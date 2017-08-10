@@ -1188,18 +1188,18 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	{
 		.name = "BTCVSD_RX",
 		.stream_name = MT_SOC_BTCVSD_CAPTURE_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_BTCVSD_RX_DAI_NAME,
+		.cpu_dai_name   = "snd-soc-dummy-dai",
 		.platform_name  = MT_SOC_BTCVSD_RX_PCM,
-		.codec_dai_name = MT_SOC_CODEC_BTCVSD_RX_DAI_NAME,
-		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
-	},
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+		},
 	{
 		.name = "BTCVSD_TX",
 		.stream_name = MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_BTCVSD_TX_DAI_NAME,
+		.cpu_dai_name   = "snd-soc-dummy-dai",
 		.platform_name  = MT_SOC_BTCVSD_TX_PCM,
-		.codec_dai_name = MT_SOC_CODEC_BTCVSD_TX_DAI_NAME,
-		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
 	},
 #endif
 	{

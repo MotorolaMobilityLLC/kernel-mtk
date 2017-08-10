@@ -44,15 +44,8 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
-#include "AudDrv_Common.h"
-#include "AudDrv_Def.h"
-#include "AudDrv_Afe.h"
-#include "AudDrv_Ana.h"
-#include "AudDrv_Clk.h"
-#include "AudDrv_Kernel.h"
-#include "mt_soc_afe_control.h"
-#include "mt_soc_digital_type.h"
-#include "mt_soc_pcm_common.h"
+#include <linux/module.h>
+
 #include "mt_soc_pcm_btcvsd.h"
 
 #ifdef CONFIG_OF
@@ -171,25 +164,6 @@ static int Auddrv_BTCVSD_Address_Map(void)
 
 #endif
 
-static struct snd_pcm_hardware mtk_btcvsd_rx_hardware = {
-	.info = (SNDRV_PCM_INFO_MMAP |
-	SNDRV_PCM_INFO_INTERLEAVED |
-	SNDRV_PCM_INFO_RESUME |
-	SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =   SND_SOC_ADV_MT_FMTS,
-	.rates =        SOC_HIGH_USE_RATE,
-	.rate_min =     SOC_HIGH_USE_RATE_MIN,
-	.rate_max =     SOC_HIGH_USE_RATE_MAX,
-	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
-	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
-	.buffer_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
-	.period_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
-	.periods_min =      SOC_NORMAL_USE_PERIODS_MIN,
-	.periods_max =     SOC_NORMAL_USE_PERIODS_MAX,
-	.fifo_size =        0,
-};
-
-
 static int mtk_pcm_btcvsd_rx_stop(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
@@ -222,16 +196,16 @@ static snd_pcm_uframes_t mtk_pcm_btcvsd_rx_pointer(struct snd_pcm_substream *sub
 
 	/* calculate cheating byte */
 	byte = (diff_msec_rx * substream->runtime->rate * substream->runtime->channels / 1000);
-	Frameidx = audio_bytes_to_frame(substream , byte);
+	Frameidx = btcvsd_bytes_to_frame(substream , byte);
 	LOGBT("%s, ch=%d, rate=%d, byte=%d, Frameidx=%d\n", __func__,
 			substream->runtime->channels, substream->runtime->rate, byte, Frameidx);
 #else
 	/* get total bytes to copy */
-	/* Frameidx = audio_bytes_to_frame(substream , Afe_Block->u4DMAReadIdx); */
+	/* Frameidx = btcvsd_bytes_to_frame(substream , Afe_Block->u4DMAReadIdx); */
 	/* return Frameidx; */
 	byte = (btsco.pRX->iPacket_w & SCO_RX_PACKET_MASK)*
 			(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
-	Frameidx = audio_bytes_to_frame(substream , byte);
+	Frameidx = btcvsd_bytes_to_frame(substream , byte);
 #endif
 	spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
@@ -256,10 +230,10 @@ static int mtk_pcm_btcvsd_rx_hw_params(struct snd_pcm_substream *substream,
 
 	/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 
-	if (BT_CVSD_Mem.RX_btcvsd_dma_buf->area) {
+	if (BT_CVSD_Mem.RX_btcvsd_dma_buf.area) {
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
-		substream->runtime->dma_area = BT_CVSD_Mem.RX_btcvsd_dma_buf->area;
-		substream->runtime->dma_addr = BT_CVSD_Mem.RX_btcvsd_dma_buf->addr;
+		substream->runtime->dma_area = BT_CVSD_Mem.RX_btcvsd_dma_buf.area;
+		substream->runtime->dma_addr = BT_CVSD_Mem.RX_btcvsd_dma_buf.addr;
 	}
 
 	pr_warn("%s, 1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n", __func__,
@@ -276,7 +250,7 @@ static int mtk_pcm_btcvsd_rx_hw_free(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
 
-	if (BT_CVSD_Mem.RX_btcvsd_dma_buf->area)
+	if (BT_CVSD_Mem.RX_btcvsd_dma_buf.area)
 		return 0;
 	else
 		return snd_pcm_lib_free_pages(substream);
@@ -285,8 +259,8 @@ static int mtk_pcm_btcvsd_rx_hw_free(struct snd_pcm_substream *substream)
 }
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
-	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
-	.list = soc_high_supported_sample_rates,
+	.count = ARRAY_SIZE(bt_supported_sample_rates),
+	.list = bt_supported_sample_rates,
 	.mask = 0,
 };
 
@@ -317,9 +291,9 @@ static int mtk_pcm_btcvsd_rx_open(struct snd_pcm_substream *substream)
 
 	ret = AudDrv_btcvsd_Allocate_Buffer(1);
 
-	runtime->hw = mtk_btcvsd_rx_hardware;
+	runtime->hw = mtk_btcvsd_hardware;
 
-	memcpy((void *)(&(runtime->hw)), (void *)&mtk_btcvsd_rx_hardware, sizeof(struct snd_pcm_hardware));
+	memcpy((void *)(&(runtime->hw)), (void *)&mtk_btcvsd_hardware, sizeof(struct snd_pcm_hardware));
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &constraints_sample_rates);
 
@@ -375,14 +349,15 @@ static int mtk_pcm_btcvsd_rx_trigger(struct snd_pcm_substream *substream, int cm
 }
 
 static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
-									int channel, snd_pcm_uframes_t pos,
-									void __user *dst, snd_pcm_uframes_t count)
+				  int channel, snd_pcm_uframes_t pos,
+				  void __user *dst, snd_pcm_uframes_t count)
 {
 	/* get total bytes to copy */
 	char *Read_Data_Ptr = (char *)dst;
 
-	count = audio_frame_to_bytes(substream , count);
-	count = Align64ByteSize(count);
+	count = btcvsd_frame_to_bytes(substream , count);
+	/*count = Align64ByteSize(count);*/
+	count = count & 0xFFFFFFC0;
 	AudDrv_btcvsd_read(Read_Data_Ptr, count);
 
 	LOGBT("pcm_copy return\n");
@@ -390,8 +365,8 @@ static int mtk_pcm_btcvsd_rx_copy(struct snd_pcm_substream *substream,
 }
 
 static int mtk_pcm_btcvsd_rx_silence(struct snd_pcm_substream *substream,
-										int channel, snd_pcm_uframes_t pos,
-										snd_pcm_uframes_t count)
+				     int channel, snd_pcm_uframes_t pos,
+				     snd_pcm_uframes_t count)
 {
 	LOGBT("%s\n", __func__);
 	return 0; /* do nothing */
@@ -403,16 +378,6 @@ static int mtk_asoc_pcm_btcvsd_rx_new(struct snd_soc_pcm_runtime *rtd)
 
 	LOGBT("%s\n", __func__);
 	return ret;
-}
-
-static int mtk_asoc_pcm_btcvsd_rx_platform_probe(struct snd_soc_platform *platform)
-{
-	pr_warn("%s\n", __func__);
-
-	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_rx,
-			Soc_Aud_Digital_Block_MEM_BTCVSD_RX, sizeof(BT_SCO_RX_T));
-	BT_CVSD_Mem.RX_btcvsd_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_RX);
-	return 0;
 }
 
 static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
@@ -431,7 +396,6 @@ static struct snd_pcm_ops mtk_btcvsd_rx_ops = {
 static struct snd_soc_platform_driver mtk_btcvsd_rx_soc_platform = {
 	.ops        = &mtk_btcvsd_rx_ops,
 	.pcm_new    = mtk_asoc_pcm_btcvsd_rx_new,
-	.probe      = mtk_asoc_pcm_btcvsd_rx_platform_probe,
 };
 
 static int mtk_btcvsd_rx_probe(struct platform_device *pdev)

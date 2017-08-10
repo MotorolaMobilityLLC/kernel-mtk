@@ -44,19 +44,10 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
-#include "AudDrv_Common.h"
-#include "AudDrv_Def.h"
-#include "AudDrv_Afe.h"
-#include "AudDrv_Ana.h"
-#include "AudDrv_Clk.h"
-#include "AudDrv_Kernel.h"
-#include "mt_soc_afe_control.h"
-#include "mt_soc_digital_type.h"
-#include "mt_soc_pcm_common.h"
-#include "mt_soc_pcm_btcvsd.h"
 #include <linux/time.h>
+#include <linux/module.h>
 
-
+#include "mt_soc_pcm_btcvsd.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -70,24 +61,6 @@ DEFINE_SPINLOCK(auddrv_btcvsd_tx_lock);
 int prev_sec; /* define 0 @ open */
 long prev_usec;
 long diff_msec;
-
-static struct snd_pcm_hardware mtk_btcvsd_tx_hardware = {
-	.info = (SNDRV_PCM_INFO_MMAP |
-	SNDRV_PCM_INFO_INTERLEAVED |
-	SNDRV_PCM_INFO_RESUME |
-	SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =   SND_SOC_ADV_MT_FMTS,
-	.rates =        SOC_HIGH_USE_RATE,
-	.rate_min =     SOC_HIGH_USE_RATE_MIN,
-	.rate_max =     SOC_HIGH_USE_RATE_MAX,
-	.channels_min =     SOC_NORMAL_USE_CHANNELS_MIN,
-	.channels_max =     SOC_NORMAL_USE_CHANNELS_MAX,
-	.buffer_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
-	.period_bytes_max = SOC_NORMAL_USE_BUFFERSIZE_MAX,
-	.periods_min =      SOC_NORMAL_USE_PERIODS_MIN,
-	.periods_max =     SOC_NORMAL_USE_PERIODS_MAX,
-	.fifo_size =        0,
-};
 
 static int btcvsd_loopback_usage_control;
 static const char *const btcvsd_loopback_usage[] = {"Off", "On"};
@@ -165,7 +138,7 @@ static snd_pcm_uframes_t mtk_pcm_btcvsd_tx_pointer(struct snd_pcm_substream
 	/* increased bytes */
 	byte = packet_diff * SCO_TX_ENCODE_SIZE;
 
-	frame = audio_bytes_to_frame(substream , byte);
+	frame = btcvsd_bytes_to_frame(substream , byte);
 	frame += prev_frame;
 	frame %= substream->runtime->buffer_size;
 
@@ -200,10 +173,10 @@ static int mtk_pcm_btcvsd_tx_hw_params(struct snd_pcm_substream *substream,
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
-	if (BT_CVSD_Mem.TX_btcvsd_dma_buf->area) {
+	if (BT_CVSD_Mem.TX_btcvsd_dma_buf.area) {
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
-		substream->runtime->dma_area = BT_CVSD_Mem.TX_btcvsd_dma_buf->area;
-		substream->runtime->dma_addr = BT_CVSD_Mem.TX_btcvsd_dma_buf->addr;
+		substream->runtime->dma_area = BT_CVSD_Mem.TX_btcvsd_dma_buf.area;
+		substream->runtime->dma_addr = BT_CVSD_Mem.TX_btcvsd_dma_buf.addr;
 	}
 
 	pr_warn("%s, 1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n", __func__,
@@ -218,7 +191,7 @@ static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
 
-	if (BT_CVSD_Mem.TX_btcvsd_dma_buf->area)
+	if (BT_CVSD_Mem.TX_btcvsd_dma_buf.area)
 		return 0;
 	else
 		return snd_pcm_lib_free_pages(substream);
@@ -228,8 +201,8 @@ static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 }
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
-	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
-	.list = soc_high_supported_sample_rates,
+	.count = ARRAY_SIZE(bt_supported_sample_rates),
+	.list = bt_supported_sample_rates,
 	.mask = 0,
 };
 
@@ -260,9 +233,9 @@ static int mtk_pcm_btcvsd_tx_open(struct snd_pcm_substream *substream)
 
 	ret = AudDrv_btcvsd_Allocate_Buffer(0);
 
-	runtime->hw = mtk_btcvsd_tx_hardware;
+	runtime->hw = mtk_btcvsd_hardware;
 
-	memcpy((void *)(&(runtime->hw)), (void *)&mtk_btcvsd_tx_hardware ,
+	memcpy((void *)(&(runtime->hw)), (void *)&mtk_btcvsd_hardware ,
 		   sizeof(struct snd_pcm_hardware));
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
@@ -326,7 +299,7 @@ static int mtk_pcm_btcvsd_tx_copy(struct snd_pcm_substream *substream,
 	/* get total bytes to copy */
 	char *data_w_ptr = (char *)dst;
 
-	count = audio_frame_to_bytes(substream , count);
+	count = btcvsd_frame_to_bytes(substream , count);
 	AudDrv_btcvsd_write(data_w_ptr, count);
 
 	LOGBT("pcm_copy return\n");
@@ -351,10 +324,6 @@ static int mtk_asoc_pcm_btcvsd_tx_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_asoc_pcm_btcvsd_tx_platform_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("%s\n", __func__);
-
-	AudDrv_Allocate_mem_Buffer(mDev_btcvsd_tx,
-			Soc_Aud_Digital_Block_MEM_BTCVSD_TX, sizeof(BT_SCO_TX_T));
-	BT_CVSD_Mem.TX_btcvsd_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_BTCVSD_TX);
 
 	snd_soc_add_platform_controls(platform, mtk_btcvsd_loopback_controls,
 									ARRAY_SIZE(mtk_btcvsd_loopback_controls));

@@ -44,22 +44,9 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
-#include "AudDrv_Common.h"
-#include "AudDrv_Def.h"
-#include "AudDrv_Afe.h"
-#include "AudDrv_Ana.h"
-#include "AudDrv_Clk.h"
-#include "AudDrv_Kernel.h"
-#include "mt_soc_afe_control.h"
-#include "mt_soc_digital_type.h"
-#include "mt_soc_pcm_common.h"
-#include "mt_soc_pcm_btcvsd.h"
+#include <linux/delay.h>
 
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
+#include "mt_soc_pcm_btcvsd.h"
 
 CVSD_MEMBLOCK_T BT_CVSD_Mem;
 struct device *mDev_btcvsd_rx;
@@ -238,9 +225,9 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 							(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
 
 			/* AudDrv_Allocate_mem_Buffer */
-			BT_CVSD_Mem.RX_btcvsd_dma_buf->area = BT_CVSD_Mem.pucRXVirtBufAddr;
-			BT_CVSD_Mem.RX_btcvsd_dma_buf->addr = BT_CVSD_Mem.pucRXPhysBufAddr;
-			BT_CVSD_Mem.RX_btcvsd_dma_buf->bytes = BT_CVSD_Mem.u4RXBufferSize;
+			BT_CVSD_Mem.RX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucRXVirtBufAddr;
+			BT_CVSD_Mem.RX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucRXPhysBufAddr;
+			BT_CVSD_Mem.RX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4RXBufferSize;
 		}
 	} else {
 		writeToBT_cnt = 0;
@@ -265,9 +252,9 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 			btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
 
 			/* AudDrv_Allocate_mem_Buffer */
-			BT_CVSD_Mem.TX_btcvsd_dma_buf->area = BT_CVSD_Mem.pucTXVirtBufAddr;
-			BT_CVSD_Mem.TX_btcvsd_dma_buf->addr = BT_CVSD_Mem.pucTXPhysBufAddr;
-			BT_CVSD_Mem.TX_btcvsd_dma_buf->bytes = BT_CVSD_Mem.u4TXBufferSize;
+			BT_CVSD_Mem.TX_btcvsd_dma_buf.area = BT_CVSD_Mem.pucTXVirtBufAddr;
+			BT_CVSD_Mem.TX_btcvsd_dma_buf.addr = BT_CVSD_Mem.pucTXPhysBufAddr;
+			BT_CVSD_Mem.TX_btcvsd_dma_buf.bytes = BT_CVSD_Mem.u4TXBufferSize;
 		}
 	}
 	pr_debug("%s(-)\n", __func__);
@@ -469,7 +456,7 @@ AudDrv_BTCVSD_IRQ_handler_exit:
 	return IRQ_HANDLED;
 }
 
-bool Register_BTCVSD_Irq(void *dev, uint32 irq_number)
+bool Register_BTCVSD_Irq(void *dev, unsigned int irq_number)
 {
 	int ret;
 
@@ -841,4 +828,49 @@ void Set_BTCVSD_State(unsigned long arg)
 	}
 }
 
+unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
+				    unsigned long count)
+{
+	unsigned long bytes = count;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+
+	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+	    runtime->format == SNDRV_PCM_FORMAT_U32_LE)
+		bytes = bytes << 2;
+	else
+		bytes = bytes << 1;
+
+	if (runtime->channels == 2)
+		bytes = bytes << 1;
+	else if (runtime->channels == 4)
+		bytes = bytes << 2;
+	else if (runtime->channels != 1)
+		bytes = bytes << 3;
+	/* printk("%s bytes = %d count = %d\n",__func__,bytes,count); */
+	return bytes;
+}
+
+
+unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
+				    unsigned long bytes)
+{
+	unsigned long count  = bytes;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+
+	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+	    runtime->format == SNDRV_PCM_FORMAT_U32_LE)
+		count = count >> 2;
+	else
+		count = count >> 1;
+
+
+	if (runtime->channels == 2)
+		count = count >> 1;
+	else if (runtime->channels == 4)
+		count = count >> 2;
+	else if (runtime->channels != 1)
+		count = count >> 3;
+	/* printk("%s bytes = %d count = %d\n",__func__,bytes,count); */
+	return count;
+}
 

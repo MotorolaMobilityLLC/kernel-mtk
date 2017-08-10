@@ -2646,9 +2646,7 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-	case Soc_Aud_Digital_Block_MEM_HDMI:
-	case Soc_Aud_Digital_Block_MEM_BTCVSD_RX:
-	case Soc_Aud_Digital_Block_MEM_BTCVSD_TX:{
+	case Soc_Aud_Digital_Block_MEM_HDMI:{
 			pr_debug("%s MemBlock =%d Buffer_length = %d\n ", __func__, MemBlock,
 				 Buffer_length);
 			if (Audio_dma_buf[MemBlock] != NULL) {
@@ -3275,10 +3273,6 @@ struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock)
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 		return Audio_dma_buf[MemBlock];
 	case Soc_Aud_Digital_Block_MEM_HDMI:
-		return Audio_dma_buf[MemBlock];
-	case Soc_Aud_Digital_Block_MEM_BTCVSD_RX:
-		return Audio_dma_buf[MemBlock];
-	case Soc_Aud_Digital_Block_MEM_BTCVSD_TX:
 		return Audio_dma_buf[MemBlock];
 	case Soc_Aud_Digital_Block_MEM_I2S:
 		pr_warn("currently not support\n");

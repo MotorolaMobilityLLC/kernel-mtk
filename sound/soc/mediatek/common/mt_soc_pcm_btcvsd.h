@@ -36,6 +36,7 @@
 
 /* #include <mach/mt_typedefs.h> */
 #include <linux/types.h>
+#include <sound/soc.h>
 
 #undef DEBUG_AUDDRV
 #ifdef DEBUG_AUDDRV
@@ -130,6 +131,34 @@ static const kal_uint8 btsco_PacketInfo[6][6] = {
 		{ 20, 9, BT_SCO_PACKET_180 / SCO_TX_ENCODE_SIZE, BT_SCO_PACKET_180 / SCO_RX_PLC_SIZE}
 }; /* 20 */
 
+#define MT_SOC_BTCVSD_RX_PCM   "mt-soc-btcvsd-rx-pcm"
+#define MT_SOC_BTCVSD_TX_PCM   "mt-soc-btcvsd-tx-pcm"
+
+static const struct snd_pcm_hardware mtk_btcvsd_hardware = {
+	.info = (SNDRV_PCM_INFO_MMAP |
+	SNDRV_PCM_INFO_INTERLEAVED |
+	SNDRV_PCM_INFO_RESUME |
+	SNDRV_PCM_INFO_MMAP_VALID),
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		   SNDRV_PCM_FMTBIT_S24_LE |
+		   SNDRV_PCM_FMTBIT_S32_LE,
+	.rates = SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000,
+	.rate_min = 8000,
+	.rate_max = 192000,
+	.channels_min = 1,
+	.channels_max = 2,
+	.buffer_bytes_max = 48 * 1024,
+	.period_bytes_max = 48 * 1024,
+	.periods_min = 1,
+	.periods_max = 16,
+	.fifo_size = 0,
+};
+
+static const unsigned int bt_supported_sample_rates[13] = {
+	8000, 11025, 12000, 16000, 22050, 24000,
+	32000, 44100, 48000, 88200, 96000, 176400, 192000
+};
+
 
 typedef enum {
 		BT_SCO_TXSTATE_IDLE = 0x0,
@@ -170,8 +199,8 @@ typedef struct {
 		kal_int32 u4RXBufferSize;
 		struct snd_pcm_substream *TX_substream;
 		struct snd_pcm_substream *RX_substream;
-		struct snd_dma_buffer *TX_btcvsd_dma_buf;
-		struct snd_dma_buffer *RX_btcvsd_dma_buf;
+		struct snd_dma_buffer TX_btcvsd_dma_buf;
+		struct snd_dma_buffer RX_btcvsd_dma_buf;
 } CVSD_MEMBLOCK_T;
 
 
@@ -227,7 +256,7 @@ void AudDrv_BTCVSD_ReadFromBT(BT_SCO_PACKET_LEN uLen,
 					kal_uint32 uControl);
 void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
 					kal_uint32 uPacketLength, kal_uint32 uPacketNumber, kal_uint32 uBlockSize);
-bool Register_BTCVSD_Irq(void *dev, uint32 irq_number);
+bool Register_BTCVSD_Irq(void *dev, unsigned int irq_number);
 int AudDrv_BTCVSD_IRQ_handler(void);
 int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX);
 int AudDrv_btcvsd_Free_Buffer(kal_uint8 isRX);
@@ -236,6 +265,11 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count);
 void Disable_CVSD_Wakeup(void);
 void Enable_CVSD_Wakeup(void);
 void Set_BTCVSD_State(unsigned long arg);
+
+unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
+				    unsigned long count);
+unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
+				    unsigned long count);
 
 
 /* here is temp address for ioremap BT hardware register */

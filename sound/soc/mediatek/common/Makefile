@@ -19,6 +19,9 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 obj-y += auddrv_devtree_parser.o
 obj-y += auddrv_underflow_mach.o
 
+# btcvsd
+obj-$(CONFIG_MTK_BTCVSD_ALSA) += mt_soc_pcm_btcvsd.o mt_soc_pcm_btcvsd_rx.o mt_soc_pcm_btcvsd_tx.o
+
 # New kernel architecture
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
 
@@ -44,7 +47,6 @@ obj-y += mt_soc_pcm_mrgrx.o mt_soc_pcm_mrgrx_awb.o mt_soc_pcm_fm_i2s.o mt_soc_pc
 obj-y += mt_soc_pcm_dl1_awb.o mt_soc_pcm_dl1_bt.o mt_soc_pcm_bt_dai.o
 obj-y += mt_soc_dai_stub.o mt_soc_dai_routing.o mt_soc_codec_dummy.o mt_soc_pcm_fmtx.o mt_soc_tdm_capture.o
 obj-y += mt_soc_pcm_hp_impedance.o
-obj-$(CONFIG_MTK_BTCVSD_ALSA) += mt_soc_pcm_btcvsd.o mt_soc_pcm_btcvsd_rx.o mt_soc_pcm_btcvsd_tx.o
 obj-y += mt_soc_machine.o
 
 endif

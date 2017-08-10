@@ -65,3 +65,7 @@ endif
 
 # End CONFIG_MTK_SND_SOC_NEW_ARCH
 endif
+
+ifeq ($(CONFIG_MTK_BTCVSD_ALSA),y)
+obj-y += common/
+endif
