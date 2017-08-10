@@ -495,6 +495,15 @@ config MT6323_AUXADC
 	  monitored, and convert them to digital data.
 	  This driver is to provide a API for other modules to get auxadc voltage.
 
+config MT6392_AUXADC
+	tristate "MediaTek MT6392 AUXADC FUNCTIONS Support"
+	depends on MFD_MT6397
+	help
+	  Say yes here to add support for MediaTek MT6392 auxadc functions.
+	  AUXADC is a sub block in PMIC MT6392 to select real-world messages to be
+	  monitored, and convert them to digital data.
+	  This driver is to provide a API for other modules to get auxadc voltage.
+
 config MFD_MENF21BMC
 	tristate "MEN 14F021P00 Board Management Controller Support"
 	depends on I2C
