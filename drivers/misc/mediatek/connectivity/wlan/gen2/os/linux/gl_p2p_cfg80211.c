@@ -1265,7 +1265,7 @@ mtk_p2p_cfg80211_change_iface(IN struct wiphy *wiphy,
 		if ((wiphy == NULL) || (ndev == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_change_iface.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_change_iface. type: %d\n", type);
 
 		if (ndev->ieee80211_ptr)
 			ndev->ieee80211_ptr->iftype = type;
