@@ -83,14 +83,17 @@ static uint32_t resv_dram_offset_cur;
  *============================================================================*/
 
 
-static uint32_t get_resv_dram_buf_offset(const uint32_t len)
+static uint32_t get_resv_dram_buf_offset(uint32_t len)
 {
 	const uint32_t max_resv_dram_a2d_size = 0x2000;
 	uint32_t retval = 0xFFFFFFFF;
 
-	if (len >= 0x2000)
+	if ((len & 0xF) != 0) /* need 16 bytes align */
+		len = (len & 0xFFFFFFF0) + 0x10;
+
+	if (len >= max_resv_dram_a2d_size)
 		retval = 0xFFFFFFFF; /* invalid offset */
-	else if (retval + len < max_resv_dram_a2d_size) {
+	else if (resv_dram_offset_cur + len < max_resv_dram_a2d_size) {
 		retval = resv_dram_offset_cur;
 		resv_dram_offset_cur += len;
 	} else {
