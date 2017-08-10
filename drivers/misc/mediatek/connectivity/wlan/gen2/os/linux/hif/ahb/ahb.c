@@ -348,6 +348,8 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 			HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
 		if (HifInfo->ChipID == 0x0326)
 			HifInfo->ChipID = 0x6755;
+		if (HifInfo->ChipID == 0x0633)
+			HifInfo->ChipID = 0x6580;
 	}
 	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID = 0x%x\n", HifInfo->ChipID);
 #ifdef CONFIG_OF
