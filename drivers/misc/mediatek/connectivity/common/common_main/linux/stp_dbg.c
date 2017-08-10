@@ -170,15 +170,15 @@ static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
 
 	STP_DBG_INFO_FUNC(" start\n");
 
-	stp_btm_notify_coredump_timeout_wq(g_stp_dbg->btm);
-
-	STP_DBG_INFO_FUNC(" end\n");
-
 	if (dmp) {
 		STP_DBG_WARN_FUNC
 		    (" coredump timer timeout, coredump maybe not finished successfully\n");
 		dmp->sm = CORE_DUMP_TIMEOUT;
 	}
+	stp_btm_notify_coredump_timeout_wq(g_stp_dbg->btm);
+
+	STP_DBG_INFO_FUNC(" end\n");
+
 }
 
 /* stp_dbg_core_dump_init - create core dump sys
