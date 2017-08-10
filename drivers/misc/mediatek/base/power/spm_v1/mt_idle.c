@@ -1161,7 +1161,7 @@ static bool soidle_can_enter(int cpu)
 
 		get_monotonic_boottime(&uptime);
 		val = (unsigned long)uptime.tv_sec;
-		if (val <= 20) {
+		if (val <= 90) {
 			sodi_by_uptime_count++;
 			reason = BY_OTH;
 			goto out;
