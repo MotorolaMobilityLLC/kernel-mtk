@@ -12,12 +12,20 @@
 #
 
 obj-$(CONFIG_COMMON_CLK_MEDIATEK_NEW) += clk-mtk.o clk-pll.o clk-gate.o clk-mux.o clk-cpumux.o clk-apmixed.o
-obj-$(CONFIG_COMMON_CLK_MT8135) += clk-mt8135.o
+obj-$(CONFIG_COMMON_CLK_MT2701) += clk-mt2701.o clk-mt2701-pg.o clk-hdmi-mt2701.o
 obj-$(CONFIG_COMMON_CLK_MT8127) += clk-mt8127.o clk-bringup.o
+obj-$(CONFIG_COMMON_CLK_MT8135) += clk-mt8135.o
 obj-$(CONFIG_COMMON_CLK_MT8163) += clk-mt8163.o
 obj-$(CONFIG_COMMON_CLK_MT8173) += clk-mt8173.o
-obj-$(CONFIG_COMMON_CLK_MT2701) += clk-mt2701.o clk-mt2701-pg.o clk-hdmi-mt2701.o
 obj-$(CONFIG_RESET_CONTROLLER) += reset.o
+
+ifeq ($(CONFIG_DEBUG_FS), y)
+obj-$(CONFIG_COMMON_CLK_MEDIATEK_NEW) += clkdbg.o
+obj-$(CONFIG_COMMON_CLK_MT2701) += clkdbg_mt2701.o clkchk_mt2701.o
+obj-$(CONFIG_COMMON_CLK_MT8127) += clkdbg_mt8127.o clkchk_mt8127.o
+obj-$(CONFIG_COMMON_CLK_MT8163) += clkdbg_mt8163.o clkchk_mt8163.o
+obj-$(CONFIG_COMMON_CLK_MT8173) += clkdbg_mt8173.o clkchk_mt8173.o
+endif
 
 obj-$(CONFIG_COMMON_CLK_MEDIATEK_V1) += clk-mtk-v1.o clk-pll-v1.o clk-gate-v1.o clk-mux.o
 obj-$(CONFIG_COMMON_CLK_MT6735) += clk-mt6735.o clk-mt6735-pll.o clk-mt6735-pg.o
