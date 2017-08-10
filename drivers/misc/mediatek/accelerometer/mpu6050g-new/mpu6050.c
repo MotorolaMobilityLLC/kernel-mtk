@@ -1450,7 +1450,6 @@ int gsensor_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 			GSE_LOG("Set delay parameter value:%d\n", value);
 
-
 			err = MPU6050_SetBWRate(priv->client, sample_delay);
 			if (err != MPU6050_SUCCESS)	{ /* 0x2C->BW=100Hz */
 				GSE_ERR("Set delay parameter error!\n");
