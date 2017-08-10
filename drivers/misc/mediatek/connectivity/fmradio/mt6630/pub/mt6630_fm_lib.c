@@ -2345,7 +2345,7 @@ static fm_s32 mt6630_TxScan(fm_u16 min_freq,
 
 			ret = mt6630_soft_mute_tune_Tx(freq, &rssi, &valid);
 			if (ret == fm_false) {
-				WCN_DBG(FM_ERR | CHIP, "mt6630_soft_mute_tune failed\n");
+				WCN_DBG(FM_ERR | CHIP, "mt6630_soft_mute_tune_tx failed\n");
 				return 1;
 			}
 
@@ -2459,7 +2459,7 @@ static fm_s32 mt6630_TxScan(fm_u16 min_freq,
 	WCN_DBG(FM_NTC | CHIP, "completed, [cnt=%d],[freq=%d]\n", cnt, freq);
 	/* return 875~1080 */
 	for (i = 0; i < cnt; i++) {
-		if (1 == fm_get_channel_space(*(pScanTBL + i)))
+		if (1 == fm_get_channel_space(*(pScanTBL + i)) && space != FM_SPACE_50K)
 			*(pScanTBL + i) = *(pScanTBL + i) / 10;
 	}
 	WCN_DBG(FM_NTC | CHIP, "-%s():[ret=%d]\n", __func__, ret);

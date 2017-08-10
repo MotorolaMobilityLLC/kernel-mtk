@@ -596,10 +596,10 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 {
 	fm_s32 ret = 0;
 	fm_u16 scandir = 0;
-	fm_u16 space = FM_SPACE_100K;
+	fm_u16 space = parm->space;
 
 	if (fm_low_ops.bi.tx_scan == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
+		pr_err("%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
 	if (FM_LOCK(fm_ops_lock))
@@ -623,28 +623,6 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 		break;
 	}
 
-	/*if (parm->space == FM_SPACE_100K) {
-	   space = 2;
-	   } else if (parm->space == FM_SPACE_50K) {
-	   space = 1;
-	   } else if (parm->space == FM_SPACE_200K) {
-	   space = 4;
-	   } else {
-	   //default
-	   space = 2;
-	   } */
-#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
-	if (parm->band == FM_BAND_UE) {
-		fm->min_freq = FM_UE_FREQ_MIN * 10;
-		fm->max_freq = FM_UE_FREQ_MAX * 10;
-	} else if (parm->band == FM_BAND_JAPANW) {
-		fm->min_freq = FM_JP_FREQ_MIN * 10;
-		fm->max_freq = FM_JP_FREQ_MAX * 10;
-	} else if (parm->band == FM_BAND_SPECIAL) {
-		fm->min_freq = FM_FREQ_MIN * 10;
-		fm->max_freq = FM_FREQ_MAX * 10;
-	}
-#else
 	if (parm->band == FM_BAND_UE) {
 		fm->min_freq = FM_UE_FREQ_MIN;
 		fm->max_freq = FM_UE_FREQ_MAX;
@@ -654,9 +632,7 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 	} else if (parm->band == FM_BAND_SPECIAL) {
 		fm->min_freq = FM_FREQ_MIN;
 		fm->max_freq = FM_FREQ_MAX;
-	}
-#endif
-	else {
+	} else {
 		WCN_DBG(FM_ERR | MAIN, "band:%d out of range\n", parm->band);
 		parm->err = FM_EPARM;
 		ret = -EPERM;
@@ -666,12 +642,16 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 	if (unlikely((parm->freq < fm->min_freq) || (parm->freq > fm->max_freq))) {
 		parm->err = FM_EPARM;
 		ret = -EPERM;
+		WCN_DBG(FM_ERR | MAIN, "%s parm->freq:%d fm->min_freq: %d fm->max_freq:%d\n",
+		__func__, parm->freq, fm->min_freq, fm->max_freq);
 		goto out;
 	}
 
 	if (unlikely(parm->ScanTBLSize < TX_SCAN_MIN || parm->ScanTBLSize > TX_SCAN_MAX)) {
 		parm->err = FM_EPARM;
 		ret = -EPERM;
+		WCN_DBG(FM_ERR | MAIN, "%s parm->ScanTBLSize:%d TX_SCAN_MIN:%d TX_SCAN_MAX:%d\n",
+		__func__, parm->ScanTBLSize, TX_SCAN_MIN, TX_SCAN_MAX);
 		goto out;
 	}
 

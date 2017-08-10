@@ -31,7 +31,6 @@
 #define FM_FREQ_MIN  FM_RX_BAND_FREQ_L
 #define FM_FREQ_MAX  FM_RX_BAND_FREQ_H
 
-#ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 #define FM_UE_FREQ_MIN  8750
 #define FM_UE_FREQ_MAX  10800
 #define FM_JP_FREQ_MIN  7600
@@ -42,20 +41,6 @@
 /* TX */
 #define FM_TX_SCAN_HOLE_LOW  9230	/* 92.3MHz~95.4MHz should not show to user */
 #define FM_TX_SCAN_HOLE_HIGH 9540	/* 92.3MHz~95.4MHz should not show to user */
-
-#else
-#define FM_UE_FREQ_MIN  875
-#define FM_UE_FREQ_MAX  1080
-#define FM_JP_FREQ_MIN  760
-#define FM_JP_FREQ_MAX  1080
-
-#define FM_RX_BAND_FREQ_L     875	/* FM radio special band low freq(Default 87.5MHz) */
-#define FM_RX_BAND_FREQ_H     1080	/* FM radio special band high freq(Default 108.0MHz) */
-/* TX */
-#define FM_TX_SCAN_HOLE_LOW  923	/* 92.30MHz~95.40MHz should not show to user */
-#define FM_TX_SCAN_HOLE_HIGH 954	/* 92.30MHz~95.40MHz should not show to user */
-
-#endif /* CONFIG_MTK_FM_50KHZ_SUPPORT */
 
 /* space */
 #define FM_SPACE_UNKNOWN    0
