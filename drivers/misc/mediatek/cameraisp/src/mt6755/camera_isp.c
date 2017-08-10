@@ -717,7 +717,7 @@ static /*volatile*/ wait_queue_head_t WaitQueueHead_EDBuf_WaitFrame;
 static spinlock_t SpinLockEDBufQueList;
 #define	_MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define	_MAX_SUPPORT_P2_BURSTQ_NUM_	4
-static volatile MINT32 P2_Support_BurstQNum = 1;
+static volatile MINT32 P2_Support_BurstQNum = 4;
 #define	_MAX_SUPPORT_P2_PACKAGE_NUM_ (_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
 #define	P2_EDBUF_MLIST_TAG 1
 #define	P2_EDBUF_RLIST_TAG 2
