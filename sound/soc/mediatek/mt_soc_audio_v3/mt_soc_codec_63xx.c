@@ -738,8 +738,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		TurnOnDacPower();
 		Ana_Set_Reg(0x0E9C, 0x0200, 0x0200);
 		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
-		Ana_Set_Reg(AUDENC_ANA_CON9, 0x0010, 0x0010);
-		/* Turn on Mic-Bias1 */
 
 		/* upmu_set_rg_vio18_cal(1);// for MT6328 E1 VIO18 patch only */
 #if 0				/* test 6328 sgen */
@@ -829,8 +827,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* HP driver output stability enhance option: NO */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
 
-		Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010);
-		/* Turn off Mic-Bias1 */
 		TurnOffDacPower();
 	}
 	return true;
