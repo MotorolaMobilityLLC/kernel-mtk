@@ -3287,7 +3287,7 @@ static inline void ISP_Reset(MINT32 rst_path)
 			Reg = ISP_RD32(ISP_REG_ADDR_CAM_SW_CTL);
 			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
 				break;
-			usleep_range(1000, 1500);
+			udelay(100);
 		} while (--i);
 
 		ISP_WR32(ISP_REG_ADDR_CAM_SW_CTL, ISP_REG_SW_CTL_HW_RST);
@@ -3318,7 +3318,7 @@ static inline void ISP_Reset(MINT32 rst_path)
 			Reg = ISP_RD32(ISP_REG_ADDR_CAM_SW_CTL);
 			if (Reg & ISP_REG_SW_CTL_SW_RST_P2_STATUS)
 				break;
-			usleep_range(1000, 1500);
+			udelay(100);
 		} while (--i);
 
 		ISP_WR32(ISP_REG_ADDR_CAM_SW_CTL, ISP_REG_SW_CTL_HW_RST_P2);
@@ -3345,7 +3345,7 @@ static inline void ISP_Reset(MINT32 rst_path)
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV_SW_CTL);
 			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
 				break;
-			usleep_range(1000, 1500);
+			udelay(100);
 		} while (--i);
 
 		ISP_WR32(ISP_REG_ADDR_CAMSV_SW_CTL, ISP_REG_SW_CTL_HW_RST);
@@ -3358,7 +3358,7 @@ static inline void ISP_Reset(MINT32 rst_path)
 			Reg = ISP_RD32(ISP_REG_ADDR_CAMSV2_SW_CTL);
 			if (Reg & ISP_REG_SW_CTL_SW_RST_STATUS)
 				break;
-			usleep_range(1000, 1500);
+			udelay(100);
 		} while (--i);
 		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, ISP_REG_SW_CTL_HW_RST);
 		ISP_WR32(ISP_REG_ADDR_CAMSV2_SW_CTL, 0);
