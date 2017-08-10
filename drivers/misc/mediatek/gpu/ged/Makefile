@@ -33,7 +33,7 @@ ccflags-y += \
 # ----- for FRR2.0 ----- #
 $(info *MTK_PLATFORM: $(MTK_PLATFORM))
 ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
-ccflags-y += -DMT6XXX_PLATFORM
+ccflags-y += -DENABLE_FRR_FOR_MT6XXX_PLATFORM
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \

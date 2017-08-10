@@ -37,7 +37,7 @@
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
 
-#ifdef MT6XXX_PLATFORM
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
 #include "ged_vsync.h"
 #endif
 
@@ -148,7 +148,7 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
 				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
 				break;
-#ifdef MT6XXX_PLATFORM
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
             case GED_BRIDGE_COMMAND_VSYNC_WAIT:
 				pFunc = (ged_bridge_func_type*)ged_bridge_vsync_wait;
 				break;

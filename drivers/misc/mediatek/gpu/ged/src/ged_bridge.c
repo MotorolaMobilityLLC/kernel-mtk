@@ -23,7 +23,7 @@
 #include "ged_dvfs.h"
 #include <linux/module.h>
 
-#ifdef MT6XXX_PLATFORM
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
 #include "ged_vsync.h"
 #endif
 
@@ -157,7 +157,7 @@ int ged_bridge_event_notify(
 }
 
 //-----------------------------------------------------------------------------
-#ifdef MT6XXX_PLATFORM
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
 int ged_bridge_vsync_wait(void)
 {
     ged_vsync_wait();
