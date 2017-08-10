@@ -517,7 +517,7 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 				host->id);
 
 			msdc_clk_disable(host);
-			msdc_clk_enable(host);
+			(void)msdc_clk_enable(host);
 
 			msdc_dump_info(host->id);
 			host->prev_cmd_cause_dump = 0;
@@ -684,7 +684,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		*/
 		#endif
 
-		msdc_clk_enable(host);
+		(void)msdc_clk_enable(host);
 
 		host->core_clkon = 1;
 		udelay(10);
@@ -5389,7 +5389,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		spin_lock(&host->sdio_irq_lock);
 
 	if (host->core_clkon == 0) {
-		msdc_clk_enable(host);
+		(void)msdc_clk_enable(host);
 		host->core_clkon = 1;
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 	}

@@ -678,7 +678,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
+	(void)msdc_clk_enable(host);
 
 	msdc_get_driving(host, host->hw);
 
