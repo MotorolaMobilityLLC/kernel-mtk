@@ -165,4 +165,6 @@
 #define CUST_TRACKINGOFFSET		0	/* Force offset to shift SOC to 0 */
 #define CUST_TRACKINGEN			0	/* 0:disable, 1:enable */
 
+/* Multi battery */
+/* #define MTK_MULTI_BAT_PROFILE_SUPPORT */
 #endif

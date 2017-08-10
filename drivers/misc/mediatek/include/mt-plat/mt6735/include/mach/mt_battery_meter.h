@@ -422,6 +422,8 @@
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
 
+/* Multi battery */
+/* #define MTK_MULTI_BAT_PROFILE_SUPPORT */
 #endif
 
 #endif	/*#ifndef _CUST_BATTERY_METER_H*/

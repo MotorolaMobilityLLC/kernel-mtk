@@ -48,7 +48,11 @@
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
 #include <mach/mt_battery_meter.h>
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+#include <mach/mt_battery_meter_table_multi_profile.h>
+#else
 #include <mach/mt_battery_meter_table.h>
+#endif
 #include <mach/mt_pmic.h>
 
 
