@@ -72,6 +72,10 @@ static void ppm_hica_update_limit_cb(enum ppm_power_state new_state);
 static void ppm_hica_status_change_cb(bool enable);
 static void ppm_hica_mode_change_cb(enum ppm_mode mode);
 
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+int hica_is_limit_big_freq = 1;
+int hica_limit_idx = -1;
+#endif
 
 /* other members will init by ppm_main */
 static struct ppm_policy_data hica_policy = {
@@ -205,6 +209,20 @@ void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 				state_info[state].cluster_limit->state_limit[i].max_cpufreq_idx;
 		}
 	}
+
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+	if ((state == PPM_POWER_STATE_4LL_L || state == PPM_POWER_STATE_4L_LL) && hica_is_limit_big_freq) {
+		/* hica_limit_idx = 0: DVFS table is not ready yet. */
+		/* hica_limit_idx < 0: First init or freq not found. */
+		if (hica_limit_idx <= 0) {
+			hica_limit_idx = ppm_main_freq_to_idx(
+					PPM_CLUSTER_B, PPM_HICA_BIG_LIMIT_FREQ, CPUFREQ_RELATION_H);
+			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx =
+				(hica_limit_idx <= 0) ? (DVFS_OPP_NUM / 2) : hica_limit_idx;
+		} else
+			policy->req.limit[PPM_CLUSTER_B].max_cpufreq_idx = hica_limit_idx;
+	}
+#endif
 
 #ifdef PPM_IC_SEGMENT_CHECK
 	/* ignore HICA min freq setting for L cluster in L_ONLY state */
@@ -476,7 +494,45 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 	return count;
 }
 
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+static int ppm_hica_is_limit_big_freq_proc_show(struct seq_file *m, void *v)
+{
+	if (hica_is_limit_big_freq)
+		seq_printf(m, "\nhica_is_limit_big_freq = %d (idx = %d)\n", hica_is_limit_big_freq, hica_limit_idx);
+	else
+		seq_printf(m, "\nhica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+
+	seq_puts(m, "\nNote: echo 0 to unlimit big freq!\n");
+
+	return 0;
+}
+
+static ssize_t ppm_hica_is_limit_big_freq_proc_write(struct file *file, const char __user *buffer,
+									size_t count, loff_t *pos)
+{
+	int is_limit;
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &is_limit)) {
+		hica_is_limit_big_freq = is_limit;
+		ppm_info("hica_is_limit_big_freq = %d\n", hica_is_limit_big_freq);
+		mt_ppm_main();
+	} else
+		ppm_err("echo <is_limit> > /proc/ppm/policy/hica_is_limit_big_freq\n");
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+#endif
+
 PROC_FOPS_RW(hica_power_state);
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+PROC_FOPS_RW(hica_is_limit_big_freq);
+#endif
 PROC_FOPS_RW_HICA_SETTINGS(mode_mask, p->mode_mask);
 PROC_FOPS_RW_HICA_SETTINGS(loading_delta, p->loading_delta);
 PROC_FOPS_RW_HICA_SETTINGS(loading_hold_time, p->loading_hold_time);
@@ -485,6 +541,7 @@ PROC_FOPS_RW_HICA_SETTINGS(loading_bond, p->loading_bond);
 PROC_FOPS_RW_HICA_SETTINGS(freq_hold_time, p->freq_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(freq_hold_cnt, p->freq_hold_cnt);
 PROC_FOPS_RW_HICA_SETTINGS(tlp_bond, p->tlp_bond);
+
 
 #define OUTPUT_BUF_SIZE	32
 
@@ -504,6 +561,9 @@ static int __init ppm_hica_policy_init(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(hica_power_state),
+#ifdef PPM_DEFAULT_LIMIT_B_FREQ
+		PROC_ENTRY(hica_is_limit_big_freq),
+#endif
 	};
 
 	const struct pentry trans_rule_entries[] = {
