@@ -178,7 +178,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -191,7 +191,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	pmic_config_interface_buck_vsleep_check(RegNum, val, MASK, SHIFT);
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -261,7 +261,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[%s] Reg[%x]= pmic_wrap read data fail\n", __func__, RegNum);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -273,8 +273,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	pmic_config_interface_buck_vsleep_check(RegNum, val, MASK, SHIFT);
 	return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
-		mutex_unlock(&pmic_access_mutex);
+		pr_err("[%s] Reg[%x]= pmic_wrap read data fail\n", __func__, RegNum);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -286,7 +285,6 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap write data fail\n", RegNum);
-		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
 	PMICLOG("[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);
