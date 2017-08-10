@@ -3828,6 +3828,7 @@ static int primary_display_esd_check_worker_kthread(void *data)
 				if (ret == 0) {
 					DISPMSG("[ESD]esd recovery success\n");
 					break;
+				}
 
 				DISPMSG("[ESD]after esd recovery, esd check still fail\n");
 				if (i == 0) {
@@ -3839,7 +3840,6 @@ static int primary_display_esd_check_worker_kthread(void *data)
 				}
 			}
 		}
-	}
 		_primary_path_cmd_unlock();
 #ifdef DISP_SWITCH_DST_MODE
 		_primary_path_switch_dst_unlock();
