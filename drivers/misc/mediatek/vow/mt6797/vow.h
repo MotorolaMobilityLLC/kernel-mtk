@@ -101,7 +101,7 @@ enum VOW_MESSAGE_TEMP {
 #define MAX_VOW_INFO_LEN               5
 #define VOW_VOICE_DATA_LENGTH_BYTES  320
 #define VOW_VOICE_RECORD_THRESHOLD   2560 /* 80ms */
-#define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 1sec */
+#define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 250ms */
 #define VOW_IPI_TIMEOUT              500 /* 500ms */
 
 /***********************************************************************************

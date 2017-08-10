@@ -386,7 +386,7 @@ static void vow_service_Init(void)
 		}
 
 #if defined OLD_METHOD
-		vowserv.voicddata_scp_ptr = kmalloc(VOW_VOICE_DATA_LENGTH_BYTES, 0);
+		vowserv.voicddata_scp_ptr = vmalloc(VOW_VOICE_DATA_LENGTH_BYTES);
 		vowserv.voicedata_scp_addr = dma_map_single(&dev,
 							    (void *)vowserv.voicddata_scp_ptr,
 							    VOW_VOICE_DATA_LENGTH_BYTES,
@@ -558,7 +558,7 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 */
 #if defined OLD_METHOD
-	kfree(vowserv.vow_speaker_model[I].model_ptr);
+	vfree(vowserv.vow_speaker_model[I].model_ptr);
 #endif
 	vowserv.vow_speaker_model[I].model_ptr = NULL;
 	vowserv.vow_speaker_model[I].id        = -1;
@@ -596,7 +596,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 	}
 	vow_service_GetParameter(arg);
 #if defined OLD_METHOD
-	vowserv.vow_speaker_model[I].model_ptr = kmalloc(vowserv.vow_info_apuser[2], 0);
+	vowserv.vow_speaker_model[I].model_ptr = vmalloc(vowserv.vow_info_apuser[2]);
 #endif
 	vowserv.vow_speaker_model[I].model_ptr = (void *)get_reserve_mem_virt(VOW_MEM_ID);
 	/*
@@ -656,13 +656,13 @@ static bool vow_service_SetInitModel(unsigned long arg)
 	char *ptr8;
 
 	if (vowserv.vow_init_model != NULL) {
-		kfree(vowserv.vow_init_model);
+		vfree(vowserv.vow_init_model);
 		vowserv.vow_init_model = NULL;
 	}
 
 	vow_service_GetParameter(arg);
 
-	vowserv.vow_init_model = kmalloc(vowserv.vow_info_apuser[2], 0);
+	vowserv.vow_init_model = vmalloc(vowserv.vow_info_apuser[2]);
 
 	PRINTK_VOWDRV("SetInitModel: allocate memory, addr:%lu size:%lu\n",
 		      vowserv.vow_info_apuser[2], (unsigned long)vowserv.vow_init_model);
@@ -713,12 +713,12 @@ static bool vow_service_SetNoiseModel(unsigned long arg)
 	bool ret;
 
 	if (vowserv.vow_noise_model != NULL) {
-		kfree(vowserv.vow_noise_model);
+		vfree(vowserv.vow_noise_model);
 		vowserv.vow_noise_model = NULL;
 	}
 
 	vow_service_GetParameter(arg);
-	vowserv.vow_noise_model = kmalloc(vowserv.vow_info_apuser[2], 0);
+	vowserv.vow_noise_model = vmalloc(vowserv.vow_info_apuser[2]);
 	if (vow_service_CopyModel(VOW_MODEL_NOISE, 0) != 0)
 		return false;
 	vowserv.vow_info_dsp[0] = VOW_MODEL_NOISE;
@@ -752,12 +752,12 @@ static bool vow_service_SetFirModel(unsigned long arg)
 	bool ret;
 
 	if (vowserv.vow_fir_model != NULL) {
-		kfree(vowserv.vow_fir_model);
+		vfree(vowserv.vow_fir_model);
 		vowserv.vow_fir_model = NULL;
 	}
 
 	vow_service_GetParameter(arg);
-	vowserv.vow_fir_model = kmalloc(vowserv.vow_info_apuser[2], 0);
+	vowserv.vow_fir_model = vmalloc(vowserv.vow_info_apuser[2]);
 	if (vow_service_CopyModel(VOW_MODEL_FIR, 0) != 0)
 		return false;
 
@@ -793,12 +793,17 @@ static bool vow_service_SetVBufAddr(unsigned long arg)
 		 (unsigned int)vowserv.vow_info_apuser[1],
 		 (unsigned int)vowserv.vow_info_apuser[2]);
 	if (vowserv.voicedata_kernel_ptr != NULL)
-		kfree(vowserv.voicedata_kernel_ptr);
+		vfree(vowserv.voicedata_kernel_ptr);
 
 	vowserv.voicedata_user_addr = vowserv.vow_info_apuser[1];
 	vowserv.voicedata_user_size = vowserv.vow_info_apuser[2];
 	vowserv.voicedata_user_return_size_addr = vowserv.vow_info_apuser[3];
-	vowserv.voicedata_kernel_ptr = kmalloc(vowserv.voicedata_user_size, 0);
+	vowserv.voicedata_kernel_ptr = vmalloc(vowserv.voicedata_user_size);
+	if (vowserv.voicedata_kernel_ptr == NULL) {
+		PRINTK_VOWDRV("SetVBUF_ptr: allocate memory fail, size:%lu\n",
+			      vowserv.voicedata_user_size);
+		return false;
+	}
 
 	return true;
 }
@@ -894,6 +899,9 @@ static void vow_service_ReadVoiceData(void)
 				PRINTK_VOWDRV("stop read vow voice data: %d, %d\n",
 					      VowDrv_GetHWStatus(), vowserv.recording_flag);
 			} else {
+				if (vowserv.voicedata_kernel_ptr == NULL)
+					VOW_ASSERT(true);
+
 				ptr16 = (short *)vowserv.voicddata_scp_ptr;
 				/* PRINTK_VOWDRV("[VOW] ReadDMA:%x\n", *ptr16); */
 				/* ReadREG_VOW((MD32_DTCM+0xE240), rdata); */
@@ -992,10 +1000,6 @@ static int VowDrv_SetHWStatus(int status)
 		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status = status;
 		spin_unlock(&vowdrv_lock);
-		if (status == VOW_PWR_OFF) {
-			VowDrv_Wait_Queue_flag = 1;
-			wake_up_interruptible(&VowDrv_Wait_Queue);
-		}
 	} else {
 		PRINTK_VOWDRV("VowDrv_SetHWStatus error input:%d\n", status);
 		ret = -1;
@@ -1433,13 +1437,14 @@ static int VowDrv_mod_init(void)
 
 	/* Register platform DRIVER */
 	ret = platform_driver_register(&VowDrv_driver);
-	if (ret) {
+	if (ret != 0) {
 		PRINTK_VOWDRV("VowDrv Fail:%d - Register DRIVER\n", ret);
 		return ret;
 	}
 
 	/* register MISC device */
-	if (ret == misc_register(&VowDrv_misc_device)) {
+	ret = misc_register(&VowDrv_misc_device);
+	if (ret != 0) {
 		PRINTK_VOWDRV("VowDrv_probe misc_register Fail:%d\n", ret);
 		return ret;
 	}
