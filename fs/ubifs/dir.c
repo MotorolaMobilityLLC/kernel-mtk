@@ -108,8 +108,6 @@ struct inode *ubifs_new_inode(struct ubifs_info *c, const struct inode *dir,
 	inode->i_mtime = inode->i_atime = inode->i_ctime =
 			 ubifs_current_time(inode);
 	inode->i_mapping->nrpages = 0;
-	/* Disable readahead */
-	inode->i_mapping->backing_dev_info = &c->bdi;
 
 	switch (mode & S_IFMT) {
 	case S_IFREG:
@@ -296,8 +294,8 @@ out_cancel:
 	dir->i_size -= sz_change;
 	dir_ui->ui_size = dir->i_size;
 	mutex_unlock(&dir_ui->ui_mutex);
-	make_bad_inode(inode);
 out_inode:
+	make_bad_inode(inode);
 	iput(inode);
 out_budg:
 	ubifs_release_budget(c, &req);
@@ -453,13 +451,13 @@ static int ubifs_readdir(struct file *file, struct dir_context *ctx)
 	}
 
 out:
+	kfree(file->private_data);
+	file->private_data = NULL;
 	if (err != -ENOENT) {
 		ubifs_err("cannot find next direntry, error %d", err);
 		return err;
 	}
 
-	kfree(file->private_data);
-	file->private_data = NULL;
 	/* 2 is a special value indicating that there are no more direntries */
 	ctx->pos = 2;
 	return 0;
@@ -869,8 +867,8 @@ out_cancel:
 	dir->i_size -= sz_change;
 	dir_ui->ui_size = dir->i_size;
 	mutex_unlock(&dir_ui->ui_mutex);
-	make_bad_inode(inode);
 out_inode:
+	make_bad_inode(inode);
 	iput(inode);
 out_budg:
 	ubifs_release_budget(c, &req);

@@ -165,9 +165,6 @@ struct inode *ubifs_iget(struct super_block *sb, unsigned long inum)
 	if (err)
 		goto out_invalid;
 
-	/* Disable read-ahead */
-	inode->i_mapping->backing_dev_info = &c->bdi;
-
 	switch (inode->i_mode & S_IFMT) {
 	case S_IFREG:
 		inode->i_mapping->a_ops = &ubifs_file_address_operations;
@@ -1329,7 +1326,7 @@ static int mount_ubifs(struct ubifs_info *c)
 			goto out_lpt;
 	}
 
-	if (!c->ro_mount) {
+	if (!c->ro_mount && !c->need_recovery) {
 		/*
 		 * Set the "dirty" flag so that if we reboot uncleanly we
 		 * will notice this immediately on the next mount.
@@ -2102,7 +2099,7 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
 	 * Read-ahead will be disabled because @c->bdi.ra_pages is 0.
 	 */
 	c->bdi.name = "ubifs",
-	c->bdi.capabilities = BDI_CAP_MAP_COPY;
+	c->bdi.capabilities = 0;
 	err  = bdi_init(&c->bdi);
 	if (err)
 		goto out_close;
@@ -2124,7 +2121,6 @@ static int ubifs_fill_super(struct super_block *sb, void *data, int silent)
 	if (c->max_inode_sz > MAX_LFS_FILESIZE)
 		sb->s_maxbytes = c->max_inode_sz = MAX_LFS_FILESIZE;
 	sb->s_op = &ubifs_super_operations;
-	sb->s_xattr = ubifs_xattr_handlers;
 
 	mutex_lock(&c->umount_mutex);
 	err = mount_ubifs(c);
@@ -2333,7 +2329,9 @@ static int __init ubifs_init(void)
 	if (!ubifs_inode_slab)
 		return -ENOMEM;
 
-	register_shrinker(&ubifs_shrinker_info);
+	err = register_shrinker(&ubifs_shrinker_info);
+	if (err)
+		goto out_slab;
 
 	err = ubifs_compressors_init();
 	if (err)
@@ -2356,6 +2354,7 @@ out_compr:
 	ubifs_compressors_exit();
 out_shrinker:
 	unregister_shrinker(&ubifs_shrinker_info);
+out_slab:
 	kmem_cache_destroy(ubifs_inode_slab);
 	return err;
 }
