@@ -400,6 +400,8 @@ static bool CAM_HAL_VER_IS3;
 static spinlock_t SpinLockCamHaVer; /* remove volatile */
 
 
+int pr_detect_count;
+
 /*******************************************************************************
 * struct & enum
 ********************************************************************************/
@@ -5355,6 +5357,11 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	ISP_USER_INFO_STRUCT *pUserInfo;
 	unsigned long flags;
 
+	/* kernellog limit to (current+150) lines per second */
+	pr_detect_count = get_detect_count();
+	i = pr_detect_count + 250;
+	set_detect_count(i);
+
 	LOG_DBG("+,UserCount(%d)", g_IspInfo.UserCount);
 
 	spin_lock(&(g_IspInfo.SpinLockIspRef));
@@ -5517,6 +5524,8 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 	ISP_WR32(ISP_ADDR + 0x4200, 0x00000001);
 	/*LOG_DBG("ISP_MCLK1_EN release\n");*/
 
+	/* kernel log limit back to default */
+	set_detect_count(pr_detect_count);
 
 EXIT:
 
