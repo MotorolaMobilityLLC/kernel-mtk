@@ -489,6 +489,7 @@ config ARCH_MT8167
 	select MTK_SYS_CIRQ
 	select MTK_GIC_EXT
 	select MTK_SYSTRACKER
+	select MTK_TIMER
 	help
 	  This enable support for MediaTek MT8167. If you need support
 	  for MediaTek MT8167, say Y here.
