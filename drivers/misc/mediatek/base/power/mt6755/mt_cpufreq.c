@@ -1174,12 +1174,18 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #ifdef CONFIG_THERMAL
 	int temp;
 
+	if (!p)
+		return 0;
+
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
 		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
 	else
 		temp = tscpu_get_temp_by_bank(THERMAL_BANK2) / 1000;
 #else
 	int temp = 40;
+
+	if (!p)
+		return 0;
 #endif
 	/* if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
 		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
