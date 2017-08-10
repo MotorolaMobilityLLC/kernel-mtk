@@ -26,7 +26,7 @@
 #include <linux/vmalloc.h>
 #include <linux/io.h>
 #include <linux/sizes.h>
-#include <mt-plat/mt_hooks.h>
+#include <mt-plat/mtk_hooks.h>
 
 #include <asm/cp15.h>
 #include <asm/cputype.h>

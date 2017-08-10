@@ -37,7 +37,7 @@
 #include <asm/tls.h>
 #include <asm/system_misc.h>
 #include <asm/opcodes.h>
-#include <mt-plat/mt_hooks.h>
+#include <mt-plat/mtk_hooks.h>
 
 
 static const char *handler[]= {

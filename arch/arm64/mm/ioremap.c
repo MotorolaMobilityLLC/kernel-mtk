@@ -24,7 +24,7 @@
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
 #include <linux/io.h>
-#include <mt-plat/mt_hooks.h>
+#include <mt-plat/mtk_hooks.h>
 
 #include <asm/fixmap.h>
 #include <asm/tlbflush.h>
