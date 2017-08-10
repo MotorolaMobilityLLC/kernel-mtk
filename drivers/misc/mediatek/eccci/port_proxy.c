@@ -84,6 +84,7 @@ int port_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 			port->skb_handler(port, skb);
 		else
 			__skb_queue_tail(&port->rx_skb_list, skb);
+		port->rx_pkg_cnt++;
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		wake_lock_timeout(&port->rx_wakelock, HZ);
 		wake_up_all(&port->rx_wq);
@@ -101,6 +102,7 @@ int port_recv_skb(struct ccci_port *port, struct sk_buff *skb)
  drop:
 	/* only return drop and caller do drop */
 	CCCI_NORMAL_LOG(port->md_id, TAG, "drop on %s, len=%d\n", port->name, port->rx_skb_list.qlen);
+	port->rx_drop_cnt++;
 	return -CCCI_ERR_DROP_PACKET;
 }
 
@@ -501,6 +503,7 @@ int port_proxy_send_skb_to_md(struct port_proxy *proxy_p, struct ccci_port *port
 	tx_qno = port_proxy_get_port_queue_no(proxy_p, OUT, port, -1);
 	ret = ccci_md_send_skb(proxy_p->md_obj, tx_qno, skb, port->skb_from_pool, blocking);
 	if (ret == 0) {
+		port->tx_pkg_cnt++;
 		/*Check FS still under working, no need time out, so resched bootup timer*/
 		if (tx_ch == CCCI_FS_TX && md_state == BOOT_WAITING_FOR_HS2
 				&& !ccci_md_is_in_debug(proxy_p->md_obj))

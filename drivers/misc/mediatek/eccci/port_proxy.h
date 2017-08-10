@@ -21,7 +21,7 @@
 #define PORT_F_USER_HEADER		(1<<2)	/* CCCI header will be provided by user, but not by CCCI */
 #define PORT_F_RX_EXCLUSIVE		(1<<3)	/* Rx queue only has this one port */
 #define PORT_F_ADJUST_HEADER	(1<<4)	/* Check whether need remove cccu header while recv skb*/
-
+#define PORT_F_CH_TRAFFIC		(1<<5)	/* Enable port channel traffic*/
 struct ccci_port_ops {
 	/* must-have */
 	int (*init)(struct ccci_port *port);
@@ -79,6 +79,9 @@ struct ccci_port {
 	unsigned int tx_busy_count;
 	unsigned int rx_busy_count;
 	int interception;
+	unsigned int rx_pkg_cnt;
+	unsigned int rx_drop_cnt;
+	unsigned int tx_pkg_cnt;
 	port_skb_handler skb_handler;
 };
 

@@ -452,6 +452,10 @@ again:
 		skb = req->skb;
 		/* update skb */
 		dma_unmap_single(&md->plat_dev->dev, req->data_buffer_ptr_saved, skb_data_size(skb), DMA_FROM_DEVICE);
+		/*init skb struct*/
+		skb->len = 0;
+		skb_reset_tail_pointer(skb);
+		/*set data len*/
 		skb_put(skb, rgpd->data_buff_len);
 		skb_bytes = skb->len;
 #ifdef ENABLE_FAST_HEADER
@@ -539,9 +543,9 @@ again:
 			/* undo skb, as it remains in buffer and will be handled later */
 			CCCI_DEBUG_LOG(md->index, TAG, "rxq%d leave skb %p in ring, ret = 0x%x\n",
 					queue->index, skb, ret);
-			skb->len = 0;
+			/*skb->len = 0;
 			skb_reset_tail_pointer(skb);
-			wmb(); /* other cores need to see this immediately when IRQ is allowed on multi-core */
+			wmb();  other cores need to see this immediately when IRQ is allowed on multi-core */
 			/* no need to retry if port refused to recv */
 			skb_handled = ret == -CCCI_ERR_PORT_RX_FULL ? 1 : 0;
 			break;
@@ -1867,10 +1871,11 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	};
 }
 
-static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
+static void polling_ready(struct ccci_modem *md, int step)
 {
-	int cnt = 100;
+	int cnt = 500; /*MD timeout is 10s*/
 	int time_once = 20;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 #ifdef CCCI_EE_HS_POLLING_TIME
 	cnt = CCCI_EE_HS_POLLING_TIME / time_once;
@@ -1878,12 +1883,13 @@ static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
 	while (cnt > 0) {
 		md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
 		if (md_ctrl->channel_id & (1 << step)) {
-			CCCI_DEBUG_LOG(0, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
-			break;
+			CCCI_DEBUG_LOG(md->index, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
+			return;
 		}
 		msleep(time_once);
 		cnt--;
 	}
+	CCCI_ERROR_LOG(md->index, TAG, "poll EE HS timeout, RCHNUM %d\n", md_ctrl->channel_id);
 }
 
 static void md_cd_ccif_work(struct work_struct *work)
@@ -1895,13 +1901,13 @@ static void md_cd_ccif_work(struct work_struct *work)
 	if (!md_ctrl->wdt_work_running) {
 		/*polling_ready(md_ctrl, D2H_EXCEPTION_INIT);*/
 		md_cd_exception(md, HIF_EX_INIT);
-		polling_ready(md_ctrl, D2H_EXCEPTION_INIT_DONE);
+		polling_ready(md, D2H_EXCEPTION_INIT_DONE);
 		md_cd_exception(md, HIF_EX_INIT_DONE);
 
-		polling_ready(md_ctrl, D2H_EXCEPTION_CLEARQ_DONE);
+		polling_ready(md, D2H_EXCEPTION_CLEARQ_DONE);
 		md_cd_exception(md, HIF_EX_CLEARQ_DONE);
 
-		polling_ready(md_ctrl, D2H_EXCEPTION_ALLQ_RESET);
+		polling_ready(md, D2H_EXCEPTION_ALLQ_RESET);
 		md_cd_exception(md, HIF_EX_ALLQ_RESET);
 
 		if (md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
