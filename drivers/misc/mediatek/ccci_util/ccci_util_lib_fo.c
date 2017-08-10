@@ -216,6 +216,30 @@ static unsigned int ccci_rat_str_to_bitmap(char str[])
 	return capability_bit_map;
 }
 
+static const unsigned int ubin_convert_table_src[] = {
+	(MD_CAP_GSM_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD),
+	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_CDMA2000_AT_MD)
+};
+
+static const unsigned int ubin_convert_table_des[] = {
+	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD),
+	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD)
+};
+
+static unsigned int compatible_convert(unsigned int src_rat)
+{
+	int i;
+
+	for (i = 0; i < (sizeof(ubin_convert_table_src)/sizeof(unsigned int)); i++) {
+		if (ubin_convert_table_src[i] == src_rat) {
+			CCCI_UTIL_INF_MSG("ccci rat convert from 0x%x to 0x%x\r\n",
+				src_rat, ubin_convert_table_des[i]);
+			return ubin_convert_table_des[i];
+		}
+	}
+	return src_rat;
+}
+
 static unsigned int ap_rat_bitmap_to_md_bitmap(unsigned int rat_cfg)
 {
 	unsigned int md_rat_cfg = 0;
@@ -238,6 +262,8 @@ static unsigned int ap_rat_bitmap_to_md_bitmap(unsigned int rat_cfg)
 	/* CMMA2000 */
 	if (rat_cfg & MD_CAP_CDMA2000)
 		md_rat_cfg |= MD_CAP_CDMA2000_AT_MD;
+
+	md_rat_cfg = compatible_convert(md_rat_cfg);
 
 	return md_rat_cfg;
 }
@@ -1387,7 +1413,7 @@ unsigned int get_wm_bitmap_for_ubin(void)
 	rat_cfg =  ubin_md_support_id_to_rat(md_support_val);
 
 _get_wm_id_done:
-	pr_err("[ccci/rat] get_wm_bitmap_for_ubin 0x%x\r\n", rat_cfg);
+
 	return ap_rat_bitmap_to_md_bitmap(rat_cfg);
 }
 
