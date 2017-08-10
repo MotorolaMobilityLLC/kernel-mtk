@@ -196,8 +196,8 @@ static int mtk_pcm_btcvsd_tx_hw_free(struct snd_pcm_substream *substream)
 	else
 		return snd_pcm_lib_free_pages(substream);
 
+	Set_BTCVSD_State(BT_SCO_TXSTATE_ENDING);
 	return 0;
-
 }
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
@@ -212,7 +212,6 @@ static int mtk_pcm_btcvsd_tx_close(struct snd_pcm_substream *substream)
 
 	pr_warn("%s\n", __func__);
 
-	Set_BTCVSD_State(BT_SCO_TXSTATE_ENDING);
 	Set_BTCVSD_State(BT_SCO_TXSTATE_IDLE);
 	ret = AudDrv_btcvsd_Free_Buffer(0);
 
