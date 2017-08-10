@@ -760,7 +760,7 @@
 #define CFG_BATCH_MAX_MSCAN                 4
 
 /*------------------------------------------------------------------------------
- * Flags of G-Scan SUPPORT and P-SCN support, GSCN is one type of PSCN
+ * Flags of G-Scan SUPPORT and P-SCN SUPPORT, GSCN is one type of PSCN
  *------------------------------------------------------------------------------
  */
 

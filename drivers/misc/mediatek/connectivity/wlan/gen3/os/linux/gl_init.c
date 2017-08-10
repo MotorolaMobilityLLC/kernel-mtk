@@ -295,6 +295,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
 	/* GSCAN */
+#if CFG_SUPPORT_GSCN
 	{
 		{
 			.vendor_id = GOOGLE_OUI,
@@ -303,7 +304,6 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_get_gscan_capabilities
 	},
-#if CFG_SUPPORT_GSCN
 	{
 		{
 			.vendor_id = GOOGLE_OUI,

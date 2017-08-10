@@ -263,6 +263,7 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 	return 0;
 }
 
+#if CFG_SUPPORT_GSCN
 int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
 					       const void *data, int data_len)
 {
@@ -285,8 +286,7 @@ int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wirel
 
 	kalMemZero(&rGscanCapabilities, sizeof(rGscanCapabilities));
 
-#if CFG_SUPPORT_GSCN
-	/* GSCN capabilities return from driver not firmare */
+	/* GSCN capabilities return from driver not firmware */
 	rGscanCapabilities.max_scan_cache_size = PSCAN_MAX_SCAN_CACHE_SIZE;
 	rGscanCapabilities.max_scan_buckets = GSCAN_MAX_BUCKETS;
 	rGscanCapabilities.max_ap_cache_per_scan = PSCAN_MAX_AP_CACHE_PER_SCAN;
@@ -299,7 +299,6 @@ int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wirel
 	rGscanCapabilities.max_number_epno_networks = 0;
 	rGscanCapabilities.max_number_epno_networks_by_ssid = 0;
 	rGscanCapabilities.max_number_of_white_listed_ssid = 0;
-#endif
 
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_ID, GOOGLE_OUI); */
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_SUBCMD, GSCAN_SUBCMD_GET_CAPABILITIES); */
@@ -316,7 +315,6 @@ nla_put_failure:
 	return i4Status;
 }
 
-#if CFG_SUPPORT_GSCN
 int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -1373,11 +1371,12 @@ int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wire
 	ASSERT(wiphy);
 	ASSERT(wdev);
 	ASSERT(pdata);
-	DBGLOG(REQ, TRACE, "ssid=%s, bssid="MACSTR", rssi=%d, %d, ie_length=%d\n",
+	DBGLOG(REQ, TRACE, "ssid=%s, bssid="MACSTR", rssi=%d, %d, capa=0x%x, ie_length=%d\n",
 				pdata->fixed.ssid,
 				MAC2STR(pdata->fixed.bssid),
 				pdata->fixed.rssi,
 				pdata->fixed.channel,
+				pdata->fixed.capability,
 				pdata->ie_length);
 
 	skb = cfg80211_vendor_event_alloc(wiphy, data_len, GSCAN_EVENT_FULL_SCAN_RESULTS, GFP_KERNEL);

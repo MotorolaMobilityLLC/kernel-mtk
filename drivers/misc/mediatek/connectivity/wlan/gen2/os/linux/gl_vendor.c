@@ -1341,11 +1341,12 @@ int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wire
 	ASSERT(wiphy);
 	ASSERT(wdev);
 	ASSERT(pdata);
-	DBGLOG(REQ, TRACE, "ssid=%s, bssid="MACSTR", rssi=%d, %d, ie_length=%d\n",
+	DBGLOG(REQ, TRACE, "ssid=%s, bssid="MACSTR", rssi=%d, %d, capa=0x%x, ie_length=%d\n",
 				pdata->fixed.ssid,
 				MAC2STR(pdata->fixed.bssid),
 				pdata->fixed.rssi,
 				pdata->fixed.channel,
+				pdata->fixed.capability,
 				pdata->ie_length);
 
 	skb = cfg80211_vendor_event_alloc(wiphy, data_len, GSCAN_EVENT_FULL_SCAN_RESULTS, GFP_KERNEL);

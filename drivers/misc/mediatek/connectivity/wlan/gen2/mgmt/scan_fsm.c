@@ -1076,7 +1076,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prScanParam->ucSeqNum++;
 	/* prScanParam->ucBssIndex             = prAdapter->prAisBssInfo->ucBssIndex; */
 
-	prNloParam->fgStopAfterIndication = TRUE;
+	prNloParam->fgStopAfterIndication = FALSE;
 	prNloParam->ucFastScanIteration = 0;
 	prNloParam->u2FastScanPeriod = u2Interval;
 	prNloParam->u2SlowScanPeriod = u2Interval;
