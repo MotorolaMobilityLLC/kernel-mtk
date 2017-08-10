@@ -952,9 +952,39 @@ config ARCH_MT6580
 	select MTK_CPU_STRESS
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
-    select MTK_NO_ATF
+	select MTK_NO_ATF
 	help
 	  This enable support for MediaTek MT6580
+
+
+config ARCH_MT6570
+	bool "MediaTek MT6570"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT && !TRUSTY)
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select VFP_OPT
+	select KERNEL_MODE_NEON
+	select CRYPTO_AES_ARM_BS
+	select CRYPTO_SHA2_ARM_CE
+	select ARM_HAS_SG_CHAIN
+	select MTK_EIC
+	select MFD_SYSCON
+	select ARM_ERRATA_814220
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_NO_ATF
+	help
+	  This enable support for MediaTek MT6570.
+
+
 
 config ARCH_MT6755
 	bool "MediaTek MT6755"
