@@ -669,6 +669,7 @@ static unsigned long    soidle_block_cnt[NR_CPUS][NR_REASONS] = { {0} };
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 static bool             soidle_by_pass_pg;
+static int				sodi_by_uptime_count;
 
 /* DeepIdle */
 static unsigned int     dpidle_block_mask[NR_GRPS] = {0x0};
@@ -1153,6 +1154,22 @@ static bool soidle_can_enter(int cpu)
 		goto out;
 	}
 #endif
+
+	if (sodi_by_uptime_count != -1) {
+		struct timespec uptime;
+		unsigned long val;
+
+		get_monotonic_boottime(&uptime);
+		val = (unsigned long)uptime.tv_sec;
+		if (val <= 20) {
+			sodi_by_uptime_count++;
+			reason = BY_OTH;
+			goto out;
+		} else {
+			idle_warn("SODI: blocking by uptime count = %d\n", sodi_by_uptime_count);
+			sodi_by_uptime_count = -1;
+		}
+	}
 
 out:
 	if (reason < NR_REASONS) {
