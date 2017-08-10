@@ -48,8 +48,8 @@ static dev_t extd_devno;
 static struct cdev *extd_cdev;
 static struct class *extd_class;
 
-static const struct EXTD_DRIVER *extd_driver[DEV_MAX_NUM - 1];
-static const struct EXTD_DRIVER *extd_factory_driver[DEV_MAX_NUM - 1];
+static const struct EXTD_DRIVER *extd_driver[DEV_MAX_NUM];
+static const struct EXTD_DRIVER *extd_factory_driver[DEV_MAX_NUM];
 
 static void external_display_enable(unsigned long param)
 {
