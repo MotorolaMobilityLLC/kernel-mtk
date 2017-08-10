@@ -666,6 +666,23 @@ void mtk_wd_resume(void)
 	pr_debug("[WDT] resume(%d)\n", g_wdt_enable);
 }
 
+int mtk_wd_SetNonResetReg2(unsigned int offset, bool value)
+{
+	unsigned int tmp;
+
+	spin_lock(&rgu_reg_operation_spinlock);
+
+	tmp = __raw_readl(MTK_WDT_NONRST_REG2);
+	if (value)
+		tmp |= 1 << offset;
+	else
+		tmp &= ~(1 << offset);
+	writel(tmp, MTK_WDT_NONRST_REG2);
+
+	spin_unlock(&rgu_reg_operation_spinlock);
+
+	return __raw_readl(MTK_WDT_NONRST_REG2);
+}
 static struct platform_driver mtk_wdt_driver = {
 	.probe = mtk_wdt_probe,
 	.remove = mtk_wdt_remove,
