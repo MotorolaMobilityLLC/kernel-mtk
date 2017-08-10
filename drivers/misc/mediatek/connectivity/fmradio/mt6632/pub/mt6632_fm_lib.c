@@ -1319,7 +1319,7 @@ static fm_s32 mt6632_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 		goto out;
 	}
 
-	ret = fm_reg_write(0x60, 0x7);
+	ret = fm_reg_write(0x60, 0x0007);
 	if (ret)
 		goto out;
 
@@ -1332,6 +1332,10 @@ static fm_s32 mt6632_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 		goto out;
 
 	ret = fm_set_bits(0x9B, tmp_state, 0xFFFD);
+	if (ret)
+		goto out;
+
+	ret = fm_reg_write(0x60, 0x000F);
 	if (ret)
 		goto out;
 
