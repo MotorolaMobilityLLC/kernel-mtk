@@ -829,6 +829,7 @@ int __init spm_module_init(void)
 	spm_set_dummy_read_addr();
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* debug code */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
 	r = pmic_read_interface_nolock(MT6353_WDTDBG_CON1, &reg_val, 0xffff, 0);
@@ -852,6 +853,7 @@ int __init spm_module_init(void)
 	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
+#endif
 #endif
 #endif
 #endif
