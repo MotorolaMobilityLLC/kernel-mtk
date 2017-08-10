@@ -41,9 +41,6 @@
 #define _AUDIO_CODEC_63xx_H
 
 void audckbufEnable(bool enable);
-void ClsqEnable(bool enable);
-void Topck_Enable(bool enable);
-void NvregEnable(bool enable);
 void OpenClassAB(void);
 void OpenAnalogHeadphone(bool bEnable);
 void OpenAnalogTrimHardware(bool bEnable);
