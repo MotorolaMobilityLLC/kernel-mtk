@@ -580,6 +580,7 @@ static int compat_get_disp_caps_info(compat_disp_caps_info __user *data32,
 	compat_uint_t u;
 	compat_int_t i;
 	int err;
+	int j, k;
 
 	err = get_user(u, &(data32->output_mode));
 	err |= put_user(u, &(data->output_mode));
@@ -604,6 +605,16 @@ static int compat_get_disp_caps_info(compat_disp_caps_info __user *data32,
 	err |= get_user(i, &(data32->is_output_rotated));
 	err |= put_user(i, &(data->is_output_rotated));
 
+	err |= get_user(i, &(data32->lcm_degree));
+	err |= put_user(i, &(data->lcm_degree));
+
+	for (j = 0; j < ARRAY_SIZE(data32->rsz_in_res_list); j++) {
+		for (k = 0; k < ARRAY_SIZE(data32->rsz_in_res_list[j]); k++) {
+			err |= get_user(u, &(data32->rsz_in_res_list[j][k]));
+			err |= put_user(u, &(data->rsz_in_res_list[j][k]));
+		}
+	}
+
 	return err;
 }
 
@@ -613,6 +624,7 @@ static int compat_put_disp_caps_info(compat_disp_caps_info __user *data32,
 	compat_uint_t u;
 	compat_int_t i;
 	int err;
+	int j, k;
 
 	err = get_user(u, &(data->output_mode));
 	err |= put_user(u, &(data32->output_mode));
@@ -636,6 +648,16 @@ static int compat_put_disp_caps_info(compat_disp_caps_info __user *data32,
 
 	err |= get_user(i, &(data->is_output_rotated));
 	err |= put_user(i, &(data32->is_output_rotated));
+
+	err |= get_user(i, &(data->lcm_degree));
+	err |= put_user(i, &(data32->lcm_degree));
+
+	for (j = 0; j < ARRAY_SIZE(data32->rsz_in_res_list); j++) {
+		for (k = 0; k < ARRAY_SIZE(data32->rsz_in_res_list[j]); k++) {
+			err |= get_user(u, &(data->rsz_in_res_list[j][k]));
+			err |= put_user(u, &(data32->rsz_in_res_list[j][k]));
+		}
+	}
 
 	return err;
 }

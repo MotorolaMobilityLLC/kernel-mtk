@@ -224,6 +224,13 @@ typedef struct compat_disp_caps_t {
 	compat_uint_t disp_feature;
 	compat_int_t is_support_frame_cfg_ioctl;
 	compat_int_t is_output_rotated;
+	compat_int_t lcm_degree;
+	/* resizer input resolution list
+	 * format:
+	 *   sequence from big resolution to small
+	 *   portrait width first then height
+	 */
+	compat_uint_t rsz_in_res_list[RSZ_RES_LIST_NUM][2];
 } compat_disp_caps_info;
 
 typedef struct compat_disp_session_buf_t {
