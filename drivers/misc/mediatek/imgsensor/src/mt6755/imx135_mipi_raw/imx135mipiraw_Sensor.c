@@ -2713,6 +2713,8 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->SensorPacketECCOrder = 1;
 
     sensor_info->PerFrameCTL_Support = 1;
+	sensor_info->SensorHorFOV = 62;
+	sensor_info->SensorVerFOV = 49;
 
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
