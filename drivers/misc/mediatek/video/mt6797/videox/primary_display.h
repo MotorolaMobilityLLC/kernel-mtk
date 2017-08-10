@@ -44,6 +44,7 @@ typedef unsigned int    UINT32;
 extern unsigned int FB_LAYER;	/* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
+#define DISP_GPIO_DTS
 
 typedef struct {
 	unsigned int id;
