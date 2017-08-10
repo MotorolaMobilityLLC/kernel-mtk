@@ -1077,7 +1077,7 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 				req->limit[PPM_CLUSTER_LL].min_cpu_core = 0;
 				req->limit[PPM_CLUSTER_L].min_cpu_core = LL_min_core;
 				ppm_ver("Judge: move LL min core to L = %d\n", LL_min_core);
-			} else if (sum <= get_cluster_max_cpu_core(PPM_CLUSTER_L)) {
+			} else if (sum <= req->limit[PPM_CLUSTER_L].max_cpu_core) {
 				req->limit[PPM_CLUSTER_LL].min_cpu_core = 0;
 				req->limit[PPM_CLUSTER_L].min_cpu_core = sum;
 				ppm_ver("Judge: merge LL and L min core = %d\n", sum);
