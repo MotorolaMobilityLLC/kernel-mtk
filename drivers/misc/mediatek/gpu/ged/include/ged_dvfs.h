@@ -33,6 +33,7 @@
 #define GED_MHL4K_VID_SIGNAL_EVENT         48
 #define GED_GAS_SIGNAL_EVENT               49
 #define GED_SIGNAL_BOOST_HOST_EVENT               50
+#define GED_VILTE_VID_SIGNAL_EVENT         51
 
 /* GED_DVFS_DIFF_THRESHOLD (us) */
 #define GED_DVFS_DIFF_THRESHOLD 500 
@@ -68,6 +69,7 @@ typedef enum GED_DVFS_TUNING_MODE_TAG
 #define GED_EVENT_MHL4K_VID      (1 << 6)
 #define GED_EVENT_BOOST_HOST      (1 << 7)
 #define GED_EVENT_VR      (1 << 8)
+#define GED_EVENT_VILTE_VID      (1 << 9)
 
 #define GED_EVENT_FORCE_ON  (1 << 0)
 #define GED_EVENT_FORCE_OFF  (1 << 1)

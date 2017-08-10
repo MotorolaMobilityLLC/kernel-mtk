@@ -395,6 +395,10 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_MHL4K_VID) : (g_ui32EventStatus &= (~GED_EVENT_MHL4K_VID));
 			ret = ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
 			break;
+		case GED_DVFS_VSYNC_OFFSET_VILTE_VID_EVENT:
+			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_VILTE_VID) : (g_ui32EventStatus &= (~GED_EVENT_VILTE_VID));
+			ret = ged_dvfs_probe_signal(GED_VILTE_VID_SIGNAL_EVENT);
+			break;
 		case GED_DVFS_BOOST_HOST_EVENT:
 			ret = ged_dvfs_probe_signal(GED_SIGNAL_BOOST_HOST_EVENT);
 			goto CHECK_OUT;
