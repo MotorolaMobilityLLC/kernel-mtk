@@ -1056,7 +1056,7 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 		strncpy(result, "n", 1);
 	} else {
 		MAGN_LOG("shipment_test NaN\n");
-		strncpy(result, "NaN", 3);
+		strncpy(result, "NaN", 4);
 	}
 
 	return sprintf(buf, "%s\n", result);
