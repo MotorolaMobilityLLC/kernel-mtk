@@ -191,6 +191,7 @@ typedef enum rds_event_status_t {
 	RDS_EVENT_AFON_LIST = 0x0200,	/* An alternative frequency list is ready */
 	RDS_EVENT_TAON = 0x0400,	/* Other Network traffic announcement start */
 	RDS_EVENT_TAON_OFF = 0x0800,	/* Other Network traffic announcement finished. */
+	RDS_EVENT_ECC_CODE = 0x1000,	/* ECC code */
 	RDS_EVENT_RDS = 0x2000,	/* RDS Interrupt had arrived durint timer period */
 	RDS_EVENT_NO_RDS = 0x4000,	/* RDS Interrupt not arrived durint timer period */
 	RDS_EVENT_RDS_TIMER = 0x8000	/* Timer for RDS Bler Check. ---- BLER  block error rate */
