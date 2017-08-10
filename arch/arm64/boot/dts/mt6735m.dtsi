@@ -1888,6 +1888,29 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		mediatek,clkbuf-quantity = <4>;
 		mediatek,clkbuf-config = <2 1 1 1>;
 	};
+
+	firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
+				vendor {
+					compatible = "android,vendor";
+					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/vendor";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
+			};
+		};
+	};
 };
 
 #include "cust.dtsi"
