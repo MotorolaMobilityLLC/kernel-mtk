@@ -17,9 +17,13 @@
 
 #include <mtk_mali_config.h>
 
+
+
 #ifdef MTK_GPU_SPM
 
 static unsigned int max_level = 7;
+unsigned int g_is_boost = 0;
+
 // highest freq => idx 0, level num - 1
 //  lowest freq => idx num - 1, level 0
 #define TRANS2IDX(level) (max_level - (level))
@@ -57,6 +61,35 @@ extern struct mtk_config *g_config;
 
 #define MTKCLK_disable_unprepare(clk) \
 	if (config->clk) {  clk_disable_unprepare(config->clk); }
+
+
+#ifdef CONFIG_MALI_MIDGARD_DVFS
+#ifndef ENABLE_COMMON_DVFS
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
+void
+PC_spm_turn_on_freq(void)
+{
+	struct mtk_config *config = g_config;
+
+	MTKCLK_prepare_enable(clk_dvfs_gpu);
+}
+EXPORT_SYMBOL(PC_spm_turn_on_freq);
+
+void
+PC_spm_turn_off_freq(void)
+{
+	struct mtk_config *config = g_config;
+
+	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+}
+EXPORT_SYMBOL(PC_spm_turn_off_freq);
+
+
+#endif
+#endif
+#endif
+
+
 
 static void spm_update_fc(void)
 {
@@ -110,19 +143,6 @@ ssize_t mtk_kbase_spm_hal_status(char *buf, ssize_t size)
 
 static int spm_vsync_hint(bool bMode)
 {
-	struct mtk_config *config = g_config;
-	if (bMode == true)
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_boost(0, 0);
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	}
-	else
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_boost(0, 300000);
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	}
 	return 0;
 }
 
@@ -133,7 +153,7 @@ static void spm_boost(unsigned int idx)
 	if (config)
 	{
 		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_boost(idx, 40);
+		mtk_kbase_spm_boost(idx, 4000);
 		MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	}
 }
@@ -143,10 +163,20 @@ static void spm_mtk_gpu_power_limit_CB(unsigned int index)
 	glo.idx_ceiling_thermal = index;
 	spm_update_fc();
 }
-static void spm_mtk_gpu_input_boost_CB(unsigned int index)
+
+void spm_mtk_gpu_input_boost_CB(unsigned int index)
 {
-	spm_boost(TRANS2IDX(max_level));
+	if (index == 1) {
+		g_is_boost = 1;
+		DVFS_GPU_write32(0x300 + 4 * 2, g_is_boost);
+		DVFS_GPU_write32(0x300 + 4 * 1, index);
+		spm_boost(TRANS2IDX(/*max_level*/max_level-3));
+	} else {
+		DVFS_GPU_write32(0x300 + 4 * 1, index);
+	}
 }
+EXPORT_SYMBOL(spm_mtk_gpu_input_boost_CB);
+
 
 extern void (*mtk_boost_gpu_freq_fp)(void);
 static void ssspm_mtk_boost_gpu_freq(void)
@@ -206,6 +236,11 @@ static unsigned long long ssspm_get_time(void)
 }
 
 void MTKCalGpuUtilization(unsigned int* pui32Loading, unsigned int* pui32Block, unsigned int* pui32Idle);
+
+static int g_loading2_sum;
+static int g_loading2_cnt;
+static DEFINE_SPINLOCK(load_info_lock);
+
 static void ssspm_update_loading(void)
 {
 	static unsigned long long lasttime = 0;
@@ -215,20 +250,44 @@ static void ssspm_update_loading(void)
 	now = ssspm_get_time();
 
 	diff = now - lasttime;
-	rem = do_div(diff, 1000000); // ms
+	rem = do_div(diff, 1000000); /* ms */
 
-	// update loading if > n ms
-	if (diff >= 16)
-	{
+	/* update loading if > n ms */
+	if (diff >= 16) {
 		MTKCalGpuUtilization(&glo.loading, &glo.block, &glo.idle);
 		lasttime = now;
+
+		spin_lock(&load_info_lock);
+		g_loading2_sum += glo.loading;
+		g_loading2_cnt += 1;
+		spin_unlock(&load_info_lock);
 	}
 }
+
 extern unsigned int (*mtk_get_gpu_loading_fp)(void);
 static unsigned int ssspm_mtk_get_gpu_loading(void)
 {
 	ssspm_update_loading();
 	return glo.loading;
+}
+
+extern unsigned int (*mtk_get_gpu_loading2_fp)(int);
+static unsigned int ssspm_mtk_get_gpu_loading2(int reset)
+{
+	int loading = 0;
+
+	ssspm_update_loading();
+
+	spin_lock(&load_info_lock);
+	if (g_loading2_cnt > 0)
+		loading = g_loading2_sum / g_loading2_cnt;
+	if (reset) {
+		g_loading2_sum = 0;
+		g_loading2_cnt = 0;
+	}
+	spin_unlock(&load_info_lock);
+
+	return loading;
 }
 
 extern unsigned int (*mtk_get_gpu_block_fp)(void);
@@ -289,17 +348,18 @@ void mtk_kbase_spm_hal_init(void)
 	mtk_custom_upbound_gpu_freq_fp = ssspm_mtk_custom_upbound_gpu_freq;
 	mtk_get_custom_upbound_gpu_freq_fp = ssspm_mtk_get_custom_upbound_gpu_freq;
 	mtk_get_gpu_loading_fp = ssspm_mtk_get_gpu_loading;
+	mtk_get_gpu_loading2_fp = ssspm_mtk_get_gpu_loading2;
 	mtk_get_gpu_block_fp = ssspm_mtk_get_gpu_block;
 	mtk_get_gpu_idle_fp = ssspm_mtk_get_gpu_idle;
 
-	// thermal
+	/* thermal */
 	mt_gpufreq_power_limit_notify_registerCB(spm_mtk_gpu_power_limit_CB);
-	// touch boost
-	mt_gpufreq_input_boost_notify_registerCB(spm_mtk_gpu_input_boost_CB);
-	// voltage
+	/* touch boost */
+	/* mt_gpufreq_input_boost_notify_registerCB(spm_mtk_gpu_input_boost_CB); */
+	/* voltage */
   	mt_gpufreq_update_volt_registerCB(spm_mtk_gpu_ptpod_update_notify);
 
-	//Vsync hint
+	/* Vsync hint */
 	ged_sw_vsync_event_fp = spm_vsync_hint;
 }
 

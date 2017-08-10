@@ -64,6 +64,8 @@ struct mtk_config {
 	unsigned int max_freq;
 	unsigned int min_volt;
 	unsigned int min_freq;
+
+	int32_t async_value;
 };
 
 #define MFG_DEBUG_SEL   (0x180)
@@ -102,6 +104,8 @@ struct mtk_config {
 
 #define SPM_GPU_POWER    (0x3A0 + 4 * 9)
 #define SPM_BYPASS_DFP   (0x3A0 + 4 * 10)
+
+#define SPM_HIST_FREQ_IDX (0x3A0 + 4 * 14)
 
 #define SPM_SW_FLAG      0x600
 #define SPM_SW_DEBUG     0x604

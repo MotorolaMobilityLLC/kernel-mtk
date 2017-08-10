@@ -281,7 +281,6 @@ void mtk_kbase_spm_update_table(void)
 	mtk_kbase_spm_wait();
 
 	num = mt_gpufreq_get_dvfs_table_num();
-	mtk_kbase_spm_wait();
 	for (i = 0; i < num; ++i)
 	{
 		unsigned int freq = mt_gpufreq_get_freq_by_idx(i);

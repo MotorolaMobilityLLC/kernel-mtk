@@ -485,7 +485,13 @@ static bool kbase_pm_transition_core_type(struct kbase_device *kbdev,
 
 	/* Perform transitions if any */
 	kbase_pm_invoke(kbdev, type, powerup, ACTION_PWRON);
+#ifdef MTK_MT6797_DEBUG
+	/* 6797 does not need to powerdown shader core */
+	if (KBASE_PM_CORE_SHADER != type)
+		kbase_pm_invoke(kbdev, type, powerdown, ACTION_PWROFF);
+#else
 	kbase_pm_invoke(kbdev, type, powerdown, ACTION_PWROFF);
+#endif
 
 	/* Recalculate cores transitioning on, and re-evaluate our state */
 	powering_on_trans |= powerup;
