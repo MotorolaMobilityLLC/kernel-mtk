@@ -90,6 +90,8 @@ static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
 static volatile int g_aal_need_lock;
 
+static volatile unsigned int g_aal_panel_type = CONFIG_BY_CUSTOM_LIB;
+
 static int disp_aal_get_cust_led(void)
 {
 	struct device_node *led_node = NULL;
@@ -421,6 +423,16 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	}
 }
 
+void disp_aal_set_lcm_type(unsigned int panel_type)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&g_aal_hist_lock, flags);
+	g_aal_panel_type = panel_type;
+	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
+
+	AAL_DBG("disp_aal_set_lcm_type: %d", g_aal_panel_type);
+}
 
 static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 {
@@ -430,6 +442,9 @@ static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 	/* We assume only one thread will call this function */
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
+#ifdef AAL_CUSTOMER_GET_PANEL_TYPE
+	g_aal_hist.panel_type = g_aal_panel_type;
+#endif
 	memcpy(&g_aal_hist_db, &g_aal_hist, sizeof(DISP_AAL_HIST));
 	g_aal_hist.serviceFlags = 0;
 	g_aal_hist_available = 0;
@@ -993,5 +1008,9 @@ void aal_test(const char *cmd, char *debug_output)
 		aal_bypass(AAL0_MODULE_NAMING, bypass);
 	} else if (strncmp(cmd, "ut:", 3) == 0) { /* debug command for UT */
 		aal_ut_cmd(cmd + 3);
+	} else if (strncmp(cmd, "lcm_type:", 9) == 0) {
+		unsigned int panel_type = cmd[9] - '0';
+
+		disp_aal_set_lcm_type(panel_type);
 	}
 }
