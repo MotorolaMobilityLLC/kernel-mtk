@@ -10,18 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: @(#) gl_p2p_cfg80211.c@@
-*/
-
-/*! \file   gl_p2p_cfg80211.c
-    \brief  Main routines of Linux driver interface for Wi-Fi Direct
-	    using cfg80211 interface
-
-    This file contains the main routines of Linux driver for MediaTek Inc. 802.11
-    Wireless LAN Adapters.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

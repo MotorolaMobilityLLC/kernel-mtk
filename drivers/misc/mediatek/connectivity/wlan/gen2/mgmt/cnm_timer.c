@@ -1,80 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/cnm_timer.c#1
-*/
-
-/*! \file   "cnm_timer.c"
-    \brief
-
-*/
-
-/*
-** Log: cnm_timer.c
- *
- * 12 13 2011 cm.chang
- * [WCXRP00001136] [All Wi-Fi][Driver] Add wake lock for pending timer
- * Add wake lock if timer timeout value is smaller than 5 seconds
- *
- * 02 24 2011 cp.wu
- * [WCXRP00000490] [MT6620 Wi-Fi][Driver][Win32] modify kalMsleep() implementation
- * because NdisMSleep() won't sleep long enough for specified interval such as 500ms
- * modify cnm_timer and hem_mbox APIs to be thread safe to ease invoking restrictions
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * cnm_timer has been migrated.
- *
- * 05 28 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support sleep notification to host
- *
- * 05 19 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add some checking assertions
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Return timer token back to COS when entering wait off state
- *
- * 01 11 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Remove compiling warning
- *
- * 01 08 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support longer timeout interval to 45 days from 65secu1rwduu`wvpghlqg|fh+fmdkb
- *
- * 01 06 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Fix system time is 32KHz instead of 1ms
- *
- * 01 04 2010 tehuang.liu
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * For working out the first connection Chariot-verified version
- *
- * Dec 3 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Place rRootTimer.rNextExpiredSysTime = rExpiredSysTime; before set timer
- *
- * Oct 30 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * In cnmTimerInitialize(), just stop timer if it was already created.
- *
- * Oct 30 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Move the external reference for Lint to precomp.h
- *
- * Oct 30 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Fix lint warning
- *
- * Oct 28 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 /*******************************************************************************

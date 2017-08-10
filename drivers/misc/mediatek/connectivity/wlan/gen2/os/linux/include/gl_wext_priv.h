@@ -10,13 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_wext_priv.h#3
-*/
-
-/*! \file   gl_wext_priv.h
-    \brief  This file includes private ioctl support.
-*/
 
 #ifndef _GL_WEXT_PRIV_H
 #define _GL_WEXT_PRIV_H

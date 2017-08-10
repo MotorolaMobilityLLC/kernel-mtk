@@ -1,35 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/wapi.h#1
-*/
-
-/*! \file  wapi.h
-    \brief  The wapi related define, macro and structure are described here.
-*/
-
-/*
-** Log: wapi.h
- *
- * 07 20 2010 wh.su
- *
- * .
- *
- * 01 27 2010 wh.su
- * [BORA00000476][Wi-Fi][firmware] Add the security module initialize code
- * add and fixed some security function.
- *
- * Dec 8 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * change the wapi function name and adding the generate wapi ie function
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some wapi structure define
- *
- * Nov 23 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
-**  \main\maintrunk.MT5921\1 2009-10-09 17:06:29 GMT mtk01088
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _WAPI_H

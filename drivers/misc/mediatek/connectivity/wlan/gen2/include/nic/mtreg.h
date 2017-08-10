@@ -1,28 +1,14 @@
 /*
-** Id: //Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/include/nic/mtreg.h#2
-*/
-
-/*! \file   "mtreg.h"
-    \brief  The common register definition of mt5931
-
-    N/A
-*/
-
-/*
-** Log: mtreg.h
- *
- * 01 28 2013 samp.lin
- * [WCXRP00000851] [MT6582 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * add MT6582-specific definitions.
- *
- * 08 15 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * add MT6628-specific definitions.
- *
- * 07 13 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * add initial version for MT6628 driver support.
- *
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _MTREG_H

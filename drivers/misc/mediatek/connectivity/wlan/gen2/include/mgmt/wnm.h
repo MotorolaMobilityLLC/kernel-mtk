@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/include/mgmt/wnm.h#1
-*/
-
-/*! \file  wnm.h
-    \brief This file contains the IEEE 802.11 family related 802.11v network management
-	   for MediaTek 802.11 Wireless LAN Adapters.
-*/
-
-
 
 #ifndef _WNM_H
 #define _WNM_H

@@ -10,21 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: qosmap.h#1
-*/
-
-/*! \file  qosmap.h
-    \brief This file contains the IEEE 802.11 family related 802.11v network management
-	   for MediaTek 802.11 Wireless LAN Adapters.
-*/
-
-/*
-** Log: qosmap.h
- *
- *
- *
-*/
 
 #ifndef _QOSMAP_H
 #define _QOSMAP_H

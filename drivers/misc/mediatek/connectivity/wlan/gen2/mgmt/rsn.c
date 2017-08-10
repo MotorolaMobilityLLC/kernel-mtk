@@ -10,17 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/rsn.c#2
-*/
-
-/*! \file   "rsn.c"
-    \brief  This file including the 802.11i, wpa and wpa2(rsn) related function.
-
-    This file provided the macros and functions library support the wpa/rsn ie parsing,
-    cipher and AKM check to help the AP seleced deciding, tkip mic error handler and rsn PMKID support.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

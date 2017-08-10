@@ -1,113 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/bow.h#1
-*/
-
-/*
-** Log: bow.h
- *
- * 01 16 2012 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Support BOW for 5GHz band.
- *
- * 05 25 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Add BoW Cancel Scan Request and Turn On deactive network function.
- *
- * 05 22 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Submit missing BoW header files.
- *
- * 03 27 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Support multiple physical link.
- *
- * 03 06 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Sync BOW Driver to latest person development branch version..
- *
- * 02 10 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Fix kernel API change issue.
- * Before ALPS 2.2 (2.2 included), kfifo_alloc() is
- * struct kfifo *kfifo_alloc(unsigned int size, gfp_t gfp_mask, spinlock_t *lock);
- * After ALPS 2.3, kfifo_alloc() is changed to
- * int kfifo_alloc(struct kfifo *fifo, unsigned int size, gfp_t gfp_mask);
- *
- * 02 10 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Update BOW structure.
- *
- * 02 09 2011 cp.wu
- * [WCXRP00000430] [MT6620 Wi-Fi][Firmware][Driver] Create V1.2 branch for MT6620E1 and MT6620E3
- * create V1.2 driver branch based on label MT6620_WIFI_DRIVER_V1_2_110209_1031
- * with BOW and P2P enabled as default
- *
- * 02 08 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Replace kfifo_get and kfifo_put with kfifo_out and kfifo_in.
- * Update BOW get MAC status, remove returning event for AIS network type.
- *
- * 01 11 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add Activity Report definition.
- *
- * 10 18 2010 chinghwa.yu
- * [WCXRP00000110] [MT6620 Wi-Fi] [Driver] Fix BoW Connected event size
- * Fix wrong BoW event size.
- *
- * 07 15 2010 cp.wu
- *
- * sync. bluetooth-over-Wi-Fi interface to driver interface document v0.2.6.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * 1) all BT physical handles shares the same RSSI/Link Quality.
- * 2) simplify BT command composing
- *
- * 04 28 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * change prefix for data structure used to communicate with 802.11 PAL
- * to avoid ambiguous naming with firmware interface
- *
- * 04 27 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * basic implementation for EVENT_BT_OVER_WIFI
- *
- * 04 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add framework for BT-over-Wi-Fi support.
- *  *  *  *  *  *  * 1) prPendingCmdInfo is replaced by queue for multiple handler capability
- *  *  *  *  *  *  * 2) command sequence number is now increased atomically
- *  *  *  *  *  *  * 3) private data could be hold and taken use for other purpose
- *
- * 04 09 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * sync. with design document for interface change.
- *
- * 04 02 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * Wi-Fi driver no longer needs to implement 802.11 PAL, thus replaced by wrapping command/event definitions
- *
- * 03 16 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * correct typo.
- *
- * 03 16 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * update for all command/event needed to be supported by 802.11 PAL.
- *
- * 03 16 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * build up basic data structure and definitions to support BT-over-WiFi
- *
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _BOW_H_

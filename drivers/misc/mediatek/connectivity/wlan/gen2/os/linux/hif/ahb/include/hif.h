@@ -11,7 +11,6 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-
 #ifndef _HIF_H
 #define _HIF_H
 

@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/mac.h#1
-*/
-
-/*! \file   "mac.h"
-    \brief  Brief description.
-
-    Detail description.
-*/
-
 
 #ifndef _MAC_H
 #define _MAC_H

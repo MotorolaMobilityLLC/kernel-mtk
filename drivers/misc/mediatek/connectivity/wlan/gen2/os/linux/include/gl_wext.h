@@ -10,14 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_wext.h#1
-*/
-
-/*! \file   gl_wext.h
-    \brief  This file is for Portable Driver linux wireless extension support.
-*/
-
 
 #ifndef _GL_WEXT_H
 #define _GL_WEXT_H

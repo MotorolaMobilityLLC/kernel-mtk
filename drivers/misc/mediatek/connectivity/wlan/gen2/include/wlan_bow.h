@@ -1,116 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/wlan_bow.h#1
-*/
-
-/*! \file   "wlan_bow.h"
-    \brief This file contains the declairations of 802.11 PAL
-	   command processing routines for
-	   MediaTek Inc. 802.11 Wireless LAN Adapters.
-*/
-
-/*
-** Log: wlan_bow.h
- *
- * 05 25 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Add BoW Cancel Scan Request and Turn On deactive network function.
- *
- * 05 23 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Add some BoW error handling.
- *
- * 05 21 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Protect BoW connection establishment.
- *
- * 05 17 2011 terry.wu
- * [WCXRP00000730] [MT6620 Wi-Fi][BoW] Send deauth while disconnecting
- * Send deauth while disconnecting BoW link.
- *
- * 05 06 2011 terry.wu
- * [WCXRP00000707] [MT6620 Wi-Fi][Driver] Fix BoW Multiple Physical Link connect/disconnect issue
- * Fix BoW Multiple Physical Link connect/disconnect issue.
- *
- * 04 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add BOW short range mode.
- *
- * 03 27 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Support multiple physical link.
- *
- * 03 10 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add BOW table.
- *
- * 02 16 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add bowNotifyAllLinkDisconnected  interface and change channel grant procedure for bow starting..
- *
- * 02 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Update bowString and channel grant.
- *
- * 01 11 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Update BOW Activity Report structure and bug fix.
- *
- * 09 27 2010 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000065] Update BoW design and settings
- * Update BCM/BoW design and settings.
- *
- * 09 14 2010 chinghwa.yu
- * NULL
- * Add bowRunEventAAAComplete.
- *
- * 08 24 2010 chinghwa.yu
- * NULL
- * Update BOW for the 1st time.
- *
- * 07 30 2010 cp.wu
- * NULL
- * 1) BoW wrapper: use definitions instead of hard-coded constant for error code
- * 2) AIS-FSM: eliminate use of desired RF parameters, use prTargetBssDesc instead
- * 3) add handling for RX_PKT_DESTINATION_HOST_WITH_FORWARD for GO-broadcast frames
- *
- * 07 15 2010 cp.wu
- *
- * sync. bluetooth-over-Wi-Fi interface to driver interface document v0.2.6.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * 1) add timeout handler mechanism for pending command packets
- * 2) add p2p add/removal key
- *
- * 05 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * 1) all BT physical handles shares the same RSSI/Link Quality.
- * 2) simplify BT command composing
- *
- * 04 28 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * change prefix for data structure used to communicate with 802.11 PAL
- * to avoid ambiguous naming with firmware interface
- *
- * 04 27 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add multiple physical link support
- *
- * 04 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add framework for BT-over-Wi-Fi support.
- *  *  *  *  *  *  *  *  *  *  *  * 1) prPendingCmdInfo is replaced by queue for multiple handler capability
- *  *  *  *  *  *  *  *  *  *  *  * 2) command sequence number is now increased atomically
- *  *  *  *  *  *  *  *  *  *  *  * 3) private data could be hold and taken use for other purpose
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _WLAN_BOW_H

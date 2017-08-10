@@ -1,74 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/cnm_timer.h#1
-*/
-
-/*! \file   cnm_timer.h
-    \brief  Declaration of timer obj and related timer macro for setup time out
-	    event.
-
-    In this file we declare the timer object and provide several macro for
-    Protocol functional blocks to setup their own time out event.
-*/
-
-/*
-** Log: cnm_timer.h
- *
- * 12 13 2011 cm.chang
- * [WCXRP00001136] [All Wi-Fi][Driver] Add wake lock for pending timer
- * Add wake lock if timer timeout value is smaller than 5 seconds
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * cnm_timer has been migrated.
- *
- * 06 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add hem_mbox.c and cnm_mem.h (but disabled some feature) for further migration
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge cnm_scan.h and hem_mbox.h
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge wifi_var.h, precomp.h, cnm_timer.h (data type only)
- *
- * 06 04 2010 george.huang
- * [BORA00000678][MT6620]WiFi LP integration
- * [PM] Support U-APSD for STA mode
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Return timer token back to COS when entering wait off state
- *
- * 01 08 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support longer timeout interval to 45 days from 65secu1rwduu`wvpghlqg|fh+fmdkb
- *
- * 01 06 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Fix system time is 32KHz instead of 1ms
- *
- * Nov 23 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * add the copy time function
- *
- * Nov 5 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Fix LINT warnning
- *
- * Oct 28 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _CNM_TIMER_H

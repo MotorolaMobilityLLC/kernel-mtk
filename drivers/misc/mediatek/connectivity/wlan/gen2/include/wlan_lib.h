@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/wlan_lib.h#1
-*/
-
-/*! \file   "wlan_lib.h"
-    \brief  The declaration of the functions of the wlanAdpater objects
-
-    Detail description.
-*/
-
 
 #ifndef _WLAN_LIB_H
 #define _WLAN_LIB_H

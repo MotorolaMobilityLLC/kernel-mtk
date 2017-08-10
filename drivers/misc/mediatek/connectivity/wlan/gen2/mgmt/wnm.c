@@ -10,14 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/mgmt/wnm.c#1
-*/
-
-/*! \file   "wnm.c"
-    \brief  This file includes the 802.11v default vale and functions.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

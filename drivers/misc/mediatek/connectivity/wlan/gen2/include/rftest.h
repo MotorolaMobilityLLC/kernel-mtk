@@ -1,50 +1,16 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/rftest.h#1
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-/*! \file   "rftest.h"
-    \brief  definitions for RF Productino test
-
-*/
-
-/*
-** Log: rftest.h
- *
- * 12 20 2011 cp.wu
- * [WCXRP00001144] [MT6620 Wi-Fi][Driver][Firmware] Add RF_FUNC_ID for exposing device and related version information
- * add driver implementations for RF_AT_FUNCID_FW_INFO & RF_AT_FUNCID_DRV_INFO
- * to expose version information
- *
- * 08 04 2010 cp.wu
- * NULL
- * add an extra parameter to rftestQueryATInfo 'cause it's necessary to pass u4FuncData for query request.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 04 14 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * information buffer for query oid/ioctl is now buffered in prCmdInfo
- *  *  *  * instead of glue-layer variable to improve multiple oid/ioctl capability
- *
- * 12 30 2009 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) According to CMD/EVENT documentation v0.8,
- *  *  *  *  *  *  * OID_CUSTOM_TEST_RX_STATUS & OID_CUSTOM_TEST_TX_STATUS is no longer used,
- *  *  *  *  *  *  * and result is retrieved by get ATInfo instead
- *  *  *  *  *  *  * 2) add 4 counter for recording aggregation statistics
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-12-08 17:35:11 GMT mtk02752
-**  * comment out RF test which is not supported on MT6620
-**  + API decalre for rftest
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-12-08 11:29:07 GMT mtk02752
-**  definitions for RF test mode
-**
-*/
 #ifndef _RFTEST_H
 #define _RFTEST_H
 

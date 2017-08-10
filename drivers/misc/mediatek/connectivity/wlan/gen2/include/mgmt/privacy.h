@@ -1,82 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/privacy.h#1
-*/
-
-/*! \file   privacy.h
-    \brief This file contains the function declaration for privacy.c.
-*/
-
-/*
-** Log: privacy.h
- *
- * 07 24 2010 wh.su
- *
- * .support the Wi-Fi RSN
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * modify some code for concurrent network.
- *
- * 06 19 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * consdier the concurrent network setting.
- *
- * 06 18 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * migration the security related function from firmware.
- *
- * 03 01 2010 wh.su
- * [BORA00000605][WIFISYS] Phase3 Integration
- * Refine the variable and parameter for security.
- *
- * 02 25 2010 wh.su
- * [BORA00000626][MT6620] Refine the remove key flow for WHQL testing
- * For support the WHQL test, do the remove key code refine.
- *
- * Dec 10 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * change the cmd return type
- *
- * Dec 8 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the function declaration for auth mode and encryption status setting from build connection command
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the function declaration for wapi
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the tx done callback handle function
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the function declaration for mac header privacy bit setting
- *
- * Dec 4 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the structure for parsing the EAPoL frame
- *
- * Dec 3 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adjust the class error function parameter
- *
- * Dec 1 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some security function declaration
- *
- * Nov 19 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the ap selection structure
- *
- * Nov 18 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _PRIVACY_H

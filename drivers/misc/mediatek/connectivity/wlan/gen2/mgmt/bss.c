@@ -10,18 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/bss.c#3
-*/
-
-/*! \file   "bss.c"
-    \brief  This file contains the functions for creating BSS(AP)/IBSS(AdHoc).
-
-    This file contains the functions for BSS(AP)/IBSS(AdHoc). We may create a BSS/IBSS
-    network, or merge with exist IBSS network and sending Beacon Frame or reply
-    the Probe Response Frame for received Probe Request Frame.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/hif_rx.h#1
-*/
-
-/*! \file   "hif_rx.h"
-    \brief  Provide HIF RX Header Information between F/W and Driver
-
-    N/A
-*/
-
 
 #ifndef _HIF_RX_H
 #define _HIF_RX_H

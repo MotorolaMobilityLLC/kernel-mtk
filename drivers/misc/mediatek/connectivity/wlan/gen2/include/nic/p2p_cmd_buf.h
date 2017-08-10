@@ -1,26 +1,14 @@
 /*
-** Id:
-*/
-
-/*! \file   "p2p_cmd_buf.h"
-    \brief  In this file we define the structure for Command Packet.
-
-		In this file we define the structure for Command Packet and the control unit
-    of MGMT Memory Pool.
-*/
-
-/*
-** Log: p2p_cmd_buf.h
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 12 22 2010 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface
- * for supporting Wi-Fi Direct Service Discovery
- * 1. header file restructure for more clear module isolation
- * 2. add function interface definition for implementing Service Discovery callbacks
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _P2P_CMD_BUF_H

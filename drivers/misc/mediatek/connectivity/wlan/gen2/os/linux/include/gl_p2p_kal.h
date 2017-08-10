@@ -10,17 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/TRUNK/WiFi_P2P_Driver/os/linux/include/gl_p2p_kal.h#2
-*/
-
-/*! \file   gl_p2p_kal.h
-    \brief  Declaration of KAL functions for Wi-Fi Direct support
-	    - kal*() which is provided by GLUE Layer.
-
-    Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
-*/
-
 
 #ifndef _GL_P2P_KAL_H
 #define _GL_P2P_KAL_H

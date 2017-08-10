@@ -10,19 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id:
-//Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/os/linux/include/gl_p2p_os.h#28
-*/
-
-/*! \file   gl_p2p_os.h
-    \brief  List the external reference to OS for p2p GLUE Layer.
-
-    In this file we define the data structure - GLUE_INFO_T to store those objects
-    we acquired from OS - e.g. TIMER, SPINLOCK, NET DEVICE ... . And all the
-    external reference (header file, extern func() ..) to OS for GLUE Layer should
-    also list down here.
-*/
 
 #ifndef _GL_P2P_OS_H
 #define _GL_P2P_OS_H

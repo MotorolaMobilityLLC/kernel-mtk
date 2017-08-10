@@ -1,97 +1,16 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/platform.c#1
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-/*! \file   "platform.c"
-    \brief  This file including the protocol layer privacy function.
-
-    This file provided the macros and functions library support for the
-    protocol layer security setting from wlan_oid.c and for parse.c and
-    rsn.c and nic_privacy.c
-
-*/
-
-/*
-** Log: platform.c
- *
- * 11 14 2011 cm.chang
- * NULL
- * Fix compiling warning
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 09 13 2011 jeffrey.chang
- * [WCXRP00000983] [MT6620][Wi-Fi Driver] invalid pointer casting causes kernel panic during p2p connection
- * fix the pointer casting
- *
- * 06 29 2011 george.huang
- * [WCXRP00000818] [MT6620 Wi-Fi][Driver] Remove unused code segment regarding CONFIG_IPV6
- * .
- *
- * 06 28 2011 george.huang
- * [WCXRP00000818] [MT6620 Wi-Fi][Driver] Remove unused code segment regarding CONFIG_IPV6
- * remove un-used code
- *
- * 05 11 2011 jeffrey.chang
- * NULL
- * fix build error
- *
- * 05 09 2011 jeffrey.chang
- * [WCXRP00000710] [MT6620 Wi-Fi] Support pattern filter update function on IP address change
- * support ARP filter through kernel notifier
- *
- * 04 08 2011 pat.lu
- * [WCXRP00000623] [MT6620 Wi-Fi][Driver] use ARCH define to distinguish PC Linux driver
- * Use CONFIG_X86 instead of PC_LINUX_DRIVER_USE option to have proper compile setting for PC Linux driver
- *
- * 03 22 2011 pat.lu
- * [WCXRP00000592] [MT6620 Wi-Fi][Driver] Support PC Linux Environment Driver Build
- * Add a compiler option "PC_LINUX_DRIVER_USE" for building driver in PC Linux environment.
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * improve portability for awareness of early version of linux kernel and wireless extension.
- *
- * 03 18 2011 jeffrey.chang
- * [WCXRP00000512] [MT6620 Wi-Fi][Driver] modify the net device relative functions to support the H/W multiple queue
- * remove early suspend functions
- *
- * 03 03 2011 jeffrey.chang
- * NULL
- * add the ARP filter callback
- *
- * 02 15 2011 jeffrey.chang
- * NULL
- * to support early suspend in android
- *
- * 02 01 2011 cp.wu
- * [WCXRP00000413] [MT6620 Wi-Fi][Driver] Merge 1103 changes on NVRAM file path change to DaVinci main trunk and V1.1
- * branch
- * upon Jason Zhang(NVRAM owner)'s change, ALPS has modified its NVRAM storage from /nvram/... to /data/nvram/...
- *
- * 11 01 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check[WCXRP00000150] [MT6620 Wi-Fi][Driver]
- * Add implementation for querying current TX rate from firmware auto rate module
- * 1) Query link speed (TX rate) from firmware directly with buffering mechanism to reduce overhead
- * 2) Remove CNM CH-RECOVER event handling
- * 3) cfg read/write API renamed with kal prefix for unified naming rules.
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check[WCXRP00000086] [MT6620 Wi-Fi][Driver]
- * The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 10 05 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * 1) add NVRAM access API
- * 2) fake scanning result when NVRAM doesn't exist and/or version mismatch. (off by compiler option)
- * 3) add OID implementation for NVRAM read/write service
- *
-**
-*/
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************

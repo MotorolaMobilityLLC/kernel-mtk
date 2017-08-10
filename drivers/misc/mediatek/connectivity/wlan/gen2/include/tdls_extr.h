@@ -1,21 +1,15 @@
 /*
-** Id: include/tdls_extr.h#1
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
-/*! \file   "tdls_extr.h"
-    \brief This file contains the external used in other modules
-	 for MediaTek Inc. 802.11 Wireless LAN Adapters.
-*/
-
-/*
-** Log: tdls_extr.h
- *
- * 11 18 2013 vend_samp.lin
- * NULL
- * Initial version.
- *
- **
- */
 
 #ifndef _TDLS_EXTR_H
 #define _TDLS_EXTR_H

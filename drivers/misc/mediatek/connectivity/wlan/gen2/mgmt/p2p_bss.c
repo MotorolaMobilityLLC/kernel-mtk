@@ -1,13 +1,14 @@
 /*
-** Id: @(#) p2p_bss.c@@
-*/
-
-/*! \file   "p2p_bss.c"
-    \brief  This file contains the functions for creating p2p BSS(AP).
-
-    This file contains the functions for BSS(AP). We may create a BSS
-    network, or merge with exist IBSS network and sending Beacon Frame or reply
-    the Probe Response Frame for received Probe Request Frame.
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 /*******************************************************************************

@@ -1,40 +1,15 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/bow_fsm.h#1
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
-/*! \file   bow_fsm.h
-    \brief  Declaration of functions and finite state machine for BOW Module.
-
-    Declaration of functions and finite state machine for BOW Module.
-*/
-
-/*
-** Log: bow_fsm.h
- *
- * 05 22 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Submit missing BoW header files.
- *
- * 03 27 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Support multiple physical link.
- *
- * 02 16 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add bowNotifyAllLinkDisconnected  interface and change channel grant procedure for bow starting..
- *
- * 02 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add channel previledge into _BOW_FSM_INFO_T.
- *
- * 09 16 2010 chinghwa.yu
- * NULL
- * update bowChangeMediaState.
- *
- * 08 24 2010 chinghwa.yu
- * NULL
- * Update BOW for the 1st time.
- */
 
 #ifndef _BOW_FSM_H
 #define _BOW_FSM_H

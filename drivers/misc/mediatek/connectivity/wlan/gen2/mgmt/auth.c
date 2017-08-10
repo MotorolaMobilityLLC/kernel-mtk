@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/auth.c#1
-*/
-
-/*! \file   "auth.c"
-    \brief  This file includes the authentication-related functions.
-
-    This file includes the authentication-related functions.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

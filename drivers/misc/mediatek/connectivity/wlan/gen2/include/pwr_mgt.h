@@ -1,55 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/pwr_mgt.h#1
-*/
-
-/*! \file   "pwr_mgt.h"
-    \brief  In this file we define the STATE and EVENT for Power Management FSM.
-
-    The SCAN FSM is responsible for performing SCAN behavior when the Arbiter enter
-    ARB_STATE_SCAN. The STATE and EVENT for SCAN FSM are defined here with detail
-    description.
-*/
-
-/*
-** Log: pwr_mgt.h
- *
- * 07 09 2010 george.huang
- *
- * [WPD00001556] Migrate PM variables from FW to driver: for composing QoS Info
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 04 20 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * don't need SPIN_LOCK_PWR_CTRL anymore, it will raise IRQL
- * and cause SdBusSubmitRequest running at DISPATCH_LEVEL as well.
-
- *
- * 03 25 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * firmware download load address & start address are now configured from config.h
- *  *  * due to the different configurations on FPGA and ASIC
-**  \main\maintrunk.MT6620WiFiDriver_Prj\7 2009-12-10 16:39:10 GMT mtk02752
-**  disable PM macros temporally
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-10-29 19:48:37 GMT mtk01084
-**  temp remove power management macro
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-04-08 16:51:11 GMT mtk01084
-**  update for power management control macro
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-04-03 14:59:58 GMT mtk01426
-**  Add #if CFG_HIF_LOOPBACK_PRETEST
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-03-23 16:53:10 GMT mtk01084
-**  modify ACQUIRE_POWER_CONTROL_FROM_PM() and RECLAIM_POWER_CONTROL_TO_PM() macro
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-19 18:32:47 GMT mtk01084
-**  update for basic power management functions
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-03-19 15:05:20 GMT mtk01084
-**  Initial version
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _PWR_MGT_H

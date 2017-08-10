@@ -1,39 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/queue.h#1
-*/
-
-/*! \file   queue.h
-    \brief  Definition for singly queue operations.
-
-    In this file we define the singly queue data structure and its
-    queue operation MACROs.
-*/
-
-/*
-** Log: queue.h
- *
- * 07 16 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * bugfix for SCN migration
- * 1) modify QUEUE_CONCATENATE_QUEUES() so it could be used to concatence with an empty queue
- * 2) before AIS issues scan request, network(BSS) needs to be activated first
- * 3) only invoke COPY_SSID when using specified SSID for scan
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 04 20 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * .
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:11:46 GMT mtk01426
-**  Init for develop
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _QUEUE_H

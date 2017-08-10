@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/aaa_fsm.c#2
-*/
-
-/*! \file   "aaa_fsm.c"
-    \brief  This file defines the FSM for AAA MODULE.
-
-    This file defines the FSM for AAA MODULE.
-*/
-
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

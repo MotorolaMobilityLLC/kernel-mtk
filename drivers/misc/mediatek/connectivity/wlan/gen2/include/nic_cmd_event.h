@@ -10,14 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic_cmd_event.h#1
-*/
-
-/*! \file   "nic_cmd_event.h"
-    \brief This file contains the declairation file of the WLAN OID processing routines
-	   of Windows driver for MediaTek Inc. 802.11 Wireless LAN Adapters.
-*/
 
 #ifndef _NIC_CMD_EVENT_H
 #define _NIC_CMD_EVENT_H

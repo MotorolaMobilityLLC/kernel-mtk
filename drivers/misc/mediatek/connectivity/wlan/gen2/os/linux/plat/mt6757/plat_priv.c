@@ -10,6 +10,7 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
+
 #include "mach/mt_ppm_api.h"
 #include "gl_typedef.h"
 INT32 kalBoostCpu(UINT_32 core_num)

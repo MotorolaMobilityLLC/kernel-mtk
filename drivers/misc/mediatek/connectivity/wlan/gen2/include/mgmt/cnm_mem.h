@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/cnm_mem.h#1
-*/
-
-/*! \file   "cnm_mem.h"
-    \brief  In this file we define the structure of the control unit of
-	    packet buffer and MGT/MSG Memory Buffer.
-*/
-
-
 
 #ifndef _CNM_MEM_H
 #define _CNM_MEM_H

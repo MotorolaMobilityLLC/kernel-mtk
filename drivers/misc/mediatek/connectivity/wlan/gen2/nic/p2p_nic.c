@@ -1,13 +1,14 @@
 /*
-** Id: @(#) p2p_nic.c@@
-*/
-
-/*! \file   p2p_nic.c
-    \brief  Wi-Fi Direct Functions that provide operation in NIC's (Network Interface Card) point of view.
-
-    This file includes functions which unite multiple hal(Hardware) operations
-    and also take the responsibility of Software Resource Management in order
-    to keep the synchronization with Hardware Manipulation.
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 /*******************************************************************************

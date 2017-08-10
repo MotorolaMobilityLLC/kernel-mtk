@@ -10,16 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/hif/sdio/include/hif.h#1
-*/
-
-/*! \file   "hif_pdma.h"
-    \brief  MARCO, definition, structure for PDMA.
-
-    MARCO, definition, structure for PDMA.
-*/
-
 
 #ifndef _HIF_PDMA_H
 #define _HIF_PDMA_H

@@ -10,20 +10,8 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/HS2_DEV_SW/MT6620_WIFI_DRIVER_V2_1_HS_2_0/mgmt/hs20.c#2
-*/
 
-/*! \file   "hs20.c"
-    \brief  This file including the hotspot 2.0 related function.
-
-    This file provided the macros and functions library support for the
-    protocol layer hotspot 2.0 related function.
-
-*/
-
-
- /*******************************************************************************
+/*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************
 */

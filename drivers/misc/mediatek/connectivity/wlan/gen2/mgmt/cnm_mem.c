@@ -10,17 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-/*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/cnm_mem.c#2
-*/
-
-/*! \file   "cnm_mem.c"
-    \brief  This file contain the management function of packet buffers and
-	    generic memory alloc/free functioin for mailbox message.
-
-	    A data packet has a fixed size of buffer, but a management
-	    packet can be equipped with a variable size of buffer.
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

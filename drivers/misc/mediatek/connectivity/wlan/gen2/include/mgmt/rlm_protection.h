@@ -1,41 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/rlm_protection.h#1
-*/
-
-/*! \file   "rlm_protection.h"
-    \brief
-*/
-
-/*
-** Log: rlm_protection.h
- *
- * 08 20 2010 cm.chang
- * NULL
- * Migrate RLM code to host from FW
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 28 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * 1st draft code for RLM module
- *
- * 04 22 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * First draft code to support protection in AP mode
- *
- * 02 13 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support PCO in STA mode
- *
- * 02 12 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Use bss info array for concurrent handle
- *
- * 01 25 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support protection and bandwidth switch
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _RLM_PROTECTION_H

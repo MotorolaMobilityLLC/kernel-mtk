@@ -1,55 +1,14 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_typedef.h#1
-*/
-
-/*! \file   gl_typedef.h
-    \brief  Definition of basic data type(os dependent).
-
-    In this file we define the basic data type.
-*/
-
-/*
-** Log: gl_typedef.h
- *
- * 06 22 2012 cp.wu
- * [WCXRP00001257] [MT6620][MT5931][MT6628][Driver][Linux] Modify KAL_HZ to align ms accuracy
- * modify KAL_HZ to (1000) for correct definition.
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * portability improvement
- *
- * 02 15 2011 jeffrey.chang
- * NULL
- * to support early suspend in android
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\6 2009-08-18 22:57:14 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\5 2008-09-22 23:19:30 GMT mtk01461
-**  Update comment for code review
-**  \main\maintrunk.MT5921\4 2008-09-05 17:25:16 GMT mtk01461
-**  Update Driver for Code Review
-**  \main\maintrunk.MT5921\3 2007-11-09 11:00:50 GMT mtk01425
-**  1. Use macro to unify network-to-host and host-to-network related functions
-** Revision 1.3  2007/06/27 02:18:51  MTK01461
-** Update SCAN_FSM, Initial(Can Load Module), Proc(Can do Reg R/W), TX API
-**
-** Revision 1.2  2007/06/25 06:16:24  MTK01461
-** Update illustrations, gl_init.c, gl_kal.c, gl_kal.h, gl_os.h and RX API
-**
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
 #ifndef _GL_TYPEDEF_H
