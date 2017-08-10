@@ -779,6 +779,8 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 		}
 		truncate_setsize(inode, ia->ia_size);
 	}
+	if (current->mm)
+		up_write(&current->mm->mmap_sem);
 
 	/*
 	 * mode change is for clearing setuid/setgid bits. Allow lower fs
@@ -797,8 +799,6 @@ static int sdcardfs_setattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 	err = notify_change2(lower_mnt, lower_dentry, &lower_ia, /* note: lower_ia */
 			NULL);
 	mutex_unlock(&lower_dentry->d_inode->i_mutex);
-	if (current->mm)
-		up_write(&current->mm->mmap_sem);
 	if (err)
 		goto out;
 
