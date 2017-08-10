@@ -625,6 +625,13 @@ UINT_8 wlanGetChannelNumberByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_T
 /*----------------------------------------------------------------------------*/
 P_BSS_DESC_T wlanGetTargetBssDescByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex);
 
+#if CFG_SUPPORT_ADD_CONN_AP
+/*----------------------------------------------------------------------------*/
+/* check for system configuration to generate message on scan list            */
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter);
+#endif
+
 /*----------------------------------------------------------------------------*/
 /* check for system configuration to generate message on scan list            */
 /*----------------------------------------------------------------------------*/
