@@ -13,7 +13,7 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
-#ifneq (,$(filter $(strip $(CONFIG_MTK_PLATFORM)), mt6735 mt6735m mt6753 mt6580 mt6572 mt6582 mt6592 mt6752 mt6795 mt6755 mt6797))
+#ifneq (,$(filter $(strip $(CONFIG_MTK_PLATFORM)), mt6735 mt6735m mt6753 mt6580 mt6570 mt6572 mt6582 mt6592 mt6752 mt6795 mt6755 mt6797))
 
 #set IP folder name
 ifneq (,$(filter y,$(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753)))
@@ -28,7 +28,7 @@ else
             ifneq (,$(filter y,$(CONFIG_ARCH_MT6752)))
 	            MDI_IP_FOLDER:=mt6325
             else
-              ifneq (,$(filter y,$(CONFIG_ARCH_MT6580)))
+              ifneq (,$(filter y,$(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6570)))
 	              MDI_IP_FOLDER:=mt6350
               else
                 ifneq (,$(filter y,$(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797)))

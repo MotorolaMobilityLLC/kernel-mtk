@@ -736,7 +736,7 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 		rtc_xerror("register rtc device failed (%ld)\n", PTR_ERR(rtc));
 		return PTR_ERR(rtc);
 	}
-#ifdef PMIC_REGISTER_INTERRUPT_ENABLE
+#if defined(PMIC_REGISTER_INTERRUPT_ENABLE) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	pmic_register_interrupt_callback(RTC_INTERRUPT_NUM, rtc_irq_handler);
 	pmic_enable_interrupt(RTC_INTERRUPT_NUM, 1, "RTC");
 #endif
