@@ -1475,10 +1475,9 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 #if CFG_ENABLE_WIFI_DIRECT
 			/* XXX The PHASE 2: decrease from  aucFreeQuotaPerQueue[] */
 			if (prStaRec->fgIsInPS && (ucTC != TC4_INDEX)) {
-				ASSERT(pucFreeQuota);
-				ASSERT(*pucFreeQuota > 0);
-				if (*pucFreeQuota > 0)
+				if ((pucFreeQuota) && (*pucFreeQuota > 0))
 					*pucFreeQuota = *pucFreeQuota - 1;
+
 			}
 #endif /* CFG_ENABLE_WIFI_DIRECT */
 
