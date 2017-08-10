@@ -2828,14 +2828,10 @@ inline static int kdSetSensorMclk(int *pBuf)
     ACDK_SENSOR_MCLK_STRUCT *pSensorCtrl = (ACDK_SENSOR_MCLK_STRUCT *)pBuf;
 
     PK_DBG("[CAMERA SENSOR] kdSetSensorMclk on=%d, freq= %d\n", pSensorCtrl->on, pSensorCtrl->freq);
-    if (1 == pSensorCtrl->on) {
-    enable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
-    clkmux_sel(MT_MUX_CAMTG, pSensorCtrl->freq, "CAMERA_SENSOR");
-    }
-    else {
-
-    disable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
-    }
+	if (1 == pSensorCtrl->on
+	    && (((pSensorCtrl->freq) == MCLK_48MHZ_GROUP) || ((pSensorCtrl->freq) == MCLK_52MHZ_GROUP))) {
+		clkmux_sel(MT_MUX_CAMTG, pSensorCtrl->freq, "CAMERA_SENSOR");
+	}
     return ret;
 /* #endif */
 }
@@ -2882,15 +2878,10 @@ static inline int kdSetSensorMclk(int *pBuf)
 
 	Check_ccf_clk();
 	if (1 == pSensorCtrl->on) {
-		   ret = clk_prepare_enable(g_camclk_camtg_sel);
 			if (pSensorCtrl->freq == 1 /*CAM_PLL_48_GROUP */)
 				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll_d26);
 			else if (pSensorCtrl->freq == 2 /*CAM_PLL_52_GROUP */)
 				   ret = clk_set_parent(g_camclk_camtg_sel, g_camclk_univpll2_d2);
-			ret = clk_prepare_enable(g_camclk_scam_sel);
-	} else {
-			clk_disable_unprepare(g_camclk_camtg_sel);
-			clk_disable_unprepare(g_camclk_scam_sel);
 	}
 #endif
     return ret;
@@ -3533,7 +3524,7 @@ static long CAMERA_HW_Ioctl(
         break;
 
     case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
-        i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);
+	/* i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff); */
         break;
 
     case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
@@ -3622,6 +3613,16 @@ static int CAMERA_HW_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
     /*  */
     atomic_inc(&g_CamDrvOpenCnt);
+
+#ifdef CONFIG_MTK_CLKMGR
+	enable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
+#else
+#ifndef CONFIG_MTK_FPGA
+	clk_prepare_enable(g_camclk_camtg_sel);
+	clk_prepare_enable(g_camclk_scam_sel);
+#endif
+#endif
+
     return 0;
 }
 
@@ -3639,6 +3640,16 @@ static int CAMERA_HW_Release(struct inode *a_pstInode, struct file *a_pstFile)
 #ifdef CONFIG_MTK_SMI_EXT
 	current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
+
+#ifdef CONFIG_MTK_CLKMGR
+	disable_mux(MT_MUX_CAMTG, "CAMERA_SENSOR");
+#else
+#ifndef CONFIG_MTK_FPGA
+	clk_disable_unprepare(g_camclk_camtg_sel);
+	clk_disable_unprepare(g_camclk_scam_sel);
+#endif
+#endif
+
 return 0;
 }
 
