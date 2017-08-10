@@ -516,51 +516,51 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 /* MSDC1 IES mask*/
 #define MSDC1_IES_CLK_MASK              (0x1 <<  8)
-#define MSDC1_IES_CMD_MASK              (0x1 <<  9)
-#define MSDC1_IES_DAT_MASK              (0x1 << 10)
+#define MSDC1_IES_DAT_MASK              (0x1 <<  9)
+#define MSDC1_IES_CMD_MASK              (0x1 << 10)
 #define MSDC1_IES_ALL_MASK              (0x7 <<  8)
 
 /* MSDC1 SMT mask*/
 #define MSDC1_SMT_CLK_MASK              (0x1 <<  8)
-#define MSDC1_SMT_CMD_MASK              (0x1 <<  9)
-#define MSDC1_SMT_DAT_MASK              (0x1 << 10)
+#define MSDC1_SMT_DAT_MASK              (0x1 <<  9)
+#define MSDC1_SMT_CMD_MASK              (0x1 << 10)
 #define MSDC1_SMT_ALL_MASK              (0x7 <<  8)
 
 /* MSDC1 TDSEL mask*/
 #define MSDC1_TDSEL_CLK_MASK            (0xF <<  0)
-#define MSDC1_TDSEL_CMD_MASK            (0xF <<  4)
-#define MSDC1_TDSEL_DAT_MASK            (0xF <<  8)
+#define MSDC1_TDSEL_DAT_MASK            (0xF <<  4)
+#define MSDC1_TDSEL_CMD_MASK            (0xF <<  8)
 #define MSDC1_TDSEL_ALL_MASK            (0xFFF << 0)
 
 /* MSDC1 RDSEL mask*/
 /*MSDC1_GPIO_RDSEL0*/
 #define MSDC1_RDSEL_CLK_MASK            (0x3F << 16)
-#define MSDC1_RDSEL_CMD_MASK            (0x3F << 22)
+#define MSDC1_RDSEL_DAT_MASK            (0x3F << 22)
 /*MSDC1_GPIO_RDSEL1*/
-#define MSDC1_RDSEL_DAT_MASK            (0x3F <<  0)
+#define MSDC1_RDSEL_CMD_MASK            (0x3F <<  0)
 #define MSDC1_RDSEL0_ALL_MASK           (0xFFF << 16)
 #define MSDC1_RDSEL1_ALL_MASK           (0x3F <<  0)
 /*Attention: not the same address, shall not define MSDC1_RDSEL_ALL_MASK*/
 
 /* MSDC1 SR mask*/
 #define MSDC1_SR_CLK_MASK               (0x1 <<  3)
-#define MSDC1_SR_CMD_MASK               (0x1 <<  7)
-#define MSDC1_SR_DAT_MASK               (0x1 << 11)
+#define MSDC1_SR_DAT_MASK               (0x1 <<  7)
+#define MSDC1_SR_CMD_MASK               (0x1 << 11)
 /*Attention: bits are not continuous, shall not define MSDC1_SR_ALL_MASK*/
 
 /* MSDC1 DRV mask*/
 #define MSDC1_DRV_CLK_MASK              (0x7 <<  0)
-#define MSDC1_DRV_CMD_MASK              (0x7 <<  4)
-#define MSDC1_DRV_DAT_MASK              (0x7 <<  8)
+#define MSDC1_DRV_DAT_MASK              (0x7 <<  4)
+#define MSDC1_DRV_CMD_MASK              (0x7 <<  8)
 /*Attention: bits are not continuous, shall not define MSDC1_DRV_ALL_MASK*/
 
 /* MSDC1 PUPD mask*/
-#define MSDC1_PUPD_CMD_MASK             (0x7  <<  0)
-#define MSDC1_PUPD_CLK_MASK             (0x7  <<  4)
-#define MSDC1_PUPD_DAT0_MASK            (0x7  <<  8)
-#define MSDC1_PUPD_DAT1_MASK            (0x7  << 12)
+#define MSDC1_PUPD_CLK_MASK             (0x7  <<  0)
+#define MSDC1_PUPD_CMD_MASK             (0x7  <<  8)
+#define MSDC1_PUPD_DAT0_MASK            (0x7  << 12)
+#define MSDC1_PUPD_DAT1_MASK            (0x7  << 20)
 #define MSDC1_PUPD_DAT2_MASK            (0x7  << 16)
-#define MSDC1_PUPD_DAT3_MASK            (0x7  << 20)
+#define MSDC1_PUPD_DAT3_MASK            (0x7  <<  4)
 #define MSDC1_PUPD_MASK                 (0x777777 << 0)
 
 /*
