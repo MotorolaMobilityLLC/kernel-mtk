@@ -663,12 +663,88 @@ void mtk11_disable_q(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 	}
 }
 
+void mtk11_qmu_host_rx_err(struct musbfsh *musbfsh, u8 epnum)
+{
+	u16 rx_csr, val;
+	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
+	void __iomem *epio = hw_ep->regs;
+	u32 status = 0;
+	void __iomem *mbase = musbfsh->mregs;
+
+	musbfsh_ep_select(mbase, epnum);
+	rx_csr = musbfsh_readw(epio, MUSBFSH_RXCSR);
+	val = rx_csr;
+
+	status = 0;
+
+	QMU_ERR("<== hw %d rxcsr %04x\n", epnum, rx_csr);
+
+	/* check for errors, concurrent stall & unlink is not really
+	 * handled yet! */
+	if (rx_csr & MUSBFSH_RXCSR_H_RXSTALL) {
+		QMU_ERR("RX end %d STALL\n", epnum);
+
+		/* handle stall in MAC */
+		rx_csr &= ~MUSBFSH_RXCSR_H_RXSTALL;
+		musbfsh_writew(epio, MUSBFSH_RXCSR, rx_csr);
+
+		/* stall; record URB status */
+		status = -EPIPE;
+	} else if (rx_csr & MUSBFSH_RXCSR_H_ERROR) {
+		QMU_ERR("end %d RX proto error,rxtoggle=0x%x\n", epnum,
+		    musbfsh_readl(mbase, MUSBFSH_RXTOG));
+
+		status = -EPROTO;
+		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
+	} else if (rx_csr & MUSBFSH_RXCSR_DATAERROR)
+		QMU_ERR("RX end %d ISO data error\n", epnum);
+	else if (rx_csr & MUSBFSH_RXCSR_INCOMPRX) {
+		QMU_ERR("end %d high bandwidth incomplete ISO packet RX\n", epnum);
+		status = -EPROTO;
+	}
+
+	/* faults abort the transfer */
+	if (status) {
+		musbfsh_h_flush_rxfifo(hw_ep, 0);
+		musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, 0);
+	}
+	QMU_ERR("done\n");
+}
+
+void mtk11_qmu_host_tx_err(struct musbfsh *musbfsh, u8 epnum)
+{
+	u16 tx_csr;
+	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + epnum;
+	void __iomem *epio = hw_ep->regs;
+	void __iomem *mbase = musbfsh->mregs;
+
+	musbfsh_ep_select(mbase, epnum);
+	tx_csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+
+	QMU_ERR("OUT/TX%d end, csr %04x\n", epnum, tx_csr);
+
+	tx_csr &= ~(MUSBFSH_TXCSR_AUTOSET
+		    | MUSBFSH_TXCSR_DMAENAB
+		    | MUSBFSH_TXCSR_H_ERROR | MUSBFSH_TXCSR_H_RXSTALL | MUSBFSH_TXCSR_H_NAKTIMEOUT);
+
+	musbfsh_ep_select(mbase, epnum);
+	musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
+	/* REVISIT may need to clear FLUSHFIFO ... */
+	musbfsh_writew(epio, MUSBFSH_TXCSR, tx_csr);
+	musbfsh_writeb(epio, MUSBFSH_TXINTERVAL, 0);
+	QMU_ERR("done\n");
+}
+
 void mtk11_qmu_err_recover(struct musbfsh *musbfsh, u8 ep_num, u8 isRx, bool is_len_err)
 {
-	if (musbfsh->is_host) {
-		QMU_ERR("!SUPPORT HOST RECOVER\n");
-		BUG();
-	}
+	/*most case caused by device disconnect*/
+	QMU_ERR("DO QMU ERR RECOVER\n");
+	if (isRx)
+		mtk11_qmu_host_rx_err(musbfsh, ep_num);
+	else
+		mtk11_qmu_host_tx_err(musbfsh, ep_num);
+
+	return;
 }
 
 void mtk11_qmu_irq_err(struct musbfsh *musbfsh, u32 qisar)

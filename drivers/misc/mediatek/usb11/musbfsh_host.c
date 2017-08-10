@@ -223,7 +223,11 @@ static void musbfsh_ep_program(struct musbfsh *musbfsh, u8 epnum,
 /*
  * Clear TX fifo. Needed to avoid BABBLE errors.
  */
+#ifdef MUSBFSH_QMU_SUPPORT
+void musbfsh_h_tx_flush_fifo(struct musbfsh_hw_ep *ep)
+#else
 static void musbfsh_h_tx_flush_fifo(struct musbfsh_hw_ep *ep)
+#endif
 {
 	void __iomem *epio = ep->regs;
 	u16 csr;
@@ -657,7 +661,11 @@ static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 	}
 }
 
+#ifdef MUSBFSH_QMU_SUPPORT
+u16 musbfsh_h_flush_rxfifo(struct musbfsh_hw_ep *hw_ep, u16 csr)
+#else
 static u16 musbfsh_h_flush_rxfifo(struct musbfsh_hw_ep *hw_ep, u16 csr)
+#endif
 {
 	/* we don't want fifo to fill itself again;
 	 * ignore dma (various models),

@@ -148,5 +148,7 @@ extern void musbfsh_ep_set_qh(struct musbfsh_hw_ep *ep, int isRx, struct musbfsh
 extern struct musbfsh_qh *musbfsh_ep_get_qh(struct musbfsh_hw_ep *ep, int isRx);
 extern void musbfsh_advance_schedule(struct musbfsh *musb, struct urb *urb,
 				  struct musbfsh_hw_ep *hw_ep, int is_in);
+extern u16 musbfsh_h_flush_rxfifo(struct musbfsh_hw_ep *hw_ep, u16 csr);
+extern void musbfsh_h_tx_flush_fifo(struct musbfsh_hw_ep *ep);
 #endif
 #endif				/* _MUSBFSH_HOST_H */

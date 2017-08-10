@@ -157,6 +157,10 @@ int qmu_init_gpd_pool(struct device *dev)
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 
+	#ifdef MUSB_QMU_LIMIT_SUPPORT
+	for (i = 1; i <= MAX_QMU_EP; i++)
+		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = isoc_ep_gpd_count;
+	#else
 	if (!mtk_qmu_max_gpd_num)
 		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
 
@@ -169,7 +173,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		else
 			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 	}
-
+	#endif
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)

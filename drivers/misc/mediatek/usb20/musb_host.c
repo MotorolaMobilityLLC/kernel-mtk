@@ -2189,6 +2189,68 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 		hw_ep = musb->control_ep;
 		goto success;
 	}
+#ifdef MUSB_QMU_LIMIT_SUPPORT
+	if (isoc_ep_gpd_count
+			&& qh->type == USB_ENDPOINT_XFER_ISOC) {
+		for (epnum = 1, hw_ep = musb->endpoints + 1;
+				epnum < MAX_QMU_EP; epnum++, hw_ep++) {
+			/* int	diff; */
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
+			break;
+		}
+
+		if (hw_end) {
+			idle = 1;
+			qh->mux = 0;
+			DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+			goto success;
+		}
+	}
+
+	for (epnum = (MAX_QMU_EP + 1), hw_ep = musb->endpoints + (MAX_QMU_EP + 1);
+		epnum < musb->nr_endpoints; epnum++, hw_ep++) {
+		if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+			continue;
+
+		hw_end = epnum;
+		hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+		break;
+	}
+
+	if (hw_end) {
+		idle = 1;
+		qh->mux = 0;
+		goto success;
+	}
+
+	if (!hw_end) {
+		for (epnum = 1, hw_ep = musb->endpoints + 1;
+				epnum <= MAX_QMU_EP; epnum++, hw_ep++) {
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			break;
+		}
+	}
+
+	if (hw_end) {
+		idle = 1;
+		qh->mux = 0;
+		goto success;
+	} else {
+		WARNING("EP OVERFLOW.\n");
+		return -ENOSPC;
+	}
+#endif
 
 #ifdef MUSB_QMU_SUPPORT_HOST
 	if (isoc_ep_gpd_count
@@ -2285,7 +2347,6 @@ success:
 
 
 	if (idle) {
-
 		if (USB_ENDPOINT_XFER_ISOC == qh->type) {
 			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 			static int skip_cnt; /* dft to 0 */
@@ -2297,9 +2358,17 @@ success:
 				skip_cnt++;
 		}
 #ifdef MUSB_QMU_SUPPORT_HOST
+#ifdef MUSB_QMU_LIMIT_SUPPORT
+		if (isoc_ep_gpd_count &&
+			qh->type == USB_ENDPOINT_XFER_ISOC &&
+			hw_end <= MAX_QMU_EP)
+			qh->is_use_qmu = 1;
+#else
 		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_count is set*/
 		if (isoc_ep_gpd_count && qh->type == USB_ENDPOINT_XFER_ISOC  && hw_end < isoc_ep_start_idx)
 			qh->is_use_qmu = 0;
+
+#endif
 
 		if (qh->is_use_qmu) {
 			musb_ep_set_qh(hw_ep, is_in, qh);
