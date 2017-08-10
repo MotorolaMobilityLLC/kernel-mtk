@@ -317,6 +317,11 @@ static int MC3XXX_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u
 
 	if (!client)
 		return -EINVAL;
+	else if (len > C_I2C_FIFO_SIZE) {
+			GSE_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+			mutex_unlock(&MC3XXX_i2c_mutex);
+			return -EINVAL;
+	}
 
 	mutex_lock(&MC3XXX_i2c_mutex);
 
@@ -330,11 +335,6 @@ static int MC3XXX_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u
 	msgs[1].len = len;
 	msgs[1].buf = data;
 
-	if (len > C_I2C_FIFO_SIZE) {
-		GSE_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
-		mutex_unlock(&MC3XXX_i2c_mutex);
-		return -EINVAL;
-	}
 	err = i2c_transfer(client->adapter, msgs, sizeof(msgs)/sizeof(msgs[0]));
 	if (err != 2) {
 		GSE_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);

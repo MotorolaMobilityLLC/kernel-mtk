@@ -151,6 +151,13 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	u8 beg = addr;
 	struct i2c_msg msgs[2] = { {0}, {0} };
 
+	if (!client) {
+		return -EINVAL;
+	} else if (len > C_I2C_FIFO_SIZE) {
+		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
 	mutex_lock(&akm09915_i2c_mutex);
 	msgs[0].addr = client->addr;
 	msgs[0].flags = 0;
@@ -161,15 +168,6 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	msgs[1].flags = I2C_M_RD;
 	msgs[1].len = len;
 	msgs[1].buf = data;
-
-	if (!client) {
-		mutex_unlock(&akm09915_i2c_mutex);
-		return -EINVAL;
-	} else if (len > C_I2C_FIFO_SIZE) {
-		mutex_unlock(&akm09915_i2c_mutex);
-		MAGN_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
-		return -EINVAL;
-	}
 
 	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {

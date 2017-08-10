@@ -754,7 +754,7 @@ int step_c_driver_add(struct step_c_init_info *obj)
 			break;
 		}
 	}
-	if (NULL == step_counter_init_list[i]) {
+	if ((i < MAX_CHOOSE_STEP_C_NUM) && (NULL == step_counter_init_list[i])) {
 		STEP_C_PR_ERR("STEP_C driver add err\n");
 		err = -1;
 	}
