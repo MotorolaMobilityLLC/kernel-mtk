@@ -189,11 +189,6 @@ void exception_header_init(void *oldbufp)
 
 static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
 {
-	if (length == 0) {
-		vfree(buf);
-		return;
-	}
-
 	mutex_lock(&scp_excep_dump_mutex);
 	vfree(scp_dump_buffer);
 

@@ -384,7 +384,6 @@ EXPORT_SYMBOL_GPL(is_scp_ready);
 int reset_scp(int reset)
 {
 	unsigned int prev_ready;
-	int ret = -1;
 	unsigned int *reg;
 
 	del_timer(&scp_ready_timer);
@@ -409,20 +408,15 @@ int reset_scp(int reset)
 		dsb(SY);
 	}
 	*(unsigned int *)reg = 0x1;
-	ret = 0;
 
+	/*set timer for scp bring up time out monitor*/
+	init_timer(&scp_ready_timer);
+	scp_ready_timer.expires = jiffies + SCP_READY_TIMEOUT;
+	scp_ready_timer.function = &scp_wait_ready_timeout;
+	scp_ready_timer.data = (unsigned long) 0;
+	add_timer(&scp_ready_timer);
 
-	if (ret == 0) {
-		init_timer(&scp_ready_timer);
-		scp_ready_timer.expires = jiffies + SCP_READY_TIMEOUT;
-		scp_ready_timer.function = &scp_wait_ready_timeout;
-		scp_ready_timer.data = (unsigned long) 0;
-		add_timer(&scp_ready_timer);
-	} else {
-		scp_aed(EXCEP_RESET);
-	}
-
-	return ret;
+	return 0;
 }
 /*
  * parse device tree and mapping iomem
