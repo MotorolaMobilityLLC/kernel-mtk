@@ -223,6 +223,7 @@
 		accdet-mic-mode = <6>;
 		/*0--MD_MAX--UP_MAX--DW_MAX*/
 		headset-three-key-threshold = <0 80 220 500>;
+		headset-three-key-threshold-CDD = <0 178 283 600>;
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 450>;
 };
