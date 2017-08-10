@@ -6358,8 +6358,8 @@ unsigned short mt6353_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned 
 unsigned short mt6353_get_register_value(PMU_FLAGS_LIST_ENUM flagname)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[flagname];
-	unsigned int val;
-	unsigned int ret;
+	unsigned int val = 0;
+	unsigned int ret = 0;
 
 	ret =
 	    pmic_read_interface((unsigned int)pFlag->offset, &val, (unsigned int)(pFlag->mask),
@@ -6391,8 +6391,8 @@ unsigned short mt6353_set_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname, un
 unsigned short mt6353_get_register_value_nolock(PMU_FLAGS_LIST_ENUM flagname)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[flagname];
-	unsigned int val;
-	unsigned int ret;
+	unsigned int val = 0;
+	unsigned int ret = 0;
 
 	ret =
 	    pmic_read_interface_nolock((unsigned int)pFlag->offset, &val, (unsigned int)(pFlag->mask),

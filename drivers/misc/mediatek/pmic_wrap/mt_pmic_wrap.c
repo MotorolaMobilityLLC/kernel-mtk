@@ -164,14 +164,24 @@ static ssize_t pwrap_trace_write(struct file *file, const char __user *buf, size
 	if (size != 0) {
 		if (size > 2) {
 			pvalue = strsep(&info, " ");
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&value);
+			if (pvalue != NULL)
+				ret = kstrtou32(pvalue, 16, (unsigned int *)&value);
+			else {
+				pr_err("[pmic_trace_write] pvalue is empty\n");
+				return -1;
+			}
 		}
 
 		if (size > 2) {
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
 			/*pvalue = (char *)buf + 1;*/
 			paddr =  strsep(&info, " ");
-			ret = kstrtou32(paddr, 16, (unsigned int *)&addr);
+			if (paddr != NULL)
+				ret = kstrtou32(paddr, 16, (unsigned int *)&addr);
+			else {
+				pr_err("[pmic_trace_write] paddr is empty\n");
+				return -1;
+			}
 		}
 	}
 
