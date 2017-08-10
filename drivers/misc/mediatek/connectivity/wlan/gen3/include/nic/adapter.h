@@ -704,6 +704,10 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucArpTxDone;
 	UINT_8 ucIcmpTxDone;
 	PARAM_POWER_MODE ePowerMode;
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	BOOLEAN fgEnableReportIndependentPkt;
+#endif
+
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

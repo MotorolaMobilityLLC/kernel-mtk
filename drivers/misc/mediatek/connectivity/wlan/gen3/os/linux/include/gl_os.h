@@ -676,6 +676,7 @@ typedef struct _PACKET_PRIVATE_DATA {
 	UINT_16 u2IpId;
 	/* package seq no for debug */
 	UINT_8 ucSeqNo;
+	BOOLEAN fgIsIndependentPkt;
 } PACKET_PRIVATE_DATA, *P_PACKET_PRIVATE_DATA;
 
 /*******************************************************************************
@@ -809,6 +810,13 @@ typedef struct _PACKET_PRIVATE_DATA {
 
 #define GLUE_SET_EVENT(pr) \
 	kalSetEvent(pr)
+
+#define GLUE_GET_INDEPENDENT_PKT(_p)    \
+	(GLUE_GET_PKT_PRIVATE_DATA(_p)->fgIsIndependentPkt)
+
+#define GLUE_SET_INDEPENDENT_PKT(_p, _fgIsIndePkt) \
+	(GLUE_GET_PKT_PRIVATE_DATA(_p)->fgIsIndependentPkt = _fgIsIndePkt)
+
 
 #define GLUE_INC_REF_CNT(_refCount)     atomic_inc((atomic_t *)&(_refCount))
 #define GLUE_DEC_REF_CNT(_refCount)     atomic_dec((atomic_t *)&(_refCount))

@@ -1409,7 +1409,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	nicRxFillRFB(prAdapter, prSwRfb);
 	ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
 	GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
-	StatsRxPktInfoDisplay(prSwRfb->pvHeader);
+	StatsRxPktInfoDisplay(prSwRfb);
 
 	prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
 
@@ -1771,6 +1771,12 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	case EVENT_ID_CHECK_REORDER_BUBBLE:
 		qmHandleEventCheckReorderBubble(prAdapter, prEvent);
 		break;
+
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	case EVENT_ID_BA_FW_DROP_SN:
+		qmHandleEventDropByFW(prAdapter, prEvent);
+		break;
+#endif
 
 	case EVENT_ID_LINK_QUALITY:
 #if CFG_ENABLE_WIFI_DIRECT && CFG_SUPPORT_P2P_RSSI_QUERY
