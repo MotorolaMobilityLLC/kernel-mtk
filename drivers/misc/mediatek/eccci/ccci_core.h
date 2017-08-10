@@ -450,7 +450,6 @@ extern int ccci_subsys_bm_init(void);
 extern int ccci_subsys_sysfs_init(void);
 extern int ccci_subsys_dfo_init(void);
 /* per-modem sub-system */
-extern void set_ccif_cg(unsigned int on);
 extern int switch_MD1_Tx_Power(unsigned int mode);
 extern int switch_MD2_Tx_Power(unsigned int mode);
 

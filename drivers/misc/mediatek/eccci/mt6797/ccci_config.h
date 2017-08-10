@@ -86,7 +86,7 @@
 #endif
 
 #define FEATURE_FORCE_ASSERT_CHECK_EN
-
+#define FEATURE_CLK_CG_CONTROL
 /*================================================ */
 /* misc size description */
 #define CCCI_SMEM_DUMP_SIZE      4096 /* smem size we dump when EE */

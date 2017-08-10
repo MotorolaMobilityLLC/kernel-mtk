@@ -56,7 +56,9 @@ void ccci_clear_dsp_region_protection(struct ccci_modem *md);
 int ccci_plat_common_init(void);
 int ccci_platform_init(struct ccci_modem *md);
 void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB);
-
+#ifdef FEATURE_CLK_CG_CONTROL
+void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
+#endif
 #ifdef ENABLE_DRAM_API
 extern phys_addr_t get_max_DRAM_size(void);
 extern unsigned int get_phys_offset(void);

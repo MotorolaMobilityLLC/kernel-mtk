@@ -397,7 +397,7 @@ int ccci_md_check_ee_done(struct ccci_modem *md, int timeout)
 	int count = 0;
 	bool is_ee_done = 0;
 	int time_step = 200; /*ms*/
-	int loop_max = 0;
+	int loop_max = timeout * 1000 / time_step;
 
 	CCCI_BOOTUP_LOG(md->index, KERN, "checking EE status\n");
 	while (md->md_state == EXCEPTION) {

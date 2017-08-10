@@ -132,7 +132,7 @@ static inline void cldma_tgpd_set_data_ptr(struct cldma_tgpd *tgpd, dma_addr_t d
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&tgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, tgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &data_ptr, tgpd->debug_id, val);
 }
 static inline void cldma_tgpd_set_next_ptr(struct cldma_tgpd *tgpd, dma_addr_t next_ptr)
 {
@@ -145,7 +145,7 @@ static inline void cldma_tgpd_set_next_ptr(struct cldma_tgpd *tgpd, dma_addr_t n
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&tgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, tgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &next_ptr, tgpd->debug_id, val);
 }
 
 static inline void cldma_rgpd_set_data_ptr(struct cldma_rgpd *rgpd, dma_addr_t data_ptr)
@@ -159,7 +159,7 @@ static inline void cldma_rgpd_set_data_ptr(struct cldma_rgpd *rgpd, dma_addr_t d
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&rgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, rgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &data_ptr, rgpd->debug_id, val);
 }
 
 static inline void cldma_rgpd_set_next_ptr(struct cldma_rgpd *rgpd, dma_addr_t next_ptr)
@@ -173,7 +173,7 @@ static inline void cldma_rgpd_set_next_ptr(struct cldma_rgpd *rgpd, dma_addr_t n
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&rgpd->debug_id, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, rgpd->debug_id, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &next_ptr, rgpd->debug_id, val);
 }
 
 static inline void cldma_tbd_set_data_ptr(struct cldma_tbd *tbd, dma_addr_t data_ptr)
@@ -187,7 +187,7 @@ static inline void cldma_tbd_set_data_ptr(struct cldma_tbd *tbd, dma_addr_t data
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&tbd->reserved, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, tbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &data_ptr, tbd->reserved, val);
 }
 
 static inline void cldma_tbd_set_next_ptr(struct cldma_tbd *tbd, dma_addr_t next_ptr)
@@ -201,7 +201,7 @@ static inline void cldma_tbd_set_next_ptr(struct cldma_tbd *tbd, dma_addr_t next
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&tbd->reserved, 0, (u16)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, tbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &next_ptr, tbd->reserved, val);
 }
 
 static inline void cldma_rbd_set_data_ptr(struct cldma_rbd *rbd, dma_addr_t data_ptr)
@@ -215,7 +215,7 @@ static inline void cldma_rbd_set_data_ptr(struct cldma_rbd *rbd, dma_addr_t data
 	val |= ((data_ptr >> 32) & 0xF);
 	cldma_write16(&rbd->reserved, 0, (u32)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &data_ptr, rbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &data_ptr, rbd->reserved, val);
 }
 static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next_ptr)
 {
@@ -228,7 +228,7 @@ static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next
 	val |= (((next_ptr >> 32) & 0xF) << 4);
 	cldma_write16(&rbd->reserved, 0, (u32)val);
 #endif
-	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:0x%p, 0x%x, val=0x%x\n", __func__, &next_ptr, rbd->reserved, val);
+	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &next_ptr, rbd->reserved, val);
 }
 
 
@@ -1868,11 +1868,19 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 static void polling_ready(struct md_cd_ctrl *md_ctrl, int step)
 {
 	int cnt = 100;
+	int time_once = 20;
 
-	while (cnt--) {
-		if (md_ctrl->channel_id & (1 << step))
+#ifdef CCCI_EE_HS_POLLING_TIME
+	cnt = CCCI_EE_HS_POLLING_TIME / time_once;
+#endif
+	while (cnt > 0) {
+		md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
+		if (md_ctrl->channel_id & (1 << step)) {
+			CCCI_DEBUG_LOG(0, TAG, "poll RCHNUM %d\n", md_ctrl->channel_id);
 			break;
-		msleep(20);
+		}
+		msleep(time_once);
+		cnt--;
 	}
 }
 
@@ -1883,7 +1891,7 @@ static void md_cd_ccif_work(struct work_struct *work)
 	/* seems sometime MD send D2H_EXCEPTION_INIT_DONE and D2H_EXCEPTION_CLEARQ_DONE together */
 	mutex_lock(&md_ctrl->ccif_wdt_mutex);
 	if (!md_ctrl->wdt_work_running) {
-		polling_ready(md_ctrl, D2H_EXCEPTION_INIT);
+		/*polling_ready(md_ctrl, D2H_EXCEPTION_INIT);*/
 		md_cd_exception(md, HIF_EX_INIT);
 		polling_ready(md_ctrl, D2H_EXCEPTION_INIT_DONE);
 		md_cd_exception(md, HIF_EX_INIT_DONE);
@@ -2108,6 +2116,12 @@ static int md_cd_start(struct ccci_modem *md)
 		} else
 			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
+
+#ifdef FEATURE_CLK_CG_CONTROL
+	/*enable cldma & ccif clk*/
+	ccci_set_clk_cg(md, 1);
+#endif
+
 	/* 2. clear share memory and ring buffer */
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	memset_io(md->smem_layout.ccci_ccb_dhl_base_vir, 0, md->smem_layout.ccci_ccb_dhl_size);
@@ -2118,6 +2132,7 @@ static int md_cd_start(struct ccci_modem *md)
 	md_cd_clear_all_queue(md, IN);
 	ccci_reset_seq_num(md);
 #endif
+
 	/* 3. enable MPU */
 	ccci_set_mem_access_protection(md);
 	md_cd_set_dsp_mpu(md, 0);
@@ -2413,11 +2428,15 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #ifdef ENABLE_CLDMA_AP_SIDE
 	md_cldma_clear(md);
 #endif
-
 	/* ACK CCIF for MD. while entering flight mode, we may send something after MD slept */
 	ccci_reset_ccif_hw(md, AP_MD1_CCIF, md_ctrl->ap_ccif_base, md_ctrl->md_ccif_base);
-
 	md_cd_check_emi_state(md, 0);	/* Check EMI after */
+
+#ifdef FEATURE_CLK_CG_CONTROL
+	/*disable cldma & ccif clk*/
+	ccci_set_clk_cg(md, 0);
+#endif
+
 	return 0;
 }
 

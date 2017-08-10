@@ -15,6 +15,7 @@
 #define __CLDMA_PLATFORM_H__
 
 #include <linux/skbuff.h>
+#include <linux/clk.h>
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
 /* ap_mixed_base+ */
@@ -46,6 +47,11 @@
 #define AP_MD_PEER_WAKEUP (5)
 #define AP_MD_SEQ_ERROR (6)
 #define AP_MD_CCB_WAKEUP (8)
+
+struct ccci_clk_node {
+	struct clk *clk_ref;
+	unsigned char *clk_name;
+};
 
 struct md_pll_reg {
 	void __iomem *md_clkSW;
@@ -135,7 +141,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
 void md_cldma_hw_reset(struct ccci_modem *md);
-
 /* ADD_SYS_CORE */
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);

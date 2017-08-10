@@ -19,11 +19,8 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include "ccci_config.h"
-#if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>
-#else
 #include <linux/clk.h>
-#endif /*CONFIG_MTK_CLKMGR */
+
 #include <mach/mt_pbm.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
@@ -48,19 +45,20 @@
 #include <mt-plat/aee.h>
 #endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
-static struct clk *clk_scp_sys_md1_main;
-static struct clk *clk_infra_ccif_ap;
-static struct clk *clk_infra_ccif_md;
-static struct clk *clk_infra_ap_c2k_ccif_0;
-static struct clk *clk_infra_ap_c2k_ccif_1;
-static struct clk *clk_infra_md2md_ccif_0;
-static struct clk *clk_infra_md2md_ccif_1;
-static struct clk *clk_infra_md2md_ccif_2;
-static struct clk *clk_infra_md2md_ccif_3;
-static struct clk *clk_infra_md2md_ccif_4;
-static struct clk *clk_infra_md2md_ccif_5;
-#endif
+static struct ccci_clk_node clk_table[] = {
+	{ NULL,	"scp-sys-md1-main"},
+	{ NULL,	"infra-cldma-ap"},
+	{ NULL,	"infra-ccif-ap"},
+	{ NULL,	"infra-ccif-md"},
+	{ NULL,	"infra-ap-c2k-ccif-0"},
+	{ NULL,	"infra-ap-c2k-ccif-1"},
+	{ NULL,	"infra-md2md-ccif-0"},
+	{ NULL,	"infra-md2md-ccif-1"},
+	{ NULL,	"infra-md2md-ccif-2"},
+	{ NULL,	"infra-md2md-ccif-3"},
+	{ NULL,	"infra-md2md-ccif-4"},
+	{ NULL,	"infra-md2md-ccif-5"},
+};
 
 static void __iomem *md_sram_pms_base;
 static void __iomem *md_sram_pd_psmcusys_base;
@@ -114,6 +112,7 @@ void md_cldma_hw_reset(struct ccci_modem *md)
 int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg *dev_cfg, struct md_hw_info *hw_info)
 {
 	struct device_node *node = NULL;
+	int idx = 0;
 
 	memset(dev_cfg, 0, sizeof(struct ccci_dev_cfg));
 	memset(hw_info, 0, sizeof(struct md_hw_info));
@@ -155,7 +154,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		hw_info->md_rgu_base = MD_RGU_BASE;
 		hw_info->l1_rgu_base = L1_RGU_BASE;
 		hw_info->md_boot_slave_En = MD_BOOT_VECTOR_EN;
-#if !defined(CONFIG_MTK_CLKMGR)
 #if defined(CONFIG_PINCTRL_MT6757)
 		mdcldma_pinctrl = devm_pinctrl_get(&dev_ptr->dev);
 		if (IS_ERR(mdcldma_pinctrl)) {
@@ -166,73 +164,14 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 #else
 		CCCI_ERROR_LOG(dev_cfg->index, TAG, "gpio pinctrl is not ready yet, use workaround.\n");
 #endif
-		clk_scp_sys_md1_main = devm_clk_get(&dev_ptr->dev, "scp-sys-md1-main");
-		if (IS_ERR(clk_scp_sys_md1_main)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n",
-							dev_cfg->index + 1);
-			return -1;
+		for (idx = 0; idx < ARRAY_SIZE(clk_table); idx++) {
+			clk_table[idx].clk_ref = devm_clk_get(&dev_ptr->dev, clk_table[idx].clk_name);
+			if (IS_ERR(clk_table[idx].clk_ref)) {
+				CCCI_ERROR_LOG(dev_cfg->index, TAG, "md%d get %s failed\n",
+								dev_cfg->index + 1, clk_table[idx].clk_name);
+				clk_table[idx].clk_ref = NULL;
+			}
 		}
-		clk_infra_ccif_ap = devm_clk_get(&dev_ptr->dev, "infra-ccif-ap");
-		if (IS_ERR(clk_infra_ccif_ap)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_ccif_md = devm_clk_get(&dev_ptr->dev, "infra-ccif-md");
-		if (IS_ERR(clk_infra_ccif_md)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_ap_c2k_ccif_0 = devm_clk_get(&dev_ptr->dev, "infra-ap-c2k-ccif-0");
-		if (IS_ERR(clk_infra_ap_c2k_ccif_0)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-ap-c2k-ccif-0 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_ap_c2k_ccif_1 = devm_clk_get(&dev_ptr->dev, "infra-ap-c2k-ccif-1");
-		if (IS_ERR(clk_infra_ap_c2k_ccif_1)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-ap-c2k-ccif-1 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_0 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-0");
-		if (IS_ERR(clk_infra_md2md_ccif_0)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-0 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_1 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-1");
-		if (IS_ERR(clk_infra_md2md_ccif_1)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-1 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_2 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-2");
-		if (IS_ERR(clk_infra_md2md_ccif_2)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-2 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_3 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-3");
-		if (IS_ERR(clk_infra_md2md_ccif_3)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-3 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_4 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-4");
-		if (IS_ERR(clk_infra_md2md_ccif_4)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-4 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-		clk_infra_md2md_ccif_5 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-5");
-		if (IS_ERR(clk_infra_md2md_ccif_5)) {
-			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-5 failed\n",
-							dev_cfg->index + 1);
-			return -1;
-		}
-#endif
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
 		break;
@@ -279,34 +218,26 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 	return 0;
 }
 
-void set_ccif_cg(unsigned int on)
+#ifdef FEATURE_CLK_CG_CONTROL
+/* md1 sys_clk_cg no need set in this API*/
+void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
-#if defined(CONFIG_MTK_CLKMGR)
-	if (on) {
-		clk_prepare_enable(clk_infra_ccif_ap);
-		clk_prepare_enable(clk_infra_ccif_md);
-		clk_prepare_enable(clk_infra_ap_c2k_ccif_0);
-		clk_prepare_enable(clk_infra_ap_c2k_ccif_1);
-		clk_prepare_enable(clk_infra_md2md_ccif_0);
-		clk_prepare_enable(clk_infra_md2md_ccif_1);
-		clk_prepare_enable(clk_infra_md2md_ccif_2);
-		clk_prepare_enable(clk_infra_md2md_ccif_3);
-		clk_prepare_enable(clk_infra_md2md_ccif_4);
-		clk_prepare_enable(clk_infra_md2md_ccif_5);
-	} else {
-		clk_disable_unprepare(clk_infra_ccif_ap);
-		clk_disable_unprepare(clk_infra_ccif_md);
-		clk_disable_unprepare(clk_infra_ap_c2k_ccif_0);
-		clk_disable_unprepare(clk_infra_ap_c2k_ccif_1);
-		clk_disable_unprepare(clk_infra_md2md_ccif_0);
-		clk_disable_unprepare(clk_infra_md2md_ccif_1);
-		clk_disable_unprepare(clk_infra_md2md_ccif_2);
-		clk_disable_unprepare(clk_infra_md2md_ccif_3);
-		clk_disable_unprepare(clk_infra_md2md_ccif_4);
-		clk_disable_unprepare(clk_infra_md2md_ccif_5);
+	int idx = 0;
+
+	CCCI_NORMAL_LOG(md->index, TAG, "%s: %d\n", __func__, on);
+	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
+		if (clk_table[idx].clk_ref == NULL)
+			continue;
+		/*cldma clk only for md1*/
+		if (md->index != MD_SYS1 && idx == 1)
+			continue;
+		if (on)
+			clk_prepare_enable(clk_table[idx].clk_ref);
+		else
+			clk_disable_unprepare(clk_table[idx].clk_ref);
 	}
-#endif
 }
+#endif
 
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 {
@@ -968,9 +899,9 @@ int md_cd_power_on(struct ccci_modem *md)
 		ret = md_power_on(SYS_MD1);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
-		CCCI_BOOTUP_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md1_main);
-		CCCI_BOOTUP_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
+		clk_prepare_enable(clk_table[0].clk_ref);
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
 #endif
 
 		kicker_pbm_by_md(KR_MD1, true);
@@ -1059,9 +990,8 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #if defined(CONFIG_MTK_CLKMGR)
 		ret = md_power_off(SYS_MD1, timeout);
 #else
-		clk_disable(clk_scp_sys_md1_main);
-		clk_unprepare(clk_scp_sys_md1_main);	/* cannot be called in mutex context */
-		set_ccif_cg(0);
+		clk_disable_unprepare(clk_table[0].clk_ref);
+		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
 #endif
 		clk_buf_set_by_flightmode(true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");

@@ -944,7 +944,6 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	unsigned int sig_pid;
 	unsigned int md_boot_data[16] = { 0 };
 	int md_type = 0;
-	unsigned int ccif_on = 0;
 	long other_md_state_for_user = 0;
 	int md_id = proxy_p->md_id;
 	char md_protol[] = "DHL";
@@ -1280,16 +1279,6 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_RESET_MD1_MD3_PCCIF:
 		CCCI_NORMAL_LOG(md_id, CHAR, "reset md pccif ioctl called by %s\n", current->comm);
 		ccci_md_reset_pccif(proxy_p->md_obj);
-		break;
-	case CCCI_IOC_SET_CCIF_CG:
-		CCCI_NORMAL_LOG(md_id, CHAR, "set ccif cg ioctl called by %s\n", current->comm);
-		if (copy_from_user(&ccif_on, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_NORMAL_LOG(md_id, CHAR, "set ccif cg fail: copy_from_user fail!\n");
-			ret = -EFAULT;
-			break;
-		}
-		CCCI_NORMAL_LOG(md_id, CHAR, "set ccif clock %s\n", ccif_on?"on":"off");
-		set_ccif_cg(ccif_on);
 		break;
 	case CCCI_IOC_SET_EFUN:
 		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {

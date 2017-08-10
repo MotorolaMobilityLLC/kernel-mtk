@@ -102,7 +102,3 @@ void __weak clk_buf_save_afc_val(unsigned int afcdac)
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 }
 
-void __weak set_ccif_cg(unsigned int on)
-{
-	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
-}

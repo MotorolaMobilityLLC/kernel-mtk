@@ -244,9 +244,10 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 	return 0;
 }
 
-void set_ccif_cg(unsigned int on)
+#ifdef FEATURE_CLK_CG_CONTROL
+void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
-#if defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_CLKMGR)
 	if (on) {
 		clk_prepare_enable(clk_infra_ccif_ap);
 		clk_prepare_enable(clk_infra_ccif_md);
@@ -272,6 +273,7 @@ void set_ccif_cg(unsigned int on)
 	}
 #endif
 }
+#endif
 
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 {
@@ -895,7 +897,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #else
 		clk_disable(clk_scp_sys_md1_main);
 		clk_unprepare(clk_scp_sys_md1_main);	/* cannot be called in mutex context */
-		set_ccif_cg(0);
 #endif
 		clk_buf_set_by_flightmode(true);
 		md1_pmic_setting_off();

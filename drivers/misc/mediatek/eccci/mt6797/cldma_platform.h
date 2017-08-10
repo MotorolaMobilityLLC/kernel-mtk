@@ -304,7 +304,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
 void md_cldma_hw_reset(struct ccci_modem *md);
-
 /* ADD_SYS_CORE */
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);

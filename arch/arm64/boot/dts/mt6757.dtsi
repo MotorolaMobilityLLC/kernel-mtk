@@ -573,11 +573,12 @@
 			<0 0x10209000 0 0x1000>, /*AP_CCIF_BASE*/
 			<0 0x1020a000 0 0x1000>; /*MD_CCIF_BASE*/
 		interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
-			     <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
+			     <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
 			     <GIC_SPI 252 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
 		mediatek,md_id = <0>;
 		mediatek,cldma_capability = <6>;
 		clocks = <&scpsys SCP_SYS_MD1>,
+			<&infrasys INFRACFG_AO_CLDMA_BCLK_CK>,
 			<&infrasys INFRACFG_AO_CCIF_AP_CG>,
 			<&infrasys INFRACFG_AO_CCIF_MD_CG>,
 			<&infrasys INFRACFG_AO_CCIF1_AP_CG>,
@@ -589,6 +590,7 @@
 			<&infrasys INFRACFG_AO_MD2MD_CCIF_CG4>,
 			<&infrasys INFRACFG_AO_MD2MD_CCIF_CG5>;
 		clock-names = "scp-sys-md1-main",
+			"infra-cldma-ap",
 			"infra-ccif-ap",
 			"infra-ccif-md",
 			"infra-ap-c2k-ccif-0",

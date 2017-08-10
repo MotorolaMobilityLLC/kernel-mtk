@@ -895,7 +895,10 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG, "modem capability 0x%x\n", md->capability);
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
-
+#ifdef FEATURE_CLK_CG_CONTROL
+	/*enable ccif clk*/
+	ccci_set_clk_cg(md, 1);
+#endif
 	/*0. init security, as security depends on dummy_char, which is ready very late. */
 	ccci_init_security();
 	md_ccif_sram_reset(md);
@@ -933,6 +936,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 
 	/*2. enable MPU */
 	ccci_set_mem_access_protection(md);
+
 	/*3. power on modem, do NOT touch MD register before this */
 	ret = md_ccif_power_on(md);
 	if (ret) {
@@ -972,7 +976,10 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	del_timer(&md_ctrl->traffic_monitor);
 
 	ccci_reset_ccif_hw(md, AP_MD3_CCIF, md_ctrl->ccif_ap_base, md_ctrl->ccif_md_base);
-
+#ifdef FEATURE_CLK_CG_CONTROL
+	/*disable ccif clk*/
+	ccci_set_clk_cg(md, 0);
+#endif
 	/*don't reset queue here, some queue may still have unread data */
 	/*md_ccif_reset_queue(md); */
 	ccci_md_broadcast_state(md, GATED);
