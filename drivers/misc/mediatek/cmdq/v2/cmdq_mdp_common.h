@@ -15,6 +15,7 @@
 #define __CMDQ_MDP_COMMON_H__
 
 #include "cmdq_def.h"
+#include "cmdq_core.h"
 
 #include <linux/types.h>
 
@@ -70,6 +71,8 @@ typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
 typedef const char*(*CmdqDispatchModule) (uint64_t engineFlag);
 
+typedef void (*CmdqTrackTask) (const struct TaskStruct *pTask);
+
 #if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
 typedef void (*CmdqMdpInitModuleClkMutex32K) (void);
 
@@ -83,7 +86,6 @@ typedef void (*CmdqMdpGetModulePa) (long *startPA, long *endPA);
 #ifdef CMDQ_USE_LEGACY
 typedef void (*CmdqMdpEnableClockMutex32k) (bool enable);
 #endif
-
 
 typedef struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
@@ -105,6 +107,7 @@ typedef struct cmdqMDPFuncStruct {
 	CmdqMdpWdmaGetRegOffsetDstAddr wdmaGetRegOffsetDstAddr;
 	CmdqTestcaseClkmgrMdp testcaseClkmgrMdp;
 	CmdqDispatchModule dispatchModule;
+	CmdqTrackTask trackTask;
 #if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
 	CmdqMdpInitModuleClkMutex32K mdpInitModuleClkMutex32K;
 	CmdqMdpSmiLarbEnableClock mdpSmiLarbEnableClock;
@@ -116,6 +119,18 @@ typedef struct cmdqMDPFuncStruct {
 	CmdqMdpEnableClockMutex32k mdpEnableClockMutex32k;
 #endif
 } cmdqMDPFuncStruct;
+
+/* track MDP task */
+#define DEBUG_STR_LEN 1024 /* debug str length */
+#define MDP_MAX_TASK_NUM 5 /* num of tasks to be keep */
+#define MDP_MAX_PLANE_NUM 3 /* max color format plane num */
+#define MDP_PORT_BUF_INFO_NUM (MDP_MAX_PLANE_NUM * 2) /* each plane has 2 info address and size */
+#define MDP_BUF_INFO_STR_LEN 8 /* each buf info length */
+
+typedef struct cmdqMDPTaskStruct {
+	char callerName[TASK_COMM_LEN];
+	char userDebugStr[DEBUG_STR_LEN];
+} cmdqMDPTaskStruct;
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,6 +159,8 @@ extern "C" {
 	void cmdq_mdp_dump_rot(const unsigned long base, const char *label);
 	void cmdq_mdp_dump_color(const unsigned long base, const char *label);
 	void cmdq_mdp_dump_wdma(const unsigned long base, const char *label);
+
+	char *cmdq_mdp_check_TF_address(unsigned int mva);
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/

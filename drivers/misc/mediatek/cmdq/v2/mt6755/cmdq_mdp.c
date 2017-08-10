@@ -188,6 +188,8 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 
 m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva, void *data)
 {
+	char dispatchModel[TASK_COMM_LEN];
+
 	CMDQ_ERR("================= [MDP M4U] Dump Begin ================\n");
 	CMDQ_ERR("[MDP M4U]fault call port=%d, mva=0x%x", port, mva);
 
@@ -208,6 +210,11 @@ m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva
 		break;
 	}
 
+	CMDQ_ERR("=============== [MDP] Frame Information Begin ====================================\n");
+	/* find dispatch module and assign dispatch key */
+	sprintf(dispatchModel, "%s", cmdq_mdp_check_TF_address(mva));
+	CMDQ_ERR("[MDP] TF dispatch model: %s\n", dispatchModel);
+	CMDQ_ERR("=============== [MDP] Frame Information End ====================================\n");
 	CMDQ_ERR("================= [MDP M4U] Dump End ================\n");
 
 	return M4U_CALLBACK_HANDLED;

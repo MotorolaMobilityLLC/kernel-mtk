@@ -1070,6 +1070,10 @@ static int __init cmdq_init(void)
 	cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_MDP,
 			   cmdq_mdp_get_func()->dispatchModule);
 
+	/* Register restore task */
+	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP,
+			   cmdq_mdp_get_func()->trackTask);
+
 	/* Register VENC callback */
 	cmdqCoreRegisterCB(CMDQ_GROUP_VENC, NULL, cmdq_mdp_get_func()->vEncDumpInfo, NULL, NULL);
 
