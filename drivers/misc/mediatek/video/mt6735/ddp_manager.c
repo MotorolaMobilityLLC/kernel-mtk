@@ -508,19 +508,19 @@ int dpmgr_destroy_path(disp_path_handle dp_handle, cmdqRecHandle cmdq_handle)
 
 	DISPDBG("destroy path handle %p on scenario %s\n", handle,
 		   ddp_get_scenario_name(handle->scenario));
-	if (handle != NULL) {
-		release_mutex(handle->hwmutexid);
-		ddp_disconnect_path(handle->scenario, cmdq_handle);
-		for (i = 0; i < module_num; i++) {
-			module_name = modules[i];
-			content->module_usage_table[module_name]--;
-			content->module_path_table[module_name] = NULL;
-		}
-		content->handle_cnt--;
-		ASSERT(content->handle_cnt >= 0);
-		content->handle_pool[handle->hwmutexid] = NULL;
-		kfree(handle);
+
+	release_mutex(handle->hwmutexid);
+	ddp_disconnect_path(handle->scenario, cmdq_handle);
+	for (i = 0; i < module_num; i++) {
+		module_name = modules[i];
+		content->module_usage_table[module_name]--;
+		content->module_path_table[module_name] = NULL;
 	}
+	content->handle_cnt--;
+	ASSERT(content->handle_cnt >= 0);
+	content->handle_pool[handle->hwmutexid] = NULL;
+	kfree(handle);
+
 	return 0;
 }
 
