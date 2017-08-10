@@ -12,7 +12,8 @@ menuconfig INPUT_TOUCHSCREEN
 if INPUT_TOUCHSCREEN
 
 config TOUCHSCREEN_MTK
-	bool "MediaTek Touch Panel Driver"
+	tristate "MediaTek Touch Panel Driver"
+	default n
 	help
 	  Say Y here if you have MediaTek touch panel.
 

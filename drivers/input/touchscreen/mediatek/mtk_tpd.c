@@ -157,7 +157,7 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 	pins_default = pinctrl_lookup_state(pinctrl1, "default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl default %d!\n", ret);
+		/* dev_err(&pdev->dev, "fwq Cannot find touch pinctrl default %d!\n", ret);*/
 	}
 	eint_as_int = pinctrl_lookup_state(pinctrl1, "state_eint_as_int");
 	if (IS_ERR(eint_as_int)) {
@@ -326,10 +326,10 @@ static struct miscdevice tpd_misc_device = {
 
 
 /* function definitions */
-static int __init tpd_device_init(void);
-static void __exit tpd_device_exit(void);
 static int tpd_probe(struct platform_device *pdev);
 static int tpd_remove(struct platform_device *pdev);
+static struct work_struct tpd_init_work;
+static struct workqueue_struct *tpd_init_workqueue;
 static int tpd_suspend_flag;
 int tpd_register_flag = 0;
 /* global variable definitions */
@@ -603,6 +603,7 @@ static int tpd_probe(struct platform_device *pdev)
 
 	return 0;
 }
+EXPORT_SYMBOL(tpd_probe);
 EXPORT_SYMBOL(tpd);
 
 static int tpd_remove(struct platform_device *pdev)
@@ -612,10 +613,11 @@ static int tpd_remove(struct platform_device *pdev)
 }
 
 /* called when loaded into kernel */
-static int __init tpd_device_init(void)
+static void tpd_init_work_callback(struct work_struct *work)
 {
 	TPD_DEBUG("MediaTek touch panel driver init\n");
-	return 0;
+	if (platform_driver_register(&tpd_driver) != 0)
+		TPD_DMESG("unable to register touch panel driver.\n");
 }
 /* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
 int tpd_driver_add(struct tpd_driver_t *tpd_drv)
@@ -654,26 +656,29 @@ int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 			return 1;	/* driver exist */
 	}
 
-	/* Adjust tpd_probe here, for support ko mode */
-	if (platform_driver_register(&tpd_driver) != 0) {
-		pr_err("platform_driver_register tpd_driver fail\n");
-		return -1;
-	}
-
 	return 0;
 }
 EXPORT_SYMBOL(tpd_driver_add);
+
+
+int tpd_device_init(void)
+{
+	int res = 0;
+
+	tpd_init_workqueue = create_singlethread_workqueue("mtk-tpd");
+	INIT_WORK(&tpd_init_work, tpd_init_work_callback);
+
+	res = queue_work(tpd_init_workqueue, &tpd_init_work);
+	if (!res)
+		pr_err("tpd : touch device init failed res:%d\n", res);
+	return 0;
+}
+EXPORT_SYMBOL(tpd_device_init);
 /* should never be called */
-static void __exit tpd_device_exit(void)
+void  tpd_device_exit(void)
 {
 	TPD_DMESG("MediaTek touch panel driver exit\n");
 	/* input_unregister_device(tpd->dev); */
 	platform_driver_unregister(&tpd_driver);
 }
-
-late_initcall(tpd_device_init);
-module_exit(tpd_device_exit);
-
-MODULE_DESCRIPTION("MediaTek touch panel driver");
-MODULE_AUTHOR("Kirby Wu<kirby.wu@mediatek.com>");
-MODULE_LICENSE("GPL");
+EXPORT_SYMBOL(tpd_device_exit);
