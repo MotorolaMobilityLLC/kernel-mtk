@@ -831,15 +831,17 @@ static int mtk_i2c_resume(struct device *dev)
 }
 #endif
 
+static const struct dev_pm_ops mtk_i2c_pm = {
+	SET_SYSTEM_SLEEP_PM_OPS(NULL, mtk_i2c_resume)
+};
+
 static struct platform_driver mtk_i2c_driver = {
 	.probe = mtk_i2c_probe,
 	.remove = mtk_i2c_remove,
 	.driver = {
 		.name = I2C_DRV_NAME,
+		.pm = &mtk_i2c_pm,
 		.of_match_table = of_match_ptr(mtk_i2c_of_match),
-		.pm = &(const struct dev_pm_ops){
-			SET_SYSTEM_SLEEP_PM_OPS(NULL, mtk_i2c_resume)
-		},
 	},
 };
 
