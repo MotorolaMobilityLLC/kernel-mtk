@@ -1214,7 +1214,6 @@ int panic_dump_disp_log(void *type, unsigned char *stringbuf, size_t size)
 	int fill_size = 0;
 	char *buffer_addr = NULL;
 
-	type = (void *) &log_type;
 	pr_debug("AEE input dump buffer type=%d, size=%d, offset=%d\n",
 		 (int)log_type,
 		 (int)size,
