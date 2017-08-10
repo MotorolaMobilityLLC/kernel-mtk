@@ -220,11 +220,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 	case DPI_CLK_480p:
 		{
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
-#ifdef HDMI_MT8193_SUPPORT
 			clksrc = 3;
-#else
-			clksrc = 4;
-#endif
 			prediv = 0x83109D89;	/*54M*/
 #else
 			clksrc = TVDPLL_D4;
