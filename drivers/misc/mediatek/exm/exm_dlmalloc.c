@@ -50,7 +50,7 @@ static size_t extmem_mspace_size;
 
 static phys_addr_t extmem_phys_base;
 
-static int extmem_scan_memory(unsigned long node, const char *uname, int depth, void *data)
+static int __init extmem_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
 	struct mem_desc *mem_desc;
 	/* We are scanning "memory" nodes only */
