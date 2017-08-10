@@ -2780,6 +2780,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	arch_get_cluster_cpus(&dvfs_cpumask, cluster_id);
 	cpumask_and(&cpu_online_cpumask, &dvfs_cpumask, cpu_online_mask);
 	p = id_to_cpu_dvfs(cluster_id);
+	if (!p)
+		return NOTIFY_OK;
 
 	cpufreq_ver("@%s():%d, cpu = %d, action = %lu, oppidx = %d, num_online_cpus = %d\n"
 	, __func__, __LINE__, cpu, action, p->idx_opp_tbl, online_cpus);
