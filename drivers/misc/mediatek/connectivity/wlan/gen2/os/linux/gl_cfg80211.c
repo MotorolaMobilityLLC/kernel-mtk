@@ -2653,6 +2653,11 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		i4Status = mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len);
 		break;
 #endif
+	case TESTMODE_CMD_ID_STR_CMD:
+		i4Status = mtk_cfg80211_process_str_cmd(prGlueInfo,
+				(PUINT_8)(prParams+1), len - sizeof(*prParams));
+		break;
+
 	default:
 		i4Status = -EINVAL;
 		break;
@@ -2792,5 +2797,29 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 end:
 	kalHaltUnlock();
 	return 0;
+}
+
+INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_32 len)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_32 u4SetInfoLen = 0;
+
+	if (strnicmp(cmd, "tdls-ps ", 8) == 0) {
+#if CFG_SUPPORT_TDLS
+		DBGLOG(TDLS, INFO, "disable tdls-ps\n");
+		rStatus = kalIoctl(prGlueInfo,
+					   wlanoidDisableTdlsPs,
+					   (PVOID)(cmd+8), 1, FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+#else
+		DBGLOG(REQ, WARN, "not support tdls\n");
+		return -EOPNOTSUPP;
+#endif
+	} else
+		return -EOPNOTSUPP;
+
+	if (rStatus == WLAN_STATUS_SUCCESS)
+		return 0;
+
+	return -EINVAL;
 }
 

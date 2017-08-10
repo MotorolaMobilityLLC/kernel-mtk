@@ -611,6 +611,7 @@ enum TestModeCmdType {
 	/* all new added test mode command should great than TESTMODE_CMD_ID_NEW_BEGIN */
 	TESTMODE_CMD_ID_NEW_BEGIN = 100,
 	TESTMODE_CMD_ID_SUSPEND = 101,
+	TESTMODE_CMD_ID_STR_CMD = 102
 };
 #if CFG_SUPPORT_HOTSPOT_2_0
 enum Hs20CmdType {
