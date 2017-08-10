@@ -85,7 +85,7 @@ struct acc_hw *get_accel_dts_func(const char *name, struct acc_hw *hw)
 
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_accel_dts_func);
+
 
 struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 {
@@ -175,7 +175,6 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 	}
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_alsps_dts_func);
 
 struct mag_hw *get_mag_dts_func(const char *name, struct mag_hw *hw)
 {
@@ -230,7 +229,6 @@ struct mag_hw *get_mag_dts_func(const char *name, struct mag_hw *hw)
 	}
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_mag_dts_func);
 
 struct gyro_hw *get_gyro_dts_func(const char *name, struct gyro_hw *hw)
 {
@@ -290,7 +288,6 @@ struct gyro_hw *get_gyro_dts_func(const char *name, struct gyro_hw *hw)
 	}
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_gyro_dts_func);
 
 struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw)
 {
@@ -350,7 +347,6 @@ struct baro_hw *get_baro_dts_func(const char *name, struct baro_hw *hw)
 	}
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_baro_dts_func);
 
 struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 {
@@ -410,5 +406,4 @@ struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw)
 	}
 	return hw;
 }
-EXPORT_SYMBOL_GPL(get_hmdy_dts_func);
 

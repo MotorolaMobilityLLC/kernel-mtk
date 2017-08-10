@@ -133,22 +133,6 @@ obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 
 obj-$(CONFIG_MTK_HIBERNATION) += hibcore/
 
-ifeq ($(CONFIG_MTK_MC3410_NEW),y)
-ccflags-y += -DMTK_ACC_MODULE
-endif
-
-ifeq ($(CONFIG_MTK_CM36652_NEW),y)
-ccflags-y += -DMTK_ALSPS_MODULE
-endif
-
-ifeq ($(CONFIG_MTK_ITG1010_NEW),y)
-ccflags-y += -DMTK_GYRO_MODULE
-endif
-
-ifeq ($(CONFIG_MTK_AKM09911_NEW),y)
-ccflags-y += -DMTK_MAG_MODULE
-endif
-
 ifdef CONFIG_CUSTOM_KERNEL_SSW
 ifneq ($(strip $(CONFIG_CUSTOM_KERNEL_SSW)),"")
 obj-y	+= ssw/
