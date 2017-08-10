@@ -807,7 +807,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20170104_1"
+#define WIFI_DRIVER_VERSION		"11_70_00_20170120_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
