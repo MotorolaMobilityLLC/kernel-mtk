@@ -405,3 +405,9 @@ config HAVE_BPF_JIT
 config MTK_NET_LOGGING
   bool "Networking log"
   default n
+
+config MTK_NET_RFC7217
+	bool "Enable stable privacy IPv6 address"
+	default n
+	---help---
+	  This config helps to enable/disable stable privacy IPv6 address
