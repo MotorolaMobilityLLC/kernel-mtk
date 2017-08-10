@@ -208,7 +208,7 @@ UINT_8 getUpFromDscp(IN P_GLUE_INFO_T prGlueInfo, IN int type, IN int dscp)
 		prStaRec = prAisBssInfo->prStaRecOfAP;
 	else {
 		DBGLOG(INIT, WARN, "qosmap type: %d\n", type);
-		return -1;
+		return 0xFF;
 	}
 
 	if (prStaRec && prStaRec->qosMapSet) {
@@ -224,8 +224,8 @@ UINT_8 getUpFromDscp(IN P_GLUE_INFO_T prGlueInfo, IN int type, IN int dscp)
 				dscp <= prStaRec->qosMapSet->dscpRange[j].hDscp)
 				return j;
 		}
-		return -1;
+		return 0xFF;
 	} else
-		return -1;
+		return 0xFF;
 }
 #endif

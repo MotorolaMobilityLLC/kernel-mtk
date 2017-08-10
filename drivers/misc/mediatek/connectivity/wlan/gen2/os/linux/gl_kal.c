@@ -2222,7 +2222,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			ucIpTos = pucIpHdr[1];
 			/* Get the DSCP value from the header of IP packet. */
 			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
-			if (ucUserPriority == -1)
+			if (ucUserPriority == 0xFF)
 				ucUserPriority = ((ucIpTos & IPTOS_PREC_MASK) >> IPTOS_PREC_OFFSET);
 		}
 
