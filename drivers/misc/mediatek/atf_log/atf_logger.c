@@ -32,7 +32,9 @@
 #include <linux/proc_fs.h>
 #include <linux/atomic.h>
 #include <linux/irq.h>
+#ifdef MTK_SIP_KERNEL_TIME_SYNC
 #include <mach/mt_secure_api.h>
+#endif
 
 /*#define ATF_LOGGER_DEBUG*/
 #define ATF_LOG_CTRL_BUF_SIZE 256
