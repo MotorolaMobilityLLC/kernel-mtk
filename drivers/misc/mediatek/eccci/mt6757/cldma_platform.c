@@ -943,6 +943,22 @@ void md1_pll_init(struct ccci_modem *md)
 	ROr2W(md_pll->md_clkSW, R_CLKSEL_CTL, 0x1);
 }
 
+int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
+{
+#ifdef FEATURE_RF_CLK_BUF
+	clk_buf_set_by_flightmode(true);
+#endif
+	return 0;
+}
+
+int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
+{
+#ifdef FEATURE_RF_CLK_BUF
+	clk_buf_set_by_flightmode(false);
+#endif
+	return 0;
+}
+
 int md_cd_power_on(struct ccci_modem *md)
 {
 	int ret = 0;
@@ -955,7 +971,7 @@ int md_cd_power_on(struct ccci_modem *md)
 
 	/* steip 1: power on MD_INFRA and MODEM_TOP */
 	if (md->index == MD_SYS1) {
-		clk_buf_set_by_flightmode(false);
+		md_cd_soft_power_on(md, 0);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
 		ret = clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done,ret = %d\n", ret);
@@ -1021,18 +1037,6 @@ int md_cd_let_md_go(struct ccci_modem *md)
 	return 0;
 }
 
-int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
-{
-	clk_buf_set_by_flightmode(true);
-	return 0;
-}
-
-int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
-{
-	clk_buf_set_by_flightmode(false);
-	return 0;
-}
-
 int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
@@ -1046,7 +1050,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 	if (md->index == MD_SYS1) {
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
-		clk_buf_set_by_flightmode(true);
+		md_cd_soft_power_off(md, 0);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
