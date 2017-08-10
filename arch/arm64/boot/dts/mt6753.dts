@@ -2025,7 +2025,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-#include "cust.dtsi"
 
 &pio {
 	/* UART GPIO Settings - Start */

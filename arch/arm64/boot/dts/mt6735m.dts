@@ -1932,8 +1932,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-#include "cust.dtsi"
-
 &mt8193ckgen {
 	pinctrl-names = "default", "bus_switch_gpio", "bus_switch_dpi";
 	pinctrl-0 = <&mt8193ckgen_pins_default>;
