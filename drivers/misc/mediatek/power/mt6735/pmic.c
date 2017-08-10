@@ -780,7 +780,7 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 
 	if (strcmp(rdesc->name, "VEFUSE") == 0) {
 		if (mreg->vol_reg != 0)
-			pmic_set_register_value(mreg->vol_reg, selector+3);
+			pmic_set_register_value(mreg->vol_reg, selector + 3);
 	} else {
 		if (mreg->vol_reg != 0)
 			pmic_set_register_value(mreg->vol_reg, selector);
@@ -1092,7 +1092,7 @@ static const int mt6328_1v825_voltages[] = {
 struct mtk_regulator mtk_ldos[] = {
 	PMIC_LDO_GEN1(VAUX18, PMIC_RG_VAUX18_EN, NULL, mt6328_1v8_voltages, 0, PMIC_EN),
 	PMIC_LDO_GEN1(VTCXO_0, PMIC_RG_VTCXO_0_EN, NULL, mt6328_2v8_voltages, 0, PMIC_EN),
-	PMIC_LDO_GEN1(VTCXO_1, PMIC_RG_VTCXO_1_EN, NULL, mt6328_2v8_voltages, 0, PMIC_EN),
+	PMIC_LDO_GEN1(VTCXO_1, PMIC_RG_VTCXO_1_EN, NULL, mt6328_2v8_voltages, 1, PMIC_EN),
 	PMIC_LDO_GEN1(VAUD28, PMIC_RG_VAUD28_EN, NULL, mt6328_2v8_voltages, 1, PMIC_EN),
 	PMIC_LDO_GEN1(VCN28, PMIC_RG_VCN28_EN, NULL, mt6328_2v8_voltages, 1, PMIC_EN),
 	PMIC_LDO_GEN1(VCAMA, PMIC_RG_VCAMA_EN, PMIC_RG_VCAMA_VOSEL, mt6328_VCAMA_voltages, 1,
@@ -1125,7 +1125,7 @@ struct mtk_regulator mtk_ldos[] = {
 		      PMIC_EN_VOL),
 	PMIC_LDO_GEN1(VRF18_0, PMIC_RG_VRF18_0_EN, NULL, mt6328_1v825_voltages, 0, PMIC_EN),
 	PMIC_LDO_GEN1(VRF18_1, PMIC_RG_VRF18_1_EN, PMIC_RG_VRF18_1_VOSEL, mt6328_VRF18_1_voltages,
-		      0, PMIC_EN_VOL),
+		      1, PMIC_EN_VOL),
 	PMIC_LDO_GEN1(VIO18, PMIC_RG_VIO18_EN, NULL, mt6328_1v8_voltages, 0, PMIC_EN),
 	PMIC_LDO_GEN1(VCN18, PMIC_RG_VCN18_EN, NULL, mt6328_1v8_voltages, 1, PMIC_EN),
 	PMIC_LDO_GEN1(VCAMIO, PMIC_RG_VCAMIO_EN, PMIC_RG_VCAMIO_VOSEL, mt6328_VCAM_IO_voltages, 1,
@@ -1252,7 +1252,8 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev)
 				PMICLOG("[regulator_register] pass to register %s\n",
 					mtk_ldos[i].desc.name);
 
-				mtk_ldos[i].vosel.def_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
+				mtk_ldos[i].vosel.def_sel =
+				    mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
 				mtk_ldos[i].vosel.cur_sel = mtk_ldos[i].vosel.def_sel;
 			}
 			PMICLOG("[PMIC]mtk_ldos[%d].config.init_data min_uv:%d max_uv:%d\n", i,
@@ -1366,6 +1367,16 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 
 	for_each_child_of_node(regulators, child) {
 		/* check ldo regualtors and set it */
+		for (i = 0; i < ARRAY_SIZE(pmic_regulator_matches); i++) {
+			if (!of_node_cmp(child->name, pmic_regulator_matches[i].name)) {
+				PMICLOG("[PMIC]%s regulator_matches %s\n", child->name,
+					(char *)of_get_property(child, "regulator-name", NULL));
+				break;
+			}
+		}
+		if (i == ARRAY_SIZE(pmic_regulator_matches))
+			continue;
+
 		if (!of_property_read_u32(child, "regulator-default-on", &default_on)) {
 			switch (default_on) {
 			case 0:
@@ -1423,16 +1434,17 @@ void pmic_regulator_suspend(void)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
-			if (mtk_ldos[i].vol_reg != 0) {
-				mtk_ldos[i].vosel.cur_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
-				if (mtk_ldos[i].vosel.cur_sel != mtk_ldos[i].vosel.def_sel) {
-					mtk_ldos[i].vosel.restore = true;
-					pr_err("pmic_regulator_suspend(name=%s id=%d default_sel=%d current_sel=%d)\n",
-							mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
-							mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
-				} else
-					mtk_ldos[i].vosel.restore = false;
-			}
+		if (mtk_ldos[i].vol_reg != 0) {
+			mtk_ldos[i].vosel.cur_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
+			if (mtk_ldos[i].vosel.cur_sel != mtk_ldos[i].vosel.def_sel) {
+				mtk_ldos[i].vosel.restore = true;
+				pr_err
+				    ("pmic_regulator_suspend(name=%s id=%d default_sel=%d current_sel=%d)\n",
+				     mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
+				     mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
+			} else
+				mtk_ldos[i].vosel.restore = false;
+		}
 	}
 }
 
@@ -1441,20 +1453,22 @@ void pmic_regulator_resume(void)
 	int i, selector;
 
 	for (i = 0; i < ARRAY_SIZE(mtk_ldos); i++) {
-			if (mtk_ldos[i].vol_reg != 0) {
-				if (mtk_ldos[i].vosel.restore == true) {
+		if (mtk_ldos[i].vol_reg != 0) {
+			if (mtk_ldos[i].vosel.restore == true) {
 					/*-- regulator voltage changed? --*/
-					selector = mtk_ldos[i].vosel.cur_sel;
-					pmic_set_register_value(mtk_ldos[i].vol_reg, selector);
-					pr_err("pmic_regulator_resume(name=%s id=%d default_sel=%d current_sel=%d)\n",
-						mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
-						mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
-				}
+				selector = mtk_ldos[i].vosel.cur_sel;
+				pmic_set_register_value(mtk_ldos[i].vol_reg, selector);
+				pr_err
+				    ("pmic_regulator_resume(name=%s id=%d default_sel=%d current_sel=%d)\n",
+				     mtk_ldos[i].rdev->desc->name, mtk_ldos[i].rdev->desc->id,
+				     mtk_ldos[i].vosel.def_sel, mtk_ldos[i].vosel.cur_sel);
 			}
+		}
 	}
 }
 
-static int pmic_regulator_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+static int pmic_regulator_pm_event(struct notifier_block *notifier, unsigned long pm_event,
+				   void *unused)
 {
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
@@ -1781,7 +1795,7 @@ bool hwPowerSetVoltage(MT65XX_POWER powerId, int powerVolt, char *mode_name)
 }
 EXPORT_SYMBOL(hwPowerSetVoltage);
 
-	   /*#endif*//* End of #if defined CONFIG_MTK_LEGACY */
+		     /*#endif *//* End of #if defined CONFIG_MTK_LEGACY */
 
 
 /*****************************************************************************
@@ -1847,6 +1861,7 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 		}
 	}
 }
+
 void lbat_min_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_AUXADC_LBAT_EN_MIN, en_val);
@@ -2571,7 +2586,7 @@ int get_dlpt_iavg(int is_use_zcv)
 	return iavg_val;
 }
 
-			     int get_real_volt(int val)*//*0.1mV */
+int get_real_volt(int val)*//*0.1mV */
 /*
 {
     int ret = 0;
@@ -2580,7 +2595,7 @@ int get_dlpt_iavg(int is_use_zcv)
     return ret;
 }
 
-			     int get_real_curr(int val)*//*0.1mA */
+int get_real_curr(int val)*//*0.1mA */
 /*
 {
 
@@ -2752,15 +2767,14 @@ int get_dlpt_imix(void)
 
 	for (i = 0; i < 5; i++) {
 		/*adc and fg-------------------------------------------------------- */
-	/*do_ptim(KAL_FALSE);*/
+		/*do_ptim(KAL_FALSE); */
 		while (do_ptim(KAL_FALSE)) {
 			if ((count_do_ptim >= 2) && (count_do_ptim < 4))
 				pr_err("do_ptim more than twice times\n");
 			else if (count_do_ptim > 3) {
 				pr_err("do_ptim more than five times\n");
 				BUG_ON(1);
-			} else
-				;
+			}
 			count_do_ptim++;
 		}
 
@@ -3353,8 +3367,8 @@ void PMIC_EINT_SETTING(void)
 		mt_gpio_set_debounce(ints[0], ints[1]);
 
 		g_pmic_irq = irq_of_parse_and_map(node, 0);
-		ret = request_irq(g_pmic_irq, (irq_handler_t)mt_pmic_eint_irq,
-			IRQF_TRIGGER_NONE, "pmic-eint", NULL);
+		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq,
+				  IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
 		enable_irq_wake(g_pmic_irq);
@@ -3743,17 +3757,17 @@ void pmic_setting_for_co_tsx(void)
 	case 0x41:
 	case 0x42:
 	case 0x43:
-	/* Denali-1+ MT6737T */
+		/* Denali-1+ MT6737T */
 
 	case 0x49:
 	case 0x4A:
 	case 0x4B:
-	/* Denali-2+ MT6737M */
+		/* Denali-2+ MT6737M */
 
 	case 0x51:
 	case 0x52:
 	case 0x53:
-	/* Denali-2+ MT6737 */
+		/* Denali-2+ MT6737 */
 		ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
 		ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
 		ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
@@ -4062,14 +4076,14 @@ void PMIC_INIT_SETTING_V1(void)
 		pmic_set_register_value(PMIC_RG_VTCXO_0_EN, 1);
 	}
 #if defined(PMIC_HW_USE_4L_SS_LAYOUT)
-	ret = pmic_config_interface(0x494, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
-	ret = pmic_config_interface(0x496, 0x0, 0x3, 0); /* [1:0]: VPROC slow slew rate */
-	ret = pmic_config_interface(0x620, 0x0, 0x3, 0); /* [1:0]: VCORE slow slew rate */
-	ret = pmic_config_interface(0x622, 0x0, 0x3, 0); /* [1:0]: VCORE slow slew rate */
-	ret = pmic_config_interface(0x4E4, 0x0, 0x3, 0); /* [1:0]: VLTE slow slew rate  */
-	ret = pmic_config_interface(0x4E6, 0x0, 0x3, 0); /* [1:0]: VLTE slow slew rate  */
-	ret = pmic_config_interface(0x648, 0x0, 0x3, 0); /* [1:0]: VSYS slow slew rate  */
-	ret = pmic_config_interface(0x64A, 0x0, 0x3, 0); /* [1:0]: VSYS slow slew rate  */
+	ret = pmic_config_interface(0x494, 0x0, 0x3, 0);	/* [1:0]: VPROC slow slew rate */
+	ret = pmic_config_interface(0x496, 0x0, 0x3, 0);	/* [1:0]: VPROC slow slew rate */
+	ret = pmic_config_interface(0x620, 0x0, 0x3, 0);	/* [1:0]: VCORE slow slew rate */
+	ret = pmic_config_interface(0x622, 0x0, 0x3, 0);	/* [1:0]: VCORE slow slew rate */
+	ret = pmic_config_interface(0x4E4, 0x0, 0x3, 0);	/* [1:0]: VLTE slow slew rate  */
+	ret = pmic_config_interface(0x4E6, 0x0, 0x3, 0);	/* [1:0]: VLTE slow slew rate  */
+	ret = pmic_config_interface(0x648, 0x0, 0x3, 0);	/* [1:0]: VSYS slow slew rate  */
+	ret = pmic_config_interface(0x64A, 0x0, 0x3, 0);	/* [1:0]: VSYS slow slew rate  */
 #endif
 }
 
@@ -4429,8 +4443,8 @@ static ssize_t store_low_battery_protect_stop(struct device *dev, struct device_
 	return size;
 }
 
-static DEVICE_ATTR(low_battery_protect_stop, 0664,
-			show_low_battery_protect_stop, store_low_battery_protect_stop);	/*664*/
+static DEVICE_ATTR(low_battery_protect_stop, 0664, show_low_battery_protect_stop,
+	store_low_battery_protect_stop);	/*664 */
 
 /*
  * low battery protect level
@@ -4450,8 +4464,8 @@ static ssize_t store_low_battery_protect_level(struct device *dev, struct device
 	return size;
 }
 
-static DEVICE_ATTR(low_battery_protect_level, 0664,
-			show_low_battery_protect_level, store_low_battery_protect_level);	/*664*/
+static DEVICE_ATTR(low_battery_protect_level, 0664, show_low_battery_protect_level,
+	store_low_battery_protect_level);	/*664 */
 #endif
 
 #ifdef BATTERY_OC_PROTECT
@@ -4489,8 +4503,7 @@ static ssize_t store_battery_oc_protect_ut(struct device *dev, struct device_att
 	return size;
 }
 
-static DEVICE_ATTR(battery_oc_protect_ut, 0664,
-			show_battery_oc_protect_ut, store_battery_oc_protect_ut);	/*664*/
+static DEVICE_ATTR(battery_oc_protect_ut, 0664, show_battery_oc_protect_ut, store_battery_oc_protect_ut);	/*664 */
 
 /*****************************************************************************
  * battery OC protect stop
@@ -4524,8 +4537,7 @@ static ssize_t store_battery_oc_protect_stop(struct device *dev, struct device_a
 	return size;
 }
 
-static DEVICE_ATTR(battery_oc_protect_stop, 0664,
-			show_battery_oc_protect_stop, store_battery_oc_protect_stop);	/*664 */
+static DEVICE_ATTR(battery_oc_protect_stop, 0664, show_battery_oc_protect_stop, store_battery_oc_protect_stop);	/*664 */
 
 /*****************************************************************************
  * battery OC protect level
@@ -4545,8 +4557,8 @@ static ssize_t store_battery_oc_protect_level(struct device *dev, struct device_
 	return size;
 }
 
-static DEVICE_ATTR(battery_oc_protect_level, 0664,
-			show_battery_oc_protect_level, store_battery_oc_protect_level);	/*664 */
+static DEVICE_ATTR(battery_oc_protect_level, 0664, show_battery_oc_protect_level,
+	store_battery_oc_protect_level);	/*664 */
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
@@ -4648,8 +4660,8 @@ static ssize_t store_battery_percent_level(struct device *dev,
 	return size;
 }
 
-static DEVICE_ATTR(battery_percent_protect_level, 0664,
-			show_battery_percent_level, store_battery_percent_level);	/*664 */
+static DEVICE_ATTR(battery_percent_protect_level, 0664, show_battery_percent_level,
+	store_battery_percent_level);	/*664 */
 #endif
 
 #ifdef DLPT_FEATURE_SUPPORT
@@ -5118,6 +5130,11 @@ static int __init pmic_mt_init(void)
 	ret = platform_driver_register(&pmic_mt_driver);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
+		return ret;
+	}
+	ret = platform_device_register(&mt_pmic_device);
+	if (ret) {
+		PMICLOG("****[pmic_mt_init] mt_pmic_device Unable to device register(%d)\n", ret);
 		return ret;
 	}
 	ret = platform_driver_register(&mt_pmic_driver);

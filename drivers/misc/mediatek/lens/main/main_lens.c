@@ -37,7 +37,7 @@
 #if defined(CONFIG_MTK_LEGACY)
 #define I2C_CONFIG_SETTING 1
 #elif defined(CONFIG_OF)
-#define I2C_CONFIG_SETTING 2 /* device tree */
+#define I2C_CONFIG_SETTING 2	/* device tree */
 #else
 
 #define I2C_CONFIG_SETTING 1
@@ -68,48 +68,52 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 
 
 static stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
-	#ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
+#ifdef CONFIG_MTK_LENS_BU6424AF_SUPPORT
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_BU6429AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_BU6429AF_SUPPORT
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_BU63165AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_BU63165AF_SUPPORT
 	{1, AFDRV_BU63165AF, BU63165AF_SetI2Cclient, BU63165AF_Ioctl, BU63165AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_DW9714AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_DW9714AF_SUPPORT
 	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl, DW9714AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_DW9814AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_DW9814AF_SUPPORT
 	{1, AFDRV_DW9814AF, DW9814AF_SetI2Cclient, DW9814AF_Ioctl, DW9814AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_DW9718AF_SUPPORT
 	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl, DW9718AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_LC898122AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_DW9719TAF_SUPPORT
+	{1, AFDRV_DW9719TAF, DW9719TAF_SetI2Cclient, DW9719TAF_Ioctl, DW9719TAF_Release},
+#endif
+#ifdef CONFIG_MTK_LENS_LC898122AF_SUPPORT
 	{1, AFDRV_LC898122AF, LC898122AF_SetI2Cclient, LC898122AF_Ioctl, LC898122AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_LC898212AF_SUPPORT
 	{1, AFDRV_LC898212AF, LC898212AF_SetI2Cclient, LC898212AF_Ioctl, LC898212AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_LC898212XDAF_SUPPORT
-	{1, AFDRV_LC898212XDAF, LC898212XDAF_SetI2Cclient, LC898212XDAF_Ioctl, LC898212XDAF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_LC898214AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_LC898212XDAF_SUPPORT
+	{1, AFDRV_LC898212XDAF, LC898212XDAF_SetI2Cclient, LC898212XDAF_Ioctl,
+	 LC898212XDAF_Release},
+#endif
+#ifdef CONFIG_MTK_LENS_LC898214AF_SUPPORT
 	{1, AFDRV_LC898214AF, LC898214AF_SetI2Cclient, LC898214AF_Ioctl, LC898214AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_FM50AF_SUPPORT
 	{1, AFDRV_FM50AF, FM50AF_SetI2Cclient, FM50AF_Ioctl, FM50AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_AD5820AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_AD5820AF_SUPPORT
 	{1, AFDRV_AD5820AF, AD5820AF_SetI2Cclient, AD5820AF_Ioctl, AD5820AF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_WV511AAF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_WV511AAF_SUPPORT
 	{1, AFDRV_WV511AAF, WV511AAF_SetI2Cclient, WV511AAF_Ioctl, WV511AAF_Release},
-	#endif
-	#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
+#endif
+#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
-	#endif
+#endif
 };
 
 static stAF_DrvList *g_pstAF_CurDrv;
@@ -126,10 +130,10 @@ static struct class *actuator_class;
 
 void AF_PowerDown(void)
 {
-	#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
+#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
 	AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
 	AK7371AF_PowerDown();
-	#endif
+#endif
 }
 
 static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
@@ -138,7 +142,7 @@ static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
 	int i;
 	stAF_MotorName stMotorName;
 
-	if (copy_from_user(&stMotorName , pstMotorName, sizeof(stAF_MotorName)))
+	if (copy_from_user(&stMotorName, pstMotorName, sizeof(stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
@@ -150,7 +154,8 @@ static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
 		LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
 		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
 			g_pstAF_CurDrv = &g_stAF_DrvList[i];
-			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
+							 &g_s4AF_Opened);
 			i4RetValue = 1;
 			break;
 		}
@@ -165,7 +170,7 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	switch (a_u4Command) {
 	case AFIOC_S_SETDRVNAME:
-		i4RetValue = AF_SetMotorName((__user stAF_MotorName *)(a_u4Param));
+		i4RetValue = AF_SetMotorName((__user stAF_MotorName *) (a_u4Param));
 		break;
 
 	case AFIOC_S_SETPOWERDOWN:
@@ -183,7 +188,8 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 }
 
 #ifdef CONFIG_COMPAT
-static long AF_Ioctl_Compat(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+static long AF_Ioctl_Compat(struct file *a_pstFile, unsigned int a_u4Command,
+			    unsigned long a_u4Param)
 {
 	long i4RetValue = 0;
 
@@ -418,9 +424,9 @@ static struct platform_device g_stAF_device = {
 
 static int __init MAINAF_i2C_init(void)
 {
-	#if I2C_CONFIG_SETTING == 1
+#if I2C_CONFIG_SETTING == 1
 	i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
-	#endif
+#endif
 
 	if (platform_device_register(&g_stAF_device)) {
 		LOG_INF("failed to register AF driver\n");

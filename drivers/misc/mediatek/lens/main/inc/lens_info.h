@@ -35,6 +35,7 @@
 #define AFDRV_DW9714A "DW9714A"
 #define AFDRV_DW9714AF "DW9714AF"
 #define AFDRV_DW9718AF "DW9718AF"
+#define AFDRV_DW9719TAF "DW9719TAF"
 #define AFDRV_DW9814AF "DW9814AF"
 #define AFDRV_FM50AF "FM50AF"
 #define AFDRV_GAF001AF "GAF001AF"
@@ -88,8 +89,10 @@ typedef struct {
 typedef struct {
 	u8 uEnable;
 	u8 uDrvName[32];
-	void (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
-	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+	void (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
+				  int *pAF_Opened);
+	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command,
+			   unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
 } stAF_DrvList;
 

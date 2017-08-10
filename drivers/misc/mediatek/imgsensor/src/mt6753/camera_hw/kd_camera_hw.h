@@ -23,11 +23,11 @@
 #include "pmic_drv.h"
 
 #ifndef FALSE
-  #define FALSE (0)
+#define FALSE (0)
 #endif
 
 #ifndef TRUE
-  #define TRUE  (1)
+#define TRUE  (1)
 #endif
 
 /*  */
@@ -77,7 +77,7 @@
 #define GPIO_OUT_ONE 1
 #define GPIO_OUT_ZERO 0
 
-#endif /* End of #if defined CONFIG_MTK_LEGACY */
+#endif				/* End of #if defined CONFIG_MTK_LEGACY */
 
 
 typedef enum KD_REGULATOR_TYPE_TAG {
@@ -85,6 +85,9 @@ typedef enum KD_REGULATOR_TYPE_TAG {
 	VCAMD,
 	VCAMIO,
 	VCAMAF,
+	VCAMA_PM,
+	VCAMD_PM,
+	VCAMIO_PM,
 } KD_REGULATOR_TYPE_T;
 
 typedef enum {
@@ -92,7 +95,9 @@ typedef enum {
 	CAMRST,
 	CAM1PDN,
 	CAM1RST,
-	CAMLDO
+	CAMLDO,
+	CAMMIPI_SWT_EN,
+	CAMMIPI_SWT_SEL,
 } CAMPowerType;
 
 extern void ISP_MCLK1_EN(bool En);
