@@ -515,7 +515,7 @@ extern void dump_c2k_iram_seg2(void);
 extern unsigned int get_c2k_reserve_mem_size(void);
 extern char *get_ap_platform(void);
 
-int sdio_modem_ccmni_send_pkt(int md_id, int tx_ch, void *data);
+int sdio_modem_ccmni_send_pkt(int md_id, int ccmni_idx, void *data, int is_ack);
 /*
 int sdio_modem_get_ccmni_ch(int md_id, int ccmni_idx, struct ccmni_ch *channel);
 */
