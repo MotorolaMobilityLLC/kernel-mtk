@@ -604,7 +604,7 @@ OUT_REGMAP_DEV:
 #endif /* #ifdef CONFIG_RT_REGMAP */
 OUT_CHIP_INIT:
 	mutex_destroy(&info->vario_lock);
-	if (use_dt && pdata)
+	if (use_dt)
 		devm_kfree(&client->dev, pdata);
 OUT_ALLOC_PDATA:
 	devm_kfree(&client->dev, info);
