@@ -102,7 +102,7 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 
 _exit:
 	/* turn off clock */
-	masp_hal_secure_algo_deinit();
+	secure_algo_ret = masp_hal_secure_algo_deinit();
 	/* release hacc lock */
 	if (TRUE == bDoLock)
 		osal_hacc_unlock();
