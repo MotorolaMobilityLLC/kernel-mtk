@@ -202,7 +202,7 @@ int AudDrv_Clk_probe(void *dev)
 
 	Aud_EMI_cntr = 0;
 
-	pr_debug("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
 		aud_clks[i].clock = devm_clk_get(dev, aud_clks[i].name);
@@ -239,7 +239,7 @@ void AudDrv_Clk_Deinit(void *dev)
 {
 	size_t i;
 
-	pr_debug("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
 		if (i == CLOCK_SCP_SYS_AUD)	/* CLOCK_SCP_SYS_AUD is MTCMOS */
 			continue;
@@ -265,7 +265,7 @@ void AudDrv_Bus_Init(void)
 {
 	unsigned long flags;
 
-	pr_debug("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Afe_Set_Reg(AUDIO_TOP_CON0, 0x00004000,
 		    0x00004000);    /* must set, system will default set bit14 to 0 */
@@ -288,7 +288,7 @@ void AudDrv_Clk_Power_On(void)
 	/*volatile uint32 *AFE_Register = (volatile uint32 *)Get_Afe_Powertop_Pointer();*/
 	volatile uint32 val_tmp;
 
-	pr_debug("%s\n", __func__);
+	pr_warn("%s\n", __func__);
 #ifdef MT6757_READY
 	val_tmp = 0x3330000d;
 #endif
@@ -314,8 +314,8 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 {
 	int ret = 0;
 
-	PRINTK_AUD_CLK("+AudDrv_AUDINTBUS_Sel, parentidx = %d, CLK_CFG_4 = 0x%x\n",
-			parentidx, GetClkCfg(AUDIO_CLK_CFG_4));
+	PRINTK_AUD_CLK("+AudDrv_AUDINTBUS_Sel, parentidx = %d\n",
+			parentidx);
 	if (parentidx == 1) {
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
@@ -370,7 +370,7 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		}
 	}
 EXIT:
-	PRINTK_AUD_CLK("-%s(), CLK_CFG_4 = 0x%x\n", __func__, GetClkCfg(AUDIO_CLK_CFG_4));
+	PRINTK_AUD_CLK("-%s()\n", __func__);
 }
 
 
@@ -399,23 +399,13 @@ void AudDrv_Clk_On(void)
 	Aud_AFE_Clk_cntr++;
 	if (Aud_AFE_Clk_cntr == 1) {
 #ifdef PM_MANAGER_API
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
-				BUG();
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
-			       __func__);
-			BUG();
-			goto EXIT;
-		}
 /* MT6755 CLOCK_PERI_AUDIO26M
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare) {
 */
+		/*
+		* Clock enable order:
+		* 26M -> Infra -> Int bus -> AFE -> DAC -> DAC pre-distortion -> MTCMOS
+		*/
 		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare) {
 
 			/* MT6755 CLOCK_PERI_AUDIO26M
@@ -427,7 +417,7 @@ void AudDrv_Clk_On(void)
 					/* MT6755 CLOCK_PERI_AUDIO26M
 				       aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].name);
 					*/
-				       aud_clks[CLOCK_PERI_AUDIO26M].name);
+						aud_clks[CLOCK_PERI_AUDIO26M].name);
 				BUG();
 				goto EXIT;
 			}
@@ -438,11 +428,42 @@ void AudDrv_Clk_On(void)
 			goto EXIT;
 		}
 
+		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
+						aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
+				BUG();
+				goto EXIT;
+			}
+		} else {
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
+			       __func__);
+			BUG();
+			goto EXIT;
+		}
+
+		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail\n",
+						__func__);
+				BUG();
+				goto EXIT;
+			}
+			PRINTK_AUD_CLK("AudDrv_Clk_On: enable CLOCK_MUX_AUDIOINTBUS\n");
+		} else {
+			pr_err("%s [CCF]clk_status error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail\n",
+					__func__);
+			BUG();
+			goto EXIT;
+		}
+
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_AFE].name);
+						aud_clks[CLOCK_AFE].name);
 				BUG();
 				goto EXIT;
 			}
@@ -471,46 +492,31 @@ void AudDrv_Clk_On(void)
 			ret = clk_enable(aud_clks[CLOCK_DAC_PREDIS].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
-				       __func__);
+						__func__);
 				BUG();
 				goto EXIT;
 			}
 		} else {
-			pr_err
-			("%s [CCF]clk_status error Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
-			 __func__);
+			pr_err("%s [CCF]clk_status error Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
 
 		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-		/* CLOCK_SCP_SYS_AUD is MTCMOS */
+		/*
+		* CLOCK_SCP_SYS_AUD is MTCMOS
+		* MTCMOS will be enabled when prepare in CCF API,
+		* Don't prepare MTCMOS in probe for low power
+		*/
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status) {
 			ret = clk_prepare_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
-					aud_clks[CLOCK_SCP_SYS_AUD].name);
+						aud_clks[CLOCK_SCP_SYS_AUD].name);
 				BUG();
 				goto EXIT_SKIP_UNLOCK;
 			}
-		}
-
-		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail\n",
-				       __func__);
-				BUG();
-				goto EXIT;
-			}
-			PRINTK_AUD_CLK("AudDrv_Clk_On: enable CLOCK_MUX_AUDIOINTBUS, CLK_CFG_4 = 0x%x\n",
-					GetClkCfg(AUDIO_CLK_CFG_4));
-		} else {
-			pr_err
-			("%s [CCF]clk_status error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail\n",
-			 __func__);
-			BUG();
-			goto EXIT;
 		}
 
 		goto EXIT_SKIP_UNLOCK;
@@ -541,36 +547,34 @@ void AudDrv_Clk_Off(void)
 		/* Make sure all IRQ status is cleared */
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 0xffff, 0xffff);
 
-		if (aud_clks[CLOCK_AFE].clk_prepare)
-			clk_disable(aud_clks[CLOCK_AFE].clock);
+		/*
+		* Clock disable order:
+		* MTCMOS -> DAC pre-distortion -> DAC -> AFE -> Int bus -> Infra -> 26M
+		*/
+
+		/* CLOCK_SCP_SYS_AUD is MTCMOS */
+		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
+			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+		spin_lock_irqsave(&auddrv_Clk_lock, flags);
+
+		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
+			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
 
 		if (aud_clks[CLOCK_DAC].clk_prepare)
 			clk_disable(aud_clks[CLOCK_DAC].clock);
 
-		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
-			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
-		/* Disable 26M here?
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clock);
-		*/
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-
-		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-		/* CLOCK_SCP_SYS_AUD is MTCMOS */
-		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
-			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
-
-		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare)
-			clk_disable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
+		if (aud_clks[CLOCK_AFE].clk_prepare)
+			clk_disable(aud_clks[CLOCK_AFE].clock);
 
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
-			PRINTK_AUD_CLK("AudDrv_Clk_Off: disable CLOCK_MUX_AUDIOINTBUS, CLK_CFG_4 = 0x%x\n",
-					GetClkCfg(AUDIO_CLK_CFG_4));
 		}
+		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
+			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
-		goto EXIT_SKIP_UNLOCK;
+		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare)
+			clk_disable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
 #else
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
 		SetInfraCfg(AUDIO_CG_SET, 0x2000000, 0x2000000);
@@ -578,12 +582,11 @@ void AudDrv_Clk_Off(void)
 #endif
 	} else if (Aud_AFE_Clk_cntr < 0) {
 		PRINTK_AUD_ERROR("!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr<0 (%d)\n",
-				 Aud_AFE_Clk_cntr);
+				Aud_AFE_Clk_cntr);
 		AUDIO_ASSERT(true);
 		Aud_AFE_Clk_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
-EXIT_SKIP_UNLOCK:
 	PRINTK_AUD_CLK("-!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
@@ -815,8 +818,8 @@ void AudDrv_APLL22M_Clk_On(void)
 
 	mutex_lock(&auddrv_pmic_mutex);
 
-	PRINTK_AUD_CLK("+%s counter = %d\n, AUDIO_CLK_CFG_6 = 0x%x\n",
-			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
+	PRINTK_AUD_CLK("+%s counter = %d\n",
+			__func__, Aud_APLL22M_Clk_cntr);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -826,15 +829,14 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL1_CK fail",
-				 __func__);
+				pr_err("%s [CCF]Aud enable_clock CLOCK_TOP_AD_APLL1_CK fail\n",
+						__func__);
 				BUG();
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL1_CK fail",
-			       __func__);
+			pr_err("%s [CCF]clk_prepare error Aud CLOCK_TOP_AD_APLL1_CK fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
@@ -842,25 +844,24 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail",
-				 __func__);
+				pr_err("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail\n",
+						__func__);
 				BUG();
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
-			       __func__);
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
 
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
-				     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
+				aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 		if (ret) {
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
 			BUG();
 			goto EXIT;
 		}
@@ -870,7 +871,7 @@ void AudDrv_APLL22M_Clk_On(void)
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 180633600);
 			if (ret) {
 				pr_err("%s clk_set_rate %s-180633600 fail %d\n",
-				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
+						__func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
 				BUG();
 				goto EXIT;
 			}
@@ -880,14 +881,14 @@ void AudDrv_APLL22M_Clk_On(void)
 
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail",
-				       __func__);
+				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail\n",
+						__func__);
 				BUG();
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail",
-			       __func__);
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
@@ -895,27 +896,24 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
-				pr_err
-				("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
-				 __func__);
+				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail\n",
+						__func__);
 				BUG();
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
-			       __func__);
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
-
-
 #endif
 	}
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
 
-	PRINTK_AUD_CLK("-%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
-			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
+	PRINTK_AUD_CLK("-%s: counter = %d\n",
+			__func__, Aud_APLL22M_Clk_cntr);
 
 	mutex_unlock(&auddrv_pmic_mutex);
 }
@@ -926,8 +924,8 @@ void AudDrv_APLL22M_Clk_Off(void)
 
 	mutex_lock(&auddrv_pmic_mutex);
 
-	PRINTK_AUD_CLK("+%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
-			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
+	PRINTK_AUD_CLK("+%s: counter = %d\n",
+			__func__, Aud_APLL22M_Clk_cntr);
 
 	Aud_APLL22M_Clk_cntr--;
 
@@ -940,53 +938,49 @@ void AudDrv_APLL22M_Clk_Off(void)
 			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);
 
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
+				aud_clks[CLOCK_CLK26M].clock);
 		if (ret) {
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_CLK26M].name, ret);
 			BUG();
 			goto EXIT;
 		}
 
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
-			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1",
-				 __func__);
-
+			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1\n",
+					__func__);
 		} else {
-			pr_err
-			("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail",
-			 __func__);
+			pr_err("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
 
 		if (aud_clks[CLOCK_TOP_AD_APLL1_CK].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
-			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL1_CK",
-				 __func__);
+			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AD_APLL1_CK\n",
+					__func__);
 
 		} else {
-			pr_err
-			("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL1_CK fail",
-			 __func__);
+			pr_err("%s [CCF]clk_prepare error CLOCK_TOP_AD_APLL1_CK fail\n",
+					__func__);
 			BUG();
 			goto EXIT;
 		}
-
 #endif
 	}
 
 EXIT:
 	if (Aud_APLL22M_Clk_cntr < 0) {
 		PRINTK_AUD_ERROR("err, %s <0 (%d)\n", __func__,
-				 Aud_APLL22M_Clk_cntr);
+				Aud_APLL22M_Clk_cntr);
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
-	PRINTK_AUD_CLK("-%s: counter = %d, AUDIO_CLK_CFG_6 = 0x%x\n",
-			__func__, Aud_APLL22M_Clk_cntr, GetClkCfg(AUDIO_CLK_CFG_6));
+	PRINTK_AUD_CLK("-%s: counter = %d\n",
+			__func__, Aud_APLL22M_Clk_cntr);
 
 	mutex_unlock(&auddrv_pmic_mutex);
 
@@ -1939,13 +1933,13 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 		/* TODO: It may need to be implemented */
 		break;
 	}
-	pr_debug("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
+	pr_warn("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
 }
 
 void EnableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
-		APLL1Counter, APLL2Counter, SampleRate);
+	pr_warn("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
+			APLL1Counter, APLL2Counter, SampleRate);
 
 	switch (GetApllbySampleRate(SampleRate)) {
 	case Soc_Aud_APLL1:
@@ -1972,14 +1966,14 @@ void EnableALLbySampleRate(uint32 SampleRate)
 		break;
 	default:
 		pr_warn("[AudioWarn] GetApllbySampleRate(%d) = %d not recognized\n",
-			SampleRate, GetApllbySampleRate(SampleRate));
+				SampleRate, GetApllbySampleRate(SampleRate));
 		break;
 	}
 }
 
 void DisableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
+	pr_warn("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
 		APLL1Counter, APLL2Counter, SampleRate);
 
 	switch (GetApllbySampleRate(SampleRate)) {
