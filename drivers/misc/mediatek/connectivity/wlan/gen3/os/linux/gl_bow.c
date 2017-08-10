@@ -549,10 +549,12 @@ BOOLEAN kalSetBowState(IN P_GLUE_INFO_T prGlueInfo, IN ENUM_BOW_DEVICE_STATE eBo
 
 	ASSERT(prGlueInfo);
 
+#if 0 /* fix me for 32bit project build error */
 	DBGLOG(BOW, EVENT, "prGlueInfo->rBowInfo.arPeerAddr, %x:%x:%x:%x:%x:%x\n",
 	       prGlueInfo->rBowInfo.arPeerAddr[0], prGlueInfo->rBowInfo.arPeerAddr[1],
 	       prGlueInfo->rBowInfo.arPeerAddr[2], prGlueInfo->rBowInfo.arPeerAddr[3],
 	       prGlueInfo->rBowInfo.arPeerAddr[4], prGlueInfo->rBowInfo.arPeerAddr[5]);
+#endif
 
 	DBGLOG(BOW, EVENT, "aucPeerAddress, %x:%x:%x:%x:%x:%x\n",
 	       aucPeerAddress[0], aucPeerAddress[1],
