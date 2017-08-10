@@ -63,9 +63,8 @@
 #include <linux/of_irq.h>
 #endif
 
-int touch_irq;
-int touch_regulator_en = 0;
-
+unsigned int touch_irq;
+static int touch_regulator_en;
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 int tpdGPIOTiedtoIRQ = 0;
 #endif
@@ -723,7 +722,7 @@ s32 i2c_dma_read(struct i2c_client *client, u16 addr, u8 *rxbuf, s32 len)
 	/* GTP_DEBUG("dma i2c read: 0x%04X, %d bytes(s)", addr, len); */
 	for (retry = 0; retry < 5; ++retry) {
 		ret = i2c_transfer(client->adapter, &gtp_msg[0], 2);
-		if (ret < 0)
+		if (ret <= 0)
 			continue;
 		memcpy(rxbuf, gtpI2CDMABuf, len);
 		return 0;
@@ -751,7 +750,7 @@ s32 i2c_dma_write(struct i2c_client *client, u16 addr, u8 *txbuf, s32 len)
 	memcpy(gtpI2CDMABuf + 2, txbuf, len);
 	for (retry = 0; retry < 5; ++retry) {
 		ret = i2c_transfer(client->adapter, &gtp_msg[0], 1);
-		if (ret < 0)
+		if (ret <= 0)
 			continue;
 		return 0;
 	}
@@ -1484,7 +1483,6 @@ reset_proc:
 #endif
 	msleep(20);
 
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	if (touch_regulator_en == 0) {
 #ifdef CONFIG_GTP_POWER_SOURCE_3300
 		ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
@@ -1498,12 +1496,6 @@ reset_proc:
 		if (ret)
 			GTP_DEBUG("regulator_enable() failed!\n");
 	}
-#else
-	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
-#endif
-#ifdef TPD_POWER_SOURCE_1800
-	hwPowerOn(TPD_POWER_SOURCE_1800, VOL_1800, "TP");
-#endif
 
 	gtp_reset_guitar(client, 20);
 
@@ -1625,7 +1617,7 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 	}
 	/* get ref file data */
 	flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
-	if (flp ==  NULL || IS_ERR(flp)) {
+	if (IS_ERR(flp) || NULL == flp) {
 		GTP_ERROR("[gtp_bak_ref_proc]Ref File not found!Creat ref file.");
 		/* flp->f_op->llseek(flp, 0, SEEK_SET); */
 		/* flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos); */
@@ -1645,6 +1637,7 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 		filp_close(flp, NULL);
 		flp = NULL;
 	}
+
 	if (GTP_BAK_REF_STORE == mode) {
 		ret = i2c_read_bytes(client, 0x99D0, refp, ref_len);
 		if (-1 == ret) {
@@ -1652,10 +1645,16 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 			ret = FAIL;
 			goto exit_ref_proc;
 		}
-		flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
+		if (IS_ERR(flp) || NULL == flp)
+			flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
 		if (flp && !IS_ERR(flp)) {
 			flp->f_op->llseek(flp, 0, SEEK_SET);
 			flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+			filp_close(flp, NULL);
+			flp = NULL;
+		} else {
+			ret = FAIL;
+			goto exit_ref_proc;
 		}
 	} else {
 		/* checksum ref file */
@@ -1694,11 +1693,12 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 	ret = SUCCESS;
 
 exit_ref_proc:
-	kfree(refp);
 	if (flp && !IS_ERR(flp)) {
 		filp_close(flp, NULL);
 		flp = NULL;
 	}
+
+	kfree(refp);
 	return ret;
 }
 
@@ -1794,9 +1794,11 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 	} else {
 		GTP_DEBUG("[gtp_main_clk_proc]/data mounted !!!!");
 		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-		if (!IS_ERR(flp) && (flp != NULL)) {
+		if (flp && !IS_ERR(flp)) {
 			flp->f_op->llseek(flp, 0, SEEK_SET);
 			ret = flp->f_op->read(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
+			filp_close(flp, NULL);
+			flp = NULL;
 			if (ret > 0) {
 				ret = gtp_check_clk_legality();
 				if (SUCCESS == ret) {
@@ -1804,9 +1806,6 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 					    ("[gtp_main_clk_proc]Open & read & check clk file success.");
 					goto send_main_clk;
 				}
-			} else {
-				filp_close(flp, NULL);
-				flp = NULL;
 			}
 		}
 		GTP_ERROR("[gtp_main_clk_proc]Check clk file failed,need cal clk");
@@ -1835,19 +1834,16 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 		clk_chksum += gtp_clk_buf[i];
 	}
 	gtp_clk_buf[5] = 0 - clk_chksum;
-
-	flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-	if (!IS_ERR(flp) && (flp != NULL)) {
+	if (!flp || IS_ERR(flp))
+		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
+	if (flp && !IS_ERR(flp)) {
 		flp->f_op->llseek(flp, 0, SEEK_SET);
 		flp->f_op->write(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
+		filp_close(flp, NULL);
+		flp = NULL;
 	}
 
 send_main_clk:
-	if (flp && !IS_ERR(flp)) {
-		filp_close(flp, NULL);
-		flp =  NULL;
-	}
-
 	ret = i2c_write_bytes(client, 0x8020, gtp_clk_buf, 6);
 	if (-1 == ret) {
 		GTP_ERROR("[gtp_main_clk_proc]send main clk i2c error!");
@@ -1878,7 +1874,7 @@ int tpd_irq_registration(void)
 {
 	int ret = 0;
 
-	if (0 == tpdGPIOTiedtoIRQ) {
+	if ((0 == tpdGPIOTiedtoIRQ) && (touch_irq > 0)) {
 		ret = request_irq(touch_irq,
 				  (irq_handler_t)tpd_eint_interrupt_handler,
 				  !int_type ? IRQF_TRIGGER_RISING : IRQF_TRIGGER_FALLING,
@@ -1908,7 +1904,11 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct hwmsen_object obj_ps;
 #endif
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
-	of_get_gt9xx_platform_data(&client->dev);
+	ret = of_get_gt9xx_platform_data(&client->dev);
+	if (ret) {
+		GTP_ERROR("Get platform data fail!\n");
+		return -1;
+	}
 	/* configure the gpio pins */
 	ret = gpio_request_one(tpd_rst_gpio_number, GPIOF_OUT_INIT_LOW, "touchp_reset");
 	if (ret < 0) {
@@ -1927,6 +1927,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		msleep(20);
 		touch_irq = irq_of_parse_and_map(node, 0);
 	} else {
+		touch_irq = 0;
 		tpdGPIOTiedtoIRQ = 0;
 		tpdIrqIsEnabled = false;
 		GTP_ERROR("[%s] tpd request_irq can not find touch eint device node!.", __func__);
@@ -1950,13 +1951,17 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	ret = gtp_read_version(client, &version_info);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("Read version failed.");
-
+		goto out;
+	}
 	ret = gtp_init_panel(client);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("GTP init panel failed.");
+		goto out;
+	}
+
 	/* Create proc file system */
 	gt91xx_config_proc =
 	    proc_create(GT91XX_CONFIG_PROC_FILE, 0660, NULL,
@@ -2106,23 +2111,15 @@ void force_reset_guitar(void)
 	tpd_gpio_output(GTP_INT_PORT, 0);
 #endif
 	/* Power off TP */
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	if (touch_regulator_en == 1) {
 		ret = regulator_disable(tpd->reg);
 		touch_regulator_en = 0;
 		if (ret)
 			GTP_DEBUG("regulator_disable() failed!\n");
 	}
-#else
-	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
-#ifdef TPD_POWER_SOURCE_1800
-	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
-#endif
 	msleep(30);
 
 	/* Power on TP */
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	if (touch_regulator_en == 0) {
 #ifdef CONFIG_GTP_POWER_SOURCE_3300
 		ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
@@ -2136,9 +2133,6 @@ void force_reset_guitar(void)
 		if (ret)
 			GTP_DEBUG("regulator_enable() failed!\n");
 	}
-#else
-	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
-#endif
 	msleep(30);
 
 	for (i = 0; i < 5; i++) {
@@ -2848,11 +2842,9 @@ exit_work_func:
 
 static int tpd_local_init(void)
 {
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
 	if (IS_ERR(tpd->reg))
 		GTP_ERROR("regulator_get() failed!\n");
-#endif
 
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	clk_tick_cnt = 2 * HZ;
@@ -3005,20 +2997,13 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 	tpd_gpio_output(GTP_INT_PORT, 0);
 #endif
 	msleep(20);
-#ifdef TPD_POWER_SOURCE_1800
-	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
-#endif
 
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	if (touch_regulator_en == 1) {
 		ret = regulator_disable(tpd->reg);	/* disable regulator */
 		touch_regulator_en = 0;
 		if (ret)
 			GTP_DEBUG("regulator_disable() failed!\n");
 	}
-#else
-	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
 
 	GTP_INFO("GTP enter sleep by poweroff!");
 	return 0;
@@ -3344,7 +3329,6 @@ static struct tpd_driver_t tpd_device_driver = {
 
 static void tpd_off(void)
 {
-#ifdef TPD_POWER_SOURCE_CUSTOM
 	if (touch_regulator_en == 1) {
 		int ret = 0;
 
@@ -3353,12 +3337,6 @@ static void tpd_off(void)
 		if (ret)
 			GTP_DEBUG("regulator_disable() failed!\n");
 	}
-#else
-	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
-#ifdef TPD_POWER_SOURCE_1800
-	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
-#endif
 	GTP_INFO("GTP enter sleep!");
 
 	tpd_halt = 1;

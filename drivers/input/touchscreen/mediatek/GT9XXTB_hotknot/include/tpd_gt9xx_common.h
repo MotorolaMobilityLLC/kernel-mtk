@@ -192,7 +192,6 @@ extern unsigned char gtp_default_FW_fl[];
 #endif
 #define GTP_MAX_TOUCH      5
 
-#define TPD_POWER_SOURCE_CUSTOM	MT6328_POWER_LDO_VGP1	/* MT6323_POWER_LDO_VGP1 */
 #define VELOCITY_CUSTOM
 #define TPD_VELOCITY_CUSTOM_X 15
 #define TPD_VELOCITY_CUSTOM_Y 15
@@ -406,7 +405,7 @@ extern u8 is_resetting;
 extern unsigned int tpd_rst_gpio_number;
 extern unsigned int tpd_int_gpio_number;
 #endif
-extern int touch_irq;
+extern unsigned int touch_irq;
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 extern int tpdGPIOTiedtoIRQ;
 #endif
