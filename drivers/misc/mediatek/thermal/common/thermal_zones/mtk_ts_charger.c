@@ -324,7 +324,7 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 
 	if (sscanf
 	    (ptr_mtktscharger_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktscharger_data->trip[0], &ptr_mtktscharger_data->t_type[0], ptr_mtktscharger_data->bind0,
 		&ptr_mtktscharger_data->trip[1], &ptr_mtktscharger_data->t_type[1], ptr_mtktscharger_data->bind1,
@@ -339,6 +339,13 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktscharger_data->time_msec) == 32) {
 		mtktscharger_dprintk("[mtktscharger_write] mtktscharger_unregister_thermal\n");
 		mtktscharger_unregister_thermal();
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktscharger_write",
+					"Bad argument");
+			mtktscharger_dprintk("[mtktscharger_write] bad argument\n");
+			kfree(ptr_mtktscharger_data);
+			return -EINVAL;
+		}
 
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktscharger_data->t_type[i];

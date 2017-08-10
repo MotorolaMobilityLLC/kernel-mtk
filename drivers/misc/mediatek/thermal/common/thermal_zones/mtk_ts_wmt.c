@@ -1463,7 +1463,7 @@ static ssize_t wmt_tm_write(struct file *filp, const char __user *buf, size_t co
 
 	if (sscanf
 	    (ptr_tm_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 	     &g_num_trip, &ptr_tm_data->trip_temp[0], &ptr_tm_data->thermal_trip[0], ptr_tm_data->bind0,
 	     &ptr_tm_data->trip_temp[1], &ptr_tm_data->thermal_trip[1], ptr_tm_data->bind1,
 	     &ptr_tm_data->trip_temp[2], &ptr_tm_data->thermal_trip[2], ptr_tm_data->bind2,

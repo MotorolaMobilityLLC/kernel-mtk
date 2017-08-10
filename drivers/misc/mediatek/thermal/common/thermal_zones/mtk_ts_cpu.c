@@ -1189,7 +1189,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 
 	if (sscanf
 	    (ptr_mtktscpu_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 	     &num_trip,
 	     &ptr_mtktscpu_data->trip[0], &ptr_mtktscpu_data->t_type[0], ptr_mtktscpu_data->bind0,
 	     &ptr_mtktscpu_data->trip[1], &ptr_mtktscpu_data->t_type[1], ptr_mtktscpu_data->bind1,
@@ -1960,8 +1960,17 @@ static int tscpu_read_ttpct(struct seq_file *m, void *v)
 	cpu_power = (cpu_power < max_cpu_pwr) ? cpu_power : max_cpu_pwr;
 	gpu_power = (gpu_power == 0x7FFFFFFF || gpu_power == 0) ? max_gpu_pwr:gpu_power;
 	gpu_power = (gpu_power < max_gpu_pwr) ? gpu_power : max_gpu_pwr;
-	cpu_power = (max_cpu_pwr - cpu_power)*100/max_cpu_pwr;
-	gpu_power = (max_gpu_pwr - gpu_power)*100/max_gpu_pwr;
+
+	if (max_cpu_pwr != 0)
+		cpu_power = (max_cpu_pwr - cpu_power)*100/max_cpu_pwr;
+	else
+		seq_printf(m, "ERROR: max_cpu_pwr = %d\n", max_cpu_pwr);
+
+	if (max_gpu_pwr != 0)
+		gpu_power = (max_gpu_pwr - gpu_power)*100/max_gpu_pwr;
+	else
+		seq_printf(m, "ERROR: max_gpu_pwr = %d\n", max_gpu_pwr);
+
 	seq_printf(m, "%d,%d\n", cpu_power, gpu_power);
 
 	return 0;

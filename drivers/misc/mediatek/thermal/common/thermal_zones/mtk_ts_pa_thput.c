@@ -300,7 +300,7 @@ static ssize_t mtk_mdm_sw_write(struct file *file, const char __user *buf, size_
 		return -EFAULT;
 	}
 
-	if (sscanf(ptr_mtktsmdm_data->desc, "%s", ptr_mtktsmdm_data->temp) == 1) {
+	if (sscanf(ptr_mtktsmdm_data->desc, "%255s", ptr_mtktsmdm_data->temp) == 1) {
 		if (strncmp(ptr_mtktsmdm_data->temp, "on", 2) == 0 || strncmp(ptr_mtktsmdm_data->temp, "1", 1) == 0)
 			mdm_sw = true;
 		else if (strncmp(ptr_mtktsmdm_data->temp, "off", 3) == 0 ||
