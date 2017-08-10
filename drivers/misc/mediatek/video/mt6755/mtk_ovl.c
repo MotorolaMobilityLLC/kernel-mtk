@@ -20,7 +20,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include "disp_debug.h"
-
+#include "mtkfb_debug.h"
 #include "disp_log.h"
 #include "disp_utils.h"
 

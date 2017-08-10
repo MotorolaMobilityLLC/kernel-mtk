@@ -34,6 +34,7 @@
 #include "disp_helper.h"
 #include "ddp_reg.h"
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 #ifdef CONFIG_MTK_LEGACY
 #include <mt-plat/mt_gpio.h>
 #else

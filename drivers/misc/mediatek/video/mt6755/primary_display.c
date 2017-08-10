@@ -58,6 +58,7 @@
 #include "cmdq_core.h"
 #include "ddp_manager.h"
 #include "mtkfb_fence.h"
+#include "mtkfb_debug.h"
 #include "disp_recorder.h"
 #include "fbconfig_kdebug.h"
 #include "ddp_mmp.h"

@@ -46,6 +46,10 @@ ifeq (y, $(filter y, $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6755)))
 obj-$(CONFIG_MTK_FB) += disp_recorder.o
 endif
 
+ifeq ($(CONFIG_ARCH_MT6755),y)
+obj-$(CONFIG_MTK_FB) += mtkfb_debug.o
+endif
+
 ifeq (y, $(filter y, $(CONFIG_ARCH_ELBRUS) $(CONFIG_ARCH_MT8160) $(CONFIG_ARCH_MT6757) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580)))
 obj-y += aal20/
 obj-y += corr10/

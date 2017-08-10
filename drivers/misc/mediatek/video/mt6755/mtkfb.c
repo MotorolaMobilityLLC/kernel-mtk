@@ -49,6 +49,7 @@
 #include "mtkfb.h"
 #include "mtkfb_console.h"
 #include "mtkfb_fence.h"
+#include "mtkfb_debug.h"
 #include "mtkfb_info.h"
 #include "ddp_ovl.h"
 #include "disp_drv_platform.h"

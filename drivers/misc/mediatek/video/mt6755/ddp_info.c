@@ -14,6 +14,7 @@
 #define LOG_TAG "INFO"
 #include"ddp_info.h"
 #include"disp_debug.h"
+#include "mtkfb_debug.h"
 #include "disp_log.h"
 
 char *ddp_get_module_name(DISP_MODULE_ENUM module)

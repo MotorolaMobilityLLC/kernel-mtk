@@ -24,6 +24,9 @@
 #else
 #include "display_recorder.h"
 #endif
+#if defined(CONFIG_ARCH_MT6755)
+#include "mtkfb_debug.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {

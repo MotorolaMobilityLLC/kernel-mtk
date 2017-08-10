@@ -24,6 +24,7 @@
 #include "ddp_reg.h"
 
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 #include "ddp_path.h"
 #include "primary_display.h"
 #include "ddp_hal.h"

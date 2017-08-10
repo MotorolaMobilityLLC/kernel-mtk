@@ -12,6 +12,7 @@
  */
 
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 
 #ifdef DISP_ENABLE_LAYER_FRAME
 unsigned char data_digit[816] = {

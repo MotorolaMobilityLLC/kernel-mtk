@@ -51,6 +51,7 @@
 #include "ddp_reg.h"
 #include "disp_log.h"
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 #ifndef LOG_TAG
 #define LOG_TAG "DPI"
 #endif

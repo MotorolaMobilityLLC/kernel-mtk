@@ -13,6 +13,7 @@
 #define LOG_TAG "RDMA"
 #include "disp_log.h"
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
