@@ -9,4 +9,8 @@ ccflags-y += -DMTK_GPU_EARLY_PORTING
 #Limit VCore DVFS bottom is LPM mode for gaming performance
 ccflags-y += -DENABLE_VCORE_DVFS_CONTROL
 
+#Switch AXI1To2 Setting
+#IT will detect DRAM type to decide to go M6+M7 or M6 only
+ccflags-y += -DENABLE_AXI_1TO2_CONTROL
+
 obj-y += mtk_config_platform.o

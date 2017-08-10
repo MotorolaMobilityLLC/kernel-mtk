@@ -40,6 +40,10 @@
 #include <mt_vcorefs_manager.h>
 #endif
 
+#ifdef ENABLE_AXI_1TO2_CONTROL
+#include "mt_dramc.h"
+#endif
+
 struct mtk_config *g_config;
 volatile void *g_MFG_base;
 
@@ -75,6 +79,19 @@ static int _mtk_pm_callback_power_on(void)
 #ifdef ENABLE_VCORE_DVFS_CONTROL
 	if (vcorefs_request_dvfs_opp(KIR_GPU, OPPI_LOW_PWR) < -1 )
 		pr_alert("[MALI]Fail to Vote LPM\n");
+#endif
+
+#ifdef ENABLE_AXI_1TO2_CONTROL
+	/**
+	 * LP3 DRAM, GPU access EMI only by M6 for performance efficiency
+	 * 0x8f0[0] = 0, 0x8f0[4] = 0, 0x8f4[31:0] = 0x0000_0000
+	 */
+	if (get_ddr_type() == TYPE_LPDDR3) {
+		MFG_write32(MFG_1to2_CFG_CON_00, MFG_read32(MFG_1to2_CFG_CON_00) & 0xFFFFFFEE);
+		MFG_write32(MFG_1to2_CFG_CON_01, MFG_read32(MFG_1to2_CFG_CON_01) & 0x0);
+		pr_debug("[MALI]CFG_CON_00(%x) CFG_CON_01(%x)\n",
+		MFG_read32(MFG_1to2_CFG_CON_00), MFG_read32(MFG_1to2_CFG_CON_01));
+	}
 #endif
 
 #ifdef ENABLE_COMMON_DVFS

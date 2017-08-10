@@ -6,6 +6,18 @@
 #define MFG_DEBUG_A 0x184
 #define MFG_DEBUG_IDEL	(1 << 2)
 
+<<<<<<< HEAD   (c29b7d [ALPS02724800] GPU: GPU requests VCore DVFS OPP)
+=======
+/* MFG Power Monitor */
+#define MFG_PERF_EN_00 0x3C0
+#define MFG_PERF_EN_01 0x3C4
+#define MFG_PERF_EN_02 0x3C8
+#define MFG_PERF_EN_03 0x3CC
+#define MFG_PERF_EN_04 0x3D0
+#define MFG_1to2_CFG_CON_00 0x8F0
+#define MFG_1to2_CFG_CON_01 0x8F4
+
+>>>>>>> BRANCH (19e0ff [ALPS02724800] GPU: Add AXI1to2 setting)
 extern volatile void *g_MFG_base;
 
 #define base_write32(addr, value)	writel(value, addr)
