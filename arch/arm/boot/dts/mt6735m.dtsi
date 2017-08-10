@@ -215,6 +215,7 @@
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
+		ranges = <0 0 0 0xffffffff>;
 
 		cpuxgpt: cpuxgpt@10200000 {
 			compatible = "mediatek,mt6735-cpuxgpt";
