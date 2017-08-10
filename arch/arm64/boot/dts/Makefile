@@ -12,7 +12,7 @@ DTB_LIST := $(dtb-y)
 endif
 
 ifeq ($(strip $(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE)), y)
-DTB_LIST += $(subst $\",,$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)).dtb
+DTB_LIST += $(addsuffix .dtb,$(subst $\",,$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)))
 endif
 
 targets += $(DTB_LIST)

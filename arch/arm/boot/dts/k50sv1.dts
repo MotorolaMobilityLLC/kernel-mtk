@@ -876,5 +876,5 @@
 	};
 };
 
-#include <cust.dtsi>
+#include <k50sv1/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/

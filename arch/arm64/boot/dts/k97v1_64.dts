@@ -1629,5 +1629,5 @@
 };
 /* DA9214 GPIO End */
 
-#include <cust.dtsi>
+#include <k97v1_64/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
