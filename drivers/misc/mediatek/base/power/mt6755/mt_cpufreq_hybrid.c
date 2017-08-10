@@ -588,21 +588,21 @@ do {							\
 
 #define wait_complete_us(condition, delay, timeout)		\
 ({								\
-	int i = 0;						\
-	int n = DIV_ROUND_UP(timeout, delay);			\
+	int _i = 0;						\
+	int _n = DIV_ROUND_UP(timeout, delay);			\
 	csram_write(OFFS_PCM_PC1, cspm_get_pcmpc());		\
 	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
 	while (!(condition)) {					\
-		if (i >= n) {					\
-			i = -i;					\
+		if (_i >= _n) {					\
+			_i = -_i;				\
 			break;					\
 		}						\
 		udelay(delay);					\
-		i++;						\
+		_i++;						\
 	}							\
 	csram_write(OFFS_TIMER_OUT2, cspm_get_timestamp());	\
 	csram_write(OFFS_PCM_PC2, cspm_get_pcmpc());		\
-	i;							\
+	_i;							\
 })
 
 static inline u32 base_va_to_pa(const u32 *base)
