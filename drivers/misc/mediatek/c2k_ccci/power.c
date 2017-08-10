@@ -165,9 +165,9 @@ void c2k_reset_modem(int type)
 
 void c2k_power_on_modem(void)
 {
-	/*add by yfu to control LDO VGP2 */
-	/*turn on VGP2 and set 2.8v */
-	/*hwPowerOn(MT6323_POWER_LDO_VGP2, VOL_2800,"VIA"); */
+	/* c2k may be powered on by muxreport before,
+	 to make sure power on success, power off first */
+	c2k_modem_power_off_platform();
 	c2k_modem_power_on_platform();
 
 	if (GPIO_C2K_VALID(GPIO_C2K_MDM_PWR_EN)) {

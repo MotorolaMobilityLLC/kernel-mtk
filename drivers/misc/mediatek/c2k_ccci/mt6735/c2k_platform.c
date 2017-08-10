@@ -670,12 +670,15 @@ void c2k_modem_power_off_platform(void)
 {
 	int ret = -123;
 
-	C2K_BOOTUP_LOG("[C2K] md_power_off begain\n");
+	C2K_BOOTUP_LOG("[C2K] md_power_off begin\n");
 #if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_off(SYS_MD2, 1000);
 #else
-	atomic_set(&clock_on, 0);
-	clk_disable_unprepare(clk_scp_sys_md2_main);
+	if (atomic_read(&clock_on)) {
+		C2K_BOOTUP_LOG("[C2K] already power on, power down now\n");
+		atomic_set(&clock_on, 0);
+		clk_disable_unprepare(clk_scp_sys_md2_main);
+	}
 #endif
 	C2K_BOOTUP_LOG("[C2K] md_power_off %d\n", ret);
 }
