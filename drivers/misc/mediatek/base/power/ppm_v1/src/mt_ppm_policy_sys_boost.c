@@ -140,6 +140,7 @@ static void ppm_sysboost_update_limit_cb(enum ppm_power_state new_state)
 {
 	unsigned int LL_max = get_cluster_max_cpu_core(0);
 	unsigned int L_max = get_cluster_max_cpu_core(1);
+	int i;
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
@@ -172,40 +173,53 @@ static void ppm_sysboost_update_limit_cb(enum ppm_power_state new_state)
 	case PPM_POWER_STATE_4L_LL:
 		if (target_boost_core > L_max) {
 			sysboost_policy.req.limit[1].min_cpu_core = L_max;
-			sysboost_policy.req.limit[0].min_cpu_core =
-				(target_boost_core - L_max >= LL_max) ? LL_max : (target_boost_core - L_max);
+			if (ppm_main_info.cluster_num == 3) {/* with B core*/
+				if (target_boost_core - L_max > LL_max) {
+					sysboost_policy.req.limit[0].min_cpu_core = LL_max;
+					sysboost_policy.req.limit[2].min_cpu_core = target_boost_core - L_max - LL_max;
+				} else
+					sysboost_policy.req.limit[0].min_cpu_core = target_boost_core - L_max;
+			} else {
+				sysboost_policy.req.limit[0].min_cpu_core =
+					(target_boost_core - L_max >= LL_max) ? LL_max : (target_boost_core - L_max);
+			}
 		} else
 			sysboost_policy.req.limit[1].min_cpu_core = target_boost_core;
 
-		/* boost both due to shared buck */
-		sysboost_policy.req.limit[0].min_cpufreq_idx = MIN(
-			sysboost_policy.req.limit[0].min_cpufreq_idx,
-			ppm_main_freq_to_idx(0, target_boost_freq, CPUFREQ_RELATION_L)
+		for_each_ppm_clusters(i) {
+			sysboost_policy.req.limit[i].min_cpufreq_idx = MIN(
+				sysboost_policy.req.limit[i].min_cpufreq_idx,
+				ppm_main_freq_to_idx(i, target_boost_freq, CPUFREQ_RELATION_L)
 			);
-		sysboost_policy.req.limit[1].min_cpufreq_idx = MIN(
-			sysboost_policy.req.limit[1].min_cpufreq_idx,
-			ppm_main_freq_to_idx(1, target_boost_freq, CPUFREQ_RELATION_L)
-			);
+		}
+
 		break;
 	case PPM_POWER_STATE_4LL_L:
 	case PPM_POWER_STATE_NONE:
 	default:
 		if (target_boost_core > LL_max) {
 			sysboost_policy.req.limit[0].min_cpu_core = LL_max;
-			sysboost_policy.req.limit[1].min_cpu_core =
-				(target_boost_core - LL_max >= L_max) ? L_max : (target_boost_core - LL_max);
+			if (ppm_main_info.cluster_num == 3) {/* with B core*/
+				if (target_boost_core - LL_max > L_max) {
+					sysboost_policy.req.limit[1].min_cpu_core = L_max;
+					sysboost_policy.req.limit[2].min_cpu_core = target_boost_core - LL_max - L_max;
+				} else
+					sysboost_policy.req.limit[1].min_cpu_core = target_boost_core - LL_max;
+			} else {
+				sysboost_policy.req.limit[1].min_cpu_core =
+					(target_boost_core - LL_max >= L_max) ? L_max : (target_boost_core - LL_max);
+			}
 		} else
 			sysboost_policy.req.limit[0].min_cpu_core = target_boost_core;
 
 		/* boost both due to shared buck */
-		sysboost_policy.req.limit[0].min_cpufreq_idx = MIN(
-			sysboost_policy.req.limit[0].min_cpufreq_idx,
-			ppm_main_freq_to_idx(0, target_boost_freq, CPUFREQ_RELATION_L)
+		for_each_ppm_clusters(i) {
+			sysboost_policy.req.limit[i].min_cpufreq_idx = MIN(
+				sysboost_policy.req.limit[i].min_cpufreq_idx,
+				ppm_main_freq_to_idx(i, target_boost_freq, CPUFREQ_RELATION_L)
 			);
-		sysboost_policy.req.limit[1].min_cpufreq_idx = MIN(
-			sysboost_policy.req.limit[1].min_cpufreq_idx,
-			ppm_main_freq_to_idx(1, target_boost_freq, CPUFREQ_RELATION_L)
-			);
+		}
+
 		break;
 	}
 
