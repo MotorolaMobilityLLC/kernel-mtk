@@ -57,6 +57,8 @@
 #define EVENT_TYPE_PEDO_COUNT			REL_Z
 #define EVENT_TYPE_PEDO_DISTANCE		REL_RX
 #define EVENT_TYPE_PEDO_STATUS			ABS_WHEEL
+#define EVENT_TYPE_PEDO_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_PEDO_TIMESTAMP_LO		REL_DIAL
 
 
 #define PEDO_VALUE_MAX (32767)
@@ -84,7 +86,7 @@ typedef struct {
 } pedometer_t;
 
 struct pedo_data_path {
-	int (*get_data)(u32 *value, int *status);
+	int (*get_data)(struct hwm_sensor_data *pedo_data, int *status);
 	int vender_div;
 };
 

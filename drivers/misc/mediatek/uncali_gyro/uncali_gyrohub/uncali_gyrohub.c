@@ -156,7 +156,7 @@ static int uncali_gyrohub_local_init(void)
 	ctl.enable_nodata = uncali_gyro_enable_nodata;
 	ctl.set_delay = uncali_gyro_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = uncali_gyro_register_control_path(&ctl);
 	if (err) {
 		UNGYROHUB_ERR("register uncali_gyro control path err\n");

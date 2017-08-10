@@ -712,7 +712,7 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.o_set_delay = maghub_o_set_delay;
 	ctl.o_open_report_data = maghub_o_open_report_data;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 
 	err = mag_register_control_path(&ctl);
 	if (err) {

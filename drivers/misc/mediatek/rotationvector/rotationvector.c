@@ -80,7 +80,7 @@ static void rotationvector_work_func(struct work_struct *work)
 				   cxt->drv_data.rotationvector_data.values[1],
 				   cxt->drv_data.rotationvector_data.values[2],
 				   cxt->drv_data.rotationvector_data.values[3],
-				   cxt->drv_data.rotationvector_data.status);
+				   cxt->drv_data.rotationvector_data.status, nt);
 
 rotationvector_loop:
 	if (true == cxt->is_polling_run)
@@ -522,16 +522,18 @@ static int rotationvector_input_init(struct rotationvector_context *cxt)
 
 	dev->name = RV_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_RV_X);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_RV_Y);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_RV_Z);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_RV_SCALAR);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_X);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_Y);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_Z);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_SCALAR);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_STATUS);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_RV_TIMESTAMP_LO);
 
-	input_set_abs_params(dev, EVENT_TYPE_RV_X, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);
+	/*input_set_abs_params(dev, EVENT_TYPE_RV_X, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_RV_Y, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_RV_Z, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_RV_SCALAR, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_RV_SCALAR, RV_VALUE_MIN, RV_VALUE_MAX, 0, 0);*/
 	input_set_drvdata(dev, cxt);
 
 	input_set_events_per_packet(dev, 32);	/* test */
@@ -620,16 +622,18 @@ int rotationvector_register_control_path(struct rotationvector_control_path *ctl
 	return 0;
 }
 
-int rotationvector_data_report(int x, int y, int z, int scalar, int status)
+int rotationvector_data_report(int x, int y, int z, int scalar, int status, int64_t nt)
 {
 	/* RV_LOG("+rotationvector_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct rotationvector_context *cxt = NULL;
 
 	cxt = rotationvector_context_obj;
-	input_report_abs(cxt->idev, EVENT_TYPE_RV_X, x);
-	input_report_abs(cxt->idev, EVENT_TYPE_RV_Y, y);
-	input_report_abs(cxt->idev, EVENT_TYPE_RV_Z, z);
-	input_report_abs(cxt->idev, EVENT_TYPE_RV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_X, x);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_Y, y);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_Z, z);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_RV_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	/* input_report_rel(cxt->idev, EVENT_TYPE_RV_STATUS, status); */
 	input_sync(cxt->idev);
 	return 0;

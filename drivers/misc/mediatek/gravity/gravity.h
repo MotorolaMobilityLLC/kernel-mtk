@@ -59,10 +59,12 @@
 
 #define GRAV_INVALID_VALUE -1
 
-#define EVENT_TYPE_GRAV_X              ABS_RX
-#define EVENT_TYPE_GRAV_Y              ABS_Y
-#define EVENT_TYPE_GRAV_Z              ABS_Z
+#define EVENT_TYPE_GRAV_X              REL_RX
+#define EVENT_TYPE_GRAV_Y              REL_RY
+#define EVENT_TYPE_GRAV_Z              REL_RZ
 #define EVENT_TYPE_GRAV_STATUS         REL_X
+#define EVENT_TYPE_GRAV_TIMESTAMP_HI	REL_HWHEEL
+#define EVENT_TYPE_GRAV_TIMESTAMP_LO	REL_DIAL
 
 #define GRAV_VALUE_MAX (32767)
 #define GRAV_VALUE_MIN (-32768)
@@ -142,7 +144,7 @@ struct grav_context {
 
 /* for auto detect */
 extern int grav_driver_add(struct grav_init_info *obj);
-extern int grav_data_report(int x, int y, int z, int status);
+extern int grav_data_report(int x, int y, int z, int status, int64_t nt);
 extern int grav_register_control_path(struct grav_control_path *ctl);
 extern int grav_register_data_path(struct grav_data_path *data);
 #endif

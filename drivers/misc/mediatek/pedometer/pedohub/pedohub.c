@@ -102,27 +102,24 @@ static int pedohub_delete_attr(struct device_driver *driver)
 	return err;
 }
 
-static int pedometer_get_data(u32 *value, int *status)
+static int pedometer_get_data(struct hwm_sensor_data *pedo_data, int *status)
 {
 	int err = 0;
 	struct data_unit_t data;
-	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_PEDOMETER, &data);
 	if (err < 0) {
 		PEDOHUB_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
 	}
-	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
-	value[0] = data.pedometer_t.accumulated_step_count;
-	value[1] = data.pedometer_t.accumulated_step_length;
-	value[2] = data.pedometer_t.step_frequency;
-	value[3] = data.pedometer_t.step_length;
-	PEDOHUB_LOG
-	    ("recv ipi: timestamp: %lld, timestamp_gpt: %lld, count: %d, length: %d, freq: %d, length: %d!\n",
-	     time_stamp, time_stamp_gpt, value[0], value[1], value[2], value[3]);
+	pedo_data->time = (int64_t)(data.time_stamp + data.time_stamp_gpt);
+	pedo_data->values[0] = data.pedometer_t.accumulated_step_count;
+	pedo_data->values[1] = data.pedometer_t.accumulated_step_length;
+	pedo_data->values[2] = data.pedometer_t.step_frequency;
+	pedo_data->values[3] = data.pedometer_t.step_length;
+	/* PEDOHUB_LOG("timestamp: %lld, count: %d, length: %d, freq: %d, length: %d!\n",
+	     pedo_data->time, pedo_data->values[0], pedo_data->values[1],
+	     pedo_data->values[2], pedo_data->values[3]); */
 	return err;
 }
 
@@ -167,12 +164,13 @@ static int pedohub_local_init(void)
 	}
 
 	data.get_data = pedometer_get_data;
+	data.vender_div = 1;
 	err = pedo_register_data_path(&data);
 	if (err) {
 		PEDOHUB_ERR("register pedometer data path err\n");
 		goto exit;
 	}
-	err = batch_register_support_info(ID_PEDOMETER, ctl.is_support_batch, 1, 1);
+	err = batch_register_support_info(ID_PEDOMETER, ctl.is_support_batch, data.vender_div, 1);
 	if (err) {
 		PEDOHUB_ERR("register TILT batch support err = %d\n", err);
 		goto exit_create_attr_failed;

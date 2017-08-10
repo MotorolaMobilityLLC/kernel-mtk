@@ -66,6 +66,8 @@
 #define EVENT_TYPE_ACT_CLIMBING			ABS_HAT2X
 #define EVENT_TYPE_ACT_SITTING			ABS_HAT2Y
 #define EVENT_TYPE_ACT_STATUS		    ABS_WHEEL
+#define EVENT_TYPE_ACT_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_ACT_TIMESTAMP_LO		REL_DIAL
 
 #define ACT_VALUE_MAX (32767)
 #define ACT_VALUE_MIN (-32768)
@@ -84,7 +86,7 @@ struct act_control_path {
 	bool is_support_batch;
 };
 struct act_data_path {
-	int (*get_data)(uint8_t *value, int *status);
+	int (*get_data)(struct hwm_sensor_data *value, int *status);
 	int vender_div;
 };
 
@@ -93,12 +95,6 @@ struct act_init_info {
 	int (*init)(void);
 	int (*uninit)(void);
 	struct platform_driver *platform_diver_addr;
-};
-
-struct act_sensor_data {
-	uint8_t	probability[12];
-	int8_t status;
-	int64_t time;
 };
 
 struct act_drv_obj {
@@ -119,7 +115,7 @@ struct act_context {
 	atomic_t trace;
 
 	atomic_t early_suspend;
-	struct act_sensor_data drv_data;
+	struct hwm_sensor_data drv_data;
 	struct act_control_path act_ctl;
 	struct act_data_path act_data;
 	bool is_active_nodata;	/* Active, but HAL don't need data sensor. such as orientation need */
@@ -136,7 +132,7 @@ struct act_context {
 
 /* for auto detect */
 extern int act_driver_add(struct act_init_info *obj);
-extern int act_data_report(struct act_sensor_data data, int status);
+extern int act_data_report(struct hwm_sensor_data *data, int status);
 extern int act_register_control_path(struct act_control_path *ctl);
 extern int act_register_data_path(struct act_data_path *data);
 #endif

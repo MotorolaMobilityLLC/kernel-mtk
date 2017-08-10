@@ -78,7 +78,7 @@ static void grv_work_func(struct work_struct *work)
 	grv_data_report(cxt->drv_data.grv_data.values[0],
 			cxt->drv_data.grv_data.values[1],
 			cxt->drv_data.grv_data.values[2],
-			cxt->drv_data.grv_data.values[3], cxt->drv_data.grv_data.status);
+			cxt->drv_data.grv_data.values[3], cxt->drv_data.grv_data.status,  nt);
 
 grv_loop:
 	if (true == cxt->is_polling_run)
@@ -514,16 +514,17 @@ static int grv_input_init(struct grv_context *cxt)
 
 	dev->name = GRV_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRV_X);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRV_Y);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRV_Z);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRV_SCALAR);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_X);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_Y);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_Z);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_SCALAR);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_STATUS);
-
-	input_set_abs_params(dev, EVENT_TYPE_GRV_X, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRV_TIMESTAMP_LO);
+	/*input_set_abs_params(dev, EVENT_TYPE_GRV_X, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GRV_Y, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GRV_Z, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_GRV_SCALAR, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_GRV_SCALAR, GRV_VALUE_MIN, GRV_VALUE_MAX, 0, 0);*/
 	input_set_drvdata(dev, cxt);
 
 	input_set_events_per_packet(dev, 32);	/* test */
@@ -609,16 +610,18 @@ int grv_register_control_path(struct grv_control_path *ctl)
 	return 0;
 }
 
-int grv_data_report(int x, int y, int z, int scalar, int status)
+int grv_data_report(int x, int y, int z, int scalar, int status, int64_t nt)
 {
 	/* GRV_LOG("+grv_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct grv_context *cxt = NULL;
 
 	cxt = grv_context_obj;
-	input_report_abs(cxt->idev, EVENT_TYPE_GRV_X, x);
-	input_report_abs(cxt->idev, EVENT_TYPE_GRV_Y, y);
-	input_report_abs(cxt->idev, EVENT_TYPE_GRV_Z, z);
-	input_report_abs(cxt->idev, EVENT_TYPE_GRV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_X, x);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_Y, y);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_Z, z);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRV_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	/* input_report_rel(cxt->idev, EVENT_TYPE_GRV_STATUS, status); */
 	input_sync(cxt->idev);
 	return 0;

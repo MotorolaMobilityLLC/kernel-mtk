@@ -654,11 +654,24 @@ err_out:
 	return err;
 }
 
+static long compat_alspshub_unlocked_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		APS_ERR("compat_ioctl f_op has no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+}
+
 static const struct file_operations alspshub_fops = {
 	.owner = THIS_MODULE,
 	.open = alspshub_open,
 	.release = alspshub_release,
 	.unlocked_ioctl = alspshub_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_alspshub_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice alspshub_misc_device = {
@@ -822,8 +835,8 @@ static int ps_get_data(int *value, int *status)
 			time_stamp = data.time_stamp;
 			time_stamp_gpt = data.time_stamp_gpt;
 			*value = data.proximity_t.oneshot;
-			APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, distance: %d!\n",
-				time_stamp, time_stamp_gpt, *value);
+			/* APS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, distance: %d!\n",
+				time_stamp, time_stamp_gpt, *value); */
 			*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 		}
 
@@ -917,7 +930,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	als_ctl.set_delay = als_set_delay;
 	als_ctl.is_report_input_direct = false;
 
-	als_ctl.is_support_batch = true;
+	als_ctl.is_support_batch = false;
 
 	err = als_register_control_path(&als_ctl);
 	if (err) {
@@ -938,7 +951,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	ps_ctl.set_delay = ps_set_delay;
 	ps_ctl.is_report_input_direct = false;
 
-	ps_ctl.is_support_batch = true;
+	ps_ctl.is_support_batch = false;
 
 	err = ps_register_control_path(&ps_ctl);
 	if (err) {

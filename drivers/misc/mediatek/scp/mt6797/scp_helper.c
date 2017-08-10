@@ -91,7 +91,7 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.num = VOW_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x10000,/*64KB*/
+		.size = 0x9000,/*36KB*/
 	},
 	{
 		.num = SENS_MEM_ID,
@@ -122,6 +122,12 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x200000,/*2MB*/
+	},
+	{
+		.num = SENS_MEM_DIRECT_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x2000,/*8KB*/
 	},
 };
 

@@ -68,7 +68,8 @@
 #define EVENT_TYPE_UNCALI_MAG_Y_BIAS			ABS_RY
 #define EVENT_TYPE_UNCALI_MAG_Z_BIAS			ABS_RZ
 #define EVENT_TYPE_UNCALI_MAG_UPDATE			REL_X
-
+#define EVENT_TYPE_UNCALI_MAG_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_UNCALI_MAG_TIMESTAMP_LO		REL_DIAL
 
 #define UNCALI_MAG_VALUE_MAX (32767)
 #define UNCALI_MAG_VALUE_MIN (-32768)
@@ -142,7 +143,7 @@ struct uncali_mag_context {
 
 /* for auto detect */
 extern int uncali_mag_driver_add(struct uncali_mag_init_info *obj);
-extern int uncali_mag_data_report(int *data, int status);
+extern int uncali_mag_data_report(int *data, int status, int64_t nt);
 extern int uncali_mag_register_control_path(struct uncali_mag_control_path *ctl);
 extern int uncali_mag_register_data_path(struct uncali_mag_data_path *data);
 

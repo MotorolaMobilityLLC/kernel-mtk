@@ -42,7 +42,7 @@ static void pdr_work_func(struct work_struct *work)
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
 	err = cxt->pdr_data.get_data(sensor_data, &status);
-	/* PDR_ERR("[Bai]>>pdr data:%d,%d,%d,status:%d\n", sensor_data[0], sensor_data[1], sensor_data[2], status); */
+	/* PDR_ERR("pdr data:%d,%d,%d,status:%d\n", sensor_data[0], sensor_data[1], sensor_data[2], status); */
 	if (err) {
 		PDR_ERR("get pdr data fails!!\n");
 		goto pdr_loop;
@@ -264,7 +264,7 @@ static ssize_t pdr_store_active(struct device *dev, struct device_attribute *att
 	struct pdr_context *cxt = NULL;
 	/* int err =0; */
 
-	PDR_ERR("[Bai]>> pdr_store_active buf=%s\n", buf);
+	/*PDR_ERR("pdr_store_active buf=%s\n", buf);*/
 	mutex_lock(&pdr_context_obj->pdr_op_mutex);
 	cxt = pdr_context_obj;
 	if (NULL == cxt->pdr_ctl.open_report_data) {
@@ -332,7 +332,7 @@ static ssize_t pdr_store_delay(struct device *dev, struct device_attribute *attr
 	cxt->pdr_ctl.set_delay(delay);
 	mutex_unlock(&pdr_context_obj->pdr_op_mutex);
 
-	PDR_ERR("[Bai]>> pdr_delay %d(ns) = %d(ms)\n", delay, mdelay);
+	/*PDR_ERR("pdr_delay %d(ns) = %d(ms)\n", delay, mdelay);*/
 	return count;
 }
 

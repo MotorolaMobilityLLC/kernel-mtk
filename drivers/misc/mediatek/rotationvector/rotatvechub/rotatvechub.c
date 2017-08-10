@@ -118,8 +118,8 @@ static int rotatvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	*z = data.orientation_t.roll;
 	*scalar = data.orientation_t.scalar;
 	*status = data.orientation_t.status;
-	ROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n", time_stamp, time_stamp_gpt,
-		   *x, *y, *z);
+	/* ROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
+			time_stamp, time_stamp_gpt, *x, *y, *z); */
 	return 0;
 }
 
@@ -156,7 +156,7 @@ static int rotatvechub_local_init(void)
 	ctl.enable_nodata = rotatvec_enable_nodata;
 	ctl.set_delay = rotatvec_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = rotationvector_register_control_path(&ctl);
 	if (err) {
 		ROTVEC_ERR("register rotatvec control path err\n");

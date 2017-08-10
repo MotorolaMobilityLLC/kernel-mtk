@@ -602,12 +602,11 @@ static int hwmsen_enable(struct hwmdev_object *obj, int sensor, int enable)
 		return -ENODEV;
 	}
 
-
-	mutex_lock(&obj->dc->lock);
 	if (sensor > MAX_ANDROID_SENSOR_NUM) {
 		HWM_ERR("sensor %d!\n", sensor);
-		return -EINVAL;
+		return -ENODEV;
 	}
+	mutex_lock(&obj->dc->lock);
 	cxt = obj->dc->cxt[sensor];
 
 
@@ -721,12 +720,11 @@ static int hwmsen_enable_nodata(struct hwmdev_object *obj, int sensor, int enabl
 		return -ENODEV;
 	}
 
-
-	mutex_lock(&obj->dc->lock);
 	if (sensor > MAX_ANDROID_SENSOR_NUM) {
 		HWM_ERR("sensor %d!\n", sensor);
 		return -EINVAL;
 	}
+	mutex_lock(&obj->dc->lock);
 	cxt = obj->dc->cxt[sensor];
 
 	if (enable == 1) {

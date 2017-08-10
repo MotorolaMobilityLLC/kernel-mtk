@@ -24,8 +24,8 @@ static void pedo_work_func(struct work_struct *work)
 
 	struct pedo_context *cxt = NULL;
 
-	u32 data32[6];
-
+	struct hwm_sensor_data data;
+	static int64_t last_time_stamp;
 	int status;
 	int64_t nt;
 	struct timespec time;
@@ -40,29 +40,22 @@ static void pedo_work_func(struct work_struct *work)
 	time = get_monotonic_coarse();
 	nt = time.tv_sec * 1000000000LL + time.tv_nsec;
 
-	err = cxt->pedo_data.get_data(data32, &status);
+	err = cxt->pedo_data.get_data(&data, &status);
 	if (err) {
 		PEDO_ERR("get pedo data fails!!\n");
 		goto pedo_loop;
 	} else {
-		if ((data32[0] == cxt->drv_data.pedo_data.values[0])
-		    && (data32[1] == cxt->drv_data.pedo_data.values[1])
-		    && (data32[2] == cxt->drv_data.pedo_data.values[2])
-		    && (data32[3] == cxt->drv_data.pedo_data.values[3])) {
-			goto pedo_loop;
-		} else {
-			cxt->drv_data.pedo_data.values[0] = data32[0];
-			cxt->drv_data.pedo_data.values[1] = data32[1];
-			cxt->drv_data.pedo_data.values[2] = data32[2];
-			cxt->drv_data.pedo_data.values[3] = data32[3];
-			/*PEDO_LOG("pedo values %d,%d,%d,%d\n" ,
-			   cxt->drv_data.pedo_data.values[0],
-			   cxt->drv_data.pedo_data.values[1],
-			   cxt->drv_data.pedo_data.values[2],
-			   cxt->drv_data.pedo_data.values[3]); */
-			cxt->drv_data.pedo_data.status = status;
-			cxt->drv_data.pedo_data.time = nt;
-		}
+		cxt->drv_data.pedo_data.values[0] = data.values[0];
+		cxt->drv_data.pedo_data.values[1] = data.values[1];
+		cxt->drv_data.pedo_data.values[2] = data.values[2];
+		cxt->drv_data.pedo_data.values[3] = data.values[3];
+		/*PEDO_LOG("pedo values %d,%d,%d,%d\n" ,
+		   cxt->drv_data.pedo_data.values[0],
+		   cxt->drv_data.pedo_data.values[1],
+		   cxt->drv_data.pedo_data.values[2],
+		   cxt->drv_data.pedo_data.values[3]); */
+		cxt->drv_data.pedo_data.status = status;
+		cxt->drv_data.pedo_data.time = data.time;
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
@@ -78,8 +71,10 @@ static void pedo_work_func(struct work_struct *work)
 	}
 	/*PEDO_LOG("pedo data %d,%d,%d %d\n" ,cxt->drv_data.pedo_data.values[0],
 	   cxt->drv_data.pedo_data.values[1],cxt->drv_data.pedo_data.values[2],cxt->drv_data.pedo_data.values[3]); */
-
-	pedo_data_report(&cxt->drv_data.pedo_data, cxt->drv_data.pedo_data.status);
+	if (last_time_stamp != cxt->drv_data.pedo_data.time) {
+		last_time_stamp = cxt->drv_data.pedo_data.time;
+		pedo_data_report(&cxt->drv_data.pedo_data, cxt->drv_data.pedo_data.status);
+	}
 
 pedo_loop:
 	if (true == cxt->is_polling_run) {
@@ -505,7 +500,8 @@ static int pedo_input_init(struct pedo_context *cxt)
 	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_COUNT);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_DISTANCE);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_PEDO_STATUS);
-
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_PEDO_TIMESTAMP_LO);
 	/* input_set_abs_params(dev, EVENT_TYPE_PEDO_LENGTH, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_PEDO_FREQUENCY, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_PEDO_COUNT, PEDO_VALUE_MIN, PEDO_VALUE_MAX, 0, 0);
@@ -597,14 +593,16 @@ int pedo_data_report(struct hwm_sensor_data *data, int status)
 	struct pedo_context *cxt = NULL;
 	int err = 0;
 
-	PEDO_LOG("pedo_data_report! %d, %d, %d, %d\n", data->values[0],
-		 data->values[1], data->values[2], data->values[3]);
+	/*PEDO_LOG("pedo_data_report! %d, %d, %d, %d\n", data->values[0],
+		 data->values[1], data->values[2], data->values[3]);*/
 	cxt = pedo_context_obj;
 	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_COUNT, data->values[0]);
 	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_LENGTH, data->values[1]);
 	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_FREQUENCY, data->values[2]);
 	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_DISTANCE, data->values[3]);
 	input_report_abs(cxt->idev, EVENT_TYPE_PEDO_STATUS, status);
+	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_TIMESTAMP_HI, data->time >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_PEDO_TIMESTAMP_LO, data->time & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return err;
 }

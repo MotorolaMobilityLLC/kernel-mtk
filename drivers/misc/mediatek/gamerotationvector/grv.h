@@ -60,11 +60,13 @@
 
 #define GRV_INVALID_VALUE -1
 
-#define EVENT_TYPE_GRV_X				ABS_RY
-#define EVENT_TYPE_GRV_Y				ABS_RZ
-#define EVENT_TYPE_GRV_Z				ABS_THROTTLE
-#define EVENT_TYPE_GRV_SCALAR		ABS_RUDDER
+#define EVENT_TYPE_GRV_X				REL_RX
+#define EVENT_TYPE_GRV_Y				REL_RY
+#define EVENT_TYPE_GRV_Z				REL_RZ
+#define EVENT_TYPE_GRV_SCALAR			REL_WHEEL
 #define EVENT_TYPE_GRV_STATUS			REL_X
+#define EVENT_TYPE_GRV_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_GRV_TIMESTAMP_LO		REL_DIAL
 
 #define GRV_VALUE_MAX (32767)
 #define GRV_VALUE_MIN (-32768)
@@ -141,7 +143,7 @@ struct grv_context {
 
 /* for auto detect */
 extern int grv_driver_add(struct grv_init_info *obj);
-extern int grv_data_report(int x, int y, int z, int scalar, int status);
+extern int grv_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
 extern int grv_register_control_path(struct grv_control_path *ctl);
 extern int grv_register_data_path(struct grv_data_path *data);
 

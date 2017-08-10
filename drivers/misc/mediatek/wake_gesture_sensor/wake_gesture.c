@@ -80,34 +80,31 @@ static int wag_real_enable(int enable)
 		if (atomic_read(&(wag_context_obj->early_suspend)))	/* not allow to enable under suspend */
 			return 0;
 
-		if (false == cxt->is_active_data) {
+
+		err = cxt->wag_ctl.open_report_data(1);
+		if (err) {
 			err = cxt->wag_ctl.open_report_data(1);
 			if (err) {
 				err = cxt->wag_ctl.open_report_data(1);
 				if (err) {
-					err = cxt->wag_ctl.open_report_data(1);
-					if (err) {
-						WAG_ERR
-						    ("enable_wake_gesture enable(%d) err 3 timers = %d\n",
-						     enable, err);
-						return err;
-					}
+					WAG_ERR
+					    ("enable_wake_gesture enable(%d) err 3 timers = %d\n",
+					     enable, err);
+					return err;
 				}
 			}
-			cxt->is_active_data = true;
-			WAG_LOG("enable_wake_gesture real enable\n");
 		}
+		cxt->is_active_data = true;
+		WAG_LOG("enable_wake_gesture real enable\n");
 	} else if ((0 == enable) || (WAG_SUSPEND == enable)) {
 		if (0 == enable)
 			resume_enable_status = 0;
-		if (true == cxt->is_active_data) {
-			err = cxt->wag_ctl.open_report_data(0);
-			if (err)
-				WAG_ERR("enable_wake_gestureenable(%d) err = %d\n", enable, err);
+		err = cxt->wag_ctl.open_report_data(0);
+		if (err)
+			WAG_ERR("enable_wake_gestureenable(%d) err = %d\n", enable, err);
 
-			cxt->is_active_data = false;
-			WAG_LOG("enable_wake_gesture real disable\n");
-		}
+		cxt->is_active_data = false;
+		WAG_LOG("enable_wake_gesture real disable\n");
 	}
 	return err;
 }

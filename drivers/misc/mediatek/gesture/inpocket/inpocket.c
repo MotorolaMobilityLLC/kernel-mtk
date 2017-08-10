@@ -83,7 +83,7 @@ static int inpocket_open_report_data(int open)
 	int ret = 0;
 
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_IN_POCKET, 20);
+		ret = sensor_set_delay_to_hub(ID_IN_POCKET, 60);
 	INPOCKET_LOG("%s : type=%d, open=%d\n", __func__, ID_IN_POCKET, open);
 	ret = sensor_enable_to_hub(ID_IN_POCKET, open);
 	return ret;

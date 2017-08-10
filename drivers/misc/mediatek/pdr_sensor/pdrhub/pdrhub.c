@@ -160,7 +160,7 @@ static int pdrsensor_open_report_data(int open)
 
 static int pdrsensor_enable_nodata(int en)
 {
-	PDRHUB_ERR("[Bai]>>pdrsensor_enable_nodata:%d\n", en);
+	/*PDRHUB_ERR("pdrsensor_enable_nodata:%d\n", en);*/
 	return sensor_enable_to_hub(ID_PDR, en);
 }
 
@@ -204,7 +204,6 @@ static int pdrhub_local_init(void)
 exit:
 	pdrhub_delete_attr(&(pdrhub_init_info.platform_diver_addr->driver));
 exit_create_attr_failed:
-	PDRHUB_ERR("[Bai]>> pdrhub local_init 4\n");
 	return -1;
 }
 

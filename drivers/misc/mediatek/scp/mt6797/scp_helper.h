@@ -95,8 +95,9 @@ typedef enum {
 	MP3_MEM_ID      = 2,
 	FLP_MEM_ID      = 3,
 	RTOS_MEM_ID     = 4,
-	OPENDSP_MEM_ID  = 5,
-	NUMS_MEM_ID     = 6,
+	OPENDSP_MEM_ID	= 5,
+	SENS_MEM_DIRECT_ID	= 6,
+	NUMS_MEM_ID     = 7,
 } scp_reserve_mem_id_t;
 typedef struct {
 	scp_reserve_mem_id_t num;

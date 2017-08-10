@@ -82,7 +82,7 @@ static int stat_open_report_data(int open)
 	int ret = 0;
 
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_STATIONARY, 20);
+		ret = sensor_set_delay_to_hub(ID_STATIONARY, 120);
 	STATHUB_LOG("%s : type=%d, open=%d\n", __func__, ID_STATIONARY, open);
 	ret = sensor_enable_to_hub(ID_STATIONARY, open);
 	return ret;

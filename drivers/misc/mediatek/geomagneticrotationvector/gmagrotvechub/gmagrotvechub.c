@@ -119,8 +119,8 @@ static int gmagrotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	*z				= data.magnetic_t.roll;
 	*scalar				= data.magnetic_t.scalar;
 	*status		= data.magnetic_t.status;
-	GMAGROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
-		time_stamp, time_stamp_gpt, *x, *y, *z);
+	/* GMAGROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
+		time_stamp, time_stamp_gpt, *x, *y, *z); */
 	return 0;
 }
 static int gmagrotvec_open_report_data(int open)
@@ -153,7 +153,7 @@ static int gmagrotvechub_local_init(void)
 	ctl.enable_nodata = gmagrotvec_enable_nodata;
 	ctl.set_delay = gmagrotvec_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = gmrv_register_control_path(&ctl);
 	if (err) {
 		GMAGROTVEC_ERR("register gmagrotvec control path err\n");

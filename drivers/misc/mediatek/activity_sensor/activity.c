@@ -24,15 +24,14 @@ static void act_work_func(struct work_struct *work)
 
 	struct act_context *cxt = NULL;
 	/* int out_size; */
-	/* hwm_sensor_data sensor_data; */
+	struct hwm_sensor_data sensor_data;
 	/* u64 data64[6]; //for unify get_data parameter type */
 	/* u16 data32[6]; //for hwm_sensor_data.values as int */
-	uint8_t data8_t[12];		/* for hwm_sensor_data.values as int */
 	int status;
 	int64_t nt;
 	struct timespec time;
 	int err = 0;
-
+	static int64_t last_time_stamp;
 	cxt = act_context_obj;
 
 	if (cxt->act_data.get_data == NULL)
@@ -45,54 +44,26 @@ static void act_work_func(struct work_struct *work)
 	/* add wake lock to make sure data can be read before system suspend */
 	/* initial data */
 
-	err = cxt->act_data.get_data(data8_t, &status);
+	err = cxt->act_data.get_data(&sensor_data, &status);
 
 	if (err) {
 		ACT_ERR("get act data fails!!\n");
 		goto act_loop;
 	} else {
-		if ((data8_t[0] == cxt->drv_data.probability[0])
-		    && (data8_t[1] == cxt->drv_data.probability[1])
-		    && (data8_t[2] == cxt->drv_data.probability[2])
-		    && (data8_t[3] == cxt->drv_data.probability[3])
-		    && (data8_t[4] == cxt->drv_data.probability[4])
-		    && (data8_t[5] == cxt->drv_data.probability[5])
-		    && (data8_t[6] == cxt->drv_data.probability[6])
-		    && (data8_t[7] == cxt->drv_data.probability[7])
-		    && (data8_t[8] == cxt->drv_data.probability[8])
-		    && (data8_t[9] == cxt->drv_data.probability[9])
-		    && (data8_t[10] == cxt->drv_data.probability[10])
-		    && (data8_t[11] == cxt->drv_data.probability[11])) {
-			goto act_loop;
-		} else {
-			cxt->drv_data.probability[0] = data8_t[0];
-			cxt->drv_data.probability[1] = data8_t[1];
-			cxt->drv_data.probability[2] = data8_t[2];
-			cxt->drv_data.probability[3] = data8_t[3];
-			cxt->drv_data.probability[4] = data8_t[4];
-			cxt->drv_data.probability[5] = data8_t[5];
-			cxt->drv_data.probability[6] = data8_t[6];
-			cxt->drv_data.probability[7] = data8_t[7];
-			cxt->drv_data.probability[8] = data8_t[8];
-			cxt->drv_data.probability[9] = data8_t[9];
-			cxt->drv_data.probability[10] = data8_t[10];
-			cxt->drv_data.probability[11] = data8_t[11];
-			/* ACT_ERR("act probability %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-				cxt->drv_data.probability[0],
-				cxt->drv_data.probability[1],
-				cxt->drv_data.probability[2],
-				cxt->drv_data.probability[3],
-				cxt->drv_data.probability[4],
-				cxt->drv_data.probability[5],
-				cxt->drv_data.probability[6],
-				cxt->drv_data.probability[7],
-				cxt->drv_data.probability[8],
-				cxt->drv_data.probability[9],
-				cxt->drv_data.probability[10],
-				cxt->drv_data.probability[11]); */
-			cxt->drv_data.status = status;
-			cxt->drv_data.time = nt;
-		}
+		cxt->drv_data.probability[0] = sensor_data.probability[0];
+		cxt->drv_data.probability[1] = sensor_data.probability[1];
+		cxt->drv_data.probability[2] = sensor_data.probability[2];
+		cxt->drv_data.probability[3] = sensor_data.probability[3];
+		cxt->drv_data.probability[4] = sensor_data.probability[4];
+		cxt->drv_data.probability[5] = sensor_data.probability[5];
+		cxt->drv_data.probability[6] = sensor_data.probability[6];
+		cxt->drv_data.probability[7] = sensor_data.probability[7];
+		cxt->drv_data.probability[8] = sensor_data.probability[8];
+		cxt->drv_data.probability[9] = sensor_data.probability[9];
+		cxt->drv_data.probability[10] = sensor_data.probability[10];
+		cxt->drv_data.probability[11] = sensor_data.probability[11];
+		cxt->drv_data.status = status;
+		cxt->drv_data.time = sensor_data.time;
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
@@ -118,8 +89,10 @@ static void act_work_func(struct work_struct *work)
 	/* report data to input devic */
 	/* ACT_LOG("act data[%d,%d,%d]\n" ,cxt->drv_data.act_data.probability[0],*/
 	/* cxt->drv_data.act_data.probability[1],cxt->drv_data.act_data.probability[2]);*/
-
-	act_data_report(cxt->drv_data, cxt->drv_data.status);
+	if (last_time_stamp != cxt->drv_data.time) {
+		last_time_stamp = cxt->drv_data.time;
+		act_data_report(&cxt->drv_data, cxt->drv_data.status);
+	}
 
 act_loop:
 	if (true == cxt->is_polling_run) {
@@ -603,7 +576,8 @@ static int act_input_init(struct act_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_ACT_CLIMBING);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_ACT_SITTING);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_ACT_STATUS);
-
+	input_set_capability(dev, EV_REL, EVENT_TYPE_ACT_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_ACT_TIMESTAMP_LO);
 	input_set_abs_params(dev, EVENT_TYPE_ACT_IN_VEHICLE, ACT_VALUE_MIN, ACT_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_ACT_ON_BICYCLE, ACT_VALUE_MIN, ACT_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_ACT_ON_FOOT, ACT_VALUE_MIN, ACT_VALUE_MAX, 0, 0);
@@ -699,25 +673,27 @@ int act_register_control_path(struct act_control_path *ctl)
 	return 0;
 }
 
-int act_data_report(struct act_sensor_data data, int status)
+int act_data_report(struct hwm_sensor_data *data, int status)
 {
 	struct act_context *cxt = NULL;
 	int err = 0;
 
 	cxt = act_context_obj;
 
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_STILL, data.probability[0]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_STANDING, data.probability[1]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_SITTING, data.probability[2]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_LYING, data.probability[3]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_ON_FOOT, data.probability[4]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_WALKING, data.probability[5]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_RUNNING, data.probability[6]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_CLIMBING, data.probability[7]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_ON_BICYCLE, data.probability[8]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_IN_VEHICLE, data.probability[9]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_TILTING, data.probability[10]);
-	input_report_abs(cxt->idev, EVENT_TYPE_ACT_UNKNOWN, data.probability[11]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_STILL, data->probability[0]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_STANDING, data->probability[1]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_SITTING, data->probability[2]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_LYING, data->probability[3]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_ON_FOOT, data->probability[4]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_WALKING, data->probability[5]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_RUNNING, data->probability[6]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_CLIMBING, data->probability[7]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_ON_BICYCLE, data->probability[8]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_IN_VEHICLE, data->probability[9]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_TILTING, data->probability[10]);
+	input_report_abs(cxt->idev, EVENT_TYPE_ACT_UNKNOWN, data->probability[11]);
+	input_report_rel(cxt->idev, EVENT_TYPE_ACT_TIMESTAMP_HI, data->time >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_ACT_TIMESTAMP_LO, data->time & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return err;
 }

@@ -73,7 +73,7 @@ static void uncali_mag_work_func(struct work_struct *work)
 	}
 
 	uncali_mag_data_report(cxt->drv_data.uncali_mag_data.values,
-			       cxt->drv_data.uncali_mag_data.status);
+			       cxt->drv_data.uncali_mag_data.status, nt);
 
 uncali_mag_loop:
 	if (true == cxt->is_polling_run)
@@ -509,6 +509,8 @@ static int uncali_mag_input_init(struct uncali_mag_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_X_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_Y_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_MAG_Z_BIAS);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_MAG_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_MAG_TIMESTAMP_LO);
 
 	input_set_abs_params(dev, EVENT_TYPE_UNCALI_MAG_X, UNCALI_MAG_VALUE_MIN,
 			     UNCALI_MAG_VALUE_MAX, 0, 0);
@@ -610,7 +612,7 @@ int uncali_mag_register_control_path(struct uncali_mag_control_path *ctl)
 	return 0;
 }
 
-int uncali_mag_data_report(int *data, int status)
+int uncali_mag_data_report(int *data, int status, int64_t nt)
 {
 	/* UNCALI_MAG_LOG("+uncali_mag_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct uncali_mag_context *cxt = NULL;
@@ -623,6 +625,8 @@ int uncali_mag_data_report(int *data, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_MAG_Y_BIAS, data[4]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_MAG_Z_BIAS, data[5]);
 	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_MAG_UPDATE, 1);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_MAG_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_MAG_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return 0;
 }

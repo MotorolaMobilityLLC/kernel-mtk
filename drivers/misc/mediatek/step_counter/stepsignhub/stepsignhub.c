@@ -262,7 +262,7 @@ static int step_chub_local_init(void)
 	ctl.step_c_set_delay = step_c_set_delay;
 	ctl.step_d_set_delay = step_d_set_delay;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = step_c_register_control_path(&ctl);
 	if (err) {
 		STEP_CDS_ERR("register step_cds control path err\n");

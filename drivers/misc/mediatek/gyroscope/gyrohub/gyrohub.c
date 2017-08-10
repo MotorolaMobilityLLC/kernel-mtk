@@ -887,7 +887,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 	ctl.enable_nodata = gyrohub_enable_nodata;
 	ctl.set_delay = gyrohub_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 
 	err = gyro_register_control_path(&ctl);
 	if (err) {

@@ -178,7 +178,7 @@ static int tiltdetecthub_local_init(void)
 	ctl.open_report_data = tilt_detect_open_report_data;
 	ctl.set_delay = tilt_detect_set_delay;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = tilt_register_control_path(&ctl);
 	if (err) {
 		TILTDETHUB_ERR("register tilt_detect control path err\n");

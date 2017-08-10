@@ -73,7 +73,7 @@ static void uncali_gyro_work_func(struct work_struct *work)
 	}
 
 	uncali_gyro_data_report(cxt->drv_data.uncali_gyro_data.values,
-				cxt->drv_data.uncali_gyro_data.status);
+				cxt->drv_data.uncali_gyro_data.status, nt);
 
 uncali_gyro_loop:
 	if (true == cxt->is_polling_run)
@@ -507,6 +507,8 @@ static int uncali_gyro_input_init(struct uncali_gyro_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_X_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_Y_BIAS);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_UNCALI_GYRO_Z_BIAS);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_GYRO_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_UNCALI_GYRO_TIMESTAMP_LO);
 
 	input_set_abs_params(dev, EVENT_TYPE_UNCALI_GYRO_X, UNCALI_GYRO_VALUE_MIN,
 			     UNCALI_GYRO_VALUE_MAX, 0, 0);
@@ -608,7 +610,7 @@ int uncali_gyro_register_control_path(struct uncali_gyro_control_path *ctl)
 	return 0;
 }
 
-int uncali_gyro_data_report(int *data, int status)
+int uncali_gyro_data_report(int *data, int status, int64_t nt)
 {
 	/* UNCALI_GYRO_LOG("+uncali_gyro_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct uncali_gyro_context *cxt = NULL;
@@ -621,6 +623,8 @@ int uncali_gyro_data_report(int *data, int status)
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_GYRO_Y_BIAS, data[4]);
 	input_report_abs(cxt->idev, EVENT_TYPE_UNCALI_GYRO_Z_BIAS, data[5]);
 	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_GYRO_UPDATE, 1);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_GYRO_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_UNCALI_GYRO_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return 0;
 }

@@ -15,7 +15,9 @@
 
 #define SCP_SENSOR_HUB_TEMP_BUFSIZE     256
 
-#define SCP_SENSOR_HUB_FIFO_SIZE        32768
+#define SCP_SENSOR_HUB_FIFO_SIZE        0x800000
+#define SCP_KFIFO_BUFFER_SIZE           (2048)
+#define SCP_DIRECT_PUSH_FIFO_SIZE       8192
 
 #define SCP_SENSOR_HUB_SUCCESS          0
 #define SCP_SENSOR_HUB_FAILURE          (-1)
@@ -36,7 +38,7 @@
 #define    SENSOR_HUB_BATCH_TIMEOUT 7
 #define    SENSOR_HUB_SET_TIMESTAMP	8
 #define    SENSOR_HUB_POWER_NOTIFY	9
-
+#define    SENSOR_HUB_MASK_NOTIFY	10
 /* SCP_NOTIFY EVENT */
 #define    SCP_INIT_DONE			0
 #define    SCP_FIFO_FULL			1
@@ -205,7 +207,7 @@ struct data_unit_t {
 	uint8_t sensor_type;
 	uint8_t reserve[3];
 	uint64_t time_stamp;	/* ms on CM4 time kick */
-	uint64_t time_stamp_gpt;	/* ms for sensor GPT AP SCP sync time */
+	int64_t time_stamp_gpt;	/* ms for sensor GPT AP SCP sync time */
 	union {
 		sensor_vec_t accelerometer_t;
 		sensor_vec_t gyroscope_t;
@@ -314,7 +316,6 @@ typedef struct {
 } SCP_SENSOR_HUB_BATCH_REQ;
 
 typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_BATCH_RSP;
-
 typedef struct {
 	uint8_t sensorType;
 	uint8_t action;
@@ -322,11 +323,23 @@ typedef struct {
 	/* struct sensorFIFO   *bufferBase; */
 	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
 	uint32_t bufferSize;
+	uint32_t directPushbufferBase;/* use int to store buffer DRAM base LSB 32 bits */
+	uint32_t directPushbufferSize;
 	uint64_t ap_timestamp;
 	/* uint32_t    reserved[8]; */
 } SCP_SENSOR_HUB_SET_CONFIG_REQ;
 
 typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_SET_CONFIG_RSP;
+
+typedef struct {
+	uint8_t sensorType;
+	uint8_t action;
+	uint8_t reserve[2];
+	/* struct sensorFIFO   *bufferBase; */
+	uint32_t if_mask_or_not;/* use int to store buffer DRAM base LSB 32 bits */
+} SCP_SENSOR_HUB_MASK_NOTIFY_REQ;
+
+typedef SCP_SENSOR_HUB_RSP SCP_SENSOR_HUB_MASK_NOTIFY_RSP;
 
 typedef enum {
 	CUST_ACTION_SET_CUST = 1,
@@ -462,6 +475,8 @@ typedef union {
 	SCP_SENSOR_HUB_BATCH_RSP batch_rsp;
 	SCP_SENSOR_HUB_SET_CONFIG_REQ set_config_req;
 	SCP_SENSOR_HUB_SET_CONFIG_RSP set_config_rsp;
+	SCP_SENSOR_HUB_MASK_NOTIFY_REQ mask_notify_req;
+	SCP_SENSOR_HUB_MASK_NOTIFY_RSP mask_notify_rsp;
 	SCP_SENSOR_HUB_SET_CUST_REQ set_cust_req;
 	SCP_SENSOR_HUB_SET_CUST_RSP set_cust_rsp;
 	SCP_SENSOR_HUB_NOTIFY_RSP notify_rsp;
@@ -475,4 +490,44 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable);
 int sensor_set_delay_to_hub(uint8_t sensorType, unsigned int delayms);
 int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data);
 int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data);
+
+#ifdef CONFIG_CUSTOM_KERNEL_ACCELEROMETER
+extern int acc_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_GYROSCOPE
+extern int gyro_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER
+extern int magnetic_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER
+extern int orientation_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_GRV_SENSOR
+extern int grv_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_GMRV_SENSOR
+extern int gmrv_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_GRAVITY_SENSOR
+extern int grav_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_LINEARACCEL_SENSOR
+extern int la_data_report(int x, int y, int z, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_RV_SENSOR
+extern int rotationvector_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_UNCALI_GYRO_SENSOR
+extern int uncali_gyro_data_report(int *data, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_UNCALI_MAG_SENSOR
+extern int uncali_mag_data_report(int *data, int status, int64_t nt);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_PEDOMETER
+extern int pedo_data_report(struct hwm_sensor_data *data, int status);
+#endif
+#ifdef CONFIG_CUSTOM_KERNEL_ACTIVITY_SENSOR
+extern int act_data_report(struct hwm_sensor_data *data, int status);
+#endif
 #endif

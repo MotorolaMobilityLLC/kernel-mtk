@@ -4107,6 +4107,9 @@
 	gyro:gyroscope@0 {
 			compatible = "mediatek,gyroscope";
 	};
+	pdrsensor@0 {
+			compatible = "mediatek,pdrsensor";
+	};
 	uncali_gyro@0 {
 			compatible = "mediatek,uncali_gyro";
 	};
@@ -4194,6 +4197,9 @@
 
 	gravity@0 {
 			compatible = "mediatek,gravity";
+	};
+	scp_sensorHub@0 {
+			compatible = "mediatek,sensorHub";
 	};
 /* sensor end */
 	shf{

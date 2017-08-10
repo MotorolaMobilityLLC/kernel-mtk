@@ -153,7 +153,7 @@ static int uncali_maghub_local_init(void)
 	ctl.enable_nodata = uncali_mag_enable_nodata;
 	ctl.set_delay = uncali_mag_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = uncali_mag_register_control_path(&ctl);
 	if (err) {
 		UNMAGHUB_ERR("register uncali_mag control path err\n");

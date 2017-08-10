@@ -915,7 +915,14 @@ int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status, int64_t
 
 	return 0;
 }
-
+int magnetic_data_report(int x, int y, int z, int status, int64_t nt)
+{
+	return mag_data_report(MAGNETIC, x, y, z, status, nt);
+}
+int orientation_data_report(int x, int y, int z, int status, int64_t nt)
+{
+	return mag_data_report(ORIENTATION, x, y, z, status, nt);
+}
 static int mag_probe(void)
 {
 	int err;

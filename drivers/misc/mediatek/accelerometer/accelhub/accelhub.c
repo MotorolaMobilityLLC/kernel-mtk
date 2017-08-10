@@ -643,6 +643,7 @@ static long compat_accelhub_unlocked_ioctl(struct file *filp, unsigned int cmd, 
 	case GSENSOR_IOCTL_CLR_CALI:
 	case GSENSOR_IOCTL_GET_CALI:
 		ret = filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+		break;
 	default:{
 			GSE_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 			return -ENOIOCTLCMD;
@@ -802,7 +803,7 @@ static int accelhub_probe(struct platform_device *pdev)
 	ctl.enable_nodata = gsensor_enable_nodata;
 	ctl.set_delay = gsensor_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 
 	err = acc_register_control_path(&ctl);
 	if (err) {

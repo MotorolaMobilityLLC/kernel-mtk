@@ -872,7 +872,7 @@ static int CM36558_check_intr(struct i2c_client *client)
 		goto EXIT_ERR;
 	}
 
-	APS_LOG("CM36558_REG_PS_DATA value value_low = %x, value_reserve = %x\n", databuf[0], databuf[1]);
+	pr_warn("CM36558_REG_PS_DATA value value_low = %x, value_reserve = %x\n", databuf[0], databuf[1]);
 
 	databuf[0] = CM36558_REG_INT_FLAG;
 	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
@@ -881,7 +881,7 @@ static int CM36558_check_intr(struct i2c_client *client)
 		goto EXIT_ERR;
 	}
 
-	APS_LOG("CM36558_REG_INT_FLAG value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
+	pr_warn("CM36558_REG_INT_FLAG value value_low = %x, value_high = %x\n", databuf[0], databuf[1]);
 
 	if (databuf[1] & 0x02) {
 		intr_flag = 0;
@@ -905,7 +905,7 @@ static void CM36558_eint_work(struct work_struct *work)
 	struct CM36558_priv *obj = (struct CM36558_priv *)container_of(work, struct CM36558_priv, eint_work);
 	int res = 0;
 
-	APS_LOG("CM36558 int top half time = %lld\n", int_top_time);
+	pr_warn("CM36558 int top half time = %lld\n", int_top_time);
 
 	res = CM36558_check_intr(obj->client);
 	if (res != 0) {
@@ -1002,7 +1002,6 @@ int CM36558_setup_eint(struct i2c_client *client)
 		}
 
 		enable_irq(CM36558_obj->irq);
-		enable_irq_wake(CM36558_obj->irq);
 	} else {
 		APS_ERR("null irq node!!\n");
 		return -EINVAL;
@@ -1267,12 +1266,26 @@ static long CM36558_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
  err_out:
 	return err;
 }
+
+static long compat_CM36558_unlocked_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		APS_ERR("compat_ioctl f_op has no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+}
+
 /*------------------------------misc device related operation functions------------------------------------*/
 static const struct file_operations CM36558_fops = {
 	.owner = THIS_MODULE,
 	.open = CM36558_open,
 	.release = CM36558_release,
 	.unlocked_ioctl = CM36558_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_CM36558_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice CM36558_device = {
@@ -1396,7 +1409,7 @@ static int als_enable_nodata(int en)
 {
 	int res = 0;
 
-	APS_LOG("CM36558_obj als enable value = %d\n", en);
+	APS_ERR("CM36558_obj als enable value = %d\n", en);
 
 	mutex_lock(&CM36558_mutex);
 	if (en)

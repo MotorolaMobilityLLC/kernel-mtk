@@ -113,8 +113,8 @@ static int barohub_get_pressure(char *buf, int bufsize)
 	time_stamp_gpt	= data.time_stamp_gpt;
 	pressure		= data.pressure_t.pressure;
 
-	BAR_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, pressure: %d!\n", time_stamp, time_stamp_gpt,
-			pressure);
+	/* BAR_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, pressure: %d!\n",
+	time_stamp, time_stamp_gpt, pressure); */
 
 	sprintf(buf, "%08x", pressure);
 	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL)
@@ -462,7 +462,7 @@ static int barohub_probe(struct platform_device *pdev)
 	ctl.enable_nodata = barohub_enable_nodata;
 	ctl.set_delay = barohub_set_delay;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 
 	err = baro_register_control_path(&ctl);
 	if (err) {

@@ -33,7 +33,7 @@ struct acthub_ipi_data {
 	atomic_t trace;
 	atomic_t suspend;
 	struct work_struct activity_work;
-	struct act_sensor_data drv_data;
+	struct hwm_sensor_data drv_data;
 };
 
 static struct acthub_ipi_data obj_ipi_data;
@@ -102,7 +102,7 @@ static int activityhub_delete_attr(struct device_driver *driver)
 	return err;
 }
 
-static int act_get_data(uint8_t *probability, int *status)
+static int act_get_data(struct hwm_sensor_data *sensor_data, int *status)
 {
 	int err = 0;
 	struct data_unit_t data;
@@ -112,18 +112,19 @@ static int act_get_data(uint8_t *probability, int *status)
 		ACTVTY_ERR("sensor_get_data_from_hub fail!!\n");
 		return -1;
 	}
-	probability[STILL] = data.activity_data_t.probability[STILL];
-	probability[STANDING] = data.activity_data_t.probability[STANDING];
-	probability[SITTING] = data.activity_data_t.probability[SITTING];
-	probability[LYING] = data.activity_data_t.probability[LYING];
-	probability[ON_FOOT] = data.activity_data_t.probability[ON_FOOT];
-	probability[WALKING] = data.activity_data_t.probability[WALKING];
-	probability[RUNNING] = data.activity_data_t.probability[RUNNING];
-	probability[CLIMBING] = data.activity_data_t.probability[CLIMBING];
-	probability[ON_BICYCLE] = data.activity_data_t.probability[ON_BICYCLE];
-	probability[IN_VEHICLE] = data.activity_data_t.probability[IN_VEHICLE];
-	probability[TILTING] = data.activity_data_t.probability[TILTING];
-	probability[UNKNOWN] = data.activity_data_t.probability[UNKNOWN];
+	sensor_data->probability[STILL] = data.activity_data_t.probability[STILL];
+	sensor_data->probability[STANDING] = data.activity_data_t.probability[STANDING];
+	sensor_data->probability[SITTING] = data.activity_data_t.probability[SITTING];
+	sensor_data->probability[LYING] = data.activity_data_t.probability[LYING];
+	sensor_data->probability[ON_FOOT] = data.activity_data_t.probability[ON_FOOT];
+	sensor_data->probability[WALKING] = data.activity_data_t.probability[WALKING];
+	sensor_data->probability[RUNNING] = data.activity_data_t.probability[RUNNING];
+	sensor_data->probability[CLIMBING] = data.activity_data_t.probability[CLIMBING];
+	sensor_data->probability[ON_BICYCLE] = data.activity_data_t.probability[ON_BICYCLE];
+	sensor_data->probability[IN_VEHICLE] = data.activity_data_t.probability[IN_VEHICLE];
+	sensor_data->probability[TILTING] = data.activity_data_t.probability[TILTING];
+	sensor_data->probability[UNKNOWN] = data.activity_data_t.probability[UNKNOWN];
+	sensor_data->time = (int64_t)(data.time_stamp + data.time_stamp_gpt);
 	return 0;
 }
 
@@ -211,6 +212,7 @@ static int activityhub_local_init(void)
 	}
 
 	data.get_data = act_get_data;
+	data.vender_div = 1;
 	err = act_register_data_path(&data);
 	if (err) {
 		ACTVTY_ERR("register activity data path err\n");
@@ -222,7 +224,7 @@ static int activityhub_local_init(void)
 		ACTVTY_ERR("SCP_sensorHub_rsp_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
-	err = batch_register_support_info(ID_ACTIVITY, ctl.is_support_batch, 1, 1);
+	err = batch_register_support_info(ID_ACTIVITY, ctl.is_support_batch, data.vender_div, 1);
 	if (err) {
 		ACTVTY_ERR("register activity batch support err = %d\n", err);
 		goto exit_create_attr_failed;

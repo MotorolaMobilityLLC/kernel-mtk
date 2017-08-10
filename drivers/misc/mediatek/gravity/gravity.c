@@ -70,7 +70,7 @@ static void grav_work_func(struct work_struct *work)
 
 	grav_data_report(cxt->drv_data.grav_data.values[0],
 			 cxt->drv_data.grav_data.values[1], cxt->drv_data.grav_data.values[2],
-			 cxt->drv_data.grav_data.status);
+			 cxt->drv_data.grav_data.status, nt);
 
 grav_loop:
 	if (true == cxt->is_polling_run)
@@ -484,14 +484,15 @@ static int grav_input_init(struct grav_context *cxt)
 
 	dev->name = GRAV_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRAV_X);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRAV_Y);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GRAV_Z);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_X);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_Y);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_Z);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_STATUS);
-
-	input_set_abs_params(dev, EVENT_TYPE_GRAV_X, GRAV_VALUE_MIN, GRAV_VALUE_MAX, 0, 0);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GRAV_TIMESTAMP_LO);
+	/*input_set_abs_params(dev, EVENT_TYPE_GRAV_X, GRAV_VALUE_MIN, GRAV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GRAV_Y, GRAV_VALUE_MIN, GRAV_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_GRAV_Z, GRAV_VALUE_MIN, GRAV_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_GRAV_Z, GRAV_VALUE_MIN, GRAV_VALUE_MAX, 0, 0);*/
 	input_set_drvdata(dev, cxt);
 
 	input_set_events_per_packet(dev, 32);
@@ -578,19 +579,21 @@ int grav_register_control_path(struct grav_control_path *ctl)
 	return 0;
 }
 
-int grav_data_report(int x, int y, int z, int status)
+int grav_data_report(int x, int y, int z, int status, int64_t nt)
 {
 	struct grav_context *cxt = NULL;
 	int err = 0;
 
 	cxt = grav_context_obj;
 
-	GRAV_LOG("grav_data_report! %d, %d, %d, %d\n", x, y, z, status);
+	/* GRAV_LOG("grav_data_report! %d, %d, %d, %d\n", x, y, z, status); */
 
-	input_report_abs(cxt->idev, EVENT_TYPE_GRAV_X, x);
-	input_report_abs(cxt->idev, EVENT_TYPE_GRAV_Y, y);
-	input_report_abs(cxt->idev, EVENT_TYPE_GRAV_Z, z);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_X, x);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_Y, y);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_Z, z);
 	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_STATUS, status);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_GRAV_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return err;
 }

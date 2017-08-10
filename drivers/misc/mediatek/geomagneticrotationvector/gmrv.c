@@ -79,7 +79,7 @@ static void gmrv_work_func(struct work_struct *work)
 	gmrv_data_report(cxt->drv_data.gmrv_data.values[0],
 			 cxt->drv_data.gmrv_data.values[1],
 			 cxt->drv_data.gmrv_data.values[2],
-			 cxt->drv_data.gmrv_data.values[3], cxt->drv_data.gmrv_data.status);
+			 cxt->drv_data.gmrv_data.values[3], cxt->drv_data.gmrv_data.status, nt);
 
 gmrv_loop:
 	if (true == cxt->is_polling_run)
@@ -513,16 +513,17 @@ static int gmrv_input_init(struct gmrv_context *cxt)
 
 	dev->name = GMRV_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GMRV_X);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GMRV_Y);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GMRV_Z);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_GMRV_SCALAR);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_X);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_Y);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_Z);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_SCALAR);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_STATUS);
-
-	input_set_abs_params(dev, EVENT_TYPE_GMRV_X, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_GMRV_TIMESTAMP_LO);
+	/*input_set_abs_params(dev, EVENT_TYPE_GMRV_X, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GMRV_Y, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GMRV_Z, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_GMRV_SCALAR, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_GMRV_SCALAR, GMRV_VALUE_MIN, GMRV_VALUE_MAX, 0, 0);*/
 	input_set_drvdata(dev, cxt);
 
 	input_set_events_per_packet(dev, 32);	/* test */
@@ -607,16 +608,18 @@ int gmrv_register_control_path(struct gmrv_control_path *ctl)
 	return 0;
 }
 
-int gmrv_data_report(int x, int y, int z, int scalar, int status)
+int gmrv_data_report(int x, int y, int z, int scalar, int status, int64_t nt)
 {
 	/* GMRV_LOG("+gmrv_data_report! %d, %d, %d, %d\n",x,y,z,status); */
 	struct gmrv_context *cxt = NULL;
 
 	cxt = gmrv_context_obj;
-	input_report_abs(cxt->idev, EVENT_TYPE_GMRV_X, x);
-	input_report_abs(cxt->idev, EVENT_TYPE_GMRV_Y, y);
-	input_report_abs(cxt->idev, EVENT_TYPE_GMRV_Z, z);
-	input_report_abs(cxt->idev, EVENT_TYPE_GMRV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_X, x);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_Y, y);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_Z, z);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_SCALAR, scalar);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_GMRV_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	/* input_report_rel(cxt->idev, EVENT_TYPE_GMRV_STATUS, status); */
 	input_sync(cxt->idev);
 	return 0;

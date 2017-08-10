@@ -340,7 +340,9 @@ EXPORT_SYMBOL_GPL(ges_driver_add);
 static int ges_misc_init(struct ges_context *cxt)
 {
 	int err = 0;
-	cxt->mdev.minor = 252;/*MISC_DYNAMIC_MINOR;*/
+	/* kernel-3.10\include\linux\Miscdevice.h */
+	/* use MISC_DYNAMIC_MINOR exceed 64 */
+	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = GES_MISC_DEV_NAME;
 
 	err = misc_register(&cxt->mdev);

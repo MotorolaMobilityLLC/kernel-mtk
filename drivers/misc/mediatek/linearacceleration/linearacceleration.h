@@ -60,10 +60,12 @@
 
 #define LA_INVALID_VALUE -1
 
-#define EVENT_TYPE_LA_X						ABS_RX
-#define EVENT_TYPE_LA_Y				ABS_Y
-#define EVENT_TYPE_LA_Z				ABS_Z
-#define EVENT_TYPE_LA_STATUS			REL_X
+#define EVENT_TYPE_LA_X				REL_RX
+#define EVENT_TYPE_LA_Y				REL_RY
+#define EVENT_TYPE_LA_Z				REL_RZ
+#define EVENT_TYPE_LA_STATUS		REL_X
+#define EVENT_TYPE_LA_TIMESTAMP_HI	REL_HWHEEL
+#define EVENT_TYPE_LA_TIMESTAMP_LO	REL_DIAL
 
 #define LA_VALUE_MAX (32767)
 #define LA_VALUE_MIN (-32768)
@@ -134,7 +136,7 @@ struct la_context {
 };
 
 extern int la_driver_add(struct la_init_info *obj);
-extern int la_data_report(int x, int y, int z, int status);
+extern int la_data_report(int x, int y, int z, int status, int64_t nt);
 extern int la_register_control_path(struct la_control_path *ctl);
 extern int la_register_data_path(struct la_data_path *data);
 #endif

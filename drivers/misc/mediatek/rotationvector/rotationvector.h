@@ -60,11 +60,13 @@
 
 #define RV_INVALID_VALUE -1
 
-#define EVENT_TYPE_RV_X					ABS_RY
-#define EVENT_TYPE_RV_Y					ABS_RZ
-#define EVENT_TYPE_RV_Z					ABS_THROTTLE
-#define EVENT_TYPE_RV_SCALAR		ABS_RUDDER
+#define EVENT_TYPE_RV_X					REL_RX
+#define EVENT_TYPE_RV_Y					REL_RY
+#define EVENT_TYPE_RV_Z					REL_RZ
+#define EVENT_TYPE_RV_SCALAR			REL_WHEEL
 #define EVENT_TYPE_RV_STATUS			REL_X
+#define EVENT_TYPE_RV_TIMESTAMP_HI		REL_HWHEEL
+#define EVENT_TYPE_RV_TIMESTAMP_LO		REL_DIAL
 
 #define RV_VALUE_MAX (32767)
 #define RV_VALUE_MIN (-32768)
@@ -141,7 +143,7 @@ struct rotationvector_context {
 
 /* for auto detect */
 extern int rotationvector_driver_add(struct rotationvector_init_info *obj);
-extern int rotationvector_data_report(int x, int y, int z, int scalar, int status);
+extern int rotationvector_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
 extern int rotationvector_register_control_path(struct rotationvector_control_path *ctl);
 extern int rotationvector_register_data_path(struct rotationvector_data_path *data);
 

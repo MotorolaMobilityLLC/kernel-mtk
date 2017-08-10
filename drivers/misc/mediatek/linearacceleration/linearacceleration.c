@@ -70,7 +70,7 @@ static void la_work_func(struct work_struct *work)
 
 	la_data_report(cxt->drv_data.la_data.values[0],
 		       cxt->drv_data.la_data.values[1], cxt->drv_data.la_data.values[2],
-		       cxt->drv_data.la_data.status);
+		       cxt->drv_data.la_data.status, nt);
 
 la_loop:
 	if (true == cxt->is_polling_run)
@@ -481,14 +481,15 @@ static int la_input_init(struct la_context *cxt)
 
 	dev->name = LA_INPUTDEV_NAME;
 
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_LA_X);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_LA_Y);
-	input_set_capability(dev, EV_ABS, EVENT_TYPE_LA_Z);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_X);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_Y);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_Z);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_STATUS);
-
-	input_set_abs_params(dev, EVENT_TYPE_LA_X, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_TIMESTAMP_HI);
+	input_set_capability(dev, EV_REL, EVENT_TYPE_LA_TIMESTAMP_LO);
+	/*input_set_abs_params(dev, EVENT_TYPE_LA_X, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_LA_Y, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);
-	input_set_abs_params(dev, EVENT_TYPE_LA_Z, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_LA_Z, LA_VALUE_MIN, LA_VALUE_MAX, 0, 0);*/
 	input_set_drvdata(dev, cxt);
 
 	input_set_events_per_packet(dev, 32);
@@ -574,19 +575,21 @@ int la_register_control_path(struct la_control_path *ctl)
 	return 0;
 }
 
-int la_data_report(int x, int y, int z, int status)
+int la_data_report(int x, int y, int z, int status, int64_t nt)
 {
 	struct la_context *cxt = NULL;
 	int err = 0;
 
 	cxt = la_context_obj;
 
-	LA_LOG("la_data_report! %d, %d, %d, %d\n", x, y, z, status);
+	/* LA_LOG("la_data_report! %d, %d, %d, %d\n", x, y, z, status); */
 
-	input_report_abs(cxt->idev, EVENT_TYPE_LA_X, x);
-	input_report_abs(cxt->idev, EVENT_TYPE_LA_Y, y);
-	input_report_abs(cxt->idev, EVENT_TYPE_LA_Z, z);
+	input_report_rel(cxt->idev, EVENT_TYPE_LA_X, x);
+	input_report_rel(cxt->idev, EVENT_TYPE_LA_Y, y);
+	input_report_rel(cxt->idev, EVENT_TYPE_LA_Z, z);
 	input_report_rel(cxt->idev, EVENT_TYPE_LA_STATUS, status);
+	input_report_rel(cxt->idev, EVENT_TYPE_LA_TIMESTAMP_HI, nt >> 32);
+	input_report_rel(cxt->idev, EVENT_TYPE_LA_TIMESTAMP_LO, nt & 0xFFFFFFFFLL);
 	input_sync(cxt->idev);
 	return err;
 }

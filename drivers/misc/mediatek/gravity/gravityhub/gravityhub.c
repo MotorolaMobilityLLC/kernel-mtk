@@ -117,8 +117,8 @@ static int grav_get_data(int *x, int *y, int *z, int *status)
 	*y = data.accelerometer_t.y;
 	*z = data.accelerometer_t.z;
 	*status = data.accelerometer_t.status;
-	GRVTY_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n", time_stamp, time_stamp_gpt,
-		*x, *y, *z);
+	/* GRVTY_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
+			time_stamp, time_stamp_gpt, *x, *y, *z); */
 	return 0;
 }
 static int grav_open_report_data(int open)
@@ -151,7 +151,7 @@ static int gravityhub_local_init(void)
 	ctl.enable_nodata = grav_enable_nodata;
 	ctl.set_delay = grav_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = grav_register_control_path(&ctl);
 	if (err) {
 		GRVTY_ERR("register gravity control path err\n");

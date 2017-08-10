@@ -153,7 +153,7 @@ static int gamerotvechub_local_init(void)
 	ctl.enable_nodata = gamerotvec_enable_nodata;
 	ctl.set_delay = gamerotvec_set_delay;
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = true;
+	ctl.is_support_batch = false;
 	err = grv_register_control_path(&ctl);
 	if (err) {
 		GROTVEC_ERR("register gamerotvec control path err\n");

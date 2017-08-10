@@ -68,39 +68,36 @@ static int tilt_real_enable(int enable)
 		if (atomic_read(&(tilt_context_obj->early_suspend)))	/* not allow to enable under suspend */
 			return 0;
 
-		if (false == cxt->is_active_data) {
-			if (NULL != cxt->tilt_ctl.set_delay) {
-				if (cxt->is_batch_enable == false)
-					cxt->tilt_ctl.set_delay(66000000);
-			} else {
-				TILT_ERR("tilt set delay = NULL\n");
-			}
+		if (NULL != cxt->tilt_ctl.set_delay) {
+			if (cxt->is_batch_enable == false)
+				cxt->tilt_ctl.set_delay(120000000);
+		} else {
+			TILT_ERR("tilt set delay = NULL\n");
+		}
+		err = cxt->tilt_ctl.open_report_data(1);
+		if (err) {
 			err = cxt->tilt_ctl.open_report_data(1);
 			if (err) {
 				err = cxt->tilt_ctl.open_report_data(1);
 				if (err) {
-					err = cxt->tilt_ctl.open_report_data(1);
-					if (err) {
-						TILT_ERR
-						    ("enable_tilt_detector enable(%d) err 3 timers = %d\n",
-						     enable, err);
-						return err;
-					}
+					TILT_ERR
+					    ("enable_tilt_detector enable(%d) err 3 timers = %d\n",
+					     enable, err);
+					return err;
 				}
 			}
-			cxt->is_active_data = true;
-			TILT_LOG("enable_tilt_detector real enable\n");
 		}
+		cxt->is_active_data = true;
+		TILT_LOG("enable_tilt_detector real enable\n");
+
 	} else if ((0 == enable) || (TILT_SUSPEND == enable)) {
 		if (0 == enable)
 			resume_enable_status = 0;
-		if (true == cxt->is_active_data) {
-			err = cxt->tilt_ctl.open_report_data(0);
-			if (err)
-				TILT_ERR("enable_tilt_detectorenable(%d) err = %d\n", enable, err);
-			cxt->is_active_data = false;
-			TILT_LOG("enable_tilt_detector real disable\n");
-		}
+		err = cxt->tilt_ctl.open_report_data(0);
+		if (err)
+			TILT_ERR("enable_tilt_detectorenable(%d) err = %d\n", enable, err);
+		cxt->is_active_data = false;
+		TILT_LOG("enable_tilt_detector real disable\n");
 	}
 	return err;
 }
@@ -231,6 +228,7 @@ static ssize_t tilt_store_batch(struct device *dev, struct device_attribute *att
 		cxt->is_batch_enable = false;
 	else
 		TILT_ERR(" tilt_store_batch error !!\n");
+
 	mutex_unlock(&cxt->tilt_op_mutex);
 	return len;
 }

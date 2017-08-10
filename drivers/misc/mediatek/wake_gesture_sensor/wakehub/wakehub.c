@@ -38,9 +38,9 @@
 
 
 #define WAKEHUB_TAG                  "[wakehub] "
-#define WAKEHUB_FUN(f)               printk(WAKEHUB_TAG"%s\n", __func__)
-#define WAKEHUB_ERR(fmt, args...)    printk(WAKEHUB_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define WAKEHUB_LOG(fmt, args...)    printk(WAKEHUB_TAG fmt, ##args)
+#define WAKEHUB_FUN(f)               pr_debug(WAKEHUB_TAG"%s\n", __func__)
+#define WAKEHUB_ERR(fmt, args...)    pr_err(WAKEHUB_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define WAKEHUB_LOG(fmt, args...)    pr_debug(WAKEHUB_TAG fmt, ##args)
 
 typedef enum {
 	WAKEHUB_TRC_INFO = 0X10,
@@ -150,7 +150,7 @@ static int wake_gesture_open_report_data(int open)
 
 	WAKEHUB_ERR("%s : enable=%d\n", __func__, open);
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 66);
+		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 120);
 	ret = sensor_enable_to_hub(ID_TILT_DETECTOR, open);
 	return ret;
 }

@@ -60,11 +60,13 @@
 
 #define GMRV_INVALID_VALUE -1
 
-#define EVENT_TYPE_GMRV_X				ABS_RY
-#define EVENT_TYPE_GMRV_Y				ABS_RZ
-#define EVENT_TYPE_GMRV_Z				ABS_THROTTLE
-#define EVENT_TYPE_GMRV_SCALAR		ABS_RUDDER
+#define EVENT_TYPE_GMRV_X				REL_RX
+#define EVENT_TYPE_GMRV_Y				REL_RY
+#define EVENT_TYPE_GMRV_Z				REL_RZ
+#define EVENT_TYPE_GMRV_SCALAR			REL_WHEEL
 #define EVENT_TYPE_GMRV_STATUS			REL_X
+#define EVENT_TYPE_GMRV_TIMESTAMP_HI	REL_HWHEEL
+#define EVENT_TYPE_GMRV_TIMESTAMP_LO	REL_DIAL
 
 #define GMRV_VALUE_MAX (32767)
 #define GMRV_VALUE_MIN (-32768)
@@ -141,7 +143,7 @@ struct gmrv_context {
 
 /* for auto detect */
 extern int gmrv_driver_add(struct gmrv_init_info *obj);
-extern int gmrv_data_report(int x, int y, int z, int scalar, int status);
+extern int gmrv_data_report(int x, int y, int z, int scalar, int status, int64_t nt);
 extern int gmrv_register_control_path(struct gmrv_control_path *ctl);
 extern int gmrv_register_data_path(struct gmrv_data_path *data);
 
