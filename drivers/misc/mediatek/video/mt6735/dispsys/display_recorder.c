@@ -1289,6 +1289,10 @@ int dprec_init(void)
 	return 0;
 }
 
+void init_log_buffer(void)
+{
+}
+
 void dprec_event_op(DPREC_EVENT event)
 {
 }
