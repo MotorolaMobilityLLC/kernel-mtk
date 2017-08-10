@@ -253,10 +253,53 @@ static bool mu3d_hal_is_vbus_exist(void)
 
 }
 
+static int mu3d_test_connect;
+static bool test_connected;
+static struct delayed_work mu3d_test_connect_work;
+#define TEST_CONNECT_BASE_MS 3000
+#define TEST_CONNECT_BIAS_MS 5000
+static void do_mu3d_test_connect_work(struct work_struct *work)
+{
+	static ktime_t ktime;
+	static unsigned long int ktime_us;
+	unsigned int delay_time_ms;
+
+	if (!mu3d_test_connect) {
+		test_connected = false;
+		os_printk(K_INFO, "%s, test done, trigger connect\n", __func__);
+		mt_usb_connect();
+		return;
+	}
+	mt_usb_connect();
+
+	ktime = ktime_get();
+	ktime_us = ktime_to_us(ktime);
+	delay_time_ms = TEST_CONNECT_BASE_MS + (ktime_us % TEST_CONNECT_BIAS_MS);
+	os_printk(K_INFO, "%s, work after %d ms\n", __func__, delay_time_ms);
+	schedule_delayed_work(&mu3d_test_connect_work, msecs_to_jiffies(delay_time_ms));
+
+	test_connected = !test_connected;
+}
+void mt_usb_connect_test(int start)
+{
+	if (start) {
+		mu3d_test_connect = 1;
+		INIT_DELAYED_WORK(&mu3d_test_connect_work, do_mu3d_test_connect_work);
+		schedule_delayed_work(&mu3d_test_connect_work, 0);
+	} else {
+		mu3d_test_connect = 0;
+	}
+}
+
 bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
+
+	if (mu3d_test_connect) {
+		os_printk(K_INFO, "%s, return test_connected<%d>\n", __func__, test_connected);
+		return test_connected;
+	}
 
 	if (mu3d_force_on) {
 		/* FORCE USB ON */

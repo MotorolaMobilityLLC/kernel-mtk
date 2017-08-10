@@ -2922,6 +2922,14 @@ static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
 		os_printk(K_WARNIN, "trigger reconnect\n");
 		mt_usb_connect();
 		break;
+	case 3:
+		os_printk(K_WARNIN, "start connect test\n");
+		mt_usb_connect_test(1);
+		break;
+	case 4:
+		os_printk(K_WARNIN, "stop connect test\n");
+		mt_usb_connect_test(0);
+		break;
 	default:
 		break;
 	}
