@@ -202,7 +202,7 @@ m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva
 
 	CMDQ_ERR("=============== [MDP] Frame Information Begin ====================================\n");
 	/* find dispatch module and assign dispatch key */
-	sprintf(dispatchModel, "%s", cmdq_mdp_check_TF_address(mva));
+	snprintf(dispatchModel, sizeof(dispatchModel), "%s", cmdq_mdp_check_TF_address(mva));
 	CMDQ_ERR("[MDP] TF dispatch model: %s\n", dispatchModel);
 	CMDQ_ERR("=============== [MDP] Frame Information End ====================================\n");
 	CMDQ_ERR("================= [MDP M4U] Dump End ================\n");
