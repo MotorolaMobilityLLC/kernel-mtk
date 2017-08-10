@@ -70,6 +70,9 @@ static char str_buf[NR_CPUS][PRINTK_BUFFER_SIZE];
 #define ATF_AEE_DEBUG_BUF_LENGTH	0x4000
 static void *atf_aee_debug_virt_addr;
 
+static atomic_t aee_wdt_zap_lock;
+int no_zap_locks;
+
 struct atf_aee_regs {
 	__u64 regs[31];
 	__u64 sp;
@@ -439,8 +442,19 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 			cpu_relax();
 	}
 
+
 	/* Wait for other cpu dump */
 	mdelay(1000);
+
+	/* printk lock: exec aee_wdt_zap_lock() only one time */
+	if (atomic_xchg(&aee_wdt_zap_lock, 0)) {
+		if (!no_zap_locks) {
+			aee_wdt_zap_locks();
+			snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\nCPU%d: zap printk locks\n", cpu);
+			aee_sram_fiq_log(str_buf[cpu]);
+			memset(str_buf[cpu], 0, sizeof(str_buf[cpu]));
+		}
+	}
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_KICK);
 	res = get_wd_api(&wd_api);
@@ -493,6 +507,7 @@ void notrace aee_wdt_atf_entry(void)
 	int cpu = get_HW_cpuid();
 
 	aee_rr_rec_exp_type(1);
+
 	if (atf_aee_debug_virt_addr) {
 		regs = (void *)(atf_aee_debug_virt_addr + (cpu * sizeof(struct atf_aee_regs)));
 
@@ -547,6 +562,8 @@ static int __init aee_wdt_init(void)
 	phys_addr_t atf_aee_debug_phy_addr;
 
 	atomic_set(&wdt_enter_fiq, 0);
+	atomic_set(&aee_wdt_zap_lock, 1);
+
 	for (i = 0; i < NR_CPUS; i++) {
 		wdt_percpu_log_buf[i] = kzalloc(WDT_PERCPU_LOG_SIZE, GFP_KERNEL);
 		if (wdt_percpu_log_buf[i] == NULL)

@@ -48,4 +48,5 @@ extern void dump_log_idle(void);
 extern void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 #endif
 /* extern void mt_fiq_printf(const char *fmt, ...); */
+extern int no_zap_locks;
 #endif				/* AEE_COMMON_H */
