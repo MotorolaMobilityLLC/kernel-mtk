@@ -2216,7 +2216,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
-    LOG_INF("L\n");
+
     return ERROR_NONE;
 }   /*  preview   */
 
@@ -2482,7 +2482,6 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
     sensor_resolution->SensorCustom5Width  = imgsensor_info.custom5.grabwindow_width;
     sensor_resolution->SensorCustom5Height     = imgsensor_info.custom5.grabwindow_height;
 
-    LOG_INF("L\n");
     return ERROR_NONE;
 }   /*  get_resolution  */
 
@@ -2895,7 +2894,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-    LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;
