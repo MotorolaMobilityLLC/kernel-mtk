@@ -29,6 +29,7 @@
 #include <asm/uaccess.h>
 #include <linux/version.h>
 
+
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #define COLLECT_GPU_MEMINFO
 #endif
@@ -49,13 +50,13 @@
 #include "mlog_internal.h"
 #include "mlog_logger.h"
 
-#define CONFIG_MLOG_BUF_SHIFT   16	/* 64KB */
+#define CONFIG_MLOG_BUF_SHIFT   16	/* 64KB for 32bit, 128kB for 64bit */
 
 #define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
 #define B2K(x) (((unsigned long)x) >> (10))
 
 
-#define MLOG_STR_LEN        16
+#define MLOG_STR_LEN        32
 #define MLOG_BUF_LEN        ((1 << CONFIG_MLOG_BUF_SHIFT) >> 2)
 #define MLOG_BUF_MASK       (mlog_buf_len-1)
 #define MLOG_BUF(idx)       (mlog_buffer[(idx) & MLOG_BUF_MASK])
@@ -68,19 +69,21 @@
 #define M_MEMFREE           (1 << 0)
 #define M_SWAPFREE          (1 << 1)
 #define M_CACHED            (1 << 2)
-#define M_GPUUSE            (1 << 3)
-#define M_MLOCK             (1 << 4)
-#define M_ZRAM              (1 << 5)
-#define M_ACTIVE              (1 << 6)
-#define M_INACTIVE              (1 << 7)
-#define M_SHMEM              (1 << 8)
-#define M_GPU_PAGE_CACHE              (1 << 9)
-#define M_ION              (1 << 10)
+#define M_KERNEL            (1 << 3)
+#define M_PAGE_TABLE        (1 << 4)
+#define M_SLAB              (1 << 5)
+#define M_GPUUSE            (1 << 6)
+#define M_MLOCK             (1 << 7)
+#define M_ZRAM              (1 << 8)
+#define M_ACTIVE            (1 << 9)
+#define M_INACTIVE          (1 << 10)
+#define M_SHMEM             (1 << 11)
+#define M_GPU_PAGE_CACHE    (1 << 12)
+#define M_ION               (1 << 13)
 
 #define V_PSWPIN            (1 << 0)
 #define V_PSWPOUT           (1 << 1)
 #define V_PGFMFAULT         (1 << 2)
-#define V_PGANFAULT         (1 << 3)
 
 #define P_ADJ               (1 << 0)
 #define P_RSS               (1 << 1)
@@ -91,17 +94,18 @@
 #define P_MINFAULT          (1 << 6)
 #define P_MAJFAULT          (1 << 7)
 
-#define B_NORMAL               (1 << 0)
-#define B_HIGH               (1 << 1)
+#define B_NORMAL            (1 << 0)
+#define B_HIGH              (1 << 1)
 
 #define P_FMT_SIZE          (P_RSS | P_RSWAP)
 #define P_FMT_COUNT         (P_SWPIN | P_SWPOUT | P_FMFAULT | P_MINFAULT | P_MAJFAULT)
 
-#define M_FILTER_ALL        (M_MEMFREE | M_SWAPFREE | M_CACHED | M_GPUUSE \
-				| M_GPU_PAGE_CACHE | M_MLOCK | M_ZRAM \
+#define M_FILTER_ALL        (M_MEMFREE | M_SWAPFREE | M_CACHED \
+				| M_KERNEL | M_PAGE_TABLE | M_SLAB \
+				| M_GPUUSE | M_GPU_PAGE_CACHE | M_MLOCK | M_ZRAM \
 				| M_ACTIVE | M_INACTIVE | M_SHMEM | M_ION)
 
-#define V_FILTER_ALL        (V_PSWPIN | V_PSWPOUT | V_PGFMFAULT | V_PGANFAULT)
+#define V_FILTER_ALL        (V_PSWPIN | V_PSWPOUT | V_PGFMFAULT)
 #define P_FILTER_ALL        (P_ADJ | P_RSS | P_RSWAP | P_SWPIN | P_SWPOUT | P_FMFAULT)
 #define B_FILTER_ALL        (B_NORMAL | B_HIGH)
 
@@ -135,12 +139,13 @@ static int strfmt_proc;
 
 static const char cr_str[] = "%c";
 static const char type_str[] = "<%ld>";
-static const char time_sec_str[] = "[%5lu";
+static const char time_sec_str[] = ",[%5lu";
 static const char time_nanosec_str[] = ".%06lu]";
-static const char mem_size_str[] = " %6lu";
-static const char acc_count_str[] = " %7lu";
-static const char pid_str[] = " [%lu]";
-static const char adj_str[] = " %3ld";
+static const char mem_size_str[] = ",%6lu";
+static const char acc_count_str[] = ",%7lu";
+static const char pid_str[] = ",[%lu]";
+static const char pname_str[] = ", %s";
+static const char adj_str[] = ", %3ld";
 
 /*
 buddyinfo
@@ -148,9 +153,9 @@ Node 0, zone   Normal    486    297    143     59     30     16      7      0   
 Node 0, zone  HighMem     74     18      7     65    161     67     23     10      0      1     21
 */
 				      /* 0    1     2    3    4     5    6    7    8     9    10 */
-static const char order_start_str[] = " [%6lu";
-static const char order_middle_str[] = " %6lu";
-static const char order_end_str[] = " %6lu]";
+static const char order_start_str[] = ", [%6lu";
+static const char order_middle_str[] = ", %6lu";
+static const char order_end_str[] = ", %6lu]";
 
 /*
 active & inactive
@@ -207,6 +212,9 @@ static void mlog_reset_format(void)
 
 	if (proc_filter) {
 		len++;		/* PID */
+#ifdef PRINT_PROCESS_NAME_DEBUG
+		len++;		/* Process name */
+#endif
 		len += hweight32(proc_filter);
 	}
 
@@ -257,6 +265,9 @@ static void mlog_reset_format(void)
 
 		strfmt_proc = len;
 		strfmt_list[len++] = pid_str;	/* PID */
+#ifdef PRINT_PROCESS_NAME_DEBUG
+		strfmt_list[len++] = pname_str;	/* Process name */
+#endif
 		strfmt_list[len++] = adj_str;	/* ADJ */
 		for (i = 0; i < hweight32(proc_filter & (P_FMT_SIZE)); ++i)
 			strfmt_list[len++] = mem_size_str;
@@ -277,59 +288,77 @@ static void mlog_reset_format(void)
 
 int mlog_print_fmt(struct seq_file *m)
 {
-	seq_puts(m, "<type>     [time]");
+	seq_puts(m, "<type>,    [time]");
 
 	if (meminfo_filter & M_MEMFREE)
-		seq_puts(m, "  memfr");
+		seq_puts(m, ", memfr");
 	if (meminfo_filter & M_SWAPFREE)
-		seq_puts(m, "  swpfr");
+		seq_puts(m, ", swpfr");
 	if (meminfo_filter & M_CACHED)
-		seq_puts(m, "  cache");
+		seq_puts(m, ", cache");
 	if (meminfo_filter & M_GPUUSE)
-		seq_puts(m, "    gpu");
+		seq_puts(m, ", kernel_stack");
+	if (meminfo_filter & M_GPUUSE)
+		seq_puts(m, ", page_table");
+	if (meminfo_filter & M_GPUUSE)
+		seq_puts(m, ", slab");
+	if (meminfo_filter & M_GPUUSE)
+		seq_puts(m, ",   gpu");
 	if (meminfo_filter & M_GPU_PAGE_CACHE)
-		seq_puts(m, "    gpu_page_cache");
+		seq_puts(m, ",   gpu_page_cache");
 	if (meminfo_filter & M_MLOCK)
-		seq_puts(m, "  mlock");
+		seq_puts(m, ", mlock");
 	if (meminfo_filter & M_ZRAM)
-		seq_puts(m, "   zram");
+		seq_puts(m, ",  zram");
 	if (meminfo_filter & M_ACTIVE)
-		seq_puts(m, "   active");
+		seq_puts(m, ",  active");
 	if (meminfo_filter & M_INACTIVE)
-		seq_puts(m, "   inactive");
+		seq_puts(m, ",  inactive");
 	if (meminfo_filter & M_SHMEM)
-		seq_puts(m, "   shmem");
+		seq_puts(m, ",  shmem");
 	if (meminfo_filter & M_ION)
-		seq_puts(m, "   ion");
+		seq_puts(m, ",  ion");
 
 	if (vmstat_filter & V_PSWPIN)
-		seq_puts(m, "   swpin");
+		seq_puts(m, ",  swpin");
 	if (vmstat_filter & V_PSWPOUT)
-		seq_puts(m, "  swpout");
+		seq_puts(m, ", swpout");
 	if (vmstat_filter & V_PGFMFAULT)
-		seq_puts(m, "   fmflt");
-	if (vmstat_filter & V_PGANFAULT)
-		seq_puts(m, "   anflt");
+		seq_puts(m, ",  fmflt");
 
 	if (buddyinfo_filter) {
-		seq_puts(m, "   [normal]");
-		seq_puts(m, "   [high]");
+		int order;
+
+		seq_puts(m, ",  [normal: 0");
+		for (order = 1; order < MAX_ORDER; ++order)
+			seq_printf(m,	", %d", order);
+
+		seq_puts(m,	"]");
+		seq_puts(m, ",  [high: 0");
+
+		for (order = 1; order < MAX_ORDER; ++order)
+			seq_printf(m,	", %d", order);
+
+		seq_puts(m,	"]");
 	}
 
 	if (proc_filter) {
-		seq_puts(m, " [pid]");
+		seq_puts(m, ", [pid]");
+#ifdef PRINT_PROCESS_NAME_DEBUG
+		seq_puts(m, ", name");
+#endif
 		if (proc_filter & P_ADJ)
-			seq_puts(m, " adj");
+			seq_puts(m, ", adj");
 		if (proc_filter & P_RSS)
-			seq_puts(m, "    rss");
+			seq_puts(m, ", rss");
 		if (proc_filter & P_RSWAP)
-			seq_puts(m, "   rswp");
+			seq_puts(m, ", rswp");
 		if (proc_filter & P_SWPIN)
-			seq_puts(m, "  pswpin");
+			seq_puts(m, ", pswpin");
 		if (proc_filter & P_SWPOUT)
-			seq_puts(m, " pswpout");
+			seq_puts(m, ", pswpout");
 		if (proc_filter & P_FMFAULT)
-			seq_puts(m, "  pfmflt");
+			seq_puts(m, ", pfmflt");
 	}
 	seq_puts(m, "\n");
 	return 0;
@@ -353,6 +382,9 @@ static void mlog_meminfo(void)
 	unsigned long memfree;
 	unsigned long swapfree;
 	unsigned long cached;
+	unsigned long kernel_stack;
+	unsigned long page_table;
+	unsigned long slab;
 	unsigned int gpuuse = 0;
 	unsigned int gpu_page_cache = 0;
 	unsigned long mlock;
@@ -369,6 +401,10 @@ static void mlog_meminfo(void)
 	swapfree = P2K(nr_swap_pages);
 	cached = P2K(global_page_state(NR_FILE_PAGES) - total_swapcache_pages);
 	*/
+
+	kernel_stack = global_page_state(NR_KERNEL_STACK) * THREAD_SIZE / 1024;
+	page_table   = P2K(global_page_state(NR_PAGETABLE));
+	slab         = P2K(global_page_state(NR_SLAB_UNRECLAIMABLE) + global_page_state(NR_SLAB_RECLAIMABLE));
 
 #ifdef COLLECT_GPU_MEMINFO
 	if (mtk_get_gpu_memory_usage(&gpuuse))
@@ -397,6 +433,12 @@ static void mlog_meminfo(void)
 	mlog_emit_32(memfree);
 	mlog_emit_32(swapfree);
 	mlog_emit_32(cached);
+
+	/* kernel memory usage */
+	mlog_emit_32(kernel_stack);
+	mlog_emit_32(page_table);
+	mlog_emit_32(slab);
+	/* hardware memory usage */
 	mlog_emit_32(gpuuse);
 	mlog_emit_32(gpu_page_cache);
 	mlog_emit_32(mlock);
@@ -428,7 +470,6 @@ static void mlog_vmstat(void)
 	mlog_emit_32(v[PSWPOUT]);
 	mlog_emit_32(v[PGFMFAULT]);
 
-	mlog_emit_32(0);
 	spin_unlock_bh(&mlogbuf_lock);
 }
 
@@ -555,12 +596,12 @@ static void mlog_procinfo(void)
 		if (!cred)
 			goto unlock_continue;
 
-	/*
-	 * 1. mediaserver is a suspect in many ANR/FLM cases.
-	 * 2. procesname is "mediaserver" not "/system/bin/mediaserver"
-	 */
-	if (strncmp("mediaserver", p->comm, TASK_COMM_LEN) == 0)
-		goto collect_proc_mem_info;
+		/*
+		 * 1. mediaserver is a suspect in many ANR/FLM cases.
+		 * 2. procesname is "mediaserver" not "/system/bin/mediaserver"
+		 */
+		if (strncmp("mediaserver", p->comm, TASK_COMM_LEN) == 0)
+			goto collect_proc_mem_info;
 
 		/* skip root user */
 		if (__kuid_val(cred->uid) == AID_ROOT)
@@ -612,6 +653,9 @@ collect_proc_mem_info:
 
 		spin_lock_bh(&mlogbuf_lock);
 		mlog_emit_32(p->pid);
+#ifdef PRINT_PROCESS_NAME_DEBUG
+		mlog_emit_32((unsigned long)p->comm);
+#endif
 		mlog_emit_32(oom_score_adj);
 		mlog_emit_32(rss);
 		mlog_emit_32(rswap);
