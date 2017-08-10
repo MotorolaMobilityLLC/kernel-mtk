@@ -13,7 +13,7 @@
 
 #include "lcm_define.h"
 
-/ {
+&odm {
 	/* LCM standardization */
 	lcm_params {
 		compatible = "mediatek,lcm_params-r63419_wqhd_truly_phantom_2k_cmd_ok";

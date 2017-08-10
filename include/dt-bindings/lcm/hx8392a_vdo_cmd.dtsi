@@ -13,7 +13,7 @@
 
 #include "lcm_define.h"
 
-/ {
+&odm {
 	/* LCM standardization */
 	lcm_params {
 		compatible = "mediatek,lcm_params-hx8392a_vdo_cmd";
