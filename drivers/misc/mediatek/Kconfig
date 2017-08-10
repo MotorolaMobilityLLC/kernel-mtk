@@ -381,6 +381,10 @@ config MTK_TUI_RAM_SIZE
 	depends on MTK_SVP
 	default 0
 
+config MTK_AB_OTA_UPDATER
+	bool "Support Android A/B system updates"
+	default n
+
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/atf_log/Kconfig"
 source "drivers/misc/mediatek/boot/Kconfig"
