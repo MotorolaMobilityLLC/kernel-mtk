@@ -861,7 +861,7 @@ void ovl_dump_reg(DISP_MODULE_ENUM module)
 	unsigned long offset = ovl_base_addr(module);
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
-	DDPDUMP("== DISP %s REGS ==\n", ddp_get_module_name(module));
+	DDPDUMP("== START: DISP %s REGS ==\n", ddp_get_module_name(module));
 	DDPDUMP("OVL:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_STA + offset),
 		DISP_REG_GET(DISP_REG_OVL_INTEN + offset),
@@ -965,6 +965,7 @@ void ovl_dump_reg(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG + offset),
 		DISP_REG_GET(DISP_REG_OVL_FUNC_DCM0 + offset),
 		DISP_REG_GET(DISP_REG_OVL_FUNC_DCM1 + offset));
+	DDPDUMP("-- END: DISP %s REGS --\n", ddp_get_module_name(module));
 }
 
 static void ovl_printf_status(unsigned int status)

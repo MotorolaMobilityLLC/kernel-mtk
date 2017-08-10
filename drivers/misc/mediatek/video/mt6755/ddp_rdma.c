@@ -757,7 +757,7 @@ void rdma_dump_reg(DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
 
-	DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
+	DDPDUMP("== START: DISP RDMA%d REGS ==\n", idx);
 	DDPDUMP("(0x000)R_INTEN       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x004)R_INTS        =0x%x\n",
@@ -826,7 +826,7 @@ void rdma_dump_reg(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-
+	DDPDUMP("-- END: DISP RDMA%d REGS --\n", idx);
 }
 
 void rdma_dump_analysis(DISP_MODULE_ENUM module)

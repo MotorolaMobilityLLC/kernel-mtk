@@ -324,14 +324,14 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 			DSI_DBG6_Status =
 			    (INREG32(DDP_REG_BASE_DSI0 + 0x160)) & 0xffff;
 
-			DDPDUMP("---------- Start dump DSI0 registers ----------\n");
+			DDPDUMP("== START: DISP DSI0 registers ==\n");
 
 			for (i = 0; i < sizeof(DSI_REGS); i += 16) {
-				DDPDUMP("DSI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-					INREG32(DDP_REG_BASE_DSI0 + i),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0x4),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0x8),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0xc));
+				DDPDUMP("DSI0: 0x%04x=0x%08x,0x%04x=0x%08x,0x%04x=0x%08x,0x%04x=0x%08x\n",
+					i, INREG32(DDP_REG_BASE_DSI0 + i),
+					i + 0x04, INREG32(DDP_REG_BASE_DSI0 + i + 0x4),
+					i + 0x08, INREG32(DDP_REG_BASE_DSI0 + i + 0x8),
+					i + 0x0c, INREG32(DDP_REG_BASE_DSI0 + i + 0xc));
 			}
 
 			for (i = 0; i < sizeof(DSI_CMDQ_REGS); i += 16) {
@@ -344,12 +344,13 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			for (i = 0; i < sizeof(DSI_PHY_REGS); i += 16) {
-				DDPDUMP("DSI_PHY+%04x : 0x%08x    0x%08x  0x%08x  0x%08x\n", i,
-					INREG32((MIPITX_BASE + i)),
-					INREG32((MIPITX_BASE + i + 0x4)),
-					INREG32((MIPITX_BASE + i + 0x8)),
-					INREG32((MIPITX_BASE + i + 0xc)));
+				DDPDUMP("DSI_PHY: 0x%04x=0x%08x,0x%04x=0x%08x,0x%04x=0x%08x,0x%04x=0x%08x\n",
+					i, INREG32((MIPITX_BASE + i)),
+					i + 0x4, INREG32((MIPITX_BASE + i + 0x4)),
+					i + 0x8, INREG32((MIPITX_BASE + i + 0x8)),
+					i + 0xc, INREG32((MIPITX_BASE + i + 0xc)));
 			}
+			DDPDUMP("-- END: DISP DSI0 registers --\n");
 #endif
 		}
 	}

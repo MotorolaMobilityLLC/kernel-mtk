@@ -367,7 +367,7 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 	unsigned int idx = wdma_index(module);
 	unsigned int off_sft = idx * DISP_WDMA_INDEX_OFFSET;
 
-	DDPDUMP("==DISP WDMA%d REGS==\n", idx);
+	DDPDUMP("== START: DISP WDMA%d REGS ==\n", idx);
 
 	DDPDUMP("WDMA:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
 		DISP_REG_GET(DISP_REG_WDMA_INTEN + off_sft),
@@ -422,6 +422,7 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 	DDPDUMP("0x10203018 = 0x%08x\n", *(unsigned int *)(emi_va+0x18));
 	iounmap(emi_va);
 #endif
+	DDPDUMP("-- END: DISP WDMA%d REGS --\n", idx);
 
 }
 
