@@ -1113,6 +1113,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	prGlueInfo->fgConnectHS20AP = FALSE;
 #endif
 	prConnSettings->fgUseOkc = FALSE;
+	prConnSettings->fgIsSetOkcPmkId = FALSE;
 	if (sme->ie && sme->ie_len > 0) {
 		WLAN_STATUS rStatus;
 		UINT_32 u4BufLen;

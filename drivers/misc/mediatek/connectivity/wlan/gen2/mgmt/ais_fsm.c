@@ -4397,6 +4397,7 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	P_MSG_CH_GRANT_T prMsgChGrant;
 	UINT_8 ucTokenID;
 	UINT_32 u4GrantInterval;
+	UINT_32 u4Entry = 0;
 
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
@@ -4427,7 +4428,13 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prAisFsmInfo->fgIsInfraChannelFinished = FALSE;
 
 		/* 3.3 switch to join state */
-		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+		if (!prAdapter->rWifiVar.rConnSettings.fgUseOkc ||
+		    !prAdapter->rWifiVar.rConnSettings.fgIsSetOkcPmkId ||
+		    (rsnSearchPmkidEntry(prAdapter, prAisFsmInfo->prTargetBssDesc->aucBSSID, &u4Entry) &&
+		     prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist)) {
+			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
+			aisFsmSteps(prAdapter, AIS_STATE_JOIN);
+		}
 
 		prAisFsmInfo->fgIsChannelGranted = TRUE;
 	} else if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_REMAIN_ON_CHANNEL &&
@@ -5271,9 +5278,10 @@ VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter)
 	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
 
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN &&
-		prAisFsmInfo->fgIsChannelGranted)
+		prAisFsmInfo->fgIsChannelGranted) {
+		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
 		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
-	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
+	}
 }
 
 static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)

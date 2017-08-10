@@ -3103,6 +3103,7 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 				prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arBSSID,
 				pucPmkID[0], pucPmkID[1], pucPmkID[2], pucPmkID[3],
 				pucPmkID[4], pucPmkID[5], pucPmkID[6], pucPmkID[7]);
+			prAdapter->rWifiVar.rConnSettings.fgIsSetOkcPmkId = TRUE;
 		}
 		aisFsmRunEventSetOkcPmk(prAdapter);
 	}

@@ -162,6 +162,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 	RSN_INFO_T rRsnInfo;
 
 	BOOLEAN fgUseOkc;
+	BOOLEAN fgIsSetOkcPmkId;
 
 #if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
 	BOOLEAN fgSecModeChangeStartTimer;
