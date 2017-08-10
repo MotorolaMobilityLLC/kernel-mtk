@@ -69,6 +69,9 @@
 #include <linux/compat.h>
 #endif
 
+/* memory signature for memory protection */
+#define MEM_SIGNATURE 0x56636F64
+
 #define VDO_HW_WRITE(ptr, data)     mt_reg_sync_writel(data, ptr)
 #define VDO_HW_READ(ptr)           (*((volatile unsigned int * const)(ptr)))
 
@@ -544,6 +547,7 @@ static long vcodec_alloc_non_cache_buffer(unsigned long arg)
 		return -EFAULT;
 	}
 
+	rTempMem.u4MemSign = MEM_SIGNATURE;
 	rTempMem.u4ReservedSize /*kernel va*/ =
 		(VAL_ULONG_T)dma_alloc_coherent(0, rTempMem.u4MemSize, (dma_addr_t *)&rTempMem.pvMemPa, GFP_KERNEL);
 	if ((0 == rTempMem.u4ReservedSize) || (0 == rTempMem.pvMemPa)) {
@@ -584,6 +588,16 @@ static long vcodec_free_non_cache_buffer(unsigned long arg)
 	ret = copy_from_user(&rTempMem, user_data_addr, sizeof(VAL_MEMORY_T));
 	if (ret) {
 		MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, copy_from_user failed: %lu\n", ret);
+		return -EFAULT;
+	}
+
+	if (rTempMem.u4MemSign != MEM_SIGNATURE) {
+		MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, memory illegal: %d\n",
+		rTempMem.u4MemSign);
+		return -EFAULT;
+	}
+	if (rTempMem.u4MemSize == 0 || rTempMem.u4ReservedSize == 0) {
+		MODULE_MFV_LOGE("[ERROR] VCODEC_FREE_NON_CACHE_BUFFER, memory size illegal\n");
 		return -EFAULT;
 	}
 
