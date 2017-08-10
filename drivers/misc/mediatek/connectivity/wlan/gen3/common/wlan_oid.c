@@ -4457,13 +4457,13 @@ wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,
 
 	/* Check if access F/W Domain MCR (due to WiFiSYS is placed from 0x6000-0000 */
 	if (prMcrRdInfo->u4McrOffset & 0xFFFF0000) {
-#if defined(MT6797)		
+#if defined(MT6797)
 		UINT32 val = 0x77777777;
-#endif		
+#endif
 		/* fill command */
 		rCmdAccessReg.u4Address = prMcrRdInfo->u4McrOffset;
 		rCmdAccessReg.u4Data = 0;
-#if defined(MT6797)		
+#if defined(MT6797)
 		if ((prMcrRdInfo->u4McrOffset & 0xFFFF0000) == 0x180f0000){
 
 			val = readl((volatile UINT_32 *)((*g_pHifRegBaseAddr) + (prMcrRdInfo->u4McrOffset & 0xffff)));
@@ -7580,7 +7580,6 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 
 		prTestStatus->rATInfo.u4FuncData =
 		    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-		prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
 
 		if (u4QueryBufferLen > 8) {
 			/*support FW version extended*/
