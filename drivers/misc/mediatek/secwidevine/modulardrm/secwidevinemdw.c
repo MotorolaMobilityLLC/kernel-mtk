@@ -274,9 +274,16 @@ static int secwidevinemdw_session_close(void)
 
 		/* close session */
 		mc_ret = mc_close_session(&secwidevinemdwdr_session);
+		if (MC_DRV_OK != mc_ret)
+			MSG(ERR, "mc_close_session failed: %d\n", mc_ret);
+
+		secwidevinemdwdr_session.session_id = 0;
+		secwidevinemdwdr_session.device_id = -1;
 
 		/* free WSM for DCI */
 		mc_ret = mc_free_wsm(secwidevinemdw_devid, (uint8_t *) secwidevinemdw_dci);
+		if (MC_DRV_OK != mc_ret)
+			MSG(ERR, "mc_free_wsm failed: %d\n", mc_ret);
 		secwidevinemdw_dci = NULL;
 		secwidevinemdw_session_ref = 0;
 
