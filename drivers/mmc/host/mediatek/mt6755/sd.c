@@ -1909,7 +1909,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_err("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
 			cmd->error = (unsigned int)-ETIMEDOUT;
@@ -2107,7 +2107,7 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 		if (!sdc_is_cmd_busy())
 			break;
 
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && sdc_is_cmd_busy()) {
 			ERR_MSG("[%s]: XXX cmd_busy timeout: before CMD<%d>",
 				__func__ , opcode);
 			cmd->error = (unsigned int)-ETIMEDOUT;
@@ -2153,7 +2153,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 
-		if (time_after(jiffies, tmo)) {
+		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_err("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
 			cmd->error = (unsigned int)-ETIMEDOUT;
