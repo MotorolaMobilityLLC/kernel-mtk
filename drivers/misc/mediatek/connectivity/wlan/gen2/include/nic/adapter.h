@@ -589,6 +589,7 @@ struct PERF_MONITOR_T {
 	UINT32 u4UpdatePeriod; /*in ms*/
 	UINT32 u4TarPerfLevel;
 	UINT32 u4CurrPerfLevel;
+	UINT8 u1ShutdownCoreCount;
 };
 
 /*
@@ -902,6 +903,8 @@ struct _ADAPTER_T {
 #define THROUGHPUT_L1_THRESHOLD		(20*1024*1024)
 #define THROUGHPUT_L2_THRESHOLD		(60*1024*1024)
 #define THROUGHPUT_L3_THRESHOLD		(135*1024*1024)
+
+#define THROUGHPUT_SHUTDOWN_CORE_COUNT	5
 
 /*----------------------------------------------------------------------------*/
 /* Macros for Power State                                                     */
