@@ -17,28 +17,32 @@
 
 typedef struct GED_HASHTABLE_TAG
 {
-	unsigned int        ui32Bits;
-	unsigned int        ui32Length;
-	unsigned int        ui32CurrentID;
-	unsigned int        ui32Count;
-	struct hlist_head*  psHashTable;
+    unsigned int        ui32Bits;
+    unsigned int        ui32Tmp;
+    unsigned long       ulLength;
+    unsigned long       ulCount;
+    unsigned long       ulCurrentID;
+    struct list_head*	psHashTable;
 } GED_HASHTABLE;
 
 typedef struct GED_HASHNODE_TAG
 {
-	unsigned int        ui32ID;
+    unsigned long       ulID;
 	void*               pvoid;
-	struct hlist_node   sNode;
+    struct list_head 	sList;
 } GED_HASHNODE;
 
 #define GED_HASHTABLE_INIT_ID 1234 // 0 = invalid
 
-void* __ged_hashtable_find(struct hlist_head *head, unsigned int ui32ID)
+void* __ged_hashtable_find(struct list_head *psList, unsigned long ulID)
 {
 	GED_HASHNODE* psHN;
-	hlist_for_each_entry_rcu(psHN, head, sNode) 
+	struct list_head *psListEntry, *psListEntryTemp;
+	
+	list_for_each_safe(psListEntry, psListEntryTemp, psList)
 	{
-		if (psHN->ui32ID == ui32ID)
+		psHN = list_entry(psListEntry, GED_HASHNODE, sList);
+		if (psHN && (psHN->ulID == ulID))
 		{
 			return psHN;
 		}
@@ -46,16 +50,16 @@ void* __ged_hashtable_find(struct hlist_head *head, unsigned int ui32ID)
 	return NULL;
 }
 
-static int ged_hash(GED_HASHTABLE_HANDLE hHashTable, unsigned int ui32ID)
+static unsigned long ged_hash(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 {
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
-	return hash_32(ui32ID, psHT->ui32Bits);
+    return hash_long(ulID, psHT->ui32Bits);
 }
 
 GED_HASHTABLE_HANDLE ged_hashtable_create(unsigned int ui32Bits)
 {
 	GED_HASHTABLE* psHT;
-	unsigned int i;
+    unsigned long i;
 
 	if (ui32Bits > 20)
 	{
@@ -64,18 +68,19 @@ GED_HASHTABLE_HANDLE ged_hashtable_create(unsigned int ui32Bits)
 		return NULL;
 	}
 
-	psHT = (GED_HASHTABLE*)ged_alloc(sizeof(GED_HASHTABLE));
+    psHT = (GED_HASHTABLE*)ged_alloc_atomic(sizeof(GED_HASHTABLE));
 	if (psHT)
 	{
 		psHT->ui32Bits = ui32Bits;
-		psHT->ui32Length = 1 << ui32Bits;
-		psHT->ui32CurrentID = GED_HASHTABLE_INIT_ID; // 0 = invalid
-		psHT->psHashTable = (struct hlist_head*)ged_alloc(psHT->ui32Length * sizeof(struct hlist_head));
+        psHT->ulLength = (unsigned long)(1 << ui32Bits);
+		psHT->ulCount = 0;
+        psHT->ulCurrentID = GED_HASHTABLE_INIT_ID; // 0 = invalid
+		psHT->psHashTable = (struct list_head*)ged_alloc_atomic(psHT->ulLength * sizeof(struct list_head));
 		if (psHT->psHashTable)
 		{
-			for (i = 0; i < psHT->ui32Length; i++)
+            for (i = 0; i < psHT->ulLength; i++)
 			{
-				INIT_HLIST_HEAD(&psHT->psHashTable[i]);
+				INIT_LIST_HEAD(&psHT->psHashTable[i]);
 			}
 			return (GED_HASHTABLE_HANDLE)psHT;
 		}
@@ -90,141 +95,253 @@ void ged_hashtable_destroy(GED_HASHTABLE_HANDLE hHashTable)
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
 	if (psHT)
 	{
-		int i = 0;
-		while(psHT->ui32Count > 0)
+        unsigned long i = 0;
+		struct list_head *psListEntry, *psListEntryTemp;
+		for (;i < psHT->ulLength; i++)
 		{
-			unsigned int ui32ID = 0;
-			GED_HASHNODE* psHN;
-			// get one to be freed
-			for (;i < psHT->ui32Length; i++)
+			struct list_head *psList = &psHT->psHashTable[i];
+			list_for_each_safe(psListEntry, psListEntryTemp, psList)
 			{
-				struct hlist_head *head = &psHT->psHashTable[i];
-				hlist_for_each_entry_rcu(psHN, head, sNode) 
+				GED_HASHNODE* psHN = list_entry(psListEntry, GED_HASHNODE, sList);
+				if (psHN)
 				{
-					ui32ID = psHN->ui32ID;
-					break;
+					list_del(&psHN->sList);
+					ged_free(psHN, sizeof(GED_HASHNODE));
 				}
-				if (0 < ui32ID)
-				{
-					break;
 				}
 			}
-
-			if (i >= psHT->ui32Length)
-			{
-				break;
-			}
-
-			ged_hashtable_remove(psHT, ui32ID);
-		}
 
 		/* free the hash table */
-		ged_free(psHT->psHashTable, psHT->ui32Length * sizeof(struct hlist_head));
+        ged_free(psHT->psHashTable, psHT->ulLength * sizeof(struct list_head));
 		ged_free(psHT, sizeof(GED_HASHTABLE));
 	}
 }
 
-GED_ERROR ged_hashtable_insert(GED_HASHTABLE_HANDLE hHashTable, void* pvoid, unsigned int* pui32ID)
+GED_ERROR ged_hashtable_insert(GED_HASHTABLE_HANDLE hHashTable, void* pvoid, unsigned long* pulID)
 {
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
 	GED_HASHNODE* psHN = NULL;
-	unsigned int ui32Hash, ui32ID;
+    unsigned long ulHash, ulID;
+	GED_BOOL bFindSlot = GED_FALSE;
 
-	if ((!psHT) || (!pui32ID))
+    if ((!psHT) || (!pulID))
 	{
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
-	ui32ID = psHT->ui32CurrentID + 1;
+    ulID = psHT->ulCurrentID + 1;
+		
 	while(1)
 	{
-		ui32Hash = ged_hash(psHT, ui32ID);
-		psHN = __ged_hashtable_find(&psHT->psHashTable[ui32Hash], ui32ID);
+        ulHash = ged_hash(psHT, ulID);
+        psHN = __ged_hashtable_find(&psHT->psHashTable[ulHash], ulID);
 		if (psHN != NULL)
 		{
-			ui32ID++;
-			if (ui32ID == 0)//skip the value 0
+            ulID++;
+            if (ulID == 0)//skip the value 0
 			{
-				ui32ID = 1;
+                ulID = 1;
 			}
-			if (ui32ID == psHT->ui32CurrentID)
+            if (ulID == psHT->ulCurrentID)
 			{
-				return GED_ERROR_FAIL;
+             	bFindSlot = GED_FALSE;
+            	break;
 			}
 		}
 		else
 		{
+        	bFindSlot = GED_TRUE;
 			break;
 		}
 	};
 
-	psHN = (GED_HASHNODE*)ged_alloc(sizeof(GED_HASHNODE));
+	if (GED_FALSE == bFindSlot)
+	{
+		return GED_ERROR_FAIL;
+	}
+
+    psHN = (GED_HASHNODE*)ged_alloc_atomic(sizeof(GED_HASHNODE));
 	if (psHN)
 	{
 		psHN->pvoid = pvoid;
-		psHN->ui32ID = ui32ID;
-		psHT->ui32CurrentID = ui32ID;
-		*pui32ID = ui32ID;
-		hlist_add_head_rcu(&psHN->sNode, &psHT->psHashTable[ui32Hash]);
-		psHT->ui32Count += 1;
+        psHN->ulID = ulID;
+        *pulID = ulID;
+		INIT_LIST_HEAD(&psHN->sList);
+        psHT->ulCurrentID = ulID;
+		psHT->ulCount += 1;
+		list_add(&psHN->sList, &psHT->psHashTable[ulHash]);       
 		return GED_OK;
 	}
 
 	return GED_ERROR_OOM;
 }
 
-void ged_hashtable_remove(GED_HASHTABLE_HANDLE hHashTable, unsigned int ui32ID)
+void ged_hashtable_remove(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 {
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
 	if (psHT)
 	{
-		unsigned int ui32Hash = ged_hash(psHT, ui32ID);
-		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ui32Hash], ui32ID);
+        unsigned long ulHash = ged_hash(psHT, ulID);
+		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ulHash], ulID);
 		if (psHN)
 		{
-			hlist_del_rcu(&psHN->sNode);
-			synchronize_rcu();
+			psHN->pvoid = NULL;
+			list_del(&psHN->sList);
 			ged_free(psHN, sizeof(GED_HASHNODE));
-			psHT->ui32Count -= 1;
+            psHT->ulCount -= 1;
 		}
 	}
 }
 
-void* ged_hashtable_find(GED_HASHTABLE_HANDLE hHashTable, unsigned int ui32ID)
+void* ged_hashtable_find(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 {
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
 	if (psHT)
 	{
-		unsigned int ui32Hash = ged_hash(psHT, ui32ID);
-		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ui32Hash], ui32ID);
+        unsigned long ulHash = ged_hash(psHT, ulID);
+		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ulHash], ulID);
 		if (psHN)
 		{
 			return psHN->pvoid;
 		}
 #ifdef GED_DEBUG
-		if (ui32ID != 0)
+        if (ulID != 0)
 		{
-			GED_LOGE("ged_hashtable_find: ui32ID=%u ui32Hash=%u psHN=%p\n", ui32ID, ui32Hash, psHN);
+            printk("ged_hashtable_find: ulID=%lu ulHash=%lu fail\n", ulID, ulHash);
 		}
 #endif
 	}
 	return NULL;
 }
 
-GED_ERROR ged_hashtable_set(GED_HASHTABLE_HANDLE hHashTable, unsigned int ui32ID, void* pvoid)
+GED_ERROR ged_hashtable_set(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID, void* pvoid)
 {
 	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
 	if (psHT)
 	{
-		unsigned int ui32Hash = ged_hash(psHT, ui32ID);
-		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ui32Hash], ui32ID);
+        unsigned long ulHash = ged_hash(psHT, ulID);
+		GED_HASHNODE* psHN = __ged_hashtable_find(&psHT->psHashTable[ulHash], ulID);
 		if (psHN)
 		{
 			psHN->pvoid = pvoid;
+        }
+		else
+		{
+	        psHN = (GED_HASHNODE*)ged_alloc_atomic(sizeof(GED_HASHNODE));
+	        if (NULL == psHN)
+			{
+				return GED_ERROR_OOM;
+	        }		
+            psHN->pvoid = pvoid;
+            psHN->ulID = ulID;
+			INIT_LIST_HEAD(&psHN->sList);
+			list_add(&psHN->sList, &psHT->psHashTable[ulHash]);
+            psHT->ulCount += 1;
+		}
 			return GED_OK;
 		}
+    return GED_ERROR_INVALID_PARAMS;
 	}
 
-	return GED_ERROR_INVALID_PARAMS;
+void ged_hashtable_iterator(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_iterator_func_type iterator, void* pvParam)
+{
+    GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
+    if (psHT)
+    {
+        GED_HASHNODE* psHN;
+        unsigned long i;
+		struct list_head *psListEntry, *psListEntryTemp;
+		for (i = 0; i < psHT->ulLength; ++i)
+		{
+			struct list_head *psList = &psHT->psHashTable[i];
+			list_for_each_safe(psListEntry, psListEntryTemp, psList)
+			{
+				psHN = list_entry(psListEntry, GED_HASHNODE, sList);
+				if (psHN)
+				{
+				 	if (!iterator(psHN->ulID, psHN->pvoid, pvParam))
+				 	{
+				 		return;
+				 	}
+				}
+			}
+		}
+    }
+}
+
+void* ged_hashtable_search(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_search_func_type pFunc, void* pvParam)
+{
+    GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
+    void* pResult = NULL;
+    if (psHT)
+    {
+        GED_HASHNODE* psHN;
+        unsigned long i;
+		struct list_head *psListEntry, *psListEntryTemp;
+		for (i = 0; i < psHT->ulLength; ++i)
+		{
+			struct list_head *psList = &psHT->psHashTable[i];
+			list_for_each_safe(psListEntry, psListEntryTemp, psList)
+			{
+				psHN = list_entry(psListEntry, GED_HASHNODE, sList);
+				if (psHN)
+				{
+					pResult = pFunc(psHN->ulID, psHN->pvoid, pvParam);
+                	if (pResult)
+                	{
+                    	return pResult;
+                	}
+				}
+			}
+		}
+    }
+    return pResult;
+}
+
+void ged_hashtable_iterator_delete(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_iterator_delete_func_type pFunc, void* pvParam)
+{
+    GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
+    if (psHT)
+    {
+        GED_HASHNODE* psHN;
+        unsigned long i;
+		struct list_head *psListEntry, *psListEntryTemp;
+		for (i = 0; i < psHT->ulLength; ++i)
+		{
+			struct list_head *psList = &psHT->psHashTable[i];
+			list_for_each_safe(psListEntry, psListEntryTemp, psList)
+			{
+				psHN = list_entry(psListEntry, GED_HASHNODE, sList);
+				if (psHN)
+				{				
+					GED_BOOL bDeleted = GED_FALSE;
+					GED_BOOL bContinue = pFunc(psHN->ulID, psHN->pvoid, pvParam, &bDeleted);
+					if (bDeleted)
+					{
+						psHN->pvoid = NULL;
+						list_del(&psHN->sList);
+						ged_free(psHN, sizeof(GED_HASHNODE));
+            			psHT->ulCount -= 1;
+					}
+					
+				 	if (!bContinue)
+				 	{
+				 		return;
+				 	}
+				}
+			}
+		}
+    }
+
+}
+
+unsigned long ged_hashtable_get_count(GED_HASHTABLE_HANDLE hHashTable)
+{
+	GED_HASHTABLE* psHT = (GED_HASHTABLE*)hHashTable;
+	if (psHT)
+	{
+		return psHT->ulCount;
+	}
+	return 0;
 }
 

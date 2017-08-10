@@ -18,20 +18,27 @@
 #include "ged_vsync.h"
 #include "ged_base.h"
 #include "ged_type.h"
+
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
 #include "primary_display.h"
+#endif
 
 GED_ERROR ged_vsync_wait()
 {
-    int ret = 0;
-    disp_session_vsync_config vsync_config;
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+int ret = 0;
+	disp_session_vsync_config vsync_config;
 	printk("[vsync] Wait...\n");
-    ret = primary_display_wait_for_vsync(&vsync_config);
-    if (ret < 0)
-    {
-        printk("[vsync] fail, ret = %d\n", ret);
-        return GED_ERROR_FAIL;
-    }
-    
-    printk("[vsync] success, ret = %d\n", ret);
+	ret = primary_display_wait_for_vsync(&vsync_config);
+	if (ret < 0)
+	{
+		printk("[vsync] fail, ret = %d\n", ret);
+		return GED_ERROR_FAIL;
+	}
+
+	printk("[vsync] success, ret = %d\n", ret);
 	return GED_OK;
+#else
+	return GED_ERROR_FAIL;
+#endif
 }

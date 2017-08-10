@@ -69,6 +69,7 @@ typedef struct GED_DVFS_UM_QUERY_PACK_TAG
     unsigned long ul3DFenceDoneTime;    
     unsigned long ulPreCalResetTS_us;
     unsigned long ulWorkingPeriod_us;
+//	int i32UncompletedCount;
 }GED_DVFS_UM_QUERY_PACK;
 
 enum {
