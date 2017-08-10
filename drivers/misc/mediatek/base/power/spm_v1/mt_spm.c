@@ -122,7 +122,7 @@ u32 spm_irq_0 = 120;
 u32 spm_irq_1 = 121;
 u32 spm_irq_2 = 122;
 u32 spm_irq_3 = 123;
-#endif /* CONFIG_ARCH_MT6580 */
+#endif /* !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580) */
 #endif /* CONFIG_OF */
 
 /*
@@ -389,7 +389,7 @@ static void spm_register_init(void)
 		spm_cksys_base, spm_mcucfg_base, spm_ddrphy_base);
 	spm_err("spm_irq_0 = %d, spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n", spm_irq_0,
 		spm_irq_1, spm_irq_2, spm_irq_3);
-#endif /*CONFIG_ARCH_MT6580*/
+#endif /*!defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)*/
 #endif /*CONFIG_OF*/
 
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -469,6 +469,13 @@ static void spm_register_init(void)
 	/* output md_ddr_en if needed for debug */
 #if SPM_MD_DDR_EN_OUT
 	__spm_dbgout_md_ddr_en(true);
+#endif
+
+#if defined(CONFIG_ARCH_MT6570)
+	spm_set_sleep_nfi_sram_config(1, 1, 1, 1);
+	spm_crit(" nfi_sram ctrl:0x%x, ufozip sram ctrl:0x%x\n",
+			spm_get_sleep_nfi_sram_config(),
+			spm_get_sleep_ufozip_sram_config());
 #endif
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
@@ -878,7 +885,7 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 #endif
 	{0xf02135cc, 0x40101000},
 #endif
-#else /* CONFIG_ARCH_MT6580 */
+#else /* CONFIG_ARCH_MT6570 || CONFIG_ARCH_MT6580 */
 #ifdef CONFIG_OF
 	{0x5c0, 0x063c0000},
 	{0x5c4, 0x00000000},
@@ -890,7 +897,7 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{0xf02085c8, 0x0000fC10},	/* temp remove mempll2/3 control for golden setting refine */
 	{0xf02085cc, 0x40101000},
 #endif
-#endif /* CONFIG_ARCH_MT6580 */
+#endif /* !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580) */
 };
 
 int spm_golden_setting_cmp(bool en)
@@ -918,7 +925,7 @@ int spm_golden_setting_cmp(bool en)
 				spm_read(spm_ddrphy_base + ddrphy_setting[i].addr));
 			r = -EPERM;
 		}
-#endif /*CONFIG_ARCH_MT6580*/
+#endif
 #else /* CONFIG_OF */
 		if (spm_read(ddrphy_setting[i].addr) != ddrphy_setting[i].value) {
 			spm_err("dramc setting mismatch addr: 0x%x, val: 0x%x\n",
@@ -965,4 +972,26 @@ unsigned int spm_get_cpu_pwr_status(void)
 	return stat;
 }
 
+#if defined(CONFIG_ARCH_MT6570)
+unsigned int spm_get_sleep_ufozip_sram_config(void)
+{
+	return spm_read(SPM_SLEEP_UFOZIP_SRAM_CON);
+}
+void spm_set_sleep_ufozip_sram_config(int sram_pdn)
+{
+	spm_write(SPM_SLEEP_UFOZIP_SRAM_CON, !!sram_pdn);
+}
+
+unsigned int spm_get_sleep_nfi_sram_config(void)
+{
+	return spm_read(SPM_SLEEP_NFI_SRAM_CON);
+}
+void spm_set_sleep_nfi_sram_config(int sram_pdn, int sram_ckiso, int sram_sleep_b, int sram_isoint_b)
+{
+	spm_write(SPM_SLEEP_NFI_SRAM_CON, ((!!sram_pdn) |
+					   (!!sram_ckiso << 4) |
+					   (!!sram_sleep_b << 8) |
+					   (!!sram_isoint_b << 12)));
+}
+#endif
 MODULE_DESCRIPTION("SPM Driver v0.1");

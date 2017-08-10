@@ -38,8 +38,6 @@ obj-y += mt_spm.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_idle.o
-#ifneq ($(CONFIG_ARCH_MT6570),y)
 obj-y += mt_spm_fs.o
-#endif
 obj-y += mt_spm_sodi.o
 obj-y += mt_spm_dpidle.o
