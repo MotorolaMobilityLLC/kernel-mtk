@@ -446,6 +446,7 @@
 #endif
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
+#define CFG_SUPPORT_DETECT_ATHEROS_AP		0
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Support EMI DEBUG

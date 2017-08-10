@@ -224,6 +224,10 @@ struct _BSS_DESC_T {
 	BOOLEAN fgIEWPA;
 	BOOLEAN fgIEOsen;
 
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	BOOLEAN fgIsAtherosAP;
+#endif
+
 	/*! \brief RSN parameters selected for connection */
 	/*! \brief The Select score for final AP selection,
 	   0, no sec, 1,2,3 group cipher is WEP, TKIP, CCMP */

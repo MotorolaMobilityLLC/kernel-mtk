@@ -1361,6 +1361,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #if CFG_PRIVACY_MIGRATION
 	prBssDesc->fgIEWPA = FALSE;
 #endif
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	prBssDesc->fgIsAtherosAP = FALSE;
+#endif
 	prBssDesc->fgExsitBssLoadIE = FALSE;
 	prBssDesc->fgMultiAnttenaAndSTBC = FALSE;
 #if CFG_SUPPORT_ROAMING_RETRY
@@ -1542,6 +1545,13 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				}
 			}
 #endif /* CFG_ENABLE_WIFI_DIRECT */
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+			if (IE_LEN(pucIE) <= ELEM_MIN_LEN_WFA_OUI_TYPE_SUBTYPE)
+				break;
+			else if (pucIE[2] == 0x00 &&
+					pucIE[3] == 0x03 && pucIE[4] == 0x7F)
+				prBssDesc->fgIsAtherosAP = TRUE;
+#endif
 			break;
 		case ELEM_ID_PWR_CONSTRAINT:
 		{

@@ -2399,6 +2399,68 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 
 }				/* end of aisFsmStateAbort() */
 
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+VOID configDelBaToFw(P_ADAPTER_T prAdapter, BOOLEAN fgEnable)
+{
+	struct _CMD_HEADER_T *pcmdV1Header = NULL;
+	UINT_8 itemString[] = "CoexRemoveBA";
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+	struct _CMD_FORMAT_V1_T *pr_cmd_v1 = NULL;
+
+	pcmdV1Header = (struct _CMD_HEADER_T *) kalMemAlloc(sizeof(struct _CMD_HEADER_T), VIR_MEM_TYPE);
+	if (pcmdV1Header == NULL)
+		return;
+
+	kalMemSet(pcmdV1Header->buffer, 0, MAX_CMD_BUFFER_LENGTH);
+
+	pr_cmd_v1 = (struct _CMD_FORMAT_V1_T *) pcmdV1Header->buffer;
+	pr_cmd_v1->itemStringLength = strlen(itemString);
+	kalMemCopy(pr_cmd_v1->itemString, itemString, pr_cmd_v1->itemStringLength);
+	pr_cmd_v1->itemType = 1;
+	pr_cmd_v1->itemValueLength = 1;
+	if (fgEnable)
+		kalMemCopy(pr_cmd_v1->itemValue, "1", pr_cmd_v1->itemValueLength);
+	else
+		kalMemCopy(pr_cmd_v1->itemValue, "0", pr_cmd_v1->itemValueLength);
+
+	pcmdV1Header->cmdVersion = CMD_VER_1_EXT;
+	pcmdV1Header->cmdType = CMD_TYPE_SET;
+	pcmdV1Header->itemNum = 1;
+	pcmdV1Header->cmdBufferLen = sizeof(struct _CMD_FORMAT_V1_T);
+
+	rStatus = wlanSendSetQueryCmd(prAdapter, CMD_ID_GET_SET_CUSTOMER_CFG,
+				TRUE, FALSE, FALSE,
+				NULL, NULL,
+				sizeof(struct _CMD_HEADER_T),
+				(PUINT_8) pcmdV1Header,
+				NULL, 0);
+	kalMemFree(pcmdV1Header, VIR_MEM_TYPE, sizeof(struct _CMD_HEADER_T));
+
+	if (rStatus == WLAN_STATUS_FAILURE)
+		DBGLOG(INIT, ERROR, "wifiSefCFG fail 0x%x\n", rStatus);
+}
+
+VOID aisSendBaCmdByAtherosAp(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+{
+	static BOOLEAN fgSetDelBatoFw = FALSE;
+
+	if (fgSetDelBatoFw) {
+		configDelBaToFw(prAdapter, FALSE);
+		fgSetDelBatoFw = FALSE;
+	}
+
+	if (prBssDesc) {
+		if (prBssDesc->fgIsAtherosAP) {
+			DBGLOG(AIS, INFO, "Connect to AtherosAP,Del BA\n");
+			configDelBaToFw(prAdapter, TRUE);
+			fgSetDelBatoFw = TRUE;
+		}
+	} else {
+		return;
+	}
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function will handle the Join Complete Event from SAA FSM for AIS FSM
@@ -3287,9 +3349,12 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 		prAisBssInfo->u2BeaconInterval = prBssDesc->u2BeaconInterval;
 	} else {
 		/* should never happen */
+		DBGLOG(AIS, WARN, "no prBssDesc found!\n");
 		ASSERT(0);
 	}
-
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	aisSendBaCmdByAtherosAp(prAdapter, prBssDesc);
+#endif
 	/* NOTE: Defer ucDTIMPeriod updating to when beacon is received after connection */
 	prAisBssInfo->ucDTIMPeriod = 0;
 	prAisBssInfo->u2ATIMWindow = 0;
