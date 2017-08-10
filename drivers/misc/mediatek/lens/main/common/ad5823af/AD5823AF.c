@@ -26,7 +26,7 @@
 
 
 #define AF_DRVNAME "AD5823AF_DRV"
-#define AF_I2C_SLAVE_ADDR        0x0C
+#define AF_I2C_SLAVE_ADDR        0x18
 
 #define AF_DEBUG
 #ifdef AF_DEBUG
