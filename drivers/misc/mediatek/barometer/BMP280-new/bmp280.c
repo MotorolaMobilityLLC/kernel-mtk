@@ -1435,14 +1435,15 @@ static int bmp_suspend(struct i2c_client *client, pm_message_t msg)
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
+	if (NULL == obj) {
+		BAR_ERR("null pointer\n");
+		return -EINVAL;
+	}
+
 	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
 		BAR_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
-		if (NULL == obj) {
-			BAR_ERR("null pointer\n");
-			return -EINVAL;
-		}
 
 		atomic_set(&obj->suspend, 1);
 		err = bmp_set_powermode(obj->client, BMP_SUSPEND_MODE);
