@@ -3095,7 +3095,7 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
 
 	/* get hw consume bytes */
-	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
+	if (HW_memory_index >= Afe_Block->u4DMAReadIdx) {
 		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
 	} else {
 		Afe_consumed_bytes =
