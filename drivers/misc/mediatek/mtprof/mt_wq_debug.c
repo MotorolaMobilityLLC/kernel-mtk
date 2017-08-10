@@ -128,7 +128,8 @@ _work_queued(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
 	if (!work_info) {
 		/* work_info = kzalloc(sizeof(struct work_info), GFP_ATOMIC); */
 		work_info = kmem_cache_zalloc(work_info_cache, gfp);
-		BUG_ON(!work_info);
+		if (!work_info)
+			goto out;
 		work_info->cpu = req_cpu;
 		work_info->work = (unsigned long)work;
 		work_info->func = (unsigned long)work->func;
@@ -138,7 +139,11 @@ _work_queued(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
 			 work_hash(work_info));
 	}
 	work_info->ts = sched_clock();
+out:
 	raw_spin_unlock(&works_lock);
+	if (!work_info)
+		pr_debug(TAG "skip tracing queued work(%pf,%lx) due to oom\n",
+			 (void *)work->func, (unsigned long)work);
 }
 
 static void _work_exec_start(void *ignore, struct work_struct *work)
