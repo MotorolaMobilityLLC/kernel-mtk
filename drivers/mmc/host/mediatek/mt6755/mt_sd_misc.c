@@ -61,7 +61,6 @@ static int dma_force[HOST_MAX_NUM] =    /* used for sd ioctrol */
 #define dma_is_forced(host_id)                  (dma_force[host_id] & 0x10)
 #define get_forced_transfer_mode(host_id)       (dma_force[host_id] & 0x01)
 
-
 static u32 *sg_msdc_multi_buffer;
 
 static int simple_sd_open(struct inode *inode, struct file *file)
@@ -117,7 +116,9 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		return -EINVAL;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
 	mmc = host_ctl->mmc;
 
 	if ((msdc_ctl->total_size <= 0) ||
@@ -352,7 +353,8 @@ static int simple_sd_ioctl_get_cid(struct msdc_ioctl *msdc_ctl)
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
 
 #if DEBUG_MMC_IOCTL
 	pr_debug("user want the cid in msdc slot%d\n", msdc_ctl->host_num);
@@ -381,7 +383,8 @@ static int simple_sd_ioctl_get_csd(struct msdc_ioctl *msdc_ctl)
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
 
 #if DEBUG_MMC_IOCTL
 	pr_debug("user want the csd in msdc slot%d\n", msdc_ctl->host_num);
@@ -417,7 +420,12 @@ static int simple_sd_ioctl_get_excsd(struct msdc_ioctl *msdc_ctl)
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
+	if (host_ctl->hw->host_function != MSDC_EMMC)
+		return -EINVAL;
+
 	mmc = host_ctl->mmc;
 
 	l_buf = kzalloc((512), GFP_KERNEL);
@@ -462,7 +470,12 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 	int bootpart = 0;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
+	if (host_ctl->hw->host_function != MSDC_EMMC)
+		return -EINVAL;
+
 	mmc = host_ctl->mmc;
 
 	if (msdc_ctl->buffer == NULL)
@@ -520,7 +533,12 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
+	if (host_ctl->hw->host_function != MSDC_EMMC)
+		return -EINVAL;
+
 	mmc = host_ctl->mmc;
 
 	if (msdc_ctl->buffer == NULL)
@@ -589,7 +607,11 @@ static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
 
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
+	if (host_ctl->hw->host_function != MSDC_EMMC)
+		return -EINVAL;
 
 	mmc = host_ctl->mmc;
 
@@ -640,7 +662,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
+	/* msdc_clk_enable(host); */
 
 #if DEBUG_MMC_IOCTL
 	pr_debug("set: clk driving is 0x%x\n", msdc_ctl->clk_pu_driving);
@@ -678,7 +700,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	(void)msdc_clk_enable(host);
+	/* (void)msdc_clk_enable(host); */
 
 	msdc_get_driving(host, host->hw);
 
@@ -706,50 +728,6 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 	pr_debug("read: rst driving is 0x%x\n", msdc_ctl->rst_pu_driving);
 	pr_debug("read: ds driving is 0x%x\n", msdc_ctl->ds_pu_driving);
 #endif
-
-	return 0;
-}
-
-static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
-{
-	int id;
-
-	unsigned int timing_table[2][7] = {
-		{                       /* select mode in EM */
-		MMC_TIMING_MMC_HS,      /*SDHC_HIGHSPEED*/
-		MMC_TIMING_LEGACY,      /*UHS_SDR12*/
-		MMC_TIMING_MMC_HS,      /*UHS_SDR25*/
-		MMC_TIMING_MMC_HS,      /*UHS_SDR50*/
-		MMC_TIMING_MMC_HS200,   /*UHS_SDR104*/
-		MMC_TIMING_MMC_DDR52,   /*UHS_DDR50*/
-		MMC_TIMING_MMC_HS400    /*EMMC_HS400*/
-		},
-		{
-		MMC_TIMING_SD_HS,      /*SDHC_HIGHSPEED*/
-		MMC_TIMING_UHS_SDR12,  /*UHS_SDR12*/
-		MMC_TIMING_UHS_SDR25,  /*UHS_SDR25*/
-		MMC_TIMING_UHS_SDR50,  /*UHS_SDR50*/
-		MMC_TIMING_UHS_SDR104, /*UHS_SDR104*/
-		MMC_TIMING_UHS_DDR50,  /*UHS_DDR50*/
-		MMC_TIMING_UHS_SDR104  /*EMMC_HS400*/
-		},
-	};
-	unsigned int timing;
-
-	if ((msdc_ctl->sd30_mode < 0) || (msdc_ctl->sd30_mode > 6))
-		return -EINVAL;
-
-	id = msdc_ctl->host_num;
-
-	if (mtk_msdc_host[id] == NULL)
-		return -EINVAL;
-
-	if (id == 0)
-		timing = timing_table[0][msdc_ctl->sd30_mode];
-	else
-		timing = timing_table[1][msdc_ctl->sd30_mode];
-
-	msdc_set_host_mode_speed(mtk_msdc_host[id]->mmc, timing, -1);
 
 	return 0;
 }
@@ -796,8 +774,11 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 		pr_err("No supported storage type!");
 		return 0;
 	}
+
 	host = msdc_get_host(host_function, boot, 0);
-	BUG_ON(!host || !host->mmc);
+	if (!host || !host->mmc)
+		return -EINVAL;
+
 	switch (info_type) {
 	/* FIX ME: check if any user space program use this EMMC_XXX */
 	case CARD_INFO:
@@ -883,7 +864,9 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 
 	/* emmc always in slot0 */
 	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
-	BUG_ON(!host || !host->mmc || !host->mmc->card);
+	if (!host || !host->mmc || !host->mmc->card)
+		return -EINVAL;
+
 	mmc = host->mmc;
 
 	mmc_claim_host(mmc);
@@ -932,7 +915,12 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 	int err = 0;
 
 	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
-	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card)
+		return -EINVAL;
+
+	if (host_ctl->hw->host_function != MSDC_EMMC)
+		return -EINVAL;
+
 	mmc = host_ctl->mmc;
 
 	mmc_claim_host(mmc);
@@ -946,6 +934,12 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 
 	from = msdc_ctl->address;
 	nr = msdc_ctl->total_size;
+
+	if (from > host_ctl->mmc->card->ext_csd.sectors
+	 || ((from + nr - 1) > host_ctl->mmc->card->ext_csd.sectors)) {
+		err = -EINVAL;
+		goto out;
+	}
 
 	if (mmc_can_discard(mmc->card))
 		arg = MMC_DISCARD_ARG;
@@ -1088,7 +1082,10 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	switch (msdc_ctl.opcode) {
 	case MSDC_SINGLE_READ_WRITE:
 	case MSDC_MULTIPLE_READ_WRITE:
-		msdc_ctl.result = simple_sd_ioctl_rw(&msdc_ctl);
+		/* No More Support */
+		/*
+		 * msdc_ctl.result = simple_sd_ioctl_rw(&msdc_ctl);
+		 */
 		break;
 	case MSDC_GET_CID:
 		msdc_ctl.result = simple_sd_ioctl_get_cid(&msdc_ctl);
@@ -1117,8 +1114,7 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 			&msdc_ctl);
 		break;
 	case MSDC_SD30_MODE_SWITCH:
-		msdc_ctl.result =
-			simple_sd_ioctl_sd30_mode_switch(&msdc_ctl);
+		/* No More support now */
 		break;
 	case MSDC_GET_BOOTPART:
 		msdc_ctl.result =
