@@ -38,9 +38,14 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <mt-plat/mt_lpae.h>
+#include <mt-plat/aee.h>
 
 #if !defined(CONFIG_MTK_LEGACY)
 /* #include <mach/mt_typedefs.h> */
+
+#if defined(ENABLE_CONSOLE_DEBUG)
+static unsigned long uart_infra_base;
+#endif /*--ENABLE_CONSOLE_DEBUG--*/
 
 struct pinctrl *ppinctrl_uart[UART_NR];
 /* pinctrl-names from dtsi.GPIO operations: rx set, rx clear, tx set, tx clear */
@@ -171,6 +176,10 @@ struct mtk_uart_setting *get_uart_default_settings(int idx)
 void set_uart_default_settings(int idx)
 {
 	struct device_node *node = NULL;
+#if defined(ENABLE_CONSOLE_DEBUG)
+	struct device_node *np = NULL;
+	struct device_node *npnode = NULL;
+#endif /*--ENABLE_CONSOLE_DEBUG--*/
 	unsigned int irq_info[3] = { 0, 0, 0 };
 	u32 phys_base;
 
@@ -214,6 +223,21 @@ void set_uart_default_settings(int idx)
 	pr_debug("[UART%d] phys_regs=0x%lx, regs=0x%lx, irq=%d, irq_flags=0x%lx\n", idx,
 		 mtk_uart_default_settings[idx].uart_phys_base, mtk_uart_default_settings[idx].uart_base,
 		 mtk_uart_default_settings[idx].irq_num, mtk_uart_default_settings[idx].irq_flags);
+
+#if defined(ENABLE_CONSOLE_DEBUG)
+	if (!idx) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-infrasys");
+		npnode = of_node_get(np);
+		if (npnode) {
+			uart_infra_base = (unsigned long)of_iomap(npnode, 0);
+			of_node_put(npnode);
+			of_node_put(np);
+		} else {
+			pr_err("uart infrasys node = NULL\n");
+			of_node_put(np);
+		}
+	}
+#endif /*--ENABLE_CONSOLE_DEBUG--*/
 }
 
 /*---------------------------------------------------------------------------*/
@@ -403,6 +427,50 @@ static inline void dump_reg(struct mtk_uart *uart, const char *caller)
 	    caller, uratefix, uhspeed, usamplecnt, usamplepnt, udlh, udll, ier);
 #endif
 }
+
+#if defined(ENABLE_CONSOLE_DEBUG)
+void dump_console_reg(struct mtk_uart *uart, char *s)
+{
+	unsigned long base;
+	u32 lsr = 0, escape_en = 0, clk = 0;
+	u32 hs = 0, sc = 0, dll = 0, dlm = 0;
+	u32 infra = 0;
+	char dump_uart[63];
+
+	memset(dump_uart, 0x00, sizeof(dump_uart));
+	base = uart->base;
+
+	if (uart_infra_base) {
+		infra = UART_INFRA_READ32(UART_INFRA(uart_infra_base));
+		infra = ((infra >> 22) & 0x3);
+	}
+
+	/*--uart 0 clk default enable--*/
+	if (uart->poweron_count) {
+		lsr = UART_READ32(UART_LSR);
+		escape_en = UART_READ32(UART_ESCAPE_EN);
+		clk = uart->poweron_count;
+		hs = UART_READ32(UART_HIGHSPEED);
+		sc = UART_READ32(UART_SAMPLE_COUNT);
+		reg_sync_writel(0x1, UART_FEATURE_SEL);
+		dll = UART_READ32(UART_DLL_E);
+		dlm = UART_READ32(UART_DLH_E);
+	} else
+		clk = 0;
+
+	/*scnprintf(dump_uart, sizeof(dump_uart),
+			"uart0,lsr=%d,es_en=%d,clk=%d,hs=%d,sc=%d,dll=%d,dlm=%d, dl=%d, dlh=%d\n",
+				lsr, escape_en, clk, hs, sc, dll, dlm, uart->registers.dll, uart->registers.dlh);*/
+	scnprintf(dump_uart, sizeof(dump_uart),
+			"lsr=%d,hs=%d,sc=%d,dl=%d,dm=%d,cnt1=%d,cnt2=%d,infra=%x,clk=%d\n",
+				lsr, hs, sc, dll, dlm, uart->cnt1, uart->cnt2, infra, clk);
+
+	strcpy(s, dump_uart);
+
+	/*aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
+			"Dump Uart Reg", "%s", dump_uart);*/
+}
+#endif /*--ENABLE_CONSOLE_DEBUG--*/
 
 void dump_uart_reg(void)
 {

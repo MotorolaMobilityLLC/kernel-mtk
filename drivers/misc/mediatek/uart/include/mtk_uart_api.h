@@ -17,7 +17,7 @@
 int request_uart_to_sleep(void);
 int request_uart_to_wakeup(void);
 
-void mtk_uart_dump_reg(void);
+void mtk_uart_dump_reg(char *s);
 int mtk_uart_dump_timeout_cnt(void);
 
 void stop_log(void);

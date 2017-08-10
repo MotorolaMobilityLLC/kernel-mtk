@@ -620,19 +620,24 @@ void mtk_uart_dump_history(void)
 	uart_mem_dump(rx_history.index, rx_history.buffer, UART_HISTORY_DATA_SIZE);
 }
 
-void mtk_uart_dump_reg(void)
+void mtk_uart_dump_reg(char *s)
 {
-	dump_uart_reg();
+	struct mtk_uart *uart;
+
+	uart = &mtk_uarts[0];
+#if defined(ENABLE_CONSOLE_DEBUG)
+	dump_console_reg(uart, s);
+#endif
 }
 
 int mtk_uart_dump_timeout_cnt(void)
 {
-	int timeout_cnt = 0;
+	int cnt1 = 0;
 	struct mtk_uart *uart;
 
 	uart = &mtk_uarts[0];
-	timeout_cnt = uart->timeout_count;
-	return timeout_cnt;
+	cnt1 = uart->cnt1;
+	return cnt1;
 }
 
 void update_history_byte(char is_tx, int nport, unsigned char byte)
@@ -957,6 +962,8 @@ static void mtk_uart_console_write(struct console *co, const char *s, unsigned i
 				return;
 			}
 		}
+		uart->cnt1 = cnt;
+
 		spin_lock_irqsave(&mtk_console_lock, flags);
 		mtk_uart_write_byte(uart, s[i]);
 		spin_unlock_irqrestore(&mtk_console_lock, flags);
@@ -970,6 +977,8 @@ static void mtk_uart_console_write(struct console *co, const char *s, unsigned i
 					return;
 				}
 			}
+			uart->cnt2 = cnt;
+
 			spin_lock_irqsave(&mtk_console_lock, flags);
 			mtk_uart_write_byte(uart, '\r');
 			spin_unlock_irqrestore(&mtk_console_lock, flags);
@@ -2693,6 +2702,8 @@ static int mtk_uart_init_ports(void)
 		uart->read_status = mtk_uart_read_status;
 		uart->poweron_count = 0;
 		uart->timeout_count = 0;
+		uart->cnt1 = 0;
+		uart->cnt2 = 0;
 		uart->baudrate = 0;
 		uart->custom_baud = 0;
 		uart->registers.dll = 1;

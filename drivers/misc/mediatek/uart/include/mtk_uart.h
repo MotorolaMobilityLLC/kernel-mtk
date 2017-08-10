@@ -204,6 +204,8 @@ struct mtk_uart {
 	int fctl_mode;		/*flow control */
 	int poweron_count;
 	int timeout_count;	/*for console write */
+	int cnt1;	/*for console write */
+	int cnt2;	/*for console write */
 
 	unsigned int fcr_back_up;	/* FCR register is a write only register */
 
