@@ -430,7 +430,7 @@ bool mt_usb_is_device(void)
 static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
 	CHARGER_TYPE charger_type = STANDARD_HOST;
 	unsigned long flags;
 	bool usb_in = false;
@@ -472,15 +472,13 @@ void do_connection_work(struct work_struct *data)
 		return;
 	}
 #ifdef FOR_BRING_UP
-	DBG(0, "BRING_UP case, type(%d)\n", charger_type);
+	DBG(0, "FOR_BRING_UP, force to STANDARD_HOST\n");
 	charger_type = STANDARD_HOST;
 #else
 	charger_type = mt_get_charger_type();
 #endif
-	DBG(0, "type(%d)\n", charger_type);
-	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST)
-		usb_in = true;
 
+	usb_in = usb_cable_connected();
 
 	if (cable_mode != CABLE_MODE_NORMAL)
 		cmode_effect_on = true;
@@ -551,24 +549,21 @@ bool usb_cable_connected(void)
 	CHARGER_TYPE charger_type;
 	int delay_time;
 #ifdef FOR_BRING_UP
+	delay_time = 0;    /* directly issue connection */
 	charger_type = STANDARD_HOST;
-	DBG(0, "BRING_UP case, type(%d)\n", charger_type);
+	DBG(0, "FOR_BRING_UP, force type to STANDARD_HOST\n");
 #else
+	delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
 	charger_type = mt_get_charger_type();
-#endif
 	DBG(0, "type(%d)\n", charger_type);
-	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
-		set_usb_rdy();
-#ifdef FOR_BRING_UP
-		delay_time = 0;    /* directly issue connection */
-#else
-		delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
 #endif
 
+	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
+
+		set_usb_rdy();
 		DBG(0, "issue work on is_ready begin, delay_time:%d ms\n", delay_time);
 		schedule_delayed_work(&connection_work, msecs_to_jiffies(delay_time));
 		DBG(0, "issue work on is_ready end, delay_time:%d ms\n", delay_time);
-
 	}
 
 	if (musb_fake_disc) {
