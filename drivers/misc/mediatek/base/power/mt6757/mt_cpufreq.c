@@ -149,7 +149,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ11_LL_FY		 676000		/* KHz */
 #define CPU_DVFS_FREQ12_LL_FY		 559000		/* KHz */
 #define CPU_DVFS_FREQ13_LL_FY		 442000		/* KHz */
-#define CPU_DVFS_FREQ14_LL_FY		 338000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_FY		 377000		/* KHz */
 #define CPU_DVFS_FREQ15_LL_FY		 221000		/* KHz */
 
 /* for DVFS OPP table L/FY */
@@ -166,7 +166,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ10_L_FY		1248000		/* KHz */
 #define CPU_DVFS_FREQ11_L_FY		1040000		/* KHz */
 #define CPU_DVFS_FREQ12_L_FY		 897000		/* KHz */
-#define CPU_DVFS_FREQ13_L_FY		 741000		/* KHz */
+#define CPU_DVFS_FREQ13_L_FY		 754000		/* KHz */
 #define CPU_DVFS_FREQ14_L_FY		 533000		/* KHz */
 #define CPU_DVFS_FREQ15_L_FY		 442000		/* KHz */
 
@@ -221,7 +221,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ11_LL_SB		 676000		/* KHz */
 #define CPU_DVFS_FREQ12_LL_SB		 559000		/* KHz */
 #define CPU_DVFS_FREQ13_LL_SB		 442000		/* KHz */
-#define CPU_DVFS_FREQ14_LL_SB		 338000		/* KHz */
+#define CPU_DVFS_FREQ14_LL_SB		 377000		/* KHz */
 #define CPU_DVFS_FREQ15_LL_SB		 221000		/* KHz */
 
 /* for DVFS OPP table L/SB */
@@ -238,7 +238,7 @@ static ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ10_L_SB		1248000		/* KHz */
 #define CPU_DVFS_FREQ11_L_SB		1040000		/* KHz */
 #define CPU_DVFS_FREQ12_L_SB		 897000		/* KHz */
-#define CPU_DVFS_FREQ13_L_SB		 741000		/* KHz */
+#define CPU_DVFS_FREQ13_L_SB		 754000		/* KHz */
 #define CPU_DVFS_FREQ14_L_SB		 533000		/* KHz */
 #define CPU_DVFS_FREQ15_L_SB		 442000		/* KHz */
 
@@ -444,11 +444,13 @@ static void _mt_cpufreq_aee_init(void)
 /*
  * PMIC_WRAP
  */
+/* for Vsram */
 #define VOLT_TO_PMIC_VAL(volt)		(((volt) - 60000 + 625 - 1) / 625)
-#define PMIC_VAL_TO_VOLT(pmic)		((pmic) * 625 + 60000)
+#define PMIC_VAL_TO_VOLT(val)		((val) * 625 + 60000)
 
-#define VOLT_TO_EXTBUCK_VAL(volt)	VOLT_TO_PMIC_VAL(volt)
-#define EXTBUCK_VAL_TO_VOLT(val)	PMIC_VAL_TO_VOLT(val)
+/* for Vproc */
+#define VOLT_TO_EXTBUCK_VAL(volt)	(((volt) - 60000 + 625 - 1) / 625)
+#define EXTBUCK_VAL_TO_VOLT(val)	((val) * 625 + 60000)
 
 
 /* cpu voltage sampler */
@@ -1589,7 +1591,7 @@ static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p)
 
 	do {
 		rdata = pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON);
-	} while ((rdata == 0 || rdata > 0x7F) && retry_cnt--);
+	} while (rdata > 0x7f && retry_cnt--);
 
 	rdata = PMIC_VAL_TO_VOLT(rdata);
 	/* cpufreq_ver("@%s: volt = %u\n", __func__, rdata); */
@@ -1600,7 +1602,6 @@ static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p)
 /* for vproc change */
 static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 {
-	unsigned char ret_val = 0;
 	unsigned int ret_volt = 0;	/* volt: mv * 100 */
 	unsigned int retry_cnt = 5;
 
@@ -1610,7 +1611,9 @@ static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 
 	if (cpu_dvfs_is_extbuck_valid()) {
 		do {
-			if (!mt6311_read_byte(MT6311_VDVFS11_CON13, &ret_val)) {
+			unsigned char ret_val;
+
+			if (mt6311_read_byte(MT6311_VDVFS11_CON13, &ret_val) <= 0) {
 				cpufreq_err("%s(), fail to read ext buck volt\n", __func__);
 				ret_volt = 0;
 			} else {
@@ -2829,8 +2832,8 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 {
 	int i, j, dlog = 0;
 	unsigned int tf_sum, t_diff, avg_f, volt = 0;
-	unsigned int prev_f[NUM_PHY_CLUSTER] = { 0 };
-	unsigned int curr_f[NUM_PHY_CLUSTER] = { 0 };
+	unsigned int old_f[NUM_PHY_CLUSTER] = { 0 };
+	unsigned int new_f[NUM_PHY_CLUSTER] = { 0 };
 	struct mt_cpu_dvfs *p;
 	struct cpufreq_freqs freqs;
 
@@ -2871,17 +2874,19 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 			}
 		}
 
-		prev_f[i] = cpu_dvfs_get_cur_freq(p);
-		curr_f[i] = cpu_dvfs_get_freq_by_idx(p, j);
+		freqs.old = cpu_dvfs_get_cur_freq(p);
+		freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
+
+		old_f[i] = freqs.old / 1000;
+		new_f[i] = freqs.new / 1000;
 
 		if (j == p->idx_opp_tbl)
 			continue;
 
-		if (abs(j - p->idx_opp_tbl) >= 5)	/* log filter */
+		if ((p->idx_opp_tbl >= 4 && p->idx_opp_tbl < p->nr_opp_tbl) &&
+		    (j >= 0 && j < 4))		/* log filter */
 			dlog = 1;
 
-		freqs.old = prev_f[i];
-		freqs.new = curr_f[i];
 		cpufreq_freq_transition_begin(p->mt_policy, &freqs);
 
 		p->idx_opp_tbl = j;
@@ -2896,8 +2901,8 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 	cpufreq_unlock();
 
 	if (dlog)
-		cpufreq_dbg("curr_freq = (%u %u) <- (%u %u) @ %08x\n",
-			    curr_f[0], curr_f[1], prev_f[0], prev_f[1], log_box[0].time);
+		cpufreq_dbg("new_freq = (%u %u) <- (%u %u) @ %08x\n",
+			    new_f[0], new_f[1], old_f[0], old_f[1], log_box[0].time);
 
 	if (!p->dvfs_disable_by_suspend && volt != 0 /* OPP changed */)
 		_kick_PBM_by_cpu(p);
@@ -3901,4 +3906,4 @@ static void __exit _mt_cpufreq_pdrv_exit(void)
 late_initcall(_mt_cpufreq_pdrv_init);
 module_exit(_mt_cpufreq_pdrv_exit);
 
-MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.1.2");
+MODULE_DESCRIPTION("MediaTek CPU DVFS Driver v0.2");
