@@ -60,6 +60,9 @@ static LCM_UTIL_FUNCS lcm_util;
 #define read_reg_v2(cmd, buffer, buffer_size) \
 	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
+#define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
+#define set_gpio_lcd_enp_ByName(cmd, pinName) lcm_util.set_gpio_lcd_enp_bias_ByName(cmd, pinName)
+
 #ifndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -460,7 +463,7 @@ static void lcm_init(void)
 		pr_debug("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write success-----\n", cmd);
 #endif
 #endif
-
+	set_gpio_lcd_enp_ByName(1, "lcd_bias_enp1_gpio");
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);
@@ -484,6 +487,7 @@ static void lcm_suspend(void)
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ZERO);
 #endif
+	set_gpio_lcd_enp_ByName(0, "lcd_bias_enp0_gpio");
 }
 
 static void lcm_resume(void)

@@ -46,6 +46,7 @@ typedef enum {
 extern unsigned int FB_LAYER;	/* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
+#define DISP_GPIO_DTS
 
 extern unsigned int gEnableDSIStateCheck;
 extern unsigned int ext_session_id;

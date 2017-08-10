@@ -24,7 +24,9 @@ static const char *this_state_name[DTS_GPIO_STATE_MAX] = {
 	"mode_te_te",                   /* DTS_GPIO_STATE_TE_MODE_TE */
 	"pwm_test_pin_mux_gpio55",      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_55 */
 	"pwm_test_pin_mux_gpio69",      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_69 */
-	"pwm_test_pin_mux_gpio129"      /* DTS_GPIO_STATE_PWM_TEST_PINMUX_129 */
+	"pwm_test_pin_mux_gpio129",     /* DTS_GPIO_STATE_PWM_TEST_PINMUX_129 */
+	"lcd_bias_enp0_gpio",
+	"lcd_bias_enp1_gpio"
 };
 
 /* pinctrl implementation */
@@ -45,6 +47,30 @@ static long _set_state(const char *name)
 	/* select state! */
 	pinctrl_select_state(this_pctrl, pState);
 
+exit:
+	return ret; /* Good! */
+}
+
+long lcm_turn_on_gate_by_name(bool bOn, char *pinName)
+{
+	long ret = 0;
+	struct pinctrl_state *pState = 0;
+
+	BUG_ON(!this_pctrl);
+
+	if (bOn)
+		pState = pinctrl_lookup_state(this_pctrl, pinName);
+	else
+		pState = pinctrl_lookup_state(this_pctrl, pinName);
+
+	if (IS_ERR(pState)) {
+		pr_err("set state '%s' failed\n", pinName);
+		ret = PTR_ERR(pState);
+		goto exit;
+	}
+
+	/* select state! */
+	pinctrl_select_state(this_pctrl, pState);
 exit:
 	return ret; /* Good! */
 }
