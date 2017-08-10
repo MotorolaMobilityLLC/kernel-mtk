@@ -4095,12 +4095,28 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT_FRMB irqinfo)
 	int idx;
 	unsigned long long time_sec;
 	unsigned long time_usec;
+	MINT32 Ret = 0;
 
 
 	switch (irqinfo.UserInfo.Type) {
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if ((irqinfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo.UserInfo.UserKey < 1)) {
+		LOG_ERR("invalid userKey(%d), max(%d)", irqinfo.UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		Ret = -EFAULT;
+		return Ret;
+	}
+	if ((irqinfo.UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT_FRMB)
+		|| (irqinfo.UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", irqinfo.UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT_FRMB);
+		Ret = -EFAULT;
+		return Ret;
 	}
 
 	/* 1. enable marked flag */
@@ -4131,7 +4147,7 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT_FRMB irqinfo)
 	LOG_DBG("MARK key/type/sts (%d/%d/0x%x), t(%d us)", irqinfo.UserInfo.UserKey,
 		irqinfo.UserInfo.Type, irqinfo.UserInfo.Status, (int)(time_usec));
 
-	return 0;
+	return Ret;
 }
 
 
@@ -4160,6 +4176,21 @@ static MINT32 ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT_FRMB * irqinfo)
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if ((irqinfo->UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->UserInfo.UserKey < 1)) {
+		LOG_ERR("invalid userKey(%d), max(%d)", irqinfo->UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		Ret = -EFAULT;
+		return Ret;
+	}
+	if ((irqinfo->UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT_FRMB)
+		|| (irqinfo->UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", irqinfo->UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT_FRMB);
+		Ret = -EFAULT;
+		return Ret;
 	}
 
 	spin_lock_irqsave(&(IspInfo_FrmB.SpinLockIrq[eIrq]), flags);
@@ -4229,11 +4260,26 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT_FRMB irqinfo)
 {
 	unsigned long flags;
 	eISPIrq eIrq = _IRQ;
+	MINT32 Ret = 0;
 
 	switch (irqinfo.UserInfo.Type) {
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if (irqinfo.UserInfo.UserKey != 0) {   /* isp driver */
+		LOG_ERR("invalid userKey(%d), max(%d)", irqinfo.UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		Ret = -EFAULT;
+		return Ret;
+	}
+	if ((irqinfo.UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT_FRMB)
+		|| (irqinfo.UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", irqinfo.UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT_FRMB);
+		Ret = -EFAULT;
+		return Ret;
 	}
 
 	/* 1. enable signal */
@@ -4245,7 +4291,7 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT_FRMB irqinfo)
 	/* 2. force to wake up the user that are waiting for that signal */
 	wake_up_interruptible(&IspInfo_FrmB.WaitQueueHead);
 
-	return 0;
+	return Ret;
 }
 
 
@@ -4295,6 +4341,21 @@ static MINT32 ISP_WaitIrq_FrmB(ISP_WAIT_IRQ_STRUCT_FRMB * WaitIrq)
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if ((WaitIrq->UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (WaitIrq->UserInfo.UserKey < 0)) {
+		LOG_ERR("invalid userKey(%d), max(%d)", WaitIrq->UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		Ret = -EFAULT;
+		return Ret;
+	}
+	if ((WaitIrq->UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT_FRMB)
+		|| (WaitIrq->UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", WaitIrq->UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT_FRMB);
+		Ret = -EFAULT;
+		return Ret;
 	}
 
 	/* 1. wait type update */

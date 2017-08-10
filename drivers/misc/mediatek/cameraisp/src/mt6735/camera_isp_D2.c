@@ -2325,6 +2325,12 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	/* MUINT8 *pData = NULL; */
 	ISP_REG_STRUCT *pData = NULL;
 
+	if (pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) {
+		LOG_ERR("pRegIo->Count error");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	if (g_IspInfo.DebugMask & ISP_DBG_WRITE_REG) {
 		/* LOG_DBG("Data(0x%08X), Count(%d)", (MUINT32)(pRegIo->Data), (MUINT32)(pRegIo->Count)); */
 		LOG_DBG("Data(0x%p), Count(%d)", pRegIo->pData, pRegIo->Count);
@@ -3720,6 +3726,12 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT WaitIrq)
 			WaitIrq.Type, WaitIrq.Status, WaitIrq.Timeout);
 	}
 #endif
+	if ((WaitIrq.Type >= ISP_IRQ_TYPE_AMOUNT) || (WaitIrq.Type < 0)) {
+		Ret = -EFAULT;
+		LOG_ERR("invalid type(%d)", WaitIrq.Type);
+		goto EXIT;
+	}
+
 	if (WaitIrq.Clear == ISP_IRQ_CLEAR_WAIT) {
 		spin_lock_irqsave(&(g_IspInfo.SpinLockIrq), flags);
 		if (g_IspInfo.IrqInfo.Status[WaitIrq.Type] & WaitIrq.Status) {
