@@ -208,8 +208,7 @@ VOID rlmRspGenerateHtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
-	if ((prMsduInfo->ucNetworkType == NETWORK_TYPE_P2P_INDEX) ||
-	    (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))))
+	if (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
 		rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
 }
 
@@ -263,8 +262,7 @@ VOID rlmRspGenerateHtOpIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType];
 	ASSERT(prBssInfo);
 
-	if ((prMsduInfo->ucNetworkType == NETWORK_TYPE_P2P_INDEX) ||
-	    (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N))))
+	if (RLM_NET_IS_11N(prBssInfo) && (!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
 		rlmFillHtOpIE(prAdapter, prBssInfo, prMsduInfo);
 }
 
