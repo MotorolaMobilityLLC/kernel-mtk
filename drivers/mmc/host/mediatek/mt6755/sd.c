@@ -2998,7 +2998,9 @@ int msdc_do_request_prepare(struct msdc_host *host,
 	u32 *l_bypass_flush,
 	int prepare_case)
 {
+#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
+#endif
 
 	#ifndef MSDC_WQ_ERROR_TUNE
 	if ((prepare_case != PREPARE_TUNE) && (host->mmc->bus_dead != 1))
