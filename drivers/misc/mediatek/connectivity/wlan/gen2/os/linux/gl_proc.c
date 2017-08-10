@@ -718,7 +718,7 @@ static ssize_t procCountryRead(struct file *filp, char __user *buf, size_t count
 	if (u2CountryCode)
 		kalSprintf(aucProcBuf, "Current Country Code: %c%c\n", (u2CountryCode>>8) & 0xff, u2CountryCode & 0xff);
 	else
-		kalStrCpy(aucProcBuf, "Current Country Code: NULL\n");
+		kalStrnCpy(aucProcBuf, "Current Country Code: NULL\n", strlen("Current Country Code: NULL\n"));
 
 	u4CopySize = kalStrLen(aucProcBuf);
 	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
