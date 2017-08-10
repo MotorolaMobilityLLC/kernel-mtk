@@ -412,8 +412,7 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 				goto exit;
 			}
 #endif				/* SUPPORT_LEGACY_CONTROL */
-		} else
-			goto exit;
+		}
 
 		if ((check_enable_state(fn) != (!!enable))) {
 			C2K_NOTE("enable:%d\n", enable);
