@@ -21,6 +21,7 @@
 #include <linux/uidgid.h>
 #include <ccci_chrdev.h>
 #include <ccci.h>
+#include <ccci_common.h>
 
 /* extern unsigned int md_ex_type; */
 /* unsigned int push_data_fail = 0; */
@@ -1220,9 +1221,9 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 			ret = -EFAULT;
 		} else {
 			CCCI_MSG_INF(md_id, "chr",
-				     "IOC_RELOAD_MD_TYPE: storing md type(%d)!\n",
+				     "IOC_RELOAD_MD_TYPE: storing md type(0x%x)!\n",
 				     md_type);
-			set_modem_support(md_id, md_type);
+			set_modem_support_cap(md_id, md_type);
 			ccci_set_reload_modem(md_id);
 		}
 		break;
@@ -1255,19 +1256,24 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 			CCCI_MSG_INF(md_id, "chr",
 				     "CCCI_IOC_SET_MD_IMG_EXIST: copy_from_user fail!\n");
 			ret = -EFAULT;
-		}
-		md_img_type_is_set = 1;
-		CCCI_MSG_INF(md_id, "chr",
-			     "CCCI_IOC_SET_MD_IMG_EXIST: set done!\n");
+		} else
+			md_img_type_is_set = 1;
+		CCCI_MSG_INF(md_id, "chr", "CCCI_IOC_SET_MD_IMG_EXIST: set done!\n");
 		break;
 
 	case CCCI_IOC_GET_MD_IMG_EXIST:
-		CCCI_MSG_INF(md_id, "chr",
-						 "CCCI_IOC_GET_MD_IMG_EXIST: waiting set\n");
-		while (md_img_type_is_set == 0)
-			msleep(200);
-		CCCI_MSG_INF(md_id, "chr",
-				     "CCCI_IOC_GET_MD_IMG_EXIST: waiting set done!\n");
+		md_type = get_md_type_from_lk(md_id); /* For LK load modem use */
+		if (md_type) {
+			memset(&md_img_exist, 0, sizeof(md_img_exist));
+			md_img_exist[0] = md_type;
+			CCCI_MSG_INF(md_id, "chr", "lk md_type: %d, image num:1\n", md_type);
+		} else {
+			CCCI_MSG_INF(md_id, "chr", "CCCI_IOC_GET_MD_IMG_EXIST: waiting set\n");
+			while (md_img_type_is_set == 0)
+				msleep(200);
+			CCCI_MSG_INF(md_id, "chr", "CCCI_IOC_GET_MD_IMG_EXIST: waiting set done!\n");
+		}
+
 		if (copy_to_user((void __user *)arg, &md_img_exist, sizeof(md_img_exist))) {
 			CCCI_MSG_INF(md_id, "chr",
 				     "CCCI_IOC_GET_MD_IMG_EXIST: copy_to_user fail!\n");
@@ -1276,7 +1282,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	case CCCI_IOC_GET_MD_TYPE:
-		md_type = get_modem_support(md_id);
+		md_type = get_modem_support_cap(md_id);
 		ret =
 		    put_user((unsigned int)md_type, (unsigned int __user *)arg);
 		break;
@@ -1296,11 +1302,11 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 				     "storing md type(%d) in kernel space!\n",
 				     md_type_saving);
 			if (0x1 <= md_type_saving && md_type_saving <= 0x4) {
-				if (md_type_saving != get_modem_support(md_id))
+				if (md_type_saving != get_modem_support_cap(md_id))
 					CCCI_MSG_INF(md_id, "chr",
 						     "Maybe Wrong: md type storing not equal with current setting!(%d %d)\n",
 						     md_type_saving,
-						     get_modem_support(md_id));
+						     get_modem_support_cap(md_id));
 				/* Notify md_init daemon to store md type in nvram */
 				ccci_system_message(md_id,
 						    CCCI_MD_MSG_STORE_NVRAM_MD_TYPE,

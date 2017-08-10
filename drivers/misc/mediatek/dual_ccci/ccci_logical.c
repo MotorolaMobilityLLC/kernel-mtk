@@ -724,8 +724,9 @@ int ccci_logic_ctlb_init(int md_id)
 	if ((sizeof(logic_ch_static_info_tab) /
 	     sizeof(struct logic_channel_static_info_t)) != CCCI_MAX_CH_NUM) {
 		CCCI_MSG_INF(md_id, "cci",
-			     "%s: channel max number mis-match fail\n",
-			     __func__);
+			     "%s: channel max number mis-match fail, %d:%d\n",
+			     __func__, sizeof(logic_ch_static_info_tab)/sizeof(struct logic_channel_static_info_t),
+			     CCCI_MAX_CH_NUM);
 		return -CCCI_ERR_CHANNEL_NUM_MIS_MATCH;
 	}
 

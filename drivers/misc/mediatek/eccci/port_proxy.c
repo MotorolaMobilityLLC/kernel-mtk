@@ -1298,13 +1298,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 		} else {
 			CCCI_NORMAL_LOG(md_id, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(%d)!\n", md_type);
 			ccci_event_log("md%d: IOC_RELOAD_MD_TYPE: storing md type(%d)!\n", md_id, md_type);
-			if ((md_type >= modem_ultg) && (md_type <= MAX_IMG_NUM) && (md_id == MD_SYS1)) {
-				if (md_capability(MD_SYS1, md_type, 0))
-					ccci_md_set_reload_type(proxy_p->md_obj, md_type);
-				else
-					ret = -1;
-			} else
-				ccci_md_set_reload_type(proxy_p->md_obj, md_type);
+			ccci_md_set_reload_type(proxy_p->md_obj, md_type);
 		}
 		break;
 	case CCCI_IOC_SET_MD_IMG_EXIST:
@@ -1357,6 +1351,26 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_GET_MD_TYPE_SAVING:
 		md_type = ccci_md_get_load_saving_type(proxy_p->md_obj);
 		ret = put_user(md_type, (unsigned int __user *)arg);
+		break;
+	case CCCI_IOC_GET_RAT_STR:
+		ret = ccci_get_rat_str_from_drv(proxy_p->md_id, (char *)md_boot_data, sizeof(md_boot_data));
+		if (ret < 0)
+			CCCI_NORMAL_LOG(md_id, CHAR, "get md rat sting fail: gen str fail! %d\n", (int)ret);
+		else {
+			if (copy_to_user((void __user *)arg, (char *)md_boot_data,
+						strlen((char *)md_boot_data) + 1)) {
+				CCCI_NORMAL_LOG(md_id, CHAR, "get md rat sting fail: copy_from_user fail!\n");
+				ret = -EFAULT;
+			}
+		}
+		break;
+	case CCCI_IOC_SET_RAT_STR:
+		if (copy_from_user((char *)md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
+			CCCI_NORMAL_LOG(md_id, CHAR, "set rat string fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+			break;
+		}
+		ccci_set_rat_str_to_drv(proxy_p->md_id, (char *)md_boot_data);
 		break;
 
 	case CCCI_IOC_GET_EXT_MD_POST_FIX:

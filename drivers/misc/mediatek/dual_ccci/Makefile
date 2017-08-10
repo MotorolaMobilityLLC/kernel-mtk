@@ -38,6 +38,7 @@ ccci-y +=ccmni.o
 ccci-y +=ccmni_pfp.o
 ccci-y +=ccci_mk_node.o
 ccci-y +=ccci_statistics.o
+ccci-y +=ccci_misc.o
 
 #include $(CCCI_DRIVER_DIR)/Makefile
 

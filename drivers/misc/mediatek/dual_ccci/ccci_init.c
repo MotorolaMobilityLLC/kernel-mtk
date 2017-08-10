@@ -21,6 +21,7 @@
 
 unsigned long long lg_ch_rx_debug_enable[MAX_MD_NUM];
 unsigned long long lg_ch_tx_debug_enable[MAX_MD_NUM];
+unsigned int ccci_debug_enable; /* to avoid ccci_util build error */
 
 static int __init ccci_init(void)
 {
@@ -28,6 +29,8 @@ static int __init ccci_init(void)
 	unsigned int md_num = 1;
 	int i = 0;
 	int md_en[MAX_MD_NUM] = { 0 };
+
+	update_ccci_port_ver(2); /* Using dual ccci */
 
 	/* 1. Get and set Support MD nmmber */
 	md_num = get_md_sys_max_num();

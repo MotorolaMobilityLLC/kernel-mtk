@@ -39,7 +39,7 @@
 #include "ccci_fs.h"
 #include "ccmni_net.h"
 #include <ccci_platform_cfg.h>
-#include <mach/mtk_ccci_helper.h>
+#include <mt-plat/mt_ccci_common.h>
 /* ======================================================== */
 /*  debug log define     */
 /* ======================================================== */
@@ -300,8 +300,6 @@ void additional_operation_before_stop_md(int md_id);
 struct smem_alloc_t *get_md_smem_layout(int md_id);
 unsigned int get_md_sys_max_num(void);
 void ccci_md_wdt_notify_register(int, int (*funcp) (int));
-int ccci_load_firmware(int md_id, unsigned int load_flag, char img_err_str[],
-		       int len);
 int ccci_power_on_md(int md_id);
 int ccci_power_down_md(int md_id);
 int let_md_stop(int md_id, unsigned int timeout);
@@ -335,12 +333,146 @@ void ccci_dump_md_register(int md_id);
  */
 int get_md2_ap_phy_addr_fixed(void);
 
+/* API export by ccci_misc.c that moved from mtk_ccci_helper.c */
+void ccci_helper_exit(void);
+
+#define MD1_SETTING_ACTIVE	(1<<0)
+#define MD2_SETTING_ACTIVE	(1<<1)
+#define MD5_SETTING_ACTIVE	(1<<4)
+
+#define MD_2G_FLAG    (1<<0)
+#define MD_FDD_FLAG   (1<<1)
+#define MD_TDD_FLAG   (1<<2)
+#define MD_LTE_FLAG   (1<<3)
+#define MD_SGLTE_FLAG (1<<4)
+
+#define MD_WG_FLAG    (MD_FDD_FLAG|MD_2G_FLAG)
+#define MD_TG_FLAG    (MD_TDD_FLAG|MD_2G_FLAG)
+#define MD_LWG_FLAG   (MD_LTE_FLAG|MD_FDD_FLAG|MD_2G_FLAG)
+#define MD_LTG_FLAG   (MD_LTE_FLAG|MD_TDD_FLAG|MD_2G_FLAG)
+
+/*-------------other configure-------------------------*/
+#define MAX_SLEEP_API	  (20)
+#define MAX_FILTER_MEMBER (4)
+
+/*-------------error code define-----------------------*/
+#define E_NO_EXIST		  (-1)
+#define E_PARAM			  (-2)
+
+#define CCCI_MEM_ALIGN      (SZ_32M)
+#define CCCI_SMEM_ALIGN_MD1 (0x200000)	/*2M */
+
+/*-------------enum define---------------------------*/
+/*modem image version definitions*/
+typedef enum {
+	AP_IMG_INVALID = 0,
+	AP_IMG_2G,
+	AP_IMG_3G
+} AP_IMG_TYPE;
+
+typedef enum {
+	RSM_ID_RESUME_WDT_IRQ = 0,
+	RSM_ID_MD_LOCK_DORMANT = 1,
+	RSM_ID_WAKE_UP_MD = 2,
+	RSM_ID_MAX
+} RESUME_ID;
+
+typedef enum {
+	SLP_ID_MD_FAST_DROMANT = 0,
+	SLP_ID_MD_UNLOCK_DORMANT = 1,
+	SLP_ID_MAX
+} SLEEP_ID;
+
+/*System channel, AP -->(/ <-->) MD message start from 0x100*/
+enum {
+	MD_DORMANT_NOTIFY = 0x100,
+	MD_SLP_REQUEST = 0x101,
+	MD_TX_POWER = 0x102,
+	MD_RF_TEMPERATURE = 0x103,
+	MD_RF_TEMPERATURE_3G = 0x104,
+	MD_GET_BATTERY_INFO = 0x105,
+	MD_SIM_TYPE = 0x107,	/*for regional phone boot animation */
+	MD_SW_2G_TX_POWER = 0x10E,
+	MD_SW_3G_TX_POWER = 0x10F,
+};
+
+/*-------------structure define------------------------*/
+typedef int (*ccci_kern_cb_func_t)(int, char *, unsigned int);
+typedef struct {
+	KERN_FUNC_ID id;
+	ccci_kern_cb_func_t func;
+} ccci_kern_func_info;
+
+typedef size_t(*ccci_filter_cb_func_t)(char *, size_t);
+typedef struct _cmd_op_map {
+	char cmd[8];
+	int cmd_len;
+	ccci_filter_cb_func_t store;
+	ccci_filter_cb_func_t show;
+} cmd_op_map_t;
+
+/*-----------------export function declaration----------------------------*/
+AP_IMG_TYPE get_ap_img_ver(void);
+int get_td_eint_info(int md_id, char *eint_name, unsigned int len);
+int get_md_gpio_info(int md_id, char *gpio_name, unsigned int len);
+int get_md_gpio_val(int md_id, unsigned int num);
+int get_md_adc_info(int md_id, char *adc_name, unsigned int len);
+int get_md_adc_val(int md_id, unsigned int num);
+int get_dram_type_clk(int *clk, int *type);
+int get_eint_attr(char *name, unsigned int name_len, unsigned int type,
+		  char *result, unsigned int *len);
+int get_bat_info(unsigned int para);
+
+unsigned int get_nr_modem(void);
+unsigned int *get_modem_size_list(void);
+int parse_ccci_dfo_setting(void *dfo_data, int num);
+int parse_meta_md_setting(unsigned char args[]);
+
+unsigned int get_md_mem_start_addr(int md_id);
+unsigned int get_md_share_mem_start_addr(int md_id);
+unsigned int get_smem_base_addr(int md_id);
+unsigned int get_modem_is_enabled(int md_id);
+unsigned int get_resv_mem_size_for_md(int md_id);
+unsigned int get_resv_share_mem_size_for_md(int md_id);
+void get_md_post_fix(int md_id, char buf[], char buf_ex[]);
+unsigned int get_modem_support(int md_id);
+unsigned int set_modem_support(int md_id, int md_type);
+
+int register_filter_func(char cmd[], ccci_filter_cb_func_t store,
+			 ccci_filter_cb_func_t show);
+
+int register_ccci_kern_func(unsigned int id, ccci_kern_cb_func_t func);
+int register_ccci_kern_func_by_md_id(int md_id, unsigned int id,
+				     ccci_kern_cb_func_t func);
+int exec_ccci_kern_func(unsigned int id, char *buf, unsigned int len);
+int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
+				 unsigned int len);
+
+void register_suspend_notify(int md_id, unsigned int id, void (*func)(int));
+void register_resume_notify(int md_id, unsigned int id, void (*func)(int));
+
+int register_sys_msg_notify_func(int md_id,
+				 int (*func)(int, unsigned int, unsigned int));
+int notify_md_by_sys_msg(int md_id, unsigned int msg, unsigned int data);
+
+int register_ccci_sys_call_back(int md_id, unsigned int id,
+				ccci_sys_cb_func_t func);
+void exec_ccci_sys_call_back(int md_id, int cb_id, int data);
+extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
+extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
+extern unsigned long *get_modem_start_addr_list(void);
+extern int IMM_get_adc_channel_num(char *channel_name, int len);
+extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
+extern int get_dram_info(int *clk, int *type);
+void ccci_helper_exit(void);
+void ccci_md_mem_reserve(void);
+
+extern int legacy_boot_md_show(int md_id, char *buf, int size);
+extern int legacy_boot_md_store(int md_id);
+
+int ccci_load_firmware_helper(int md_id, char img_err_str[], int len);/* Platform code export */
+
 #ifdef ENABLE_GPS_MD_COCLK
 extern unsigned int wmt_get_coclock_setting_for_ccci(void);
 #endif
-/* ============================================================= */
-/*  CCCI API cannot be directly called by platform,  */
-/*  since ccci.ko is loaded after ccci_platform.ko,  */
-/*  so there is no API exported to platform. */
-/* ============================================================= */
 #endif				/* __CCCI_COMMON_H__ */
