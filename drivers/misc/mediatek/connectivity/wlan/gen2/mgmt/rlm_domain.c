@@ -555,6 +555,29 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	 }
 	}
 	,
+#ifdef CONFIG_MTK_TC1_FEATURE
+	{
+	/* 2.4GHz -> Ch1~11 : Set Active Scan,
+		2.4Ghz -> Ch12~14: Disabled.
+		5Ghz -> All channel : Set Passive Scan
+		*/
+	(PUINT_16) g_u2CountryGroup21, sizeof(g_u2CountryGroup21) / 2,
+	{
+	 {81, BAND_2G4, CHNL_SPAN_5, 1, 11, FALSE}
+	 ,			/* CH_SET_2G4_1_11 */
+
+	 {115, BAND_5G, CHNL_SPAN_20, 36, 4, FALSE}
+	 ,
+	 {118, BAND_5G, CHNL_SPAN_20, 52, 4, FALSE}
+	 ,
+	 {121, BAND_5G, CHNL_SPAN_20, 100, 12, FALSE}
+	 ,
+	 {125, BAND_5G, CHNL_SPAN_20, 149, 7, FALSE}
+	 ,
+	 {0, BAND_NULL, 0, 0, 0, FALSE}
+	 }
+	}
+#else
 	{
 	 /* Note: Default group if no matched country code */
 	 (PUINT_16) g_u2CountryGroup21, sizeof(g_u2CountryGroup21) / 2,
@@ -592,6 +615,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 	  {0, BAND_NULL, 0, 0, 0, FALSE}
 	 }
 	}
+#endif
 };
 
 static UINT_16 g_u2CountryGroup0_Passive[] = {
@@ -610,8 +634,26 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	  {118, BAND_5G, CHNL_SPAN_20, 52, 0, 0},	/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_5G, CHNL_SPAN_20, 100, 0, 0},	/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0},	/* CH_SET_UNII_UPPER_149_173 */
+	  }
+	 },
+#ifdef CONFIG_MTK_TC1_FEATURE
+	{
+	 /* 2.4GHz -> Ch1~11 : Set Active Scan,
+	   2.4Ghz -> Ch12~14: Disabled.
+	   5Ghz -> All channel : Set Passive Scan
+	   */
+	 g_u2CountryGroup0_Passive, 0,
+	 {
+	  {81, BAND_2G4, CHNL_SPAN_5, 1, 0, 0}, /* CH_SET_2G4_1_11 */
+
+	  {115, BAND_5G, CHNL_SPAN_20, 36, 4, 0}, /* CH_SET_UNII_LOW_36_48 */
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, 0}, /* CH_SET_UNII_MID_52_64 */
+	  {121, BAND_5G, CHNL_SPAN_20, 100, 12, 0}, /* CH_SET_UNII_WW_100_144 */
+	  {125, BAND_5G, CHNL_SPAN_20, 149, 7, 0}, /* CH_SET_UNII_UPPER_149_173 */
+	  {0, BAND_NULL, 0, 0, 0, 0}
+	  }
 	 }
-	},
+#else
 	{
 	 /* User Defined passive scan channel table */
 	 g_u2CountryGroup0_Passive, 0,
@@ -623,8 +665,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 	  {118, BAND_5G, CHNL_SPAN_20, 52, 0, 0},	/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_5G, CHNL_SPAN_20, 100, 0, 0},	/* CH_SET_UNII_WW_100_140 */
 	  {125, BAND_5G, CHNL_SPAN_20, 149, 0, 0},	/* CH_SET_UNII_UPPER_149_173 */
+	  }
 	 }
-	}
+#endif
 };
 
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
