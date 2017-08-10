@@ -1515,14 +1515,16 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ret = -EINVAL;
 					goto EXIT;
 				}
+
+				task_lock(task);
 				dumpable = get_dumpable(task->mm);
-				if (dumpable == 0) {
+				if ((dumpable == 0) && (task->mm != NULL)) {
 					LOGD("%s: set process:%d dumpable\n", __func__, pid);
 					set_dumpable(task->mm, 1);
 				} else
 					LOGD("%s: get process:%d dumpable:%d\n", __func__, pid,
 					     dumpable);
-
+				task_unlock(task);
 			} else {
 				LOGD("%s: check suid dumpable ioctl pid invalid\n", __func__);
 				ret = -EINVAL;
