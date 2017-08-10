@@ -3701,8 +3701,11 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static const char * const Pmic_Test_function[] = { "Off", "On" };
 static const char * const Pmic_LPBK_function[] = { "Off", "LPBK3" };
 static int32 Pmic_Loopback_Type;
+static int32 TurnOn_ULDL_16K_Type;
+
 static int Pmic_Loopback_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s()\n", __func__);
@@ -3743,8 +3746,78 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	return 0;
 }
 
+static int TurnOn_ULDL_16K_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	ucontrol->value.integer.value[0] = TurnOn_ULDL_16K_Type;
+	return 0;
+}
+
+static int TurnOn_ULDL_16K_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	uint32 top_ctrl_status_now;
+	uint16 rReg = 0;
+	uint16 i = 3;
+
+	pr_debug("%s()\n", __func__);
+
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_Test_function)) {
+		pr_warn("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	if (ucontrol->value.integer.value[0]) {		/* enable pmic lpbk */
+		/* clk */
+		Ana_Set_Reg(TOP_CKPDN1, 0x12ff, 0xffff);
+		Ana_Set_Reg(TOP_CKPDN1_CLR, 0x100, 0xffff);
+
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 0x3300, 0xffff);
+		Ana_Set_Reg(ABB_AFE_CON1, 0x4, 0xffff);
+		Ana_Set_Reg(ABB_AFE_CON11, 0x0200, 0x0200);
+		top_ctrl_status_now = Ana_Get_Reg(ABB_AFE_CON11);
+		Ana_Set_Reg(ABB_AFE_CON11, ((top_ctrl_status_now & 0x0001) ? 0 : 1) << 8, 0x0100);
+		Ana_Set_Reg(ABB_AFE_CON0, 0x0001, 0x0001);	/* turn on DL */
+
+		/* set analog part (voice HS playback) */
+		Ana_Set_Reg(AUDTOP_CON7, 0x2430, 0xffff);	/* Set voice buffer to smallest -22dB. */
+		/* enable input short of HP to prevent voice signal leakage . Enable 2.4V. */
+		Ana_Set_Reg(AUDTOP_CON6, 0xB7F6, 0xffff);
+		/* Depop. Enable audio clock */
+		Ana_Set_Reg(AUDTOP_CON0, 0x7000, 0xf000);	/* enable clean 1.35VCM buffer in audioUL */
+		Ana_Set_Reg(AUDTOP_CON4, 0x0014, 0xffff);	/* enable audio bias. enable LCH DAC */
+		for (i = 3; i < 11; i++) {
+			/* udelay(5 * 1000); */
+			mdelay(5);
+			rReg = 0x2500 + (i << 4);
+			/* enable voice buffer and -1dB gain. ramp up volume from -21dB to -1dB here */
+			Ana_Set_Reg(AUDTOP_CON7, rReg, 0xffff);
+		}
+
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x342f, 0xffff);
+		Ana_Set_Reg(ABB_AFE_CON1, 0x4, 0xffff);
+		top_ctrl_status_now = Ana_Get_Reg(ABB_AFE_CON11);
+		Ana_Set_Reg(ABB_AFE_CON11, ((top_ctrl_status_now & 0x0001) ? 0 : 1) << 8, 0x0100);
+		Ana_Set_Reg(ABB_AFE_CON0, 0x0002, 0x0002);	/* turn on UL */
+
+		Ana_Set_Reg(AUDTOP_CON0, 0x7810, 0xffff);
+		Ana_Set_Reg(AUDTOP_CON1, 0x100, 0xffff);
+		Ana_Set_Reg(AUDTOP_CON2, 0xf0, 0xffff);
+		Ana_Set_Reg(AUDTOP_CON8, 0x208, 0xffff);
+		Ana_Set_Reg(AUDTOP_CON0, 0x7990, 0xffff);
+		Ana_Set_Reg(AUDTOP_CON2, 0xf3, 0xffff);
+
+	} else {						/* disable pmic lpbk */
+		Voice_Amp_Change(false);
+		TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC1, false);
+		TurnOnADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC2, false);
+	}
+
+	pr_warn("%s() done\n", __func__);
+	Pmic_Loopback_Type = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 /* here start uplink power function */
-static const char * const Pmic_Test_function[] = { "Off", "On" };
 
 static const struct soc_enum Pmic_Test_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
@@ -3753,6 +3826,7 @@ static const struct soc_enum Pmic_Test_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_LPBK_function), Pmic_LPBK_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
 };
 
 static const struct snd_kcontrol_new mt6350_pmic_Test_controls[] = {
@@ -3766,6 +3840,7 @@ static const struct snd_kcontrol_new mt6350_pmic_Test_controls[] = {
 		     Voice_Call_DAC_DAC_HS_Set),
 	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[4], SineTable_UL2_Get, SineTable_UL2_Set),
 	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[5], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_ENUM_EXT("TurnOn_ULDL_16K", Pmic_Test_Enum[6], TurnOn_ULDL_16K_Get, TurnOn_ULDL_16K_Set),
 };
 
 static const struct snd_kcontrol_new mt6350_UL_Codec_controls[] = {
