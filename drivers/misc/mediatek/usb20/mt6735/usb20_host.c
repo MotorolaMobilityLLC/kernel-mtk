@@ -53,7 +53,7 @@ struct pinctrl_state *pinctrl_drvvbus_low;
 struct pinctrl_state *pinctrl_drvvbus_high;
 #endif
 static int usb_iddig_number;
-static struct timeval tv_init, tv_current;
+static ktime_t ktime_start, ktime_end;
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num =  1, .style = MUSB_FIFO_TX,   .maxpacket = 512, .mode = MUSB_BUF_SINGLE},
@@ -333,27 +333,27 @@ void switch_int_to_host_and_mask(struct musb *musb)
 }
 
 #define ID_PIN_WORK_RECHECK_TIME 30	/* 30 ms */
-#define ID_PIN_WORK_BLOCK_TIMEOUT 30 /* 30 seconds */
+#define ID_PIN_WORK_BLOCK_TIMEOUT 30000 /* 30000 ms */
 static void musb_id_pin_work(struct work_struct *data)
 {
 	u8 devctl = 0;
 	unsigned long flags;
 	static int inited, timeout; /* default to 0 */
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+	static s64 diff_time;
 
 	/* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 	if (!inited && !kernel_init_done && !mtk_musb->is_ready && !timeout) {
-		do_gettimeofday(&tv_current);
-		if (__ratelimit(&ratelimit))
-			DBG(0, "init_done:%d, is_ready:%d, inited:%d, TO:%d, tv<%d,%d,%d,%d>\n",
+		ktime_end = ktime_get();
+		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_start));
+		if (__ratelimit(&ratelimit)) {
+			DBG(0, "init_done:%d, is_ready:%d, inited:%d, TO:%d, diff:%lld\n",
 					kernel_init_done, mtk_musb->is_ready, inited, timeout,
-					(unsigned int)tv_current.tv_sec, (unsigned int)tv_current.tv_usec,
-					(unsigned int)tv_init.tv_sec, (unsigned int)tv_init.tv_usec);
+					diff_time);
+		}
 
-		if ((tv_current.tv_sec - tv_init.tv_sec) > ID_PIN_WORK_BLOCK_TIMEOUT) {
-			DBG(0, "tv_current:<%d,%d>, tv_init:<%d,%d>\n",
-					(unsigned int)tv_current.tv_sec, (unsigned int)tv_current.tv_usec,
-					(unsigned int)tv_init.tv_sec, (unsigned int)tv_init.tv_usec);
+		if (diff_time > ID_PIN_WORK_BLOCK_TIMEOUT) {
+			DBG(0, "diff_time:%lld\n", diff_time);
 			timeout = 1;
 		}
 
@@ -569,7 +569,7 @@ void mt_usb_otg_init(struct musb *musb)
 	mt_usb_init_drvvbus();
 
 	/* init idpin interrupt */
-	do_gettimeofday(&tv_init);
+	ktime_start = ktime_get();
 	INIT_DELAYED_WORK(&musb->id_pin_work, musb_id_pin_work);
 	otg_int_init();
 
