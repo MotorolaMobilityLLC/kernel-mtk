@@ -740,6 +740,13 @@ INT32 wmt_dev_tm_temp_query(VOID)
 	INT32 index = 0;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
+	if ((!osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state)) ||
+	    (!osal_test_bit(WMT_STAT_STP_RDY, &gDevWmt.state))) {
+		WMT_DBG_FUNC
+			("read thermal but stp is not ready now, return 0\n");
+		return 0;
+	}
+
 	/* Query condition 1: */
 	/* If we have the high temperature records on the past, we continue to query/monitor */
 	/* the real temperature until cooling */
