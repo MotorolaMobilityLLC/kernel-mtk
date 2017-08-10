@@ -41,11 +41,7 @@ obj-y                           += camera_hw/
 endif
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
-ifeq ($(CONFIG_MTK_EFUSE_DOWNGRADE),y)
-custom_kernel_imgsensor_by_platform := $(addsuffix /, $(shell echo $(subst imx135_mipi_raw,imx135_mipi_raw_cap24fps,$(platform_drv))))
-else
 custom_kernel_imgsensor_by_platform := $(addsuffix /, $(shell echo $(platform_drv)))
-endif
 custom_kernel_imgsensor_by_project := $(addsuffix /, $(shell echo $(project_drv)))
 
 obj-y += $(custom_kernel_imgsensor_by_platform)
@@ -76,11 +72,7 @@ ModFiles                           += camera_hw/kd_camera_hw.o
 endif
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
-ifeq ($(CONFIG_MTK_EFUSE_DOWNGRADE),y)
-custom_kernel_imgsensor_by_platform := $(subst imx135_mipi_raw,imx135_mipi_raw_cap24fps,$(platform_drv))
-else
 custom_kernel_imgsensor_by_platform := $(platform_drv)
-endif
 
 ifeq ($(project_drv),)
 $(foreach drv,$(custom_kernel_imgsensor_by_platform), $(eval $(call DRV_FILE_BY_PLATFORM,$(drv))))

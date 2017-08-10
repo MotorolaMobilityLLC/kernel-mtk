@@ -119,6 +119,17 @@ static imgsensor_info_struct imgsensor_info = {
         .mipi_data_lp2hs_settle_dc = 30,
         .max_framerate = 150,
     },
+    .cap3 = {  //28 fps  capture
+        .pclk = 432000000,
+        .linelength = 4572,
+        .framelength = 3370,
+        .startx = 4,
+        .starty = 4,
+        .grabwindow_width = 4176,
+        .grabwindow_height = 3088,
+        .mipi_data_lp2hs_settle_dc = 30,
+        .max_framerate = 280,
+    },
     #ifdef IHDR_USED
     .normal_video = {
         .pclk = 432000000,
@@ -402,7 +413,7 @@ extern int read_imx135_otp_mtk_fmt(void);
 extern bool otp_update(BYTE update_sensor_otp_awb, BYTE update_sensor_otp_lsc);
 extern void otp_clear_flag(void);
 #endif
-
+extern u32 get_devinfo_with_index(u32 index);
 //#if IMX135_OTP_Enable
 void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
 {
@@ -1309,7 +1320,7 @@ static void capture_setting(kal_uint16 currefps)  // IMX135MIPI_set_13M
 LOG_INF("E! currefps:%d\n",currefps);
     write_cmos_sensor(0x0100,0x00);// STREAM STop
     //ClockSetting
-    if(currefps == 300) // default 30.0 fps
+    if(currefps == 300 || currefps == 280) // default 30.0 fps
     {
         write_cmos_sensor(0x011E,0x18);
         write_cmos_sensor(0x011F,0x00);
@@ -1405,7 +1416,7 @@ else {
     write_cmos_sensor(0x4086,0x00);
     write_cmos_sensor(0x4087,0x00);
     write_cmos_sensor(0x4400,0x00);
-    if(currefps == 300)
+    if(currefps == 300 || currefps == 280)
     {
         write_cmos_sensor(0x0830,0x8f); // 7f
         write_cmos_sensor(0x0831,0x47); // 37
@@ -2421,11 +2432,17 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     	imgsensor.frame_length = imgsensor_info.cap2.framelength;
     	imgsensor.min_frame_length = imgsensor_info.cap2.framelength;
     	imgsensor.autoflicker_en = KAL_FALSE;
-    }else  {  //400Mhz PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
+    }else if (imgsensor.current_fps == 240) {
         imgsensor.pclk = imgsensor_info.cap1.pclk;
         imgsensor.line_length = imgsensor_info.cap1.linelength;
         imgsensor.frame_length = imgsensor_info.cap1.framelength;
         imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
+        imgsensor.autoflicker_en = KAL_FALSE;
+    }else { /*28fps*/
+        imgsensor.pclk = imgsensor_info.cap3.pclk;
+        imgsensor.line_length = imgsensor_info.cap3.linelength;
+        imgsensor.frame_length = imgsensor_info.cap3.framelength;
+        imgsensor.min_frame_length = imgsensor_info.cap3.framelength;
         imgsensor.autoflicker_en = KAL_FALSE;
     }
     spin_unlock(&imgsensor_drv_lock);
@@ -2914,12 +2931,19 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
                     imgsensor.dummy_line = (frame_length > imgsensor_info.cap2.framelength) ? (frame_length - imgsensor_info.cap2.framelength) : 0;
                     imgsensor.frame_length = imgsensor_info.cap2.framelength + imgsensor.dummy_line;
                     spin_unlock(&imgsensor_drv_lock);
-				    }
-            else{
+            }
+            else if (imgsensor.current_fps == 240) {
                     frame_length = imgsensor_info.cap1.pclk / framerate * 10 / imgsensor_info.cap1.linelength;
                     spin_lock(&imgsensor_drv_lock);
                     imgsensor.dummy_line = (frame_length > imgsensor_info.cap1.framelength) ? (frame_length - imgsensor_info.cap1.framelength) : 0;
                     imgsensor.frame_length = imgsensor_info.cap1.framelength + imgsensor.dummy_line;
+                    spin_unlock(&imgsensor_drv_lock);
+            }
+            else{ /*imgsensor.current_fps == 280*/
+                    frame_length = imgsensor_info.cap3.pclk / framerate * 10 / imgsensor_info.cap3.linelength;
+                    spin_lock(&imgsensor_drv_lock);
+                    imgsensor.dummy_line = (frame_length > imgsensor_info.cap3.framelength) ? (frame_length - imgsensor_info.cap3.framelength) : 0;
+                    imgsensor.frame_length = imgsensor_info.cap3.framelength + imgsensor.dummy_line;
                     spin_unlock(&imgsensor_drv_lock);
             }
             //set_dummy();
@@ -3013,6 +3037,7 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 
 static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
+    unsigned int segment_code;
     LOG_INF("scenario_id = %d\n", scenario_id);
 
     switch (scenario_id) {
@@ -3023,7 +3048,23 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
             *framerate = imgsensor_info.normal_video.max_framerate;
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-            *framerate = imgsensor_info.cap.max_framerate;
+            segment_code = (get_devinfo_with_index(47) >> 25) & 0x7F;
+            switch (segment_code) {
+                case 0x41:
+                case 0x42:
+                case 0x43:
+                    *framerate = imgsensor_info.cap.max_framerate; /*30fps*/
+                    break;
+                case 0x49:
+                    *framerate = imgsensor_info.cap1.max_framerate; /*24fps*/
+                    break;
+                case 0x51:
+                    *framerate = imgsensor_info.cap3.max_framerate; /*28fps*/
+                    break;
+                default:
+                    *framerate = imgsensor_info.cap.max_framerate;
+                    break;
+            }
             break;
         case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
             *framerate = imgsensor_info.hs_video.max_framerate;
