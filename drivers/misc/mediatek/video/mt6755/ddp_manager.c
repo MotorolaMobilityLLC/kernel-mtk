@@ -1704,7 +1704,7 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 	if (wq_handle->init) {
 		DISPDBG("wait event %s on scenario %s\n", path_event_name(event),
 			   ddp_get_scenario_name(handle->scenario));
-		cur_time = sched_clock();
+		cur_time = ktime_to_ns(ktime_get());/*sched_clock();*/
 
 		ret =
 		    wait_event_interruptible_timeout(wq_handle->wq, cur_time < wq_handle->data,
@@ -1749,7 +1749,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 	DISPDBG("wait event %s on scenario %s\n", path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario));
 
-	cur_time = sched_clock();
+	cur_time = ktime_to_ns(ktime_get());/*sched_clock();*/
 	ret = wait_event_interruptible(wq_handle->wq, cur_time < wq_handle->data);
 	if (ret < 0) {
 		DISPERR("wait %s interrupt by other ret %d on scenario %s\n",
@@ -1786,7 +1786,7 @@ int dpmgr_signal_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	wq_handle = &handle->wq_list[event];
 
 	if (handle->wq_list[event].init) {
-		wq_handle->data = sched_clock();
+		wq_handle->data = ktime_to_ns(ktime_get());/*sched_clock();*/
 		DISPDBG("wake up evnet %s on scenario %s\n", path_event_name(event),
 			   ddp_get_scenario_name(handle->scenario));
 		wake_up_interruptible(&(handle->wq_list[event].wq));
@@ -1815,7 +1815,7 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 				if (handle->wq_list[j].init
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
 					dprec_stub_event(j);
-					handle->wq_list[j].data = sched_clock();
+					handle->wq_list[j].data = ktime_to_ns(ktime_get());/*sched_clock();*/
 					DISPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,
 					       ddp_get_scenario_name(handle->scenario));
