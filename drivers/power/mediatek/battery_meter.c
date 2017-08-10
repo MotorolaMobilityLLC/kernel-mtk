@@ -1154,7 +1154,7 @@ int force_get_tbat(kal_bool update)
 	} else {
 		bat_temperature_val = pre_bat_temperature_val;
 	}
-	return 25;
+	return bat_temperature_val;
 #endif
 }
 EXPORT_SYMBOL(force_get_tbat);
