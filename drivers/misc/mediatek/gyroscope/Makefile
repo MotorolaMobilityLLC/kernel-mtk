@@ -14,7 +14,10 @@ obj-$(CONFIG_MTK_MPU6050GY)   +=  mpu6050gy/
 obj-$(CONFIG_MTK_BMG160)   +=  bmg160/
 obj-$(CONFIG_MTK_MPU6515G)   +=  mpu6515/
 obj-$(CONFIG_MTK_MPU3050C_NEW)   +=  mpu3050c-new/
-obj-$(CONFIG_MTK_ITG1010_NEW)   +=  ITG1010-new/
+ifeq ($(CONFIG_MTK_ITG1010_NEW),y)
+ccflags-y += -DMTK_GYRO_NO_MODULE
+endif
+obj-y   +=  ITG1010-new/
 obj-$(CONFIG_MTK_L3G4200D)   +=  l3g4200d/
 obj-$(CONFIG_MTK_L3GD20)   +=  l3gd20/
 obj-$(CONFIG_MTK_LSM6DS0)   +=  lsm6ds0/

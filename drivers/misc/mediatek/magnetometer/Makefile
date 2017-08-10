@@ -15,7 +15,10 @@ obj-$(CONFIG_MTK_AKM8975)	+=  akm8975/
 obj-$(CONFIG_MTK_AKM8975_AUTO)	+=  akm8975_auto/
 obj-$(CONFIG_MTK_AKM09911)   +=  akm09911/
 obj-$(CONFIG_MTK_AKM09912)   +=  akm09912/
-obj-$(CONFIG_MTK_AKM09911_NEW)   +=  akm09911-new/
+ifeq ($(CONFIG_MTK_AKM09911_NEW),y)
+ccflags-y += -DMTK_MAG_NO_MODULE
+endif
+obj-y   +=  akm09911-new/
 obj-$(CONFIG_MTK_AMI304)   +=  ami304/
 obj-$(CONFIG_MTK_AMI304_AUTO)   +=  ami304_auto/
 obj-$(CONFIG_MTK_BMM050)	+=  bmm050/

@@ -867,6 +867,7 @@ int batch_register_support_info(int handle, int support, int div, int timestamp_
 	}
 	return -1;
 }
+EXPORT_SYMBOL_GPL(batch_register_support_info);
 
 void report_batch_data(struct input_dev *dev, struct hwm_sensor_data *data)
 {

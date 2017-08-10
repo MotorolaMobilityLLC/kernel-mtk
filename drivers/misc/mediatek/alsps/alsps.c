@@ -3,7 +3,7 @@
 struct alsps_context *alsps_context_obj = NULL;
 struct platform_device *pltfm_dev;
 
-
+static int alsps_probe(void);
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
 
 static bool alsps_misc_dev_init;
@@ -721,6 +721,13 @@ int alsps_driver_add(struct alsps_init_info *obj)
 		err =  -1;
 	}
 
+#ifndef MTK_ALSPS_NO_MODULE
+	if (alsps_probe()) {
+		ALSPS_ERR("failed to register alsps driver\n");
+		return -ENODEV;
+	}
+#endif
+
 	return err;
 }
 EXPORT_SYMBOL_GPL(alsps_driver_add);
@@ -728,7 +735,7 @@ struct platform_device *get_alsps_platformdev(void)
 {
 	return pltfm_dev;
 }
-
+EXPORT_SYMBOL_GPL(get_alsps_platformdev);
 
 int ps_report_interrupt_data(int value)
 {
@@ -842,6 +849,7 @@ int als_register_data_path(struct als_data_path *data)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(als_register_data_path);
 
 int ps_register_data_path(struct ps_data_path *data)
 {
@@ -858,6 +866,7 @@ int ps_register_data_path(struct ps_data_path *data)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ps_register_data_path);
 
 int als_register_control_path(struct als_control_path *ctl)
 {
@@ -896,6 +905,7 @@ int als_register_control_path(struct als_control_path *ctl)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(als_register_control_path);
 
 int ps_register_control_path(struct ps_control_path *ctl)
 {
@@ -937,6 +947,7 @@ int ps_register_control_path(struct ps_control_path *ctl)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ps_register_control_path);
 
 
 /* AAL functions**************************************** */
@@ -1058,10 +1069,12 @@ static int __init alsps_init(void)
 {
 	ALSPS_FUN();
 
+#ifdef MTK_ALSPS_NO_MODULE
 	if (alsps_probe()) {
 		ALSPS_ERR("failed to register alsps driver\n");
 		return -ENODEV;
 	}
+#endif
 
 	return 0;
 }
