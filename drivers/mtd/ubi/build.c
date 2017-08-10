@@ -944,7 +944,7 @@ static int io_init(struct ubi_device *ubi, int max_beb_per1024)
 	ubi->max_write_size = COMBO_NAND_PAGE_SIZE;
 #endif
 #if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_SLC_BUFFER_SUPPORT)
-	ubi->max_write_size = ubi->mtd->erasesize/4;
+	ubi->max_write_size = rounddown_pow_of_two(ubi->mtd->erasesize/4);
 #endif
 	/*
 	 * Maximum write size has to be greater or equivalent to min. I/O
