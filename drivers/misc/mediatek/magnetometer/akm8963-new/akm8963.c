@@ -549,7 +549,7 @@ static long AKECS_GetData(char *rbuf, int size)
 // Get Msensor Raw data
 static int AKECS_GetRawData(char *rbuf, int size)
 {
-	char strbuf[SENSOR_DATA_SIZE];
+	char strbuf[SENSOR_DATA_SIZE] = { 0 };
 	s16 data[3];
 	if((atomic_read(&open_flag) == 0) || (factory_mode == 1))
 	{
@@ -969,9 +969,8 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 /*----------------------------------------------------------------------------*/
 static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 {
-
-	char sensordata[SENSOR_DATA_SIZE];
-	char strbuf[AKM8963_BUFSIZE];
+	char sensordata[SENSOR_DATA_SIZE] = { 0 };
+	char strbuf[AKM8963_BUFSIZE] = { 0 };
 	if(atomic_read(&open_flag) == 0)
 	{
 		AKECS_SetMode_SngMeasure();
