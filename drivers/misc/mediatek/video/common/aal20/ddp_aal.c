@@ -354,6 +354,9 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* set backlight = 0 may be not from AAL, we have to let AALService
 		   can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
+		/* using CPU to set backlight = 0,  */
+		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
+		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
 		/* AAL Service is not running */
 		backlight_brightness_set(bl_1024);
@@ -923,11 +926,7 @@ void aal_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "bypass:", 7) == 0) {
 		int bypass = (cmd[7] == '1');
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-		aal_bypass(DISP_MODULE_AAL0, bypass);
-#else
-		aal_bypass(DISP_MODULE_AAL, bypass);
-#endif
+		aal_bypass(AAL0_MODULE_NAMING, bypass);
 	} else if (strncmp(cmd, "ut:", 3) == 0) { /* debug command for UT */
 		aal_ut_cmd(cmd + 3);
 	}
