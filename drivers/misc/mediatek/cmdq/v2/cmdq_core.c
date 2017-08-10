@@ -2034,6 +2034,7 @@ void cmdq_task_free_task_command_buffer(TaskStruct *pTask)
 		list_del(&cmd_buffer->listEntry);
 		cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
 			cmd_buffer->pVABase, cmd_buffer->MVABase);
+		kfree(cmd_buffer);
 	}
 
 	CMDQ_INC_TIME_IN_US(startTime, sched_clock(), pTask->durRelease);
