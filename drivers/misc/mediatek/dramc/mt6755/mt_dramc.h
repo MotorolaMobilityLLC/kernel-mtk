@@ -82,33 +82,57 @@ Sysfs config
 /*=========================
 DRAM HQA Config
 =========================*/
-/*#define DRAM_HQA*/
+/* Vdram :for jade minus PMIC change to MT6353*/
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define Vdram_REG MT6353_SLDO_ANA_CON5
+#define Vcore_REG_SW MT6353_BUCK_VCORE_VOL_CON1
+#define Vcore_REG_HW MT6353_BUCK_VCORE_VOL_CON2
+#define RG_VDRAM_VOSEL_1p24V	(0x0<<8)/*1.24V*/
+#define VDRAM_ANA_CON0_SUB20mV	0x1
+#define VDRAM_ANA_CON0_SUB80mV	0x4
+#define VDRAM_ANA_CON0_ADD60mV	0Xd
 
-#ifdef DRAM_HQA
-/*#define HVcore1*/		/*Vcore1=1.10, Vdram=1.3,  Vio18=1.8*/
-/*#define NV*/			/*Vcore1=1.00, Vdram=1.22, Vio18=1.8*/
-/*#define LVcore1*/		/*Vcore1=0.90, Vdram=1.16, Vio18=1.8*/
-#define HVcore1_LVdram		/*Vcore1=1.10, Vdram=1.16, Vio18=1.8*/
-/*#define LVcore1_HVdram*/	/*Vcore1=0.90, Vdram=1.3,  Vio18=1.8*/
+#define Vdram_NV_default (RG_VDRAM_VOSEL_1p24V | VDRAM_ANA_CON0_SUB20mV)/*1.22V*/
+#define Vdram_HV (RG_VDRAM_VOSEL_1p24V | VDRAM_ANA_CON0_ADD60mV)/*1.30V*/
+#define Vdram_NV Vdram_NV_default
+#define Vdram_LV (RG_VDRAM_VOSEL_1p24V | VDRAM_ANA_CON0_SUB80mV)/*1.16V*/
 
+#else /*#if defined (CONFIG_MTK_PMIC_CHIP_MT6353)*/
+#define Vdram_REG MT6351_VDRAM_ANA_CON0
+#define Vcore_REG_SW MT6351_BUCK_VCORE_CON4
+#define Vcore_REG_HW MT6351_BUCK_VCORE_CON5
 #define RG_VDRAM_VOSEL_1p2V			(0x5 << 8)	/*1.2V*/
-#define VDRAM_ANA_CON0_SUB40mV	0x4
 #define VDRAM_ANA_CON0_ADD20mV	0x1e
+#define VDRAM_ANA_CON0_SUB40mV	0x4
 #define VDRAM_ANA_CON0_ADD100mV	0X16
 
+#define Vdram_NV_default (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD20mV)/*1.22V*/
 #define Vdram_HV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD100mV) /*1.30V*/
-#define Vdram_NV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD20mV)  /*1.22V*/
+#define Vdram_NV Vdram_NV_default
 #define Vdram_LV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_SUB40mV)  /*1.16V*/
 
+#endif/*#if defined (CONFIG_MTK_PMIC_CHIP_MT6353)*/
+
+
+/*#define DRAM_HQA*/
+#ifdef DRAM_HQA
+#define HVcore1		/*Vcore1=1.10, Vdram=1.3,  Vio18=1.8*/
+/*#define NV*/			/*Vcore1=1.00, Vdram=1.22, Vio18=1.8*/
+/*#define LVcore1*/		/*Vcore1=0.90, Vdram=1.16, Vio18=1.8*/
+/*#define HVcore1_LVdram*/	/*Vcore1=1.10, Vdram=1.16, Vio18=1.8*/
+/*#define LVcore1_HVdram*/	/*Vcore1=0.90, Vdram=1.3,  Vio18=1.8*/
+
+/*Vcore :for DRAM HQA*/
+#ifdef ONEPLL_TEST
+#define Vcore1_HV 0x38 /*0.95V*/
+#define Vcore1_NV 0x30 /*0.90V*/
+#define Vcore1_LV 0x28 /*0.85V*/
+#else
 #define Vcore1_HV	0x48	/*1.05V*/
 #define Vcore1_NV	0x40	/*1.00V*/
 #define Vcore1_LV	0x38	/*0.95V*/
-
-#define Vio18_HV	0x28	/*1.9V*/
-#define Vio18_NV	0x20	/*1.8V*/
-#define Vio18_LV	0x18	/*1.7V*/
-
-#endif
+#endif /*end #ifdef ONEPLL_TEST*/
+#endif /*end #ifdef DRAM_HQA*/
 
 /*=========================
 DRAMC API config

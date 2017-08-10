@@ -150,48 +150,48 @@ unsigned int support_4GB_mode(void)
 void dram_HQA_adjust_voltage(void)
 {
 #ifdef HVcore1	/*Vcore1=1.10V, Vdram=1.30V,  Vio18=1.8*/
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, Vcore1_HV, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_HV, 0x7F, 0);
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_HV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_SW, Vcore1_HV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_HW, Vcore1_HV, 0x7F, 0);
+	pmic_config_interface(Vdram_REG, Vdram_HV, 0x7F, 0);
 	pr_err("[HQA]Set HVcore1 setting: Vcore1=1.10V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.30V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
-		Vcore1_HV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_HV);
+		upmu_get_reg_value(Vcore_REG_SW), upmu_get_reg_value(Vcore_REG_HW),
+		Vcore1_HV, upmu_get_reg_value(Vdram_REG), Vdram_HV);
 #endif
 
 #ifdef NV	/*Vcore1=1.00V, Vdram=1.22V,  Vio18=1.8*/
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, Vcore1_NV, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_NV, 0x7F, 0);
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_NV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_SW, Vcore1_NV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_HW, Vcore1_NV, 0x7F, 0);
+	pmic_config_interface(Vdram_REG, Vdram_NV, 0x7F, 0);
 	pr_err("[HQA]Set NV setting: Vcore1=1.00V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.22V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
-		Vcore1_NV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_NV);
+		upmu_get_reg_value(Vcore_REG_SW), upmu_get_reg_value(Vcore_REG_HW),
+		Vcore1_NV, upmu_get_reg_value(Vdram_REG), Vdram_NV);
 #endif
 
 #ifdef LVcore1	/*Vcore1=0.90V, Vdram=1.16V,  Vio18=1.8*/
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, Vcore1_LV, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_LV, 0x7F, 0);
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_LV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_SW, Vcore1_LV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_HW, Vcore1_LV, 0x7F, 0);
+	pmic_config_interface(Vdram_REG, Vdram_LV, 0x7F, 0);
 	pr_err("[HQA]Set LVcore1 setting: Vcore1=0.90V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.16V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
-		Vcore1_LV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_LV);
+		upmu_get_reg_value(Vcore_REG_SW), upmu_get_reg_value(Vcore_REG_HW),
+		Vcore1_LV, upmu_get_reg_value(Vdram_REG), Vdram_LV);
 #endif
 
 #ifdef HVcore1_LVdram	/*Vcore1=1.10V, Vdram=1.16V,  Vio18=1.8*/
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, Vcore1_HV, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_HV, 0x7F, 0);
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_LV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_SW, Vcore1_HV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_HW, Vcore1_HV, 0x7F, 0);
+	pmic_config_interface(Vdram_REG, Vdram_LV, 0x7F, 0);
 	pr_err("[HQA]Set HVcore1_LVdram setting: Vcore1=1.10V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.16V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
-		Vcore1_HV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_LV);
+		upmu_get_reg_value(Vcore_REG_SW), upmu_get_reg_value(Vcore_REG_HW),
+		Vcore1_HV, upmu_get_reg_value(Vdram_REG), Vdram_LV);
 #endif
 
 #ifdef LVcore1_HVdram	/*Vcore1=0.90V, Vdram=1.30V,  Vio18=1.8*/
-	pmic_config_interface(MT6351_BUCK_VCORE_CON4, Vcore1_LV, 0x7F, 0);
-	pmic_config_interface(MT6351_BUCK_VCORE_CON5, Vcore1_LV, 0x7F, 0);
-	pmic_config_interface(MT6351_VDRAM_ANA_CON0, Vdram_HV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_SW, Vcore1_LV, 0x7F, 0);
+	pmic_config_interface(Vcore_REG_HW, Vcore1_LV, 0x7F, 0);
+	pmic_config_interface(Vdram_REG, Vdram_HV, 0x7F, 0);
 	pr_err("[HQA]Set LVcore1_HVdram setting: Vcore1=0.90V(SW_Ctrl=0x%x, HW_Ctrl=0x%x, should be 0x%x), Vdram=1.30V(0x%x, should be 0x%x)\n",
-		upmu_get_reg_value(MT6351_BUCK_VCORE_CON4), upmu_get_reg_value(MT6351_BUCK_VCORE_CON5),
-		Vcore1_LV, upmu_get_reg_value(MT6351_VDRAM_ANA_CON0), Vdram_HV);
+		upmu_get_reg_value(Vcore_REG_SW), upmu_get_reg_value(Vcore_REG_HW),
+		Vcore1_LV, upmu_get_reg_value(Vdram_REG), Vdram_HV);
 #endif
 }
 #endif
