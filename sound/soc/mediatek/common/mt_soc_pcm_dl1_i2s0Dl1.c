@@ -532,8 +532,6 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL1, runtime->channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, true);
 
-	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
-
 	EnableAfe(true);
 
 #ifdef _DEBUG_6328_CLK
