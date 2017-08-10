@@ -352,6 +352,7 @@ static void start_upstream(struct work_struct *work)
 
 	length = c->length;
 	buffer = c->buffer;
+	ret = -1;
 
 reget:
 	mutex_lock(&transfer->usb_up_mutex);
@@ -376,7 +377,7 @@ reget:
 		C2K_NOTE("%s: up request is buzy, try to get usb request\n", __func__);
 		goto reget;
 	}
-	if (!t->req || got == 0) {
+	if (!t->req) {
 		C2K_DBG("%s\n", __func__);
 		return;
 	}
