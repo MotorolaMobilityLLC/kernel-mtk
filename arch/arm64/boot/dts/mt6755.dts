@@ -3153,6 +3153,7 @@
 					fsmgr_flags = "wait";
 				};
 #endif
+#ifndef CONFIG_MTK_LATE_MOUNT
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/vendor";
@@ -3164,6 +3165,7 @@
 					fsmgr_flags = "wait,slotselect,verify";
 #endif
 				};
+#endif
 			};
 		};
 	};
