@@ -285,7 +285,14 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 			   gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd), rcv_len, buf_len,
 			   TGPD_GET_DATA(gpd));
 #endif
+		if (!request) {
+			qmu_printk(K_ERR, "[RXD]" "%s Next request of %d is NULL pointer.\n",
+				   __func__, ep_num);
+			BUG_ON(1);
+			return;
+		}
 		request->actual += rcv_len;
+
 #if defined(CONFIG_USB_MU3D_DRV_36BIT)
 		if (!TGPD_GET_NEXT_RX(gpd) || !TGPD_GET_DATA_RX(gpd)) {
 			qmu_printk(K_ERR, "[RXD][ERROR]" "%s EP%d ,gpd=%p\n", __func__, ep_num,
