@@ -25,3 +25,9 @@ config NFC_MSR3110
 	  Card emulation or P2P function. If you are not sure about this, set n.
 
 endif # NFC
+
+config NFC_CHIP_SUPPORT
+	tristate "STMicroelectronics ST21NFC NFC Controller Driver"
+	depends on I2C
+	help
+	  STMicroelectronics ST21NFC Near Field Communication controller support.

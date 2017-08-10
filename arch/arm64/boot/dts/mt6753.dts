@@ -2008,6 +2008,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 /* sensor end */
 
+	irq_nfc: irq_nfc {
+		compatible = "mediatek,irq_nfc-eint";
+		status = "disabled";
+	};
+
 	mt8193ckgen@0 {
 		compatible = "mediatek,mt8193-ckgen";
 	};
