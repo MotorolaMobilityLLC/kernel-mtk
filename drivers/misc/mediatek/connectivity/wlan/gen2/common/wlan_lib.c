@@ -4068,6 +4068,8 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->rVerInfo.u2FwProductID = prEventNicCapability->u2ProductID;
 	prAdapter->rVerInfo.u2FwOwnVersion = prEventNicCapability->u2FwVersion;
 	prAdapter->rVerInfo.u2FwPeerVersion = prEventNicCapability->u2DriverVersion;
+	prAdapter->rVerInfo.u2FwOwnVersionExtend = prEventNicCapability->aucReserved[0];
+
 	prAdapter->fgIsHw5GBandDisabled = (BOOLEAN) prEventNicCapability->ucHw5GBandDisabled;
 	prAdapter->fgIsEepromUsed = (BOOLEAN) prEventNicCapability->ucEepromUsed;
 	prAdapter->fgIsEfuseValid = (BOOLEAN) prEventNicCapability->ucEfuseValid;
