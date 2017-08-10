@@ -922,6 +922,11 @@ static long SYSRAM_Ioctl(
 	case SYSRAM_FREE:
 	{
 		if (copy_from_user(&User, (void *)Param, sizeof(SYSRAM_USER_ENUM)) == 0) {
+			if (User >= SYSRAM_USER_AMOUNT) {
+				LOG_ERR("invalid User(%d)", User);
+				Ret = -EFAULT;
+				break;
+			}
 			SYSRAM_SpinLock();
 			if ((pProc->Table) & (1 << User)) {
 				SYSRAM_SpinUnlock();
