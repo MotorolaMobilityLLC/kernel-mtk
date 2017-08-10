@@ -785,8 +785,9 @@ static char const PareGetkeyAna[] = "Getanareg";
 static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 				  size_t count, loff_t *offset)
 {
+#define MAX_DEBUG_WRITE_INPUT 256
 	int ret = 0;
-	char InputString[256];
+	char InputString[MAX_DEBUG_WRITE_INPUT];
 	char *token1 = NULL;
 	char *token2 = NULL;
 	char *token3 = NULL;
@@ -798,16 +799,21 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	unsigned int long regvalue = 0;
 	char delim[] = " ,";
 
-	memset((void *)InputString, 0, 256);
+	memset((void *)InputString, 0, MAX_DEBUG_WRITE_INPUT);
 
-	if (count > 256)
-		count = 256;
+	if (count > MAX_DEBUG_WRITE_INPUT)
+		count = MAX_DEBUG_WRITE_INPUT;
 
 	if (copy_from_user((InputString), buf, count))
-		pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s\n", count,
-			 InputString);
+		pr_debug("%s(), copy_from_user fail, mt_soc_debug_write count = %zu, temp = %s\n",
+			 __func__, count, InputString);
 
-	temp = kstrdup(InputString, GFP_KERNEL);
+	temp = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT, GFP_KERNEL);
+	if (!temp) {
+		pr_warn("%s(), kstrndup fail\n", __func__);
+		goto exit;
+	}
+
 	pr_debug("copy_from_user mt_soc_debug_write count = %zu temp = %s pointer = %p\n",
 		 count, InputString, InputString);
 	token1 = strsep(&temp, delim);
@@ -826,10 +832,12 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
 		ret = kstrtoul(token3, 16, &regaddr);
 		ret = kstrtoul(token5, 16, &regvalue);
+		AudDrv_Clk_On();
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr, regvalue);
 		Afe_Set_Reg(regaddr, regvalue, 0xffffffff);
 		regvalue = Afe_Get_Reg(regaddr);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr, regvalue);
+		AudDrv_Clk_Off();
 	}
 	if (strcmp(token1, ParSetkeyAna) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyAna)\n");
@@ -837,11 +845,11 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		ret = kstrtoul(token5, 16, &regvalue);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
 		/* clk_buf_ctrl(CLK_BUF_AUDIO, true); //6752 need? */
-		AudDrv_Clk_On();
 		audckbufEnable(true);
 		Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
 		regvalue = Ana_Get_Reg(regaddr);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
+		audckbufEnable(false);
 	}
 	if (strcmp(token1, ParSetkeyCfg) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyCfg)\n");
@@ -864,6 +872,10 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		regvalue = Ana_Get_Reg(regaddr);
 		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr, regvalue);
 	}
+
+	kfree(temp);
+
+exit:
 	return count;
 }
 
