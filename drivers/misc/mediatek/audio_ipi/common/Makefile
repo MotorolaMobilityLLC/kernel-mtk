@@ -11,7 +11,8 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
-ifneq ($(filter y,$(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT) $(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) $(CONFIG_MTK_VOW_SUPPORT)),)
-#obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-y += common/
-endif
+obj-y += framework/
+obj-y += tasks/
+
+
+

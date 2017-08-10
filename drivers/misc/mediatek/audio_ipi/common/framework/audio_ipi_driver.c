@@ -32,23 +32,32 @@
 #include <linux/of_irq.h>
 #include <linux/of_fdt.h>
 #include <linux/ioport.h>
-#include <asm/io.h>
+#include <linux/io.h>
 
 #include <scp_helper.h>
-#include <mt_spm_sleep.h>       /* for spm_ap_mdsrc_req */
 
+#include "audio_log.h"
+#include "audio_assert.h"
 
-#include "audio_messenger_ipi.h"
+#include "audio_task_manager.h"
+
 #include "audio_dma_buf_control.h"
 
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+#include <mt_spm_sleep.h>       /* for spm_ap_mdsrc_req */
 #include "audio_ipi_client_phone_call.h"
-#include "audio_speech_msg_id.h"
+#endif
+
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
+#include "audio_ipi_client_playback.h"
+#endif
 
 
-
-/*==============================================================================
+/*
+ * =============================================================================
  *                     MACRO
- *============================================================================*/
+ * =============================================================================
+ */
 
 #define AUDIO_IPI_DEVICE_NAME "audio_ipi"
 #define AUDIO_IPI_IOC_MAGIC 'i'
@@ -57,30 +66,41 @@
 #define AUDIO_IPI_IOCTL_SEND_PAYLOAD  _IOW(AUDIO_IPI_IOC_MAGIC, 1, unsigned int)
 #define AUDIO_IPI_IOCTL_SEND_DRAM     _IOW(AUDIO_IPI_IOC_MAGIC, 2, unsigned int)
 
+#define AUDIO_IPI_IOCTL_LOAD_SCENE    _IOW(AUDIO_IPI_IOC_MAGIC, 10, unsigned int)
+
 #define AUDIO_IPI_IOCTL_DUMP_PCM      _IOW(AUDIO_IPI_IOC_MAGIC, 97, unsigned int)
 #define AUDIO_IPI_IOCTL_REG_FEATURE   _IOW(AUDIO_IPI_IOC_MAGIC, 98, unsigned int)
 #define AUDIO_IPI_IOCTL_SPM_MDSRC_ON  _IOW(AUDIO_IPI_IOC_MAGIC, 99, unsigned int)
 
-/*==============================================================================
+/*
+ * =============================================================================
  *                     private global members
- *============================================================================*/
+ * =============================================================================
+ */
 
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT /* TOOD: move to call */
 static bool b_speech_on;
 static bool b_spm_ap_mdsrc_req_on;
 static bool b_dump_pcm_enable;
+#endif
+
 static audio_resv_dram_t *p_resv_dram;
 static uint32_t resv_dram_offset_cur;
 
 
-/*==============================================================================
+/*
+ * =============================================================================
  *                     functions declaration
- *============================================================================*/
+ * =============================================================================
+ */
 
 
 
-/*==============================================================================
+/*
+ * =============================================================================
  *                     implementation
- *============================================================================*/
+ * =============================================================================
+ */
 
 
 static uint32_t get_resv_dram_buf_offset(uint32_t len)
@@ -154,12 +174,23 @@ static int parsing_ipi_msg_from_user_space(
 	/* get message size to write */
 	msg_len = get_message_buf_size(&ipi_msg);
 	check_msg_format(&ipi_msg, msg_len);
-	audio_send_ipi_msg_to_scp(&ipi_msg);
 
+	retval = audio_send_ipi_filled_msg(&ipi_msg);
+	if (retval == 0) {
+		retval = copy_to_user(user_data_ptr, &ipi_msg, sizeof(ipi_msg_t));
+		if (retval) {
+			AUD_LOG_W("%s(), copy_to_user err, id = 0x%x\n", __func__, ipi_msg.msg_id);
+			retval = -EFAULT;
+		}
+	}
 
 parsing_exit:
 	return retval;
 }
+
+
+/* trigger scp driver to dump scp_log to sdcard */
+/*extern void scp_get_log(int save);*/ /* TODO: ask scp driver to add in .h */
 
 
 static long audio_ipi_driver_ioctl(
@@ -185,13 +216,17 @@ static long audio_ipi_driver_ioctl(
 				 (void __user *)arg, AUDIO_IPI_DMA);
 		break;
 	}
-	/* TOOD: use message */
+	case AUDIO_IPI_IOCTL_LOAD_SCENE: {
+		AUD_LOG_D("%s(), AUDIO_IPI_IOCTL_LOAD_SCENE(%d)\n", __func__, (uint8_t)arg);
+		audio_load_task((uint8_t)arg);
+		break;
+	}
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT /* TOOD: use message */
 	case AUDIO_IPI_IOCTL_DUMP_PCM: {
 		AUD_LOG_D("%s(), AUDIO_IPI_IOCTL_DUMP_PCM(%lu)\n", __func__, arg);
 		b_dump_pcm_enable = arg;
 		break;
 	}
-	/* TOOD: use message */
 	case AUDIO_IPI_IOCTL_REG_FEATURE: {
 		AUD_LOG_V("%s(), AUDIO_IPI_IOCTL_REG_FEATURE(%lu)\n", __func__, arg);
 		if (arg) { /* enable scp speech */
@@ -208,11 +243,11 @@ static long audio_ipi_driver_ioctl(
 				close_dump_file();
 				deregister_feature(OPEN_DSP_FEATURE_ID);
 				request_freq();
+				/*scp_get_log(1);*/ /* dump scp log */
 			}
 		}
 		break;
 	}
-	/* TOOD: use message */
 	case AUDIO_IPI_IOCTL_SPM_MDSRC_ON: {
 		if (arg) { /* enable scp speech */
 			if (b_spm_ap_mdsrc_req_on == false) {
@@ -229,6 +264,7 @@ static long audio_ipi_driver_ioctl(
 		}
 		break;
 	}
+#endif
 	default:
 		break;
 	}
@@ -252,7 +288,7 @@ static long audio_ipi_driver_compat_ioctl(
 static ssize_t audio_ipi_driver_read(
 	struct file *file, char *buf, size_t count, loff_t *ppos)
 {
-	return audio_ipi_client_phone_call_read(file, buf, count, ppos);
+	return 0; /*audio_ipi_client_phone_call_read(file, buf, count, ppos);*/
 }
 
 
@@ -277,11 +313,15 @@ static struct miscdevice audio_ipi_device = {
 static int __init audio_ipi_driver_init(void)
 {
 	int ret = 0;
+
+#if 0 /* TODO: this will cause KE/HWT ...... */
 	if (is_scp_ready() == 0) {
 		AUD_LOG_E("[SCP] scp not ready\n");
 		return -EACCES;
 	}
-	audio_messenger_ipi_init();
+#endif
+
+	audio_task_manager_init();
 
 	/* TODO: ring buf */
 	init_reserved_dram();
@@ -290,7 +330,13 @@ static int __init audio_ipi_driver_init(void)
 
 	resv_dram_offset_cur = 0;
 
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
 	audio_ipi_client_phone_call_init();
+
+	b_speech_on = false;
+	b_spm_ap_mdsrc_req_on = false;
+	b_dump_pcm_enable = false;
+#endif
 
 	ret = misc_register(&audio_ipi_device);
 	if (unlikely(ret != 0)) {
@@ -298,17 +344,18 @@ static int __init audio_ipi_driver_init(void)
 		return ret;
 	}
 
-	b_speech_on = false;
-	b_spm_ap_mdsrc_req_on = false;
-	b_dump_pcm_enable = false;
-
 	return ret;
 }
 
 
 static void __exit audio_ipi_driver_exit(void)
 {
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
 	audio_ipi_client_phone_call_deinit();
+#endif
+
+	audio_task_manager_deinit();
+
 	misc_deregister(&audio_ipi_device);
 }
 

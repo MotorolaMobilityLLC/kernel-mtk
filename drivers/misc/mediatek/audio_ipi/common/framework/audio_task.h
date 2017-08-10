@@ -11,29 +11,25 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-#ifndef AUDIO_TYPE_H
-#define AUDIO_TYPE_H
+#ifndef AUDIO_TASK_H
+#define AUDIO_TASK_H
 
-#include "audio_log.h"
-#include "audio_assert.h"
+#include <linux/types.h>
 
-typedef enum {
-	NO_ERROR,
-	UNKNOWN_ERROR,
+enum {
+	TASK_SCENE_PHONE_CALL = 0,
+	TASK_SCENE_VOICE_ULTRASOUND,
+	TASK_SCENE_PLAYBACK_MP3,
+	TASK_SCENE_RECORD,
+	TASK_SCENE_VOIP,
+	TASK_SCENE_SPEAKER_PROTECTION,
+	TASK_SCENE_VOW,
+	TASK_SCENE_SIZE, /* the size of tasks */
+	TASK_SCENE_CONTROLLER = 0xFF
+};
 
-	NO_MEMORY,
-	NO_INIT,
-	NOT_ENOUGH_DATA,
-
-	ALREADY_EXISTS,
-
-	BAD_INDEX,
-	BAD_VALUE,
-	BAD_TYPE,
-
-	TIMED_OUT,
-} audio_status_t;
+typedef uint8_t task_scene_t;
 
 
+#endif /* end of AUDIO_TASK_H */
 
-#endif /* end of AUDIO_TYPE_H */

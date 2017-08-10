@@ -38,30 +38,22 @@
 #include <linux/wakelock.h>
 
 
-#include <asm/io.h>
-
-#include <mt_spm_sleep.h>       /* for spm_ap_mdsrc_req */
+#include <linux/io.h>
 
 #include <linux/wait.h>
 #include <linux/time.h>
 
-#include "audio_type.h"
+#include "audio_log.h"
+#include "audio_assert.h"
 
-#include "audio_messenger_ipi.h"
+#include "audio_task_manager.h"
+
 #include "audio_dma_buf_control.h"
 #include "audio_speech_msg_id.h"
 
 
 #define DUMP_DSP_PCM_DATA_PATH "/sdcard/mtklog/aurisys_dump"
 static struct wake_lock call_pcm_dump_wake_lock;
-
-
-static wait_queue_head_t wq_read_msg;
-
-static DEFINE_SPINLOCK(ipi_msg_to_hal_lock);
-static ipi_msg_t ipi_msg_to_hal[16];
-static uint8_t   ipi_msg_to_hal_idx_read;
-static uint8_t   ipi_msg_to_hal_idx_write;
 
 
 typedef enum {
@@ -98,7 +90,7 @@ static DEFINE_SPINLOCK(dump_queue_lock);
 static dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
 
-struct task_struct *dump_task = NULL;
+struct task_struct *dump_task;
 
 static int dump_kthread(void *data);
 
@@ -292,47 +284,31 @@ void close_dump_file(void)
 }
 
 
-void phone_call_recv_message(struct ipi_msg_t *ipi_msg)
+void phone_call_recv_message(struct ipi_msg_t *p_ipi_msg)
 {
-	unsigned long flags = 0;
 	int ret = 0;
 	dump_data_t idx;
 
-	if (ipi_msg->msg_id == IPI_MSG_D2A_PCM_DUMP_DATA_NOTIFY) {
-		idx = (dump_data_t)ipi_msg->param2;
+	AUD_ASSERT(p_ipi_msg->task_scene == TASK_SCENE_PHONE_CALL);
+
+	if (p_ipi_msg->msg_id == IPI_MSG_D2A_PCM_DUMP_DATA_NOTIFY) {
+		idx = (dump_data_t)p_ipi_msg->param2;
 
 		irq_cnt[idx]++;
-		dump_work[idx].dma_addr = ipi_msg->dma_addr;
+		dump_work[idx].dma_addr = p_ipi_msg->dma_addr;
 
 		ret = queue_work(dump_workqueue[idx], &dump_work[idx].work);
 		if (ret == 0)
 			dump_data_routine_cnt_pass++;
 
-	} else if (ipi_msg->msg_id == IPI_MSG_A2D_SPH_ON ||
-		   ipi_msg->msg_id == IPI_MSG_A2D_SET_ADDR_VALUE ||
-		   ipi_msg->msg_id == IPI_MSG_A2D_GET_ADDR_VALUE ||
-		   ipi_msg->msg_id == IPI_MSG_A2D_SET_KEY_VALUE ||
-		   ipi_msg->msg_id == IPI_MSG_A2D_GET_KEY_VALUE) {
-		spin_lock_irqsave(&ipi_msg_to_hal_lock, flags);
-		memcpy(&ipi_msg_to_hal[ipi_msg_to_hal_idx_write], ipi_msg, sizeof(ipi_msg_t));
-
-		ipi_msg_to_hal_idx_write++;
-		if (ipi_msg_to_hal_idx_write == 16)
-			ipi_msg_to_hal_idx_write = 0;
-
-		if (ipi_msg_to_hal_idx_write == ipi_msg_to_hal_idx_read) {
-			AUD_LOG_V("ipi_msg_to_hal queue full, drop msg 0x%x\n", ipi_msg->msg_id);
-			if (ipi_msg_to_hal_idx_write == 0)
-				ipi_msg_to_hal_idx_write = 0xF;
-			else
-				ipi_msg_to_hal_idx_write--;
-		}
-
-		spin_unlock_irqrestore(&ipi_msg_to_hal_lock, flags);
-		wake_up_interruptible(&wq_read_msg);
 	}
 }
 
+
+void phone_call_task_unloaded(void)
+{
+	AUD_LOG_D("%s()\n", __func__);
+}
 
 
 static void dump_data_routine_ul(struct work_struct *ws)
@@ -501,68 +477,7 @@ static int dump_kthread(void *data)
 ssize_t audio_ipi_client_phone_call_read(
 	struct file *file, char *buf, size_t count, loff_t *ppos)
 {
-	int ret = 0;
-	char *data_addr = NULL;
-	uint32_t data_len = 0;
-
-	unsigned long flags = 0;
-	ipi_msg_t ipi_msg;
-	ipi_msg_t ipi_msg_hal;
-
-	if (ipi_msg_to_hal_idx_read == ipi_msg_to_hal_idx_write) {
-		ret = wait_event_interruptible(
-			      wq_read_msg,
-			      ipi_msg_to_hal_idx_read != ipi_msg_to_hal_idx_write);
-		if (ret == -ERESTARTSYS) {
-			ret = -EINTR;
-			goto exit;
-		}
-	}
-
-	if (ipi_msg_to_hal_idx_read != ipi_msg_to_hal_idx_write) {
-		spin_lock_irqsave(&ipi_msg_to_hal_lock, flags);
-		memcpy(&ipi_msg, &ipi_msg_to_hal[ipi_msg_to_hal_idx_read], sizeof(ipi_msg_t));
-		ipi_msg_to_hal_idx_read++;
-		if (ipi_msg_to_hal_idx_read == 16)
-			ipi_msg_to_hal_idx_read = 0;
-		spin_unlock_irqrestore(&ipi_msg_to_hal_lock, flags);
-
-		AUD_LOG_D("get id 0x%x\n", ipi_msg.msg_id);
-
-		if (ipi_msg.msg_id == IPI_MSG_A2D_GET_KEY_VALUE && ipi_msg.param1 == 1) {
-			if (copy_from_user(&ipi_msg_hal, buf, sizeof(ipi_msg_t)) != 0) {
-				AUD_LOG_E("0x%x copy_from_user err\n", IPI_MSG_A2D_GET_KEY_VALUE);
-				ret = -EFAULT;
-			}
-			AUD_LOG_V("hal dma: %p\n", ipi_msg_hal.dma_addr);
-			AUD_LOG_V("hal string: %s, len: %u, memsize: %u\n",
-				  ipi_msg_hal.dma_addr, ipi_msg_hal.param1, ipi_msg_hal.param2);
-
-
-			data_addr = get_resv_dram_vir_addr(ipi_msg.dma_addr);
-			AUD_LOG_V("data %p, dma %p, vp %p, pp %p\n",
-				  data_addr, ipi_msg.dma_addr,
-				  p_resv_dram->vir_addr, p_resv_dram->phy_addr);
-
-			data_len = strlen(data_addr) + 1;
-			AUD_LOG_V("scp string: %s, len: %u, memsize: %u\n",
-				  data_addr, data_len, ipi_msg.param2);
-
-			AUD_ASSERT(ipi_msg_hal.param2 >= data_len);
-			if (copy_to_user(ipi_msg_hal.dma_addr, data_addr, data_len)) {
-				AUD_LOG_W("dma copy_to_user err, id = 0x%x\n", ipi_msg.msg_id);
-				ret = -EFAULT;
-			}
-		}
-
-		if (copy_to_user(buf, &ipi_msg, sizeof(ipi_msg_t))) {
-			AUD_LOG_W("msg copy_to_user err, id = 0x%x\n", ipi_msg.msg_id);
-			ret = -EFAULT;
-		}
-	}
-
-exit:
-	return ret ? ret : sizeof(ipi_msg_t);
+	return 0;
 }
 
 
@@ -571,7 +486,10 @@ void audio_ipi_client_phone_call_init(void)
 	wake_lock_init(&call_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,
 		       "call_pcm_dump_wake_lock");
 
-	audio_reg_recv_message(TASK_SCENE_PHONE_CALL, phone_call_recv_message);
+	audio_task_register_callback(
+		TASK_SCENE_PHONE_CALL,
+		phone_call_recv_message,
+		phone_call_task_unloaded);
 
 	dump_workqueue[DUMP_UL] = create_workqueue("dump_pcm_ul");
 	if (dump_workqueue[DUMP_UL] == NULL)
@@ -588,14 +506,11 @@ void audio_ipi_client_phone_call_init(void)
 
 	init_waitqueue_head(&wq_dump_pcm);
 
-	init_waitqueue_head(&wq_read_msg);
+	dump_task = NULL;
 
 	/* TODO: ring buf */
 	p_resv_dram = get_reserved_dram();
 	AUD_ASSERT(p_resv_dram != NULL);
-
-	ipi_msg_to_hal_idx_read = 0;
-	ipi_msg_to_hal_idx_write = 0;
 }
 
 

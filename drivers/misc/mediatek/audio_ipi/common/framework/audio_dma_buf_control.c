@@ -15,7 +15,9 @@
 
 #include <scp_helper.h>
 
-#include "audio_type.h"
+#include "audio_log.h"
+#include "audio_assert.h"
+
 
 static audio_resv_dram_t resv_dram;
 
@@ -29,9 +31,11 @@ void init_reserved_dram(void)
 	AUD_LOG_D("resv_dram: pa %p, va %p, sz 0x%x\n",
 		  resv_dram.phy_addr, resv_dram.vir_addr, resv_dram.size);
 
-	AUD_ASSERT(resv_dram.phy_addr != NULL);
-	AUD_ASSERT(resv_dram.vir_addr != NULL);
-	AUD_ASSERT(resv_dram.size > 0);
+	if (is_scp_ready()) {
+		AUD_ASSERT(resv_dram.phy_addr != NULL);
+		AUD_ASSERT(resv_dram.vir_addr != NULL);
+		AUD_ASSERT(resv_dram.size > 0);
+	}
 }
 
 

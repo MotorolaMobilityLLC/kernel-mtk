@@ -1,9 +1,10 @@
-config MTK_TINYSYS_SCP_SUPPORT
-	bool "Specifiy If Platform Support SCP"
+config MTK_AURISYS_PHONE_CALL_SUPPORT
+	bool "enable phone call speech processing on OpenDSP"
 	default n
 	help
-		SCP is a MediaTek in-house DSP which can receive
-		command from IPI interface.
-		And audio driver use the IPI interface
-		to communicate with DSP.
+	  Select this to enable phone call speech enhancement in OpenDSP.
+	  The OpenDSP is a DSP that can integrate 3rd party algorithm
+	  for speech processing.
+	  If unsure, say N here.
+
 

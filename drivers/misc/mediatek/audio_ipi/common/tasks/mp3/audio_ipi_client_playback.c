@@ -38,15 +38,15 @@
 #include <linux/wakelock.h>
 
 
-#include <asm/io.h>
-
-#include <mt_spm_sleep.h>       /* for spm_ap_mdsrc_req */
+#include <linux/io.h>
 
 #include <linux/wait.h>
 #include <linux/time.h>
 
-#include "audio_type.h"
+#include "audio_log.h"
+#include "audio_assert.h"
 
+#include "audio_task_manager.h"
 #include "audio_dma_buf_control.h"
 
 
@@ -86,7 +86,7 @@ static DEFINE_SPINLOCK(dump_queue_lock);
 static dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
 
-struct task_struct *playback_dump_task = NULL;
+struct task_struct *playback_dump_task;
 
 static int dump_kthread(void *data);
 
@@ -125,12 +125,12 @@ void playback_open_dump_file(void)
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
-	snprintf(string_time, sizeof(string_time), "%.2lu_%.2lu_%.2lu",
+	sprintf(string_time, "%.2lu_%.2lu_%.2lu",
 		(8 + (curr_tm.tv_sec / 3600)) % (24),
 		(curr_tm.tv_sec / 60) % (60),
 		curr_tm.tv_sec % 60);
 
-	snprintf(path_decode_pcm, sizeof(path_decode_pcm), "%s/%s_%s",
+	sprintf(path_decode_pcm, "%s/%s_%s",
 		DUMP_DSP_PCM_DATA_PATH, string_time, string_decode_pcm);
 
 	file_decode_pcm = filp_open(path_decode_pcm, O_CREAT | O_WRONLY, 0);
@@ -199,6 +199,8 @@ static void dump_data_routine(struct work_struct *ws)
 		dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DECODE;
 		dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
 		dump_queue->idx_w++;
+		if (dump_queue->idx_w == 256)
+			dump_queue->idx_w = 0;
 		if (dump_queue->idx_w == dump_queue->idx_r)
 			AUD_LOG_D("%s Buffer Full\n", __func__);
 		spin_unlock_irqrestore(&dump_queue_lock, flags);
@@ -312,6 +314,9 @@ void audio_ipi_client_playback_init(void)
 	INIT_WORK(&dump_work[DUMP_DECODE].work, dump_data_routine);
 
 	init_waitqueue_head(&wq_dump_pcm);
+
+	playback_dump_task = NULL;
+
 	/* TODO: ring buf */
 	p_resv_dram = get_reserved_dram();
 	AUD_ASSERT(p_resv_dram != NULL);
