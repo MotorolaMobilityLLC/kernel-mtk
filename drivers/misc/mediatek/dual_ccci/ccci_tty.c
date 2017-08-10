@@ -248,28 +248,54 @@ static void ccci_tty_callback(void *private)
 		}
 	}
 }
+
+#define DUMP_CHANNEL_DATA
 #ifdef DUMP_CHANNEL_DATA
-#define DUMP_BUF_SIZE 200
 static void ccci_ch_dump(int md_id, char *str, void *msg_buf, int len)
 {
+#define DUMP_BUF_SIZE 32
 	unsigned char *char_ptr = (unsigned char *)msg_buf;
 	char buf[DUMP_BUF_SIZE];
 	int i, j;
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+	char *replace_str;
 
 	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
-		if (((32 <= char_ptr[i]) && (char_ptr[i] <= 126))) {
-			buf[j++] = char_ptr[i];
-		} else {
-			if (DUMP_BUF_SIZE - j > 4) {
-				snprintf(buf+j, DUMP_BUF_SIZE-j, "[%02X]", char_ptr[i]);
-				j += 4;
-			} else {
-				buf[j++] = '.';
+		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
+			buf[j] = char_ptr[i];
+			j += 1;
+		} else if (char_ptr[i] == '\r' ||
+			char_ptr[i] == '\n' ||
+			char_ptr[i] == '\t') {
+			switch (char_ptr[i]) {
+			case '\r':
+				replace_str = "\\r";
+				break;
+			case '\n':
+				replace_str = "\\n";
+				break;
+			case '\t':
+				replace_str = "\\t";
+				break;
+			default:
+				replace_str = "";
+				break;
 			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
+			j += 2;
+		} else {
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
+			j += 4;
 		}
 	}
+
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+
 	buf[j] = '\0';
-	CCCI_MSG_INF(md_id, "tty", "%s %d>%s\n", str, len, buf);
+	ccci_dump_write(md_id, CCCI_DUMP_HISTORY, 0, "[%5lu.%06lu]%s %d>%s\n",
+		(unsigned long)ts_nsec, rem_nsec / 1000, str, len, buf);
 }
 #endif
 

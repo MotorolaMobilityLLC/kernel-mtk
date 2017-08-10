@@ -14,6 +14,8 @@
 #ifndef __CCCI_TTY_H__
 #define __CCCI_TTY_H__
 
+#include <mt_ccci_common.h>
+
 #define  CCCI_TTY_MODEM      0
 #define  CCCI_TTY_META       1
 #define  CCCI_TTY_IPC         2
