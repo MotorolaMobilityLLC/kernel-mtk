@@ -1,5 +1,6 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -I$(srctree)/kernel/sched/
 obj-y += mutex.o semaphore.o rwsem.o mcs_spinlock.o
 
 ifdef CONFIG_FUNCTION_TRACER
