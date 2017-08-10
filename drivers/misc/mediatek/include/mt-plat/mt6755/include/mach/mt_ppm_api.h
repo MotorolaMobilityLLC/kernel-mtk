@@ -52,6 +52,11 @@ enum ppm_sysboost_user {
 	NR_PPM_SYSBOOST_USER,
 };
 
+struct ppm_limit_data {
+	int min;
+	int max;
+};
+
 /*==============================================================*/
 /* Definition							*/
 /*==============================================================*/
@@ -120,6 +125,9 @@ extern void mt_ppm_cpu_thermal_protect(unsigned int limited_power);
 extern unsigned int mt_ppm_thermal_get_min_power(void);
 extern unsigned int mt_ppm_thermal_get_max_power(void);
 extern unsigned int mt_ppm_thermal_get_cur_power(void);
+
+/* Force limit policy */
+extern unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data);
 
 /* PTPOD policy */
 extern void mt_ppm_ptpod_policy_activate(void);

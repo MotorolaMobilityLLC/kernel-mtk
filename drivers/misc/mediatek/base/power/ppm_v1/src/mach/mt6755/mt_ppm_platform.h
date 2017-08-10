@@ -79,6 +79,13 @@ enum ppm_power_state {
 	NR_PPM_POWER_STATE = PPM_POWER_STATE_NONE,
 };
 
+enum ppm_cluster {
+	PPM_CLUSTER_LL = 0,
+	PPM_CLUSTER_L,
+
+	NR_PPM_CLUSTERS,
+};
+
 /*==============================================================*/
 /* Data Structures						*/
 /*==============================================================*/

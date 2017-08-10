@@ -163,6 +163,7 @@ enum {
 enum ppm_policy {
 	PPM_POLICY_PTPOD = 0,		/* highest priority if priority value is the same */
 	PPM_POLICY_UT,
+	PPM_POLICY_FORCE_LIMIT,
 	PPM_POLICY_PWR_THRO,
 	PPM_POLICY_THERMAL,
 	PPM_POLICY_DLPT,
