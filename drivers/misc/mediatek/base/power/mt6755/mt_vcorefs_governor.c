@@ -108,6 +108,8 @@ unsigned int vcorefs_log_mask = ~((0xFFFFFFFF << LAST_KICKER) | (1U << KIR_GPU))
 #define MT6750_TURBO_SEGMENT 0x41
 #define MT6750_NORMAL_SEGMENT 0x42
 #define MT6738_SEGMENT 0x43
+#define MT6750_TURBO_5M_SEGMENT 0x45
+#define MT6750_NORMAL_5M_SEGMENT 0x46
 
 /*
  * struct define
@@ -1112,6 +1114,7 @@ int vcorefs_late_init_dvfs(void)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	/* mt6750 series */
 	if (gvrctrl->segment_code == MT6750_NORMAL_SEGMENT ||
+		gvrctrl->segment_code == MT6750_NORMAL_5M_SEGMENT ||
 		gvrctrl->segment_code == MT6738_SEGMENT) {
 		if (gvrctrl->is_fhd_segment == true) {
 			if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
