@@ -267,16 +267,16 @@ kal_bool check_IMX214_otp_valid_LSC_Page(kal_uint8 page)
 #if 1
  kal_bool IMX214_Read_LSC_Otp(kal_uint8 pagestart,kal_uint8 pageend,u16 Outdatalen,unsigned char * pOutputdata)
  {
- 
  kal_uint8 page = 0;
  kal_uint16 byteperpage = 256;
  kal_uint16 number = 0;
  kal_uint16 LSCOTPaddress = 0x00 ; 
  u8 readbuff;
  int i = 0;
+	if (Outdatalen > OTP_SIZE)
+		Outdatalen = OTP_SIZE;
 
  if(otp_flag){
-
 	for(i=0;i<Outdatalen;i++)
 		pOutputdata[i]=OTPData[i];
  }
