@@ -5368,6 +5368,14 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		/* -> we should use param to find the current buffer index in Rlikst to update the buffer status cuz deque success/fail may not be the first buffer in Rlist */
 		/* ////////////////////////////////////////////////////////////////////// */
 		idx2 = ISP_P2_BufQue_GetMatchIdx(param, ISP_P2_BUFQUE_MATCH_TYPE_FRAMEOP, ISP_P2_BUFQUE_LIST_TAG_UNIT);
+		if (idx2 ==  -1) {
+			spin_unlock(&(SpinLock_P2FrameList));
+			LOG_ERR("ERR findmatch index 2 fail (%d_0x%x_0x%x_%d, %d_%d)",
+				 param.property, param.processID, param.callerID,
+				 param.frameNum, param.cQIdx, param.dupCQIdx);
+			ret =  -EFAULT;
+			return ret;
+		}
 		if (param.ctrl == ISP_P2_BUFQUE_CTRL_DEQUE_SUCCESS) {
 			P2_FrameUnit_List[property][idx2].bufSts = ISP_P2_BUF_STATE_DEQUE_SUCCESS;
 		} else {
@@ -5377,7 +5385,9 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		idx = ISP_P2_BufQue_GetMatchIdx(param, ISP_P2_BUFQUE_MATCH_TYPE_FRAMEOP, ISP_P2_BUFQUE_LIST_TAG_PACKAGE);
 		if (idx ==  -1) {
 			spin_unlock(&(SpinLock_P2FrameList));
-			LOG_ERR("ERRRRRRRRRRR findmatch index 1 fail (%d_0x%x_0x%x_%d, %d_%d)", param.property, param.processID, param.callerID, param.frameNum, param.cQIdx, param.dupCQIdx);
+			LOG_ERR("ERR findmatch index 1 fail (%d_0x%x_0x%x_%d, %d_%d)",
+				 param.property, param.processID, param.callerID,
+				 param.frameNum, param.cQIdx, param.dupCQIdx);
 			ret =  -EFAULT;
 			return ret;
 		}
@@ -5385,12 +5395,6 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		/* [3]update global pointer */
 		ISP_P2_BufQue_Update_ListCIdx(property, ISP_P2_BUFQUE_LIST_TAG_UNIT);
 		/* [4]erase node in ring buffer list */
-		if (idx2 ==  -1) {
-			spin_unlock(&(SpinLock_P2FrameList));
-			LOG_ERR("ERRRRRRRRRRR findmatch index 2 fail (%d_0x%x_0x%x_%d, %d_%d)", param.property, param.processID, param.callerID, param.frameNum, param.cQIdx, param.dupCQIdx);
-			ret =  -EFAULT;
-			return ret;
-		}
 		ISP_P2_BufQue_Erase(property, ISP_P2_BUFQUE_LIST_TAG_UNIT, idx2);
 		spin_unlock(&(SpinLock_P2FrameList));
 		/* [5]wake up thread user that wait for a specific buffer and the thread that wait for deque */
@@ -7821,6 +7825,7 @@ static MINT32 ISP_open(
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 	/*  */
+	spin_lock(&(SpinLock_P2FrameList));
 	for (q = 0; q < ISP_P2_BUFQUE_PROPERTY_NUM; q++) {
 		for (i = 0; i < _MAX_SUPPORT_P2_FRAME_NUM_; i++) {
 			P2_FrameUnit_List[q][i].processID = 0x0;
@@ -7843,9 +7848,12 @@ static MINT32 ISP_open(
 		P2_FramePack_List_Idx[q].curr = 0;
 		P2_FramePack_List_Idx[q].end =  -1;
 	}
+	spin_unlock(&(SpinLock_P2FrameList));
 
 	/*  */
+	spin_lock((spinlock_t *)(&SpinLockRegScen));
 	g_regScen = 0xa5a5a5a5;
+	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*  */
 	IspInfo.BufInfo.Read.pData = (MUINT8 *) kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
 	IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
