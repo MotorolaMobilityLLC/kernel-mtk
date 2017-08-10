@@ -1633,13 +1633,13 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	}
 
 	/* Is PE+20 connect */
-	if (mtk_pep20_get_is_connect())
+	if (mtk_pep20_get_is_connect() && (BMT_status.UI_SOC > 0) && (BMT_status.UI_SOC < 95))
 		is_ta_detected = 1;
 	battery_log(BAT_LOG_FULL, "%s: pep20_is_connect = %d\n",
 		__func__, mtk_pep20_get_is_connect());
 
 	/* Is PE+ connect */
-	if (mtk_pep_get_is_connect())
+	if (mtk_pep_get_is_connect() && (BMT_status.UI_SOC > 0) && (BMT_status.UI_SOC < 95))
 		is_ta_detected = 1;
 	battery_log(BAT_LOG_FULL, "%s: pep_is_connect = %d\n",
 		__func__, mtk_pep_get_is_connect());
