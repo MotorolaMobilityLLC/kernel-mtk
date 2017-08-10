@@ -429,6 +429,7 @@ void OpenAfeDigitaldl1(bool bEnable)
 
 		EnableAfe(false);
 	}
+
 }
 
 
@@ -451,8 +452,6 @@ void SetExternalModemStatus(const bool bEnable)
 bool InitAfeControl(void)
 {
 	int i = 0;
-
-	pr_debug("InitAfeControl\n");
 
 	/* first time to init , reg init. */
 	AfeGlobalVarInit();
@@ -1116,7 +1115,6 @@ bool SetChannels(uint32 Memory_Interface, uint32 channel)
 
 bool Set2ndI2SOutAttribute(uint32_t sampleRate)
 {
-	pr_debug("+%s(), sampleRate = %d\n", __func__, sampleRate);
 	m2ndI2Sout->mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
 	m2ndI2Sout->mI2S_SLAVE = Soc_Aud_I2S_SRC_MASTER_MODE;
 	m2ndI2Sout->mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
@@ -1172,7 +1170,6 @@ bool SetDaiBt(AudioDigitalDAIBT *mAudioDaiBt)
 
 bool SetDaiBtEnable(bool bEanble)
 {
-	pr_debug("%s bEanble = %d\n", __func__, bEanble);
 	if (bEanble == true) {
 		/* turn on dai bt */
 		Afe_Set_Reg(AFE_DAIBT_CON0, AudioDaiBt->mDAI_BT_MODE << 9, 0x1 << 9);
@@ -1219,7 +1216,6 @@ bool GetMrgI2SEnable(void)
 
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate)
 {
-	pr_warn("%s bEnable = %d\n", __func__, bEnable);
 
 	if (bEnable == true) {
 		/* To enable MrgI2S */
@@ -1342,9 +1338,6 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 
 bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 {
-	pr_debug("+%s(), connection = %d, direction = %d, Enable= %d\n", __func__, connection,
-		 direction, Enable);
-
 	if (Enable && direction) {
 		switch (connection) {
 		case Soc_Aud_InterConnectionInput_I00:
@@ -1587,8 +1580,6 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 {
 	uint32 Audio_I2S_Dac = 0;
 
-	pr_warn("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
-		I2SWLen);
 	CleanPreDistortion();
 	SetDLSrc2(SampleRate);
 	Audio_I2S_Dac |= (Soc_Aud_LR_SWAP_NO_SWAP << 31);
@@ -1686,8 +1677,6 @@ bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute)
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mPcmWordLength & 0x1) << 5;
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mPcmModeWidebandSel & 0x3) << 3;
 		reg_pcm2_intf_con |= (p_modem_pcm_attribute.mPcmFormat & 0x3) << 1;
-		pr_debug("%s(), PCM2_INTF_CON(0x%lx) = 0x%x\n", __func__, PCM2_INTF_CON,
-			 reg_pcm2_intf_con);
 		Afe_Set_Reg(PCM2_INTF_CON, reg_pcm2_intf_con, MASK_ALL);
 
 		if (p_modem_pcm_attribute.mPcmModeWidebandSel == Soc_Aud_PCM_MODE_PCM_MODE_8K) {
@@ -1782,8 +1771,6 @@ bool SetModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribute)
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mSlaveModeSel & 0x01) << 5;
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mPcmModeWidebandSel & 0x03) << 3;
 		reg_pcm_intf_con1 |= (p_modem_pcm_attribute.mPcmFormat & 0x03) << 1;
-		pr_debug("%s(), PCM_INTF_CON1(0x%lx) = 0x%x", __func__, PCM_INTF_CON,
-			 reg_pcm_intf_con1);
 		Afe_Set_Reg(PCM_INTF_CON, reg_pcm_intf_con1, MASK_ALL);
 	}
 
@@ -1850,11 +1837,11 @@ bool EnableSideToneFilter(bool stf_on)
 		uint32_t reg_value = (bypass_stf_on << 31) | (stf_on << 8);
 
 		Afe_Set_Reg(AFE_SIDETONE_CON1, reg_value, MASK_ALL);
-		pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
-			 reg_value);
+		/*pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
+			 reg_value);*/
 		/* set side tone gain = 0 */
 		Afe_Set_Reg(AFE_SIDETONE_GAIN, 0, MASK_ALL);
-		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);
+/*		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);*/
 	} else {
 		const bool bypass_stf_on = false;
 		/* using STF result & enable & set half tap num */
@@ -1867,13 +1854,12 @@ bool EnableSideToneFilter(bool stf_on)
 		uint32_t read_reg_value = Afe_Get_Reg(AFE_SIDETONE_CON0);
 		size_t coef_addr = 0;
 
-		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);
 
 		/* set side tone gain */
 		Afe_Set_Reg(AFE_SIDETONE_GAIN, 0, MASK_ALL);
 		Afe_Set_Reg(AFE_SIDETONE_CON1, write_reg_value, MASK_ALL);
-		pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
-			 write_reg_value);
+		/*pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
+			 write_reg_value);*/
 
 		for (coef_addr = 0; coef_addr < kSideToneHalfTapNum; coef_addr++) {
 			bool old_write_ready = (read_reg_value >> 29) & 0x1;
@@ -1886,8 +1872,8 @@ bool EnableSideToneFilter(bool stf_on)
 								coef_addr		<< 16 |
 								kSideToneCoefficientTable16k[coef_addr];
 			Afe_Set_Reg(AFE_SIDETONE_CON0, write_reg_value, 0x39FFFFF);
-			pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
-				write_reg_value);
+			/*pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
+				write_reg_value);*/
 
 			/* wait until flag write_ready changed (means write done) */
 			for (try_cnt = 0; try_cnt < 10; try_cnt++) { /* max try 10 times */
@@ -2190,7 +2176,6 @@ bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S)
 	Audio_I2S_Adc |= (m2ndI2S->mI2S_WLEN << 1);
 	Audio_I2S_Adc |= (m2ndI2S->mI2S_IN_PAD_SEL << 28);
 	Audio_I2S_Adc |= 1 << 31;	/* Default enable phase_shift_fix for better quality */
-	pr_debug("Set2ndI2SIn Audio_I2S_Adc= 0x%x", Audio_I2S_Adc);
 	Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Adc, 0xfffffffe);
 
 	if (!m2ndI2S->mI2S_SLAVE)
@@ -2203,7 +2188,6 @@ bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S)
 
 bool Set2ndI2SInEnable(bool bEnable)
 {
-	pr_warn("Set2ndI2SInEnable bEnable = %d", bEnable);
 	m2ndI2S->mI2S_EN = bEnable;
 	Afe_Set_Reg(AFE_I2S_CON, bEnable, 0x1);
 	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_2]->mState = bEnable;
@@ -2530,7 +2514,6 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 #endif
 	AFE_BLOCK_T *pblock;
 
-	pr_debug("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
 
@@ -2596,38 +2579,25 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
 	case Soc_Aud_Digital_Block_MEM_HDMI:{
-			pr_debug("%s MemBlock =%d Buffer_length = %d\n ", __func__, MemBlock,
-				 Buffer_length);
+
 			if (Audio_dma_buf[MemBlock] != NULL) {
-				pr_debug
-				    ("AudDrv_Allocate_mem_Buffer MemBlock = %d dma_alloc_coherent\n",
-				     MemBlock);
 				if (Audio_dma_buf[MemBlock]->area == NULL) {
-					pr_debug("dma_alloc_coherent\n");
 					Audio_dma_buf[MemBlock]->area = dma_alloc_coherent(pDev, Buffer_length,
 						&Audio_dma_buf[MemBlock]->addr, GFP_KERNEL|GFP_DMA);
 					if (Audio_dma_buf[MemBlock]->area)
 						Audio_dma_buf[MemBlock]->bytes = Buffer_length;
 				}
-				pr_debug("area = %p\n", Audio_dma_buf[MemBlock]->area);
 			}
 		}
 		break;
 	case Soc_Aud_Digital_Block_MEM_VUL:{
-			pr_debug("%s MemBlock =%d Buffer_length = %d\n ", __func__, MemBlock,
-				 Buffer_length);
 			if (Audio_dma_buf[MemBlock] != NULL) {
-				pr_debug
-				    ("AudDrv_Allocate_mem_Buffer MemBlock = %d dma_alloc_coherent\n",
-				     MemBlock);
 				if (Audio_dma_buf[MemBlock]->area == NULL) {
-					pr_debug("dma_alloc_coherent\n");
 					Audio_dma_buf[MemBlock]->area = dma_alloc_coherent(pDev, Buffer_length,
 						&Audio_dma_buf[MemBlock]->addr, GFP_KERNEL|GFP_DMA);
 					if (Audio_dma_buf[MemBlock]->area)
 						Audio_dma_buf[MemBlock]->bytes = Buffer_length;
 				}
-				pr_debug("area = %p\n", Audio_dma_buf[MemBlock]->area);
 			}
 			break;
 		}
