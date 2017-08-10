@@ -1810,7 +1810,7 @@ static inline MVOID ISP_Reset(MVOID)
 
 	do {
 		Reg = ISP_RD32((void *)ISP_REG_ADDR_SW_CTL);
-	} while ((!Reg) & ISP_REG_SW_CTL_SW_RST_STATUS);
+	} while (0/* (!Reg) & ISP_REG_SW_CTL_SW_RST_STATUS */);
 
 	ISP_WR32((void *)ISP_REG_ADDR_SW_CTL, ISP_REG_SW_CTL_SW_RST_TRIG | ISP_REG_SW_CTL_HW_RST);	/* 0x5 */
 	ISP_WR32((void *)ISP_REG_ADDR_SW_CTL, ISP_REG_SW_CTL_HW_RST);	/* 0x4 */
