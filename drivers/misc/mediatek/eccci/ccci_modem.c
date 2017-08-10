@@ -404,11 +404,9 @@ int ccci_md_check_ee_done(struct ccci_modem *md, int timeout)
 
 void ccci_md_set_reload_type(struct ccci_modem *md, int type)
 {
-	if (type != md->config.load_type) {
-		if (set_modem_support_cap(md->index, type) == 0) {
-			md->config.load_type = type;
-			md->config.setting |= MD_SETTING_RELOAD;
-		}
+	if (set_modem_support_cap(md->index, type) == 0) {
+		md->config.load_type = type;
+		md->config.setting |= MD_SETTING_RELOAD;
 	}
 }
 
