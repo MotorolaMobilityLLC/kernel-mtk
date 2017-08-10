@@ -444,6 +444,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 		int i = 0;
 
+		memset(ovl_all, 0, sizeof(ovl_all));
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
@@ -472,6 +473,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		PM_LAYER_INFO layer_info;
 		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+		memset(ovl_all, 0, sizeof(ovl_all));
 		if (copy_from_user(&layer_info, (void __user *)argp, sizeof(layer_info))) {
 			pr_debug("[FB_LAYER_GET_INFO]: copy_from_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
@@ -509,6 +511,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int real_size = 0;
 		OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+		memset(ovl_all, 0, sizeof(ovl_all));
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
