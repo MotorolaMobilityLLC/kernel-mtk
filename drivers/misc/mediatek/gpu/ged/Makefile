@@ -31,7 +31,6 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/video/include
 
 # ----- for FRR2.0 ----- #
-$(info *MTK_PLATFORM: $(MTK_PLATFORM))
 ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
 ccflags-y += -DENABLE_FRR_FOR_MT6XXX_PLATFORM
 
@@ -64,8 +63,7 @@ endif
 endif
 # ---------------------- #
 
-$(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])
-    
+
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DGED_DVFS_ENABLE \
              -DENABLE_COMMON_DVFS \
@@ -97,7 +95,6 @@ ged-y += \
 	src/ged_dvfs.o
     
 
-$(info *MTK_PLATFORM: $(MTK_PLATFORM))
 ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
 ged-y += src/ged_vsync.o
 endif
