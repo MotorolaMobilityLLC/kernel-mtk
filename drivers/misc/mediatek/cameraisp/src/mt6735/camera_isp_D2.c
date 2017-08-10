@@ -6308,7 +6308,7 @@ static ssize_t ISP_RegDebug(struct file *pFile,
 		LOG_ERR("Write => Addr: 0x%08X, Write Data: 0x%08X. Read Data: 0x%08X.",
 			(unsigned int)(ISP_ADDR_CAMINF + Addr), Data,
 			ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
-	} else if (kstrto(RegBuf, "%x", &Addr) == 0) {
+	} else if (kstrtou32(RegBuf, 0, &Addr) == 0) {
 		LOG_ERR("Read => Addr: 0x%08X, Read Data: 0x%08X.",
 			(unsigned int)(ISP_ADDR_CAMINF + Addr), ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
 	}
