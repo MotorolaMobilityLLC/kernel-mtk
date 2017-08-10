@@ -41,6 +41,7 @@
 #include "ged_vsync.h"
 #endif
 
+#include "ged_ge.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
@@ -69,12 +70,18 @@ static void* gvIOCTLParamBuf = NULL;
  *****************************************************************************/
 static int ged_open(struct inode *inode, struct file *filp)
 {
+	filp->private_data = NULL;
 	GED_LOGE("%s:%d:%d\n", __func__, MAJOR(inode->i_rdev), MINOR(inode->i_rdev));
 	return 0;
 }
 
 static int ged_release(struct inode *inode, struct file *filp)
 {
+	if (filp->private_data) {
+		void (*free_func)(void *) = ((GED_FILE_PRIVATE_BASE *)filp->private_data)->free_func;
+
+		free_func(filp->private_data);
+	}
 	GED_LOGE("%s:%d:%d\n", __func__, MAJOR(inode->i_rdev), MINOR(inode->i_rdev));
 	return 0;
 }
@@ -94,7 +101,7 @@ static ssize_t ged_write(struct file *filp, const char __user *buf, size_t count
 	return 0;
 }
 
-static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
+static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackageKM)
 {
 	int ret = -EFAULT;
 	void *pvInt, *pvOut;
@@ -116,7 +123,7 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 		}
 
 		// we will change the below switch into a function pointer mapping table in the future
-		switch(GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID))
+		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID))
 		{
 			case GED_BRIDGE_COMMAND_LOG_BUF_GET:
 				pFunc = (ged_bridge_func_type*)ged_bridge_log_buf_get;
@@ -153,6 +160,21 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 				pFunc = (ged_bridge_func_type*)ged_bridge_vsync_wait;
 				break;
 #endif
+			case GED_BRIDGE_COMMAND_GE_ALLOC:
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_alloc;
+				break;
+			case GED_BRIDGE_COMMAND_GE_RETAIN:
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_retain;
+				break;
+			case GED_BRIDGE_COMMAND_GE_RELEASE:
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_release;
+				break;
+			case GED_BRIDGE_COMMAND_GE_GET:
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_get;
+				break;
+			case GED_BRIDGE_COMMAND_GE_SET:
+				pFunc = (ged_bridge_func_type *)ged_bridge_ge_set;
+				break;
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
 				break;
@@ -161,6 +183,40 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 		if (pFunc)
 		{
 			ret = pFunc(pvInt, pvOut);
+		}
+
+		switch (GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID)) {
+		case GED_BRIDGE_COMMAND_GE_ALLOC:
+			{
+				GED_BRIDGE_OUT_GE_ALLOC *out = (GED_BRIDGE_OUT_GE_ALLOC *)pvOut;
+
+				if (out->eError == GED_OK) {
+					ged_ge_init_context(&pFile->private_data);
+					ged_ge_context_ref(pFile->private_data, out->ge_hnd);
+				}
+			}
+			break;
+		case GED_BRIDGE_COMMAND_GE_RETAIN:
+			{
+				GED_BRIDGE_IN_GE_RETAIN *in = (GED_BRIDGE_IN_GE_RETAIN *)pvInt;
+				GED_BRIDGE_OUT_GE_RETAIN *out = (GED_BRIDGE_OUT_GE_RETAIN *)pvOut;
+
+				if (out->eError == GED_OK) {
+					ged_ge_init_context(&pFile->private_data);
+					ged_ge_context_ref(pFile->private_data, in->ge_hnd);
+				}
+			}
+			break;
+		case GED_BRIDGE_COMMAND_GE_RELEASE:
+			{
+				GED_BRIDGE_IN_GE_RELEASE *in = (GED_BRIDGE_IN_GE_RELEASE *)pvInt;
+				GED_BRIDGE_OUT_GE_RELEASE *out = (GED_BRIDGE_OUT_GE_RELEASE *)pvOut;
+
+				if (out->eError == GED_OK)
+					ged_ge_context_deref(pFile->private_data, in->ge_hnd);
+
+			}
+			break;
 		}
 
 		if (psBridgePackageKM->i32OutBufferSize > 0)
@@ -196,7 +252,7 @@ static long ged_ioctl(struct file *pFile, unsigned int ioctlCmd, unsigned long a
 		goto unlock_and_return;
 	}
 
-	ret = ged_dispatch(psBridgePackageKM);
+	ret = ged_dispatch(pFile, psBridgePackageKM);
 
 unlock_and_return:
 	up(&ged_dal_sem);
@@ -242,7 +298,7 @@ static long ged_ioctl_compat(struct file *pFile, unsigned int ioctlCmd, unsigned
 	sBridgePackageKM64.i32InBufferSize = psBridgePackageKM32->i32InBufferSize;
 	sBridgePackageKM64.i32OutBufferSize = psBridgePackageKM32->i32OutBufferSize;
 
-	ret = ged_dispatch(&sBridgePackageKM64);
+	ret = ged_dispatch(pFile, &sBridgePackageKM64);
 
 unlock_and_return:
 	up(&ged_dal_sem);
@@ -309,6 +365,8 @@ static void ged_exit(void)
 
 	ged_debugFS_exit();
 
+	ged_ge_exit();
+
 	remove_proc_entry(GED_DRIVER_DEVICE_NAME, NULL);
 
 	if (gvIOCTLParamBuf)
@@ -371,11 +429,16 @@ static int ged_init(void)
 		goto ERROR;
 	}
 
-
 	err = ged_dvfs_system_init();
 	if (unlikely(err != GED_OK))
 	{
 		GED_LOGE("ged: failed to init common dvfs!\n");
+		goto ERROR;
+	}
+
+	err = ged_ge_init();
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to init gralloc_extra!\n");
 		goto ERROR;
 	}
 
