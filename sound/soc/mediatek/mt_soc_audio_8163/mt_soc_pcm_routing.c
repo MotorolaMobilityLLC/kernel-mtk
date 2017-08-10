@@ -997,8 +997,6 @@ static int mtk_routing_pm_ops_suspend(struct device *device)
 		return 0;
 
 	if (AudDrvSuspendStatus == false) {
-		AudDrv_Clk_Power_On();
-		BackUp_Audio_Register();
 		if (ConditionEnterSuspend() == true) {
 			SetAnalogSuspend(true);
 #if 0
@@ -1025,7 +1023,6 @@ static int mtk_routing_pm_ops_resume(struct device *device)
 	if (AudDrvSuspendStatus == true) {
 		AudDrv_Suspend_Clk_On();
 		if (ConditionEnterSuspend() == true) {
-			Restore_Audio_Register();
 			SetAnalogSuspend(false);
 		}
 		AudDrvSuspendStatus = false;
