@@ -412,6 +412,11 @@ void musb_g_tx(struct musb *musb, u8 epnum)
 			writel((txcsr0 & TX_W1C_BITS) | TX_TXPKTRDY,
 			       musb->endpoints[epnum].addr_txcsr0);
 			request->zero = 0;
+			/*
+			 * Return from here with the expectation of the endpoint
+			 * interrupt for further action.
+			 */
+			return;
 		}
 
 		if (request->actual == request->length) {
@@ -715,7 +720,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 #ifdef USE_SSUSB_QMU
 	_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, MAX_SLOT, 0, 0);
 #else
-	/*TODO: Check support mulitslots on real ship */
+	/* note multi-slot is not supported in PIO mode currently, need to revise driver to support it */
 	_ex_mu3d_hal_ep_enable(epnum, dir, type, maxp, 0, 0, 0, 0);
 #endif
 
