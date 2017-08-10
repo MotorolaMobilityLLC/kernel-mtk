@@ -506,13 +506,18 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 
 		if (isRx) {
 			DBG(4, "isRX = 1\n");
-			if (unlikely(qh->hb_mult > 1)) {
-				DBG(4, "hb_mult:%d\n", qh->hb_mult);
-				if (unlikely(!musb_host_dynamic_fifo))
-					BUG();
-				musb_writew(epio, MUSB_RXMAXP, qh->maxpacket | ((qh->hb_mult - 1) << 11));
-			} else
+			if (qh->type == USB_ENDPOINT_XFER_ISOC) {
+				DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
+				if (qh->hb_mult == 3)
+					musb_writew(epio, MUSB_RXMAXP, qh->maxpacket|0x1000);
+				else if (qh->hb_mult == 2)
+					musb_writew(epio, MUSB_RXMAXP, qh->maxpacket|0x800);
+				else
+					musb_writew(epio, MUSB_RXMAXP, qh->maxpacket);
+			} else {
+				DBG(4, "!! USB_ENDPOINT_XFER_ISOC\n");
 				musb_writew(epio, MUSB_RXMAXP, qh->maxpacket);
+			}
 
 			musb_writew(epio, MUSB_RXCSR, MUSB_RXCSR_DMAENAB);
 			/*CC: speed */
@@ -534,13 +539,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			intr_e = intr_e & (~(1<<(hw_ep->epnum)));
 			musb_writew(musb->mregs, MUSB_INTRRXE, intr_e);
 		} else {
-			if (unlikely(qh->hb_mult > 1)) {
-				DBG(4, "hb_mult:%d\n", qh->hb_mult);
-				if (unlikely(!musb_host_dynamic_fifo))
-					BUG();
-				musb_writew(epio, MUSB_TXMAXP, qh->maxpacket | ((qh->hb_mult - 1) << 11));
-			} else
-				musb_writew(epio, MUSB_TXMAXP, qh->maxpacket);
+			musb_writew(epio, MUSB_TXMAXP, qh->maxpacket);
 			musb_writew(epio, MUSB_TXCSR, MUSB_TXCSR_DMAENAB);
 			/*CC: speed?*/
 			musb_writeb(epio, MUSB_TXTYPE, (qh->type_reg | usb_pipeendpoint(urb->pipe)));
