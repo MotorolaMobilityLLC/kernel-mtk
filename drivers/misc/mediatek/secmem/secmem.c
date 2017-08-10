@@ -911,12 +911,15 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			mutex_unlock(&secmem_region_lock);
 #endif
 		} else if (!strcmp(cmd, "2")) {
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 			u32 size = 0;
 
 			MSG(ERR, "[SECMEM] - test for secmem_api_query()\n");
 			secmem_api_query(&size);
 			MSG(ERR, "[SECMEM] - allocated : 0x%x\n", size);
+#endif
 		} else if (!strcmp(cmd, "3")) {
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 			u32 size = 0;
 			u32 refcount = 0;
 			u32 sec_handle = 0;
@@ -929,6 +932,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			secmem_api_unref(sec_handle, owner, 0);
 			secmem_api_query(&size);
 			MSG(ERR, "[SECMEM] - after free : 0x%x\n", size);
+#endif
 		} else if (!strcmp(cmd, "4")) {
 			MSG(ERR, "[SECMEM] - test for command 2\n");
 			tbase_trigger_aee_dump();

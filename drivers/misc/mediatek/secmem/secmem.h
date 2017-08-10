@@ -50,11 +50,13 @@ struct secmem_param {
 /* SVP CMA API */
 extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int svp_region_online(void);
+#endif
 
+#ifdef SECMEM_KERNEL_API
 /* APIs for ION */
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
-#endif
+#endif /* SECMEM_KERNEL_API */
 
 #endif				/* end of SECMEM_H */
