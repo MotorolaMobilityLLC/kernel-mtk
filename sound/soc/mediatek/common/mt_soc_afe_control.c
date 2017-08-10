@@ -410,7 +410,7 @@ void SetExternalModemStatus(const bool bEnable)
  *
  *****************************************************************************
  */
-bool InitAfeControl(void)
+bool InitAfeControl(struct device *pDev)
 {
 	int i = 0;
 
@@ -454,7 +454,7 @@ bool InitAfeControl(void)
 	AudioAdcI2SStatus = false;
 	Audio2ndAdcI2SStatus = false;
 	AudioMrgStatus = false;
-	InitSramManager(SramBlockSize);
+	InitSramManager(pDev, SramBlockSize);
 	init_irq_manager();
 
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
@@ -2802,7 +2802,7 @@ void AudDrv_checkDLISRStatus(void)
 	}
 }
 
-bool InitSramManager(unsigned int sramblocksize)
+bool InitSramManager(struct device *pDev, unsigned int sramblocksize)
 {
 	int i = 0;
 
@@ -2812,8 +2812,16 @@ bool InitSramManager(unsigned int sramblocksize)
 	mAud_Sram_Manager.mSramLength =  Get_Afe_Sram_Length();
 	mAud_Sram_Manager.mBlockSize = sramblocksize;
 	mAud_Sram_Manager.mBlocknum = (mAud_Sram_Manager.mSramLength / mAud_Sram_Manager.mBlockSize);
+
 	pr_warn("%s mBlocknum = %d mAud_Sram_Manager.mSramLength = %d mAud_Sram_Manager.mBlockSize = %d\n",
-	 __func__, mAud_Sram_Manager.mBlocknum, mAud_Sram_Manager.mSramLength, mAud_Sram_Manager.mBlockSize);
+			__func__, mAud_Sram_Manager.mBlocknum,
+			mAud_Sram_Manager.mSramLength,
+			mAud_Sram_Manager.mBlockSize);
+
+	/* Dynamic allocate mAud_Sram_Block according to mBlocknum */
+	mAud_Sram_Manager.mAud_Sram_Block = devm_kzalloc(pDev,
+			mAud_Sram_Manager.mBlocknum * sizeof(Aud_Sram_Block), GFP_KERNEL);
+
 	for (i = 0; i < mAud_Sram_Manager.mBlocknum ; i++) {
 		mAud_Sram_Manager.mAud_Sram_Block[i].mValid = true;
 		mAud_Sram_Manager.mAud_Sram_Block[i].mLength = mAud_Sram_Manager.mBlockSize;

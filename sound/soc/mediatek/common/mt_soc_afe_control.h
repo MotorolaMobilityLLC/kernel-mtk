@@ -60,7 +60,7 @@
 #define MASK_ALL          (0xFFFFFFFF)
 #define AFE_MASK_ALL  (0xffffffff)
 
-bool InitAfeControl(void);
+bool InitAfeControl(struct device *pDev);
 bool ResetAfeControl(void);
 bool Register_Aud_Irq(void *dev, uint32 afe_irq_number);
 void Auddrv_Reg_map(void);
@@ -205,7 +205,7 @@ unsigned int Align64ByteSize(unsigned int insize);
 void AudDrv_checkDLISRStatus(void);
 
 /* sram mamager */
-bool InitSramManager(unsigned int sramblocksize);
+bool InitSramManager(struct device *pDev, unsigned int sramblocksize);
 bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsigned int *mSramBlocknum);
 int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
 	unsigned int mSramLength, void *user);
