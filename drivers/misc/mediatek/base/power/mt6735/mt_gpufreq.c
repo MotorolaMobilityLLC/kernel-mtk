@@ -205,7 +205,7 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_2[] = {
 	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT1),
 };
 
-/* LV3: 600MHz with 3 OPP lv */
+/* LV3: 550MHz with 3 OPP lv */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_3[] = {
 	GPUOP(GPU_DVFS_FREQ0_1, GPU_DVFS_VOLT0),
 	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT0),
@@ -393,12 +393,12 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 		case 0x43:
 			return 2;	/* 37T: 600M with 3 OPP*/
 		case 0x49:
-			return 1;	/* 37M: 450M */
+			return 3;	/* 37M: 550M */
 		case 0x4A:
 		case 0x4B:
 			return 0;	/* 35M+: 550M */
 		case 0x51:
-			return 0;	/* 37: 600M */
+			return 2;	/* 37: 600M */
 		case 0x52:
 		case 0x53:
 #ifdef CONFIG_MTK_EFUSE_DOWNGRADE
