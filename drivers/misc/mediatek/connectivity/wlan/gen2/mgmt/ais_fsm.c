@@ -1451,7 +1451,15 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				/* set scan channel type for partial scan */
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
 			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_NULL) {
-				if (prAdapter->fgEnable5GBand == TRUE)
+				if (prAdapter->fgEnable5GBand == TRUE &&
+					prAdapter->rWifiVar.rRoamingInfo.eCurrentState == ROAMING_STATE_DISCOVERY) {
+					if (prAdapter->aeSetBand[NETWORK_TYPE_AIS_INDEX] == BAND_2G4)
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+					else if (prAdapter->aeSetBand[NETWORK_TYPE_AIS_INDEX] == BAND_5G)
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
+					else
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+				} else if (prAdapter->fgEnable5GBand == TRUE)
 					prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
 				else
 					prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
@@ -1465,7 +1473,6 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
 				ASSERT(0);
 			}
-
 			/*Full2Partial at here, chech sould update full scan to partial scan or not*/
 			if ((prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN) &&
 				(prScanReqMsg->eScanChannel == SCAN_CHANNEL_FULL) &&

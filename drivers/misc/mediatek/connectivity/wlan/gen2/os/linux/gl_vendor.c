@@ -1566,3 +1566,44 @@ nla_put_failure:
 	return -1;
 }
 
+int mtk_cfg80211_vendor_set_band(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	struct nlattr *attr;
+	UINT_8 setBand = 0;
+	ENUM_BAND_T band;
+
+	ASSERT(wiphy);
+	ASSERT(wdev);
+
+	DBGLOG(REQ, INFO, "%s()\n", __func__);
+
+	if ((data == NULL) || !data_len)
+		goto nla_put_failure;
+
+	DBGLOG(REQ, TRACE, "vendor command: data_len=%d, data=0x%x 0x%x\r\n",
+		data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1));
+
+	attr = (struct nlattr *)data;
+	setBand = nla_get_u32(attr);
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	ASSERT(prGlueInfo);
+
+	DBGLOG(REQ, INFO, "Vendor Set Band value=%d\r\n", setBand);
+
+	if (setBand == QCA_SETBAND_5G)
+		band = BAND_5G;
+	else if (setBand == QCA_SETBAND_2G)
+		band = BAND_2G4;
+	else
+		band = BAND_NULL;
+
+	prGlueInfo->prAdapter->aeSetBand[NETWORK_TYPE_AIS_INDEX] = band;
+	return 0;
+
+nla_put_failure:
+	return -1;
+
+}
+

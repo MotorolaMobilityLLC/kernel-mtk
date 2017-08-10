@@ -614,6 +614,8 @@ struct _ADAPTER_T {
 
 	ENUM_BAND_T aePreferBand[NETWORK_TYPE_INDEX_NUM];
 
+	ENUM_BAND_T aeSetBand[NETWORK_TYPE_INDEX_NUM];
+
 	/* ADAPTER flags */
 	UINT_32 u4Flags;
 	UINT_32 u4HwFlags;
