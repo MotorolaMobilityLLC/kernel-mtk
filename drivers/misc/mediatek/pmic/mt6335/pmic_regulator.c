@@ -654,7 +654,7 @@ void pmic_regulator_vol_test(void)
  ******************************************************************************/
 void dump_ldo_status_read_debug(void)
 {
-	int i, j;
+	int i;
 	int en = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
@@ -713,15 +713,6 @@ void dump_ldo_status_read_debug(void)
 			mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
-	for (i = 0; i < interrupts_size; i++) {
-		for (j = 0; j < PMIC_INT_WIDTH; j++) {
-
-			PMICLOG("[PMIC_INT][%s] interrupt issue times: %d\n",
-				interrupts[i].interrupts[j].name,
-				interrupts[i].interrupts[j].times);
-		}
-	}
-
 	PMICLOG("Power Good Status 0=0x%x. 1=0x%x\n", upmu_get_reg_value(MT6335_PGSTATUS0),
 			upmu_get_reg_value(MT6335_PGSTATUS1));
 	PMICLOG("Power Source OC Status =0x%x.\n", upmu_get_reg_value(MT6335_PSOCSTATUS));
@@ -730,7 +721,7 @@ void dump_ldo_status_read_debug(void)
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i, j;
+	int i;
 	int en = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
@@ -788,14 +779,6 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 			   mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
-	for (i = 0; i < interrupts_size; i++) {
-		for (j = 0; j < PMIC_INT_WIDTH; j++) {
-
-			seq_printf(m, "[PMIC_INT][%s] interrupt issue times: %d\n",
-				   interrupts[i].interrupts[j].name,
-				   interrupts[i].interrupts[j].times);
-		}
-	}
 	seq_printf(m, "Power Good Status 0=0x%x. 1=0x%x\n", upmu_get_reg_value(MT6335_PGSTATUS0),
 			upmu_get_reg_value(MT6335_PGSTATUS1));
 	seq_printf(m, "Power Source OC Status=0x%x.\n", upmu_get_reg_value(MT6335_PSOCSTATUS));

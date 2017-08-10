@@ -1196,7 +1196,7 @@ EXPORT_SYMBOL(hwPowerSetVoltage);
  ******************************************************************************/
 void dump_ldo_status_read_debug(void)
 {
-	int i, j;
+	int i;
 	int en = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
@@ -1255,15 +1255,6 @@ void dump_ldo_status_read_debug(void)
 			mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
-	for (i = 0; i < interrupts_size; i++) {
-		for (j = 0; j < PMIC_INT_WIDTH; j++) {
-
-			PMICLOG("[PMIC_INT][%s] interrupt issue times: %d\n",
-				interrupts[i].interrupts[j].name,
-				interrupts[i].interrupts[j].times);
-		}
-	}
-
 	PMICLOG("Power Good Status=0x%x.\n", upmu_get_reg_value(0x21c));
 	PMICLOG("OC Status=0x%x.\n", upmu_get_reg_value(0x214));
 	PMICLOG("Thermal Status=0x%x.\n", upmu_get_reg_value(0x21e));
@@ -1271,7 +1262,7 @@ void dump_ldo_status_read_debug(void)
 
 static int proc_utilization_show(struct seq_file *m, void *v)
 {
-	int i, j;
+	int i;
 	int en = 0;
 	int voltage_reg = 0;
 	int voltage = 0;
@@ -1329,14 +1320,6 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 			   mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
 
-	for (i = 0; i < interrupts_size; i++) {
-		for (j = 0; j < PMIC_INT_WIDTH; j++) {
-
-			seq_printf(m, "[PMIC_INT][%s] interrupt issue times: %d\n",
-				   interrupts[i].interrupts[j].name,
-				   interrupts[i].interrupts[j].times);
-		}
-	}
 	seq_printf(m, "Power Good Status=0x%x.\n", upmu_get_reg_value(0x21c));
 	seq_printf(m, "OC Status=0x%x.\n", upmu_get_reg_value(0x214));
 	seq_printf(m, "Thermal Status=0x%x.\n", upmu_get_reg_value(0x21e));

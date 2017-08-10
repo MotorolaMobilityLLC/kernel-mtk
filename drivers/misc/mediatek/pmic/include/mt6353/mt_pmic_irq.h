@@ -14,13 +14,6 @@
 #ifndef __MT_PMIC_IRQ_H
 #define __MT_PMIC_IRQ_H
 
-#define PMIC_INTERRUPT_WIDTH 16
-
-#define PMIC_S_INT_GEN(_name)	\
-	{	\
-		.name =  #_name,	\
-	}
-
 #define PMIC_M_INTS_GEN(adr, enA, setA, clearA, interrupt)	\
 	{	\
 		.address =  adr,	\
@@ -44,4 +37,6 @@ struct pmic_interrupts {
 	struct pmic_interrupt_bit *interrupts;
 };
 
+extern struct task_struct *pmic_thread_handle;
+extern int pmic_thread_kthread(void *x);
 #endif /*--PMIC_IRQ_H--*/

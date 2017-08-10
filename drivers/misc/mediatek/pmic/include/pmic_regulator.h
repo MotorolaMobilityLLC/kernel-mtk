@@ -27,7 +27,6 @@
 #include <linux/regulator/consumer.h>
 
 #include "include/pmic.h"
-#include "include/pmic_irq.h"
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 #include "mt6353/mt_pmic_regulator.h"

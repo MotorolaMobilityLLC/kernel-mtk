@@ -28,6 +28,8 @@
 #include <mach/upmu_hw.h>
 #include <mach/upmu_sw.h>
 
+#include "mtk_pmic_common.h"
+
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 #include "mt6335/mt_pmic_info.h"
 #endif

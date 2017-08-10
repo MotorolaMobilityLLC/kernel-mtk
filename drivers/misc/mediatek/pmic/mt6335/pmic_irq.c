@@ -39,7 +39,6 @@
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
-#include "include/mtk_pmic_common.h"
 
 #include <mach/mt_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
