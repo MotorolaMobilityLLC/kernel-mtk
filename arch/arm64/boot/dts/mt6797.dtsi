@@ -2557,6 +2557,20 @@
 			clock-names = "main", "dma";
 			clock-div = <10>;
 			mediatek,gpupm_used;
+
+			rt5735@1c {
+				status = "ok";
+				compatible = "rt,rt5735-regulator";
+				reg = <0x1c>;
+				//rt,pgdvs;
+				//rt,pgdcdc;
+				rt,dvs_up = <0x6>;
+				rt,dvs_down = <0x1>;
+				//rt,dvs_mode;
+				rt,ioc = <0x1>;
+				rt,tpwth = <0x2>;
+				rt,rearm;
+			};
 		};
 
 		i2c4:i2c@11011000 {
