@@ -94,7 +94,7 @@ static int extmem_get_lca_reserved_mem(void)
 	return 0;
 }
 
-static void extmem_init(void)
+static void __init extmem_init(void)
 {
 	if (extmem_mspace == NULL) {
 	#ifdef CONFIG_ARM64
