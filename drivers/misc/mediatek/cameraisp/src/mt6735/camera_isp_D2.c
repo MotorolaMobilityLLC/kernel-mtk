@@ -6269,10 +6269,10 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 		(long int)Count, dataState);
 
 	for (; i <= j; i += 4) {
-		if (length < 226) {/*Peserve some memory for safety*/
+		if (length < 226) {/*Preserve some memory for safety*/
 			length += sprintf(tempStr, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
 			     ISP_RD32(ISP_ADDR + i));
-			strcat(tempStr2, tempStr);
+			strncat(tempStr2, tempStr, length);
 		} else {
 			lastDataState = dataState;
 			dataState = 0;/*a state to keep i, j value*/
@@ -6305,6 +6305,11 @@ static ssize_t ISP_RegDebug(struct file *pFile,
 	MUINT32 CopyBufSize = (Count < (sizeof(RegBuf) - 1)) ? (Count) : (sizeof(RegBuf) - 1);
 	MUINT32 Addr = 0;
 	MUINT32 Data = 0;
+
+	if ((Count <= 0) || (Count > (sizeof(RegBuf) - 1))) {
+		LOG_ERR("Count(%ld) size error!", (long int)Count);
+		return -EFAULT;
+	}
 
 	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
 
@@ -6350,7 +6355,7 @@ static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 		(unsigned int)(ISP_ADDR_CAMINF + proc_regOfst),
 		     ioread32((void *)(ISP_ADDR_CAMINF + proc_regOfst)));
 
-	strcat(tempStr2, tempStr);
+	strncat(tempStr2, tempStr, length);
 
 	if (copy_to_user(pBuffer, tempStr2, length))
 		return -EFAULT;
@@ -6435,7 +6440,7 @@ EXPORT_SYMBOL(ISP_RegCallback);
 ********************************************************************************/
 bool ISP_UnregCallback(ISP_CALLBACK_ENUM Type)
 {
-	if (Type > ISP_CALLBACK_AMOUNT) {
+	if (Type >= ISP_CALLBACK_AMOUNT) {
 		LOG_ERR("Type(%d) must smaller than %d", Type, ISP_CALLBACK_AMOUNT);
 		return false;
 	}
