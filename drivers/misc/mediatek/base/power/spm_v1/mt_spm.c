@@ -478,6 +478,7 @@ int spm_module_init(void)
 	/* This following setting is moved to LK by WDT init, because of DTS init level issue */
 #if !defined(CONFIG_ARCH_MT6580)
 	struct wd_api *wd_api;
+	int wd_ret;
 #endif
 
 	spm_register_init();
@@ -496,12 +497,14 @@ int spm_module_init(void)
 #endif
 
 #if !defined(CONFIG_ARCH_MT6580)
-	get_wd_api(&wd_api);
-	if (wd_api->wd_spmwdt_mode_config) {
-		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
-	} else {
-		spm_err("FAILED TO GET WD API\n");
-		r = -ENODEV;
+	wd_ret = get_wd_api(&wd_api);
+	if (!wd_ret) {
+		if (wd_api->wd_spmwdt_mode_config) {
+			wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+		} else {
+			spm_err("FAILED TO GET WD API\n");
+			r = -ENODEV;
+		}
 	}
 #endif
 
