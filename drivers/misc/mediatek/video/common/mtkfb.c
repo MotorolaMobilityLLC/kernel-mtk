@@ -48,7 +48,7 @@
 #else
 #include "display_recorder.h"
 #endif
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
 #include "mtkfb_debug.h"
 #endif
 

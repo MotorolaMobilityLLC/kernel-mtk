@@ -29,20 +29,31 @@
 #define DBG_INDENT_SIZE		    3
 #define MAX_DBG_MESSAGES	    0
 
-extern struct dentry *disp_debugDir;
-extern int lcm_mode_status;
-extern int bypass_blank;
-
 /* For Log print Switch */
 extern unsigned int gEnableUartLog;
 extern unsigned int gMobilelog;
 extern unsigned int gFencelog;
 extern unsigned int gLoglevel;
 extern unsigned int gRcdlevel;
+extern unsigned int dbg_log_level;
+extern unsigned int irq_log_level;
 
+extern unsigned char pq_debug_flag;
+extern unsigned char aal_debug_flag;
+extern unsigned int gUltraEnable;
+extern int lcm_mode_status;
+extern int bypass_blank;
+extern struct dentry *disp_debugDir;
+extern char dbg_buf[2048];
+
+extern int g_display_debug_pattern_index;
+
+unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr);
 unsigned int  ddp_debug_analysis_to_buffer(void);
 unsigned int  ddp_debug_dbg_log_level(void);
 unsigned int  ddp_debug_irq_log_level(void);
+int ddp_mem_test(void);
+int ddp_lcd_test(void);
 
 void DBG_Init(void);
 void DBG_Deinit(void);
@@ -118,10 +129,11 @@ static inline void dbg_print(int level, const char *fmt, ...)
 #define MSG(evt, fmt, args...)
 #define MSG_FUNC_ENTER()
 #define MSG_FUNC_LEAVE()
-void _debug_pattern(unsigned int mva, unsigned int va, unsigned int w, unsigned int h,
+/* below functions are defined in mtkfb_debug.c */
+void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
 		    unsigned int linepitch, unsigned int color, unsigned int layerid,
 		    unsigned int bufidx);
-/* defined in mtkfb.c */
+/* below functions are defined in mtkfb.c */
 extern unsigned int mtkfb_fm_auto_test(void);
 extern int pan_display_test(int frame_num, int bpp);
 extern int mtkfb_get_debug_state(char *stringbuf, int buf_len);

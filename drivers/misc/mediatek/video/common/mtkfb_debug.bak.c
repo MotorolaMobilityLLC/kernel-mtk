@@ -58,8 +58,13 @@
 #include "disp_drv_ddp.h"
 #include "disp_recorder.h"
 #include "disp_session.h"
+#if defined(CONFIG_ARCH_MT6755)
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
+#endif
+#if defined(CONFIG_ARCH_MT6580)
+#include "ddp_rdma_ex.h"
+#endif
 #include "disp_assert_layer.h"
 #include "mtkfb.h"
 #include "mtkfb_fence.h"
@@ -71,7 +76,30 @@
 /* --------------------------------------------------------------------------- */
 /* Global variable declarations */
 /* --------------------------------------------------------------------------- */
-char DDP_STR_HELP[] =
+unsigned int gEnableUartLog = 0;
+unsigned int gMobilelog = 1;
+unsigned int gFencelog = 0; /*Fence Log*/
+unsigned int gLoglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
+unsigned int gRcdlevel = 0;
+unsigned char pq_debug_flag = 0;
+unsigned char aal_debug_flag = 0;
+unsigned int gUltraEnable = 1;
+int lcm_mode_status = 0;
+int bypass_blank = 0;
+struct dentry *disp_debugDir;
+
+/* --------------------------------------------------------------------------- */
+/* Local variable declarations */
+/* --------------------------------------------------------------------------- */
+static struct dentry *dispsys_debugfs;
+static struct dentry *dump_debugfs;
+static struct dentry *mtkfb_debugfs;
+static int debug_init;
+static unsigned int dbg_log_level;
+static unsigned int irq_log_level;
+static unsigned int dump_to_buffer;
+static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
+static char DDP_STR_HELP[] =
 	"USAGE:\n"
 	"       echo [ACTION]>/d/dispsys\n"
 	"ACTION:\n"
@@ -87,7 +115,7 @@ char DDP_STR_HELP[] =
 	"       dump_path:mutexID\n"
 	"       dpfd_ut1:channel\n";
 
-char MTKFB_STR_HELP[] =
+static char MTKFB_STR_HELP[] =
 	"\n"
 	"USAGE\n"
 	"        echo [ACTION]... > /d/mtkfb\n"
@@ -168,23 +196,43 @@ char MTKFB_STR_HELP[] =
 	"             Start/end to capture current enabled OVL layer every frame\n";
 
 /* --------------------------------------------------------------------------- */
-/* Local variable declarations */
+/* DDP debugfs functions */
 /* --------------------------------------------------------------------------- */
-static struct dentry *lowpowermode_debugfs;
-static struct dentry *kickdump_debugfs;
-static int low_power_cust_mode = LP_CUST_DISABLE;
-static unsigned int vfp_backup;
-static char LP_CUST_STR_HELP[] =
-	"USAGE:\n"
-	"       echo [ACTION]>/d/disp/lowpowermode\n"
-	"ACTION:\n"
-	"       low_power_mode:Mode\n"
-	"		Mode:0(LP_CUST_DISABLE)|1(LOW_POWER_MODE)|2(JUST_MAKE_MODE)|3(PERFORMANC_MODE)\n";
+static char dbg_buf[2048];
 
-/* --------------------------------------------------------------------------- */
-/* DDP and MTKFB Command Processor */
-/* --------------------------------------------------------------------------- */
-void ddp_process_dbg_opt(const char *opt)
+static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < DISP_REG_NUM; i++) {
+		if ((isVa == 1) && (addr > dispsys_reg[i]) && (addr < dispsys_reg[i] + 0x1000))
+			break;
+		if ((isVa == 0) && (addr > ddp_reg_pa_base[i])
+		    && (addr < ddp_reg_pa_base[i] + 0x1000))
+			break;
+	}
+
+	if (i < DISP_REG_NUM) {
+		DISPMSG("addr valid, isVa=0x%x, addr=0x%lx, module=%s!\n", isVa, addr,
+		       ddp_get_reg_module_name(i));
+		return 1;
+	}
+
+	DISPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
+	return 0;
+}
+
+int ddp_mem_test(void)
+{
+	return -1;
+}
+
+int ddp_lcd_test(void)
+{
+	return -1;
+}
+
+static void ddp_process_dbg_opt(const char *opt)
 {
 	int ret = 0;
 	char *buf = dbg_buf + strlen(dbg_buf);
@@ -208,7 +256,7 @@ void ddp_process_dbg_opt(const char *opt)
 			sprintf(buf, "regr, invalid address 0x%lx\n", addr);
 			goto Error;
 		}
-	} else if (0 == strncmp(opt, "lfr_update", 3)) {
+	} else if (0 == strncmp(opt, "lfr_update", 10)) {
 		DSI_LFR_UPDATE(DISP_MODULE_DSI0, NULL);
 	} else if (0 == strncmp(opt, "regw:", 5)) {
 		unsigned long addr;
@@ -427,28 +475,94 @@ void ddp_process_dbg_opt(const char *opt)
 			ddp_lcd_test();
 		} else if (enable == 4) {
 			/* DISPAEE("test 4"); */
+		} else if (enable == 5) {
+			;
+		} else if (enable == 6) {
+			unsigned int i = 0;
+			int *modules = ddp_get_scenario_list(DDP_SCENARIO_PRIMARY_DISP);
+			int module_num = ddp_get_module_num(DDP_SCENARIO_PRIMARY_DISP);
+
+			DISPMSG("dump path status:");
+			for (i = 0; i < module_num; i++)
+				DISPMSG("%s-", ddp_get_module_name(modules[i]));
+
+			DISPMSG("\n");
+
+			ddp_dump_analysis(DISP_MODULE_CONFIG);
+			ddp_dump_analysis(DISP_MODULE_MUTEX);
+			for (i = 0; i < module_num; i++)
+				ddp_dump_analysis(modules[i]);
+
+			ddp_dump_reg(DISP_MODULE_CONFIG);
+			ddp_dump_reg(DISP_MODULE_MUTEX);
+			for (i = 0; i < module_num; i++)
+				ddp_dump_reg(modules[i]);
+
+		} else if (enable == 7) {
+			if (dbg_log_level < 3)
+				dbg_log_level++;
+			else
+				dbg_log_level = 0;
+
+			DISPMSG("DISP: dbg_log_level=%d\n", dbg_log_level);
+			sprintf(buf, "dbg_log_level: %d\n", dbg_log_level);
+		} else if (enable == 9) {
+			gOVLBackground = 0xFF0000FF;
+			DISPMSG("DISP: gOVLBackground=%d\n", gOVLBackground);
+			sprintf(buf, "gOVLBackground: %d\n", gOVLBackground);
+		} else if (enable == 10) {
+			gOVLBackground = 0xFF000000;
+			DISPMSG("DISP: gOVLBackground=%d\n", gOVLBackground);
+			sprintf(buf, "gOVLBackground: %d\n", gOVLBackground);
+		} else if (enable == 11) {
+			unsigned int i = 0;
+			char *buf_temp = buf;
+
+			for (i = 0; i < DISP_REG_NUM; i++) {
+				DISPDMP("i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d,%d)\n",
+					i, ddp_get_reg_module_name(i), dispsys_reg[i],
+					ddp_reg_pa_base[i], dispsys_irq[i], ddp_irq_num[i]);
+				sprintf(buf_temp,
+					"i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d,%d)\n", i,
+					ddp_get_reg_module_name(i), dispsys_reg[i],
+					ddp_reg_pa_base[i], dispsys_irq[i], ddp_irq_num[i]);
+				buf_temp += strlen(buf_temp);
+			}
 		} else if (enable == 12) {
 			if (gUltraEnable == 0)
 				gUltraEnable = 1;
 			else
 				gUltraEnable = 0;
+
+			DISPMSG("DISP: gUltraEnable=%d\n", gUltraEnable);
 			sprintf(buf, "gUltraEnable: %d\n", gUltraEnable);
+		} else if (enable == 13) {
+			if (disp_low_power_lfr == 0) {
+				disp_low_power_lfr = 1;
+				DISPMSG("DISP: disp_low_power_lfr=%d\n", disp_low_power_lfr);
+			} else {
+				disp_low_power_lfr = 0;
+				DISPMSG("DISP: disp_low_power_lfr=%d\n", disp_low_power_lfr);
+			}
+		} else if (enable == 14) {
+			if (gEnableDSIStateCheck == 0)
+				gEnableDSIStateCheck = 1;
+			else
+				gEnableDSIStateCheck = 0;
+
+			DISPMSG("DISP: gEnableDSIStateCheck=%d\n", gEnableDSIStateCheck);
+			sprintf(buf, "gEnableDSIStateCheck: %d\n", gEnableDSIStateCheck);
+		} else if (enable == 15) {
+			if (gMutexFreeRun == 0)
+				gMutexFreeRun = 1;
+			else
+				gMutexFreeRun = 0;
+
+			DISPMSG("DISP: gMutexFreeRun=%d\n", gMutexFreeRun);
+			sprintf(buf, "gMutexFreeRun: %d\n", gMutexFreeRun);
 		}
 	} else if (0 == strncmp(opt, "mmp", 3)) {
 		init_ddp_mmp_events();
-	} else if (0 == strncmp(opt, "low_power_mode:", 15)) {
-		char *p = (char *)opt + 15;
-		unsigned int mode;
-
-		ret = kstrtouint(p, 0, &mode);
-
-		if (ret) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		low_power_cust_mode = mode;
-
 	} else {
 		dbg_buf[0] = '\0';
 		goto Error;
@@ -460,11 +574,267 @@ Error:
 	DISPERR("parse command error!\n%s\n\n%s", opt, DDP_STR_HELP);
 }
 
-void mtkfb_process_dbg_opt(const char *opt)
+static void ddp_process_dbg_cmd(char *cmd)
 {
-	int ret;
+	char *tok;
 
-	if (0 == strncmp(opt, "helper", 6)) {
+	DISPMSG("cmd: %s\n", cmd);
+	memset(dbg_buf, 0, sizeof(dbg_buf));
+	while ((tok = strsep(&cmd, " ")) != NULL)
+		ddp_process_dbg_opt(tok);
+}
+
+static ssize_t ddp_debug_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static char cmd_buf[512];
+
+static ssize_t ddp_debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	if (strlen(dbg_buf))
+		return simple_read_from_buffer(ubuf, count, ppos, dbg_buf, strlen(dbg_buf));
+	else
+		return simple_read_from_buffer(ubuf, count, ppos, DDP_STR_HELP, strlen(DDP_STR_HELP));
+
+}
+
+static ssize_t ddp_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	const int debug_bufmax = sizeof(cmd_buf) - 1;
+	size_t ret;
+
+	ret = count;
+
+	if (count > debug_bufmax)
+		count = debug_bufmax;
+
+	if (copy_from_user(&cmd_buf, ubuf, count))
+		return -EFAULT;
+
+	cmd_buf[count] = 0;
+
+	ddp_process_dbg_cmd(cmd_buf);
+
+	return ret;
+}
+
+static const struct file_operations ddp_debug_fops = {
+	.read = ddp_debug_read,
+	.write = ddp_debug_write,
+	.open = ddp_debug_open,
+};
+
+unsigned int ddp_debug_dbg_log_level(void)
+{
+	return dbg_log_level;
+}
+
+unsigned int ddp_debug_irq_log_level(void)
+{
+	return irq_log_level;
+}
+
+/* --------------------------------------------------------------------------- */
+/* DUMP debugfs functions */
+/* --------------------------------------------------------------------------- */
+static ssize_t dump_debug_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+{
+#if defined(CONFIG_ARCH_MT6755)
+	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
+
+	if (is_mipi_enterulps())
+		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
+#endif
+	dprec_logger_dump_reset();
+	dump_to_buffer = 1;
+
+	/* dump all */
+	dpmgr_debug_path_status(-1);
+	dump_to_buffer = 0;
+	return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
+			       dprec_logger_get_dump_len());
+
+}
+
+static const struct file_operations dump_debug_fops = {
+	.read = dump_debug_read,
+};
+
+unsigned int ddp_debug_analysis_to_buffer(void)
+{
+	return dump_to_buffer;
+}
+
+/* --------------------------------------------------------------------------- */
+/* MTKFB debugfs functions */
+/* --------------------------------------------------------------------------- */
+static int _draw_line(unsigned long addr, int l, int t, int r, int b,
+		      int linepitch, unsigned int color)
+{
+	int i = 0;
+
+	if (l > r || b < t)
+		return -1;
+
+	if (l == r) {		/* vertical line */
+		for (i = 0; i < (b - t); i++) {
+			*(unsigned long *)(addr + (t + i) * linepitch + l * 4) =
+			    color;
+		}
+	} else if (t == b) {	/* horizontal line */
+		for (i = 0; i < (r - l); i++) {
+			*(unsigned long *)(addr + t * linepitch + (l + i) * 4) =
+			    color;
+		}
+	} else {		/* tile line, not support now */
+		return -1;
+	}
+
+	return 0;
+}
+
+static int _draw_rect(unsigned long addr, int l, int t, int r, int b, unsigned int linepitch,
+		      unsigned int color)
+{
+	int ret = 0;
+
+	ret += _draw_line(addr, l, t, r, t, linepitch, color);
+	ret += _draw_line(addr, l, t, l, b, linepitch, color);
+	ret += _draw_line(addr, r, t, r, b, linepitch, color);
+	ret += _draw_line(addr, l, b, r, b, linepitch, color);
+	return ret;
+}
+
+static void _draw_block(unsigned long addr, unsigned int x, unsigned int y,
+			unsigned int w, unsigned int h, unsigned int linepitch,
+			unsigned int color)
+{
+	int i = 0;
+	int j = 0;
+	unsigned long start_addr = addr + linepitch * y + x * 4;
+
+	DISPMSG
+	    ("addr=0x%lx, start_addr=0x%lx, x=%d,y=%d,w=%d,h=%d,linepitch=%d, color=0x%08x\n",
+	     addr, start_addr, x, y, w, h, linepitch, color);
+	for (j = 0; j < h; j++) {
+		for (i = 0; i < w; i++) {
+			*(unsigned long *)(start_addr + i * 4 + j * linepitch) =
+			    color;
+		}
+	}
+}
+
+
+static int g_display_debug_pattern_index;
+void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigned int h,
+		    unsigned int linepitch, unsigned int color, unsigned int layerid,
+		    unsigned int bufidx)
+{
+	unsigned long addr = 0;
+	unsigned int layer_size = 0;
+	unsigned int mapped_size = 0;
+	unsigned int bcolor = 0xff808080;
+
+	if (g_display_debug_pattern_index == 0)
+		return;
+
+	if (layerid == 0)
+		bcolor = 0x0000ffff;
+	else if (layerid == 1)
+		bcolor = 0x00ff00ff;
+	else if (layerid == 2)
+		bcolor = 0xff0000ff;
+	else if (layerid == 3)
+		bcolor = 0xffff00ff;
+
+	if (va) {
+		addr = va;
+	} else {
+		layer_size = linepitch * h;
+		m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
+		if (mapped_size == 0) {
+			DISPERR("m4u_mva_map_kernel failed\n");
+			return;
+		}
+	}
+
+	switch (g_display_debug_pattern_index) {
+	case 1:
+		{
+			unsigned int resize_factor = layerid + 1;
+
+			_draw_rect(addr, w / 10 * resize_factor + 0,
+				   h / 10 * resize_factor + 0,
+				   w / 10 * (10 - resize_factor) - 0,
+				   h / 10 * (10 - resize_factor) - 0, linepitch,
+				   bcolor);
+			_draw_rect(addr, w / 10 * resize_factor + 1,
+				   h / 10 * resize_factor + 1,
+				   w / 10 * (10 - resize_factor) - 1,
+				   h / 10 * (10 - resize_factor) - 1, linepitch,
+				   bcolor);
+			_draw_rect(addr, w / 10 * resize_factor + 2,
+				   h / 10 * resize_factor + 2,
+				   w / 10 * (10 - resize_factor) - 2,
+				   h / 10 * (10 - resize_factor) - 2, linepitch,
+				   bcolor);
+			_draw_rect(addr, w / 10 * resize_factor + 3,
+				   h / 10 * resize_factor + 3,
+				   w / 10 * (10 - resize_factor) - 3,
+				   h / 10 * (10 - resize_factor) - 3, linepitch,
+				   bcolor);
+			break;
+		}
+	case 2:
+		{
+			int bw = 20;
+			int bh = 20;
+
+			_draw_block(addr, bufidx % (w / bw) * bw,
+				    bufidx % (w * h / bh / bh) / (w / bh) * bh,
+				    bw, bh, linepitch, bcolor);
+			break;
+		}
+	}
+#ifndef CONFIG_MTK_FPGA
+	/* smp_inner_dcache_flush_all(); */
+	/* outer_flush_all();//remove in early porting */
+#endif
+	if (mapped_size)
+		m4u_mva_unmap_kernel(addr, layer_size, addr);
+}
+
+static void mtkfb_process_dbg_opt(const char *opt)
+{
+	int ret = 0;
+
+	if (0 == strncmp(opt, "stop_trigger_loop", 17)) {
+		_cmdq_stop_trigger_loop();
+		return;
+	} else if (0 == strncmp(opt, "start_trigger_loop", 18)) {
+		_cmdq_start_trigger_loop();
+		return;
+	} else if (0 == strncmp(opt, "cmdqregw:", 9)) {
+		char *p = (char *)opt + 9;
+		unsigned int addr = 0;
+		unsigned int val = 0;
+
+		ret = kstrtoul(p, 16, (unsigned long int *)&addr);
+		if (ret)
+			pr_err("DISP/%s: errno %d\n", __func__, ret);
+		ret = kstrtoul(p + 1, 16, (unsigned long int *)&val);
+		if (ret)
+			pr_err("DISP/%s: errno %d\n", __func__, ret);
+
+		if (addr)
+			primary_display_cmdq_set_reg(addr, val);
+		else
+			return;
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+	} else if (0 == strncmp(opt, "helper", 6)) {
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
 		char option[100] = "";
 		char *tmp;
@@ -486,6 +856,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 
 		DISPMSG("will set option %s to %d\n", option, value);
 		disp_helper_set_option_by_name(option, value);
+#endif
 	} else if (0 == strncmp(opt, "switch_mode:", 12)) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;
@@ -503,6 +874,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 	} else if (0 == strncmp(opt, "dsi_mode:vdo", 12)) {
 		DISPMSG("switch vdo\n");
 		lcm_mode_status = 2;
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 	} else if (0 == strncmp(opt, "clk_change:", 11)) {
 		char *p = (char *)opt + 11;
 		unsigned int clk = 0;
@@ -514,6 +886,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 		}
 		DISPMSG("clk_change:%d\n", clk);
 		primary_display_mipi_clk_change(clk);
+#endif
 	} else if (0 == strncmp(opt, "dsipattern", 10)) {
 		char *p = (char *)opt + 11;
 		unsigned int pattern;
@@ -533,6 +906,11 @@ void mtkfb_process_dbg_opt(const char *opt)
 			primary_display_manual_unlock();
 			return;
 		}
+	} else if (0 == strncmp(opt, "mobile:", 7)) {
+		if (0 == strncmp(opt + 7, "on", 2))
+			gMobilelog = 1;
+		else if (0 == strncmp(opt + 7, "off", 3))
+			gMobilelog = 0;
 	} else if (0 == strncmp(opt, "bypass_blank:", 13)) {
 		char *p = (char *)opt + 13;
 		unsigned int blank;
@@ -704,6 +1082,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 		DISP_CPU_REG_SET(DISPSYS_CONFIG_BASE + 0x150, 1);
 #else
 #ifdef CONFIG_MTK_LEGACY
+#if defined(CONFIG_ARCH_MT6755)
 		mt_set_gpio_mode(GPIO158 | 0x80000000, GPIO_MODE_00);
 		mt_set_gpio_dir(GPIO158 | 0x80000000, GPIO_DIR_OUT);
 		mt_set_gpio_out(GPIO158 | 0x80000000, GPIO_OUT_ONE);
@@ -711,6 +1090,16 @@ void mtkfb_process_dbg_opt(const char *opt)
 		mt_set_gpio_out(GPIO158 | 0x80000000, GPIO_OUT_ZERO);
 		msleep(20);
 		mt_set_gpio_out(GPIO158 | 0x80000000, GPIO_OUT_ONE);
+#endif
+#if defined(CONFIG_ARCH_MT6580)
+		mt_set_gpio_mode(GPIO106 | 0x80000000, GPIO_MODE_00);
+		mt_set_gpio_dir(GPIO106 | 0x80000000, GPIO_DIR_OUT);
+		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ONE);
+		msleep(20);
+		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ZERO);
+		msleep(20);
+		mt_set_gpio_out(GPIO106 | 0x80000000, GPIO_OUT_ONE);
+#endif
 #else
 		ret = disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
 		msleep(20);
@@ -744,7 +1133,12 @@ void mtkfb_process_dbg_opt(const char *opt)
 		} else if (0 == strncmp(opt + 11, "off", 3)) {
 			gCapturePriLayerEnable = 0;
 			gCaptureWdmaLayerEnable = 0;
+#if defined(CONFIG_ARCH_MT6755)
 			gCapturePriLayerNum = TOTAL_OVL_LAYER_NUM;
+#endif
+#if defined(CONFIG_ARCH_MT6580)
+			gCapturePriLayerNum = OVL_LAYER_NUM;
+#endif
 			DISPMSG("dump_layer En %d\n", gCapturePriLayerEnable);
 		}
 
@@ -790,6 +1184,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 			gCaptureRdmaLayerEnable = 0;
 			DISPMSG("dump_layer En %d\n", gCaptureRdmaLayerEnable);
 		}
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 	} else if (0 == strncmp(opt, "enable_idlemgr:", 15)) {
 		char *p = (char *)opt + 15;
 		uint32_t flg;
@@ -800,9 +1195,19 @@ void mtkfb_process_dbg_opt(const char *opt)
 			return;
 		}
 		enable_idlemgr(flg);
-	}
+#endif
+	} else if (0 == strncmp(opt, "bkl:", 4)) {
+		char *p = (char *)opt + 4;
+		unsigned long int level = 0;
 
-	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
+		ret = kstrtoul(p, 10, (unsigned long int *)&level);
+		if (ret)
+			pr_err("DISP/%s: errno %d\n", __func__, ret);
+
+		pr_debug("mtkfb_process_dbg_opt(), set backlight level = %ld\n",
+			       level);
+		primary_display_setbacklight(level);
+	} else if (0 == strncmp(opt, "primary_basic_test:", 19)) {
 		int layer_num, w, h, fmt, frame_num, vsync;
 
 		ret = sscanf(opt, "primary_basic_test:%d,%d,%d,%d,%d,%d\n",
@@ -820,9 +1225,7 @@ void mtkfb_process_dbg_opt(const char *opt)
 			fmt = DISP_FORMAT_RGB565;
 
 		/*primary_display_basic_test(layer_num, w, h, fmt, frame_num, vsync);*/
-	}
-
-	if (0 == strncmp(opt, "pan_disp_test:", 13)) {
+	} else if (0 == strncmp(opt, "pan_disp_test:", 13)) {
 		int frame_num;
 		int bpp;
 
@@ -833,70 +1236,108 @@ void mtkfb_process_dbg_opt(const char *opt)
 		}
 
 		pan_display_test(frame_num, bpp);
-	}
-
-}
-
-/* --------------------------------------------------------------------------- */
-/* Local debugfs Command Processor */
-/* --------------------------------------------------------------------------- */
-int get_lp_cust_mode(void)
-{
-	return low_power_cust_mode;
-}
-void backup_vfp_for_lp_cust(unsigned int vfp)
-{
-	vfp_backup = vfp;
-}
-unsigned int get_backup_vfp(void)
-{
-	return vfp_backup;
-}
-
-static char cmd_buf[512];
-
-static void lp_cust_process_dbg_opt(const char *opt)
-{
-	int ret = 0;
-	char *buf = cmd_buf + strlen(cmd_buf);
-
-	if (0 == strncmp(opt, "low_power_mode:", 15)) {
-		char *p = (char *)opt + 15;
-		unsigned int mode;
-
-		ret = kstrtouint(p, 0, &mode);
-
-		if (ret) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		low_power_cust_mode = mode;
-
 	} else {
-		cmd_buf[0] = '\0';
 		goto Error;
 	}
 
 	return;
-
 Error:
-	DISPERR("parse command error!\n%s\n\n%s", opt, LP_CUST_STR_HELP);
+	pr_debug("parse command error!\n\n%s",
+		       MTKFB_STR_HELP);
 }
 
-static void lp_cust_process_dbg_cmd(char *cmd)
+static void mtkfb_process_dbg_cmd(char *cmd)
 {
 	char *tok;
 
-	DISPMSG("cmd: %s\n", cmd);
-	memset(cmd_buf, 0, sizeof(cmd_buf));
+	DISPMSG("[mtkfb_dbg] %s\n", cmd);
+
 	while ((tok = strsep(&cmd, " ")) != NULL)
-		lp_cust_process_dbg_opt(tok);
+		mtkfb_process_dbg_opt(tok);
 }
 
-static ssize_t lp_cust_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+static int mtkfb_debug_open(struct inode *inode, struct file *file)
 {
-	const int debug_bufmax = sizeof(cmd_buf) - 1;
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+int debug_get_info(unsigned char *stringbuf, int buf_len)
+{
+	int n = 0;
+
+	DISPFUNC();
+
+	n += mtkfb_get_debug_state(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += primary_display_get_debug_state(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += disp_sync_get_debug_info(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += dprec_logger_get_result_string_all(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += disp_helper_get_option_list(stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, stringbuf + n, buf_len - n);
+	DISPMSG("%s,%d, n=%d\n", __func__, __LINE__, n);
+
+	stringbuf[n++] = 0;
+	return n;
+}
+
+void debug_info_dump_to_printk(char *buf, int buf_len)
+{
+	int i = 0;
+	int n = buf_len;
+
+	for (i = 0; i < n; i += 256)
+		DISPMSG("%s", buf + i);
+}
+
+static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	const int debug_bufmax = sizeof(debug_buffer) - 1;
+	int n = 0;
+
+	/* Debugfs read only fetch 4096 byte each time, thus whole ringbuffer need massive
+	 * iteration. We only copy ringbuffer content to debugfs buffer at first time (*ppos = 0)
+	 */
+	if (*ppos != 0)
+		goto out;
+
+	DISPFUNC();
+
+	n = mtkfb_get_debug_state(debug_buffer + n, debug_bufmax - n);
+
+	n += primary_display_get_debug_state(debug_buffer + n, debug_bufmax - n);
+
+	n += disp_sync_get_debug_info(debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_result_string_all(debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_DUMP, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, debug_buffer + n, debug_bufmax - n);
+
+out:
+	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
+}
+
+static ssize_t mtkfb_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	const int debug_bufmax = sizeof(debug_buffer) - 1;
 	size_t ret;
 
 	ret = count;
@@ -904,73 +1345,55 @@ static ssize_t lp_cust_write(struct file *file, const char __user *ubuf, size_t 
 	if (count > debug_bufmax)
 		count = debug_bufmax;
 
-	if (copy_from_user(&cmd_buf, ubuf, count))
+	if (copy_from_user(&debug_buffer, ubuf, count))
 		return -EFAULT;
 
-	cmd_buf[count] = 0;
+	debug_buffer[count] = 0;
 
-	lp_cust_process_dbg_cmd(cmd_buf);
+	mtkfb_process_dbg_cmd(debug_buffer);
 
 	return ret;
 }
 
-static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
-{
-	char *mode0 = "low power mode(1)\n";
-	char *mode1 = "just make mode(2)\n";
-	char *mode2 = "performance mode(3)\n";
-	char *mode4 = "unknown mode(n)\n";
+static const struct file_operations mtkfb_debug_fops = {
+	.read = mtkfb_debug_read,
+	.write = mtkfb_debug_write,
+	.open = mtkfb_debug_open,
+};
 
-	switch (low_power_cust_mode) {
-	case LOW_POWER_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode0, strlen(mode0));
-	case JUST_MAKE_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode1, strlen(mode1));
-	case PERFORMANC_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode2, strlen(mode2));
-	default:
-		return simple_read_from_buffer(ubuf, count, ppos, mode4, strlen(mode4));
+/* --------------------------------------------------------------------------- */
+/* Debugfs register in debug system */
+/* --------------------------------------------------------------------------- */
+void DBG_Init(void)
+{
+	if (!debug_init) {
+		debug_init = 1;
+		mtkfb_debugfs = debugfs_create_file("mtkfb",
+						  S_IFREG | S_IRUGO, NULL, (void *)0, &mtkfb_debug_fops);
+
+		dispsys_debugfs = debugfs_create_file("dispsys",
+						      S_IFREG | S_IRUGO, NULL, (void *)0, &ddp_debug_fops);
+
+		disp_debugDir = debugfs_create_dir("disp", NULL);
+		if (disp_debugDir) {
+			dump_debugfs = debugfs_create_file("dump",
+							   S_IFREG | S_IRUGO, disp_debugDir, NULL,
+							   &dump_debug_fops);
+
+			/* by Chip, sub debugfs define, and sub debugfs must be in disp folder. */
+			sub_debug_init();
+		}
 	}
-
 }
 
-static int lp_cust_open(struct inode *inode, struct file *file)
+void DBG_Deinit(void)
 {
-	file->private_data = inode->i_private;
-	return 0;
+	/* by Chip, sub debugfs remove */
+	sub_debug_deinit();
+
+	debugfs_remove(mtkfb_debugfs);
+	debugfs_remove(dispsys_debugfs);
+	debugfs_remove(dump_debugfs);
+	debugfs_remove_recursive(disp_debugDir);
+	debug_init = 0;
 }
-
-static const struct file_operations low_power_cust_fops = {
-	.read = lp_cust_read,
-	.write = lp_cust_write,
-	.open = lp_cust_open,
-};
-
-static ssize_t kick_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
-{
-	return simple_read_from_buffer(ubuf, count, ppos, get_kick_dump(), get_kick_dump_size());
-}
-
-static const struct file_operations kickidle_fops = {
-	.read = kick_read,
-};
-
-void sub_debug_init(void)
-{
-	lowpowermode_debugfs = debugfs_create_file("lowpowermode",
-						   S_IFREG | S_IRUGO, disp_debugDir, NULL, &low_power_cust_fops);
-	if (!lowpowermode_debugfs)
-		DISPERR("create debug file disp/lowpowermode fail!\n");
-
-	kickdump_debugfs = debugfs_create_file("kickdump",
-					       S_IFREG | S_IRUGO, disp_debugDir, NULL, &kickidle_fops);
-	if (!kickdump_debugfs)
-		DISPERR("create debug file disp/kickdump fail!\n");
-}
-
-void sub_debug_deinit(void)
-{
-	debugfs_remove(lowpowermode_debugfs);
-	debugfs_remove(kickdump_debugfs);
-}
-

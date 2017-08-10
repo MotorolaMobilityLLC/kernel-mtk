@@ -23,6 +23,7 @@
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
 #include "disp_debug.h"
+#include "mtkfb_debug.h"
 #else
 #include "debug.h"
 #endif
@@ -37,9 +38,6 @@
 #include "ddp_ovl.h"
 #include "ddp_dsi.h"
 #include "ddp_irq.h"
-
-/* #include "disp_drv.h" */
-/* #include "lcd_drv.h" */
 
 /* **************************************************************************** */
 /* This part is for customization parameters of D-IC and DSI . */

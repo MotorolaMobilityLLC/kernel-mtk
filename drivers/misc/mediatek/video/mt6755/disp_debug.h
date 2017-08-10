@@ -25,13 +25,14 @@
 #define JUST_MAKE_MODE (2)
 #define PERFORMANC_MODE (3)
 
+extern char DDP_STR_HELP[];
+extern char MTKFB_STR_HELP[];
+
+void ddp_process_dbg_opt(const char *opt);
+void mtkfb_process_dbg_opt(const char *opt);
 int get_lp_cust_mode(void);
 unsigned int get_backup_vfp(void);
 void backup_vfp_for_lp_cust(unsigned int vfp);
-
-int ddp_mem_test(void);
-int ddp_lcd_test(void);
-
 void sub_debug_init(void);
 void sub_debug_deinit(void);
 
