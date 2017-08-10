@@ -1836,6 +1836,12 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 		, prIoReq->pu4QryInfoLen
 		, prIoReq->fgRead
 		, prIoReq->fgWaitResp);
+
+		wlanDumpTcResAndTxedCmd(NULL, 0);
+		cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+		/* dump TC4[0] ~ TC4[3] TX_DESC */
+		wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
+		show_stack(current, NULL);
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -4221,6 +4227,7 @@ INT_32 kalHaltLock(UINT_32 waitMs)
 
 			if (prGlueInfo)
 				show_stack(prGlueInfo->main_thread, NULL);
+			show_stack(rHaltCtrl.owner, NULL);
 		} else {
 			DBGLOG(INIT, ERROR, "halt lock held by %s pid %d longer than %u ms!\n",
 				rHaltCtrl.owner->comm, rHaltCtrl.owner->pid,
