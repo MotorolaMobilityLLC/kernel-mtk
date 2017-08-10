@@ -133,10 +133,9 @@ int rtc_set_time(struct rtc_device *rtc, struct rtc_time *tm)
 	else if (rtc->ops->set_time)
 		err = rtc->ops->set_time(rtc->dev.parent, tm);
 	else if (rtc->ops->set_mmss) {
-		unsigned long secs;
-		err = rtc_tm_to_time(tm, &secs);
-		if (err == 0)
-			err = rtc->ops->set_mmss(rtc->dev.parent, secs);
+		time64_t secs64 = rtc_tm_to_time64(tm);
+
+		err = rtc->ops->set_mmss(rtc->dev.parent, secs64);
 	} else
 		err = -EINVAL;
 
@@ -173,7 +172,7 @@ int rtc_set_mmss(struct rtc_device *rtc, unsigned long secs)
 
 		err = rtc->ops->read_time(rtc->dev.parent, &old);
 		if (err == 0) {
-			rtc_time_to_tm(secs, &new);
+			rtc_time64_to_tm(secs, &new);
 
 			/*
 			 * avoid writing when we're going to change the day of
@@ -234,7 +233,7 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 	int err;
 	struct rtc_time before, now;
 	int first_time = 1;
-	unsigned long t_now, t_alm;
+	time64_t t_now, t_alm;
 	enum { none, day, month, year } missing = none;
 	unsigned days;
 
@@ -335,8 +334,8 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 	}
 
 	/* with luck, no rollover is needed */
-	rtc_tm_to_time(&now, &t_now);
-	rtc_tm_to_time(&alarm->time, &t_alm);
+	t_now = rtc_tm_to_time64(&now);
+	t_alm = rtc_tm_to_time64(&alarm->time);
 	if (t_now < t_alm)
 		goto done;
 
@@ -350,7 +349,7 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 	case day:
 		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "day");
 		t_alm += 24 * 60 * 60;
-		rtc_time_to_tm(t_alm, &alarm->time);
+		rtc_time64_to_tm(t_alm, &alarm->time);
 		break;
 
 	/* Month rollover ... if it's the 31th, an alarm on the 3rd will
@@ -431,23 +430,23 @@ EXPORT_SYMBOL_GPL(rtc_read_alarm);
 static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 {
 	struct rtc_time tm;
-	long now, scheduled;
+	time64_t now, scheduled;
 	int err;
 
 	err = rtc_valid_tm(&alarm->time);
 	if (err)
 		return err;
-	rtc_tm_to_time(&alarm->time, &scheduled);
+	scheduled = rtc_tm_to_time64(&alarm->time);
 
 	/* Make sure we're not setting alarms in the past */
 	err = __rtc_read_time(rtc, &tm);
 	if (err)
 		return err;
-	rtc_tm_to_time(&tm, &now);
+	now = rtc_tm_to_time64(&tm);
 	if (scheduled <= now) {
-		pr_emerg("alarm: %d/%d/%d, %d:%d:%d (%ld)\n", alarm->time.tm_year, alarm->time.tm_mon,
+		pr_emerg("alarm: %d/%d/%d, %d:%d:%d (%lld)\n", alarm->time.tm_year, alarm->time.tm_mon,
 			alarm->time.tm_mday, alarm->time.tm_hour, alarm->time.tm_min, alarm->time.tm_sec, scheduled);
-		pr_emerg("now: %d/%d/%d, %d:%d:%d (%ld)\n", tm.tm_year, tm.tm_mon, tm.tm_mday,
+		pr_emerg("now: %d/%d/%d, %d:%d:%d (%lld)\n", tm.tm_year, tm.tm_mon, tm.tm_mday,
 			tm.tm_hour, tm.tm_min, tm.tm_sec, now);
 		pr_emerg("%s, -ETIME\n", __func__);
 		return -ETIME;
