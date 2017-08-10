@@ -5425,6 +5425,14 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 			kalMemZero(pucMac, MAC_ADDR_LEN);
 		}
 	}
+	if (wlanCfgGet(prAdapter, "ApUapsd", aucValue, "", 0) == WLAN_STATUS_SUCCESS) {
+		if (*aucValue == '1')
+			prAdapter->rWifiVar.fgSupportUAPSD = TRUE;
+		else if (*aucValue == '0')
+			prAdapter->rWifiVar.fgSupportUAPSD = FALSE;
+
+		DBGLOG(INIT, INFO, "Ap Mode Uapsd Status: %s\n", aucValue);
+	}
 	/* TODO: Apply other Config */
 }
 #endif /* CFG_SUPPORT_CFG_FILE */
