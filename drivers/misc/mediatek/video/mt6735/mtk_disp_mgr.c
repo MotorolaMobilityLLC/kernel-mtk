@@ -311,6 +311,7 @@ int disp_destroy_session(disp_session_config *config)
 
 	DISPMSG("disp_destroy_session, 0x%x\n", config->session_id);
 
+	release_session_buffer(DISP_SESSION_TYPE(config->session_id), 0xFF, 0);
 	/* 1.To check if this session exists already, and remove it */
 	mutex_lock(&disp_session_lock);
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
@@ -330,7 +331,6 @@ int disp_destroy_session(disp_session_config *config)
 
 	mutex_unlock(&disp_session_lock);
 
-	release_session_buffer(DISP_SESSION_TYPE(config->session_id), 0xFF, 0);
 #if defined(OVL_TIME_SHARING)
 	if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 2))
 		ovl2mem_setlayernum(0);

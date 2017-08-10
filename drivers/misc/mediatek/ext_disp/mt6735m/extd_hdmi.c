@@ -633,7 +633,7 @@ static void hdmi_state_reset(void)
 	ext_disp_suspend(MHL_SESSION_ID);
 	session_id = ext_disp_get_sess_id();
 
-	for (i = 0; i < EXTD_OVERLAY_CNT; i++)
+	for (i = 0; i < HW_OVERLAY_COUNT; i++)
 		mtkfb_release_layer_fence(session_id, i);
 
 	first_frame_done = 0;
@@ -703,6 +703,9 @@ static void hdmi_state_reset(void)
 
 /*static*/ void hdmi_power_off(void)
 {
+	int i = 0;
+	int session_id = 0;
+
 	HDMI_FUNC();
 	/*RET_VOID_IF(IS_HDMI_OFF());*/
 	if (IS_HDMI_OFF())
@@ -715,6 +718,11 @@ static void hdmi_state_reset(void)
 
 	hdmi_drv->power_off();
 	ext_disp_suspend(MHL_SESSION_ID);
+	session_id = ext_disp_get_sess_id();
+
+	for (i = 0; i < HW_OVERLAY_COUNT; i++)
+		mtkfb_release_layer_fence(session_id, i);
+
 	p->is_clock_on = false;
 	SET_HDMI_OFF();
 	up(&hdmi_update_mutex);
@@ -1085,7 +1093,7 @@ int hdmi_set_resolution(int res)
 
 		session_id = ext_disp_get_sess_id();
 
-		for (i = 0; i < EXTD_OVERLAY_CNT; i++)
+		for (i = 0; i < HW_OVERLAY_COUNT; i++)
 			mtkfb_release_layer_fence(session_id, i);
 	}
 
