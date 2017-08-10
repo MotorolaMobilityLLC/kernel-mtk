@@ -3250,16 +3250,6 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 	P_RX_BA_ENTRY_T prRxBaEntry;
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
 
-	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
-
-
-
-	if (prNoNeedWaitPkt == NULL) {
-		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
-			prSwRfb->u2SSN, eDropReason);
-		return;
-	}
-
 	/* Check whether the STA_REC is activated */
 	prStaRec = &(prAdapter->arStaRec[prSwRfb->ucStaRecIdx]);
 	ASSERT(prStaRec);
@@ -3272,6 +3262,13 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 		return;
 	}
 
+	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
+
+	if (prNoNeedWaitPkt == NULL) {
+		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
+			prSwRfb->u2SSN, eDropReason);
+		return;
+	}
 
 	prNoNeedWaitPkt->u2SSN = prSwRfb->u2SSN;
 	prNoNeedWaitPkt->eDropReason = eDropReason;
