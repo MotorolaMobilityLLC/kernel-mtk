@@ -826,8 +826,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		TurnOnDacPower();
 		Ana_Set_Reg(MT6353_AUXADC_CON2, 0x0200, 0x0200);
 		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
-		Ana_Set_Reg(MT6353_AUDENC_ANA_CON9, 0x0010, 0x0010);
-		/* Turn on Mic-Bias1 */
 
 		/* upmu_set_rg_vio18_cal(1);// for MT6328 E1 VIO18 patch only */
 #if 0				/* test 6328 sgen */
@@ -845,78 +843,71 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 #endif
 
 		/* set analog part (HP playback) */
-		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
-		/* Set NCP soft start mode as default mode */
-
 		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
 		/* Turn on DA_600K_NCP_VA18 */
 		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON2, 0x002B, 0xffff);
 		/* Set NCP clock as 604kHz // 26MHz/43 = 604KHz */
 		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON0, 0x0001, 0xffff);
 		/* Toggle RG_DIVCKS_CHG */
-		/* Ana_Set_Reg(AUDNCP_CLKDIV_CON4, 0x0000, 0xffff);
-		   //Set NCP soft start mode as default mode */
+		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON4, 0x0003, 0xffff);
+		/* Set NCP soft start mode as default mode */
 		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON3, 0x0000, 0xffff);
 		/* Enable NCP */
 
-		/* Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0300, 0xffff);
-		   //Enable HP driver bias circuit */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0841, 0xfeeb);
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0A41, 0xfeeb);
 		/* Enable cap-less HC LDO (1.5V) & LDO VA33REFGEN */
-
-		/* Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0A41, 0xfeeb);
-		   //Enable cap-less HC LDO (1.5V) & LDO VA33REFGEN */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC1, 0xfeeb);
-		   //Enable cap-less LC LDO (1.5V) */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x28C1, 0xfeeb);
-		/* Enable cap-less LC LDO (1.5V) */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x2AC1, 0xfeeb);
 		/* Enable cap-less LC LDO (1.5V) */
-
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON7, 0x8000, 0x8000);
 		/* Enable NV regulator (-1.5V) */
-		Ana_Set_Reg(MT6353_ZCD_CON0, 0x0000, 0xffff);	/* Disable AUD_ZCD */
 
-		/* Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE000, 0xffff);
-		   Disable headphone, voice and short-ckt protection. HP and voice MUX is opened */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-ckt protection. HP and voice MUX is opened */
+		Ana_Set_Reg(MT6353_ZCD_CON0, 0x0000, 0xffff);
+		/* Disable AUD_ZCD */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE000, 0xffff);
+		/* Disable headphone, voice and short-ckt protection */
+
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON1, 0x0000, 0x0400);
 		/* HP output not short to VCM */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON1, 0x0000, 0x0080);
 		/* HP driver output stability enhance option: NO */
+
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON3, 0x0080, 0x0080);
-		/* Audio headphone speaker detection enable */
+		/* Enable HPDET circuits */
+
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0000, 0x0001);
 		/* Power down control for IbiasDistrib circuit */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0002, 0x0002);
 		/* Enable AUD_CLK */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE089, 0xffff);
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0x0009, 0x0009);
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON3, 0x0900, 0x0f00);
 		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
 	} else {
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON3, 0x0000, 0x0f00);
-		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE080, 0xffff);
+		/* Select headphone speaker detection output mux open, input mux open */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0x0000, 0x0009);
 		/* Disable LCH Audio DAC */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0000, 0x0002);
 		/* Disable AUD_CLK */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0001, 0x0001);
-		/* Power down control for IbiasDistrib circuit */
+		/* Disable IBIST */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON3, 0x0000, 0x0080);
-		/* Audio headphone speaker detection disable */
+		/* Disable HPDET circuits */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON1, 0x0080, 0x0080);
+		/* HP driver output stability enhance option: YES */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON1, 0x0400, 0x0400);
+		/* HP output short to VCM */
 
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x1000, 0x1400);
+		/* Power down Discharge of cap-less HC/LC LDO (1.5V) */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0000, 0x0040);
+		/* Disable cap-less HC LDO (1.5V) */
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON7, 0x0000, 0x8000);
 		/* Disable NV regulator (-1.5V) */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
-		/* Disable cap-less LDOs (1.5V) & Disable IBIST */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON1, 0x0080, 0x0080);
-		/* HP driver output stability enhance option: NO */
-		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE000, 0xffff);
-
-		Ana_Set_Reg(MT6353_AUDENC_ANA_CON9, 0x0000, 0x0010);
-		/* Turn off Mic-Bias1 */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0000, 0x2080);
+		/* Disable cap-less LC LDO (1.5V) */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON6, 0x0000, 0x0A00);
+		/* Disable LDO VA33REFGEN */
 		TurnOffDacPower();
 	}
 	return true;

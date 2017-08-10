@@ -80,7 +80,7 @@ static const int DCoffsetVariance = 200;    /* denali 0.2v */
 
 static const unsigned short HpImpedanceAuxCable = 10000;
 static const int mDcRangestep = 7;
-static const int HpImpedancePhase1Step = 100;
+static const int HpImpedancePhase1Step = 50;
 static const int HpImpedancePhase2Step = 100;
 static const int HpImpedancePhase0AdcValue = 200;
 static const int HpImpedancePhase1AdcValue = 2000;
@@ -562,7 +562,7 @@ static void ApplyDctoDl(void)
 			}
 		}
 
-		usleep_range(1*250, 1*500);
+		usleep_range(600, 800);
 	}
 
 	/* Ramp-Down */
@@ -573,7 +573,7 @@ static void ApplyDctoDl(void)
 		/* apply to dram */
 		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
 
-		usleep_range(1*200, 1*400);
+		usleep_range(600, 800);
 	}
 #endif
 }
