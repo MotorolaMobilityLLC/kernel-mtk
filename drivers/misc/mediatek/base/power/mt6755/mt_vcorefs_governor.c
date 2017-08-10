@@ -111,6 +111,10 @@ unsigned int vcorefs_log_mask = ~((0xFFFFFFFF << LAST_KICKER) | (1U << KIR_GPU))
 #define MT6750_TURBO_5M_SEGMENT 0x45
 #define MT6750_NORMAL_5M_SEGMENT 0x46
 #define MT6738_5M_SEGMENT 0x4B
+#define MT6750S_6M_SEGMENT 0xC1
+#define MT6750S_5M_SEGMENT 0xC5
+#define MT6750N_6M_SEGMENT 0xC2
+#define MT6750N_5M_SEGMENT 0xC6
 
 /*
  * struct define
@@ -1148,7 +1152,9 @@ int vcorefs_late_init_dvfs(void)
 	if (gvrctrl->segment_code == MT6750_NORMAL_SEGMENT ||
 		gvrctrl->segment_code == MT6750_NORMAL_5M_SEGMENT ||
 		gvrctrl->segment_code == MT6738_5M_SEGMENT ||
-		gvrctrl->segment_code == MT6738_SEGMENT) {
+		gvrctrl->segment_code == MT6738_SEGMENT ||
+		gvrctrl->segment_code == MT6750N_6M_SEGMENT ||
+		gvrctrl->segment_code == MT6750N_5M_SEGMENT) {
 		if (gvrctrl->is_fhd_segment == true) {
 			if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
 				gvrctrl->segment_policy = VCOREFS_SEGMENT_LPM;
