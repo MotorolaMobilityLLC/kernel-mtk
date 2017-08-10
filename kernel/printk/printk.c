@@ -51,8 +51,9 @@
 #include <linux/proc_fs.h>
 
 #include <asm/uaccess.h>
+#ifdef CONFIG_MTK_SERIAL
 #include <include/mtk_uart_api.h>
-
+#endif
 #define CREATE_TRACE_POINTS
 #include <trace/events/printk.h>
 
@@ -1657,7 +1658,7 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	char cur_time[32];
 	int idx = 0;
 
-	int uart_timeout_cnt = 0;
+	int uart_timeout_cnt = -1;
 #endif
 
 	trace_console(text, len);
@@ -1702,9 +1703,9 @@ static void call_console_drivers(int level, const char *text, size_t len)
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 	/* console duration over 15 seconds, Calc console write rate recently */
 	if ((local_clock() - con_dura_time) > 15000000000) {
-
+#ifdef CONFIG_MTK_SERIAL
 		uart_timeout_cnt = mtk_uart_dump_timeout_cnt();
-
+#endif
 		/* stat console list */
 		memset(con_name, 0x00, sizeof(con_name));
 		for_each_console(con) {
