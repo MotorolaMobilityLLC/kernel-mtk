@@ -11238,9 +11238,11 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 		IspInfo.UserCount++;
 		/*Move P2_IMEM_DBGList here to fix re-setting after other initializations*/
 		for (i = 0; i <	PROCESS_MAX; i++) {
+			spin_lock(&(SpinLockImemDump));
 			P2_IMEM_DBGList[i].processID = 0x0;
 			P2_IMEM_DBGList[i].bImemDbgDump = false;
 			P2_IMEM_DBGList[i].bImemDbgDumpDone = false;
+			spin_unlock(&(SpinLockImemDump));
 		}
 		for (i = 0; i < ISP_REF_CNT_ID_MAX; i++)
 			atomic_set(&g_imem_ref_cnt[i], 0);
@@ -11252,7 +11254,9 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 
 	/* do wait queue head init when re-enter in camera */
 	EDBufQueRemainNodeCnt = 0;
+	spin_lock((spinlock_t *)(&SpinLockRegScen));
 	P2_Support_BurstQNum = 1;
+	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*      */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
 		FirstUnusedIrqUserKey = 1;
@@ -11276,6 +11280,7 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	    (ISP_IRQ_P1_STATUS_VS1_INT_ST | ISP_IRQ_P1_STATUS_D_VS1_INT_ST |
 	     ISP_IRQ_P1_STATUS_PASS1_DON_ST | ISP_IRQ_P1_STATUS_D_PASS1_DON_ST);
 	/*      */
+	spin_lock(&(SpinLockEDBufQueList));
 	for (i = 0; i < _MAX_SUPPORT_P2_FRAME_NUM_; i++) {
 		P2_EDBUF_RingList[i].processID = 0x0;
 		P2_EDBUF_RingList[i].callerID = 0x0;
@@ -11294,8 +11299,11 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 	}
 	P2_EDBUF_MList_FirstBufIdx = 0;
 	P2_EDBUF_MList_LastBufIdx = -1;
+	spin_unlock(&(SpinLockEDBufQueList));
 	/*      */
+	spin_lock((spinlock_t *)(&SpinLockRegScen));
 	g_regScen = 0xa5a5a5a5;
+	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*      */
 	IspInfo.BufInfo.Read.pData = (MUINT8 *) kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
 	IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
