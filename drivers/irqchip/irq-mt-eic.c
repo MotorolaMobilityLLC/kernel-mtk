@@ -1875,6 +1875,7 @@ static struct irq_chip mt_irq_eint = {
 	.irq_unmask = mt_eint_irq_unmask,
 	.irq_ack = mt_eint_irq_ack,
 	.irq_set_type = mt_eint_irq_set_type,
+	.flags = IRQCHIP_SKIP_SET_WAKE,
 };
 
 int mt_eint_domain_xlate_onetwocell(struct irq_domain *d,
