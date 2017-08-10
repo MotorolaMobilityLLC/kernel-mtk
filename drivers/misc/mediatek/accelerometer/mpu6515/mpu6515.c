@@ -809,6 +809,7 @@ static int MPU6515_CheckDeviceID(struct i2c_client *client)
 #endif
 
 	memset(databuf, 0, sizeof(u8) * 10);
+#if 0
 	databuf[0] = MPU6515_REG_DEVID;
 
 	res = i2c_master_send(client, databuf, 0x1);
@@ -825,12 +826,19 @@ static int MPU6515_CheckDeviceID(struct i2c_client *client)
 		GSE_ERR("i2c_master_recv failed : %d\n", res);
 		goto exit_MPU6515_CheckDeviceID;
 	}
+#else
+	res = hwmsen_read_byte(client, MPU6515_REG_DEVID, databuf);
+	if (res) {
+		GSE_ERR("read devid register err! %d\n", res);
+		goto exit_MPU6515_CheckDeviceID;
+	}
+#endif
 
 	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
 		GSE_LOG("MPU6515_CheckDeviceID 0x%x\n", databuf[0]);
 
 exit_MPU6515_CheckDeviceID:
-	if (res <= 0)
+	if (res)
 		return MPU6515_ERR_I2C;
 
 	return MPU6515_SUCCESS;
@@ -845,6 +853,8 @@ static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 
 #ifndef GSENSOR_UT
 	memset(databuf, 0, sizeof(u8) * 2);
+
+#if 0
 	databuf[0] = MPU6515_REG_DATA_FORMAT;
 	res = i2c_master_send(client, databuf, 0x1);
 	if (res <= 0)
@@ -856,6 +866,7 @@ static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 	res = i2c_master_recv(client, databuf, 0x01);
 	if (res <= 0)
 		return MPU6515_ERR_I2C;
+#endif
 
 	GSE_LOG("MPU6515_REG_DATA_FORMAT, reg[%x] read=0x%x, dataformat=0x%x\n", MPU6515_REG_DATA_FORMAT, databuf[0], dataformat);
 	/* write */
@@ -887,6 +898,7 @@ static int MPU6515_SetBWRate(struct i2c_client *client, u8 bwrate)
 	if ((obj->bandwidth != bwrate) || (atomic_read(&obj->suspend))) {
 		memset(databuf, 0, sizeof(u8) * 10);
 
+#if 0
 		/* read */
 		databuf[0] = MPU6515_REG_BW_RATE;
 		res = i2c_master_send(client, databuf, 0x1);
@@ -900,6 +912,7 @@ static int MPU6515_SetBWRate(struct i2c_client *client, u8 bwrate)
 		res = i2c_master_recv(client, databuf, 0x01);
 		if (res <= 0)
 			return MPU6515_ERR_I2C;
+#endif
 
     	GSE_LOG("MPU6515_REG_BW_RATE, reg[%x] read=0x%x, bwrate=0x%x\n", MPU6515_REG_BW_RATE, databuf[0], bwrate);
 		/* write */
@@ -931,6 +944,7 @@ static int MPU6515_Dev_Reset(struct i2c_client *client)
 
 	memset(databuf, 0, sizeof(u8) * 10);
 
+#if 0
 	/* read */
 	databuf[0] = MPU6515_REG_POWER_CTL;
 	res = i2c_master_send(client, databuf, 0x1);
@@ -944,6 +958,12 @@ static int MPU6515_Dev_Reset(struct i2c_client *client)
 	res = i2c_master_recv(client, databuf, 0x01);
 	if (res <= 0)
 		return MPU6515_ERR_I2C;
+#else
+	if (hwmsen_read_byte(client, MPU6515_REG_POWER_CTL, databuf)) {
+		GSE_ERR("read power ctl register err!\n");
+		return MPU6515_ERR_I2C;
+	}
+#endif
 
 
 	if ((databuf[0] & 0x1f) != 0x1)
@@ -960,6 +980,7 @@ static int MPU6515_Dev_Reset(struct i2c_client *client)
 
 
 	do {
+#if 0
 		databuf[0] = MPU6515_REG_POWER_CTL;
 		res = i2c_master_send(client, databuf, 0x1);
 
@@ -967,6 +988,9 @@ static int MPU6515_Dev_Reset(struct i2c_client *client)
 
 		databuf[0] = 0x0;
 		res = i2c_master_recv(client, databuf, 0x01);
+#else
+		res = hwmsen_read_byte(client, MPU6515_REG_POWER_CTL, databuf);
+#endif
 
 		GSE_LOG("[Gsensor] check reset bit");
 
