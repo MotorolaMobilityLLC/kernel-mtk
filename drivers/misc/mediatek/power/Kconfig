@@ -5,6 +5,15 @@ config MTK_PMIC
 	---help---
 	  MediaTek PMIC driver
 
+config MTK_CHARGER_INTERFACE
+	bool "Mediatek Charger Interface"
+	default n
+	---help---
+	  Mediatek Charger Interface.
+	  Say y to support this module.
+	  Say n and choose other chargers and interface.
+	  Do not select this module if you've ported your own interface.
+
 config MTK_RT9466_SUPPORT
 	bool "MTK_RT9466_SUPPORT"
 	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
