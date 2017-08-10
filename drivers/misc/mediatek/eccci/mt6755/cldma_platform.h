@@ -291,7 +291,7 @@ int ccci_modem_pm_suspend(struct device *device);
 int ccci_modem_pm_resume(struct device *device);
 int ccci_modem_pm_restore_noirq(struct device *device);
 int md_cd_power_on(struct ccci_modem *md);
-int md_cd_power_off(struct ccci_modem *md, unsigned int timeout);
+int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type);
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode);
 int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode);
 int md_cd_let_md_go(struct ccci_modem *md);
@@ -306,7 +306,6 @@ void md_cd_dump_md_bootup_status(struct ccci_modem *md);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
 void md_cldma_hw_reset(struct ccci_modem *md);
-
 /* ADD_SYS_CORE */
 int ccci_modem_syssuspend(void);
 void ccci_modem_sysresume(void);

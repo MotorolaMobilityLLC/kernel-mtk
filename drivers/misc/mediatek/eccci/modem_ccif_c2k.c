@@ -483,8 +483,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		from_pool = 1;
 
 	while (1) {
-		if (queue->index == 0)
-			md->latest_q0_rx_time = local_clock();
+		md->latest_q_rx_time[qno] = local_clock();
 		spin_lock_irqsave(&queue->rx_lock, flags);
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		spin_unlock_irqrestore(&queue->rx_lock, flags);
@@ -780,8 +779,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 			schedule_work(&md_ctrl->ccif_sram_work);
 		}
 		for (i = 0; i < QUEUE_NUM; i++) {
-			if (i == 0)
-				md->latest_poll_isr_time = local_clock();
+			md->latest_q_rx_isr_time[i] = local_clock();
 			if (md_ctrl->channel_id & (1 << (i + D2H_RINGQ0))) {
 				clear_bit(i + D2H_RINGQ0, &md_ctrl->channel_id);
 				if (atomic_read(&md_ctrl->rxq[i].rx_on_going)) {
@@ -900,7 +898,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	}
 
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
-	ccci_set_bsi_bpi_SRAM_cfg(md, 1);
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1, MD_FLIGHT_MODE_NONE);
 #endif
 
 #ifdef FEATURE_CLK_CG_CONTROL
@@ -915,6 +913,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	md->heart_beat_counter = 0;
 	md->data_usb_bypass = 0;
 	md->is_in_ee_dump = 0;
+	md->is_force_asserted = 0;
 	CCCI_NORMAL_LOG(md->index, TAG, "CCIF modem is starting\n");
 	/*1. load modem image */
 	if (!modem_run_env_ready(md->index)) {
@@ -967,14 +966,14 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	return ret;
 }
 
-static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
+static int md_ccif_op_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 	int idx = 0;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, timeout=%d\n", timeout);
-	ret = md_ccif_power_off(md, timeout);
+	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, stop_type=%d\n", stop_type);
+	ret = md_ccif_power_off(md, stop_type);
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off done, %d\n", ret);
 	for (idx = 0; idx < QUEUE_NUM; idx++)
 		flush_work(&md_ctrl->rxq[idx].qwork);
@@ -990,7 +989,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 #endif
 
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
-	ccci_set_bsi_bpi_SRAM_cfg(md, 0);
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0, stop_type);
 #endif
 
 	/*don't reset queue here, some queue may still have unread data */
@@ -999,7 +998,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	return 0;
 }
 
-static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
+static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 

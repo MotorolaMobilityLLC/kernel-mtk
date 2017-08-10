@@ -245,7 +245,7 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
 /*turn on/off bsi_bpi clock & SRAM for mt6757*/
-void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on)
+void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, unsigned int stop_type)
 {
 	unsigned int cnt, reg_value, md_num;
 
@@ -269,7 +269,7 @@ void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on)
 		ccci_write32(ap_sleep_base, 0x370, reg_value);
 	} else {
 		if (cnt > 0) {
-			if (atomic_dec_and_test(&md_power_on_off_cnt)) {
+			if (atomic_dec_and_test(&md_power_on_off_cnt) && stop_type == MD_FLIGHT_MODE_ENTER) {
 				reg_value = ccci_read32(ap_sleep_base, 0x370);
 				reg_value |= 0x7F;
 				ccci_write32(ap_sleep_base, 0x370, reg_value);
@@ -1032,7 +1032,7 @@ int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 	return 0;
 }
 
-int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 

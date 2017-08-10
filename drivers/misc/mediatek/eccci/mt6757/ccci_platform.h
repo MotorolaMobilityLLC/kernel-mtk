@@ -60,7 +60,7 @@ void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA,
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
 #endif
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
-void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on);
+void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on, unsigned int stop_type);
 #endif
 
 #ifdef ENABLE_DRAM_API

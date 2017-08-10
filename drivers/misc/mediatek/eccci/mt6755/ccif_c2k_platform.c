@@ -565,9 +565,15 @@ int md_ccif_power_on(struct ccci_modem *md)
 	return ret;
 }
 
-int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
+#if defined(CONFIG_MTK_CLKMGR)
+	unsigned int timeout = 0;
+
+	if (stop_type == MD_FLIGHT_MODE_ENTER)
+		timeout = 1000;
+#endif
 
 	switch (md->index) {
 	case MD_SYS2:

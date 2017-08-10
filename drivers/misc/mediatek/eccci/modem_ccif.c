@@ -223,9 +223,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 	queue->rx_on_going = 1;
 	spin_unlock_irqrestore(&queue->rx_lock, flags);
 	while (1) {
-		if (queue->index == 0)
-			md->latest_q0_rx_time = local_clock();
-
+		md->latest_q_rx_time[queue->index] = local_clock();
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		if (pkg_size < 0) {
 			CCCI_ERROR_LOG(md->index, TAG, "Q%d Rx:rbf readable ret=%d\n", queue->index, pkg_size);
@@ -456,8 +454,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 			schedule_work(&md_ctrl->ccif_sram_work);
 		}
 		for (i = 0; i < QUEUE_NUM; i++) {
-			if (i == 0)
-				md->latest_poll_isr_time = local_clock();
+			md->latest_q_rx_isr_time[i] = local_clock();
 			if (md_ctrl->channel_id & (1 << (i + D2H_RINGQ0))) {
 				clear_bit(i + D2H_RINGQ0, &md_ctrl->channel_id);
 				if (md_ctrl->rxq[i].rx_on_going != 0) {

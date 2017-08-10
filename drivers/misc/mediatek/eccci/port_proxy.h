@@ -124,7 +124,7 @@ void port_proxy_md_status_notice(struct port_proxy *proxy_p, DIRECTION dir,
 void port_proxy_wake_up_tx_queue(struct port_proxy *proxy_p, unsigned char qno);
 int port_proxy_recv_skb(struct port_proxy *proxy_p, struct sk_buff *skb);
 int port_proxy_start_md(struct port_proxy *proxy_p);
-int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int is_flightmode, OTHER_MD_OPS other_ops);
+int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type, OTHER_MD_OPS other_ops);
 int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops);
 /****************************************************************************************************************/
 /* API Region called by ccci port object */

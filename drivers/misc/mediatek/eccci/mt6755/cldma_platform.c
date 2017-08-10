@@ -806,10 +806,15 @@ int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 	return 0;
 }
 
-int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_cd_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
+#if defined(CONFIG_MTK_CLKMGR)
+	unsigned int timeout = 0;
 
+	if (stop_type == MD_FLIGHT_MODE_ENTER)
+		timeout = 1000;
+#endif
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
 	inform_nfc_vsim_change(md->index, 0, 0);

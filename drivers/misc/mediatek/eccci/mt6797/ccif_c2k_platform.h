@@ -153,7 +153,7 @@ struct c2k_pll_t {
 
 extern unsigned long ccci_modem_boot_count[];
 
-extern int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout);
+extern int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type);
 extern int md_ccif_power_on(struct ccci_modem *md);
 extern int md_ccif_let_md_go(struct ccci_modem *md);
 int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,

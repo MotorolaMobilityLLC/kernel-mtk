@@ -443,21 +443,21 @@ int md_ccif_power_on(struct ccci_modem *md)
 	return ret;
 }
 
-int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
+int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 
 	switch (md->index) {
 	case MD_SYS2:
 #if defined(CONFIG_MTK_CLKMGR)
-		ret = md_power_off(SYS_MD2, timeout);
+		ret = md_power_off(SYS_MD2, stop_type);
 #else
 		clk_disable_unprepare(clk_scp_sys_md2_main);
 #endif
 		break;
 	case MD_SYS3:
 #if defined(CONFIG_MTK_CLKMGR)
-		ret = md_power_off(SYS_MD3, timeout);
+		ret = md_power_off(SYS_MD3, stop_type);
 #else
 		clk_disable_unprepare(clk_scp_sys_md3_main);
 #endif

@@ -282,15 +282,32 @@ void md_cd_traffic_monitor_func(unsigned long data)
 	int i;
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	unsigned long q_rx_rem_nsec[CLDMA_RXQ_NUM];
+	unsigned long isr_rem_nsec;
 
 	ccci_md_dump_port_status(md);
-
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 		if (md_ctrl->txq[i].busy_count != 0) {
 			CCCI_REPEAT_LOG(md->index, TAG, "Txq%d busy count %d\n", i, md_ctrl->txq[i].busy_count);
 			md_ctrl->txq[i].busy_count = 0;
 		}
+		q_rx_rem_nsec[i] = (md->latest_q_rx_isr_time[i] == 0 ?
+			0 : do_div(md->latest_q_rx_isr_time[i], 1000000000));
 	}
+	isr_rem_nsec = (md->latest_isr_time == 0 ? 0 : do_div(md->latest_isr_time, 1000000000));
+
+	CCCI_REPEAT_LOG(md->index, TAG,
+	"ISR: %lu.%06lu, RX(%lu.%06lu,%lu.%06lu,%lu.%06lu,%lu.%06lu,%lu.%06lu,%lu.%06lu,%lu.%06lu,%lu.%06lu)\n",
+			(unsigned long)md->latest_isr_time, isr_rem_nsec / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[0], q_rx_rem_nsec[0] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[1], q_rx_rem_nsec[1] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[2], q_rx_rem_nsec[2] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[3], q_rx_rem_nsec[3] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[4], q_rx_rem_nsec[4] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[5], q_rx_rem_nsec[5] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[6], q_rx_rem_nsec[6] / 1000,
+			(unsigned long)md->latest_q_rx_isr_time[7], q_rx_rem_nsec[7] / 1000);
+
 #ifdef ENABLE_CLDMA_TIMER
 	CCCI_REPEAT_LOG(md->index, TAG, "traffic(tx_timer): [3]%llu %llu, [4]%llu %llu, [5]%llu %llu\n",
 		     md_ctrl->txq[3].timeout_start, md_ctrl->txq[3].timeout_end,
@@ -331,7 +348,7 @@ void md_cd_traffic_monitor_func(unsigned long data)
 			 md_ctrl->rxq[4].skb_list.skb_list.qlen, md_ctrl->rxq[5].skb_list.skb_list.qlen);
 
 	ccci_channel_dump_packet_counter(md);
-	ccci_dump_skb_pool_usage();
+	ccci_dump_skb_pool_usage(md->index);
 }
 #endif
 
@@ -674,6 +691,7 @@ static void cldma_rx_done(struct work_struct *work)
 	struct ccci_modem *md = queue->modem;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
+	md->latest_q_rx_time[queue->index] = local_clock();
 	queue->tr_ring->handle_rx_done(queue, queue->budget, 1);
 	/* enable RX_DONE interrupt */
 	md_cd_lock_cldma_clock_src(1);
@@ -1181,11 +1199,11 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
 				cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0); /* dummy read */
 				if (md->md_state == EXCEPTION || ccci_md_napi_check_and_notice(md, i) == 0) {
+					md->latest_q_rx_isr_time[i] = local_clock();
 					if (i != 0) {
 						ret = queue_work(md_ctrl->rxq[i].worker,
 									&md_ctrl->rxq[i].cldma_rx_work);
 					} else {
-						md->latest_poll_isr_time = local_clock();
 						tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
 					}
 				}
@@ -1794,10 +1812,6 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 
 static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 {
-#if defined(CONFIG_MTK_AEE_FEATURE)
-	/*aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");*/
-#endif
-
 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
 	cldma_stop(md);
 #ifdef ENABLE_CLDMA_AP_SIDE
@@ -2127,7 +2141,7 @@ static int md_cd_start(struct ccci_modem *md)
 
 
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
-	ccci_set_bsi_bpi_SRAM_cfg(md, 1);
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1, MD_FLIGHT_MODE_NONE);
 #endif
 
 #ifdef FEATURE_CLK_CG_CONTROL
@@ -2201,6 +2215,7 @@ static int md_cd_start(struct ccci_modem *md)
 	cldma_reset(md);
 	ccci_md_broadcast_state(md, BOOT_WAITING_FOR_HS1);
 	md->is_in_ee_dump = 0;
+	md->is_force_asserted = 0;
 #ifdef ENABLE_HS1_POLLING_TIMER
 	mod_timer(&md_ctrl->hs1_polling_timer, jiffies+0);
 #endif
@@ -2309,7 +2324,7 @@ static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
 	return md_cd_soft_power_off(md, mode);
 }
 
-static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
+static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	int count = 0;
@@ -2328,7 +2343,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_
 
 	en_power_check = check_power_off_en(md);
 
-	if (timeout) {		/* only debug in Flight mode */
+	if (stop_type == MD_FLIGHT_MODE_ENTER) {		/* only debug in Flight mode */
 		count = 5;
 		while (spm_is_md1_sleep() == 0) {
 			count--;
@@ -2417,12 +2432,12 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_
 	return 0;
 }
 
-static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
+static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
+	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, stop_type=%d\n", stop_type);
 
 	/* flush work before new start */
 	flush_work(&md_ctrl->ccif_work);
@@ -2434,7 +2449,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 	md_cldma_clear(md);
 #endif
 	/* power off MD */
-	ret = md_cd_power_off(md, timeout);
+	ret = md_cd_power_off(md, stop_type);
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
 	ccci_md_broadcast_state(md, GATED);
 
@@ -2451,7 +2466,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #endif
 
 #ifdef FEATURE_BSI_BPI_SRAM_CFG
-	ccci_set_bsi_bpi_SRAM_cfg(md, 0);
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0, stop_type);
 #endif
 
 	return 0;
@@ -2775,8 +2790,8 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 	int ret;
 	struct md_cd_queue *queue;
 
-	md->latest_q0_rx_time = local_clock();
 	queue = &md_ctrl->rxq[0];
+	md->latest_q_rx_time[queue->index] = local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue, queue->budget, 0);
 
 	if (ret != ALL_CLEAR) {
@@ -2802,6 +2817,7 @@ static int md_cd_napi_poll(struct ccci_modem *md, unsigned char qno, struct napi
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
 
 	queue = &md_ctrl->rxq[qno];
+	md->latest_q_rx_time[queue->index] = local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue, weight, 0);
 
 	if (ret == ALL_CLEAR) {

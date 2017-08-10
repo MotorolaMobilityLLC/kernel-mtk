@@ -197,6 +197,7 @@ READ_START:
 		if (port->rx_skb_list.qlen == 0)
 			port_proxy_ask_more_req_to_md(port->port_proxy, port);
 		if (port->rx_skb_list.qlen < 0) {
+			spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 			CCCI_ERROR_LOG(port->md_id, CHAR, "%s:port->rx_skb_list.qlen < 0 %s\n", __func__, port->name);
 			return -EFAULT;
 		}

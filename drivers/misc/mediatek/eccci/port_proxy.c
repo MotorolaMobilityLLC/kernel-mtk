@@ -910,18 +910,15 @@ int port_proxy_pre_stop_md(struct port_proxy *proxy_p, OTHER_MD_OPS other_ops)
 	return ret;
 }
 
-int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int is_flightmode, OTHER_MD_OPS other_ops)
+int port_proxy_stop_md(struct port_proxy *proxy_p, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	int ret = 0;
-	unsigned int timeout = 0;
 
-	if (is_flightmode)
-		timeout = 1000;
 	proxy_p->sim_type = 0xEEEEEEEE; /* reset sim_type(MCC/MNC) to 0xEEEEEEEE */
-	ret = ccci_md_pre_stop(proxy_p->md_obj, timeout, other_ops);
+	ret = ccci_md_pre_stop(proxy_p->md_obj, stop_type, other_ops);
 	if (ret == 0) {
-		ret = ccci_md_stop(proxy_p->md_obj, 0);
-		if (is_flightmode)
+		ret = ccci_md_stop(proxy_p->md_obj, stop_type);
+		if (stop_type == MD_FLIGHT_MODE_ENTER)
 			ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_ENTER_FLIGHT_MODE, 0);
 		else
 			port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_STOP_MD_REQUEST, 0);
@@ -1080,7 +1077,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md_id, current->comm);
-		ret = port_proxy_stop_md(proxy_p, MD_FIGHT_MODE_ENTER, OTHER_MD_NONE);
+		ret = port_proxy_stop_md(proxy_p, MD_FLIGHT_MODE_ENTER, OTHER_MD_NONE);
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
