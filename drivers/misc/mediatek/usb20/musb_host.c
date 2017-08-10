@@ -107,8 +107,8 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 {
 	void __iomem *mbase = musb->mregs;
 	int epnum = qh->hw_ep->epnum;
-	u16 maxpacket = qh->maxpacket;
-	u16 request_fifo_sz, fifo_unit_nr;
+	u16 maxpacket;
+	u16 request_fifo_sz = 0, fifo_unit_nr;
 	u16 idx_start = 0;
 	u8 index, i;
 	u16 c_off = 0;
@@ -116,15 +116,32 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 	u16 free_uint = 0;
 	u8 found = 0;
 
+	if (unlikely(qh->hb_mult > 1))
+		maxpacket = qh->maxpacket | ((qh->hb_mult - 1) << 11);
+	else
+		maxpacket = qh->maxpacket;
+
 	if (maxpacket <= 512) {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
 		c_size = 6;
-	} else {
+	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
 		c_size = 7;
+	} else if (maxpacket <= 2048) {
+		request_fifo_sz = 2048;
+		fifo_unit_nr = 4;
+		c_size = 8;
+	} else if (maxpacket <= 4096) {
+		request_fifo_sz = 4096;
+		fifo_unit_nr = 8;
+		c_size = 9;
+	} else {
+		DBG(0, "should not be here\n");
+		BUG();
 	}
+
 
 	for (i = 0; i < dynamic_fifo_total_slot; i++) {
 		if (!(musb_host_dynamic_fifo_usage_msk & (1 << i)))
@@ -2498,19 +2515,25 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	 * Some musb cores don't support high bandwidth ISO transfers; and
 	 * we don't (yet!) support high bandwidth interrupt transfers.
 	 */
-#if 0
-	qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
-	if (qh->hb_mult > 1) {
-		int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if ((!usb_pipecontrol(urb->pipe)) && ((usb_pipetype(urb->pipe) + 1) & mtk_host_qmu_pipe_msk))
+		qh->is_use_qmu = 1;
 
-		if (ok)
-			ok = (usb_pipein(urb->pipe) && musb->hb_iso_rx)
-			    || (usb_pipeout(urb->pipe) && musb->hb_iso_tx);
-		if (!ok) {
-			ret = -EMSGSIZE;
-			goto done;
+	/* only support hb_mult in QMU case */
+	if (qh->is_use_qmu) {
+		qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
+		if (qh->hb_mult > 1) {
+			int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
+
+			if (ok)
+				ok = (usb_pipein(urb->pipe) && musb->hb_iso_rx)
+					|| (usb_pipeout(urb->pipe) && musb->hb_iso_tx);
+			if (!ok) {
+				ret = -EMSGSIZE;
+				goto done;
+			}
+			qh->maxpacket &= 0x7ff;
 		}
-		qh->maxpacket &= 0x7ff;
 	}
 #endif
 	qh->epnum = usb_endpoint_num(epd);
@@ -2598,10 +2621,6 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		qh = NULL;
 		ret = 0;
 	} else {
-#ifdef MUSB_QMU_SUPPORT_HOST
-		if ((!usb_pipecontrol(urb->pipe)) && ((usb_pipetype(urb->pipe) + 1) & mtk_host_qmu_pipe_msk))
-			qh->is_use_qmu = 1;
-#endif
 		ret = musb_schedule(musb, qh, epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);
 	}
 
@@ -2613,7 +2632,7 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
 
-/* done: */
+done:
 	if (ret != 0) {
 		spin_lock_irqsave(&musb->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);
