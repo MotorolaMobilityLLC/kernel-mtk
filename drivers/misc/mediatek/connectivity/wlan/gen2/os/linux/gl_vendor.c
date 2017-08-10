@@ -255,7 +255,7 @@ int mtk_cfg80211_vendor_get_roaming_capabilities(struct wiphy *wiphy,
 	}
 
 	if (unlikely(nla_put(skb, WIFI_ATTRIBUTE_ROAMING_CAPABILITIES,
-						 sizeof(maxNumOfList), maxNumOfList)) < 0)
+						 sizeof(maxNumOfList), maxNumOfList) < 0))
 		goto nla_put_failure;
 
 	return cfg80211_vendor_cmd_reply(skb);
