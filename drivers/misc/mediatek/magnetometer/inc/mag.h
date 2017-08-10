@@ -152,7 +152,8 @@ struct mag_context {
 	atomic_t				early_suspend;
 	struct mag_drv_obj *drv_obj[MAX_M_V_SENSOR];
 	struct mag_data	   drv_data[MAX_M_V_SENSOR];
-	bool is_first_data_after_enable;
+	bool is_first_data_after_enable_mag;
+	bool is_first_data_after_enable_ori;
 	bool is_polling_run;
 	bool				is_batch_enable;
 	uint32_t			active_nodata_sensor;
