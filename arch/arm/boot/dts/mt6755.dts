@@ -240,13 +240,6 @@
 		#size-cells = <2>;
 		ranges;
 
-		/* reserve 256KB at DRAM start + 70MB */
-		atf-reserved-memory@44600000 {
-			compatible = "mediatek,mt6755-atf-reserved-memory";
-			no-map;
-			reg = <0 0x44600000 0 0x40000>;
-		};
-
 		reserve-memory-ccci_md1 {
 			compatible = "mediatek,reserve-memory-ccci_md1";
 			no-map;
