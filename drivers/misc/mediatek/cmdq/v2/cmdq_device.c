@@ -18,6 +18,14 @@
 #ifndef CMDQ_OF_SUPPORT
 #include <mach/mt_irq.h>
 #endif
+#ifdef CONFIG_MTK_CMDQ_TAB
+/* CCF */
+#ifdef CMDQ_OF_SUPPORT
+#include <linux/clk.h>
+#include <linux/clk-provider.h>
+#endif
+#endif
+
 
 /* device tree */
 #include <linux/of.h>
@@ -237,6 +245,16 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 
 	return result;
 }
+
+#ifdef CONFIG_MTK_CMDQ_TAB
+bool cmdq_dev_gce_clock_is_on(void)
+{
+	if (__clk_get_enable_count(gCmdqDev.clk_gce) > 0)
+		return 1;
+	else
+		return 0;
+}
+#endif
 
 bool cmdq_dev_device_clock_is_enable(struct clk *clk_module)
 {

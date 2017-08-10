@@ -96,6 +96,12 @@ static CmdqCBkStruct gCmdqGroupCallback[CMDQ_MAX_GROUP_COUNT];
 static CmdqDebugCBkStruct gCmdqDebugCallback;
 static cmdq_dts_setting g_dts_setting;
 
+#ifdef CONFIG_MTK_CMDQ_TAB
+static atomic_t gSuspendPlace;
+static CMDQ_TIME Thread8Suspend;
+static CMDQ_TIME Thread8Resume;
+#endif
+
 #ifdef CMDQ_DUMP_FIRSTERROR
 DumpFirstErrorStruct gCmdqFirstError;
 #endif
@@ -158,6 +164,13 @@ int32_t cmdq_core_suspend_HW_thread(int32_t thread, uint32_t lineNum)
 		return -EFAULT;
 	}
 
+#ifdef CONFIG_MTK_CMDQ_TAB
+	if (thread == 8) {
+		atomic_set(&gSuspendPlace, lineNum);
+		Thread8Suspend = sched_clock();
+	}
+#endif
+
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_suspend, MMProfileFlagPulse, thread, lineNum);
 	/* write suspend bit */
 	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x01);
@@ -194,6 +207,10 @@ static inline void cmdq_core_resume_HW_thread(int32_t thread)
 	/* make sure instructions are really in DRAM */
 	smp_mb();
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_resume, MMProfileFlagPulse, thread, __LINE__);
+#ifdef CONFIG_MTK_CMDQ_TAB
+	if (thread == 8)
+		Thread8Resume = sched_clock();
+#endif
 	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x00);
 }
 
@@ -5528,6 +5545,10 @@ static void cmdq_core_attach_error_task(const TaskStruct *pTask, int32_t thread,
 	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
 		 gCmdqContext.errNum);
 
+#ifdef CONFIG_MTK_CMDQ_TAB
+	CMDQ_ERR("GCE clock_on:%d\n", cmdq_dev_gce_clock_is_on());
+#endif
+
 	cmdq_core_dump_summary(pTask, thread, &pNGTask);
 	short_log = !(gCmdqContext.errNum <= 2 || gCmdqContext.errNum % 16 == 0 || cmdq_core_should_full_error());
 	cmdq_core_dump_error_task(pTask, pNGTask, thread, short_log);
@@ -6334,6 +6355,17 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			break;
 
 		CMDQ_ERR("Task state of %p is not TASK_STATE_DONE, %d\n", pTask, pTask->taskState);
+#ifdef CONFIG_MTK_CMDQ_TAB
+		CMDQ_ERR("thread:%d suspended:%d gSuspendPlace=%d Thread8Suspend=%lld Thread8Resume=%lld\n",
+			thread, CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread)),
+			atomic_read(&gSuspendPlace), Thread8Suspend, Thread8Resume);
+		cmdq_core_dump_thread(thread, true);
+		for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++) {
+			if (index == thread)
+				continue;
+			cmdq_core_dump_thread(index, true);
+		}
+#endif
 
 		/* Oops, tha tasks is not done. */
 		/* We have several possible error scenario: */
@@ -8875,4 +8907,45 @@ ContextStruct *cmdq_core_get_cmdqcontext(void)
 {
 	return &gCmdqContext;
 }
+
+#ifdef CONFIG_MTK_CMDQ_TAB
+void cmdq_core_dump_thread(uint32_t thread, bool dump_cmd)
+{
+	ThreadStruct *pThread;
+	uint32_t value[10] = { 0 };
+
+	pThread = &(gCmdqContext.thread[thread]);
+	if (pThread->taskCount == 0)
+		return;
+
+	CMDQ_ERR("=============== [CMDQ] Error Thread Status ===============\n");
+	/* normal thread */
+	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
+	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
+	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
+	value[3] = cmdq_core_thread_exec_counter(thread);
+	value[4] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
+	value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
+	value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
+	value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
+	value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
+
+	CMDQ_ERR
+		("Index: %d, Enabled: %d, IRQ: 0x%08x, Thread PC: 0x%08x, End: 0x%08x, Wait Token: 0x%08x\n",
+		 thread, value[8], value[4], value[0], value[1], value[2]);
+	CMDQ_ERR
+		("Curr Cookie: %d, Wait Cookie: %d, Next Cookie: %d, Task Count %d, engineFlag: 0x%llx\n",
+		 value[3], pThread->waitCookie, pThread->nextCookie, pThread->taskCount,
+		 pThread->engineFlag);
+	CMDQ_ERR("Timeout Cycle:%d, Status:0x%08x, IRQ_EN: 0x%08x\n", value[5], value[6],
+		 value[7]);
+
+	/* dump tasks in error thread */
+	cmdq_core_dump_thread_pc(thread);
+	cmdq_core_dump_task_in_thread(thread, false, false, dump_cmd);
+
+	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
+	cmdq_core_dump_status("ERR");
+}
+#endif
 

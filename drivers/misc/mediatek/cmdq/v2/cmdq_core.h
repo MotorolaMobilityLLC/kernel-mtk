@@ -1044,6 +1044,9 @@ extern "C" {
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
 	ContextStruct *cmdq_core_get_cmdqcontext(void);
+#ifdef CONFIG_MTK_CMDQ_TAB
+	void cmdq_core_dump_thread(uint32_t thread, bool dump_cmd);
+#endif
 #ifdef __cplusplus
 }
 #endif
