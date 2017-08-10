@@ -61,12 +61,14 @@ module_param(tpd_fail_count, int, 0644);
 module_param(tpd_trial_count, int, 0644);
 
 int tpd_debug_time = 0;
+EXPORT_SYMBOL(tpd_debug_time);
 long tpd_last_2_int_time[2] = { 0 };
 
 long tpd_last_down_time = 0;
 int tpd_start_profiling = 0;
 
 int tpd_down_status = 0;
+EXPORT_SYMBOL(tpd_down_status);
 module_param(tpd_debug_time, int, 0644);
 
 void tpd_debug_set_time(void)
@@ -89,6 +91,7 @@ void tpd_debug_set_time(void)
 		tpd_last_down_time = tpd_last_2_int_time[1];
 	}
 }
+EXPORT_SYMBOL(tpd_debug_set_time);
 
 #ifdef TPD_DEBUG_TRACK
 int tpd_debug_track = 0;
@@ -137,6 +140,7 @@ void tpd_up_debug_track(int x, int y)
 #define BUFFER_SIZE 128
 
 int tpd_em_log = 0;
+EXPORT_SYMBOL(tpd_em_log);
 module_param(tpd_em_log, int, 0664);
 
 void tpd_enable_em_log(int enable)
@@ -150,6 +154,7 @@ EXPORT_SYMBOL(tpd_enable_em_log);
 
 
 int tpd_em_log_to_fs = 0;
+EXPORT_SYMBOL(tpd_em_log_to_fs);
 module_param(tpd_em_log_to_fs, int, 0664);
 
 int tpd_em_log_first = 1;
@@ -359,7 +364,7 @@ noinline void MET_touch(int raw_x, int raw_y, int cal_x, int cal_y, int p, int d
 		trace_MET_touch("EV_ABS", t.tv_sec, t.tv_usec, "Y", raw_y);
 	}
 }
-
+EXPORT_SYMBOL(MET_touch);
 void tpd_em_log_output(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down)
 {
 	if (down == TPD_TYPE_INT_DOWN) {
@@ -395,6 +400,7 @@ void tpd_em_log_output(int raw_x, int raw_y, int cal_x, int cal_y, int p, int do
 		       (tpd_last_2_int_time[1] - tpd_last_2_int_time[0]) / 1000);
 	}
 }
+EXPORT_SYMBOL(tpd_em_log_output);
 
 void tpd_em_log_store(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down)
 {
@@ -473,6 +479,7 @@ void tpd_em_log_store(int raw_x, int raw_y, int cal_x, int cal_y, int p, int dow
 
 	/* list_add_tail(&tpd_em_log_struct_new->list, &tpd_em_log_list); */
 }
+EXPORT_SYMBOL(tpd_em_log_store);
 
 void tpd_em_log_release(void)
 {
@@ -490,6 +497,7 @@ void tpd_em_log_release(void)
 		tpd_em_log_to_fs = 0;
 	}
 }
+EXPORT_SYMBOL(tpd_em_log_release);
 
 static int __init tpd_log_init(void)
 {
@@ -504,4 +512,5 @@ static int __init tpd_log_init(void)
 int tpd_debuglog = 0;
 module_param(tpd_debuglog, int, 0664);
 module_init(tpd_log_init);
+MODULE_LICENSE("GPL");
 #endif				/* TPD_DEBUG_CODE */

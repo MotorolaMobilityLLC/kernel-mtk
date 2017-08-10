@@ -291,6 +291,7 @@ extern s32 hotknot_event_handler(u8 *data);
 #endif				/*CONFIG_GTP_HOTKNOT */
 extern s32 gt1x_init_node(void);
 extern bool check_flag;
+
 #ifdef CONFIG_GTP_GESTURE_WAKEUP
 extern DOZE_T gesture_doze_status;
 extern int gesture_enabled;

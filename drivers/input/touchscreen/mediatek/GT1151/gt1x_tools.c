@@ -439,3 +439,4 @@ static ssize_t gt1x_tool_read(struct file *filp, char __user *buffer, size_t cou
 	*ppos += cmd_head.data_len;
 	return cmd_head.data_len;
 }
+MODULE_LICENSE("GPL");

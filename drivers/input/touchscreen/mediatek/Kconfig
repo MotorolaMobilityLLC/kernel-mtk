@@ -34,6 +34,18 @@ config TOUCHSCREEN_MTK_GT1151
 
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
 
+config TOUCHSCREEN_MTK_USE_MODULE
+	bool "Mediatek touch panel driver build as module"
+	default n
+	help
+	  Say Y here if you want to build touch driver as xxx.ko.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module,
+	  It will be called by insmod xxx.ko in init.rc.
+
+
 config TOUCHSCREEN_MTK_GT1151TB
 	bool "GT1151 for Mediatek package"
 	default n

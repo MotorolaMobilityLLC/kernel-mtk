@@ -20,7 +20,6 @@
  */
 
 #include <linux/input.h>
-
 #include "include/gt1x_tpd_common.h"
 #include "gt1x_config.h"
 
@@ -1051,12 +1050,10 @@ s32 gt1x_request_event_handler(void)
 	case GTP_RQST_MAIN_CLOCK:
 		GTP_INFO("Request main clock.");
 		break;
-#if 0
 #ifdef CONFIG_GTP_HOTKNOT
 	case GTP_RQST_HOTKNOT_CODE:
 		GTP_INFO("Request HotKnot Code.");
 		break;
-#endif
 #endif
 	default:
 		break;
@@ -1730,6 +1727,7 @@ s32 gt1x_init(void)
 		gt1x_abs_y_max = tpd_dts_data.tpd_resolution[1];
 		gt1x_int_type = GTP_INT_TRIGGER;
 		gt1x_wakeup_level = GTP_WAKEUP_LEVEL;
+		return ret;
 	}
 
 	gt1x_workqueue = create_singlethread_workqueue("gt1x_workthread");
@@ -1781,3 +1779,4 @@ void gt1x_deinit(void)
 	if (gt1x_workqueue)
 		destroy_workqueue(gt1x_workqueue);
 }
+MODULE_LICENSE("GPL");

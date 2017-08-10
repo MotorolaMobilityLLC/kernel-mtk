@@ -54,6 +54,7 @@ static int tpd_polling_time = 50;
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static DECLARE_WAIT_QUEUE_HEAD(pm_waiter);
 static bool gtp_suspend;
+
 DECLARE_WAIT_QUEUE_HEAD(init_waiter);
 DEFINE_MUTEX(i2c_access);
 unsigned int touch_irq = 0;
@@ -572,6 +573,7 @@ static int tpd_registration(void *client)
 		/* TP resolution == LCD resolution, no need to match resolution when initialized fail */
 		gt1x_abs_x_max = 0;
 		gt1x_abs_y_max = 0;
+		return 0;
 	}
 
 	thread = kthread_run(tpd_event_handler, 0, TPD_DEVICE);
@@ -630,20 +632,14 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		GTP_INFO(TPD_DEVICE " failed to create probe thread: %d\n", err);
 		return err;
 	}
-	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
-	wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
-	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
-/*
-	do {
-		GTP_INFO("ZH tpd_i2c_probe A count = %d", count);
-		msleep(20);
-		GTP_INFO("ZH tpd_i2c_probe B count = %d", count);
-		count++;
-		if (check_flag == true)
-			break;
-	} while (count < 300);
-	GTP_INFO("tpd_i2c_probe done.count = %d, flag = %d", count, tpd_load_status);
-*/
+
+	err = wait_event_timeout(init_waiter, check_flag == true, 5 * HZ);
+	if (err <= 0)
+		GTP_ERROR("init_waiter fail, err=%d\n", err);
+
+	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible, err=%d, flag=%d, tpd_load_status=%d\n",
+				err, check_flag, tpd_load_status);
+
 	return 0;
 }
 
@@ -1230,3 +1226,4 @@ static void __exit tpd_driver_exit(void)
 
 module_init(tpd_driver_init);
 module_exit(tpd_driver_exit);
+MODULE_LICENSE("GPL");

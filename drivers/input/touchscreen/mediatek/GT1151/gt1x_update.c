@@ -1250,3 +1250,4 @@ int gt1x_startup_patch(void)
 
 	return ret;
 }
+MODULE_LICENSE("GPL");

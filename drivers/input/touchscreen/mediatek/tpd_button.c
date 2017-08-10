@@ -99,6 +99,7 @@ void tpd_button(unsigned int x, unsigned int y, unsigned int down)
 		tpd->btn_state = 0;
 	}
 }
+EXPORT_SYMBOL(tpd_button);
 
 void tpd_button_setting(int keycnt, void *keys, void *keys_dim)
 {
@@ -106,5 +107,6 @@ void tpd_button_setting(int keycnt, void *keys, void *keys_dim)
 	memcpy(tpd_keys, keys, keycnt * 4);
 	memcpy(tpd_keys_dim, keys_dim, keycnt * 4 * 4);
 }
-
+EXPORT_SYMBOL(tpd_button_setting);
+MODULE_LICENSE("GPL");
 /* #endif */

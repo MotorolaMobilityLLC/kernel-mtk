@@ -17,6 +17,7 @@
 #include <linux/kobject.h>
 #include <linux/regulator/consumer.h>
 
+
 /*debug macros */
 /*#define TPD_DEBUG */
 #define TPD_DEBUG_CODE

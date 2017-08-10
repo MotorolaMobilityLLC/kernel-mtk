@@ -48,6 +48,8 @@
 #endif
 struct tpd_filter_t tpd_filter;
 struct tpd_dts_info tpd_dts_data;
+EXPORT_SYMBOL(tpd_dts_data);
+
 struct pinctrl *pinctrl1;
 struct pinctrl_state *pins_default;
 struct pinctrl_state *eint_as_int, *eint_output0, *eint_output1, *rst_output0, *rst_output1;
@@ -64,6 +66,7 @@ struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt7623-touch", },
 	{},
 };
+EXPORT_SYMBOL(touch_of_match);
 
 void tpd_get_dts_info(void)
 {
@@ -108,6 +111,7 @@ void tpd_get_dts_info(void)
 		pr_err("[tpd]%s can't find touch compatible custom node\n", __func__);
 	}
 }
+EXPORT_SYMBOL(tpd_get_dts_info);
 
 static DEFINE_MUTEX(tpd_set_gpio_mutex);
 void tpd_gpio_as_int(int pin)
@@ -118,6 +122,7 @@ void tpd_gpio_as_int(int pin)
 		pinctrl_select_state(pinctrl1, eint_as_int);
 	mutex_unlock(&tpd_set_gpio_mutex);
 }
+EXPORT_SYMBOL(tpd_gpio_as_int);
 
 void tpd_gpio_output(int pin, int level)
 {
@@ -136,6 +141,8 @@ void tpd_gpio_output(int pin, int level)
 	}
 	mutex_unlock(&tpd_set_gpio_mutex);
 }
+EXPORT_SYMBOL(tpd_gpio_output);
+
 int tpd_get_gpio_info(struct platform_device *pdev)
 {
 	int ret;
@@ -323,8 +330,6 @@ static int __init tpd_device_init(void);
 static void __exit tpd_device_exit(void);
 static int tpd_probe(struct platform_device *pdev);
 static int tpd_remove(struct platform_device *pdev);
-static struct work_struct tpd_init_work;
-static struct workqueue_struct *tpd_init_workqueue;
 static int tpd_suspend_flag;
 int tpd_register_flag = 0;
 /* global variable definitions */
@@ -401,52 +406,6 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	}
 	return 0;
 }
-/* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
-int tpd_driver_add(struct tpd_driver_t *tpd_drv)
-{
-	int i;
-
-	if (g_tpd_drv != NULL) {
-		TPD_DMESG("touch driver exist\n");
-		return -1;
-	}
-	/* check parameter */
-	if (tpd_drv == NULL)
-		return -1;
-	tpd_drv->tpd_have_button = tpd_dts_data.use_tpd_button;
-	/* R-touch */
-	if (strcmp(tpd_drv->tpd_device_name, "generic") == 0) {
-		tpd_driver_list[0].tpd_device_name = tpd_drv->tpd_device_name;
-		tpd_driver_list[0].tpd_local_init = tpd_drv->tpd_local_init;
-		tpd_driver_list[0].suspend = tpd_drv->suspend;
-		tpd_driver_list[0].resume = tpd_drv->resume;
-		tpd_driver_list[0].tpd_have_button = tpd_drv->tpd_have_button;
-		return 0;
-	}
-	for (i = 1; i < TP_DRV_MAX_COUNT; i++) {
-		/* add tpd driver into list */
-		if (tpd_driver_list[i].tpd_device_name == NULL) {
-			tpd_driver_list[i].tpd_device_name = tpd_drv->tpd_device_name;
-			tpd_driver_list[i].tpd_local_init = tpd_drv->tpd_local_init;
-			tpd_driver_list[i].suspend = tpd_drv->suspend;
-			tpd_driver_list[i].resume = tpd_drv->resume;
-			tpd_driver_list[i].tpd_have_button = tpd_drv->tpd_have_button;
-			tpd_driver_list[i].attrs = tpd_drv->attrs;
-#if 0
-			if (tpd_drv->tpd_local_init() == 0) {
-				TPD_DMESG("load %s successfully\n",
-					  tpd_driver_list[i].tpd_device_name);
-				g_tpd_drv = &tpd_driver_list[i];
-			}
-#endif
-			break;
-		}
-		if (strcmp(tpd_driver_list[i].tpd_device_name, tpd_drv->tpd_device_name) == 0)
-			return 1;	/* driver exist */
-	}
-
-	return 0;
-}
 
 int tpd_driver_remove(struct tpd_driver_t *tpd_drv)
 {
@@ -463,6 +422,7 @@ int tpd_driver_remove(struct tpd_driver_t *tpd_drv)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(tpd_driver_remove);
 
 static void tpd_create_attributes(struct device *dev, struct tpd_attrs *attrs)
 {
@@ -643,6 +603,8 @@ static int tpd_probe(struct platform_device *pdev)
 
 	return 0;
 }
+EXPORT_SYMBOL(tpd);
+
 static int tpd_remove(struct platform_device *pdev)
 {
 	input_unregister_device(tpd->dev);
@@ -650,25 +612,57 @@ static int tpd_remove(struct platform_device *pdev)
 }
 
 /* called when loaded into kernel */
-static void tpd_init_work_callback(struct work_struct *work)
-{
-	TPD_DEBUG("MediaTek touch panel driver init\n");
-	if (platform_driver_register(&tpd_driver) != 0) {
-		TPD_DMESG("unable to register touch panel driver.\n");
-	}
-}
 static int __init tpd_device_init(void)
 {
-	int res = 0;
-
-	tpd_init_workqueue = create_singlethread_workqueue("mtk-tpd");
-	INIT_WORK(&tpd_init_work, tpd_init_work_callback);
-
-	res = queue_work(tpd_init_workqueue, &tpd_init_work);
-	if (!res)
-		pr_err("tpd : touch device init failed res:%d\n", res);
+	TPD_DEBUG("MediaTek touch panel driver init\n");
 	return 0;
 }
+/* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
+int tpd_driver_add(struct tpd_driver_t *tpd_drv)
+{
+	int i;
+
+	if (g_tpd_drv != NULL) {
+		TPD_DMESG("touch driver exist\n");
+		return -1;
+	}
+	/* check parameter */
+	if (tpd_drv == NULL)
+		return -1;
+	tpd_drv->tpd_have_button = tpd_dts_data.use_tpd_button;
+	/* R-touch */
+	if (strcmp(tpd_drv->tpd_device_name, "generic") == 0) {
+		tpd_driver_list[0].tpd_device_name = tpd_drv->tpd_device_name;
+		tpd_driver_list[0].tpd_local_init = tpd_drv->tpd_local_init;
+		tpd_driver_list[0].suspend = tpd_drv->suspend;
+		tpd_driver_list[0].resume = tpd_drv->resume;
+		tpd_driver_list[0].tpd_have_button = tpd_drv->tpd_have_button;
+	return 0;
+}
+	for (i = 1; i < TP_DRV_MAX_COUNT; i++) {
+		/* add tpd driver into list */
+		if (tpd_driver_list[i].tpd_device_name == NULL) {
+			tpd_driver_list[i].tpd_device_name = tpd_drv->tpd_device_name;
+			tpd_driver_list[i].tpd_local_init = tpd_drv->tpd_local_init;
+			tpd_driver_list[i].suspend = tpd_drv->suspend;
+			tpd_driver_list[i].resume = tpd_drv->resume;
+			tpd_driver_list[i].tpd_have_button = tpd_drv->tpd_have_button;
+			tpd_driver_list[i].attrs = tpd_drv->attrs;
+			break;
+		}
+		if (strcmp(tpd_driver_list[i].tpd_device_name, tpd_drv->tpd_device_name) == 0)
+			return 1;	/* driver exist */
+	}
+
+	/* Adjust tpd_probe here, for support ko mode */
+	if (platform_driver_register(&tpd_driver) != 0) {
+		pr_err("platform_driver_register tpd_driver fail\n");
+		return -1;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(tpd_driver_add);
 /* should never be called */
 static void __exit tpd_device_exit(void)
 {
@@ -680,6 +674,6 @@ static void __exit tpd_device_exit(void)
 late_initcall(tpd_device_init);
 module_exit(tpd_device_exit);
 
-MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek touch panel driver");
 MODULE_AUTHOR("Kirby Wu<kirby.wu@mediatek.com>");
+MODULE_LICENSE("GPL");

@@ -5,7 +5,10 @@ unsigned long TPD_RES_Y = 800;
 
 /* #if (defined(TPD_HAVE_CALIBRATION) && !defined(TPD_CUSTOM_CALIBRATION)) */
 int tpd_calmat[8] = { 0 };
+EXPORT_SYMBOL(tpd_calmat);
 int tpd_def_calmat[8] = { 0 };
+EXPORT_SYMBOL(tpd_def_calmat);
+
 
 int tpd_calmat_size = 8;
 int tpd_def_calmat_size = 8;
@@ -14,6 +17,7 @@ module_param_array(tpd_def_calmat, int, &tpd_def_calmat_size, 0444);
 /* #endif */
 /* #ifdef TPD_TYPE_CAPACITIVE */
 int tpd_type_cap = 0;
+EXPORT_SYMBOL(tpd_type_cap);
 
 int tpd_v_magnify_x = 10;
 int tpd_v_magnify_y = 10;
@@ -58,7 +62,9 @@ int tpd_em_sample_cnt = 16;
 module_param(tpd_em_sample_cnt, int, 0664);
 
 int tpd_load_status = 0;
+EXPORT_SYMBOL(tpd_load_status);
 module_param(tpd_load_status, int, 0664);
 
 int tpd_em_asamp = 1;
 module_param(tpd_em_asamp, int, 0664);
+MODULE_LICENSE("GPL");
