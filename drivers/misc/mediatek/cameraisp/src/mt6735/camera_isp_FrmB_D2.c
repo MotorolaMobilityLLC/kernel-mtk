@@ -2230,6 +2230,7 @@ static long ISP_Buf_CTRL_FUNC_FRMB(unsigned long Param)
 			break;
 
 		case ISP_RT_BUF_CTRL_DEQUE_FRMB:
+			deque_buf.sof_cnt = 0;
 			switch (rt_dma) {
 			case _imgo_:
 			case _img2o_:
