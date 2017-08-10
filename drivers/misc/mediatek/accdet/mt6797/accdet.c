@@ -1202,6 +1202,7 @@ static inline void accdet_init(void)
 {
 	unsigned int reg_val = 0;
 
+	reg_val = 0;
 	ACCDET_DEBUG("[Accdet]accdet hardware init\n");
 	/*clock*/
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);
