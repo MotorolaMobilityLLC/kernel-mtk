@@ -1400,9 +1400,9 @@ void musb_stop(struct musb *musb)
 {
 	/* stop IRQs, timers, ... */
 	musb_generic_disable(musb);
+	gadget_stop(musb);
 	musb_platform_disable(musb);
 	musb->is_active = 0;
-	gadget_stop(musb);
 	DBG(0, "HDRC disabled\n");
 
 	/* FIXME
