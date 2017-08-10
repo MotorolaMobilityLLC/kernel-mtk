@@ -1658,6 +1658,8 @@ P_MSDU_INFO_T qmDequeueTxPacketsMthread(IN P_ADAPTER_T prAdapter, IN P_TX_TCQ_ST
 		    (prTcqStatus->au2FreePageCount[prMsduInfo->ucTC] / NIC_TX_MAX_PAGE_PER_FRAME);
 		prMsduInfo = prNextMsduInfo;
 	}
+	if (prReturnedPacketListHead)
+		wlanTxProfilingTagMsdu(prAdapter, prReturnedPacketListHead, TX_PROF_TAG_DRV_DEQUE);
 
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 

@@ -1596,7 +1596,7 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
 				GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
 			} else if (prMsduInfo->eSrc == TX_PACKET_OS) {
-				wlanTxProfilingTagMsdu(prAdapter, prMsduInfo, TX_PROF_TAG_DRV_DEQUE);
+				wlanTxProfilingTagMsdu(prAdapter, prMsduInfo, TX_PROF_TAG_DRV_TX_DONE);
 				kalSendComplete(prAdapter->prGlueInfo, prNativePacket, WLAN_STATUS_SUCCESS);
 				prMsduInfo->prPacket = NULL;
 			} else if (prMsduInfo->eSrc == TX_PACKET_FORWARDING) {
@@ -1680,8 +1680,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 		HAL_WRITE_TX_PORT(prAdapter, u4TotalLength, (PUINT_8) pucOutputBuf, u4ValidBufSize);
 #endif
-		wlanTxLifetimeTagPacketQue(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue),
-				TX_PROF_TAG_DRV_TX_DONE);
 
 		nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue));
 

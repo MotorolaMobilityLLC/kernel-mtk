@@ -6349,7 +6349,7 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 
 BOOLEAN wlanTxLifetimeIsProfilingEnabled(IN P_ADAPTER_T prAdapter)
 {
-	BOOLEAN fgEnabled = FALSE;
+	BOOLEAN fgEnabled = TRUE;
 #if CFG_SUPPORT_WFD
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 
@@ -6603,6 +6603,15 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 WLAN_STATUS
 wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
+	OS_SYSTIME rCurrent = kalGetTimeTick();
+	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
+
+	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000)
+		DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
+				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
+				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+
 	DBGLOG(TX, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
@@ -6612,6 +6621,15 @@ wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 WLAN_STATUS
 wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
+	OS_SYSTIME rCurrent = kalGetTimeTick();
+	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
+
+	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000)
+		DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
+				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
+				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+
 	DBGLOG(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
