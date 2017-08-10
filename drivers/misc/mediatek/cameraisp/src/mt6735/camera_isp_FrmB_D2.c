@@ -3732,6 +3732,13 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC_FRMB(ISP_ED_BUFQUE_STRUCT_FRMB param)
 	switch (param.ctrl) {
 	case ISP_ED_BUFQUE_CTRL_ENQUE_FRAME:	/* signal that a specific buffer is enqueued */
 		/* [1] check the ring buffer list is full or not */
+		if (P2_EDBUF_MList_LastBufIdx < 0 ||
+			P2_EDBUF_MList_LastBufIdx >= _MAX_SUPPORT_P2_PACKAGE_NUM_) {
+			LOG_ERR("P2_EDBUF_MList_LastBufIdx error!");
+			ret = -EFAULT;
+			return ret;
+		}
+
 		spin_lock(&(SpinLockEDBufQueList));
 		if (((P2_EDBUF_MList_LastBufIdx + 1) % _MAX_SUPPORT_P2_PACKAGE_NUM_) ==
 		    P2_EDBUF_MList_FirstBufIdx && (P2_EDBUF_MList_LastBufIdx != -1)) {
