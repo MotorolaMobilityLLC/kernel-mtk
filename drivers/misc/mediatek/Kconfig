@@ -78,6 +78,15 @@ config MTK_LDVT
 	help
 	  Support LDVT or not
 
+config MTK_CPU_STRESS
+	bool "MTK cpu stress pattern"
+	default n
+	help
+	  This is an option for MTK internal cpu_stress pattern.
+	  Run test patterns to stress CPU functionality.
+	  Internal project will enable it to stress CPU.
+	  If you are not sure about this, do not set it to y.
+
 config TABLET_PROJECT
     bool "IS_TABLET_PROJECT"
     default n
@@ -409,7 +418,6 @@ source "drivers/misc/mediatek/atf_log/Kconfig"
 source "drivers/misc/mediatek/boot/Kconfig"
 source "drivers/misc/mediatek/boot_reason/Kconfig"
 source "drivers/misc/mediatek/chip/Kconfig"
-
 source "drivers/misc/mediatek/devinfo/Kconfig"
 source "drivers/misc/mediatek/dynamic_boost/Kconfig"
 source "drivers/misc/mediatek/exm/Kconfig"
