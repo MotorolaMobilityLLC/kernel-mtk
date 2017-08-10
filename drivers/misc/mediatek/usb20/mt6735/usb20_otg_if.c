@@ -268,7 +268,16 @@ void musb_h_in_data(unsigned char *buf, u16 len)
 
 			if (count < 64)
 				bshort = true;
-			musb_otg_read_fifo(count, buf + received);
+
+			if (received + count > len) {
+				DBG(0, "Data is too large\n");
+
+				/* read FIFO until data end (maximum size of len) */
+				musb_otg_read_fifo(len - received, buf);
+			} else {
+				musb_otg_read_fifo(count, buf + received);
+			}
+
 			received += count;
 			csr0 &= ~MUSB_CSR0_RXPKTRDY;
 			musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
