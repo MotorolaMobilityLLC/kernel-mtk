@@ -19,6 +19,10 @@
 #include "cmdq_def.h"
 #include "cmdq_mdp_common.h"
 
+#if !defined(CONFIG_MTK_CLKMGR) && !defined(CMDQ_USE_CCF)
+#define CMDQ_USE_CCF
+#endif
+
 #ifndef CMDQ_USE_CCF
 #include <mach/mt_clkmgr.h>
 #else

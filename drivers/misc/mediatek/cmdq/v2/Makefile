@@ -66,7 +66,7 @@ endif
 # platform dependent definition
 ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6570" "mt6580"))
 ccflags-y += -DCMDQ_DUMP_IMG_CLOCK_STATE
 endif
 
@@ -74,7 +74,7 @@ endif
 # ccflags-$(CONFIG_MTK_MET) += -DCMDQ_MDP_MET_STATUS
 # endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6580"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6570" "mt6580"))
 ccflags-y += -DCMDQ_USE_LARGE_MAX_COOKIE
 endif
 
@@ -82,7 +82,7 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797" "mt6757"))
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6580" "mt6755" "mt6797"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6570" "mt6580" "mt6755" "mt6797"))
 ccflags-y += -DCMDQ_DISP_LEGACY_SUB_SCENARIO
 endif
 
