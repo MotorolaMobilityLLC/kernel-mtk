@@ -593,8 +593,11 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 			  0);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, USB20_GPIO_MODE_OFST, USB20_GPIO_MODE, 0);
 	/*DP/DM BC1.1 path Disable */
+	/* Don't disable, it will cause chr detection check USB port fail */
+	/*
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
 			  RG_USB20_BC11_SW_EN, 0);
+	*/
 	/*dp_100k disable */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_DP_100K_MODE_OFST,
 			  RG_USB20_DP_100K_MODE, 1);
@@ -833,9 +836,11 @@ void usb_phy_savecurrent(unsigned int clk_on)
 	/*DP/DM BC1.1 path Disable */
 	/* RG_USB20_BC11_SW_EN 1'b0 */
 	/* U3D_USBPHYACR6 RG_USB20_BC11_SW_EN */
+	/* Don't disable, it will cause chr detection check USB port fail */
+	/*
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
 			  RG_USB20_BC11_SW_EN, 0);
-
+	*/
 	/*OTG Disable */
 	/* RG_USB20_OTG_VBUSCMP_EN 1b0 */
 	/* U3D_USBPHYACR6 RG_USB20_OTG_VBUSCMP_EN */
