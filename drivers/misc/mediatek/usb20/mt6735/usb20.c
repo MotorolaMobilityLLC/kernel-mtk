@@ -1403,6 +1403,9 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 	/* enable uart log */
 	musb_uart_debug = 1;
+#ifdef MUSB_QMU_SUPPORT
+	isoc_ep_gpd_customization = 256;
+#endif
 
 	DBG(0, "first_connect, check_delay_done to 0\n");
 	first_connect = 0;

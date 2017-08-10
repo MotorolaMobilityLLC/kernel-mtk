@@ -71,11 +71,13 @@ typedef struct _GPD_RANGE {
 
 #ifdef MUSB_QMU_SUPPORT_HOST
 extern int mtk_host_qmu_concurrent;
-extern int mtk_host_qmu_pipe;
-extern int mtk_host_qmu_support_max_speed;
+extern int mtk_host_qmu_pipe_msk;
 #endif
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;
+extern struct musb_hw_ep *qmu_isoc_ep;
+#define ISOC_EP_IDX 2
+extern int isoc_ep_gpd_customization;
 static inline int mtk_dbg_level(unsigned level)
 {
 	return mtk_qmu_dbg_level >= level;

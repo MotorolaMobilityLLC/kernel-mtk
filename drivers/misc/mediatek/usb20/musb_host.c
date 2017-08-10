@@ -2048,8 +2048,7 @@ finish:
 static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 {
 	int idle = 0;
-	int best_diff;
-	int best_end, epnum;
+	int epnum, hw_end = 0;
 	struct musb_hw_ep *hw_ep = NULL;
 	struct list_head *head = NULL;
 	/* u8                   toggle; */
@@ -2067,17 +2066,18 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 		goto success;
 	}
 
-	/* else, periodic transfers get muxed to other endpoints */
-
-	/*
-	 * We know this qh hasn't been scheduled, so all we need to do
-	 * is choose which hardware endpoint to put it on ...
-	 *
-	 * REVISIT what we really want here is a regular schedule tree
-	 * like e.g. OHCI uses.
-	 */
-	best_diff = 4096;
-	best_end = -1;
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if (isoc_ep_gpd_customization
+			&& qh->type == USB_ENDPOINT_XFER_ISOC
+			&& (musb_ep_get_qh(qmu_isoc_ep, is_in) == NULL)) {
+		hw_end = qmu_isoc_ep->epnum;
+		hw_ep = musb->endpoints + hw_end;
+		idle = 1;
+		qh->mux = 0;
+		DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+		goto success;
+	}
+#endif
 
 	for (epnum = 1, hw_ep = musb->endpoints + 1; epnum < musb->nr_endpoints; epnum++, hw_ep++) {
 		/* int  diff; */
@@ -2085,81 +2085,36 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 		if (musb_ep_get_qh(hw_ep, is_in) != NULL)
 			continue;
 
-		/* if (hw_ep == musb->bulk_ep) */
-		/* continue; */
-
-
-		hw_ep = musb->endpoints + epnum;	/* got the right ep */
-		DBG(3, "musb_schedule:: find a hw_ep%d\n", hw_ep->epnum);
-		break;
-#if 0
-		if (is_in)
-			diff = hw_ep->max_packet_sz_rx;
-		else
-			diff = hw_ep->max_packet_sz_tx;
-		diff -= (qh->maxpacket * qh->hb_mult);
-
-		if (diff >= 0 && best_diff > diff) {
-
-			/*
-			 * Mentor controller has a bug in that if we schedule
-			 * a BULK Tx transfer on an endpoint that had earlier
-			 * handled ISOC then the BULK transfer has to start on
-			 * a zero toggle.  If the BULK transfer starts on a 1
-			 * toggle then this transfer will fail as the mentor
-			 * controller starts the Bulk transfer on a 0 toggle
-			 * irrespective of the programming of the toggle bits
-			 * in the TXCSR register.  Check for this condition
-			 * while allocating the EP for a Tx Bulk transfer.  If
-			 * so skip this EP.
-			 */
-			hw_ep = musb->endpoints + epnum;
-			toggle = usb_gettoggle(urb->dev, qh->epnum, !is_in);
-			txtype = (musb_readb(hw_ep->regs, MUSB_TXTYPE)
-				  >> 4) & 0x3;
-			if (!is_in && (qh->type == USB_ENDPOINT_XFER_BULK) &&
-			    toggle && (txtype == USB_ENDPOINT_XFER_ISOC))
-				continue;
-
-			best_diff = diff;
-			best_end = epnum;
-		}
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if (isoc_ep_gpd_customization && (hw_ep == qmu_isoc_ep))
+			continue;
 #endif
+
+		hw_end = epnum;
+		hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+		DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
+		break;
 	}
 
-	if (!hw_ep || epnum >= musb->nr_endpoints) {
+#ifdef MUSB_QMU_SUPPORT_HOST
+	/* grab isoc ep if no other ep is available */
+	if (isoc_ep_gpd_customization
+			&& !hw_end
+			&& qh->type != USB_ENDPOINT_XFER_ISOC
+			&& (musb_ep_get_qh(qmu_isoc_ep, is_in) == NULL)) {
+		hw_end = qmu_isoc_ep->epnum;
+		hw_ep = musb->endpoints + hw_end;
+		DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+	}
+#endif
+
+	if (!hw_end) {
 		DBG(0, "musb::error!not find a ep for the urb\r\n");
 		return -ENOSPC;
 	}
 
-#if 0
-	/* use bulk reserved ep1 if no other ep is free */
-	if (best_end < 0 && qh->type == USB_ENDPOINT_XFER_BULK) {
-		hw_ep = musb->bulk_ep;
-		if (is_in)
-			head = &musb->in_bulk;
-		else
-			head = &musb->out_bulk;
-
-		/* Enable bulk RX/TX NAK timeout scheme when bulk requests are
-		 * multiplexed.  This scheme doen't work in high speed to full
-		 * speed scenario as NAK interrupts are not coming from a
-		 * full speed device connected to a high speed device.
-		 * NAK timeout interval is 8 (128 uframe or 16ms) for HS and
-		 * 4 (8 frame or 8ms) for FS device.
-		 */
-		if (qh->dev)
-			qh->intv_reg = (USB_SPEED_HIGH == qh->dev->speed) ? 8 : 4;
-		goto success;
-	} else if (best_end < 0) {
-		return -ENOSPC;
-	}
-#endif
-
 	idle = 1;
 	qh->mux = 0;
-	/* hw_ep = musb->endpoints + best_end; */
-	DBG(4, "qh %p periodic slot %d\n", qh, best_end);
 success:
 	if (head) {
 		idle = list_empty(head);
@@ -2181,6 +2136,10 @@ success:
 				skip_cnt++;
 		}
 #ifdef MUSB_QMU_SUPPORT_HOST
+		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_customization is set*/
+		if (isoc_ep_gpd_customization && qh->type == USB_ENDPOINT_XFER_ISOC  && hw_ep != qmu_isoc_ep)
+			qh->is_use_qmu = 0;
+
 		if (qh->is_use_qmu) {
 			musb_ep_set_qh(hw_ep, is_in, qh);
 			mtk_kick_CmdQ(musb, is_in ? 1:0, qh, next_urb(qh));
@@ -2372,7 +2331,7 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		ret = 0;
 	} else {
 #ifdef MUSB_QMU_SUPPORT_HOST
-		if ((usb_pipetype(urb->pipe)) == mtk_host_qmu_pipe && urb->dev->speed <= mtk_host_qmu_support_max_speed)
+		if ((!usb_pipecontrol(urb->pipe)) && ((usb_pipetype(urb->pipe) + 1) & mtk_host_qmu_pipe_msk))
 			qh->is_use_qmu = 1;
 #endif
 		ret = musb_schedule(musb, qh, epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);

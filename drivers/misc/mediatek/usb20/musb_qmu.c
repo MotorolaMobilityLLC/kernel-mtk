@@ -54,6 +54,7 @@ int musb_qmu_init(struct musb *musb)
 		return -1;
 	}
 
+	qmu_isoc_ep = musb->endpoints + ISOC_EP_IDX;
 	return 0;
 }
 

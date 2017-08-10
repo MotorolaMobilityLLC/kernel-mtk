@@ -132,19 +132,23 @@ module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
-int mtk_host_qmu_pipe = PIPE_ISOCHRONOUS;
-int mtk_host_qmu_support_max_speed = USB_SPEED_FULL;
+int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
 module_param(mtk_host_qmu_concurrent, int, 0644);
-module_param(mtk_host_qmu_pipe, int, 0644);
-module_param(mtk_host_qmu_support_max_speed, int, 0644);
+module_param(mtk_host_qmu_pipe_msk, int, 0644);
 #endif
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
+u32 dma_burst_setting, qmu_ioc_setting;
+struct musb_hw_ep *qmu_isoc_ep;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
-u32 dma_burst_setting, qmu_ioc_setting;
+int isoc_ep_gpd_customization;
+module_param(mtk_qmu_dbg_level, int, 0644);
+module_param(mtk_qmu_max_gpd_num, int, 0644);
+module_param(isoc_ep_gpd_customization, int, 0644);
 #ifdef QMU_TASKLET
 int qmu_tasklet = 1;
+module_param(qmu_tasklet, int, 0644);
 void qmu_done_tasklet(unsigned long data)
 {
 	unsigned int qmu_val;
@@ -2688,13 +2692,7 @@ static void __exit musb_cleanup(void)
 	platform_driver_unregister(&musb_driver);
 }
 module_exit(musb_cleanup);
-#ifdef MUSB_QMU_SUPPORT
-module_param(mtk_qmu_dbg_level, int, 0644);
-module_param(mtk_qmu_max_gpd_num, int, 0644);
-#ifdef QMU_TASKLET
-module_param(qmu_tasklet, int, 0644);
-#endif
-#endif
+
 static int set_option(const char *val, const struct kernel_param *kp)
 {
 	int rv = param_set_int(val, kp);
