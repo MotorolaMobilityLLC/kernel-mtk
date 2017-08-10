@@ -619,8 +619,6 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE)) {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
 			Auddrv_DL1_Interrupt_Handler();
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
-			Auddrv_DL2_Interrupt_Handler();
 	}
 
 	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE)) {
@@ -634,6 +632,11 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Auddrv_UL2_Interrupt_Handler();
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mState == true)
 			Auddrv_MOD_DAI_Interrupt_Handler();
+	}
+
+	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE)) {
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
+			Auddrv_DL2_Interrupt_Handler();
 	}
 
 	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE)) {
@@ -2395,8 +2398,12 @@ static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		break;
 	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
 		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (1 << 2), (1 << 2));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 10), (1 << 10));
 		break;
 	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
 		/* irq 4 default send to cm4 */

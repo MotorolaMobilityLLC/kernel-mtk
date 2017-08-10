@@ -148,7 +148,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE);
 
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I07,
@@ -463,7 +463,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE,
 		     runtime->rate, runtime->period_size);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL2, runtime->rate);
