@@ -2422,6 +2422,21 @@ int32_t cmdqCoreRegisterCB(CMDQ_GROUP_ENUM engGroup,
 	return 0;
 }
 
+int32_t cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_ENUM engGroup,
+	CmdqDispatchModuleCB dispatchMod)
+{
+	CmdqCBkStruct *pCallback;
+
+	if (!cmdq_core_is_valid_group(engGroup))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' dispatch callback\n", engGroup);
+	pCallback = &(gCmdqGroupCallback[engGroup]);
+	pCallback->dispatchMod = dispatchMod;
+
+	return 0;
+}
+
 int32_t cmdqCoreRegisterDebugRegDumpCB(CmdqDebugRegDumpBeginCB beginCB, CmdqDebugRegDumpEndCB endCB)
 {
 	CMDQ_VERBOSE("Register reg dump: begin=%p, end=%p\n", beginCB, endCB);
@@ -4752,7 +4767,8 @@ static void cmdq_core_parse_error(const TaskStruct *pTask, uint32_t thread,
 			case CMDQ_CODE_WFE:
 				/* arg_a is the event ID */
 				eventENUM = cmdq_core_reverse_event_ENUM(arg_a);
-				module = cmdq_get_func()->moduleFromEvent(eventENUM);
+				module = cmdq_get_func()->moduleFromEvent(eventENUM,
+					gCmdqGroupCallback, pTask->engineFlag);
 				break;
 			case CMDQ_CODE_READ:
 			case CMDQ_CODE_MOVE:

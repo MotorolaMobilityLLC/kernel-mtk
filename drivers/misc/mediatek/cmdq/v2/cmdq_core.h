@@ -311,11 +311,15 @@ typedef int32_t(*CmdqDebugRegDumpBeginCB) (uint32_t taskID, uint32_t *regCount,
 					   uint32_t **regAddress);
 typedef int32_t(*CmdqDebugRegDumpEndCB) (uint32_t taskID, uint32_t regCount, uint32_t *regValues);
 
+/* dispatch module can be change by callback */
+typedef const char*(*CmdqDispatchModuleCB) (uint64_t engineFlag);
+
 typedef struct CmdqCBkStruct {
 	CmdqClockOnCB clockOn;
 	CmdqDumpInfoCB dumpInfo;
 	CmdqResetEngCB resetEng;
 	CmdqClockOffCB clockOff;
+	CmdqDispatchModuleCB dispatchMod;
 } CmdqCBkStruct;
 
 typedef struct CmdqDebugCBkStruct {
@@ -718,6 +722,9 @@ extern "C" {
 				   CmdqClockOnCB clockOn,
 				   CmdqDumpInfoCB dumpInfo,
 				   CmdqResetEngCB resetEng, CmdqClockOffCB clockOff);
+
+	int32_t cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_ENUM engGroup,
+			CmdqDispatchModuleCB dispatchMod);
 
 	int32_t cmdqCoreRegisterDebugRegDumpCB(CmdqDebugRegDumpBeginCB beginCB,
 					       CmdqDebugRegDumpEndCB endCB);
