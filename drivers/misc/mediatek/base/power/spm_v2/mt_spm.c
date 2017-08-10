@@ -2328,7 +2328,7 @@ void spm_vmd_sel_gpio_set(void)
 #else
 		gpio_nf = 0;
 #endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
-	} else if (segment == 0x43) {
+	} else if ((segment == 0x43) || (segment == 0x4B)) {
 		gpio_nf = 0;
 	}
 #endif
