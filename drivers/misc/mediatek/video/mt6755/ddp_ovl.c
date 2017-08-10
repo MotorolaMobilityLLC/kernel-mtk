@@ -785,7 +785,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 {
 	int enabled_layers = 0;
 	int has_sec_layer = 0;
-	int local_layer, global_layer, layer_id;
+	unsigned int local_layer, global_layer, layer_id;
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
@@ -805,17 +805,28 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 
 	/* check if the ovl module has sec layer */
 	for (layer_id = global_layer; layer_id < (global_layer + ovl_layer_num(module)); layer_id++) {
-		if (pConfig->ovl_config[layer_id].layer_en &&
-		    (pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
+		if (unlikely(layer_id > TOTAL_OVL_LAYER_NUM - 1)) {
+			DISPERR("%s: %s layer_id out of max num\n", __func__,
+			     ddp_get_module_name(module));
+			BUG();
+		} else if (pConfig->ovl_config[layer_id].layer_en &&
+		    (pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER)) {
 			has_sec_layer = 1;
+		}
 	}
 
 	setup_ovl_sec(module, handle, has_sec_layer);
 
 	for (local_layer = 0; local_layer < ovl_layer_num(module); local_layer++, global_layer++) {
+		OVL_CONFIG_STRUCT *ovl_cfg = NULL;
 
-		OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
+		if (unlikely(global_layer >= ARRAY_SIZE(pConfig->ovl_config))) {
+			DISPERR("%s: %s global_layer out of max num\n", __func__,
+			     ddp_get_module_name(module));
+			break;
+		}
 
+		ovl_cfg = &pConfig->ovl_config[global_layer];
 		pConfig->ovl_layer_scanned |= (1 << global_layer);
 
 		if (ovl_cfg->layer_en == 0)

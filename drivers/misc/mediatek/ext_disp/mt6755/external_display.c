@@ -1104,7 +1104,7 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 	int ret = 0;
 	int i = 0;
 	int layer_cnt = 0;
-	int config_layer_id = 0;
+	unsigned int config_layer_id = 0;
 	M4U_PORT_STRUCT sPort;
 
 	/* /EXT_DISP_FUNC(); */
@@ -1161,22 +1161,28 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 	if (_should_config_ovl_input()) {
 		for (i = 0; i < input->config_layer_num; i++) {
 			config_layer_id = input->config[i].layer_id;
-			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]),
-				&(input->config[i]));
-			dprec_mmp_dump_ovl_layer(&(data_config->ovl_config[config_layer_id]), config_layer_id, 2);
 
-			if (init_roi == 1) {
-				memcpy(&(data_config->dispif_config), &extd_lcm_params, sizeof(LCM_PARAMS));
+			if (config_layer_id < (ARRAY_SIZE(input->config))) {
+				ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]),
+					&(input->config[i]));
+				dprec_mmp_dump_ovl_layer(&(data_config->ovl_config[config_layer_id]),
+										config_layer_id, 2);
 
-				EXT_DISP_LOG("set dest w:%d, h:%d\n",
-						extd_lcm_params.dpi.width, extd_lcm_params.dpi.height);
-				data_config->dst_w = extd_lcm_params.dpi.width;
-				data_config->dst_h = extd_lcm_params.dpi.height;
-				data_config->dst_dirty = 1;
-				data_config->rdma_config.address = 0;
+				if (init_roi == 1) {
+					memcpy(&(data_config->dispif_config), &extd_lcm_params, sizeof(LCM_PARAMS));
+
+					EXT_DISP_LOG("set dest w:%d, h:%d\n",
+							extd_lcm_params.dpi.width, extd_lcm_params.dpi.height);
+					data_config->dst_w = extd_lcm_params.dpi.width;
+					data_config->dst_h = extd_lcm_params.dpi.height;
+					data_config->dst_dirty = 1;
+					data_config->rdma_config.address = 0;
+				}
+				data_config->ovl_dirty = 1;
+				pgc->need_trigger_overlay = 1;
+			} else {
+				BUG_ON(1);
 			}
-			data_config->ovl_dirty = 1;
-			pgc->need_trigger_overlay = 1;
 		}
 	} else {
 		OVL_CONFIG_STRUCT ovl_config;

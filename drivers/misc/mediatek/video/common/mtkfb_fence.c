@@ -363,7 +363,7 @@ static void mtkfb_ion_free_handle(struct ion_client *client, struct ion_handle *
 static size_t mtkfb_ion_phys_mmu_addr(struct ion_client *client, struct ion_handle *handle,
 				      unsigned int *mva)
 {
-	size_t size;
+	size_t size = 0;
 
 	if (!ion_client) {
 		MTKFB_FENCE_ERR("invalid ion client!\n");

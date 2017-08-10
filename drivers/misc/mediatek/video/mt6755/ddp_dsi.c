@@ -58,8 +58,8 @@ static int dsi_reg_op_debug;
 #define DSI_OUTREGBIT(cmdq, TYPE, REG, bit, value)  \
 	{\
 		do {\
-			TYPE r;\
-			TYPE v;\
+			TYPE r = {0};\
+			TYPE v = {0};\
 			if (cmdq) {\
 				*(unsigned int *)(&r) = ((unsigned int)0x00000000); \
 				r.bit = ~(r.bit);  \
@@ -131,7 +131,7 @@ static int dsi_reg_op_debug;
 
 #define MIPITX_OUTREGBIT(TYPE, REG, bit, value) {\
 		do {	\
-			TYPE r;\
+			TYPE r = {0};\
 			if (0) \
 				mt_reg_sync_writel(INREG32(&REG), &r); \
 			*(unsigned long *)(&r) = ((unsigned long)0x00000000);	  \
@@ -162,7 +162,7 @@ static int dsi_reg_op_debug;
 #define MIPITX_OUTREGBIT(TYPE, REG, bit, value)  \
 	{\
 		do {	\
-			TYPE r;\
+			TYPE r = {0};\
 			mt_reg_sync_writel(INREG32(&REG), &r);	  \
 			r.bit = value;	  \
 			MIPITX_OUTREG32(&REG, AS_UINT32(&r));	  \
@@ -361,8 +361,8 @@ DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 static void _DSI_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int param)
 {
 	int i = 0;
-	DSI_INT_STATUS_REG status;
-	DSI_TXRX_CTRL_REG txrx_ctrl;
+	DSI_INT_STATUS_REG status = {0};
+	DSI_TXRX_CTRL_REG txrx_ctrl = {0};
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		status = *(PDSI_INT_STATUS_REG) & param;
@@ -538,7 +538,7 @@ void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 	int i = DSI_MODULE_BEGIN(module);
-	DSI_PHY_LCCON_REG tmpreg;
+	DSI_PHY_LCCON_REG tmpreg = {0};
 
 	DSI_READREG32(PDSI_PHY_LCCON_REG, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
 	return tmpreg.LC_HS_TX_EN ? true : false;
@@ -2999,15 +2999,15 @@ static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, cmdqRecHandle
 					  LCM_DSI_PARAMS *dsi_params)
 {
 	int i;
-	DSI_PHY_TIMCON0_REG timcon0;	/* LPX */
-	DSI_PHY_TIMCON2_REG timcon2;	/* CLK_HS_TRAIL, CLK_HS_ZERO */
-	DSI_PHY_TIMCON3_REG timcon3;	/* CLK_HS_EXIT, CLK_HS_POST, CLK_HS_PREP */
-	DSI_HSA_WC_REG hsa;
-	DSI_HBP_WC_REG hbp;
-	DSI_HFP_WC_REG hfp, new_hfp;
-	DSI_BLLP_WC_REG bllp;
-	DSI_PSCTRL_REG ps;
-	uint32_t hstx_ckl_wc, new_hstx_ckl_wc;
+	DSI_PHY_TIMCON0_REG timcon0 = {0};	/* LPX */
+	DSI_PHY_TIMCON2_REG timcon2 = {0};	/* CLK_HS_TRAIL, CLK_HS_ZERO */
+	DSI_PHY_TIMCON3_REG timcon3 = {0};	/* CLK_HS_EXIT, CLK_HS_POST, CLK_HS_PREP */
+	DSI_HSA_WC_REG hsa = {0};
+	DSI_HBP_WC_REG hbp = {0};
+	DSI_HFP_WC_REG hfp = {0}, new_hfp = {0};
+	DSI_BLLP_WC_REG bllp = {0};
+	DSI_PSCTRL_REG ps = {0};
+	uint32_t hstx_ckl_wc = 0, new_hstx_ckl_wc = 0;
 	uint32_t v_a, v_b, v_c, lane_num;
 	LCM_DSI_MODE_CON dsi_mode;
 
@@ -3676,7 +3676,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 	LCM_DSI_PARAMS *dsi_params = NULL;
 	DSI_T0_INS t0;
 	DSI_T0_INS t1;
-	DSI_RX_DATA_REG read_data[4];
+	DSI_RX_DATA_REG read_data[4] = {{0} };
 
 	static cmdqBackupSlotHandle hSlot[4] = {0, 0, 0, 0};
 
@@ -4400,7 +4400,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		return dsi_val;
 	case HPW:
 		{
-			DSI_HSA_WC_REG tmp_reg;
+			DSI_HSA_WC_REG tmp_reg = {0};
 
 			DSI_READREG32(PDSI_HSA_WC_REG, &tmp_reg, &dsi_reg->DSI_HSA_WC);
 			dsi_val = (tmp_reg.HSA_WC + 10) / fbconfig_dsiTmpBufBpp;
@@ -4408,7 +4408,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case HFP:
 		{
-			DSI_HFP_WC_REG tmp_hfp;
+			DSI_HFP_WC_REG tmp_hfp = {0};
 
 			DSI_READREG32(PDSI_HFP_WC_REG, &tmp_hfp, &dsi_reg->DSI_HFP_WC);
 			dsi_val = ((tmp_hfp.HFP_WC + 12) / fbconfig_dsiTmpBufBpp);
@@ -4416,7 +4416,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case HBP:
 		{
-			DSI_HBP_WC_REG tmp_hbp;
+			DSI_HBP_WC_REG tmp_hbp = {0};
 			LCM_DSI_PARAMS *dsi_params;
 
 			dsi_params = get_dsi_params_handle(dsi_index);
@@ -4430,7 +4430,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VPW:
 		{
-			DSI_VACT_NL_REG tmp_vpw;
+			DSI_VACT_NL_REG tmp_vpw = {0};
 
 			DSI_READREG32(PDSI_VACT_NL_REG, &tmp_vpw, &dsi_reg->DSI_VACT_NL);
 			dsi_val = tmp_vpw.VACT_NL;
@@ -4438,7 +4438,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VFP:
 		{
-			DSI_VFP_NL_REG tmp_vfp;
+			DSI_VFP_NL_REG tmp_vfp = {0};
 
 			DSI_READREG32(PDSI_VFP_NL_REG, &tmp_vfp, &dsi_reg->DSI_VFP_NL);
 			dsi_val = tmp_vfp.VFP_NL;
@@ -4446,7 +4446,7 @@ uint32_t PanelMaster_get_dsi_timing(uint32_t dsi_index, MIPI_SETTING_TYPE type)
 		}
 	case VBP:
 		{
-			DSI_VBP_NL_REG tmp_vbp;
+			DSI_VBP_NL_REG tmp_vbp = {0};
 
 			DSI_READREG32(PDSI_VBP_NL_REG, &tmp_vbp, &dsi_reg->DSI_VBP_NL);
 			dsi_val = tmp_vbp.VBP_NL;

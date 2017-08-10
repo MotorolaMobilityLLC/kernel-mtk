@@ -419,7 +419,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 	int i;
 	fpsEx fps;
 	char disp_tmp[20];
-	int dst_layer_id = 0;
+	unsigned int dst_layer_id = 0;
 	int bytes_per_pixel = 0;
 
 	dprec_logger_get_result_value(DPREC_LOGGER_RDMA0_TRANSFER_1SECOND, &fps);
@@ -444,13 +444,16 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 				dst_layer_id : cfg->input_cfg[i].layer_id;
 		}
 	}
-
-	bytes_per_pixel = cfg->input_cfg[dst_layer_id].src_fmt & 0xff;
-	dynamic_debug_msg_print((unsigned int)(unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
-				cfg->input_cfg[dst_layer_id].tgt_width,
-				cfg->input_cfg[dst_layer_id].tgt_height,
-				cfg->input_cfg[dst_layer_id].src_pitch * bytes_per_pixel,
-				bytes_per_pixel);
+	if (dst_layer_id < (ARRAY_SIZE(cfg->input_cfg))) {
+		bytes_per_pixel = cfg->input_cfg[dst_layer_id].src_fmt & 0xff;
+		dynamic_debug_msg_print((unsigned int)(unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
+					cfg->input_cfg[dst_layer_id].tgt_width,
+					cfg->input_cfg[dst_layer_id].tgt_height,
+					cfg->input_cfg[dst_layer_id].src_pitch * bytes_per_pixel,
+					bytes_per_pixel);
+	} else {
+		BUG();
+	}
 	return 0;
 }
 
@@ -3731,6 +3734,7 @@ int primary_display_resume(void)
 			LCM_PARAMS *lcm_param_cv = NULL;
 
 			lcm_param_cv = disp_lcm_get_params(pgc->plcm);
+			BUG_ON(IS_ERR_OR_NULL(lcm_param_cv));
 			DISPMSG("lcm_mode_status=%d, lcm_param_cv->dsi.mode %d\n",
 					lcm_mode_status, lcm_param_cv->dsi.mode);
 			if (lcm_param_cv->dsi.mode != CMD_MODE)

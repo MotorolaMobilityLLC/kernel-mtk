@@ -390,14 +390,18 @@ int ovl2mem_input_config(disp_session_input_config *input)
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
 				   input->config[i].layer_id | (input->config[i].layer_enable << 16),
 				   0/*input->config[i].src_phy_addr*/);
-
 		config_layer_id = input->config[i].layer_id;
-		_convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]), &(input->config[i]));
-		dprec_mmp_dump_ovl_layer(&(data_config->ovl_config[config_layer_id]), config_layer_id, 3);
+		if (config_layer_id < (ARRAY_SIZE(input->config))) {
+			_convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]), &(input->config[i]));
+			dprec_mmp_dump_ovl_layer(&(data_config->ovl_config[config_layer_id]), config_layer_id, 3);
 
-		data_config->ovl_dirty = 1;
-		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, input->config[i].src_offset_x,
-											input->config[i].src_offset_y);
+			data_config->ovl_dirty = 1;
+			dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, input->config[i].src_offset_x,
+							input->config[i].src_offset_y);
+		} else {
+			DISPERR("config_layer_id:%u, out of the bounds\n", config_layer_id);
+			BUG_ON(1);
+		}
 	}
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
