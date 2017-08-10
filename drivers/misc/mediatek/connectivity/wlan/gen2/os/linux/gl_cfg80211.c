@@ -733,7 +733,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, INFO, "mtk_cfg80211_scan\n");
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(),n_ssids=%d\n"
+		, request->n_ssids);
 	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_EXT_T));
 
 	/* check if there is any pending scan not yet finished */
@@ -745,10 +746,22 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	if (request->n_ssids == 0) {
 		rScanRequest.rSsid.u4SsidLen = 0;
 	} else if (request->n_ssids == 1) {
+		/*wildcard ssid*/
+		COPY_SSID(rScanRequest.rSsid.aucSsid, rScanRequest.rSsid.u4SsidLen, request->ssids[0].ssid,
+			  request->ssids[0].ssid_len);
+	} else if (request->n_ssids == 2) {
+
+		DBGLOG(REQ, INFO, "mtk_cfg80211_scan,[0]ssid:%s, [0]ssid_len:%d [1]ssid:%s, [1]ssid_len:%d"
+		, request->ssids[0].ssid, request->ssids[0].ssid_len
+		, request->ssids[1].ssid, request->ssids[1].ssid_len);
+		/*ssids[0]: specific ssid*/
+		/*ssids[1]: wildcard ssid*/
+
 		COPY_SSID(rScanRequest.rSsid.aucSsid, rScanRequest.rSsid.u4SsidLen, request->ssids[0].ssid,
 			  request->ssids[0].ssid_len);
 	} else {
-		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
+		DBGLOG(REQ, ERROR, "request to find %d SSIDs, but only support %d\n"
+			, request->n_ssids, GL_CFG80211_SCAN_SSID_MAX_NUM);
 		return -EINVAL;
 	}
 
