@@ -4331,12 +4331,23 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 		return 0;
 
 	/* now we have only 1 layer */
+	/* check background (bg).
+	 * If top_bg=0, and left bg!=0, we should not use rdma mode.
+	*/
+	if (data_config->ovl_config[*bypass_layer_id].dst_y == 0 &&
+		data_config->ovl_config[*bypass_layer_id].dst_x != 0)
+		return 0;
+
 	/* we need to check layer size, because rdma has output_valid_thres setting
 	 * if (size < output_valid_thres) RDMA will hang !!*/
 	h = data_config->ovl_config[*bypass_layer_id].dst_h;
 	w = data_config->ovl_config[*bypass_layer_id].dst_w;
 	if (w * h <= 512 * 16 / 2)
 		return 0;
+	/* RDMA must use even width */
+	if (w & 0x1)
+		return 0;
+
 
 	return 1;
 }

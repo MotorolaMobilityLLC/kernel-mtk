@@ -140,7 +140,7 @@ struct disp_help_info help_info[OPT_COUNT] = {
 	{ DISP_OPT_SWITCH_DST_MODE, 0, "DISP_OPT_SWITCH_DST_MODE" },
 	{ DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1, "DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE" },
 	{ DISP_OPT_SCREEN_CAP_FROM_DITHER, 0, "DISP_OPT_SCREEN_CAP_FROM_DITHER" },
-	{ DISP_OPT_BYPASS_OVL, 0, "DISP_OPT_BYPASS_OVL" },
+	{ DISP_OPT_BYPASS_OVL, 1, "DISP_OPT_BYPASS_OVL" },
 	{ DISP_OPT_FPS_CALC_WND, 10, "DISP_OPT_FPS_CALC_WND" },
 	{ DISP_OPT_SMART_OVL, 1, "DISP_OPT_SMART_OVL" },
 	{ DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG" },
@@ -408,7 +408,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
+	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 1);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
 	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 0);
