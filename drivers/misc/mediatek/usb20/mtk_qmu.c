@@ -1102,12 +1102,16 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 	struct musb_hw_ep	*hw_ep = musb->endpoints + ep_num;
 	struct musb_qh	*qh = hw_ep->in_qh;
 	struct urb	*urb = NULL;
-
 	bool done = true;
-	/*trying to give_back the request to gadget driver.*/
+
+	if (unlikely(!qh)) {
+		DBG(0, "hw_ep:%d, QH NULL\n", ep_num);
+		return;
+	}
+
 	urb = next_urb(qh);
 	if (unlikely(!urb)) {
-		mtk_qmu_stop(ep_num, USB_DIR_IN);
+		DBG(0, "hw_ep:%d, !URB\n", ep_num);
 		return;
 	}
 	DBG(4, "\n");
@@ -1217,7 +1221,13 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 		if (done) {
 			if (musb_ep_get_qh(hw_ep, USB_DIR_IN))
 				qh->iso_idx = 0;
+
 			musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
+
+			if (!hw_ep->in_qh) {
+				DBG(0, "hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
+				return;
+			}
 		}
 	}
 	/* QMU should keep take HWO gpd , so there is error*/
@@ -1258,13 +1268,17 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 	struct urb	*urb = NULL;
 	bool done = true;
 
-
-	urb = next_urb(qh);
-	if (!urb) {
-		DBG(4, "extra TX%d ready\n", ep_num);
-		mtk_qmu_stop(ep_num, USB_DIR_OUT);
+	if (unlikely(!qh)) {
+		DBG(0, "hw_ep:%d, QH NULL\n", ep_num);
 		return;
 	}
+
+	urb = next_urb(qh);
+	if (unlikely(!urb)) {
+		DBG(0, "hw_ep:%d, !URB\n", ep_num);
+		return;
+	}
+
 	/*Transfer PHY addr got from QMU register to VIR addr*/
 	gpd_current = gpd_phys_to_virt((dma_addr_t)gpd_current, TXQ, ep_num);
 
@@ -1335,7 +1349,13 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 		if (done) {
 			if (musb_ep_get_qh(hw_ep, USB_DIR_OUT))
 				qh->iso_idx = 0;
+
 			musb_advance_schedule(musb, urb, hw_ep, USB_DIR_OUT);
+
+			if (!hw_ep->out_qh) {
+				DBG(0, "hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
+				return;
+			}
 		}
 	}
 }

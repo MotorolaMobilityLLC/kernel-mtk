@@ -467,8 +467,8 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb,
 		qh->hep->hcpriv = NULL;
 
 #ifdef MUSB_QMU_SUPPORT_HOST
-		if (qh->is_use_qmu && mtk_is_qmu_enabled(qh->epnum, is_in))
-			mtk_disable_q(musb, qh->epnum, is_in);
+		if (qh->is_use_qmu)
+			mtk_disable_q(musb, hw_ep->epnum, is_in);
 #endif
 
 		switch (qh->type) {
@@ -2515,8 +2515,8 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		 */
 		if (ready && list_empty(&qh->hep->urb_list)) {
 #ifdef MUSB_QMU_SUPPORT_HOST
-			if (qh->is_use_qmu && mtk_is_qmu_enabled(qh->epnum, is_in))
-				mtk_disable_q(musb, qh->epnum, is_in);
+			if (qh->is_use_qmu)
+				mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
 #endif
 			qh->hep->hcpriv = NULL;
 			list_del(&qh->ring);
@@ -2574,8 +2574,8 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 		while (!list_empty(&hep->urb_list))
 			musb_giveback(musb, next_urb(qh), -ESHUTDOWN);
 #ifdef MUSB_QMU_SUPPORT_HOST
-		if (mtk_is_qmu_enabled(qh->epnum, is_in))
-			mtk_disable_q(musb, qh->epnum, is_in);
+		if (qh->is_use_qmu)
+			mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
 #endif
 		hep->hcpriv = NULL;
 		list_del(&qh->ring);
