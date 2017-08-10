@@ -581,14 +581,24 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 
 	if (request->n_ssids == 0) {
 		rScanRequest.u4SsidNum = 0;
-	} else if (request->n_ssids <= SCN_SSID_MAX_NUM) {
+	} else if (request->n_ssids <= GL_CFG80211_SCAN_SSID_MAX_NUM) {
+		BOOLEAN fgHasWildcardSSID = FALSE;
+
 		rScanRequest.u4SsidNum = request->n_ssids;
 
 		for (i = 0; i < request->n_ssids; i++) {
+			if (request->ssids[i].ssid_len == 0)
+				fgHasWildcardSSID = TRUE;
 			COPY_SSID(rScanRequest.rSsid[i].aucSsid,
 				  rScanRequest.rSsid[i].u4SsidLen, request->ssids[i].ssid, request->ssids[i].ssid_len);
 		}
+		if (request->n_ssids == GL_CFG80211_SCAN_SSID_MAX_NUM && !fgHasWildcardSSID) {
+			DBGLOG(REQ, ERROR, "request to find %d SSIDs, but no wildcard ssid\n", request->n_ssids);
+			return -EINVAL;
+		}
 	} else {
+		DBGLOG(REQ, ERROR, "request to find %d SSIDs, but only support %d\n",
+			request->n_ssids, GL_CFG80211_SCAN_SSID_MAX_NUM);
 		return -EINVAL;
 	}
 

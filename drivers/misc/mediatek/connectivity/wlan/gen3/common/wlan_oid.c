@@ -9944,7 +9944,7 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 				   prSchedScanRequest->u4IELength,
 				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval,
 				   prSchedScanRequest->ucChnlNum, prSchedScanRequest->pucChannels) == TRUE)
-		return WLAN_STATUS_PENDING;
+		return WLAN_STATUS_SUCCESS;
 	else
 		return WLAN_STATUS_FAILURE;
 }
@@ -9977,7 +9977,7 @@ wlanoidSetStopSchedScan(IN P_ADAPTER_T prAdapter,
 
 	/* ask SCN module to stop scan request */
 	if (scnFsmSchedScanStopRequest(prAdapter) == TRUE)
-		return WLAN_STATUS_PENDING;
+		return WLAN_STATUS_SUCCESS;
 	else
 		return WLAN_STATUS_FAILURE;
 }

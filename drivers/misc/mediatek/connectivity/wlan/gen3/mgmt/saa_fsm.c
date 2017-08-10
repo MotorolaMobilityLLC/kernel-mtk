@@ -518,12 +518,12 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	ASSERT(prStaRec);
 
-	DBGLOG(SAA, INFO, "EVENT-TX DONE: Current Time = %d status: %d, SeqNO: %d\n",
-			kalGetTimeTick(), rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
 	/* Trigger statistics log if Auth/Assoc Tx failed */
-	if (rTxDoneStatus != TX_RESULT_SUCCESS)
+	if (rTxDoneStatus != TX_RESULT_SUCCESS) {
 		wlanTriggerStatsLog(prAdapter, prAdapter->rWifiVar.u4StatsLogDuration);
+		DBGLOG(SAA, INFO, "EVENT-TX DONE: Current Time = %d status: %d, SeqNO: %d\n",
+			kalGetTimeTick(), rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	}
 
 	eNextState = prStaRec->eAuthAssocState;
 
@@ -765,7 +765,8 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	if (!IS_AP_STA(prStaRec))
 		return;
 
-	DBGLOG(SAA, INFO, "RX auth, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
+	if (IS_STA_IN_P2P(prStaRec))
+		DBGLOG(SAA, INFO, "RX auth, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
 
 	switch (prStaRec->eAuthAssocState) {
 	case SAA_STATE_SEND_AUTH1:
