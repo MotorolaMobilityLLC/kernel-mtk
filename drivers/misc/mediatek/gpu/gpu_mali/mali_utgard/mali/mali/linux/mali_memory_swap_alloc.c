@@ -77,7 +77,7 @@ _mali_osk_errcode_t mali_mem_swap_init(void)
 		return _MALI_OSK_ERR_NOMEM;
 	}
 
-	global_swap_file = shmem_file_setup("mali_swap", MALI_SWAP_GLOBAL_SWAP_FILE_SIZE, VM_NORESERVE, 0);
+	global_swap_file = shmem_file_setup("mali_swap", MALI_SWAP_GLOBAL_SWAP_FILE_SIZE, VM_NORESERVE);
 	if (IS_ERR(global_swap_file)) {
 		_mali_osk_bitmap_term(&idx_mgr);
 		return _MALI_OSK_ERR_NOMEM;
