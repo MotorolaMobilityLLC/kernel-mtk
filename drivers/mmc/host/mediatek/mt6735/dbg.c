@@ -3160,6 +3160,11 @@ static ssize_t msdc_debug_proc_write_DVT(struct file *file, const char __user *b
 	int scan_ret;
 	struct msdc_host *host;
 
+	if (count == 0)
+		return -1;
+	if (count > 255)
+		count = 255;
+
 	ret = copy_from_user(cmd_buf, buf, count);
 	if (ret < 0)
 		return -1;
@@ -3177,11 +3182,11 @@ static ssize_t msdc_debug_proc_write_DVT(struct file *file, const char __user *b
 	}
 
 	host = mtk_msdc_host[i_msdc_id];
-
-	pr_err("[****SD_Debug****] Start Online Tuning DVT test\n");
-	mt_msdc_online_tuning_test(host, 0, 0, 0);
-	pr_err("[****SD_Debug****] Finish Online Tuning DVT test\n");
-
+	if (host) {
+		pr_err("[****SD_Debug****] Start Online Tuning DVT test\n");
+		mt_msdc_online_tuning_test(host, 0, 0, 0);
+		pr_err("[****SD_Debug****] Finish Online Tuning DVT test\n");
+	}
 	return count;
 }
 #endif				/* ONLINE_TUNING_DVTTEST*/
@@ -3370,6 +3375,11 @@ static ssize_t msdc_voltage_proc_write(struct file *file, const char __user *buf
 {
 	int ret;
 	int scan_ret;
+
+	if (count == 0)
+		return -1;
+	if (count > 255)
+		count = 255;
 
 	ret = copy_from_user(cmd_buf, buf, count);
 	if (ret < 0)
