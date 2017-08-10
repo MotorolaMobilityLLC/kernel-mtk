@@ -3710,7 +3710,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT WaitIrq)
 	unsigned long flags;
 	MUINT32 startTimeS = 0, startTimeUS = 0;
 	MUINT32 endTimeS = 0, endTimeUS = 0;
-
+#if 0 /*commend out for prink too much*/
 	if (g_IspInfo.DebugMask & ISP_DBG_INT) {
 		LOG_DBG("Clear(%d),Type(%d),Status(0x%08X),Timeout(%d)", WaitIrq.Clear,
 			WaitIrq.Type, WaitIrq.Status, WaitIrq.Timeout);
@@ -3732,6 +3732,7 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT WaitIrq)
 		g_IspInfo.IrqInfo.Status[WaitIrq.Type] = 0;
 		spin_unlock_irqrestore(&(g_IspInfo.SpinLockIrq), flags);
 	}
+#endif
 #if ISP_IRQ_POLLING
 
 	ISP_IRQ_TYPE_ENUM IrqStatus[ISP_IRQ_TYPE_AMOUNT];
@@ -4219,11 +4220,15 @@ static __tcmfunc irqreturn_t ISP_Irq(MINT32 Irq, MVOID *DeviceId)
 
 			ISP_SOF_Buf_Get(sec, usec);
 
-			LOG_DBG("P1_SOF_%d(0x%08lx,0x%08lx,0x%08x,0x%08x)",
+			if (g_sof_pass1done == 1) {
+				LOG_DBG("Lost pass1 done,P1_SOF_%d(0x%08lx,0x%08lx,0x%08x,0x%08x)",
 				((ISP_RD32(ISP_REG_ADDR_TG_INTER_ST) & 0x00FF0000) >> 16),
 				imgo_fbc.Reg_val, img2o_fbc.Reg_val, imgo_pa, img2o_pa);
-			if (g_sof_pass1done == 1) {
-				LOG_DBG("Lost pass1 done");
+			} else {
+				LOG_DBG("P1_SOF_%d(0x%08lx,0x%08lx,0x%08x,0x%08x)",
+								((ISP_RD32(ISP_REG_ADDR_TG_INTER_ST) &
+								0x00FF0000) >> 16), imgo_fbc.Reg_val,
+								img2o_fbc.Reg_val, imgo_pa, img2o_pa);
 			}
 			g_sof_pass1done = 1;
 		}
