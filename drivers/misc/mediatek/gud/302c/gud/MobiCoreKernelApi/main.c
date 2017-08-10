@@ -191,6 +191,7 @@ static int __init mcapi_init(void)
 
 	mutex_init(&mod_ctx->peers_lock);
 	mutex_init(&device_mutex);
+	mutex_init(&global_mutex);
 
 	return 0;
 }

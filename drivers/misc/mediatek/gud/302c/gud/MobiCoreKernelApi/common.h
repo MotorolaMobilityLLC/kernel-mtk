@@ -36,6 +36,9 @@ extern struct device *mc_kapi;
 /* Found in clientlib.c */
 extern struct mutex device_mutex;
 
+/* Found in clientlib.c */
+extern struct mutex global_mutex;
+
 #define MCDRV_ERROR(dev, txt, ...) \
 	dev_err(dev, "%s() ### ERROR: " txt, __func__, ##__VA_ARGS__)
 
