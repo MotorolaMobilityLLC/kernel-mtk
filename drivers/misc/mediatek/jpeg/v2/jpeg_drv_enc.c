@@ -380,7 +380,8 @@ kal_uint32 jpeg_drv_enc_set_dst_buff(kal_uint32 dst_addr, kal_uint32 stall_size,
 
 	IMG_REG_WRITE((dst_addr & (~0xF)), REG_ADDR_JPEG_ENC_DST_ADDR0);
 
-	IMG_REG_WRITE(((dst_addr + stall_size) & (~0xF)), REG_ADDR_JPEG_ENC_STALL_ADDR0);
+    /* subtract stall address with 128 bytes in order to prevent HW write over */
+	IMG_REG_WRITE((((dst_addr + stall_size) & (~0xF)) - 128), REG_ADDR_JPEG_ENC_STALL_ADDR0);
 
 
 	return 1;
