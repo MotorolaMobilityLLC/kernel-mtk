@@ -1499,9 +1499,9 @@ static inline int adopt_CAMERA_HW_CheckIsAlive(void)
 				} else {
 
 					PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
-					snprintf(mtk_ccm_name, sizeof(mtk_ccm_name),
-						 "%s CAM[%d]:%s;", mtk_ccm_name,
-						 g_invokeSocketIdx[i], g_invokeSensorNameStr[i]);
+					snprintf(mtk_ccm_name + strlen(mtk_ccm_name),
+						 sizeof(mtk_ccm_name) - strlen(mtk_ccm_name),
+						 " CAM[%d]:%s;", g_invokeSocketIdx[i], g_invokeSensorNameStr[i]);
 					err = ERROR_NONE;
 				}
 				if (ERROR_NONE != err) {
