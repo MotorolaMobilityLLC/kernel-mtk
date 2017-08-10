@@ -121,9 +121,6 @@ struct clk *clk_infra_conn_main;	/*ctrl infra_connmcu_bus clk */
 #endif
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
-#ifdef CONFIG_OF
-struct CONSYS_BASE_ADDRESS conn_reg;
-#endif
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE

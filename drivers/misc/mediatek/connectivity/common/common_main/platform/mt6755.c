@@ -125,9 +125,6 @@ struct clk *clk_scp_conn_main;	/*ctrl conn_power_on/off */
 /*struct clk *clk_infra_conn_main;*/	/*ctrl infra_connmcu_bus clk */
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
-#ifdef CONFIG_OF
-struct CONSYS_BASE_ADDRESS conn_reg;
-#endif
 
 EMI_CTRL_STATE_OFFSET mtk_wcn_emi_state_off = {
 	.emi_apmem_ctrl_state = EXP_APMEM_CTRL_STATE,

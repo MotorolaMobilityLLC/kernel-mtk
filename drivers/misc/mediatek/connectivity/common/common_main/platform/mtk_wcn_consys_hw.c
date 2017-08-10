@@ -77,6 +77,7 @@ const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt8163-consys",},
 	{}
 };
+struct CONSYS_BASE_ADDRESS conn_reg;
 #endif
 
 static struct platform_driver mtk_wmt_dev_drv = {
