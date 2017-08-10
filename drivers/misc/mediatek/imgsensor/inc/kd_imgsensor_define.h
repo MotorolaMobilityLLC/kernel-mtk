@@ -221,6 +221,14 @@ typedef enum {
 } ACDK_SENSOR_FEATURE_ENUM;
 
 typedef enum {
+	SENSOR_STATE_CLOSE = 0,
+	SENSOR_STATE_OPEN,
+	SENSOR_STATE_STREAMING,
+	SENSOR_STATE_STANDBY,
+} SENSOR_STATE_ENUM;
+
+
+typedef enum {
 	SENSOR_AF_IDLE = 0,
 	SENSOR_AF_FOCUSING,
 	SENSOR_AF_FOCUSED,
@@ -430,6 +438,7 @@ typedef struct {
 	MUINT8 SensorModeNum;
 	MUINT8 IHDR_Support;
 	MUINT16 IHDR_LE_FirstLine;
+	MUINT8 TEMPERATURE_SUPPORT;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
@@ -530,6 +539,7 @@ typedef struct {
 	MUINT8 SensorModeNum;
 	MUINT8 IHDR_Support;
 	MUINT16 IHDR_LE_FirstLine;
+	MUINT8 TEMPERATURE_SUPPORT;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
@@ -680,11 +690,14 @@ typedef struct {
 typedef enum {
 	MCLK_48MHZ_GROUP = 0x1,
 	MCLK_52MHZ_GROUP = 0x2,
+	MCLK_24MHZ_GROUP,
+	MCLK_26MHZ_GROUP,
 } ACKD_SENSOR_MCLK_ENUM;
 
 typedef struct {
 	MUINT8 on;
 	ACKD_SENSOR_MCLK_ENUM freq;
+	MUINT8 TG;
 } ACDK_SENSOR_MCLK_STRUCT;
 
 typedef struct {
@@ -1028,6 +1041,7 @@ typedef struct {
 	MSDK_SCENARIO_ID_ENUM ScenarioId;
 	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT imageWindow;
 	MSDK_SENSOR_CONFIG_STRUCT sensorConfigData;
+	SENSOR_STATE_ENUM sensorState;
 #endif
 } SENSOR_FUNCTION_STRUCT, *PSENSOR_FUNCTION_STRUCT;
 
