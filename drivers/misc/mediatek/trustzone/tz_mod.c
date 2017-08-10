@@ -227,7 +227,7 @@ static long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange,
 	}
 	if (!(vma->vm_flags & (VM_IO | VM_PFNMAP))) {
 		pinRange->isPage = 1;
-		res = get_user_pages(current, current->mm, uaddr, nr_pages,
+		res = get_user_pages_durable(current, current->mm, uaddr, nr_pages,
 					write, 0,/* don't force */
 					pages, NULL);
 	} else {
