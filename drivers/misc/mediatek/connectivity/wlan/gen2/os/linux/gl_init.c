@@ -2028,8 +2028,8 @@ void wlanHandleSystemSuspend(void)
 
 notify_suspend:
 	DBGLOG(INIT, INFO, "IP: %d.%d.%d.%d, rStatus: %u\n", ip[0], ip[1], ip[2], ip[3], rStatus);
-	if (rStatus != WLAN_STATUS_SUCCESS)
-		wlanNotifyFwSuspend(prGlueInfo, TRUE);
+	/* if (rStatus != WLAN_STATUS_SUCCESS) */
+	wlanNotifyFwSuspend(prGlueInfo, TRUE);
 }
 
 void wlanHandleSystemResume(void)
@@ -2144,8 +2144,9 @@ notify_resume:
 	DBGLOG(INIT, INFO, "Query BSS result: %d %d %d, IP: %d.%d.%d.%d, rStatus: %u\n",
 		       rParam.eConnectionState, rParam.eCurrentOPMode, rParam.fgIsNetActive,
 		       ip[0], ip[1], ip[2], ip[3], rStatus);
-	if (rStatus != WLAN_STATUS_SUCCESS)
-		wlanNotifyFwSuspend(prGlueInfo, FALSE);
+
+	/* if (rStatus != WLAN_STATUS_SUCCESS) */
+	wlanNotifyFwSuspend(prGlueInfo, FALSE);
 }
 #endif /* ! CONFIG_X86 */
 
