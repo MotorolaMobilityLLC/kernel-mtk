@@ -58,8 +58,8 @@ static int dsi_reg_op_debug;
 #include <linux/types.h>
 
 static void __iomem *ddp_apmixed_base;
-#ifndef AP_PLL_CON0
-#define AP_PLL_CON0 (ddp_apmixed_base + 0x00)
+#ifndef AP_PLL_CON5
+#define AP_PLL_CON5 (ddp_apmixed_base + 0x14)
 #endif
 
 #define DRV_Reg32(addr)                          (*(volatile unsigned int* const)(addr))
@@ -71,9 +71,9 @@ static void __iomem *ddp_apmixed_base;
 void ddp_set_mipi26m(int en)
 {
 	if (en)
-		clk_setl(AP_PLL_CON0, 1 << 6);
+		clk_setl(AP_PLL_CON5, 1 << 3);
 	else
-		clk_clrl(AP_PLL_CON0, 1 << 6);
+		clk_clrl(AP_PLL_CON5, 1 << 3);
 }
 #endif /* CONFIG_MTK_CLKMGR */
 
