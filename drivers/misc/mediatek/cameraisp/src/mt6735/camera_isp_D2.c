@@ -29,6 +29,7 @@
 #include <asm/atomic.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
+#include <linux/string.h>
 #include <mt-plat/aee.h>
 /* #include <mach/hardware.h> */
 /* #include <mach/mt6589_pll.h> */
@@ -6009,6 +6010,7 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 	struct resource *pRes;
 	MINT32 i;
 	MINT32 IrqNum;
+	MINT32 Ret = 0;
 
 	LOG_DBG("+");
 
@@ -6017,8 +6019,13 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 
 	/* unmaping ISP CAM_REGISTER registers */
 	for (i = 0; i < 2; i++) {
-		pRes = platform_get_resource(pDev, IORESOURCE_MEM, 0);
-		release_mem_region(pRes->start, (pRes->end - pRes->start + 1));
+		pRes = platform_get_resource(pDev, IORESOURCE_MEM, i);
+		if (pRes == NULL) {
+			dev_err(&pDev->dev, "platform_get_resource failed");
+			Ret = -ENOMEM;
+		} else
+			release_mem_region(pRes->start, (pRes->end - pRes->start + 1));
+
 	}
 
 	/* Release IRQ */
@@ -6034,7 +6041,7 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 
 	class_destroy(g_pIspClass);
 	g_pIspClass = NULL;
-	return 0;
+	return Ret;
 }
 
 /*******************************************************************************
@@ -6170,91 +6177,111 @@ static struct platform_driver IspDriver = {
 static ssize_t ISP_DumpRegToProc(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *off)
 {
-	char *p = (char*)pPage;
-           char** ppStart=NULL;
-	long Length = 0;
-	MUINT32 i = 0;
-	long ret = 0;
+	static MUINT32 i, j;
+	static int dataState = 1, lastDataState = 1;
+	char tempStr[256];
+	char tempStr2[256] = { '\0' };
+	long length = 0;
 
-	LOG_DBG("pPage(%p),off(0x%lx),Count(%ld)", pPage, (unsigned long)off, (long int)Count);
+	if (Count < 256) {
+		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
+		return 0;
+	}
 
-	p += sprintf(p, " MT ISP Register\n");
-	p += sprintf(p, "====== top ====\n");
+	switch (dataState) {
+	case 0:
+		dataState = lastDataState;
+		break;
+	case 1:
+		i = 0x0;
+		j = 0x64;
+		length += sprintf(tempStr, "MT ISP Register\n");
+		strcat(tempStr2, tempStr);
+		length += sprintf(tempStr, "====== top ====\n");
+		strcat(tempStr2, tempStr);
+		break;
+	case 2:
+		i = 0x200;
+		j = 0x3D8;
+		length += sprintf(tempStr, "====== dma ====\n");
+		strcat(tempStr2, tempStr);
+		break;
+	case 3:
+		i = 0x400;
+		j = 0x4EC;
+		length += sprintf(tempStr, "====== tg ====\n");
+		strcat(tempStr2, tempStr);
+		break;
+	case 4:
+		i = 0xB00;
+		j = 0xDE0;
+		length += sprintf(tempStr, "====== cdp (including EIS) ====\n");
+		strcat(tempStr2, tempStr);
+		break;
+	case 5:
+		i = 0x4000;
+		j = 0x40C0;
+		break;
+	case 6:
+		i = 0x4100;
+		j = 0x41BC;
+		break;
+	case 7:
+		i = 0x4300;
+		j = 0x4310;
+		break;
+	case 8:
+		i = 0x43A0;
+		j = 0x43B0;
+		break;
+	case 9:
+		i = 0x4400;
+		j = 0x4424;
+		break;
+	case 10:
+		i = 0x4500;
+		j = 0x4520;
+		break;
+	case 11:
+		i = 0x4F00;
+		j = 0x4F38;
+		length += sprintf(tempStr, "====== 3DNR ====\n");
+		strcat(tempStr2, tempStr);
+		break;
+	default:
+		dataState = 0;
+		lastDataState = 0;
+		return 0;
+	}
 
-	for (i = 0x0; i <= 0x1AC; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
+	LOG_INF(" i(%d), j(%d), Count(%ld), dataState(%d)", i, j,
+		(long int)Count, dataState);
+
+	for (; i <= j; i += 4) {
+		if (length < 226) {/*Peserve some memory for safety*/
+			length += sprintf(tempStr, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
 			     ISP_RD32(ISP_ADDR + i));
+			strcat(tempStr2, tempStr);
+		} else {
+			lastDataState = dataState;
+			dataState = 0;/*a state to keep i, j value*/
+			i -= 4;
+			if (copy_to_user(pBuffer, tempStr2, length))
+				return -EFAULT;
+
+			return length;
+		}
 	}
 
-	p += sprintf(p, "====== dma ====\n");
-	for (i = 0x200; i <= 0x3D8; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n\r", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
+	if (dataState <= 11) {
+		if (copy_to_user(pBuffer, tempStr2, length))
+			return -EFAULT;
 
-	p += sprintf(p, "====== tg ====\n");
-	for (i = 0x400; i <= 0x4EC; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
+		dataState++;
+		return length;
+	} else
+		return 0;/*end of reading*/
 
-	p += sprintf(p, "====== cdp (including EIS) ====\n");
-	for (i = 0xB00; i <= 0xDE0; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	p += sprintf(p, "====== seninf ====\n");
-	for (i = 0x4000; i <= 0x40C0; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	for (i = 0x4100; i <= 0x41BC; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	for (i = 0x4300; i <= 0x4310; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	for (i = 0x43A0; i <= 0x43B0; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	for (i = 0x4400; i <= 0x4424; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32((ISP_ADDR + i)));
-	}
-
-	for (i = 0x4500; i <= 0x4520; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-	p += sprintf(p, "====== 3DNR ====\n");
-	for (i = 0x4F00; i <= 0x4F38; i += 4) {
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(ISP_ADDR + i),
-			     ISP_RD32(ISP_ADDR + i));
-	}
-
-
-	*ppStart = (char*)((unsigned long)pPage + (unsigned long)off);
-
-	Length = (long)((unsigned long)p - (unsigned long)pPage);
-	if (Length > (long)off) {
-		Length -= (long)off;
-	} else {
-		Length = 0;
-	}
-
-	ret = Length < Count ? Length : Count;
-
-	/*LOG_DBG("ret(%ld)", ret);*/
-	return ((ssize_t)(ret));
 }
 
 /*******************************************************************************
@@ -6263,30 +6290,34 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 static ssize_t ISP_RegDebug(struct file *pFile,
 			   const char __user *pBuffer, size_t  Count, loff_t *p_off)
 {
-	char RegBuf[64];
-	MUINT32 CopyBufSize = (Count < (sizeof(RegBuf) - 1)) ? (Count) : (sizeof(RegBuf) - 1);
-	MUINT32 Addr = 0;
-	MUINT32 Data = 0;
+	char tempStr[256];
+	char tempStr2[256] = {'\0'};
+	long length = 0;
+	static int finished;
 
-	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
+	if (finished) {
+		finished = 0;
+		return 0;
+	}
 
-	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
-		LOG_ERR("copy_from_user() fail.");
+	finished = 1;
+
+	if (Count < 200) {
+		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
+		return 0;
+	}
+
+	length += sprintf(tempStr, "reg_0x%08X = 0x%X\n",
+		(unsigned int)(ISP_ADDR_CAMINF + proc_regOfst),
+		     ioread32((void *)(ISP_ADDR_CAMINF + proc_regOfst)));
+
+	strcat(tempStr2, tempStr);
+
+	if (copy_to_user(pBuffer, tempStr2, length))
 		return -EFAULT;
-	}
 
-	if (sscanf(RegBuf, "%x %x", &Addr, &Data) == 2) {
-		ISP_WR32((ISP_ADDR_CAMINF + Addr), Data);
-		LOG_ERR("Write => Addr: 0x%08X, Write Data: 0x%08X. Read Data: 0x%08X.",
-			(unsigned int)(ISP_ADDR_CAMINF + Addr), Data,
-			ioread32((void*)(ISP_ADDR_CAMINF + Addr)));
-	} else if (sscanf(RegBuf, "%x", &Addr) == 1) {
-		LOG_ERR("Read => Addr: 0x%08X, Read Data: 0x%08X.",
-			(unsigned int)(ISP_ADDR_CAMINF + Addr), ioread32((void*)(ISP_ADDR_CAMINF + Addr)));
-	}
+	return length;/*end of reading*/
 
-	LOG_DBG("Count(%d)", (MINT32) Count);
-	return ((ssize_t)Count);
 }
 
 static MUINT32 proc_regOfst;
@@ -6383,7 +6414,8 @@ bool ISP_RegCallback(ISP_CALLBACK_STRUCT *pCallback)
 	}
 
 	LOG_DBG("Type(%d)", pCallback->Type);
-	g_IspInfo.Callback[pCallback->Type].Func = pCallback->Func;
+	if (pCallback->Type >= 0 && pCallback->Type < ISP_CALLBACK_AMOUNT)
+		g_IspInfo.Callback[pCallback->Type].Func = pCallback->Func;
 
 	return true;
 }
@@ -6528,6 +6560,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0310));
 		LOG_DBG("[TF_IMGO]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x031C),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x031C));
+		break;
 	case M4U_PORT_IMGO2O:
 		LOG_DBG("[TF_IMG2O]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x0320),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0320));
@@ -6541,6 +6574,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0330));
 		LOG_DBG("[TF_IMG2O]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x033C),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x033C));
+		break;
 	case M4U_PORT_LSCI:
 		LOG_DBG("[TF_LSCI]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x00A8),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x00A8));
@@ -6564,6 +6598,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0278));
 		LOG_DBG("[TF_LSCI]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x027c),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x027c));
+		break;
 	case M4U_PORT_CAM_IMGI:
 		LOG_DBG("[TF_IMGI]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x0050),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0050));
@@ -6583,6 +6618,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x023C));
 		LOG_DBG("[TF_IMGI]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x0240),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0240));
+		break;
 	case M4U_PORT_CAM_ESFKO:
 		LOG_DBG("[TF_ESFKO]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x035C),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x035C));
@@ -6602,6 +6638,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0378));
 		LOG_DBG("[TF_ESFKO]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x037C),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x037C));
+		break;
 	case M4U_PORT_CAM_AAO:
 		LOG_DBG("[TF_AAO]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x0388),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0388));
@@ -6613,6 +6650,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0394));
 		LOG_DBG("[TF_AAO]0x%08X %08X", (unsigned int)(ISP_TPIPE_ADDR + 0x0398),
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x0398));
+		break;
 	default:
 		break;
 	}
