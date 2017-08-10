@@ -1107,8 +1107,10 @@ VOID authAddMDIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo)
 {
 	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
 	PUINT_8 pucBuffer = (PUINT_8)prMsduInfo->prPacket + prMsduInfo->u2FrameLength;
+	UINT_8 ucBssIdx = prMsduInfo->ucNetworkType;
 
-	if (!prFtIEs->prMDIE)
+	if (!IS_BSS_INDEX_VALID(ucBssIdx) ||
+		!IS_BSS_AIS(GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIdx)) || !prFtIEs->prMDIE)
 		return;
 	prMsduInfo->u2FrameLength += 5; /* IE size for MD IE is fixed, it is 5 */
 	kalMemCopy(pucBuffer, prFtIEs->prMDIE, 5);
@@ -1120,7 +1122,8 @@ UINT_32 authCalculateRSNIELen(P_ADAPTER_T prAdapter,
 	ENUM_PARAM_AUTH_MODE_T eAuthMode = prAdapter->rWifiVar.rConnSettings.eAuthMode;
 	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
 
-	if (!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
+	if (!IS_BSS_INDEX_VALID(eNetTypeIndex) || !IS_BSS_AIS(GET_BSS_INFO_BY_INDEX(prAdapter, eNetTypeIndex)) ||
+		!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
 		return 0;
 	return IE_SIZE(prFtIEs->prRsnIE);
 }
@@ -1131,8 +1134,10 @@ VOID authAddRSNIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo)
 	struct FT_IES *prFtIEs = &prAdapter->prGlueInfo->rFtIeForTx;
 	PUINT_8 pucBuffer = (PUINT_8)prMsduInfo->prPacket + prMsduInfo->u2FrameLength;
 	UINT_32 ucRSNIeSize = 0;
+	UINT_8 ucBssIdx = prMsduInfo->ucNetworkType;
 
-	if (!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
+	if (!IS_BSS_INDEX_VALID(ucBssIdx) || !IS_BSS_AIS(GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIdx)) ||
+		!prFtIEs->prRsnIE || (eAuthMode != AUTH_MODE_WPA2_FT && eAuthMode != AUTH_MODE_WPA2_FT_PSK))
 		return;
 	ucRSNIeSize = IE_SIZE(prFtIEs->prRsnIE);
 	prMsduInfo->u2FrameLength += ucRSNIeSize;

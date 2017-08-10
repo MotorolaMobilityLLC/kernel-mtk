@@ -2171,13 +2171,15 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	if (prBcnRmParam->eState == RM_WAITING) {
 		rlmDoBeaconMeasurement(prAdapter, 0);
 	} else if (prBcnRmParam->rNormalScan.fgExist) {/* pending normal scan here, should schedule it on time */
+		struct NORMAL_SCAN_PARAMS *prParam = &prBcnRmParam->rNormalScan;
+
+		DBGLOG(AIS, INFO, "Schedule normal scan after a beacon measurement done\n");
 		prBcnRmParam->eState = RM_WAITING;
 		prBcnRmParam->rNormalScan.fgExist = FALSE;
-		cnmTimerStartTimer(prAdapter,
-					&prAisFsmInfo->rScanDoneTimer,
+		cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer,
 					SEC_TO_MSEC(AIS_SCN_DONE_TIMEOUT_SEC));
-		aisFsmScanRequest(prAdapter, prBcnRmParam->rNormalScan.prSSID,
-					prBcnRmParam->rNormalScan.pucScanIE, prBcnRmParam->rNormalScan.u4IELen);
+		aisFsmScanRequestAdv(prAdapter, prParam->ucSsidNum, prParam->arSSID,
+					prParam->aucScanIEBuf, prParam->u4IELen);
 	} else /* Radio Measurement is on-going, schedule to next Measurement Element */
 		rlmStartNextMeasurement(prAdapter, FALSE);
 
@@ -4302,14 +4304,6 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 		} else {
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
 		}
-	} else if (prAdapter->rWifiVar.rRmReqParams.rBcnRmParam.eState == RM_ON_GOING) {
-		struct NORMAL_SCAN_PARAMS *prNormalScan = &prAdapter->rWifiVar.rRmReqParams.rBcnRmParam.rNormalScan;
-
-		prNormalScan->fgExist = TRUE;
-		prNormalScan->prSSID = prSsid;
-		prNormalScan->pucScanIE = pucIe;
-		prNormalScan->u4IELen = u4IeLength;
-		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 	} else {
 		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
 	}
@@ -4395,6 +4389,31 @@ VOID aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PA
 		} else {
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
 		}
+	} else if (prAdapter->rWifiVar.rRmReqParams.rBcnRmParam.eState == RM_ON_GOING) {
+		struct NORMAL_SCAN_PARAMS *prNormalScan = &prAdapter->rWifiVar.rRmReqParams.rBcnRmParam.rNormalScan;
+
+		prNormalScan->fgExist = TRUE;
+		if (ucSsidNum == 0) {
+			prNormalScan->ucSsidNum = 0;
+		} else {
+			prNormalScan->ucSsidNum = ucSsidNum;
+
+			for (i = 0; i < ucSsidNum; i++) {
+				COPY_SSID(prNormalScan->arSSID[i].aucSsid,
+					  prNormalScan->arSSID[i].u4SsidLen,
+					  prSsid[i].aucSsid, prSsid[i].u4SsidLen);
+			}
+		}
+
+		if (u4IeLength > 0 && u4IeLength <= MAX_IE_LENGTH) {
+			prNormalScan->u4IELen = u4IeLength;
+			kalMemCopy(prNormalScan->aucScanIEBuf, pucIe, u4IeLength);
+		} else {
+			prNormalScan->u4IELen = 0;
+		}
+		/* prNormalScan->fgFull2Partial = ucSetChannel; */
+		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
+		DBGLOG(AIS, INFO, "Buffer normal scan while Beacon request measurement\n");
 	} else {
 		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
 	}

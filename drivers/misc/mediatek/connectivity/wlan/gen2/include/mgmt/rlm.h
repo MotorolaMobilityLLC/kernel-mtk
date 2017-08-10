@@ -137,10 +137,12 @@ enum RM_REQ_PRIORITY {
 };
 
 struct NORMAL_SCAN_PARAMS {
-	P_PARAM_SSID_T prSSID;
-	PUINT_8 pucScanIE;
+	PARAM_SSID_T arSSID[SCN_SSID_MAX_NUM];
+	UINT_8 aucScanIEBuf[MAX_IE_LENGTH];
 	UINT_32 u4IELen;
+	UINT_8 ucSsidNum;
 	BOOLEAN fgExist;
+	BOOLEAN fgFull2Partial;
 };
 
 /* Beacon RM related parameters */

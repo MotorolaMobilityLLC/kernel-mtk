@@ -968,6 +968,9 @@ struct _ADAPTER_T {
 		(_prAdapter->rWifiVar.arBssInfo[(_NetTypeIndex)].fgIsNetActive)
 #define IS_BSS_ACTIVE(_prBssInfo)     ((_prBssInfo)->fgIsNetActive)
 
+#define IS_BSS_AIS(_prBssInfo) \
+	((_prBssInfo)->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX)
+
 #define IS_AIS_ACTIVE(_prAdapter)     IS_NET_ACTIVE(_prAdapter, NETWORK_TYPE_AIS_INDEX)
 #define IS_P2P_ACTIVE(_prAdapter)     IS_NET_ACTIVE(_prAdapter, NETWORK_TYPE_P2P_INDEX)
 #define IS_BOW_ACTIVE(_prAdapter)     IS_NET_ACTIVE(_prAdapter, NETWORK_TYPE_BOW_INDEX)

@@ -1002,10 +1002,9 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	}
 
 	/* Put the report IE into report frame */
-	if (ucIeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH) {
+	if (ucIeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH)
 		rlmTxRadioMeasurementReport(prAdapter);
-		prRmRep->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
-	}
+
 	DBGLOG(WMM, INFO, "tid %d, aci %d\n", prCurrentTsmReq->prTsmReq->ucTID, prCurrentTsmReq->prTsmReq->ucACI);
 	prTsmRpt = (P_IE_MEASUREMENT_REPORT_T)(prRmRep->pucReportFrameBuff + prRmRep->u2ReportFrameLen);
 	prTsmRpt->ucId = ELEM_ID_MEASUREMENT_REPORT;
@@ -1068,7 +1067,6 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 			prWMMInfo->rTriggeredTsmRptTime = rCurrent;
 		else if (CHECK_FOR_TIMEOUT(rCurrent, prWMMInfo->rTriggeredTsmRptTime, 10000)) {
 			rlmTxRadioMeasurementReport(prAdapter);
-			prRmRep->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
 			prWMMInfo->rTriggeredTsmRptTime = 0;
 		}
 	}

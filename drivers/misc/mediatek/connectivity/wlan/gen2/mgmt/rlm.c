@@ -76,7 +76,7 @@ static BOOLEAN rlmAllMeasurementIssued(struct RADIO_MEASUREMENT_REQ_PARAMS *prRe
 
 static VOID rlmFreeMeasurementResources(P_ADAPTER_T prAdapter);
 
-static VOID rlmCalibrationRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq);
+static VOID rlmCalibrateRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq);
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -1935,6 +1935,19 @@ static BOOLEAN rlmAllMeasurementIssued(struct RADIO_MEASUREMENT_REQ_PARAMS *prRe
 	return prReq->u2RemainReqLen > IE_SIZE(prReq->prCurrMeasElem) ? FALSE : TRUE;
 }
 
+VOID rlmComposeIncapableRmRep(
+	struct RADIO_MEASUREMENT_REPORT_PARAMS *prRep, UINT_8 ucToken, UINT_8 ucMeasType)
+{
+	P_IE_MEASUREMENT_REPORT_T prRepIE =
+		(P_IE_MEASUREMENT_REPORT_T)(prRep->pucReportFrameBuff + prRep->u2ReportFrameLen);
+
+	prRepIE->ucId = ELEM_ID_MEASUREMENT_REPORT;
+	prRepIE->ucToken = ucToken;
+	prRepIE->ucMeasurementType = ucMeasType;
+	prRepIE->ucLength = 3;
+	prRepIE->ucReportMode = RM_REP_MODE_INCAPABLE;
+	prRep->u2ReportFrameLen += 5;
+}
 /* Purpose: Interative processing Measurement Request Element. If it is not the first element,
 	will copy all collected report element to the report frame buffer. and may tx the radio report frame.
 	prAdapter: pointer to the Adapter
@@ -1954,20 +1967,37 @@ schedule_next:
 	}
 	/* we don't support parallel measurement now */
 	if (prCurrReq->ucRequestMode & RM_REQ_MODE_PARALLEL_BIT) {
-		PUINT_8 pucReportFrame = prRmRep->pucReportFrameBuff + prRmRep->u2ReportFrameLen;
-		IE_MEASUREMENT_REPORT_T rRepIE;
+		DBGLOG(RLM, WARN, "Parallel request, compose incapable report\n");
+		if (prRmRep->u2ReportFrameLen + 5 > RM_REPORT_FRAME_MAX_LENGTH)
+			rlmTxRadioMeasurementReport(prAdapter);
+		rlmComposeIncapableRmRep(prRmRep, prCurrReq->ucToken, prCurrReq->ucMeasurementType);
+		if (rlmAllMeasurementIssued(prRmReq)) {
+			if (prRmReq->rBcnRmParam.fgExistBcnReq && RM_EXIST_REPORT(prRmRep))
+				rlmComposeEmptyBeaconReport(prAdapter);
+			rlmTxRadioMeasurementReport(prAdapter);
 
-		/* fill in basic content of Measurement report IE */
-		rRepIE.ucId = ELEM_ID_MEASUREMENT_REPORT;
-		rRepIE.ucToken = prCurrReq->ucToken;
-		rRepIE.ucMeasurementType = prCurrReq->ucMeasurementType;
-		rRepIE.aucReportFields[0] = 0;
-		rRepIE.ucLength = 3;
-		rRepIE.ucReportMode = RM_REP_MODE_INCAPABLE;
-		kalMemCopy(pucReportFrame, &rRepIE, IE_SIZE(&rRepIE));
-		prRmRep->u2ReportFrameLen += IE_SIZE(&rRepIE);
-		rlmStartNextMeasurement(prAdapter, FALSE);
+			/* repeat measurement if repetitions is required and not only parallel measurements.
+			** otherwise, no need to repeat, it is not make sense to do that.
+			*/
+			if (prRmReq->u2Repetitions > 0) {
+				prRmReq->fgInitialLoop = FALSE;
+				prRmReq->u2Repetitions--;
+				prCurrReq = prRmReq->prCurrMeasElem = (P_IE_MEASUREMENT_REQ_T)prRmReq->pucReqIeBuf;
+				prRmReq->u2RemainReqLen = prRmReq->u2ReqIeBufLen;
+			} else {
+				rlmFreeMeasurementResources(prAdapter);
+				DBGLOG(RLM, INFO, "Radio Measurement done\n");
 		return;
+	}
+		} else {
+			UINT_8 ucIeSize = IE_SIZE(prRmReq->prCurrMeasElem);
+
+			prCurrReq = prRmReq->prCurrMeasElem =
+				(P_IE_MEASUREMENT_REQ_T)((PUINT_8)prRmReq->prCurrMeasElem + ucIeSize);
+			prRmReq->u2RemainReqLen -= ucIeSize;
+		}
+		fgNewStarted = FALSE;
+		goto schedule_next;
 	}
 	/* copy collected measurement report for specific measurement type */
 	if (!fgNewStarted) {
@@ -1988,7 +2018,6 @@ schedule_next:
 			/* if reach the max length of a MMPDU size, send a Rm report first */
 			if (ucIeSize + prRmRep->u2ReportFrameLen > RM_REPORT_FRAME_MAX_LENGTH) {
 				rlmTxRadioMeasurementReport(prAdapter);
-				prRmRep->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
 				pucReportFrame = prRmRep->pucReportFrameBuff + prRmRep->u2ReportFrameLen;
 			}
 			kalMemCopy(pucReportFrame, prReportEntry->aucMeasReport, ucIeSize);
@@ -2032,6 +2061,11 @@ schedule_next:
 	{
 		P_RM_BCN_REQ_T prBeaconReq = (P_RM_BCN_REQ_T)&prCurrReq->aucRequestFields[0];
 
+		if (!prRmReq->fgInitialLoop) {
+			/* If this is the repeating measurement, then wait next scan done */
+			prRmReq->rBcnRmParam.eState = RM_WAITING;
+			break;
+		}
 		if (prBeaconReq->u2RandomInterval == 0)
 			rlmDoBeaconMeasurement(prAdapter, 0);
 		else {
@@ -2102,12 +2136,23 @@ schedule_next:
 		cnmTimerStartTimer(prAdapter, &rTSMReqTimer, u2RandomTime);
 		break;
 	}
+	default:
+	{
+		if (prRmRep->u2ReportFrameLen + 5 > RM_REPORT_FRAME_MAX_LENGTH)
+			rlmTxRadioMeasurementReport(prAdapter);
+		rlmComposeIncapableRmRep(prRmRep, prCurrReq->ucToken, prCurrReq->ucMeasurementType);
+		fgNewStarted = FALSE;
+		DBGLOG(RLM, INFO, "RM type %d is not supported on this chip\n", prCurrReq->ucMeasurementType);
+		goto schedule_next;
+	}
 	}
 }
 
 /* If disconnect with the target AP, radio measurement should be canceled. */
 VOID rlmCancelRadioMeasurement(P_ADAPTER_T prAdapter)
 {
+	DBGLOG(RLM, INFO, "Cancel measurement, timer is running %d\n", timerPendingTimer(&rBeaconReqTimer));
+	cnmTimerStopTimer(prAdapter, &rBeaconReqTimer);
 	rlmFreeMeasurementResources(prAdapter);
 }
 
@@ -2174,7 +2219,7 @@ BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg)
 				ucChnlNum = pucIE[1] - 1;
 				DBGLOG(RLM, INFO, "Channel number in latest AP channel report %d\n", ucChnlNum);
 				while (ucIndex < ucChnlNum &&
-					prMsg->ucChannelListNum < MAXIMUM_OPERATION_CHANNEL_LIST) {
+					prMsg->ucChannelListNum <= MAXIMUM_OPERATION_CHANNEL_LIST) {
 					if (pucChnl[ucIndex] <= 14)
 						prChnlInfo[prMsg->ucChannelListNum].eBand = BAND_2G4;
 					else
@@ -2218,7 +2263,7 @@ BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg)
 			prMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
 			DBGLOG(RLM, INFO, "Channel number in measurement AP channel report %d\n", ucChannelCnt);
 			while (ucIndex < ucChannelCnt &&
-				prMsg->ucChannelListNum < MAXIMUM_OPERATION_CHANNEL_LIST) {
+				prMsg->ucChannelListNum <= MAXIMUM_OPERATION_CHANNEL_LIST) {
 				if (prApChnl->aucChnlList[ucIndex] <= 14)
 					prMsg->arChnlInfoList[prMsg->ucChannelListNum].eBand = BAND_2G4;
 				else
@@ -2282,6 +2327,35 @@ VOID rlmDoBeaconMeasurement(P_ADAPTER_T prAdapter, ULONG ulParam)
 		aisFsmScanRequest(prAdapter, NULL, NULL, 0);
 	}
 }
+
+/*
+*/
+static BOOLEAN rlmRmFrameIsValid(P_SW_RFB_T prSwRfb)
+{
+	UINT_16 u2ElemLen = 0;
+	UINT_16 u2Offset = (UINT_16)OFFSET_OF(ACTION_RM_REQ_FRAME, aucInfoElem);
+	PUINT_8 pucIE = (PUINT_8)prSwRfb->pvHeader;
+	UINT_16 u2CalcIELen = 0;
+
+	if (prSwRfb->u2PacketLen <= u2Offset) {
+		DBGLOG(RLM, ERROR, "Rm Packet length %d is too short\n", prSwRfb->u2PacketLen);
+		return FALSE;
+	}
+	pucIE += u2Offset;
+	u2ElemLen = prSwRfb->u2PacketLen - u2Offset;
+	IE_FOR_EACH(pucIE, u2ElemLen, u2Offset) {
+		if (!IE_LEN(pucIE)) {
+			DBGLOG(RLM, ERROR, "RM IE length is 0\n");
+			return FALSE;
+		}
+		u2CalcIELen += IE_SIZE(pucIE);
+	}
+	if (u2CalcIELen != u2ElemLen) {
+		DBGLOG(RLM, ERROR, "Calculated Total IE len is not equal to received length\n");
+		return FALSE;
+	}
+	return TRUE;
+}
 /*
 */
 VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
@@ -2297,6 +2371,9 @@ VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb
 	prRmReqFrame = (P_ACTION_RM_REQ_FRAME)prSwRfb->pvHeader;
 	prRmReqParam = &prAdapter->rWifiVar.rRmReqParams;
 	prRmRepParam = &prAdapter->rWifiVar.rRmRepParams;
+
+	if (!rlmRmFrameIsValid(prSwRfb))
+		return;
 	DBGLOG(RLM, INFO, "RM Request From %pM, DialogToken %d\n",
 			prRmReqFrame->aucSrcAddr, prRmReqFrame->ucDialogToken);
 	eNewPriority = rlmGetRmRequestPriority(prRmReqFrame->aucDestAddr);
@@ -2321,7 +2398,7 @@ VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb
 			prRmReqParam->u2RemainReqLen);
 		return;
 	}
-	prRmReqParam->u2Repetitions = prRmReqFrame->u2Repetitions;
+	WLAN_GET_FIELD_BE16(&prRmReqFrame->u2Repetitions, &prRmReqParam->u2Repetitions);
 	prRmReqParam->pucReqIeBuf = kalMemAlloc(prRmReqParam->u2RemainReqLen, VIR_MEM_TYPE);
 	if (!prRmReqParam->pucReqIeBuf) {
 		DBGLOG(RLM, ERROR, "Alloc %d bytes Req IE Buffer failed, No Memory\n", prRmReqParam->u2RemainReqLen);
@@ -2348,7 +2425,7 @@ VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb
 	prReportFrame->ucAction = RM_ACTION_RM_REPORT;
 	prReportFrame->ucDialogToken = prRmReqFrame->ucDialogToken;
 	prRmRepParam->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
-	rlmCalibrationRepetions(prRmReqParam);
+	rlmCalibrateRepetions(prRmReqParam);
 	/* Step3: Start to process Measurement Request Element */
 	rlmStartNextMeasurement(prAdapter, TRUE);
 }
@@ -2449,6 +2526,8 @@ VOID rlmTxRadioMeasurementReport(P_ADAPTER_T prAdapter)
 	}
 	DBGLOG(RLM, INFO, "frame length %d\n", prRmRepParam->u2ReportFrameLen);
 	kalMemCopy(prMsduInfo->prPacket, prRmRepParam->pucReportFrameBuff, prRmRepParam->u2ReportFrameLen);
+	/* reset u2ReportFrameLen after tx frame */
+	prRmRepParam->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
 
 	/* 2 Update information of MSDU_INFO_T */
 	prMsduInfo->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;	/* Management frame */
@@ -2552,7 +2631,7 @@ enum RM_REQ_PRIORITY rlmGetRmRequestPriority(PUINT_8 pucDestAddr)
 	return RM_PRI_MULTICAST;
 }
 
-static VOID rlmCalibrationRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq)
+static VOID rlmCalibrateRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq)
 {
 	UINT_8 ucIeSize = 0;
 	UINT_16 u2RemainReqLen = prRmReq->u2ReqIeBufLen;
@@ -2563,25 +2642,31 @@ static VOID rlmCalibrationRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq
 
 	ucIeSize = IE_SIZE(prCurrReq);
 	while (u2RemainReqLen >= ucIeSize) {
-		if (!(prCurrReq->ucRequestMode & RM_REQ_MODE_ENABLE_BIT))
-			return;
+		/* 1. If all measurement request has enable bit, no need to repeat
+		** see 11.10.6 Measurement request elements with the enable bit set to 1 shall be processed once
+		** regardless of the value in the number of repetitions in the measurement request.
+		** 2. Due to we don't support parallel measurement, if all request has parallel bit, no need to repeat
+		** measurement, to avoid frequent composing incapable response IE and exhauste CPU resource
+		** and then cause watch dog timeout.
+		** 3. if all measurements are not supported, no need to repeat. currently we only support Beacon request
+		** on this chip.
+		*/
+		if (!(prCurrReq->ucRequestMode & (RM_REQ_MODE_ENABLE_BIT | RM_REQ_MODE_PARALLEL_BIT))) {
+			if (prCurrReq->ucMeasurementType == ELEM_RM_TYPE_BEACON_REQ)
+				return;
+		}
 		u2RemainReqLen -= ucIeSize;
 		prCurrReq = (P_IE_MEASUREMENT_REQ_T)((PUINT_8)prCurrReq + ucIeSize);
 		ucIeSize = IE_SIZE(prCurrReq);
 	}
-	/* If all measurement request has enable bit, no need to repeat
-	** see 11.10.6 Measurement request elements with the enable bit set to 1 shall be processed once
-	** regardless of the value in the number of repetitions in the measurement request.
-	*/
-	DBGLOG(RLM, INFO, "All Measurement has set enable bit, don't repeat\n");
+	DBGLOG(RLM, INFO,
+		"All Measurement has set enable bit, or all are parallel or not supported, don't repeat\n");
 	prRmReq->u2Repetitions = 0;
 }
 
 VOID rlmRunEventProcessNextRm(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 {
-	ASSERT(prAdapter);
-	if (prMsgHdr)
-		cnmMemFree(prAdapter, prMsgHdr);
+	cnmMemFree(prAdapter, prMsgHdr);
 	rlmStartNextMeasurement(prAdapter, FALSE);
 }
 
@@ -2590,10 +2675,6 @@ VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter)
 	P_MSG_HDR_T prMsg = NULL;
 
 	prMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsg));
-	if (prMsg) {
-		ASSERT(0);	/* Can't send  Msg */
-		return;
-	}
 	prMsg->eMsgId = MID_RLM_RM_SCHEDULE;
 	mboxSendMsg(prAdapter, MBOX_ID_0, prMsg, MSG_SEND_METHOD_BUF);
 }

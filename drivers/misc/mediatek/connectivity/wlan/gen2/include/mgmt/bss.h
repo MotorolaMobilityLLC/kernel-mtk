@@ -56,6 +56,13 @@
 *                                 M A C R O S
 ********************************************************************************
 */
+#define IS_BSS_INDEX_VALID(_ucBssIndex)     ((_ucBssIndex) < NETWORK_TYPE_INDEX_NUM)
+
+
+#define GET_BSS_INFO_BY_INDEX(_prAdapter, _ucBssIndex) \
+	(&((_prAdapter)->rWifiVar.arBssInfo[(_ucBssIndex)]))
+
+
 #define bssAssignAssocID(_prStaRec)      ((_prStaRec)->ucIndex + 1)
 
 /*******************************************************************************
