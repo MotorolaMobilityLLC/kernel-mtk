@@ -148,7 +148,7 @@ void ksysfs_bootinfo_exit(void)
 
 /* end sysfs bootinfo */
 
-static inline unsigned int get_linear_memory_size(void)
+static inline unsigned long get_linear_memory_size(void)
 {
 	return (unsigned long)high_memory - PAGE_OFFSET;
 }
