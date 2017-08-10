@@ -552,6 +552,10 @@ void c2k_modem_power_on_platform(void)
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG,
 		    (c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG) &
 		     (~(0x7 << 8))));
+	/*clear c2k config before booting*/
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG,
+		    (c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG) &
+		     (~(0x3 << 11))));
 	C2K_BOOTUP_LOG("[C2K] C2K_CONFIG = 0x%x\n",
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG));
 	/*step 2: config srcclkena selection mask */
