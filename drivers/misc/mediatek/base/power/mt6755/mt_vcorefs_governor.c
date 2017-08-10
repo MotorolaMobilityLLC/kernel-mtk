@@ -851,7 +851,6 @@ int vcorefs_handle_kir_sysfsx_req(int opp, int vcore, int ddr)
 {
 	int r = -1;
 
-	vcorefs_info("hh: vcorefs_handle_kir_sysfsx_req(%d, v:%d, f:%d)\n", opp, vcore, ddr);
 	if (opp == OPPI_PERF)
 		r = spm_vcorefs_set_dvfs_hpm_force(OPPI_PERF, vcore, ddr);
 	else if (opp == OPPI_LOW_PWR)
@@ -893,7 +892,7 @@ int governor_debug_store(const char *buf)
 
 	if (sscanf(buf, "%31s 0x%x 0x%x", cmd, &val, &val2) == 3 ||
 	    sscanf(buf, "%31s %d %d", cmd, &val, &val2) == 3) {
-		vcorefs_info("governor_debug: cmd: %s, val: %d(0x%x), val2: %d(0x%x)\n", cmd, val,
+		vcorefs_info("vcore_debug: cmd: %s, val: %d(0x%x), val2: %d(0x%x)\n", cmd, val,
 			     val, val2, val2);
 
 		if (!strcmp(cmd, "perform_bw_threshold")) {
@@ -910,7 +909,8 @@ int governor_debug_store(const char *buf)
 		}
 	} else if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
 		   sscanf(buf, "%31s %d", cmd, &val) == 2) {
-		vcorefs_info("governor_debug: cmd: %s, val: %d(0x%x)\n", cmd, val, val);
+		vcorefs_debug_mask(KIR_SYSFSX, "vcore_debug: cmd: %s, val: %d(0x%x)\n", cmd, val, val);
+
 		if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM)
 			vcorefs_err("segment policy is LPM only not allow vcore_debug cmd\n");
 		else if (!strcmp(cmd, "vcore_dvs"))
@@ -1042,13 +1042,11 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 	else
 		expect_ddr_khz = gvrctrl->curr_ddr_khz;
 
-	vcorefs_debug_mask(krconf->kicker, "opp: %d, vcore: %d(%d), fddr: %d(%d)\n",
+	vcorefs_debug_mask(krconf->kicker, "opp: %d, vcore: %d <= %d, fddr: %d <= %d, group[%d]:%s\n",
 		     krconf->dvfs_opp,
 		     expect_vcore_uv, gvrctrl->curr_vcore_uv,
-		     expect_ddr_khz, gvrctrl->curr_ddr_khz);
-
-	vcorefs_debug_mask(krconf->kicker, "[%d]%s, opp: %d\n", group_id, spm_dvfs_func_list[group_id].purpose,
-		     krconf->dvfs_opp);
+		     expect_ddr_khz, gvrctrl->curr_ddr_khz,
+		     group_id, spm_dvfs_func_list[group_id].purpose);
 
 	/* call spm with dvfs_opp */
 	ret =

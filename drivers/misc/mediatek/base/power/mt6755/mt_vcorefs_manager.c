@@ -117,7 +117,7 @@ int vcorefs_get_curr_opp(void)
 /*
  * Sub-main function
  */
-static int _get_dvfs_opp(int kicker, struct vcorefs_profile *pwrctrl)
+static int _get_dvfs_opp(int kicker, struct vcorefs_profile *pwrctrl, enum dvfs_opp orig_opp)
 {
 	unsigned int opp = UINT_MAX;
 	int i;
@@ -127,8 +127,6 @@ static int _get_dvfs_opp(int kicker, struct vcorefs_profile *pwrctrl)
 
 	for (i = 0; i < NUM_KICKER; i++)
 		p += snprintf(p, buff_end - p, "%d, ", kicker_table[i]);
-
-	vcorefs_debug_mask(kicker, "kr opp: %s\n", table);
 
 	for (i = 0; i < NUM_KICKER; i++) {
 		if (kicker_table[i] < 0)
@@ -142,6 +140,8 @@ static int _get_dvfs_opp(int kicker, struct vcorefs_profile *pwrctrl)
 	if (opp == UINT_MAX)
 		opp = pwrctrl->plat_init_opp;
 
+	vcorefs_debug_mask(kicker, "kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d kr opp: %s\n",
+				kicker, orig_opp, opp, vcorefs_curr_opp, table);
 	return opp;
 }
 
@@ -249,10 +249,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 
 	krconf.kicker = kicker;
 	krconf.opp = opp;
-	krconf.dvfs_opp = _get_dvfs_opp(kicker, pwrctrl);
-
-	vcorefs_debug_mask(kicker, "kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
-		     krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_curr_opp);
+	krconf.dvfs_opp = _get_dvfs_opp(kicker, pwrctrl, opp);
 
 	record_kicker_opp_in_aee(kicker, opp);
 	if (vcorefs_req_handler)
@@ -461,9 +458,6 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		return -EPERM;
 	}
 
-	/* manager debug sysfs */
-	vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
-
 	if (!strcmp(cmd, "feature_en")) {
 		mutex_lock(&vcorefs_mutex);
 
@@ -514,8 +508,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		krconf.kicker = KIR_SYSFSX;
 		krconf.opp = val;
 		krconf.dvfs_opp = val;
-
-		vcorefs_crit("kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
+		vcorefs_debug_mask(krconf.kicker, "kicker: %d, opp: %d, dvfs_opp: %d, curr_opp: %d\n",
 			     krconf.kicker, krconf.opp, krconf.dvfs_opp, vcorefs_curr_opp);
 
 		/*
