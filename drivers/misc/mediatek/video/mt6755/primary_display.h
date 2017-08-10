@@ -73,7 +73,8 @@ typedef enum {
 typedef enum {
 	DISP_ALIVE = 0xf0,
 	DISP_SLEPT,
-	DISP_BLANK
+	DISP_BLANK,
+	DISP_FREEZE,
 } DISP_POWER_STATE;
 
 typedef enum {
@@ -296,5 +297,6 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 
 int display_enter_tui(void);
 int display_exit_tui(void);
+int display_freeze_mode(int enable, int need_lock);
 
 #endif

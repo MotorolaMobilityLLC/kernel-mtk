@@ -514,6 +514,11 @@ void mtkfb_process_dbg_opt(const char *opt)
 		}
 		DISPMSG("clk_change:%d\n", clk);
 		primary_display_mipi_clk_change(clk);
+	} else if (0 == strncmp(opt, "freeze:", 7)) {
+		if (0 == strncmp(opt + 7, "on", 2))
+			display_freeze_mode(1, 1);
+		else if (0 == strncmp(opt + 7, "off", 3))
+			display_freeze_mode(0, 1);
 	} else if (0 == strncmp(opt, "dsipattern", 10)) {
 		char *p = (char *)opt + 11;
 		unsigned int pattern;

@@ -94,6 +94,7 @@
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+static disp_internal_buffer_info *freeze_buffer_info;/*freeze mode*/
 static disp_internal_buffer_info *gmo_decouple_buffer_info;
 static RDMA_CONFIG_STRUCT decouple_rdma_config;
 static WDMA_CONFIG_STRUCT decouple_wdma_config;
@@ -104,6 +105,8 @@ static unsigned int frm_update_cnt;
 static unsigned int gPresentFenceIndex;
 static unsigned int g_keep;
 static unsigned int g_skip;
+static DISP_POWER_STATE power_stat_backup;
+static int session_mode_backup;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
 #endif
@@ -177,6 +180,7 @@ typedef struct {
 	int vsync_drop;
 	unsigned int dc_buf_id;
 	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
+	unsigned int freeze_buf;
 	unsigned int force_fps_keep_count;
 	unsigned int force_fps_skip_count;
 	cmdqBackupSlotHandle cur_config_fence;
@@ -1511,6 +1515,13 @@ void disp_enable_emi_force_on(unsigned int enable, void *cmdq_handle)
 {
 }
 
+static unsigned int _get_switch_dc_buffer(void)
+{
+	if (pgc->freeze_buf)
+		return pgc->freeze_buf;
+
+	return pgc->dc_buf[pgc->dc_buf_id];
+}
 static int _DL_switch_to_DC_fast(void)
 {
 	int ret = 0;
@@ -1520,9 +1531,10 @@ static int _DL_switch_to_DC_fast(void)
 
 	disp_ddp_path_config *data_config_dl = NULL;
 	disp_ddp_path_config *data_config_dc = NULL;
-	unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
+	unsigned int mva = 0;	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
 	struct ddp_io_golden_setting_arg gset_arg;
 
+	mva = _get_switch_dc_buffer();
 	wdma_config.dstAddress = mva;
 	wdma_config.security = DISP_NORMAL_BUFFER;
 
@@ -2202,6 +2214,35 @@ static int _release_dc_buffer(void)
 	}
 
 	return ret;
+}
+
+static int _allocate_freeze_buffer(void)
+{
+	enum UNIFIED_COLOR_FMT fmt = UFMT_RGB888;
+	int height = primary_display_get_height();
+	int width = primary_display_get_width();
+	int Bpp = UFMT_GET_Bpp(fmt);
+	int buffer_size =  width * height * Bpp;
+
+	freeze_buffer_info = allocat_decouple_buffer(buffer_size);
+	if (freeze_buffer_info != NULL)
+		pgc->freeze_buf = freeze_buffer_info->mva;
+	else
+		return -1;
+
+	return 0;
+}
+
+static int release_freeze_buffer(void)
+{
+	if (freeze_buffer_info) {
+		ion_free(freeze_buffer_info->client, freeze_buffer_info->handle);
+		ion_client_destroy(freeze_buffer_info->client);
+		kfree(freeze_buffer_info);
+		freeze_buffer_info = NULL;
+		pgc->freeze_buf = 0;
+	}
+	return 0;
 }
 
 int pd_release_dc_buffer(void)
@@ -3541,6 +3582,8 @@ int primary_display_suspend(void)
 		_primary_path_lock(__func__);
 		DISPMSG("primary_display_suspend wait tui done stat=%d\n", primary_get_state());
 	}
+
+	display_freeze_mode(0, 0);
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPWRN("primary display path is already sleep, skip\n");
@@ -6546,9 +6589,6 @@ void restart_smart_ovl_nolock(void)
 
 }
 
-static DISP_POWER_STATE tui_power_stat_backup;
-static int tui_session_mode_backup;
-
 int display_enter_tui(void)
 {
 
@@ -6564,7 +6604,7 @@ int display_enter_tui(void)
 		goto err0;
 	}
 
-	tui_power_stat_backup = primary_set_state(DISP_BLANK);
+	power_stat_backup = primary_set_state(DISP_BLANK);
 
 	primary_display_idlemgr_kick((char *)__func__, 0);
 
@@ -6575,7 +6615,7 @@ int display_enter_tui(void)
 
 	stop_smart_ovl_nolock();
 
-	tui_session_mode_backup = pgc->session_mode;
+	session_mode_backup = pgc->session_mode;
 
 	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 
@@ -6585,7 +6625,7 @@ int display_enter_tui(void)
 	return 0;
 
 err1:
-	primary_set_state(tui_power_stat_backup);
+	primary_set_state(power_stat_backup);
 
 err0:
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
@@ -6600,13 +6640,13 @@ int display_exit_tui(void)
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 1, 1);
 
 	_primary_path_lock(__func__);
-	primary_set_state(tui_power_stat_backup);
+	primary_set_state(power_stat_backup);
 
 	/* trigger rdma to display last normal buffer */
 	_decouple_update_rdma_config_nolock();
 	/*workaround: wait until this frame triggered to lcm */
 	msleep(32);
-	do_primary_display_switch_mode(tui_session_mode_backup, pgc->session_id, 0, NULL, 0);
+	do_primary_display_switch_mode(session_mode_backup, pgc->session_id, 0, NULL, 0);
 	/*DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff);*/
 
 	restart_smart_ovl_nolock();
@@ -6698,4 +6738,56 @@ static int primary_display_recovery_thread(void *data)
 	}
 	return ret;
 
+}
+int display_freeze_mode(int enable, int need_lock)
+{
+
+	DISPMSG("%s, enable:%d\n", __func__, enable);
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagStart, 0, 0);
+
+	if (need_lock)
+		_primary_path_lock(__func__);
+	if (enable) {
+		if (primary_get_state() != DISP_ALIVE) {
+			DISPERR("Can't enter freeze mode: current_stat=%d is not alive\n", primary_get_state());
+			goto end;
+		}
+		disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
+		_allocate_freeze_buffer();
+		power_stat_backup = primary_set_state(DISP_FREEZE);
+		if (primary_display_is_mirror_mode()) {
+			DISPERR("Can't enter freeze mode: current_mode=%s\n", session_mode_spy(pgc->session_mode));
+			goto err1;
+		}
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		session_mode_backup = pgc->session_mode;
+		if (session_mode_backup == DISP_SESSION_DECOUPLE_MODE) {
+			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+				pgc->session_id, 0, NULL, 0);
+			session_mode_backup = DISP_SESSION_DIRECT_LINK_MODE;
+		}
+		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+				pgc->session_id, 0, NULL, 0);
+	} else {
+		if (primary_get_state() != DISP_FREEZE)
+			goto end;
+		primary_set_state(power_stat_backup);
+		primary_display_idlemgr_kick((char *)__func__, 0);
+		do_primary_display_switch_mode(session_mode_backup, pgc->session_id,
+			0, NULL, 0);
+		release_freeze_buffer();
+		disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
+	}
+	if (need_lock)
+		_primary_path_unlock(__func__);
+	return 0;
+
+err1:
+	primary_set_state(power_stat_backup);
+	release_freeze_buffer();
+end:
+	if (need_lock)
+		_primary_path_unlock(__func__);
+
+	return -1;
 }
