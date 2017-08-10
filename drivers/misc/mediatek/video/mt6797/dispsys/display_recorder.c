@@ -1039,10 +1039,10 @@ void dprec_logger_vdump(const char *fmt, ...)
 	va_list vargs;
 	int tmp;
 
-	va_start(vargs, fmt);
-
 	if (analysize_length >= dprec_dump_max_length - 10)
 		return;
+
+	va_start(vargs, fmt);
 
 	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
 		      dprec_dump_max_length - analysize_length, fmt, vargs);
@@ -1242,13 +1242,21 @@ void init_log_buffer(void)
 	is_buffer_init = true;
 	pr_warn("[DISP]%s success\n", __func__);
 	return;
+
 err:
-	err_buffer = 0;
-	fence_buffer = 0;
-	dbg_buffer = 0;
-	dump_buffer = 0;
-	debug_buffer = 0;
+	kfree(status_buffer);
+	kfree(dump_buffer);
+	kfree(dbg_buffer);
+	kfree(fence_buffer);
+	kfree(err_buffer);
+	kfree(debug_buffer);
+
 	status_buffer = 0;
+	dump_buffer = 0;
+	dbg_buffer = 0;
+	fence_buffer = 0;
+	err_buffer = 0;
+	debug_buffer = 0;
 	pr_err("[DISP]%s: log buffer allocation fail\n", __func__);
 }
 

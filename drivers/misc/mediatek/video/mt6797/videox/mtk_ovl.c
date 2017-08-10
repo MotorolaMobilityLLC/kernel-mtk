@@ -175,7 +175,7 @@ int ovl2mem_get_info(void *info)
 
 static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
-	int ret;
+	int ret = 0;
 	int force_disable_alpha = 0;
 	enum UNIFIED_COLOR_FMT tmp_fmt;
 	unsigned int Bpp = 0;
