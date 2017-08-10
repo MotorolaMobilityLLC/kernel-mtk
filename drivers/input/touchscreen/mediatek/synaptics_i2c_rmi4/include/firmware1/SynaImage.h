@@ -1,3 +1,23 @@
+/*
+ * Synaptics DSX touchscreen driver
+ *
+ * Copyright (C) 2012 Synaptics Incorporated
+ *
+ * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+ * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
+ * Copyright (C) 2010 Js HA <js.ha@stericsson.com>
+ * Copyright (C) 2010 Naveen Kumar G <naveen.gaddipati@stericsson.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 static const unsigned char synaImage[] = {
 #if 1				/* LENSONE TP */
 	0x60, 0xfd, 0x55, 0xb1, 0x00, 0x00, 0x00, 0x05,
