@@ -986,6 +986,7 @@ config ARCH_MT6570
 	select MTK_NO_ATF
 	select MTK_POWER_GS
 	select MTK_SYS_CIRQ
+	select MTK_DRAMC
 	help
 	  This enable support for MediaTek MT6570.
 
