@@ -51,7 +51,13 @@
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 #include "mach/mt_pbm.h"
-#include "fan53555.h"
+#include "pmic.h"
+#if defined(EXTERNAL_BUCK_FAN53555)
+#include <fan53555.h>
+#endif /* defined(EXTRENAL_BUCK_FAN53555) */
+#ifdef CONFIG_MTK_GPUREGULATOR_INTF
+#include "mtk_gpuregulator_intf.h"
+#endif /* CONFIG_MTK_GPUREGULATOR_INTF */
 
 #define STATIC_PWR_READY2USE
 /*
@@ -126,6 +132,7 @@
 #define GPU_DVFS_FREQT (819000)
 #endif
 
+#define GPU_DVFS_FREQ0_P		(900000)	/* KHz */
 #define GPU_DVFS_FREQ0_S		(850000)	/* KHz */
 #define GPU_DVFS_FREQ0		(825000)	/* KHz */
 #define GPU_DVFS_FREQ1		(780000) /* KHz */
@@ -151,6 +158,7 @@
 #define GPUFREQ_LAST_FREQ_LEVEL		(GPU_DVFS_FREQ9_M)
 #define GPU_DVFS_VOLT0_S	(115450)		/* mV x 100 */
 #define GPU_DVFS_VOLT0		(112890)		/* mV x 100 */
+#define GPU_DVFS_VOLT1_P		(110320)		/* mV x 100 */
 #define GPU_DVFS_VOLT1		(109040)		/* mV x 100 */
 #define GPU_DVFS_VOLT2		(107760)		/* mV x 100 */
 #define GPU_DVFS_VOLT3		(106470)		/* mV x 100 */
@@ -214,11 +222,11 @@
 
 #define EXTIC_VOLT_ON_OFF_DELAY_US		350
 #define EXTIC_VOLT_STEP			12826	/* 12.826mV per step */
-#define EXTIC_SLEW_STEP			100	/* 10.000mV per step */
+#define EXTIC_SLEW_STEP			10	/* 10.000mV per step */
 #define EXTIC_VOLT_UP_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
-	(((((new_volt) - (old_volt)) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate))	/* us */
+	(((((new_volt) - (old_volt)) * EXTIC_SLEW_STEP) + (slew_rate) * 1000) / ((slew_rate) * 1000)) /* us */
 #define EXTIC_VOLT_DOWN_SETTLE_TIME(old_volt, new_volt, slew_rate)	\
-	(((((old_volt) - (new_volt)) * EXTIC_SLEW_STEP) /  EXTIC_VOLT_STEP) / (slew_rate))	/* us */
+	(((((old_volt) - (new_volt)) * EXTIC_SLEW_STEP) + (slew_rate) * 1000) / ((slew_rate) * 1000)) /* us */
 #endif
 /* efuse */
 #define GPUFREQ_EFUSE_INDEX		(8)
@@ -306,6 +314,16 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_lp_tbl_e1_0[] = {
 };
 
 /* Speed Bin */
+/* 20160526 type = 12 */
+static struct mt_gpufreq_table_info mt_gpufreq_opp_plus_tbl_e1_1[] = {
+	GPUOP(GPU_DVFS_FREQ0_P, GPU_DVFS_VOLT0_S, 0),
+	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1_P, 1),
+	GPUOP(GPU_DVFS_FREQ3, GPU_DVFS_VOLT5_S, 2),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT8, 3),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT10, 4),
+	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT11, 5),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT13_S, 6),
+};
 /* 20160119 type = 9*/
 static struct mt_gpufreq_table_info mt_gpufreq_opp_v7_tbl_e1_1[] = {
 	GPUOP(GPU_DVFS_FREQ0_S, GPU_DVFS_VOLT0_S, 0),
@@ -599,6 +617,8 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 	if (func_code_1 == 0xf)
 		type = 11;
+	else if (func_code_1 == 4)
+		type = 12;
 	gpu_speed_bounding = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >>
 				EFUSE_MFG_SPD_BOND_SHIFT) & EFUSE_MFG_SPD_BOND_MASK;
 
@@ -796,15 +816,56 @@ static int mt_gpufreq_idx_get(int num)
 /**************************************
  * Convert pmic wrap register to voltage
  ***************************************/
+static unsigned int get_ext_buck2_type(void)
+{
+	unsigned int i;
+	static enum ext_ic_num ext_type = NONE_EXT_IC;
+
+	if (ext_type != NONE_EXT_IC)
+		return ext_type;
+
+	for (i = 0; i < 3; i++) {
+#if defined(EXTERNAL_BUCK_FAN53555)
+		if (is_fan53555_exist() == 1) {
+			ext_type = EXT_FAN53555;
+			return EXT_FAN53555;
+		}
+#endif
+#if defined(CONFIG_MTK_GPUREGULATOR_INTF)
+		if (rt_is_hw_exist() == 1) {
+			ext_type = EXT_RT5735;
+			return EXT_RT5735;
+		}
+#endif
+	}
+	ext_type = rt_is_hw_exist();
+	gpufreq_err("@%s: ext buck2 type %d!\n", __func__, ext_type);
+	BUG();
+	return ext_type;
+}
+
 static unsigned int mt_gpufreq_pmic_wrap_to_volt(unsigned int pmic_wrap_value)
 {
 	unsigned int volt = 0;
 #ifdef VGPU_SET_BY_EXTIC
+	switch (get_ext_buck2_type()) {
+	case EXT_RT5735:
+		volt = ((pmic_wrap_value * 6250) + 600000) / 10;
+		if (volt > 140000) {
+			gpufreq_err("@%s: volt > 1.411v!\n", __func__);
+			return 140000;
+		}
+		break;
+	case EXT_FAN53555:
 	volt = ((pmic_wrap_value * 12826) + 603000) / 10;
-	/* 1.39375V */
 	if (volt > 141150) {
 		gpufreq_err("@%s: volt > 1.411v!\n", __func__);
 		return 141100;
+	}
+		break;
+	default:
+		gpufreq_err("@%s: cannot recognize ext_buck2 !\n", __func__);
+		return 100000;
 	}
 #else
 	volt = (pmic_wrap_value * 625) + 60000;
@@ -894,7 +955,7 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 	unsigned int delay = 100;
 #if defined(VGPU_SET_BY_EXTIC)
 	unsigned char reg_val;
-	unsigned int slew_rate;
+	unsigned int slew_rate = 0;
 #endif
 
 	if (volt_new == volt_old) {
@@ -903,16 +964,26 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 #ifdef VGPU_SET_BY_PMIC
 		delay = PMIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new);
 #elif defined(VGPU_SET_BY_EXTIC)
-		fan53555_read_byte(0x2, &reg_val);
-		slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
+		if (get_ext_buck2_type() == EXT_RT5735) {
+			slew_rate = rt_get_slew_rate(RT_DVS_UP);
+		} else if (get_ext_buck2_type() == EXT_FAN53555) {
+			fan53555_read_byte(0x2, &reg_val);
+			slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
+		} else {
+			slew_rate = 0;
+		}
 		delay = EXTIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	} else {
 #ifdef VGPU_SET_BY_PMIC
 		delay = PMIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new);
 #elif defined(VGPU_SET_BY_EXTIC)
-		fan53555_read_byte(0x2, &reg_val);
-		slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
+		if (get_ext_buck2_type() == EXT_RT5735) {
+			slew_rate = rt_get_slew_rate(RT_DVS_DOWN);
+		} else if (get_ext_buck2_type() == EXT_FAN53555) {
+			fan53555_read_byte(0x2, &reg_val);
+			slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
+		}
 		delay = EXTIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	}
@@ -972,27 +1043,20 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		}
 	}
 
-	if (enable == 1) {
 #ifdef VGPU_SET_BY_PMIC
-		pmic_config_interface(PMIC_ADDR_VGPU_EN, 0x1,
+	pmic_config_interface(PMIC_ADDR_VGPU_EN, enable,
 				      PMIC_ADDR_VGPU_EN_MASK,
 				      PMIC_ADDR_VGPU_EN_SHIFT);	/* Set VGPU_EN[0] to 1 */
 #elif defined(VGPU_SET_BY_EXTIC)
-		fan53555_config_interface(EXTIC_VSEL0, 0x1,
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		rt_set_vsel_enable(RT_VSEL0, enable); /* enable bulk */
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
+		fan53555_config_interface(EXTIC_VSEL0, enable,
 					EXTIC_BUCK_EN0_MASK,
 					EXTIC_BUCK_EN0_SHIFT);
-#endif
-	} else {
-#ifdef VGPU_SET_BY_PMIC
-		pmic_config_interface(PMIC_ADDR_VGPU_EN, 0x0,
-				      PMIC_ADDR_VGPU_EN_MASK,
-				      PMIC_ADDR_VGPU_EN_SHIFT);	/* Set VGPU_EN[0] to 0 */
-#elif defined(VGPU_SET_BY_EXTIC)
-		fan53555_config_interface(EXTIC_VSEL0, 0x0,
-					EXTIC_BUCK_EN0_MASK,
-					EXTIC_BUCK_EN0_SHIFT);
-#endif
 	}
+#endif
+
 #ifdef VGPU_SET_BY_PMIC
 	/* (g_cur_gpu_volt / 1250) + 26; */
 	/* delay = mt_gpufreq_calc_pmic_settle_time(0, g_cur_gpu_volt); */
@@ -1016,9 +1080,13 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	pmic_read_interface(PMIC_ADDR_VGPU_EN, &reg_val,
 			    PMIC_ADDR_VGPU_EN_MASK, PMIC_ADDR_VGPU_EN_SHIFT);
 #elif defined(VGPU_SET_BY_EXTIC)
-	fan53555_read_interface(EXTIC_VSEL0, &reg_val,
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		reg_val = rt_is_vsel_enabled(RT_VSEL0);/* get bulk enable or not */
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
+		fan53555_read_interface(EXTIC_VSEL0, &reg_val,
 				EXTIC_BUCK_EN0_MASK,
 				EXTIC_BUCK_EN0_SHIFT);
+	}
 #endif
 	/* Error checking */
 	if (enable == 1 && reg_val == 0) {
@@ -1030,18 +1098,26 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		/* read PMIC chip id via PMIC wrapper */
 		for (i = 0; i < 10; i++) {
 #ifdef VGPU_SET_BY_EXTIC
-			fan53555_read_interface(EXTIC_VSEL0, &reg_val,
+			if (get_ext_buck2_type() == EXT_RT5735) {
+				reg_val = rt_is_vsel_enabled(RT_VSEL0); /* get bulk enable or not*/
+				gpufreq_err("@%s: i2c num = 0x%x, rt5735 sw ready is %d, reg_val = 0x%x\n",
+					__func__, rt_get_chip_i2c_channel(), rt_is_sw_ready(), reg_val);
+			} else if (get_ext_buck2_type() == EXT_FAN53555) {
+				fan53555_read_interface(EXTIC_VSEL0, &reg_val,
 				EXTIC_BUCK_EN0_MASK,
 				EXTIC_BUCK_EN0_SHIFT);
-			gpufreq_err("@%s: i2c num = 0x%x, fan53555 sw ready is %d, reg_val = 0x%x\n",
+				gpufreq_err("@%s: i2c num = 0x%x, fan53555 sw ready is %d, reg_val = 0x%x\n",
 				__func__, get_fan53555_i2c_ch_num(), is_fan53555_sw_ready(), reg_val);
+			}
 #else
 			pwrap_read(0x200, &reg_val);
 			gpufreq_err("@%s: PMIC CID via pwap = 0x%x\n", __func__, reg_val);
 #endif
 		}
 #ifdef VGPU_SET_BY_EXTIC
-		if (((reg_val >> EXTIC_BUCK_EN0_SHIFT) & EXTIC_BUCK_EN0_MASK) != EXTIC_BUCK_EN0_MASK)
+		if ((get_ext_buck2_type() == EXT_RT5735 && reg_val != 1) ||
+			((get_ext_buck2_type() == EXT_FAN53555) &&
+			((reg_val >> EXTIC_BUCK_EN0_SHIFT) & EXTIC_BUCK_EN0_MASK) != EXTIC_BUCK_EN0_MASK))
 #endif
 			BUG();
 	}
@@ -1602,13 +1678,17 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 #endif
 #endif
 #ifdef VGPU_SET_BY_EXTIC
-	/* set target volt */
-	gpu_volt = volt_new / 100;
-	if (volt_new % 100 != 0)
-		gpu_volt++;
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		rt_set_voltage(RT_VSEL0, volt_new*10);
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
+		/* set target volt */
+		gpu_volt = volt_new / 100;
+		if (volt_new % 100 != 0)
+			gpu_volt++;
 
-	fan53555_vosel(gpu_volt);
-	gpufreq_dbg("gpu_dvfs_set_cur_volt: request volt = %d, gpu volt = %d\n", volt_new, gpu_volt*100);
+		fan53555_vosel(gpu_volt);
+	}
+	gpufreq_dbg("gpu_dvfs_set_cur_volt: request volt = %d, gpu volt = %d\n", volt_new, gpu_volt);
 
 #elif defined(VGPU_SET_BY_PMIC)
 	/* Set VGPU_VOSEL_CTRL[1] to HW control */
@@ -1663,15 +1743,23 @@ static unsigned int _mt_gpufreq_get_cur_volt(void)
 {
 	unsigned int en = 0;
 	unsigned char reg_val = 0;
-	unsigned int gpu_volt;
+	unsigned int gpu_volt = 0;
 
 	gpufreq_dbg("@%s\n", __func__);
-	fan53555_read_byte(0x0, &reg_val);
-	en = reg_val >> 7;
-	if (en) { /* enabled i.e. not 0mv */
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		en = rt_is_vsel_enabled(RT_VSEL0);
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
 		fan53555_read_byte(0x0, &reg_val);
-		gpu_volt = ((reg_val & 0x3f) * 12826 + 603000) / 10;
-		gpufreq_dbg("gpu_dvfs_get_cur_volt: pmic_val = 0x%x, volt = %d\n", reg_val, gpu_volt);
+		en = reg_val >> 7;
+	}
+	if (en) { /* enabled i.e. not 0mv */
+		if (get_ext_buck2_type() == EXT_RT5735) {
+			gpu_volt = rt_get_voltage(RT_VSEL0) / 10;
+		} else if (get_ext_buck2_type() == EXT_FAN53555) {
+			fan53555_read_byte(0x0, &reg_val);
+			gpu_volt = ((reg_val & 0x3f) * 12826 + 603000) / 10;
+		}
+		gpufreq_dbg("gpu_dvfs_get_cur_volt: volt = %d\n", gpu_volt);
 	} else {
 		gpufreq_dbg("gpu_dvfs_get_cur_volt: VGPU not enabled!\n");
 		gpu_volt = 0;
@@ -2662,7 +2750,7 @@ static int mt_gpufreq_pm_restore_early(struct device *dev)
 	return 0;
 }
 
-int mt_gpufreq_fan53555_init(void)
+int mt_gpufreq_ext_ic_init(void)
 {
 #if defined(VGPU_SET_BY_EXTIC)
 	unsigned char reg_val = 0;
@@ -2672,36 +2760,50 @@ int mt_gpufreq_fan53555_init(void)
 	/* enable: // VGPU_SRAM */
 	g_ldo_base = ioremap_nocache(GPU_LDO_BASE, 0x1000);
 	gpufreq_info("@%s 2\n", __func__);
-#if 1
+
 	DRV_WriteReg32(g_ldo_base + 0xfc0, 0x0f0f0f0f);
 	DRV_WriteReg32(g_ldo_base + 0xfc4, 0x0f0f0f0f);
 	DRV_WriteReg32(g_ldo_base + 0xfbc, 0xff);
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		rt_set_voltage(RT_VSEL0, 1000000);
+		rt_set_vsel_enable(RT_VSEL0, 1);
+		rt_set_slew_rate(RT_DVS_UP, 32);
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
 
-
-	/* enable VGPU power */
-	fan53555_config_interface(EXTIC_VSEL0, 0x1,
+		/* enable VGPU power */
+		fan53555_config_interface(EXTIC_VSEL0, 0x1,
 				EXTIC_BUCK_EN0_MASK,
 				EXTIC_BUCK_EN0_SHIFT);
-	/* set slew rate to 32mv/us */
-	fan53555_config_interface(EXTIC_VGPU_CTRL, 0x11,
+		/* set slew rate to 32mv/us */
+		fan53555_config_interface(EXTIC_VGPU_CTRL, 0x11,
 				EXTIC_VGPU_SLEW_MASK,
 				EXTIC_VGPU_SLEW_SHIFT);
-
+	} else {
+		gpufreq_err("no external ic exist\n");
+		BUG();
+	}
 #if 0
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_VGPU_ENABLED));
 #endif
 
 	mt_gpufreq_volt_enable_state = 1;
 	gpufreq_info(" check VGPU_EN\n");
-	fan53555_read_interface(EXTIC_VSEL0, &reg_val,
+	if (get_ext_buck2_type() == EXT_RT5735) {
+		reg_val = rt_is_vsel_enabled(RT_VSEL0);
+		gpufreq_info("VGPU_EN = %d\n", reg_val);
+		reg_val = rt_get_slew_rate(RT_DVS_UP);
+		gpufreq_info("VGPU_SLEW = %d\n", reg_val);
+	} else if (get_ext_buck2_type() == EXT_FAN53555) {
+		fan53555_read_interface(EXTIC_VSEL0, &reg_val,
 				EXTIC_BUCK_EN0_MASK,
 				EXTIC_BUCK_EN0_SHIFT);
-	gpufreq_info("VGPU_EN = %d\n", reg_val);
-	fan53555_read_interface(EXTIC_VGPU_CTRL, &reg_val,
+		gpufreq_info("VGPU_EN = %d\n", reg_val);
+		fan53555_read_interface(EXTIC_VGPU_CTRL, &reg_val,
 				EXTIC_VGPU_SLEW_MASK,
 				EXTIC_VGPU_SLEW_SHIFT);
-#endif
+	}
 	gpufreq_info("VGPU_SLEW = %d\n", reg_val);
+
 
 	/**********************
 	 * setup initial frequency
@@ -2837,6 +2939,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else if (mt_gpufreq_dvfs_table_type == 11)	/* 600M */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_v7_tbl_e1_3,
 					ARRAY_SIZE(mt_gpufreq_opp_v7_tbl_e1_3));
+	else if (mt_gpufreq_dvfs_table_type == 12)	/* 900M */
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_plus_tbl_e1_1,
+					ARRAY_SIZE(mt_gpufreq_opp_plus_tbl_e1_1));
 #ifdef MTK_TABLET_TURBO
 	else if (mt_gpufreq_dvfs_table_type == 3)	/* 800 */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_t,
@@ -2904,14 +3009,6 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 
 #if !defined(VGPU_SET_BY_EXTIC)
-#if 0
-	/* Make sure the power control is ready */
-	if (!is_fan53555_exist() || !is_fan53555_sw_ready()) {
-		gpufreq_dbg("fan53555 is not ready yet\n");
-		return -EPROBE_DEFER;
-	}
-	mt_gpufreq_fan53555_init();
-#endif
 	/**********************
 	 * setup initial frequency
 	 ***********************/
@@ -3704,8 +3801,11 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 {
 	/* volt (mV) */
 #ifdef VGPU_SET_BY_EXTIC
-	if (fixed_volt >= (mt_gpufreq_pmic_wrap_to_volt(0x0) / 100) &&
-	    fixed_volt <= (mt_gpufreq_pmic_wrap_to_volt(0x3F) / 100)) {
+	if ((get_ext_buck2_type() == EXT_RT5735
+		 && (fixed_volt >= 600 && fixed_volt <= 1238))
+		 || (get_ext_buck2_type() == EXT_FAN53555
+		 && (fixed_volt >= (mt_gpufreq_pmic_wrap_to_volt(0x0) / 100) &&
+	    fixed_volt <= (mt_gpufreq_pmic_wrap_to_volt(0x3F) / 100)))) {
 #else
 	if (fixed_volt >= (mt_gpufreq_pmic_wrap_to_volt(0x0) / 100) &&
 	    fixed_volt <= (mt_gpufreq_pmic_wrap_to_volt(0x7F) / 100)) {

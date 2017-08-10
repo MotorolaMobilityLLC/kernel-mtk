@@ -23,6 +23,12 @@ enum post_div_enum {
 	POST_DIV8,
 };
 
+enum ext_ic_num {
+	NONE_EXT_IC = 0,
+	EXT_FAN53555,
+	EXT_RT5735,
+};
+
 struct mt_gpufreq_table_info {
 	unsigned int gpufreq_khz;
 	unsigned int gpufreq_volt;
@@ -67,7 +73,7 @@ extern unsigned int mt_gpufreq_get_leakage_mw(void);
 extern void mt_gpufreq_kick_pbm(int enable, unsigned int spm_gpu_freq);
 extern unsigned int mt_get_mfgclk_freq(void);	/* Freq Meter API */
 extern u32 get_devinfo_with_index(u32 index);
-extern int mt_gpufreq_fan53555_init(void);
+extern int mt_gpufreq_ext_ic_init(void);
 /* #ifdef MT_GPUFREQ_AEE_RR_REC */
 extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
 extern void aee_rr_rec_gpu_dvfs_oppidx(u8 val);
