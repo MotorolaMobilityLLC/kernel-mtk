@@ -495,7 +495,7 @@ static int idle_switch[NR_TYPES] = {
 static unsigned int dpidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* CG_MIXED: */
 	0x00000000, /* CG_MPLL: */
-	0x00000000, /* CG_INFRA_AO: */
+	0x00000000, /* CG_UPLL: */
 	0x00000037, /* CG_CTRL0: */
 	0x8089B2FC, /* CG_CTRL1: */
 	0x00003F16, /* CG_CTRL2: */
@@ -504,12 +504,14 @@ static unsigned int dpidle_condition_mask[NR_GRPS] = {
 	0x000003E1, /* CG_IMGSYS: */
 	0x00000001, /* CG_MFGSYS: */
 	0x00000000, /* CG_AUDIO: */
+	0x00000000, /* CG_INFRA_AO: */
+	0x00000006, /* CG_CTRL3: */
 };
 
 static unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* CG_MIXED: */
 	0x00000000, /* CG_MPLL: */
-	0x00000000, /* CG_INFRA_AO: */
+	0x00000000, /* CG_UPLL: */
 	0x00000026, /* CG_CTRL0: */
 	0x8089B2F8, /* CG_CTRL1: */
 	0x00003F06, /* CG_CTRL2: */
@@ -518,12 +520,14 @@ static unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x000003E1, /* CG_IMGSYS: */
 	0x00000001, /* CG_MFGSYS: */
 	0x00000000, /* CG_AUDIO: */
+	0x00000000, /* CG_INFRA_AO: */
+	0x00000000, /* CG_CTRL3: */
 };
 
 static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0xFFFFFFFF, /* CG_MIXED: */
 	0xFFFFFFFF, /* CG_MPLL: */
-	0xFFFFFFFF, /* CG_INFRA_AO: */
+	0xFFFFFFFF, /* CG_UPLL: */
 	0xFFFFFFFF, /* CG_CTRL0: */
 	0xFFFFFFFF, /* CG_CTRL1: */
 	0xFFFFFFFF, /* CG_CTRL2: */
@@ -532,6 +536,8 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0xFFFFFFFF, /* CG_IMGSYS: */
 	0xFFFFFFFF, /* CG_MFGSYS: */
 	0xFFFFFFFF, /* CG_AUDIO: */
+	0xFFFFFFFF, /* CG_INFRA_AO: */
+	0xFFFFFFFF, /* CG_CTRL3: */
 };
 #elif defined(CONFIG_ARCH_MT6580)
 /*Idle handler on/off*/
