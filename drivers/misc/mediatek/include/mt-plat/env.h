@@ -30,6 +30,8 @@ struct env_struct {
 #define ENV_MAGIC		'e'
 #define ENV_READ		_IOW(ENV_MAGIC, 1, int)
 #define ENV_WRITE		_IOW(ENV_MAGIC, 2, int)
+#define ENV_SET_PID		_IOW(ENV_MAGIC, 3, int)
+#define ENV_USER_INIT	_IOW(ENV_MAGIC, 4, int)
 
 struct env_ioctl {
 	char *name;
