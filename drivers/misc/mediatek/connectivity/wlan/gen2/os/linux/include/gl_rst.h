@@ -92,6 +92,7 @@ typedef void (*PF_WMT_CB) (ENUM_WMTDRV_TYPE_T,	/* Source driver type */
 		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
 	} while (0)
 
+
 #if CFG_CHIP_RESET_SUPPORT
 extern int mtk_wcn_wmt_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
 extern int mtk_wcn_wmt_msgcb_unreg(ENUM_WMTDRV_TYPE_T eType);
@@ -100,6 +101,11 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 #endif
 extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 extern BOOLEAN mtk_wcn_set_connsys_power_off_flag(BOOLEAN value);
+
+/*----------------------------------------------------------------------------*/
+/* WMT Core Dump Support                                                                */
+/*----------------------------------------------------------------------------*/
+extern BOOLEAN mtk_wcn_stp_coredump_start_get(VOID);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -133,5 +139,7 @@ VOID glResetUninit(VOID);
 VOID glSendResetRequest(VOID);
 
 BOOLEAN kalIsResetting(VOID);
+
+BOOLEAN glIsWmtCodeDump(VOID);
 
 #endif /* _GL_RST_H */
