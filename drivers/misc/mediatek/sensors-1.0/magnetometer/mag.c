@@ -711,10 +711,6 @@ static int mag_probe(void)
 		goto real_driver_init_fail;
 	}
 
-	err = mag_factory_device_init();
-	if (err)
-		MAG_PR_ERR("mag_factory_device_init fail\n");
-
 	MAG_LOG("----magel_probe OK !!\n");
 	return 0;
 

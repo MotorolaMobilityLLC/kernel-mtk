@@ -1025,6 +1025,173 @@ static int ITG1010_flush(void)
 }
 
 /*----------------------------------------------------------------------------*/
+static int ITG1010_write_rel_calibration(struct ITG1010_i2c_data *obj, int dat[ITG1010_AXES_NUM])
+{
+	obj->cali_sw[ITG1010_AXIS_X] = obj->cvt.sign[ITG1010_AXIS_X]*dat[obj->cvt.map[ITG1010_AXIS_X]];
+	obj->cali_sw[ITG1010_AXIS_Y] = obj->cvt.sign[ITG1010_AXIS_Y]*dat[obj->cvt.map[ITG1010_AXIS_Y]];
+	obj->cali_sw[ITG1010_AXIS_Z] = obj->cvt.sign[ITG1010_AXIS_Z]*dat[obj->cvt.map[ITG1010_AXIS_Z]];
+#if DEBUG
+	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
+		GYRO_LOG("test  (%5d, %5d, %5d) ->(%5d, %5d, %5d)->(%5d, %5d, %5d))\n",
+		obj->cvt.sign[ITG1010_AXIS_X], obj->cvt.sign[ITG1010_AXIS_Y], obj->cvt.sign[ITG1010_AXIS_Z],
+		dat[ITG1010_AXIS_X], dat[ITG1010_AXIS_Y], dat[ITG1010_AXIS_Z],
+		obj->cvt.map[ITG1010_AXIS_X], obj->cvt.map[ITG1010_AXIS_Y], obj->cvt.map[ITG1010_AXIS_Z]);
+		GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)\n",
+		obj->cali_sw[ITG1010_AXIS_X], obj->cali_sw[ITG1010_AXIS_Y], obj->cali_sw[ITG1010_AXIS_Z]);
+	}
+#endif
+	return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+static int ITG1010_ResetCalibration(struct i2c_client *client)
+{
+	struct ITG1010_i2c_data *obj = i2c_get_clientdata(client);
+
+	memset(obj->cali_sw, 0x00, sizeof(obj->cali_sw));
+	return 0;
+}
+/*----------------------------------------------------------------------------*/
+static int ITG1010_ReadCalibration(struct i2c_client *client, int dat[ITG1010_AXES_NUM])
+{
+	struct ITG1010_i2c_data *obj = i2c_get_clientdata(client);
+
+	dat[obj->cvt.map[ITG1010_AXIS_X]] = obj->cvt.sign[ITG1010_AXIS_X]*obj->cali_sw[ITG1010_AXIS_X];
+	dat[obj->cvt.map[ITG1010_AXIS_Y]] = obj->cvt.sign[ITG1010_AXIS_Y]*obj->cali_sw[ITG1010_AXIS_Y];
+	dat[obj->cvt.map[ITG1010_AXIS_Z]] = obj->cvt.sign[ITG1010_AXIS_Z]*obj->cali_sw[ITG1010_AXIS_Z];
+
+#if DEBUG
+	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
+		GYRO_LOG("Read gyro calibration data  (%5d, %5d, %5d)\n",
+		dat[ITG1010_AXIS_X], dat[ITG1010_AXIS_Y], dat[ITG1010_AXIS_Z]);
+	}
+#endif
+
+	return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+static int ITG1010_WriteCalibration(struct i2c_client *client, int dat[ITG1010_AXES_NUM])
+{
+	struct ITG1010_i2c_data *obj = i2c_get_clientdata(client);
+	int cali[ITG1010_AXES_NUM];
+
+	/*GYRO_LOG();*/
+	if (!obj || !dat) {
+		GYRO_PR_ERR("null ptr!!\n");
+		return -EINVAL;
+	}
+	cali[obj->cvt.map[ITG1010_AXIS_X]] = obj->cvt.sign[ITG1010_AXIS_X]*obj->cali_sw[ITG1010_AXIS_X];
+	cali[obj->cvt.map[ITG1010_AXIS_Y]] = obj->cvt.sign[ITG1010_AXIS_Y]*obj->cali_sw[ITG1010_AXIS_Y];
+	cali[obj->cvt.map[ITG1010_AXIS_Z]] = obj->cvt.sign[ITG1010_AXIS_Z]*obj->cali_sw[ITG1010_AXIS_Z];
+	cali[ITG1010_AXIS_X] += dat[ITG1010_AXIS_X];
+	cali[ITG1010_AXIS_Y] += dat[ITG1010_AXIS_Y];
+	cali[ITG1010_AXIS_Z] += dat[ITG1010_AXIS_Z];
+#if DEBUG
+	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
+		GYRO_LOG("write gyro calibration data  (%5d, %5d, %5d)-->(%5d, %5d, %5d)\n",
+			dat[ITG1010_AXIS_X], dat[ITG1010_AXIS_Y], dat[ITG1010_AXIS_Z],
+				cali[ITG1010_AXIS_X], cali[ITG1010_AXIS_Y], cali[ITG1010_AXIS_Z]);
+	}
+#endif
+	return ITG1010_write_rel_calibration(obj, cali);
+}
+/*----------------------------------------------------------------------------*/
+
+
+static int ITG1010_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err = 0;
+
+	err = ITG1010_enable_nodata(enabledisable == true ? 1 : 0);
+	if (err) {
+		GYRO_PR_ERR("%s enable failed!\n", __func__);
+		return -1;
+	}
+	err = ITG1010_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GYRO_PR_ERR("%s set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int ITG1010_factory_get_data(int32_t data[3], int *status)
+{
+	return ITG1010_get_data(&data[0], &data[1], &data[2], status);
+}
+static int ITG1010_factory_get_raw_data(int32_t data[3])
+{
+	GYRO_INFO("don't support ITG1010_factory_get_raw_data!\n");
+	return 0;
+}
+static int ITG1010_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int ITG1010_factory_clear_cali(void)
+{
+	int err = 0;
+
+	err = ITG1010_ResetCalibration(ITG1010_i2c_client);
+	if (err) {
+		GYRO_INFO("bmg_ResetCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int ITG1010_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	cali[ITG1010_AXIS_X] = data[0] * ITG1010_DEFAULT_LSB / ITG1010_FS_MAX_LSB;
+	cali[ITG1010_AXIS_Y] = data[1] * ITG1010_DEFAULT_LSB / ITG1010_FS_MAX_LSB;
+	cali[ITG1010_AXIS_Z] = data[2] * ITG1010_DEFAULT_LSB / ITG1010_FS_MAX_LSB;
+	GYRO_LOG("gyro set cali:[%5d %5d %5d]\n",
+			cali[ITG1010_AXIS_X], cali[ITG1010_AXIS_Y], cali[ITG1010_AXIS_Z]);
+	err = ITG1010_WriteCalibration(ITG1010_i2c_client, cali);
+	return 0;
+}
+static int ITG1010_factory_get_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	err = ITG1010_ReadCalibration(ITG1010_i2c_client, cali);
+	if (err) {
+		GYRO_INFO("bmg_ReadCalibration failed!\n");
+		return -1;
+	}
+	data[0] = cali[ITG1010_AXIS_X] * ITG1010_FS_MAX_LSB / ITG1010_DEFAULT_LSB;
+	data[1] = cali[ITG1010_AXIS_Y] * ITG1010_FS_MAX_LSB / ITG1010_DEFAULT_LSB;
+	data[2] = cali[ITG1010_AXIS_Z] * ITG1010_FS_MAX_LSB / ITG1010_DEFAULT_LSB;
+
+	return 0;
+}
+static int ITG1010_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct gyro_factory_fops ITG1010_factory_fops = {
+	.enable_sensor = ITG1010_factory_enable_sensor,
+	.get_data = ITG1010_factory_get_data,
+	.get_raw_data = ITG1010_factory_get_raw_data,
+	.enable_calibration = ITG1010_factory_enable_calibration,
+	.clear_cali = ITG1010_factory_clear_cali,
+	.set_cali = ITG1010_factory_set_cali,
+	.get_cali = ITG1010_factory_get_cali,
+	.do_self_test = ITG1010_factory_do_self_test,
+};
+
+static struct gyro_factory_public ITG1010_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &ITG1010_factory_fops,
+};
+
+
+/*----------------------------------------------------------------------------*/
 static int ITG1010_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct i2c_client *new_client;
@@ -1072,6 +1239,12 @@ static int ITG1010_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	err = ITG1010_init_client(new_client, false);
 	if (err)
 		goto exit_init_failed;
+
+	err = gyro_factory_device_register(&ITG1010_factory_device);
+	if (err) {
+		GYRO_PR_ERR("misc device register failed, err = %d\n", err);
+		goto exit_misc_device_register_failed;
+	}
 
 	ctl.is_use_common_factory = false;
 
@@ -1159,6 +1332,7 @@ exit_class_create_failed:
 exit_create_attr_failed:
 exit_init_failed:
 exit_kfree:
+exit_misc_device_register_failed:
 exit:
 	kfree(obj);
 	obj = NULL;
@@ -1187,6 +1361,7 @@ static int ITG1010_i2c_remove(struct i2c_client *client)
 
 	ITG1010_i2c_client = NULL;
 	i2c_unregister_device(client);
+	gyro_factory_device_deregister(&ITG1010_factory_device);
 	kfree(i2c_get_clientdata(client));
 	return 0;
 }

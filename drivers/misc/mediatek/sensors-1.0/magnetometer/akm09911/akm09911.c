@@ -1440,6 +1440,70 @@ static int akm09911_flush(void)
 	return mag_flush_report();
 }
 
+static int akm09911_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+
+	err = akm09911_enable(enabledisable == true ? 1 : 0);
+	if (err) {
+		MAGN_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = akm09911_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		MAGN_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int akm09911_factory_get_data(int32_t data[3], int *status)
+{
+	/* get raw data */
+	return  akm09911_get_data(&data[0], &data[1], &data[2], status);
+}
+static int akm09911_factory_get_raw_data(int32_t data[3])
+{
+	MAGN_LOG("do not support akm09911_factory_get_raw_data!\n");
+	return 0;
+}
+static int akm09911_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int akm09911_factory_clear_cali(void)
+{
+	return 0;
+}
+static int akm09911_factory_set_cali(int32_t data[3])
+{
+	return 0;
+}
+static int akm09911_factory_get_cali(int32_t data[3])
+{
+	return 0;
+}
+static int akm09911_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct mag_factory_fops akm09911_factory_fops = {
+	.enable_sensor = akm09911_factory_enable_sensor,
+	.get_data = akm09911_factory_get_data,
+	.get_raw_data = akm09911_factory_get_raw_data,
+	.enable_calibration = akm09911_factory_enable_calibration,
+	.clear_cali = akm09911_factory_clear_cali,
+	.set_cali = akm09911_factory_set_cali,
+	.get_cali = akm09911_factory_get_cali,
+	.do_self_test = akm09911_factory_do_self_test,
+};
+
+static struct mag_factory_public akm09911_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &akm09911_factory_fops,
+};
+
 /*----------------------------------------------------------------------------*/
 static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1475,6 +1539,12 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	if (err < 0) {
 		MAGN_ERR("AKM09911 akm09911_probe: check device connect error\n");
 		goto exit_init_failed;
+	}
+
+	err = mag_factory_device_register(&akm09911_factory_device);
+	if (err) {
+		MAGN_ERR("misc device register failed, err = %d\n", err);
+		goto exit_misc_device_register_failed;
 	}
 
 
@@ -1516,6 +1586,7 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 
 exit_sysfs_create_group_failed:
 exit_init_failed:
+exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 exit:
@@ -1535,6 +1606,7 @@ static int akm09911_i2c_remove(struct i2c_client *client)
 
 	this_client = NULL;
 	i2c_unregister_device(client);
+	mag_factory_device_deregister(&akm09911_factory_device);
 	kfree(i2c_get_clientdata(client));
 	return 0;
 }

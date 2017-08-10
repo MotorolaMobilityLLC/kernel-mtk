@@ -1413,6 +1413,42 @@ static int MC3XXX_ReadSensorData(struct i2c_client *pt_i2c_client, char *pbBuf, 
 }
 
 
+/*****************************************
+ *** MC3XXX_ReadRawData
+ *****************************************/
+static int MC3XXX_ReadRawData(struct i2c_client *client, char *buf)
+{
+	int res = 0;
+
+	if (!buf || !client)
+		return -EINVAL;
+
+	if (mc3xxx_sensor_power == false) {
+		res = MC3XXX_SetPowerMode(client, true);
+		if (res)
+			GSE_ERR("Power on mc3xxx error %d!\n", res);
+	}
+
+	#ifdef _MC3XXX_SUPPORT_APPLY_AVERAGE_AGORITHM_
+	return _MC3XXX_ReadAverageData(client, buf);
+	#else
+	{
+	s16 sensor_data[3] = {0};
+
+	res = MC3XXX_ReadData(client, sensor_data);
+	if (res) {
+		GSE_ERR("I2C error: ret value=%d", res);
+		return -EIO;
+	}
+	sprintf(buf, "%04x %04x %04x", sensor_data[MC3XXX_AXIS_X],
+	sensor_data[MC3XXX_AXIS_Y], sensor_data[MC3XXX_AXIS_Z]);
+	}
+	#endif
+
+	return 0;
+}
+
+
 
 /*****************************************
  *** show_chipinfo_value
@@ -2202,6 +2238,99 @@ static int mc3410_flush(void)
 	return acc_flush_report();
 }
 
+static int mc3410_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+
+	err = mc3xxx_enable_nodata(enabledisable == true ? 1 : 0);
+	if (err) {
+		GSE_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = mc3410_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GSE_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int mc3410_factory_get_data(int32_t data[3], int *status)
+{
+	return mc3xxx_get_data(&data[0], &data[1], &data[2], status);
+
+}
+static int mc3410_factory_get_raw_data(int32_t data[3])
+{
+	char strbuf[MC3XXX_BUF_SIZE] = { 0 };
+
+	MC3XXX_ReadRawData(mc3xxx_i2c_client, strbuf);
+	GSE_LOG("support mc3410_factory_get_raw_data!\n");
+	return 0;
+}
+static int mc3410_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int mc3410_factory_clear_cali(void)
+{
+	int err = 0;
+
+	err = MC3XXX_ResetCalibration(mc3xxx_i2c_client);
+	if (err) {
+		GSE_ERR("mc3410_ResetCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int mc3410_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	/* obj */
+	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X] += data[0];
+	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y] += data[1];
+	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z] += data[2];
+
+	cali[MC3XXX_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
+	cali[MC3XXX_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
+	cali[MC3XXX_AXIS_Z] = data[2] * gsensor_gain.z / GRAVITY_EARTH_1000;
+	err = MC3XXX_WriteCalibration(mc3xxx_i2c_client, cali);
+	if (err) {
+		GSE_ERR("mc3410_WriteCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int mc3410_factory_get_cali(int32_t data[3])
+{
+	data[0] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X];
+	data[1] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y];
+	data[2] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z];
+	return 0;
+}
+static int mc3410_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct accel_factory_fops mc3410_factory_fops = {
+	.enable_sensor = mc3410_factory_enable_sensor,
+	.get_data = mc3410_factory_get_data,
+	.get_raw_data = mc3410_factory_get_raw_data,
+	.enable_calibration = mc3410_factory_enable_calibration,
+	.clear_cali = mc3410_factory_clear_cali,
+	.set_cali = mc3410_factory_set_cali,
+	.get_cali = mc3410_factory_get_cali,
+	.do_self_test = mc3410_factory_do_self_test,
+};
+
+static struct accel_factory_public mc3410_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &mc3410_factory_fops,
+};
+
 
 /*****************************************
  *** mc3xxx_i2c_probe
@@ -2262,6 +2391,13 @@ static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	mc3xxx_mutex_init();
 
 	ctl.is_use_common_factory = false;
+	/* factory */
+	err = accel_factory_device_register(&mc3410_factory_device);
+	if (err) {
+		GSE_ERR("acc_factory register failed.\n");
+		goto exit_misc_device_register_failed;
+	}
+
 	err = mc3xxx_create_attr(&(mc3xxx_init_info.platform_diver_addr->driver));
 	if (err) {
 		GSE_ERR("create attribute err = %d\n", err);
@@ -2293,6 +2429,7 @@ static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 exit_create_attr_failed:
 exit_init_failed:
+exit_misc_device_register_failed:
 exit_kfree:
 	kfree(obj);
 	obj = NULL;
@@ -2319,6 +2456,7 @@ static int mc3xxx_i2c_remove(struct i2c_client *client)
 	#endif
 	mc3xxx_i2c_client = NULL;
 	i2c_unregister_device(client);
+	accel_factory_device_deregister(&mc3410_factory_device);
 	kfree(i2c_get_clientdata(client));
 
 	return 0;
