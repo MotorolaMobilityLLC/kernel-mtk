@@ -1967,7 +1967,7 @@ const char *buf, size_t count)
 	if (!command)
 		return count;
 
-	strcpy(command, buf);
+	strncpy(command, buf, (size_t) MAX_EMI_MPU_STORE_CMD_LEN);
 	ptr = (char *)buf;
 
 	if (!strncmp(buf, EN_MPU_STR, strlen(EN_MPU_STR))) {
@@ -2459,7 +2459,7 @@ const char *buf, size_t count)
 	if (!command)
 		return count;
 
-	strcpy(command, buf);
+	strncpy(command, buf, (size_t)MAX_EMI_MPU_STORE_CMD_LEN);
 	ptr = (char *)buf;
 
 	if (!strncmp(buf, EN_WP_STR, strlen(EN_WP_STR))) {
