@@ -1075,8 +1075,14 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				kfree(layerInfo);
 				return -EFAULT;
 			} else {
+				int ret;
+
 				input = &session_input.config[session_input.config_layer_num++];
-				_convert_fb_layer_to_disp_input(layerInfo, input);
+				ret = _convert_fb_layer_to_disp_input(layerInfo, input);
+				if (ret < 0) {
+					kfree(layerInfo);
+					return -EINVAL;
+				}
 			}
 
 
@@ -1468,8 +1474,14 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 					("COMPAT_MTKFB_SET_OVERLAY_LAYER, layer_id invalid=%d\n",
 					 layerInfo.layer_id);
 			} else {
+				int ret;
+
 				input = &session_input.config[session_input.config_layer_num++];
-				_convert_fb_layer_to_disp_input(&layerInfo, input);
+				ret = _convert_fb_layer_to_disp_input(&layerInfo, input);
+				if (ret < 0) {
+					kfree(compat_layerInfo);
+					return -EINVAL;
+				}
 			}
 			primary_display_config_input_multiple(&session_input);
 			/* primary_display_trigger(1, NULL, 0); */
