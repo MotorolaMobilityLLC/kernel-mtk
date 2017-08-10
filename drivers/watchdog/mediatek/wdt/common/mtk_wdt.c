@@ -523,7 +523,9 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 #else				/* CONFIG_FIQ_GLUE */
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 {
+	writel(__raw_readl(MTK_WDT_STATUS), MTK_WDT_NONRST_REG);
 	pr_err("fwq mtk_wdt_isr\n");
+
 #ifndef __USING_DUMMY_WDT_DRV__	/* FPGA will set this flag */
 
 	wdt_report_info();
@@ -573,8 +575,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		pr_err("mtk_wdt_probe : failed to request irq (%d)\n", ret);
 		return ret;
 	}
-	pr_debug("mtk_wdt_probe : Success to request irq\n");
-
 
 	/* Set timeout vale and restart counter */
 	g_last_time_time_out_value = 30;
@@ -597,7 +597,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 #define KERNEL_MAGIC		(0x2)
 #define MAGIC_NUM_MASK		(0x3)
 
-
 #ifdef CONFIG_MTK_WD_KICKER	/* Initialize to dual mode */
 	pr_debug("mtk_wdt_probe : Initialize to dual mode\n");
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
@@ -615,10 +614,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	writel(interval_val, MTK_WDT_INTERVAL);
 #endif
 	udelay(100);
-	pr_debug("mtk_wdt_probe : done WDT_MODE(%x),MTK_WDT_NONRST_REG(%x)\n",
+	pr_err("mtk_wdt_probe: WDT_MODE(%x),MTK_WDT_NONRST_REG(%x)\n",
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
-	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_MODE(%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
-	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_IRQ_EN(%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 
 	toprgu_register_reset_controller(dev->dev.of_node, toprgu_base, 0x18);
 
