@@ -55,7 +55,7 @@ config MD1_SMEM_SIZE
 config MTK_MD2_SUPPORT
 	int "configure modem 1 boot up capability"
 	depends on MTK_CCCI_EXT
-	default 1
+	default 0
 	help
 	  modem 2 mode:
 	  1=>2g,
