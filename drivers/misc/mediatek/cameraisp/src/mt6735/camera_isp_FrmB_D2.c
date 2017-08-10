@@ -3793,12 +3793,6 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC_FRMB(ISP_ED_BUFQUE_STRUCT_FRMB param)
 				    (P2_EDBUF_RList_LastBufIdx + 1) % _MAX_SUPPORT_P2_FRAME_NUM_;
 			}
 
-			if (P2_EDBUF_MList_LastBufIdx < 0) {
-				LOG_ERR("P2_EDBUF_MList_LastBufIdx<0 error!");
-				ret = -EFAULT;
-				return ret;
-			}
-
 			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].processID = param.processID;
 			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].callerID = param.callerID;
 			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2dupCQIdx = param.p2dupCQIdx;
@@ -3818,6 +3812,13 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC_FRMB(ISP_ED_BUFQUE_STRUCT_FRMB param)
 					    (P2_EDBUF_MList_LastBufIdx +
 					     1) % _MAX_SUPPORT_P2_PACKAGE_NUM_;
 				}
+
+				if (P2_EDBUF_MList_LastBufIdx < 0) {
+					LOG_ERR("P2_EDBUF_MList_LastBufIdx<0 error!");
+					ret = -EFAULT;
+					return ret;
+				}
+
 				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].processID =
 				    param.processID;
 				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].callerID =
