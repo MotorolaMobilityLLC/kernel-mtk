@@ -503,7 +503,9 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 	if (!host || !host->mmc || !host->mmc->card)
 		return;
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	base = host->base;
+#endif
 
 	switch (num) {
 	case 0:
