@@ -1108,16 +1108,6 @@ static struct miscdevice mtp_device = {
 	.fops = &mtp_fops,
 };
 
-static void mtp_ep_flush_all(void)
-{
-	struct mtp_dev *dev = _mtp_dev;
-
-	DBG(dev->cdev, "%s: __begin__\n", __func__);
-	dev->state = STATE_RESET;
-
-	DBG(dev->cdev, "%s: __end__\n", __func__);
-}
-
 static int mtp_ctrlrequest(struct usb_composite_dev *cdev,
 				const struct usb_ctrlrequest *ctrl)
 {
@@ -1201,119 +1191,6 @@ static int mtp_ctrlrequest(struct usb_composite_dev *cdev,
 	if (value >= 0) {
 		int rc;
 
-		cdev->req->zero = value < w_length;
-		cdev->req->length = value;
-		rc = usb_ep_queue(cdev->gadget->ep0, cdev->req, GFP_ATOMIC);
-		if (rc < 0)
-			ERROR(cdev, "%s: response queue error\n", __func__);
-	}
-	return value;
-}
-
-static int ptp_ctrlrequest(struct usb_composite_dev *cdev,
-				const struct usb_ctrlrequest *ctrl)
-{
-	struct mtp_dev *dev = _mtp_dev;
-	int	value = -EOPNOTSUPP;
-#ifndef CONFIG_MTK_TC1_FEATURE
-	u16	w_index = le16_to_cpu(ctrl->wIndex);
-#endif
-	u16	w_value = le16_to_cpu(ctrl->wValue);
-	u16	w_length = le16_to_cpu(ctrl->wLength);
-	unsigned long	flags;
-
-	if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_CLASS) {
-		if (ctrl->bRequest == MTP_REQ_CANCEL
-#ifndef CONFIG_MTK_TC1_FEATURE
-			&& w_index == 0
-#endif
-			&& w_value == 0) {
-
-			spin_lock_irqsave(&dev->lock, flags);
-			if (dev->state == STATE_BUSY) {
-				dev->state = STATE_CANCELED;
-				wake_up(&dev->read_wq);
-				wake_up(&dev->write_wq);
-			} else if (dev->state == STATE_READY) {
-				dev->state = STATE_CANCELED;
-			}
-
-			spin_unlock_irqrestore(&dev->lock, flags);
-
-			/* We need to queue a request to read the remaining
-			 *  bytes, but we don't actually need to look at
-			 * the contents.
-			 */
-			value = w_length;
-		} else if (ctrl->bRequest == MTP_REQ_GET_DEVICE_STATUS
-#ifndef CONFIG_MTK_TC1_FEATURE
-				&& w_index == 0
-#endif
-				&& w_value == 0) {
-			struct mtp_device_status *status = cdev->req->buf;
-
-			status->wLength =
-				cpu_to_le16(sizeof(*status));
-
-			spin_lock_irqsave(&dev->lock, flags);
-			/* device status is "busy" until we report
-			 * the cancel to userspace
-			 */
-			if (dev->state == STATE_CANCELED) {
-
-				status->wCode =
-					__cpu_to_le16(MTP_RESPONSE_DEVICE_BUSY);
-
-				dev->fileTransferSend++;
-
-				if (dev->fileTransferSend > 5) {
-					dev->fileTransferSend = 0;
-					dev->state = STATE_BUSY;
-					status->wCode =
-						__cpu_to_le16(MTP_RESPONSE_OK);
-				}
-			} else if (dev->state == STATE_RESET) {
-				dev->fileTransferSend = 0;
-				status->wCode =
-					__cpu_to_le16(MTP_RESPONSE_OK);
-			} else if (dev->state == STATE_ERROR) {
-				dev->fileTransferSend = 0;
-
-				if (dev->epOut_halt) {
-					status->wCode =
-						__cpu_to_le16(MTP_RESPONSE_DEVICE_CANCEL);
-				} else
-				    status->wCode =
-					__cpu_to_le16(MTP_RESPONSE_OK);
-			} else	{
-				dev->fileTransferSend = 0;
-				status->wCode =
-					__cpu_to_le16(MTP_RESPONSE_OK);
-			}
-
-			spin_unlock_irqrestore(&dev->lock, flags);
-			value = sizeof(*status);
-		} else if (ctrl->bRequest == MTP_REQ_RESET
-#ifndef CONFIG_MTK_TC1_FEATURE
-			&& w_index == 0
-#endif
-			&& w_value == 0) {
-			struct work_struct *work;
-
-			spin_lock_irqsave(&dev->lock, flags);
-			work = &dev->device_reset_work;
-			schedule_work(work);
-			/* wait for operation to complete */
-			mtp_ep_flush_all();
-
-			spin_unlock_irqrestore(&dev->lock, flags);
-			value = w_length;
-		}
-	}
-
-	/* respond with data transfer or status phase? */
-	if (value >= 0) {
-		int rc;
 		cdev->req->zero = value < w_length;
 		cdev->req->length = value;
 		rc = usb_ep_queue(cdev->gadget->ep0, cdev->req, GFP_ATOMIC);
