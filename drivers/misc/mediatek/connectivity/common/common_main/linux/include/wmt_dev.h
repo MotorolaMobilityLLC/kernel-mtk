@@ -32,6 +32,4 @@ VOID wmt_dev_send_cmd_to_daemon(UINT32 cmd);
 MTK_WCN_BOOL wmt_dev_get_early_suspend_state(VOID);
 extern LONG wmt_dev_tm_temp_query(VOID);
 
-typedef INT32(*WMT_DEV_DBG_FUNC) (INT32 par1, INT32 par2, INT32 par3);
-
 #endif /*_WMT_DEV_H_*/
