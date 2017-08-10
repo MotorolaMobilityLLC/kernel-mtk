@@ -114,8 +114,9 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 		struct ion_buffer *buffer) {
 	struct sg_table *table;
 	int ret;
+#if ION_RUNTIME_DEBUGGER
 	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *) buffer->priv_virt;
-
+#endif
 	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 
 	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
@@ -235,8 +236,6 @@ int ion_sec_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 	IONMSG("%s exit\n", __func__);
 	return 0;
 #else
-	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *)buffer->priv_virt;
-
 	IONMSG("%s do not suppuprt\n", __func__);
 	return  (-ENOMEM);
 #endif
