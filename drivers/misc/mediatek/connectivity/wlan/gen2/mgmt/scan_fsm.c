@@ -1188,6 +1188,12 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		return TRUE;
 	}
 
+	/*check if scanning...*/
+	if (prScanInfo->eCurrentState != SCAN_STATE_IDLE) {
+		DBGLOG(SCN, INFO, "already scanning , reject sched scan request\n");
+		return FALSE;
+	}
+
 	prScanInfo->fgNloScanning = TRUE;
 
 	/* 1. load parameters */

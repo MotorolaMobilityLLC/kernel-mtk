@@ -3629,21 +3629,22 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	ENUM_AIS_STATE_T eNextState;
 	OS_SYSTIME rCurrentTime;
+	P_MSG_SAA_FSM_COMP_T prSaaFsmCompMsg;
 
 	DEBUGFUNC("aisFsmRunEventJoinTimeout()");
 	prAisBssInfo = &prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX];
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	eNextState = prAisFsmInfo->eCurrentState;
+	DBGLOG(AIS, INFO, "aisFsmRunEventJoinTimeout,CurrentState[%d]\n" , prAisFsmInfo->eCurrentState);
 
 	GET_CURRENT_SYSTIME(&rCurrentTime);
 	switch (prAisFsmInfo->eCurrentState) {
-	case AIS_STATE_JOIN:
-		DBGLOG(AIS, LOUD, "EVENT- JOIN TIMEOUT\n");
 
+	case AIS_STATE_JOIN:
 		/* 1. Do abort JOIN */
 		aisFsmStateAbort_JOIN(prAdapter);
 		aisAddBlacklist(prAdapter, prAisFsmInfo->prTargetBssDesc);
-
+#if 0
 		/* 2. Increase Join Failure Count */
 		prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount++;
 /* For JB nl802.11 */
@@ -3664,6 +3665,25 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			kalIndicateStatusAndComplete(prAdapter->prGlueInfo, WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
 			eNextState = AIS_STATE_IDLE;
 		}
+#else
+
+		/* keep eNextState the same (so will not do action here), and do action in aisFsmRunEventJoinComplete */
+		prSaaFsmCompMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SAA_FSM_COMP_T));
+		if (!prSaaFsmCompMsg) {
+			DBGLOG(AIS, WARN, "aisFsmRunEventJoinTimeout memory alloc fail!\n");
+			return;
+		}
+		prSaaFsmCompMsg->rMsgHdr.eMsgId = MID_SAA_AIS_JOIN_COMPLETE;
+		prSaaFsmCompMsg->ucSeqNum = prAisFsmInfo->ucSeqNumOfReqMsg;
+		prSaaFsmCompMsg->rJoinStatus = WLAN_STATUS_FAILURE;
+		prSaaFsmCompMsg->prStaRec = prAisFsmInfo->prTargetStaRec;
+		prSaaFsmCompMsg->prSwRfb = NULL;
+		/* joint complete only use it when rJoinStatus is WLAN_STATUS_SUCCESS*/
+		/* NOTE(Kevin): Set to UNBUF for immediately JOIN complete */
+		aisFsmRunEventJoinComplete(prAdapter, (P_MSG_HDR_T) prSaaFsmCompMsg);
+		eNextState = prAisFsmInfo->eCurrentState;
+#endif
+
 		break;
 
 	case AIS_STATE_NORMAL_TR:
