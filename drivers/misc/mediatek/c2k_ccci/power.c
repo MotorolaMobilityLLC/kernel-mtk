@@ -137,12 +137,6 @@ void c2k_reset_modem(void)
 
 	pr_debug("[C2K] %s: set md reset.\n", __func__);
 	spin_lock_irqsave(&cmdata->modem->status_lock, flags);
-	if (cmdata->modem->status == MD_OFF) {
-		pr_debug("[C2K] %s: md already off\n", __func__);
-		spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
-		atomic_set(&reset_on_going, 0);
-		return;
-	}
 	cmdata->modem->status = MD_OFF;
 	spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
 
@@ -218,12 +212,6 @@ void c2k_power_off_modem(void)
 
 	pr_debug("[C2K] %s: set md off.\n", __func__);
 	spin_lock_irqsave(&cmdata->modem->status_lock, flags);
-	if (cmdata->modem->status == MD_OFF) {
-		pr_debug("[C2K] %s: md already off\n", __func__);
-		spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
-		atomic_set(&reset_on_going, 0);
-		return;
-	}
 	cmdata->modem->status = MD_OFF;
 	spin_unlock_irqrestore(&cmdata->modem->status_lock, flags);
 
@@ -560,6 +548,9 @@ static int modem_wdt_notify_misc(struct notifier_block *nb, unsigned long event,
 	case MDM_EVT_NOTIFY_WDT:
 		pr_debug("%s %d ASC_USER_MDM_WDT\n", __func__, __LINE__);
 		modem_signal_user(ASC_USER_MDM_WDT);
+#ifdef CONFIG_MTK_SVLTE_SUPPORT
+		exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
+#endif
 		break;
 	default:
 		break;

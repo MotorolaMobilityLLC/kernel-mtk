@@ -475,7 +475,6 @@ static irqreturn_t gpio_irq_cbp_excp_ind(int irq, void *data)
 
 static irqreturn_t c2k_wdt_isr(int irq, void *data)
 {
-	unsigned long flags;
 	struct cbp_platform_data *cdata = &cbp_data;
 
 	LOGPRT(LOG_ERR,
@@ -484,10 +483,6 @@ static irqreturn_t c2k_wdt_isr(int irq, void *data)
 	dump_c2k_iram();
 	/*wake_lock_timeout(&cmdata->wlock, MDM_RST_LOCK_TIME *HZ); */
 	modem_notify_event(MDM_EVT_NOTIFY_WDT);
-
-	spin_lock_irqsave(&cdata->modem->status_lock, flags);
-	cdata->modem->status = MD_OFF;
-	spin_unlock_irqrestore(&cdata->modem->status_lock, flags);
 
 	atomic_set(&cdata->modem->tx_fifo_cnt, TX_FIFO_SZ);
 	wake_up(&cdata->modem->wait_tx_done_q);
