@@ -313,7 +313,6 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 		cmd->ret = mmdvfs_set_step(cmd->scen,
 		mmdvfs_query(cmd->scen, cmd));
 		break;
-
 	case MTK_MMDVFS_CMD_TYPE_QUERY: { /* query with some parameters */
 		if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_FHD) {
 			/* QUERY ALWAYS HIGH for FHD */
@@ -485,9 +484,7 @@ int mmdvfs_get_mmdvfs_profile(void)
 	unsigned int segment_code = 0;
 #endif
 
-#ifdef MMDVFS_USE_APMCU_CLK_MUX_SWITCH
 	segment_code = _GET_BITS_VAL_(31 : 25, get_devinfo_with_index(47));
-#endif
 
 #if defined(SMI_D1)
 	mmdvfs_profile_id = MMDVFS_PROFILE_D1;
@@ -499,10 +496,9 @@ int mmdvfs_get_mmdvfs_profile(void)
 			mmdvfs_profile_id = MMDVFS_PROFILE_D1;
 #elif defined(SMI_D2)
 	mmdvfs_profile_id = MMDVFS_PROFILE_D2;
-
-	if (segment_code == 0x4B)
+	if (segment_code == 0x4A || segment_code == 0x4B)
 			mmdvfs_profile_id = MMDVFS_PROFILE_D2_M_PLUS;
-	else if (segment_code == 0x53)
+	else if (segment_code == 0x52 || segment_code == 0x53)
 						mmdvfs_profile_id = MMDVFS_PROFILE_D2_P_PLUS;
 	else
 			mmdvfs_profile_id = MMDVFS_PROFILE_D2;
@@ -513,7 +509,6 @@ int mmdvfs_get_mmdvfs_profile(void)
 #elif defined(SMI_EV)
 	mmdvfs_profile_id = MMDVFS_PROFILE_E1;
 #endif
-
 	return mmdvfs_profile_id;
 
 }
@@ -656,25 +651,39 @@ static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode, in
 
 static int mmsys_clk_switch_impl(unsigned int venc_pll_con1_val)
 {
-	/*
+	if (g_mmdvfs_profile_id != MMDVFS_PROFILE_D2_M_PLUS
+		&& g_mmdvfs_profile_id != MMDVFS_PROFILE_D2_P_PLUS) {
+		MMDVFSMSG("mmsys_clk_switch_impl is not support in profile:%d", g_mmdvfs_profile_id);
+		return 0;
+	}
+
+#if defined(SMI_D2)
 	clkmux_sel(MT_MUX_MM, 6, "SMI common");
 	mt_set_vencpll_con1(venc_pll_con1_val);
 	udelay(20);
 	clkmux_sel(MT_MUX_MM, 1, "SMI common");
-	*/
+#endif
+
 	return 1;
 }
 
 static int default_clk_switch_cb(int ori_mmsys_clk_mode, int update_mmsys_clk_mode)
 {
+	unsigned int venc_pll_con1_val = 0;
 
-	if (ori_mmsys_clk_mode  == MMSYS_CLK_LOW &&  update_mmsys_clk_mode == MMSYS_CLK_HIGH)
-		mmsys_clk_switch_impl(0x82110000);
-	else if (ori_mmsys_clk_mode  == MMSYS_CLK_HIGH &&  update_mmsys_clk_mode == MMSYS_CLK_LOW)
-		mmsys_clk_switch_impl(0x830E0000);
-	else
-		MMDVFSMSG("default_clk_switch_cb: by-pass (%d,%d)\n", ori_mmsys_clk_mode, update_mmsys_clk_mode);
+	if (ori_mmsys_clk_mode  == MMSYS_CLK_LOW && update_mmsys_clk_mode == MMSYS_CLK_HIGH) {
+		if (g_mmdvfs_profile_id == MMDVFS_PROFILE_D2_M_PLUS)
+			venc_pll_con1_val = 0x820F0000; /* 380MHz (35M+) */
+		else
+			venc_pll_con1_val = 0x82110000; /* 442MHz (35P+) */
+	} else if (ori_mmsys_clk_mode  == MMSYS_CLK_HIGH && update_mmsys_clk_mode == MMSYS_CLK_LOW) {
+			venc_pll_con1_val = 0x830E0000;
+	} else {
+		return 1;
+	}
 
+	if (venc_pll_con1_val != 0)
+		mmsys_clk_switch_impl(venc_pll_con1_val);
 
 	return 1;
 }

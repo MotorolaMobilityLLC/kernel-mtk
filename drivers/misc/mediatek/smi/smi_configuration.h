@@ -18,7 +18,7 @@
 #include "mt_smi.h"
 
 /* SMI common configuration */
-#if defined(SMI_D1) || defined(SMI_D3) || defined(SMI_J)
+#if defined(SMI_D1) || defined(SMI_D3) || defined(SMI_J) || defined(SMI_D2)
 	#define SMI_PARAM_BW_OPTIMIZATION (1)
 	#define SMI_PARAM_BUS_OPTIMIZATION (0xFF)
 	#define SMI_PARAM_ENABLE_IOCTL (1)
