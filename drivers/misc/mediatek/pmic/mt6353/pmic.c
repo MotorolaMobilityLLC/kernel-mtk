@@ -224,7 +224,7 @@ unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, 
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 
 	/*mt_read_byte(RegNum, &pmic_reg); */
@@ -253,7 +253,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
     /* pmic wrapper has spinlock protection. pmic do not to do it again */
 

@@ -47,7 +47,7 @@ extern unsigned int gPWRAPDBGADDR;
 #define tracepwrap(addr, wdata) do { \
 	if (gPWRAPHCK >= PWRAP_HCK_LEVEL) \
 		if (addr == gPWRAPDBGADDR) { \
-			unsigned int rdata; \
+			unsigned int rdata = 0; \
 			pwrap_read(addr, &rdata); \
 			pr_err("pwrap addr = 0x%x wdata = 0x%x, rdata = 0x%x\n", addr, wdata, rdata); \
 			WARN_ON(1); \

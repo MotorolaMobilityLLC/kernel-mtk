@@ -206,12 +206,12 @@ void low_battery_protect_init(void)
 	lbat_min_en_setting(1);
 	lbat_max_en_setting(0);
 
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_AUXADC_LBAT_VOLT_MAX_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MAX_ADDR),
 		PMIC_AUXADC_LBAT_VOLT_MIN_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MIN_ADDR),
 		PMIC_RG_INT_EN_BAT_L_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_BAT_L_ADDR)
 	    );
-	pr_err("[low_battery_protect_init] %d mV, %d mV, %d mV\n",
+	PMICLOG("[low_battery_protect_init] %d mV, %d mV, %d mV\n",
 		POWER_INT0_VOLT, POWER_INT1_VOLT, POWER_INT2_VOLT);
 	PMICLOG("[low_battery_protect_init] Done\n");
 
@@ -317,13 +317,13 @@ void battery_oc_protect_init(void)
 	bat_oc_h_en_setting(0);
 	bat_oc_l_en_setting(1);
 
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
 		PMIC_RG_INT_EN_FG_BAT_H_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT_H_ADDR)
 	    );
 
-	pr_err("[battery_oc_protect_init] %d mA, %d mA\n",
+	PMICLOG("[battery_oc_protect_init] %d mA, %d mA\n",
 		POWER_BAT_OC_CURRENT_H, POWER_BAT_OC_CURRENT_L);
 	PMICLOG("[battery_oc_protect_init] Done\n");
 }
@@ -336,15 +336,15 @@ void battery_oc_protect_reinit(void)
 	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD_RE);
 	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD_RE); */
 
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
 		PMIC_RG_INT_EN_FG_BAT_H_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT_H_ADDR)
 	    );
 
-	pr_err("[battery_oc_protect_reinit] %d mA, %d mA\n",
+	PMICLOG("[battery_oc_protect_reinit] %d mA, %d mA\n",
 		POWER_BAT_OC_CURRENT_H_RE, POWER_BAT_OC_CURRENT_L_RE);
-	pr_err("[battery_oc_protect_reinit] Done\n");
+	PMICLOG("[battery_oc_protect_reinit] Done\n");
 #else
 	pr_warn("[battery_oc_protect_reinit] no define BATTERY_OC_PROTECT\n");
 #endif
@@ -1850,7 +1850,7 @@ void bat_h_int_handler(void)
 	lbat_min_en_setting(1);
 #endif
 
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_AUXADC_LBAT_VOLT_MAX_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MAX_ADDR),
 		PMIC_AUXADC_LBAT_VOLT_MIN_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MIN_ADDR),
 		PMIC_RG_INT_EN_BAT_L_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_BAT_L_ADDR)
@@ -1893,7 +1893,7 @@ void bat_l_int_handler(void)
 	lbat_max_en_setting(1);
 #endif
 
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_AUXADC_LBAT_VOLT_MAX_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MAX_ADDR),
 		PMIC_AUXADC_LBAT_VOLT_MIN_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MIN_ADDR),
 		PMIC_RG_INT_EN_BAT_L_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_BAT_L_ADDR)
@@ -1981,7 +1981,7 @@ void pmic_throttling_dlpt_suspend(void)
 	lbat_max_en_setting(0);
 
 /* for jade minus */
-	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 		PMIC_AUXADC_LBAT_VOLT_MAX_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MAX_ADDR),
 		PMIC_AUXADC_LBAT_VOLT_MIN_ADDR, upmu_get_reg_value(PMIC_AUXADC_LBAT_VOLT_MIN_ADDR),
 		PMIC_RG_INT_EN_BAT_L_ADDR, upmu_get_reg_value(PMIC_RG_INT_EN_BAT_L_ADDR)
@@ -2108,7 +2108,7 @@ int pmic_throttling_dlpt_init(void)
 #endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	struct device_node *np;
-	u32 val;
+	u32 val = 0;
 	char *path = "/bus/BAT_METTER";
 
 	np = of_find_node_by_path(path);

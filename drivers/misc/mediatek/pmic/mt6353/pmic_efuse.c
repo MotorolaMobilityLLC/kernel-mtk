@@ -50,7 +50,7 @@ unsigned int pmic_Read_Efuse_HPOffset(int i)
 {
 	unsigned int ret = 0;
 	unsigned int reg_val = 0;
-	unsigned int efusevalue;
+	unsigned int efusevalue = 0;
 
 	pr_debug("pmic_Read_Efuse_HPOffset(+)\n");
 	mutex_lock(&pmic_efuse_lock_mutex);
