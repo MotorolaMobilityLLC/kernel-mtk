@@ -459,26 +459,6 @@ static unsigned int charging_get_charger_type(void *data)
 	return status;
 }
 
-static unsigned int charging_get_is_pcm_timer_trigger(void *data)
-{
-	unsigned int status = STATUS_OK;
-	/*
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
-	*(kal_bool *) (data) = KAL_FALSE;
-#else
-
-	if (slp_get_wake_reason() == WR_PCM_TIMER)
-		*(kal_bool *) (data) = KAL_TRUE;
-	else
-		*(kal_bool *) (data) = KAL_FALSE;
-
-	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
-
-#endif
-*/
-	return status;
-}
-
 static unsigned int charging_set_platform_reset(void *data)
 {
 	unsigned int status = STATUS_OK;
@@ -520,17 +500,6 @@ static unsigned int charging_set_power_off(void *data)
 
 	return status;
 }
-
-static unsigned int charging_get_power_source(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
-static unsigned int charging_get_csdac_full_flag(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
 
 static unsigned int charging_set_ta_current_pattern(void *data)
 {
@@ -671,47 +640,7 @@ static unsigned int charging_set_ta_current_pattern(void *data)
 	return status;
 }
 
-static unsigned int charging_set_error_state(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
-static unsigned int charging_diso_init(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
-static unsigned int charging_get_diso_state(void *data)
-{
-	return STATUS_UNSUPPORTED;
-}
-
-static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
-	charging_hw_init,
-	charging_dump_register,
-	charging_enable,
-	charging_set_cv_voltage,
-	charging_get_current,
-	charging_set_current,
-	charging_set_input_current,
-	charging_get_charging_status,
-	charging_reset_watch_dog_timer,
-	charging_set_hv_threshold,
-	charging_get_hv_status,
-	charging_get_battery_status,
-	charging_get_charger_det_status,
-	charging_get_charger_type,
-	charging_get_is_pcm_timer_trigger,
-	charging_set_platform_reset,
-	charging_get_platform_boot_mode,
-	charging_set_power_off,
-	charging_get_power_source,
-	charging_get_csdac_full_flag,
-	charging_set_ta_current_pattern,
-	charging_set_error_state,
-	charging_diso_init,
-	charging_get_diso_state
-};
+static unsigned int(*charging_func[CHARGING_CMD_NUMBER]) (void *data);
 
 /*
 * FUNCTION
@@ -733,12 +662,36 @@ static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 */
 signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 {
-	signed int status;
+	static signed int init = -1;
 
-	if (cmd < CHARGING_CMD_NUMBER)
-		status = charging_func[cmd] (data);
-	else
-		return STATUS_UNSUPPORTED;
+	if (init == -1) {
+		init = 0;
+		charging_func[CHARGING_CMD_INIT] = charging_hw_init;
+		charging_func[CHARGING_CMD_DUMP_REGISTER] = charging_dump_register;
+		charging_func[CHARGING_CMD_ENABLE] = charging_enable;
+		charging_func[CHARGING_CMD_SET_CV_VOLTAGE] = charging_set_cv_voltage;
+		charging_func[CHARGING_CMD_GET_CURRENT] = charging_get_current;
+		charging_func[CHARGING_CMD_SET_CURRENT] = charging_set_current;
+		charging_func[CHARGING_CMD_SET_INPUT_CURRENT] = charging_set_input_current;
+		charging_func[CHARGING_CMD_GET_CHARGING_STATUS] =  charging_get_charging_status;
+		charging_func[CHARGING_CMD_RESET_WATCH_DOG_TIMER] = charging_reset_watch_dog_timer;
+		charging_func[CHARGING_CMD_SET_HV_THRESHOLD] = charging_set_hv_threshold;
+		charging_func[CHARGING_CMD_GET_HV_STATUS] = charging_get_hv_status;
+		charging_func[CHARGING_CMD_GET_BATTERY_STATUS] = charging_get_battery_status;
+		charging_func[CHARGING_CMD_GET_CHARGER_DET_STATUS] = charging_get_charger_det_status;
+		charging_func[CHARGING_CMD_GET_CHARGER_TYPE] = charging_get_charger_type;
+		charging_func[CHARGING_CMD_SET_PLATFORM_RESET] = charging_set_platform_reset;
+		charging_func[CHARGING_CMD_GET_PLATFORM_BOOT_MODE] = charging_get_platform_boot_mode;
+		charging_func[CHARGING_CMD_SET_POWER_OFF] = charging_set_power_off;
+		charging_func[CHARGING_CMD_SET_TA_CURRENT_PATTERN] = charging_set_ta_current_pattern;
+	}
 
-	return status;
+	if (cmd < CHARGING_CMD_NUMBER) {
+		if (charging_func[cmd] != NULL)
+			return charging_func[cmd](data);
+	}
+
+	pr_debug("[%s]UNSUPPORT Function: %d\n", __func__, cmd);
+
+	return STATUS_UNSUPPORTED;
 }
