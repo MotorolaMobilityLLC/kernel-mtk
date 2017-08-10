@@ -29,7 +29,6 @@
 #include <net/netlink.h>
 #include <net/cfg80211.h>
 #include "gl_cfg80211.h"
-#include "gl_vendor.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -52,13 +51,6 @@ is that there is no resource in TC4, so del key command was not able to set, and
 timeout was happed. if we found the root cause why fw couldn't release TC resouce, we will remove this
 workaround */
 static UINT_8 gucKeyIndex = 255;
-
-P_SW_RFB_T g_arGscnResultsTempBuffer[MAX_BUFFERED_GSCN_RESULTS];
-UINT_8 g_GscanResultsTempBufferIndex = 0;
-UINT_8 g_arGscanResultsIndicateNumber[MAX_BUFFERED_GSCN_RESULTS] = { 0, 0, 0, 0, 0 };
-
-UINT_8 g_GetResultsBufferedCnt = 0;
-UINT_8 g_GetResultsCmdCnt = 0;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

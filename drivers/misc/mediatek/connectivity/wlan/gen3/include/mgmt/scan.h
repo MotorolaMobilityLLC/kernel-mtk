@@ -121,6 +121,9 @@
 
 #define SCAN_NLO_CHECK_SSID_ONLY    0x00000001
 #define SCAN_NLO_DEFAULT_INTERVAL           30000
+/* PNO min period 30s, max period 300s */
+#define SCAN_NLO_MIN_INTERVAL               30
+#define SCAN_NLO_MAX_INTERVAL               300
 #define SCN_BSS_JOIN_FAIL_THRESOLD          4
 
 #define SWC_NUM_BSSID_THRESHOLD_DEFAULT 8

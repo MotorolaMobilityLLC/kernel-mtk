@@ -1038,7 +1038,6 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 
 }
 
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief         handler for starting scheduled scan
@@ -1066,7 +1065,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	prScanParam = &prNloParam->rScanParam;
 
 	if (prScanInfo->fgNloScanning) {
-		DBGLOG(SCN, INFO, "prScanInfo->fgNloScanning == TRUE  already scanning\n");
+		DBGLOG(SCN, WARN, "prScanInfo->fgNloScanning == TRUE  already scanning\n");
 		return TRUE;
 	}
 
@@ -1074,12 +1073,17 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 	/* 1. load parameters */
 	prScanParam->ucSeqNum++;
-	/* prScanParam->ucBssIndex             = prAdapter->prAisBssInfo->ucBssIndex; */
+	/* prScanParam->ucBssIndex = prAdapter->prAisBssInfo->ucBssIndex; */
 
 	prNloParam->fgStopAfterIndication = FALSE;
-	prNloParam->ucFastScanIteration = 0;
-	prNloParam->u2FastScanPeriod = u2Interval;
-	prNloParam->u2SlowScanPeriod = u2Interval;
+	prNloParam->ucFastScanIteration = 1;
+
+	if (u2Interval < SCAN_NLO_DEFAULT_INTERVAL) {
+		u2Interval = SCAN_NLO_DEFAULT_INTERVAL; /* millisecond */
+		DBGLOG(SCN, TRACE, "force interval to SCAN_NLO_DEFAULT_INTERVAL\n");
+	}
+	prNloParam->u2FastScanPeriod = SCAN_NLO_MIN_INTERVAL; /* use second instead of millisecond for UINT_16*/
+	prNloParam->u2SlowScanPeriod = SCAN_NLO_MAX_INTERVAL;
 
 	if (prScanParam->ucSSIDNum > CFG_SCAN_SSID_MAX_NUM)
 		prScanParam->ucSSIDNum = CFG_SCAN_SSID_MAX_NUM;
@@ -1107,6 +1111,9 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 			prNloParam->aucChannelHint[i][j] = 0;
 	}
 
+	DBGLOG(SCN, INFO, "ssidNum %d, %s, Iteration=%d, FastScanPeriod=%d\n",
+		prNloParam->ucMatchSSIDNum, prNloParam->aucMatchSSID[0],
+		prNloParam->ucFastScanIteration, prNloParam->u2FastScanPeriod);
 	/* 2. prepare command for sending */
 	prCmdNloReq = (P_CMD_NLO_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_NLO_REQ) + prScanParam->u2IELen);
 
@@ -1148,8 +1155,8 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 	if (prScanParam->u2IELen)
 		kalMemCopy(prCmdNloReq->aucIE, prScanParam->aucIE, sizeof(UINT_8) * prCmdNloReq->u2IELen);
-#if !CFG_SUPPORT_GSCN
 
+#if !CFG_SUPPORT_SCN_PSCN
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_NLO_REQ,
 			    TRUE,
@@ -1193,8 +1200,7 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	/* send cancel message to firmware domain */
 	rCmdNloCancel.ucSeqNum = prScanParam->ucSeqNum;
 
-#if !CFG_SUPPORT_GSCN
-
+#if !CFG_SUPPORT_SCN_PSCN
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_NLO_CANCEL,
 			    TRUE,
@@ -1675,7 +1681,7 @@ BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARA
 	kalMemZero(prCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
 	prCmdGscnReq->u4NumBuckets = prCmdGscnParam->num_buckets;
 	prCmdGscnReq->u4BasePeriod = prCmdGscnParam->base_period;
-	DBGLOG(SCN, INFO, "u4BasePeriod[%d], u4NumBuckets[%d]\n",
+	DBGLOG(SCN, TRACE, "u4BasePeriod[%d], u4NumBuckets[%d]\n",
 		prCmdGscnReq->u4BasePeriod, prCmdGscnReq->u4NumBuckets);
 
 	for (i = 0; i < prCmdGscnReq->u4NumBuckets; i++) {
