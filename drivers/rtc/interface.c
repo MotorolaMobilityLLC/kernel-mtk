@@ -33,14 +33,14 @@ static void rtc_mutex_monitor_start(const char *rtc);
 static void rtc_mutex_monitor_stop(void);
 static void rtc_mutex_monitor_update(int step);
 
+#ifdef CONFIG_DEBUG_MUTEXES
 static void rtc_mutex_monitor(unsigned long data)
 {
-#ifdef CONFIG_DEBUG_MUTEXES
 	pr_emerg("%s: mutex_is_locked by %s, %d\n", __func__, rtc_mutex_lock_info.func, rtc_mutex_lock_info.step);
 
 	rtc_mutex_monitor_start(rtc_mutex_lock_info.func);
-#endif
 }
+#endif
 
 static void rtc_mutex_monitor_start(const char *func)
 {
