@@ -798,7 +798,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 			} else if (alt) {
 				if (mSensorState[alt].enable)
 					err = obj->dispatch_data_cb[alt](data_t, NULL);
-				if (mSensorState[sensor_type].enable)
+				if (mSensorState[sensor_type].enable || data_t->flush_action == BIAS_ACTION)
 					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 			}
 		}
