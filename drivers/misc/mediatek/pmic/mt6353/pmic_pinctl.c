@@ -115,9 +115,10 @@ void vmd1_pmic_setting_on(void)
 		/* 2.Call PMIC driver API configure VCORE2 ON voltage as 1.0V */
 		pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_ON, 0x40); /* set to 1.0V */
 	} else if (segment == 0x42 || segment == 0x43 || segment == 0x46 || segment == 0x4B
-		|| segment == 0xC2 || segment == 0xC6) {
+		|| segment == 0x82 || segment == 0x86 || segment == 0xC2 || segment == 0xC6) {
 		/*
 		 * 0x42: normal 0x43: 6738
+		 * 0x82/0x86: ROSA 6755S
 		 * 0xC2/0xC6: ROSA 6750N
 		 */
 
