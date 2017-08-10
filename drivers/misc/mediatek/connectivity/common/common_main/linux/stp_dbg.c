@@ -41,6 +41,7 @@
 #include "wmt_plat.h"
 #include "wmt_detect.h"
 #include "stp_sdio.h"
+#include "stp_core.h"
 
 
 UINT32 gStpDbgLogOut = 0;
@@ -1955,6 +1956,9 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR1));
 		STP_DBG_INFO_FUNC("CONNSYS debug cr2 0x1807040c:0x%08x\n",
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
+	} else if (chip_type == WMT_CHIP_TYPE_COMBO) {
+		STP_DBG_INFO_FUNC("dump sdio register for debug\n");
+		mtk_stp_dump_sdio_register();
 	}
 
 	return 0;

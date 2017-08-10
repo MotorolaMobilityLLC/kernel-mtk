@@ -297,4 +297,5 @@ VOID stp_sdio_txdbg_dump(VOID);
 INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 		MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32 offset, PUINT32 pData, UINT32 len);
 VOID stp_sdio_dump_info(MTK_WCN_STP_SDIO_HIF_INFO *p_info);
+VOID stp_sdio_dump_register(VOID);
 #endif				/* _STP_SDIO_H */

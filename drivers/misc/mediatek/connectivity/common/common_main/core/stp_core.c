@@ -3549,3 +3549,8 @@ VOID mtk_wcn_stp_dbg_pkt_log(INT32 type, INT32 dir)
 {
 	stp_dbg_pkt_log(type, 0, 0, 0, dir, NULL, 0);
 }
+
+VOID mtk_stp_dump_sdio_register(VOID)
+{
+	stp_sdio_dump_register();
+}
