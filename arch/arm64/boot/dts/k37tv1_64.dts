@@ -16,6 +16,20 @@
 #include "k37tv1_64_fg_oldgauge_bat_setting.dtsi"
 #endif
 
+&reserved_memory {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	ranges;
+
+	reserve-memory-ccci_md3 {
+		compatible = "mediatek,reserve-memory-ccci_md3";
+		no-map;
+		size = <0 0x00b00000>;
+		alignment = <0 0x2000000>;
+		alloc-ranges = <0 0x40000000 0 0xc0000000>;
+	};
+};
+
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
@@ -513,6 +527,19 @@
 		host_function = /bits/ 8 <MSDC_SD>;
 		cd_level = /bits/ 8 <MSDC_CD_LOW>;
 		cd-gpios = <&pio 5 0>;
+		status = "okay";
+};
+
+&mmc3 {
+		clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
+		bus-width = <4>;
+		max-frequency = <50000000>;
+		cap-sd-highspeed;
+		sd-uhs-sdr12;
+		sd-uhs-sdr25;
+		sd-uhs-sdr50;
+		host_function = /bits/ 8 <MSDC_SDIO>;
+		non-removable;
 		status = "okay";
 };
 
