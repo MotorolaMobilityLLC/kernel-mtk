@@ -67,6 +67,9 @@
 
 #endif
 
+#ifndef CONFIG_MTK_CLKMGR
+#define NO_POWER_OFF_ON_STARTMD
+#endif
 /*================================================ */
 /* misc size description */
 #define CCCI_SMEM_DUMP_SIZE      4096 /* smem size we dump when EE */
