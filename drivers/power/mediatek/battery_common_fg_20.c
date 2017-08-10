@@ -243,6 +243,8 @@ static struct hrtimer battery_kthread_timer;
 kal_bool g_battery_soc_ready = KAL_FALSE;
 unsigned char fg_ipoh_reset;
 
+static struct workqueue_struct *battery_init_workqueue;
+static struct work_struct battery_init_work;
 
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* FOR ADB CMD */
@@ -4728,6 +4730,25 @@ static struct notifier_block battery_pm_notifier_block = {
 	.priority = 0,
 };
 
+static void battery_init_work_callback(struct work_struct *work)
+{
+	int ret = 0;
+
+	battery_log(BAT_LOG_CRTI, "battery_init_work\n");
+
+#ifdef CONFIG_OF
+	ret = platform_driver_register(&battery_dts_driver);
+	ret = platform_driver_register(&mt_batteryNotify_dts_driver);
+#endif
+
+	ret = register_pm_notifier(&battery_pm_notifier_block);
+	if (ret)
+		battery_log(BAT_LOG_CRTI, "[%s] failed to register PM notifier %d\n", __func__,
+			    ret);
+
+	battery_log(BAT_LOG_CRTI, "****[battery_driver] Initialization : DONE !!\n");
+}
+
 static int __init battery_init(void)
 {
 	int ret;
@@ -4771,16 +4792,14 @@ static int __init battery_init(void)
 			    "****[mt_batteryNotify] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
-#ifdef CONFIG_OF
-	ret = platform_driver_register(&battery_dts_driver);
-	ret = platform_driver_register(&mt_batteryNotify_dts_driver);
-#endif
-	ret = register_pm_notifier(&battery_pm_notifier_block);
-	if (ret)
-		battery_log(BAT_LOG_CRTI, "[%s] failed to register PM notifier %d\n", __func__,
-			    ret);
 
-	battery_log(BAT_LOG_CRTI, "****[battery_driver] Initialization : DONE !!\n");
+	battery_init_workqueue = create_singlethread_workqueue("mtk-battery");
+	INIT_WORK(&battery_init_work, battery_init_work_callback);
+
+	ret = queue_work(battery_init_workqueue, &battery_init_work);
+	if (!ret)
+		pr_err("battery_init failed\n");
+
 	return 0;
 }
 
