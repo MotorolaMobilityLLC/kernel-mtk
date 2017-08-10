@@ -20,24 +20,11 @@
 #include "mtk-phy-asic.h"
 /*#include <mach/mt_typedefs.h>*/
 #endif
-#if defined(FOR_BRING_UP) || !defined(CONFIG_MTK_SMART_BATTERY)
-static inline void BATTERY_SetUSBState(int usb_state)
-{
-};
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static inline CHARGER_TYPE  mt_get_charger_type(void)
-{
-	return STANDARD_HOST;
-};
-#endif
-static inline bool upmu_is_chr_det(void)
-{
-	return true;
-};
-static inline u32 upmu_get_rgs_chrdet(void)
-{
-	return 1;
-};
+
+/* #define USB_FORCE_ON */
+/* USB FORCE ON for FPGA/U3_COMPLIANCE cases */
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
+#define USB_FORCE_ON
 #endif
 
 unsigned int cable_mode = CABLE_MODE_NORMAL;
@@ -108,31 +95,8 @@ void connection_work(struct work_struct *data)
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
 		bool is_usb_cable = usb_cable_connected();
-		bool cmode_effect_on = false;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-		CHARGER_TYPE chg_type = musb->charger_mode = mt_get_charger_type();
-
-		if (fake_CDP && chg_type == STANDARD_HOST) {
-			os_printk(K_INFO, "%s, fake to type 2\n", __func__);
-			chg_type = CHARGING_HOST;
-		}
-		os_printk(K_NOTICE, "%s type=%d\n", __func__, chg_type);
-		if ((musb->usb_mode == CABLE_MODE_HOST_ONLY && chg_type == STANDARD_HOST)
-		    || musb->usb_mode == CABLE_MODE_CHRG_ONLY)
-			cmode_effect_on = true;
-/*
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-		    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-			if (chg_type == STANDARD_HOST)
-				cmode_effect_on = true;
-
-		}
-#endif
-*/
-		os_printk(K_INFO, "%s type=%d, cmode_effect_on=%d, usb_mode:%d\n",
-			  __func__, chg_type, cmode_effect_on, musb->usb_mode);
 
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
@@ -148,8 +112,7 @@ void connection_work(struct work_struct *data)
 			    0) ? "INIT" : ((connection_work_dev_status == 1) ? "ON" : "OFF")),
 			  (is_usb_cable ? "IN" : "OUT"));
 
-		if ((is_usb_cable == true) && (connection_work_dev_status != ON)
-		    && (!cmode_effect_on)) {
+		if ((is_usb_cable == true) && (connection_work_dev_status != ON)) {
 
 			connection_work_dev_status = ON;
 #ifndef CONFIG_USBIF_COMPLIANCE
@@ -164,8 +127,7 @@ void connection_work(struct work_struct *data)
 			musb_start(musb);
 
 			os_printk(K_INFO, "%s ----Connect----\n", __func__);
-		} else if (((is_usb_cable == false) && (connection_work_dev_status != OFF))
-			   || (cmode_effect_on)) {
+		} else if ((is_usb_cable == false) && (connection_work_dev_status != OFF)) {
 
 			connection_work_dev_status = OFF;
 #ifndef CONFIG_USBIF_COMPLIANCE
@@ -252,35 +214,51 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
 bool usb_cable_connected(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(U3_COMPLIANCE) && !defined(FOR_BRING_UP)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
-	chg_type = mt_get_charger_type();
+	bool connected = false, vbus_exist = false;
 
-	/* disable USB and send HWDISCONNECT uevent */
-	if ((cable_mode == CABLE_MODE_HOST_ONLY && chg_type == STANDARD_HOST)
-			|| cable_mode == CABLE_MODE_CHRG_ONLY) {
-		os_printk(K_INFO, "%s, cable_mode:%d, return false\n", __func__, cable_mode);
-		return false;
-	}
-
-#ifdef CONFIG_POWER_EXT
-	os_printk(K_INFO, "%s ext-chrdet=%d type=%d\n", __func__, upmu_get_rgs_chrdet(), chg_type);
-	if (upmu_get_rgs_chrdet() && (chg_type == STANDARD_HOST))
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+		os_printk(K_INFO, "%s, in KPOC, force USB on\n", __func__);
 		return true;
-#else
-
-	if (upmu_is_chr_det()) {
-		os_printk(K_INFO, "%s type=%d\n", __func__, chg_type);
-		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
-			return true;
 	}
 #endif
-	os_printk(K_INFO, "%s no USB Host detect!\n", __func__);
-	return false;
+
+#ifdef USB_FORCE_ON
+	/* FORCE USB ON */
+	chg_type = STANDARD_HOST;
+	vbus_exist = true;
+	connected = true;
+	os_printk(K_INFO, "%s type force to STANDARD_HOST\n", __func__);
 #else
-	os_printk(K_INFO, "%s [FPGA] always true\n", __func__);
-	return true;
+	/* TYPE CHECK*/
+	chg_type = mt_get_charger_type();
+	if (fake_CDP && chg_type == STANDARD_HOST) {
+		os_printk(K_INFO, "%s, fake to type 2\n", __func__);
+		chg_type = CHARGING_HOST;
+	}
+
+	if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+		connected = true;
+
+	/* VBUS CHECK to avoid type miss-judge */
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
 #endif
+	os_printk(K_INFO, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
+	if (!vbus_exist)
+		connected = false;
+#endif
+
+	/* CMODE CHECK */
+	if (cable_mode == CABLE_MODE_CHRG_ONLY || (cable_mode == CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))
+		connected = false;
+
+	os_printk(K_INFO, "%s, connected:%d, cable_mode:%d\n", __func__, connected, cable_mode);
+	return connected;
 }
 EXPORT_SYMBOL_GPL(usb_cable_connected);
 
@@ -338,16 +316,6 @@ void musb_platform_reset(struct musb *musb)
 }
 #endif				/* NEVER */
 
-void usb_check_connect(void)
-{
-	os_printk(K_INFO, "usb_check_connect\n");
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	if (usb_cable_connected())
-		mt_usb_connect();
-#endif
-
-}
 
 void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
@@ -356,9 +324,7 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	BATTERY_SetUSBState(usb_state);
-#ifndef FOR_BRING_UP
 	wake_up_bat();
-#endif
 #endif
 #endif
 
