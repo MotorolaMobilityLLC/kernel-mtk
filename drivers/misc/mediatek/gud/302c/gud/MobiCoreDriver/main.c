@@ -1730,7 +1730,7 @@ bool mc_sleep_ready(void)
 }
 
 /* Linux Driver Module Macros */
-module_init(mobicore_init);
+core_initcall(mobicore_init);
 module_exit(mobicore_exit);
 MODULE_AUTHOR("Trustonic Limited");
 MODULE_LICENSE("GPL v2");
