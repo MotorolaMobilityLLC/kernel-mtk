@@ -691,7 +691,7 @@
 #define CFG_SUPPORT_UL_PSMP         0
 
 #define CFG_SUPPORT_ROAMING         1	/* Roaming System */
-#define CFG_SUPPORT_DYNAMOC_ROAM    0
+#define CFG_SUPPORT_DYNAMIC_ROAM    0
 #define CFG_SUPPORT_SWCR            1
 
 #define CFG_SUPPORT_ANTI_PIRACY     1
