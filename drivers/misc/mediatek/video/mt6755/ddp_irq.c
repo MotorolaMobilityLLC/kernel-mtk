@@ -45,6 +45,11 @@ static unsigned int cnt_wdma_underflow[2];
 unsigned long long rdma_start_time[2] = { 0 };
 unsigned long long rdma_end_time[2] = { 0 };
 
+unsigned int mmsys_debug[4] = {0};
+unsigned int mmsys_enable = 4;
+
+
+
 #define DISP_MAX_IRQ_CALLBACK   10
 
 static DDP_IRQ_CALLBACK irq_module_callback_table[DISP_MODULE_NUM][DISP_MAX_IRQ_CALLBACK];
@@ -199,6 +204,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
 	unsigned int reg_temp_val = 0;
+	unsigned int tmp_mmsys_debug[4] = {0};
 
 	DISPIRQ("disp_irq_handler, irq=%d, module=%s\n",
 	       irq, ddp_get_module_name(disp_irq_module(irq)));
@@ -313,6 +319,18 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagEnd,
 				       reg_val, 0);
 			rdma_end_time[index] = sched_clock();
+			tmp_mmsys_debug[2] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
+			tmp_mmsys_debug[3] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B);
+
+			if ((tmp_mmsys_debug[2] != mmsys_debug[2])
+				|| (tmp_mmsys_debug[3] != mmsys_debug[3])) {
+				mmsys_debug[2] = tmp_mmsys_debug[2];
+				mmsys_debug[3] = tmp_mmsys_debug[3];
+				if (mmsys_enable > 0) {
+					DISPMSG("cg_e = %x, rst_e = %x", mmsys_debug[2], mmsys_debug[3]);
+					mmsys_enable--;
+					}
+				}
 			DISPIRQ("IRQ: RDMA%d frame done!\n", index);
 			rdma_done_irq_cnt[index]++;
 		}
@@ -320,6 +338,18 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index],
 				       MMProfileFlagStart, reg_val, 0);
 			rdma_start_time[index] = sched_clock();
+			tmp_mmsys_debug[0] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0);
+			tmp_mmsys_debug[1] = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B);
+
+			if ((tmp_mmsys_debug[0] != mmsys_debug[0])
+				|| (tmp_mmsys_debug[1] != mmsys_debug[1])) {
+				mmsys_debug[0] = tmp_mmsys_debug[0];
+				mmsys_debug[1] = tmp_mmsys_debug[1];
+				if (mmsys_enable > 0) {
+					DISPMSG("cg_s = %x, rst_s = %x", mmsys_debug[0], mmsys_debug[1]);
+					mmsys_enable--;
+					}
+				}
 			DISPIRQ("IRQ: RDMA%d frame start!\n", index);
 			rdma_start_irq_cnt[index]++;
 		}

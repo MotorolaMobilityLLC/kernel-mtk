@@ -2547,8 +2547,11 @@ int32_t cmdqDdpClockOff(uint64_t engineFlag)
 
 int32_t cmdqDdpDumpInfo(uint64_t engineFlag, int level)
 {
+	int i = 0;
 	DISPERR("cmdq timeout:%llu\n", engineFlag);
 	primary_display_diagnose();
+	for (i = 0; i < 4; i++)
+		smi_dumpDebugMsg();
 
 	if (primary_display_is_decouple_mode())
 		ddp_dump_analysis(DISP_MODULE_OVL0);

@@ -525,6 +525,9 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 
 	while (1) {
 		msleep(2000);/*2s*/
+		DISPMSG("cg_s = %x, rst_s = %x,cg_e = %x, rst_e = %x",
+		mmsys_debug[0], mmsys_debug[1], mmsys_debug[2], mmsys_debug[3]);
+		mmsys_enable = 4;
 		ret = wait_event_interruptible(_check_task_wq, atomic_read(&_check_task_wakeup));
 		if (ret < 0) {
 			DISPMSG("[disp_check]check thread waked up accidently\n");

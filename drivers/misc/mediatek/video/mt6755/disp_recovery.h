@@ -20,7 +20,8 @@
 
 /* defined in mtkfb.c should move to mtkfb.h*/
 extern unsigned int islcmconnected;
-
+extern unsigned int mmsys_debug[4];
+extern unsigned int mmsys_enable;
 
 void primary_display_check_recovery_init(void);
 void primary_display_esd_check_enable(int enable);
