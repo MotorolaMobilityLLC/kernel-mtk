@@ -45,9 +45,9 @@ struct ion_sec_heap {
 static int ion_sec_heap_allocate(struct ion_heap *heap,
 		struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
-	int sec_handle = 0;
+	u32 sec_handle = 0;
 	ion_sec_buffer_info *pBufferInfo = NULL;
-	u32 *refcount = 0;
+	u32 refcount = 0;
 
 	IONMSG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
 
@@ -58,9 +58,9 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	}
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	secmem_api_alloc(align, size, refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+	secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 #else
-	refcount = NULL;
+	refcount = 0;
 #endif
 	if (sec_handle <= 0) {
 		IONMSG("%s alloc security memory failed\n", __func__);
@@ -90,21 +90,13 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 void ion_sec_heap_free(struct ion_buffer *buffer)
 {
 	struct sg_table *table = buffer->sg_table;
-	struct scatterlist *sg;
-	int i, sec_handle;
+	u32 sec_handle = 0;
 
 	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
-
-	sec_handle = buffer->priv_phys;
+	sec_handle = ((ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
 #endif
-	for_each_sg(table->sgl, sg, table->nents, i) {
-		sg_dma_address(sg) = 0;
-		sg_dma_len(sg) = 0;
-	}
-
-	sg_free_table(table);
 	kfree(table);
 	IONMSG("%s exit\n", __func__);
 
@@ -427,7 +419,7 @@ long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long ar
 			}
 
 			buffer = ion_handle_buffer(kernel_handle);
-			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
+			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
 				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
 
 				if (pBufferInfo->MVA == 0) {
@@ -475,7 +467,7 @@ long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long ar
 			}
 
 			buffer = ion_handle_buffer(kernel_handle);
-			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
+			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
 				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
 
 				ion_sec_copy_dbg_info(&(param.buf_debug_info_param), &(pBufferInfo->dbg_info));
@@ -506,7 +498,7 @@ long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long ar
 				break;
 			}
 			buffer = ion_handle_buffer(kernel_handle);
-			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
+			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
 				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
 
 				ion_sec_copy_dbg_info(&(pBufferInfo->dbg_info), &(param.buf_debug_info_param));
