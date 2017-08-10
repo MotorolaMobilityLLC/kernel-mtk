@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 ifeq ($(CONFIG_IMGSENSOR_USE_MODULE_DRIVER),y)
-$(info imx135_otp use module build)
+#$(info imx135_otp use module build)
 obj-m += imx135_otp.o
 else
 obj-y += imx135_otp.o
