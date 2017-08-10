@@ -1222,7 +1222,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* check if it is a beacon frame */
 			if (((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_BEACON) &&
 				!fgIsValidSsid) {
-				DBGLOG(SCN, INFO, "scanAddToBssDescssid is NULL Beacon, don't add hidden BSS(%pM)\n",
+				DBGLOG(SCN, TRACE, "scanAddToBssDescssid is NULL Beacon, don't add hidden BSS(%pM)\n",
 					(PUINT_8)prWlanBeaconFrame->aucBSSID);
 				return NULL;
 			}
@@ -1662,7 +1662,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* Limit Tx power changed */
 			if (prBssDesc->cPowerLimit != cNewPwrLimit) {
 				prBssDesc->cPowerLimit = cNewPwrLimit;
-				DBGLOG(SCN, INFO, "Old: TxPwrLimit %d,New: CountryMax %d, Constraint %d\n",
+				DBGLOG(SCN, TRACE, "Old: TxPwrLimit %d,New: CountryMax %d, Constraint %d\n",
 					prBssDesc->cPowerLimit, prSubBand->cMaxTxPwrLv, ucPowerConstraint);
 				/* should tell firmware to restrict tx power if connected a BSS */
 				if (prBssDesc->fgIsConnected) {
@@ -3619,6 +3619,8 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
+		dumpMemory8IEOneLine(prBssDesc->aucBSSID, &prBssDesc->aucIEBuf[0], prBssDesc->u2IELength);
+
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
 			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
