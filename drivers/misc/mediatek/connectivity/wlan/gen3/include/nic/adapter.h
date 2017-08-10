@@ -1102,7 +1102,7 @@ struct _BSS_INFO_T {
 	BOOLEAN fgIsPNOEnable;
 	BOOLEAN fgIsNetRequestInActive;
 #endif
-
+	UINT_8 ucKeyCmdAction; /* 0: will queue add key command, 1: send add key command, 2: drop command */
 	WIFI_WMM_AC_STAT_T arLinkStatistics[WMM_AC_INDEX_NUM];	/*link layer statistics */
 
 };

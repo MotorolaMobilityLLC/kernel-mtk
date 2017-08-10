@@ -2309,6 +2309,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	BOOLEAN fgDrop;
 	P_STA_RECORD_T prStaRec;
+	UINT_8 ucBssIndex = 0;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -2385,59 +2386,88 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 #endif /* CFG_TCP_IP_CHKSUM_OFFLOAD */
 
 	/* if(secCheckClassError(prAdapter, prSwRfb, prStaRec) == TRUE && */
-	if (prAdapter->fgTestMode == FALSE && fgDrop == FALSE) {
-#if CFG_HIF_RX_STARVATION_WARNING
-		prRxCtrl->u4QueuedCnt++;
-#endif
-		nicRxFillRFB(prAdapter, prSwRfb);
-		GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx));
-		StatsRxPktInfoDisplay(prSwRfb->pvHeader);
-
-		prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
-		if (prRetSwRfb != NULL) {
-			do {
-				/* save next first */
-				prNextSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prRetSwRfb);
-
-				switch (prRetSwRfb->eDst) {
-				case RX_PKT_DESTINATION_HOST:
-					prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
-					if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
-#if ARP_MONITER_ENABLE
-						qmHandleRxArpPackets(prAdapter, prRetSwRfb);
-#endif
-						u4LastRxPacketTime = kalGetTimeTick();
-					}
-					nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_FORWARD:
-					nicRxProcessForwardPkt(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_HOST_WITH_FORWARD:
-					nicRxProcessGOBroadcastPkt(prAdapter, prRetSwRfb);
-					break;
-
-				case RX_PKT_DESTINATION_NULL:
-					nicRxReturnRFB(prAdapter, prRetSwRfb);
-					RX_INC_CNT(prRxCtrl, RX_DST_NULL_DROP_COUNT);
-					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
-					break;
-
-				default:
-					break;
-				}
-#if CFG_HIF_RX_STARVATION_WARNING
-				prRxCtrl->u4DequeuedCnt++;
-#endif
-				prRetSwRfb = prNextSwRfb;
-			} while (prRetSwRfb);
-		}
-	} else {
+	if (prAdapter->fgTestMode || fgDrop) {
 		nicRxReturnRFB(prAdapter, prSwRfb);
 		RX_INC_CNT(prRxCtrl, RX_CLASS_ERR_DROP_COUNT);
 		RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+		return;
+	}
+
+#if CFG_HIF_RX_STARVATION_WARNING
+	prRxCtrl->u4QueuedCnt++;
+#endif
+	nicRxFillRFB(prAdapter, prSwRfb);
+	ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
+	GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
+	StatsRxPktInfoDisplay(prSwRfb->pvHeader);
+
+	prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
+
+	while (prRetSwRfb) {
+		/* save next first */
+		prNextSwRfb = (P_SW_RFB_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prRetSwRfb);
+
+		switch (prRetSwRfb->eDst) {
+		case RX_PKT_DESTINATION_HOST:
+			prStaRec = cnmGetStaRecByIndex(prAdapter, prRetSwRfb->ucStaRecIdx);
+			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
+#if ARP_MONITER_ENABLE
+				qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+#endif
+				u4LastRxPacketTime = kalGetTimeTick();
+			}
+
+			do {
+				if (prRetSwRfb->u2PacketLen <= ETHER_HEADER_LEN) {
+					DBGLOG(RX, ERROR, "Packet Length is %d\n", prRetSwRfb->u2PacketLen);
+					break;
+				}
+				/* when we RX 3/4 */
+				if (EAPOL_KEY_3_OF_4 != secGetEapolKeyType((PUINT_8)prRetSwRfb->pvHeader))
+					break;
+
+				if (ucBssIndex <= HW_BSSID_NUM) {
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4, FALSE);
+					break;
+				} else if (prStaRec && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
+					DBGLOG(RX, INFO,
+						"BSS IDX got from wlan idx is wrong, using bss index from sta record\n");
+					secSetKeyCmdAction(prAdapter->aprBssInfo[prStaRec->ucBssIndex],
+						EAPOL_KEY_3_OF_4, FALSE);
+					break;
+				}
+				ucBssIndex = secGetBssIdxByNetType(prAdapter);
+				if (ucBssIndex <= HW_BSSID_NUM) {
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4, FALSE);
+					break;
+				}
+				DBGLOG(RX, ERROR, "Can't get bss index base on network type\n");
+			} while (FALSE);
+
+			nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_FORWARD:
+			nicRxProcessForwardPkt(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_HOST_WITH_FORWARD:
+			nicRxProcessGOBroadcastPkt(prAdapter, prRetSwRfb);
+			break;
+
+		case RX_PKT_DESTINATION_NULL:
+			nicRxReturnRFB(prAdapter, prRetSwRfb);
+			RX_INC_CNT(prRxCtrl, RX_DST_NULL_DROP_COUNT);
+			RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+			break;
+
+		default:
+			break;
+		}
+#if CFG_HIF_RX_STARVATION_WARNING
+		prRxCtrl->u4DequeuedCnt++;
+#endif
+		prRetSwRfb = prNextSwRfb;
 	}
 }
 
