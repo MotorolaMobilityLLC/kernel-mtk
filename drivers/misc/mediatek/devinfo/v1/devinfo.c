@@ -28,6 +28,7 @@
 #endif
 #include <linux/atomic.h>
 #include <asm/setup.h>
+#include <mt-plat/mt_devinfo.h>
 #include "devinfo.h"
 
 enum {
@@ -37,6 +38,7 @@ enum {
 
 static u32 *g_devinfo_data;
 static u32 g_devinfo_size;
+static u32 g_hrid_size = HRID_DEFAULT_SIZE;
 static struct cdev devinfo_cdev;
 static struct class *devinfo_class;
 static dev_t devinfo_dev;
@@ -94,6 +96,50 @@ u32 get_devinfo_with_index(u32 index)
 }
 EXPORT_SYMBOL(get_devinfo_with_index);
 
+u32 get_hrid_size(void)
+{
+#ifdef CONFIG_OF
+	if (devinfo_get_size() == 0)
+		init_devinfo_exclusive();
+#endif
+
+	return g_hrid_size;
+}
+EXPORT_SYMBOL(get_hrid_size);
+
+u32 get_hrid(unsigned char *rid, unsigned char *rid_sz)
+{
+	u32 ret = E_SUCCESS;
+	u32 i, j;
+
+#ifdef CONFIG_OF
+	if (devinfo_get_size() == 0)
+		init_devinfo_exclusive();
+#endif
+
+	if (rid_sz == NULL)
+		return E_BUF_SIZE_ZERO_OR_NULL;
+
+	if (rid == NULL)
+		return E_BUF_ZERO_OR_NULL;
+
+	if (*rid_sz < (g_hrid_size * 4))
+		return E_BUF_NOT_ENOUGH;
+
+	for (i = 0; i < g_hrid_size; i++) {
+		u32 reg_val = 0;
+
+		reg_val = get_devinfo_with_index(12 + i);
+		for (j = 0; j < 4; j++)
+			*(rid + i * 4 + j) = (reg_val & (0xff << (8 * j))) >> (8 * j);
+	}
+
+	*rid_sz = g_hrid_size * 4;
+
+	return ret;
+}
+EXPORT_SYMBOL(get_hrid);
+
 /**************************************************************************
 *STATIC FUNCTION
 **************************************************************************/
@@ -101,7 +147,7 @@ EXPORT_SYMBOL(get_devinfo_with_index);
 static const struct file_operations devinfo_fops = {
 	.open = devinfo_open,
 	.release = devinfo_release,
-	.unlocked_ioctl   = devinfo_ioctl,
+	.unlocked_ioctl	  = devinfo_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = devinfo_ioctl,
 #endif
@@ -124,8 +170,8 @@ static int devinfo_release(struct inode *inode, struct file *filp)
 static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	u32 index = 0;
-	int err   = 0;
-	int ret   = 0;
+	int err	  = 0;
+	int ret	  = 0;
 	u32 data_read = 0;
 	int size = devinfo_get_size();
 
@@ -168,16 +214,16 @@ static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg
  * devinfo_init
  *
  * DESCRIPTION:
- *   Init the device driver !
+ *	 Init the device driver !
  *
  * PARAMETERS:
- *   None
+ *	 None
  *
  * RETURNS:
- *   0 for success
+ *	 0 for success
  *
  * NOTES:
- *   None
+ *	 None
  *
  ******************************************************************************/
 static int __init devinfo_init(void)
@@ -200,7 +246,7 @@ static int __init devinfo_init(void)
 		unregister_chrdev_region(devinfo_dev, 1);
 		return ret;
 	}
-	/* initialize the device structure and register the device  */
+	/* initialize the device structure and register the device	*/
 	cdev_init(&devinfo_cdev, &devinfo_fops);
 	devinfo_cdev.owner = THIS_MODULE;
 
@@ -230,6 +276,9 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 {
 	struct devinfo_tag *tags;
 	u32 size = 0;
+	u32 hrid_magic_num_and_size = 0;
+	u32 hrid_magic_num = 0;
+	u32 hrid_tmp_size = 0;
 
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
 		return 0;
@@ -245,8 +294,25 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 
 		memcpy(g_devinfo_data, tags->data, (size * sizeof(u32)));
 
-		pr_err("devinfo size:%d, tag size(devinfo_lk_atag_tag_devinfo_data):%d\n",
-			size, (u32)(devinfo_lk_atag_tag_size(devinfo_lk_atag_tag_devinfo_data)));
+		if (size >= EFUSE_FIXED_HRID_SIZE_INDEX) {
+			hrid_magic_num_and_size = g_devinfo_data[EFUSE_FIXED_HRID_SIZE_INDEX];
+			hrid_magic_num = (hrid_magic_num_and_size & 0xFFFF0000);
+			hrid_tmp_size = (hrid_magic_num_and_size & 0x0000FFFF);
+			if ((hrid_magic_num & HRID_SIZE_MAGIC_NUM) == HRID_SIZE_MAGIC_NUM) {
+				if (hrid_tmp_size > HRID_MAX_ALLOWED_SIZE)
+					g_hrid_size = HRID_MAX_ALLOWED_SIZE;
+				else if (hrid_tmp_size < HRID_MIN_ALLOWED_SIZE)
+					g_hrid_size = HRID_MIN_ALLOWED_SIZE;
+				else
+					g_hrid_size = hrid_tmp_size;
+			} else
+				g_hrid_size = HRID_DEFAULT_SIZE;
+		} else
+			g_hrid_size = HRID_DEFAULT_SIZE;
+
+		pr_err("devinfo size:%d, tag size(devinfo_lk_atag_tag_devinfo_data):%d, HRID size:%d\n",
+			size, (u32)(devinfo_lk_atag_tag_size(devinfo_lk_atag_tag_devinfo_data)), g_hrid_size);
+
 	} else {
 		pr_err("'atag,devinfo' is not found\n");
 	}
@@ -256,14 +322,14 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 
 static void init_devinfo_exclusive(void)
 {
-	if (DEVINFO_INITIALIZING_OR_INITIALIZED == atomic_read(&g_devinfo_init_status)) {
+	if (atomic_read(&g_devinfo_init_status) == DEVINFO_INITIALIZING_OR_INITIALIZED) {
 		atomic_inc(&g_devinfo_init_errcnt);
 		pr_err("devinfo data already init done earlier. 'init_devinfo_exclusive' extra times: %d\n",
 			atomic_read(&g_devinfo_init_errcnt));
 		return;
 	}
 
-	if (DEVINFO_UNINIT == atomic_read(&g_devinfo_init_status))
+	if (atomic_read(&g_devinfo_init_status) == DEVINFO_UNINIT)
 		atomic_set(&g_devinfo_init_status, DEVINFO_INITIALIZING_OR_INITIALIZED);
 	else
 		return;
@@ -282,16 +348,16 @@ static int __init devinfo_of_init(void)
  * devinfo_exit
  *
  * DESCRIPTION:
- *   Free the device driver !
+ *	 Free the device driver !
  *
  * PARAMETERS:
- *   None
+ *	 None
  *
  * RETURNS:
- *   None
+ *	 None
  *
  * NOTES:
- *   None
+ *	 None
  *
  ******************************************************************************/
 static void __exit devinfo_exit(void)
