@@ -23,6 +23,7 @@
 #include <mach/wd_api.h>
 #include <linux/reboot.h>
 #include "ipanic.h"
+#include "../mrdump/mrdump_private.h"
 #include <asm/system_misc.h>
 
 static u32 ipanic_iv = 0xaabbccdd;
@@ -520,11 +521,14 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	int dt;
 	int errno;
 	struct ipanic_header *ipanic_hdr;
+	struct pt_regs saved_regs;
 
 	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_START);
 	aee_rr_rec_exp_type(2);
 	bust_spinlocks(1);
+	mrdump_mini_save_regs(&saved_regs);
+	__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_PANIC, &saved_regs, "Kernel Panic");
 	spin_lock_irq(&ipanic_lock);
 	aee_disable_api();
 	mrdump_mini_ke_cpu_regs(NULL);
@@ -587,10 +591,21 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 {
 	int errno;
 	struct kmsg_dumper dumper;
+	struct pt_regs saved_regs;
 
 	aee_nested_printf("minidump\n");
 	aee_rr_rec_exp_type(3);
 	bust_spinlocks(1);
+	if (excp_regs != NULL) {
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_NESTED_EXCEPTION, excp_regs, "Kernel NestedPanic");
+	} else if (regs != NULL) {
+		aee_nested_printf("previous excp_regs NULL\n");
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_NESTED_EXCEPTION, regs, "Kernel NestedPanic");
+	} else {
+		aee_nested_printf("both NULL\n");
+		mrdump_mini_save_regs(&saved_regs);
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_NESTED_EXCEPTION, &saved_regs, "Kernel NestedPanic");
+	}
 	flush_cache_all();
 #ifdef __aarch64__
 	cpu_cache_off();
