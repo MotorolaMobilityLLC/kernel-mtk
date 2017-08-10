@@ -1388,6 +1388,10 @@ static int mt_usb_probe(struct platform_device *pdev)
 #if defined(FPGA_PLATFORM) || defined(FOR_BRING_UP)
 	musb_force_on = 1;
 #endif
+	if (get_boot_mode() == META_BOOT) {
+		DBG(0, "in special mode %d\n", get_boot_mode());
+		musb_force_on = 1;
+	}
 
 	return 0;
 
@@ -1404,16 +1408,6 @@ err0:
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
-
-	if (get_boot_mode() == META_BOOT
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			|| get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
-#endif
-	   ) {
-		DBG(0, "in special mode %d\n", get_boot_mode());
-		musb_force_on = 1;
-	}
 
 	/* enable uart log */
 	musb_uart_debug = 1;

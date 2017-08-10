@@ -2088,6 +2088,7 @@ static ssize_t state_show(struct device *pdev, struct device_attribute *attr,
 		state = "CONFIGURED";
 	else if (dev->connected)
 		state = "CONNECTED";
+	pr_warn("[USB]%s, state:%s\n", __func__, state);
 	spin_unlock_irqrestore(&cdev->lock, flags);
 out:
 	return sprintf(buf, "%s\n", state);
@@ -2120,11 +2121,13 @@ log_store(struct device *pdev, struct device_attribute *attr,
 
 	n = strlcpy(buf, buff, sizeof(buf));
 
-	if ((log_buf_idx + n) > LOG_BUG_SZ)
+	if ((log_buf_idx + (n + 1)) > LOG_BUG_SZ)
 		log_buf_idx = 0;
 
-	log_buf_idx += strlcpy(log_buf + log_buf_idx, buf, n);
-	pr_warn("%s, <%s>, n:%d, log_buf_idx:%d\n", __func__, buf, n, log_buf_idx);
+	memcpy(log_buf + log_buf_idx, buf, n);
+	log_buf_idx += n;
+	log_buf[log_buf_idx++] = ' ';
+	pr_warn("[USB]%s, <%s>, n:%d, log_buf_idx:%d\n", __func__, buf, n, log_buf_idx);
 
 	mutex_unlock(&dev->mutex);
 	return size;
