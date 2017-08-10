@@ -793,6 +793,9 @@ TRY_LOAD_IMG:
 		} else {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 			     "Try to load all md image failed:ret=%d!\n", ret);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			aed_md_exception_api(NULL, 0, NULL, 0, "Try to load all md image failed!", DB_OPT_DEFAULT);
+#endif
 			ret = -CCCI_ERR_INVALID_PARAM;
 			goto out;
 		}
