@@ -2181,6 +2181,7 @@ mtk_p2p_wext_set_key(IN struct net_device *prDev,
 
 					/* BSSID */
 					memcpy(prKey->arBSSID, prIWEncExt->addr.sa_data, 6);
+					ASSERT(prIWEncExt->key_len < 32);
 					memcpy(prKey->aucKeyMaterial, prIWEncExt->key, prIWEncExt->key_len);
 
 					prKey->u4KeyLength = prIWEncExt->key_len;
@@ -3584,6 +3585,7 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 		}
 		break;
 #endif
+#if 0
 	case PRIV_CMD_P2P_VERSION:
 		if (u4CmdLen > sizeof(IW_P2P_TRANSPORT_STRUCT)) {
 			status = -EINVAL;
@@ -3627,7 +3629,9 @@ mtk_p2p_wext_get_struct(IN struct net_device *prDev,
 		}
 
 		break;
+#endif
 	default:
+		DBGLOG(P2P, ERROR, "Unknown sub cmd: %d\n", (INT_16) u4SubCmd);
 		return -EOPNOTSUPP;
 	}
 
