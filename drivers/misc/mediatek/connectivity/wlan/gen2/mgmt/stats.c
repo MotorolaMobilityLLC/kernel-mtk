@@ -141,6 +141,8 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 
 	/* init */
 	prAdapter = prGlueInfo->prAdapter;
+	/* show pkt status */
+	wlanPktStatusDebugDumpInfo(prAdapter);
 	/*prInfo = &rStatsInfoEnv;*/
 	prInfo = kalMemAlloc(sizeof(STATS_INFO_ENV_T), VIR_MEM_TYPE);
 	if (prInfo == NULL) {
@@ -1009,6 +1011,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			prMsduInfo->fgIsBasicRate = TRUE;
 
 		wlanPktDebugTraceInfoARP(status, eventType, u2OpCode);
+		wlanPktStatusDebugTraceInfoARP(status, eventType, u2OpCode, pucPkt);
 
 		if ((su2TxDoneCfg & CFG_ARP) == 0)
 			break;
@@ -1048,9 +1051,8 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		UINT_8 ucIpVersion = (pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		UINT_16 u2IpId = pucEthBody[4]<<8 | pucEthBody[5];
 
-
 		wlanPktDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId);
-
+		wlanPktStatusDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId, pucPkt);
 
 		if (ucIpVersion != IPVERSION)
 			break;
