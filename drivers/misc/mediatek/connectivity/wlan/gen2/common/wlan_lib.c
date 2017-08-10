@@ -661,6 +661,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
 
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+		prAdapter->ucScanType = SCAN_TYPE_ACTIVE_SCAN;
+#endif
+
 #if 1				/* set PM parameters */
 		{
 #if  CFG_SUPPORT_PWR_MGT

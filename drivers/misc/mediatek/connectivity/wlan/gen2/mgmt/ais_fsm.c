@@ -1443,7 +1443,11 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 #if CFG_SUPPORT_RDD_TEST_MODE
 			prScanReqMsg->eScanType = SCAN_TYPE_PASSIVE_SCAN;
 #else
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+			prScanReqMsg->eScanType = (ENUM_SCAN_TYPE_T)prAdapter->ucScanType;
+#else
 			prScanReqMsg->eScanType = SCAN_TYPE_ACTIVE_SCAN;
+#endif
 #endif
 
 #if CFG_SUPPORT_ROAMING_ENC

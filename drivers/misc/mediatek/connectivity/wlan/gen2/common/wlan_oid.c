@@ -8611,6 +8611,46 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 }
 #endif
 
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to set Passive Scan mode.
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                           bytes read from the set buffer. If the call failed
+*                           due to invalid length of the set buffer, returns
+*                           the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidSetPassiveScan(IN P_ADAPTER_T prAdapter,
+			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	PUINT_8 pucScanType;
+
+	ASSERT(prAdapter);
+	ASSERT(pvSetBuffer);
+	ASSERT(u4SetBufferLen == 1);
+
+	*pu4SetInfoLen = 1;
+
+	pucScanType = pvSetBuffer;
+
+	if (*pucScanType == 0x2)
+		prAdapter->ucScanType = SCAN_TYPE_PASSIVE_SCAN;
+	else
+		prAdapter->ucScanType = SCAN_TYPE_ACTIVE_SCAN;
+
+	return WLAN_STATUS_SUCCESS;
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set BT profile or BT information and the
