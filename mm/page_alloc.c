@@ -2960,6 +2960,9 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 #else
 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
 #endif
+#ifdef CONFIG_DMAUSER_PAGES
+	static DEFINE_RATELIMIT_STATE(dmawarn, (180 * HZ), 1);
+#endif
 	int classzone_idx;
 #ifdef __LOG_PAGE_ALLOC_ORDER__
 	struct stack_trace trace;
@@ -3061,8 +3064,10 @@ out:
 	/*
 	 * make sure DMA pages cannot be allocated to non-GFP_DMA users
 	 */
-	if (page && !(gfp_mask & GFP_DMA) && (ZONE_DMA == page_zonenum(page)))
-		aee_kernel_warning("large memory", "out of high-end memory");
+	if (page && !(gfp_mask & GFP_DMA) && (OPT_ZONE_DMA == page_zonenum(page))) {
+		if (__ratelimit(&dmawarn))
+			aee_kernel_warning("large memory", "out of high-end memory");
+	}
 #endif
 
 	return page;
