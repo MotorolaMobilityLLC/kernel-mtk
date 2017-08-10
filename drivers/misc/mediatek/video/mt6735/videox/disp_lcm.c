@@ -923,11 +923,11 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 		isLCMFound = true;
 		isLCMDtFound = true;
 
-		if (!is_lcm_inited) {
+		/*if (!is_lcm_inited) {
 			isLCMFound = true;
 			isLCMInited = false;
 			DISPCHECK("LCM not init\n");
-		}
+		}*/
 
 		lcmindex = 0;
 	} else
