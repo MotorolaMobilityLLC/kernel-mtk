@@ -221,14 +221,17 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
 	int idx = 0;
+	int ret = 0;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "%s: on=%d\n", __func__, on);
 	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
 		if (clk_table[idx].clk_ref == NULL)
 			continue;
-		if (on)
-			clk_prepare_enable(clk_table[idx].clk_ref);
-		else
+		if (on) {
+			ret = clk_prepare_enable(clk_table[idx].clk_ref);
+			if (ret)
+				CCCI_ERROR_LOG(md->index, TAG, "%s: on=%d,ret=%d\n", __func__, on, ret);
+		} else
 			clk_disable_unprepare(clk_table[idx].clk_ref);
 	}
 }

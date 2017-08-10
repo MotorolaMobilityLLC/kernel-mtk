@@ -417,8 +417,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md2_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md2_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable(),ret =%d\n", ret);
 #endif
 		break;
 	case MD_SYS3:
@@ -428,8 +428,8 @@ int md_ccif_power_on(struct ccci_modem *md)
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_NORMAL_LOG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md3_main);
-		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md3_main);
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable() ret=%d\n", ret);
 #endif
 		kicker_pbm_by_md(KR_MD3, true);
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end kicker_pbm_by_md(3,true)\n");
