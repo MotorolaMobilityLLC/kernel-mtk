@@ -4025,8 +4025,9 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				(unsigned int)(det->VMAX + EEM_PMIC_OFFSET));
 
 			/* for (i = 0; i < NR_FREQ; i++) */
-			det->recordRef[index*2] = (det->recordRef[index*2] & (~0x3FFF)) |
-				(((voltSram & 0x7F) << 7) | (voltProc & 0x7F));
+			if ((index >= 0) && (index < 8))
+				det->recordRef[index*2] = (det->recordRef[index*2] & (~0x3FFF)) |
+					(((voltSram & 0x7F) << 7) | (voltProc & 0x7F));
 
 			det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 			mb(); /* SRAM writing */
