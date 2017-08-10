@@ -58,6 +58,7 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 				 unsigned int seed_size)
 {
 	unsigned int ret = SEC_OK;
+	unsigned char secure_algo_ret = TRUE;
 
 	/* get hacc lock */
 	if (TRUE == bDoLock) {
@@ -70,8 +71,9 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 		}
 	}
 	/* turn on clock */
-	masp_hal_secure_algo_init();
-
+	secure_algo_ret = masp_hal_secure_algo_init();
+	if (FALSE == secure_algo_ret)
+		goto _exit;
 
 	if (buf_size != 0) {
 		/* try to open connection to TEE */
@@ -97,7 +99,6 @@ static char *hacc_secure_request(HACC_USER user, unsigned char *buf, unsigned in
 		pr_debug
 		    ("[HACC] hacc_secure_request - buffer size is 0, no encryption or decyrption is performed\n");
 	}
-
 
 _exit:
 	/* turn off clock */
