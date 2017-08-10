@@ -107,6 +107,7 @@ typedef struct {
 	spinlock_t substream_lock;
 	void (*offloadCbk)(void *stream);
 	void *offloadstream;
+	bool mWaitForIRQ;
 } AFE_MEM_CONTROL_T;
 
 struct pcm_afe_info {
