@@ -297,7 +297,7 @@ void mc_cpu_offfline(int cpu)
 				MCDRV_DBG(mcd, "Skipping CPU %d\n", cpu);
 				continue;
 			}
-			MCDRV_DBG(mcd, "CPU %d is dying, switching to %d\n",
+			dev_info(mcd, "CPU %d is dying, switching to %d\n",
 				  cpu, i);
 			mc_switch_core(i);
 			break;
@@ -315,12 +315,12 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 	switch (action) {
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
-		dev_info(mcd, "Cpu %u is going to die\n", cpu);
+		MCDRV_DBG(mcd, "Cpu %u is going to die\n", cpu);
 		mc_cpu_offfline(cpu);
 		break;
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
-		dev_info(mcd, "Cpu %u is dead\n", cpu);
+		MCDRV_DBG(mcd, "Cpu %u is dead\n", cpu);
 		break;
 	}
 	return NOTIFY_OK;
