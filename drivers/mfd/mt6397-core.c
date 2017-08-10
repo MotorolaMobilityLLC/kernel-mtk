@@ -148,6 +148,9 @@ static const struct mfd_cell mt6392_devs[] = {
 	}, {
 		.name = "mt6392-auxadc",
 		.of_compatible = "mediatek,mt6392-auxadc"
+	}, {
+		.name = "mt6392-adc",
+		.of_compatible = "mediatek,mt6392-adc"
 	}
 };
 
