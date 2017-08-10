@@ -915,7 +915,7 @@ static fm_s32 mt6630_full_cqi_get(fm_s32 min_freq, fm_s32 max_freq, fm_s32 space
 	fm_s32 pos;
 	fm_u8 cqi_log_path[100] = { 0 };
 
-	WCN_DBG(FM_NTC | CHIP, "6630 cqi log start\n");
+	WCN_DBG(FM_DBG | CHIP, "6630 cqi log start\n");
 	/* for soft-mute tune, and get cqi */
 	freq = fm_cb_op->cur_freq_get();
 	if (0 == fm_get_channel_space(freq))
@@ -1368,13 +1368,9 @@ static fm_s32 mt6630_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 	FM_UNLOCK(cmd_buf_lock);
 
 	if (!ret && fm_res) {
-		WCN_DBG(FM_NTC | CHIP, "smt cqi size %d\n", fm_res->cqi[0]);
+		WCN_DBG(FM_DBG | CHIP, "smt cqi size %d\n", fm_res->cqi[0]);
 		p_cqi = (struct mt6630_full_cqi *)&fm_res->cqi[2];
-		/* just for debug */
-		WCN_DBG(FM_NTC | CHIP,
-			   "freq %d, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x\n",
-			   p_cqi->ch, p_cqi->rssi, p_cqi->pamd, p_cqi->pr, p_cqi->fpamd, p_cqi->mr,
-			   p_cqi->atdc, p_cqi->prx, p_cqi->atdev, p_cqi->smg, p_cqi->drssi);
+
 		RSSI = ((p_cqi->rssi & 0x03FF) >= 512) ? ((p_cqi->rssi & 0x03FF) - 1024) : (p_cqi->rssi & 0x03FF);
 		PAMD = ((p_cqi->pamd & 0x1FF) >= 256) ? ((p_cqi->pamd & 0x01FF) - 512) : (p_cqi->pamd & 0x01FF);
 		MR = ((p_cqi->mr & 0x01FF) >= 256) ? ((p_cqi->mr & 0x01FF) - 512) : (p_cqi->mr & 0x01FF);
@@ -1397,6 +1393,12 @@ static fm_s32 mt6630_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 		} else {
 			*valid = fm_false;
 		}
+
+		WCN_DBG(FM_NTC | CHIP,
+			"valid = %d, freq %d, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x, 0x%04x\n",
+			*valid, p_cqi->ch, p_cqi->rssi, p_cqi->pamd, p_cqi->pr, p_cqi->fpamd, p_cqi->mr,
+			p_cqi->atdc, p_cqi->prx, p_cqi->atdev, p_cqi->smg, p_cqi->drssi);
+
 		*rssi = RSSI;
 /*		if(RSSI < -296)
 			WCN_DBG(FM_NTC | CHIP, "rssi\n");
@@ -1417,7 +1419,6 @@ static fm_s32 mt6630_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 		WCN_DBG(FM_ERR | CHIP, "smt get CQI failed\n");
 		return fm_false;
 	}
-	WCN_DBG(FM_NTC | CHIP, "valid=%d\n", *valid);
 	return fm_true;
 }
 
