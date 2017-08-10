@@ -23,7 +23,7 @@
 #include <asm/setup.h>
 #include <linux/lockdep.h>
 #include <linux/irqchip/mt-gic.h>
-/* #include <mach/mt_cirq.h> */
+#include <mt-plat/mt_cirq.h>
 #include "mt_spm_sleep.h"
 #include "mach/mt_clkmgr.h"
 #include "mt_cpuidle.h"

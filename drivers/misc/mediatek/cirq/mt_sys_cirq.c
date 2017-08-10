@@ -34,7 +34,6 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #endif
-
 void __iomem *SYS_CIRQ_BASE;
 static unsigned int CIRQ_IRQ_NUM;
 static unsigned int CIRQ_SPI_START;
@@ -703,7 +702,7 @@ struct __check_irq_type {
 };
 #undef __X_DEFINE_IRQ
 struct __check_irq_type __check_irq_type[] = {
-#include <mach/x_define_irq.h>
+#include <mt-plat/x_define_irq.h>
 	{.num = -1,},
 };
 
