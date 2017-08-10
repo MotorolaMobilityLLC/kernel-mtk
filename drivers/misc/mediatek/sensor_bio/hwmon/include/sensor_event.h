@@ -1,11 +1,9 @@
 #ifndef _SENSOR_EVENT_H
 #define _SENSOR_EVENT_H
 #include <linux/poll.h>
-#include "../../sensorHub/inc_v1/SCP_sensorHub.h"
 
 #define CONTINUE_SENSOR_BUF_SIZE	2048
 #define OTHER_SENSOR_BUF_SIZE	16
-
 struct sensor_event {
 	int64_t time_stamp;
 	int8_t handle;
@@ -14,7 +12,7 @@ struct sensor_event {
 	int8_t reserved;
 	union {
 		int32_t word[6];
-		int8_t byte[ACTIVITY_MAX];
+		int8_t byte[0];
 	};
 } __packed;
 ssize_t sensor_event_read(unsigned char handle, struct file *file, char __user *buffer,
