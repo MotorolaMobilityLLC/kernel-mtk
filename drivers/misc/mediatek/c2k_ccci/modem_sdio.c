@@ -1030,7 +1030,7 @@ static int ctrl_msg_analyze(struct sdio_modem *modem)
 		break;
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
 	case HEART_BEAT_MSG_ID:
-		LOGPRT(LOG_INFO, "heart beat msg received %x\n",
+		LOGPRT(LOG_ERR, "heart beat msg received %x\n",
 		       (msg->chan_num << 8) | msg->option);
 		del_timer(&modem->heart_beat_timer);
 		break;
