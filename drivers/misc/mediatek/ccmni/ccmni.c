@@ -423,7 +423,8 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 		/* ifru_ivalue[31~16]: watchdog timeout value */
 		ctlb = ccmni_ctl_blk[ccmni->md_id];
 		if ((ifr->ifr_ifru.ifru_ivalue & 0xF) == 0) {
-			if (atomic_read(&ccmni->usage) > 0) {
+			/*ignore txq stop/resume if dev is not running */
+			if (atomic_read(&ccmni->usage) > 0 && netif_running(dev)) {
 				atomic_dec(&ccmni->usage);
 
 				netif_tx_disable(dev);
@@ -441,9 +442,8 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				}
 			}
 		} else {
-			if (atomic_read(&ccmni->usage) <= 0) {
-				if (netif_running(dev))
-					netif_tx_wake_all_queues(dev);
+			if (atomic_read(&ccmni->usage) <= 0 && netif_running(dev)) {
+				netif_tx_wake_all_queues(dev);
 				dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
 				atomic_inc(&ccmni->usage);
 
