@@ -294,7 +294,7 @@ static void spi_complete(void *arg)
 
 static int threadfunc1(void *data)
 {
-	struct spi_transfer transfer;
+	struct spi_transfer transfer = {0,};
 	struct spi_message msg;
 	struct spi_device *spi = (struct spi_device *)data;
 	u32 len = 8;
@@ -327,7 +327,7 @@ static int threadfunc1(void *data)
 
 static int threadfunc2(void *data)
 {
-	struct spi_transfer transfer;
+	struct spi_transfer transfer = {0,};
 	struct spi_message msg;
 	struct spi_device *spi = (struct spi_device *)data;
 
