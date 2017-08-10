@@ -34,6 +34,7 @@ struct mtk_smi_data {
 	const struct mtk_smi_priv *smi_priv;
 	unsigned long smi_common_base;
 	unsigned long larb_base[SMI_LARB_NR_MAX];
+	int larbref[SMI_LARB_NR_MAX];
 
 	/*record the larb port register, please use the max value*/
 	unsigned short int larb_port_backup[SMI_LARB_PORT_NR_MAX * SMI_LARB_NR_MAX];
@@ -56,5 +57,6 @@ extern const struct mtk_smi_priv smi_mt8173_priv;
 extern const struct mtk_smi_priv smi_mt8127_priv;
 extern const struct mtk_smi_priv smi_mt8163_priv;
 extern const struct mtk_smi_priv smi_mt8167_priv;
+extern bool smi_clk_always_on;
 
 #endif

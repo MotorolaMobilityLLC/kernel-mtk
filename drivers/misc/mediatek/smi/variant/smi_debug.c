@@ -46,6 +46,8 @@
 
 #define SMI_LOG_TAG "smi"
 
+bool smi_clk_always_on = 0;
+
 static char debug_buffer[4096];
 
 static void process_dbg_opt(const char *opt)
@@ -100,6 +102,15 @@ static void process_dbg_opt(const char *opt)
 			addr, COM_ReadReg32(reg_va), reg_va);
 
 		iounmap((void *)reg_va);
+	} else if (0 == strncmp(opt, "always_on_clk:", 14)) {
+		unsigned long val = 0;
+		char *p = (char *)opt + 14;
+
+		ret = kstrtoul(p, 16, &val);
+		if (val)
+			smi_clk_always_on = 1;
+		else
+			smi_clk_always_on = 0;
 	}
 
 }

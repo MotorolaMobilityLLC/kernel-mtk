@@ -15,7 +15,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/kobject.h>
-
 #include <linux/uaccess.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
@@ -175,10 +174,19 @@ static unsigned int smi_get_larb_index(struct device *dev)
 
 int mtk_smi_larb_clock_on(int larbid, bool pm)
 {
+	int ret;
+
 	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return -EINVAL;
 
-	return _mtk_smi_larb_get(smi_data->larb[larbid], pm);
+	ret = _mtk_smi_larb_get(smi_data->larb[larbid], pm);
+	WARN_ON(ret);
+	if (ret)
+		return ret;
+
+	smi_data->larbref[larbid]++;
+
+	return ret;
 }
 
 void mtk_smi_larb_clock_off(int larbid, bool pm)
@@ -186,7 +194,10 @@ void mtk_smi_larb_clock_off(int larbid, bool pm)
 	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return;
 
-	_mtk_smi_larb_put(smi_data->larb[larbid], pm);
+	WARN_ON(smi_data->larbref[larbid] <= 0);
+	if (!smi_clk_always_on)
+		_mtk_smi_larb_put(smi_data->larb[larbid], pm);
+	smi_data->larbref[larbid]--;
 }
 
 static void backup_smi_common(void)
