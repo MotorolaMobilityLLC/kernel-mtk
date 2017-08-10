@@ -204,6 +204,8 @@ extern void kalDevLoopbkRxHandle(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prS
  * (ALPS02494017 BA size must be power of 2)
  */
 #define IOT_RX_BA_SIZE 16
+#elif (CFG_SRAM_SIZE_OPTION == 0)
+#define IOT_RX_BA_SIZE 8
 #endif
 
 #define RX_STATUS_FLAG_MORE_PACKET    BIT(30)
