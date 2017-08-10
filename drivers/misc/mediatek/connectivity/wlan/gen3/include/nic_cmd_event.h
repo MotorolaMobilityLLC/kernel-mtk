@@ -152,7 +152,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_GSCAN_ADD_SWC_BSSID,	/* 0x64 (Set) */
 	CMD_ID_SET_GSCAN_MAC_ADDR,	/* 0x65 (Set) */
 	CMD_ID_GET_GSCAN_RESULT,	/* 0x66 (Get) */
-
+#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
+	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
+#endif
 #if FW_CFG_SUPPORT
 	CMD_ID_GET_SET_CUSTOMER_CFG = 0x70, /* 0x70(Set) */
 #endif
@@ -856,6 +858,20 @@ typedef struct _CMD_PATTERN_FUNC_CONFIG {
 	BOOLEAN fgBcA1MatchDrop;
 	BOOLEAN fgMcA1MatchDrop;
 } CMD_PATTERN_FUNC_CONFIG, *P_CMD_PATTERN_FUNC_CONFIG;
+
+#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
+/* TX Power Adjust For FCC/CE Certification */
+typedef struct _CMD_FCC_TX_PWR_ADJUST_T {
+	UINT_8 fgFccTxPwrAdjust;
+	UINT_8 Offset_CCK;      /* Offset for CH 11~14 */
+	UINT_8 Offset_HT20;     /* Offset for CH 11~14 */
+	UINT_8 Offset_HT40;     /* Offset for CH 11~14 */
+	UINT_8 Channel_CCK[2];  /* [0] for start channel, [1] for ending channel */
+	UINT_8 Channel_HT20[2]; /* [0] for start channel, [1] for ending channel */
+	UINT_8 Channel_HT40[2]; /* [0] for start channel, [1] for ending channel */
+	UINT_8 cReserved[2];
+} CMD_FCC_TX_PWR_ADJUST, *P_CMD_FCC_TX_PWR_ADJUST;
+#endif
 
 typedef struct _EVENT_TX_DONE_T {
 	UINT_8 ucPacketSeq;
