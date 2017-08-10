@@ -329,6 +329,7 @@ typedef enum{
 	DT_USB_SHARE_MEMORY,
 	EE_AFTER_EPOF,
 	CCMNI_MTU, /* max Rx packet buffer size on AP side */
+	CCCI_FAST_HEADER = 22,
 	MD_RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
