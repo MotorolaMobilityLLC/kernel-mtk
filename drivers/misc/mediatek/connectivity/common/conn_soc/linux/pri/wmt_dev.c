@@ -1700,6 +1700,11 @@ long wmt_dev_tm_temp_query(void)
 	INT32 current_temp = 0;
 	INT32 index = 0;
 	long return_temp = 0;
+
+	if (!mtk_wcn_stp_is_ready()) {
+		WMT_DBG_FUNC("read thermal but stp is not ready now, return 0\n");
+		return 0;
+	}
 	/* Query condition 1: */
 	/* If we have the high temperature records on the past, we continue to query/monitor */
 	/* the real temperature until cooling */
