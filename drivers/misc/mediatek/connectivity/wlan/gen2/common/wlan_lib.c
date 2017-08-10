@@ -3639,6 +3639,9 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 	CMD_FCC_TX_PWR_ADJUST FccTxPwrAdjust = {0x00};
 #endif
 
+	UINT8 uc_NVRAM[EXTEND_NVRAM_SIZE] = {0x0};
+	UINT16 NVRAMSize = 0;
+
 	ASSERT(prAdapter);
 
 	/* 1. Version Check */
@@ -3657,7 +3660,32 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 	}
 #endif
 
-	/* MT6620 E1/E2 would be ignored directly */
+	/* Only when NVRAM size is EXTEND_NVRAM_SIZE bytes, send the whole NVRAM data to FW */
+	if (kalCfgDataRead16(prAdapter->prGlueInfo,
+		OFFSET_OF(WIFI_CFG_PARAM_STRUCT, u2SizeOfNvram),
+		(PUINT_16)&NVRAMSize) == TRUE) {
+		DBGLOG(INIT, INFO, "current NVRAMSize :%d and extend Size:%d\n"
+			, NVRAMSize, EXTEND_NVRAM_SIZE);
+		if (NVRAMSize >= EXTEND_NVRAM_SIZE) {
+			if (kalCfgDataRead(prAdapter->prGlueInfo,
+			0,
+			sizeof(UINT_8)*EXTEND_NVRAM_SIZE,
+			(PUINT_16)&uc_NVRAM[0]) == TRUE)
+
+				wlanSendSetQueryCmd(prAdapter,
+						CMD_ID_SET_NVRAM_SETTINGS,
+						TRUE,
+						FALSE,
+						FALSE, NULL, NULL, sizeof(UINT_8) * EXTEND_NVRAM_SIZE,
+						(PUINT_8)(&uc_NVRAM[0]), NULL, 0);
+			else
+				DBGLOG(INIT, WARN, "Nvram read fail!\n");
+
+			/* MT6620 E1/E2 would be ignored directly */
+		}
+	} else
+		DBGLOG(INIT, WARN, "u2SizeOfNvram read fail!\n");
+
 	if (prAdapter->rVerInfo.u2Part1CfgOwnVersion == 0x0001) {
 		prRegInfo->ucTxPwrValid = 1;
 	} else {
