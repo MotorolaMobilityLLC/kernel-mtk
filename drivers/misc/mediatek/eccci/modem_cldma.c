@@ -527,10 +527,15 @@ again:
 		port_recv_time = ((skb_alloc_time = sched_clock()) - port_recv_time);
 #endif
 		new_skb = NULL;
+new_skb_retry:
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			new_skb = ccci_alloc_skb(queue->tr_ring->pkt_size, !is_net_queue, blocking);
-			if (!new_skb)
+			if (!new_skb) {
 				CCCI_ERROR_LOG(md->index, TAG, "alloc skb fail on q%d\n", queue->index);
+				if (queue->index != 0)
+					msleep(100);
+				goto new_skb_retry;
+			}
 		}
 		if (new_skb) {
 			/* mark cldma_request as available */
