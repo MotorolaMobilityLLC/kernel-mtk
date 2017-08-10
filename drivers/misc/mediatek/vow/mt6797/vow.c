@@ -828,10 +828,10 @@ static bool vow_service_Disable(void)
 	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_DISABLE);
-	if (vowserv.recording_flag) {
-		vowserv.voice_length = 0;
+
+	if ((VowDrv_GetHWStatus() == VOW_PWR_ON) && (vowserv.recording_flag == true))
 		vow_service_getVoiceData();
-	}
+
 	if (vowserv.suspend_lock == 1) {
 		vowserv.suspend_lock = 0;
 		wake_unlock(&VOW_suspend_lock); /* Let AP will suspend */
@@ -890,7 +890,8 @@ static void vow_service_ReadVoiceData(void)
 			if ((VowDrv_GetHWStatus() == VOW_PWR_OFF) || (vowserv.recording_flag == false)) {
 				vowserv.voicedata_idx = 0;
 				stop_condition = 1;
-				PRINTK_VOWDRV("stop read vow voice data\n");
+				PRINTK_VOWDRV("stop read vow voice data: %d, %d\n",
+					      VowDrv_GetHWStatus(), vowserv.recording_flag);
 			} else {
 				ptr16 = (short *)vowserv.voicddata_scp_ptr;
 				/* PRINTK_VOWDRV("[VOW] ReadDMA:%x\n", *ptr16); */
@@ -1140,18 +1141,14 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			vowserv.voicedata_idx = 0;
 			vowserv.recording_flag = true;
 			vowserv.suspend_lock = 0;
-			vowserv.voice_length = 0;
 			vowserv.firstRead = true;
 			/*VowDrv_SetFlag(VOW_FLAG_DEBUG, true);*/
 			break;
 		case VOWControlCmd_DisableDebug:
 			pr_debug("VOW_SET_CONTROL VOWControlCmd_DisableDebug");
 			VowDrv_SetFlag(VOW_FLAG_DEBUG, false);
-			if (vowserv.recording_flag)
-				vow_service_getVoiceData();
-			vowserv.voice_length = 0;
-			vowserv.firstRead = true;
 			vowserv.recording_flag = false;
+			vow_service_getVoiceData();
 			break;
 		default:
 			pr_debug("VOW_SET_CONTROL no such command = %lu", arg);
