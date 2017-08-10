@@ -25,6 +25,7 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 #include <asm/memory.h>
+#include <mt-plat/mtk_memcfg.h>
 
 #include "log_store_kernel.h"
 
@@ -52,7 +53,7 @@ void store_log_to_emmc_enable(bool value)
 		sram_header->save_to_emmc = 0;
 	}
 
-	pr_notice("log_store: sram_dram_buff flag 0x%x, reboot count %d, %d.\n",
+	pr_debug("log_store: sram_dram_buff flag 0x%x, reboot count %d, %d.\n",
 		sram_dram_buff->flag, sram_header->reboot_count, sram_header->save_to_emmc);
 }
 
@@ -143,10 +144,14 @@ static int __init log_store_late_init(void)
 		dram_log_store_status = BUFF_ALLOC_ERROR;
 		return -1;
 	}
-	pr_notice("log store:sram_dram_buff addr 0x%x, size 0x%x.\n",
+	pr_debug("log store:sram_dram_buff addr 0x%x, size 0x%x.\n",
 		sram_dram_buff->buf_addr, sram_dram_buff->buf_size);
 
 	pbuff = remap_lowmem(sram_dram_buff->buf_addr, sram_dram_buff->buf_size);
+	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]log_store_mem   :   0x%08llx - 0x%08llx (0x%llx)\n",
+			(unsigned long long)sram_dram_buff->buf_addr,
+			(unsigned long long)sram_dram_buff->buf_addr + sram_dram_buff->buf_size - 1,
+			(unsigned long long)sram_dram_buff->buf_size);
 	if (pbuff == NULL) {
 		pr_err("log_store: ioremap failed.\n");
 		dram_log_store_status = BUFF_ERROR;
@@ -163,7 +168,7 @@ static int __init log_store_late_init(void)
 	}
 
 	dram_log_store_status = BUFF_READY;
-	pr_notice("log_store: log buff 0x%p, sig 0x%x, buff_size 0x%x, pl off 0x%x, pl sz 0x%x,lk off 0x%x, lk size 0x%x,flag 0x%x, 0x%x.\n",
+	pr_debug("log_store: log buff 0x%p, sig 0x%x, buff_size 0x%x, pl off 0x%x, pl sz 0x%x,lk off 0x%x, lk size 0x%x,flag 0x%x, 0x%x.\n",
 	pbuff, log_buff_header->sig, log_buff_header->buff_size, log_buff_header->off_pl, log_buff_header->sz_pl,
 	log_buff_header->off_lk, log_buff_header->sz_lk, log_buff_header->pl_flag, log_buff_header->lk_flag);
 
@@ -194,13 +199,13 @@ static void store_printk_buff(void)
 	sram_dram_buff->reserve2[1] = size;
 	if (early_log_disable == false)
 		sram_dram_buff->flag |= BUFF_EARLY_PRINTK;
-	pr_notice("log_store printk log buff addr:0x%x, size 0x%x. buff flag 0x%x.\n",
+	pr_debug("log_store printk log buff addr:0x%x, size 0x%x. buff flag 0x%x.\n",
 		sram_dram_buff->reserve2[0], sram_dram_buff->reserve2[1], sram_dram_buff->flag);
 }
 
 void disable_early_log(void)
 {
-	pr_notice("log_store: disable_early_log.\n");
+	pr_debug("log_store: disable_early_log.\n");
 	early_log_disable = true;
 	if (sram_dram_buff == NULL) {
 		pr_err("log_store: sram_dram_buff is null.\n");
@@ -216,7 +221,7 @@ static int __init log_store_early_init(void)
 
 	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR, CONFIG_MTK_DRAM_LOG_STORE_SIZE);
 
-	pr_err("log_store: sram header address 0x%p.\n", sram_header);
+	pr_debug("log_store: sram header address 0x%p.\n", sram_header);
 	if (sram_header->sig != SRAM_HEADER_SIG) {
 		pr_err("log_store: sram header sig 0x%x.\n", sram_header->sig);
 		sram_log_store_status = BUFF_ERROR;
@@ -235,7 +240,7 @@ static int __init log_store_early_init(void)
 	/* store printk log buff information to DRAM */
 	store_printk_buff();
 
-	pr_notice("sram_dram_buff sig 0x%x, flag 0x%x, add 0x%x, size 0x%x, offsize 0x%x, point 0x%x.\n",
+	pr_debug("sram_dram_buff sig 0x%x, flag 0x%x, add 0x%x, size 0x%x, offsize 0x%x, point 0x%x.\n",
 		sram_dram_buff->sig, sram_dram_buff->flag, sram_dram_buff->buf_addr,
 		sram_dram_buff->buf_size, sram_dram_buff->buf_offsize, sram_dram_buff->buf_point);
 	return 0;
