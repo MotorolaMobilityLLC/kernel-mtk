@@ -21,6 +21,7 @@
 #define RAWFS_DBG		 pr_debug
 #endif
 
+#define RAWFS_BLOCK_LIMIT 2  /* do not modify, design limit */
 #define RAWFS_BLOCK_FILE
 /* #define RAWFS_RAM_DISK */
 
@@ -115,7 +116,7 @@ struct rawfs_sb_info {
 	struct hlist_head inode_hashtable[RAWFS_HASH_SIZE];
 };
 
-#define RAWFS_NAND_BLOCKS(sb)		 ((sb)?2:0) /* We use only two block */
+#define RAWFS_NAND_BLOCKS(sb)		 ((sb)?RAWFS_BLOCK_LIMIT:0) /* We use only two block */
 #define RAWFS_NAND_PAGES(sb)		  (sb->pages_per_block)
 #define RAWFS_NAND_PAGE_SIZE(sb)	  (sb->page_size)
 #define RAWFS_NAND_BLOCK_SIZE(sb)	 (sb->block_size)

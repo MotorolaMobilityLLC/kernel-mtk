@@ -281,6 +281,7 @@ struct inode *rawfs_iget(struct super_block *sb, const char *name, int folder)
 }
 EXPORT_SYMBOL_GPL(rawfs_iget);
 
+#if 0
 static int rawfs_fill_inode_blk(struct inode *inode,
 	struct rawfs_file_info *file_info, int block_no, int page_no)
 {
@@ -300,6 +301,7 @@ static int rawfs_fill_inode_blk(struct inode *inode,
 
 	return 0;
 }
+#endif
 
 static int rawfs_fill_inode_reg(struct inode *inode,
 	struct rawfs_file_info *file_info, int block_no, int page_no)
@@ -959,6 +961,7 @@ int rawfs_fill_inode(struct inode *inode, struct rawfs_file_info *file_info,
 		break;
 
 	case S_IFREG:
+#if 0
 		if ((block_no >= 0) && (page_no < 0)) { /* Speical block file */
 			RAWFS_PRINT(RAWFS_DBG_INODE,
 				"rawfs_fill_inode: block file %d, %lx -> %lx\n",
@@ -966,7 +969,9 @@ int rawfs_fill_inode(struct inode *inode, struct rawfs_file_info *file_info,
 				(unsigned long)inode_info);
 			rawfs_fill_inode_blk(inode, file_info, block_no, page_no);
 			inode->i_fop  = &rawfs_block_file_operations;
-		} else if (file_info != NULL) { /* Regular file */
+		} else
+#endif
+		if (file_info != NULL) { /* Regular file */
 			rawfs_fill_inode_reg(inode, file_info, block_no, page_no);
 			inode->i_fop =  &rawfs_file_operations;
 			inode->i_blocks = CEILING((unsigned)inode->i_size,
