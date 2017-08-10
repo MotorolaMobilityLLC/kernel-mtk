@@ -116,7 +116,7 @@ unsigned int emmc_get_wp_size(void)
 		sg_wp_size = (512 * host_ctl->mmc->card->erase_size)*
 					(write_prot_grpsz + 1);
 	}
-	pr_debug("write_protect_group_size = %d MByte %s:%d\n", sg_wp_size / 1048576);
+	pr_debug("write_protect_group_size = %d MByte\n", sg_wp_size / 1048576);
 
 	return sg_wp_size;
 }
