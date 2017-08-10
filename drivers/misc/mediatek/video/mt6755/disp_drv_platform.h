@@ -73,6 +73,8 @@ typedef enum {
 /*schedule priority*/
 #define RTPM_PRIO_SCRN_UPDATE               94   /*0x5e*/
 #define RTPM_PRIO_FB_THREAD                 87   /*0x57*/
+#define FBCONFIG_SHOULD_KICK_IDLEMGR
+
 /* Other platform-dependent features */
 #define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 
