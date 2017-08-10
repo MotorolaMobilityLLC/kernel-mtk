@@ -40,6 +40,7 @@
 #define AUDIO_DEF_H
 
 #include "AudDrv_Type_Def.h"
+#include <mt-plat/aee.h>
 
 #define PM_MANAGER_API
 #define AUDIO_MEMORY_SRAM
@@ -163,6 +164,8 @@
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) BUG_ON(false)
 
+#define AUDIO_AEE(message) \
+	(aee_kernel_exception_api(__FILE__, __LINE__, DB_OPT_FTRACE, message, "audio dump ftrace"))
 
 /**********************************
  *  Other Definitions             *
