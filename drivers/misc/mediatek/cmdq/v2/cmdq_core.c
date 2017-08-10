@@ -717,7 +717,7 @@ int32_t cmdq_core_set_secure_thread_exec_counter(const int32_t thread, const uin
 	const uint32_t offset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
 	uint32_t *pVA = NULL;
 
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+	if (cmdq_get_func()->isSecureThread(thread) == false) {
 		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
 		return -EFAULT;
 	}
@@ -745,7 +745,7 @@ int32_t cmdq_core_get_secure_thread_exec_counter(const int32_t thread)
 	uint32_t *pVA;
 	uint32_t value;
 
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+	if (cmdq_get_func()->isSecureThread(thread) == false) {
 		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
 		return -EFAULT;
 	}
@@ -2849,7 +2849,7 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	int32_t offset;
 
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+	if (cmdq_get_func()->isSecureThread(thread) == false) {
 		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
 		return -EFAULT;
 	}
@@ -2931,7 +2931,7 @@ static int32_t cmdq_core_insert_secure_IRQ_instr(TaskStruct *pTask, int32_t thre
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	int32_t offset;
 
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+	if (cmdq_get_func()->isSecureThread(thread) == false) {
 		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
 		return -EFAULT;
 	}
