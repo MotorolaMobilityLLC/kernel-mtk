@@ -6709,7 +6709,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				goto EXIT;
 			}
 
-			LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%p)\n", ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type, IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.UserKey]);
+			LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%x)\n",
+				ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type,
+				IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type]
+				[ClearIrq.EventInfo.UserKey]);
 			spin_lock_irqsave(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
 			IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][ClearIrq.EventInfo.UserKey] &= (~ClearIrq.EventInfo.Status);
 			spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
@@ -6722,6 +6725,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	case ISP_REGISTER_IRQ_USER_KEY:
 		if (copy_from_user(&RegUserKey, (void *)Param, sizeof(ISP_REGISTER_USERKEY_STRUCT)) == 0) {
+			RegUserKey.userName[31] = 0;
 			userKey = ISP_REGISTER_IRQ_USERKEY(RegUserKey.userName);
 			RegUserKey.userKey = userKey;
 			if (copy_to_user((void *)Param, &RegUserKey, sizeof(ISP_REGISTER_USERKEY_STRUCT)) != 0) {
@@ -7314,7 +7318,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_ION_FREE_BY_HWMODULE:
 		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) == 0) {
-			if (module < 0 || module > CAM_MAX) {
+			if (module < 0 || module >= CAM_MAX) {
 				LOG_ERR("module error(%d)\n", module);
 				Ret = -EFAULT;
 				break;
@@ -7922,6 +7926,7 @@ static inline void ISP_StopHW(MINT32 module)
 	loopCnt = 3;
 	waitirq.Type = (module == ISP_CAM_A_IDX) ?
 		ISP_IRQ_TYPE_INT_CAM_A_ST : ISP_IRQ_TYPE_INT_CAM_B_ST;
+	waitirq.bDumpReg = 0;
 	waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
 	waitirq.EventInfo.Status = VS_INT_ST;
 	waitirq.EventInfo.St_type = SIGNAL_INT;
@@ -8510,7 +8515,9 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 
 
 		/* Init IspInfo*/
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		IspInfo.UserCount = 0;
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		/*  */
 		IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INT_CAM_A_ST][SIGNAL_INT] = INT_ST_MASK_CAM;
 		IspInfo.IrqInfo.Mask[ISP_IRQ_TYPE_INT_CAM_B_ST][SIGNAL_INT] = INT_ST_MASK_CAM;
@@ -9578,6 +9585,7 @@ static MINT32 ISP_suspend(
 		/* wait TG idle*/
 		loopCnt = 3;
 		waitirq.Type = IrqType;
+		waitirq.bDumpReg = 0;
 		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
 		waitirq.EventInfo.Status = VS_INT_ST;
 		waitirq.EventInfo.St_type = SIGNAL_INT;
@@ -11477,8 +11485,8 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_
 
 	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
-	else if (product == 0)
-		return CAM_FST_DROP_FRAME;
+	/* else if (product == 0)
+		return CAM_FST_DROP_FRAME; */
 	else
 		return CAM_FST_NORMAL;
 }
@@ -11668,8 +11676,8 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 
 	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
-	else if (product == 0)
-		return CAM_FST_DROP_FRAME;
+	/* else if (product == 0)
+		return CAM_FST_DROP_FRAME; */
 	else
 		return CAM_FST_NORMAL;
 
@@ -12283,7 +12291,7 @@ static irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -12465,7 +12473,7 @@ static irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -12648,7 +12656,7 @@ static irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -12829,7 +12837,7 @@ static irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -13010,7 +13018,7 @@ static irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -13192,7 +13200,7 @@ static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -13613,7 +13621,7 @@ LB_CAMA_SOF_IGNORE:
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
@@ -14032,7 +14040,7 @@ LB_CAMB_SOF_IGNORE:
 				if (tmp & 0x1) {
 					IspInfo.IrqInfo.LastestSigTime_usec[module][cnt] = (unsigned int)time_frmb.tv_usec;
 					IspInfo.IrqInfo.LastestSigTime_sec[module][cnt] = (unsigned int) time_frmb.tv_sec;
-					IspInfo.IrqInfo.PassedBySigCnt[i][module][cnt]++;
+					IspInfo.IrqInfo.PassedBySigCnt[module][cnt][i]++;
 				}
 				tmp = tmp >> 1;
 				cnt++;
