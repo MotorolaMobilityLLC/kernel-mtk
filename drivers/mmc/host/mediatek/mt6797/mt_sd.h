@@ -815,5 +815,7 @@ u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
+int msdc_check_otp_ops(unsigned int opcode, unsigned long long start_addr,
+	unsigned int size);
 
 #endif /* end of  MT_SD_H */

@@ -3160,7 +3160,10 @@ int msdc_do_request_prepare(struct msdc_host *host,
 	 && (cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK))
 		*l_force_prg = !msdc_can_apply_cache(cmd->arg, data->blocks);
 #endif
-
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+		return 1;
+#endif
 	return 0;
 }
 
