@@ -979,6 +979,10 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	if (prScanInfo->prPscnParam)
 		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
 
+	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
+#if CFG_SUPPORT_SCN_PSCN
+	cnmTimerStopTimer(prAdapter, &prScanInfo->rWaitForGscanResutsTimer);
+#endif
 }				/* end of scnUninit() */
 
 /*----------------------------------------------------------------------------*/
