@@ -560,7 +560,7 @@ int kdReleaseI2CTriggerLock(void)
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 {
 
-    uintptr_t phyAddr;
+    dma_addr_t phyAddr;
     u8 *buf = NULL;
     u32 old_addr = 0;
     int ret = 0;
@@ -595,7 +595,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     ret = 0;
     retry = 3;
     do {
-        ret = i2c_master_send(g_pstI2Cclient, (u8 *)phyAddr,
+        ret = i2c_master_send(g_pstI2Cclient, (u8 *)((uintptr_t)phyAddr),
         bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
         retry--;
         if ((ret&0xffff) != transfer_length) {
@@ -634,7 +634,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
     ret = 0;
     retry = 3;
     do {
-        ret = i2c_master_send(g_pstI2Cclient2, (u8 *)phyAddr,
+        ret = i2c_master_send(g_pstI2Cclient2, (u8 *)((uintptr_t)phyAddr),
         bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
         retry--;
         if ((ret&0xffff) != transfer_length) {
