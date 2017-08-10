@@ -53,7 +53,7 @@ else
 
 obj-y += common/
 obj-$(CONFIG_MT_SND_SOC_V3) += mt6735/
-obj-$(CONFIG_MT_SND_SOC_6570) += mt6580/
+obj-$(CONFIG_MT_SND_SOC_6570) += mt6570/
 obj-$(CONFIG_MT_SND_SOC_6580) += mt6580/
 obj-$(CONFIG_MT_SND_SOC_6797) += mt6797/
 obj-$(CONFIG_MT_SND_SOC_6755) += mt6755/
