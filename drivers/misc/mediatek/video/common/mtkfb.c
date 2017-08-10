@@ -1759,8 +1759,9 @@ static int init_framebuffer(struct fb_info *info)
 	/* clean whole frame buffer as black */
 	int size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
 
-	DISP_memset_io(buffer, 0, size);
-
+	if ((info->var.yres + info->var.yoffset <= info->var.yres_virtual) &&
+		info->var.yoffset >= 0)
+		DISP_memset_io(buffer, 0, size);
 
 	return 0;
 }
