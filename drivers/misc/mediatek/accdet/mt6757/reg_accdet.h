@@ -65,6 +65,9 @@
 #define ACCDET_ADC_REG           MT6351_AUDENC_ANA_CON11
 #define ACCDET_MICBIAS_REG       MT6351_AUDENC_ANA_CON10
 
+#define PMIC_REG_BASE_START		(0x0000)/* MT6351 register base address start */
+#define PMIC_REG_BASE_END		(0x0FE0)/* MT6351 register base address end */
+
 /*Register value define*/
 
 #define ACCDET_AUXADC_AUTO_SET   (1<<0)

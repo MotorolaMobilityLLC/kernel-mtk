@@ -61,6 +61,9 @@
 
 #define ACCDET_ADC_REG			 (ACCDET_BASE + 0x0D00)
 
+#define PMIC_REG_BASE_START		(0x0000)/* MT6328 register base address start */
+#define PMIC_REG_BASE_END		(0x0FAE)/* MT6328 register base address end */
+
 /*Register value define*/
 
 #define ACCDET_AUXADC_AUTO_SET   (1<<0)

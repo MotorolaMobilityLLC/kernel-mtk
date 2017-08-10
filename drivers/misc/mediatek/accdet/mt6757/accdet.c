@@ -68,7 +68,7 @@ unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
 static bool IRQ_CLR_FLAG;
-static char call_status;
+static int call_status;
 static int button_status;
 struct wake_lock accdet_suspend_lock;
 struct wake_lock accdet_irq_lock;
@@ -1323,6 +1323,18 @@ static inline void accdet_init(void)
 
 /*-----------------------------------sysfs-----------------------------------------*/
 #if DEBUG_THREAD
+static int g_start_debug_thread;
+static struct task_struct *thread;
+static int g_dump_register;
+
+#if defined(ACCDET_TS3A225E_PIN_SWAP)
+static ssize_t show_TS3A225EConnectorType(struct device_driver *ddri, char *buf)
+{
+	ACCDET_DEBUG("[Accdet] TS3A225E ts3a225e_connector_type=%d\n", ts3a225e_connector_type);
+	return sprintf(buf, "%u\n", ts3a225e_connector_type);
+}
+static DRIVER_ATTR(TS3A225EConnectorType, 0664, show_TS3A225EConnectorType, NULL);
+#endif
 static int dump_register(void)
 {
 	int i = 0;
@@ -1341,43 +1353,64 @@ static int dump_register(void)
 	return 0;
 }
 
-#if defined(ACCDET_TS3A225E_PIN_SWAP)
-static ssize_t show_TS3A225EConnectorType(struct device_driver *ddri, char *buf)
+static int cat_register(char *buf)
 {
-	ACCDET_DEBUG("[Accdet] TS3A225E ts3a225e_connector_type=%d\n", ts3a225e_connector_type);
-	return sprintf(buf, "%u\n", ts3a225e_connector_type);
+	int i = 0;
+	char buf_temp[128] = { 0 };
+
+#ifdef CONFIG_ACCDET_EINT_IRQ
+	strncat(buf, "[CONFIG_ACCDET_EINT_IRQ]dump_register:\n", 64);
+#elif defined CONFIG_ACCDET_EINT
+	strncat(buf, "[CONFIG_ACCDET_EINT]dump_register:\n", 64);
+#else
+	strncat(buf, "[NO_CONFIG_ACCDET_EINT_SUPPORT]Error!\n", 64);
+#endif
+
+	for (i = ACCDET_RSV; i <= ACCDET_RSV_CON1; i += 2) {
+		sprintf(buf_temp, "ACCDET_ADDR[0x%x]=0x%x\n", (ACCDET_BASE + i), pmic_pwrap_read(ACCDET_BASE + i));
+		strncat(buf, buf_temp, strlen(buf_temp));
+	}
+
+	sprintf(buf_temp, "TOP_RST_ACCDET[0x%x]=0x%x\n", TOP_RST_ACCDET, pmic_pwrap_read(TOP_RST_ACCDET));
+	strncat(buf, buf_temp, strlen(buf_temp));
+	sprintf(buf_temp, "INT_CON_ACCDET[0x%x]=0x%x\n", INT_CON_ACCDET, pmic_pwrap_read(INT_CON_ACCDET));
+	strncat(buf, buf_temp, strlen(buf_temp));
+	sprintf(buf_temp, "TOP_CKPDN[0x%x]=0x%x\n", TOP_CKPDN, pmic_pwrap_read(TOP_CKPDN));
+	strncat(buf, buf_temp, strlen(buf_temp));
+	sprintf(buf_temp, "ACCDET_ADC_REG[0x%x]=0x%x\n", ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG));
+	strncat(buf, buf_temp, strlen(buf_temp));
+
+	return 0;
 }
 
-static DRIVER_ATTR(TS3A225EConnectorType, 0664, show_TS3A225EConnectorType, NULL);
-#endif
-static ssize_t accdet_store_call_state(struct device_driver *ddri, const char *buf, size_t count)
+static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *buf, size_t count)
 {
-	int ret;
+	int ret = 0;
 
-	ret = sscanf(buf, "%s", &call_status);
-	if (ret != 1) {
-		ACCDET_DEBUG("accdet: Invalid values\n");
+	if (strlen(buf) < 1) {
+		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
 		return -EINVAL;
 	}
 
+	ret = kstrtoint(buf, 10, &call_status);
+	if (ret < 0)
+		return ret;
+
 	switch (call_status) {
 	case CALL_IDLE:
-		ACCDET_DEBUG("[Accdet]accdet call: Idle state!\n");
+		ACCDET_DEBUG("[%s]accdet call: Idle state!\n", __func__);
 		break;
-
 	case CALL_RINGING:
-
-		ACCDET_DEBUG("[Accdet]accdet call: ringing state!\n");
+		ACCDET_DEBUG("[%s]accdet call: ringing state!\n", __func__);
 		break;
-
 	case CALL_ACTIVE:
-		ACCDET_DEBUG("[Accdet]accdet call: active or hold state!\n");
-		ACCDET_DEBUG("[Accdet]accdet_ioctl : Button_Status=%d (state:%d)\n", button_status, accdet_data.state);
+		ACCDET_DEBUG("[%s]accdet call: active or hold state!\n", __func__);
+		ACCDET_DEBUG("[%s]accdet_ioctl : button_status=%d (state:%d)\n",
+			__func__, button_status, accdet_data.state);
 		/*return button_status;*/
 		break;
-
 	default:
-		ACCDET_DEBUG("[Accdet]accdet call : Invalid values\n");
+		ACCDET_DEBUG("[%s]accdet call: Invalid value=%d\n", __func__, call_status);
 		break;
 	}
 	return count;
@@ -1385,20 +1418,70 @@ static ssize_t accdet_store_call_state(struct device_driver *ddri, const char *b
 
 static ssize_t show_pin_recognition_state(struct device_driver *ddri, char *buf)
 {
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] *buf is NULL Pointer\n",  __func__);
+		return -EINVAL;
+	}
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 	ACCDET_DEBUG("ACCDET show_pin_recognition_state = %d\n", cable_pin_recognition);
 	return sprintf(buf, "%u\n", cable_pin_recognition);
 #else
-	return sprintf(buf, "%u\n", 0);
+	return sprintf(buf, "Not support: %u\n", 0);
 #endif
 }
 
 static DRIVER_ATTR(accdet_pin_recognition, 0664, show_pin_recognition_state, NULL);
-static DRIVER_ATTR(accdet_call_state, 0664, NULL, accdet_store_call_state);
+static DRIVER_ATTR(accdet_call_state, 0664, NULL, store_accdet_call_state);
 
-static int g_start_debug_thread;
-static struct task_struct *thread;
-static int g_dump_register;
+static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const char *buf, size_t count)
+{
+	int ret = 0;
+	int tmp_headset_mode = 0;
+
+	if (strlen(buf) < 1) {
+		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
+		return -EINVAL;
+	}
+
+	ret = kstrtoint(buf, 10, &tmp_headset_mode);
+	if (ret < 0)
+		return ret;
+
+	ACCDET_DEBUG("[%s]get accdet mode: %d\n", __func__, tmp_headset_mode);
+	switch (tmp_headset_mode&0x0F) {
+	case 1:
+		ACCDET_DEBUG("[%s]Don't support accdet mode_1 to configure!!\n", __func__);
+		/* accdet_dts_data.accdet_mic_mode = tmp_headset_mode; */
+		/* accdet_init(); */
+		break;
+	case 2:
+		accdet_dts_data.accdet_mic_mode = tmp_headset_mode;
+		accdet_init();
+		break;
+	case 6:
+		accdet_dts_data.accdet_mic_mode = tmp_headset_mode;
+		accdet_init();
+		break;
+	default:
+		ACCDET_DEBUG("[%s]Not support accdet mode: %d\n", __func__, tmp_headset_mode);
+		break;
+	}
+
+	return count;
+}
+
+static ssize_t show_accdet_dump_register(struct device_driver *ddri, char *buf)
+{
+	if (buf == NULL) {
+		ACCDET_INFO("[%s] *buf is NULL Pointer\n",  __func__);
+		return -EINVAL;
+	}
+
+	cat_register(buf);
+	ACCDET_INFO("[%s] buf_size:%d\n", __func__, (int)strlen(buf));
+
+	return strlen(buf);
+}
 
 static int dbug_thread(void *unused)
 {
@@ -1415,6 +1498,11 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 	int error = 0;
 	int ret = 0;
 
+	if (strlen(buf) < 1) {
+		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
+		return -EINVAL;
+	}
+
 	/* if write 0, Invalid; otherwise, valid */
 	ret = strncmp(buf, "0", 1);
 	if (ret) {
@@ -1422,13 +1510,13 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 		thread = kthread_run(dbug_thread, 0, "ACCDET");
 		if (IS_ERR(thread)) {
 			error = PTR_ERR(thread);
-			ACCDET_DEBUG("[store_accdet_start_debug_thread] failed to create kernel thread: %d\n", error);
+			ACCDET_DEBUG("[%s]failed to create kernel thread: %d\n",  __func__, error);
 		} else {
-			ACCDET_INFO("[store_accdet_start_debug_thread] start debug thread!\n");
+			ACCDET_INFO("[%s]start debug thread!\n",  __func__);
 		}
 	} else {
 		g_start_debug_thread = 0;
-		ACCDET_INFO("[store_accdet_start_debug_thread] stop debug thread!\n");
+		ACCDET_INFO("[%s]stop debug thread!\n",  __func__);
 	}
 
 	return count;
@@ -1438,52 +1526,66 @@ static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char
 {
 	int ret = 0;
 
+	if (strlen(buf) < 1) {
+		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
+		return -EINVAL;
+	}
+
 	/* if write 0, Invalid; otherwise, valid */
 	ret = strncmp(buf, "0", 1);
 	if (ret) {
 		g_dump_register = 1;
-		ACCDET_INFO("[store_accdet_dump_register] start dump regs!\n");
+		ACCDET_INFO("[%s]start dump regs!\n",  __func__);
 	} else {
 		g_dump_register = 0;
-		ACCDET_INFO("[store_accdet_dump_register] stop dump regs!\n");
+		ACCDET_INFO("[%s]stop dump regs!\n",  __func__);
 	}
 
 	return count;
 }
 
-static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const char *buf, size_t count)
+static ssize_t store_accdet_set_register(struct device_driver *ddri, const char *buf, size_t count)
 {
+	int ret = 0;
+	unsigned int addr_temp = 0;
+	unsigned int value_temp = 0;
 
-	char value;
-	int ret;
-
-	ret = sscanf(buf, "%s", &value);
-	if (ret != 1) {
-		ACCDET_DEBUG("accdet: Invalid values\n");
+	if (strlen(buf) < 3) {
+		ACCDET_INFO("[%s] Invalid input!!\n",  __func__);
 		return -EINVAL;
 	}
 
-	ACCDET_DEBUG("[Accdet]store_accdet_set_headset_mode value =%d\n", value);
+	ret = sscanf(buf, "%x,%x", &addr_temp, &value_temp);
+	if (ret < 0)
+		return ret;
+
+	ACCDET_INFO("[%s] set addr[0x%x]=0x%x\n",  __func__, addr_temp, value_temp);
+
+	/* comfirm PMIC addr is legal */
+	if ((addr_temp < PMIC_REG_BASE_START) || (addr_temp > PMIC_REG_BASE_END))
+		ACCDET_INFO("[%s] Can't set illegal addr[0x%x]!!\n", __func__, addr_temp);
+	else
+		pmic_pwrap_write(addr_temp, value_temp);/* set reg */
 
 	return count;
 }
 
 /*----------------------------------------------------------------------------*/
-static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, NULL, store_accdet_dump_register);
-
+static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, store_accdet_dump_register);
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
-
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
+static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_start_debug,
-	&driver_attr_set_headset_mode,
+	&driver_attr_set_register,
 	&driver_attr_dump_register,
+	&driver_attr_set_headset_mode,
 	&driver_attr_accdet_call_state,
-	/*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
+/*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
-	/*#endif*/
+/*#endif*/
 #if defined(ACCDET_TS3A225E_PIN_SWAP)
 	&driver_attr_TS3A225EConnectorType,
 #endif
