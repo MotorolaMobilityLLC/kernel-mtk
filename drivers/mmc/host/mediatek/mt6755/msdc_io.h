@@ -555,12 +555,12 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 /*Attention: bits are not continuous, shall not define MSDC1_DRV_ALL_MASK*/
 
 /* MSDC1 PUPD mask*/
-#define MSDC1_PUPD_CLK_MASK             (0x7  <<  0)
-#define MSDC1_PUPD_CMD_MASK             (0x7  <<  8)
-#define MSDC1_PUPD_DAT0_MASK            (0x7  << 12)
-#define MSDC1_PUPD_DAT1_MASK            (0x7  << 20)
+#define MSDC1_PUPD_CLK_MASK             (0x7  <<  4)
+#define MSDC1_PUPD_DAT0_MASK            (0x7  <<  8)
+#define MSDC1_PUPD_CMD_MASK             (0x7  <<  0)
+#define MSDC1_PUPD_DAT1_MASK            (0x7  << 12)
 #define MSDC1_PUPD_DAT2_MASK            (0x7  << 16)
-#define MSDC1_PUPD_DAT3_MASK            (0x7  <<  4)
+#define MSDC1_PUPD_DAT3_MASK            (0x7  << 20)
 #define MSDC1_PUPD_MASK                 (0x777777 << 0)
 
 /*

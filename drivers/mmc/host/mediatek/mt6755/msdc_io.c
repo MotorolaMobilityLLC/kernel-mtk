@@ -661,7 +661,7 @@ void msdc_dump_padctl_by_id(u32 id)
 		pr_err("MSDC1 PULL  [0x%p] =0x%8x\n",
 			MSDC1_GPIO_PUPD_ADDR,
 			MSDC_READ32(MSDC1_GPIO_PUPD_ADDR));
-		pr_err("P-NONE: 0x--44 4444, PU:0x--22 2226, PD:0x--66 6666\n");
+		pr_err("P-NONE: 0x--44 4444, PU:0x--22 2262, PD:0x--66 6666\n");
 		break;
 
 #ifdef CFG_DEV_MSDC2
@@ -1069,7 +1069,7 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			val0 = 0x666666;
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* cmd/dat:pu-50k, clk:pd-50k */
-			val0 = 0x222226;
+			val0 = 0x222262;
 		}
 		MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, val0);
 		break;
