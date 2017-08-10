@@ -694,7 +694,7 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
 		/* try to use enough URBs to contain an entire ALSA buffer */
 		max_urbs = min((unsigned) MAX_URBS,
 				MAX_QUEUE * packs_per_ms / urb_packs);
-		ep->nurbs = min(max_urbs, urbs_per_period * periods_per_buffer);
+		ep->nurbs = min(max_urbs, urbs_per_period * periods_per_buffer) + 1;
 	}
 
 	/* allocate and initialize data urbs */
