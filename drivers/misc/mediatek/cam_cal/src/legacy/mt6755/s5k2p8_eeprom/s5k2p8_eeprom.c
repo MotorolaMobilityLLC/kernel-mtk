@@ -382,6 +382,14 @@ static long CAM_CAL_Ioctl(
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
 		CAM_CALDB("[CAM_CAL] to user length %d\n", ptempbuf->u4Length);
 		CAM_CALDB("[CAM_CAL] to user  Working buffer address 0x%p\n", pu1Params);
+
+		if (ptempbuf->u4Length > 65535) {
+			kfree(pBuff);
+			kfree(pu1Params);
+			CAM_CALDB("[CAM_CAL] ptempbuf->u4Length is so large\n");
+			return -EFAULT;
+		}
+
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pu1Params , ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pu1Params);
