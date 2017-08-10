@@ -1799,38 +1799,52 @@ _priv_set_struct(IN struct net_device *prNetDev,
 	case PRIV_CMD_SET_TX_POWER:
 		{
 			WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
-			/* CMD_TX_PWR_T rTxPwrParam = {0}; */
-			/* CMD_MITIGATED_PWR_OFFSET_T rTxPwrOffsetParam; */
-			BOOLEAN bTxPowerLimitEnable = FALSE;
-			UINT8 cStartTxBackOff = 0, cTxBackOffMaxPower = 0x00, aucTmp[2];
-			/* UINT8 index = 0; */
-			/* INT8 BasePower5Ga,BasePower2Gb,BasePower2Gg,BasePower2Gn20,
-				BasePower2Gn40,BasePower5Gn20,BasePower5Gn40; */
-			UINT32 TxPwrBackOffParam = 0;
+			BOOLEAN bTxPowerLimitEnable2G = FALSE;
+			BOOLEAN bTxPowerLimitEnable5G = FALSE;
+			UINT8 cStartTxBackOff = 0;
+			UINT8 cTxBackOffMaxPower2G = 0x00;
+			UINT8 cTxBackOffMaxPower5G = 0x00;
+			UINT8 aucTmp[2];
+			/* TxPwrBackOffParam's 0th byte contains enable/disable TxPowerBackOff for 2G */
+			/* TxPwrBackOffParam's 1st byte contains default TxPowerBackOff value for 2G */
+			/* TxPwrBackOffParam's 2nd byte contains enable/disable TxPowerBackOff for 5G */
+			/* TxPwrBackOffParam's 3rd byte contains default TxPowerBackOff value for 5G */
+
+			ULONG TxPwrBackOffParam = 0;
 
 			DBGLOG(REQ, INFO, "Entered case PRIV_CMD_SET_TX_POWER\n");
 			prTestStruct = prIwReqData->data.pointer;
-#if 0
+#if 1
 			DBGLOG(REQ, INFO, "prTestStruct->u4FuncIndex = %u, prTestStruct->u4FuncData = %u[0x%x]\n",
 				prTestStruct->u4FuncIndex, prTestStruct->u4FuncData, prTestStruct->u4FuncData);
 #endif
 			cStartTxBackOff = prTestStruct->u4FuncData;
 
-			/* Get Default TxPower from stored database */
-			/* kalMemCopy(&rTxPwrParam, &prGlueInfo->rRegInfo.rTxPwr, sizeof(CMD_TX_PWR_T)); */
-
-			/* load TxPower from nvram */
+			/* load TxPower for 2.4G Band from nvram */
 			kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
-				bTxPowerLimitEnable), (PUINT_16) aucTmp);
-			bTxPowerLimitEnable = (BOOLEAN)aucTmp[0];
-			cTxBackOffMaxPower = aucTmp[1];
+				bTxPowerLimitEnable2G), (PUINT_16) aucTmp);
+			bTxPowerLimitEnable2G = (BOOLEAN)aucTmp[0];
+			cTxBackOffMaxPower2G = aucTmp[1];
 
-			if (TRUE == bTxPowerLimitEnable) {
+			/* load TxPower for 5G Band from nvram */
+			kalCfgDataRead16(prGlueInfo, OFFSET_OF(WIFI_CFG_PARAM_STRUCT,
+				bTxPowerLimitEnable5G), (PUINT_16) aucTmp);
+			bTxPowerLimitEnable5G = (BOOLEAN)aucTmp[0];
+			cTxBackOffMaxPower5G = aucTmp[1];
+
+			DBGLOG(REQ, INFO, "%s: %d, %d, %d, %d\n", __func__,
+				bTxPowerLimitEnable2G,
+				cTxBackOffMaxPower2G,
+				bTxPowerLimitEnable5G,
+				cTxBackOffMaxPower5G);
+
+			if ((TRUE == bTxPowerLimitEnable2G) || (TRUE == bTxPowerLimitEnable5G)) {
 				if (1 ==  cStartTxBackOff) {
 					DBGLOG(REQ, INFO, "Start BackOff\n");
-					TxPwrBackOffParam |= 1; /* First byte is start/stop */
-					TxPwrBackOffParam |= cTxBackOffMaxPower << 8;
-					/* Second byte is the backoff value, ignored if fyrst byte is stop */
+					TxPwrBackOffParam |= bTxPowerLimitEnable2G;
+					TxPwrBackOffParam |= cTxBackOffMaxPower2G << 8;
+					TxPwrBackOffParam |= bTxPowerLimitEnable5G << 16;
+					TxPwrBackOffParam |= cTxBackOffMaxPower5G << 24;
 					rStatus = nicTxPowerBackOff(prGlueInfo->prAdapter, TxPwrBackOffParam);
 				} else {
 					DBGLOG(REQ, INFO, "Stop BackOff\n");

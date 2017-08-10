@@ -128,8 +128,10 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	INT_8 cBandEdgeMaxPwrOFDM20;
 	INT_8 cBandEdgeMaxPwrOFDM40;
 #if CFG_SUPPORT_TX_BACKOFF
-	INT_8 bTxPowerLimitEnable;
-	INT_8 cTxBackOffMaxPower;
+	INT_8 bTxPowerLimitEnable2G;
+	INT_8 cTxBackOffMaxPower2G;
+	INT_8 bTxPowerLimitEnable5G;
+	INT_8 cTxBackOffMaxPower5G;
 #endif
 
 	UINT_8 ucRegChannelListMap;
@@ -137,7 +139,7 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	UINT_8 aucRegSubbandInfo[36];
 #if CFG_SUPPORT_TX_BACKOFF
 	UINT_8 ucDefaultTestMode;
-	UINT_8 aucReserved2[256-243];
+	UINT_8 aucReserved2[256-245];
 #else
 	UINT_8 aucReserved2[256 - 240];
 #endif
