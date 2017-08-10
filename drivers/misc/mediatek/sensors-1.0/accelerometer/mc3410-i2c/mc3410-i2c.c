@@ -1178,8 +1178,9 @@ static void MC3XXX_SetResolution(void)
 /*****************************************
  *** MC3XXX_SetSampleRate
  *****************************************/
-static void MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
+static int MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
 {
+	int err = 0;
 	unsigned char	_baDataBuf[2] = { 0 };
 
 	/* GSE_LOG("[%s]\n", __func__); */
@@ -1217,7 +1218,8 @@ static void MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
 	} else
 		_baDataBuf[0] = 0x00;
 
-	MC3XXX_i2c_write_block(pt_i2c_client, MC3XXX_REG_SAMPLE_RATE, _baDataBuf, 1);
+	err = MC3XXX_i2c_write_block(pt_i2c_client, MC3XXX_REG_SAMPLE_RATE, _baDataBuf, 1);
+	return err;
 }
 
 /*****************************************
@@ -2185,7 +2187,7 @@ static int mc3410_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRepo
 		sample_delay = MC3410_ACCEL_ODR_100HZ;
 	/*FIX  ME */
 
-	MC3XXX_SetSampleRate(mc3xxx_obj_i2c_data->client);
+	err = MC3XXX_SetSampleRate(mc3xxx_obj_i2c_data->client);
 
 	if (err < 0) {
 		GSE_ERR("set delay parameter error!\n");

@@ -5,6 +5,5 @@ obj-y   +=  alsps_factory.o
 obj-y   +=  aal_control.o
 
 obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
-ifneq ($(CONFIG_MTK_ALSPSHUB),y)
 obj-$(CONFIG_MTK_CM36558)	+=  cm36558/
-endif
+obj-$(CONFIG_MTK_CM36652)	+=  cm36652/

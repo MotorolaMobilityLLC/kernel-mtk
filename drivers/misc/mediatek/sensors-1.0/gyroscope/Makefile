@@ -6,3 +6,4 @@ obj-y   +=  gyroscope.o gyro_factory.o
 
 obj-$(CONFIG_MTK_GYROHUB)      +=  gyrohub/
 obj-$(CONFIG_MTK_BMI160_SPI)   +=  bmi160gy-spi/
+obj-$(CONFIG_MTK_ITG1010)   +=  ITG1010/
