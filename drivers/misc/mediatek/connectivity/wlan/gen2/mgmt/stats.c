@@ -1229,10 +1229,12 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 					pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(TX, INFO,
-					"<TX status: %d> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
-					status, u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19],
-					pucEapol[20], pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+				if (status != 0) {
+					DBGLOG(TX, INFO,
+						"<TX status: %d> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+						status, u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19],
+						pucEapol[20], pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+				}
 				break;
 			}
 

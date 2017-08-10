@@ -2785,7 +2785,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 
 	/* free the packet */
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
-	DBGLOG(TX, INFO, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
+	DBGLOG(TX, TRACE, "Security frame tx done, SeqNum: %d\n", prCmdInfo->ucCmdSeqNum);
 }
 
 /*----------------------------------------------------------------------------*/
