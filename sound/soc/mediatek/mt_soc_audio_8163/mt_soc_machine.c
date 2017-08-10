@@ -544,9 +544,9 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf, size_t cou
 		       Afe_Get_Reg(AFE_ADDA4_NEWIF_CFG1));
 
 	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_0  = 0x%x\n",
-		       GetClkCfg(AUDIO_CLK_AUDDIV_0));
+		       Afe_Get_Reg(AUDIO_CLK_AUDDIV_0));
 	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_AUDDIV_1  = 0x%x\n",
-		       GetClkCfg(AUDIO_CLK_AUDDIV_1));
+		       Afe_Get_Reg(AUDIO_CLK_AUDDIV_1));
 	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_CFG_6      = 0x%x\n",
 		       GetClkCfg(AUDIO_CLK_CFG_6));
 	n += scnprintf(buffer + n, size - n, "AUDIO_CLK_CFG_6_SET  = 0x%x\n",

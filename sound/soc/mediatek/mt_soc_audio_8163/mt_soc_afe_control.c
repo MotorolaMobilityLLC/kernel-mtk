@@ -610,21 +610,22 @@ uint32 GetApllbySampleRate(uint32 SampleRate)
 
 void SetckSel(uint32 I2snum, uint32 SampleRate)
 {
-	/* always from APLL1 */
 	uint32 ApllSource = 0;
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2)
+		ApllSource = 1;
 
 	switch (I2snum) {
 	case Soc_Aud_I2S0:
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, ApllSource << 8, 1 << 8);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, ApllSource << 8, 1 << 8);
 		break;
 	case Soc_Aud_I2S1:
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, ApllSource << 9, 1 << 9);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, ApllSource << 9, 1 << 9);
 		break;
 	case Soc_Aud_I2S2:
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, ApllSource << 10, 1 << 10);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, ApllSource << 10, 1 << 10);
 		break;
 	case Soc_Aud_I2S3:
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, ApllSource << 11, 1 << 11);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, ApllSource << 11, 1 << 11);
 		break;
 	case Soc_Aud_HDMI_BCK:	/* hdmi i2s bck */
 		SetClkCfg(AUDIO_CLK_AUD_DIV0, ApllSource << 0, 1 << 0);
@@ -737,19 +738,19 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 	switch (I2snum) {
 	case Soc_Aud_I2S0:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		SetClkCfg(AUDIO_CLK_AUDDIV_1, I2s_ck_div, 0x0000007f);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_1, I2s_ck_div, 0x0000007f);
 		break;
 	case Soc_Aud_I2S1:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		SetClkCfg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 8, 0x00007f00);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 8, 0x00007f00);
 		break;
 	case Soc_Aud_I2S2:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		SetClkCfg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 16, 0x007f0000);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 16, 0x007f0000);
 		break;
 	case Soc_Aud_I2S3:
 		I2s_ck_div = (I2S_APll / MCLKFS / SampleRate) - 1;
-		SetClkCfg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 24, 0x7f000000);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_1, I2s_ck_div << 24, 0x7f000000);
 		break;
 	case Soc_Aud_HDMI_MCK:
 	case Soc_Aud_SPDIF:
@@ -785,6 +786,10 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 	PRINTK_AUDDRV("%s I2S_APll = %dv I2S_Bclk = %d I2s_Bck_div = %d\n", __func__,
 		 I2S_APll, I2S_Bclk, I2s_Bck_div);
 	I2s_Bck_div--;
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, I2s_Bck_div << 24, 0x07000000);
+	else
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, I2s_Bck_div << 28, 0x70000000);
 }
 
 uint32 SetCLkHdmiBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 bitDepth)
@@ -811,9 +816,9 @@ void EnableI2SDivPower(uint32 Diveder_name, bool bEnable)
 {
 	if (bEnable) {
 		/* AUDIO_APLL1_DIV0 */
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, 0 << Diveder_name, 1 << Diveder_name);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0 << Diveder_name, 1 << Diveder_name);
 	} else
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
 }
 
 void EnableHDMIDivPower(uint32 Diveder_name, bool bEnable)
@@ -845,34 +850,20 @@ void EnableApll1(bool bEnable)
 	PRINTK_AUDDRV("%s bEnable = %d", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_1_ck from apll1_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 16, 0x1 << 16);
+#endif
 
 			/* apll1_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
-
-#if 0
-			/* apll2_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
-#endif
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 
 			/* set apll1_ck_div0, 90.3168/4 = 22.5792M, used for I2S0~I2S3 */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x03000000, 0x07000000);
-
-#if 0
-			/* hf_faud_apll1_ck from hf_faud_1_ck */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0 << 6, 1 << 6);
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1 << 7, 1 << 7);
-#endif
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x03000000, 0x07000000);
 
 			AudDrv_APLL22M_Clk_On();
 			/* apll1_div0_pdn power up */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x1);
-
-#if 0
-			/* apll2_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
-#endif
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x1);
 
 #ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn on  hf_faud_2_ck */
@@ -884,7 +875,7 @@ void EnableApll1(bool bEnable)
 		Aud_APLL_DIV_APLL1_cntr--;
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
 			AudDrv_APLL22M_Clk_Off();
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x1, 0x1);
 #ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn off hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 23, 0x1 << 23);
@@ -898,15 +889,21 @@ void EnableApll2(bool bEnable)
 	PRINTK_AUDDRV("%s bEnable = %d\n", __func__, bEnable);
 	if (bEnable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
+#ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* set hf_faud_2_ck from apll2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 24, 0x1 << 24);
+#endif
 			/* apll2_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
+
 			/* apll2_ck_div0, 98.3030/4 = 24.576M */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x3 << 28, 0x7 << 28);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x3 << 28, 0x7 << 28);
+
+			AudDrv_APLL22M_Clk_On();
 			AudDrv_APLL24M_Clk_On();
+
 			/* apll2_div0_pdn power up */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
 #ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn on hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x0 << 31, 0x1 << 31);
@@ -917,8 +914,10 @@ void EnableApll2(bool bEnable)
 		Aud_APLL_DIV_APLL2_cntr--;
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
 			AudDrv_APLL24M_Clk_Off();
+			AudDrv_APLL22M_Clk_Off();
+
 			/* apll2_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x2, 0x2);
 #ifndef COMMON_CLOCK_FRAMEWORK_API
 			/* turn off hf_faud_2_ck */
 			SetClkCfg(AUDIO_CLK_CFG_6, 0x1 << 31, 0x1 << 31);

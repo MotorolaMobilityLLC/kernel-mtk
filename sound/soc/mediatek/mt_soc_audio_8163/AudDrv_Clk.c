@@ -93,8 +93,8 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_MUX_AUD_INTBUS] = {"top_mux_audio_intbus", true, false, NULL},
 	[CLOCK_MUX_AUD_1] = {"aud_mux1_clk", false, false, NULL},
 	[CLOCK_MUX_AUD_2] = {"aud_mux2_clk", false, false, NULL},
-	[CLOCK_TOP_APLL1_CK] = {"apmixed_apll1_clk", false, false, NULL},
-	[CLOCK_TOP_APLL2_CK] = {"apmixed_apll2_clk", false, false, NULL},
+	[CLOCK_TOP_APLL1_CK] = {"top_apll1_clk", false, false, NULL},
+	[CLOCK_TOP_APLL2_CK] = {"top_apll2_clk", false, false, NULL},
 	[CLOCK_CLK26M] = {"top_clk26m_clk", false, false, NULL}
 };
 
@@ -609,7 +609,6 @@ void AudDrv_APLL22M_Clk_On(void)
 			pr_err("%s clk_enable %s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_1].name, ret);
 
-#if 0	/* now directly set register in EnableApll */
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUD_1].clock,
 			aud_clks[CLOCK_TOP_APLL1_CK].clock);
 
@@ -617,7 +616,6 @@ void AudDrv_APLL22M_Clk_On(void)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_1].name,
 				aud_clks[CLOCK_TOP_APLL1_CK].name, ret);
-#endif
 
 		ret = clk_set_rate(aud_clks[CLOCK_TOP_APLL1_CK].clock, 90316800);
 		if (ret) {
@@ -651,6 +649,10 @@ void AudDrv_APLL22M_Clk_On(void)
 
 void AudDrv_APLL22M_Clk_Off(void)
 {
+#if defined(COMMON_CLOCK_FRAMEWORK_API)
+	int ret;
+#endif
+
 	PRINTK_AUD_CLK("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
 	mutex_lock(&auddrv_Clk_mutex);
 	Aud_APLL22M_Clk_cntr--;
@@ -659,13 +661,11 @@ void AudDrv_APLL22M_Clk_Off(void)
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 		Afe_Set_Reg(AUDIO_TOP_CON0, 1 << 8, 1 << 8); /* disable 22M */
 
-#if 0	/* now directly set register in EnableApll */
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUD_1].clock, aud_clks[CLOCK_CLK26M].clock);
 		if (ret)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_1].name,
 				aud_clks[CLOCK_CLK26M].name, ret);
-#endif
 
 		clk_disable_unprepare(aud_clks[CLOCK_MUX_AUD_1].clock);
 #else
@@ -715,14 +715,12 @@ void AudDrv_APLL24M_Clk_On(void)
 			pr_err("%s clk_enable %s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_2].name, ret);
 
-#if 0	/* now directly set register in EnableApll */
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUD_2].clock,
 			     aud_clks[CLOCK_TOP_APLL2_CK].clock);
 		if (ret)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_2].name,
 				aud_clks[CLOCK_TOP_APLL2_CK].name, ret);
-#endif
 
 		ret = clk_set_rate(aud_clks[CLOCK_TOP_APLL2_CK].clock, 98303999);
 		if (ret) {
@@ -752,6 +750,10 @@ void AudDrv_APLL24M_Clk_On(void)
 
 void AudDrv_APLL24M_Clk_Off(void)
 {
+#if defined(COMMON_CLOCK_FRAMEWORK_API)
+	int ret;
+#endif
+
 	PRINTK_AUD_CLK("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
 	mutex_lock(&auddrv_Clk_mutex);
 	Aud_APLL24M_Clk_cntr--;
@@ -760,14 +762,12 @@ void AudDrv_APLL24M_Clk_Off(void)
 #if defined(COMMON_CLOCK_FRAMEWORK_API)
 		Afe_Set_Reg(AUDIO_TOP_CON0, 1 << 9, 1 << 9); /* disable 24M */
 
-#if 0	/* now directly set register in EnableApll */
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUD_2].clock, aud_clks[CLOCK_CLK26M].clock);
 
 		if (ret)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 				__func__, aud_clks[CLOCK_MUX_AUD_2].name,
 				aud_clks[CLOCK_CLK26M].name, ret);
-#endif
 
 		clk_disable_unprepare(aud_clks[CLOCK_MUX_AUD_2].clock);
 #else
