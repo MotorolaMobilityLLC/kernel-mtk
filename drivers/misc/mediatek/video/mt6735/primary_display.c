@@ -7198,71 +7198,80 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart,
 		       (unsigned long)handle, 0);
 
+	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
 #ifndef MTK_FB_CMDQ_DISABLE
-#if 0 /* CONFIG_FOR_SOURCE_PQ */
-	if (primary_display_is_decouple_mode()) {
-		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_COLOR, &handle);
-		cmdqRecReset(handle);
-		cmdqRecWait(handle, CMDQ_EVENT_DISP_WDMA0_EOF);
-	} else {
 		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 		cmdqRecReset(handle);
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-	}
-#else
-	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-	cmdqRecReset(handle);
 
-	if (primary_display_is_video_mode())
-		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
-	else
-		cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
-#endif
-	cmdqsize = cmdqRecGetInstructionCount(handle);
+		if (primary_display_is_video_mode())
+			cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		else
+			cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+		cmdqsize = cmdqRecGetInstructionCount(handle);
 
 #ifdef MTK_DISP_IDLE_LP
-	/* will write register in dpmgr_path_user_cmd, need to exit idle */
-	last_primary_trigger_time = sched_clock();
-	_disp_primary_path_exit_idle(__func__, 1);
+		/* will write register in dpmgr_path_user_cmd, need to exit idle */
+		last_primary_trigger_time = sched_clock();
+		_disp_primary_path_exit_idle(__func__, 1);
 #endif
 
-#ifdef CONFIG_FOR_SOURCE_PQ
-	if (primary_display_is_decouple_mode())
-		ret = dpmgr_path_user_cmd(pgc->ovl2mem_path_handle, cmd, arg, handle);
-	else
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
-#else
-	ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
-#endif
-
-	if (handle) {
-		if (cmdqRecGetInstructionCount(handle) > cmdqsize) {
-			_primary_path_lock(__func__);
-			if (pgc->state == DISP_ALIVE) {
-#if 0				/* CONFIG_FOR_SOURCE_PQ */
-				if (primary_display_is_decouple_mode()) {
-					dpmgr_path_trigger(pgc->ovl2mem_path_handle, handle,
-							   CMDQ_ENABLE);
-					cmdqRecFlushAsync(handle);
-				} else {
+		if (handle) {
+			if (cmdqRecGetInstructionCount(handle) > cmdqsize) {
+				_primary_path_lock(__func__);
+				if (pgc->state == DISP_ALIVE) {
 					_cmdq_set_config_handle_dirty_mira(handle);
 					/* use non-blocking flush here to avoid primary path is locked for too long */
 					_cmdq_flush_config_handle_mira(handle, 0);
 				}
-#else
-				_cmdq_set_config_handle_dirty_mira(handle);
-				/* use non-blocking flush here to avoid primary path is locked for too long */
-				_cmdq_flush_config_handle_mira(handle, 0);
-#endif
+				_primary_path_unlock(__func__);
 			}
-			_primary_path_unlock(__func__);
+
+			cmdqRecDestroy(handle);
+		}
+#endif
+	} else {
+#ifndef MTK_FB_CMDQ_DISABLE
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		cmdqRecReset(handle);
+
+		if (primary_display_is_video_mode())
+			cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		else
+			cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+		cmdqsize = cmdqRecGetInstructionCount(handle);
+		_primary_path_lock(__func__);
+		if (pgc->state == DISP_SLEPT) {
+			cmdqRecDestroy(handle);
+			handle = NULL;
+			goto user_cmd_unlock;
 		}
 
-		cmdqRecDestroy(handle);
-	}
+#ifdef MTK_DISP_IDLE_LP
+		/* will write register in dpmgr_path_user_cmd, need to exit idle */
+		last_primary_trigger_time = sched_clock();
+		_disp_primary_path_exit_idle(__func__, 0);
 #endif
 
+		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
+
+		if (handle) {
+			if (cmdqRecGetInstructionCount(handle) > cmdqsize) {
+				if (pgc->state == DISP_ALIVE) {
+					_cmdq_set_config_handle_dirty_mira(handle);
+					/* use non-blocking flush here to avoid primary path is locked for too long */
+					_cmdq_flush_config_handle_mira(handle, 0);
+				}
+			}
+
+			cmdqRecDestroy(handle);
+		}
+user_cmd_unlock:
+		_primary_path_unlock(__func__);
+
+#endif
+	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd,
 		       (unsigned long)handle, cmdqsize);
 	return ret;
