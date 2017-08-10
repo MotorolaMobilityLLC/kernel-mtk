@@ -191,8 +191,6 @@ struct md_cd_ctrl {
 	atomic_t wdt_enabled;
 	atomic_t cldma_irq_enabled;
 	atomic_t ccif_irq_enabled;
-	int wdt_work_running;
-	struct mutex ccif_wdt_mutex;
 	char trm_wakelock_name[32];
 	struct wake_lock trm_wake_lock;
 	char peer_wakelock_name[32];
@@ -205,7 +203,6 @@ struct md_cd_ctrl {
 	struct work_struct cldma_irq_work;
 	struct workqueue_struct *cldma_irq_worker;
 	int channel_id;		/* CCIF channel */
-	struct work_struct wdt_work;
 
 #if TRAFFIC_MONITOR_INTERVAL
 	unsigned tx_traffic_monitor[CLDMA_TXQ_NUM];
@@ -245,7 +242,6 @@ struct md_cd_ctrl {
 	void __iomem *md_ost_status;
 	void __iomem *md_pll;
 	struct md_pll_reg *md_pll_base;
-	struct tasklet_struct ccif_irq_task;
 	struct tasklet_struct cldma_rxq0_task;
 
 	unsigned int cldma_irq_id;
@@ -358,9 +354,6 @@ static inline void md_cd_queue_struct_init(struct md_cd_queue *queue, struct ccc
 	queue->fast_hdr.gpd_count = 0;
 #endif
 }
-#ifndef CONFIG_MTK_ECCCI_C2K
-extern void c2k_reset_modem(void);
-#endif
 extern void mt_irq_dump_status(int irq);
 extern unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
 

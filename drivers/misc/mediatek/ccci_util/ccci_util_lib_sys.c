@@ -95,10 +95,8 @@ static int get_md_status(int md_id, char val[], int size)
 
 static int trigger_md_boot(int md_id)
 {
-	if ((md_id < MAX_MD_NUM) && (boot_md_func[md_id] != NULL)) {
-		(boot_md_func[md_id]) (md_id);
-		return 0;
-	}
+	if ((md_id < MAX_MD_NUM) && (boot_md_func[md_id] != NULL))
+		return (boot_md_func[md_id]) (md_id);
 
 	return -1;
 }
@@ -176,10 +174,10 @@ static ssize_t ccci_dump_event_show(char *buf)
 CCCI_ATTR(md_chn, 0444, &ccci_dump_event_show, NULL);
 
 /* Sys -- Versin */
-static unsigned int ccci_port_ver = 3;
+static unsigned int ccci_port_ver = 6; /* ECCCI_FSM */
 static ssize_t ccci_version_show(char *buf)
 {
-	return snprintf(buf, 16, "%d\n", ccci_port_ver);	/* ECCCI */
+	return snprintf(buf, 16, "%d\n", ccci_port_ver);
 }
 
 void update_ccci_port_ver(unsigned int new_ver)

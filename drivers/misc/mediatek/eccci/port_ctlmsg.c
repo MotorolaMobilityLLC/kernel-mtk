@@ -129,23 +129,8 @@ static int port_ctl_init(struct ccci_port *port)
 	port->skb_from_pool = 1;
 	return 0;
 }
-static void port_ctl_md_state_notice(struct ccci_port *port, MD_STATE state)
-{
-	if (port->rx_ch != CCCI_CONTROL_RX)
-		return;
-
-	/* only for thoes states which are updated by modem driver */
-	switch (state) {
-	case WAITING_TO_STOP:
-		mdee_reset(port);
-		break;
-	default:
-		break;
-	};
-}
 
 struct ccci_port_ops ctl_port_ops = {
 	.init = &port_ctl_init,
 	.recv_skb = &port_recv_skb,
-	.md_state_notice = &port_ctl_md_state_notice,
 };

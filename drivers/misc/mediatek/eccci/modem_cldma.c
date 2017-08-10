@@ -1690,7 +1690,7 @@ void ccif_disable_irq(struct ccci_modem *md)
 
 	if (atomic_cmpxchg(&md_ctrl->ccif_irq_enabled, 1, 0) == 1) {
 		disable_irq_nosync(md_ctrl->ap_ccif_irq_id);
-		CCCI_NORMAL_LOG(md->index, TAG, "Disable ccif irq\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "disable ccif irq\n");
 	}
 }
 
@@ -1731,24 +1731,6 @@ int md_cd_op_is_epon_set(struct ccci_modem *md)
 		return 0;
 }
 
-static void md_cd_wdt_work(struct work_struct *work)
-{
-	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, wdt_work);
-	struct ccci_modem *md = md_ctrl->modem;
-
-	mutex_lock(&md_ctrl->ccif_wdt_mutex);
-	md_ctrl->wdt_work_running = 1;
-	mutex_unlock(&md_ctrl->ccif_wdt_mutex);
-
-	if (md->md_state == INVALID) {
-		CCCI_ERROR_LOG(md->index, TAG, "md_cd_wdt_work: md_state is INVALID\n");
-		return;
-	}
-	/* 2. wakelock */
-	wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
-	ccci_md_wdt_handler(md);
-}
-
 static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
@@ -1757,6 +1739,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	CCCI_ERROR_LOG(md->index, TAG, "MD WDT IRQ\n");
 
 	ccif_disable_irq(md);
+	wdt_disable_irq(md);
 
 	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
 #ifndef DISABLE_MD_WDT_PROCESS
@@ -1776,9 +1759,9 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ disabled for debug, L1 state=%X\n", state);
 #endif
 #endif
-	/* 2. start a work queue to do the reset, because we used flush_work which is not designed for ISR */
-	schedule_work(&md_ctrl->wdt_work);
 #endif
+	wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
+	ccci_fsm_append_command(md, CCCI_COMMAND_WDT, 0);
 	return IRQ_HANDLED;
 }
 
@@ -1907,33 +1890,20 @@ static void md_cd_ccif_work(struct work_struct *work)
 {
 	struct md_cd_ctrl *md_ctrl = container_of(work, struct md_cd_ctrl, ccif_work);
 	struct ccci_modem *md = md_ctrl->modem;
+
 	/* seems sometime MD send D2H_EXCEPTION_INIT_DONE and D2H_EXCEPTION_CLEARQ_DONE together */
-	mutex_lock(&md_ctrl->ccif_wdt_mutex);
-	if (!md_ctrl->wdt_work_running) {
-		/*polling_ready(md_ctrl, D2H_EXCEPTION_INIT);*/
-		md_cd_exception(md, HIF_EX_INIT);
-		polling_ready(md, D2H_EXCEPTION_INIT_DONE);
-		md_cd_exception(md, HIF_EX_INIT_DONE);
+	/*polling_ready(md_ctrl, D2H_EXCEPTION_INIT);*/
+	md_cd_exception(md, HIF_EX_INIT);
+	polling_ready(md, D2H_EXCEPTION_INIT_DONE);
+	md_cd_exception(md, HIF_EX_INIT_DONE);
 
-		polling_ready(md, D2H_EXCEPTION_CLEARQ_DONE);
-		md_cd_exception(md, HIF_EX_CLEARQ_DONE);
+	polling_ready(md, D2H_EXCEPTION_CLEARQ_DONE);
+	md_cd_exception(md, HIF_EX_CLEARQ_DONE);
 
-		polling_ready(md, D2H_EXCEPTION_ALLQ_RESET);
-		md_cd_exception(md, HIF_EX_ALLQ_RESET);
+	polling_ready(md, D2H_EXCEPTION_ALLQ_RESET);
+	md_cd_exception(md, HIF_EX_ALLQ_RESET);
 
-		if (md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
-			wake_lock_timeout(&md_ctrl->peer_wake_lock, HZ);
-		if (md_ctrl->channel_id & (1<<AP_MD_SEQ_ERROR)) {
-			CCCI_ERROR_LOG(md->index, TAG, "MD check seq fail\n");
-			md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
-		}
-	}
-	mutex_unlock(&md_ctrl->ccif_wdt_mutex);
-
-	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
-		CCCI_NORMAL_LOG(md->index, TAG, "CCB wakeup\n");
-		ccci_md_status_notice(md, IN, CCCI_SMEM_CH, -1, RX_IRQ);
-	}
+	ccci_fsm_append_event(md, CCCI_EVENT_CCIF_HS, NULL, 0);
 }
 
 static irqreturn_t md_cd_ccif_isr(int irq, void *data)
@@ -1941,15 +1911,27 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	wdt_disable_irq(md);
 	/* must ack first, otherwise IRQ will rush in */
 	md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
 	CCCI_DEBUG_LOG(md->index, TAG, "MD CCIF IRQ 0x%X\n", md_ctrl->channel_id);
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, md_ctrl->channel_id);
 
+	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
+		CCCI_NORMAL_LOG(md->index, TAG, "CCB wakeup\n");
+		ccci_md_status_notice(md, IN, CCCI_SMEM_CH, -1, RX_IRQ);
+	}
+	if (md_ctrl->channel_id & (1<<AP_MD_PEER_WAKEUP))
+		wake_lock_timeout(&md_ctrl->peer_wake_lock, HZ);
+	if (md_ctrl->channel_id & (1<<AP_MD_SEQ_ERROR)) {
+		CCCI_ERROR_LOG(md->index, TAG, "MD check seq fail\n");
+		md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
+	}
+
 	/* only schedule tasklet in EXCEPTION HIF 1 */
-	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT))
-		tasklet_hi_schedule(&md_ctrl->ccif_irq_task);
+	if (md_ctrl->channel_id & (1 << D2H_EXCEPTION_INIT)) {
+		ccif_disable_irq(md);
+		schedule_work(&md_ctrl->ccif_work);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -2039,14 +2021,6 @@ static void md_cd_clear_traffic_data(struct ccci_modem *md)
 }
 #endif
 
-static void md_ccif_irq_tasklet(unsigned long data)
-{
-	struct ccci_modem *md = (struct ccci_modem *)data;
-	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-
-	ccif_disable_irq(md);
-	schedule_work(&md_ctrl->ccif_work);
-}
 static int md_cd_set_dsp_mpu(struct ccci_modem *md, int is_loaded)
 {
 	if (md->mem_layout.dsp_region_phy != 0)
@@ -2181,7 +2155,6 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 	/* 5. update mutex */
 	atomic_set(&md_ctrl->reset_on_going, 0);
-	md_ctrl->wdt_work_running = 0;
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
 	wdt_enable_irq(md);
@@ -2321,7 +2294,7 @@ static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
 	return md_cd_soft_power_off(md, mode);
 }
 
-static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
+static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	int count = 0;
@@ -2389,39 +2362,9 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_M
 		}
 	}
 
-	ccci_md_check_ee_done(md, 0);
-
-	ccif_disable_irq(md);
 	CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD state: %d\n",
 			md->md_state);
-	/* 3, stop CLDMA */
 	ccci_md_broadcast_state(md, WAITING_TO_STOP);	/* to block port's write operation */
-
-	switch (other_ops) {
-	case OTHER_MD_RESET:
-#ifdef CONFIG_MTK_ECCCI_C2K
-		exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
-#else
-#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
-		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_SUPPORT */
-			c2k_reset_modem();
-#endif
-#endif
-		break;
-	case OTHER_MD_STOP:
-#ifdef CONFIG_MTK_ECCCI_C2K
-		exec_ccci_kern_func_by_md_id(MD_SYS3, ID_STOP_MD, NULL, 0);
-#else
-#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
-		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_SUPPORT */
-			c2k_reset_modem();
-#endif
-#endif
-		break;
-	default:
-		break;
-	}
-
 	return 0;
 }
 
@@ -2431,10 +2374,10 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, stop_type=%d\n", stop_type);
+	ccif_disable_irq(md);
 
 	/* flush work before new start */
 	flush_work(&md_ctrl->ccif_work);
-	flush_work(&md_ctrl->wdt_work);
 
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
 
@@ -2442,7 +2385,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	md_cldma_clear(md);
 #endif
 	/* power off MD */
-	ret = md_cd_power_off(md, stop_type);
+	ret = md_cd_power_off(md, stop_type == MD_FLIGHT_MODE_ENTER ? 100 : 0);
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
 	ccci_md_broadcast_state(md, GATED);
 
@@ -3447,8 +3390,11 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 	}
 	if (strncmp(buf, "ccci_trm", count - 1) == 0) {
 		CCCI_NORMAL_LOG(md->index, TAG, "TRM triggered\n");
-		ccci_md_pre_stop(md, 0, OTHER_MD_RESET);
-		ccci_md_send_msg_to_user(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
+		ccci_md_send_msg_to_user(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET_REQUEST, 0);
+	}
+	if (strncmp(buf, "wdt", count - 1) == 0) {
+		CCCI_NORMAL_LOG(md->index, TAG, "WDT triggered\n");
+		md_cd_wdt_isr(0, md);
 	}
 	size = strlen("md_type=");
 	if (strncmp(buf, "md_type=", size) == 0) {
@@ -3738,9 +3684,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	snprintf(md_ctrl->peer_wakelock_name, sizeof(md_ctrl->peer_wakelock_name), "md%d_cldma_peer", md_id + 1);
 	wake_lock_init(&md_ctrl->peer_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->peer_wakelock_name);
 	INIT_WORK(&md_ctrl->ccif_work, md_cd_ccif_work);
-	tasklet_init(&md_ctrl->ccif_irq_task, md_ccif_irq_tasklet, (unsigned long)md);
 	tasklet_init(&md_ctrl->cldma_rxq0_task, md_cldma_rxq0_tasklet, (unsigned long)md);
-	mutex_init(&md_ctrl->ccif_wdt_mutex);
 #ifdef ENABLE_HS1_POLLING_TIMER
 	init_timer(&md_ctrl->hs1_polling_timer);
 	md_ctrl->hs1_polling_timer.function = md_cd_hs1_polling_timer_func;
@@ -3765,8 +3709,6 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	atomic_set(&md_ctrl->wdt_enabled, 1); /* IRQ is default enabled after request_irq */
 	atomic_set(&md_ctrl->cldma_irq_enabled, 1);
 	atomic_set(&md_ctrl->ccif_irq_enabled, 1);
-	md_ctrl->wdt_work_running = 0;
-	INIT_WORK(&md_ctrl->wdt_work, md_cd_wdt_work);
 #if TRAFFIC_MONITOR_INTERVAL
 	init_timer(&md_ctrl->traffic_monitor);
 	md_ctrl->traffic_monitor.function = md_cd_traffic_monitor_func;

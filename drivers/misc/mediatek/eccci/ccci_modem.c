@@ -56,9 +56,9 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 	}
 	mdee_state_notify(md->mdee_obj, stage);
 }
-static void ccci_md_boot_fail_func(unsigned long data)
+
+void ccci_md_boot_fail_func(struct ccci_modem *md)
 {
-	struct ccci_modem *md = (struct ccci_modem *)data;
 	int handshake = 0;
 
 	if (md->md_state == READY ||
@@ -77,6 +77,7 @@ static void ccci_md_boot_fail_func(unsigned long data)
 
 	ccci_md_exception_notify(md, MD_BOOT_TIMEOUT);
 }
+
 /* setup function is only for data structure initialization */
 struct ccci_modem *ccci_md_alloc(int private_size)
 {
@@ -94,10 +95,6 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 	atomic_set(&md->wakeup_src, 0);
 	INIT_LIST_HEAD(&md->entry);
 	ccci_reset_seq_num(md);
-
-	init_timer(&md->bootup_timer);
-	md->bootup_timer.function = ccci_md_boot_fail_func;
-	md->bootup_timer.data = (unsigned long)md;
 	md->md_dbg_dump_flag = MD_DBG_DUMP_ALL;
 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
@@ -276,6 +273,7 @@ int ccci_md_register(struct ccci_modem *md)
 	list_add_tail(&md->entry, &modem_list);
 	ccci_sysfs_add_md(md->index, (void *)&md->kobj);
 	ccci_platform_init(md);
+	ccci_fsm_init(md);
 	return 0;
 }
 
@@ -455,29 +453,6 @@ int ccci_md_store_load_type(struct ccci_modem *md, int type)
 		CCCI_BOOTUP_LOG(md_id, TAG, "store md type fail: invalid md type(0x%x)\n",
 				 md->config.load_type_saving);
 		ret = -EFAULT;
-	}
-	return ret;
-}
-
-int ccci_md_wdt_handler(struct ccci_modem *md)
-{
-	int ret = 0;
-
-	if (md->ops->is_epon_set && md->ops->is_epon_set(md)) {
-		ret = ccci_md_pre_stop(md, 0, OTHER_MD_RESET);
-		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after WDT %d\n", ret);
-		/*4. send message, only reset MD on non-eng load */
-		port_proxy_send_msg_to_user(md->port_proxy_obj, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-	} else {
-		if (port_proxy_get_critical_user(md->port_proxy_obj, CRIT_USR_MDLOG) == 0) {
-			ret = ccci_md_pre_stop(md, 0, OTHER_MD_RESET);
-			CCCI_NORMAL_LOG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
-			/* 4. send message, only reset MD on non-eng load */
-			port_proxy_send_msg_to_user(md->port_proxy_obj, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-		} else {
-			md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
-			ccci_md_exception_notify(md, MD_WDT);
-		}
 	}
 	return ret;
 }
