@@ -487,7 +487,7 @@ static void mtk_wcn_cmb_sdio_request_eirq(msdc_sdio_irq_handler_t irq_handler, v
 
 	CMB_STUB_LOG_INFO("enter %s\n", __func__);
 	mtk_wcn_sdio_irq_flag_set(0);
-	atomic_set(&irq_enable_flag, 0);
+	atomic_set(&irq_enable_flag, 1);
 	mtk_wcn_cmb_sdio_eirq_data = data;
 	mtk_wcn_cmb_sdio_eirq_handler = irq_handler;
 
