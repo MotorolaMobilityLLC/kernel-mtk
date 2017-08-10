@@ -69,6 +69,12 @@ void set_custom_cmds(const struct cmd_fn *cmds);
 
 struct provider_clk *get_all_provider_clks(void);
 const char *get_last_cmd(void);
+
+void reg_pdrv(void);
+void unreg_pdrv(void);
+void prepare_enable_provider(const char *pvd);
+void disable_unprepare_provider(const char *pvd);
+
 void print_regs(void);
 void print_fmeter_all(void);
 

@@ -559,7 +559,7 @@ static int clkdbg_clkop_int_ckname(int (*clkop)(struct clk *clk),
 	char *c = cmd;
 	char *ign;
 	char *clk_name;
-	int r;
+	int r = 0;
 
 	strcpy(cmd, last_cmd);
 
@@ -570,7 +570,6 @@ static int clkdbg_clkop_int_ckname(int (*clkop)(struct clk *clk),
 		return 0;
 
 	if (strcmp(clk_name, "all") == 0) {
-		int r = 0;
 		struct provider_clk *pvdck = get_all_provider_clks();
 
 		for (; pvdck->ck; pvdck++) {
@@ -677,6 +676,62 @@ static int clkdbg_disable_unprepare(struct seq_file *s, void *v)
 {
 	return clkdbg_clkop_void_ckname(clk_disable_unprepare,
 					"clk_disable_unprepare", s, v);
+}
+
+void prepare_enable_provider(const char *pvd)
+{
+	bool allpvd = (!pvd || strcmp(pvd, "all") == 0);
+	struct provider_clk *pvdck = get_all_provider_clks();
+
+	for (; pvdck->ck; pvdck++) {
+		if (allpvd || (pvdck->provider_name &&
+				strcmp(pvd, pvdck->provider_name) == 0))
+			clk_prepare_enable(pvdck->ck);
+	}
+}
+
+void disable_unprepare_provider(const char *pvd)
+{
+	bool allpvd = (!pvd || strcmp(pvd, "all") == 0);
+	struct provider_clk *pvdck = get_all_provider_clks();
+
+	for (; pvdck->ck; pvdck++) {
+		if (allpvd || (pvdck->provider_name &&
+				strcmp(pvd, pvdck->provider_name) == 0))
+			clk_disable_unprepare(pvdck->ck);
+	}
+}
+
+static void clkpvdop(void (*pvdop)(const char *), const char *clkpvdop_name,
+			struct seq_file *s)
+{
+	char cmd[sizeof(last_cmd)];
+	char *c = cmd;
+	char *ign;
+	char *pvd_name;
+
+	strcpy(cmd, last_cmd);
+
+	ign = strsep(&c, " ");
+	pvd_name = strsep(&c, " ");
+
+	if (!pvd_name)
+		return;
+
+	pvdop(pvd_name);
+	seq_printf(s, "%s(%s)\n", clkpvdop_name, pvd_name);
+}
+
+static int clkdbg_prepare_enable_provider(struct seq_file *s, void *v)
+{
+	clkpvdop(prepare_enable_provider, "prepare_enable_provider", s);
+	return 0;
+}
+
+static int clkdbg_disable_unprepare_provider(struct seq_file *s, void *v)
+{
+	clkpvdop(disable_unprepare_provider, "disable_unprepare_provider", s);
+	return 0;
 }
 
 static int clkdbg_set_parent(struct seq_file *s, void *v)
@@ -1357,7 +1412,122 @@ static int clkdbg_pwr_off(struct seq_file *s, void *v)
 	return genpd_op("power_off", s);
 }
 
+/*
+ * clkdbg reg_pdrv/runeg_pdrv support
+ */
+
+static int clkdbg_probe(struct platform_device *pdev)
+{
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
+
+	return 0;
+}
+
+static int clkdbg_remove(struct platform_device *pdev)
+{
+	pm_runtime_put_sync(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
+
+	return 0;
+}
+
+struct pdev_drv {
+	struct platform_driver pdrv;
+	struct platform_device *pdev;
+	struct generic_pm_domain *genpd;
+};
+
+#define PDEV_DRV(_name) {				\
+	.pdrv = {					\
+		.probe		= clkdbg_probe,		\
+		.remove		= clkdbg_remove,	\
+		.driver		= {			\
+			.name	= _name,		\
+		},					\
+	},						\
+}
+
+static struct pdev_drv pderv[] = {
+	PDEV_DRV("clkdbg-pd0"),
+	PDEV_DRV("clkdbg-pd1"),
+	PDEV_DRV("clkdbg-pd2"),
+	PDEV_DRV("clkdbg-pd3"),
+	PDEV_DRV("clkdbg-pd4"),
+	PDEV_DRV("clkdbg-pd5"),
+	PDEV_DRV("clkdbg-pd6"),
+	PDEV_DRV("clkdbg-pd7"),
+	PDEV_DRV("clkdbg-pd8"),
+	PDEV_DRV("clkdbg-pd9"),
+};
+
+static int clkdbg_reg_pdrv(struct seq_file *s, void *v)
+{
+	int i;
+	struct generic_pm_domain **pds = get_all_genpd();
+
+	for (i = 0; i < ARRAY_SIZE(pderv) && *pds; i++, pds++) {
+		const char *name = pderv[i].pdrv.driver.name;
+		struct generic_pm_domain *pd = *pds;
+
+		if (IS_ERR_OR_NULL(pd) || pderv[i].genpd)
+			continue;
+
+		pderv[i].genpd = pd;
+
+		pderv[i].pdev = platform_device_alloc(name, 0);
+		platform_device_add(pderv[i].pdev);
+
+		pm_genpd_add_device(pd, &pderv[i].pdev->dev);
+		platform_driver_register(&pderv[i].pdrv);
+
+		if (s)
+			seq_printf(s, "%s --> %s\n", name, pd->name);
+	}
+
+	return 0;
+}
+
+static int clkdbg_unreg_pdrv(struct seq_file *s, void *v)
+{
+	int i;
+
+	for (i = ARRAY_SIZE(pderv) - 1; i >= 0; i--) {
+		const char *name = pderv[i].pdrv.driver.name;
+		struct generic_pm_domain *pd = pderv[i].genpd;
+
+		if (IS_ERR_OR_NULL(pd))
+			continue;
+
+		platform_driver_unregister(&pderv[i].pdrv);
+		pm_genpd_remove_device(pd, &pderv[i].pdev->dev);
+
+		platform_device_unregister(pderv[i].pdev);
+
+		pderv[i].genpd = NULL;
+
+		if (s)
+			seq_printf(s, "%s -x- %s\n", name, pd->name);
+	}
+
+	return 0;
+}
+
 #endif /* CLKDBG_PM_DOMAIN */
+
+void reg_pdrv(void)
+{
+#if CLKDBG_PM_DOMAIN
+	clkdbg_reg_pdrv(NULL, NULL);
+#endif
+}
+
+void unreg_pdrv(void)
+{
+#if CLKDBG_PM_DOMAIN
+	clkdbg_unreg_pdrv(NULL, NULL);
+#endif
+}
 
 /*
  * Suspend / resume handler
@@ -1606,6 +1776,8 @@ static const struct cmd_fn common_cmds[] = {
 	CMDFN("disable", clkdbg_disable),
 	CMDFN("prepare_enable", clkdbg_prepare_enable),
 	CMDFN("disable_unprepare", clkdbg_disable_unprepare),
+	CMDFN("prepare_enable_provider", clkdbg_prepare_enable_provider),
+	CMDFN("disable_unprepare_provider", clkdbg_disable_unprepare_provider),
 	CMDFN("set_parent", clkdbg_set_parent),
 	CMDFN("set_rate", clkdbg_set_rate),
 	CMDFN("reg_read", clkdbg_reg_read),
@@ -1623,6 +1795,8 @@ static const struct cmd_fn common_cmds[] = {
 	CMDFN("pm_runtime_put_sync", clkdbg_pm_runtime_put_sync),
 	CMDFN("pwr_on", clkdbg_pwr_on),
 	CMDFN("pwr_off", clkdbg_pwr_off),
+	CMDFN("reg_pdrv", clkdbg_reg_pdrv),
+	CMDFN("unreg_pdrv", clkdbg_unreg_pdrv),
 #endif /* CLKDBG_PM_DOMAIN */
 	CMDFN("suspend_set_ops", clkdbg_suspend_set_ops),
 	CMDFN("dump_suspend_clks", clkdbg_dump_suspend_clks),
