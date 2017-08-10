@@ -55,6 +55,7 @@
 
 #define DEFAULT_VOLT_VSRAM      (100000)
 #define DEFAULT_VOLT_VCORE      (100000)
+#define DEFAULT_VOLT_VPROC      (100000)
 #define NR_PMIC_WRAP_CMD (16)	/* 6755 has 16 pmic wrap cmd */
 #define MAX_RETRY_COUNT (100)
 
