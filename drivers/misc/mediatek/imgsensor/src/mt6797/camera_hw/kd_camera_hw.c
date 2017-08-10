@@ -282,14 +282,14 @@ PowerUp PowerOnList = {
 	  {SENSOR_DRVNAME_IMX214_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1000, 10},
-	   {AFVDD, Vol_2800, 5},
+	   {AVDD, Vol_2800, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 1},
 	   {PDN, Vol_Low, 0},
 	   {PDN, Vol_High, 0},
 	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
+	   {RST, Vol_High, 1}
 	   },
 	  },
 #endif
@@ -297,14 +297,14 @@ PowerUp PowerOnList = {
 	  {SENSOR_DRVNAME_IMX214_MIPI_MONO,
 	  {
 	   {SensorMCLK, Vol_High, 0},
-	   {AVDD, Vol_2800, 10},
-	   {DOVDD, Vol_1800, 10},
-	   {DVDD, Vol_1000, 10},
-	   {AFVDD, Vol_2800, 5},
+	   {AVDD, Vol_2800, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 1},
 	   {PDN, Vol_Low, 0},
 	   {PDN, Vol_High, 0},
 	   {RST, Vol_Low, 0},
-	   {RST, Vol_High, 0}
+	   {RST, Vol_High, 1}
 	   },
 	  },
 #endif
@@ -413,6 +413,21 @@ PowerUp PowerOnList = {
 	   },
 	  },
 #endif
+#if defined(S5K3M3_MIPI_RAW)
+	  {SENSOR_DRVNAME_S5K3M3_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1000, 0},
+	   {AFVDD, Vol_2800, 1},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_High, 2}
+	   },
+	  },
+#endif	  
 #if defined(OV5670_MIPI_RAW)
 	   {SENSOR_DRVNAME_OV5670_MIPI_RAW,
 	   {
