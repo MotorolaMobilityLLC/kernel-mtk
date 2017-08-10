@@ -1706,7 +1706,9 @@ kdGetSocketPostion(unsigned int *pSocketPos) {
         break;
     default:
     case DUAL_CAMERA_SUB_SENSOR:
+#ifdef MTK_SUB2_IMGSENSOR
     case DUAL_CAMERA_SUB_2_SENSOR:
+#endif
         *pSocketPos = IMGSENSOR_SOCKET_POS_NONE;
         break;
     }

@@ -1,11 +1,17 @@
 config MTK_IMGSENSOR
-  bool CONFIG_MTK_IMGSENSOR
-  default n
-  help
-    CONFIG_MTK_IMGSENSOR
+	bool "enable MTK cam driver"
+	default n
+	help
+	  CONFIG_MTK_IMGSENSOR
+
+config MTK_CAM_MAX_NUMBER_OF_CAMERA
+	int "max number of camera supported"
+	default 2
+	help
+	  max number of camera supported
 
 config MTK_EFUSE_DOWNGRADE
-  bool "CONFIG_MTK_EFUSE_DOWNGRADE"
-  default n
-  help
-    CONFIG_MTK_EFUSE_DOWNGRADE
+	bool "a variant of downgrade chip"
+	default n
+	help
+	  a variant of downgrade chip
