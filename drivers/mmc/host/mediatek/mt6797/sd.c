@@ -1799,6 +1799,8 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	case SD_SWITCH:
 	case SD_APP_SD_STATUS:
 	case MMC_SEND_EXT_CSD:
+	case MMC_SEND_WRITE_PROT:
+	case 31:
 		if (mmc_cmd_type(cmd) == MMC_CMD_ADTC)
 			rawcmd |= (1 << 11);
 		break;
