@@ -935,6 +935,29 @@ static signed int read_hw_ocv(void *data)
 	return STATUS_OK;
 }
 
+static signed int read_is_hw_ocv_ready(void *data)
+{
+#if defined(CONFIG_POWER_EXT)
+	*(signed int *) (data) = 0;
+#else
+#if defined(SWCHR_POWER_PATH)
+	*(signed int *) (data) = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_SWCHR);
+	bm_err("[read_is_hw_ocv_ready] is_hw_ocv_ready(SWCHR) %d\n", *(signed int *) (data));
+	pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+	mdelay(1);
+	pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+#else
+	*(signed int *) (data) = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
+	bm_err("[read_is_hw_ocv_ready] is_hw_ocv_ready(PCHR) %d\n", *(signed int *) (data));
+	pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+	mdelay(1);
+	pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+#endif
+#endif
+
+	return STATUS_OK;
+}
+
 static signed int dump_register_fgadc(void *data)
 {
 	return STATUS_OK;
@@ -970,6 +993,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT] = fgauge_set_columb_interrupt;
 		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
+		bm_func[BATTERY_METER_CMD_GET_IS_HW_OCV_READY] = read_is_hw_ocv_ready;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {

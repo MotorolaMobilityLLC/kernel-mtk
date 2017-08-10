@@ -1706,7 +1706,8 @@ static void battery_update(struct battery_data *bat_data)
 	static unsigned int shutdown_cnt = 0xBADDCAFE;
 	static unsigned int shutdown_cnt_chr = 0xBADDCAFE;
 	static unsigned int update_cnt = 6;
-	static unsigned int pre_soc;
+	static unsigned int pre_uisoc2;
+	static unsigned int pre_chr_state;
 
 	if (shutdown_cnt == 0xBADDCAFE)
 		shutdown_cnt = 0;
@@ -1753,12 +1754,13 @@ static void battery_update(struct battery_data *bat_data)
 
 		if (dlpt_check_power_off() == 1) {
 			bat_data->BAT_CAPACITY = 0;
+			BMT_status.UI_SOC2 = 0;
 			cnt++;
 			battery_log(BAT_LOG_CRTI,
 				    "[DLPT_POWER_OFF_EN] SOC=%d to power off , cnt=%d\n",
 				    bat_data->BAT_CAPACITY, cnt);
 
-			if (cnt >= 2)
+			if (cnt >= 4)
 				kernel_restart("DLPT reboot system");
 
 		} else {
@@ -1774,12 +1776,19 @@ static void battery_update(struct battery_data *bat_data)
 	if (update_cnt == 6) {
 		/* Update per 60 seconds */
 		power_supply_changed(bat_psy);
-		pre_soc = BMT_status.SOC;
+		pre_uisoc2 = BMT_status.UI_SOC2;
+		pre_chr_state = BMT_status.bat_charging_state;
 		update_cnt = 0;
-	} else if (pre_soc != BMT_status.SOC) {
-		/* Update when soc change */
+	} else if (pre_uisoc2 != BMT_status.UI_SOC2) {
+		/* Update when uisoc2 change */
 		power_supply_changed(bat_psy);
-		pre_soc = BMT_status.SOC;
+		pre_uisoc2 = BMT_status.UI_SOC2;
+		update_cnt = 0;
+	} else if ((BMT_status.charger_exist == KAL_TRUE) &&
+				(pre_chr_state != BMT_status.bat_charging_state)) {
+		/* Update when changer status change */
+		power_supply_changed(bat_psy);
+		pre_chr_state = BMT_status.bat_charging_state;
 		update_cnt = 0;
 	} else if (cable_in_uevent == 1) {
 		/*To prevent interrupt-trigger update from being filtered*/
@@ -4110,6 +4119,26 @@ static void battery_timer_resume(void)
 	/* restore timer */
 	hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
 	hrtimer_start(&charger_hv_detect_timer, hvtime, HRTIMER_MODE_REL);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	battery_log(BAT_LOG_CRTI,
+		 "[fg reg] current:0x%x 0x%x low:0x%x 0x%x high:0x%x 0x%x\r\n",
+		pmic_get_register_value(PMIC_FG_CAR_18_03), pmic_get_register_value(PMIC_FG_CAR_34_19),
+		pmic_get_register_value(PMIC_FG_BLTR_15_00), pmic_get_register_value(PMIC_FG_BLTR_31_16),
+		pmic_get_register_value(PMIC_FG_BFTR_15_00), pmic_get_register_value(PMIC_FG_BFTR_31_16));
+
+	{
+		signed int cur, low, high;
+
+		cur = (pmic_get_register_value(PMIC_FG_CAR_18_03));
+		cur |= ((pmic_get_register_value(PMIC_FG_CAR_34_19)) & 0xffff) << 16;
+		low = (pmic_get_register_value(PMIC_FG_BLTR_15_00));
+		low |= ((pmic_get_register_value(PMIC_FG_BLTR_31_16)) & 0xffff) << 16;
+		high = (pmic_get_register_value(PMIC_FG_BFTR_15_00));
+		high |= ((pmic_get_register_value(PMIC_FG_BFTR_31_16)) & 0xffff) << 16;
+		battery_log(BAT_LOG_CRTI,
+			 "[fg reg] current:%d low:%d high:%d\r\n", cur, low, high);
+	}
+#else
 /*
 	battery_log(BAT_LOG_CRTI,
 		 "[fg reg] current:0x%x 0x%x low:0x%x 0x%x high:0x%x 0x%x\r\n",
@@ -4130,6 +4159,7 @@ static void battery_timer_resume(void)
 			 "[fg reg] current:%d low:%d high:%d\r\n", cur, low, high);
 	}
 */
+#endif
 
 	battery_suspended = KAL_FALSE;
 	battery_log(BAT_LOG_CRTI, "@bs=0@\n");

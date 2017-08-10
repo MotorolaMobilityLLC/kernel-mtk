@@ -70,7 +70,11 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE	1000
 #define R_FG_BOARD_SLOPE	1000 /*slope*/
-#define CAR_TUNE_VALUE	118 /*1.00 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	#define CAR_TUNE_VALUE	101 /*1.00 */
+#else
+	#define CAR_TUNE_VALUE	118 /*1.00 */
+#endif
 
 
 /* HW Fuel gague  */

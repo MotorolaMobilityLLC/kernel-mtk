@@ -22,7 +22,11 @@
 #define BAT_NTC_47 0
 
 #if (BAT_NTC_10 == 1)
-#define RBAT_PULL_UP_R             24000
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	#define RBAT_PULL_UP_R             16900
+#else
+	#define RBAT_PULL_UP_R             24000
+#endif
 #endif
 
 #if (BAT_NTC_47 == 1)

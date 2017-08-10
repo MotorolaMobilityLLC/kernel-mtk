@@ -3410,7 +3410,7 @@ void fg_bat_int_handler(void)
 	if (bat_is_charger_exist() == KAL_FALSE) {
 		battery_log(BAT_LOG_CRTI, "wake up user space >>\n");
 		/* self_correct_dod_scheme(duration_time); */
-		wakeup_fg_algo(FG_RESUME);
+		wakeup_fg_algo(FG_MAIN);
 	}
 
 }
@@ -3611,6 +3611,9 @@ static int battery_meter_resume(struct platform_device *dev)
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
+	/* read HW ocv ready bit here, daemon resume flow will get it later */
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_HW_OCV_READY, &is_hwocv_update);
+
 	if (g_sleep_total_time.tv_sec < g_spm_timer) {
 		if (wake_up_smooth_time == 0) {
 			if (bat_is_charger_exist() == KAL_FALSE) {
