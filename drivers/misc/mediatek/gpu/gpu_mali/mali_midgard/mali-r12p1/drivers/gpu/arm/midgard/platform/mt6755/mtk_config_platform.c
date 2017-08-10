@@ -306,13 +306,24 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	}
 	
 	gpu_efuse =  (get_devinfo_with_index(17) >> 6)&0x01;
-	pr_alert("[Mali] get_devinfo_with_index = 0x%x , gpu_efuse = 0x%x  \n", get_devinfo_with_index(17), gpu_efuse);
-/*	if( gpu_efuse == 1 )
-		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
-	else
-		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
-*/
-	g_mtk_gpu_efuse_set_already = 1;
+	pr_alert("[Mali] get_devinfo_with_index = 0x%x , gpu_efuse = 0x%x.\n", get_devinfo_with_index(17), gpu_efuse);
+	g_mtk_gpu_efuse_set_already = 0;
+
+	if (gpu_efuse == 1) {
+		kbdev->pm.debug_core_mask[0] = (u64)1;	 /* 1-core */
+		kbdev->pm.debug_core_mask[1] = (u64)1;
+		kbdev->pm.debug_core_mask[2] = (u64)1;
+		kbdev->pm.debug_core_mask_all = (u64)1;
+
+		g_mtk_gpu_efuse_set_already = 1;
+	} else {
+		kbdev->pm.debug_core_mask[0] = (u64)3;	 /* 2-core */
+		kbdev->pm.debug_core_mask[1] = (u64)3;
+		kbdev->pm.debug_core_mask[2] = (u64)3;
+		kbdev->pm.debug_core_mask_all = (u64)3;
+	}
+
+
     
     return 0;
 }
