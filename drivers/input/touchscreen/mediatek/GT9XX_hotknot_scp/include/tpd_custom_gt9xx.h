@@ -20,7 +20,6 @@
 #include <linux/byteorder/generic.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
-#include <linux/rtpm_prio.h>
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include "mt_boot_common.h"
