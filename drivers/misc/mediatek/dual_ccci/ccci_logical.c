@@ -161,13 +161,13 @@ int get_md_wakeup_src(int md_id, char *buf, unsigned int len)
 				channel_name =
 				    logic_ch_static_info_tab[rx_ch[i]
 							     [0]].m_ch_name;
-				sprintf(str, "%s(%d,%d) ", channel_name,
+				snprintf(str, sizeof(str), "%s(%d,%d) ", channel_name,
 					rx_ch[i][0], rx_ch[i][1]);
 			} else
-				sprintf(str, "%s(%d,%d) ", "unknown",
+				snprintf(str, sizeof(str), "%s(%d,%d) ", "unknown",
 					rx_ch[i][0], rx_ch[i][1]);
-			if (curr_str_len + strlen(str) < sizeof(log_buf)) {
-				strncat(log_buf, str, sizeof(log_buf) - curr_str_len);
+			if (curr_str_len + strlen(str) < sizeof(log_buf) - 1) {
+				strncat(log_buf, str, strlen(str));
 				curr_str_len += strlen(str);
 			}
 		}

@@ -1091,7 +1091,8 @@ int ccci_tty_init(int md_id)
 
  _RELEASE_CTL_MEMORY:
 	kfree(ctlb);
-	tty_ctlb[md_id] = NULL;
+	if (md_id >= 0 && md_id < MAX_MD_NUM)
+		tty_ctlb[md_id] = NULL;
 
 	return ret;
 }
