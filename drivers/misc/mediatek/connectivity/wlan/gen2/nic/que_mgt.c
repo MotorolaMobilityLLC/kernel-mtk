@@ -931,6 +931,9 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 				break;	/*default */
 			}	/* switch (prCurrentMsduInfo->ucStaRecIndex) */
+#if 0  /*TGn AP mode N-4.2.25 causes a large number of forwarding packets.
+		* Disable this drop mechanism to raise the throughput.
+		*/
 
 			if (prCurrentMsduInfo->eSrc == TX_PACKET_FORWARDING) {
 				if (prTxQue->u4NumElem > 32) {
@@ -941,7 +944,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 					TX_INC_CNT(&prAdapter->rTxCtrl, TX_FORWARD_OVERFLOW_DROP);
 				}
 			}
-
+#endif
 		} else {
 
 			DBGLOG(QM, WARN, "Drop the Packet for inactive Bss %u\n", prCurrentMsduInfo->ucNetworkType);
