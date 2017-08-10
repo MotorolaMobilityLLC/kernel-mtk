@@ -23,10 +23,6 @@ static unsigned int max_level = 7;
 //  lowest freq => idx num - 1, level 0
 #define TRANS2IDX(level) (max_level - (level))
 
-extern int (*ged_sw_vsync_event_fp)(bool bMode);
-//static unsigned int VSync_SW;
-
-
 static struct {
 	int idx_fix;
 	unsigned int idx_floor;
@@ -92,37 +88,6 @@ static void spm_update_fc(void)
 		mtk_kbase_spm_set_vol_freq_cf(cv, cf, fv, ff);
 		MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	}
-}
-
-ssize_t mtk_kbase_spm_hal_status(char *buf, ssize_t size)
-{
-	ssize_t ret = 0;
-
-	ret += scnprintf(buf + ret, size - ret, "\nhal_status:\n");
-	ret += scnprintf(buf + ret, size - ret, "  thermal_ceiling: %d\n", glo.idx_ceiling_thermal);
-	ret += scnprintf(buf + ret, size - ret, "  cust_ceiling: %d\n", glo.idx_ceiling);
-	ret += scnprintf(buf + ret, size - ret, "  cust_floor: %d\n", glo.idx_floor_cust);
-	ret += scnprintf(buf + ret, size - ret, "  fix_freq: %d (floor: %d)\n\n", glo.idx_fix, glo.idx_floor);
-
-	return ret;
-}
-
-static int spm_vsync_hint(bool bMode)
-{
-	struct mtk_config *config = g_config;
-	if (bMode == true)
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_boost(0, 0);
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	}
-	else
-	{
-		MTKCLK_prepare_enable(clk_dvfs_gpu);
-		mtk_kbase_spm_boost(0, 300000);
-		MTKCLK_disable_unprepare(clk_dvfs_gpu);
-	}
-	return 0;
 }
 
 static void spm_boost(unsigned int idx)
@@ -297,9 +262,6 @@ void mtk_kbase_spm_hal_init(void)
 	mt_gpufreq_input_boost_notify_registerCB(spm_mtk_gpu_input_boost_CB);
 	// voltage
   	mt_gpufreq_update_volt_registerCB(spm_mtk_gpu_ptpod_update_notify);
-
-	//Vsync hint
-	ged_sw_vsync_event_fp = spm_vsync_hint;
 }
 
 void mtk_gpu_spm_resume_hal(void)

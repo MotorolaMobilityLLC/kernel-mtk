@@ -69,19 +69,23 @@ void mtk_kbase_spm_release(void)
 
 static void _mtk_kbase_spm_kick_lock(void)
 {
-	mtk_dvfs_gpu_lock(3, 1);
+	int retry = 0;
+	DVFS_CPU_write32(0x0, 0x0b160001);
+	do {
+		DVFS_CPU_write32(0x428, 0x1);
+		if (((++retry) % 10000) == 0)
+			pr_MTK_err("polling dvfs_cpu:0x428 , retry=%d\n", retry);
+	} while(DVFS_CPU_read32(0x428) != 0x1);
 }
 static void _mtk_kbase_spm_kick_unlock(void)
 {
-	mtk_dvfs_gpu_unlock(3, 1);
+	DVFS_CPU_write32(0x428, 0x1);
 }
 
-void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock)
+void mtk_kbase_spm_kick(struct pcm_desc *pd)
 {
 	dma_addr_t pa;
 	uint32_t tmp;
-
-	MTK_err("spm-kick begin, lock = %d", lock);
 
 	spm_acquire();
 
@@ -114,11 +118,8 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock)
 
 	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
 
-	if (lock)
-	{
-		/* Lock before fetch IM */
-		_mtk_kbase_spm_kick_lock();
-	}
+	/* Lock before fetch IM */
+	_mtk_kbase_spm_kick_lock();
 
 	/* Kick */
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_IM_KICK_L | CON0_PCM_KICK_L);
@@ -127,15 +128,12 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd, int lock)
 	/* Wait IM ready */
 	while ((DVFS_GPU_read32(DVFS_GPU_PCM_FSM_STA) & FSM_STA_IM_STATE_MASK) != FSM_STA_IM_STATE_IM_READY);
 
-	if (lock)
-	{
-		/* Unlock after IM ready */
-		_mtk_kbase_spm_kick_unlock();
-	}
+	/* Unlock after IM ready */
+	_mtk_kbase_spm_kick_unlock();
 
 	spm_release();
 
-	MTK_err("spm-kick end - done");
+	MTK_err("spm-kick done");
 }
 
 int mtk_kbase_spm_isonline(void)
@@ -293,53 +291,4 @@ void mtk_kbase_spm_update_table(void)
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	mtk_kbase_spm_wait();
 	spm_release();
-}
-
-int mtk_dvfs_gpu_lock(int sem, int user)
-{
-	int offset, retry = 0;;
-
-	if (sem < 0 || sem > 4) return 1;
-	if (user < 0 || user > 3) return 1;
-
-	offset = 0x410 + sem * 0x10 + user * 0x4;
-
-	while (DVFS_GPU_read32(offset) != 0x1)
-	{
-		DVFS_GPU_write32(offset, 0x1);
-		if (((++retry) % 1000) == 0)
-		{
-			pr_MTK_err("request sem @ dvfs_gpu:0x%x fail, retry=%d, continue...\n", offset, retry);
-		}
-		udelay(1);
-
-		if (retry > 2000)
-		{
-			pr_MTK_err("request sem @ dvfs_gpu:0x%x fail, retry=%d, exit\n", offset, retry);
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-int mtk_dvfs_gpu_unlock(int sem, int user)
-{
-	int offset;
-
-	if (sem < 0 || sem > 4) return 1;
-	if (user < 0 || user > 3) return 1;
-
-	offset = 0x410 + sem * 0x10 + user * 0x4;
-
-	if (DVFS_GPU_read32(offset) == 0x1)
-	{
-		DVFS_GPU_write32(offset, 0x1);
-	}
-	else
-	{
-		return 1;
-	}
-
-	return 0;
 }
