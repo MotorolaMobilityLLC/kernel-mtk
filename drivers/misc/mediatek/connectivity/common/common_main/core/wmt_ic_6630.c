@@ -683,6 +683,7 @@ static INT32 mt6630_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 		if (iRet || (u4Res != osal_sizeof(WMT_SET_WAKEUP_WAKE_EVT))) {
 			WMT_ERR_FUNC("read WAKEUP_WAKE_EVT fail(%d)\n", iRet);
+			mtk_wcn_stp_dbg_dump_package();
 			return -5;
 		}
 		/* WMT_DBG_FUNC("WMT-CORE: read WMT_SET_WAKEUP_WAKE_EVT ok"); */
@@ -1650,6 +1651,7 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 
 	if (iRet || (u4Res != sizeof(WMT_PATCH_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d)\n", iRet, u4Res);
+		mtk_wcn_stp_dbg_dump_package();
 		iRet -= 1;
 		goto done;
 	}
@@ -1686,6 +1688,7 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	if (iRet || (u4Res != sizeof(WMT_PATCH_P_ADDRESS_EVT))) {
 		WMT_ERR_FUNC("wmt_core:wmt patch address EVT fail(%d),size(%d),index(%d)\n", iRet,
 			     u4Res, index);
+		mtk_wcn_stp_dbg_dump_package();
 		iRet -= 1;
 		goto done;
 	}
@@ -1744,6 +1747,7 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 		if (iRet || (u4Res != sizeof(WMT_PATCH_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%zu, %d) fail(%d)\n",
 				     sizeof(WMT_PATCH_EVT), u4Res, iRet);
+			mtk_wcn_stp_dbg_dump_package();
 			iRet -= 1;
 			break;
 		}
@@ -1936,6 +1940,7 @@ static INT32 mt6630_patch_dwn(VOID)
 		if (iRet || (u4Res != sizeof(WMT_PATCH_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_PATCH_EVT length(%d, %d) fail(%d)\n",
 				     sizeof(WMT_PATCH_EVT), u4Res, iRet);
+			mtk_wcn_stp_dbg_dump_package();
 			iRet -= 1;
 			break;
 		}

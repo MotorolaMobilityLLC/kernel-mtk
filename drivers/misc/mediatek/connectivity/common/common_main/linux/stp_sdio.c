@@ -1325,6 +1325,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			osal_get_local_time(&ts, &nsec);
+			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 			pkt_bufp =
 			    gp_info->pkt_buf.tx_buf +
@@ -2898,13 +2901,11 @@ VOID stp_sdio_txdbg_dump(VOID)
 #endif
 
 #endif
-		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d)\n",
-				idx, gp_info->pkt_buf.tx_buf_ts[idx], len);
 		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d), time[%llu.%06lu]\n",
 				   idx, gp_info->pkt_buf.tx_buf_ts[idx], len,
 				   gp_info->pkt_buf.tx_buf_local_ts[idx],
 				   gp_info->pkt_buf.tx_buf_local_nsec[idx]);
-		if (0 == len) {
+		if (len == 0) {
 			STPSDIO_INFO_FUNC("idx(%x) 0 == len dump skip\n", idx);
 			continue;
 		}
@@ -2925,7 +2926,7 @@ VOID stp_sdio_txdbg_dump(VOID)
 		}
 		STPSDIO_INFO_FUNC("pkt_buf.tx_buf dump ok\n");
 	}
-#endif
+#endif				/*end of STP_TXDBG*/
 #endif				/* end of STP_SDIO_TXDBG */
 }
 

@@ -1342,7 +1342,6 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 	hdr->type = type;
 	hdr->l_sec = ts;
 	hdr->l_nsec = nsec;
-
 	return 0;
 }
 

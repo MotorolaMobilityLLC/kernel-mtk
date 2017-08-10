@@ -277,6 +277,10 @@ extern MTK_WCN_STP_SDIO_HIF_INFO g_stp_sdio_host_info;
  */
 extern INT32 mtk_wcn_hif_sdio_client_reg(const MTK_WCN_HIF_SDIO_CLTINFO *pinfo);
 
+#if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
+VOID stp_sdio_txdbg_dump(VOID);
+#endif
+
 extern INT32 mtk_wcn_stp_sdio_do_own_clr(VOID);
 #if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
 VOID stp_sdio_txdbg_dump(VOID);
