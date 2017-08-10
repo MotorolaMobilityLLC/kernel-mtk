@@ -1586,7 +1586,8 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 	/* check file-system mounted */
 	GTP_DEBUG("[gtp_bak_ref_proc]Waiting for FS %d", gtp_ref_retries);
 	if (gup_check_fs_mounted("/data") == FAIL) {
-		GTP_DEBUG("[gtp_bak_ref_proc]/data not mounted");
+		if ((gtp_ref_retries % 10) == 0)
+			GTP_DEBUG("[gtp_bak_ref_proc]/data not mounted");
 		if (gtp_ref_retries++ < GTP_CHK_FS_MNT_MAX)
 			return FAIL;
 	} else {
@@ -1624,7 +1625,7 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 	}
 	/* get ref file data */
 	flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
-	if (IS_ERR(flp)) {
+	if (flp ==  NULL || IS_ERR(flp)) {
 		GTP_ERROR("[gtp_bak_ref_proc]Ref File not found!Creat ref file.");
 		/* flp->f_op->llseek(flp, 0, SEEK_SET); */
 		/* flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos); */
@@ -1640,6 +1641,10 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 		}
 	}
 
+	if (flp && !IS_ERR(flp)) {
+		filp_close(flp, NULL);
+		flp = NULL;
+	}
 	if (GTP_BAK_REF_STORE == mode) {
 		ret = i2c_read_bytes(client, 0x99D0, refp, ref_len);
 		if (-1 == ret) {
@@ -1647,8 +1652,11 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 			ret = FAIL;
 			goto exit_ref_proc;
 		}
-		flp->f_op->llseek(flp, 0, SEEK_SET);
-		flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+		flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
+		if (flp && !IS_ERR(flp)) {
+			flp->f_op->llseek(flp, 0, SEEK_SET);
+			flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+		}
 	} else {
 		/* checksum ref file */
 		for (j = 0; j < ref_grps; ++j) {
@@ -1687,8 +1695,10 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 
 exit_ref_proc:
 	kfree(refp);
-	if (flp && !IS_ERR(flp))
+	if (flp && !IS_ERR(flp)) {
 		filp_close(flp, NULL);
+		flp = NULL;
+	}
 	return ret;
 }
 
@@ -1756,7 +1766,8 @@ static u8 gtp_check_clk_legality(void)
 		GTP_INFO("Clk ram legality check success");
 		return SUCCESS;
 	}
-	GTP_ERROR("main clock freq in clock buf is wrong");
+	if ((gtp_clk_retries % 10) == 0)
+		GTP_ERROR("main clock freq in clock buf is wrong");
 	return FAIL;
 }
 
@@ -1775,14 +1786,15 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 
 	GTP_DEBUG("[gtp_main_clk_proc]Waiting for FS %d", gtp_ref_retries);
 	if (gup_check_fs_mounted("/data") == FAIL) {
-		GTP_DEBUG("[gtp_main_clk_proc]/data not mounted");
+		if ((gtp_clk_retries % 10) == 0)
+			GTP_DEBUG("[gtp_main_clk_proc]/data not mounted");
 		if (gtp_clk_retries++ < GTP_CHK_FS_MNT_MAX)
 			return FAIL;
 		GTP_ERROR("[gtp_main_clk_proc]Wait for file system timeout,need cal clk");
 	} else {
 		GTP_DEBUG("[gtp_main_clk_proc]/data mounted !!!!");
 		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-		if (!IS_ERR(flp)) {
+		if (!IS_ERR(flp) && (flp != NULL)) {
 			flp->f_op->llseek(flp, 0, SEEK_SET);
 			ret = flp->f_op->read(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
 			if (ret > 0) {
@@ -1792,6 +1804,9 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 					    ("[gtp_main_clk_proc]Open & read & check clk file success.");
 					goto send_main_clk;
 				}
+			} else {
+				filp_close(flp, NULL);
+				flp = NULL;
 			}
 		}
 		GTP_ERROR("[gtp_main_clk_proc]Check clk file failed,need cal clk");
@@ -1821,15 +1836,17 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 	}
 	gtp_clk_buf[5] = 0 - clk_chksum;
 
-	if (IS_ERR(flp)) {
-		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-	} else {
+	flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
+	if (!IS_ERR(flp) && (flp != NULL)) {
 		flp->f_op->llseek(flp, 0, SEEK_SET);
 		flp->f_op->write(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
 	}
 
-
 send_main_clk:
+	if (flp && !IS_ERR(flp)) {
+		filp_close(flp, NULL);
+		flp =  NULL;
+	}
 
 	ret = i2c_write_bytes(client, 0x8020, gtp_clk_buf, 6);
 	if (-1 == ret) {
@@ -1841,8 +1858,10 @@ send_main_clk:
 	ret = SUCCESS;
 
 exit_clk_proc:
-	if (flp && !IS_ERR(flp))
+	if (flp && !IS_ERR(flp)) {
 		filp_close(flp, NULL);
+		flp =  NULL;
+	}
 	return ret;
 }
 
@@ -2537,7 +2556,8 @@ static int touch_event_handler(void *unused)
 			}
 			switch (rqst_data[2] & 0x0F) {
 			case GTP_RQST_BAK_REF:
-				GTP_INFO("Request Ref.");
+				if ((gtp_ref_retries % 10) == 0)
+					GTP_INFO("Request Ref.");
 				ret = gtp_bak_ref_proc(i2c_client_point,
 						       GTP_BAK_REF_SEND);
 				if (SUCCESS == ret) {
@@ -2560,7 +2580,8 @@ static int touch_event_handler(void *unused)
 				}
 				goto exit_work_func;
 			case GTP_RQST_MAIN_CLOCK:
-				GTP_INFO("Request main clock.");
+				if ((gtp_clk_retries % 10) == 0)
+					GTP_INFO("Request main clock.");
 				rqst_processing = 1;
 				ret = gtp_main_clk_proc(i2c_client_point);
 				if (SUCCESS == ret) {
