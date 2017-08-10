@@ -35,7 +35,7 @@ void c2k_sdio_register_pm(pm_callback_t pm_cb, void *data)
 #ifdef C2K_USE_EINT
 
 static const int c2k_sdio_eirq_num = 262;
-static msdc_c2k_sdio_irq_handler_t *c2k_sdio_eirq_handler;
+static msdc_c2k_irq_handler_t *c2k_sdio_eirq_handler;
 static void *c2k_sdio_eirq_data;
 /*static int interrupt_count_c2k;*/
 static atomic_t irq_installed;
@@ -77,7 +77,7 @@ static irqreturn_t c2k_sdio_eirq_handler_stub(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-void c2k_sdio_request_eirq(msdc_c2k_sdio_irq_handler_t irq_handler, void *data)
+void c2k_sdio_request_eirq(msdc_c2k_irq_handler_t irq_handler, void *data)
 {
 	pr_info("[C2K] request interrupt %d from %ps\n", c2k_sdio_eirq_num, __builtin_return_address(0));
 	/*
