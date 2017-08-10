@@ -63,7 +63,7 @@ extern u32 fake_CDP;
 extern unsigned int musb_speed;
 
 extern struct musb *_mu3d_musb;
-#if defined(CONFIG_MTK_SMART_BATTERY)
+#if defined(CONFIG_MTK_SMART_BATTERY) && !defined(FOR_BRING_UP)
 extern void BATTERY_SetUSBState(int usb_state_value);
 extern CHARGER_TYPE mt_get_charger_type(void);
 #endif
