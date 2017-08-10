@@ -262,6 +262,8 @@ static int ccmni_open(struct net_device *dev)
 		return -1;
 	}
 
+	netif_carrier_on(dev);
+
 	netif_tx_start_all_queues(dev);
 
 	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
@@ -901,7 +903,8 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	switch (state) {
 	case READY:
-		netif_carrier_on(ccmni->dev);
+		/*don't carrire on here, MD data link may be not ready. carrirer on it in ccmni_open*/
+		/*netif_carrier_on(ccmni->dev);*/
 		ccmni->tx_seq_num[0] = 0;
 		ccmni->tx_seq_num[1] = 0;
 		ccmni->rx_seq_num = 0;
