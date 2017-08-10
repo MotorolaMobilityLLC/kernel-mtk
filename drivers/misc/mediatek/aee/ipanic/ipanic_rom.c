@@ -385,12 +385,12 @@ void ipanic_mrdump_mini(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 	if (ipanic_data_is_valid(IPANIC_DT_MINI_RDUMP))
 		return;
 
-	va_start(ap, msg);
 	ipanic_hdr = ipanic_header();
 	if (ipanic_hdr == NULL) {
 		LOGW("%s: unexpected ipanic header null\n", __func__);
 		return;
 	}
+	va_start(ap, msg);
 	sd_offset = ipanic_hdr->data_hdr[IPANIC_DT_MINI_RDUMP].offset;
 	dheader = &ipanic_hdr->data_hdr[IPANIC_DT_MINI_RDUMP];
 	ret = mrdump_mini_create_oops_dump(reboot_mode, ipanic_mem_write, sd_offset, msg, ap);
