@@ -1326,6 +1326,7 @@ static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg)
 	if (!GlueInfo)
 		return IRQ_HANDLED;
 
+	GlueInfo->u8HifIntTime = sched_clock();
 	HifInfo = &GlueInfo->rHifInfo;
 	GlueInfo->IsrCnt++;
 	if (GlueInfo->ulFlag & GLUE_FLAG_HALT) {

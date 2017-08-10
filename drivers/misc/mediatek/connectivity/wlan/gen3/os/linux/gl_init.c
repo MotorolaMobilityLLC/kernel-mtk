@@ -995,6 +995,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 
 	kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
 
+	STATS_TX_TIME_ARRIVE(prSkb);
+
 	if (kalHardStartXmit(prSkb, prDev, prGlueInfo, ucBssIndex) == WLAN_STATUS_SUCCESS) {
 		/* Successfully enqueue to Tx queue */
 		/* Successfully enqueue to Tx queue */
@@ -1829,6 +1831,64 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 		p2pNetRegister(prGlueInfo, FALSE);
 
 	return 0;
+}
+
+VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
+{
+	struct net_device *prDev = NULL;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+	PARAM_POWER_MODE ePowerMode;
+	UINT_8 ucBssIndex;
+	CMD_PS_PROFILE_T rPowerSaveMode;
+
+	/* 4 <1> Sanity Check */
+	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+		return;
+	}
+
+	prDev = arWlanDevInfo[u4WlanDevNum - 1].prDev;
+	if (!prDev)
+		return;
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
+	if (!prGlueInfo)
+		return;
+
+	prAdapter = prGlueInfo->prAdapter;
+	if ((!prAdapter) || (!prAdapter->prAisBssInfo))
+		return;
+
+	ucBssIndex = prAdapter->prAisBssInfo->ucBssIndex;
+	if (ucBssIndex >= BSS_INFO_NUM)
+		return;
+	rPowerSaveMode.ucBssIndex = ucBssIndex;
+
+	if (enabled) {
+		prAdapter->rWlanInfo.fgEnSpecPwrMgt = TRUE;
+		ePowerMode = Param_PowerModeCAM;
+		rPowerSaveMode.ucPsProfile = (UINT_8) ePowerMode;
+		DBGLOG(INIT, INFO, "Enable CAM BssIndex:%d, PowerMode:%d\n",
+		       ucBssIndex, rPowerSaveMode.ucPsProfile);
+	} else {
+		prAdapter->rWlanInfo.fgEnSpecPwrMgt = FALSE;
+		rPowerSaveMode.ucPsProfile =
+				prAdapter->rWlanInfo.arPowerSaveMode[ucBssIndex].ucPsProfile;
+		DBGLOG(INIT, INFO, "Disable CAM BssIndex:%d, PowerMode:%d\n",
+		       ucBssIndex, rPowerSaveMode.ucPsProfile);
+	}
+
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_POWER_SAVE_MODE,
+			    TRUE,
+			    FALSE,
+			    FALSE,
+			    NULL,
+			    NULL,
+			    sizeof(CMD_PS_PROFILE_T),
+			    (PUINT_8) &rPowerSaveMode,
+			    NULL, 0);
 }
 
 /*----------------------------------------------------------------------------*/
