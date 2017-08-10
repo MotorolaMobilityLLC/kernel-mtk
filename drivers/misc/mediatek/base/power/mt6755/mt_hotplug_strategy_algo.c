@@ -391,8 +391,12 @@ void hps_algo_amp(void)
 		if (!((little_num_online == target_little_cores)
 		      && (big_num_online == target_big_cores)))
 			goto ALGO_END_WITH_ACTION;
-		else
-			hps_ctxt.action = ACTION_NONE;
+		else {
+			if (hps_ctxt.up_loads_count > hps_ctxt.up_times)
+				goto ALGO_END_WITH_ACTION;
+			else
+				hps_ctxt.action = ACTION_NONE;
+		}
 	}
 /* ALGO_DOWN: */
 	/*
@@ -416,7 +420,7 @@ void hps_algo_amp(void)
 		}
 		if (hps_ctxt.stats_dump_enabled)
 			hps_ctxt_print_algo_stats_down(0);
-		if (hps_ctxt.up_times == 1)
+		if (hps_ctxt.down_times == 1)
 			hps_ctxt.down_loads_sum = hps_ctxt.cur_loads;
 		if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) {
 			unsigned int down_threshold = hps_ctxt.down_threshold * hps_ctxt.down_times;
@@ -446,8 +450,12 @@ void hps_algo_amp(void)
 		if (!((little_num_online == target_little_cores)
 		      && (big_num_online == target_big_cores)))
 			goto ALGO_END_WITH_ACTION;
-		else
-			hps_ctxt.action = ACTION_NONE;
+		else {
+			if (hps_ctxt.down_loads_count > hps_ctxt.down_times)
+				goto ALGO_END_WITH_ACTION;
+			else
+				hps_ctxt.action = ACTION_NONE;
+		}
 	}
 /*ACTION_ROOT_TRAN: */
 	/* Process "ONLY" root cpu transition */
