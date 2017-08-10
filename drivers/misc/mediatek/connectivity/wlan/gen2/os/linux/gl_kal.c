@@ -3926,7 +3926,9 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		    ieee80211_get_channel(wiphy, ieee80211_channel_to_frequency(ucChannelNum, IEEE80211_BAND_5GHZ));
 	}
 
-	if (prChannel != NULL && (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL)) {
+	if (prChannel != NULL && (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL
+		|| prGlueInfo->prAdapter->rWifiVar.rScanInfo.fgNloScanning
+		|| prGlueInfo->prAdapter->rWifiVar.rScanInfo.fgPscnOngoing)) {
 		struct cfg80211_bss *bss;
 #if CFG_SUPPORT_TSF_USING_BOOTTIME
 		struct ieee80211_mgmt *prMgmtFrame = (struct ieee80211_mgmt *)pucBeaconProbeResp;
