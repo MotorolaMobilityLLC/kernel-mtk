@@ -27,6 +27,8 @@ MALI_UPPER_HALF_SCHEDULING ?= 1
 MALI_ENABLE_CPU_CYCLES ?= 0
 
 DRIVER_DIR=$(src)
+PLATFORM_DIR = $(subst ",,$(CONFIG_MTK_PLATFORM))
+MTK_GPU_VERSION = $(subst ",,$(CONFIG_MTK_GPU_VERSION))
 
 
 # For customer releases the Linux Device Drivers will be provided as ARM proprietary and GPL releases:
@@ -127,8 +129,15 @@ mali-y += \
 	linux/mali_pmu_power_up_down.o \
 	__malidrv_build_info.o
 
-mali-y += platform/platform.o
-mali-y += platform/platform_pmm.o
+mali-y += platform/$(PLATFORM_DIR)/platform.o
+mali-y += platform/$(PLATFORM_DIR)/platform_pmm.o
+
+ifeq ($(word 3,$(MTK_GPU_VERSION)), mali450)
+ifdef CONFIG_OF
+	ccflags-y += -DCONFIG_MALI_DT
+endif
+	ccflags-y += -DCONFIG_MALI450
+endif
 
 ifneq ($(wildcard $(src)/linux/mali_slp_global_lock.c),)
 	mali-y += linux/mali_slp_global_lock.o

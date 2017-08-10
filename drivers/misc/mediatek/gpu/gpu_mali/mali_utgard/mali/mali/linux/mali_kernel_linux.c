@@ -42,6 +42,7 @@
 #include "mali_memory_dma_buf.h"
 #include "mali_memory_manager.h"
 #include "mali_memory_swap_alloc.h"
+#include "platform_pmm.h"
 #if defined(CONFIG_MALI400_INTERNAL_PROFILING)
 #include "mali_profiling_internal.h"
 #endif
@@ -506,7 +507,7 @@ static int mali_probe(struct platform_device *pdev)
 	struct mali_device *mdev;
 #endif
 
-	MALI_DEBUG_PRINT(2, ("mali_probe(): Called for platform device %s\n", pdev->name));
+	MALI_DEBUG_PRINT(0, ("mali_probe(): Called for platform device0725 %s\n", pdev->name));
 
 	if (NULL != mali_platform_device) {
 		/* Already connected to a device, return error */
@@ -520,9 +521,9 @@ static int mali_probe(struct platform_device *pdev)
 	/* If we use DT to initialize our DDK, we have to prepare somethings. */
 	err = mali_platform_device_init(mali_platform_device);
 	if (0 != err) {
-		MALI_PRINT_ERROR(("mali_probe(): Failed to initialize platform device."));
+		MALI_DEBUG_PRINT(2, ("mali_probe(): Failed to initialize platform device."));
 		mali_platform_device = NULL;
-		return -EFAULT;
+		return err;
 	}
 #endif
 
@@ -719,6 +720,7 @@ static int mali_driver_suspend_scheduler(struct device *dev)
 				      0,
 				      0,
 				      0, 0, 0);
+	mali_platform_power_mode_change(MALI_POWER_MODE_DEEP_SLEEP);
 	return 0;
 }
 
@@ -729,6 +731,7 @@ static int mali_driver_resume_scheduler(struct device *dev)
 	if (!mdev)
 		return -ENODEV;
 #endif
+	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
 
 	/* Tracing the frequency and voltage after mali is resumed */
 #if defined(CONFIG_MALI400_PROFILING) && defined(CONFIG_MALI_DVFS)
