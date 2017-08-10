@@ -5178,6 +5178,10 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 	P_GLUE_INFO_T prGlueInfo;
 	UINT_32 i, u4TotalBufferCount, u4TotalPageCount;
 	UINT_32 u4CurBufferCount, u4CurPageCount;
+	PUINT_8 pucMemHandle;
+	P_MSDU_INFO_T prMsduInfo = NULL;
+	QUE_T rNotReturnedQue;
+	P_QUE_T prNotReturnedQue = &rNotReturnedQue;
 
 	DEBUGFUNC(("%s", __func__));
 
@@ -5266,6 +5270,51 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 			   prAdapter->rTxCtrl.rFreeMsduInfoList.u4NumElem, CFG_TX_MAX_PKT_NUM,
 			   prAdapter->rTxCtrl.rTxMgmtTxingQueue.u4NumElem);
 
+	pucMemHandle = prTxCtrl->pucTxCached;
+	QUEUE_INITIALIZE(prNotReturnedQue);
+	for (i = 0; i < CFG_TX_MAX_PKT_NUM; i++) {
+		P_MSDU_INFO_T prFreeMsduInfo = NULL;
+
+		prMsduInfo = (P_MSDU_INFO_T) pucMemHandle;
+		prFreeMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_HEAD(&prAdapter->rTxCtrl.rFreeMsduInfoList);
+		while (prFreeMsduInfo && prFreeMsduInfo != prMsduInfo)
+			prFreeMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prFreeMsduInfo->rQueEntry);
+		if (!prFreeMsduInfo)
+			QUEUE_INSERT_TAIL(prNotReturnedQue, &prMsduInfo->rQueEntry);
+		pucMemHandle += ALIGN_4(sizeof(MSDU_INFO_T));
+	}
+	DBGLOG(SW4, INFO, "not returned MSDU queue length: %u\n", prNotReturnedQue->u4NumElem);
+	prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_HEAD(prNotReturnedQue);
+	while (prMsduInfo) {
+		P_MSDU_INFO_T prMsduInfo1 = NULL, prMsduInfo2 = NULL, prMsduInfo3 = NULL;
+
+		prMsduInfo1 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
+		if (!prMsduInfo1) {
+			DBGLOG(SW4, INFO, "src %d, 1x %d\n", prMsduInfo->eSrc, prMsduInfo->fgIs802_1x);
+			break;
+		}
+		prMsduInfo2 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo1->rQueEntry);
+		if (!prMsduInfo2) {
+			DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d\n",
+				prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
+				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x);
+			break;
+		}
+		prMsduInfo3 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo2->rQueEntry);
+		if (!prMsduInfo3) {
+			DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d; src %d, 1x %d\n",
+				prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
+				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x,
+				prMsduInfo2->eSrc, prMsduInfo2->fgIs802_1x);
+			break;
+		}
+		DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d; src %d, 1x %d; src %d, 1x %d\n",
+			prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
+				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x,
+				prMsduInfo2->eSrc, prMsduInfo2->fgIs802_1x,
+				prMsduInfo3->eSrc, prMsduInfo3->fgIs802_1x);
+		prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo3->rQueEntry);
+	}
 	DBGLOG(SW4, INFO, "---------------------------------\n\n");
 }
 

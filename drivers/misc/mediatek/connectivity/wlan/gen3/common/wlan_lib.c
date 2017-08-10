@@ -3402,7 +3402,7 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 			prCmdInfo->ucStaRecIndex = STA_REC_INDEX_NOT_FOUND;
 		prCmdInfo->ucBssIndex = ucBssIndex;
 		prCmdInfo->pfCmdDoneHandler = wlanSecurityFrameTxDone;
-		prCmdInfo->pfCmdTimeoutHandler = wlanSecurityFrameTxTimeout;
+		prCmdInfo->pfCmdTimeoutHandler = NULL;
 		prCmdInfo->fgIsOid = FALSE;
 		prCmdInfo->fgSetQuery = TRUE;
 		prCmdInfo->fgNeedResp = FALSE;
