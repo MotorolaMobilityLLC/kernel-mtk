@@ -62,7 +62,7 @@ struct dbgreg_set {
 #define DBGBVR0		regs[1]
 #define DBGDSCRext	regs[0]
 
-#ifdef CONFIG_ARCH_MT6580 /* For armv7 */
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570) /* For armv7 */
 #define DBGWVR 0x180
 #define DBGWCR 0x1C0
 #define DBGBVR 0x100

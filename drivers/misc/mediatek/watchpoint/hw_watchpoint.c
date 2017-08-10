@@ -142,7 +142,7 @@ void reset_watchpoint(void)
 	int j;
 	int i;
 	unsigned int args;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
@@ -212,7 +212,7 @@ int add_hw_watchpoint(struct wp_event *wp_event)
 	int ret, i, j;
 	unsigned long flags;
 	unsigned int ctl;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
@@ -287,7 +287,7 @@ int del_hw_watchpoint(struct wp_event *wp_event)
 {
 	unsigned long flags;
 	int i, j;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
@@ -331,7 +331,7 @@ static int watchpoint_handler(unsigned long addr, unsigned int esr, struct pt_re
 {
 	unsigned long wfar, daddr, iaddr;
 	int i, j, ret;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;

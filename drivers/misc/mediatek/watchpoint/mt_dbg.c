@@ -32,7 +32,7 @@ void dump_dbgregs(int cpuid)
 	struct wp_trace_context_t *wp_context;
 	int i;
 	int oslsr;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
@@ -322,7 +322,7 @@ void mt_copy_dbg_regs(int to, int from)
 	unsigned long args;
 	struct wp_trace_context_t *wp_context;
 	int i;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
@@ -376,7 +376,7 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 	struct wp_trace_context_t *wp_context;
 	unsigned long base_to, base_from = 0;
 	int i, j;
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	int offset = 2;
 #else
 	int offset = 4;
