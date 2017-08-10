@@ -98,6 +98,11 @@ static bool mt_dpidle_chk_golden;
 
 #define INVALID_GRP_ID(grp) (grp < 0 || grp >= NR_GRPS)
 
+/* For early porting*/
+#ifdef CONFIG_ARCH_MT6570
+#undef EN_PTP_OD
+#define EN_PTP_OD 0
+#endif
 
 void __attribute__((weak)) bus_dcm_enable(void)
 {
@@ -458,8 +463,8 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 #elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 /*Idle handler on/off*/
 static int idle_switch[NR_TYPES] = {
-	1,  /* dpidle switch */
-	1,  /* soidle switch */
+	0,  /* dpidle switch */
+	0,  /* soidle switch */
 	0,  /* slidle switch */
 	1,  /* rgidle switch */
 };
