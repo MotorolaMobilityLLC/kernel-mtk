@@ -3141,6 +3141,10 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	DBGLOG(SCN, INFO, "Max RSSI %d, ConnectionPolicy =%d\n",
 		cMaxRssi,
 		prConnSettings->eConnectionPolicy);
+#else
+	DBGLOG(SCN, INFO, "%s: ConnectionPolicy = %d\n",
+		__func__,
+		prConnSettings->eConnectionPolicy);
 #endif
 
 
