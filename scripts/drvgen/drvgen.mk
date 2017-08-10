@@ -3,11 +3,14 @@ ifdef MTK_PLATFORM
 PRIVATE_CUSTOM_KERNEL_DCT := $(if $(CUSTOM_KERNEL_DCT),$(CUSTOM_KERNEL_DCT),dct)
 ifneq ($(wildcard $(srctree)/arch/arm/mach-$(MTK_PLATFORM)/$(MTK_PROJECT)/dct/$(PRIVATE_CUSTOM_KERNEL_DCT)/codegen.dws),)
   DRVGEN_PATH := arch/arm/mach-$(MTK_PLATFORM)/$(MTK_PROJECT)/dct/$(PRIVATE_CUSTOM_KERNEL_DCT)
+  DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
 else
   ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(MTK_PROJECT)/dct/$(PRIVATE_CUSTOM_KERNEL_DCT)/codegen.dws),)
     DRVGEN_PATH := drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(MTK_PROJECT)/dct/$(PRIVATE_CUSTOM_KERNEL_DCT)
+    DWS_FILE := $(srctree)/$(DRVGEN_PATH)/codegen.dws
   else
     DRVGEN_PATH := drivers/misc/mediatek/dws/$(MTK_PLATFORM)
+    DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
   endif
 endif
 ifndef DRVGEN_OUT
@@ -18,7 +21,6 @@ export DRVGEN_OUT
 
 ALL_DRVGEN_FILE := cust.dtsi
 
-DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
 ifneq ($(wildcard $(DWS_FILE)),)
 DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
 else
