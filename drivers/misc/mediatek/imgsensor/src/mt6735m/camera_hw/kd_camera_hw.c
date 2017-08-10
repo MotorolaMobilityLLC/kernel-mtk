@@ -332,7 +332,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		pinSetIdx = 2;
 
 	if (On) {
-		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+		if(currSensorName && (0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
 			PK_DBG("[PowerON]135 not main\n");
 		else
 			ISP_MCLK1_EN(1);
@@ -800,7 +800,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		}
-		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+		if(currSensorName && (0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
 			PK_DBG("[PowerOFF]135 not main\n");
 		else
 			ISP_MCLK1_EN(0);
