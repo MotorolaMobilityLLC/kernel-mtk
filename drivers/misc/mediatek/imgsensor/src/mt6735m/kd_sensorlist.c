@@ -1315,7 +1315,9 @@ int kdSensorSyncFunctionPtr(void)
 	/* if the delay frame is 0 or 0xFF, stop to count */
 	if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF)
 	    && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
+		spin_lock(&kdsensor_drv_lock);
 		g_NewSensorExpGain.uISPGainDelayFrame--;
+		spin_unlock(&kdsensor_drv_lock);
 	}
 	mutex_unlock(&kdCam_Mutex);
 	return 0;
@@ -2054,6 +2056,7 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		g_NewSensorExpGain.uSensorExpDelayFrame = pSensorSyncInfo->uSensorExpDelayFrame;
 		g_NewSensorExpGain.uSensorGainDelayFrame = pSensorSyncInfo->uSensorGainDelayFrame;
 		g_NewSensorExpGain.uISPGainDelayFrame = pSensorSyncInfo->uISPGainDelayFrame;
+		spin_unlock(&kdsensor_drv_lock);
 		/* AE smooth not change shutter to speed up */
 		if ((0 == g_NewSensorExpGain.u2SensorNewExpTime)
 		    || (0xFFFF == g_NewSensorExpGain.u2SensorNewExpTime)) {
@@ -2086,7 +2089,9 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		/* if the delay frame is 0 or 0xFF, stop to count */
 		if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF)
 		    && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
+			spin_lock(&kdsensor_drv_lock);
 			g_NewSensorExpGain.uISPGainDelayFrame--;
+			spin_unlock(&kdsensor_drv_lock);
 		}
 
 
