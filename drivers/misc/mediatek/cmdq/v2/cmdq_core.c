@@ -1037,6 +1037,10 @@ static bool cmdq_core_task_is_valid_pa(const struct TaskStruct *pTask, dma_addr_
 	struct CmdBufferStruct *entry = NULL;
 	long task_pa = 0;
 
+	/* check if pc stay at end */
+	if (pa == CMDQ_GCE_END_ADDR_PA && pTask->pCMDEnd && pTask->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA)
+		return true;
+
 	list_for_each_entry(entry, &pTask->cmd_buffer_list, listEntry) {
 		task_pa = (long)entry->MVABase;
 		if (pa >= task_pa && pa <= task_pa +
@@ -2685,7 +2689,8 @@ static void cmdq_core_reorder_task_array(ThreadStruct *pThread, int32_t thread, 
 			}
 		}
 
-		if (((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+		if (pThread->pCurTask[nextID] &&
+			((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
 			CMDQ_IS_END_ADDR(pThread->pCurTask[nextID]->pCMDEnd[-1])) {
 			/* We reached the last task */
 			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
@@ -6505,7 +6510,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 
 		pNextTask = NULL;
 		/* find pTask's jump destination */
-		if (0x10000001 == pTask->pCMDEnd[0]) {
+		if (0x10000001 == pTask->pCMDEnd[0] && pTask->pCMDEnd[-1] != CMDQ_GCE_END_ADDR_PA) {
 			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
 		} else {
 			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
