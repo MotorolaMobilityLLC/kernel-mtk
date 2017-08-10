@@ -380,10 +380,10 @@ static const struct mt81xx_mmc_compatible mt8163_compat = {
 };
 
 static const struct mt81xx_mmc_compatible mt8167_compat = {
-	.clk_div_bits = 8,
-	.pad_tune0 = false,
-	.async_fifo = false,
-	.data_tune = false,
+	.clk_div_bits = 12,
+	.pad_tune0 = true,
+	.async_fifo = true,
+	.data_tune = true,
 };
 
 static const struct mt81xx_mmc_compatible mt8173_compat = {
