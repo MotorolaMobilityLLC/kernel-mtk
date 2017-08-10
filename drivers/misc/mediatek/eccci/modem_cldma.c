@@ -2303,7 +2303,7 @@ static int check_power_off_en(struct ccci_modem *md)
 	if (md->index != MD_SYS1)
 		return 1;
 
-	smem_val = *((int *)((long)md->mem_layout.smem_region_vir + 8*1024+31*4));
+	smem_val = *((int *)((long)md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_EPOF));
 	CCCI_NORMAL_LOG(md->index, TAG, "share for power off:%x\n", smem_val);
 	if (smem_val != 0) {
 		CCCI_NORMAL_LOG(md->index, TAG, "[ccci]enable power off check\n");
