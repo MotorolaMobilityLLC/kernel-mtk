@@ -956,7 +956,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/*pmic initial setting */
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#if 1
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
 #else
@@ -1085,6 +1085,7 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&pmicThread_lock, WAKE_LOCK_SUSPEND, "pmicThread_lock_mt6328 wakelock");
 #endif
 
+	pmic_auxadc_init();
 #if !defined CONFIG_MTK_LEGACY
 /*#if !defined CONFIG_MTK_LEGACY*//*Jimmy*/
 #ifdef CONFIG_OF
@@ -1117,8 +1118,6 @@ static int __init pmic_mt_init(void)
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
-
-	pmic_auxadc_init();
 
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
 

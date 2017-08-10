@@ -7208,7 +7208,7 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	PMICLOG1("[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 		g_mt6311_hw_exist, g_mt6311_driver_ready);
 
-	PMIC_INIT_SETTING_V1();
+	/*PMIC_INIT_SETTING_V1();*/
 
 	if (g_mt6311_hw_exist == 0) {
 #ifdef BATTERY_OC_PROTECT
@@ -7223,7 +7223,7 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 exit:
 	PMICLOG1("[mt6311_driver_probe] exit: return err\n");
-	PMIC_INIT_SETTING_V1();
+	/*PMIC_INIT_SETTING_V1();*/
 	return err;
 }
 
