@@ -909,7 +909,7 @@ static int _mt_gpufreq_set_cur_volt(unsigned int new_oppidx)
 		if (NULL != g_pVoltSampler)
 			g_pVoltSampler(volt_new);
 	} else
-		gpufreq_warn("@%s: GPU DVS failed, ret = %d\n", __func__, g_last_gpu_dvs_result);
+		gpufreq_dbg("@%s: GPU DVS failed, ret = %d\n", __func__, g_last_gpu_dvs_result);
 
 	return g_last_gpu_dvs_result;
 }
@@ -1708,7 +1708,7 @@ int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		if (ret) {
 			unsigned int cur_freq = _mt_gpufreq_get_cur_freq();
 
-			gpufreq_err("@%s: Set Vcore to %dmV failed! ret = 0x%x, cur_freq = %d\n",
+			gpufreq_dbg("@%s: Set Vcore to %dmV failed! ret = 0x%x, cur_freq = %d\n",
 					__func__,
 					mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt / 100,
 					ret,
