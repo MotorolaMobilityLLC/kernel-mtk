@@ -2302,7 +2302,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 	}
 
 	ppinctrl = ppinctrl_uart[uartport];
-	if (IS_ERR(ppinctrl)) {
+	if (!ppinctrl || IS_ERR(ppinctrl)) {
 		pr_err("[UART%d][PinC]%s get pinctrl fail!! err:%ld\n", uartport, __func__, PTR_ERR(ppinctrl));
 		return;
 	}
