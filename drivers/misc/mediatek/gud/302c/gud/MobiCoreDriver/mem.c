@@ -412,6 +412,7 @@ static int map_buffer(struct task_struct *task, void *wsm_buffer,
 	/* Request comes from kernel space(cont buffer) */
 	else if (task == NULL && !is_vmalloc_addr(wsm_buffer)) {
 		void *uaddr = wsm_buffer;
+
 		for (i = 0; i < nr_of_pages; i++) {
 			page = virt_to_page(uaddr);
 			if (!page) {
@@ -426,6 +427,7 @@ static int map_buffer(struct task_struct *task, void *wsm_buffer,
 	/* Request comes from kernel space(vmalloc buffer) */
 	else {
 		void *uaddr = wsm_buffer;
+
 		for (i = 0; i < nr_of_pages; i++) {
 			page = vmalloc_to_page(uaddr);
 			if (!page) {
@@ -554,6 +556,7 @@ static void unmap_buffers(struct mc_mmu_table *table)
 	for (i = 0; i < table->pages; i++) {
 		/* convert physical entries from MMU table to page pointers */
 		struct page *page = pte_page(mmutable->table_entries[i]);
+
 		MCDRV_DBG_VERBOSE(mcd, "MMU entry %d:  0x%llx, virt %p", i,
 				  (u64)(mmutable->table_entries[i]), page);
 		BUG_ON(!page);
@@ -737,8 +740,10 @@ phys_addr_t mc_find_mmu_table(uint32_t handle, int32_t fd)
 		goto table_err;
 	}
 
-	/* It's safe here not to lock the instance since the owner of
-	 * the table will be cleared only with the table lock taken */
+	/*
+	 * It's safe here not to lock the instance since the owner of
+	 * the table will be cleared only with the table lock taken
+	 */
 	if (!mc_check_owner_fd(table->owner, fd)) {
 		MCDRV_DBG_ERROR(mcd, "not valid owner %u", handle);
 		ret = 0;

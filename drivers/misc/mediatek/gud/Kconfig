@@ -5,28 +5,34 @@ config TRUSTONIC_TEE_SUPPORT
 	bool "Enable Trustonic TEE Support"
 	default n
 	---help---
-	  Enable Trustonic TEE Support
+	  Enable Trustonic TEE Support.
+	  This option enables MobiCore Driver which is used to communicate with
+	  TEE OS, for things like, setting up log buffers, interrupt pins,
+	  and IPC channels.
 
 config TRUSTONIC_TEE_VERSION
 	string "TRUSTONIC TEE Version"
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302c" if (ARCH_MT6797 || ARCH_MT6755 || ARCH_MT6735 || ARCH_MT6735M || ARCH_MT6753 || ARCH_MT6580)
 
-config MT_TRUSTONIC_TEE_DEBUGFS
-	bool "Enable Trustonic TEE debugfs"
-	default n
-	---help---
-	  Enable Trustonic TEE debugfs
+#config MT_TRUSTONIC_TEE_DEBUGFS
+#	bool "Enable Trustonic TEE debugfs"
+#	default n
+#	---help---
+#	  Enable Trustonic TEE debugfs
 
 #
 # MobiCore configuration
 #
 config MOBICORE_DRIVER
 	tristate "MobiCore Driver"
-	depends on TRUSTONIC_TEE_SUPPORT
-	default n
+	depends on (TRUSTONIC_TEE_SUPPORT) && (TRUSTONIC_TEE_VERSION="302c")
+	default y
 	---help---
 	  Enable Linux Kernel MobiCore Support
+	  This option enables MobiCore Driver which is used to communicate with
+	  TEE OS, for things like, setting up log buffers, interrupt pins,
+	  and IPC channels.
 
 config MOBICORE_DEBUG
 	bool "MobiCore Module debug mode"
@@ -34,7 +40,9 @@ config MOBICORE_DEBUG
 	default n
 	---help---
 	  Enable Debug mode in the MobiCore Driver.
-	  It enables printing information about mobicore operations
+	  MobiCore Driver has loglevel control thru DEBUG and VERBOSE
+	  This option enables MCDRV_DBG() macros to print useful debugging
+	  information about mobicore operations.
 
 config MOBICORE_VERBOSE
 	bool "MobiCore Module verbose debug mode"
@@ -42,16 +50,19 @@ config MOBICORE_VERBOSE
 	default n
 	---help---
 	  Enable Verbose Debug mode in the MobiCore Driver.
-	  It enables printing extra information about mobicore operations
-	  Beware: this is only useful for debuging deep in the driver because
-	  it prints too much logs
+	  It enables MCDRV_DBG_VERBOSE() macros to print extra information
+	  about mobicore operations. Beware: this is only useful for
+	  debuging deep in the driver because it prints too much logs
 
 config MOBICORE_API
 	tristate "Linux MobiCore API"
 	depends on MOBICORE_DRIVER
-	default n
+	default y
 	---help---
 	  Enable Linux Kernel MobiCore API
+	  This option enables MobiCore Driver which is used to communicate with
+	  TEE OS, for things like, setting up log buffers, interrupt pins,
+	  and IPC channels.
 
 config TRUSTONIC_TRUSTED_UI
 	tristate "<t-base TUI"
@@ -59,10 +70,14 @@ config TRUSTONIC_TRUSTED_UI
 	default n
 	---help---
 	  Enable <t-base Trusted User Interface
+	  Trustonic TUI features was based on Trustonic TEE mechanism to protect
+	  Touch/Display inside TEE, to prevent malicious access of sensitive data
+	  used by APPs like Banking.
 
-config TRUSTONIC_TRUSTED_UI_FB_BLANK
-	bool "<t-base TUI with fb_blank"
-	depends on TRUSTONIC_TRUSTED_UI
-	default n
-	---help---
-	  Blank the framebuffer before starting a TUI session
+# TODO: Obsolete, to-be-removed
+#config TRUSTONIC_TRUSTED_UI_FB_BLANK
+#	bool "<t-base TUI with fb_blank"
+#	depends on TRUSTONIC_TRUSTED_UI
+#	default n
+#	---help---
+#	  Blank the framebuffer before starting a TUI session

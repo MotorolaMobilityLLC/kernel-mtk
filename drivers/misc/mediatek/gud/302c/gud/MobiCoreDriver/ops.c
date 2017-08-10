@@ -62,8 +62,10 @@ static struct notifier_block mobicore_cpu_notifer = {
 
 static inline long smc(union fc_generic *fc)
 {
-	/* If we request sleep yields must be filtered out as they
-	 * make no sense */
+	/*
+	 * If we request sleep yields must be filtered out as they
+	 * make no sense
+	 */
 	if (ctx->mcp)
 		if (ctx->mcp->flags.sleep_mode.sleep_req) {
 			if (fc->as_in.cmd == MC_SMC_N_YIELD)
@@ -109,8 +111,8 @@ bool mc_fastcall(void *data)
 int mc_fastcall_init(struct mc_context *context)
 {
 	int ret = 0;
-	ctx = context;
 
+	ctx = context;
 	fastcall_thread = kthread_create(kthread_worker_fn, &fastcall_worker,
 					 "mc_fastcall");
 	if (IS_ERR(fastcall_thread)) {
@@ -123,7 +125,7 @@ int mc_fastcall_init(struct mc_context *context)
 	wake_up_process(fastcall_thread);
 
 	/* this thread MUST run on CPU 0 at startup */
-	set_cpus_allowed(fastcall_thread, CPU_MASK_CPU0);
+	set_cpus_allowed_ptr(fastcall_thread, &CPU_MASK_CPU0);
 #ifdef TBASE_CORE_SWITCHER
 	register_cpu_notifier(&mobicore_cpu_notifer);
 #endif
@@ -193,13 +195,14 @@ static void fastcall_work_func(struct work_struct *work)
 	if (cpu_swap) {
 		if (fc_generic->as_out.ret == 0) {
 			cpumask_t cpu;
+
 			active_cpu = new_cpu;
 			MCDRV_DBG(mcd, "CoreSwap ok %d -> %d\n",
 				  raw_smp_processor_id(), active_cpu);
 			cpumask_clear(&cpu);
 			cpumask_set_cpu(active_cpu, &cpu);
 #ifdef MC_FASTCALL_WORKER_THREAD
-			set_cpus_allowed(fastcall_thread, cpu);
+			set_cpus_allowed_ptr(fastcall_thread, &cpu);
 #endif
 		} else {
 			MCDRV_DBG(mcd, "CoreSwap failed %d -> %d\n",
@@ -347,6 +350,7 @@ int mc_nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
+
 	MCDRV_DBG_VERBOSE(mcd, "enter");
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;
@@ -360,6 +364,7 @@ int _nsiq(void)
 {
 	int ret = 0;
 	union fc_generic nsiq;
+
 	MCDRV_DBG_VERBOSE(mcd, "enter");
 	memset(&nsiq, 0, sizeof(nsiq));
 	nsiq.as_in.cmd = MC_SMC_N_SIQ;

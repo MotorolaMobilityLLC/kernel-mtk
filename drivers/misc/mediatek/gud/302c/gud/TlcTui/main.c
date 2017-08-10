@@ -131,7 +131,7 @@ static int __init tlc_tui_init(void)
 
 	err = alloc_chrdev_region(&devno, 0, 1, TUI_DEV_NAME);
 	if (err) {
-		pr_debug(KERN_ERR "Unable to allocate Trusted UI device number\n");
+		pr_err("Unable to allocate Trusted UI device number\n");
 		return err;
 	}
 
@@ -141,7 +141,7 @@ static int __init tlc_tui_init(void)
 
 	err = cdev_add(&tui_cdev, devno, 1);
 	if (err) {
-		pr_debug(KERN_ERR "Unable to add Trusted UI char device\n");
+		pr_err("Unable to add Trusted UI char device\n");
 		unregister_chrdev_region(devno, 1);
 		return err;
 	}

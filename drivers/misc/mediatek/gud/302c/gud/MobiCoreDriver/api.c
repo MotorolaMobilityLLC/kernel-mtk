@@ -21,8 +21,8 @@ int mobicore_map_vmem(struct mc_instance *instance, void *addr,
 	uint32_t len, uint32_t *handle)
 {
 	phys_addr_t phys;
-	return mc_register_wsm_mmu(instance, addr, len,
-		handle, &phys);
+
+	return mc_register_wsm_mmu(instance, addr, len, handle, &phys);
 }
 EXPORT_SYMBOL(mobicore_map_vmem);
 
@@ -88,6 +88,7 @@ EXPORT_SYMBOL(mobicore_allocate_wsm);
 struct mc_instance *mobicore_open(void)
 {
 	struct mc_instance *instance = mc_alloc_instance();
+
 	if (instance)
 		instance->admin = true;
 	return instance;
