@@ -548,10 +548,29 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
 	int32_t status;
 	int32_t iwcRsp;
 	cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
+	int index;
 
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
 	status = iwcRsp;
+
+	if (pTask) {
+		pTask->secStatus = kzalloc(sizeof(struct iwcCmdqSecStatus_t), GFP_KERNEL);
+		if (pTask->secStatus) {
+			memcpy(pTask->secStatus, &pIwc->secStatus, sizeof(struct iwcCmdqSecStatus_t));
+			if (status < 0 || pTask->secStatus->status < 0) {
+				CMDQ_ERR("Secure status: %d step: %u args: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					pTask->secStatus->status, (uint32_t)pTask->secStatus->step,
+					pTask->secStatus->args[0], pTask->secStatus->args[1],
+					pTask->secStatus->args[2], pTask->secStatus->args[3]);
+				for (index = 0; index < pTask->secStatus->inst_index; index += 2) {
+					CMDQ_ERR("Secure instruction %d: 0x%08x:%08x", (index / 2),
+						pTask->secStatus->sec_inst[index],
+						pTask->secStatus->sec_inst[index+1]);
+				}
+			}
+		}
+	}
 
 	if (CMD_CMDQ_TL_CANCEL_TASK == iwcCommand) {
 		pCancelResult = (cmdqSecCancelTaskResultStruct *) data;

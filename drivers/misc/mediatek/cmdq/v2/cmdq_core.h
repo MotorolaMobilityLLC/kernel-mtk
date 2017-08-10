@@ -477,6 +477,7 @@ typedef struct TaskStruct {
 
 	/* For seucre execution */
 	cmdqSecDataStruct secData;
+	struct iwcCmdqSecStatus_t *secStatus;
 
 	/* For statistics & debug */
 	CMDQ_TIME submit;	/* ASYNC: task submit time (as soon as task acquired) */
