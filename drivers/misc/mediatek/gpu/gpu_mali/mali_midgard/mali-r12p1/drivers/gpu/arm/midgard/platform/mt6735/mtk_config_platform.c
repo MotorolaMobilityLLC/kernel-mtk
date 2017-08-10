@@ -416,14 +416,25 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	kbasep_pm_read_present_cores(kbdev);
 	gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
-/*	if( gpu_efuse == 1 )
-		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
-	else
-		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+	if (gpu_efuse == 1) {
+		kbdev->pm.debug_core_mask[0] = (u64)1;	 /* 1-core */
+		kbdev->pm.debug_core_mask[1] = (u64)1;
+		kbdev->pm.debug_core_mask[2] = (u64)1;
+		kbdev->pm.debug_core_mask_all = (u64)1;
+	} else {
+		kbdev->pm.debug_core_mask[0] = (u64)3;	 /* 2-core */
+		kbdev->pm.debug_core_mask[1] = (u64)3;
+		kbdev->pm.debug_core_mask[2] = (u64)3;
+		kbdev->pm.debug_core_mask_all = (u64)3;
+	}
 		
-	if (0x337 == code) //For MT6753 3-core
-		kbdev->pm.debug_core_mask = (u64)7;
-*/
+	if (0x337 == code) {
+		kbdev->pm.debug_core_mask[0] = (u64)7; /* For MT6753 3-core */
+		kbdev->pm.debug_core_mask[1] = (u64)7;
+		kbdev->pm.debug_core_mask[2] = (u64)7;
+		kbdev->pm.debug_core_mask_all = (u64)7;
+	}
+
 	g_mtk_gpu_efuse_set_already = 1;
 
 	ret = mtk_platform_device_probe(pdev, kbdev);
