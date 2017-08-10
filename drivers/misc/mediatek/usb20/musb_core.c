@@ -2688,7 +2688,7 @@ static int __init musb_init(void)
 	return platform_driver_register(&musb_driver);
 }
 
-#if defined(CONFIG_MACH_MT2701) || defined(CONFIG_ARCH_MT7623)
+#if defined(CONFIG_MACH_MT2701) || defined(CONFIG_ARCH_MT7623) || defined(CONFIG_FPGA_EARLY_PORTING)
 module_init(musb_init);
 #else
 fs_initcall(musb_init);

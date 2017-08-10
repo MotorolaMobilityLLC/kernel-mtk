@@ -42,7 +42,7 @@ obj-$(CONFIG_ARCH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT2701) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT7623) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-
+obj-$(CONFIG_ARCH_MT6570) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 #Driver
 obj-$(CONFIG_USB_MTK_HDRC) += musb_hdrc.o
 musb_hdrc-$(CONFIG_USB_MTK_HDRC) := musb_core.o
