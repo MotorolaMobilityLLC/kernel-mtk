@@ -157,6 +157,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_SET_CUSTOMER_CFG = 0x70, /* 0x70(Set) */
 #endif
 
+	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -1670,6 +1671,12 @@ struct EVENT_RSP_CHNL_UTILIZATION {
 	UINT_8 aucChannelBusyTime[48];
 	UINT_8 aucReserved2[16];
 };
+
+struct CMD_TDLS_PS_T {
+	UINT_8	ucIsEnablePs; /* 0: disable tdls power save; 1: enable tdls power save */
+	UINT_8	aucReserved[3];
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
