@@ -1,7 +1,0 @@
-
-config CUSTOM_KERNEL_PEDOMETER
-	bool "CUSTOM_KERNEL_PEDOMETER"
-	help
-	  Kernel space pedometer sensor driver.
-
-source "drivers/misc/mediatek/pedometer/pedohub/Kconfig"

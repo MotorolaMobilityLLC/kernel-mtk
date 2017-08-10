@@ -1,5 +1,0 @@
-
-config MTK_SENSOR_HUB_SUPPORT
-	bool "MTK_SENSOR_HUB_SUPPORT"
-	help
-	  To enable MTK sensor hub kernel shf

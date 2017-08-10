@@ -1,7 +1,0 @@
-
-config CUSTOM_KERNEL_GRAVITY_SENSOR
-	bool "CUSTOM_KERNEL_GRAVITY_SENSOR"
-	help
-	  Kernel space gravity sensor driver.
-
-source "drivers/misc/mediatek/gravity/gravityhub/Kconfig"
