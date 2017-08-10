@@ -474,7 +474,7 @@ int handle_switch_core(int cpu)
 	IMSG_DEBUG("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
 
 	cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
-	set_cpus_allowed(teei_switch_task, mtee_mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
 	nt_sched_core(teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
 	current_cpu_id = switch_to_cpu_id;
 	IMSG_DEBUG("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
@@ -2094,7 +2094,7 @@ static int teei_client_init(void)
 	wake_up_process(teei_switch_task);
 
 	cpumask_set_cpu(get_current_cpuid(), &mask);
-	set_cpus_allowed(teei_switch_task, mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mask);
 
 	IMSG_DEBUG("create the sub_thread successfully!\n");
 
