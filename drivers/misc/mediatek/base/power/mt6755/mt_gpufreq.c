@@ -1431,7 +1431,7 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 {
 #define SYSPLL_D3_FREQ	(364000)
 
-	unsigned int cur_volt, cur_freq, dds, i, found;
+	unsigned int cur_volt, cur_freq, dds, i, found = 0;
 	unsigned int new_oppidx = g_cur_gpu_OPPidx;
 	unsigned int tmp_idx = g_cur_gpu_OPPidx;
 	unsigned int syspll_volt = mt_gpufreqs[0].gpufreq_volt;
