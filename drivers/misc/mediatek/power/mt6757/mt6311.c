@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -30,6 +43,11 @@
 #include "mt6311.h"
 
 #include <mach/mt_pmic.h>
+#include "pmic.h"
+
+#include <linux/uaccess.h>
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
 
 #if defined(CONFIG_MTK_FPGA)
 #else
@@ -47,12 +65,12 @@
 #define mt6311_SLAVE_ADDR_WRITE   0xD6
 #define mt6311_SLAVE_ADDR_Read    0xD7
 
-#define I2C_EXT_BUCK_CHANNEL 3 /*TBD for bring up only, need to change to DTS*/
+#define I2C_EXT_BUCK_CHANNEL 5 /*TBD for bring up only, need to change to DTS*/
 
 #ifdef I2C_EXT_BUCK_CHANNEL
 #define mt6311_BUSNUM I2C_EXT_BUCK_CHANNEL
 #else
-#define mt6311_BUSNUM 4
+#define mt6311_BUSNUM 5
 #endif
 
 static struct i2c_client *new_client;
@@ -60,7 +78,7 @@ static const struct i2c_device_id mt6311_i2c_id[] = { {"mt6311", 0}, {} };
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt6311_of_ids[] = {
-			{.compatible = "mediatek,ext_buck"},
+			{.compatible = "mediatek,vproc_buck"},
 			{},
 };
 #endif
@@ -90,17 +108,284 @@ int g_mt6311_driver_ready = 0;
 int g_mt6311_hw_exist = 0;
 
 unsigned int g_mt6311_cid = 0;
+unsigned int g_mt6311_logger;
+unsigned int g_mt6311_dbgaddr;
+unsigned char g_reg_value_mt6311 = 0;
 /*
 extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void battery_oc_protect_reinit(void);
 */
-#define PMICTAG                "[MT6311] "
-#if defined PMIC_DEBUG_PR_DBG
-#define PMICLOG1(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
-#else
-#define PMICLOG1(fmt, arg...)
-#endif
+/* #define PMICTAG                "[MT6311] "*/
 
+/*----------------debug machanism-----------------------*/
+unsigned int mt6311_logger_level_set(unsigned int level, unsigned int addr)
+{
+	g_mt6311_logger = level >= MT6311LOGLV ? level : MT6311LOGLV;
+	g_mt6311_dbgaddr = addr;
+	return 0;
+}
+
+static ssize_t mt6311_logger_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+{
+	char *info, *pdbg_lv, *paddr;
+	unsigned int dbg_lv_value = 0;
+	unsigned int reg_addr = 0;
+	int ret = 0;
+
+	info = kmalloc_array(size, sizeof(char), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	memset(info, 0, size);
+
+	if (copy_from_user(info, buf, size))
+		return -EFAULT;
+
+	info[size-1] = '\0';
+
+	/* pr_err(PMICTAG "[logger_write] buf is %s, info is %s, size is %zu\n", buf, info, size); */
+
+	if (size != 0) {
+		if (size > 2) {
+			pdbg_lv = strsep(&info, " ");
+			/* pr_err(PMICTAG "[logger_write] pdbg_lv is %s, info is %s\n", pdbg_lv, info); */
+			ret = kstrtou32(pdbg_lv, 16, (unsigned int *)&dbg_lv_value);
+		}
+
+		if (size > 2) {
+			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
+			/*pvalue = (char *)buf + 1;*/
+			paddr = strsep(&info, " ");
+			/* pr_err(PMICTAG "[logger_write] paddr is %s, info is %s\n", paddr, info); */
+			ret = kstrtou32(paddr, 16, (unsigned int *)&reg_addr);
+		}
+	}
+
+	pr_err(PMICTAG "[logger_write] dbg_lv_value = %d, addr = 0x%x\n", dbg_lv_value, reg_addr);
+
+	mt6311_logger_level_set(dbg_lv_value, reg_addr);
+
+	pr_err(PMICTAG "mt6311_logger = %d\n", g_mt6311_logger);
+	pr_err(PMICTAG "mt6311_dbg_addr = 0x%x\n", g_mt6311_dbgaddr);
+
+	kfree(info);
+
+	return size;
+}
+
+static ssize_t mt6311_access_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+{
+	char *info, *addr = NULL, *val = NULL;
+	unsigned int reg_value = 0;
+	unsigned int reg_addr = 0;
+	int ret = 0;
+
+	info = kmalloc_array(size, sizeof(char), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	memset(info, 0, size);
+
+	if (copy_from_user(info, buf, size))
+		return -EFAULT;
+
+	info[size-1] = '\0';
+
+	/* pr_err(PMICTAG "[access_write] buf is %s, info is %s, size is %zu\n", buf, info, size); */
+
+	if (size != 0) {
+		if (size > 5) {
+			addr = strsep(&info, " ");
+			/* pr_err(PMICTAG "[access_write] paddr is %s, info is %s\n", addr, info); */
+			ret = kstrtou32(addr, 16, (unsigned int *)&reg_addr);
+		} else
+			ret = kstrtou32(info, 16, (unsigned int *)&reg_addr);
+
+		if (size > 5) {
+			val = strsep(&info, " ");
+			/* pr_err(PMICTAG "[access_write] pvalue is %s, info is %s\n", val, info); */
+			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
+			ret = mt6311_config_interface(reg_addr, reg_value, 0xFF, 0x0);
+			g_reg_value_mt6311 = reg_value;
+		} else {
+			ret = mt6311_read_interface(reg_addr, &g_reg_value_mt6311, 0xFF, 0x0);
+
+			pr_err(PMICTAG "[access_write] read mt6311 reg 0x%x with value 0x%x !\n",
+				reg_addr, g_reg_value_mt6311);
+		}
+	}
+	pr_err(PMICTAG "[access_write] addr = 0x%x, value = 0x%x\n", reg_addr, reg_value);
+	pr_err(PMICTAG "[store_mt6311_access] use \"cat mt6311_access\"\r\n");
+
+	kfree(info);
+
+	return size;
+}
+
+static ssize_t mt6311_dump_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+{
+	mt6311_dump_register();
+	return size;
+}
+
+static ssize_t mt6311_buck_ut_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+{
+	char *info, *pmode, *penable, *pvoltage;
+	unsigned int mode_value = 0;
+	unsigned int enable_value = 0;
+	int voltage_value = 0;
+	int ret = 0;
+
+	info = kmalloc_array(size, sizeof(char), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	memset(info, 0, size);
+
+	if (copy_from_user(info, buf, size))
+		return -EFAULT;
+
+	info[size-1] = '\0';
+
+	/* pr_err(PMICTAG "[logger_write] buf is %s, info is %s, size is %zu\n", buf, info, size); */
+
+	if (size != 0) {
+		if (size > 3) {
+			pmode = strsep(&info, " ");
+			/* pr_err(PMICTAG "[logger_write] pdbg_lv is %s, info is %s\n", pdbg_lv, info); */
+			ret = kstrtou32(pmode, 16, (unsigned int *)&mode_value);
+		}
+
+		if (size > 3) {
+			penable = strsep(&info, " ");
+			/* pr_err(PMICTAG "[logger_write] pdbg_lv is %s, info is %s\n", pdbg_lv, info); */
+			ret = kstrtou32(penable, 16, (unsigned int *)&enable_value);
+		}
+
+		if (size > 3) {
+			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
+			/*pvalue = (char *)buf + 1;*/
+			pvoltage = strsep(&info, " ");
+			/* pr_err(PMICTAG "[logger_write] paddr is %s, info is %s\n", paddr, info); */
+			ret = kstrtoint(pvoltage, 10, (int *)&voltage_value);
+		}
+	}
+
+	pr_err(PMICTAG "[mt6311_buck_ut] mode = %d, enable = %d, volt = %d\n", mode_value, enable_value, voltage_value);
+
+	pr_err("mt6311_set_voltage ret::%x\n", mt6311_set_voltage(VPROC, voltage_value));
+	pr_err("mt6311_enable ret:%d\n", mt6311_enable(VPROC, enable_value));
+	pr_err("mt6311_is_enabled ret:%d\n", mt6311_is_enabled(VPROC));
+	pr_err("mt6311_set_mode, ret:%d\n", mt6311_set_mode(VPROC, mode_value));
+	pr_err("mt6311_get_voltage:0x%x\n", mt6311_get_voltage(VPROC));
+
+	kfree(info);
+
+	return size;
+}
+static int mt6311_logger_show(struct seq_file *s, void *unused)
+{
+	seq_puts(s, "usage: echo dbg_lv addr > mt6311_logger\n");
+	seq_puts(s, "     dvb_lv: 1-7, default=4\n");
+	seq_puts(s, "     addr: addr need to monitor\n");
+	seq_printf(s, "mt6311_logger  = %d\n", g_mt6311_logger);
+	seq_printf(s, "mt6311_dbg_addr = 0x%x\n", g_mt6311_dbgaddr);
+	return 0;
+}
+
+static int mt6311_logger_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt6311_logger_show, NULL);
+}
+
+static int mt6311_dump_show(struct seq_file *s, void *unused)
+{
+	seq_puts(s, "usage: echo > mt6311_dump_all_reg\n");
+	return 0;
+}
+
+static int mt6311_dump_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt6311_dump_show, NULL);
+}
+
+static int mt6311_access_show(struct seq_file *s, void *unused)
+{
+	seq_puts(s, "echo addr value > mt6311_access\n");
+	seq_puts(s, "     addr: hex mode, not need 0x\n");
+	seq_puts(s, "     value: hex mode, not need 0x\n");
+	seq_puts(s, "usage: echo 8d 34 > mt6311_access. write 0x8d to 0x34\n");
+	seq_puts(s, "echo addr > mt6311_access\n");
+	seq_puts(s, "usage: echo 8d > mt6311_access. read 0x8d to 0x34\n");
+	seq_printf(s, "[show_mt6311_access] 0x%x\n", g_reg_value_mt6311);
+	return 0;
+}
+
+static int mt6311_buck_ut_show(struct seq_file *s, void *unused)
+{
+	seq_puts(s, "echo mode enable voltage > mt6311_buck_ut\n");
+	seq_puts(s, "     mode: 1:force pwm, 0:auto\n");
+	seq_puts(s, "     enable 1:sw enable, 0:sw disable\n");
+	seq_puts(s, "     voltage: expect voltage uV\n");
+	return 0;
+}
+
+static int mt6311_access_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt6311_access_show, NULL);
+}
+
+static int mt6311_buck_ut_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mt6311_buck_ut_show, NULL);
+}
+
+static const struct file_operations mt6311_logger_op = {
+	.open    = mt6311_logger_open,
+	.read    = seq_read,
+	.write   = mt6311_logger_write,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations mt6311_dump_op = {
+	.open    = mt6311_dump_open,
+	.read    = seq_read,
+	.write   = mt6311_dump_write,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations mt6311_access_op = {
+	.open    = mt6311_access_open,
+	.read    = seq_read,
+	.write   = mt6311_access_write,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+static const struct file_operations mt6311_buck_ut_op = {
+	.open    = mt6311_buck_ut_open,
+	.read    = seq_read,
+	.write   = mt6311_buck_ut_write,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+static int __init mt6311_debugfs_init(void)
+{
+	if (mtk_extbuck != NULL) {
+		debugfs_create_file("mt6311_logger", S_IFREG | S_IRUGO, mtk_extbuck, NULL, &mt6311_logger_op);
+		debugfs_create_file("mt6311_dump_all_reg", S_IFREG | S_IRUGO, mtk_extbuck, NULL, &mt6311_dump_op);
+		debugfs_create_file("mt6311_access", S_IFREG | S_IRUGO, mtk_extbuck, NULL, &mt6311_access_op);
+		debugfs_create_file("mt6311_buck_ut", S_IFREG | S_IRUGO, mtk_extbuck, NULL, &mt6311_buck_ut_op);
+	} else
+		pr_err(PMICTAG "reference mtk_extbuck fail\n");
+	return 0;
+}
+
+subsys_initcall(mt6311_debugfs_init);
+/*----------------debug machanism-----------------------*/
 /**********************************************************
   *
   *   [I2C Function For Read/Write mt6311]
@@ -129,7 +414,7 @@ unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData)
 	cmd_buf[0] = cmd;
 	ret = i2c_master_send(new_client, &cmd_buf[0], (1 << 8 | 1));
 	if (ret < 0) {
-		PMICLOG1("[mt6311_read_byte] ret=%d\n", ret);
+		pr_err(PMICTAG "[mt6311_read_byte] ret=%d\n", ret);
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
@@ -169,7 +454,8 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 
 	ret = i2c_master_send(new_client, write_data, 2);
 	if (ret < 0) {
-		PMICLOG1("[mt6311_write_byte] ret=%d\n", ret);
+		pr_err(PMICTAG "[mt6311_write_byte] ret=%d\n", ret);
+		pr_err(PMICTAG "skipping non-existent adapter %s\n", new_client->adapter->name);
 
 		new_client->ext_flag = 0;
 		mutex_unlock(&mt6311_i2c_access);
@@ -210,8 +496,9 @@ unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData)
 		 */
 		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
-		if (ret == -ENXIO) {
-			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+		if (ret < 0) {
+			pr_err(PMICTAG "skipping non-existent adapter %s\n", new_client->adapter->name);
+			pr_err(PMICTAG "i2c_transfer error: (%d) %d\n", cmd, ret);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -249,8 +536,9 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 		 */
 		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
-		if (ret == -ENXIO) {
-			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+		if (ret < 0) {
+			pr_err(PMICTAG "skipping non-existent adapter %s\n", new_client->adapter->name);
+			pr_err(PMICTAG "i2c_transfer error: (%d) %d\n", cmd, ret);
 			break;
 		}
 	} while (ret != xfers && --retries);
@@ -267,23 +555,23 @@ unsigned int mt6311_write_byte(unsigned char cmd, unsigned char writeData)
 unsigned int mt6311_read_interface(unsigned char RegNum, unsigned char *val, unsigned char MASK, unsigned char SHIFT)
 {
 #if 0
-	PMICLOG1("[mt6311_read_interface] HW no mt6311\n");
+	PMICLOG("[mt6311_read_interface] HW no mt6311\n");
 	*val = 0;
 	return 1;
 #else
 	unsigned char mt6311_reg = 0;
 	unsigned int ret = 0;
 
-	/* PMICLOG1("--------------------------------------------------\n"); */
+	/* PMICLOG("--------------------------------------------------\n"); */
 
 	ret = mt6311_read_byte(RegNum, &mt6311_reg);
 
-	/* PMICLOG1("[mt6311_read_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg); */
+	/* PMICLOG("[mt6311_read_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg); */
 
 	mt6311_reg &= (MASK << SHIFT);
 	*val = (mt6311_reg >> SHIFT);
 
-	/* PMICLOG1("[mt6311_read_interface] val=0x%x\n", *val); */
+	/* PMICLOG("[mt6311_read_interface] val=0x%x\n", *val); */
 
 	return ret;
 #endif
@@ -292,26 +580,28 @@ unsigned int mt6311_read_interface(unsigned char RegNum, unsigned char *val, uns
 unsigned int mt6311_config_interface(unsigned char RegNum, unsigned char val, unsigned char MASK, unsigned char SHIFT)
 {
 #if 0
-	PMICLOG1("[mt6311_config_interface] HW no mt6311\n");
+	PMICLOG("[mt6311_config_interface] HW no mt6311\n");
 	return 1;
 #else
 	unsigned char mt6311_reg = 0;
 	unsigned int ret = 0;
 
-	/*PMICLOG1("--------------------------------------------------\n"); */
+	/*PMICLOG("--------------------------------------------------\n"); */
 
 	ret = mt6311_read_byte(RegNum, &mt6311_reg);
-	/* PMICLOG1("[mt6311_config_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
+	/* PMICLOG("[mt6311_config_interface] Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
 
 	mt6311_reg &= ~(MASK << SHIFT);
 	mt6311_reg |= (val << SHIFT);
 
+	MT6311LOGGER(RegNum, mt6311_reg, val, MASK, SHIFT);
+
 	ret = mt6311_write_byte(RegNum, mt6311_reg);
-	/*PMICLOG1("[mt6311_config_interface] write Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
+	/*PMICLOG("[mt6311_config_interface] write Reg[%x]=0x%x\n", RegNum, mt6311_reg);*/
 
 	/* Check*/
 	/*ret = mt6311_read_byte(RegNum, &mt6311_reg);
-	PMICLOG1("[mt6311_config_interface] Check Reg[%x]=0x%x\n", RegNum, mt6311_reg);
+	PMICLOG("[mt6311_config_interface] Check Reg[%x]=0x%x\n", RegNum, mt6311_reg);
 	*/
 
 	return ret;
@@ -334,6 +624,148 @@ unsigned int mt6311_get_reg_value(unsigned int reg)
 
 	return reg_val;
 }
+
+
+/*
+ *   mt6311 special API
+ */
+unsigned char mt6311_get_register_value(mt6311_flag pmureg)
+{
+	unsigned char val;
+	unsigned int ret;
+
+	ret = mt6311_read_interface(pmureg.addr, &val, pmureg.mask, pmureg.shift);
+
+	return val;
+}
+
+unsigned int mt6311_set_register_value(mt6311_flag pmureg, unsigned int val)
+{
+	unsigned int ret;
+
+	ret = mt6311_config_interface(pmureg.addr, val, pmureg.mask, pmureg.shift);
+
+	return ret;
+}
+
+/*
+ *   mt6311 buck control start
+ */
+struct mt6311_bucks_t mt6311_bucks_class[] = {
+	MT6311_BUCK_GEN1(VPROC,
+			MT6311_VDVFS11_CON9, MT6311_VDVFS11_CON7,
+			MT6311_VDVFS1_ANA_CON2, MT6311_VDVFS11_CON12,
+			MT6311_VDVFS11_CON13, MT6311_VDVFS11_CON14,
+			MT6311_VDVFS11_CON9, MT6311_VDVFS11_CON15,
+			600000, 1350000, 6250),
+};
+
+static unsigned int mt6311_bucks_size = ARRAY_SIZE(mt6311_bucks_class);
+
+unsigned char mt6311_is_enabled(MT6311_BUCK_TYPE type)
+{
+	if (type >= mt6311_bucks_size) {
+		pr_err("[MT6311] Set Wrong buck type\n");
+		return -1;
+	}
+
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8a, mt6311_get_reg_value(0x8a));
+	return mt6311_get_qi_vdvfs11_en();
+
+}
+/* en = 1 enable */
+/* en = 0 disable */
+unsigned char mt6311_enable(MT6311_BUCK_TYPE type, unsigned char en)
+{
+	if (type >= mt6311_bucks_size) {
+		pr_err("[MT6311] Set Wrong buck type\n");
+		WARN_ON(1);
+		return -1;
+	}
+
+	if (en > 1) {
+		pr_err("[MT6311] Set en > 1, only 0 or 1!!!!\n");
+		return -1;
+	}
+
+	/*--EN SW CTRL--*/
+	mt6311_set_vdvfs11_en_ctrl(0x0);
+	/*--EN SW --*/
+	mt6311_set_vdvfs11_en(en);
+
+	if (mt6311_is_enabled(type) == en)
+		PMICLOG("%s Set en pass: 0x%x\n", mt6311_bucks_class[type].name, en);
+	else
+		PMICLOG("%s Set en fail: 0x%x\n", mt6311_bucks_class[type].name, en);
+
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x88, mt6311_get_reg_value(0x88));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8d, mt6311_get_reg_value(0x8d));
+	/*--return mt6311_get_register_value(mt6311_bucks_class[type].da_qi_en);--*/
+	return 0;
+
+}
+/* pmode = 1 force PWM mode */
+/* pmode = 0 auto mode      */
+unsigned char mt6311_set_mode(MT6311_BUCK_TYPE type, unsigned char pmode)
+{
+	if (type >= mt6311_bucks_size) {
+		pr_err("[MT6311] Set Wrong buck type\n");
+		WARN_ON(1);
+		return -1;
+	}
+
+	if (pmode > 1) {
+		pr_err("[MT6311] Set mode > 1, only 0 or 1!!!!\n");
+		return -1;
+	}
+
+	/*--MODESET--*/
+	mt6311_set_rg_vdvfs11_modeset(pmode);
+
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x7c, mt6311_get_reg_value(0x7c));
+	return 0;
+}
+
+unsigned char mt6311_set_voltage(MT6311_BUCK_TYPE type, int voltage)
+{
+	int value = 0;
+
+	if (type >= mt6311_bucks_size) {
+		pr_err("[MT6311] Set Wrong buck type\n");
+		return -1;
+	}
+
+	if ((voltage < mt6311_bucks_class[type].min_uV) || (voltage > mt6311_bucks_class[type].max_uV)) {
+		pr_err("unsupportable voltage range: %d-%duV set_volt:%d\n", mt6311_bucks_class[type].min_uV,
+			mt6311_bucks_class[type].max_uV, voltage);
+		return -1;
+	}
+
+	value = (voltage - mt6311_bucks_class[type].min_uV)/(mt6311_bucks_class[type].uV_step);
+
+	pr_err("%s Expected voltage: 0x%x\n", mt6311_bucks_class[type].name, value);
+
+	/*--VOSEL SW CTRL--*/
+	mt6311_set_vdvfs11_vosel(value);
+	/*--VOSEL HW CTRL--*/
+	mt6311_set_vdvfs11_vosel_on(value);
+
+	pr_err("[mt6311] [0x%x]=0x%x\n", 0x8d, mt6311_get_reg_value(0x8d));
+	pr_err("[mt6311] [0x%x]=0x%x\n", 0x8e, mt6311_get_reg_value(0x8e));
+	return 0;
+}
+
+unsigned char mt6311_get_voltage(MT6311_BUCK_TYPE type)
+{
+	if (type >= mt6311_bucks_size) {
+		pr_err("Get Wrong buck type\n");
+		return 0;
+	}
+
+	pr_err("[mt6311] [0x%x]=0x%x\n", 0x90, mt6311_get_reg_value(0x90));
+	return mt6311_get_ni_vdvfs11_vosel();
+}
+/*-----mt6311 buck control end---*/
 
 /*
  *   [APIs]
@@ -360,7 +792,7 @@ unsigned char mt6311_get_cid(void)
 				    (unsigned char) (MT6311_PMIC_CID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG1("[mt6311_get_cid] ret=%d\n", ret);
+		pr_err(PMICTAG "[mt6311_get_cid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -381,7 +813,7 @@ unsigned char mt6311_get_swcid(void)
 				    (unsigned char) (MT6311_PMIC_SWCID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG1("[mt6311_get_swcid] ret=%d\n", ret);
+		pr_err(PMICTAG "[mt6311_get_swcid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -402,7 +834,7 @@ unsigned char mt6311_get_hwcid(void)
 				    (unsigned char) (MT6311_PMIC_HWCID_SHIFT)
 	    );
 	if (ret < 0) {
-		PMICLOG1("[mt6311_get_hwcid] ret=%d\n", ret);
+		pr_err(PMICTAG "[mt6311_get_hwcid] ret=%d\n", ret);
 		mt6311_unlock();
 		return ret;
 	}
@@ -4262,6 +4694,7 @@ void mt6311_set_vdvfs11_en(unsigned char val)
 				      (unsigned char) (MT6311_PMIC_VDVFS11_EN_SHIFT)
 	    );
 	mt6311_unlock();
+	udelay(200);
 }
 
 void mt6311_set_vdvfs11_stbtd(unsigned char val)
@@ -4298,13 +4731,11 @@ unsigned char mt6311_get_qi_vdvfs11_en(void)
 	unsigned char ret = 0;
 	unsigned char val = 0;
 
-	mt6311_lock();
 	ret = mt6311_read_interface((unsigned char) (MT6311_VDVFS11_CON9),
 				    (&val),
 				    (unsigned char) (MT6311_PMIC_QI_VDVFS11_EN_MASK),
 				    (unsigned char) (MT6311_PMIC_QI_VDVFS11_EN_SHIFT)
 	    );
-	mt6311_unlock();
 
 	return val;
 }
@@ -4388,6 +4819,7 @@ void mt6311_set_vdvfs11_vosel(unsigned char val)
 				      (unsigned char) (MT6311_PMIC_VDVFS11_VOSEL_SHIFT)
 	    );
 	mt6311_unlock();
+	udelay(200);
 }
 
 void mt6311_set_vdvfs11_vosel_on(unsigned char val)
@@ -4401,6 +4833,7 @@ void mt6311_set_vdvfs11_vosel_on(unsigned char val)
 				      (unsigned char) (MT6311_PMIC_VDVFS11_VOSEL_ON_SHIFT)
 	    );
 	mt6311_unlock();
+	udelay(200);
 }
 
 void mt6311_set_vdvfs11_vosel_sleep(unsigned char val)
@@ -4421,13 +4854,11 @@ unsigned char mt6311_get_ni_vdvfs11_vosel(void)
 	unsigned char ret = 0;
 	unsigned char val = 0;
 
-	mt6311_lock();
 	ret = mt6311_read_interface((unsigned char) (MT6311_VDVFS11_CON15),
 				    (&val),
 				    (unsigned char) (MT6311_PMIC_NI_VDVFS11_VOSEL_MASK),
 				    (unsigned char) (MT6311_PMIC_NI_VDVFS11_VOSEL_SHIFT)
 	    );
-	mt6311_unlock();
 
 	return val;
 }
@@ -6770,13 +7201,21 @@ unsigned char mt6311_get_fqmtr_data_0(void)
  */
 void mt6311_dump_register(void)
 {
-#if 0
-	unsigned char i = 0x0;
-	unsigned char i_max = 0x2;	/*0xD5*/
+	int i = 0;
+	int i_max = 0xD0;	/*0xD5*/
 
-	for (i = 0x0; i <= i_max; i++)
-		pr_debug("[0x%x]=0x%x ", i, mt6311_get_reg_value(i));
-#endif
+	for (i = 0; i <= i_max; i += 8) {
+		pr_err(PMICTAG "[0x%x]=0x%x, [0x%x]=0x%x, [0x%x]=0x%x, [0x%x]=0x%x\n",
+			i, mt6311_get_reg_value(i),
+			i+1, mt6311_get_reg_value(i+1),
+			i+2, mt6311_get_reg_value(i+2),
+			i+3, mt6311_get_reg_value(i+3));
+		pr_err(PMICTAG "[0x%x]=0x%x, [0x%x]=0x%x, [0x%x]=0x%x, [0x%x]=0x%x\n",
+			i+4, mt6311_get_reg_value(i+4),
+			i+5, mt6311_get_reg_value(i+5),
+			i+6, mt6311_get_reg_value(i+6),
+			i+7, mt6311_get_reg_value(i+7));
+	}
 }
 
 int get_mt6311_i2c_ch_num(void)
@@ -6792,19 +7231,19 @@ unsigned int update_mt6311_chip_id(void)
 
 	id_l = mt6311_get_cid();
 	if (id_l < 0) {
-		PMICLOG1("[update_mt6311_chip_id] id_l=%d\n", id_l);
+		pr_err(PMICTAG "[update_mt6311_chip_id] id_l=%d\n", id_l);
 		return id_l;
 	}
 	id_r = mt6311_get_swcid();
 	if (id_r < 0) {
-		PMICLOG1("[update_mt6311_chip_id] id_r=%d\n", id_r);
+		pr_err(PMICTAG "[update_mt6311_chip_id] id_r=%d\n", id_r);
 		return id_r;
 	}
 	id = ((id_l << 8) | (id_r));
 
 	g_mt6311_cid = id;
 
-	PMICLOG1("[update_mt6311_chip_id] id_l=0x%x, id_r=0x%x, id=0x%x\n", id_l, id_r, id);
+	PMICLOG("[update_mt6311_chip_id] id_l=0x%x, id_r=0x%x, id=0x%x\n", id_l, id_r, id);
 
 	return id;
 }
@@ -6817,12 +7256,12 @@ unsigned int mt6311_get_chip_id(void)
 		ret = update_mt6311_chip_id();
 		if (ret < 0) {
 			g_mt6311_hw_exist = 0;
-			PMICLOG1("[mt6311_get_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+			pr_err(PMICTAG "[mt6311_get_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
 			return ret;
 		}
 	}
 
-	PMICLOG1("[mt6311_get_chip_id] g_mt6311_cid=0x%x\n", g_mt6311_cid);
+	PMICLOG("[mt6311_get_chip_id] g_mt6311_cid=0x%x\n", g_mt6311_cid);
 
 	return g_mt6311_cid;
 }
@@ -6831,14 +7270,14 @@ void mt6311_hw_init(void)
 {
 	unsigned int ret = 0;
 
-	PMICLOG1("[mt6311_hw_init] 20140513, CC Lee\n");
+	PMICLOG("[mt6311_hw_init] 20140513, CC Lee\n");
 
 	/*put init setting from DE/SA*/
 	/*ret=mt6311_config_interface(0x04,0x11,0xFF,0); set pin to interrupt, DVT only*/
 
 	if (mt6311_get_chip_id() >= PMIC6311_E1_CID_CODE) {
-		PMICLOG1("[mt6311_hw_init] 6311 PMIC Chip = 0x%x\n", mt6311_get_chip_id());
-		PMICLOG1("[mt6311_hw_init] 2014-08-13\n");
+		pr_err(PMICTAG "[mt6311_hw_init] 6311 PMIC Chip = 0x%x\n", mt6311_get_chip_id());
+		pr_err(PMICTAG "[mt6311_hw_init] 2016-04-26\n");
 
 	/*put init setting from DE/SA*/
 
@@ -6846,7 +7285,6 @@ void mt6311_hw_init(void)
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 0); /*  [0:0]: VDVFS11_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 1); /*  [1:1]: VDVFS12_PG_H2L_EN; Ricky*/
 	ret = mt6311_config_interface(0x1F, 0x0, 0x1, 2); /*  [2:2]: VBIASN_PG_H2L_EN; Ricky*/
-	ret = mt6311_config_interface(0x6A, 0x2, 0x7, 0);
 	ret = mt6311_config_interface(0x6D, 0x3, 0x3, 5);
 	/* [6:5]: RG_UVLO_VTHL; Ricky, for K2/D3T UVLO issues_0.2V for PCB drop. 20150306*/
 	ret = mt6311_config_interface(0x6E, 0x3, 0x3, 0);
@@ -6859,27 +7297,29 @@ void mt6311_hw_init(void)
 	/* [1:0]: VDVFS11_TRANS_TD; Johnson, for DVFS sof change, falling 50us,,20150305 */
 	ret = mt6311_config_interface(0x94, 0x1, 0x3, 4);
 	ret = mt6311_config_interface(0xCF, 0x0, 0x1, 0);
-	ret = mt6311_config_interface(0x8E, 0x40, 0x7F, 0);
-	ret = mt6311_config_interface(0x8F, 0x10, 0x7F, 0);
+	ret = mt6311_config_interface(0x8E, 0x34, 0x7F, 0);
+	ret = mt6311_config_interface(0x8F, 0x0, 0x7F, 0);
+	ret = mt6311_config_interface(0x8D, 0x34, 0x7F, 0);
+	ret = mt6311_config_interface(0x93, 0x1, 0x1, 0);
 	ret = mt6311_config_interface(0x88, 0x0, 0x1, 0);
 	ret = mt6311_config_interface(0x88, 0x1, 0x1, 1);
-	ret = mt6311_config_interface(0x93, 0x1, 0x1, 0);
-	ret = mt6311_config_interface(0x8D, 0x10, 0x7F, 0);
-
 #if 1
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x04, mt6311_get_reg_value(0x04));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x15, mt6311_get_reg_value(0x15));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x1F, mt6311_get_reg_value(0x1F));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x6A, mt6311_get_reg_value(0x6A));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x8B, mt6311_get_reg_value(0x8B));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x8C, mt6311_get_reg_value(0x8C));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x94, mt6311_get_reg_value(0x94));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x93, mt6311_get_reg_value(0x93));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0xCF, mt6311_get_reg_value(0xCF));
-	PMICLOG1("[mt6311] [0x%x]=0x%x\n", 0x88, mt6311_get_reg_value(0x88));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x04, mt6311_get_reg_value(0x04));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x15, mt6311_get_reg_value(0x15));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x1F, mt6311_get_reg_value(0x1F));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x6A, mt6311_get_reg_value(0x6A));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8B, mt6311_get_reg_value(0x8B));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8C, mt6311_get_reg_value(0x8C));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x94, mt6311_get_reg_value(0x94));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x93, mt6311_get_reg_value(0x93));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0xCF, mt6311_get_reg_value(0xCF));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x88, mt6311_get_reg_value(0x88));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8d, mt6311_get_reg_value(0x8d));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x8e, mt6311_get_reg_value(0x8e));
+	PMICLOG("[mt6311] [0x%x]=0x%x\n", 0x90, mt6311_get_reg_value(0x90));
 #endif
 	} else {
-		PMICLOG1("[mt6311_hw_init] Unknown PMIC Chip (0x%x)\n", mt6311_get_chip_id());
+		pr_err(PMICTAG "[mt6311_hw_init] Unknown PMIC Chip (0x%x)\n", mt6311_get_chip_id());
 	}
 }
 
@@ -6890,13 +7330,13 @@ unsigned int mt6311_hw_component_detect(void)
 	ret = update_mt6311_chip_id();
 	if (ret < 0) {
 		g_mt6311_hw_exist = 0;
-		PMICLOG1("[update_mt6311_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
+		pr_err(PMICTAG "[update_mt6311_chip_id] ret=%d hw_exist:%d\n", ret, g_mt6311_hw_exist);
 		return ret;
 	}
 
 	chip_id = mt6311_get_chip_id();
 	if (chip_id < 0) {
-		PMICLOG1("[mt6311_get_chip_id] ret=%d\n", chip_id);
+		pr_err(PMICTAG "[mt6311_get_chip_id] ret=%d\n", chip_id);
 		return chip_id;
 	}
 	if ((chip_id == PMIC6311_E1_CID_CODE) ||
@@ -6906,20 +7346,20 @@ unsigned int mt6311_hw_component_detect(void)
 		g_mt6311_hw_exist = 1;
 	} else
 		g_mt6311_hw_exist = 0;
-	PMICLOG1("[mt6311_hw_component_detect] exist=%d\n", g_mt6311_hw_exist);
+	PMICLOG("[mt6311_hw_component_detect] exist=%d\n", g_mt6311_hw_exist);
 	return 0;
 }
 
 int is_mt6311_sw_ready(void)
 {
-	/*PMICLOG1("g_mt6311_driver_ready=%d\n", g_mt6311_driver_ready);*/
+	/*PMICLOG("g_mt6311_driver_ready=%d\n", g_mt6311_driver_ready);*/
 
 	return g_mt6311_driver_ready;
 }
 
 int is_mt6311_exist(void)
 {
-	/*PMICLOG1("g_mt6311_hw_exist=%d\n", g_mt6311_hw_exist);*/
+	/*PMICLOG("g_mt6311_hw_exist=%d\n", g_mt6311_hw_exist);*/
 
 	return g_mt6311_hw_exist;
 }
@@ -6961,7 +7401,7 @@ struct wake_lock pmicThread_lock_mt6311;
 
 void wake_up_pmic_mt6311(void)
 {
-	PMICLOG1("[wake_up_pmic_mt6311]\n");
+	PMICLOG("[wake_up_pmic_mt6311]\n");
 	wake_up_process(pmic_6311_thread_handle);
 	wake_lock(&pmicThread_lock_mt6311);
 }
@@ -6969,7 +7409,7 @@ EXPORT_SYMBOL(wake_up_pmic_mt6311);
 
 void mt_pmic_eint_irq_mt6311(void)
 {
-	PMICLOG1("[mt_pmic_eint_irq_mt6311] receive interrupt\n");
+	PMICLOG("[mt_pmic_eint_irq_mt6311] receive interrupt\n");
 	wake_up_pmic_mt6311();
 }
 
@@ -7025,14 +7465,14 @@ void cust_pmic_interrupt_en_setting_mt6311(void)
 void mt6311_lbat_min_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG1("[mt6311_lbat_min_int_handler]....\n");
+	PMICLOG("[mt6311_lbat_min_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,0);*/
 }
 
 void mt6311_lbat_max_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG1("[mt6311_lbat_max_int_handler]....\n");
+	PMICLOG("[mt6311_lbat_max_int_handler]....\n");
 
 #if 0
 	mt6311_set_auxadc_lbat_irq_en_max(0);
@@ -7051,25 +7491,25 @@ unsigned int thr_h_int_status = 0;
 void mt6311_clr_thr_l_int_status(void)
 {
 	thr_l_int_status = 0;
-	PMICLOG1("[mt6311_clr_thr_l_int_status]....\n");
+	PMICLOG("[mt6311_clr_thr_l_int_status]....\n");
 }
 
 void mt6311_clr_thr_h_int_status(void)
 {
 	thr_h_int_status = 0;
-	PMICLOG1("[mt6311_clr_thr_h_int_status]....\n");
+	PMICLOG("[mt6311_clr_thr_h_int_status]....\n");
 }
 
 unsigned int mt6311_get_thr_l_int_status(void)
 {
-	PMICLOG1("[mt6311_get_thr_l_int_status]....\n");
+	PMICLOG("[mt6311_get_thr_l_int_status]....\n");
 
 	return thr_l_int_status;
 }
 
 unsigned int mt6311_get_thr_h_int_status(void)
 {
-	PMICLOG1("[mt6311_get_thr_h_int_status]....\n");
+	PMICLOG("[mt6311_get_thr_h_int_status]....\n");
 
 	return thr_h_int_status;
 }
@@ -7078,7 +7518,7 @@ void mt6311_thr_l_int_handler(void)
 {
 	/*unsigned int ret=0;*/
 	thr_l_int_status = 1;
-	PMICLOG1("[mt6311_thr_l_int_handler]....\n");
+	PMICLOG("[mt6311_thr_l_int_handler]....\n");
 	/*return thr_l_int_status;*/
 
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,2);*/
@@ -7088,14 +7528,14 @@ void mt6311_thr_h_int_handler(void)
 {
 	/*unsigned int ret=0;*/
 	thr_h_int_status = 1;
-	PMICLOG1("[mt6311_thr_h_int_handler]....\n");
+	PMICLOG("[mt6311_thr_h_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,3);*/
 }
 
 void mt6311_buck_oc_int_handler(void)
 {
 	/*unsigned int ret=0;*/
-	PMICLOG1("[mt6311_buck_oc_int_handler]....\n");
+	PMICLOG("[mt6311_buck_oc_int_handler]....\n");
 	/*ret=mt6311_config_interface(MT6311_TOP_INT_MON,0x1,0x1,4);*/
 }
 
@@ -7106,7 +7546,7 @@ static void mt6311_int_handler(void)
 
 	/*--------------------------------------------------------------------------------*/
 	ret = mt6311_read_interface(MT6311_TOP_INT_MON, (&mt6311_int_status_val_0), 0xFF, 0x0);
-	PMICLOG1("[MT6311_INT] mt6311_int_status_val_0=0x%x\n", mt6311_int_status_val_0);
+	PMICLOG("[MT6311_INT] mt6311_int_status_val_0=0x%x\n", mt6311_int_status_val_0);
 
 	if ((((mt6311_int_status_val_0) & (0x01)) >> 0) == 1)
 		mt6311_lbat_min_int_handler();
@@ -7129,7 +7569,7 @@ static int pmic_thread_kthread_mt6311(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	PMICLOG1("[MT6311_INT] enter\n");
+	PMICLOG("[MT6311_INT] enter\n");
 
 	/* Run on a process content */
 	while (1) {
@@ -7143,7 +7583,7 @@ static int pmic_thread_kthread_mt6311(void *x)
 		    mt6311_read_interface(MT6311_TOP_INT_MON, (&mt6311_int_status_val_0), 0xFF,
 					  0x0);
 
-		PMICLOG1("[MT6311_INT] after ,mt6311_int_status_val_0=0x%x\n",
+		PMICLOG("[MT6311_INT] after ,mt6311_int_status_val_0=0x%x\n",
 			mt6311_int_status_val_0);
 
 		mdelay(1);
@@ -7185,13 +7625,14 @@ void mt6311_eint_setting(void)
 
 	ret = request_irq(g_mt6311_irq, mt6311_eint_handler, g_cust_eint_mt_pmic_mt6311_type, "mt6311-eint", NULL);
 	if (ret)
-		PMICLOG1("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6311_irq, ret);
+		PMICLOG("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6311_irq, ret);
+	enable_irq_wake(g_mt6311_irq);
 
-	PMICLOG1("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
+	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_cn);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_en);
 #else
 	mt_eint_set_hw_debounce(g_eint_pmic_mt6311_num, g_cust_eint_mt_pmic_mt6311_debounce_cn);
@@ -7201,11 +7642,11 @@ void mt6311_eint_setting(void)
 
 	mt_eint_unmask(g_eint_pmic_mt6311_num);
 
-	PMICLOG1("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
+	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_cn);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
-	PMICLOG1("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_mt6311_type);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n",
 		g_cust_eint_mt_pmic_mt6311_debounce_en);
 #endif
 
@@ -7222,21 +7663,21 @@ void mt6311_eint_init(void)
 {
 	/*---------------------*/
 #if defined(CONFIG_MTK_FPGA)
-	PMICLOG1("[MT6311_EINT] disable when CONFIG_MTK_FPGA\n");
+	PMICLOG("[MT6311_EINT] disable when CONFIG_MTK_FPGA\n");
 #else
 	/*PMIC Interrupt Service*/
 	pmic_6311_thread_handle =
 	    kthread_create(pmic_thread_kthread_mt6311, (void *)NULL, "pmic_6311_thread");
 	if (IS_ERR(pmic_6311_thread_handle)) {
 		pmic_6311_thread_handle = NULL;
-		PMICLOG1("[MT6311_EINT] creation fails\n");
+		PMICLOG("[MT6311_EINT] creation fails\n");
 	} else {
 		wake_up_process(pmic_6311_thread_handle);
-		PMICLOG1("[MT6311_EINT] kthread_create Done\n");
+		PMICLOG("[MT6311_EINT] kthread_create Done\n");
 	}
 
 	/*mt6311_eint_setting();*/
-	PMICLOG1("[MT6311_EINT] TBD\n");
+	PMICLOG("[MT6311_EINT] TBD\n");
 #endif
 
 }
@@ -7252,7 +7693,7 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	int err = 0;
 	unsigned int ret = 0;
 
-	PMICLOG1("[mt6311_driver_probe]\n");
+	PMICLOG("[mt6311_driver_probe]\n");
 
 	new_client = client;
 
@@ -7266,14 +7707,14 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 	}
 	if (g_mt6311_hw_exist == 1) {
 		mt6311_hw_init();
-		mt6311_dump_register();
+		/*debug only mt6311_dump_register();*/
 
 		mt6311_eint_init();
 
 	}
 	g_mt6311_driver_ready = 1;
 
-	PMICLOG1("[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
+	pr_err(PMICTAG "[mt6311_driver_probe] g_mt6311_hw_exist=%d, g_mt6311_driver_ready=%d\n",
 		g_mt6311_hw_exist, g_mt6311_driver_ready);
 
 	PMIC_INIT_SETTING_V1();
@@ -7283,14 +7724,14 @@ static int mt6311_driver_probe(struct i2c_client *client, const struct i2c_devic
 		/*re-init battery oc protect point for platform without extbuck*/
 		battery_oc_protect_reinit();
 #endif
-		PMICLOG1("[mt6311_driver_probe] return err\n");
+		pr_err(PMICTAG "[mt6311_driver_probe] return err\n");
 		return err;
 	}
 
 	return 0;
 
 exit:
-	PMICLOG1("[mt6311_driver_probe] exit: return err\n");
+	PMICLOG("[mt6311_driver_probe] exit: return err\n");
 	PMIC_INIT_SETTING_V1();
 	return err;
 }
@@ -7304,10 +7745,9 @@ exit:
 /*
  * mt6311_access
  */
-unsigned char g_reg_value_mt6311 = 0;
 static ssize_t show_mt6311_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	PMICLOG1("[show_mt6311_access] 0x%x\n", g_reg_value_mt6311);
+	PMICLOG("[show_mt6311_access] 0x%x\n", g_reg_value_mt6311);
 	return sprintf(buf, "%u\n", g_reg_value_mt6311);
 }
 
@@ -7319,10 +7759,10 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 	unsigned int reg_value = 0;
 	unsigned int reg_address = 0;
 
-	pr_err("[store_mt6311_access]\n");
+	pr_err(PMICTAG "[store_mt6311_access]\n");
 
 	if (buf != NULL && size != 0) {
-		/*PMICLOG1("[store_mt6311_access] buf is %s and size is %d\n",buf,size);*/
+		/*PMICLOG("[store_mt6311_access] buf is %s and size is %d\n",buf,size);*/
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
 
 		pvalue = (char *)buf;
@@ -7337,14 +7777,14 @@ static ssize_t store_mt6311_access(struct device *dev, struct device_attribute *
 			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
 			val =  strsep(&pvalue, " ");
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
-			pr_err("[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
+			pr_err(PMICTAG "[store_mt6311_access] write mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 
 			ret = mt6311_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
 			ret = mt6311_read_interface(reg_address, &g_reg_value_mt6311, 0xFF, 0x0);
 
-			pr_err("[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
+			pr_err(PMICTAG "[store_mt6311_access] read mt6311 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_mt6311);
 			pr_err
 			    ("[store_mt6311_access] use \"cat mt6311_access\" to get value(decimal)\r\n");
@@ -7361,7 +7801,7 @@ static DEVICE_ATTR(mt6311_access, 0664, show_mt6311_access, store_mt6311_access)
 int g_mt6311_vosel_pin = 0;
 static ssize_t show_mt6311_vosel_pin(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_err("[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
+	pr_err(PMICTAG "[show_mt6311_vosel_pin] g_mt6311_vosel_pin=%d\n", g_mt6311_vosel_pin);
 	return sprintf(buf, "%u\n", g_mt6311_vosel_pin);
 }
 
@@ -7371,7 +7811,7 @@ static ssize_t store_mt6311_vosel_pin(struct device *dev, struct device_attribut
 	int val = 0, ret;
 	char *pvalue = NULL;
 
-	pr_err("[store_mt6311_vosel_pin]\n");
+	pr_err(PMICTAG "[store_mt6311_vosel_pin]\n");
 
 	/*val = simple_strtoul(buf, &pvalue, 16);*/
 	pvalue = (char *)buf;
@@ -7379,7 +7819,7 @@ static ssize_t store_mt6311_vosel_pin(struct device *dev, struct device_attribut
 
 	g_mt6311_vosel_pin = val;
 
-	pr_err("[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
+	pr_err(PMICTAG "[store_mt6311_vosel_pin] g_mt6311_vosel_pin(%d)\n", g_mt6311_vosel_pin);
 
 	return size;
 }
@@ -7393,7 +7833,7 @@ static int mt6311_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	PMICLOG1("******** mt6311_user_space_probe!! ********\n");
+	PMICLOG("******** mt6311_user_space_probe!! ********\n");
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6311_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6311_vosel_pin);
@@ -7422,7 +7862,7 @@ static int __init mt6311_init(void)
 {
 #ifdef mt6311_AUTO_DETECT_DISABLE
 
-	PMICLOG1("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
+	PMICLOG("[mt6311_init] mt6311_AUTO_DETECT_DISABLE\n");
 	g_mt6311_hw_exist = 0;
 	g_mt6311_driver_ready = 1;
 
@@ -7433,24 +7873,24 @@ static int __init mt6311_init(void)
 	wake_lock_init(&pmicThread_lock_mt6311, WAKE_LOCK_SUSPEND,
 		       "pmicThread_lock_mt6311 wakelock");
 	{
-		PMICLOG1("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
+		PMICLOG("[mt6311_init] init start. ch=%d!!\n", mt6311_BUSNUM);
 
 		/*i2c_register_board_info(mt6311_BUSNUM, &i2c_mt6311, 1);*/
 
 		if (i2c_add_driver(&mt6311_driver) != 0)
-			PMICLOG1("[mt6311_init] failed to register mt6311 i2c driver.\n");
+			PMICLOG("[mt6311_init] failed to register mt6311 i2c driver.\n");
 		else
-			PMICLOG1("[mt6311_init] Success to register mt6311 i2c driver.\n");
+			PMICLOG("[mt6311_init] Success to register mt6311 i2c driver.\n");
 
 		/* mt6311 user space access interface*/
 		ret = platform_device_register(&mt6311_user_space_device);
 		if (ret) {
-			PMICLOG1("****[mt6311_init] Unable to device register(%d)\n", ret);
+			pr_err(PMICTAG "****[mt6311_init] Unable to device register(%d)\n", ret);
 			return ret;
 		}
 		ret = platform_driver_register(&mt6311_user_space_driver);
 		if (ret) {
-			PMICLOG1("****[mt6311_init] Unable to register driver (%d)\n", ret);
+			pr_err(PMICTAG "****[mt6311_init] Unable to register driver (%d)\n", ret);
 			return ret;
 		}
 	}
