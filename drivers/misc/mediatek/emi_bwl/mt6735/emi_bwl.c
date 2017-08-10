@@ -479,8 +479,10 @@ static ssize_t con_sce_show(struct device_driver *driver, char *buf)
 	char *ptr = buf;
 	int i = 0;
 
-	if (cur_con_sce >= NR_CON_SCE)
+	if (cur_con_sce >= NR_CON_SCE) {
 		ptr += sprintf(ptr, "none\n");
+		return strlen(buf);
+	}
 	else
 		ptr += sprintf(ptr, "current scenario: %s\n",
 		con_sce_str[cur_con_sce]);
