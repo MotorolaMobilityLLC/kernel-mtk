@@ -2781,6 +2781,9 @@ void do_chrdet_int_task(void)
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger NOT exist!\n");
 			BMT_status.charger_exist = KAL_FALSE;
 
+			/* Reset AICR's upper bound calculated by AICL */
+			mtk_chr_reset_aicr_upper_bound();
+
 			/* Set AICR to 500mA if it is plugged out */
 			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
 				&plug_out_aicr);
