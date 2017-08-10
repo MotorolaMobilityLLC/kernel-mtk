@@ -37,6 +37,8 @@
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/map.h>
 #include <linux/vmalloc.h>
+#include <linux/mtd/nand.h>
+
 
 #include <asm/uaccess.h>
 
@@ -1032,7 +1034,17 @@ static int mtdchar_ioctl(struct file *file, u_int cmd, u_long arg)
 		ret = 0;
 		break;
 	}
+#ifdef CONFIG_MTK_MTD_NAND
+	case MEMGETADDRINFO:
+	{
+		loff_t offs;
+		loff_t start_address = mtd_partition_start_address(mtd);
 
+		if (copy_from_user(&offs, argp, sizeof(loff_t)))
+			return -EFAULT;
+		return mtk_block_istlc(start_address + offs);
+	}
+#endif
 	default:
 		ret = -ENOTTY;
 	}

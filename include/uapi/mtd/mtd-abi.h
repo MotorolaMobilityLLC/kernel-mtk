@@ -204,6 +204,9 @@ struct otp_info {
  */
 #define MEMWRITE		_IOWR('M', 24, struct mtd_write_req)
 
+#define MEMGETADDRINFO                _IOR('M', 25, loff_t)
+
+
 /*
  * Obsolete legacy interface. Keep it in order not to break userspace
  * interfaces
