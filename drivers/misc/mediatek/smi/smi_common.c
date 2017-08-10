@@ -67,6 +67,7 @@
 #include "smi_debug.h"
 #include "smi_info_util.h"
 #include "smi_configuration.h"
+#include "smi_public.h"
 #if defined(MMDVFS_HOOK)
 #include "mmdvfs_mgr.h"
 #endif
@@ -2051,6 +2052,7 @@ MTK_SMI_BWC_SCEN smi_get_current_profile(void)
 {
 	return (MTK_SMI_BWC_SCEN) smi_profile;
 }
+EXPORT_SYMBOL(smi_get_current_profile);
 
 #if IS_ENABLED(CONFIG_COMPAT)
 /* 32 bits process ioctl support: */
