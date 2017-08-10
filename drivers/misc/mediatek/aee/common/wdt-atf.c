@@ -450,7 +450,9 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	if (atomic_xchg(&aee_wdt_zap_lock, 0)) {
 		if (!no_zap_locks) {
 			aee_wdt_zap_locks();
-			snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\nCPU%d: zap printk locks\n", cpu);
+			snprintf(str_buf[cpu], sizeof(str_buf[cpu]),
+				"\nCPU%d: zap printk locks mtk_uart_dump_timeout_cnt=%d\n",
+				cpu, mtk_uart_dump_timeout_cnt());
 			aee_sram_fiq_log(str_buf[cpu]);
 			memset(str_buf[cpu], 0, sizeof(str_buf[cpu]));
 		}
