@@ -2124,7 +2124,7 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 		}
 
 		do {
-			simp_mmc_get_status(pmmc_boot_host, &status);
+			err = simp_mmc_get_status(pmmc_boot_host, &status);
 		} while (R1_CURRENT_STATE(status) == 7 && polling--);
 	}
 	if (err == 0)
