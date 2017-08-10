@@ -385,13 +385,28 @@ int dm_get_device(struct dm_target *ti, const char *path, fmode_t mode,
 		if (MAJOR(dev) != major || MINOR(dev) != minor)
 			return -EOVERFLOW;
 	} else {
-		/* convert the path to a device */
-		struct block_device *bdev = lookup_bdev(path);
+		char *dev_path = kstrdup(path, GFP_KERNEL);
 
-		if (IS_ERR(bdev))
-			return PTR_ERR(bdev);
-		dev = bdev->bd_dev;
-		bdput(bdev);
+		if (!dev_path)
+			return -ENOMEM;
+
+		if (strncmp(dev_path, "PARTUUID=", 9) == 0) {
+			dev = name_to_dev_t(dev_path);
+			if (!dev) {
+				DMWARN("no dev found for %s", dev_path);
+				kfree(dev_path);
+				return -EINVAL;
+			}
+			kfree(dev_path);
+		} else {
+			/* convert the path to a device */
+			struct block_device *bdev = lookup_bdev(path);
+
+			if (IS_ERR(bdev))
+				return PTR_ERR(bdev);
+			dev = bdev->bd_dev;
+			bdput(bdev);
+		}
 	}
 
 	dd = find_device(&t->devices, dev);
