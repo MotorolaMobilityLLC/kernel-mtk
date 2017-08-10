@@ -906,7 +906,6 @@ VOID scanRemoveBssDescByBssid(IN P_ADAPTER_T prAdapter, IN UINT_8 aucBSSID[])
 			/* Remove this BSS Desc from the Ess Desc List */
 			if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss))
 				LINK_REMOVE_KNOWN_ENTRY(prEssList, &prBssDesc->rLinkEntryEss);
-
 			/* Return this BSS Desc to the free BSS Desc list. */
 			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
 
@@ -3205,7 +3204,15 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 	kalMemZero(prEssChnlInfo, CFG_MAX_NUM_OF_CHNL_INFO * sizeof(struct ESS_CHNL_INFO));
 	while (!LINK_IS_EMPTY(prCurEssLink)) {
 		prBssDesc = LINK_PEEK_HEAD(prCurEssLink, BSS_DESC_T, rLinkEntryEss);
-		LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
+		if (LINK_ENTRY_IS_VALID(&prBssDesc->rLinkEntryEss)) {
+			LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
+		} else {
+			DBGLOG(SCN, WARN, "scanGetCurrentEssChnlList: Invalid prPrev[%d] prNext[%d]\n",
+				((((P_LINK_ENTRY_T)&prBssDesc->rLinkEntryEss)->prPrev == NULL) ? -1:0),
+				((((P_LINK_ENTRY_T)&prBssDesc->rLinkEntryEss)->prNext == NULL) ? -1:0));
+			LINK_INITIALIZE(prCurEssLink);
+			break;
+		}
 	}
 	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
 		if (prBssDesc->ucChannelNum > 214)
