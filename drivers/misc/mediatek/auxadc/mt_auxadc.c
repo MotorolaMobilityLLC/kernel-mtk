@@ -502,7 +502,8 @@ static void mt_auxadc_hal_resume(void)
 #if !defined(AUXADC_CLOCK_BY_SPM)
 #if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc)
-		clk_prepare_enable(clk_auxadc);
+		if (clk_prepare_enable(clk_auxadc))
+			pr_err("AUXADC clk_prepare_enable failed!");
 #else
 #ifndef CONFIG_MTK_FPGA
 	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC"))
