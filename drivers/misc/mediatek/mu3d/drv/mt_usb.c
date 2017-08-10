@@ -254,15 +254,22 @@ bool usb_cable_connected(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(U3_COMPLIANCE) && !defined(FOR_BRING_UP)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
-#ifdef CONFIG_POWER_EXT
 	chg_type = mt_get_charger_type();
+
+	/* disable USB and send HWDISCONNECT uevent */
+	if ((cable_mode == CABLE_MODE_HOST_ONLY && chg_type == STANDARD_HOST)
+			|| cable_mode == CABLE_MODE_CHRG_ONLY) {
+		os_printk(K_INFO, "%s, cable_mode:%d, return false\n", __func__, cable_mode);
+		return false;
+	}
+
+#ifdef CONFIG_POWER_EXT
 	os_printk(K_INFO, "%s ext-chrdet=%d type=%d\n", __func__, upmu_get_rgs_chrdet(), chg_type);
 	if (upmu_get_rgs_chrdet() && (chg_type == STANDARD_HOST))
 		return true;
 #else
 
 	if (upmu_is_chr_det()) {
-		chg_type = mt_get_charger_type();
 		os_printk(K_INFO, "%s type=%d\n", __func__, chg_type);
 		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
 			return true;
