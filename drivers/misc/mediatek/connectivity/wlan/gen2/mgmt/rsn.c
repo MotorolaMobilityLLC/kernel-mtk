@@ -1353,6 +1353,9 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 	PUINT_8 pucBuffer;
 	ENUM_NETWORK_TYPE_INDEX_T eNetworkId;
 	P_STA_RECORD_T prStaRec;
+#if CFG_SUPPORT_OKC
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+#endif
 
 	DEBUGFUNC("rsnGenerateRSNIE");
 
@@ -1421,13 +1424,21 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 				cp += 2;
 				DBGLOG(RSN, TRACE,
 				       "BSSID %pM ind=%d\n", prStaRec->aucMacAddr, (UINT_32) u4Entry);
-				DBGLOG(RSN, TRACE, "use PMKID %pM\n",
+				DBGLOG(RSN, INFO, "use PMKID %pM\n",
 					(prAdapter->rWifiVar.rAisSpecificBssInfo.
 						arPmkidCache[u4Entry].rBssidInfo.arPMKID));
 				kalMemCopy(cp,
 					   (PVOID) prAdapter->rWifiVar.rAisSpecificBssInfo.
 					   arPmkidCache[u4Entry].rBssidInfo.arPMKID, sizeof(PARAM_PMKID_VALUE));
 				/* ucExpendedLen = 40; */
+#if CFG_SUPPORT_OKC
+			} else if (prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
+				RSN_IE(pucBuffer)->ucLength = 38;
+				WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
+				cp += 2;
+				DBGLOG(RSN, INFO, "use OKC PMKID %pM\n", prConnSettings->aucOkcPmkId);
+				kalMemCopy(cp, prConnSettings->aucOkcPmkId, 16);
+#endif
 			} else {
 				WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
 				/* ucExpendedLen = ELEM_ID_RSN_LEN_FIXED + 2; */
@@ -1436,6 +1447,14 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 				RSN_IE(pucBuffer)->ucLength += 2;
 #endif
 			}
+#if CFG_SUPPORT_OKC
+		} else if (prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
+			RSN_IE(pucBuffer)->ucLength = 38;
+			WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
+			cp += 2;
+			DBGLOG(RSN, INFO, "use OKC PMKID %pM\n", prConnSettings->aucOkcPmkId);
+			kalMemCopy(cp, prConnSettings->aucOkcPmkId, 16);
+#endif
 		} else {
 			WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
 			/* ucExpendedLen = ELEM_ID_RSN_LEN_FIXED + 2; */

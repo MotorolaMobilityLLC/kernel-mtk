@@ -807,11 +807,13 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	PARAM_CONNECT_T rNewSsid;
 	BOOLEAN fgCarryWPSIE = FALSE;
 	ENUM_PARAM_OP_MODE_T eOpMode;
+	P_CONNECTION_SETTINGS_T prConnSettings = NULL;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
 	DBGLOG(REQ, TRACE, "[wlan] mtk_cfg80211_connect %p %zu\n", sme->ie, sme->ie_len);
+	prConnSettings = &prGlueInfo->prAdapter->rWifiVar.rConnSettings;
 
 	if (prGlueInfo->prAdapter->rWifiVar.rConnSettings.eOPMode > NET_TYPE_AUTO_SWITCH)
 		eOpMode = NET_TYPE_AUTO_SWITCH;
@@ -948,7 +950,10 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 #if CFG_SUPPORT_HOTSPOT_2_0
 	prGlueInfo->fgConnectHS20AP = FALSE;
 #endif
-
+#if CFG_SUPPORT_OKC
+	prConnSettings->fgUseOkc = FALSE;
+	prConnSettings->fgOkcPmkIdValid = FALSE;
+#endif
 	if (sme->ie && sme->ie_len > 0) {
 		WLAN_STATUS rStatus;
 		UINT_32 u4BufLen;
@@ -1011,6 +1016,26 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 			}
 		}
 #endif
+#if CFG_SUPPORT_OKC
+		if (wextSrchOkcAndPMKID(pucIEStart, sme->ie_len, (PUINT_8 *) &prDesiredIE, &prConnSettings->fgUseOkc)) {
+			UINT_16 u2PmkIdCnt = 0;
+
+			if (prDesiredIE)
+				u2PmkIdCnt = *(PUINT_16)prDesiredIE;
+			DBGLOG(REQ, TRACE, "u2PmkIdCnt %d\n", u2PmkIdCnt);
+			if (u2PmkIdCnt != 0) {
+				prConnSettings->fgOkcPmkIdValid = TRUE;
+				kalMemCopy(prConnSettings->aucOkcPmkId, prDesiredIE+2, 16);
+			} else {
+				rStatus = kalIoctl(prGlueInfo,
+					   wlanoidAddPMKID,
+					   (PVOID)sme->bssid_hint, MAC_ADDR_LEN, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+				if (rStatus != WLAN_STATUS_SUCCESS)
+					DBGLOG(REQ, WARN, "failed to add OKC PMKID\n");
+			}
+		}
+#endif
+
 	}
 
 	/* clear WSC Assoc IE buffer in case WPS IE is not detected */

@@ -160,6 +160,11 @@ typedef struct _CONNECTION_SETTINGS_T {
 
 	/* for RSN info store, when upper layer set rsn info */
 	RSN_INFO_T rRsnInfo;
+#if CFG_SUPPORT_OKC
+	BOOLEAN fgUseOkc;
+	BOOLEAN fgOkcPmkIdValid;
+	UINT_8 aucOkcPmkId[16];
+#endif
 
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
