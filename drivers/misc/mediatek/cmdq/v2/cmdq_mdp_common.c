@@ -233,8 +233,11 @@ void cmdq_mdp_trackTask_virtual(const struct TaskStruct *pTask)
 {
 	memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].callerName,
 		pTask->callerName, sizeof(pTask->callerName));
-	memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr,
-		pTask->userDebugStr, (uint32_t)strlen(pTask->userDebugStr) + 1);
+	if (pTask->userDebugStr)
+		memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr,
+			pTask->userDebugStr, (uint32_t)strlen(pTask->userDebugStr) + 1);
+	else
+		gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr[0] = '\0';
 
 	CMDQ_MSG("cmdq_mdp_trackTask: caller: %s\n",
 		gCmdqMDPTask[gCmdqMDPTaskIndex].callerName);

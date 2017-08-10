@@ -3116,6 +3116,7 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		pTask->durRelease = 0;
 		pTask->dumpAllocTime = false;
 		atomic_set(&pTask->useWorkQueue, 0);
+		pTask->userDebugStr = NULL;
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		pTask->secStatus = NULL;
 #endif
@@ -3174,9 +3175,6 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		}
 
 		/* store user debug string for debug */
-		if (pTask->userDebugStr != NULL)
-			kfree(pTask->userDebugStr);
-
 		if (pCommandDesc->userDebugStr != 0 &&
 			pCommandDesc->userDebugStrLen > 0) {
 			pTask->userDebugStr = kzalloc(pCommandDesc->userDebugStrLen, GFP_KERNEL);
