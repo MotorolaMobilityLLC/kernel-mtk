@@ -55,6 +55,7 @@ extern int bypass_blank;
 /* For Log print Switch */
 extern unsigned int gEnableUartLog;
 extern unsigned int gMobilelog;
+extern unsigned int gFencelog;
 extern unsigned int gLoglevel;
 extern unsigned int gRcdlevel;
 

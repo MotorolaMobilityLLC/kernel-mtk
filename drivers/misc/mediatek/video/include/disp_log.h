@@ -264,7 +264,7 @@
 		dprec_logger_pr(DPREC_LOGGER_FENCE,                    \
 				fmt,                                   \
 				##args);                               \
-		if (gMobilelog)                                       \
+		if (gFencelog)                                       \
 			pr_debug("[DISP]fence/"fmt, ##args);           \
 	} while (0)
 

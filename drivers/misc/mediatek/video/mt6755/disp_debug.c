@@ -72,6 +72,7 @@
 /* --------------------------------------------------------------------------- */
 unsigned int gEnableUartLog = 0;
 unsigned int gMobilelog = 1;
+unsigned int gFencelog = 0; /*Fence Log*/
 unsigned int gLoglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
 unsigned int gRcdlevel = 0;
 unsigned char pq_debug_flag = 0;
@@ -209,10 +210,15 @@ static void ddp_process_dbg_opt(const char *opt)
 			return;
 		}
 
-		if (enable)
+		if (enable) {
 			dbg_log_level = 1;
-		else
+			gFencelog = 1;
+			gLoglevel = 5;
+		} else {
 			dbg_log_level = 0;
+			gFencelog = 0;
+			gLoglevel = 3;
+		}
 
 		sprintf(buf, "dbg_log: %d\n", dbg_log_level);
 	} else if (0 == strncmp(opt, "irq_log:", 8)) {
@@ -224,10 +230,13 @@ static void ddp_process_dbg_opt(const char *opt)
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		if (enable)
+		if (enable) {
 			irq_log_level = 1;
-		else
+			gLoglevel = 6;
+		} else {
 			irq_log_level = 0;
+			gLoglevel = 3;
+		}
 
 		sprintf(buf, "irq_log: %d\n", irq_log_level);
 	} else if (0 == strncmp(opt, "met_on:", 7)) {
