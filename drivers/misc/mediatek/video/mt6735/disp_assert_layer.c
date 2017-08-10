@@ -391,7 +391,10 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 		dal_shown = true;
 
 	mutex_lock(&disp_trigger_lock);
-	ret = primary_display_trigger(0, NULL, 0);
+	/* Since the output buffer may not exsit, so skip frame trigger update. */
+	if (primary_display_get_session_mode() != DISP_SESSION_DECOUPLE_MIRROR_MODE &&
+		primary_display_get_session_mode() != DISP_SESSION_DECOUPLE_MODE)
+		ret = primary_display_trigger(0, NULL, 0);
 	mutex_unlock(&disp_trigger_lock);
 
 	up(&dal_sem);
