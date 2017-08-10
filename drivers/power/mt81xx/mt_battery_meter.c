@@ -305,9 +305,25 @@ s32 fgauge_get_Q_max(s16 temperature)
 		if (temperature < low_temperature)
 			temperature = low_temperature;
 
+	} else if (p_bat_meter_data->p_battery_profile_t1_5 &&
+			temperature <= p_bat_meter_data->temperature_t1_5) {
+			low_temperature = p_bat_meter_data->tempearture_t1;
+			low_Q_max = p_bat_meter_data->q_max_pos_0;
+			high_temperature = p_bat_meter_data->temperature_t1_5;
+			high_Q_max = p_bat_meter_data->q_max_pos_10;
+
+			if (temperature < low_temperature)
+				temperature = low_temperature;
+
 	} else if (temperature <= p_bat_meter_data->temperature_t2) {
-		low_temperature = p_bat_meter_data->tempearture_t1;
-		low_Q_max = p_bat_meter_data->q_max_pos_0;
+
+		if (p_bat_meter_data->p_battery_profile_t1_5) {
+			low_temperature = p_bat_meter_data->temperature_t1_5;
+			low_Q_max = p_bat_meter_data->q_max_pos_10;
+		} else {
+			low_temperature = p_bat_meter_data->tempearture_t1;
+			low_Q_max = p_bat_meter_data->q_max_pos_0;
+		}
 		high_temperature = p_bat_meter_data->temperature_t2;
 		high_Q_max = p_bat_meter_data->q_max_pos_25;
 
@@ -350,9 +366,25 @@ s32 fgauge_get_Q_max_high_current(s16 temperature)
 		if (temperature < low_temperature)
 			temperature = low_temperature;
 
-	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+	} else if (p_bat_meter_data->p_battery_profile_t1_5 &&
+		temperature <= p_bat_meter_data->temperature_t1_5) {
 		low_temperature = p_bat_meter_data->tempearture_t1;
 		low_Q_max = p_bat_meter_data->q_max_pos_0_h_current;
+		high_temperature = p_bat_meter_data->temperature_t1_5;
+		high_Q_max = p_bat_meter_data->q_max_pos_10_h_current;
+
+		if (temperature < low_temperature)
+			temperature = low_temperature;
+
+	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+
+		if (p_bat_meter_data->p_battery_profile_t1_5) {
+			low_temperature = p_bat_meter_data->temperature_t1_5;
+			low_Q_max = p_bat_meter_data->q_max_pos_10_h_current;
+		} else {
+			low_temperature = p_bat_meter_data->tempearture_t1;
+			low_Q_max = p_bat_meter_data->q_max_pos_0_h_current;
+		}
 		high_temperature = p_bat_meter_data->temperature_t2;
 		high_Q_max = p_bat_meter_data->q_max_pos_25_h_current;
 
@@ -532,6 +564,8 @@ struct BATTERY_PROFILE_STRUCT *fgauge_get_profile(u32 temperature)
 		return p_bat_meter_data->p_battery_profile_t0;
 	else if (temperature == p_bat_meter_data->tempearture_t1)
 		return p_bat_meter_data->p_battery_profile_t1;
+	else if (temperature == p_bat_meter_data->temperature_t1_5)
+		return p_bat_meter_data->p_battery_profile_t1_5;
 	else if (temperature == p_bat_meter_data->temperature_t2)
 		return p_bat_meter_data->p_battery_profile_t2;
 	else if (temperature == p_bat_meter_data->temperature_t3)
@@ -548,6 +582,8 @@ struct R_PROFILE_STRUCT *fgauge_get_profile_r_table(u32 temperature)
 		return p_bat_meter_data->p_r_profile_t0;
 	else if (temperature == p_bat_meter_data->tempearture_t1)
 		return p_bat_meter_data->p_r_profile_t1;
+	else if (temperature == p_bat_meter_data->temperature_t1_5)
+		return p_bat_meter_data->p_r_profile_t1_5;
 	else if (temperature == p_bat_meter_data->temperature_t2)
 		return p_bat_meter_data->p_r_profile_t2;
 	else if (temperature == p_bat_meter_data->temperature_t3)
@@ -770,10 +806,27 @@ void fgauge_construct_battery_profile(s32 temperature,
 		if (temperature < low_temperature)
 			temperature = low_temperature;
 
-	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+	} else if (p_bat_meter_data->p_battery_profile_t1_5 &&
+		temperature <= p_bat_meter_data->temperature_t1_5) {
 		low_profile_p = fgauge_get_profile(p_bat_meter_data->tempearture_t1);
-		high_profile_p = fgauge_get_profile(p_bat_meter_data->temperature_t2);
+		high_profile_p = fgauge_get_profile(p_bat_meter_data->temperature_t1_5);
 		low_temperature = p_bat_meter_data->tempearture_t1;
+		high_temperature = p_bat_meter_data->temperature_t1_5;
+
+		if (temperature < low_temperature)
+			temperature = low_temperature;
+
+	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+
+		if (p_bat_meter_data->p_battery_profile_t1_5) {
+			low_profile_p = fgauge_get_profile(p_bat_meter_data->temperature_t1_5);
+			low_temperature = p_bat_meter_data->temperature_t1_5;
+		} else {
+			low_profile_p = fgauge_get_profile(p_bat_meter_data->tempearture_t1);
+			low_temperature = p_bat_meter_data->tempearture_t1;
+		}
+
+		high_profile_p = fgauge_get_profile(p_bat_meter_data->temperature_t2);
 		high_temperature = p_bat_meter_data->temperature_t2;
 
 		if (temperature < low_temperature)
@@ -846,10 +899,27 @@ void fgauge_construct_r_table_profile(s32 temperature, struct R_PROFILE_STRUCT *
 		if (temperature < low_temperature)
 			temperature = low_temperature;
 
-	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+	} else if (p_bat_meter_data->p_battery_profile_t1_5 &&
+		temperature <= p_bat_meter_data->temperature_t1_5) {
 		low_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->tempearture_t1);
-		high_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t2);
+		high_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t1_5);
 		low_temperature = p_bat_meter_data->tempearture_t1;
+		high_temperature = p_bat_meter_data->temperature_t1_5;
+
+		if (temperature < low_temperature)
+			temperature = low_temperature;
+
+	} else if (temperature <= p_bat_meter_data->temperature_t2) {
+
+		if (p_bat_meter_data->p_battery_profile_t1_5) {
+			low_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t1_5);
+			low_temperature = p_bat_meter_data->temperature_t1_5;
+		} else {
+			low_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->tempearture_t1);
+			low_temperature = p_bat_meter_data->tempearture_t1;
+		}
+
+		high_profile_p = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t2);
 		high_temperature = p_bat_meter_data->temperature_t2;
 
 		if (temperature < low_temperature)

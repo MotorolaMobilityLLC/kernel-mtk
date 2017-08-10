@@ -1691,6 +1691,7 @@ static struct mt_battery_meter_custom_data default_bat_meter_data = {
 
 	.temperature_t0 = 110,
 	.tempearture_t1 = 0,
+	.temperature_t1_5 = 10,
 	.temperature_t2 = 25,
 	.temperature_t3 = 50,
 	.temperature_t = 255,	/* This should be fixed, never change the value */
@@ -1699,11 +1700,13 @@ static struct mt_battery_meter_custom_data default_bat_meter_data = {
 
 	.q_max_pos_50 = 3029,
 	.q_max_pos_25 = 3029,
+	.q_max_pos_10 = 3029,
 	.q_max_pos_0 = 3029,
 	.q_max_neg_10 = 3029,
 
 	.q_max_pos_50_h_current = 2989,
 	.q_max_pos_25_h_current = 2989,
+	.q_max_pos_10_h_current = 2989,
 	.q_max_pos_0_h_current = 2989,
 	.q_max_neg_10_h_current = 2989,
 
@@ -1772,10 +1775,12 @@ static struct mt_battery_meter_custom_data default_bat_meter_data = {
 	.battery_aging_table_saddles = 0,
 	.p_battery_profile_t0 = default_battery_profile_t0,
 	.p_battery_profile_t1 = default_battery_profile_t1,
+	.p_battery_profile_t1_5 = NULL,
 	.p_battery_profile_t2 = default_battery_profile_t2,
 	.p_battery_profile_t3 = default_battery_profile_t3,
 	.p_r_profile_t0 = default_r_profile_t0,
 	.p_r_profile_t1 = default_r_profile_t1,
+	.p_r_profile_t1_5 = NULL,
 	.p_r_profile_t2 = default_r_profile_t2,
 	.p_r_profile_t3 = default_r_profile_t3,
 	.p_battery_profile_temperature = default_battery_profile_temperature,
