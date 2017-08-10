@@ -359,7 +359,7 @@ void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigne
 			break;
 		}
 	}
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* smp_inner_dcache_flush_all(); */
 	/* outer_flush_all();//remove in early porting */
 #endif
