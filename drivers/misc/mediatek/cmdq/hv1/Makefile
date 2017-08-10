@@ -27,13 +27,8 @@ $(warning start to build cmdq secure)
 	ccflags-y += -I$(srctree)/include/trustzone
 
 #	ccflags-y += -DMTK_SEC_VIDEO_PATH_SUPPORT
-ifeq ($(MTK_PLATFORM), mt8173)
-	ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
-endif
 
-ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_FULL_SUPPORT),y)
 	ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
-endif
 
 	ccflags-y += -DDEBUG_SVP_INFO
 	obj-y += cmdq_sec.o
