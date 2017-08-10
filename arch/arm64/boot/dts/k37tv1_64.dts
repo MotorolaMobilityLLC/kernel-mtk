@@ -849,7 +849,7 @@
 	pinctrl-7 = <&lcm_mode_06>;
 	pinctrl-8 = <&lcm_mode_07>;
 	lcm_power_gpio = <&pio 80 0>;
-	lcm_bl_gpio = <&pio 129 0>;
+	/* lcm_bl_gpio = <&pio 69 0>; */
 	status = "okay";
 };
 /* LCM GPIO Kernal Standardization end */
