@@ -1199,7 +1199,7 @@ mpu_cfg_t *get_mpu_region_cfg_info(int region_id)
 /**************************************************************/
 /* The following functions are back up for old platform       */
 /**************************************************************/
-int ccci_parse_meta_md_setting(void)
+int __init ccci_parse_meta_md_setting(void)
 {
 	/* Device tree method */
 	int ret;
@@ -1636,7 +1636,7 @@ RESERVEDMEM_OF_DECLARE(ccci_reserve_smem_md1md3_init, CCCI_MD1MD3_SMEM_RESERVED_
 /**************************************************************/
 /* CCCI Feature option parsiong      entry                    */
 /**************************************************************/
-int ccci_util_fo_init(void)
+int __init ccci_util_fo_init(void)
 {
 	int idx;
 	struct device_node *node = NULL;
