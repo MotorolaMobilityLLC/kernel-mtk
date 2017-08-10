@@ -467,7 +467,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			break;
 		}
 	case FM_IOCTL_GETCHIPID:{
-			fm_u16 chipid;
+			fm_u16 chipid = 0;
 
 			ret = fm_chipid_get(fm, &chipid);
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_GETCHIPID:%04x\n", chipid);
@@ -482,7 +482,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 		}
 
 	case FM_IOCTL_GETMONOSTERO:{
-			fm_u16 usStereoMono;
+			fm_u16 usStereoMono = 0;
 
 			ret = fm_monostereo_get(fm, &usStereoMono);
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_GETMONOSTERO:%04x\n", usStereoMono);
@@ -503,7 +503,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 		}
 
 	case FM_IOCTL_GETCURPAMD:{
-			fm_u16 PamdLevl;
+			fm_u16 PamdLevl = 0;
 
 			ret = fm_pamd_get(fm, &PamdLevl);
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_GETCURPAMD:%d\n", PamdLevl);
@@ -518,7 +518,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 		}
 
 	case FM_IOCTL_GETCAPARRAY:{
-			fm_s32 ca;
+			fm_s32 ca = 0;
 
 			ret = fm_caparray_get(fm, &ca);
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_GETCAPARRAY:%d\n", ca);
@@ -718,8 +718,9 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 
 	case FM_IOCTL_RDS_GET_LOG:{
 			struct rds_raw_t rds_log;
-			fm_s32 len;
+			fm_s32 len = 0;
 
+			memset(rds_log.data, 0, sizeof(rds_log.data));
 			WCN_DBG(FM_DBG | MAIN, "......FM_IOCTL_RDS_GET_LOG......\n");
 			/* fetch a record form RDS log buffer */
 			ret = fm_rds_log_get(fm, (struct rds_rx_t *)&(rds_log.data), &len);
@@ -1192,13 +1193,13 @@ static ssize_t fm_proc_read(struct file *file, char __user *buf, size_t count, l
 	}
 
 	if (fm->chipon && (fm_pwr_state_get(fm) == FM_PWR_RX_ON)) {
-		length = sprintf(tmpbuf, "1\n");
+		length = snprintf(tmpbuf, sizeof(tmpbuf), "1\n");
 		WCN_DBG(FM_NTC | MAIN, " FM_PWR_RX_ON\n");
 	} else if (fm->chipon && (fm_pwr_state_get(fm) == FM_PWR_TX_ON)) {
-		length = sprintf(tmpbuf, "2\n");
+		length = snprintf(tmpbuf, sizeof(tmpbuf), "2\n");
 		WCN_DBG(FM_NTC | MAIN, " FM_PWR_TX_ON\n");
 	} else {
-		length = sprintf(tmpbuf, "0\n");
+		length = snprintf(tmpbuf, sizeof(tmpbuf), "0\n");
 		WCN_DBG(FM_NTC | MAIN, " FM POWER OFF\n");
 	}
 
@@ -1257,6 +1258,7 @@ static ssize_t fm_proc_write(struct file *file, const char *buffer, size_t count
 
 	copysize = (count < (sizeof(tmp_buf) - 1)) ? count : (sizeof(tmp_buf) - 1);
 
+	memset(tmp_buf, 0, sizeof(tmp_buf));
 	WCN_DBG(FM_NTC | MAIN, "fm_proc_write:0\n");
 	if (copy_from_user(tmp_buf, buffer, copysize)) {
 		WCN_DBG(FM_ERR | MAIN, "failed copy_from_user\n");

@@ -1534,7 +1534,7 @@ fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
 fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 {
 	fm_s32 ret = 0;
-	fm_s32 len;
+	fm_s32 len = 0;
 	struct rds_raw_t rds_log;
 
 	if (fm_low_ops.bi.mute == NULL) {

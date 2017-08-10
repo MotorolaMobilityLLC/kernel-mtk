@@ -105,7 +105,7 @@ static fm_u16 mt6630_get_chipid(void)
  */
 static fm_s32 mt6630_SetAntennaType(fm_s32 type)
 {
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_NTC | CHIP, "set ana to %s\n", type ? "short" : "long");
 	if (fm_packaging == 0) {
@@ -125,7 +125,7 @@ static fm_s32 mt6630_SetAntennaType(fm_s32 type)
 
 static fm_s32 mt6630_GetAntennaType(void)
 {
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 
 	if (fm_packaging == 0)
 		return fm_sant_flag;
@@ -142,7 +142,7 @@ static fm_s32 mt6630_GetAntennaType(void)
 static fm_s32 mt6630_Mute(fm_bool mute)
 {
 	fm_s32 ret = 0;
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_NTC | CHIP, "set %s\n", mute ? "mute" : "unmute");
 	fm_reg_read(FM_MAIN_CTRL, &dataRead);
@@ -432,8 +432,8 @@ static fm_s32 mt6630_tune(fm_u8 *buf, fm_s32 buf_size, fm_u16 freq, fm_u16 chan_
 
 static fm_s32 mt6630_get_rom_version(void)
 {
-	fm_u16 tmp;
-	fm_s32 ret;
+	fm_u16 tmp = 0;
+	fm_s32 ret = 0;
 
 	/* DSP rom code version request enable --- set 0x61 b15=1 */
 	fm_set_bits(0x61, 0x8000, 0x7FFF);
@@ -806,7 +806,7 @@ static fm_s32 mt6630_PowerDown(void)
 {
 	fm_s32 ret = 0;
 	fm_u16 pkt_size;
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_DBG | CHIP, "pwr down seq\n");
 	/*SW work around for MCUFA issue.
@@ -1001,7 +1001,7 @@ static fm_s32 mt6630_full_cqi_get(fm_s32 min_freq, fm_s32 max_freq, fm_s32 space
  */
 static fm_s32 mt6630_GetCurRSSI(fm_s32 *pRSSI)
 {
-	fm_u16 tmp_reg;
+	fm_u16 tmp_reg = 0;
 
 	/* TODO: check reg */
 	fm_reg_read(FM_RSSI_IND, &tmp_reg);
@@ -1049,7 +1049,7 @@ static fm_s32 mt6630_SetVol(fm_u8 vol)
 static fm_s32 mt6630_GetVol(fm_u8 *pVol)
 {
 	int ret = 0;
-	fm_u16 tmp;
+	fm_u16 tmp = 0;
 	fm_s32 i;
 
 	if (pVol == NULL) {
@@ -1079,7 +1079,7 @@ static fm_s32 mt6630_GetVol(fm_u8 *pVol)
 static fm_s32 mt6630_dump_reg(void)
 {
 	fm_s32 i;
-	fm_u16 TmpReg;
+	fm_u16 TmpReg = 0;
 
 	for (i = 0; i < 0xff; i++) {
 		fm_reg_read(i, &TmpReg);
@@ -1091,7 +1091,7 @@ static fm_s32 mt6630_dump_reg(void)
 static fm_bool mt6630_GetMonoStereo(fm_u16 *pMonoStereo)
 {
 #define FM_BF_STEREO 0x1000
-	fm_u16 TmpReg;
+	fm_u16 TmpReg = 0;
 
 	/* TODO: check reg */
 	if (pMonoStereo) {
@@ -1126,7 +1126,7 @@ static fm_s32 mt6630_SetMonoStereo(fm_s32 MonoStereo)
 
 static fm_s32 mt6630_GetCapArray(fm_s32 *ca)
 {
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 	fm_u16 tmp = 0;
 
 	/* TODO: check reg */
@@ -1152,7 +1152,7 @@ static fm_s32 mt6630_GetCapArray(fm_s32 *ca)
  */
 static fm_bool mt6630_GetCurPamd(fm_u16 *pPamdLevl)
 {
-	fm_u16 tmp_reg;
+	fm_u16 tmp_reg = 0;
 	fm_u16 dBvalue, valid_cnt = 0;
 	int i, total = 0;
 
@@ -2223,7 +2223,7 @@ static fm_s32 mt6630_PowerUpTx(void)
 {
 	fm_s32 ret = 0;
 	fm_u16 pkt_size;
-	fm_u16 dataRead;
+	fm_u16 dataRead = 0;
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on Tx seq......\n");
 

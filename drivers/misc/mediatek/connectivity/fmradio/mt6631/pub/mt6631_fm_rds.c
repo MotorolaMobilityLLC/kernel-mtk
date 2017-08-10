@@ -93,7 +93,7 @@ static fm_s32 mt6631_RDS_disable(void)
 
 static fm_u16 mt6631_RDS_Get_GoodBlock_Counter(void)
 {
-	fm_u16 tmp_reg;
+	fm_u16 tmp_reg = 0;
 
 	fm_reg_read(FM_RDS_GOODBK_CNT, &tmp_reg);
 	GOOD_BLK_CNT = tmp_reg;
@@ -104,7 +104,7 @@ static fm_u16 mt6631_RDS_Get_GoodBlock_Counter(void)
 
 static fm_u16 mt6631_RDS_Get_BadBlock_Counter(void)
 {
-	fm_u16 tmp_reg;
+	fm_u16 tmp_reg = 0;
 
 	fm_reg_read(FM_RDS_BADBK_CNT, &tmp_reg);
 	BAD_BLK_CNT = tmp_reg;
