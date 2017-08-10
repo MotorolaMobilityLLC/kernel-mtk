@@ -73,13 +73,13 @@ config MTK_LATE_MOUNT
 	  If you are not sure about this, do not set it to y
 
 config TARGET_COPY_OUT_ODM
-	string "ODM location for partition layout"
-	default "odm"
+	bool "Support ODM partition"
+	default y
 	help
-	  This config set location for odm partition
+	  This config decide to enable odm partition
 	  ODM partition is defined in new android version
 	  OTA project will disable it to prevent exception
-	  If you are not sure about this, do not set it to "odm"
+	  If you are not sure about this, do not set it to n
 
 config MTK_LDVT
 	bool "LDVT"
