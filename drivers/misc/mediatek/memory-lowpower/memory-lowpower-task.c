@@ -571,7 +571,7 @@ static int periodic_dc_entry(void *p)
 				break;
 			}
 		}
-		if (trigger) {
+		if (trigger && MlpsScreenOn(&memory_lowpower_state)) {
 			get_memory_lowpower_cma();
 			put_memory_lowpower_cma();
 			nr_dc++;
