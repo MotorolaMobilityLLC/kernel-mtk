@@ -550,7 +550,7 @@ static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE
-	    || runtime->format == SNDRV_PCM_FORMAT_S32_LE) {
+	    || runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1,
 					     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 	} else {
