@@ -1708,7 +1708,6 @@ static void mtk_eint_irq_handler(unsigned irq, struct irq_desc *desc)
 	chained_irq_enter(chip, desc);
 	for (eint_num = 0; eint_num < pctl->devdata->ap_num; eint_num += 32) {
 		status = readl(reg);
-		reg += 4;
 		while (status) {
 			offset = __ffs(status);
 			index = eint_num + offset;
@@ -1743,6 +1742,7 @@ static void mtk_eint_irq_handler(unsigned irq, struct irq_desc *desc)
 			if (index < pctl->devdata->db_cnt)
 				mtk_eint_debounce_process(pctl , index);
 		}
+		reg += 4;
 	}
 	chained_irq_exit(chip, desc);
 }
