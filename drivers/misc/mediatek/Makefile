@@ -39,43 +39,8 @@ obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
 obj-$(CONFIG_MTK_PWM)	    += pwm/
-ifneq ($(CONFIG_MTK_SENSOR_BIO),y)
-ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
-obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
-obj-$(CONFIG_MTK_HWMON)	    += hwmon/
 obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
-obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
-obj-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += accelerometer/
-obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
-obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
-obj-$(CONFIG_CUSTOM_KERNEL_BAROMETER) += barometer/
-obj-$(CONFIG_CUSTOM_KERNEL_HUMIDITY) += humidity/
-obj-$(CONFIG_CUSTOM_KERNEL_STEP_COUNTER)	+= step_counter/
-obj-$(CONFIG_CUSTOM_KERNEL_SIGNIFICANT_MOTION_SENSOR)	+= step_counter/
-obj-$(CONFIG_CUSTOM_KERNEL_ACTIVITY_SENSOR)	+= activity_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_PICK_UP_SENSOR)	+= pick_up_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_SHAKE_SENSOR)	+= shake_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_FACE_DOWN_SENSOR)	+= face_down_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_GESTURE_SENSOR) += gesture/
-obj-$(CONFIG_CUSTOM_KERNEL_PEDOMETER)	+= pedometer/
-obj-$(CONFIG_CUSTOM_KERNEL_HEART)	+= heart_rate_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_TILT_DETECTOR_SENSOR)	+= tilt_detector_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_WAKE_GESTURE_SENSOR)	+= wake_gesture_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_GLANCE_GESTURE_SENSOR)	+= glance_gesture_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_ANSWER_CALL_SENSOR)	+= answer_call_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_GRAVITY_SENSOR)	+= gravity/
-obj-$(CONFIG_CUSTOM_KERNEL_RV_SENSOR)	+= rotationvector/
-obj-$(CONFIG_CUSTOM_KERNEL_LINEARACCEL_SENSOR)	+= linearacceleration/
-obj-$(CONFIG_CUSTOM_KERNEL_GRV_SENSOR)	+= gamerotationvector/
-obj-$(CONFIG_CUSTOM_KERNEL_GMRV_SENSOR)	+= geomagneticrotationvector/
-obj-$(CONFIG_CUSTOM_KERNEL_PDR_SENSOR)	+= pdr_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_FREEFALL_SENSOR)	+= freefall_sensor/
-obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_GYRO_SENSOR)	+= uncali_gyro/
-obj-$(CONFIG_CUSTOM_KERNEL_UNCALI_MAG_SENSOR)	+= uncali_mag/
-endif
-else
-obj-y   += sensor_bio/
-endif
+obj-$(CONFIG_MTK_SENSORS_1_0) += sensors-1.0/
 obj-$(CONFIG_MTPROF)	+= mtprof/
 ifeq ($(CONFIG_MTK_I2C_EXTENSION),y)
 obj-$(CONFIG_MTK_I2C)  += i2c/
