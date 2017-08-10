@@ -2760,6 +2760,9 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 	ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
+	if (prMsgHdr == NULL)  /* for coverity issue */
+		return;
+
 	prExtListenMsg = (struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *) prMsgHdr;
 
 	prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
