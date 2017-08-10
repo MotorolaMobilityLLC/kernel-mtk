@@ -638,7 +638,12 @@ ssize_t musb_sib_enable_show(struct device *dev, struct device_attribute *attr, 
 		pr_debug("dev is null!!\n");
 		return 0;
 	}
+#ifndef CONFIG_MTK_FPGA
 	ret = usb_phy_sib_enable_switch_status();
+#else
+	pr_err("FPGA not support SIB switch!!\n");
+	ret = false;
+#endif
 	return scnprintf(buf, PAGE_SIZE, "%d\n", ret);
 }
 
@@ -651,8 +656,12 @@ ssize_t musb_sib_enable_store(struct device *dev, struct device_attribute *attr,
 		pr_debug("dev is null!!\n");
 		return count;
 	} else if (!kstrtouint(buf, 0, &mode)) {
+#ifndef CONFIG_MTK_FPGA
 		pr_debug("USB sib_enable: %d\n", mode);
 		usb_phy_sib_enable_switch(mode);
+#else
+		pr_err("FPGA not support SIB switch!!\n");
+#endif
 	}
 	return count;
 }
