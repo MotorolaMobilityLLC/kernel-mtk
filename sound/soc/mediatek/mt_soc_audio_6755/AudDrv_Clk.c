@@ -772,7 +772,7 @@ void AudDrv_APLL22M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
-	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/*pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);*/
 
 	mutex_lock(&auddrv_pmic_mutex);
 
@@ -902,7 +902,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
-	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/*pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);*/
 
 	mutex_lock(&auddrv_pmic_mutex);
 
@@ -997,7 +997,7 @@ void AudDrv_APLL24M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
-	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	/*pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);*/
 
 	mutex_lock(&auddrv_pmic_mutex);
 
@@ -1122,7 +1122,7 @@ void AudDrv_APLL24M_Clk_Off(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
-	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	/*pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);*/
 
 	mutex_lock(&auddrv_pmic_mutex);
 
@@ -1486,7 +1486,7 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL2_TUNER].clock);
 #endif
-		pr_debug("AudDrv_APLL2Tuner_Clk_Off\n");
+		/*pr_debug("AudDrv_APLL2Tuner_Clk_Off\n");*/
 	}
 	/* handle for clock error */
 	else if (Aud_APLL2_Tuner_cntr < 0) {
