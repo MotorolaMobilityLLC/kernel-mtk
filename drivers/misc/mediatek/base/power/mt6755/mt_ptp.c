@@ -4711,14 +4711,11 @@ static int __init eem_conf(void)
 			eem_error("@The table ----->(p15Tbl)\n");
 		#endif
 		} else {
+			#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
-				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-				if (0) {
-				#else
 				if (freq_bound == 5) {
 					recordTbl = &fyTbl_M[0][0];
 					eem_error("@The table ----->(ENG fyTbl_M)\n");
-				#endif
 				} else {
 					recordTbl = &fyTbl[0][0];
 					eem_error("@The table ----->(ENG fyTbl)\n");
@@ -4727,6 +4724,9 @@ static int __init eem_conf(void)
 				recordTbl = &sbTbl[0][0];
 				eem_error("@The table ----->(ENG sbTbl)\n");
 			}
+			#else
+			recordTbl = &fyTbl[0][0];
+			#endif
 		}
 	}
 
