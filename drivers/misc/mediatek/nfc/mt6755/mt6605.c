@@ -410,8 +410,6 @@ static int mt6605_probe(struct i2c_client *client,
 		pr_err("%s : failed to allocate dma buffer\n", __func__);
 		goto err_request_irq_failed;
 	}
-	pr_debug("%s :I2CDMAWriteBuf_pa %lld, I2CDMAReadBuf_pa,%lld\n", __func__,
-		 I2CDMAWriteBuf_pa, I2CDMAReadBuf_pa);
 	/* request irq.  the irq is set whenever the chip has data available
 	 * for reading.  it is cleared when all data has been read.
 	 */
