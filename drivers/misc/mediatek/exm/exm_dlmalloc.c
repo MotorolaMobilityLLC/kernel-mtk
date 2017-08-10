@@ -309,6 +309,7 @@ static int mt_mspace_probe(struct platform_device *dev)
 
 	if (!info->mem[0].addr) {
 		dev_err(&dev->dev, "Invalid memory resource\n");
+		kfree(info);
 		return -ENODEV;
 	}
 
@@ -317,6 +318,7 @@ static int mt_mspace_probe(struct platform_device *dev)
 
 	if (exm_register_device(&dev->dev, info)) {
 		iounmap(info->mem[0].internal_addr);
+		kfree(info);
 		pr_err("exm_register failed\n");
 		return -ENODEV;
 	}
