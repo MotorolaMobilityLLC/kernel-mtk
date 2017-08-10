@@ -240,12 +240,14 @@ int port_kthread_handler(void *arg)
 
 	while (1) {
 		if (skb_queue_empty(&port->rx_skb_list)) {
-			ret = wait_event_interruptible(port->rx_wq, !skb_queue_empty(&port->rx_skb_list));
+			ret = wait_event_interruptible(port->rx_wq,
+				(!skb_queue_empty(&port->rx_skb_list) || kthread_should_stop()));
 			if (ret == -ERESTARTSYS)
 				continue;	/* FIXME */
 		}
 		if (kthread_should_stop())
 			break;
+
 		CCCI_DEBUG_LOG(md_id, TAG, "read on %s\n", port->name);
 		port_proxy_record_rx_sched_time(port->port_proxy, port->rx_ch);
 		/* 1. dequeue */

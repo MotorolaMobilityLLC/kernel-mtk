@@ -2413,11 +2413,12 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	/* power off MD */
 	ret = md_cd_power_off(md, stop_type == MD_FLIGHT_MODE_ENTER ? 100 : 0);
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
-	ccci_md_broadcast_state(md, GATED);
 
 #ifdef ENABLE_CLDMA_AP_SIDE
 	md_cldma_clear(md);
 #endif
+	ccci_md_broadcast_state(md, GATED);
+
 	/* ACK CCIF for MD. while entering flight mode, we may send something after MD slept */
 	ccci_reset_ccif_hw(md, AP_MD1_CCIF, md_ctrl->ap_ccif_base, md_ctrl->md_ccif_base);
 	md_cd_check_emi_state(md, 0);	/* Check EMI after */

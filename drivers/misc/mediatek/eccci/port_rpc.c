@@ -1301,9 +1301,46 @@ int port_rpc_recv_match(struct ccci_port *port, struct sk_buff *skb)
 	return 0;
 }
 
+void port_rpc_md_state_notice(struct ccci_port *port, MD_STATE state)
+{
+	struct sk_buff *skb = NULL;
+	int clear_cnt = 0;
+
+	if (port->md_id != MD_SYS1)
+		return;
+
+	switch (state) {
+	case GATED:
+		CCCI_DEBUG_LOG(port->md_id, CHAR, "port rpc notice stop\n");
+		if (port->private_data != NULL) {
+			kthread_stop(port->private_data);
+			CCCI_DEBUG_LOG(port->md_id, CHAR, "port rpc notice clear list\n");
+			/* clear queue list */
+			while ((skb = __skb_dequeue(&port->rx_skb_list)) != NULL) {
+				ccci_free_skb(skb);
+				clear_cnt++;
+			}
+			port->rx_drop_cnt += clear_cnt;
+			CCCI_NORMAL_LOG(port->md_id, CHAR,
+				"port rpc notice: port %s state notice rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n",
+				port->name, port->rx_skb_list.qlen, skb_queue_empty(&port->rx_skb_list),
+				clear_cnt, port->rx_drop_cnt);
+			ccci_event_log("md%d: port %s close rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n",
+				port->md_id, port->name, port->rx_skb_list.qlen,
+				skb_queue_empty(&port->rx_skb_list), clear_cnt, port->rx_drop_cnt);
+			port->private_data = kthread_run(port_kthread_handler, port, "%s", port->name);
+			CCCI_NOTICE_LOG(port->md_id, CHAR, "port rpc notice end\n");
+		}
+		break;
+	default:
+		break;
+	};
+}
+
 struct ccci_port_ops rpc_port_ops = {
 	.init = &port_rpc_init,
 	.recv_match = &port_rpc_recv_match,
 	.recv_skb = &port_recv_skb,
+	.md_state_notice = &port_rpc_md_state_notice,
 };
 
