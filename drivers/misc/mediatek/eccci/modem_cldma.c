@@ -2069,9 +2069,6 @@ static int md_cd_start(struct ccci_modem *md)
 		ccci_init_security();
 		/* MD will clear share memory itself after the first boot */
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
-#ifdef CONFIG_MTK_ECCCI_C2K
-		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
-#endif
 
 #ifndef NO_POWER_OFF_ON_STARTMD
 		ret = md_cd_power_off(md, 0);
