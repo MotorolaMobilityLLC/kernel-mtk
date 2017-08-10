@@ -3119,6 +3119,9 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		pTask->userDebugStr = NULL;
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		pTask->secStatus = NULL;
+#if defined(CONFIG_MTK_CMDQ_TAB)
+		pTask->secData.secMode = pCommandDesc->secData.secMode;
+#endif
 #endif
 
 		/* secure exec data */

@@ -1037,6 +1037,11 @@ int32_t cmdq_setup_sec_data_of_command_desc_by_rec_handle(cmdqCommandStruct *pDe
 	pDesc->secData.addrMetadataCount = handle->secData.addrMetadataCount;
 	pDesc->secData.addrMetadatas = handle->secData.addrMetadatas;
 	pDesc->secData.addrMetadataMaxCount = handle->secData.addrMetadataMaxCount;
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+#ifdef CONFIG_MTK_CMDQ_TAB
+	pDesc->secData.secMode = handle->secData.secMode;
+#endif
+#endif
 
 	/* init reserved field */
 	pDesc->secData.resetExecCnt = false;
