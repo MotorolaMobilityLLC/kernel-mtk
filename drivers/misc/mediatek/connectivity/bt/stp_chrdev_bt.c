@@ -25,6 +25,7 @@
 #include <linux/poll.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <linux/wakelock.h>
 #include <linux/device.h>
 #include <linux/printk.h>
 
@@ -75,6 +76,7 @@ static UINT8 i_buf[BT_BUFFER_SIZE]; /* Input buffer for read */
 static UINT8 o_buf[BT_BUFFER_SIZE]; /* Output buffer for write */
 
 static struct semaphore wr_mtx, rd_mtx;
+static struct wake_lock bt_wakelock;
 /* Wait queue for poll and read */
 static wait_queue_head_t inq;
 static DECLARE_WAIT_QUEUE_HEAD(BT_wq);
@@ -134,6 +136,21 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 VOID BT_event_cb(VOID)
 {
 	BT_DBG_FUNC("BT_event_cb\n");
+
+	/*
+	 * Hold wakelock for 100ms to avoid system enter suspend in such case:
+	 *   FW has sent data to host, STP driver received the data and put it
+	 *   into BT rx queue, then send sleep command and release wakelock as
+	 *   quick sleep mechanism for low power, BT driver will wake up stack
+	 *   hci thread stuck in poll or read.
+	 *   But before hci thread comes to read data, system enter suspend,
+	 *   hci command timeout timer keeps counting during suspend period till
+	 *   expires, then the RTC interrupt wakes up system, command timeout
+	 *   handler is executed and meanwhile the event is received.
+	 *   This will false trigger FW assert and should never happen.
+	 */
+	wake_lock_timeout(&bt_wakelock, 100);
+
 	/*
 	 * Finally, wake up any reader blocked in poll or read
 	 */
@@ -383,25 +400,25 @@ static int BT_open(struct inode *inode, struct file *file)
 	}
 
 	BT_INFO_FUNC("WMT turn on BT OK!\n");
-	rstflag = 0;
 
-	if (mtk_wcn_stp_is_ready()) {
+	if (mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE) {
 
-		mtk_wcn_stp_set_bluez(0);
-
-		BT_INFO_FUNC("Now it's in MTK Bluetooth Mode\n");
-		BT_INFO_FUNC("STP is ready!\n");
-
-		BT_DBG_FUNC("Register BT event callback!\n");
-		mtk_wcn_stp_register_event_cb(BT_TASK_INDX, BT_event_cb);
-	} else {
 		BT_ERR_FUNC("STP is not ready!\n");
 		mtk_wcn_wmt_func_off(WMTDRV_TYPE_BT);
 		return -EIO;
 	}
 
+	mtk_wcn_stp_set_bluez(0);
+
+	BT_INFO_FUNC("Now it's in MTK Bluetooth Mode\n");
+	BT_INFO_FUNC("STP is ready!\n");
+
+	BT_DBG_FUNC("Register BT event callback!\n");
+	mtk_wcn_stp_register_event_cb(BT_TASK_INDX, BT_event_cb);
+
 	BT_DBG_FUNC("Register BT reset callback!\n");
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_BT, bt_cdev_rst_cb);
+	rstflag = 0;
 
 	sema_init(&wr_mtx, 1);
 	sema_init(&rd_mtx, 1);
@@ -469,6 +486,8 @@ static int BT_init(void)
 
 	/* Initialize wait queue */
 	init_waitqueue_head(&(inq));
+	/* Initialize wake lock */
+	wake_lock_init(&bt_wakelock, WAKE_LOCK_SUSPEND, "bt_drv");
 
 	return 0;
 
@@ -495,6 +514,8 @@ error:
 static void BT_exit(void)
 {
 	dev_t dev = MKDEV(BT_major, 0);
+	/* Destroy wake lock*/
+	wake_lock_destroy(&bt_wakelock);
 
 #if CREATE_NODE_DYNAMIC
 	if (stpbt_dev && !IS_ERR(stpbt_dev)) {
