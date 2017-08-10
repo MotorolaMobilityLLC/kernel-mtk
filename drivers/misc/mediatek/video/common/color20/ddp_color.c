@@ -1678,6 +1678,8 @@ static void ddp_color_bypass_color(DISP_MODULE_ENUM module, int bypass, void *__
 	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
 
+	g_color_bypass = bypass;
+
 	if (DISP_MODULE_COLOR1 == module)
 		offset = C1_OFFSET;
 
