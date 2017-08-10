@@ -19,6 +19,7 @@
 #include <linux/kernel.h>       /* min() */
 #include <linux/uaccess.h>      /* copy_to_user() */
 #include <linux/sched.h>        /* TASK_INTERRUPTIBLE/signal_pending/schedule */
+#include <linux/syscore_ops.h>
 #include <linux/poll.h>
 #include <linux/io.h>           /* ioremap() */
 #include <linux/of_fdt.h>
@@ -31,6 +32,7 @@
 #include <linux/proc_fs.h>
 #include <linux/atomic.h>
 #include <linux/irq.h>
+#include <mach/mt_secure_api.h>
 
 /*#define ATF_LOGGER_DEBUG*/
 #define ATF_LOG_CTRL_BUF_SIZE 256
@@ -505,6 +507,25 @@ static const struct file_operations proc_atf_crash_file_operations = {
 	.release = single_release,
 };
 
+#ifdef MTK_SIP_KERNEL_TIME_SYNC
+static void atf_time_sync_resume(void)
+{
+	/* Get local_clock and sync to ATF */
+	u64 time_to_sync = local_clock();
+
+#ifdef CONFIG_ARM64
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, time_to_sync, 0, 0);
+#else
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, (u32)time_to_sync, (u32)(time_to_sync >> 32), 0);
+#endif
+	pr_notice("atf_time_sync: resume sync");
+}
+
+static struct syscore_ops atf_time_sync_syscore_ops = {
+	.resume = atf_time_sync_resume,
+};
+#endif
+
 #ifdef CONFIG_ARCH_MT6797
 
 static int atf_dump_show(struct seq_file *m, void *v)
@@ -542,6 +563,9 @@ static int __init atf_log_init(void)
 #endif
 	struct proc_dir_entry *atf_crash_proc_file;
 	struct proc_dir_entry *atf_last_proc_file;
+#ifdef MTK_SIP_KERNEL_TIME_SYNC
+	u64 time_to_sync;
+#endif
 
 	err = misc_register(&atf_log_dev);
 	if (unlikely(err)) {
@@ -626,6 +650,20 @@ static int __init atf_log_init(void)
 		atf_crash_log_buf = ioremap_wc(atf_buf_vir_ctl->info.atf_crash_log_addr,
 				atf_buf_vir_ctl->info.atf_crash_log_size);
 	}
+
+#ifdef MTK_SIP_KERNEL_TIME_SYNC
+	register_syscore_ops(&atf_time_sync_syscore_ops);
+
+	/* Get local_clock and sync to ATF */
+	time_to_sync = local_clock();
+
+#ifdef CONFIG_ARM64
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, time_to_sync, 0, 0);
+#else
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, (u32)time_to_sync, (u32)(time_to_sync >> 32), 0);
+#endif
+	pr_notice("atf_time_sync: inited");
+#endif
 
 	return 0;
 }
