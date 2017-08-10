@@ -6434,7 +6434,6 @@ static int cpufreq_dvfs_time_profile_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const char __user *buffer,
 	size_t count, loff_t *pos)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
 	unsigned int temp;
 	int rc;
 	int i;
@@ -6446,7 +6445,7 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file, const cha
 
 	rc = kstrtoint(buf, 10, &temp);
 	if (rc < 0)
-		cpufreq_err("echo 0/1 > /proc/cpufreq/%s/cpufreq_dvfs_time_profile\n", p->name);
+		cpufreq_err("echo 1 > /proc/cpufreq/cpufreq_dvfs_time_profile\n");
 	else {
 		if (temp == 1) {
 			for (i = 0; i < NR_SET_V_F; i++)
