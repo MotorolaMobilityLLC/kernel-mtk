@@ -45,8 +45,10 @@ void mtk_gpu_meminfo_reset(void)
 
 void mtk_gpu_meminfo_set(ssize_t index, int pid, int used_pages)
 {
-	g_mtk_gpu_meminfo[index].pid = pid;
-	g_mtk_gpu_meminfo[index].used_pages = used_pages;
+	if (index < MTK_MEMINFO_SIZE) {
+		g_mtk_gpu_meminfo[index].pid = pid;
+		g_mtk_gpu_meminfo[index].used_pages = used_pages;
+	}
 }
 
 bool mtk_dump_mali_memory_usage(void)

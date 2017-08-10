@@ -12,7 +12,7 @@
  */
 
 #ifdef ENABLE_MTK_MEMINFO
-#define MTK_MEMINFO_SIZE 50
+#define MTK_MEMINFO_SIZE 128
 
 typedef struct {
 	int pid;
