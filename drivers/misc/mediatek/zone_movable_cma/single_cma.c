@@ -94,7 +94,8 @@ phys_addr_t zmc_shrink_cma_range(void)
 		phys_addr_t new_base;
 
 		/* Check new_base */
-		new_base = ALIGN(cma_get_base(cma) + cma_get_size(cma) - max, alignment);
+		new_base = round_down(cma_get_base(cma) + cma_get_size(cma) - max, alignment);
+
 		if (new_base < cma_get_base(cma)) {
 			pr_warn("%s: mismatched base(0x%lx) new_base(%p)\n",
 					__func__, (unsigned long)(cma_get_base(cma)), &new_base);

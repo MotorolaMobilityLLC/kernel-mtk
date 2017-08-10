@@ -211,8 +211,11 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max_low,
 	 */
 	zone_size[0] = max_low - min;
 #ifdef CONFIG_ZONE_MOVABLE_CMA
-	highmem_high = cma_base_pfn;
-	zone_size[ZONE_MOVABLE] = max_high - highmem_high;
+	if (cma_size) {
+		highmem_high = cma_base_pfn;
+		zone_size[ZONE_MOVABLE] = max_high - highmem_high;
+	} else
+		highmem_high = max_high;
 #else
 	highmem_high = max_high;
 #endif
