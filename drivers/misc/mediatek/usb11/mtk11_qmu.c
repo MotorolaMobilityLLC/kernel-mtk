@@ -11,12 +11,13 @@
  * GNU General Public License for more details.
  */
 
-#ifdef MUSBFSH_QMU_SUPPORT_HOST
+#ifdef MUSBFSH_QMU_SUPPORT
 #include <linux/dma-mapping.h>
 #include <linux/dmapool.h>
 #include <linux/list.h>
 #include "musbfsh_qmu.h"
 #include "mtk11_qmu.h"
+#include "musbfsh_host.h"
 
 static PGPD Rx_gpd_head[MAX_QMU_EP + 1];
 static PGPD Tx_gpd_head[MAX_QMU_EP + 1];
@@ -34,7 +35,7 @@ static u32 Rx_gpd_max_count[MAX_QMU_EP + 1];
 static u32 Tx_gpd_max_count[MAX_QMU_EP + 1];
 
 
-u32 qmu_used_gpd_count(u8 isRx, u32 num)
+u32 mtk11_qmu_used_gpd_count(u8 isRx, u32 num)
 {
 	if (isRx)
 		return (Rx_gpd_max_count[num] - 1) - Rx_gpd_free_count[num];
@@ -42,7 +43,7 @@ u32 qmu_used_gpd_count(u8 isRx, u32 num)
 		return (Tx_gpd_max_count[num] - 1) - Tx_gpd_free_count[num];
 }
 
-u32 qmu_free_gpd_count(u8 isRx, u32 num)
+u32 mtk11_qmu_free_gpd_count(u8 isRx, u32 num)
 {
 	if (isRx)
 		return Rx_gpd_free_count[num];
@@ -50,7 +51,7 @@ u32 qmu_free_gpd_count(u8 isRx, u32 num)
 		return Tx_gpd_free_count[num];
 }
 
-u8 PDU_calcCksum(u8 *data, int len)
+u8 mtk11_PDU_calcCksum(u8 *data, int len)
 {
 	u8 *uDataPtr, ckSum;
 	int i;
@@ -151,13 +152,17 @@ static void init_gpd_list(u8 isRx, int num, PGPD ptr, PGPD io_ptr, u32 size)
 	}
 }
 
-int qmu_init_gpd_pool(struct device *dev)
+int mtk11_qmu_init_gpd_pool(struct device *dev)
 {
 	u32 i, size;
 	TGPD *ptr, *io_ptr;
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 
+#ifdef MUSBFSH_QMU_LIMIT_SUPPORT
+	for (i = 1; i <= MAX_QMU_EP; i++)
+		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk11_isoc_ep_gpd_count;
+#else
 	if (!mtk11_qmu_max_gpd_num)
 		mtk11_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
 
@@ -170,7 +175,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		else
 			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk11_qmu_max_gpd_num;
 	}
-
+#endif
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
@@ -219,7 +224,7 @@ int qmu_init_gpd_pool(struct device *dev)
 	return 0;
 }
 
-void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
+void mtk11_qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 {
 	u32 size;
 
@@ -242,7 +247,7 @@ void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 	}
 }
 
-void qmu_destroy_gpd_pool(struct device *dev)
+void mtk11_qmu_destroy_gpd_pool(struct device *dev)
 {
 	int i;
 
@@ -355,7 +360,7 @@ bool mtk11_is_qmu_enabled(u8 ep_num, u8 isRx)
 
 void mtk11_qmu_enable(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 {
-	struct musbfsh_ep *musbfsh_ep;
+	struct musbfsh_hw_ep *hw_ep;
 	u32 QCR;
 	void __iomem *base = musbfsh_qmu_base;
 	void __iomem *mbase = musbfsh->mregs;
@@ -364,7 +369,10 @@ void mtk11_qmu_enable(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 	u16 intr_e = 0;
 
 	epio = musbfsh->endpoints[ep_num].regs;
+	hw_ep = &musbfsh->endpoints[ep_num];
 	musbfsh_ep_select(mbase, ep_num);
+
+	QMU_WARN("USB1_BASE:0x%x musbfsh:regs:0x%p\n", USB1_BASE, musbfsh->mregs);
 
 	if (isRx) {
 		QMU_WARN("enable RQ(%d)\n", ep_num);
@@ -373,8 +381,7 @@ void mtk11_qmu_enable(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 		csr |= MUSBFSH_RXCSR_DMAENAB;
 
 		/* check ISOC */
-		musbfsh_ep = &musbfsh->endpoints[ep_num].ep_out;
-		if (musbfsh_ep->type == USB_ENDPOINT_XFER_ISOC)
+		if (hw_ep->type == USB_ENDPOINT_XFER_ISOC)
 			csr |= MUSBFSH_RXCSR_P_ISO;
 		musbfsh_writew(epio, MUSBFSH_RXCSR, csr);
 
@@ -439,8 +446,7 @@ void mtk11_qmu_enable(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 		csr |= MUSBFSH_TXCSR_DMAENAB;
 
 		/* check ISOC */
-		musbfsh_ep = &musbfsh->endpoints[ep_num].ep_in;
-		if (musbfsh_ep->type == USB_ENDPOINT_XFER_ISOC)
+		if (hw_ep->type == USB_ENDPOINT_XFER_ISOC)
 			csr |= MUSBFSH_TXCSR_P_ISO;
 		musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
 
@@ -564,9 +570,9 @@ static void mtk11_qmu_disable(u8 ep_num, u8 isRx)
 	}
 }
 
-void mtk_qmu_insert_task(u8 ep_num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc)
+void mtk11_qmu_insert_task(u8 ep_num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc)
 {
-	QMU_INFO("mtk_qmu_insert_task ep_num: %d, isRx: %d, buf: %p, length: %d zlp: %d isioc: %d\n",
+	QMU_INFO("mtk11_qmu_insert_task ep_num: %d, isRx: %d, buf: %p, length: %d zlp: %d isioc: %d\n",
 			ep_num, isRx, buf, length, zlp, isioc);
 	if (isRx) /* rx don't care zlp input */
 		prepare_rx_gpd(buf, length, ep_num, isioc);
@@ -574,7 +580,32 @@ void mtk_qmu_insert_task(u8 ep_num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isi
 		prepare_tx_gpd(buf, length, ep_num, zlp, isioc);
 }
 
-void flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
+void mtk11_qmu_resume(u8 ep_num, u8 isRx)
+{
+	void __iomem *base = musbfsh_qmu_base;
+
+	if (!isRx) {
+		MGC_WriteQMU32(base, MGC_O_QMU_TQCSR(ep_num), DQMU_QUE_RESUME);
+		if (!MGC_ReadQMU32(base, MGC_O_QMU_TQCSR(ep_num))) {
+			QMU_ERR("TQCSR[%d]=%x\n", ep_num,
+				MGC_ReadQMU32(base, MGC_O_QMU_TQCSR(ep_num)));
+			MGC_WriteQMU32(base, MGC_O_QMU_TQCSR(ep_num), DQMU_QUE_RESUME);
+			QMU_ERR("TQCSR[%d]=%x\n", ep_num,
+				MGC_ReadQMU32(base, MGC_O_QMU_TQCSR(ep_num)));
+		}
+	} else {
+		MGC_WriteQMU32(base, MGC_O_QMU_RQCSR(ep_num), DQMU_QUE_RESUME);
+		if (!MGC_ReadQMU32(base, MGC_O_QMU_RQCSR(ep_num))) {
+			QMU_ERR("RQCSR[%d]=%x\n", ep_num,
+				MGC_ReadQMU32(base, MGC_O_QMU_RQCSR(ep_num)));
+			MGC_WriteQMU32(base, MGC_O_QMU_RQCSR(ep_num), DQMU_QUE_RESUME);
+			QMU_ERR("RQCSR[%d]=%x\n", ep_num,
+				MGC_ReadQMU32(base, MGC_O_QMU_RQCSR(ep_num)));
+		}
+	}
+}
+
+void mtk11_flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 {
 	void __iomem *mbase = musbfsh->mregs;
 	struct musbfsh_hw_ep *hw_ep = musbfsh->endpoints + ep_num;
@@ -587,8 +618,7 @@ void flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 	if (isRx) {
 		csr = musbfsh_readw(epio, MUSBFSH_RXCSR);
 		csr |= MUSBFSH_RXCSR_FLUSHFIFO | MUSBFSH_RXCSR_RXPKTRDY;
-		if (musbfsh->is_host)
-			csr &= ~MUSBFSH_RXCSR_H_REQPKT;
+		csr &= ~MUSBFSH_RXCSR_H_REQPKT;
 
 		/* write 2x to allow double buffering */
 		/* CC: see if some check is necessary */
@@ -617,23 +647,23 @@ void mtk11_disable_q(struct musbfsh *musbfsh, u8 ep_num, u8 isRx)
 	u16 csr;
 
 	mtk11_qmu_disable(ep_num, isRx);
-	qmu_reset_gpd_pool(ep_num, isRx);
+	mtk11_qmu_reset_gpd_pool(ep_num, isRx);
 
 	musbfsh_ep_select(mbase, ep_num);
 	if (isRx) {
 		csr = musbfsh_readw(epio, MUSBFSH_RXCSR);
 		csr &= ~MUSBFSH_RXCSR_DMAENAB;
 		musbfsh_writew(epio, MUSBFSH_RXCSR, csr);
-		flush_ep_csr(musbfsh, ep_num, isRx);
+		mtk11_flush_ep_csr(musbfsh, ep_num, isRx);
 	} else {
 		csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
 		csr &= ~MUSBFSH_TXCSR_DMAENAB;
 		musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
-		flush_ep_csr(musbfsh, ep_num, isRx);
+		mtk11_flush_ep_csr(musbfsh, ep_num, isRx);
 	}
 }
 
-void mtk_qmu_err_recover(struct musbfsh *musbfsh, u8 ep_num, u8 isRx, bool is_len_err)
+void mtk11_qmu_err_recover(struct musbfsh *musbfsh, u8 ep_num, u8 isRx, bool is_len_err)
 {
 	if (musbfsh->is_host) {
 		QMU_ERR("!SUPPORT HOST RECOVER\n");
@@ -771,7 +801,7 @@ void mtk11_qmu_irq_err(struct musbfsh *musbfsh, u32 qisar)
 
 	/* QMU ERR RECOVER , only servie one ep error ? */
 	if (err_ep_num)
-		mtk_qmu_err_recover(musbfsh, err_ep_num, isRx, is_len_err);
+		mtk11_qmu_err_recover(musbfsh, err_ep_num, isRx, is_len_err);
 }
 
 void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
@@ -786,20 +816,20 @@ void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
 	bool done = true;
 
 	if (unlikely(!qh)) {
-		DBG(0, "hw_ep:%d, QH NULL\n", ep_num);
+		WARNING("hw_ep:%d, QH NULL\n", ep_num);
 		return;
 	}
 
 	urb = next_urb(qh);
 	if (unlikely(!urb)) {
-		DBG(0, "hw_ep:%d, !URB\n", ep_num);
+		WARNING("hw_ep:%d, !URB\n", ep_num);
 		return;
 	}
-	DBG(4, "\n");
+	INFO("\n");
 
 	/*Transfer PHY addr got from QMU register to VIR addr*/
 	gpd_current = (TGPD *)gpd_phys_to_virt((dma_addr_t)gpd_current, RXQ, ep_num);
-	DBG(4, "\n");
+	INFO("\n");
 
 	QMU_INFO("[RXD]""%s EP%d, Last=%p, Current=%p, End=%p\n",
 				__func__, ep_num, gpd, gpd_current, Rx_gpd_end[ep_num]);
@@ -850,7 +880,7 @@ void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
 
 		urb = next_urb(qh);
 		if (!urb) {
-			DBG(4, "extra RX%d ready\n", ep_num);
+			INFO("extra RX%d ready\n", ep_num);
 			mtk11_qmu_stop(ep_num, USB_DIR_IN);
 			return;
 		}
@@ -885,20 +915,20 @@ void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
 		gpd = TGPD_GET_NEXT(gpd);
 
 		gpd = gpd_phys_to_virt((dma_addr_t)gpd, RXQ, ep_num);
-		DBG(4, "gpd = %p ep_num = %d\n", gpd, ep_num);
+		INFO("gpd = %p ep_num = %d\n", gpd, ep_num);
 		if (!gpd) {
 			QMU_ERR("[RXD][ERROR]""%s EP%d ,gpd=%p\n", __func__, ep_num, gpd);
 			BUG_ON(1);
 		}
-		DBG(4, "gpd = %p ep_num = %d\n", gpd, ep_num);
+		INFO("gpd = %p ep_num = %d\n", gpd, ep_num);
 		Rx_gpd_last[ep_num] = gpd;
 		Rx_gpd_free_count[ep_num]++;
-		DBG(4, "gpd = %p ep_num = %d\n", gpd, ep_num);
-		DBG(4, "hw_ep = %p\n", hw_ep);
+		INFO("gpd = %p ep_num = %d\n", gpd, ep_num);
+		INFO("hw_ep = %p\n", hw_ep);
 
 
 
-		DBG(4, "\n");
+		INFO("\n");
 		if (done) {
 			if (musbfsh_ep_get_qh(hw_ep, USB_DIR_IN))
 				qh->iso_idx = 0;
@@ -906,7 +936,7 @@ void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
 			musbfsh_advance_schedule(musbfsh, urb, hw_ep, USB_DIR_IN);
 
 			if (!hw_ep->in_qh) {
-				DBG(0, "hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
+				WARNING("hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
 				return;
 			}
 		}
@@ -936,7 +966,7 @@ void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num)
 
 	QMU_INFO("[RXD]""%s EP%d, Last=%p, End=%p, complete\n", __func__,
 				ep_num, Rx_gpd_last[ep_num], Rx_gpd_end[ep_num]);
-	DBG(4, "\n");
+	INFO("\n");
 }
 
 void h_mtk11_qmu_done_tx(struct musbfsh *musbfsh, u8 ep_num)
@@ -950,13 +980,13 @@ void h_mtk11_qmu_done_tx(struct musbfsh *musbfsh, u8 ep_num)
 	bool done = true;
 
 	if (unlikely(!qh)) {
-		DBG(0, "hw_ep:%d, QH NULL\n", ep_num);
+		WARNING("hw_ep:%d, QH NULL\n", ep_num);
 		return;
 	}
 
 	urb = next_urb(qh);
 	if (unlikely(!urb)) {
-		DBG(0, "hw_ep:%d, !URB\n", ep_num);
+		WARNING("hw_ep:%d, !URB\n", ep_num);
 		return;
 	}
 
@@ -1034,7 +1064,7 @@ void h_mtk11_qmu_done_tx(struct musbfsh *musbfsh, u8 ep_num)
 			musbfsh_advance_schedule(musbfsh, urb, hw_ep, USB_DIR_OUT);
 
 			if (!hw_ep->out_qh) {
-				DBG(0, "hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
+				WARNING("hw_ep:%d, QH NULL after advance_schedule\n", ep_num);
 				return;
 			}
 		}

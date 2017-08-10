@@ -100,7 +100,7 @@ static struct dma_channel *dma_channel_allocate(struct dma_controller *c,
 	INFO("epnum=%d\n", hw_ep->epnum);
 
 /* reserve dma channel 0 for QMU */
-#ifdef MUSBFSH_QMU_SUPPORT_HOST
+#ifdef MUSBFSH_QMU_SUPPORT
 	start_bit = 1;
 #else
 	start_bit = 0;

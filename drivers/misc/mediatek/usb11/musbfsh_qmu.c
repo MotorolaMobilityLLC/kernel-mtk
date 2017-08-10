@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#ifdef MUSBFSH_QMU_SUPPORT_HOST
+#ifdef MUSBFSH_QMU_SUPPORT
 
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -27,6 +27,7 @@
 #include "musbfsh_hsdma.h"
 /*#include "mtk_musb.h"*/
 #include "musbfsh_qmu.h"
+#include "mtk11_qmu.h"
 
 void __iomem *musbfsh_qmu_base;
 /* debug variable to check musbfsh_qmu_base issue */
@@ -39,18 +40,18 @@ int musbfsh_qmu_init(struct musbfsh *musbfsh)
 	musbfsh_writel((musbfsh->mregs + MUSBFSH_QISAR), 0x30, 0);
 
 #ifdef CONFIG_OF
-	musbfsh_qmu_base = (void __iomem *)(mtk_musbfsh->mregs + MUSBFSH_QMUBASE);
+	musbfsh_qmu_base = (void __iomem *)(musbfsh->mregs + MUSBFSH_QMUBASE);
 	/* debug variable to check musbfsh_qmu_base issue */
-	musbfsh_qmu_base_2 = (void __iomem *)(mtk_musbfsh->mregs + MUSBFSH_QMUBASE);
+	musbfsh_qmu_base_2 = (void __iomem *)(musbfsh->mregs + MUSBFSH_QMUBASE);
 #else
-	musbfsh_qmu_base = (void __iomem *)(USB1_BASE + MUSBFSH_QMUBASE);
+	musbfsh_qmu_base = (void __iomem *)(musbfsh->mregs + MUSBFSH_QMUBASE);
 	/* debug variable to check musbfsh_qmu_base issue */
-	musbfsh_qmu_base_2 = (void __iomem *)(mtk_musbfsh->mregs + MUSBFSH_QMUBASE);
+	musbfsh_qmu_base_2 = (void __iomem *)(musbfsh->mregs + MUSBFSH_QMUBASE);
 #endif
 	mb();
 
-	if (qmu_init_gpd_pool(musbfsh->controller)) {
-		QMU_ERR("[QMU]qmu_init_gpd_pool fail\n");
+	if (mtk11_qmu_init_gpd_pool(musbfsh->controller)) {
+		QMU_ERR("[QMU]mtk11_qmu_init_gpd_pool fail\n");
 		return -1;
 	}
 
@@ -59,7 +60,7 @@ int musbfsh_qmu_init(struct musbfsh *musbfsh)
 
 void musbfsh_qmu_exit(struct musbfsh *musbfsh)
 {
-	qmu_destroy_gpd_pool(musbfsh->controller);
+	mtk11_qmu_destroy_gpd_pool(musbfsh->controller);
 }
 
 void musbfsh_disable_q_all(struct musbfsh *musbfsh)
@@ -101,14 +102,14 @@ void musbfsh_flush_qmu(u32 ep_num, u8 isRx)
 {
 	QMU_DBG("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 	mtk11_qmu_stop(ep_num, isRx);
-	qmu_reset_gpd_pool(ep_num, isRx);
+	mtk11_qmu_reset_gpd_pool(ep_num, isRx);
 }
 
 void musbfsh_restart_qmu(struct musbfsh *musbfsh, u32 ep_num, u8 isRx)
 {
 	QMU_DBG("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
-	flush_ep_csr(musbfsh, ep_num, isRx);
-	mtk_qmu_enable(musbfsh, ep_num, isRx);
+	mtk11_flush_ep_csr(musbfsh, ep_num, isRx);
+	mtk11_qmu_enable(musbfsh, ep_num, isRx);
 }
 
 bool musbfsh_is_qmu_stop(u32 ep_num, u8 isRx)
@@ -147,19 +148,19 @@ void musbfsh_tx_zlp_qmu(struct musbfsh *musbfsh, u32 ep_num)
 	musbfsh_ep_select(mbase, ep_num);
 
 	/* disable dma for pio */
-	csr = musbfsh_readw(epio, MUSB_TXCSR);
-	csr &= ~MUSB_TXCSR_DMAENAB;
-	musbfsh_writew(epio, MUSB_TXCSR, csr);
+	csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+	csr &= ~MUSBFSH_TXCSR_DMAENAB;
+	musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
 
 	/* TXPKTRDY */
-	csr = musbfsh_readw(epio, MUSB_TXCSR);
-	csr |= MUSB_TXCSR_TXPKTRDY;
-	musbfsh_writew(epio, MUSB_TXCSR, csr);
+	csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+	csr |= MUSBFSH_TXCSR_TXPKTRDY;
+	musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
 
 	/* wait ZLP sent */
 	while (cnt--) {
-		csr = musbfsh_readw(epio, MUSB_TXCSR);
-		if (!(csr & MUSB_TXCSR_TXPKTRDY)) {
+		csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+		if (!(csr & MUSBFSH_TXCSR_TXPKTRDY)) {
 			is_timeout = 0;
 			break;
 		}
@@ -167,20 +168,20 @@ void musbfsh_tx_zlp_qmu(struct musbfsh *musbfsh, u32 ep_num)
 	}
 
 	/* re-enable dma for qmu */
-	csr = musbfsh_readw(epio, MUSB_TXCSR);
-	csr |= MUSB_TXCSR_DMAENAB;
-	musbfsh_writew(epio, MUSB_TXCSR, csr);
+	csr = musbfsh_readw(epio, MUSBFSH_TXCSR);
+	csr |= MUSBFSH_TXCSR_DMAENAB;
+	musbfsh_writew(epio, MUSBFSH_TXCSR, csr);
 
 	if (is_timeout)
 		QMU_ERR("TX ZLP sent fail???\n");
 	QMU_WARN("TX ZLP sent done\n");
 }
 
-int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struct urb *urb)
+int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musbfsh_qh *qh, struct urb *urb)
 {
 	void __iomem        *mbase = musbfsh->mregs;
 	u16 intr_e = 0;
-	struct musb_hw_ep	*hw_ep = qh->hw_ep;
+	struct musbfsh_hw_ep	*hw_ep = qh->hw_ep;
 	void __iomem		*epio = hw_ep->regs;
 	unsigned int offset = 0;
 	u8 bIsIoc;
@@ -195,79 +196,79 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 	}
 
 	if (!mtk11_is_qmu_enabled(hw_ep->epnum, isRx)) {
-		DBG(4, "! mtk_is_qmu_enabled\n");
+		INFO("! mtk_is_qmu_enabled\n");
 
 		musbfsh_ep_select(mbase, hw_ep->epnum);
-		flush_ep_csr(musbfsh, hw_ep->epnum,  isRx);
+		mtk11_flush_ep_csr(musbfsh, hw_ep->epnum,  isRx);
 
 		if (isRx) {
-			DBG(4, "isRX = 1\n");
+			INFO("isRX = 1\n");
 			if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-				DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
+				INFO("USB_ENDPOINT_XFER_ISOC\n");
 				if (qh->hb_mult == 3)
-					musbfsh_writew(epio, MUSB_RXMAXP, qh->maxpacket|0x1000);
+					musbfsh_writew(epio, MUSBFSH_RXMAXP, qh->maxpacket|0x1000);
 				else if (qh->hb_mult == 2)
-					musbfsh_writew(epio, MUSB_RXMAXP, qh->maxpacket|0x800);
+					musbfsh_writew(epio, MUSBFSH_RXMAXP, qh->maxpacket|0x800);
 				else
-					musbfsh_writew(epio, MUSB_RXMAXP, qh->maxpacket);
+					musbfsh_writew(epio, MUSBFSH_RXMAXP, qh->maxpacket);
 			} else {
-				DBG(4, "!! USB_ENDPOINT_XFER_ISOC\n");
-				musbfsh_writew(epio, MUSB_RXMAXP, qh->maxpacket);
+				INFO("!! USB_ENDPOINT_XFER_ISOC\n");
+				musbfsh_writew(epio, MUSBFSH_RXMAXP, qh->maxpacket);
 			}
 
-			musbfsh_writew(epio, MUSB_RXCSR, MUSB_RXCSR_DMAENAB);
+			musbfsh_writew(epio, MUSBFSH_RXCSR, MUSBFSH_RXCSR_DMAENAB);
 			/*CC: speed */
-			musbfsh_writeb(epio, MUSB_RXTYPE, qh->type_reg);
-			musbfsh_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
+			musbfsh_writeb(epio, MUSBFSH_RXTYPE, qh->type_reg);
+			musbfsh_writeb(epio, MUSBFSH_RXINTERVAL, qh->intv_reg);
 
 			if (musbfsh->is_multipoint) {
-				DBG(4, "is_multipoint\n");
-				musb_write_rxfunaddr(musbfsh->mregs, hw_ep->epnum, qh->addr_reg);
-				musb_write_rxhubaddr(musbfsh->mregs, hw_ep->epnum, qh->h_addr_reg);
-				musb_write_rxhubport(musbfsh->mregs, hw_ep->epnum, qh->h_port_reg);
+				INFO("is_multipoint\n");
+				musbfsh_write_rxfunaddr(musbfsh->mregs, hw_ep->epnum, qh->addr_reg);
+				musbfsh_write_rxhubaddr(musbfsh->mregs, hw_ep->epnum, qh->h_addr_reg);
+				musbfsh_write_rxhubport(musbfsh->mregs, hw_ep->epnum, qh->h_port_reg);
 			} else {
-				DBG(4, "!! is_multipoint\n");
-				musbfsh_writeb(musbfsh->mregs, MUSB_FADDR, qh->addr_reg);
+				INFO("!! is_multipoint\n");
+				musbfsh_writeb(musbfsh->mregs, MUSBFSH_FADDR, qh->addr_reg);
 			}
 
 			/*turn off intrRx*/
-			intr_e = musbfsh_readw(musbfsh->mregs, MUSB_INTRRXE);
+			intr_e = musbfsh_readw(musbfsh->mregs, MUSBFSH_INTRRXE);
 			intr_e = intr_e & (~(1<<(hw_ep->epnum)));
-			musbfsh_writew(musbfsh->mregs, MUSB_INTRRXE, intr_e);
+			musbfsh_writew(musbfsh->mregs, MUSBFSH_INTRRXE, intr_e);
 		} else {
-			musbfsh_writew(epio, MUSB_TXMAXP, qh->maxpacket);
-			musbfsh_writew(epio, MUSB_TXCSR, MUSB_TXCSR_DMAENAB);
+			musbfsh_writew(epio, MUSBFSH_TXMAXP, qh->maxpacket);
+			musbfsh_writew(epio, MUSBFSH_TXCSR, MUSBFSH_TXCSR_DMAENAB);
 			/*CC: speed?*/
-			musbfsh_writeb(epio, MUSB_TXTYPE, qh->type_reg);
-			musbfsh_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
+			musbfsh_writeb(epio, MUSBFSH_TXTYPE, qh->type_reg);
+			musbfsh_writeb(epio, MUSBFSH_TXINTERVAL, qh->intv_reg);
 
 			if (musbfsh->is_multipoint) {
-				DBG(4, "is_multipoint\n");
+				INFO("is_multipoint\n");
 				musbfsh_write_txfunaddr(mbase, hw_ep->epnum, qh->addr_reg);
 				musbfsh_write_txhubaddr(mbase, hw_ep->epnum, qh->h_addr_reg);
 				musbfsh_write_txhubport(mbase, hw_ep->epnum, qh->h_port_reg);
 				/* FIXME if !epnum, do the same for RX ... */
 			} else {
-				DBG(4, "!! is_multipoint\n");
-				musbfsh_writeb(mbase, MUSB_FADDR, qh->addr_reg);
+				INFO("!! is_multipoint\n");
+				musbfsh_writeb(mbase, MUSBFSH_FADDR, qh->addr_reg);
 			}
-			/* turn off intrTx , but this will be revert by musb_ep_program*/
-			intr_e = musbfsh_readw(musbfsh->mregs, MUSB_INTRTXE);
+			/* turn off intrTx , but this will be revert by musbfsh_ep_program*/
+			intr_e = musbfsh_readw(musbfsh->mregs, MUSBFSH_INTRTXE);
 			intr_e = intr_e & (~(1<<hw_ep->epnum));
-			musbfsh_writew(musbfsh->mregs, MUSB_INTRTXE, intr_e);
+			musbfsh_writew(musbfsh->mregs, MUSBFSH_INTRTXE, intr_e);
 		}
 
-		DBG(4, "mtk_qmu_enable\n");
-		mtk_qmu_enable(musbfsh, hw_ep->epnum, isRx);
+		INFO("mtk11_qmu_enable\n");
+		mtk11_qmu_enable(musbfsh, hw_ep->epnum, isRx);
 	}
 
-	gdp_free_count = qmu_free_gpd_count(isRx, hw_ep->epnum);
+	gdp_free_count = mtk11_qmu_free_gpd_count(isRx, hw_ep->epnum);
 	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-		DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
+		INFO("USB_ENDPOINT_XFER_ISOC\n");
 		pBuffer = (uint8_t *)urb->transfer_dma;
 
 		if (gdp_free_count < urb->number_of_packets) {
-			DBG(0, "gdp_free_count:%d, number_of_packets:%d\n", gdp_free_count, urb->number_of_packets);
+			INFO("gdp_free_count:%d, number_of_packets:%d\n", gdp_free_count, urb->number_of_packets);
 			BUG();
 		}
 		for (i = 0; i < urb->number_of_packets; i++) {
@@ -276,14 +277,14 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 			dwLength = urb->iso_frame_desc[i].length;
 			/* If interrupt on complete ? */
 			bIsIoc = (i == (urb->number_of_packets-1)) ? 1 : 0;
-			DBG(4, "mtk_qmu_insert_task\n");
-			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+			INFO("mtk11_qmu_insert_task\n");
+			mtk11_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
 
-			mtk_qmu_resume(hw_ep->epnum, isRx);
+			mtk11_qmu_resume(hw_ep->epnum, isRx);
 		}
 
-		if (mtk11_host_qmu_max_active_isoc_gpd < qmu_used_gpd_count(isRx, hw_ep->epnum))
-			mtk11_host_qmu_max_active_isoc_gpd = qmu_used_gpd_count(isRx, hw_ep->epnum);
+		if (mtk11_host_qmu_max_active_isoc_gpd < mtk11_qmu_used_gpd_count(isRx, hw_ep->epnum))
+			mtk11_host_qmu_max_active_isoc_gpd = mtk11_qmu_used_gpd_count(isRx, hw_ep->epnum);
 
 		if (mtk11_host_qmu_max_number_of_pkts < urb->number_of_packets)
 			mtk11_host_qmu_max_number_of_pkts = urb->number_of_packets;
@@ -293,7 +294,7 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 			static int skip_cnt;
 
 			if (__ratelimit(&ratelimit)) {
-				DBG(0, "max_isoc gpd:%d, max_pkts:%d, skip_cnt:%d\n",
+				INFO("max_isoc gpd:%d, max_pkts:%d, skip_cnt:%d\n",
 						mtk11_host_qmu_max_active_isoc_gpd,
 						mtk11_host_qmu_max_number_of_pkts,
 						skip_cnt);
@@ -307,23 +308,23 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 		pBuffer = (uint8_t *)urb->transfer_dma;
 		if (urb->transfer_buffer_length < QMU_RX_SPLIT_THRE) {
 			if (gdp_free_count < 1) {
-				DBG(0, "gdp_free_count:%d, number_of_packets:%d\n",
+				INFO("gdp_free_count:%d, number_of_packets:%d\n",
 						gdp_free_count, urb->number_of_packets);
 				BUG();
 			}
-			DBG(4, "urb->transfer_buffer_length : %d\n", urb->transfer_buffer_length);
+			INFO("urb->transfer_buffer_length : %d\n", urb->transfer_buffer_length);
 
 			dwLength = urb->transfer_buffer_length;
 			bIsIoc = 1;
 
-			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-			mtk_qmu_resume(hw_ep->epnum, isRx);
+			mtk11_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+			mtk11_qmu_resume(hw_ep->epnum, isRx);
 		} else {
 			/*reuse isoc urb->unmber_of_packets*/
 			urb->number_of_packets =
 				((urb->transfer_buffer_length) + QMU_RX_SPLIT_BLOCK_SIZE-1)/(QMU_RX_SPLIT_BLOCK_SIZE);
 			if (gdp_free_count < urb->number_of_packets) {
-				DBG(0, "gdp_free_count:%d, number_of_packets:%d\n",
+				INFO("gdp_free_count:%d, number_of_packets:%d\n",
 						gdp_free_count, urb->number_of_packets);
 				BUG();
 			}
@@ -338,15 +339,12 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 				if (dwLength == 0)
 					dwLength = QMU_RX_SPLIT_BLOCK_SIZE;
 
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-				mtk_qmu_resume(hw_ep->epnum, isRx);
+				mtk11_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+				mtk11_qmu_resume(hw_ep->epnum, isRx);
 			}
 		}
 	}
-	/*sync register*/
-	mb();
-
-	DBG(4, "\n");
+	INFO("\n");
 	return 0;
 }
 #endif
