@@ -496,12 +496,14 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 void msdc_cmdq_func(struct msdc_host *host, const int num)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	void __iomem *base = host->base;
+	void __iomem *base;
 	int a, b;
 #endif
 
 	if (!host || !host->mmc || !host->mmc->card)
 		return;
+
+	base = host->base;
 
 	switch (num) {
 	case 0:
