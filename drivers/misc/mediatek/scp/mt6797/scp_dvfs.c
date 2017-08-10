@@ -335,17 +335,19 @@ static int mt_scp_dvfs_debug_proc_show(struct seq_file *m, void *v)
  ************************/
 static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	int debug = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtoint(desc, 0, &debug) == 0) {
+*/
+	if (kstrtoint(buffer, 0, &debug) == 0) {
 		if (debug == 0)
 			mt_scp_dvfs_debug = 0;
 		else if (debug == 1)
@@ -376,17 +378,19 @@ static int mt_scp_dvfs_limited_opp_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_scp_dvfs_limited_opp_proc_write(struct file *file,
 				const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int limited_clk = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &limited_clk) == 0)
+*/
+	if (kstrtouint(buffer, 0, &limited_clk) == 0)
 		scp_ipi_send(IPI_DVFS_LIMIT_OPP_SET, (void *)&limited_clk, sizeof(limited_clk), 0);
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
@@ -409,17 +413,19 @@ static int mt_scp_dvfs_limited_opp_on_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_scp_dvfs_limited_opp_on_proc_write(struct file *file,
 					const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int limited_clk_on = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &limited_clk_on) == 0)
+*/
+	if (kstrtouint(buffer, 0, &limited_clk_on) == 0)
 		scp_ipi_send(IPI_DVFS_LIMIT_OPP_EN, (void *)&limited_clk_on, sizeof(limited_clk_on), 0);
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
@@ -458,17 +464,19 @@ static int mt_scp_dvfs_fix_opp_proc_show(struct seq_file *m, void *v)
  ***********************************/
 static ssize_t mt_scp_dvfs_fix_opp_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int fix_clk = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &fix_clk) == 0)
+*/
+	if (kstrtouint(buffer, 0, &fix_clk) == 0)
 		scp_ipi_send(IPI_DVFS_FIX_OPP_SET, (void *)&fix_clk, sizeof(fix_clk), 0);
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
@@ -491,17 +499,19 @@ static int mt_scp_dvfs_fix_opp_on_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_scp_dvfs_fix_opp_on_proc_write(struct file *file,
 					const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int fix_clk_on = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &fix_clk_on) == 0)
+*/
+	if (kstrtouint(buffer, 0, &fix_clk_on) == 0)
 		scp_ipi_send(IPI_DVFS_FIX_OPP_EN, (void *)&fix_clk_on, sizeof(fix_clk_on), 0);
 	else
 		scp_dvfs_warn("bad argument!! please provide the maximum limited power\n");
@@ -593,17 +603,19 @@ static int mt_scp_dvfs_sleep_proc_show(struct seq_file *m, void *v)
  ***********************************/
 static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int on = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &on) == 0) {
+*/
+	if (kstrtouint(buffer, 0, &on) == 0) {
 		if (on == 0) {
 			mt_scp_dvfs_info->scp_dvfs_sleep = 0;
 			scp_dvfs_warn("scp_dvfs_sleep = 0\n");
@@ -637,17 +649,19 @@ static int mt_scp_dvfs_wake_proc_show(struct seq_file *m, void *v)
  ***********************************/
 static ssize_t mt_scp_dvfs_wake_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int on = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &on) == 0) {
+*/
+	if (kstrtouint(buffer, 0, &on) == 0) {
 		if (on == 0)
 			mt_scp_dvfs_info->scp_dvfs_wake = 0;
 		else if (on == 1)
@@ -679,17 +693,19 @@ static int mt_scp_dvfs_disable_proc_show(struct seq_file *m, void *v)
  ***********************************/
 static ssize_t mt_scp_dvfs_disable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
+/*
 	char desc[32];
 	int len = 0;
+*/
 	unsigned int on = 0;
-
+/*
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
 
 	desc[len] = '\0';
-
-	if (kstrtouint(desc, 0, &on) == 0) {
+*/
+	if (kstrtouint(buffer, 0, &on) == 0) {
 		if (on == 0)
 			mt_scp_dvfs_info->scp_dvfs_disable = 0;
 		else if (on == 1) {

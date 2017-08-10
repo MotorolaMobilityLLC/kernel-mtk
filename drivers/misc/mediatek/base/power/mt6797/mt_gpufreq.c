@@ -972,7 +972,8 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 		} else {
 			slew_rate = 0;
 		}
-		delay = EXTIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new, slew_rate);
+		if (slew_rate)
+			delay = EXTIC_VOLT_UP_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	} else {
 #ifdef VGPU_SET_BY_PMIC
@@ -983,8 +984,11 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 		} else if (get_ext_buck2_type() == EXT_FAN53555) {
 			fan53555_read_byte(0x2, &reg_val);
 			slew_rate = 1 << (6 - ((reg_val >> 4) & (0x7)));
+		} else {
+			slew_rate = 0;
 		}
-		delay = EXTIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new, slew_rate);
+		if (slew_rate)
+			delay = EXTIC_VOLT_DOWN_SETTLE_TIME(volt_old, volt_new, slew_rate);
 #endif
 	}
 #ifdef VGPU_SET_BY_PMIC
