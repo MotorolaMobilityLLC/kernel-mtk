@@ -413,14 +413,14 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	kbasep_pm_read_present_cores(kbdev);
 	gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
-	if( gpu_efuse == 1 )
+/*	if( gpu_efuse == 1 )
 		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
 	else
 		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
 		
 	if (0x337 == code) //For MT6753 3-core
 		kbdev->pm.debug_core_mask = (u64)7;
-
+*/
 	g_mtk_gpu_efuse_set_already = 1;
 
 	ret = mtk_platform_device_probe(pdev, kbdev);
