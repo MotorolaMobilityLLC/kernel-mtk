@@ -598,7 +598,7 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_HIGH:
-		atomic_set(&obj->ps_thd_val_low, (21 + obj->ps_cali));
+		/* atomic_set(&obj->ps_thd_val_low, (21 + obj->ps_cali)); */
 		threshold[0] = atomic_read(&obj->ps_thd_val_high) - obj->ps_cali;
 		APS_ERR("%s get threshold high: 0x%x\n", __func__, threshold[0]);
 		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {
@@ -608,7 +608,7 @@ static long alspshub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		break;
 
 	case ALSPS_GET_PS_THRESHOLD_LOW:
-		atomic_set(&obj->ps_thd_val_high, (28 + obj->ps_cali));
+		/* atomic_set(&obj->ps_thd_val_high, (28 + obj->ps_cali)); */
 		threshold[0] = atomic_read(&obj->ps_thd_val_low) - obj->ps_cali;
 		APS_ERR("%s get threshold low: 0x%x\n", __func__, threshold[0]);
 		if (copy_to_user(ptr, &threshold[0], sizeof(threshold[0]))) {
