@@ -1012,6 +1012,20 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
+
+					/* Join req timeout means Bss had lost and no need to looking for */
+					if (prAisFsmInfo->rJoinReqTime != 0 &&
+						   CHECK_FOR_TIMEOUT(kalGetTimeTick(),
+								     prAisFsmInfo->rJoinReqTime,
+								     SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+						prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
+						eNextState = AIS_STATE_IDLE;
+						fgIsTransition = TRUE;
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+								     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+						break;
+					}
+
 					/* 4 <A> Try to SCAN */
 					if (prAisFsmInfo->fgTryScan) {
 						eNextState = AIS_STATE_LOOKING_FOR;
