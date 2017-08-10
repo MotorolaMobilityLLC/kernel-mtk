@@ -102,7 +102,8 @@ static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len
 
 	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
 		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
-			buf[j++] = char_ptr[i];
+			buf[j] = char_ptr[i];
+			j += 1;
 		} else if (char_ptr[i] == '\r' ||
 			char_ptr[i] == '\n' ||
 			char_ptr[i] == '\t') {
@@ -120,19 +121,11 @@ static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len
 				replace_str = "";
 				break;
 			}
-			if (DUMP_BUF_SIZE - j > 2) {
-				snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
-				j += 2;
-			} else {
-				buf[j++] = '.';
-			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
+			j += 2;
 		} else {
-			if (DUMP_BUF_SIZE - j > 4) {
-				snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
-				j += 4;
-			} else {
-				buf[j++] = '.';
-			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
+			j += 4;
 		}
 	}
 	buf[j] = '\0';

@@ -560,9 +560,6 @@ again:
 			/* undo skb, as it remains in buffer and will be handled later */
 			CCCI_DEBUG_LOG(md->index, TAG, "rxq%d leave skb %p in ring, ret = 0x%x\n",
 					queue->index, skb, ret);
-			/*skb->len = 0;
-			skb_reset_tail_pointer(skb);
-			wmb();  other cores need to see this immediately when IRQ is allowed on multi-core */
 			/* no need to retry if port refused to recv */
 			skb_handled = ret == -CCCI_ERR_PORT_RX_FULL ? 1 : 0;
 			break;
@@ -580,7 +577,6 @@ again:
 			break;
 		}
 	}
-
 	/*
 	 * do not use if(count == RING_BUFFER_SIZE) to resume Rx queue.
 	 * resume Rx queue every time. we may not handle all RX ring buffer at one time due to
@@ -1096,7 +1092,19 @@ void cldma_disable_irq_nosync(struct md_cd_ctrl *md_ctrl)
 		 */
 		disable_irq_nosync(md_ctrl->cldma_irq_id);
 }
+static void cldma_rx_worker_start(struct ccci_modem *md, int qno)
+{
+	int ret = 0;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
+	md->latest_q_rx_isr_time[qno] = local_clock();
+	if (qno != 0) {
+		ret = queue_work(md_ctrl->rxq[qno].worker,
+					&md_ctrl->rxq[qno].cldma_rx_work);
+	} else {
+		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
+	}
+}
 static void cldma_irq_work_cb(struct ccci_modem *md)
 {
 	int i, ret;
@@ -1198,15 +1206,8 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0,
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
 				cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0); /* dummy read */
-				if (md->md_state == EXCEPTION || ccci_md_napi_check_and_notice(md, i) == 0) {
-					md->latest_q_rx_isr_time[i] = local_clock();
-					if (i != 0) {
-						ret = queue_work(md_ctrl->rxq[i].worker,
-									&md_ctrl->rxq[i].cldma_rx_work);
-					} else {
-						tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
-					}
-				}
+				if (md->md_state == EXCEPTION || ccci_md_napi_check_and_notice(md, i) == 0)
+					cldma_rx_worker_start(md, i);
 			}
 		}
 	}
@@ -1267,9 +1268,6 @@ static inline void cldma_stop(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Tx CLDMA, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/*aee_kernel_dal_show("stop Tx CLDMA failed.\n");*/
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
@@ -1341,8 +1339,12 @@ static inline void cldma_stop(struct ccci_modem *md)
 	flush_work(&md_ctrl->cldma_irq_work);
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
 		flush_delayed_work(&md_ctrl->txq[i].cldma_tx_work);
-	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++)
+	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
+		/*q0 is handled in tasklet, no need flush*/
+		if (i == 0)
+			continue;
 		flush_work(&md_ctrl->rxq[i].cldma_rx_work);
+	}
 }
 
 static inline void cldma_stop_for_ee(struct ccci_modem *md)
@@ -2774,12 +2776,11 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 static int md_cd_give_more(struct ccci_modem *md, unsigned char qno)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	int ret;
 
 	if (qno >= QUEUE_LEN(md_ctrl->rxq))
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
 	CCCI_DEBUG_LOG(md->index, TAG, "give more on queue %d work %p\n", qno, &md_ctrl->rxq[qno].cldma_rx_work);
-	ret = queue_work(md_ctrl->rxq[qno].worker, &md_ctrl->rxq[qno].cldma_rx_work);
+	cldma_rx_worker_start(md, qno);
 	return 0;
 }
 
@@ -2793,7 +2794,6 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 	queue = &md_ctrl->rxq[0];
 	md->latest_q_rx_time[queue->index] = local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue, queue->budget, 0);
-
 	if (ret != ALL_CLEAR) {
 		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
 	} else {

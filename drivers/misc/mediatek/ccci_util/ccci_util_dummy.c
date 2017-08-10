@@ -18,6 +18,7 @@
 #include <linux/wait.h>
 #include <linux/module.h>
 #include <linux/poll.h>
+#include <linux/skbuff.h>
 
 bool __weak spm_is_md1_sleep(void)
 {
@@ -100,5 +101,16 @@ void __weak clk_buf_get_rf_drv_curr(void *rf_drv_curr)
 void __weak clk_buf_save_afc_val(unsigned int afcdac)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+}
+int __weak rawbulk_push_upstream_buffer(int transfer_id, const void *buffer,
+		unsigned int length)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+	return 0;
+}
+int __weak mbim_start_xmit(struct sk_buff *skb, int ifid)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+	return 0;
 }
 
