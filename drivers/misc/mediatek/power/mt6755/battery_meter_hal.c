@@ -275,9 +275,9 @@ static unsigned int fg_get_data_ready_status(void)
 	unsigned int ret = 0;
 	unsigned int temp_val = 0;
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	ret = pmic_read_interface(PMIC_FG_LATCHDATA_ST, &temp_val, 0xFFFF, 0x0);
+	ret = pmic_read_interface(PMIC_FG_LATCHDATA_ST_ADDR, &temp_val, 0xFFFF, 0x0);
 
-	bm_print(BM_LOG_FULL, "[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", PMIC_FG_LATCHDATA_ST,
+	bm_print(BM_LOG_FULL, "[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", PMIC_FG_LATCHDATA_ST_ADDR,
 		 temp_val);
 
 	temp_val =

@@ -396,6 +396,9 @@ int get_charger_detect_status(void)
 {
 	kal_bool chr_status;
 
+	if (battery_charging_control == NULL)
+		return KAL_FALSE;
+
 	battery_charging_control(CHARGING_CMD_GET_CHARGER_DET_STATUS, &chr_status);
 	return chr_status;
 }

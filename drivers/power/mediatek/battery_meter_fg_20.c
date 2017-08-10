@@ -4018,6 +4018,12 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_BATTERY_INIT_VOLTAGE:
 		{
+			while (gFG_voltage_init == 0) {
+				msleep(100);
+				bm_err("FG_DAEMON_CMD_GET_BATTERY_INIT_VOLTAGE waiting ,%d %d\n",
+				gFG_voltage_init, gFG_current_init);
+			}
+
 			ret_msg->fgd_data_len += sizeof(gFG_voltage_init);
 			memcpy(ret_msg->fgd_data, &gFG_voltage_init, sizeof(gFG_voltage_init));
 
