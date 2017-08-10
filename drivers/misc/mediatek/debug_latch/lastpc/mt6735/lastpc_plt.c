@@ -37,7 +37,7 @@ struct lastpc_imp {
 static unsigned int LASTPC_MAGIC_NUM[] = {0x3, 0xB, 0x33, 0x43};
 */
 
-static int lastpc_plt_start(struct lastpc_plt *plt)
+static int __init lastpc_plt_start(struct lastpc_plt *plt)
 {
 	return 0;
 }

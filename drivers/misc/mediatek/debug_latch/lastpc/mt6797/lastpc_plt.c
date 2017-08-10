@@ -111,7 +111,7 @@ static int __init fdt_get_chosen(unsigned long node,
 	return 1;
 }
 
-static int lastpc_plt_start(struct lastpc_plt *plt)
+static int __init lastpc_plt_start(struct lastpc_plt *plt)
 {
 	struct lastpc_imp *drv = to_lastpc_imp(plt);
 	unsigned long node;
