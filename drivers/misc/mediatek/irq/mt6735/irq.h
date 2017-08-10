@@ -27,11 +27,6 @@
 #define MT_POLARITY_LOW   0
 #define MT_POLARITY_HIGH  1
 
-#if !defined(__ASSEMBLY__)
-typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
-
-#endif				/* !__ASSEMBLY__ */
-
 
 #define GIC_PRIVATE_SIGNALS     (32)
 #define NR_GIC_SGI              (16)
