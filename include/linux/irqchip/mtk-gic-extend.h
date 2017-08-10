@@ -15,6 +15,8 @@
 #ifndef __MTK_GIC_EXTEND_H
 #define __MTK_GIC_EXTEND_H
 
+#include <linux/irq.h>
+
 #define MT_EDGE_SENSITIVE	0
 #define MT_LEVEL_SENSITIVE	1
 #define MT_POLARITY_LOW		0
@@ -23,8 +25,6 @@
 #ifndef FIQ_SMP_CALL_SGI
 #define FIQ_SMP_CALL_SGI	13
 #endif
-
-typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
 
 enum {
 	IRQ_MASK_HEADER = 0xF1F1F1F1,
