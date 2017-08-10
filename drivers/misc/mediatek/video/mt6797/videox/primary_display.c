@@ -2436,6 +2436,7 @@ static int __primary_check_trigger(void)
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 		static cmdqRecHandle handle;
+		disp_ddp_path_config *data_config = NULL;
 
 		if (!handle)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -2443,6 +2444,9 @@ static int __primary_check_trigger(void)
 
 		primary_display_idlemgr_kick((char *)__func__, 0);
 		_cmdq_insert_wait_frame_done_token_mira(handle);
+
+		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+		primary_display_config_full_roi(data_config, pgc->dpmgr_handle, handle);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 				if (od_need_start) {
