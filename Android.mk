@@ -106,7 +106,7 @@ $(KERNEL_ZIMAGE_OUT): $(TARGET_KERNEL_CONFIG) FORCE
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION)
 	$(hide) $(call fixup-kernel-cmd-file,$(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/compressed/.piggy.xzkern.cmd)
 ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
-	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) dtboimage
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) odmdtboimage
 endif
 ifneq ($(KERNEL_CONFIG_MODULES),)
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) modules
@@ -134,8 +134,8 @@ $(TARGET_PREBUILT_KERNEL): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(A
   endif#TARGET_PREBUILT_KERNEL
 
 ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
-INSTALLED_DTB_OVERLAY_TARGET := $(PRODUCT_OUT)/dtbo.img
-BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/dtbo.img
+INSTALLED_DTB_OVERLAY_TARGET := $(PRODUCT_OUT)/odmdtbo.img
+BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/odmdtbo.img
 
 $(BUILT_DTB_OVERLAY_TARGET): $(BUILT_KERNEL_TARGET)
 
@@ -150,7 +150,7 @@ ifneq ($(KERNEL_CONFIG_MODULES),)
 $(BUILT_SYSTEMIMAGE): $(KERNEL_MODULES_DEPS)
 endif
 
-.PHONY: kernel save-kernel kernel-savedefconfig %config-kernel clean-kernel dtboimage
+.PHONY: kernel save-kernel kernel-savedefconfig %config-kernel clean-kernel odmdtboimage
 kernel: $(INSTALLED_KERNEL_TARGET)
 save-kernel: $(TARGET_PREBUILT_KERNEL)
 
@@ -170,9 +170,9 @@ clean-kernel:
 ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
 	$(hide) rm -f $(INSTALLED_DTB_OVERLAY_TARGET)
 
-dtboimage: $(TARGET_KERNEL_CONFIG) FORCE
+odmdtboimage: $(TARGET_KERNEL_CONFIG) FORCE
 	$(hide) mkdir -p $(KERNEL_OUT)
-	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) dtboimage
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) odmdtboimage
 	$(hide) cp $(BUILT_DTB_OVERLAY_TARGET) $(INSTALLED_DTB_OVERLAY_TARGET)
 endif
 
