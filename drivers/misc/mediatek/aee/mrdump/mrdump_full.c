@@ -32,7 +32,7 @@
 #include <asm/processor.h>
 #include <mach/wd_api.h>
 #if defined(CONFIG_FIQ_GLUE)
-#include <mt-plat/fiq_smp_call.h>
+#include <asm/fiq_smp_call.h>
 #endif
 #include <smp.h>
 #include <mrdump.h>
