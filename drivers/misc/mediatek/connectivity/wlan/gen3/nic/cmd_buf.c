@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/nic/cmd_buf.c#1
 */
 
@@ -15,40 +29,6 @@
     3. Because the CMD is NOT FIFO when doing memory allocation (CMD will be generated
        from OID or interrupt handler), thus we'll use the Block style of Memory Allocation
        here.
-*/
-
-/*
-** Log: cmd_buf.c
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 18 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Provide cnmMgtPktAlloc() and alloc/free function of msg/buf
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 02 03 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. clear prPendingCmdInfo properly
- *  * 2. while allocating memory for cmdinfo, no need to add extra 4 bytes.
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-10-13 21:59:08 GMT mtk01084
-**  remove un-neceasary spaces
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-05-20 12:24:26 GMT mtk01461
-**  Increase CMD Buffer - HIF_RX_HW_APPENDED_LEN when doing CMD_INFO_T allocation
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-04-21 09:41:08 GMT mtk01461
-**  Add init of Driver Domain MCR flag and fix lint MTK WARN
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-04-17 19:51:45 GMT mtk01461
-**  allocation function of CMD_INFO_T
 */
 
 /*******************************************************************************

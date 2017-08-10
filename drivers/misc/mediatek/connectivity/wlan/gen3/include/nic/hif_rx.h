@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/hif_rx.h#1
 */
 
@@ -6,80 +20,6 @@
     \brief  Provide HIF RX Header Information between F/W and Driver
 
     N/A
-*/
-
-/*
-** Log: hif_rx.h
-**
-** 03 29 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. remove unused HIF definitions
-** 2. enable NDIS 5.1 build success
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** remove hif_rx_hdr usage.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 09 01 2010 kevin.huang
- * NULL
- * Use LINK LIST operation to process SCAN result
- *
- * 07 16 2010 yarco.yang
- *
- * 1. Support BSS Absence/Presence Event
- * 2. Support STA change PS mode Event
- * 3. Support BMC forwarding for AP mode.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 14 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * follow-ups for HIF_RX_HEADER_T update:
- * 1) add TCL
- * 2) add RCPI
- * 3) add ChannelNumber
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) migrate assoc.c.
- * 2) add ucTxSeqNum for tracking frames which needs TX-DONE awareness
- * 3) add configuration options for CNM_MEM and RSN modules
- * 4) add data path for management frames
- * 5) eliminate rPacketInfo of MSDU_INFO_T
- *
- * 06 09 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add necessary changes to driver data paths.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
-**  \main\maintrunk.MT6620WiFiDriver_Prj\10 2009-12-10 16:44:00 GMT mtk02752
-**  code clean
-**  \main\maintrunk.MT6620WiFiDriver_Prj\9 2009-12-09 13:59:20 GMT MTK02468
-**  Added HIF_RX_HDR parsing macros
-**  \main\maintrunk.MT6620WiFiDriver_Prj\8 2009-11-24 19:54:54 GMT mtk02752
-**  adopt HIF_RX_HEADER_T in new data path
-**  \main\maintrunk.MT6620WiFiDriver_Prj\7 2009-10-29 19:51:19 GMT mtk01084
-**  modify FW/ driver interface
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-04-28 10:33:58 GMT mtk01461
-**  Add define of HW_APPENED_LEN
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-04-01 10:51:02 GMT mtk01461
-**  Rename ENUM_HIF_RX_PKT_TYPE_T
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-03-19 12:05:03 GMT mtk01426
-**  Remove __KAL_ATTRIB_PACKED__ and add hifDataTypeCheck()
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-03-17 20:18:52 GMT mtk01426
-**  Add comment to HIF_RX_HEADER_T
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:16:23 GMT mtk01426
-**  Init for develop
-**
 */
 
 #ifndef _HIF_RX_H

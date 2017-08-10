@@ -1,114 +1,19 @@
 /*
-** Id: //Department/DaVinci/TRUNK/WiFi_P2P_Driver/include/nic/p2p.h#3
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-** Log: p2p.h
-**
-** 03 16 2015 eason.tsai
-** [ALPS01985239] [Need Patch] [Volunteer Patch]
-** enlarge the time to avoid  deauth packet stucking in the driver
-**
-** 07 25 2014 eason.tsai
-** AOSP
-**
-** 10 08 2013 yuche.tsai
-** [ALPS01065606] [Volunteer Patch][MT6630][Wi-Fi Direct][Driver] MT6630 Wi-Fi Direct Driver Patch
-** Update Wi-Fi Direct Source.
-**
-** 08 28 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** Fix Wi-Fi Direct channel width & RX channel indication issue.
-**
-** 08 22 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** [BORA00000779] [MT6620] Emulation For TX Code Check In
-**	Make P2P group interface formation success.
-**
-** 08 13 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Update driver for P2P scan & listen.
-**
-** 07 19 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Code update for P2P.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add p2p_rlm.c, p2p_rlm_obss.c, fix compile warning & error.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add new code, fix compile warning.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*
-* 07 17 2012 yuche.tsai
-* NULL
-* Compile no error before trial run.
-*
-* 10 20 2010 wh.su
-* [WCXRP00000124] [MT6620 Wi-Fi] [Driver] Support the dissolve P2P Group
-* Add the code to support disconnect p2p group
-*
-* 09 21 2010 kevin.huang
-* [WCXRP00000054] [MT6620 Wi-Fi][Driver] Restructure driver for second Interface
-* Isolate P2P related function for Hardware Software Bundle
-*
-* 08 03 2010 cp.wu
-* NULL
-* [Wi-Fi Direct] add framework for driver hooks
-*
-* 07 08 2010 cp.wu
-*
-* [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
-*
-* 06 23 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* p2p interface revised to be sync. with HAL
-*
-* 06 06 2010 kevin.huang
-* [WPD00003832][MT6620 5931] Create driver base
-* [MT6620 5931] Create driver base
-*
-* 05 18 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* add parameter to control:
-* 1) auto group owner
-* 2) P2P-PS parameter (CTWindow, NoA descriptors)
-*
-* 05 18 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* correct WPS Device Password ID definition.
-*
-* 05 17 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* implement get scan result.
-*
-* 05 17 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* add basic handling framework for wireless extension ioctls.
-*
-* 05 14 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* add ioctl framework for Wi-Fi Direct by reusing wireless extension ioctls as well
-*
-* 05 11 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* p2p ioctls revised.
-*
-* 05 10 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* implement basic wi-fi direct framework
-*
-* 05 07 2010 cp.wu
-* [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
-* add basic framework for implementating P2P driver hook.
-*
-*
+** Id: //Department/DaVinci/TRUNK/WiFi_P2P_Driver/include/nic/p2p.h#3
 */
 
 #ifndef _P2P_H

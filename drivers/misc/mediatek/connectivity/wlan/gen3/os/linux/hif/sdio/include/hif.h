@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/hif/sdio/include/hif.h#1
 */
 
@@ -6,61 +20,6 @@
     \brief  Functions for the driver to register bus and setup the IRQ
 
     Functions for the driver to register bus and setup the IRQ
-*/
-
-/*
-** Log: hif.h
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 01 2010 yarco.yang
- * [WCXRP00000149] [MT6620 WI-Fi][Driver]Fine tune performance on MT6516 platform
- * Add GPIO debug function
- *
- * 10 19 2010 jeffrey.chang
- * [WCXRP00000120] [MT6620 Wi-Fi][Driver] Refine linux kernel module to the license of
- * MTK propietary and enable MTK HIF by default
- * Refine linux kernel module to the license of MTK and enable MTK HIF
- *
- * 08 18 2010 jeffrey.chang
- * NULL
- * support multi-function sdio
- *
- * 08 17 2010 cp.wu
- * NULL
- * add ENE SDIO host workaround for x86 linux platform.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\4 2009-10-20 17:38:28 GMT mtk01090
-**  Refine driver unloading and clean up procedure. Block requests, stop main thread and clean up queued requests,
-**  and then stop hw.
-**  \main\maintrunk.MT5921\3 2009-09-28 20:19:20 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\2 2009-08-18 22:57:05 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\2 2008-09-22 23:18:17 GMT mtk01461
-**  Update driver for code review
-** Revision 1.1  2007/07/05 07:25:33  MTK01461
-** Add Linux initial code, modify doc, add 11BB, RF init code
-**
-** Revision 1.3  2007/06/27 02:18:51  MTK01461
-** Update SCAN_FSM, Initial(Can Load Module), Proc(Can do Reg R/W), TX API
-**
 */
 
 #ifndef _HIF_H

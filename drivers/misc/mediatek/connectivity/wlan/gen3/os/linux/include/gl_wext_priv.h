@@ -1,128 +1,23 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_wext_priv.h#3
 */
 
 /*! \file   gl_wext_priv.h
     \brief  This file includes private ioctl support.
-*/
-
-/*
-** Log: gl_wext_priv.h
-**
-** 08 09 2013 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** update ICAP support code
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 01 16 2012 wh.su
- * [WCXRP00001170] [MT6620 Wi-Fi][Driver] Adding the related code for set/get band ioctl
- * Adding the template code for set / get band IOCTL (with ICS supplicant_6)..
- *
- * 01 05 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the related ioctl / wlan oid function to set the Tx power cfg.
- *
- * 01 02 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the proto type function for set_int set_tx_power and get int get_ch_list.
- *
- * 11 08 2011 yuche.tsai
- * [WCXRP00001094] [Volunteer Patch][Driver] Driver version & supplicant
- * version query & set support for service discovery version check.
- * Add a CMD ID for P2P driver version query.
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 03 02 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * Add security check code.
- *
- * 01 27 2011 cm.chang
- * [WCXRP00000402] [MT6620 Wi-Fi][Driver] Enable MCR read/write by iwpriv by default
- * .
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Add Oid for sw control debug command
- *
- * 01 07 2011 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add a new compiling option to control if MCR read/write is permitted
- *
- * 12 31 2010 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add some iwpriv commands to support test mode operation
- *
- * 11 08 2010 wh.su
- * [WCXRP00000171] [MT6620 Wi-Fi][Driver] Add message check code same behavior as mt5921
- * add the message check code from mt5921.
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with
- * Version Check[WCXRP00000086] [MT6620 Wi-Fi][Driver] The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 09 23 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * add skeleton for NVRAM integration
- *
- * 08 04 2010 cp.wu
- * NULL
- * revert changelist #15371, efuse read/write access will be done by RF test approach
- *
- * 08 04 2010 cp.wu
- * NULL
- * add OID definitions for EFUSE read/write access.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 03 31 2010 wh.su
- * [WPD00003816][MT6620 Wi-Fi] Adding the security support
- * modify the wapi related code for new driver's design.
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\16 2009-09-29 16:47:23 GMT mtk01090
-**  Remove unused functions
-**  \main\maintrunk.MT5921\15 2009-09-28 20:19:31 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\14 2009-05-07 22:26:06 GMT mtk01089
-**  add private IO control for Linux BWCS
-**  \main\maintrunk.MT5921\13 2008-08-29 14:55:20 GMT mtk01088
-**  adjust the code to meet coding style
-**  \main\maintrunk.MT5921\12 2008-07-16 15:23:45 GMT mtk01104
-**  Support GPIO2 mode
-**  \main\maintrunk.MT5921\11 2008-07-14 13:55:58 GMT mtk01104
-**  Support PRIV_CMD_BT_COEXIST
-**  \main\maintrunk.MT5921\10 2008-07-09 00:20:24 GMT mtk01461
-**  Add priv oid to support WMM_PS_TEST
-**  \main\maintrunk.MT5921\9 2008-05-30 20:27:24 GMT mtk01461
-**  Add POWER_MODE Private IOCTL cmd
-**  \main\maintrunk.MT5921\8 2008-04-17 23:06:44 GMT mtk01461
-**  Add iwpriv support for AdHocMode setting
-**  \main\maintrunk.MT5921\7 2008-03-31 21:01:24 GMT mtk01461
-**  Add priv IOCTL for VOIP settings
-**  \main\maintrunk.MT5921\6 2008-03-31 13:49:47 GMT mtk01461
-**  add priv ioctl arg definition for turning on / off roaming
-**  \main\maintrunk.MT5921\5 2008-03-26 15:35:09 GMT mtk01461
-**  Add CSUM offload priv ioctl for Linux
-**  \main\maintrunk.MT5921\4 2008-03-11 14:51:11 GMT mtk01461
-**  Refine private IOCTL functions
-**  \main\maintrunk.MT5921\3 2007-11-06 19:36:25 GMT mtk01088
-**  add the WPS related code
 */
 
 #ifndef _GL_WEXT_PRIV_H

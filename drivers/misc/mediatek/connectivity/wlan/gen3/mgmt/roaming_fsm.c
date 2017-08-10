@@ -22,69 +22,6 @@
     This file defines the FSM for Roaming MODULE.
 */
 
-/*
-** Log: roaming_fsm.c
-**
-** 09 03 2013 tsaiyuan.hsu
-** [BORA00002775] MT6630 unified MAC ROAMING
-** 1. modify roaming fsm.
-** 2. add roaming control.
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 24 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Adjust code for DBG and CONFIG_XLOG.
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 02 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * adding the code for XLOG.
- *
- * 08 31 2011 tsaiyuan.hsu
- * [WCXRP00000931] [MT5931 Wi-Fi][DRV/FW] add swcr to disable roaming from driver
- * remove obsolete code.
- *
- * 08 15 2011 tsaiyuan.hsu
- * [WCXRP00000931] [MT5931 Wi-Fi][DRV/FW] add swcr to disable roaming from driver
- * add swcr in driver reg, 0x9fxx0000, to disable roaming .
- *
- * 03 16 2011 tsaiyuan.hsu
- * [WCXRP00000517] [MT6620 Wi-Fi][Driver][FW] Fine Tune Performance of Roaming
- * remove obsolete definition and unused variables.
- *
- * 02 26 2011 tsaiyuan.hsu
- * [WCXRP00000391] [MT6620 Wi-Fi][FW] Add Roaming Support
- * not send disassoc or deauth to leaving AP so as to improve performace of roaming.
- *
- * 01 27 2011 tsaiyuan.hsu
- * [WCXRP00000392] [MT6620 Wi-Fi][Driver] Add Roaming Support
- * add roaming fsm
- * 1. not support 11r, only use strength of signal to determine roaming.
- * 2. not enable CFG_SUPPORT_ROAMING until completion of full test.
- * 3. in 6620, adopt work-around to avoid sign extension problem of cck of hw
- * 4. assume that change of link quality in smooth way.
- *
- * 01 27 2011 tsaiyuan.hsu
- * [WCXRP00000392] [MT6620 Wi-Fi][Driver] Add Roaming Support
- * add roaming fsm
- * 1. not support 11r, only use strength of signal to determine roaming.
- * 2. not enable CFG_SUPPORT_ROAMING until completion of full test.
- * 3. in 6620, adopt work-around to avoid sign extension problem of cck of hw
- * 4. assume that change of link quality in smooth way.
- *
-*/
-
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
 ********************************************************************************

@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/rate.c#1
 */
 
@@ -8,77 +22,6 @@
     This file contains the transmission rate handling routines for setting up
     ACK/CTS Rate, Highest Tx Rate, Lowest Tx Rate, Initial Tx Rate and do
     conversion between Rate Set and Data Rates.
-*/
-
-/*
-** Log: rate.c
-**
-** 08 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add SW rate definition
-** 2. Add HW default rate selection logic from FW
-**
-** 07 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Update VHT IE composing function
-** 2. disable bow
-** 3. Exchange bss/sta rec update sequence for temp solution
-**
-** 11 06 2012 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** .
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add rate.c.
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Nov 23 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Update comments
- *
- * Nov 16 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Fix DBGLOG
- *
- * Nov 5 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-**  \main\maintrunk.MT5921\12 2008-12-19 17:19:32 GMT mtk01461
-**  Fix the problem that do not ASSERT the length of Supported Rate IE == 8
-**  \main\maintrunk.MT5921\11 2008-12-01 18:17:42 GMT mtk01088
-**  fixed the lint "possible using null pointer" warning
-**  \main\maintrunk.MT5921\10 2008-08-20 00:16:36 GMT mtk01461
-**  Update for Driver Review
-**  \main\maintrunk.MT5921\9 2008-04-13 21:17:13 GMT mtk01461
-**  Revise GEN Link Speed OID
-**  \main\maintrunk.MT5921\8 2008-03-28 10:40:13 GMT mtk01461
-**  Add rateGetRateSetFromDataRates() for set desired rate OID
-**  \main\maintrunk.MT5921\7 2008-03-26 09:16:20 GMT mtk01461
-**  Add adopt operational rate as ACK rate if BasicRateSet was not found
-**  Add comments
-**  \main\maintrunk.MT5921\6 2008-02-21 15:01:39 GMT mtk01461
-**  Add initial rate according rx signal quality support
-**  \main\maintrunk.MT5921\5 2008-01-07 15:06:44 GMT mtk01461
-**  Fix typo of rate adaptation of CtrlResp Frame
-**  \main\maintrunk.MT5921\4 2007-10-25 18:05:12 GMT mtk01461
-**  Add VOIP SCAN Support  & Refine Roaming
 */
 
 /*******************************************************************************

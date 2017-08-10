@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/bow_fsm.h#1
 */
 
@@ -7,39 +21,6 @@
 
     Declaration of functions and finite state machine for BOW Module.
 */
-
-/*
-** Log: bow_fsm.h
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 05 22 2011 terry.wu
- * [WCXRP00000735] [MT6620 Wi-Fi][BoW][FW/Driver] Protect BoW connection establishment
- * Submit missing BoW header files.
- *
- * 03 27 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Support multiple physical link.
- *
- * 02 16 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add bowNotifyAllLinkDisconnected  interface and change channel grant procedure for bow starting..
- *
- * 02 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add channel previledge into _BOW_FSM_INFO_T.
- *
- * 09 16 2010 chinghwa.yu
- * NULL
- * update bowChangeMediaState.
- *
- * 08 24 2010 chinghwa.yu
- * NULL
- * Update BOW for the 1st time.
- */
 
 #ifndef _BOW_FSM_H
 #define _BOW_FSM_H

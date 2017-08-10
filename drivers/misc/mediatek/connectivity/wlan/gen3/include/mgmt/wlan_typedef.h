@@ -23,20 +23,6 @@
     to all MGMT Protocol Stack.
 */
 
-/*
-** Log: wlan_typedef.h
-**
-** 01 21 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** 1. Create rP2pDevInfo structure
-** 2. Support 80/160 MHz channel bandwidth for channel privilege
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*/
-
 #ifndef _WLAN_TYPEDEF_H
 #define _WLAN_TYPEDEF_H
 
