@@ -433,7 +433,7 @@ static long AudDrv_btcvsd_ioctl(struct file *fp, unsigned int cmd, unsigned long
 		PRINTK_AUDDRV("GET_BTCVSD_RX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu",
 			time_buffer_info_rx.uTimestampUS, time_buffer_info_rx.uDataCountEquiTime);
 
-		if (copy_to_user((void *)arg, &time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T))) {
+		if (copy_to_user((void __user *)arg, &time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T))) {
 			pr_warn("GET_BTCVSD_RX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
 				(kal_uint8 *)&time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T));
 			ret = -1;
@@ -446,7 +446,7 @@ static long AudDrv_btcvsd_ioctl(struct file *fp, unsigned int cmd, unsigned long
 		PRINTK_AUDDRV("GET_BTCVSD_TX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu",
 			time_buffer_info_tx.uTimestampUS, time_buffer_info_tx.uDataCountEquiTime);
 
-		if (copy_to_user((void *)arg, &time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T))) {
+		if (copy_to_user((void __user *)arg, &time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T))) {
 			pr_warn("GET_BTCVSD_TX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
 				(kal_uint8 *)&time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T));
 			ret = -1;
