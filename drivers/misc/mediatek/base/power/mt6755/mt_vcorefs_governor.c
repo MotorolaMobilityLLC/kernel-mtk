@@ -1018,12 +1018,12 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 	/* call spm with dvfs_opp */
 	ret =
 	    spm_dvfs_func_list[group_id].do_dvfs(krconf->dvfs_opp,
-						 opp_ctrl_table[krconf->dvfs_opp].vcore_uv,
-						 opp_ctrl_table[krconf->dvfs_opp].ddr_khz);
+						 opp_ctrl_table[opp_idx].vcore_uv,
+						 opp_ctrl_table[opp_idx].ddr_khz);
 
 	/* update curr_vcore_uv and curr_ddr_khz */
-	gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
-	gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
+	gvrctrl->curr_vcore_uv = opp_ctrl_table[opp_idx].vcore_uv;
+	gvrctrl->curr_ddr_khz = opp_ctrl_table[opp_idx].ddr_khz;
 
 	return ret;
 
@@ -1168,7 +1168,8 @@ int vcorefs_late_init_dvfs(void)
 
 	vcorefs_init_sram_debug();
 
-	is_vcorefs_feature_enable();
+	if (!is_vcorefs_feature_enable())
+		vcorefs_info("vcore_dvfs_en=%d\n", gvrctrl->vcore_dvfs_en);
 
 	/* SPM_SW_RSV_5[0] init in spm module init */
 	/* spm_vcorefs_set_opp_state(gvrctrl->boot_up_opp); */
