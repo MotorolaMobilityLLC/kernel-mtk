@@ -670,7 +670,7 @@ int act_data_report(struct hwm_sensor_data *data, int status)
 	struct sensor_event event;
 	int err = 0;
 
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.time_stamp = data->time;
 	event.byte[0] = data->probability[0];
 	event.byte[1] = data->probability[1];
@@ -697,7 +697,7 @@ int act_flush_report(void)
 	int err = 0;
 
 	ACT_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(act_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACT_ERR("failed due to event buffer full\n");

@@ -32,7 +32,7 @@
 #include "sensors_io.h"
 #include "SCP_sensorHub.h"
 #include "hwmsen_helper.h"
-
+#include "sensor_event.h"
 #define SENSOR_DATA_SIZE 48
 /*
  * experience number for delay_count per DELAY_COUNT sensor input delay 10ms
@@ -531,7 +531,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 			SCP_ERR("type:%d don't support this flow?\n", sensor_type);
 			return 0;
 		}
-		if (data_t->flush_action == true)
+		if (data_t->flush_action != DATA_ACTION)
 			need_send = true;
 		else {
 			/* timestamp filter, drop events which timestamp equal to each other at 1 ms */
@@ -709,6 +709,13 @@ int sensor_flush_to_hub(uint8_t sensorType)
 		ret = -1;
 	} else
 		ret = SCP_sensorHub_flush(sensorType);
+	return ret;
+}
+
+int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count)
+{
+	int ret = 0;
+
 	return ret;
 }
 

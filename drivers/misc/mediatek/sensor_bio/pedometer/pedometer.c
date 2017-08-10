@@ -618,7 +618,7 @@ int pedo_data_report(struct hwm_sensor_data *data, int status)
 	struct sensor_event event;
 	int err = 0;
 
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.time_stamp = data->time;
 	event.word[0] = data->values[1];/* length */
 	event.word[1] = data->values[2];/* freq */
@@ -637,7 +637,7 @@ int pedo_flush_report(void)
 	int err = 0;
 
 	PEDO_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(pedo_context_obj->mdev.minor, &event);
 	if (err < 0)
 		PEDO_ERR("failed due to event buffer full\n");

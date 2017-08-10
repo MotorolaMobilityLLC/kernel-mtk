@@ -87,9 +87,9 @@ static int glance_gesture_batch(int flag, int64_t samplingPeriodNs, int64_t maxB
 }
 static int glance_gesture_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		GLGHUB_ERR("glance_gesture do not support flush\n");
-	else
+	else if (event->flush_action == DATA_ACTION)
 		ges_notify(ID_GLANCE_GESTURE);
 	return 0;
 }

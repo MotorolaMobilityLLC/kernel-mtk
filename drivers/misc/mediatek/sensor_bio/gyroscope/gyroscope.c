@@ -11,6 +11,7 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
+#include <linux/vmalloc.h>
 #include "inc/gyroscope.h"
 
 struct gyro_context *gyro_context_obj = NULL;
@@ -481,6 +482,39 @@ static ssize_t gyro_show_flush(struct device *dev,
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
+static ssize_t gyro_show_cali(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
+
+static ssize_t gyro_store_cali(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	struct gyro_context *cxt = NULL;
+	int err = 0;
+	uint8_t *cali_buf = NULL;
+
+	cali_buf = vzalloc(count);
+	if (cali_buf == NULL) {
+		GYRO_ERR("kzalloc fail\n");
+		return -EFAULT;
+	}
+	memcpy(cali_buf, buf, count);
+
+	mutex_lock(&gyro_context_obj->gyro_op_mutex);
+	cxt = gyro_context_obj;
+	if (NULL != cxt->gyro_ctl.set_cali)
+		err = cxt->gyro_ctl.set_cali(cali_buf, count);
+	else
+		GYRO_ERR("GYRO DRIVER OLD ARCHITECTURE DON'T SUPPORT GYRO COMMON VERSION FLUSH\n");
+	if (err < 0)
+		GYRO_ERR("gyro set cali err %d\n", err);
+	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
+	vfree(cali_buf);
+	return count;
+}
+
 /* need work around again */
 static ssize_t gyro_show_devnum(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -621,6 +655,7 @@ DEVICE_ATTR(gyroactive,     S_IWUSR | S_IRUGO, gyro_show_active, gyro_store_acti
 DEVICE_ATTR(gyrodelay,      S_IWUSR | S_IRUGO, gyro_show_delay,  gyro_store_delay);
 DEVICE_ATTR(gyrobatch,     S_IWUSR | S_IRUGO, gyro_show_batch, gyro_store_batch);
 DEVICE_ATTR(gyroflush,      S_IWUSR | S_IRUGO, gyro_show_flush,  gyro_store_flush);
+DEVICE_ATTR(gyrocali,      S_IWUSR | S_IRUGO, gyro_show_cali,  gyro_store_cali);
 DEVICE_ATTR(gyrodevnum,      S_IWUSR | S_IRUGO, gyro_show_devnum,  NULL);
 
 static struct attribute *gyro_attributes[] = {
@@ -629,6 +664,7 @@ static struct attribute *gyro_attributes[] = {
 	&dev_attr_gyrodelay.attr,
 	&dev_attr_gyrobatch.attr,
 	&dev_attr_gyroflush.attr,
+	&dev_attr_gyrocali.attr,
 	&dev_attr_gyrodevnum.attr,
 	NULL
 };
@@ -664,8 +700,8 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 	cxt->gyro_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->gyro_ctl.batch = ctl->batch;
 	cxt->gyro_ctl.flush = ctl->flush;
+	cxt->gyro_ctl.set_cali = ctl->set_cali;
 	cxt->gyro_ctl.is_support_batch = ctl->is_support_batch;
-	cxt->gyro_ctl.gyro_calibration = ctl->gyro_calibration;
 	cxt->gyro_ctl.is_use_common_factory = ctl->is_use_common_factory;
 	cxt->gyro_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	if (NULL == cxt->gyro_ctl.set_delay || NULL == cxt->gyro_ctl.open_report_data
@@ -720,12 +756,28 @@ int gyro_data_report(int x, int y, int z, int status, int64_t nt)
 	int err = 0;
 
 	check_repeat_data(x, y, z);
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.time_stamp = nt;
 	event.word[0] = x;
 	event.word[1] = y;
 	event.word[2] = z;
 	event.status = status;
+
+	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
+	if (err < 0)
+		GYRO_ERR("failed due to event buffer full\n");
+	return err;
+}
+
+int gyro_bias_report(int x, int y, int z)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = BIAS_ACTION;
+	event.word[0] = x;
+	event.word[1] = y;
+	event.word[2] = z;
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
@@ -739,7 +791,7 @@ int gyro_flush_report(void)
 	int err = 0;
 
 	GYRO_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
 		GYRO_ERR("failed due to event buffer full\n");

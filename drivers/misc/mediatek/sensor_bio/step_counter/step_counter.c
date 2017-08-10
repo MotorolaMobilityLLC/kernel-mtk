@@ -121,7 +121,7 @@ int step_notify(STEP_NOTIFY_TYPE type)
 		STEP_C_LOG("fwq TYPE_STEP_DETECTOR notify\n");
 		/* cxt->step_c_data.get_data_step_d(&value); */
 		/* step_c_data_report(cxt->idev,value,3); */
-		event.flush_action = false;
+		event.flush_action = DATA_ACTION;
 		event.handle = ID_STEP_DETECTOR;
 		event.word[0] = 1;
 		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
@@ -130,7 +130,7 @@ int step_notify(STEP_NOTIFY_TYPE type)
 	if (type == TYPE_SIGNIFICANT) {
 		STEP_C_LOG("fwq TYPE_SIGNIFICANT notify\n");
 		/* cxt->step_c_data.get_data_significant(&value); */
-		event.flush_action = false;
+		event.flush_action = DATA_ACTION;
 		event.handle = ID_SIGNIFICANT_MOTION;
 		event.word[0] = 1;
 		err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
@@ -810,7 +810,7 @@ int step_c_data_report(uint32_t new_counter, int status)
 	static uint32_t last_step_counter;
 
 	if (last_step_counter != new_counter) {
-		event.flush_action = false;
+		event.flush_action = DATA_ACTION;
 		event.handle = ID_STEP_COUNTER;
 		event.word[0] = new_counter;
 		last_step_counter = new_counter;
@@ -827,7 +827,7 @@ int step_c_flush_report(void)
 	int err = 0;
 
 	event.handle = ID_STEP_COUNTER;
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
 		STEP_C_ERR("event buffer full, so drop this data\n");
@@ -842,7 +842,7 @@ int step_d_flush_report(void)
 	int err = 0;
 
 	event.handle = ID_STEP_DETECTOR;
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
 	if (err < 0)
 		STEP_C_ERR("event buffer full, so drop this data\n");

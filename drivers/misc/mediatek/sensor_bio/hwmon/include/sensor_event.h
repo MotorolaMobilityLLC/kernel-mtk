@@ -17,6 +17,11 @@
 
 #define CONTINUE_SENSOR_BUF_SIZE	2048
 #define OTHER_SENSOR_BUF_SIZE	16
+enum flushAction {
+	DATA_ACTION,
+	FLUSH_ACTION,
+	BIAS_ACTION,
+};
 struct sensor_event {
 	int64_t time_stamp;
 	int8_t handle;

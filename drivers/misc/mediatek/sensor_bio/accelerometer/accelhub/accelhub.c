@@ -428,10 +428,16 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 	data.status = event->accelerometer_t.status;
 	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
 	data.reserved[0] = event->reserve[0];
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = acc_flush_report();
-	else
-		err = acc_data_report(data);
+	else if (event->flush_action == DATA_ACTION)
+		err = acc_data_report(&data);
+	else if (event->flush_action == BIAS_ACTION) {
+		data.x = event->accelerometer_t.x_bias;
+		data.y = event->accelerometer_t.y_bias;
+		data.z = event->accelerometer_t.z_bias;
+		err = acc_bias_report(&data);
+	}
 	return err;
 }
 
@@ -736,6 +742,11 @@ static int gsensor_flush(void)
 	return sensor_flush_to_hub(ID_ACCELEROMETER);
 }
 
+static int gsensor_set_cali(uint8_t *data, uint8_t count)
+{
+	return sensor_cfg_to_hub(ID_ACCELEROMETER, data, count);
+}
+
 static int gsensor_get_data(int *x, int *y, int *z, int *status)
 {
 	int err = 0;
@@ -827,6 +838,7 @@ static int accelhub_probe(struct platform_device *pdev)
 	ctl.set_delay = gsensor_set_delay;
 	ctl.batch = gsensor_batch;
 	ctl.flush = gsensor_flush;
+	ctl.set_cali = gsensor_set_cali;
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = false;

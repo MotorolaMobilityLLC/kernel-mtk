@@ -154,9 +154,9 @@ static int tilt_detect_flush(void)
 
 static int tilt_detect_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		tilt_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		tilt_notify();
 	return 0;
 }

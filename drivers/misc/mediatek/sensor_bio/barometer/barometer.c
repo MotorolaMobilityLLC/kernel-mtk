@@ -684,7 +684,7 @@ int baro_data_report(int value, int status, int64_t nt)
 	struct sensor_event event;
 	int err = 0;
 
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.time_stamp = nt;
 	event.word[0] = value;
 	event.status = status;
@@ -701,7 +701,7 @@ int baro_flush_report(void)
 	int err = 0;
 
 	BARO_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
 		BARO_ERR("failed due to event buffer full\n");

@@ -63,21 +63,24 @@ static int uncali_mag_recv_data(struct data_unit_t *event, void *reserved)
 	int err = 0;
 	int value[6] = {0};
 
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	value[0] = event->uncalibrated_mag_t.x;
 	value[1] = event->uncalibrated_mag_t.y;
 	value[2] = event->uncalibrated_mag_t.z;
-#if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	value[3] = event->uncalibrated_mag_t.x_bias;
 	value[4] = event->uncalibrated_mag_t.y_bias;
 	value[5] = event->uncalibrated_mag_t.z_bias;
 #elif defined CONFIG_NANOHUB
-	value[3] = 0;
-	value[4] = 0;
-	value[5] = 0;
+	value[0] = event->uncalibrated_mag_t.x + event->uncalibrated_mag_t.x_bias;
+	value[1] = event->uncalibrated_mag_t.y + event->uncalibrated_mag_t.y_bias;
+	value[2] = event->uncalibrated_mag_t.z + event->uncalibrated_mag_t.z_bias;
+	value[3] = event->uncalibrated_mag_t.x_bias;
+	value[4] = event->uncalibrated_mag_t.y_bias;
+	value[5] = event->uncalibrated_mag_t.z_bias;
 #endif
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = uncali_mag_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		err = uncali_mag_data_report(value, event->uncalibrated_mag_t.status,
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
 	return err;

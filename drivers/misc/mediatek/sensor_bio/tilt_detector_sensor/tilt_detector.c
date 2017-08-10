@@ -46,7 +46,7 @@ int tilt_notify(void)
 	cxt = tilt_context_obj;
 	if (true == cxt->is_active_data) {
 		TILT_LOG("tilt_notify++++\n");
-		event.flush_action = false;
+		event.flush_action = DATA_ACTION;
 		event.word[0] = 1;
 		err = sensor_input_event(cxt->mdev.minor, &event);
 		if (err < 0)
@@ -60,7 +60,7 @@ int tilt_flush_report(void)
 	struct sensor_event event;
 	int err = 0;
 
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(tilt_context_obj->mdev.minor, &event);
 	if (err < 0)
 		TILT_ERR("event buffer full, so drop this data\n");

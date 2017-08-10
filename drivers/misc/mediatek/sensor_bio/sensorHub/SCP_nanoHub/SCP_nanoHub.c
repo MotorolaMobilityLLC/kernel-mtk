@@ -33,7 +33,7 @@
 #include "SCP_sensorHub.h"
 #include "hwmsen_helper.h"
 #include "comms.h"
-
+#include "sensor_event.h"
 /* ALGIN TO SCP SENSOR_DATA_SIZE AT FILE CONTEXTHUB_FW.H, ALGIN
  * TO SCP_SENSOR_HUB_DATA UNION, ALGIN TO STRUCT DATA_UNIT_T
  * SIZEOF(STRUCT DATA_UNIT_T) = SCP_SENSOR_HUB_DATA = SENSOR_DATA_SIZE
@@ -781,7 +781,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				return 0;
 			}
 		}
-		if (data_t->flush_action == true)
+		if (data_t->flush_action != DATA_ACTION)
 			need_send = true;
 		else {
 			/* timestamp filter, drop events which timestamp equal to each other at 1 ms */
@@ -986,6 +986,32 @@ int sensor_flush_to_hub(uint8_t sensorType)
 		ret = -1;
 	} else
 		ret = SCP_sensorHub_flush(sensorType);
+	return ret;
+}
+
+int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count)
+{
+	struct ConfigCmd *cmd = NULL;
+	int ret = 0;
+
+	if (ID_SENSOR_MAX_HANDLE < sensorType) {
+		SCP_ERR("invalid sensor %d\n", sensorType);
+		ret = -1;
+	} else {
+		cmd = vzalloc(sizeof(struct ConfigCmd) + count);
+		if (cmd == NULL)
+			return -1;
+		cmd->evtType = EVT_NO_SENSOR_CONFIG_EVENT;
+		cmd->sensorType = sensorType + ID_OFFSET;
+		cmd->cmd = CONFIG_CMD_CFG_DATA;
+		memcpy(cmd->data, data, count);
+		ret = nanohub_external_write((const uint8_t *)cmd, sizeof(struct ConfigCmd) + count);
+		if (ret < 0) {
+			SCP_ERR("failed cfg data handle:%d, cmd:%d\n", sensorType, cmd->cmd);
+			ret =  -1;
+		}
+		vfree(cmd);
+	}
 	return ret;
 }
 

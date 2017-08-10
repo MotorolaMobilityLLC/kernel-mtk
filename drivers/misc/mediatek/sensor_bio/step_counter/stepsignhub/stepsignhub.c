@@ -234,27 +234,27 @@ static int step_cds_open_report_data(int open)
 
 static int step_detect_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		step_d_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		step_notify(TYPE_STEP_DETECTOR);
 	return 0;
 }
 
 static int step_count_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		step_c_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		step_c_data_report(event->step_counter_t.accumulated_step_count, 2);
 	return 0;
 }
 
 static int sign_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		STEP_CDS_ERR("sign do not support flush\n");
-	else
+	else if (event->flush_action == DATA_ACTION)
 		step_notify(TYPE_SIGNIFICANT);
 	return 0;
 }

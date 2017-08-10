@@ -83,10 +83,10 @@ struct gyro_control_path {
 	int (*enable_nodata)(int en);
 	int (*set_delay)(u64 delay);
 	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
-	int (*flush)(void);/* open data rerport to HAL */
+	int (*flush)(void);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	bool is_report_input_direct;
 	bool is_support_batch;
-	int (*gyro_calibration)(int type, int cali[3]);
 	bool is_use_common_factory;
 };
 
@@ -140,6 +140,7 @@ struct gyro_context {
 
 extern int gyro_driver_add(struct gyro_init_info *obj);
 extern int gyro_data_report(int x, int y, int z, int status, int64_t nt);
+extern int gyro_bias_report(int x, int y, int z);
 extern int gyro_flush_report(void);
 extern int gyro_register_control_path(struct gyro_control_path *ctl);
 extern int gyro_register_data_path(struct gyro_data_path *data);

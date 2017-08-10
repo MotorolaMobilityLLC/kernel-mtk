@@ -56,7 +56,7 @@ int ges_notify(int handle)
 	GESTURE_LOG("ges_notify handle:%d, index:%d\n", handle, index);
 
 	event.handle = handle;
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.word[0] = 1;
 	err = sensor_input_event(ges_context_obj->mdev.minor, &event);
 	if (err < 0)

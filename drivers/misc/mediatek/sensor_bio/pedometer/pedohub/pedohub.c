@@ -166,9 +166,9 @@ static int pedometer_recv_data(struct data_unit_t *event, void *reserved)
 	data.values[3] = event->pedometer_t.step_length;
 	data.time = (int64_t)(event->time_stamp + event->time_stamp_gpt);
 
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = pedo_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		err = pedo_data_report(&data, 2);
 
 	return err;

@@ -83,9 +83,9 @@ static int gamerotvec_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = grv_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		err = grv_data_report(event->orientation_t.azimuth, event->orientation_t.pitch,
 			event->orientation_t.roll, event->orientation_t.scalar,
 			event->orientation_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));

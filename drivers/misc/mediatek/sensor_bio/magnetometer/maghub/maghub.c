@@ -289,11 +289,13 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = mag_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		err = mag_data_report(event->magnetic_t.x, event->magnetic_t.y, event->magnetic_t.z,
 			event->magnetic_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == BIAS_ACTION)
+		err = mag_bias_report(event->magnetic_t.x_bias, event->magnetic_t.y_bias, event->magnetic_t.z_bias);
 	return err;
 }
 
@@ -531,6 +533,11 @@ static int maghub_flush(void)
 	return sensor_flush_to_hub(ID_MAGNETIC);
 }
 
+static int maghub_set_cali(uint8_t *data, uint8_t count)
+{
+	return sensor_cfg_to_hub(ID_MAGNETIC, data, count);
+}
+
 static int maghub_open_report_data(int open)
 {
 	return 0;
@@ -603,6 +610,7 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.set_delay = maghub_set_delay;
 	ctl.batch = maghub_batch;
 	ctl.flush = maghub_flush;
+	ctl.set_cali = maghub_set_cali;
 	ctl.open_report_data = maghub_open_report_data;
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	ctl.is_report_input_direct = true;

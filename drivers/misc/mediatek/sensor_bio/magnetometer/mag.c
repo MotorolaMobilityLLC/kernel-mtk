@@ -11,6 +11,7 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
+#include <linux/vmalloc.h>
 #include "inc/mag.h"
 
 struct mag_context *mag_context_obj = NULL;
@@ -382,6 +383,39 @@ static ssize_t mag_store_flush(struct device *dev, struct device_attribute *attr
 	return count;
 }
 
+static ssize_t mag_show_cali(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
+
+static ssize_t mag_store_cali(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	struct mag_context *cxt = NULL;
+	int err = 0;
+	uint8_t *cali_buf = NULL;
+
+	cali_buf = vzalloc(count);
+	if (cali_buf == NULL) {
+		MAG_ERR("kzalloc fail\n");
+		return -EFAULT;
+	}
+	memcpy(cali_buf, buf, count);
+
+	mutex_lock(&mag_context_obj->mag_op_mutex);
+	cxt = mag_context_obj;
+	if (NULL != cxt->mag_ctl.set_cali)
+		err = cxt->mag_ctl.set_cali(cali_buf, count);
+	else
+		MAG_ERR("MAG DRIVER OLD ARCHITECTURE DON'T SUPPORT MAG COMMON VERSION FLUSH\n");
+	if (err < 0)
+		MAG_ERR("mag set cali err %d\n", err);
+	mutex_unlock(&mag_context_obj->mag_op_mutex);
+	vfree(cali_buf);
+	return count;
+}
+
 /* need work around again */
 static ssize_t mag_show_sensordevnum(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -526,6 +560,7 @@ DEVICE_ATTR(magactive,	 S_IWUSR | S_IRUGO, mag_show_active, mag_store_active);
 DEVICE_ATTR(magdelay,	  S_IWUSR | S_IRUGO, mag_show_delay,  mag_store_delay);
 DEVICE_ATTR(magbatch,	S_IWUSR | S_IRUGO, mag_show_batch,  mag_store_batch);
 DEVICE_ATTR(magflush,		S_IWUSR | S_IRUGO, mag_show_flush,  mag_store_flush);
+DEVICE_ATTR(magcali,		S_IWUSR | S_IRUGO, mag_show_cali,  mag_store_cali);
 DEVICE_ATTR(magdevnum,	S_IWUSR | S_IRUGO, mag_show_sensordevnum,  NULL);
 
 static struct attribute *mag_attributes[] = {
@@ -534,6 +569,7 @@ static struct attribute *mag_attributes[] = {
 	&dev_attr_magdelay.attr,
 	&dev_attr_magbatch.attr,
 	&dev_attr_magflush.attr,
+	&dev_attr_magcali.attr,
 	&dev_attr_magdevnum.attr,
 	NULL
 };
@@ -567,6 +603,7 @@ int mag_register_control_path(struct mag_control_path *ctl)
 	cxt->mag_ctl.open_report_data = ctl->open_report_data;
 	cxt->mag_ctl.batch = ctl->batch;
 	cxt->mag_ctl.flush = ctl->flush;
+	cxt->mag_ctl.set_cali = ctl->set_cali;
 	cxt->mag_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->mag_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->mag_ctl.is_use_common_factory = ctl->is_use_common_factory;
@@ -640,9 +677,26 @@ int mag_data_report(int x, int y, int z, int status, int64_t nt)
 
 	check_repeat_data(x, y, z);
 	check_abnormal_data(x, y, z, status);
-	event.flush_action = false;
+	event.flush_action = DATA_ACTION;
 	event.status = status;
 	event.time_stamp = nt;
+	event.word[0] = x;
+	event.word[1] = y;
+	event.word[2] = z;
+
+	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
+	if (err < 0)
+		MAG_ERR("failed due to event buffer full\n");
+	return err;
+}
+
+int mag_bias_report(int x, int y, int z)
+{
+	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = BIAS_ACTION;
 	event.word[0] = x;
 	event.word[1] = y;
 	event.word[2] = z;
@@ -659,7 +713,7 @@ int mag_flush_report(void)
 	int err = 0;
 
 	MAG_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
 		MAG_ERR("failed due to event buffer full\n");

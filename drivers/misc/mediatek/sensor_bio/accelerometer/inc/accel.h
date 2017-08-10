@@ -58,16 +58,15 @@
 #define MAX_CHOOSE_G_NUM 5
 #define ACC_AXES_NUM 3
 struct acc_control_path {
-	int (*open_report_data)(int open);/* open data rerport to HAL */
-	int (*enable_nodata)(int en);/* only enable not report event to HAL */
+	int (*open_report_data)(int open);
+	int (*enable_nodata)(int en);
 	int (*set_delay)(u64 delay);
 	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
-	int (*flush)(void);/* open data rerport to HAL */
-	int (*access_data_fifo)(void);/* version2.used for flush operate */
+	int (*flush)(void);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	bool is_report_input_direct;
-	bool is_support_batch;/* version2.used for batch mode support flag */
+	bool is_support_batch;
 	bool is_use_common_factory;
-	int (*acc_calibration)(int type, int cali[3]);/* version3 sensor common layer factory mode API1 */
 };
 
 struct acc_data_path {
@@ -130,7 +129,8 @@ struct acc_context {
 
 /* for auto detect */
 extern int acc_driver_add(struct acc_init_info *obj);
-extern int acc_data_report(struct acc_data data);
+extern int acc_data_report(struct acc_data *data);
+extern int acc_bias_report(struct acc_data *data);
 extern int acc_flush_report(void);
 extern int acc_register_control_path(struct acc_control_path *ctl);
 extern int acc_register_data_path(struct acc_data_path *data);

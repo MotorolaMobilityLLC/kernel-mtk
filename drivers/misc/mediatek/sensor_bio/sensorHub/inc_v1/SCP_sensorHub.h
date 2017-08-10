@@ -496,6 +496,7 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data);
 int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data);
 int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 int sensor_flush_to_hub(uint8_t sensorType);
+int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count);
 #elif defined(CONFIG_NANOHUB)
 
 #define EVT_NO_SENSOR_CONFIG_EVENT       0x00000300
@@ -996,5 +997,6 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data);
 int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data);
 int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 int sensor_flush_to_hub(uint8_t sensorType);
+int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count);
 #endif
 #endif

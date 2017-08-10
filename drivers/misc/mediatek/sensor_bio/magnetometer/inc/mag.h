@@ -101,7 +101,8 @@ struct mag_control_path {
 	int (*set_delay)(u64 delay);
 	int (*enable)(int en);
 	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
-	int (*flush)(void);/* open data rerport to HAL */
+	int (*flush)(void);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	bool is_report_input_direct;
 	bool is_support_batch;
 	bool is_use_common_factory;
@@ -155,6 +156,7 @@ extern int mag_attach(int sensor, struct mag_drv_obj *obj);
 
 extern int mag_driver_add(struct mag_init_info *obj);
 extern int mag_data_report(int x, int y, int z, int status, int64_t nt);
+extern int mag_bias_report(int x, int y, int z);
 extern int mag_flush_report(void);
 extern int mag_register_control_path(struct mag_control_path *ctl);
 extern int mag_register_data_path(struct mag_data_path *ctl);

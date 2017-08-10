@@ -11,6 +11,7 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
+#include <linux/vmalloc.h>
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
 
@@ -123,10 +124,10 @@ static void acc_work_func(struct work_struct *work)
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		pre_ns += delay_ms*1000000LL;
-		acc_data_report(cxt->drv_data);
+		acc_data_report(&cxt->drv_data);
 	}
 
-	acc_data_report(cxt->drv_data);
+	acc_data_report(&cxt->drv_data);
 
  acc_loop:
 	if (true == cxt->is_polling_run)
@@ -489,6 +490,40 @@ static ssize_t acc_show_flush(struct device *dev,
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
+
+static ssize_t acc_show_cali(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
+}
+
+static ssize_t acc_store_cali(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	struct acc_context *cxt = NULL;
+	int err = 0;
+	uint8_t *cali_buf = NULL;
+
+	cali_buf = vzalloc(count);
+	if (cali_buf == NULL) {
+		ACC_ERR("kzalloc fail\n");
+		return -EFAULT;
+	}
+	memcpy(cali_buf, buf, count);
+
+	mutex_lock(&acc_context_obj->acc_op_mutex);
+	cxt = acc_context_obj;
+	if (NULL != cxt->acc_ctl.set_cali)
+		err = cxt->acc_ctl.set_cali(cali_buf, count);
+	else
+		ACC_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION FLUSH\n");
+	if (err < 0)
+		ACC_ERR("acc set cali err %d\n", err);
+	mutex_unlock(&acc_context_obj->acc_op_mutex);
+	vfree(cali_buf);
+	return count;
+}
+
 static int gsensor_remove(struct platform_device *pdev)
 {
 	ACC_LOG("gsensor_remove\n");
@@ -624,6 +659,7 @@ DEVICE_ATTR(accactive, S_IWUSR | S_IRUGO, acc_show_active, acc_store_active);
 DEVICE_ATTR(accdelay, S_IWUSR | S_IRUGO, acc_show_delay, acc_store_delay);
 DEVICE_ATTR(accbatch,		S_IWUSR | S_IRUGO, acc_show_batch,  acc_store_batch);
 DEVICE_ATTR(accflush,		S_IWUSR | S_IRUGO, acc_show_flush,  acc_store_flush);
+DEVICE_ATTR(acccali,		S_IWUSR | S_IRUGO, acc_show_cali,  acc_store_cali);
 DEVICE_ATTR(accdevnum,		S_IWUSR | S_IRUGO, acc_show_sensordevnum,  NULL);
 
 static struct attribute *acc_attributes[] = {
@@ -632,6 +668,7 @@ static struct attribute *acc_attributes[] = {
 	&dev_attr_accdelay.attr,
 	&dev_attr_accbatch.attr,
 	&dev_attr_accflush.attr,
+	&dev_attr_acccali.attr,
 	&dev_attr_accdevnum.attr,
 	NULL
 };
@@ -667,9 +704,9 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	cxt->acc_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->acc_ctl.batch = ctl->batch;
 	cxt->acc_ctl.flush = ctl->flush;
+	cxt->acc_ctl.set_cali = ctl->set_cali;
 	cxt->acc_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->acc_ctl.is_report_input_direct = ctl->is_report_input_direct;
-	cxt->acc_ctl.acc_calibration = ctl->acc_calibration;
 
 	if (NULL == cxt->acc_ctl.set_delay || NULL == cxt->acc_ctl.open_report_data
 	    || NULL == cxt->acc_ctl.enable_nodata) {
@@ -692,27 +729,42 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	return 0;
 }
 
-int acc_data_report(struct acc_data data)
+int acc_data_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
-	#ifdef DEBUG_PERFORMANCE
+#ifdef DEBUG_PERFORMANCE
 	int64_t t;
-	#endif
+#endif
 
-	event.time_stamp = data.timestamp;
-	event.flush_action = false;
-	event.status = data.status;
-	event.word[0] = data.x;
-	event.word[1] = data.y;
-	event.word[2] = data.z;
-	event.reserved = data.reserved[0];
-
+	event.time_stamp = data->timestamp;
+	event.flush_action = DATA_ACTION;
+	event.status = data->status;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	event.reserved = data->reserved[0];
 	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
-	#ifdef DEBUG_PERFORMANCE
+#ifdef DEBUG_PERFORMANCE
 	t = ktime_get_raw_ns();
-	pr_err("fwq delta=%llu , flag=%d, [%llu,%llu]\n", t-event.time_stamp, event.reserved, t, event.time_stamp);
-	#endif
+	pr_err("fwq delta=%llu , flag=%d, [%llu,%llu]\n", t - event.time_stamp, event.reserved, t, event.time_stamp);
+#endif
+	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
+	if (err < 0)
+		ACC_ERR("failed due to event buffer full\n");
+	return err;
+}
+
+int acc_bias_report(struct acc_data *data)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = BIAS_ACTION;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");
@@ -725,7 +777,7 @@ int acc_flush_report(void)
 	int err = 0;
 
 	ACC_LOG("flush\n");
-	event.flush_action = true;
+	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");

@@ -286,17 +286,17 @@ static void alspshub_init_done_work(struct work_struct *work)
 }
 static int ps_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		ps_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		ps_report_interrupt_data(event->proximity_t.oneshot);
 	return 0;
 }
 static int als_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		als_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		als_data_report(event->light, SENSOR_STATUS_ACCURACY_MEDIUM);
 	return 0;
 }

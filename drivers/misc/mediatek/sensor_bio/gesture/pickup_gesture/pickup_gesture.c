@@ -90,9 +90,9 @@ static int pickup_gesture_batch(int flag, int64_t samplingPeriodNs, int64_t maxB
 }
 static int pickup_gesture_recv_data(struct data_unit_t *event, void *reserved)
 {
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		PKUPHUB_ERR("pickup_gesture do not support flush\n");
-	else
+	else if (event->flush_action == DATA_ACTION)
 		ges_notify(ID_PICK_UP_GESTURE);
 	return 0;
 }

@@ -444,12 +444,13 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == true)
+	if (event->flush_action == FLUSH_ACTION)
 		err = gyro_flush_report();
-	else
+	else if (event->flush_action == DATA_ACTION)
 		err = gyro_data_report(event->gyroscope_t.x, event->gyroscope_t.y, event->gyroscope_t.z,
 			event->gyroscope_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
-
+	else if (event->flush_action == BIAS_ACTION)
+		err = gyro_bias_report(event->gyroscope_t.x_bias, event->gyroscope_t.y_bias, event->gyroscope_t.z_bias);
 	return err;
 }
 
@@ -785,6 +786,11 @@ static int gyrohub_flush(void)
 	return sensor_flush_to_hub(ID_GYROSCOPE);
 }
 
+static int gyrohub_set_cali(uint8_t *data, uint8_t count)
+{
+	return sensor_cfg_to_hub(ID_GYROSCOPE, data, count);
+}
+
 static int gpio_config(void)
 {
 	int ret;
@@ -904,6 +910,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 	ctl.set_delay = gyrohub_set_delay;
 	ctl.batch = gyrohub_batch;
 	ctl.flush = gyrohub_flush;
+	ctl.set_cali = gyrohub_set_cali;
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	ctl.is_report_input_direct = true;
 	ctl.is_support_batch = false;

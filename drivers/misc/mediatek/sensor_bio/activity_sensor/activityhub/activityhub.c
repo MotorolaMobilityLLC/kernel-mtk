@@ -189,9 +189,9 @@ static int activity_recv_data(struct data_unit_t *data_t, void *reserved)
 	data.probability[UNKNOWN] =
 		data_t->activity_data_t.probability[UNKNOWN];
 	data.time = (int64_t)(data_t->time_stamp + data_t->time_stamp_gpt);
-	if (data_t->flush_action == true)
+	if (data_t->flush_action == FLUSH_ACTION)
 		err = act_flush_report();
-	else
+	else if (data_t->flush_action == DATA_ACTION)
 		err = act_data_report(&data, 2);
 	return err;
 }
