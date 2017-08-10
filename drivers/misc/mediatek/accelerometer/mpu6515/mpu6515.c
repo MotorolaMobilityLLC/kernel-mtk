@@ -49,6 +49,7 @@
 #define MPU6515_AXIS_Z          2
 #define MPU6515_AXES_NUM        3
 #define MPU6515_DATA_LEN        6
+#define MPU6515_DUMP_LEN        128
 #define MPU6515_DEV_NAME        "MPU6515G"	/* name must different with gyro mpu6515 */
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id mpu6515_i2c_id[] = { {MPU6515_DEV_NAME, 0}, {} };
@@ -93,6 +94,8 @@ typedef enum {
 	MPU6515_TRC_IOCTL = 0x04,
 	MPU6515_TRC_CALI = 0X08,
 	MPU6515_TRC_INFO = 0X10,
+	MPU6515_TRC_I2C = 0X20,
+	MPU6515_TRC_DUMP = 0X1000,
 } MPU6515_TRC;
 /*----------------------------------------------------------------------------*/
 struct scale_factor {
@@ -317,6 +320,7 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	int err;
 	struct i2c_adapter *adap = client->adapter;
 	struct i2c_msg msg;
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 
 	data[0] = addr;
 
@@ -331,6 +335,8 @@ static int mpu_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	msg.timing = client->timing;
 	msg.ext_flag = client->ext_flag;
 #endif
+	if (atomic_read(&obj->trace) & MPU6515_TRC_I2C)
+		GSE_LOG("i2c msg: (%x %x %x %x %x)\n", msg.addr, msg.flags, msg.len, msg.timing, msg.ext_flag);
 
 	err = i2c_transfer(adap, &msg, 1);
 
@@ -486,6 +492,9 @@ static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM
 	struct mpu6515_i2c_data *priv;
 	int err = 0;
 	u8 buf[MPU6515_DATA_LEN] = { 0 };
+	u8 buf_dump[MPU6515_DUMP_LEN] = { 0 };
+	int i;
+	static int num = 0;
 
 #ifdef GSENSOR_UT
 	GSE_FUN();
@@ -494,12 +503,26 @@ static int MPU6515_ReadData(struct i2c_client *client, s16 data[MPU6515_AXES_NUM
 	if (NULL == client)
 		return -EINVAL;
 
+	num %= 100;
+
 	priv = i2c_get_clientdata(client);
 
 
 	{
 		/* write then burst read */
 		mpu_i2c_read_block(client, MPU6515_REG_DATAX0, buf, MPU6515_DATA_LEN);
+		if ((atomic_read(&priv->trace) & MPU6515_TRC_DUMP) && (num == 0)) {
+			GSE_LOG("\n== Dump Info ==\n");
+			for(i=0;i<MPU6515_DUMP_LEN;i+=8) {
+				mpu_i2c_read_block(client, (0x00+i), (buf_dump+i), 8);
+				GSE_LOG("[%02X %02X %02X %02X %02X %02X %02X %02X] => [%02X %02X %02X %02X %02X %02X %02X %02X]\n",
+					i, i+1, i+2, i+3, i+4, i+5, i+6, i+7,
+					buf_dump[i], buf_dump[i+1], buf_dump[i+2], buf_dump[i+3],
+					buf_dump[i+4], buf_dump[i+5], buf_dump[i+6], buf_dump[i+7]);
+			}
+			GSE_LOG("== End Dump Info ==\n\n");
+		}
+		num++;
 
 		data[MPU6515_AXIS_X] = (s16) ((buf[MPU6515_AXIS_X * 2] << 8) |
 					      (buf[MPU6515_AXIS_X * 2 + 1]));
