@@ -13,5 +13,8 @@ endif
 targets += $(DTB_LIST)
 
 dtbs: $(addprefix $(obj)/, $(DTB_LIST))
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+	$(Q)$(MAKE) $(build)=arch/arm64/boot/dts/overlays
+endif
 
 clean-files := dts/*.dtb *.dtb

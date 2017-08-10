@@ -13,16 +13,24 @@ else
     DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
   endif
 endif
+
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+DRVGEN_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts/overlays
+DTS_OVERLAY := $(DRVGEN_OUT)/$(MTK_PROJECT)-overlay.dts
+endif
+
 ifndef DRVGEN_OUT
 #DRVGEN_OUT := $(objtree)/$(DRVGEN_PATH)
 DRVGEN_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts
 endif
 export DRVGEN_OUT
+export DTS_OVERLAY
 
 ALL_DRVGEN_FILE := cust.dtsi
 
 ifneq ($(wildcard $(DWS_FILE)),)
 DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
+DRVGEN_FILE_LIST += $(DTS_OVERLAY)
 else
 DRVGEN_FILE_LIST :=
 endif
@@ -32,7 +40,12 @@ DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen.py
 drvgen: $(DRVGEN_FILE_LIST)
 $(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
 	@mkdir -p $(dir $@)
+	echo "" > $(DRVGEN_OUT)/../cust.dtsi
 	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+$(DTS_OVERLAY): $(DRVGEN_OUT)/cust.dtsi
+	@echo -e '/dts-v1/;\n/plugin/;\n' > $@
+	cat $< >> $@
 
 DTB_OVERLAY_IMAGE_TAGERT := $(objtree)/arch/$(SRCARCH)/boot/dts/overlays/dtbo.img
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_OBJ:=$(objtree)/arch/$(SRCARCH)/boot/dts/overlays/$(MTK_PROJECT)-overlay.dtb
@@ -41,7 +54,9 @@ $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_MKIMAGE_TOOL:=$(srctree)/scripts/mkimage
 $(DTB_OVERLAY_IMAGE_TAGERT) : $(PRIVATE_DTB_OVERLAY_OBJ) dtbs $(PRIVATE_DTB_OVERLAY_HDR) | $(PRIVATE_MKIMAGE_TOOL)
 	@echo Singing the generated overlay dtbo.
 	$(PRIVATE_MKIMAGE_TOOL) $(PRIVATE_DTB_OVERLAY_OBJ) $(PRIVATE_DTB_OVERLAY_HDR)  > $@
+
 .PHONY: dtboimage
 dtboimage : $(DTB_OVERLAY_IMAGE_TAGERT)
+endif
 
 endif#MTK_PLATFORM
