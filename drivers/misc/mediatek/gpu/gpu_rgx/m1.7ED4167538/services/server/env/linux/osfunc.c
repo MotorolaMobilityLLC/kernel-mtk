@@ -96,12 +96,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "kernel_compatibility.h"
 
 #if defined(VIRTUAL_PLATFORM)
-#define EVENT_OBJECT_TIMEOUT_MS		(120000)
+#define EVENT_OBJECT_TIMEOUT_US		(120000000ULL)
 #else
 #if defined(EMULATOR)
-#define EVENT_OBJECT_TIMEOUT_MS		(2000)
+#define EVENT_OBJECT_TIMEOUT_US		(2000000ULL)
 #else
-#define EVENT_OBJECT_TIMEOUT_MS		(100)
+#define EVENT_OBJECT_TIMEOUT_US		(100000ULL)
 #endif /* EMULATOR */
 #endif
 
@@ -942,7 +942,12 @@ PVRSRV_ERROR OSThreadDestroy(IMG_HANDLE hThread)
 
 	/* Let the thread know we are ready for it to end and wait for it. */
 	ret = kthread_stop(psOSThreadData->kthread);
-	PVR_ASSERT(ret == 0);
+	if (0 != ret)
+	{
+		PVR_DPF((PVR_DBG_WARNING, "kthread_stop failed(%d)", ret));
+		return PVRSRV_ERROR_RETRY;
+	}
+
 	OSFreeMem(psOSThreadData);
 
 	return PVRSRV_OK;
@@ -1329,42 +1334,42 @@ PVRSRV_ERROR OSEventObjectDestroy(IMG_HANDLE hEventObject)
  * EventObjectWaitTimeout()
  */
 static PVRSRV_ERROR EventObjectWaitTimeout(IMG_HANDLE hOSEventKM,
-										   IMG_UINT32 uiTimeoutMs,
+										   IMG_UINT64 uiTimeoutus,
 										   IMG_BOOL bHoldBridgeLock)
 {
 	PVRSRV_ERROR eError;
 
-	if(hOSEventKM && uiTimeoutMs > 0)
+	if(hOSEventKM && uiTimeoutus > 0)
 	{
-		eError = LinuxEventObjectWait(hOSEventKM, uiTimeoutMs, bHoldBridgeLock);
+		eError = LinuxEventObjectWait(hOSEventKM, uiTimeoutus, bHoldBridgeLock);
 	}
 	else
 	{
-		PVR_DPF((PVR_DBG_ERROR, "OSEventObjectWait: invalid arguments %p, %d", hOSEventKM, uiTimeoutMs ));
+		PVR_DPF((PVR_DBG_ERROR, "OSEventObjectWait: invalid arguments %p, %lld", hOSEventKM, uiTimeoutus));
 		eError = PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
 	return eError;
 }
 
-PVRSRV_ERROR OSEventObjectWaitTimeout(IMG_HANDLE hOSEventKM, IMG_UINT32 uiTimeoutMs)
+PVRSRV_ERROR OSEventObjectWaitTimeout(IMG_HANDLE hOSEventKM, IMG_UINT64 uiTimeoutus)
 {
-	return EventObjectWaitTimeout(hOSEventKM, uiTimeoutMs, IMG_FALSE);
+	return EventObjectWaitTimeout(hOSEventKM, uiTimeoutus, IMG_FALSE);
 }
 
 PVRSRV_ERROR OSEventObjectWait(IMG_HANDLE hOSEventKM)
 {
-	return OSEventObjectWaitTimeout(hOSEventKM, EVENT_OBJECT_TIMEOUT_MS);
+	return OSEventObjectWaitTimeout(hOSEventKM, EVENT_OBJECT_TIMEOUT_US);
 }
 
-PVRSRV_ERROR OSEventObjectWaitTimeoutAndHoldBridgeLock(IMG_HANDLE hOSEventKM, IMG_UINT32 uiTimeoutMs)
+PVRSRV_ERROR OSEventObjectWaitTimeoutAndHoldBridgeLock(IMG_HANDLE hOSEventKM, IMG_UINT64 uiTimeoutus)
 {
-	return EventObjectWaitTimeout(hOSEventKM, uiTimeoutMs, IMG_TRUE);
+	return EventObjectWaitTimeout(hOSEventKM, uiTimeoutus, IMG_TRUE);
 }
 
 PVRSRV_ERROR OSEventObjectWaitAndHoldBridgeLock(IMG_HANDLE hOSEventKM)
 {
-	return OSEventObjectWaitTimeoutAndHoldBridgeLock(hOSEventKM, EVENT_OBJECT_TIMEOUT_MS);
+	return OSEventObjectWaitTimeoutAndHoldBridgeLock(hOSEventKM, EVENT_OBJECT_TIMEOUT_US);
 }
 
 PVRSRV_ERROR OSEventObjectOpen(IMG_HANDLE hEventObject,

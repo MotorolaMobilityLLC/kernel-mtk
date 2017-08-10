@@ -609,6 +609,68 @@ PVRSRVBridgeGetDeviceStatus(IMG_UINT32 ui32DispatchTableEntry,
 }
 
 
+static IMG_INT
+PVRSRVBridgeEventObjectWaitTimeout(IMG_UINT32 ui32DispatchTableEntry,
+					  PVRSRV_BRIDGE_IN_EVENTOBJECTWAITTIMEOUT *psEventObjectWaitTimeoutIN,
+					  PVRSRV_BRIDGE_OUT_EVENTOBJECTWAITTIMEOUT *psEventObjectWaitTimeoutOUT,
+					 CONNECTION_DATA *psConnection)
+{
+	IMG_HANDLE hOSEventKM = psEventObjectWaitTimeoutIN->hOSEventKM;
+	IMG_HANDLE hOSEventKMInt = NULL;
+
+
+
+
+
+
+
+
+
+
+				{
+					/* Look up the address from the handle */
+					psEventObjectWaitTimeoutOUT->eError =
+						PVRSRVLookupHandle(psConnection->psHandleBase,
+											(void **) &hOSEventKMInt,
+											hOSEventKM,
+											PVRSRV_HANDLE_TYPE_EVENT_OBJECT_CONNECT,
+											IMG_TRUE);
+					if(psEventObjectWaitTimeoutOUT->eError != PVRSRV_OK)
+					{
+						goto EventObjectWaitTimeout_exit;
+					}
+				}
+
+	psEventObjectWaitTimeoutOUT->eError =
+		OSEventObjectWaitTimeout(
+					hOSEventKMInt,
+					psEventObjectWaitTimeoutIN->ui64uiTimeoutus);
+
+
+
+
+EventObjectWaitTimeout_exit:
+
+
+
+
+
+
+				{
+					/* Unreference the previously looked up handle */
+						if(hOSEventKMInt)
+						{
+							PVRSRVReleaseHandle(psConnection->psHandleBase,
+											hOSEventKM,
+											PVRSRV_HANDLE_TYPE_EVENT_OBJECT_CONNECT);
+						}
+				}
+
+
+	return 0;
+}
+
+
 
 
 /* *************************************************************************** 
@@ -663,6 +725,9 @@ PVRSRV_ERROR InitSRVCOREBridge(void)
 					NULL, bUseLock);
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE, PVRSRV_BRIDGE_SRVCORE_GETDEVICESTATUS, PVRSRVBridgeGetDeviceStatus,
+					NULL, bUseLock);
+
+	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE, PVRSRV_BRIDGE_SRVCORE_EVENTOBJECTWAITTIMEOUT, PVRSRVBridgeEventObjectWaitTimeout,
 					NULL, bUseLock);
 
 

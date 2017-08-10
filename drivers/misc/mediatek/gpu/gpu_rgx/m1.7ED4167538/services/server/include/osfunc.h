@@ -537,7 +537,7 @@ void OSInvalidateCPUCacheRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
                                  IMG_CPU_PHYADDR sCPUPhysEnd);
 
 /**************************************************************************/ /*!
-@Function       OSAddrTypeCPUCacheRangeKM
+@Function       OSCPUCacheOpAddressType
 @Description    Returns the address type (i.e. virtual/physical/both) that is 
                 used to perform cache maintenance on the CPU. This is used
 				to infer whether the virtual or physical address supplied to
@@ -545,7 +545,7 @@ void OSInvalidateCPUCacheRangeKM(PVRSRV_DEVICE_NODE *psDevNode,
 @Input          uiCacheOp       the type of cache operation to be performed
 @Return         PVRSRV_CACHE_OP_ADDR_TYPE
  */ /**************************************************************************/
-PVRSRV_CACHE_OP_ADDR_TYPE OSAddrTypeCPUCacheRangeKM(PVRSRV_CACHE_OP uiCacheOp);
+PVRSRV_CACHE_OP_ADDR_TYPE OSCPUCacheOpAddressType(PVRSRV_CACHE_OP uiCacheOp);
 
 /*!
  ******************************************************************************
@@ -828,14 +828,14 @@ PVRSRV_ERROR OSEventObjectWait(IMG_HANDLE hOSEventKM);
                 The calling thread will be rescheduled when the associated
                 event object signals.
                 If the event object has not signalled after the specified
-                timeout period (passed in 'uiTimeoutMs'), the function
+                timeout period (passed in 'uiTimeoutus'), the function
                 will return with the result code PVRSRV_ERROR_TIMEOUT.
 @Input          hOSEventKM    the OS event object handle associated with
                               the event object.
-@Input          uiTimeoutMs   the timeout period (in ms)
+@Input          uiTimeoutus   the timeout period (in usecs)
 @Return         PVRSRV_OK on success, a failure code otherwise.
 */ /**************************************************************************/
-PVRSRV_ERROR OSEventObjectWaitTimeout(IMG_HANDLE hOSEventKM, IMG_UINT32 uiTimeoutMs);
+PVRSRV_ERROR OSEventObjectWaitTimeout(IMG_HANDLE hOSEventKM, IMG_UINT64 uiTimeoutus);
 
 /*************************************************************************/ /*!
 @Function       OSEventObjectWaitAndHoldBridgeLock
@@ -864,17 +864,17 @@ PVRSRV_ERROR OSEventObjectWaitAndHoldBridgeLock(IMG_HANDLE hOSEventKM);
                 The calling thread will be rescheduled when the associated
                 event object signals.
                 If the event object has not signalled after the specified
-                timeout period (passed in 'uiTimeoutMs'), the function
+                timeout period (passed in 'uiTimeoutus'), the function
                 will return with the result code PVRSRV_ERROR_TIMEOUT.
                 The global bridge lock is held while waiting for the event
                 object to signal (this will prevent other bridge calls from
                 being serviced during this time).
 @Input          hOSEventKM    the OS event object handle associated with
                               the event object.
-@Input          uiTimeoutMs   the timeout period (in ms)
+@Input          uiTimeoutus   the timeout period (in usecs)
 @Return         PVRSRV_OK on success, a failure code otherwise.
 */ /**************************************************************************/
-PVRSRV_ERROR OSEventObjectWaitTimeoutAndHoldBridgeLock(IMG_HANDLE hOSEventKM, IMG_UINT32 uiTimeoutMs);
+PVRSRV_ERROR OSEventObjectWaitTimeoutAndHoldBridgeLock(IMG_HANDLE hOSEventKM, IMG_UINT64 uiTimeoutus);
 
 /*************************************************************************/ /*!
 @Function       OSEventObjectOpen

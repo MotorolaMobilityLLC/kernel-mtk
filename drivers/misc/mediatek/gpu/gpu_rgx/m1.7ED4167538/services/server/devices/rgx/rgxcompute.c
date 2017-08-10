@@ -347,7 +347,6 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	                                   asCmdHelperData);
 	if (eError != PVRSRV_OK)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "RGXKickCDM: Failed to acquire space for client CCB command"));
 		goto fail_cmdaquire;
 	}
 

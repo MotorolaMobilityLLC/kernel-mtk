@@ -178,10 +178,6 @@ ccflags-y += \
  -I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
  -I$(srctree)/drivers/misc/mediatek/include
 
-ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
-ccflags-y += -DENABLE_COMMON_DVFS
-endif
-
 ccflags-y += \
  -I$(RGX_TOP)/generated/breakpoint_bridge \
  -I$(RGX_TOP)/generated/cacherangebased_bridge \
@@ -228,6 +224,5 @@ ccflags-y += \
  -I$(RGX_TOP)/generated/ri_bridge \
  -I$(RGX_TOP)/generated/devicememhistory_bridge
 endif
-
 
 obj-y += pvrsrvkm.o

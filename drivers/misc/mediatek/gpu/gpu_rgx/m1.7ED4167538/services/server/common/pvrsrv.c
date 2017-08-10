@@ -116,11 +116,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*! Wait 100ms before retrying deferred clean-up again */
-#define CLEANUP_THREAD_WAIT_RETRY_TIMEOUT 0x00000064
+#define CLEANUP_THREAD_WAIT_RETRY_TIMEOUT 100000ULL
 
 /*! Wait 8hrs when no deferred clean-up required. Allows a poll several times
  * a day to check for any missed clean-up. */
-#define CLEANUP_THREAD_WAIT_SLEEP_TIMEOUT 0x01B77400
+#define CLEANUP_THREAD_WAIT_SLEEP_TIMEOUT 28800000000ULL
 
 
 #define PVRSRV_PROC_HANDLE_BASE_INIT 10
@@ -563,7 +563,7 @@ static void DevicesWatchdogThread(void *pvData)
 
 		/* Wait time between polls (done at the start of the loop to allow devices
 		   to initialise) or for the event signal (shutdown or power on). */
-		eError = OSEventObjectWaitTimeout(hOSEvent, ui32Timeout);
+		eError = OSEventObjectWaitTimeout(hOSEvent, (IMG_UINT64)ui32Timeout * 1000);
 
 #ifdef PVR_TESTING_UTILS
 		psPVRSRVData->ui32DevicesWdWakeupCounter++;
@@ -856,8 +856,16 @@ PVRSRVDriverDeInit(void)
 			eError = OSEventObjectSignal(gpsPVRSRVData->hDevicesWatchdogEvObj);
 			PVR_LOG_IF_ERROR(eError, "OSEventObjectSignal");
 		}
-		eError = OSThreadDestroy(gpsPVRSRVData->hDevicesWatchdogThread);
-		gpsPVRSRVData->hDevicesWatchdogThread = NULL;
+		LOOP_UNTIL_TIMEOUT(OS_THREAD_DESTROY_TIMEOUT_US)
+		{
+			eError = OSThreadDestroy(gpsPVRSRVData->hDevicesWatchdogThread);
+			if (PVRSRV_OK == eError)
+			{
+				gpsPVRSRVData->hDevicesWatchdogThread = NULL;
+				break;
+			}
+			OSWaitus(OS_THREAD_DESTROY_TIMEOUT_US/OS_THREAD_DESTROY_RETRY_COUNT);
+		} END_LOOP_UNTIL_TIMEOUT();
 		PVR_LOG_IF_ERROR(eError, "OSThreadDestroy");
 	}
 
@@ -878,8 +886,16 @@ PVRSRVDriverDeInit(void)
 			eError = OSEventObjectSignal(gpsPVRSRVData->hCleanupEventObject);
 			PVR_LOG_IF_ERROR(eError, "OSEventObjectSignal");
 		}
-		eError = OSThreadDestroy(gpsPVRSRVData->hCleanupThread);
-		gpsPVRSRVData->hCleanupThread = NULL;
+		LOOP_UNTIL_TIMEOUT(OS_THREAD_DESTROY_TIMEOUT_US)
+		{
+			eError = OSThreadDestroy(gpsPVRSRVData->hCleanupThread);
+			if (PVRSRV_OK == eError)
+			{
+				gpsPVRSRVData->hCleanupThread = NULL;
+				break;
+			}
+			OSWaitus(OS_THREAD_DESTROY_TIMEOUT_US/OS_THREAD_DESTROY_RETRY_COUNT);
+		} END_LOOP_UNTIL_TIMEOUT();
 		PVR_LOG_IF_ERROR(eError, "OSThreadDestroy");
 	}
 

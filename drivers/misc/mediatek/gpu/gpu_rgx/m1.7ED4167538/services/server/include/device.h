@@ -54,7 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "sync_external.h"
 #include "sysinfo.h"
 #include "dllist.h"
-#include "cache_ops.h"
+#include "cache.h"
 
 #include "lock.h"
 
@@ -186,6 +186,7 @@ typedef PVRSRV_ERROR (*FN_CREATERAMBACKEDPMR)(struct _PVRSRV_DEVICE_NODE_ *psDev
 										PVRSRV_MEMALLOCFLAGS_T uiFlags,
 										IMG_CHAR *pszAnnotation,
 										PMR **ppsPMRPtr);
+
 typedef struct _PVRSRV_DEVICE_NODE_
 {
 	PVRSRV_DEVICE_IDENTIFIER	sDevId;

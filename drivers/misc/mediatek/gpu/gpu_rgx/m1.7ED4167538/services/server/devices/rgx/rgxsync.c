@@ -123,7 +123,6 @@ PVRSRV_ERROR RGXKickSyncKM(PVRSRV_DEVICE_NODE        *psDeviceNode,
 	                                   asCmdHelperData);
 	if (eError != PVRSRV_OK)
 	{
-		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to acquire space for client CCB command", __FUNCTION__));
 		goto fail_cmdaquire;
 	}
 

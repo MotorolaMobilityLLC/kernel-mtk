@@ -3179,7 +3179,13 @@ MMU_ChangeValidity(MMU_CONTEXT *psMMUContext,
 		if (bMakeValid == IMG_TRUE)
 		{
 			/* Only set valid if physical address exists (sparse allocs might have none)*/
-			PMR_IsOffsetValid(psPMR, uiLog2PageSize, 1, i<<uiLog2PageSize, &bValid);
+			eError = PMR_IsOffsetValid(psPMR, uiLog2PageSize, 1, i<<uiLog2PageSize, &bValid);
+			if (eError != PVRSRV_OK)
+			{
+				PVR_DPF((PVR_DBG_ERROR, "Cannot determine validity of page table entries page"));
+				goto e_exit;
+			}
+
 			if (bValid)
 			{
 				if (psConfig->uiBytesPerEntry == 8)

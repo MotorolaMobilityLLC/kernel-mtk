@@ -79,5 +79,8 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeCacheOpLog(IMG_HANDLE hBridge,
 							IMG_INT64 i64ExecuteTimeUs,
 							PVRSRV_CACHE_OP iuCacheOp);
 
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeCacheOpGetLineSize(IMG_HANDLE hBridge,
+								IMG_UINT32 *pui32L1DataCacheLineSize);
+
 
 #endif /* CLIENT_CACHERANGEBASED_BRIDGE_H */

@@ -68,6 +68,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	#define CACHEOP_DEBUG
 #endif
 
+/* Type of cache maintenance mechanism being used */
 #if (CACHEFLUSH_KM_TYPE == CACHEFLUSH_KM_RANGEBASED_DEFERRED)
 	#define SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED
 	#define SUPPORT_RANGEBASED_CACHEFLUSH
@@ -93,6 +94,7 @@ typedef struct _CACHEOP_WORK_ITEM_
 	IMG_UINT64	ui64QueuedTime;
 	IMG_UINT64	ui64ExecuteTime;
 	IMG_BOOL bRBF;
+	IMG_BOOL bUMF;
 	IMG_PID pid;
 #if defined(PVR_RI_DEBUG)
 	RGXFWIF_DM eFenceOpType;
@@ -100,19 +102,37 @@ typedef struct _CACHEOP_WORK_ITEM_
 #endif
 } CACHEOP_WORK_ITEM;
 
+/* Copy of CPU page & dcache-line size */
+static size_t guiOSPageSize;
+static IMG_UINT32 guiCacheLineSize;
+
+/* 
+  System-wide CacheOp sequence numbers
+  - ghCommonCacheOpSeqNum:
+		This common sequence, numbers mostly CacheOp requests
+		from UM/KM but might also number fence checks and
+		completed CacheOps depending on SUPPORT_XXX configs.
+  - ghCompletedCacheOpSeqNum:
+		This tracks last CacheOp request that was executed
+		in all SUPPORT_XXX configurations and is used for
+		fence checks exclusively.
+*/
+static ATOMIC_T ghCommonCacheOpSeqNum;
+static ATOMIC_T ghCompletedCacheOpSeqNum;
+
 #if defined(CACHEOP_DEBUG)
 #define CACHEOP_MAX_STATS_ITEMS 128
 #define INCR_WRAP(x) ((x+1) >= CACHEOP_MAX_STATS_ITEMS ? 0 : (x+1))
 #define DECR_WRAP(x) ((x-1) < 0 ? (CACHEOP_MAX_STATS_ITEMS-1) : (x-1))
 #if defined(PVR_RI_DEBUG)
 /* Refer to CacheOpStatExecLogHeader() for header item names */
-#define CACHEOP_RI_PRINTF_HEADER "%-10s %-10s %-8s %-16s %-10s %-10s %-12s %-12s"
-#define CACHEOP_RI_PRINTF_FENCE	 "%-10s %-10s %-8d %-16s %-10s %-10s %-12llu 0x%-10x\n"
-#define CACHEOP_RI_PRINTF		 "%-10s %-10s %-8d 0x%-14llx 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
+#define CACHEOP_RI_PRINTF_HEADER "%-10s %-10s %-5s %-8s %-16s %-10s %-10s %-18s %-12s"
+#define CACHEOP_RI_PRINTF_FENCE	 "%-10s %-10s %-5s %-8d %-16s %-10s %-10s %-18llu 0x%-10x\n"
+#define CACHEOP_RI_PRINTF		 "%-10s %-10s %-5s %-8d 0x%-14llx 0x%-8llx 0x%-8llx %-18llu 0x%-10x\n"
 #else
-#define CACHEOP_PRINTF_HEADER	 "%-10s %-10s %-10s %-10s %-12s %-12s"
-#define CACHEOP_PRINTF_FENCE	 "%-10s %-10s %-10s %-10s %-12llu 0x%-10x\n"
-#define CACHEOP_PRINTF		 	 "%-10s %-10s 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
+#define CACHEOP_PRINTF_HEADER	 "%-10s %-10s %-5s %-10s %-10s %-18s %-12s"
+#define CACHEOP_PRINTF_FENCE	 "%-10s %-10s %-5s %-10s %-10s %-18llu 0x%-10x\n"
+#define CACHEOP_PRINTF		 	 "%-10s %-10s %-5s 0x%-8llx 0x%-8llx %-18llu 0x%-10x\n"
 #endif
 
 /* Divide a number by 10 using shifts only */
@@ -213,9 +233,6 @@ static void CacheOpStatStallLogRead(void *pvFilePtr, void *pvData,
 
 	OSLockRelease(ghCacheOpStatStallLock);
 }
-#elif defined(SUPPORT_RANGEBASED_CACHEFLUSH)
-/* Used to provide CacheOp debug logs */
-static ATOMIC_T ghGlobalCacheOpSeqNum;
 #endif
 
 typedef struct _CACHEOP_STAT_EXEC_ITEM_
@@ -229,6 +246,7 @@ typedef struct _CACHEOP_STAT_EXEC_ITEM_
 	IMG_BOOL bHasTimeline;
 	IMG_BOOL bIsFence;
 	IMG_BOOL bRBF;
+	IMG_BOOL bUMF;
 #if defined(PVR_RI_DEBUG)
 	IMG_DEV_VIRTADDR sDevVAddr;
 	RGXFWIF_DM eFenceOpType;
@@ -254,6 +272,7 @@ static INLINE void CacheOpStatExecLogHeader(IMG_CHAR szBuffer[PVR_MAX_DEBUG_MESS
 #endif
 				"CacheOp",
 				"Type",
+				"Mode",
 #if defined(PVR_RI_DEBUG)
 				"Pid",
 				"DevVAddr",
@@ -291,6 +310,7 @@ static INLINE void CacheOpStatExecLogWrite(DLLIST_NODE *psNode)
 	gasCacheOpStatExecuted[i32WriteOffset].ui64ExecuteTime = psCacheOpWorkItem->ui64ExecuteTime;
 	gasCacheOpStatExecuted[i32WriteOffset].bHasTimeline	= psCacheOpWorkItem->psPMR == NULL;
 	gasCacheOpStatExecuted[i32WriteOffset].bRBF = psCacheOpWorkItem->bRBF;
+	gasCacheOpStatExecuted[i32WriteOffset].bUMF = psCacheOpWorkItem->bUMF;
 	gasCacheOpStatExecuted[i32WriteOffset].bIsFence	 =
 			psCacheOpWorkItem->psPMR == NULL && psCacheOpWorkItem->psTimeline == NULL;
 #if defined(PVR_RI_DEBUG)
@@ -335,6 +355,7 @@ static INLINE void CacheOpStatExecLogWrite(DLLIST_NODE *psNode)
 						ui64ExecuteTime - ui64QueuedTime:
 						ui64QueuedTime - ui64ExecuteTime,
 					gasCacheOpStatExecuted[i32WriteOffset].bRBF,
+					gasCacheOpStatExecuted[i32WriteOffset].bUMF,
 					gasCacheOpStatExecuted[i32WriteOffset].bIsFence,
 					gasCacheOpStatExecuted[i32WriteOffset].bHasTimeline,
 					psCacheOpWorkItem->pid);
@@ -346,6 +367,7 @@ static void CacheOpStatExecLogRead(void *pvFilePtr, void *pvData,
 	IMG_INT32 i32ReadOffset;
 	IMG_INT32 i32WriteOffset;
 	IMG_CHAR *pszCacheOpType;
+	IMG_CHAR *pszFlushSource;
 	IMG_CHAR *pszFlushype;
 	IMG_UINT64 ui64QueuedTime, ui64ExecuteTime;
 	IMG_CHAR szBuffer[PVR_MAX_DEBUG_MESSAGE_LEN]={0};
@@ -434,6 +456,7 @@ static void CacheOpStatExecLogRead(void *pvFilePtr, void *pvData,
 #endif
 							pszCacheOpType,
 							pszFenceType,
+							"",
 #if defined(PVR_RI_DEBUG)
 							gasCacheOpStatExecuted[i32ReadOffset].pid,
 							"",
@@ -454,6 +477,7 @@ static void CacheOpStatExecLogRead(void *pvFilePtr, void *pvData,
 							CACHEOP_PRINTF_FENCE,
 #endif
 							"Timeline",
+							"",
 							"",
 #if defined(PVR_RI_DEBUG)
 							gasCacheOpStatExecuted[i32ReadOffset].pid,
@@ -487,6 +511,15 @@ static void CacheOpStatExecLogRead(void *pvFilePtr, void *pvData,
 				pszFlushype = "GF";
 			}
 
+			if (gasCacheOpStatExecuted[i32ReadOffset].bUMF)
+			{
+				pszFlushSource = "UM";
+			}
+			else
+			{
+				pszFlushSource = "KM";
+			}
+
 			switch (gasCacheOpStatExecuted[i32ReadOffset].uiCacheOp)
 			{
 				case PVRSRV_CACHE_OP_NONE:
@@ -514,6 +547,7 @@ static void CacheOpStatExecLogRead(void *pvFilePtr, void *pvData,
 #endif
 							pszCacheOpType,
 							pszFlushype,
+							pszFlushSource,
 #if defined(PVR_RI_DEBUG)
 							gasCacheOpStatExecuted[i32ReadOffset].pid,
 							gasCacheOpStatExecuted[i32ReadOffset].sDevVAddr.uiAddr,
@@ -549,11 +583,9 @@ static PVRSRV_ERROR CacheOpStatExecLog(void *pvData)
 }
 #endif /* defined(CACHEOP_DEBUG) */
 
-#if defined(SUPPORT_RANGEBASED_CACHEFLUSH)
 //#define CACHEOP_NO_CACHE_LINE_ALIGNED_ROUNDING
+#define CACHEOP_SEQ_MIDPOINT (IMG_UINT32) 0x7FFFFFFF
 #define CACHEOP_DPFL PVR_DBG_MESSAGE
-static IMG_UINT32 guiCacheLineSize;
-static size_t guiOSPageSize;
 
 /* Perform requested CacheOp on the CPU data cache for successive cache
    line worth of bytes up to page or in-page cache-line boundary */
@@ -676,8 +708,9 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 	else
 	{
 		/* Carry out full dcache operation if size (in pages) qualifies */
-		if ((uiSize >> OS_PAGE_SHIFT) > PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
+		if (uiSize >= PVR_DIRTY_BYTES_FLUSH_THRESHOLD)
 		{
+			/* Flush, so we can skip subsequent invalidates */
 			eError = OSCPUOperation(PVRSRV_CACHE_OP_FLUSH);
 			if (eError == PVRSRV_OK)
 			{
@@ -708,7 +741,7 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 #endif
 
 	/* Which type of address(es) do we need for this CacheOp */
-	uiCacheOpAddrType = OSAddrTypeCPUCacheRangeKM(uiCacheOp);
+	uiCacheOpAddrType = OSCPUCacheOpAddressType(uiCacheOp);
 
 	/* Type of allocation backing the PMR data */
 	ui32NumOfPages = uiPgAlignedSize >> OS_PAGE_SHIFT;
@@ -738,13 +771,12 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 
 	/* We always retrieve PMR data in bulk, up-front if number of pages is within
 	   PMR_MAX_TRANSLATION_STACK_ALLOC limits else we check to ensure that a 
-	   dynamic buffer as been allocated to satisfy requests outside limits */
+	   dynamic buffer has been allocated to satisfy requests outside limits */
 	if (ui32NumOfPages <= PMR_MAX_TRANSLATION_STACK_ALLOC || pbValid != abValid)
 	{
 		if (uiCacheOpAddrType != PVRSRV_CACHE_OP_ADDR_TYPE_VIRTUAL)
 		{
-			/* Look-up PMR CpuPhyAddr once, if possible;
-			   using stack-alloc to back PMR CpuPhyAddr */
+			/* Look-up PMR CpuPhyAddr once, if possible */
 			eError = PMR_CpuPhysAddr(psPMR,
 									 OS_PAGE_SHIFT,
 									 ui32NumOfPages,
@@ -758,12 +790,13 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 		}
 		else
 		{
-			PMR_IsOffsetValid(psPMR,
-							OS_PAGE_SHIFT,
-							ui32NumOfPages,
-							uiPgAlignedStartOffset,
-							pbValid);
-			bIsPMRDataRetrieved = IMG_TRUE;
+			/* Look-up PMR per-page validity once, if possible */
+			eError = PMR_IsOffsetValid(psPMR,
+									   OS_PAGE_SHIFT,
+									   ui32NumOfPages,
+									   uiPgAlignedStartOffset,
+									   pbValid);
+			bIsPMRDataRetrieved = eError == PVRSRV_OK ? IMG_TRUE : IMG_FALSE;
 		}
 	}
 
@@ -775,7 +808,7 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 		if (bIsPMRDataRetrieved == IMG_FALSE)
 		{
 			/* Never cross page boundary without looking up corresponding
-			   PMR page physical address and page validity if these
+			   PMR page physical address and/or page validity if these
 			   were not looked-up, in bulk, up-front */	
 			ui32PageIndex = 0;
 			if (uiCacheOpAddrType != PVRSRV_CACHE_OP_ADDR_TYPE_VIRTUAL)
@@ -794,11 +827,16 @@ static PVRSRV_ERROR CacheOpRangeBased (PMR *psPMR,
 			}
 			else
 			{
-				PMR_IsOffsetValid(psPMR,
-								  OS_PAGE_SHIFT,
-								  1,
-								  uiPgAlignedOffsetNext,
-								  pbValid);
+				eError = PMR_IsOffsetValid(psPMR,
+										  OS_PAGE_SHIFT,
+										  1,
+										  uiPgAlignedOffsetNext,
+										  pbValid);
+				if (eError != PVRSRV_OK)
+				{
+					PVR_ASSERT(0);
+					goto e0;
+				}
 			}
 		}
 
@@ -877,12 +915,64 @@ e0:
 	return eError;
 }
 
+static INLINE IMG_BOOL CacheOpFenceCheck(IMG_UINT32 ui32UpdateSeqNum,
+										 IMG_UINT32 ui32FenceSeqNum)
+{
+	IMG_UINT32 ui32RebasedUpdateNum;
+	IMG_UINT32 ui32RebasedFenceNum;
+	IMG_UINT32 ui32Rebase;
+
+	if (ui32FenceSeqNum == 0)
+	{
+		return IMG_TRUE;
+	}
+
+	/*
+	   The problem statement is how to compare two values
+	   on a numerical sequentially incrementing timeline in
+	   the presence of wrap around arithmetic semantics using
+	   a single ui32 counter & atomic (increment) operations.
+
+	   The rationale for the solution here is to rebase the
+	   incoming values to the sequence midpoint and perform
+	   comparisons there; this allows us to handle overflow
+	   or underflow wrap-round using only a single integer.
+
+	   NOTE: We assume that the absolute value of the 
+	   difference between the two incoming values in _not_ 
+	   greater than CACHEOP_SEQ_MIDPOINT. This assumption
+	   holds as it implies that it is very _unlikely_ that 2
+	   billion CacheOp requests could have been made between
+	   a single client's CacheOp request & the corresponding
+	   fence check. This code sequence is hopefully a _more_
+	   hand optimised (branchless) version of this:
+
+	   	   x = ui32CompletedOpSeqNum
+	   	   y = ui32FenceOpSeqNum
+
+		   if (|x - y| < CACHEOP_SEQ_MIDPOINT)
+			   return (x - y) >= 0 ? true : false
+		   else
+			   return (y - x) >= 0 ? true : false
+	 */
+	ui32Rebase = CACHEOP_SEQ_MIDPOINT - ui32UpdateSeqNum;
+
+	/* ui32Rebase could be either positive/negative, in
+	   any case we still perform operation using unsigned
+	   semantics as 2's complement notation always means
+	   we end up with the correct result */
+	ui32RebasedUpdateNum = ui32Rebase + ui32UpdateSeqNum;
+	ui32RebasedFenceNum = ui32Rebase + ui32FenceSeqNum;
+
+	return (ui32RebasedUpdateNum >= ui32RebasedFenceNum);
+}
+
+#if defined(SUPPORT_RANGEBASED_CACHEFLUSH)
 #if defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED)
 /* Wait 8hrs when no deferred CacheOp is required;
    for fence checks, wait 10ms then retry */
-#define CACHEOP_THREAD_WAIT_TIMEOUT 0x01B77400
-#define CACHEOP_FENCE_WAIT_TIMEOUT  0x0000000A
-#define CACHEOP_SEQ_MIDPOINT 0x7FFFFFFF
+#define CACHEOP_THREAD_WAIT_TIMEOUT 28800000000ULL
+#define CACHEOP_FENCE_WAIT_TIMEOUT  10000ULL
 
 typedef struct _CACHEOP_CLEANUP_WORK_ITEM_
 {
@@ -890,10 +980,8 @@ typedef struct _CACHEOP_CLEANUP_WORK_ITEM_
 	DLLIST_NODE *psListNode;
 } CACHEOP_CLEANUP_WORK_ITEM;
 
-/* These are used for CacheOp fence checks */
+/* These are used to track pending CacheOps */
 static IMG_DEVMEM_SIZE_T guiPendingDevmemSize;
-static ATOMIC_T ghCompletedCacheOpSeqNum;
-static ATOMIC_T ghGlobalCacheOpSeqNum;
 static IMG_BOOL gbPendingTimeline;
 
 static INLINE PVRSRV_ERROR CacheOpFree(void *pvData)
@@ -966,15 +1054,15 @@ static INLINE PVRSRV_ERROR CacheOpEnqueue(PVRSRV_DATA *psPVRSRVData,
 	gbPendingTimeline = psData->psTimeline ? IMG_TRUE : gbPendingTimeline;
 	guiPendingDevmemSize += psData->uiSize;
 
-	/* Advance the system-wide CacheOp sequence value */
-	*psSeqNum = OSAtomicIncrement(&ghGlobalCacheOpSeqNum);
+	/* Advance the system-wide CacheOp common sequence value */
+	*psSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
 	if (! *psSeqNum)
 	{
 		/* Zero is _not_ a valid sequence value, doing so 
 		   simplifies subsequent fence checking when no
 		   cache maintenance operation is outstanding as
 		   in this case a fence value of zero is supplied */
-		*psSeqNum = 1;
+		*psSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
 	}
 	psData->ui32OpSeqNum = *psSeqNum;
 
@@ -1010,58 +1098,6 @@ static INLINE DLLIST_NODE *CacheOpDequeue(PVRSRV_DATA *psPVRSRVData,
 	return psListNode;
 }
 
-static INLINE IMG_BOOL CacheOpFenceCheck(IMG_UINT32 ui32UpdateSeqNum,
-										 IMG_UINT32 ui32FenceSeqNum)
-{
-	IMG_UINT32 ui32RebasedUpdateNum;
-	IMG_UINT32 ui32RebasedFenceNum;
-	IMG_UINT32 ui32Rebase;
-
-	if (ui32FenceSeqNum == 0)
-	{
-		return IMG_TRUE;
-	}
-
-	/*
-	   The problem statement is how to compare two values
-	   on a numerical sequentially incrementing timeline in
-	   the presence of wrap around arithmetic semantics using
-	   a single ui32 counter & atomic (increment) operations.
-
-	   The rationale for the solution here is to rebase the
-	   incoming values to the sequence midpoint and perform
-	   comparisons there; this allows us to handle overflow
-	   or underflow wrap-round using only a single integer.
-
-	   NOTE: We assume that the absolute value of the 
-	   difference between the two incoming values in _not_ 
-	   greater than CACHEOP_SEQ_MIDPOINT. This assumption
-	   holds as it implies that it is very _unlikely_ that 2
-	   billion CacheOp requests could have been made between
-	   a single client's CacheOp request & the corresponding
-	   fence check. This code sequence is hopefully a _more_
-	   hand optimised (branchless) version of this:
-
-	   	   x = ui32CompletedOpSeqNum
-	   	   y = ui32FenceOpSeqNum
-
-		   if (|x - y| < CACHEOP_SEQ_MIDPOINT)
-			   return (x - y) >= 0 ? true : false
-		   else
-			   return (y - x) >= 0 ? true : false
-	 */
-	ui32Rebase = CACHEOP_SEQ_MIDPOINT - ui32UpdateSeqNum;
-
-	/* ui32Rebase could be either positive/negative, in
-	   any case we still perform operation using unsigned
-	   semantics as 2's complement notation always means
-	   we end up with the correct result */
-	ui32RebasedUpdateNum = ui32Rebase + ui32UpdateSeqNum;
-	ui32RebasedFenceNum = ui32Rebase + ui32FenceSeqNum;
-
-	return (ui32RebasedUpdateNum >= ui32RebasedFenceNum);
-}
-
 static PVRSRV_ERROR CacheOpExecGlobal(PVRSRV_DATA *psPVRSRVData,
 										DLLIST_NODE *psListNode)
 {
@@ -1088,6 +1124,7 @@ static PVRSRV_ERROR CacheOpExecGlobal(PVRSRV_DATA *psPVRSRVData,
 #if defined(CACHEOP_DEBUG)
 	psCacheOpWorkItem->ui64ExecuteTime = uiTimeNow;
 	psCacheOpWorkItem->bRBF = IMG_FALSE;
+	psCacheOpWorkItem->bUMF = IMG_FALSE;
 #endif
 
 	/* Process other queue CacheOp work items if present */
@@ -1097,6 +1134,7 @@ static PVRSRV_ERROR CacheOpExecGlobal(PVRSRV_DATA *psPVRSRVData,
 #if defined(CACHEOP_DEBUG)
 		psCacheOpWorkItem->ui64ExecuteTime = uiTimeNow;
 		psCacheOpWorkItem->bRBF = IMG_FALSE;
+		psCacheOpWorkItem->bUMF = IMG_FALSE;
 #endif
 	}
 
@@ -1156,6 +1194,7 @@ static PVRSRV_ERROR CacheOpExecRangeBased(PVRSRV_DATA *psPVRSRVData,
 			psCacheOpWorkItem->ui64ExecuteTime = bSkipRemainingCacheOps ?
 				(psPrevWorkItem ? psPrevWorkItem->ui64ExecuteTime : OSClockns64()) : OSClockns64();
 			psCacheOpWorkItem->bRBF = !bSkipRemainingCacheOps;
+			psCacheOpWorkItem->bUMF = IMG_FALSE;
 			psPrevWorkItem = psCacheOpWorkItem;
 #endif
 
@@ -1201,7 +1240,7 @@ static void CacheOpExecQueuedList(PVRSRV_DATA *psPVRSRVData)
 	IMG_BOOL bUseGlobalCachOp;
 	IMG_BOOL bHasTimeline = IMG_FALSE;
 	IMG_UINT64 ui64Size = (IMG_UINT64) 0;
-	IMG_UINT64 ui64FlushThreshold = PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD;
+	IMG_UINT64 ui64FlushThreshold = PVR_DIRTY_BYTES_FLUSH_THRESHOLD;
 
 	/* Obtain the current queue of pending CacheOps, this also provides
 	   information pertaining to the queue such as if one or more 
@@ -1219,7 +1258,7 @@ static void CacheOpExecQueuedList(PVRSRV_DATA *psPVRSRVData)
 	/* Perform a global cache operation if queue size (in pages)
 	   qualifies and there is no work item in the queue which is a
 	   timeline request */
-	bUseGlobalCachOp = (ui64Size >> OSGetPageShift()) > ui64FlushThreshold;
+	bUseGlobalCachOp = ui64Size >= ui64FlushThreshold;
 	if (bUseGlobalCachOp == IMG_TRUE && bHasTimeline == IMG_FALSE)
 	{
 		eError = CacheOpExecGlobal(psPVRSRVData, psListNode);
@@ -1420,7 +1459,6 @@ static PVRSRV_ERROR CacheOpExecQueue(PMR **ppsPMR,
 {
 	IMG_UINT32 ui32Idx;
 	PVRSRV_ERROR eError = PVRSRV_OK;
-	PVR_UNREFERENCED_PARAMETER(pui32OpSeqNum);
 
 	for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
 	{
@@ -1430,61 +1468,13 @@ static PVRSRV_ERROR CacheOpExecQueue(PMR **ppsPMR,
 							 puiCacheOp[ui32Idx]);
 	}
 
-#if defined(CACHEOP_DEBUG)
-		*pui32OpSeqNum = OSAtomicRead(&ghGlobalCacheOpSeqNum);
-#endif
+	/* For immediate RBF, common/completed are identical */
+	*pui32OpSeqNum = OSAtomicRead(&ghCommonCacheOpSeqNum);
+	OSAtomicWrite(&ghCompletedCacheOpSeqNum, *pui32OpSeqNum);
 
 	return eError;
 }
 #endif
-
-PVRSRV_ERROR CacheOpExec (PMR *psPMR,
-						  IMG_DEVMEM_OFFSET_T uiOffset,
-						  IMG_DEVMEM_SIZE_T uiSize,
-						  PVRSRV_CACHE_OP uiCacheOp)
-{
-	PVRSRV_ERROR eError;
-	IMG_BOOL bUsedGlobalFlush = IMG_FALSE;
-#if	defined(CACHEOP_DEBUG)
-	CACHEOP_WORK_ITEM sCacheOpWorkItem;
-	dllist_init(&sCacheOpWorkItem.sNode);
-
-	/* This interface is always synchronous and
-	   not deferred; during debug build, use
-	   work-item to capture debug logs */
-	sCacheOpWorkItem.psPMR = psPMR;
-	sCacheOpWorkItem.uiSize = uiSize;
-	sCacheOpWorkItem.psTimeline = NULL;
-	sCacheOpWorkItem.uiOffset = uiOffset;
-	sCacheOpWorkItem.uiCacheOp = uiCacheOp;
-	sCacheOpWorkItem.ui64QueuedTime = OSClockns64();
-	sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
-	sCacheOpWorkItem.ui32OpSeqNum = OSAtomicIncrement(&ghGlobalCacheOpSeqNum);
-	sCacheOpWorkItem.ui32OpSeqNum = sCacheOpWorkItem.ui32OpSeqNum ?
-			sCacheOpWorkItem.ui32OpSeqNum : 1;
-#endif
-
-	/* Perform range-based cache maintenance operation */
-	eError = PMRLockSysPhysAddresses(psPMR);
-	if (eError != PVRSRV_OK)
-	{
-		PVR_DPF((CACHEOP_DPFL,
-				"%s: PMRLockSysPhysAddresses failed (%u)",
-				__FUNCTION__, eError));
-		goto e0;
-	}
-
-	eError = CacheOpRangeBased(psPMR, uiOffset, uiSize, uiCacheOp, &bUsedGlobalFlush);
-#if	defined(CACHEOP_DEBUG)
-	sCacheOpWorkItem.bRBF = !bUsedGlobalFlush;
-	sCacheOpWorkItem.ui64ExecuteTime = OSClockns64();
-	eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
-#endif
-
-	PMRUnlockSysPhysAddresses(psPMR);
-e0:
-	return eError;
-}
 
 PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32NumCacheOps,
 						   PMR **ppsPMR,
@@ -1506,9 +1496,9 @@ PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
 {
 	PVRSRV_ERROR eError = PVRSRV_OK;
 	IMG_UINT32 ui32CompletedOpSeqNum;
+	IMG_BOOL b1stCacheOpFenceCheckPass;
 #if defined(CACHEOP_DEBUG)
 	CACHEOP_WORK_ITEM sCacheOpWorkItem;
-	IMG_BOOL b1stFenceFailed = IMG_FALSE;
 	IMG_UINT64 uiTimeNow = OSClockns64();
 	IMG_UINT32 ui32RetryCount = 0;
 
@@ -1527,14 +1517,12 @@ PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
 
 	PVR_UNREFERENCED_PARAMETER(eFenceOpType);
 
+	ui32CompletedOpSeqNum = OSAtomicRead(&ghCompletedCacheOpSeqNum);
+	b1stCacheOpFenceCheckPass = CacheOpFenceCheck(ui32CompletedOpSeqNum, ui32FenceOpSeqNum);
+
 #if defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED)
 	/* If initial fence check fails, then wait-and-retry in loop */
-	ui32CompletedOpSeqNum = OSAtomicRead(&ghCompletedCacheOpSeqNum);
-	if (CacheOpFenceCheck(ui32CompletedOpSeqNum, ui32FenceOpSeqNum))
-	{
-		goto e0;
-	}
-	else
+	if (b1stCacheOpFenceCheckPass == IMG_FALSE)
 	{
 		IMG_HANDLE hOSEvent;
 		PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
@@ -1586,7 +1574,6 @@ PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
 		}
 
 #if defined(CACHEOP_DEBUG)
-		b1stFenceFailed = IMG_TRUE;
 		uiTimeNow = OSClockns64();
 #endif
 
@@ -1596,7 +1583,7 @@ PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
 
 e0:
 #if defined(CACHEOP_DEBUG)
-	if (b1stFenceFailed == IMG_TRUE)
+	if (b1stCacheOpFenceCheckPass == IMG_FALSE)
 	{
 		/* This log gives an indication of how badly deferred
 		   cache maintenance is doing and provides data for
@@ -1612,11 +1599,12 @@ e0:
 	}
 #endif
 #else /* defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED) */
-	PVR_UNREFERENCED_PARAMETER(ui32CompletedOpSeqNum);
 #if defined(CACHEOP_DEBUG)
-	PVR_UNREFERENCED_PARAMETER(b1stFenceFailed);
 	PVR_UNREFERENCED_PARAMETER(ui32RetryCount);
 #endif
+	/* Fence checks _cannot_ fail in immediate RBF */
+	PVR_UNREFERENCED_PARAMETER(b1stCacheOpFenceCheckPass);
+	PVR_ASSERT(b1stCacheOpFenceCheckPass == IMG_TRUE);
 #endif
 
 #if defined(CACHEOP_DEBUG)
@@ -1705,17 +1693,319 @@ PVRSRV_ERROR CacheOpSetTimeline (IMG_INT32 i32Timeline)
 
 	return eError;
 }
+#else /* defined(SUPPORT_RANGEBASED_CACHEFLUSH) */
+PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32NumCacheOps,
+						   PMR **ppsPMR,
+						   IMG_DEVMEM_OFFSET_T *puiOffset,
+						   IMG_DEVMEM_SIZE_T *puiSize,
+						   PVRSRV_CACHE_OP *puiCacheOp,
+						   IMG_UINT32 *pui32OpSeqNum)
+{
+	IMG_UINT32 ui32Idx;
+	PVRSRV_ERROR eError = PVRSRV_OK;
+	IMG_BOOL bHasInvalidate = IMG_FALSE;
+	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	PVRSRV_CACHE_OP uiCacheOp = PVRSRV_CACHE_OP_NONE;
+#if	defined(CACHEOP_DEBUG)
+	CACHEOP_WORK_ITEM sCacheOpWorkItem;
+	dllist_init(&sCacheOpWorkItem.sNode);
+
+	sCacheOpWorkItem.psPMR = ppsPMR[0];
+	sCacheOpWorkItem.bRBF = IMG_FALSE;
+	sCacheOpWorkItem.bUMF = IMG_FALSE;
+	sCacheOpWorkItem.psTimeline = NULL;
+	sCacheOpWorkItem.uiOffset = puiOffset[0];
+	sCacheOpWorkItem.ui64QueuedTime = 0;
+	sCacheOpWorkItem.ui64ExecuteTime = (IMG_UINT64)0;
+	sCacheOpWorkItem.uiSize = (IMG_DEVMEM_OFFSET_T)0;
+	sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
+#endif
+
+	/* Coalesce all requests into a single superset request */
+	for (ui32Idx = 0; ui32Idx < ui32NumCacheOps; ui32Idx++)
+	{
+		uiCacheOp = SetCacheOp(uiCacheOp, puiCacheOp[ui32Idx]);
+		if (uiCacheOp == PVRSRV_CACHE_OP_INVALIDATE)
+		{
+			/* Cannot be deferred, action now */
+			bHasInvalidate = IMG_TRUE;
+#if	!defined(CACHEOP_DEBUG)
+			break;
+#endif
+		}
+#if	defined(CACHEOP_DEBUG)
+		/* For debug, we _want_ to know how many items are in batch */
+		sCacheOpWorkItem.uiSize += puiSize[ui32Idx];
+		*pui32OpSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
+		*pui32OpSeqNum = !*pui32OpSeqNum ?
+			OSAtomicIncrement(&ghCommonCacheOpSeqNum) : *pui32OpSeqNum;
+#endif
+	}
+
+#if	!defined(CACHEOP_DEBUG)
+	/* For release, we don't care, so use per-batch sequencing */
+	*pui32OpSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
+	*pui32OpSeqNum = !*pui32OpSeqNum ?
+			OSAtomicIncrement(&ghCommonCacheOpSeqNum) : *pui32OpSeqNum;
+#endif
+
+	if (bHasInvalidate == IMG_TRUE)
+	{
+		psPVRSRVData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
+
+		/* Perform global cache maintenance operation */
+		eError = OSCPUOperation(PVRSRV_CACHE_OP_FLUSH);
+		if (eError != PVRSRV_OK)
+		{
+			PVR_DPF((PVR_DBG_ERROR, "%s: OSCPUOperation failed (%u)",
+					__FUNCTION__, eError));
+			goto e0;
+		}
+
+		/* Having completed the invalidate, note sequence number */
+		OSAtomicWrite(&ghCompletedCacheOpSeqNum, *pui32OpSeqNum);
+	}
+	else
+	{
+		/* NOTE: Possible race condition, CacheOp value set here using SetCacheOp()
+		   might be over-written during read-modify-write sequence in CacheOpFence() */
+		psPVRSRVData->uiCacheOp = SetCacheOp(psPVRSRVData->uiCacheOp, uiCacheOp);
+	}
+
+#if	defined(CACHEOP_DEBUG)
+	sCacheOpWorkItem.uiCacheOp = uiCacheOp;
+	sCacheOpWorkItem.ui32OpSeqNum = *pui32OpSeqNum;
+	eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
+#endif
+
+e0:
+	return eError;
+}
+
+PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
+						   IMG_UINT32 ui32FenceOpSeqNum)
+{
+	PVRSRV_ERROR eError = PVRSRV_OK;
+	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	IMG_BOOL b1stCacheOpFenceCheckPass;
+	IMG_UINT32 ui32CacheOpSeqNum;
+	PVRSRV_CACHE_OP uiCacheOp;
+#if defined(CACHEOP_DEBUG)
+	IMG_UINT64 uiTimeNow;
+	CACHEOP_WORK_ITEM sCacheOpWorkItem;
+	sCacheOpWorkItem.uiCacheOp = PVRSRV_CACHE_OP_NONE;
+#endif
+
+	ui32CacheOpSeqNum = OSAtomicRead(&ghCompletedCacheOpSeqNum);
+	b1stCacheOpFenceCheckPass = CacheOpFenceCheck(ui32CacheOpSeqNum, ui32FenceOpSeqNum);
+
+	/* Flush if there is pending CacheOp that affects this fence */
+	if (b1stCacheOpFenceCheckPass == IMG_FALSE)
+	{
+		/* After global CacheOp, requests before this sequence are met */
+		ui32CacheOpSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
+		ui32CacheOpSeqNum = !ui32CacheOpSeqNum ?
+				OSAtomicIncrement(&ghCommonCacheOpSeqNum) : ui32CacheOpSeqNum;
+
+		uiCacheOp = psPVRSRVData->uiCacheOp;
+		psPVRSRVData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
+
+		/* Perform global cache maintenance operation */
+		eError = OSCPUOperation(uiCacheOp);
+		if (eError != PVRSRV_OK)
+		{
+			PVR_DPF((PVR_DBG_ERROR, "%s: OSCPUOperation failed (%u)",
+					__FUNCTION__, eError));
+			goto e0;
+		}
+
+		/* Having completed the global CacheOp, note the sequence number */
+		OSAtomicWrite(&ghCompletedCacheOpSeqNum, ui32CacheOpSeqNum);
+#if defined(CACHEOP_DEBUG)
+		sCacheOpWorkItem.uiCacheOp = uiCacheOp;
+#endif
+	}
+
+#if defined(CACHEOP_DEBUG)
+	dllist_init(&sCacheOpWorkItem.sNode);
+
+	uiTimeNow = OSClockns64();
+	sCacheOpWorkItem.psPMR = NULL;
+	sCacheOpWorkItem.psTimeline = NULL;
+	sCacheOpWorkItem.ui64QueuedTime = uiTimeNow;
+	sCacheOpWorkItem.ui64ExecuteTime = uiTimeNow;
+	sCacheOpWorkItem.ui32OpSeqNum = ui32FenceOpSeqNum;
+	sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
+#if defined(PVR_RI_DEBUG)
+	sCacheOpWorkItem.eFenceOpType = eFenceOpType;
+#endif
+
+	eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
+#endif
+
+e0:
+	return eError;
+}
+
+PVRSRV_ERROR CacheOpSetTimeline (IMG_INT32 i32Timeline)
+{
+	PVRSRV_ERROR eError;
+	struct file *psFile;
+	PVRSRV_CACHE_OP uiCacheOp;
+	PVRSRV_DATA *psPVRSRVData;
+
+	if (i32Timeline < 0)
+	{
+		return PVRSRV_OK;
+	}
+
+#if defined(CONFIG_SW_SYNC)
+	psFile = fget(i32Timeline);
+	if (!psFile || !psFile->private_data)
+	{
+		return PVRSRV_ERROR_INVALID_PARAMS;
+	}
+
+	psPVRSRVData = PVRSRVGetPVRSRVData();
+	uiCacheOp = psPVRSRVData->uiCacheOp;
+	psPVRSRVData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
+
+	/* Perform global cache maintenance operation */
+	eError = OSCPUOperation(uiCacheOp);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: OSCPUOperation failed (%u)",
+				__FUNCTION__, eError));
+		goto e0;
+	}
+
+	sw_sync_timeline_inc(psFile->private_data, 1);
+	fput(psFile);
+e0:
+#else
+	PVR_UNREFERENCED_PARAMETER(psFile);
+	PVR_UNREFERENCED_PARAMETER(uiCacheOp);
+	PVR_UNREFERENCED_PARAMETER(psPVRSRVData);
+	eError = PVRSRV_ERROR_NOT_SUPPORTED;
+	PVR_ASSERT(0);
+#endif
+
+	return eError;
+}
+#endif /* defined(SUPPORT_RANGEBASED_CACHEFLUSH) */
+
+PVRSRV_ERROR CacheOpExec (PMR *psPMR,
+						  IMG_DEVMEM_OFFSET_T uiOffset,
+						  IMG_DEVMEM_SIZE_T uiSize,
+						  PVRSRV_CACHE_OP uiCacheOp)
+{
+	PVRSRV_ERROR eError;
+	IMG_BOOL bUsedGlobalFlush = IMG_FALSE;
+#if	defined(CACHEOP_DEBUG)
+	/* This interface is always synchronous and not deferred;
+	   during debug build, use work-item to capture debug logs */
+	CACHEOP_WORK_ITEM sCacheOpWorkItem;
+	dllist_init(&sCacheOpWorkItem.sNode);
+
+	sCacheOpWorkItem.psPMR = psPMR;
+	sCacheOpWorkItem.uiSize = uiSize;
+	sCacheOpWorkItem.psTimeline = NULL;
+	sCacheOpWorkItem.uiOffset = uiOffset;
+	sCacheOpWorkItem.uiCacheOp = uiCacheOp;
+	sCacheOpWorkItem.ui64QueuedTime = OSClockns64();
+	sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
+	sCacheOpWorkItem.ui32OpSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
+	sCacheOpWorkItem.ui32OpSeqNum = !sCacheOpWorkItem.ui32OpSeqNum ?
+		OSAtomicIncrement(&ghCommonCacheOpSeqNum) : sCacheOpWorkItem.ui32OpSeqNum;
+#endif
+
+	/* Perform range-based cache maintenance operation */
+	eError = PMRLockSysPhysAddresses(psPMR);
+	if (eError != PVRSRV_OK)
+	{
+		PVR_DPF((CACHEOP_DPFL,
+				"%s: PMRLockSysPhysAddresses failed (%u)",
+				__FUNCTION__, eError));
+		goto e0;
+	}
+
+	eError = CacheOpRangeBased(psPMR, uiOffset, uiSize, uiCacheOp, &bUsedGlobalFlush);
+#if	defined(CACHEOP_DEBUG)
+	sCacheOpWorkItem.bUMF = IMG_FALSE;
+	sCacheOpWorkItem.bRBF = !bUsedGlobalFlush;
+	sCacheOpWorkItem.ui64ExecuteTime = OSClockns64();
+	eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
+#endif
+
+	PMRUnlockSysPhysAddresses(psPMR);
+e0:
+	return eError;
+}
+
+PVRSRV_ERROR CacheOpLog (PMR *psPMR,
+						 IMG_DEVMEM_OFFSET_T uiOffset,
+						 IMG_DEVMEM_SIZE_T uiSize,
+						 IMG_UINT64 ui64QueuedTimeUs,
+						 IMG_UINT64 ui64ExecuteTimeUs,
+						 PVRSRV_CACHE_OP uiCacheOp)
+{
+#if defined(CACHEOP_DEBUG)
+	CACHEOP_WORK_ITEM sCacheOpWorkItem;
+	dllist_init(&sCacheOpWorkItem.sNode);
+
+	sCacheOpWorkItem.psPMR = psPMR;
+	sCacheOpWorkItem.uiSize = uiSize;
+	sCacheOpWorkItem.psTimeline = NULL;
+	sCacheOpWorkItem.uiOffset = uiOffset;
+	sCacheOpWorkItem.uiCacheOp = uiCacheOp;
+	sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
+	sCacheOpWorkItem.ui32OpSeqNum = OSAtomicIncrement(&ghCommonCacheOpSeqNum);
+	sCacheOpWorkItem.ui32OpSeqNum = !sCacheOpWorkItem.ui32OpSeqNum ?
+		OSAtomicIncrement(&ghCommonCacheOpSeqNum) : sCacheOpWorkItem.ui32OpSeqNum;
+
+	/* All UM cache maintenance is range-based */
+	sCacheOpWorkItem.ui64ExecuteTime = ui64ExecuteTimeUs;
+	sCacheOpWorkItem.ui64QueuedTime = ui64QueuedTimeUs;
+	sCacheOpWorkItem.bUMF = IMG_TRUE;
+	sCacheOpWorkItem.bRBF = IMG_TRUE;
+
+	CacheOpStatExecLogWrite(&sCacheOpWorkItem.sNode);
+#else /* defined(CACHEOP_DEBUG) */
+	PVR_UNREFERENCED_PARAMETER(psPMR);
+	PVR_UNREFERENCED_PARAMETER(uiSize);
+	PVR_UNREFERENCED_PARAMETER(uiOffset);
+	PVR_UNREFERENCED_PARAMETER(ui64QueuedTimeUs);
+	PVR_UNREFERENCED_PARAMETER(ui64ExecuteTimeUs);
+	PVR_UNREFERENCED_PARAMETER(uiCacheOp);
+#endif
+	return PVRSRV_OK;
+}
+
+PVRSRV_ERROR CacheOpGetLineSize (IMG_UINT32 *pui32L1DataCacheLineSize)
+{
+	*pui32L1DataCacheLineSize = guiCacheLineSize;
+	PVR_ASSERT(guiCacheLineSize != 0);
+	return PVRSRV_OK;
+}
 
 PVRSRV_ERROR CacheOpInit (void)
 {
 	PVRSRV_ERROR eError;
 	PVRSRV_DATA *psPVRSRVData;
 
+	/* DDK initialisation is anticipated to be performed on the boot
+	   processor (little core in big/little systems) though this may
+	   not always be the case. If so, the value cached here is the 
+	   system wide safe (i.e. smallest) L1 d-cache line size value 
+	   on platforms with mismatched d-cache line sizes */
 	guiCacheLineSize = OSCPUCacheAttributeSize(PVR_DCACHE_LINE_SIZE);
 	PVR_ASSERT(guiCacheLineSize != 0);
 
 	guiOSPageSize = OSGetPageSize();
 	PVR_ASSERT(guiOSPageSize != 0);
+
+	OSAtomicWrite(&ghCommonCacheOpSeqNum, 0);
+	OSAtomicWrite(&ghCompletedCacheOpSeqNum, 0);
 
 #if defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED)
 	psPVRSRVData = PVRSRVGetPVRSRVData();
@@ -1735,8 +2025,6 @@ PVRSRV_ERROR CacheOpInit (void)
 	/* Initialise pending CacheOp list & seq number */
 	dllist_init(&psPVRSRVData->sCacheOpThreadWorkList);
 	guiPendingDevmemSize = (IMG_DEVMEM_SIZE_T) 0;
-	OSAtomicWrite(&ghCompletedCacheOpSeqNum, 0);
-	OSAtomicWrite(&ghGlobalCacheOpSeqNum, 0);
 	gbPendingTimeline = IMG_FALSE;
 
 #if defined(CACHEOP_DEBUG)
@@ -1782,9 +2070,7 @@ PVRSRV_ERROR CacheOpInit (void)
 	}
 #else /* defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED) */
 	PVR_UNREFERENCED_PARAMETER(psPVRSRVData);
-
 #if defined(CACHEOP_DEBUG)
-	OSAtomicWrite(&ghGlobalCacheOpSeqNum, 0);
 	gi32CacheOpStatExecWriteIdx = 0;
 
 	OSMemSet(gasCacheOpStatExecuted, 0, sizeof(gasCacheOpStatExecuted));
@@ -1800,7 +2086,6 @@ PVRSRV_ERROR CacheOpInit (void)
 												NULL);
 	PVR_ASSERT(pvCacheOpStatExecEntry != NULL);
 #endif
-
 	eError = PVRSRV_OK;
 #endif
 
@@ -1809,7 +2094,7 @@ PVRSRV_ERROR CacheOpInit (void)
 
 PVRSRV_ERROR CacheOpDeInit (void)
 {
-	PVRSRV_ERROR eError;
+	PVRSRV_ERROR eError = PVRSRV_OK;
 	PVRSRV_DATA *psPVRSRVData;
 
 #if defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED)
@@ -1835,9 +2120,17 @@ PVRSRV_ERROR CacheOpDeInit (void)
 			PVR_LOG_IF_ERROR(eError, "OSEventObjectSignal");
 		}
 
-		eError = OSThreadDestroy(psPVRSRVData->hCacheOpThread);
+		LOOP_UNTIL_TIMEOUT(OS_THREAD_DESTROY_TIMEOUT_US)
+		{
+			eError = OSThreadDestroy(psPVRSRVData->hCacheOpThread);
+			if (PVRSRV_OK == eError)
+			{
+				psPVRSRVData->hCacheOpThread = NULL;
+				break;
+			}
+			OSWaitus(OS_THREAD_DESTROY_TIMEOUT_US/OS_THREAD_DESTROY_RETRY_COUNT);
+		} END_LOOP_UNTIL_TIMEOUT();
 		PVR_LOG_IF_ERROR(eError, "OSThreadDestroy");
-		psPVRSRVData->hCacheOpThread = NULL;
 	}
 
 	OSLockDestroy(psPVRSRVData->hCacheOpThreadWorkListLock);
@@ -1858,205 +2151,14 @@ PVRSRV_ERROR CacheOpDeInit (void)
 	}
 
 	eError = PVRSRV_OK;
-#else
+#else /* defined(SUPPORT_RANGEBASED_CACHEFLUSH_DEFERRED) */
 	PVR_UNREFERENCED_PARAMETER(psPVRSRVData);
-
 #if defined(CACHEOP_DEBUG)
 	OSLockDestroy(ghCacheOpStatExecLock);
 	OSRemoveStatisticEntry(pvCacheOpStatExecEntry);
 #endif
-
 	eError = PVRSRV_OK;
 #endif
 
 	return eError;
-}
-#else /* defined(SUPPORT_RANGEBASED_CACHEFLUSH) */
-PVRSRV_ERROR CacheOpExec (PMR *psPMR,
-						  IMG_DEVMEM_OFFSET_T uiOffset,
-						  IMG_DEVMEM_SIZE_T uiSize,
-						  PVRSRV_CACHE_OP uiCacheOp)
-{
-	PVRSRV_DATA *psData = PVRSRVGetPVRSRVData();
-	PVRSRV_ERROR eError = PVRSRV_OK;
-
-	psData->uiCacheOp = SetCacheOp(psData->uiCacheOp, uiCacheOp);
-
-#if	defined(CACHEOP_DEBUG)
-	{
-		CACHEOP_WORK_ITEM sCacheOpWorkItem;
-		dllist_init(&sCacheOpWorkItem.sNode);
-
-		sCacheOpWorkItem.psPMR = psPMR;
-		sCacheOpWorkItem.uiSize = uiSize;
-		sCacheOpWorkItem.bRBF = IMG_FALSE;
-		sCacheOpWorkItem.psTimeline = NULL;
-		sCacheOpWorkItem.ui32OpSeqNum = ~0;
-		sCacheOpWorkItem.uiOffset = uiOffset;
-		sCacheOpWorkItem.uiCacheOp = uiCacheOp;
-		sCacheOpWorkItem.ui64QueuedTime = OSClockns64();
-		sCacheOpWorkItem.ui64ExecuteTime = (IMG_UINT64)~0;
-		sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
-
-		eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
-	}
-#endif
-
-	return eError;
-}
-
-PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32NumCacheOps,
-						   PMR **ppsPMR,
-						   IMG_DEVMEM_OFFSET_T *puiOffset,
-						   IMG_DEVMEM_SIZE_T *puiSize,
-						   PVRSRV_CACHE_OP *puiCacheOp,
-						   IMG_UINT32 *pui32OpSeqNum)
-{
-	PVR_UNREFERENCED_PARAMETER(ui32NumCacheOps);
-	PVR_UNREFERENCED_PARAMETER(pui32OpSeqNum);
-	return CacheOpExec(*ppsPMR, *puiOffset, *puiSize, *puiCacheOp);
-}
-
-PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eFenceOpType,
-						   IMG_UINT32 ui32OpSeqNum)
-{
-	PVRSRV_DATA *psData = PVRSRVGetPVRSRVData();
-	PVRSRV_ERROR eError = PVRSRV_OK;
-
-	eError = OSCPUOperation(psData->uiCacheOp);
-	if (eError != PVRSRV_OK)
-	{
-		PVR_DPF((PVR_DBG_ERROR, "CacheOpFence: OSCPUOperation failed"));
-		PVR_ASSERT(0);
-	}
-
-	psData->uiCacheOp = PVRSRV_CACHE_OP_NONE;
-
-#if defined(CACHEOP_DEBUG)
-	{
-		CACHEOP_WORK_ITEM sCacheOpWorkItem;
-		IMG_UINT64 uiTimeNow = OSClockns64();
-
-		dllist_init(&sCacheOpWorkItem.sNode);
-
-		sCacheOpWorkItem.psPMR = NULL;
-		sCacheOpWorkItem.psTimeline = NULL;
-		
-		sCacheOpWorkItem.ui64QueuedTime = uiTimeNow;
-		sCacheOpWorkItem.pid = OSGetCurrentClientProcessIDKM();
-#if defined(PVR_RI_DEBUG)
-		sCacheOpWorkItem.eFenceOpType = eFenceOpType;
-#endif
-		sCacheOpWorkItem.ui64ExecuteTime = uiTimeNow;
-		sCacheOpWorkItem.uiCacheOp = PVRSRV_CACHE_OP_NONE;
-
-		eError = CacheOpStatExecLog(&sCacheOpWorkItem.sNode);
-	}
-#endif
-
-	return eError;
-}
-
-PVRSRV_ERROR CacheOpSetTimeline (IMG_INT32 i32Timeline)
-{
-	PVRSRV_ERROR eError = CacheOpFence(0, 0);
-#if defined(CONFIG_SW_SYNC)
-	struct file *file;
-
-	if (i32Timeline < 0)
-	{
-		return eError;
-	}
-
-	file = fget(i32Timeline);
-	if (!file || !file->private_data)
-	{
-		return PVRSRV_ERROR_INVALID_PARAMS;
-	}
-
-	sw_sync_timeline_inc(file->private_data, 1);
-	fput(file);
-#endif
-	return eError;
-}
-
-PVRSRV_ERROR CacheOpInit()
-{
-#if defined(CACHEOP_DEBUG)
-	PVRSRV_ERROR eError;
-
-	eError = OSLockCreate((POS_LOCK*)&ghCacheOpStatExecLock, LOCK_TYPE_PASSIVE);
-	PVR_ASSERT(eError == PVRSRV_OK);
-
-	pvCacheOpStatExecEntry = OSCreateStatisticEntry("cache_ops_exec",
-												NULL,
-												CacheOpStatExecLogRead,
-												NULL,
-												NULL,
-												NULL);
-	PVR_ASSERT(pvCacheOpStatExecEntry != NULL);
-#endif
-
-	return PVRSRV_OK;
-}
-
-PVRSRV_ERROR CacheOpDeInit()
-{
-#if defined(CACHEOP_DEBUG)
-	OSLockDestroy(ghCacheOpStatExecLock);
-	OSRemoveStatisticEntry(pvCacheOpStatExecEntry);
-#endif
-	return PVRSRV_OK;
-}
-#endif /* defined(SUPPORT_RANGEBASED_CACHEFLUSH) */
-
-PVRSRV_ERROR CacheOpLog (PMR *psPMR,
-						 IMG_DEVMEM_OFFSET_T uiOffset,
-						 IMG_DEVMEM_SIZE_T uiSize,
-						 IMG_UINT64 ui64QueuedTimeUs,
-						 IMG_UINT64 ui64ExecuteTimeUs,
-						 PVRSRV_CACHE_OP uiCacheOp)
-{
-#if defined(CACHEOP_DEBUG)
-	IMG_PID pid = OSGetCurrentClientProcessIDKM();
-#if defined(PVR_RI_DEBUG)
-	IMG_DEV_VIRTADDR sDevVAddr;
-	PVRSRV_ERROR eError;
-
-	/* Get more detailed information regarding the sub allocations
-	   that PMR has from RI manager for process that requested the
-	   CacheOp */
-	eError = RIDumpProcessListKM(psPMR, pid, uiOffset, &sDevVAddr);
-	if (eError != PVRSRV_OK)
-	{
-		return eError;
-	}
-#endif
-
-	ui64ExecuteTimeUs = ui64QueuedTimeUs < ui64ExecuteTimeUs ?
-							ui64ExecuteTimeUs - ui64QueuedTimeUs:
-							ui64QueuedTimeUs - ui64ExecuteTimeUs;
-
-	PVRSRVStatsUpdateCacheOpStats(uiCacheOp,
-								  ~0,
-#if defined(PVR_RI_DEBUG)
-								  sDevVAddr,
-								  0,
-#endif
-								  uiOffset,
-								  uiSize,
-								  ui64ExecuteTimeUs,
-								  IMG_TRUE,
-								  IMG_FALSE,
-								  IMG_FALSE,
-								  pid);
-#else /* defined(CACHEOP_DEBUG) */
-	PVR_UNREFERENCED_PARAMETER(psPMR);
-	PVR_UNREFERENCED_PARAMETER(uiSize);
-	PVR_UNREFERENCED_PARAMETER(uiOffset);
-	PVR_UNREFERENCED_PARAMETER(ui64QueuedTimeUs);
-	PVR_UNREFERENCED_PARAMETER(ui64ExecuteTimeUs);
-	PVR_UNREFERENCED_PARAMETER(uiCacheOp);
-#endif
-	return PVRSRV_OK;
 }

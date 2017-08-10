@@ -288,27 +288,35 @@ PVRSRV_ERROR LinuxEventObjectSignal(IMG_HANDLE hOSEventObjectList)
 
  @Input    hOSEventObject : Event object handle
 
- @Input   ui32MSTimeout : Time out value in msec
+ @Input    ui64Timeoutus : Time out value in usec
 
  @Return   PVRSRV_ERROR  :  Error code
 
 ******************************************************************************/
-PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT32 ui32MSTimeout, IMG_BOOL bHoldBridgeLock)
+PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT64 ui64Timeoutus, IMG_BOOL bHoldBridgeLock)
 {
 	IMG_UINT32 ui32TimeStamp;
 	IMG_BOOL bReleasePVRLock;
 	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
+	IMG_UINT32 ui32Remainder;
+	long timeOutJiffies;
 	DEFINE_WAIT(sWait);
 
 	PVRSRV_LINUX_EVENT_OBJECT *psLinuxEventObject = (PVRSRV_LINUX_EVENT_OBJECT *) hOSEventObject;
-
-	IMG_UINT32 ui32TimeOutJiffies = msecs_to_jiffies(ui32MSTimeout);
 
 	/* Check if the driver is good shape */
 	if (psPVRSRVData->eServicesState != PVRSRV_SERVICES_STATE_OK)
 	{
 		return PVRSRV_ERROR_TIMEOUT;
 	}
+
+	/* usecs_to_jiffies only takes an uint. So if our timeout is bigger than an
+	 * uint use the msec version. With such a long timeout we really don't need
+	 * the high resolution of usecs. */
+	if (ui64Timeoutus > 0xffffffffULL)
+		timeOutJiffies = msecs_to_jiffies(OSDivide64(ui64Timeoutus, 1000, &ui32Remainder));
+	else
+		timeOutJiffies = usecs_to_jiffies(ui64Timeoutus);
 
 	do
 	{
@@ -330,7 +338,7 @@ PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT32 ui32MSTi
 			OSReleaseBridgeLock();
 		}
 
-		ui32TimeOutJiffies = (IMG_UINT32)schedule_timeout((IMG_INT32)ui32TimeOutJiffies);
+		timeOutJiffies = schedule_timeout(timeOutJiffies);
 
 		if (bReleasePVRLock == IMG_TRUE)
 		{
@@ -342,12 +350,12 @@ PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT32 ui32MSTi
 #endif
 
 
-	} while (ui32TimeOutJiffies);
+	} while (timeOutJiffies);
 
 	finish_wait(&psLinuxEventObject->sWait, &sWait);
 
 	psLinuxEventObject->ui32TimeStampPrevious = ui32TimeStamp;
 
-	return ui32TimeOutJiffies ? PVRSRV_OK : PVRSRV_ERROR_TIMEOUT;
+	return timeOutJiffies ? PVRSRV_OK : PVRSRV_ERROR_TIMEOUT;
 
 }

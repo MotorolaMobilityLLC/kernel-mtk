@@ -1358,7 +1358,7 @@ _ApplyCacheMaintenance(PVRSRV_DEVICE_NODE *psDevNode,
 	PVRSRV_ERROR eError = PVRSRV_ERROR_RETRY;
 	IMG_UINT32 ui32Idx;
 
-	if (uiNumPages >= PVR_DIRTY_PAGECOUNT_FLUSH_THRESHOLD)
+	if ((uiNumPages << PAGE_SHIFT) >= PVR_DIRTY_BYTES_FLUSH_THRESHOLD)
 	{
 		/* May fail so fallback to range-based flush */
 		eError = OSCPUOperation(PVRSRV_CACHE_OP_FLUSH);

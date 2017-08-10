@@ -62,6 +62,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "virt_validation_defs.h"
 #endif
 
+/*!
+ * For OSThreadDestroy(), which may require a retry
+ * Try for 100 ms to destroy an OS thread before failing
+ */
+#define OS_THREAD_DESTROY_TIMEOUT_US 100000ULL
+#define OS_THREAD_DESTROY_RETRY_COUNT 10
+
 typedef struct _BUILD_INFO_
 {
 	IMG_UINT32	ui32BuildOptions;

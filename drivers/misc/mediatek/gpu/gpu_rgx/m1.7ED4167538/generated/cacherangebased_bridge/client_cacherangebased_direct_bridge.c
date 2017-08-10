@@ -137,3 +137,17 @@ IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeCacheOpLog(IMG_HANDLE hBridge,
 	return eError;
 }
 
+IMG_INTERNAL PVRSRV_ERROR IMG_CALLCONV BridgeCacheOpGetLineSize(IMG_HANDLE hBridge,
+								IMG_UINT32 *pui32L1DataCacheLineSize)
+{
+	PVRSRV_ERROR eError;
+	PVR_UNREFERENCED_PARAMETER(hBridge);
+
+
+	eError =
+		CacheOpGetLineSize(
+					pui32L1DataCacheLineSize);
+
+	return eError;
+}
+

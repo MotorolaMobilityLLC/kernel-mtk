@@ -56,13 +56,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define KM_FTRACE_NO_PRIORITY (0)
 
-/* MTK */
-/*
-#if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS) && defined(MTK_GPU_DVFS)
-#include <mach/mt_gpufreq.h>
-#include <trace/events/mtk_events.h>
-#endif
-*/
 
 /******************************************************************************
  Module internal implementation
@@ -212,15 +205,6 @@ void PVRGpuTraceClientWork(
 
 	if (PVRGpuTraceEnabled())
 	{
-/* NEED PORTING WITH GPU HAL
-#if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS) && defined(MTK_GPU_DVFS)
-		{
-			unsigned int ui32CurFreqID = mt_gpufreq_get_cur_freq_index();
-			unsigned int ui32GPUFreq = mt_gpufreq_get_frequency_by_level(ui32CurFreqID);
-			trace_gpu_freq(ui32GPUFreq);
-		}
-#endif
-*/
 		trace_gpu_job_enqueue(ui32CtxId, ui32JobId, pszKickType);
 	}
 }

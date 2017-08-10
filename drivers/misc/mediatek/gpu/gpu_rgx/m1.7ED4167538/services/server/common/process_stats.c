@@ -262,6 +262,7 @@ typedef struct _PVRSRV_PROCESS_STATS_ {
 		IMG_DEVMEM_SIZE_T uiSize;
 		IMG_UINT64 ui64ExecuteTime;
 		IMG_BOOL bRangeBasedFlush;
+		IMG_BOOL bUserModeFlush;
 		IMG_UINT32 ui32OpSeqNum;
 		IMG_BOOL bHasTimeline;
 		IMG_BOOL bIsFence;
@@ -2770,6 +2771,7 @@ PVRSRVStatsUpdateCacheOpStats(PVRSRV_CACHE_OP uiCacheOp,
 							IMG_DEVMEM_SIZE_T uiSize,
 							IMG_UINT64 ui64ExecuteTime,
 							IMG_BOOL bRangeBasedFlush,
+							IMG_BOOL bUserModeFlush,
 							IMG_BOOL bHasTimeline,
 							IMG_BOOL bIsFence,
 							IMG_PID ownerPid)
@@ -2807,6 +2809,7 @@ PVRSRVStatsUpdateCacheOpStats(PVRSRV_CACHE_OP uiCacheOp,
 		psProcessStats->asCacheOp[Idx].uiOffset = uiOffset;
 		psProcessStats->asCacheOp[Idx].uiSize = uiSize;
 		psProcessStats->asCacheOp[Idx].bRangeBasedFlush = bRangeBasedFlush;
+		psProcessStats->asCacheOp[Idx].bUserModeFlush = bUserModeFlush;
 		psProcessStats->asCacheOp[Idx].ui64ExecuteTime = ui64ExecuteTime;
 		psProcessStats->asCacheOp[Idx].ui32OpSeqNum = ui32OpSeqNum;
 		psProcessStats->asCacheOp[Idx].bHasTimeline = bHasTimeline;
@@ -2831,23 +2834,23 @@ CacheOpStatsPrintElements(void *pvFile,
 {
 	PVRSRV_STAT_STRUCTURE_TYPE*  peStructureType = (PVRSRV_STAT_STRUCTURE_TYPE*) pvStatPtr;
 	PVRSRV_PROCESS_STATS*		 psProcessStats  = (PVRSRV_PROCESS_STATS*) pvStatPtr;
-	IMG_CHAR					 *pszCacheOpType, *pszFlushype;
+	IMG_CHAR					 *pszCacheOpType, *pszFlushType, *pszFlushMode;
 	IMG_INT32 					 i32WriteIdx, i32ReadIdx;
 
 #if defined(PVR_RI_DEBUG)
 	#define CACHEOP_RI_PRINTF_HEADER \
-		"%-10s %-10s %-16s %-10s %-10s %-12s %-12s\n"
+		"%-10s %-10s %-5s %-16s %-10s %-10s %-12s %-12s\n"
 	#define CACHEOP_RI_PRINTF_FENCE	 \
-		"%-10s %-10s %-16s %-10s %-10s %-12llu 0x%-10x\n"
+		"%-10s %-10s %-5s %-16s %-10s %-10s %-12llu 0x%-10x\n"
 	#define CACHEOP_RI_PRINTF		\
-		"%-10s %-10s 0x%-14llx 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
+		"%-10s %-10s %-5s 0x%-14llx 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
 #else
 	#define CACHEOP_PRINTF_HEADER	\
-		"%-10s %-10s %-10s %-10s %-12s %-12s\n"
+		"%-10s %-10s %-5s %-10s %-10s %-12s %-12s\n"
 	#define CACHEOP_PRINTF_FENCE	 \
-		"%-10s %-10s %-10s %-10s %-12llu 0x%-10x\n"
+		"%-10s %-10s %-5s %-10s %-10s %-12llu 0x%-10x\n"
 	#define CACHEOP_PRINTF		 	\
-		"%-10s %-10s 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
+		"%-10s %-10s %-5s 0x%-8llx 0x%-8llx %-12llu 0x%-10x\n"
 #endif
 
 	if (peStructureType == NULL  ||
@@ -2874,6 +2877,7 @@ CacheOpStatsPrintElements(void *pvFile,
 #endif
 					"CacheOp",
 					"Type",
+					"Mode",
 #if defined(PVR_RI_DEBUG)
 					"DevVAddr",
 #endif
@@ -2962,6 +2966,7 @@ CacheOpStatsPrintElements(void *pvFile,
 #endif
 							pszCacheOpType,
 							pszFenceType,
+							"",
 #if defined(PVR_RI_DEBUG)
 							"",
 #endif
@@ -2980,6 +2985,7 @@ CacheOpStatsPrintElements(void *pvFile,
 #endif
 							"Timeline",
 							"",
+							"",
 #if defined(PVR_RI_DEBUG)
 							"",
 #endif
@@ -2997,16 +3003,25 @@ CacheOpStatsPrintElements(void *pvFile,
 				ui64NumOfPages = psProcessStats->asCacheOp[i32ReadIdx].uiSize >> OSGetPageShift();
 				if (ui64NumOfPages <= PMR_MAX_TRANSLATION_STACK_ALLOC)
 				{
-					pszFlushype = "RBF.Fast";
+					pszFlushType = "RBF.Fast";
 				}
 				else
 				{
-					pszFlushype = "RBF.Slow";
+					pszFlushType = "RBF.Slow";
 				}
 			}
 			else
 			{
-				pszFlushype = "GF";
+				pszFlushType = "GF";
+			}
+
+			if (psProcessStats->asCacheOp[i32ReadIdx].bUserModeFlush)
+			{
+				pszFlushMode = "UM";
+			}
+			else
+			{
+				pszFlushMode = "KM";
 			}
 
 			switch (psProcessStats->asCacheOp[i32ReadIdx].uiCacheOp)
@@ -3035,7 +3050,8 @@ CacheOpStatsPrintElements(void *pvFile,
 							CACHEOP_PRINTF,
 #endif
 							pszCacheOpType,
-							pszFlushype,
+							pszFlushType,
+							pszFlushMode,
 #if defined(PVR_RI_DEBUG)
 							psProcessStats->asCacheOp[i32ReadIdx].sDevVAddr.uiAddr,
 #endif

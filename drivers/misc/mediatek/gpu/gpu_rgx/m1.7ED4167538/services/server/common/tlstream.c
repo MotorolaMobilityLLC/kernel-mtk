@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * stream buffer utilisation. */
 //#define TL_BUFFER_UTILIZATION 1
 
-#define EVENT_OBJECT_TIMEOUT_MS 1000
+#define EVENT_OBJECT_TIMEOUT_US 1000000ULL
 
 /* Given the state of the buffer it returns a number of bytes that the client
  * can use for a successful allocation. */
@@ -434,7 +434,7 @@ TLStreamClose(IMG_HANDLE hStream)
 				/* Release lock before sleeping */
 				OSLockRelease (TLGGD()->hTLGDLock);
 				
-				OSEventObjectWaitTimeout(psTmp->hProducerEvent, EVENT_OBJECT_TIMEOUT_MS);
+				OSEventObjectWaitTimeout(psTmp->hProducerEvent, EVENT_OBJECT_TIMEOUT_US);
 				
 				OSLockAcquire (TLGGD()->hTLGDLock);
 

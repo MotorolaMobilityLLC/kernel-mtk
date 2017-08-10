@@ -406,6 +406,34 @@ CacheOpLog_exit:
 }
 
 
+static IMG_INT
+PVRSRVBridgeCacheOpGetLineSize(IMG_UINT32 ui32DispatchTableEntry,
+					  PVRSRV_BRIDGE_IN_CACHEOPGETLINESIZE *psCacheOpGetLineSizeIN,
+					  PVRSRV_BRIDGE_OUT_CACHEOPGETLINESIZE *psCacheOpGetLineSizeOUT,
+					 CONNECTION_DATA *psConnection)
+{
+
+	PVR_UNREFERENCED_PARAMETER(psConnection);
+	PVR_UNREFERENCED_PARAMETER(psCacheOpGetLineSizeIN);
+
+
+
+
+
+	psCacheOpGetLineSizeOUT->eError =
+		CacheOpGetLineSize(
+					&psCacheOpGetLineSizeOUT->ui32L1DataCacheLineSize);
+
+
+
+
+
+
+
+	return 0;
+}
+
+
 
 
 /* *************************************************************************** 
@@ -433,6 +461,9 @@ PVRSRV_ERROR InitCACHERANGEBASEDBridge(void)
 					NULL, bUseLock);
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_CACHERANGEBASED, PVRSRV_BRIDGE_CACHERANGEBASED_CACHEOPLOG, PVRSRVBridgeCacheOpLog,
+					NULL, bUseLock);
+
+	SetDispatchTableEntry(PVRSRV_BRIDGE_CACHERANGEBASED, PVRSRV_BRIDGE_CACHERANGEBASED_CACHEOPGETLINESIZE, PVRSRVBridgeCacheOpGetLineSize,
 					NULL, bUseLock);
 
 

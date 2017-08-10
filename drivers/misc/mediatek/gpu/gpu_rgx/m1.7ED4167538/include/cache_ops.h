@@ -52,11 +52,6 @@ typedef IMG_UINT32 PVRSRV_CACHE_OP;				/*!< Type represents cache maintenance op
 #define PVRSRV_CACHE_OP_INVALIDATE			0x2	/*!< Invalidate w/o flush */
 #define PVRSRV_CACHE_OP_FLUSH				0x3	/*!< Flush w/ invalidate */
 
-typedef IMG_UINT32 PVRSRV_CACHE_OP_ADDR_TYPE;	/*!< Type represents address required for cache op. */
-#define PVRSRV_CACHE_OP_ADDR_TYPE_VIRTUAL	0x1	/*!< Operation require virtual address only */
-#define PVRSRV_CACHE_OP_ADDR_TYPE_PHYSICAL	0x2	/*!< Operation require physical address only */
-#define PVRSRV_CACHE_OP_ADDR_TYPE_BOTH		0x3	/*!< Operation require both virtual & physical addresses */
-
 #define CACHEFLUSH_UM_X86					0x1	/*!< Intel x86/x64 specific UM range-based cache flush */
 #define CACHEFLUSH_UM_ARM64					0x2	/*!< ARM Aarch64 specific UM range-based cache flush */
 #define CACHEFLUSH_UM_GENERIC				0x3	/*!< Generic UM/KM cache flush (i.e. CACHEFLUSH_KM_TYPE) */
@@ -69,38 +64,5 @@ typedef IMG_UINT32 PVRSRV_CACHE_OP_ADDR_TYPE;	/*!< Type represents address requi
 #define CACHEFLUSH_UM_TYPE CACHEFLUSH_UM_GENERIC
 #endif
 #endif
-
-#define CACHEFLUSH_KM_RANGEBASED_DEFERRED	0x1	/*!< Services KM using deferred (i.e asynchronous) range-based flush */
-#define CACHEFLUSH_KM_RANGEBASED			0x2	/*!< Services KM using immediate (i.e synchronous) range-based flush */
-#define CACHEFLUSH_KM_GLOBAL				0x3	/*!< Services KM using global flush */
-#ifndef CACHEFLUSH_KM_TYPE						/*!< Type represents cache maintenance operation method */
-#define CACHEFLUSH_KM_TYPE CACHEFLUSH_KM_RANGEBASED	/*!< Default (if not specified) is range-based flush */
-#else
-#if (CACHEFLUSH_KM_TYPE == CACHEFLUSH_KM_GLOBAL)
-#if defined(__aarch64__) || defined(__mips__)
-/* These architectures do not support global cache maintenance */
-#error "CACHEFLUSH_KM_GLOBAL is not supported on architecture"
-#endif
-#endif
-#endif
-
-/*
-	If we get multiple cache operations before the operation which will
-	trigger the operation to happen then we need to make sure we do
-	the right thing.
-
-	Note: PVRSRV_CACHE_OP_INVALIDATE should never be passed into here
-*/
-#ifdef INLINE_IS_PRAGMA
-#pragma inline(SetCacheOp)
-#endif
-static INLINE PVRSRV_CACHE_OP SetCacheOp(PVRSRV_CACHE_OP uiCurrent,
-										 PVRSRV_CACHE_OP uiNew)
-{
-	PVRSRV_CACHE_OP uiRet;
-
-	uiRet = uiCurrent | uiNew;
-	return uiRet;
-}
 
 #endif	/* _CACHE_OPS_H_ */

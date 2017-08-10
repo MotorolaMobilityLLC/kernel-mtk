@@ -49,6 +49,49 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "device.h"
 #include "pmr.h"
 
+typedef IMG_UINT32 PVRSRV_CACHE_OP_ADDR_TYPE;	/*!< Type represents address required for cache op. */
+#define PVRSRV_CACHE_OP_ADDR_TYPE_VIRTUAL	0x1	/*!< Operation requires virtual address only */
+#define PVRSRV_CACHE_OP_ADDR_TYPE_PHYSICAL	0x2	/*!< Operation requires physical address only */
+#define PVRSRV_CACHE_OP_ADDR_TYPE_BOTH		0x3	/*!< Operation requires both virtual & physical addresses */
+
+#define CACHEFLUSH_KM_RANGEBASED_DEFERRED	0x1	/*!< Services KM using deferred (i.e asynchronous) range-based flush */
+#define CACHEFLUSH_KM_RANGEBASED			0x2	/*!< Services KM using immediate (i.e synchronous) range-based flush */
+#define CACHEFLUSH_KM_GLOBAL				0x3	/*!< Services KM using global flush */
+#ifndef CACHEFLUSH_KM_TYPE						/*!< Type represents cache maintenance operation method */
+	#if defined(__x86__) || defined(__aarch64__)
+		#define CACHEFLUSH_KM_TYPE CACHEFLUSH_KM_GLOBAL		/*!< Default for x86/arm64 is global flush */
+	#else
+		#define CACHEFLUSH_KM_TYPE CACHEFLUSH_KM_RANGEBASED	/*!< Default for others is range-based flush */
+	#endif
+#else
+	#if (CACHEFLUSH_KM_TYPE == CACHEFLUSH_KM_GLOBAL)
+		#if defined(__mips__)
+			/* Architecture(s) do not support global cache maintenance */
+			#error "CACHEFLUSH_KM_GLOBAL is not supported on architecture"
+		#endif
+	#endif
+#endif
+
+/*
+	If we get multiple cache operations before the operation which will
+	trigger the operation to happen then we need to make sure we do
+	the right thing. Used for global cache maintenance
+
+	Note: PVRSRV_CACHE_OP_INVALIDATE should never be passed into here
+*/
+#ifdef INLINE_IS_PRAGMA
+#pragma inline(SetCacheOp)
+#endif
+static INLINE PVRSRV_CACHE_OP SetCacheOp(PVRSRV_CACHE_OP uiCurrent, PVRSRV_CACHE_OP uiNew)
+{
+	PVRSRV_CACHE_OP uiRet;
+	uiRet = uiCurrent | uiNew;
+	return uiRet;
+}
+
+/*
+	Cache maintenance framework API
+*/
 PVRSRV_ERROR CacheOpInit(void);
 PVRSRV_ERROR CacheOpDeInit(void);
 
@@ -58,7 +101,7 @@ PVRSRV_ERROR CacheOpExec (PMR *psPMR,
 						IMG_DEVMEM_SIZE_T uiSize,
 						PVRSRV_CACHE_OP uiCacheOp);
 
-/* This interface _may_ defer cache ops (i.e. asynchronous) */
+/* This interface _may_ defer cache-ops (i.e. asynchronous) */
 PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32OpCount,
 						PMR **ppsPMR,
 						IMG_DEVMEM_OFFSET_T *puiOffset,
@@ -66,7 +109,7 @@ PVRSRV_ERROR CacheOpQueue (IMG_UINT32 ui32OpCount,
 						PVRSRV_CACHE_OP *puiCacheOp,
 						IMG_UINT32 *pui32OpSeqNum);
 
-/* This interface is used to log cache ops */
+/* This interface is used to log user-mode cache-ops */
 PVRSRV_ERROR CacheOpLog (PMR *psPMR,
 						IMG_DEVMEM_OFFSET_T uiOffset,
 						IMG_DEVMEM_SIZE_T uiSize,
@@ -74,8 +117,12 @@ PVRSRV_ERROR CacheOpLog (PMR *psPMR,
 						IMG_UINT64 ui64ExecuteTimeMs,
 						PVRSRV_CACHE_OP uiCacheOp);
 
+/* This interface must be used to fence for pending cache-ops before kicks */
 PVRSRV_ERROR CacheOpFence (RGXFWIF_DM eOpType, IMG_UINT32 ui32OpSeqNum);
 
+/* This interface is used for notification of completed cache-ops */
 PVRSRV_ERROR CacheOpSetTimeline (IMG_INT32 i32OpTimeline);
 
+/* This interface is used for retrieving the processor d-cache line size */
+PVRSRV_ERROR CacheOpGetLineSize (IMG_UINT32 *pui32L1DataCacheLineSize);
 #endif	/* _CACHE_RANGEBASED_H_ */

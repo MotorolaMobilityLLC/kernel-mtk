@@ -1246,7 +1246,7 @@ _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
 				}
 
 				puiPhysicalOffset[idx] = (psMappingTable->aui32Translation[ui64ChunkIndex] * psMappingTable->uiChunkSize) +	 ui32Remain;
-				
+
 				/* initial offset may not be page aligned, round down */
 				uiOffset &= ~(uiPageSize-1);
 			}
@@ -1653,26 +1653,59 @@ PMR_LogicalSize(const PMR *psPMR,
     return PVRSRV_OK;
 }
 
-void
+PVRSRV_ERROR
 PMR_IsOffsetValid(const PMR *psPMR,
 				IMG_UINT32 ui32Log2PageSize,
 				IMG_UINT32 ui32NumOfPages,
 				IMG_DEVMEM_OFFSET_T uiLogicalOffset,
 				IMG_BOOL *pbValid)
 {
-	IMG_DEVMEM_OFFSET_T uiPhysicalOffset;
-    IMG_UINT32 ui32BytesRemain;
+	IMG_DEVMEM_OFFSET_T auiPhysicalOffset[PMR_MAX_TRANSLATION_STACK_ALLOC];
+	IMG_UINT32 aui32BytesRemain[PMR_MAX_TRANSLATION_STACK_ALLOC];
+	IMG_DEVMEM_OFFSET_T *puiPhysicalOffset = auiPhysicalOffset;
+	IMG_UINT32 *pui32BytesRemain = aui32BytesRemain;
+	PVRSRV_ERROR eError = PVRSRV_OK;
 
-    PVR_ASSERT(psPMR != NULL);
-    PVR_ASSERT(psPMR->uiLogicalSize >= uiLogicalOffset);
+	PVR_ASSERT(psPMR != NULL);
+	PVR_ASSERT(psPMR->uiLogicalSize >= uiLogicalOffset);
+
+	if (ui32NumOfPages > PMR_MAX_TRANSLATION_STACK_ALLOC)
+	{
+		puiPhysicalOffset = OSAllocMem(ui32NumOfPages * sizeof(IMG_DEVMEM_OFFSET_T));
+		if (puiPhysicalOffset == NULL)
+		{
+			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+			goto e0;
+		}
+
+		pui32BytesRemain = OSAllocMem(ui32NumOfPages * sizeof(IMG_UINT32));
+		if (pui32BytesRemain == NULL)
+		{
+			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
+			goto e0;
+		}
+	}
 
 	_PMRLogicalOffsetToPhysicalOffset(psPMR,
 									ui32Log2PageSize,
 									ui32NumOfPages,
 									uiLogicalOffset,
-									&uiPhysicalOffset,
-									&ui32BytesRemain,
+									puiPhysicalOffset,
+									pui32BytesRemain,
 									pbValid);
+
+e0:
+	if (puiPhysicalOffset != auiPhysicalOffset && puiPhysicalOffset != NULL)
+	{
+		OSFreeMem(puiPhysicalOffset);
+	}
+
+	if (pui32BytesRemain != aui32BytesRemain && pui32BytesRemain != NULL)
+	{
+		OSFreeMem(pui32BytesRemain);
+	}
+
+	return eError;
 }
 
 PMR_MAPPING_TABLE *

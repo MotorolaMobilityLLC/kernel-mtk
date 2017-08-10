@@ -549,7 +549,7 @@ PMR_GetMappigTable(const PMR *psPMR);
  * Returns if an address offset inside a PMR has a valid
  * physical backing.
  */
-extern void
+extern PVRSRV_ERROR
 PMR_IsOffsetValid(const PMR *psPMR,
 				IMG_UINT32 ui32Log2PageSize,
 				IMG_UINT32 ui32NumOfPages,

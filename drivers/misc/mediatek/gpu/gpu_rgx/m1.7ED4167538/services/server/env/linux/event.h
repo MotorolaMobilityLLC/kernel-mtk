@@ -45,4 +45,4 @@ PVRSRV_ERROR LinuxEventObjectListDestroy(IMG_HANDLE hEventObjectList);
 PVRSRV_ERROR LinuxEventObjectAdd(IMG_HANDLE hOSEventObjectList, IMG_HANDLE *phOSEventObject);
 PVRSRV_ERROR LinuxEventObjectDelete(IMG_HANDLE hOSEventObject);
 PVRSRV_ERROR LinuxEventObjectSignal(IMG_HANDLE hOSEventObjectList);
-PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT32 ui32MSTimeout, IMG_BOOL bHoldBridgeLock);
+PVRSRV_ERROR LinuxEventObjectWait(IMG_HANDLE hOSEventObject, IMG_UINT64 ui64Timeoutus, IMG_BOOL bHoldBridgeLock);

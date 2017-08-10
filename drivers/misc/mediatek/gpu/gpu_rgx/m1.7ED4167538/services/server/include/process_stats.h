@@ -167,6 +167,7 @@ void  PVRSRVStatsUpdateCacheOpStats(PVRSRV_CACHE_OP uiCacheOp,
 									IMG_DEVMEM_SIZE_T uiSize,
 									IMG_UINT64 ui64ExecuteTimeMs,
 									IMG_BOOL bRangeBasedFlush,
+									IMG_BOOL bUserModeFlush,
 									IMG_BOOL bIsTimeline,
 									IMG_BOOL bIsFence,
 									IMG_PID ownerPid);
