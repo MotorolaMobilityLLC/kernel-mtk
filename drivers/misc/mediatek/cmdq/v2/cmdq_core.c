@@ -1840,9 +1840,11 @@ void cmdq_core_reset_hw_events_impl(CMDQ_EVENT_ENUM event)
 void cmdq_core_reset_hw_events(void)
 {
 	int index;
+	struct ResourceUnitStruct *pResource = NULL;
+	struct list_head *p = NULL;
+
 	/* set all defined events to 0 */
 	CMDQ_MSG("cmdq_core_reset_hw_events\n");
-
 
 #undef DECLARE_CMDQ_EVENT
 #define DECLARE_CMDQ_EVENT(name, val, dts_name) \
@@ -1860,10 +1862,21 @@ void cmdq_core_reset_hw_events(void)
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_GPR_SET_3);
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_GPR_SET_4);
 
-	/* However, CMDQ_SYNC_RESOURCE are resource flags, */
+	/* CMDQ_SYNC_RESOURCE are resource flags, */
 	/* by default they should be 1. */
-	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT0);
-	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT1);
+	list_for_each(p, &gCmdqContext.resourceList) {
+		pResource = list_entry(p, struct ResourceUnitStruct, listEntry);
+		mutex_lock(&gCmdqResourceMutex);
+		if (pResource->lend) {
+			CMDQ_LOG("[Res] Client is already lend, event: %d\n", pResource->lockEvent);
+			cmdqCoreClearEvent(pResource->lockEvent);
+		} else {
+			CMDQ_MSG("[Res] init resource event to 1: %d\n", pResource->lockEvent);
+			cmdqCoreSetEvent(pResource->lockEvent);
+		}
+		mutex_unlock(&gCmdqResourceMutex);
+	}
+
 	/* However, CMDQ_SYNC_RESOURCE are WSM lock flags, */
 	/* by default they should be 1. */
 	cmdqCoreSetEvent(CMDQ_SYNC_SECURE_WSM_LOCK);
@@ -2948,7 +2961,6 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	CMDQ_DATA_REGISTER_ENUM valueRegId;
 	CMDQ_DATA_REGISTER_ENUM destRegId;
 	CMDQ_EVENT_ENUM regAccessToken;
-	uint32_t prependBufferSize = 0;
 	const bool userSpaceRequest = cmdq_core_is_request_from_user_space(pTask->scenario);
 	bool postInstruction = false;
 
@@ -2976,12 +2988,6 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	}
 
 	CMDQ_VERBOSE("test %d, original command size = %d\n", __LINE__, pTask->commandSize);
-
-	if (status < 0) {
-		CMDQ_ERR("finalize command buffer failed to realloc, pTask=0x%p, requireSize=%d\n",
-			 pTask, pTask->commandSize + prependBufferSize + extraBufferSize);
-		return status;
-	}
 
 	/* init pCMDEnd */
 	/* mark command end to NULL as initial state */
@@ -4075,7 +4081,8 @@ void cmdq_core_dump_resource_status(CMDQ_EVENT_ENUM resourceEvent)
 			CMDQ_ERR("[Res]   notify: %llu, delay: %lld\n", pResource->notify, pResource->delay);
 			CMDQ_ERR("[Res]   lock: %llu, unlock: %lld\n", pResource->lock, pResource->unlock);
 			CMDQ_ERR("[Res]   acquire: %llu, release: %lld\n", pResource->acquire, pResource->release);
-			CMDQ_ERR("[Res] isUsed:%d, isDelay:%d\n", pResource->used, pResource->delaying);
+			CMDQ_ERR("[Res] isUsed:%d, isLend:%d, isDelay:%d\n",
+				pResource->used, pResource->lend, pResource->delaying);
 			if (NULL == pResource->releaseCB)
 				CMDQ_ERR("[Res]: release CB func is NULL\n");
 			mutex_unlock(&gCmdqResourceMutex);
@@ -8769,6 +8776,7 @@ bool cmdqCoreAcquireResource(CMDQ_EVENT_ENUM resourceEvent)
 				CMDQ_MSG("[Res] Acquire successfully, event: %d\n", resourceEvent);
 				cmdqCoreClearEvent(resourceEvent);
 				pResource->acquire = sched_clock();
+				pResource->lend = true;
 			}
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
@@ -8792,6 +8800,7 @@ void cmdqCoreReleaseResource(CMDQ_EVENT_ENUM resourceEvent)
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
 			pResource->release = sched_clock();
+			pResource->lend = false;
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
 		}
