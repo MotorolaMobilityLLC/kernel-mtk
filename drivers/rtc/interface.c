@@ -444,8 +444,14 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 	if (err)
 		return err;
 	rtc_tm_to_time(&tm, &now);
-	if (scheduled <= now)
+	if (scheduled <= now) {
+		pr_emerg("alarm: %d/%d/%d, %d:%d:%d (%ld)\n", alarm->time.tm_year, alarm->time.tm_mon,
+			alarm->time.tm_mday, alarm->time.tm_hour, alarm->time.tm_min, alarm->time.tm_sec, scheduled);
+		pr_emerg("now: %d/%d/%d, %d:%d:%d (%ld)\n", tm.tm_year, tm.tm_mon, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec, now);
+		pr_emerg("%s, -ETIME\n", __func__);
 		return -ETIME;
+	}
 	/*
 	 * XXX - We just checked to make sure the alarm time is not
 	 * in the past, but there is still a race window where if
@@ -1072,8 +1078,10 @@ again:
 		alarm.enabled = 1;
 		err = __rtc_set_alarm(rtc, &alarm);
 		rtc_mutex_monitor_update(7);
-		if (err == -ETIME)
+		if (err == -ETIME) {
+			pr_emerg("%s, -ETIME\n", __func__);
 			goto again;
+		}
 	} else {
 		rtc_mutex_monitor_update(8);
 		rtc_alarm_disable(rtc);
