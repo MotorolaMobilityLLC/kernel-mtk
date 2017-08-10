@@ -671,6 +671,16 @@ bool soidle3_can_enter(int cpu)
 	unsigned int expected_us;
 #endif
 
+#if defined(CONFIG_ARCH_MT6755)
+	if (soidle3_by_pass_en == 0) {
+		if (spm_get_sodi_mempll() || !spm_get_sodi3_en() || !spm_get_sodi_en()) {
+			/* if SODI is disabled, SODI3 is also disabled */
+			reason = BY_OTH;
+			goto out;
+		}
+	}
+#endif
+
 	if (!is_disp_pwm_rosc()) {
 		reason = BY_PWM;
 		goto out;
@@ -723,6 +733,7 @@ bool soidle3_can_enter(int cpu)
 	}
 #endif
 
+#if !defined(CONFIG_ARCH_MT6755)
 	if (soidle3_by_pass_en == 0) {
 		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0) || (spm_get_sodi_mempll() == true)) {
 			/* if SODI is disabled, SODI3 is also disabled */
@@ -730,6 +741,7 @@ bool soidle3_can_enter(int cpu)
 			goto out;
 		}
 	}
+#endif
 
 	if (soidle3_by_pass_pll == 0) {
 		if (!pll_check_idle_can_enter(soidle3_pll_condition_mask, soidle3_pll_block_mask)) {
