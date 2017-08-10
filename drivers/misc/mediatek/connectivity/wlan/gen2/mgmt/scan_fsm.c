@@ -1047,11 +1047,13 @@ scnFsmGenerateScanDoneMsg(IN P_ADAPTER_T prAdapter,
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	DBGLOG(SCN, INFO, "Rcv Scan Done, NetIdx %d, Obss %d, Status %d, Seq %d ,STA MAC:[%pM] FwVer: 0x%x.%x\n",
+	DBGLOG(SCN, INFO,
+		"Rcv Scan Done, NetIdx %d, Obss %d, Status %d, Seq %d ,STA MAC:[%pM] FwVer: 0x%x.%x DriVer:%s\n",
 				  ucNetTypeIndex, prScanParam->fgIsObssScan, eScanStatus, ucSeqNum,
 				  prAdapter->rWifiVar.aucMacAddress,
 				  prAdapter->rVerInfo.u2FwOwnVersion,
-				  prAdapter->rVerInfo.u2FwOwnVersionExtend);
+				  prAdapter->rVerInfo.u2FwOwnVersionExtend,
+				  WIFI_DRIVER_VERSION);
 	prScanDoneMsg = (P_MSG_SCN_SCAN_DONE) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SCN_SCAN_DONE));
 	if (!prScanDoneMsg) {
 		ASSERT(0);	/* Can't indicate SCAN FSM Complete */
