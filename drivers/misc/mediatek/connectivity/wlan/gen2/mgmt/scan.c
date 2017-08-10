@@ -67,7 +67,7 @@ definition for AP selection algrithm
 #define WEIGHT_IDX_5G_BAND		2
 #define WEIGHT_IDX_BAND_WIDTH	1
 #define WEIGHT_IDX_STBC			1
-#define WEIGHT_IDX_DEAUTH_LAST	3
+#define WEIGHT_IDX_DEAUTH_LAST	4
 #define WEIGHT_IDX_BLACK_LIST	2
 
 /*******************************************************************************
@@ -3440,9 +3440,9 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 	else if (cRssi >= -65)
 		u2Score = 90;
 	else if (cRssi >= -70)
-		u2Score = 85;
+		u2Score = 50;
 	else if (cRssi >= -77)
-		u2Score = 30;
+		u2Score = 10;
 	else if (cRssi <= -88 && cRssi > -100)
 		u2Score = 5;
 	else if (cRssi <= -100)

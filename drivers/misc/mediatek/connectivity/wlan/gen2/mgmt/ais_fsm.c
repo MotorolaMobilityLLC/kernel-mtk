@@ -2605,11 +2605,19 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 #if CFG_SUPPORT_ROAMING
 					if (prAisBssInfo->prStaRecOfAP)
 						prAisBssInfo->prStaRecOfAP->fgIsTxAllowed = TRUE;
-
-					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #if CFG_SUPPORT_ROAMING_RETRY
-						fgIsUnderRoaming = TRUE;
-#endif /*CFG_SUPPORT_ROAMING_RETRY*/
+					/*Under roamming case : After candidate BSS joined fail.*/
+					/*STA will re-try other BSS.*/
+					DBGLOG(AIS, INFO,
+						"Under roamming %pM join fail and STA will re-try other AP\n",
+					prBssDesc->aucBSSID);
+					prBssDesc->fgIsRoamFail = TRUE;
+					fgIsUnderRoaming = TRUE;
+
+					eNextState = AIS_STATE_COLLECT_ESS_INFO;
+#else
+					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
+#endif /* CFG_SUPPORT_ROAMING_RETRY */
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 				} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
