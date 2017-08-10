@@ -224,7 +224,7 @@ int switch_sim_mode(int id, char *buf, unsigned int len)
 static int get_sim_mode_init(void)
 {
 	unsigned int sim_mode = 0;
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
+#if defined(CONFIG_MTK_LTE_MODE) && (CONFIG_MTK_LTE_MODE == 1)
 	sim_mode = SINGLE_TALK_MDSYS;
 #else
 #ifdef CONFIG_EVDO_DT_SUPPORT
