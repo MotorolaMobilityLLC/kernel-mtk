@@ -403,15 +403,6 @@ bool mt_usb_is_device(void)
 	}
 	DBG(4, "is_host=%d\n", mtk_musb->is_host);
 
-	/* from K2, FIXME */
-#ifdef MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
-		/* prevent MHL chip initial and cable related issue. */
-		/* power off charging mode. No need OTG function */
-		return true;
-	}
-#endif
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
 		DBG(0, "in UART Mode\n");
@@ -504,12 +495,6 @@ void do_connection_work(struct work_struct *data)
 
 void mt_usb_connect(void)
 {
-	/* FORCE USB ON case */
-	if (musb_force_on) {
-		DBG(0, "BRING_UP, SKIP issue work !!!\n");
-		return;
-	}
-
 	if (!mtk_musb) {
 		DBG(0, "mtk_musb = NULL\n");
 		return;
@@ -523,12 +508,6 @@ void mt_usb_connect(void)
 
 void mt_usb_disconnect(void)
 {
-	/* FORCE USB ON case */
-	if (musb_force_on) {
-		DBG(0, "BRING_UP, SKIP issue work !!!\n");
-		return;
-	}
-
 	if (!mtk_musb) {
 		DBG(0, "mtk_musb = NULL\n");
 		return;
@@ -545,19 +524,44 @@ static void do_connect_rescue_work(struct work_struct *work)
 	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 }
 
+
+/* #define BYPASS_PMIC_LINKAGE */
+static CHARGER_TYPE musb_hal_get_charger_type(void)
+{
+	CHARGER_TYPE chg_type;
+#ifdef BYPASS_PMIC_LINKAGE
+	DBG(0, "force on");
+	chg_type = STANDARD_HOST;
+#else
+	chg_type = mt_get_charger_type();
+#endif
+
+	return chg_type;
+}
+static bool musb_hal_is_vbus_exist(void)
+{
+	bool vbus_exist;
+
+#ifdef BYPASS_PMIC_LINKAGE
+	DBG(0, "force on");
+	vbus_exist = true;
+#else
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
+#endif
+#endif
+
+	return vbus_exist;
+
+}
+
 bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
 	int delay_time;
-
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		DBG(0, "%s, in KPOC, force USB on\n", __func__);
-		return true;
-	}
-#endif
 
 	/* FORCE USB ON case */
 	if (musb_force_on) {
@@ -569,7 +573,7 @@ bool usb_cable_connected(void)
 	} else {
 		/* TYPE CHECK*/
 		delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
-		chg_type = mt_get_charger_type();
+		chg_type = musb_hal_get_charger_type();
 		if (musb_fake_CDP && chg_type == STANDARD_HOST) {
 			DBG(0, "%s, fake to type 2\n", __func__);
 			chg_type = CHARGING_HOST;
@@ -579,11 +583,8 @@ bool usb_cable_connected(void)
 			connected = true;
 
 		/* VBUS CHECK to avoid type miss-judge */
-#ifdef CONFIG_POWER_EXT
-		vbus_exist = upmu_get_rgs_chrdet();
-#else
-		vbus_exist = upmu_is_chr_det();
-#endif
+		vbus_exist = musb_hal_is_vbus_exist();
+
 		DBG(0, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
 		if (!vbus_exist)
 			connected = false;
@@ -1400,6 +1401,16 @@ err0:
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
+
+	if (get_boot_mode() == META_BOOT
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+			|| get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
+#endif
+	   ) {
+		DBG(0, "in special mode %d\n", get_boot_mode());
+		musb_force_on = 1;
+	}
 
 	/* enable uart log */
 	musb_uart_debug = 1;

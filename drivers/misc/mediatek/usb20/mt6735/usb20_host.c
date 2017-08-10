@@ -371,13 +371,8 @@ static void musb_id_pin_work(struct work_struct *data)
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
 	down(&mtk_musb->musb_lock);
-	DBG(0, "work start, is_host=%d, boot mode(%d)\n", mtk_musb->is_host, get_boot_mode());
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		DBG(0, "do nothing due to in power off charging\n");
-		goto out;
-	}
-#endif
+	DBG(0, "work start, is_host=%d\n", mtk_musb->is_host);
+
 	if (mtk_musb->in_ipo_off) {
 		DBG(0, "do nothing due to in_ipo_off\n");
 		goto out;
@@ -544,6 +539,17 @@ static void otg_int_init(void)
 
 void mt_usb_otg_init(struct musb *musb)
 {
+	/* BYPASS OTG function in special mode */
+	if (get_boot_mode() == META_BOOT
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+			|| get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
+#endif
+	   ) {
+		DBG(0, "in special mode %d\n", get_boot_mode());
+		return;
+	}
+
 #ifdef CONFIG_OF
 	usb_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-usb20");
 	if (usb_node == NULL) {

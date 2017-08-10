@@ -2757,11 +2757,7 @@ static int set_musb_force_on(const char *val, const struct kernel_param *kp)
 	DBG(0, "musb_force_on:%d\n", musb_force_on);
 
 	switch (musb_force_on) {
-	case 0:
-		DBG(0, "case %d\n", musb_force_on);
-		mt_usb_connect();
-		break;
-	case 1:
+	case 2:
 		DBG(0, "case %d\n", musb_force_on);
 		mt_usb_connect();
 		break;
