@@ -125,6 +125,7 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 obj-$(CONFIG_THERMAL) += ts_da9214.o
 obj-$(CONFIG_THERMAL) += mtk_ts_dram.o
+obj-$(CONFIG_THERMAL) += mtk_ts_imgsensor.o
 
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
