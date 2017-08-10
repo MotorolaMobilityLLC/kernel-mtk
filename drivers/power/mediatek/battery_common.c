@@ -438,7 +438,7 @@ EXPORT_SYMBOL(upmu_is_chr_det);
 
 void wake_up_bat(void)
 {
-	battery_log(BAT_LOG_CRTI, "[BATTERY] wake_up_bat. \r\n");
+	battery_log(BAT_LOG_FULL, "[BATTERY] wake_up_bat. \r\n");
 
 	chr_wake_up_bat = KAL_TRUE;
 	bat_thread_timeout = KAL_TRUE;
