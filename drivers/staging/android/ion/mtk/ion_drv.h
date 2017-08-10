@@ -199,6 +199,11 @@ typedef struct ion_mm_data {
 	snprintf(ion_name, 100, "["ION_LOG_TAG"]"string, ##args); \
 	aee_kernel_warning(ion_name, "["ION_LOG_TAG"]error:"string, ##args);  \
 } while (0)
+#ifdef ION_DBG
+#define IONDBG(string, args...)	pr_err("[ION]"string, ##args)
+#else
+#define IONDBG(string, args...)
+#endif
 
 /* Exported global variables */
 extern struct ion_device *g_ion_device;

@@ -63,7 +63,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	ion_sec_buffer_info *pBufferInfo = NULL;
 	u32 refcount = 0;
 
-	IONMSG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
+	IONDBG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
 
 	pBufferInfo = kzalloc(sizeof(ion_sec_buffer_info), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(pBufferInfo)) {
@@ -114,7 +114,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	buffer->flags &= ~ION_FLAG_CACHED;
 	buffer->size = size;
 
-	IONMSG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
+	IONDBG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
 							pBufferInfo->priv_phys, buffer->size);
 	return 0;
 }
@@ -126,7 +126,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *) buffer->priv_virt;
 	u32 sec_handle = 0;
 
-	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 	sec_handle = ((ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
@@ -143,7 +143,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	buffer->priv_virt = NULL;
 	kfree(pBufferInfo);
 
-	IONMSG("%s exit\n", __func__);
+	IONDBG("%s exit\n", __func__);
 }
 
 struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
@@ -153,7 +153,7 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 #if ION_RUNTIME_DEBUGGER
 	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *) buffer->priv_virt;
 #endif
-	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 
 	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
 	if (!table)
@@ -169,14 +169,14 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 #else
 	sg_set_page(table->sgl, 0, 0, 0);
 #endif
-	IONMSG("%s exit\n", __func__);
+	IONDBG("%s exit\n", __func__);
 	return table;
 
 }
 
 static void ion_sec_heap_unmap_dma(struct ion_heap *heap, struct ion_buffer *buffer)
 {
-	IONMSG("%s priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s priv_virt %p\n", __func__, buffer->priv_virt);
 	sg_free_table(buffer->sg_table);
 }
 
@@ -191,10 +191,10 @@ static int ion_sec_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *) buffer->priv_virt;
 
-	IONMSG("%s priv_virt %p\n", __func__, buffer->priv_virt);
+	IONDBG("%s priv_virt %p\n", __func__, buffer->priv_virt);
 	*addr = pBufferInfo->priv_phys;
 	*len = buffer->size;
-	IONMSG("%s exit pa 0x%lx(%zu)\n", __func__, pBufferInfo->priv_phys, buffer->size);
+	IONDBG("%s exit pa 0x%lx(%zu)\n", __func__, pBufferInfo->priv_phys, buffer->size);
 
 	return 0;
 }
