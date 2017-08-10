@@ -537,7 +537,7 @@ static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
 		}
 
 		for (i = infoCntUsed - 1; i >= 0; i--) {
-			strcpy(&name[actualLen], eventInfo[i]->name);
+			strncpy(&name[actualLen], eventInfo[i]->name, strlen(eventInfo[i]->name));
 			actualLen += strlen(eventInfo[i]->name);
 			if (i > 0) {
 				/* not the last name */
