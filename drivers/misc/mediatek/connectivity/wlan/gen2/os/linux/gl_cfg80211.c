@@ -2429,6 +2429,104 @@ nla_put_failure:
 }
 
 int
+mtk_cfg80211_testmode_set_packet_filter(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	INT_32 i4Status = rStatus;
+	UINT_32 u4BufLen = 0;
+	P_NL80211_DRIVER_RXFILTER_PARAMS prParams = NULL;
+
+	PACKET_DROP_T cmdBuf;
+	P_PACKET_DROP_T pCmdHeader = NULL;
+	P_PACKET_DROP_SETTING_V1_T pCmdData = NULL;
+	UINT_64 u64Filter = 0;
+
+	ASSERT(wiphy);
+	ASSERT(prGlueInfo);
+
+	if (data && len)
+		prParams = (P_NL80211_DRIVER_RXFILTER_PARAMS)data;
+
+	kalMemZero(&cmdBuf, sizeof(cmdBuf));
+
+	pCmdHeader = &cmdBuf;
+	pCmdHeader->cmdVersion = 0;
+	pCmdHeader->cmdType = 0;
+	pCmdHeader->magicCode = 0x72;
+	pCmdHeader->cmdBufferLen = MAX_PACKET_DROP_LENGTH;
+
+	pCmdData = (P_PACKET_DROP_SETTING_V1_T)&(pCmdHeader->buffer[0]);
+
+	u64Filter = prParams->Ipv4FilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_IPv4.bytes = u64Filter|prParams->Ipv4FilterLow;
+
+	/*bit0~bit8
+
+	pCmdData->Drop_IPv4.bytes |= 0xFE;
+	struct {
+				UINT_64    all:1;
+				UINT_64    MDNS:1;
+				UINT_64    LLMNR:1;
+				UINT_64    BROWSER:1;
+				UINT_64    CAPWAP:1;
+				UINT_64    DNS:1;
+				UINT_64    NBNS:1;
+				UINT_64    SSDP:1;
+				UINT_64    others:1;
+			} UDPbits;
+	*/
+
+	u64Filter = prParams->Ipv6FilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_IPv6.bytes = u64Filter|prParams->Ipv6FilterLow;
+
+	/* bit0 only
+	pCmdData->Drop_IPv6.bytes |= 0x01;
+	struct {
+			UINT_64    all:1;
+			} bits;
+	*/
+
+	u64Filter = prParams->SnapFilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_SNAP.bytes = u64Filter|prParams->SnapFilterLow;
+
+	/*bit0~bit4
+	pCmdData->Drop_SNAP.bytes |= 0x0E;
+	 struct {
+				UINT_64    all:1;
+				UINT_64    CDP:1;
+				UINT_64    STP:1;
+				UINT_64    XID:1;
+				UINT_64    others:1;
+			} bits;
+	*/
+	pr_info("wlan_gen2: mtk_cfg80211_testmode_set_packet_filter\n Drop_IPv4(%02llx)\nDrop_IPv6(%02llx)\nDrop_SNAP(%02llx)\n",
+		pCmdData->Drop_IPv4.bytes, pCmdData->Drop_IPv6.bytes, pCmdData->Drop_SNAP.bytes);
+
+	rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetRxPacketFilterPriv,
+					&cmdBuf,
+					sizeof(PACKET_DROP_T),
+					FALSE,
+					FALSE,
+					TRUE,
+					FALSE,
+					&u4BufLen);
+
+	/*printk("rStatus = %08x\n",rStatus);*/
+
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		i4Status = -EFAULT;
+
+	return i4Status;
+}
+
+int
 mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
 {
 
@@ -2684,6 +2782,9 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 			}
 			break;
 		}
+	case TESTMODE_CMD_ID_RXFILTER:
+		i4Status = mtk_cfg80211_testmode_set_packet_filter(wiphy, data, len, prGlueInfo);
+		break;
 	case TESTMODE_CMD_ID_STATISTICS:
 		i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
 		break;
