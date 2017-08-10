@@ -71,6 +71,8 @@ static struct kobj_attribute _name##_attr = {	\
 
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
+#define cmd_cmp(cmd, str)	strncmp(cmd, str, sizeof(str) - 1)
+
 /**************************************
  * Define and Declare
  **************************************/
@@ -813,7 +815,7 @@ static ssize_t opp_table_store(struct kobject *kobj, struct kobj_attribute *attr
 
 	tag_pr_info("opp_table: cmd = %s, val = %u (0x%x)\n", cmd, val, val);
 
-	if (!strcmp(cmd, "UHPM") && val < VCORE_INVALID) {
+	if (!cmd_cmp(cmd, "UHPM") && val < VCORE_INVALID) {
 		uv = vcore_pmic_to_uv(val);
 		mutex_lock(&vcorefs_mutex);
 		if (uv >= opp_ctrl_table[OPPI_PERF].vcore_uv && !feature_en) {
@@ -821,7 +823,7 @@ static ssize_t opp_table_store(struct kobject *kobj, struct kobj_attribute *attr
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 		mutex_unlock(&vcorefs_mutex);
-	} else if (!strcmp(cmd, "HPM") && val < VCORE_INVALID) {
+	} else if (!cmd_cmp(cmd, "HPM") && val < VCORE_INVALID) {
 		uv = vcore_pmic_to_uv(val);
 		mutex_lock(&vcorefs_mutex);
 		if (uv >= opp_ctrl_table[OPPI_LOW_PWR].vcore_uv &&
@@ -830,7 +832,7 @@ static ssize_t opp_table_store(struct kobject *kobj, struct kobj_attribute *attr
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 		mutex_unlock(&vcorefs_mutex);
-	} else if (!strcmp(cmd, "LPM") && val < VCORE_INVALID) {
+	} else if (!cmd_cmp(cmd, "LPM") && val < VCORE_INVALID) {
 		uv = vcore_pmic_to_uv(val);
 		mutex_lock(&vcorefs_mutex);
 		if (uv <= opp_ctrl_table[OPPI_PERF].vcore_uv && !feature_en) {
@@ -931,7 +933,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 
 	tag_pr_info("vcore_debug: cmd = %s, val = %d (0x%x)\n", cmd, val, val);
 
-	if (!strcmp(cmd, "feature_en")) {
+	if (!cmd_cmp(cmd, "feature_en")) {
 		mutex_lock(&vcorefs_mutex);
 		if (val && dram_can_support_fh() && !feature_en) {
 			feature_en = 1;
@@ -943,34 +945,34 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 			set_init_opp_index(pwrctrl);
 		}
 		mutex_unlock(&vcorefs_mutex);
-	} else if (!strcmp(cmd, "vcore_dvs")) {
+	} else if (!cmd_cmp(cmd, "vcore_dvs")) {
 		pwrctrl->vcore_dvs = !!val;
-	} else if (!strcmp(cmd, "freq_dfs")) {
+	} else if (!cmd_cmp(cmd, "freq_dfs")) {
 		pwrctrl->freq_dfs = !!val;
-	} else if (!strcmp(cmd, "ddr_dfs")) {
+	} else if (!cmd_cmp(cmd, "ddr_dfs")) {
 		pwrctrl->ddr_dfs = !!val;
-	} else if (!strcmp(cmd, "log_mask")) {
+	} else if (!cmd_cmp(cmd, "log_mask")) {
 		pwrctrl->log_mask = val;
-	} else if (!strcmp(cmd, "init_opp_perf")) {
+	} else if (!cmd_cmp(cmd, "init_opp_perf")) {
 		pwrctrl->init_opp_perf = !!val;
-	} else if (!strcmp(cmd, "kr_req_mask")) {
+	} else if (!cmd_cmp(cmd, "kr_req_mask")) {
 		pwrctrl->kr_req_mask = val;
-	} else if (!strcmp(cmd, "KIR_GPU")) {
+	} else if (!cmd_cmp(cmd, "KIR_GPU")) {
 		vcorefs_request_dvfs_opp(KIR_GPU, val);
-	} else if (!strcmp(cmd, "KIR_MM")) {
+	} else if (!cmd_cmp(cmd, "KIR_MM")) {
 		vcorefs_request_dvfs_opp(KIR_MM, val);
-	} else if (!strcmp(cmd, "KIR_EMIBW")) {
+	} else if (!cmd_cmp(cmd, "KIR_EMIBW")) {
 		vcorefs_request_dvfs_opp(KIR_EMIBW, val);
-	} else if (!strcmp(cmd, "KIR_SDIO")) {
+	} else if (!cmd_cmp(cmd, "KIR_SDIO")) {
 		vcorefs_request_dvfs_opp(KIR_SDIO, val);
-	} else if (!strcmp(cmd, "KIR_WIFI")) {
+	} else if (!cmd_cmp(cmd, "KIR_WIFI")) {
 		vcorefs_request_dvfs_opp(KIR_WIFI, val);
-	} else if (!strcmp(cmd, "KIR_SYSFS") && (val >= OPP_OFF && val < NUM_OPP)) {
+	} else if (!cmd_cmp(cmd, "KIR_SYSFS") && (val >= OPP_OFF && val < NUM_OPP)) {
 		if (is_vcorefs_can_work()) {
 			r = vcorefs_request_dvfs_opp(KIR_SYSFS, val);
 			BUG_ON(r);
 		}
-	} else if (!strcmp(cmd, "KIR_SYSFSX") && (val >= OPP_OFF && val < NUM_OPP)) {
+	} else if (!cmd_cmp(cmd, "KIR_SYSFSX") && (val >= OPP_OFF && val < NUM_OPP)) {
 		mutex_lock(&vcorefs_mutex);
 		if (val != OPP_OFF) {
 			pwrctrl->kr_req_mask = (1U << NUM_KICKER) - 1;
