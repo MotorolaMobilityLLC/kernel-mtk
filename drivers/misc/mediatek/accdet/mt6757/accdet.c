@@ -1176,6 +1176,7 @@ static void accdet_work_callback(struct work_struct *work)
 		send_accdet_status_event(cable_type, 1);
 #if JUST_INPUT_NO_SWITCH
 		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
+#endif
 	} else
 		ACCDET_DEBUG("Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
