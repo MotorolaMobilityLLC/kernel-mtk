@@ -853,9 +853,9 @@ int spm_mtcmos_ctrl_mfg2(int state)
 		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK)) {
 			count++;
-			if (count > 2000) {
+			if (count > 10000) {
 				pr_err("mfgx: , MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
-				BUG();
+				/*BUG();*/
 			}
 
 		}
@@ -878,10 +878,10 @@ int spm_mtcmos_ctrl_mfg2(int state)
 			|| (spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 			count++;
-			if (count > 2000) {
+			if (count > 10000) {
 				pr_err("mfgx: , PWR_STATUS = 0x%08x, 0x%08x\n",
 				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
-				BUG();
+				/*BUG();*/
 			}
 		}
 #endif
@@ -900,14 +900,12 @@ int spm_mtcmos_ctrl_mfg2(int state)
 			|| !(spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 			count++;
-#if 0
-			if (count > 1000 && count < 1010)
-				check_mfg();
-#endif
-			if (count > 2000) {
-				pr_err("mfgo: , PWR_STATUS = 0x%08x, 0x%08x\n",
+
+			if (count > 10000) {
+				pr_err("mfgo1: PWR_STATUS = 0x%08x, 0x%08x\n",
 				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
-				BUG();
+				pr_err("mfgo1: MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
+				/*BUG();*/
 			}
 		}
 #endif
@@ -925,9 +923,11 @@ int spm_mtcmos_ctrl_mfg2(int state)
 		while (spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK) {
 			/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
 			count++;
-			if (count > 2000) {
-				pr_err("mfgo: , MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
-				BUG();
+			if (count > 10000) {
+				pr_err("mfgo2: PWR_STATUS = 0x%08x, 0x%08x\n",
+				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_err("mfgo2: MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
+				/*BUG();*/
 			}
 		}
 		/* TINFO="Release bus protect" */
