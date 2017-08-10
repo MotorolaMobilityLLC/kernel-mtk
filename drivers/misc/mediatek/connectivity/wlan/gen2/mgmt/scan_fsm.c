@@ -212,6 +212,7 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 			DBGLOG(P2P, ERROR, "scnSendScanReqExtCh prP2pBssInfo is NULL\n");
 			return;
 		}
+#if CFG_TC10_FEATURE
 		/*
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
@@ -226,7 +227,9 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 			prCmdScanReq->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReq->u2ChannelDwellTime = 30;
-			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+#else
+		prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+#endif
 	}
 #endif
 
@@ -344,6 +347,7 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 				DBGLOG(P2P, ERROR, "scnSendScanReq prP2pBssInfo is NULL\n");
 				return;
 			}
+#if CFG_TC10_FEATURE
 			/*
 			* mtk supplicant will scan 4 channels for prograssive scan
 			* customer supplicant should have 3 channels when do social scan
@@ -358,7 +362,9 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 				prCmdScanReq->u2ChannelDwellTime = 100;
 			} else
 				prCmdScanReq->u2ChannelDwellTime = 30;
-				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+#else
+			prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+#endif
 		}
 #endif
 #if CFG_ENABLE_FAST_SCAN
@@ -479,6 +485,7 @@ VOID scnSendScanReqV2ExtCh(IN P_ADAPTER_T prAdapter)
 			DBGLOG(P2P, ERROR, "scnSendScanReqV2ExtCh prP2pBssInfo is NULL\n");
 			return;
 		}
+#if CFG_TC10_FEATURE
 		/*
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
@@ -493,7 +500,9 @@ VOID scnSendScanReqV2ExtCh(IN P_ADAPTER_T prAdapter)
 			prCmdScanReq->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReq->u2ChannelDwellTime = 30;
-			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+#else
+		prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+#endif
 	}
 #endif
 
@@ -603,6 +612,7 @@ VOID scnSendScanReqV3ExtCh(IN P_ADAPTER_T prAdapter)
 			DBGLOG(P2P, ERROR, "scnSendScanReqV3ExtCh prP2pBssInfo is NULL\n");
 			return;
 		}
+#if CFG_TC10_FEATURE
 		/*
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
@@ -617,7 +627,9 @@ VOID scnSendScanReqV3ExtCh(IN P_ADAPTER_T prAdapter)
 			prCmdScanReqV3->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReqV3->u2ChannelDwellTime = 30;
-			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+#else
+		prCmdScanReqV3->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+#endif
 	}
 #endif
 
@@ -722,6 +734,7 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 				DBGLOG(P2P, ERROR, "scnSendScanReqV2 prP2pBssInfo is NULL\n");
 				return;
 			}
+#if CFG_TC10_FEATURE
 			/*
 			* mtk supplicant will scan 4 channels for prograssive scan
 			* customer supplicant should have 3 channels when do social scan
@@ -736,7 +749,9 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 				prCmdScanReqV3->u2ChannelDwellTime = 100;
 			} else
 				prCmdScanReqV3->u2ChannelDwellTime = 30;
-				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+#else
+			prCmdScanReqV3->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+#endif
 		}
 #endif
 		if (prScanParam->u2IELen <= MAX_IE_LENGTH)
