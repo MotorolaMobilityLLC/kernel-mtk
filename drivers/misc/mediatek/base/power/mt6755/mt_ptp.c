@@ -1650,12 +1650,18 @@ static void get_freq_table_cpu(struct eem_det *det)
 	/* det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu, 0); */
 	#ifdef __KERNEL__
 		binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
+		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-		binLevel = (eem_is_extbuck_valid) ? 2 : 1;
+		if (eem_is_extbuck_valid) {
+			if ((binLevel == 0x82) || (binLevel == 0x86))
+				binLevel = 2;
+			else
+				binLevel = 1;
+		} else
+			binLevel = 1;
 		cpuBinLevel = binLevel;
 		cpuBinLevel_eng = 0x20;
 		#else
-		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 		freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
 		#endif
 	#else
@@ -4698,11 +4704,17 @@ static int __init eem_conf(void)
 
 	/* read E-fuse for segment selection */
 	binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
+	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	binLevel = (cpu_eem_is_extbuck_valid()) ? 2 : 1;
+	if (cpu_eem_is_extbuck_valid()) {
+		if ((binLevel == 0x82) || (binLevel == 0x86))
+			binLevel = 2;
+		else
+			binLevel = 1;
+	} else
+		binLevel = 1;
 	if (0) {
 	#else
-	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 	freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
 	if (1001 == cpu_speed) {
 	#endif
