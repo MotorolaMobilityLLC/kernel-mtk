@@ -181,7 +181,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_
 			Enable4pin_I2S0_I2S3(true, mi2s0_hdoutput_control, samplerate);
 		}
 	} else {
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == true)
+		if ((GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == true) &&
+			(GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2) == false))
 			Enable4pin_I2S0_I2S3(false, mi2s0_hdoutput_control, samplerate);
 
 		if (!mtk_soc_always_hd)
