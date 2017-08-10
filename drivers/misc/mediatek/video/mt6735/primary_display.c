@@ -666,9 +666,11 @@ void _disp_primary_path_exit_idle(const char *caller, unsigned int need_primary_
 
 void disp_exit_idle_ex(const char *caller)
 {
-	if (primary_display_is_video_mode() == 0) {
-		disp_update_trigger_time();
-		_disp_primary_path_exit_idle(caller, 0);
+	if (pgc->plcm) {
+		if (primary_display_is_video_mode() == 0) {
+			disp_update_trigger_time();
+			_disp_primary_path_exit_idle(caller, 0);
+		}
 	}
 }
 
