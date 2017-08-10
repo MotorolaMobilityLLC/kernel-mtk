@@ -1021,7 +1021,7 @@ static long vcodec_lockhw_enc_while_loop(VAL_HW_LOCK_T *prHWLock, VAL_BOOL_T *pb
 		}
 
 		if (VAL_TRUE == *pbLockedHW) {
-			MODULE_MFV_LOGI
+			MODULE_MFV_LOGD
 				("VCODEC_LOCKHW, Lock ok grVcodecEncHWLock.pvHandle = 0x%lx, va:%lx, type:%d",
 				 (VAL_ULONG_T) grVcodecEncHWLock.pvHandle,
 				 (VAL_ULONG_T) prHWLock->pvHandle,
@@ -1766,7 +1766,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 					     pmem_user_v2p_video((unsigned long)val_isr.pvHandle));
 
 					mutex_lock(&VencHWLock);
-					MODULE_MFV_LOGI
+					MODULE_MFV_LOGD
 					    ("VCODEC_WAITISR, grVcodecEncHWLock.pvHandle = 0x%lx\n",
 					     (VAL_ULONG_T) grVcodecEncHWLock.pvHandle);
 					if (grVcodecEncHWLock.pvHandle ==
