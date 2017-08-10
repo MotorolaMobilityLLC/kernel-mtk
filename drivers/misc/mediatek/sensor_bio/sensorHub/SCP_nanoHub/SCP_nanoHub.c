@@ -51,8 +51,6 @@
 #define SCP_sensorHub_DEV_NAME        "SCP_sensorHub"
 static int sensor_send_timestamp_to_hub(void);
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp);
-static DEFINE_MUTEX(SCP_sensorHub_report_data_mutex);
-
 static int SCP_sensorHub_init_flag = -1;
 
 struct curr_wp_queue {
@@ -66,6 +64,7 @@ struct curr_wp_queue {
 struct SCP_sensorHub_data {
 	struct sensorHub_hw *hw;
 	struct work_struct direct_push_work;
+	struct workqueue_struct	*direct_push_workqueue;
 	struct timer_list sync_time_timer;
 	struct work_struct sync_time_worker;
 
@@ -386,9 +385,7 @@ static void SCP_sensorHub_sync_time_func(unsigned long data)
 
 static void SCP_sensorHub_direct_push_work(struct work_struct *work)
 {
-	mutex_lock(&SCP_sensorHub_report_data_mutex);
 	SCP_sensorHub_read_wp_queue();
-	mutex_unlock(&SCP_sensorHub_report_data_mutex);
 }
 static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
@@ -535,7 +532,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 	switch (rsp->notify_rsp.event) {
 	case SCP_DIRECT_PUSH:
 		SCP_sensorHub_write_wp_queue(rsp);
-		schedule_work(&obj->direct_push_work);
+		queue_work(obj->direct_push_workqueue, &obj->direct_push_work);
 		break;
 	case SCP_NOTIFY:
 		handle = rsp->rsp.sensorType;
@@ -1570,6 +1567,11 @@ static int sensorHub_probe(struct platform_device *pdev)
 		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
 	/* init receive scp dram data worker */
 	INIT_WORK(&obj->direct_push_work, SCP_sensorHub_direct_push_work);
+	obj->direct_push_workqueue = create_singlethread_workqueue("chre_work");
+	if (obj->direct_push_workqueue == NULL) {
+		SCP_ERR("direct_push_workqueue fail\n");
+		return -1;
+	}
 	/* init timestamp sync worker */
 	INIT_WORK(&obj->sync_time_worker, SCP_sensorHub_sync_time_work);
 	obj->sync_time_timer.expires = jiffies + 3 * HZ;
