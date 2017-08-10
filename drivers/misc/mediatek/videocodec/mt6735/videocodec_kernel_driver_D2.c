@@ -1900,6 +1900,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			VAL_UINT32_T ret, i, pa_u4HWIsCompleted, pa_u4HWIsTimeout;
 			VAL_ULONG_T addr_pa;
 
+			memset(oal_mem_status, 0, sizeof(oal_mem_status));
+
 			MODULE_MFV_LOGD("VCODEC_INITHWLOCK + - tid = %d\n", current->pid);
 
 			/* //////////// Start to get content */
