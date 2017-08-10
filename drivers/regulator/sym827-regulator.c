@@ -139,7 +139,7 @@ static unsigned int sym827_buck_get_mode(struct regulator_dev *rdev)
 	if (ret < 0)
 		return ret;
 	mode = 0;
-	switch (data & SYM827_BUCK_MODE_MASK) {
+	switch ((data & SYM827_BUCK_MODE_MASK) >> 6) {
 	case SYM827_BUCK_MODE_PWM:
 		mode = REGULATOR_MODE_FAST;
 		break;
@@ -309,6 +309,7 @@ static struct regulator_desc sym827_reg = {
 static int sym827_regulator_init(struct sym827 *chip)
 {
 	struct regulator_config config = {};
+	struct regulation_constraints *c;
 	int ret;
 	unsigned int data;
 
@@ -336,6 +337,14 @@ static int sym827_regulator_init(struct sym827 *chip)
 		ret = PTR_ERR(chip->rdev);
 		goto err_regulator;
 	}
+
+	/* Constrain board-specific capabilities according to what
+	 * this driver and the chip itself can actually do.
+	 */
+	c = chip->rdev->constraints;
+	c->valid_modes_mask |= REGULATOR_MODE_NORMAL |
+	REGULATOR_MODE_STANDBY | REGULATOR_MODE_FAST;
+	c->valid_ops_mask |= REGULATOR_CHANGE_MODE;
 
 	return 0;
 
