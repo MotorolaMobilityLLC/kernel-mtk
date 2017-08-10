@@ -711,8 +711,8 @@ static int gsensor_set_delay(u64 ns)
 		GSE_ERR("gsensor_set_delay fail!\n");
 		return err;
 	}
-
 	GSE_LOG("gsensor_set_delay (%d)\n", delayms);
+	return 0;
 #elif defined CONFIG_NANOHUB
 	return 0;
 #else

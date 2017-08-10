@@ -689,6 +689,7 @@ static int als_set_delay(u64 ns)
 		return -1;
 	}
 	APS_LOG("als_set_delay (%d)\n", delayms);
+	return 0;
 #elif defined CONFIG_NANOHUB
 	return 0;
 #else
@@ -787,6 +788,7 @@ static int ps_set_delay(u64 ns)
 	}
 
 	APS_LOG("ps_set_delay (%d)\n", delayms);
+	return 0;
 #elif defined CONFIG_NANOHUB
 	return 0;
 #else

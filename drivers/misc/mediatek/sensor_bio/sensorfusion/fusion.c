@@ -224,7 +224,32 @@ static ssize_t fusion_show_active(struct device *dev, struct device_attribute *a
 static ssize_t fusion_store_delay(struct device *dev, struct device_attribute *attr,
 			       const char *buf, size_t count)
 {
-	return 0;
+	int ret = 0, index = -1, handle = 0;
+	struct fusion_context *cxt = NULL;
+	int64_t samplingPeriodNs = 0;
+
+	ret = sscanf(buf, "%d,%lld", &handle, &samplingPeriodNs);
+	if (ret != 2)
+		FUSION_ERR("fusion_store_delay param error: err = %d\n", ret);
+
+	FUSION_LOG("handle %d, samplingPeriodNs:%lld\n", handle, samplingPeriodNs);
+
+	mutex_lock(&fusion_context_obj->fusion_op_mutex);
+	cxt = fusion_context_obj;
+	index = handle_to_index(handle);
+	if (index < 0) {
+		FUSION_ERR("[%s] invalid index\n", __func__);
+		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
+		return  -1;
+	}
+	if (NULL == cxt->fusion_context[index].fusion_ctl.set_delay) {
+		FUSION_ERR("handle:%d set_delay NULL\n", handle);
+		mutex_unlock(&fusion_context_obj->fusion_op_mutex);
+		return count;
+	}
+	cxt->fusion_context[index].fusion_ctl.set_delay(samplingPeriodNs);
+	mutex_unlock(&fusion_context_obj->fusion_op_mutex);
+	return count;
 }
 
 static ssize_t fusion_show_delay(struct device *dev, struct device_attribute *attr, char *buf)

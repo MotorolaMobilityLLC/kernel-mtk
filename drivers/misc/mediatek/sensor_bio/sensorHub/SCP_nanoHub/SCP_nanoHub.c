@@ -807,7 +807,6 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 		}
 	}
 	return err;
-
 }
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 {

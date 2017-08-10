@@ -409,7 +409,7 @@ static int barohub_set_delay(u64 ns)
 		BAR_ERR("sensor hub has not been ready!!\n");
 		return -1;
 	}
-	/* BAR_LOG("barohub_set_delay (%d)\n", delayms); */
+	return 0;
 #elif defined CONFIG_NANOHUB
 	return 0;
 #else
