@@ -191,38 +191,6 @@ void osal_restore_fs(void)
 }
 EXPORT_SYMBOL(osal_restore_fs);
 
-int osal_filp_open_read_only(const char *file_path)
-{
-	int filp_id = 0;
-	int val = 0;
-
-	val = down_interruptible(&osal_fp_sem);
-
-	for (filp_id = 1; filp_id < OSAL_MAX_FP_COUNT - 1; filp_id++) {
-		if (g_osal_fp[filp_id] == NULL)
-			break;
-	}
-
-	g_osal_fp[filp_id] = filp_open(file_path, O_RDONLY, 0777);
-
-	if (IS_ERR(g_osal_fp[filp_id])) {
-		g_osal_fp[OSAL_FILE_NULL] = g_osal_fp[filp_id];	/* Record the fail reason in pos 0 */
-		g_osal_fp[filp_id] = NULL;
-		filp_id = OSAL_FILE_NULL;
-	}
-
-	up(&osal_fp_sem);
-
-	/* the fp_id = 0 will be thought as NULL file ponter */
-	if (filp_id >= OSAL_FP_OVERFLOW) {
-		g_osal_fp[OSAL_FILE_NULL] = (struct file *)(-ENOMEM);	/* Out of memory */
-		return OSAL_FILE_NULL;
-	}
-
-	return filp_id;
-}
-EXPORT_SYMBOL(osal_filp_open_read_only);
-
 void *osal_get_filp_struct(int fp_id)
 {
 	int val = 0;
@@ -241,27 +209,6 @@ void *osal_get_filp_struct(int fp_id)
 	return (struct file *)(-ENOENT);	/* No such file or directory */
 }
 EXPORT_SYMBOL(osal_get_filp_struct);
-
-int osal_filp_close(int fp_id)
-{
-	int val = 0;
-	int ret = 0;
-
-	if (fp_id >= 1 && fp_id < OSAL_MAX_FP_COUNT) {
-		val = down_interruptible(&osal_fp_sem);
-
-		if (!IS_ERR(g_osal_fp[fp_id]))
-			ret = filp_close(g_osal_fp[fp_id], NULL);
-		g_osal_fp[fp_id] = NULL;
-
-		up(&osal_fp_sem);
-
-		return ret;
-	}
-
-	return OSAL_FILE_CLOSE_FAIL;
-}
-EXPORT_SYMBOL(osal_filp_close);
 
 loff_t osal_filp_seek_set(int fp_id, loff_t off)
 {
