@@ -88,6 +88,9 @@ static const char longname[] = "Gadget Android";
 #define MIDI_BUFFER_SIZE    1024
 #define MIDI_QUEUE_LENGTH   32
 #endif
+#ifdef CONFIG_MTPROF
+#include "bootprof.h"
+#endif
 
 struct android_usb_function {
 	char *name;
@@ -241,6 +244,16 @@ static void android_work(struct work_struct *data)
 	if (uevent_envp) {
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp);
 		pr_notice("%s: sent uevent %s\n", __func__, uevent_envp[0]);
+#ifdef CONFIG_MTPROF
+		if (uevent_envp == configured) {
+			static int first_shot = 1;
+
+			if (first_shot) {
+				log_boot("USB configured");
+				first_shot = 0;
+			}
+		}
+#endif
 	} else {
 		pr_notice("%s: did not send uevent (%d %d %p)\n", __func__,
 			 dev->connected, dev->sw_connected, cdev->config);
@@ -2055,6 +2068,16 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		dev->enabled = true;
 		pr_notice("[USB]%s: enable 0->1 case, device_desc.idVendor = 0x%x, device_desc.idProduct = 0x%x\n",
 				__func__, device_desc.idVendor, device_desc.idProduct);
+#ifdef CONFIG_MTPROF
+		{
+			static int first_shot = 1;
+
+			if (first_shot) {
+				log_boot("USB ready");
+				first_shot = 0;
+			}
+		}
+#endif
 	} else if (!enabled && dev->enabled) {
 		pr_notice("[USB]%s: enable 1->0 case, device_desc.idVendor = 0x%x, device_desc.idProduct = 0x%x\n",
 				__func__, device_desc.idVendor, device_desc.idProduct);
