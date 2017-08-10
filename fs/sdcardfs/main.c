@@ -374,11 +374,15 @@ static int __init init_sdcardfs_fs(void)
 	if (err)
 		goto out;
 	err = register_filesystem(&sdcardfs_fs_type);
+	if (err)
+		goto out;
+	err = sdcardfs_init_workqueue();
 out:
 	if (err) {
 		sdcardfs_destroy_inode_cache();
 		sdcardfs_destroy_dentry_cache();
 		packagelist_exit();
+		sdcardfs_destroy_workqueue();
 	}
 	return err;
 }
@@ -388,6 +392,7 @@ static void __exit exit_sdcardfs_fs(void)
 	sdcardfs_destroy_inode_cache();
 	sdcardfs_destroy_dentry_cache();
 	packagelist_exit();
+	sdcardfs_destroy_workqueue();
 	unregister_filesystem(&sdcardfs_fs_type);
 	pr_info("Completed sdcardfs module unload\n");
 }

@@ -20,6 +20,120 @@
 
 #include "sdcardfs.h"
 #include <linux/lockdep.h>
+#include <linux/dcache.h>
+#include <linux/workqueue.h>
+#include <linux/delay.h>
+
+struct workqueue_struct *sdcardfs_perm_wq = NULL;
+struct kmem_cache *sdcardfs_permwork_cachep = NULL;
+
+struct sdcardfs_permwork {
+	struct dentry *entry;
+	struct task_struct *owner;
+	struct work_struct work;
+};
+
+static void permwork_init_once(void *obj);
+static void get_derive_permissions_recursive_internal(struct dentry *parent);
+
+int sdcardfs_init_workqueue(void)
+{
+	int err = 0;
+
+	if (!sdcardfs_perm_wq)
+		sdcardfs_perm_wq = create_singlethread_workqueue("sdcardfs_permwork");
+
+	if (!sdcardfs_perm_wq) {
+		err = -ENOMEM;
+		goto out;
+	}
+
+	sdcardfs_permwork_cachep =
+		kmem_cache_create("sdcardfs_work_cache",
+				  sizeof(struct sdcardfs_permwork), 0,
+				  SLAB_RECLAIM_ACCOUNT, permwork_init_once);
+
+	if (!sdcardfs_permwork_cachep)
+		err = -ENOMEM;
+
+out:
+	return err;
+}
+
+void sdcardfs_destroy_workqueue(void)
+{
+	if (sdcardfs_permwork_cachep) {
+		kmem_cache_destroy(sdcardfs_permwork_cachep);
+		sdcardfs_permwork_cachep = NULL;
+	}
+
+	if (sdcardfs_perm_wq) {
+		flush_workqueue(sdcardfs_perm_wq);
+		destroy_workqueue(sdcardfs_perm_wq);
+		sdcardfs_perm_wq = NULL;
+	}
+}
+
+static inline void sdcardfs_lock_dinode(struct dentry *entry)
+{
+	mutex_lock(&entry->d_inode->i_mutex);
+}
+
+static inline void sdcardfs_unlock_dinode(struct dentry *entry)
+{
+	mutex_unlock(&entry->d_inode->i_mutex);
+}
+
+static void get_derive_permissions_work_handler(struct work_struct *w)
+{
+	struct sdcardfs_permwork *pw;
+	struct dentry *entry;
+
+	pw = container_of(w, struct sdcardfs_permwork, work);
+	entry = pw->entry;
+
+	if (entry && entry->d_inode) {
+		lockdep_off();
+		sdcardfs_lock_dinode(entry);
+		get_derive_permissions_recursive_internal(entry);
+		sdcardfs_unlock_dinode(entry);
+		lockdep_on();
+		dput(entry);
+	}
+
+	kmem_cache_free(sdcardfs_permwork_cachep, pw);
+}
+
+/* sdcardfs permwork constructor */
+static void permwork_init_once(void *obj)
+{
+	struct sdcardfs_permwork *pw = obj;
+
+	INIT_WORK(&pw->work, get_derive_permissions_work_handler);
+}
+
+static int sched_update_perm(struct dentry *entry)
+{
+	struct sdcardfs_permwork *pw;
+	bool ret;
+
+	pw = kmem_cache_alloc(sdcardfs_permwork_cachep, GFP_KERNEL);
+
+	if (!pw)
+		return -ENOMEM;
+
+	dget(entry);
+	pw->entry = entry;
+	pw->owner = current;
+
+	ret = queue_work(sdcardfs_perm_wq, &pw->work);
+
+	if (!ret)
+		pr_warn("sdcardfs: sched_update_perm(): failed %d\n", ret);
+
+	return 0;
+}
+
 
 /* copy derived state from parent inode */
 static void inherit_derived_state(struct inode *parent, struct inode *child)
@@ -110,24 +224,21 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 	get_derived_permission_new(parent, dentry, dentry);
 }
 
-
-void get_derive_permissions_recursive_internal(struct dentry *parent)
+static void get_derive_permissions_recursive_internal(struct dentry *parent)
 {
 	struct dentry *dentry;
+
 	dget(parent);
 	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
 		if (dentry && dentry->d_inode) {
-			mode_t mode;
-
 			if (dentry == parent)
 				continue;
-			mutex_lock(&dentry->d_inode->i_mutex);
+			sdcardfs_lock_dinode(dentry);
 			get_derived_permission(parent, dentry);
 			fix_derived_permission(dentry->d_inode);
-			mode = dentry->d_inode->i_mode;
-			mutex_unlock(&dentry->d_inode->i_mutex);
-			if (S_ISDIR(mode))
+			if (S_ISDIR(dentry->d_inode->i_mode))
 				get_derive_permissions_recursive_internal(dentry);
+			sdcardfs_unlock_dinode(dentry);
 		}
 	}
 	dput(parent);
@@ -135,9 +246,7 @@ void get_derive_permissions_recursive_internal(struct dentry *parent)
 
 void get_derive_permissions_recursive(struct dentry *parent)
 {
-	lockdep_off();
-	get_derive_permissions_recursive_internal(parent);
-	lockdep_on();
+	sched_update_perm(parent);
 }
 
 /* main function for updating derived permission */

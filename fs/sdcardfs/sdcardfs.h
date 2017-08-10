@@ -528,4 +528,8 @@ static inline void sdcardfs_copy_and_fix_attrs(struct inode *dest, const struct 
 	dest->i_flags = src->i_flags;
 	set_nlink(dest, src->i_nlink);
 }
+
+extern int sdcardfs_init_workqueue(void);
+extern void sdcardfs_destroy_workqueue(void);
+
 #endif	/* not _SDCARDFS_H_ */
