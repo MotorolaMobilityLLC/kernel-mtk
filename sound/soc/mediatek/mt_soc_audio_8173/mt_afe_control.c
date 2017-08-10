@@ -99,6 +99,11 @@ int mt_afe_platform_init(void *dev)
 		return -ENODEV;
 	}
 
+	if (!pdev->pm_domain) {
+		pr_warn("%s invalid pm_domain\n", __func__);
+		return -EPROBE_DEFER;
+	}
+
 	irq_id = irq_of_parse_and_map(pdev->of_node, 0);
 	if (irq_id)
 		audio_irq_id = irq_id;
