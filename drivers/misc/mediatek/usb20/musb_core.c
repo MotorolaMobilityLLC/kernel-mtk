@@ -121,11 +121,14 @@ int musb_is_shutting = 0;
 int musb_fake_disc = 0;
 int musb_skip_charge_detect = 0;
 int musb_removed = 0;
+/* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
+int kernel_init_done = 0;
 module_param(musb_connect_legacy, int, 0644);
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_fake_disc, int, 0644);
 module_param(musb_skip_charge_detect, int, 0644);
 module_param(musb_removed, int, 0644);
+module_param(kernel_init_done, int, 0644);
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
 int mtk_qmu_dbg_level = LOG_WARN;
@@ -2126,6 +2129,7 @@ static struct musb *allocate_instance(struct device *dev,
 	musb->config = config;
 	musb->is_ready = false;
 	musb->in_ipo_off = false;
+	musb->st_wq = create_singlethread_workqueue("usb20_st_wq");
 
 	BUG_ON(musb->config->num_eps > MUSB_C_NUM_EPS);
 	for (epnum = 0, ep = musb->endpoints; epnum < musb->config->num_eps; epnum++, ep++) {
@@ -2678,3 +2682,34 @@ module_param(mtk_qmu_dbg_level, int, 0644);
 module_param(qmu_tasklet, int, 0644);
 #endif
 #endif
+static int set_option(const char *val, const struct kernel_param *kp)
+{
+	int rv = param_set_int(val, kp);
+	unsigned char option;
+
+	if (rv)
+		return rv;
+
+	rv = kstrtol(val, 10, (long *)&option);
+	if (rv != 0)
+		return rv;
+	DBG(0, "option:%d\n", option);
+
+	switch (option) {
+	case 0:
+		DBG(0, "case %d\n", option);
+		break;
+	case 1:
+		DBG(0, "case %d\n", option);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops option_param_ops = {
+	.set = set_option,
+	.get = param_get_int,
+};
+static int option;
+module_param_cb(option, &option_param_ops, &option, 0644);

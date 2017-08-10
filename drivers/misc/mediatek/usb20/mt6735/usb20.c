@@ -438,13 +438,14 @@ void do_connection_work(struct work_struct *data)
 
 
 	if (mtk_musb) {
-		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
-				mtk_musb->power);
+		if (__ratelimit(&ratelimit))
+			DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
+					mtk_musb->power);
 	} else {
 		/* re issue delay work */
 		if (__ratelimit(&ratelimit))
 			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
-		schedule_delayed_work(&connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
+		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	}
 
@@ -467,7 +468,7 @@ void do_connection_work(struct work_struct *data)
 		/* re issue work */
 		if (__ratelimit(&ratelimit))
 			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
-		schedule_delayed_work(&connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
+		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
@@ -522,9 +523,13 @@ void mt_usb_connect(void)
 #ifdef FOR_BRING_UP
 	DBG(0, "BRING_UP, SKIP issue work !!!\n");
 #else
+	if (!mtk_musb) {
+		DBG(0, "mtk_musb = NULL\n");
+		return;
+	}
 	/* issue connection work */
 	DBG(0, "issue work\n");
-	schedule_delayed_work(&connection_work, 0);
+	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 	DBG(0, "[MUSB] USB connect\n");
 #endif
 
@@ -535,9 +540,13 @@ void mt_usb_disconnect(void)
 #ifdef FOR_BRING_UP
 	DBG(0, "BRING_UP, SKIP issue work !!!\n");
 #else
+	if (!mtk_musb) {
+		DBG(0, "mtk_musb = NULL\n");
+		return;
+	}
 	/* issue connection work */
 	DBG(0, "issue work\n");
-	schedule_delayed_work(&connection_work, 0);
+	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 	DBG(0, "[MUSB] USB disconnect\n");
 #endif
 
@@ -546,7 +555,7 @@ void mt_usb_disconnect(void)
 static void do_connect_rescue_work(struct work_struct *work)
 {
 	DBG(0, "do_connect_rescue_work, issue connection work\n");
-	schedule_delayed_work(&connection_work, 0);
+	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 }
 
 bool usb_cable_connected(void)
@@ -574,8 +583,8 @@ bool usb_cable_connected(void)
 		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
 	}
 
-	if (musb_fake_disc) {
-		DBG(0, "musb_fake_disc is set\n");
+	if (mtk_musb && (mtk_musb->in_ipo_off == true)) {
+		DBG(0, "in_ipo_off is set\n");
 		return false;
 	}
 	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
@@ -731,16 +740,17 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 {
 	unsigned int cmode;
 	long tmp_val;
-	unsigned long flags = 0;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return count;
 	/* } else if (1 == sscanf(buf, "%d", &cmode)) { */
 	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
-		if (mtk_musb)
-			spin_lock_irqsave(&mtk_musb->lock, flags);
-
+		if (mtk_musb) {
+			if (down_interruptible(&mtk_musb->musb_lock))
+				DBG(0, "USB20: %s: busy, Couldn't get power_clock_lock\n",
+						__func__);
+		}
 		cmode = tmp_val;
 		DBG(0, "cmode=%d, cable_mode=%d\n", cmode, cable_mode);
 		if (cmode >= CABLE_MODE_MAX)
@@ -748,16 +758,16 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 
 		if (cable_mode != cmode) {
 			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
-				if (mtk_musb)
+				if (mtk_musb) {
 					mtk_musb->in_ipo_off = true;
-				musb_fake_disc = 1;
-				DBG(0, "musb_fake_disc is set\n");
+					DBG(0, "in_ipo_off is set\n");
+				}
 
 			} else {	/* IPO bootup, enable USB */
-				if (mtk_musb)
+				if (mtk_musb) {
 					mtk_musb->in_ipo_off = false;
-				musb_fake_disc = 0;
-				DBG(0, "musb_fake_disc is clr\n");
+					DBG(0, "in_ipo_off is clr\n");
+				}
 			}
 
 			mt_usb_disconnect();
@@ -791,7 +801,7 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 #endif
 		}
 		if (mtk_musb)
-			spin_unlock_irqrestore(&mtk_musb->lock, flags);
+			up(&mtk_musb->musb_lock);
 	}
 	return count;
 }

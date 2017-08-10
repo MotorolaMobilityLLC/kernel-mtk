@@ -93,6 +93,7 @@ extern int musb_is_shutting;
 extern int musb_fake_disc;
 extern int musb_connect_legacy;
 extern int musb_removed;
+extern int kernel_init_done;
 
 extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;
@@ -543,6 +544,7 @@ struct musb {
 	bool srp_drvvbus;
 	enum usb_otg_event otg_event;
 #endif
+	struct workqueue_struct *st_wq;
 };
 
 static inline struct musb *gadget_to_musb(struct usb_gadget *g)

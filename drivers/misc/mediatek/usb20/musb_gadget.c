@@ -1149,7 +1149,7 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 		if (!f)
 			break;
 
-		pr_warn("<%s, %d>, name: %s\n", __func__, __LINE__, f->name);
+		DBG(1, "<%s, %d>, name: %s\n", __func__, __LINE__, f->name);
 
 		switch (gadget->speed) {
 		case USB_SPEED_SUPER:
@@ -1175,7 +1175,7 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 			is_in = (ep->bEndpointAddress & 0x80) >> 7;
 			epnum = (ep->bEndpointAddress & 0x0f);
 
-			pr_warn("<%s, %d>, ep->bEndpointAddress(%x), address(%x)\n",
+			DBG(1, "<%s, %d>, ep->bEndpointAddress(%x), address(%x)\n",
 					__func__, __LINE__, ep->bEndpointAddress,
 					(musb_ep->end_point).address);
 
@@ -1187,15 +1187,15 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 					if (musb_dbuffer_avail_function_list[i] == NULL)
 						break;
 
-					pr_warn("<%s, %d>, comparing:%s\n", __func__,
+					DBG(1, "<%s, %d>, comparing:%s\n", __func__,
 							__LINE__, musb_dbuffer_avail_function_list[i]);
 					if (!strcmp(f->name, musb_dbuffer_avail_function_list[i])) {
-						pr_warn("<%s, %d>, got bulk ep:%x in function :%s\n",
+						DBG(0, "<%s, %d>, got bulk ep:%x in function :%s\n",
 								__func__, __LINE__, ep->bEndpointAddress,
 								f->name);
 #ifdef TIME_SPENT_CHECK_MUSB_DBUFFER_AVAIL
 						do_gettimeofday(&tv_after);
-						pr_warn("<%s, %d>, sec:%d, usec:%d\n",
+						DBG(0, "<%s, %d>, sec:%d, usec:%d\n",
 								__func__, __LINE__,
 								(tv_after.tv_sec - tv_before.tv_sec),
 								(tv_after.tv_usec - tv_before.tv_usec));
@@ -1205,7 +1205,7 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 				}
 #ifdef TIME_SPENT_CHECK_MUSB_DBUFFER_AVAIL
 				do_gettimeofday(&tv_after);
-				pr_warn("<%s, %d>, sec:%d, usec:%d\n", __func__,
+				DBG(0, "<%s, %d>, sec:%d, usec:%d\n", __func__,
 						__LINE__, (tv_after.tv_sec - tv_before.tv_sec),
 						(tv_after.tv_usec - tv_before.tv_usec));
 #endif
@@ -1215,7 +1215,7 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 	}
 	return 0;
 
-	pr_warn("<%s, %d>, should not be here\n", __func__, __LINE__);
+	DBG(0, "<%s, %d>, should not be here\n", __func__, __LINE__);
 }
 
 static void fifo_setup(struct musb *musb, struct musb_ep *musb_ep)

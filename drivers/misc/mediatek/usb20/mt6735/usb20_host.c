@@ -53,6 +53,7 @@ struct pinctrl_state *pinctrl_drvvbus_low;
 struct pinctrl_state *pinctrl_drvvbus_high;
 #endif
 static int usb_iddig_number;
+static struct timeval tv_init, tv_current;
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num =  1, .style = MUSB_FIFO_TX,   .maxpacket = 512, .mode = MUSB_BUF_SINGLE},
@@ -331,10 +332,39 @@ void switch_int_to_host_and_mask(struct musb *musb)
 	DBG(0, "swtich_int_to_host_and_mask is done\n");
 }
 
+#define ID_PIN_WORK_RECHECK_TIME 30	/* 30 ms */
+#define ID_PIN_WORK_BLOCK_TIMEOUT 30 /* 30 seconds */
 static void musb_id_pin_work(struct work_struct *data)
 {
 	u8 devctl = 0;
 	unsigned long flags;
+	static int inited, timeout; /* default to 0 */
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+
+	/* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
+	if (!inited && !kernel_init_done && !mtk_musb->is_ready && !timeout) {
+		do_gettimeofday(&tv_current);
+		if (__ratelimit(&ratelimit))
+			DBG(0, "init_done:%d, is_ready:%d, inited:%d, TO:%d, tv<%d,%d,%d,%d>\n",
+					kernel_init_done, mtk_musb->is_ready, inited, timeout,
+					(unsigned int)tv_current.tv_sec, (unsigned int)tv_current.tv_usec,
+					(unsigned int)tv_init.tv_sec, (unsigned int)tv_init.tv_usec);
+
+		if ((tv_current.tv_sec - tv_init.tv_sec) > ID_PIN_WORK_BLOCK_TIMEOUT) {
+			DBG(0, "tv_current:<%d,%d>, tv_init:<%d,%d>\n",
+					(unsigned int)tv_current.tv_sec, (unsigned int)tv_current.tv_usec,
+					(unsigned int)tv_init.tv_sec, (unsigned int)tv_init.tv_usec);
+			timeout = 1;
+		}
+
+		queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(ID_PIN_WORK_RECHECK_TIME));
+		return;
+	} else if (!inited) {
+		DBG(0, "PASS, init_done:%d, is_ready:%d, inited:%d, TO:%d\n",
+				kernel_init_done,  mtk_musb->is_ready, inited, timeout);
+	}
+
+	inited = 1;
 
 	spin_lock_irqsave(&mtk_musb->lock, flags);
 	musb_generic_disable(mtk_musb);
@@ -393,7 +423,6 @@ static void musb_id_pin_work(struct work_struct *data)
 		MUSB_HST_MODE(mtk_musb);
 		switch_int_to_device(mtk_musb);
 	} else {
-		spin_lock_irqsave(&mtk_musb->lock, flags);
 		DBG(0, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))
@@ -414,7 +443,6 @@ static void musb_id_pin_work(struct work_struct *data)
 		mtk_musb->xceiv->state = OTG_STATE_B_IDLE;
 		MUSB_DEV_MODE(mtk_musb);
 		switch_int_to_host(mtk_musb);
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 	}
 out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);
@@ -424,12 +452,8 @@ out:
 static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 {
 	iddig_cnt++;
-	if (!mtk_musb->is_ready) {
-		/* dealy 5 sec if usb function is not ready */
-		schedule_delayed_work(&mtk_musb->id_pin_work, 5000*HZ/1000);
-	} else {
-		schedule_delayed_work(&mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
-	}
+
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
 	DBG(0, "id pin interrupt assert\n");
 	disable_irq_nosync(usb_iddig_number);
 	return IRQ_HANDLED;
@@ -448,12 +472,7 @@ void mt_usb_iddig_int(struct musb *musb)
 	musb_writel(musb->mregs, USB_L1INTP, usb_l1_ploy);
 	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
 
-	if (!mtk_musb->is_ready) {
-		/* dealy 5 sec if usb function is not ready */
-		schedule_delayed_work(&mtk_musb->id_pin_work, 5000*HZ/1000);
-	} else {
-		schedule_delayed_work(&mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
-	}
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
 	DBG(0, "id pin interrupt assert\n");
 }
 
@@ -550,6 +569,7 @@ void mt_usb_otg_init(struct musb *musb)
 	mt_usb_init_drvvbus();
 
 	/* init idpin interrupt */
+	do_gettimeofday(&tv_init);
 	INIT_DELAYED_WORK(&musb->id_pin_work, musb_id_pin_work);
 	otg_int_init();
 
