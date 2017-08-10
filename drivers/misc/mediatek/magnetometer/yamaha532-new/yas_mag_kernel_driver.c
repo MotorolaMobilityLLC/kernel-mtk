@@ -2031,7 +2031,7 @@ static atomic_t dev_open_count;
 
 static int yamaha530_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, YAMAHA530_DEV_NAME);
+	strncpy(info->type, YAMAHA530_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
