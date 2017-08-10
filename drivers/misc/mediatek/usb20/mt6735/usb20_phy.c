@@ -172,6 +172,43 @@ void usb_phy_switch_to_usb(void)
 #endif
 
 #else
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#define VAL_MAX_WDITH_3		0x7
+#define OFFSET_RG_USB20_VRT_VREF_SEL 0x5
+#define SHFT_RG_USB20_VRT_VREF_SEL 4
+#define OFFSET_RG_USB20_TERM_VREF_SEL 0x5
+#define SHFT_RG_USB20_TERM_VREF_SEL 0
+static void usb_phy_tuning(void)
+{
+	static bool inited;
+	struct device_node *of_node;
+	u32 val;
+
+	if (inited)
+		return;
+
+	of_node = of_find_compatible_node(NULL, NULL, "mediatek,phy_tuning");
+	if (of_node) {
+		if (!of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &val)) {
+			if (val <= VAL_MAX_WDITH_3) {
+				USBPHY_CLR8(OFFSET_RG_USB20_VRT_VREF_SEL,
+						VAL_MAX_WDITH_3<<SHFT_RG_USB20_VRT_VREF_SEL);
+				USBPHY_SET8(OFFSET_RG_USB20_VRT_VREF_SEL,
+						val<<SHFT_RG_USB20_VRT_VREF_SEL);
+			}
+		}
+		if (!of_property_read_u32(of_node, "u2_term_ref", (u32 *) &val)) {
+			if (val <= VAL_MAX_WDITH_3) {
+				USBPHY_CLR8(OFFSET_RG_USB20_TERM_VREF_SEL,
+						VAL_MAX_WDITH_3<<SHFT_RG_USB20_TERM_VREF_SEL);
+				USBPHY_SET8(OFFSET_RG_USB20_TERM_VREF_SEL,
+						val<<SHFT_RG_USB20_TERM_VREF_SEL);
+			}
+		}
+	}
+	inited = true;
+}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 bool in_uart_mode = false;
@@ -624,6 +661,8 @@ void usb_phy_recover(void)
 	HQA_special();
 
 	hs_slew_rate_cal();
+
+	usb_phy_tuning();
 
 	DBG(0, "usb recovery success\n");
 }

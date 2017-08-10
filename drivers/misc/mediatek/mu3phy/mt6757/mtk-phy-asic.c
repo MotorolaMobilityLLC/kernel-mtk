@@ -463,6 +463,26 @@ bool usb_phy_sib_enable_switch_status(void)
 }
 #endif
 
+static void usb_phy_tuning(void)
+{
+	struct device_node *of_node;
+	u32 val;
+
+	of_node = of_find_compatible_node(NULL, NULL, "mediatek,phy_tuning");
+	if (of_node) {
+		if (!of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &val)) {
+			if (val <= 7)
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
+					RG_USB20_VRT_VREF_SEL, val);
+		}
+		if (!of_property_read_u32(of_node, "u2_term_ref", (u32 *) &val)) {
+			if (val <= 7)
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
+					RG_USB20_TERM_VREF_SEL, val);
+		}
+	}
+}
+
 
 /*This "power on/initial" sequence refer to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
 PHY_INT32 phy_init_soc(struct u3phy_info *info)
@@ -595,6 +615,8 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, FORCE_VBUSVALID_OFST, FORCE_VBUSVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, FORCE_AVALID_OFST, FORCE_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, FORCE_SESSEND_OFST, FORCE_SESSEND, 1);
+
+	usb_phy_tuning();
 
 	/* USB PLL Force settings */
 	usb20_pll_settings(false, false);
