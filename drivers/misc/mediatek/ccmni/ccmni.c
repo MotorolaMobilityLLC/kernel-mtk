@@ -892,11 +892,9 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 #endif
 	} else {
 #ifdef ENABLE_WQ_GRO
-		spin_lock(&ccmni->spinlock);
-		preempt_disable();
+		spin_lock_bh(&ccmni->spinlock);
 		napi_gro_receive(ccmni->napi, skb);
-		preempt_enable();
-		spin_unlock(&ccmni->spinlock);
+		spin_unlock_bh(&ccmni->spinlock);
 #else
 		if (!in_interrupt())
 			netif_rx_ni(skb);
@@ -954,11 +952,9 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		break;
 #ifdef ENABLE_WQ_GRO
 	case RX_FLUSH:
-		spin_lock(&ccmni->spinlock);
-		preempt_disable();
+		spin_lock_bh(&ccmni->spinlock);
 		napi_gro_flush(ccmni->napi, false);
-		preempt_enable();
-		spin_unlock(&ccmni->spinlock);
+		spin_unlock_bh(&ccmni->spinlock);
 		break;
 #endif
 
