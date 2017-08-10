@@ -60,12 +60,12 @@ static imgsensor_info_struct imgsensor_info = {
 
 	.pre = {
 		.pclk = 480000000,				//record different mode's pclk
-		.linelength  = 4704,				//record different mode's linelength
-		.framelength = 3388,			//record different mode's framelength
+		.linelength  = 9408,				//record different mode's linelength
+		.framelength = 1689,			//record different mode's framelength
 		.startx= 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width  = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
+		.grabwindow_width  = 2104,		//record different mode's width of grabwindow
+		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
@@ -103,7 +103,7 @@ static imgsensor_info_struct imgsensor_info = {
 #if 1 //fps =24
 	.cap1 = {							//capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate
 		.pclk = 480000000,				//record different mode's pclk
-		.linelength  = 4704,				//record different mode's linelength
+		.linelength  = 5880,				//record different mode's linelength
 		.framelength = 3375,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -654,7 +654,7 @@ static void night_mode(kal_bool enable)
 static void sensor_init(void)
 {
   LOG_INF("E\n");
-    write_cmos_sensor(0X6028, 0X4000);
+write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X6010, 0X0000);
 mdelay(3);
 write_cmos_sensor(0X6214, 0X7971);
@@ -2774,7 +2774,7 @@ write_cmos_sensor(0XF63E, 0X0106);
 write_cmos_sensor(0XF640, 0X010E);
 write_cmos_sensor(0XF4D0, 0X0034);
 write_cmos_sensor(0XF4D8, 0X0034);
-	write_cmos_sensor(0x0100, 0x0000);
+write_cmos_sensor(0x0100, 0x0000);
 
 }	/*	sensor_init  */
 
@@ -2785,22 +2785,22 @@ static void preview_setting(void)
 write_cmos_sensor(0X6028, 0X4000);
 write_cmos_sensor(0X6214, 0X7971);
 write_cmos_sensor(0X6218, 0X7150);
-write_cmos_sensor(0X0344, 0X0010);
-write_cmos_sensor(0X0346, 0X0010);
-write_cmos_sensor(0X0348, 0X106F);
-write_cmos_sensor(0X034A, 0X0C2F);
-write_cmos_sensor(0X034C, 0X0830);
-write_cmos_sensor(0X034E, 0X0610);
-write_cmos_sensor(0X0340, 0X0D3C);
-write_cmos_sensor(0X0342, 0X1260);
+write_cmos_sensor(0X0344, 0X0008);
+write_cmos_sensor(0X0346, 0X0008);
+write_cmos_sensor(0X0348, 0X1077);
+write_cmos_sensor(0X034A, 0X0C37);
+write_cmos_sensor(0X034C, 0X0838);
+write_cmos_sensor(0X034E, 0X0618);
+write_cmos_sensor(0X0340, 0X0699);
+write_cmos_sensor(0X0342, 0X24C0);
 write_cmos_sensor(0X3000, 0X0001);
-write_cmos_sensor(0X0900, 0X0112);
+write_cmos_sensor(0X0900, 0X0122);
 write_cmos_sensor(0X0380, 0X0001);
-write_cmos_sensor(0X0382, 0X0001);
+write_cmos_sensor(0X0382, 0X0003);
 write_cmos_sensor(0X0384, 0X0001);
 write_cmos_sensor(0X0386, 0X0003);
-write_cmos_sensor(0X0400, 0X0001);
-write_cmos_sensor(0X0404, 0X0020);
+write_cmos_sensor(0X0400, 0X0000);
+write_cmos_sensor(0X0404, 0X0010);
 write_cmos_sensor(0X6028, 0X2000);
 write_cmos_sensor(0X602A, 0X157C);
 write_cmos_sensor(0X6F12, 0X0100);
@@ -2861,7 +2861,7 @@ write_cmos_sensor(0XF4D6, 0X0039);
 write_cmos_sensor(0XF4DA, 0X0035);
 write_cmos_sensor(0XF4DC, 0X0038);
 write_cmos_sensor(0XF4DE, 0X0039);
-  write_cmos_sensor(0x0100, 0x0100);
+write_cmos_sensor(0X0100, 0X0100);
 
 }	/*	preview_setting  */
 
