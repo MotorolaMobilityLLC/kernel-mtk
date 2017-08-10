@@ -824,13 +824,15 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
 #ifdef FEATURE_C2K_ALWAYS_ON
 				c2k_flags = 0;
-#ifdef CONFIG_MTK_C2K_SUPPORT
+
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 				c2k_flags |= (1 << 0);
 #endif
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
+
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_MODE */
 					c2k_flags |= (1 << 1);
 
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* CONFIG_MTK_SRLTE_SUPPORT */
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_MODE */
 					c2k_flags |= (1 << 2);
 
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1

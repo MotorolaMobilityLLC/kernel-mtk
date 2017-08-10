@@ -15,7 +15,6 @@
 #include <linux/interrupt.h>
 #include "c2k_hw.h"
 
-/*#if defined(CONFIG_MTK_C2K_SUPPORT)*/
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 
