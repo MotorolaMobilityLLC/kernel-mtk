@@ -130,7 +130,7 @@ static unsigned int backlight_PWM_div_hal = CLK_DIV1;	/* this para come from cus
 /****************************************************************************
  * func:return global variables
  ***************************************************************************/
-static long long current_time, last_time;
+static unsigned long long current_time, last_time;
 static int count;
 static char buffer[4096] = "[BL] Set Backlight directly ";
 
@@ -226,8 +226,8 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 
 			led_node =
 			    of_find_compatible_node(NULL, NULL,
-						    strcat(node_name,
-							   leds_name[i]));
+				    strncat(node_name, leds_name[i],
+						(sizeof(node_name)-strlen(node_name)-1)));
 			if (!led_node) {
 				LEDS_DEBUG("Cannot find LED node from dts\n");
 				pled_dtsi[i].mode = 0;
@@ -366,6 +366,7 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 
 	pwm_setting.pwm_no = pwm_num;
 	pwm_setting.mode = PWM_MODE_OLD;
+	pwm_setting.pmic_pad = 0;
 
 	LEDS_DEBUG("led_set_pwm: mode=%d,pwm_no=%d\n", led->nled_mode,
 		   pwm_num);
@@ -569,11 +570,8 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 
 	LEDS_DEBUG("led_blink_pmic: pmic_type=%d\n", pmic_type);
 
-	if ((pmic_type != MT65XX_LED_PMIC_NLED_ISINK0
-	     && pmic_type != MT65XX_LED_PMIC_NLED_ISINK1)
-	    || led->nled_mode != NLED_BLINK) {
+	if (led->nled_mode != NLED_BLINK)
 		return -1;
-	}
 
 	LEDS_DEBUG("LED blink on time = %d offtime = %d\n",
 		   led->blink_on_time, led->blink_off_time);
@@ -628,6 +626,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		pmic_set_register_value(PMIC_ISINK_CH5_EN, NLED_ON);
 		break;
 	default:
+		LEDS_DEBUG("[LEDS] pmic_type %d is not support\n", pmic_type);
 		break;
 	}
 	return 0;
