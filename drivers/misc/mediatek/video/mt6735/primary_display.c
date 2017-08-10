@@ -6317,7 +6317,11 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 
 static bool is_multipass_trigger;
 
-int primary_display_merge_session_cmd(disp_session_config *config)
+static int primary_display_config_input_multiple_nolock(disp_session_input_config *session_input);
+static int primary_display_config_output_nolock(disp_mem_output_config *output, unsigned int session_id);
+
+
+static int primary_display_merge_session_cmd(disp_session_config *config)
 {
 	disp_session_input_config *session_input;
 	disp_mem_output_config *primary_output;
@@ -6360,14 +6364,14 @@ int primary_display_merge_session_cmd(disp_session_config *config)
 		}
 	}
 
-	primary_display_config_input_multiple(session_input);
+	primary_display_config_input_multiple_nolock(session_input);
 	if (output_type == DISP_OUTPUT_MEMORY || pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
 	    config->type == DISP_SESSION_MEMORY) {
 		mutex_lock(&session_config_mutex);
 		cached_session_output[config->type - 1] = captured_session_output[config->type - 1];
 		mutex_unlock(&session_config_mutex);
 		primary_output = &cached_session_output[config->type - 1];
-		primary_display_config_output(primary_output, config->session_id);
+		primary_display_config_output_nolock(primary_output, config->session_id);
 	}
 #endif
 	return 0;
@@ -6385,11 +6389,12 @@ void primary_display_update_present_fence(unsigned int fence_idx)
 static int config_wdma_output(disp_path_handle disp_handle, cmdqRecHandle cmdq_handle,
 			disp_mem_output_config *output, int is_multipass);
 
-int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
+static int _primary_display_trigger(int blocking, void *callback, unsigned int userdata, int lock)
 {
 	int ret = 0;
 
-	_primary_path_lock(__func__);
+	if (lock)
+		_primary_path_lock(__func__);
 	last_primary_trigger_time = sched_clock();
 #ifdef DISP_SWITCH_DST_MODE
 	if (is_switched_dst_mode) {
@@ -6505,7 +6510,8 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_TRIGGER, 0, 0);
 
 done:
-	_primary_path_unlock(__func__);
+	if (lock)
+		_primary_path_unlock(__func__);
 	/* FIXME: find aee_kernel_Powerkey_is_press definitation */
 #ifndef DISP_NO_AEE
 	if ((primary_trigger_cnt > PRIMARY_DISPLAY_TRIGGER_CNT) && aee_kernel_Powerkey_is_press()) {
@@ -6519,11 +6525,20 @@ done:
 	return ret;
 }
 
-int primary_display_memory_trigger(int blocking, void *callback, unsigned int userdata)
+int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
+{
+	return _primary_display_trigger(blocking, callback, userdata, 1);
+}
+
+int primary_display_trigger_nolock(int blocking, void *callback, unsigned int userdata)
+{
+	return _primary_display_trigger(blocking, callback, userdata, 0);
+}
+
+
+int primary_display_memory_trigger_nolock(int blocking, void *callback, unsigned int userdata)
 {
 	int ret = 0;
-
-	_primary_path_lock(__func__);
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("%s, primary dipslay is sleep\n", __func__);
@@ -6546,9 +6561,21 @@ int primary_display_memory_trigger(int blocking, void *callback, unsigned int us
 		DISPMSG("Not support memory trigger using session_mode:%d\n", pgc->session_mode);
 	}
 
-	_primary_path_unlock(__func__);
-
 	return ret;
+}
+
+void primary_display_trigger_and_merge(disp_session_config *config, int session_id)
+{
+	_primary_path_lock(__func__);
+	primary_display_merge_session_cmd(config);
+
+	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY)
+		primary_display_trigger_nolock(0, NULL, 0);
+	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY)
+		primary_display_memory_trigger_nolock(0, NULL, 0);
+	else
+		DISPERR("Invalid session trigger\n");
+	_primary_path_unlock(__func__);
 }
 
 static int primary_display_ovl2mem_callback(unsigned int userdata)
@@ -6715,14 +6742,15 @@ int primary_suspend_outputbuf_fence_release(void)
 }
 #endif
 
-int primary_display_config_output(disp_mem_output_config *output, unsigned int session_id)
+int _primary_display_config_output(disp_mem_output_config *output, unsigned int session_id, int lock)
 {
 	int ret = 0;
 	disp_path_handle disp_handle;
 	cmdqRecHandle cmdq_handle = NULL;
 
 	DISPFUNC();
-	_primary_path_lock(__func__);
+	if (lock)
+		_primary_path_lock(__func__);
 
 	if (pgc->state == DISP_SLEPT && DISP_SESSION_TYPE(session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("mem out is already slept or mode wrong(%d)\n", pgc->session_mode);
@@ -6780,11 +6808,22 @@ int primary_display_config_output(disp_mem_output_config *output, unsigned int s
 		       output->buff_idx, (unsigned int)output->addr);
 
 done:
-	_primary_path_unlock(__func__);
+	if (lock)
+		_primary_path_unlock(__func__);
 
 	/* dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG, output->src_x, output->src_y); */
 	return ret;
 
+}
+
+int primary_display_config_output(disp_mem_output_config *output, unsigned int session_id)
+{
+	return _primary_display_config_output(output, session_id, 1);
+}
+
+static int primary_display_config_output_nolock(disp_mem_output_config *output, unsigned int session_id)
+{
+	return _primary_display_config_output(output, session_id, 0);
 }
 
 #if 0
@@ -7033,7 +7072,7 @@ static int _config_rdma_input(disp_session_input_config *session_input, disp_pat
 	return ret;
 }
 
-int primary_display_config_input_multiple(disp_session_input_config *session_input)
+static int _primary_display_config_input_multiple(disp_session_input_config *session_input, int lock)
 {
 	int ret = 0;
 	disp_path_handle disp_handle;
@@ -7042,7 +7081,8 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 	if (gTriggerDispMode > 0)
 		return 0;
 
-	_primary_path_lock(__func__);
+	if (lock)
+		_primary_path_lock(__func__);
 
 	if (primary_get_state() == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);
@@ -7070,8 +7110,19 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 		_config_rdma_input(session_input, disp_handle);
 
 done:
-	_primary_path_unlock(__func__);
+	if (lock)
+		_primary_path_unlock(__func__);
 	return ret;
+}
+
+int primary_display_config_input_multiple(disp_session_input_config *session_input)
+{
+	return _primary_display_config_input_multiple(session_input, 1);
+}
+
+static int primary_display_config_input_multiple_nolock(disp_session_input_config *session_input)
+{
+	return _primary_display_config_input_multiple(session_input, 0);
 }
 
 int primary_display_config_interface_input(primary_disp_input_config *input)
