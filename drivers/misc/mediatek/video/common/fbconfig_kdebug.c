@@ -523,6 +523,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	{
 		ESD_PARA esd_para;
 		uint8_t *buffer = NULL;
+		int buffer_size;
 
 		copy_ret_val = copy_from_user(&esd_para, argp, sizeof(esd_para));
 		if (copy_ret_val != 0) {
@@ -533,7 +534,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_debug("fbconfig=>LCM_GET_ESD para_num:%d < 0\n", esd_para.para_num);
 			return -1;
 		}
-		buffer = kzalloc(esd_para.para_num + 6, GFP_KERNEL);
+
+		buffer_size = esd_para.para_num + 6;
+		if (buffer_size < 0) {
+			pr_debug("buffer size overflow: buffer_size:%d, para_num:%d\n",
+				buffer_size, esd_para.para_num);
+			return -EINVAL;
+		}
+		buffer = kzalloc(buffer_size, GFP_KERNEL);
 		if (buffer == NULL)
 			return -ENOMEM;
 
