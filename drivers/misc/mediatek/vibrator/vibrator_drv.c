@@ -1,12 +1,15 @@
-/******************************************************************************
- * mt6575_vibrator.c - MT6575 Android Linux Vibrator Device Driver
+/*
+ * Copyright (C) 2015 MediaTek Inc.
  *
- * Copyright 2009-2010 MediaTek Co.,Ltd.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * DESCRIPTION:
- *     This file provid the other drivers vibrator relative functions
- *
- ******************************************************************************/
+ * This program is distributed in the hope that it will be useful,
+i * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #include <linux/init.h>
 #include <linux/module.h>
