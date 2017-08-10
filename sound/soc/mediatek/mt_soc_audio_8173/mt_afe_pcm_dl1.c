@@ -28,7 +28,9 @@ enum mt_afe_dl1_playback_mux {
 	MTK_INTERFACE = 0,
 	I2S0,
 	MTK_INTERFACE_AND_I2S0,
-	MTK_INTERFACE_AND_I2S1_DATA2
+	MTK_INTERFACE_AND_I2S1_DATA2,
+	/* i2s1 data2 to external chip then feedback from i2s0 to mtk interface */
+	I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE
 };
 
 struct mt_pcm_dl1_priv {
@@ -250,8 +252,10 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, memif_format);
 
-	if (priv->playback_mux == MTK_INTERFACE || priv->playback_mux == MTK_INTERFACE_AND_I2S0 ||
-	    priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
+	if (priv->playback_mux == MTK_INTERFACE ||
+	    priv->playback_mux == MTK_INTERFACE_AND_I2S0 ||
+	    priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2 ||
+	    priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
 		if (priv->i2s1_clock_mode == MT_AFE_LOW_JITTER_CLOCK) {
 			mt_afe_enable_apll(runtime->rate);
 			mt_afe_enable_apll_tuner(runtime->rate);
@@ -271,6 +275,11 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O04);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O03);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		} else if (priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O19);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O20);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O19);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O20);
 		} else {
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O03);
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O04);
@@ -288,7 +297,9 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 		priv->enable_mtk_interface = true;
 	}
 
-	if (priv->playback_mux == I2S0 || priv->playback_mux == MTK_INTERFACE_AND_I2S0) {
+	if (priv->playback_mux == I2S0 ||
+	    priv->playback_mux == MTK_INTERFACE_AND_I2S0 ||
+	    priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
 		if (priv->i2s0_clock_mode == MT_AFE_LOW_JITTER_CLOCK) {
 			mt_afe_enable_apll(runtime->rate);
 			mt_afe_enable_apll_tuner(runtime->rate);
@@ -299,10 +310,15 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 			priv->enable_i2s0_low_jitter = true;
 		}
 
-		mt_afe_set_out_conn_format(conn_format, INTER_CONN_O00);
-		mt_afe_set_out_conn_format(conn_format, INTER_CONN_O01);
-		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O00);
-		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O01);
+		if (priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I00, INTER_CONN_O03);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I01, INTER_CONN_O04);
+		} else {
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O00);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O01);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O00);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O01);
+		}
 
 #ifdef ENABLE_I2S0_CLK_RESYNC
 		/* i2s0 soft reset begin */
@@ -311,41 +327,42 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 
 		mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_I2S, runtime->rate);
 
-#ifdef ENABLE_I2S0_CLK_RESYNC
-		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2)) {
+		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2)) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
-			mt_afe_disable_2nd_i2s_in();
+
+			if (priv->enable_i2s0_low_jitter) {
+				mt_afe_set_2nd_i2s_in(wlen,
+						MT_AFE_I2S_SRC_MASTER_MODE,
+						MT_AFE_BCK_INV_NO_INVERSE,
+						MT_AFE_LOW_JITTER_CLOCK);
+			} else {
+				mt_afe_set_2nd_i2s_in(wlen,
+						MT_AFE_I2S_SRC_MASTER_MODE,
+						MT_AFE_BCK_INV_NO_INVERSE,
+						MT_AFE_NORMAL_CLOCK);
+			}
+
+			mt_afe_enable_2nd_i2s_in();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
 		}
 
-		if (priv->enable_i2s0_low_jitter) {
-			mt_afe_set_2nd_i2s_in(wlen,
-					MT_AFE_I2S_SRC_MASTER_MODE,
-					MT_AFE_BCK_INV_NO_INVERSE,
-					MT_AFE_LOW_JITTER_CLOCK);
-		} else {
-			mt_afe_set_2nd_i2s_in(wlen,
-					MT_AFE_I2S_SRC_MASTER_MODE,
-					MT_AFE_BCK_INV_NO_INVERSE,
-					MT_AFE_NORMAL_CLOCK);
+		if (priv->playback_mux == I2S0 ||
+		    priv->playback_mux == MTK_INTERFACE_AND_I2S0) {
+			if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2)) {
+				mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
+				mt_afe_disable_2nd_i2s_out();
+			} else {
+				mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
+			}
+
+			if (priv->enable_i2s0_low_jitter)
+				mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_LOW_JITTER_CLOCK, wlen);
+			else
+				mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_NORMAL_CLOCK, wlen);
+
+			mt_afe_enable_2nd_i2s_out();
 		}
-		mt_afe_enable_2nd_i2s_in();
-#endif
-
-		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2)) {
-			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
-			mt_afe_disable_2nd_i2s_out();
-		} else {
-			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
-		}
-
-		if (priv->enable_i2s0_low_jitter)
-			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_LOW_JITTER_CLOCK, wlen);
-		else
-			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_NORMAL_CLOCK, wlen);
-
-		mt_afe_enable_2nd_i2s_out();
 
 #ifdef ENABLE_I2S0_CLK_RESYNC
 		/* i2s0 soft reset end */
@@ -417,6 +434,9 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O20);
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
+		} else if (priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O19);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O20);
 		} else {
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
@@ -433,18 +453,26 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 	}
 
 	if (priv->enable_i2s0) {
-		mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
-		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2))
-			mt_afe_disable_2nd_i2s_out();
+		if (priv->playback_mux == I2S0 ||
+		    priv->playback_mux == MTK_INTERFACE_AND_I2S0) {
+			mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
+			if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2))
+				mt_afe_disable_2nd_i2s_out();
+		}
 
-#ifdef ENABLE_I2S0_CLK_RESYNC
 		mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_2);
 		if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2))
 			mt_afe_disable_2nd_i2s_in();
-#endif
 
-		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O00);
-		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O01);
+		if (priv->playback_mux == I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE) {
+			if (!mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_2)) {
+				mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I00, INTER_CONN_O03);
+				mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I01, INTER_CONN_O04);
+			}
+		} else {
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O00);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O01);
+		}
 
 		priv->enable_i2s0 = false;
 
@@ -497,6 +525,7 @@ static const char *const mt_pcm_dl1_playback_mux_function[] = {
 	ENUM_TO_STR(I2S0),
 	ENUM_TO_STR(MTK_INTERFACE_AND_I2S0),
 	ENUM_TO_STR(MTK_INTERFACE_AND_I2S1_DATA2),
+	ENUM_TO_STR(I2S1_DATA2_EXT_I2S0_TO_MTK_INTERFACE)
 };
 
 static int dl1_playback_mux_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -606,7 +635,7 @@ static int mt_pcm_dl1_dev_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	priv->i2s0_clock_mode = MT_AFE_LOW_JITTER_CLOCK;
+	priv->i2s0_clock_mode = MT_AFE_NORMAL_CLOCK;
 
 	dev_set_drvdata(dev, priv);
 
