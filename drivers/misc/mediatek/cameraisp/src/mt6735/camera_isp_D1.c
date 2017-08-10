@@ -7929,6 +7929,19 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT irqinfo)
 		break;
 	}
 
+	if ((irqinfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo.UserInfo.UserKey < 0)) {
+		LOG_ERR("invalid userKey(%d), max(%d)", irqinfo.UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		return 0;
+	}
+	if ((irqinfo.UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT)
+		|| (irqinfo.UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", irqinfo.UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT);
+		return 0;
+	}
+
 	/* 1. enable marked     flag */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	IspInfo.IrqInfo.MarkedFlag[irqinfo.UserInfo.UserKey][irqinfo.UserInfo.Type] |=
@@ -7999,6 +8012,21 @@ static MINT32 ISP_GET_MARKtoQEURY_TIME(ISP_WAIT_IRQ_STRUCT *irqinfo)
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if ((irqinfo->UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo->UserInfo.UserKey < 0)) {
+		LOG_ERR("invalid userKey(%d), max(%d)", irqinfo->UserInfo.UserKey,
+			IRQ_USER_NUM_MAX);
+		Ret = -EFAULT;
+		return Ret;
+	}
+	if ((irqinfo->UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT)
+		|| (irqinfo->UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)", irqinfo->UserInfo.Type,
+			ISP_IRQ_TYPE_AMOUNT);
+		Ret = -EFAULT;
+		return Ret;
 	}
 
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
@@ -8094,6 +8122,11 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT irqinfo)
 		break;
 	}
 
+	if ((irqinfo.UserNumber >= ISP_IRQ_USER_MAX) || (irqinfo.UserNumber < 0)) {
+		LOG_ERR("invalid userNumber(%d), max(%d)",
+			irqinfo.UserNumber, ISP_IRQ_USER_MAX);
+		return 0;
+	}
 
 	/* 1. enable signal     */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
@@ -8126,6 +8159,19 @@ static MINT32 ISP_FLUSH_IRQ_V3(ISP_WAIT_IRQ_STRUCT irqinfo)
 	default:
 		eIrq = _IRQ;
 		break;
+	}
+
+	if ((irqinfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (irqinfo.UserInfo.UserKey < 0)) {
+		LOG_ERR("invalid userKey(%d), max(%d)\n",
+			irqinfo.UserInfo.UserKey, IRQ_USER_NUM_MAX);
+		return 0;
+	}
+	if ((irqinfo.UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT)
+		|| (irqinfo.UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)\n",
+			irqinfo.UserInfo.Type, ISP_IRQ_TYPE_AMOUNT);
+		return 0;
 	}
 
 	/* 1. enable signal     */
@@ -8401,6 +8447,20 @@ static MINT32 ISP_WaitIrq_v3(ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		eIrq = _IRQ;
 		break;
 	}
+
+	if ((WaitIrq->UserInfo.UserKey >= IRQ_USER_NUM_MAX)
+		|| (WaitIrq->UserInfo.UserKey < 0)) {
+		LOG_ERR("invalid userKey(%d), max(%d)\n",
+			WaitIrq->UserInfo.UserKey, IRQ_USER_NUM_MAX);
+		return 0;
+	}
+	if ((WaitIrq->UserInfo.Type >= ISP_IRQ_TYPE_AMOUNT)
+		|| (WaitIrq->UserInfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)\n",
+			WaitIrq->UserInfo.Type, ISP_IRQ_TYPE_AMOUNT);
+		return 0;
+	}
+
 	/* 1. wait type update */
 	if (WaitIrq->Clear == ISP_IRQ_CLEAR_STATUS) {
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
@@ -10081,15 +10141,20 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					/* LOG_ERR("invalid userKey(%d), max(%d)", */
 					/* WaitIrq_FrmB.UserInfo.UserKey,IRQ_USER_NUM_MAX); */
 					userKey = 0;
+					IrqInfo.UserInfo.UserKey = 0;
 				}
-				if ((IrqInfo.UserInfo.UserKey > 0)
+				if ((IrqInfo.UserInfo.UserKey >= 0)
 				    && (IrqInfo.UserInfo.UserKey < IRQ_USER_NUM_MAX)) {
 					/* avoid other users in v3 do not set UserNumber and */
 					/* UserNumber is set as 0 in isp driver */
 					userKey = IrqInfo.UserInfo.UserKey;
+				} else {
+					Ret = -EFAULT;
+					LOG_ERR("invalid userkey error(%d)", IrqInfo.UserInfo.UserKey);
+					goto EXIT;
 				}
 				IrqInfo.UserInfo.UserKey = userKey;
-				Ret = ISP_WaitIrq_v3(&IrqInfo);
+					Ret = ISP_WaitIrq_v3(&IrqInfo);
 			}
 #endif
 			if (copy_to_user((void *)Param, &IrqInfo, sizeof(ISP_WAIT_IRQ_STRUCT)) != 0) {
@@ -10201,7 +10266,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_MARK_IRQ_REQUEST:
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(ISP_WAIT_IRQ_STRUCT)) == 0) {
 			if ((IrqInfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
-			    || (IrqInfo.UserInfo.UserKey < 1)) {
+			    || (IrqInfo.UserInfo.UserKey < 0)) {
 				LOG_ERR("invalid userKey(%d), max(%d)", IrqInfo.UserInfo.UserKey,
 					IRQ_USER_NUM_MAX);
 				Ret = -EFAULT;
@@ -10224,7 +10289,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_GET_MARK2QUERY_TIME:
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(ISP_WAIT_IRQ_STRUCT)) == 0) {
 			if ((IrqInfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
-			    || (IrqInfo.UserInfo.UserKey < 1)) {
+			    || (IrqInfo.UserInfo.UserKey < 0)) {
 				LOG_ERR("invalid userKey(%d), max(%d)", IrqInfo.UserInfo.UserKey,
 					IRQ_USER_NUM_MAX);
 				Ret = -EFAULT;
@@ -10253,7 +10318,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(ISP_WAIT_IRQ_STRUCT)) == 0) {
 			if (IrqInfo.UserNumber > 0) {	/*     v1 flow / v1 ISP_IRQ_USER_MAX */
 				if ((IrqInfo.UserNumber >= ISP_IRQ_USER_MAX)
-				    || (IrqInfo.UserNumber < 1)) {
+				    || (IrqInfo.UserNumber < 0)) {
 					LOG_ERR("invalid userNumber(%d), max(%d)",
 						IrqInfo.UserNumber, ISP_IRQ_USER_MAX);
 					Ret = -EFAULT;
@@ -10268,7 +10333,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* check UserNumber     */
 				if ((IrqInfo.UserNumber != ISP_IRQ_USER_3A) &&
 				    (IrqInfo.UserNumber != ISP_IRQ_USER_EIS) &&
-				    (IrqInfo.UserNumber != ISP_IRQ_USER_VHDR)) {
+				    (IrqInfo.UserNumber != ISP_IRQ_USER_VHDR) &&
+				    (IrqInfo.UserNumber != ISP_IRQ_USER_ISPDRV)) {
 					LOG_ERR("invalid userNumber(%d)\n", IrqInfo.UserNumber);
 					Ret = -EFAULT;
 					break;
@@ -10284,7 +10350,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = ISP_FLUSH_IRQ(IrqInfo);
 			} else {	/* v3 flow /v3 IRQ_USER_NUM_MAX */
 				if ((IrqInfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
-				    || (IrqInfo.UserInfo.UserKey < 1)) {
+				    || (IrqInfo.UserInfo.UserKey < 0)) {
 					LOG_ERR("invalid userKey(%d), max(%d)\n",
 						IrqInfo.UserInfo.UserKey, IRQ_USER_NUM_MAX);
 					Ret = -EFAULT;
