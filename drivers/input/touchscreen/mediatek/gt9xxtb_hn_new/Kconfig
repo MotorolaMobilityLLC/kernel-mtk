@@ -1,0 +1,224 @@
+#
+# Touchscreen driver configuration
+#
+menu "GT9 Touchscreen Config"
+	depends on TOUCHSCREEN_MTK_GT9XXTB_HN_NEW
+
+#if TOUCHSCREEN_MTK_GT9XXTB_HN_NEW
+
+config GTP_FIRMWARE
+	string "GT9 firmawre group"
+
+config GTP_CONFIG
+	string "GT9 config data group"
+
+config GTP_DRIVER_SEND_CFG
+	bool "GT9 driver update config data"
+	default y
+	help
+	Driver will send configuration data to touch IC.
+	Say Y here if you need to update config data when touch startup.
+	Say N if not need to update and use default config in touch IC.
+	If unsure, say N.
+
+config GTP_CUSTOM_CFG
+	bool "GT9 resoluton customized"
+	default n
+	help
+	Touch resolution and trigger mode will be customized,
+	relative data in config data array will be replaced with
+	customized data  before send to touch IC.
+	Say Y here if you want to customized touch resolution and trigger mode.
+	If unsure, say N.
+
+config GTP_HAVE_TOUCH_KEY
+	bool "GT9 touch key enable"
+	default n
+	help
+	Touch panel may have a key area at the bottom side.
+	It works just like keys in key area.
+	Say Y here if your touch panel have key area and you want to use it.
+	If unsure, say N.
+
+config GTP_WITH_HOVER
+	bool "GT9 hover enable"
+	default n
+	help
+	This config is for enable HOVER function of touch.
+	Say Y here if your touch have HOVER function and you want to enable it.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_CHANGE_X2Y
+	bool "GT9 exchange X Y coordinate data"
+	default n
+	help
+	Touch IC can exchange X and Y coordinate data in touch register.
+	Say Y here if you need to exchange X coordinate data to Y.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_COMPATIBLE_MODE
+	bool "GT9 flahless compatible"
+	default n
+	help
+	Driver will compatible with flashless and flashed touch IC.
+	You can use one driver for both 2 types touch IC.
+	Say Y here if your driver need to compatible with both 2 types touch IC.
+	If unsure, say N.
+
+config GTP_WARP_X_ON
+	bool "GT9 X coordinate turnaround"
+	default n
+	help
+	Coordinate data of X axis will be turnarounded.
+	X_max would be X_min after turnarounded.
+	Say Y here if you need X cooridinate data turnaround.
+	If unsure, say N.
+
+config GTP_WARP_Y_ON
+	bool "GT9 Y coordinate turnaround"
+	default n
+	help
+        Coordinate data of y axis will be turnarounded.
+        Y_max would be Y_min after turnarounded.
+        Say Y here if you need Y cooridinate data turnaround.
+        If unsure, say N.
+
+config GTP_GESTURE_WAKEUP
+	bool "GT9 gesture wakeup function"
+	default n
+	help
+	This config is to enable touch gesture wakeup function.
+	If your touch IC support gesture wakeup and after enable this config,
+	You can wakeup your set by special gesture on touch.
+	Say Y here if you want to enable gesture wakeup function.
+	If unsure, say N.
+
+config GTP_HOTKNOT
+	bool "GT9 hotknot function"
+	default n
+	help
+	For enabeling hotknot function
+	You can transfer photo between 2 sets by making them face to face.
+	Need touch IC support hotknot function.
+	Say Y here if you want to enable hotknot function.
+	If unsure, say N.
+
+config GTP_HOTKNOT_AUTH_FW
+	string "GT9 hotknot authentication FW path"
+
+config GTP_HOTKNOT_TRANS_FW
+	string "GT9 hotknot translation FW path"
+
+config HOTKNOT_BLOCK_RW
+	bool "GT9 hotknot blocking read write"
+	default n
+	help
+	Hotknot blocking read/write function.
+	Say Y here if you want to enable this funciton.
+	Otherwise, sy N.
+	If unsure, say N.
+
+config GTP_PROXIMITY
+	bool "GT9 proximity"
+	default n
+	help
+	Touch can detect event of near to and far from.
+	Like proximity sensor.
+	Say Y here if you need to enable proximity function of touch.
+	If unsure, say N.
+
+config GTP_AUTO_UPDATE
+	bool "GT9 firmware auto update"
+	default y
+	help
+	Driver will check firmware you provide is match with IC or not.
+	And check the FW is newer than current FW in IC or not.
+	Then it decide need to update touch IC FW or not.
+	Say Y here if you need driver auto check and update FW to tp IC.
+	If unsure, say N.
+
+config GTP_SUPPORT_I2C_DMA
+	bool "GT9 i2c access with dma mode"
+	default n
+	help
+	This config is for enable or disable DMA mode for i2c read/write.
+	Say Y here if you need I2C access with DMA mode.
+	Say N if you want to do I2C access with FIFO mode.
+	If unsure, say N.
+
+config GTP_CREATE_WR_NODE
+	bool "GT9 create debug node"
+	default y
+	help
+	This config is for creating a debug node.
+	Then you can debug your driver in user space.
+	Say Y here if you need to create a debug node for your driver.
+	If unsure, say N.
+
+config GTP_ESD_PROTECT
+	bool "GT9 esd protection"
+	default n
+	help
+	When ESD protection enabled, driver will monitor touch status regularly.
+	Touch will be reseted if abnormal happened.
+	Say Y here if you want to enable touch ESD proction function.
+	If unsure, say N.
+
+config GTP_CHARGER_DETECT
+	bool "GT9 charger detection"
+	default n
+	help
+	This is for touch driver detecting your set is charging or not.
+	Say Y here if you want to enable touch charger detect function.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_DEBUG_ARRAY_ON
+	bool "GT9 debug array"
+	default n
+	help
+	This config is to enable output array data with log.
+	Say Y here if you need debug information with array data to log.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_DEBUG_FUNC_ON
+	bool "GT9 debug log"
+	default n
+	help
+	This is to enable output function information log.
+	Say Y here if you need to check driver function flow with log.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_DEBUG_ON
+	bool "GT9 debug on"
+	default n
+	help
+	This is to enable driver debug log output function.
+	Say Y here if you need to check debug information in log.
+	Otherwise, please say N.
+	If unsure, say N.
+
+config GTP_POWER_CTRL_SLEEP
+	bool "GT9 power down when sleeping"
+	default n
+	help
+	This is for touch power control in suspend mode.
+	When this config enable, touch will power off shen set is suspended.
+	Say Y here if you want to power off to save power in suspend mode.
+	If touch is flashless, recommend to say N here.
+	If unsure, say N.
+
+config GTP_POWER_SOURCE_3300
+	bool "touch power 3.3V"
+	default n
+	help
+	Touch power is 2.8V or 3.3V.
+	Say Y here if your touch power is 3300mV.
+	Say N here is use 2.8V power for touch.
+	If unsure, say N.
+#endif
+endmenu
