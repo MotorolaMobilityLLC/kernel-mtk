@@ -100,8 +100,8 @@
 		lcm_params-dsi-packet_size = <256>;
 
 		lcm_params-dsi-vertical_sync_active = <2>;
-		lcm_params-dsi-vertical_backporch = <8>;
-		lcm_params-dsi-vertical_frontporch = <15>;
+		lcm_params-dsi-vertical_backporch = <6>;
+		lcm_params-dsi-vertical_frontporch = <17>;
 		lcm_params-dsi-vertical_frontporch_for_low_power;
 		lcm_params-dsi-vertical_active_line = <1280>;
 		lcm_params-dsi-horizontal_sync_active = <50>;
