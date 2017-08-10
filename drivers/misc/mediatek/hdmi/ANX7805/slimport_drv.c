@@ -319,7 +319,7 @@ static int slimport_drv_audio_config(enum HDMI_AUDIO_FORMAT aformat, int bitWidt
 		}
 		default:
 		{
-			printk("slimport_drv_audio_config do not support");
+			pr_info("slimport_drv_audio_config do not support");
 			break;
 		}
 	}
@@ -341,7 +341,7 @@ static int slimport_drv_video_enable(bool enable)
 
 static int slimport_drv_audio_enable(bool enable)  
 {
-    printk("[EXTD]Set_I2S_Pin, enable = %d\n", enable);
+	pr_info("[EXTD]Set_I2S_Pin, enable = %d\n", enable);
 	if (enable)
 		i2s_gpio_ctrl(1);
 	else

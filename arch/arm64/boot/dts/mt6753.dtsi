@@ -1593,8 +1593,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			      <0x10206514 0x000c>,  /*DISP_DPI_EFUSE_PERMISSION */
 			      <0x10206558 0x000c>,  /*DISP_DPI_EFUSE_KEY */
 			      <0x102100a0 0x1000>,  /*DISP_TVDPLL_CFG6 */
-			      <0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
-			      <0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
+			      <0x10209260 0x1000>,  /*DISP_TVDPLL_CON0 */
+			      <0x10209264 0x1000>,  /*DISP_TVDPLL_CON1 */
 			      <0x14012000 0x1000>,  /*DISP_OD      */
 			      <0x10209000 0x1000>;  /*DISP_VENCPLL      */
 
@@ -1631,6 +1631,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				     <0 0 8>, /*DISP_TVDPLL_CON1 */
 				     <0 210 8>, /*DISP_OD      */
 				     <0 0 8>; /*DISP_VENCPLL      */
+		};
+		mhl:mhl@0 {
+			compatible = "mediatek,extd_dev";
 		};
 
 		lcm: lcm {

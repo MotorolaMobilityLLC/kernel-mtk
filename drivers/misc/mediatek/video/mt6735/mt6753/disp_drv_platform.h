@@ -232,7 +232,7 @@ typedef enum {
 /**
  * DISP_NO_DPI: option for DPI
  */
-#define DISP_NO_DPI
+/* #define DISP_NO_DPI */
 
 /**
  * DISP_NO_MT_BOOT: option for mt_boot

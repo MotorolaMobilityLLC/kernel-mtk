@@ -643,6 +643,7 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP1_DPI_PIXEL",
 	"DISP_PWM",
 	"MUX_DPI0",
+	"TVDPLL",
 	"TVDPLL_CK",
 	"TVDPLL_D2",
 	"TVDPLL_D4",
@@ -714,6 +715,11 @@ int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 {
 	return clk_set_parent(dispsys_dev->disp_clk[id], dispsys_dev->disp_clk[parent]);
+}
+
+int ddp_clk_set_rate(eDDP_CLK_ID id, unsigned long rate)
+{
+	return clk_set_rate(dispsys_dev->disp_clk[id], rate);
 }
 #endif				/* CONFIG_MTK_CLKMGR */
 

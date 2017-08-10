@@ -53,7 +53,7 @@
 
 #define MTK_HDMI_POST_VIDEO_BUFFER              HDMI_IOW(20,  struct fb_overlay_layer)
 #define MTK_HDMI_AUDIO_SETTING                  HDMI_IOWR(21, struct HDMITX_AUDIO_PARA)
-
+#define HDMI_SET_MULTIPLE_LAYERS                HDMI_IOW(22,  struct fb_overlay_layer)
 
 #define MTK_HDMI_FACTORY_MODE_ENABLE            HDMI_IOW(30, int)
 #define MTK_HDMI_FACTORY_GET_STATUS             HDMI_IOWR(31, int)
@@ -99,6 +99,7 @@
 #define MTK_MHL_GET_3DINFO                      HDMI_IOWR(91, unsigned int)
 #define MTK_HDMI_HDCP                           HDMI_IOWR(92, unsigned int)
 
+#define MTK_HDMI_FAKE_PLUG_IN                   HDMI_IOWR(93, unsigned int)
 #define MTK_HDMI_FACTORY_CHIP_INIT              HDMI_IOWR(94, int)
 #define MTK_HDMI_FACTORY_JUDGE_CALLBACK         HDMI_IOWR(95, int)
 #define MTK_HDMI_FACTORY_START_DPI_AND_CONFIG   HDMI_IOWR(96, int)

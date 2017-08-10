@@ -84,9 +84,9 @@ const char *avdd33_name;
 
 
 
-#define D(fmt, arg...) printk("<1>```%s:%d: " fmt, __FUNCTION__, __LINE__, ##arg)
-#define debug_printf(fmt, arg...) printk(fmt,##arg)
-#define debug_puts(fmt) printk(fmt)
+#define D(fmt, arg...) pr_info("<1>```%s:%d: " fmt, __func__, __LINE__, ##arg)
+#define debug_printf(fmt, arg...) pr_info(fmt, ##arg)
+#define debug_puts(fmt) pr_info(fmt)
 #define delay_ms(time) mdelay(time)
 
 #define MIPI_EN  0

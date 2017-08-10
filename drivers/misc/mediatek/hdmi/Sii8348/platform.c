@@ -198,8 +198,8 @@ uint8_t reGetI2cAddress(uint8_t device_ID)
 	return address;
 }
 /****************************Platform I2C Read/Write*****************************/
-#define MAX_I2C_READ_NUM 16
-#define MAX_I2C_WRITE_NUM 16
+#define MAX_I2C_READ_NUM 8
+#define MAX_I2C_WRITE_NUM 7
 
 uint8_t mhl_i2c_read_len_bytes(struct i2c_client *client, uint8_t offset, uint8_t *buf, uint8_t len)
 {
@@ -511,7 +511,7 @@ void mhl_tx_vbus_control(enum vbus_power_state power_state)
 #ifdef ENABLE_MHL_VBUS_POWER_OUT
 	///struct mhl_dev_context *dev_context;
 	///dev_context = i2c_get_clientdata(device_addresses[0].client);	// TODO: FD, TBC, it seems the 'client' is always 'NULL', is it right here
-	printk("%s: mhl_tx_vbus_control3 %d-%d received!\n", __func__, VBUS_state, power_state);
+	pr_info("%s: mhl_tx_vbus_control3 %d-%d received!\n", __func__, VBUS_state, power_state);
     if(VBUS_state == power_state)
         return;
         
@@ -527,24 +527,24 @@ void mhl_tx_vbus_control(enum vbus_power_state power_state)
 	case VBUS_ON:
 		//set_pin(dev_context,TX2MHLRX_PWR_M,0);
 		//set_pin(dev_context,LED_SRC_VBUS_ON,GPIO_LED_ON);
-		printk(	"%s:  power chg %d received!\n",
+		pr_info("%s:  power chg %d received!\n",
 				__func__, battery_meter_get_charger_voltage());
 		if(battery_meter_get_charger_voltage() > 4000)
 		    VBUS_state = VBUS_OFF;
 		else
     		mtk_enable_pmic_otg_mode();
-		printk(	"%s:  power chg %d received!\n",
+		pr_info("%s:  power chg %d received!\n",
 				__func__, battery_meter_get_charger_voltage());
 		msleep(100);
 		break;
 
 	default:
-		printk(	"%s: Invalid power state %d received!\n",
+		pr_info("%s: Invalid power state %d received!\n",
 				__func__, power_state);
 		break;
 	}        
 #else
-	printk(	"%s: do not support power out %d received!\n",
+	pr_info("%s: do not support power out %d received!\n",
 				__func__, power_state);
 #endif	
 }
@@ -663,7 +663,7 @@ void print_formatted_debug_msg(int level,
 	len = vscnprintf(msg_offset, remaining_msg_len, fmt, ap);
 	va_end(ap);
 
-	printk(msg);
+	pr_info("%s\n", msg);
 
 	kfree(msg);
 }
