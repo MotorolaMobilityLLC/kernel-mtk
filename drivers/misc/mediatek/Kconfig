@@ -352,7 +352,7 @@ config MTK_SM100
 
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
-	depends on CMA
+	depends on CMA && ZONE_MOVABLE_CMA
 	default n
 	help
 	  Mediatek Shareable SVP technology.

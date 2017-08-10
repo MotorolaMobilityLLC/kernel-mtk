@@ -17,6 +17,8 @@
 int svp_region_offline(phys_addr_t *pa, unsigned long *size);
 int svp_region_online(void);
 
+extern struct single_cma_registration memory_ssvp_registration;
+
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 extern int secmem_api_enable(u32 start, u32 size);
 extern int secmem_api_disable(void);
@@ -33,23 +35,6 @@ static inline int svp_region_online(void) { return -ENOSYS; }
 #endif
 
 extern struct cma *svp_contiguous_default_area;
-
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-void svp_contiguous_reserve(phys_addr_t addr_limit);
-
-unsigned long get_svp_cma_basepfn(void);
-unsigned long get_svp_cma_count(void);
-
-int svp_migrate_range(unsigned long pfn);
-int svp_is_in_range(unsigned long pfn);
-
-#else
-static inline void svp_contiguous_reserve(phys_addr_t limit) { }
-static inline unsigned long get_svp_cma_basepfn(void) { return 0; }
-static inline long get_svp_cma_count(void) { return 0; }
-static inline int svp_migrate_range(unsigned long pfn) { return 0; }
-static inline int svp_is_in_range(unsigned long pfn) { return 0; }
-#endif
 
 #define SVP_REGION_IOC_MAGIC		'S'
 

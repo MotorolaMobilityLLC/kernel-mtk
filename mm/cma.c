@@ -84,6 +84,12 @@ void cma_get_range(phys_addr_t *base, phys_addr_t *size)
 	}
 }
 
+void cma_resize_front(struct cma *cma, unsigned long nr_pfn)
+{
+	cma->base_pfn += nr_pfn;
+	cma->count    -= nr_pfn;
+}
+
 static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
 {
 	if (align_order <= cma->order_per_bit)

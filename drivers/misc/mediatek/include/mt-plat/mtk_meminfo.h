@@ -13,6 +13,7 @@
 
 #ifndef __MTK_MEMINFO_H__
 #define __MTK_MEMINFO_H__
+#include <linux/cma.h>
 
 /* physical offset */
 extern phys_addr_t get_phys_offset(void);
@@ -26,6 +27,26 @@ extern phys_addr_t get_zone_movable_cma_size(void);
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
 extern phys_addr_t memory_lowpower_cma_base(void);
 extern phys_addr_t memory_lowpower_cma_size(void);
+extern struct single_cma_registration memory_lowpower_registration;
+#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+
+
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+extern phys_addr_t zmc_base(void);
+extern struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align);
+extern bool zmc_cma_release(struct cma *cma, struct page *pages, int count);
+struct single_cma_registration {
+	phys_addr_t size;
+	phys_addr_t align;
+	const char *name;
+	void (*init)(struct cma *);
+};
+#endif
+
+#ifdef CONFIG_MTK_SVP
+extern phys_addr_t memory_ssvp_cma_base(void);
+extern phys_addr_t memory_ssvp_cma_size(void);
+extern struct single_cma_registration memory_ssvp_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 enum dcs_status {
 	DCS_NORMAL,

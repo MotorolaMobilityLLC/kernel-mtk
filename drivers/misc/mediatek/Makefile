@@ -162,6 +162,7 @@ obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_TCPC_CLASS) += pd/
 
 obj-$(CONFIG_MTK_SVP) += memory-ssvp/
+obj-$(CONFIG_ZONE_MOVABLE_CMA) += zone_movable_cma/
 
 obj-y += performance/
 

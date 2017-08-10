@@ -18,6 +18,8 @@ struct cma;
 extern phys_addr_t cma_get_base(struct cma *cma);
 extern unsigned long cma_get_size(struct cma *cma);
 extern void cma_get_range(phys_addr_t *base, phys_addr_t *size);
+extern void cma_resize_front(struct cma *cma, unsigned long nr_pfn);
+
 
 extern int __init cma_declare_contiguous(phys_addr_t base,
 			phys_addr_t size, phys_addr_t limit,

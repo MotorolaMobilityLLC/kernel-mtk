@@ -47,10 +47,13 @@
 #include <mt-plat/aee.h>
 #endif
 
+#include "mt-plat/mtk_meminfo.h"
+
 static unsigned long svp_usage_count;
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-static struct page *wrap_cma_pages;
+static struct page *wrap_svp_pages;
+static struct page *wrap_tui_pages;
 #endif
 
 
@@ -88,10 +91,24 @@ struct SSVP_Region {
 static int _svp_onlinewait_tries;
 static struct task_struct *_svp_online_task; /* NULL */
 
-struct cma *cma;
+static struct cma *cma;
 
 static struct SSVP_Region _svpregs[__MAX_NR_SSVPSUBS];
 
+void zmc_ssvp_init(struct cma *zmc_cma)
+{
+	phys_addr_t base = cma_get_base(zmc_cma), size = cma_get_size(zmc_cma);
+
+	cma = zmc_cma;
+	pr_info("%s, base: %pa, size: %pa\n", __func__, &base, &size);
+}
+
+struct single_cma_registration memory_ssvp_registration = {
+	.align = 0x8000000,
+	.size = (_SSVP_MBSIZE_ * SZ_1M),
+	.name = "memory-ssvp",
+	.init = zmc_ssvp_init,
+};
 
 static int __init memory_ssvp_init(struct reserved_mem *rmem)
 {
@@ -150,9 +167,10 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 		_svpregs[SSVP_TUI].state = SVP_STATE_OFFING;
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		page = wrap_cma_pages;
+		page = wrap_tui_pages;
 #else
-		page = cma_alloc(cma, _svpregs[SSVP_TUI].count, 0);
+		page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
 		if (page)
 			svp_usage_count += _svpregs[SSVP_TUI].count;
 #endif
@@ -410,9 +428,10 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 		_svpregs[SSVP_SVP].state = SVP_STATE_OFFING;
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		page = wrap_cma_pages;
+		page = wrap_svp_pages;
 #else
-		page = cma_alloc(cma, _svpregs[SSVP_SVP].count, 0);
+		page = zmc_cma_alloc(cma, _svpregs[SSVP_SVP].count,
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
 
 		if (page)
 			svp_usage_count += _svpregs[SSVP_SVP].count;
@@ -580,10 +599,12 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 			cma_get_size(cma) >> PAGE_SHIFT);
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-	seq_printf(m, "cma info: wrap: %pa\n", &wrap_cma_pages);
+	seq_printf(m, "cma info: svp wrap: %pa\n", &wrap_svp_pages);
+	seq_printf(m, "cma info: tui wrap: %pa\n", &wrap_tui_pages);
 #endif
 
-	seq_printf(m, "svp region count %lu, state %s\n",
+	seq_printf(m, "svp region base:0x%llx, count %lu, state %s\n",
+			_svpregs[SSVP_SVP].page == NULL ? 0 : page_to_phys(_svpregs[SSVP_SVP].page),
 			_svpregs[SSVP_SVP].count,
 			svp_state_text[_svpregs[SSVP_SVP].state]);
 
@@ -620,12 +641,19 @@ static int __init memory_ssvp_debug_init(void)
 	}
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-	wrap_cma_pages = cma_alloc(cma, cma_get_size(cma) >> PAGE_SHIFT, 0);
+	if (_SVP_MBSIZE > 0) {
+		wrap_svp_pages = zmc_cma_alloc(cma, _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT,
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+		svp_usage_count = _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT;
+	} else
+		pr_err("wrap_svp_pages is not inited\n");
 
-	if (!wrap_cma_pages)
-		pr_err("wrap_cma_pages is not inited\n");
-	else
-		svp_usage_count = cma_get_size(cma);
+	if (_TUI_MBSIZE > 0) {
+		wrap_tui_pages = zmc_cma_alloc(cma, _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT,
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+		svp_usage_count = _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT;
+	} else
+		pr_err("wrap_tui_pages is not inited\n");
 
 #endif
 
