@@ -180,7 +180,7 @@ signed int d5_count_time_rate = 1;
 signed int g_d_hw_ocv = 0;
 signed int g_vol_bat_hw_ocv = 0;
 signed int g_hw_ocv_before_sleep = 0;
-struct timespec g_rtc_time_before_sleep, xts_before_sleep, g_sleep_total_time;
+struct timespec g_rtc_time_before_sleep, xts_before_sleep;
 signed int g_sw_vbat_temp = 0;
 struct timespec last_oam_run_time;
 
@@ -253,8 +253,7 @@ kal_bool gFG_Is_offset_init = KAL_FALSE;
 
 void battery_meter_reset_sleep_time(void)
 {
-	g_sleep_total_time.tv_sec = 0;
-	g_sleep_total_time.tv_nsec = 0;
+	_g_bat_sleep_total_time = 0;
 }
 
 
@@ -2172,7 +2171,7 @@ void oam_run(void)
 	signed int delta_time = 0;
 
 	/* now_time = rtc_read_hw_time(); */
-	get_monotonic_boottime(&now_time);
+	getrawmonotonic(&now_time);
 
 	/* delta_time = now_time - last_oam_run_time; */
 	delta_time = now_time.tv_sec - last_oam_run_time.tv_sec;
@@ -4302,12 +4301,8 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 #endif
 		get_monotonic_boottime(&xts_before_sleep);
 		get_monotonic_boottime(&g_rtc_time_before_sleep);
-		if (_g_bat_sleep_total_time < g_spm_timer)
-			return 0;
-
-
-		g_sleep_total_time.tv_sec = 0;
-		g_sleep_total_time.tv_nsec = 0;
+		if (_g_bat_sleep_total_time >= g_spm_timer)
+			_g_bat_sleep_total_time = 0;
 
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &g_hw_ocv_before_sleep);
 	}
@@ -4511,7 +4506,10 @@ static int battery_meter_resume(struct platform_device *dev)
 #elif defined(SOC_BY_SW_FG) || defined(SOC_BY_HW_FG)
 #if defined(SOC_BY_SW_FG)
 	signed int hw_ocv_after_sleep;
+	signed int DOD_hwocv;
+	struct timespec now_time;
 #endif
+	signed int sleep_interval;
 	struct timespec rtc_time_after_sleep;
 #ifdef MTK_POWER_EXT_DETECT
 	if (KAL_TRUE == bat_is_ext_power())
@@ -4519,17 +4517,13 @@ static int battery_meter_resume(struct platform_device *dev)
 #endif
 
 	get_monotonic_boottime(&rtc_time_after_sleep);
+	sleep_interval =
+		rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec;
 
-	g_sleep_total_time = timespec_add(g_sleep_total_time,
-		timespec_sub(rtc_time_after_sleep, g_rtc_time_before_sleep));
-	_g_bat_sleep_total_time = g_sleep_total_time.tv_sec;
-
+	_g_bat_sleep_total_time += sleep_interval;
 	battery_log(BAT_LOG_CRTI,
-			"[battery_meter_resume] sleep time = %d, g_spm_timer = %d , %ld %ld %ld %ld %ld %ld\n",
-			_g_bat_sleep_total_time, g_spm_timer,
-			g_rtc_time_before_sleep.tv_sec, g_rtc_time_before_sleep.tv_nsec,
-			rtc_time_after_sleep.tv_sec, rtc_time_after_sleep.tv_nsec,
-			g_sleep_total_time.tv_sec, g_sleep_total_time.tv_nsec);
+		"[battery_meter_resume]sleep interval=%d sleep time = %d, g_spm_timer = %d\n",
+		sleep_interval, _g_bat_sleep_total_time, g_spm_timer);
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
@@ -4539,28 +4533,53 @@ static int battery_meter_resume(struct platform_device *dev)
 #endif
 #endif
 
-	if (_g_bat_sleep_total_time < g_spm_timer)
-		return 0;
+	/* trigger gauge update if accumulated
+	sleep time more than give period */
+	if (_g_bat_sleep_total_time >= g_spm_timer)
+		bat_spm_timeout = true;
 
-	bat_spm_timeout = true;
 #if defined(SOC_BY_SW_FG)
-	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &hw_ocv_after_sleep);
-	if (_g_bat_sleep_total_time > 3600) {	/* 1hr */
+	/* trigger gauge update if oam_run()
+	not run in the last 30s kernel active time */
+	getrawmonotonic(&now_time);
+	if (now_time.tv_sec - last_oam_run_time.tv_sec > 30) {
+			bat_spm_timeout = true;
+			pr_warn("[battery_meter] trigger oam_run() for 30s threshold.\n");
+	}
+
+	/* try to calibrate D0 by HWOCV
+	if battery has no loading for more than 30mins */
+	if (sleep_interval > 1800 && bat_is_charger_exist() == KAL_FALSE) {
+		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV,
+			&hw_ocv_after_sleep);
+
+		DOD_hwocv = fgauge_read_d_by_v(hw_ocv_after_sleep);
+
 		if (hw_ocv_after_sleep < g_hw_ocv_before_sleep) {
-			oam_d0 = fgauge_read_d_by_v(hw_ocv_after_sleep);
+			oam_d0 = DOD_hwocv;
 			oam_v_ocv_2 = oam_v_ocv_1 = hw_ocv_after_sleep;
 			oam_car_1 = 0;
 			oam_car_2 = 0;
+
+			bm_print(BM_LOG_CRTI,
+				"[self-discharge check] reset to HWOCV. dod_ocv(%d) dod_now(%d)\n",
+				DOD_hwocv, oam_d_2);
+
 		} else {
-			oam_car_1 = oam_car_1 +
-				(40 * (rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec) / 3600);
-/* 0.1mAh */
-			oam_car_2 = oam_car_2 +
-				(40 * (rtc_time_after_sleep.tv_sec - g_rtc_time_before_sleep.tv_sec) / 3600);
-/* 0.1mAh */
+				/* 0.1mAh */
+				oam_car_1 = oam_car_1 + (40*sleep_interval/3600);
+				/* 0.1mAh */
+				oam_car_2 = oam_car_2 + (40*sleep_interval/3600);
 		}
+		bm_print(BM_LOG_CRTI,
+			"[self-discharge check] dod_ocv(%d) dod_now(%d)\n",
+			DOD_hwocv, oam_d_2);
+	} else {
+				/* 0.1mAh */
+				oam_car_1 = oam_car_1 + (40*sleep_interval/3600);
+				/* 0.1mAh */
+				oam_car_2 = oam_car_2 + (40*sleep_interval/3600);
 	}
-	/* FIXME */
 
 	bm_print(BM_LOG_CRTI,
 		 "sleeptime=(%d)s, be_ocv=(%d), af_ocv=(%d), D0=(%d), car1=(%d), car2=(%d)\n",
