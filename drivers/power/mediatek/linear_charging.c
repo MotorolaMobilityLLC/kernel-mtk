@@ -1133,9 +1133,6 @@ static void pchr_turn_on_charging(void)
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] charging current is set 0mA, turn off charging !\r\n");
 		} else {
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
-if (ta_check_ta_control == KAL_FALSE)
-#endif
 			{
 				if (ulc_cv_charging_current_flag == KAL_TRUE)
 					battery_charging_control(CHARGING_CMD_SET_CURRENT,
