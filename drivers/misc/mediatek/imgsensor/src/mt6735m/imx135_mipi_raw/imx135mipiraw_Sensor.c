@@ -134,10 +134,10 @@ static imgsensor_info_struct imgsensor_info = {
         .pclk = 432000000,
         .linelength = 4572,
         .framelength = 3144,
-        .startx = 2,
-        .starty = 2,
-        .grabwindow_width = 4192,//4192,
-        .grabwindow_height = 3104,//3104,
+        .startx = 4,
+        .starty = 4,
+        .grabwindow_width = 4176,//4192,
+        .grabwindow_height = 3088,//3104,
         .mipi_data_lp2hs_settle_dc = 30,
         .max_framerate = 300,
     },
@@ -2285,6 +2285,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     LOG_INF("L\n");
     return ERROR_NONE;
 }   /* capture() */
+#if 0
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -2311,7 +2312,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     LOG_INF("L\n");
     return ERROR_NONE;
 }   /*  normal_video   */
-
+#endif
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -2649,7 +2650,8 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSUR
             capture(image_window, sensor_config_data);
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-            normal_video(image_window, sensor_config_data);  // VideoFullSizeSetting
+            capture(image_window, sensor_config_data);
+            //normal_video(image_window, sensor_config_data);  // VideoFullSizeSetting
             break;
         case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
             hs_video(image_window, sensor_config_data);  // VideoHDSetting_120fps
@@ -2734,12 +2736,29 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
             if(framerate == 0)
                 return ERROR_NONE;
+            if (imgsensor.current_fps == 280){
+                    frame_length = imgsensor_info.cap.pclk / framerate * 10 / imgsensor_info.cap.linelength;
+                    spin_lock(&imgsensor_drv_lock);
+                    imgsensor.dummy_line = (frame_length > imgsensor_info.cap.framelength) ? (frame_length - imgsensor_info.cap.framelength) : 0;
+                    imgsensor.frame_length = imgsensor_info.cap.framelength + imgsensor.dummy_line;
+                    imgsensor.min_frame_length = imgsensor.frame_length;
+                    spin_unlock(&imgsensor_drv_lock);
+            }
+            else{ /*imgsensor.current_fps == 240*/
+                    frame_length = imgsensor_info.cap1.pclk / framerate * 10 / imgsensor_info.cap1.linelength;
+                    spin_lock(&imgsensor_drv_lock);
+                    imgsensor.dummy_line = (frame_length > imgsensor_info.cap1.framelength) ? (frame_length - imgsensor_info.cap1.framelength) : 0;
+                    imgsensor.frame_length = imgsensor_info.cap1.framelength + imgsensor.dummy_line;
+                    spin_unlock(&imgsensor_drv_lock);
+            }
+            /*
             frame_length = imgsensor_info.normal_video.pclk / framerate * 10 / imgsensor_info.normal_video.linelength;
             spin_lock(&imgsensor_drv_lock);
             imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video.framelength) ? (frame_length - imgsensor_info.normal_video.framelength) : 0;
             imgsensor.frame_length = imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
             imgsensor.min_frame_length = imgsensor.frame_length;
             spin_unlock(&imgsensor_drv_lock);
+            */
             //set_dummy();
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -2864,7 +2883,21 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
             *framerate = imgsensor_info.pre.max_framerate;
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-            *framerate = imgsensor_info.normal_video.max_framerate;
+            //*framerate = imgsensor_info.normal_video.max_framerate;
+            segment_code = (get_devinfo_with_index(47) >> 25) & 0x7F;
+            switch (segment_code) {
+                case 0x52:
+                case 0x53:
+                    *framerate = imgsensor_info.cap.max_framerate; /*30fps*/
+                    break;
+                case 0x4A:
+                case 0x4B:
+                    *framerate = imgsensor_info.cap1.max_framerate; /*24fps*/
+                    break;
+                default:
+                    *framerate = imgsensor_info.cap.max_framerate;
+                    break;
+            }
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
             segment_code = (get_devinfo_with_index(47) >> 25) & 0x7F;
