@@ -411,6 +411,7 @@ extern VOID mtk_wcn_wmt_exp_init(VOID);
 extern VOID mtk_wcn_wmt_exp_deinit(VOID);
 #endif
 extern INT8 mtk_wcn_wmt_co_clock_flag_get(VOID);
+extern VOID mtk_wcn_wmt_dump_wmtd_backtrace(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

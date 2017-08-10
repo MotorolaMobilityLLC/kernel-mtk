@@ -732,3 +732,8 @@ VOID mtk_wcn_wmt_set_wifi_ver(UINT32 Value)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_set_wifi_ver);
 
+VOID mtk_wcn_wmt_dump_wmtd_backtrace(VOID)
+{
+	wmt_lib_dump_wmtd_backtrace();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_dump_wmtd_backtrace);

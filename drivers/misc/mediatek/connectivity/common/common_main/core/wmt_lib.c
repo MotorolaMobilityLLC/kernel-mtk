@@ -1081,7 +1081,6 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 	MTK_WCN_BOOL bCleanup = MTK_WCN_BOOL_FALSE;
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 waitRet = -1;
-	P_OSAL_THREAD pThread;
 	PUINT8 pbuf = NULL;
 	INT32 len = 0;
 
@@ -1135,14 +1134,13 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 
 		/* if (unlikely(!wait_ret)) { */
 		if (0 == waitRet) {
-			pThread = &gDevWmt.thread;
 			pbuf = "Wait wmtd complation timeout, just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 			WMT_ERR_FUNC
 				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
+			wmt_lib_dump_wmtd_backtrace();
 			/* TODO: how to handle it? retry? */
 			/* wcn_wmtd_timeout_collect_ftrace();*/ /*trigger collect SYS_FTRACE */
-			osal_thread_show_stack(pThread);
 			stp_dbg_trigger_collect_ftrace(pbuf, len);
 		} else {
 			if (pOp->result)
@@ -2089,4 +2087,9 @@ INT32 wmt_lib_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 UINT32 wmt_lib_co_clock_flag_get(VOID)
 {
 	return wmt_plat_soc_co_clock_flag_get();
+}
+
+VOID wmt_lib_dump_wmtd_backtrace(VOID)
+{
+	osal_thread_show_stack(&gDevWmt.thread);
 }
