@@ -769,6 +769,8 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	/* if *f_pos >  0, we should return 0 to make cat command exit */
 	if (*f_pos > 0 || gprGlueInfo == NULL)
 		return 0;
+	if (!kalStrLen(aucCfgQueryKey))
+		return 0;
 
 	kalMemSet(aucCfgOutputBuf, 0, MAX_CFG_OUTPUT_BUF_LENGTH);
 
