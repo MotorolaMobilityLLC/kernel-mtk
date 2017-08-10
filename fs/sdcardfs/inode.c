@@ -500,6 +500,7 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (new_dir != old_dir) {
 		sdcardfs_copy_and_fix_attrs(old_dir, lower_old_dir_dentry->d_inode);
 		fsstack_copy_inode_size(old_dir, lower_old_dir_dentry->d_inode);
+		unlock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
 
 		/* update the derived permission of the old_dentry
 		 * with its new parent
@@ -507,27 +508,31 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		new_parent = dget_parent(new_dentry);
 		if(new_parent) {
 			if(old_dentry->d_inode) {
-				update_derived_permission_lock(old_dentry);
+				update_derived_permission(old_dentry);
 			}
 			dput(new_parent);
 		}
+	} else {
+		unlock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
 	}
+
 	/* At this point, not all dentry information has been moved, so
 	 * we pass along new_dentry for the name.*/
-	lockdep_off();
-	mutex_lock(&old_dentry->d_inode->i_mutex);
 	get_derived_permission_new(new_dentry->d_parent, old_dentry, new_dentry);
 	fix_derived_permission(old_dentry->d_inode);
 	get_derive_permissions_recursive(old_dentry);
-	mutex_unlock(&old_dentry->d_inode->i_mutex);
-	lockdep_on();
+	goto out_success;
+
 out:
 	unlock_rename(lower_old_dir_dentry, lower_new_dir_dentry);
+
+out_success:
 	dput(lower_old_dir_dentry);
 	dput(lower_new_dir_dentry);
 	sdcardfs_put_real_lower(old_dentry, &lower_old_path);
 	sdcardfs_put_lower_path(new_dentry, &lower_new_path);
 	REVERT_CRED(saved_cred);
+
 out_eacces:
 	return err;
 }

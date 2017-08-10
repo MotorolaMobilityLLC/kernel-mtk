@@ -145,11 +145,9 @@ static int insert_str_to_int_lock(struct packagelist_data *pkgl_dat, char *key,
 
 static void fixup_perms(struct super_block *sb) {
 	if (sb && sb->s_magic == SDCARDFS_SUPER_MAGIC) {
-		lockdep_off();
 		mutex_lock(&sb->s_root->d_inode->i_mutex);
 		get_derive_permissions_recursive(sb->s_root);
 		mutex_unlock(&sb->s_root->d_inode->i_mutex);
-		lockdep_on();
 	}
 }
 
