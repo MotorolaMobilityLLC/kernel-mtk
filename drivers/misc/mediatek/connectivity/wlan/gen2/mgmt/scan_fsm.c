@@ -1230,14 +1230,16 @@ BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAc
 	DBGLOG(SCN, INFO, "scnFsmPSCNAction Act = %d\n", ucPscanAct);
 
 	kalMemZero(&rCmdPscnAction, sizeof(CMD_SET_PSCAN_ENABLE));
-	rCmdPscnAction.ucPscanAct = ucPscanAct;
 
 	ASSERT(prAdapter);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	if (ucPscanAct == PSCAN_ACT_ENABLE)
+	if (ucPscanAct == PSCAN_ACT_ENABLE) {
 		prScanInfo->fgPscnOngoing = TRUE;
-	else
+		rCmdPscnAction.ucPscanAct = 0;
+	} else {
 		prScanInfo->fgPscnOngoing = FALSE;
+		rCmdPscnAction.ucPscanAct = 1; /* sync to firmware, 1 means disable, 0 means enable */
+	}
 
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_PSCN_ENABLE,
