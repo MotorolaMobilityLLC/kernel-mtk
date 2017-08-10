@@ -1941,7 +1941,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		    (cmd->opcode != 1) &&
 		    ((cmd->opcode != 13) || (g_emmc_mode_switch == 0))) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			mmc_cmd_dump(host->mmc);
+			if (host->hw->host_function == MSDC_EMMC)
+				mmc_cmd_dump(host->mmc);
 #endif
 			msdc_dump_info(host->id);
 		}
