@@ -580,13 +580,13 @@ enum {
 void __iomem *eem_base;
 static u32 eem_irq_number;
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-void __iomem *eem_apmixed_base;
+	void __iomem *eem_apmixed_base;
+	#define cpu_eem_is_extbuck_valid()     (is_ext_buck_exist() && is_ext_buck_sw_ready())
+	static unsigned int eem_is_extbuck_valid;
+	static unsigned int eemFeatureSts = 0x5;
+#else
+	static unsigned int eemFeatureSts = 0x7;
 #endif
-#endif
-
-#define cpu_eem_is_extbuck_valid()     (is_ext_buck_exist() && is_ext_buck_sw_ready())
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-static unsigned int eem_is_extbuck_valid;
 #endif
 
 /**
@@ -2266,10 +2266,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMIN	= VMIN_VAL_GPU; /* override default setting */
 		det->DVTFIXED	= DVTFIXED_VAL_GPU;
 		det->VCO	= VCO_VAL_GPU;
-		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-			if (eem_is_extbuck_valid)
-				det->features = FEA_INIT01 | FEA_INIT02 | FEA_MON;
-		#endif
 		break;
 
 	#if 0
@@ -2345,6 +2341,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
+int __attribute__((weak)) tscpu_is_temp_valid(void)
+{
+	return 1;
+}
 
 static void eem_set_eem_volt(struct eem_det *det)
 {
@@ -2354,8 +2354,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
 
 	cur_temp = det->ops->get_temp(det);
-	/* eem_debug("eem_set_eem_volt cur_temp = %d\n", cur_temp); */
-	if (cur_temp <= 33000) {
+	/* eem_debug("eem_set_eem_volt cur_temp = %d, valid = %d\n", cur_temp, tscpu_is_temp_valid()); */
+	if ((cur_temp <= 33000) || !tscpu_is_temp_valid()) {
 		low_temp_offset = 10;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
 	} else {
@@ -3268,7 +3268,7 @@ void eem_init01(void)
 			else if ((EEM_CTRL_BIG == det->ctrl_id) && (1 == det->eem_eemen[EEM_PHASE_INIT01]))
 				out |= BIT(EEM_CTRL_BIG);
 		}
-		if ((0x07 == out) || (30 == timeout)) {
+		if ((eemFeatureSts == out) || (30 == timeout)) {
 			eem_debug("init01 finish time is %d\n", timeout);
 			break;
 		}
@@ -3388,21 +3388,12 @@ void get_devinfo(struct eem_devinfo *p)
 #endif
 
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0)) {
-		if (cpu_eem_is_extbuck_valid()) {
-			if (p->GPU_BDES != 0)
-				val[7] = 0x01;
-		} else
+	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0))
 			val[7] = 0x01;
-	}
 
-	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0)) {
-		if (cpu_eem_is_extbuck_valid()) {
-			if (p->GPU_MTDES != 0)
-				val[7] = val[7] | (0x01<<8);
-		} else
+	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0))
 			val[7] = val[7] | (0x01<<8);
-	}
+
 	#else
 	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0) && (p->GPU_BDES != 0))
 		val[7] = 0x01;
@@ -3550,7 +3541,7 @@ static int eem_probe(struct platform_device *pdev)
 		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 1);
 		if (cpu_eem_is_extbuck_valid()) {
 			eem_is_extbuck_valid = 1;
-			/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
+			mt6311_config_interface(0x7C, 0x1, 0x1, 6); /* set PWM mode for MT6311 */
 		}
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
@@ -3585,8 +3576,8 @@ static int eem_probe(struct platform_device *pdev)
 		pmic_set_register_value(PMIC_RG_VPROC_MODESET, 0);
 		pmic_set_register_value(PMIC_RG_VCORE_MODESET, 0);
 		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 0);
-		/* if (cpu_eem_is_extbuck_valid()) */
-			/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
+		if (cpu_eem_is_extbuck_valid())
+			mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
 		mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
@@ -3924,9 +3915,9 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 		for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {
 			seq_printf(m, "Bank_number = %d\n", det->ctrl_id);
 			if (i < EEM_PHASE_MON)
-				seq_printf(m, "mode = init%d\n", i);
+				seq_printf(m, "mode = init%d\n", i+1);
 			else
-				seq_puts(m, "mode = mon");
+				seq_puts(m, "mode = mon\n");
 			if (eem_log_en) {
 				seq_printf(m, "0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
 					det->dcvalues[i],
@@ -4942,7 +4933,7 @@ static void __exit eem_exit(void)
 }
 
 #ifdef __KERNEL__
-module_init(eem_conf);
+device_initcall_sync(eem_conf);
 arch_initcall(vcore_ptp_init); /* I-Chang */
 late_initcall(eem_init);
 #endif
