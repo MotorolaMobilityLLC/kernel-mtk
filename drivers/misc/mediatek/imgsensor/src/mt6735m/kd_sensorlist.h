@@ -445,6 +445,9 @@ ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR+1] =
 #if defined(IMX135_MIPI_RAW_5MP)
     {IMX135_SENSOR_ID, SENSOR_DRVNAME_IMX135_MIPI_RAW_5MP, IMX135_MIPI_RAW_SensorInit},
 #endif
+#if defined(IMX135_MIPI_RAW_8MP)
+    {IMX135_SENSOR_ID, SENSOR_DRVNAME_IMX135_MIPI_RAW_8MP, IMX135_MIPI_RAW_SensorInit},
+#endif
 
 /*  ADD sensor driver before this line */
     {0,{0},NULL}, //end of list
