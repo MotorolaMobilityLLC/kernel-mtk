@@ -130,6 +130,12 @@ static MTK_MMDVFS_CMD g_mmdvfs_cmd;
 static unsigned int g_disp_low_low_request;
 static unsigned int g_disp_is_ui_idle;
 
+#if defined(SMI_J)
+#define MMDVFS_DISABLE_LIST_NUM 6
+static unsigned int mmdvfs_disable_list[MMDVFS_DISABLE_LIST_NUM] = {
+	0x42, 0x43, 0x46, 0x4B, 0xC2, 0xC6
+};
+#endif
 
 /* mmdvfs timer for monitor gpu loading */
 typedef struct {
@@ -1010,11 +1016,15 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 	if (!is_mmdvfs_disabled()) {
 		/* get platform info */
 		unsigned int profile_id;
+		int i = 0;
 
 		profile_id = get_devinfo_with_index(21) & 0xff;
-		if (profile_id == 0x42 || profile_id == 0x43 || profile_id == 0x46 ||
-				profile_id == 0x4B)
-			mmdvfs_enable(0);
+		for (i = 0; i < MMDVFS_DISABLE_LIST_NUM; i++) {
+			if (profile_id == mmdvfs_disable_list[i]) {
+				mmdvfs_enable(0);
+				break;
+			}
+		}
 	}
 #endif
 
