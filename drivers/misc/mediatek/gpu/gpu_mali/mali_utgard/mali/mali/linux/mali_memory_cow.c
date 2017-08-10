@@ -465,7 +465,7 @@ void _mali_mem_cow_copy_page(mali_page_node *src_node, struct page *new_page)
 	MALI_DEBUG_ASSERT(src_node != NULL);
 
 	dma_unmap_page(&mali_platform_device->dev, page_private(new_page),
-		       _MALI_OSK_MALI_PAGE_SIZE, DMA_TO_DEVICE);
+		       _MALI_OSK_MALI_PAGE_SIZE, DMA_BIDIRECTIONAL);
 	/* map it , and copy the content*/
 
 	dst = kmap_atomic(new_page);
@@ -475,24 +475,24 @@ void _mali_mem_cow_copy_page(mali_page_node *src_node, struct page *new_page)
 		/*clear cache */
 
 		dma_unmap_page(&mali_platform_device->dev, page_private(src_page),
-			       _MALI_OSK_MALI_PAGE_SIZE, DMA_TO_DEVICE);
+			       _MALI_OSK_MALI_PAGE_SIZE, DMA_BIDIRECTIONAL);
 		src = kmap_atomic(src_page);
 #ifdef CONFIG_ARM
 		/* It seem have cache coherence issue if we use
 		* kmap to map the src_page. we need to invlidate L2 cache here
 		*/
-		outer_inv_range(page_to_phys(src_page), page_to_phys(src_page) + _MALI_OSK_MALI_PAGE_SIZE);
+		//outer_inv_range(page_to_phys(src_page), page_to_phys(src_page) + _MALI_OSK_MALI_PAGE_SIZE);
 #else
 		/* use sync for CPU for arm64 becasue no HIGMEM in aarch 64,
 		* So this function can work
 		*/
-		dma_sync_single_for_cpu(&mali_platform_device->dev, page_private(src_page),
-					_MALI_OSK_MALI_PAGE_SIZE, DMA_BIDIRECTIONAL);
+		//dma_sync_single_for_cpu(&mali_platform_device->dev, page_private(src_page),
+		//			_MALI_OSK_MALI_PAGE_SIZE, DMA_BIDIRECTIONAL);
 #endif
 		memcpy(dst, src , _MALI_OSK_MALI_PAGE_SIZE);
 		kunmap_atomic(src);
 		dma_map_page(&mali_platform_device->dev, src_page,
-			     0, _MALI_OSK_MALI_PAGE_SIZE, DMA_TO_DEVICE);
+			     0, _MALI_OSK_MALI_PAGE_SIZE, DMA_BIDIRECTIONAL);
 	} else if (src_node->type == MALI_PAGE_NODE_BLOCK) {
 		/*
 		* use ioremap to map src for BLOCK memory
