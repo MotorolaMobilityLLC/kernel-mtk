@@ -418,7 +418,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 				| DB_OPT_PROCESS_COREDUMP
 				| DB_OPT_PAGETYPE_INFO
 				| DB_OPT_DUMPSYS_PROCSTATS,
-				"\nCRDISPATCH_KEY:SVP_SS1\n",
+				"SVP offline unmapping fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 				"[unmapping fail]: virt:0x%lx, size:0x%lx",
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
@@ -439,8 +439,10 @@ out:
 
 static int memory_region_online(struct SSVP_Region *region)
 {
-	if (region->use_cache_memory)
+	if (region->use_cache_memory) {
+		region->page = NULL;
 		return 0;
+	}
 
 	/* remapping if unmapping while offline */
 	if (region->is_unmapping) {
@@ -460,7 +462,7 @@ static int memory_region_online(struct SSVP_Region *region)
 					| DB_OPT_PROCESS_COREDUMP
 					| DB_OPT_PAGETYPE_INFO
 					| DB_OPT_DUMPSYS_PROCSTATS,
-					"\nCRDISPATCH_KEY:SVP_SS1\n",
+					"SVP online remapping fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 					"[remapping fail]: virt:0x%lx, size:0x%lx",
 					(unsigned long)__va((page_to_phys(region->page))),
 					region->count << PAGE_SHIFT);
@@ -573,14 +575,14 @@ static int _svp_wdt_kthread_func(void *data)
 	}
 	pr_info("[COUNT DOWN FAIL]\n");
 
-	pr_info("Shareable SVP trigger kernel warnin");
+	pr_info("Shareable SVP trigger kernel warning");
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 			| DB_OPT_PROCESS_COREDUMP
 			| DB_OPT_DUMPSYS_SURFACEFLINGER
 			| DB_OPT_DUMPSYS_GFXINFO
 			| DB_OPT_DUMPSYS_PROCSTATS,
-			"\nCRDISPATCH_KEY:SVP_SS1\n",
+			"SVP online fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 			"[SSVP ONLINE FAIL]: online timeout due to none free memory region.\n");
 
 	reset_svp_online_task();
@@ -842,13 +844,13 @@ out:
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 			| DB_OPT_DUMPSYS_PROCSTATS,
-			"\nCRDISPATCH_KEY:SVP_SS1\n",
+			"SVP Sanity fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 			err_msg);
 	return -1;
 }
 
 
-int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
+int memory_ssvp_init_region(char *name, unsigned long size, struct SSVP_Region *region,
 		const struct file_operations *entry_fops)
 {
 	struct proc_dir_entry *procfs_entry;
@@ -870,6 +872,7 @@ int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 
 	if (has_dedicate_memory) {
 		pr_info("[%s]:Use dedicate memory as cached memory\n", name);
+		size = (region->count * PAGE_SIZE) / SZ_1M;
 		goto region_init_done;
 	}
 
@@ -898,7 +901,7 @@ int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 					| DB_OPT_PROCESS_COREDUMP
 					| DB_OPT_PAGETYPE_INFO
 					| DB_OPT_DUMPSYS_PROCSTATS,
-					"\nCRDISPATCH_KEY:SVP_SS1\n",
+					"SVP offline unmapping fail.\nCRDISPATCH_KEY:SVP_SS1\n",
 					"[unmapping fail]: virt:0x%lx, size:0x%lx",
 					(unsigned long)__va((page_to_phys(page))),
 					region->count << PAGE_SHIFT);
@@ -910,7 +913,7 @@ int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 
 region_init_done:
 	region->state = SVP_STATE_ON;
-	pr_info("%s %d: %s is enable with size: %d mB\n",
+	pr_info("%s %d: %s is enable with size: %lu mB\n",
 			__func__, __LINE__, name, size);
 	return 0;
 }
