@@ -328,19 +328,19 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 					<0x0800000C 0x0004>;
 		};
 
-		topckgen: topckgen@0x10210000 {
+		topckgen: topckgen@10210000 {
 			compatible = "mediatek,mt6735-topckgen";
 			reg = <0x10210000 0x1000>;
 			#clock-cells = <1>;
 		};
 
-		infrasys: infrasys@0x10000000 {
+		infrasys: infrasys@10000000 {
 			compatible = "mediatek,mt6735-infrasys";
 			reg = <0x10000000 0x1000>;
 			#clock-cells = <1>;
 		};
 
-		perisys: perisys@0x10002000 {
+		perisys: perisys@10002000 {
 			compatible = "mediatek,mt6735-perisys";
 			reg = <0x10002000 0x1000>;
 			#clock-cells = <1>;
@@ -662,7 +662,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			mediatek,spi_start_offset = <72>;
 		};
 
-		apmixedsys: apmixedsys@0x10209000 {
+		apmixedsys: apmixedsys@10209000 {
 			compatible = "mediatek,mt6735-apmixedsys";
 			reg = <0x10209000 0x1000>;
 			#clock-cells = <1>;
@@ -682,45 +682,45 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "auxadc-main";
 		};
 
-		audiosys: audiosys@0x11220000 {
+		audiosys: audiosys@11220000 {
 			compatible = "mediatek,mt6735-audiosys";
 			reg = <0x11220000 0x10000>;
 			#clock-cells = <1>;
 		};
 
-		mfgsys: mfgsys@0x13000000 {
+		mfgsys: mfgsys@13000000 {
 			compatible = "mediatek,mt6735-mfgsys";
 			reg = <0x13000000 0x1000>;
 			#clock-cells = <1>;
 		};
 
-		mmsys: mmsys@0x14000000 {
+		mmsys: mmsys@14000000 {
 			compatible = "mediatek,mt6735-mmsys";
 			reg = <0x14000000 0x1000>;
 			#clock-cells = <1>;
 		};
 
-		imgsys: imgsys@0x15000000 {
+		imgsys: imgsys@15000000 {
 			compatible = "mediatek,mt6735-imgsys";
 			reg = <0x15000000 0x1000>;
 			#clock-cells = <1>;
 		};
 
-		vdecsys: vdecsys@0x16000000 {
+		vdecsys: vdecsys@16000000 {
 			compatible = "mediatek,mt6735-vdecsys";
 			reg = <0x16000000 0x1000>;
 			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
 			#clock-cells = <1>;
 		};
 
-		vencsys: vencsys@0x17000000 {
+		vencsys: vencsys@17000000 {
 			compatible = "mediatek,mt6735-vencsys";
 			reg = <0x17000000 0x1000>;
 			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 			#clock-cells = <1>;
 		};
 
-		scpsys: scpsys@0x10000000 {
+		scpsys: scpsys@10000000 {
 			compatible = "mediatek,mt6735-scpsys";
 			reg = <0x10000000 0x1000>, <0x10006000 0x1000>;
 			#clock-cells = <1>;
@@ -1124,7 +1124,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x15008000 0x1000>;  /* SENINF_ADDR */
 		};
 
-		SENINF_TOP@0x15008000 {
+		SENINF_TOP@15008000 {
 			compatible = "mediatek,SENINF_TOP";
 			reg = <0x15008000 0x1000>;
 			interrupts = <0 182 0x8>;
@@ -1222,7 +1222,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <1>;
 		ranges = <0 0 0 0xffffffff>;
 
-		MCUCFG@0x10200000 {
+		MCUCFG@10200000 {
 			compatible = "mediatek,MCUCFG";
 			reg = <0x10200000 0x200>;
 			interrupts = <0 71 0x4>;
@@ -1234,17 +1234,17 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
-		INFRACFG_AO@0x10000000 {
+		INFRACFG_AO@10000000 {
 			compatible = "mediatek,INFRACFG_AO";
 			reg = <0x10000000 0x1000>;
 		};
 
-		CKSYS@0x10210000 {
+		CKSYS@10210000 {
 			compatible = "mediatek,CKSYS";
 			reg = <0x10210000 0x1000>;
 		};
 
-		PERICFG@0x10002000 {
+		PERICFG@10002000 {
 			compatible = "mediatek,PERICFG";
 			reg = <0x10002000 0x1000>;
 		};
@@ -1324,7 +1324,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 							<9 512000>;
 		};
 
-		SLEEP@0x10006000 {
+		SLEEP@10006000 {
 			compatible = "mediatek,SLEEP";
 			reg = <0x10006000 0x1000>;
 			interrupts = <0 165 0x8>,
@@ -1333,7 +1333,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				<0 168 0x8>;
 		};
 
-		BAT_METTER {
+		bat_meter: bat_meter {
 			compatible = "mediatek,bat_meter";
 		};
 
@@ -1341,7 +1341,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,bat_notify";
 		};
 
-		BATTERY {
+		battery: battery {
 			compatible = "mediatek,battery";
 		};
 
@@ -1363,7 +1363,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			nr_channel = <1>;
 		};
 
-		EMI@0x10203000 {
+		EMI@10203000 {
 			compatible = "mediatek,EMI";
 			reg = <0x10203000 0x1000>;
 			interrupts = <0 136 0x4>;
@@ -1465,17 +1465,17 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 137 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		APMIXED@0x10209000 {
+		APMIXED@10209000 {
 			compatible = "mediatek,APMIXED";
 			reg = <0x10209000 0x1000>;
 		};
 
-		FHCTL@0x10209F00 {
+		FHCTL@10209F00 {
 			compatible = "mediatek,FHCTL";
 			reg = <0x10209F00 0x100>;
 		};
 
-		THERM_CTRL@0x1100B000 {
+		THERM_CTRL@1100B000 {
 			compatible = "mediatek,THERM_CTRL";
 			reg = <0x1100B000 0x1000>;
 			interrupts = <0 78 0x8>;
@@ -1770,12 +1770,12 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 						"mediatek,mt6753-accdet";
 		};
 
-		G3D_CONFIG@0x13000000 {
+		G3D_CONFIG@13000000 {
 			compatible = "mediatek,G3D_CONFIG";
 			reg = <0x13000000 0x1000>;
 		};
 
-		MALI@0x13040000 {
+		MALI@13040000 {
 			compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
 			reg = <0x13040000 0x4000>;
 			interrupts = <0 214 0x8>, <0 213 0x8>, <0 212 0x8>;

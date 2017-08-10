@@ -1826,8 +1826,10 @@ void fgauge_algo_run_get_init_data(void)
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &gFG_current_init);
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &gFG_Is_Charging_init);
 #endif
+#ifndef CONFIG_MTK_RT9536_SUPPORT
 	charging_enable = KAL_TRUE;
 	battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+#endif /* CONFIG_MTK_RT9536_SUPPORT */
 	bm_info
 	    ("1.[fgauge_algo_run_get_init_data](gFG_voltage_init %d, gFG_current_init %d, gFG_Is_Charging_init %d)\n",
 	     gFG_voltage_init, gFG_current_init, gFG_Is_Charging_init);
