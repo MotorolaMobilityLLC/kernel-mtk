@@ -125,12 +125,12 @@ void playback_open_dump_file(void)
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
-	sprintf(string_time, "%.2lu_%.2lu_%.2lu",
+	snprintf(string_time, sizeof(string_time), "%.2lu_%.2lu_%.2lu",
 		(8 + (curr_tm.tv_sec / 3600)) % (24),
 		(curr_tm.tv_sec / 60) % (60),
 		curr_tm.tv_sec % 60);
 
-	sprintf(path_decode_pcm, "%s/%s_%s",
+	snprintf(path_decode_pcm, sizeof(path_decode_pcm), "%s/%s_%s",
 		DUMP_DSP_PCM_DATA_PATH, string_time, string_decode_pcm);
 
 	file_decode_pcm = filp_open(path_decode_pcm, O_CREAT | O_WRONLY, 0);
@@ -199,8 +199,6 @@ static void dump_data_routine(struct work_struct *ws)
 		dump_queue->dump_package[dump_queue->idx_w].dump_data_type = DUMP_DECODE;
 		dump_queue->dump_package[dump_queue->idx_w].data_addr = data_addr;
 		dump_queue->idx_w++;
-		if (dump_queue->idx_w == 256)
-			dump_queue->idx_w = 0;
 		if (dump_queue->idx_w == dump_queue->idx_r)
 			AUD_LOG_D("%s Buffer Full\n", __func__);
 		spin_unlock_irqrestore(&dump_queue_lock, flags);
