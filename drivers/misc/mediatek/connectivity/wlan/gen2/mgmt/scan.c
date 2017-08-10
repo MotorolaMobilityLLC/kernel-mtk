@@ -300,9 +300,11 @@ scanSearchBssDescByBssidAndSsid(IN P_ADAPTER_T prAdapter,
 				return prBssDesc;
 			} else if (prDstBssDesc == NULL && prBssDesc->fgIsHiddenSSID == TRUE) {
 				prDstBssDesc = prBssDesc;
-			} else {
+			} else if (prBssDesc->eBSSType == BSS_TYPE_P2P_DEVICE) {
 				/* 20120206 frog: Equal BSSID but not SSID, SSID not hidden,
 				 * SSID must be updated. */
+				 /* 20160823:Permit the scan reusult which there are same BSSID
+				  * but different SSID in what AIS STATE */
 				COPY_SSID(prBssDesc->aucSSID,
 					  prBssDesc->ucSSIDLen, prSsid->aucSsid, prSsid->u4SsidLen);
 				return prBssDesc;
@@ -2075,8 +2077,20 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 #endif
 			rsnCheckSecurityModeChanged(prAdapter, prAisBssInfo, prBssDesc)) {
 				DBGLOG(SCN, INFO, "Beacon security mode change detected\n");
+				DBGLOG_MEM8(SCN, INFO, prSwRfb->pvHeader, prSwRfb->u2PacketLen);
 				fgNeedDisconnect = FALSE;
-				aisBssSecurityChanged(prAdapter);
+				if (!prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStartTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer,
+						SEC_TO_MSEC(3));
+					prConnSettings->fgSecModeChangeStartTimer = TRUE;
+				}
+			} else {
+				if (prConnSettings->fgSecModeChangeStartTimer) {
+					cnmTimerStopTimer(prAdapter,
+						&prAdapter->rWifiVar.rAisFsmInfo.rSecModeChangeTimer);
+					prConnSettings->fgSecModeChangeStartTimer = FALSE;
+				}
 			}
 #endif
 

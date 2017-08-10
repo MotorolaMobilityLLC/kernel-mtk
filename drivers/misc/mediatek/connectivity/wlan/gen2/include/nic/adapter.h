@@ -162,6 +162,11 @@ typedef struct _CONNECTION_SETTINGS_T {
 	RSN_INFO_T rRsnInfo;
 
 	BOOLEAN fgUseOkc;
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	BOOLEAN fgSecModeChangeStartTimer;
+#endif
+
 	struct LINK_MGMT rBlackList;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 

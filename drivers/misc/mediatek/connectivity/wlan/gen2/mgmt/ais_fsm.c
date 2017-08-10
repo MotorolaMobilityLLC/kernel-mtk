@@ -167,6 +167,10 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	prConnSettings->fgIsAdHocQoSEnable = FALSE;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		prConnSettings->fgSecModeChangeStartTimer = FALSE;
+#endif
+
 	prConnSettings->eDesiredPhyConfig = PHY_CONFIG_802_11ABGN;
 
 	/* Set default bandwidth modes */
@@ -257,6 +261,11 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	cnmTimerInitTimer(prAdapter,
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		cnmTimerInitTimer(prAdapter,
+				  &prAisFsmInfo->rSecModeChangeTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
+#endif
 
 	cnmTimerInitTimer(prAdapter,
 				  &prAisFsmInfo->rWaitOkcPMKTimer,
@@ -3800,6 +3809,13 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
+	aisBssSecurityChanged(prAdapter);
+}
+#endif
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/
