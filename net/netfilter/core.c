@@ -89,6 +89,7 @@ static void iptables_drop_packet_monitor(unsigned long data)
 {
 	int limit = 0;
 	int i = 0;
+	int size = 0;
 	int num  = iptables_drop_packets.cnt % 500;
 	struct sbuff m;
 
@@ -98,10 +99,13 @@ static void iptables_drop_packet_monitor(unsigned long data)
 			limit = 10;
 	else
 			limit = num;
-
-	for (i = iptables_drop_packets.print_len; i < iptables_drop_packets.print_len + limit; i++) {
+	if ((iptables_drop_packets.print_len + limit) > num)
+			size = num;
+	else
+		size = iptables_drop_packets.print_len + limit;
+	for (i = iptables_drop_packets.print_len; i < size; i++) {
 		if (iptables_drop_packets.drop_packets[i].already_print == 0) {
-			sb_add(&m, "[drop_debug][%ld],number[%d],",
+			sb_add(&m, "[mtk_net][drop](%ld,%d),",
 			       iptables_drop_packets.cnt,
 			       iptables_drop_packets.drop_packets[i].packet_num);
 			switch (iptables_drop_packets.drop_packets[i].pf) {
@@ -312,17 +316,18 @@ next_hook:
 		/*because skb free  need copy some info to ...*/
 	iptables_drop_packets.cnt++;
 	if (iptables_drop_packets.cnt > 100000)
-			iptables_drop_packets.cnt = 0;
+			iptables_drop_packets.cnt = 1;
 	table = (char *)((struct nf_hook_ops *)elem)->hook;
 	num = iptables_drop_packets.cnt % 500;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].drop_time = jiffies;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].len = skb->len;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].hook = hook;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].pf = pf;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].iface = skb->dev->name;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].table = table;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].packet_num = num;
-	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].already_print = 0;
+	iptables_drop_packets.drop_packets[num].drop_time = jiffies;
+	iptables_drop_packets.drop_packets[num].len = skb->len;
+	iptables_drop_packets.drop_packets[num].hook = hook;
+	iptables_drop_packets.drop_packets[num].pf = pf;
+	iptables_drop_packets.drop_packets[num].iface = skb->dev->name;
+	iptables_drop_packets.drop_packets[num].table = table;
+	iptables_drop_packets.drop_packets[num].packet_num = num + 1;
+	iptables_drop_packets.drop_packets[num].already_print = 0;
+	iptables_drop_packets.cnt++;
 	if ((jiffies - iptables_drop_packets.print_stamp)/HZ > IPTABLES_DROP_PACKET_STATICS) {
 		iptables_drop_packets.print_stamp = jiffies;
 		mod_timer(&iptables_drop_packets.print_drop_packets_timer, jiffies);
