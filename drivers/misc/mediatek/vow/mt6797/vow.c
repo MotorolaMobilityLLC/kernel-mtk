@@ -372,8 +372,10 @@ static void vow_service_Init(void)
 		vowserv.suspend_lock      = 0;
 		vowserv.voice_length      = 0;
 		vowserv.firstRead         = false;
+		spin_lock(&vowdrv_lock);
 		vowserv.pwr_status        = VOW_PWR_OFF;
 		vowserv.eint_status       = VOW_EINT_DISABLE;
+		spin_unlock(&vowdrv_lock);
 		vowserv.vow_init_model    = NULL;
 		vowserv.vow_noise_model   = NULL;
 		vowserv.vow_fir_model     = NULL;
@@ -536,7 +538,6 @@ static int vow_service_SearchSpeakerModel(int id)
 static bool vow_service_ReleaseSpeakerModel(int id)
 {
 	int I;
-	bool ret;
 
 	I = vow_service_SearchSpeakerModel(id);
 
@@ -563,7 +564,7 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	vowserv.vow_speaker_model[I].id        = -1;
 	vowserv.vow_speaker_model[I].enabled   = 0;
 
-	return ret;
+	return true;
 }
 
 static bool vow_service_SetVowMode(unsigned long arg)
