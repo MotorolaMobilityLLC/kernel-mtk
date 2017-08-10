@@ -11290,14 +11290,13 @@ wlanoidSetNchoRoamTrigger(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_ROAM_RCPI, *pi4Param);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.i4RoamTrigger = RCPI_TO_dBm(*pi4Param);
-			DBGLOG(INIT, TRACE, "NCHO roam trigger is %d\n", prAdapter->rNchoInfo.i4RoamTrigger);
-		}
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_ROAM_RCPI, *pi4Param);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.i4RoamTrigger = RCPI_TO_dBm(*pi4Param);
+		DBGLOG(INIT, TRACE, "NCHO roam trigger is %d\n", prAdapter->rNchoInfo.i4RoamTrigger);
 	}
+
 	return rStatus;
 }
 
@@ -11370,11 +11369,9 @@ wlanoidSetNchoRoamDelta(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prAdapter->rNchoInfo.i4RoamDelta = *pi4Param;
-		DBGLOG(INIT, TRACE, "NCHO roam delta is %d\n", *pi4Param);
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+	prAdapter->rNchoInfo.i4RoamDelta = *pi4Param;
+	DBGLOG(INIT, TRACE, "NCHO roam delta is %d\n", *pi4Param);
+	rStatus = WLAN_STATUS_SUCCESS;
 
 	return rStatus;
 }
@@ -11420,11 +11417,10 @@ wlanoidSetNchoRoamScnPeriod(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_LENGTH;
 
 	pParam = (PUINT_32) pvSetBuffer;
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prAdapter->rNchoInfo.u4RoamScanPeriod = *pParam;
-		DBGLOG(INIT, TRACE, "NCHO roam scan period is %d\n", *pParam);
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+
+	prAdapter->rNchoInfo.u4RoamScanPeriod = *pParam;
+	DBGLOG(INIT, TRACE, "NCHO roam scan period is %d\n", *pParam);
+	rStatus = WLAN_STATUS_SUCCESS;
 
 	return rStatus;
 }
@@ -11470,12 +11466,12 @@ wlanoidSetNchoRoamScnChnl(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_LENGTH;
 
 	prRoamScnChnl = (PCFG_NCHO_SCAN_CHNL_T) pvSetBuffer;
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalMemCopy(&prAdapter->rNchoInfo.rRoamScnChnl, prRoamScnChnl, *pu4SetInfoLen);
-		prAdapter->rNchoInfo.u4RoamScanControl = TRUE;
-		DBGLOG(INIT, TRACE, "NCHO set roam scan channel num is %d\n", prRoamScnChnl->ucChannelListNum);
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+
+	kalMemCopy(&prAdapter->rNchoInfo.rRoamScnChnl, prRoamScnChnl, *pu4SetInfoLen);
+	prAdapter->rNchoInfo.u4RoamScanControl = TRUE;
+	DBGLOG(INIT, TRACE, "NCHO set roam scan channel num is %d\n", prRoamScnChnl->ucChannelListNum);
+	rStatus = WLAN_STATUS_SUCCESS;
+
 
 	return rStatus;
 }
@@ -11526,11 +11522,9 @@ wlanoidSetNchoRoamScnCtrl(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prAdapter->rNchoInfo.u4RoamScanControl = *pParam;
-		DBGLOG(INIT, TRACE, "NCHO roam scan control is %d\n", *pParam);
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+	prAdapter->rNchoInfo.u4RoamScanControl = *pParam;
+	DBGLOG(INIT, TRACE, "NCHO roam scan control is %d\n", *pParam);
+	rStatus = WLAN_STATUS_SUCCESS;
 
 	return rStatus;
 }
@@ -11582,14 +11576,13 @@ wlanoidSetNchoScnChnlTime(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_CHANNEL_TIME, *pParam);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.u4ScanChannelTime = *pParam;
-			DBGLOG(INIT, TRACE, "NCHO scan channel time is %d\n", *pParam);
-		}
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_CHANNEL_TIME, *pParam);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.u4ScanChannelTime = *pParam;
+		DBGLOG(INIT, TRACE, "NCHO scan channel time is %d\n", *pParam);
 	}
+
 	return rStatus;
 }
 
@@ -11664,15 +11657,14 @@ wlanoidSetNchoScnHomeTime(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_HOME_TIME, *pParam);
-		DBGLOG(REQ, TRACE, "NCHO cmd is %s\n", acCmd);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.u4ScanHomeTime = *pParam;
-			DBGLOG(INIT, TRACE, "NCHO scan home time is %d\n", *pParam);
-		}
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_HOME_TIME, *pParam);
+	DBGLOG(REQ, TRACE, "NCHO cmd is %s\n", acCmd);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.u4ScanHomeTime = *pParam;
+		DBGLOG(INIT, TRACE, "NCHO scan home time is %d\n", *pParam);
 	}
+
 	return rStatus;
 }
 
@@ -11747,15 +11739,15 @@ wlanoidSetNchoScnHomeAwayTime(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_HOME_AWAY_TIME, *pParam);
-		DBGLOG(REQ, TRACE, "NCHO cmd is %s\n", acCmd);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.u4ScanHomeawayTime = *pParam;
-			DBGLOG(INIT, TRACE, "NCHO scan home away is %d\n", *pParam);
-		}
+
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_HOME_AWAY_TIME, *pParam);
+	DBGLOG(REQ, TRACE, "NCHO cmd is %s\n", acCmd);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.u4ScanHomeawayTime = *pParam;
+		DBGLOG(INIT, TRACE, "NCHO scan home away is %d\n", *pParam);
 	}
+
 	return rStatus;
 }
 
@@ -11829,13 +11821,12 @@ wlanoidSetNchoScnNprobes(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_NPROBES, *pParam);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.u4ScanNProbes = *pParam;
-			DBGLOG(INIT, TRACE, "NCHO Nprobes is %d\n", *pParam);
-		}
+
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCN_NPROBES, *pParam);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.u4ScanNProbes = *pParam;
+		DBGLOG(INIT, TRACE, "NCHO Nprobes is %d\n", *pParam);
 	}
 	return rStatus;
 }
@@ -11926,21 +11917,21 @@ wlanoidSendNchoActionFrameStart(IN P_ADAPTER_T prAdapter,
 	ASSERT(pu4SetInfoLen);
 	ASSERT(pvSetBuffer);
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prNchoInfo = &prAdapter->rNchoInfo;
-		prParamActionFrame = (P_NCHO_ACTION_FRAME_PARAMS)pvSetBuffer;
-		prNchoInfo->fgIsSendingAF = TRUE;
-		prNchoInfo->fgChGranted = FALSE;
-		COPY_MAC_ADDR(prNchoInfo->rParamActionFrame.aucBssid, prParamActionFrame->aucBssid);
-		prNchoInfo->rParamActionFrame.i4channel = prParamActionFrame->i4channel;
-		prNchoInfo->rParamActionFrame.i4DwellTime = prParamActionFrame->i4DwellTime;
-		prNchoInfo->rParamActionFrame.i4len = prParamActionFrame->i4len;
-		kalMemCopy(prNchoInfo->rParamActionFrame.aucData,
-			   prParamActionFrame->aucData,
-			   prParamActionFrame->i4len);
-		DBGLOG(INIT, TRACE, "NCHO send ncho action frame start\n");
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+
+	prNchoInfo = &prAdapter->rNchoInfo;
+	prParamActionFrame = (P_NCHO_ACTION_FRAME_PARAMS)pvSetBuffer;
+	prNchoInfo->fgIsSendingAF = TRUE;
+	prNchoInfo->fgChGranted = FALSE;
+	COPY_MAC_ADDR(prNchoInfo->rParamActionFrame.aucBssid, prParamActionFrame->aucBssid);
+	prNchoInfo->rParamActionFrame.i4channel = prParamActionFrame->i4channel;
+	prNchoInfo->rParamActionFrame.i4DwellTime = prParamActionFrame->i4DwellTime;
+	prNchoInfo->rParamActionFrame.i4len = prParamActionFrame->i4len;
+	kalMemCopy(prNchoInfo->rParamActionFrame.aucData,
+		   prParamActionFrame->aucData,
+		   prParamActionFrame->i4len);
+	DBGLOG(INIT, TRACE, "NCHO send ncho action frame start\n");
+	rStatus = WLAN_STATUS_SUCCESS;
+
 	return rStatus;
 }
 
@@ -11954,12 +11945,11 @@ wlanoidSendNchoActionFrameEnd(IN P_ADAPTER_T prAdapter,
 	ASSERT(pu4SetInfoLen);
 	ASSERT(pvSetBuffer);
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prAdapter->rNchoInfo.fgIsSendingAF = FALSE;
-		prAdapter->rNchoInfo.fgChGranted = TRUE;
-		DBGLOG(INIT, TRACE, "NCHO send action frame end\n");
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+	prAdapter->rNchoInfo.fgIsSendingAF = FALSE;
+	prAdapter->rNchoInfo.fgChGranted = TRUE;
+	DBGLOG(INIT, TRACE, "NCHO send action frame end\n");
+	rStatus = WLAN_STATUS_SUCCESS;
+
 	return rStatus;
 }
 
@@ -11985,11 +11975,11 @@ wlanoidSetNchoWesMode(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		prAdapter->rNchoInfo.u4WesMode = *pParam;
-		DBGLOG(INIT, TRACE, "NCHO WES mode is %d\n", *pParam);
-		rStatus = WLAN_STATUS_SUCCESS;
-	}
+
+	prAdapter->rNchoInfo.u4WesMode = *pParam;
+	DBGLOG(INIT, TRACE, "NCHO WES mode is %d\n", *pParam);
+	rStatus = WLAN_STATUS_SUCCESS;
+
 	return rStatus;
 }
 
@@ -12034,30 +12024,32 @@ wlanoidSetNchoBand(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_LENGTH;
 
 	pParam = (PUINT_32) pvSetBuffer;
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		switch (*pParam) {
-		case NCHO_BAND_AUTO:
-			prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_NULL;
-			prAdapter->rNchoInfo.eBand = NCHO_BAND_AUTO;
-			rStatus = WLAN_STATUS_SUCCESS;
-			break;
-		case NCHO_BAND_2G4:
-			prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_2G4;
-			prAdapter->rNchoInfo.eBand = NCHO_BAND_2G4;
-			rStatus = WLAN_STATUS_SUCCESS;
-			break;
-		case NCHO_BAND_5G:
-			prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_5G;
-			prAdapter->rNchoInfo.eBand = NCHO_BAND_5G;
-			rStatus = WLAN_STATUS_SUCCESS;
-			break;
-		default:
-			DBGLOG(INIT, ERROR, "NCHO wes mode invalid %d\n", *pParam);
-			rStatus = WLAN_STATUS_INVALID_DATA;
-			break;
-		}
-		DBGLOG(INIT, TRACE, "NCHO band is %d\n", *pParam);
+
+	switch (*pParam) {
+	case NCHO_BAND_AUTO:
+		prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_NULL;
+		prAdapter->rNchoInfo.eBand = NCHO_BAND_AUTO;
+		rStatus = WLAN_STATUS_SUCCESS;
+		break;
+	case NCHO_BAND_2G4:
+		prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_2G4;
+		prAdapter->rNchoInfo.eBand = NCHO_BAND_2G4;
+		rStatus = WLAN_STATUS_SUCCESS;
+		break;
+	case NCHO_BAND_5G:
+		prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] = BAND_5G;
+		prAdapter->rNchoInfo.eBand = NCHO_BAND_5G;
+		rStatus = WLAN_STATUS_SUCCESS;
+		break;
+	default:
+		DBGLOG(INIT, ERROR, "NCHO wes mode invalid %d\n", *pParam);
+		rStatus = WLAN_STATUS_INVALID_DATA;
+		break;
 	}
+
+	DBGLOG(INIT, INFO, "NCHO enabled:%d ,band:%d,status:%d\n"
+		, prAdapter->rNchoInfo.fgECHOEnabled, *pParam, rStatus);
+
 
 	return rStatus;
 }
@@ -12109,14 +12101,14 @@ wlanoidSetNchoDfsScnMode(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
-	if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
-		kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCAN_DFS_MODE, *pParam);
-		rStatus =  wlanFwCfgParse(prAdapter, acCmd);
-		if (rStatus == WLAN_STATUS_SUCCESS) {
-			prAdapter->rNchoInfo.eDFSScnMode = *pParam;
-			DBGLOG(INIT, TRACE, "NCHO DFS scan mode is %d\n", *pParam);
-		}
+
+	kalSprintf(acCmd, "%s %d", FW_CFG_KEY_NCHO_SCAN_DFS_MODE, *pParam);
+	rStatus =  wlanFwCfgParse(prAdapter, acCmd);
+	if (rStatus == WLAN_STATUS_SUCCESS) {
+		prAdapter->rNchoInfo.eDFSScnMode = *pParam;
+		DBGLOG(INIT, TRACE, "NCHO DFS scan mode is %d\n", *pParam);
 	}
+
 	return rStatus;
 }
 
