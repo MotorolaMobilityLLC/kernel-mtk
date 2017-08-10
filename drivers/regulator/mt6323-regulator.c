@@ -23,6 +23,8 @@
 #include <linux/regulator/mt6323-regulator.h>
 #include <linux/regulator/of_regulator.h>
 
+#define MT6323_BUCK_MODE_AUTO	0
+#define MT6323_BUCK_MODE_FORCE_PWM	1
 #define MT6323_LDO_MODE_NORMAL	0
 #define MT6323_LDO_MODE_LP	1
 
@@ -46,7 +48,8 @@ struct mt6323_regulator_info {
 };
 
 #define MT6323_BUCK(match, vreg, min, max, step, volt_ranges, enreg,	\
-		vosel, vosel_mask, voselon, vosel_ctrl)			\
+		vosel, vosel_mask, voselon, vosel_ctrl,			\
+		_modeset_reg, _modeset_mask)				\
 [MT6323_ID_##vreg] = {							\
 	.desc = {							\
 		.name = #vreg,						\
@@ -67,6 +70,8 @@ struct mt6323_regulator_info {
 	.vselon_reg = voselon,						\
 	.vselctrl_reg = vosel_ctrl,					\
 	.vselctrl_mask = BIT(1),					\
+	.modeset_reg = _modeset_reg,				\
+	.modeset_mask = _modeset_mask,				\
 }
 
 #define MT6323_LDO(match, vreg, ldo_volt_table, enreg, enbit, vosel,	\
@@ -178,6 +183,63 @@ static int mt6323_get_status(struct regulator_dev *rdev)
 	return (regval & info->qi) ? REGULATOR_STATUS_ON : REGULATOR_STATUS_OFF;
 }
 
+static int mt6323_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
+{
+	int ret, val = 0;
+	struct mt6323_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (!info->modeset_mask) {
+		dev_err(&rdev->dev, "regulator %s doesn't support set_mode\n", info->desc.name);
+		return -EINVAL;
+	}
+
+	switch (mode) {
+	case REGULATOR_MODE_FAST:
+		val = MT6323_BUCK_MODE_FORCE_PWM;
+		break;
+	case REGULATOR_MODE_NORMAL:
+		val = MT6323_BUCK_MODE_AUTO;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	val <<= ffs(info->modeset_mask) - 1;
+
+	ret = regmap_update_bits(rdev->regmap, info->modeset_reg,
+				  info->modeset_mask, val);
+
+	return ret;
+}
+
+static unsigned int mt6323_buck_get_mode(struct regulator_dev *rdev)
+{
+	unsigned int val;
+	unsigned int mode;
+	int ret;
+	struct mt6323_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (!info->modeset_mask) {
+		dev_err(&rdev->dev, "regulator %s doesn't support get_mode\n", info->desc.name);
+		return -EINVAL;
+	}
+
+	ret = regmap_read(rdev->regmap, info->modeset_reg, &val);
+	if (ret < 0)
+		return ret;
+
+	val &= info->modeset_mask;
+	val >>= ffs(info->modeset_mask) - 1;
+
+	if (val & 0x1)
+		mode = REGULATOR_MODE_FAST;
+	else
+		mode = REGULATOR_MODE_NORMAL;
+
+	return mode;
+}
+
+
 static int mt6323_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 {
 	int ret, val = 0;
@@ -244,6 +306,8 @@ static struct regulator_ops mt6323_volt_range_ops = {
 	.disable = regulator_disable_regmap,
 	.is_enabled = regulator_is_enabled_regmap,
 	.get_status = mt6323_get_status,
+	.set_mode = mt6323_buck_set_mode,
+	.get_mode = mt6323_buck_get_mode,
 };
 
 static struct regulator_ops mt6323_volt_table_ops = {
@@ -274,13 +338,13 @@ static struct regulator_ops mt6323_volt_fixed_ops = {
 static struct mt6323_regulator_info mt6323_regulators[] = {
 	MT6323_BUCK("buck_vproc", VPROC, 700000, 1493750, 6250,
 		buck_volt_range1, MT6323_VPROC_CON7, MT6323_VPROC_CON9, 0x7f,
-		MT6323_VPROC_CON10, MT6323_VPROC_CON5),
+		MT6323_VPROC_CON10, MT6323_VPROC_CON5, MT6323_VPROC_CON2, 0x100),
 	MT6323_BUCK("buck_vsys", VSYS, 1400000, 2987500, 12500,
 		buck_volt_range2, MT6323_VSYS_CON7, MT6323_VSYS_CON9, 0x7f,
-		MT6323_VSYS_CON10, MT6323_VSYS_CON5),
+		MT6323_VSYS_CON10, MT6323_VSYS_CON5, MT6323_VSYS_CON2, 0x100),
 	MT6323_BUCK("buck_vpa", VPA, 500000, 3650000, 50000,
 		buck_volt_range3, MT6323_VPA_CON7, MT6323_VPA_CON9,
-		0x3f, MT6323_VPA_CON10, MT6323_VPA_CON5),
+		0x3f, MT6323_VPA_CON10, MT6323_VPA_CON5, MT6323_VPA_CON2, 0x100),
 	MT6323_REG_FIXED("ldo_vtcxo", VTCXO, MT6323_ANALDO_CON1, 10, 2800000,
 		MT6323_ANALDO_CON1, 0x2),
 	MT6323_REG_FIXED("ldo_vcn28", VCN28, MT6323_ANALDO_CON19, 12, 2800000,
@@ -394,7 +458,8 @@ static int mt6323_regulator_probe(struct platform_device *pdev)
 		 * this driver and the chip itself can actually do.
 		 */
 		c = rdev->constraints;
-		c->valid_modes_mask |= REGULATOR_MODE_NORMAL | REGULATOR_MODE_STANDBY;
+		c->valid_modes_mask |= REGULATOR_MODE_NORMAL|
+			REGULATOR_MODE_STANDBY | REGULATOR_MODE_FAST;
 		c->valid_ops_mask |= REGULATOR_CHANGE_MODE;
 	}
 	return 0;
