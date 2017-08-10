@@ -27,7 +27,7 @@
 #include <linux/of_address.h>
 #include <mt_dramc.h>
 #include "mt_freqhopping_drv.h"
-#include <mt-plat/mt_chip.h>
+
 
 /* #define DCM_DEFAULT_ALL_OFF */
 /* #define NON_AO_MP2_DCM_CONFIG */
@@ -561,10 +561,7 @@ void dcm_peri_preset(void)
 #define MEM_BUS_DCM_CTRL_MASK	((0x1 << 6) | (0x1 << 7) | (0x1 << 8) | (0x7f << 9) | \
 								 (0x1f << 16) | (0x1f << 21) | (0x1 << 26) | \
 								 (0x1 << 29) | (0x1 << 31))
-#define MEM_BUS_DCM_CTRL_EN_1	((0x0 << 6) | (0x1 << 7) | (0x1 << 8) | (0x10 << 9) | \
-								 (0x0 << 16) | (0x1f << 21) | (0x0 << 26) | \
-								 (0x0 << 29) | (0x0 << 31))
-#define MEM_BUS_DCM_CTRL_EN_2	((0x0 << 6) | (0x1 << 7) | (0x0 << 8) | (0x10 << 9) | \
+#define MEM_BUS_DCM_CTRL_EN		((0x0 << 6) | (0x1 << 7) | (0x1 << 8) | (0x10 << 9) | \
 								 (0x0 << 16) | (0x1f << 21) | (0x0 << 26) | \
 								 (0x0 << 29) | (0x0 << 31))
 #define MEM_BUS_DCM_CTRL_DIS	((0x0 << 6) | (0x0 << 7) | (0x0 << 8) | (0x2f << 9) | \
@@ -660,21 +657,12 @@ void dcm_mem_preset(void)
 
 int dcm_mem(ENUM_MEM_DCM on)
 {
-	int ver = mt_get_chip_hw_ver();
-
 	if (on == MEM_DCM_ON) {
 
-		if (0xCA00 == ver) {
-			reg_write(MEM_DCM_CTRL,
+		reg_write(MEM_DCM_CTRL,
 					aor(reg_read(MEM_DCM_CTRL),
 						~MEM_BUS_DCM_CTRL_MASK,
-						MEM_BUS_DCM_CTRL_EN_1));
-		} else {
-			reg_write(MEM_DCM_CTRL,
-					aor(reg_read(MEM_DCM_CTRL),
-						~MEM_BUS_DCM_CTRL_MASK,
-						MEM_BUS_DCM_CTRL_EN_2));
-	    }
+						MEM_BUS_DCM_CTRL_EN));
 
 		dcm_mem_toggle();
 
