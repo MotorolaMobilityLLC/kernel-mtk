@@ -34,7 +34,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -1239,7 +1239,7 @@ static unsigned long mt_mmc_pidlogger_init(void)
 
 	spin_lock_init(&mt_bio_pagelogger_lock);
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	mt_bio_pagelogger = extmem_malloc_page_align(size);
 #else
 	mt_bio_pagelogger = vmalloc(size);

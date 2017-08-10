@@ -42,7 +42,7 @@
 #include <linux/slab.h>
 #include "kdb_private.h"
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -2876,7 +2876,7 @@ void __init kdb_init(int lvl)
 	if (kdb_init_lvl == KDB_INIT_FULL || lvl <= kdb_init_lvl)
 		return;
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	init_debug_alloc_pool_aligned();
 #endif
 
