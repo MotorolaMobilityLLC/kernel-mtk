@@ -74,6 +74,15 @@ typedef struct _PKT_TRACE_RECORD {
 	UINT_32 u4RxIndex;
 } PKT_TRACE_RECORD, *P_PKT_TRACE_RECORD;
 
+typedef struct _SCAN_HIF_DESC_RECORD {
+	P_HIF_TX_DESC_T pTxDescScanWriteBefore;
+	P_HIF_TX_DESC_T pTxDescScanWriteDone;
+	UINT_64 u8ScanWriteBeforeTime;
+	UINT_64 u8ScanWriteDoneTime;
+	UINT_32 aucFreeBufCntScanWriteBefore;
+	UINT_32 aucFreeBufCntScanWriteDone;
+} SCAN_HIF_DESC_RECORD, *P_SCAN_HIF_DESC_RECORD;
+
 
 #define PKT_INFO_BUF_MAX_NUM 50
 #define PKT_INFO_MSG_LENGTH 200
@@ -86,6 +95,7 @@ static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
 static P_COMMAND_ENTRY gprCommandEntry;
 static PKT_TRACE_RECORD grPktRec;
+static SCAN_HIF_DESC_RECORD grScanHifDescRecord;
 
 
 VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode)
@@ -243,9 +253,16 @@ VOID wlanDebugInit(VOID)
 	grPktRec.pRxPkt = kalMemAlloc(PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY), VIR_MEM_TYPE);
 	kalMemZero(grPktRec.pRxPkt, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
 	grPktRec.u4RxIndex = 0;
-
 	/* debug for package info end */
 
+	/*debug for scan request tx_description begin*/
+	grScanHifDescRecord.pTxDescScanWriteBefore = kalMemAlloc(NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T)
+		, VIR_MEM_TYPE);
+	grScanHifDescRecord.aucFreeBufCntScanWriteBefore = 0;
+	grScanHifDescRecord.pTxDescScanWriteDone = kalMemAlloc(NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T)
+	, VIR_MEM_TYPE);
+	grScanHifDescRecord.aucFreeBufCntScanWriteDone = 0;
+	/*debug for scan request tx_description end*/
 }
 
 VOID wlanDebugUninit(VOID)
@@ -263,76 +280,202 @@ VOID wlanDebugUninit(VOID)
 	kalMemFree(grPktRec.pRxPkt, VIR_MEM_TYPE, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
 	grPktRec.u4RxIndex = 0;
 	/* debug for package info end */
+
+	/*debug for scan request tx_description begin*/
+	kalMemFree(grScanHifDescRecord.pTxDescScanWriteBefore
+	, VIR_MEM_TYPE, NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T));
+	grScanHifDescRecord.aucFreeBufCntScanWriteBefore = 0;
+	kalMemFree(grScanHifDescRecord.pTxDescScanWriteDone
+	, VIR_MEM_TYPE, NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T));
+	grScanHifDescRecord.aucFreeBufCntScanWriteDone = 0;
+	/*debug for scan request tx_description end*/
+}
+
+VOID wlanDebugHifDescriptorRecord(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type
+	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex, PUINT_8 pucBuffer)
+{
+	UINT_32 i;
+	UINT_32 u4Offset;
+	UINT_32 u4StartAddr;
+	P_HIF_TX_DESC_T prTxDesc;
+	P_HIF_RX_DESC_T prRxDesc;
+	UINT_32 u4TcCount;
+
+	if (pucBuffer == NULL) {
+		DBGLOG(TX, ERROR, "wlanDebugHifDescriptorRecord pucBuffer is Null !");
+		return;
+	}
+
+
+	if (type == MTK_AMPDU_TX_DESC) {
+
+		if (tcIndex == DEBUG_TC0_INDEX) {
+			u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+			u4StartAddr = AP_MCU_TX_DESC_ADDR;
+			u4Offset = AP_MCU_BANK_OFFSET;
+		} else if (tcIndex == DEBUG_TC4_INDEX) {
+			u4TcCount = NIC_TX_BUFF_COUNT_TC4;
+			u4StartAddr = AP_MCU_TC_INDEX_4_ADDR;
+			u4Offset = AP_MCU_TC_INDEX_4_OFFSET;
+		} else {
+			DBGLOG(TX, ERROR, "Type :%d TC_INDEX :%d don't support !", type , tcIndex);
+			return;
+		}
+
+		prTxDesc = (P_HIF_TX_DESC_T)pucBuffer;
+		for (i = 0; i < u4TcCount ; i++)
+			HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8) &prTxDesc[i]
+				, sizeof(HIF_TX_DESC_T));
+
+
+	} else if (type == MTK_AMPDU_RX_DESC) {
+
+		if (tcIndex == DEBUG_TC0_INDEX) {
+			u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+			u4StartAddr = AP_MCU_RX_DESC_ADDR;
+			u4Offset = AP_MCU_BANK_OFFSET;
+		} else {
+			DBGLOG(RX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
+			return;
+		}
+
+		prRxDesc = (P_HIF_RX_DESC_T)pucBuffer;
+		for (i = 0; i < u4TcCount ; i++)
+			HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8) &prRxDesc[i]
+				, sizeof(HIF_RX_DESC_T));
+	}
+
+}
+
+VOID wlanDebugHifDescriptorPrint(P_ADAPTER_T prAdapter , ENUM_AMPDU_TYPE type
+	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex, PUINT_8 pucBuffer)
+{
+	UINT_32 i;
+	UINT_32 u4TcCount;
+	P_HIF_TX_DESC_T prTxDesc;
+	P_HIF_RX_DESC_T prRxDesc;
+
+	if (pucBuffer == NULL) {
+		DBGLOG(TX, ERROR, "wlanDebugHifDescriptorDump pucBuffer is Null !");
+		return;
+	}
+
+	if (type == MTK_AMPDU_TX_DESC) {
+		if (tcIndex == DEBUG_TC0_INDEX)
+			u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+		else if (tcIndex == DEBUG_TC4_INDEX)
+			u4TcCount = NIC_TX_BUFF_COUNT_TC4;
+		else {
+			DBGLOG(TX, ERROR, "Type :%d TC_INDEX :%d don't support !", type , tcIndex);
+			return;
+		}
+
+		prTxDesc = (P_HIF_TX_DESC_T)pucBuffer;
+		DBGLOG(TX, INFO, "Start dump Tx_desc from APMCU\n");
+		for (i = 0; i < u4TcCount ; i++) {
+				DBGLOG(TX, INFO
+					, "TC%d[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,SA: 0x%08x,R2:%x\n"
+					, tcIndex, i, prTxDesc[i].ucOwn, prTxDesc[i].ucDescChksum
+					, prTxDesc[i].u2Rsrv1, prTxDesc[i].u4NextDesc
+					, prTxDesc[i].u4BufStartAddr, prTxDesc[i].u4Rsrv2);
+		}
+
+	} else if (type == MTK_AMPDU_RX_DESC) {
+
+		if (tcIndex == DEBUG_TC0_INDEX)
+			u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+		else {
+			DBGLOG(RX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
+			return;
+		}
+
+		prRxDesc = (P_HIF_RX_DESC_T)pucBuffer;
+		DBGLOG(RX, INFO, "Start dump rx_desc from APMCU\n");
+		for (i = 0; i < u4TcCount ; i++) {
+			DBGLOG(RX, INFO
+				, "RX%d[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,SA:0x%08x,len:%x,R1:%x\n"
+				, tcIndex, i, prRxDesc[i].ucOwn , prRxDesc[i].ucDescChksum
+				, prRxDesc[i].ucEtherTypeOffset, prRxDesc[i].ucChkSumInfo
+				, prRxDesc[i].u4NextDesc, prRxDesc[i].u4BufStartAddr
+				, prRxDesc[i].u2RxBufLen, prRxDesc[i].u2Rsrv1);
+
+		}
+	}
+
+
 }
 
 VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter , ENUM_AMPDU_TYPE type
 	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex)
 {
-	/* debug for tx/rx description begin */
-	UINT_32 i;
-	UINT_32 u4TcCount;
-	UINT_32 u4Offset;
-	UINT_32 u4StartAddr;
+	UINT_32 size = NIC_TX_BUFF_SUM;
 	P_HIF_TX_DESC_T prTxDesc;
 	P_HIF_RX_DESC_T prRxDesc;
 
-	do {
-		if (type == MTK_AMPDU_TX_DESC) {
 
-			if (tcIndex == DEBUG_TC0_INDEX) {
-				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
-				u4StartAddr = AP_MCU_TX_DESC_ADDR;
-				u4Offset = AP_MCU_BANK_OFFSET;
-			} else if (tcIndex == DEBUG_TC4_INDEX) {
-				u4TcCount = NIC_TX_BUFF_COUNT_TC4;
-				u4StartAddr = AP_MCU_TC_INDEX_4_ADDR;
-				u4Offset = AP_MCU_TC_INDEX_4_OFFSET;
-			} else {
-				DBGLOG(TX, ERROR, "Type :%d TC_INDEX :%d don't support !", type , tcIndex);
-				break;
-			}
+	if (type == MTK_AMPDU_TX_DESC) {
 
-			prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T), VIR_MEM_TYPE);
-
-			for (i = 0; i < u4TcCount ; i++) {
-				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prTxDesc
-					, sizeof(HIF_TX_DESC_T));
-				DBGLOG(TX, INFO
-					, "TC%d[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,SA: 0x%08x,R2:%x\n"
-					, tcIndex, i, prTxDesc->ucOwn, prTxDesc->ucDescChksum
-					, prTxDesc->u2Rsrv1, prTxDesc->u4NextDesc
-					, prTxDesc->u4BufStartAddr, prTxDesc->u4Rsrv2);
-			}
-			kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
-
-		} else if (type == MTK_AMPDU_RX_DESC) {
-
-			if (tcIndex == DEBUG_TC0_INDEX) {
-				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
-				u4StartAddr = AP_MCU_RX_DESC_ADDR;
-				u4Offset = AP_MCU_BANK_OFFSET;
-			} else {
-				DBGLOG(RX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
-				break;
-			}
-
-			prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T), VIR_MEM_TYPE);
-			DBGLOG(RX, INFO, "Start dump rx_desc from APMCU\n");
-			for (i = 0; i < NIC_TX_INIT_BUFF_COUNT_TC0 ; i++) {
-				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prRxDesc
-					, sizeof(HIF_RX_DESC_T));
-				DBGLOG(RX, INFO
-					, "RX%d[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,SA:0x%08x,len:%x,R1:%x\n"
-					, tcIndex, i, prRxDesc->ucOwn , prRxDesc->ucDescChksum
-					, prRxDesc->ucEtherTypeOffset, prRxDesc->ucChkSumInfo
-					, prRxDesc->u4NextDesc, prRxDesc->u4BufStartAddr
-					, prRxDesc->u2RxBufLen, prRxDesc->u2Rsrv1);
-			}
-			kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(P_HIF_RX_DESC_T));
+		prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T) * size, VIR_MEM_TYPE);
+		if (prTxDesc == NULL) {
+			DBGLOG(TX, WARN, "wlanDebugHifDescriptorDump prTxDesc alloc fail!\n");
+			return;
 		}
-	} while (FALSE);
-	/* debug for tx/rx description end */
+		kalMemZero(prTxDesc, sizeof(HIF_TX_DESC_T) * size);
+		wlanDebugHifDescriptorRecord(prAdapter, type, tcIndex, (PUINT_8)prTxDesc);
+		wlanDebugHifDescriptorPrint(prAdapter, type, tcIndex, (PUINT_8)prTxDesc);
+		kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
 
+	} else if (type == MTK_AMPDU_RX_DESC) {
+
+		prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T) * size, VIR_MEM_TYPE);
+		if (prRxDesc == NULL) {
+			DBGLOG(RX, WARN, "wlanDebugHifDescriptorDump prRxDesc alloc fail!\n");
+			return;
+		}
+		kalMemZero(prRxDesc, sizeof(HIF_RX_DESC_T) * size);
+		wlanDebugHifDescriptorRecord(prAdapter, type, tcIndex, (PUINT_8)prRxDesc);
+		wlanDebugHifDescriptorPrint(prAdapter, type, tcIndex, (PUINT_8)prRxDesc);
+		kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(P_HIF_RX_DESC_T));
+	}
+
+
+}
+VOID wlanDebugScanRecord(P_ADAPTER_T prAdapter, ENUM_DBG_SCAN_T recordType)
+{
+
+	UINT_32 tcIndex = DEBUG_TC4_INDEX;
+	UINT_32 type = MTK_AMPDU_TX_DESC;
+	P_TX_CTRL_T pTxCtrl = &prAdapter->rTxCtrl;
+
+	if (recordType == DBG_SCAN_WRITE_BEFORE) {
+		wlanDebugHifDescriptorRecord(prAdapter, type, tcIndex
+		, (PUINT_8)grScanHifDescRecord.pTxDescScanWriteBefore);
+		grScanHifDescRecord.aucFreeBufCntScanWriteBefore = pTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX];
+		grScanHifDescRecord.u8ScanWriteBeforeTime = sched_clock();
+	} else if (recordType == DBG_SCAN_WRITE_DONE) {
+		wlanDebugHifDescriptorRecord(prAdapter, type, tcIndex
+		, (PUINT_8)grScanHifDescRecord.pTxDescScanWriteDone);
+		grScanHifDescRecord.aucFreeBufCntScanWriteDone = pTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX];
+		grScanHifDescRecord.u8ScanWriteDoneTime = sched_clock();
+	}
+
+}
+VOID wlanDebugScanDump(P_ADAPTER_T prAdapter)
+{
+	UINT_32 tcIndex = DEBUG_TC4_INDEX;
+	UINT_32 type = MTK_AMPDU_TX_DESC;
+
+	DBGLOG(TX, INFO, "ScanReq hal write before:Time=%llu ,freeCnt=%d,dump tc4[0]~[3] desc!\n"
+		, grScanHifDescRecord.u8ScanWriteBeforeTime
+		, grScanHifDescRecord.aucFreeBufCntScanWriteBefore);
+	wlanDebugHifDescriptorPrint(prAdapter, type, tcIndex
+		, (PUINT_8)grScanHifDescRecord.pTxDescScanWriteBefore);
+
+	DBGLOG(TX, INFO, "ScanReq hal write done:Time=%llu ,freeCnt=%d,dump tc4[0]~[3] desc!\n"
+		, grScanHifDescRecord.u8ScanWriteDoneTime
+		, grScanHifDescRecord.aucFreeBufCntScanWriteDone);
+	wlanDebugHifDescriptorPrint(prAdapter, type, tcIndex
+		, (PUINT_8)grScanHifDescRecord.pTxDescScanWriteDone);
 }
 
 
