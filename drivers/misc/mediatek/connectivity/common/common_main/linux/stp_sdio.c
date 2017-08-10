@@ -638,15 +638,18 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		return 0;
 	}
 	pOsalSignal = &gp_info->isr_check_complete;
-	pOsalSignal->timeoutValue = 100;
-	osal_signal_init(pOsalSignal);
 	switch (op) {
 	case OWN_SET:
 		gp_info->wakeup_flag = 0;
 		gp_info->sleep_flag = 1;
 		osal_trigger_event(&gp_info->tx_rx_event);
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
-		osal_wait_for_signal(pOsalSignal);
+		osal_ftrace_print("own set start, wakeup_flag(%d), sleep_flag(%d), wait signal",
+				gp_info->wakeup_flag, gp_info->sleep_flag);
+		ret = osal_wait_for_signal_timeout(pOsalSignal);
+		if (!ret)
+			STPSDIO_ERR_FUNC("OWN_SET fail, done(%d), sleep(%d), wakeup(%d)\n",
+				pOsalSignal->comp.done, gp_info->sleep_flag, gp_info->wakeup_flag);
 		STPSDIO_LOUD_FUNC("after op(%d)\n", op);
 		ret = 0;
 		break;
@@ -657,7 +660,10 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		gp_info->wakeup_flag = 1;
 		osal_trigger_event(&gp_info->tx_rx_event);
 		STPSDIO_LOUD_FUNC("before op(%d)\n", op);
-		osal_wait_for_signal(pOsalSignal);
+		ret = osal_wait_for_signal_timeout(pOsalSignal);
+		if (!ret)
+			STPSDIO_ERR_FUNC("OWN_CLER fail, done(%d), sleep(%d), wakeup(%d)\n",
+				pOsalSignal->comp.done, gp_info->sleep_flag, gp_info->wakeup_flag);
 		STPSDIO_LOUD_FUNC("after op(%d)\n", op);
 		ret = 0;
 		break;
@@ -671,7 +677,8 @@ INT32 stp_sdio_own_ctrl(SDIO_PS_OP op)
 		ret = -1;
 		break;
 	}
-	osal_signal_deinit(pOsalSignal);
+	osal_ftrace_print("own control end, wakeup_flag(%d), sleep_flag(%d), signal done",
+			gp_info->wakeup_flag, gp_info->sleep_flag);
 	return ret;
 }
 
@@ -1003,10 +1010,6 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 		pInfo->sleep_flag = 0;
 		STPSDIO_WARN_FUNC("someone is wait for sleep/wakeup event, signal it to return\n");
 		osal_raise_signal(&pInfo->isr_check_complete);
-	}
-	while (0 < osal_signal_active_state(&pInfo->isr_check_complete)) {
-		STPSDIO_WARN_FUNC("is_check_complete signal in active state, wait for a moment.\n");
-		osal_sleep_ms(10);
 	}
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread exit\n");
 }
@@ -2467,6 +2470,8 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 	g_stp_sdio_host_info.firmware_info.tx_packet_num = 0;
 	atomic_set(&g_stp_sdio_host_info.firmware_info.tx_comp_num, 0);
 
+	g_stp_sdio_host_info.isr_check_complete.timeoutValue = 1000;
+	osal_signal_init(&g_stp_sdio_host_info.isr_check_complete);
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_init(&g_stp_sdio_host_info.tx_rx_job, stp_sdio_tx_rx_handling,
 	   (unsigned long) &g_stp_sdio_host_info); */
@@ -2636,7 +2641,8 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 	/* STPSDIO_INFO_FUNC("kill tasklet finished\n"); */
 	osal_thread_destroy(&g_stp_sdio_host_info.tx_rx_thread);
 	osal_event_deinit(&g_stp_sdio_host_info.tx_rx_event);
-	STPSDIO_INFO_FUNC("destroy STP-SDIO tx_rx_thread\n");
+	osal_signal_deinit(&g_stp_sdio_host_info.isr_check_complete);
+	STPSDIO_DBG_FUNC("destroy STP-SDIO tx_rx_thread\n");
 #else
 	flush_scheduled_work();
 	STPSDIO_INFO_FUNC("flush scheduled work end\n");
