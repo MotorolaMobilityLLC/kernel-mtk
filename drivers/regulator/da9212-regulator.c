@@ -213,6 +213,7 @@ static int da9212_regulator_init(struct da9212 *chip)
 	struct regulator_config config = { };
 	int i, ret;
 	unsigned int data;
+	struct regulation_constraints *c;
 
 	ret = regmap_update_bits(chip->regmap, DA9212_REG_PAGE_CON,
 				 DA9212_REG_PAGE_MASK, DA9212_REG_PAGE2);
@@ -253,13 +254,18 @@ static int da9212_regulator_init(struct da9212 *chip)
 		config.regmap = chip->regmap;
 
 		chip->rdev[i] = regulator_register(&da9212_regulators[i], &config);
-
 		if (IS_ERR(chip->rdev[i])) {
 			dev_err(chip->dev, "Failed to register DA9212 regulator\n");
 			ret = PTR_ERR(chip->rdev[i]);
 			goto err_regulator;
 		}
-
+		/* Constrain board-specific capabilities according to what
+		 * this driver and the chip itself can actually do.
+		 */
+		c = chip->rdev[i]->constraints;
+		c->valid_modes_mask |= REGULATOR_MODE_NORMAL |
+		REGULATOR_MODE_STANDBY | REGULATOR_MODE_FAST;
+		c->valid_ops_mask |= REGULATOR_CHANGE_MODE;
 	}
 
 	return 0;
