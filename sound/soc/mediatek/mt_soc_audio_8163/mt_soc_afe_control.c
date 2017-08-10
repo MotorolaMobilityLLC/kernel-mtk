@@ -2577,7 +2577,7 @@ void SetHdmiTdm1Config(unsigned int channels, unsigned int i2s_wlen)
 	unsigned int register_value = 0;
 
 	register_value |= (MT_AFE_TDM_BCK_INVERSE << 1);
-	register_value |= (MT_AFE_TDM_LRCK_NOT_INVERSE << 2);
+	register_value |= (MT_AFE_TDM_LRCK_INVERSE << 2);
 	register_value |= (MT_AFE_TDM_1_BCK_CYCLE_DELAY << 3);
 	register_value |= (MT_AFE_TDM_ALIGNED_TO_MSB << 4);	/* aligned for I2S mode */
 	register_value |= (MT_AFE_TDM_2CH_FOR_EACH_SDATA << 10);
