@@ -1217,8 +1217,22 @@ static void ndisc_router_discovery(struct sk_buff *skb)
 		rt->rt6i_flags = (rt->rt6i_flags & ~RTF_PREF_MASK) | RTF_PREF(pref);
 	}
 
-	if (rt)
-		rt6_set_expires(rt, jiffies + (HZ * lifetime));
+	if (rt) {
+		/*mtk10127 change
+		 *if route lifetime carried by RA msg equals to 0xFFFF, considering it as infinite
+		 * route lifetime and cleaning route expires. Otherwise, setting route expires
+		 * according to the lifetime value.
+		*/
+		if (lifetime == 0xffff) {
+			rt6_clean_expires(rt);
+			pr_info("[mtk_net]RA: %s, rt %p, clean route expires since lifetime %d infinite\n",
+				__func__, rt, lifetime);
+		} else {
+			rt6_set_expires(rt, jiffies + HZ * lifetime);
+			pr_info("[mtk_net]RA: %s, rt %p, set route expires since lifetime %d finite\n",
+				__func__, rt, lifetime);
+		}
+	}
 	if (ra_msg->icmph.icmp6_hop_limit) {
 		/* Only set hop_limit on the interface if it is higher than
 		 * the current hop_limit.
