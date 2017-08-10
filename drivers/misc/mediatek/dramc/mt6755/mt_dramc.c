@@ -54,6 +54,8 @@ void __iomem *DRAMCAO_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
 void __iomem *DRAMCNAO_BASE_ADDR;
 void __iomem *TOPCKGEN_BASE_ADDR;
+void __iomem *EMI_BASE;
+
 
 volatile unsigned int dst_dummy_read_addr[2];
 volatile unsigned int src_dummy_read_addr[2];
@@ -1355,6 +1357,118 @@ static struct platform_driver dram_test_drv = {
 		},
 };
 
+/* last dramc for jade mp patch*/
+#define lk_base 0x46000000
+#define test_length 0x4000
+static int __init last_dramc_test_agent_init(void)
+{
+	int ret = 0;
+	unsigned int bit_scb, bit_xor, bit_sft;
+	unsigned int emi_cona = readl(IOMEM(EMI_BASE+0x000));
+	unsigned int emi_conf = readl(IOMEM(EMI_BASE+0x028))>>8;
+	unsigned int chn_pos = ((emi_cona & 0xf) >> 2) + 7;
+	unsigned int temp;
+	phys_addr_t rank0_addr_dramc = lk_base;
+
+	if (EMI_BASE == NULL)
+		pr_err("[LastDramc] NULL EMI base\n");
+	else
+		pr_warn("[LastDramc] EMI CONA: %x  , EMI CONF: %x\n",
+		readl(IOMEM(EMI_BASE+0x000)), readl(IOMEM(EMI_BASE+0x028)));
+
+	pr_warn("[LastDramc] reserved address before emi: %llx\n", rank0_addr_dramc);
+	/*emi descramble*/
+	for (bit_scb = 11; bit_scb < 17; bit_scb++) {
+		bit_xor = (emi_conf >> (4*(bit_scb-11))) & 0xf;
+		bit_xor &= (rank0_addr_dramc>>16);
+		for (bit_sft = 0; bit_sft < 4; bit_sft++)
+			rank0_addr_dramc ^= ((bit_xor>>bit_sft) & 0x1)<<bit_scb;
+	}
+	if (support_4GB_mode() != 0)
+		rank0_addr_dramc &= 0xffffffff;
+	else
+		rank0_addr_dramc -= 0x40000000;
+
+	pr_warn("[LastDramc] reserved address after emi: %llx\n", rank0_addr_dramc);
+
+	if ((emi_cona & 0x1) != 0) {
+		pr_err("[LastDramc] two channel\n");
+		rank0_addr_dramc = ((rank0_addr_dramc&(0x1ffffffff<<(chn_pos+1)))>>1) |
+		(rank0_addr_dramc&(0x1ffffffff>>(33-chn_pos)));
+		pr_err("[LastDramc] reserved address after emi channel dispatch: %llx\n", rank0_addr_dramc);
+	}
+
+	/*disable self test engine1 and self test engine2*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x008) & 0x1fffffff;
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x008, temp);
+
+	/* set MATYPE for test agent :high*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x004) & 0xfffffcff;
+	temp |= ((emi_cona&0x30)+0x10) << 4;
+	pr_warn("[LastDramc] CONF1 Shuffle High: %x\n", temp);
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x004, temp);
+
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x804) & 0xfffffcff;
+	temp |= ((emi_cona&0x30)+0x10) << 4;
+	pr_warn("[LastDramc] CONF1 Shuffle Low: %x\n", temp);
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x804, temp);
+
+	/* set base address for test agent*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x038) & 0xfffffff0;
+	temp |= (rank0_addr_dramc>>28) & 0xf;
+	pr_warn("[LastDramc] TEST2_0: %x\n", temp);
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x038, temp);
+
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x03c) & 0x00000000;
+	temp |= (rank0_addr_dramc>>4) & 0x00ffffff;
+	pr_warn("[LastDramc] TEST2_1: %x\n", temp);
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x03c, temp|0x1);
+
+	/* set offset for test agent*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x040) & 0x00000000;
+	temp |= (test_length>>4);
+	pr_warn("[LastDramc] TEST2_2: %x\n", temp);
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x040, temp);
+
+	/* set test pattern to XTALK*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x044) & 0xffffff70;
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x044, temp);
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x048) & 0xfffe3fff;
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x048, temp|0x10000);
+#if 0
+	/* enable write*/
+	 pr_err("[sagy] start test agent 2\n");
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x008) & 0x7fffffff;
+	temp |= 0x80000000;
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x008, temp);
+
+	temp = 1000000;
+	while (temp) {
+		done = (Reg_Readl(DRAMCNAO_BASE_ADDR+0x3fc)>>10) & 0x1;
+		if (done)
+			break;
+		temp--;
+		}
+	if (temp == 0)
+		pr_err("[sagy] test incomplete\n");
+	else
+		pr_err("[sagy] test complete\n");
+
+	/* check error*/
+	temp = Reg_Readl(DRAMCNAO_BASE_ADDR+0x370);
+	pr_err("[sagy] test result: %x\n", temp);
+
+	/* disable write*/
+	temp = Reg_Readl(DRAMCAO_BASE_ADDR+0x008) & 0x1fffffff;
+	Reg_Sync_Writel(DRAMCAO_BASE_ADDR+0x008, temp);
+#endif
+	return ret;
+}
+
+late_initcall(last_dramc_test_agent_init);
+
+
+
 static int dram_dt_init(void)
 {
 	int ret = 0;
@@ -1393,6 +1507,15 @@ static int dram_dt_init(void)
 		pr_warn("[DRAMC]get TOPCKGEN_BASE_ADDR @ %p\n", TOPCKGEN_BASE_ADDR);
 	} else {
 		pr_err("[DRAMC]can't find TOPCKGEN compatible node\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,emi");
+	if (node) {
+		EMI_BASE = of_iomap(node, 0);
+		pr_warn("[DRAMC]get EMI_BASE_ADDR @ %p\n", EMI_BASE);
+	} else {
+		pr_err("[DRAMC]can't find EMI_BASE_ADDR compatible node\n");
 		return -1;
 	}
 
