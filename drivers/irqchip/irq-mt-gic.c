@@ -1237,8 +1237,8 @@ overflow:
 
 void mt_irq_dump_status(int irq)
 {
-	int len = PAGE_SIZE;
-	char *buf = kmalloc(len, GFP_KERNEL);
+	int len = 2048;
+	char *buf = kmalloc(len, GFP_ATOMIC);
 
 	if (!buf)
 		return;
