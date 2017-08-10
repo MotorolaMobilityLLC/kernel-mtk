@@ -3623,7 +3623,7 @@ static int tune_cmdq_data(struct mmc_host *mmc,
 	struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
-	int ret;
+	int ret = 0;
 
 	if (mrq->cmd && (mrq->cmd->error == (unsigned int)-EILSEQ)) {
 		ret = msdc_tune_cmdrsp(host);
