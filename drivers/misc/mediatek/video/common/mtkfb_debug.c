@@ -293,6 +293,7 @@ void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigne
 		    unsigned int linepitch, unsigned int color, unsigned int layerid,
 		    unsigned int bufidx)
 {
+	int ret = 0;
 	unsigned long addr = 0;
 	unsigned int layer_size = 0;
 	unsigned int mapped_size = 0;
@@ -314,9 +315,9 @@ void _debug_pattern(unsigned long mva, unsigned long va, unsigned int w, unsigne
 		addr = va;
 	} else {
 		layer_size = linepitch * h;
-		m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
-		if (mapped_size == 0) {
-			DISPERR("m4u_mva_map_kernel failed\n");
+		ret = m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
+		if ((ret < 0) || (mapped_size == 0)) {
+			DISPERR("m4u_mva_map_kernel fail in %s to map mva = 0x%lx\n", __func__, mva);
 			return;
 		}
 	}
