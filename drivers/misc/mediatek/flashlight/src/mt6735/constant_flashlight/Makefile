@@ -15,4 +15,10 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
+ifeq ($(findstring lego,$(ARCH_MTK_PROJECT)), )
 obj-y				+= leds_strobe.o
+else
+CFILES := leds_strobe.o
+obj-m				+= flashlight_device.o
+flashlight_device-objs := $(CFILES)
+endif

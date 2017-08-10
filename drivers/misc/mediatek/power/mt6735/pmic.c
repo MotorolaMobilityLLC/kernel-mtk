@@ -1835,7 +1835,7 @@ void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTERY_LEVEL
 	pr_err("[register_low_battery_notify] prio_val=%d\n", prio_val);
 #endif				/*end of #ifdef LOW_BATTERY_PROTECT */
 }
-
+EXPORT_SYMBOL(register_low_battery_notify);
 #ifdef LOW_BATTERY_PROTECT
 void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 {				/*0:no limit */
@@ -1855,7 +1855,6 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 		}
 	}
 }
-
 void lbat_min_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_AUXADC_LBAT_EN_MIN, en_val);
@@ -2218,7 +2217,7 @@ void register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_P
 	}
 #endif				/* end of #ifdef BATTERY_PERCENT_PROTECT */
 }
-
+EXPORT_SYMBOL(register_battery_percent_notify);
 #ifdef BATTERY_PERCENT_PROTECT
 void exec_battery_percent_callback(BATTERY_PERCENT_LEVEL battery_percent_level)
 {				/*0:no limit */
