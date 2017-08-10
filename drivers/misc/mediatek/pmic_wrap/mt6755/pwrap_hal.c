@@ -89,7 +89,7 @@ static void pwrap_of_iounmap(void);
 
 #ifdef PMIC_WRAP_NO_PMIC
 /*-pwrap debug--------------------------------------------------------------------------*/
-static inline void pwrap_dump_all_register(void)
+void pwrap_dump_all_register(void)
 {
 	return;
 }
@@ -344,7 +344,7 @@ static inline void pwrap_dump_pmic_register(void)
 #endif
 }
 
-static inline void pwrap_dump_all_register(void)
+void pwrap_dump_all_register(void)
 {
 	pwrap_dump_ap_register();
 	pwrap_dump_pmic_register();
