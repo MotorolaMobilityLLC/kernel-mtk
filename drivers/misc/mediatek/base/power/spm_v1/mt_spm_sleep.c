@@ -1606,6 +1606,13 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		wd_api->wd_suspend_notify();
 
 	mt_power_gs_dump_suspend();
+#if 0
+	/* snapshot golden setting */
+	{
+		if (!is_already_snap_shot)
+			snapshot_golden_setting(__func__, 0);
+	}
+#endif
 	/* spm_suspend_pre_process(pwrctrl); */
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
