@@ -543,6 +543,11 @@ void mt_usb_disconnect(void)
 
 }
 
+static void do_connect_rescue_work(struct work_struct *work)
+{
+	DBG(0, "do_connect_rescue_work, issue connection work\n");
+	schedule_delayed_work(&connection_work, 0);
+}
 
 bool usb_cable_connected(void)
 {
@@ -559,11 +564,14 @@ bool usb_cable_connected(void)
 #endif
 
 	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
+		static struct delayed_work connect_rescue_work;
 
 		set_usb_rdy();
-		DBG(0, "issue work on is_ready begin, delay_time:%d ms\n", delay_time);
-		schedule_delayed_work(&connection_work, msecs_to_jiffies(delay_time));
-		DBG(0, "issue work on is_ready end, delay_time:%d ms\n", delay_time);
+
+		INIT_DELAYED_WORK(&connect_rescue_work, do_connect_rescue_work);
+		DBG(0, "issue connect_rescue_work on is_ready begin, delay_time:%d ms\n", delay_time);
+		schedule_delayed_work(&connect_rescue_work, msecs_to_jiffies(delay_time));
+		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
 	}
 
 	if (musb_fake_disc) {
