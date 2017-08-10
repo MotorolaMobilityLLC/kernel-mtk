@@ -20,6 +20,7 @@
 
 #include "sdcardfs.h"
 #include "linux/ctype.h"
+#include <linux/lockdep.h>
 
 /*
  * returns: -ERRNO if error (returned to user)
@@ -85,6 +86,7 @@ static int sdcardfs_d_revalidate(struct dentry *dentry, unsigned int flags)
 		goto out;
 	}
 
+	lockdep_off();
 	if (dentry < lower_dentry) {
 		spin_lock(&dentry->d_lock);
 		spin_lock_nested(&lower_dentry->d_lock, DENTRY_D_LOCK_NESTED);
@@ -105,6 +107,7 @@ static int sdcardfs_d_revalidate(struct dentry *dentry, unsigned int flags)
 		spin_unlock(&dentry->d_lock);
 		spin_unlock(&lower_dentry->d_lock);
 	}
+	lockdep_on();
 	if (!err)
 		goto out;
 
