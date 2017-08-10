@@ -229,7 +229,7 @@ static ssize_t lastpc_reboot_test_store(struct device_driver *driver, const char
 
 DRIVER_ATTR(lastpc_reboot_test, 0664, lastpc_reboot_test_show, lastpc_reboot_test_store);
 
-static int lastpc_start(void)
+static int __init lastpc_start(void)
 {
 	struct lastpc_plt *plt = lastpc_drv.cur_plt;
 
