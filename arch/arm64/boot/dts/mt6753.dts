@@ -830,6 +830,40 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		jpgenc@17003000 {
+			compatible = "mediatek,jpgenc";
+			reg = <0x17003000 0x1000>;
+			interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_DISP0_SMI_COMMON>,
+				<&scpsys SCP_SYS_VEN>,
+				<&vencsys VENC_LARB>,
+				<&vencsys VENC_JPGENC>;
+
+			clock-names = "disp-mtcmos",
+				"disp-smi",
+				"venc-mtcmos",
+				"venc-larb",
+				"venc-jpgenc";
+		};
+
+		jpgdec@17004000 {
+			compatible = "mediatek,jpgdec";
+			reg = <0x17004000 0x1000>;
+			interrupts = <GIC_SPI 209 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_DISP0_SMI_COMMON>,
+				<&scpsys SCP_SYS_VEN>,
+				<&vencsys VENC_LARB>,
+				<&vencsys VENC_JPGDEC>;
+
+			clock-names = "disp-mtcmos",
+				"disp-smi",
+				"venc-mtcmos",
+				"venc-larb",
+				"venc-jpgdec";
+		};
+
 		keypad: keypad@10003000 {
 			compatible = "mediatek,mt6735-keypad";
 			reg = <0x10003000 0x1000>;
