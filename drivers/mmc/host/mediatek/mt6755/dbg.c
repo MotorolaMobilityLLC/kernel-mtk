@@ -323,7 +323,12 @@ void mmc_cmd_dump(struct mmc_host *mmc)
 	int i;
 	int tag = -1;
 	unsigned long flags;
-	struct msdc_host *host = mmc_priv(mmc);
+	struct msdc_host *host;
+
+	if (!mmc || !mmc->card)
+		return;
+
+	host = mmc_priv(mmc);
 
 	if (!is_lock_init) {
 		spin_lock_init(&cmd_dump_lock);
@@ -466,7 +471,7 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_host *mmc = host->mmc;
 
-	if (!mmc)
+	if (!mmc || !mmc->card)
 		return;
 
 	pr_err("===============================\n");
