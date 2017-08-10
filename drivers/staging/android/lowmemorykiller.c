@@ -42,6 +42,7 @@
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
 #include <linux/freezer.h>
+#include <linux/cpu.h>
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
 #include <mt-plat/aee.h>
@@ -167,6 +168,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
+	bool in_cpu_hotplugging = false;
 
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 	int other_anon = global_page_state(NR_INACTIVE_ANON) - global_page_state(NR_ACTIVE_ANON);
@@ -190,6 +192,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (lowmem_deathpending &&
 	    time_before_eq(jiffies, lowmem_deathpending_timeout))
 		return SHRINK_STOP;
+
+	/* Check whether it is in cpu_hotplugging */
+	in_cpu_hotplugging = cpu_hotplugging();
 
 	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
 	if (IS_ENABLED(CONFIG_CMA))
@@ -226,6 +231,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			break;
 		}
 	}
+
+	/* If in CPU hotplugging, let LMK be more aggressive */
+	if (in_cpu_hotplugging) {
+		pr_alert("Aggressive LMK during CPU hotplug!\n");
+		min_score_adj = 0;
+	}
+
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE /* Need removal */
 	if (min_score_adj < 9 && other_anon > 70 * 256) {
 		/* if other_anon > 70MB, don't kill adj <= 8 */
