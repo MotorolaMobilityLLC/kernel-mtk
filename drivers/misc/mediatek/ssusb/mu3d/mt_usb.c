@@ -108,14 +108,14 @@ void connection_work(struct work_struct *data)
 
 bool mt_usb_is_ready(void)
 {
-	mu3d_dbg(K_INFO, "USB is ready or not\n");
-#ifdef NEVER
-	if (!mtk_musb || !mtk_musb->is_ready)
+	if (!_mu3d_musb)
 		return false;
-	else
+
+	if (_mu3d_musb->usb_mode == CABLE_MODE_CHRG_ONLY ||
+		_mu3d_musb->usb_mode == CABLE_MODE_HOST_ONLY)
 		return true;
-#endif				/* NEVER */
-	return true;
+
+	return _mu3d_musb->softconnect ? true : false;
 }
 
 void mt_usb_connect(void)

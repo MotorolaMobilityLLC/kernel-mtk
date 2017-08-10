@@ -2593,7 +2593,8 @@ void BAT_thread(void)
 		battery_meter_initilized = true;
 	}
 
-	mt_battery_charger_detect_check();
+	if (g_bat.usb_connect_ready)
+		mt_battery_charger_detect_check();
 
 	if (fg_battery_shutdown)
 		return;
@@ -2625,6 +2626,15 @@ int bat_thread_kthread(void *x)
 	/* Run on a process content */
 	while (!fg_battery_shutdown) {
 		int ret;
+
+		/* check usb ready once at boot time */
+		if (g_bat.usb_connect_ready == false) {
+			while (!mt_usb_is_ready()) {
+				pr_info("wait usb connection ready..\n");
+				msleep(100);
+			}
+			g_bat.usb_connect_ready = true;
+		}
 
 		mutex_lock(&bat_mutex);
 
