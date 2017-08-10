@@ -108,4 +108,5 @@ source "drivers/staging/skein/Kconfig"
 
 source "drivers/staging/unisys/Kconfig"
 
+source "drivers/staging/nanohub/Kconfig"
 endif # STAGING

@@ -61,7 +61,8 @@ void scp_ipi_init(void)
 	scp_send_obj = scp_rcv_obj + 1;
 	pr_debug("scp_rcv_obj = 0x%p\n", scp_rcv_obj);
 	pr_debug("scp_send_obj = 0x%p\n", scp_send_obj);
-	memset(scp_send_obj, 0, SHARE_BUF_SIZE);
+	memset_io(scp_send_obj, 0, SHARE_BUF_SIZE);
+
 }
 
 /*

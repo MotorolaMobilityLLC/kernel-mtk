@@ -920,11 +920,11 @@ static int __init scp_init(void)
 		return -1;
 	}
 
-	scp_send_buff = kmalloc((size_t) 64, GFP_KERNEL);
+	scp_send_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
 	if (!scp_send_buff)
 		return -1;
 
-	scp_recv_buff = kmalloc((size_t) 64, GFP_KERNEL);
+	scp_recv_buff = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
 	if (!scp_recv_buff)
 		return -1;
 

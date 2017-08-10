@@ -54,7 +54,7 @@ extern void scp_ram_dump_init(void);
 #define SCP_TCM_SIZE		(scpreg.tcmsize)
 #define SCP_TCM			(scpreg.sram)
 #define SCP_DTCM		SCP_TCM
-#define SCP_SHARE_BUFFER	(scpreg.sram + SCP_TCM_SIZE - 0x200)
+#define SCP_SHARE_BUFFER	(scpreg.sram + SCP_TCM_SIZE - SHARE_BUF_SIZE*2)
 #define SCP_BASE		(scpreg.cfg)
 #define SCP_SEMAPHORE		(SCP_BASE  + 0x90)
 #define SCP_CLK_CTRL_BASE	(scpreg.clkctrl)
