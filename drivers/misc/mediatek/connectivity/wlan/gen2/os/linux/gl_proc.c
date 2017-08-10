@@ -1097,18 +1097,12 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		, aucCfgBuf, token_num, count);
 
 	if (token_num == 1) {
-		/*set cfg Query key*/
-		kalMemSet(aucCfgQueryKey, '\0', sizeof(aucCfgQueryKey));
-
-		if (u4CopySize > (MAX_CMD_NAME_MAX_LENGTH - 1))
-			u4CopySize = MAX_CMD_NAME_MAX_LENGTH - 1;
-
+		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
+		u4CopySize = ((u4CopySize > sizeof(aucCfgQueryKey)) ? sizeof(aucCfgQueryKey) : u4CopySize);
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
-
 		/*replace Carriage Return (0x0a) to string end of terminal */
 		if ((u4CopySize > 0) && (aucCfgQueryKey[u4CopySize - 1] == 0x0a))
 			aucCfgQueryKey[u4CopySize - 1] = '\0';
-
 	} else {
 		if (u4CopySize)
 			wlanFwCfgParse(gprGlueInfo->prAdapter, aucCfgBuf);
