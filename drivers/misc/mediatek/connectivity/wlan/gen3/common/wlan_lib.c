@@ -2056,7 +2056,7 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 				       "%s: Failure to get RDY bit cleared! CardRemoved[%u] BusFailed[%u] Timeout[%u]",
 					__func__,
 					kalIsCardRemoved(prAdapter->prGlueInfo), fgIsBusAccessFailed, i);
-
+					glResetTrigger(prAdapter);
 					break;
 				}
 				i++;
