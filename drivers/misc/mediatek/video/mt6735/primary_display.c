@@ -584,7 +584,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 
 	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
 		DISPMSG("MMDVFS enter:%d\n", enter);
-		if (enter)
+		if (enter && primary_display_get_width() < 1200)
 			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
 		else if (primary_display_get_width() > 800)
 			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
@@ -5841,7 +5841,8 @@ int primary_display_suspend(void)
 
 	if (_is_decouple_mode(pgc->session_mode)) {
 		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
-	} else if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+	} else if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS &&
+		 primary_display_get_width() < 1200) {
 		DISPMSG("set MMDVFS low\n");
 		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
 	}
