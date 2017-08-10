@@ -118,6 +118,11 @@ void mt_spi_enable_clk(struct mt_spi_t *ms)
 	enable_clk(ms);
 }
 
+void mt_spi_enable_master_clk(struct spi_device *ms)
+{
+	enable_clk(spi_master_get_devdata(ms->master));
+}
+
 static void disable_clk(struct mt_spi_t *ms)
 {
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
@@ -136,6 +141,10 @@ void mt_spi_disable_clk(struct mt_spi_t *ms)
 	disable_clk(ms);
 }
 
+void mt_spi_disable_master_clk(struct spi_device *ms)
+{
+	disable_clk(spi_master_get_devdata(ms->master));
+}
 
 #ifdef SPI_DEBUG
 	/*#define SPI_DBG(fmt, args...)  printk(KERN_ALERT "mt-spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args )*/

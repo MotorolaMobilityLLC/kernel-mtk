@@ -129,6 +129,7 @@ struct mt_spi_t {
 
 extern void mt_spi_enable_clk(struct mt_spi_t *ms);
 extern void mt_spi_disable_clk(struct mt_spi_t *ms);
-
+extern void mt_spi_enable_master_clk(struct spi_device *ms);
+extern void mt_spi_disable_master_clk(struct spi_device *ms);
 #endif
 
