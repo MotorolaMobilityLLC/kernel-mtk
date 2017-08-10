@@ -318,6 +318,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10000000 0x1000>;
 		};
 
+		usb2jtag: usb2jtag@10000000 {
+			compatible = "mediatek,usb2jtag_v1";
+			reg = <0x10000000 0x1000>, <0x11210000 0x1000>;
+		};
 
 		pwrap@10001000 {
 			compatible = "mediatek,PWRAP";
@@ -366,6 +370,18 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 			mediatek,max_eint_num = <213>;
 			mediatek,mapping_table_entry = <0>;
+
+			mediatek,debtime_setting_entry = <10>;
+			mediatek,debtime_setting_array	= <0 125>,
+							<1 250>,
+							<2 500>,
+							<3 1000>,
+							<4 16000>,
+							<5 32000>,
+							<6 64000>,
+							<7 128000>,
+							<8 256000>,
+							<9 512000>;
 		};
 
 		sleep@10006000 {
@@ -659,8 +675,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10300000 0x8000>;
 		};
 
-		cpu_dbgapb: cpu_dbgapb@0x10810000 {
-			compatible = "mediatek,mt6735-dbg_debug";
+		cpu_dbgapb: cpu_dbgapb@10810000 {
+			compatible = "mediatek,hw_dbg";
 			num = <4>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000
