@@ -1293,6 +1293,7 @@ static int mpu6515_gpio_config(void)
 	if (IS_ERR(pins_cfg)) {
 		ret = PTR_ERR(pins_cfg);
 		GYRO_ERR("Cannot find gyro pinctrl pin_cfg!\n");
+		return 0;
 
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);

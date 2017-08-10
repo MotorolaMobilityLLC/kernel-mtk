@@ -104,6 +104,9 @@ struct gf_ioc_chip_info {
 #define GF_IOC_GET_FW_INFO		_IOR(GF_IOC_MAGIC, 11, u8)
 #define GF_IOC_REMOVE		_IO(GF_IOC_MAGIC, 12)
 #define GF_IOC_CHIP_INFO	_IOR(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
+/*goodix SMT*/
+#define GF_IOC_FTM		_IOR(GF_IOC_MAGIC, 14, u8)
+
 
 /* for SPI REE transfer */
 #define GF_IOC_TRANSFER_CMD		_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
@@ -165,7 +168,7 @@ struct gf_device {
 /**************************REE SPI******************************/
 
 #ifndef SUPPORT_REE_SPI
-/* #define SUPPORT_REE_SPI */
+#define SUPPORT_REE_SPI
 #endif
 
 #ifdef SUPPORT_REE_SPI

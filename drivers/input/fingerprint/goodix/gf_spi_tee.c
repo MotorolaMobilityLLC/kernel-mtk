@@ -96,6 +96,7 @@ u8 g_debug_level = DEBUG_LOG;
 /* align=4, 4 bytes align */
 /* align=8, 8 bytes align */
 #define ROUND_UP(x, align)		((x+(align-1))&~(align-1))
+u8	id_buf[11];
 
 
 /*************************************************************/
@@ -301,7 +302,7 @@ static void gf_spi_clk_enable(struct gf_device *gf_dev, u8 bonoff)
 	else
 		disable_clock(MT_CG_PERI_SPI0, "spi");
 
-#else
+#elif defined(MT6797)
 	/* changed after MT6797 platform */
 	struct mt_spi_t *ms = NULL;
 	static int count;
@@ -313,6 +314,17 @@ static void gf_spi_clk_enable(struct gf_device *gf_dev, u8 bonoff)
 		count = 1;
 	} else if ((count > 0) && (bonoff == 0)) {
 		mt_spi_disable_clk(ms);
+		count = 0;
+	}
+#else
+	static int count;
+
+
+	if (bonoff && (count == 0)) {
+		mt_spi_enable_master_clk(gf_dev->spi);
+		count = 1;
+	} else if ((count > 0) && (bonoff == 0)) {
+		mt_spi_disable_master_clk(gf_dev->spi);
 		count = 0;
 	}
 #endif
@@ -651,6 +663,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	u8  buf    = 0;
 	u8 netlink_route = GF_NETLINK_ROUTE;
 	struct gf_ioc_chip_info info;
+	void __user *data;
 
 	FUNC_ENTRY();
 	if (_IOC_TYPE(cmd) != GF_IOC_MAGIC)
@@ -876,6 +889,14 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		mutex_destroy(&gf_dev->buf_lock);
 
 		break;
+	case GF_IOC_FTM:
+			data = (void __user *) arg;
+			if (copy_to_user(data, id_buf, 7)) {
+				retval = -EFAULT;
+				break;
+			}
+			gf_debug(INFO_LOG, "%s: GF_IOC_FTM ======\n", __func__);
+			break;
 
 #ifdef SUPPORT_REE_SPI
 
@@ -972,11 +993,19 @@ static ssize_t gf_debug_store(struct device *dev,
 
 	if (!strncmp(buf, "-8", 2)) {
 		gf_debug(INFO_LOG, "%s: parameter is -8, enable spi clock test===============\n", __func__);
+#if defined(MT6797)
 		mt_spi_enable_clk(ms);
+#else
+		mt_spi_enable_master_clk(gf_dev->spi);
+#endif
 
 	} else if (!strncmp(buf, "-9", 2)) {
 		gf_debug(INFO_LOG, "%s: parameter is -9, disable spi clock test===============\n", __func__);
+#if defined(MT6797)
 		mt_spi_disable_clk(ms);
+#else
+		mt_spi_disable_master_clk(gf_dev->spi);
+#endif
 
 	} else if (!strncmp(buf, "-10", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -10, gf init start===============\n", __func__);
@@ -1491,6 +1520,7 @@ static int gf_init_flash_fw(struct gf_device *gf_dev)
 		}
 		return -ERR_FW_DESTROY;
 	}
+	memcpy(id_buf, tmp_buf, 11);
 	return 0;
 }
 
