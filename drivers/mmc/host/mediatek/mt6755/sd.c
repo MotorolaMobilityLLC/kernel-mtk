@@ -190,7 +190,7 @@ unsigned int sd_register_zone[HOST_MAX_NUM] = {
 /* mode select */
 u32 dma_size[HOST_MAX_NUM] = {
 	512,
-	512,
+	8,
 	512,
 	512,
 };
