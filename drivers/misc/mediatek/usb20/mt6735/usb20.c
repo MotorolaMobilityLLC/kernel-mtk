@@ -450,18 +450,6 @@ void do_connection_work(struct work_struct *data)
 
 
 	spin_lock_irqsave(&mtk_musb->lock, flags);
-	if (mtk_musb->is_host) {
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-		return;
-	}
-
-#ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (usb_phy_check_in_uart_mode()) {
-		DBG(0, "CHECK In UART Mode, not enable USB.\n");
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-		return;
-	}
-#endif
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
@@ -471,6 +459,21 @@ void do_connection_work(struct work_struct *data)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
+
+	if (mtk_musb->is_host) {
+		DBG(0, "is host, return\n");
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+		return;
+	}
+
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (usb_phy_check_in_uart_mode()) {
+		DBG(0, "in uart mode, return\n");
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+		return;
+	}
+#endif
+
 
 	usb_in = usb_cable_connected();
 
