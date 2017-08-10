@@ -979,7 +979,10 @@ INT32 wmt_lib_ps_stp_cb(MTKSTP_PSM_ACTION_T action)
 
 MTK_WCN_BOOL wmt_lib_is_quick_ps_support(VOID)
 {
-	return wmt_core_is_quick_ps_support();
+	if ((g_quick_sleep_ctrl) && (wmt_dev_get_early_suspend_state() == MTK_WCN_BOOL_TRUE))
+		return wmt_core_is_quick_ps_support();
+	else
+		return MTK_WCN_BOOL_FALSE;
 }
 
 VOID wmt_lib_ps_irq_cb(VOID)
