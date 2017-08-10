@@ -16,7 +16,7 @@
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
-#include <mtk_nand.h>
+#include "mtk_nand.h"
 
 #define MAX_BMT_SIZE        (0x200)	/* 0x80 */
 #define BMT_VERSION         (1)	/* initial version */

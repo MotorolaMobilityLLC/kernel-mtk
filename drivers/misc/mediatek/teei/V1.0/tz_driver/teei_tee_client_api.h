@@ -12,8 +12,8 @@
 	(param3Type << 12 | param2Type << 8 | param1Type << 4 | param0Type)
 
 #define TEEC_VALUE_UNDEF 0xffffffff
-#include <teei_list.h>
-#include <teei_tee_api.h>
+#include "teei_list.h"
+#include "teei_tee_api.h"
 
 #define D(fmt, ...) \
 fprintf(stderr, "[%s-%d]"fmt"\n",\

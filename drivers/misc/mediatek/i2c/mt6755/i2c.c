@@ -39,7 +39,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
-#include <mt_i2c.h>
+#include "mt_i2c.h"
 #include <mt_cpufreq_hybrid.h>
 
 #define TAG     "MT_I2C"

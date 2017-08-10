@@ -29,7 +29,7 @@
 #include <linux/proc_fs.h>
 #include <linux/suspend.h>
 
-#include <mtk_hibernate_dpm.h>
+#include "mtk_hibernate_dpm.h"
 #ifdef CONFIG_MTK_SYSENV
 #include <env.h> /* for set_env() by MTK */
 #endif

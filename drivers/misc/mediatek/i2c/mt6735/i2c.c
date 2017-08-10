@@ -25,7 +25,7 @@
 #include <asm/io.h>
 /* #include <mach/dma.h> */
 /* #include <mach/mt_reg_base.h> */
-#include <mt_i2c.h>
+#include "mt_i2c.h"
 #include <mt-plat/sync_write.h>
 /* #include "mach/memory.h" */
 /* #include <mach/i2c.h> */

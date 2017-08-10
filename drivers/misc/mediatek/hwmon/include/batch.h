@@ -9,9 +9,9 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <hwmsensor.h>
+#include "hwmsensor.h"
 #include <linux/string.h>
-#include <hwmsen_dev.h>
+#include "hwmsen_dev.h"
 
 #define BATCH_TAG					"<BATCHDEV> "
 #define BATCH_FUN(f)				pr_debug(BATCH_TAG"%s\n", __func__)

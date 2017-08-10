@@ -14,7 +14,7 @@
 #ifndef _PMT_H
 #define _PMT_H
 
-#include <partition_define.h>
+#include "partition_define.h"
 
 /* mt6516_partition.h has defination */
 /* mt6516_download.h define again, both is 20 */

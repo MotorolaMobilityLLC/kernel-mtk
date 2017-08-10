@@ -12,7 +12,7 @@
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-#include <bmt.h>
+#include "bmt.h"
 #include <linux/module.h>
 #include <linux/slab.h>
 

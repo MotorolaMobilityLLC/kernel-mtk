@@ -34,7 +34,7 @@
 #include <mach/dma.h>
 #include <mach/mt_clkmgr.h>
 #include <mach/mtk_nand.h>
-#include <mtk_nand_util.h>
+#include "mtk_nand_util.h"
 #include "bmt.h"
 #include <linux/of.h>
 #include <linux/of_address.h>

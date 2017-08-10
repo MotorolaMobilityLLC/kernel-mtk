@@ -12,7 +12,7 @@
  */
 
 #include <mach/mtk_nand.h>
-#include <mtk_nand_util.h>
+#include "mtk_nand_util.h"
 #include "bmt.h"
 #include <linux/module.h>
 #include <linux/slab.h>

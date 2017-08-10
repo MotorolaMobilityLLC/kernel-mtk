@@ -14,7 +14,7 @@
 #ifndef __MMPROFILE_INTERNAL_H__
 #define __MMPROFILE_INTERNAL_H__
 
-#include <mmprofile.h>
+#include "mmprofile.h"
 
 #ifdef __cplusplus
 extern "C" {

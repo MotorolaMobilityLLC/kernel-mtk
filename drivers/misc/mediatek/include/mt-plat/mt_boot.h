@@ -13,9 +13,9 @@
 
 #ifndef __MT_BOOT_H__
 #define __MT_BOOT_H__
-#include <mt_boot_common.h>
-#include <mt_boot_reason.h>
-#include <mt_chip.h>
+#include "mt_boot_common.h"
+#include "mt_boot_reason.h"
+#include "mt_chip.h"
 
 /*META COM port type*/
 enum meta_com_type {

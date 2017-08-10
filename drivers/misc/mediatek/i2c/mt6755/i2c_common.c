@@ -22,7 +22,7 @@
 #include <linux/types.h>
 /* #include <mach/mt_pm_ldo.h> */
 #include <asm/memory.h>
-#include <mt_i2c.h>
+#include "mt_i2c.h"
 
 static char data_buffer[256 * 4];
 

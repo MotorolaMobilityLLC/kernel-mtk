@@ -17,7 +17,7 @@
 #include <linux/mtd/nand.h>
 #include <linux/mtd/partitions.h>
 #include <linux/mtd/nand_ecc.h>
-#include <nand_device_list.h>
+#include "nand_device_list.h"
 #include "partition_define.h"
 
 #ifndef FALSE

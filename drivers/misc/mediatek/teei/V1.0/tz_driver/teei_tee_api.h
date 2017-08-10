@@ -1,7 +1,7 @@
 
 #ifndef TEEI_TEE_API_H
 #define TEEI_TEE_API_H
-#include <teei_common_types.h>
+#include "teei_common_types.h"
 #define TYPE_UINT_DEFINED
 #ifndef TYPE_UINT_DEFINED
 #define uint32_t (unsigned int)

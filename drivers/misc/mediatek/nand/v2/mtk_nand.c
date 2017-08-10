@@ -57,13 +57,13 @@
 /* #include <mach/mt_clkmgr.h> */
 /* #include <mach/mtk_nand.h> */
 /* #include <mach/bmt.h> */
-#include <mtk_nand.h>
-#include <bmt.h>
+#include "mtk_nand.h"
+#include "bmt.h"
 /* #include <mach/mt_irq.h> */
 /* #include "partition.h" */
 /* #include <asm/system.h> */
 /* #include <mach/partition_define.h> */
-#include <partition_define.h>
+#include "partition_define.h"
 /* #include <mach/mt_boot.h> */
 #include <mt-plat/mt_boot.h>
 /* #include "../../../../../../source/kernel/drivers/aee/ipanic/ipanic.h" */
@@ -74,7 +74,7 @@
 #include <mach/power_loss_test.h>
 #endif
 /* #include <mach/nand_device_define.h> */
-#include <nand_device_define.h>
+#include "nand_device_define.h"
 
 #ifndef CONFIG_MTK_LEGACY
 #include <linux/clk.h>

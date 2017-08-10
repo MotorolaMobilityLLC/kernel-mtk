@@ -39,11 +39,11 @@
 /* #include <mach/mt_typedefs.h> */
 /* #include <mach/mt_clkmgr.h> */
 /* #include <mach/mtk_nand.h> */
-#include <nand_device_define.h>
-#include <mtk_nand.h>
+#include "nand_device_define.h"
+#include "mtk_nand.h"
 /* #include "board-custom.h" */
 /* #include <mach/pmt.h> */
-#include <pmt.h>
+#include "pmt.h"
 /* #include "partition.h" */
 /* #include <mach/board.h> */
 

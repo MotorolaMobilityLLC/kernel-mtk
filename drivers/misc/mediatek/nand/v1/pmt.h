@@ -15,7 +15,7 @@
 #ifndef _PMT_H
 #define _PMT_H
 #include <mach/mtk_nand.h>
-#include <mtk_nand_util.h>
+#include "mtk_nand_util.h"
 #include "partition_define.h"
 
 #define MAX_PARTITION_NAME_LEN 64

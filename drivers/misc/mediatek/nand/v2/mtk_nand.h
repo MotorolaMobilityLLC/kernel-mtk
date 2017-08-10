@@ -14,7 +14,7 @@
 #ifndef __MTK_NAND_H
 #define __MTK_NAND_H
 
-#include <partition_define.h>
+#include "partition_define.h"
 #include <linux/mtd/partitions.h>
 
 /*******************************************************************************
