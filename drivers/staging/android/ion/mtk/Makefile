@@ -17,10 +17,12 @@ ccflags-$(CONFIG_MTK_M4U) += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFO
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
+ccflags-y += -DION_HISTORY_RECORD
+obj-$(CONFIG_MTK_ION) += ion_history.o
+
 ifeq ($(CONFIG_MT_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
 #ccflags-y += -DION_HISTORY_RECORD
-#obj-$(CONFIG_ION_MTK) += ion_history.o
 else
 ccflags-y += -DION_RUNTIME_DEBUGGER=0
 endif

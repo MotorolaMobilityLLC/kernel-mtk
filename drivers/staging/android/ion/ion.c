@@ -538,7 +538,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("%s error: size (%zu) is more than 1G !!\n", __func__, len);
 		return ERR_PTR(-EINVAL);
 	}
-	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagStart, len, 0);
+	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagStart, (unsigned long)client, len);
 	start = sched_clock();
 
 	down_read(&dev->lock);
@@ -590,7 +590,7 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		IONMSG("warn: ion alloc buffer size: %zu time: %lld ns\n", buffer->size, end-start);
 	}
 
-	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagEnd, buffer->size, 0);
+	MMProfileLogEx(ION_MMP_Events[PROFILE_ALLOC], MMProfileFlagEnd, (unsigned long)client, (unsigned long)handle);
 
 	return handle;
 }
