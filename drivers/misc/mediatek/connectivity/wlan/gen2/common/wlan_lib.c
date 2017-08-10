@@ -274,6 +274,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	UINT_8 aucTxCount[8];
 #if CFG_ENABLE_FW_DOWNLOAD
 	UINT_32 u4FwLoadAddr, u4ImgSecSize;
+	BOOLEAN fgFWDLDumped = FALSE;
 #if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
 	UINT_32 j;
 	P_FIRMWARE_DIVIDED_DOWNLOAD_T prFwHead;
@@ -289,6 +290,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		WAIT_FIRMWARE_READY_FAIL,
 		FAIL_REASON_MAX
 	} eFailReason;
+
 	ASSERT(prAdapter);
 
 	DEBUGFUNC("wlanAdapterStart");
@@ -354,6 +356,9 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		nicRxInitialize(prAdapter);
 
 #if CFG_ENABLE_FW_DOWNLOAD
+
+		wlanFWDLDebugInit();
+
 		if (pvFwImageMapFile == NULL) {
 			DBGLOG(INIT, ERROR, "No Firmware found!\n");
 			u4Status = WLAN_STATUS_FAILURE;
@@ -419,6 +424,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					else
 						u4ImgSecSize = prFwHead->arSection[i].u4Length - j;
 
+					wlanFWDLDebugStartSectionPacketInfo(i, j, kalGetTimeTick());
+
 					if (wlanImageSectionDownload(prAdapter,
 								     prFwHead->arSection[i].u4DestAddr + j,
 								     u4ImgSecSize,
@@ -430,16 +437,18 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 						u4Status = WLAN_STATUS_FAILURE;
 						break;
 					}
-					/* timeout exceeding check */
-					u4Current = kalGetTimeTick();
-					if ((u4Current > u4Time)
-					&& ((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT))
-						DBGLOG(RX, WARN, "wlanImageSectionDownload timeout :%d %d %u\n"
-						, i, j, u4Current);
 
+					/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
+					u4Current = kalGetTimeTick();
+					if ((u4Current > u4Time) &&
+						((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+						(fgFWDLDumped == FALSE)) {
+						DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+						wlanFWDLDebugDumpInfo();
+						fgFWDLDumped = TRUE;
+					}
 				}
 #endif
-
 				/* escape from loop if any pending error occurs */
 				if (u4Status == WLAN_STATUS_FAILURE)
 					break;
@@ -462,6 +471,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				else
 					u4ImgSecSize = u4FwImageFileLength - i;
 
+				wlanFWDLDebugStartSectionPacketInfo(0, i, kalGetTimeTick());
+
 				if (wlanImageSectionDownload(prAdapter,
 							     u4FwLoadAddr + i,
 							     u4ImgSecSize,
@@ -471,13 +482,20 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					u4Status = WLAN_STATUS_FAILURE;
 					break;
 				}
-				/* timeout exceeding check */
+
+				/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
 				u4Current = kalGetTimeTick();
-				if ((u4Current > u4Time) && ((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT))
-					DBGLOG(RX, WARN, "wlanImageSectionDownload timeout :%d %u\n"
-					, i, u4Current);
+				if ((u4Current > u4Time) &&
+					((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+					(fgFWDLDumped == FALSE)) {
+					DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+					wlanFWDLDebugDumpInfo();
+					fgFWDLDumped = TRUE;
+				}
 			}
 #endif
+
+		wlanFWDLDebugUninit();
 
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
@@ -1986,11 +2004,16 @@ wlanImageSectionDownload(IN P_ADAPTER_T prAdapter,
 			}
 			continue;
 		}
+
+		wlanFWDLDebugAddTxStartTime(kalGetTimeTick());
+
 		/* 6.2 Send CMD Info Packet */
 		if (nicTxInitCmd(prAdapter, prCmdInfo, ucTC) != WLAN_STATUS_SUCCESS) {
 			u4Status = WLAN_STATUS_FAILURE;
 			DBGLOG(INIT, ERROR, "Fail to transmit image download command\n");
 		}
+
+		wlanFWDLDebugAddTxDoneTime(kalGetTimeTick());
 
 		break;
 	};

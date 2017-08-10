@@ -83,6 +83,15 @@ typedef struct _SCAN_HIF_DESC_RECORD {
 	UINT_32 aucFreeBufCntScanWriteDone;
 } SCAN_HIF_DESC_RECORD, *P_SCAN_HIF_DESC_RECORD;
 
+typedef struct _FWDL_DEBUG_T {
+	UINT_32	u4TxStartTime;
+	UINT_32	u4TxDoneTime;
+	UINT_32	u4RxStartTime;
+	UINT_32	u4RxDoneTime;
+	UINT_32	u4Section;
+	UINT_32	u4DownloadSize;
+	UINT_32	u4ResponseTime;
+} FWDL_DEBUG_T, *P_FWDL_DEBUG_T;
 
 #define PKT_INFO_BUF_MAX_NUM 50
 #define PKT_INFO_MSG_LENGTH 200
@@ -90,13 +99,16 @@ typedef struct _SCAN_HIF_DESC_RECORD {
 #define TC_RELEASE_TRACE_BUF_MAX_NUM 100
 #define TXED_CMD_TRACE_BUF_MAX_NUM 100
 #define TXED_COMMAND_BUF_MAX_NUM 10
+#define MAX_FW_IMAGE_PACKET_COUNT	500
 
 static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
 static P_COMMAND_ENTRY gprCommandEntry;
 static PKT_TRACE_RECORD grPktRec;
 static SCAN_HIF_DESC_RECORD grScanHifDescRecord;
+P_FWDL_DEBUG_T gprFWDLDebug = NULL;
 
+UINT_32 u4FWDL_packet_count;
 
 VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode)
 {
@@ -625,4 +637,75 @@ VOID wlanDumpCommandFwStatus(VOID)
 			prCmd[i].u2Counter, prCmd[i].u4RelCID,
 			prCmd[i].u4ReadFwValue, prCmd[i].u8ReadFwTime);
 	}
+}
+
+
+VOID wlanFWDLDebugInit(VOID)
+{
+	u4FWDL_packet_count = -1;
+	gprFWDLDebug = (P_FWDL_DEBUG_T) kalMemAlloc(sizeof(FWDL_DEBUG_T)*MAX_FW_IMAGE_PACKET_COUNT,
+			VIR_MEM_TYPE);
+
+	if (gprFWDLDebug)
+		kalMemZero(gprFWDLDebug, sizeof(FWDL_DEBUG_T)*MAX_FW_IMAGE_PACKET_COUNT);
+	else
+		DBGLOG(INIT, ERROR, "wlanFWDLDebugInit alloc memory error\n");
+}
+
+VOID wlanFWDLDebugAddTxStartTime(UINT_32 u4TxStartTime)
+{
+	if ((gprFWDLDebug != NULL) && (u4FWDL_packet_count < MAX_FW_IMAGE_PACKET_COUNT))
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4TxStartTime = u4TxStartTime;
+}
+
+VOID wlanFWDLDebugAddTxDoneTime(UINT_32 u4TxDoneTime)
+{
+	if ((gprFWDLDebug != NULL) && (u4FWDL_packet_count < MAX_FW_IMAGE_PACKET_COUNT))
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4TxDoneTime = u4TxDoneTime;
+}
+
+VOID wlanFWDLDebugAddRxStartTime(UINT_32 u4RxStartTime)
+{
+	if ((gprFWDLDebug != NULL) && (u4FWDL_packet_count < MAX_FW_IMAGE_PACKET_COUNT))
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4RxStartTime = u4RxStartTime;
+}
+
+VOID wlanFWDLDebugAddRxDoneTime(UINT_32 u4RxDoneTime)
+{
+	if ((gprFWDLDebug != NULL) && (u4FWDL_packet_count < MAX_FW_IMAGE_PACKET_COUNT))
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4RxDoneTime = u4RxDoneTime;
+}
+
+VOID wlanFWDLDebugStartSectionPacketInfo(UINT_32 u4Section, UINT_32 u4DownloadSize,
+	UINT_32 u4ResponseTime)
+{
+	u4FWDL_packet_count++;
+	if ((gprFWDLDebug != NULL) && (u4FWDL_packet_count < MAX_FW_IMAGE_PACKET_COUNT)) {
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4Section = u4Section;
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4DownloadSize = u4DownloadSize;
+		(*(gprFWDLDebug+u4FWDL_packet_count)).u4ResponseTime = u4ResponseTime;
+	}
+}
+
+VOID wlanFWDLDebugDumpInfo(VOID)
+{
+	UINT_32 i;
+
+	for (i = 0; i < u4FWDL_packet_count; i++) {
+		/* Tx:[TxStartTime][TxDoneTime]
+		*	Pkt:[DL Pkt Section][DL Pkt Size][DL Pkt Resp Time]
+		*/
+		DBGLOG(INIT, WARN, "wlanFWDLDumpLog > Tx:[%u][%u] Rx:[%u][%u] Pkt:[%d][%d][%u]\n"
+		, (*(gprFWDLDebug+i)).u4TxStartTime, (*(gprFWDLDebug+i)).u4TxDoneTime
+		, (*(gprFWDLDebug+i)).u4RxStartTime, (*(gprFWDLDebug+i)).u4RxDoneTime
+		, (*(gprFWDLDebug+i)).u4Section, (*(gprFWDLDebug+i)).u4DownloadSize
+		, (*(gprFWDLDebug+i)).u4ResponseTime);
+	}
+}
+
+VOID wlanFWDLDebugUninit(VOID)
+{
+	kalMemFree(gprFWDLDebug, VIR_MEM_TYPE, sizeof(FWDL_DEBUG_T)*MAX_FW_IMAGE_PACKET_COUNT);
+	gprFWDLDebug = NULL;
+	u4FWDL_packet_count = -1;
 }

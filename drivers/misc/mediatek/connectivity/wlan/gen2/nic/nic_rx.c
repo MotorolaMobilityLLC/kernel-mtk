@@ -2700,8 +2700,13 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 			DBGLOG(RX, ERROR, "i = %d, u4PktLen = %u\n", i, u4PktLen);
 			return WLAN_STATUS_FAILURE;
 		}
+
+		wlanFWDLDebugAddRxStartTime(kalGetTimeTick());
+
 		HAL_PORT_RD(prAdapter,
 			    ucPortIdx == 0 ? MCR_WRDR0 : MCR_WRDR1, u4PktLen, pucRspBuffer, u4MaxRespBufferLen);
+
+		wlanFWDLDebugAddRxDoneTime(kalGetTimeTick());
 
 		/* fgResult will be updated in MACRO */
 		if (!fgResult) {
