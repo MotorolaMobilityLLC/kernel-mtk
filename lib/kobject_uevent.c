@@ -293,6 +293,11 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 		struct sk_buff *skb;
 		size_t len;
 
+		/* BEGIN MT6755 O debug */
+		if (!strncmp(devpath, "/devices/mtk-msdc.0", 19))
+			pr_err("[kobject_uevent] add uevent %s\n", devpath);
+		/* END */
+
 		if (!netlink_has_listeners(uevent_sock, 1))
 			continue;
 
@@ -319,6 +324,10 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 							    kobj_bcast_filter,
 							    kobj);
 			/* ENOBUFS should be handled in userspace */
+			/* BEGIN MT6755 O debug */
+			if (!strncmp(devpath, "/devices/mtk-msdc.0", 19))
+				pr_err("[kobject_uevent] add uevent %s, ret %d\n", devpath, retval);
+			/* END */
 			if (retval == -ENOBUFS || retval == -ESRCH)
 				retval = 0;
 		} else
