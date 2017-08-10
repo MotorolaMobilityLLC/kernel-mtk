@@ -1,23 +1,29 @@
-
+#include <generated/autoconf.h>
 /dts-v1/;
 
-#include "mt6753.dtsi"
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/plugin/;
+#include "mt6735-pinfunc.h"
+#include <dt-bindings/mmc/mt67xx-msdc.h>
+#else
+#include "mt6753.dts"
+#endif
 #include <dt-bindings/lcm/r63417_fhd_dsi_cmd_truly_nt50358.dtsi>
 
-/ {
+&bus {
+	compatible = "simple-bus";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	ranges = <0 0 0 0xffffffff>;
 
-	bus {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
-
-		MTKFB@5e200000 {
-			compatible = "mediatek,MTKFB";
-			reg = <0x7F000000 0x1000000>;
-		};
-
+	MTKFB@5e200000 {
+		compatible = "mediatek,MTKFB";
+		reg = <0x7F000000 0x1000000>;
 	};
+
+};
+
+&odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
@@ -66,8 +72,8 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
- /* sensor standardization */
-		cust_accel@0 {
+	/* sensor standardization */
+	cust_accel@0 {
 		compatible = "mediatek,mc3410";
 		i2c_num	= <2>;
 		i2c_addr = <0x4c 0 0 0>;
@@ -76,9 +82,9 @@
 		power_vol = <0>;
 		firlen = <0>;
 		is_batch_supported = <0>;
-		};
+	};
 
-		cust_alsps@0 {
+	cust_alsps@0 {
 		compatible = "mediatek,cm36652";
 		i2c_num	= <2>;
 		i2c_addr = <0x60 0 0 0>;
@@ -92,9 +98,9 @@
 		ps_threshold_low		=  <22>;
 		is_batch_supported_ps	= <0>;
 		is_batch_supported_als	= <0>;
-		};
+	};
 
-		cust_mag@0 {
+	cust_mag@0 {
 		compatible				= "mediatek,akm09911";
 		i2c_num					= <2>;
 		i2c_addr				= <0x0D 0 0 0>;
@@ -102,9 +108,9 @@
 		power_id				= <0xffff>;
 		power_vol				= <0>;
 		is_batch_supported			= <0>;
-		};
+	};
 
-		cust_gyro@0 {
+	cust_gyro@0 {
 		compatible				= "mediatek,itg1010";
 		i2c_num					= <2>;
 		i2c_addr				= <0x68 0 0 0>;
@@ -113,7 +119,7 @@
 		power_vol				= <0>;
 		firlen					= <0>;
 		is_batch_supported			= <0>;
-		};
+	};
 };
 /* sensor gpio standization */
 &pio {
@@ -332,7 +338,7 @@
 
 /* CONSYS GPIO standardization */
 &pio {
-	consys_pins_default: default {
+	consys_pins_default: consys_default {
 
 	};
 
@@ -541,7 +547,7 @@
 
 /* NFC GPIO standardization */
 &pio {
-	nfc_default: default {
+	nfc_default: nfc_default {
 
 	};
 
@@ -741,3 +747,6 @@
 	status = "okay";
 };
 /* LCM GPIO Kernal Standardization end */
+#include <cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
+

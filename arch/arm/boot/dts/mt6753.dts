@@ -215,7 +215,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		reg = <0 0x40000000 0 0x40000000>;
 	};
 
-	reserved-memory: reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;

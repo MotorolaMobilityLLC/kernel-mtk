@@ -10,75 +10,73 @@
 #endif
 #include <dt-bindings/lcm/otm9608_qhd_dsi_cmd.dtsi>
 
-/ {
-	#address-cells = <2>;
-	#size-cells = <2>;
+&cpus {
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-	cpus {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		cpu0: cpu@000 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x000>;
-			enable-method = "mt-boot";
-			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1100000000>;
-		};
-
-		cpu1: cpu@001 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x001>;
-			enable-method = "mt-boot";
-			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1100000000>;
-		};
-
-		cpu2: cpu@002 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x002>;
-			enable-method = "mt-boot";
-			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1100000000>;
-		};
-
-		cpu3: cpu@003 {
-			device_type = "cpu";
-			compatible = "arm,cortex-a53";
-			reg = <0x003>;
-			enable-method = "mt-boot";
-			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
-			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1100000000>;
-		};
+	cpu0: cpu@000 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x000>;
+		enable-method = "mt-boot";
+		cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
+		cpu-release-addr = <0x0 0x40000200>;
+		clock-frequency = <1100000000>;
 	};
 
-	bus {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
-
-		MALI@0x13040000 {
-			compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
-			reg = <0x13040000 0x4000>;
-			interrupts = <0 212 0x8>, <0 211 0x8>, <0 210 0x8>;
-			interrupt-names = "JOB", "MMU", "GPU";
-			clock-frequency = <550000000>;
-		};
-
-		MTKFB@5e200000 {
-			compatible = "mediatek,MTKFB";
-			reg = <0x7F000000 0x1000000>;
-		};
-
+	cpu1: cpu@001 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x001>;
+		enable-method = "mt-boot";
+		cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
+		cpu-release-addr = <0x0 0x40000200>;
+		clock-frequency = <1100000000>;
 	};
+
+	cpu2: cpu@002 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x002>;
+		enable-method = "mt-boot";
+		cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
+		cpu-release-addr = <0x0 0x40000200>;
+		clock-frequency = <1100000000>;
+	};
+
+	cpu3: cpu@003 {
+		device_type = "cpu";
+		compatible = "arm,cortex-a53";
+		reg = <0x003>;
+		enable-method = "mt-boot";
+		cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
+		cpu-release-addr = <0x0 0x40000200>;
+		clock-frequency = <1100000000>;
+	};
+};
+
+&bus {
+	compatible = "simple-bus";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	ranges = <0 0 0 0xffffffff>;
+
+	MALI@0x13040000 {
+		compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
+		reg = <0x13040000 0x4000>;
+		interrupts = <0 212 0x8>, <0 211 0x8>, <0 210 0x8>;
+		interrupt-names = "JOB", "MMU", "GPU";
+		clock-frequency = <550000000>;
+	};
+
+	MTKFB@5e200000 {
+		compatible = "mediatek,MTKFB";
+		reg = <0x7F000000 0x1000000>;
+	};
+
+};
+
+&odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
@@ -127,8 +125,8 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
- /* sensor standardization */
-		cust_accel@0 {
+	/* sensor standardization */
+	cust_accel@0 {
 		compatible = "mediatek,mc3410";
 		i2c_num	= <2>;
 		i2c_addr = <0x4c 0 0 0>;
@@ -137,9 +135,9 @@
 		power_vol = <0>;
 		firlen = <0>;
 		is_batch_supported = <0>;
-		};
+	};
 
-		cust_alsps@0 {
+	cust_alsps@0 {
 		compatible = "mediatek,cm36652";
 		i2c_num	= <2>;
 		i2c_addr = <0x60 0 0 0>;
@@ -153,9 +151,9 @@
 		ps_threshold_low		=  <28>;
 		is_batch_supported_ps	= <0>;
 		is_batch_supported_als	= <0>;
-		};
+	};
 
-		cust_mag@0 {
+	cust_mag@0 {
 		compatible				= "mediatek,akm09911";
 		i2c_num					= <2>;
 		i2c_addr				= <0x0D 0 0 0>;
@@ -163,9 +161,9 @@
 		power_id				= <0xffff>;
 		power_vol				= <0>;
 		is_batch_supported			= <0>;
-		};
+	};
 
-		cust_gyro@0 {
+	cust_gyro@0 {
 		compatible				= "mediatek,itg1010";
 		i2c_num					= <2>;
 		i2c_addr				= <0x68 0 0 0>;
@@ -174,7 +172,7 @@
 		power_vol				= <0>;
 		firlen					= <0>;
 		is_batch_supported			= <0>;
-		};
+	};
 };
 /* sensor gpio standization */
 &pio {
@@ -391,7 +389,7 @@
 
 /* CONSYS GPIO standardization */
 &pio {
-	consys_pins_default: default {
+	consys_pins_default: consys_default {
 
 	};
 
@@ -601,7 +599,7 @@
 
 /* NFC GPIO standardization */
 &pio {
-	nfc_default: default {
+	nfc_default: nfc_default {
 
 	};
 
@@ -727,3 +725,6 @@
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+#include <cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
+

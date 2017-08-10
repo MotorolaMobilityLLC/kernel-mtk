@@ -1,153 +1,159 @@
+#include <generated/autoconf.h>
 /dts-v1/;
 
-#include "mt6797.dtsi"
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/plugin/;
+#include <dt-bindings/mmc/mt6797-msdc.h>
+#include <dt-bindings/pinctrl/mt6797-pinfunc.h>
+#else
+#include "mt6797.dts"
+#endif
 #include <dt-bindings/lcm/r63419_wqhd_truly_phantom_2k_cmd_ok_mt6797.dtsi>
 
-/ {
+&reserved_memory {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	ranges;
 
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
+	memory-lowpower-reserved-memory {
+		compatible = "mediatek,memory-lowpower";
+		size = <0 0x60000000>;
+		alloc-ranges = <0 0xc0000000 0 0x60000000>;
+	};
+};
 
-		memory-lowpower-reserved-memory {
-			compatible = "mediatek,memory-lowpower";
-			size = <0 0x60000000>;
-			alloc-ranges = <0 0xc0000000 0 0x60000000>;
+/* chosen */
+&chosen {
+	bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,0x4B434E loglevel=8";
+	/* fpga may has no lk, we need to specify display info here */
+	/* fb buffer is reserved using this dts by memory node above */
+	atag,videolfb-fb_base_h = <0x0>;
+	atag,videolfb-fb_base_l = <0x5e605000>;
+	atag,videolfb-islcmfound = <1>;
+	/* because no lk, so lcm is not inited */
+	atag,videolfb-islcm_inited = <0>;
+	atag,videolfb-fps= <6000>;
+	atag,videolfb-vramSize= <0x017bb000>;
+	atag,videolfb-lcmname= "r63419_wqhd_truly_phantom_2k_cmd_ok";
+};
+
+
+&soc {
+	compatible = "simple-bus";
+	#address-cells = <1>;
+	#size-cells = <1>;
+	ranges = <0 0 0 0xffffffff>;
+
+	i2c0@11007000 {
+		bq24261@6b {
+			compatible = "bq24261";
+			reg = <0x6b>;
+		};
+
+		mt6306@64 {
+			compatible = "mediatek,mt6306";
+			reg = <0x64>;
+		};
+	};
+	mmc0_pins_default: mmc0@default {
+		pins_cmd {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_dat {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_clk {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_rst {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_ds {
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
-	/* chosen */
-	chosen {
-		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x44000000,0x4B434E loglevel=8";
-		/* fpga may has no lk, we need to specify display info here */
-		/* fb buffer is reserved using this dts by memory node above */
-		atag,videolfb-fb_base_h = <0x0>;
-		atag,videolfb-fb_base_l = <0x5e605000>;
-		atag,videolfb-islcmfound = <1>;
-		/* because no lk, so lcm is not inited */
-		atag,videolfb-islcm_inited = <0>;
-		atag,videolfb-fps= <6000>;
-		atag,videolfb-vramSize= <0x017bb000>;
-		atag,videolfb-lcmname= "r63419_wqhd_truly_phantom_2k_cmd_ok";
+	mmc0_register_setting_default: mmc0@register_default {
+		dat0rddly      = /bits/ 8 <0>;
+		dat1rddly      = /bits/ 8 <0>;
+		dat2rddly      = /bits/ 8 <0>;
+		dat3rddly      = /bits/ 8 <0>;
+		dat4rddly      = /bits/ 8 <0>;
+		dat5rddly      = /bits/ 8 <0>;
+		dat6rddly      = /bits/ 8 <0>;
+		dat7rddly      = /bits/ 8 <0>;
+		datwrddly      = /bits/ 8 <0>;
+		cmdrrddly      = /bits/ 8 <0>;
+		cmdrddly       = /bits/ 8 <0>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
 	};
 
+	mmc1_pins_default: mmc1@default {
+		   pins_cmd {
+			   drive-strength = /bits/ 8 <6>;
+		   };
+		   pins_dat {
+			   drive-strength = /bits/ 8 <6>;
+		   };
+		   pins_clk {
+			   drive-strength = /bits/ 8 <6>;
+		   };
+	};
 
-	soc {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
+	mmc1_pins_sdr104: mmc1@sdr104 {
+		  pins_cmd {
+			  drive-strength = /bits/ 8 <3>;
+		  };
+		  pins_dat {
+			  drive-strength = /bits/ 8 <3>;
+		  };
+		  pins_clk {
+			  drive-strength = /bits/ 8 <4>;
+		  };
+	};
 
-		i2c0@11007000 {
-			bq24261@6b {
-				compatible = "bq24261";
-				reg = <0x6b>;
-			};
-
-			mt6306@64 {
-				compatible = "mediatek,mt6306";
-				reg = <0x64>;
-			};
-		};
-		mmc0_pins_default: mmc0@default {
-			pins_cmd {
-				drive-strength = /bits/ 8 <1>;
-			};
-			pins_dat {
-				drive-strength = /bits/ 8 <1>;
-			};
-			pins_clk {
-				drive-strength = /bits/ 8 <1>;
-			};
-			pins_rst {
-				drive-strength = /bits/ 8 <1>;
-			};
-			pins_ds {
-				drive-strength = /bits/ 8 <1>;
-			};
-		};
-
-		mmc0_register_setting_default: mmc0@register_default {
-			dat0rddly      = /bits/ 8 <0>;
-			dat1rddly      = /bits/ 8 <0>;
-			dat2rddly      = /bits/ 8 <0>;
-			dat3rddly      = /bits/ 8 <0>;
-			dat4rddly      = /bits/ 8 <0>;
-			dat5rddly      = /bits/ 8 <0>;
-			dat6rddly      = /bits/ 8 <0>;
-			dat7rddly      = /bits/ 8 <0>;
-			datwrddly      = /bits/ 8 <0>;
-			cmdrrddly      = /bits/ 8 <0>;
-			cmdrddly       = /bits/ 8 <0>;
-			cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-			rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-			wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		};
-
-		mmc1_pins_default: mmc1@default {
-			   pins_cmd {
-				   drive-strength = /bits/ 8 <6>;
-			   };
-			   pins_dat {
-				   drive-strength = /bits/ 8 <6>;
-			   };
-			   pins_clk {
-				   drive-strength = /bits/ 8 <6>;
-			   };
-		};
-
-		mmc1_pins_sdr104: mmc1@sdr104 {
-			  pins_cmd {
-				  drive-strength = /bits/ 8 <3>;
-			  };
-			  pins_dat {
-				  drive-strength = /bits/ 8 <3>;
-			  };
-			  pins_clk {
-				  drive-strength = /bits/ 8 <4>;
-			  };
-		};
-
-		mmc1_pins_sdr50: mmc1@sdr50 {
-			 pins_cmd {
-				 drive-strength = /bits/ 8 <3>;
-			 };
-			 pins_dat {
-				 drive-strength = /bits/ 8 <3>;
-			 };
-			 pins_clk {
-				 drive-strength = /bits/ 8 <4>;
-			 };
-		};
-
-		mmc1_pins_ddr50: mmc1@ddr50 {
-			 pins_cmd {
-				 drive-strength = /bits/ 8 <3>;
-			 };
-			 pins_dat {
-				 drive-strength = /bits/ 8 <3>;
-			 };
-			 pins_clk {
-				 drive-strength = /bits/ 8 <4>;
-			 };
+	mmc1_pins_sdr50: mmc1@sdr50 {
+		 pins_cmd {
+			 drive-strength = /bits/ 8 <3>;
 		 };
-
-		mmc1_register_setting_default: mmc1@register_default {
-				       dat0rddly      = /bits/ 8 <0>;
-				       dat1rddly      = /bits/ 8 <0>;
-				       dat2rddly      = /bits/ 8 <0>;
-				       dat3rddly      = /bits/ 8 <0>;
-				       datwrddly      = /bits/ 8 <0>;
-				       cmdrrddly      = /bits/ 8 <0>;
-				       cmdrddly       = /bits/ 8 <0>;
-				       cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-				       rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-				       wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
-		};
-
+		 pins_dat {
+			 drive-strength = /bits/ 8 <3>;
+		 };
+		 pins_clk {
+			 drive-strength = /bits/ 8 <4>;
+		 };
 	};
 
+	mmc1_pins_ddr50: mmc1@ddr50 {
+		 pins_cmd {
+			 drive-strength = /bits/ 8 <3>;
+		 };
+		 pins_dat {
+			 drive-strength = /bits/ 8 <3>;
+		 };
+		 pins_clk {
+			 drive-strength = /bits/ 8 <4>;
+		 };
+	 };
+
+	mmc1_register_setting_default: mmc1@register_default {
+				   dat0rddly      = /bits/ 8 <0>;
+				   dat1rddly      = /bits/ 8 <0>;
+				   dat2rddly      = /bits/ 8 <0>;
+				   dat3rddly      = /bits/ 8 <0>;
+				   datwrddly      = /bits/ 8 <0>;
+				   cmdrrddly      = /bits/ 8 <0>;
+				   cmdrddly       = /bits/ 8 <0>;
+				   cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				   rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				   wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+	};
+
+};
+
+&odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
@@ -422,7 +428,7 @@
 
 /* NFC GPIO standardization */
 &pio {
-	nfc_default: default {
+	nfc_default: nfc_default {
 
 	};
 
@@ -1147,7 +1153,7 @@
 
 /* CONSYS GPIO standardization */
 &pio {
-	consys_pins_default: default {
+	consys_pins_default: consys_default {
 
 	};
 
@@ -1348,7 +1354,7 @@
 
 /* FLASHLIGHT GPIO standardization */
 &pio {
-	flashlight_pins_default: default {
+	flashlight_pins_default: flashlight_default {
 
 	};
 
@@ -1576,7 +1582,7 @@
 /* SCP GPIO standardization */
 
 &pio {
-	scp_dvfs_default: default {
+	scp_dvfs_default: scp_dvfs_default {
 	};
 	scp_aud_clk_mosi_off: scp_gpio_off {
 		pins_cmd_dat {
@@ -1622,3 +1628,6 @@
 	/* DA9214 GPIO Settings -End */
 };
 /* DA9214 GPIO End */
+
+#include <cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/

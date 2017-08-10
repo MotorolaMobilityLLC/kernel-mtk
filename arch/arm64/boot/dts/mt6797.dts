@@ -5,13 +5,15 @@
  *              http://www.mediatek.com
  *
  */
-/dts-v1/;
-
+#include <generated/autoconf.h>
 #include <dt-bindings/clock/mt6797-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6797-msdc.h>
 #include <dt-bindings/pinctrl/mt6797-pinfunc.h>
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 
 / {
 	model = "MT6797";
@@ -89,7 +91,7 @@
 				<GIC_SPI 305 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	cpus {
+	cpus: cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		cpu0: cpu@000 {
@@ -282,7 +284,7 @@
 		/*TODO: add memory node here*/
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -778,7 +780,7 @@
 	};
 /* End of mt_pmic_regulator */
 
-	soc {
+	soc: soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
