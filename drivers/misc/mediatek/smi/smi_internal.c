@@ -46,14 +46,14 @@ int smi_larb_clock_is_on(unsigned int larb_index)
 		result = clock_is_on(MT_CG_DISP0_SMI_LARB0);
 		break;
 	case 1:
-#if defined(SMI_R)
+#if defined(SMI_R) || defined(SMI_RU)
 		result = clock_is_on(MT_CG_LARB1_SMI_CKPDN);
 #else
 		result = clock_is_on(MT_CG_VDEC1_LARB);
 #endif
 		break;
 	case 2:
-#if !defined(SMI_R)
+#if !defined(SMI_R) && !defined(SMI_RU)
 		result = clock_is_on(MT_CG_IMAGE_LARB2_SMI);
 #endif
 		break;
