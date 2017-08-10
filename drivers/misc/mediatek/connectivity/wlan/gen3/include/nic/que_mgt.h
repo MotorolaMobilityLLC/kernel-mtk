@@ -409,7 +409,7 @@ extern UINT_8 g_arTdlsLink[MAXNUM_TDLS_PEER];
 
 #define TXM_DEFAULT_FLUSH_QUEUE_GUARD_TIME              0	/* Unit: 64 us */
 
-#define QM_RX_BA_ENTRY_MISS_TIMEOUT_MS      (1000)
+#define QM_RX_BA_ENTRY_MISS_TIMEOUT_MS      (200)
 
 #if CFG_M0VE_BA_TO_DRIVER
 /* MQM internal control bitmap per-bit usage (for operations on g_prMqm->u4FlagBitmap) */

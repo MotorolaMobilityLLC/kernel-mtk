@@ -3823,6 +3823,7 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 	QUE_T rReturnedQue;
 	P_QUE_T prReturnedQue = &rReturnedQue;
 	P_SW_RFB_T prReorderedSwRfb, prSwRfb;
+	OS_SYSTIME *prMissTimeout;
 
 	QUEUE_INITIALIZE(prReturnedQue);
 
@@ -3913,6 +3914,14 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 				   prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 	}
 
+	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
+	if (QUEUE_IS_EMPTY(prReorderQue)) {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to zero\n");
+		*prMissTimeout = 0;
+	} else {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to current time\n");
+		GET_CURRENT_SYSTIME(prMissTimeout);
+	}
 }
 
 BOOLEAN qmCompareSnIsLessThan(IN UINT_32 u4SnLess, IN UINT_32 u4SnGreater)
