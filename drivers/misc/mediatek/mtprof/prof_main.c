@@ -597,6 +597,96 @@ static void __init init_signal_log(void)
 	register_trace_signal_generate(probe_death_signal, NULL);
 }
 
+/* 8. fork & exit logs */
+#include <trace/events/sched.h>
+
+MT_DEBUG_ENTRY(fork_exit_log);
+
+enum {
+	DO_FORK = (1 << 0),
+	DO_EXIT  = (1 << 1),
+} FORK_EXIT_LOG_MASK;
+
+static unsigned int enabled_fork_exit_log;
+
+static void probe_sched_fork_time(void *ignore,
+	struct task_struct *parent, struct task_struct *child, unsigned long long dur)
+{
+	char parent_comm[TASK_COMM_LEN], child_comm[TASK_COMM_LEN];
+	pid_t parent_pid, child_pid;
+	unsigned long long fork_time;
+
+	memcpy(parent_comm, parent->comm, TASK_COMM_LEN);
+	parent_pid = parent->pid;
+	memcpy(child_comm, child->comm, TASK_COMM_LEN);
+	child_pid = child->pid;
+	fork_time = dur;
+
+	pr_debug("[fork]comm=%s pid=%d fork child_comm=%s child_pid=%d, total fork time=%llu us",
+		parent_comm, parent_pid, child_comm, child_pid, fork_time);
+
+}
+
+static void probe_sched_process_exit(void *ignore, struct task_struct *p)
+{
+	char comm[TASK_COMM_LEN];
+	pid_t pid;
+	int prio;
+
+	memcpy(comm, p->comm, TASK_COMM_LEN);
+	pid = p->pid;
+	prio = p->prio;
+
+	pr_debug("[exit]comm=%s pid=%d prio=%d exited", comm, pid, prio);
+
+}
+
+static int mt_fork_exit_log_show(struct seq_file *m, void *v)
+{
+	SEQ_printf(m, "%d: debug message for fork\n", DO_FORK);
+	SEQ_printf(m, "%d: debug message for exit\n", DO_EXIT);
+	SEQ_printf(m, "%d: enable all logs\n", DO_FORK | DO_EXIT);
+	SEQ_printf(m, "%d\n", enabled_fork_exit_log);
+	return 0;
+}
+
+static ssize_t mt_fork_exit_log_write(struct file *filp, const char *ubuf,
+	   size_t cnt, loff_t *data)
+{
+	unsigned long val;
+	unsigned long update;
+	int ret;
+
+	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
+	if (ret)
+		return ret;
+
+	update = enabled_fork_exit_log ^ val;
+	if (update & DO_FORK) {
+		if (val & DO_FORK)
+			register_trace_sched_fork_time(probe_sched_fork_time, NULL);
+		else
+			unregister_trace_sched_fork_time(probe_sched_fork_time, NULL);
+	}
+	if (update & DO_EXIT) {
+		if (val & DO_EXIT)
+			register_trace_sched_process_exit(probe_sched_process_exit, NULL);
+		else
+			unregister_trace_sched_process_exit(probe_sched_process_exit, NULL);
+	}
+	enabled_fork_exit_log = val;
+
+	return cnt;
+}
+
+static void __init init_fork_exit_log(void)
+{
+	if (enabled_fork_exit_log & DO_FORK)
+		register_trace_sched_fork_time(probe_sched_fork_time, NULL);
+	if (enabled_fork_exit_log & DO_EXIT)
+		register_trace_sched_process_exit(probe_sched_process_exit, NULL);
+}
+
 /*-------------------------------------------------------------------*/
 static int __init init_mtsched_prof(void)
 {
@@ -618,6 +708,11 @@ static int __init init_mtsched_prof(void)
 
 	init_signal_log();
 	pe = proc_create("mtprof/signal_log", 0664, NULL, &mt_signal_log_fops);
+	if (!pe)
+		return -ENOMEM;
+
+	init_fork_exit_log();
+	pe = proc_create("mtprof/fork_exit_log", 0664, NULL, &mt_fork_exit_log_fops);
 	if (!pe)
 		return -ENOMEM;
 

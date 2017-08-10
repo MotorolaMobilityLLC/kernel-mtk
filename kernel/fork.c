@@ -1785,6 +1785,7 @@ long do_fork(unsigned long clone_flags,
 
 		end = sched_clock();
 		dur = end - start;
+		trace_sched_fork_time(current, p, dur);
 		if (dur > WARN_FORK_DUR) {
 			pr_err("[%d:%s] fork [%d:%s] total fork time[%llu us] > 1s\n",
 			current->pid, current->comm, p->pid, p->comm, dur);
