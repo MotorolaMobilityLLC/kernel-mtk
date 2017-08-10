@@ -2793,7 +2793,7 @@ int mtkfb_get_debug_state(char *stringbuf, int buf_len)
 	len +=
 	    scnprintf(stringbuf + len, buf_len - len,
 		      "|--------------------------------------------------------------------------------------|\n");
-	/* len += scnprintf(stringbuf+len, buf_len - len, "********MTKFB Driver General Information********\n"); */
+	len += scnprintf(stringbuf + len, buf_len - len, "********MTKFB Driver General Information********\n");
 	len +=
 	    scnprintf(stringbuf + len, buf_len - len,
 		      "|Framebuffer VA:0x%lx, PA:0x%lx, MVA:0x%lx, Reserved Size:0x%08x|%d\n", va,

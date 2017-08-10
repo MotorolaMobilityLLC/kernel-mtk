@@ -428,14 +428,6 @@ static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t cou
 	const int debug_bufmax = sizeof(debug_buffer) - 1;
 	int n = 0;
 
-	/* Debugfs read only fetch 4096 byte each time, thus whole ringbuffer need massive
-	 * iteration. We only copy ringbuffer content to debugfs buffer at first time (*ppos = 0)
-	 */
-	if (*ppos != 0)
-		goto out;
-
-	DISPFUNC();
-
 	n = mtkfb_get_debug_state(debug_buffer + n, debug_bufmax - n);
 
 	n += primary_display_get_debug_state(debug_buffer + n, debug_bufmax - n);
@@ -452,7 +444,6 @@ static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t cou
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, debug_buffer + n, debug_bufmax - n);
 
-out:
 	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
 

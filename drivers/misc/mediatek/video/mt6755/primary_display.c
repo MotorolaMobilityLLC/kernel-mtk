@@ -2325,8 +2325,6 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 {
 	int ret;
 
-	DISPFUNC();
-
 	if (_should_wait_path_idle()) {
 		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		if (ret <= 0)

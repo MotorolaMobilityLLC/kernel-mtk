@@ -52,14 +52,6 @@
 #include "ddp_mmp.h"
 #include <linux/ftrace_event.h>
 
-#define dprec_string_max_length 512
-#define dprec_dump_max_length   (1024*16*4)
-#define LOGGER_BUFFER_SIZE      (16*1024)
-#define ERROR_BUFFER_COUNT      2
-#define FENCE_BUFFER_COUNT      22
-#define DEBUG_BUFFER_COUNT      4
-#define DUMP_BUFFER_COUNT       2
-
 unsigned int gCapturePriLayerEnable = 0;
 unsigned int gCaptureWdmaLayerEnable = 0;
 unsigned int gCaptureRdmaLayerEnable = 0;
@@ -804,6 +796,8 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 	int n = 0;
 	int i = 0;
 
+	n += scnprintf(stringbuf + n, strlen - n,
+		       "|--------------------------------------------------------------------------------------|\n");
 	n += scnprintf(stringbuf + n, strlen - n,
 		       "|**** Display Driver Statistic Information Dump ****\n");
 	n += scnprintf(stringbuf + n, strlen - n, "|Timestamp Begin=%llu.%03lds, End=%llu.%03lds\n",
