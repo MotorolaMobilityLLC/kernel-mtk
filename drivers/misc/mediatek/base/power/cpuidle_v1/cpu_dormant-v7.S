@@ -11,6 +11,17 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+        @ Aliases for mode encodings - do not change
+        .equ MODE_USR, 0x10
+        .equ MODE_FIQ, 0x11
+        .equ MODE_IRQ, 0x12
+        .equ MODE_SVC, 0x13
+        .equ MODE_MON, 0x16  @ A-profile (Security Extensions) only
+        .equ MODE_ABT, 0x17
+        .equ MODE_UND, 0x1B
+        .equ MODE_SYS, 0x1F
+        .equ MODE_HYP, 0x1A
+
 	.global write_cntpctl
 write_cntpctl:
 	.func
@@ -295,4 +306,72 @@ copy_words:
         pop     {r3}
         bx      lr
 
+        .endfunc
+
+        .global mt_save_banked_registers
+mt_save_banked_registers:
+        .func
+
+        mrs    r2, CPSR             @ save current mode
+
+        cps    #MODE_SYS            @ switch to System mode
+        str    sp,[r0], #4          @ save the User SP
+        str    lr,[r0], #4          @ save the User LR
+        cps    #MODE_ABT            @ switch to Abort mode
+        str    sp,[r0], #4          @ save the current SP
+        mrs    r3,SPSR
+        stm    r0!,{r3,lr}          @ save the current SPSR, LR
+        cps    #MODE_UND            @ switch to Undefined mode
+        str    sp,[r0], #4          @ save the current SP
+        mrs    r3,SPSR
+        stm    r0!,{r3,lr}          @ save the current SPSR, LR
+        cps    #MODE_IRQ            @ switch to IRQ mode
+        str    sp,[r0], #4          @ save the current SP
+        mrs    r3,SPSR
+        stm    r0!,{r3,lr}          @ save the current SPSR, LR
+        cps    #MODE_FIQ            @ switch to FIQ mode
+        str    SP,[r0], #4          @ save the current SP
+        mrs    r3,SPSR
+        stm    r0!,{r3,r8-r12,lr}   @ save the current SPSR,r8-r12,LR
+        msr    CPSR_cxsf, r2        @ switch back to original mode
+
+        MRS     r3, SPSR
+        STM     r0!, {r2, r3}       @ CPSR, SPSR
+        dsb
+
+        bx     lr
+        .endfunc
+
+        .global mt_restore_banked_registers
+mt_restore_banked_registers:
+        .func
+        mrs    r2, CPSR         @ save current mode
+
+        cps    #MODE_SYS        @ switch to System mode
+        ldr    sp,[r0],#4       @ restore the User SP
+        ldr    lr,[r0],#4       @ restore the User LR
+        cps    #MODE_ABT        @ switch to Abort mode
+        ldr    sp,[r0],#4       @ restore the current SP
+        ldm    r0!,{r3,lr}      @ restore the current LR
+        msr    SPSR_fsxc,r3     @ restore the current SPSR
+        cps    #MODE_UND        @ switch to Undefined mode
+        ldr    sp,[r0],#4       @ restore the current SP
+        ldm    r0!,{r3,lr}      @ restore the current LR
+        msr    SPSR_fsxc,r3     @ restore the current SPSR
+        cps    #MODE_IRQ        @ switch to IRQ mode
+        ldr    sp,[r0],#4       @ restore the current SP
+        ldm    r0!,{r3,lr}      @ restore the current LR
+        msr    SPSR_fsxc,r3     @ restore the current SPSR
+        cps    #MODE_FIQ        @ switch to FIQ mode
+        ldr    sp,[r0],#4       @ restore the current SP
+        ldm    r0!,{r3,r8-r12,lr}  @ restore the current r8-r12,LR
+        msr    SPSR_fsxc,r3     @ restore the current SPSR
+        msr    CPSR_cxsf, r2    @ switch back to original mode
+
+        LDM     r0!, {r2, r3}
+        MSR     SPSR_fsxc, r3                   @ restore the current SPSR
+        MSR     CPSR_fsxc, r2                   @ restore the current CPSR
+        dsb
+0:
+        bx     lr
         .endfunc

@@ -134,6 +134,7 @@ static unsigned int c2k_wdt_irq_bit;
 #define _aor(a, b, c)		_or(_and(a, b), (c))
 
 struct core_context {
+	unsigned int banked_regs[32];
 	volatile u64 timestamp[5];
 	unsigned long timer_data[8];
 };
@@ -688,6 +689,8 @@ void mt_cpu_save(void)
 		cluster = GET_CLUSTER_DATA();
 		mt_save_dbg_regs((unsigned int *)cluster->dbg_data, cpuid + (clusterid * 4));
 	}
+
+	mt_save_banked_registers(core->banked_regs);
 }
 
 void mt_cpu_restore(void)
@@ -700,6 +703,8 @@ void mt_cpu_restore(void)
 	read_id(&cpuid, &clusterid);
 
 	core = GET_CORE_DATA();
+
+	mt_restore_banked_registers(core->banked_regs);
 
 	if (clusterid == 0)
 		sleep_sta = (spm_read(CPUIDLE_CPU_IDLE_STA) >> CPUIDLE_CPU_IDLE_STA_OFFSET) & 0x0f;

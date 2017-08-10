@@ -69,3 +69,15 @@ mt_restore_generic_timer:
 	msr	CNTV_TVAL_EL0, x3
         ret
 	.endfunc
+
+        .global mt_save_banked_registers
+mt_save_banked_registers:
+	.func
+        ret
+	.endfunc
+
+        .global mt_restore_banked_registers
+mt_restore_banked_registers:
+	.func
+        ret
+	.endfunc
