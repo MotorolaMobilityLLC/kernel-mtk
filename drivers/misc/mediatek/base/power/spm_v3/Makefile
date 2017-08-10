@@ -27,7 +27,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 endif
 
 ifeq ($(CONFIG_ARCH_ELBRUS), y)
-#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt6755/
 
 obj-y += mt_idle.o
 obj-y += mt_idle_mt6755.o

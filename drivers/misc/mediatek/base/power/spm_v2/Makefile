@@ -47,7 +47,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-$(CONFIG_MTK_MET) += -DMET_USER_EVENT_SUPPORT
 
 ifeq ($(CONFIG_ARCH_MT6755), y)
-ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/mt6755/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common_define/
 
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
@@ -72,7 +72,7 @@ obj-y += mt_spm_vcorefs_mt6755.o
 endif
 
 ifeq ($(CONFIG_ARCH_MT6757), y)
-#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 
 obj-y += mt_sleep.o
