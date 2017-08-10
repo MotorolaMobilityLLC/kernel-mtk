@@ -1,23 +1,15 @@
-/*****************************************************************************
+/*
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * Filename:
- * ---------
- *   catc24c16.h
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * Project:
- * --------
- *   ALPS
- *
- * Description:
- * ------------
- *   Header file of CAM_CAL driver
- *
- *
- * Author:
- * -------
- *   John Wei (MTK07407)
- *
- *============================================================================*/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 #ifndef __IMX219_EEPROM_H
 #define __IMX219_EEPROM_H
 

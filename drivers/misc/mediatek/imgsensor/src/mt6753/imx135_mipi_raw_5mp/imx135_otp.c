@@ -1,18 +1,15 @@
-/*************************************************************************************************
-imx135_otp.c
----------------------------------------------------------
-OTP Application file From Truly for imx135
-2013.01.14
----------------------------------------------------------
-NOTE:
-The modification is appended to initialization of image sensor.
-After sensor initialization, use the function , and get the id value.
-bool otp_wb_update(BYTE zone)
-and
-bool otp_lenc_update(BYTE zone),
-then the calibration of AWB and LSC will be applied.
-After finishing the OTP written, we will provide you the golden_rg and golden_bg settings.
-**************************************************************************************************/
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
