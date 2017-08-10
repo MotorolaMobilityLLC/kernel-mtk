@@ -425,7 +425,7 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, u32 *addr)
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
 	/*OUTREG32(reg_buff0_addr, addr);*/
 	/*OUTREG32_DMA(reg_buff0_addr, addr);*/
-	OUTREG32(reg_buff0_addr, (dma_addr_t)addr);
+	OUTREG32(reg_buff0_addr, (unsigned long)addr);
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)
