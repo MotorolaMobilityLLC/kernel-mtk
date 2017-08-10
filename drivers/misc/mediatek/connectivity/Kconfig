@@ -132,6 +132,14 @@ config MTK_COMBO_CHIP_CONSYS_6580
 	  is
 	  MT6580
 
+config MTK_COMBO_CHIP_CONSYS_6570
+	bool "CONSYS_6570"
+	help
+	  this config is used to decided SOC consys version
+	  in current platform
+	  is
+	  MT6570
+
 config MTK_COMBO_CHIP_CONSYS_6797
 	bool "CONSYS_6797"
 	help
@@ -158,6 +166,7 @@ config MTK_COMBO_CHIP
 	default "CONSYS_8163" if MTK_COMBO_CHIP_CONSYS_8163
 	default "CONSYS_6735" if MTK_COMBO_CHIP_CONSYS_6735
 	default "CONSYS_6580" if MTK_COMBO_CHIP_CONSYS_6580
+	default "CONSYS_6570" if MTK_COMBO_CHIP_CONSYS_6570
 	default "CONSYS_6797" if MTK_COMBO_CHIP_CONSYS_6797
 	help
 	  this feature is used to identify combo chip version or SOC chip
