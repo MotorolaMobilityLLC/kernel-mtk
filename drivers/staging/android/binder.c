@@ -3502,11 +3502,11 @@ static int binder_free_thread(struct binder_proc *proc,
 		} else
 			BUG();
 	}
+	binder_release_work(&thread->todo);
 	INIT_HLIST_NODE(&thread->zombie_thread);
 	hlist_add_head(&thread->zombie_thread, &proc->zombie_threads);
 	binder_queue_for_zombie_cleanup(proc);
 	binder_proc_unlock(thread->proc, __LINE__);
-	binder_release_work(&thread->todo);
 
 	if (send_reply)
 		binder_send_failed_reply(send_reply, BR_DEAD_REPLY);
