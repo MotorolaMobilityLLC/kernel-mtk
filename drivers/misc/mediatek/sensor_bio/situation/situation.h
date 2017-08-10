@@ -78,6 +78,7 @@ struct situation_context {
 	struct mutex situation_op_mutex;
 	struct situation_data_control_context ctl_context[max_situation_support];
 	struct wake_lock wake_lock[max_situation_support];
+	char *wake_lock_name[max_situation_support];
 };
 
 extern int situation_data_report(int handle, uint32_t one_sample_data);
