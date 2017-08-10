@@ -465,16 +465,16 @@ static void mmsys_config_dump_analysis(void)
 
 	for (i = 0; i <= 1; i++) {
 		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_0(i));
+			strncat(clock_on, ddp_clock_0(i), sizeof(clock_on) - strlen(clock_on));
 	}
 	for (i = 10; i <= 31; i++) {
 		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_0(i));
+			strncat(clock_on, ddp_clock_0(i), sizeof(clock_on) - strlen(clock_on));
 	}
 	reg = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1);
 	for (i = 0; i <= 5; i++) {
 		if ((reg & (1 << i)) == 0)
-			strcat(clock_on, ddp_clock_1(i));
+			strncat(clock_on, ddp_clock_1(i), sizeof(clock_on) - strlen(clock_on));
 	}
 	DISPDMP("clock on modules:%s\n", clock_on);
 
