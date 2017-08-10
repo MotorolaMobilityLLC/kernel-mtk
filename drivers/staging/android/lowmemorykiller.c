@@ -153,6 +153,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
+	static struct task_struct *prev_selected;
 	unsigned long rem = 0;
 	int tasksize;
 	int i;
@@ -449,6 +450,14 @@ log_again:
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
 		long free = other_free * (long)(PAGE_SIZE / 1024);
 		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
+
+		/*  Did it be selected? */
+		if (selected == prev_selected) {
+			lowmem_print(1, "%s state(%ld)\n", selected->comm, selected->state);
+			show_stack(selected, NULL);
+		}
+		prev_selected = selected;
+
 		lowmem_print(1, "Killing '%s' (%d), adj %d, score_adj %hd,\n"
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
