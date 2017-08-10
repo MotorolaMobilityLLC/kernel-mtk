@@ -3958,7 +3958,7 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		}
 	}
 	/* 4 <2> invoke abort handler */
-	if (fgDoAbortIndication) {
+	if (fgDoAbortIndication && (prAdapter->rWifiVar.rAisFsmInfo.u4PostponeIndStartTime == 0)) {
 		prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
 		if (prConnSettings->eReConnectLevel < RECONNECT_LEVEL_USER_SET) {
 			prConnSettings->eReConnectLevel = RECONNECT_LEVEL_BEACON_TIMEOUT;

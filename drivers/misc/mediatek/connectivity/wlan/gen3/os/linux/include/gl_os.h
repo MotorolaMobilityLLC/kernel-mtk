@@ -274,6 +274,7 @@ typedef enum _ENUM_PKT_FLAG_T {
 	ENUM_PKT_ARP,		/* ARP */
 	ENUM_PKT_ICMP,		/* ICMP */
 	ENUM_PKT_TDLS,		/* TDLS */
+	ENUM_PKT_DNS,           /* DNS */
 
 	ENUM_PKT_FLAG_NUM
 } ENUM_PKT_FLAG_T;

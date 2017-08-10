@@ -402,6 +402,7 @@ struct _BSS_INFO_T {
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;
+	UINT_32 u4CoexPhyRateLimit;
 };
 
 struct ESS_CHNL_INFO {

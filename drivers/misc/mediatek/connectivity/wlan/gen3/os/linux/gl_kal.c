@@ -894,7 +894,6 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 
 	}
 #endif
-	STATS_RX_PKT_INFO_DISPLAY(prSkb->data);
 	prNetDev->last_rx = jiffies;
 #if CFG_SUPPORT_SNIFFER
 	if (prGlueInfo->fgIsEnableMon) {
@@ -1640,24 +1639,33 @@ kalIPv4FrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DHCP);
 			}
-		}
-	} else if (ucIpProto == IP_PRO_ICMP) {
-			/* the number of ICMP packets is seldom so we print log here */
-			pucIcmp = &pucIpHdr[20];
-
-			ucIcmpType = pucIcmp[0];
-			if (ucIcmpType == 3) /* don't log network unreachable packet */
-				return FALSE;
-			u2IcmpId = *(UINT_16 *) &pucIcmp[4];
-			u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
+		} else if (u2DstPort == UDP_PORT_DNS) {
+			UINT_16 u2IpId = *(UINT_16 *) &pucIpHdr[IPV4_ADDR_LEN];
+			PUINT_8 pucUdpPayload = &pucUdpHdr[UDP_HDR_LEN];
+			UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
 
 			ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
-			DBGLOG(SW4, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x, SeqNo: %d\n",
-					ucIcmpType, u2IcmpId, u2IcmpSeq, ucSeqNo);
-			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_ICMP);
+			DBGLOG(TX, INFO, "<TX> DNS: [0x%p] IPID[0x%02x] TransID[0x%04x] SeqNo[%d]\n",
+					prPacket, u2IpId, u2TransId, ucSeqNo);
+			prTxPktInfo->u2Flag |= BIT(ENUM_PKT_DNS);
 		}
+	} else if (ucIpProto == IP_PRO_ICMP) {
+		/* the number of ICMP packets is seldom so we print log here */
+		pucIcmp = &pucIpHdr[20];
 
+		ucIcmpType = pucIcmp[0];
+		if (ucIcmpType == 3) /* don't log network unreachable packet */
+			return FALSE;
+		u2IcmpId = *(UINT_16 *) &pucIcmp[4];
+		u2IcmpSeq = *(UINT_16 *) &pucIcmp[6];
+
+		ucSeqNo = nicIncreaseTxSeqNum(prGlueInfo->prAdapter);
+		GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
+		DBGLOG(SW4, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x, SeqNo: %d\n",
+				ucIcmpType, u2IcmpId, u2IcmpSeq, ucSeqNo);
+		prTxPktInfo->u2Flag |= BIT(ENUM_PKT_ICMP);
+	}
 	return TRUE;
 }
 

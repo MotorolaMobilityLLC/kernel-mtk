@@ -3276,6 +3276,9 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_TDLS))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_TDLS);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
 		}
 #else
 		if (rTxPacketInfo.fgIs1X) {
@@ -5573,6 +5576,19 @@ VOID wlanCfgSetChip(IN P_ADAPTER_T prAdapter)
 
 }
 
+VOID wlanGetFwInfo(IN P_ADAPTER_T prAdapter)
+{
+	CMD_GET_FW_INFO_T rCmdGetFwInfo;
+
+	rCmdGetFwInfo.ucValue = 0x1;
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_GET_FW_INFO,
+			    TRUE,
+			    FALSE,
+			    FALSE, NULL, NULL, sizeof(CMD_GET_FW_INFO_T),
+			    (PUINT_8)&rCmdGetFwInfo, NULL, 0);
+}
+
 VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i = 0;
@@ -6697,6 +6713,16 @@ WLAN_STATUS
 wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
 	DBGLOG(TX, INFO, "TDLS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
