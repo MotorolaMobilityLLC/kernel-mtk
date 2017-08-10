@@ -1795,7 +1795,7 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 {
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");
+	/*aee_kernel_dal_show("Modem exception dump start, please wait up to 5 minutes.\n");*/
 #endif
 
 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
