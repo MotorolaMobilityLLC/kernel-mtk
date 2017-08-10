@@ -545,6 +545,19 @@ fail:
 	return -1;
 }
 
+/* MTP QUEUE DEBUG */
+static pid_t active_pid;
+static char active_comm[TASK_COMM_LEN];
+struct mutex mtp_read_mutex;
+static int is_the_same_active(void)
+{
+	if (active_pid == current->pid)
+		return 1;
+	return 0;
+}
+#define MTP_QUEUE_DBG(fmt, args...)		\
+	pr_warn("MTP_QUEUE_DBG, <%s(), %d> " fmt, __func__, __LINE__, ## args)
+
 static ssize_t mtp_read(struct file *fp, char __user *buf,
 	size_t count, loff_t *pos)
 {
@@ -557,9 +570,23 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 
 	DBG(cdev, "mtp_read(%zu)\n", count);
 
-	if (count > MTP_BULK_BUFFER_SIZE)
-		return -EINVAL;
+	/* MTP QUEUE DEBUG */
+	mutex_lock(&mtp_read_mutex);
+	if (!active_pid) {
+		active_pid = current->pid;
+		memcpy(active_comm, current->comm, sizeof(active_comm));
+		MTP_QUEUE_DBG("save active <%d,%s>\n", active_pid, active_comm);
+	} else if (!is_the_same_active()) {
+		MTP_QUEUE_DBG("more than one user <%d,%d>, <%s,%s>\n",
+			active_pid, current->pid, active_comm, current->comm);
+		BUG();
+	}
 
+	if (count > MTP_BULK_BUFFER_SIZE) {
+		/* MTP QUEUE DEBUG */
+		mutex_unlock(&mtp_read_mutex);
+		return -EINVAL;
+	}
 	/* we will block until we're online */
 	DBG(cdev, "mtp_read: waiting for online state\n");
 	ret = wait_event_interruptible(dev->read_wq,
@@ -573,6 +600,8 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 		/* report cancelation to userspace */
 		dev->state = STATE_READY;
 		spin_unlock_irq(&dev->lock);
+		/* MTP QUEUE DEBUG */
+		mutex_unlock(&mtp_read_mutex);
 		return -ECANCELED;
 	}
 	dev->state = STATE_BUSY;
@@ -630,6 +659,8 @@ done:
 	spin_unlock_irq(&dev->lock);
 
 	DBG(cdev, "mtp_read returning %zd\n", r);
+	/* MTP QUEUE DEBUG */
+	mutex_unlock(&mtp_read_mutex);
 	return r;
 }
 
@@ -1083,6 +1114,10 @@ static int mtp_open(struct inode *ip, struct file *fp)
 	if (mtp_lock(&_mtp_dev->open_excl))
 		return -EBUSY;
 
+	/* MTP QUEUE DEBUG */
+	active_pid = 0;
+	memset(active_comm, 0x0, sizeof(active_comm));
+
 	/* clear any error condition */
 	if (_mtp_dev->state != STATE_OFFLINE)
 		_mtp_dev->state = STATE_READY;
@@ -1412,6 +1447,9 @@ static int __mtp_setup(struct mtp_instance *fi_mtp)
 
 	if (!dev)
 		return -ENOMEM;
+
+	/* MTP QUEUE DEBUG */
+	mutex_init(&mtp_read_mutex);
 
 	spin_lock_init(&dev->lock);
 	init_waitqueue_head(&dev->read_wq);
