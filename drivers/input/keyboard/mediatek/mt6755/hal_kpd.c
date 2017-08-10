@@ -208,7 +208,11 @@ void kpd_auto_test_for_factorymode(void)
 
 	kpd_factory_mode_handler();
 	kpd_print("begin kpd_auto_test_for_factorymode!\n");
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 	if (pmic_get_register_value(PMIC_PWRKEY_DEB) == 1) {
+#else
+	if (pmic_get_register_value(MT6351_PMIC_PWRKEY_DEB) == 1) {
+#endif
 		kpd_print("power key release\n");
 		/*kpd_pwrkey_pmic_handler(1);*/
 		/*mdelay(time);*/
@@ -221,7 +225,11 @@ void kpd_auto_test_for_factorymode(void)
 	}
 
 #ifdef KPD_PMIC_RSTKEY_MAP
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 	if (pmic_get_register_value(PMIC_HOMEKEY_DEB) == 1) {
+#else
+	if (pmic_get_register_value(MT6351_PMIC_HOMEKEY_DEB) == 1) {
+#endif
 		/*kpd_print("home key release\n");*/
 		/*kpd_pmic_rstkey_handler(1);*/
 		/*mdelay(time);*/
@@ -243,20 +251,37 @@ void long_press_reboot_function_setting(void)
 #ifdef CONFIG_KPD_PMIC_LPRST_TD
 		kpd_info("Enable normal mode LPRST\n");
 #ifdef CONFIG_ONEKEY_REBOOT_NORMAL_MODE
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#endif
 #endif
 
 #ifdef CONFIG_TWOKEY_REBOOT_NORMAL_MODE
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#endif
 #endif
 #else
 		kpd_info("disable normal mode LPRST\n");
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x00);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#endif
 
 #endif
 	} else {
@@ -264,20 +289,37 @@ void long_press_reboot_function_setting(void)
 #ifdef CONFIG_KPD_PMIC_LPRST_TD
 		kpd_info("Enable other mode LPRST\n");
 #ifdef CONFIG_ONEKEY_REBOOT_OTHER_MODE
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#endif
 #endif
 
 #ifdef CONFIG_TWOKEY_REBOOT_OTHER_MODE
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x01);
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x01);
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_TD, CONFIG_KPD_PMIC_LPRST_TD);
+#endif
 #endif
 #else
 		kpd_info("disable other mode LPRST\n");
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#else
+		pmic_set_register_value(MT6351_PMIC_RG_PWRKEY_RST_EN, 0x00);
+		pmic_set_register_value(MT6351_PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#endif
 #endif
 	}
 }
@@ -427,7 +469,7 @@ void mt_eint_register(void)
 		kpd_print("can't find compatible node\n");
 	else {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		mt_gpio_set_debounce(ints[0], ints[1]);
+		gpio_set_debounce(ints[0], ints[1]);
 
 		mrdump_ext_rst_irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(mrdump_ext_rst_irq, mrdump_rst_eint_handler,
