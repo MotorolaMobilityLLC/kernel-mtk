@@ -333,7 +333,7 @@ static int picachu_emmc_proc_show(struct seq_file *m, void *v)
 static ssize_t picachu_emmc_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
-	int ret;
+	int ret = 0;
 	char *buf = (char *) __get_free_page(GFP_USER);
 	struct picachu_sram_info *p;
 	int offset = 0;
@@ -347,21 +347,22 @@ static ssize_t picachu_emmc_proc_write(struct file *file,
 	if (!buf)
 		return -ENOMEM;
 
-	ret = -EINVAL;
 
-	if (count >= PAGE_SIZE)
+	if (count >= PAGE_SIZE) {
+		ret = -EINVAL;
 		goto out;
+	}
 
-	ret = -EFAULT;
-
-	if (copy_from_user(buf, buffer, count))
+	if (copy_from_user(buf, buffer, count)) {
+		ret = -EFAULT;
 		goto out;
+	}
 
 	buf[count] = '\0';
 
 	if (kstrtoint(buf, 10, &offset) || offset != -1) {
-		free_page((unsigned long)buf);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto out;
 	}
 
 	reset_picachu_emmc(sizeof(*p), sizeof(*p) * p->cluster_id);
