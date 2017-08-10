@@ -85,6 +85,16 @@ config MTK_BQ24261_SUPPORT
           Set to Yes if BQ24261 is used.
         default n
 
+config CHARGER_SMB1351
+        tristate "Summit Microelectronics SMB1351 Battery Charger"
+        depends on I2C
+        select REGMAP_I2C
+        help
+          This is to enable supports to SMB1351.
+          It depends on config MTK_SMART_BATTERY
+          Say Y to include support for Summit Microelectronics SMB1351
+          Battery Charger.
+
 config MTK_BQ25890_SUPPORT
         bool "MTK_BQ25890_SUPPORT"
         help
@@ -92,7 +102,14 @@ config MTK_BQ25890_SUPPORT
           It depends on config MTK_SMART_BATTERY
           and config MTK_SWCHR_SUPPORT
           Set to Yes if BQ25890 is used.
-	default n
+
+config MTK_BQ25896_SUPPORT
+        bool "MTK_BQ25896_SUPPORT"
+        help
+          This is to enable MediaTek supports to BQ25896.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if BQ25896 is used.
 
 config MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	bool "MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION"

@@ -24,6 +24,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
+#include <linux/reboot.h>
 
 #include "bq24261.h"
 #include "mt_charging.h"
@@ -595,7 +596,7 @@ static u32 charging_set_current(void *data)
 	u32 register_value;
 	u32 current_value = *(u32 *) data;
 
-	current_value = current_value / 1000;
+	current_value = current_value / 100;
 
 	if (current_value <= 500)
 		register_value = 0;
@@ -743,13 +744,10 @@ static u32 charging_set_platform_reset(void *data)
 
 	battery_log(BAT_LOG_CRTI, "charging_set_platform_reset\n");
 
-#if 0				/* need porting of orderly_reboot(). */
 	if (system_state == SYSTEM_BOOTING)
 		arch_reset(0, NULL);
 	else
 		orderly_reboot(true);
-#endif
-	arch_reset(0, NULL);
 
 	return status;
 }
@@ -1061,7 +1059,8 @@ static ssize_t store_bq24261_access(struct device *dev, struct device_attribute 
 
 	if (buf != NULL && size != 0) {
 
-		strcpy(temp_buf, buf);
+		strncpy(temp_buf, buf, sizeof(temp_buf));
+		temp_buf[sizeof(temp_buf) - 1] = 0;
 		pvalue = temp_buf;
 		if (size > 4) {
 			ret = kstrtouint(strsep(&pvalue, " "), 0, &reg_address);

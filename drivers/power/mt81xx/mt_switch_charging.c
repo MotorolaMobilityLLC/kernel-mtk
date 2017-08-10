@@ -195,9 +195,12 @@ static void mtk_ta_init(void)
 
 	if (p_bat_charging_data->ta_9v_support) {
 		ta_vchr_tuning = false;
+		p_bat_charging_data->v_charger_max = 10500;
 		bat_charger_set_hv_threshold(10500000);
-	} else
+	} else {
+		p_bat_charging_data->v_charger_max = 7500;
 		bat_charger_set_hv_threshold(7500000);
+	}
 
 	bat_charger_init(p_bat_charging_data);
 }
@@ -502,6 +505,7 @@ u32 set_bat_charging_current_limit(int current_limit)
 	return g_bcct_flag;
 }
 
+__attribute__ ((weak)) int mt_usb_pd_get_current(void) { return 0; }
 
 void select_charging_curret(void)
 {
@@ -534,13 +538,13 @@ void select_charging_curret(void)
 			{
 				g_temp_input_CC_value = CHARGE_CURRENT_MAX;
 				if (g_usb_state == USB_SUSPEND)
-					g_temp_CC_value = USB_CHARGER_CURRENT_SUSPEND;
+					g_temp_CC_value = p_bat_charging_data->usb_charger_current_suspend;
 				else if (g_usb_state == USB_UNCONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
+					g_temp_CC_value = p_bat_charging_data->usb_charger_current_unconfigured;
 				else if (g_usb_state == USB_CONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_CONFIGURED;
+					g_temp_CC_value = p_bat_charging_data->usb_charger_current_configured;
 				else
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
+					g_temp_CC_value = p_bat_charging_data->usb_charger_current_unconfigured;
 
 				battery_log(BAT_LOG_CRTI,
 					    "[BATTERY] STANDARD_HOST CC mode charging : %d on %d state\r\n",
@@ -557,7 +561,7 @@ void select_charging_curret(void)
 			g_temp_CC_value = p_bat_charging_data->non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			g_temp_input_CC_value = p_bat_charging_data->ac_charger_current;
+			g_temp_input_CC_value = p_bat_charging_data->ac_charger_input_current;
 			g_temp_CC_value = p_bat_charging_data->ac_charger_current;
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 			if (is_ta_connect == true)
@@ -575,6 +579,24 @@ void select_charging_curret(void)
 		} else if (BMT_status.charger_type == APPLE_0_5A_CHARGER) {
 			g_temp_input_CC_value = p_bat_charging_data->apple_0_5a_charger_current;
 			g_temp_CC_value = p_bat_charging_data->apple_0_5a_charger_current;
+		} else if (BMT_status.charger_type == TYPEC_1_5A_CHARGER) {
+			g_temp_input_CC_value = 150000;
+			g_temp_CC_value = p_bat_charging_data->ac_charger_current;
+		} else if (BMT_status.charger_type == TYPEC_3A_CHARGER) {
+			g_temp_input_CC_value = 280000;
+			g_temp_CC_value = p_bat_charging_data->ac_charger_current;
+		} else if (BMT_status.charger_type == TYPEC_PD_5V_CHARGER) {
+			if (mt_usb_pd_get_current())
+				g_temp_input_CC_value = mt_usb_pd_get_current() * 100;
+			else
+				g_temp_input_CC_value = 150000;
+			g_temp_CC_value = p_bat_charging_data->ac_charger_current;
+		} else if (BMT_status.charger_type == TYPEC_PD_12V_CHARGER) {
+			if (mt_usb_pd_get_current())
+				g_temp_input_CC_value = mt_usb_pd_get_current() * 100;
+			else
+				g_temp_input_CC_value = 150000;
+			g_temp_CC_value = p_bat_charging_data->ac_charger_current;
 		} else {
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 			g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
@@ -656,11 +678,7 @@ static void pchr_turn_on_charging(void)
 
 			/*Set CV Voltage */
 #if !defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-#ifdef CONFIG_HIGH_BATTERY_VOLTAGE_SUPPORT
-			cv_voltage = BATTERY_VOLT_04_340000_V;
-#else
-			cv_voltage = BATTERY_VOLT_04_200000_V;
-#endif
+			cv_voltage = p_bat_charging_data->battery_cv_voltage;
 #else
 			cv_voltage = select_jeita_cv();
 #endif
@@ -795,13 +813,6 @@ int BAT_BatteryCmdHoldAction(void)
 {
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Cmd Hold mode !!\n\r");
 
-	if (!g_cmd_hold_charging) {
-		BMT_status.bat_charging_state = CHR_CC;
-
-		bat_charger_enable_power_path(true);
-		battery_log(BAT_LOG_CRTI, "[BATTERY] Exit Cmd Hold mode and Enter CC mode !!\n\r");
-	}
-
 	BMT_status.bat_full = false;
 	BMT_status.bat_in_recharging_state = false;
 	BMT_status.total_charging_time = 0;
@@ -883,3 +894,4 @@ void mt_battery_charging_algorithm(void)
 
 	bat_charger_dump_register();
 }
+

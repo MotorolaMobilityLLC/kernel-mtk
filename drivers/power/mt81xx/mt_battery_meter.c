@@ -45,14 +45,8 @@
 static DEFINE_MUTEX(FGADC_mutex);
 static DEFINE_MUTEX(qmax_mutex);
 
-#define CUST_CAPACITY_OCV2CV_TRANSFORM
-
-
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
-#define STEP_OF_QMAX 54		/* 54 mAh */
-#define CV_CURRENT 6000		/* 600mA */
 static s32 g_currentfactor = 100;
-#endif
+
 
 #define BM_LOG_ERROR 0
 #define BM_LOG_CRTI 1
@@ -729,8 +723,8 @@ s32 fgauge_read_r_bat_by_v(s32 voltage)
 
 	profile_p = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t);
 	if (profile_p == NULL) {
-		bm_print(BM_LOG_CRTI, "[FGADC] fgauge get R-Table profile : fail !\r\n");
-		return (profile_p + 0)->resistance;
+		bm_print(BM_LOG_ERROR, "[FGADC] fgauge get R-Table profile : fail !\r\n");
+		return 0;
 	}
 
 	saddles = fgauge_get_saddles_r_table();
@@ -1093,7 +1087,6 @@ void fgauge_construct_table_by_temp(void)
 #endif
 }
 
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
 /*
 	ZCV table is created by 600mA loading.
 	Here we calculate average current and get a factor based on 600mA.
@@ -1132,7 +1125,7 @@ void fgauge_get_current_factor(void)
 	battCurrentBuffer[tempcurrentIndex] = inst_current;
 	avg_current = (current_sum) / TEMP_AVERAGE_SIZE;
 
-	g_currentfactor = avg_current * 100 / CV_CURRENT;	/* calculate factor by 600ma */
+	g_currentfactor = avg_current * 100 / p_bat_meter_data->cv_current;	/* calculate factor by 600ma */
 
 	bm_print(BM_LOG_CRTI, "[fgauge_get_current_factor] %d,%d,%d,%d\r\n",
 		 inst_current, avg_current, g_currentfactor, gFG_Is_Charging);
@@ -1182,9 +1175,9 @@ s32 fgauge_get_Q_max_high_current_by_current(s32 i_current, s16 val_temp)
 
 		if (OCV_temp - V_drop < threshold) {
 			if (iIndex <= 1)
-				ret_Q_max = STEP_OF_QMAX;
+				ret_Q_max = p_bat_meter_data->step_of_qmax;
 			else
-				ret_Q_max = (iIndex - 1) * STEP_OF_QMAX;
+				ret_Q_max = (iIndex - 1) * p_bat_meter_data->step_of_qmax;
 			break;
 		}
 	}
@@ -1194,9 +1187,6 @@ s32 fgauge_get_Q_max_high_current_by_current(s32 i_current, s16 val_temp)
 
 	return ret_Q_max;
 }
-
-#endif
-
 
 void fg_qmax_update_for_aging(void)
 {
@@ -1429,8 +1419,9 @@ s32 fgauge_get_dod0(s32 voltage, s32 temperature, bool bOcv)
 	/* Re-constructure r-table profile according to current temperature */
 	profile_p_r_table = fgauge_get_profile_r_table(p_bat_meter_data->temperature_t);
 	if (profile_p_r_table == NULL) {
-		bm_print(BM_LOG_CRTI,
+		bm_print(BM_LOG_ERROR,
 			 "[FGADC] fgauge_get_profile_r_table : create table fail !\r\n");
+		return 0;
 	}
 	fgauge_construct_r_table_profile(temperature, profile_p_r_table);
 
@@ -1614,9 +1605,8 @@ void fgauge_algo_run(void)
 	gFG_voltage = gFG_voltage + fgauge_compensate_battery_voltage_recursion(gFG_voltage, 5);	/* mV */
 	gFG_voltage = gFG_voltage + p_bat_meter_data->ocv_board_compesate;
 
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
-	fgauge_get_current_factor();
-#endif
+	if (p_bat_meter_data->enable_ocv2cv_trans)
+		fgauge_get_current_factor();
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR, &gFG_columb);
 
@@ -2139,6 +2129,14 @@ s32 battery_meter_get_charger_voltage(void)
 	return val;
 }
 
+bool battery_meter_ocv2cv_trans_support(void)
+{
+	if (p_bat_meter_data)
+		return p_bat_meter_data->enable_ocv2cv_trans ? true : false;
+	else
+		return false;
+}
+
 s32 battery_meter_get_battery_soc(void)
 {
 #if defined(CONFIG_SOC_BY_HW_FG)
@@ -2148,7 +2146,6 @@ s32 battery_meter_get_battery_soc(void)
 #endif
 }
 
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
 /* Here we compensate D1 by a factor from Qmax with loading. */
 s32 battery_meter_trans_battery_percentage(s32 d_val)
 {
@@ -2164,7 +2161,7 @@ s32 battery_meter_trans_battery_percentage(s32 d_val)
 	C_0mA = fgauge_get_Q_max(temp_val);
 
 	/* discharging and current > 600ma */
-	i_avg_current = g_currentfactor * CV_CURRENT / 100;
+	i_avg_current = g_currentfactor * (p_bat_meter_data->cv_current / 100);
 	if (false == gFG_Is_Charging && g_currentfactor > 100) {
 		C_600mA = fgauge_get_Q_max_high_current(temp_val);
 		C_current = fgauge_get_Q_max_high_current_by_current(i_avg_current, temp_val);
@@ -2184,7 +2181,6 @@ s32 battery_meter_trans_battery_percentage(s32 d_val)
 
 	return d_val;
 }
-#endif
 
 s32 battery_meter_get_battery_percentage(void)
 {
@@ -2199,13 +2195,12 @@ s32 battery_meter_get_battery_percentage(void)
 
 	fgauge_algo_run();
 
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
 	/* We keep gFG_capacity_by_c as capacity before compensation */
 	/* Compensated capacity is returned for UI SOC tracking */
-	return 100 - battery_meter_trans_battery_percentage(100 - gFG_capacity_by_c);
-#else
-	return gFG_capacity_by_c;
-#endif
+	if (p_bat_meter_data->enable_ocv2cv_trans)
+		return 100 - battery_meter_trans_battery_percentage(100 - gFG_capacity_by_c);
+	else
+		return gFG_capacity_by_c;
 #endif
 #endif
 }
@@ -2279,13 +2274,13 @@ s32 battery_meter_reset(bool bUI_SOC)
 #else
 	u32 ui_percentage = bat_get_ui_percentage();
 
-#ifdef CUST_CAPACITY_OCV2CV_TRANSFORM
-	if (false == bUI_SOC) {
-		ui_percentage = battery_meter_get_battery_soc();
-		bm_print(BM_LOG_FULL, "[CUST_CAPACITY_OCV2CV_TRANSFORM]Use Battery SOC: %d\n",
-			 ui_percentage);
+	if (p_bat_meter_data->enable_ocv2cv_trans) {
+		if (false == bUI_SOC) {
+			ui_percentage = battery_meter_get_battery_soc();
+				bm_print(BM_LOG_FULL, "[battery_meter_reset] use meter soc: %d\n",
+				 ui_percentage);
+		}
 	}
-#endif
 
 #if defined(CONFIG_QMAX_UPDATE_BY_CHARGED_CAPACITY)
 	if (bat_is_charging_full() == true) {	/* charge full */
@@ -3030,6 +3025,8 @@ static int battery_meter_probe(struct platform_device *dev)
 	int ret_device_file = 0;
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 	char *temp_strptr;
+	int cmd_len;
+	char chr_mode_str[] = " androidboot.mode=charger";
 #endif
 
 	p_bat_meter_data = (struct mt_battery_meter_custom_data *)dev->dev.platform_data;
@@ -3048,11 +3045,10 @@ static int battery_meter_probe(struct platform_device *dev)
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 	if (get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
 	    || get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
-		temp_strptr =
-		    kzalloc(strlen(saved_command_line) + strlen(" androidboot.mode=charger") + 1,
-			    GFP_KERNEL);
-		strcpy(temp_strptr, saved_command_line);
-		strcat(temp_strptr, " androidboot.mode=charger");
+		cmd_len = strlen(saved_command_line) + strlen(chr_mode_str) + 1;
+		temp_strptr = kzalloc(cmd_len, GFP_KERNEL);
+		strncpy(temp_strptr, saved_command_line, cmd_len);
+		strncat(temp_strptr, chr_mode_str, strlen(chr_mode_str));
 		saved_command_line = temp_strptr;
 	}
 #endif

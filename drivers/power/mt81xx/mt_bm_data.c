@@ -1732,6 +1732,11 @@ static struct mt_battery_meter_custom_data default_bat_meter_data = {
 	.poweron_max_vbat_tolerance = 90,
 	.poweron_delta_vbat_tolerance = 30,
 
+	/* ocv2cv transform */
+	.enable_ocv2cv_trans = 0, /* default off. change to 1 your zcv profile is ready */
+	.step_of_qmax = 54, /*mAh*/
+	.cv_current = 6000, /*0.1mA*/
+
 	/* Dynamic change wake up period of battery thread when suspend */
 	.vbat_normal_wakeup = 3600,	/* 3.6V */
 	.vbat_low_power_wakeup = 3500,	/* 3.5V */
@@ -2530,6 +2535,26 @@ static struct BATT_TEMPERATURE p1v1_bat_temperature_table[] = {
 	{70, 7897}
 };
 
+static struct BATT_TEMPERATURE ariel8_bat_temperature_table[] = {
+	{-20, 68237},
+	{-15, 53650},
+	{-10, 42506},
+	{ -5, 33892},
+	{  0, 27219},
+	{  5, 22021},
+	{ 10, 17926},
+	{15, 14674},
+	{ 20, 12081},
+	{ 25, 10000},
+	{ 30, 8315},
+	{ 35, 6948},
+	{ 40, 5834},
+	{ 45, 4917},
+	{ 50, 4161},
+	{ 55, 3535},
+	{ 60, 3014}
+};
+
 void p1v1_custom_battery_init(struct mt_battery_meter_custom_data *p_meter_data)
 {
 	p_meter_data->car_tune_value = 102;
@@ -2537,6 +2562,11 @@ void p1v1_custom_battery_init(struct mt_battery_meter_custom_data *p_meter_data)
 	p_meter_data->rbat_pull_up_r = 24000;
 	p_meter_data->rbat_pull_down_r = 100000000;
 	p_meter_data->cust_r_fg_offset = 0;
+
+	/* ocv2cv transform */
+	p_meter_data->enable_ocv2cv_trans = 1;
+	p_meter_data->step_of_qmax = 54;
+	p_meter_data->cv_current = 6000;
 
 	/* set low capacity tolerance to 2% due to flat curve of low battery area */
 	p_meter_data->poweron_low_capacity_tolerance = 2;
@@ -2580,13 +2610,66 @@ void p1v1_custom_battery_init(struct mt_battery_meter_custom_data *p_meter_data)
 	p_meter_data->p_r_profile_temperature = p1v1_custom_r_profile_temperature;
 }
 
+void ariel8_custom_battery_init(struct mt_battery_meter_custom_data *p_meter_data)
+{
+	/* todo: should update ariel8 board value here */
+	p_meter_data->car_tune_value = 102;
+
+	/* NTC 10K */
+	p_meter_data->rbat_pull_up_r = 24000;
+	p_meter_data->rbat_pull_down_r = 100000000;
+	p_meter_data->cust_r_fg_offset = 0;
+
+	/* ocv2cv transform */
+	p_meter_data->enable_ocv2cv_trans = 0; /* change to 1 when zcv profile is ready */
+	p_meter_data->step_of_qmax = 54;
+	p_meter_data->cv_current = 6000;
+
+	/* set low capacity tolerance to 2% due to flat curve of low battery area */
+	p_meter_data->poweron_low_capacity_tolerance = 2;
+
+	p_meter_data->p_batt_temperature_table = ariel8_bat_temperature_table;
+	p_meter_data->battery_ntc_table_saddles =
+	    sizeof(ariel8_bat_temperature_table) / sizeof(struct BATT_TEMPERATURE);
+
+	/* todo: should update ariel8 battery capacity here */
+	p_meter_data->q_max_pos_50 = 4000;
+	p_meter_data->q_max_pos_50_h_current = 3950;
+	p_meter_data->q_max_pos_25 = 4000;
+	p_meter_data->q_max_pos_25_h_current = 3950;
+
+	p_meter_data->q_max_pos_0 = 4000;
+	p_meter_data->q_max_pos_0_h_current = 3950;
+	p_meter_data->q_max_neg_10 = 4000;
+	p_meter_data->q_max_neg_10_h_current = 3950;
+
+	p_meter_data->battery_profile_saddles =
+	    sizeof(p1v1_custom_battery_profile_temperature) / sizeof(struct BATTERY_PROFILE_STRUCT);
+	p_meter_data->battery_r_profile_saddles =
+	    sizeof(p1v1_custom_r_profile_temperature) / sizeof(struct R_PROFILE_STRUCT);
+
+	/* todo: should update arile8 zcv table here */
+	p_meter_data->p_battery_profile_t0 = p1v1_custom_battery_profile_t0;
+	p_meter_data->p_battery_profile_t1 = p1v1_custom_battery_profile_t1;
+	p_meter_data->p_battery_profile_t2 = p1v1_custom_battery_profile_t2;
+	p_meter_data->p_battery_profile_t3 = p1v1_custom_battery_profile_t3;
+	p_meter_data->p_r_profile_t0 = p1v1_custom_r_profile_t0;
+	p_meter_data->p_r_profile_t1 = p1v1_custom_r_profile_t1;
+	p_meter_data->p_r_profile_t2 = p1v1_custom_r_profile_t2;
+	p_meter_data->p_r_profile_t3 = p1v1_custom_r_profile_t3;
+
+	p_meter_data->p_battery_profile_temperature = p1v1_custom_battery_profile_temperature;
+	p_meter_data->p_r_profile_temperature = p1v1_custom_r_profile_temperature;
+}
+
 struct mt_bm_item {
 	const char *battery_name;
 	void (*func)(struct mt_battery_meter_custom_data *p_meter_data);
 };
 
 static struct mt_bm_item mt_battery_profiles[] = {
-	{"p1v1_battery", p1v1_custom_battery_init}
+	{"p1v1_battery", p1v1_custom_battery_init},
+	{"ariel_battery", ariel8_custom_battery_init}
 };
 
 int mt_bm_of_probe(struct device *dev, struct mt_battery_meter_custom_data **p_meter_data)

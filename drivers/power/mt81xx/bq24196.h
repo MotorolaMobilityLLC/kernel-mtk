@@ -179,7 +179,7 @@
 
 /* CON10 */
 #define CON10_PN_MASK      0x07
-#define CON10_PN_SHIFT     5
+#define CON10_PN_SHIFT     3
 
 #define CON10_Rev_MASK           0x07
 #define CON10_Rev_SHIFT          0

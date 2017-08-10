@@ -24,6 +24,7 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/regulator/consumer.h>
+#include <linux/reboot.h>
 
 #include "bq24196.h"
 #include "mt_charging.h"
@@ -52,7 +53,6 @@
   *********************************************************/
 
 static struct i2c_client *new_client;
-static struct switch_dev bq24196_reg09;
 static u8 bq24196_reg[bq24196_REG_NUM] = { 0 };
 
 static u8 g_reg_value_bq24196;
@@ -86,8 +86,8 @@ static const u32 CS_VTH[] = {
 static const u32 INPUT_CS_VTH[] = {
 	CHARGE_CURRENT_100_00_MA, CHARGE_CURRENT_150_00_MA, CHARGE_CURRENT_500_00_MA,
 	CHARGE_CURRENT_900_00_MA,
-	CHARGE_CURRENT_1000_00_MA, CHARGE_CURRENT_1500_00_MA, CHARGE_CURRENT_2000_00_MA,
-	CHARGE_CURRENT_2000_00_MA
+	CHARGE_CURRENT_1200_00_MA, CHARGE_CURRENT_1500_00_MA, CHARGE_CURRENT_2000_00_MA,
+	CHARGE_CURRENT_3000_00_MA
 };
 
 /* for MT6391 */
@@ -847,13 +847,10 @@ static u32 charging_set_platform_reset(void *data)
 
 	battery_log(BAT_LOG_CRTI, "charging_set_platform_reset\n");
 
-#if 0				/* need porting of orderly_reboot(). */
 	if (system_state == SYSTEM_BOOTING)
 		arch_reset(0, NULL);
 	else
 		orderly_reboot(true);
-#endif
-	arch_reset(0, NULL);
 
 	return status;
 }
@@ -1096,93 +1093,19 @@ void bq24196_dump_register(void)
 	}
 }
 
-u8 bq24196_get_reg9_fault_type(u8 reg9_fault)
-{
-	u8 ret = 0;
-/*	if((reg9_fault & (CON9_WATCHDOG_FAULT_MASK << CON9_WATCHDOG_FAULT_SHIFT)) !=0){
-		ret = BQ_WATCHDOG_FAULT;
-	} else
-*/
-	if ((reg9_fault & (CON9_OTG_FAULT_MASK << CON9_OTG_FAULT_SHIFT)) != 0) {
-		ret = BQ_OTG_FAULT;
-	} else if ((reg9_fault & (CON9_CHRG_FAULT_MASK << CON9_CHRG_FAULT_SHIFT)) != 0) {
-		if ((reg9_fault & (CON9_CHRG_INPUT_FAULT_MASK << CON9_CHRG_FAULT_SHIFT)) != 0)
-			ret = BQ_CHRG_INPUT_FAULT;
-		else if ((reg9_fault &
-			  (CON9_CHRG_THERMAL_SHUTDOWN_FAULT_MASK << CON9_CHRG_FAULT_SHIFT)) != 0)
-			ret = BQ_CHRG_THERMAL_FAULT;
-		else if ((reg9_fault &
-			  (CON9_CHRG_TIMER_EXPIRATION_FAULT_MASK << CON9_CHRG_FAULT_SHIFT)) != 0)
-			ret = BQ_CHRG_TIMER_EXPIRATION_FAULT;
-	} else if ((reg9_fault & (CON9_BAT_FAULT_MASK << CON9_BAT_FAULT_SHIFT)) != 0)
-		ret = BQ_BAT_FAULT;
-	else if ((reg9_fault & (CON9_NTC_FAULT_MASK << CON9_NTC_FAULT_SHIFT)) != 0) {
-		if ((reg9_fault & (CON9_NTC_COLD_FAULT_MASK << CON9_NTC_FAULT_SHIFT)) != 0)
-			ret = BQ_NTC_COLD_FAULT;
-		else if ((reg9_fault & (CON9_NTC_HOT_FAULT_MASK << CON9_NTC_FAULT_SHIFT)) != 0)
-			ret = BQ_NTC_HOT_FAULT;
-	}
-	return ret;
-}
-
-void bq24196_polling_reg09(void)
-{
-	int i, i2;
-	u8 reg1;
-
-	for (i2 = i = 0; i < 4 && i2 < 10; i++, i2++) {
-		bq24196_read_byte((u8) (bq24196_CON9), &bq24196_reg[bq24196_CON9]);
-		if ((bq24196_reg[bq24196_CON9] & 0x40) != 0) {	/* OTG_FAULT bit */
-			/* Disable OTG */
-			bq24196_read_byte(1, &reg1);
-			reg1 &= ~0x20;	/* 0 = OTG Disable */
-			bq24196_write_byte(1, reg1);
-			msleep(20);
-			/* Enable OTG */
-			reg1 |= 0x20;	/* 1 = OTG Enable */
-			bq24196_write_byte(1, reg1);
-		}
-		if (bq24196_reg[bq24196_CON9] != 0) {
-			i = 0;	/* keep on polling if reg9 is not 0. This is to filter noises */
-			/* need filter fault type here */
-			switch_set_state(&bq24196_reg09,
-					 bq24196_get_reg9_fault_type(bq24196_reg[bq24196_CON9]));
-		}
-		msleep(20);
-	}
-	/* send normal fault state to UI */
-	switch_set_state(&bq24196_reg09, BQ_NORMAL_FAULT);
-}
-
-static irqreturn_t ops_bq24196_int_handler(int irq, void *dev_id)
-{
-	bq24196_polling_reg09();
-	return IRQ_HANDLED;
-}
-
 static int bq24196_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	pr_debug("[bq24196_driver_suspend] client->irq(%d)\n", client->irq);
-	if (client->irq > 0)
-		disable_irq(client->irq);
-
 	return 0;
 }
 
 static int bq24196_driver_resume(struct i2c_client *client)
 {
-	pr_debug("[bq24196_driver_resume] client->irq(%d)\n", client->irq);
-	if (client->irq > 0)
-		enable_irq(client->irq);
-
 	return 0;
 }
 
 static void bq24196_driver_shutdown(struct i2c_client *client)
 {
-	pr_debug("[bq24196_driver_shutdown] client->irq(%d)\n", client->irq);
-	if (client->irq > 0)
-		disable_irq(client->irq);
+
 }
 
 static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -1217,33 +1140,6 @@ static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_devi
 	}
 
 	bq24196_dump_register();
-
-	bq24196_reg09.name = "bq24196_reg09";
-	bq24196_reg09.index = 0;
-	bq24196_reg09.state = 0;
-	ret = switch_dev_register(&bq24196_reg09);
-
-	if (ret < 0)
-		pr_err("[bq24196_driver_probe] switch_dev_register() error(%d)\n", ret);
-
-
-	if (client->irq > 0) {
-
-		pr_debug("[bq24196_driver_probe] enable interrupt: %d\n", client->irq);
-		/* make sure we clean REG9 before enable fault interrupt */
-		bq24196_read_byte((u8) (bq24196_CON9), &bq24196_reg[9]);
-		if (bq24196_reg[9] != 0)
-			bq24196_polling_reg09();
-
-		bq24196_set_int_mask(0x1);	/* Disable CHRG fault interrupt */
-		ret = request_threaded_irq(client->irq, NULL, ops_bq24196_int_handler,
-					   IRQF_TRIGGER_FALLING |
-					   IRQF_ONESHOT, "ops_bq24196_int_handler", NULL);
-		if (ret)
-			pr_err
-			    ("[bq24196_driver_probe] fault interrupt registration failed err = %d\n",
-			     ret);
-	}
 
 	return 0;
 }
@@ -1289,7 +1185,8 @@ static ssize_t store_bq24196_access(struct device *dev, struct device_attribute 
 
 	if (buf != NULL && size != 0) {
 
-		strcpy(temp_buf, buf);
+		strncpy(temp_buf, buf, sizeof(temp_buf));
+		temp_buf[sizeof(temp_buf) - 1] = 0;
 		pvalue = temp_buf;
 		if (size > 4) {
 			ret = kstrtouint(strsep(&pvalue, " "), 0, &reg_address);

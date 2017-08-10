@@ -99,6 +99,11 @@ struct mt_battery_meter_custom_data {
 	int low_power_wakeup_period;
 	int close_poweroff_wakeup_period;
 
+	/* ocv2cv transform */
+	int enable_ocv2cv_trans;
+	int step_of_qmax; /*mAh*/
+	int cv_current; /*0.1mA*/
+
 	/* meter table */
 	int rbat_pull_up_r;
 	int rbat_pull_down_r;
@@ -147,6 +152,7 @@ struct mt_battery_charging_custom_data {
 
 	int usb_charger_current;
 	int ac_charger_current;
+	int ac_charger_input_current;
 	int non_std_ac_charger_current;
 	int charging_host_charger_current;
 	int apple_0_5a_charger_current;
@@ -163,6 +169,9 @@ struct mt_battery_charging_custom_data {
 	int onehundred_percent_tracking_time;
 	int npercent_tracking_time;
 	int sync_to_real_tracking_time;
+
+	/* Battery voltage */
+	int battery_cv_voltage;
 
 	/* JEITA parameter */
 	int cust_soc_jeita_sync_time;
