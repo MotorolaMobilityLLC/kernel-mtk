@@ -1799,6 +1799,8 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.disp_feature |= DISP_FEATURE_TIME_SHARING;
 #endif
 
+	caps_info.disp_feature |= DISP_FEATURE_NO_PARGB;
+
 	DISPMSG("%s mode:%d, pass:%d, max_layer_num:%d\n",
 		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
 

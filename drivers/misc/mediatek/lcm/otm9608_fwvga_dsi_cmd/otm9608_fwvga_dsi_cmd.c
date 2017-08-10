@@ -24,6 +24,10 @@
 #define FRAME_WIDTH  (480)
 #define FRAME_HEIGHT (854)
 
+/* physical size in um */
+#define LCM_PHYSICAL_WIDTH    (59500)
+#define LCM_PHYSICAL_HEIGHT   (104700)
+
 /* --------------------------------------------------------------------------- */
 /* Local Variables */
 /* --------------------------------------------------------------------------- */
@@ -271,6 +275,11 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 
 	/* enable tearing-free */
 	params->dbi.te_mode = LCM_DBI_TE_MODE_VSYNC_ONLY;
