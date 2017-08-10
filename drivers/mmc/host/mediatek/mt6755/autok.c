@@ -410,13 +410,9 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 
 	/* clear fifo */
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA)) {
-		if ((tune_type_value == TUNE_CMD) && (host->id == 0))
-			MSDC_WRITE32(MSDC_INT, MSDC_INT_CMDTMO | MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR);
-		else {
-			autok_msdc_reset();
-			msdc_clear_fifo();
-			MSDC_WRITE32(MSDC_INT, 0xffffffff);
-		}
+		autok_msdc_reset();
+		msdc_clear_fifo();
+		MSDC_WRITE32(MSDC_INT, 0xffffffff);
 	}
 
 	/* start command */
@@ -1015,14 +1011,41 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 					uMgLost_F = uBD_width / 2 - pBdPrev->Bound_End;
 				}
 			} else {
-				/* for falling edge there must be one full boundary between two bounary_mid at rising */
-				return -1;
+				/* for falling edge there must be one full boundary between two bounary_mid at rising
+				 * this is a corner case, falling boundary may  scan miss.
+				 * xoooooooooooooooox or  xoooooooooooooooox  or xoooooooooooooooox
+				 * oooooooooooooooooo       xxoooooooooooooooo      ooooooooooooooooox
+				 */
+				pInfo->cycle_cnt = pBdInfo_R->bd_info[1].Bound_End
+					- pBdInfo_R->bd_info[0].Bound_Start;
+				if (Bound_Cnt_F == 0) {
+					pInfo->opt_edge_sel = 1;
+					pInfo->opt_dly_cnt = 0;
+				} else {
+					pInfo->opt_edge_sel = 0;
+					pInfo->opt_dly_cnt = (pBdInfo_R->bd_info[1].Bound_End
+						+ pBdInfo_R->bd_info[0].Bound_Start) / 2;
+				}
+				return ret;
 			}
 		} else if (Bound_Cnt_R == 1) {
 			if (Bound_Cnt_F > 1) {
 				/* when rising_edge have only one boundary (not full bound),
-				   falling edge should not more than 1Bound exist */
-				return -1;
+				 * falling edge should not more than 1Bound exist
+				 * this is a corner case, rising boundary may  scan miss.
+				 * xooooooooooooooooo
+				 * oooxooooooooxooooo
+				 */
+				pInfo->cycle_cnt = (pBdInfo_F->bd_info[1].Bound_End
+					+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+					- (pBdInfo_F->bd_info[0].Bound_End
+					+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				pInfo->opt_edge_sel = 1;
+				pInfo->opt_dly_cnt = ((pBdInfo_F->bd_info[1].Bound_End
+					+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+					+ (pBdInfo_F->bd_info[0].Bound_End
+					+ pBdInfo_F->bd_info[0].Bound_Start) / 2) / 2;
+				return ret;
 			} else if (Bound_Cnt_F == 1) {
 				/* mode_6: rising edge only 1 boundary (not full Bound)
 				   & falling edge have only 1 bound too */
@@ -1042,16 +1065,36 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 
 				if (pBdPrev->Bound_Start == 0) {
 					/* Current Desing Not Allowed */
-					if (pBdNext->Bound_Start == 0)
-						return -1;
+					if (pBdNext->Bound_Start == 0) {
+						/* Current Desing Not Allowed
+						 * this is a corner case, boundary may  scan error.
+						 * xooooooooooooooooo
+						 * xooooooooooooooooo
+						 */
+						pInfo->cycle_cnt = 2 * (64 - (pBdInfo_R->bd_info[0].Bound_End
+							+ pBdInfo_R->bd_info[0].Bound_Start) / 2);
+						pInfo->opt_edge_sel = 0;
+						pInfo->opt_dly_cnt = 31;
+						return ret;
+					}
 
 					cycle_cnt =
 					    (pBdNext->Bound_Start - pBdPrev->Bound_End +
 					     uBD_width) * 2;
 				} else if (pBdPrev->Bound_End == 63) {
 					/* Current Desing Not Allowed */
-					if (pBdNext->Bound_End == 63)
-						return -1;
+					if (pBdNext->Bound_End == 63) {
+						/* Current Desing Not Allowed
+						 * this is a corner case, boundary may  scan error.
+						 * ooooooooooooooooox
+						 * ooooooooooooooooox
+						 */
+						pInfo->cycle_cnt = pBdInfo_R->bd_info[0].Bound_End
+							+ pBdInfo_R->bd_info[0].Bound_Start;
+						pInfo->opt_edge_sel = 0;
+						pInfo->opt_dly_cnt = 31;
+						return ret;
+					}
 
 					cycle_cnt =
 					    (pBdPrev->Bound_Start - pBdNext->Bound_End +
@@ -1127,8 +1170,19 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			}
 		} else if (Bound_Cnt_R == 0) { /* Rising Edge No Boundary found */
 			if (Bound_Cnt_F > 1) {
-				/* falling edge not allowed two boundary Exist for this case */
-				return -1;
+				/* falling edge not allowed two boundary Exist for this case
+				 * this is a corner case,rising boundary may  scan miss.
+				 * oooooooooooooooooo
+				 * oooxooooooooxooooo
+				 */
+				pInfo->cycle_cnt = (pBdInfo_F->bd_info[1].Bound_End
+					+ pBdInfo_F->bd_info[1].Bound_Start) / 2
+					- (pBdInfo_F->bd_info[0].Bound_End
+					+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				pInfo->opt_edge_sel = 0;
+				pInfo->opt_dly_cnt = (pBdInfo_F->bd_info[0].Bound_End
+					+ pBdInfo_F->bd_info[0].Bound_Start) / 2;
+				return ret;
 			} else if (Bound_Cnt_F > 0) {
 				/* mode_8: falling edge have one Boundary exist */
 				pBdPrev = &(pBdInfo_F->bd_info[0]);
@@ -1298,7 +1352,7 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 	return ret;
 }
 
-static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_value, unsigned int *pDlySel)
+static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int *pDlySel, u8 *param)
 {
 	unsigned int ret = 0;
 	int uDlySel = 0;
@@ -1322,11 +1376,8 @@ static int autok_ds_dly_sel(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_val
 			} else {
 				uDlySel = (pInfo->bd_info[0].Bound_End + 31) / 2;
 			}
-		} else {
-			/* uDlySel = pInfo->bd_info[0].Bound_Start / 2; */
-			uDlySel = (((pInfo->bd_info[0].Bound_Start * 5000) / cycle_value)
-				- (1250 - 400)) * cycle_value / 5000;
-		}
+		} else
+			uDlySel = pInfo->bd_info[0].Bound_Start / 2;
 	} else {
 		/* bound count == 0 */
 		uDlySel = 16;
@@ -1960,11 +2011,13 @@ EXPORT_SYMBOL(autok_init_hs400);
 
 int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 {
+	void __iomem *base = host->base;
 	unsigned int ret = 0;
+	unsigned int response;
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
 	unsigned int score = 0;
-	unsigned int j, k, cycle_value;
+	unsigned int j, k;
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
@@ -2026,15 +2079,43 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
 	}
-
-	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = (uCmdDatInfo.cycle_cnt / 2) > 31 ? 31 : (uCmdDatInfo.cycle_cnt / 2);
-	cycle_value = uCmdDatInfo.cycle_cnt;
+	/* DLY3 keep default value 20 */
+	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = 20;
 	/* Step2 : Tuning DS Clk Path-ZCLK only tune DLY1 */
 #ifdef CMDQ
 	opcode = MMC_SEND_EXT_CSD;
 #else
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
+	autok_tuning_parameter_init(host, p_autok_tune_res);
+	/* check device status */
+	ret = autok_send_tune_cmd(host, 13, TUNE_CMD);
+	if (ret == E_RESULT_PASS) {
+		response = MSDC_READ32(SDC_RESP0);
+		AUTOK_RAWPRINT("[AUTOK]current device status 0x%08x\r\n", response);
+	} else
+		AUTOK_RAWPRINT("[AUTOK]CMD error while check device status\r\n");
+	/* tune data pad delay , find data pad boundary */
+	for (j = 0; j < 32; j++) {
+		msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
+		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
+				AUTOK_RAWPRINT
+				    ("[AUTOK]Error Autok CMD Failed while tune DATA PAD Delay\r\n");
+				return -1;
+			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0)
+				break;
+			else if (ret == E_RESULT_FATAL_ERR)
+				return -1;
+		}
+		if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
+			p_autok_tune_res[DAT_RD_D_DLY1] = j;
+			if (j)
+				p_autok_tune_res[DAT_RD_D_DLY1_SEL] = 1;
+			break;
+		}
+	}
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
@@ -2073,7 +2154,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	}
 	#endif
 
-	if (autok_ds_dly_sel(pBdInfo, cycle_value, &uDatDly) == 0) {
+	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
 		autok_paddly_update(DS_PAD_RDLY, uDatDly, p_autok_tune_res);
 	} else {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
@@ -2120,7 +2201,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 			       pBdInfo->bd_info[i].Bound_width, pBdInfo->bd_info[i].is_fullbound);
 	}
 
-	if (autok_ds_dly_sel(pBdInfo, cycle_value, &uDatDly) == 0) {
+	if (autok_ds_dly_sel(pBdInfo, &uDatDly, p_autok_tune_res) == 0) {
 		autok_param_update(EMMC50_DS_ZDLY_DLY, uDatDly, p_autok_tune_res);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK]================Analysis Result[HS400]================\r\n");
@@ -3500,9 +3581,9 @@ int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (execute_cmd_online_tuning(host, res) != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS400 Failed========");
 
-	/*autok_msdc_reset();*/
-	/*msdc_clear_fifo();*/
-	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
+	autok_msdc_reset();
+	msdc_clear_fifo();
+	MSDC_WRITE32(MSDC_INT, 0xffffffff);
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
@@ -3570,9 +3651,9 @@ int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res)
 	if (execute_cmd_online_tuning(host, res) != 0)
 		AUTOK_RAWPRINT("[AUTOK only for cmd] ========Error: Autok HS200 Failed========");
 
-	/*autok_msdc_reset();*/
-	/*msdc_clear_fifo();*/
-	/*MSDC_WRITE32(MSDC_INT, 0xffffffff);*/
+	autok_msdc_reset();
+	msdc_clear_fifo();
+	MSDC_WRITE32(MSDC_INT, 0xffffffff);
 	MSDC_WRITE32(MSDC_INTEN, int_en);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, clk_pwdn);
 
