@@ -60,7 +60,6 @@ ccflags-y +=	-DHDMI_MT8193_SUPPORT
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/mt8193/
 endif
 
-$(warning "lwlwlw")
 obj-y +=  \
     dpi_dvt_test.o \
     dpi_dvt_platform.o \

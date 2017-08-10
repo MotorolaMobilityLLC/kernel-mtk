@@ -1037,7 +1037,7 @@ int __init anx7805_init(void)
 
 int slimport_anx7805_init(void)
 {
-	pr_warn("%s: \n", __func__);
+	pr_info("%s:\n", __func__);
 	anx7805_init();
 	return 0;
 }

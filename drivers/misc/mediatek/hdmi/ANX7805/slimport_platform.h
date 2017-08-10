@@ -51,10 +51,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 	pr_info(fmt, ## arg);
 
 #define SLIMPORT_TX_DBG_INFO(driver_context, fmt, arg...)				\
-	pr_warn(fmt, ## arg);
-
-#define SLIMPORT_TX_DBG_WARN(driver_context, fmt, arg...) 				\
-	pr_warn(fmt, ## arg);
+	pr_info(fmt, ## arg);
 
 #define SLIMPORT_TX_DBG_ERR(driver_context, fmt, arg...)				\
 	pr_err(fmt, ## arg);
