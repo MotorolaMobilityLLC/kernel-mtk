@@ -1052,6 +1052,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 		ret = -EFAULT;
 	}
 
+#if 0
 	if (((buffer_sec != 0) && ((int)buffer_type != ION_HEAP_TYPE_MULTIMEDIA_SEC)) ||
 	    ((buffer_sec == 0) && ((int)buffer_type == ION_HEAP_TYPE_MULTIMEDIA_SEC)))
 		IONMSG("[ion_heap]: Warning. CMD(%d) buffer para error from %d heap sec:%d(%d).!!!!!!\n",
@@ -1059,6 +1060,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 								buffer_type,
 								buffer_sec,
 								Param.config_buffer_param.security);
+#endif
 	if (from_kernel)
 		*(ion_mm_data_t *)arg = Param;
 	else
