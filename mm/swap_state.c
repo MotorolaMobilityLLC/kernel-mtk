@@ -173,7 +173,7 @@ int add_to_swap(struct page *page, struct list_head *list)
 	VM_BUG_ON_PAGE(!PageLocked(page), page);
 	VM_BUG_ON_PAGE(!PageUptodate(page), page);
 
-	entry = get_swap_page();
+	entry = get_swap_page_by_state(page);
 	if (!entry.val)
 		return 0;
 

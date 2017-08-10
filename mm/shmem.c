@@ -808,7 +808,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
 		SetPageUptodate(page);
 	}
 
-	swap = get_swap_page();
+	swap = get_swap_page_by_state(page);
 	if (!swap.val)
 		goto redirty;
 
