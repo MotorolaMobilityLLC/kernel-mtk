@@ -237,6 +237,10 @@ extern BOOLEAN fgIsBusAccessFailed;
 /* #define GLUE_BOW_DEVICE_NAME        "MT6620 802.11 AMP" */
 #define GLUE_BOW_DEVICE_NAME        "ampc0"
 
+/*Full2Partial*/
+#define UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT     60 /* s */
+
+#define FULL_SCAN_MAX_CHANNEL_NUM               40
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -576,6 +580,19 @@ struct _GLUE_INFO_T {
 	PUINT_8	puScanChannel;
 	UINT_64 u8SkbToDriver;
 	UINT_64 u8SkbFreed;
+
+	/*Full2Partial*/
+	/*save update full scan to partial scan information*/
+	/*last full scan time during AIS_STATE_NORMAL_TR state*/
+	OS_SYSTIME u4LastFullScanTime;
+	/*full scan or partial scan*/
+	UINT_8     ucTrScanType;
+	/*channel number, last full scan find AP*/
+	/*UINT_8   ucChannelListNum;*/
+	/*channel list, last full scan find AP*/
+	UINT_8     ucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
+	/**/
+	PUINT_8    puFullScan2PartialChannel;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);
