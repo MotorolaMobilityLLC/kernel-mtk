@@ -1841,11 +1841,11 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	/* <8> Wake up tx thread to handle kick start the I/O request */
 	wake_up_interruptible(&prGlueInfo->waitq);
 
-	/* <9> Block and wait for event or timeout, current the timeout is 5 secs */
-	/* if (wait_for_completion_interruptible_timeout(&prGlueInfo->rPendComp, 5 * KAL_HZ)) { */
-	/* if (!wait_for_completion_interruptible(&prGlueInfo->rPendComp)) { */
-	DBGLOG(OID, TEMP, "kalIoctl: before wait, caller: %p\n", __builtin_return_address(0));
-	wait_for_completion(&prGlueInfo->rPendComp); {
+	/* <9> Block and wait for event or timeout, current the timeout is 30 secs */
+	if (wait_for_completion_interruptible_timeout(&prGlueInfo->rPendComp, 30 * KAL_HZ)) {
+		/* if (!wait_for_completion_interruptible(&prGlueInfo->rPendComp)) { */
+		DBGLOG(OID, TEMP, "kalIoctl: before wait, caller: %p\n", __builtin_return_address(0));
+		/*wait_for_completion(&prGlueInfo->rPendComp); {*/
 		/* Case 1: No timeout. */
 		/* if return WLAN_STATUS_PENDING, the status of cmd is stored in prGlueInfo  */
 		if (prIoReq->rStatus == WLAN_STATUS_PENDING)
@@ -1853,14 +1853,19 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 		else
 			ret = prIoReq->rStatus;
 	}
-#if 0
+#if 1
 	else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
+		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_interruptible_timeout occurred!\n");
+		DBGLOG(OID, WARN, "kalIoctl: do whole chip reset!\n");
+		glDoChipReset();
+#if 0
 		if (fgCmd) {
 			prGlueInfo->u4TimeoutFlag = 1;
 			wlanReleasePendingOid(prGlueInfo->prAdapter, 0);
 		}
+#endif
 		ret = WLAN_STATUS_FAILURE;
 	}
 #endif
