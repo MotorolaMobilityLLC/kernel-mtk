@@ -19,9 +19,9 @@
 
 #include "teei_fp.h"
 
-//#define FP_DEBUG
+/* #define FP_DEBUG */
 
-#define FP_SIZE	0x80000
+#define MICROTRUST_FP_SIZE	0x80000
 #define CMD_MEM_CLEAR	_IO(0x775A777E, 0x1)
 #define CMD_FP_CMD      _IO(0x775A777E, 0x2)
 #define CMD_GATEKEEPER_CMD	_IO(0x775A777E, 0x3)
@@ -38,7 +38,7 @@ static dev_t devno;
 struct semaphore fp_api_lock;
 struct fp_dev {
 	struct cdev cdev;
-	unsigned char mem[FP_SIZE];
+	unsigned char mem[MICROTRUST_FP_SIZE];
 	struct semaphore sem;
 };
 
@@ -131,7 +131,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		}
 
 		Flush_Dcache_By_Area((unsigned long)fp_buff_addr,
-				(unsigned long)fp_buff_addr + FP_SIZE);
+				(unsigned long)fp_buff_addr + MICROTRUST_FP_SIZE);
 		/*send command data to TEEI*/
 		send_fp_command(FP_DRIVER_ID);
 #ifdef FP_DEBUG
@@ -233,7 +233,7 @@ static const struct file_operations fp_fops = {
 	.unlocked_ioctl = fp_ioctl,
  	.compat_ioctl = fp_ioctl,
 	.open = fp_open,
-	.release = fp_release, 
+	.release = fp_release,
 };
 
 static void fp_setup_cdev(struct fp_dev *dev, int index)
