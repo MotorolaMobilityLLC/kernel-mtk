@@ -47,15 +47,15 @@
 #define AUDIO_DL2_ISR_COPY_SUPPORT
 
 /* below for audio debugging */
-#define DEBUG_AUDDRV
-#define DEBUG_AFE_REG
-#define DEBUG_ANA_REG
-#define DEBUG_AUD_CLK
+/* #define DEBUG_AUDDRV */
+/* #define DEBUG_AFE_REG */
+/* #define DEBUG_ANA_REG */
+/* #define DEBUG_AUD_CLK */
 /* #define DEBUG_AUD_HDMI*/
 /* #define DEBUG_AUD_FMTX */
 /* #define DEBUG_AUD_UL2 */
 /* #define DEBUG_AUD_UL1 */
-#define DEBUG_AUD_DL1
+/* #define DEBUG_AUD_DL1 */
 /* #define DEBUG_AUD_DAI */
 
 #ifdef DEBUG_AUDDRV
