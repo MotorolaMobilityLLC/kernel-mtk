@@ -221,7 +221,6 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 	int timing;
 	int trans_num;
 	int trans_auxlen;
-	int dir = 0;
 
 	int number = 0;
 	int length = 0;
@@ -257,8 +256,6 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				I2CERR("invalid operation\n");
 				goto err;
 			}
-			if (dir > 0)
-				ext_flag |= I2C_DIRECTION_FLAG;
 
 			if (trans_mode == 0) {
 				/* default is fifo */

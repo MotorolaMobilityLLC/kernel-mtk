@@ -1261,6 +1261,7 @@ static void mt_i2c_clock_enable(struct mt_i2c_t *i2c)
 {
 #if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
 #if defined(CONFIG_MTK_CLKMGR)
+
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock enable .....\n");
 		enable_clock(MT_CG_PERI_APDMA, "i2c");
@@ -1271,10 +1272,12 @@ static void mt_i2c_clock_enable(struct mt_i2c_t *i2c)
 #else
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock enable .....\n");
-		clk_prepare_enable(i2c->clk_dma);
+		if (clk_prepare_enable(i2c->clk_dma))
+			pr_err("clk_prepare_enable: i2c->clk_dma fail\n");
 	}
 	I2CINFO(I2C_T_TRANSFERFLOW, "Before i2c clock enable .....\n");
-	clk_prepare_enable(i2c->clk_main);
+	if (clk_prepare_enable(i2c->clk_main))
+		pr_err("clk_prepare_enable: i2c->clk_main fail\n");
 	I2CINFO(I2C_T_TRANSFERFLOW, "clock enable done.....\n");
 #endif
 #endif
@@ -1432,7 +1435,7 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	if (!request_mem_region(res->start, resource_size(res), pdev->name))
 		return -ENOMEM;
 
-	i2c = kzalloc(sizeof(struct mt_i2c_t), GFP_KERNEL);
+	i2c = devm_kzalloc(&pdev->dev, sizeof(struct mt_i2c_t), GFP_KERNEL);
 	if (NULL == i2c)
 		return -ENOMEM;
 
