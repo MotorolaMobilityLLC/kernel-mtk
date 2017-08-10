@@ -414,6 +414,9 @@ static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
 				enum fullness_group *fullness)
 {
 	unsigned long m;
+
+	if (unlikely(!is_first_page(page)))
+		dump_page(page, "NOT first page");
 	BUG_ON(!is_first_page(page));
 
 	m = (unsigned long)page->mapping;
