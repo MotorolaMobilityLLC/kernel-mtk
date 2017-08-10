@@ -18,9 +18,12 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
 #include <leds_drv.h>
+#include <leds_sw.h>
 #include <cmdq_record.h>
 #include <ddp_reg.h>
 #include <ddp_drv.h>
@@ -59,6 +62,7 @@
 int aal_dbg_en = 0;
 
 #define AAL_ERR(fmt, arg...) pr_err("[AAL] " fmt "\n", ##arg)
+#define AAL_NOTICE(fmt, arg...) pr_warn("[AAL] " fmt "\n", ##arg)
 #define AAL_DBG(fmt, arg...) \
 	do { if (aal_dbg_en) pr_debug("[AAL] " fmt "\n", ##arg); } while (0)
 
@@ -66,6 +70,8 @@ int aal_dbg_en = 0;
 static int disp_aal_write_init_regs(void *cmdq);
 #endif
 static int disp_aal_write_param_to_reg(cmdqRecHandle cmdq, const DISP_AAL_PARAM *param);
+static void set_aal_need_lock(int aal_need_lock);
+
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
@@ -81,6 +87,37 @@ static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
+static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
+static volatile int g_aal_need_lock;
+
+static int disp_aal_get_cust_led(void)
+{
+	struct device_node *led_node = NULL;
+	int ret = 0;
+	int led_mode;
+	int pwm_config[5] = { 0 };
+
+	led_node = of_find_compatible_node(NULL, NULL, "mediatek,lcd-backlight");
+	if (!led_node) {
+		ret = -1;
+		AAL_ERR("Cannot find LED node from dts\n");
+	} else {
+		ret = of_property_read_u32(led_node, "led_mode", &led_mode);
+		if (!ret)
+			g_led_mode = led_mode;
+		else
+			AAL_ERR("led dts can not get led mode data.\n");
+
+		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
+						       ARRAY_SIZE(pwm_config));
+	}
+
+	if (ret)
+		AAL_ERR("get pwm cust info fail");
+	AAL_DBG("mode=%u", g_led_mode);
+
+	return ret;
+}
 
 static int disp_aal_exit_idle(const char *caller, int need_kick)
 {
@@ -106,6 +143,9 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757) /* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
 #endif
+	/* get lcd-backlight mode from dts */
+	if (g_led_mode == MT65XX_LED_MODE_NONE)
+		disp_aal_get_cust_led();
 	g_aal_hist_available = 0;
 	g_aal_dirty_frame_retrieved = 1;
 
@@ -346,10 +386,17 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	if (bl_1024 > max_backlight)
 		bl_1024 = max_backlight;
 
+	/* default set need not to lock display path */
+	set_aal_need_lock(0);
+
 	g_aal_backlight_notified = bl_1024;
 
 	service_flags = 0;
 	if (bl_1024 == 0) {
+		/* set backlight under LCM_CABC mode with cpu : need lock */
+		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
+			set_aal_need_lock(1);
+
 		backlight_brightness_set(0);
 		/* set backlight = 0 may be not from AAL, we have to let AALService
 		   can turn on backlight on phone resumption */
@@ -358,9 +405,14 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
 		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
+		/* set backlight under LCM_CABC mode with cpu : need lock */
+		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
+			set_aal_need_lock(1);
+
 		/* AAL Service is not running */
 		backlight_brightness_set(bl_1024);
 	}
+	AAL_NOTICE("led_mode=%d , aal_need_lock=%d", g_led_mode, g_aal_need_lock);
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	g_aal_hist.backlight = bl_1024;
@@ -487,6 +539,12 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
 		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
+
+	/*
+	set backlight from user cmd ioctl, no display path lock needed because
+	lock already applied
+	  */
+	set_aal_need_lock(0);
 
 	backlight_brightness_set(backlight_value);
 
@@ -719,6 +777,17 @@ int aal_request_partial_support(int partial)
 	AAL_DBG("aal_request_partial_support: %d", partial);
 
 	return 0;
+}
+
+int aal_is_need_lock(void)
+{
+	AAL_NOTICE("g_aal_need_lock = %d", g_aal_need_lock);
+	return g_aal_need_lock;
+}
+
+static void set_aal_need_lock(int aal_need_lock)
+{
+	g_aal_need_lock = aal_need_lock;
 }
 
 #ifdef AAL_SUPPORT_PARTIAL_UPDATE
