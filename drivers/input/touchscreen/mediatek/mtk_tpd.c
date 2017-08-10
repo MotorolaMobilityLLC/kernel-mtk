@@ -491,7 +491,7 @@ static int tpd_probe(struct platform_device *pdev)
 			return ret;
 		}
 		TPD_RES_X = tpd_res_x;
-		ret = kstrtoul(CONFIG_LCM_HEIGHT, 0, &tpd_res_x);*/
+		ret = kstrtoul(CONFIG_LCM_HEIGHT, 0, &tpd_res_y);
 		if (ret < 0) {
 			pr_err("Touch down get lcm_y failed");
 			return ret;
