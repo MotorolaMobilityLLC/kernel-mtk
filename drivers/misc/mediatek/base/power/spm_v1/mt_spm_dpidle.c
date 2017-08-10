@@ -77,7 +77,7 @@
 	WAKE_SRC_SYSPWREQ | WAKE_SRC_MD_WDT | WAKE_SRC_C2K_WDT | WAKE_SRC_CLDMA_MD)
 #endif
 
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 #define WAKE_SRC_FOR_DPIDLE \
 	(WAKE_SRC_KP | WAKE_SRC_GPT | WAKE_SRC_EINT | WAKE_SRC_CONN_WDT| \
 	WAKE_SRC_CCIF0_MD | WAKE_SRC_CONN2AP | WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN | \
@@ -755,7 +755,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.md1_req_mask = 0,
 	.md2_req_mask = 0,
 };
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 /**********************************************************
  * PCM code for deep idle
  **********************************************************/
@@ -996,7 +996,8 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		 * MT6735/MT6735M: Mp0_axi_config[4] is one by default. No need to program it before entering deepidle.
 		 * MT6753:         Have to program it before entering deepidle.
 		 */
-#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARM_MT6735) || defined(CONFIG_ARM_MT6735M) || defined(CONFIG_ARCH_MT6570) || \
+defined(CONFIG_ARCH_MT6580)
 		wfi_with_sync();
 #elif defined(CONFIG_ARCH_MT6753)
 		/* backup MPx_AXI_CONFIG */
@@ -1090,7 +1091,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 			wr = WR_NONE;
 		}
 	}
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	if (wakesta->r12 & WAKE_SRC_CLDMA_MD)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
@@ -1151,7 +1152,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | (1 << SPM_DEEPIDLE_ENTER_UART_SLEEP));
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -1181,12 +1182,12 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
 #endif
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_set_primask();
 #endif
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_clear_primask();
 #endif
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
@@ -1207,7 +1208,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | (1 << SPM_DEEPIDLE_ENTER_UART_AWAKE));
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	request_uart_to_wakeup();
 #endif
 
@@ -1216,7 +1217,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 #if defined(CONFIG_ARCH_MT6753)
 	__spm_disable_i2c4_clk();
 #endif
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 RESTORE_IRQ:
 #endif
 	mt_cirq_flush();

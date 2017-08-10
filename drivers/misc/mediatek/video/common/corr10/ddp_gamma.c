@@ -528,7 +528,7 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		enable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
 #else
@@ -544,7 +544,7 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		disable_clock(MT_CG_DISP0_DISP_CCORR, "CCORR");
 #endif
 #else

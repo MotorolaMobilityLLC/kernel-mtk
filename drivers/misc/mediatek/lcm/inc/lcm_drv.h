@@ -850,6 +850,7 @@ typedef struct {
 #if	defined(CONFIG_ARCH_MT6735) ||\
 	defined(CONFIG_ARCH_MT6735M) ||\
 	defined(CONFIG_ARCH_MT6753) ||\
+	defined(CONFIG_ARCH_MT6570) ||\
 	defined(CONFIG_ARCH_MT6580) ||\
 	defined(CONFIG_ARCH_MT8167)
 extern LCM_DRIVER *lcm_driver_list[];

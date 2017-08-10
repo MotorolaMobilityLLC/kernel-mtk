@@ -24,6 +24,9 @@ ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
 				-I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
+ifeq ($(CONFIG_ARCH_MT6570),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/
+endif
 ifeq ($(CONFIG_ARCH_MT6580),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/
 endif

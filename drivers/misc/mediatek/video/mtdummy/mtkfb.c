@@ -44,12 +44,11 @@
 /* #include <mach/irqs.h> */
 /* #include "mach/mt_boot.h" */
 
-#define DISPCHECK pr_warn
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
-#define SCREEN_WIDHT  (1080)
-#define SCREEN_HEIGHT  (1920)
+#define SCREEN_WIDTH   (540)
+#define SCREEN_HEIGTH  (960)
 
 #define MTK_FB_ALIGNMENT 32
 
@@ -66,6 +65,8 @@ static u32 fb_yres_update;
 #define MTK_FB_SIZE  (MTK_FB_LINE * ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT))
 
 #define MTK_FB_SIZEV (MTK_FB_LINE * ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) * MTK_FB_PAGES)
+
+#define NOT_REFERENCED(x)    { (x) = (x); }
 
 /* --------------------------------------------------------------------------- */
 /* local variables */
@@ -98,6 +99,81 @@ unsigned int DISP_GetVRamSizeBoot(void)
 {
 	return 0x01800000;
 }
+
+/* --------------------------------------------------------------------------- */
+/* Export function declarations */
+/* --------------------------------------------------------------------------- */
+typedef enum {
+	DAL_STATUS_OK = 0,
+	DAL_STATUS_NOT_READY = -1,
+	DAL_STATUS_INVALID_ARGUMENT = -2,
+	DAL_STATUS_LOCK_FAIL = -3,
+	DAL_STATUS_LCD_IN_SUSPEND = -4,
+	DAL_STATUS_FATAL_ERROR = -10,
+} DAL_STATUS;
+
+typedef enum {
+	DAL_COLOR_BLACK = 0x000000,
+	DAL_COLOR_WHITE = 0xFFFFFF,
+	DAL_COLOR_RED = 0xFF0000,
+	DAL_COLOR_GREEN = 0x00FF00,
+	DAL_COLOR_BLUE = 0x0000FF,
+	DAL_COLOR_TURQUOISE = (DAL_COLOR_GREEN | DAL_COLOR_BLUE),
+	DAL_COLOR_YELLOW = (DAL_COLOR_RED | DAL_COLOR_GREEN),
+	DAL_COLOR_PINK = (DAL_COLOR_RED | DAL_COLOR_BLUE),
+} DAL_COLOR;
+
+unsigned int isAEEEnabled = 0;
+
+uint32_t DAL_GetLayerSize(void)
+{
+	/* avoid lcdc read buffersize+1 issue */
+	return (SCREEN_WIDTH * SCREEN_HEIGTH * 2 + 4096);
+}
+
+DAL_STATUS DAL_Init(uint32_t layerVA, uint32_t layerPA)
+{
+	NOT_REFERENCED(layerVA);
+	NOT_REFERENCED(layerPA);
+
+	return DAL_STATUS_OK;
+}
+
+DAL_STATUS DAL_SetColor(unsigned int fgColor, unsigned int bgColor)
+{
+	NOT_REFERENCED(fgColor);
+	NOT_REFERENCED(bgColor);
+
+	return DAL_STATUS_OK;
+}
+EXPORT_SYMBOL(DAL_SetColor);
+
+DAL_STATUS DAL_Clean(void)
+{
+	pr_err("[MTKFB_DAL] DAL_Clean is not implemented\n");
+	return DAL_STATUS_OK;
+}
+EXPORT_SYMBOL(DAL_Clean);
+
+DAL_STATUS DAL_Printf(const char *fmt, ...)
+{
+	NOT_REFERENCED(fmt);
+	pr_err("[MTKFB_DAL] DAL_Printf is not implemented\n");
+	return DAL_STATUS_OK;
+}
+EXPORT_SYMBOL(DAL_Printf);
+
+DAL_STATUS DAL_OnDispPowerOn(void)
+{
+	return DAL_STATUS_OK;
+}
+
+DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
+{
+	return DAL_STATUS_OK;
+}
+EXPORT_SYMBOL(DAL_SetScreenColor);
+
 
 /*
  * ---------------------------------------------------------------------------
@@ -215,7 +291,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 
 static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info *info)
 {
-	DISPCHECK("xoffset=%u, yoffset=%u, xres=%u, yres=%u, xresv=%u, yresv=%u\n", var->xoffset,
+	pr_err("xoffset=%u, yoffset=%u, xres=%u, yres=%u, xresv=%u, yresv=%u\n", var->xoffset,
 	       var->yoffset, info->var.xres, info->var.yres, info->var.xres_virtual,
 	       info->var.yres_virtual);
 	info->var.yoffset = var->yoffset;
@@ -234,14 +310,14 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 	struct mtkfb_device *fbdev = (struct mtkfb_device *)fbi->par;
 
-	pr_warn("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
+	pr_err("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
 	       var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 	       var->xoffset, var->yoffset, var->bits_per_pixel);
 
 	bpp = var->bits_per_pixel;
 
 	if (bpp != 16 && bpp != 24 && bpp != 32) {
-		DISPCHECK("[%s]unsupported bpp: %d", __func__, bpp);
+		pr_err("[%s]unsupported bpp: %d", __func__, bpp);
 		return -1;
 	}
 
@@ -266,7 +342,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 		var->yres_virtual = var->yres;
 
 	max_frame_size = fbdev->fb_size_in_byte;
-	DISPCHECK("fbdev->fb_size_in_byte=0x%08lx\n", fbdev->fb_size_in_byte);
+	pr_err("fbdev->fb_size_in_byte=0x%08lx\n", fbdev->fb_size_in_byte);
 	line_size = var->xres_virtual * bpp / 8;
 
 	if (line_size * var->yres_virtual > max_frame_size) {
@@ -280,7 +356,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 			var->yres_virtual = max_frame_size / line_size;
 		}
 	}
-	pr_warn("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
+	pr_err("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
 	       var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 	       var->xoffset, var->yoffset, var->bits_per_pixel);
 	if (var->xres + var->xoffset > var->xres_virtual)
@@ -288,7 +364,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	if (var->yres + var->yoffset > var->yres_virtual)
 		var->yoffset = var->yres_virtual - var->yres;
 
-	pr_warn("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
+	pr_err("mtkfb_check_var, xres=%u, yres=%u, xres_virtual=%u, yres_virtual=%u, xoffset=%u, yoffset=%u, bits_per_pixel=%u)\n",
 	       var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 	       var->xoffset, var->yoffset, var->bits_per_pixel);
 
@@ -391,7 +467,7 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	r = fb_alloc_cmap(&info->cmap, 32, 0);
 	if (r != 0)
-		DISPCHECK("unable to allocate color map memory\n");
+		pr_err("unable to allocate color map memory\n");
 
 	/* setup the initial video mode (RGB565) */
 
@@ -429,13 +505,13 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 
 	r = mtkfb_check_var(&var, info);
 	if (r != 0)
-		DISPCHECK("failed to mtkfb_check_var\n");
+		pr_err("failed to mtkfb_check_var\n");
 
 	info->var = var;
 
 	r = mtkfb_set_par(info);
 	if (r != 0)
-		DISPCHECK("failed to mtkfb_set_par\n");
+		pr_err("failed to mtkfb_set_par\n");
 	return r;
 }
 
@@ -461,7 +537,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		mtkfb_fbinfo_cleanup(fbdev);
 		/* lint -fallthrough */
 	case 2:
-#ifndef FPGA_EARLY_PORTING
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		dma_free_coherent(0, fbdev->fb_size_in_byte, fbdev->fb_va_base, fbdev->fb_pa_base);
 #endif
 		/* lint -fallthrough */
@@ -550,13 +626,13 @@ int __parse_tag_videolfb_extra(unsigned long node)
 	if (!prop)
 		return -1;
 	if (size >= sizeof(mtkfb_lcm_name)) {
-		DISPCHECK("%s: error to get lcmname size=%ld\n", __func__, size);
+		pr_err("%s: error to get lcmname size=%ld\n", __func__, size);
 		return -1;
 	}
 	memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
 	strncpy((char *)mtkfb_lcm_name, prop, sizeof(mtkfb_lcm_name));
 	mtkfb_lcm_name[size] = '\0';
-	pr_debug("__parse_tag_videolfb_extra done\n");
+	pr_err("__parse_tag_videolfb_extra done\n");
 	return 0;
 }
 
@@ -582,7 +658,7 @@ int __parse_tag_videolfb(unsigned long node)
 		return 0;
 	}
 
-	DISPCHECK("[DT][videolfb] videolfb_tag not found\n");
+	pr_err("[DT][videolfb] videolfb_tag not found\n");
 	return -1;
 }
 
@@ -592,7 +668,7 @@ static int _parse_tag_videolfb(void)
 	int ret;
 	unsigned long node = 0;
 
-	DISPCHECK("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
+	pr_err("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
 
 	if (is_videofb_parse_done)
 		return 0;
@@ -606,18 +682,18 @@ static int _parse_tag_videolfb(void)
 		if (!ret)
 			goto found;
 	} else {
-		DISPCHECK("[DT][videolfb] of_chosen not found\n");
+		pr_err("[DT][videolfb] of_chosen not found\n");
 	}
 	return -1;
 
 found:
 	is_videofb_parse_done = 1;
-	DISPCHECK("[DT][videolfb] islcmfound = %d\n", islcmconnected);
-	DISPCHECK("[DT][videolfb] is_lcm_inited = %d\n", is_lcm_inited);
-	DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
-	DISPCHECK("[DT][videolfb] fb_base    = 0x%lx\n", (unsigned long)fb_base);
-	DISPCHECK("[DT][videolfb] vram       = 0x%x (%d)\n", vramsize, vramsize);
-	DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+	pr_err("[DT][videolfb] islcmfound = %d\n", islcmconnected);
+	pr_err("[DT][videolfb] is_lcm_inited = %d\n", is_lcm_inited);
+	pr_err("[DT][videolfb] fps        = %d\n", lcd_fps);
+	pr_err("[DT][videolfb] fb_base    = 0x%lx\n", (unsigned long)fb_base);
+	pr_err("[DT][videolfb] vram       = 0x%x (%d)\n", vramsize, vramsize);
+	pr_err("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 	return 0;
 }
 
@@ -633,7 +709,7 @@ int mtkfb_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigne
 			       unsigned int *mva)
 {
 	*va = (unsigned long)ioremap_nocache(pa_start, pa_end - pa_start + 1);
-	DISPCHECK("disphal_allocate_fb, pa=%pa, va=0x%08x\n", &pa_start, *va);
+	pr_err("disphal_allocate_fb, pa=%pa, va=0x%08x\n", &pa_start, *va);
 	{
 		*mva = pa_start & 0xffffffffULL;
 	}
@@ -648,7 +724,7 @@ static int mtkfb_probe(struct device *dev)
 	int init_state;
 	int r = 0;
 
-	DISPCHECK("mtkfb_probe begin\n");
+	pr_err("mtkfb_probe begin\n");
 
 #ifdef CONFIG_OF
 	_parse_tag_videolfb();
@@ -659,7 +735,7 @@ static int mtkfb_probe(struct device *dev)
 
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
 	if (!fbi) {
-		DISPCHECK("unable to allocate memory for device info\n");
+		pr_err("unable to allocate memory for device info\n");
 		r = -ENOMEM;
 		goto cleanup;
 	}
@@ -672,9 +748,9 @@ static int mtkfb_probe(struct device *dev)
 	{
 
 #ifdef CONFIG_OF
-		DISPCHECK("mtkfb_probe:get FB MEM REG\n");
+		pr_err("mtkfb_probe:get FB MEM REG\n");
 		_parse_tag_videolfb();
-		DISPCHECK("mtkfb_probe: fb_pa = 0x%p\n", (void *)fb_base);
+		pr_err("mtkfb_probe: fb_pa = 0x%p\n", (void *)fb_base);
 
 		mtkfb_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 					   (unsigned int *)&fbdev->fb_va_base, &fb_pa);
@@ -689,24 +765,24 @@ static int mtkfb_probe(struct device *dev)
 	}
 
 	init_state++;		/* 1 */
-	MTK_FB_XRES = SCREEN_WIDHT;
-	MTK_FB_YRES = SCREEN_HEIGHT;
+	MTK_FB_XRES = SCREEN_WIDTH;
+	MTK_FB_YRES = SCREEN_HEIGTH;
 	fb_xres_update = MTK_FB_XRES;
 	fb_yres_update = MTK_FB_YRES;
 
 	MTK_FB_BPP = 32;
 	MTK_FB_PAGES = 3;
-	DISPCHECK
+	pr_err
 	    ("MTK_FB_XRES=%d, MTKFB_YRES=%d, MTKFB_BPP=%d, MTK_FB_PAGES=%d, MTKFB_LINE=%d, MTKFB_SIZEV=%d\n",
 	     MTK_FB_XRES, MTK_FB_YRES, MTK_FB_BPP, MTK_FB_PAGES, MTK_FB_LINE, MTK_FB_SIZEV);
 	fbdev->fb_size_in_byte = MTK_FB_SIZEV;
 
 	/* Allocate and initialize video frame buffer */
-	DISPCHECK("[FB Driver] fbdev->fb_pa_base = %p, fbdev->fb_va_base = %lx\n",
+	pr_err("[FB Driver] fbdev->fb_pa_base = %p, fbdev->fb_va_base = %lx\n",
 	       (void *)fbdev->fb_pa_base, (unsigned long)(fbdev->fb_va_base));
 
 	if (!fbdev->fb_va_base) {
-		DISPCHECK("unable to allocate memory for frame buffer\n");
+		pr_err("unable to allocate memory for frame buffer\n");
 		r = -ENOMEM;
 		goto cleanup;
 	}
@@ -716,7 +792,7 @@ static int mtkfb_probe(struct device *dev)
 
 	r = mtkfb_fbinfo_init(fbi);
 	if (r) {
-		DISPCHECK("mtkfb_fbinfo_init fail, r = %d\n", r);
+		pr_err("mtkfb_fbinfo_init fail, r = %d\n", r);
 		goto cleanup;
 	}
 	init_state++;		/* 4 */
@@ -725,17 +801,17 @@ static int mtkfb_probe(struct device *dev)
 
 	r = register_framebuffer(fbi);
 	if (r != 0) {
-		DISPCHECK("register_framebuffer failed\n");
+		pr_err("register_framebuffer failed\n");
 		goto cleanup;
 	}
 	fbdev->state = MTKFB_ACTIVE;
-	DISPCHECK("mtkfb_probe end\n");
+	pr_err("mtkfb_probe end0\n");
 	return 0;
 
 cleanup:
 	mtkfb_free_resources(fbdev, init_state);
 
-	DISPCHECK("mtkfb_probe end\n");
+	pr_err("mtkfb_probe end1\n");
 	return r;
 }
 
@@ -787,10 +863,10 @@ int __init mtkfb_init(void)
 {
 	int r = 0;
 
-	DISPCHECK("mtkfb_init init");
+	pr_err("mtkfb_init init");
 
 	if (platform_driver_register(&mtkfb_driver)) {
-		DISPCHECK("failed to register mtkfb driver\n");
+		pr_err("failed to register mtkfb driver\n");
 		r = -ENODEV;
 	}
 	return r;

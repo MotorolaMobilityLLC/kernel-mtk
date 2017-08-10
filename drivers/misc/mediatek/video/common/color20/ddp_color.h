@@ -84,7 +84,7 @@ enum {
 #define MIRAVISION_HW_VERSION       (5)
 #elif defined(CONFIG_ARCH_MT6753)
 #define MIRAVISION_HW_VERSION       (6)
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 #define MIRAVISION_HW_VERSION       (7)
 #elif defined(CONFIG_ARCH_MT6755)
 #define MIRAVISION_HW_VERSION       (8)

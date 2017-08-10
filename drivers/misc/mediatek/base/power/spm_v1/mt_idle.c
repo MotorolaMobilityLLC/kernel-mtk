@@ -36,7 +36,7 @@
 #include "mt_ptp.h"
 #include <mach/mt_gpt.h>
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 #include <mach/mt_cpuxgpt.h>
 #else
 #include <mach/mt_clkmgr.h>
@@ -76,7 +76,7 @@ enum mt_idle_mode {
 	MT_SLIDLE,
 };
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 enum {
 	CG_INFRA   = 0,
 	CG_PERI    = 1,
@@ -455,7 +455,7 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* VDEC1: */
 	0x00000000, /* VENC: */
 };
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 /*Idle handler on/off*/
 static int idle_switch[NR_TYPES] = {
 	1,  /* dpidle switch */
@@ -525,7 +525,7 @@ static const char *reason_name[NR_REASONS] = {
 };
 
 char cg_group_name[][NR_GRPS] = {
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	"INFRA",
 	"PERI",
 	"DISP0",
@@ -608,7 +608,7 @@ static unsigned int		idle_spm_lock;
 #define clk_readl(addr)			__raw_readl(addr)
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 static void __iomem *infrasys_base;
 static void __iomem *perisys_base;
 static void __iomem *audiosys_base;
@@ -791,7 +791,7 @@ static int __init get_base_from_node(
 	node = of_find_matching_node(NULL, ids);
 	if (!node) {
 		idle_warn("node '%s' not found!\n", cmp);
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		BUG();
 #endif
 	}
@@ -799,7 +799,7 @@ static int __init get_base_from_node(
 	*pbase = of_iomap(node, idx);
 	if (!(*pbase)) {
 		idle_warn("node '%s' cannot iomap!\n", cmp);
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		BUG();
 #endif
 	}
@@ -987,7 +987,7 @@ void disable_soidle_by_bit(int id)
 }
 EXPORT_SYMBOL(disable_soidle_by_bit);
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 void defeature_soidle_by_display(void)
 {
     if (idle_switch[IDLE_TYPE_SO] != 0)
@@ -1032,7 +1032,7 @@ static bool soidle_can_enter(int cpu)
 
 	if (soidle_by_pass_cg == 0) {
 		memset(soidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		if (!cg_check_idle_can_enter(soidle_condition_mask, soidle_block_mask, MT_SOIDLE)) {
 #else
 	if (!clkmgr_idle_can_enter(soidle_condition_mask, soidle_block_mask)) {
@@ -1235,7 +1235,7 @@ static bool dpidle_can_enter(void)
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		if (!cg_check_idle_can_enter(dpidle_condition_mask, dpidle_block_mask, MT_DPIDLE)) {
 #else
 		if (!clkmgr_idle_can_enter(dpidle_condition_mask, dpidle_block_mask)) {
@@ -1309,7 +1309,7 @@ void spm_dpidle_before_wfi(void)
 {
 	bus_dcm_enable();
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	faudintbus_pll2sq();
 #else
 	clkmgr_faudintbus_pll2sq();
@@ -1354,7 +1354,7 @@ void spm_dpidle_after_wfi(void)
 	}
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	faudintbus_sq2pll();
 #else
 	clkmgr_faudintbus_sq2pll();
@@ -1415,7 +1415,7 @@ static bool slidle_can_enter(void)
 	}
 
 	memset(slidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	if (!cg_check_idle_can_enter(slidle_condition_mask, slidle_block_mask, MT_SLIDLE)) {
 #else
 	if (!clkmgr_idle_can_enter(slidle_condition_mask, slidle_block_mask)) {
@@ -2229,7 +2229,7 @@ static int mt_cpuidle_debugfs_init(void)
 void mt_cpuidle_framework_init(void)
 {
 	int err = 0;
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	int i = 0;
 #endif
 
@@ -2242,7 +2242,7 @@ void mt_cpuidle_framework_init(void)
 
 	err = 0;
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	for (i = 0; i < num_possible_cpus(); i++)
 		err |= cpu_xgpt_register_timer(i, NULL);
 #else
@@ -2252,7 +2252,7 @@ void mt_cpuidle_framework_init(void)
 	if (err)
 		idle_warn("[%s]fail to request cpuxgpt\n", __func__);
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	iomap_init();
 #endif
 

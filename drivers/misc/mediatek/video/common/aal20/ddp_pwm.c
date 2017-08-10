@@ -521,7 +521,7 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6752)
 		enable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		enable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 		enable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
 #else
 		enable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
@@ -556,7 +556,7 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_ARCH_MT6752)
 		disable_clock(MT_CG_DISP1_DISP_PWM_26M, "PWM");
 		disable_clock(MT_CG_DISP1_DISP_PWM_MM, "PWM");
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 		disable_clock(MT_CG_PWM_MM_SW_CG, "PWM");
 #else
 		disable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");

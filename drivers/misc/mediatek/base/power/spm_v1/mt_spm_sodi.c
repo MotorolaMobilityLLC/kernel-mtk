@@ -90,7 +90,7 @@
 	WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN | WAKE_SRC_SEJ | WAKE_SRC_AFE | \
 	WAKE_SRC_CIRQ | WAKE_SRC_MD1_VRF18_WAKE | WAKE_SRC_SYSPWREQ | \
 	WAKE_SRC_MD_WDT | WAKE_SRC_C2K_WDT | WAKE_SRC_CLDMA_MD)
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 #define WAKE_SRC_FOR_SODI \
 	(WAKE_SRC_KP | WAKE_SRC_GPT | WAKE_SRC_EINT | WAKE_SRC_WDT | \
 	WAKE_SRC_CCIF0_MD | WAKE_SRC_CONN2AP | \
@@ -623,7 +623,7 @@ static struct pcm_desc sodi_pcm = {
 	.vec4		= EVENT_VEC(11, 1, 0, 234),	/* FUNC_VCORE_HIGH2 */
 	.vec5		= EVENT_VEC(12, 1, 0, 264),	/* FUNC_VCORE_LOW2 */
 };
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 static const u32 sodi_binary[] = {
 	0x814e0001, 0xd8200465, 0x17c07c1f, 0x81491801, 0xd80001c5, 0x17c07c1f,
 	0x18c0001f, 0x102085cc, 0x1910001f, 0x102085cc, 0x813f8404, 0xe0c00004,
@@ -772,7 +772,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mfg_req_mask		= 1,
 	.lte_mask			= 1,
 
-#if defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	.md2_req_mask		= 1,
 #endif
 
@@ -824,7 +824,7 @@ static unsigned int sodi_cnt, timeout_cnt;
 static unsigned int refresh_cnt, not_refresh_cnt;
 static unsigned int by_cldma_cnt, by_conn2ap_count;
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 static const char *sodi_wakesrc_str[32] = {
 	[0] = "SPM_MERGE",
 	[1] = "LTE_PTP",
@@ -954,13 +954,13 @@ static void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 		wfi_with_sync();
 }
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 static u32 vsram_vosel_on_lb;
 #endif
 
 static void spm_sodi_pre_process(void)
 {
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	/* set PMIC WRAP table for deepidle power control */
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
@@ -970,7 +970,7 @@ static void spm_sodi_pre_process(void)
 
 static void spm_sodi_post_process(void)
 {
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	__spm_dpidle_sodi_restore_pmic_setting(vsram_vosel_on_lb);
 
 	/* set PMIC WRAP table for normal power control */
@@ -997,7 +997,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_sodi_val(1 << SPM_SODI_ENTER);
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	spm_flags &= ~SPM_DISABLE_ATF_ABORT;
 #else
@@ -1061,7 +1061,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val()|(1<<SPM_SODI_ENTER_UART_SLEEP));
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -1105,11 +1105,11 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 #if SPM_AEE_RR_REC
 	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << SPM_SODI_ENTER_WFI));
 #endif
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_set_primask();
 #endif
 	spm_trigger_wfi_for_sodi(pwrctrl);
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_clear_primask();
 #endif
 
@@ -1127,7 +1127,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val()|(1<<SPM_SODI_ENTER_UART_AWAKE));
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	request_uart_to_wakeup();
 #endif
 
@@ -1151,7 +1151,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 		need_log_out = 1;
 	} else if (wakesta.r12 == 0) {
 		need_log_out = 2;
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	} else if ((wakesta.r12 & (WAKE_SRC_GPT | WAKE_SRC_CONN2AP)) == 0) {
 		/* not wakeup by GPT, CONN2AP and CLDMA_WDT */
 		need_log_out = 3;
@@ -1269,7 +1269,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 		if (spm_read(SPM_PCM_PASR_DPD_3) == 0)
 			not_refresh_cnt++;
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 		if (wakesta.r12 & WAKE_SRC_CLDMA_MD)
 			by_cldma_cnt++;
 #endif
@@ -1288,7 +1288,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	__spm_disable_i2c4_clk();
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 RESTORE_IRQ:
 #endif
 	mt_cirq_flush();

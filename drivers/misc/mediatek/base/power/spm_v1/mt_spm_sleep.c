@@ -42,7 +42,7 @@
 /* #include <mt_i2c.h> */
 
 #include "mt_spm_internal.h"
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 #include "pwrap_hal.h"
 #include "mt_vcore_dvfs.h"
 /* #include <mach/mt_dramc.h> */
@@ -59,7 +59,7 @@
 #include <mt-plat/mt_usb2jtag.h>
 #endif
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 #define DISABLE_DLPT_FEATURE
 #endif
 /**************************************
@@ -676,7 +676,7 @@ static struct pcm_desc suspend_pcm = {
 	.vec6 = EVENT_VEC(11, 1, 0, 425),	/* FUNC_VCORE_HIGH */
 	.vec7 = EVENT_VEC(12, 1, 0, 457),	/* FUNC_VCORE_LOW */
 };
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 
 static const u32 suspend_binary[] = {
 	0xa1d58407, 0x81f68407, 0x803a0400, 0x1b80001f, 0x20000000, 0x80300400,
@@ -825,7 +825,7 @@ static struct pcm_desc suspend_pcm = {
 
 #define SPM_WAKE_PERIOD         600	/* sec */
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_KP | WAKE_SRC_EINT |  WAKE_SRC_CONN_WDT  |  WAKE_SRC_CCIF0_MD | WAKE_SRC_CONN2AP | \
@@ -975,7 +975,7 @@ extern void mtk_uart_restore(void);
 extern void dump_uart_reg(void);
 */
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 
 static struct pwr_ctrl suspend_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SUSPEND,
@@ -1396,7 +1396,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	}
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	if (wakesta->r13 & 0x18) {
 		spm_warn("dump ID_DUMP_MD_SLEEP_MODE");
@@ -1630,7 +1630,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_set_wakeup_event(pwrctrl);
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_SUSPEND);
 #endif
 #if 0
@@ -1665,15 +1665,15 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | (1 << SPM_SUSPEND_ENTER_WFI));
 #endif
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_set_primask();
 #endif
 	spm_trigger_wfi_for_sleep(pwrctrl);
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_clear_primask();
 #endif
 
-#if !defined(CONFIG_ARCH_MT6580)
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
 #endif
 
@@ -1891,7 +1891,7 @@ u32 spm_get_last_wakeup_misc(void)
 	return spm_wakesta.wake_misc;
 }
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 uint32_t get_suspend_debug_flag(void)
 {
 	uint32_t value = 0;
