@@ -27,6 +27,9 @@
 
 #define MTK_EXT_DISP_OVERLAY_SUPPORT
 
+#define MHL_DYNAMIC_VSYNC_OFFSET
+
+
 /* /#define EXTD_DBG_USE_INNER_BUF */
 
 /*#define HW_OVERLAY_COUNT  4*/

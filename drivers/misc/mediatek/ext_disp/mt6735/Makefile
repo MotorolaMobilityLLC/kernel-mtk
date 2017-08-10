@@ -31,7 +31,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/hdmi/inc/ \
              -I$(srctree)/drivers/staging/android/ion \
-             -I$(srctree)/drivers/misc/mediatek/lcm/inc
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
+             -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
                     -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6735
