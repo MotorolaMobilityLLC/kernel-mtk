@@ -1326,7 +1326,7 @@ int vdec_resume_after_mmsysclk_switch(void)
 static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	VAL_LONG_T ret;
-	VAL_UINT8_T *user_data_addr;
+	VAL_UINT8_T __user *user_data_addr;
 	VAL_RESULT_T eValRet;
 	VAL_RESULT_T eValHWLockRet = VAL_RESULT_INVALID_ISR;
 	VAL_ULONG_T ulFlags, ulFlagsISR;
@@ -1906,7 +1906,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 			/* //////////// Start to get content */
 			/* //////////// take VAL_VCODEC_OAL_HW_REGISTER_T content */
-			user_data_addr = (VAL_UINT8_T *) arg;
+			user_data_addr = (VAL_UINT8_T __user *) arg;
 			ret =
 			    copy_from_user(&hwoal_reg, user_data_addr,
 					   sizeof(VAL_VCODEC_OAL_HW_REGISTER_T));
@@ -1960,6 +1960,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			   (&oal_mem_status[0], ((VAL_VCODEC_OAL_HW_REGISTER_T *)user_data_addr)->pHWStatus,
 			   hwoal_reg.u4NumOfRegister*sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T)); */
 			if (hwoal_reg.pHWStatus != NULL &&
+				hwoal_reg.u4NumOfRegister >= 0 &&
 				hwoal_reg.u4NumOfRegister <= OALMEM_STATUS_NUM) {
 				memcpy(&oal_mem_status[0], hwoal_reg.pHWStatus,
 						hwoal_reg.u4NumOfRegister *
