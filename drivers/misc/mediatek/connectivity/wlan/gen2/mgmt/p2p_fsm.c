@@ -1518,7 +1518,7 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 		prStaRec = prJoinCompMsg->prStaRec;
 
 		/* Check SEQ NUM */
-		if (prJoinCompMsg->ucSeqNum == prJoinInfo->ucSeqNumOfReqMsg) {
+		if (prJoinCompMsg->ucSeqNum == ((prJoinInfo->ucSeqNumOfReqMsg)%256)) {
 			ASSERT(prStaRec == prJoinInfo->prTargetStaRec);
 			prJoinInfo->fgIsJoinComplete = TRUE;
 
