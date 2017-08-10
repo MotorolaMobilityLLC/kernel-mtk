@@ -45,7 +45,7 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 #define wrtie_cmd(cmd)                                      lcm_util.dsi_write_cmd(cmd)
 #define write_regs(addr, pdata, byte_nums)                  lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg                                            lcm_util.dsi_read_reg()
-
+#define read_reg_v2(cmd, buffer, buffer_size)               lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 struct LCM_setting_table {
 	unsigned cmd;
@@ -232,6 +232,52 @@ static void lcm_get_params(LCM_PARAMS *params)
 }
 
 
+static unsigned int lcm_compare_id(void)
+{
+	int array[4];
+	char buffer[3];
+	char id0 = 0;
+	char id1 = 0;
+	char id2 = 0;
+
+	SET_RESET_PIN(0);
+	MDELAY(200);
+	SET_RESET_PIN(1);
+	MDELAY(200);
+
+	array[0] = 0x00033700;	/* read id return two byte,version and id */
+	dsi_set_cmdq(array, 1, 1);
+
+	read_reg_v2(0xDA, buffer, 1);
+
+
+	array[0] = 0x00033700;	/* read id return two byte,version and id */
+	dsi_set_cmdq(array, 1, 1);
+	read_reg_v2(0xDB, buffer + 1, 1);
+
+
+	array[0] = 0x00033700;	/* read id return two byte,version and id */
+	dsi_set_cmdq(array, 1, 1);
+	read_reg_v2(0xDC, buffer + 2, 1);
+
+	id0 = buffer[0];	/* should be 0x00 */
+	id1 = buffer[1];	/* should be 0xaa */
+	id2 = buffer[2];	/* should be 0x55 */
+
+	pr_debug("%s, id0 = 0x%08x\n", __func__, id0);	/* should be 0x00 */
+	pr_debug("%s, id1 = 0x%08x\n", __func__, id1);	/* should be 0xaa */
+	pr_debug("%s, id2 = 0x%08x\n", __func__, id2);	/* should be 0x55 */
+
+	if ((id0 == 0x83) && (id1 == 0x89) && (id2 == 0x0C)) {
+		pr_debug("[LK] Compare HX8389C LCM ID Success: 0x%x, 0x%x, 0x%x\n", id0, id1, id2);
+		return 1;
+	}
+
+	pr_debug("[LK] Compare HX8389C LCM ID Failed: 0x%x, 0x%x, 0x%x\n", id0, id1, id2);
+	return 0;
+}
+
+
 static void lcm_init(void)
 {
 	SET_RESET_PIN(1);
@@ -261,6 +307,7 @@ LCM_DRIVER hx8389c_dsi_vdo_lcm_drv = {
 
 	.name = "hx8389c_dsi_vdo",
 	.set_util_funcs = lcm_set_util_funcs,
+	.compare_id = lcm_compare_id,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
 	.suspend = lcm_suspend,
