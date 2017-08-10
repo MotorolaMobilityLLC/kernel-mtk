@@ -897,7 +897,6 @@ static int cbp_probe(struct platform_device *pdev)
 		ret =
 		    c2k_gpio_request_irq(plat->gpio_cp_exception,
 					 gpio_irq_cbp_excp_ind,
-					 IRQF_SHARED | IRQF_TRIGGER_RISING |
 					 IRQF_TRIGGER_FALLING,
 					 DRIVER_NAME "(c2k EE)", cbp_excp_ind);
 #if defined(CONFIG_MTK_LEGACY)
