@@ -76,6 +76,15 @@ config MMC_MT81XX
 
 	  If unsure, say N.
 
+config MMC_MTK_COMM_SDIO
+	tristate "MediaTek SDIO driver support"
+	help
+	  This selects the MediaTek(R) SDIO serial driver, if enable,
+	  will use the driver at mmc/host/, but not use meidatek/${platform}.
+	  Note that this driver only support SDIO.
+
+	  If unsure, say N.
+
 config K42_MMC_RETUNE
 	tristate "Kernel-4.2 mmc retune support"
 	depends on MMC_MT81XX || MMC_MTK
