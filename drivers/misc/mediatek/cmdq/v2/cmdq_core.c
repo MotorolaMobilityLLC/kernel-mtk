@@ -6149,6 +6149,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 	int32_t irqFlag = 0;
 	cmdqSecCancelTaskResultStruct result;
 	char parsedInstruction[128] = { 0 };
+	unsigned long flags;
 
 	/* Init default status */
 	status = 0;
@@ -6193,15 +6194,21 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		cmdq_sec_cancel_error_task_unlocked(pTask, thread, &result);
 
 		/* dump shared cookie */
-		CMDQ_VERBOSE
-		    ("WAIT: [2]secure path failed, pTask:%p, thread:%d, shared_cookie(%d, %d, %d)\n",
-		     pTask, thread,
-		     cmdq_core_get_secure_thread_exec_counter(12),
-		     cmdq_core_get_secure_thread_exec_counter(13),
-		     cmdq_core_get_secure_thread_exec_counter(14));
+		CMDQ_ERR
+			("WAIT: [2]pTask:%p thread:%d cookie(%d, %d, %d) waitCookie:%d raisedIRQ:%#x\n",
+			pTask, thread,
+			cmdq_core_get_secure_thread_exec_counter(12),
+			cmdq_core_get_secure_thread_exec_counter(13),
+			cmdq_core_get_secure_thread_exec_counter(14),
+			gCmdqContext.thread[thread].waitCookie,
+			cmdq_core_get_secure_IRQ_status());
+
+		spin_lock_irqsave(&gCmdqExecLock, flags);
 
 		/* confirm pending IRQ first */
 		cmdq_core_handle_secure_thread_done_impl(thread, 0x01, &pTask->wakedUp);
+
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 		/* check if this task has finished after handling pending IRQ */
 		if (TASK_STATE_DONE == pTask->taskState)
@@ -6220,6 +6227,8 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		/* TODO: get needReset infor by secure thread PC */
 		cmdq_core_reset_hw_engine(pTask->engineFlag);
 
+		spin_lock_irqsave(&gCmdqExecLock, flags);
+
 		/* remove all tasks in tread since we have reset HW thread in SWd */
 		for (i = 0; i < cmdq_core_max_task_in_thread(thread); i++) {
 			pTask = pThread->pCurTask[i];
@@ -6230,6 +6239,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		}
 		pThread->taskCount = 0;
 		pThread->waitCookie = pThread->nextCookie;
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 	} while (0);
 
 	/* unlock cmdqSecLock */
@@ -6626,6 +6636,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 	int32_t msgMAXSize;
 	uint32_t *pVABase = NULL;
 	dma_addr_t MVABase = 0;
+	unsigned long flags;
 
 	cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 	cmdq_core_get_task_first_buffer(pTask, &pVABase, &MVABase);
@@ -6652,6 +6663,8 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 		if (0 > status)
 			break;
 
+		spin_lock_irqsave(&gCmdqExecLock, flags);
+
 		/* update task's thread info */
 		pTask->thread = thread;
 		pTask->irqFlag = 0;
@@ -6670,6 +6683,8 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 									  false);
 		}
 
+		spin_unlock_irqrestore(&gCmdqExecLock, flags);
+
 		pTask->trigger = sched_clock();
 
 		/* execute */
@@ -6679,7 +6694,9 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 			/* config failed case, dump for more detail */
 			cmdq_core_attach_error_task(pTask, thread, NULL);
 			cmdq_core_turnoff_first_dump();
+			spin_lock_irqsave(&gCmdqExecLock, flags);
 			cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(pThread, cookie);
+			spin_unlock_irqrestore(&gCmdqExecLock, flags);
 		}
 	} while (0);
 
