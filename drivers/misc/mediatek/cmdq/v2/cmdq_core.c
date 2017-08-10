@@ -3192,9 +3192,9 @@ static int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *s
 	return status;
 }
 
-static uint32_t cmdq_core_get_current_pa_addr(struct TaskStruct *pTask)
+static dma_addr_t cmdq_core_get_current_pa_addr(struct TaskStruct *pTask)
 {
-	return (uint32_t)(cmdq_core_task_get_last_pa(pTask) + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size);
+	return (cmdq_core_task_get_last_pa(pTask) + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size);
 }
 #endif
 
@@ -3347,7 +3347,7 @@ bool cmdq_core_task_finalize_end(struct TaskStruct *pTask)
 			 * JUMP to next instruction case.
 			 * Set new JUMP to head of new buffer (as blank instruction).
 			 */
-			pa = cmdq_core_task_get_last_pa(pTask) + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
+			pa = cmdq_core_get_current_pa_addr(pTask);
 			pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
 			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);
 
@@ -3450,7 +3450,7 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	pTask->pCMDEnd = NULL;
 
 	/* backup command start mva for loop case */
-	cmdLoopStartAddr = cmdq_core_get_current_pa_addr(pTask);
+	cmdLoopStartAddr = (uint32_t)cmdq_core_get_current_pa_addr(pTask);
 
 	/* Copy the commands to our DMA buffer, except last 2 instruction EOC+JUMP. */
 	copyCmdSrc = CMDQ_U32_PTR(pCommandDesc->pVABase);
@@ -6561,7 +6561,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 				/* We reached the last task */
 				break;
 #ifdef CMDQ_JUMP_MEM
-			} else if (pExecTask->pCMDEnd[-1] == cmdq_core_task_get_last_pa(pTask)) {
+			} else if (pExecTask->pCMDEnd[-1] == cmdq_core_task_get_first_pa(pTask)) {
 #else
 			} else if (pExecTask->pCMDEnd[-1] == pTask->MVABase) {
 #endif
@@ -7882,7 +7882,7 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(pTask->MVABase));
 		EndAddr = CMDQ_PHYS_TO_AREG(pTask->MVABase + pTask->commandSize - shiftEnd);
 #endif
-		CMDQ_MSG("EXEC: set end addr: 0x%08x", EndAddr);
+		CMDQ_MSG("EXEC: set end addr: 0x%08x\n", EndAddr);
 
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 		CMDQ_REG_SET32(CMDQ_THR_CFG(thread), threadPrio & 0x7);	/* bit 0-2 for priority level; */

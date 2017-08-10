@@ -339,19 +339,31 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.thread = thread;
 		pIwc->command.priority = pTask->priority;
 		pIwc->command.engineFlag = pTask->engineFlag;
-		pIwc->command.commandSize = pTask->commandSize;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
 #ifdef CMDQ_JUMP_MEM
+		pIwc->command.commandSize = pTask->bufferSize;
+
 		buffer_index = 0;
 		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
 			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
 				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
-			memcpy((pIwc->command.pVABase +
-				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2),
-				(cmd_buffer->pVABase), (copy_size));
+			uint32_t *start_va = (pIwc->command.pVABase +
+				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2);
+			uint32_t *end_va = start_va + copy_size / sizeof(uint32_t);
+
+			memcpy(start_va, (cmd_buffer->pVABase), (copy_size));
+
+			/* we must reset the jump inst since now buffer is continues */
+			if (((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+				(end_va[-1] & 0x1) == 1) {
+				end_va[-1] = CMDQ_CODE_JUMP << 24;
+				end_va[-2] = 0x8;
+			}
+
 			buffer_index++;
 		}
 #else
+		pIwc->command.commandSize = pTask->commandSize;
 		memcpy((pIwc->command.pVABase), (pTask->pVABase), (pTask->commandSize));
 #endif
 
