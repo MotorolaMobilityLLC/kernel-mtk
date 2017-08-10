@@ -163,6 +163,28 @@ static const struct ieee80211_txrx_stypes
 	}
 };
 
+static const struct ieee80211_iface_limit mtk_p2p_iface_limits[] = {
+	{
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_STATION) |
+				BIT(NL80211_IFTYPE_AP)
+	},
+	{
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_P2P_CLIENT) |
+				BIT(NL80211_IFTYPE_P2P_GO)
+	},
+};
+
+static const struct ieee80211_iface_combination mtk_p2p_iface_combos[] = {
+	{
+		.max_interfaces = 2,
+		.num_different_channels = 2,
+		.n_limits = ARRAY_SIZE(mtk_p2p_iface_limits),
+		.limits = mtk_p2p_iface_limits
+	}
+};
+
 #endif
 
 #if 0
@@ -826,6 +848,8 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	    | BIT(NL80211_IFTYPE_P2P_GO)
 	    | BIT(NL80211_IFTYPE_STATION);
 
+	prWiphy->iface_combinations = mtk_p2p_iface_combos;
+	prWiphy->n_iface_combinations = ARRAY_SIZE(mtk_p2p_iface_combos);
 	prWiphy->bands[IEEE80211_BAND_2GHZ] = &mtk_band_2ghz;
 	prWiphy->bands[IEEE80211_BAND_5GHZ] = &mtk_band_5ghz;
 
