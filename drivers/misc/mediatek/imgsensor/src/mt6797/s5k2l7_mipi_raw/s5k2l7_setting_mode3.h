@@ -1458,7 +1458,7 @@
     write_cmos_sensor_twobyte(0X602A, 0X0AEC); \
     write_cmos_sensor_twobyte(0X6F12, 0X0207); \
     write_cmos_sensor_twobyte(0X602A, 0X0A96); \
-    write_cmos_sensor_twobyte(0X6F12, 0X6E33); \
+    write_cmos_sensor_twobyte(0X6F12, 0X1E00); \
     write_cmos_sensor_twobyte(0X602A, 0X2800); \
     write_cmos_sensor_twobyte(0X6F12, 0X0245); \
     write_cmos_sensor_twobyte(0X6F12, 0X0105); \
@@ -1551,7 +1551,7 @@
     write_cmos_sensor_twobyte(0X602A, 0X5840); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X602A, 0X0AF4); \
-    write_cmos_sensor_twobyte(0X6F12, 0X0005); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0004); \
 }while(0)
 
 
@@ -1617,8 +1617,6 @@
     write_cmos_sensor_twobyte(0X6028, 0X2000); \
     write_cmos_sensor_twobyte(0X602A, 0X0990); \
     write_cmos_sensor_twobyte(0X6F12, 0X0040); \
-    write_cmos_sensor_twobyte(0X602A, 0X0AF8); \
-    write_cmos_sensor_twobyte(0X6F12, 0X0008); \
     write_cmos_sensor_twobyte(0X602A, 0X27A8); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X602A, 0X09AA); \
@@ -1751,9 +1749,20 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
+    write_cmos_sensor_twobyte(0X602A, 0X568C); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56D0); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
     write_cmos_sensor_twobyte(0X6218, 0X79F0); \
+    write_cmos_sensor_twobyte(0X6028, 0X4000); \
     /* Stream On */                            \
     write_cmos_sensor_twobyte(0x0100, 0x0100); \
     mDELAY(10);                                \
@@ -1822,8 +1831,6 @@
     write_cmos_sensor_twobyte(0X6028, 0X2000); \
     write_cmos_sensor_twobyte(0X602A, 0X0990); \
     write_cmos_sensor_twobyte(0X6F12, 0X0040); \
-    write_cmos_sensor_twobyte(0X602A, 0X0AF8); \
-    write_cmos_sensor_twobyte(0X6F12, 0X0004); \
     write_cmos_sensor_twobyte(0X602A, 0X27A8); \
     write_cmos_sensor_twobyte(0X6F12, 0X0100); \
     write_cmos_sensor_twobyte(0X602A, 0X09AA); \
@@ -1956,9 +1963,20 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BE0); \
+    write_cmos_sensor_twobyte(0X602A, 0X568C); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56D0); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
     write_cmos_sensor_twobyte(0X6218, 0X79F0); \
+    write_cmos_sensor_twobyte(0X6028, 0X4000); \
     /* Stream On */                            \
     write_cmos_sensor_twobyte(0x0100, 0x0100); \
     mDELAY(10);                                \
@@ -2027,8 +2045,6 @@
     write_cmos_sensor_twobyte(0X6028, 0X2000); \
     write_cmos_sensor_twobyte(0X602A, 0X0990); \
     write_cmos_sensor_twobyte(0X6F12, 0X0040); \
-    write_cmos_sensor_twobyte(0X602A, 0X0AF8); \
-    write_cmos_sensor_twobyte(0X6F12, 0X000C); \
     write_cmos_sensor_twobyte(0X602A, 0X27A8); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X602A, 0X09AA); \
@@ -2161,9 +2177,20 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
+    write_cmos_sensor_twobyte(0X602A, 0X568C); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56D0); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
     write_cmos_sensor_twobyte(0X6218, 0X79F0); \
+    write_cmos_sensor_twobyte(0X6028, 0X4000); \
     /* Stream On */                            \
     write_cmos_sensor(0x0100,0x01);            \
     mDELAY(10);                                \
@@ -2231,8 +2258,6 @@
     write_cmos_sensor_twobyte(0X6028, 0X2000); \
     write_cmos_sensor_twobyte(0X602A, 0X0990); \
     write_cmos_sensor_twobyte(0X6F12, 0X0040); \
-    write_cmos_sensor_twobyte(0X602A, 0X0AF8); \
-    write_cmos_sensor_twobyte(0X6F12, 0X000C); \
     write_cmos_sensor_twobyte(0X602A, 0X27A8); \
     write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X602A, 0X09AA); \
@@ -2365,9 +2390,20 @@
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
     write_cmos_sensor_twobyte(0X602A, 0X29A2); \
     write_cmos_sensor_twobyte(0X6F12, 0X0BD0); \
+    write_cmos_sensor_twobyte(0X602A, 0X568C); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X602A, 0X56D0); \
+    write_cmos_sensor_twobyte(0X6F12, 0X010B); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
+    write_cmos_sensor_twobyte(0X6F12, 0X03FF); \
+    write_cmos_sensor_twobyte(0X6F12, 0X0000); \
     write_cmos_sensor_twobyte(0X6028, 0X4000); \
     write_cmos_sensor_twobyte(0X6214, 0X79F0); \
     write_cmos_sensor_twobyte(0X6218, 0X79F0); \
+    write_cmos_sensor_twobyte(0X6028, 0X4000); \
     /* Stream On */                            \
     write_cmos_sensor(0x0100,0x01);            \
     mDELAY(10);                                \
