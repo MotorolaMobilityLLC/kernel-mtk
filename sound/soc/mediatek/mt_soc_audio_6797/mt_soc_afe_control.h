@@ -161,6 +161,8 @@ uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
 /* APLL , low jitter mode setting */
 void EnableALLbySampleRate(uint32 SampleRate);
 void DisableALLbySampleRate(uint32 SampleRate);
+void EnableAPLLTunerbySampleRate(uint32 SampleRate);
+void DisableAPLLTunerbySampleRate(uint32 SampleRate);
 uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate);
 void EnableI2SDivPower(uint32 Diveder_name, bool bEnable);
 void EnableApll1(bool bEnable);

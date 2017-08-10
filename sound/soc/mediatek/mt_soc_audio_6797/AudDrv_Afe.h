@@ -393,7 +393,7 @@ typedef struct {
 #define AUD_DRV_SEL4 (0xB40)
 
 #define APLL_PHYSICAL_BASE (0x10209000L)
-/* #define AP_PLL_CON5 (0x0014) */
+#define AP_PLL_CON5 (0x0014)
 
 #define AUDIO_CLK_CFG_4 (0x0080)
 #define AUDIO_CLK_CFG_6 (0x00A0)

@@ -852,6 +852,8 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 
 	n += scnprintf(buffer + n, size - n, "0x1f8  = 0x%x\n",
 			Afe_Get_Reg(AFE_BASE + 0x1f8));
+	n += scnprintf(buffer + n, size - n, "AP_PLL_CON5 = 0x%x\n",
+			GetApmixedCfg(AP_PLL_CON5));
 
 
 	pr_debug("mt_soc_debug_read len = %d\n", n);
