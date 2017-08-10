@@ -72,7 +72,7 @@ static int glance_gesture_open_report_data(int open)
 
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_GLANCE_GESTURE, 66);
+		ret = sensor_set_delay_to_hub(ID_GLANCE_GESTURE, 120);
 #elif defined CONFIG_NANOHUB
 
 #else

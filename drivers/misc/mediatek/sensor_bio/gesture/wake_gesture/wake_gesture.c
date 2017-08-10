@@ -68,7 +68,7 @@ static int wake_gesture_open_report_data(int open)
 	WAKEHUB_ERR("%s : enable=%d\n", __func__, open);
 #if defined CONFIG_MTK_SCP_SENSORHUB_V1
 	if (open == 1)
-		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 66);
+		ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 120);
 #elif defined CONFIG_NANOHUB
 
 #else
