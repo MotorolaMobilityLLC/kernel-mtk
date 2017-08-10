@@ -436,36 +436,6 @@ static int mtk_afe_hdmi_force_clk_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int mtk_afe_hpl_offset_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	/* TODO: implement */
-	ucontrol->value.integer.value[0] = 2048;
-	return 0;
-}
-
-static int mtk_afe_hpl_offset_put(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	/* TODO: implement */
-	return 0;
-}
-
-static int mtk_afe_hpr_offset_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	/* TODO: implement */
-	ucontrol->value.integer.value[0] = 2048;
-	return 0;
-}
-
-static int mtk_afe_hpr_offset_put(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	/* TODO: implement */
-	return 0;
-}
-
 static const struct soc_enum mtk_afe_soc_enums[] = {
 	[CTRL_SGEN_EN] = SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(sgen_func),
 				sgen_func),
@@ -492,16 +462,6 @@ static const struct snd_kcontrol_new mtk_afe_controls[] = {
 			    0,
 			    mtk_afe_hdmi_force_clk_get,
 			    mtk_afe_hdmi_force_clk_put),
-	SOC_SINGLE_EXT("Audio HPL Offset",
-		       SND_SOC_NOPM,
-		       0, 0x20000, 0,
-		       mtk_afe_hpl_offset_get,
-		       mtk_afe_hpl_offset_put),
-	SOC_SINGLE_EXT("Audio HPR Offset",
-		       SND_SOC_NOPM,
-		       0, 0x20000, 0,
-		       mtk_afe_hpr_offset_get,
-		       mtk_afe_hpr_offset_put),
 };
 
 

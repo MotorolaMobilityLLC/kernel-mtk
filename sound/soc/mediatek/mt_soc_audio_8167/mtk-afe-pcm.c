@@ -2297,7 +2297,7 @@ static const struct regmap_config mtk_afe_regmap_config = {
 	.reg_bits = 32,
 	.reg_stride = 4,
 	.val_bits = 32,
-	.max_register = AFE_MEMIF_MON15,
+	.max_register = ABB_AFE_SDM_TEST,
 	.cache_type = REGCACHE_NONE,
 };
 

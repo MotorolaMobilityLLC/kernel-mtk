@@ -103,6 +103,7 @@
 #define AFE_TDM_CON2		0x054c
 
 #define AFE_MEMIF_MON15		0x0d7c
+#define ABB_AFE_SDM_TEST    0x0f4c
 
 
 
