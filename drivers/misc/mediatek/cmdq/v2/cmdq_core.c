@@ -1884,8 +1884,10 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 								   insts[3],
 								   parsedInstruction);
 					} else {
+						long pcPA = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(
+							CMDQ_THR_CURR_ADDR(index)));
 						length += snprintf(&pBuffer[length], PAGE_SIZE - length,
-								"PC(VA): Not available\n");
+								"PC(VA): Not available, PC(PA): 0x%08lx\n", pcPA);
 					}
 				}
 			}
@@ -4939,7 +4941,6 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 {
 	struct TaskStruct *pDumpTask = NULL;
 	struct list_head *p = NULL;
-
 #ifdef CMDQ_JUMP_MEM
 	uint32_t *pVABase = NULL;
 	dma_addr_t MVABase = 0;
@@ -4955,10 +4956,8 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 		if (true == cmdq_core_is_valid_in_active_list(pDumpTask) && (engineFlag & pDumpTask->engineFlag)) {
 #ifdef CMDQ_JUMP_MEM
 			cmdq_core_get_task_first_buffer(pDumpTask, &pVABase, &MVABase);
-			CMDQ_ERR("Thr %d, Task: 0x%p, VABase: 0x%p, MVABase: 0x%pa, Size: %d\n",
-					   (pDumpTask->thread), (pDumpTask),
-					   (pVABase), &(MVABase),
-					   pDumpTask->commandSize);
+			CMDQ_ERR("Thr %d, Task: 0x%p, first VABase: 0x%p, first MVABase: 0x%pa, size: %d\n",
+				(pDumpTask->thread), (pDumpTask), pVABase, &MVABase, pDumpTask->commandSize);
 #else
 			CMDQ_ERR("Thr %d, Task: 0x%p, VABase: 0x%p, MVABase 0x%pa, Size: %d\n",
 					   (pDumpTask->thread), (pDumpTask),
@@ -4966,9 +4965,9 @@ static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
 					   pDumpTask->commandSize);
 #endif
 			CMDQ_ERR("  cont'd: Flag: 0x%08llx, Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x\n",
-					   pDumpTask->engineFlag, pDumpTask->pCMDEnd[-3],
-					   pDumpTask->pCMDEnd[-2], pDumpTask->pCMDEnd[-1],
-					   pDumpTask->pCMDEnd[0]);
+				pDumpTask->engineFlag,
+				pDumpTask->pCMDEnd[-2], pDumpTask->pCMDEnd[-3],
+				pDumpTask->pCMDEnd[0], pDumpTask->pCMDEnd[-1]);
 		}
 	}
 }
@@ -5265,16 +5264,21 @@ int32_t cmdq_core_parse_instruction(const uint32_t *pCmd, char *textBuf, int buf
 	return reqLen;
 }
 
-void cmdq_core_dump_error_instruction(const uint32_t *pcVA, uint32_t *insts, int thread,
-				      uint32_t lineNum)
+void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
+	uint32_t *insts, int thread, uint32_t lineNum)
 {
 	char parsedInstruction[128] = { 0 };
 	const uint32_t op = (insts[3] & 0xFF000000) >> 24;
 
-	if (pcVA == NULL) {
+	if (pcPA == CMDQ_GCE_END_ADDR_PA) {
+		/* in end address case instruction may not correct */
+		CMDQ_ERR("PC stay at GCE end address, line: %u\n", lineNum);
+		return;
+	} else if (pcVA == NULL) {
 		CMDQ_ERR("Dump error instruction with null va, line: %u\n", lineNum);
 		return;
 	}
+
 	cmdq_core_parse_instruction(pcVA, parsedInstruction, sizeof(parsedInstruction));
 	CMDQ_ERR("Thread %d error instruction: 0x%p, 0x%08x:0x%08x => %s",
 		 thread, pcVA, insts[2], insts[3], parsedInstruction);
@@ -5302,6 +5306,7 @@ static void cmdq_core_dump_summary(const TaskStruct *pTask, int thread,
 	int32_t index;
 	uint32_t instA = 0, instB = 0;
 	int32_t irqFlag = 0;
+	long currPC = 0;
 
 	if (NULL == pTask) {
 		CMDQ_ERR("dump summary failed since pTask is NULL");
@@ -5344,23 +5349,28 @@ static void cmdq_core_dump_summary(const TaskStruct *pTask, int thread,
 		return;
 	}
 
-	/* Find correct task */
-	pThread = &(gCmdqContext.thread[thread]);
-	pcVA = cmdq_core_get_pc(pTask, thread, insts);
-	if (NULL == pcVA) {
-		/* Find all task to get correct PC */
-		for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
-			pNGTask = pThread->pCurTask[index];
-			if (NULL == pNGTask)
-				continue;
+	/* check if pc stay at fix end address */
+	currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+	if (currPC != CMDQ_GCE_END_ADDR_PA) {
+		/* Find correct task */
+		pThread = &(gCmdqContext.thread[thread]);
+		pcVA = cmdq_core_get_pc(pTask, thread, insts);
+		if (pcVA == NULL) {
+			/* Find all task to get correct PC */
+			for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
+				pNGTask = pThread->pCurTask[index];
+				if (pNGTask == NULL)
+					continue;
 
-			pcVA = cmdq_core_get_pc(pNGTask, thread, insts);
-			if (pcVA) {
-				/* we got NG task ! */
-				break;
+				pcVA = cmdq_core_get_pc(pNGTask, thread, insts);
+				if (pcVA) {
+					/* we got NG task ! */
+					break;
+				}
 			}
 		}
 	}
+
 	if (NULL == pNGTask)
 		pNGTask = pTask;
 
@@ -5374,7 +5384,7 @@ static void cmdq_core_dump_summary(const TaskStruct *pTask, int thread,
 		     pTask, pNGTask);
 	}
 	CMDQ_ERR("** [Error Info] Refer to instruction and check engine dump for debug**\n");
-	cmdq_core_dump_error_instruction(pcVA, insts, thread, __LINE__);
+	cmdq_core_dump_error_instruction(pcVA, currPC, insts, thread, __LINE__);
 	cmdq_core_dump_disp_trigger_loop("ERR");
 	CMDQ_ERR("***************************************\n");
 
@@ -7335,7 +7345,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			}
 		} else {
 			pPrevTask = NULL;
-			for (index = 0; index < cmdq_core_max_task_in_thread(thread); ++index) {
+			for (index = 0; index < cmdq_core_max_task_in_thread(thread); index++) {
 				bool is_jump_to = false;
 
 				pPrevTask = pThread->pCurTask[index];
@@ -7344,7 +7354,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 #ifdef CMDQ_JUMP_MEM
 				is_jump_to = (pPrevTask && pPrevTask->pCMDEnd &&
 					pPrevTask->pCMDEnd[-1] == cmdq_core_task_get_first_pa(pTask) &&
-					pPrevTask->pCMDEnd[0] == 0x10000001);
+					pPrevTask->pCMDEnd[0] == ((CMDQ_CODE_JUMP << 24) | 0x1));
 #else
 				is_jump_to = (pPrevTask && pPrevTask->pCMDEnd &&
 					pPrevTask->pCMDEnd[-1] == pTask->MVABase &&
@@ -7671,13 +7681,16 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 		}
 
 		if (loop <= 1) {
-			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 #ifdef CMDQ_JUMP_MEM
 			task_pa	= cmdq_core_task_get_first_pa(pPrev);
-			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x, 0x%08x\n",
+			CMDQ_MSG(
+				"Set current(%d) order for new task, org PC(0x%p): %pa, size: %d inst: 0x%08x:%08x line: %d\n",
+				index, pPrev,
 				&task_pa, pTask->commandSize,
-				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1],
+				__LINE__);
 #else
+			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x, 0x%08x\n",
 				&pPrev->MVABase, pTask->commandSize,
 				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
@@ -7736,13 +7749,16 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 				*pLast = pPrev;
 			}
 		} else {
-			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 #ifdef CMDQ_JUMP_MEM
 			task_pa = cmdq_core_task_get_first_pa(pPrev);
-			CMDQ_MSG("Original PC: 0x%pa, size: %d inst: 0x%08x:%08x\n",
+			CMDQ_MSG(
+				"Set current(%d) order for new task, org PC(0x%p): %pa, size: %d inst: 0x%08x:%08x line: %d\n",
+				index, pPrev,
 				&task_pa, pPrev->commandSize,
-				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1],
+				__LINE__);
 #else
+			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x:%08x\n",
 				&pPrev->MVABase, pTask->commandSize,
 				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
@@ -7936,8 +7952,8 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 
 #ifdef CMDQ_JUMP_MEM
 		/* PC = END - 0, All CMDs are executed */
-		if ((CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
-			(CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 0))) {
+		if (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
+			CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)))) {
 #else
 		/* PC = END - 8, EOC is executed */
 		/* PC = END - 0, All CMDs are executed */
@@ -7951,7 +7967,8 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 #ifdef CMDQ_JUMP_MEM
 			MVABase = cmdq_core_task_get_first_pa(pTask);
 			cmdqCoreLongString(true, longMsg, &msgOffset, &msgMAXSize,
-					   "EXEC: Set HW thread(%d) pc from 0x%08x(end:0x%08x) to 0x%pa,",
+					   "EXEC: Task: 0x%p Set HW thread(%d) pc from 0x%08x(end:0x%08x) to 0x%pa,",
+					   pTask,
 					   thread,
 					   CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
 					   CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)),
@@ -7974,17 +7991,15 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 
 			/* set to pTask directly */
 #ifdef CMDQ_JUMP_MEM
-			MVABase = cmdq_core_task_get_first_pa(pTask);
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
-					   CMDQ_PHYS_TO_AREG(MVABase));
-			MVABase = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
-			EndAddr = CMDQ_PHYS_TO_AREG(MVABase);
+				CMDQ_PHYS_TO_AREG(MVABase));
+			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
 #else
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
 				       CMDQ_PHYS_TO_AREG(pTask->MVABase));
 			EndAddr = CMDQ_PHYS_TO_AREG(pTask->MVABase + pTask->commandSize - shiftEnd);
 #endif
-			CMDQ_MSG("EXEC: set end addr: 0x%08x\n", EndAddr);
+			CMDQ_MSG("EXEC: set end addr: 0x%08x for task: 0x%p\n", EndAddr, pTask);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
 			pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = pTask;
@@ -8006,7 +8021,8 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 				loop = (CMDQ_MAX_COOKIE_VALUE - minimum + 1) + cookie;
 			}
 
-			CMDQ_MSG("Reorder task in range [%d, %d] with count %d\n", minimum, cookie, loop);
+			CMDQ_MSG("Reorder task: 0x%p in range [%d, %d] with count %d thread %d\n",
+				pTask, minimum, cookie, loop, thread);
 
 			/* ALPS01672377 */
 			/* .note pThread->taskCount-- when remove task from pThread in ISR */
