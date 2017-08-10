@@ -33,6 +33,8 @@ struct ut_log_entry {
 	int type;
 	char context;
 	char reserve;
+	char reserve2;
+	char reserve3;
 };
 
 /********************************************

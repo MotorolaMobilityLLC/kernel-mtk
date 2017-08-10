@@ -1216,6 +1216,8 @@ int teei_client_encode_mem_ref(void *private_data, void *argp)
 
 				break;
 			}
+			if (shared_mem_found == 1)
+				break;
 		}
 	}
 
@@ -1913,9 +1915,11 @@ static int teei_client_close_session_for_service_plus(void *private_data, struct
 	if (!list_empty(&temp_ses->shared_mem_list)) {
 
 		list_for_each_entry_safe(shared_mem,
-					temp_shared,
-					&temp_ses->shared_mem_list,
-					s_head) {
+				temp_shared,
+				&temp_ses->shared_mem_list,
+				s_head) {
+			if (shared_mem == NULL)
+				continue;
 
 			list_del(&shared_mem->s_head);
 
@@ -2009,9 +2013,11 @@ int teei_client_close_session_for_service(
 	if (!list_empty(&temp_ses->shared_mem_list)) {
 
 		list_for_each_entry_safe(shared_mem,
-					temp_shared,
-					&temp_ses->shared_mem_list,
-					s_head) {
+				temp_shared,
+				&temp_ses->shared_mem_list,
+				s_head) {
+			if (shared_mem == NULL)
+				continue;
 
 			list_del(&shared_mem->s_head);
 

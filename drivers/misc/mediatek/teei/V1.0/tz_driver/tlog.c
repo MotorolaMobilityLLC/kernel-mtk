@@ -71,6 +71,7 @@ irqreturn_t tlog_handler(void)
 /**************************************************
 		LOG thread for printf
  **************************************************/
+#define LOG_BUF_LEN		(256 * 1024)
 
 unsigned long tlog_thread_buff = 0;
 unsigned long tlog_buf = NULL;
@@ -126,7 +127,8 @@ int tlog_print(unsigned long log_start)
 		tlog_line_len++;
 	}
 
-	tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % (((struct ut_log_buf_head *)tlog_buf)->length - sizeof(struct ut_log_buf_head));
+	//tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % (((struct ut_log_buf_head *)tlog_buf)->length - sizeof(struct ut_log_buf_head));
+	tlog_pos = (tlog_pos + sizeof(struct ut_log_entry)) % ( LOG_BUF_LEN - sizeof(struct ut_log_buf_head));
 
 	return 0;
 }
@@ -139,7 +141,14 @@ int handle_tlog(void)
 	unsigned long last_log_pointer = tlog_cont_pos + shared_buff_write_pos;
 	unsigned long start_log_pointer = tlog_cont_pos + tlog_pos;
 
-	while (last_log_pointer != start_log_pointer) {
+	if ((shared_buff_write_pos < 0) || (shared_buff_write_pos >= (LOG_BUF_LEN - sizeof(struct ut_log_buf_head)))) {
+		pr_err("[%s][%d]tlog shared mem failed!\n", __func__, __LINE__);
+		tlog_pos = 0;
+		return -1;
+	}
+
+
+	while(last_log_pointer != start_log_pointer) {
 		retVal = tlog_print(start_log_pointer);
 
 		if (retVal != 0) {
@@ -169,18 +178,17 @@ int tlog_worker(void *p)
 		}
 
 		switch (((struct ut_log_buf_head *)tlog_buf)->version) {
-		case UT_TLOG_VERSION:
-			ret = handle_tlog();
-
-			if (ret != 0)
-				return ret;
-
-			break;
-
-		default:
-			pr_err("[%s][%d] tlog VERSION is wrong !\n", __func__, __LINE__);
-			tlog_pos = ((struct ut_log_buf_head *)tlog_buf)->write_pos;
-			ret = -EFAULT;
+			case UT_TLOG_VERSION:
+				ret = handle_tlog();
+				if (ret != 0) {
+					schedule_timeout_interruptible(1 * HZ);
+					continue;
+				}
+				break;
+			default:
+				pr_err("[%s][%d] tlog VERSION is wrong !\n", __func__, __LINE__);
+				tlog_pos = ((struct ut_log_buf_head *)tlog_buf)->write_pos;
+				ret = -EFAULT;
 		}
 	}
 

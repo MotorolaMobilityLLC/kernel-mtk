@@ -7,14 +7,21 @@
 #include "nt_smc_call.h"
 #include "global_function.h"
 #include "sched_status.h"
-
+#include "utdriver_macro.h"
 #define SCHED_CALL      0x04
 
 extern int add_work_entry(int work_type, unsigned long buff);
 
 static void secondary_nt_sched_t(void *info)
 {
-	nt_sched_t();
+	unsigned long smc_type = 2;
+
+	nt_sched_t(&smc_type);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
 }
 
 

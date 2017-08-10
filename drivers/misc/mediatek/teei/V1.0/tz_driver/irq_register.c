@@ -14,6 +14,8 @@
 #include "teei_id.h"
 #include "teei_common.h"
 
+extern int add_work_entry(int work_type, unsigned long buff);
+extern struct timeval stime;
 static struct teei_smc_cmd *get_response_smc_cmd(void)
 {
 	struct NQ_entry *nq_ent = NULL;
@@ -327,10 +329,7 @@ static irqreturn_t nt_boot_irq_handler(void)
 	} else {
 		pr_debug("boot irq hanler else\n");
 
-		if (forward_call_flag == GLSCH_NONE)
-			forward_call_flag = GLSCH_NEG;
-		else
-			forward_call_flag = GLSCH_NONE;
+		forward_call_flag = GLSCH_NONE;
 
 		up(&smc_lock);
 		up(&(boot_sema));
@@ -404,11 +403,12 @@ int register_boot_irq_handler(void)
 }
 
 
-static void secondary_load_func(void)
+void secondary_load_func(void)
 {
+	unsigned long smc_type;
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
 	pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	n_ack_t_load_img(0, 0, 0);
+	n_ack_t_load_img(&smc_type, 0, 0);
 
 	return ;
 }
@@ -417,16 +417,20 @@ static void secondary_load_func(void)
 void load_func(struct work_struct *entry)
 {
 	int cpu_id = 0;
+	int retVal = 0;
 
 	vfs_thread_function(boot_vfs_addr, NULL, NULL);
 
 	down(&smc_lock);
 
-	get_online_cpus();
+#if 1
+	retVal = add_work_entry(LOAD_FUNC, NULL);
+#else
+	/* get_online_cpus(); */
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
-	put_online_cpus();
-
+//	put_online_cpus();
+#endif
 	return;
 }
 

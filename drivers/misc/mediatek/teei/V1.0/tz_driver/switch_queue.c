@@ -3,14 +3,10 @@
 #include <linux/list.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
+#include <linux/cpu.h>
 #include "nt_smc_call.h"
 #include "utdriver_macro.h"
 #include "sched_status.h"
-
-#define CAPI_CALL	0x01
-#define FDRV_CALL	0x02
-#define BDRV_CALL	0x03
-#define SCHED_CALL	0x04
 
 #define FP_SYS_NO	100
 #define KEYMASTER_SYS_NO	101
@@ -19,6 +15,14 @@
 #define VFS_SYS_NO	0x08
 #define REETIME_SYS_NO	0x07
 
+#define UT_BOOT_CORE   	0
+#define UT_SWITCH_CORE 	4
+extern void secondary_init_cmdbuf(void *info);
+extern void secondary_boot_stage2(void *info);
+extern void secondary_invoke_fastcall(void *info);
+extern void secondary_load_tee(void *info);
+extern void secondary_boot_stage1(void *info);
+extern void secondary_load_func(void);
 struct switch_head_struct {
 	struct list_head head;
 };
@@ -50,6 +54,8 @@ struct smc_call_struct {
 	struct semaphore *psema;
 	int retVal;
 };
+extern struct mutex pm_mutex;
+extern unsigned long ut_pm_count;
 
 extern struct kthread_worker ut_fastcall_worker;
 
@@ -83,6 +89,10 @@ extern int __teei_smc_call(unsigned long local_smc_cmd,
 				int *error_code,
 				struct semaphore *psema);
 
+extern unsigned int need_mig_flag;
+extern unsigned int nt_core;
+extern struct task_struct *teei_switch_task;
+extern int get_current_cpuid(void);
 static struct switch_call_struct *create_switch_call_struct(void)
 {
 	struct switch_call_struct *tmp_entry = NULL;
@@ -141,6 +151,14 @@ static int check_work_type(int work_type)
 	case FDRV_CALL:
 	case BDRV_CALL:
 	case SCHED_CALL:
+	case LOAD_FUNC:
+	case INIT_CMD_CALL:
+	case BOOT_STAGE1:
+	case BOOT_STAGE2:
+	case INVOKE_FASTCALL:
+	case LOAD_TEE:
+	case LOCK_PM_MUTEX:
+	case UNLOCK_PM_MUTEX:
 		return 0;
 
 	default:
@@ -148,6 +166,24 @@ static int check_work_type(int work_type)
 	}
 }
 
+void handle_lock_pm_mutex(struct mutex *lock)
+{
+	if (ut_pm_count == 0){
+		mutex_lock(lock);
+	}
+	ut_pm_count++;
+}
+
+
+void handle_unlock_pm_mutex(struct mutex *lock)
+{
+
+	ut_pm_count--;
+
+	if (ut_pm_count == 0){
+		mutex_unlock(lock);
+	}
+}
 
 int add_work_entry(int work_type, unsigned long buff)
 {
@@ -191,7 +227,14 @@ int get_call_type(struct switch_call_struct *ent)
 
 int handle_sched_call(void *buff)
 {
-	nt_sched_t();
+	unsigned long smc_type = 2;
+
+	nt_sched_t(&smc_type);
+	while(smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+
 	return 0;
 }
 
@@ -337,7 +380,15 @@ int handle_switch_call(void *buff)
 	}
 
 #else
-	nt_sched_t();
+	unsigned long smc_type = 2;
+
+	nt_sched_t(&smc_type);
+
+	while (smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+	pr_debug("[%s][%d] smc_type = %lu\n", __func__, __LINE__, smc_type);
 #endif
 	return 0;
 }
@@ -357,6 +408,24 @@ static void switch_fn(struct kthread_work *work)
 	call_type = get_call_type(switch_ent);
 
 	switch (call_type) {
+	case LOAD_FUNC:
+		secondary_load_func();
+		break;
+	case BOOT_STAGE1:
+		secondary_boot_stage1(switch_ent->buff_addr);
+		break;
+	case INIT_CMD_CALL:
+		secondary_init_cmdbuf(switch_ent->buff_addr);
+		break;
+	case BOOT_STAGE2:
+		secondary_boot_stage2(NULL);
+		break;
+	case INVOKE_FASTCALL:
+		secondary_invoke_fastcall(NULL);
+		break;
+	case LOAD_TEE:
+		secondary_load_tee(NULL);
+		break;
 	case CAPI_CALL:
 		retVal = handle_capi_call(switch_ent->buff_addr);
 
@@ -390,9 +459,13 @@ static void switch_fn(struct kthread_work *work)
 		if (retVal < 0) {
 			pr_err("[%s][%d] fail to handle sched-Call!\n", __func__, __LINE__);
 		}
-
 		break;
-
+	case LOCK_PM_MUTEX:
+		handle_lock_pm_mutex((struct mutext *)(switch_ent->buff_addr));
+		break;
+	case UNLOCK_PM_MUTEX:
+		handle_unlock_pm_mutex((struct mutext *)(switch_ent->buff_addr));
+		break;
 	default:
 		pr_err("switch fn handles a undefined call!\n");
 		break;

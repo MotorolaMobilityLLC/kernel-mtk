@@ -38,6 +38,8 @@ extern struct semaphore smc_lock;
 extern struct semaphore boot_sema;
 extern struct semaphore fdrv_sema;
 extern struct mutex pm_mutex;
+extern void ut_pm_mutex_lock(struct mutex *lock);
+extern void ut_pm_mutex_unlock(struct mutex *lock);
 extern struct completion global_down_lock;
 extern unsigned long teei_config_flag;
 

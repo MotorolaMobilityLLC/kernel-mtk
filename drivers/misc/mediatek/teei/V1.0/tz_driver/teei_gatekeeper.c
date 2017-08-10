@@ -1,7 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
-
+#include <linux/delay.h>
 #include "teei_gatekeeper.h"
 #include "teei_id.h"
 #include "sched_status.h"
@@ -113,13 +113,21 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 int __send_gatekeeper_command(unsigned long share_memory_size)
 {
 
+	unsigned long smc_type = 2;
+
 	set_gatekeeper_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv(0, 0, 0);
 
-	return 0;
+	n_invoke_t_drv(&smc_type, 0, 0);
+
+	while(smc_type == 1) {
+		udelay(IRQ_DELAY);
+		nt_sched_t(&smc_type);
+	}
+
+        return 0;
 }
 
 
@@ -143,13 +151,12 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	int cpu_id = 0;
 	int retVal = 0;
 	struct fdrv_call_struct fdrv_ent;
+  down(&fdrv_lock);
+  ut_pm_mutex_lock(&pm_mutex);
 
-	down(&fdrv_lock);
-	mutex_lock(&pm_mutex);
-
-	if (teei_config_flag == 1) {
-		complete(&global_down_lock);
-	}
+  if (teei_config_flag == 1) {
+    complete(&global_down_lock);
+  }
 
 	down(&smc_lock);
 	fdrv_ent.fdrv_call_type = GK_SYS_NO;
@@ -160,7 +167,7 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
 
 	if (retVal != 0) {
-		mutex_unlock(&pm_mutex);
+		ut_pm_mutex_unlock(&pm_mutex);
 		up(&fdrv_lock);
 		return retVal;
 	}
@@ -171,8 +178,8 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
 	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 
-	mutex_unlock(&pm_mutex);
-	up(&fdrv_lock);
+  ut_pm_mutex_unlock(&pm_mutex);
+  up(&fdrv_lock);
 
 	return fdrv_ent.retVal;
 }
