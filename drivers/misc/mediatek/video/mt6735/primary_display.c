@@ -3854,6 +3854,7 @@ static int primary_display_esd_check_worker_kthread(void *data)
 				}
 			}
 		}
+	}
 		_primary_path_cmd_unlock();
 #ifdef DISP_SWITCH_DST_MODE
 		_primary_path_switch_dst_unlock();
