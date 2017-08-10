@@ -608,6 +608,12 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 	if (dump_log == DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+
+#ifdef CONFIG_MTK_ECCCI_DRIVER
+		if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
+			exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+#endif
+
 	} else if (dump_log == DEEPIDLE_LOG_REDUCED) {
 		/* Determine print SPM log or not */
 		dpidle_log_print_curr_time = spm_get_current_time_ms();
@@ -637,17 +643,17 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 			dpidle_log_print_prev_time = dpidle_log_print_curr_time;
 			dpidle_log_discard_cnt = 0;
 			timer_out_too_short = false;
+
+#ifdef CONFIG_MTK_ECCCI_DRIVER
+			if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
+				exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+#endif
 		} else {
 			dpidle_log_discard_cnt++;
 
 			wr = WR_NONE;
 		}
 	}
-
-#ifdef CONFIG_MTK_ECCCI_DRIVER
-	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
-		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
-#endif
 
 	return wr;
 }
