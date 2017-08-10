@@ -1699,7 +1699,10 @@ static void fetch_dvfs_log_and_notify(struct cpuhvfs_dvfsp *dvfsp)
 
 	for (i = 1; i <= MAX_LOG_FETCH; i++) {
 		log_box[i].time = csram_read(next_log_offs);
-		if (log_box[i].time <= log_box[i - 1].time)
+		log = csram_read(next_log_offs + 4);
+
+		/* if (log_box[i].time <= log_box[i - 1].time) suffers time overflow */
+		if (log_box[i].time == 0 || log == 0)
 			break;
 
 		next_log_offs += 4;
