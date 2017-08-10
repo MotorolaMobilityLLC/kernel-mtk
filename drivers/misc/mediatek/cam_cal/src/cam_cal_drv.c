@@ -465,8 +465,6 @@ static long cam_cal_drv_ioctl(
 		CAM_CALDB("ioctl allocate mem failed\n");
 		return -ENOMEM;
 	}
-	CAM_CALDB("init Working buffer address=0x%p, length=%d, command=0x%x, sensorID=%x\n",
-		pu1Params, ptempbuf->u4Length, a_u4Command, ptempbuf->sensorID);
 
 	if (copy_from_user((u8 *)pu1Params, (u8 *)ptempbuf->pu1Params, ptempbuf->u4Length)) {
 		kfree(pBuff);
@@ -491,12 +489,7 @@ static long cam_cal_drv_ioctl(
 	pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID);
 
 	if (pcmdInf != NULL) {
-		CAM_CALDB("pcmdInf != NULL\n");
-
 		if (pcmdInf->writeCMDFunc != NULL) {
-
-			CAM_CALDB("before write offset=%d,pu1Params=%x, length=%d\n",
-				ptempbuf->u4Offset, *pu1Params, ptempbuf->u4Length);
 			i4RetValue = pcmdInf->writeCMDFunc(pcmdInf->client,
 				ptempbuf->u4Offset, pu1Params, ptempbuf->u4Length);
 		} else
@@ -533,7 +526,6 @@ static long cam_cal_drv_ioctl(
 		pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID);
 
 		if (pcmdInf != NULL) {
-			CAM_CALDB("pcmdInf != NULL\n");
 			if (pcmdInf->readCMDFunc != NULL)
 				i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
 					ptempbuf->u4Offset, pu1Params, ptempbuf->u4Length);
@@ -552,7 +544,6 @@ static long cam_cal_drv_ioctl(
 
 		CAM_CALDB("Read data %d bytes take %lu us\n", ptempbuf->u4Length, TimeIntervalUS);
 #endif
-		CAM_CALDB("CAM_CALIOC_G_READ End!\n");
 		break;
 
 	default:
@@ -563,7 +554,6 @@ static long cam_cal_drv_ioctl(
 
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
-		CAM_CALDB("to user length %d, Working buffer address 0x%p\n", ptempbuf->u4Length, pu1Params);
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pu1Params , ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pu1Params);
