@@ -872,11 +872,11 @@ static const struct soc_enum Audio_Routing_Enum[] = {
 };
 
 static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
-	SOC_ENUM_EXT("Audio_SideGen_Switch", Audio_Routing_Enum[0],
+	SOC_ENUM_EXT("Audio_SineGen_Switch", Audio_Routing_Enum[0],
 		     Audio_SideGen_Get, Audio_SideGen_Set),
-	SOC_ENUM_EXT("Audio_SideGen_SampleRate", Audio_Routing_Enum[1],
+	SOC_ENUM_EXT("Audio_SineGen_SampleRate", Audio_Routing_Enum[1],
 		     Audio_SideGen_SampleRate_Get, Audio_SideGen_SampleRate_Set),
-	SOC_ENUM_EXT("Audio_SideGen_Amplitude", Audio_Routing_Enum[2],
+	SOC_ENUM_EXT("Audio_SineGen_Amplitude", Audio_Routing_Enum[2],
 		     Audio_SideGen_Amplitude_Get, Audio_SideGen_Amplitude_Set),
 	SOC_ENUM_EXT("Audio_Sidetone_Switch", Audio_Routing_Enum[3],
 		     Audio_SideTone_Get, Audio_SideTone_Set),
