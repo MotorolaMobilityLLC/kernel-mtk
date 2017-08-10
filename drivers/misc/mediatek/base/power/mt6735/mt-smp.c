@@ -99,7 +99,7 @@ static void __init smp_set_boot_addr(void)
 	   register for bootrom power down mode */
 
 	mt_reg_sync_writel(virt_to_phys(mt_secondary_startup),
-			infracfg_ao_base + 0x800);
+			(void *) infracfg_ao_base + 0x800);
 
 	iounmap(infracfg_ao_base);
 }
