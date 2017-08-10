@@ -80,6 +80,10 @@ static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
 static volatile bool g_pwm_force_backlight_update;
 
 static volatile bool g_pwm_is_config_init;
+#if defined(CONFIG_ARCH_MT6757)
+static bool g_pwm_first_config;
+#endif
+
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
 	struct device_node *led_node = NULL;
@@ -197,6 +201,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int ret;
+	bool config_instantly = false;
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
 
@@ -207,10 +212,30 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 		/* Some backlight chip/PMIC(e.g. MT6332) only accept slower clock */
 		pwm_div = (pwm_div == 0) ? PWM_DEFAULT_DIV_VALUE : pwm_div;
 		pwm_div &= 0x3FF;
+#if defined(CONFIG_ARCH_MT6757)
+		if ((pwm_src == 0 || pwm_src == 1) && (pwm_src < 0x3FF)) {
+			/* add PWM clock division, due to ULPOSC frequency is too high in some chip */
+			pwm_div += 1;
+		}
+		if (g_pwm_first_config == false) {
+			config_instantly = true;
+			g_pwm_first_config = true;
+		}
+#endif
 		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
 	g_pwm_is_config_init = true;
+
+	if (config_instantly == true) {
+		/* Set PWM clock division instantly to avoid frequency change dramaticly */
+		DISP_REG_MASK(NULL, reg_base + 0x20, 0x3, ~0);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
+		udelay(40);
+		DISP_REG_MASK(NULL, reg_base + 0x20, 0x0, ~0);
+
+		PWM_MSG("disp_pwm_init : PWM config data instantly (%d,%d)", pwm_src, pwm_div);
+	}
 
 	/* We don't enable PWM until we really need */
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
@@ -576,6 +601,7 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 static int ddp_pwm_init(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_pwm_power_on(module, cmq_handle);
+
 	return 0;
 }
 
@@ -822,5 +848,15 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "queryBL", 7) == 0) {
 		disp_pwm_query_backlight(debug_output);
 	}
+
+#if defined(CONFIG_ARCH_MT6757)
+	if (strncmp(cmd, "query_osc", 9) == 0) {
+		disp_pwm_ulposc_query(debug_output);
+		PWM_MSG("Trigger query ulposc");
+	} else if (strncmp(cmd, "osc_cali", 8) == 0) {
+		disp_pwm_ulposc_cali();
+		PWM_MSG("Trigger ulposc calibration");
+	}
+#endif
 }
 
