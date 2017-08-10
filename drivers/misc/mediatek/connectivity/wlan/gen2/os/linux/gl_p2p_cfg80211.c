@@ -1562,6 +1562,15 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	INT_32 value;
 	int status = 0;
 	UINT_32 u4Leng;
+	struct NL80211_DRIVER_P2P_NOA_PARAMS {
+		NL80211_DRIVER_TEST_PARAMS hdr;
+		UINT_32 idx;
+		UINT_32 value; /* should not be used in this case */
+		UINT_32 count;
+		UINT_32 interval;
+		UINT_32 duration;
+	};
+	struct NL80211_DRIVER_P2P_NOA_PARAMS *prNoaParams = NULL;
 
 	ASSERT(wiphy);
 
@@ -1591,9 +1600,17 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	case 1:		/* P2p mode */
 		break;
 	case 4:		/* Noa duration */
-		prP2pSpecificBssInfo->rNoaParam.u4NoaDurationMs = value;
+		prNoaParams = data;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaCount = prNoaParams->count;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaIntervalMs = prNoaParams->interval;
+		prP2pSpecificBssInfo->rNoaParam.u4NoaDurationMs = prNoaParams->duration;
+		DBGLOG(P2P, INFO, "SET NOA: %d %d %d\n",
+		       prNoaParams->count, prNoaParams->interval, prNoaParams->duration);
+
 		/* only to apply setting when setting NOA count */
-		/* status = mtk_p2p_wext_set_noa_param(prDev, info, wrqu, (char *)&prP2pSpecificBssInfo->rNoaParam); */
+		kalIoctl(prGlueInfo, wlanoidSetNoaParam, &prP2pSpecificBssInfo->rNoaParam,
+			 sizeof(PARAM_CUSTOM_NOA_PARAM_STRUCT_T),
+			 FALSE, FALSE, TRUE, TRUE, &u4Leng);
 		break;
 	case 5:		/* Noa interval */
 		prP2pSpecificBssInfo->rNoaParam.u4NoaIntervalMs = value;
@@ -1629,7 +1646,11 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 		break;
 	case 107:		/* P2P set opps, CTWindowl */
 		prP2pSpecificBssInfo->rOppPsParam.u4CTwindowMs = value;
-		/* status = mtk_p2p_wext_set_oppps_param(prDev,info,wrqu,(char *)&prP2pSpecificBssInfo->rOppPsParam); */
+
+		DBGLOG(P2P, INFO, "SET OPPS: %d\n", value);
+		kalIoctl(prGlueInfo, wlanoidSetOppPsParam, &prP2pSpecificBssInfo->rOppPsParam,
+			 sizeof(PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T),
+			 FALSE, FALSE, TRUE, TRUE, &u4Leng);
 		break;
 	case 108:		/* p2p_set_power_save */
 		kalIoctl(prGlueInfo,

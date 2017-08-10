@@ -1178,7 +1178,7 @@ wlanoidSetOppPsParam(IN P_ADAPTER_T prAdapter,
 				   (PUINT_8) &rCmdOppPsParam, pvSetBuffer, u4SetBufferLen);
 #else
 	return wlanoidSendSetQueryP2PCmd(prAdapter,
-					 CMD_ID_SET_NOA_PARAM,
+					 CMD_ID_SET_OPPPS_PARAM,
 					 TRUE,
 					 FALSE,
 					 TRUE,
