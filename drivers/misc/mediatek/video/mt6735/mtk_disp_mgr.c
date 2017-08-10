@@ -1132,7 +1132,7 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 static int set_memory_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	int layer_id = 0;
+	unsigned int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long dst_mva = 0;
 	unsigned int session_id = input->session_id;
@@ -1144,6 +1144,9 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
+
+		if (input->config_layer_num > MAX_OVL_CONFIG - 1)
+			break;
 		layer_id = input->config[i].layer_id;
 		if (input->config[i].layer_enable) {
 			if (input->config[i].buffer_source == DISP_BUFFER_ALPHA) {
@@ -1226,7 +1229,7 @@ static int set_external_buffer(disp_session_input_config *input)
 {
 	int i = 0;
 	int ret = 0;
-	int layer_id = 0;
+	unsigned int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long int dst_mva = 0;
 	unsigned int session_id = 0;
@@ -1238,6 +1241,10 @@ static int set_external_buffer(disp_session_input_config *input)
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
+
+		if (input->config_layer_num > MAX_OVL_CONFIG - 1)
+			break;
+
 		layer_id = input->config[i].layer_id;
 		if (input->config[i].layer_enable) {
 			if (input->config[i].buffer_source == DISP_BUFFER_ALPHA) {
@@ -1356,7 +1363,7 @@ static inline void remove_assert_layer(disp_session_input_config *input)
 static int set_primary_buffer(disp_session_input_config *input)
 {
 	int i = 0;
-	int layer_id = 0;
+	unsigned int layer_id = 0;
 	unsigned int dst_size = 0;
 	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;

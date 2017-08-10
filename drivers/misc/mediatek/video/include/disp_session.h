@@ -25,6 +25,7 @@
 #define DISP_SESSION_TYPE(id) (((id)>>16)&0xff)
 #define DISP_SESSION_DEV(id) ((id)&0xff)
 #define MAKE_DISP_SESSION(type, dev) (unsigned int)((type)<<16 | (dev))
+#define MAX_OVL_CONFIG 12
 
 #define RSZ_RES_LIST_NUM 4
 
@@ -270,7 +271,7 @@ typedef struct disp_session_input_config_t {
 	DISP_SESSION_USER setter;
 	unsigned int session_id;
 	unsigned int config_layer_num;
-	disp_input_config config[12];
+	disp_input_config config[MAX_OVL_CONFIG];
 } disp_session_input_config;
 
 typedef struct disp_session_output_config_t {
