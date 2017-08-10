@@ -456,7 +456,7 @@ void mt_spm_update_pmic_wrap(void)
 	pw.set[PMIC_WRAP_PHASE_DEEPIDLE]._[IDX_DI_VSRAM_CORE_1P0V].cmd_addr = MT6351_BUCK_VSRAM_PROC_CON5;
 	pw.set[PMIC_WRAP_PHASE_DEEPIDLE]._[IDX_DI_VSRAM_CORE_1P1V].cmd_addr = MT6351_BUCK_VSRAM_PROC_CON5;
 }
-EXPORT_SYMBOL(mt_spm_pmic_wrap_update);
+EXPORT_SYMBOL(mt_spm_update_pmic_wrap);
 #endif
 
 int mt_spm_pmic_wrap_init(void)
