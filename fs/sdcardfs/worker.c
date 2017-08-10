@@ -439,6 +439,7 @@ int sdcardfs_work_dispatch_syncjob(int operation,
 	if (!pw)
 		return -ENOMEM;
 
+	dget(dentry);
 	pw->operation = operation;
 	pw->owner = current;
 	pw->dir = dir;
@@ -452,6 +453,7 @@ int sdcardfs_work_dispatch_syncjob(int operation,
 	else
 		ret = pw->result;
 
+	dput(dentry);
 	kmem_cache_free(sdcardfs_work_cachep, pw);
 	return ret;
 }
