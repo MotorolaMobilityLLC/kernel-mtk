@@ -35,15 +35,12 @@
 
 #define MRDUMP_CPU_MAX 16
 
-#define MRDUMP_DEV_NULL 0
-#define MRDUMP_DEV_SDCARD 1
-#define MRDUMP_DEV_EMMC 2
+#define MRDUMP_ENABLE_COOKIE 0x590d2ba3
 
-#define MRDUMP_FS_NULL 0
-#define MRDUMP_FS_VFAT 1
-#define MRDUMP_FS_EXT4 2
+#define MRDUMP_GO_DUMP "MRDUMP07"
 
-#define MRDUMP_GO_DUMP "MRDUMP04"
+#define KSYM_32        1
+#define KSYM_64        2
 
 typedef uint32_t arm32_gregset_t[18];
 typedef uint64_t aarch64_gregset_t[34];
@@ -62,15 +59,35 @@ struct mrdump_crash_record {
 	} cpu_regs[MRDUMP_CPU_MAX];
 };
 
-struct mrdump_machdesc {
+struct mrdump_ksyms_param {
+	char     tag[4];
+	uint32_t flag;
 	uint32_t crc;
+	uint64_t start_addr;
+	uint32_t size;
+	uint32_t addresses_off;
+	uint32_t num_syms_off;
+	uint32_t names_off;
+	uint32_t markers_off;
+	uint32_t token_table_off;
+	uint32_t token_index_off;
+} __packed;
 
-	uint32_t output_device;
-
+struct mrdump_machdesc {
 	uint32_t nr_cpus;
 
 	uint64_t page_offset;
 	uint64_t high_memory;
+
+	uint64_t kimage_vaddr;
+	uint64_t kimage_init_begin;
+	uint64_t kimage_init_end;
+	uint64_t kimage_stext;
+	uint64_t kimage_etext;
+	uint64_t kimage_srodata;
+	uint64_t kimage_erodata;
+	uint64_t kimage_sdata;
+	uint64_t kimage_edata;
 
 	uint64_t vmalloc_start;
 	uint64_t vmalloc_end;
@@ -81,14 +98,22 @@ struct mrdump_machdesc {
 	uint64_t phys_offset;
 	uint64_t master_page_table;
 
-	uint32_t output_fstype;
-	uint32_t output_lbaooo;
+	uint64_t memmap;
+
+	uint64_t dfdmem_pa;
+
+	struct mrdump_ksyms_param kallsyms;
 };
 
 struct mrdump_control_block {
 	char sig[8];
 
 	struct mrdump_machdesc machdesc;
+	uint32_t machdesc_crc;
+
+	uint32_t enabled;
+	uint32_t output_fs_lbaooo;
+
 	struct mrdump_crash_record crash_record;
 };
 

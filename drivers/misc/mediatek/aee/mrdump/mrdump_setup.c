@@ -55,5 +55,6 @@ const struct mrdump_platform mrdump_v1_platform = {
 
 int __init mrdump_init(void)
 {
+	mrdump_cblock_init();
 	return mrdump_platform_init(&mrdump_v1_platform);
 }

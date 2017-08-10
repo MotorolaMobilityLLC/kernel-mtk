@@ -79,7 +79,7 @@ SECTIONS
 		_text = .;
 		HEAD_TEXT
 	}
-#ifdef CONFIG_MTK_AEE_MRDUMP
+#ifdef CONFIG_MTK_AEE_IPANIC
 	.mrdump ALIGN (0x400): {
 	}
 #endif

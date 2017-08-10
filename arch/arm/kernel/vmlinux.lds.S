@@ -162,7 +162,7 @@ SECTIONS
 #endif
 	_etext = .;			/* End of text and rodata section */
 
-#ifdef CONFIG_MTK_AEE_MRDUMP
+#ifdef CONFIG_MTK_AEE_IPANIC
 	.mrdump ALIGN (0x400): {
 	}
 #endif

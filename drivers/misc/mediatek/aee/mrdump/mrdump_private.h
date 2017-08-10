@@ -21,6 +21,10 @@ struct mrdump_platform {
 
 struct pt_regs;
 
+extern struct mrdump_control_block mrdump_cblock;
+
+void mrdump_cblock_init(void);
+
 int mrdump_platform_init(const struct mrdump_platform *plat);
 
 void mrdump_save_current_backtrace(struct pt_regs *regs);
