@@ -992,6 +992,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 	struct siginfo sig_info;
 	unsigned int sig_pid;
 	/*int scanned_num = -1;*/
+	int retry;
 
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
@@ -1282,9 +1283,16 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	case CCCI_IOC_GET_MD_TYPE:
-		md_type = get_modem_support_cap(md_id);
-		ret =
-		    put_user((unsigned int)md_type, (unsigned int __user *)arg);
+		retry = 600;
+		do {
+			md_type = get_legacy_md_type(md_id);
+			if (md_type)
+				break;
+			msleep(500);
+			retry--;
+		} while (retry);
+		CCCI_MSG_INF(md_id, "chr", "CCCI_IOC_GET_MD_TYPE: %d!\n", md_type);
+		ret = put_user((unsigned int)md_type, (unsigned int __user *)arg);
 		break;
 
 	case CCCI_IOC_STORE_MD_TYPE:
