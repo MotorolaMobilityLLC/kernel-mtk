@@ -2641,6 +2641,7 @@ exit_kfree:
 exit:
 	GSE_ERR("%s: err = %d\n", __func__, err);
 	gsensor_init_flag = -1;
+	mpu6515_i2c_client = NULL;
 	return err;
 }
 
