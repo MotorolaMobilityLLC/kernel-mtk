@@ -182,7 +182,15 @@ int aed_get_process_bt(struct aee_process_bt *bt)
 			break;
 	}
 
-	aed_get_bt(task, bt);
+	task = find_task_by_vpid(bt->pid);
+	if (task && (task->pid == bt->pid)) {
+		task_lock(task);
+		aed_get_bt(task, bt);
+		task_unlock(task);
+	} else {
+		err = -EINVAL;
+		LOGE("%s: pid %d can't find\n", __func__, bt->pid);
+	}
 
 	atomic_set(&s.cpus_report, nr_cpus - 1);
 	atomic_set(&s.cpus_lock, 0);
