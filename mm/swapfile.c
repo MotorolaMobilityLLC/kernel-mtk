@@ -106,8 +106,6 @@ static bool dynamic_swap_selection(void)
 	wb = global_page_state(NR_WRITEBACK);
 	if (swap_cache_size > dt_swapcache && wb > dt_writeback)
 		return false;
-	else
-		return true;
 
 	/* Is the size of cache memory < 1/8 kernel manageable memory - minimum working set */
 	file_cache_threshold = (global_page_state(NR_FILE_PAGES) - global_page_state(NR_SHMEM) - swap_cache_size) << 3;
