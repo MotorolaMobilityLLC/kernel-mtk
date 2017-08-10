@@ -3326,11 +3326,12 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	/* 4 <6> Indicate Disconnected Event to Host */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, fgDelayIndication);
 
+	/*dump package information and ignore disconnect before new connect state*/
+	if (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState != AIS_STATE_REMAIN_ON_CHANNEL)
+		wlanPktDebugDumpInfo(prAdapter);
+
 	/* 4 <7> Trigger AIS FSM */
 	aisFsmSteps(prAdapter, AIS_STATE_IDLE);
-
-	/*dump package information*/
-	wlanPktDebugDumpInfo(prAdapter);
 
 }				/* end of aisFsmDisconnect() */
 
