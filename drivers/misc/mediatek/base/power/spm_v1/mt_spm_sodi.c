@@ -1203,7 +1203,7 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 				 wakesta.event_reg, wakesta.isr, pcmdesc->version);
 		} else {
 			char buf[LOG_BUF_SIZE] = { 0 };
-			int i, left_size;
+			int i, left_size, str_size;
 
 			if (wakesta.r12 & WAKE_SRC_SPM_MERGE) {
 				if (wakesta.wake_misc & WAKE_MISC_PCM_TIMER)
@@ -1216,8 +1216,9 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 			for (i = 1; i < 32; i++) {
 				if (wakesta.r12 & (1U << i)) {
 					left_size = sizeof(buf) - strlen(buf) - 1;
-					if (left_size >= strlen(sodi_wakesrc_str[i]))
-						strcat(buf, sodi_wakesrc_str[i]);
+					str_size = strlen(sodi_wakesrc_str[i]);
+					if (left_size >= str_size)
+						strncat(buf, sodi_wakesrc_str[i], str_size);
 					else
 						strncat(buf, sodi_wakesrc_str[i], left_size);
 
