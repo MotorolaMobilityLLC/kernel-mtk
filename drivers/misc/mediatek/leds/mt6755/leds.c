@@ -503,13 +503,8 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 
 	LEDS_DEBUG("led_blink_pmic: pmic_type=%d\n", pmic_type);
 
-	if ((pmic_type != MT65XX_LED_PMIC_NLED_ISINK0
-	     && pmic_type != MT65XX_LED_PMIC_NLED_ISINK1
-		&& pmic_type != MT65XX_LED_PMIC_NLED_ISINK2
-		&& pmic_type != MT65XX_LED_PMIC_NLED_ISINK3)
-	    || led->nled_mode != NLED_BLINK) {
+	if (led->nled_mode != NLED_BLINK)
 		return -1;
-	}
 
 	LEDS_DEBUG("LED blink on time = %d offtime = %d\n",
 		   led->blink_on_time, led->blink_off_time);
@@ -520,12 +515,15 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 	duty =
 	    32 * led->blink_on_time / (led->blink_on_time +
 				       led->blink_off_time);
-	/* pmic_set_register_value(PMIC_RG_G_DRV_2M_CK_PDN(0X0); // DISABLE POWER DOWN ,Indicator no need) */
-	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-	#else
-	pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
-	#endif
+	if (pmic_type > MT65XX_LED_PMIC_NLED_ISINK_MIN && pmic_type < MT65XX_LED_PMIC_NLED_ISINK_MAX) {
+		/* pmic_set_register_value(PMIC_RG_G_DRV_2M_CK_PDN(0X0); // DISABLE POWER DOWN ,Indicator no need) */
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_CLK_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		#else
+		pmic_set_register_value(MT6351_PMIC_RG_DRV_32K_CK_PDN, 0x0);	/* Disable power down */
+		#endif
+	}
+
 	switch (pmic_type) {
 	case MT65XX_LED_PMIC_NLED_ISINK0:
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
@@ -600,6 +598,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 		#endif
 		break;
 	default:
+		LEDS_DEBUG("[LEDS] pmic_type %d is not handled\n", pmic_type);
 		break;
 	}
 #endif /* End of #ifdef CONFIG_MTK_PMIC */
