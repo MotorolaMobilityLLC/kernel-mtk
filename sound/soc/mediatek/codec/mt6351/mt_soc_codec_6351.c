@@ -169,6 +169,7 @@ static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
+static bool mClkBufferfromPMIC;
 static uint32 MicbiasRef, GetMicbias;
 
 static int reg_AFE_VOW_CFG0 = 0x0000;		/* VOW AMPREF Setting */
@@ -418,9 +419,13 @@ void audckbufEnable(bool enable)
 	if (enable) {
 		if (audck_buf_Count == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef _GIT318_READY
-			clk_buf_ctrl(CLK_BUF_AUDIO, true);
-#endif
+			if (mClkBufferfromPMIC) {
+				Ana_Set_Reg(DCXO_CW01, 0x8000, 0x8000);
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable\n");
+			} else {
+				clk_buf_ctrl(CLK_BUF_AUDIO, true);
+				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+			}
 #endif
 		}
 		audck_buf_Count++;
@@ -428,9 +433,13 @@ void audckbufEnable(bool enable)
 		audck_buf_Count--;
 		if (audck_buf_Count == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef _GIT318_READY
-			clk_buf_ctrl(CLK_BUF_AUDIO, false);
-#endif
+			if (mClkBufferfromPMIC) {
+				Ana_Set_Reg(DCXO_CW01, 0x0000, 0x8000);
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable\n");
+			} else {
+				clk_buf_ctrl(CLK_BUF_AUDIO, false);
+				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+			}
 #endif
 		}
 		if (audck_buf_Count < 0) {
@@ -1928,7 +1937,9 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_aud("%s() enable = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_aud("%s(): enable = %ld, mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = %d\n",
+			__func__, ucontrol->value.integer.value[0],
+			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
@@ -1958,7 +1969,9 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_aud("%s()\n", __func__);
+	pr_aud("%s(): enable = %ld, mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = %d\n",
+			__func__, ucontrol->value.integer.value[0],
+			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
@@ -3065,7 +3078,7 @@ static int Set_ANC_Enable(bool enable)
 static int Audio_ANC_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s(), value = %d\n", __func__);
+	pr_aud("%s(), value = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	ucontrol->value.integer.value[0] = ANC_enabled;
 	return 0;
 }
@@ -3073,7 +3086,7 @@ static int Audio_ANC_Get(struct snd_kcontrol *kcontrol,
 static int Audio_ANC_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s(), value = %d\n", __func__);
+	pr_aud("%s(), value = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	if (ucontrol->value.integer.value[0])
 		Set_ANC_Enable(true);
 	else
@@ -5612,6 +5625,12 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	mt6331_codec_init_reg(codec);
 	InitCodecDefault();
 	mInitCodec = true;
+
+	/* Clock buffer source is from RF or PMIC
+	 *   false: RF clock buffer
+	 *   true : PMIC clock buffer */
+	mClkBufferfromPMIC = is_clk_buf_from_pmic();
+	pr_debug("%s Clk_buf_from_pmic is %d\n", __func__, mClkBufferfromPMIC);
 
 	return 0;
 }

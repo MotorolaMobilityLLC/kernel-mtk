@@ -569,6 +569,8 @@ void Afe_Log_Print(void)
 	pr_debug("AFE_ASRC_CONNSYS_CON21 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON21));
 	pr_debug("AFE_ASRC_CONNSYS_CON23 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON23));
 	pr_debug("AFE_ASRC_CONNSYS_CON24 = 0x%x\n", Afe_Get_Reg(AFE_ASRC_CONNSYS_CON24));
+	pr_debug("AUDIO_CLK_CFG_4 = 0x%x\n", GetClkCfg(AUDIO_CLK_CFG_4));
+	pr_debug("AUDIO_CLK_CFG_6 = 0x%x\n", GetClkCfg(AUDIO_CLK_CFG_6));
 	AudDrv_Clk_Off();
 	pr_debug("-AudDrv Afe_Log_Print\n");
 }

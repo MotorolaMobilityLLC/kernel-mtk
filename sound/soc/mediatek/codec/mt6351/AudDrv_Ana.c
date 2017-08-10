@@ -236,6 +236,9 @@ void Ana_Log_Print(void)
 
 	pr_debug("TOP_CKPDN_CON0	= 0x%x\n", Ana_Get_Reg(TOP_CKPDN_CON0));
 	pr_debug("GPIO_MODE3	= 0x%x\n", Ana_Get_Reg(GPIO_MODE3));
+
+	pr_debug("DCXO_CW01	= 0x%x\n", Ana_Get_Reg(DCXO_CW01));
+
 	pr_debug("-Ana_Log_Print\n");
 }
 EXPORT_SYMBOL(Ana_Log_Print);
@@ -527,6 +530,8 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(AFE_VOW_PERIODIC_MON0));
 	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_MON1  = 0x%x\n",
 		       Ana_Get_Reg(AFE_VOW_PERIODIC_MON1));
+	n += scnprintf(buffer + n, size - n, "DCXO_CW01  = 0x%x\n",
+		       Ana_Get_Reg(DCXO_CW01));
 	return n;
 }
 EXPORT_SYMBOL(Ana_Debug_Read);
