@@ -1901,9 +1901,8 @@ static void md_cd_ccif_work(struct work_struct *work)
 	md_cd_exception(md, HIF_EX_CLEARQ_DONE);
 
 	polling_ready(md, D2H_EXCEPTION_ALLQ_RESET);
+	ccci_fsm_append_event(md, CCCI_EVENT_CCIF_HS, NULL, 0); /* before re-start CLDMA */
 	md_cd_exception(md, HIF_EX_ALLQ_RESET);
-
-	ccci_fsm_append_event(md, CCCI_EVENT_CCIF_HS, NULL, 0);
 }
 
 static irqreturn_t md_cd_ccif_isr(int irq, void *data)

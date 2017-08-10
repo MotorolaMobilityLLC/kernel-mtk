@@ -220,6 +220,7 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 			} else if (event->event_id == CCCI_EVENT_FS_OUT) {
 				fs_got = 1;
 				fs_ongoing = 0;
+				count = 0;
 				ccci_fsm_finish_event(md, event);
 			} else if (event->event_id == CCCI_EVENT_HS2 && hs1_got) {
 				hs2_got = 1;
@@ -233,14 +234,17 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 		}
 		if (hs2_got)
 			goto success;
+		/* FS trick
+		 * count from the last FS write, but also eliminate on-the-fly FS operation.
+		 * do not sleep or count++ for any FS event, there are a lot of them.
+		 */
 		if (fs_got) {
 			fs_got = 0;
-			continue; /* speed up */
+			continue;
 		}
-		if (!fs_ongoing) {
+		if (!fs_ongoing)
 			count++;
-			msleep(EVENT_POLL_INTEVAL); /* should not be too long, otherwise the FS trick above may fail */
-		}
+		msleep(EVENT_POLL_INTEVAL);
 	}
 	/* 4. check result, finish command */
 fail:
@@ -285,7 +289,7 @@ static void ccci_routine_stop(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command 
 	ee_cmd = ccci_check_for_ee(ctl, 1);
 	if (ee_cmd)
 		ccci_routine_exception(ctl, ee_cmd, EXCEPTION_EE);
-	ccci_md_check_ee_done(md, 120);
+	ccci_md_check_ee_done(md, EE_DONE_TIMEOUT);
 	/* 4. hardware stop */
 	ccci_md_stop(md, 100);
 	/* 5. clear event queue */
