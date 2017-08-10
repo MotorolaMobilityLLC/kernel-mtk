@@ -390,10 +390,14 @@ static int max_temperature_in_bank(thermal_bank_name bank)
 	int max_in_bank = 0;
 
 	for (j = 0; j < tscpu_g_bank[bank].ts_number; j++) {
-		if (tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type] > max_in_bank)
+		if (j == 0) {
 			max_in_bank = tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type];
-		tscpu_dprintk("tscpu_get_temp CPU bank%d T%d=%d\n", bank, j,
-			      tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type]);
+		} else {
+			if (tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type] > max_in_bank)
+				max_in_bank = tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type];
+			tscpu_dprintk("tscpu_get_temp CPU bank%d T%d=%d\n", bank, j,
+				tscpu_bank_ts[bank][tscpu_g_bank[bank].ts[j].type]);
+		}
 	}
 
 	return max_in_bank;
@@ -408,12 +412,14 @@ int tscpu_max_temperature(void)
 
 	tscpu_dprintk("tscpu_get_temp %s, %d\n", __func__, __LINE__);
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
-
-		max_in_bank = max_temperature_in_bank(i);
-		if (max_in_bank > max)
-			max = max_in_bank;
+		if (i == 0) {
+			max = max_temperature_in_bank(i);
+		} else {
+			max_in_bank = max_temperature_in_bank(i);
+			if (max_in_bank > max)
+				max = max_in_bank;
+		}
 	}
-
 	return max;
 }
 
