@@ -1120,9 +1120,9 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #else
 	int temp = 40;
 #endif
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
+	/* if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
 		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
-	else
+	else */
 		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
 #else
 	return 0;
