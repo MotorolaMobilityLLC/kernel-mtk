@@ -11,7 +11,9 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
-obj-$(CONFIG_MTK_LASTPC_V2)	+= mrdump_hw.o
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6570) $(CONFIG_ARCH_MT6757)))
+obj-$(CONFIG_MTK_AEE_FEATURE)	+= mrdump_hw.o
+endif
 
 ifeq ($(CONFIG_MTK_AEE_MRDUMP),y)
 obj-y += mrdump.o

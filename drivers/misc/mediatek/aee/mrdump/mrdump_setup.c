@@ -21,7 +21,7 @@
 
 static void mrdump_hw_enable(bool enabled)
 {
-#ifndef CONFIG_MTK_LASTPC_V2
+#if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6757)
 	int res;
 	struct wd_api *wd_api = NULL;
 
