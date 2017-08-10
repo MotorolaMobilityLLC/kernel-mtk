@@ -2180,7 +2180,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	if ((get_devinfo_with_index(38) & 0x100) && (get_devinfo_with_index(28) & 0x40000000)) {
 		/* for Jade- UMC */
 		det->DVTFIXED = 0;
-		det->features = FEA_INIT01 | FEA_INIT02;
+		eem_error("Apply HT settings FEA(%d)\n", det->features);
 	} else
 		det->DVTFIXED = DVTFIXED_VAL;
 	#else
@@ -2343,6 +2343,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 	} else {
 		low_temp_offset = 0;
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		if ((get_devinfo_with_index(38) & 0x100) && (get_devinfo_with_index(28) & 0x40000000))
+			memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl_init2));
+		#endif
 	}
 	/* eem_debug("ctrl->volt_update |= EEM_VOLT_UPDATE\n"); */
 
@@ -2782,7 +2786,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			if (EEM_CTRL_BIG == det->ctrl_id) {
 				ctrl_ITurbo = (0 == ctrl_ITurbo) ? 0 : 2;
-				eem_error("Finished BIG monitor mode!!\n");
+				eem_isr_info("Finished BIG monitor mode!!\n");
 			}
 		#endif
 	#endif
@@ -3159,7 +3163,7 @@ void eem_init02(const char *str)
 	FUNC_ENTER(FUNC_LV_LOCAL);
 	eem_error("eem_init02 called by [%s]\n", str);
 	for_each_det_ctrl(det, ctrl) {
-		if (HAS_FEATURE(det, FEA_MON)) {
+		if (HAS_FEATURE(det, FEA_INIT02)) {
 			unsigned long flag;
 
 			mt_ptp_lock(&flag);
