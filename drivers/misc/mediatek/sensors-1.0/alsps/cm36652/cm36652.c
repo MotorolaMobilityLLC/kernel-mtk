@@ -1067,7 +1067,9 @@ int cm36652_setup_eint(struct i2c_client *client)
 		ret = of_property_read_u32_array(cm36652_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
 		if (!ret)
 			APS_LOG("of_property_read_u32_array fail!!\n");
-		gpio_request(ints[0], "p-sensor");
+		ret = gpio_request(ints[0], "p-sensor");
+		if (ret)
+			APS_ERR("gpio_request fail. ret(%d)\n", ret);
 		gpio_set_debounce(ints[0], ints[1]);
 		pinctrl_select_state(pinctrl, pins_cfg);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
@@ -1812,7 +1814,7 @@ static int cm36652_i2c_remove(struct i2c_client *client)
 
 static int cm36652_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strncpy(info->type, CM36652_DEV_NAME, strlen(CM36652_DEV_NAME));
+	strncpy(info->type, CM36652_DEV_NAME, sizeof(info->type));
 	return 0;
 
 }

@@ -1053,13 +1053,13 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	res = FctShipmntTestProcess_Body();
 	if (1 == res) {
 		MAGN_LOG("shipment_test pass\n");
-		strncpy(result, "y", 1);
+		strncpy(result, "y", sizeof(result));
 	} else if (-1 == res) {
 		MAGN_LOG("shipment_test fail\n");
-		strncpy(result, "n", 1);
+		strncpy(result, "n", sizeof(result));
 	} else {
 		MAGN_LOG("shipment_test NaN\n");
-		strncpy(result, "NaN", 4);
+		strncpy(result, "NaN", sizeof(result));
 	}
 
 	return sprintf(buf, "%s\n", result);

@@ -78,7 +78,7 @@ static void gyro_work_func(struct work_struct *work)
 {
 
 	struct gyro_context *cxt = NULL;
-	int x, y, z, status;
+	int x = 0, y = 0, z = 0, status = 0;
 	int64_t pre_ns, cur_ns;
 	int64_t delay_ms;
 	int err = 0;
