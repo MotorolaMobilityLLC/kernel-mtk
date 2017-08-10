@@ -790,7 +790,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		fgSuiteSupported = FALSE;
 
 		DBGLOG(RSN, TRACE,
-		       "eEncStatus %d %lu 0x%lx\n", prAdapter->rWifiVar.rConnSettings.eEncStatus,
+		       "eEncStatus %d %u 0x%x\n", prAdapter->rWifiVar.rConnSettings.eEncStatus,
 			prBssRsnInfo->u4PairwiseKeyCipherSuiteCount, prBssRsnInfo->au4PairwiseKeyCipherSuite[0]);
 		/* Select pairwise/group ciphers */
 		switch (prAdapter->rWifiVar.rConnSettings.eEncStatus) {
@@ -925,7 +925,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 			    (UINT_8) ((u4AkmSuite >> 16) & 0x000000FF), (UINT_8) ((u4AkmSuite >> 24) & 0x000000FF));
 
 #if CFG_SUPPORT_802_11W
-	DBGLOG(RSN, TRACE, "[MFP] MFP setting = %lu\n ", kalGetMfpSetting(prAdapter->prGlueInfo));
+	DBGLOG(RSN, TRACE, "[MFP] MFP setting = %u\n ", kalGetMfpSetting(prAdapter->prGlueInfo));
 
 	if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED) {
 		if (!prBssRsnInfo->fgRsnCapPresent) {
@@ -1306,7 +1306,7 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 				WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
 				cp += 2;
 				DBGLOG(RSN, TRACE,
-					"BSSID " MACSTR " ind=%lu\n", MAC2STR(prStaRec->aucMacAddr), u4Entry);
+					"BSSID " MACSTR " ind=%u\n", MAC2STR(prStaRec->aucMacAddr), u4Entry);
 
 /*
 				DBGLOG(RSN, TRACE,
@@ -1867,7 +1867,7 @@ VOID rsnGeneratePmkidIndication(IN P_ADAPTER_T prAdapter)
 			prPmkidEvent->arCandidateList[count].u4Flags =
 			    prAisSpecificBssInfo->arPmkidCandicate[i].u4PreAuthFlags;
 			DBGLOG(RSN, TRACE,
-			       MACSTR " %lu\n",
+			       MACSTR " %u\n",
 				MAC2STR(prPmkidEvent->arCandidateList[count].arBSSID),
 				prPmkidEvent->arCandidateList[count].u4Flags);
 			count++;
@@ -1877,7 +1877,7 @@ VOID rsnGeneratePmkidIndication(IN P_ADAPTER_T prAdapter)
 	/* PMKID Candidate List */
 	prPmkidEvent->u4Version = 1;
 	prPmkidEvent->u4NumCandidates = count;
-	DBGLOG(RSN, TRACE, "rsnGeneratePmkidIndication #%lu\n", prPmkidEvent->u4NumCandidates);
+	DBGLOG(RSN, TRACE, "rsnGeneratePmkidIndication #%u\n", prPmkidEvent->u4NumCandidates);
 	u4LenOfUsedBuffer = sizeof(ENUM_STATUS_TYPE_T) + (2 * sizeof(UINT_32)) +
 	    (count * sizeof(PARAM_PMKID_CANDIDATE_T));
 	/* dumpMemory8((PUINT_8)prAdapter->aucIndicationEventBuffer, u4LenOfUsedBuffer); */
@@ -2036,7 +2036,7 @@ void rsnStartSaQueryTimer(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 	}
 
 	if (prBssSpecInfo->u4SaQueryCount > 0 && rsnCheckSaQueryTimeout(prAdapter)) {
-		DBGLOG(RSN, INFO, "MFP: u4SaQueryCount count =%lu\n", prBssSpecInfo->u4SaQueryCount);
+		DBGLOG(RSN, INFO, "MFP: u4SaQueryCount count =%u\n", prBssSpecInfo->u4SaQueryCount);
 		return;
 	}
 
@@ -2118,7 +2118,7 @@ void rsnStartSaQueryTimer(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 	/* 4 Enqueue the frame to send this action frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
-	DBGLOG(RSN, INFO, "Set SA Query timer %lu (%d Tu)\n", prBssSpecInfo->u4SaQueryCount, 201);
+	DBGLOG(RSN, INFO, "Set SA Query timer %u (%d Tu)\n", prBssSpecInfo->u4SaQueryCount, 201);
 
 	cnmTimerStartTimer(prAdapter, &prBssSpecInfo->rSaQueryTimer, TU_TO_MSEC(201));
 

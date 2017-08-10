@@ -678,7 +678,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 		       prScanDone->ucScanDoneVersion, prScanDone->ucCompleteChanCount,
 		       prScanDone->ucCurrentState, prScanDone->fgIsPNOenabled);
 		if (prScanDone->ucScanDoneVersion > 2)
-			DBGLOG(SCN, INFO, "New u4ScanDurBcnCnt[%lu]!!! fgIsPNOenabled[%d]\n",
+			DBGLOG(SCN, INFO, "New u4ScanDurBcnCnt[%u]!!! fgIsPNOenabled[%d]\n",
 					prScanDone->u4ScanDurBcnCnt, prScanDone->fgIsPNOenabled);
 	} else
 		DBGLOG(SCN, INFO, "Old scnEventScanDone Version\n");

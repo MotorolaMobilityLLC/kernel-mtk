@@ -546,7 +546,7 @@ batchConvertResult(IN P_EVENT_BATCH_RESULT_T prEventBatchResult,
 			freq = batchChannelNum2Freq(prEntry->ucFreq);
 			nsize3 =
 			    kalSnprintf(text3, TMP_TEXT_LEN_L,
-					"freq=%lu\nlevel=%d\ndist=%lu\ndistSd=%lu\n====\n", freq,
+					"freq=%u\nlevel=%d\ndist=%u\ndistSd=%u\n====\n", freq,
 					prEntry->cRssi, prEntry->u4Dist, prEntry->u4Distsd);
 
 			nsize = nsize1 + nsize2 + nsize3;
@@ -805,7 +805,7 @@ priv_set_int(IN struct net_device *prNetDev,
 
 	case PRIV_CMD_BAND_CONFIG:
 		{
-			DBGLOG(INIT, INFO, "CMD set_band = %lu\n", (UINT_32) pu4IntBuf[1]);
+			DBGLOG(INIT, INFO, "CMD set_band = %u\n", (UINT_32) pu4IntBuf[1]);
 		}
 		break;
 
@@ -1512,7 +1512,7 @@ priv_get_struct(IN struct net_device *prNetDev,
 		}
 		return 0;
 	default:
-		DBGLOG(REQ, WARN, "get struct cmd:0x%lx\n", u4SubCmd);
+		DBGLOG(REQ, WARN, "get struct cmd:0x%x\n", u4SubCmd);
 		return -EOPNOTSUPP;
 	}
 }				/* priv_get_struct */

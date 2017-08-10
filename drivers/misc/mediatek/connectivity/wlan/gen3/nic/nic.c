@@ -106,14 +106,14 @@ static IST_EVENT_FUNCTION apfnEventFuncTable[] = {
  */
 #define LOCAL_NIC_ALLOCATE_MEMORY(pucMem, u4Size, eMemType, pucComment) \
 	{ \
-		DBGLOG(MEM, TRACE, "Allocating %ld bytes for %s.\n", u4Size, pucComment); \
+		DBGLOG(MEM, TRACE, "Allocating %u bytes for %s.\n", u4Size, pucComment); \
 		pucMem = (PUINT_8)kalMemAlloc(u4Size, eMemType); \
 		if (pucMem == (PUINT_8)NULL) { \
-			DBGLOG(MEM, ERROR, "Could not allocate %ld bytes for %s.\n", u4Size, pucComment); \
+			DBGLOG(MEM, ERROR, "Could not allocate %u bytes for %s.\n", u4Size, pucComment); \
 			break; \
 		} \
 		ASSERT(((ULONG)pucMem % 4) == 0); \
-		DBGLOG(MEM, LOUD, "Virtual Address = 0x%p for %s.\n", (ULONG)pucMem, pucComment); \
+		DBGLOG(MEM, LOUD, "Virtual Address = 0x%p for %s.\n", pucMem, pucComment); \
 	}
 
 /*******************************************************************************
@@ -205,7 +205,7 @@ WLAN_STATUS nicAllocateAdapterMemory(IN P_ADAPTER_T prAdapter)
 
 		if (prAdapter->pucCoalescingBufCached == NULL) {
 			DBGLOG(NIC, ERROR,
-			       "Could not allocate %ld bytes for coalescing buffer.\n",
+			       "Could not allocate %u bytes for coalescing buffer.\n",
 				prAdapter->u4CoalescingBufCachedSize);
 			break;
 		}
@@ -217,7 +217,7 @@ WLAN_STATUS nicAllocateAdapterMemory(IN P_ADAPTER_T prAdapter)
 
 		if (prAdapter->prSDIOCtrl == NULL) {
 			DBGLOG(NIC, ERROR,
-			       "Could not allocate %d bytes for interrupt response.\n",
+			       "Could not allocate %zu bytes for interrupt response.\n",
 				sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 			break;
 		}
@@ -557,7 +557,7 @@ WLAN_STATUS nicProcessIST(IN P_ADAPTER_T prAdapter)
 		/* DBGLOG(NIC, TRACE, ("u4IntStatus: 0x%x\n", u4IntStatus)); */
 
 		if (u4IntStatus & ~(WHIER_DEFAULT | WHIER_FW_OWN_BACK_INT_EN)) {
-			DBGLOG(INTR, WARN, "Un-handled HISR %#lx, HISR = %#lx (HIER:0x%lx)\n",
+			DBGLOG(INTR, WARN, "Un-handled HISR %#x, HISR = %#x (HIER:0x%x)\n",
 					    (u4IntStatus & ~WHIER_DEFAULT), u4IntStatus, WHIER_DEFAULT);
 			u4IntStatus &= WHIER_DEFAULT;
 		}
@@ -605,7 +605,7 @@ WLAN_STATUS nicProcessIST_impl(IN P_ADAPTER_T prAdapter, IN UINT_32 u4IntStatus)
 				apfnEventFuncTable[prIntEventMap->u4Event] (prAdapter);
 			} else {
 				DBGLOG(INTR, WARN,
-				       "Empty INTR handler! ISAR bit#: %ld, event:%lu, func: 0x%x\n",
+				       "Empty INTR handler! ISAR bit#: %u, event:%u, func: 0x%x\n",
 					prIntEventMap->u4Int, prIntEventMap->u4Event,
 					apfnEventFuncTable[prIntEventMap->u4Event]);
 
@@ -640,8 +640,8 @@ BOOL nicVerifyChipID(IN P_ADAPTER_T prAdapter)
 
 	HAL_MCR_RD(prAdapter, MCR_WCIR, &u4CIR);
 
-	DBGLOG(NIC, TRACE, "Chip ID: 0x%lx\n", u4CIR & WCIR_CHIP_ID);
-	DBGLOG(NIC, TRACE, "Revision ID: 0x%lx\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
+	DBGLOG(NIC, TRACE, "Chip ID: 0x%08x\n", u4CIR & WCIR_CHIP_ID);
+	DBGLOG(NIC, TRACE, "Revision ID: 0x%08x\n", ((u4CIR & WCIR_REVISION_ID) >> 16));
 
 	if ((u4CIR & WCIR_CHIP_ID) != MTK_CHIP_REV)
 		return FALSE;
@@ -769,10 +769,10 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 #if defined(MT6797)
 	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
 	HAL_MCR_RD(prAdapter, MCR_WASR2, &u4Value1);
-	DBGLOG(REQ, ERROR, "MCR_WASR: 0x%lx, MCR_WASR2: 0x%lx\n", u4Value, u4Value1);
+	DBGLOG(REQ, ERROR, "MCR_WASR: 0x%08x, MCR_WASR2: 0x%08x\n", u4Value, u4Value1);
 #else
 	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
-	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+	DBGLOG(REQ, WARN, "MCR_WASR: 0x%08x\n", u4Value);
 #endif
 
 	glGetRstReason(RST_PROCESS_ABNORMAL_INTER);
@@ -819,7 +819,7 @@ VOID nicProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 #endif
 	}
 
-	DBGLOG(REQ, WARN, "u4IntrBits: 0x%lx\n", u4IntrBits);
+	DBGLOG(REQ, WARN, "u4IntrBits: 0x%08x\n", u4IntrBits);
 
 }				/* end of nicProcessSoftwareInterrupt() */
 

@@ -5634,7 +5634,7 @@ VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter)
 		} else if (u4DbgIdx < DBG_MODULE_NUM) {
 			wlanSetDebugLevel(u4DbgIdx, u4DbgMask);
 			DBGLOG(INIT, INFO,
-			       "Set DBG module[%lu] log level to [0x%02x]!", u4DbgIdx, (UINT_8) u4DbgMask);
+			       "Set DBG module[%u] log level to [0x%02x]!", u4DbgIdx, (UINT_8) u4DbgMask);
 		}
 	}
 
@@ -6331,10 +6331,11 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 	P_STA_RECORD_T prStaRec;
 	UINT_32 u4DeltaTime;
 	UINT_32 u4DeltaHifTxTime;
-	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
+#if 0
+	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	UINT_32 u4PktPrintPeriod = 0;
-
+#endif
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
 	if (prStaRec) {
@@ -6356,7 +6357,8 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 
 		if (u4DeltaTime >= NIC_TX_TIME_THRESHOLD)
 			prStaRec->u4ThresholdCounter++;
-
+/* currently these code are not used, so disable it */
+#if 0
 		if (u4PktPrintPeriod && (prStaRec->u4TotalTxPktsNumber >= u4PktPrintPeriod)) {
 			DBGLOG(TX, TRACE, "[%u]N[%4lu]A[%5lu]M[%4lu]T[%4lu]E[%4lu]\n",
 					   prStaRec->ucIndex,
@@ -6372,6 +6374,7 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 			prStaRec->u4ThresholdCounter = 0;
 			prQM->au4QmTcResourceEmptyCounter[prStaRec->ucBssIndex][TC2_INDEX] = 0;
 		}
+#endif
 	}
 }
 #endif

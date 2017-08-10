@@ -205,7 +205,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 
 			filp = filp_open(aucFwName, O_RDONLY, 0);
 			if (IS_ERR(filp)) {
-				DBGLOG(INIT, TRACE, "Open FW image: %s failed, errno[%d]\n",
+				DBGLOG(INIT, TRACE, "Open FW image: %s failed, errno[%p]\n",
 						     aucFwName, ERR_PTR((LONG) filp));
 				continue;
 			} else {
@@ -233,7 +233,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 
 				filp = filp_open(aucFwName, O_RDONLY, 0);
 				if (IS_ERR(filp)) {
-					DBGLOG(INIT, INFO, "Open FW image: %s failed, errno[%d]\n",
+					DBGLOG(INIT, INFO, "Open FW image: %s failed, errno[%p]\n",
 							    aucFwName, ERR_PTR((LONG) filp));
 				} else {
 					DBGLOG(INIT, INFO, "Open FW image: %s done\n", aucFwName);
@@ -842,7 +842,7 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 		UINT_32 u4HeadValue = 0;
 
 		kalMemCopy(&u4HeadValue, pu4Head, sizeof(u4HeadValue));
-		DBGLOG(RX, TRACE, "prSkb->head = 0x%p, prSkb->cb = 0x%lx\n", pu4Head, u4HeadValue);
+		DBGLOG(RX, TRACE, "prSkb->head = 0x%p, prSkb->cb = 0x%x\n", pu4Head, u4HeadValue);
 	} while (0);
 #endif
 
@@ -913,7 +913,7 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 	/* DBGLOG(RX, EVENT, ("kalRxIndicatePkts len = %d\n", prSkb->len)); */
 	if (prSkb->tail > prSkb->end) {
 		DBGLOG(RX, ERROR,
-		       "kalRxIndicateOnePkt [prSkb = 0x%p][prSkb->len = %d][prSkb->protocol = 0x%02X] %p,%p\n",
+		       "kalRxIndicateOnePkt [prSkb = 0x%p][prSkb->len = %u][prSkb->protocol = 0x%02X] %p,%p\n",
 			(PUINT_8) prSkb, prSkb->len, prSkb->protocol, prSkb->tail, prSkb->end);
 		DBGLOG_MEM32(RX, ERROR, (PUINT_32) prSkb->data, prSkb->len);
 	}
@@ -1018,7 +1018,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				prBssDesc = ((P_AIS_FSM_INFO_T)
 					     (&(prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo)))->prTargetBssDesc;
 
-				if (prBssDesc != NULL) {
+				if (prBssDesc != NULL && prChannel) {
 					bss = cfg80211_inform_bss(priv_to_wiphy(prGlueInfo),
 								prChannel,
 								CFG80211_BSS_FTYPE_PRESP,
@@ -1382,7 +1382,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 		netif_stop_subqueue(prDev, u2QueueIdx);
 
 		DBGLOG(TX, INFO,
-		       "Stop subqueue for BSS[%u] QIDX[%u] PKT_LEN[%u] TOT_CNT[%ld] PER-Q_CNT[%ld]\n",
+		       "Stop subqueue for BSS[%d] QIDX[%d] PKT_LEN[%u] TOT_CNT[%d] PER-Q_CNT[%d]\n",
 			ucBssIndex, u2QueueIdx, prSkb->len,
 			GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum),
 			GLUE_GET_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex]
@@ -1394,7 +1394,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 	prDev->stats.tx_packets++;
 
 	DBGLOG(TX, LOUD,
-	       "Enqueue frame for BSS[%u] QIDX[%u] PKT_LEN[%u] TOT_CNT[%ld] PER-Q_CNT[%ld]\n",
+	       "Enqueue frame for BSS[%d] QIDX[%d] PKT_LEN[%u] TOT_CNT[%d] PER-Q_CNT[%d]\n",
 		ucBssIndex, u2QueueIdx, prSkb->len,
 		GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum),
 		GLUE_GET_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex][u2QueueIdx]));
@@ -1495,7 +1495,7 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	GLUE_DEC_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex][u2QueueIdx]);
 
 	DBGLOG(TX, LOUD,
-	       "Release frame for BSS[%u] QIDX[%u] PKT_LEN[%u] TOT_CNT[%ld] PER-Q_CNT[%ld]\n",
+	       "Release frame for BSS[%d] QIDX[%d] PKT_LEN[%u] TOT_CNT[%d] PER-Q_CNT[%d]\n",
 		ucBssIndex, u2QueueIdx, prSkb->len,
 		GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum),
 		GLUE_GET_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex][u2QueueIdx]));
@@ -1511,7 +1511,7 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 		    prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex][u2QueueIdx] <= u4StartTh) {
 			netif_wake_subqueue(prDev, u2QueueIdx);
 			DBGLOG(TX, INFO,
-			       "WakeUp Queue BSS[%u] QIDX[%u] PKT_LEN[%u] TOT_CNT[%ld] PER-Q_CNT[%ld]\n",
+			       "WakeUp Queue BSS[%d] QIDX[%d] PKT_LEN[%u] TOT_CNT[%d] PER-Q_CNT[%d]\n",
 				ucBssIndex, u2QueueIdx, prSkb->len,
 				GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum),
 				GLUE_GET_REF_CNT(prGlueInfo->ai4TxPendingFrameNumPerQueue[ucBssIndex]
@@ -1787,7 +1787,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	u4PacketLen = prSkb->len;
 
 	if (u4PacketLen < ETHER_HEADER_LEN) {
-		DBGLOG(INIT, WARN, "Invalid Ether packet length: %lu\n", u4PacketLen);
+		DBGLOG(INIT, WARN, "Invalid Ether packet length: %u\n", u4PacketLen);
 		return FALSE;
 	}
 
@@ -1814,7 +1814,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	case ETH_P_IPV4:
 		/* IPv4 header length check */
 		if (u4PacketLen < (ucEthTypeLenOffset + ETHER_TYPE_LEN + IPV4_HDR_LEN)) {
-			DBGLOG(INIT, WARN, "Invalid IPv4 packet length: %lu\n", u4PacketLen);
+			DBGLOG(INIT, WARN, "Invalid IPv4 packet length: %u\n", u4PacketLen);
 			break;
 		}
 
@@ -4007,7 +4007,7 @@ kalIndicateMgmtTxStatus(IN P_GLUE_INFO_T prGlueInfo,
 		    || (pucFrameBuf == NULL)
 		    || (u4FrameLen == 0)) {
 			DBGLOG(AIS, TRACE,
-			       "Unexpected pointer PARAM. 0x%lx, 0x%lx, %ld.", prGlueInfo, pucFrameBuf, u4FrameLen);
+			       "Unexpected pointer PARAM. 0x%p, 0x%p, %u.", prGlueInfo, pucFrameBuf, u4FrameLen);
 			ASSERT(FALSE);
 			break;
 		}
@@ -4369,7 +4369,7 @@ BOOLEAN kalMetCheckProfilingPacket(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACK
 	u4PacketLen = prSkb->len;
 
 	if (u4PacketLen < ETHER_HEADER_LEN) {
-		DBGLOG(INIT, WARN, "Invalid Ether packet length: %lu\n", u4PacketLen);
+		DBGLOG(INIT, WARN, "Invalid Ether packet length: %u\n", u4PacketLen);
 		return FALSE;
 	}
 
@@ -4397,7 +4397,7 @@ BOOLEAN kalMetCheckProfilingPacket(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACK
 
 			/* IPv4 header length check */
 			if (u4PacketLen < (ucEthTypeLenOffset + ETHER_TYPE_LEN + IPV4_HDR_LEN)) {
-				DBGLOG(INIT, WARN, "Invalid IPv4 packet length: %lu\n", u4PacketLen);
+				DBGLOG(INIT, WARN, "Invalid IPv4 packet length: %u\n", u4PacketLen);
 				return FALSE;
 			}
 

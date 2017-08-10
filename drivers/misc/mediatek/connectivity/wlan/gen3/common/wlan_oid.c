@@ -2161,7 +2161,7 @@ wlanoidSetRemoveWep(IN P_ADAPTER_T prAdapter,
 	/* Verify whether key index is valid or not. Current version
 	   driver support only 4 global WEP keys. */
 	if (u4KeyId > MAX_KEY_NUM - 1) {
-		DBGLOG(OID, ERROR, "invalid WEP key ID %lu\n", u4KeyId);
+		DBGLOG(OID, ERROR, "invalid WEP key ID %u\n", u4KeyId);
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
@@ -3292,7 +3292,7 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 		if (j < CFG_MAX_PMKID_CACHE) {
 			kalMemCopy(prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arPMKID,
 				   prPmkid->arBSSIDInfo[i].arPMKID, sizeof(PARAM_PMKID_VALUE));
-			DBGLOG(RSN, TRACE, "Add BSSID " MACSTR " idx=%lu PMKID value " MACSTR "\n",
+			DBGLOG(RSN, TRACE, "Add BSSID " MACSTR " idx=%u PMKID value " MACSTR "\n",
 			       MAC2STR(prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arBSSID), j,
 			       MAC2STR(prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arPMKID));
 			prAisSpecBssInfo->arPmkidCache[j].fgPmkidExist = TRUE;
@@ -4438,7 +4438,7 @@ wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,
 
 			val = readl((volatile UINT_32 *)((*g_pHifRegBaseAddr) + (prMcrRdInfo->u4McrOffset & 0xffff)));
 
-			DBGLOG(INIT, TRACE, "sarah MCR Read: Offset = %#08lx, Data = %#08lx\n",
+			DBGLOG(INIT, TRACE, "sarah MCR Read: Offset = %#08x, Data = %#08x\n",
 						   prMcrRdInfo->u4McrOffset, val);
 
 
@@ -4653,7 +4653,7 @@ wlanoidSetMcrWrite(IN P_ADAPTER_T prAdapter,
 
 			writel(prMcrWrInfo->u4McrData, (volatile UINT_32 *)((*g_pHifRegBaseAddr) + (prMcrWrInfo->u4McrOffset & 0xffff)));
 
-			DBGLOG(INIT, TRACE, "sarah MCR write: Offset = %#08lx, wData = %#08lx\n",
+			DBGLOG(INIT, TRACE, "sarah MCR write: Offset = %#08x, wData = %#08x\n",
 						   prMcrWrInfo->u4McrOffset, prMcrWrInfo->u4McrData);
 
 			return WLAN_STATUS_SUCCESS;
@@ -5885,7 +5885,7 @@ wlanoidQueryOidInterfaceVersion(IN P_ADAPTER_T prAdapter,
 	*(PUINT_32) pvQueryBuffer = MTK_CUSTOM_OID_INTERFACE_VERSION;
 	*pu4QueryInfoLen = sizeof(UINT_32);
 
-	DBGLOG(OID, WARN, "Custom OID interface version: %#08lX\n", *(PUINT_32) pvQueryBuffer);
+	DBGLOG(OID, WARN, "Custom OID interface version: %#08X\n", *(PUINT_32) pvQueryBuffer);
 
 	return WLAN_STATUS_SUCCESS;
 }				/* wlanoidQueryOidInterfaceVersion */
@@ -7174,7 +7174,7 @@ wlanoidSetNetworkAddress(IN P_ADAPTER_T prAdapter,
 	}
 
 	DBGLOG(OID, INFO,
-	       "%s: Set %lu IPv4 address for BSS[%u]\n", __func__, u4IPv4AddrCount,
+	       "%s: Set %u IPv4 address for BSS[%u]\n", __func__, u4IPv4AddrCount,
 	       prCmdNetworkAddressList->ucBssIndex);
 
 	/* 4 <5> Send command */
@@ -7407,7 +7407,7 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 
 
 	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
-		DBGLOG(OID, WARN, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
+		DBGLOG(OID, WARN, "Invalid data. QueryBufferLen: %u.\n", u4QueryBufferLen);
 
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
@@ -9571,7 +9571,7 @@ WLAN_STATUS wlanSendMemDumpCmd(IN P_ADAPTER_T prAdapter, IN PVOID pvQueryBuffer,
 		prCmdDumpMem->u4RemainLength = u4RemainLeng;
 		prCmdDumpMem->ucFragNum = ucFragNum;
 
-		DBGLOG(OID, TRACE, "[%d] 0x%lX, len %lu, remain len %lu\n",
+		DBGLOG(OID, TRACE, "[%d] 0x%X, len %u, remain len %u\n",
 		       ucFragNum, prCmdDumpMem->u4Address, prCmdDumpMem->u4Length, prCmdDumpMem->u4RemainLength);
 
 		rStatus = wlanSendSetQueryCmd(prAdapter,
@@ -9623,7 +9623,7 @@ wlanoidQueryMemDump(IN P_ADAPTER_T prAdapter,
 	*pu4QueryInfoLen = sizeof(UINT_32);
 
 	prMemDumpInfo = (P_PARAM_CUSTOM_MEM_DUMP_STRUCT_T) pvQueryBuffer;
-	DBGLOG(OID, TRACE, "Dump 0x%lX, len %lu\n", prMemDumpInfo->u4Address, prMemDumpInfo->u4Length);
+	DBGLOG(OID, TRACE, "Dump 0x%X, len %u\n", prMemDumpInfo->u4Address, prMemDumpInfo->u4Length);
 
 	prMemDumpInfo->u4RemainLength = prMemDumpInfo->u4Length;
 	prMemDumpInfo->u4Length = 0;

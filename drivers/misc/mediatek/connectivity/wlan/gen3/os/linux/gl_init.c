@@ -1812,7 +1812,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 			   wlanoidSetP2pMode,
 			   &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
 	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08lx\n", (UINT_32) rStatus);
+		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08x\n", (UINT_32) rStatus);
 		return -1;
 	}
 
@@ -2038,7 +2038,7 @@ bailout:
 					   &MacAddr.sa_data, PARAM_MAC_ADDR_LEN, TRUE, TRUE, TRUE, &u4SetInfoLen);
 
 			if (rStatus != WLAN_STATUS_SUCCESS) {
-				DBGLOG(INIT, WARN, "set MAC addr fail 0x%lx\n", rStatus);
+				DBGLOG(INIT, WARN, "set MAC addr fail 0x%x\n", rStatus);
 				prGlueInfo->u4ReadyFlag = 0;
 			} else {
 				ether_addr_copy(prGlueInfo->prDevHandler->dev_addr, MacAddr.sa_data);
@@ -2077,7 +2077,7 @@ bailout:
 					   (PVOID) &u4CSUMFlags, sizeof(UINT_32), FALSE, FALSE, TRUE, &u4SetInfoLen);
 
 			if (rStatus != WLAN_STATUS_SUCCESS)
-				DBGLOG(INIT, WARN, "set HW checksum offload fail 0x%lx\n", rStatus);
+				DBGLOG(INIT, WARN, "set HW checksum offload fail 0x%x\n", rStatus);
 		}
 #endif
 

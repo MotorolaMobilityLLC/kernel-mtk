@@ -1870,7 +1870,7 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void 
 	if (data && len)
 		memcpy(&rParams, data, len);
 
-	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA,idx_mode=%d idx=%d value=%lu\n",
+	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA,idx_mode=%d idx=%d value=%u\n",
 			    (INT_16) rParams.idx_mode, (INT_16) rParams.idx, rParams.value);
 
 	index_mode = rParams.idx_mode;
@@ -1989,8 +1989,8 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	index = (INT_32) prParams->idx;
 	value = (INT_32) prParams->value;
 
-	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx=%lu value=%lu\n",
-			    (INT_32) prParams->idx, (INT_32) prParams->value);
+	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx=%u value=%u\n",
+			    prParams->idx, prParams->value);
 
 	/* 3 FIX ME: Add p2p role index selection */
 	if (p2pFuncRoleToBssIdx(prGlueInfo->prAdapter, 0, &ucBssIdx) != WLAN_STATUS_SUCCESS)

@@ -2334,7 +2334,7 @@ wext_set_encode(IN struct net_device *prNetDev,
 				   wlanoidSetAddWep, prWepKey, prWepKey->u4Length, FALSE, FALSE, TRUE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, INFO, "wlanoidSetAddWep fail 0x%lx\n", rStatus);
+			DBGLOG(INIT, INFO, "wlanoidSetAddWep fail 0x%x\n", rStatus);
 			return -EFAULT;
 		}
 
@@ -2720,7 +2720,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 					   prRemoveKey, prRemoveKey->u4Length, FALSE, FALSE, TRUE, &u4BufLen);
 
 			if (rStatus != WLAN_STATUS_SUCCESS)
-				DBGLOG(INIT, INFO, "remove key error:%lx\n", rStatus);
+				DBGLOG(INIT, INFO, "remove key error:%x\n", rStatus);
 			return 0;
 		}
 		/* return 0; */
@@ -2753,7 +2753,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 						   prWepKey, prWepKey->u4Length, FALSE, FALSE, TRUE, &u4BufLen);
 
 				if (rStatus != WLAN_STATUS_SUCCESS) {
-					DBGLOG(INIT, INFO, "wlanoidSetAddWep fail 0x%lx\n", rStatus);
+					DBGLOG(INIT, INFO, "wlanoidSetAddWep fail 0x%x\n", rStatus);
 					return -EFAULT;
 				}
 
@@ -2766,7 +2766,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 						   &eAuthMode, sizeof(eAuthMode), FALSE, FALSE, FALSE, &u4BufLen);
 
 				if (rStatus != WLAN_STATUS_SUCCESS) {
-					DBGLOG(INIT, INFO, "wlanoidSetAuthMode fail 0x%lx\n", rStatus);
+					DBGLOG(INIT, INFO, "wlanoidSetAuthMode fail 0x%x\n", rStatus);
 					return -EFAULT;
 				}
 
@@ -2782,7 +2782,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 						   FALSE, FALSE, FALSE, &u4BufLen);
 
 				if (rStatus != WLAN_STATUS_SUCCESS) {
-					DBGLOG(INIT, INFO, "wlanoidSetEncryptionStatus fail 0x%lx\n", rStatus);
+					DBGLOG(INIT, INFO, "wlanoidSetEncryptionStatus fail 0x%x\n", rStatus);
 					return -EFAULT;
 				}
 
@@ -2805,7 +2805,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 #else
 			if (prKey->u4KeyIndex > 3) {
 #endif
-				DBGLOG(INIT, INFO, "key index error:0x%lx\n", prKey->u4KeyIndex);
+				DBGLOG(INIT, INFO, "key index error:0x%x\n", prKey->u4KeyIndex);
 				/* key id is out of range */
 				return -EINVAL;
 			}
@@ -2848,7 +2848,7 @@ wext_set_encode_ext(IN struct net_device *prNetDev,
 					   wlanoidSetAddKey, prKey, prKey->u4Length, FALSE, FALSE, TRUE, &u4BufLen);
 
 			if (rStatus != WLAN_STATUS_SUCCESS) {
-				DBGLOG(INIT, INFO, "add key error:%lx\n", rStatus);
+				DBGLOG(INIT, INFO, "add key error:%x\n", rStatus);
 				return -EFAULT;
 			}
 			break;
@@ -3478,7 +3478,7 @@ wext_support_ioctl_SIOCSIWPMKSA_Action(IN struct net_device *prDev, IN char *prE
 		rStatus = kalIoctl(prGlueInfo,
 				   wlanoidSetPmkid, prPmkid, sizeof(PARAM_PMKID_T), FALSE, FALSE, TRUE, &u4BufLen);
 		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(INIT, INFO, "add pmkid error:%lx\n", rStatus);
+			DBGLOG(INIT, INFO, "add pmkid error:%x\n", rStatus);
 
 		kalMemFree(prPmkid, VIR_MEM_TYPE, 8 + sizeof(PARAM_BSSID_INFO_T));
 		break;
@@ -3496,7 +3496,7 @@ wext_support_ioctl_SIOCSIWPMKSA_Action(IN struct net_device *prDev, IN char *prE
 		rStatus = kalIoctl(prGlueInfo,
 				   wlanoidSetPmkid, prPmkid, sizeof(PARAM_PMKID_T), FALSE, FALSE, TRUE, &u4BufLen);
 		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(INIT, INFO, "flush pmkid error:%lx\n", rStatus);
+			DBGLOG(INIT, INFO, "flush pmkid error:%x\n", rStatus);
 
 		kalMemFree(prPmkid, VIR_MEM_TYPE, 8);
 		break;

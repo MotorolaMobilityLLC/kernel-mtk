@@ -719,7 +719,7 @@ typedef struct _TX_TC_TRAFFIC_SETTING_T {
 #define PRINT_PKT_PROFILE(_pkt_profile, _note) \
 { \
 	if (!(_pkt_profile)->fgIsPrinted) { \
-		DBGLOG(TX, TRACE, "X[%lu] E[%lu] D[%lu] HD[%lu] B[%d] RTP[%d] %s\n", \
+		DBGLOG(TX, TRACE, "X[%u] E[%u] D[%u] HD[%u] B[%d] RTP[%d] %s\n", \
 		(UINT_32)((_pkt_profile)->rHardXmitArrivalTimestamp), \
 		(UINT_32)((_pkt_profile)->rEnqueueTimestamp), \
 		(UINT_32)((_pkt_profile)->rDequeueTimestamp), \

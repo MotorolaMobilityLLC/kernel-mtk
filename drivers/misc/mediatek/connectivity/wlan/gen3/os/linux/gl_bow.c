@@ -751,7 +751,7 @@ BOOLEAN kalBowFrameClassifier(IN P_GLUE_INFO_T prGlueInfo, IN P_NATIVE_PACKET pr
 	u4PacketLen = prSkb->len;
 
 	if (u4PacketLen < ETHER_HEADER_LEN) {
-		DBGLOG(INIT, WARN, "Invalid Ether packet length: %lu\n", u4PacketLen);
+		DBGLOG(INIT, WARN, "Invalid Ether packet length: %u\n", u4PacketLen);
 		return FALSE;
 	}
 

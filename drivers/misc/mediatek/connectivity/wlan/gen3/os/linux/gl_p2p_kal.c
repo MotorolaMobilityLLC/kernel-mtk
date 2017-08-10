@@ -972,7 +972,7 @@ VOID kalP2PIndicateMgmtTxStatus(IN P_GLUE_INFO_T prGlueInfo, IN P_MSDU_INFO_T pr
 
 	do {
 		if ((prGlueInfo == NULL) || (prMsduInfo == NULL)) {
-			DBGLOG(P2P, WARN, "Unexpected pointer PARAM. 0x%lx, 0x%lx.\n", prGlueInfo, prMsduInfo);
+			DBGLOG(P2P, WARN, "Unexpected pointer PARAM. 0x%p, 0x%p.\n", prGlueInfo, prMsduInfo);
 			ASSERT(FALSE);
 			break;
 		}
