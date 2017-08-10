@@ -36,6 +36,7 @@
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <mt-plat/mrdump.h>
+#include <mt-plat/mtk_meminfo.h>
 
 #include "mm.h"
 
@@ -188,6 +189,15 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max_low,
 {
 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
 	struct memblock_region *reg;
+	unsigned long highmem_high;
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	phys_addr_t cma_base, cma_size;
+	unsigned long cma_base_pfn = ULONG_MAX;
+
+	cma_get_range(&cma_base, &cma_size);
+	if (cma_size)
+		cma_base_pfn = PFN_DOWN(cma_base);
+#endif
 
 	/*
 	 * initialise the zones.
@@ -200,8 +210,20 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max_low,
 	 * to the zones, now is the time to do it.
 	 */
 	zone_size[0] = max_low - min;
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	highmem_high = cma_base_pfn;
+	zone_size[ZONE_MOVABLE] = max_high - highmem_high;
+#else
+	highmem_high = max_high;
+#endif
+
 #ifdef CONFIG_HIGHMEM
-	zone_size[ZONE_HIGHMEM] = max_high - max_low;
+	if (highmem_high > max_low) {
+		zone_size[ZONE_HIGHMEM] = highmem_high - max_low;
+	} else if (highmem_high > min) {
+		max_low = highmem_high;
+		zone_size[0] = max_low - min;
+	}
 #endif
 
 	/*
@@ -218,9 +240,18 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max_low,
 			zhole_size[0] -= low_end - start;
 		}
 #ifdef CONFIG_HIGHMEM
-		if (end > max_low) {
+		if (end > max_low && zhole_size[ZONE_HIGHMEM] > 0) {
 			unsigned long high_start = max(start, max_low);
-			zhole_size[ZONE_HIGHMEM] -= end - high_start;
+			unsigned long high_end = min(end, highmem_high);
+
+			zhole_size[ZONE_HIGHMEM] -= high_end - high_start;
+		}
+#endif
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+		if (end > highmem_high) {
+			unsigned long high_start = max(start, highmem_high);
+
+			zhole_size[ZONE_MOVABLE] -= end - high_start;
 		}
 #endif
 	}
