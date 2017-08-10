@@ -42,9 +42,13 @@
 
 #define PWM_DEFAULT_DIV_VALUE 0x0
 
+static int pwm_dbg_en;
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
 #define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
+#define PWM_DBG(fmt, arg...) \
+	do { if (pwm_dbg_en) pr_warn("[PWM] " fmt "\n", ##arg); } while (0)
+
 
 #define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
 
@@ -191,7 +195,7 @@ static void disp_pwm_query_backlight(char *debug_output)
 void disp_pwm_set_force_update_flag(void)
 {
 	g_pwm_force_backlight_update = true;
-	PWM_NOTICE("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
+	PWM_DBG("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
 }
 
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
@@ -477,7 +481,7 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	if (g_pwm_force_backlight_update == true && cmdq != NULL) {
 		g_pwm_force_backlight_update = false;
 		force_update = true;
-		PWM_NOTICE("PWM force set backlight to 0 again\n");
+		PWM_DBG("PWM force set backlight to 0 again\n");
 	}
 
 	/* we have to change backlight after config init or max backlight changed */
@@ -846,8 +850,12 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		PWM_MSG("combine %lu backlight change log in one line", log_num);
 	} else if (strncmp(cmd, "queryBL", 7) == 0) {
 		disp_pwm_query_backlight(debug_output);
+	} else if (strncmp(cmd, "pwm_dbg:", 8) == 0) {
+		if (cmd[8] == '0')
+			pwm_dbg_en = 0;
+		else
+			pwm_dbg_en = 1;
 	}
-
 #if defined(CONFIG_ARCH_MT6757)
 	if (strncmp(cmd, "query_osc", 9) == 0) {
 		disp_pwm_ulposc_query(debug_output);
