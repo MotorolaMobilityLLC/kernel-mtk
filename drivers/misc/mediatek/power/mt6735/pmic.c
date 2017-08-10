@@ -5099,7 +5099,6 @@ static int __init pmic_mt_init(void)
 {
 	int ret;
 
-#ifdef BATTERY_PERCENT_PROTECT
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&pmicThread_lock, "pmicThread_lock_mt6328 wakelock");
 	wakeup_source_init(&bat_percent_notify_lock, "bat_percent_notify_lock wakelock");
@@ -5108,7 +5107,6 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&bat_percent_notify_lock, WAKE_LOCK_SUSPEND,
 		       "bat_percent_notify_lock wakelock");
 #endif
-#endif				/* #ifdef BATTERY_PERCENT_PROTECT */
 
 #ifdef DLPT_FEATURE_SUPPORT
 #if !defined CONFIG_HAS_WAKELOCKS
