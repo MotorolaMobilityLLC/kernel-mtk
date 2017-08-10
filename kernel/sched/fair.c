@@ -10221,6 +10221,8 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	unsigned int force = 0;
 	struct task_struct *p = NULL;
 	struct clb_env clbenv;
+	struct task_struct *prev_selected = NULL;
+	int selected = 0;
 
 	if (!hmp_cpu_is_slowest(this_cpu))
 		hmp_domain = hmp_slower_domain(this_cpu);
@@ -10269,12 +10271,22 @@ static unsigned int hmp_idle_pull(int this_cpu)
 		if (curr && entity_is_task(curr) && (se_load(curr) > clbenv.bstats.threshold) &&
 				(se_load(curr) > ratio) &&
 				cpumask_test_cpu(this_cpu, tsk_cpus_allowed(task_of(curr)))) {
+			selected = 1;
 			p = task_of(curr);
+			get_task_struct(p); /* get task and selection inside rq lock  */
+
 			target = rq;
 			ratio = curr->avg.loadwop_avg_contrib;
 		}
 
 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+
+		if (selected) {
+			if (prev_selected)
+				put_task_struct(prev_selected); /* To put task out of rq lock */
+			prev_selected = p;
+			selected = 0;
+		}
 	}
 	if (!p)
 		goto done;
@@ -10307,6 +10319,8 @@ static unsigned int hmp_idle_pull(int this_cpu)
 
 done:
 	spin_unlock(&hmp_force_migration);
+	if (p)
+		put_task_struct(p);
 	return force;
 
 }
