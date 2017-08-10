@@ -3373,6 +3373,9 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
 		DBGLOG(AIS, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
 
+	/*dump firmware status */
+	wlanDumpCommandFwStatus();
+
 	ucScanTimeoutTimes++;
 	if (ucScanTimeoutTimes > SCAN_DONE_TIMEOUT_TIMES_LIMIT) {
 		kalSendAeeWarning("[Scan done timeout more than 20 times!]", __func__);
