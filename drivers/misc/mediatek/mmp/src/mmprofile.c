@@ -1065,7 +1065,7 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long d
 		MetaData.pData = vmalloc(MetaData.size);
 		if (!MetaData.pData)
 			return -1;
-		strcpy((char *)MetaData.pData, str);
+		strncpy((char *)MetaData.pData, str, strlen(str));
 		ret = MMProfileLogMeta(event, type, &MetaData);
 		vfree(MetaData.pData);
 	}
