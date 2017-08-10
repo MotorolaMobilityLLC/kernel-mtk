@@ -1189,12 +1189,15 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	}
 
 	/*check if normal scanning is true, driver start to postpone sched scan request*/
+	prScanInfo->eCurrendSchedScanReq = SCHED_SCAN_POSTPONE_START;
+
 	if (prScanInfo->eCurrentState != SCAN_STATE_IDLE) {
 		prScanInfo->fgIsPostponeSchedScan = TRUE;
 		DBGLOG(SCN, WARN, "already normal scanning ,driver postpones sched scan request!\n");
 		return TRUE;
 	}
 
+	prScanInfo->fgIsPostponeSchedScan = FALSE;
 	prScanInfo->fgNloScanning = TRUE;
 
 	/* 1. load parameters */
@@ -1332,6 +1335,7 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	prNloParam = &prScanInfo->rNloParam;
 	prScanParam = &prNloParam->rScanParam;
 
+
 #if 0
 	if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
 		UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
@@ -1341,6 +1345,16 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 		nicDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 	}
 #endif
+
+	/*check if normal scanning is true, driver start to postpone sched scan stop request*/
+	prScanInfo->eCurrendSchedScanReq = SCHED_SCAN_POSTPONE_STOP;
+
+	if (prScanInfo->eCurrentState != SCAN_STATE_IDLE) {
+		prScanInfo->fgIsPostponeSchedScan = TRUE;
+		DBGLOG(SCN, WARN, "already normal scanning ,driver postpones sched scan stop request!\n");
+		return TRUE;
+	}
+	prScanInfo->fgIsPostponeSchedScan = FALSE;
 
 	/* send cancel message to firmware domain */
 	rCmdNloCancel.ucSeqNum = prScanParam->ucSeqNum;
@@ -1363,7 +1377,6 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 #endif
 
 	prScanInfo->fgNloScanning = FALSE;
-	prScanInfo->fgIsPostponeSchedScan = FALSE;
 
 	return TRUE;
 }

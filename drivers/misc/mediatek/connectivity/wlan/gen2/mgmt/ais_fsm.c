@@ -347,7 +347,6 @@ VOID aisFsmUninit(IN P_ADAPTER_T prAdapter)
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);	/* Add by Enlai */
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rChannelTimeoutTimer);
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
-
 	/* 4 <2> flush pending request */
 	aisFsmFlushRequest(prAdapter);
 
@@ -1033,7 +1032,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					if (prAisReq == NULL &&
 						fgIsRequestScanPending == FALSE &&
 						prScanInfo->fgIsPostponeSchedScan == TRUE)
-						aisPostponedEventOfSchedScanStart(prAdapter, prAisFsmInfo);
+						aisPostponedEventOfSchedScanReq(prAdapter, prAisFsmInfo);
 
 				}
 				if (prAisReq) {
@@ -2889,35 +2888,48 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID aisPostponedEventOfSchedScanStart(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_INFO_T prAisFsmInfo)
+VOID aisPostponedEventOfSchedScanReq(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_INFO_T prAisFsmInfo)
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
 
 	ASSERT(prAdapter);
 
-	DBGLOG(AIS, INFO, "aisPostponedEventOfSchedScanStart:AIS CurrentState[%d]\n",
-			   prAisFsmInfo->eCurrentState);
-
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prSchedScanRequest = &prScanInfo->rSchedScanRequest;
 
-	if (prScanInfo->fgIsPostponeSchedScan == FALSE) {
-		DBGLOG(AIS, WARN, "Driver don't need postpone schedScan!\n");
-		return;
+	DBGLOG(AIS, INFO, "aisPostponedEventOfSchedScanReq:AIS CurState[%d] SchedScanReq:%d\n"
+		, prAisFsmInfo->eCurrentState
+		, prScanInfo->eCurrendSchedScanReq);
+
+	if (prScanInfo->fgIsPostponeSchedScan == TRUE) {
+		if (prScanInfo->eCurrendSchedScanReq == SCHED_SCAN_POSTPONE_START) {
+			/*resume schedscan start*/
+			if (scnFsmSchedScanRequest(prAdapter,
+				(UINT_8) (prSchedScanRequest->u4SsidNum),
+				prSchedScanRequest->arSsid,
+				prSchedScanRequest->u4IELength,
+				prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
+				DBGLOG(AIS, INFO, "aisPostponedEventOf SchedScanStart: Success!\n");
+			else
+				DBGLOG(AIS, WARN, "aisPostponedEventOf SchedScanStart: fail\n");
+
+		} else if (prScanInfo->eCurrendSchedScanReq == SCHED_SCAN_POSTPONE_STOP) {
+			/*resume schedscan stop*/
+			if (scnFsmSchedScanStopRequest(prAdapter) == TRUE)
+				DBGLOG(AIS, INFO, "aisPostponedEventOf SchedScanStop: Success!\n");
+			else
+				DBGLOG(AIS, INFO, "aisPostponedEventOf SchedScanStop: fail!\n");
+
+		} else
+			DBGLOG(AIS, INFO, "unexcept SchedScan Request!\n");
+	} else {
+		DBGLOG(AIS, WARN, "driver don't resume schedScan Request\n");
 	}
-	prScanInfo->fgIsPostponeSchedScan = FALSE;
-	if (scnFsmSchedScanRequest(prAdapter,
-				   (UINT_8) (prSchedScanRequest->u4SsidNum),
-				   prSchedScanRequest->arSsid,
-				   prSchedScanRequest->u4IELength,
-				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
-		DBGLOG(AIS, INFO, "aisPostponedEventOfSchedScanStart: Success!\n");
-	else
-		DBGLOG(AIS, WARN, "aisPostponedEventOfSchedScanStart: fail\n");
 
 
-}				/* end of aisPostponedEventOfSchedScanStart() */
+
+}				/* end of aisPostponedEventOfSchedScanReq() */
 
 /*----------------------------------------------------------------------------*/
 /*!
