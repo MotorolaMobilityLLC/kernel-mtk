@@ -463,9 +463,9 @@ static unsigned int charging_get_charger_det_status(void *data)
 	battery_log(BAT_LOG_CRTI, "[charging_get_charger_det_status] chr exist for fpga.\n");
 #else
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-	val = pmic_get_register_value(PMIC_RGS_CHRDET);
+	val = pmic_get_register_value_nolock(PMIC_RGS_CHRDET);
 #else
-	if (((g_diso_state >> 1) & 0x3) != 0x0 || pmic_get_register_value(PMIC_RGS_CHRDET))
+	if (((g_diso_state >> 1) & 0x3) != 0x0 || pmic_get_register_value_nolock(PMIC_RGS_CHRDET))
 		val = KAL_TRUE;
 	else
 		val = KAL_FALSE;
