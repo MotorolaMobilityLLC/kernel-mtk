@@ -457,8 +457,13 @@ static long cam_cal_drv_ioctl(
 			}
 		}
 	}
-
 	ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
+	/*===code coverity===*/
+	if (NULL == ptempbuf) {
+		CAM_CALDB("NULL == ptempbuf\n");
+		return -ENOMEM;
+	}
+	/*===================*/
 	pu1Params = kmalloc(ptempbuf->u4Length, GFP_KERNEL);
 	if (NULL == pu1Params) {
 		kfree(pBuff);
