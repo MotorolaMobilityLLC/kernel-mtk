@@ -1076,6 +1076,142 @@ static signed int fgauge_read_columb_accurate(void *data)
 #endif
 }
 
+static signed int fgauge_set_meta_cali_current(void *data)
+{
+	g_meta_input_cali_current = *(signed int *)(data);
+
+	return STATUS_OK;
+}
+
+#if defined(CONFIG_POWER_EXT)
+ /**/
+#else
+static signed int fgauge_get_AUXADC_current_rawdata(unsigned short *uvalue16)
+{
+	int m;
+	int ret;
+	/* (1)    Set READ command */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
+	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
+	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0200, 0xFF00, 0x0);
+#endif
+
+	/*(2)     Keep i2c read when status = 1 (0x06) */
+	m = 0;
+	while (fg_get_data_ready_status() == 0) {
+		m++;
+		if (m > 1000) {
+			bm_print(BM_LOG_CRTI,
+			"[fgauge_get_AUXADC_current_rawdata] fg_get_data_ready_status timeout 1 !\r\n");
+			break;
+		}
+	}
+
+	/* (3)    Read FG_CURRENT_OUT[15:08] */
+	/* (4)    Read FG_CURRENT_OUT[07:00] */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	*uvalue16 = pmic_get_register_value(PMIC_FG_CURRENT_OUT);	/*mt6325_upmu_get_fg_current_out(); */
+#else
+	*uvalue16 = pmic_get_register_value(MT6351_PMIC_FG_CURRENT_OUT);	/*mt6325_upmu_get_fg_current_out(); */
+#endif
+
+	/* (5)    (Read other data) */
+	/* (6)    Clear status to 0 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x1);
+	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0800, 0xFF00, 0x0);
+#endif
+
+	/* (7)    Keep i2c read when status = 0 (0x08) */
+	m = 0;
+	while (fg_get_data_ready_status() != 0) {
+		m++;
+		if (m > 1000) {
+			bm_print(BM_LOG_CRTI,
+			 "[fgauge_get_AUXADC_current_rawdata] fg_get_data_ready_status timeout 2 !\r\n");
+			break;
+		}
+	}
+
+	/*(8)    Recover original settings */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
+	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
+	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
+	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0000, 0xFF00, 0x0);
+#endif
+
+	return ret;
+}
+#endif
+
+static signed int fgauge_meta_cali_car_tune_value(void *data)
+{
+#if defined(CONFIG_POWER_EXT)
+	return STATUS_OK;
+#else
+	int cali_car_tune;
+	long long sum_all = 0;
+	long long temp_sum = 0;
+	int	avg_cnt = 0;
+	int i;
+	unsigned short uvalue16;
+	signed int dvalue = 0;
+	long long Temp_Value = 0;
+	long long current_from_ADC = 0;
+
+	if (g_meta_input_cali_current != 0) {
+		for (i = 0; i < CALI_CAR_TUNE_AVG_NUM; i++) {
+			if (!fgauge_get_AUXADC_current_rawdata(&uvalue16)) {
+				sum_all += uvalue16;
+				avg_cnt++;
+			}
+			mdelay(30);
+		}
+		/*calculate the real world data    */
+		/*current_from_ADC = sum_all / avg_cnt;*/
+		temp_sum = sum_all;
+		do_div(temp_sum, avg_cnt);
+		current_from_ADC = temp_sum;
+
+		Temp_Value = current_from_ADC * UNIT_FGCURRENT;
+		do_div(Temp_Value, 1000000);
+		dvalue = (unsigned int) Temp_Value;
+
+		/* Auto adjust value */
+		if (batt_meter_cust_data.r_fg_value != 20)
+			dvalue = (dvalue * 20) / batt_meter_cust_data.r_fg_value;
+
+		cali_car_tune = g_meta_input_cali_current * 1000 / dvalue;	/* 1000 base, so multiple by 1000*/
+		*(signed int *) (data) = cali_car_tune;
+
+		pr_err(
+			"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
+			cali_car_tune, g_meta_input_cali_current, current_from_ADC,
+			UNIT_FGCURRENT, batt_meter_cust_data.r_fg_value);
+
+		return STATUS_OK;
+	}
+
+	return STATUS_UNSUPPORTED;
+#endif
+}
 
 static signed int fgauge_hw_reset(void *data)
 {
@@ -1258,6 +1394,8 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT] = fgauge_set_columb_interrupt;
 		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
+		bm_func[BATTERY_METER_CMD_SET_META_CALI_CURRENT] = fgauge_set_meta_cali_current;
+		bm_func[BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE] = fgauge_meta_cali_car_tune_value;
 		bm_func[BATTERY_METER_CMD_GET_IS_HW_OCV_READY] = read_is_hw_ocv_ready;
 	}
 

@@ -40,15 +40,15 @@
 #define FG_METER_RESISTANCE	0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50	2910
-#define Q_MAX_POS_25	2737
-#define Q_MAX_POS_0	1999
-#define Q_MAX_NEG_10	796
+#define Q_MAX_POS_50	2794
+#define Q_MAX_POS_25	2710
+#define Q_MAX_POS_0	1342
+#define Q_MAX_NEG_10	793
 
-#define Q_MAX_POS_50_H_CURRENT	2852
-#define Q_MAX_POS_25_H_CURRENT	2682
-#define Q_MAX_POS_0_H_CURRENT	1959
-#define Q_MAX_NEG_10_H_CURRENT	780
+#define Q_MAX_POS_50_H_CURRENT	2738
+#define Q_MAX_POS_25_H_CURRENT	2656
+#define Q_MAX_POS_0_H_CURRENT	1315
+#define Q_MAX_NEG_10_H_CURRENT	777
 
 
 /* Discharge Percentage */
@@ -70,10 +70,12 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE	1000
 #define R_FG_BOARD_SLOPE	1000 /*slope*/
+#define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL
+#define CALI_CAR_TUNE_AVG_NUM	60
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	#define CAR_TUNE_VALUE	101 /*1.00 */
 #else
-	#define CAR_TUNE_VALUE	118 /*1.00 */
+	#define CAR_TUNE_VALUE	120 /*1.00 */
 #endif
 
 
@@ -95,18 +97,19 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
-#define BATTERYPSEUDO100	95
+#define BATTERYPSEUDO100	96
 #define BATTERYPSEUDO1	2
 
 /* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
-#define Q_MAX_SYS_VOLTAGE		3050
+#define Q_MAX_SYS_VOLTAGE		3350
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS	60
 
-#define SHUTDOWN_SYSTEM_VOLTAGE	3100	/*	DLPT will shutdown at 3.1v first	*/
-#define CHARGE_TRACKING_TIME	60
-#define DISCHARGE_TRACKING_TIME	10
+#define SHUTDOWN_SYSTEM_VOLTAGE	3400
+#define BAT_TASK_PERIOD_SECOND	20
+#define CHARGE_TRACKING_TIME	(6*BAT_TASK_PERIOD_SECOND)
+#define DISCHARGE_TRACKING_TIME	(BAT_TASK_PERIOD_SECOND)
 
 #define RECHARGE_TOLERANCE	10
 /* SW Fuel Gauge */
@@ -149,6 +152,7 @@
 
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
+/* #define USE_EMBEDDED_BATTERY */
 
 /* Calculate do in Kernel */
 /* #define FORCE_D0_IN_KERNEL */
