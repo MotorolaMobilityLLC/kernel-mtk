@@ -154,7 +154,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if ((data == NULL) || !data_len)
 		return -EINVAL;
 
-	DBGLOG(REQ, TRACE, "vendor command: data_len=%d\n", data_len);
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d, iftype=%d\n", data_len, wdev->iftype);
 
 	attr = (struct nlattr *)data;
 	if (attr->nla_type == WIFI_ATTRIBUTE_BAND)
@@ -162,7 +162,10 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 
 	DBGLOG(REQ, INFO, "Get channel list for band: %d\n", band);
 
-	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (wdev->iftype == NL80211_IFTYPE_AP)
+		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+	else
+		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	if (!prGlueInfo)
 		return -EFAULT;
 
@@ -226,7 +229,7 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 	if ((data == NULL) || (data_len == 0))
 		return -EINVAL;
 
-	DBGLOG(REQ, TRACE, "vendor command: data_len=%d\n", data_len);
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d, iftype=%d\n", data_len, wdev->iftype);
 
 	attr = (struct nlattr *)data;
 	if (attr->nla_type == WIFI_ATTRIBUTE_COUNTRY_CODE) {
@@ -236,7 +239,10 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 
 	DBGLOG(REQ, INFO, "Set country code: %c%c\n", country[0], country[1]);
 
-	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (wdev->iftype == NL80211_IFTYPE_AP)
+		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+	else
+		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	if (!prGlueInfo)
 		return -EFAULT;
 
