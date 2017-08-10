@@ -94,11 +94,10 @@ static int Audio_i2s0_SideGen_Get(struct snd_kcontrol *kcontrol,
 	ucontrol->value.integer.value[0] = mi2s0_sidegen_control;
 	return 0;
 }
+static int samplerate;
 
 static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	uint32 samplerate = 0;
-
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_SIDEGEN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;

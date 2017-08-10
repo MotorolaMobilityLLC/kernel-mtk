@@ -168,8 +168,8 @@ const size_t AudioInterruptLimiter = 100;
 static int Aud_APLL_DIV_APLL1_cntr;
 static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
-static int APLLCounter;
-
+static int APLL1Counter;
+static int APLL2Counter;
 static bool mExternalModemStatus;
 
 #define IrqShortCounter  512
@@ -240,7 +240,8 @@ static void AfeGlobalVarInit(void)
 	Aud_APLL_DIV_APLL2_cntr = 0;
 	mExternalModemStatus = false;
 	irqcount = 0;
-	APLLCounter = 0;
+	APLL1Counter = 0;
+	APLL2Counter = 0;
 }
 
 void AfeControlMutexLock(void)
@@ -674,36 +675,27 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 }
 
 
-static int APLLUsage = Soc_Aud_APLL_NOUSE;
 void EnableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLLUsage = %d APLLCounter = %d SampleRate = %d\n", __func__, APLLUsage,
-		APLLCounter, SampleRate);
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1Counter,
+		APLL2Counter, SampleRate);
 
-	if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
-	    && (APLLUsage == Soc_Aud_APLL_NOUSE)) {
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		/* enable APLL1 */
-		APLLUsage = Soc_Aud_APLL1;
-		APLLCounter++;
-		if (APLLCounter == true) {
+		APLL1Counter++;
+		if (APLL1Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll1(true);
 			EnableI2SDivPower(AUDIO_APLL1_DIV0, true);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, true);
 			AudDrv_APLL1Tuner_Clk_On();
-			AudDrv_APLL2Tuner_Clk_On();
 		}
-	} else if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2)
-		   && (APLLUsage == Soc_Aud_APLL_NOUSE)) {
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		/* enable APLL2 */
-		APLLUsage = Soc_Aud_APLL2;
-		APLLCounter++;
-		if (APLLCounter == true) {
+		APLL2Counter++;
+		if (APLL2Counter == 1) {
 			AudDrv_Clk_On();
 			EnableApll2(true);
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, true);
 			EnableI2SDivPower(AUDIO_APLL2_DIV0, true);
-			AudDrv_APLL1Tuner_Clk_On();
 			AudDrv_APLL2Tuner_Clk_On();
 		}
 	}
@@ -713,31 +705,25 @@ void EnableALLbySampleRate(uint32 SampleRate)
 
 void DisableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLLUsage = %d APLLCounter = %d SampleRate = %d\n", __func__, APLLUsage,
-		APLLCounter, SampleRate);
+	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1Counter,
+		APLL2Counter, SampleRate);
 
-	if (APLLUsage == Soc_Aud_APLL1) {
+	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		/* disable APLL1 */
-		APLLCounter--;
-		if (APLLCounter == 0) {
+		APLL1Counter--;
+		if (APLL1Counter == 0) {
 			/* disable APLL1 */
-			APLLUsage = Soc_Aud_APLL_NOUSE;
 			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
-			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
 			AudDrv_APLL1Tuner_Clk_Off();
-			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll1(false);
 			AudDrv_Clk_Off();
 		}
-	} else if (APLLUsage == Soc_Aud_APLL2) {
+	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		/* disable APLL2 */
-		APLLCounter--;
-		if (APLLCounter == 0) {
+		APLL2Counter--;
+		if (APLL2Counter == 0) {
 			/* disable APLL2 */
-			APLLUsage = Soc_Aud_APLL_NOUSE;
-			EnableI2SDivPower(AUDIO_APLL1_DIV0, false);
 			EnableI2SDivPower(AUDIO_APLL2_DIV0, false);
-			AudDrv_APLL1Tuner_Clk_Off();
 			AudDrv_APLL2Tuner_Clk_Off();
 			EnableApll2(false);
 			AudDrv_Clk_Off();
@@ -745,6 +731,7 @@ void DisableALLbySampleRate(uint32 SampleRate)
 	}
 
 }
+
 
 uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 {
