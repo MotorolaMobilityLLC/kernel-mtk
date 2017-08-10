@@ -465,6 +465,7 @@ typedef struct _SCAN_INFO_T {
 	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
+	BOOLEAN fgGScnAction;
 	P_CMD_SET_PSCAN_PARAM prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
 #endif

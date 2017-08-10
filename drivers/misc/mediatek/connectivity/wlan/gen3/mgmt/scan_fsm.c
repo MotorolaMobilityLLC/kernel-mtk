@@ -1055,7 +1055,11 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 		fgRet = FALSE;
 #else
 	scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, TRUE, FALSE, FALSE);
-	scnPSCNFsm(prAdapter, PSCN_RESET);
+	if (prScanInfo->prPscnParam->fgGScnEnable
+		|| prScanInfo->prPscnParam->fgBatchScnEnable)
+		scnPSCNFsm(prAdapter, PSCN_RESET); /* in case there is any PSCN */
+	else
+		scnPSCNFsm(prAdapter, PSCN_IDLE);
 #endif
 
 	prScanInfo->fgNloScanning = FALSE;
@@ -1118,7 +1122,6 @@ BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM pr
 
 	ASSERT(prAdapter);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	/*prCmdPscnParam->u4BasePeriod = prCmdPscnParam->u4BasePeriod;*/
 
 	DBGLOG(SCN, INFO, "fgNLOScnEnable=%d %d %d, basePeriod=%d\n",
 		prCmdPscnParam->fgNLOScnEnable, prCmdPscnParam->fgBatchScnEnable,
@@ -1388,14 +1391,14 @@ scnRemoveFromPSCN(IN P_ADAPTER_T prAdapter,
 		prCmdPscnParam->fgGScnEnable = FALSE;
 		prScanInfo->fgGScnParamSet = FALSE;
 		prScanInfo->fgGScnConfigSet = FALSE;
+		prScanInfo->fgGScnAction = FALSE;
 		kalMemZero(&prCmdPscnParam->rCmdGscnReq, sizeof(CMD_GSCN_REQ_T));
 	}
 
-	/* sync to firmware*/
+	/* sync to firmware */
 	if (fgRemoveNLOfromPSCN || fgRemoveBatchSCNfromPSCN || fgRemoveGSCNfromPSCN) {
-		prScanInfo->fgPscnOngoing = FALSE;
-		scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
-		scnFsmPSCNSetParam(prAdapter, prCmdPscnParam);
+		/* prScanInfo->fgPscnOngoing = FALSE;
+		scnPSCNFsm(prAdapter, PSCN_RESET); */
 	}
 
 }
@@ -1468,8 +1471,10 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
-			if (prScanInfo->prPscnParam->fgNLOScnEnable) {
-				eNextPSCNState = PSCN_SCANNING; /* upper layer trigger GSCN Action */
+			if (prScanInfo->prPscnParam->fgNLOScnEnable
+				|| prScanInfo->prPscnParam->fgBatchScnEnable
+				|| (prScanInfo->prPscnParam->fgGScnEnable && prScanInfo->fgGScnAction)) {
+				eNextPSCNState = PSCN_SCANNING; /* keep original operation if there is any PSCN */
 				DBGLOG(SCN, TRACE,
 				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
 			} else {
