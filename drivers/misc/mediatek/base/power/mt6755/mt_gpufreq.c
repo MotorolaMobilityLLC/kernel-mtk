@@ -535,12 +535,14 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 	switch (segment) {
 	case 0x42:
+	case 0x46:
 		type = 1;
 		break;
 	case 0x43:
 		type = 2;
 		break;
 	case 0x41:
+	case 0x45:
 	default:
 		type = 0;
 		break;
