@@ -649,7 +649,7 @@ int ion_drv_create_heap(struct ion_platform_heap *heap_data)
 {
 	struct ion_heap *heap;
 
-	heap = ion_heap_create(heap_data);
+	heap = ion_mtk_heap_create(heap_data);
 	if (IS_ERR_OR_NULL(heap)) {
 		IONMSG("%s: %d heap is err or null.\n", __func__, heap_data->id);
 		return PTR_ERR(heap);
