@@ -3288,8 +3288,10 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 #ifdef CONFIG_MTK_MLC_NAND_SUPPORT
 	if (mtk_nand_IsRawPartition(to))
 		blockmask = (1ULL << (chip->phys_erase_shift - chip->page_shift - 1)) - 1;
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
 	if (!mtk_block_istlc(to))
 		blockmask = (1ULL << (chip->phys_erase_shift - chip->page_shift - 1)) - 1;
+#endif
 #endif
 
 	#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -3731,11 +3733,12 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		block_size = (1 << (chip->phys_erase_shift-1));
 	else
 		block_size = (1 << chip->phys_erase_shift);
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
 	if (!mtk_block_istlc(instr->addr)) {
 		block_size = (1 << (chip->phys_erase_shift-1));
 		pages_per_block = 1 << (chip->phys_erase_shift - chip->page_shift - 1);
 	}
-
+#endif
 	#endif
 
 	#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
