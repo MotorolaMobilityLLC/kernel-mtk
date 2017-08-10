@@ -275,7 +275,7 @@ int __init ccci_pmic_init(void)
 	return 0;
 }
 
-void __exit ccci_pmic_exit(void)
+void ccci_pmic_exit(void)
 {
 	ccci_pmic_stop();
 
