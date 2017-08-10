@@ -323,17 +323,17 @@ enum ppb_power_mode {
 	LOW_POWER_MODE,
 	JUST_MAKE_MODE,
 	PERFORMANCE_MODE,	/* sports mode */
-	NUM_POWER_MODE
+	NUM_PPB_POWER_MODE
 };
 
-static const char *power_mode_str[NUM_POWER_MODE] = {
+static const char *power_mode_str[NUM_PPB_POWER_MODE] = {
 	"Default(Normal) mode",
 	"Low Power mode",
 	"Just Make mode",
 	"Performance(Sports) mode"
 };
 
-static unsigned int ppb_hispeed_freq[NR_MT_CPU_DVFS][NUM_POWER_MODE] = {
+static unsigned int ppb_hispeed_freq[NR_MT_CPU_DVFS][NUM_PPB_POWER_MODE] = {
 	[MT_CPU_DVFS_LL][DEFAULT_MODE]		= 8,	/* OPP index */
 	[MT_CPU_DVFS_LL][LOW_POWER_MODE]	= 12,
 	[MT_CPU_DVFS_LL][JUST_MAKE_MODE]	= 10,
@@ -2686,7 +2686,7 @@ unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu, unsigned int mode)
 {
 	enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(cpu);
 
-	if (id >= NR_MT_CPU_DVFS || mode >= NUM_POWER_MODE)
+	if (id >= NR_MT_CPU_DVFS || mode >= NUM_PPB_POWER_MODE)
 		return 0;
 
 	return ppb_hispeed_freq[id][mode];	/* OPP index */
@@ -3258,7 +3258,7 @@ static int cpufreq_power_mode_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int mode = dvfs_power_mode;
 
-	seq_printf(m, "%s\n", mode < NUM_POWER_MODE ? power_mode_str[mode] : "Unknown");
+	seq_printf(m, "%s\n", mode < NUM_PPB_POWER_MODE ? power_mode_str[mode] : "Unknown");
 
 	return 0;
 }
@@ -3272,8 +3272,18 @@ static ssize_t cpufreq_power_mode_proc_write(struct file *file, const char __use
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtouint(buf, 10, &mode) && mode < NUM_POWER_MODE) {
+	if (!kstrtouint(buf, 10, &mode) && mode < NUM_PPB_POWER_MODE) {
 		dvfs_power_mode = mode;
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+		cpufreq_lock();
+		if (enable_cpuhvfs && enable_hw_gov) {
+			if (mode == DEFAULT_MODE)
+				cpuhvfs_set_power_mode(POWER_NORMAL);
+			else if (mode == PERFORMANCE_MODE)
+				cpuhvfs_set_power_mode(POWER_SPORTS);
+		}
+		cpufreq_unlock();
+#endif
 		cpufreq_dbg("%s start\n", power_mode_str[mode]);
 	} else {
 		cpufreq_err("echo 0/1/2/3 > /proc/cpufreq/cpufreq_power_mode\n");
@@ -3289,7 +3299,7 @@ static int ppb_hispeed_freq_proc_show(struct seq_file *m, void *v)
 	unsigned int idx;
 	struct mt_cpu_dvfs *p = m->private;
 
-	for (i = 0; i < NUM_POWER_MODE; i++) {
+	for (i = 0; i < NUM_PPB_POWER_MODE; i++) {
 		idx = ppb_hispeed_freq[p->id][i];
 		seq_printf(m, "<%d>%s: %u (%u)\n", i, power_mode_str[i], idx, cpu_dvfs_get_freq_by_idx(p, idx));
 	}
@@ -3309,7 +3319,7 @@ static ssize_t ppb_hispeed_freq_proc_write(struct file *file, const char __user 
 		return -EINVAL;
 
 	tok = strsep(&buf, " ");
-	if (!tok || kstrtouint(tok, 10, &mode) || mode >= NUM_POWER_MODE)
+	if (!tok || kstrtouint(tok, 10, &mode) || mode >= NUM_PPB_POWER_MODE)
 		goto OUT;
 
 	tok = strsep(&buf, " ");
