@@ -51,6 +51,7 @@
 #include <linux/proc_fs.h>
 
 #include <asm/uaccess.h>
+#include <include/mtk_uart_api.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/printk.h>
@@ -1655,6 +1656,8 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	char aee_str[80];
 	char cur_time[32];
 	int idx = 0;
+
+	int uart_timeout_cnt = 0;
 #endif
 
 	trace_console(text, len);
@@ -1699,6 +1702,9 @@ static void call_console_drivers(int level, const char *text, size_t len)
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 	/* console duration over 15 seconds, Calc console write rate recently */
 	if ((local_clock() - con_dura_time) > 15000000000) {
+
+		uart_timeout_cnt = mtk_uart_dump_timeout_cnt();
+
 		/* stat console list */
 		memset(con_name, 0x00, sizeof(con_name));
 		for_each_console(con) {
@@ -1725,8 +1731,8 @@ static void call_console_drivers(int level, const char *text, size_t len)
 		scnprintf(cur_time, sizeof(cur_time), "[%llu.%06lu]", tmp2, rem_nsec/1000);
 
 		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
-			"Console Lock dur over 15 seconds", "%s %s, cpu: %d, ConList(%d): %s", cur_time,
-					aee_str, smp_processor_id(), cnt, con_name);
+			"Console Lock dur over 15 seconds", "%s uart->timeout_count: %d, %s, cpu: %d, ConList(%d): %s",
+			cur_time, uart_timeout_cnt, aee_str, smp_processor_id(), cnt, con_name);
 
 		con_dura_time = local_clock();
 	}
