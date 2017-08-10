@@ -513,7 +513,7 @@ void mmc_cmd_dump(struct mmc_host *host) { }
 
 #endif
 
-void msdc_cmdq_status_print(struct msdc_host *host)
+void msdc_cmdq_status_print(struct seq_file *m, struct msdc_host *host)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_host *mmc = host->mmc;
@@ -521,27 +521,27 @@ void msdc_cmdq_status_print(struct msdc_host *host)
 	if (!mmc)
 		return;
 
-	pr_err("===============================\n");
-	pr_err("cmdq support : %s\n",
+	seq_puts(m, "===============================\n");
+	seq_printf(m, "cmdq support : %s\n",
 		mmc->card->ext_csd.cmdq_support ? "yes":"no");
-	pr_err("cmdq mode    : %s\n",
+	seq_printf(m, "cmdq mode    : %s\n",
 		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
-	pr_err("cmdq depth   : %d\n",
+	seq_printf(m, "cmdq depth   : %d\n",
 		mmc->card->ext_csd.cmdq_depth);
-	pr_err("===============================\n");
-	pr_err("task_id_index: %08lx\n",
+	seq_puts(m, "===============================\n");
+	seq_printf(m, "task_id_index: %08lx\n",
 		mmc->task_id_index);
-	pr_err("cq_wait_rdy  : %d\n",
+	seq_printf(m, "cq_wait_rdy  : %d\n",
 		atomic_read(&mmc->cq_wait_rdy));
-	pr_err("cq_tuning_now: %d\n",
+	seq_printf(m, "cq_tuning_now: %d\n",
 		atomic_read(&mmc->cq_tuning_now));
 
 #else
-	pr_err("driver not supported\n");
+	seq_puts(m, "driver not supported\n");
 #endif
 }
 
-void msdc_cmdq_func(struct msdc_host *host, const int num)
+void msdc_cmdq_func(struct seq_file *m, struct msdc_host *host, const int num)
 {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base = host->base;
@@ -553,11 +553,11 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 
 	switch (num) {
 	case 0:
-		msdc_cmdq_status_print(host);
+		msdc_cmdq_status_print(m, host);
 		break;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	case 1:
-		pr_err("force enable cmdq\n");
+		seq_puts(m, "force enable cmdq\n");
 		host->mmc->card->ext_csd.cmdq_support = 1;
 		host->mmc->cmdq_support_changed = 1;
 		break;
@@ -568,29 +568,29 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
 		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
 		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
-		pr_err("force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
 		break;
 	case 4:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
 		break;
 	case 5:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
 		break;
 	case 6:
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
 		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
+		seq_printf(m, "force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
 		break;
 #endif
 	default:
-		pr_err("unknown function id %d\n", num);
+		seq_printf(m, "unknown function id %d\n", num);
 		break;
 	}
 }
@@ -821,7 +821,7 @@ static void msdc_get_field(struct seq_file *m, void __iomem *address,
 {
 	unsigned long field;
 
-	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
+	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0 || ((len == 32) && (start_bit == 0))) {
 		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -1094,6 +1094,11 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	rPtr = wPtr = (u8 *)multi_rwbuf;
 
 	host_ctl = mtk_msdc_host[host_num];
+	if (!host_ctl) {
+		pr_err(" host_ctl in host[%d]\n", host_num);
+		result = -1;
+		goto free;
+	}
 	mmc = host_ctl->mmc;
 	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
 		pr_err(" No card initialized in host[%d]\n", host_num);
@@ -1779,7 +1784,12 @@ void msdc_dump_ext_csd(struct seq_file *m, struct msdc_host *host)
 		"4.0", "4.1", "4.2", "4.3", "Obsolete", "4.41", "4.5", "5.0", "5.1"};
 
 	mmc_claim_host(host->mmc);
-	mmc_send_ext_csd(host->mmc->card, ext_csd);
+
+	if (mmc_send_ext_csd(host->mmc->card, ext_csd)) {
+		seq_puts(m, "mmc_send_ext_csd failed\n");
+		mmc_release_host(host->mmc);
+		return;
+	}
 	mmc_release_host(host->mmc);
 
 	seq_puts(m, "===========================================================\n");
@@ -2260,8 +2270,10 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		if ((offset == 0x18 || offset == 0x1C) && p1 != 4)
 			seq_puts(m, "[SD_Debug] Err: Accessing TXDATA and RXDATA is forbidden\n");
 
-		msdc_clk_enable(host);
-
+		if (msdc_clk_enable(host)) {
+			seq_puts(m, "[SD_Debug] msdc_clk_enable failed\n");
+			return 1;
+		}
 		if (p1 == 0) {
 			if (offset > 0x228) {
 				seq_puts(m, "invalid register offset\n");
@@ -2288,6 +2300,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 
 		msdc_clk_disable(host);
+
 		break;
 	case SD_TOOL_SET_DRIVING:
 		id = p2;
@@ -2655,9 +2668,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 #endif
 	case ENABLE_AXI_MODULE:
 		if (p1)
-			strcpy("enable", enable_str);
+			strcpy(enable_str, "enable");
 		else
-			strcpy("disable", enable_str);
+			strcpy(enable_str, "disable");
 		seq_printf(m, "==== %s AXI MODULE ====\n", enable_str);
 		if (p2 == 0 || p2 == 5) {
 			seq_printf(m, "%s %s transaction on AXI bus\n",
@@ -2749,7 +2762,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
-		msdc_cmdq_func(host, p2);
+		msdc_cmdq_func(m, host, p2);
 		break;
 	default:
 		seq_puts(m, "[SD_Debug]: Invalid Command\n");
@@ -2829,8 +2842,10 @@ static int msdc_debug_proc_read_FT_show(struct seq_file *m, void *data)
 		pr_err("Invalid Host number: %d\n", CONFIG_MTK_WCN_CMB_SDIO_SLOT);
 		break;
 	}
-	msdc_clk_enable(host);
-
+	if (msdc_clk_enable(host)) {
+		seq_puts(m, "[SD_Debug] msdc_clk_enable failed\n");
+		return 1;
+	}
 	MSDC_GET_FIELD((base+0x04), MSDC_IOCON_RSPL, cmd_edge);
 	MSDC_GET_FIELD((base+0x04), MSDC_IOCON_R_D_SMPL, data_edge);
 /*

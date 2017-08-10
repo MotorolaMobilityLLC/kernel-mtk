@@ -171,7 +171,7 @@ extern u32 g_msdc3_flash;
 extern  u32 hclks_msdc[];
 #define msdc_dump_clock_sts(host)
 #define msdc_get_hclks(host)		hclks_msdc
-#define msdc_clk_enable(host)
+#define msdc_clk_enable(host) (0)
 #define msdc_clk_disable(host)
 #define msdc_get_ccf_clk_pointer(pdev, host)
 #else /* FPGA_PLATFORM */
@@ -197,7 +197,7 @@ extern u32 hclks_msdc30_2[];
 	((id == 0) ? hclks_msdc50_0 : \
 	((id == 1) ? hclks_msdc30_1 : hclks_msdc30_2))
 
-#define msdc_clk_enable(host) clk_enable(host->clock_control)
+unsigned int msdc_clk_enable(struct msdc_host *host);
 #define msdc_clk_disable(host) clk_disable(host->clock_control)
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		struct msdc_host *host);

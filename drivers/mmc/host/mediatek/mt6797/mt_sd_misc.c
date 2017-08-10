@@ -644,7 +644,10 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
+	if (msdc_clk_enable(host)) {
+		pr_err("%s msdc_clk_enable error\n", __func__);
+		return -EINVAL;
+	}
 
 #if DEBUG_MMC_IOCTL
 	pr_debug("set: clk driving is 0x%x\n", msdc_ctl->clk_pu_driving);
@@ -679,7 +682,10 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
+	if (msdc_clk_enable(host)) {
+		pr_err("%s msdc_clk_enable error\n", __func__);
+		return -EINVAL;
+	}
 
 	msdc_get_driving(host, host->hw);
 

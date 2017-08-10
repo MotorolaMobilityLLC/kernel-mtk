@@ -555,8 +555,8 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 				host->id);
 
 			msdc_clk_disable(host);
-			msdc_clk_enable(host);
-
+			if (msdc_clk_enable(host))
+				pr_err("%s msdc_clk_enable error\n", __func__);
 			msdc_dump_info(host->id);
 		}
 		retry = 3;
@@ -1245,7 +1245,8 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 
 			if (val) {
 				pr_err("SDcard over current, power off: OC status = %x\n", val);
-				host->power_control(host, 0);
+				if (host->power_control)
+					host->power_control(host, 0);
 			}
 		}
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
@@ -1647,7 +1648,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	u32 opcode = cmd->opcode;
 	u32 rawcmd;
 	u32 rawarg;
-	u32 resp;
+	u32 resp = RESP_NONE;
 	unsigned long tmo;
 	struct mmc_command *sbc = NULL;
 	char *str;
@@ -4925,7 +4926,8 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		spin_lock(&host->sdio_irq_lock);
 
 	if (0 == host->core_clkon) {
-		msdc_clk_enable(host);
+		if (msdc_clk_enable(host))
+			pr_err("%s msdc_clk_enable error\n", __func__);
 		host->core_clkon = 1;
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 		intsts = MSDC_READ32(MSDC_INT);
