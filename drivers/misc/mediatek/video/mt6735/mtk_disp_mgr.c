@@ -115,6 +115,7 @@ disp_session_input_config *captured_session_input = _session_input[0];
 disp_session_input_config *cached_session_input = _session_input[1];
 disp_mem_output_config *captured_session_output = _session_output[0];
 disp_mem_output_config *cached_session_output = _session_output[1];
+unsigned int is_output_buffer_set = 0;
 
 static int mtk_disp_mgr_open(struct inode *inode, struct file *file)
 {
@@ -312,6 +313,7 @@ int disp_destroy_session(disp_session_config *config)
 	DISPMSG("disp_destroy_session, 0x%x\n", config->session_id);
 
 	release_session_buffer(DISP_SESSION_TYPE(config->session_id), 0xFF, 0);
+
 	/* 1.To check if this session exists already, and remove it */
 	mutex_lock(&disp_session_lock);
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
@@ -408,6 +410,18 @@ int _ioctl_create_session(unsigned long arg)
 		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
+
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	if (config.type == DISP_SESSION_MEMORY) {
+		if (init_ext_decouple_buffers() < 0) {
+			DISPERR("allocate dc buffer fail\n");
+			return -ENOMEM;
+		}
+
+		DISPMSG("allocate dc buffer success\n");
+	}
+#endif
+
 #if !defined(OVL_TIME_SHARING)
 	if ((config.type == DISP_SESSION_MEMORY) && (get_ovl1_to_mem_on() == false)) {
 		DISPMSG("[FB]: _ioctl_create_session! line:%d  %d\n", __LINE__,
@@ -452,6 +466,13 @@ int _ioctl_destroy_session(unsigned long arg)
 		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
+
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	if (config.type == DISP_SESSION_MEMORY) {
+		deinit_ext_decouple_buffers();
+		DISPMSG("free dc buffer\n");
+	}
+#endif
 
 	if (disp_destroy_session(&config) != 0)
 		ret = -EFAULT;
@@ -1613,6 +1634,7 @@ int _ioctl_set_output_buffer(unsigned long arg)
 		mutex_lock(&session_config_mutex);
 		captured_session_output[DISP_SESSION_PRIMARY - 1] = primary_output;
 		mutex_unlock(&session_config_mutex);
+		is_output_buffer_set = 1;
 #else
 		primary_display_config_output(&primary_output, session_id);
 #endif
@@ -1856,20 +1878,6 @@ int _ioctl_insert_session_buffers(unsigned long arg)
 	return ret;
 }
 
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
-/*
-Decoule mode has not be supported due to no dc buffers.
-*/
-static bool sesssion_mode_is_valid(DISP_MODE session_mode)
-{
-	if (session_mode == DISP_SESSION_DECOUPLE_MODE
-	    || session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE)
-		return false;
-
-	return true;
-}
-#endif
-
 int _ioctl_screen_freeze(unsigned long arg)
 {
 	int ret = 0;
@@ -1950,13 +1958,6 @@ int set_session_mode(disp_session_config *config_info, int force)
 	int ret = 0;
 
 	config_info->mode = select_session_mode(config_info);
-
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
-	if (!sesssion_mode_is_valid(config_info->mode)) {
-		DISPMSG("[FB]: session mode is invalid, session_mode:%d\n", config_info->mode);
-		return -EINVAL;
-	}
-#endif
 
 	primary_display_switch_mode(config_info->mode, config_info->session_id, force);
 #if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)

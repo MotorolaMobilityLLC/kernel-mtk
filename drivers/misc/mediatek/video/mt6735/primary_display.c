@@ -142,7 +142,6 @@ unsigned int isDSIOff = 0;
 unsigned int gPresentFenceIndex = 0;
 unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 disp_ddp_path_config last_primary_config;
-static atomic_t DvfsIsHPM = ATOMIC_INIT(1);
 
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 static struct switch_dev disp_switch_data;
@@ -339,41 +338,6 @@ static void _primary_path_vsync_unlock(void)
 {
 	mutex_unlock(&(pgc->vsync_lock));
 }
-
-static void _primary_path_set_dvfsHPM(bool bForcedinHPM, unsigned int needLock)
-{
-	if (needLock)
-		_primary_path_lock(__func__);
-
-	if (bForcedinHPM)
-		atomic_set(&DvfsIsHPM, 1);
-	else
-		atomic_set(&DvfsIsHPM, 0);
-
-
-	if (needLock)
-		_primary_path_unlock(__func__);
-}
-
-#ifdef MTK_DISP_IDLE_LP
-static bool _primary_path_IsForcedHPM(unsigned int needLock)
-{
-	bool bResult;
-
-	if (needLock)
-		_primary_path_lock(__func__);
-
-	if (atomic_read(&DvfsIsHPM) == 1)
-		bResult = true;
-	else
-		bResult = false;
-
-	if (needLock)
-		_primary_path_unlock(__func__);
-
-	return bResult;
-}
-#endif
 
 static void _cmdq_flush_config_handle_mira(void *handle, int blocking);
 
@@ -618,18 +582,14 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 		}
 	}
 
-	if (_primary_path_IsForcedHPM(0) == false) {
-		if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
-			DISPMSG("MMDVFS enter:%d\n", enter);
-			if (enter)
-				mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
-			else
-				mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
-		}
-	} else {
-		DISPMSG("MMDVFS is forced into HPM\n");
-		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
+	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+		DISPMSG("MMDVFS enter:%d\n", enter);
+		if (enter)
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
+		else if (primary_display_get_width() > 800)
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
 	}
+
 end:
 	if (enter)
 		atomic_set(&isDdp_Idle, 1);
@@ -640,7 +600,7 @@ end:
 	return 0;
 }
 
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 static int release_idle_lp_dc_buffer(unsigned int need_primary_lock);
 static int allocate_idle_lp_dc_buffer(void);
 #endif
@@ -651,7 +611,7 @@ void _disp_primary_path_exit_idle(const char *caller, unsigned int need_primary_
 	if (atomic_read(&isDdp_Idle) == 1) {
 		DISPMSG("[ddp_idle_on]_disp_primary_path_exit_idle (%s) &&&\n", caller);
 		primary_display_save_power_for_idle(0, need_primary_lock);
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 		if (primary_display_is_video_mode())
 			release_idle_lp_dc_buffer(need_primary_lock);
 #endif
@@ -725,8 +685,6 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			continue;
 		}
 
-		_primary_path_set_dvfsHPM(false, 0);
-
 		_primary_path_unlock(__func__);
 
 #if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
@@ -735,13 +693,15 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 
 		/* _disp_primary_idle_lock(); */
 		_primary_path_esd_check_lock();
+		_primary_path_lock(__func__);
 		if (((sched_clock() - last_primary_trigger_time) / 1000) > idle_time * 1000) {
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 			/* Dynamically allocate decouple buffer. */
 			if (primary_display_is_video_mode()) {
 				ret = allocate_idle_lp_dc_buffer();
 				if (ret < 0) {
 					DISPMSG("[ddp_idle]allocate dc buffer fail\n");
+					_primary_path_unlock(__func__);
 					_primary_path_esd_check_unlock();
 					continue;
 				}
@@ -750,10 +710,12 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			enter_cnt++;
 			pr_debug("[LP] - enter: %d, flag:%d,%d\n", enter_cnt,
 				atomic_read(&isDdp_Idle), atomic_read(&idle_detect_flag));
-			primary_display_save_power_for_idle(1, 1);
+			primary_display_save_power_for_idle(1, 0);
+			_primary_path_unlock(__func__);
 			_primary_path_esd_check_unlock();
 		} else {
 			/* _disp_primary_idle_unlock(); */
+			_primary_path_unlock(__func__);
 			_primary_path_esd_check_unlock();
 			continue;
 		}
@@ -2534,7 +2496,9 @@ static int init_decouple_buffers(void)
 	return 0;
 }
 
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+
+
 static int allocate_idle_lp_dc_buffer(void)
 {
 	int height = primary_display_get_height();
@@ -2614,7 +2578,7 @@ static int __build_path_direct_link(void)
 	DISPMSG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module));
 #ifndef MTKFB_NO_M4U
 	config_display_m4u_port();
-#if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) || defined(CONFIG_MTK_WFD_SUPPORT)
+#if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	init_decouple_buffers();
 #endif
 #endif
@@ -3255,6 +3219,11 @@ static struct task_struct *primary_display_esd_check_task;
 #define IS_ESD_ENABLE false
 #endif
 
+#ifdef MTK_FB_PULLCLK_ENABLE
+static struct task_struct *primary_display_pullclk_task;
+#endif
+
+
 static wait_queue_head_t esd_check_task_wq; /* For Esd Check Task */
 static atomic_t esd_check_task_wakeup = ATOMIC_INIT(0);	/* For Esd Check Task */
 static wait_queue_head_t esd_ext_te_wq;	/* For Vdo Mode EXT TE Check */
@@ -3403,7 +3372,12 @@ int _esd_check_config_handle_vdo(void)
 	/* 3.write instruction(read from lcm) */
 	dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ESD_CHECK_READ);
 
-	/* 4.start dsi vdo mode */
+	/* pull DSI clock lane */
+	DSI_sw_clk_trail_cmdq(0, pgc->cmdq_handle_config_esd);
+	DSI_manual_enter_HS(pgc->cmdq_handle_config_esd);
+
+
+	/* start dsi vdo mode */
 	dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_START_VDO_MODE);
 
 	/* 5. trigger path */
@@ -3859,6 +3833,7 @@ static int primary_display_esd_check_worker_kthread(void *data)
 						  esd_try_cnt);
 					DISPMSG("disable esd check\n");
 					primary_display_esd_check_enable(0);
+					primary_display_esd_recovery();
 				}
 			}
 		}
@@ -4019,6 +3994,125 @@ void primary_display_esd_check_enable(int enable)
 /* ESD CHECK / RECOVERY ---- End                                              */
 /******************************************************************************/
 #define EEEEEEEEEEEEEEEEEEEEEEEEEE
+
+#ifdef MTK_FB_PULLCLK_ENABLE
+static int primary_display_vdo_pullclk_worker_kthread(void *data)
+{
+	int ret = 0;
+	int count = 0;
+	struct sched_param param = {.sched_priority = 87 }; /* RTPM_PRIO_FB_THREAD */
+
+	sched_setscheduler(current, SCHED_RR, &param);
+
+
+	while (1) {
+		if (count == 0) {
+			count++;
+			msleep(3000);
+		}
+		msleep(2000);
+#ifdef DISP_SWITCH_DST_MODE
+		_primary_path_switch_dst_lock();
+#endif
+		_primary_path_cmd_lock();
+
+
+		_primary_path_esd_check_lock();
+		_primary_path_lock(__func__);
+		if (pgc->state == DISP_SLEPT) {
+			_primary_path_unlock(__func__);
+			_primary_path_esd_check_unlock();
+			continue;
+		}
+		_primary_path_unlock(__func__);
+
+#ifdef MTK_DISP_IDLE_LP
+		_disp_primary_path_dsi_clock_on(0);
+#endif
+
+		_primary_path_lock(__func__);
+		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &(pgc->cmdq_handle_config_esd));
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ESD_ALLC_SLOT);
+		_primary_path_unlock(__func__);
+#ifdef DISP_DUMP_EVENT_STATUS
+		DISP_REG_SET_PA(pgc->cmdq_handle_config_esd, DISP_REG_CMDQ_TOKEN_ID, DISP_MUTEX0_STREAM_EOF_ID);
+		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config_esd, pgc->event_status, 1
+						, DISP_REG_CMDQ_TOKEN_VALUE);
+#endif
+
+		primary_display_esd_cust_bycmdq(1);
+
+		_primary_path_lock(__func__);
+
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
+		spm_enable_sodi(0);
+#endif
+
+		/* reset*/
+		cmdqRecReset(pgc->cmdq_handle_config_esd);
+
+		/* wait stream eof first*/
+		cmdqRecWait(pgc->cmdq_handle_config_esd, CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqRecWait(pgc->cmdq_handle_config_esd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+
+
+		/*stop dsi vdo mode*/
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_STOP_VDO_MODE);
+
+
+		/* pull DSI clock lane */
+		DSI_sw_clk_trail_cmdq(0, pgc->cmdq_handle_config_esd);
+		DSI_manual_enter_HS(pgc->cmdq_handle_config_esd);
+
+		/* start dsi vdo mode*/
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_START_VDO_MODE);
+
+		/* trigger path*/
+		cmdqRecClearEventToken(pgc->cmdq_handle_config_esd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		if (gEnableSWTrigger == 1)
+			DISP_REG_SET(pgc->cmdq_handle_config_esd
+					, DISP_REG_CONFIG_MUTEX_EN(DISP_OVL_SEPARATE_MUTEX_ID), 1);
+
+		dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ENABLE);
+		if (gDumpESDCMD == 1) {
+			DISPMSG("esd dump before flush:\n");
+			cmdqRecDumpCommand(pgc->cmdq_handle_config_esd);
+		}
+
+		ret = cmdqRecFlush(pgc->cmdq_handle_config_esd);
+
+#if defined(MTK_FB_SODI_SUPPORT) && !defined(CONFIG_FPGA_EARLY_PORTING)
+		spm_enable_sodi(1);
+#endif
+		_primary_path_unlock(__func__);
+		primary_display_esd_cust_bycmdq(0);
+
+		_primary_path_lock(__func__);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ESD_FREE_SLOT);
+		cmdqRecDestroy(pgc->cmdq_handle_config_esd);
+		pgc->cmdq_handle_config_esd = NULL;
+		_primary_path_unlock(__func__);
+
+#ifdef MTK_DISP_IDLE_LP
+		_disp_primary_path_dsi_clock_off(0);
+#endif
+
+		_primary_path_esd_check_unlock();
+
+		_primary_path_cmd_unlock();
+#ifdef DISP_SWITCH_DST_MODE
+		_primary_path_switch_dst_unlock();
+#endif
+
+		if (kthread_should_stop())
+			break;
+
+	}
+	return 0;
+}
+#endif
 
 static struct task_struct *primary_path_aal_task;
 
@@ -4502,6 +4596,9 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 		cmdqBackupReadSlot(pgc->ovl_status_info, 0, &ovl_status[0]);
 		cmdqBackupReadSlot(pgc->ovl_status_info, 1, &ovl_status[1]);
 		DISPDBG("ovl fsm state:0x%x\n", ovl_status[0]);
+		if ((ovl_status[1] & 0x1) != OVL_STATUS_IDLE)
+			DISPERR("disp ovl status error, 0x%x, 0x%x\n", ovl_status[0],
+				ovl_status[1]);
 	}
 #endif
 
@@ -4547,7 +4644,7 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	}
 
 	/* async callback, need to check if it is still decouple */
-	if (_is_decouple_mode(pgc->session_mode)
+	if (_is_decouple_mode(pgc->session_mode) && !_is_mirror_mode(pgc->session_mode)
 	    && (userdata == DISP_SESSION_DECOUPLE_MODE || userdata == 5)) {
 		static cmdqRecHandle cmdq_handle;
 		unsigned int rdma_pitch_sec, rdma_fmt;
@@ -4964,6 +5061,11 @@ unsigned long primary_display_get_frame_buffer_va_address(void)
 	return pgc->framebuffer_va;
 }
 
+int primary_display_get_session_mode(void)
+{
+	return pgc->session_mode;
+}
+
 int is_dim_layer(unsigned int long mva)
 {
 	if (mva == dim_layer_mva)
@@ -5227,6 +5329,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 #endif
 		/* this should remove? for video mode when LK has start path */
 		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
+#ifdef MTK_FB_PULLCLK_ENABLE
+	primary_display_pullclk_task = kthread_create(primary_display_vdo_pullclk_worker_kthread,
+							NULL, "display_vdo_pullclk");
+	wake_up_process(primary_display_pullclk_task);
+#endif
+
 
 #ifdef MTK_FB_ESD_ENABLE
 	primary_display_esd_check_task = kthread_create(primary_display_esd_check_worker_kthread,
@@ -5970,7 +6078,8 @@ int primary_display_resume(void)
 		}
 	}
 
-	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS &&
+		primary_display_get_width() > 800) {
 		DISPMSG("set MMDVFS high\n");
 		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
 	}
@@ -6280,6 +6389,7 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 {
 	int ret = 0;
 
+	_primary_path_lock(__func__);
 	last_primary_trigger_time = sched_clock();
 #ifdef DISP_SWITCH_DST_MODE
 	if (is_switched_dst_mode) {
@@ -6289,12 +6399,11 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 #endif
 	if (gTriggerDispMode > 0) {
 		primary_display_release_fence_fake();
+		_primary_path_unlock(__func__);
 		return ret;
 	}
 
 	primary_trigger_cnt++;
-
-	_primary_path_lock(__func__);
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);
@@ -6303,8 +6412,6 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 
 	if (blocking)
 		DISPMSG("%s, change blocking to non blocking trigger\n", __func__);
-
-	_primary_path_set_dvfsHPM(true, 0);
 
 #ifdef MTK_DISP_IDLE_LP
 	_disp_primary_path_exit_idle(__func__, 0);
@@ -6331,7 +6438,7 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 					&cached_session_output[DISP_SESSION_PRIMARY - 1], 0);
 			DISPPR_ERROR("There is no output config when decouple mirror!!\n");
 		}
-
+		is_output_buffer_set = 0;
 		pgc->need_trigger_dcMirror_out = 0;
 		_trigger_ovl_to_memory_mirror(pgc->ovl2mem_path_handle,
 					      pgc->cmdq_handle_ovl1to2_config,
@@ -6359,6 +6466,7 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 			decouple_wdma_config.dstAddress = writing_mva;
 			mem_config.addr = writing_mva;
 			mem_config.fmt = decouple_wdma_config.outputFormat;
+			mem_config.pitch = decouple_wdma_config.dstPitch;
 			_config_wdma_output(&decouple_wdma_config, pgc->ovl2mem_path_handle,
 					    pgc->cmdq_handle_ovl1to2_config);
 			MMProfileLogEx(ddp_mmp_get_events()->primary_wdma_config,
@@ -6639,7 +6747,7 @@ int primary_display_config_output(disp_mem_output_config *output, unsigned int s
 	}
 
 	if (_is_decouple_mode(pgc->session_mode)) {
-		if (_is_mirror_mode(pgc->session_mode))
+		if (_is_mirror_mode(pgc->session_mode) && is_output_buffer_set)
 			pgc->need_trigger_dcMirror_out = 1;
 
 	} else {
@@ -6765,6 +6873,11 @@ static int _config_ovl_input(disp_session_input_config *session_input,
 		OVL_CONFIG_STRUCT *ovl_cfg;
 
 		layer = input_cfg->layer_id;
+
+		/*security issue*/
+		if (layer >= OVL_LAYER_NUM)
+			continue;
+
 		ovl_cfg = &(data_config->ovl_config[layer]);
 		if (session_input->setter != SESSION_USER_AEE) {
 			if (isAEEEnabled && layer == primary_display_get_option("ASSERT_LAYER")) {
@@ -7103,6 +7216,37 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+
+int init_ext_decouple_buffers(void)
+{
+	int ret = 0;
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	_primary_path_lock(__func__);
+
+	if (pgc->state == DISP_SLEPT) {
+		ret = -1;
+	} else {
+		if (decouple_buffer_info[0] == NULL)
+			ret = allocate_idle_lp_dc_buffer();
+	}
+
+	_primary_path_unlock(__func__);
+#endif
+	return ret;
+}
+int deinit_ext_decouple_buffers(void)
+{
+	int ret = 0;
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	_primary_path_lock(__func__);
+	ret = release_idle_lp_dc_buffer(0);
+	_primary_path_unlock(__func__);
+#endif
+	return ret;
+}
+
+
+
 int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 {
 	DISPDBG("primary_display_switch_mode sess_mode %d, session 0x%x\n", sess_mode, session);
@@ -7181,6 +7325,10 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* dl to dc mirror  mirror */
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+		if (decouple_buffer_info[0] == NULL)
+			allocate_idle_lp_dc_buffer();
+#endif
 		_DL_switch_to_DC_fast();
 		pgc->session_mode = sess_mode;
 		DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
@@ -7192,6 +7340,9 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 		/*dc mirror  to dl */
 		_DC_switch_to_DL_fast();
 		pgc->session_mode = sess_mode;
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+		release_idle_lp_dc_buffer(0);
+#endif
 		DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
 		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse,
 			       pgc->session_mode, sess_mode);

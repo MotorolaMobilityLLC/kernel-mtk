@@ -53,6 +53,7 @@ extern unsigned int is_hwc_enabled;
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 extern  unsigned int g_suspend_flag;
 #endif
+extern unsigned int is_output_buffer_set;
 
 typedef struct {
 	unsigned int id;
@@ -384,10 +385,8 @@ extern void disp_exit_idle_ex(const char *caller);
 
 
 int primary_display_set_secondary_display(int add, DISP_SESSION_TYPE type);
-#if defined(OVL_TIME_SHARING)
 int init_ext_decouple_buffers(void);
 int deinit_ext_decouple_buffers(void);
-#endif
 
 int primary_display_get_session_mode(void);
 int display_freeze_mode(int enable, int need_lock);
