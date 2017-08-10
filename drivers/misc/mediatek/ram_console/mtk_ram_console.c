@@ -244,120 +244,6 @@ unsigned int ram_console_size(void)
 	return ram_console_buffer->sz_console;
 }
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-#ifdef CONFIG_MTK_AEE_IPANIC
-/*#include <mt-plat/sd_misc.h>*/
-
-#define EMMC_ADDR 0X700000
-static char *ram_console2_log;
-
-void last_kmsg_store_to_emmc(void)
-{
-	int buff_size;
-	int res;
-	struct wd_api *wd_api = NULL;
-
-	res = get_wd_api(&wd_api);
-	if (res == 0) {
-		/* if(num_online_cpus() > 1){ */
-		if (wd_api->wd_get_check_bit() > 1) {
-			pr_err("ram_console: online cpu %d!\n", wd_api->wd_get_check_bit());
-#ifdef CONFIG_MTPROF
-			if (boot_finish == 0)
-				return;
-#endif
-		}
-	}
-
-	/* save log to emmc */
-	buff_size = ram_console_buffer->sz_buffer;
-	card_dump_func_write((unsigned char *)ram_console_buffer, buff_size, EMMC_ADDR,
-			     0 /*DUMP_INTO_BOOT_CARD_IPANIC*/);
-
-	pr_err("ram_console: save kernel log (0x%x) to emmc!\n", buff_size);
-}
-
-static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_file *m, void *v);
-static int ram_console2_show(struct seq_file *m, void *v)
-{
-	struct ram_console_buffer *bufp = NULL;
-
-	bufp = (struct ram_console_buffer *)ram_console2_log;
-	seq_printf(m, "show last_kmsg2 sig %d, size %d", bufp->sig, bufp->log_size);
-	ram_console_lastk_show(bufp, m, v);
-	return 0;
-}
-
-
-static int ram_console2_file_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, ram_console2_show, inode->i_private);
-}
-
-static const struct file_operations ram_console2_file_ops = {
-	.owner = THIS_MODULE,
-	.open = ram_console2_file_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int emmc_read_last_kmsg(void *data)
-{
-	int ret;
-	struct file *filp;
-
-	struct proc_dir_entry *entry;
-	struct ram_console_buffer *bufp = NULL;
-	int timeout = 0;
-
-	ram_console2_log = kzalloc(ram_console_buffer->sz_buffer, GFP_KERNEL);
-	if (ram_console2_log == NULL)
-		return 1;
-
-	do {
-		filp = expdb_open();
-		if (timeout++ > 60) {
-			pr_err("ram_console: open expdb partition error [%ld]!\n", PTR_ERR(filp));
-			return 1;
-		}
-		msleep(500);
-	} while (IS_ERR(filp));
-	ret = kernel_read(filp, EMMC_ADDR, ram_console2_log, ram_console_buffer->sz_buffer);
-	fput(filp);
-	if (IS_ERR(ERR_PTR(ret))) {
-		kfree(ram_console2_log);
-		ram_console2_log = NULL;
-		pr_err("ram_console: read emmc data 2 error!\n");
-		return 1;
-	}
-
-	bufp = (struct ram_console_buffer *)ram_console2_log;
-	if (bufp->sig != REBOOT_REASON_SIG) {
-		kfree(ram_console2_log);
-		ram_console2_log = NULL;
-		pr_err("ram_console: emmc read data sig is not match!\n");
-		return 1;
-	}
-
-	entry = proc_create("last_kmsg2", 0444, NULL, &ram_console2_file_ops);
-	if (!entry) {
-		pr_err("ram_console: failed to create proc entry\n");
-		kfree(ram_console2_log);
-		ram_console2_log = NULL;
-		return 1;
-	}
-	pr_err("ram_console: create last_kmsg2 ok.\n");
-	return 0;
-
-}
-#else
-void last_kmsg_store_to_emmc(void)
-{
-}
-#endif
-#endif
-
 #ifdef CONFIG_PSTORE
 void sram_log_save(const char *msg, int count)
 {
@@ -755,18 +641,6 @@ static int __init ram_console_late_init(void)
 {
 	struct proc_dir_entry *entry;
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-#ifdef CONFIG_MTK_AEE_IPANIC
-	int err;
-	static struct task_struct *thread;
-
-	thread = kthread_run(emmc_read_last_kmsg, 0, "read_poweroff_log");
-	if (IS_ERR(thread)) {
-		err = PTR_ERR(thread);
-		pr_err("ram_console: failed to create kernel thread: %d\n", err);
-	}
-#endif
-#endif
 	entry = proc_create("last_kmsg", 0444, NULL, &ram_console_file_ops);
 	if (!entry) {
 		pr_err("ram_console: failed to create proc entry\n");
