@@ -893,8 +893,13 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		wlanProcessCommandQueue(prAdapter, &prAdapter->prGlueInfo->rCmdQueue);
 		wlanReleasePowerControl(prAdapter);
 
-		DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
-		kalMdelay(500);
+		if (prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode) {
+			DBGLOG(P2P, INFO, "Wait 100ms for deauth TX in Hotspot\n");
+			kalMdelay(100);
+		} else {
+			DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
+			kalMdelay(500);
+		}
 
 		/* Change Connection Status. */
 		p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
