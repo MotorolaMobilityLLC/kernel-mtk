@@ -69,7 +69,7 @@ Bank2 : CPU_mp1     (TS_MCU4)
 */
 
 int tscpu_bank_ts[THERMAL_BANK_NUM][ENUM_MAX];
-static int tscpu_bank_ts_r[THERMAL_BANK_NUM][ENUM_MAX];
+int tscpu_bank_ts_r[THERMAL_BANK_NUM][ENUM_MAX];
 
 /* chip dependent */
 bank_t tscpu_g_bank[THERMAL_BANK_NUM] = {
@@ -959,7 +959,7 @@ int tscpu_thermal_fast_init(void)
 	/* tscpu_printk( "tscpu_thermal_fast_init\n"); */
 
 
-	temp = 0xDA1;
+	temp = THERMAL_INIT_VALUE;
 	mt_reg_sync_writel((0x00001000 + temp), PTPSPARE2);	/* write temp to spare register */
 
 	mt_reg_sync_writel(1, TEMPMONCTL1);	/* counting unit is 320 * 31.25us = 10ms */
@@ -1008,7 +1008,7 @@ int tscpu_thermal_fast_init(void)
 
 	cunt = 0;
 	temp = readl(TEMPMSR0) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]0 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(TEMPMSR0) & 0x0fff;
@@ -1016,7 +1016,7 @@ int tscpu_thermal_fast_init(void)
 
 	cunt = 0;
 	temp = readl(TEMPMSR1) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]1 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(TEMPMSR1) & 0x0fff;
@@ -1024,7 +1024,7 @@ int tscpu_thermal_fast_init(void)
 
 	cunt = 0;
 	temp = readl(TEMPMSR2) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]2 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(TEMPMSR2) & 0x0fff;
@@ -1032,7 +1032,7 @@ int tscpu_thermal_fast_init(void)
 
 	cunt = 0;
 	temp = readl(TEMPMSR3) & 0x0fff;
-	while (temp != 0xDA1 && cunt < 20) {
+	while (temp != THERMAL_INIT_VALUE && cunt < 20) {
 		cunt++;
 		/* pr_debug("[Power/CPU_Thermal]3 temp=%d,cunt=%d\n",temp,cunt); */
 		temp = readl(TEMPMSR3) & 0x0fff;

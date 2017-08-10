@@ -234,6 +234,9 @@ void tscpu_met_unlock(unsigned long *flags)
 EXPORT_SYMBOL(tscpu_met_unlock);
 
 #endif
+static int g_is_temp_valid;
+static void temp_valid_lock(unsigned long *flags);
+static void temp_valid_unlock(unsigned long *flags);
 /*=============================================================
  *Weak functions
  *=============================================================*/
@@ -339,6 +342,10 @@ static void tscpu_fast_initial_sw_workaround(void)
 
 		mt_ptp_unlock(&flags);
 	}
+
+	temp_valid_lock(&flags);
+	g_is_temp_valid = 0;
+	temp_valid_unlock(&flags);
 }
 
 void tscpu_thermal_tempADCPNP(int adc, int order)
@@ -2144,6 +2151,49 @@ static void tscpu_thermal_release(void)
 }
 #endif
 
+static DEFINE_SPINLOCK(temp_valid_spinlock);
+static void temp_valid_lock(unsigned long *flags)
+{
+	spin_lock_irqsave(&temp_valid_spinlock, *flags);
+}
+
+static void temp_valid_unlock(unsigned long *flags)
+{
+	spin_unlock_irqrestore(&temp_valid_spinlock, *flags);
+}
+
+static void check_all_temp_valid(void)
+{
+	int i, j, raw;
+
+	for (i = 0; i < ARRAY_SIZE(tscpu_g_bank); i++) {
+		for (j = 0; j < tscpu_g_bank[i].ts_number; j++) {
+			raw = tscpu_bank_ts_r[i][tscpu_g_bank[i].ts[j].type];
+
+			if (raw == THERMAL_INIT_VALUE)
+				return;	/* The temperature is not valid. */
+		}
+	}
+
+	g_is_temp_valid = 1;
+}
+
+int tscpu_is_temp_valid(void)
+{
+	int is_valid = 0;
+	unsigned long flags;
+
+	temp_valid_lock(&flags);
+	if (g_is_temp_valid == 0)
+		check_all_temp_valid();
+
+	is_valid = g_is_temp_valid;
+	temp_valid_unlock(&flags);
+
+	return is_valid;
+}
+
+
 static void read_all_bank_temperature(void)
 {
 	int i = 0;
@@ -2159,6 +2209,8 @@ static void read_all_bank_temperature(void)
 
 		mt_ptp_unlock(&flags);
 	}
+
+	tscpu_is_temp_valid();
 }
 
 void tscpu_update_tempinfo(void)

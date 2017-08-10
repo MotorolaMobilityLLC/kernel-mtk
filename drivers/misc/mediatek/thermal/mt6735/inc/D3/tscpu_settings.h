@@ -62,6 +62,7 @@ they means one reading is a avg of X samples */
 
 /* 1: thermal driver update temp to MET directly, use hrtimer; 0: turn off */
 #define THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET  (1)
+#define THERMAL_INIT_VALUE (0xDA1)
 /*=============================================================
  * Chip related
  *=============================================================*/
@@ -220,6 +221,7 @@ struct mtk_cpu_power_info {
 extern int tscpu_debug_log;
 extern const struct of_device_id mt_thermal_of_match[2];
 extern int tscpu_bank_ts[THERMAL_BANK_NUM][ENUM_MAX];
+extern int tscpu_bank_ts_r[THERMAL_BANK_NUM][ENUM_MAX]; /* raw data */
 extern bank_t tscpu_g_bank[THERMAL_BANK_NUM];
 extern int tscpu_polling_trip_temp1;
 extern int tscpu_polling_trip_temp2;
