@@ -664,7 +664,7 @@ static void send_accdet_status_event(int cable_type, int status)
 {
 	switch (cable_type) {
 	case HEADSET_NO_MIC:
-		input_report_switch(kpd_accdet_dev, SW_LINEOUT_INSERT, status);
+		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
 		input_sync(kpd_accdet_dev);
 		ACCDET_DEBUG("[accdet][send_accdet_status_Inputevent]LineOut %s\n", status?"PlugIn":"PlugOut");
 		break;
