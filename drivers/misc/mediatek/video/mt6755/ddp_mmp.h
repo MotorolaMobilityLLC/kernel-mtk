@@ -74,6 +74,7 @@ typedef struct {
 	MMP_Event primary_error;
 	MMP_Event ovl_trigger;
 	MMP_Event interface_trigger;
+	MMP_Event hrt;
 	MMP_Event Extd_Parent;
 	MMP_Event Extd_layerParent;
 	MMP_Event Extd_layer[4];

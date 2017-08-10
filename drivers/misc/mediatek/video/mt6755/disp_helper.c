@@ -103,10 +103,11 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_GMO_OPTIMIZE",
 	"DISP_OPT_CV_BYSUSPEND",
+	"DISP_OPT_HRT",
 };
 #endif
 
-#define OPT_COUNT 40
+#define OPT_COUNT 44
 const int help_info_cnt = OPT_COUNT;
 
 struct disp_help_info help_info[OPT_COUNT] = {
@@ -150,6 +151,10 @@ struct disp_help_info help_info[OPT_COUNT] = {
 	{ DISP_OPT_CV_BYSUSPEND, 1, "DISP_OPT_CV_BYSUSPEND" },
 	{ DISP_OPT_DETECT_RECOVERY, 0, "DISP_OPT_DETECT_RECOVERY" },
 	{ DISP_OPT_DELAYED_TRIGGER, 1, "DISP_OPT_DELAYED_TRIGGER" },
+	{ DISP_OPT_OVL_EXT_LAYER, 0, "DISP_OPT_OVL_EXT_LAYER" },
+	{ DISP_OPT_RSZ, 0, "DISP_OPT_RSZ" },
+	{ DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE" },
+	{ DISP_OPT_HRT, 1, "DISP_OPT_HRT" },
 };
 
 static int option_to_index(DISP_HELPER_OPT option)
@@ -417,6 +422,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	/*Detect Hang thread Option*/
 	disp_helper_set_option(DISP_OPT_DETECT_RECOVERY, 0);
+	disp_helper_set_option(DISP_OPT_HRT, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

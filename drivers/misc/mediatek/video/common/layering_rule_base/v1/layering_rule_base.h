@@ -22,8 +22,8 @@
 #define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
 #define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
 
-/* #define HRT_DEBUG_LEVEL1 */
-/* #define HRT_DEBUG_LEVEL2 */
+/*#define HRT_DEBUG_LEVEL1 */
+/*#define HRT_DEBUG_LEVEL2 */
 #define HRT_UT_DEBUG
 
 #define PATH_FMT_RSZ_SHIFT 9
@@ -160,6 +160,6 @@ int rollback_all_resize_layer_to_GPU(disp_layer_info *disp_info, int disp_idx);
 bool is_yuv(DISP_FORMAT format);
 bool is_argb_fmt(DISP_FORMAT format);
 bool is_gles_layer(disp_layer_info *disp_info, int disp_idx, int layer_idx);
-bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_caps);
+bool has_layer_cap(layer_config *layer_info, enum LAYERING_CAPS l_caps);
 
 #endif

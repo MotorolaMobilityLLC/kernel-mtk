@@ -73,7 +73,7 @@
 #include "mtkfb_fence.h"
 #include "extd_multi_control.h"
 #include "m4u.h"
-
+#include "layering_rule.h"
 #include "compat_mtk_disp_mgr.h"
 
 
@@ -1325,6 +1325,8 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.is_output_rotated = 1;
 #endif
 
+	if (disp_helper_get_option(DISP_OPT_HRT))
+		caps_info.disp_feature |= DISP_FEATURE_HRT;
 	DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
 		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
 
@@ -1380,6 +1382,27 @@ int _ioctl_set_vsync(unsigned long arg)
 	}
 
 	ret = primary_display_force_set_vsync_fps(fps);
+	return ret;
+}
+
+int _ioctl_query_valid_layer(unsigned long arg)
+{
+	int ret = 0;
+	disp_layer_info disp_info_user;
+	void __user *argp = (void __user *)arg;
+
+	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+
+	ret = layering_rule_start(&disp_info_user, 0);
+
+	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+		ret = -EFAULT;
+	}
+
 	return ret;
 }
 
@@ -1476,6 +1499,8 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		return "DISP_IOCTL_OD_CTL";
 	case DISP_IOCTL_GET_DISPLAY_CAPS:
 		return "DISP_IOCTL_GET_DISPLAY_CAPS";
+	case DISP_IOCTL_QUERY_VALID_LAYER:
+		return "DISP_IOCTL_QUERY_VALID_LAYER";
 	default:
 		{
 			return "unknown";
@@ -1548,6 +1573,10 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
 			return primary_display_get_lcm_index();
+		}
+	case DISP_IOCTL_QUERY_VALID_LAYER:
+		{
+			return _ioctl_query_valid_layer(arg);
 		}
 	case DISP_IOCTL_SCREEN_FREEZE:
 		{

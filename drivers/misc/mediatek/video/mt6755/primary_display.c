@@ -90,6 +90,7 @@
 #include "mt_spm_sodi_cmdq.h"
 #include "mt_spm_reg.h"
 #include "mt_spm_idle.h"
+#include "layering_rule.h"
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
@@ -3408,6 +3409,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 done:
 	primary_display_diagnose();
 	dst_module = _get_dst_module_by_lcm(pgc->plcm);
+	layering_rule_init();
 	_primary_path_unlock(__func__);
 	return ret;
 }
@@ -4462,7 +4464,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
 
-	overlap_layers = cfg->overlap_layer_num;
+	overlap_layers = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = overlap_layers;
 
 	if (!_requestCondition(overlap_layers)) {
