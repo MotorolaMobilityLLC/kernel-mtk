@@ -37,7 +37,7 @@
 #include <ddp_clkmgr.h>
 #endif
 #endif
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 #include <disp_lowpower.h>
 #include <disp_helper.h>
 #endif
@@ -543,6 +543,21 @@ static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, vo
 
 		width = pConfig->dst_w;
 		height = pConfig->dst_h;
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode*/
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x0);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+				/* force commit */
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x2);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+				/* bypass shadow */
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x1);
+			}
+		}
+#endif
 
 		DISP_REG_SET(cmdq, DISP_AAL_SIZE, (width << 16) | height);
 		DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x0, 0x1);	/* Disable relay mode */
