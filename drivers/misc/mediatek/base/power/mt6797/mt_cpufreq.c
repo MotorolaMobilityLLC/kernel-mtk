@@ -4906,7 +4906,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 
 	for_each_cpu_dvfs_only(i, p) {
-		if (p->armpll_is_available) {
+		if (p->armpll_is_available && p->mt_policy->governor) {
 			if (p->idx_opp_ppm_limit == -1)
 				p->mt_policy->max = cpu_dvfs_get_max_freq(p);
 			else
@@ -4915,15 +4915,13 @@ static void ppm_limit_callback(struct ppm_client_req req)
 				p->mt_policy->min = cpu_dvfs_get_min_freq(p);
 			else
 				p->mt_policy->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
-		}
-	}
 
-	for_each_cpu_dvfs_only(i, p)
 		if (!ignore_ppm[i]) {
 			_mt_cpufreq_set(p->mt_policy, i, -1, 0);
 			kick = 1;
 		}
-
+		}
+	}
 	cpufreq_unlock(flags);
 
 	ppm_main_cancel_hrtimer();
@@ -5254,11 +5252,6 @@ static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
 		cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
 	}
 	cpufreq_unlock(flags);
-
-#ifndef DISABLE_PBM_FEATURE
-	if (!p->dvfs_disable_by_suspend && volt != 0 /* OPP changed */)
-		_kick_PBM_by_cpu(p);
-#endif
 }
 #endif
 
