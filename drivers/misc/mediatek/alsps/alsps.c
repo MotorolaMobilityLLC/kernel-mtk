@@ -120,7 +120,7 @@ static void ps_work_func(struct work_struct *work)
 	}
 
 	if (cxt->is_get_valid_ps_data_after_enable == false) {
-		if (ALSPS_INVALID_VALUE != cxt->drv_data.als_data.values[0])
+		if (ALSPS_INVALID_VALUE != cxt->drv_data.ps_data.values[0])
 			cxt->is_get_valid_ps_data_after_enable = true;
 	}
 
