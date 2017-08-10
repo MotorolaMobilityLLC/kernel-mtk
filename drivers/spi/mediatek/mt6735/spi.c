@@ -1298,6 +1298,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t));
+	if (!master) {
+		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
+		goto out;
+	}
 	ms = spi_master_get_devdata(master);
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -1384,11 +1388,6 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 #endif
-	/*master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t)); */
-	if (!master) {
-		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
-		goto out;
-	}
 	/*hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
 
