@@ -1103,6 +1103,7 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 #if defined(CONFIG_ARCH_MT6797)
 	int i, j, reg_index;
 #endif
+	int wide_gamut_en = 0;
 
 	if (DISP_MODULE_COLOR1 == module) {
 		offset = C1_OFFSET;
@@ -1127,7 +1128,7 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 #if defined(CONFIG_ARCH_MT6797)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
 						| (g_Color_Index.LSP_EN << 20)
-						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
 						| (0 << 7), 0x003081FF);
 #else
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
@@ -1156,11 +1157,10 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 	}
 
 	/* for partial Y contour issue */
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
-#else
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
-#endif
+	if (wide_gamut_en == 0)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+	else if (wide_gamut_en == 1)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
 
 	/* config parameter from customer color_index.h */
 	_color_reg_mask(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
@@ -1417,6 +1417,7 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 #if defined(CONFIG_ARCH_MT6797)
 	int i, j, reg_index;
 #endif
+	int wide_gamut_en = 0;
 
 	if (DISP_MODULE_COLOR1 == module)
 		offset = C1_OFFSET;
@@ -1425,7 +1426,7 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 #if defined(CONFIG_ARCH_MT6797)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
 						| (g_Color_Index.LSP_EN << 20)
-						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (0 << 8)
+						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
 						| (0 << 7), 0x003081FF);
 #else
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 8) | (0 << 7)
@@ -1455,11 +1456,10 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 	}
 
 	/* for partial Y contour issue */
-#if defined(CONFIG_ARCH_MT6797)
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
-#else
-	_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
-#endif
+	if (wide_gamut_en == 0)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x40, 0x0000007F);
+	else if (wide_gamut_en == 1)
+		_color_reg_mask(cmdq, DISP_COLOR_LUMA_ADJ + offset, 0x0, 0x0000007F);
 
 	_color_reg_mask(cmdq, DISP_COLOR_G_PIC_ADJ_MAIN_1 + offset,
 		(color_reg->BRIGHTNESS << 16) | color_reg->CONTRAST, 0x07FF01FF);
