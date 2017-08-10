@@ -1793,12 +1793,17 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 {
 	P_GL_IO_REQ_T prIoReq = NULL;
 	WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
+	P_ADAPTER_T prAdapter = NULL;
 
 	if (fgIsResetting == TRUE)
 		return WLAN_STATUS_SUCCESS;
 
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
+
+	prAdapter = prGlueInfo->prAdapter;
+
+	ASSERT(prAdapter);
 
 	/* <1> Check if driver is halt */
 	/* if (prGlueInfo->u4Flag & GLUE_FLAG_HALT) { */
@@ -1880,9 +1885,19 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
-		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_interruptible_timeout occurred!\n");
+		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_timeout occurred!\n");
 		DBGLOG(OID, WARN, "kalIoctl: do whole chip reset!\n");
-		glDoChipReset();
+		DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d\n"
+		, pfnOidHandler
+		, pvInfoBuf
+		, u4InfoBufLen
+		, pu4QryInfoLen
+		, fgRead
+		, fgWaitResp);
+		wlanDumpTcResAndTxedCmd(NULL, 0);
+		cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+		/* dump TC4[0] ~ TC4[3] TX_DESC */
+		wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 #if 0
 		if (fgCmd) {
 			prGlueInfo->u4TimeoutFlag = 1;
@@ -2706,6 +2721,7 @@ VOID kalEnqueueCommand(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_ENTRY_T prQueueEntr
 		prMsduInfo->ucCID = prCmdInfo->ucCID;
 		prMsduInfo->u4InqueTime = kalGetTimeTick();
 	}
+	prCmdInfo->u4InqueTime = kalGetTimeTick();
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 	QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
