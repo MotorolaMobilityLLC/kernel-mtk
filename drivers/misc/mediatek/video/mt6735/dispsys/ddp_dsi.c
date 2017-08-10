@@ -2078,7 +2078,7 @@ void DSI_set_null(DISP_MODULE_ENUM module, void *cmdq, unsigned cmd, unsigned ch
 				goto_addr =
 				    (unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte0) + i;
 				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
-				set_para = (para_list[i] << ((goto_addr & 0x3u) * 8));
+				set_para = (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
 				DSI_MASKREG32(cmdq, goto_addr & (~((unsigned long)0x3u)),
 					      mask_para, set_para);
 
@@ -2220,7 +2220,7 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
 						mask_para =
 						    (0xFFu << ((goto_addr & 0x3u) * 8));
 						set_para =
-						    (para_list[i] << ((goto_addr & 0x3u) * 8));
+						    (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
 						DSI_MASKREG32(cmdq,
 							goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
 
@@ -2264,7 +2264,7 @@ void DSI_set_cmdq_V2(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned cmd,
 						mask_para =
 						    (0xFFu << ((goto_addr & 0x3u) * 8));
 						set_para =
-						    (para_list[i] << ((goto_addr & 0x3u) * 8));
+						    (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
 						DSI_MASKREG32(cmdq,
 							goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
 					}
@@ -2443,7 +2443,7 @@ void DSI_set_cmdq_subV3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 					mask_para =
 					    (0xFFu << ((goto_addr & 0x3u) * 8));
 					set_para =
-					    (para_list[i] << ((goto_addr & 0x3u) * 8));
+					    (((unsigned long)para_list[i]) << ((goto_addr & 0x3u) * 8));
 					DSI_MASKREG32(cmdq,
 						goto_addr & (~((unsigned long)0x3u)), mask_para, set_para);
 				}

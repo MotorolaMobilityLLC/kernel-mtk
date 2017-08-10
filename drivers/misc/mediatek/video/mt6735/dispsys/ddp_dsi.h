@@ -150,7 +150,6 @@ int DSI_check_roi(void);
 		unsigned CONFG:8;
 		unsigned Data_ID:8;
 		unsigned WC16:16;
-		unsigned int *pdata;
 	} DSI_T2_INS, *PDSI_T2_INS;
 
 	typedef struct {
