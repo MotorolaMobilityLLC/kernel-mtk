@@ -188,6 +188,8 @@ static const uint16_t kSideToneCoefficientTable32k[] = {
 	0x0e96
 };
 
+static bool LowLatencyDebug;
+
 /*
  *    function implementation
  */
@@ -2938,26 +2940,27 @@ void Auddrv_DL2_Interrupt_Handler(void)	/* irq2 ISR handler */
 
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes ||
 	    Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained > Afe_Block->u4BufferSize) {
-#if 0  /* DL2 have false alarm about underflow, so temporarily disable */
-		if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
-			AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->pucPhysBufAddr;
-			AFE_dL_Abnormal_context.u4BufferSize[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4BufferSize;
-			AFE_dL_Abnormal_context.u4ConsumedBytes[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_consumed_bytes;
-			AFE_dL_Abnormal_context.u4DataRemained[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DataRemained;
-			AFE_dL_Abnormal_context.u4DMAReadIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4DMAReadIdx;
-			AFE_dL_Abnormal_context.u4HwMemoryIndex[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									HW_memory_index;
-			AFE_dL_Abnormal_context.u4WriteIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
-									Afe_Block->u4WriteIdx;
-			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] = MEM_DL2;
+		/* DL2 have false alarm about underflow, so temporarily disable */
+		if (LowLatencyDebug) {
+			if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
+				AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_Block->pucPhysBufAddr;
+				AFE_dL_Abnormal_context.u4BufferSize[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_Block->u4BufferSize;
+				AFE_dL_Abnormal_context.u4ConsumedBytes[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_consumed_bytes;
+				AFE_dL_Abnormal_context.u4DataRemained[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_Block->u4DataRemained;
+				AFE_dL_Abnormal_context.u4DMAReadIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_Block->u4DMAReadIdx;
+				AFE_dL_Abnormal_context.u4HwMemoryIndex[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										HW_memory_index;
+				AFE_dL_Abnormal_context.u4WriteIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+										Afe_Block->u4WriteIdx;
+				AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] = MEM_DL2;
+			}
+			AFE_dL_Abnormal_context.u4UnderflowCnt++;
 		}
-		AFE_dL_Abnormal_context.u4UnderflowCnt++;
-#endif
 	} else {
 
 		PRINTK_AUD_DL2("+DL2_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
@@ -3773,4 +3776,15 @@ int irq_update_user(const void *_user,
 }
 /* IRQ Manager END*/
 
+/* low latency debug */
+int get_LowLatencyDebug(void)
+{
+	return LowLatencyDebug;
+}
+
+void set_LowLatencyDebug(bool bFlag)
+{
+	LowLatencyDebug = bFlag;
+	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);
+}
 

@@ -594,6 +594,21 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int Audio_LowLatencyDebug_Get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = get_LowLatencyDebug();
+	return 0;
+}
+
+static int Audio_LowLatencyDebug_Set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	set_LowLatencyDebug((bool)ucontrol->value.integer.value[0] ? 1 : 0);
+	return 0;
+}
+
+
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
 
 static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
@@ -851,6 +866,8 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_Ipoh_Setting_Get, Audio_Ipoh_Setting_Set),
 	SOC_ENUM_EXT("Audio_I2S1_Setting", Audio_Routing_Enum[8],
 		     AudioI2S1_Setting_Get, AudioI2S1_Setting_Set),
+	SOC_SINGLE_EXT("Audio_LowLatency_Debug", SND_SOC_NOPM, 0, 0x20000, 0,
+	Audio_LowLatencyDebug_Get, Audio_LowLatencyDebug_Set),
 };
 
 

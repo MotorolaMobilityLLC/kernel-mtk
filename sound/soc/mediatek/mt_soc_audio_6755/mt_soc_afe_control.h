@@ -245,4 +245,8 @@ int irq_update_user(const void *_user,
 
 /* IRQ Manager */
 
+/* low latency debug */
+int get_LowLatencyDebug(void);
+void set_LowLatencyDebug(bool bFlag);
+
 #endif
