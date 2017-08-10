@@ -12,6 +12,7 @@
  */
 
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/errno.h>
 #include <linux/memory.h>
 #include <mt-plat/mt_lpae.h>
@@ -66,7 +67,7 @@ int cmdq_rec_realloc_cmd_buffer(cmdqRecHandle handle, uint32_t size)
 	if (size <= handle->bufferSize)
 		return 0;
 
-	pNewBuf = kzalloc(size, GFP_KERNEL);
+	pNewBuf = vzalloc(size);
 
 	if (NULL == pNewBuf) {
 		CMDQ_ERR("REC: kzalloc %d bytes cmd_buffer failed\n", size);
@@ -80,7 +81,7 @@ int cmdq_rec_realloc_cmd_buffer(cmdqRecHandle handle, uint32_t size)
 
 	CMDQ_VERBOSE("REC: realloc size from %d to %d bytes\n", handle->bufferSize, size);
 
-	kfree(handle->pBuffer);
+	vfree(handle->pBuffer);
 	handle->pBuffer = pNewBuf;
 	handle->bufferSize = size;
 
@@ -1341,7 +1342,7 @@ int32_t cmdq_task_destroy(cmdqRecHandle handle)
 		return cmdq_task_stop_loop(handle);
 
 	/* Free command buffer */
-	kfree(handle->pBuffer);
+	vfree(handle->pBuffer);
 	handle->pBuffer = NULL;
 
 	/* Free command handle */
