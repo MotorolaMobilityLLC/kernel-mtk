@@ -844,7 +844,7 @@ bool EnableSideToneFilter(bool stf_on)
 			read_write_sel	<< 24 |
 			sel_ch2		<< 23 |
 			coef_addr	<< 16 |
-			kSideToneCoefficientTable16k[coef_addr];
+			kSideToneCoefficientTable[coef_addr];
 			Afe_Set_Reg(AFE_SIDETONE_CON0, write_reg_value, 0x39FFFFF);
 			pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
 				write_reg_value);
