@@ -1,5 +1,3 @@
-/dts-v1/;
-
 /*
  * Mediatek's MT6735M SoC device tree source
  *
@@ -7,6 +5,8 @@
  *              http://www.mediatek.com
  *
  */
+/dts-v1/;
+
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
@@ -21,10 +21,10 @@
 	#size-cells = <2>;
 
 	/* chosen */
-		chosen {
+	chosen: chosen {
 			bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram \
 			initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
-		};
+	};
 
 	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
 	/*workaround for .0*/
@@ -1853,6 +1853,7 @@
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
 				system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system";
@@ -1860,15 +1861,25 @@
 					mnt_flags = "ro";
 					fsmgr_flags = "wait";
 				};
+#endif
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
 					fsmgr_flags = "wait";
+#else
+					fsmgr_flags = "wait,slotselect,verify";
+#endif
 				};
 			};
 		};
+	};
+
+	odm: odm{
+		compatible = "simple-bus";
+		/* reserved for overlay by odm */
 	};
 };
 #ifndef CONFIG_OF_RESOLVE

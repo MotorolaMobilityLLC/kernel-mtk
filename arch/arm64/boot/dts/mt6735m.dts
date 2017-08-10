@@ -1,4 +1,3 @@
-/dts-v1/;
 /*
  * Mediatek's MT6735M SoC device tree source
  *
@@ -6,6 +5,8 @@
  *              http://www.mediatek.com
  *
  */
+/dts-v1/;
+
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
@@ -18,7 +19,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram \
 initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	};
@@ -1911,6 +1912,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 				};
 			};
 		};
+	};
+
+	odm: odm{
+		compatible = "simple-bus";
+		/* reserved for overlay by odm */
 	};
 };
 
