@@ -412,7 +412,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	unsigned long nanosec_rem;
 	int res = 0;
 	struct wd_api *wd_api = NULL;
-
+	char uart_buf[64];
 	aee_wdt_percpu_printf(cpu, "===> aee_wdt_atf_info : cpu %d\n", cpu);
 	if (!cpu_possible(cpu)) {
 		aee_wdt_printf("FIQ: Watchdog time out at incorrect CPU %d ?\n", cpu);
@@ -450,9 +450,11 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	if (atomic_xchg(&aee_wdt_zap_lock, 0)) {
 		if (!no_zap_locks) {
 			aee_wdt_zap_locks();
+			uart_buf[0] = 0;
+			mtk_uart_dump_reg(uart_buf);
 			snprintf(str_buf[cpu], sizeof(str_buf[cpu]),
-				"\nCPU%d: zap printk locks mtk_uart_dump_timeout_cnt=%d\n",
-				cpu, mtk_uart_dump_timeout_cnt());
+				"\nCPU%d: zap printk locks uart register=%s\n",
+				cpu, uart_buf);
 			aee_sram_fiq_log(str_buf[cpu]);
 			memset(str_buf[cpu], 0, sizeof(str_buf[cpu]));
 		}

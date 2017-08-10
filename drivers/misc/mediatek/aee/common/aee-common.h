@@ -49,6 +49,6 @@ extern void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 #endif
 /* extern void mt_fiq_printf(const char *fmt, ...); */
 extern int no_zap_locks;
-extern int mtk_uart_dump_timeout_cnt(void);
+extern void mtk_uart_dump_reg(char *s);
 
 #endif				/* AEE_COMMON_H */
