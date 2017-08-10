@@ -78,7 +78,7 @@ static ssize_t env_proc_read(struct file *file, char __user *buf, size_t size, l
 	}
 	if (!env_valid) {
 		pr_debug("[%s]read no env valid\n", MODULE_NAME);
-		page += sprintf(page, "\nno env valid\n");
+		page += snprintf(page, 32, "\nno env valid\n");
 		len = page - &p[0];
 
 		if (*ppos >= len)
@@ -163,6 +163,11 @@ static long env_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 		ret = -EPERM;
 		goto end;
 	}
+	if (en_ctl.name_len >= CFG_ENV_DATA_SIZE || en_ctl.value_len >= CFG_ENV_DATA_SIZE) {
+		ret = -EFAULT;
+		goto end;
+	}
+
 	name_buf = kmalloc(en_ctl.name_len+1, GFP_KERNEL);
 	if (!name_buf) {
 		ret = -ENOMEM;
