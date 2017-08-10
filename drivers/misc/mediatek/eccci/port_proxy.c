@@ -1398,7 +1398,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 		}
 		break;
 	case CCCI_IOC_SET_RAT_STR:
-		if (copy_from_user((char *)md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
+		if (strncpy_from_user((char *)md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
 			CCCI_NORMAL_LOG(md_id, CHAR, "set rat string fail: copy_from_user fail!\n");
 			ret = -EFAULT;
 			break;
