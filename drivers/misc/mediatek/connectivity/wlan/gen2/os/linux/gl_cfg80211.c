@@ -455,10 +455,8 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 					prGlueInfo->u8TotalFailCnt += u8diffTxBad;
 				}
 				/* report counters */
-				prGlueInfo->rNetDevStats.tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart;
 				prGlueInfo->rNetDevStats.tx_errors = prGlueInfo->u8TotalFailCnt;
-
-				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
+				sinfo->tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart;
 				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
 				/* Good Fail Bad Difference retry difference Linkspeed Rate Weighted */
 				DBGLOG(REQ, TRACE,
