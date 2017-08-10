@@ -4587,6 +4587,10 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 VOID wlanSetPreferBandByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_BAND_T eBand, IN UINT_8 ucBssIndex)
 {
+	UINT_32 u4ChannelNum;
+	UINT_32 u4SetInfoLen;
+	UINT_8 ucBand;
+
 	ASSERT(prAdapter);
 	ASSERT(eBand <= BAND_NUM);
 	ASSERT(ucBssIndex <= MAX_BSS_INDEX);
@@ -4594,6 +4598,13 @@ VOID wlanSetPreferBandByNetwork(IN P_ADAPTER_T prAdapter, IN ENUM_BAND_T eBand, 
 
 	/* 1. set prefer band according to network type */
 	prAdapter->aePreferBand[ucBssIndex] = eBand;
+	u4ChannelNum = wlanGetChannelNumberByNetwork(prAdapter, ucBssIndex);
+	ucBand = u4ChannelNum > BAND_2G4_UPPER_BOUND ? BAND_5G : BAND_2G4;
+	DBGLOG(INIT, INFO, "SSID: %s, fq = %d, chn = %d, band = %d\n", prAdapter->rWlanInfo.rCurrBssId.rSsid.aucSsid,
+		prAdapter->rWlanInfo.rCurrBssId.rConfiguration.u4DSConfig, u4ChannelNum, ucBand);
+
+	if (eBand != BAND_NULL && eBand != ucBand)
+		wlanoidSetDisassociate(prAdapter, NULL, 0, &u4SetInfoLen);
 
 	/* 2. remove buffered BSS descriptors correspondingly */
 	if (eBand == BAND_2G4)

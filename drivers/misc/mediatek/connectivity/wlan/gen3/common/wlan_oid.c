@@ -5194,12 +5194,12 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 #endif
 #if CFG_MTK_STAGE_SCAN
 			else if (u2SubId == 0x1250)
-				prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_NULL;
+				wlanSetPreferBandByNetwork(prAdapter, BAND_NULL, KAL_NETWORK_TYPE_AIS_INDEX);
 			else if (u2SubId == 0x1251)
-				prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_2G4;
+				wlanSetPreferBandByNetwork(prAdapter, BAND_2G4, KAL_NETWORK_TYPE_AIS_INDEX);
 			else if (u2SubId == 0x1252) {
 				if (prAdapter->fgEnable5GBand)
-					prAdapter->aePreferBand[KAL_NETWORK_TYPE_AIS_INDEX] = BAND_5G;
+					wlanSetPreferBandByNetwork(prAdapter, BAND_5G, KAL_NETWORK_TYPE_AIS_INDEX);
 				else
 					/* Skip this setting if 5G band is disabled */
 					DBGLOG(SCN, INFO, "Skip 5G stage scan request due to " "5G is disabled\n");
