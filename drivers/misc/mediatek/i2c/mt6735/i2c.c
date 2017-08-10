@@ -40,6 +40,7 @@
 /* #include <mach/mt_reg_base.h> */
 #include "mt_i2c.h"
 #include <mt-plat/sync_write.h>
+#include "../../base/power/mt6735/mt_pm_init.h"
 /* #include "mach/memory.h" */
 /* #include <mach/i2c.h> */
 /* #include <linux/aee.h> */
@@ -821,8 +822,8 @@ static s32 _i2c_transfer_interface(struct mt_i2c_t *i2c)
 #ifdef CONFIG_MT_I2C_FPGA_ENABLE
 	i2c->clk = I2C_CLK_RATE;
 #else
-	/* i2c->clk = mt_get_bus_freq() / 16; */
-	i2c->clk = I2C_CLK_RATE;
+	i2c->clk  = mt_check_bus_freq()/16;
+	/*i2c->clk = I2C_CLK_RATE;*/
 #endif
 
 	return_value = i2c_set_speed(i2c);
