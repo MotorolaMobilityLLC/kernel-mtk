@@ -86,5 +86,7 @@ UINT32 GC0310GetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_INFO_STRUCT *
 UINT32 GC0310GetResolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *pSensorResolution);
 UINT32 GC0310Close(void);
 
+extern void kdSetI2CSpeed(u16 i2cSpeed);
+
 #endif /* __SENSOR_H */
 
