@@ -83,7 +83,7 @@
 #include <mt-plat/battery_common.h>
 #include <mach/mt_battery_meter.h>
 #endif
-#include "../../power/mt6755/mt6311.h"
+#include "mt6311.h"
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
 
@@ -635,29 +635,23 @@ int is_ext_vbat_boost_exist(void)
 
 int get_ext_buck_i2c_ch_num(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	if (is_mt6311_exist() == 1)
 		return get_mt6311_i2c_ch_num();
-#endif
-		return -1;
+	return -1;
 }
 
 int is_ext_buck_sw_ready(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	if ((is_mt6311_sw_ready() == 1))
 		return 1;
-#endif
-		return 0;
+	return 0;
 }
 
 int is_ext_buck_exist(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	if ((is_mt6311_exist() == 1))
 		return 1;
-#endif
-		return 0;
+	return 0;
 }
 
 int is_ext_buck_gpio_exist(void)
