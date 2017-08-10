@@ -1,8 +1,16 @@
 /*
-* Copyright(C)2014 MediaTek Inc.
-* Modification based on code covered by the below mentioned copyright
-* and/or permission notice(S).
+* Copyright (C) 2014 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
+
 
 #include <linux/types.h>
 #include <linux/i2c.h>
