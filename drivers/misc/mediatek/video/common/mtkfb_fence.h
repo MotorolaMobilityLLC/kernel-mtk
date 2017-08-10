@@ -21,11 +21,9 @@
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
 #include "disp_recorder.h"
+#include "mtkfb_debug.h"
 #else
 #include "display_recorder.h"
-#endif
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
-#include "mtkfb_debug.h"
 #endif
 
 #ifdef __cplusplus

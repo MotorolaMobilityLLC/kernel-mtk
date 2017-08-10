@@ -58,18 +58,15 @@
 #include "disp_drv_ddp.h"
 #include "disp_recorder.h"
 #include "disp_session.h"
-#if defined(CONFIG_ARCH_MT6755)
-#include "disp_lowpower.h"
-#include "disp_recovery.h"
-#endif
-#if defined(CONFIG_ARCH_MT6580)
-#include "ddp_rdma_ex.h"
-#endif
 #include "disp_assert_layer.h"
 #include "mtkfb.h"
 #include "mtkfb_fence.h"
 #include "mtkfb_debug.h"
 #include "primary_display.h"
+#if defined(CONFIG_ARCH_MT6755)
+#include "disp_lowpower.h"
+#include "disp_recovery.h"
+#endif
 
 #pragma GCC optimize("O0")
 
