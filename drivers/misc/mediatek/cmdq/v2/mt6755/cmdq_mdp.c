@@ -736,9 +736,13 @@ const char *cmdq_mdp_dispatch(uint64_t engineFlag)
 	int32_t status = 0;
 	const char *module = "MDP";
 
-	task.userDebugStr = kzalloc(debug_str_len, GFP_KERNEL);
+	task.userDebugStr = kzalloc(debug_str_len, GFP_ATOMIC);
+	if (!task.userDebugStr) {
+		CMDQ_ERR("fail to alloc debug buffer\n");
+		return "MDP";
+	}
 
-	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
+	status = cmdq_core_get_running_task_by_engine_unlock(engineFlag, debug_str_len, &task);
 	if (status < 0) {
 		CMDQ_ERR("Failed: get task by engine flag: 0x%016llx, task flag: 0x%016llx\n",
 			engineFlag, task.engineFlag);
