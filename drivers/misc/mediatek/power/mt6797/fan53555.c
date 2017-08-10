@@ -413,13 +413,14 @@ static int fan53555_driver_probe(struct i2c_client *client, const struct i2c_dev
 	int err = 0;
 
 	PMICLOG1("[fan53555_driver_probe]\n");
+/*
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
 	if (new_client == NULL) {
 		err = -ENOMEM;
 		goto exit;
 	}
 	memset(new_client, 0, sizeof(struct i2c_client));
-
+*/
 	new_client = client;
 
 	/* --------------------- */
@@ -427,16 +428,16 @@ static int fan53555_driver_probe(struct i2c_client *client, const struct i2c_dev
 	if (g_fan53555_hw_exist == 1) {
 		fan53555_hw_init();
 		fan53555_dump_register();
+	} else {
+		PMICLOG1("[fan53555_driver_probe] hw_exist =%d\n", g_fan53555_hw_exist);
+		err = -ENOMEM;
+		goto exit;
 	}
 	g_fan53555_driver_ready = 1;
 
 	PMICLOG1("[fan53555_driver_probe] g_fan53555_hw_exist=%d, g_fan53555_driver_ready=%d\n",
 		 g_fan53555_hw_exist, g_fan53555_driver_ready);
 
-	if (g_fan53555_hw_exist == 0) {
-		PMICLOG1("[fan53555_driver_probe] return err\n");
-		return err;
-	}
 	mt_gpufreq_ext_ic_init();
 	return 0;
 
