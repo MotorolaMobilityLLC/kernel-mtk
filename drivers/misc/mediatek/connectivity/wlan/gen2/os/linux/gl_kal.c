@@ -2429,6 +2429,9 @@ int rx_thread(void *data)
 
 	if (current->policy == SCHED_NORMAL)
 		current->static_prio = DEFAULT_PRIO - 19;
+
+	DBGLOG(INIT, INFO, "rx_thread starts running...\n");
+
 	while (TRUE) {
 		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 			DBGLOG(INIT, INFO, "rx_thread should stop now...\n");
