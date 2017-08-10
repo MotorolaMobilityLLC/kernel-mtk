@@ -883,6 +883,13 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	token1 = strsep(&temp, delim);
 	pr_debug("token1\n");
 	pr_debug("token1 = %s\n", token1);
+
+	if (!token1) {
+		pr_warn("%s(), token1 is NULL!\n", __func__);
+		kfree(temp);
+		goto exit;
+	}
+
 	token2 = strsep(&temp, delim);
 	pr_debug("token2 = %s\n", token2);
 	token3 = strsep(&temp, delim);
@@ -893,51 +900,78 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	pr_debug("token5 = %s\n", token5);
 
 	AudDrv_Clk_On();
-	if (strcmp(token1, ParSetkeyAfe) == 0) {
+	if (strncmp(token1, ParSetkeyAfe, strlen(ParSetkeyAfe) + 1) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyAfe)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		ret = kstrtoul(token5, 16, &regvalue);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr, regvalue);
-		Afe_Set_Reg(regaddr, regvalue, 0xffffffff);
-		regvalue = Afe_Get_Reg(regaddr);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr, regvalue);
+		if ((token3 != NULL) && (token5 != NULL)) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			ret = kstrtoul(token5, 16, &regvalue);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr,
+				 regvalue);
+			Afe_Set_Reg(regaddr, regvalue, 0xffffffff);
+			regvalue = Afe_Get_Reg(regaddr);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAfe, regaddr,
+				 regvalue);
+		} else {
+			pr_debug("token3 or token5 is NULL!\n");
+		}
 	}
-	if (strcmp(token1, ParSetkeyAna) == 0) {
+	if (strncmp(token1, ParSetkeyAna, strlen(ParSetkeyAna) + 1) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyAna)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		ret = kstrtoul(token5, 16, &regvalue);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
-		/* audckbufEnable(true); */
-		Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
-		regvalue = Ana_Get_Reg(regaddr);
-		/* audckbufEnable(false); */
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr, regvalue);
+		if ((token3 != NULL) && (token5 != NULL)) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			ret = kstrtoul(token5, 16, &regvalue);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr,
+				 regvalue);
+			/* audckbufEnable(true); */
+			Ana_Set_Reg(regaddr, regvalue, 0xffffffff);
+			regvalue = Ana_Get_Reg(regaddr);
+			/* audckbufEnable(false); */
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyAna, regaddr,
+				 regvalue);
+		} else {
+			pr_debug("token3 or token5 is NULL!\n");
+		}
 	}
-	if (strcmp(token1, ParSetkeyCfg) == 0) {
+	if (strncmp(token1, ParSetkeyCfg, strlen(ParSetkeyCfg) + 1) == 0) {
 		pr_debug("strcmp (token1,ParSetkeyCfg)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		ret = kstrtoul(token5, 16, &regvalue);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyCfg, regaddr, regvalue);
-		SetClkCfg(regaddr, regvalue, 0xffffffff);
-		regvalue = GetClkCfg(regaddr);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyCfg, regaddr, regvalue);
+		if ((token3 != NULL) && (token5 != NULL)) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			ret = kstrtoul(token5, 16, &regvalue);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyCfg, regaddr,
+				 regvalue);
+			SetClkCfg(regaddr, regvalue, 0xffffffff);
+			regvalue = GetClkCfg(regaddr);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", ParSetkeyCfg, regaddr,
+				 regvalue);
+		} else {
+			pr_debug("token3 or token5 is NULL!\n");
+		}
 	}
-	if (strcmp(token1, PareGetkeyAfe) == 0) {
+	if (strncmp(token1, PareGetkeyAfe, strlen(PareGetkeyAfe) + 1) == 0) {
 		pr_debug("strcmp (token1,PareGetkeyAfe)\n");
-		ret = kstrtoul(token3, 16, &regaddr);
-		regvalue = Afe_Get_Reg(regaddr);
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAfe, regaddr, regvalue);
+		if (token3 != NULL) {
+			ret = kstrtoul(token3, 16, &regaddr);
+			regvalue = Afe_Get_Reg(regaddr);
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAfe, regaddr,
+				 regvalue);
+		} else {
+			pr_debug("token3 is NULL!\n");
+		}
 	}
-	if (strcmp(token1, PareGetkeyAna) == 0) {
+	if (strncmp(token1, PareGetkeyAna, strlen(PareGetkeyAna) + 1) == 0) {
 		pr_debug("strcmp (token1,PareGetkeyAna)\n");
-		/* audckbufEnable(true); */
-		ret = kstrtoul(token3, 16, &regaddr);
-		regvalue = Ana_Get_Reg(regaddr);
-		/* audckbufEnable(false); */
-		pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr, regvalue);
+		if (token3 != NULL) {
+			/* audckbufEnable(true); */
+			ret = kstrtoul(token3, 16, &regaddr);
+			regvalue = Ana_Get_Reg(regaddr);
+			/* audckbufEnable(false); */
+			pr_debug("%s regaddr = 0x%lu regvalue = 0x%lu\n", PareGetkeyAna, regaddr,
+				 regvalue);
+		} else {
+			pr_debug("token3 is NULL!\n");
+		}
 	}
-
-	/* AudDrv_Clk_Off(); */
+	AudDrv_Clk_Off();
 
 	kfree(temp);
 exit:

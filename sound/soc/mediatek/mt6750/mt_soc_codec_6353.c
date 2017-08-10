@@ -3044,7 +3044,7 @@ static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
-	int index = 0, oldindex = 0, offset = 0, count = 1;
+	int index = 0, oldindex = 0, offset = 0, count = 0, ramp_index = 0;
 
 	/* pr_warn("%s(), index = %d, arraysize = %d\n", __func__,
 	   ucontrol->value.enumerated.item[0], ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)); //mark for 64bit build fail */
@@ -3055,10 +3055,13 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
+	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1)) {
+		/* index = 0x1f; */
+		pr_err("return -EINVAL, -40Db(Mute) is not supported\n");
+		return -EINVAL;
+	}
 
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
-		index = 0x1f;
+	index = ucontrol->value.integer.value[0];
 
 	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == true) {
 		oldindex = Ana_Get_Reg(MT6353_ZCD_CON2) & 0x1f;
@@ -3068,30 +3071,32 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		/* pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex); */
 		if (index > oldindex) {
 			offset = index - oldindex;
-			while (offset > 0) {
-				Ana_Set_Reg(MT6353_ZCD_CON2, (oldindex + count), 0x1f);
+			while ((offset > 0) && (oldindex < (MAX_HP_GAIN_LEVEL-1))) {
+				count++;
+				ramp_index = oldindex + count;
+				Ana_Set_Reg(MT6353_ZCD_CON2, ramp_index, 0x1f);
 
 				if (mHPon == 1)
-					SetHplOffset(mHplOffset_CompenBydB[(oldindex + count)], false);
+					SetHplOffset(mHplOffset_CompenBydB[ramp_index], false);
 				else if (mHPSPKon == 1)
-					SetHplOffset(mHplSpkOffset_CompenBydB[(oldindex + count)], false);
+					SetHplOffset(mHplSpkOffset_CompenBydB[ramp_index], false);
 
 				offset--;
-				count++;
 				udelay(HP_PGA_RAMP_DELAY);
 			}
 		} else {
 			offset = oldindex - index;
-			while (offset > 0) {
-				Ana_Set_Reg(MT6353_ZCD_CON2, (oldindex - count), 0x1f);
+			while ((offset > 0) && (oldindex > 0)) {
+				count++;
+				ramp_index = oldindex - count;
+				Ana_Set_Reg(MT6353_ZCD_CON2, ramp_index, 0x1f);
 
 				if (mHPon == 1)
-					SetHplOffset(mHplOffset_CompenBydB[(oldindex - count)], false);
+					SetHplOffset(mHplOffset_CompenBydB[ramp_index], false);
 				else if (mHPSPKon == 1)
-					SetHplOffset(mHplSpkOffset_CompenBydB[(oldindex - count)], false);
+					SetHplOffset(mHplSpkOffset_CompenBydB[ramp_index], false);
 
 				offset--;
-				count++;
 				udelay(HP_PGA_RAMP_DELAY);
 			}
 		}
@@ -3116,7 +3121,7 @@ static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
-	int index = 0, oldindex = 0, offset = 0, count = 1;
+	int index = 0, oldindex = 0, offset = 0, count = 0, ramp_index = 0;
 
 	pr_warn("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
 
@@ -3124,10 +3129,14 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
 
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
-		index = 0x1f;
+	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1)) {
+		/* index = 0x1f; */
+		pr_err("return -EINVAL, -40Db(Mute) is not supported\n");
+		return -EINVAL;
+	}
+
+	index = ucontrol->value.integer.value[0];
 
 	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == true) {
 		oldindex = (Ana_Get_Reg(MT6353_ZCD_CON2) & 0x0f80) >> 7;
@@ -3137,30 +3146,32 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		/* pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex); */
 		if (index > oldindex) {
 			offset = index - oldindex;
-			while (offset > 0) {
-				Ana_Set_Reg(MT6353_ZCD_CON2, ((oldindex + count) << 7), 0xf80);
+			while ((offset > 0) && (oldindex < (MAX_HP_GAIN_LEVEL-1))) {
+				count++;
+				ramp_index = oldindex + count;
+				Ana_Set_Reg(MT6353_ZCD_CON2, (ramp_index << 7), 0xf80);
 
 				if (mHPon == 1)
-					SetHprOffset(mHprOffset_CompenBydB[(oldindex + count)]);
+					SetHprOffset(mHprOffset_CompenBydB[ramp_index]);
 				else if (mHPSPKon == 1)
-					SetHprOffset(mHprSpkOffset_CompenBydB[(oldindex + count)]);
+					SetHprOffset(mHprSpkOffset_CompenBydB[ramp_index]);
 
 				offset--;
-				count++;
 				udelay(HP_PGA_RAMP_DELAY);
 			}
 		} else {
 			offset = oldindex - index;
-			while (offset > 0) {
-				Ana_Set_Reg(MT6353_ZCD_CON2, ((oldindex - count) << 7), 0xf80);
+			while ((offset > 0) && (oldindex > 0)) {
+				count++;
+				ramp_index = oldindex - count;
+				Ana_Set_Reg(MT6353_ZCD_CON2, (ramp_index << 7), 0xf80);
 
 				if (mHPon == 1)
-					SetHprOffset(mHprOffset_CompenBydB[(oldindex - count)]);
+					SetHprOffset(mHprOffset_CompenBydB[ramp_index]);
 				else if (mHPSPKon == 1)
-					SetHprOffset(mHprSpkOffset_CompenBydB[(oldindex - count)]);
+					SetHprOffset(mHprSpkOffset_CompenBydB[ramp_index]);
 
 				offset--;
-				count++;
 				udelay(HP_PGA_RAMP_DELAY);
 			}
 		}

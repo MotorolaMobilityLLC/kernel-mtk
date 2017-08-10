@@ -4142,6 +4142,11 @@ static const struct irq_user *get_min_period_user(
 static int check_and_update_irq(const struct irq_user *_irq_user,
 				enum Soc_Aud_IRQ_MCU_MODE _irq)
 {
+	if (_irq_user == NULL) {
+		pr_err("error, _irq_user is NULL, no irq_user\n ");
+		return -EINVAL;
+	}
+
 	if (!is_tgt_rate_ok(_irq_user->request_rate,
 			    _irq_user->request_count,
 			    irq_managers[_irq].rate)) {
