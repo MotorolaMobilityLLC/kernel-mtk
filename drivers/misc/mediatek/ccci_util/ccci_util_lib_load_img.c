@@ -863,7 +863,7 @@ TRY_LOAD_IMG:
 
 	/* Construct image information string */
 	if (img->type == IMG_MD) {
-		sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
+		snprintf(img_str, sizeof(md_img_info_str[md_id]), "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
 			img->img_info.image_type, img->img_info.platform,
 			img->img_info.build_ver, img->img_info.build_time,
 			img->img_info.product_ver, img->ap_info.image_type,

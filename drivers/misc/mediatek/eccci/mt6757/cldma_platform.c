@@ -894,15 +894,16 @@ int md_cd_power_on(struct ccci_modem *md)
 	md1_pmic_setting_on();
 
 	/* steip 1: power on MD_INFRA and MODEM_TOP */
-	switch (md->index) {
-	case MD_SYS1:
+	if (md->index == MD_SYS1) {
 		clk_buf_set_by_flightmode(false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
-		clk_prepare_enable(clk_table[0].clk_ref);
-		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
+		ret = clk_prepare_enable(clk_table[0].clk_ref);
+		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done,ret = %d\n", ret);
 		kicker_pbm_by_md(KR_MD1, true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,true)\n");
-		break;
+	} else {
+		CCCI_BOOTUP_LOG(md->index, TAG, "md power on index error = %d\n", md->index);
+		ret = -1;
 	}
 	if (ret)
 		return ret;
@@ -981,8 +982,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #endif
 
 	/* power off MD_INFRA and MODEM_TOP */
-	switch (md->index) {
-	case MD_SYS1:
+	if (md->index == MD_SYS1) {
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
 		clk_buf_set_by_flightmode(true);
@@ -990,7 +990,9 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,false)\n");
-		break;
+	} else {
+		CCCI_BOOTUP_LOG(md->index, TAG, "md power off wrong index error = %d\n", md->index);
+		ret = -1;
 	}
 	return ret;
 }
