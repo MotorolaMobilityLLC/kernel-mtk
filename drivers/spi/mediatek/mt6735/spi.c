@@ -82,24 +82,7 @@ enum spi_fifo {
 
 #define INVALID_DMA_ADDRESS 0xffffffff
 
-struct mt_spi_t {
-	struct platform_device *pdev;
-	void __iomem *regs;
-	int irq;
-	int running;
-	struct wake_lock wk_lock;
-	struct mt_chip_conf *config;
-	struct spi_master *master;
 
-	struct spi_transfer *cur_transfer;
-	struct spi_transfer *next_transfer;
-
-	spinlock_t lock;
-	struct list_head queue;
-#if !defined(CONFIG_MTK_CLKMGR)
-	struct clk *clk_main;	/* main clock for spi bus */
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
-};
 /*open time record debug, log can't affect transfer*/
 /*	#define SPI_REC_DEBUG */
 

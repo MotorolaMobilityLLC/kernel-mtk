@@ -441,7 +441,7 @@ int secspi_session_open(void)
 	return 0;
 }
 
-int secspi_execute(u32 cmd, tciSpiMessage_t *param)
+int secspi_execute(u32 cmd, tciSpiMessage_t *param,  struct mt_spi_t *ms)
 {
 	enum mc_result mc_ret;
 
@@ -473,7 +473,7 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 	SPIDEV_MSG("mc_notify\n");
 
 	/*enable_clock(MT_CG_PERI_SPI0, "spi"); */
-	/*enable_clk(ms); */
+	mt_spi_enable_clk(ms);
 
 	mc_ret = mc_notify(&secspi_session);
 
@@ -499,7 +499,7 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 
 	return 0;
 }
-
+#if 0
 static int secspi_session_close(void)
 {
 	enum mc_result mc_ret = MC_DRV_OK;
@@ -552,6 +552,7 @@ static int secspi_session_close(void)
 
 }
 #endif
+#endif
 
 static ssize_t spi_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -565,7 +566,12 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 	int rx_endian, com_mod, pause, finish_intr;
 	int deassert, tckdly, ulthigh;
 
+	struct spi_master *master;
+	struct mt_spi_t *ms;
+
 	spi = container_of(dev, struct spi_device, dev);
+	master = spi->master;
+	ms = spi_master_get_devdata(master);
 
 	SPIDEV_LOG("SPIDEV name is:%s\n", spi->modalias);
 
@@ -585,22 +591,22 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 	if (!strncmp(buf, "-1", 2)) {
 		/*TRANSFER*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(1, NULL);
+		secspi_execute(1, NULL, ms);
 		SPIDEV_MSG("secspi_execute 1 finished!!!\n");
 	} else if (!strncmp(buf, "-2", 2)) {	/*HW CONFIG */
 		SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(2, NULL);
+		secspi_execute(2, NULL, ms);
 		SPIDEV_MSG("secspi_execute 2 finished!!!\n");
 	} else if (!strncmp(buf, "-3", 2)) {
 		/*DEBUG*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(3, NULL);
+		secspi_execute(3, NULL, ms);
 		SPIDEV_MSG("secspi_execute 3 finished!!!\n");
 	} else if (!strncmp(buf, "-4", 2)) {
 		/*TEST*/ SPIDEV_MSG("start to access TL SPI driver.\n");
 		secspi_session_open();
-		secspi_execute(4, NULL);
+		secspi_execute(4, NULL, ms);
 		SPIDEV_MSG("secspi_execute 4 finished!!!\n");
 #else
 	if (!strncmp(buf, "-h", 2)) {
