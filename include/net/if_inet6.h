@@ -25,6 +25,8 @@
 #define IF_RA_RCVD	0x20
 #define IF_RS_SENT	0x10
 #define IF_READY	0x80000000
+/*add for VzW feature*/
+#define IF_RS_VZW_SENT 0x01
 
 /* prefix flags */
 #define IF_PREFIX_ONLINK	0x01
