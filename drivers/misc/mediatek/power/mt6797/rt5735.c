@@ -46,6 +46,20 @@ static u8 rt5735_cfg_default[4] = {
 	0x63, /* RT5753_REG_LIMCONF */
 };
 
+static int rt5735_read_device(void *client, u32 addr, int len, void *dst)
+{
+	struct i2c_client *i2c = (struct i2c_client *)client;
+
+	return i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
+}
+
+static int rt5735_write_device(void *client, u32 addr, int len, const void *src)
+{
+	struct i2c_client *i2c = (struct i2c_client *)client;
+
+	return i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
+}
+
 #ifdef CONFIG_RT_REGMAP
 RT_REG_DECL(RT5735_REG_PID, 1, RT_WBITS_WR_ONCE, {0x00});
 RT_REG_DECL(RT5735_REG_RID, 1, RT_WBITS_WR_ONCE, {0x00});
@@ -78,20 +92,6 @@ static struct rt_regmap_properties rt5735_regmap_props = {
 	.rm = rt5735_regmap,
 	.rt_regmap_mode = RT_CACHE_DISABLE,
 };
-
-static int rt5735_read_device(void *client, u32 addr, int len, void *dst)
-{
-	struct i2c_client *i2c = (struct i2c_client *)client;
-
-	return i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
-}
-
-static int rt5735_write_device(void *client, u32 addr, int len, const void *src)
-{
-	struct i2c_client *i2c = (struct i2c_client *)client;
-
-	return i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
-}
 
 static struct rt_regmap_fops rt5735_regmap_fops = {
 	.read_device = rt5735_read_device,
@@ -150,9 +150,9 @@ static void rt5735_io_unlock(void *r_info)
 static int rt5735_io_read(void *r_info, u8 reg)
 {
 	struct rt5735_info *info = (struct rt5735_info *)r_info;
+	int ret = 0;
 #ifdef CONFIG_RT_REGMAP
 	struct rt_reg_data rrd = {0};
-	int ret = 0;
 
 	ret = rt_regmap_reg_read(info->regmap_dev, &rrd, reg);
 	return (ret < 0 ? ret : rrd.rt_data.data_u32);
@@ -593,7 +593,7 @@ static int rt5735_i2c_probe(struct i2c_client *client,
 		goto OUT_PDEV;
 
 	/* please remark this after GPU Driver updated (Owen) */
-	mt_gpufreq_ext_ic_init();
+	/* mt_gpufreq_ext_ic_init(); */
 
 	dev_info(&client->dev, "rt5735 successfully probed\n");
 

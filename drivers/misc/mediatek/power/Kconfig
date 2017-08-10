@@ -80,3 +80,23 @@ config MTK_POWER_EXT_DETECT
 	EVB/Phone share load configration.
 	Require one GPIO to do detection,
 	GPIO high mean EVB, otherwise mean phone platform.
+
+config MTK_GPUREGULATOR_INTF
+	bool "MTK Reaulator Richtek Chip INTF"
+	---help---
+	  This driver provide MTK
+	  GPU Regulator
+	  support.
+	  from Richtek.
+
+config REGULATOR_RT5735
+	bool "RT5735 Regulator As External BUCK for GPU"
+        depends on ARCH_MT6797
+	select MTK_GPUREGULATOR_INTF
+        select RT_REGMAP
+	default y
+	---help---
+	  Say Y here
+	  to enable support
+	  RT5735 Regulator
+	  from Richtek
