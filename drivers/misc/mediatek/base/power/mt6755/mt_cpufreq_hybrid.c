@@ -1171,7 +1171,7 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 
 	switch (cluster) {
 	case CPU_CLUSTER_LL:
-		BUG_ON(!(rsv4 & SW_L_PAUSE));	/* not paused at cluster off */
+		WARN_ON(!(rsv4 & SW_L_PAUSE));	/* not paused at cluster off */
 
 		if (pause_src_map == 0)
 			rsv4 &= ~SW_L_PAUSE;
@@ -1180,7 +1180,7 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 		break;
 	case CPU_CLUSTER_L:
 	default:
-		BUG_ON(!(rsv4 & SW_B_PAUSE));	/* not paused at cluster off */
+		WARN_ON(!(rsv4 & SW_B_PAUSE));	/* not paused at cluster off */
 
 		if (pause_src_map == 0)
 			rsv4 &= ~SW_B_PAUSE;
@@ -1215,7 +1215,8 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	/* DFS only to the lowest frequency (no I2C control) */
 	switch (cluster) {
 	case CPU_CLUSTER_LL:
-		BUG_ON(!(rsv4 & L_CLUSTER_EN));		/* already off */
+		if (WARN_ON(!(rsv4 & L_CLUSTER_EN)))	/* already off */
+			goto out;
 
 		cspm_write(CSPM_SW_RSV4, rsv4 & ~(L_CLUSTER_EN | SW_L_PAUSE | SW_L_F_ASSIGN));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
@@ -1227,7 +1228,8 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		break;
 	case CPU_CLUSTER_L:
 	default:
-		BUG_ON(!(rsv4 & B_CLUSTER_EN));		/* already off */
+		if (WARN_ON(!(rsv4 & B_CLUSTER_EN)))	/* already off */
+			goto out;
 
 		cspm_write(CSPM_SW_RSV4, rsv4 & ~(B_CLUSTER_EN | SW_B_PAUSE | SW_B_F_ASSIGN));
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
@@ -1244,6 +1246,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		BUG();
 	}
 
+out:
 	csram_write(OFFS_FUNC_ENTER, 0);
 	spin_unlock(&dvfs_lock);
 }
@@ -1774,4 +1777,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.7");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.7.1");
