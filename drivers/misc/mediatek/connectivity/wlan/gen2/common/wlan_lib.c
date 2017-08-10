@@ -875,6 +875,9 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 
 	nicTxRelease(prAdapter);
 
+	/* MGMT - unitialization */
+	nicUninitMGMT(prAdapter);
+
 	/* System Service Uninitialization */
 	nicUninitSystemService(prAdapter);
 
