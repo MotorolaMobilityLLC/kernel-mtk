@@ -40,6 +40,7 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#include <linux/ctype.h>
 #if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
 #endif
@@ -955,6 +956,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 			WMT_INFO_FUNC("OPID(%d) length(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 			iRet = pOp->op.au4OpData[0];
+			if ((iRet > sizeof(gLpbkBuf)) || (iRet < 0)) {
+				iRet = -EFAULT;
+				WMT_ERR_FUNC("length is too long\n");
+				break;
+			}
 			if (copy_to_user((PVOID)arg + sizeof(SIZE_T) + sizeof(UINT8[2048]), gLpbkBuf, iRet)) {
 				iRet = -EFAULT;
 				break;
@@ -996,6 +1002,11 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 			WMT_INFO_FUNC("OPID(%d) length(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 			iRet = pOp->op.au4OpData[0];
+			if ((iRet > sizeof(gLpbkBuf)) || (iRet < 0)) {
+				iRet = -EFAULT;
+				WMT_ERR_FUNC("length is too long\n");
+				break;
+			}
 			if (copy_to_user((PVOID)arg + sizeof(SIZE_T), gLpbkBuf, iRet)) {
 				iRet = -EFAULT;
 				break;
@@ -1201,7 +1212,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 				if (pBuf[i] == '/') {
 					k = 0;
 					j++;
-				} else {
+				} else if (isascii(pBuf[i])) {
 					Buffer[j][k] = pBuf[i];
 					k++;
 				}
