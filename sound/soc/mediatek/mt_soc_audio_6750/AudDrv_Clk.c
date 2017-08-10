@@ -86,6 +86,8 @@ int Aud_APLL22M_Clk_cntr = 0;
 int Aud_APLL24M_Clk_cntr = 0;
 int Aud_APLL1_Tuner_cntr = 0;
 int Aud_APLL2_Tuner_cntr = 0;
+int Aud_APLL1_Tuner_CLK_cntr = 0;
+int Aud_APLL2_Tuner_CLK_cntr = 0;
 static int Aud_EMI_cntr;
 
 static DEFINE_SPINLOCK(auddrv_Clk_lock);
@@ -347,7 +349,7 @@ void AudDrv_Clk_On(void)
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_AFE_Clk_cntr++;
 	if (Aud_AFE_Clk_cntr == 1) {
-		PRINTK_AUD_CLK("-----------  AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		pr_err("-----------  AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 #ifdef PM_MANAGER_API
 #ifdef CONFIG_MTK_CLKMGR
 		if (enable_clock(MT_CG_INFRA_AUDIO, "AUDIO"))
@@ -450,8 +452,66 @@ void AudDrv_Clk_On(void)
 				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
 					aud_clks[CLOCK_SCP_SYS_AUD].name);
 				BUG();
-				goto UNLOCK;
+				return;
 			}
+		}
+
+		if (aud_clks[CLOCK_APMIXED_APLL1_CK].clk_prepare) {
+			/* set half first, then correct, for CCF not setting reg */
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 180633600/2);
+			if (ret) {
+				pr_err("%s clk_set_rate %s-180633600/2 fail %d\n",
+				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
+				BUG();
+				return;
+			}
+
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 180633600);
+			if (ret) {
+				pr_err("%s clk_set_rate %s-180633600 fail %d\n",
+				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
+				BUG();
+				return;
+			}
+		}
+
+		if (aud_clks[CLOCK_APMIXED_APLL2_CK].clk_prepare) {
+			/* set half first, then correct, for CCF not setting reg */
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL2_CK].clock, 196608000 / 2);
+			if (ret) {
+				pr_err("%s clk_set_rate %s-196607998/2 fail %d\n",
+				       __func__, aud_clks[CLOCK_APMIXED_APLL2_CK].name, ret);
+				BUG();
+				return;
+			}
+
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL2_CK].clock, 196608000);
+			if (ret) {
+				pr_err("%s clk_set_rate %s-196607998 fail %d\n",
+				       __func__, aud_clks[CLOCK_APMIXED_APLL2_CK].name, ret);
+				BUG();
+				return;
+			}
+		}
+
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
+				     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
+		if (ret) {
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
+			BUG();
+			return;
+		}
+
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX2].clock,
+				     aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
+		if (ret) {
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
+			       aud_clks[CLOCK_TOP_AD_APLL2_CK].name, ret);
+			BUG();
+			return;
 		}
 
 		return;
@@ -772,9 +832,11 @@ void AudDrv_APLL22M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
+	unsigned long flags = 0;
+
 	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s  enable_clock APLL22M clk(%x)\n", __func__,
@@ -833,27 +895,6 @@ void AudDrv_APLL22M_Clk_On(void)
 			goto UNLOCK;
 		}
 
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
-				     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
-			BUG();
-			goto UNLOCK;
-		}
-
-		if (aud_clks[CLOCK_APMIXED_APLL1_CK].clk_prepare) {
-
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 180633600);
-			if (ret) {
-				pr_err("%s clk_set_rate %s-180633600 fail %d\n",
-				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
-				BUG();
-				goto UNLOCK;
-			}
-		}
-
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
@@ -870,7 +911,7 @@ void AudDrv_APLL22M_Clk_On(void)
 			goto UNLOCK;
 		}
 
-		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
+		/*if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
 				pr_err
@@ -884,7 +925,7 @@ void AudDrv_APLL22M_Clk_On(void)
 			       __func__);
 			BUG();
 			goto UNLOCK;
-		}
+		}*/
 #endif
 
 
@@ -894,17 +935,16 @@ void AudDrv_APLL22M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_APLL22M_Clk_Off(void)
 {
-#ifndef CONFIG_MTK_CLKMGR
-	int ret = 0;
-#endif
+	unsigned long flags = 0;
+
 	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	Aud_APLL22M_Clk_cntr--;
 
@@ -929,18 +969,8 @@ void AudDrv_APLL22M_Clk_Off(void)
 		if (aud_clks[CLOCK_APLL22M].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL22M].clock);
 
-		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare)
-			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);
-
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
-			BUG();
-			goto UNLOCK;
-		}
+		/*if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare)
+			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);*/
 
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
@@ -979,7 +1009,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 
@@ -997,9 +1027,11 @@ void AudDrv_APLL24M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
+	unsigned long flags = 0;
+
 	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s  enable_clock APLL24M clk(%x)\n", __func__,
@@ -1053,27 +1085,6 @@ void AudDrv_APLL24M_Clk_On(void)
 			goto UNLOCK;
 		}
 
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX2].clock,
-				     aud_clks[CLOCK_TOP_AD_APLL2_CK].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
-			       aud_clks[CLOCK_TOP_AD_APLL2_CK].name, ret);
-			BUG();
-			goto UNLOCK;
-		}
-
-		if (aud_clks[CLOCK_APMIXED_APLL2_CK].clk_prepare) {
-
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL2_CK].clock, 196607998);
-			if (ret) {
-				pr_err("%s clk_set_rate %s-196607998 fail %d\n",
-				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
-				BUG();
-				goto UNLOCK;
-			}
-		}
-
 		if (aud_clks[CLOCK_APLL24M].clk_prepare) {
 
 			ret = clk_enable(aud_clks[CLOCK_APLL24M].clock);
@@ -1090,6 +1101,7 @@ void AudDrv_APLL24M_Clk_On(void)
 			goto UNLOCK;
 		}
 
+		/*
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL2_TUNER].clock);
 			if (ret) {
@@ -1105,7 +1117,7 @@ void AudDrv_APLL24M_Clk_On(void)
 			     __func__);
 			BUG();
 			goto UNLOCK;
-		}
+		}*/
 
 #endif
 #endif
@@ -1114,17 +1126,16 @@ void AudDrv_APLL24M_Clk_On(void)
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_APLL24M_Clk_Off(void)
 {
-#ifndef CONFIG_MTK_CLKMGR
-	int ret = 0;
-#endif
+	unsigned long flags = 0;
+
 	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	Aud_APLL24M_Clk_cntr--;
 
@@ -1151,18 +1162,8 @@ void AudDrv_APLL24M_Clk_Off(void)
 		if (aud_clks[CLOCK_APLL24M].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL24M].clock);
 
-		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare)
-			clk_disable(aud_clks[CLOCK_APLL2_TUNER].clock);
-
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX2].clock,
-				     aud_clks[CLOCK_CLK26M].clock);
-		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
-			BUG();
-			goto UNLOCK;
-		}
+		/*if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare)
+			clk_disable(aud_clks[CLOCK_APLL2_TUNER].clock);*/
 
 		if (aud_clks[CLOCK_TOP_AUD_MUX2].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX2].clock);
@@ -1203,7 +1204,7 @@ void AudDrv_APLL24M_Clk_Off(void)
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 
@@ -1373,11 +1374,12 @@ void AudDrv_APLL1Tuner_Clk_On(void)
 	int ret = 0;
 #endif
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	if (Aud_APLL1_Tuner_cntr == 0) {
-		PRINTK_AUD_CLK("+AudDrv_APLLTuner_Clk_On, Aud_APLL1_Tuner_cntr:%d\n",
-			       Aud_APLL1_Tuner_cntr);
+	if (Aud_APLL1_Tuner_CLK_cntr == 0) {
+		PRINTK_AUD_CLK("+AudDrv_APLLTuner_Clk_On, Aud_APLL1_Tuner_CLK_cntr:%d\n",
+			       Aud_APLL1_Tuner_CLK_cntr);
 #ifdef CONFIG_MTK_CLKMGR
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x0 << 19, 0x1 << 19);
+		Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000832, 0x0000FFF7);
 		SetpllCfg(AP_PLL_CON5, 0x1, 0x1);
 #else
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
@@ -1395,9 +1397,11 @@ void AudDrv_APLL1Tuner_Clk_On(void)
 			BUG();
 			goto UNLOCK;
 		}
+		Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000832, 0x0000FFF7);
+		SetpllCfg(AP_PLL_CON5, 0x1, 0x1);
 #endif
 	}
-	Aud_APLL1_Tuner_cntr++;
+	Aud_APLL1_Tuner_CLK_cntr++;
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
@@ -1410,26 +1414,59 @@ void AudDrv_APLL1Tuner_Clk_Off(void)
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
-	Aud_APLL1_Tuner_cntr--;
-	if (Aud_APLL1_Tuner_cntr == 0) {
+	Aud_APLL1_Tuner_CLK_cntr--;
+	if (Aud_APLL1_Tuner_CLK_cntr == 0) {
 #ifdef CONFIG_MTK_CLKMGR
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 19, 0x1 << 19);
-		Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000033, 0x1 << 19);
 		SetpllCfg(AP_PLL_CON5, 0x0, 0x1);
+		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 19, 0x1 << 19);
 #else
+		SetpllCfg(AP_PLL_CON5, 0x0, 0x1);
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);
 #endif
 	}
 	/* handle for clock error */
+	else if (Aud_APLL1_Tuner_CLK_cntr < 0) {
+		PRINTK_AUD_ERROR("!! AudDrv_APLLTuner_Clk_Off, Aud_APLL1_Tuner_CLK_cntr<0 (%d)\n",
+				 Aud_APLL1_Tuner_CLK_cntr);
+		Aud_APLL1_Tuner_CLK_cntr = 0;
+	}
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+}
+
+void AudDrv_APLL1Tuner_On(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	PRINTK_AUD_CLK("+%s, Aud_APLL1_Tuner_CLK_cntr:%d\n",
+		       __FUNC__, Aud_APLL1_Tuner_cntr);
+
+	if (Aud_APLL1_Tuner_cntr == 0)
+		Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x1, 0x1);
+
+	Aud_APLL1_Tuner_cntr++;
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+}
+
+void AudDrv_APLL1Tuner_Off(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+
+	Aud_APLL1_Tuner_cntr--;
+
+	if (Aud_APLL1_Tuner_cntr == 0)
+		Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x0, 0x1);
+	/* handle for clock error */
 	else if (Aud_APLL1_Tuner_cntr < 0) {
-		PRINTK_AUD_ERROR("!! AudDrv_APLLTuner_Clk_Off, Aud_APLL1_Tuner_cntr<0 (%d)\n",
+		PRINTK_AUD_ERROR("!! AudDrv_APLL1Tuner_Off, Aud_APLL1_Tuner_cntr<0 (%d)\n",
 				 Aud_APLL1_Tuner_cntr);
 		Aud_APLL1_Tuner_cntr = 0;
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
-
 
 void AudDrv_APLL2Tuner_Clk_On(void)
 {
@@ -1438,12 +1475,12 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 	int ret = 0;
 #endif
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	if (Aud_APLL2_Tuner_cntr == 0) {
-		PRINTK_AUD_CLK("+Aud_APLL2_Tuner_cntr, Aud_APLL2_Tuner_cntr:%d\n",
-			       Aud_APLL2_Tuner_cntr);
+	if (Aud_APLL2_Tuner_CLK_cntr == 0) {
+		PRINTK_AUD_CLK("+Aud_APLL2_Tuner_cntr, Aud_APLL2_Tuner_CLK_cntr:%d\n",
+			       Aud_APLL2_Tuner_CLK_cntr);
 #ifdef CONFIG_MTK_CLKMGR
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x0 << 18, 0x1 << 18);
-		Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000033, 0x1 << 19);
+		Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000634, 0x0000FFF7);
 		SetpllCfg(AP_PLL_CON5, 0x1 << 1, 0x1 << 1);
 #else
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare) {
@@ -1461,9 +1498,11 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 			BUG();
 			goto UNLOCK;
 		}
+		Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000634, 0x0000FFF7);
+		SetpllCfg(AP_PLL_CON5, 0x1 << 1, 0x1 << 1);
 #endif
 	}
-	Aud_APLL2_Tuner_cntr++;
+	Aud_APLL2_Tuner_CLK_cntr++;
 #ifndef CONFIG_MTK_CLKMGR
 UNLOCK:
 #endif
@@ -1476,21 +1515,58 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
-	Aud_APLL2_Tuner_cntr--;
+	Aud_APLL2_Tuner_CLK_cntr--;
 
-	if (Aud_APLL2_Tuner_cntr == 0) {
+	if (Aud_APLL2_Tuner_CLK_cntr == 0) {
 #ifdef CONFIG_MTK_CLKMGR
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 18, 0x1 << 18);
 		SetpllCfg(AP_PLL_CON5, 0x0 << 1, 0x1 << 1);
+		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 18, 0x1 << 18);
 #else
+		SetpllCfg(AP_PLL_CON5, 0x0 << 1, 0x1 << 1);
+
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL2_TUNER].clock);
 #endif
 		pr_debug("AudDrv_APLL2Tuner_Clk_Off\n");
 	}
 	/* handle for clock error */
+	else if (Aud_APLL2_Tuner_CLK_cntr < 0) {
+		PRINTK_AUD_ERROR("!! AudDrv_APLL2Tuner_Clk_Off, Aud_APLL2_Tuner_CLK_cntr<0 (%d)\n",
+				 Aud_APLL2_Tuner_CLK_cntr);
+		Aud_APLL2_Tuner_CLK_cntr = 0;
+	}
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+}
+
+void AudDrv_APLL2Tuner_On(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	PRINTK_AUD_CLK("+%s, Aud_APLL2_Tuner_CLK_cntr:%d\n",
+		       __FUNC__, Aud_APLL2_Tuner_cntr);
+
+	if (Aud_APLL2_Tuner_cntr == 0)
+		Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x1, 0x1);
+
+	Aud_APLL2_Tuner_cntr++;
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+}
+
+
+void AudDrv_APLL2Tuner_Off(void)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+
+	Aud_APLL2_Tuner_cntr--;
+
+	if (Aud_APLL2_Tuner_cntr == 0)
+		Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x0, 0x1);
+	/* handle for clock error */
 	else if (Aud_APLL2_Tuner_cntr < 0) {
-		PRINTK_AUD_ERROR("!! AudDrv_APLL2Tuner_Clk_Off, Aud_APLL1_Tuner_cntr<0 (%d)\n",
+		PRINTK_AUD_ERROR("!! AudDrv_APLL2Tuner_Off, Aud_APLL2_Tuner_cntr<0 (%d)\n",
 				 Aud_APLL2_Tuner_cntr);
 		Aud_APLL2_Tuner_cntr = 0;
 	}
