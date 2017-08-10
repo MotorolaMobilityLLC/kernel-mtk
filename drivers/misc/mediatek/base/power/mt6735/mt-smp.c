@@ -62,7 +62,6 @@ static void __cpuinit write_pen_release(int val)
 
 void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 {
-	pr_debug("Slave cpu init\n");
 	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
 
 #ifndef CONFIG_MTK_GIC
