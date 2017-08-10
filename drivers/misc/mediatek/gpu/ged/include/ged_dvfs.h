@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#ifndef __GED_DVFS_H__
+#define __GED_DVFS_H__
+
 #include <linux/types.h>
 #include "ged_type.h"
 
@@ -121,4 +124,4 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch);
 GED_ERROR ged_dvfs_system_init(void);
 void ged_dvfs_system_exit(void);
 
-
+#endif

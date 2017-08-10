@@ -481,7 +481,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 #endif  
 	if(g_gpu_timer_based_emu)
 	{
-		return GED_INTENTIONAL_BLOCK;
+		return GED_ERROR_INTENTIONAL_BLOCK;
 	}
 
 #ifdef GED_DVFS_UM_CAL
@@ -1163,10 +1163,7 @@ void set_target_fps(int i32FPS)
 
 unsigned long ged_gas_query_mode()
 {
-	if (g_ui32EventStatus & GED_EVENT_GAS)
-		return GAS_CATEGORY_OTHERS;
-	else
-		return GAS_CATEGORY_GAME;
+	return (g_ui32EventStatus & GED_EVENT_GAS) ? GAS_CATEGORY_GAME : GAS_CATEGORY_OTHERS;
 }
 
 
