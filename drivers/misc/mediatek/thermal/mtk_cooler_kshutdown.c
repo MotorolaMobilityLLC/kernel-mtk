@@ -32,7 +32,7 @@
 #define mtk_cooler_kshutdown_dprintk(fmt, args...)
 #endif
 
-#define MAX_NUM_INSTANCE_MTK_COOLER_KSHUTDOWN  3
+#define MAX_NUM_INSTANCE_MTK_COOLER_KSHUTDOWN  5
 
 static struct thermal_cooling_device *cl_kshutdown_dev[MAX_NUM_INSTANCE_MTK_COOLER_KSHUTDOWN] = { 0 };
 static unsigned long cl_kshutdown_state[MAX_NUM_INSTANCE_MTK_COOLER_KSHUTDOWN] = { 0 };

@@ -1195,7 +1195,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	len = (count < (sizeof(ptr_mtktscpu_data->desc) - 1)) ? count : (sizeof(ptr_mtktscpu_data->desc) - 1);
 	if (copy_from_user(ptr_mtktscpu_data->desc, buffer, len)) {
 		kfree(ptr_mtktscpu_data);
-		return 0;
+		return -ENOMEM;
 	}
 
 	ptr_mtktscpu_data->desc[len] = '\0';

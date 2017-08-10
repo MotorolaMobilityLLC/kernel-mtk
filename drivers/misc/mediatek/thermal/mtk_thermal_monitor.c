@@ -2331,6 +2331,11 @@ static int mtk_cooling_wrapper_set_cur_state
 				THRML_LOG("[.set_cur_state] last_temp:%d\n", last_temp);
 
 				tz_ops = getClientZoneOps(mcdata->tz);
+				if (tz_ops == NULL) {
+					THRML_ERROR_LOG("[.set_cur_state]tz_ops null\n");
+					mutex_unlock(&MTM_COOLER_LOCK);
+					return -1;
+				}
 
 				if (!ops) {
 					THRML_ERROR_LOG("[.set_cur_state]E tz unregistered.\n");
