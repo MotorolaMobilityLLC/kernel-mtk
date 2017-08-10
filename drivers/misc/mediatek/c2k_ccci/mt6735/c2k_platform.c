@@ -219,6 +219,10 @@ static void c2k_hw_info_init(void)
 	    ("c2k_chip_id_base=0x%lx, md3_mem_base_virt=0x%lx, c2k_wdt_irq_id=%d\n",
 	     c2k_chip_id_base, md3_mem_base_virt, c2k_wdt_irq_id);
 #endif
+
+	mt_set_gpio_mode(0x80000000 | GPIO198, GPIO_MODE_00);
+	mt_set_gpio_mode(0x80000000 | GPIO199, GPIO_MODE_00);
+	pr_info("[C2K] set gpio %u and next to mode 0\n", GPIO198);
 }
 
 void c2k_mem_dump(void *start_addr, int len)
