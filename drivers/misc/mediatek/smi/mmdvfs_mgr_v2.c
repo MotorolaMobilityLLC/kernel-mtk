@@ -1009,7 +1009,7 @@ void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 		unsigned int profile_id;
 
 		profile_id = get_devinfo_with_index(21) & 0xff;
-		if (profile_id == 0x42 || profile_id == 0x43)
+		if (profile_id == 0x42 || profile_id == 0x43 || profile_id == 0x46)
 			mmdvfs_enable(0);
 	}
 #endif
