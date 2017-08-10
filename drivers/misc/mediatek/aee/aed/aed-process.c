@@ -145,11 +145,14 @@ int aed_get_process_bt(struct aee_process_bt *bt)
 
 	err = 0;
 	if (bt->pid > 0) {
+		rcu_read_lock();
 		task = find_task_by_vpid(bt->pid);
 		if (task == NULL) {
+			rcu_read_unlock();
 			err = -EINVAL;
 			goto exit;
 		}
+		rcu_read_unlock();
 	} else {
 		err = -EINVAL;
 		goto exit;
@@ -182,12 +185,15 @@ int aed_get_process_bt(struct aee_process_bt *bt)
 			break;
 	}
 
+	rcu_read_lock();
 	task = find_task_by_vpid(bt->pid);
 	if (task && (task->pid == bt->pid)) {
+		rcu_read_unlock();
 		task_lock(task);
 		aed_get_bt(task, bt);
 		task_unlock(task);
 	} else {
+		rcu_read_unlock();
 		err = -EINVAL;
 		LOGE("%s: pid %d can't find\n", __func__, bt->pid);
 	}
