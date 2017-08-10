@@ -14,6 +14,9 @@
 #ifndef __CCCI_H__
 #define __CCCI_H__
 #include "ccci_common.h"
+#define BOOT_TIMER_HS1 10
+#define BOOT_TIMER_HS2 10
+
 typedef void (*ccci_aed_cb_t) (unsigned int flag, char *aed_str);
 /******************************************************************************/
 /** mdlogger mode define                                                                                           **/
@@ -140,6 +143,8 @@ int register_ccci_attr_func(const char *buf, ssize_t (*show)(char *str),
 int get_common_cfg_setting(int md_id, int cfg[], int *num);
 unsigned int get_sim_switch_type(void);
 void ccmni_v2_dump(int md_id);
+void ccci_start_bootup_timer(int md_id, int second);
+void ccci_stop_bootup_timer(int md_id);
 /* ================================================================================== */
 /*  API functions for IPO-H */
 /* ================================================================================== */

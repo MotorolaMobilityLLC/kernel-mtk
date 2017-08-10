@@ -250,18 +250,25 @@ static long ccci_fs_ioctl(struct file *file, unsigned int cmd,
 {
 	int ret;
 	int md_id;
+	int md_stage;
 	struct fs_ctl_block_t *ctl_b;
 
 	ctl_b = (struct fs_ctl_block_t *) file->private_data;
 	md_id = ctl_b->fs_md_id;
-
+	md_stage = get_curr_md_state(md_id);
 	switch (cmd) {
 	case CCCI_FS_IOCTL_GET_INDEX:
 		ret = ccci_fs_get_index(md_id);
+		/*Check FS still under working, no need time out, so resched bootup timer*/
+		if (ret >= 0 && md_stage != MD_BOOT_STAGE_2)
+			ccci_stop_bootup_timer(md_id);
 		break;
 
 	case CCCI_FS_IOCTL_SEND:
 		ret = ccci_fs_send(md_id, arg);
+		/*Check FS still under working, no need time out, so resched bootup timer*/
+		if (ret == 0 && md_stage != MD_BOOT_STAGE_2)
+			ccci_start_bootup_timer(md_id, BOOT_TIMER_HS2);
 		break;
 
 	default:

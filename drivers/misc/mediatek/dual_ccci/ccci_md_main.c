@@ -52,6 +52,7 @@
 #ifdef ENABLE_32K_CLK_LESS
 #include <mt-plat/mtk_rtc.h>
 #endif
+
 /* ------------------- md control variable define---------------------*/
 struct md_ctl_block_t {
 	struct mutex ccci_md_boot_mutex;	/*  for ccci_mb_mutex */
@@ -1568,6 +1569,23 @@ int md_unregister_call_chain(int md_id, struct MD_CALL_BACK_QUEUE *queue)
 /* modem boot up function                                                   */
 /*                                                                          */
 /****************************************************************************/
+void ccci_start_bootup_timer(int md_id, int second)
+{
+	struct md_ctl_block_t *ctl_b;
+
+	ctl_b = md_ctlb[md_id];
+	mod_timer(&ctl_b->md_boot_up_check_timer, jiffies + second * HZ);
+	/*CCCI_MSG_INF(md_id, "ctl", "%s!\n", __func__);*/
+}
+
+void ccci_stop_bootup_timer(int md_id)
+{
+	struct md_ctl_block_t *ctl_b;
+
+	ctl_b = md_ctlb[md_id];
+	del_timer(&ctl_b->md_boot_up_check_timer);
+	/*CCCI_MSG_INF(md_id, "ctl", "%s!\n", __func__);*/
+}
 static void md_boot_up_timeout_func(unsigned long data)
 {
 	struct md_ctl_block_t *ctl_b = (struct md_ctl_block_t *) data;
@@ -1932,8 +1950,7 @@ int ccci_send_run_time_data(int md_id)
 		return ret;
 	}
 
-	if ((get_debug_mode_flag() & (DBG_FLAG_JTAG | DBG_FLAG_DEBUG)) == 0)
-		mod_timer(&ctl_b->md_boot_up_check_timer, jiffies + 30 * HZ);
+	ccci_start_bootup_timer(md_id, BOOT_TIMER_HS2);
 
 	CCCI_MSG_INF(md_id, "ctl", "wait for NORMAL_BOOT_ID @ %d\n",
 		     get_curr_md_state(md_id));
@@ -2006,7 +2023,7 @@ int ccci_start_modem(int md_id)
 
 	ret = let_md_go(md_id);
 	if (ret == 0)
-		mod_timer(&ctl_b->md_boot_up_check_timer, jiffies + 5 * HZ);
+		ccci_start_bootup_timer(md_id, BOOT_TIMER_HS1);
 	else
 		CCCI_MSG_INF(md_id, "ctl", "ungate_md fail: %d\n", ret);
 
@@ -2062,7 +2079,7 @@ int ccci_stop_modem(int md_id, unsigned int timeout)
 	CCCI_MSG_INF(md_id, "ctl", "md power off before\n");
 
 	CCCI_MSG_INF(md_id, "ctl", "stop modem, delete boot up check timer\n");
-	del_timer(&ctl_b->md_boot_up_check_timer);
+	ccci_stop_bootup_timer(md_id);
 	ccmni_v2_dump(md_id);
 	let_md_stop(md_id, timeout);
 	for (i = 0; i < NR_CCCI_RESET_USER; i++)
@@ -2327,6 +2344,7 @@ int ccci_force_md_assert(int md_id, char buf[], unsigned int len)
 	return 0;
 }
 
+
 /*  ccci_md_ctrl_cb: CCCI_CONTROL_RX callback function for MODEM */
 /*  @buff: pointer to a CCCI buffer */
 /*  @private_data: pointer to private data of CCCI_CONTROL_RX */
@@ -2345,7 +2363,7 @@ void ccci_md_ctrl_cb(void *private)
 		if (msg.id == MD_INIT_START_BOOT &&
 		    msg.reserved == MD_INIT_CHK_ID &&
 		    ctl_b->md_boot_stage == MD_BOOT_STAGE_0) {
-			del_timer(&ctl_b->md_boot_up_check_timer);
+			ccci_stop_bootup_timer(md_id);
 			CCCI_MSG_INF(md_id, "ctl",
 				     "receive MD_INIT_START_BOOT\n");
 			/* set_curr_md_state(md_id, MD_BOOT_STAGE_1); */
@@ -2356,7 +2374,7 @@ void ccci_md_ctrl_cb(void *private)
 			ccci_system_message(md_id, CCCI_MD_MSG_BOOT_UP, 0);
 		} else if (msg.id == NORMAL_BOOT_ID &&
 			   ctl_b->md_boot_stage == MD_BOOT_STAGE_1) {
-			del_timer(&ctl_b->md_boot_up_check_timer);
+			ccci_stop_bootup_timer(md_id);
 			CCCI_MSG_INF(md_id, "ctl", "receive NORMAL_BOOT_ID\n");
 			/* set_curr_md_state(md_id, MD_BOOT_STAGE_2); */
 			ctl_b->md_boot_stage = MD_BOOT_STAGE_2;
@@ -2367,7 +2385,7 @@ void ccci_md_ctrl_cb(void *private)
 			ccci_system_message(md_id, CCCI_MD_MSG_BOOT_READY, 0);
 
 		} else if (msg.id == MD_EX) {
-			del_timer(&ctl_b->md_boot_up_check_timer);
+			ccci_stop_bootup_timer(md_id);
 			if (unlikely(msg.reserved != MD_EX_CHK_ID))
 				CCCI_MSG_INF(md_id, "ctl",
 					     "receive invalid MD_EX\n");
@@ -2427,8 +2445,7 @@ void ccci_md_ctrl_cb(void *private)
 				if (need_update_state) {
 					md_call_chain(&ctl_b->md_notifier,
 						      CCCI_MD_EXCEPTION);
-					del_timer
-					    (&ctl_b->md_boot_up_check_timer);
+					ccci_stop_bootup_timer(md_id);
 				}
 				/* atomic_set(&ctl_b->md_ex_ok, 1); */
 				mod_timer(&ctl_b->md_ex_monitor, jiffies);
@@ -2780,8 +2797,7 @@ void ccci_md_ctrl_exit(int md_id)
 	if (ctlb == NULL)
 		return;
 	wake_lock_destroy(&ctlb->trm_wake_lock);
-	del_timer(&ctlb->md_boot_up_check_timer);
-	del_timer(&ctlb->md_boot_up_check_timer);
+	ccci_stop_bootup_timer(md_id);
 	/* ccci_free_smem(md_id); */
 	tasklet_kill(&ctlb->md_notifier.tasklet);
 	kfree(ctlb);
