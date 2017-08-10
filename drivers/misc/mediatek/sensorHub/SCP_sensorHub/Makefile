@@ -13,6 +13,7 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensorHub/inc
 ccflags-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += -I$(srctree)/drivers/misc/mediatek/accelerometer/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/magnetometer/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/activity_sensor
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/face_down_sensor
