@@ -73,42 +73,7 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
-
-	/*  start sensor */
-	cust_accel@0 {
-		compatible = "mediatek,mpu6515a";
-		i2c_num	= <1>;
-		/* i2c_addr = <0x4c 0 0 0>; */
-		direction = <6>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		firlen = <16>;
-		is_batch_supported = <1>;
-	};
-
-	cust_mag@0 {
-		compatible			= "mediatek,akm8963";
-		i2c_num				= <1>;
-		/* i2c_addr			= <0x0F 0 0 0>; */
-		direction			= <8>;
-		power_id			= <0xffff>;
-		power_vol			= <0>;
-		/* is_batch_supported		= <0>; */
-	};
-
-	cust_gyro@0 {
-		compatible			= "mediatek,mpu6515g";
-		i2c_num				= <1>;
-		/* i2c_addr			= <0x68 0 0 0>; */
-		direction			= <6>;
-		power_id			= <0xffff>;
-		power_vol			= <0>;
-		firlen				= <0>;
-		is_batch_supported		= <0>;
-	};
-/* end sensor */
 };
-
 &accdet {
 		accdet-mic-vol = <7>;
 		headset-mode-setting = <0x500 0x500 1 0x3F0 0x800 0x800 0x200>;
@@ -324,12 +289,6 @@
 	};
 };
 
-&gyroscope {
-	pinctrl-names = "pin_default", "pin_cfg";
-	pinctrl-0 = <&gyro_intpin_default>;
-	pinctrl-1 = <&gyro_intpin_cfg>;
-	status = "okay";
-};
 
 /* DISPSYS GPIO standardization */
 &pio {
@@ -831,16 +790,38 @@
 
 &i2c1 {
 
-	gyro@68 {
-		compatible = "mediatek,gyro";
-		reg = <0x69>;
-		status = "okay";
+	gsensor@68 {
+		i2c_num	= <1>;
+		i2c_addr = <0x68 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
 	};
 
-	gsensor@68 {
-		compatible = "mediatek,gsensor";
-		reg = <0x68>;
+	msensor@0f {
+		i2c_num = <1>;
+		i2c_addr = <0x0f 0 0 0>;
+		direction = <8>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		is_batch_supported = <0>;
+	};
+
+	gyro@69 {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&gyro_intpin_default>;
+		pinctrl-1 = <&gyro_intpin_cfg>;
 		status = "okay";
+		/* customization */
+		i2c_num = <1>;
+		i2c_addr = <0x69 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <0>;
+		is_batch_supported = <0>;
 	};
 
 	alsps@60 {
