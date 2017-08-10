@@ -640,6 +640,7 @@ void PMIC_EINT_SETTING(void)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
 		/* enable_irq(g_pmic_irq); */
 		disable_irq(g_pmic_irq);
+		enable_irq_wake(g_pmic_irq);
 	} else
 		PMICLOG("can't find compatible node\n");
 #endif
