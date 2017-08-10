@@ -333,6 +333,7 @@ extern UINT32 wmt_lib_get_drv_status(UINT32 type);
 #endif
 extern INT32 wmt_lib_tm_temp_query(VOID);
 extern INT32 wmt_lib_trigger_reset(VOID);
+extern INT32 wmt_lib_trigger_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 extern VOID wmt_lib_read_fw_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 #if CFG_WMT_PS_SUPPORT
 extern UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en);
