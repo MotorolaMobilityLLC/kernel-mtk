@@ -484,6 +484,11 @@ int _ioctl_destroy_session(unsigned long arg)
 		)
 		primary_display_set_secondary_display(0, config.type);
 
+#if defined(OVL_TIME_SHARING)
+	if (config.type == DISP_SESSION_MEMORY)
+		primary_display_disable_ovl2mem();
+#endif
+
 	return ret;
 }
 

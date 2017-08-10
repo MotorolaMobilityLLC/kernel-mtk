@@ -9650,3 +9650,38 @@ end:
 
 	return -1;
 }
+
+#if defined(OVL_TIME_SHARING)
+int primary_display_disable_ovl2mem(void)
+{
+	DISPMSG("%s\n", __func__);
+
+	_primary_path_lock(__func__);
+
+	if (_is_decouple_mode(pgc->session_mode) &&
+		pgc->state == DISP_SLEPT &&
+		pgc->force_on_wdma_path == 1) {
+
+		/* msleep(16); */ /* wait last frame done */
+		usleep_range(16000, 17000);
+		if (dpmgr_path_is_busy(pgc->ovl2mem_path_handle))
+			dpmgr_wait_event_timeout(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE, HZ);
+
+		DISPMSG("[POWER]stop cmdq[begin]\n");
+		_cmdq_stop_trigger_loop();
+		DISPMSG("[POWER]stop cmdq[end]\n");
+
+		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+
+#ifndef CONFIG_MTK_CLKMGR
+		ddp_clk_unprepare(DISP_MTCMOS_CLK);
+#endif
+		DISPMSG("disable ovl power\n");
+		pgc->force_on_wdma_path = 0;
+	}
+
+	_primary_path_unlock(__func__);
+
+	return 1;
+}
+#endif

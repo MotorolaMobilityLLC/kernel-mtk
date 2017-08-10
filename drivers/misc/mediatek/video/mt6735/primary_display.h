@@ -391,3 +391,6 @@ int deinit_ext_decouple_buffers(void);
 
 int primary_display_get_session_mode(void);
 int display_freeze_mode(int enable, int need_lock);
+#if defined(OVL_TIME_SHARING)
+int primary_display_disable_ovl2mem(void);
+#endif

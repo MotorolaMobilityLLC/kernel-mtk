@@ -2456,6 +2456,9 @@ static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
 	/* NOT_REFERENCED(pdev); */
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_suspend(): 0x%x\n", mesg.event);
+#if defined(OVL_TIME_SHARING)
+	primary_display_disable_ovl2mem();
+#endif
 	ovl2mem_wait_done();
 
 	MSG_FUNC_LEAVE();
