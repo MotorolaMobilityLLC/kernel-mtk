@@ -2728,7 +2728,7 @@ static int set_option(const char *val, const struct kernel_param *kp)
 		return rv;
 
 	/* update local_option */
-	rv = kstrtol(val, 10, (long *)&local_option);
+	rv = kstrtoint(val, 10, &local_option);
 	if (rv != 0)
 		return rv;
 
@@ -2756,7 +2756,7 @@ static int set_musb_force_on(const char *val, const struct kernel_param *kp)
 	int option;
 	int rv;
 
-	rv = kstrtol(val, 10, (long *)&option);
+	rv = kstrtoint(val, 10, &option);
 	if (rv != 0)
 		return rv;
 
