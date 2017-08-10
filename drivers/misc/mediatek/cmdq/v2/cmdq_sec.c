@@ -339,7 +339,7 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	pIwc->command.metadata.enginesNeedDAPC = pTask->secData.enginesNeedDAPC;
 	pIwc->command.metadata.enginesNeedPortSecurity = pTask->secData.enginesNeedPortSecurity;
 
-	if (NULL != pTask && CMDQ_INVALID_THREAD != thread) {
+	if (CMDQ_INVALID_THREAD != thread) {
 		/* basic data */
 		pIwc->command.scenario = pTask->scenario;
 		pIwc->command.thread = thread;
