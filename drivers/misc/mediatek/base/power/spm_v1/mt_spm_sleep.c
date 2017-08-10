@@ -1078,6 +1078,14 @@ static struct pwr_ctrl suspend_ctrl = {
 
 #endif
 
+#if defined(CONFIG_ARCH_MT6570)
+/* TODO: fix build error */
+int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
+{
+	return 0;
+}
+#endif
+
 struct spm_lp_scen __spm_suspend = {
 #ifndef USE_DYNA_LOAD_SUSPEND
 	.pcmdesc = &suspend_pcm,
