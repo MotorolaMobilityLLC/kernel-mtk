@@ -2325,6 +2325,7 @@ void mt_battery_GetBatteryData(void)
 	static signed int batteryTempBuffer[BATTERY_AVERAGE_SIZE];
 	static unsigned char batteryIndex;
 	static signed int previous_SOC = -1;
+	kal_bool current_sign;
 
 	bat_vol = battery_meter_get_battery_voltage(KAL_TRUE);
 	Vsense = battery_meter_get_VSense();
@@ -2388,7 +2389,9 @@ void mt_battery_GetBatteryData(void)
 	BMT_status.temperatureR = temperatureR;
 	BMT_status.SOC = SOC;
 	BMT_status.ZCV = ZCV;
-
+	BMT_status.IBattery = battery_meter_get_battery_current();
+	current_sign = battery_meter_get_battery_current_sign();
+	BMT_status.IBattery *= (current_sign ? 1 : (-1));
 
 	if (BMT_status.charger_exist == KAL_FALSE) {
 		if (BMT_status.SOC > previous_SOC && previous_SOC >= 0)
@@ -2407,11 +2410,12 @@ void mt_battery_GetBatteryData(void)
 		g_battery_soc_ready = KAL_TRUE;
 
 	battery_log(BAT_LOG_CRTI,
-	"AvgVbat=(%d,%d),AvgI=(%d,%d),VChr=%d,AvgT=(%d,%d),SOC=(%d,%d),UI_SOC=%d,ZCV=%d bcct:%d:%d I:%d\n",
+	"AvgVbat=(%d,%d),AvgI=(%d,%d),VChr=%d,AvgT=(%d,%d),SOC=(%d,%d),UI_SOC=%d,ZCV=%d,CHR_Type=%d bcct:%d:%d I:%d Ibat:%d\n",
 		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
 		    BMT_status.charger_vol, BMT_status.temperature, temperature,
-		previous_SOC, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.ZCV,
-		g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level());
+		    previous_SOC, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.ZCV,
+		    BMT_status.charger_type, g_bcct_flag, get_usb_current_unlimited(),
+		    get_bat_charging_current_level(), BMT_status.IBattery / 10);
 
 }
 

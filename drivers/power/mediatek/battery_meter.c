@@ -3012,8 +3012,8 @@ void fgauge_initialization(void)
 		 gFG_voltage, gFG_current, gFG_columb, gFG_temp, gFG_capacity, gFG_BATT_CAPACITY);
 
 #if defined(FG_BAT_INT)
-	/*pmic_register_interrupt_callback(41, fg_bat_int_handler);*/
-	/*pmic_register_interrupt_callback(40, fg_bat_int_handler);*/
+	pmic_register_interrupt_callback(FG_BAT_INT_L_NO, fg_bat_int_handler);
+	pmic_register_interrupt_callback(FG_BAT_INT_H_NO, fg_bat_int_handler);
 #endif
 #endif
 }
