@@ -3377,6 +3377,17 @@ bool cmdq_core_task_finalize_end(struct TaskStruct *pTask)
 
 	return true;
 }
+
+bool cmdq_core_task_is_jump_inside(struct TaskStruct *pTask)
+{
+	dma_addr_t jump_to_pa = (dma_addr_t)pTask->pCMDEnd[-1];
+	dma_addr_t last_pa = cmdq_core_task_get_last_pa(pTask);
+
+	return ((pTask->pCMDEnd[0] & 0x1) == 1 &&
+		last_pa &&
+		jump_to_pa >= last_pa &&
+		jump_to_pa < last_pa + CMDQ_CMD_BUFFER_SIZE);
+}
 #endif
 
 static TaskStruct *cmdq_core_find_free_task(void)
@@ -7667,7 +7678,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 
 		/* Maybe the job is killed, search a new one */
 		while ((NULL == pPrev) && (loop > 1)) {
-			CMDQ_LOG("pPrev is NULL, prev:%d, loop:%d, index:%d\n", prev, loop, index);
+			CMDQ_MSG("pPrev is NULL, prev:%d, loop:%d, index:%d\n", prev, loop, index);
 			prev = prev - 1;
 			if (prev < 0)
 				prev = cmdq_core_max_task_in_thread(thread) - 1;
@@ -7687,16 +7698,17 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 #ifdef CMDQ_JUMP_MEM
 			task_pa	= cmdq_core_task_get_first_pa(pPrev);
-			CMDQ_MSG("Original PC: %pa, size: %d\n", &task_pa, pTask->commandSize);
+			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x, 0x%08x\n",
+				&task_pa, pTask->commandSize,
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
 #else
-			CMDQ_MSG("Original PC: %pa, size: %d\n", &pPrev->MVABase, pTask->commandSize);
+			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x, 0x%08x\n",
+				&pPrev->MVABase, pTask->commandSize,
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
 #endif
-			CMDQ_MSG("Original instruction 0x%08x, 0x%08x\n", pPrev->pCMDEnd[0],
-				 pPrev->pCMDEnd[-1]);
-
 			pThread->pCurTask[index] = pTask;
 			/* Jump: Absolute */
-			pPrev->pCMDEnd[0] = 0x10000001;
+			pPrev->pCMDEnd[0] = ((CMDQ_CODE_JUMP << 24) | 0x1);
 			/* Jump to here */
 #ifdef CMDQ_JUMP_MEM
 			task_pa = cmdq_core_task_get_first_pa(pTask);
@@ -7715,12 +7727,25 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 		}
 
 		if (pPrev->priority < pTask->priority) {
-			CMDQ_LOG("Switch prev(%d, 0x%p) and curr(%d, 0x%p) order\n",
+			CMDQ_MSG("Switch prev(%d, 0x%p) and curr(%d, 0x%p) order\n",
 				 prev, pPrev, index, pTask);
 
 			pThread->pCurTask[index] = pPrev;
+#ifdef CMDQ_JUMP_MEM
+			if (cmdq_core_task_is_jump_inside(pTask)) {
+				/* Jump to next instruction, re-finalize the end. */
+				pPrev->pCMDEnd[0] = CMDQ_CODE_JUMP << 24;	/* jump related */
+				pPrev->pCMDEnd[-1] = 0x8;
+				cmdq_core_task_finalize_end(pPrev);
+			} else {
+				/* If jump to another task, copy the instruction. */
+				pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
+				pPrev->pCMDEnd[-1] = pTask->pCMDEnd[-1];
+			}
+#else
 			pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
 			pPrev->pCMDEnd[-1] = pTask->pCMDEnd[-1];
+#endif
 
 			/* Boot priority for the task */
 			pPrev->priority += CMDQ_MIN_AGE_VALUE;
@@ -7728,7 +7753,7 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 
 			pThread->pCurTask[prev] = pTask;
 			/* Jump: Absolute */
-			pTask->pCMDEnd[0] = 0x10000001;
+			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);
 			/* Jump to here */
 #ifdef CMDQ_JUMP_MEM
 			task_pa = cmdq_core_task_get_first_pa(pPrev);
@@ -7744,22 +7769,24 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 			cmdq_core_invalidate_hw_fetched_buffer(thread);
 #endif
 			if (*pLast == pTask) {
-				CMDQ_LOG("update pLast from 0x%p to 0x%p\n", pTask, pPrev);
+				CMDQ_MSG("update pLast from 0x%p to 0x%p\n", pTask, pPrev);
 				*pLast = pPrev;
 			}
 		} else {
 			CMDQ_MSG("Set current(%d) order for the new task, line:%d\n", index, __LINE__);
 #ifdef CMDQ_JUMP_MEM
 			task_pa = cmdq_core_task_get_first_pa(pPrev);
-			CMDQ_MSG("Original PC: 0x%pa, size: %d\n", &task_pa, pTask->commandSize);
+			CMDQ_MSG("Original PC: 0x%pa, size: %d inst: 0x%08x:%08x\n",
+				&task_pa, pPrev->commandSize,
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
 #else
-			CMDQ_MSG("Original PC: %pa, size: %d\n", &pPrev->MVABase, pTask->commandSize);
+			CMDQ_MSG("Original PC: %pa, size: %d inst: 0x%08x:%08x\n",
+				&pPrev->MVABase, pTask->commandSize,
+				pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
 #endif
-			CMDQ_MSG("Original instruction 0x%08x, 0x%08x\n", pPrev->pCMDEnd[0], pPrev->pCMDEnd[-1]);
-
 			pThread->pCurTask[index] = pTask;
 			/* Jump: Absolute */
-			pPrev->pCMDEnd[0] = 0x10000001;
+			pPrev->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);
 			/* Jump to here */
 #ifdef CMDQ_JUMP_MEM
 			task_pa	= cmdq_core_task_get_first_pa(pTask);
