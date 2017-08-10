@@ -147,7 +147,7 @@ static int pep_check_leave_status(void)
 
 	/* Check SOC & Ichg */
 	if (BMT_status.SOC > batt_cust_data.ta_stop_battery_soc &&
-	    current_sign && ichg < PEP_ICHG_LEAVE_THRESHOLD) {
+	    current_sign && ichg < 1000) {
 		ret = pep_leave(true);
 		if (ret < 0 || pep_is_connect)
 			goto _err;
