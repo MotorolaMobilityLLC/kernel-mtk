@@ -571,6 +571,35 @@ TZ_RESULT KREE_CreateSession(const char *ta_uuid, KREE_SESSION_HANDLE *pHandle)
 }
 EXPORT_SYMBOL(KREE_CreateSession);
 
+TZ_RESULT KREE_CreateSessionWithTag(const char *ta_uuid, KREE_SESSION_HANDLE *pHandle, const char *tag)
+{
+	uint32_t paramTypes;
+	MTEEC_PARAM param[4];
+	TZ_RESULT ret;
+
+	if (!ta_uuid || !pHandle)
+		return TZ_RESULT_ERROR_BAD_PARAMETERS;
+
+	param[0].mem.buffer = (char *)ta_uuid;
+	param[0].mem.size = strlen(ta_uuid) + 1;
+	param[1].mem.buffer = (char *)tag;
+	if (tag != NULL && strlen(tag) != 0)
+		param[1].mem.size = strlen(tag) + 1;
+	else
+		param[1].mem.size = 0;
+	paramTypes = TZ_ParamTypes3(TZPT_MEM_INPUT, TZPT_MEM_INPUT, TZPT_VALUE_OUTPUT);
+
+	ret = KREE_TeeServiceCall(
+			(KREE_SESSION_HANDLE) MTEE_SESSION_HANDLE_SYSTEM,
+			TZCMD_SYS_SESSION_CREATE_WITH_TAG, paramTypes, param);
+
+	if (ret == TZ_RESULT_SUCCESS)
+		*pHandle = (KREE_SESSION_HANDLE)param[2].value.a;
+
+	return ret;
+}
+EXPORT_SYMBOL(KREE_CreateSessionWithTag);
+
 TZ_RESULT KREE_CloseSession(KREE_SESSION_HANDLE handle)
 {
 	uint32_t paramTypes;

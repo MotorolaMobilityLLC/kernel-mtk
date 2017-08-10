@@ -577,35 +577,102 @@ static void tz_client_free_client_info(struct file *file)
 /**************************************************************************
 *  DEV DRIVER IOCTL
 **************************************************************************/
-static long tz_client_open_session(struct file *file, unsigned long arg)
+static KREE_SESSION_HANDLE tz_client_open_session_impl(int with_tag,
+				unsigned long arg,
+				struct kree_session_tag_cmd_param *pparam)
 {
-	struct kree_session_cmd_param param;
+	size_t param_size;
+	TZ_RESULT ret;
 	unsigned long cret;
 	char uuid[40];
 	long len;
-	TZ_RESULT ret;
 	KREE_SESSION_HANDLE handle;
+	char tag[48] = { 0 };
 
-	cret = copy_from_user(&param, (void *)arg, sizeof(param));
+	if (with_tag == 0)
+		param_size = sizeof(struct kree_session_cmd_param);
+	else
+		param_size = sizeof(struct kree_session_tag_cmd_param);
+
+	cret = copy_from_user(pparam, (void *)arg, param_size);
 	if (cret)
 		return -EFAULT;
 
 	/* Check if can we access UUID string. 10 for min uuid len. */
-	if (!access_ok(VERIFY_READ, param.data, 10))
+	if (!access_ok(VERIFY_READ, pparam->data, 10))
 		return -EFAULT;
 
+	if (with_tag != 0 && pparam->tag != 0) {
+		/* Check if can we access tag string. */
+		if (!access_ok(VERIFY_READ, pparam->tag, pparam->tag_size))
+			return -EFAULT;
+
+		len = strncpy_from_user(tag,
+					(void *)(unsigned long)pparam->tag,
+					sizeof(tag));
+		if (len <= 0)
+			return -EFAULT;
+
+		tag[sizeof(tag) - 1] = 0;
+	}
+
 	len = strncpy_from_user(uuid,
-				(void *)(unsigned long)param.data,
+				(void *)(unsigned long)pparam->data,
 				sizeof(uuid));
 	if (len <= 0)
 		return -EFAULT;
 
 	uuid[sizeof(uuid) - 1] = 0;
-	ret = KREE_CreateSession(uuid, &handle);
-	param.ret = ret;
+	if (with_tag != 0 && pparam->tag != 0)
+		ret = KREE_CreateSessionWithTag(uuid, &handle, tag);
+	else
+		ret = KREE_CreateSession(uuid, &handle);
+	pparam->ret = ret;
 
-	/* Register session to fd */
-	if (ret == TZ_RESULT_SUCCESS) {
+	if (ret != TZ_RESULT_SUCCESS)
+		return KREE_SESSION_HANDLE_FAIL;
+
+	return handle;
+}
+
+static long tz_client_open_session(struct file *file, unsigned long arg)
+{
+	unsigned long cret;
+	KREE_SESSION_HANDLE handle;
+	struct kree_session_tag_cmd_param param;
+
+	handle = tz_client_open_session_impl(0, arg, &param);
+
+	if (handle != KREE_SESSION_HANDLE_FAIL &&
+		handle != KREE_SESSION_HANDLE_NULL) {
+		param.handle = tz_client_register_session(file, handle);
+		if (param.handle < 0)
+			goto error_register;
+	}
+
+	cret = copy_to_user((void *)arg, &param, sizeof(struct kree_session_cmd_param));
+	if (cret)
+		goto error_copy;
+
+	return 0;
+
+ error_copy:
+	tz_client_unregister_session(file, param.handle);
+ error_register:
+	KREE_CloseSession(handle);
+	return -EFAULT;
+}
+
+static long tz_client_open_session_with_tag(struct file *file, unsigned long arg)
+{
+	unsigned long cret;
+	KREE_SESSION_HANDLE handle;
+	struct kree_session_tag_cmd_param param;
+
+	handle = tz_client_open_session_impl(1, arg, &param);
+
+	if (handle != KREE_SESSION_HANDLE_FAIL &&
+		handle != KREE_SESSION_HANDLE_NULL) {
 		param.handle = tz_client_register_session(file, handle);
 		if (param.handle < 0)
 			goto error_register;
@@ -1085,6 +1152,9 @@ static long do_tz_client_ioctl(struct file *file, unsigned int cmd,
 	switch (cmd) {
 	case MTEE_CMD_OPEN_SESSION:
 		return tz_client_open_session(file, arg);
+
+	case MTEE_CMD_OPEN_SESSION_WITH_TAG:
+		return tz_client_open_session_with_tag(file, arg);
 
 	case MTEE_CMD_CLOSE_SESSION:
 		return tz_client_close_session(file, arg);

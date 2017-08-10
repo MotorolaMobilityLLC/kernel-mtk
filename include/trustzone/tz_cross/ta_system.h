@@ -28,6 +28,7 @@
 #define TZCMD_SYS_SESSION_CLOSE       2
 #define TZCMD_SYS_IRQ                 3
 #define TZCMD_SYS_THREAD_CREATE       4
+#define TZCMD_SYS_SESSION_CREATE_WITH_TAG 5
 
 
 #endif				/* __TRUSTZONE_TA_SYSTEM__ */
