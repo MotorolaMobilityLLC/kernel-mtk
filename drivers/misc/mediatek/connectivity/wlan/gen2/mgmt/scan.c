@@ -67,7 +67,7 @@ definition for AP selection algrithm
 #define WEIGHT_IDX_5G_BAND		2
 #define WEIGHT_IDX_BAND_WIDTH	1
 #define WEIGHT_IDX_STBC			1
-#define WEIGHT_IDX_DEAUTH_LAST	1
+#define WEIGHT_IDX_DEAUTH_LAST	3
 #define WEIGHT_IDX_BLACK_LIST	2
 
 /*******************************************************************************
@@ -1354,7 +1354,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #endif
 	prBssDesc->fgExsitBssLoadIE = FALSE;
 	prBssDesc->fgMultiAnttenaAndSTBC = FALSE;
-
+#if CFG_SUPPORT_ROAMING_RETRY
+	prBssDesc->fgIsRoamFail = FALSE;
+#endif
 	/* 4 <3.1> Full IE parsing on SW_RFB_T */
 	pucIE = prWlanBeaconFrame->aucInfoElem;
 
@@ -3223,6 +3225,13 @@ try_again:
 			prCandBssDesc = prBssDesc;
 			break;
 		}
+#if CFG_SUPPORT_ROAMING_RETRY
+		/*STA ingored the BSS which was fail on roamming.*/
+		if (prBssDesc->fgIsRoamFail) {
+			DBGLOG(SCN, INFO, "Roamming fail before ingoring [%pM]!\n", prBssDesc->aucBSSID);
+			continue;
+		}
+#endif
 		if (!fgSearchBlackList) {
 			prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
 			if (prBssDesc->prBlack)

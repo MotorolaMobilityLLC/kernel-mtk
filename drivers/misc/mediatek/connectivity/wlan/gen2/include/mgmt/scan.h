@@ -272,6 +272,9 @@ struct _BSS_DESC_T {
 	BOOLEAN fgMultiAnttenaAndSTBC;
 	BOOLEAN fgDeauthLastTime;
 	UINT_32 u4UpdateIdx;
+#if CFG_SUPPORT_ROAMING_RETRY
+	BOOLEAN fgIsRoamFail;
+#endif
 };
 
 struct _ROAM_BSS_DESC_T {

@@ -28,7 +28,9 @@ static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 */
 #define AIS_ROAMING_CONNECTION_TRIAL_LIMIT  2
 #define AIS_ROAMING_SCAN_CHANNEL_DWELL_TIME 80
-
+#if CFG_SUPPORT_ROAMING_RETRY
+#define AIS_ROAMING_RETRY_BSS_THRESHOLD     1
+#endif
 #define CTIA_MAGIC_SSID                     "ctia_test_only_*#*#3646633#*#*"
 #define CTIA_MAGIC_SSID_LEN                 30
 
@@ -1099,6 +1101,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 				if (prAisFsmInfo->ucConnTrialCount > AIS_ROAMING_CONNECTION_TRIAL_LIMIT) {
 #if CFG_SUPPORT_ROAMING
+					DBGLOG(AIS, STATE,
+						"Roaming retry count :%d fail!\n", prAisFsmInfo->ucConnTrialCount);
 					roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_CONNLIMIT);
 #endif /* CFG_SUPPORT_ROAMING */
 					/* reset retry count */
@@ -2278,6 +2282,10 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	P_BSS_INFO_T prAisBssInfo;
 	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
 	OS_SYSTIME rCurrentTime;
+#if CFG_SUPPORT_ROAMING_RETRY
+	P_LINK_T prEssLink = NULL;
+	BOOLEAN fgIsUnderRoaming;
+#endif
 
 	DEBUGFUNC("aisFsmRunEventJoinComplete()");
 
@@ -2288,7 +2296,10 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	prJoinCompMsg = (P_MSG_JOIN_COMP_T) prMsgHdr;
 	prStaRec = prJoinCompMsg->prStaRec;
 	prAssocRspSwRfb = prJoinCompMsg->prSwRfb;
-
+#if CFG_SUPPORT_ROAMING_RETRY
+	prEssLink = &prAdapter->rWifiVar.rAisSpecificBssInfo.rCurEssLink;
+	fgIsUnderRoaming = FALSE;
+#endif
 	eNextState = prAisFsmInfo->eCurrentState;
 
 	DBGLOG(AIS, TRACE, "AISOK\n");
@@ -2451,6 +2462,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 #if CFG_SUPPORT_ROAMING
 						eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
+#if CFG_SUPPORT_ROAMING_RETRY
+						fgIsUnderRoaming = TRUE;
+#endif /*CFG_SUPPORT_ROAMING_RETRY*/
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 					} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
@@ -2494,6 +2508,22 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 						eNextState = AIS_STATE_IDLE;
 					}
+#if CFG_SUPPORT_ROAMING_RETRY
+					if (fgIsUnderRoaming == TRUE &&
+							prEssLink->u4NumElem > AIS_ROAMING_RETRY_BSS_THRESHOLD) {
+						/*Under roaming case : After candidate BSS joined fail.*/
+						/*STA will re-try other BSS.*/
+						/*if roaming failure was over then AIS_ROAMING_CONNECTION_TRIAL_LIMIT */
+						/*ROAM_FSM was stopped and AIS_FSM was transferred to NORMAL_TR.*/
+						DBGLOG(AIS, INFO,
+						"Under roamming %pM join fail and STA will re-try other AP :%d\n"
+						, prBssDesc->aucBSSID
+						, prEssLink->u4NumElem);
+						prBssDesc->fgIsRoamFail = TRUE;
+						fgIsUnderRoaming = FALSE;
+						eNextState = AIS_STATE_COLLECT_ESS_INFO;
+					}
+#endif /* CFG_SUPPORT_ROAMING_RETRY */
 				}
 			}
 		}

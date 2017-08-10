@@ -103,6 +103,7 @@
 #define CFG_SUPPORT_RX_HT_GF        1	/* 802.11n RX HT green-field capability */
 
 #define CFG_SUPPORT_ROAMING_ENC		0	/* enahnced roaming */
+#define CFG_SUPPORT_ROAMING_RETRY	1	/* enahnced roaming */
 
 #define CFG_SUPPORT_TDLS			1	/* IEEE802.11z TDLS */
 #define CFG_SUPPORT_TDLS_DBG		0	/* TDLS debug */
