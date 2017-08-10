@@ -532,6 +532,10 @@ static int secmem_region_alloc(void)
 	secmem_region_online = 1;
 	secmem_region_ref = 0;
 
+#ifdef SVP_ENABLE_SODI
+	spm_enable_sodi(false);
+#endif
+
 	return 0;
 }
 
@@ -566,6 +570,10 @@ static int secmem_region_release(void)
 	}
 
 	secmem_region_online = 0;
+
+#ifdef SVP_ENABLE_SODI
+	spm_enable_sodi(true);
+#endif
 
 	MSG(INFO, "%s: done\n", __func__);
 

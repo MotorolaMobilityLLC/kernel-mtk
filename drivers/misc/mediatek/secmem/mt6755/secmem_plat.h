@@ -17,6 +17,8 @@
 /* Enable the support of secure memory dump detail */
 #define SECMEM_DEBUG_DUMP
 
+#define SVP_ENABLE_SODI
+
 /* Enable secure memory test interface */
 /* #define SECMEM_DEBUG_INTERFACE */
 

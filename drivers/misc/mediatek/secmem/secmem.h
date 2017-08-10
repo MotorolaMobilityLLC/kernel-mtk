@@ -50,6 +50,7 @@ struct secmem_param {
 /* SVP CMA API */
 extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int svp_region_online(void);
+extern void spm_enable_sodi(bool);
 #endif
 
 #ifdef SECMEM_KERNEL_API
