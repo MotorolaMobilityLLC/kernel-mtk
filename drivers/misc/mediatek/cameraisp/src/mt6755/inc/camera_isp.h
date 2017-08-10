@@ -700,6 +700,7 @@ typedef struct {
 	unsigned int callerID;
 	int p2burstQIdx;
 	int p2dupCQIdx;
+	int frameNum;
 	unsigned int timeoutUs;
 } ISP_ED_BUFQUE_STRUCT;
 
