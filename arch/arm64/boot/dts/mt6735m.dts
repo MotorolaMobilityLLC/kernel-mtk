@@ -11,6 +11,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <generated/autoconf.h>
 / {
 	model = "MT6735M";
 	compatible = "mediatek,MT6735M";
@@ -1896,6 +1897,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
 				system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system";
@@ -1903,12 +1905,17 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 					mnt_flags = "ro";
 					fsmgr_flags = "wait";
 				};
+#endif
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
 					fsmgr_flags = "wait";
+#else
+					fsmgr_flags = "wait,slotselect,verify";
+#endif
 				};
 			};
 		};

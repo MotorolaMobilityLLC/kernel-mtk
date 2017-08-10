@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <generated/autoconf.h>
 / {
 	model = "MT6735M";
 	compatible = "mediatek,MT6735M";
@@ -1911,7 +1912,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 					fsmgr_flags = "wait";
 #else
-					fsmgr_flags = "wait,slotselect,verify"
+					fsmgr_flags = "wait,slotselect,verify";
 #endif
 				};
 			};

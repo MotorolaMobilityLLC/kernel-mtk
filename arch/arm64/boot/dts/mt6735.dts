@@ -12,6 +12,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <generated/autoconf.h>
 / {
 	model = "MT6735";
 	compatible = "mediatek,MT6735";
