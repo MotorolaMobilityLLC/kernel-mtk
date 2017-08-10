@@ -33,10 +33,11 @@
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
 static wait_queue_head_t disp_irq_log_wq;
-static int disp_irq_log_module;
+static int disp_irq_log_module_en;
 
 static int irq_init;
 
+static unsigned int disp_irq_log_module[DISP_MODULE_NUM];
 static unsigned int cnt_rdma_underflow[2];
 static unsigned int cnt_rdma_abnormal[2];
 static unsigned int cnt_ovl_underflow[OVL_NUM];
@@ -204,6 +205,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	unsigned int index = 0;
 	unsigned int mutexID = 0;
 	unsigned int reg_temp_val = 0;
+	unsigned int j = 0;
 	unsigned int tmp_mmsys_debug[4] = {0};
 
 	DISPIRQ("disp_irq_handler, irq=%d, module=%s\n",
@@ -291,7 +293,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 1)) {
 			DISPERR("IRQ: WDMA%d underrun! cnt=%d\n", index,
 			       cnt_wdma_underflow[index]++);
-			disp_irq_log_module |= 1 << module;
+			disp_irq_log_module[module] = 1;
 		}
 		/* clear intr */
 		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA + index * DISP_WDMA_INDEX_OFFSET, ~reg_val);
@@ -358,7 +360,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       reg_val, 0);
 
 			DISPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
-			disp_irq_log_module |= 1 << module;
+			disp_irq_log_module[module] = 1;
 
 		}
 		if (reg_val & (1 << 4)) {
@@ -381,7 +383,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_INDEX_OFFSET * index));
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
 				DISPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]++);
-			disp_irq_log_module |= 1 << module;
+			disp_irq_log_module[module] = 1;
 			rdma_underflow_irq_cnt[index]++;
 		}
 		if (reg_val & (1 << 5)) {
@@ -443,7 +445,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	}
 
 	disp_invoke_irq_callbacks(module, reg_val);
-	if (disp_irq_log_module != 0)
+
+	for (j = 0; j < DISP_MODULE_NUM; j++) {
+		if (disp_irq_log_module[j] != 0) {
+			disp_irq_log_module_en = 1;
+			break;
+		}
+	}
+	if (disp_irq_log_module_en != 0)
 		wake_up_interruptible(&disp_irq_log_wq);
 
 	MMProfileLogEx(ddp_mmp_get_events()->DDP_IRQ, MMProfileFlagEnd, irq, reg_val);
@@ -456,15 +465,15 @@ static int disp_irq_log_kthread_func(void *data)
 	unsigned int i = 0;
 
 	while (1) {
-		wait_event_interruptible(disp_irq_log_wq, disp_irq_log_module);
-		DISPMSG("disp_irq_log_kthread_func dump intr register: disp_irq_log_module=%d\n",
-		       disp_irq_log_module);
-		for (i = 0; i < DISP_MODULE_NUM; i++) {
-			if ((disp_irq_log_module & (1 << i)) != 0)
-				ddp_dump_reg(i);
+		wait_event_interruptible(disp_irq_log_wq, disp_irq_log_module_en);
 
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (disp_irq_log_module[i] != 0) {
+				ddp_dump_reg(i);
+				disp_irq_log_module[i] = 0;
+			}
 		}
-		disp_irq_log_module = 0;
+		disp_irq_log_module_en = 0;
 	}
 	return 0;
 }

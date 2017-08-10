@@ -1901,6 +1901,8 @@ int DSI_read_cmp(unsigned int index, DSI_RX_DATA_REG *read_data,
 		recv_data_cnt = read_data[0].byte1 + read_data[0].byte2 * 16;
 		DISPDBG("packet_type=0x%x,recv_data_cnt = %d\n",
 			packet_type, recv_data_cnt);
+		if (count > 20)
+			count = 20;
 		if (recv_data_cnt > count)
 			recv_data_cnt = count;
 		if (recv_data_cnt <= 4) {
