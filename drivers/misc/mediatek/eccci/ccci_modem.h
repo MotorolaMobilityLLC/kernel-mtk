@@ -94,6 +94,7 @@ struct ccci_modem {
 	struct ccci_smem_layout smem_layout;
 	struct ccci_image_info img_info[IMG_NUM];
 	unsigned int sbp_code;
+	unsigned int sbp_sub_code;
 	unsigned int mdlg_mode;
 	unsigned int md_dbg_dump_flag;
 	MD_BOOT_MODE md_boot_mode;

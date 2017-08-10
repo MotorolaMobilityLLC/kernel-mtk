@@ -437,6 +437,7 @@ enum {
 	MD_CFG_MDLOG_MODE,
 	MD_CFG_SBP_CODE,
 	MD_CFG_DUMP_FLAG,
+	MD_CFG_SBP_SUB_CODE,
 };
 
 enum {
