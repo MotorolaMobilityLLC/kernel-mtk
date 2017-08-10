@@ -1602,14 +1602,15 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
+	if (obj == NULL) {
+		GYRO_ERR("null pointer!!\n");
+		return -EINVAL;
+	}
+
 	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
 		GYRO_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
-		if (obj == NULL) {
-			GYRO_ERR("null pointer!!\n");
-			return -EINVAL;
-		}
 		atomic_set(&obj->suspend, 1);
 		MPU6515_SetPWR_MGMT_2(client, false);
 #ifndef CUSTOM_KERNEL_SENSORHUB
