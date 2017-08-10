@@ -151,6 +151,18 @@ typedef enum {
 	AMK_I2C_DEBUG = 0x10,
 } AMK_TRC;
 
+#define AKMD_PATNO enum _AKMD_PATNO
+enum _AKMD_PATNO {
+	PAT_INVALID = 0,
+	PAT1,
+	PAT2,
+	PAT3,
+	PAT4,
+	PAT5,
+	PAT6,
+	PAT7,
+	PAT8
+};
 
 /*----------------------------------------------------------------------------*/
 struct akm8963_i2c_data {
@@ -464,6 +476,68 @@ static long AKECS_ReadFuse(void)
 	ret = AKECS_SetMode_PowerDown();
 
 	return ret;
+}
+
+static int AKECS_ConvertCoordinate(int data[3])
+{
+	int	pat, tmp;
+
+	struct i2c_client *client = this_client;
+	struct akm8963_i2c_data *i2c_data = i2c_get_clientdata(client);
+
+	pat = atomic_read(&i2c_data->layout);
+
+	switch (pat) {
+	/* Obverse */
+	case PAT1:
+		/* This is Android default */
+		break;
+	case PAT2:
+		/* X = y, Y = -x, Z = z    */
+		tmp = data[0];
+		data[0] = data[1];
+		data[1] = -tmp;
+		break;
+	case PAT3:
+		/* X = -x, Y = -y, Z = z   */
+		data[0] = -data[0];
+		data[1] = -data[1];
+		break;
+	case PAT4:
+		/* X = -y, Y = x, Z = z    */
+		tmp = data[0];
+		data[0] = -data[1];
+		data[1] = tmp;
+		break;
+	/* Back side */
+	case PAT5:
+		/* X = -x, Y = y, Z = -z   */
+		data[0] = -data[0];
+		data[2] = -data[2];
+		break;
+	case PAT6:
+		/* X = y, Y = x, Z = -z    */
+		tmp = data[0];
+		data[0] = data[1];
+		data[1] = tmp;
+		data[2] = -data[2];
+		break;
+	case PAT7:
+		/* X = x, Y = -y, Z = -z   */
+		data[1] = -data[1];
+		data[2] = -data[2];
+		break;
+	case PAT8:
+		/* X = -y, Y = -x, Z = -z  */
+		tmp = data[0];
+		data[0] = -data[1];
+		data[1] = -tmp;
+		data[2] = -data[2];
+		break;
+	default:
+		return -1;
+	}
+	return 0;
 }
 
 #if 0
@@ -2027,6 +2101,7 @@ static int akm8963_m_get_data(int *x, int *y, int *z, int *status)
 #endif
 	char strbuf[SENSOR_DATA_SIZE];
 	s16 data[3];
+	int tmpdata[3];
 
 	AKECS_SetMode_SngMeasure();
 	mdelay(10);
@@ -2038,9 +2113,15 @@ static int akm8963_m_get_data(int *x, int *y, int *z, int *status)
 
 	/* Sensitivity adjustment */
 	/* H*((ASA-128)*0.5/128 + 1) is equivalent to H*(ASA+128) >> 8 */
-	*x = (data[0] * 100 * (fuse[0] + 128)) >> 8;
-	*y = (data[1] * 100 * (fuse[1] + 128)) >> 8;
-	*z = (data[2] * 100 * (fuse[2] + 128)) >> 8;
+	tmpdata[0] = (data[0] * 100 * (fuse[0] + 128)) >> 8;
+	tmpdata[1] = (data[1] * 100 * (fuse[1] + 128)) >> 8;
+	tmpdata[2] = (data[2] * 100 * (fuse[2] + 128)) >> 8;
+
+	AKECS_ConvertCoordinate(tmpdata);
+
+	*x = tmpdata[0];
+	*y = tmpdata[1];
+	*z = tmpdata[2];
 	*status = (AKM8963_PSEUDO_WIA2 << 8) | strbuf[7];
 
 	return 0;
