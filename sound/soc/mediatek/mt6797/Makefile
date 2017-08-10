@@ -44,6 +44,5 @@ obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_anc.o mt_soc_pcm_voice_ultra.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_mrgrx.o mt_soc_pcm_mrgrx_awb.o mt_soc_pcm_fm_i2s.o mt_soc_pcm_fm_i2s_awb.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_dl1_awb.o mt_soc_pcm_dl1_bt.o mt_soc_pcm_bt_dai.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_dai_stub.o mt_soc_dai_routing.o mt_soc_codec_dummy.o mt_soc_codec_63xx.o mt_soc_pcm_fmtx.o mt_soc_tdm_capture.o
-obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_hp_impedance.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_machine.o
 obj-$(CONFIG_MTK_SPEAKER) += mt_soc_codec_speaker_63xx.o

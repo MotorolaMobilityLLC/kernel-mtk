@@ -140,6 +140,11 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
+/* Pmic Headphone Impedance varible */
+static unsigned short hp_impedance = 32;
+static const unsigned short auxcable_impedance = 5000;
+static int efuse_current_calibration;
+
 enum hp_depop_flow {
 	HP_DEPOP_FLOW_DEPOP_HW,
 	HP_DEPOP_FLOW_33OHM,
@@ -181,6 +186,17 @@ static int reg_AFE_VOW_CFG4 = 0x006E;		/* gamma K value setting (gamma), bit4:8 
 static int reg_AFE_VOW_CFG5 = 0x0001;		/* N mini value setting (Nmin) */
 static int reg_AFE_VOW_PERIODIC = 0x0000;	/* Periodic On/Off setting (On percent)*/
 static bool mIsVOWOn;
+
+/* Headphone Impedance Detection */
+struct mtk_hpdet_param {
+	int auxadc_upper_bound;
+	int dc_Step;
+	int dc_Phase0;
+	int dc_Phase1;
+	int dc_Phase2;
+	int resistance_first_threshold;
+	int resistance_second_threshold;
+};
 
 /* VOW using */
 typedef enum {
@@ -1007,6 +1023,13 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 	return true;
 }
 
+static void EnableDcCompensation(bool bEnable)
+{
+#ifndef EFUSE_HP_TRIM
+	Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, bEnable, 0x1);
+#endif
+}
+
 void setHpGainZero(void)
 {
 	Ana_Set_Reg(ZCD_CON2, 0x8 << 7, 0x0f80);
@@ -1018,6 +1041,187 @@ void SetSdmLevel(unsigned int level)
 	Ana_Set_Reg(AFE_DL_SDM_CON1, level, 0xffffffff);
 }
 
+void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
+{
+	hpdet_param->auxadc_upper_bound = 4050; /* should little lower than auxadc max resolution */
+	hpdet_param->dc_Step = 100; /* Dc ramp up and ramp down step */
+	hpdet_param->dc_Phase0 = 200; /* Phase 0 : high impedance with worst resolution */
+	hpdet_param->dc_Phase1 = 2200; /* Phase 1 : median impedance with normal resolution */
+	hpdet_param->dc_Phase2 = 8800; /* Phase 2 : low impedance with better resolution */
+	hpdet_param->resistance_first_threshold = 150; /* Resistance Threshold of phase 2 and phase 1 */
+	hpdet_param->resistance_second_threshold = 650; /* Resistance Threshold of phase 1 and phase 0 */
+}
+
+int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
+{
+	/* The formula is from DE programming guide */
+	/* should be mantain by pmic owner */
+	/* R = V /I */
+	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
+	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
+	return (28800000 / pcm_offset * aux_diff + 4051) / 8102;
+}
+
+static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offset,
+				      const unsigned int detect_times)
+{
+	int dc_value;
+	int r_tmp = 0;
+
+	if (dc_input < dc_init) {
+		pr_warn("%s(), Wrong[%d] : dc_input(%d) > dc_init(%d)\n", __func__, pcm_offset, dc_input, dc_init);
+		return 0;
+	}
+
+	dc_value = dc_input - dc_init;
+	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
+	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
+
+	/* Efuse calibration */
+	if ((efuse_current_calibration != 0) && (r_tmp != 0)) {
+		pr_debug("%s(), Before Calibration from EFUSE: %d, R: %d\n",
+		       __func__, efuse_current_calibration, r_tmp);
+		r_tmp = (r_tmp * (128 + efuse_current_calibration) + 64) / 128;
+	}
+
+	pr_debug("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
+	       __func__, pcm_offset, dc_value, r_tmp);
+
+	return r_tmp;
+}
+
+static int detect_impedance_by_phase(void)
+{
+	const unsigned int kDetectTimes = 8;
+	unsigned int counter;
+	int dcSum = 0, detectSum = 0;
+	int detectsOffset[kDetectTimes];
+	unsigned short pick_impedance = 0, detect_impedance = 0, phase_flag = 0, dcValue = 0;
+	struct mtk_hpdet_param hpdet_param;
+
+	mtk_read_hp_detection_parameter(&hpdet_param);
+
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
+	setOffsetTrimBufferGain(3); /* HPDET trim. buffer gain : 18db */
+	EnableTrimbuffer(true);
+	setHpGainZero();
+	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, 0x0, 0xffff);
+	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0x0, 0xffff);
+	EnableDcCompensation(true);
+
+	for (dcValue = 0; dcValue <= hpdet_param.dc_Phase2; dcValue += hpdet_param.dc_Step) {
+
+		/* apply dc by dc compensation: 16bit and negative value */
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, -dcValue, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, -dcValue, 0xffff);
+
+		/* save for DC =0 offset */
+		if (dcValue == 0) {
+			usleep_range(1*1000, 1*1000);
+			dcSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				dcSum = dcSum + detectsOffset[counter];
+			}
+		}
+
+		/* start checking */
+		if (dcValue == hpdet_param.dc_Phase0) {
+			usleep_range(1*1000, 1*1000);
+			detectSum = 0;
+			detectSum = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+			pick_impedance = mtk_calculate_hp_impedance(dcSum/kDetectTimes,
+								    detectSum, dcValue, 1);
+
+			if (pick_impedance < hpdet_param.resistance_first_threshold) {
+				phase_flag = 2;
+				continue;
+			} else if (pick_impedance < hpdet_param.resistance_second_threshold) {
+				phase_flag = 1;
+				continue;
+			}
+
+			/* Phase 0 : detect  range 1kohm to 5kohm impedance */
+			for (counter = 1; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				detectSum = detectSum + detectsOffset[counter];
+			}
+			/* if detect auxadc value over 32630 , the hpImpedance is over 5k ohm */
+			if ((detectSum / kDetectTimes) > hpdet_param.auxadc_upper_bound)
+				detect_impedance = auxcable_impedance;
+			else
+				detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+									      dcValue, kDetectTimes);
+			break;
+		}
+
+		/* Phase 1 : detect  range 250ohm to 1000ohm impedance */
+		if (dcValue == hpdet_param.dc_Phase1 && phase_flag == 1) {
+			usleep_range(1*1000, 1*1000);
+			detectSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				detectSum = detectSum + detectsOffset[counter];
+			}
+			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+								      dcValue, kDetectTimes);
+			break;
+		}
+
+		/* Phase 2 : detect under 250ohm impedance */
+		if (dcValue == hpdet_param.dc_Phase2 && phase_flag == 2) {
+			usleep_range(1*1000, 1*1000);
+			detectSum = 0;
+			for (counter = 0; counter < kDetectTimes; counter++) {
+				detectsOffset[counter] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				detectSum = detectSum + detectsOffset[counter];
+			}
+			detect_impedance = mtk_calculate_hp_impedance(dcSum, detectSum,
+								      dcValue, kDetectTimes);
+			break;
+		}
+		usleep_range(1*200, 1*200);
+	}
+
+	pr_debug("%s(), phase %d [dc,detect]Sum %d times = [%d,%d], hp_impedance = %d, pick_impedance = %d\n",
+		 __func__, phase_flag, kDetectTimes, dcSum, detectSum, detect_impedance, pick_impedance);
+
+	/* Ramp-Down */
+	while (dcValue > 0) {
+		dcValue = dcValue - hpdet_param.dc_Step;
+		/* apply dc by dc compensation: 16bit and negative value */
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, -dcValue, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, -dcValue, 0xffff);
+		usleep_range(1*200, 1*200);
+	}
+	EnableDcCompensation(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	EnableTrimbuffer(false);
+
+	return detect_impedance;
+}
+
+static int pmic_hp_impedance_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	if (OpenHeadPhoneImpedanceSetting(true) == true) {
+		hp_impedance = detect_impedance_by_phase();
+		OpenHeadPhoneImpedanceSetting(false);
+	} else
+		pr_warn("%s(), Pmic DL Busy, HPDET do nothing\n", __func__);
+
+	ucontrol->value.integer.value[0] = hp_impedance;
+	pr_debug("-%s(), hp_impedance = %d, efuse = %d\n",
+		 __func__, hp_impedance, efuse_current_calibration);
+	return 0;
+}
+
+static int pmic_hp_impedance_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), hp_impedance = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	hp_impedance = ucontrol->value.integer.value[0];
+	return 0;
+}
 
 static void SetHprOffset(int OffsetTrimming)
 {
@@ -1045,13 +1249,6 @@ static void SetHplOffset(int OffsetTrimming)
 	RegValue = Dccompsentation;
 	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
-}
-
-static void EnableDcCompensation(bool bEnable)
-{
-#ifndef EFUSE_HP_TRIM
-	Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, bEnable, 0x1);
-#endif
 }
 
 static void SetHprOffsetTrim(void)
@@ -1414,17 +1611,6 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .rates = SNDRV_PCM_RATE_8000_192000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
-	 },
-	{
-	 .name = MT_SOC_CODEC_HP_IMPEDANCE_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
-	 .playback = {
-		      .stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
-		      .channels_min = 1,
-		      .channels_max = 2,
-		      .rates = SNDRV_PCM_RATE_8000_192000,
-		      .formats = SND_SOC_ADV_MT_FMTS,
-		      },
 	 },
 	{
 	 .name = MT_SOC_CODEC_FM_I2S_DAI_NAME,
@@ -2887,25 +3073,6 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	return 0;
 }
 
-static uint32 mHp_Impedance = 32;
-
-static int Audio_Hp_Impedance_Get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("Audio_Hp_Impedance_Get = %d\n", mHp_Impedance);
-	ucontrol->value.integer.value[0] = mHp_Impedance;
-	return 0;
-
-}
-
-static int Audio_Hp_Impedance_Set(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	mHp_Impedance = ucontrol->value.integer.value[0];
-	pr_aud("%s Audio_Hp_Impedance_Set = 0x%x\n", __func__, mHp_Impedance);
-	return 0;
-}
-
 static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_aud("\%s n", __func__);
@@ -3070,9 +3237,6 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 	SOC_ENUM_EXT("Receiver_Speaker_Switch", Audio_DL_Enum[11],
 		     Receiver_Speaker_Switch_Get,
 		     Receiver_Speaker_Switch_Set),
-	SOC_SINGLE_EXT("Audio HP Impedance", SND_SOC_NOPM, 0, 512, 0,
-		       Audio_Hp_Impedance_Get,
-		       Audio_Hp_Impedance_Set),
 	SOC_ENUM_EXT("PMIC_REG_CLEAR", Audio_DL_Enum[12], PMIC_REG_CLEAR_Get, PMIC_REG_CLEAR_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
 };
@@ -5264,6 +5428,8 @@ static const struct snd_kcontrol_new mt6331_pmic_Test_controls[] = {
 		     Voice_Call_DAC_DAC_HS_Set),
 	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[4], SineTable_UL2_Get, SineTable_UL2_Set),
 	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[5], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_SINGLE_EXT("Audio HP ImpeDance Setting", SND_SOC_NOPM, 0, 0x10000, 0,
+		       pmic_hp_impedance_get, pmic_hp_impedance_set),
 };
 
 static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {

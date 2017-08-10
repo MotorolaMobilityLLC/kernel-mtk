@@ -609,19 +609,6 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 	},
 	{
 		.playback = {
-			.stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
-			.rates = SNDRV_PCM_RATE_8000_192000,
-			.formats = SND_SOC_ADV_MT_FMTS,
-			.channels_min = 1,
-			.channels_max = 8,
-			.rate_min = 8000,
-			.rate_max = 192000,
-		},
-		.name = MT_SOC_HP_IMPEDANCE_NAME,
-		.ops = &mtk_dai_stub_ops,
-	},
-	{
-		.playback = {
 			.stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
 			.rates = SNDRV_PCM_RATE_8000_48000,
 			.formats = SND_SOC_ADV_MT_FMTS,

@@ -1174,14 +1174,6 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 	},
 	{
-		.name = "HP_IMPEDANCE",
-		.stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_HP_IMPEDANCE_NAME,
-		.platform_name  = MT_SOC_HP_IMPEDANCE_PCM,
-		.codec_dai_name = MT_SOC_CODEC_HP_IMPEDANCE_NAME,
-		.codec_name = MT_SOC_CODEC_NAME,
-	},
-	{
 		.name = "FM_I2S_RX_Playback",
 		.stream_name = MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME,
 		.cpu_dai_name   = MT_SOC_FM_I2S_NAME,

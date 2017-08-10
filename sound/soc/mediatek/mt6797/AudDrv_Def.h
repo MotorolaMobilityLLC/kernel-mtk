@@ -234,7 +234,6 @@
 #define MT_SOC_MODADCI2SDAI_NAME "mt-soc-mod2adci2s-driver"
 #define MT_SOC_ADC2AWBDAI_NAME "mt-soc-adc2awb-driver"
 #define MT_SOC_IO2DAIDAI_NAME "mt-soc-io2dai-driver"
-#define MT_SOC_HP_IMPEDANCE_NAME "mt-soc-hpimpedancedai-driver"
 #define MT_SOC_FM_I2S_NAME "mt-soc-fmi2S-driver"
 #define MT_SOC_FM_I2S_CAPTURE_NAME "mt-soc-fmi2Scapturedai-driver"
 #define MT_SOC_BTCVSD_RX_DAI_NAME "mt-soc-btcvsd-rx-dai-driver"
@@ -245,7 +244,6 @@
 
 /* platform name */
 #define MT_SOC_DL1_PCM   "mt-soc-dl1-pcm"
-#define MT_SOC_HP_IMPEDANCE_PCM   "mt-soc-hp-impedence-pcm"
 #define MT_SOC_DL1DATA2_PCM   "mt-soc-dl1_data2-pcm"
 #define MT_SOC_DL2_PCM   "mt-soc-dl2-pcm"
 #define MT_SOC_UL1_PCM   "mt-soc-ul1-pcm"
@@ -299,7 +297,6 @@
 #define MT_SOC_CODEC_VOIPCALLBTOUTDAI_NAME "mt-soc-codec-voipcall-btout-dai"
 #define MT_SOC_CODEC_VOIPCALLBTINDAI_NAME "mt-soc-codec-voipcall-btin-dai"
 #define MT_SOC_CODEC_TDMRX_DAI_NAME "mt-soc-tdmrx-dai-codec"
-#define MT_SOC_CODEC_HP_IMPEDANCE_NAME "mt-soc-codec-hp-impedance-dai"
 #define MT_SOC_CODEC_OFFLOAD_NAME "mt-soc-codec-offload-dai"
 #define MT_SOC_CODEC_ANC_NAME "mt-soc-codec-anc-dai"
 
@@ -354,7 +351,6 @@
 #define MT_SOC_DAI_STREAM_NAME "MultiMedia_dai_Capture"
 #define MT_SOC_MODDAI_STREAM_NAME "Voice_Dai_Capture"
 #define MT_SOC_ROUTING_STREAM_NAME "MultiMedia_Routing"
-#define MT_SOC_HP_IMPEDANCE_STREAM_NAME "HP_IMPEDANCE_Playback"
 #define MT_SOC_FM_MRGTX_STREAM_NAME "FM_MRGTX_Playback"
 #define MT_SOC_TDM_CAPTURE_STREAM_NAME "TDM_Debug_Record"
 #define MT_SOC_MODADCI2S_STREAM_NAME "ANC_Debug_Record_MOD"

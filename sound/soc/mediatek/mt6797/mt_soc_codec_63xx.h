@@ -54,7 +54,6 @@ void EnableTrimbuffer(bool benable);
 void SetHplTrimOffset(int Offset);
 void SetHprTrimOffset(int Offset);
 void setHpGainZero(void);
-bool OpenHeadPhoneImpedanceSetting(bool bEnable);
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
 
