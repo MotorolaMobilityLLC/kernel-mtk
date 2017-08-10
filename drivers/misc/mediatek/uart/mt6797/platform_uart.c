@@ -2291,7 +2291,7 @@ void switch_uart_gpio(int uartport, int gpioopid)
 void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
-	int uart_gpio_op = 0;	/* URAT RX SET */
+	int uart_gpio_op = 3;	/* URAT TX CLEAR */
 #endif
 	int uartport = uart->nport;
 
@@ -2350,7 +2350,7 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
-	int uart_gpio_op = 0;	/* URAT RX SET */
+	int uart_gpio_op = 2;	/* URAT TX SET */
 #endif
 	int uartport = uart->nport;
 
