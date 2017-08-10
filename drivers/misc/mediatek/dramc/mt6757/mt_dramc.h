@@ -17,38 +17,9 @@
 /*=========================
 Registers define
 =========================*/
-#define PDEF_DRAMC0_CHA_REG_008	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0008))
-#define PDEF_DRAMC0_CHA_REG_088	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0088))
-#define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x00e4))
-#define PDEF_DRAMC0_CHA_REG_0F4	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x00f4))
-#define PDEF_DRAMC0_CHA_REG_110	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0110))
-#define PDEF_DRAMC0_CHA_REG_138	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0138))
-#define PDEF_DRAMC0_CHA_REG_1DC	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x01dc))
-#define PDEF_DRAMC0_CHA_REG_1E4	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x01e4))
-#define PDEF_DRAMC0_CHA_REG_1E8	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x01e8))
-#define PDEF_DRAMC0_CHA_REG_1EC	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x01ec))
-#define PDEF_DRAMC0_CHA_REG_3B8	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x03B8))
-
-#define PDEF_DRAMC0_CHB_REG_008	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x0008))
-#define PDEF_DRAMC0_CHB_REG_088	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x0088))
-#define PDEF_DRAMC0_CHB_REG_0E4	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x00e4))
-#define PDEF_DRAMC0_CHB_REG_0F4	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x00f4))
-#define PDEF_DRAMC0_CHB_REG_110	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x0110))
-#define PDEF_DRAMC0_CHB_REG_138	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x0138))
-#define PDEF_DRAMC0_CHB_REG_1DC	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x01dc))
-#define PDEF_DRAMC0_CHB_REG_1E4	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x01e4))
-#define PDEF_DRAMC0_CHB_REG_1E8	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x01e8))
-#define PDEF_DRAMC0_CHB_REG_1EC	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x01ec))
-#define PDEF_DRAMC0_CHB_REG_3B8	IOMEM((DRAMCAO_CHB_BASE_ADDR + 0x03B8))
-
-#define PDEF_DRAMCNAO_CHA_REG_3B8	IOMEM((DRAMCNAO_CHA_BASE_ADDR + 0x03B8))
-#define PDEF_DRAMCNAO_CHB_REG_3B8	IOMEM((DRAMCNAO_CHB_BASE_ADDR + 0x03B8))
-
-#define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0010))
-#define PDEF_SPM_PASR_DPD_0	IOMEM((SLEEP_BASE_ADDR + 0x0630))
-#define PDEF_SPM_PASR_DPD_3	IOMEM((SLEEP_BASE_ADDR + 0x063C))
-#define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x0428))
-/* #define _CLK_CFG_0_SET		IOMEM((TOPCKGEN_BASE_ADDR + 0x0040)) */
+#define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
+#define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x0010))
+#define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x0484))
 
 /*=========================
 Define
@@ -69,13 +40,6 @@ Define
 #define LPDDR3_MODE_REG_2_LOW	0x00140002              /*RL6 WL3.*/
 #define LPDDR2_MODE_REG_2_LOW	0x00040002              /*RL6 WL3.*/
 
-#ifdef DDR_1866
-#define LPDDR3_MODE_REG_2	0x001C0002
-#else
-#define LPDDR3_MODE_REG_2	0x001A0002
-#endif
-#define LPDDR2_MODE_REG_2	0x00060002
-
 #define DRAMC_REG_MRS		0x088
 #define DRAMC_REG_PADCTL4	0x0e4
 #define DRAMC_REG_LPDDR2_3	0x1e0
@@ -86,6 +50,36 @@ Define
 #define DRAMC_REG_SPCMDRESP	0x3b8
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
+
+#define SW_TX_TRACKING
+#ifdef SW_TX_TRACKING
+#define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
+#define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
+#define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
+#define DRAMC_AO_SPCMD		(dramc_ao_chx_base+0x060)
+#define DRAMC_AO_SPCMDCTRL	(dramc_ao_chx_base+0x064)
+#define DRAMC_AO_SLP4_TESTMODE	(dramc_ao_chx_base+0x0C4)
+#define DRAMC_AO_DQSOSCR	(dramc_ao_chx_base+0x0C8)
+#define DRAMC_AO_SHUSTATUS	(dramc_ao_chx_base+0x0E4)
+#define DRAMC_AO_CKECTRL	(dramc_ao_chx_base+0x85C)
+#define DRAMC_AO_DQSOSC_PRD	(dramc_ao_chx_base+0x868)
+#define DRAMC_AO_SHU1RK0_PI	(dramc_ao_chx_base+0xA0C)
+#define DRAMC_AO_SHU1RK0_DQSOSC	(dramc_ao_chx_base+0xA10)
+#define DRAMC_AO_SHU1RK1_PI     (dramc_ao_chx_base+0xB0C)
+#define DRAMC_AO_SHU1RK1_DQSOSC (dramc_ao_chx_base+0xB10)
+#define DRAMC_NAO_MISC_STATUSA	(dramc_nao_chx_base+0x80)
+#define DRAMC_NAO_SPCMDRESP	(dramc_nao_chx_base+0x88)
+#define DRAMC_NAO_MRR_STATUS	(dramc_nao_chx_base+0x8C)
+#define DDRPHY_SHU1_R0_B0_DQ7	(ddrphy_chx_base+0xE1C)
+#define DDRPHY_SHU1_R0_B1_DQ7	(ddrphy_chx_base+0xE6C)
+#define DDRPHY_SHU1_R1_B0_DQ7	(ddrphy_chx_base+0xF1C)
+#define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
+#endif
+
+#define LAST_DRAMC
+#ifdef LAST_DRAMC
+extern void *mt_emi_base_get(void);
+#endif
 
 /*=========================
 Sysfs config
@@ -99,6 +93,74 @@ Sysfs config
 #define IOREMAP_ALIGMENT	0x1000
 #define Delay_magic_num		0x295
 /*We use GPT to measurement how many clk pass in 100us*/
+
+/*=========================
+DRAM HQA config
+=========================*/
+/*#define DRAM_HQA*/
+#ifdef DRAM_HQA
+
+/*#define HQA_LPDDR3*/
+#define HQA_LPDDR4
+/*#define HQA_LPDDR4X*/
+
+/*#define HVCORE_HVDRAM*/
+/*#define NVCORE_NVDRAM*/
+/*#define LVCORE_LVDRAM*/
+/*#define HVCORE_LVDRAM*/
+/*#define LVCORE_HVDRAM*/
+
+extern unsigned int mt_get_chip_hw_ver(void);
+
+#define VCORE_LV_LPM 0x09
+#define VCORE_NV_LPM 0x10
+#define VCORE_HV_LPM 0x17
+#define VCORE_LV_HPM 0x19
+#define VCORE_NV_HPM 0x20
+#define VCORE_HV_HPM 0x27
+
+#if defined(HQA_LPDDR3)
+#define VDRAM_LV 0x504
+#define VDRAM_NV 0x51E
+#define VDRAM_HV 0x617
+#elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
+#define VDRAM_LV 1060000
+#define VDRAM_NV 1100000
+#define VDRAM_HV 1170000
+#endif
+
+#define VDDQ_LV 570000
+#define VDDQ_NV 600000
+#define VDDQ_HV 650000
+
+#if defined(HVCORE_HVDRAM)
+#define HQA_VCORE_LPM	VCORE_HV_LPM
+#define HQA_VCORE_HPM	VCORE_HV_HPM
+#define HQA_VDRAM	VDRAM_HV
+#define HQA_VDDQ	VDDQ_HV
+#elif defined(NVCORE_NVDRAM)
+#define HQA_VCORE_LPM	VCORE_NV_LPM
+#define HQA_VCORE_HPM	VCORE_NV_HPM
+#define HQA_VDRAM	VDRAM_NV
+#define HQA_VDDQ	VDDQ_NV
+#elif defined(LVCORE_LVDRAM)
+#define HQA_VCORE_LPM	VCORE_LV_LPM
+#define HQA_VCORE_HPM	VCORE_LV_HPM
+#define HQA_VDRAM	VDRAM_LV
+#define HQA_VDDQ	VDDQ_LV
+#elif defined(HVCORE_LVDRAM)
+#define HQA_VCORE_LPM	VCORE_HV_LPM
+#define HQA_VCORE_HPM	VCORE_HV_HPM
+#define HQA_VDRAM	VDRAM_LV
+#define HQA_VDDQ	VDDQ_LV
+#elif defined(LVCORE_HVDRAM)
+#define HQA_VCORE_LPM	VCORE_LV_LPM
+#define HQA_VCORE_HPM	VCORE_LV_HPM
+#define HQA_VDRAM	VDRAM_HV
+#define HQA_VDDQ	VDDQ_HV
+#endif
+
+#endif /*end #ifdef DRAM_HQA*/
 
 /*=========================
 DRAMC API config
@@ -123,11 +185,18 @@ void dram_HQA_adjust_voltage(void);
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 unsigned char segment_rank1);
 int exit_pasr_dpd_config(void);
+void del_zqcs_timer(void);
+void add_zqcs_timer(void);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,
 	TYPE_LPDDR4,
 	TYPE_LPDDR4X
+};
+
+enum DRAM_MODE {
+	NORMAL_MODE = 0,
+	BYTE_MODE
 };
 
 enum {
