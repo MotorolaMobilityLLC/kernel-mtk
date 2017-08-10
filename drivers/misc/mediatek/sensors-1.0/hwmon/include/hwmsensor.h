@@ -132,7 +132,7 @@
 #define ID_PPG1                         (ID_BASE+SENSOR_TYPE_PPG1-1)
 #define ID_PPG2                         (ID_BASE+SENSOR_TYPE_PPG2-1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_PPG2 - 1)
+#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_PPG2)
 #define ID_NONE							(ID_SENSOR_MAX_HANDLE + 1)
 #define ID_OFFSET                       (1)
 #define ID_SCP_MAX_SENSOR_TYPE			(57)

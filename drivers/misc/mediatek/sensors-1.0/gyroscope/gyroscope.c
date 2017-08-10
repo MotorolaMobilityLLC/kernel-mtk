@@ -86,14 +86,13 @@ static void gyro_work_func(struct work_struct *work)
 	cxt  = gyro_context_obj;
 	delay_ms = atomic_read(&cxt->delay);
 
-	if (cxt->gyro_data.get_data == NULL)
-		GYRO_PR_ERR("gyro driver not register data path\n");
-
-
 	cur_ns = getCurNS();
 
     /* add wake lock to make sure data can be read before system suspend */
-	cxt->gyro_data.get_data(&x, &y, &z, &status);
+	if (cxt->gyro_data.get_data != NULL)
+		cxt->gyro_data.get_data(&x, &y, &z, &status);
+	else
+		GYRO_PR_ERR("gyro driver not register data path\n");
 
 	if (err) {
 		GYRO_PR_ERR("get gyro data fails!!\n");
@@ -673,6 +672,7 @@ int gyro_data_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	check_repeat_data(data->x, data->y, data->z);
 	event.time_stamp = data->timestamp;
@@ -695,6 +695,7 @@ int gyro_bias_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
 	event.word[0] = data->x;
@@ -711,6 +712,7 @@ int gyro_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	GYRO_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;

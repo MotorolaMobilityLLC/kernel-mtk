@@ -1052,13 +1052,13 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	res = FctShipmntTestProcess_Body();
 	if (1 == res) {
 		MAGN_LOG("shipment_test pass\n");
-		strcpy(result, "y");
+		strncpy(result, "y", 1);
 	} else if (-1 == res) {
 		MAGN_LOG("shipment_test fail\n");
-		strcpy(result, "n");
+		strncpy(result, "n", 1);
 	} else {
 		MAGN_LOG("shipment_test NaN\n");
-		strcpy(result, "NaN");
+		strncpy(result, "NaN", 3);
 	}
 
 	return sprintf(buf, "%s\n", result);
@@ -1350,7 +1350,7 @@ static int akm09911_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int akm09911_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, AKM09911_DEV_NAME);
+	strncpy(info->type, AKM09911_DEV_NAME, sizeof(AKM09911_DEV_NAME));
 	return 0;
 }
 

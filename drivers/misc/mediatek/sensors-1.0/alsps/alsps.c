@@ -27,6 +27,7 @@ int als_data_report(int value, int status)
 	int err = 0;
 	struct alsps_context *cxt = NULL;
 	struct sensor_event event;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	cxt  = alsps_context_obj;
 	/*ALSPS_LOG(" +als_data_report! %d, %d\n", value, status);*/
@@ -55,6 +56,7 @@ int als_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(alsps_context_obj->als_mdev.minor, &event);
@@ -69,6 +71,7 @@ int ps_data_report(int value, int status)
 {
 	int err = 0;
 	struct sensor_event event;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	pr_warn("[ALS/PS]ps_data_report! %d, %d\n", value, status);
 	event.flush_action = DATA_ACTION;
@@ -83,6 +86,7 @@ int ps_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);

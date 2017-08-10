@@ -625,6 +625,7 @@ int mag_data_report(struct mag_data *data)
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	check_repeat_data(data->x, data->y, data->z);
 	check_abnormal_data(data->x, data->y, data->z, data->status);
@@ -649,6 +650,7 @@ int mag_bias_report(struct mag_data *data)
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
 	event.word[0] = data->x;
@@ -665,6 +667,7 @@ int mag_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	MAG_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;

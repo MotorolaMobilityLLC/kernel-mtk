@@ -303,7 +303,7 @@ err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
 #endif
-	return count;
+	/* return count; */
 }
 
 static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
@@ -649,6 +649,7 @@ int acc_data_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.time_stamp = data->timestamp;
 	event.flush_action = DATA_ACTION;
@@ -670,6 +671,7 @@ int acc_bias_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
 	event.word[0] = data->x;
@@ -686,6 +688,7 @@ int acc_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+	memset(&event, 0, sizeof(struct sensor_event));
 
 	ACC_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;
