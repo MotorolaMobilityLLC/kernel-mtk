@@ -111,13 +111,6 @@ typedef struct ESD_PARA {
 	int para_num;
 	char *esd_ret_buffer;
 } ESD_PARA;
-#if 0
-typedef struct LAYER_H_SIZE {
-	int layer_size;
-	int height;
-	int fmt;
-} LAYER_H_SIZE;
-#endif
 typedef struct MIPI_CLK_V2 {
 	unsigned char div1;
 	unsigned char div2;
@@ -125,8 +118,8 @@ typedef struct MIPI_CLK_V2 {
 } MIPI_CLK_V2;
 
 typedef struct LCM_TYPE_FB {
-	int clock;
-	int lcm_type;
+	unsigned int clock;
+	unsigned int lcm_type;
 } LCM_TYPE_FB;
 
 typedef struct DSI_RET {
