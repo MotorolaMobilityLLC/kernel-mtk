@@ -88,7 +88,7 @@ struct musb;
 struct musb_hw_ep;
 struct musb_ep;
 extern volatile bool usb_is_host;
-extern int musb_skip_charge_detect;
+extern int musb_fake_CDP;
 extern int musb_is_shutting;
 extern int musb_fake_disc;
 extern int musb_connect_legacy;

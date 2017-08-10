@@ -46,9 +46,10 @@ struct clk *musb_clk;
 #include <mt-plat/mt_usb2jtag.h>
 #endif
 
-/* #define FOR_BRING_UP */
-#ifdef FPGA_PLATFORM
-#define FOR_BRING_UP
+/* #define USB_FORCE_ON */
+/* USB FORCE ON for FPGA/U3_COMPLIANCE cases */
+#if defined(FPGA_PLATFORM) || defined(FOR_BRING_UP)
+#define USB_FORCE_ON
 #endif
 
 /* default value 0 */
@@ -431,10 +432,8 @@ static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
-	CHARGER_TYPE charger_type = STANDARD_HOST;
 	unsigned long flags;
 	bool usb_in = false;
-	bool cmode_effect_on = false;
 
 
 	if (mtk_musb) {
@@ -472,23 +471,10 @@ void do_connection_work(struct work_struct *data)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
-#ifdef FOR_BRING_UP
-	DBG(0, "FOR_BRING_UP, force to STANDARD_HOST\n");
-	charger_type = STANDARD_HOST;
-#else
-	charger_type = mt_get_charger_type();
-#endif
 
 	usb_in = usb_cable_connected();
 
-	if (cable_mode != CABLE_MODE_NORMAL)
-		cmode_effect_on = true;
-
-	/* revert cmode_effect for this case to make CDP connect */
-	if (musb_skip_charge_detect || (cable_mode == CABLE_MODE_HOST_ONLY && charger_type == CHARGING_HOST))
-		cmode_effect_on = false;
-
-	if (!mtk_musb->power && ((usb_in == true) && !cmode_effect_on)) {
+	if (!mtk_musb->power && (usb_in == true)) {
 		/* enable usb */
 		if (!wake_lock_active(&mtk_musb->usb_lock)) {
 			wake_lock(&mtk_musb->usb_lock);
@@ -500,7 +486,7 @@ void do_connection_work(struct work_struct *data)
 		/* note this already put SOFTCON */
 		musb_start(mtk_musb);
 
-	} else if ((mtk_musb->power && (usb_in == false || cmode_effect_on))) {
+	} else if (mtk_musb->power && (usb_in == false)) {
 		/* disable usb */
 		musb_stop(mtk_musb);
 		if (wake_lock_active(&mtk_musb->usb_lock)) {
@@ -511,8 +497,8 @@ void do_connection_work(struct work_struct *data)
 		}
 
 	} else
-		DBG(0, "do nothing, usb_in:%d, power:%d, cmode_effect_on:%d\n",
-				usb_in, mtk_musb->power, cmode_effect_on);
+		DBG(0, "do nothing, usb_in:%d, power:%d\n",
+				usb_in, mtk_musb->power);
 
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
@@ -520,7 +506,7 @@ void do_connection_work(struct work_struct *data)
 
 void mt_usb_connect(void)
 {
-#ifdef FOR_BRING_UP
+#ifdef USB_FORCE_ON
 	DBG(0, "BRING_UP, SKIP issue work !!!\n");
 #else
 	if (!mtk_musb) {
@@ -537,7 +523,7 @@ void mt_usb_connect(void)
 
 void mt_usb_disconnect(void)
 {
-#ifdef FOR_BRING_UP
+#ifdef USB_FORCE_ON
 	DBG(0, "BRING_UP, SKIP issue work !!!\n");
 #else
 	if (!mtk_musb) {
@@ -560,18 +546,53 @@ static void do_connect_rescue_work(struct work_struct *work)
 
 bool usb_cable_connected(void)
 {
-	CHARGER_TYPE charger_type;
+	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
+	bool connected = false, vbus_exist = false;
 	int delay_time;
-#ifdef FOR_BRING_UP
-	delay_time = 0;    /* directly issue connection */
-	charger_type = STANDARD_HOST;
-	DBG(0, "FOR_BRING_UP, force type to STANDARD_HOST\n");
-#else
-	delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
-	charger_type = mt_get_charger_type();
-	DBG(0, "type(%d)\n", charger_type);
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
+			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
+		DBG(0, "%s, in KPOC, force USB on\n", __func__);
+		return true;
+	}
 #endif
 
+#ifdef USB_FORCE_ON
+	/* FORCE USB ON */
+	delay_time = 0;    /* directly issue connection */
+	chg_type = STANDARD_HOST;
+	vbus_exist = true;
+	connected = true;
+	DBG(0, "%s type force to STANDARD_HOST\n", __func__);
+#else
+	/* TYPE CHECK*/
+	delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
+	chg_type = mt_get_charger_type();
+	if (musb_fake_CDP && chg_type == STANDARD_HOST) {
+		DBG(0, "%s, fake to type 2\n", __func__);
+		chg_type = CHARGING_HOST;
+	}
+
+	if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+		connected = true;
+
+	/* VBUS CHECK to avoid type miss-judge */
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
+#endif
+	DBG(0, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
+	if (!vbus_exist)
+		connected = false;
+#endif
+
+	/* CMODE CHECK */
+	if (cable_mode == CABLE_MODE_CHRG_ONLY || (cable_mode == CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))
+		connected = false;
+
+	/* one time job, set_usb_rdy, issue connect_rescue_work */
 	if (is_usb_rdy() == KAL_FALSE && mtk_musb->is_ready) {
 		static struct delayed_work connect_rescue_work;
 
@@ -583,14 +604,8 @@ bool usb_cable_connected(void)
 		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
 	}
 
-	if (mtk_musb && (mtk_musb->in_ipo_off == true)) {
-		DBG(0, "in_ipo_off is set\n");
-		return false;
-	}
-	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
-		return true;
-	}
-	return false;
+	DBG(0, "%s, connected:%d, cable_mode:%d\n", __func__, connected, cable_mode);
+	return connected;
 }
 
 void musb_platform_reset(struct musb *musb)
@@ -603,12 +618,11 @@ void musb_platform_reset(struct musb *musb)
 	musb_writew(mbase, MUSB_SWRST, swrst);
 }
 
-static void usb_check_connect(void)
+static void usb_reconnect(void)
 {
-#ifndef FPGA_PLATFORM
-	if (usb_cable_connected())
-		mt_usb_connect();
-#endif
+	DBG(0, "issue work\n");
+	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
+	DBG(0, "%s end\n", __func__);
 }
 
 bool is_switch_charger(void)
@@ -770,12 +784,11 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 				}
 			}
 
-			mt_usb_disconnect();
 			cable_mode = cmode;
-			mdelay(10);
-			/* check that "if USB cable connected and than call mt_usb_connect" */
-			/* Then, the Bat_Thread won't be always wakeup while no USB/chatger cable and IPO mode */
-			usb_check_connect();
+			usb_reconnect();
+
+			/* let conection work do its job */
+			msleep(50);
 
 #ifdef CONFIG_USB_MTK_OTG
 			if (cmode == CABLE_MODE_CHRG_ONLY) {

@@ -119,14 +119,14 @@ struct device_node *dts_np;
 int musb_connect_legacy = 1;
 int musb_is_shutting = 0;
 int musb_fake_disc = 0;
-int musb_skip_charge_detect = 0;
+int musb_fake_CDP = 0;
 int musb_removed = 0;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done = 0;
 module_param(musb_connect_legacy, int, 0644);
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_fake_disc, int, 0644);
-module_param(musb_skip_charge_detect, int, 0644);
+module_param(musb_fake_CDP, int, 0644);
 module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
 #ifdef MUSB_QMU_SUPPORT
