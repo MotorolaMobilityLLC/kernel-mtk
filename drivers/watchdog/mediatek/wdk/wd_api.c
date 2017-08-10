@@ -594,6 +594,10 @@ void arch_reset(char mode, const char *cmd)
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		rtc_mark_kpoc();
 #endif
+#if defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8173)
+	} else if (cmd && !strcmp(cmd, "rpmbpk")) {
+		mtk_wd_SetNonResetReg2(0x0, 1);
+#endif
 	} else {
 		reboot = 1;
 	}
