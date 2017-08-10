@@ -1030,9 +1030,8 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 
 		cpufreq_info("@%s: segment_code = 0x%x\n", __func__, segment_code);
 
-#ifdef CONFIG_ARCH_MT6735
-		if (cpu_speed == 1100)
-			return CPU_LEVEL_4;	/* SW config 37T to 35M+ */
+#if defined(CONFIG_ARCH_MT6735) && defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+		return CPU_LEVEL_4;	/* SW config 37T to 35M+ */
 #endif
 
 		switch (segment_code) {
@@ -1049,10 +1048,11 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			return CPU_LEVEL_1;	/* 37: 1.3G */
 		case 0x52:
 		case 0x53:
-			if (cpu_speed == 1100)
-				return CPU_LEVEL_3;	/* SW config to 35M+ */
-			else
-				return CPU_LEVEL_2;	/* 35P+ 1.25G */
+#ifdef CONFIG_MTK_EFUSE_DOWNGRADE
+			return CPU_LEVEL_3;	/* SW config to 35M+ */
+#else
+			return CPU_LEVEL_2;	/* 35P+ 1.25G */
+#endif
 		default:
 			break;
 		}

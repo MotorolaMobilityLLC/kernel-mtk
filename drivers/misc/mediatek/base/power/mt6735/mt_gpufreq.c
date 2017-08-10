@@ -383,9 +383,8 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 
 		gpufreq_info("@%s: segment_code = 0x%x\n", __func__, segment_code);
 
-#ifdef CONFIG_ARCH_MT6735
-		if (gpu_speed == 550)
-			return 3;	/* SW config 37T to 35M+ */
+#if defined(CONFIG_ARCH_MT6735) && defined(CONFIG_MTK_EFUSE_DOWNGRADE)
+		return 3;	/* SW config 37T to 35M+ */
 #endif
 
 		switch (segment_code) {
@@ -402,10 +401,11 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 			return 0;	/* 37: 600M */
 		case 0x52:
 		case 0x53:
-			if (gpu_speed == 550)
-				return 0;	/* SW config to 35M+ */
-			else
-				return 2;	/* 35P+ 650M */
+#ifdef CONFIG_MTK_EFUSE_DOWNGRADE
+			return 0;	/* SW config to 35M+ */
+#else
+			return 2;	/* 35P+ 650M */
+#endif
 		default:
 			break;
 		}
