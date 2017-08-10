@@ -76,7 +76,11 @@
 unsigned int g_enable_uart_log = 0;
 unsigned int g_mobilelog = 1;
 unsigned int g_fencelog = 0; /*Fence Log*/
-unsigned int g_loglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
+#ifdef CONFIG_ARCH_MT6570
+unsigned int g_loglevel = 5; /*DISPMSG level is DEFAULT_LEVEL==3*/
+#else
+unsigned int g_loglevel = 3;
+#endif
 unsigned int g_rcdlevel = 0;
 unsigned int dbg_log_level;
 unsigned int irq_log_level;
