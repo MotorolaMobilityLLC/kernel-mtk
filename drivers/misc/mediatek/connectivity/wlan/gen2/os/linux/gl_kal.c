@@ -4430,7 +4430,8 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 		if (!kalIsHalted()) {
 #ifdef ENHANCE_AP_MODE_THROUGHPUT
 			/* Distinguish AP mode from STA mode requirement  */
-			fgIsPureAp = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
+			if (prGlueInfo && prGlueInfo->prAdapter && prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo)
+				fgIsPureAp = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
 			if (!fgIsPureAp)
 				kalPerMonDisable(prGlueInfo);
 #else
