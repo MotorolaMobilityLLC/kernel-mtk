@@ -206,6 +206,10 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_MNY_P2P_START_AP, p2pFsmRunEventStartAP},
 	{MID_MNY_P2P_MGMT_FRAME_UPDATE, p2pFsmRunEventUpdateMgmtFrame},
 	{MID_MNY_P2P_EXTEND_LISTEN_INTERVAL, p2pFsmRunEventExtendListen},
+#if CFG_SUPPORT_P2P_ECSA
+	{MID_MNY_P2P_CSA, p2pFsmRunEventSendCSA},
+	{MID_MNY_P2P_ECSA, p2pFsmRunEventSendECSA},
+#endif
 #if CFG_SUPPORT_WFD
 	{MID_MNY_P2P_WFD_CFG_UPDATE, p2pFsmRunEventWfdSettingUpdate},
 #endif

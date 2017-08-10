@@ -781,7 +781,10 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 			prP2pBssInfo->eCurrentOPMode, fgSendDeauth ? "True" : "False");
 		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 			kalP2PGOStationUpdate(prAdapter->prGlueInfo, prStaRec, FALSE);
-
+#if CFG_SUPPORT_P2P_ECSA
+		/* clear channel switch flag to avoid scan issues */
+		prP2pBssInfo->fgChanSwitching = FALSE;
+#endif
 		if (fgSendDeauth) {
 			/* Send deauth. */
 			authSendDeauthFrame(prAdapter,
@@ -1111,7 +1114,9 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 	BOOLEAN fgIsProbrsp = FALSE;
-
+#if CFG_SUPPORT_P2P_ECSA
+	P_BSS_INFO_T prBssInfo;
+#endif
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMgmtTxReqInfo != NULL));
 
@@ -1148,13 +1153,29 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		switch (prWlanHdr->u2FrameCtrl & MASK_FRAME_TYPE) {
 		case MAC_FRAME_PROBE_RSP:
 			DBGLOG(P2P, TRACE, "p2pFuncTxMgmtFrame:  TX MAC_FRAME_PROBE_RSP\n");
+#if CFG_SUPPORT_P2P_ECSA
+			prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMgmtTxMsdu->ucNetworkType];
+			if (prBssInfo->fgChanSwitching) {
+				fgIsProbrsp = TRUE;
+				DBGLOG(P2P, INFO, "Bss is switching channel, not TX probe response\n");
+				break;
+			}
+#else
 			fgIsProbrsp = TRUE;
+#endif
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, prMgmtTxMsdu);
 			break;
 		default:
 			break;
 		}
-
+#if CFG_SUPPORT_P2P_ECSA
+		if (fgIsProbrsp) {
+			/* Drop this frame */
+			p2pFsmRunEventMgmtFrameTxDone(prAdapter, prMgmtTxMsdu, TX_RESULT_DROPPED_IN_DRIVER);
+			cnmMgtPktFree(prAdapter, prMgmtTxMsdu);
+			break;
+		}
+#endif
 		prMgmtTxReqInfo->u8Cookie = u8Cookie;
 		prMgmtTxReqInfo->prMgmtTxMsdu = prMgmtTxMsdu;
 		prMgmtTxReqInfo->fgIsMgmtTxRequested = TRUE;

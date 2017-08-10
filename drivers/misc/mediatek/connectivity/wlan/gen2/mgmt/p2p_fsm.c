@@ -1490,6 +1490,27 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 
 }				/* p2pFsmRunEventMgmtFrameTxDone */
 
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS
+p2pFsmRunEventMgmtEcsaTxDone(IN P_ADAPTER_T prAdapter,
+			      IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	do {
+		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
+
+		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
+			DBGLOG(P2P, INFO, "Mgmt ECSA Frame TX Fail, Status: %d, seq NO. %d\n",
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+		} else {
+			DBGLOG(P2P, INFO, "Mgmt ECSA Frame TX Done.\n");
+		}
+
+	} while (FALSE);
+
+	return WLAN_STATUS_SUCCESS;
+
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief    This function is called when JOIN complete message event is received from SAA.
@@ -1987,6 +2008,116 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	if (prMsgHdr)
 		cnmMemFree(prAdapter, prMsgHdr);
 }				/* p2pFsmRunEventUpdateMgmtFrame */
+#if CFG_SUPPORT_P2P_ECSA
+VOID p2pFsmRunEventSendCSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	MSDU_INFO_T *prMsduInfoMgmtCSA;
+
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	P_MSG_P2P_ECSA_T prMsgCSA = NULL;
+
+	UINT_8 aucBcMac[] = BC_MAC_ADDR;
+
+	if (prMsgHdr == NULL)
+		return;
+	prMsgCSA = (P_MSG_P2P_ECSA_T)prMsgHdr;
+
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+
+	prMsduInfoMgmtCSA = (MSDU_INFO_T *)
+		cnmMgtPktAlloc(prAdapter, PUBLIC_ACTION_MAX_LEN);
+
+	if (prMsduInfoMgmtCSA == NULL) {
+		DBGLOG(P2P, ERROR, "<ECSA> %s: allocate mgmt pkt fail\n", __func__);
+		return;
+	}
+
+	rlmGenActionCSHdr((u8 *)prMsduInfoMgmtCSA->prPacket,
+			aucBcMac,
+			prP2pBssInfo->aucBSSID,
+			prP2pBssInfo->aucBSSID, CATEGORY_SPEC_MGT, 4);
+
+
+	rlmGenActionCSA((u8 *)prMsduInfoMgmtCSA->prPacket,
+			prMsgCSA->rP2pECSA.mode,
+			prMsgCSA->rP2pECSA.channel,
+			prMsgCSA->rP2pECSA.count,
+			prMsgCSA->rP2pECSA.sco);
+
+	prMsduInfoMgmtCSA->eSrc = TX_PACKET_MGMT;
+	prMsduInfoMgmtCSA->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
+	prMsduInfoMgmtCSA->ucStaRecIndex = STA_REC_INDEX_BMCAST;
+	prMsduInfoMgmtCSA->ucNetworkType = NETWORK_TYPE_P2P_INDEX;
+	prMsduInfoMgmtCSA->ucMacHeaderLength = WLAN_MAC_MGMT_HEADER_LEN;
+	prMsduInfoMgmtCSA->fgIs802_1x = FALSE;
+	prMsduInfoMgmtCSA->fgIs802_11 = TRUE;
+	prMsduInfoMgmtCSA->u2FrameLength = 34; /* header len + payload */
+	prMsduInfoMgmtCSA->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
+	prMsduInfoMgmtCSA->pfTxDoneHandler = p2pFsmRunEventMgmtEcsaTxDone;
+	prMsduInfoMgmtCSA->fgIsBasicRate = TRUE;	/* use basic rate */
+
+	/* Send them to HW queue */
+	nicTxEnqueueMsdu(prAdapter, prMsduInfoMgmtCSA);
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+
+
+VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	MSDU_INFO_T *prMsduInfoMgmtECSA;
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	P_MSG_P2P_ECSA_T prMsgECSA = NULL;
+
+	UINT_8 aucBcMac[] = BC_MAC_ADDR;
+
+	if (prMsgHdr == NULL)
+		return;
+	prMsgECSA = (P_MSG_P2P_ECSA_T)prMsgHdr;
+
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+
+	prMsduInfoMgmtECSA = (MSDU_INFO_T *)
+		cnmMgtPktAlloc(prAdapter, PUBLIC_ACTION_MAX_LEN);
+
+	if (prMsduInfoMgmtECSA == NULL) {
+		DBGLOG(P2P, ERROR, "<ECSA> %s: allocate mgmt pkt fail\n", __func__);
+		return;
+	}
+
+	rlmGenActionCSHdr((u8 *)prMsduInfoMgmtECSA->prPacket,
+			aucBcMac,
+			prP2pBssInfo->aucBSSID,
+			prP2pBssInfo->aucBSSID, CATEGORY_PUBLIC_ACTION, 4);
+
+	rlmGenActionECSA((u8 *)prMsduInfoMgmtECSA->prPacket,
+			prMsgECSA->rP2pECSA.mode,
+			prMsgECSA->rP2pECSA.channel,
+			prMsgECSA->rP2pECSA.count,
+			prMsgECSA->rP2pECSA.op_class);
+
+	prP2pBssInfo->ucOpClass = prMsgECSA->rP2pECSA.op_class;
+	prP2pBssInfo->ucSwitchCount = prMsgECSA->rP2pECSA.count;
+	prP2pBssInfo->ucSwitchMode = prMsgECSA->rP2pECSA.mode;
+	prP2pBssInfo->ucEcsaChannel = prMsgECSA->rP2pECSA.channel;
+	prP2pBssInfo->fgChanSwitching = TRUE;
+
+	prMsduInfoMgmtECSA->eSrc = TX_PACKET_MGMT;
+	prMsduInfoMgmtECSA->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
+	prMsduInfoMgmtECSA->ucStaRecIndex = STA_REC_INDEX_BMCAST;
+	prMsduInfoMgmtECSA->ucNetworkType = NETWORK_TYPE_P2P_INDEX;
+	prMsduInfoMgmtECSA->ucMacHeaderLength = WLAN_MAC_MGMT_HEADER_LEN;
+	prMsduInfoMgmtECSA->fgIs802_1x = FALSE;
+	prMsduInfoMgmtECSA->fgIs802_11 = TRUE;
+	prMsduInfoMgmtECSA->u2FrameLength = 30; /* header len + payload */
+	prMsduInfoMgmtECSA->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
+	prMsduInfoMgmtECSA->pfTxDoneHandler = p2pFsmRunEventMgmtEcsaTxDone;
+	prMsduInfoMgmtECSA->fgIsBasicRate = TRUE;	/* use basic rate */
+
+	/* Send them to HW queue */
+	nicTxEnqueueMsdu(prAdapter, prMsduInfoMgmtECSA);
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+#endif
 
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
@@ -2275,6 +2406,15 @@ WLAN_STATUS p2pRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	return rWlanStatus;
 }				/* p2pRxActionFrame */
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS p2pUpdateBeaconEcsaIE(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIndex)
+{
+	if (!prAdapter)
+		return WLAN_STATUS_FAILURE;
+
+	return bssUpdateBeaconContent(prAdapter, ucNetTypeIndex);
+}
+#endif
 
 VOID
 p2pProcessEvent_UpdateNOAParam(IN P_ADAPTER_T prAdapter,

@@ -1611,6 +1611,20 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				prKeyDone->ucNetworkType, prKeyDone->aucStaAddr, prStaRec->fgIsTxAllowed);
 			break;
 		}
+#if CFG_SUPPORT_P2P_ECSA
+	case EVENT_ID_ECSA_RESULT:
+		{
+			P_EVENT_ECSA_RESULT prEcsa = (P_EVENT_ECSA_RESULT) (prEvent->aucBuffer);
+
+			DBGLOG(RX, INFO, "BssIndex:status:PrimaryChannel:Sco: %d:%d:%d:%d\n",
+				prEcsa->ucNetTypeIndex,
+				prEcsa->ucStatus,
+				prEcsa->ucPrimaryChannel,
+				prEcsa->ucRfSco);
+			kalP2pUpdateECSA(prAdapter, prEcsa);
+		}
+		break;
+#endif
 	default:
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 

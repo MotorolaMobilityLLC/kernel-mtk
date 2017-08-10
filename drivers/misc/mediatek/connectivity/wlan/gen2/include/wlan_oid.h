@@ -478,6 +478,14 @@ typedef struct _PARAM_CUSTOM_CHIP_CONFIG_STRUCT_T {
 	UINT_8 aucCmd[CHIP_CONFIG_RESP_SIZE];
 } PARAM_CUSTOM_CHIP_CONFIG_STRUCT_T, *P_PARAM_CUSTOM_CHIP_CONFIG_STRUCT_T;
 
+typedef struct _PARAM_ECSA_CONFIG_STRUCT_T {
+	UINT_8 mode;
+	UINT_8 channel;
+	UINT_8 op_class;
+	UINT_8 sco;
+	UINT_8 count;
+} PARAM_ECSA_CONFIG_STRUCT_T, *P_PARAM_ECSA_CONFIG_STRUCT_T;
+
 typedef struct _PARAM_CUSTOM_KEY_CFG_STRUCT_T {
 	UINT_8 aucKey[WLAN_CFG_KEY_LEN_MAX];
 	UINT_8 aucValue[WLAN_CFG_VALUE_LEN_MAX];
@@ -1662,6 +1670,13 @@ WLAN_STATUS wlanoidTspecOperation(
 WLAN_STATUS
 wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS
+wlanoidSetECSAConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif
+
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 								IN PVOID pvSetBuffer,

@@ -1116,7 +1116,11 @@ BOOLEAN kalP2pFuncGetChannelType(IN ENUM_CHNL_EXT_T rChnlSco, OUT enum nl80211_c
 
 			switch (rChnlSco) {
 			case CHNL_EXT_SCN:
+#if CFG_SUPPORT_P2P_ECSA
+				*channel_type = NL80211_CHAN_HT20;
+#else
 				*channel_type = NL80211_CHAN_NO_HT;
+#endif
 				break;
 			case CHNL_EXT_SCA:
 				*channel_type = NL80211_CHAN_HT40MINUS;
@@ -1184,7 +1188,58 @@ struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo
 
 	return prTargetChannelEntry;
 }				/* kalP2pFuncGetChannelEntry */
+#if CFG_SUPPORT_P2P_ECSA
+VOID kalP2pUpdateECSA(IN P_ADAPTER_T prAdapter, IN P_EVENT_ECSA_RESULT prECSA)
+{
+	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prECSA->ucNetTypeIndex]);
 
+	struct cfg80211_chan_def chandef;
+	RF_CHANNEL_INFO_T rChannelInfo;
+	enum nl80211_channel_type chantype;
+	struct ieee80211_channel *channel;
+
+
+	UINT_32 u4Freq = nicChannelNum2Freq(prECSA->ucPrimaryChannel);
+
+	if (!u4Freq) {
+		DBGLOG(P2P, INFO, "channel number invalid: %d\n", prECSA->ucPrimaryChannel);
+		return;
+	}
+
+	rChannelInfo.ucChannelNum = prECSA->ucPrimaryChannel;
+	rChannelInfo.eBand = prECSA->ucPrimaryChannel > 14 ? BAND_5G : BAND_2G4;
+
+	channel = kalP2pFuncGetChannelEntry(prAdapter->prGlueInfo->prP2PInfo, &rChannelInfo);
+	if (!channel) {
+		DBGLOG(P2P, ERROR, "invalid channel:band %d:%d\n",
+				rChannelInfo.ucChannelNum,
+				rChannelInfo.eBand);
+		return;
+	}
+	kalP2pFuncGetChannelType(prECSA->ucRfSco, &chantype);
+	prBssInfo->ucPrimaryChannel = prECSA->ucPrimaryChannel;
+	prBssInfo->eBssSCO = prECSA->ucRfSco;
+	prBssInfo->eBand = prBssInfo->ucPrimaryChannel > 14 ? BAND_5G : BAND_2G4;
+	prBssInfo->fgChanSwitching = FALSE;
+
+	/* sync with firmware */
+	nicUpdateBss(prAdapter, prECSA->ucNetTypeIndex);
+
+	/* only indicate to host when we AP/GO */
+	if (prBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) {
+		DBGLOG(P2P, INFO, "Do not indicate to host\n");
+		return;
+	}
+
+	if (prBssInfo->ucPrimaryChannel == 14)
+		chantype = NL80211_CHAN_NO_HT;
+
+	cfg80211_chandef_create(&chandef, channel, chantype);
+	/* indicate to host */
+	cfg80211_ch_switch_notify(prAdapter->prGlueInfo->prP2PInfo->prDevHandler,
+			&chandef);
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief to set/clear the MAC address to/from the black list of Hotspot

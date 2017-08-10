@@ -745,6 +745,7 @@
 
 #define CFG_SUPPORT_FCC_POWER_BACK_OFF             0
 
+#define CFG_SUPPORT_P2P_ECSA                       0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------

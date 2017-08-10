@@ -285,6 +285,13 @@ struct _BSS_INFO_T {
     /*------------------------------------------------------------------------*/
 	ENUM_BAND_T eBand;
 	UINT_8 ucPrimaryChannel;
+#if CFG_SUPPORT_P2P_ECSA
+	UINT_8 ucEcsaChannel;
+	UINT_8 ucOpClass;
+	UINT_8 ucSwitchCount;
+	UINT_8 ucSwitchMode;
+	BOOLEAN fgChanSwitching;
+#endif
 	UINT_8 ucHtOpInfo1;
 	UINT_16 u2HtOpInfo2;
 	UINT_16 u2HtOpInfo3;

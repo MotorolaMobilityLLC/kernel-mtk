@@ -63,6 +63,7 @@
 #define CMD_SETROAMMODE			"SETROAMMODE"
 #define CMD_MIRACAST			"MIRACAST"
 
+#define CMD_ECSA			"P2P_ECSA"
 #define CMD_PNOSSIDCLR_SET	"PNOSSIDCLR"
 #define CMD_PNOSETUP_SET	"PNOSETUP "
 #define CMD_PNOENABLE_SET	"PNOFORCE"
@@ -2872,7 +2873,154 @@ int priv_driver_set_miracast(IN struct net_device *prNetDev, IN char *pcCommand,
 	/* i4Argc */
 	return i4BytesWritten;
 }
+#if CFG_SUPPORT_P2P_ECSA
+int priv_driver_set_cs_config(IN struct net_device *prNetDev,
+				IN UINT_8 mode,
+				IN UINT_8 channel,
+				IN UINT_8 op_class,
+				IN UINT_8 count,
+				IN UINT_8 sco)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	UINT_32 u4BufLen = 0;
+	PARAM_ECSA_CONFIG_STRUCT_T rECSAConfig;
 
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	kalMemZero(&rECSAConfig, sizeof(rECSAConfig));
+
+	rECSAConfig.channel = channel;
+	rECSAConfig.count = count;
+	rECSAConfig.mode = mode;
+	rECSAConfig.op_class = op_class;
+	rECSAConfig.sco = sco;
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetECSAConfig,
+			   &rECSAConfig,
+			   sizeof(rECSAConfig), FALSE, FALSE, TRUE, TRUE, &u4BufLen);
+	DBGLOG(REQ, INFO, "%s status: %d\n", __func__, rStatus);
+	rStatus = p2pUpdateBeaconEcsaIE(prGlueInfo->prAdapter, NETWORK_TYPE_P2P_INDEX);
+	DBGLOG(REQ, INFO, "%s update beacon status: %d\n", __func__, rStatus);
+	return rStatus;
+}
+
+int priv_driver_ecsa(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	UINT_32 channel;
+	UINT_8 op_class;
+	UINT_32 bandwidth;
+	UINT_32 u4Freq;
+	INT_32 sec_channel = 0;
+	UINT_8 ucPreferedChnl;
+	ENUM_BAND_T eBand;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+
+	P_MSG_P2P_ECSA_T prMsgECSA = NULL;
+	P_MSG_P2P_ECSA_T prMsgCSA = NULL;
+
+	INT_32 i4Argc = 0;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	ENUM_CHNL_EXT_T eSco = CHNL_EXT_SCN;
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	prAdapter = prGlueInfo->prAdapter;
+
+	DBGLOG(REQ, INFO, "command is %s\n", pcCommand);
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+
+	if (i4Argc != 3) {
+		/*
+		 * cmd format: P2P_ECSA channel bandwidth
+		 * argc should be 3
+		 */
+		DBGLOG(REQ, WARN, "cmd format invalid. argc: %d\n", i4Argc);
+		return -1;
+	}
+	/*
+	 * apcArgv[0] = "P2P_ECSA
+	 * apcArgv[1] = channel
+	 * apcArgv[2] = bandwidth
+	 */
+	if (kalkStrtou32(apcArgv[1], 0, &channel) ||
+		kalkStrtou32(apcArgv[2], 0, &bandwidth)) {
+		DBGLOG(REQ, INFO, "kalkstrtou32 failed\n");
+		return -1;
+	}
+	DBGLOG(REQ, INFO, "ECSA: channel:bandwidth %d:%d\n", channel, bandwidth);
+	u4Freq = nicChannelNum2Freq(channel);
+	prMsgCSA = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_P2P_ECSA_T));
+
+	prMsgECSA = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_P2P_ECSA_T));
+	if (!prMsgECSA || !prMsgCSA) {
+		if (prMsgECSA)
+			cnmMemFree(prAdapter, prMsgECSA);
+		if (prMsgCSA)
+			cnmMemFree(prAdapter, prMsgCSA);
+
+		DBGLOG(REQ, ERROR, "Msg alloc failed\n");
+		return -1;
+	}
+
+	if (bandwidth == 20) {
+		/* no need to get sco */
+	} else if (bandwidth == 40) {
+		/* need get sco */
+		if (cnmPreferredChannel(prAdapter,
+					&eBand,
+					&ucPreferedChnl,
+					&eSco) == FALSE) {
+			eSco = rlmDecideSco(prAdapter, channel, channel > 14 ? BAND_2G4 : BAND_5G);
+		}
+
+	} else {
+		/* failed, we not support 80/160 yet */
+		DBGLOG(REQ, ERROR, "band width %d not support\n", bandwidth);
+		return -2;
+	}
+
+	if (eSco == CHNL_EXT_SCN) {
+		DBGLOG(REQ, INFO, "SCO: No Sco\n");
+		sec_channel = 0;
+	} else if (eSco == CHNL_EXT_SCA) {
+		DBGLOG(REQ, INFO, "SCO: above Sco\n");
+		sec_channel = 1;
+	} else if (eSco == CHNL_EXT_SCB) {
+		DBGLOG(REQ, INFO, "SCO: above Sco\n");
+		sec_channel = -1;
+	}
+	rlmFreqToChannelExt(u4Freq / 1000, sec_channel, &op_class, (PUINT_8)&channel);
+
+	prMsgCSA->rMsgHdr.eMsgId = MID_MNY_P2P_CSA;
+	prMsgCSA->rP2pECSA.channel = channel;
+	prMsgCSA->rP2pECSA.count = 50; /* 50 TBTTs */
+	prMsgCSA->rP2pECSA.mode = 0; /* not reserve transimit */
+	prMsgCSA->rP2pECSA.op_class = op_class;
+	prMsgCSA->rP2pECSA.sco = eSco;
+
+	DBGLOG(REQ, INFO, "freq:channel:mode:count:op_class:sco %d:%d:%d:%d:%d:%d",
+			u4Freq,
+			channel, prMsgCSA->rP2pECSA.mode,
+			prMsgCSA->rP2pECSA.count,
+			prMsgCSA->rP2pECSA.op_class,
+			prMsgCSA->rP2pECSA.sco);
+
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgCSA, MSG_SEND_METHOD_BUF);
+
+	prMsgECSA->rMsgHdr.eMsgId = MID_MNY_P2P_ECSA;
+	prMsgECSA->rP2pECSA.channel = channel;
+	prMsgECSA->rP2pECSA.count = 50; /* 50 TBTTs */
+	prMsgECSA->rP2pECSA.mode = 0; /* not reserve transimit */
+	prMsgECSA->rP2pECSA.op_class = op_class;
+	prMsgECSA->rP2pECSA.sco = eSco;
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgECSA, MSG_SEND_METHOD_BUF);
+
+	priv_driver_set_cs_config(prNetDev, 0, channel, op_class, 50, eSco);
+	return 0;
+}
+#endif
 int priv_support_driver_cmd(IN struct net_device *prNetDev, IN OUT struct ifreq *prReq, IN int i4Cmd)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -2962,6 +3110,10 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 
 		if (strnicmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0)
 			i4BytesWritten = priv_driver_set_miracast(prNetDev, pcCommand, i4TotalLen);
+#if CFG_SUPPORT_P2P_ECSA
+		else if (kalStrniCmp(pcCommand, CMD_ECSA, strlen(CMD_ECSA)) == 0)
+			i4BytesWritten = priv_driver_ecsa(prNetDev, pcCommand, i4TotalLen);
+#endif
 #if CFG_SUPPORT_BATCH_SCAN
 		else if (strnicmp(pcCommand, CMD_BATCH_SET, strlen(CMD_BATCH_SET)) == 0) {
 			kalIoctl(prGlueInfo,

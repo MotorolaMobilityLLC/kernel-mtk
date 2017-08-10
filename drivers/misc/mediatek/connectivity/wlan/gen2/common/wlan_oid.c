@@ -10327,7 +10327,49 @@ wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,
 #endif
 	return rWlanStatus;
 }				/* wlanoidSetChipConfig */
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS
+wlanoidSetECSAConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_ECSA_CONFIG_STRUCT_T prCsInfo;
+	CMD_SET_ECSA_PARAM rCmdCsConfig;
+	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
 
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+	ASSERT(pvSetBuffer);
+
+	prCsInfo = (P_PARAM_ECSA_CONFIG_STRUCT_T) pvSetBuffer;
+	kalMemZero(&rCmdCsConfig, sizeof(rCmdCsConfig));
+
+	rCmdCsConfig.ucNetTypeIndex = NETWORK_TYPE_P2P_INDEX,
+	rCmdCsConfig.ucOperatingClass = prCsInfo->op_class;
+	rCmdCsConfig.ucPrimaryChannel = prCsInfo->channel;
+	rCmdCsConfig.ucRfSco = prCsInfo->sco;
+	rCmdCsConfig.ucSwitchMode = prCsInfo->mode;
+	rCmdCsConfig.ucSwitchTotalCount = prCsInfo->count;
+
+	DBGLOG(OID, INFO, "index:op_class:channel:sco:mode:count %d:%d:%d:%d:%d:%d\n",
+			rCmdCsConfig.ucNetTypeIndex,
+			rCmdCsConfig.ucOperatingClass,
+			rCmdCsConfig.ucPrimaryChannel,
+			rCmdCsConfig.ucRfSco,
+			rCmdCsConfig.ucSwitchMode,
+			rCmdCsConfig.ucSwitchTotalCount);
+	rWlanStatus = wlanSendSetQueryCmd(prAdapter,
+					  CMD_ID_SET_ECSA_PARAM,
+					  TRUE,
+					  FALSE,
+					  TRUE,
+					  nicCmdEventSetCommon,
+					  nicOidCmdTimeoutCommon,
+					  sizeof(CMD_CHIP_CONFIG_T),
+					  (PUINT_8) & rCmdCsConfig,
+					  pvSetBuffer, u4SetBufferLen);
+	return rWlanStatus;
+}
+#endif
 WLAN_STATUS
 wlanoidSetWfdDebugMode(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)

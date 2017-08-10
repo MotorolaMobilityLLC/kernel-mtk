@@ -127,6 +127,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_RRM_CAPABILITY = 0x59, /* 0x59 (Set) */
 	CMD_ID_SET_MAX_TXPWR_LIMIT = 0x5A, /* 0x5A (Set) */
 	CMD_ID_REQ_CHNL_UTILIZATION = 0x5C, /* 0x5C (Get) */
+#if CFG_SUPPORT_P2P_ECSA
+	CMD_ID_SET_ECSA_PARAM = 0x5D,		/* 0x5D (Set) */
+#endif
 	CMD_ID_SET_TSM_STATISTICS_REQUEST = 0x5E,
 	CMD_ID_GET_TSM_STATISTICS = 0x5F,
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
@@ -256,14 +259,19 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_GSCAN_SCAN_AVAILABLE = 0x35,
 	EVENT_ID_GSCAN_RESULT = 0x36,
 	EVENT_ID_BATCH_RESULT = 0x37,
+
 	EVENT_ID_CHECK_REORDER_BUBBLE = 0x39,
+#if CFG_SUPPORT_P2P_ECSA
+		EVENT_ID_ECSA_RESULT = 0x3D,
+#endif
 	EVENT_ID_ADD_PKEY_DONE = 0x44, /* 0x44 (Unsolicited) */
 	EVENT_ID_GET_TSM_STATISTICS = 0x47,
+
+
 
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	EVENT_ID_BA_FW_DROP_SN = 0x51,
 #endif
-
 	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
 #if CFG_SUPPORT_EMI_DEBUG
 	EVENT_ID_DRIVER_DUMP_LOG = 0x76, /*request driver to dump EMI message*/
@@ -1686,6 +1694,7 @@ struct CMD_TDLS_PS_T {
 	UINT_8	aucReserved[3];
 };
 
+
 struct CMD_REQ_CHNL_UTILIZATION {
 	UINT_16 u2MeasureDuration;
 	UINT_8 ucChannelNum;
@@ -1713,6 +1722,35 @@ struct EVENT_RSP_CHNL_UTILIZATION {
 	UINT_8 aucReserved2[16];
 };
 
+#if CFG_SUPPORT_P2P_ECSA
+typedef struct _CMD_SET_ECSA_PARAM_T {
+	UINT_8  ucNetTypeIndex;
+	UINT_8  ucSwitchMode;
+	UINT_8  ucOperatingClass;
+	UINT_8  ucSwitchTotalCount; /* unit:tbtt, min value: 1 sec */
+	UINT_8  ucPrimaryChannel;
+	UINT_8  ucRfSco;
+	UINT_8  ucReserved[2];
+} CMD_SET_ECSA_PARAM, *P_CMD_SET_ECSA_PARAM;
+
+typedef struct _EVENT_ECSA_RESULT_T {
+	UINT_8 ucNetTypeIndex;
+#define ECSA_EVENT_STATUS_SUCCESS	0
+#define ECSA_EVENT_STATUS_UPDATE_BEACON	1
+#define ECSA_EVENT_STATUS_INVALID_PARAM	2
+#define ECSA_EVENT_STATUS_CHNL_SWITCH_FAILED	3
+#define ECSA_EVENT_STATUS_UNACCEPTABLE	4
+	UINT_8 ucStatus;	/*
+				 * 0: ECSA success
+				 * 1: update beacon success
+				 * 2: Fail due to wrong parameter
+				 * 3: Set channel fail
+				 */
+	UINT_8 ucPrimaryChannel;
+	UINT_8 ucRfSco;
+	UINT_8 ucReserved[4];
+} EVENT_ECSA_RESULT, *P_EVENT_ECSA_RESULT;
+#endif
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
