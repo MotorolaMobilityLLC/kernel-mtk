@@ -2241,6 +2241,11 @@ static VOID wlanRemove(VOID)
 
 	kalPerMonDestroy(prGlueInfo);
 
+	/* complete possible pending oid, which may block wlanRemove some time
+		and then whole chip reset may failed */
+	if (kalIsResetting())
+		kalOidCmdClearance(prGlueInfo);
+
 #if CFG_ENABLE_BT_OVER_WIFI
 	if (prGlueInfo->rBowInfo.fgIsNetRegistered) {
 		bowNotifyAllLinkDisconnected(prGlueInfo->prAdapter);
