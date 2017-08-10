@@ -785,8 +785,6 @@ out:
 static int __init memory_ssvp_debug_init(void)
 {
 	int ret = 0;
-	struct proc_dir_entry *procfs_entry;
-
 	struct dentry *dentry;
 
 	if (ssvp_sanity() < 0) {
@@ -803,7 +801,7 @@ static int __init memory_ssvp_debug_init(void)
 
 	/* svp is enabled with a given size */
 	if (_SVP_MBSIZE > 0) {
-		procfs_entry = proc_create("svp_region", 0, NULL, &svp_cma_fops);
+		struct proc_dir_entry *procfs_entry = proc_create("svp_region", 0, NULL, &svp_cma_fops);
 
 		if (!procfs_entry)
 			pr_warn("Failed to create procfs svp_region file\n");
@@ -825,7 +823,7 @@ static int __init memory_ssvp_debug_init(void)
 
 	/* TUI is enabled with a given size */
 	if (_TUI_MBSIZE > 0) {
-		proc_create("tui_region", 0, NULL, &tui_cma_fops);
+		struct proc_dir_entry *procfs_entry = proc_create("tui_region", 0, NULL, &tui_cma_fops);
 
 		if (!procfs_entry)
 			pr_warn("Failed to create procfs tui_region file\n");
