@@ -4822,6 +4822,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				memset((void *)g_DmaErr_CAM[rt_buf_ctrl.module], 0, sizeof(MUINT32)*nDMA_ERR_CAM);
 				break;
 			default:
+				if (rt_buf_ctrl.module >= ISP_IRQ_TYPE_AMOUNT) {
+					LOG_ERR("rt_buf_ctrl wrong module: %d", rt_buf_ctrl.module);
+					break;
+				}
 				sof_count[rt_buf_ctrl.module] = 0;
 				g1stSof[rt_buf_ctrl.module] = MTRUE;
 				g_ISPIntErr[rt_buf_ctrl.module] = 0;
