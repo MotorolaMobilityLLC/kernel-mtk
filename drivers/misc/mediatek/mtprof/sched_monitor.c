@@ -869,6 +869,14 @@ static int __init init_mtsched_mon(void)
 	int cpu;
 	struct proc_dir_entry *pe;
 
+	WARN_ISR_DUR = TIME_3MS;
+	WARN_SOFTIRQ_DUR = TIME_5MS;
+	WARN_TASKLET_DUR = TIME_10MS;
+	WARN_HRTIMER_DUR = TIME_3MS;
+	WARN_STIMER_DUR = TIME_10MS;
+	WARN_BURST_IRQ_DETECT = 25000;
+	WARN_PREEMPT_DUR = TIME_10MS;
+
 	for_each_possible_cpu(cpu) {
 		per_cpu(MT_stack_trace, cpu).entries =
 		    kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(unsigned long), GFP_KERNEL);
@@ -881,14 +889,6 @@ static int __init init_mtsched_mon(void)
 		per_cpu(hrt_mon, cpu).type = evt_HRTIMER;
 		per_cpu(sft_mon, cpu).type = evt_STIMER;
 	}
-
-	WARN_ISR_DUR = TIME_3MS;
-	WARN_SOFTIRQ_DUR = TIME_5MS;
-	WARN_TASKLET_DUR = TIME_10MS;
-	WARN_HRTIMER_DUR = TIME_3MS;
-	WARN_STIMER_DUR = TIME_10MS;
-	WARN_BURST_IRQ_DETECT = 25000;
-	WARN_PREEMPT_DUR = TIME_10MS;
 
 	if (!proc_mkdir("mtmon", NULL))
 		return -1;
