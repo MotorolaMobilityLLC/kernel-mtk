@@ -19,7 +19,6 @@
 #include <linux/ktime.h>
 #include <linux/hrtimer.h>
 #include <linux/module.h>
-#include <linux/suspend.h>
 #include <trace/events/power.h>
 
 #include "cpuidle.h"
@@ -103,27 +102,6 @@ static int cpuidle_find_deepest_state(struct cpuidle_driver *drv,
 		ret = i;
 	}
 	return ret;
-}
-
-/**
- * cpuidle_enter_freeze - Enter an idle state suitable for suspend-to-idle.
- *
- * Find the deepest state available and enter it.
- */
-void cpuidle_enter_freeze(void)
-{
-	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-	int index;
-
-	index = cpuidle_find_deepest_state(drv, dev);
-	if (index >= 0)
-		cpuidle_enter(drv, dev, index);
-	else
-		arch_cpu_idle();
-
-	/* Interrupts are enabled again here. */
-	local_irq_disable();
 }
 
 /**
@@ -228,7 +206,7 @@ int cpuidle_enter(struct cpuidle_driver *drv, struct cpuidle_device *dev,
  */
 void cpuidle_reflect(struct cpuidle_device *dev, int index)
 {
-	if (cpuidle_curr_governor->reflect)
+	if (cpuidle_curr_governor->reflect && !unlikely(use_deepest_state))
 		cpuidle_curr_governor->reflect(dev, index);
 
 #if 0
