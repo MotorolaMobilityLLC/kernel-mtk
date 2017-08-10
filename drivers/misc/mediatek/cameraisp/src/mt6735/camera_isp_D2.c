@@ -6207,27 +6207,27 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 		i = 0x0;
 		j = 0x64;
 		length += sprintf(tempStr, "MT ISP Register\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		length += sprintf(tempStr, "====== top ====\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		break;
 	case 2:
 		i = 0x200;
 		j = 0x3D8;
 		length += sprintf(tempStr, "====== dma ====\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		break;
 	case 3:
 		i = 0x400;
 		j = 0x4EC;
 		length += sprintf(tempStr, "====== tg ====\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		break;
 	case 4:
 		i = 0xB00;
 		j = 0xDE0;
 		length += sprintf(tempStr, "====== cdp (including EIS) ====\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		break;
 	case 5:
 		i = 0x4000;
@@ -6257,7 +6257,7 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 		i = 0x4F00;
 		j = 0x4F38;
 		length += sprintf(tempStr, "====== 3DNR ====\n");
-		strcat(tempStr2, tempStr);
+		strncat(tempStr2, tempStr, length);
 		break;
 	default:
 		dataState = 0;
