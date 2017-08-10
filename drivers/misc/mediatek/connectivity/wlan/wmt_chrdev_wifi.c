@@ -309,6 +309,7 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
 			if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_WIFI)) {
 				WIFI_ERR_FUNC("WMT turn off WIFI fail!\n");
 				WMT_CHECK_DO_CHIP_RESET();
+				powered = 0;
 			} else {
 				WIFI_INFO_FUNC("WMT turn off WIFI OK!\n");
 				powered = 0;
