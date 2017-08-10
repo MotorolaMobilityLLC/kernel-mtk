@@ -1931,6 +1931,11 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 			osal_memcpy_fromio(&buf[0], pAddr, len);
 		}
 	} else {
+		if (p_consys_info == NULL) {
+			WMT_ERR_FUNC("wmt-lib: get EMI physical address fail!\n");
+			return 0;
+		}
+
 		if (offset >= 0x7fff)
 			offset = 0x0;
 
