@@ -157,6 +157,8 @@ void wmt_lib_psm_lock_release(VOID)
 INT32 DISABLE_PSM_MONITOR(VOID)
 {
 	INT32 ret = 0;
+	PUINT8 pbuf = NULL;
+	INT32 len = 0;
 
 	/* osal_lock_sleepable_lock(&gDevWmt.psm_lock); */
 	ret = wmt_lib_psm_lock_aquire();
@@ -169,6 +171,10 @@ INT32 DISABLE_PSM_MONITOR(VOID)
 	if (ret) {
 		WMT_ERR_FUNC("wmt_lib_ps_disable fail, ret=%d\n", ret);
 		wmt_lib_psm_lock_release();
+		pbuf = "wmt_lib_ps_disable fail, just collect SYS_FTRACE to DB";
+		len = osal_strlen(pbuf);
+		stp_dbg_trigger_collect_ftrace(pbuf, len);
+		wmt_lib_cmb_rst(WMTRSTSRC_RESET_STP);
 	}
 #endif
 	return ret;
@@ -1082,8 +1088,6 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 	MTK_WCN_BOOL bCleanup = MTK_WCN_BOOL_FALSE;
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 waitRet = -1;
-	PUINT8 pbuf = NULL;
-	INT32 len = 0;
 
 	osal_assert(pWmtDev);
 	osal_assert(pOp);
@@ -1135,14 +1139,9 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 
 		/* if (unlikely(!wait_ret)) { */
 		if (0 == waitRet) {
-			pbuf = "Wait wmtd complation timeout, just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
 			WMT_ERR_FUNC
 				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
 			wmt_lib_dump_wmtd_backtrace();
-			/* TODO: how to handle it? retry? */
-			/* wcn_wmtd_timeout_collect_ftrace();*/ /*trigger collect SYS_FTRACE */
-			stp_dbg_trigger_collect_ftrace(pbuf, len);
 		} else {
 			if (pOp->result)
 				WMT_WARN_FUNC("opId(%d) result:%d\n", pOp->op.opId, pOp->result);

@@ -1936,7 +1936,7 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM] = DRV_STS_POWER_OFF;
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_GPS] = DRV_STS_POWER_OFF;
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WIFI] = DRV_STS_POWER_OFF; */
-	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF;
+	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_LPBK] = DRV_STS_POWER_OFF; */
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO1]= DRV_STS_POWER_OFF; */
 	/* gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2]= DRV_STS_POWER_OFF; */
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_STP] = DRV_STS_POWER_OFF;
@@ -2101,6 +2101,8 @@ static INT32 opfunc_therm_ctrl(P_WMT_OP pWmtOp)
 	UINT32 u4Res;
 	UINT32 evtLen;
 	UINT8 evtBuf[16] = { 0 };
+	ULONG ctrlpa1;
+	ULONG ctrlpa2;
 
 	WMT_THERM_CMD[4] = pWmtOp->au4OpData[0];	/*CMD type, refer to ENUM_WMTTHERM_TYPE_T */
 
@@ -2121,20 +2123,13 @@ static INT32 opfunc_therm_ctrl(P_WMT_OP pWmtOp)
 	if (iRet
 	    || ((u4Res != osal_sizeof(WMT_THERM_CTRL_EVT))
 		&& (u4Res != osal_sizeof(WMT_THERM_READ_EVT)))) {
-#if 0
-		unsigned long ctrlpa1 = WMTDRV_TYPE_WMT;
-		unsigned long ctrlpa2 = 36;
-
+		ctrlpa1 = WMTDRV_TYPE_WMT;
+		ctrlpa2 = 36;
 		WMT_ERR_FUNC
 		    ("WMT-CORE: read THERM_CTRL_EVT/THERM_READ_EVENT fail(%d) len(%d, %d)\n", iRet,
 		     u4Res, evtLen);
-		mtk_wcn_stp_dbg_dump_package();
+		wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
 		wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
-#else
-		WMT_ERR_FUNC
-		    ("WMT-CORE: read THERM_CTRL_EVT/THERM_READ_EVENT fail(%d) len(%d, %d)\n", iRet,
-		     u4Res, evtLen);
-#endif
 		return iRet;
 	}
 	if (u4Res == osal_sizeof(WMT_THERM_CTRL_EVT)) {
@@ -2943,6 +2938,9 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	UINT16 msg_len = 0;
 	UINT32 total_len = 0;
 	UINT32 index = 0;
+	UINT32 evtLen;
+	ULONG ctrlpa1;
+	ULONG ctrlpa2;
 
 	pTxBuf = (UINT8 *) pWmtOp->au4OpData[0];
 	if (NULL == pTxBuf) {
@@ -2987,10 +2985,15 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 			break;
 		}
 		osal_memset(evtbuf, 0, osal_sizeof(evtbuf));
-		iRet = wmt_core_rx(evtbuf, osal_sizeof(host_lte_btwf_coex_evt), &u4Res);
-		if (iRet || (u4Res != osal_sizeof(host_lte_btwf_coex_evt))) {
-			WMT_ERR_FUNC("wmt_core:recv host_lte_btwf_coex_evt fail(%d),size(%d)\n",
-				     iRet, u4Res);
+		evtLen = osal_sizeof(host_lte_btwf_coex_evt);
+		iRet = wmt_core_rx(evtbuf, evtLen, &u4Res);
+		if (iRet || (u4Res != evtLen)) {
+			WMT_ERR_FUNC("wmt_core:recv host_lte_btwf_coex_evt fail(%d) len(%d, %d)\n",
+				iRet, u4Res, evtLen);
+			ctrlpa1 = WMTDRV_TYPE_WMT;
+			ctrlpa2 = 41;
+			wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
 			break;
 		}
 

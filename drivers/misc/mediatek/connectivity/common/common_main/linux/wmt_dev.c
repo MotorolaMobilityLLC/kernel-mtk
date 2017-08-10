@@ -511,7 +511,6 @@ static UINT32 wmt_dev_tra_poll(VOID)
 	switch (chip_type) {
 	case WMT_CHIP_TYPE_COMBO:
 		during_count = count_last_access_sdio;
-		count_last_access_sdio = 0;
 		break;
 	case WMT_CHIP_TYPE_SOC:
 		during_count = (*mtk_wcn_wlan_bus_tx_cnt)();
@@ -523,7 +522,6 @@ static UINT32 wmt_dev_tra_poll(VOID)
 			WMT_ERR_FUNC("WMT-DEV:mtk_wcn_wlan_bus_tx_cnt_clr null pointer\n");
 			return -3;
 		}
-		(*mtk_wcn_wlan_bus_tx_cnt_clr)();
 		break;
 	default:
 		WMT_ERR_FUNC("WMT-DEV:error chip type(%d)\n", chip_type);
@@ -536,7 +534,12 @@ static UINT32 wmt_dev_tra_poll(VOID)
 	}
 
 	jiffies_last_poll = jiffies;
-
+	if (chip_type == WMT_CHIP_TYPE_COMBO)
+		count_last_access_sdio = 0;
+	else if (chip_type == WMT_CHIP_TYPE_SOC)
+		(*mtk_wcn_wlan_bus_tx_cnt_clr)();
+	else
+		WMT_ERR_FUNC("WMT-DEV:error chip type(%d)\n", chip_type);
 	WMT_INFO_FUNC("**poll_during_time = %lu > %lu, during_count = %lu > %lu, query\n",
 		      jiffies_to_msecs(poll_during_time), TIME_THRESHOLD_TO_TEMP_QUERY,
 		      jiffies_to_msecs(during_count), COUNT_THRESHOLD_TO_TEMP_QUERY);
