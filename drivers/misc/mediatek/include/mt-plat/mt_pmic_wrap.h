@@ -16,7 +16,6 @@
 
 #include <linux/types.h>
 #include <linux/device.h>
-#include <mach/upmu_hw.h>
 
 #define PWRAP_READ 0
 #define PWRAP_WRITE 1
