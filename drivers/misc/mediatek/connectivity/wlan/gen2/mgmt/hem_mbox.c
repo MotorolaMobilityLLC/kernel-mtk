@@ -361,13 +361,19 @@ mboxSendMsg(IN P_ADAPTER_T prAdapter,
 	    IN ENUM_MBOX_ID_T eMboxId, IN P_MSG_HDR_T prMsg, IN EUNM_MSG_SEND_METHOD_T eMethod)
 {
 	P_MBOX_T prMbox;
-
+#if CFG_DBG_MGT_BUF
+	P_BUF_INFO_T prBufInfo;
+#endif
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(eMboxId < MBOX_ID_TOTAL_NUM);
 	ASSERT(prMsg);
 	ASSERT(prAdapter);
-
+#if CFG_DBG_MGT_BUF
+	prBufInfo = &prAdapter->rMgtBufInfo;
+	DBGLOG(CNM, TRACE, "MSG [%d],freeCnt:%d,AllocCnt:%d\n", prMsg->eMsgId
+		, prBufInfo->u4FreeCount, prBufInfo->u4AllocCount);
+#endif
 	prMbox = &(prAdapter->arMbox[eMboxId]);
 
 	switch (eMethod) {

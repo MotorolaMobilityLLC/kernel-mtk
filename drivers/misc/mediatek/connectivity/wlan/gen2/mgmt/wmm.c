@@ -376,7 +376,8 @@ wmmRunEventTSOperate(
 
 	wmmTspecSteps(prAdapter, prMsgTsOperate->ucTid,
 				  prMsgTsOperate->eOpCode, (VOID *)&prMsgTsOperate->rTspecParam);
-	cnmMemFree(prAdapter, prMsgHdr);
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
 }
 
 VOID
@@ -400,7 +401,7 @@ wmmTspecSteps(P_ADAPTER_T prAdapter, UINT_8 ucTid, enum TSPEC_OP_CODE eOpCode,
 	}
 
 	prCurTs = &prWmmInfo->arTsInfo[ucTid];
-	DBGLOG(WMM, INFO, "TID %d, State %d, Oper %d\n", ucTid, prCurTs->eState, eOpCode);
+	DBGLOG(WMM, TRACE, "TID %d, State %d, Oper %d\n", ucTid, prCurTs->eState, eOpCode);
 
 	switch (prCurTs->eState) {
 	case QOS_TS_INACTIVE:

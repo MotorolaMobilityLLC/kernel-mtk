@@ -2489,18 +2489,18 @@ VOID rlmSetMaxTxPwrLimit(IN P_ADAPTER_T prAdapter, INT_8 cLimit, UINT_8 ucEnable
 	rTxPwrLimit.ucMaxTxPwrLimitEnable = ucEnable;
 	if (ucEnable) {
 		if (cLimit > RLM_MAX_TX_PWR) {
-			DBGLOG(RLM, INFO, "Target MaxPwr %d Higher than Capability, reset to capability\n", cLimit);
+			DBGLOG(RLM, TRACE, "Target MaxPwr %d Higher than Capability, reset to capability\n", cLimit);
 			cLimit = RLM_MAX_TX_PWR;
 		}
 		if (cLimit < RLM_MIN_TX_PWR) {
-			DBGLOG(RLM, INFO, "Target MinPwr %d Lower than Capability, reset to capability\n", cLimit);
+			DBGLOG(RLM, TRACE, "Target MinPwr %d Lower than Capability, reset to capability\n", cLimit);
 			cLimit = RLM_MIN_TX_PWR;
 		}
-		DBGLOG(RLM, INFO, "Set Max Tx Power Limit %d, Min Limit %d\n", cLimit, RLM_MIN_TX_PWR);
+		DBGLOG(RLM, TRACE, "Set Max Tx Power Limit %d, Min Limit %d\n", cLimit, RLM_MIN_TX_PWR);
 		rTxPwrLimit.cMaxTxPwr = cLimit * 2; /* unit of cMaxTxPwr is 0.5 dBm */
 		rTxPwrLimit.cMinTxPwr = RLM_MIN_TX_PWR * 2;
 	} else
-		DBGLOG(RLM, INFO, "Disable Tx Power Limit\n");
+		DBGLOG(RLM, TRACE, "Disable Tx Power Limit\n");
 
 	wlanSendSetQueryCmd(prAdapter,
 					  CMD_ID_SET_MAX_TXPWR_LIMIT,
@@ -2549,7 +2549,9 @@ static VOID rlmCalibrationRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq
 
 VOID rlmRunEventProcessNextRm(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 {
-	cnmMemFree(prAdapter, prMsgHdr);
+	ASSERT(prAdapter);
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
 	rlmStartNextMeasurement(prAdapter, FALSE);
 }
 
@@ -2558,6 +2560,10 @@ VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter)
 	P_MSG_HDR_T prMsg = NULL;
 
 	prMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsg));
+	if (prMsg) {
+		ASSERT(0);	/* Can't send  Msg */
+		return;
+	}
 	prMsg->eMsgId = MID_RLM_RM_SCHEDULE;
 	mboxSendMsg(prAdapter, MBOX_ID_0, prMsg, MSG_SEND_METHOD_BUF);
 }

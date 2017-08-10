@@ -243,6 +243,9 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 {
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+#if CFG_DBG_MGT_BUF
+	P_BUF_INFO_T prBufInfo;
+#endif
 
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
@@ -278,6 +281,8 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 	}
 #if CFG_DBG_MGT_BUF
 	/* Check if all allocated memories are free */
+	prBufInfo = &prAdapter->rMgtBufInfo;
+	DBGLOG(CNM, TRACE, "freeCnt:%d,AllocCnt:%d\n", prBufInfo->u4FreeCount, prBufInfo->u4AllocCount);
 	ASSERT(prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount);
 #endif
 
