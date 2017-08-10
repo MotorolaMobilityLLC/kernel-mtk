@@ -41,6 +41,7 @@
 #include <sound/soc.h>
 
 #undef DEBUG_AUDDRV
+
 #ifdef DEBUG_AUDDRV
 #define LOGBT(format, args...) pr_warn(format, ##args)
 #else
@@ -250,6 +251,12 @@ typedef struct {
 		kal_bool  fIsStructMemoryOnMED;
 		enum BT_SCO_BAND band;
 } BT_SCO_T;
+
+typedef struct {
+	unsigned long long uDataCountEquiTime;
+	unsigned long long uTimestampUS;
+} TIME_BUFFER_INFO_T;
+
 extern BT_SCO_T btsco;
 
 extern volatile kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
@@ -260,6 +267,13 @@ extern CVSD_MEMBLOCK_T BT_CVSD_Mem;
 extern kal_uint32 disableBTirq;
 
 extern bool isProbeDone;
+
+extern TIME_BUFFER_INFO_T time_buffer_info_rx;
+extern TIME_BUFFER_INFO_T time_buffer_info_tx;
+extern kal_uint64 BT_RX_timestamp;
+extern kal_uint64 BT_TX_timestamp;
+extern kal_uint64 BT_RX_bufdata_equivalent_time;
+extern kal_uint64 BT_TX_bufdata_equivalent_time;
 
 /*****************************************************************************
  *    BT SCO Internal Function

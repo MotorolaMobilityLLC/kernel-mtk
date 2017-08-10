@@ -107,6 +107,11 @@ typedef struct {
 	kal_uint32 u4BufferSize;	/*TX packetbuf size*/
 } BT_SCO_TX_T;
 
+typedef struct {
+	unsigned long long uDataCountEquiTime;
+	unsigned long long uTimestampUS;
+} TIME_BUFFER_INFO_T;
+
 CVSD_MEMBLOCK_T BT_CVSD_Mem;
 
 /* here is temp address for ioremap BT hardware register*/

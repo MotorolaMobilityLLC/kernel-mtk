@@ -151,6 +151,8 @@ static struct {
 	kal_bool fIsStructMemoryOnMED;
 } btsco;
 
+static TIME_BUFFER_INFO_T time_buffer_info_rx, time_buffer_info_tx;
+
 static volatile kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R, *bt_hw_REG_CONTROL;
 
 static DEFINE_SPINLOCK(auddrv_BTCVSDTX_lock);
@@ -159,6 +161,7 @@ static DEFINE_SPINLOCK(auddrv_BTCVSDRX_lock);
 static kal_uint32 BTCVSD_write_wait_queue_flag;
 static kal_uint32 BTCVSD_read_wait_queue_flag;
 
+static kal_uint64 BT_RX_timestamp, BT_TX_timestamp, BT_RX_bufdata_equivalent_time, BT_TX_bufdata_equivalent_time;
 
 DECLARE_WAIT_QUEUE_HEAD(BTCVSD_Write_Wait_Queue);
 DECLARE_WAIT_QUEUE_HEAD(BTCVSD_Read_Wait_Queue);
@@ -422,6 +425,32 @@ static long AudDrv_btcvsd_ioctl(struct file *fp, unsigned int cmd, unsigned long
 			break;
 		}
 	case GET_BTCVSD_STATE:{
+			break;
+		}
+	case GET_BTCVSD_RX_TIME_BUFFER_INFO:{
+		time_buffer_info_rx.uTimestampUS = BT_RX_timestamp;
+		time_buffer_info_rx.uDataCountEquiTime = BT_RX_bufdata_equivalent_time;
+		PRINTK_AUDDRV("GET_BTCVSD_RX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu",
+			time_buffer_info_rx.uTimestampUS, time_buffer_info_rx.uDataCountEquiTime);
+
+		if (copy_to_user((void *)arg, &time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T))) {
+			pr_warn("GET_BTCVSD_RX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
+				(kal_uint8 *)&time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T));
+			ret = -1;
+		}
+			break;
+		}
+	case GET_BTCVSD_TX_TIME_BUFFER_INFO:{
+		time_buffer_info_tx.uTimestampUS = BT_TX_timestamp;
+		time_buffer_info_tx.uDataCountEquiTime = BT_TX_bufdata_equivalent_time;
+		PRINTK_AUDDRV("GET_BTCVSD_TX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu",
+			time_buffer_info_tx.uTimestampUS, time_buffer_info_tx.uDataCountEquiTime);
+
+		if (copy_to_user((void *)arg, &time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T))) {
+			pr_warn("GET_BTCVSD_TX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
+				(kal_uint8 *)&time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T));
+			ret = -1;
+		}
 			break;
 		}
 	default:{
@@ -826,6 +855,13 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 	write_timeout_limit =
 	((kal_uint64) SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE * 16 * 1000000000) / 2 / 2 / 64000;
 
+	BT_TX_timestamp = sched_clock();
+	BT_TX_bufdata_equivalent_time = (btsco.pTX->iPacket_w - btsco.pTX->iPacket_r) * (SCO_TX_ENCODE_SIZE)
+		* 16 * 1000  / 2 / 64;
+	BT_TX_bufdata_equivalent_time *= 1000; /* return equivalent time(us) to data count */
+	PRINTK_AUDDRV("BT_TX_timestamp:%llu,BT_TX_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
+		BT_TX_timestamp, BT_TX_bufdata_equivalent_time, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
+
 	while (count) {
 		/*pr_debug("AudDrv_btcvsd_write btsco.pTX->iPacket_w=%d, btsco.pTX->iPacket_r=%d\n",
 		btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);*/
@@ -1135,9 +1171,9 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 
 			count -= read_size;
 			Read_Data_Ptr += read_size;
-			/*PRINTK_AUDDRV("AudDrv_btcvsd_read finish3, copy size_2:%zu, pRX->iPacket_r:0x%x,
-				pRX->iPacket_w:0x%x u4DataRemained:%zu\r\n",
-			     size_2, btsco.pRX->iPacket_r, btsco.pRX->iPacket_w, u4DataRemained);*/
+			/* PRINTK_AUDDRV("copy size_2:%lu, pRX->iPacket_r:0x%x, pRX->iPacket_w:0x%x,
+				u4DataRemained:%lu\r\n",
+				size_2, btsco.pRX->iPacket_r, btsco.pRX->iPacket_w, u4DataRemained); */
 		}
 
 		if (count != 0) {
@@ -1196,6 +1232,15 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 
 		}
 	}
+
+	BT_RX_timestamp = sched_clock();
+	BT_RX_bufdata_equivalent_time = (btsco.pRX->iPacket_w - btsco.pRX->iPacket_r) * (SCO_RX_PLC_SIZE)
+		* 16 * 1000  / 2 / 64;
+	BT_RX_bufdata_equivalent_time += read_count * SCO_RX_PLC_SIZE * 16 * 1000
+		/ (SCO_RX_PLC_SIZE+BTSCO_CVSD_PACKET_VALID_SIZE) / 2 / 64;
+	BT_RX_bufdata_equivalent_time *= 1000;  /* return equivalent time(us) to data count */
+	PRINTK_AUDDRV("BT_RX_timestamp:%llu,BT_RX_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
+		BT_RX_timestamp, BT_RX_bufdata_equivalent_time, btsco.pRX->iPacket_w, btsco.pRX->iPacket_r);
 	PRINTK_AUDDRV("AudDrv_btcvsd_read read_count = %zu,read_timeout_limit=%llu\n",
 		      read_count, read_timeout_limit);
 	return read_count;

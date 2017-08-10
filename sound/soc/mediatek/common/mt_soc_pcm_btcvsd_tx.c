@@ -79,6 +79,33 @@ static int Btcvsd_Loopback_Control_Get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int btcvsd_tx_timestamp_get(unsigned int __user *data, unsigned int size)
+{
+	int ret = 0;
+
+	if (size > sizeof(TIME_BUFFER_INFO_T))
+		return -EINVAL;
+
+	time_buffer_info_tx.uTimestampUS = BT_TX_timestamp;
+	time_buffer_info_tx.uDataCountEquiTime = BT_TX_bufdata_equivalent_time;
+
+	LOGBT("GET_BTCVSD_TX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu, sizeof(TIME_BUFFER_INFO_T) = %d",
+	      time_buffer_info_tx.uTimestampUS, time_buffer_info_tx.uDataCountEquiTime, sizeof(TIME_BUFFER_INFO_T));
+
+	if (copy_to_user(data, &time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T))) {
+		pr_err("GET_BTCVSD_TX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
+		       (kal_uint8 *)&time_buffer_info_tx, sizeof(TIME_BUFFER_INFO_T));
+		ret = -EFAULT;
+	}
+
+	return ret;
+}
+
+static int btcvsd_tx_timestamp_set(const unsigned int __user *data, unsigned int size)
+{
+	return 0;
+}
+
 static int Btcvsd_Loopback_Control_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btcvsd_loopback_usage)) {
@@ -98,6 +125,8 @@ static int Btcvsd_Loopback_Control_Set(struct snd_kcontrol *kcontrol, struct snd
 static const struct snd_kcontrol_new mtk_btcvsd_loopback_controls[] = {
 	SOC_ENUM_EXT("BT_DIRECT_LOOPBACK", Btcvsd_Loopback_Enum[0],
 		Btcvsd_Loopback_Control_Get, Btcvsd_Loopback_Control_Set),
+	SND_SOC_BYTES_TLV("btcvsd_tx_timestamp", sizeof(TIME_BUFFER_INFO_T),
+			  btcvsd_tx_timestamp_get, btcvsd_tx_timestamp_set),
 };
 
 static int mtk_pcm_btcvsd_tx_stop(struct snd_pcm_substream *substream)

@@ -173,48 +173,55 @@ static int mtk_pcm_btcvsd_rx_stop(struct snd_pcm_substream *substream)
 	return 0;
 }
 
+static snd_pcm_uframes_t prev_frame;
+static kal_int32 prev_iPacket_w;
+
 static snd_pcm_uframes_t mtk_pcm_btcvsd_rx_pointer(struct snd_pcm_substream *substream)
 {
+	snd_pcm_uframes_t frame = 0;
 	kal_uint32 byte = 0;
-	kal_uint32 Frameidx = 0;
+	static kal_int32 packet_diff;
 
 	unsigned long flags;
-	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 
 	LOGBT("%s\n", __func__);
 
 	spin_lock_irqsave(&auddrv_btcvsd_rx_lock, flags);
 
-#if 0
-	/* kernel time testing */
-	do_gettimeofday(&begin_rx);
+	/* get packet diff from last time */
+	LOGBT("%s(), btsco.pRX->iPacket_w = %d, prev_iPacket_w = %d\n",
+	      __func__,
+	      btsco.pRX->iPacket_w,
+	      prev_iPacket_w);
+	if (btsco.pRX->iPacket_w >= prev_iPacket_w) {
+		packet_diff = btsco.pRX->iPacket_w - prev_iPacket_w;
+	} else {
+		/* integer overflow */
+		packet_diff = (INT_MAX - prev_iPacket_w) +
+			      (btsco.pRX->iPacket_w - INT_MIN) + 1;
+	}
+	prev_iPacket_w = btsco.pRX->iPacket_w;
 
-	diff_msec_rx = (begin_rx.tv_sec - prev_sec_rx) * 1000 +
-					(begin_rx.tv_usec - prev_usec_rx) / 1000;
-	LOGBT("%s, tv_sec=%d, tv_usec=%ld, diff_msec=%ld, prev_sec=%d, prev_usec=%ld\n",
-			 __func__, (int)(begin_rx.tv_sec), begin_rx.tv_usec, diff_msec_rx, prev_sec_rx,
-			prev_usec_rx);
-	prev_sec_rx = begin_rx.tv_sec;
-	prev_usec_rx = begin_rx.tv_usec;
+	/* increased bytes */
+	byte = packet_diff * (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
 
-	/* calculate cheating byte */
-	byte = (diff_msec_rx * substream->runtime->rate * substream->runtime->channels / 1000);
-	Frameidx = btcvsd_bytes_to_frame(substream , byte);
-	LOGBT("%s, ch=%d, rate=%d, byte=%d, Frameidx=%d\n", __func__,
-			substream->runtime->channels, substream->runtime->rate, byte, Frameidx);
-#else
-	/* get total bytes to copy */
-	/* Frameidx = btcvsd_bytes_to_frame(substream , Afe_Block->u4DMAReadIdx); */
-	/* return Frameidx; */
-	byte = (btsco.pRX->iPacket_w & SCO_RX_PACKET_MASK)*
-			(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
-	Frameidx = btcvsd_bytes_to_frame(substream , byte);
-#endif
+	frame = btcvsd_bytes_to_frame(substream, byte);
+	frame += prev_frame;
+	frame %= substream->runtime->buffer_size;
+
+	prev_frame = frame;
+	LOGBT("%s(), frame %lu, byte=%d, btsco.pRX->iPacket_w=%d\n",
+	      __func__,
+	      frame,
+	      byte,
+	      btsco.pRX->iPacket_w);
+
 	spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
-	return Frameidx;
+	return frame;
 
 }
+
 
 
 static int mtk_pcm_btcvsd_rx_hw_params(struct snd_pcm_substream *substream,
@@ -331,6 +338,9 @@ static int mtk_pcm_btcvsd_rx_prepare(struct snd_pcm_substream *substream)
 static int mtk_pcm_btcvsd_rx_start(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
+
+	prev_frame = 0;
+	prev_iPacket_w = btsco.pRX->iPacket_w;
 
 	return 0;
 }
@@ -500,6 +510,33 @@ static int btcvsd_rx_timeout_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
+{
+	int ret = 0;
+
+	if (size > sizeof(TIME_BUFFER_INFO_T))
+		return -EINVAL;
+
+	time_buffer_info_rx.uTimestampUS = BT_RX_timestamp;
+	time_buffer_info_rx.uDataCountEquiTime = BT_RX_bufdata_equivalent_time;
+
+	pr_debug("GET_BTCVSD_RX_TIMESTAMP uTimestampUS:%llu,uDataCountEquiTime:%llu, sizeof(TIME_BUFFER_INFO_T) = %zu",
+		 time_buffer_info_rx.uTimestampUS, time_buffer_info_rx.uDataCountEquiTime, sizeof(TIME_BUFFER_INFO_T));
+
+	if (copy_to_user(data, &time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T))) {
+		pr_err("GET_BTCVSD_RX_TIMESTAMP Fail copy to user Ptr:%p,r_sz:%zu",
+			(kal_uint8 *)&time_buffer_info_rx, sizeof(TIME_BUFFER_INFO_T));
+		ret = -EFAULT;
+	}
+
+	return ret;
+}
+
+static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int size)
+{
+	return 0;
+}
+
 static const struct snd_kcontrol_new btcvsd_controls[] = {
 	SOC_ENUM_EXT("btcvsd_band",
 		     btcvsd_enum[0], btcvsd_band_get, btcvsd_band_set),
@@ -513,6 +550,10 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 		     btcvsd_enum[3],
 		     btcvsd_rx_timeout_get,
 		     btcvsd_rx_timeout_set),
+	SND_SOC_BYTES_TLV("btcvsd_rx_timestamp",
+		     sizeof(TIME_BUFFER_INFO_T),
+		     btcvsd_rx_timestamp_get,
+		     btcvsd_rx_timestamp_set),
 };
 
 static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
