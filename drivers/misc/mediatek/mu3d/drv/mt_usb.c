@@ -89,6 +89,7 @@ void connection_work(struct work_struct *data)
 #ifndef CONFIG_USBIF_COMPLIANCE
 	static enum status connection_work_dev_status = INIT;
 #endif
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -97,6 +98,15 @@ void connection_work(struct work_struct *data)
 		bool is_usb_cable = usb_cable_connected();
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
+
+		/* delay 100ms if user space is not ready to set usb function */
+		if (!is_usb_rdy()) {
+			if (__ratelimit(&ratelimit))
+				os_printk(K_INFO, "%s, !is_usb_rdy, delay 100ms\n", __func__);
+			schedule_delayed_work(&musb->connection_work,
+								 msecs_to_jiffies(100));
+			return;
+		}
 
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
@@ -187,7 +197,7 @@ void mt_usb_connect(void)
 
 		work = &_mu3d_musb->connection_work;
 
-		schedule_delayed_work_on(0, work, 0);
+		schedule_delayed_work(work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -204,7 +214,7 @@ void mt_usb_disconnect(void)
 
 		work = &_mu3d_musb->connection_work;
 
-		schedule_delayed_work_on(0, work, 0);
+		schedule_delayed_work(work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -274,7 +284,7 @@ int typec_switch_usb_connect(void *data)
 
 		work = &musb->connection_work;
 
-		schedule_delayed_work_on(0, work, 0);
+		schedule_delayed_work(work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -294,7 +304,7 @@ int typec_switch_usb_disconnect(void *data)
 
 		work = &musb->connection_work;
 
-		schedule_delayed_work_on(0, work, 0);
+		schedule_delayed_work(work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
