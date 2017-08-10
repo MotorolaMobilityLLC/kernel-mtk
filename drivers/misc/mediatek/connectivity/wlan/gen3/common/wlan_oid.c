@@ -1879,6 +1879,98 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+#define PARTIAL_SCAN_FILTER_CHREQ	0
+BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScanReq)
+{
+	struct cfg80211_scan_request *scan_req_t = NULL;
+	struct ieee80211_channel *channel_tmp = NULL;
+	P_PARTIAL_SCAN_INFO	PartialScanChannel = NULL;
+	int i = 0;
+	int j = 0;
+	UINT_8 channel_num = 0;
+	UINT_8 channel_counts = 0;
+
+	if ((prAdapter == NULL) || (prAdapter->prGlueInfo == NULL) ||
+		(puPartialScanReq == NULL))
+		return FALSE;
+
+	scan_req_t = (struct cfg80211_scan_request *)puPartialScanReq;
+	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
+
+		channel_counts = scan_req_t->n_channels;
+		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
+		if (channel_counts > MAXIMUM_OPERATION_CHANNEL_LIST)
+			return TRUE;
+		/*
+		if (scan_req_t->n_channels > MAXIMUM_OPERATION_CHANNEL_LIST) {
+			DBGLOG(REQ, TRACE, "request channel great max num, reset channel num\n");
+		}
+		*/
+		PartialScanChannel = (P_PARTIAL_SCAN_INFO) kalMemAlloc(sizeof(PARTIAL_SCAN_INFO), VIR_MEM_TYPE);
+		if (PartialScanChannel == NULL) {
+			DBGLOG(OID, ERROR, "alloc PartialScanChannel fail\n");
+			return FALSE;
+		}
+		kalMemSet(PartialScanChannel, 0, sizeof(PARTIAL_SCAN_INFO));
+		while (j < channel_counts) {
+			channel_tmp = scan_req_t->channels[j];
+
+			DBGLOG(OID, TRACE, "set channel band=%d\n", channel_tmp->band);
+			if (channel_tmp->band >= IEEE80211_BAND_60GHZ) {
+				j++;
+				continue;
+			}
+#if PARTIAL_SCAN_FILTER_CHREQ
+			if ((channel_tmp->center_freq >= 5150) && (channel_tmp->center_freq <= 5350)) {
+				DBGLOG(OID, TRACE, "ignore channel freq =%d\n", channel_tmp->center_freq);
+				j++;
+				continue;
+			}
+#endif
+			if (i >= MAXIMUM_OPERATION_CHANNEL_LIST)
+				break;
+			if (channel_tmp->band == IEEE80211_BAND_2GHZ)
+				PartialScanChannel->arChnlInfoList[i].eBand = BAND_2G4;
+			else if (channel_tmp->band == IEEE80211_BAND_5GHZ)
+				PartialScanChannel->arChnlInfoList[i].eBand = BAND_5G;
+
+			DBGLOG(OID, TRACE, "set channel channel_center_freq =%d\n",
+				channel_tmp->center_freq);
+
+			channel_num = (UINT_8)nicFreq2ChannelNum(
+				channel_tmp->center_freq * 1000);
+
+			DBGLOG(OID, TRACE, "set channel channel_num=%d\n",
+				channel_num);
+			PartialScanChannel->arChnlInfoList[i].ucChannelNum = channel_num;
+
+			j++;
+			i++;
+		}
+	}
+	DBGLOG(INIT, INFO, "set channel i=%d\n", i);
+	if (i > 0) {
+		PartialScanChannel->ucChannelListNum = i;
+		/*ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;*/
+		prAdapter->prGlueInfo->puScanChannel = (PUINT_8)PartialScanChannel;
+		return TRUE;
+	}
+
+	kalMemFree(PartialScanChannel, VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+	return FALSE;
+
+}
+
+
+/*----------------------------------------------------------------------------*/
+/*!
 * \brief This routine is called to request the driver to perform
 *        scanning with attaching information elements(IEs) specified from user space
 *        and multiple SSID
@@ -1905,6 +1997,7 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	PUINT_8 pucIe;
 	UINT_8 ucSsidNum;
 	UINT_32 i, u4IeLength;
+	BOOLEAN	partial_result = FALSE;
 
 	DEBUGFUNC("wlanoidSetBssidListScanAdv()");
 
@@ -1955,6 +2048,9 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
 		if ((prAdapter->fgEnOnlineScan == TRUE) && (prAdapter->ucRddStatus)) {
 			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
+				partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+				if (partial_result == FALSE)
+					return WLAN_STATUS_FAILURE;
 				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 			else
 				return WLAN_STATUS_FAILURE;
@@ -1963,11 +2059,17 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	} else
 #endif
 	{
-		if (prAdapter->fgEnOnlineScan == TRUE)
+		if (prAdapter->fgEnOnlineScan == TRUE) {
+			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+			if (partial_result == FALSE)
+				return WLAN_STATUS_FAILURE;
 			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-		else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
+		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+			if (partial_result == FALSE)
+				return WLAN_STATUS_FAILURE;
 			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-		else
+		} else
 			return WLAN_STATUS_FAILURE;
 	}
 	cnmTimerStartTimer(prAdapter, &prAdapter->rWifiVar.rAisFsmInfo.rScanDoneTimer,

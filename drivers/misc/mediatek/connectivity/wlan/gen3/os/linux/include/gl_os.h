@@ -1015,6 +1015,8 @@ struct _GLUE_INFO_T {
 	UINT_64 u8SkbToDriver;
 	UINT_64 u8SkbFreed;
 
+	/* save partial scan channel information */
+	PUINT_8 puScanChannel;
 	UINT_32 u4Register;
 	UINT_32 u4RegValue;
 	PUINT_32 prRegValue;

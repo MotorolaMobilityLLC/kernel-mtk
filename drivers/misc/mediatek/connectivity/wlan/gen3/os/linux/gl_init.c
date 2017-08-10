@@ -2276,6 +2276,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->fgIsRegistered = FALSE;
 	prGlueInfo->prScanRequest = NULL;
 	prGlueInfo->prSchedScanRequest = NULL;
+	prGlueInfo->puScanChannel = NULL;
 
 #if CFG_SUPPORT_PASSPOINT
 	/* Init DAD */

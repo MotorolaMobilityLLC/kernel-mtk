@@ -696,6 +696,10 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	if (request->ie_len > 0)
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
 
+	/* temp save request ieee80211_channel info */
+	rScanRequest.puPartialScanReq = (PUINT_8)request;
+	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan request=%p\n", rScanRequest.puPartialScanReq);
+
 	prGlueInfo->prScanRequest = request;
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetBssidListScanAdv,
