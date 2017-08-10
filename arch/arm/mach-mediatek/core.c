@@ -25,11 +25,21 @@
 #include <linux/irqchip.h>
 #include <linux/of_platform.h>
 
-#ifdef CONFIG_ARCH_MT6580
+#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 #include <mt-smp.h>
 #endif
 
 #ifdef CONFIG_OF
+
+static const char *mt6570_dt_match[] __initconst = {
+	"mediatek,MT6570",
+	NULL
+};
+
+DT_MACHINE_START(MT6570_DT, "MT6570")
+	.dt_compat      = mt6570_dt_match,
+MACHINE_END
+
 static const char *mt6580_dt_match[] __initconst = {
 	"mediatek,MT6580",
 	NULL
