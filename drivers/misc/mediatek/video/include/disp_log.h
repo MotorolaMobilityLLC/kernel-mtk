@@ -62,7 +62,7 @@
 #define DISPERR(fmt, args...)                                          \
 	do {                                                           \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);      \
-		if ((gMobilelog > 0) && (gLoglevel >= ERROR_LEVEL))    \
+		if ((g_mobilelog > 0) && (g_loglevel >= ERROR_LEVEL))    \
 			pr_err("[DISP]"fmt, ##args);                   \
 	} while (0)
 
@@ -79,7 +79,7 @@
 #define DISPWRN(fmt, args...)                                          \
 	do {                                                           \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);      \
-		if ((gMobilelog > 0) && (gLoglevel >= WARN_LEVEL))     \
+		if ((g_mobilelog > 0) && (g_loglevel >= WARN_LEVEL))     \
 			pr_debug("[DISP]"fmt, ##args);                 \
 	} while (0)
 
@@ -94,7 +94,7 @@
 #define DISPMSG(fmt, args...)                                          \
 	do {                                                           \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);      \
-		if ((gMobilelog > 0) && (gLoglevel >= DEFAULT_LEVEL))  \
+		if ((g_mobilelog > 0) && (g_loglevel >= DEFAULT_LEVEL))  \
 			pr_debug("[DISP]"fmt, ##args);                 \
 	} while (0)
 
@@ -109,7 +109,7 @@
 	do {                                                           \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG,                    \
 			"func|%s\n", __func__);                        \
-		if ((gMobilelog > 0) && (gLoglevel >= DEFAULT_LEVEL))  \
+		if ((g_mobilelog > 0) && (g_loglevel >= DEFAULT_LEVEL))  \
 			pr_debug("[DISP]func|%s\n", __func__);         \
 	} while (0)
 
@@ -117,7 +117,7 @@
 /*
  * Log function: DEBUG_LEVEL
  *   To print usage message for debugging only
- *   and this log will be recorded in display log buffer when gLoglevel
+ *   and this log will be recorded in display log buffer when g_loglevel
  *   is not lower than DEBUG_LEVEL.
  *   suggest to use this function in debug stage.
  * Input:
@@ -126,17 +126,17 @@
  */
 #define DISPDBG(fmt, args...)                                          \
 	do {                                                           \
-		if (gLoglevel >= DEBUG_LEVEL)                          \
+		if (g_loglevel >= DEBUG_LEVEL)                          \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
 					fmt, ##args);                  \
-		if ((gMobilelog > 0) && (gLoglevel >= DEBUG_LEVEL))    \
+		if ((g_mobilelog > 0) && (g_loglevel >= DEBUG_LEVEL))    \
 			pr_debug("[DISP]func|%s\n", __func__);         \
 	} while (0)
 
 /*
  * Log function: IRQ_LEVEL
  *   To print display IRQ message.
- *   And this log will be recorded in display log buffer when gLoglevel
+ *   And this log will be recorded in display log buffer when g_loglevel
  *   is not lower than IRQ_LEVEL.
  * Input:
  *   fmt: which format string will be printed.
@@ -144,10 +144,10 @@
  */
 #define DISPIRQ(fmt, args...)                                          \
 	do {                                                           \
-		if (gLoglevel >= IRQ_LEVEL)                            \
+		if (g_loglevel >= IRQ_LEVEL)                            \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
 					fmt, ##args);                  \
-		if ((gMobilelog > 0) && (gLoglevel >= IRQ_LEVEL))      \
+		if ((g_mobilelog > 0) && (g_loglevel >= IRQ_LEVEL))      \
 			pr_debug("[DISP]IRQ: "fmt, ##args);            \
 	} while (0)
 
@@ -161,7 +161,7 @@
  */
 #define DISPRCD(fmt, args...)                                          \
 	do {                                                           \
-		if (gRcdlevel > 0)                                     \
+		if (g_rcdlevel > 0)                                     \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
 				fmt, ##args);                          \
 	} while (0)
@@ -177,7 +177,7 @@
  */
 #define DISPINFO(fmt, args...)                                         \
 	do {                                                           \
-		if (gMobilelog)                                        \
+		if (g_mobilelog)                                        \
 			pr_debug("[DISP]"fmt, ##args);                 \
 	} while (0)
 
@@ -198,7 +198,7 @@
 		} else {                                               \
 			dprec_logger_pr(DPREC_LOGGER_DUMP,             \
 					fmt, ##__VA_ARGS__);           \
-			if (gMobilelog)                                \
+			if (g_mobilelog)                                \
 				pr_debug("[DISP]"fmt,                  \
 					 ##__VA_ARGS__);               \
 		}                                                      \
@@ -267,7 +267,7 @@
 		dprec_logger_pr(DPREC_LOGGER_FENCE,                    \
 				fmt,                                   \
 				##args);                               \
-		if (gFencelog)                                         \
+		if (g_fencelog)                                         \
 			pr_debug("[DISP]fence/"fmt, ##args);           \
 	} while (0)
 

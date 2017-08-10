@@ -243,12 +243,12 @@ void ddp_process_dbg_opt(const char *opt)
 
 		if (enable) {
 			dbg_log_level = 1;
-			gFencelog = 1;
-			gLoglevel = 5;
+			g_fencelog = 1;
+			g_loglevel = 5;
 		} else {
 			dbg_log_level = 0;
-			gFencelog = 0;
-			gLoglevel = 3;
+			g_fencelog = 0;
+			g_loglevel = 3;
 		}
 
 		sprintf(buf, "dbg_log: %d\n", dbg_log_level);
@@ -263,10 +263,10 @@ void ddp_process_dbg_opt(const char *opt)
 		}
 		if (enable) {
 			irq_log_level = 1;
-			gLoglevel = 6;
+			g_loglevel = 6;
 		} else {
 			irq_log_level = 0;
-			gLoglevel = 3;
+			g_loglevel = 3;
 		}
 
 		sprintf(buf, "irq_log: %d\n", irq_log_level);

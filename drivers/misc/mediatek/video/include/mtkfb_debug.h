@@ -30,11 +30,11 @@
 #define MAX_DBG_MESSAGES	    0
 
 /* For Log print Switch */
-extern unsigned int gEnableUartLog;
-extern unsigned int gMobilelog;
-extern unsigned int gFencelog;
-extern unsigned int gLoglevel;
-extern unsigned int gRcdlevel;
+extern unsigned int g_enable_uart_log;
+extern unsigned int g_mobilelog;
+extern unsigned int g_fencelog;
+extern unsigned int g_loglevel;
+extern unsigned int g_rcdlevel;
 extern unsigned int dbg_log_level;
 extern unsigned int irq_log_level;
 

@@ -407,13 +407,13 @@ static void process_dbg_debug(const char *opt)
 		sprintf(buf, "gDumpClockStatus: %d\n", gDumpClockStatus);
 
 	} else if (enable == 29) {
-		if (gEnableUartLog == 0)
-			gEnableUartLog = 1;
+		if (g_enable_uart_log == 0)
+			g_enable_uart_log = 1;
 		else
-			gEnableUartLog = 0;
+			g_enable_uart_log = 0;
 
-		pr_debug("DDP: gEnableUartLog=%d\n", gEnableUartLog);
-		sprintf(buf, "gEnableUartLog: %d\n", gEnableUartLog);
+		pr_debug("DDP: g_enable_uart_log=%d\n", g_enable_uart_log);
+		sprintf(buf, "g_enable_uart_log: %d\n", g_enable_uart_log);
 
 	} else if (enable == 30) {
 		if (gEnableMutexRisingEdge == 0) {
@@ -889,9 +889,9 @@ void mtkfb_process_dbg_opt(const char *opt)
 		dvfs_test = val;
 	} else if (0 == strncmp(opt, "mobile:", 7)) {
 		if (0 == strncmp(opt + 7, "on", 2))
-			gMobilelog = 1;
+			g_mobilelog = 1;
 		else if (0 == strncmp(opt + 7, "off", 3))
-			gMobilelog = 0;
+			g_mobilelog = 0;
 	} else if (0 == strncmp(opt, "freeze:", 7)) {
 		if (0 == strncmp(opt + 7, "on", 2))
 			display_freeze_mode(1, 1);

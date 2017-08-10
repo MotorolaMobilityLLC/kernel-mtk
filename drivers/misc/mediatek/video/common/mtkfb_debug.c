@@ -73,11 +73,11 @@
 /* --------------------------------------------------------------------------- */
 /* Global variable declarations */
 /* --------------------------------------------------------------------------- */
-unsigned int gEnableUartLog = 0;
-unsigned int gMobilelog = 0;
-unsigned int gFencelog = 0; /*Fence Log*/
-unsigned int gLoglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
-unsigned int gRcdlevel = 0;
+unsigned int g_enable_uart_log = 0;
+unsigned int g_mobilelog = 1;
+unsigned int g_fencelog = 0; /*Fence Log*/
+unsigned int g_loglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
+unsigned int g_rcdlevel = 0;
 unsigned int dbg_log_level;
 unsigned int irq_log_level;
 unsigned char pq_debug_flag = 0;
