@@ -3650,6 +3650,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		if (prRegInfo->ucTxPwrValid != 0) {
 			/* send to F/W */
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
+#if CFG_SUPPORT_TX_BACKOFF
+			nicUpdateTxPowerOffset(prAdapter,
+				(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
+#endif
 		}
 	}
 
@@ -4144,9 +4148,15 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	P_SET_TXPWR_CTRL_T prTxpwr;
-
+#if CFG_SUPPORT_TX_BACKOFF
+	P_REG_INFO_T prRegInfo;
+#endif
 	ASSERT(prGlueInfo);
 
+#if CFG_SUPPORT_TX_BACKOFF
+	prRegInfo = &prGlueInfo->rRegInfo;
+	ASSERT(prRegInfo);
+#endif
 	prTxpwr = &prGlueInfo->rTxPwr;
 
 	prTxpwr->c2GLegacyStaPwrOffset = 0;
@@ -4170,6 +4180,21 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	for (i = 0; i < 2; i++)
 		prTxpwr->acReserved2[i] = 0;
 
+#if CFG_SUPPORT_TX_BACKOFF
+	for (i = 0; i < 40; i++) {
+		/* 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].channel =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].channel;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedCckDsss;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedOfdm;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt20 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt20;
+		prTxpwr->arRlmMitigatedPwrByChByMode[i].mitigatedHt40 =
+			prRegInfo->arRlmMitigatedPwrByChByMode[i].mitigatedHt40;
+	}
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

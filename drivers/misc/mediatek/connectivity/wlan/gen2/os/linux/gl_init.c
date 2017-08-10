@@ -664,6 +664,14 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 				 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, fgRssiCompensationValidbit), (PUINT_16) aucTmp);
 		prRegInfo->fgRssiCompensationValidbit = aucTmp[0];
 		prRegInfo->ucRxAntennanumber = aucTmp[1];
+
+#if CFG_SUPPORT_TX_BACKOFF
+		/* load Tx Power offset perchannel per mode 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
+		kalCfgDataRead(prGlueInfo,
+			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, arRlmMitigatedPwrByChByMode),
+			sizeof(MITIGATED_PWR_BY_CH_BY_MODE)*40,
+			(PUINT_16) prRegInfo->arRlmMitigatedPwrByChByMode);
+#endif
 	} else {
 		prGlueInfo->fgNvramAvailable = FALSE;
 	}

@@ -708,6 +708,8 @@
 #define CFG_SUPPORT_WFD_COMPOSE_IE          1
 
 #define CFG_SUPPORT_CPU_BOOST			0
+
+#define CFG_SUPPORT_TX_BACKOFF              0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
