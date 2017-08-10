@@ -21,8 +21,11 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
-#include "ged_vsync.h"
 #include <linux/module.h>
+
+#ifdef MT6XXX_PLATFORM
+#include "ged_vsync.h"
+#endif
 
 static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
@@ -154,10 +157,12 @@ int ged_bridge_event_notify(
 }
 
 //-----------------------------------------------------------------------------
+#ifdef MT6XXX_PLATFORM
 int ged_bridge_vsync_wait(void)
 {
     ged_vsync_wait();
     return 0;
 }
+#endif
 
 module_param(ged_boost_enable, uint, 0644);

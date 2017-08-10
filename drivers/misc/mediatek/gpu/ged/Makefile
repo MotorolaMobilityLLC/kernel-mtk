@@ -31,7 +31,10 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/video/include
 
 # ----- for FRR2.0 ----- #
-ifneq ($(MTK_GPU_VERSION)),)
+$(info *MTK_PLATFORM: $(MTK_PLATFORM))
+ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
+ccflags-y += -DMT6XXX_PLATFORM
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
@@ -95,6 +98,10 @@ ged-y += \
 	src/ged_notify_sw_vsync.o \
 	src/ged_hashtable.o \
 	src/ged_thread.o \
-	src/ged_dvfs.o \
-    src/ged_vsync.o
+	src/ged_dvfs.o
+    
 
+$(info *MTK_PLATFORM: $(MTK_PLATFORM))
+ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
+ged-y += src/ged_vsync.o
+endif
