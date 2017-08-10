@@ -57,6 +57,12 @@
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
 
+#ifdef AUDIO_VCOREFS_SUPPORT
+#include <linux/fb.h>
+#include <linux/notifier.h>
+#include <mt_vcorefs_manager.h>
+#endif
+
 #define _DEBUG_6328_CLK
 
 static DEFINE_SPINLOCK(auddrv_I2S0dl1_lock);
@@ -400,6 +406,11 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 	irq1_cnt = 0;	/* reset irq1_cnt */
 
 	AudDrv_Clk_Off();
+
+#ifdef AUDIO_VCOREFS_SUPPORT
+	vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
+#endif
+
 	return 0;
 }
 
@@ -781,6 +792,38 @@ static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef AUDIO_VCOREFS_SUPPORT
+static int soc_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		pr_debug("%s SCREEN ON\n", __func__);
+		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
+		break;
+	case FB_BLANK_POWERDOWN:
+		pr_debug("%s SCREEN OFF\n", __func__);
+		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_ULTRA_LOW_PWR);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block soc_fb_notif = {
+	.notifier_call = soc_fb_notifier_callback,
+};
+#endif
+
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_dl1_i2s0Dl1_of_ids[] = {
 	{ .compatible = "mediatek,mt_soc_pcm_dl1_i2s0dl1", },
@@ -822,6 +865,13 @@ static int __init mtk_I2S0dl1_soc_platform_init(void)
 #endif
 
 	ret = platform_driver_register(&mtk_I2S0dl1_driver);
+
+#ifdef AUDIO_VCOREFS_SUPPORT
+	ret = fb_register_client(&soc_fb_notif);
+	if (ret)
+		pr_err("FAILED TO REGISTER FB CLIENT (%d)\n", ret);
+#endif
+
 	return ret;
 
 }
