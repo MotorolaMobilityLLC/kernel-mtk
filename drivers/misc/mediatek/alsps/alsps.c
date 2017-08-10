@@ -692,43 +692,12 @@ static int alsps_real_driver_init(void)
 	return err;
 }
 
-int alsps_driver_add(struct alsps_init_info *obj)
-{
-	int err = 0;
-	int i = 0;
 
-	ALSPS_FUN();
-	if (!obj) {
-		ALSPS_ERR("ALSPS driver add fail, alsps_init_info is NULL\n");
-		return -1;
-	}
-
-	for (i = 0; i < MAX_CHOOSE_ALSPS_NUM; i++) {
-		if ((i == 0) && (NULL == alsps_init_list[0])) {
-			ALSPS_LOG("register alsps driver for the first time\n");
-			if (platform_driver_register(&als_ps_driver))
-				ALSPS_ERR("failed to register alsps driver already exist\n");
-		}
-
-		if (NULL == alsps_init_list[i]) {
-			obj->platform_diver_addr = &als_ps_driver;
-			alsps_init_list[i] = obj;
-			break;
-		}
-	}
-	if (i >= MAX_CHOOSE_ALSPS_NUM) {
-		ALSPS_ERR("ALSPS driver add err\n");
-		err =  -1;
-	}
-
-	return err;
-}
-EXPORT_SYMBOL_GPL(alsps_driver_add);
 struct platform_device *get_alsps_platformdev(void)
 {
 	return pltfm_dev;
 }
-
+EXPORT_SYMBOL_GPL(get_alsps_platformdev);
 
 int ps_report_interrupt_data(int value)
 {
@@ -842,6 +811,7 @@ int als_register_data_path(struct als_data_path *data)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(als_register_data_path);
 
 int ps_register_data_path(struct ps_data_path *data)
 {
@@ -858,6 +828,7 @@ int ps_register_data_path(struct ps_data_path *data)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ps_register_data_path);
 
 int als_register_control_path(struct als_control_path *ctl)
 {
@@ -896,6 +867,7 @@ int als_register_control_path(struct als_control_path *ctl)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(als_register_control_path);
 
 int ps_register_control_path(struct ps_control_path *ctl)
 {
@@ -937,6 +909,7 @@ int ps_register_control_path(struct ps_control_path *ctl)
 	}
 	return 0;
 }
+EXPORT_SYMBOL_GPL(ps_register_control_path);
 
 
 /* AAL functions**************************************** */
@@ -1037,6 +1010,46 @@ exit_alloc_data_failed:
 	return err;
 }
 
+int alsps_driver_add(struct alsps_init_info *obj)
+{
+	int err = 0;
+	int i = 0;
+
+	ALSPS_FUN();
+	if (!obj) {
+		ALSPS_ERR("ALSPS driver add fail, alsps_init_info is NULL\n");
+		return -1;
+	}
+
+	for (i = 0; i < MAX_CHOOSE_ALSPS_NUM; i++) {
+		if ((i == 0) && (NULL == alsps_init_list[0])) {
+			ALSPS_LOG("register alsps driver for the first time\n");
+			if (platform_driver_register(&als_ps_driver))
+				ALSPS_ERR("failed to register alsps driver already exist\n");
+		}
+
+		if (NULL == alsps_init_list[i]) {
+			obj->platform_diver_addr = &als_ps_driver;
+			alsps_init_list[i] = obj;
+			break;
+		}
+	}
+	if (i >= MAX_CHOOSE_ALSPS_NUM) {
+		ALSPS_ERR("ALSPS driver add err\n");
+		err =  -1;
+	}
+
+#ifndef MTK_ALSPS_MODULE
+	if (alsps_probe()) {
+		ALSPS_ERR("failed to register alsps driver\n");
+		return -ENODEV;
+	}
+#endif
+
+	return err;
+}
+EXPORT_SYMBOL_GPL(alsps_driver_add);
+
 static int alsps_remove(void)
 {
 	int err = 0;
@@ -1057,12 +1070,12 @@ static int alsps_remove(void)
 static int __init alsps_init(void)
 {
 	ALSPS_FUN();
-
+#ifdef MTK_ALSPS_MODULE
 	if (alsps_probe()) {
 		ALSPS_ERR("failed to register alsps driver\n");
 		return -ENODEV;
 	}
-
+#endif
 	return 0;
 }
 

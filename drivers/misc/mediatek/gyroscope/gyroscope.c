@@ -509,39 +509,6 @@ static int gyro_real_driver_init(struct platform_device *pdev)
 	return err;
 }
 
-int gyro_driver_add(struct gyro_init_info *obj)
-{
-	int err = 0;
-	int i = 0;
-
-	if (!obj) {
-		GYRO_ERR("gyro driver add fail, gyro_init_info is NULL\n");
-		return -1;
-	}
-
-	for (i = 0; i < MAX_CHOOSE_GYRO_NUM; i++) {
-		if ((i == 0) && (NULL == gyroscope_init_list[0])) {
-			GYRO_LOG("register gyro driver for the first time\n");
-			if (platform_driver_register(&gyroscope_driver))
-				GYRO_ERR("failed to register gyro driver already exist\n");
-		}
-
-	    if (NULL == gyroscope_init_list[i]) {
-			obj->platform_diver_addr = &gyroscope_driver;
-			gyroscope_init_list[i] = obj;
-			break;
-	    }
-	}
-
-	if (i >= MAX_CHOOSE_GYRO_NUM) {
-		GYRO_ERR("gyro driver add err\n");
-		err =  -1;
-	}
-
-	return err;
-}
-EXPORT_SYMBOL_GPL(gyro_driver_add);
-
 static int gyro_misc_init(struct gyro_context *cxt)
 {
 	int err = 0;
@@ -634,6 +601,7 @@ int gyro_register_data_path(struct gyro_data_path *data)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(gyro_register_data_path);
 
 int gyro_register_control_path(struct gyro_control_path *ctl)
 {
@@ -671,6 +639,7 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 
 	return 0;
 }
+EXPORT_SYMBOL(gyro_register_control_path);
 
 int x_t = 0;
 int y_t = 0;
@@ -762,6 +731,47 @@ exit_alloc_data_failed:
 	return err;
 }
 
+int gyro_driver_add(struct gyro_init_info *obj)
+{
+        int err = 0;
+        int i = 0;
+
+        if (!obj) {
+                GYRO_ERR("gyro driver add fail, gyro_init_info is NULL\n");
+                return -1;
+        }
+
+        for (i = 0; i < MAX_CHOOSE_GYRO_NUM; i++) {
+                if ((i == 0) && (NULL == gyroscope_init_list[0])) {
+                        GYRO_LOG("register gyro driver for the first time\n");
+                        if (platform_driver_register(&gyroscope_driver))
+                                GYRO_ERR("failed to register gyro driver already exist\n");
+                }
+
+            if (NULL == gyroscope_init_list[i]) {
+                        obj->platform_diver_addr = &gyroscope_driver;
+                        gyroscope_init_list[i] = obj;
+                        break;
+            }
+        }
+
+        if (i >= MAX_CHOOSE_GYRO_NUM) {
+                GYRO_ERR("gyro driver add err\n");
+                err =  -1;
+        }
+
+#ifndef MTK_GYRO_MODULE
+	if (gyro_probe()) {
+	      GYRO_ERR("failed to register gyro driver\n");
+	      return -ENODEV;
+	}
+#endif
+
+        return err;
+}
+EXPORT_SYMBOL_GPL(gyro_driver_add);
+
+
 static int gyro_remove(void)
 {
 	int err = 0;
@@ -782,10 +792,12 @@ static int __init gyro_init(void)
 {
 	GYRO_LOG("gyro_init\n");
 
+#ifdef MTK_GYRO_MODULE
 	if (gyro_probe()) {
 		GYRO_ERR("failed to register gyro driver\n");
 		return -ENODEV;
 	}
+#endif
 
 	return 0;
 }

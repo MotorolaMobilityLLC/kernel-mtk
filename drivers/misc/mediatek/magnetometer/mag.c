@@ -646,38 +646,7 @@ static int mag_real_driver_init(void)
 	return err;
 }
 
-int mag_driver_add(struct mag_init_info *obj)
-{
-	int err = 0;
-	int i = 0;
 
-	MAG_FUN();
-	if (!obj) {
-		MAG_ERR("MAG driver add fail, mag_init_info is NULL\n");
-		return -1;
-	}
-
-	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
-		if ((i == 0) && (NULL == msensor_init_list[0])) {
-			MAG_LOG("register mensor driver for the first time\n");
-			if (platform_driver_register(&msensor_driver))
-				MAG_ERR("failed to register msensor driver already exist\n");
-		}
-		if (NULL == msensor_init_list[i]) {
-			obj->platform_diver_addr = &msensor_driver;
-			msensor_init_list[i] = obj;
-			break;
-		}
-	}
-
-	if (i >= MAX_CHOOSE_G_NUM) {
-		MAG_ERR("MAG driver add err\n");
-		err =  -1;
-	}
-
-	return err;
-}
-EXPORT_SYMBOL_GPL(mag_driver_add);
 
 static int mag_misc_init(struct mag_context *cxt)
 {
@@ -797,6 +766,7 @@ int mag_register_data_path(struct mag_data_path *data)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(mag_register_data_path);
 
 int mag_register_control_path(struct mag_control_path *ctl)
 {
@@ -839,6 +809,7 @@ int mag_register_control_path(struct mag_control_path *ctl)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(mag_register_control_path);
 static int x1, y1, z1;
 static long pc;
 static long count;
@@ -954,6 +925,46 @@ exit_alloc_data_failed:
 	return err;
 }
 
+int mag_driver_add(struct mag_init_info *obj)
+{
+	int err = 0;
+	int i = 0;
+
+	MAG_FUN();
+	if (!obj) {
+		MAG_ERR("MAG driver add fail, mag_init_info is NULL\n");
+		return -1;
+	}
+
+	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
+		if ((i == 0) && (NULL == msensor_init_list[0])) {
+			MAG_LOG("register mensor driver for the first time\n");
+			if (platform_driver_register(&msensor_driver))
+				MAG_ERR("failed to register msensor driver already exist\n");
+		}
+		if (NULL == msensor_init_list[i]) {
+			obj->platform_diver_addr = &msensor_driver;
+			msensor_init_list[i] = obj;
+			break;
+		}
+	}
+
+	if (i >= MAX_CHOOSE_G_NUM) {
+		MAG_ERR("MAG driver add err\n");
+		err =  -1;
+	}
+
+#ifndef MTK_MAG_MODULE
+	if (mag_probe()) {
+		MAG_ERR("failed to register mag driver\n");
+		return -ENODEV;
+	}
+#endif
+
+	return err;
+}
+EXPORT_SYMBOL_GPL(mag_driver_add);
+
 static int mag_remove(void)
 {
 	int err = 0;
@@ -975,12 +986,12 @@ static int mag_remove(void)
 static int __init mag_init(void)
 {
 	MAG_FUN();
-
+#ifdef MTK_MAG_MODULE
 	if (mag_probe()) {
 		MAG_ERR("failed to register mag driver\n");
 		return -ENODEV;
 	}
-
+#endif
 	return 0;
 }
 
