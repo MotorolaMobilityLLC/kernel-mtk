@@ -62,8 +62,6 @@ static void __cpuinit write_pen_release(int val)
 
 void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 {
-	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
-
 #ifndef CONFIG_MTK_GIC
 	mt_gic_secondary_init();
 #endif
@@ -116,7 +114,6 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 */
 	spin_lock(&boot_lock);
 
-	HOTPLUG_INFO("mt_smp_boot_secondary, cpu: %d\n", cpu);
 	/*
 	 * The secondary processor is waiting to be released from
 	 * the holding pen - release it, then wait for it to flag
