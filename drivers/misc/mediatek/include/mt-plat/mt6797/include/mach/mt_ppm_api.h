@@ -127,6 +127,10 @@ extern unsigned int mt_ppm_thermal_get_min_power(void);
 extern unsigned int mt_ppm_thermal_get_max_power(void);
 extern unsigned int mt_ppm_thermal_get_cur_power(void);
 
+/* User limit policy */
+extern unsigned int mt_ppm_userlimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data);
+extern unsigned int mt_ppm_userlimit_cpu_freq(unsigned int cluster_num, struct ppm_limit_data *data);
+
 /* Force limit policy */
 extern unsigned int mt_ppm_forcelimit_cpu_core(unsigned int cluster_num, struct ppm_limit_data *data);
 
