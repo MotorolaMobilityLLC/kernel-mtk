@@ -328,18 +328,11 @@ extern kal_bool g_ftm_battery_flag;
 extern int charging_level_data[1];
 extern kal_bool g_call_state;
 extern kal_bool g_charging_full_reset_bat_meter;
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 extern kal_bool ta_check_chr_type;
 extern kal_bool ta_cable_out_occur;
 extern kal_bool is_ta_connect;
 extern struct wake_lock TA_charger_suspend_lock;
-#endif
-
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
-extern struct wake_lock PE20_charger_suspend_lock;
-extern kal_bool pe20_check_chr_type;
-extern kal_bool pe20_cable_out_occur;
-extern kal_bool is_pe20_connect;
 #endif
 
 

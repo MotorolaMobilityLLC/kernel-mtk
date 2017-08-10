@@ -15,9 +15,8 @@
 #define _CUST_PE_H_
 
 /* Pump Express support (fast charging) */
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT
 #define TA_START_BATTERY_SOC	1
-#define TA_STOP_BATTERY_SOC	110
+#define TA_STOP_BATTERY_SOC	85
 #define TA_AC_12V_INPUT_CURRENT CHARGE_CURRENT_3200_00_MA
 #define TA_AC_9V_INPUT_CURRENT	CHARGE_CURRENT_3200_00_MA
 #define TA_AC_7V_INPUT_CURRENT	CHARGE_CURRENT_3200_00_MA
@@ -25,30 +24,10 @@
 #define TA_9V_SUPPORT
 #define TA_12V_SUPPORT
 
+/* For PE+20, ichg threshold for leaving PE+20 */
+#define PEP20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 
-/*this is for HW OVP*/
-#define TA_AC_12V_INPUT_OVER_VOLTAGE BATTERY_VOLT_10_500000_V
-#define TA_AC_9V_INPUT_OVER_VOLTAGE  BATTERY_VOLT_10_500000_V
-#define TA_AC_7V_INPUT_OVER_VOLTAGE  BATTERY_VOLT_09_000000_V
-#define TA_AC_5V_INPUT_OVER_VOLTAGE  BATTERY_VOLT_07_000000_V
-
-/*Pump express plus : recharge enable mode*/
-#define PUMPEX_PLUS_RECHG (1)
-
-/*This seems not to be used batterymeter*/
-#undef V_CHARGER_MAX
-#if defined(TA_9V_SUPPORT) || defined(TA_12V_SUPPORT)
-#define V_CHARGER_MAX 6500				/* For SW OVP*/
-#else
-#define V_CHARGER_MAX 7500				/* 7.5 V */
-#endif
-#endif
-
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
-#undef V_CHARGER_MAX
-#define V_CHARGER_MAX 15000
-#endif
-
+/* For PE+20, VBUS V.S. VBAT table, according to BQ25896 */
 #define VBAT3400_VBUS CHR_VOLT_08_000000_V
 #define VBAT3500_VBUS CHR_VOLT_08_500000_V
 #define VBAT3600_VBUS CHR_VOLT_08_500000_V

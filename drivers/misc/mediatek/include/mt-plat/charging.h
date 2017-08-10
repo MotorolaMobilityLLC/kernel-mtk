@@ -613,7 +613,7 @@ extern void hw_charging_enable_dp_voltage(int ison);
 
 /* switch charger */
 extern void switch_charger_set_vindpm(unsigned int chr_v);
-extern void mtk_pe20_plugout_reset(void);
+extern int mtk_get_dynamic_cv(unsigned int *cv);
 /*extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);*/
 /*extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);*/
 
@@ -624,9 +624,6 @@ __weak kal_bool pmic_chrdet_status(void);
 #endif
 /*BCCT input current control function over switch charger*/
 extern unsigned int set_chr_input_current_limit(int current_limit);
-
-/* Get internal temperature of charger */
-extern int get_chr_temperature(int *min_temp, int *max_temp);
 
 /* Set charger's boost current limit */
 extern int set_chr_boost_current_limit(unsigned int current_limit);

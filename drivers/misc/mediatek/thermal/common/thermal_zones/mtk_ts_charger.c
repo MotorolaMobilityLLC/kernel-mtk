@@ -75,7 +75,7 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, unsigned l
 	mtktscharger_dprintk("[mtktscharger_get_temp]\n");
 	*t = 0;
 
-	ret = get_chr_temperature(&min_temp, &max_temp);
+	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
 /*
 	if (da9214_read_interface(0x51, &val, 3, 2) == 1) {
 		switch (val) {
