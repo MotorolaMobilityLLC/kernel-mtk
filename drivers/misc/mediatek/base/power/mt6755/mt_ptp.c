@@ -115,7 +115,13 @@ unsigned int reg_dump_addr_off[] = {
 };
 
 unsigned int littleFreq_FY[8] = {1001000, 910000, 819000, 689000, 598000, 494000, 338000, 156000};
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+unsigned int bigFreq_FY[8] = {1508000, 1430000, 1352000, 1196000, 1027000, 871000, 663000, 286000};
+#else
 unsigned int bigFreq_FY[8] = {1807000, 1651000, 1495000, 1196000, 1027000, 871000, 663000, 286000};
+unsigned int bigFreq_FY_M[8] = {1807000, 1651000, 1495000, 1196000, 1098000, 871000, 663000, 286000};
+#endif
 
 unsigned int littleFreq_SB[8] = {1144000, 1014000, 871000, 689000, 598000, 494000, 338000, 156000};
 unsigned int bigFreq_SB[8] = {1950000, 1755000, 1573000, 1196000, 1027000, 871000, 663000, 286000};
@@ -137,6 +143,49 @@ unsigned int gpuFreq[8] = {728000, 650000, 598000, 520000, 468000, 429000, 39000
 [13:7] Vsram pmic value
 [6:0] Vproc pmic value
 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+
+unsigned int fyTbl[][9] = {
+/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS, Vsram, Vproc */
+	{0x09, 0xa, 0x13, 0x8, 0x1, 0x134, 0x0, 0x58, 0x58},/* 1001 (LL) */
+	{0x08, 0xa, 0x11, 0x8, 0x1, 0x118, 0x0, 0x58, 0x52},/* 910 */
+	{0x07, 0xa, 0x0f, 0x8, 0x1, 0x0fc, 0x0, 0x58, 0x4c},/* 819 */
+	{0x06, 0xa, 0x0D, 0x8, 0x1, 0x0d4, 0x0, 0x50, 0x40},/* 689 */
+	{0x05, 0xa, 0x0B, 0x8, 0x1, 0x0b8, 0x0, 0x4b, 0x3b},/* 598 */
+	{0x04, 0xb, 0x09, 0xa, 0x1, 0x130, 0x0, 0x46, 0x36},/* 494 */
+	{0x03, 0xb, 0x06, 0xa, 0x1, 0x0d0, 0x0, 0x40, 0x30},/* 338 */
+	{0x01, 0x1d, 0x03, 0xb, 0x1, 0x0c0, 0x0, 0x35, 0x20},/* 156 */
+	{0x0e, 0xa, 0x1d, 0x8, 0x0, 0x0e8, 0x0, 0x58, 0x58},/* 1508 (L) */
+	{0x0d, 0xa, 0x1b, 0x8, 0x0, 0x0dc, 0x0, 0x58, 0x52},/* 1430 */
+	{0x0d, 0xa, 0x1a, 0x8, 0x0, 0x0d0, 0x0, 0x58, 0x4c},/* 1352 */
+	{0x0b, 0xa, 0x17, 0x8, 0x0, 0x0b8, 0x0, 0x50, 0x40},/* 1196 */
+	{0x09, 0xa, 0x13, 0x8, 0x1, 0x13c, 0x0, 0x4b, 0x3b},/* 1027 */
+	{0x08, 0xa, 0x10, 0x8, 0x1, 0x10c, 0x0, 0x46, 0x36},/* 871 */
+	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x0, 0x40, 0x30},/* 663 */
+	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x0, 0x35, 0x20},/* 286 */
+};
+
+unsigned int sbTbl[][9] = {
+	{0x0b, 0xa, 0x16, 0x8, 0x1, 0x160, 0x0, 0x58, 0x58},/* 1144 (LL) */
+	{0x09, 0xa, 0x13, 0x8, 0x1, 0x138, 0x0, 0x58, 0x52},/* 1014 */
+	{0x08, 0xa, 0x10, 0x8, 0x1, 0x10c, 0x0, 0x58, 0x4c},/* 871 */
+	{0x06, 0xa, 0x0D, 0x8, 0x1, 0x0d4, 0x0, 0x50, 0x40},/* 689 */
+	{0x05, 0xa, 0x0B, 0x8, 0x1, 0x0b8, 0x0, 0x4b, 0x3b},/* 598 */
+	{0x04, 0xb, 0x09, 0xa, 0x1, 0x130, 0x0, 0x46, 0x36},/* 494 */
+	{0x03, 0xb, 0x06, 0xa, 0x1, 0x0d0, 0x0, 0x40, 0x30},/* 338 */
+	{0x01, 0x1d, 0x03, 0xb, 0x1, 0x0c0, 0x0, 0x35, 0x20},/* 156 */
+	{0x12, 0xa, 0x1f, 0x8, 0x0, 0x12c, 0x0, 0x58, 0x58},/* 1950 (L) */
+	{0x10, 0xa, 0x1f, 0x8, 0x0, 0x10e, 0x0, 0x58, 0x52},/* 1755 */
+	{0x0f, 0xa, 0x1e, 0x8, 0x0, 0x0f2, 0x0, 0x58, 0x4c},/* 1573 */
+	{0x0b, 0xa, 0x17, 0x8, 0x0, 0x0b8, 0x0, 0x50, 0x40},/* 1196 */
+	{0x09, 0xa, 0x13, 0x8, 0x1, 0x13c, 0x0, 0x4b, 0x3b},/* 1027 */
+	{0x08, 0xa, 0x10, 0x8, 0x1, 0x10c, 0x0, 0x46, 0x36},/* 871 */
+	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x0, 0x40, 0x30},/* 663 */
+	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x0, 0x35, 0x20},/* 286 */
+};
+static unsigned int *tTbl;
+
+#else
 unsigned int fyTbl[][9] = {
 /* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS, Vsram, Vproc */
 	{0x09, 0xa, 0x13, 0x8, 0x1, 0x134, 0xc51, 0x58, 0x58},/* 1001 (LL) */
@@ -152,6 +201,26 @@ unsigned int fyTbl[][9] = {
 	{0x0e, 0xa, 0x1c, 0x8, 0x0, 0x0e6, 0x933, 0x58, 0x4c},/* 1495 */
 	{0x0b, 0xa, 0x17, 0x8, 0x0, 0x0b8, 0x75c, 0x50, 0x40},/* 1196 */
 	{0x09, 0xa, 0x13, 0x8, 0x1, 0x13c, 0xca3, 0x4b, 0x3b},/* 1027 */
+	{0x08, 0xa, 0x10, 0x8, 0x1, 0x10c, 0xab8, 0x46, 0x36},/* 871 */
+	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x828, 0x40, 0x30},/* 663 */
+	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
+};
+
+unsigned int fyTbl_M[][9] = {
+/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS, Vsram, Vproc */
+	{0x09, 0xa, 0x13, 0x8, 0x1, 0x134, 0xc51, 0x58, 0x58},/* 1001 (LL) */
+	{0x08, 0xa, 0x11, 0x8, 0x1, 0x118, 0xb33, 0x58, 0x52},/* 910 */
+	{0x07, 0xa, 0x0f, 0x8, 0x1, 0x0fc, 0xa14, 0x58, 0x4c},/* 819 */
+	{0x06, 0xa, 0x0D, 0x8, 0x1, 0x0d4, 0x87a, 0x50, 0x40},/* 689 */
+	{0x05, 0xa, 0x0B, 0x8, 0x1, 0x0b8, 0x75c, 0x4b, 0x3b},/* 598 */
+	{0x02, 0xb, 0x09, 0xa, 0x1, 0x130, 0xc28, 0x46, 0x36},/* 494 */
+	{0x01, 0xb, 0x06, 0xa, 0x1, 0x0d0, 0x851, 0x40, 0x30},/* 338 */
+	{0x00, 0x1d, 0x03, 0xb, 0x1, 0x0c0, 0x7ae, 0x35, 0x20},/* 156 */
+	{0x11, 0xa, 0x1f, 0x8, 0x0, 0x116, 0xb1e, 0x58, 0x58},/* 1807 (L) */
+	{0x0f, 0xa, 0x1f, 0x8, 0x0, 0x0fe, 0xA28, 0x58, 0x52},/* 1651 */
+	{0x0e, 0xa, 0x1c, 0x8, 0x0, 0x0e6, 0x933, 0x58, 0x4c},/* 1495 */
+	{0x0b, 0xa, 0x17, 0x8, 0x0, 0x0b8, 0x75c, 0x50, 0x40},/* 1196 */
+	{0x09, 0xa, 0x13, 0x8, 0x0, 0x09e, 0xca3, 0x4b, 0x3b},/* 1027 */
 	{0x08, 0xa, 0x10, 0x8, 0x1, 0x10c, 0xab8, 0x46, 0x36},/* 871 */
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x828, 0x40, 0x30},/* 663 */
 	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
@@ -194,10 +263,10 @@ unsigned int p15Tbl[][9] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x828, 0x40, 0x30},/* 663 */
 	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
 };
-
 unsigned int gpuSb[8] = {0x54, 0x54, 0x54, 0x40, 0x40, 0x40, 0x40, 0x35};
 unsigned int gpuFy[8] = {0x54, 0x40, 0x40, 0x40, 0x40, 0x35, 0x00, 0x00};
-
+#endif
+static unsigned int record_tbl_locked[8];
 static unsigned int *recordTbl;
 static unsigned int cpu_speed;
 
@@ -218,6 +287,7 @@ static unsigned int cpu_speed;
 
 /* system includes */
 #include <linux/init.h>
+#include <linux/cpu.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
@@ -264,7 +334,6 @@ static unsigned int cpu_speed;
 
 /* local includes */
 #include "mt_defptp.h"
-
 #ifdef __KERNEL__
 	#include <mt-plat/mt_chip.h>
 	#include <mt-plat/mt_gpio.h>
@@ -272,8 +341,12 @@ static unsigned int cpu_speed;
 	#include "mach/mt_thermal.h"
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
-	#include "../../../power/mt6755/mt6311.h"
-	/* #include "mach/mt6311.h" */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_MTK_MT6750TT)
+		#include "mt_eem_turbo.h"
+	#else
+		#include "../../../power/mt6755/mt6311.h"
+		/* #include "mach/mt6311.h" */
+	#endif
 
 #else
 	#include "mach/mt_ptpslt.h"
@@ -288,9 +361,15 @@ static unsigned int cpu_speed;
 	#endif
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+static unsigned int ctrl_ITurbo = 0, ITurboRun, fab, segment;
+unsigned int cpuBinLevel, cpuBinLevel_eng;
+#endif
+static int eem_log_en;
 
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
+
 
 struct eem_det;
 struct eem_ctrl;
@@ -415,7 +494,7 @@ static void _mt_eem_aee_init(void)
  * LOG
  */
 #ifdef __KERNEL__
-#define EEM_TAG     "[xxxxx] "
+#define EEM_TAG     "[xxxx1] "
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
 	#define eem_emerg(fmt, args...)     pr_err(ANDROID_LOG_ERROR, EEM_TAG, fmt, ##args)
@@ -498,6 +577,9 @@ enum {
 #ifdef CONFIG_OF
 void __iomem *eem_base;
 static u32 eem_irq_number;
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+void __iomem *eem_apmixed_base;
+#endif
 #endif
 
 /**
@@ -753,6 +835,15 @@ struct eem_devinfo {
  * lock
  */
 static DEFINE_SPINLOCK(eem_spinlock);
+static DEFINE_MUTEX(record_mutex);
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* CPU callback */
+		static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
+			unsigned long action, void *hcpu);
+		static struct notifier_block __refdata _mt_eem_cpu_notifier = {
+			.notifier_call = _mt_eem_cpu_CB,
+		};
+	#endif
 #endif
 /**
  * EEM controllers
@@ -905,7 +996,11 @@ static struct eem_det eem_detectors[NR_EEM_DET] = {
 		.name		= __stringify(EEM_DET_GPU),
 		.ops		= &gpu_det_ops,
 		.ctrl_id	= EEM_CTRL_GPU,
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		.features	= 0,
+		#else
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		#endif
 		.max_freq_khz	= 728000,/* 728 MHz */
 		.VBOOT		= EEM_VOLT_TO_PMIC_VAL(100000), /* 1.0v: 0x30 */
 		.volt_offset	= 0,
@@ -1408,12 +1503,12 @@ static void record(struct eem_det *det)
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
-		vSram = clamp((unsigned int)(det->volt_tbl_pmic[i] + 0x10),
+		vSram = clamp((unsigned int)(record_tbl_locked[i] + 0x10),
 				(unsigned int)(VMIN_SRAM + EEM_PMIC_OFFSET),
 				(unsigned int)(det->VMAX + EEM_PMIC_OFFSET));
 
 		det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
-			((((vSram & 0x7F) << 7) | (det->volt_tbl_pmic[i] & 0x7F)) & 0x3fff);
+			((((vSram & 0x7F) << 7) | (record_tbl_locked[i] & 0x7F)) & 0x3fff);
 	}
 	det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 	mb(); /* SRAM writing */
@@ -1470,6 +1565,8 @@ static int get_volt_cpu(struct eem_det *det)
 /* volt_tbl_pmic is convert from 10uV */
 static int set_volt_cpu(struct eem_det *det)
 {
+	int value = 0;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 #if defined(__MTK_SLT_)
@@ -1487,16 +1584,26 @@ static int set_volt_cpu(struct eem_det *det)
 	eem_debug("init02_vop_30 = 0x%x\n", det->eem_vop30[EEM_PHASE_INIT02]);
 
 	#ifdef EARLY_PORTING
-		return 0;
+		return value;
 	#else
-		/* I-Chang */
 		#ifdef __KERNEL__
 		/* record(det); */
+		mutex_lock(&record_mutex);
 		#endif
-		return mt_cpufreq_update_volt(
+
+		for (value = 0; value < NR_FREQ; value++)
+			record_tbl_locked[value] = det->volt_tbl_pmic[value];
+
+		value = mt_cpufreq_update_volt(
 			(det_to_id(det) == EEM_DET_LITTLE) ?
 			MT_CPU_DVFS_LITTLE : MT_CPU_DVFS_BIG,
-			det->volt_tbl_pmic, det->num_freq_tbl);
+			record_tbl_locked, det->num_freq_tbl);
+
+		#ifdef __KERNEL__
+		mutex_unlock(&record_mutex);
+		#endif
+
+		return value;
 	#endif
 }
 
@@ -1522,6 +1629,9 @@ static void get_freq_table_cpu(struct eem_det *det)
 {
 	int i;
 	unsigned int binLevel, binLevel_eng;
+	#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	unsigned int freq_bound;
+	#endif
 	#ifndef EARLY_PORTING
 	enum mt_cpu_dvfs_id cpu;
 
@@ -1532,11 +1642,23 @@ static void get_freq_table_cpu(struct eem_det *det)
 
 	/* det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu, 0); */
 	#ifdef __KERNEL__
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		binLevel = 1;
+		cpuBinLevel = binLevel;
+		cpuBinLevel_eng = 0x20;
+		#else
 		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 		binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
+		freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
+		#endif
 	#else
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		binLevel = 1;
+		#else
 		binLevel = GET_BITS_VAL(7:0, eem_read(0x1020627C));
 		binLevel_eng = GET_BITS_VAL(15:0, eem_read(0x10206278));
+		freq_bound = GET_BITS_VAL(25:23, eem_read(0x10206044));
+		#endif
 	#endif
 
 	for (i = 0; i < NR_FREQ; i++) {
@@ -1547,15 +1669,29 @@ static void get_freq_table_cpu(struct eem_det *det)
 		#else
 			/* I-Chang */
 			/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			if (0) {
+			#else
 			if (1001 == cpu_speed) {
+			#endif
 				det->freq_tbl[i] =
-				PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] : bigFreq_FY[i],
+				PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] :
+					#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+					bigFreq_FY[i],
+					#else
+					((freq_bound == 5) ? bigFreq_FY_M[i] : bigFreq_FY[i]),
+					#endif
 				det->max_freq_khz);
-				eem_debug("2--->Get cpu speed from Device tree = %d\n", cpu_speed);
+				/* eem_error("2--->Get cpu speed from Device tree = %d\n", cpu_speed); */
 			} else {
 				if ((1 == binLevel) || (3 == binLevel)) {
 					det->freq_tbl[i] =
-					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] : bigFreq_FY[i],
+					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] :
+					#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+						bigFreq_FY[i],
+					#else
+						((freq_bound == 5) ? bigFreq_FY_M[i] : bigFreq_FY[i]),
+					#endif
 					det->max_freq_khz);
 				} else if ((2 == binLevel) || (4 == binLevel)) {
 					det->freq_tbl[i] =
@@ -1572,7 +1708,11 @@ static void get_freq_table_cpu(struct eem_det *det)
 							PERCENT(
 							(det_to_id(det) == EEM_DET_LITTLE) ?
 								littleFreq_FY[i] :
+								#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 								bigFreq_FY[i],
+								#else
+								((freq_bound == 5) ? bigFreq_FY_M[i] : bigFreq_FY[i]),
+								#endif
 							det->max_freq_khz);
 					} else {
 						det->freq_tbl[i] =
@@ -2049,6 +2189,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->DCMDET	= devinfo->CPU0_DCMDET;
 		det->DCBDET	= devinfo->CPU0_DCBDET;
 		det->recordRef  = recordRef;
+
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* For Jade- UMC use */
+		if (get_devinfo_with_index(28) & 0x40000000)
+			det->max_freq_khz = 1001000;
+		#endif
 		#if 0
 			int i;
 
@@ -2066,6 +2212,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->DCMDET	= devinfo->CPU1_DCMDET;
 		det->DCBDET	= devinfo->CPU1_DCBDET;
 		det->recordRef  = recordRef + 36;
+
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* For Jade- UMC use */
+		if (get_devinfo_with_index(28) & 0x40000000)
+			det->max_freq_khz = 1508000;
+		#endif
+
 		#if 0
 			int i;
 
@@ -2190,6 +2343,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], (*(recordTbl + (i * 9) + 8) & 0x7F));
 		else if (det_to_id(det) == EEM_DET_BIG)
 			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], (*(recordTbl + (i + 8) * 9 + 8) & 0x7F));
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		#else
 		else {
 			if (8 == det->num_freq_tbl)
 				det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuSb[i]);
@@ -2199,6 +2354,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 				det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuFy[i]);
 			}
 		}
+		#endif
 	}
 
 #ifdef __KERNEL__
@@ -2610,6 +2766,12 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	}
 	#else
 	eem_set_eem_volt(det);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			if (EEM_CTRL_BIG == det->ctrl_id) {
+				ctrl_ITurbo = (0 == ctrl_ITurbo) ? 0 : 2;
+				eem_error("Finished BIG monitor mode!!\n");
+			}
+		#endif
 	#endif
 
 out:
@@ -2805,6 +2967,174 @@ static void eem_init01_finish(struct eem_det *det)
 	}
 
 	FUNC_EXIT(FUNC_LV_LOCAL);
+}
+#endif
+
+#if defined(__KERNEL__) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define ITURBO_CPU_NUM 2
+static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void *hcpu)
+{
+#if defined(CONFIG_MTK_MT6750TT)
+	unsigned long flags;
+	unsigned int cpu = (unsigned long)hcpu;
+	unsigned int online_cpus = num_online_cpus();
+	struct device *dev;
+	struct eem_det *det;
+	enum mt_eem_cpu_id cluster_id;
+
+	/* CPU mask - Get on-line cpus per-cluster */
+	struct cpumask eem_cpumask;
+	struct cpumask cpu_online_cpumask;
+	unsigned int cpus, big_cpus, timeout;
+
+	if (ctrl_ITurbo < 2) {
+		eem_debug("Default Turbo off (%d) !!", ctrl_ITurbo);
+		return NOTIFY_OK;
+	}
+	/* eem_debug("Turbo start to run (%d) !!", ctrl_ITurbo); */
+	tTbl = get_turbo(cpuBinLevel, cpuBinLevel_eng);
+
+	/* Current active CPU is belong which cluster */
+	cluster_id = arch_get_cluster_id(cpu);
+
+	/* How many active CPU in this cluster, present by bit mask
+		ex:	BIG	LITTLE
+			1111	0000 */
+	arch_get_cluster_cpus(&eem_cpumask, cluster_id);
+
+	/* How many active CPU online in this cluster, present by number */
+	cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+	cpus = cpumask_weight(&cpu_online_cpumask);
+
+	if (eem_log_en)
+		eem_error("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
+		, __func__, __LINE__, cpu, action, online_cpus, cluster_id, cpus);
+
+	dev = get_cpu_device(cpu);
+	if (dev) {
+		det = id_to_eem_det(EEM_DET_BIG);
+		arch_get_cluster_cpus(&eem_cpumask, MT_EEM_CPU_BIG);
+		cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+		big_cpus = cpumask_weight(&cpu_online_cpumask);
+
+		switch (action) {
+		case CPU_POST_DEAD:
+			if ((0 == ITurboRun) &&
+				(0 < big_cpus) &&
+				(ITURBO_CPU_NUM >= big_cpus) &&
+				(MT_EEM_CPU_BIG == cluster_id)) {
+				if (eem_log_en)
+					eem_error("Turbo(1) POST_DEAD (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
+				mt_ptp_lock(&flags);
+				ITurboRun = 1;
+				/* Revise BIG private table */
+				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
+				det->recordRef[1] =
+					((tTbl[0] & 0x1F) << 27) |
+					((tTbl[1] & 0x1F) << 22) |
+					((tTbl[2] & 0x1F) << 17) |
+					((tTbl[3] & 0x1F) << 12) |
+					((tTbl[4] & 0x07) << 9) |
+					(tTbl[5] & 0x1FF);
+				mb(); /* SRAM writing */
+				mt_ptp_unlock(&flags);
+			} else {
+				if (eem_log_en)
+					eem_error("Turbo(%d)ed !! POST_DEAD (%d), BIG_cc(%d)\n",
+						ITurboRun, online_cpus, big_cpus);
+			}
+		break;
+
+		case CPU_DOWN_PREPARE:
+			if ((1 == ITurboRun) && (1 == big_cpus) && (MT_EEM_CPU_BIG == cluster_id)) {
+				if (eem_log_en)
+					eem_error("Turbo(0) DP (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
+				mt_ptp_lock(&flags);
+				ITurboRun = 0;
+				/* Restore BIG private table */
+				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
+				det->recordRef[1] =
+					((*(recordTbl + (8 * 9) + 0) & 0x1F) << 27) |
+					((*(recordTbl + (8 * 9) + 1) & 0x1F) << 22) |
+					((*(recordTbl + (8 * 9) + 2) & 0x1F) << 17) |
+					((*(recordTbl + (8 * 9) + 3) & 0x1F) << 12) |
+					((*(recordTbl + (8 * 9) + 4) & 0x07) << 9) |
+					(*(recordTbl + (8 * 9) + 5) & 0x1FF);
+				mb(); /* SRAM writing */
+				mt_ptp_unlock(&flags);
+			} else {
+				if (eem_log_en)
+					eem_error("Turbo(%d)ed !! DP (%d), BIG_cc(%d)\n",
+						ITurboRun, online_cpus, big_cpus);
+			}
+		break;
+
+		case CPU_UP_PREPARE:
+			if ((0 == ITurboRun) && (0 == big_cpus) && (MT_EEM_CPU_BIG == cluster_id)) {
+				if (eem_log_en)
+					eem_error("Turbo(1) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
+				mt_ptp_lock(&flags);
+				ITurboRun = 1;
+				/* Revise BIG private table */
+				/* CCI dcmdiv, CCI_div, dcm_div, clk_div, post_div, DDS */
+				det->recordRef[1] =
+					((tTbl[0] & 0x1F) << 27) |
+					((tTbl[1] & 0x1F) << 22) |
+					((tTbl[2] & 0x1F) << 17) |
+					((tTbl[3] & 0x1F) << 12) |
+					((tTbl[4] & 0x07) << 9) |
+					(tTbl[5] & 0x1FF);
+				mb(); /* SRAM writing */
+				mt_ptp_unlock(&flags);
+			} else if ((1 == ITurboRun) &&
+					((ITURBO_CPU_NUM == big_cpus) /* || (5 < cpu) */) &&
+					(MT_EEM_CPU_BIG == cluster_id)) {
+				if (eem_log_en)
+					eem_error("Turbo(0) UP c(%d), on_c(%d), BIG_cc(%d)\n",
+						cpu, online_cpus, big_cpus);
+				mt_ptp_lock(&flags);
+				ITurboRun = 0;
+				/* Restore BIG private table */
+				det->recordRef[1] =
+					((*(recordTbl + (8 * 9) + 0) & 0x1F) << 27) |
+					((*(recordTbl + (8 * 9) + 1) & 0x1F) << 22) |
+					((*(recordTbl + (8 * 9) + 2) & 0x1F) << 17) |
+					((*(recordTbl + (8 * 9) + 3) & 0x1F) << 12) |
+					((*(recordTbl + (8 * 9) + 4) & 0x07) << 9) |
+					(*(recordTbl + (8 * 9) + 5) & 0x1FF);
+				mb(); /* SRAM writing */
+				mt_ptp_unlock(&flags);
+				timeout = 0;
+				while (((eem_read(eem_apmixed_base + 0x204) >> 12) & 0x1FF) >
+					*(recordTbl + (8 * 9) + 5)) {
+					udelay(120);
+					if (timeout == 100) {
+						eem_error("DDS = %x, %x\n",
+							(eem_read(eem_apmixed_base + 0x204) >> 12) & 0x1FF,
+							*(recordTbl + (8 * 9) + 5));
+						break;
+					}
+					timeout++;
+				}
+				udelay(120);
+			} else {
+				if (eem_log_en)
+					eem_error("Turbo(%d)ed !! UP (%d), BIG_cc(%d)\n",
+						ITurboRun, online_cpus, big_cpus);
+			}
+		break;
+		}
+	}
+	return NOTIFY_OK;
+#else
+	tTbl = NULL;
+	return NOTIFY_OK;
+#endif
+}
+
+unsigned int get_turbo_status(void)
+{
+	return ITurboRun;
 }
 #endif
 
@@ -3015,6 +3345,16 @@ void get_devinfo(struct eem_devinfo *p)
 	eem_debug("p->EEMMONEN=0x%x\n", p->EEMMONEN);
 	/* p->EEMINITEN = 0; */ /* TODO: FIXME */
 	/* p->EEMMONEN  = 0; */ /* TODO: FIXME */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	fab = get_devinfo_with_index(28) & 0x40000000;
+	segment = get_devinfo_with_index(21) & 0xFF;
+	if (((segment == 0x41) || (segment == 0x40)) && !(fab))
+		#if defined(CONFIG_MTK_MT6750TT)
+		ctrl_ITurbo = 1; /* t */
+		#else
+		ctrl_ITurbo = 0; /* u */
+		#endif
+	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -3121,8 +3461,18 @@ static int eem_probe(struct platform_device *pdev)
 		*/
 	}
 	#endif
-	pmic_config_interface(0x44E, 0x1, 0x1, 1); /* set PWM mode for MT6351 */
-	mt6311_config_interface(0x7C, 0x1, 0x1, 6); /* set PWM mode for MT6311 */
+
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* for Jade-(MT6353) */
+		pmic_set_register_value(PMIC_RG_VPROC_MODESET, 1);
+		pmic_set_register_value(PMIC_RG_VCORE_MODESET, 1);
+		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 1);
+	#else
+		/* for Jade/Everest/Olympus(MT6351) */
+		pmic_config_interface(0x44E, 0x1, 0x1, 1); /* set PWM mode for MT6351 */
+		mt6311_config_interface(0x7C, 0x1, 0x1, 6); /* set PWM mode for MT6311 */
+	#endif
+
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
 
@@ -3144,8 +3494,18 @@ static int eem_probe(struct platform_device *pdev)
 			ckgen_meter(2));
 		*/
 	#endif
-	mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
-	pmic_config_interface(0x44E, 0x0, 0x1, 1); /* set non-PWM mode for MT6351 */
+
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* for Jade-(MT6353) */
+		pmic_set_register_value(PMIC_RG_VPROC_MODESET, 0);
+		pmic_set_register_value(PMIC_RG_VCORE_MODESET, 0);
+		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 0);
+	#else
+		/* for Jade/Everest/Olympus(MT6351) */
+		mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
+		pmic_config_interface(0x44E, 0x0, 0x1, 1); /* set non-PWM mode for MT6351 */
+	#endif
+
 	#ifdef __KERNEL__
 		#ifndef EARLY_PORTING
 			#if !defined(CONFIG_MTK_CLKMGR)
@@ -3161,6 +3521,10 @@ static int eem_probe(struct platform_device *pdev)
 	#else
 		gpu_dvfs_enable_by_ptpod();
 		dvfs_enable_by_ptpod();
+	#endif
+
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	register_hotcpu_notifier(&_mt_eem_cpu_notifier);
 	#endif
 
 	eem_debug("eem_probe ok\n");
@@ -3439,7 +3803,6 @@ out:
 /*
  * show current EEM data
  */
-static int eem_log_en;
 static int eem_dump_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det;
@@ -3473,7 +3836,10 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	for_each_det(det) {
 		for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {
 			seq_printf(m, "Bank_number = %d\n", det->ctrl_id);
-			seq_printf(m, "mode = init%d\n", i);
+			if (i < EEM_PHASE_MON)
+				seq_printf(m, "mode = init%d\n", i);
+			else
+				seq_puts(m, "mode = mon");
 			if (eem_log_en) {
 				seq_printf(m, "0x%08X, 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
 					det->dcvalues[i],
@@ -3579,9 +3945,9 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t eem_cur_volt_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
-	int ret, i;
+	int ret;
 	char *buf = (char *) __get_free_page(GFP_USER);
-	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0;
+	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0, index = 0;
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -3602,8 +3968,10 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 		goto out;
 
 	buf[count] = '\0';
+
 	if (EEM_CTRL_GPU != det->ctrl_id) {
-		if (!kstrtoint(buf, 10, &voltValue)) {
+		/* if (sscanf(buf, "%d", &voltValue) == 1) { */
+		if (2 == sscanf(buf, "%u %u", &voltValue, &index)) {
 			ret = 0;
 			det->recordRef[NR_FREQ * 2] = 0x00000000;
 			mb(); /* SRAM writing */
@@ -3616,15 +3984,15 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				(unsigned int)(VMIN_SRAM + EEM_PMIC_OFFSET),
 				(unsigned int)(det->VMAX + EEM_PMIC_OFFSET));
 
-			for (i = 0; i < NR_FREQ; i++)
-				det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
-					(((voltSram & 0x7F) << 7) | (voltProc & 0x7F));
+			/* for (i = 0; i < NR_FREQ; i++) */
+			det->recordRef[index*2] = (det->recordRef[index*2] & (~0x3FFF)) |
+				(((voltSram & 0x7F) << 7) | (voltProc & 0x7F));
 
 			det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 			mb(); /* SRAM writing */
 		} else {
 			ret = -EINVAL;
-			eem_debug("bad argument_1!! argument should be 80000 ~ 115500\n");
+			eem_debug("bad argument_1!! argument should be 80000 ~ 115500, index = (0 ~ 8)\n");
 		}
 	}
 out:
@@ -4227,6 +4595,9 @@ static int __init eem_conf(void)
 {
 	int i;
 	unsigned int binLevel, binLevel_eng;
+	#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	unsigned int freq_bound;
+	#endif
 	struct device_node *cpuSpeedNode = NULL;
 
 	recordRef = ioremap_nocache(EEMCONF_S, EEMCONF_SIZE);
@@ -4247,15 +4618,39 @@ static int __init eem_conf(void)
 	eem_error("0--->The cpu_speed = %d\n", cpu_speed);
 
 	/* read E-fuse for segment selection */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	binLevel = 1;
+	if (0) {
+	#else
 	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
 	binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
+	freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
 	if (1001 == cpu_speed) {
-		recordTbl = &fyTbl[0][0];
-		eem_debug("1--->The table ----->(fyTbl), cpu_speed = %d\n", cpu_speed);
+	#endif
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		if (0) {
+		#else
+		if (freq_bound == 5) {
+			recordTbl = &fyTbl_M[0][0];
+			eem_debug("1--->The table ----->(fyTbl_M), cpu_speed = %d\n", cpu_speed);
+		#endif
+		} else {
+			recordTbl = &fyTbl[0][0];
+			eem_debug("1--->The table ----->(fyTbl), cpu_speed = %d\n", cpu_speed);
+		}
 	} else {
 		if ((1 == binLevel) || (3 == binLevel)) {
-			recordTbl = &fyTbl[0][0];
-			eem_error("@The table ----->(fyTbl)\n");
+			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			if (0) {
+			#else
+			if (freq_bound == 5) {
+				recordTbl = &fyTbl_M[0][0];
+				eem_error("@The table ----->(fyTbl_M)\n");
+			#endif
+			} else {
+				recordTbl = &fyTbl[0][0];
+				eem_error("@The table ----->(fyTbl)\n");
+			}
 		} else if ((2 == binLevel) || (4 == binLevel)) {
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
@@ -4263,10 +4658,22 @@ static int __init eem_conf(void)
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
 		} else {
-			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
-				recordTbl = &fyTbl[0][0];
-			else
+			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				if (0) {
+				#else
+				if (freq_bound == 5) {
+					recordTbl = &fyTbl_M[0][0];
+					eem_error("@The table ----->(ENG fyTbl_M)\n");
+				#endif
+				} else {
+					recordTbl = &fyTbl[0][0];
+					eem_error("@The table ----->(ENG fyTbl)\n");
+				}
+			} else {
 				recordTbl = &sbTbl[0][0];
+				eem_error("@The table ----->(ENG sbTbl)\n");
+			}
 		}
 	}
 
@@ -4377,6 +4784,15 @@ int __init eem_init(void)
 		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
 		return 0;
 	}
+
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	/* apmixed */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	if (node) {
+		eem_apmixed_base = of_iomap(node, 0);
+		eem_debug("[EEM] eem_apmixed_base = 0x%p\n", eem_apmixed_base);
+	}
+	#endif
 
 #endif
 	get_devinfo(&eem_devinfo);

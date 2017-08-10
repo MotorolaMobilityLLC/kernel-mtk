@@ -2348,7 +2348,12 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 			break;
 	}
 
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if (i < 0)
+		i = 0;
+	#else
 	BUG_ON(i < 0);		/* i.e. target_khz > p->opp_tbl[0].cpufreq_khz */
+	#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 

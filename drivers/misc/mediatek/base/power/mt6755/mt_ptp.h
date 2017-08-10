@@ -93,6 +93,13 @@ enum eem_det_id {
 	NR_EEM_DET, /* 3 */
 };
 
+enum mt_eem_cpu_id {
+	MT_EEM_CPU_LITTLE,
+	MT_EEM_CPU_BIG,
+
+	NR_MT_EEM_CPU,
+};
+
 
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */
@@ -135,6 +142,9 @@ extern int get_ptpod_status(void);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
 extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+extern unsigned int get_turbo_status(void);
+#endif
 
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
