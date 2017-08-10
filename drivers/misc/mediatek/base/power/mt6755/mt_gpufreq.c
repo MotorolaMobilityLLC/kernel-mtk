@@ -539,6 +539,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 		type = 1;
 		break;
 	case 0x43:
+	case 0x4B:
 		type = 2;
 		break;
 	case 0x41:
