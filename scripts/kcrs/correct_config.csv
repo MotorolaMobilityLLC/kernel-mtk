@@ -784,7 +784,6 @@ CONFIG_SWP_EMULATION,PLATFORM,,,X,X,X,X,X,y,y,y,y,y,y
 CONFIG_SYN_COOKIES,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_SYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_SYSCTL_SYSCALL,PLATFORM,,,X,X,X,X,y,y,y,y,y,y,y
-CONFIG_TARGET_COPY_OUT_ODM,COMMON,juju.sung,,N,N,N,N,N,N,N,N,N,N,N
 CONFIG_TCPC_CLASS,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
 CONFIG_TCPC_RT1711H,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,X,X,X,X,O,X,X,X,X,X,O
 CONFIG_THERMAL,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
