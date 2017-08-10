@@ -856,8 +856,8 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 	((kal_uint64) SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE * 16 * 1000000000) / 2 / 2 / 64000;
 
 	BT_TX_timestamp = sched_clock();
-	BT_TX_bufdata_equivalent_time = (btsco.pTX->iPacket_w - btsco.pTX->iPacket_r) * (SCO_TX_ENCODE_SIZE)
-		* 16 * 1000  / 2 / 64;
+	BT_TX_bufdata_equivalent_time = ((kal_uint64)(btsco.pTX->iPacket_w - btsco.pTX->iPacket_r)) *
+		(SCO_TX_ENCODE_SIZE) * 16 * 1000  / 2 / 64;
 	BT_TX_bufdata_equivalent_time *= 1000; /* return equivalent time(us) to data count */
 	PRINTK_AUDDRV("BT_TX_timestamp:%llu,BT_TX_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
 		BT_TX_timestamp, BT_TX_bufdata_equivalent_time, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
@@ -1234,7 +1234,7 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 	}
 
 	BT_RX_timestamp = sched_clock();
-	BT_RX_bufdata_equivalent_time = (btsco.pRX->iPacket_w - btsco.pRX->iPacket_r) * (SCO_RX_PLC_SIZE)
+	BT_RX_bufdata_equivalent_time = ((kal_uint64)(btsco.pRX->iPacket_w - btsco.pRX->iPacket_r)) * (SCO_RX_PLC_SIZE)
 		* 16 * 1000  / 2 / 64;
 	BT_RX_bufdata_equivalent_time += read_count * SCO_RX_PLC_SIZE * 16 * 1000
 		/ (SCO_RX_PLC_SIZE+BTSCO_CVSD_PACKET_VALID_SIZE) / 2 / 64;
