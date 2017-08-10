@@ -286,7 +286,7 @@ int get_eint_attr_DTSVal(int md_id, char *name, unsigned int name_len,
 			sim_value = eint_node_prop.eint_value[type].value_sim[i];
 			*len = sizeof(sim_value);
 			memcpy(sim_info, &sim_value, *len);
-			CCCI_NORMAL_LOG(md_id, RPC, "md_eint:%s, sizeof: %d, sim_info: %d, %d\n",
+			CCCI_BOOTUP_LOG(md_id, RPC, "md_eint:%s, sizeof: %d, sim_info: %d, %d\n",
 					eint_node_prop.eint_value[type].property,
 					*len, *sim_info, eint_node_prop.eint_value[type].value_sim[i]);
 			return 0;
