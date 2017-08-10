@@ -25,8 +25,8 @@ extern int add_work_entry(int work_type, unsigned long buff);
 static long register_shared_param_buf(struct service_handler *handler);
 
 void set_ack_vdrv_cmd(unsigned int sys_num)
-{               
-        
+{
+
         if (boot_soter_flag == START_STATUS) {
 
                 struct message_head msg_head;
@@ -43,13 +43,13 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 
                 memcpy(message_buff, &msg_head, sizeof(struct message_head));
                 memcpy(message_buff + sizeof(struct message_head), &ack_body, sizeof(struct ack_vdrv_struct));
-    
+
                 Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
         } else {
                 *((int *)bdrv_message_buff) = sys_num;
                 Flush_Dcache_By_Area((unsigned long)bdrv_message_buff, (unsigned long)bdrv_message_buff + MESSAGE_SIZE);
         }
-    
+
         return;
 }
 
@@ -220,8 +220,10 @@ static int reetime_handle(struct service_handler *handler)
 	wmb();
 
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);	
+	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
+	put_online_cpus();
 #else
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
         if (retVal != 0) {
@@ -319,8 +321,10 @@ static int vfs_handle(struct service_handler *handler)
 	/* with a wmb() */
 	wmb();
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
+	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);

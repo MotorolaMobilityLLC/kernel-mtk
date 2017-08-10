@@ -285,8 +285,11 @@ static void post_teei_invoke_drv(int cpu_id)
 static void teei_invoke_drv(void)
 {
 	int cpu_id = 0;
+
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	post_teei_invoke_drv(cpu_id);
+	put_online_cpus();
 
 	return;
 }
@@ -345,6 +348,7 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	struct cpumask mtee_mask = { CPU_BITS_NONE };
 	int retVal = 0;
 	int i;
+	int switch_to_cpu_id = 0;
 
 	switch (action) {
 	case CPU_DOWN_PREPARE:
@@ -358,24 +362,24 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 					cpu_notify_flag = 1;
 					for_each_online_cpu(i)
 					{
-						printk("current on line cpu [%d]\n", i);
+						/*printk("current on line cpu [%d]\n", i);*/
 						if (i == cpu) {
 							continue;
 						}
-						current_cpu_id = i;
+						switch_to_cpu_id = i;
 					}
-					printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);
+					/*printk("current cpu id = [%d]\n", current_cpu_id);*/
+					nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
 
+					/*printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
 #if 1
-					cpumask_set_cpu(current_cpu_id, &mtee_mask);
-
+					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
 					set_cpus_allowed(teei_switch_task, mtee_mask);
-					printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);
+					/*printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
+					current_cpu_id = switch_to_cpu_id;
+					printk("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
 #endif
-					printk("current cpu id  \n");
-					nt_sched_core(teei_cpu_id[current_cpu_id],teei_cpu_id[cpu],0);
 
-					printk("change cpu id = [%d]\n", current_cpu_id);
 				}
 			}
 			break;
@@ -445,8 +449,10 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
+	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();
@@ -685,7 +691,9 @@ static int init_teei_framework(void)
 		return -1;
 	}
 
+	down(&smc_lock);
 	retVal = create_cmd_buff();
+	up(&smc_lock);
 	if (retVal < 0) {
 		printk("[%s][%d] create_cmd_buff failed !\n", __func__, __LINE__);
 		return retVal;

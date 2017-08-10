@@ -58,7 +58,7 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 	//n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
 	//n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
 	//chx need add  the smc call function to transmit the physical addr from REE to TEE
-	
+
 	/* with a wmb() */
 	wmb();
 }
@@ -67,6 +67,7 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_phy_address,
 			unsigned long b_phy_address)
 {
+	int cpu_id = 0;
 	keymaster_cmdbuf_entry.phy_addr = phy_address;
 	keymaster_cmdbuf_entry.f_phy_addr = f_phy_address;
 	keymaster_cmdbuf_entry.b_phy_addr = b_phy_address;
@@ -75,7 +76,10 @@ static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_ph
 	/* with a wmb() */
 	wmb();
 
-	smp_call_function_single(0, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
+	get_online_cpus();
+	cpu_id = get_current_cpuid();
+	smp_call_function_single(cpu_id, secondary_init_keymaster_cmdbuf, (void *)(&keymaster_cmdbuf_entry), 1);
+	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();
@@ -110,8 +114,8 @@ long create_keymaster_cmd_buf(void)
         }
 
 
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__, 
-			(unsigned long)virt_to_phys(ut_keymaster_message_buf), 
+        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
+			(unsigned long)virt_to_phys(ut_keymaster_message_buf),
 			(unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
 			(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
 
