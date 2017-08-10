@@ -900,6 +900,8 @@ int ccci_tty_init(int md_id)
 	struct tty_ctl_block_t *ctlb;
 	char name[16];
 
+	if (md_id < 0 || md_id >= MAX_MD_NUM)
+		return -CCCI_ERR_INVALID_PARAM;
 	/*  Create control block structure */
 	ctlb = kmalloc(sizeof(struct tty_ctl_block_t), GFP_KERNEL);
 	if (ctlb == NULL)
@@ -1091,8 +1093,7 @@ int ccci_tty_init(int md_id)
 
  _RELEASE_CTL_MEMORY:
 	kfree(ctlb);
-	if (md_id >= 0 && md_id < MAX_MD_NUM)
-		tty_ctlb[md_id] = NULL;
+	tty_ctlb[md_id] = NULL;
 
 	return ret;
 }
