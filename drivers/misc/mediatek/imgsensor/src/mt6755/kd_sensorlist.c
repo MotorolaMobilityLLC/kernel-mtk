@@ -3538,7 +3538,7 @@ static long CAMERA_HW_Ioctl(
     case KDIMGSENSORIOC_X_GET_ISP_CLK:
 #ifdef CONFIG_MTK_SMI_EXT
 	PK_DBG("KDIMGSENSORIOC_X_GET_ISP_CLK current_mmsys_clk=%d\n", current_mmsys_clk);
-	if(current_mmsys_clk == MMSYS_CLK_HIGH)
+	if(mmdvfs_get_stable_isp_clk() == MMSYS_CLK_HIGH)
 		*(unsigned int*)pBuff = 364;
 	else
 #endif
