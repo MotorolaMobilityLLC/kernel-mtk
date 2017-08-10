@@ -521,7 +521,7 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 	/* Trigger statistics log if Auth/Assoc Tx failed */
 	if (rTxDoneStatus != TX_RESULT_SUCCESS) {
 		wlanTriggerStatsLog(prAdapter, prAdapter->rWifiVar.u4StatsLogDuration);
-		DBGLOG(SAA, INFO, "EVENT-TX DONE: Current Time = %d status: %d, SeqNO: %d\n",
+		DBGLOG(SAA, INFO, "EVENT-TX DONE: Current Time = %d status: %d, SeqNo: %d\n",
 			kalGetTimeTick(), rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 	}
 
@@ -765,8 +765,7 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	if (!IS_AP_STA(prStaRec))
 		return;
 
-	if (IS_STA_IN_P2P(prStaRec))
-		DBGLOG(SAA, INFO, "RX auth, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
+	DBGLOG(SAA, TRACE, "Recv Auth, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
 
 	switch (prStaRec->eAuthAssocState) {
 	case SAA_STATE_SEND_AUTH1:
@@ -795,9 +794,8 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				}
 			} else {
 				DBGLOG(SAA, INFO,
-				       "Auth Req was rejected by [" MACSTR "], Status Code = %d\n",
-					MAC2STR(prStaRec->aucMacAddr),
-					u2StatusCode);
+				       "Auth was rejected by [" MACSTR "], StatusCode: %d\n",
+				       MAC2STR(prStaRec->aucMacAddr), u2StatusCode);
 
 				eNextState = AA_STATE_IDLE;
 			}
@@ -834,9 +832,8 @@ VOID saaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				eNextState = SAA_STATE_SEND_ASSOC1;
 			} else {
 				DBGLOG(SAA, INFO,
-				       "Auth Req was rejected by [" MACSTR "], Status Code = %d\n",
-					MAC2STR(prStaRec->aucMacAddr),
-					u2StatusCode);
+				       "Auth was rejected by [" MACSTR "], StatusCode: %d\n",
+				       MAC2STR(prStaRec->aucMacAddr), u2StatusCode);
 
 				eNextState = AA_STATE_IDLE;
 			}
@@ -881,13 +878,13 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 	}
 
 	/* We should have the corresponding Sta Record. */
-	if (!prStaRec) {
-		/* ASSERT(0); */
+	if (!prStaRec)
 		return rStatus;
-	}
 
 	if (!IS_AP_STA(prStaRec))
 		return rStatus;
+
+	DBGLOG(SAA, TRACE, "Recv (Re)Assoc Resp, eAuthAssocState: %d\n", prStaRec->eAuthAssocState);
 
 	switch (prStaRec->eAuthAssocState) {
 	case SAA_STATE_SEND_ASSOC1:
@@ -915,8 +912,8 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 				rStatus = WLAN_STATUS_PENDING;
 			} else {
 				DBGLOG(SAA, INFO,
-				       "Assoc Req was rejected by [" MACSTR
-					"], Status Code = %d\n", MAC2STR(prStaRec->aucMacAddr), u2StatusCode);
+				       "Assoc Req was rejected by [" MACSTR "], StatusCode: %d\n",
+				       MAC2STR(prStaRec->aucMacAddr), u2StatusCode);
 			}
 
 			/* Reset Send Auth/(Re)Assoc Frame Count */

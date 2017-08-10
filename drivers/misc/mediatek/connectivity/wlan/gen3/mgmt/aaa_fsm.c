@@ -198,6 +198,8 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	do {
 		prAuthFrame = (P_WLAN_AUTH_FRAME_T) prSwRfb->pvHeader;
 
+		DBGLOG(AAA, INFO, "Recv Auth from [" MACSTR "]\n", MAC2STR(prAuthFrame->aucSrcAddr));
+
 #if CFG_ENABLE_WIFI_DIRECT
 		prBssInfo = p2pFuncBSSIDFindBssInfo(prAdapter, prAuthFrame->aucBSSID);
 
@@ -219,9 +221,9 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 						fgReplyAuth = p2pFuncValidateAuth(prAdapter,
 										  prBssInfo,
 										  prSwRfb, &prStaRec, &u2StatusCode);
-					} else {
+					} else
 						fgReplyAuth = TRUE;
-					}
+
 					break;
 				}
 			}
@@ -253,10 +255,9 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 						fgReplyAuth =
 						    bowValidateAuth(prAdapter, prSwRfb, &prStaRec, &u2StatusCode);
 
-					} else {
-
+					} else
 						fgReplyAuth = TRUE;
-					}
+
 					/* TODO(Kevin): Allocate a STA_RECORD_T for new client */
 					break;
 				}
@@ -337,7 +338,6 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 		/* 4 <1> Check if we have the STA_RECORD_T for incoming Assoc Req */
 		prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
-
 		if (!prStaRec) {
 			nicRxMgmtNoWTBLHandling(prAdapter, prSwRfb);
 			prStaRec = prSwRfb->prStaRec;
@@ -350,6 +350,9 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 		if (!IS_CLIENT_STA(prStaRec))
 			break;
+
+		DBGLOG(AAA, INFO, "Recv Assoc Req from [" MACSTR "], eAuthAssocState: %d\n",
+		       MAC2STR(prStaRec->aucMacAddr), prStaRec->eAuthAssocState);
 
 		if (prStaRec->ucStaState == STA_STATE_3) {
 			/* Do Reassocation */
@@ -385,9 +388,8 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 						fgReplyAssocResp =
 						    p2pFuncValidateAssocReq(prAdapter, prSwRfb,
 									    (PUINT_16)&u2StatusCode);
-					} else {
+					} else
 						fgReplyAssocResp = TRUE;
-					}
 
 					break;
 				}
@@ -414,10 +416,8 @@ WLAN_STATUS aaaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 						fgReplyAssocResp =
 						    bowValidateAssocReq(prAdapter, prSwRfb, &u2StatusCode);
 
-					} else {
-
+					} else
 						fgReplyAssocResp = TRUE;
-					}
 
 					/* TODO(Kevin): Allocate a STA_RECORD_T for new client */
 					break;
