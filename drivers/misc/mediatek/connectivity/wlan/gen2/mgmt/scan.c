@@ -3682,13 +3682,24 @@ try_again:
 #endif
 		if (!fgSearchBlackList) {
 			prBssDesc->prBlack = aisQueryBlackList(prAdapter, prBssDesc);
-			if (prBssDesc->prBlack)
+			if (prBssDesc->prBlack) {
+				if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE)
+					DBGLOG(SCN, INFO, "%s(%pM) is in FWK blacklist, skip it\n",
+								prBssDesc->aucSSID, prBssDesc->aucBSSID);
 				continue;
+			}
 		} else if (!prBssDesc->prBlack)
 			continue;
-		else
+		else {
+			/* never search FWK blacklist even if we are trying blacklist */
+			if (prBssDesc->prBlack->fgIsInFWKBlacklist == TRUE) {
+				DBGLOG(SCN, INFO, "Although trying blacklist, %s(%pM) is in FWK blacklist, skip it\n",
+							prBssDesc->aucSSID, prBssDesc->aucBSSID);
+				continue;
+			}
 			u2BlackListScore = WEIGHT_IDX_BLACK_LIST *
 				aisCalculateBlackListScore(prAdapter, prBssDesc);
+		}
 
 		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 

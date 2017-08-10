@@ -146,6 +146,7 @@ struct AIS_BLACKLIST_ITEM {
 	UINT_8 aucSSID[32];
 	OS_SYSTIME rAddTime;
 	UINT_32 u4DisapperTime;
+	BOOLEAN fgIsInFWKBlacklist;
 };
 
 struct AIS_BEACON_TIMEOUT_BSS {
@@ -448,6 +449,7 @@ VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter, struct IE_NEIGHBOR_REPOR
 VOID aisTest(VOID);
 #endif /* CFG_TEST_MGMT_FSM */
 
+VOID aisRefreshFWKBlacklist(P_ADAPTER_T prAdapter);
 struct AIS_BLACKLIST_ITEM *aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
 VOID aisRemoveBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
 VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter);

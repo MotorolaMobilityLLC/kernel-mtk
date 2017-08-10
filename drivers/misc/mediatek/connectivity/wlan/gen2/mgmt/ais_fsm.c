@@ -5487,6 +5487,18 @@ VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 }				/* aisFuncValidateRxActionFrame */
 
+VOID aisRefreshFWKBlacklist(P_ADAPTER_T prAdapter)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+
+	DBGLOG(AIS, INFO, "Refresh all the BSSes' fgIsInFWKBlacklist to FALSE\n");
+	LINK_FOR_EACH_ENTRY(prEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		prEntry->fgIsInFWKBlacklist = FALSE;
+	}
+}
+
 struct AIS_BLACKLIST_ITEM *
 aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 {
@@ -5527,6 +5539,7 @@ aisAddBlacklist(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	}
 	kalMemZero(prEntry, sizeof(*prEntry));
 	prEntry->ucCount = 1;
+	prEntry->fgIsInFWKBlacklist = FALSE;
 	COPY_MAC_ADDR(prEntry->aucBSSID, prBssDesc->aucBSSID);
 	COPY_SSID(prEntry->aucSSID, prEntry->ucSSIDLen, prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
 	GET_CURRENT_SYSTIME(&prEntry->rAddTime);
@@ -5589,6 +5602,8 @@ VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter)
 	GET_CURRENT_SYSTIME(&rCurrent);
 
 	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		if (prEntry->fgIsInFWKBlacklist == TRUE)
+			continue;
 		if (!CHECK_FOR_TIMEOUT(rCurrent, prEntry->rAddTime, SEC_TO_MSEC(AIS_BLACKLIST_TIMEOUT)))
 			continue;
 		LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);

@@ -46,7 +46,7 @@
 ********************************************************************************
 */
 
-static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_RSSI_MONITOR_START + 1] = {
+static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID + 1] = {
 	[WIFI_ATTRIBUTE_BAND] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_NUM_CHANNELS] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_CHANNEL_LIST] = {.type = NLA_UNSPEC},
@@ -60,6 +60,12 @@ static struct nla_policy nla_parse_wifi_policy[WIFI_ATTRIBUTE_RSSI_MONITOR_START
 	[WIFI_ATTRIBUTE_MAX_RSSI] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_MIN_RSSI] = {.type = NLA_U32},
 	[WIFI_ATTRIBUTE_RSSI_MONITOR_START] = {.type = NLA_U32},
+
+	[WIFI_ATTRIBUTE_ROAMING_CAPABILITIES] = {.type = NLA_UNSPEC},
+	[WIFI_ATTRIBUTE_ROAMING_BLACKLIST_NUM] = {.type = NLA_U32},
+	[WIFI_ATTRIBUTE_ROAMING_BLACKLIST_BSSID] = {.type = NLA_UNSPEC},
+	[WIFI_ATTRIBUTE_ROAMING_WHITELIST_NUM] = {.type = NLA_U32},
+	[WIFI_ATTRIBUTE_ROAMING_WHITELIST_SSID] = {.type = NLA_UNSPEC},
 };
 
 static struct nla_policy nla_parse_gscan_policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
@@ -229,6 +235,95 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 	}
 
 	return 0;
+}
+
+int mtk_cfg80211_vendor_get_roaming_capabilities(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len)
+{
+	UINT_32 maxNumOfList[2] = { MAX_FW_ROAMING_BLACKLIST_SIZE, MAX_FW_ROAMING_WHITELIST_SIZE };
+	struct sk_buff *skb;
+
+	ASSERT(wiphy);	/* change to if (wiphy == NULL) then return? */
+	ASSERT(wdev);	/* change to if (wiphy == NULL) then return? */
+
+	DBGLOG(REQ, INFO, "Get roaming capabilities: max black/whitelist=%d/%d", maxNumOfList[0], maxNumOfList[1]);
+
+	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(maxNumOfList));
+	if (!skb) {
+		DBGLOG(REQ, ERROR, "Allocate skb failed\n");
+		return -ENOMEM;
+	}
+
+	if (unlikely(nla_put(skb, WIFI_ATTRIBUTE_ROAMING_CAPABILITIES,
+						 sizeof(maxNumOfList), maxNumOfList)) < 0)
+		goto nla_put_failure;
+
+	return cfg80211_vendor_cmd_reply(skb);
+
+nla_put_failure:
+	kfree_skb(skb);
+	return -EFAULT;
+}
+
+int mtk_cfg80211_vendor_config_roaming(struct wiphy *wiphy,
+				 struct wireless_dev *wdev, const void *data, int data_len)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	struct nlattr *attrlist;
+	struct AIS_BLACKLIST_ITEM *prBlackList;
+	P_BSS_DESC_T prBssDesc = NULL;
+	UINT_32 len_shift = 0;
+	UINT_32 numOfList[2] = { 0 };
+	int i;
+
+	DBGLOG(REQ, INFO, "Receives roaming blacklist & whitelist with data_len=%d\n", data_len);
+	ASSERT(wiphy);
+	ASSERT(wdev);
+	if ((data == NULL) || (data_len == 0))
+		return -EINVAL;
+
+	if (wdev->iftype == NL80211_IFTYPE_AP)
+		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+	else
+		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	if (!prGlueInfo)
+		return -EINVAL;
+
+	attrlist = (struct nlattr *)((UINT_8 *) data);
+
+	/* get the number of blacklist and copy those mac addresses from HAL */
+	if (attrlist->nla_type == WIFI_ATTRIBUTE_ROAMING_BLACKLIST_NUM) {
+		numOfList[0] = nla_get_u32(attrlist);
+		len_shift += NLA_ALIGN(attrlist->nla_len);
+	}
+	DBGLOG(REQ, INFO, "Get the number of blacklist=%d\n", numOfList[0]);
+
+	if (numOfList[0] >= 0 && numOfList[0] <= MAX_FW_ROAMING_BLACKLIST_SIZE) {
+		/*Refresh all the FWKBlacklist */
+		aisRefreshFWKBlacklist(prGlueInfo->prAdapter);
+
+		/* Start to receive blacklist mac addresses and set to FWK blacklist */
+		attrlist = (struct nlattr *)((UINT_8 *) data + len_shift);
+		for (i = 0; i < numOfList[0]; i++) {
+			if (attrlist->nla_type == WIFI_ATTRIBUTE_ROAMING_BLACKLIST_BSSID) {
+				prBssDesc = scanSearchBssDescByBssid(prGlueInfo->prAdapter, nla_data(attrlist));
+				len_shift += NLA_ALIGN(attrlist->nla_len);
+				attrlist = (struct nlattr *)((UINT_8 *) data + len_shift);
+
+				if (prBssDesc == NULL) {
+					DBGLOG(REQ, ERROR, "Cannot find the blacklist BSS=%pM\n", nla_data(attrlist));
+					continue;
+				}
+
+				prBlackList = aisAddBlacklist(prGlueInfo->prAdapter, prBssDesc);
+				prBlackList->fgIsInFWKBlacklist = TRUE;
+				DBGLOG(REQ, INFO, "Receives roaming blacklist SSID=%s addr=%pM\n",
+							prBlackList->aucSSID, prBlackList->aucBSSID);
+			}
+		}
+	}
+
+	return WLAN_STATUS_SUCCESS;
 }
 
 #if CFG_SUPPORT_GSCN
