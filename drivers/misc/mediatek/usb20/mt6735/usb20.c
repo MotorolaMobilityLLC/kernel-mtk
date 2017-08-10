@@ -46,11 +46,6 @@ struct clk *musb_clk;
 #include <mt-plat/mt_usb2jtag.h>
 #endif
 
-/* #define USB_FORCE_ON */
-/* USB FORCE ON for FPGA/U3_COMPLIANCE cases */
-#if defined(FPGA_PLATFORM) || defined(FOR_BRING_UP)
-#define USB_FORCE_ON
-#endif
 
 /* default value 0 */
 static int usb_rdy;
@@ -509,9 +504,12 @@ void do_connection_work(struct work_struct *data)
 
 void mt_usb_connect(void)
 {
-#ifdef USB_FORCE_ON
-	DBG(0, "BRING_UP, SKIP issue work !!!\n");
-#else
+	/* FORCE USB ON case */
+	if (musb_force_on) {
+		DBG(0, "BRING_UP, SKIP issue work !!!\n");
+		return;
+	}
+
 	if (!mtk_musb) {
 		DBG(0, "mtk_musb = NULL\n");
 		return;
@@ -520,15 +518,17 @@ void mt_usb_connect(void)
 	DBG(0, "issue work\n");
 	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 	DBG(0, "[MUSB] USB connect\n");
-#endif
 
 }
 
 void mt_usb_disconnect(void)
 {
-#ifdef USB_FORCE_ON
-	DBG(0, "BRING_UP, SKIP issue work !!!\n");
-#else
+	/* FORCE USB ON case */
+	if (musb_force_on) {
+		DBG(0, "BRING_UP, SKIP issue work !!!\n");
+		return;
+	}
+
 	if (!mtk_musb) {
 		DBG(0, "mtk_musb = NULL\n");
 		return;
@@ -537,8 +537,6 @@ void mt_usb_disconnect(void)
 	DBG(0, "issue work\n");
 	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
 	DBG(0, "[MUSB] USB disconnect\n");
-#endif
-
 }
 
 static void do_connect_rescue_work(struct work_struct *work)
@@ -561,35 +559,35 @@ bool usb_cable_connected(void)
 	}
 #endif
 
-#ifdef USB_FORCE_ON
-	/* FORCE USB ON */
-	delay_time = 0;    /* directly issue connection */
-	chg_type = STANDARD_HOST;
-	vbus_exist = true;
-	connected = true;
-	DBG(0, "%s type force to STANDARD_HOST\n", __func__);
-#else
-	/* TYPE CHECK*/
-	delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
-	chg_type = mt_get_charger_type();
-	if (musb_fake_CDP && chg_type == STANDARD_HOST) {
-		DBG(0, "%s, fake to type 2\n", __func__);
-		chg_type = CHARGING_HOST;
-	}
-
-	if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+	/* FORCE USB ON case */
+	if (musb_force_on) {
+		delay_time = 0;    /* directly issue connection */
+		chg_type = STANDARD_HOST;
+		vbus_exist = true;
 		connected = true;
+		DBG(0, "%s type force to STANDARD_HOST\n", __func__);
+	} else {
+		/* TYPE CHECK*/
+		delay_time = 2000; /* issue connection one time in case, BAT THREAD didn't come*/
+		chg_type = mt_get_charger_type();
+		if (musb_fake_CDP && chg_type == STANDARD_HOST) {
+			DBG(0, "%s, fake to type 2\n", __func__);
+			chg_type = CHARGING_HOST;
+		}
 
-	/* VBUS CHECK to avoid type miss-judge */
+		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+			connected = true;
+
+		/* VBUS CHECK to avoid type miss-judge */
 #ifdef CONFIG_POWER_EXT
-	vbus_exist = upmu_get_rgs_chrdet();
+		vbus_exist = upmu_get_rgs_chrdet();
 #else
-	vbus_exist = upmu_is_chr_det();
+		vbus_exist = upmu_is_chr_det();
 #endif
-	DBG(0, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
-	if (!vbus_exist)
-		connected = false;
-#endif
+		DBG(0, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
+		if (!vbus_exist)
+			connected = false;
+	}
 
 	/* CMODE CHECK */
 	if (cable_mode == CABLE_MODE_CHRG_ONLY || (cable_mode == CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))
@@ -659,11 +657,8 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 /*-------------------------------------------------------------------------*/
 static irqreturn_t generic_interrupt(int irq, void *__hci)
 {
-	unsigned long flags;
 	irqreturn_t retval = IRQ_NONE;
 	struct musb *musb = __hci;
-
-	spin_lock_irqsave(&musb->lock, flags);
 
 	/* musb_read_clear_generic_interrupt */
 	musb->int_usb =
@@ -693,7 +688,6 @@ static irqreturn_t generic_interrupt(int irq, void *__hci)
 		retval = musb_interrupt(musb);
 #endif
 
-	spin_unlock_irqrestore(&musb->lock, flags);
 
 	return retval;
 }
@@ -704,7 +698,9 @@ static irqreturn_t mt_usb_interrupt(int irq, void *dev_id)
 	irqreturn_t status = IRQ_NONE;
 	struct musb *musb = (struct musb *)dev_id;
 	u32 usb_l1_ints;
+	unsigned long flags;
 
+	spin_lock_irqsave(&musb->lock, flags);
 	usb_l1_ints = musb_readl(musb->mregs, USB_L1INTS) & musb_readl(mtk_musb->mregs, USB_L1INTM);
 	DBG(1, "usb interrupt assert %x %x  %x %x %x\n", usb_l1_ints,
 	    musb_readl(mtk_musb->mregs, USB_L1INTM), musb_readb(musb->mregs, MUSB_INTRUSBE),
@@ -720,6 +716,7 @@ static irqreturn_t mt_usb_interrupt(int irq, void *dev_id)
 		if (tmp_status != IRQ_NONE)
 			status = tmp_status;
 	}
+	spin_unlock_irqrestore(&musb->lock, flags);
 
 	/* FIXME, workaround for device_qmu + host_dma */
 #if 1
@@ -1382,6 +1379,10 @@ static int mt_usb_probe(struct platform_device *pdev)
 	}
 #ifdef CONFIG_OF
 	DBG(0, "USB probe done!\n");
+#endif
+
+#if defined(FPGA_PLATFORM) || defined(FOR_BRING_UP)
+	musb_force_on = 1;
 #endif
 
 	return 0;

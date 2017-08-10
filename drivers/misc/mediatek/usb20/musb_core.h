@@ -94,6 +94,7 @@ extern int musb_fake_disc;
 extern int musb_connect_legacy;
 extern int musb_removed;
 extern int kernel_init_done;
+extern int musb_force_on;
 
 extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;

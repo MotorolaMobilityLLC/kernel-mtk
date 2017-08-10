@@ -123,6 +123,7 @@ int musb_fake_CDP = 0;
 int musb_removed = 0;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done = 0;
+int musb_force_on = 0;
 module_param(musb_connect_legacy, int, 0644);
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_fake_disc, int, 0644);
@@ -2713,3 +2714,35 @@ static struct kernel_param_ops option_param_ops = {
 };
 static int option;
 module_param_cb(option, &option_param_ops, &option, 0644);
+static int set_musb_force_on(const char *val, const struct kernel_param *kp)
+{
+	int rv = param_set_int(val, kp);
+	unsigned char musb_force_on;
+
+	if (rv)
+		return rv;
+
+	rv = kstrtol(val, 10, (long *)&musb_force_on);
+	if (rv != 0)
+		return rv;
+	DBG(0, "musb_force_on:%d\n", musb_force_on);
+
+	switch (musb_force_on) {
+	case 0:
+		DBG(0, "case %d\n", musb_force_on);
+		mt_usb_connect();
+		break;
+	case 1:
+		DBG(0, "case %d\n", musb_force_on);
+		mt_usb_connect();
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+static struct kernel_param_ops musb_force_on_param_ops = {
+	.set = set_musb_force_on,
+	.get = param_get_int,
+};
+module_param_cb(musb_force_on, &musb_force_on_param_ops, &musb_force_on, 0644);
