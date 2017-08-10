@@ -4753,18 +4753,17 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 #endif
 	data_config->overlap_layer_num = hrt_level;
 
-	if (hrt_level > HRT_LEVEL_HIGH)
-		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, HRT_LEVEL_HIGH);
-
-	if (hrt_level > HRT_LEVEL_LOW &&
-		primary_display_is_directlink_mode()) {
-		_request_dvfs_perf(HRT_LEVEL_HIGH);
-		dvfs_last_ovl_req = HRT_LEVEL_HIGH;
-	} else if (hrt_level > HRT_LEVEL_EXTREME_LOW) {
-		dvfs_last_ovl_req = HRT_LEVEL_LOW;
-	} else{
-		dvfs_last_ovl_req = HRT_LEVEL_EXTREME_LOW;
+	if ((hrt_level > HRT_LEVEL_HIGH) ||
+			(hrt_level < 0)) {
+		DISPERR("invalid overlayed layer num %d, fix it to %d\n", hrt_level, HRT_LEVEL_HIGH);
+		hrt_level = HRT_LEVEL_HIGH;
 	}
+
+	if ((hrt_level - dvfs_last_ovl_req) > 0 &&
+			(!primary_display_is_decouple_mode())) {
+		_request_dvfs_perf(hrt_level);
+	}
+	dvfs_last_ovl_req = hrt_level;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
