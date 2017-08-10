@@ -47,11 +47,4 @@
 #define MT_POLARITY_LOW		0
 #define MT_POLARITY_HIGH	1
 
-#ifndef __ASSEMBLY__
-typedef void (*fiq_isr_handler)(void *arg, void *regs, void *svc_sp);
-
-int request_fiq(int irq, fiq_isr_handler handler,
-		unsigned long irq_flags, void *arg);
-#endif
-
 #endif
