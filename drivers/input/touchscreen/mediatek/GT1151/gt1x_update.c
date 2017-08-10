@@ -175,7 +175,7 @@ s32 gt1x_check_fs_mounted(char *path_name)
 
 int gt1x_i2c_write_with_readback(u16 addr, u8 *buffer, int length)
 {
-	u8 buf[100];
+	u8 buf[100] = { 0 };
 	int ret = gt1x_i2c_write(addr, buffer, length);
 
 	if (ret)
@@ -436,7 +436,7 @@ u16 gt1x_calc_checksum(u8 *fw, u32 length)
 
 int gt1x_recall_check(u8 *chk_src, u16 start_addr, u16 chk_length)
 {
-	u8 rd_buf[PACK_SIZE];
+	u8 rd_buf[PACK_SIZE] = { 0 };
 	s32 ret = 0;
 	u16 len = 0;
 	u32 compared_length = 0;
@@ -968,7 +968,7 @@ void gt1x_leave_update_mode(void)
 void read_reg(u16 addr, int len)
 {
 	int i;
-	u8 buffer[16];
+	u8 buffer[16] = { 0 };
 	int read_len = 0;
 	int cur_len;
 
