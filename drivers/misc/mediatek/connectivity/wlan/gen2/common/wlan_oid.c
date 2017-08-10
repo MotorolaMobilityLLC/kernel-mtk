@@ -5615,6 +5615,7 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 			      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	UINT_32 u4NewPacketFilter;
+	UINT_32 u4RealPacketFilter;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 
 	ASSERT(prAdapter);
@@ -5672,8 +5673,9 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 
 		prAdapter->u4OsPacketFilter &= PARAM_PACKET_FILTER_P2P_MASK;
 		prAdapter->u4OsPacketFilter |= u4NewPacketFilter;
+		u4RealPacketFilter = prAdapter->u4OsPacketFilter | swCrGetDNSRxFilter();
 
-		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
+		rStatus = wlanoidSetPacketFilter(prAdapter, u4RealPacketFilter,
 					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
 	DBGLOG(REQ, TRACE, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
