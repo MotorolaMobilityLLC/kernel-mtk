@@ -40,6 +40,7 @@ extern u32 kbasep_get_cl_js1_utilization(void);
 
 /* on:1, off:0 */
 int g_vgpu_power_on_flag = 0;
+DEFINE_MUTEX(g_flag_lock);
 
 void mtk_kbase_gpu_memory_debug_init()
 {
@@ -434,18 +435,21 @@ int mtk_get_vgpu_power_on_flag(void)
 
 int mtk_set_vgpu_power_on_flag(int power_on_id)
 {
+	mutex_lock(&g_flag_lock);
     g_vgpu_power_on_flag = power_on_id;
-
+	mutex_unlock(&g_flag_lock);
     return 0;
 }
 
 int mtk_set_mt_gpufreq_target(int freq_id)
 {
-    if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()) {
-        return  mt_gpufreq_target(freq_id);
-    } else {
-        ///pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
-    }
+	int ret = 0;
+
+	mutex_lock(&g_flag_lock);
+	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag())
+		ret = mt_gpufreq_target(freq_id);
+	mutex_unlock(&g_flag_lock);
+	return ret;
 
     return 0;
 }
