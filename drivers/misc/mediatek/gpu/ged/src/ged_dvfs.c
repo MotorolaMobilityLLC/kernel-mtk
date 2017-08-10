@@ -172,6 +172,7 @@ unsigned long ged_query_info( GED_INFO eType)
 	unsigned int gpu_loading;
 	unsigned int gpu_block;
 	unsigned int gpu_idle;
+
 	switch(eType)
 	{
 		case GED_LOADING:

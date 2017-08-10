@@ -144,7 +144,7 @@ int ged_bridge_event_notify(
 
 //-----------------------------------------------------------------------------
 #ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
-int ged_bridge_vsync_wait(void)
+int ged_bridge_vsync_wait(void *IN, void *OUT)
 {
     ged_vsync_wait();
     return 0;

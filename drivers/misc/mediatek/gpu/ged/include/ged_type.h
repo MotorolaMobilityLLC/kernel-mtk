@@ -66,6 +66,8 @@ typedef enum GED_INFO_TAG {
 	GED_PRE_HALF_PERIOD = 17,
 	GED_LATEST_START = 18,
 	GED_FPS = 19,
+
+	GED_INFO_SIZE
 } GED_INFO;
 
 typedef enum {

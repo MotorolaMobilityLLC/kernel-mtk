@@ -60,6 +60,7 @@ typedef enum {
 	GED_BRIDGE_COMMAND_GE_SET = 102,
 	GED_BRIDGE_COMMAND_GPU_TIMESTAMP = 103,
 	GED_BRIDGE_COMMAND_TARGET_FPS = 104,
+	GED_BRIDGE_COMMAND_GE_INFO = 105,
 } GED_BRIDGE_COMMAND_ID;
 
 #define GED_BRIDGE_IO_LOG_BUF_GET           GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_GET)
@@ -80,6 +81,7 @@ typedef enum {
 #define GED_BRIDGE_IO_GE_SET                GED_IOWR(GED_BRIDGE_COMMAND_GE_SET)
 #define GED_BRIDGE_IO_QUERY_TARGET_FPS      GED_IOWR(GED_BRIDGE_COMMAND_QUERY_TARGET_FPS)
 #define GED_BRIDGE_IO_GPU_TIMESTAMP         GED_IOWR(GED_BRIDGE_COMMAND_GPU_TIMESTAMP)
+#define GED_BRIDGE_IO_GE_INFO               GED_IOWR(GED_BRIDGE_COMMAND_GE_INFO)
 
 /******************************************************************************
  *  LOG_BUF_GET
@@ -321,5 +323,16 @@ typedef struct GED_BRIDGE_IN_GE_SET_TAG {
 typedef struct GED_BRIDGE_OUT_GE_SET_TAG {
 	GED_ERROR eError;
 } GED_BRIDGE_OUT_GE_SET;
+
+/* Bridge in structure for GE_INFO */
+typedef struct GED_BRIDGE_IN_GE_INFO_TAG {
+	int ge_fd;
+} GED_BRIDGE_IN_GE_INFO;
+
+/* Bridge out structure for GE_INFO */
+typedef struct GED_BRIDGE_OUT_GE_INFO_TAG {
+	uint64_t unique_id;
+	GED_ERROR eError;
+} GED_BRIDGE_OUT_GE_INFO;
 
 #endif

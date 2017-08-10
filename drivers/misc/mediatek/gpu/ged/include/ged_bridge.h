@@ -77,8 +77,12 @@ int ged_bridge_ge_set(
 		struct GED_BRIDGE_IN_GE_SET_TAG  *psSET_IN,
 		struct GED_BRIDGE_OUT_GE_SET_TAG *psSET_OUT);
 
+int ged_bridge_ge_info(
+		struct GED_BRIDGE_IN_GE_INFO_TAG  *psINFO_IN,
+		struct GED_BRIDGE_OUT_GE_INFO_TAG *psINFO_OUT);
+
 #ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
-int ged_bridge_vsync_wait(void);
+int ged_bridge_vsync_wait(void *IN, void *OUT);
 #endif
 
 #endif

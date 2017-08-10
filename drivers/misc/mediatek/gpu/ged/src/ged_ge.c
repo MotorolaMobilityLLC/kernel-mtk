@@ -27,12 +27,16 @@
 #include <ged_debugFS.h>
 
 typedef struct {
+	uint64_t unique_id;
+
 	struct file *file;
 	int alloc_fd;
+
 	int region_num;
 	void *data;
 	int *region_sizes; /* sub data */
 	uint32_t **region_data; /* sub data */
+
 	struct list_head ge_entry_list;
 } GEEntry;
 
@@ -43,6 +47,26 @@ static struct dentry *gDFSEntry;
 static LIST_HEAD(ge_entry_list_head);
 static DEFINE_SPINLOCK(ge_entry_list_lock);
 static int num_entry;
+
+/* region alloc and free lock */
+static DEFINE_SPINLOCK(ge_raf_lock);
+
+static uint64_t gen_unique_id(void)
+{
+	/* A collision may occur after 2^44 sec, aka 557,474 years,
+	 * if we do allocate and free in 2^20 times per second.
+	 */
+	static uint64_t serial;
+
+	unsigned long flags;
+	uint64_t ret;
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
+	ret = serial++;
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
+	return ret;
+}
 
 static void *_ge_debugfs_seq_start(struct seq_file *m, loff_t *pos)
 {
@@ -81,7 +105,8 @@ int _ge_debugfs_seq_show(struct seq_file *m, void *v)
 			memory_ksize += ksize(entry->region_data[i]);
 		}
 	}
-	seq_printf(m, "GEEntry memory size: %d bytes, ksize: %3d bytes\n", memory_size, memory_ksize);
+	seq_printf(m, "GEEntry id:0x%llx memory size: %d bytes, ksize: %3d bytes\n",
+			entry->unique_id, memory_size, memory_ksize);
 	return 0;
 }
 static const struct seq_operations gDEFEntryOps = {
@@ -170,17 +195,18 @@ int ged_ge_alloc(int region_num, uint32_t *region_sizes)
 	}
 
 	entry->region_num = region_num;
-	entry->data = kmalloc((sizeof(uint32_t) + sizeof(uint32_t *)) * region_num, GFP_KERNEL);
+	entry->data = kzalloc((sizeof(uint32_t) + sizeof(uint32_t *)) * region_num, GFP_KERNEL);
 	if (!entry->data) {
 		GE_PERR("alloc data fail, size:%zu\n", sizeof(void *) * region_num);
 		goto err_kmalloc;
 	}
-	memset(entry->data, 0, (sizeof(uint32_t) + sizeof(uint32_t *)) * region_num);
 
 	entry->region_sizes = (uint32_t *)entry->data;
 	entry->region_data = (uint32_t **)(entry->data + sizeof(uint32_t) * region_num);
 	for (i = 0; i < region_num; ++i)
 		entry->region_sizes[i] = region_sizes[i];
+
+	entry->unique_id = gen_unique_id();
 
 	spin_lock_irqsave(&ge_entry_list_lock, flags);
 	list_add_tail(&entry->ge_entry_list, &ge_entry_list_head);
@@ -199,23 +225,58 @@ err_entry:
 	return -1;
 }
 
+static void dump_ge_regions(GEEntry *entry)
+{
+	int i;
+
+	for (i = 0; i < entry->region_num; ++i)
+		GE_PERR("ged_ge dump, %d/%d, s %d\n", i, entry->region_num, entry->region_sizes[i]);
+}
+
+static int valid_parameters(GEEntry *entry, int region_id, int u32_offset, int u32_size)
+{
+	if (region_id < 0 || region_id >= entry->region_num ||
+		u32_offset < 0 || u32_size < 0 ||
+		u32_offset * sizeof(uint32_t) > entry->region_sizes[region_id] ||
+		(u32_offset + u32_size) * sizeof(uint32_t) > entry->region_sizes[region_id]
+		) {
+
+		GE_PERR("fail, invalid r_id %d, o %d, s %d\n",
+				region_id, u32_offset, u32_size);
+
+		dump_ge_regions(entry);
+
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 int ged_ge_get(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t *output_data)
 {
+	unsigned long flags;
 	int err = 0;
 	uint32_t i;
 	GEEntry *entry = NULL;
 	uint32_t *pregion_data = NULL;
 	struct file *file = fget(ge_fd);
 
-	if (file == NULL) {
-		GE_PERR("ged_ge_get fail, invalid ge_fd %d\n", ge_fd);
-		err = -EFAULT;
-		goto err_file;
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("fail, invalid ge_fd %d\n", ge_fd);
+		return -EFAULT;
 	}
 
 	entry = file->private_data;
 
+	if (valid_parameters(entry, region_id, u32_offset, u32_size)) {
+		err = -EFAULT;
+		goto err_parameter;
+	}
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
 	pregion_data = entry->region_data[region_id];
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
 	if (pregion_data) {
 		for (i = 0; i < u32_size; ++i)
 			output_data[i] = pregion_data[u32_offset + i];
@@ -224,46 +285,73 @@ int ged_ge_get(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t 
 			output_data[i] = 0;
 	}
 
+err_parameter:
 	fput(file);
 
-err_file:
 	return err;
 }
 
 int ged_ge_set(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t *input_data)
 {
+	unsigned long flags;
 	int err = 0;
 	uint32_t i;
 	GEEntry *entry = NULL;
 	uint32_t *pregion_data = NULL;
 	struct file *file = fget(ge_fd);
 
-	if (file == NULL) {
-		GE_PERR("ged_ge_set fail, invalid ge_fd %d\n", ge_fd);
-		err = -EFAULT;
-		goto err_file;
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("fail, invalid ge_fd %d\n", ge_fd);
+		return -EFAULT;
 	}
 
 	entry = file->private_data;
 
-	if (!entry->region_data[region_id]) {
-		/* lazy allocate */
-		entry->region_data[region_id] = kmalloc(entry->region_sizes[region_id], GFP_KERNEL);
-		memset(entry->region_data[region_id], 0, entry->region_sizes[region_id]);
+	if (valid_parameters(entry, region_id, u32_offset, u32_size)) {
+		err = -EFAULT;
+		goto err_parameter;
+	}
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
+	while (!entry->region_data[region_id]) {
+		void *data;
+
+		spin_unlock_irqrestore(&ge_raf_lock, flags);
+		data = kzalloc(entry->region_sizes[region_id], GFP_KERNEL);
+		if (!data) {
+			GE_PERR("kmalloc fail, size: %d\n", entry->region_sizes[region_id]);
+			err = -EFAULT;
+			goto err_parameter;
+		}
+		spin_lock_irqsave(&ge_raf_lock, flags);
+
+		/* Check again.
+		 * Assign data to entry->region_data[region_id] if it still is NULL.
+		 */
+		if (entry->region_data[region_id]) {
+			spin_unlock_irqrestore(&ge_raf_lock, flags);
+			kfree(data);
+			spin_lock_irqsave(&ge_raf_lock, flags);
+			break;
+		}
+
+		entry->region_data[region_id] = data;
 	}
 
 	pregion_data = entry->region_data[region_id];
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
 	for (i = 0; i < u32_size; ++i)
 		pregion_data[u32_offset + i] = input_data[i];
 
+err_parameter:
 	fput(file);
 
-err_file:
 	return err;
 }
 
 int ged_bridge_ge_alloc(GED_BRIDGE_IN_GE_ALLOC *psALLOC_IN,	GED_BRIDGE_OUT_GE_ALLOC *psALLOC_OUT)
-{;
+{
 	psALLOC_OUT->ge_fd = ged_ge_alloc(psALLOC_IN->region_num, psALLOC_IN->region_sizes);
 	psALLOC_OUT->eError = !!(psALLOC_OUT->ge_fd) ? GED_OK : GED_ERROR_OOM;
 	return 0;
@@ -288,6 +376,23 @@ int ged_bridge_ge_set(GED_BRIDGE_IN_GE_SET *psSET_IN, GED_BRIDGE_OUT_GE_SET *psS
 			psSET_IN->uint32_offset,
 			psSET_IN->uint32_size,
 			psSET_IN->data);
+	return 0;
+}
+
+int ged_bridge_ge_info(GED_BRIDGE_IN_GE_INFO *psINFO_IN, GED_BRIDGE_OUT_GE_INFO *psINFO_OUT)
+{
+	struct file *file = fget(psINFO_IN->ge_fd);
+
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("ged_ge fail, invalid ge_fd %d\n", psINFO_IN->ge_fd);
+		return -EFAULT;
+	}
+
+	psINFO_OUT->unique_id = ((GEEntry *)(file->private_data))->unique_id;
+	psINFO_OUT->eError = GED_OK;
+
+	fput(file);
+
 	return 0;
 }
 
