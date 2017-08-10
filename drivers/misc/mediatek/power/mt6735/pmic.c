@@ -164,6 +164,16 @@ static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
 
+void pmic_md_power_on(void)
+{
+	/*ALPS02057700 workaround:
+	* Power on VLTE for system power off backlight work normal
+	*/
+	PMICLOG("md_power_on:set VLTE on,bit0,1\n");
+	pmic_config_interface(0x04D6, 0x1, 0x1, 0); /* bit[0] =>1'b1 */
+	udelay(200);
+}
+
 unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
 				 unsigned int SHIFT)
 {
@@ -4944,6 +4954,7 @@ static int pmic_mt_remove(struct platform_device *dev)
 static void pmic_mt_shutdown(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver shutdown!! ********\n");
+	pmic_md_power_on();
 }
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
