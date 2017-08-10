@@ -1097,7 +1097,6 @@ static void cldma_rx_worker_start(struct ccci_modem *md, int qno)
 	int ret = 0;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	md->latest_q_rx_isr_time[qno] = local_clock();
 	if (qno != 0) {
 		ret = queue_work(md_ctrl->rxq[qno].worker,
 					&md_ctrl->rxq[qno].cldma_rx_work);
@@ -1202,6 +1201,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 #endif
 		for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
 			if (L2RISAR0 & CLDMA_BM_INT_DONE & (1 << i)) {
+				md->latest_q_rx_isr_time[i] = local_clock();
 				/* disable RX_DONE interrupt */
 				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0,
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
