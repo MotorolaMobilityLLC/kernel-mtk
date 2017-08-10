@@ -136,7 +136,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if (attr->nla_type == WIFI_ATTRIBUTE_BAND)
 		band = nla_get_u32(attr);
 
-	DBGLOG(REQ, INFO, "Get channel list for band: %d, iftype=%d\n", band, wdev->iftype);
+
 
 	if (wdev->iftype == NL80211_IFTYPE_AP)
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
@@ -166,13 +166,12 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 			 * Filter CH36~CH52 for compatible with some old devices.
 			 */
 			continue;
-		} else {
-			DBGLOG(REQ, INFO, "channels[%d] = %d\n", j, channels[j]);
+		} else
 			j++;
-		}
 	}
 	num_channels = j;
-	DBGLOG(REQ, INFO, "num_channels = %d\n", num_channels);
+	DBGLOG(REQ, INFO, "Get channel list for band: %d, iftype=%d num_channels = %d\n"
+		, band, wdev->iftype, num_channels);
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(channels));
 	if (!skb) {
