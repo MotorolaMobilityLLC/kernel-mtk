@@ -2833,7 +2833,7 @@ out:
 	d_rehash(dentry);
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(d_splice_alias);
+EXPORT_SYMBOL(d_splice_alias);
 
 static int prepend(char **buffer, int *buflen, const char *str, int namelen)
 {
