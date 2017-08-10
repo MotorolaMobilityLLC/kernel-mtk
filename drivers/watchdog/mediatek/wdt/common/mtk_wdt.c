@@ -614,6 +614,10 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	writel(interval_val, MTK_WDT_INTERVAL);
 #endif
 	udelay(100);
+	/* disable debug_sys */
+	writel((__raw_readl(MTK_WDT_REQ_MODE) & ~(MTK_WDT_REQ_MODE_DEBUG_EN)) |
+		MTK_WDT_REQ_MODE_KEY, MTK_WDT_REQ_MODE);
+
 	pr_err("mtk_wdt_probe: WDT_MODE(%x),MTK_WDT_NONRST_REG(%x)\n",
 		__raw_readl(MTK_WDT_MODE), __raw_readl(MTK_WDT_NONRST_REG));
 
