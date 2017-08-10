@@ -178,9 +178,7 @@ struct HDMI_PARAMS {
 	/* 0 means no scaling, 5 means scaling to 95%, 10 means 90% */
 	enum HDMI_CABLE_TYPE cabletype;
 	unsigned int HDCPSupported;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	int is_3d_support;
-#endif
 	unsigned int input_clock;
 };
 
@@ -291,12 +289,7 @@ struct HDMI_DRIVER {
 	void (*suspend)(void);
 	void (*resume)(void);
 	int  (*audio_config)(enum HDMI_AUDIO_FORMAT aformat, int bitWidth);
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	int  (*video_config)(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin, int vou);
-#else
-	int  (*video_config)(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin,
-	enum HDMI_VIDEO_OUTPUT_FORMAT vou);
-#endif
 	int (*video_enable)(bool enable);
 	int (*audio_enable)(bool enable);
 	int (*irq_enable)(bool enable);

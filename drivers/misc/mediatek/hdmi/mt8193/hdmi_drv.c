@@ -294,7 +294,7 @@ static void mt8193_resume(void)
 /*----------------------------------------------------------------------------*/
 
 static int mt8193_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin,
-			       enum HDMI_VIDEO_OUTPUT_FORMAT vout)
+			       int vout)
 {
 	HDMI_DEF_LOG("[hdmi]mt8193_video_config:%d\n", vformat);
 
