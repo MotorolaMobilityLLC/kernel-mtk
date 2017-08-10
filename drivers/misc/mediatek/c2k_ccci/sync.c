@@ -2543,8 +2543,8 @@ int asc_rx_register_handle(struct asc_config *cfg)
 
 	ret = asc_rx_handle_init(rx);
 	if (ret < 0) {
-		kfree(rx);
 		ASCPRT("fail to init rx handle %s\n", rx->cfg.name);
+		kfree(rx);
 		return -EINVAL;
 	}
 
