@@ -61,6 +61,7 @@ static kal_uint32 writeToBT_cnt;
 static kal_uint32 readFromBT_cnt;
 
 static bool rx_timeout;
+static bool tx_timeout;
 
 TIME_BUFFER_INFO_T time_buffer_info_rx;
 TIME_BUFFER_INFO_T time_buffer_info_tx;
@@ -266,6 +267,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 		}
 	} else {
 		writeToBT_cnt = 0;
+		tx_timeout = false;
 		BT_CVSD_Mem.u4TXBufferSize = sizeof(BT_SCO_TX_T);
 		if ((BT_CVSD_Mem.pucTXVirtBufAddr == NULL)
 				&& (BT_CVSD_Mem.pucTXPhysBufAddr == 0)) {
@@ -449,6 +451,7 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 		}
 
 		if (btsco.pTX) {
+			tx_timeout = false;
 			if (btsco.uTXState == BT_SCO_TXSTATE_RUNNING || btsco.uTXState == BT_SCO_TXSTATE_ENDING) {
 				LOGBT("%s pTX->fUnderflow=%d, iPacket_w=%d, iPacket_r=%d, uBufferCount_TX=%d\n",
 						__func__, btsco.pTX->fUnderflow, btsco.pTX->iPacket_w,
@@ -885,6 +888,7 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				       ret,
 				       written_size);
 
+				tx_timeout = true;
 				return written_size;
 			} else if (ret == 0) {
 				/* conidtion is false after timeout */
@@ -894,8 +898,10 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 					max_timeout_trial,
 					written_size);
 
-				if (max_timeout_trial <= 0)
+				if (max_timeout_trial <= 0) {
+					tx_timeout = true;
 					return written_size;
+				}
 			} else if (ret == 1) {
 				/* condition is true after timeout */
 				pr_debug("%s(), timeout, condition is true\n", __func__);
@@ -950,6 +956,16 @@ bool btcvsd_rx_timeout(void)
 void btcvsd_rx_reset_timeout(void)
 {
 	rx_timeout = false;
+}
+
+bool btcvsd_tx_timeout(void)
+{
+	return tx_timeout;
+}
+
+void btcvsd_tx_reset_timeout(void)
+{
+	tx_timeout = false;
 }
 
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,

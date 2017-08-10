@@ -537,6 +537,28 @@ static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int
 	return 0;
 }
 
+static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), btcvsd tx timeout %d\n",
+		 __func__, btcvsd_tx_timeout() ? 1 : 0);
+	ucontrol->value.integer.value[0] = btcvsd_tx_timeout() ? 1 : 0;
+	/*btcvsd_tx_reset_timeout();*/
+	return 0;
+}
+
+static int btcvsd_tx_timeout_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(rx_timeout_str)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static const struct snd_kcontrol_new btcvsd_controls[] = {
 	SOC_ENUM_EXT("btcvsd_band",
 		     btcvsd_enum[0], btcvsd_band_get, btcvsd_band_set),
@@ -554,6 +576,10 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 		     sizeof(TIME_BUFFER_INFO_T),
 		     btcvsd_rx_timestamp_get,
 		     btcvsd_rx_timestamp_set),
+	SOC_ENUM_EXT("btcvsd_tx_timeout",
+		     btcvsd_enum[3],
+		     btcvsd_tx_timeout_get,
+		     btcvsd_tx_timeout_set),
 };
 
 static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)

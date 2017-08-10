@@ -300,6 +300,9 @@ bool btcvsd_rx_irq_received(void);
 bool btcvsd_rx_timeout(void);
 void btcvsd_rx_reset_timeout(void);
 
+bool btcvsd_tx_timeout(void);
+void btcvsd_tx_reset_timeout(void);
+
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
 				    unsigned long count);
 unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
