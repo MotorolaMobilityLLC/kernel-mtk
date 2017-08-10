@@ -596,9 +596,25 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	};
 	static const char *const listNames[] = { "Free", "Active", "Wait" };
 
-	const enum CMDQ_ENG_ENUM engines[] = { CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_ENUM) };
+
+	const enum CMDQ_ENG_ENUM engines[] = {
+		CMDQ_ENG_ISP_IMGI,
+		CMDQ_ENG_MDP_RDMA0,
+		CMDQ_ENG_MDP_RSZ0,
+		CMDQ_ENG_MDP_RSZ1,
+		CMDQ_ENG_MDP_TDSHP0,
+		CMDQ_ENG_MDP_WROT0,
+		CMDQ_ENG_MDP_WDMA,
+	};
 	static const char *const engineNames[] = {
-	    CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_STRING) };
+		"ISP_IMGI",
+		"MDP_RDMA0",
+		"MDP_RSZ0",
+		"MDP_RSZ1",
+		"MDP_TDSHP0",
+		"MDP_WROT0",
+		"MDP_WDMA",
+	};
 
 	cmdqCorePrintStatus_idv(pBuffer);
 
@@ -1067,9 +1083,25 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 	};
 	static const char *const listNames[] = { "Free", "Active", "Wait" };
 
-	const enum CMDQ_ENG_ENUM engines[] = { CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_ENUM) };
+	const enum CMDQ_ENG_ENUM engines[] = {
+		CMDQ_ENG_ISP_IMGI,
+		CMDQ_ENG_MDP_RDMA0,
+		CMDQ_ENG_MDP_RSZ0,
+		CMDQ_ENG_MDP_RSZ1,
+		CMDQ_ENG_MDP_TDSHP0,
+		CMDQ_ENG_MDP_WROT0,
+		CMDQ_ENG_MDP_WDMA,
+	};
+
 	static const char *const engineNames[] = {
-	    CMDQ_FOREACH_STATUS_MODULE_PRINT(GENERATE_STRING) };
+		"ISP_IMGI",
+		"MDP_RDMA0",
+		"MDP_RSZ0",
+		"MDP_RSZ1",
+		"MDP_TDSHP0",
+		"MDP_WROT0",
+		"MDP_WDMA",
+	};
 
 	cmdqCorePrintStatusSeq_idv(m);
 

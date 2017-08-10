@@ -129,6 +129,19 @@ config SND_SOC_MT7623_WM8960
 	  The driver is based on MT_SND_SOC_2701.
 	  Select Y if you have such device.
 
+config SND_SOC_MT8167
+	tristate
+
+config SND_SOC_MT8167_MT6392_MACH
+	tristate "ASoC Audio driver for MT8167 with internal codec"
+	depends on ARCH_MT8167
+	select SND_SOC_MT8167
+	help
+	  This adds support for ASoC machine driver for Mediatek MT8167
+	  platforms with internal audio codec and speaker amplifier MT6392.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config MTK_SPKGPIO_REWORK
     bool "MTK_SPKGPIO_REWORK"
 	default n

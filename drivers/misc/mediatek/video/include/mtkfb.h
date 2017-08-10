@@ -299,7 +299,7 @@ struct fb_post_video_buffer {
 };
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8167)
 extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
@@ -449,7 +449,7 @@ extern unsigned int vramsize;
 #endif
 
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8160)
+	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT8167)
 extern bool is_early_suspended;
 extern void mtkfb_waitVsync(void);
 extern bool is_ipoh_bootup;

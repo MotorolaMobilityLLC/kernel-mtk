@@ -69,7 +69,7 @@
 #include <mt-plat/mt_boot_common.h>
 #endif
 /* #include <linux/printk.h> */
-#include <mt_reboot.h>
+#include <linux/reboot.h>
 #include <mt-plat/charging.h>
 
 #define RTC_NAME	"mt-rtc"
@@ -412,7 +412,7 @@ void mt_power_off(void)
 		mdelay(100);
 		rtc_xinfo("Phone with charger\n");
 		if (pmic_chrdet_status() == KAL_TRUE || count > 10)
-			arch_reset(0, "charger");
+			machine_restart("charger");
 		count++;
 #endif
 	}
@@ -479,7 +479,7 @@ static void rtc_handler(void)
 				/* tm.tm_sec += 1; */
 				hal_rtc_set_alarm(&tm);
 				spin_unlock(&rtc_lock);
-				arch_reset(0, "kpoc");
+				machine_restart("kpoc");
 			} else {
 				hal_rtc_save_pwron_alarm();
 				pwron_alm = true;

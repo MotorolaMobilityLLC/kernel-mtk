@@ -32,7 +32,7 @@ else
 	obj-$(CONFIG_ARCH_MT6755) += common/
 	obj-$(CONFIG_ARCH_MT6797) += common/
 	obj-$(CONFIG_ARCH_MT6757) += common/
-	obj-$(CONFIG_ARCH_MT8160) += common/
+	obj-$(CONFIG_ARCH_MT8167) += common/
 	obj-$(CONFIG_ARCH_ELBRUS) += common/
 endif
 

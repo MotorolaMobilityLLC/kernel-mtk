@@ -23,7 +23,7 @@ enum mtk_platform {
 	MTK_PLAT_MT8173,
 	MTK_PLAT_MT8163,
 	MTK_PLAT_MT8127,
-	MTK_PLAT_MT8160,
+	MTK_PLAT_MT8167,
 	MTK_PLAT_MAX
 };
 
@@ -55,6 +55,6 @@ struct mtk_smi_priv {
 extern const struct mtk_smi_priv smi_mt8173_priv;
 extern const struct mtk_smi_priv smi_mt8127_priv;
 extern const struct mtk_smi_priv smi_mt8163_priv;
-extern const struct mtk_smi_priv smi_mt8160_priv;
+extern const struct mtk_smi_priv smi_mt8167_priv;
 
 #endif

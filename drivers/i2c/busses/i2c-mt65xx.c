@@ -197,6 +197,15 @@ static const struct mtk_i2c_compatible mt6589_compat = {
 	.support_33bits = 0,
 };
 
+static const struct mtk_i2c_compatible mt8167_compat = {
+	.quirks = &mt8173_i2c_quirks,
+	.pmic_i2c = 0,
+	.dcm = 1,
+	.auto_restart = 1,
+	.aux_len_reg = 1,
+	.support_33bits = 1,
+};
+
 static const struct mtk_i2c_compatible mt8173_compat = {
 	.quirks = &mt8173_i2c_quirks,
 	.pmic_i2c = 0,
@@ -209,6 +218,7 @@ static const struct mtk_i2c_compatible mt8173_compat = {
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6577-i2c", .data = &mt6577_compat },
 	{ .compatible = "mediatek,mt6589-i2c", .data = &mt6589_compat },
+	{ .compatible = "mediatek,mt8167-i2c", .data = &mt8167_compat },
 	{ .compatible = "mediatek,mt8173-i2c", .data = &mt8173_compat },
 	{}
 };

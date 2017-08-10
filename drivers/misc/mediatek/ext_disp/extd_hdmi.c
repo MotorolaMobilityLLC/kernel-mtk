@@ -40,7 +40,7 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 
-#if defined(CONFIG_ARCH_MT8160)
+#if defined(CONFIG_ARCH_MT8167)
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif

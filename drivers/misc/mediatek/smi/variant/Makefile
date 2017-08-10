@@ -19,4 +19,4 @@ obj-y += smi_debug.o
 obj-y += smi_variant_config_8173.o
 obj-y += smi_variant_config_8127.o
 obj-y += smi_variant_config_8163.o
-obj-y += smi_variant_config_mt8160.o
+obj-y += smi_variant_config_8167.o

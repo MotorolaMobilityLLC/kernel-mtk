@@ -21,7 +21,7 @@
 #include <linux/list.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
-#if !defined(CONFIG_ARCH_MT8160)
+#if !defined(CONFIG_ARCH_MT8167)
 #include <linux/irq.h>
 #endif
 #include <linux/uaccess.h>

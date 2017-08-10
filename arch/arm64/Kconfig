@@ -469,19 +469,6 @@ config ARCH_ELBRUS
         help
           This enables support for MediaTek Elbrus
 
-config ARCH_MT8160
-	bool "MediaTek MT8160"
-	select ARCH_MEDIATEK
-	select MTK_BASE_POWER
-	select MTK_SYS_CIRQ
-	select MTK_GIC_EXT
-	select MTK_SYSTRACKER
-	help
-	  This enable support for MediaTek MT8160. If you need support
-	  for MediaTek MT8160, say Y here.
-	  Please note this also select ARCH_MEDIATEK, so driver depends
-	  on it can be selected.
-
 config ARCH_MT8163
 	bool "MediaTek MT8163"
 	select ARCH_MEDIATEK
@@ -492,6 +479,19 @@ config ARCH_MT8163
 	help
 	  This enable support for MediaTek MT8163. If you need support
 	  for MediaTek MT8163, say Y here.
+	  Please note this also select ARCH_MEDIATEK, so driver depends
+	  on it can be selected.
+
+config ARCH_MT8167
+	bool "MediaTek MT8167"
+	select ARCH_MEDIATEK
+	select MTK_BASE_POWER
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
+	select MTK_SYSTRACKER
+	help
+	  This enable support for MediaTek MT8167. If you need support
+	  for MediaTek MT8167, say Y here.
 	  Please note this also select ARCH_MEDIATEK, so driver depends
 	  on it can be selected.
 

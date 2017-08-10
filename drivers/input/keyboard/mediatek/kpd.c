@@ -36,7 +36,7 @@ struct wake_lock kpd_suspend_lock;	/* For suspend usage */
 /*for kpd_memory_setting() function*/
 static u16 kpd_keymap[KPD_NUM_KEYS];
 static u16 kpd_keymap_state[KPD_NUM_MEMS];
-#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8160))
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8167))
 static struct wake_lock pwrkey_lock;
 #endif
 /***********************************/
@@ -77,6 +77,7 @@ static const struct of_device_id kpd_of_match[] = {
 	{.compatible = "mediatek,mt8173-keypad"},
 	{.compatible = "mediatek,mt6797-keypad"},
 	{.compatible = "mediatek,mt8163-keypad"},
+	{.compatible = "mediatek,mt8167-keypad"},
 	{.compatible = "mediatek,mt8127-keypad"},
 	{.compatible = "mediatek,mt2701-keypad"},
 	{.compatible = "mediatek,mt7623-keypad"},
@@ -824,7 +825,7 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 
 	kpd_get_dts_info(pdev->dev.of_node);
 
-#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8160))
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163) || defined(CONFIG_ARCH_MT8167))
 	wake_lock_init(&pwrkey_lock, WAKE_LOCK_SUSPEND, "PWRKEY");
 #endif
 
