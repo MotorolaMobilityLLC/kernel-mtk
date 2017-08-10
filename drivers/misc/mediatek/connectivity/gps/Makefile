@@ -14,8 +14,8 @@ ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DREMOVE_MK_NODE=1
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/combo/include \
-	-I$(src)/../common/combo/linux/include
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/comon_main/linux/include
 endif
 ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DSOC_CO_CLOCK_FLAG=0
@@ -23,8 +23,8 @@ ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DREMOVE_MK_NODE=1
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/combo/include \
-	-I$(src)/../common/combo/linux/include
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include
 endif
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DSOC_CO_CLOCK_FLAG=0
@@ -32,8 +32,8 @@ ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DREMOVE_MK_NODE=1
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/combo/include \
-	-I$(src)/../common/combo/linux/include
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include
 endif
 
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
@@ -42,11 +42,11 @@ ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
         ccflags-y += -DREMOVE_MK_NODE=0
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/conn_soc/include \
-	-I$(src)/../common/conn_soc/linux/include \
-	-I$(src)/../common/conn_soc/core/include \
-	-I$(src)/../common/conn_soc/$(MTK_PLATFORM)/include \
-	-I$(src)/../common/conn_soc/linux/pri/include \
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include \
+	-I$(src)/../common/common_main/core/include \
+	-I$(src)/../common/common_main/$(MTK_PLATFORM)/include \
+	-I$(src)/../common/common_main/linux/pri/include \
         -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach
 endif
 

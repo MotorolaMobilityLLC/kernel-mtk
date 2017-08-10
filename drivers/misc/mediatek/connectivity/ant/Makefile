@@ -5,8 +5,8 @@
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/combo/include \
-	-I$(src)/../common/combo/linux/include
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include
 
 	obj-$(CONFIG_MTK_COMBO_ANT)	+= stp_chrdev_ant.o
 endif
@@ -14,8 +14,8 @@ endif
 ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
 	ccflags-y += \
 	-I$(src)/../common/common_detect \
-	-I$(src)/../common/conn_soc/include \
-	-I$(src)/../common/conn_soc/linux/include
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include
 
 	obj-$(CONFIG_MTK_COMBO_ANT)	+= stp_chrdev_ant.o
 endif

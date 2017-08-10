@@ -11,18 +11,17 @@ else
     ccflags-y += -D CFG_TC1_FEATURE=0
 endif
 
-ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
+#ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
     ccflags-y += \
-        -I$(src)/../common/common_detect \
-        -I$(src)/../common/combo/include \
-        -I$(src)/../common/combo/linux/include
-endif
-ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-    ccflags-y += \
-        -I$(src)/../common/common_detect \
-        -I$(src)/../common/conn_soc/include \
-        -I$(src)/../common/conn_soc/linux/include
-endif
+        -I$(src)/../common/common_main/include \
+        -I$(src)/../common/common_main/linux/include
+#endif
+#ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
+#    ccflags-y += \
+#        -I$(src)/../common/common_detect \
+#        -I$(src)/../common/conn_soc/include \
+#        -I$(src)/../common/conn_soc/linux/include
+#endif
 
 obj-$(CONFIG_MTK_COMBO_WIFI) += wmt_chrdev_wifi.o
 

@@ -78,17 +78,22 @@ do { \
 		pr_err(DFT_TAG"[E]%s(%d):"  fmt, __func__ , __LINE__, ##arg); \
 } while (0)
 
-#define WMT_IOC_MAGIC			'w'
-#define COMBO_IOCTL_GET_CHIP_ID		  _IOR(WMT_IOC_MAGIC, 0, int)
-#define COMBO_IOCTL_SET_CHIP_ID		  _IOW(WMT_IOC_MAGIC, 1, int)
-#define COMBO_IOCTL_EXT_CHIP_DETECT   _IOR(WMT_IOC_MAGIC, 2, int)
-#define COMBO_IOCTL_GET_SOC_CHIP_ID   _IOR(WMT_IOC_MAGIC, 3, int)
-#define COMBO_IOCTL_DO_MODULE_INIT    _IOR(WMT_IOC_MAGIC, 4, int)
-#define COMBO_IOCTL_MODULE_CLEANUP    _IOR(WMT_IOC_MAGIC, 5, int)
-#define COMBO_IOCTL_EXT_CHIP_PWR_ON   _IOR(WMT_IOC_MAGIC, 6, int)
-#define COMBO_IOCTL_EXT_CHIP_PWR_OFF  _IOR(WMT_IOC_MAGIC, 7, int)
-#define COMBO_IOCTL_DO_SDIO_AUDOK     _IOR(WMT_IOC_MAGIC, 8, int)
+#define WMT_DETECT_IOC_MAGIC            'w'
+#define COMBO_IOCTL_GET_CHIP_ID       _IOR(WMT_DETECT_IOC_MAGIC, 0, int)
+#define COMBO_IOCTL_SET_CHIP_ID       _IOW(WMT_DETECT_IOC_MAGIC, 1, int)
+#define COMBO_IOCTL_EXT_CHIP_DETECT   _IOR(WMT_DETECT_IOC_MAGIC, 2, int)
+#define COMBO_IOCTL_GET_SOC_CHIP_ID   _IOR(WMT_DETECT_IOC_MAGIC, 3, int)
+#define COMBO_IOCTL_DO_MODULE_INIT    _IOR(WMT_DETECT_IOC_MAGIC, 4, int)
+#define COMBO_IOCTL_MODULE_CLEANUP    _IOR(WMT_DETECT_IOC_MAGIC, 5, int)
+#define COMBO_IOCTL_EXT_CHIP_PWR_ON   _IOR(WMT_DETECT_IOC_MAGIC, 6, int)
+#define COMBO_IOCTL_EXT_CHIP_PWR_OFF  _IOR(WMT_DETECT_IOC_MAGIC, 7, int)
+#define COMBO_IOCTL_DO_SDIO_AUDOK     _IOR(WMT_DETECT_IOC_MAGIC, 8, int)
 
+typedef enum _ENUM_WMT_CHIP_TYPE_T {
+	WMT_CHIP_TYPE_COMBO,
+	WMT_CHIP_TYPE_SOC,
+	WMT_CHIP_TYPE_INVALID
+} ENUM_WMT_CHIP_TYPE;
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************/
@@ -110,5 +115,6 @@ extern unsigned int wmt_plat_get_soc_chipid(void);
  */
 extern unsigned int mtk_uart_pdn_enable(char *port, int enable);
 #endif
-
+extern int wmt_detect_set_chip_type(int chip_id);
+extern ENUM_WMT_CHIP_TYPE wmt_detect_get_chip_type(void);
 #endif

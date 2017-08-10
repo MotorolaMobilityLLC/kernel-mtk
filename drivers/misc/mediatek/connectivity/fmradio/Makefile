@@ -28,9 +28,9 @@ endif
 $(warning FM_CHIP := $(FM_CHIP))
 
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-	WMT_INCLUDE_PATH := conn_soc
+	WMT_INCLUDE_PATH := common_main
 else
-	WMT_INCLUDE_PATH := combo
+	WMT_INCLUDE_PATH := common_main
 endif
 
 	FM_CHIP_PATH := $(FM_CHIP)/pub/$(FM_CHIP)
