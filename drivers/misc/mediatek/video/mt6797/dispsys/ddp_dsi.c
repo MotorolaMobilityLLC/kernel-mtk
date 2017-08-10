@@ -3412,6 +3412,15 @@ int ddp_dsi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 	return 0;
 }
 
+/*TUI will use the api*/
+int dsi_enable_irq(DISP_MODULE_ENUM module, void *handle, unsigned int enable)
+{
+	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL)
+		DSI_OUTREGBIT(handle, DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, FRAME_DONE_INT_EN, enable);
+
+	return 0;
+}
+
 #if 0
 int ddp_dsi_switch_lcm_mode(DISP_MODULE_ENUM module, void *params)
 {

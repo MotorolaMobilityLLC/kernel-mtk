@@ -7063,6 +7063,29 @@ void restart_smart_ovl_nolock(void)
 static DISP_POWER_STATE tui_power_stat_backup;
 static int tui_session_mode_backup;
 
+/*Now the normal display vsync is DDP_IRQ_RDMA0_DONE in vdo mode, but when enter TUI,
+ *we must protect the rdma0, then, should
+ * switch it to the DDP_IRQ_DSI0_FRAME_DONE.
+ */
+int display_vsync_switch_to_dsi(unsigned int flg)
+{
+	if (!primary_display_is_video_mode())
+		return 0;
+
+	if (!flg) {
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								DDP_IRQ_RDMA0_DONE);
+		dsi_enable_irq(DISP_MODULE_DSI0, NULL, 0);
+
+	} else {
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								DDP_IRQ_DSI0_FRAME_DONE);
+		dsi_enable_irq(DISP_MODULE_DSI0, NULL, 1);
+	}
+
+	return 0;
+}
+
 int display_enter_tui(void)
 {
 	msleep(500);
@@ -7092,6 +7115,7 @@ int display_enter_tui(void)
 
 	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 
+	display_vsync_switch_to_dsi(1);
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 0, 1);
 
 	_primary_path_unlock(__func__);
@@ -7123,6 +7147,7 @@ int display_exit_tui(void)
 	/* DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
+	display_vsync_switch_to_dsi(0);
 	_primary_path_unlock(__func__);
 
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
