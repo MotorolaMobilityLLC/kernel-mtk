@@ -803,9 +803,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 		nicDisableClockGating(prAdapter);
 #endif
 
-	/* MGMT - unitialization */
-	nicUninitMGMT(prAdapter);
-
 	if (prAdapter->rAcpiState == ACPI_STATE_D0 &&
 #if (CFG_CHIP_RESET_SUPPORT == 1)
 	    kalIsResetting() == FALSE &&
@@ -872,6 +869,9 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 	}
 
 	nicRxUninitialize(prAdapter);
+
+	/* MGMT - unitialization */
+	nicUninitMGMT(prAdapter);
 
 	nicTxRelease(prAdapter);
 
