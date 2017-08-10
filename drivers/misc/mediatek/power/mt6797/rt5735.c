@@ -592,8 +592,7 @@ static int rt5735_i2c_probe(struct i2c_client *client,
 	if (!info->pdev)
 		goto OUT_PDEV;
 
-	/* please remark this after GPU Driver updated (Owen) */
-	/* mt_gpufreq_ext_ic_init(); */
+	mt_gpufreq_ext_ic_init();
 
 	dev_info(&client->dev, "rt5735 successfully probed\n");
 
