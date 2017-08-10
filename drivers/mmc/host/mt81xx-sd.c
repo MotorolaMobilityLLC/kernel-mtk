@@ -921,10 +921,20 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 {
 	/* The max busy time we can endure is 20ms */
 	unsigned long tmo = jiffies + msecs_to_jiffies(20);
+	u32 count = 0;
 
-	while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
-			time_before(jiffies, tmo))
-		cpu_relax();
+	if (in_interrupt()) {
+		while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
+		       (count < 1000)) {
+			udelay(1);
+			count++;
+		}
+	} else {
+		while ((readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) &&
+		       time_before(jiffies, tmo))
+			cpu_relax();
+	}
+
 	if (readl(host->base + SDC_STS) & SDC_STS_CMDBUSY) {
 		dev_err(host->dev, "CMD bus busy detected\n");
 		host->error |= REQ_CMD_BUSY;
@@ -933,26 +943,26 @@ static inline bool msdc_cmd_is_ready(struct msdc_host *host,
 	}
 
 	if (cmd->opcode != MMC_SEND_STATUS) {
+		count = 0;
 		/* Consider that CMD6 crc error before card was init done,
 		 * mmc_retune() will return directly as host->card is null.
 		 * and CMD6 will retry 3 times, must ensure card is in transfer
 		 * state when retry.
 		 */
-		if (in_interrupt())
-			tmo = jiffies + msecs_to_jiffies(1000);
-		else
-			tmo = jiffies + msecs_to_jiffies(5 * 1000);
+		tmo = jiffies + msecs_to_jiffies(60 * 1000);
 		while (1) {
 			if (!(readl(host->base + MSDC_PS) & BIT(16))) {
-				if (in_interrupt())
-					cpu_relax();
-				else
+				if (in_interrupt()) {
+					udelay(1);
+					count++;
+				} else {
 					msleep_interruptible(10);
+				}
 			} else {
 				break;
 			}
 			/* Timeout if the device never leaves the program state. */
-			if (time_after(jiffies, tmo)) {
+			if (count > 1000 || time_after(jiffies, tmo)) {
 				pr_err("%s: Card stuck in programming state! %s\n",
 				       mmc_hostname(host->mmc), __func__);
 				host->error |= REQ_CMD_BUSY;
