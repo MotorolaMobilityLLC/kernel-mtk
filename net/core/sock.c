@@ -1788,16 +1788,18 @@ struct sock_block_info_t {
 
 void print_block_sock_info(unsigned long data)
 {
-	sock_block_info_t  *print_info = (sock_block_info_t *)data;
+	struct sock_block_info_t  *print_info = (struct sock_block_info_t *)data;
 	struct sock *sk = print_info->sk;
 	struct unix_sock *u = unix_sk(sk);
 	struct sock *peer = NULL;
+	unsigned long long time = jiffies - print_info->when;
 
 	if (sk->sk_family != AF_UNIX)
 		return;
+	do_div(time, HZ);
 	pr_info("----------------------sock alloc memory block info-----------------------\n");
 	pr_info("[mtk_net][sock]sockdbg %s[%d] is blocking more than %lld sec\n",
-		print_info->process, print_info->pid, (jiffies - print_info->when)/HZ);
+		print_info->process, print_info->pid, time);
 	if (u->path.dentry != NULL)
 			pr_info("[mtk_net][sock]sockdbg: socket-Name:%s\n", u->path.dentry->d_iname);
 		else
@@ -1840,7 +1842,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 	long timeo;
 	int err;
 #ifdef CONFIG_MTK_NET_LOGGING
-	sock_block_info_t debug_block;
+	struct sock_block_info_t debug_block;
 	struct timer_list debug_timer;
 #endif
 	timeo = sock_sndtimeo(sk, noblock);

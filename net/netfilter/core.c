@@ -58,10 +58,10 @@ struct drop_packets_statics_t {
 	struct timer_list print_drop_packets_timer;
 	unsigned long print_stamp;
 	unsigned int print_len;
-	drop_packet_info_t drop_packets[IPTABLES_DROP_PACKET_NUM];
+	struct drop_packet_info_t drop_packets[IPTABLES_DROP_PACKET_NUM];
 };
 
-drop_packets_statics_t iptables_drop_packets;
+struct drop_packets_statics_t iptables_drop_packets;
 struct sbuff {
 	unsigned int    count;
 	char        buf[S_SIZE + 1];
@@ -294,7 +294,10 @@ int nf_hook_slow(u_int8_t pf, unsigned int hook, struct sk_buff *skb,
 	struct nf_hook_ops *elem;
 	unsigned int verdict;
 	int ret = 0;
-
+#ifdef CONFIG_MTK_NET_LOGGING
+	char *table = NULL;
+	unsigned int num;
+#endif
 	/* We may already have this, but read-locks nest anyway */
 	rcu_read_lock();
 
@@ -310,9 +313,8 @@ next_hook:
 	iptables_drop_packets.cnt++;
 	if (iptables_drop_packets.cnt > 100000)
 			iptables_drop_packets.cnt = 0;
-	char *table = (char *)((struct nf_hook_ops *)elem)->hook;
-	unsigned int num = iptables_drop_packets.cnt % 500;
-
+	table = (char *)((struct nf_hook_ops *)elem)->hook;
+	num = iptables_drop_packets.cnt % 500;
 	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].drop_time = jiffies;
 	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].len = skb->len;
 	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].hook = hook;
