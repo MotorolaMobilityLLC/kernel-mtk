@@ -192,15 +192,22 @@ static void ta_nl_data_handler(struct sk_buff *skb)
 
 	size = tad_msg->tad_ret_data_len + TAD_NL_MSG_T_HDR_LEN;
 
+
 	/*tad_ret_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
 	tad_ret_msg = vmalloc(size);
-	memset(tad_ret_msg, 0, size);
+	if (tad_ret_msg != NULL) {
+		memset(tad_ret_msg, 0, size);
 
-	atm_ctrl_cmd_from_user(data, tad_ret_msg);
-	ta_nl_send_to_user(pid, seq, tad_ret_msg);
-	tsta_dprintk("[ta_nl_data_handler] send to user space process done\n");
+		atm_ctrl_cmd_from_user(data, tad_ret_msg);
+		ta_nl_send_to_user(pid, seq, tad_ret_msg);
+		tsta_dprintk("[ta_nl_data_handler] send to user space process done\n");
 
-	vfree(tad_ret_msg);
+		vfree(tad_ret_msg);
+
+	} else {
+		tsta_warn("[ta_nl_data_handler] vmalloc fail\n");
+	}
+
 }
 
 int wakeup_ta_algo(int flow_state)
@@ -213,6 +220,9 @@ int wakeup_ta_algo(int flow_state)
 
 		/*tad_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
 		tad_msg = vmalloc(size);
+		if (!tad_msg)
+			return -ENOMEM;
+
 		tsta_dprintk("[wakeup_ta_algo] malloc size=%d\n", size);
 		memset(tad_msg, 0, size);
 		tad_msg->tad_cmd = TA_DAEMON_CMD_NOTIFY_DAEMON;
