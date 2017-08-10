@@ -4077,6 +4077,12 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 
 	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 	mtk_wcn_wmt_set_wifi_ver(u4FwIDVersion);
+
+	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x\n"
+		, prAdapter->rVerInfo.u2FwProductID
+		, prAdapter->rVerInfo.u2FwOwnVersion
+		, prAdapter->rVerInfo.u2FwOwnVersionExtend);
+
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
 		prAdapter->fgTdlsIsSup = TRUE;

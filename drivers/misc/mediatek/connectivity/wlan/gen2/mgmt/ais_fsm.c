@@ -3311,6 +3311,9 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	/* 4 <7> Trigger AIS FSM */
 	aisFsmSteps(prAdapter, AIS_STATE_IDLE);
 
+	/*dump package information*/
+	wlanPktDebugDumpInfo(prAdapter);
+
 }				/* end of aisFsmDisconnect() */
 
 /*----------------------------------------------------------------------------*/

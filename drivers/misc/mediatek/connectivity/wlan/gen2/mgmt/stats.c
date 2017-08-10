@@ -1,18 +1,16 @@
 /*
-** Id: stats.c#1
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
-/*! \file stats.c
-    \brief This file includes statistics support.
-*/
-
-/*
-** Log: stats.c
- *
- * 07 17 2014 samp.lin
- * NULL
- * Initial version.
- */
 
 /*******************************************************************************
  *						C O M P I L E R	 F L A G S
@@ -1011,6 +1009,8 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		if (eventType == EVENT_TX)
 			prMsduInfo->fgIsBasicRate = TRUE;
 
+		wlanPktDebugTraceInfoARP(status, eventType, u2OpCode);
+
 		if ((su2TxDoneCfg & CFG_ARP) == 0)
 			break;
 
@@ -1048,6 +1048,10 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		UINT_8 ucIpProto = pucEthBody[9]; /* IP header without options */
 		UINT_8 ucIpVersion = (pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		UINT_16 u2IpId = pucEthBody[4]<<8 | pucEthBody[5];
+
+
+		wlanPktDebugTraceInfoIP(status, eventType, ucIpProto, u2IpId);
+
 
 		if (ucIpVersion != IPVERSION)
 			break;
@@ -1305,6 +1309,7 @@ VOID StatsTxPktCallBack(UINT_8 *pPkt, P_MSDU_INFO_T prMsduInfo)
 
 	u2EtherTypeLen = (pPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pPkt[ETH_TYPE_LEN_OFFSET + 1]);
 	statsParsePktInfo(pPkt, 0, EVENT_TX, prMsduInfo);
+
 }
 
 /*----------------------------------------------------------------------------*/

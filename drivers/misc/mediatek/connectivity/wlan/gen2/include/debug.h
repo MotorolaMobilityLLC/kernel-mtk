@@ -97,6 +97,11 @@ typedef enum _ENUM_DBG_MODULE_T {
 
 	DBG_MODULE_NUM		/* Notice the XLOG check */
 } ENUM_DBG_MODULE_T;
+enum PKT_TYPE {
+	PKT_RX,
+	PKT_TX,
+	PKT_TX_DONE
+};
 
 /* XLOG */
 /* #define XLOG_DBG_MODULE_IDX    28 */ /* DBG_MODULE_NUM */
@@ -359,6 +364,13 @@ VOID wlanTraceTxCmd(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmd);
 VOID wlanReadFwStatus(P_ADAPTER_T prAdapter);
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
 VOID wlanDumpCommandFwStatus(VOID);
+VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter);
+VOID wlanPktDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId);
+VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode);
+VOID wlanPktDebugTraceInfo(UINT_8 status, UINT_8 eventType
+	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode);
+
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
