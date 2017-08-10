@@ -135,8 +135,9 @@ typedef enum _ENUM_CMD_ID_T {
 #ifdef FW_CFG_SUPPORT
 		CMD_ID_GET_SET_CUSTOMER_CFG = 0x70,
 #endif
+	CMD_ID_SET_ALWAYS_SCAN_PARAM = 0x73,/*0x73(set)*/
 	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
-	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
+	CMD_ID_TDLS_PS = 0x75,	/* 0x75 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */

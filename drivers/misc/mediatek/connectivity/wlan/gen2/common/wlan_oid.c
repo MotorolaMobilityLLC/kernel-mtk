@@ -10366,6 +10366,49 @@ wlanoidSetTxRateInfo(
 }
 #endif /* CFG_SUPPORT_TXR_ENC */
 
+
+WLAN_STATUS
+wlanoidSetAlwaysScan(
+IN  P_ADAPTER_T prAdapter,
+IN  PVOID       pvSetBuffer,
+IN  UINT_32     u4SetBufferLen,
+OUT PUINT_32    pu4SetInfoLen
+)
+{
+	WLAN_STATUS rStatus;
+	UINT_8 u8AlwaysScan;
+
+	DEBUGFUNC("wlanoidSetAlwaysScan");
+
+	if (!prAdapter || !pvSetBuffer)
+		return WLAN_STATUS_INVALID_DATA;
+
+	u8AlwaysScan = *(PUINT_8)pvSetBuffer - '0';
+
+	if ((u8AlwaysScan != 0) && (u8AlwaysScan != 1))
+		return WLAN_STATUS_INVALID_DATA;
+
+	rStatus = wlanSendSetQueryCmd(
+				prAdapter,                  /* prAdapter */
+				CMD_ID_SET_ALWAYS_SCAN_PARAM,/* ucCID */
+				TRUE,                       /* fgSetQuery */
+				FALSE,                      /* fgNeedResp */
+				TRUE,                       /* fgIsOid */
+				nicCmdEventSetCommon,		/* pfCmdDoneHandler*/
+				nicOidCmdTimeoutCommon,		/* pfCmdTimeoutHandler */
+				sizeof(u8AlwaysScan),		/* u4SetQueryInfoLen */
+				(PUINT_8)&u8AlwaysScan,      /* pucInfoBuffer */
+				NULL,                       /* pvSetQueryBuffer */
+				0                           /* u4SetQueryBufferLen */
+				);
+	DBGLOG(OID, INFO, "u8AlwaysScan %d rStatus %x\n", u8AlwaysScan, rStatus);
+
+	ASSERT(rStatus == WLAN_STATUS_PENDING);
+
+	return rStatus;
+
+}
+
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
