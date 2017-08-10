@@ -1862,7 +1862,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 static void set_cur_freq_hybrid(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
 {
 	int r, index;
-	unsigned int cluster, volt, volt_val;
+	unsigned int cluster, volt, volt_val = 0;
 
 	BUG_ON(!enable_cpuhvfs);
 
