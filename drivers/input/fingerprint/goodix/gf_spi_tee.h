@@ -6,30 +6,6 @@
 #include <linux/cdev.h>
 #include "mt_spi.h"
 
-/**************************REE SPI******************************/
-
-#ifndef SUPPORT_REE_SPI
-#define SUPPORT_REE_SPI
-#endif
-
-#ifdef SUPPORT_REE_SPI
-
-#define HIGH_SPEED 6
-#define LOW_SPEED  1
-
-#define ERR_NO_SENSOR    111
-#define ERR_FW_DESTROY   112
-#define ERR_PREPARE_FAIL 113
-
-/**********************function defination**********************/
-void gf_spi_setup_conf_ree(u32 speed, enum spi_transfer_mode mode);
-int gf_spi_read_bytes_ree(u16 addr, u32 data_len, u8 *rx_buf);
-int gf_spi_write_bytes_ree(u16 addr, u32 data_len, u8 *tx_buf);
-int gf_spi_read_byte_ree(u16 addr, u8 *value);
-int gf_spi_write_byte_ree(u16 addr, u8 value);
-
-#endif
-
 /**************************debug******************************/
 #define ERR_LOG  (0)
 #define INFO_LOG (1)
@@ -44,7 +20,6 @@ int gf_spi_write_byte_ree(u16 addr, u8 value);
 
 #define FUNC_ENTRY()  gf_debug(DEBUG_LOG, "%s, %d, enter\n", __func__, __LINE__)
 #define FUNC_EXIT()  gf_debug(DEBUG_LOG, "%s, %d, exit\n", __func__, __LINE__)
-
 
 /**********************IO Magic**********************/
 #define GF_IOC_MAGIC	'g'
@@ -84,6 +59,13 @@ struct gf_ioc_transfer {
 	u8 *buf;
 };
 
+struct gf_ioc_chip_info {
+	u8 vendor_id;
+	u8 mode;
+	u8 operation;
+	u8 reserved[5];
+};
+
 /* define commands */
 #define GF_IOC_INIT			_IOR(GF_IOC_MAGIC, 0, u8)
 #define GF_IOC_EXIT			_IO(GF_IOC_MAGIC, 1)
@@ -103,13 +85,14 @@ struct gf_ioc_transfer {
 /* fp sensor has change to sleep mode while screen off */
 #define GF_IOC_ENTER_SLEEP_MODE		_IO(GF_IOC_MAGIC, 10)
 #define GF_IOC_GET_FW_INFO		_IOR(GF_IOC_MAGIC, 11, u8)
-
+#define GF_IOC_REMOVE		_IO(GF_IOC_MAGIC, 12)
+#define GF_IOC_CHIP_INFO	_IOR(GF_IOC_MAGIC, 13, struct gf_ioc_chip_info)
 
 /* for SPI REE transfer */
 #define GF_IOC_TRANSFER_CMD		_IOWR(GF_IOC_MAGIC, 15, struct gf_ioc_transfer)
 #define  GF_IOC_MAXNR    16  /* THIS MACRO IS NOT USED NOW... */
 
-struct gf_dev {
+struct gf_device {
 	dev_t devno;
 	struct cdev cdev;
 	struct device *device;
@@ -118,22 +101,17 @@ struct gf_dev {
 	int device_count;
 	struct mt_chip_conf spi_mcc;
 
-	spinlock_t	spi_lock;
+	spinlock_t spi_lock;
 	struct list_head device_entry;
 
 	struct input_dev *input;
 
-	/* buffer is NULL unless this device is open (users > 0) */
-	unsigned users;
 	u8 *spi_buffer;  /* only used for SPI transfer internal */
 	struct mutex buf_lock;
 	u8 buf_status;
-	u8 device_available;	/* changed during fingerprint chip sleep and wakeup phase */
-
 
 	/* for netlink use */
 	struct sock *nl_sk;
-	int pid;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
@@ -166,5 +144,29 @@ struct gf_dev {
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
 };
+
+/**************************REE SPI******************************/
+
+#ifndef SUPPORT_REE_SPI
+/* #define SUPPORT_REE_SPI */
+#endif
+
+#ifdef SUPPORT_REE_SPI
+
+#define HIGH_SPEED 6
+#define LOW_SPEED  1
+
+#define ERR_NO_SENSOR    111
+#define ERR_FW_DESTROY   112
+#define ERR_PREPARE_FAIL 113
+
+/**********************function defination**********************/
+void gf_spi_setup_conf_ree(struct gf_device *gf_dev, u32 speed, enum spi_transfer_mode mode);
+int gf_spi_read_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *rx_buf);
+int gf_spi_write_bytes_ree(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *tx_buf);
+int gf_spi_read_byte_ree(struct gf_device *gf_dev, u16 addr, u8 *value);
+int gf_spi_write_byte_ree(struct gf_device *gf_dev, u16 addr, u8 value);
+
+#endif
 
 #endif	/* __GF_SPI_TEE_H */
