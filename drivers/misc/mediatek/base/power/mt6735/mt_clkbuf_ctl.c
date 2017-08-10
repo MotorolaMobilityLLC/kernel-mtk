@@ -224,6 +224,7 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 		status[i] = clk_buf_swctrl[i];
 }
 
+#if defined(CONFIG_PM) && defined(CONFIG_MT_ENG_BUILD)
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				  const char *buf, size_t count)
 {
@@ -292,16 +293,19 @@ static struct attribute_group spm_attr_group = {
 	.name = "clk_buf",
 	.attrs = clk_buf_attrs,
 };
+#endif
 
 static int clk_buf_fs_init(void)
 {
+#if defined(CONFIG_PM) && defined(CONFIG_MT_ENG_BUILD)
 	int r;
 
-#if defined(CONFIG_PM)
 	r = sysfs_create_group(power_kobj, &spm_attr_group);
 	if (r)
 		pr_err("FAILED TO CREATE /sys/power/clk_buf (%d)\n", r);
 	return r;
+#else
+	return 0;
 #endif
 }
 
