@@ -1500,7 +1500,7 @@
 			reg = <0x1100e000 0x1000>;
 		};
 
-		i2c_appm: i2c@1100f000 {
+		i2c4: i2c@1100f000 {
 			compatible = "mediatek,mt6755-i2c", "mediatek,i2c3";
 			cell-index = <3>;
 			reg = <0x1100f000 0x1000>,
