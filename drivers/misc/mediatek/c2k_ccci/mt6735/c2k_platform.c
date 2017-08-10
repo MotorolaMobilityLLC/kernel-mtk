@@ -306,13 +306,12 @@ void dump_c2k_iram_seg2(void)
 void dump_c2k_bootup_status(void)
 {
 	static int init_done;
-	static unsigned long c2k_iram_base_virt1;
-	static unsigned long c2k_iram_base_virt2;
-	static unsigned long c2k_uart0;
-	static unsigned long bootst;
-	static unsigned long chipid;
-	static unsigned long c2ksys_uart0;
-	int i;
+	static void __iomem *c2k_iram_base_virt1;
+	static void __iomem *c2k_iram_base_virt2;
+	static void __iomem *c2k_uart0;
+	static void __iomem *bootst;
+	static void __iomem *chipid;
+	static void __iomem *c2ksys_uart0;
 	int retry = 0;
 
 	if (!init_done) {
