@@ -21,6 +21,7 @@
 //#include <linux/xlog.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/fb.h>
 #include <mt-plat/mtk_gpu_utility.h>
 
 #include "ged_base.h"
@@ -453,6 +454,7 @@ static int ged_vsync_offset_enable_seq_show(struct seq_file *psSeqFile, void *pv
 			seq_printf(psSeqFile, "Low power mode: %d\n", g_ui32EventStatus & GED_EVENT_LOW_POWER_MODE ? 1 : 0);
 			seq_printf(psSeqFile, "MHL4K Video: %d\n", g_ui32EventStatus & GED_EVENT_MHL4K_VID ? 1 : 0);
 			seq_printf(psSeqFile, "ViLTE Video: %d\n", g_ui32EventStatus & GED_EVENT_VILTE_VID ? 1 : 0);
+			seq_printf(psSeqFile, "LCD: %d\n", g_ui32EventStatus & GED_EVENT_LCD ? 1 : 0);
 		}
 	}
 
@@ -864,6 +866,35 @@ static struct seq_operations gsIntegrationReportReadOps =
 };
 //-----------------------------------------------------------------------------
 
+static struct notifier_block ged_fb_notifier;
+
+static int ged_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	/* If we aren't interested in this event, skip it immediately ... */
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		g_ui32EventStatus |= GED_EVENT_LCD;
+		ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
+		break;
+	case FB_BLANK_POWERDOWN:
+		g_ui32EventStatus &= ~GED_EVENT_LCD;
+		ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 GED_ERROR ged_hal_init(void)
 {
 	GED_ERROR err = GED_OK;
@@ -1019,6 +1050,10 @@ GED_ERROR ged_hal_init(void)
 			NULL,
 			NULL,
 			&gpsIntegrationReportReadEntry);
+
+	ged_fb_notifier.notifier_call = ged_fb_notifier_callback;
+	if (fb_register_client(&ged_fb_notifier))
+		GED_LOGE("register fb_notifier fail!\n");
 
 	if (unlikely(err != GED_OK))
 	{
