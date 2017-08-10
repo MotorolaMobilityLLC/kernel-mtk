@@ -349,7 +349,7 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	INT_32 i4Rssi = 0;
 	PARAM_802_11_STATISTICS_STRUCT_T rStatistics;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -2621,7 +2621,7 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_SW_CMD_PARAMS) data;
