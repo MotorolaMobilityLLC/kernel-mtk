@@ -109,6 +109,8 @@ phys_addr_t zmc_base(void)
 
 struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align)
 {
+	zmc_notifier_call_chain(ZMC_EVENT_ALLOC_MOVABLE, NULL);
+
 	if (!zmc_reserved_mem_inited)
 		return cma_alloc(cma, count, align);
 

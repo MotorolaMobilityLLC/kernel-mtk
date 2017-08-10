@@ -35,12 +35,19 @@ extern struct single_cma_registration memory_lowpower_registration;
 extern phys_addr_t zmc_base(void);
 extern struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align);
 extern bool zmc_cma_release(struct cma *cma, struct page *pages, int count);
+
+extern int zmc_register_client(struct notifier_block *nb);
+extern int zmc_unregister_client(struct notifier_block *nb);
+extern int zmc_notifier_call_chain(unsigned long val, void *v);
+
 struct single_cma_registration {
 	phys_addr_t size;
 	phys_addr_t align;
 	const char *name;
 	void (*init)(struct cma *);
 };
+
+#define ZMC_EVENT_ALLOC_MOVABLE 0x01
 #endif
 
 #ifdef CONFIG_MTK_SVP
