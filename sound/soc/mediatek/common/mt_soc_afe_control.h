@@ -254,4 +254,7 @@ int SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
 /* ANC AP Dependent */
 bool SetAncRecordReg(uint32 value, uint32 mask);
 
+/* irq from other module */
+bool is_irq_from_ext_module(void);
+
 #endif

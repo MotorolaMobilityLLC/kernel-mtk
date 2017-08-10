@@ -3249,3 +3249,108 @@ int irq_update_user(const void *_user,
 }
 /* IRQ Manager END*/
 
+/* api for other module */
+static int irq_from_ext_module;
+
+bool is_irq_from_ext_module(void)
+{
+	return irq_from_ext_module > 0 ? true : false;
+}
+
+struct timeval ext_time;
+struct timeval ext_time_prev;
+struct timeval ext_time_diff;
+
+static struct timeval ext_diff(struct timeval start, struct timeval end)
+{
+	struct timeval temp;
+
+	if ((end.tv_usec - start.tv_usec) < 0) {
+		temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+		temp.tv_usec = 1000000 + end.tv_usec - start.tv_usec;
+	} else {
+		temp.tv_sec = end.tv_sec - start.tv_sec;
+		temp.tv_usec = end.tv_usec - start.tv_usec;
+	}
+	return temp;
+}
+
+int start_ext_sync_signal(void)
+{
+	unsigned int dl1_state =
+		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+
+
+	do_gettimeofday(&ext_time);
+	ext_time_prev = ext_time;
+	pr_warn("%s(), irq_from_ext_module = %d, dl1_state = %d, time = %ld, %ld\n",
+		__func__,
+		irq_from_ext_module,
+		dl1_state,
+		ext_time.tv_sec,
+		ext_time.tv_usec);
+
+	irq_from_ext_module++;
+
+	if (dl1_state == true)
+		Auddrv_DL1_Interrupt_Handler();
+
+	return 0;
+}
+EXPORT_SYMBOL(start_ext_sync_signal);
+
+int stop_ext_sync_signal(void)
+{
+	unsigned int dl1_state =
+		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+
+	do_gettimeofday(&ext_time);
+
+	ext_time_diff = ext_diff(ext_time_prev, ext_time);
+	ext_time_prev = ext_time;
+	pr_warn("%s(), irq_from_ext_module = %d, dl1_state = %d, time diff= %ld, %ld\n",
+		__func__,
+		irq_from_ext_module,
+		dl1_state,
+		ext_time_diff.tv_sec,
+		ext_time_diff.tv_usec);
+
+	irq_from_ext_module--;
+
+	if (irq_from_ext_module > 0) {
+		irq_from_ext_module--;
+	} else {
+		irq_from_ext_module = 0;
+		pr_err("%s(), irq_from_ext_module %d <= 0\n",
+		       __func__, irq_from_ext_module);
+	}
+
+	if (dl1_state == true)
+		Auddrv_DL1_Interrupt_Handler();
+
+	return 0;
+}
+EXPORT_SYMBOL(stop_ext_sync_signal);
+
+int ext_sync_signal(void)
+{
+	unsigned int dl1_state =
+		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+
+	do_gettimeofday(&ext_time);
+
+	ext_time_diff = ext_diff(ext_time_prev, ext_time);
+	ext_time_prev = ext_time;
+	pr_warn("%s(), irq_from_ext_module = %d, dl1_state = %d, time diff= %ld, %ld\n",
+		__func__,
+		irq_from_ext_module,
+		dl1_state,
+		ext_time_diff.tv_sec,
+		ext_time_diff.tv_usec);
+
+	if (irq_from_ext_module && dl1_state == true)
+		Auddrv_DL1_Interrupt_Handler();
+	return 0;
+}
+EXPORT_SYMBOL(ext_sync_signal);
+

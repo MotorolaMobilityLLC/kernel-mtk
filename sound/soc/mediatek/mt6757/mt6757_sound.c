@@ -1728,7 +1728,8 @@ const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE irqPurpo
 /*Irq handler function array*/
 static void Aud_IRQ1_Handler(void)
 {
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1))
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) &&
+	    is_irq_from_ext_module() == false)
 		Auddrv_DL1_Interrupt_Handler();
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2))
 		Auddrv_DL2_Interrupt_Handler();
