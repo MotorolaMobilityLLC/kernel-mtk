@@ -84,6 +84,8 @@
 #define TCP_HDR_TCP_CSUM_OFFSET                 16
 #define UDP_HDR_UDP_CSUM_OFFSET                 6
 
+#define DHCP_MAGIC_NUMBER                       0x63825363
+
 #define LLC_LEN                                 8	/* LLC(3) + SNAP(3) + EtherType(2) */
 
 #define NULL_MAC_ADDR                           {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
@@ -1112,6 +1114,24 @@ typedef struct _ETH_FRAME_T {
 	UINT_16 u2TypeLen;
 	UINT_8 aucData[1];
 } __KAL_ATTRIB_PACKED__ ETH_FRAME_T, *P_ETH_FRAME_T;
+
+typedef struct _BOOTP_PROTOCOL_T {
+	UINT_8 ucOperation;
+	UINT_8 ucHdrType;
+	UINT_8 ucHdrLen;
+	UINT_8 ucHops;
+	UINT_32 u4TransId;
+	UINT_16 u2Seconds;
+	UINT_16 u2Flags;
+	UINT_32 u4CIAddr;
+	UINT_32 u4YIAddr;
+	UINT_32 u4SIAddr;
+	UINT_32 u4GIAddr;
+	UINT_8 aucCHAddr[16];
+	UINT_8 aucServerName[64];
+	UINT_8 aucFileName[128];
+	UINT_8 aucOptions[0];
+} __KAL_ATTRIB_PACKED__ BOOTP_PROTOCOL_T, *P_BOOTP_PROTOCOL_T;
 
 /* IEEE 802.11 WLAN Frame Structure */
 /* WLAN MAC Header (without Address 4 and QoS Control fields) */
