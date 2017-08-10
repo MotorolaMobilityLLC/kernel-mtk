@@ -2805,10 +2805,12 @@ void sched_exec(void)
 {
 	struct task_struct *p = current;
 	unsigned long flags;
-	int dest_cpu;
+	int src_cpu, dest_cpu;
 
 	raw_spin_lock_irqsave(&p->pi_lock, flags);
 	dest_cpu = p->sched_class->select_task_rq(p, task_cpu(p), SD_BALANCE_EXEC, 0);
+	src_cpu = smp_processor_id();
+
 	if (dest_cpu == smp_processor_id())
 		goto unlock;
 
@@ -2816,7 +2818,7 @@ void sched_exec(void)
 		struct migration_arg arg = { p, dest_cpu };
 
 		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-		stop_one_cpu(task_cpu(p), migration_cpu_stop, &arg);
+		stop_one_cpu(src_cpu, migration_cpu_stop, &arg);
 		return;
 	}
 unlock:
