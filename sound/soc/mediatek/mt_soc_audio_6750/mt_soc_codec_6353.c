@@ -373,22 +373,13 @@ static void Topck_Enable(bool enable)
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (TopCkCount == 0) {
-			/* Ana_Set_Reg(MT6353_CLK_CKPDN_CON0_CLR, 0x0070, 0x0070);*/
-			pmic_set_register_value(PMIC_CLK_AUDIF_CK_PDN , 0x0);
-			pmic_set_register_value(PMIC_CLK_AUD_CK_PDN , 0x0);
-			pmic_set_register_value(PMIC_CLK_AUDNCP_CK_PDN , 0x0);
-			/* Turn on AUDNCP_CLKDIV engine clock,Turn on AUD 26M */
-			/* AUD clock power down released */
+			Ana_Set_Reg(MT6353_CLK_CKPDN_CON0_CLR, 0x0070, 0x0070);
 		}
 		TopCkCount++;
 	} else {
 		TopCkCount--;
 		if (TopCkCount == 0) {
-			/*Ana_Set_Reg(MT6353_CLK_CKPDN_CON0_SET, 0x0040, 0x0040);*/
-			pmic_set_register_value(PMIC_CLK_AUDNCP_CK_PDN , 0x1);
-			pmic_set_register_value(PMIC_CLK_AUDIF_CK_PDN , 0x1);
-			pmic_set_register_value(PMIC_CLK_AUD_CK_PDN , 0x1);
-			/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
+			Ana_Set_Reg(MT6353_CLK_CKPDN_CON0_SET, 0x0070, 0x0070);
 		}
 
 		if (TopCkCount <= 0) {
@@ -1471,8 +1462,8 @@ static void TurnOffDacPower(void)
 	Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON3, 0x0001, 0xffff);	/* Disable NCP */
 	/* upmu_set_rg_vio18_cal(0);// for MT6328 E1 VIO18 patch only */
 	NvregEnable(false);
-	ClsqEnable(false);
 	Topck_Enable(false);
+	ClsqEnable(false);
 	audckbufEnable(false);
 }
 
