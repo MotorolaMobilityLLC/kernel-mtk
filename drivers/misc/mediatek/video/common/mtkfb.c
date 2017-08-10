@@ -408,6 +408,14 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 		dst->src_fmt = DISP_FORMAT_UYVY;
 		break;
 
+	case MTK_FB_FORMAT_BGRA8888:
+		dst->src_fmt = DISP_FORMAT_BGRA8888;
+		break;
+
+	case MTK_FB_FORMAT_RGBX8888:
+		dst->src_fmt = DISP_FORMAT_RGBX8888;
+		break;
+
 	default:
 		DISPERR("Invalid color format: 0x%x\n", src->src_fmt);
 		return -1;
@@ -764,7 +772,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	case 32:
 		fb_layer.src_use_color_key = 0;
 		DISPMSG("set_par,var->blue.offset=%d\n", var->blue.offset);
-		fb_layer.src_fmt = (0 == var->blue.offset) ?  MTK_FB_FORMAT_ARGB8888 : MTK_FB_FORMAT_ABGR8888;
+		fb_layer.src_fmt = (0 == var->blue.offset) ?  MTK_FB_FORMAT_BGRA8888 : MTK_FB_FORMAT_RGBX8888;
 		fb_layer.src_color_key = 0;
 		break;
 
