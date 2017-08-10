@@ -3,6 +3,8 @@
 struct alsps_context *alsps_context_obj = NULL;
 struct platform_device *pltfm_dev;
 
+/* AAL default delay timer(nano seconds)*/
+#define AAL_DELAY	200000000
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
 
@@ -253,6 +255,8 @@ static int als_real_enable(int enable)
 				if (err)
 					ALSPS_ERR("alsps enable(%d) err = %d\n", enable, err);
 
+			} else {
+				err = cxt->als_ctl.batch(0, AAL_DELAY, 0);
 			}
 			ALSPS_LOG("alsps real disable\n");
 		}
@@ -438,6 +442,9 @@ static ssize_t als_store_delay(struct device *dev, struct device_attribute *attr
 		return count;
 	}
 
+	if (aal_use)
+		delay = delay < AAL_DELAY ? delay : AAL_DELAY;
+
 	if (false == cxt->als_ctl.is_report_input_direct) {
 		mdelay = (int)delay/1000/1000;
 		atomic_set(&alsps_context_obj->delay_als, mdelay);
@@ -468,6 +475,9 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
 		ALSPS_ERR("als_store_batch param error: err = %d\n", err);
+
+	if (aal_use)
+		samplingPeriodNs = samplingPeriodNs < AAL_DELAY ? samplingPeriodNs : AAL_DELAY;
 
 	ALSPS_LOG("als_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
@@ -1088,7 +1098,7 @@ int alsps_aal_enable(int enable)
 
 	if (enable == 1) {
 		if (alsps_context_obj->is_als_active_data == false) {
-			ret = cxt->als_ctl.batch(0, 200000000, 0);
+			ret = cxt->als_ctl.batch(0, AAL_DELAY, 0);
 			if (ret == 0)
 				ret = cxt->als_ctl.enable_nodata(enable);
 		}
