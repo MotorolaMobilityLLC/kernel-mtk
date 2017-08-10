@@ -5400,7 +5400,9 @@ void modem_pre_stop(void)
 
 	sdio_release_host(func);
 
-	LOGPRT(LOG_INFO, "%s %d: Enter.\n", __func__, __LINE__);
+	modem->func = NULL;
+
+	LOGPRT(LOG_INFO, "%s %d: Leave.\n", __func__, __LINE__);
 }
 
 static void modem_sdio_remove(struct sdio_func *func)
