@@ -241,7 +241,7 @@ INT32 wmt_lib_init(VOID)
 		iRet = wmt_plat_init(gDevWmt.rWmtGenConf.co_clock_flag & 0x0f);
 	else
 		iRet = wmt_plat_init(0);
-
+	gDevWmt.rWmtGenConf.co_clock_flag = wmt_plat_soc_co_clock_flag_get();
 	if (iRet) {
 		WMT_ERR_FUNC("wmt_plat_init() fail(%d)\n", iRet);
 		return -3;
@@ -1935,4 +1935,8 @@ UINT32 wmt_lib_jtag_flag_set(UINT32 en)
 UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver)
 {
 	return stp_dbg_set_wifiver(wifiver);
+}
+UINT32 wmt_lib_co_clock_flag_get(VOID)
+{
+	return wmt_plat_soc_co_clock_flag_get();
 }

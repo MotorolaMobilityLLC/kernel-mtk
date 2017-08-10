@@ -323,6 +323,27 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 	return 0;
 }
 
+INT32 mtk_wcn_consys_co_clock_type(VOID)
+{
+	UINT32 retval = 0;
+	UINT32 back_up = 0;
+	UINT32 co_clock_type = 0;
+
+	/* co-clock auto detection:backup cw15,write cw15,read cw16,restore cw15, */
+	pmic_read_interface(PMIC_DCXO_CW15, &retval, 0xFFFF, 0);
+	back_up = retval;
+	pmic_config_interface(PMIC_DCXO_CW15, PMIC_DCXO_CW15_VAL, 0xFFFF, 0);
+	pmic_read_interface(PMIC_DCXO_CW16, &retval, 0xFFFF, 0);
+	pmic_config_interface(PMIC_DCXO_CW15, back_up, 0xFFFF, 0);
+	if ((retval & AP_CONSYS_NOCO_CLOCK_BITA) || (retval & AP_CONSYS_NOCO_CLOCK_BITB)) {
+		co_clock_type = 0;
+		WMT_PLAT_INFO_FUNC("pmic_register_val = 0x%x, co_clock_type = %d,TCXO mode\n", retval, co_clock_type);
+	} else if ((retval & AP_CONSYS_CO_CLOCK_BITA) || (retval & AP_CONSYS_CO_CLOCK_BITB)) {
+		co_clock_type = 1;
+		WMT_PLAT_INFO_FUNC("pmic_register_val = 0x%x, co_clock_type = %d,co-TSX mode\n", retval, co_clock_type);
+	}
+	return co_clock_type;
+}
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 {
 

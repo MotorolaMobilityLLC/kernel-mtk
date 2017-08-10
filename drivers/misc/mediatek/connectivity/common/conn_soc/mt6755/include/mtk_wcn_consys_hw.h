@@ -187,6 +187,24 @@ struct CONSYS_BASE_ADDRESS {
 /*force fw assert pattern*/
 #define EXP_APMEM_HOST_OUTBAND_ASSERT_MAGIC_W1   (0x19b30bb1)
 
+/*clock type auto detection for jade and jade minus*/
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define PMIC_DCXO_CW15						0x0D46
+#define PMIC_DCXO_CW16						0x0D48
+#define PMIC_DCXO_CW15_VAL					0x18
+#define AP_CONSYS_NOCO_CLOCK_BITA			(0x1 << 11)
+#define AP_CONSYS_NOCO_CLOCK_BITB			(0x1 << 13)
+#define AP_CONSYS_CO_CLOCK_BITA				(0x1 << 10)
+#define AP_CONSYS_CO_CLOCK_BITB				(0x1 << 12)
+#else
+#define PMIC_DCXO_CW15						0x701E
+#define PMIC_DCXO_CW16						0x7000
+#define PMIC_DCXO_CW15_VAL					0x7
+#define AP_CONSYS_NOCO_CLOCK_BITA			(0x1 << 7)
+#define AP_CONSYS_NOCO_CLOCK_BITB			(0x1 << 9)
+#define AP_CONSYS_CO_CLOCK_BITA				(0x1 << 6)
+#define AP_CONSYS_CO_CLOCK_BITB				(0x1 << 8)
+#endif
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
@@ -267,6 +285,7 @@ extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
 #if !defined(CONFIG_MTK_LEGACY)
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
+extern INT32 mtk_wcn_consys_co_clock_type(VOID);
 extern INT32 mtk_wcn_consys_set_dbg_mode(UINT32 flag);
 extern INT32 mtk_wcn_consys_set_dynamic_dump(PUINT32 buf);
 #endif /* _MTK_WCN_CMB_HW_H_ */
