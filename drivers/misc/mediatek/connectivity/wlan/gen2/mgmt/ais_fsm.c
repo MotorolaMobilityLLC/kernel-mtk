@@ -2421,6 +2421,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 						ASSERT(prBssDesc);
 						ASSERT(prBssDesc->fgIsConnecting);
 						*/
+						aisFsmStateAbort(prAdapter,
+							DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
 						break;
 					}
 					/* ASSERT(prBssDesc); */
