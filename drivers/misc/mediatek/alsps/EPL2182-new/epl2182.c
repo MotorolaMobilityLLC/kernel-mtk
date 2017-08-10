@@ -53,6 +53,7 @@
 /* TODO: change ps/als integrationtime */
 int PS_INTT = 4;
 int ALS_INTT = 7;
+int psEableTimes = 0;
 
 #define TXBYTES				2
 #define RXBYTES				2
@@ -364,7 +365,10 @@ static int elan_epl2182_psensor_enable(struct epl2182_priv *epl_data, int enable
 		       gRawData.ps_state, __func__);
 
 		int_flag = ps_state;
-		schedule_work(&epl_data->data_work);
+		if (psEableTimes == 0)
+			psEableTimes = 1;
+		else
+			schedule_work(&epl_data->data_work);
 		gRawData.ps_state = ps_state;	/* update ps state */
 		/* APS_LOG("epl2182 gRawData.ps_state = %d, %s\n", gRawData.ps_state, __func__); */
 	} else {
@@ -372,6 +376,7 @@ static int elan_epl2182_psensor_enable(struct epl2182_priv *epl_data, int enable
 		regdata = regdata | EPL_S_SENSING_MODE;
 		ret = elan_epl2182_I2C_Write(client, REG_0, W_SINGLE_BYTE, 0X02, regdata);
 		ret = elan_epl2182_I2C_Write(client, REG_9, W_SINGLE_BYTE, 0x02, EPL_INT_DISABLE | EPL_DRIVE_120MA);
+		psEableTimes = 0;
 	}
 
 
@@ -1833,11 +1838,7 @@ static int ps_get_data(int *value, int *status)
 		return -1;
 	}
 
-	err = elan_epl2182_psensor_enable(epl2182_obj, 1);
-	if (err != 0) {
-		APS_ERR("enable ps fail: %d\n", err);
-		return -1;
-	}
+	/*err = elan_epl2182_psensor_enable(epl2182_obj, 1);*/
 
 	epl2182_read_ps(epl2182_obj->client, &epl2182_obj->ps);
 
