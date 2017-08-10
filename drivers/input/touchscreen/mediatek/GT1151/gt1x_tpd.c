@@ -1166,6 +1166,7 @@ int tpd_enter_tui(void)
 	int ret = 0;
 
 	tpd_tui_flag = 1;
+	mt_eint_set_deint(10, 187);
 	GTP_INFO("[%s] enter tui", __func__);
 	return ret;
 }
@@ -1175,7 +1176,6 @@ int tpd_exit_tui(void)
 	int ret = 0;
 
 	GTP_INFO("[%s] exit TUI+", __func__);
-	tpd_reregister_from_tui();
 	mutex_lock(&tui_lock);
 	tpd_tui_flag = 0;
 	mutex_unlock(&tui_lock);
@@ -1185,6 +1185,10 @@ int tpd_exit_tui(void)
 		tpd_suspend(NULL);
 		GTP_INFO("[%s] do low power again-", __func__);
 	}
+
+	mt_eint_clr_deint(10);
+	tpd_reregister_from_tui();
+
 	GTP_INFO("[%s] exit TUI-", __func__);
 	return ret;
 }
