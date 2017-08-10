@@ -620,6 +620,21 @@ void mtk_uart_dump_history(void)
 	uart_mem_dump(rx_history.index, rx_history.buffer, UART_HISTORY_DATA_SIZE);
 }
 
+void mtk_uart_dump_reg(void)
+{
+	dump_uart_reg();
+}
+
+int mtk_uart_dump_timeout_cnt(void)
+{
+	int timeout_cnt = 0;
+	struct mtk_uart *uart;
+
+	uart = &mtk_uarts[0];
+	timeout_cnt = uart->timeout_count;
+	return timeout_cnt;
+}
+
 void update_history_byte(char is_tx, int nport, unsigned char byte)
 {
 	struct uart_history_data *x_history;
