@@ -13,29 +13,6 @@
 #ifndef __SH_SVP_H__
 #define __SH_SVP_H__
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-int svp_region_offline(phys_addr_t *pa, unsigned long *size);
-int svp_region_online(void);
-
-extern struct single_cma_registration memory_ssvp_registration;
-
-#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-extern int secmem_api_enable(u32 start, u32 size);
-extern int secmem_api_disable(void);
-extern int secmem_api_query(u32 *allocate_size);
-#else
-static inline int secmem_api_enable(u32 start, u32 size) {return 0; }
-static inline int secmem_api_disable(void) {return 0; }
-static inline int secmem_api_query(u32 *allocate_size) {return 0; }
-#endif
-
-#else
-static inline int svp_region_offline(void) { return -ENOSYS; }
-static inline int svp_region_online(void) { return -ENOSYS; }
-#endif
-
-extern struct cma *svp_contiguous_default_area;
-
 #define SVP_REGION_IOC_MAGIC		'S'
 
 #define SVP_REGION_IOC_ONLINE		_IOR(SVP_REGION_IOC_MAGIC, 2, int)
@@ -46,4 +23,36 @@ extern struct cma *svp_contiguous_default_area;
 
 void show_pte(struct mm_struct *mm, unsigned long addr);
 
+#define UPPER_LIMIT32 (1ULL << 32)
+#define UPPER_LIMIT64 (1ULL << 63)
+
+extern int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
+		u64 upper_limit);
+
+int tui_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return _tui_region_offline(pa, size, UPPER_LIMIT64);
+}
+EXPORT_SYMBOL(tui_region_offline64);
+
+int tui_region_offline(phys_addr_t *pa, unsigned long *size)
+{
+	return _tui_region_offline(pa, size, UPPER_LIMIT32);
+}
+EXPORT_SYMBOL(tui_region_offline);
+
+extern int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
+		u64 upper_limit);
+
+int svp_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return _svp_region_offline(pa, size, UPPER_LIMIT64);
+}
+EXPORT_SYMBOL(svp_region_offline64);
+
+int svp_region_offline(phys_addr_t *pa, unsigned long *size)
+{
+	return _svp_region_offline(pa, size, UPPER_LIMIT32);
+}
+EXPORT_SYMBOL(svp_region_offline);
 #endif
