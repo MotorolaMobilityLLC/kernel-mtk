@@ -48,6 +48,9 @@
 #include "musb.h"
 #include <linux/wakelock.h>
 #include <linux/version.h>
+#ifdef CONFIG_MEDIATEK_SOLUTION
+#include "aee.h"
+#endif
 
 /* data type used from mt_typdefs.h, mt_typedefs.h is removed now */
 typedef enum {

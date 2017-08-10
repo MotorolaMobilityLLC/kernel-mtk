@@ -637,7 +637,7 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb,
 	}
 }
 
-static u16 musb_h_flush_rxfifo(struct musb_hw_ep *hw_ep, u16 csr)
+u16 musb_h_flush_rxfifo(struct musb_hw_ep *hw_ep, u16 csr)
 {
 	/* we don't want fifo to fill itself again;
 	 * ignore dma (various models),

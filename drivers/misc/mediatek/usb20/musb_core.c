@@ -133,6 +133,7 @@ module_param(musb_fake_CDP, int, 0644);
 module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
 module_param(musb_host_dynamic_fifo, int, 0644);
+module_param(musb_host_dynamic_fifo_usage_msk, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;

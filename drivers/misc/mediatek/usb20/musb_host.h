@@ -110,6 +110,7 @@ static inline struct urb *next_urb(struct musb_qh *qh)
 		return NULL;
 	return list_entry(queue->next, struct urb, urb_list);
 }
+extern u16 musb_h_flush_rxfifo(struct musb_hw_ep *hw_ep, u16 csr);
 
 #ifdef MUSB_QMU_SUPPORT_HOST
 extern void musb_ep_set_qh(struct musb_hw_ep *ep, int isRx, struct musb_qh *qh);
