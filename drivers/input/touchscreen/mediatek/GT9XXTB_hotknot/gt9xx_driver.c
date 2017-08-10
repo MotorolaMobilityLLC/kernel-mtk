@@ -64,6 +64,8 @@
 #endif
 
 int touch_irq;
+int touch_regulator_en = 0;
+
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 int tpdGPIOTiedtoIRQ = 0;
 #endif
@@ -1482,24 +1484,25 @@ reset_proc:
 #endif
 	msleep(20);
 
-#ifndef CONFIG_GTP_POWER_CTRL_BY_EMMC
 #ifdef TPD_POWER_SOURCE_CUSTOM
+	if (touch_regulator_en == 0) {
 #ifdef CONFIG_GTP_POWER_SOURCE_3300
-	ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
+		ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
 #else
-	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
+		ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
 #endif
-	if (ret)
-		GTP_DEBUG("regulator_set_voltage() failed!\n");
-	ret = regulator_enable(tpd->reg);	/* enable regulator */
-	if (ret)
-		GTP_DEBUG("regulator_enable() failed!\n");
+		if (ret)
+			GTP_DEBUG("regulator_set_voltage() failed!\n");
+		ret = regulator_enable(tpd->reg);	/* enable regulator */
+		touch_regulator_en = 1;
+		if (ret)
+			GTP_DEBUG("regulator_enable() failed!\n");
+	}
 #else
 	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
 #endif
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerOn(TPD_POWER_SOURCE_1800, VOL_1800, "TP");
-#endif
 #endif
 
 	gtp_reset_guitar(client, 20);
@@ -2084,11 +2087,13 @@ void force_reset_guitar(void)
 	tpd_gpio_output(GTP_INT_PORT, 0);
 #endif
 	/* Power off TP */
-#ifndef CONFIG_GTP_POWER_CTRL_BY_EMMC
 #ifdef TPD_POWER_SOURCE_CUSTOM
-	ret = regulator_disable(tpd->reg);
-	if (ret)
-		GTP_DEBUG("regulator_disable() failed!\n");
+	if (touch_regulator_en == 1) {
+		ret = regulator_disable(tpd->reg);
+		touch_regulator_en = 0;
+		if (ret)
+			GTP_DEBUG("regulator_disable() failed!\n");
+	}
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
 #endif
@@ -2099,21 +2104,23 @@ void force_reset_guitar(void)
 
 	/* Power on TP */
 #ifdef TPD_POWER_SOURCE_CUSTOM
+	if (touch_regulator_en == 0) {
 #ifdef CONFIG_GTP_POWER_SOURCE_3300
-	ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
+		ret = regulator_set_voltage(tpd->reg, 3300000, 3300000);
 #else
-	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
+		ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
 #endif
-	if (ret)
-		GTP_DEBUG("regulator_set_voltage() failed!\n");
-	ret = regulator_enable(tpd->reg);	/* enable regulator */
-	if (ret)
-		GTP_DEBUG("regulator_enable() failed!\n");
+		if (ret)
+			GTP_DEBUG("regulator_set_voltage() failed!\n");
+		ret = regulator_enable(tpd->reg);	/* enable regulator */
+		touch_regulator_en = 1;
+		if (ret)
+			GTP_DEBUG("regulator_enable() failed!\n");
+	}
 #else
 	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
 #endif
 	msleep(30);
-#endif
 
 	for (i = 0; i < 5; i++) {
 		/* Reset Guitar */
@@ -2820,12 +2827,10 @@ exit_work_func:
 
 static int tpd_local_init(void)
 {
-#ifndef CONFIG_GTP_POWER_CTRL_BY_EMMC
 #ifdef TPD_POWER_SOURCE_CUSTOM
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
 	if (IS_ERR(tpd->reg))
 		GTP_ERROR("regulator_get() failed!\n");
-#endif
 #endif
 
 #if defined(CONFIG_GTP_ESD_PROTECT)
@@ -2979,18 +2984,19 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 	tpd_gpio_output(GTP_INT_PORT, 0);
 #endif
 	msleep(20);
-#ifndef CONFIG_GTP_POWER_CTRL_BY_EMMC
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
 #endif
 
 #ifdef TPD_POWER_SOURCE_CUSTOM
-	ret = regulator_disable(tpd->reg);	/* disable regulator */
-	if (ret)
-		GTP_DEBUG("regulator_disable() failed!\n");
+	if (touch_regulator_en == 1) {
+		ret = regulator_disable(tpd->reg);	/* disable regulator */
+		touch_regulator_en = 0;
+		if (ret)
+			GTP_DEBUG("regulator_disable() failed!\n");
+	}
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
-#endif
 #endif
 
 	GTP_INFO("GTP enter sleep by poweroff!");
@@ -3317,19 +3323,20 @@ static struct tpd_driver_t tpd_device_driver = {
 
 static void tpd_off(void)
 {
-#ifndef CONFIG_GTP_POWER_CTRL_BY_EMMC
 #ifdef TPD_POWER_SOURCE_CUSTOM
-	int ret = 0;
+	if (touch_regulator_en == 1) {
+		int ret = 0;
 
-	ret = regulator_disable(tpd->reg);	/* disable regulator */
-	if (ret)
-		GTP_DEBUG("regulator_disable() failed!\n");
+		ret = regulator_disable(tpd->reg);	/* disable regulator */
+		touch_regulator_en = 0;
+		if (ret)
+			GTP_DEBUG("regulator_disable() failed!\n");
+	}
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
 #endif
 #ifdef TPD_POWER_SOURCE_1800
 	hwPowerDown(TPD_POWER_SOURCE_1800, "TP");
-#endif
 #endif
 	GTP_INFO("GTP enter sleep!");
 

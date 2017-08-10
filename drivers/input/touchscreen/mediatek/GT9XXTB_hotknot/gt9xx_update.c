@@ -243,9 +243,10 @@ static u8 gup_get_ic_fw_msg(struct i2c_client *client)
 
 		update_msg.force_update = buf[GTP_ADDR_LENGTH];
 
-		if ((0xBE != update_msg.force_update) && (!retry)) {
+		if (0xBE != update_msg.force_update) {
 			GTP_INFO("The check sum in ic is error.");
 			GTP_INFO("The IC will be updated by force.");
+			usleep_range(5000, 5001);
 			continue;
 		}
 		break;
@@ -1972,6 +1973,8 @@ s32 gup_update_proc(void *dir)
 		GTP_ERROR("[update_proc]Check *.bin file fail.");
 		goto file_fail;
 	}
+
+	load_fw_process = 1;
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
 	if (true == tpdIrqIsEnabled) {
 		disable_irq(touch_irq);
@@ -2094,6 +2097,7 @@ file_fail:
 	}
 #endif
 
+	load_fw_process = 0;
 	total_len = 100;
 	if (SUCCESS == update_ret) {
 		show_len = 100;
@@ -2184,15 +2188,23 @@ u8 gup_check_fs_mounted(char *path_name)
 
 	err = kern_path(path_name, LOOKUP_FOLLOW, &path);
 
-	if (err)
-		return FAIL;
+	if (err) {
+		err = FAIL;
+		goto exit_chk;
+	}
 
 	if (path.mnt->mnt_sb == root_path.mnt->mnt_sb) {
 		/* -- not mounted */
-		return FAIL;
+		err = FAIL;
 	} else {
-		return SUCCESS;
+		err = SUCCESS;
 	}
+
+	path_put(&path);
+exit_chk:
+	path_put(&root_path);
+
+	return err;
 }
 
 s32 gup_hold_ss51_dsp(struct i2c_client *client)
@@ -3310,9 +3322,15 @@ s32 gup_load_fx_system(void)
 	char *firmware = NULL;
 	u32 is_load_from_file = 0;
 	u32 length = 0;
+	u8 retry = 20;
 
 	GTP_INFO("[load_fx_system] Load authorization system.");
 
+	while (load_fw_process && retry--) {
+		GTP_INFO("%s:	waiting for fw download finished", __func__);
+		ssleep(2);
+	}
+	load_fw_process = 1;
 	firmware = gtp_default_FW_hotknot2;
 
 #if defined(CONFIG_GTP_AUTO_UPDATE)
@@ -3348,6 +3366,7 @@ load_fx_exit:
 	if (is_load_from_file)
 		kfree(firmware);
 
+	load_fw_process = 0;
 	return ret;
 }
 
@@ -3432,6 +3451,8 @@ load_hotknot_exit:
 	if (is_load_from_file)
 		kfree(firmware);
 
+	load_fw_process = 0;
+
 	return ret;
 
 }
@@ -3462,6 +3483,7 @@ s32 gup_recovery_main_system(void)
 		return SUCCESS;
 	}
 
+	load_fw_process = 1;
 	firmware = gtp_default_FW_fl;
 
 #if defined(CONFIG_GTP_AUTO_UPDATE)
@@ -3522,6 +3544,8 @@ s32 gup_load_main_system(char *filepath)
 
 	GTP_INFO("[load_main_system] Load main system.");
 
+	load_fw_process = 1;
+
 	if (filepath != NULL) {
 		firmware = gup_load_fw_from_file(filepath);
 		if (firmware == NULL) {
@@ -3575,6 +3599,8 @@ load_main_system_exit:
 
 	if (is_load_from_file)
 		kfree(firmware);
+
+	load_fw_process = 0;
 
 	return ret;
 }
