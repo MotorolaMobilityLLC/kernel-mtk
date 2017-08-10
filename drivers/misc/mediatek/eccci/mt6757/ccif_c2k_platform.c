@@ -365,6 +365,10 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
 			     INFRA_AO_C2K_HANDSHAKE,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base, INFRA_AO_C2K_HANDSHAKE) | (0x1 << 1));
+
+		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+					(ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) &
+					(~(0x3 << 11))));
 		while (!((ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_STATUS) >> 1) & 0x1))
 			;
 
