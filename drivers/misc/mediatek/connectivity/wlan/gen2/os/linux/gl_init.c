@@ -2666,6 +2666,45 @@ bailout:
 		kalPerMonInit(prGlueInfo);
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
+#if CFG_TC10_FEATURE
+	{
+		INT_8 ucPsmFlag = 0xff;
+		INT_8 uaVerInfo[128];
+		UINT_32 u4Ret = 0;
+		PINT_8 pucPtr = &uaVerInfo[0];
+		UINT_16 u2NvramVer = 0;
+
+		memset(pucPtr, 0, sizeof(uaVerInfo));
+		/* If content in /data/.psm.info is 0, we shall disable power save */
+		if (kalReadToFile("/data/.psm.info", &ucPsmFlag, 1, NULL) == 0) {
+			if (ucPsmFlag == '0') {
+				prAdapter->fgEnDbgPowerMode = TRUE;
+				nicEnterCtiaMode(prAdapter, TRUE, FALSE);
+			}
+			DBGLOG(INIT, INFO, "/data/.psm.info = %c\n", ucPsmFlag);
+		}
+		/* Log driver version, firmware version and nvram version into /data/.wifiver.info
+		 * driver version:     DRIVER_VERSION_STRING
+		 * firmware version: prAdapter->rVerInfo.u2FwOwnVersion & prAdapter->rVerInfo.u2FwOwnVersionExtend
+		 * nvram version:    1st 2 bytes in NVRAM
+		*/
+		kalCfgDataRead16(prGlueInfo,
+				 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, u2Part1OwnVersion), &u2NvramVer);
+		SPRINTF(pucPtr, ("%s\nDRIVER_VER: %s\nFW_VER: %x.%x.%x\nNVRAM: 0x%x\n",
+			"Mediatek",
+			NIC_DRIVER_VERSION_STRING,
+			prAdapter->rVerInfo.u2FwOwnVersion >> 8,
+			prAdapter->rVerInfo.u2FwOwnVersion & 0xff,
+			prAdapter->rVerInfo.u2FwOwnVersionExtend,
+			u2NvramVer));
+		u4Ret = kalWriteToFile("/data/.wifiver.info", FALSE, uaVerInfo, sizeof(uaVerInfo));
+		if (u4Ret < 0)
+			DBGLOG(INIT, WARN, "version info write failured, ret:%d\n", u4Ret);
+		else
+			DBGLOG(INIT, INFO, "version info write succeed, ret:%d\n", u4Ret);
+
+	}
+#endif
 	} else {
 		/* we don't care the return value of mtk_wcn_set_connsys_power_off_flag,
 		 * because even this function returns
