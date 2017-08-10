@@ -2756,7 +2756,6 @@ bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 	if (MemBlock >= 0 && MemBlock < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE) {
 		AFE_BLOCK_T *pBlock = &AFE_Mem_Control_context[MemBlock]->rBlock;
 
-		memset_io(pBlock->pucVirtBufAddr, 0, pBlock->u4BufferSize);
 		pBlock->u4WriteIdx = 0;
 		pBlock->u4DMAReadIdx = 0;
 		pBlock->u4DataRemained = 0;
