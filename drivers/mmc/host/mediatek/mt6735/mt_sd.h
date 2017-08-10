@@ -1212,10 +1212,8 @@ struct msdc_host {
 	u32 read_timeout_emmc;
 	u8 autocmd;
 	u32 sw_timeout;
-	u32 power_cycle;	/* power cycle done in tuning flow */
-	bool power_cycle_enable;	/*Enable power cycle */
-	u32 continuous_fail_request_count;
-	u32 sd_30_busy;
+	u8 power_cycle_cnt;
+	u8 is_in_power_tune;
 	bool tune;
 
 #define MSDC_VIO18_MC1	(0)
