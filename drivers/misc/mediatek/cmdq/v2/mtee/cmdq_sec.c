@@ -38,6 +38,7 @@ static cmdqSecContextHandle gCmdqSecContextHandle;	/* secure context to cmdqSecT
 static KREE_SHAREDMEM_HANDLE gCmdq_share_cookie_handle;
 #endif
 static uint32_t gSecPrintCount;
+static uint32_t gSubmitTaskCount;
 
 /*
 ** for CMDQ_LOG_LEVEL
@@ -483,6 +484,10 @@ static int32_t cmdq_sec_execute_session_unlocked(cmdqSecContextHandle handle)
 		CMDQ_MSG("commandID:%d\n", ((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd);
 		CMDQ_MSG("handle->sessionHandle:%x\n", handle->sessionHandle);
 		CMDQ_MSG("start to enter Secure World\n");
+
+		if (CMD_CMDQ_TL_SUBMIT_TASK ==
+		    ((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd)
+			gSubmitTaskCount++;
 		tzRes =
 		    KREE_TeeServiceCall(handle->sessionHandle,
 					((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd,
@@ -813,6 +818,10 @@ int32_t cmdq_sec_cancel_error_task_unlocked(struct TaskStruct *pTask, int32_t th
 	status = cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_CANCEL_TASK,
 								pTask, thread, NULL,
 								(void *)pResult, true);
+
+	if (status <= 0)
+		CMDQ_ERR("gSubmitTaskCount:%u\n", gSubmitTaskCount);
+
 	return status;
 #else
 	CMDQ_ERR("secure path not support\n");
