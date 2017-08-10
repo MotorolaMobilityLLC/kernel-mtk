@@ -635,3 +635,28 @@ bool mtk_get_vsync_offset_debug_status(unsigned int* pui32DebugStatus)
 }
 EXPORT_SYMBOL(mtk_get_vsync_offset_debug_status);
 
+/* ----------------------------------------------------------------------------- */
+
+int (*mtk_get_gpu_pmu_init_fp)(GPU_PMU *pmus, int pmu_size, int *ret_size);
+EXPORT_SYMBOL(mtk_get_gpu_pmu_init_fp);
+
+bool mtk_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size)
+{
+	if (NULL != mtk_get_gpu_pmu_init_fp)
+		return mtk_get_gpu_pmu_init_fp(pmus, pmu_size, ret_size) == 0;
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_pmu_init);
+
+/* ----------------------------------------------------------------------------- */
+
+int (*mtk_get_gpu_pmu_swapnreset_fp)(GPU_PMU *pmus, int pmu_size);
+EXPORT_SYMBOL(mtk_get_gpu_pmu_swapnreset_fp);
+
+bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size)
+{
+	if (NULL != mtk_get_gpu_pmu_swapnreset_fp)
+		return mtk_get_gpu_pmu_swapnreset_fp(pmus, pmu_size) == 0;
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_pmu_swapnreset);
