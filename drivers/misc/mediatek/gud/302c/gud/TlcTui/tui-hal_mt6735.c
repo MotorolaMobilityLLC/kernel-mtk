@@ -14,17 +14,21 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/fb.h>
+#include <linux/delay.h>
 
 #include <t-base-tui.h>
+#include <mach/mt_clkmgr.h>
 
 #include "tui_ioctl.h"
 #include "dciTui.h"
 #include "tlcTui.h"
 #include "tui-hal.h"
-#include <linux/delay.h>
+/*
+#include "secmem.h"
+#include "disp_tui.h"
+*/
 
-#include <mach/mt_clkmgr.h>
-
+#include "tui-hal_mt6735.h"
 
 #define TUI_MEMPOOL_SIZE 0
 
@@ -37,22 +41,9 @@ struct tui_mempool {
 	size_t size;
 };
 
-/* for TUI EINT mepping to Security World */
-extern void gt1x_power_reset(void);
-extern int mt_eint_set_deint(int eint_num, int irq_num);
-extern int mt_eint_clr_deint(int eint_num);
-extern int tpd_reregister_from_tui(void);
-extern int tpd_enter_tui(void);
-extern int tpd_exit_tui(void);
-extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
-	uint8_t *owner, uint32_t id);
-extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
-extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
-extern int tui_region_online(void);
 static struct tui_mempool g_tui_mem_pool;
-static int g_tui_secmem_handle;
-extern int display_enter_tui(void);
-extern int display_exit_tui(void);
+static u32 g_tui_secmem_handle;
+
 /* basic implementation of a memory pool for TUI framebuffer.  This
  * implementation is using kmalloc, for the purpose of demonstration only.
  * A real implementation might prefer using more advanced allocator, like ION,
@@ -155,9 +146,13 @@ uint32_t hal_tui_alloc(
 	tuiAllocBuffer_t *allocbuffer, size_t allocsize, uint32_t number)
 {
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
-	phys_addr_t pa;
-	u32 sec_handle = 0;
+#ifndef CONFIG_CMA
+	u32 refcount = 0;
+	u32 sec_pa = 0;
+#else
+	phys_addr_t pa = 0;
 	unsigned long size = 0;
+#endif
 
 	if (!allocbuffer) {
 		pr_debug("%s(%d): allocbuffer is null\n", __func__, __LINE__);
@@ -178,29 +173,45 @@ uint32_t hal_tui_alloc(
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 
-	/*ret = secmem_api_alloc(4096, allocsize*number+TUI_EXTRA_MEM_SIZE, &refcount,
-		&sec_handle, __func__, __LINE__);*/
+#ifndef CONFIG_CMA
+	ret = secmem_api_alloc_pa(4096, allocsize*number+TUI_EXTRA_MEM_SIZE, &refcount,
+		&sec_pa, (uint8_t *)__func__, __LINE__);
+	pr_err("%s: sec_pa=%x ret=%d", __func__, sec_pa, (int)ret);
+	if (ret) {
+		pr_err("%s(%d): secmem_api_alloc failed! ret=%d\n",
+			 __func__, __LINE__, ret);
+		return TUI_DCI_ERR_INTERNAL_ERROR;
+	}
+#else
 	ret = tui_region_offline(&pa, &size);
+	pr_debug("tui pa=0x%x, size=0x%lx", (uint32_t)pa, size);
 	if (ret) {
 		pr_err("%s(%d): tui_region_offline failed!\n",
 			 __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
+#endif
 
 	if (ret == 0) {
-		g_tui_secmem_handle = pa;
+#ifndef CONFIG_CMA
+		g_tui_secmem_handle = sec_pa;
+		allocbuffer[0].pa = (uint64_t) sec_pa;
+		allocbuffer[1].pa = (uint64_t) (sec_pa + allocsize);
+#else
+		g_tui_secmem_handle = (u32)pa;
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
+#endif
+	} else {
+		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
-	pr_debug("tui pa=0x%x, size=0x%lx", (uint32_t)pa, size);
 
-	pr_debug("tui-hal allocasize=%zu number=%d, extra=%d\n", allocsize, number, TUI_EXTRA_MEM_SIZE);
+	pr_debug("tui-hal allocasize=%ld number=%d, extra=%d\n", allocsize, number, TUI_EXTRA_MEM_SIZE);
 	pr_debug("%s(%d): allocated at %llx\n", __func__, __LINE__,
 			allocbuffer[0].pa);
 	pr_debug("%s(%d): allocated at %llx\n", __func__, __LINE__,
 			allocbuffer[1].pa);
 
-	pr_debug("%s: sec_handle=%x ret=%d", __func__, sec_handle, (int)ret);
 	return TUI_DCI_OK;
 
 #if 0
@@ -236,8 +247,11 @@ void hal_tui_free(void)
 {
 	pr_info("[TUI-HAL] hal_tui_free()\n");
 	if (g_tui_secmem_handle) {
-		//secmem_api_unref(g_tui_secmem_handle, __func__, __LINE__);
+#ifndef CONFIG_CMA
+		secmem_api_unref_pa(g_tui_secmem_handle, (uint8_t *)__func__, __LINE__);
+#else
 		tui_region_online();
+#endif
 		g_tui_secmem_handle = 0;
 	}
 }
@@ -266,13 +280,16 @@ uint32_t hal_tui_deactivate(void)
 	 * This can be done by calling the fb_blank(FB_BLANK_POWERDOWN) function
 	 * on the appropriate framebuffer device
 	 */
-	tpd_enter_tui();
-	mt_eint_set_deint(10, 187);
+
+	 tpd_enter_tui();
+#if 0
     enable_clock(MT_CG_PERI_I2C0, "i2c");
     enable_clock(MT_CG_PERI_I2C1, "i2c");
     enable_clock(MT_CG_PERI_I2C2, "i2c");
     enable_clock(MT_CG_PERI_I2C3, "i2c");
 	enable_clock(MT_CG_PERI_APDMA, "i2c");
+#endif
+	i2c_tui_enable_clock();
 
 	//gt1x_power_reset();
 
@@ -317,16 +334,16 @@ uint32_t hal_tui_activate(void)
 	 * on the appropriate framebuffer device
 	 */
 	/* Clear linux TUI flag */
-	mt_eint_clr_deint(10);
-	tpd_exit_tui();
-	tpd_reregister_from_tui();
-	//gt1x_power_reset();
 
+	tpd_exit_tui();
+#if 0
     disable_clock(MT_CG_PERI_I2C0, "i2c");
     disable_clock(MT_CG_PERI_I2C1, "i2c");
     disable_clock(MT_CG_PERI_I2C2, "i2c");
     disable_clock(MT_CG_PERI_I2C3, "i2c");
 	disable_clock(MT_CG_PERI_APDMA, "i2c");
+#endif
+	i2c_tui_disable_clock();
 
 	display_exit_tui();
 
@@ -336,3 +353,47 @@ uint32_t hal_tui_activate(void)
 	return TUI_DCI_OK;
 }
 
+int __weak tui_region_offline(phys_addr_t *pa, unsigned long *size)
+{
+	return -1;
+}
+
+int __weak tui_region_online(void)
+{
+	return 0;
+}
+
+int __weak tpd_reregister_from_tui(void)
+{
+	return 0;
+}
+
+int __weak tpd_enter_tui(void)
+{
+	return 0;
+}
+
+int __weak tpd_exit_tui(void)
+{
+	return 0;
+}
+
+int __weak display_enter_tui(void)
+{
+	return 0;
+}
+
+int __weak display_exit_tui(void)
+{
+	return 0;
+}
+
+int __weak i2c_tui_enable_clock(void)
+{
+	return 0;
+}
+
+int __weak i2c_tui_disable_clock(void)
+{
+	return 0;
+}
