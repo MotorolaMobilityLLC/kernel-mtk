@@ -33,6 +33,9 @@
 
 #define CLKDBG_PM_DOMAIN	0
 #define CLKDBG_CCF_API_4_4	0
+#define CLKDBG_HACK_CLK		1
+#define CLKDBG_HACK_CLK_CORE	0
+
 
 #if !CLKDBG_CCF_API_4_4
 
@@ -70,6 +73,49 @@ static struct clk_hw *clk_hw_get_parent_by_index(const struct clk_hw *hw,
 }
 
 #endif /* !CLKDBG_CCF_API_4_4 */
+
+#if CLKDBG_HACK_CLK
+
+#include <linux/clk-private.h>
+
+static int clk_hw_is_on(struct clk_hw *hw)
+{
+	const struct clk_ops *ops = hw->clk->ops;
+
+	if (ops->is_enabled)
+		return clk_hw_is_enabled(hw);
+	else if (ops->is_prepared)
+		return clk_hw_is_prepared(hw);
+	return clk_hw_is_enabled(hw) || clk_hw_is_prepared(hw);
+}
+
+#elif CLKDBG_HACK_CLK_CORE
+
+struct clk_core {
+	const char		*name;
+	const struct clk_ops	*ops;
+	struct clk_hw		*hw;
+};
+
+static int clk_hw_is_on(struct clk_hw *hw)
+{
+	const struct clk_ops *ops = hw->core->ops;
+
+	if (ops->is_enabled)
+		return clk_hw_is_enabled(hw);
+	else if (ops->is_prepared)
+		return clk_hw_is_prepared(hw);
+	return clk_hw_is_enabled(hw) || clk_hw_is_prepared(hw);
+}
+
+#else
+
+static int clk_hw_is_on(struct clk_hw *hw)
+{
+	return __clk_get_enable_count(hw->clk) || clk_hw_is_prepared(hw);
+}
+
+#endif /* !CLKDBG_HACK_CLK && !CLKDBG_HACK_CLK_CORE */
 
 static const struct clkdbg_ops *clkdbg_ops;
 
@@ -328,8 +374,7 @@ static void dump_clk_state(const char *clkname, struct seq_file *s)
 
 	seq_printf(s, "[%-17s: %3s, %3d, %3d, %10ld, %17s]\n",
 		clk_hw_get_name(c_hw),
-		(clk_hw_is_enabled(c_hw) || clk_hw_is_prepared(c_hw)) ?
-			"ON" : "off",
+		clk_hw_is_on(c_hw) ? "ON" : "off",
 		clk_hw_is_prepared(c_hw),
 		__clk_get_enable_count(c),
 		clk_hw_get_rate(c_hw),
@@ -440,8 +485,7 @@ static void dump_provider_clk(struct provider_clk *pvdck, struct seq_file *s)
 	seq_printf(s, "[%10s: %-17s: %3s, %3d, %3d, %10ld, %17s]\n",
 		pvdck->provider_name ? pvdck->provider_name : "/ ",
 		clk_hw_get_name(c_hw),
-		(clk_hw_is_enabled(c_hw) || clk_hw_is_prepared(c_hw)) ?
-			"ON" : "off",
+		clk_hw_is_on(c_hw) ? "ON" : "off",
 		clk_hw_is_prepared(c_hw),
 		__clk_get_enable_count(c),
 		clk_hw_get_rate(c_hw),
@@ -479,8 +523,7 @@ static void dump_provider_mux(struct provider_clk *pvdck, struct seq_file *s)
 		seq_printf(s, "\t\t\t(%2d: %-17s: %3s, %10ld)\n",
 			i,
 			clk_hw_get_name(p_hw),
-			(clk_hw_is_enabled(p_hw) || clk_hw_is_prepared(p_hw)) ?
-				"ON" : "off",
+			clk_hw_is_on(p_hw) ? "ON" : "off",
 			clk_hw_get_rate(p_hw));
 	}
 }
@@ -1573,7 +1616,7 @@ static void save_all_clks_state(struct provider_clk_state *clks_states)
 
 		st->pvdck = pvdck;
 		st->prepared = clk_hw_is_prepared(c_hw);
-		st->enabled = clk_hw_is_enabled(c_hw);
+		st->enabled = clk_hw_is_on(c_hw);
 		st->enable_count = __clk_get_enable_count(c);
 		st->rate = clk_hw_get_rate(c_hw);
 	}
@@ -1588,8 +1631,7 @@ static void dump_provider_clk_state(struct provider_clk_state *st,
 	seq_printf(s, "[%10s: %-17s: %3s, %3d, %3d, %10ld]\n",
 		pvdck->provider_name ? pvdck->provider_name : "/ ",
 		clk_hw_get_name(c_hw),
-		(st->prepared || st->enabled) ?
-			"ON" : "off",
+		st->enabled ? "ON" : "off",
 		st->prepared,
 		st->enable_count,
 		st->rate);
