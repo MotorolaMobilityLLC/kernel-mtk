@@ -1072,7 +1072,7 @@ int rt_regmap_cache_init(struct rt_regmap_device *rd)
 
 	if (rd->props.group == NULL) {
 		rd->props.group = devm_kzalloc(&rd->dev,
-				sizeof(rd->props.group), GFP_KERNEL);
+				sizeof(*rd->props.group), GFP_KERNEL);
 		rd->props.group[0].start = 0x00;
 		rd->props.group[0].end = 0xffff;
 		rd->props.group[0].mode = RT_1BYTE_MODE;
@@ -1841,10 +1841,10 @@ static void rt_create_every_debug(struct rt_regmap_device *rd,
 	for (i = 0; i < rd->props.register_num; i++) {
 		sprintf(buf, "reg0x%02x", (rd->props.rm[i])->addr);
 		rd->rt_reg_file[i] = devm_kzalloc(&rd->dev,
-						  sizeof(rd->rt_reg_file[i]),
+						  sizeof(*rd->rt_reg_file[i]),
 						  GFP_KERNEL);
 		rd->reg_st[i] =
-		    devm_kzalloc(&rd->dev, sizeof(rd->reg_st[i]), GFP_KERNEL);
+		    devm_kzalloc(&rd->dev, sizeof(*rd->reg_st[i]), GFP_KERNEL);
 
 		rd->reg_st[i]->info = rd;
 		rd->reg_st[i]->id = i;
@@ -1993,8 +1993,11 @@ struct rt_regmap_device *rt_regmap_device_register
 	dev_set_drvdata(&rd->dev, drvdata);
 	sprintf(device_name, "rt_regmap_%s", props->name);
 	dev_set_name(&rd->dev, device_name);
-	if (props)
-		memcpy(&rd->props, props, sizeof(struct rt_regmap_properties));
+	if (!props) {
+		devm_kfree(parent, rd);
+		return NULL;
+	}
+	memcpy(&rd->props, props, sizeof(struct rt_regmap_properties));
 
 	/* check rt_registe_map format */
 	ret = rt_regmap_check(rd);

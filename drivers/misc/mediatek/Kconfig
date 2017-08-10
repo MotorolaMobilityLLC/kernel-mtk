@@ -387,6 +387,7 @@ source "drivers/misc/mediatek/trustzone/Kconfig"
 source "drivers/misc/mediatek/vow/Kconfig"
 source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/rt-regmap/Kconfig"
+source "drivers/misc/mediatek/pd/Kconfig"
 
 endmenu    # Misc
 
