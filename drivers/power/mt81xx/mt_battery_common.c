@@ -447,13 +447,7 @@ static int usb_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-#if defined(CONFIG_POWER_EXT)
-		/* #if 0 */
-		data->USB_ONLINE = 1;
 		val->intval = data->USB_ONLINE;
-#else
-		val->intval = data->USB_ONLINE;
-#endif
 		break;
 	default:
 		ret = -EINVAL;
@@ -1765,6 +1759,8 @@ static void battery_update(struct battery_data *bat_data)
 	power_supply_changed(bat_psy);
 }
 
+#endif
+
 static void ac_update(struct ac_data *ac_data)
 {
 	static int ac_status = -1;
@@ -1815,8 +1811,6 @@ static void usb_update(struct usb_data *usb_data)
 		power_supply_changed(usb_psy);
 	}
 }
-
-#endif
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // Battery Temprature Parameters and functions */
@@ -2548,17 +2542,12 @@ static void mt_battery_charger_detect_check(void)
 
 static void mt_battery_update_status(void)
 {
-#if defined(CONFIG_POWER_EXT)
-	battery_log(BAT_LOG_CRTI, "[BATTERY] CONFIG_POWER_EXT, no update Android.\n");
-#else
-	{
-		if (battery_meter_initilized == true)
-			battery_update(&battery_main);
-
-		ac_update(&ac_main);
-		usb_update(&usb_main);
-	}
+#if !defined(CONFIG_POWER_EXT)
+	if (battery_meter_initilized == true)
+		battery_update(&battery_main);
 #endif
+	ac_update(&ac_main);
+	usb_update(&usb_main);
 }
 
 static void do_chrdet_int_task(void)
@@ -2574,8 +2563,7 @@ static void do_chrdet_int_task(void)
 #if defined(CONFIG_POWER_EXT)
 			bat_charger_type_detection();
 			mt_usb_connect();
-			battery_log(BAT_LOG_CRTI,
-				    "[do_chrdet_int_task] call mt_usb_connect() in EVB\n");
+			pr_notice("[do_chrdet_int_task] call mt_usb_connect() in EVB\n");
 #endif
 		} else {
 			pr_debug("[do_chrdet_int_task] charger NOT exist!\n");
@@ -2764,6 +2752,10 @@ EXPORT_SYMBOL(bat_detect_set_usb_host_mode);
 static int bat_setup_charger_locked(void)
 {
 	int ret = -EAGAIN;
+
+#if defined(CONFIG_POWER_EXT)
+	g_bat.usb_connect_ready = true;
+#endif
 
 	if (g_bat.common_init_done && g_bat.charger && !g_bat.init_done) {
 
