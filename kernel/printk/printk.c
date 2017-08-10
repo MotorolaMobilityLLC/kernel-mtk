@@ -63,9 +63,21 @@
 bool overflow_info_flag = false;
 u64 overflow_gap = 0;
 
-/* Console duration timer */
+/* ****************************************
+*
+*Console lock duration timer
+*
+******************************************/
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
 u64 con_dura_time;
+/* for console access logbuf_lock */
+u64 accum_t0;
+/* for console write  */
+u64 accum_t1;
+u64 accum_t2;
+size_t len_1;
+size_t len_2;
+
 #endif
 
 int printk_too_much_enable = 0;
@@ -1636,16 +1648,11 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	char con_name[64];
 	int index = 0;
 
-	static u64 refer_t;
 	u64 tmp1 = 0, tmp2 = 0, differ;
-	static u64 accum_t1;
-	static u64 accum_t2;
-	static size_t len_1;
-	static size_t len_2;
 
 	unsigned long rem_nsec;
 	u64 quot;
-	char aee_str[63];
+	char aee_str[80];
 	char cur_time[32];
 	int idx = 0;
 #endif
@@ -1690,9 +1697,8 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	}
 
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	/* console duration over 20 seconds, Calc console write rate recently */
-	if ((local_clock() - con_dura_time) > 20000000000) {
-
+	/* console duration over 15 seconds, Calc console write rate recently */
+	if ((local_clock() - con_dura_time) > 15000000000) {
 		/* stat console list */
 		memset(con_name, 0x00, sizeof(con_name));
 		for_each_console(con) {
@@ -1709,24 +1715,20 @@ static void call_console_drivers(int level, const char *text, size_t len)
 		rem_nsec = do_div(quot, 1000000000);
 		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "pstore: %llu.%06lu, %lu ",
 							quot, rem_nsec/1000, (unsigned long)len_2);
+		quot = accum_t0;
+		rem_nsec = do_div(quot, 1000000000);
+		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "spin: %llu.%06lu ",
+							quot, rem_nsec/1000);
 
 		memset(cur_time, 0x00, sizeof(cur_time));
 		rem_nsec = do_div(tmp2, 1000000000);
 		scnprintf(cur_time, sizeof(cur_time), "[%llu.%06lu]", tmp2, rem_nsec/1000);
 
-		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,	"Console Lock dur over 20 seconds",
-			"Exec cpu: %d, %s, Conlist(%d): %s %s", smp_processor_id(), aee_str, cnt, con_name, cur_time);
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
+			"Console Lock dur over 15 seconds", "%s %s, cpu: %d, ConList(%d): %s", cur_time,
+					aee_str, smp_processor_id(), cnt, con_name);
 
 		con_dura_time = local_clock();
-	}
-
-	/* Per 10 seconds, reset all var */
-	if ((local_clock() - refer_t) > 10000000000) {
-		refer_t = local_clock();
-		accum_t1 = 0;
-		accum_t2 = 0;
-		len_1 = 0;
-		len_2 = 0;
 	}
 #endif
 }
@@ -2589,7 +2591,13 @@ void console_unlock(void)
 	unsigned long rem_nsec;
 #endif
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	u64 tmp1 = 0, tmp2 = 0;
 	con_dura_time = local_clock();
+	accum_t0 = 0;
+	accum_t1 = 0;
+	accum_t2 = 0;
+	len_1 = 0;
+	len_2 = 0;
 #endif
 	if (console_suspended) {
 		up_console_sem();
@@ -2616,7 +2624,9 @@ again:
 		struct printk_log *msg;
 		size_t len;
 		int level;
-
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+		tmp1 = local_clock();
+#endif
 		raw_spin_lock_irqsave(&logbuf_lock, flags);
 		if (seen_seq != log_next_seq) {
 			wake_klogd = true;
@@ -2663,7 +2673,10 @@ skip:
 		console_seq++;
 		console_prev = msg->flags;
 		raw_spin_unlock(&logbuf_lock);
-
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+		tmp2 = local_clock();
+		accum_t0 += tmp2 - tmp1;
+#endif
 		stop_critical_timings();	/* don't trace print latency */
 #if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 		if (flag_toomuch == true) {
