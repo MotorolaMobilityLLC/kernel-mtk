@@ -35,7 +35,7 @@ struct pcm_desc {
 	u32 vec1;		/* event vector 1 config */
 };
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 static const u32 dvfs_binary[] = {
 	0x1ad0001f, 0x1022761c, 0x8ac0000b, 0x0000000f, 0x12c02c1f, 0xf0000000,
 	0x17c07c1f, 0x1850001f, 0x1022761c, 0x88400001, 0xfffffff0, 0xa0502c01,
@@ -364,8 +364,9 @@ static struct pcm_desc dvfs_pcm = {
 	.replace	= 0,
 	.addr_2nd	= 0,
 };
-#else
-static const u32 dvfs_binary[] = {
+#endif
+
+static const u32 dvfs_binary_6311[] = {
 	0x1ad0001f, 0x1022761c, 0x8ac0000b, 0x0000000f, 0x12c02c1f, 0xf0000000,
 	0x17c07c1f, 0x1850001f, 0x1022761c, 0x88400001, 0xfffffff0, 0xa0502c01,
 	0x18c0001f, 0x1022761c, 0xe0c00001, 0xf0000000, 0x17c07c1f, 0x1ad0001f,
@@ -682,14 +683,13 @@ static const u32 dvfs_binary[] = {
 	0x00000001, 0x18c0001f, 0x0011c314, 0x1850001f, 0x0011c314, 0x1054041f,
 	0xa0402c01, 0xe0c00001, 0xf0000000, 0x17c07c1f
 };
-static struct pcm_desc dvfs_pcm = {
+static struct pcm_desc dvfs_pcm_6311 = {
 	.version	= "pcm_dvfs_v0.1_150806_09",
-	.base		= dvfs_binary,
+	.base		= dvfs_binary_6311,
 	.size		= 1888,
 	.sess		= 2,
 	.replace	= 0,
 	.addr_2nd	= 0,
 };
-#endif
 
 #endif  /* _MT_CPUFREQ_HYBRID_FW_ */

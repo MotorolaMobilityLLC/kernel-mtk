@@ -26,6 +26,7 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_lpae.h>
 #include "mt_cpufreq_hybrid.h"
+#include "mt_cpufreq.h"		/* for ext-buck API */
 
 
 /**************************************
@@ -501,7 +502,7 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
  * [Hybrid DVFS] Declaration
  **************************************/
 static struct cpuhvfs_dvfsp g_dvfsp = {
-	.pcmdesc	= &dvfs_pcm,
+	.pcmdesc	= &dvfs_pcm_6311,
 	.pwrctrl	= &dvfs_ctrl,
 
 	.init_dvfsp	= cspm_module_init,
@@ -1720,13 +1721,22 @@ int cpuhvfs_module_init(void)
 {
 	int r;
 	struct cpuhvfs_data *cpuhvfs = &g_cpuhvfs;
+	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
 
 	if (!cpuhvfs->dbg_repo) {
 		cpuhvfs_err("FAILED TO PRE-INIT CPUHVFS\n");
 		return -ENODEV;
 	}
 
-	set_dvfsp_init_done(cpuhvfs->dvfsp);
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+	if (!is_ext_buck_exist())
+		dvfsp->pcmdesc = &dvfs_pcm;
+#endif
+
+	cpuhvfs_crit("ext_buck = %d, dvfsp_fw = %s\n",
+		     is_ext_buck_exist(), dvfsp->pcmdesc->version);
+
+	set_dvfsp_init_done(dvfsp);
 
 	r = create_cpuhvfs_debug_fs(cpuhvfs);
 	if (r) {
@@ -1756,4 +1766,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.5");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.6");
