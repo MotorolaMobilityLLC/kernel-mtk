@@ -5516,6 +5516,8 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 
 	/* if (!kstrtoint(buf, 10, &voltValue)) { */
 	if (2 == sscanf(buf, "%u %u", &voltValue, &index)) {
+		if ((index < 0) || (index > 15))
+			index = 0;
 		if ((EEM_CTRL_GPU != det->ctrl_id) && (EEM_CTRL_SOC != det->ctrl_id)) {
 			ret = 0;
 			det->recordRef[NR_FREQ * 2] = 0x00000000;
