@@ -66,7 +66,7 @@ mt6620_ampc_write(IN struct file *filp, OUT const char __user *buf, IN size_t si
 
 static long mt6620_ampc_ioctl(IN struct file *filp, IN unsigned int cmd, IN OUT unsigned long arg);
 
-static unsigned int mt6620_ampc_poll(IN struct file *filp, IN poll_table *wait);
+static unsigned int mt6620_ampc_poll(IN struct file *filp, IN poll_table * wait);
 
 static int mt6620_ampc_open(IN struct inode *inodep, IN struct file *filp);
 
@@ -366,7 +366,7 @@ static long mt6620_ampc_ioctl(IN struct file *filp, IN unsigned int cmd, IN OUT 
 *
 */
 /*----------------------------------------------------------------------------*/
-static unsigned int mt6620_ampc_poll(IN struct file *filp, IN poll_table *wait)
+static unsigned int mt6620_ampc_poll(IN struct file *filp, IN poll_table * wait)
 {
 	unsigned int retval;
 	P_GLUE_INFO_T prGlueInfo;

@@ -245,7 +245,7 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 					 TRUE,
 					 nicCmdEventSetCommon,
 					 NULL,
-					 sizeof(CMD_802_11_KEY), (PUINT_8) & rCmdKey,
+					 sizeof(CMD_802_11_KEY), (PUINT_8) &rCmdKey,
 					 pvSetBuffer, u4SetBufferLen);
 }
 

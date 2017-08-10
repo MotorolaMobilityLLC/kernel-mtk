@@ -3580,6 +3580,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #endif
 #if CFG_SUPPORT_WPS2
 				PUINT_8 prDesiredIE = NULL;
+
 				if (wextSrchDesiredWPSIE(prExtraBuf,
 							 u4ExtraSize,
 							 0xDD, (PUINT_8 *) &prDesiredIE)) {

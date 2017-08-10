@@ -313,6 +313,7 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRl
 	KAL_SPIN_LOCK_DECLARATION();
 
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
+
 	prTxCtrl = &prAdapter->rTxCtrl;
 
 	if (pu4Tmp[0] | pu4Tmp[1]) {

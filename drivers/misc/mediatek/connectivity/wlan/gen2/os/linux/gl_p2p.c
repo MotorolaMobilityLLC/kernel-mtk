@@ -1284,6 +1284,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_16 u2QueueIdx = 0;
 	P_BSS_INFO_T prP2pBssInfo = NULL;
+
 	GLUE_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prSkb);

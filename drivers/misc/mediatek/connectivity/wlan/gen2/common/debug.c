@@ -929,6 +929,7 @@ VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 uc
 {
 	static UINT_16 u2CurEntry;
 	P_TC_RES_RELEASE_ENTRY prCurBuf = &gprTcReleaseTraceBuffer[u2CurEntry];
+
 	HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurBuf->u4RelCID);
 	prCurBuf->u8RelaseTime = sched_clock();
 	prCurBuf->ucTc4RelCnt = aucTxRlsCnt[TC4_INDEX];
@@ -950,6 +951,7 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 	UINT_16 i = 0;
 	P_CMD_TRACE_ENTRY prCmd = gprCmdTraceEntry;
 	P_TC_RES_RELEASE_ENTRY prTcRel = gprTcReleaseTraceBuffer;
+
 	if (pucBuf) {
 		int bufLen = 0;
 

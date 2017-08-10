@@ -1326,6 +1326,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter)
 	UINT_32 i, j;
 	UINT_8 ucNetworkIndex;
 	BOOLEAN fgIsHiddenSSID;
+
 	ASSERT(prAdapter);
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);

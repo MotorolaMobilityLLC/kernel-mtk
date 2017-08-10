@@ -864,6 +864,7 @@ VOID statsEnvReportDetect(ADAPTER_T *prAdapter, UINT8 ucStaRecIndex)
 	STA_RECORD_T *prStaRec;
 	OS_SYSTIME rCurTime;
 	STATS_CMD_CORE_T rCmd;
+
 	prStaRec = cnmGetStaRecByIndex(prAdapter, ucStaRecIndex);
 
 	if (prStaRec == NULL) {
@@ -1039,6 +1040,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 	case ETH_P_ARP:
 	{
 		UINT_16 u2OpCode = (pucEthBody[6] << 8) | pucEthBody[7];
+
 		if (eventType == EVENT_TX)
 			prMsduInfo->fgIsBasicRate = TRUE;
 
@@ -1154,6 +1156,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 				}
 			} else if (u2UdpDstPort == UDP_PORT_DNS) { /* tx dns */
 				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
+
 				if (eventType == EVENT_TX)
 					prMsduInfo->fgIsBasicRate = TRUE;
 

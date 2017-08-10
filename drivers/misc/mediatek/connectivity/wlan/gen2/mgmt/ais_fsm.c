@@ -579,6 +579,7 @@ BOOLEAN aisFsmStateInit_RetryJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prSta
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_MSG_JOIN_REQ_T prJoinReqMsg;
 	INT_32 rssi = 0;
+
 	DEBUGFUNC("aisFsmStateInit_RetryJOIN()");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
@@ -1260,7 +1261,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
 									WLAN_STATUS_JOIN_FAILURE,
-									(PVOID) & u2StaTusCode, sizeof(u2StaTusCode));
+									(PVOID)&u2StaTusCode, sizeof(u2StaTusCode));
 
 						eNextState = AIS_STATE_IDLE;
 						fgIsTransition = TRUE;

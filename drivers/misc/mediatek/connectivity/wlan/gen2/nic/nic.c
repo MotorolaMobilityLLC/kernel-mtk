@@ -724,6 +724,7 @@ VOID nicProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 	UINT_32 u4IntrBits;
 
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+
 	u4IntrBits = prAdapter->u4IntStatus & BITS(8, 31);
 
 	prGlueInfo->IsrSoftWareCnt++;
@@ -902,6 +903,7 @@ P_MSDU_INFO_T nicGetPendingStaMMPDU(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRec
 	P_QUE_T prTempQue = &rTempQue;
 	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
 	P_MSDU_INFO_T prMsduInfo = (P_MSDU_INFO_T) NULL;
+
 	GLUE_SPIN_LOCK_DECLARATION();
 
 	if (prAdapter == NULL) {
@@ -1863,11 +1865,11 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	if (u2IELen > MAX_IE_LENGTH)
 		return WLAN_STATUS_INVALID_DATA;
 
-	if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_RANDOM || eIeUpdMethod == IE_UPD_METHOD_UPDATE_ALL) {
+	if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_RANDOM || eIeUpdMethod == IE_UPD_METHOD_UPDATE_ALL)
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
-	} else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL) {
+	else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL)
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, u2IELen);
-	}
+
 #if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
 	else if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_PROBE_RSP) {
 		DBGLOG(NIC, INFO, "update probe response temp for probe response offload to firmware\n");

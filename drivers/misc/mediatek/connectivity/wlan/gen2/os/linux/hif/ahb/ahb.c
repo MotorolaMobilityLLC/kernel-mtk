@@ -93,8 +93,7 @@
 ********************************************************************************
 */
 
-static UINT_32
-HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, IN UINT_32 BurstLen, IN UINT_32 PortId, IN UINT_32 TransByte);
+static UINT_32 HifAhbDmaEnhanceModeConf(GLUE_INFO_T *GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte);
 
 static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg);
 
@@ -708,7 +707,7 @@ BOOLEAN kalDevRegRead(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, OUT UINT_3
 
 	return TRUE;
 
-} /* end of kalDevRegRead() */
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -739,8 +738,7 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 		HIF_DBG(("[WiFi/HIF] kalDevRegWrite to Data Port 0 or 1\n"));
 
 	return TRUE;
-
-} /* end of kalDevRegWrite() */
+}
 
 
 /*----------------------------------------------------------------------------*/
@@ -1438,7 +1436,7 @@ static int HifAhbBusCntClr(VOID)
 * \return void
 */
 /*----------------------------------------------------------------------------*/
-static UINT_32 HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T * GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte)
+static UINT_32 HifAhbDmaEnhanceModeConf(GLUE_INFO_T *GlueInfo, UINT_32 BurstLen, UINT_32 PortId, UINT_32 TransByte)
 {
 	GL_HIF_INFO_T *HifInfo;
 	UINT_32 RegHSTCR;

@@ -1587,6 +1587,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 		ucIpVersion = (pucIpHdr[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		if (ucIpVersion == IPVERSION) {
 			UINT_8 ucIpTos;
+
 			ucIpTos = pucIpHdr[1];
 			/* Get the DSCP value from the header of IP packet. */
 			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
@@ -1683,6 +1684,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				PUINT_8 pucEapol = &aucLookAheadBuf[ETH_SNAP_OFFSET + 5];
 				UINT_8 ucEapolType = pucEapol[1];
 				UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
+
 				if (prGenUse)
 					*(UINT_8 *)prGenUse = nicIncreaseCmdSeqNum(prGlueInfo->prAdapter);
 
@@ -1899,8 +1901,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 			ret = prIoReq->rStatus;
 		if (ret != WLAN_STATUS_SUCCESS)
 			DBGLOG(OID, WARN, "kalIoctl: ret ErrCode: %d\n", ret);
-	}
-	else {
+	} else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
 		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_timeout occurred!\n");

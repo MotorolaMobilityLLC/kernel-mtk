@@ -2207,9 +2207,8 @@ void wlanHandleSystemResume(void)
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidQueryBSSInfo,
 			   &rParam, sizeof(EVENT_AIS_BSS_INFO_T), TRUE, TRUE, TRUE, FALSE, &u4BufLen);
-	if (rStatus != WLAN_STATUS_SUCCESS) {
+	if (rStatus != WLAN_STATUS_SUCCESS)
 		DBGLOG(INIT, ERROR, "Query BSSinfo fail 0x%x!!\n", rStatus);
-	}
 
 	/* <2> get the IPv4 address */
 	if (!(prDev->ip_ptr) ||
@@ -3398,7 +3397,7 @@ VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
 			    (fgEnCmdEvent ? nicCmdEventSetCommon : NULL),
 			    (fgEnCmdEvent ? nicOidCmdTimeoutCommon : NULL),
 			    sizeof(CMD_PS_PROFILE_T),
-			    (PUINT_8) & (arPowerSaveMode[ucBssIndex]),
+			    (PUINT_8) &(arPowerSaveMode[ucBssIndex]),
 			    NULL, sizeof(PARAM_POWER_MODE));
 }
 #endif

@@ -1926,6 +1926,7 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 {
 	P_RX_CTRL_T prRxCtrl;
 	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
+
 	KAL_SPIN_LOCK_DECLARATION();
 
 #if CFG_SUPPORT_MULTITHREAD
@@ -2637,8 +2638,6 @@ VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SDIO_INTR_ENHANCE */
 
 	nicRxProcessRFBs(prAdapter);
-
-	return;
 }				/* end of nicProcessRxInterrupt() */
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
