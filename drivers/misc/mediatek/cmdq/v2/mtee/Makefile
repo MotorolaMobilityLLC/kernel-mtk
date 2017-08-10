@@ -39,7 +39,7 @@ endif
              	 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl \
 	             -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include \
 	             -I$(srctree)/include/trustzone
-$(warning $(srctree)/include/trustzone)
-#endif
+
 
 obj-y += cmdq_sec.o
+
