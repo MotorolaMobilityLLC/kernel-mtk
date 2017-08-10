@@ -7362,6 +7362,9 @@ wlanoidSetWapiAssocInfo(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_LENGTH;
 	}
 
+	if (u4SetBufferLen > sizeof(prAdapter->prGlueInfo->aucWapiAssocInfoIEs))
+		return WLAN_STATUS_INVALID_LENGTH;
+
 	prAdapter->rWifiVar.rConnSettings.fgWapiMode = TRUE;
 
 	/* if (prWapiInfo->ucElemId != ELEM_ID_WAPI) */
@@ -7637,6 +7640,9 @@ wlanoidSetWSCAssocInfo(IN P_ADAPTER_T prAdapter,
 	DBGLOG(OID, LOUD, "\r\n");
 
 	if (u4SetBufferLen == 0)
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	if (u4SetBufferLen > sizeof(prAdapter->prGlueInfo->aucWapiAssocInfoIEs))
 		return WLAN_STATUS_INVALID_LENGTH;
 
 	*pu4SetInfoLen = u4SetBufferLen;

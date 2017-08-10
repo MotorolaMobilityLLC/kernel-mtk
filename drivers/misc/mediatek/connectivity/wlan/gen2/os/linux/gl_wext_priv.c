@@ -494,6 +494,9 @@ int priv_support_ioctl(IN struct net_device *prNetDev, IN OUT struct ifreq *prIf
 	rIwReqInfo.cmd = (__u16) i4Cmd;
 	rIwReqInfo.flags = 0;
 
+	if ((i4Cmd == IOCTL_SET_STRUCT_FOR_EM) && !capable(CAP_NET_ADMIN))
+		return -EPERM;
+
 	switch (i4Cmd) {
 	case IOCTL_SET_INT:
 		/* NOTE(Kevin): 1/3 INT Type <= IFNAMSIZ, so we don't need copy_from/to_user() */
