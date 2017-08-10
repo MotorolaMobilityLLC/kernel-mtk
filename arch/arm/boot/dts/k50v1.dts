@@ -86,24 +86,6 @@
 		is_batch_supported = <1>;
 	};
 
-	cust_alsps@0 {
-		compatible		= "mediatek,cm36686";
-		i2c_num			= <1>;
-		i2c_addr		= <0x60 0 0 0>;
-		polling_mode_ps		= <0>;
-		polling_mode_als	= <1>;
-		power_id		= <0xffff>;
-		power_vol		= <0>;
-		/* Total has 15 level*/
-		als_level	= <0 257 637 1027 2297 5588 6730 11301 20449 25768 31122 45552 57937 57937 57937>;
-		/*  Total has 16 range*/
-		als_value	= <0 132 304 502 1004 2003 3006 5006 8004 10000 12000 16000 20000 20000 20000 20000>;
-		ps_threshold_high	=  <70>;
-		ps_threshold_low	=  <40>;
-		is_batch_supported_ps	= <1>;
-		is_batch_supported_als	= <1>;
-	};
-
 	cust_mag@0 {
 		compatible			= "mediatek,akm8963";
 		i2c_num				= <1>;
@@ -122,17 +104,6 @@
 		power_id			= <0xffff>;
 		power_vol			= <0>;
 		firlen				= <0>;
-		is_batch_supported		= <0>;
-	};
-
-	cust_baro@0 {
-		compatible			= "mediatek,bmp280new";
-		i2c_num				= <1>;
-		/* i2c_addr			= <0x68 0 0 0>; */
-		direction			= <0>;
-		power_id			= <0xffff>;
-		power_vol			= <0>;
-		firlen				= <32>;
 		is_batch_supported		= <0>;
 	};
 /* end sensor */
@@ -351,13 +322,6 @@
 	gyro_intpin_default: gyrodefaultcfg {
 
 	};
-};
-
-&alsps {
-	pinctrl-names = "pin_default", "pin_cfg";
-	pinctrl-0 = <&alsps_intpin_default>;
-	pinctrl-1 = <&alsps_intpin_cfg>;
-	status = "okay";
 };
 
 &gyroscope {
@@ -877,6 +841,27 @@
 		compatible = "mediatek,gsensor";
 		reg = <0x68>;
 		status = "okay";
+	};
+
+	alsps@60 {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&alsps_intpin_default>;
+		pinctrl-1 = <&alsps_intpin_cfg>;
+		status = "okay";
+		i2c_num			= <1>;
+		i2c_addr		= <0x60 0 0 0>;
+		polling_mode_ps		= <0>;
+		polling_mode_als	= <1>;
+		power_id		= <0xffff>;
+		power_vol		= <0>;
+		/* Total has 15 level*/
+		als_level	= <0 257 637 1027 2297 5588 6730 11301 20449 25768 31122 45552 57937 57937 57937>;
+		/*  Total has 16 range*/
+		als_value	= <0 132 304 502 1004 2003 3006 5006 8004 10000 12000 16000 20000 20000 20000 20000>;
+		ps_threshold_high	=  <70>;
+		ps_threshold_low	=  <40>;
+		is_batch_supported_ps	= <1>;
+		is_batch_supported_als	= <1>;
 	};
 };
 
