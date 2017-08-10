@@ -781,7 +781,7 @@ static ssize_t show_daemon_name(struct device_driver *ddri, char *buf)
 {
 	char strbuf[24];
 
-	sprintf(strbuf, "orientationd");
+	snprintf(strbuf, sizeof(strbuf), "orientationd");
 	return sprintf(buf, "%s", strbuf);
 }
 
@@ -789,7 +789,7 @@ static ssize_t show_daemon2_name(struct device_driver *ddri, char *buf)
 {
 	char strbuf[24];
 
-	sprintf(strbuf, "geomagneticd");
+	snprintf(strbuf, sizeof(strbuf), "geomagneticd");
 	return sprintf(buf, "%s", strbuf);
 }
 
