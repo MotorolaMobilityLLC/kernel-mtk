@@ -80,6 +80,13 @@ void vmd1_pmic_setting_off(void)
 		pmic_set_register_value(PMIC_RG_STRUP_EXT_PMIC_EN, 0); /* 1: enable, 0:disable */
 		/* Wait for 100ms */
 		msleep(100);
+	} else if (segment == 0x82 || segment == 0x86) {
+		/* 0x82, 0x86: ROSA 6755S */
+		/* Turn OFF VCORE2 */
+		/* Call PMIC driver API to configure VCORE2 OFF */
+		pmic_buck_vcore2_en("VMODEM", 0, 0);
+		/* Wait for 100ms */
+		msleep(100);
 	}
 }
 
