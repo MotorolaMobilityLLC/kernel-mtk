@@ -61,8 +61,6 @@ typedef enum
 #endif
 
 	GED_BRIDGE_COMMAND_GE_ALLOC = 100,
-	GED_BRIDGE_COMMAND_GE_RETAIN,
-	GED_BRIDGE_COMMAND_GE_RELEASE,
 	GED_BRIDGE_COMMAND_GE_GET,
 	GED_BRIDGE_COMMAND_GE_SET,
 } GED_BRIDGE_COMMAND_ID;
@@ -82,15 +80,13 @@ typedef enum
 #endif
 
 #define GED_BRIDGE_IO_GE_ALLOC              GED_IOWR(GED_BRIDGE_COMMAND_GE_ALLOC)
-#define GED_BRIDGE_IO_GE_RETAIN             GED_IOWR(GED_BRIDGE_COMMAND_GE_RETAIN)
-#define GED_BRIDGE_IO_GE_RELEASE            GED_IOWR(GED_BRIDGE_COMMAND_GE_RELEASE)
 #define GED_BRIDGE_IO_GE_GET                GED_IOWR(GED_BRIDGE_COMMAND_GE_GET)
 #define GED_BRIDGE_IO_GE_SET                GED_IOWR(GED_BRIDGE_COMMAND_GE_SET)
 
 /*****************************************************************************
  *  LOG_BUF_GET
  *****************************************************************************/
-    
+
 /* Bridge in structure for LOG_BUF_GET */
 typedef struct GED_BRIDGE_IN_LOGBUFGET_TAG
 {
@@ -274,35 +270,13 @@ typedef struct GED_BRIDGE_IN_GE_ALLOC_TAG {
 
 /* Bridge out structure for GE_ALLOC */
 typedef struct GED_BRIDGE_OUT_GE_ALLOC_TAG {
-	uint32_t ge_hnd;
+	int ge_fd;
 	GED_ERROR eError;
 } GED_BRIDGE_OUT_GE_ALLOC;
 
-/* Bridge in structure for GE_RETAIN */
-typedef struct GED_BRIDGE_IN_GE_RETAIN_TAG {
-	uint32_t ge_hnd;
-} GED_BRIDGE_IN_GE_RETAIN;
-
-/* Bridge out structure for GE_RETAIN */
-typedef struct GED_BRIDGE_OUT_GE_RETAIN_TAG {
-	int32_t ref;
-	GED_ERROR eError;
-} GED_BRIDGE_OUT_GE_RETAIN;
-
-/* Bridge in structure for GE_RELEASE */
-typedef struct GED_BRIDGE_IN_GE_RELEASE_TAG {
-	uint32_t ge_hnd;
-} GED_BRIDGE_IN_GE_RELEASE;
-
-/* Bridge out structure for GE_RELEASE */
-typedef struct GED_BRIDGE_OUT_GE_RELEASE_TAG {
-	int32_t ref;
-	GED_ERROR eError;
-} GED_BRIDGE_OUT_GE_RELEASE;
-
 /* Bridge in structure for GE_GET */
 typedef struct GED_BRIDGE_IN_GE_GET_TAG {
-	uint32_t ge_hnd;
+	int ge_fd;
 	int region_id;
 	int uint32_offset;
 	int uint32_size;
@@ -316,7 +290,7 @@ typedef struct GED_BRIDGE_OUT_GE_GET_TAG {
 
 /* Bridge in structure for GE_SET */
 typedef struct GED_BRIDGE_IN_GE_SET_TAG {
-	uint32_t ge_hnd;
+	int ge_fd;
 	int region_id;
 	int uint32_offset;
 	int uint32_size;
@@ -375,14 +349,6 @@ int ged_bridge_event_notify(
 int ged_bridge_ge_alloc(
 		struct GED_BRIDGE_IN_GE_ALLOC_TAG  *psALLOC_IN,
 		struct GED_BRIDGE_OUT_GE_ALLOC_TAG *psALLOC_OUT);
-
-int ged_bridge_ge_retain(
-		struct GED_BRIDGE_IN_GE_RETAIN_TAG  *psRETAIN_IN,
-		struct GED_BRIDGE_OUT_GE_RETAIN_TAG *psRETAIN_OUT);
-
-int ged_bridge_ge_release(
-		struct GED_BRIDGE_IN_GE_RELEASE_TAG  *psRELEASE_IN,
-		struct GED_BRIDGE_OUT_GE_RELEASE_TAG *psRELEASE_OUT);
 
 int ged_bridge_ge_get(
 		struct GED_BRIDGE_IN_GE_GET_TAG  *psGET_IN,
