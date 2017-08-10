@@ -1,48 +1,32 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-
-#include <linux/types.h>
-#include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/delay.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-
-#include <linux/fs.h>
 #include <linux/proc_fs.h>
-#include <linux/seq_file.h>
-
-#include <linux/spinlock.h>
-#include <linux/interrupt.h>
-#include <linux/mutex.h>
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 
 #include <mach/mt_charging.h>
 #include <mt-plat/charging.h>
 
-#include "include/mt6336/mt6336.h"
-#include "include/mt6336/mt6336_irq.h"
-#include "include/mt6336/mt6336_efuse.h"
-#include "include/mt6336/mt6336_upmu_hw.h"
-
+#include "mt6336.h"
 
 /**********************************************************
   *
@@ -102,6 +86,52 @@ unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 				.addr = addr,
 				.flags = I2C_M_RD,
 				.len = 1,
+				.buf = returnData,
+			}
+		};
+
+		/*
+		 * Avoid sending the segment addr to not upset non-compliant
+		 * DDC monitors.
+		 */
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
+
+		if (ret == -ENXIO) {
+			PMICLOG("skipping non-existent adapter %s\n", new_client->adapter->name);
+			break;
+		}
+	} while (ret != xfers && --retries);
+
+	mutex_unlock(&mt6336_i2c_access);
+
+	return ret == xfers ? 1 : -1;
+}
+
+unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len)
+{
+	unsigned char xfers = 2;
+	int ret, retries = 1;
+	unsigned short addr;
+	unsigned char cmd;
+
+	mutex_lock(&mt6336_i2c_access);
+
+	addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	cmd = reg % CODA_ADDR_WIDTH;
+
+	do {
+		struct i2c_msg msgs[2] = {
+			{
+				.addr = addr,
+				.flags = 0,
+				.len = 1,
+				.buf = &cmd,
+			},
+			{
+
+				.addr = addr,
+				.flags = I2C_M_RD,
+				.len = len,
 				.buf = returnData,
 			}
 		};
@@ -408,22 +438,8 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	/* --------------------- */
 	mt6336_hw_component_detect();
 	mt6336_dump_register();
-/*
-#if !defined CONFIG_HAS_WAKELOCKS
-		wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
-#else
-		wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
-#endif
-*/
 
 	/*MT6336 Interrupt Service*/
-	mt6336_thread_handle = kthread_create(mt6336_thread_kthread, (void *)NULL, "mt6336_thread");
-	if (IS_ERR(mt6336_thread_handle)) {
-		mt6336_thread_handle = NULL;
-		PMICLOG("[mt6336_thread_handle] creation fails\n");
-	} else {
-		PMICLOG("[mt6336_thread_handle] kthread_create Done\n");
-	}
 	MT6336_EINT_SETTING();
 	PMICLOG("[MT6336_EINT_SETTING] Done\n");
 
@@ -435,7 +451,7 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt6336_of_match[] = {
-	{.compatible = "mediatek,SWITHING_CHARGER"},
+	{.compatible = "mediatek,sw_charger"},
 	{},
 };
 #else
@@ -463,9 +479,9 @@ static int __init mt6336_init(void)
 	int ret = 0;
 
 #if !defined CONFIG_HAS_WAKELOCKS
-		wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
+	wakeup_source_init(&mt6336Thread_lock, "BatThread_lock_mt6336 wakelock");
 #else
-		wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
+	wake_lock_init(&mt6336Thread_lock, WAKE_LOCK_SUSPEND, "BatThread_lock_mt6336 wakelock");
 #endif
 
 	/* i2c registeration using DTS instead of boardinfo*/

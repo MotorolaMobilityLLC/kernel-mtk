@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <generated/autoconf.h>
@@ -57,8 +57,8 @@
 #endif
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
-#include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_irq.h"
+#include "include/pmic_throttling_dlpt.h"
 /*#include <mach/eint.h> TBD*/
 /*#include <mach/mt_pmic_wrap.h>*/
 #include "pwrap_hal.h"
@@ -86,10 +86,20 @@
 #endif
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
+#ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>
+#endif /* CONFIG_MTK_AUXADC_INTF */
 
 /*wilma debug*/
 #include "include/pmic_efuse.h"
+
+#if defined(CONFIG_MTK_EXTBUCK)
+#include "include/extbuck/fan53526.h"
+#endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+#include "include/mt6313/mt6313.h"
+#endif
 /*****************************************************************************
  * PMIC related define
  ******************************************************************************/
@@ -99,19 +109,12 @@ static DEFINE_MUTEX(pmic_lock_mutex);
 /*****************************************************************************
  * PMIC read/write APIs
  ******************************************************************************/
-#if 0				/*defined(CONFIG_MTK_FPGA)*/
+#if 0				/*defined(CONFIG_FPGA_EARLY_PORTING)*/
     /* no CONFIG_PMIC_HW_ACCESS_EN */
 #else
 #define CONFIG_PMIC_HW_ACCESS_EN
 #endif
-/*
-#define PMICTAG                "[PMIC] "
-#if defined PMIC_DEBUG_PR_DBG
-#define PMICLOG(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
-#else
-#define PMICLOG(fmt, arg...)
-#endif
-*/
+
 #ifdef CONFIG_OF
 #if !defined CONFIG_MTK_LEGACY
 /*
@@ -124,10 +127,61 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 
 /*---IPI Mailbox define---*/
 /*#define IPIMB*/
-
+#if defined(IPIMB)
+#include <mach/mt_pmic_ipi.h>
+#endif
 static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
+
+void vmd1_pmic_setting_on(void)
+{
+	/*---VMD1, VMODEM, VSRAM_VMD ENABLE---*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 1);
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 1);
+	udelay(220);
+
+	if (!pmic_get_register_value(PMIC_DA_QI_VMD1_EN) ||
+		!pmic_get_register_value(PMIC_DA_QI_VMODEM_EN) ||
+			!pmic_get_register_value(PMIC_DA_QI_VSRAM_VMD_EN))
+			pr_err("[vmd1_pmic_setting_on] VMD1 = %d, VMODEM = %d, VSRAM_VMD = %d\n",
+				pmic_get_register_value(PMIC_DA_QI_VMD1_EN),
+				pmic_get_register_value(PMIC_DA_QI_VMODEM_EN),
+				pmic_get_register_value(PMIC_DA_QI_VSRAM_VMD_EN));
+
+	/*---VMD1, VMODEM, VSRAM_VMD Voltage Select---*/
+	/*--0x40 (0x40*0.00625+0.4 =0.8V)--*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, 0x40);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL_SLEEP, 0x10);
+	/*--0x40 (0x40*0.00625+0.4 =0.8V)--*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x40);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
+	/*--0x50 (0x50*0.00625+0.4 =0.9V)--*/
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, 0x50);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
+}
+
+void vmd1_pmic_setting_off(void)
+{
+	/*---VMD1, VMODEM, VSRAM_VMD DISABLE---*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 0);
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, 0);
+	udelay(220);
+
+	if (pmic_get_register_value(PMIC_DA_QI_VMD1_EN) ||
+		pmic_get_register_value(PMIC_DA_QI_VMODEM_EN) ||
+			pmic_get_register_value(PMIC_DA_QI_VSRAM_VMD_EN))
+			pr_err("[vmd1_pmic_setting_off] VMD1 = %d, VMODEM = %d, VSRAM_VMD = %d\n",
+				pmic_get_register_value(PMIC_DA_QI_VMD1_EN),
+				pmic_get_register_value(PMIC_DA_QI_VMODEM_EN),
+				pmic_get_register_value(PMIC_DA_QI_VSRAM_VMD_EN));
+
+}
 
 unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK, unsigned int SHIFT)
 {
@@ -150,7 +204,7 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	return_value = pwrap_wacs2_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -175,6 +229,14 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 #ifdef IPIMB
+
+	return_value = pmic_ipi_config_interface(RegNum, val, MASK, SHIFT);
+
+	if (return_value)
+		PMICLOG("[pmic_read_interface] IPIMB write data fail\n");
+	else
+		PMICLOG("[pmic_read_interface] IPIMB write data =(%x,%x,%x,%x)\n", RegNum, val, MASK, SHIFT);
+
 #else
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
@@ -188,7 +250,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	return_value = pwrap_wacs2_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -201,7 +263,7 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	/*return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);*/
 	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		mutex_unlock(&pmic_access_mutex);
 		return return_value;
 	}
@@ -246,7 +308,7 @@ unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val, 
 	return_value = pwrap_wacs2_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -279,7 +341,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	return_value = pwrap_wacs2_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -291,7 +353,7 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	/*return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);*/
 	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
 	if (return_value != 0) {
-		PMICLOG("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
+		pr_err("[pmic_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		return return_value;
 	}
 	/*PMICLOG"[pmic_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
@@ -531,12 +593,20 @@ static ssize_t store_pmic_auxadc(struct device *dev, struct device_attribute *at
 		pvalue = (char *)buf;
 		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
 		for (i = 0; i < val; i++) {
-
-			for (j = 0; j < 16; j++) {
+		#ifdef CONFIG_MTK_AUXADC_INTF
+			for (j = 0; j < AUXADC_LIST_MAX; j++) {
 				pr_err("[PMIC_AUXADC] [%s]=%d\n",
-					pmic_get_auxadc_name(j), pmic_get_auxadc_value(j));
+						pmic_get_auxadc_name(j),
+						pmic_get_auxadc_value(j));
 				mdelay(5);
 			}
+		#else /* not config CONFIG_MTK_AUXADC_INTF */
+			for (j = 0; j < 16; j++) {
+				pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(j, 0, 0));
+				mdelay(5);
+			}
+			pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH4_DCXO, 0, 0));
+		#endif /* CONFIG_MTK_AUXADC_INTF */
 		}
 	}
 	return size;
@@ -576,9 +646,16 @@ bool is_charger_detection_rdy(void)
 
 int is_ext_buck2_exist(void)
 {
+#if defined(CONFIG_MTK_EXTBUCK)
+	if ((is_fan53526_exist() == 1))
+		return 1;
+	else
+		return 0;
+#else
 	return 0;
+#endif /* End of #if defined(CONFIG_MTK_EXTBUCK) */
 #if 0
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #else
 #if !defined CONFIG_MTK_LEGACY
@@ -656,17 +733,17 @@ int is_ext_vbat_boost_exist(void)
 
 int get_ext_buck_i2c_ch_num(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6335)
-	if (is_mt6311_exist() == 1)
-		return get_mt6311_i2c_ch_num();
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+	if (is_mt6313_exist() == 1)
+		return get_mt6313_i2c_ch_num();
 #endif
 		return -1;
 }
 
 int is_ext_buck_sw_ready(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6335)
-	if ((is_mt6311_sw_ready() == 1))
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+	if ((is_mt6313_sw_ready() == 1))
 		return 1;
 #endif
 		return 0;
@@ -674,8 +751,8 @@ int is_ext_buck_sw_ready(void)
 
 int is_ext_buck_exist(void)
 {
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6335)
-	if ((is_mt6311_exist() == 1))
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+	if ((is_mt6313_exist() == 1))
 		return 1;
 #endif
 		return 0;
@@ -839,7 +916,7 @@ void PMIC_CUSTOM_SETTING_V1(void)
 {
 #if 0
 #if defined CONFIG_MTK_LEGACY
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	pmu_drv_tool_customization_init();	/* legacy DCT only */
 #endif
@@ -880,18 +957,19 @@ static const struct file_operations pmic_dump_register_proc_fops = {
 
 void pmic_debug_init(struct platform_device *dev)
 {
-	struct dentry *mt_pmic_dir;
+	struct dentry *mtk_pmic_dir;
 
-	mt_pmic_dir = debugfs_create_dir("mt_pmic", NULL);
-	if (!mt_pmic_dir) {
-		PMICLOG("fail to mkdir /sys/kernel/debug/mt_pmic\n");
+	mtk_pmic_dir = debugfs_create_dir("mtk_pmic", NULL);
+	if (!mtk_pmic_dir) {
+		PMICLOG("fail to mkdir /sys/kernel/debug/mtk_pmic\n");
 		return;
 	}
 
-	debugfs_create_file("dump_pmic_reg", S_IRUGO | S_IWUSR, mt_pmic_dir, NULL, &pmic_dump_register_proc_fops);
+	debugfs_create_file("dump_pmic_reg", S_IRUGO | S_IWUSR, mtk_pmic_dir,
+		NULL, &pmic_dump_register_proc_fops);
 
-	pmic_regulator_debug_init(dev, mt_pmic_dir);
-	pmic_throttling_dlpt_debug_init(dev, mt_pmic_dir);
+	pmic_regulator_debug_init(dev, mtk_pmic_dir);
+	pmic_throttling_dlpt_debug_init(dev, mtk_pmic_dir);
 	PMICLOG("proc_create pmic_dump_register_proc_fops\n");
 
 }
@@ -953,7 +1031,7 @@ void pwrkey_sw_workaround_init(void)
 	    kthread_run(pwrkey_detect_sw_thread_handler, 0, "mtk pwrkey_sw_workaround_init");
 
 	if (IS_ERR(pwrkey_detect_thread))
-		PMICLOG("[%s]: failed to create pwrkey_detect_thread thread\n", __func__);
+		pr_err("[%s]: failed to create pwrkey_detect_thread thread\n", __func__);
 
 }
 
@@ -966,7 +1044,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 
 	PMICLOG("******** MT pmic driver probe!! ********\n");
 	/*get PMIC CID */
-	pr_debug
+	PMICLOG
 	    ("PMIC CID=0x%x PowerGoodStatus = 0x%x OCStatus = 0x%x ThermalStatus = 0x%x rsvStatus = 0x%x\n",
 	     pmic_get_register_value(PMIC_SWCID), upmu_get_reg_value(0x21c),
 	     upmu_get_reg_value(0x214), upmu_get_reg_value(0x21e), upmu_get_reg_value(0x2a6));
@@ -974,38 +1052,24 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/*pmic initial setting */
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
-#else
-	PMICLOG("[PMIC_INIT_SETTING_V1] delay to MT6311 init\n");
-#endif
 #if !defined CONFIG_MTK_LEGACY
 /*      replace by DTS*/
 #else
 	PMIC_CUSTOM_SETTING_V1();
 	PMICLOG("[PMIC_CUSTOM_SETTING_V1] Done\n");
-#endif				/*End of #if !defined CONFIG_MTK_LEGACY */
+#endif	/*End of #if !defined CONFIG_MTK_LEGACY */
 
 
-/*#if defined(CONFIG_MTK_FPGA)*/
+/*#if defined(CONFIG_FPGA_EARLY_PORTING)*/
 #if 0
-	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
+	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
 #else
 	/*PMIC Interrupt Service*/
-	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
-	if (IS_ERR(pmic_thread_handle)) {
-		pmic_thread_handle = NULL;
-		PMICLOG("[pmic_thread_kthread_mt6325] creation fails\n");
-	} else {
-		wake_up_process(pmic_thread_handle);
-		PMICLOG("[pmic_thread_kthread_mt6325] kthread_create Done\n");
-	}
-
 	PMIC_EINT_SETTING();
 	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
-
 
 	mtk_regulator_init(dev);
 
@@ -1046,6 +1110,7 @@ static int pmic_mt_remove(struct platform_device *dev)
 static void pmic_mt_shutdown(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver shutdown!! ********\n");
+	vmd1_pmic_setting_on();
 }
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
@@ -1107,12 +1172,12 @@ static int __init pmic_mt_init(void)
 	/* PMIC device driver register*/
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
-		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
+		pr_err("****[pmic_mt_init] Unable to device register(%d)\n", ret);
 		return ret;
 	}
 	ret = platform_driver_register(&pmic_mt_driver);
 	if (ret) {
-		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
+		pr_err("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
 #endif				/* End of #ifdef CONFIG_OF */
@@ -1121,18 +1186,22 @@ static int __init pmic_mt_init(void)
 	/* PMIC device driver register*/
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
-		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
+		pr_err("****[pmic_mt_init] Unable to device register(%d)\n", ret);
 		return ret;
 	}
 	ret = platform_driver_register(&pmic_mt_driver);
 	if (ret) {
-		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
+		pr_err("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 
 
+#ifdef CONFIG_MTK_AUXADC_INTF
 	mtk_auxadc_init();
+#else
+	pmic_auxadc_init();
+#endif /* CONFIG_MTK_AUXADC_INTF */
 
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
 

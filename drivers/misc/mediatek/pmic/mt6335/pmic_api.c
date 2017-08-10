@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/kernel.h>
@@ -30703,6 +30703,16 @@ unsigned int mt6335_upmu_get_da_qi_vcn33_en(void)
 	return val;
 }
 
+unsigned int mt6335_upmu_get_da_qi_vcn33_wifi_en(void)
+{
+	return mt6335_upmu_get_da_qi_vcn33_en();
+}
+
+unsigned int mt6335_upmu_get_da_qi_vcn33_bt_en(void)
+{
+	return mt6335_upmu_get_da_qi_vcn33_en();
+}
+
 void mt6335_upmu_set_rg_vcn33_ocfb_en(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -31106,6 +31116,16 @@ unsigned int mt6335_upmu_get_da_qi_vcn18_en(void)
 
 
 	return val;
+}
+
+unsigned int mt6335_upmu_get_da_qi_vcn18_wifi_en(void)
+{
+	return mt6335_upmu_get_da_qi_vcn18_en();
+}
+
+unsigned int mt6335_upmu_get_da_qi_vcn18_bt_en(void)
+{
+	return mt6335_upmu_get_da_qi_vcn18_en();
 }
 
 void mt6335_upmu_set_rg_vcn18_ocfb_en(unsigned int val)
@@ -38562,6 +38582,16 @@ void mt6335_upmu_set_rg_vcn33_vosel(unsigned int val)
 				    (unsigned int)(PMIC_RG_VCN33_VOSEL_SHIFT)
 	    );
 
+}
+
+void mt6335_upmu_set_rg_vcn33_bt_vosel(unsigned int val)
+{
+	mt6335_upmu_set_rg_vcn33_vosel(val);
+}
+
+void mt6335_upmu_set_rg_vcn33_wifi_vosel(unsigned int val)
+{
+	mt6335_upmu_set_rg_vcn33_vosel(val);
 }
 
 void mt6335_upmu_set_rg_vcn33_ndis_en(unsigned int val)
@@ -56334,6 +56364,16 @@ unsigned int mt6335_upmu_get_rg_vcn33_vosel(void)
 
 }
 
+unsigned int mt6335_upmu_get_rg_vcn33_wifi_vosel(void)
+{
+	return mt6335_upmu_get_rg_vcn33_vosel();
+}
+
+unsigned int mt6335_upmu_get_rg_vcn33_bt_vosel(void)
+{
+	return mt6335_upmu_get_rg_vcn33_vosel();
+}
+
 unsigned int mt6335_upmu_get_rg_vsim1_vosel(void)
 {
 	unsigned int ret = 0;
@@ -56542,6 +56582,16 @@ unsigned int mt6335_upmu_get_rg_vcn18_vosel(void)
 	    );
 	return val;
 
+}
+
+unsigned int mt6335_upmu_get_rg_vcn18_bt_vosel(void)
+{
+	return mt6335_upmu_get_rg_vcn18_vosel();
+}
+
+unsigned int mt6335_upmu_get_rg_vcn18_wifi_vosel(void)
+{
+	return mt6335_upmu_get_rg_vcn18_vosel();
 }
 
 unsigned int mt6335_upmu_get_rg_vmipi_vosel(void)

@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/kernel.h>
@@ -35,8 +35,7 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 
-#include "include/mt6336/mt6336.h"
-#include "include/mt6336/mt6336_upmu_hw.h"
+#include "mt6336.h"
 #include <mt-plat/mtk_auxadc_intf.h>
 
 #define VOLTAGE_FULL_RANGE	(1800)
@@ -211,7 +210,7 @@ void mt6336_auxadc_init(void)
 	wake_lock_init(&mt6336_auxadc_wake_lock,
 			WAKE_LOCK_SUSPEND, "MT6336 AuxADC wakelock");
 	mutex_init(&mt6336_adc_mutex);
-	mt6336_set_flag_register_value(MT6336_AUXADC_CK_AON, 0);
+	/*mt6336_set_flag_register_value(MT6336_AUXADC_CK_AON, 0);*/
 
 	pr_info("****[%s] DONE\n", __func__);
 }

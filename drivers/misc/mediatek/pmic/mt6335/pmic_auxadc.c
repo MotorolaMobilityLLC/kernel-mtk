@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/kernel.h>
@@ -44,13 +44,13 @@ static int count_time_out = 100;
 static struct wake_lock  mt6335_auxadc_wake_lock;
 static struct mutex mt6335_adc_mutex;
 
-static void mt6335_auxadc_lock(void)
+void mt6335_auxadc_lock(void)
 {
 	wake_lock(&mt6335_auxadc_wake_lock);
 	mutex_lock(&mt6335_adc_mutex);
 }
 
-static void mt6335_auxadc_unlock(void)
+void mt6335_auxadc_unlock(void)
 {
 	mutex_unlock(&mt6335_adc_mutex);
 	wake_unlock(&mt6335_auxadc_wake_lock);
@@ -59,17 +59,17 @@ static void mt6335_auxadc_unlock(void)
 struct pmic_auxadc_channel mt6335_auxadc_channel[] = {
 	{15, 3, PMIC_AUXADC_RQST_CH0, /* BATADC */
 		PMIC_AUXADC_ADC_RDY_CH0_BY_AP, PMIC_AUXADC_ADC_OUT_CH0_BY_AP},
-	{12, 3, PMIC_AUXADC_RQST_CH2, /* VCDT */
+	{12, 1, PMIC_AUXADC_RQST_CH2, /* VCDT */
 		PMIC_AUXADC_ADC_RDY_CH2, PMIC_AUXADC_ADC_OUT_CH2},
-	{12, 1, PMIC_AUXADC_RQST_CH3, /* BAT TEMP */
+	{12, 2, PMIC_AUXADC_RQST_CH3, /* BAT TEMP */
 		PMIC_AUXADC_ADC_RDY_CH3, PMIC_AUXADC_ADC_OUT_CH3},
-	{12, 1, PMIC_AUXADC_RQST_BATID, /* BATID */
+	{12, 2, PMIC_AUXADC_RQST_BATID, /* BATID */
 		PMIC_AUXADC_ADC_RDY_BATID, PMIC_AUXADC_ADC_OUT_BATID},
 	{12, 1, PMIC_AUXADC_RQST_CH11, /* VBIF */
 		PMIC_AUXADC_ADC_RDY_CH11, PMIC_AUXADC_ADC_OUT_CH11},
-	{12, 2, PMIC_AUXADC_RQST_CH4, /* CHIP TEMP */
+	{12, 1, PMIC_AUXADC_RQST_CH4, /* CHIP TEMP */
 		PMIC_AUXADC_ADC_RDY_CH4, PMIC_AUXADC_ADC_OUT_CH4},
-	{12, 2, PMIC_AUXADC_RQST_CH4, /* DCXO */
+	{12, 1, PMIC_AUXADC_RQST_CH4, /* DCXO */
 		PMIC_AUXADC_ADC_RDY_CH4, PMIC_AUXADC_ADC_OUT_CH4},
 	{15, 1, PMIC_AUXADC_RQST_CH7, /* TSX */
 		PMIC_AUXADC_ADC_RDY_CH7_BY_AP, PMIC_AUXADC_ADC_OUT_CH7_BY_AP},
@@ -133,11 +133,17 @@ void mt6335_auxadc_init(void)
 	/* set channel 0, 7 as 15 bits, others = 12 bits  000001000001*/
 	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SEL, 1);
 	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SW, 1);
-	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_START_SEL, 1);
+
+	/* 4/11, Ricky, Remove initial setting due to MT6353 issue */
+	/* pmic_set_register_value(PMIC_RG_STRUP_AUXADC_START_SEL, 1); */
+
+	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_EN, 0);
+	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_PRD, 0x40);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_PRD, 0x40);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_SRCLKEN_IND, 0);
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_START_SEL, 1);
 	pmic_set_register_value(PMIC_AUXADC_CK_AON, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_SEL, 0);
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);

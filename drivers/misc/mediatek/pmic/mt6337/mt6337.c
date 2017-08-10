@@ -1,22 +1,17 @@
-/*****************************************************************************
- *
- * Filename:
- * ---------
- *    pmic.c
- *
- * Project:
- * --------
- *   Android_Software
- *
- * Description:
- * ------------
- *   This Module defines PMIC functions
- *
- * Author:
- * -------
- * Argus Lin
- *
- ****************************************************************************/
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+
 #include <generated/autoconf.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -62,9 +57,7 @@
 #include <linux/gpio/consumer.h>
 #endif
 
-#include "include/sub_upmu_hw.h"
-#include "include/sub_pmic.h"
-#include "include/sub_pmic_irq.h"
+#include "mt6337.h"
 /*TBD*/
 /*#include <mach/mt_pmic_wrap.h>*/
 #include "pwrap_hal.h"
@@ -72,28 +65,17 @@
 /*****************************************************************************
  * PMIC read/write APIs
  ******************************************************************************/
-#if 0				/*defined(CONFIG_MTK_FPGA)*/
+#if 0	/*defined(CONFIG_FPGA_EARLY_PORTING)*/
     /* no CONFIG_PMIC_HW_ACCESS_EN */
 #else
 #define CONFIG_PMIC_HW_ACCESS_EN
 #endif
-/*
-#define PMICTAG                "[PMIC] "
-#if defined PMIC_DEBUG_PR_DBG
-#define PMICLOG(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
-#else
-#define PMICLOG(fmt, arg...)
-#endif
-*/
-
-#define pwrap_wacs2_read(a, b) (0)
-#define pwrap_wacs2_write(a, b) (0)
 
 /*---IPI Mailbox define---*/
 /*
 #define IPIMB
 */
-static DEFINE_MUTEX(mt6337_access_mutex);
+/*static DEFINE_MUTEX(mt6337_access_mutex);*/
 
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state_mt6337;
@@ -109,20 +91,20 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 	/*PMICLOG"[mt6337_read_interface] val=0x%x\n", *val);*/
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata = 0;
+	unsigned int rdata;
 
 	if ((pmic_suspend_state_mt6337 == true) && irqs_disabled())
 		return mt6337_read_interface_nolock(RegNum, val, MASK, SHIFT);
 
-	mutex_lock(&mt6337_access_mutex);
+	/*mutex_lock(&mt6337_access_mutex);*/
 
 	/*mt_read_byte(RegNum, &pmic_reg);*/
 	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[mt6337_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
-		mutex_unlock(&mt6337_access_mutex);
+		/*mutex_unlock(&mt6337_access_mutex);*/
 		return return_value;
 	}
 	/*PMICLOG"[mt6337_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
@@ -131,6 +113,7 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 	*val = (pmic_reg >> SHIFT);
 	/*PMICLOG"[mt6337_read_interface] val=0x%x\n", *val);*/
 
+	/*mutex_unlock(&mt6337_access_mutex);*/
 #endif /*---IPIMB---*/
 #else
 	/*PMICLOG("[mt6337_read_interface] Can not access HW PMIC\n");*/
@@ -147,20 +130,20 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 #ifdef IPIMB
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata = 0;
+	unsigned int rdata;
 
 	if ((pmic_suspend_state_mt6337 == true) && irqs_disabled())
 		return mt6337_config_interface_nolock(RegNum, val, MASK, SHIFT);
 
-	mutex_lock(&mt6337_access_mutex);
+	/*mutex_lock(&mt6337_access_mutex);*/
 
 	/*1. mt_read_byte(RegNum, &pmic_reg);*/
 	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[mt6337_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
-		mutex_unlock(&mt6337_access_mutex);
+		/*mutex_unlock(&mt6337_access_mutex);*/
 		return return_value;
 	}
 	/*PMICLOG"[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
@@ -170,10 +153,10 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 
 	/*2. mt_write_byte(RegNum, pmic_reg);*/
 	/*return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);*/
-	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
+	return_value = pwrap_wacs2_audio_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		PMICLOG("[mt6337_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
-		mutex_unlock(&mt6337_access_mutex);
+		/*mutex_unlock(&mt6337_access_mutex);*/
 		return return_value;
 	}
 	/*PMICLOG"[mt6337_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
@@ -190,7 +173,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 	PMICLOG("[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);
 #endif
 
-	mutex_unlock(&mt6337_access_mutex);
+	/*mutex_unlock(&mt6337_access_mutex);*/
 #endif /*---IPIMB---*/
 #else
 	/*PMICLOG("[mt6337_config_interface] Can not access HW PMIC\n");*/
@@ -210,11 +193,11 @@ unsigned int mt6337_read_interface_nolock(unsigned int RegNum, unsigned int *val
 	PMICLOG("[mt6337_read_interface_nolock] IPIMB\n");
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata = 0;
+	unsigned int rdata;
 
 	/*mt_read_byte(RegNum, &pmic_reg); */
 	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[mt6337_read_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
@@ -242,13 +225,13 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 #ifdef IPIMB
 #else
 	unsigned int pmic_reg = 0;
-	unsigned int rdata = 0;
+	unsigned int rdata;
 
     /* pmic wrapper has spinlock protection. pmic do not to do it again */
 
 	/*1. mt_read_byte(RegNum, &pmic_reg); */
 	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
-	return_value = pwrap_wacs2_read((RegNum), &rdata);
+	return_value = pwrap_wacs2_audio_read((RegNum), &rdata);
 	pmic_reg = rdata;
 	if (return_value != 0) {
 		PMICLOG("[mt6337_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
@@ -261,7 +244,7 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 
 	/*2. mt_write_byte(RegNum, pmic_reg); */
 	/*return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);*/
-	return_value = pwrap_wacs2_write((RegNum), pmic_reg);
+	return_value = pwrap_wacs2_audio_write((RegNum), pmic_reg);
 	if (return_value != 0) {
 		PMICLOG("[mt6337_config_interface] Reg[%x]= pmic_wrap read data fail\n", RegNum);
 		return return_value;
@@ -488,6 +471,60 @@ void mt6337_debug_init(struct platform_device *dev)
 /*****************************************************************************
  * system function
  ******************************************************************************/
+void MT6337_INIT_SETTING(void)
+{
+	unsigned int ret = 0;
+
+	/* [4:4]: RG_SRCLKEN_IN0_HW_MODE; Joseph/ OSC CLK wi SRCLKEN */
+	ret = mt6337_config_interface(0x8006, 0x1, 0x1, 4);
+	/* [5:5]: RG_VOWEN_HW_MODE; Joseph/ OSC CLK wi SRCLKEN */
+	ret = mt6337_config_interface(0x8006, 0x1, 0x1, 5);
+	/* [6:6]: RG_OSC_SEL_HW_MODE; Joseph/ OSC CLK wi SRCLKEN */
+	ret = mt6337_config_interface(0x8006, 0x1, 0x1, 6);
+	/* [4:4]: RG_TRIM_75K_CK_PDN; Joseph/power down (FT trim use) */
+	ret = mt6337_config_interface(0x8200, 0x1, 0x1, 4);
+	/* [11:11]: RG_AUDIF_CK_PDN; Joseph/power down */
+	ret = mt6337_config_interface(0x8200, 0x1, 0x1, 11);
+	/* [3:3]: RG_INTRP_PRE_OC_CK_PDN; Joseph/power down (37 no use) */
+	ret = mt6337_config_interface(0x8206, 0x1, 0x1, 3);
+	/* [8:8]: RG_LDO_CALI_75K_CK_PDN; Joseph/power down (37 no use) */
+	ret = mt6337_config_interface(0x8206, 0x1, 0x1, 8);
+	/* [11:11]: RG_ACCDET_CK_PDN; Joseph/power on (ACCDET use) */
+	ret = mt6337_config_interface(0x8206, 0x0, 0x1, 11);
+	/* [7:7]: RG_REG_CK_PDN_HWEN; Joseph/RG CLK HW */
+	ret = mt6337_config_interface(0x8218, 0x1, 0x1, 7);
+#if 0  /*--TBD--*/ /*--Need DE Check--*/
+	/* [8:8]: RG_OSC_SEL_BUCK_LDO_EN; Joseph/OSC CLK mode don't care this signal*/
+	ret = mt6337_config_interface(0x8232, 0x0, 0x1, 8);
+#endif
+	/* [1:1]: RG_VA18_HW0_OP_EN; Joseph/LDO LP wi SRCLKEN */
+	ret = mt6337_config_interface(0x9008, 0x1, 0x1, 1);
+	/* [1:1]: RG_VA18_HW0_OP_CFG; Joseph/LDO LP wi SRCLKEN */
+	ret = mt6337_config_interface(0x900E, 0x1, 0x1, 1);
+	/* [5:3]: AUXADC_AVG_NUM_LARGE; Jyun-Jia/256 average */
+	ret = mt6337_config_interface(0x943A, 0x7, 0x7, 3);
+	/* [7:6]: AUXADC_TRIM_CH3_SEL; Jyun-Jia/ efuse ch0 */
+	ret = mt6337_config_interface(0x9444, 0x0, 0x3, 6);
+	/* [9:8]: AUXADC_TRIM_CH4_SEL; Jyun-Jia/ efuse ch4 */
+	ret = mt6337_config_interface(0x9444, 0x1, 0x3, 8);
+	/* [11:10]: AUXADC_TRIM_CH5_SEL; Jyun-Jia/ efuse ch7 */
+	ret = mt6337_config_interface(0x9444, 0x2, 0x3, 10);
+	/* [13:12]: AUXADC_TRIM_CH6_SEL; Jyun-Jia/ efuse ch0 */
+	ret = mt6337_config_interface(0x9444, 0x0, 0x3, 12);
+	/* [15:14]: AUXADC_TRIM_CH7_SEL; Jyun-Jia/ efuse ch7 */
+	ret = mt6337_config_interface(0x9444, 0x2, 0x3, 14);
+	/* [3:2]: AUXADC_TRIM_CH9_SEL; Jyun-Jia/ efuse ch7 */
+	ret = mt6337_config_interface(0x9446, 0x2, 0x3, 2);
+	/* [9:8]: AUXADC_TRIM_CH12_SEL; Jyun-Jia/ efuse ch7 */
+	ret = mt6337_config_interface(0x9446, 0x2, 0x3, 8);
+	/* [10:0]: GPIO_PULLEN0; Joseph/ no pull */
+	ret = mt6337_config_interface(0x9C06, 0x0, 0x7FF, 0);
+	/* [11:9]: GPIO8_MODE; Joseph/ MTKIF */
+	ret = mt6337_config_interface(0x9C28, 0x1, 0x7, 9);
+	/* [14:12]: GPIO9_MODE; Joseph/ MTKIF */
+	ret = mt6337_config_interface(0x9C28, 0x1, 0x7, 12);
+}
+
 static int mt6337_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
@@ -503,6 +540,7 @@ static int mt6337_probe(struct platform_device *dev)
 
 	/*pmic initial setting */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6337)
+	MT6337_INIT_SETTING();
 	PMICLOG("[MT6337_INIT_SETTING_V1] Done\n");
 #else
 	PMICLOG("[MT6337_INIT_SETTING_V1] delay to MT6311 init\n");
@@ -510,18 +548,9 @@ static int mt6337_probe(struct platform_device *dev)
 
 
 #if 0
-	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
+	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
 #else
 	/*PMIC Interrupt Service*/
-	mt6337_thread_handle = kthread_create(mt6337_thread_kthread, (void *)NULL, "mt6337_thread");
-	if (IS_ERR(mt6337_thread_handle)) {
-		mt6337_thread_handle = NULL;
-		PMICLOG("[mt6337_thread_kthread_mt6325] creation fails\n");
-	} else {
-		wake_up_process(mt6337_thread_handle);
-		PMICLOG("[mt6337_thread_kthread_mt6325] kthread_create Done\n");
-	}
-
 	MT6337_EINT_SETTING();
 	PMICLOG("[MT6337_EINT_SETTING] Done\n");
 #endif

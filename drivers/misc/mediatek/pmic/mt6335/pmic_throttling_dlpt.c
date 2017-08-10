@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <generated/autoconf.h>
@@ -52,6 +52,7 @@
 #include <linux/uaccess.h>
 
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_auxadc_intf.h>
 #include "include/pmic.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_irq.h"
@@ -117,11 +118,17 @@ void bat_per_test(BATTERY_PERCENT_LEVEL level_val)
 int g_lowbat_int_bottom = 0;
 
 #ifdef LOW_BATTERY_PROTECT
+#if 0 /* fast stress test lbat_H/L on phone, phone UT only */ /*PMIC_THROTTLING_DLPT_UT*/
+/* ex. 3400/5400*4096*/
+#define BAT_HV_THD   (POWER_INT0_VOLT*4096/5400)	/*ex: 3400mV*/
+#define BAT_LV_1_THD (4200*4096/5400)	/*ex: fake, 4200mV to trigger lbat */
+#define BAT_LV_2_THD (4200*4096/5400)	/*ex: fake, 4200mV to trigger lbat */
+#else
 /* ex. 3400/5400*4096*/
 #define BAT_HV_THD   (POWER_INT0_VOLT*4096/5400)	/*ex: 3400mV*/
 #define BAT_LV_1_THD (POWER_INT1_VOLT*4096/5400)	/*ex: 3250mV*/
 #define BAT_LV_2_THD (POWER_INT2_VOLT*4096/5400)	/*ex: 3000mV*/
-
+#endif
 int g_low_battery_level = 0;
 int g_low_battery_stop = 0;
 /*give one change to ignore DLPT power off. battery voltage may return to 3.25 or higher
@@ -546,31 +553,35 @@ unsigned int ptim_cnt = 0;
 signed int count_time_out_adc_imp = 36;
 unsigned int count_adc_imp = 0;
 
-int do_ptim(bool isSuspend)
+void pmic_auxadc_lock(void)
+{
+	mt6335_auxadc_lock();
+}
+
+void pmic_auxadc_unlock(void)
+{
+	mt6335_auxadc_unlock();
+}
+
+int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	unsigned int vbat_reg;
 	int ret = 0;
 
 	count_adc_imp = 0;
 	/*PMICLOG("[do_ptim] start\n"); */
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,1); */
-	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,0); */
 
-	/*MT6353 only */
-	pmic_set_register_value(PMIC_RG_ADCIN_VBAT_EN, 1);
 
 	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006);
 
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
-#if 0 /*-- MT6335 TBD Start --*/
+#if 0 /* default use hw control, no need to set CK_PDN_HWEN to sw mode */
 	pmic_set_register_value(PMIC_CLK_AUXADC_SMPS_CK_PDN, 0);
 	pmic_set_register_value(PMIC_CLK_AUXADC_SMPS_CK_PDN_HWEN, 0);
-#endif /*-- MT6335 TBD End --*/
+
 	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
 	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
-
+#endif
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 1);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 1);
 
@@ -612,17 +623,63 @@ int do_ptim(bool isSuspend)
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
 
 
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
+
 
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP_AVG);
-	ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;
+	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;*/
+	*bat = (vbat_reg * 3 * 18000) / 32768;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	fgauge_read_IM_current((void *)&ptim_R_curr);
+	fgauge_read_IM_current((void *)cur);
+#else
+	*cur = 0;
+#endif
+	pr_err("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
+
+#if defined(SWCHR_POWER_PATH)
+	pr_err("do_ptim_internal test: bat %d cur %d\n", *bat, *cur);
 #endif
 	return ret;
 }
+
+int do_ptim(bool isSuspend)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, bat, cur);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
+{
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+	*bat = ptim_bat_vol;
+	*cur = ptim_R_curr;
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+}
+
 
 
 void enable_dummy_load(unsigned int en)
@@ -630,71 +687,46 @@ void enable_dummy_load(unsigned int en)
 
 	if (en == 1) {
 		/*1. disable isink pdn */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0);
-		/*
-		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
-		*/
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0);
-#if 0 /*-- MT6335 TBD Start --*/
-		/*1. disable isink pdn */
-		pmic_set_register_value(PMIC_RG_DRV_CHRIND_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK7_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK6_CK_PDN, 0);
-#endif /*-- MT6335 TBD End --*/
-		/*
-		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
-		*/
 
 		/* enable isink step */
-		pmic_set_register_value(PMIC_ISINK_CH2_STEP, 0x7);
-		pmic_set_register_value(PMIC_ISINK_CH3_STEP, 0x7);
+		pmic_set_register_value(PMIC_ISINK_CH4_STEP, 0x7);
+		pmic_set_register_value(PMIC_ISINK_CH5_STEP, 0x7);
 		pmic_set_register_value(PMIC_ISINK_CH6_STEP, 0x7);
 		pmic_set_register_value(PMIC_ISINK_CH7_STEP, 0x7);
 
 		/*enable isink */
 		pmic_set_register_value(PMIC_ISINK_CH7_BIAS_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH6_BIAS_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH5_BIAS_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH4_BIAS_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CHOP7_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CHOP6_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CHOP5_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CHOP4_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH7_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH6_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0x1);
-		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH5_EN, 0x1);
+		pmic_set_register_value(PMIC_ISINK_CH4_EN, 0x1);
 		/*PMICLOG("[enable dummy load]\n"); */
 	} else {
 		/*upmu_set_reg_value(0x828,0x0cc0); */
 		pmic_set_register_value(PMIC_ISINK_CH7_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH6_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH5_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH4_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CHOP7_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CHOP6_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP5_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP4_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH7_BIAS_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH6_BIAS_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH5_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH4_BIAS_EN, 0);
 
 		/*1. enable isink pdn */
-		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_PDN, 0x1);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0x1);
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x1);
 
-#if 0 /*-- MT6335 TBD Start --*/
-		/*1. enable isink pdn */
-		pmic_set_register_value(PMIC_RG_DRV_CHRIND_CK_PDN, 0x1);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK7_CK_PDN, 0x1);
-		pmic_set_register_value(PMIC_RG_DRV_ISINK6_CK_PDN, 0x1);
-#endif /*-- MT6335 TBD End --*/
-		/*pmic_set_register_value(PMIC_RG_VIBR_EN,0); */
 		/*PMICLOG("[disable dummy load]\n"); */
 	}
 
@@ -1056,19 +1088,19 @@ int get_dlpt_imix(void)
 #endif
 	PMICLOG("[get_dlpt_imix:%d] %d,%d,%d,%d\n", i, volt[i], curr[i], volt_avg, curr_avg);
 #if 0 /* debug only */
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_ADC29), (&val), (0xffff), 0);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_ADC30), (&val1), (0xffff), 0);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_FGADC_CON25), (&val2), (0xffff), 0);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_IMP0), (&val3), (0xffff), 0);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_CON2), (&val4), (0xffff), 0);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_LBAT1), (&val5), (0xffff), 0);
-	pr_debug("[get_dlpt_imix after ptim]MT6353_AUXADC_ADC29 0x%x:0x%x, MT6353_AUXADC_ADC30 0x%x:0x%x, PMIC_FGADC_CON25 0x%x:0x%x\n",
-		MT6353_AUXADC_ADC29, val, MT6353_AUXADC_ADC30, val1, MT6353_FGADC_CON25, val2);
-	pr_debug("[get_dlpt_imix after ptim]MT6353_AUXADC_IMP0 0x%x:0x%x, MT6353_AUXADC_CON2 0x%x:0x%x, MT6353_AUXADC_LBAT1 0x%x:0x%x\n",
-		MT6353_AUXADC_IMP0, val3, MT6353_AUXADC_CON2, val4, MT6353_AUXADC_LBAT1, val5);
-	ret_val = pmic_read_interface((unsigned int)(MT6353_AUXADC_LBAT2), (&val), (0xffff), 0);
-	pr_debug("[get_dlpt_imix after ptim]MT6353_AUXADC_LBAT2 0x%x:0x%x\n",
-		MT6353_AUXADC_LBAT2, val);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_ADC29), (&val), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_ADC30), (&val1), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_FGADC_CON25), (&val2), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_IMP0), (&val3), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_CON2), (&val4), (0xffff), 0);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_LBAT1), (&val5), (0xffff), 0);
+	pr_debug("[get_dlpt_imix after ptim]MT6335_AUXADC_ADC29 0x%x:0x%x, MT6335_AUXADC_ADC30 0x%x:0x%x, PMIC_FGADC_CON25 0x%x:0x%x\n",
+		MT6335_AUXADC_ADC29, val, MT6335_AUXADC_ADC30, val1, MT6335_FGADC_CON25, val2);
+	pr_debug("[get_dlpt_imix after ptim]MT6335_AUXADC_IMP0 0x%x:0x%x, MT6335_AUXADC_CON2 0x%x:0x%x, MT6335_AUXADC_LBAT1 0x%x:0x%x\n",
+		MT6335_AUXADC_IMP0, val3, MT6335_AUXADC_CON2, val4, MT6335_AUXADC_LBAT1, val5);
+	ret_val = pmic_read_interface((unsigned int)(MT6335_AUXADC_LBAT2), (&val), (0xffff), 0);
+	pr_debug("[get_dlpt_imix after ptim]MT6335_AUXADC_LBAT2 0x%x:0x%x\n",
+		MT6335_AUXADC_LBAT2, val);
 #endif
 	}
 #if !DLPT_SORT_IMIX_VOLT_CURR
@@ -1104,9 +1136,11 @@ int get_dlpt_imix_charging(void)
 	int vsys_min_1_val = POWER_INT2_VOLT;
 	int imix_val = 0;
 #if defined(SWCHR_POWER_PATH)
-	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, 5, 1);
+	/*zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_ISENSE_AP, 5, 1);*/
+	zcv_val = pmic_get_auxadc_value(PMIC_AUX_ISENSE_AP);
 #else
-	zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);
+	/*zcv_val = PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);*/
+	zcv_val = pmic_get_auxadc_value(PMIC_AUX_BATSNS_AP);
 #endif
 
 	imix_val = (zcv_val - vsys_min_1_val) * 1000 / ptim_rac_val_avg * 9 / 10;
@@ -1133,7 +1167,6 @@ int dlpt_check_power_off(void)
 			} else {
 				/*2nd time receive battery voltage < 3.1V, wait FG to call power off */
 				ret = 1;
-				g_low_battery_if_power_off = 0;
 				pr_err("[dlpt_check_power_off] %d %d\n", ret, g_low_battery_if_power_off);
 			}
 		} else {
@@ -1209,13 +1242,9 @@ int dlpt_notify_handler(void *unused)
 			if (ptim_rac_val_avg == 0)
 				pr_err("[DLPT] ptim_rac_val_avg=0 , skip\n");
 			else {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 				if (upmu_get_rgs_chrdet()) {
 					g_imix_val = get_dlpt_imix_charging();
 				} else {
-#else
-				{
-#endif
 					g_imix_val = get_dlpt_imix();
 
 /*

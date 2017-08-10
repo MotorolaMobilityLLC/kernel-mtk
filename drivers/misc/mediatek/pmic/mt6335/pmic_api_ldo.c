@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/kernel.h>
@@ -391,4 +391,59 @@ void pmic_ldo_vcama2_sw_en(int en_value)
 	/* read back check */
 	read_back =  pmic_get_register_value(PMIC_DA_QI_VCAMA2_EN);
 	pr_debug("ldo : VCAMA2; sw en_value readback = %d\n", read_back);
+}
+void pmic_ldo_vsram_dvfs1_sw_en(int en_value)
+{
+	unsigned short read_back;
+
+	pr_debug("ldo : VSRAM_DVFS1; sw enable = %d\n", en_value);
+	pmic_set_register_value(PMIC_RG_VSRAM_DVFS1_SW_EN, en_value);
+
+	/* read back check */
+	read_back =  pmic_get_register_value(PMIC_DA_QI_VSRAM_DVFS1_EN);
+	pr_debug("ldo : VSRAM_DVFS1; sw en_value readback = %d\n", read_back);
+}
+void pmic_ldo_vsram_dvfs2_sw_en(int en_value)
+{
+	unsigned short read_back;
+
+	pr_debug("ldo : VSRAM_DVFS2; sw enable = %d\n", en_value);
+	pmic_set_register_value(PMIC_RG_VSRAM_DVFS2_SW_EN, en_value);
+
+	/* read back check */
+	read_back =  pmic_get_register_value(PMIC_DA_QI_VSRAM_DVFS2_EN);
+	pr_debug("ldo : VSRAM_DVFS2; sw en_value readback = %d\n", read_back);
+}
+void pmic_ldo_vsram_vgpu_sw_en(int en_value)
+{
+	unsigned short read_back;
+
+	pr_debug("ldo : VSRAM_VGPU; sw enable = %d\n", en_value);
+	pmic_set_register_value(PMIC_RG_VSRAM_VGPU_SW_EN, en_value);
+
+	/* read back check */
+	read_back =  pmic_get_register_value(PMIC_DA_QI_VSRAM_VGPU_EN);
+	pr_debug("ldo : VSRAM_VGPU; sw en_value readback = %d\n", read_back);
+}
+void pmic_ldo_vsram_vcore_sw_en(int en_value)
+{
+	unsigned short read_back;
+
+	pr_debug("ldo : VSRAM_VCORE; sw enable = %d\n", en_value);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SW_EN, en_value);
+
+	/* read back check */
+	read_back =  pmic_get_register_value(PMIC_DA_QI_VSRAM_VCORE_EN);
+	pr_debug("ldo : VSRAM_VCORE; sw en_value readback = %d\n", read_back);
+}
+void pmic_ldo_vsram_vmd_sw_en(int en_value)
+{
+	unsigned short read_back;
+
+	pr_debug("ldo : VSRAM_VMD; sw enable = %d\n", en_value);
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_SW_EN, en_value);
+
+	/* read back check */
+	read_back =  pmic_get_register_value(PMIC_DA_QI_VSRAM_VMD_EN);
+	pr_debug("ldo : VSRAM_VMD; sw en_value readback = %d\n", read_back);
 }

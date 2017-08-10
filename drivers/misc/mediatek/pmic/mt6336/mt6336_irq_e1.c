@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
-
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #include <generated/autoconf.h>
 #include <linux/module.h>
@@ -82,7 +82,7 @@ static struct chr_interrupt_bit interrupt_status3[] = {
 	CHR_S_INT_GEN(RG_INT_STATUS_LED2_OPEN),
 	CHR_S_INT_GEN(RG_INT_STATUS_FLASH_TIMEOUT),
 	CHR_S_INT_GEN(RG_INT_STATUS_TORCH_TIMEOUT),
-	CHR_S_INT_GEN(RG_INT_STATUS_dd_vbus_in_valid),
+	CHR_S_INT_GEN(RG_INT_STATUS_DD_VBUS_IN_VALID),
 	CHR_S_INT_GEN(RG_INT_STATUS_WDT_TIMEOUT),
 	CHR_S_INT_GEN(RG_INT_STATUS_SAFETY_TIMEOUT),
 	CHR_S_INT_GEN(RG_INT_STATUS_CHR_AICC_DONE),
@@ -100,19 +100,19 @@ static struct chr_interrupt_bit interrupt_status4[] = {
 };
 
 static struct chr_interrupt_bit interrupt_status5[] = {
+	CHR_S_INT_GEN(RG_INT_STATUS_CHR_BAT_RECHG),
+	CHR_S_INT_GEN(RG_INT_STATUS_BAT_TEMP_H),
+	CHR_S_INT_GEN(RG_INT_STATUS_BAT_TEMP_L),
 	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_L_MIN),
 	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_L_MAX),
 	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_H_MIN),
 	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_H_MAX),
 	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_CC_IRQ),
-	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_PD_IRQ),
-	CHR_S_INT_GEN(RG_INT_STATUS_CHR_BAT_RECHG),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_PE_STATUS),
 };
 
 static struct chr_interrupt_bit interrupt_status6[] = {
-	CHR_S_INT_GEN(RG_INT_STATUS_BAT_TEMP_H),
-	CHR_S_INT_GEN(RG_INT_STATUS_BAT_TEMP_L),
+	CHR_S_INT_GEN(RG_INT_STATUS_TYPE_C_PD_IRQ),
+	CHR_S_INT_GEN(RG_INT_STATUS_DD_PE_STATUS),
 	CHR_S_INT_GEN(RG_INT_STATUS_BC12_V2P7_TIMEOUT),
 	CHR_S_INT_GEN(RG_INT_STATUS_BC12_V3P2_TIMEOUT),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_BC12_STATUS),
@@ -124,15 +124,16 @@ static struct chr_interrupt_bit interrupt_status6[] = {
 static struct chr_interrupt_bit interrupt_status7[] = {
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_TOP_RST_WDT),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING),
+	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_BUCK_MODE),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_LOWQ_MODE),
 };
 
 static struct chr_interrupt_bit interrupt_status8[] = {
+	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_LOWQ_MODE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_SHIP_MODE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_BAT_OC_MODE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_BAT_DEAD_MODE),
@@ -140,25 +141,13 @@ static struct chr_interrupt_bit interrupt_status8[] = {
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_RST_GLOBAL_MODE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_RST_WDT_MODE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE),
 };
 
 static struct chr_interrupt_bit interrupt_status9[] = {
+	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE),
 	CHR_S_INT_GEN(RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_PAM_MODE_DB_RISING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_PAM_MODE_DB_FALLING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_THR_MODE_DB_RISING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_THR_MODE_DB_FALLING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_CV_MODE_DB_RISING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_CV_MODE_DB_FALLING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_ICL_MODE_DB_RISING),
-};
-
-static struct chr_interrupt_bit interrupt_status10[] = {
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_ICL_MODE_DB_FALLING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_ICC_MODE_DB_RISING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_QI_ICC_MODE_DB_FALLING),
-	CHR_S_INT_GEN(RG_INT_STATUS_DD_1MS_TIMER_FINISH),
+	CHR_S_INT_GEN(NO_USE),
+	CHR_S_INT_GEN(NO_USE),
 	CHR_S_INT_GEN(NO_USE),
 	CHR_S_INT_GEN(NO_USE),
 	CHR_S_INT_GEN(NO_USE),
@@ -186,14 +175,13 @@ struct chr_interrupts mt6336_interrupts[] = {
 		MT6336_PMIC_INT_CON8, MT6336_PMIC_INT_MASK_CON8, interrupt_status8),
 	CHR_M_INTS_GEN(MT6336_PMIC_INT_STATUS9, MT6336_PMIC_INT_RAW_STATUS9,
 		MT6336_PMIC_INT_CON9, MT6336_PMIC_INT_MASK_CON9, interrupt_status9),
-	CHR_M_INTS_GEN(MT6336_PMIC_INT_STATUS10, MT6336_PMIC_INT_RAW_STATUS10,
-		MT6336_PMIC_INT_CON10, MT6336_PMIC_INT_MASK_CON10, interrupt_status10),
 };
 
 unsigned int mt6336_interrupts_size = ARRAY_SIZE(mt6336_interrupts);
 /* prior irq CC & PD irq index, CC & PD have the same i index */
-unsigned char cc_pd_i = MT6336_INT_TYPE_C_CC_IRQ / CHR_INT_WIDTH;
+unsigned char cc_i = MT6336_INT_TYPE_C_CC_IRQ / CHR_INT_WIDTH;
 unsigned char cc_j = MT6336_INT_TYPE_C_CC_IRQ % CHR_INT_WIDTH;
+unsigned char pd_i = MT6336_INT_TYPE_C_PD_IRQ / CHR_INT_WIDTH;
 unsigned char pd_j = MT6336_INT_TYPE_C_PD_IRQ % CHR_INT_WIDTH;
 
 /*****************************************************************************
@@ -228,7 +216,7 @@ irqreturn_t mt6336_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_enable_interrupt(unsigned int intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -250,7 +238,7 @@ void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
-void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_disable_interrupt(unsigned int intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -272,7 +260,7 @@ void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
-void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_mask_interrupt(unsigned int intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -294,7 +282,7 @@ void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
-void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
+void mt6336_unmask_interrupt(unsigned int intNo, char *str)
 {
 	unsigned int shift, no;
 
@@ -316,7 +304,7 @@ void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
-void mt6336_register_interrupt_callback(MT6336_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
+void mt6336_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int shift, no;
 
@@ -337,7 +325,8 @@ static void mt6336_int_handler(void)
 {
 	unsigned char i, j;
 	unsigned char int_status_vals[mt6336_interrupts_size];
-	unsigned short cc_pd_status;
+	unsigned short cc_status;
+	unsigned short pd_status;
 	unsigned int ret;
 
 	ret = mt6336_read_bytes(mt6336_interrupts[0].address, int_status_vals, mt6336_interrupts_size);
@@ -352,22 +341,23 @@ static void mt6336_int_handler(void)
 
 		for (j = 0; j < CHR_INT_WIDTH; j++) {
 			/* handle CC & PD irq first, CC & PD are at the same status register */
-			cc_pd_status = mt6336_get_register_value(mt6336_interrupts[cc_pd_i].address);
-			if (cc_pd_status & (1 << cc_j)) {
-				if (mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback != NULL) {
-					mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback();
-					mt6336_interrupts[cc_pd_i].interrupts[cc_j].times++;
+			cc_status = mt6336_get_register_value(mt6336_interrupts[cc_i].address);
+			if (cc_status & (1 << cc_j)) {
+				if (mt6336_interrupts[cc_i].interrupts[cc_j].callback != NULL) {
+					mt6336_interrupts[cc_i].interrupts[cc_j].callback();
+					mt6336_interrupts[cc_i].interrupts[cc_j].times++;
 				}
-				ret = mt6336_config_interface(mt6336_interrupts[cc_pd_i].address, 0x1, 0x1, cc_j);
+				ret = mt6336_config_interface(mt6336_interrupts[cc_i].address, 0x1, 0x1, cc_j);
 			}
-			if (cc_pd_status & (1 << pd_j)) {
-				if (mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback != NULL) {
-					mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback();
-					mt6336_interrupts[cc_pd_i].interrupts[pd_j].times++;
+			pd_status = mt6336_get_register_value(mt6336_interrupts[pd_i].address);
+			if (pd_status & (1 << pd_j)) {
+				if (mt6336_interrupts[pd_i].interrupts[pd_j].callback != NULL) {
+					mt6336_interrupts[pd_i].interrupts[pd_j].callback();
+					mt6336_interrupts[pd_i].interrupts[pd_j].times++;
 				}
-				ret = mt6336_config_interface(mt6336_interrupts[cc_pd_i].address, 0x1, 0x1, pd_j);
+				ret = mt6336_config_interface(mt6336_interrupts[pd_i].address, 0x1, 0x1, pd_j);
 			}
-			if (i == cc_pd_i && (j == cc_j || j == pd_j))
+			if ((i == cc_i && j == cc_j) || (i == pd_i && j == pd_j))
 				continue;
 			/* handle other irqs */
 			if ((int_status_vals[i]) & (1 << j)) {
@@ -466,7 +456,8 @@ void MT6336_EINT_SETTING(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6336_chr");
 	if (node) {
 		g_chr_irq = irq_of_parse_and_map(node, 0);
-		ret = request_irq(g_chr_irq, (irq_handler_t) mt6336_eint_irq, IRQF_TRIGGER_NONE, "mt6336-eint", NULL);
+		ret = request_irq(g_chr_irq, (irq_handler_t) mt6336_eint_irq,
+			IRQF_TRIGGER_NONE, "mt6336-eint", NULL);
 		if (ret > 0)
 			pr_err(MT6336TAG "EINT IRQ LINENNOT AVAILABLE\n");
 	} else

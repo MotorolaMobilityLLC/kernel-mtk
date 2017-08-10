@@ -11,10 +11,16 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
+#ifndef _MTK_PMIC_COMMON_H_
+#define _MTK_PMIC_COMMON_H_
 
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
-#include <mt-plat/upmu_common.h>
 
+#if !defined CONFIG_HAS_WAKELOCKS
+#define pmic_wake_lock(lock)	__pm_stay_awake(lock)
+#define pmic_wake_unlock(lock)	__pm_relax(lock)
+#else
+#define pmic_wake_lock(lock)	wake_lock(lock)
+#define pmic_wake_unlock(lock)	wake_unlock(lock)
+#endif
+
+#endif	/* _MTK_PMIC_COMMON_H_ */

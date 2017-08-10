@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <generated/autoconf.h>
@@ -34,12 +34,13 @@
 #include <linux/of_device.h>
 #include <linux/of_fdt.h>
 #endif
-/*#include <asm/uaccess.h>*/
 #include <linux/uaccess.h>
 
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
-/*#include <mach/eint.h> TBD*/
+#include "include/pmic_irq.h"
+#include "include/mtk_pmic_common.h"
+
 #include <mach/mt_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
 #include <mach/mt_spm_mtcmos.h>
@@ -57,9 +58,9 @@
 #include <mach/mt_battery_meter.h>
 #endif
 #include "include/pmic_throttling_dlpt.h"
-/*#include <mt6311.h>*/
 #include <mach/mt_pmic.h>
 #include <mt-plat/mt_reboot.h>
+#include <mt-plat/aee.h>
 
 /*#define VPA_OC*/
 /*#include <mach/mt_ccci_common.h>*/
@@ -91,15 +92,6 @@ static unsigned long timer_pos;
  * PMIC extern function
  ******************************************************************************/
 
-#define PMIC_DEBUG_PR_DBG
-/*
-#define PMICTAG                "[PMIC] "
-#if defined PMIC_DEBUG_PR_DBG
-#define PMICLOG(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
-#else
-#define PMICLOG(fmt, arg...)
-#endif
-*/
 #ifdef CONFIG_ARM /* fix kpd build error only */
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {}
@@ -253,7 +245,7 @@ void pwrkey_int_handler(void)
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT)
 		timer_pre = sched_clock();
 #endif
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pwrkey_pmic_handler(0x1);
 #endif
@@ -280,7 +272,7 @@ void pwrkey_int_handler_r(void)
 		}
 	}
 #endif
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pwrkey_pmic_handler(0x0);
 #endif
@@ -293,7 +285,7 @@ void homekey_int_handler(void)
 {
 	PMICLOG("[homekey_int_handler] Press homekey %d\n",
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pmic_rstkey_handler(0x1);
 #endif
@@ -303,7 +295,7 @@ void homekey_int_handler_r(void)
 {
 	PMICLOG("[homekey_int_handler_r] Release homekey %d\n",
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
-#if defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #else
 	kpd_pmic_rstkey_handler(0x0);
 #endif
@@ -406,6 +398,23 @@ void pmic_ldo_oc_int_register(void)
 EXPORT_SYMBOL(pmic_ldo_oc_int_register);
 
 /*****************************************************************************
+ * General OC Int Handler
+ ******************************************************************************/
+void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
+{
+	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
+	switch (intNo) {
+	default:
+		/* issue AEE exception and disable OC interrupt */
+		/* TBD: dump_exception_reg*/
+		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
+		pmic_enable_interrupt(intNo, 0, "PMIC");
+		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
+		break;
+	}
+}
+
+/*****************************************************************************
  * PMIC Interrupt service
  ******************************************************************************/
 static DEFINE_MUTEX(pmic_mutex);
@@ -419,35 +428,23 @@ struct wake_lock pmicThread_lock;
 
 void wake_up_pmic(void)
 {
-	PMICLOG("[wake_up_pmic]\r\n");
-	wake_up_process(pmic_thread_handle);
-
-#if !defined CONFIG_HAS_WAKELOCKS
-	__pm_stay_awake(&pmicThread_lock);
-#else
-	wake_lock(&pmicThread_lock);
-#endif
+	PMICLOG("[%s]\n", __func__);
+	if (pmic_thread_handle != NULL) {
+		pmic_wake_lock(&pmicThread_lock);
+		wake_up_process(pmic_thread_handle);
+	} else {
+		pr_err(PMICTAG "[%s] pmic_thread_handle not ready\n", __func__);
+		return;
+	}
 }
-EXPORT_SYMBOL(wake_up_pmic);
 
-/*
-#ifdef CONFIG_MTK_LEGACY
-void mt_pmic_eint_irq(void)
-{
-	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
-	wake_up_pmic();
-	return;
-}
-#else
-*/
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
-	wake_up_pmic();
 	disable_irq_nosync(irq);
+	PMICLOG("[mt_pmic_eint_irq] disable PMIC irq\n");
+	wake_up_pmic();
 	return IRQ_HANDLED;
 }
-/*#endif*/
 
 void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 {
@@ -456,8 +453,8 @@ void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 	shift = intNo / PMIC_INT_WIDTH;
 	no = intNo % PMIC_INT_WIDTH;
 
-	if (shift >= ARRAY_SIZE(interrupts)) {
-		PMICLOG("[pmic_enable_interrupt] fail intno=%d \r\n", intNo);
+	if (shift >= interrupts_size) {
+		pr_err(PMICTAG "[pmic_enable_interrupt] fail intno=%d\r\n", intNo);
 		return;
 	}
 
@@ -482,8 +479,8 @@ void pmic_mask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
 	shift = intNo / PMIC_INT_WIDTH;
 	no = intNo % PMIC_INT_WIDTH;
 
-	if (shift >= ARRAY_SIZE(interrupts)) {
-		PMICLOG("[pmic_mask_interrupt] fail intno=%d \r\n", intNo);
+	if (shift >= interrupts_size) {
+		pr_err(PMICTAG "[pmic_mask_interrupt] fail intno=%d \r\n", intNo);
 		return;
 	}
 
@@ -505,8 +502,8 @@ void pmic_unmask_interrupt(PMIC_IRQ_ENUM intNo, char *str)
 	shift = intNo / PMIC_INT_WIDTH;
 	no = intNo % PMIC_INT_WIDTH;
 
-	if (shift >= ARRAY_SIZE(interrupts)) {
-		PMICLOG("[pmic_unmask_interrupt] fail intno=%d \r\n", intNo);
+	if (shift >= interrupts_size) {
+		pr_err(PMICTAG "[pmic_unmask_interrupt] fail intno=%d \r\n", intNo);
 		return;
 	}
 
@@ -528,8 +525,12 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 	shift = intNo / PMIC_INT_WIDTH;
 	no = intNo % PMIC_INT_WIDTH;
 
-	if (shift >= ARRAY_SIZE(interrupts)) {
-		PMICLOG("[pmic_register_interrupt_callback] fail intno=%d\r\n", intNo);
+	if (shift >= interrupts_size) {
+		pr_err(PMICTAG "[pmic_register_interrupt_callback] fail intno=%d\r\n", intNo);
+		return;
+	} else if (interrupts[shift].interrupts[no].callback != NULL) {
+		pr_err(PMICTAG "[pmic_register_interrupt_callback] register callback conflict intno=%d\n",
+			intNo);
 		return;
 	}
 
@@ -539,78 +540,32 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 
 }
 
-void PMIC_EINT_SETTING(void)
+#define ENABLE_ALL_OC_IRQ 0
+/* register general oc interrupt handler */
+void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 {
-	struct device_node *node = NULL;
-	int ret = 0;
-	u32 ints[2] = { 0, 0 };
+	unsigned int shift, no;
 
-	upmu_set_reg_value(MT6335_INT_CON0, 0);
-	upmu_set_reg_value(MT6335_INT_CON1, 0);
-	upmu_set_reg_value(MT6335_INT_CON2, 0);
-	upmu_set_reg_value(MT6335_INT_CON3, 0);
-	upmu_set_reg_value(MT6335_INT_CON4, 0);
-	upmu_set_reg_value(MT6335_INT_CON5, 0);
+	shift = intNo / PMIC_INT_WIDTH;
+	no = intNo % PMIC_INT_WIDTH;
 
-	/*enable pwrkey/homekey interrupt */
-	upmu_set_reg_value(MT6335_INT_CON0_SET, 0xf);
+	if (shift >= interrupts_size) {
+		pr_err(PMICTAG "[pmic_register_oc_interrupt_callback] fail intno=%d\r\n", intNo);
+		return;
+	}
+	PMICLOG("[pmic_register_oc_interrupt_callback] intno=%d\r\n", intNo);
+	interrupts[shift].interrupts[no].oc_callback = oc_int_handler;
+}
 
-	/*for all interrupt events, turn on interrupt module clock */
-	pmic_set_register_value(PMIC_RG_INTRP_CK_PDN, 0);
+/* register and enable all oc interrupt */
+void register_all_oc_interrupts(void)
+{
+	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
 
-#if 0 /* -- MT6335 TBD Start -- */
-	/*For BUCK OC related interrupt, please turn on pwmoc_6m_ck (6MHz) */
-	pmic_set_register_value(PMIC_RG_PWMOC_6M_CK_PDN, 0);
-#endif /* -- MT6335 TBD End -- */
-
-	pmic_register_interrupt_callback(INT_PWRKEY, pwrkey_int_handler);
-	pmic_register_interrupt_callback(INT_HOMEKEY, homekey_int_handler);
-	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
-	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
-
-	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
-	pmic_register_interrupt_callback(INT_BATON_LV, bat_l_int_handler);
-	pmic_register_interrupt_callback(INT_BATON_HV, bat_h_int_handler);
-
-	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
-	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
-
-	pmic_enable_interrupt(INT_PWRKEY, 1, "PMIC");
-	pmic_enable_interrupt(INT_HOMEKEY, 1, "PMIC");
-	pmic_enable_interrupt(INT_PWRKEY_R, 1, "PMIC");
-	pmic_enable_interrupt(INT_HOMEKEY_R, 1, "PMIC");
-#ifdef LOW_BATTERY_PROTECT
-	/* move to lbat_xxx_en_setting */
-#else
-	/* pmic_enable_interrupt(INT_BATON_LV, 1, "PMIC"); */
-	/* pmic_enable_interrupt(INT_BATON_HV, 1, "PMIC"); */
-#endif
-
-	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
-#ifdef BATTERY_OC_PROTECT
-	/* move to bat_oc_x_en_setting */
-#else
-	/* pmic_enable_interrupt(82, 1, "PMIC"); */
-	/* pmic_enable_interrupt(83, 1, "PMIC"); */
-#endif
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6335-pmic");
-	if (node) {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-
-		g_pmic_irq = irq_of_parse_and_map(node, 0);
-		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
-		if (ret > 0)
-			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
-		enable_irq(g_pmic_irq);
-	} else
-		PMICLOG("can't find compatible node\n");
-
-	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
-	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
-
+	for (; oc_interrupt <= INT_VXO22_OC; oc_interrupt++) {
+		pmic_register_oc_interrupt_callback(oc_interrupt);
+		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+	}
 }
 
 static void pmic_int_handler(void)
@@ -618,18 +573,21 @@ static void pmic_int_handler(void)
 	unsigned char i, j;
 	unsigned int ret;
 
-	for (i = 0; i < ARRAY_SIZE(interrupts); i++) {
+	for (i = 0; i < interrupts_size; i++) {
 		unsigned int int_status_val = 0;
 
 		int_status_val = upmu_get_reg_value(interrupts[i].address);
-		PMICLOG("[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
+		pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
 
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
 				PMICLOG("[PMIC_INT][%s]\n", interrupts[i].interrupts[j].name);
-				if (interrupts[i].interrupts[j].callback != NULL) {
+				interrupts[i].interrupts[j].times++;
+				if (interrupts[i].interrupts[j].callback != NULL)
 					interrupts[i].interrupts[j].callback();
-					interrupts[i].interrupts[j].times++;
+				if (interrupts[i].interrupts[j].oc_callback != NULL) {
+					interrupts[i].interrupts[j].oc_callback((i * PMIC_INT_WIDTH + j),
+						interrupts[i].interrupts[j].name);
 				}
 				ret = pmic_config_interface(interrupts[i].address, 0x1, 0x1, j);
 			}
@@ -669,39 +627,97 @@ int pmic_thread_kthread(void *x)
 #else
 		pmic_wrap_eint_clr(0x0);
 #endif
-		/*PMICLOG("[PMIC_INT] pmic_wrap_eint_clr(0x0);\n");*/
 
-		for (i = 0; i < ARRAY_SIZE(interrupts); i++) {
+		for (i = 0; i < interrupts_size; i++) {
 			int_status_val = upmu_get_reg_value(interrupts[i].address);
 			PMICLOG("[PMIC_INT] after ,int_status_val[0x%x]=0x%x\n",
 				interrupts[i].address, int_status_val);
 		}
 
-
 		mdelay(1);
 
 		mutex_unlock(&pmic_mutex);
-#if !defined CONFIG_HAS_WAKELOCKS
-		__pm_relax(&pmicThread_lock);
-#else
-		wake_unlock(&pmicThread_lock);
-#endif
+		pmic_wake_unlock(&pmicThread_lock);
 
 		set_current_state(TASK_INTERRUPTIBLE);
-/*
-#ifdef CONFIG_MTK_LEGACY
-		mt_eint_unmask(g_eint_pmic_num);
-#else
-*/
 		if (g_pmic_irq != 0)
 			enable_irq(g_pmic_irq);
-/*#endif*/
 		schedule();
 	}
 
 	return 0;
 }
 
+void PMIC_EINT_SETTING(void)
+{
+	struct device_node *node = NULL;
+	int ret = 0;
+	u32 ints[2] = { 0, 0 };
+
+	/* create pmic irq thread handler*/
+	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
+	if (IS_ERR(pmic_thread_handle)) {
+		pmic_thread_handle = NULL;
+		pr_err(PMICTAG "[pmic_thread_kthread] creation fails\n");
+	} else {
+		PMICLOG("[pmic_thread_kthread] kthread_create Done\n");
+	}
+
+	upmu_set_reg_value(MT6335_INT_CON0, 0);
+	upmu_set_reg_value(MT6335_INT_CON1, 0);
+	upmu_set_reg_value(MT6335_INT_CON2, 0);
+	upmu_set_reg_value(MT6335_INT_CON3, 0);
+	upmu_set_reg_value(MT6335_INT_CON4, 0);
+	upmu_set_reg_value(MT6335_INT_CON5, 0);
+
+	/* For all interrupt events, turn on interrupt module clock */
+	pmic_set_register_value(PMIC_RG_INTRP_CK_PDN, 0);
+
+#if 0
+	/* For BUCK PREOC related interrupt, please turn on intrp_pre_oc_ck (1MHz) */
+	/* This clock is default on */
+	pmic_set_register_value(RG_INTRP_PRE_OC_CK_PDN, 0);
+#endif
+
+	pmic_register_interrupt_callback(INT_PWRKEY, pwrkey_int_handler);
+	pmic_register_interrupt_callback(INT_HOMEKEY, homekey_int_handler);
+	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
+	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
+
+	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
+	pmic_register_interrupt_callback(INT_BATON_LV, bat_l_int_handler);
+	pmic_register_interrupt_callback(INT_BATON_HV, bat_h_int_handler);
+
+	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
+	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
+
+	pmic_enable_interrupt(INT_PWRKEY, 1, "PMIC");
+	pmic_enable_interrupt(INT_HOMEKEY, 1, "PMIC");
+	pmic_enable_interrupt(INT_PWRKEY_R, 1, "PMIC");
+	pmic_enable_interrupt(INT_HOMEKEY_R, 1, "PMIC");
+
+	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
+
+#if ENABLE_ALL_OC_IRQ
+	register_all_oc_interrupts();
+#endif
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6335-pmic");
+	if (node) {
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		g_pmic_irq = irq_of_parse_and_map(node, 0);
+		ret = request_irq(g_pmic_irq, (irq_handler_t)mt_pmic_eint_irq,
+			IRQF_TRIGGER_NONE, "pmic-eint", NULL);
+		if (ret > 0)
+			pr_err(PMICTAG "EINT IRQ LINENNOT AVAILABLE\n");
+	} else
+		pr_err(PMICTAG "can't find compatible node\n");
+
+	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6335_NUM=%d\n", g_eint_pmic_num);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
+	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
+}
 
 MODULE_AUTHOR("Jimmy-YJ Huang");
 MODULE_DESCRIPTION("MT PMIC Interrupt Driver");

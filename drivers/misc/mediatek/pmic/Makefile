@@ -1,7 +1,8 @@
-obj-$(CONFIG_MTK_PMIC_CHIP_MT6353) += mt6353/
+obj-$(CONFIG_MTK_EXTBUCK) += extbuck/
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6313) += mt6313/
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6335) += mt6335/
-obj-$(CONFIG_MTK_PMIC_CHIP_MT6337) += mt6337/
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += mt6336/
-#obj-y += mt6336/
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6337) += mt6337/
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6353) += mt6353/
 
-obj-$(CONFIG_MTK_PMIC_NEW_ARCH) += mtk_auxadc_intf.o
+obj-$(CONFIG_MTK_AUXADC_INTF)   += mtk_auxadc_intf.o

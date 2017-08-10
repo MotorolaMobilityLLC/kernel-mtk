@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/kernel.h>
@@ -35,8 +35,8 @@
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 
-#include "include/mt6337/mt6337.h"
-#include "include/mt6337/mt6337_upmu_hw.h"
+#include "mt6337.h"
+#include "mt6337_upmu_hw.h"
 #include <mt-plat/mtk_auxadc_intf.h>
 
 static int count_time_out = 100;
@@ -97,6 +97,10 @@ int mt6337_get_auxadc_value(u8 channel)
 	reg_val = mt6337_get_register_value(auxadc_channel->channel_out);
 
 	mt6337_auxadc_unlock();
+
+	/* Audio request HPOPS to return raw data */
+	if (channel == AUXADC_LIST_HPOFS_CAL)
+		return reg_val * auxadc_channel->r_val;
 
 	if (auxadc_channel->resolution == 12)
 		adc_result = (reg_val * auxadc_channel->r_val *
