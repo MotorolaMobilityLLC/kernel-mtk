@@ -10,6 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
+#include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 obj-y += gc0310mipi_yuv_Sensor.o
 
