@@ -1,0 +1,9 @@
+config MTK_BMA222E
+	bool "for support BMA222E gsensor"
+	default n
+	help
+		This configuration is for enable or disable BMA222E accelerometer sensor support.
+		Say Y here if you want to support this sensor.
+		Say N if you not support it.
+		If no sure, say N.
+
