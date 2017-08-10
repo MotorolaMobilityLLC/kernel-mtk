@@ -398,6 +398,7 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 			pDtr = osal_strchr(pStr, '-');
 			if (NULL != pDtr) {
 				tmp = pDtr - pStr;
+				tmp = (tmp > STP_CORE_DUMP_INFO_SZ) ? STP_CORE_DUMP_INFO_SZ : tmp;
 				osal_memcpy(&dmp->info[osal_strlen(INFO_HEAD)], pStr, tmp);
 				dmp->info[osal_strlen(dmp->info) + 1] = '\0';
 			} else {
@@ -1274,6 +1275,8 @@ INT32 stp_dbg_dmp_out(MTKSTP_DBG_T *stp_dbg, PINT8 buf, PINT32 len)
 	spin_lock_irqsave(&(stp_dbg->logsys->lock), flags);
 
 	if (stp_dbg->logsys->size > 0) {
+		if (stp_dbg->logsys->queue[stp_dbg->logsys->out].len >= STP_DBG_LOG_ENTRY_SZ)
+			stp_dbg->logsys->queue[stp_dbg->logsys->out].len = STP_DBG_LOG_ENTRY_SZ - 1;
 		memcpy(buf, &(stp_dbg->logsys->queue[stp_dbg->logsys->out].buffer[0]),
 		       stp_dbg->logsys->queue[stp_dbg->logsys->out].len);
 
@@ -1586,14 +1589,17 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 
 static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 {
+#define TEMPBUF_LEN 64
+
 	PINT8 pStr = NULL;
 	PINT8 pDtr = NULL;
 	PINT8 pTemp = NULL;
 	PINT8 pTemp2 = NULL;
-	INT8 tempBuf[64] = { 0 };
+	INT8 tempBuf[TEMPBUF_LEN] = { 0 };
 	UINT32 len = 0;
 	LONG res;
 	INT32 ret;
+	INT32 remain_array_len = 0;
 
 	PUINT8 parser_sub_string[] = {
 		"<ASSERT> ",
@@ -1638,12 +1644,27 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len] = '_';
 
 		pTemp = osal_strchr(pDtr, '#');
+		if (pTemp == NULL) {
+			STP_DBG_ERR_FUNC("parser '#' is not find\n");
+			return -5;
+		}
 		pTemp += 1;
 
 		pTemp2 = osal_strchr(pTemp, ' ');
-		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
-				pTemp2 - pTemp);
-		g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1 + pTemp2 - pTemp] = '\0';
+		if (pTemp2 == NULL) {
+			STP_DBG_ERR_FUNC("parser ' ' is not find\n");
+			pTemp2 = pTemp + 1;
+		}
+		remain_array_len = osal_array_size(g_stp_dbg_cpupcr->assert_info) - (osal_strlen("assert@") + len + 1);
+		if (remain_array_len - 1 > pTemp2 - pTemp) {
+			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
+					pTemp2 - pTemp);
+			g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1 + pTemp2 - pTemp] = '\0';
+		} else {
+			osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@") + len + 1], pTemp,
+					remain_array_len - 1);
+			g_stp_dbg_cpupcr->assert_info[STP_ASSERT_INFO_SIZE - 1] = '\0';
+		}
 		STP_DBG_INFO_FUNC("assert info:%s\n", &g_stp_dbg_cpupcr->assert_info[0]);
 		break;
 	case STP_DBG_FW_TASK_ID:
@@ -1663,6 +1684,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
+		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1693,6 +1715,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
+		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1721,6 +1744,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
+		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 		ret = osal_strtol(tempBuf, 16, &res);
@@ -1749,6 +1773,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 		}
 
 		len = pTemp - pDtr;
+		len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
 
@@ -1769,6 +1794,7 @@ static _osal_inline_ INT32 stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO
 				return -5;
 			}
 			len = pTemp - pDtr;
+			len = (len >= TEMPBUF_LEN) ? TEMPBUF_LEN - 1 : len;
 			osal_memcpy(&tempBuf[0], pDtr, len);
 			tempBuf[len] = '\0';
 			ret = osal_strtol(tempBuf, 16, &res);
