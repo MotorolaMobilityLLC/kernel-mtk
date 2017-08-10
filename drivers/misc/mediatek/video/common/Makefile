@@ -35,12 +35,17 @@
 
 #####################################
 # Common Source files for all chips
-obj-$(CONFIG_MTK_FB) += 			\
-				mtkfb_fence.o \
+obj-$(CONFIG_MTK_FB) += 	mtkfb_fence.o \
 				fbconfig_kdebug.o
 
 ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT8160)))
 obj-$(CONFIG_MTK_FB) += mtkfb.o
+endif
+
+#ifeq (y, $(filter y, $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6755)))
+ifeq ($(CONFIG_ARCH_MT6580),y)
+obj-$(CONFIG_MTK_FB) += disp_debug.o
+obj-$(CONFIG_MTK_FB) += disp_recorder.o
 endif
 
 ifeq (y, $(filter y, $(CONFIG_ARCH_ELBRUS) $(CONFIG_ARCH_MT8160) $(CONFIG_ARCH_MT6757) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6752) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580)))

@@ -24,7 +24,6 @@
 #include "mtkfb_fence.h"
 #include "ddp_path.h"
 #include "disp_drv_platform.h"
-#include "display_recorder.h"
 #include "ddp_mmp.h"
 #include "primary_display.h"
 #include "mtk_disp_mgr.h"
@@ -36,6 +35,12 @@
 #include "debug.h"
 #include "ddp_log.h"
 #include "disp_drv_log.h"
+#endif
+
+#if defined(CONFIG_ARCH_MT6580)
+#include "disp_recorder.h"
+#else
+#include "display_recorder.h"
 #endif
 /************************* log*********************/
 

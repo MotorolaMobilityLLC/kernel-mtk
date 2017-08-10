@@ -53,7 +53,12 @@
 #include "disp_drv_log.h"
 #endif
 
+#if defined(CONFIG_ARCH_MT6580)
+#include "disp_recorder.h"
+#else
 #include "display_recorder.h"
+#endif
+
 #include "disp_assert_layer.h"
 #include "ddp_hal.h"
 #include "disp_lcm.h"
