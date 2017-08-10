@@ -1244,7 +1244,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
 						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								     WLAN_STATUS_CONNECT_INDICATION,
+									WLAN_STATUS_JOIN_FAILURE,
 									(PVOID) & u2StaTusCode, sizeof(u2StaTusCode));
 
 						eNextState = AIS_STATE_IDLE;
@@ -1271,7 +1271,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						DBGLOG(AIS, WARN,
 							"Target BSS is NULL ,timeout and report disconnect!\n");
 						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+									WLAN_STATUS_JOIN_FAILURE, NULL, 0);
 						eNextState = AIS_STATE_IDLE;
 						fgIsTransition = TRUE;
 						prAisFsmInfo->rJoinReqTime = 0;
@@ -2479,6 +2479,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	P_BSS_INFO_T prAisBssInfo;
 	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
 	OS_SYSTIME rCurrentTime;
+	P_CONNECTION_SETTINGS_T prConnSettings;
 #if CFG_SUPPORT_ROAMING_RETRY
 	P_LINK_T prEssLink = NULL;
 	BOOLEAN fgIsUnderRoaming;
@@ -2498,6 +2499,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	fgIsUnderRoaming = FALSE;
 #endif
 	eNextState = prAisFsmInfo->eCurrentState;
+	prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 
 	DBGLOG(AIS, TRACE, "AISOK\n");
 
@@ -2643,8 +2645,15 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 						DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
 					break;
 				}
+				DBGLOG(AIS, TRACE,
+					"ucJoinFailureCount=%d %d, Status=%d Reason=%d, eConnectionState=%d, fgDisConnReassoc=%d\n",
+					prStaRec->ucJoinFailureCount, prBssDesc->ucJoinFailureCount,
+					prStaRec->u2StatusCode, prStaRec->u2ReasonCode,
+					prAisBssInfo->eConnectionState, prAisBssInfo->fgDisConnReassoc);
+
 				/* ASSERT(prBssDesc); */
 				/* ASSERT(prBssDesc->fgIsConnecting); */
+				prBssDesc->u2JoinStatus = prStaRec->u2StatusCode;
 				prBssDesc->ucJoinFailureCount++;
 				if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
 					aisAddBlacklist(prAdapter, prBssDesc);
@@ -2682,6 +2691,14 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 #else
 					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #endif /* CFG_SUPPORT_ROAMING_RETRY */
+					if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
+						(prBssDesc->u2JoinStatus == STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD ||
+						prBssDesc->u2JoinStatus == STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD)) {
+						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
+									WLAN_STATUS_JOIN_FAILURE, NULL, 0);
+
+						eNextState = AIS_STATE_IDLE;
+					}
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 				} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
@@ -2707,7 +2724,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-							     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+								WLAN_STATUS_JOIN_FAILURE, NULL, 0);
 
 					eNextState = AIS_STATE_IDLE;
 				} else if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
@@ -2721,10 +2738,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-							     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+								WLAN_STATUS_JOIN_FAILURE, NULL, 0);
 
 					eNextState = AIS_STATE_IDLE;
-
 				} else {
 					/* 4.b send reconnect request */
 					aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
@@ -4015,7 +4031,7 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			/* restore tx power control */
 			rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 			/* 3.4 Retreat to AIS_STATE_JOIN_FAILURE to terminate join operation */
-			kalIndicateStatusAndComplete(prAdapter->prGlueInfo, WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+			kalIndicateStatusAndComplete(prAdapter->prGlueInfo, WLAN_STATUS_JOIN_FAILURE, NULL, 0);
 			eNextState = AIS_STATE_IDLE;
 		}
 #else
