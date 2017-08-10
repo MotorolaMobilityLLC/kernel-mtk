@@ -918,6 +918,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 
 	case EXCEPTION:
 	case RESET:
+	case WAITING_TO_STOP:
 		netif_carrier_off(ccmni->dev);
 		break;
 
