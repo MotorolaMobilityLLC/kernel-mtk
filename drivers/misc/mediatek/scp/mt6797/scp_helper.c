@@ -787,7 +787,7 @@ int check_scp_resource(void)
 int request_freq(void)
 {
 	int value = 0;
-	int timeout = 10;
+	int timeout = 50;
 
 	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
 	 * use wake lock to prevent AP from entering suspend state
@@ -797,7 +797,7 @@ int request_freq(void)
 	while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
 		scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0);
 		mdelay(2);
-		timeout -= 1; /*try 10 times, total about 20ms*/
+		timeout -= 1; /*try 50 times, total about 100ms*/
 		if (timeout <= 0)
 			goto fail_to_set_freq;
 	}
