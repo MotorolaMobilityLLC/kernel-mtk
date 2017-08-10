@@ -3556,11 +3556,13 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_L:
+			/*
 			if (1 == ITurboRunSet) {
 				ITurbo_offset[i] = det->ops->volt_2_eem(det, MAX_ITURBO_OFFSET + det->eem_v_base) *
 						(det->volt_tbl[i] - det->volt_tbl[NR_FREQ-1]) /
 						(det->volt_tbl[0] - det->volt_tbl[NR_FREQ-1]);
 			} else
+			*/
 				ITurbo_offset[i] = 0;
 
 			det->volt_tbl_pmic[i] =
