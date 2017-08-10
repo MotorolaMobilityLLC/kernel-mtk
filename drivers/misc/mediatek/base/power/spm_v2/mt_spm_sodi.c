@@ -509,6 +509,14 @@ static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_
 
 static inline bool spm_sodi_abnormal_residency(struct wake_status *wakesta)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
+		if ((wakesta->r12 & WAKE_SRC_R12_CCIF0_EVENT_B) || (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)) {
+			/* will take care in spm_sodi_is_not_gpt_event */
+			return false;
+		}
+	}
+#endif
 	return (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
 			   (wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA);
 }
