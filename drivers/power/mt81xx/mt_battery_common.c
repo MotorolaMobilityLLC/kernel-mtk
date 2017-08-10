@@ -3474,6 +3474,62 @@ static const struct file_operations battery_cmd_proc_fops = {
 	.write = battery_cmd_write,
 };
 
+static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+	int len = 0;
+	char desc[32];
+	int cmd_current_unlimited = 0, cmd_discharging = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
+
+		if (cmd_current_unlimited) {
+			g_custom_charging_current = p_bat_charging_data->ac_charger_current;
+			battery_log(BAT_LOG_CRTI, "custom charging current = %d\n", g_custom_charging_current);
+		} else {
+			g_custom_charging_current = -1;
+			battery_log(BAT_LOG_CRTI, "custom charging current = %d\n", g_custom_charging_current);
+		}
+
+		if (cmd_discharging == 1)
+			g_cmd_hold_charging = true;
+		else
+			g_cmd_hold_charging = false;
+
+		wake_up_bat_update_meter();
+
+		return count;
+	}
+
+	battery_log(BAT_LOG_CRTI, "  bad argument, echo [usb_limit] [chr_enable] > current_cmd\n");
+
+	return -EINVAL;
+}
+
+static int current_cmd_read(struct seq_file *m, void *v)
+{
+	battery_log(BAT_LOG_CRTI, "g_custom_charging_current=%d g_cmd_hold_charging=%d\n",
+		g_custom_charging_current, g_cmd_hold_charging);
+
+	return 0;
+}
+
+static int proc_utilization_open_cur_stop(struct inode *inode, struct file *file)
+{
+	return single_open(file, current_cmd_read, NULL);
+}
+
+static const struct file_operations current_cmd_proc_fops = {
+	.open = proc_utilization_open_cur_stop,
+	.read = seq_read,
+	.write = current_cmd_write,
+};
+
 static int mt_batteryNotify_probe(struct platform_device *pdev)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -3493,16 +3549,11 @@ static int mt_batteryNotify_probe(struct platform_device *pdev)
 	if (!battery_dir) {
 		pr_err("[%s]: mkdir /proc/mtk_battery_cmd failed\n", __func__);
 	} else {
-#if 1
 		proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
 		battery_log(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
-#else
-		entry = create_proc_entry("battery_cmd", S_IRUGO | S_IWUSR, battery_dir);
-		if (entry) {
-			entry->read_proc = battery_cmd_read;
-			entry->write_proc = battery_cmd_write;
-		}
-#endif
+
+		proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
+		battery_log(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
 	}
 
 	battery_log(BAT_LOG_CRTI, "******** mtk_battery_cmd!! ********\n");
@@ -3595,3 +3646,4 @@ module_exit(battery_exit);
 MODULE_AUTHOR("Oscar Liu");
 MODULE_DESCRIPTION("Battery Device Driver");
 MODULE_LICENSE("GPL");
+
