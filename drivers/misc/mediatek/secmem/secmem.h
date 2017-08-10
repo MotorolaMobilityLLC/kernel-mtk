@@ -56,7 +56,9 @@ extern int svp_region_online(void);
 /* APIs for ION */
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
+int secmem_api_alloc_pa(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
+int secmem_api_unref_pa(u32 sec_handle, uint8_t *owner, uint32_t id);
 #endif /* SECMEM_KERNEL_API */
 
 #endif				/* end of SECMEM_H */

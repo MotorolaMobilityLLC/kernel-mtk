@@ -762,11 +762,11 @@ EXPORT_SYMBOL(secmem_api_query);
 
 #ifdef SECMEM_KERNEL_API
 static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
-	u32 *sec_handle, uint8_t *owner, uint32_t id, uint32_t clean)
+	u32 *sec_handle, uint8_t *owner, uint32_t id, uint32_t clean, uint32_t is_pa)
 {
 	int ret = 0;
 	struct secmem_param param;
-	u32 cmd = clean ? CMD_SEC_MEM_ALLOC_ZERO : CMD_SEC_MEM_ALLOC;
+	u32 cmd = is_pa ? CMD_SEC_MEM_ALLOC_PA : (clean ? CMD_SEC_MEM_ALLOC_ZERO : CMD_SEC_MEM_ALLOC);
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 	mutex_lock(&secmem_region_lock);
@@ -821,22 +821,29 @@ end:
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 	uint8_t *owner, uint32_t id)
 {
-	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 0);
+	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 0, 0);
 }
 EXPORT_SYMBOL(secmem_api_alloc);
 
 int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 	uint8_t *owner,	uint32_t id)
 {
-	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 1);
+	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 1, 0);
 }
 EXPORT_SYMBOL(secmem_api_alloc_zero);
 
+int secmem_api_alloc_pa(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
+	uint32_t id)
+{
+	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 1, 1);
+}
+EXPORT_SYMBOL(secmem_api_alloc_pa);
 
-int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
+static int secmem_api_unref_internal(u32 sec_handle, uint8_t *owner, uint32_t id, uint32_t is_pa)
 {
 	int ret = 0;
 	struct secmem_param param;
+	u32 cmd = is_pa ? CMD_SEC_MEM_UNREF_PA : CMD_SEC_MEM_UNREF;
 
 	if (secmem_session_open() < 0) {
 		ret = -ENXIO;
@@ -852,7 +859,7 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 		param.owner[MAX_NAME_SZ - 1] = 0;
 	}
 
-	ret = secmem_execute(CMD_SEC_MEM_UNREF, &param);
+	ret = secmem_execute(cmd, &param);
 
 	secmem_session_close();
 
@@ -875,7 +882,20 @@ end:
 
 	return ret;
 }
+
+int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
+{
+	return secmem_api_unref_internal(sec_handle, owner, id, 0);
+}
 EXPORT_SYMBOL(secmem_api_unref);
+
+
+int secmem_api_unref_pa(u32 sec_handle, uint8_t *owner, uint32_t id)
+{
+	return secmem_api_unref_internal(sec_handle, owner, id, 1);
+}
+EXPORT_SYMBOL(secmem_api_unref_pa);
+
 #endif /* END OF SECMEM_KERNEL_API */
 
 #ifdef CONFIG_MT_ENG_BUILD
