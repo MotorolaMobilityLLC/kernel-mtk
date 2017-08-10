@@ -944,7 +944,7 @@ static int __init early_init_dt_get_chosen(unsigned long node, const char *uname
 	return 1;
 }
 
-static int collect_lk_boot_arguments(void)
+static int __init collect_lk_boot_arguments(void)
 {
 	/* Device tree method */
 	int ret;
