@@ -267,10 +267,10 @@ unsigned int p15Tbl[][9] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x828, 0x40, 0x30},/* 663 */
 	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
 };
+#endif
 
 unsigned int gpuSb[8] = {0x54, 0x54, 0x54, 0x40, 0x40, 0x40, 0x40, 0x35};
 unsigned int gpuFy[8] = {0x54, 0x40, 0x40, 0x40, 0x40, 0x35, 0x00, 0x00};
-#endif
 static unsigned int record_tbl_locked[8];
 static unsigned int *recordTbl;
 static unsigned int cpu_speed;
@@ -346,13 +346,10 @@ static unsigned int cpu_speed;
 	#include "mach/mt_thermal.h"
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
+	#include "../../../power/mt6755/mt6311.h"
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_MTK_MT6750TT)
 		#include "mt_eem_turbo.h"
-	#else
-		#include "../../../power/mt6755/mt6311.h"
-		/* #include "mach/mt6311.h" */
 	#endif
-
 #else
 	#include "mach/mt_ptpslt.h"
 	#include "kernel2ctp.h"
@@ -585,6 +582,11 @@ static u32 eem_irq_number;
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 void __iomem *eem_apmixed_base;
 #endif
+#endif
+
+#define cpu_eem_is_extbuck_valid()     (is_ext_buck_exist() && is_ext_buck_sw_ready())
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+static unsigned int eem_is_extbuck_valid;
 #endif
 
 /**
@@ -1647,21 +1649,22 @@ static void get_freq_table_cpu(struct eem_det *det)
 
 	/* det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu, 0); */
 	#ifdef __KERNEL__
+		binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-		binLevel = 1;
+		binLevel = (eem_is_extbuck_valid) ? 2 : 1;
 		cpuBinLevel = binLevel;
 		cpuBinLevel_eng = 0x20;
 		#else
 		binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
-		binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
 		freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
 		#endif
 	#else
+		binLevel_eng = GET_BITS_VAL(15:0, eem_read(0x10206278));
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/* binLevel = (eem_is_extbuck_valid) ? 2 : 1; */
 		binLevel = 1;
 		#else
 		binLevel = GET_BITS_VAL(7:0, eem_read(0x1020627C));
-		binLevel_eng = GET_BITS_VAL(15:0, eem_read(0x10206278));
 		freq_bound = GET_BITS_VAL(25:23, eem_read(0x10206044));
 		#endif
 	#endif
@@ -1702,16 +1705,20 @@ static void get_freq_table_cpu(struct eem_det *det)
 						((freq_bound == 5) ? bigFreq_FY_M[i] : bigFreq_FY[i]),
 					#endif
 					det->max_freq_khz);
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				} else if (2 == binLevel) {
+				#else
 				} else if ((2 == binLevel) || (4 == binLevel)) {
+				#endif
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
 					det->max_freq_khz);
-#ifdef CONFIG_ARCH_MT6755_TURBO
+				#ifdef CONFIG_ARCH_MT6755_TURBO
 				} else if (0x22 == binLevel) {
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_P15[i] : bigFreq_P15[i],
 					det->max_freq_khz);
-#endif
+				#endif
 				} else {
 					if ((2 == ((binLevel_eng >> 4) & 0x07)) ||
 					    (2 == ((binLevel_eng >> 10) & 0x07))) {
@@ -2259,6 +2266,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMIN	= VMIN_VAL_GPU; /* override default setting */
 		det->DVTFIXED	= DVTFIXED_VAL_GPU;
 		det->VCO	= VCO_VAL_GPU;
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			if (eem_is_extbuck_valid)
+				det->features = FEA_INIT01 | FEA_INIT02 | FEA_MON;
+		#endif
 		break;
 
 	#if 0
@@ -2368,6 +2379,17 @@ static void eem_set_eem_volt(struct eem_det *det)
 		else if (det_to_id(det) == EEM_DET_BIG)
 			det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], (*(recordTbl + (i + 8) * 9 + 8) & 0x7F));
 		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		else {
+			if (eem_is_extbuck_valid) {
+				if (8 == det->num_freq_tbl)
+					det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuSb[i]);
+				else {
+					if (0 == gpuFy[i])
+						break;
+					det->volt_tbl_pmic[i] = min(det->volt_tbl_pmic[i], gpuFy[i]);
+				}
+			}
+		}
 		#else
 		else {
 			if (8 == det->num_freq_tbl)
@@ -3366,10 +3388,21 @@ void get_devinfo(struct eem_devinfo *p)
 #endif
 
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0))
-		val[7] = 0x01;
-	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0))
-		val[7] = val[7] | (0x01<<8);
+	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0)) {
+		if (cpu_eem_is_extbuck_valid()) {
+			if (p->GPU_BDES != 0)
+				val[7] = 0x01;
+		} else
+			val[7] = 0x01;
+	}
+
+	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0)) {
+		if (cpu_eem_is_extbuck_valid()) {
+			if (p->GPU_MTDES != 0)
+				val[7] = val[7] | (0x01<<8);
+		} else
+			val[7] = val[7] | (0x01<<8);
+	}
 	#else
 	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0) && (p->GPU_BDES != 0))
 		val[7] = 0x01;
@@ -3392,7 +3425,11 @@ void get_devinfo(struct eem_devinfo *p)
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	fab = get_devinfo_with_index(28) & 0x40000000;
 	segment = get_devinfo_with_index(21) & 0xFF;
-	if (((segment == 0x41) || (segment == 0x45) || (segment == 0x40)) && !(fab))
+	if (((segment == 0x41) ||
+	     (segment == 0x45) ||
+	     (segment == 0x40) ||
+	     (segment == 0xC1) ||
+	     (segment == 0xC5)) && !(fab))
 		#if defined(CONFIG_MTK_MT6750TT)
 		ctrl_ITurbo = 1; /* t */
 		#else
@@ -3511,6 +3548,10 @@ static int eem_probe(struct platform_device *pdev)
 		pmic_set_register_value(PMIC_RG_VPROC_MODESET, 1);
 		pmic_set_register_value(PMIC_RG_VCORE_MODESET, 1);
 		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 1);
+		if (cpu_eem_is_extbuck_valid()) {
+			eem_is_extbuck_valid = 1;
+			/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
+		}
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
 		pmic_config_interface(0x44E, 0x1, 0x1, 1); /* set PWM mode for MT6351 */
@@ -3544,6 +3585,8 @@ static int eem_probe(struct platform_device *pdev)
 		pmic_set_register_value(PMIC_RG_VPROC_MODESET, 0);
 		pmic_set_register_value(PMIC_RG_VCORE_MODESET, 0);
 		pmic_set_register_value(PMIC_RG_VCORE2_MODESET, 0);
+		/* if (cpu_eem_is_extbuck_valid()) */
+			/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
 	#else
 		/* for Jade/Everest/Olympus(MT6351) */
 		mt6311_config_interface(0x7C, 0x0, 0x1, 6); /* set non-PWM mode for MT6311 */
@@ -4639,9 +4682,9 @@ static int __init vcore_ptp_init(void)
 static int __init eem_conf(void)
 {
 	int i;
-	unsigned int binLevel;
+	unsigned int binLevel, binLevel_eng;
 	#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	unsigned int freq_bound, binLevel_eng;
+	unsigned int freq_bound;
 	#endif
 	struct device_node *cpuSpeedNode = NULL;
 
@@ -4663,12 +4706,12 @@ static int __init eem_conf(void)
 	eem_error("0--->The cpu_speed = %d\n", cpu_speed);
 
 	/* read E-fuse for segment selection */
+	binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	binLevel = 1;
+	binLevel = (cpu_eem_is_extbuck_valid()) ? 2 : 1;
 	if (0) {
 	#else
 	binLevel = GET_BITS_VAL(7:0, get_devinfo_with_index(21));
-	binLevel_eng = GET_BITS_VAL(15:0, get_devinfo_with_index(19));
 	freq_bound = GET_BITS_VAL(25:23, get_devinfo_with_index(4));
 	if (1001 == cpu_speed) {
 	#endif
@@ -4700,19 +4743,21 @@ static int __init eem_conf(void)
 				recordTbl = &fyTbl[0][0];
 				eem_error("@The table ----->(fyTbl)\n");
 			}
-		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		} else if (2 == binLevel) {
+		#else
 		} else if ((2 == binLevel) || (4 == binLevel)) {
+		#endif
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
-		#endif
 		#ifdef CONFIG_ARCH_MT6755_TURBO
 		} else if (0x22 == binLevel) {
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
 		#endif
 		} else {
-			#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
+				#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 				if (freq_bound == 5) {
 					recordTbl = &fyTbl_M[0][0];
 					eem_error("@The table ----->(ENG fyTbl_M)\n");
@@ -4720,13 +4765,13 @@ static int __init eem_conf(void)
 					recordTbl = &fyTbl[0][0];
 					eem_error("@The table ----->(ENG fyTbl)\n");
 				}
+				#else
+				recordTbl = &fyTbl[0][0];
+				#endif
 			} else {
 				recordTbl = &sbTbl[0][0];
 				eem_error("@The table ----->(ENG sbTbl)\n");
 			}
-			#else
-			recordTbl = &fyTbl[0][0];
-			#endif
 		}
 	}
 
