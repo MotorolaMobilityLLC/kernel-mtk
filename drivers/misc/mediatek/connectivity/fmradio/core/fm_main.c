@@ -1492,8 +1492,8 @@ fm_s32 fm_i2s_set(struct fm *fm, fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
-	if ((onoff != 0) || (onoff != 1))
-		onoff = 0;	/* default on. */
+	if ((onoff != 0) && (onoff != 1))
+		onoff = 0; /* default set i2s on in case user input illegal.*/
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
