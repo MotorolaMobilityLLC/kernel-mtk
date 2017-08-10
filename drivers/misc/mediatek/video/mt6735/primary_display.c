@@ -7112,7 +7112,7 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	if (pgc->session_mode == sess_mode)
 		goto done;
 
-	if (pgc->state == DISP_ALIVE || primary_get_state() == DISP_FREEZE) {
+	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("primary display switch from %s to %s in suspend state!!!\n",
 			session_mode_spy(pgc->session_mode), session_mode_spy(sess_mode));
 
