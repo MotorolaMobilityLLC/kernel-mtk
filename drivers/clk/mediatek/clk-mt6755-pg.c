@@ -106,9 +106,11 @@ static struct subsys_ops AUD_sys_ops;
 /*static struct subsys_ops IFR_sys_ops;*/
 static void __iomem *infracfg_base;
 static void __iomem *spm_base;
+static void __iomem *infra_base;
 
 #define INFRACFG_REG(offset)		(infracfg_base + offset)
 #define SPM_REG(offset)			(spm_base + offset)
+#define INFRA_REG(offset)			(infra_base + offset)
 
 /**************************************
  * for non-CPU MTCMOS
@@ -146,6 +148,15 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define INFRA_TOPAXI_PROTECTEN_1	INFRACFG_REG(0x0250) /* correct */
 #define INFRA_TOPAXI_PROTECTSTA1_1	INFRACFG_REG(0x0258) /* correct */
 #define C2K_SPM_CTRL			INFRACFG_REG(0x0368) /* correct */
+
+
+#define INFRA_BUS_IDLE_STA1	INFRA_REG(0x0180)
+#define INFRA_BUS_IDLE_STA2	INFRA_REG(0x0184)
+#define INFRA_BUS_IDLE_STA3	INFRA_REG(0x0188)
+#define INFRA_BUS_IDLE_STA4	INFRA_REG(0x018c)
+#define INFRA_BUS_IDLE_STA5	INFRA_REG(0x0190)
+
+
 
 #define SPM_PROJECT_CODE		0xb16
 /* MCU/CPU */
@@ -314,27 +325,51 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 	return old_pgcb;
 }
 
+#define _TOPAXI_TIMEOUT_CNT_ 4000
 int spm_topaxi_protect(unsigned int mask_value, int en)
 {
 	unsigned long flags;
+	int count = 0;
+	struct timeval tm_s, tm_e;
+	unsigned int tm_val = 0;
 
+	do_gettimeofday(&tm_s);
 	spm_mtcmos_noncpu_lock(flags);
 
 	if (en == 1) {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | (mask_value));
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value))
-			;
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value)) {
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
+		}
 	} else {
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~(mask_value));
-		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value))
-			;
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) {
+			count++;
+			if (count > _TOPAXI_TIMEOUT_CNT_)
+				break;
+		}
 	}
 
 	spm_mtcmos_noncpu_unlock(flags);
-/*
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
-*/
+
+	if (count > _TOPAXI_TIMEOUT_CNT_) {
+		do_gettimeofday(&tm_e);
+		tm_val = (tm_e.tv_sec - tm_s.tv_sec) * 1000000 + (tm_e.tv_usec - tm_s.tv_usec);
+		pr_err("TOPAXI Bus Protect Timeout Error (%d us)(%d) !!\n", tm_val, count);
+		pr_err("mask_value = 0x%x (%d)\n", mask_value, en);
+		pr_err("INFRA_TOPAXI_PROTECTEN = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN));
+		pr_err("INFRA_TOPAXI_PROTECTSTA1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1));
+		pr_err("INFRA_TOPAXI_PROTECTEN_1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTEN_1));
+		pr_err("INFRA_TOPAXI_PROTECTSTA1_1 = 0x%x\n", clk_readl(INFRA_TOPAXI_PROTECTSTA1_1));
+		pr_err("INFRA_BUS_IDLE_STA1 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA1));
+		pr_err("INFRA_BUS_IDLE_STA2 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA2));
+		pr_err("INFRA_BUS_IDLE_STA3 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA3));
+		pr_err("INFRA_BUS_IDLE_STA4 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA4));
+		pr_err("INFRA_BUS_IDLE_STA5 = 0x%x\n", clk_readl(INFRA_BUS_IDLE_STA5));
+		BUG();
+	}
 	return 0;
 }
 
@@ -403,12 +438,12 @@ static struct subsys *id_to_sys(unsigned int id)
 static int spm_mtcmos_ctrl_connsys(int state)
 {
 	int err = 0;
-	int count = 0;
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) != CONN_PROT_MASK) {
@@ -416,6 +451,9 @@ static int spm_mtcmos_ctrl_connsys(int state)
 			if (count > 1000)
 				break;
 		}
+#else
+		spm_topaxi_protect(CONN_PROT_MASK, 1);
+#endif
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -456,10 +494,14 @@ static int spm_mtcmos_ctrl_connsys(int state)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK)
 			;
+#else
+		spm_topaxi_protect(CONN_PROT_MASK, 0);
+#endif
 		/* TINFO="Finish to turn on CONN" */
 	}
 	return err;
@@ -610,7 +652,6 @@ static int spm_mtcmos_ctrl_mdsys2(int state)
 int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 {
 	int err = 0;
-	int count = 0;
 
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
@@ -626,6 +667,7 @@ int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 #endif
 		/* TINFO="Start to turn off MDSYS_INTF_INFRA" */
 		/* TINFO="Set bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) | MDSYS_INTF_INFRA_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_MASK) !=
@@ -634,6 +676,9 @@ int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 			if (count > 1000)
 				break;
 		}
+#else
+		spm_topaxi_protect(MDSYS_INTF_INFRA_PROT_MASK, 1);
+#endif
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -684,10 +729,14 @@ int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN,
 			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MDSYS_INTF_INFRA_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_MASK)
 			;
+#else
+		spm_topaxi_protect(MDSYS_INTF_INFRA_PROT_MASK, 0);
+#endif
 		/* TINFO="Finish to turn on MDSYS_INTF_INFRA" */
 	}
 	return err;
@@ -1918,7 +1967,8 @@ struct mtk_power_gate scp_clks[] __initdata = {
 
 static void __init init_clk_scpsys(
 		void __iomem *infracfg_reg,
-		void __iomem *spm_reg ,
+		void __iomem *spm_reg,
+		void __iomem *infra_reg,
 		struct clk_onecell_data *clk_data)
 {
 	int i;
@@ -1927,6 +1977,7 @@ static void __init init_clk_scpsys(
 
 	infracfg_base = infracfg_reg;
 	spm_base = spm_reg;
+	infra_base = infra_reg;
 
 	syss[SYS_MD1].ctl_addr = MD1_PWR_CON;
 	syss[SYS_MD2].ctl_addr = C2K_PWR_CON;
@@ -2005,6 +2056,15 @@ static void __init mt_scpsys_init(struct device_node *node)
 	void __iomem *infracfg_reg;
 	void __iomem *spm_reg;
 	int r;
+	void __iomem *infra_reg;
+	struct device_node *node2;
+
+	node2 = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+	if (!node2)
+		pr_err("[infracfg] find node failed\n");
+	infra_reg = of_iomap(node, 0);
+	if (!infra_reg)
+		pr_err("[infracfg] base failed\n");
 
 	infracfg_reg = get_reg(node, 0);
 	spm_reg = get_reg(node, 1);
@@ -2019,7 +2079,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 	clk_data = alloc_clk_data(SCP_NR_SYSS);
 
-	init_clk_scpsys(infracfg_reg, spm_reg, clk_data);
+	init_clk_scpsys(infracfg_reg, spm_reg, infra_reg, clk_data);
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
