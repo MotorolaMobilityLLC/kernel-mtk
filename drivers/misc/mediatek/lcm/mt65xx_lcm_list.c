@@ -925,6 +925,13 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35695_fhd_dsi_vdo_truly_nt50358_lcm_drv,
 #endif
 
+#if defined(NT35695B_FHD_DSI_VDO_AUO_NT50358_EXTERN)
+	&nt35695B_fhd_dsi_vdo_auo_nt50358_extern_lcm_drv,
+#endif
+
+#if defined(NT35695B_FHD_DSI_VDO_AUO_NT50358)
+	&nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv,
+#endif
 #if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_720P)
 	&nt35695_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv,
 #endif
@@ -947,6 +954,13 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(ST7789H2_DBI)
 	&st7789h2_dbi_lcm_drv,
+#endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081)
+	&nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv,
+#endif
+
+#if defined(NT35695B_FHD_DSI_VDO_AUO_RT5081)
+	&nt35695B_fhd_dsi_vdo_auo_rt5081_lcm_drv,
 #endif
 
 #if defined(CM_N070ICE_DSI_VDO_MT8173)
@@ -988,7 +1002,19 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_VDO_TRULY_NT50358_720P)
 	&nt35695_fhd_dsi_vdo_truly_nt50358_720p_lcm_drv,
 #endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv,
+#endif
 
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_EXTERN)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_extern_lcm_drv,
+#endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_720P)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv,
+#endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_720P_EXTERN)
+	&nt35695B_fhd_dsi_cmd_auo_nt50358_720p_extern_lcm_drv,
+#endif
 #if defined(AUO_WUXGA_DSI_VDO)
 	&auo_wuxga_dsi_vdo_lcm_drv,
 #endif

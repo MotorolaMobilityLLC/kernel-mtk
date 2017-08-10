@@ -255,7 +255,15 @@ extern LCM_DRIVER nt36850_wqhd_dsi_2k_cmd_lcm_drv;
 extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv;
 extern LCM_DRIVER nt35695_fhd_dsi_vdo_truly_nt50358_720p_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_extern_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_extern_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_lcm_drv;
 extern LCM_DRIVER ft8707_fhd_dsi_vdo_lgd_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_extern_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv;
 extern LCM_DRIVER auo_wuxga_dsi_vdo_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
