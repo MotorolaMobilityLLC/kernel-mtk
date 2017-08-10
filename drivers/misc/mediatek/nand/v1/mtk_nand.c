@@ -32,6 +32,7 @@
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
 #include <linux/miscdevice.h>
+#include <linux/random.h>
 #include <mach/dma.h>
 #include <mach/mt_clkmgr.h>
 #include <mach/mtk_nand.h>
@@ -1681,6 +1682,10 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 					maxSectorBitErr, ecc_threshold, u4PageAddr);
 				mtd->ecc_stats.corrected++;
 			}
+#ifdef CONFIG_MTK_NAND_BITFLIP
+			if (26 > (prandom_u32() % 10000))
+				mtd->ecc_stats.corrected++;
+#endif
 		}
 	}
 	if (0 != (DRV_Reg32(NFI_STA_REG32) & STA_READ_EMPTY)) {
