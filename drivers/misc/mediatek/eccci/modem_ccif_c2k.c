@@ -1510,7 +1510,7 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 		/*rx */
 		md_ctrl->rxq[i].ringbuf = ringbuf;
 		md_ctrl->rxq[i].ccif_ch = D2H_RINGQ0 + i;
-		if (i == C2K_PCM_RX_Q)
+		if (i != C2K_MD_LOG_RX_Q)
 			md_ctrl->rxq[i].worker =
 				alloc_workqueue("rx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, i);
 		else
