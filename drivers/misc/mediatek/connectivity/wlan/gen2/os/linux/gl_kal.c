@@ -1804,6 +1804,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 		kalHaltUnlock();
 		return WLAN_STATUS_FAILURE;
 	}
+	rHaltCtrl.fgHeldByKalIoctl = TRUE;
 
 	/* <2> TODO: thread-safe */
 
@@ -1865,6 +1866,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 	DBGLOG(OID, TEMP, "kalIoctl: done\n");
 	up(&prGlueInfo->ioctl_sem);
+	rHaltCtrl.fgHeldByKalIoctl = FALSE;
 	kalHaltUnlock();
 
 	return ret;
