@@ -3016,11 +3016,13 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file, const char __user *bu
 					loff_t *data)
 {
 	int ret;
-	int i_case = 0, i_par1 = -1, i_par2 = -1, i_clk = 0, i_driving = 0, i_edge = 0, i_data =
-	    0, i_delay = 0;
+	int i_case = 0, i_par1 = -1, i_par2 = -1;
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
+	int i_clk = 0, i_driving = 0, i_edge = 0, i_data = 0, i_delay = 0;
 	u32 cur_rxdly0;
 	u8 u8_dat0, u8_dat1, u8_dat2, u8_dat3;
 	void __iomem *base;
+#endif
 	int scan_ret;
 
 	if (count == 0)
@@ -3055,7 +3057,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file, const char __user *bu
 #else
 	return -1;
 #endif
-
+#if defined(CONFIG_MTK_WCN_CMB_SDIO_SLOT)
 	if (i_case == 1) {
 		if (!((i_par1 == 0) || (i_par1 == 1)))
 			return -1;
@@ -3138,7 +3140,7 @@ static ssize_t msdc_debug_proc_write_FT(struct file *file, const char __user *bu
 	} else {
 		return -1;
 	}
-
+#endif
 	return 1;
 }
 
