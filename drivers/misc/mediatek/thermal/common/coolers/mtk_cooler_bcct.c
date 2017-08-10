@@ -604,9 +604,9 @@ static int mtk_cl_abcct_lcmoff_set_cur_temp(struct thermal_cooling_device *cdev,
 		((abcct_lcmoff_curr_temp > abcct_target_temp) && (abcct_lcmoff_iterm > 0)))
 		abcct_lcmoff_iterm = 0;
 
-	if (((abcct_lcmoff_curr_temp < abcct_lcmoff_prev_temp)
+	if (((abcct_lcmoff_curr_temp < abcct_target_temp)
 		&& (abcct_lcmoff_curr_temp < abcct_lcmoff_prev_temp)) ||
-		((abcct_lcmoff_curr_temp > abcct_lcmoff_prev_temp)
+		((abcct_lcmoff_curr_temp > abcct_target_temp)
 		&& (abcct_lcmoff_curr_temp > abcct_lcmoff_prev_temp)))
 		dterm = abcct_lcmoff_prev_temp - abcct_lcmoff_curr_temp;
 	else
@@ -1015,14 +1015,6 @@ static const struct file_operations _cl_chrlmt_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-static int bat_info_soc; /* battery soc */
-static int bat_info_uisoc; /* battery UI soc */
-static int bat_info_vbat; /* battery voltage */
-static int bat_info_ibat; /* charging current */
-static int bat_info_mintchr; /* charger min temp */
-static int bat_info_maxtchr; /* charger max temp */
-static int bat_info_vbus; /* Vbus */
-static int bat_info_aicr; /* input current */
 
 static int _cl_battery_status_read(struct seq_file *m, void *v)
 {
