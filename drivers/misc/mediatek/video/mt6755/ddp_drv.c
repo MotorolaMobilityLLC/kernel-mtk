@@ -268,7 +268,7 @@ static int open_tplay_driver_connection(void)
 		}
 	} while (0);
 
-	return (MC_DRV_OK == mcRet) ? 0 : -1;
+	return  0;
 }
 
 static int close_tplay_driver_connection(void)
