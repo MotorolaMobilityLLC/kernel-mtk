@@ -521,7 +521,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			copy_size = count;
 	} else {
 		pr_warn("%s, Insufficient data !\n", __func__);
-		if (unlikely(get_LowLatencyDebug()) & DEBUG_DL2_AEE_OTHERS)
+		if (unlikely(get_LowLatencyDebug() & DEBUG_DL2_AEE_OTHERS))
 			AUDIO_AEE("ISRCopy has remaining data !!");
 	}
 
@@ -650,9 +650,8 @@ retry:
 
 	if (unlikely(ISRCopyBuffer.u4BufferSize)) {
 		pr_warn("%s, remaining data %d\n", __func__, ISRCopyBuffer.u4BufferSize);
-		if (unlikely(get_LowLatencyDebug()) & DEBUG_DL2_AEE_OTHERS) {
+		if (unlikely(get_LowLatencyDebug() & DEBUG_DL2_AEE_OTHERS))
 			AUDIO_AEE("ISRCopy has remaining data !!");
-		}
 	}
 
 
