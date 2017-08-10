@@ -1500,7 +1500,7 @@ static struct clk_onecell_data *alloc_clk_data(unsigned int clk_num)
 	int i;
 	struct clk_onecell_data *clk_data;
 
-	clk_data = kzalloc(sizeof(clk_data), GFP_KERNEL);
+	clk_data = kzalloc(sizeof(*clk_data), GFP_KERNEL);
 	if (!clk_data)
 		return NULL;
 
