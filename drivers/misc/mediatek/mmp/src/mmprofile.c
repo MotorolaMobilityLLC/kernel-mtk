@@ -680,7 +680,8 @@ static void MMProfileLog_Int(MMP_Event event, MMP_LogType type, unsigned long da
 
 	if (!MMProfileGlobals.enable)
 		return;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -760,7 +761,8 @@ static long MMProfileLogMetaInt(MMP_Event event, MMP_LogType type, MMP_MetaData_
 
 	if (!MMProfileGlobals.enable)
 		return 0;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return -3;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -983,7 +985,8 @@ long MMProfileQueryEnable(MMP_Event event)
 {
 	if (!MMProfileGlobals.enable)
 		return 0;
-	if (event >= MMProfileMaxEventCount)
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return 0;
 	if (event == MMP_InvalidEvent)
 		return MMProfileGlobals.enable;
@@ -1024,6 +1027,9 @@ long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
 		return -3;
 	if (in_interrupt())
 		return 0;
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
+		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
 		MMP_MetaData_t MetaData;
@@ -1055,6 +1061,9 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long d
 	if (event >= MMProfileMaxEventCount)
 		return -3;
 	if (in_interrupt())
+		return 0;
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -1090,6 +1099,9 @@ long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitma
 	if (event >= MMProfileMaxEventCount)
 		return -3;
 	if (in_interrupt())
+		return 0;
+	if ((event >= MMP_MaxStaticEvent) ||
+	    (event >= MMProfileMaxEventCount) || (event == MMP_InvalidEvent))
 		return 0;
 	if (bMMProfileInitBuffer && MMProfileGlobals.start
 	    && (MMProfileGlobals.event_state[event] & MMP_EVENT_STATE_ENABLED)) {
@@ -1579,8 +1591,11 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		if ((!MMProfileGlobals.enable) ||
 		    (!bMMProfileInitBuffer) ||
 		    (!MMProfileGlobals.start) ||
+		    (arg >= MMP_MaxStaticEvent) ||
 		    (arg >= MMProfileMaxEventCount) ||
-		    (!(MMProfileGlobals.event_state[arg] & MMP_EVENT_STATE_ENABLED)))
+		    (arg == MMP_InvalidEvent))
+			ret = -EINVAL;
+		else if (!(MMProfileGlobals.event_state[arg] & MMP_EVENT_STATE_ENABLED))
 			ret = -EINVAL;
 		break;
 	case MMP_IOC_ISENABLE:
