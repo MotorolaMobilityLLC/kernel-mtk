@@ -45,6 +45,7 @@ read_tbat_value(void)
 static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
 
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
@@ -476,6 +477,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktsbattery_data->trip[8], &ptr_mtktsbattery_data->t_type[8], ptr_mtktsbattery_data->bind8,
 		&ptr_mtktsbattery_data->trip[9], &ptr_mtktsbattery_data->t_type[9], ptr_mtktsbattery_data->bind9,
 		&ptr_mtktsbattery_data->time_msec) == 32) {
+		down(&sem_mutex);
 		mtktsbattery_dprintk("[mtktsbattery_write] mtktsbattery_unregister_thermal\n");
 		mtktsbattery_unregister_thermal();
 
@@ -484,6 +486,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 					"Bad argument");
 			mtktsbattery_dprintk("[mtktsbattery_write] bad argument\n");
 			kfree(ptr_mtktsbattery_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -534,6 +537,7 @@ static ssize_t mtktsbattery_write(struct file *file, const char __user *buffer, 
 
 		mtktsbattery_dprintk("[mtktsbattery_write] mtktsbattery_register_thermal\n");
 		mtktsbattery_register_thermal();
+		up(&sem_mutex);
 
 		kfree(ptr_mtktsbattery_data);
 		/* battery_write_flag=1; */

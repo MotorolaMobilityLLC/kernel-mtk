@@ -31,9 +31,10 @@
 
 #define MTK_ALLTS_SW_FILTER         (1)
 
-static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
+static int isTimerCancelled;
 
 static unsigned int interval = 1000;	/* mseconds, 0 : no auto polling */
 static int trip_temp[10] = {120000, 110000, 100000, 90000, 80000,
@@ -256,16 +257,33 @@ static int tsallts_get_crit_temp(struct thermal_zone_device *thermal, unsigned l
 
 void mtkts_allts_cancel_ts4_timer(void)
 {
-	if (thz_dev && !doing_tz_unregister)
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
+		isTimerCancelled = 1;
+	}
+
+	up(&sem_mutex);
 }
 
 
 void mtkts_allts_start_ts4_timer(void)
 {
-	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
+
+	if (!isTimerCancelled)
+		return;
+
+	isTimerCancelled = 0;
+
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 	/*1000 = 1sec */
+	up(&sem_mutex);
 }
 
 /* bind callback functions to thermalzone */
@@ -342,6 +360,8 @@ static ssize_t tsallts_write(struct file *file, const char __user *buffer, size_
 		&ptr_temp_data->trip[8], &ptr_temp_data->t_type[8], ptr_temp_data->bind8,
 		&ptr_temp_data->trip[9], &ptr_temp_data->t_type[9], ptr_temp_data->bind9,
 		&ptr_temp_data->time_msec) == 32) {
+
+		down(&sem_mutex);
 		tsallts_dprintk("[tsallts_write_ts4] tsallts_unregister_thermal\n");
 		if (thz_dev) {
 			mtk_thermal_zone_device_unregister(thz_dev);
@@ -353,6 +373,7 @@ static ssize_t tsallts_write(struct file *file, const char __user *buffer, size_
 					"Bad argument");
 			tsallts_dprintk("[tsallts_write4] bad argument\n");
 			kfree(ptr_temp_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -406,7 +427,7 @@ static ssize_t tsallts_write(struct file *file, const char __user *buffer, size_
 								   interval);
 		}
 
-
+		up(&sem_mutex);
 		kfree(ptr_temp_data);
 		return count;
 	}
@@ -456,10 +477,8 @@ static void tsallts_unregister_thermal(void)
 	tsallts_dprintk("[tsallts_unregister_thermal]\n");
 
 	if (thz_dev) {
-		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
-		doing_tz_unregister = 0;
 	}
 }
 

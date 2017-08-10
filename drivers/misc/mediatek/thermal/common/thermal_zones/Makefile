@@ -165,7 +165,7 @@ ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 endif
 
-obj-$(CONFIG_THERMAL) += mtk_ts_Abts.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_Abts.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts1.o
 obj-$(CONFIG_THERMAL) += mtk_ts2.o
