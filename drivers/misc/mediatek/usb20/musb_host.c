@@ -101,6 +101,7 @@
  * of transfers between endpoints, or anything clever.
  */
 
+static struct usb_host_endpoint pre_hep;
 static u8 dynamic_fifo_total_slot = 15;
 int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 {
@@ -2515,8 +2516,10 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	if (ret != 0) {
 		spin_lock_irqsave(&musb->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);
-		spin_unlock_irqrestore(&musb->lock, flags);
+		DBG(0, "%s - free qh after enqueue done!\n", __func__);
+		qh->hep->hcpriv = NULL;
 		kfree(qh);
+		spin_unlock_irqrestore(&musb->lock, flags);
 	}
 	return ret;
 }
@@ -2669,9 +2672,31 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 
 	spin_lock_irqsave(&musb->lock, flags);
 
-	qh = hep->hcpriv;
-	if (qh == NULL)
-		goto exit;
+	if (hep == &pre_hep) {
+		struct musb_hw_ep *hw_ep;
+		int epnum = usb_endpoint_num(&hep->desc);
+
+		hw_ep = musb->endpoints + epnum;
+		if (is_in)
+			qh = hw_ep->in_qh;
+		else
+			qh = hw_ep->out_qh;
+
+		if (qh == NULL)
+			goto exit;
+
+		DBG(0, "qh:%p, is_in:%x, epnum:%d\n", qh, is_in, epnum);
+
+		if (is_in)
+			hep = hw_ep->in_qh->hep;
+		else
+			hep = hw_ep->out_qh->hep;
+
+	} else {
+		qh = hep->hcpriv;
+		if (qh == NULL)
+			goto exit;
+	}
 
 	/* NOTE: qh is invalid unless !list_empty(&hep->urb_list) */
 
@@ -2721,18 +2746,18 @@ exit:
 void musb_h_pre_disable(struct musb *musb)
 {
 	int i = 0;
-	struct musb_hw_ep *hw_ep = NULL;
 	struct usb_hcd *hcd = musb_to_hcd(musb);
 
 	DBG(0, "disable all endpoints\n");
 	if (hcd == NULL)
 		return;
+
 	for (i = 0; i < musb->nr_endpoints; i++) {
-		hw_ep = musb->endpoints + i;
-		if (hw_ep->in_qh != NULL && hw_ep->in_qh->hep != NULL)
-			musb_h_disable(hcd, hw_ep->in_qh->hep);
-		else if (hw_ep->out_qh != NULL && hw_ep->out_qh->hep != NULL)
-			musb_h_disable(hcd, hw_ep->out_qh->hep);
+		pre_hep.desc.bEndpointAddress = (i | USB_DIR_IN);
+		musb_h_disable(hcd, &pre_hep);
+
+		pre_hep.desc.bEndpointAddress = (i | USB_DIR_OUT);
+		musb_h_disable(hcd, &pre_hep);
 	}
 }
 

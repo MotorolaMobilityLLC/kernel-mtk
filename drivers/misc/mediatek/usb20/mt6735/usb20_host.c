@@ -322,8 +322,8 @@ void switch_int_to_host(struct musb *musb)
 void switch_int_to_host_and_mask(struct musb *musb)
 {
 #ifdef ID_PIN_USE_EX_EINT
-	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
 	disable_irq(usb_iddig_number);
+	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_LOW);
 #else
 	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
 	mb();
