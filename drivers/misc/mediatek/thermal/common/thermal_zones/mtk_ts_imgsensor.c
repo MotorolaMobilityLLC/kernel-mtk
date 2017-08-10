@@ -265,7 +265,7 @@ static ssize_t mtktsimgsensor_write(struct file *file, const char __user *buffer
 
 	if (sscanf
 	    (ptr_mtktsimgsensor_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktsimgsensor_data->trip[0], &ptr_mtktsimgsensor_data->t_type[0], ptr_mtktsimgsensor_data->bind0,
 		&ptr_mtktsimgsensor_data->trip[1], &ptr_mtktsimgsensor_data->t_type[1], ptr_mtktsimgsensor_data->bind1,
@@ -280,6 +280,14 @@ static ssize_t mtktsimgsensor_write(struct file *file, const char __user *buffer
 		&ptr_mtktsimgsensor_data->time_msec) == 32) {
 		mtktsimgsensor_dprintk("%s legal parameters\n", __func__);
 		mtktsimgsensor_unregister_thermal();
+
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktsimgsensor_write",
+					"Bad argument");
+			mtktsimgsensor_dprintk("mtktsimgsensor_write bad argument\n");
+			kfree(ptr_mtktsimgsensor_data);
+			return -EINVAL;
+		}
 
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktsimgsensor_data->t_type[i];
@@ -397,7 +405,7 @@ static ssize_t imgsensortemp_write(struct file *file, const char __user *buffer,
 
 	input_count = sscanf
 	    (ptr_mtktsimgsensor_data->desc,
-		"%ld,%ld,%ld,%ld,%s,%s,%s,%s",
+		"%ld,%ld,%ld,%ld,%19s,%19s,%19s,%19s",
 		&ptr_mtktsimgsensor_data->t_imgsensor0, &ptr_mtktsimgsensor_data->t_imgsensor1,
 		&ptr_mtktsimgsensor_data->t_imgsensor2, &ptr_mtktsimgsensor_data->t_imgsensor3,
 		ptr_mtktsimgsensor_data->imgsensor0, ptr_mtktsimgsensor_data->imgsensor1,

@@ -331,6 +331,14 @@ static ssize_t tsda9214_write(struct file *file, const char __user *buffer, size
 		tsda9214_dprintk("[tsda9214_write] tsda9214_unregister_thermal\n");
 		tsda9214_unregister_thermal();
 
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "tsda9214_write",
+					"Bad argument");
+			tsda9214_dprintk("tsda9214_write bad argument\n");
+			kfree(ptr_tsda9214_data);
+			return -EINVAL;
+		}
+
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_tsda9214_data->t_type[i];
 
