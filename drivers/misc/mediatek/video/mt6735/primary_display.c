@@ -3977,6 +3977,9 @@ int primary_display_esd_recovery(void)
 	_cmdq_start_trigger_loop();
 	DISPMSG("[ESD]start cmdq trigger loop[end]\n");
 
+	if (!primary_display_is_video_mode())
+		dpmgr_signal_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
+
 	MMProfileLogEx(ddp_mmp_get_events()->esd_recovery_t, MMProfileFlagPulse, 0, 12);
 
 done:
