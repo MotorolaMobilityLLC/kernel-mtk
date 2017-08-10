@@ -61,7 +61,11 @@
 
 #define SPM_PWAKE_EN            1
 #define SPM_PCMWDT_EN           1
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_BYPASS_SYSPWREQ     1
+#else
 #define SPM_BYPASS_SYSPWREQ     0
+#endif
 
 #define WAKE_SRC_FOR_MD32  0
 

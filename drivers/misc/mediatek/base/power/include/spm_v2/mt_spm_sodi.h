@@ -199,7 +199,11 @@
 				pr_debug(SODI_TAG fmt, ##args);     \
 		} while (0)
 
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_BYPASS_SYSPWREQ         1
+#else
 #define SPM_BYPASS_SYSPWREQ         0
+#endif
 #define ALL_TOP_CON_MASK 0x037F
 #define MEMPLL_PD_MODE false
 #define MEMPLL_CG_MODE true

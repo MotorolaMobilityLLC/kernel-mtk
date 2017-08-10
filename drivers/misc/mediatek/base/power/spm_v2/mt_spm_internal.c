@@ -722,7 +722,8 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->ccif1_to_ap_mask_b << 4) |
 			(!!pwrctrl->ccif1_to_md_mask_b << 3) |
 			(!!pwrctrl->ccif0_to_ap_mask_b << 2) |
-			(!!pwrctrl->ccif0_to_md_mask_b << 1));
+			(!!pwrctrl->ccif0_to_md_mask_b << 1) |
+			(!!pwrctrl->syspwreq_mask << 0));
 
 	spm_write(SPM_SRC2_MASK,
 #if defined(CONFIG_ARCH_MT6797)
