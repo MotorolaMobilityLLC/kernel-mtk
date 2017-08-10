@@ -214,12 +214,12 @@ static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream)
 
 	/* interconnection setting */
 	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I00,
-		      Soc_Aud_InterConnectionOutput_O13);
+		      Soc_Aud_InterConnectionOutput_O15);
 	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I01,
-		      Soc_Aud_InterConnectionOutput_O14);
-	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I10,
+		      Soc_Aud_InterConnectionOutput_O16);
+	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I12,
 		      Soc_Aud_InterConnectionOutput_O03);
-	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I11,
+	mt_afe_set_connection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I13,
 		      Soc_Aud_InterConnectionOutput_O04);
 
 
