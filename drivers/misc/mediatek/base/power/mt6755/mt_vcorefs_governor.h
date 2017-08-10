@@ -37,17 +37,6 @@
 			vcorefs_info(fmt, ##args);		\
 	} while (0)
 
-/* log_mask[15:0]: show nothing, log_mask[16:31]: show only on MobileLog */
-#define vcorefs_crit_mask(fmt, args...)				\
-do {								\
-	if (pwrctrl->log_mask & (1U << kicker))			\
-		;						\
-	else if ((pwrctrl->log_mask >> 16) & (1U << kicker))	\
-		vcorefs_debug(fmt, ##args);			\
-	else							\
-		vcorefs_crit(fmt, ##args);			\
-} while (0)
-
 struct kicker_config {
 	int kicker;
 	int opp;
@@ -77,6 +66,7 @@ enum dvfs_kicker {
 	KIR_PERF,
 	KIR_SYSFS,
 	KIR_SYSFS_N,
+	KIR_GPU,
 	NUM_KICKER,
 
 	/* internal kicker */
@@ -198,4 +188,10 @@ extern void aee_rr_rec_vcore_dvfs_opp(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_opp(void);
 extern void aee_rr_rec_vcore_dvfs_status(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_status(void);
+
+/* GPU kicker init opp API */
+extern int vcorefs_gpu_get_init_opp(void);
+extern void  vcorefs_gpu_set_init_opp(int opp);
+extern bool vcorefs_request_init_opp(int kicker, int opp);
+
 #endif				/* _MT_VCOREFS_GOVERNOR_H */

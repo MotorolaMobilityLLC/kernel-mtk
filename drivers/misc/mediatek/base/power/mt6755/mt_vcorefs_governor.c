@@ -25,7 +25,8 @@
 #include "mt-plat/upmu_common.h"
 #include "mt-plat/mt_pmic_wrap.h"
 #include "mt_spm.h"
-
+#include "mmdvfs_mgr.h"
+#include <mach/fliper.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #else
@@ -43,6 +44,7 @@
 #include <mach/irqs.h>
 #include <linux/irqchip/mt-eic.h>
 #include <linux/suspend.h>
+#include "mt-plat/aee.h"
 
 __weak int emmc_autok(void)
 {
@@ -59,10 +61,19 @@ __weak int sdio_autok(void)
 	return 0;
 }
 
+__weak void mmdvfs_enable(int enable)
+{
+
+}
+
 /*
  * PMIC
  */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define PMIC_VCORE_ADDR PMIC_BUCK_VCORE_VOSEL_ON_ADDR
+#else
 #define PMIC_VCORE_ADDR MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR
+#endif
 #define VCORE_BASE_UV		600000
 #define VCORE_STEP_UV		6250
 
@@ -79,8 +90,24 @@ __weak int sdio_autok(void)
  */
 void __iomem *vcorefs_sram_base;
 u32 spm_vcorefs_err_irq = 154;
+/* unsigned int vcorefs_log_mask = ~((0xFFFFFFFF << LAST_KICKER)); */
+/* default filter-out GPU message */
+unsigned int vcorefs_log_mask = ~((0xFFFFFFFF << LAST_KICKER) | (1U << KIR_GPU));
+/*
+ * HD segment size
+ */
+#define DISP_LCM_HD_SIZE (1280 * 800)
 
-unsigned int vcorefs_log_mask = ~(0xFFFFFFFF << LAST_KICKER);
+#define VCOREFS_SEGMENT_HPM_LPM	1
+#define VCOREFS_SEGMENT_LPM		2
+#define VCOREFS_SEGMENT_LPM_EXCEPT_OVL	3
+
+/*
+ *  product segment
+ */
+#define MT6750_TURBO_SEGMENT 0x41
+#define MT6750_NORMAL_SEGMENT 0x42
+#define MT6738_SEGMENT 0x43
 
 /*
  * struct define
@@ -107,6 +134,8 @@ struct governor_profile {
 	u32 cpu_dvfs_req;
 
 	u32 log_mask;
+	u32 segment_code;
+	u32 segment_policy;
 
 	u32 total_bw_lpm_threshold;
 	u32 total_bw_hpm_threshold;
@@ -152,6 +181,33 @@ static struct opp_profile opp_table[] __nosavedata = {
 
 int kicker_table[LAST_KICKER];
 
+int gpu_kicker_init_opp = OPPI_LOW_PWR;
+
+int vcorefs_gpu_get_init_opp(void)
+{
+	return gpu_kicker_init_opp;
+}
+
+void vcorefs_gpu_set_init_opp(int opp)
+{
+	vcorefs_info("gpu_set_init_opp(%d)\n", opp);
+	gpu_kicker_init_opp = opp;
+}
+
+bool vcorefs_request_init_opp(int kicker, int opp)
+{
+	bool accept = false;
+
+	mutex_lock(&governor_mutex);
+	if (kicker == KIR_GPU) {
+		gpu_kicker_init_opp = opp;
+		vcorefs_info("init_opp request(kr:%d, opp:%d)\n", kicker, opp);
+		accept = true;
+	}
+	mutex_unlock(&governor_mutex);
+	return accept;
+}
+
 static char *kicker_name[] = {
 	"KIR_MM_16MCAM",
 	"KIR_MM_WFD",
@@ -161,6 +217,7 @@ static char *kicker_name[] = {
 	"KIR_PERF",
 	"KIR_SYSFS",
 	"KIR_SYSFS_N",
+	"KIR_GPU",
 	"NUM_KICKER",
 	"KIR_LATE_INIT",
 	"KIR_SYSFSX",
@@ -604,6 +661,8 @@ char *vcorefs_get_dvfs_info(char *p)
 	p += sprintf(p, "[fhd_segment ]: %d\n", gvrctrl->is_fhd_segment);
 	p += sprintf(p, "[cpu_dvfs_req]: 0x%x\n", vcorefs_get_cpu_dvfs_req());
 	p += sprintf(p, "[log_mask    ]: 0x%x\n", gvrctrl->log_mask);
+	p += sprintf(p, "[segment_code]: 0x%x\n", gvrctrl->segment_code);
+	p += sprintf(p, "[segment_policy]: 0x%x\n", gvrctrl->segment_policy);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
@@ -638,19 +697,27 @@ char *get_kicker_name(int id)
 char *vcorefs_get_opp_table_info(char *p)
 {
 	struct opp_profile *opp_ctrl_table = opp_table;
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	int i;
 
-	for (i = 0; i < NUM_OPP; i++) {
+	if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM) {
+		i = OPPI_LOW_PWR;
 		p += sprintf(p, "[OPP_%d] vcore_uv:    %u (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
 			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
 		p += sprintf(p, "[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
 		p += sprintf(p, "\n");
+	} else {
+		for (i = 0; i < NUM_OPP; i++) {
+			p += sprintf(p, "[OPP_%d] vcore_uv:    %u (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
+				     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
+			p += sprintf(p, "[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
+			p += sprintf(p, "\n");
+		}
+
+		for (i = 0; i < NUM_TRANS; i++)
+			p += sprintf(p, "[TRANS%d] vcore_uv: %u (0x%x)\n", i + 1, trans[i],
+				     vcore_uv_to_pmic(trans[i]));
 	}
-
-	for (i = 0; i < NUM_TRANS; i++)
-		p += sprintf(p, "[TRANS%d] vcore_uv: %u (0x%x)\n", i + 1, trans[i],
-			     vcore_uv_to_pmic(trans[i]));
-
 	return p;
 }
 
@@ -658,7 +725,13 @@ char *vcorefs_get_opp_table_info(char *p)
 void vcorefs_update_opp_table(char *cmd, int val)
 {
 	struct opp_profile *opp_ctrl_table = opp_table;
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	int uv = vcore_pmic_to_uv(val);
+
+	if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM) {
+		vcorefs_err("segment policy is LPM only not allow opp_table cmd\n");
+		return;
+	}
 
 	if (!strcmp(cmd, "HPM") && val < VCORE_INVALID) {
 		if (uv >= opp_ctrl_table[OPPI_LOW_PWR].vcore_uv) {
@@ -779,6 +852,7 @@ int governor_debug_store(const char *buf)
 {
 	int val, val2, r = 0;
 	char cmd[32];
+	struct governor_profile *gvrctrl = &governor_ctrl;
 
 	if (sscanf(buf, "%31s 0x%x 0x%x", cmd, &val, &val2) == 3 ||
 	    sscanf(buf, "%31s %d %d", cmd, &val, &val2) == 3) {
@@ -800,8 +874,9 @@ int governor_debug_store(const char *buf)
 	} else if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
 		   sscanf(buf, "%31s %d", cmd, &val) == 2) {
 		vcorefs_info("governor_debug: cmd: %s, val: %d(0x%x)\n", cmd, val, val);
-
-		if (!strcmp(cmd, "vcore_dvs"))
+		if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM)
+			vcorefs_err("segment policy is LPM only not allow vcore_debug cmd\n");
+		else if (!strcmp(cmd, "vcore_dvs"))
 			vcorefs_enable_dvs(val);
 		else if (!strcmp(cmd, "ddr_dfs"))
 			vcorefs_enable_dfs(val);
@@ -835,7 +910,8 @@ struct dvfs_func {
 
 static struct dvfs_func spm_dvfs_func_list[] = {
 	{spm_vcorefs_set_dvfs_hpm_force,
-	 (1 << KIR_MM_16MCAM | 1 << KIR_SDIO | 1 << KIR_SYSFS | 1 << KIR_PERF | 1 << KIR_OVL), "set hpm_force"},
+	 (1 << KIR_MM_16MCAM | 1 << KIR_SDIO | 1 << KIR_SYSFS | 1 << KIR_PERF | 1 << KIR_OVL | 1 << KIR_GPU),
+	  "set hpm_force"},
 	{spm_vcorefs_set_dvfs_hpm, (1 << KIR_MM_WFD | 1 << KIR_MM_MHL | 1 << KIR_SYSFS_N),
 	 "set hpm"},
 	{vcorefs_release_hpm, (1 << KIR_LATE_INIT), "clear hpm_lpm_forced"},
@@ -917,7 +993,7 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 	else
 		expect_ddr_khz = gvrctrl->curr_ddr_khz;
 
-	vcorefs_info("opp: %d, vcore: %d(%d), fddr: %d(%d)\n",
+	vcorefs_debug_mask(krconf->kicker, "opp: %d, vcore: %d(%d), fddr: %d(%d)\n",
 		     krconf->dvfs_opp,
 		     expect_vcore_uv, gvrctrl->curr_vcore_uv,
 		     expect_ddr_khz, gvrctrl->curr_ddr_khz);
@@ -933,18 +1009,18 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 		/* check with history_opp_table to decide the real request opp (dvfs_opp) */
 		krconf->dvfs_opp = get_kicker_group_opp(krconf->kicker, group_id);
 	}
-	vcorefs_info("[%d]%s, opp: %d\n", group_id, spm_dvfs_func_list[group_id].purpose,
+	vcorefs_debug_mask(krconf->kicker, "[%d]%s, opp: %d\n", group_id, spm_dvfs_func_list[group_id].purpose,
 		     krconf->dvfs_opp);
 
 	/* call spm with dvfs_opp */
 	ret =
 	    spm_dvfs_func_list[group_id].do_dvfs(krconf->dvfs_opp,
-						 opp_ctrl_table[opp_idx].vcore_uv,
-						 opp_ctrl_table[opp_idx].ddr_khz);
+						 opp_ctrl_table[krconf->dvfs_opp].vcore_uv,
+						 opp_ctrl_table[krconf->dvfs_opp].ddr_khz);
 
 	/* update curr_vcore_uv and curr_ddr_khz */
-	gvrctrl->curr_vcore_uv = opp_ctrl_table[opp_idx].vcore_uv;
-	gvrctrl->curr_ddr_khz = opp_ctrl_table[opp_idx].ddr_khz;
+	gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
+	gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
 
 	return ret;
 
@@ -978,7 +1054,7 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 	else
 		r = do_dvfs_for_low_power(krconf);
 
-	vcorefs_info("kick_dvfs_by_opp_index done, r: %d\n", r);
+	vcorefs_debug_mask(krconf->kicker, "kick_dvfs_by_opp_index done, r: %d\n", r);
 
 	return r;
 }
@@ -990,9 +1066,12 @@ int vcorefs_late_init_dvfs(void)
 {
 	struct kicker_config krconf;
 	struct governor_profile *gvrctrl = &governor_ctrl;
+	struct opp_profile *opp_ctrl_table = opp_table;
 	bool plat_init_done = true;
 	int plat_init_opp;
 	int disp_w, disp_h;
+	int uv;
+	u32 mask = 0;
 
 	vcorefs_info("disp_virtual(w:%d, h:%d) disp(w:%d, h:%d)\n",
 		primary_display_get_virtual_width(), primary_display_get_virtual_height(),
@@ -1005,9 +1084,14 @@ int vcorefs_late_init_dvfs(void)
 	if (disp_h == 0)
 		disp_h = primary_display_get_height();
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if (disp_w * disp_h <= DISP_LCM_HD_SIZE) {
+		gvrctrl->is_fhd_segment = false;
+		gvrctrl->cpu_dvfs_req = 0;
+	}
+#else
 #if 0 /* apply FHD policy for MD-CA */
-	vcorefs_info("disp_w=%d disp_h=%d\n", disp_w, disp_h);
-	if (disp_w * disp_h <= 720 * 1280) {
+	if (disp_w * disp_h <= DISP_LCM_HD_SIZE) {
 		gvrctrl->is_fhd_segment = false;
 		gvrctrl->cpu_dvfs_req = 0;
 	} else {
@@ -1015,6 +1099,66 @@ int vcorefs_late_init_dvfs(void)
 		gvrctrl->cpu_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_Position));
 	}
 #endif
+#endif
+
+	/* update boot_up_opp */
+	uv = vcorefs_get_curr_vcore();
+	if (opp_ctrl_table[OPPI_PERF].vcore_uv == uv)
+		gvrctrl->boot_up_opp = OPPI_PERF;
+	else
+		gvrctrl->boot_up_opp = OPPI_LOW_PWR;
+	vcorefs_info("curr uv=%d boot_up_opp=%d\n", uv, gvrctrl->boot_up_opp);
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	/* mt6750 series */
+	if (gvrctrl->segment_code == MT6750_NORMAL_SEGMENT ||
+		gvrctrl->segment_code == MT6738_SEGMENT) {
+		if (gvrctrl->is_fhd_segment == true) {
+			if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
+				gvrctrl->segment_policy = VCOREFS_SEGMENT_LPM;
+				gvrctrl->vcore_dvfs_en = false;
+				vcorefs_err("disable vcore_dvfs for DRAMC only K LPM(reg=0x%x) by seg=0x%x\n",
+				 spm_read(SPM_POWER_ON_VAL0), gvrctrl->segment_code);
+			} else {
+				gvrctrl->segment_policy = VCOREFS_SEGMENT_LPM_EXCEPT_OVL;
+			}
+		} else {
+			gvrctrl->segment_policy = VCOREFS_SEGMENT_LPM;
+			gvrctrl->vcore_dvfs_en = false;
+		}
+	} else {
+		gvrctrl->segment_policy = VCOREFS_SEGMENT_HPM_LPM;
+	}
+#else
+	gvrctrl->segment_policy = VCOREFS_SEGMENT_HPM_LPM;
+
+#endif
+	vcorefs_info("segment=0x%x policy=%d vcore_dvfs_en=%d\n",
+				 gvrctrl->segment_code, gvrctrl->segment_policy, gvrctrl->vcore_dvfs_en);
+	if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM) {
+		gvrctrl->vcore_dvfs_en = false;
+		vcorefs_info("vcore dvfs disable. segment(0x%x) boot_up_opp=%d\n",
+			      gvrctrl->segment_code, gvrctrl->boot_up_opp);
+		if (!(spm_read(SPM_POWER_ON_VAL0) & (1 << 14))) {
+			vcorefs_err("boot ddr freq is not expected as LPM (seg=0x%x)\n", gvrctrl->segment_code);
+			aee_kernel_exception_api(__FILE__, __LINE__,
+						DB_OPT_DEFAULT, "BOOT_DRAMC", "BOOT DDR Freq Not Expected");
+		}
+		if (gvrctrl->boot_up_opp != OPPI_LOW_PWR) {
+			vcorefs_err("boot vcore is not expected as LPM (seg=0x%x)\n", gvrctrl->segment_code);
+			aee_kernel_exception_api(__FILE__, __LINE__,
+						DB_OPT_DEFAULT, "BOOT_PMIC", "BOOT VCORE Not Expected");
+		}
+	} else if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM_EXCEPT_OVL) {
+		disable_cg_fliper(); /* disable c+g fliper */
+		mmdvfs_enable(0); /* disable mm dvfs */
+		gvrctrl->cpu_dvfs_req = 0; /* disable MD request */
+		/* only allow OVL kicker and GPU kicker */
+		mask = (1U << NUM_KICKER) - 1 - (1U << KIR_OVL) - (1U << KIR_GPU);
+		vcorefs_info("fake HD segment, adjust kr_mask=0x%x\n", mask);
+		vcorefs_set_kr_req_mask(mask);
+	}
+
 	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
 
 	vcorefs_init_sram_debug();
@@ -1024,10 +1168,10 @@ int vcorefs_late_init_dvfs(void)
 	/* SPM_SW_RSV_5[0] init in spm module init */
 	/* spm_vcorefs_set_opp_state(gvrctrl->boot_up_opp); */
 	if (gvrctrl->vcore_dvfs_en == true)
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, gvrctrl->boot_up_opp);
 	else
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS |
-				     SPM_FLAG_DIS_VCORE_DFS, 0);
+				     SPM_FLAG_DIS_VCORE_DFS, gvrctrl->boot_up_opp);
 
 	mutex_lock(&governor_mutex);
 
@@ -1036,11 +1180,19 @@ int vcorefs_late_init_dvfs(void)
 	/* spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0); */
 	plat_init_opp = gvrctrl->late_init_opp;
 	if (is_vcorefs_feature_enable()) {
-		/* set to late init opp */
-		krconf.kicker = KIR_LATE_INIT;
-		krconf.opp = plat_init_opp;
-		krconf.dvfs_opp = plat_init_opp;
-		kick_dvfs_by_opp_index(&krconf);
+		if (gpu_kicker_init_opp == OPPI_PERF)  {
+			kicker_table[KIR_GPU] = OPPI_PERF;
+			gvrctrl->late_init_opp = OPPI_PERF;
+			plat_init_opp = OPPI_PERF;
+		}
+		if (plat_init_opp != gvrctrl->boot_up_opp) {
+			krconf.kicker = KIR_LATE_INIT;
+			krconf.opp = plat_init_opp;
+			krconf.dvfs_opp = plat_init_opp;
+			kick_dvfs_by_opp_index(&krconf);
+		} else {
+			vcorefs_info("skip late_init kick(opp=%d)\n", gvrctrl->late_init_opp);
+		}
 	}
 
 	mutex_unlock(&governor_mutex);
@@ -1141,7 +1293,7 @@ static int vcorefs_governor_pm_callback(struct notifier_block *nb, unsigned long
 static int __init vcorefs_module_init(void)
 {
 	int r;
-
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct device_node *node;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-vcorefs");
@@ -1168,6 +1320,9 @@ static int __init vcorefs_module_init(void)
 		    request_irq(spm_vcorefs_err_irq, spm_vcorefs_err_handler,
 				IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND, "spm_vcorefs_err_eint", NULL);
 	}
+
+	gvrctrl->segment_code = get_devinfo_with_index(21) & 0xff;
+	vcorefs_info("efuse segment code = 0x%x\n", gvrctrl->segment_code);
 
 	pm_notifier(vcorefs_governor_pm_callback, 0);
 
@@ -1312,7 +1467,6 @@ void governor_apply_E2_SDIO_DVFS(void)
 #if 0
 	if (spm_read(VCOREFS_SRAM_AUTOK_REMARK) == VALID_AUTOK_REMARK_VAL) {
 		int flag = (SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_EN_E2_SDIO_SOLUTION);
-
 		vcorefs_crit("reload FW with flag=0x%x for E2-SDIO_ECO\n", flag);
 		vcorefs_reload_spm_firmware(flag);
 	}

@@ -1095,7 +1095,7 @@ int __check_dvfs_halt_source(int enable)
 	if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
 		is_halt = 0;
 		pr_err("[VcoreFS]dvfs_halt already clear!(%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
-		aee_kernel_warning_api(__FILE__, __LINE__,
+		aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_UNKNOWN", "DVFS_HALT_UNKNOWN");
 	}
@@ -1120,7 +1120,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]isp_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT, "DVFS_HALT_ISP", "DVFS_HALT_ISP");
 			is_halt = 0;
 			pr_err("[VcoreFS]dvfs_halt is hold by ISP (%d, 0x%x)\n", is_halt, spm_read(CPU_DVFS_REQ));
@@ -1137,7 +1137,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]disp1_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_DISP1", "DVFS_HALT_DISP1");
 			/* primary_display_diagnose(); */
@@ -1156,7 +1156,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]disp0_halt[1]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 		if ((spm_read(CPU_DVFS_REQ) & DVFS_HALT_LSB) == 0) {
-			aee_kernel_warning_api(__FILE__, __LINE__,
+			aee_kernel_exception_api(__FILE__, __LINE__,
 			 DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER | DB_OPT_DISPLAY_HANG_DUMP | DB_OPT_DUMP_DISPLAY,
 			 "DVFS_HALT_DISP0", "DVFS_HALT_DISP0");
 			/* primary_display_diagnose(); */

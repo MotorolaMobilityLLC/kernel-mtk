@@ -995,7 +995,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		dyna_load_pcm[i].ready = 1;
 		spm_fw_count++;
 	}
-#if 0 /* enable VCORE DVFS */
+#if 1 /* enable VCORE DVFS */
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* check addr_2nd */
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {

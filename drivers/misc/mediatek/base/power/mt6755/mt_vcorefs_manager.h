@@ -27,6 +27,7 @@ extern int vcorefs_request_dvfs_opp(enum dvfs_kicker, enum dvfs_opp);
 extern void vcorefs_drv_init(bool, bool, int);
 extern int init_vcorefs_sysfs(void);
 extern void vcorefs_set_feature_en(bool enable);
+extern void vcorefs_set_kr_req_mask(unsigned int mask);
 
 /* Called by MET */
 typedef void (*vcorefs_req_handler_t) (enum dvfs_kicker kicker, enum dvfs_opp opp);

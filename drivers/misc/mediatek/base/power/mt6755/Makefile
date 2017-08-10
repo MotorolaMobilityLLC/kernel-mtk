@@ -20,6 +20,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
 
 obj-y += mt_pm_init.o
 obj-y += mt_clkbuf_ctl.o
