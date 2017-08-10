@@ -140,16 +140,13 @@ static void mtk_set_iddig_in_detect(void)
 
 static bool mtk_is_charger_4_vol(void)
 {
-#if 0
-	int vol = battery_meter_get_charger_voltage();
-#else
-	int vol = 0;
-#endif
-	mtk_xhci_mtk_printk(K_DEBUG, "voltage(%d)\n", vol);
-
 #if defined(CONFIG_USBIF_COMPLIANCE) || defined(CONFIG_POWER_EXT)
 	return false;
 #else
+	int vol = battery_meter_get_charger_voltage();
+
+	mtk_xhci_mtk_printk(K_DEBUG, "voltage(%d)\n", vol);
+
 	return (vol > 4000) ? true : false;
 #endif
 }
@@ -394,17 +391,10 @@ int mtk_is_hub_active(void)
 #endif
 static void mtk_enable_otg_mode(void)
 {
-#if 0
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
-	bq25890_otg_en(0x01);
-	bq25890_set_boost_ilim(0x03);	/* 1.3A */
-#elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
-	mtk_enable_pmic_otg_mode();
-#endif
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x01);
 	bq25898_set_boost_ilim(0x01);
-#endif
+#else
 	set_chr_enable_otg(0x1);
 	set_chr_boost_current_limit(500);
 #endif
@@ -412,15 +402,9 @@ static void mtk_enable_otg_mode(void)
 
 static void mtk_disable_otg_mode(void)
 {
-#if 0
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
-	bq25890_otg_en(0x0);
-#elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
-	mtk_disable_pmic_otg_mode();
-#endif
 #if defined(CONFIG_MTK_BQ25898_DUAL_SUPPORT)
 	bq25898_otg_en(0x0);
-#endif
+#else
 	set_chr_enable_otg(0x0);
 #endif
 }
