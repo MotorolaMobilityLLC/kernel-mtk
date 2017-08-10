@@ -443,6 +443,8 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp", &lcm_params->dsi.vertical_vfp_lp);
 	disp_of_getprop_u32(np, "lcm_params-physical_width", &lcm_params->physical_width);
 	disp_of_getprop_u32(np, "lcm_params-physical_height", &lcm_params->physical_height);
+	disp_of_getprop_u32(np, "lcm_params-physical_width_um", &lcm_params->physical_width_um);
+	disp_of_getprop_u32(np, "lcm_params-physical_height_um", &lcm_params->physical_height_um);
 	disp_of_getprop_u32(np, "lcm_params-od_table_size", &lcm_params->od_table_size);
 	disp_of_getprop_u32(np, "lcm_params-od_table", (u32 *) (&lcm_params->od_table));
 }

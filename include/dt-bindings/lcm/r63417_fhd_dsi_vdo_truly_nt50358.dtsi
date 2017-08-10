@@ -183,6 +183,8 @@
 		lcm_params-dsi-vertical_vfp_lp;
 		lcm_params-physical_width;
 		lcm_params-physical_height;
+		lcm_params-physical_width_um;
+		lcm_params-physical_height_um;
 		lcm_params-od_table_size;
 		lcm_params-od_table;
 	};

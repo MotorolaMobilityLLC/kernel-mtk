@@ -462,8 +462,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width  = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
-	params->physical_width = LCM_PHYSICAL_WIDTH;
-	params->physical_height = LCM_PHYSICAL_HEIGHT;
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 	params->lcm_if = LCM_INTERFACE_DSI_DUAL;
 	params->lcm_cmd_if = LCM_INTERFACE_DSI0;
 

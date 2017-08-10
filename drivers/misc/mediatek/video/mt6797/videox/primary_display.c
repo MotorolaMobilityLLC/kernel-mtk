@@ -5576,6 +5576,8 @@ int primary_display_get_info(disp_session_info *info)
 
 	dispif_info->physicalWidth = DISP_GetActiveWidth();
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
+	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
+	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
@@ -6024,6 +6026,34 @@ UINT32 DISP_GetActiveWidth(void)
 
 	if (pgc->plcm->params)
 		return pgc->plcm->params->physical_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveHeightUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_height_um;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveWidthUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_width_um;
 
 	DISPERR("lcm_params is null!\n");
 	return 0;
