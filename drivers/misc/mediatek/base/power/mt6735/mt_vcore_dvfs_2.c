@@ -185,7 +185,7 @@ static struct kicker_profile kicker_table[] = {
 	[KIR_SDIO] = {
 		.opp	= OPP_OFF,
 	},
-	[KIR_USB] = {
+	[KIR_WIFI] = {
 		.opp	= OPP_OFF,
 	},
 	[KIR_SYSFS] = {
@@ -415,7 +415,7 @@ static unsigned int find_min_opp(enum dvfs_kicker kicker)
 				kicker_ctrl_table[KIR_MM].opp,
 				kicker_ctrl_table[KIR_EMIBW].opp,
 				kicker_ctrl_table[KIR_SDIO].opp,
-				kicker_ctrl_table[KIR_USB].opp,
+				kicker_ctrl_table[KIR_WIFI].opp,
 				kicker_ctrl_table[KIR_SYSFS].opp);
 
 	/* find the min opp from kicker table */
@@ -604,7 +604,7 @@ static int vcorefs_func_enable_check(enum dvfs_kicker kicker, enum dvfs_opp new_
 	vcorefs_crit_mask("feature_en: %u(%d), kicker: %u, new_opp: %d(%d)\n",
 			  feature_en, pwrctrl->error_code, kicker, new_opp, kicker_ctrl_table[kicker].opp);
 
-	if (kicker < KIR_GPU || kicker >= NUM_KICKER || kicker == KIR_SDIO || kicker == KIR_USB)
+	if (kicker < KIR_GPU || kicker >= NUM_KICKER || kicker == KIR_SDIO)
 		return -ERR_KICKER;
 	if (new_opp < OPP_OFF || new_opp >= NUM_OPP)
 		return -ERR_OPP;
@@ -908,7 +908,7 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 	p += sprintf(p, "[KIR_MM   ] opp: %d\n", kicker_ctrl_table[KIR_MM].opp);
 	p += sprintf(p, "[KIR_EMIBW] opp: %d\n", kicker_ctrl_table[KIR_EMIBW].opp);
 	p += sprintf(p, "[KIR_SDIO ] opp: %d\n", kicker_ctrl_table[KIR_SDIO].opp);
-	p += sprintf(p, "[KIR_USB  ] opp: %d\n", kicker_ctrl_table[KIR_USB].opp);
+	p += sprintf(p, "[KIR_WIFI ] opp: %d\n", kicker_ctrl_table[KIR_WIFI].opp);
 	p += sprintf(p, "[KIR_SYSFS] opp: %d\n", kicker_ctrl_table[KIR_SYSFS].opp);
 	p += sprintf(p, "\n");
 
@@ -964,8 +964,8 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		vcorefs_request_dvfs_opp(KIR_EMIBW, val);
 	} else if (!strcmp(cmd, "KIR_SDIO")) {
 		vcorefs_request_dvfs_opp(KIR_SDIO, val);
-	} else if (!strcmp(cmd, "KIR_USB")) {
-		vcorefs_request_dvfs_opp(KIR_USB, val);
+	} else if (!strcmp(cmd, "KIR_WIFI")) {
+		vcorefs_request_dvfs_opp(KIR_WIFI, val);
 	} else if (!strcmp(cmd, "KIR_SYSFS") && (val >= OPP_OFF && val < NUM_OPP)) {
 		if (is_vcorefs_can_work()) {
 			r = vcorefs_request_dvfs_opp(KIR_SYSFS, val);
@@ -1064,4 +1064,4 @@ static int __init vcorefs_module_init(void)
 module_init(vcorefs_module_init);
 late_initcall_sync(late_init_to_lowpwr_opp);
 
-MODULE_DESCRIPTION("Vcore DVFS Driver v0.4");
+MODULE_DESCRIPTION("Vcore DVFS Driver v0.5");
