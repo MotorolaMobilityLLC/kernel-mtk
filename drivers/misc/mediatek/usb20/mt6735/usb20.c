@@ -560,6 +560,7 @@ static bool musb_hal_is_vbus_exist(void)
 
 }
 
+DEFINE_MUTEX(cable_connected_lock);
 /* be aware this could not be used in non-sleep context */
 bool usb_cable_connected(void)
 {
@@ -567,6 +568,7 @@ bool usb_cable_connected(void)
 	bool connected = false, vbus_exist = false;
 	int delay_time;
 
+	mutex_lock(&cable_connected_lock);
 	/* FORCE USB ON case */
 	if (musb_force_on) {
 		delay_time = 0;    /* directly issue connection */
@@ -610,6 +612,7 @@ bool usb_cable_connected(void)
 		DBG(0, "issue connect_rescue_work on is_ready end, delay_time:%d ms\n", delay_time);
 	}
 
+	mutex_unlock(&cable_connected_lock);
 	DBG(0, "%s, connected:%d, cable_mode:%d\n", __func__, connected, cable_mode);
 	return connected;
 }
