@@ -2501,9 +2501,11 @@ static void mt_battery_charger_detect_check(void)
 
 	} else {
 		if (BMT_status.charger_exist) {
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 			if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
 				wake_lock(&battery_suspend_lock);
 			else
+#endif
 			wake_lock_timeout(&battery_suspend_lock, HZ / 2);
 		}
 		fg_first_detect = false;
@@ -2578,9 +2580,11 @@ static void do_chrdet_int_task(void)
 		} else {
 			pr_debug("[do_chrdet_int_task] charger NOT exist!\n");
 			if (BMT_status.charger_exist) {
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 				if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
 					wake_lock(&battery_suspend_lock);
 				else
+#endif
 					wake_lock_timeout(&battery_suspend_lock, HZ / 2);
 			}
 			BMT_status.charger_exist = false;
