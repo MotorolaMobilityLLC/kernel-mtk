@@ -127,7 +127,7 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 
 		pGpsEmibaseaddr = ioremap_nocache(gGpsEmiPhyBase, SZ_1M);
 		if (pGpsEmibaseaddr != NULL) {
-			UINT8 *pFullPatchName = "/vendor/firmware/MNL.bin";
+			UINT8 *pFullPatchName = "MNL.bin";
 		    osal_firmware *pPatch = NULL;
 
 		    GPS_DBG("EMI mapping OK(0x%p)\n", pGpsEmibaseaddr);
