@@ -256,5 +256,9 @@ bool SetAncRecordReg(uint32 value, uint32 mask);
 
 /* irq from other module */
 bool is_irq_from_ext_module(void);
-
+int start_ext_sync_signal(void);
+int stop_ext_sync_signal(void);
+int ext_sync_signal(void);
+void ext_sync_signal_lock(void);
+void ext_sync_signal_unlock(void);
 #endif

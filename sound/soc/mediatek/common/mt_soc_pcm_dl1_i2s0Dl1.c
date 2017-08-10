@@ -185,8 +185,14 @@ static struct snd_pcm_hardware mtk_I2S0dl1_hardware = {
 static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Afe_Block = &(pI2S0dl1MemControl->rBlock); */
+	bool ext_sync_signal_locked = false;
 
 	pr_warn("%s\n", __func__);
+
+	if (is_irq_from_ext_module()) {
+		ext_sync_signal_lock();
+		ext_sync_signal_locked = true;
+	}
 
 	irq_user_id = NULL;
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -202,6 +208,10 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 		      Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
+
+	if (ext_sync_signal_locked)
+		ext_sync_signal_unlock();
+
 	return 0;
 }
 
