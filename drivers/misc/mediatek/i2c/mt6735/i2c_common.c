@@ -366,26 +366,26 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 
 				if (operation == 1) {
 					hex2string(vir_addr, tmpbuffer, length >> 1);
-					sprintf(data_buffer, "1 %s", tmpbuffer);
+					snprintf(data_buffer, sizeof(data_buffer), "1 %s", tmpbuffer);
 					I2CLOG("received data: %s\n", tmpbuffer);
 				} else if (operation == 0) {
 					hex2string(vir_addr, tmpbuffer, trans_auxlen);
-					sprintf(data_buffer, "1 %s", tmpbuffer);
+					snprintf(data_buffer, sizeof(data_buffer), "1 %s", tmpbuffer);
 					I2CLOG("received data: %s\n", tmpbuffer);
 				} else {
-					sprintf(data_buffer, "1 %s", "00");
+					snprintf(data_buffer, sizeof(data_buffer), "1 %s", "00");
 				}
 				I2CLOG("Actual return Value:%d 0x%p\n", ret, vir_addr);
 			} else if (ret < 0) {
 
 				if (ret == -EINVAL)
-					sprintf(data_buffer, "0 %s", "Invalid Parameter");
+					snprintf(data_buffer, sizeof(data_buffer), "0 %s", "Invalid Parameter");
 				else if (ret == -ETIMEDOUT)
-					sprintf(data_buffer, "0 %s", "Transfer Timeout");
+					snprintf(data_buffer, sizeof(data_buffer), "0 %s", "Transfer Timeout");
 				else if (ret == -EREMOTEIO)
-					sprintf(data_buffer, "0 %s", "Ack Error");
+					snprintf(data_buffer, sizeof(data_buffer), "0 %s", "Ack Error");
 				else
-					sprintf(data_buffer, "0 %s", "unknown error");
+					snprintf(data_buffer, sizeof(data_buffer), "0 %s", "unknown error");
 				I2CLOG("Actual return Value:%d 0x%p\n", ret, vir_addr);
 			}
 
