@@ -7273,7 +7273,7 @@ user_cmd_unlock:
 #endif
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagEnd,
-		       (unsigned long)handle, cmdqsize);
+		       cmdqsize, 0);
 	return ret;
 }
 
