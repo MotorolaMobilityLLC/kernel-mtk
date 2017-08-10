@@ -2017,7 +2017,7 @@ static void __exit tpd_driver_exit(void)
 	TPD_DEBUG("Synaptics touch panel driver exit\n");
 	tpd_driver_remove(&tpd_device_driver);
 }
-late_initcall(tpd_driver_init);
+module_init(tpd_driver_init);
 module_exit(tpd_driver_exit);
 
 MODULE_DESCRIPTION("Mediatek Synaptics Driver");
