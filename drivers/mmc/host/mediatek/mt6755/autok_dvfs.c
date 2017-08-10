@@ -211,8 +211,6 @@ void sdio_set_vcore_performance(struct msdc_host *host, u32 enable)
 				pr_err("msdc%d -> request vcore fail\n",
 					host->id);
 			}
-		} else {
-			pr_debug("** cancel @ TRUE\n");
 		}
 	} else {
 		schedule_delayed_work(&(host->set_vcore_workq), SDIO_DVFS_TIMEOUT);
@@ -333,12 +331,14 @@ EXPORT_SYMBOL(emmc_autok);
 int sd_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[1];
-	struct mmc_host *mmc = host->mmc;
+	struct mmc_host *mmc;
 
-	if (mmc == NULL) {
+	if (host == NULL) {
 		pr_err("SD card not ready\n");
 		return -1;
 	}
+
+	mmc = host->mmc;
 
 	pr_err("sd autok\n");
 

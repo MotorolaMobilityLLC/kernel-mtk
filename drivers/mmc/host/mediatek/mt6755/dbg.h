@@ -125,8 +125,8 @@ void msdc_error_tune_debug3(struct msdc_host *host, struct mmc_command *cmd,
 	u32 *intsts);
 int multi_rw_compare(int host_num, uint address, int count, uint type);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg);
-void mmc_cmd_dump(struct mmc_host *host);
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
+void mmc_cmd_dump(struct mmc_host *mmc);
 #endif
-
+void msdc_cmdq_status_print(struct msdc_host *host);
 #endif

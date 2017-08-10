@@ -78,10 +78,6 @@
 
 /*#define MTK_MSDC_DUMP_FIFO*/
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#define CONFIG_CMDQ_CMD_DAT_PARALLEL
-#endif
-
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
@@ -461,6 +457,12 @@ struct msdc_host {
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
 #endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	u32     power_DL_status;
+	u32     power_CL_status;
+#endif
+
 	int                     prev_cmd_cause_dump;
 };
 
@@ -578,13 +580,12 @@ static inline unsigned int uffs(unsigned int x)
 #define sdc_is_busy()           (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
 #define sdc_is_cmd_busy()       (MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
 
-#ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 #define sdc_send_cmdq_cmd(opcode, arg) \
 	do { \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN, (1)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_NUM, (opcode)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_RSPTYPE, (1)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_DTYPE, (0)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN \
+			| MSDC_EMMC51_CFG_NUM | MSDC_EMMC51_CFG_RSPTYPE \
+			| MSDC_EMMC51_CFG_DTYPE, (0x81) | (opcode << 1)); \
 		MSDC_WRITE32(SDC_ARG, (arg)); \
 		MSDC_WRITE32(SDC_CMD, (0x0)); \
 	} while (0)
@@ -700,8 +701,8 @@ enum {
 	MMC_CRC_STRESS = 25,
 	ENABLE_AXI_MODULE = 26,
 	SDIO_AUTOK_RESULT = 27,
-	MMC_CMDQ_STATUS = 28,
-	DO_AUTOK_OFFLINE_TUNE_TX = 29
+	DO_AUTOK_OFFLINE_TUNE_TX = 29,
+	MMC_CMDQ_STATUS = 30
 };
 
 enum {

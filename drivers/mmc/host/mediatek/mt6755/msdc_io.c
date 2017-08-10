@@ -106,7 +106,7 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
-	u32 ldo_en = 0, ldo_vol = 0;
+	u32 ldo_en = 0, ldo_vol = 0, ldo_cal = 0;
 	u32 id = host->id;
 
 	switch (id) {
@@ -115,36 +115,127 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			SHIFT_VEMC_EN);
 		pmic_read_interface_nolock(REG_VEMC_VOSEL, &ldo_vol,
 			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
-		pr_err(" VEMC_EN=0x%x, VEMC_VOL=0x%x [1b'0(3V),1b'1(3.3V)]\n",
-			ldo_en, ldo_vol);
+		pmic_read_interface_nolock(REG_VEMC_VOSEL_CAL, &ldo_cal,
+			MASK_VEMC_VOSEL_CAL, SHIFT_VEMC_VOSEL_CAL);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pr_err(" VEMC_EN=0x%x, VEMC_VOL=0x%x [2b'00(2.9V),2b'01(3V),2b'10(3.3V)], VEMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#else
+		pr_err(" VEMC_EN=0x%x, VEMC_VOL=0x%x [1b'0(3V),1b'1(3.3V)], VEMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#endif
+		break;
 		break;
 	case 1:
 		pmic_read_interface_nolock(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
 			SHIFT_VMC_EN);
 		pmic_read_interface_nolock(REG_VMC_VOSEL, &ldo_vol,
 			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
-		pr_err(" VMC_EN=0x%x, VMC_VOL=0x%x [3b'101(2.9V),3b'011(1.8V)]\n",
-			ldo_en, ldo_vol);
-		pmic_read_interface_nolock(REG_VMC_VOSEL_CAL, &ldo_vol,
-			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
-		pr_err(" VMC_CAL=0x%x\n", ldo_vol);
+		pmic_read_interface_nolock(REG_VMCH_VOSEL_CAL, &ldo_cal,
+			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
+
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pr_err(" VMC_EN=0x%x, VMC_VOL=0x%x [2b'00(1.8V),2b'01(2.9V),2b'10(3V),2b'11(3.3V)], VMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#else
+		pr_err(" VMC_EN=0x%x, VMC_VOL=0x%x [3b'101(2.9V),3b'011(1.8V)], VMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#endif
 
 		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
 			SHIFT_VMCH_EN);
 		pmic_read_interface_nolock(REG_VMCH_VOSEL, &ldo_vol,
 			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
-		pr_err(" VMCH_EN=0x%x, VMCH_VOL=0x%x [1b'0(3V),1b'1(3.3V)]\n",
-			ldo_en, ldo_vol);
+		pmic_read_interface_nolock(REG_VMC_VOSEL_CAL, &ldo_cal,
+			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 
-		pmic_read_interface_nolock(REG_VMCH_VOSEL_CAL, &ldo_vol,
-			MASK_VMCH_VOSEL_CAL, SHIFT_VMCH_VOSEL_CAL);
-		pr_err(" VMCH_CAL=0x%x\n", ldo_vol);
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pr_err(" VMCH_EN=0x%x, VMCH_VOL=0x%x [2b'00(2.9V),2b'01(3V),2b'10(3.3V)], VMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#else
+		pr_err(" VMCH_EN=0x%x, VMCH_VOL=0x%x [1b'0(3V),1b'1(3.3V)], VMC_CAL=0x%x\n",
+			ldo_en, ldo_vol, ldo_cal);
+		#endif
 
 		break;
 	default:
 		break;
 	}
 }
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+void msdc_power_DL_CL_control(struct msdc_host *host, u32 sel)
+{
+	/* since this function may be invoked with a lock already get,
+	   we use pmic_config_interface_nolock() instead of
+	   pmic_config_interface() to avoid lock dependency */
+	u32 DL_on, CL_on;
+
+	if (host->id == 0) {
+		if (sel == MSDC_POWER_DL_CL_FOR_POWER_OFF) {
+			CL_on = 0;
+			DL_on = 0;
+		} else if (sel == MSDC_POWER_DL_CL_FOR_POWER_ON) {
+			CL_on = 0;
+			DL_on = 1;
+		/*
+		} else if (sel == MSDC_POWER_DL_CL_FOR_NO_LOAD) {
+			DL_on = 0;
+			CL_on = 1;
+		} else {
+			DL_on = 1;
+			CL_on = 1;
+		*/
+		}
+		if (host->power_DL_status != DL_on)
+			pmic_config_interface_nolock(REG_VEMC_DL_EN, DL_on,
+				MASK_VEMC_DL_EN, SHIFT_VEMC_DL_EN);
+		if (host->power_CL_status != CL_on)
+			pmic_config_interface_nolock(REG_VEMC_CL_EN, CL_on,
+				MASK_VEMC_CL_EN, SHIFT_VEMC_CL_EN);
+
+		host->power_DL_status = DL_on;
+		host->power_CL_status = CL_on;
+		udelay(60);
+	} else if (host->id == 1) {
+		CL_on = 0;
+		if (sel == MSDC_POWER_DL_CL_FOR_POWER_OFF) {
+			DL_on = 0;
+		} else if (sel == MSDC_POWER_DL_CL_FOR_POWER_ON) {
+			DL_on = 1;
+		/*
+		} else if (sel == MSDC_POWER_DL_CL_FOR_NO_LOAD) {
+			DL_on = 0;
+		} else {
+			DL_on = 1;*/
+		}
+
+		/* VMCH CL always off, DL alwys on */
+		if (host->power_DL_status != DL_on)
+			pmic_config_interface_nolock(REG_VMCH_DL_EN, DL_on,
+				MASK_VMCH_DL_EN, SHIFT_VMCH_DL_EN);
+		/*
+		pmic_config_interface_nolock(REG_VMCH_CL_EN, on,
+			MASK_VMCH_CL_EN, SHIFT_VMCH_CL_EN);
+		*/
+
+		/* VMC CL always off, DL alwys on */
+		if (host->power_CL_status != DL_on)
+			pmic_config_interface_nolock(REG_VMC_DL_EN, DL_on,
+				MASK_VMC_DL_EN, SHIFT_VMC_DL_EN);
+		/*
+		pmic_config_interface_nolock(REG_VMC_CL_EN, on,
+			MASK_VMC_CL_EN, SHIFT_VMC_CL_EN);
+		*/
+
+		host->power_DL_status = DL_on;
+		host->power_CL_status = CL_on;
+		udelay(60);
+	}
+	/*pr_err("msdc%d power_control DL(%d) CL(%d)\n", host->id, DL_on,
+		CL_on);*/
+}
+#endif
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
@@ -192,9 +283,8 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 
 void msdc_power_calibration_init(struct msdc_host *host)
 {
-	u32 val = 0;
-
 	if (MSDC_EMMC == host->hw->host_function) {
+		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		/* Set to 3.0V - 100mV
 		 * 4'b0000: 0 mV
 		 * 4'b0001: -20 mV
@@ -203,10 +293,14 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		 * 4'b0100: -80 mV
 		 * 4'b0101: -100 mV*/
 		pmic_config_interface(REG_VEMC_VOSEL_CAL,
-			VEMC_VOSEL_CAL_mV(CARD_VOL_ACTUAL - VOL_3000),
+			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
 			MASK_VEMC_VOSEL_CAL,
 			SHIFT_VEMC_VOSEL_CAL);
+		#endif
 	} else if (MSDC_SD == host->hw->host_function) {
+		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		u32 val = 0;
+
 		/* VMCH vosel is 3.0V and calibration default is 0mV.
 		   Use calibration -100mv to get target VMCH = 2.9V */
 		pmic_read_interface(REG_VMCH_VOSEL_CAL, &val,
@@ -240,6 +334,12 @@ void msdc_power_calibration_init(struct msdc_host *host)
 		pmic_config_interface(REG_VMC_VOSEL_CAL, val,
 			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
 
+		#else
+		pmic_read_interface(REG_VMC_VOSEL_CAL,
+			&host->vmc_cal_default,
+			MASK_VMC_VOSEL_CAL, SHIFT_VMC_VOSEL_CAL);
+		#endif
+
 	}
 }
 
@@ -271,7 +371,17 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
 	}
 
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	msdc_power_DL_CL_control(host, ((on == 0) ? 0 : 1));
+	#endif
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &g_msdc0_flash);
+
+	if (on && EMMC_VOL_ACTUAL != VOL_3000) {
+		pmic_config_interface(REG_VEMC_VOSEL_CAL,
+			VEMC_VOSEL_CAL_mV(EMMC_VOL_ACTUAL - VOL_3000),
+			MASK_VEMC_VOSEL_CAL,
+			SHIFT_VEMC_VOSEL_CAL);
+	}
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	msdc_dump_ldo_sts(host);
@@ -290,13 +400,36 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		/*  ramp-up time: 0: 40us, 1: 240us */
+		pmic_config_interface(REG_VMCH_RAMPUP_SEL, on, MASK_VMCH_RAMPUP_SEL,
+			SHIFT_VMCH_RAMPUP_SEL);
+		msdc_power_DL_CL_control(host, ((on == 0) ? 0 : 1));
+		#endif
 		/* VMCH VOLSEL */
 		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
 			&g_msdc1_flash);
 
+		/* VMCH Golden for 6750 */
+		/*          Addr  on   off  mask  shift */
+		/* vosel:  0xAB2   6         0x7     8  */
+		/* DL   :  0xAB4   1    0    0x1     8  */
+		/* CL   :  0xAB4   1    0    0x1     9  */
+		/* Ramp :  0xA80             0x1     9  */
+		/* EN   :  0xA80   1    0    0x1     1  */
+
+
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&g_msdc1_io);
+
+		/* VMC Golden for 6750 */
+		/*          Addr  on   off  mask  shift */
+		/* vosel:  0xAC2   1         0x3     8  */
+		/* DL   :  0xAC4   1    0    0x1     4  */
+		/* CL   :  0xAC4   1    0    0x1     5  */
+		/* EN   :  0xA7A   1    0    0x1     1  */
+
 
 		break;
 
