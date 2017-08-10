@@ -132,6 +132,61 @@
 
 #include <asm/arch_gicv3.h>
 
+#define ICC_SGI1R_TARGET_LIST_SHIFT	0
+#define ICC_SGI1R_TARGET_LIST_MASK	(0xffff << ICC_SGI1R_TARGET_LIST_SHIFT)
+#define ICC_SGI1R_AFFINITY_1_SHIFT	16
+#define ICC_SGI1R_AFFINITY_1_MASK	(0xff << ICC_SGI1R_AFFINITY_1_SHIFT)
+#define ICC_SGI1R_SGI_ID_SHIFT		24
+#define ICC_SGI1R_SGI_ID_MASK		(0xfULL << ICC_SGI1R_SGI_ID_SHIFT)
+#define ICC_SGI1R_AFFINITY_2_SHIFT	32
+#define ICC_SGI1R_AFFINITY_2_MASK	(0xffULL << ICC_SGI1R_AFFINITY_1_SHIFT)
+#define ICC_SGI1R_IRQ_ROUTING_MODE_BIT	40
+#define ICC_SGI1R_AFFINITY_3_SHIFT	48
+#define ICC_SGI1R_AFFINITY_3_MASK	(0xffULL << ICC_SGI1R_AFFINITY_1_SHIFT)
+
+/*
+ * System register definitions
+ */
+#define ICH_VSEIR_EL2			sys_reg(3, 4, 12, 9, 4)
+#define ICH_HCR_EL2			sys_reg(3, 4, 12, 11, 0)
+#define ICH_VTR_EL2			sys_reg(3, 4, 12, 11, 1)
+#define ICH_MISR_EL2			sys_reg(3, 4, 12, 11, 2)
+#define ICH_EISR_EL2			sys_reg(3, 4, 12, 11, 3)
+#define ICH_ELSR_EL2			sys_reg(3, 4, 12, 11, 5)
+#define ICH_VMCR_EL2			sys_reg(3, 4, 12, 11, 7)
+
+#define __LR0_EL2(x)			sys_reg(3, 4, 12, 12, x)
+#define __LR8_EL2(x)			sys_reg(3, 4, 12, 13, x)
+
+#define ICH_LR0_EL2			__LR0_EL2(0)
+#define ICH_LR1_EL2			__LR0_EL2(1)
+#define ICH_LR2_EL2			__LR0_EL2(2)
+#define ICH_LR3_EL2			__LR0_EL2(3)
+#define ICH_LR4_EL2			__LR0_EL2(4)
+#define ICH_LR5_EL2			__LR0_EL2(5)
+#define ICH_LR6_EL2			__LR0_EL2(6)
+#define ICH_LR7_EL2			__LR0_EL2(7)
+#define ICH_LR8_EL2			__LR8_EL2(0)
+#define ICH_LR9_EL2			__LR8_EL2(1)
+#define ICH_LR10_EL2			__LR8_EL2(2)
+#define ICH_LR11_EL2			__LR8_EL2(3)
+#define ICH_LR12_EL2			__LR8_EL2(4)
+#define ICH_LR13_EL2			__LR8_EL2(5)
+#define ICH_LR14_EL2			__LR8_EL2(6)
+#define ICH_LR15_EL2			__LR8_EL2(7)
+
+#define __AP0Rx_EL2(x)			sys_reg(3, 4, 12, 8, x)
+#define ICH_AP0R0_EL2			__AP0Rx_EL2(0)
+#define ICH_AP0R1_EL2			__AP0Rx_EL2(1)
+#define ICH_AP0R2_EL2			__AP0Rx_EL2(2)
+#define ICH_AP0R3_EL2			__AP0Rx_EL2(3)
+
+#define __AP1Rx_EL2(x)			sys_reg(3, 4, 12, 9, x)
+#define ICH_AP1R0_EL2			__AP1Rx_EL2(0)
+#define ICH_AP1R1_EL2			__AP1Rx_EL2(1)
+#define ICH_AP1R2_EL2			__AP1Rx_EL2(2)
+#define ICH_AP1R3_EL2			__AP1Rx_EL2(3)
+
 #ifndef __ASSEMBLY__
 
 static inline void gic_enable_sre(void)
