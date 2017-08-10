@@ -20,6 +20,9 @@
 #include <linux/statfs.h>	/* kstatfs struct */
 #include <linux/file.h>		/*kernel write and kernel read */
 #include <linux/uaccess.h>	/*copy_to_user copy_from_user */
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 #include "env.h"
 #include "partition.h"
 
@@ -224,11 +227,57 @@ fail_malloc:
 fail:
 	return ret;
 }
+#ifdef CONFIG_COMPAT
+struct env_compat_ioctl {
+	compat_uptr_t name;
+	compat_int_t name_len;
+	compat_uptr_t value;
+	compat_int_t value_len;
+};
+
+static int compat_get_env_ioctl(struct env_compat_ioctl __user *arg32, struct env_ioctl __user *arg64)
+{
+	compat_int_t i;
+	compat_uptr_t p;
+	int err;
+
+	err = get_user(p, &(arg32->name));
+	err |= put_user(compat_ptr(p), &(arg64->name));
+	err |= get_user(i, &(arg32->name_len));
+	err |= put_user(i, &(arg64->name_len));
+	err |= get_user(p, &(arg32->value));
+	err |= put_user(compat_ptr(p), &(arg64->value));
+	err |= get_user(i, &(arg32->value_len));
+	err |= put_user(i, &(arg64->value_len));
+	return err;
+}
+
+static long env_proc_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	struct env_compat_ioctl *arg32;
+	struct env_ioctl *arg64;
+	int err;
+
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		pr_err("f_op or unlocked ioctl is NULL.\n");
+		return -ENOTTY;
+	}
+	arg32 = compat_ptr(arg);
+	arg64 = compat_alloc_user_space(sizeof(*arg64));
+	err = compat_get_env_ioctl(arg32, arg64);
+	if (err)
+		return err;
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long) arg64);
+}
+#endif
 
 static const struct file_operations env_proc_fops = {
 	.read = env_proc_read,
 	.write = env_proc_write,
 	.unlocked_ioctl = env_proc_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = env_proc_compat_ioctl,
+#endif
 };
 
 static int get_env_valid_length(void)
