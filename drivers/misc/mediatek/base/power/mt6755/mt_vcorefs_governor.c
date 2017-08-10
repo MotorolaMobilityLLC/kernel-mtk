@@ -977,6 +977,18 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 	int expect_ddr_khz;
 	int opp_idx;
 
+	/* find spm func group by kicker type */
+	group_id = find_spm_dvfs_func_group(krconf->kicker);
+
+	if (group_id < 0) {
+		vcorefs_err("not find spm func for %s kicker\n", get_kicker_name(krconf->kicker));
+		return -1;
+	}
+	if (krconf->kicker < NUM_KICKER) {
+		/* check with history_opp_table to decide the real request opp (dvfs_opp) */
+		krconf->dvfs_opp = get_kicker_group_opp(krconf->kicker, group_id);
+	}
+
 	/* struct opp_profile *opp_ctrl_table = opp_table; */
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
@@ -1001,17 +1013,6 @@ static int set_dvfs_with_opp(struct governor_profile *gvrctrl, struct kicker_con
 		     expect_vcore_uv, gvrctrl->curr_vcore_uv,
 		     expect_ddr_khz, gvrctrl->curr_ddr_khz);
 
-	/* find spm func group by kicker type */
-	group_id = find_spm_dvfs_func_group(krconf->kicker);
-
-	if (group_id < 0) {
-		vcorefs_err("not find spm func for %s kicker\n", get_kicker_name(krconf->kicker));
-		return -1;
-	}
-	if (krconf->kicker < NUM_KICKER) {
-		/* check with history_opp_table to decide the real request opp (dvfs_opp) */
-		krconf->dvfs_opp = get_kicker_group_opp(krconf->kicker, group_id);
-	}
 	vcorefs_debug_mask(krconf->kicker, "[%d]%s, opp: %d\n", group_id, spm_dvfs_func_list[group_id].purpose,
 		     krconf->dvfs_opp);
 
