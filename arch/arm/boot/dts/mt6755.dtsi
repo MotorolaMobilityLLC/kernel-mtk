@@ -743,14 +743,22 @@
 				<&vdecsys VDEC1_LARB>,
 				<&imgsys IMG_IMAGE_LARB2_SMI>,
 				<&vencsys VENC_VENC>,
-				<&vencsys VENC_LARB>;
+				<&vencsys VENC_LARB>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_DIS>;
 			clock-names = "smi_common",
 				"m4u_disp0_smi_larb0",
 				"m4u_vdec0_vdec",
 				"m4u_vdec1_larb",
 				"m4u_img_image_larb2_smi",
 				"m4u_venc_venc",
-				"m4u_venc_larb";
+				"m4u_venc_larb",
+				"m4u_mtcmos_ven",
+				"m4u_mtcmos_vde",
+				"m4u_mtcmos_isp",
+				"m4u_mtcmos_dis";
 		};
 
 		efusec@10206000 {

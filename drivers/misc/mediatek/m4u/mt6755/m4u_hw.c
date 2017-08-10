@@ -815,7 +815,8 @@ static int m4u_clock_off(void)
 #if !defined(CONFIG_MTK_CLKMGR)
 const char *smi_clk_name[] = {
 	"smi_common", "m4u_disp0_smi_larb0", "m4u_vdec0_vdec", "m4u_vdec1_larb",
-	"m4u_img_image_larb2_smi", "m4u_venc_venc", "m4u_venc_larb"
+	"m4u_img_image_larb2_smi", "m4u_venc_venc", "m4u_venc_larb", "m4u_mtcmos_ven",
+	"m4u_mtcmos_vde", "m4u_mtcmos_isp", "m4u_mtcmos_dis"
 };
 #endif
 
@@ -890,13 +891,19 @@ static int larb_clock_on(int larb)
 #else
 	int ret;
 
+	ret = clk_prepare_enable(gM4uDev->smi_clk[NTCMOS_DIS]);
 	switch (larb) {
 	case 0:
+		ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 		ret = clk_enable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[DISP0_SMI_LARB0_CLK]);
 	break;
+
 	case 1:
+		ret = clk_prepare_enable(gM4uDev->smi_clk[NTCMOS_VDE]);
+
+		ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 		ret = clk_enable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
 	    if (ret)
 		M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VDEC0_VDEC_CLK]);
@@ -904,12 +911,20 @@ static int larb_clock_on(int larb)
 	    if (ret)
 		M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VDEC1_LARB_CLK]);
 	break;
+
 	case 2:
+		ret = clk_prepare_enable(gM4uDev->smi_clk[NTCMOS_ISP]);
+
+		ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 		ret = clk_enable(gM4uDev->smi_clk[LARB2_SMI_CLK]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[LARB2_SMI_CLK]);
 	break;
+
 	case 3:
+		ret = clk_prepare_enable(gM4uDev->smi_clk[NTCMOS_VEN]);
+
+		ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 		ret = clk_enable(gM4uDev->smi_clk[VENC_VENC_CLK]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_VENC_CLK]);
@@ -952,22 +967,31 @@ static int larb_clock_off(int larb)
 	switch (larb) {
 	case 0:
 		clk_disable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+		clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 	break;
 	case 1:
-		clk_disable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
 		clk_disable(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+		clk_disable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
+		clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+		clk_disable_unprepare(gM4uDev->smi_clk[NTCMOS_VDE]);
 	break;
 	case 2:
+		clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 		clk_disable(gM4uDev->smi_clk[LARB2_SMI_CLK]);
+		clk_disable_unprepare(gM4uDev->smi_clk[NTCMOS_ISP]);
 	break;
 	case 3:
 		clk_disable(gM4uDev->smi_clk[VENC_VENC_CLK]);
 		clk_disable(gM4uDev->smi_clk[VENC_LARB_CLK]);
+		clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+		clk_disable_unprepare(gM4uDev->smi_clk[NTCMOS_VEN]);
 	break;
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
 	}
+
+	clk_disable_unprepare(gM4uDev->smi_clk[NTCMOS_DIS]);
 #endif
 	return 0;
 }
@@ -997,7 +1021,11 @@ void smi_common_clock_on(void)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
 #else
-	int ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+	int ret = 0;
+
+	M4UMSG("error: smi_common_clock_on not support.\n");
+	return;
+	clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 
 	if (ret)
 		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[SMI_COMMON_CLK]);
@@ -1011,6 +1039,8 @@ void smi_common_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x0); */
 #else
+	M4UMSG("error: smi_common_clock_off not support.\n");
+	return;
 	clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 #endif
 }
@@ -1336,11 +1366,9 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 	if (m4u_index == 0) {
 		start = sched_clock();
 		if (on) {
-			smi_common_clock_on();
 			larb_clock_on(larb);
 		} else {
 			larb_clock_off(larb);
-			smi_common_clock_off();
 		}
 		end = sched_clock();
 
@@ -1428,11 +1456,25 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 	for (port = 0; port < M4U_PORT_NR; port++) {
 		if (port_array->ports[port] && M4U_PORT_ATTR_EN != 0) {
-			unsigned int value;
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 			config_larb[larb] |= (1 << larb_port);
+		}
+	}
+
+	for (larb = 0; larb < SMI_LARB_NR; larb++) {
+		if (0 != config_larb[larb])
+			_m4u_port_clock_toggle(0, larb, 1);
+
+	}
+
+	for (port = 0; port < M4U_PORT_NR; port++) {
+		if (port_array->ports[port] && M4U_PORT_ATTR_EN != 0) {
+			unsigned int value;
+
+			larb = m4u_port_2_larb_id(port);
+			larb_port = m4u_port_2_larb_port(port);
 			value = (!!(port_array->ports[port] && M4U_PORT_ATTR_VIRTUAL))<<larb_port;
 			regOri[larb] = M4U_ReadReg32(gLarbBaseAddr[larb], SMI_LARB_MMU_EN);
 			regNew[larb] = (regOri[larb] & (~(1 << larb_port)))
@@ -1455,7 +1497,6 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 	for (larb = 0; larb < SMI_LARB_NR; larb++) {
 		if (0 != config_larb[larb]) {
-			_m4u_port_clock_toggle(0, larb, 1);
 #ifdef M4U_TEE_SERVICE_ENABLE
 			if (m4u_tee_en)
 				change = 1;
@@ -1475,9 +1516,11 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 #ifdef M4U_TEE_SERVICE_ENABLE
 	if (m4u_tee_en && 1 == change) {
 		m4u_config_port_array_tee(m4u_port_array);
-		for (larb = 0; larb < SMI_LARB_NR; larb++)
+		for (larb = 0; larb < SMI_LARB_NR; larb++) {
 			if (0 != config_larb[larb])
 				_m4u_port_clock_toggle(0, larb, 0);
+
+		}
 		return ret;
 	}
 #endif
@@ -1743,7 +1786,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "m4u_print_port_status ========>\n");
 
-	smi_common_clock_on();
 	larb_clock_all_on();
 
 	for (port = 0; port < gM4u_port_num; port++) {
@@ -1768,7 +1810,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	}
 
 	larb_clock_all_off();
-	smi_common_clock_off();
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
 }
@@ -2278,7 +2319,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		}
 	}
 	smi_larb_clock_prepare();
-	smi_common_clock_on();
 #endif
 
 #ifdef M4U_4GBDRAM
