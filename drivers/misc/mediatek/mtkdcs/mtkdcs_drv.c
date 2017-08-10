@@ -44,6 +44,7 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_ALWAYS_LOWPOWER,
 	DCS_SYSFS_FREERUN,
 	DCS_SYSFS_FREERUN_NORMAL,
+	DCS_SYSFS_FREERUN_LOWPOWER,
 	DCS_SYSFS_NR_MODE,
 };
 
@@ -54,6 +55,7 @@ static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"always lowpower",
 	"freerun only",
 	"freerun normal",
+	"freerun lowpower",
 };
 
 /*
@@ -267,6 +269,9 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	case DCS_SYSFS_ALWAYS_NORMAL:
 		ret = __dcs_dram_channel_switch(DCS_NORMAL);
 		break;
+	case DCS_SYSFS_FREERUN_LOWPOWER:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		/* fallthrough */
 	case DCS_SYSFS_ALWAYS_LOWPOWER:
 		ret = __dcs_dram_channel_switch(DCS_LOWPOWER);
 		break;
