@@ -266,6 +266,7 @@ WLAN_STATUS kalFirmwareLoad(IN P_GLUE_INFO_T prGlueInfo, OUT PVOID prBuf, IN UIN
 		goto error_read;
 	} else {
 		filp->f_pos = u4Offset;
+		DBGLOG(INIT, INFO, "kalFirmwareLoad read start!\n");
 		*pu4Size = filp->f_op->read(filp, prBuf, *pu4Size, &filp->f_pos);
 	}
 
