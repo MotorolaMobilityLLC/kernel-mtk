@@ -101,6 +101,11 @@ extern u8 got_hotknot_extra_state;
 extern u8 hotknot_paired_flag;
 extern wait_queue_head_t bp_waiter;
 extern s32 gup_load_hotknot_system(void);
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+extern int tpd_irq_registration(void);
+extern void gtp_eint_gpio_output(unsigned int gpio_number, int level);
+extern int gtp_irq_enable(void);
+#endif
 
 extern unsigned char gtp_default_FW[];
 extern unsigned char gtp_default_FW_fl[];
@@ -402,6 +407,11 @@ extern unsigned int tpd_rst_gpio_number;
 extern unsigned int tpd_int_gpio_number;
 #endif
 extern int touch_irq;
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+extern int tpdGPIOTiedtoIRQ;
+#endif
+extern bool tpdIrqIsEnabled;
+
 extern struct i2c_client *i2c_client_point;
 #if defined(CONFIG_GTP_ESD_PROTECT)
 extern void gtp_esd_switch(struct i2c_client *client, s32 on);

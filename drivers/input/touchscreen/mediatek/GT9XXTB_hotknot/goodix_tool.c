@@ -24,6 +24,7 @@
 #include <linux/i2c.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
+#include <linux/rtpm_prio.h>
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
@@ -440,18 +441,26 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (7 == cmd_head.wr) {
 		/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-		disable_irq(touch_irq);
+		if (true == tpdIrqIsEnabled) {
+			disable_irq(touch_irq);
+			tpdIrqIsEnabled = false;
+		}
+
 #if defined(CONFIG_GTP_ESD_PROTECT)
 		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
 #endif
 		return CMD_HEAD_LENGTH;
 	} else if (9 == cmd_head.wr) {
-		/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+		gtp_irq_enable();
+#else
 		enable_irq(touch_irq);
-#if defined(CONFIG_GTP_ESD_PROTECT)
-		gtp_esd_switch(i2c_client_point, SWITCH_ON);
 #endif
-		return CMD_HEAD_LENGTH;
+
+#if defined(CONFIG_GTP_ESD_PROTECT)
+			gtp_esd_switch(i2c_client_point, SWITCH_ON);
+#endif
+			return CMD_HEAD_LENGTH;
 	} else if (17 == cmd_head.wr) {
 		ret =
 		    copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH], &buff[CMD_HEAD_LENGTH],

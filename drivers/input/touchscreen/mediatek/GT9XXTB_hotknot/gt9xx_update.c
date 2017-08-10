@@ -296,7 +296,7 @@ s32 gup_enter_update_mode(struct i2c_client *client)
 	msleep(20);
 
 	/* step2:select I2C slave addr,INT:0--0xBA;1--0x28. */
-	gpio_direction_output(tpd_rst_gpio_number, 1);
+	gtp_eint_gpio_output(tpd_int_gpio_number, (client->addr == 0x14));
 	msleep(20);
 
 	/* step3:RST output high reset guitar */
@@ -1973,7 +1973,10 @@ s32 gup_update_proc(void *dir)
 		goto file_fail;
 	}
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	if (true == tpdIrqIsEnabled) {
+		disable_irq(touch_irq);
+		tpdIrqIsEnabled = false;
+	}
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_esd_switch(i2c_client_point, SWITCH_OFF);
 #endif
@@ -2069,8 +2072,11 @@ update_fail:
 #endif
 
 file_fail:
-	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gtp_irq_enable();
+#else
 	enable_irq(touch_irq);
+#endif
 
 	if (update_msg.file && !IS_ERR(update_msg.file)) {
 		if (update_msg.old_fs)
@@ -2267,7 +2273,7 @@ s32 gup_enter_update_mode_fl(struct i2c_client *client)
 	msleep(20);
 
 	/* step2:select I2C slave addr,INT:0--0xBA;1--0x28. */
-	gpio_direction_output(tpd_int_gpio_number, (client->addr == 0x14));
+	gtp_eint_gpio_output(tpd_int_gpio_number, (client->addr == 0x14));
 	msleep(20);
 
 	/* step3:RST output high reset guitar */
@@ -2686,7 +2692,11 @@ s32 gup_fw_download_proc(void *dir, u8 dwn_mode)
 		goto file_fail;
 	}
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	if (true == tpdIrqIsEnabled) {
+		disable_irq(touch_irq);
+		tpdIrqIsEnabled = false;
+	}
+
 	if (NULL != dir) {
 #if defined(CONFIG_GTP_ESD_PROTECT)
 		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
@@ -2732,8 +2742,12 @@ s32 gup_fw_download_proc(void *dir, u8 dwn_mode)
 #endif
 	}
 	show_len = 100;
-	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gtp_irq_enable();
+#else
 	enable_irq(touch_irq);
+#endif
+
 	return SUCCESS;
 
 download_fail:
@@ -2747,7 +2761,12 @@ download_fail:
 file_fail:
 	show_len = 200;
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gtp_irq_enable();
+#else
 	enable_irq(touch_irq);
+#endif
+
 	return FAIL;
 }
 
@@ -2885,21 +2904,21 @@ void gup_output_pulse(int t)
 
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 	/* s32 i; */
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 	udelay(10);
 
 	local_irq_save(flags);
-	gpio_direction_output(tpd_int_gpio_number, 1);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 1);
 	udelay(50);
 
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 	udelay(t - 50);
 
-	gpio_direction_output(tpd_int_gpio_number, 1);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 1);
 	local_irq_restore(flags);
 	udelay(20);
 
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 #else
 	/* s32 i; */
 
@@ -2984,7 +3003,7 @@ u8 gup_clk_calibration(void)
 	gup_clk_calibration_pin_select(1);	/* use GIO1 to do the calibration */
 
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
-	gpio_direction_output(tpd_int_gpio_number, 0);
+	gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 #else
 	tpd_gpio_output(GTP_INT_PORT, 0);
 #endif
@@ -3006,25 +3025,25 @@ u8 gup_clk_calibration(void)
 			break;
 #else
 	#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
-		gpio_direction_output(tpd_int_gpio_number, 0);
+		gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 
 		/* local_irq_save(flags); */
 		do_gettimeofday(&start);
-		gpio_direction_output(tpd_int_gpio_number, 1);
+		gtp_eint_gpio_output(tpd_int_gpio_number, 1);
 		/* local_irq_restore(flags); */
 
 		msleep(20);
-		gpio_direction_output(tpd_int_gpio_number, 0);
+		gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 		msleep(20);
 
 		/* local_irq_save(flags); */
 		do_gettimeofday(&end);
-		gpio_direction_output(tpd_int_gpio_number, 1);
+		gtp_eint_gpio_output(tpd_int_gpio_number, 1);
 		/* local_irq_restore(flags); */
 
 		count = gup_clk_count_get();
 		udelay(20);
-		gpio_direction_output(tpd_int_gpio_number, 0);
+		gtp_eint_gpio_output(tpd_int_gpio_number, 0);
 	#else
 		tpd_gpio_output(GTP_INT_PORT, 0);
 
@@ -3082,6 +3101,8 @@ u8 gup_clk_calibration(void)
 #endif
 #ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 	gpio_direction_input(tpd_int_gpio_number);
+	if (0 == tpdGPIOTiedtoIRQ)
+		tpd_irq_registration();
 #else
 	tpd_gpio_as_int(GTP_INT_PORT);
 #endif
@@ -3241,7 +3262,11 @@ s32 gup_load_system(char *firmware, s32 length, u8 need_check)
 
 	/* disable irq & ESD protect */
 	/* mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM); */
-	disable_irq(touch_irq);
+	if (true == tpdIrqIsEnabled) {
+		disable_irq(touch_irq);
+		tpdIrqIsEnabled = false;
+	}
+
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_esd_switch(i2c_client_point, SWITCH_OFF);
 #endif
@@ -3270,8 +3295,12 @@ gup_load_system_exit:
 	gtp_esd_switch(i2c_client_point, SWITCH_ON);
 #endif
 #endif
-	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+	gtp_irq_enable();
+#else
 	enable_irq(touch_irq);
+#endif
+
 	return ret;
 }
 
@@ -3400,7 +3429,6 @@ s32 gup_load_hotknot_system(void)
 	ret = gup_load_system(&firmware[FIRMWARE_HEADER_LEN], length, 0);
 
 load_hotknot_exit:
-
 	if (is_load_from_file)
 		kfree(firmware);
 
@@ -3419,7 +3447,17 @@ s32 gup_recovery_main_system(void)
 	GTP_INFO("[recovery_main_system] Recovery main system.");
 
 	if (gtp_chip_type == CHIP_TYPE_GT9) {
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+		if (true == tpdIrqIsEnabled) {
+			disable_irq(touch_irq);
+			tpdIrqIsEnabled = false;
+		}
+#endif
 		gtp_reset_guitar(i2c_client_point, 10);
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
+		gtp_irq_enable();
+#endif
+
 		load_fw_process = 0;
 		return SUCCESS;
 	}
