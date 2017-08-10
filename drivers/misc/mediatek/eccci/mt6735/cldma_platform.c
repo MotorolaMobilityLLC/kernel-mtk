@@ -513,7 +513,7 @@ int ccci_modem_suspend(struct platform_device *dev, pm_message_t state)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccci_modem_suspend\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_suspend\n");
 	return 0;
 }
 
@@ -521,7 +521,7 @@ int ccci_modem_resume(struct platform_device *dev)
 {
 	struct ccci_modem *md = (struct ccci_modem *)dev->dev.platform_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccci_modem_resume\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "ccci_modem_resume\n");
 	return 0;
 }
 
@@ -572,7 +572,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_CON, 0x01);	/* arbitration */
 
 	if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_TQSAR(0))) {
-		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register: No need  ...\n");
+		CCCI_DEBUG_LOG(md->index, TAG, "Resume cldma pdn register: No need  ...\n");
 	} else {
 		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register ...11\n");
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -598,7 +598,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0) {
-				CCCI_NORMAL_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
+				CCCI_DEBUG_LOG(md->index, TAG, "Resume CH(%d) current bak:== 0\n", i);
 				cldma_reg_set_tx_start_addr(md_ctrl->cldma_ap_pdn_base, md_ctrl->txq[i].index,
 					md_ctrl->txq[i].tr_done->gpd_addr);
 				cldma_reg_set_tx_start_addr_bk(md_ctrl->cldma_ap_ao_base, md_ctrl->txq[i].index,
@@ -630,13 +630,13 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3RIMCR0, CLDMA_BM_INT_ALL);
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3RIMCR1, CLDMA_BM_INT_ALL);
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
-		CCCI_NORMAL_LOG(md->index, TAG, "Resume cldma pdn register done\n");
+		CCCI_DEBUG_LOG(md->index, TAG, "Resume cldma pdn register done\n");
 	}
 }
 
 int ccci_modem_syssuspend(void)
 {
-	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_syssuspend\n");
+	CCCI_DEBUG_LOG(0, TAG, "ccci_modem_syssuspend\n");
 	return 0;
 }
 
@@ -644,7 +644,7 @@ void ccci_modem_sysresume(void)
 {
 	struct ccci_modem *md;
 
-	CCCI_NORMAL_LOG(0, TAG, "ccci_modem_sysresume\n");
+	CCCI_DEBUG_LOG(0, TAG, "ccci_modem_sysresume\n");
 	md = ccci_md_get_modem_by_id(0);
 	if (md != NULL)
 		ccci_modem_restore_reg(md);
