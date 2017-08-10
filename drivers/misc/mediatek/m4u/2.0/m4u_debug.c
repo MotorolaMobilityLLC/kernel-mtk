@@ -620,9 +620,9 @@ static int m4u_debug_set(void *data, u64 val)
 	break;
 	case 24:
 	{
-		unsigned int *pSrc;
-		unsigned int mva;
-		unsigned long pa;
+		unsigned int *pSrc = NULL;
+		unsigned int mva = 0;
+		unsigned long pa = 0;
 		m4u_client_t *client = m4u_create_client();
 
 		pSrc = vmalloc(128);
