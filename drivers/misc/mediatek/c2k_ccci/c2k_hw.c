@@ -417,7 +417,6 @@ int c2k_gpio_set_irq_type(int gpio, unsigned int type)
 		return -EINVAL;
 	}
 #else
-	gpio_set_debounce(gpio, 0);
 	irq_set_irq_type(irq, type);
 #endif
 	/*pr_debug("[C2K]set irq(%d) type(%d) done\n", irq, type); */
