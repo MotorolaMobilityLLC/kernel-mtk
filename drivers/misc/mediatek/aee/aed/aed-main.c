@@ -615,7 +615,10 @@ static int ke_log_avail(void)
 		if (is_compat_task() != ((aed_dev.kerec.lastlog->dump_option & DB_OPT_AARCH64) == 0))
 			return 0;
 #endif
-		LOGI("AEE api log available\n");
+		/*remove the log to reduce risk of dead loop: cpux keep moving log from buffer to
+		console and can not process debuggerd work flow, meanwhile aed keep calling poll
+		which produce more log into buffer and cpux stucked whith these log.
+		LOGI("AEE api log available\n");*/
 		return 1;
 	}
 
@@ -1020,7 +1023,7 @@ static ssize_t aed_ee_write(struct file *filp, const char __user *buf, size_t co
 		return -1;
 	}
 
-	msg_show(__func__, &msg);
+	/*the same reason removing "AEE api log available". msg_show(__func__, &msg);*/
 
 	if (msg.cmdType == AE_REQ) {
 		if (!ee_log_avail()) {
@@ -1225,7 +1228,7 @@ static ssize_t aed_ke_write(struct file *filp, const char __user *buf, size_t co
 		return -1;
 	}
 
-	msg_show(__func__, &msg);
+	/*the same reason removing "AEE api log available". msg_show(__func__, &msg);*/
 
 	if (msg.cmdType == AE_REQ) {
 		if (!ke_log_avail()) {
