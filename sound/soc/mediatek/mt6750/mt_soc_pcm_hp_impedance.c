@@ -80,6 +80,7 @@ static const int DCoffsetVariance = 200;    /* denali 0.2v */
 
 static const unsigned short HpImpedanceAuxCable = 10000;
 static const int mDcRangestep = 7;
+/* static const int HpImpedancePhase1Step = 100; */
 static const int HpImpedancePhase1Step = 50;
 static const int HpImpedancePhase2Step = 100;
 static const int HpImpedancePhase0AdcValue = 200;
@@ -377,7 +378,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
 		setOffsetTrimBufferGain(3);
 		EnableTrimbuffer(true);
-		setHpGainZero();
+		setHpGain(8); /* 8: 0dB */
 		memset((void *)Get_Afe_SramBase_Pointer(), ucontrol->value.integer.value[0],
 		       AFE_INTERNAL_SRAM_SIZE);
 		msleep(5 * 1000);
@@ -561,7 +562,7 @@ static void ApplyDctoDl(void)
 				break;
 			}
 		}
-
+		/* usleep_range(1*250, 1*500); */
 		usleep_range(600, 800);
 	}
 
@@ -572,7 +573,7 @@ static void ApplyDctoDl(void)
 		value = value - HpImpedancePhase1Step;
 		/* apply to dram */
 		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
-
+		/* usleep_range(1*200, 1*400); */
 		usleep_range(600, 800);
 	}
 #endif
@@ -593,7 +594,7 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		setOffsetTrimBufferGain(3);
 
 		EnableTrimbuffer(true);
-		setHpGainZero();
+		setHpGain(8); /* 8:0dB */
 		ApplyDctoDl();
 		SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 		/*msleep(1);*/

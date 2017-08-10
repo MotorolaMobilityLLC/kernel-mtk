@@ -199,6 +199,10 @@ define for PCM settings
 #define SOC_HIGH_USE_RATE_MAX       192000
 #define SOC_HIGH_USE_CHANNELS_MIN    1
 #define SOC_HIGH_USE_CHANNELS_MAX    8
+
+#define HP_TRIM_INDEX (8) /* 0dB */
+#define SPK_D_TRIM_INDEX (4) /* 6dB */
+
 #ifdef AUDIO_ALLOCATE_SMP_RATE_DECLARE
 /* Conventional and unconventional sample rate supported */
 const unsigned int soc_fm_supported_sample_rates[3] = {

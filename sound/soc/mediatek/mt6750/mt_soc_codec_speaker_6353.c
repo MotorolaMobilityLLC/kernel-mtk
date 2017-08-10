@@ -67,11 +67,11 @@
 #include "mt_soc_analog_type.h"
 /*#include <mach/pmic_mt6325_sw.h>*/
 #include <mach/upmu_hw.h>
-/*#include "mt_soc_pcm_common.h"*/
+#include "mt_soc_pcm_common.h"
 
 
 
-void Speaker_ClassD_Open(void)
+void Speaker_ClassD_Open(uint32 in_trimming)
 {
 	kal_uint32 i, SPKTrimReg = 0;
 
@@ -84,12 +84,23 @@ void Speaker_ClassD_Open(void)
 	Ana_Set_Reg(MT6353_SPK_CON13, 0x3800, 0xffff);	/* Offset trim RSV bit */
 	Ana_Set_Reg(MT6353_SPK_CON2, 0x04A4, 0xffff);
 	/* Turn on OC function, set SPK PGA in DCC mod */
-	Ana_Set_Reg(MT6353_SPK_ANA_CON0, 0x5000, 0xffff);	/* Set 12dB PGA gain */
+
+	Ana_Set_Reg(MT6353_SPK_ANA_CON0, SPK_D_TRIM_INDEX << 11, 0xffff);	/* Set SPK_D_TRIM_INDEX PGA gain */
+
+	if (in_trimming == 1)
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3008, 0xffff);	/* No turn on speaker amp when trimming */
+	else
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3009, 0xffff);	/* Turn on speaker */
+
 	Ana_Set_Reg(MT6353_SPK_CON9, 0x2000, 0xffff);	/* Set Fast Vcm mode */
 	Ana_Set_Reg(MT6353_SPK_CON0, 0x3009, 0xffff);	/* Turn on speaker */
 	for (i = 0; i < 15; i++)
 		udelay(1000);	/* wait 15ms for trimming */
-	Ana_Set_Reg(MT6353_SPK_CON0, 0x3000, 0xffff);
+
+	if (in_trimming == 1)
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3000, 0xffff);	/* Turn off trim,(set to class D mode) */
+	else
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);	/* Turn off trim,(set to class D mode) */
 	/* Turn off trim,(set to class D mode) */
 	Ana_Set_Reg(MT6353_SPK_CON13, 0x2000, 0xffff);
 	/* Clock from Saw-tooth to Triangular wave */
@@ -102,23 +113,25 @@ void Speaker_ClassD_Open(void)
 	if ((SPKTrimReg & 0x8000) == 0)
 		pr_warn("spk trim fail!\n");
 	else
-		pr_warn("spk trim offset=%d\n", (SPKTrimReg & 0x1f));
+		pr_warn("[open spk]spk trim offset=%d\n", (SPKTrimReg & 0x1f));
 
-	/* spk PWM to 418k */
-	Ana_Set_Reg(MT6353_SPK_CON8, 0x0010, 0x00f0);
-
+	if (in_trimming == 1)
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3000, 0xffff);	/* set 0dB amplifier gain */
+	else
 	/* spk amp gain fixed at 0dB */
-	Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);	/* set 0dB amplifier gain */
 	/* Turn on speaker (D mode) set 0dB amplifier gain */
 }
 
-void Speaker_ClassD_close(void)
+void Speaker_ClassD_close(uint32 in_trimming)
 {
 	pr_warn("%s\n", __func__);
 	Ana_Set_Reg(MT6353_SPK_CON9, 0x2A00, 0xffff);	/* Set Vcm high PSRR mode */
-	Ana_Set_Reg(MT6353_SPK_ANA_CON0, 0x5000, 0xffff);
+	Ana_Set_Reg(MT6353_SPK_ANA_CON0, SPK_D_TRIM_INDEX << 11, 0xffff);
 	/* Set 12dB PGA gain(level when trimming) */
-	Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);	/* set 0dB amp gain(level when trimming) */
+	if (in_trimming == 0)
+		Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);	/* set 0dB amp gain(level when trimming) */
+
 	Ana_Set_Reg(MT6353_SPK_CON0, 0x3000, 0xffff);	/* amp L-ch disable */
 }
 
