@@ -599,6 +599,7 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 	struct stack_trace trace;
 	int i;
 	struct task_struct *tsk, *cur;
+	struct task_struct *previous;
 	struct aee_process_info *cur_proc;
 
 	if (!virt_addr_valid(current_thread_info())) {
@@ -622,7 +623,12 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 		}
 		/* FIXME: Check overflow ? */
 		sz += snprintf(symbol + sz, 96 - sz, "[%s, %d]", tsk->comm, tsk->pid);
+		previous = tsk;
 		tsk = tsk->real_parent;
+		if (!virt_addr_valid(tsk)) {
+			LOGE("tsk(%p) invalid (previous: [%s, %d])\n", tsk, previous->comm, previous->pid);
+			break;
+		}
 	} while (tsk && (tsk->pid != 0) && (tsk->pid != 1));
 	if (strncmp(cur_proc->process_path, symbol, sz) == 0) {
 		LOGE("same process path\n");
