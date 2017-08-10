@@ -2800,6 +2800,11 @@ void Auddrv_DL1_Interrupt_Handler(void)	/* irq1 ISR handler */
 			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] = MEM_DL1;
 		}
 		AFE_dL_Abnormal_context.u4UnderflowCnt++;
+		if (Afe_Block->u4DataRemained < Afe_consumed_bytes) {
+			Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
+			Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
+			Afe_Block->u4DataRemained -= Afe_Block->u4DataRemained;
+		}
 	} else {
 
 		PRINTK_AUD_DL1("+DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",

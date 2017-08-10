@@ -223,7 +223,14 @@ static snd_pcm_uframes_t mtk_pcm_I2S0dl1_pointer(struct snd_pcm_substream
 		Afe_consumed_bytes = Align64ByteSize(Afe_consumed_bytes);
 #endif
 
-		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+		if (Afe_consumed_bytes > Afe_Block->u4DataRemained) {
+			PRINTK_AUDDRV("I2S0dl1_pointer underrun? WIdx=0x%x,RIdx=0x%x,DataRemain=0x%x,Consume=0x%x\n",
+			Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_consumed_bytes);
+			Afe_Block->u4DataRemained -= Afe_Block->u4DataRemained;
+		} else {
+			Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+		}
+
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		PRINTK_AUD_DL1
