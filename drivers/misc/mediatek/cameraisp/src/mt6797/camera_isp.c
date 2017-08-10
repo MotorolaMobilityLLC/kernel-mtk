@@ -6874,6 +6874,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
 			MUINT32 currentPPB = m_CurrentPPB;
 			MUINT32 lock_key = ISP_IRQ_TYPE_AMOUNT;
+
+			if (DebugFlag[0] >= ISP_IRQ_TYPE_AMOUNT) {
+				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
+				Ret = -EFAULT;
+				break;
+			}
 			if (DebugFlag[0] == ISP_IRQ_TYPE_INT_CAM_B_ST) {
 				lock_key = ISP_IRQ_TYPE_INT_CAM_A_ST;
 			} else {

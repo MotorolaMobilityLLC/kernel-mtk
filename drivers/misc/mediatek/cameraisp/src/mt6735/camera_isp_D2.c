@@ -4603,6 +4603,11 @@ static long ISP_ioctl(struct file *pFile, MUINT32 Cmd, unsigned long Param)
 			    0) {
 				MUINT32 lock_key = _IRQ_MAX;
 
+				if (DebugFlag[1] >= _IRQ_MAX) {
+					LOG_ERR("unsupported module:0x%x\n", DebugFlag[1]);
+					Ret = -EFAULT;
+					break;
+				}
 				if (DebugFlag[1] == _IRQ_D)
 					lock_key = _IRQ;
 				else
@@ -4873,6 +4878,11 @@ static long ISP_ioctl(struct file *pFile, MUINT32 Cmd, unsigned long Param)
 			MUINT32 currentPPB = m_CurrentPPB;
 			MUINT32 lock_key = _IRQ_MAX;
 
+			if (DebugFlag[0] >= _IRQ_MAX) {
+				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
+				Ret = -EFAULT;
+				break;
+			}
 			if (DebugFlag[0] == _IRQ_D)
 				lock_key = _IRQ;
 			else
