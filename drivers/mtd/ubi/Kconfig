@@ -114,7 +114,7 @@ config MTD_UBI_LOWPAGE_BACKUP
 	   If in doubt, say "N".
 
 config MTK_SLC_BUFFER_SUPPORT
-        tristate "Write MLC/TLC block by SLC BUFFER"
+        bool "Write MLC/TLC block by SLC BUFFER"
         help
           This option enables SLC buffer - All data is written into SLC mode
           block first then copy to TLC/MLC mode block if SLC mode block is

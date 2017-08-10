@@ -33,10 +33,8 @@ int lz4k_decompress_safe(const unsigned char *src, size_t src_len,
 			 unsigned char *dst, size_t *dst_len);
 int lz4k_compress_zram(const unsigned char *src, size_t src_len,
 		  unsigned char *dst, size_t *dst_len, void *wrkmem, int *checksum);
-#ifdef CONFIG_UBIFS_FS
 int lz4k_decompress_ubifs(const unsigned char *src, size_t src_len,
 			  unsigned char *dst, size_t *dst_len);
-#endif				/* CONFIG_UBIFS_FS */
 
 
 #if 0

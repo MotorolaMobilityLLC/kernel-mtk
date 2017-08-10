@@ -168,7 +168,6 @@ struct ubifs_global_debug_tnc {
 	if (unlikely(!(expr))) {                                               \
 		pr_crit("UBIFS assert failed in %s at %u (pid %d)\n",          \
 		       __func__, __LINE__, current->pid);                      \
-		show_stack(NULL, NULL);                                                  \
 	}                                                                      \
 } while (0)
 
