@@ -30,3 +30,12 @@ config MTK_DT_USB_SUPPORT
 	  When there is secound MODEM on the device and connected to main
 	  SoC via MTK_MUSBFSH USB port. MTK_DT_USB_SUPPORT is need for
 	  supporting dual talk to transfer data between 2 MODEMs.
+
+config MTK_MUSBFSH_QMU_SUPPORT
+	bool "QMU Transfer mode of MediaTek MUSBFSH"
+	depends on MTK_USBFSH
+	---help---
+	  Say Y here if your system has a QMU capability for USB11
+	  controller based on the MTK MUSBFSH IP.
+	  QMU is some kind of enhanced DMA mode by HW queeu rather
+	  than SW queue to reduce SW effort.

@@ -51,6 +51,9 @@
 #include "musbfsh_host.h"
 #include "musbfsh_dma.h"
 #include "usb.h"
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+#include "musbfsh_qmu.h"
+#endif
 
 /* MUSB HOST status 22-mar-2006
  *
@@ -100,6 +103,117 @@
  * of transfers between endpoints, or anything clever.
  */
 
+static u8 dynamic_fifo_total_slot = 15;
+int musbfsh_host_alloc_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u8 is_in)
+{
+	void __iomem *mbase = musbfsh->mregs;
+	int epnum = qh->hw_ep->epnum;
+	u16 maxpacket = qh->maxpacket;
+	u16 request_fifo_sz, fifo_unit_nr;
+	u16 idx_start = 0;
+	u8 index, i;
+	u16 c_off = 0;
+	u8 c_size = 0;
+	u16 free_uint = 0;
+	u8 found = 0;
+
+	if (maxpacket <= 512) {
+		request_fifo_sz = 512;
+		fifo_unit_nr = 1;
+		c_size = 6;
+	} else {
+		request_fifo_sz = 1024;
+		fifo_unit_nr = 2;
+		c_size = 7;
+	}
+
+	for (i = 0; i < dynamic_fifo_total_slot; i++) {
+		if (!(musbfsh_host_dynamic_fifo_usage_msk & (1 << i)))
+			free_uint++;
+		else
+			free_uint = 0;
+
+		if (free_uint == fifo_unit_nr) {
+			found = 1;
+			break;
+		}
+	}
+
+	if (found == 0) {
+		WARNING("!enough, dynamic_fifo_usage_msk:0x%x,maxp:%d,req_len:%d,ep%d-%s\n",
+				musbfsh_host_dynamic_fifo_usage_msk, maxpacket,
+				request_fifo_sz, epnum, is_in ? "in":"out");
+		return -1;
+	}
+
+	idx_start = i - (fifo_unit_nr - 1);
+	c_off = (64 >> 3) + idx_start * (512 >> 3);
+
+	for (i = 0; i < fifo_unit_nr; i++)
+		musbfsh_host_dynamic_fifo_usage_msk |= (1 << (idx_start + i));
+
+	index = musbfsh_readb(mbase, MUSBFSH_INDEX);
+	musbfsh_writeb(musbfsh->mregs, MUSBFSH_INDEX, epnum);
+	if (is_in) {
+		musbfsh_write_rxfifosz(mbase, c_size);
+		musbfsh_write_rxfifoadd(mbase, c_off);
+
+		INFO("addr:0x%x, size:0x%x\n", musbfsh_read_rxfifoadd(mbase), musbfsh_read_rxfifosz(mbase));
+	} else {
+		musbfsh_write_txfifosz(mbase, c_size);
+		musbfsh_write_txfifoadd(mbase, c_off);
+		INFO("addr:0x%x, size:0x%x\n", musbfsh_read_txfifoadd(mbase), musbfsh_read_txfifosz(mbase));
+	}
+	musbfsh_writeb(mbase, MUSBFSH_INDEX, index);
+
+	INFO("maxp:%d, req_len:%d, dynamic_fifo_usage_msk:0x%x, ep%d-%s, qh->type:%d\n",
+	    maxpacket, request_fifo_sz, musbfsh_host_dynamic_fifo_usage_msk, epnum, is_in ? "in":"out", qh->type);
+	return 0;
+}
+
+void musbfsh_host_free_ep_fifo(struct musbfsh *musbfsh, struct musbfsh_qh *qh, u8 is_in)
+{
+	void __iomem *mbase = musbfsh->mregs;
+	int epnum = qh->hw_ep->epnum;
+	u16 maxpacket = qh->maxpacket;
+	u16 request_fifo_sz, fifo_unit_nr;
+	u16 idx_start = 0;
+	u8 index, i;
+	u16 c_off = 0;
+
+	if (maxpacket <= 512) {
+		request_fifo_sz = 512;
+		fifo_unit_nr = 1;
+	} else {
+		request_fifo_sz = 1024;
+		fifo_unit_nr = 2;
+	}
+
+	index = musbfsh_readb(mbase, MUSBFSH_INDEX);
+	musbfsh_writeb(mbase, MUSBFSH_INDEX, epnum);
+
+	if (is_in)
+		c_off =  musbfsh_read_rxfifoadd(mbase);
+	else
+		c_off = musbfsh_read_txfifoadd(mbase);
+
+	idx_start = (c_off - (64 >> 3)) / (512 >> 3);
+
+	for (i = 0; i < fifo_unit_nr; i++)
+		musbfsh_host_dynamic_fifo_usage_msk &= ~(1 << (idx_start + i));
+
+	if (is_in) {
+		musbfsh_write_rxfifosz(mbase, 0);
+		musbfsh_write_rxfifoadd(mbase, 0);
+	} else {
+		musbfsh_write_txfifosz(mbase, 0);
+		musbfsh_write_txfifoadd(mbase, 0);
+	}
+	musbfsh_writeb(mbase, MUSBFSH_INDEX, index);
+
+	INFO("maxp:%d, req_len:%d, dynamic_fifo_usage_msk:0x%x, ep%d-%s, qh->type:%d\n",
+	    maxpacket, request_fifo_sz, musbfsh_host_dynamic_fifo_usage_msk, epnum, is_in ? "in":"out", qh->type);
+}
 
 static void musbfsh_ep_program(struct musbfsh *musbfsh, u8 epnum,
 			       struct urb *urb, int is_out, u8 *buf,
@@ -187,8 +301,13 @@ static inline void musbfsh_h_tx_start(struct musbfsh_hw_ep *ep)
 
 }
 
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+void musbfsh_ep_set_qh(struct musbfsh_hw_ep *ep, int is_in,
+			      struct musbfsh_qh *qh)
+#else
 static void musbfsh_ep_set_qh(struct musbfsh_hw_ep *ep, int is_in,
 			      struct musbfsh_qh *qh)
+#endif
 {
 	if (is_in != 0 || ep->is_shared_fifo)
 		ep->in_qh = qh;
@@ -196,7 +315,11 @@ static void musbfsh_ep_set_qh(struct musbfsh_hw_ep *ep, int is_in,
 		ep->out_qh = qh;
 }
 
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+struct musbfsh_qh *musbfsh_ep_get_qh(struct musbfsh_hw_ep *ep, int is_in)
+#else
 static struct musbfsh_qh *musbfsh_ep_get_qh(struct musbfsh_hw_ep *ep, int is_in)
+#endif
 {
 	INFO("%s++, hw_ep%d, is_in=%d\r\n",
 	     __func__, ep->epnum, is_in);
@@ -375,8 +498,13 @@ static inline void musbfsh_set_toggle(struct musbfsh_qh *qh, int is_in,
  *
  * Context: caller owns controller lock, IRQs are blocked
  */
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
+				     struct musbfsh_hw_ep *hw_ep, int is_in)
+#else
 static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 				     struct musbfsh_hw_ep *hw_ep, int is_in)
+#endif
 {
 	struct musbfsh_qh *qh;
 	struct musbfsh_hw_ep *ep;
@@ -402,6 +530,11 @@ static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 
 	qh->is_ready = 0;
 	musbfsh_giveback(musbfsh, urb, status);
+	if ((is_in && !hw_ep->in_qh)
+			|| (!is_in && !hw_ep->out_qh)) {
+		WARNING("QH already freed\n");
+		return;
+	}
 	qh->is_ready = ready;
 
 	/* work around from tablet, avoid KE for qh->hep content 0x6b6b6b6b...
@@ -435,6 +568,14 @@ static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 		musbfsh_ep_set_qh(ep, is_in, NULL);
 		qh->hep->hcpriv = NULL;
 
+		if (musbfsh_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL)
+			musbfsh_host_free_ep_fifo(musbfsh, qh, is_in);
+
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+		if (qh->is_use_qmu)
+			mtk_disable_q(musbfsh, hw_ep->epnum, is_in);
+#endif
+
 		switch (qh->type) {
 
 		case USB_ENDPOINT_XFER_CONTROL:
@@ -465,7 +606,15 @@ static void musbfsh_advance_schedule(struct musbfsh *musbfsh, struct urb *urb,
 	if (qh != NULL && qh->is_ready) {
 		INFO("... next ep%d %cX urb %p\n",
 		     hw_ep->epnum, is_in ? 'R' : 'T', next_urb(qh));
-		     musbfsh_start_urb(musbfsh, is_in, qh);
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+				if (qh->is_use_qmu && !mtk11_host_qmu_concurrent) {
+					musbfsh_ep_set_qh(hw_ep, is_in, qh);
+					mtk_kick_CmdQ(musbfsh, is_in ? 1:0, qh, next_urb(qh));
+				} else if (!qh->is_use_qmu)
+					musbfsh_start_urb(musbfsh, is_in, qh);
+#else
+				musbfsh_start_urb(musbfsh, is_in, qh);
+#endif
 	}
 }
 
@@ -912,7 +1061,7 @@ static bool musbfsh_h_ep0_continue(struct musbfsh *musbfsh, u16 len,
 		if (len < qh->maxpacket) {
 			/* always terminate on short read; it's
 			 * rarely reported as an error.
-			 more = false;//add by zheng wang
+			 more = false;
 			 */
 		} else if (urb->actual_length < urb->transfer_buffer_length)
 			more = true;
@@ -1131,6 +1280,11 @@ void musbfsh_host_tx(struct musbfsh *musbfsh, u8 epnum)	/* real ep num */
 	void __iomem *mbase = musbfsh->mregs;
 	struct dma_channel *dma;
 	bool transfer_pending = false;
+
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+		if (qh && qh->is_use_qmu)
+			return;
+#endif
 
 	INFO("%s++, real ep=%d\r\n", __func__, epnum);
 	musbfsh_ep_select(mbase, epnum);
@@ -1443,6 +1597,11 @@ void musbfsh_host_rx(struct musbfsh *musbfsh, u8 epnum)
 	u32 status;
 	struct dma_channel *dma;
 
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+	if (qh && qh->is_use_qmu)
+		return;
+#endif
+
 	INFO("musbfsh_host_rx++,real ep=%d\r\n", epnum);
 	musbfsh_ep_select(mbase, epnum);
 
@@ -1715,8 +1874,7 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 			    int is_in)
 {
 	int idle;
-	int best_diff;
-	int best_end, epnum;
+	int epnum, hw_end = 0;
 	struct musbfsh_hw_ep *hw_ep = NULL;
 	struct list_head *head = NULL;
 
@@ -1729,6 +1887,29 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 		goto success;
 	}
 
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+	if (mtk11_isoc_ep_gpd_count
+			&& qh->type == USB_ENDPOINT_XFER_ISOC) {
+		for (epnum = mtk11_isoc_ep_start_idx, hw_ep = musbfsh->endpoints + mtk11_isoc_ep_start_idx;
+				epnum < musbfsh->nr_endpoints; epnum++, hw_ep++) {
+			/* int	diff; */
+
+			if (musbfsh_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musbfsh->endpoints + hw_end;	/* got the right ep */
+			break;
+		}
+
+		if (hw_end) {
+			idle = 1;
+			qh->mux = 0;
+			goto success;
+		}
+	}
+#endif
+
 	/* else, periodic transfers get muxed to other endpoints */
 
 	/*
@@ -1738,59 +1919,47 @@ static int musbfsh_schedule(struct musbfsh *musbfsh, struct musbfsh_qh *qh,
 	 * REVISIT what we really want here is a regular schedule tree
 	 * like e.g. OHCI uses.
 	 */
-	best_diff = 4096;
-	best_end = -1;
-
 	for (epnum = 1, hw_ep = musbfsh->endpoints + 1;
 	     epnum < musbfsh->nr_endpoints; epnum++, hw_ep++) {
-		int diff;
 
 		if (musbfsh_ep_get_qh(hw_ep, is_in) != NULL)
 			continue;
 
-		if (hw_ep == musbfsh->bulk_ep)
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+		if (mtk11_isoc_ep_gpd_count && (epnum >= mtk11_isoc_ep_start_idx)) {
+			epnum = musbfsh->nr_endpoints;
 			continue;
+		}
+#endif
 
-		if (is_in)
-			diff = hw_ep->max_packet_sz_rx;
-		else
-			diff = hw_ep->max_packet_sz_tx;
-		diff -= qh->maxpacket;
+		hw_end = epnum;
+		hw_ep = musbfsh->endpoints + hw_end;	/* got the right ep */
+		break;
+	}
 
-		if (diff >= 0 && best_diff > diff) {
-			hw_ep = musbfsh->endpoints + epnum;
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+	/* grab isoc ep if no other ep is available */
+	if (mtk11_isoc_ep_gpd_count
+			&& !hw_end
+			&& qh->type != USB_ENDPOINT_XFER_ISOC) {
+		for (epnum = mtk11_isoc_ep_start_idx, hw_ep = musbfsh->endpoints + mtk11_isoc_ep_start_idx;
+				epnum < musbfsh->nr_endpoints; epnum++, hw_ep++) {
+			/* int	diff; */
 
-			best_diff = diff;
-			best_end = epnum;
+			if (musbfsh_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musbfsh->endpoints + hw_end;	/* got the right ep */
+			break;
 		}
 	}
-	/* use bulk reserved ep1 if no other ep is free */
-	if (best_end < 0 && qh->type == USB_ENDPOINT_XFER_BULK) {
-		hw_ep = musbfsh->bulk_ep;
-		if (is_in)
-			head = &musbfsh->in_bulk;
-		else
-			head = &musbfsh->out_bulk;
-
-		/* Enable bulk RX NAK timeout scheme when bulk requests are
-		 * multiplexed.  This scheme doen't work in high speed to full
-		 * speed scenario as NAK interrupts are not coming from a
-		 * full speed device connected to a high speed device.
-		 * NAK timeout interval is 8 (128 uframe or 16ms) for HS and
-		 * 4 (8 frame or 8ms) for FS device.
-		 */
-		if (is_in && qh->dev)
-			qh->intv_reg =
-				(USB_SPEED_HIGH == qh->dev->speed) ? 8 : 4;
-		goto success;
-	} else if (best_end < 0) {
+#endif
+	if (!hw_end)
 		return -ENOSPC;
-	}
 
 	idle = 1;
 	qh->mux = 0;
-	hw_ep = musbfsh->endpoints + best_end;
-	INFO("qh %p periodic slot %d\n", qh, best_end);
 success:
 	if (head) {
 #ifdef CONFIG_MTK_DT_USB_SUPPORT
@@ -1803,12 +1972,40 @@ success:
 	qh->hw_ep = hw_ep;
 	qh->hep->hcpriv = qh;
 
+	if (musbfsh_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL) {
+		int ret;
+
+		/* take this after qh->hw_ep is set */
+		ret = musbfsh_host_alloc_ep_fifo(musbfsh, qh, is_in);
+		if (ret) {
+			qh->hw_ep = NULL;
+			qh->hep->hcpriv = NULL;
+			WARNING("NOT ENOUGH FIFO\n");
+			return -ENOSPC;
+		}
+	}
+
 	/* the new urb added is the first urb now, excute it! */
 	if (idle) {
 #ifdef CONFIG_MTK_DT_USB_SUPPORT
 		mark_qh_activity(qh->epnum, hw_ep->epnum, is_in, 0);
 #endif
-		musbfsh_start_urb(musbfsh, is_in, qh);
+
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+			/* downgrade to non-qmu if no specific ep grabbed whenmtk11_ isoc_ep_gpd_count is set*/
+			if (mtk11_isoc_ep_gpd_count &&
+				qh->type == USB_ENDPOINT_XFER_ISOC &&
+				hw_end < mtk11_isoc_ep_start_idx)
+				qh->is_use_qmu = 0;
+
+			if (qh->is_use_qmu) {
+				musbfsh_ep_set_qh(hw_ep, is_in, qh);
+				mtk11_kick_CmdQ(musb, is_in ? 1:0, qh, next_urb(qh));
+			} else
+				musbfsh_start_urb(musbfsh, is_in, qh);
+#else
+			musbfsh_start_urb(musbfsh, is_in, qh);
+#endif
 	}
 	return 0;
 }
@@ -1858,6 +2055,14 @@ static int musbfsh_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
 	 * disabled, testing for empty qh->ring and avoiding qh setup costs
 	 * except for the first urb queued after a config change.
 	 */
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+	if (mtk11_host_qmu_concurrent && qh && qh->is_use_qmu && (ret == 0)) {
+		mtk11_kick_CmdQ(musb, (epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK) ? 1:0, qh, urb);
+		spin_unlock_irqrestore(&musbfsh->lock, flags);
+		return ret;
+	}
+#endif
+
 	if (qh || ret)
 		return ret;
 
@@ -1969,6 +2174,10 @@ static int musbfsh_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
 		qh = NULL;
 		ret = 0;
 	} else {
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+		if ((!usb_pipecontrol(urb->pipe)) && ((usb_pipetype(urb->pipe) + 1) & mtk11_host_qmu_pipe_msk))
+			qh->is_use_qmu = 1;
+#endif
 		ret = musbfsh_schedule(musbfsh, qh,
 			(epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK));
 		/*
@@ -2101,8 +2310,14 @@ static int musbfsh_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		 * and its URB list has emptied, recycle this qh.
 		 */
 		if (ready && list_empty(&qh->hep->urb_list)) {
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+			if (qh->is_use_qmu)
+				mtk11_disable_q(musbfsh, qh->hw_ep->epnum, is_in);
+#endif
 			qh->hep->hcpriv = NULL;
 			list_del(&qh->ring);
+			if (musbfsh_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL)
+				musbfsh_host_free_ep_fifo(musbfsh, qh, is_in);
 			kfree(qh);
 		}
 	} else
@@ -2180,8 +2395,15 @@ static void musbfsh_h_disable(struct usb_hcd *hcd,
 		while (!list_empty(&hep->urb_list))
 			musbfsh_giveback(musbfsh, next_urb(qh), -ESHUTDOWN);
 
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+		if (qh->is_use_qmu)
+			mtk11_disable_q(musbfsh, qh->hw_ep->epnum, is_in);
+#endif
 		hep->hcpriv = NULL;
 		list_del(&qh->ring);
+
+		if (musbfsh_host_dynamic_fifo && qh->type != USB_ENDPOINT_XFER_CONTROL)
+			musbfsh_host_free_ep_fifo(musbfsh, qh, is_in);
 		kfree(qh);
 	}
 exit:

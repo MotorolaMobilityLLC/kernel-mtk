@@ -80,6 +80,9 @@ struct musbfsh_qh {
 	u16 frame;		/* for periodic schedule */
 	unsigned iso_idx;	/* in urb->iso_frame_desc[] */
 	struct sg_mapping_iter sg_miter;	/* for highmem in PIO mode */
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+	u8 is_use_qmu;
+#endif
 };
 
 /* map from control or bulk queue head to the first qh on that ring */
@@ -140,5 +143,10 @@ extern int musbfsh_skip_port_suspend;
 extern int musbfsh_skip_port_resume;
 #endif
 
-
+#ifdef MUSBFSH_QMU_SUPPORT_HOST
+extern void musbfsh_ep_set_qh(struct musbfsh_hw_ep *ep, int isRx, struct musbfsh_qh *qh);
+extern struct musbfsh_qh *musbfsh_ep_get_qh(struct musbfsh_hw_ep *ep, int isRx);
+extern void musbfsh_advance_schedule(struct musbfsh *musb, struct urb *urb,
+				  struct musbfsh_hw_ep *hw_ep, int is_in);
+#endif
 #endif				/* _MUSBFSH_HOST_H */
