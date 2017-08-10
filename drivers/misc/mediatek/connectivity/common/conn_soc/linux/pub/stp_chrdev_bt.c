@@ -266,11 +266,14 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 		retval = mtk_wcn_stp_receive_data(i_buf, count, BT_TASK_INDX);
 		BT_DBG_FUNC("%s: mtk_wcn_stp_receive_data returns %d\n", __func__, retval);
 	}
-
-	/* Got something from STP driver */
-	if (copy_to_user(buf, i_buf, retval)) {
-		retval = -EFAULT;
+	if (retval < 0) {
+		retval = -EIO;
 		goto OUT;
+	} else { /* Got something from STP driver */
+		if (copy_to_user(buf, i_buf, retval)) {
+			retval = -EFAULT;
+			goto OUT;
+		}
 	}
 
 OUT:
