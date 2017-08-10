@@ -801,8 +801,8 @@ static inline void TSF_Reset(void)
 
 		/* Reset TSF flow */
 		TSF_WR32(TSF_START_REG, 0x00010000);
-		/*while (((TSF_RD32(TSF_START_REG) >> 24) & 0x01) != 0x1)
-			LOG_DBG("TSF resetting...\n");*/
+		while (((TSF_RD32(TSF_START_REG) >> 24) & 0x01) != 0x0)
+			LOG_DBG("TSF resetting...\n");
 
 		TSF_WR32(TSF_START_REG, 0x00100000);
 		TSF_WR32(TSF_START_REG, 0x00000000);
