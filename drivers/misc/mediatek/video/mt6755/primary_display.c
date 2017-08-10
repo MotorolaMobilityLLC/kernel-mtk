@@ -5387,8 +5387,6 @@ int primary_display_setbacklight(unsigned int level)
 	int ret = 0;
 	static unsigned int last_level;
 
-	DISPFUNC();
-
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
 		return 0;

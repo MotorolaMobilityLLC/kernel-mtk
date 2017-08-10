@@ -454,7 +454,6 @@ int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 	LCM_DRIVER *lcm_drv = NULL;
 	int ret = 0;
 
-	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->set_backlight_cmdq) {
