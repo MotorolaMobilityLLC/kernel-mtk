@@ -102,7 +102,7 @@ static void StopAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
 
 	if (GetI2SDacEnable() == false)
-		SetI2SDacEnable(false);
+		SetI2SDacEnable(false);/*why set this*/
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I00,

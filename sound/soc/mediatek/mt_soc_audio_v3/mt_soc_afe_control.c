@@ -408,17 +408,20 @@ void OpenAfeDigitaldl1(bool bEnable)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 			SetI2SDacOut(44100, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetI2SDacEnable(true);
+			EnableAfe(true);
+			SetI2SADDAEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			EnableAfe(true);
 		}
-
-		EnableAfe(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-		if (GetI2SDacEnable() == false)
+		if (GetI2SDacEnable() == false) {
+			SetI2SADDAEnable(false);
 			SetI2SDacEnable(false);
+		}
 
 		EnableAfe(false);
 	}
@@ -1992,6 +1995,7 @@ bool GetMemoryPathEnable(uint32 Aud_block)
 	return false;
 }
 
+#if 0
 bool SetI2SDacEnable(bool bEnable)
 {
 	pr_warn("%s bEnable = %d", __func__, bEnable);
@@ -2011,6 +2015,43 @@ bool SetI2SDacEnable(bool bEnable)
 		}
 
 		Afe_Set_Reg(FPGA_CFG1, 1 << 4, 0x10);	/* For FPGA Pin the same with DAC */
+	}
+
+	return true;
+}
+#endif
+
+bool SetI2SDacEnable(bool bEnable)
+{
+	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
+
+	if (bEnable) {
+		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
+		Afe_Set_Reg(FPGA_CFG1, 0, 0x10);	/* For FPGA Pin the same with DAC */
+	} else {
+		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
+		Afe_Set_Reg(FPGA_CFG1, 1 << 4, 0x10);	/* For FPGA Pin the same with DAC */
+	}
+
+	return true;
+}
+
+
+bool SetI2SADDAEnable(bool bEnable)
+{
+	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
+
+	if (bEnable) {
+		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+	} else {
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
+		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		}
 	}
 
 	return true;

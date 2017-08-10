@@ -243,8 +243,10 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 		SetMrgI2SEnable(false, runtime->rate);
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-	if (GetI2SDacEnable() == false)
+	if (GetI2SDacEnable() == false) {
+		SetI2SADDAEnable(false);
 		SetI2SDacEnable(false);
+	}
 
 	/* interconnection setting */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I15,
@@ -256,7 +258,6 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 		      Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I11,
 		      Soc_Aud_InterConnectionOutput_O04);
-
 
 	EnableAfe(false);
 
@@ -312,6 +313,8 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_MRG_I2S_OUT, true);
 
 		EnableAfe(true);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == true)
+			SetI2SADDAEnable(true);
 		mPrepareDone = true;
 	}
 	return 0;
