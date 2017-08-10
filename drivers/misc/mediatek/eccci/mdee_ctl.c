@@ -17,9 +17,6 @@
 
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
-#else
-#define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
-#define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */
 #endif
 
 #include "ccci_core.h"
@@ -28,6 +25,14 @@
 #include "port_proxy.h"
 #include "mdee_ctl.h"
 #include "ccci_platform.h"
+
+#ifndef DB_OPT_DEFAULT
+#define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
+#endif
+
+#ifndef DB_OPT_FTRACE
+#define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */
+#endif
 
 #define MAX_QUEUE_LENGTH 16
 #define EX_TIMER_MD_HANG 5
