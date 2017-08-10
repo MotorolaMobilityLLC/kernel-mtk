@@ -32,6 +32,7 @@
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
 #include <m4u.h>
+#include "ion_sec_heap.h"
 
 typedef struct {
 	int eModuleID;
@@ -766,6 +767,8 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 	long ret = 0;
 	/* char dbgstr[256]; */
 	unsigned long ret_copy;
+	unsigned int  buffer_sec = 0;
+	enum ion_heap_type buffer_type = 0
 
 	ION_FUNC_ENTER;
 	if (from_kernel)
@@ -788,10 +791,11 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			}
 
 			buffer = ion_handle_buffer(kernel_handle);
-
+			buffer_type = buffer->heap->type;
 			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
 				ion_mm_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				if (pBufferInfo->MVA == 0) {
 					pBufferInfo->eModuleID = Param.config_buffer_param.eModuleID;
 					pBufferInfo->security = Param.config_buffer_param.security;
@@ -801,10 +805,9 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 							!= Param.config_buffer_param.security
 							|| pBufferInfo->coherent
 									!= Param.config_buffer_param.coherent) {
-						IONMSG(
-								"[ion_heap]: Warning. config buffer param error from %c heap:.\n",
+						IONMSG("[ion_heap]: Warning. config buffer param error from %c heap\n",
 								buffer->heap->type);
-						IONMSG("sec:%d(%d), coherent: %d(%d)\n",
+						IONMSG(" sec:%d(%d), coherent: %d(%d)\n",
 								pBufferInfo->security,
 								Param.config_buffer_param.security,
 								pBufferInfo->coherent,
@@ -815,6 +818,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_FB) {
 				ion_fb_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				if (pBufferInfo->MVA == 0) {
 					pBufferInfo->eModuleID = Param.config_buffer_param.eModuleID;
 					pBufferInfo->security = Param.config_buffer_param.security;
@@ -824,10 +828,9 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 							!= Param.config_buffer_param.security
 							|| pBufferInfo->coherent
 									!= Param.config_buffer_param.coherent) {
-						IONMSG(
-								"[ion_heap]: Warning. config buffer param error from %c heap:.\n",
+						IONMSG("[ion_heap]: Warning. config buffer param error from %c heap\n",
 								buffer->heap->type);
-						IONMSG("sec:%d(%d), coherent: %d(%d)\n",
+						IONMSG(" sec:%d(%d), coherent: %d(%d)\n",
 								pBufferInfo->security,
 								Param.config_buffer_param.security,
 								pBufferInfo->coherent,
@@ -836,6 +839,29 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 					}
 				}
 
+			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
+				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
+
+				buffer_sec = pBufferInfo->security;
+				if (pBufferInfo->MVA == 0) {
+					pBufferInfo->eModuleID = Param.config_buffer_param.eModuleID;
+					pBufferInfo->security = Param.config_buffer_param.security;
+					pBufferInfo->coherent = Param.config_buffer_param.coherent;
+				} else {
+					if (pBufferInfo->security
+							!= Param.config_buffer_param.security
+							|| pBufferInfo->coherent
+									!= Param.config_buffer_param.coherent) {
+						IONMSG("[ion_heap]: Warning. config buffer param error from %c heap\n",
+								buffer->heap->type);
+						IONMSG(" sec:%d(%d), coherent: %d(%d)\n",
+								pBufferInfo->security,
+								Param.config_buffer_param.security,
+								pBufferInfo->coherent,
+								Param.config_buffer_param.coherent);
+						ret = -ION_ERROR_CONFIG_LOCKED;
+					}
+				}
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot configure buffer that is not from %c heap.\n",
 						buffer->heap->type);
@@ -863,13 +889,21 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			}
 
 			buffer = ion_handle_buffer(kernel_handle);
+			buffer_type = buffer->heap->type;
 			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
 				ion_mm_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_dbg_info(&(Param.buf_debug_info_param), &(pBufferInfo->dbg_info));
 			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_FB) {
 				ion_fb_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
+				ion_mm_copy_dbg_info(&(Param.buf_debug_info_param), &(pBufferInfo->dbg_info));
+			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
+				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
+
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_dbg_info(&(Param.buf_debug_info_param), &(pBufferInfo->dbg_info));
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot set dbg buffer that is not from %c heap.\n",
@@ -898,13 +932,21 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 				break;
 			}
 			buffer = ion_handle_buffer(kernel_handle);
+			buffer_type = buffer->heap->type;
 			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
 				ion_mm_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_dbg_info(&(pBufferInfo->dbg_info), &(Param.buf_debug_info_param));
 			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_FB) {
 				ion_fb_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
+				ion_mm_copy_dbg_info(&(pBufferInfo->dbg_info), &(Param.buf_debug_info_param));
+			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
+				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
+
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_dbg_info(&(pBufferInfo->dbg_info), &(Param.buf_debug_info_param));
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot get dbg buffer that is not from %c heap.\n",
@@ -934,13 +976,21 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			}
 
 			buffer = ion_handle_buffer(kernel_handle);
+			buffer_type = buffer->heap->type;
 			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
 				ion_mm_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_sf_buf_info(&(Param.sf_buf_info_param), &(pBufferInfo->sf_buf_info));
 			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_FB) {
 				ion_fb_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
+				ion_mm_copy_sf_buf_info(&(Param.sf_buf_info_param), &(pBufferInfo->sf_buf_info));
+			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
+				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
+
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_sf_buf_info(&(Param.sf_buf_info_param), &(pBufferInfo->sf_buf_info));
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot set sf_buf_info buffer that is not from %c heap.\n",
@@ -969,13 +1019,21 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 				break;
 			}
 			buffer = ion_handle_buffer(kernel_handle);
+			buffer_type = buffer->heap->type;
 			if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
 				ion_mm_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_sf_buf_info(&(pBufferInfo->sf_buf_info), &(Param.sf_buf_info_param));
 			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_FB) {
 				ion_fb_buffer_info *pBufferInfo = buffer->priv_virt;
 
+				buffer_sec = pBufferInfo->security;
+				ion_mm_copy_sf_buf_info(&(pBufferInfo->sf_buf_info), &(Param.sf_buf_info_param));
+			} else if ((int) buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
+				ion_sec_buffer_info *pBufferInfo = buffer->priv_virt;
+
+				buffer_sec = pBufferInfo->security;
 				ion_mm_copy_sf_buf_info(&(pBufferInfo->sf_buf_info), &(Param.sf_buf_info_param));
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot get sf_buf_info buffer that is not from %c heap.\n",
@@ -993,6 +1051,14 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 		IONMSG("[ion_heap]: Error. Invalid command.\n");
 		ret = -EFAULT;
 	}
+
+	if (((buffer_sec != 0) && ((int)buffer_type != ION_HEAP_TYPE_MULTIMEDIA_SEC)) ||
+	    ((buffer_sec == 0) && ((int)buffer_type == ION_HEAP_TYPE_MULTIMEDIA_SEC)))
+		IONMSG("[ion_heap]: Warning. CMD(%d) buffer para error from %d heap sec:%d(%d).!!!!!!\n",
+								Param.mm_cmd,
+								buffer_type,
+								buffer_sec,
+								Param.config_buffer_param.security);
 	if (from_kernel)
 		*(ion_mm_data_t *)arg = Param;
 	else

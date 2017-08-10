@@ -25,9 +25,6 @@
 long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 		unsigned long arg, int from_kernel);
 
-long ion_sec_ioctl(struct ion_client *client, unsigned int cmd,
-			 unsigned long arg, int from_kernel);
-
 void smp_inner_dcache_flush_all(void);
 #ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
 int mt_smp_cache_flush(struct sg_table *table, unsigned int sync_type, int npages);
@@ -56,6 +53,8 @@ extern void shrink_ion_by_scenario(void);
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount,
 					u32 *sec_handle, uint8_t *owner, uint32_t id);
+int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
+	uint32_t id);
 extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
 #endif
 

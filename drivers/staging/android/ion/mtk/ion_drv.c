@@ -571,9 +571,6 @@ static long _ion_ioctl(struct ion_client *client, unsigned int cmd,
 	case ION_CMD_MULTIMEDIA:
 		ret = ion_mm_ioctl(client, cmd, arg, from_kernel);
 		break;
-	case ION_CMD_MULTIMEDIA_SEC:
-		ret = ion_sec_ioctl(client, cmd, arg, from_kernel);
-		break;
 	}
 	ION_FUNC_LEAVE;
 	return ret;

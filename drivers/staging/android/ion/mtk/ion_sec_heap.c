@@ -17,23 +17,13 @@
 #include "ion_drv_priv.h"
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
+#include "ion_sec_heap.h"
 #ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 #include "tz_cross/trustzone.h"
 #include "tz_cross/ta_mem.h"
 #include "trustzone/kree/system.h"
 #include "trustzone/kree/mem.h"
 #endif
-
-typedef struct {
-	int eModuleID;
-	unsigned int security;
-	unsigned int coherent;
-	void *pVA;
-	unsigned int MVA;
-	ion_phys_addr_t priv_phys;
-	ion_mm_buf_debug_info_t dbg_info;
-	ion_mm_sf_buf_info_t sf_buf_info;
-} ion_sec_buffer_info;
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
 do {\
@@ -82,7 +72,10 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	}
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+	if (flags & ION_FLAG_MM_HEAP_INIT_ZERO)
+		secmem_api_alloc_zero(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+	else
+		secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 #elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
 	{
 		int ret = 0;
@@ -430,14 +423,15 @@ void ion_sec_heap_destroy(struct ion_heap *heap)
 #endif
 }
 
+#if 0
 long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg, int from_kernel)
 {
 	ion_mm_data_t param;
 	long ret = 0;
 	unsigned long ret_copy = 0;
 
-#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
-	|| defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#if ((defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
+	|| defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT))
 	IONMSG("%s enter\n", __func__);
 #else
 	IONMSG("%s error: not support\n", __func__);
@@ -573,5 +567,5 @@ long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long ar
 	return ret;
 
 }
-
+#endif
 
