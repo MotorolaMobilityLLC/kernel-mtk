@@ -422,6 +422,11 @@ void port_proxy_md_status_notice(struct port_proxy *proxy_p, DIRECTION dir,
 				continue;
 			state = (dir<<31) | (filter_queue_idx<<16) | state;
 		}
+		if ((state == GATED) && (port->flags & PORT_F_CH_TRAFFIC)) {
+			port->rx_pkg_cnt = 0;
+			port->rx_drop_cnt = 0;
+			port->tx_pkg_cnt = 0;
+		}
 		if (port->ops->md_state_notice)
 			port->ops->md_state_notice(port, state);
 	}

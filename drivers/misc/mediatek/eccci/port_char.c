@@ -50,11 +50,6 @@ static int dev_char_open(struct inode *inode, struct file *file)
 		port_poller_start(status_poller);
 	}
 #endif
-	if (port->flags & PORT_F_CH_TRAFFIC) {
-		port->rx_pkg_cnt = 0;
-		port->rx_drop_cnt = 0;
-		port->tx_pkg_cnt = 0;
-	}
 	port_proxy_user_register(port->port_proxy, port);
 	return 0;
 }
@@ -450,7 +445,15 @@ static int port_char_init(struct ccci_port *port)
 	port->skb_from_pool = 1;
 	port->flags |= PORT_F_ADJUST_HEADER;
 
-	if (port->rx_ch == CCCI_UART2_RX)
+	if (port->rx_ch == CCCI_UART2_RX ||
+		port->rx_ch == CCCI_C2K_AT ||
+		port->rx_ch == CCCI_C2K_AT2 ||
+		port->rx_ch == CCCI_C2K_AT3 ||
+		port->rx_ch == CCCI_C2K_AT4 ||
+		port->rx_ch == CCCI_C2K_AT5 ||
+		port->rx_ch == CCCI_C2K_AT6 ||
+		port->rx_ch == CCCI_C2K_AT7 ||
+		port->rx_ch == CCCI_C2K_AT8)
 		port->flags |= PORT_F_CH_TRAFFIC;
 
 	return ret;
@@ -553,8 +556,10 @@ void port_char_dump_info(struct ccci_port *port, unsigned int flag)
 		CCCI_ERROR_LOG(0, CHAR, "%s: port==NULL\n", __func__);
 		return;
 	}
+	if (atomic_read(&port->usage_cnt) == 0)
+		return;
 	if (port->flags & PORT_F_CH_TRAFFIC)
-		CCCI_REPEAT_LOG(port->md_id, CHAR, "CHR:(%d):%d_RX(%d, %d, %d):%d_TX(%d)\n",
+		CCCI_REPEAT_LOG(port->md_id, CHAR, "CHR:(%d):%dR(%d,%d,%d):%dT(%d)\n",
 			port->flags,
 			port->rx_ch, port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt,
 			port->tx_ch, port->tx_pkg_cnt);
