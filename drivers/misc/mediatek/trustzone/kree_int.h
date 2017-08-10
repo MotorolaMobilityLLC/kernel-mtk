@@ -41,5 +41,7 @@ TZ_RESULT KREE_ServEnableIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 TZ_RESULT KREE_ServEnableClock(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 TZ_RESULT KREE_ServDisableClock(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 
+/* cache operation for chunk memory allocation */
+extern void smp_inner_dcache_flush_all(void);
 
 #endif				/* __KREE_INT_H__ */

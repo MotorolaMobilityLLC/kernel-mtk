@@ -1272,7 +1272,7 @@ TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
 			chunkmem->chunkmem_pa, secure_size);
 
 	/* flush cache to avoid writing secure memory after allocation. */
-	flush_cache_all();
+	smp_inner_dcache_flush_all();
 
 	return TZ_RESULT_SUCCESS;
 }
