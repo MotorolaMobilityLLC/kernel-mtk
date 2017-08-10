@@ -627,11 +627,24 @@ err_out:
 	return err;
 }
 
+static long compat_alspshub_unlocked_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		APS_ERR("compat_ioctl f_op has no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+}
+
 static const struct file_operations alspshub_fops = {
 	.owner = THIS_MODULE,
 	.open = alspshub_open,
 	.release = alspshub_release,
 	.unlocked_ioctl = alspshub_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_alspshub_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice alspshub_misc_device = {
