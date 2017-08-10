@@ -78,6 +78,8 @@ static DEFINE_MUTEX(akm8963_op_mutex);
 #define AKMFUNC(func)
 #endif
 
+#define AKM8963_PSEUDO_WIA2 0x01
+
 static struct i2c_client *this_client;
 
 /* Addresses to scan -- protected by sense_data_mutex */
@@ -96,6 +98,7 @@ static atomic_t open_flag = ATOMIC_INIT(0);
 static atomic_t m_flag = ATOMIC_INIT(0);
 static atomic_t o_flag = ATOMIC_INIT(0);
 
+static unsigned char fuse[3];
 static int factory_mode;
 
 /*----------------------------------------------------------------------------*/
@@ -437,6 +440,30 @@ static int AKECS_CheckDevice(void)
 
 
 	return 0;
+}
+
+static long AKECS_ReadFuse(void)
+{
+	long ret;
+
+	ret = AKECS_SetMode_FUSEAccess();
+	if (ret < 0) {
+		AKMDBG("AKM Error set FUSE Access mode, ret = %ld", ret);
+		return ret;
+	}
+
+	fuse[0] = AK8963_FUSE_ASAX;
+	ret = AKI2C_RxData(fuse, 3);
+
+	if (ret < 0) {
+		AKMDBG("AKM Error read FuseROM, ret = %ld", ret);
+		return ret;
+	}
+
+	AKMDBG("asax = %d, asay = %d, asaz = %d", fuse[0], fuse[1], fuse[2]);
+	ret = AKECS_SetMode_PowerDown();
+
+	return ret;
 }
 
 #if 0
@@ -2009,10 +2036,12 @@ static int akm8963_m_get_data(int *x, int *y, int *z, int *status)
 	data[1] = (s16) (strbuf[3] | (strbuf[4] << 8));
 	data[2] = (s16) (strbuf[5] | (strbuf[6] << 8));
 
-	*x = (data[0] * 100 * 15) / 100;	/* 16-bit (0.15 μT/LSB),0.15=15/100 */
-	*y = (data[1] * 100 * 15) / 100;
-	*z = (data[2] * 100 * 15) / 100;
-	*status = strbuf[7];	/* Need Fix */
+	/* Sensitivity adjustment */
+	/* H*((ASA-128)*0.5/128 + 1) is equivalent to H*(ASA+128) >> 8 */
+	*x = (data[0] * 100 * (fuse[0] + 128)) >> 8;
+	*y = (data[1] * 100 * (fuse[1] + 128)) >> 8;
+	*z = (data[2] * 100 * (fuse[2] + 128)) >> 8;
+	*status = (AKM8963_PSEUDO_WIA2 << 8) | strbuf[7];
 
 	return 0;
 }
@@ -2138,6 +2167,11 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_init_failed;
 	}
 
+	err = AKECS_ReadFuse();
+	if (err < 0) {
+		AKMDBG(KERN_ERR "AKM8963 akm8963_probe: read Fuse ROM error\n");
+		goto exit_init_failed;
+	}
 
 	/* Register sysfs attribute */
 	err = akm8963_create_attr(&(akm8963_init_info.platform_diver_addr->driver));
@@ -2167,6 +2201,7 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.flush = akm8963_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
+	ctl.lib_name = "akl";
 
 	err = mag_register_control_path(&ctl);
 	if (err) {
