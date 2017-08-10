@@ -11,35 +11,10 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __PMIC_WRAP_REGS_H__
-#define __PMIC_WRAP_REGS_H__
+#ifndef __PWRAP_HAL_H__
+#define __PWRAP_HAL_H__
 
-/*-----start-- Driver Config-------------------------------------------------*/
-/* #define PMIC_WRAP_PRELOADER_DRIVER_HEADER */
-/* #define PMIC_WRAP_LK_DRIVER_HEADER */
-#define PMIC_WRAP_KERNEL_DRIVER_HEADER
-/*-----end -- Driver Config-------------------------------------------------*/
 
-#ifdef PMIC_WRAP_PRELOADER_DRIVER_HEADER
-/* #include <mach/mt_reg_base.h> */
-#include <sync_write.h>
-#include <upmu_hw.h>
-#include <pll.h>
-#include <mt6755.h>
-#endif
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-#include <debug.h>
-#include <platform/mt_typedefs.h>
-#include <platform/mt_reg_base.h>
-#include <platform/mt_gpt.h>
-#include <platform/mt_irq.h>
-#include <sys/types.h>
-#include <platform/sync_write.h>
-#include <platform/upmu_hw.h>
-#endif
-
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
 /* Should not include mt_reg_base.h and mt_irq.h if using device tree */
 #ifndef CONFIG_OF
 #include <mach/mt_reg_base.h>
@@ -48,42 +23,18 @@
 
 #include <mach/upmu_hw.h>
 #include "mt-plat/sync_write.h"
-#endif
+
 
 #define PMIC_WRAP_DEBUG
 /* #define PMIC_WRAP_SLIM */
 
 #define PWRAPTAG                "[PWRAP] "
+
 #ifdef PMIC_WRAP_DEBUG
-#ifdef PMIC_WRAP_PRELOADER_DRIVER_HEADER
-#define PWRAPDEB(fmt, arg...)   printf(PWRAPTAG fmt, ##arg)
-#define PWRAPFUC(fmt, arg...)   printf(PWRAPTAG "%s\n", __func__)
-#endif
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-#define PWRAPDEB(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
-#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
-#endif
-
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
 #define PWRAPDEB(fmt, arg...)   printk(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
 #define PWRAPFUC(fmt, arg...)   printk(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
-#endif
-
-
 #ifndef PMIC_WRAP_SLIM
-#ifdef PMIC_WRAP_PRELOADER_DRIVER_HEADER
-#define PWRAPLOG(fmt, arg...)   printf(PWRAPTAG fmt, ##arg)
-#endif
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-#define PWRAPLOG(fmt, arg...)   printf(CRITICAL, PWRAPTAG fmt, ##arg)
-#endif
-
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
 #define PWRAPLOG(fmt, arg...)   printk(PWRAPTAG fmt, ##arg)
-#endif
-
 #else
 #define PWRAPLOG(fmt, arg...)
 #endif
@@ -94,42 +45,13 @@
 #define PWRAPLOG(fmt, arg...)
 #endif
 
-#ifdef PMIC_WRAP_PRELOADER_DRIVER_HEADER
-#define PWRAPREG(fmt, arg...)	printf(PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)	printf(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-#define PWRAPREG(fmt, arg...)	dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)	dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
-
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
 #define PWRAPREG(fmt, arg...)	pr_debug(PWRAPTAG fmt, ##arg)
 #define PWRAPERR(fmt, arg...)	pr_debug(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
+
 
 /* ---start ---external API-------------------------------------------------- */
-#ifdef PMIC_WRAP_PRELOADER_DRIVER_HEADER
-S32 pwrap_read(U32 adr, U32 *rdata);
-S32 pwrap_write(U32 adr, U32 wdata);
-S32 pwrap_wacs2(U32 write, U32 adr, U32 wdata, U32 *rdata);
-S32 pwrap_init(void);
-S32 pwrap_init_preloader(void);
-#endif
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-S32 pwrap_read(U32 adr, U32 *rdata);
-S32 pwrap_write(U32 adr, U32 wdata);
-S32 pwrap_wacs2(U32 write, U32 adr, U32 wdata, U32 *rdata);
-/* S32 pwrap_init ( void ); */
-S32 pwrap_init_lk(void);
-void pwrap_init_for_early_porting(void);
-#endif
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
 s32 pwrap_write_nochk(u32 adr, u32 wdata);
 s32 pwrap_read_nochk(u32 adr, u32 *rdata);
-#endif
 /* ---end ---external API---------------------------------------------------- */
 
 /************************ For BringUp *********************/
@@ -138,10 +60,15 @@ s32 pwrap_read_nochk(u32 adr, u32 *rdata);
 #else
 #endif
 /**********************************************************/
+#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 #define SLV_6351
+#endif
 /* #define ULPOSC */
 
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#define PMIC_CHIP_STR	"MT6353"
+#endif
+
 #ifdef CONFIG_OF
 extern void __iomem *pwrap_base;
 #define PMIC_WRAP_BASE		(pwrap_base)	/* 0x1000D000 */
@@ -150,12 +77,6 @@ extern void __iomem *pwrap_base;
 #define MT_PMIC_WRAP_IRQ_ID	(PMIC_WRAP_ERR_IRQ_BIT_ID)
 #define PMIC_WRAP_BASE		(PWRAP_BASE)
 #endif
-
-#else
-
-#define PMIC_WRAP_BASE		(PWRAP_BASE)	/* 0x1000D000 */
-
-#endif				/* End of #ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER */
 
 #define PMIC_WRAP_REG_RANGE	208
 
@@ -181,7 +102,7 @@ global variable and  sys interface
 #define GPIO_BASE               (0x10005000)
 #define SLEEP_BASE              (0x10006000)
 */
-#ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER
+
 #ifdef CONFIG_OF
 #define TOPCKGEN_REG_BASE	(topckgen_reg_base)
 #define INFRACFG_AO_REG_BASE	(infracfg_ao_reg_base)
@@ -204,23 +125,6 @@ global variable and  sys interface
 #define INFRA_GLOBALCON_RST2_CLR ((INFRACFG_AO_REG_BASE+0x144))
 #define MODULE_SW_CG_0_SET       ((INFRACFG_AO_REG_BASE+0x080))
 #define MODULE_SW_CG_0_CLR       ((INFRACFG_AO_REG_BASE+0x084))
-
-#else
-
-#define SLEEP_BASE               (0x10006000)
-
-#define CLK_CFG_5_CLR            ((TOPCKGEN_BASE+0x098))
-#define CLK_CFG_5_SET            ((TOPCKGEN_BASE+0x094))
-#define CLK_CFG_UPDATE           ((TOPCKGEN_BASE+0x004))
-#define ULPOSC_CON               ((SLEEP_BASE+0x458))
-#define GPIO_DUMMY               ((GPIO_BASE+0x6C0))
-#define PMICW_CLOCK_CTRL         ((INFRACFG_AO_BASE+0x108))
-#define INFRA_GLOBALCON_RST2_SET ((INFRACFG_AO_BASE+0x140))
-#define INFRA_GLOBALCON_RST2_CLR ((INFRACFG_AO_BASE+0x144))
-#define MODULE_SW_CG_0_SET       ((INFRACFG_AO_BASE+0x080))
-#define MODULE_SW_CG_0_CLR       ((INFRACFG_AO_BASE+0x084))
-
-#endif				/* End of #ifdef PMIC_WRAP_KERNEL_DRIVER_HEADER */
 
 #define PMIC_CG_TMR		(1 << 0)
 #define PMIC_CG_AP		(1 << 1)
@@ -600,79 +504,13 @@ global variable and  sys interface
 #define WACS_SYNC_IDLE              (0x01)
 #define WACS_SYNC_BUSY              (0x00)
 
-
-
-/* -----macro for  regsister@PMIC ------------------------------------------------- */
-#ifdef SLV_6351
-#if 0				/* defined in upmu_hw.h */
-#define MT6351_PMIC_REG_BASE		(0x0000)
-
-#define MT6351_DEW_DIO_EN		((MT6351_PMIC_REG_BASE+0x02F2))
-#define MT6351_DEW_READ_TEST		((MT6351_PMIC_REG_BASE+0x02F4))
-#define MT6351_DEW_WRITE_TEST		((MT6351_PMIC_REG_BASE+0x02F6))
-#define MT6351_DEW_CRC_SWRST		((MT6351_PMIC_REG_BASE+0x02F8))
-#define MT6351_DEW_CRC_EN		((MT6351_PMIC_REG_BASE+0x02FA))
-#define MT6351_DEW_CRC_VAL		((MT6351_PMIC_REG_BASE+0x02FC))
-#define MT6351_DEW_DBG_MON_SEL		((MT6351_PMIC_REG_BASE+0x02FE))
-#define MT6351_DEW_CIPHER_KEY_SEL	((MT6351_PMIC_REG_BASE+0x0300))
-#define MT6351_DEW_CIPHER_IV_SEL	((MT6351_PMIC_REG_BASE+0x0302))
-#define MT6351_DEW_CIPHER_EN		((MT6351_PMIC_REG_BASE+0x0304))
-#define MT6351_DEW_CIPHER_RDY		((MT6351_PMIC_REG_BASE+0x0306))
-#define MT6351_DEW_CIPHER_MODE		((MT6351_PMIC_REG_BASE+0x0308))
-#define MT6351_DEW_CIPHER_SWRST		((MT6351_PMIC_REG_BASE+0x030A))
-#define MT6351_DEW_RDDMY_NO		((MT6351_PMIC_REG_BASE+0x030C))
-#define MT6351_INT_STA			((MT6351_PMIC_REG_BASE+0x0326))
-
-#define MT6351_AUXADC_ADC16		((MT6351_PMIC_REG_BASE+0x0E20))
-#define MT6351_AUXADC_ADC32		((MT6351_PMIC_REG_BASE+0x0E40))
-#define MT6351_AUXADC_BUF0		((MT6351_PMIC_REG_BASE+0x0E50))
-#define MT6351_AUXADC_BUF1		((MT6351_PMIC_REG_BASE+0x0E52))
-#define MT6351_AUXADC_BUF2		((MT6351_PMIC_REG_BASE+0x0E54))
-#define MT6351_AUXADC_BUF3		((MT6351_PMIC_REG_BASE+0x0E56))
-#define MT6351_AUXADC_BUF4		((MT6351_PMIC_REG_BASE+0x0E58))
-#define MT6351_AUXADC_BUF5		((MT6351_PMIC_REG_BASE+0x0E5A))
-#define MT6351_AUXADC_BUF6		((MT6351_PMIC_REG_BASE+0x0E5C))
-#define MT6351_AUXADC_BUF7		((MT6351_PMIC_REG_BASE+0x0E5E))
-#define MT6351_AUXADC_BUF8		((MT6351_PMIC_REG_BASE+0x0E60))
-#define MT6351_AUXADC_BUF9		((MT6351_PMIC_REG_BASE+0x0E62))
-#define MT6351_AUXADC_BUF10		((MT6351_PMIC_REG_BASE+0x0E64))
-#define MT6351_AUXADC_BUF11		((MT6351_PMIC_REG_BASE+0x0E66))
-#define MT6351_AUXADC_BUF12		((MT6351_PMIC_REG_BASE+0x0E68))
-#define MT6351_AUXADC_BUF13		((MT6351_PMIC_REG_BASE+0x0E6A))
-#define MT6351_AUXADC_BUF14		((MT6351_PMIC_REG_BASE+0x0E6C))
-#define MT6351_AUXADC_BUF15		((MT6351_PMIC_REG_BASE+0x0E6E))
-#define MT6351_AUXADC_BUF16		((MT6351_PMIC_REG_BASE+0x0E70))
-#define MT6351_AUXADC_BUF17		((MT6351_PMIC_REG_BASE+0x0E72))
-#define MT6351_AUXADC_BUF18		((MT6351_PMIC_REG_BASE+0x0E74))
-#define MT6351_AUXADC_BUF19		((MT6351_PMIC_REG_BASE+0x0E76))
-#define MT6351_AUXADC_BUF20		((MT6351_PMIC_REG_BASE+0x0E78))
-#define MT6351_AUXADC_BUF21		((MT6351_PMIC_REG_BASE+0x0E7A))
-#define MT6351_AUXADC_BUF22		((MT6351_PMIC_REG_BASE+0x0E7C))
-#define MT6351_AUXADC_BUF23		((MT6351_PMIC_REG_BASE+0x0E7E))
-#define MT6351_AUXADC_BUF24		((MT6351_PMIC_REG_BASE+0x0E80))
-#define MT6351_AUXADC_BUF25		((MT6351_PMIC_REG_BASE+0x0E82))
-#define MT6351_AUXADC_BUF26		((MT6351_PMIC_REG_BASE+0x0E84))
-#define MT6351_AUXADC_BUF27		((MT6351_PMIC_REG_BASE+0x0E86))
-#define MT6351_AUXADC_BUF28		((MT6351_PMIC_REG_BASE+0x0E88))
-#define MT6351_AUXADC_BUF29		((MT6351_PMIC_REG_BASE+0x0E8A))
-#define MT6351_AUXADC_BUF30		((MT6351_PMIC_REG_BASE+0x0E8C))
-#define MT6351_AUXADC_BUF31		((MT6351_PMIC_REG_BASE+0x0E8E))
-
-#define MT6351_AUXADC_RQST1_SET	((MT6351_PMIC_REG_BASE+0x0E9E))
-#define MT6351_AUXADC_MDBG_1		((MT6351_PMIC_REG_BASE+0x0F18))
-
-#endif
-#endif				/* End of #ifdef SLV_6351 */
-
-
-/* ///////////////////////////////////////////////////////////////////////////////////////// */
-
 /* -----macro for dewrapper defaule value------------------------------------------------------- */
+#ifdef SLV_6351
 #define MT6351_DEFAULT_VALUE_READ_TEST		0x5aa5
 #define MT6351_WRITE_TEST_VALUE			0xa55a
-
-#ifdef SLV_6351
-#define WRAP_ACCESS_TEST_REG			MT6351_DEW_WRITE_TEST
+#else
+#define PMIC_DEFAULT_VALUE_READ_TEST		0x5aa5
+#define PMIC_WRITE_TEST_VALUE				0xa55a
 #endif
 
 /* -----macro for manual commnd -------------------------------------------------------- */
@@ -734,27 +572,11 @@ global variable and  sys interface
 #define E_PWR_SWITCH_DIO                32
 
 /* -----macro for read/write register -------------------------------------------------------- */
-
-/* #define WRAP_RD32(addr)            (*(volatile U32 *)(addr)) */
-/* #define WRAP_WR32(addr,data)       ((*(volatile U32 *)(addr)) = (U32)data) */
-
-/* #define WRAP_SET_BIT(BS,REG)       ((*(volatile U32*)(REG)) |= (U32)(BS)) */
-/* #define WRAP_CLR_BIT(BS,REG)       ((*(volatile U32*)(REG)) &= ~((U32)(BS))) */
-
-#ifdef PMIC_WRAP_LK_DRIVER_HEADER
-#define WRAP_RD32(addr)            DRV_Reg32(addr)
-#define WRAP_WR32(addr, val)        mt_reg_sync_writel((val), ((void *)addr))
-
-#define WRAP_SET_BIT(BS, REG)       mt_reg_sync_writel((DRV_Reg32(REG) | (U32)(BS)), ((void *)REG))
-#define WRAP_CLR_BIT(BS, REG)       mt_reg_sync_writel((DRV_Reg32(REG) & (~(U32)(BS))), ((void *)REG))
-
-#else
-
 #define WRAP_RD32(addr)            __raw_readl((void *)addr)
 #define WRAP_WR32(addr, val)        mt_reg_sync_writel((val), ((void *)addr))
 
 #define WRAP_SET_BIT(BS, REG)       mt_reg_sync_writel((__raw_readl((void *)REG) | (U32)(BS)), ((void *)REG))
 #define WRAP_CLR_BIT(BS, REG)       mt_reg_sync_writel((__raw_readl((void *)REG) & (~(U32)(BS))), ((void *)REG))
 
-#endif				/* End of #ifdef PMIC_WRAP_LK_DRIVER_HEADER */
-#endif				/* __PMIC_WRAP_REGS_H__ */
+
+#endif				/* __PWRAP_HAL_H__ */
