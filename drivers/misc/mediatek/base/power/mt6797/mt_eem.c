@@ -4361,6 +4361,8 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 		tTbl = tSbTbl;
 	else if ((cpuBinLevel == 2) || (cpuBinLevel == 7))
 		tTbl = tMbTbl;
+	else if (cpuBinLevel == 0x0F)
+		tTbl = tLbTbl;
 	else
 		tTbl = tFyTbl;
 
