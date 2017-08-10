@@ -734,9 +734,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
 	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
 	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;

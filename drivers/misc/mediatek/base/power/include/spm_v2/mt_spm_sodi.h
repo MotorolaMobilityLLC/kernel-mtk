@@ -191,7 +191,13 @@
 #define sodi3_debug(fmt, args...)  pr_debug(SODI3_TAG fmt, ##args)
 #define so_err(fg, fmt, args...)   ((fg&SODI_FLAG_3P0)?pr_err(SODI3_TAG fmt, ##args):pr_err(SODI_TAG fmt, ##args))
 #define so_warn(fg, fmt, args...)  ((fg&SODI_FLAG_3P0)?pr_warn(SODI3_TAG fmt, ##args):pr_warn(SODI_TAG fmt, ##args))
-#define so_debug(fg, fmt, args...) ((fg&SODI_FLAG_3P0)?pr_debug(SODI3_TAG fmt, ##args):pr_debug(SODI_TAG fmt, ##args))
+#define so_debug(fg, fmt, args...)                                  \
+		do {                                                \
+			if (fg&SODI_FLAG_3P0)                       \
+				pr_debug(SODI3_TAG fmt, ##args);    \
+			else                                        \
+				pr_debug(SODI_TAG fmt, ##args);     \
+		} while (0)
 
 #define SPM_BYPASS_SYSPWREQ         0
 #define ALL_TOP_CON_MASK 0x037F

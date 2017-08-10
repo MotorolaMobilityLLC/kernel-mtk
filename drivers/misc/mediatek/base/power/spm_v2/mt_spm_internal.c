@@ -320,7 +320,6 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 			spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
 			/* don't change vcore and dram when dvfs enable reture false */
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)) | (dvfs_en << 7));
 			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_OFFLOAD);
 			spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
@@ -350,7 +349,6 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 			spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 			spm_write(SPM_WAKEUP_EVENT_MASK, con1);
 			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)));
 		}
 
 		/* backup mem control from r0 to POWER_ON_VAL0 */
@@ -395,6 +393,41 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 	/* clear SPM_SW_INT after scenario change */
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
+}
+
+bool is_vcorefs_fw(bool dynamic_load)
+{
+	struct pcm_desc *pcmdesc;
+	u32 ptr, len;
+
+	if (dynamic_load) {
+		u32 vcorefs_idx = spm_get_pcm_vcorefs_index();
+
+		if (dyna_load_pcm[vcorefs_idx].ready) {
+			pcmdesc = &(dyna_load_pcm[vcorefs_idx].desc);
+		} else {
+			pr_err("[%s] dyna load F/W fail\n", __func__);
+			BUG();
+		}
+	} else {
+		pcmdesc = __spm_vcore_dvfs.pcmdesc;
+	}
+
+	/* tell IM where is PCM code (use slave mode if code existed) */
+	if (pcmdesc->base_dma) {
+		ptr = pcmdesc->base_dma;
+		/* for 4GB mode */
+		if (enable_4G())
+			MAPPING_DRAM_ACCESS_ADDR(ptr);
+	} else {
+		ptr = base_va_to_pa(pcmdesc->base);
+	}
+	len = pcmdesc->size - 1;
+
+	if (spm_read(PCM_IM_PTR) != ptr || spm_read(PCM_IM_LEN) != len)
+		return false;
+	else
+		return true;
 }
 #endif
 
@@ -941,11 +974,18 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->event_reg, wakesta->isr);
 
 #if defined(CONFIG_ARCH_MT6797)
-	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x, scp_request_freq = %u",
+	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x, scp_request_freq = %u\n",
 			wakesta->raw_ext_sta,
 			wakesta->wake_misc,
 			spm_read(SPM_SW_FLAG),
 			scp_request_freq);
+	if (spm_read(spm_infracfg_base + 0x4C)) {
+		spm_print(suspend, "bsi_bpi_tx_err_addr_reg = 0x%x, clk_cf_8 = 0x%x, mainpll_con0 = 0x%x\n",
+			spm_read(spm_infracfg_base + 0x4C),
+			spm_read(spm_cksys_base + 0xc0),
+			spm_read(spm_apmixed_base + 0x220));
+		BUG();
+	}
 #else
 	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x\n",
 			wakesta->raw_ext_sta,
@@ -1066,7 +1106,10 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 void __spm_backup_vcore_dvfs_dram_shuffle(void)
 {
 #ifdef SPM_VCORE_EN_MT6797
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | (0x2 << 23));
+	u32 shuf;
+
+	shuf = spm_read(PCM_REG6_DATA) & (0x3 << 23);
+	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3 << 23)) | shuf);
 #endif
 }
 

@@ -35,6 +35,10 @@ enum {
 	IDX_NM_VCORE_ULPM,		/* 9 */
 	IDX_NM_PWM_MODE,		/* A */
 	IDX_NM_AUTO_MODE,		/* B */
+	IDX_NM_PWM_BEF1,		/* C */
+	IDX_NM_PWM_BEF2,		/* D */
+	IDX_NM_AUTO_AFT1,		/* E */
+	IDX_NM_AUTO_AFT2,		/* F */
 	NR_IDX_NM,
 };
 enum {

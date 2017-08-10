@@ -128,6 +128,8 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_SYSRAM_SLEEP
 #endif
 };
+
+#if !defined(CONFIG_ARCH_MT6797)
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
@@ -140,6 +142,8 @@ static u32 slp_spm_deepidle_flags = {
 	#endif
 };
 #endif
+#endif
+
 /* static u32 slp_spm_data = 0; */
 u32 slp_spm_data = 0;
 
@@ -361,6 +365,8 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		goto LEAVE_SLEEP;
 	}
 #endif
+
+#if !defined(CONFIG_ARCH_MT6797)
 #if SLP_SLEEP_DPIDLE_EN
 #if defined(CONFIG_MT_SND_SOC_6755) /*|| defined(CONFIG_MT_SND_SOC_6757)*/ || defined(CONFIG_MT_SND_SOC_6797)
 	if (slp_ck26m_on | fm_radio_is_playing)
@@ -371,6 +377,8 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	else
 #endif
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
+
+#endif
 
 LEAVE_SLEEP:
 #ifdef CONFIG_MTKPASR

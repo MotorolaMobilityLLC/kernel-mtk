@@ -168,7 +168,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 1,
+	.dramc_spcmd_apsrc_req_mask_b = 0,
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -183,7 +183,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mp0_cpu3_wfi_en	= 1,
 
 #if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 1,
+	.csyspwreq_mask = 1,
 #endif
 };
 #else

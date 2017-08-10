@@ -539,6 +539,9 @@ extern void __spm_dbgout_md_ddr_en(bool enable);
 
 extern void __spm_check_md_pdn_power_control(struct pwr_ctrl *pwr_ctrl);
 
+#if defined(CONFIG_ARCH_MT6797)
+bool is_vcorefs_fw(bool dynamic_load);
+#endif
 void __spm_backup_vcore_dvfs_dram_shuffle(void);
 /* sync with vcore_dvfs related pwr_ctrl */
 extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl);

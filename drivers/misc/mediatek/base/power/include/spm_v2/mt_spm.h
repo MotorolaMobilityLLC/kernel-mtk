@@ -24,6 +24,9 @@ extern void __iomem *spm_cksys_base;
 extern void __iomem *spm_mcucfg;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 extern void __iomem *spm_bsi1cfg;
+#elif defined(CONFIG_ARCH_MT6797)
+extern void __iomem *spm_infracfg_base;
+extern void __iomem *spm_apmixed_base;
 #endif
 #if defined(CONFIG_ARCH_MT6757)
 extern void __iomem *spm_dramc_ch0_top0_base;

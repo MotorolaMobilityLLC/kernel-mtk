@@ -192,6 +192,8 @@ void __iomem *spm_mcucfg;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 void __iomem *spm_bsi1cfg;
 #elif defined(CONFIG_ARCH_MT6797)
+void __iomem *spm_infracfg_base;
+void __iomem *spm_apmixed_base;
 void __iomem *spm_efusec;
 void __iomem *spm_thermal_ctrl;
 #endif
@@ -524,6 +526,20 @@ static void spm_register_init(void)
 	if (!spm_bsi1cfg)
 		spm_err("[bsi1] base failed\n");
 #elif defined(CONFIG_ARCH_MT6797)
+	/* infracfg */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+	if (!node)
+		spm_err("[INFRACFG] find node failed\n");
+	spm_infracfg_base = of_iomap(node, 0);
+	if (!spm_infracfg_base)
+		spm_err("[INFRACFG] base failed\n");
+	/* apmixed */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	if (!node)
+		spm_err("[APMIXED] find node failed\n");
+	spm_apmixed_base = of_iomap(node, 0);
+	if (!spm_apmixed_base)
+		spm_err("[APMIXED] base failed\n");
 	/* efusec */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
 	if (!node)
@@ -862,6 +878,9 @@ int spm_module_init(void)
 							spm_read(SPM_SW_RSV_5),
 							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
 							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
+	/* BSIBPI timer*/
+	spm_write(spm_infracfg_ao_base + 0x230, spm_read(spm_infracfg_ao_base + 0x230) | 0x10000);
+
 #if  !defined(CONFIG_MTK_TINYSYS_SCP_SUPPORT)
 	/* NEW ADD: RG_VSRAM_PROC_MODE_CTRL=HW control */
 	pmic_config_interface(0xA5E, 0x1A06, 0xffff, 0);

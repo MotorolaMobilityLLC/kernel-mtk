@@ -554,6 +554,13 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VCORE_VSLEEP_SEL_0P7V,
 			temp & ~(3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
+	if (spm_read(spm_infracfg_base + 0x4C)) {
+		spm_crit2("bsi_bpi_tx_err_addr_reg = 0x%x, clk_cf_8 = 0x%x, mainpll_con0 = 0x%x\n",
+			spm_read(spm_infracfg_base + 0x4C),
+			spm_read(spm_cksys_base + 0xc0),
+			spm_read(spm_apmixed_base + 0x220));
+		BUG();
+	}
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)

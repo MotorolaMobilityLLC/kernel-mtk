@@ -55,7 +55,7 @@
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
 
 /* vcore dvfs request */
-extern int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req, int kicker);
+extern int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req, int kicker, int user_opp);
 
 /* bw monitor threshold setting to spm */
 extern int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
@@ -75,5 +75,7 @@ extern void aee_rr_rec_vcore_dvfs_status(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_status(void);
 
 extern void ISP_Halt_Mask(int);
+
+extern void spm_mask_wakeup_event(int val);
 
 #endif	/* _MT_SPM_VCORE_DVFS_H */
