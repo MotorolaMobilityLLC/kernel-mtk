@@ -47,6 +47,10 @@
 #include <linux/fence.h>
 #endif
 
+#ifdef ENABLE_MTK_MEMINFO
+#include "mtk_gpu_meminfo.h"
+#endif /* ENABLE_MTK_MEMINFO */
+
 #define MALI_SHARED_MEMORY_DEFAULT_SIZE 0xffffffff
 
 /* Mali GPU memory. Real values come from module parameter or from device specific data */
@@ -760,6 +764,11 @@ _mali_osk_errcode_t mali_initialize_subsystems(void)
 		return err;
 	}
 
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_gpu_meminfo_init();
+	mtk_gpu_meminfo_reset();
+#endif /* ENABLE_MTK_MEMINFO */
+
 	/*Try to init gpu secure mode */
 	_mali_osk_gpu_secure_mode_init();
 
@@ -949,6 +958,10 @@ void mali_terminate_subsystems(void)
 	_mali_osk_gpu_secure_mode_deinit();
 
 	mali_memory_terminate();
+
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_gpu_meminfo_remove();
+#endif /* ENABLE_MTK_MEMINFO */
 
 	mali_session_terminate();
 

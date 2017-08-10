@@ -15,6 +15,10 @@
 #ifdef MALI_MEM_SWAP_TRACKING
 #include "mali_memory_swap_alloc.h"
 #endif
+#ifdef ENABLE_MTK_MEMINFO
+#include "mtk_gpu_meminfo.h"
+extern int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
+#endif
 
 _MALI_OSK_LIST_HEAD(mali_sessions);
 static u32 mali_session_count = 0;
@@ -108,6 +112,9 @@ void mali_session_memory_tracking(_mali_osk_print_ctx *print_ctx)
 	u32 swap_pool_size;
 	u32 swap_unlock_size;
 #endif
+#ifdef ENABLE_MTK_MEMINFO
+    u32 mtk_kbase_gpu_meminfo_index = 0;
+#endif /* ENABLE_MTK_MEMINFO */
 
 	MALI_DEBUG_ASSERT_POINTER(print_ctx);
 	mali_session_lock();
@@ -132,9 +139,16 @@ void mali_session_memory_tracking(_mali_osk_print_ctx *print_ctx)
 				    (unsigned int)((atomic_read(&session->mali_mem_array[MALI_MEM_DMA_BUF])) * _MALI_OSK_MALI_PAGE_SIZE)
 				   );
 #endif
+#ifdef ENABLE_MTK_MEMINFO
+		mtk_gpu_meminfo_set(mtk_kbase_gpu_meminfo_index, session->pid, (atomic_read(&session->mali_mem_allocated_pages)));
+		mtk_kbase_gpu_meminfo_index++;
+#endif /* ENABLE_MTK_MEMINFO */
 	}
 	mali_session_unlock();
 	mali_mem_usage  = _mali_ukk_report_memory_usage();
+#ifdef ENABLE_MTK_MEMINFO
+    g_mtk_gpu_total_memory_usage_in_pages_debugfs = mali_mem_usage/4096;
+#endif /* ENABLE_MTK_MEMINFO */
 	total_mali_mem_size = _mali_ukk_report_total_memory_size();
 	_mali_osk_ctxprintf(print_ctx, "Mali mem usage: %u\nMali mem limit: %u\n", mali_mem_usage, total_mali_mem_size);
 #ifdef MALI_MEM_SWAP_TRACKING

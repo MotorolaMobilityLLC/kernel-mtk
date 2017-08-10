@@ -34,6 +34,7 @@ mali-y += platform/$(PLATFORM_DIR)/platform_pmm.o
 #MTK_DEBUG
 ccflags-y += -I$(DRIVER_DIR)/mtk_common
 
+mali-y += mtk_common/mtk_gpu_meminfo.o
 mali-y += mtk_common/mtk_mem_record.o
 mali-$(MTK_DEBUG) += mtk_common/mtk_debug.o
 mali-$(MTK_DEBUG_PROC_PRINT) += mtk_common/mtk_pp.o
