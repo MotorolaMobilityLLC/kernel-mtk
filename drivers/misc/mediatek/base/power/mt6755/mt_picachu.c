@@ -39,7 +39,7 @@
 #define CFG_ENV_SIZE    0x1000
 #define CFG_ENV_OFFSET  0x40000
 
-#define NR_OPPS         8
+#define NR_OPPS         1
 
 
 #undef TAG
