@@ -688,10 +688,15 @@ static void spm_register_init(void)
 
 	/* md resource request selection */
 
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check > 0 */
 	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
 		~(0xff << MD_SRC_REQ_BIT)) | (0x6d << MD_SRC_REQ_BIT));
-#else
+#else /* CONFIG_MTK_MD3_SUPPORT is 0 */
+	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
+		~(0xff << MD_SRC_REQ_BIT)) | (0x29 << MD_SRC_REQ_BIT));
+#endif
+#else /* CONFIG_MTK_MD3_SUPPORT is not defined */
 	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
 		~(0xff << MD_SRC_REQ_BIT)) | (0x29 << MD_SRC_REQ_BIT));
 #endif
