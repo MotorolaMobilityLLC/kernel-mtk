@@ -169,7 +169,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
 #endif
@@ -222,7 +222,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 #endif
 
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
 	if (swap_pages * 2 < total_swap_pages)
@@ -239,11 +239,15 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
-			if (to_be_aggressive != 0 && i > 3) {
-				i -= to_be_aggressive;
-				if (i < 3)
-					i = 3;
+#ifdef CONFIG_SWAP
+			if (totalram_pages < 0x40000) {
+				if (to_be_aggressive != 0 && i > 3) {
+					i -= to_be_aggressive;
+					if (i < 3)
+						i = 3;
+				}
+			} else {
+				to_be_aggressive = 0;
 			}
 #endif
 			min_score_adj = lowmem_adj[i];
@@ -462,7 +466,7 @@ log_again:
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
 				"   Free memory is %ldkB above reserved\n"
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 				"   swapfree %lukB of SwapTatal %lukB(decrease %d level)\n"
 #endif
 				, selected->comm, selected->pid,
@@ -473,7 +477,7 @@ log_again:
 				cache_size, cache_limit,
 				min_score_adj,
 				free
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 				, swap_pages * 4, total_swap_pages * 4, to_be_aggressive
 #endif
 				);
