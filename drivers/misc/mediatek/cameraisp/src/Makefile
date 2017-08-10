@@ -17,8 +17,10 @@ ifeq ($(CONFIG_ARCH_MT6580),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 
+ifneq ($(CONFIG_ARCH_MTK_PROJECT),"fpga6570_emmc")
 ifeq ($(CONFIG_ARCH_MT6570),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
 endif
 
 ifeq ($(CONFIG_ARCH_MT6735M),y)
