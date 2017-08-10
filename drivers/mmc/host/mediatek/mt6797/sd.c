@@ -731,8 +731,9 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
-		 && (got_polarity ^ host->hw->cd_level)) {
-			tasklet_hi_schedule(&host->card_tasklet);
+		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
+			/* do nothing*/
+			/*tasklet_hi_schedule(&host->card_tasklet);*/
 		} else {
 			mmc_remove_card(host->mmc->card);
 			host->mmc->card = NULL;
@@ -4764,7 +4765,8 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 
 	pr_err("XXX msdc%d will reset card\n", host->id);
-
+	/* reset pin will clear WP status */
+#ifdef EMMC_RESET_WHEN_TMO
 	if (host->power_control) {
 		host->power_control(host, 0);
 		udelay(10);
@@ -4776,6 +4778,11 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	udelay(2);
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
 	usleep_range(200, 500);
+#endif
+      /* clock = 400k init will fail because of CRC */
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 260000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
 	msdc_init_hw(host);
 }
 
@@ -5438,6 +5445,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		mmc->caps |= MMC_CAP_ERASE;
 #else
 	mmc->caps |= MMC_CAP_ERASE;
+#endif
+
+#ifdef EMMC_REINIT_WHEN_TMO
+	mmc->caps |= MMC_CAP_HW_RESET;
 #endif
 
 	/* If 0  < mmc->max_busy_timeout < cmd.busy_timeout,

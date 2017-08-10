@@ -27,6 +27,12 @@
 #include <mt-plat/sync_write.h>
 
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
+#ifndef CONFIG_MTK_EMMC_CQ_SUPPORT
+/* reset pin will clear WP status */
+#define EMMC_REINIT_WHEN_TMO
+/* #define EMMC_RESET_WHEN_TMO */
+#endif
+
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
 #define TUNE_ASYNC_DATA_WRITE    (0x1 << 1) /* async transfer data crc */
