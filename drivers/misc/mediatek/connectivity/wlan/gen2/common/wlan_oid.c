@@ -9483,6 +9483,7 @@ wlanoidSetStopSchedScan(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_FAILURE;
 }
 
+#if CFG_SUPPORT_GSCN
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set a periodically PSCN action
@@ -9564,7 +9565,7 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS
 wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam;
 
@@ -9623,7 +9624,7 @@ wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS
 wlanoidSetGSCNConfig(IN P_ADAPTER_T prAdapter,
-		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnConfigParam;
 	CMD_GSCN_SCN_COFIG_T rCmdGscnConfig;
@@ -9725,6 +9726,7 @@ wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
 	else
 		return WLAN_STATUS_FAILURE;
 }
+#endif /* CFG_SUPPORT_GSCN */
 
 
 #if CFG_SUPPORT_HOTSPOT_2_0

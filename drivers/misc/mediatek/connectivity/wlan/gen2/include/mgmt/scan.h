@@ -465,11 +465,16 @@ typedef struct _SCAN_INFO_T {
 
 	/* NLO scanning state tracking */
 	BOOLEAN fgNloScanning;
+#if CFG_SUPPORT_SCN_PSCN
 	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
 	P_CMD_SET_PSCAN_PARAM prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
+#endif
+#if CFG_SUPPORT_GSCN
+	P_PARAM_WIFI_GSCAN_FULL_RESULT prGscnFullResult;
+#endif
 
 	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;
@@ -740,45 +745,44 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 
+#if CFG_SUPPORT_SCN_PSCN
 BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAct);
 
 BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
 BOOLEAN scnFsmGSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
-#if 0
-
-BOOLEAN scnFsmGSCNSetRssiSignificatn(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
-#endif
-
 BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_SWC_BSSID prCmdPscnAddSWCBssId);
 
 BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_ADDR prCmdPscnSetMacAddr);
 
+BOOLEAN scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
+				 IN P_CMD_NLO_REQ prCmdNloReq,
+				 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
+				 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
+				 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
+				 IN BOOLEAN fgRemoveNLOfromPSCN,
+				 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
+
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
+#endif
+
+#if CFG_SUPPORT_GSCN
 BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
 
 BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
 
-BOOLEAN
-scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
-			 IN P_CMD_NLO_REQ prCmdNloReq,
-			 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
-			 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
-			 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
-			 IN BOOLEAN fgRemoveNLOfromPSCN,
-			 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
+BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter,
+			    IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd, OUT PUINT_32 pu4SetInfoLen);
 
-BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd,
-			OUT PUINT_32 pu4SetInfoLen);
 BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T prEventBuffer);
-
-VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
-
-#endif /* _SCAN_H */
+#endif
 
 #if CFG_SUPPORT_AGPS_ASSIST
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
 #endif
 P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter);
 VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
+
+#endif /* _SCAN_H */
 

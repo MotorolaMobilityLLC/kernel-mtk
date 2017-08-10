@@ -1212,7 +1212,7 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 	return TRUE;
 }
 
-#if CFG_SUPPORT_GSCN
+#if CFG_SUPPORT_SCN_PSCN
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief         handler for Set PSCN action
@@ -1589,6 +1589,70 @@ scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
 	return TRUE;
 }
 
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
+{
+	P_SCAN_INFO_T prScanInfo;
+	BOOLEAN fgTransitionState = FALSE;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+	do {
+		fgTransitionState = FALSE;
+
+		DBGLOG(SCN, STATE, "eCurrentPSCNState=%d, eNextPSCNState=%d\n",
+			prScanInfo->eCurrentPSCNState, eNextPSCNState);
+
+		prScanInfo->eCurrentPSCNState = eNextPSCNState;
+
+		switch (prScanInfo->eCurrentPSCNState) {
+		case PSCN_IDLE:
+			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
+			eNextPSCNState = PSCN_IDLE;
+			break;
+
+		case PSCN_RESET:
+			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
+			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
+
+			if (prScanInfo->prPscnParam->fgNLOScnEnable) {
+				eNextPSCNState = PSCN_SCANNING; /* upper layer trigger GSCN Action */
+				DBGLOG(SCN, TRACE,
+				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
+			} else {
+				/* eNextPSCNState = PSCN_RESET; */
+				DBGLOG(SCN, TRACE,
+				       "PSCN_RESET->PSCN_RESET....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable DISABLE\n");
+			}
+			break;
+
+		case PSCN_SCANNING:
+			DBGLOG(SCN, TRACE, "PSCN_SCANNING.... PSCAN_ACT_ENABLE\n");
+			/* nicActivateNetwork(); */
+			if (prScanInfo->fgPscnOngoing)
+				break;
+			scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
+			prScanInfo->fgPscnOngoing = TRUE;
+			eNextPSCNState = PSCN_SCANNING;
+			break;
+
+		default:
+			DBGLOG(SCN, WARN, "Unexpected state\n");
+			ASSERT(0);
+			break;
+		}
+
+		if (prScanInfo->eCurrentPSCNState != eNextPSCNState)
+			fgTransitionState = TRUE;
+
+	} while (fgTransitionState);
+
+}
+#endif
+
+#if CFG_SUPPORT_GSCN
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief        handler for Set GSCN param
@@ -1683,15 +1747,15 @@ BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prC
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd,
-					OUT PUINT_32 pu4SetInfoLen)
+			    OUT PUINT_32 pu4SetInfoLen)
 {
 	CMD_GET_GSCAN_RESULT_T rGetGscnResultCmd;
 	P_SCAN_INFO_T prScanInfo;
 	P_PARAM_WIFI_GSCAN_RESULT_REPORT prGscnResult;
 	struct wiphy *wiphy;
 	UINT_32 u4SizeofGScanResults = 0;
-	UINT8 ucBkt;
-	static UINT8 scanId, numAp;
+	UINT_8 ucBkt;
+	static UINT_8 scanId, numAp;
 
 	ASSERT(prAdapter);
 	wiphy = priv_to_wiphy(prAdapter->prGlueInfo);
@@ -1737,7 +1801,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 	/* copy scan results */
 	{
 		P_PARAM_BSSID_EX_T prScanResults;
-		UINT8 i = 0, remainAp = 0;
+		UINT_8 i = 0, remainAp = 0;
 
 		if (numAp < prAdapter->rWlanInfo.u4ScanResultNum)
 			remainAp = prAdapter->rWlanInfo.u4ScanResultNum - numAp;
@@ -1840,66 +1904,5 @@ BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T pr
 
 	return TRUE;
 }
-
-VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
-{
-	P_SCAN_INFO_T prScanInfo;
-	BOOLEAN fgTransitionState = FALSE;
-
-	ASSERT(prAdapter);
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-
-	do {
-		fgTransitionState = FALSE;
-
-		DBGLOG(SCN, STATE, "eCurrentPSCNState=%d, eNextPSCNState=%d\n",
-			prScanInfo->eCurrentPSCNState, eNextPSCNState);
-
-		prScanInfo->eCurrentPSCNState = eNextPSCNState;
-
-		switch (prScanInfo->eCurrentPSCNState) {
-		case PSCN_IDLE:
-			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
-			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
-			eNextPSCNState = PSCN_IDLE;
-			break;
-
-		case PSCN_RESET:
-			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
-			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
-			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
-
-			if (prScanInfo->prPscnParam->fgNLOScnEnable) {
-				eNextPSCNState = PSCN_SCANNING; /* upper layer trigger GSCN Action */
-				DBGLOG(SCN, TRACE,
-				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
-			} else {
-				/* eNextPSCNState = PSCN_RESET; */
-				DBGLOG(SCN, TRACE,
-				       "PSCN_RESET->PSCN_RESET....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable DISABLE\n");
-			}
-			break;
-
-		case PSCN_SCANNING:
-			DBGLOG(SCN, TRACE, "PSCN_SCANNING.... PSCAN_ACT_ENABLE\n");
-			/* nicActivateNetwork(); */
-			if (prScanInfo->fgPscnOngoing)
-				break;
-			scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
-			prScanInfo->fgPscnOngoing = TRUE;
-			eNextPSCNState = PSCN_SCANNING;
-			break;
-
-		default:
-			DBGLOG(SCN, WARN, "Unexpected state\n");
-			ASSERT(0);
-			break;
-		}
-
-		if (prScanInfo->eCurrentPSCNState != eNextPSCNState)
-			fgTransitionState = TRUE;
-
-	} while (fgTransitionState);
-
-}
 #endif
+
