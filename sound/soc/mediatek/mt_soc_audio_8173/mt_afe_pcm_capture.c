@@ -303,13 +303,17 @@ static int mt_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		if (priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S0 ||
 		    priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S0_MAX)
 			priv->i2s_mclk_divider_type = MT_AFE_I2S0;
+		else if (priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S1 ||
+			 priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S1_MAX)
+			priv->i2s_mclk_divider_type = MT_AFE_I2S1;
 		else
 			priv->i2s_mclk_divider_type = MT_AFE_I2S2;
 
 		mt_afe_enable_apll(runtime->rate);
 		mt_afe_enable_apll_tuner(runtime->rate);
 
-		if (priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S0_MAX)
+		if (priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S0_MAX ||
+		    priv->i2s_mclk_mode == MCLK_SHARE_FROM_I2S1_MAX)
 			mt_afe_set_mclk(priv->i2s_mclk_divider_type,
 				(runtime->rate % 8000) ? 176400 : 192000);
 		else
