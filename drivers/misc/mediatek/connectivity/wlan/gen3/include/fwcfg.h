@@ -45,10 +45,6 @@
 
 #define MAX_CMD_BUFFER_LENGTH		(CMD_FORMAT_V1_LENGTH * MAX_CMD_ITEM_MAX)
 
-#define ITEM_TYPE_DEC	1
-#define ITEM_TYPE_HEX	2
-#define ITEM_TYPE_STR	3
-
 #define FW_CFG_FILE "/etc/firmware/wifi_fw.cfg"
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -118,7 +114,7 @@ PUINT_8 getFwCfgItemKey(UINT_8 i);
 
 PUINT_8 getFwCfgItemValue(UINT_8 i);
 
-WLAN_STATUS wlanCfgFwSetParam(PUINT_8 fwBuffer, PCHAR cmdStr, PCHAR value, int num, int type);
+void wlanCfgFwSetParam(PUINT_8 fwBuffer, PCHAR cmdStr, PCHAR value, int num, int type);
 
 WLAN_STATUS wlanCfgSetGetFw(IN P_ADAPTER_T prAdapter, const PCHAR fwBuffer, int cmdNum, enum _CMD_TYPE_T cmdType);
 

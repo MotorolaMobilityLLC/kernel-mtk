@@ -57,30 +57,9 @@ PUINT_8 __weak getFwCfgItemValue(UINT_8 i)
 		return NULL;
 }
 
-INT_8 atoi(UCHAR ch)
-{
-	if (ch >= 'a' && ch <= 'f')
-		return ch - 87;
-	else if (ch >= 'A' && ch <= 'F')
-		return ch - 55;
-	else if (ch >= '0' && ch <= '9')
-		return ch - 48;
-	return 0;
-}
-
-WLAN_STATUS wlanCfgFwSetParam(PUINT_8 fwBuffer, PCHAR cmdStr, PCHAR value, int num, int type)
+void wlanCfgFwSetParam(PUINT_8 fwBuffer, PCHAR cmdStr, PCHAR value, int num, int type)
 {
 	struct _CMD_FORMAT_V1_T *cmd = (struct _CMD_FORMAT_V1_T *)fwBuffer + num;
-	UINT32 bufferindex = 0, base = 0;
-	UINT32 sum = 0, startOffset = 0;
-	PCHAR data = NULL;
-	int i = 0;
-	char ch = 0;
-
-	if (cmdStr == NULL || value == NULL) {
-		DBGLOG(INIT, ERROR, "Error, cmdStr or value is NULL!!\n");
-		return WLAN_STATUS_FAILURE;
-	}
 
 	kalMemSet(cmd, 0, sizeof(struct _CMD_FORMAT_V1_T));
 	cmd->itemType = type;
@@ -92,57 +71,12 @@ WLAN_STATUS wlanCfgFwSetParam(PUINT_8 fwBuffer, PCHAR cmdStr, PCHAR value, int n
 	/* here will not ensure the end will be '\0' */
 	kalMemCopy(cmd->itemString, cmdStr, cmd->itemStringLength);
 
-	data = (PCHAR)value;
-
-	if (type == ITEM_TYPE_DEC || type == ITEM_TYPE_HEX) {
-		switch (type) {
-		case ITEM_TYPE_DEC:
-			base = 10;
-			startOffset = 0;
-			break;
-		case ITEM_TYPE_HEX:
-			ch = *data;
-			if (strlen(data) < 3 || ch != '0') {
-				DBGLOG(INIT, ERROR, "Hex args must have prefix '0x'\n");
-				return WLAN_STATUS_FAILURE;
-			}
-
-			data++;
-			ch = *data;
-			if (ch != 'x' && ch != 'X') {
-				DBGLOG(INIT, ERROR, "Hex args must have prefix '0x'\n");
-				return WLAN_STATUS_FAILURE;
-			}
-			data++;
-			base = 16;
-			startOffset = 2;
-			break;
-		}
-
-		for (i = strlen(value) - 1 - startOffset; i >= 0; i--) {
-			sum = sum * base + atoi(*data);
-			data++;
-		}
-
-		if (sum == 0)
-			cmd->itemValueLength = 1;
-		else {
-			for (bufferindex = 0; sum > 0; bufferindex++) {
-				cmd->itemValue[bufferindex] = sum & 0xFF;
-				sum = sum >> 8;
-			}
-		}
-		cmd->itemValueLength = bufferindex;
-	} else {
-		cmd->itemValueLength = strlen(value);
-		/* here will not ensure the end will be '\0' */
-		kalMemCopy(cmd->itemValue, value, cmd->itemValueLength);
-	}
-
+	cmd->itemValueLength = strlen(value);
 	if (cmd->itemValueLength > MAX_CMD_VALUE_MAX_LENGTH)
 		cmd->itemValueLength = MAX_CMD_VALUE_MAX_LENGTH;
 
-	return WLAN_STATUS_SUCCESS;
+	/* here will not ensure the end will be '\0' */
+	kalMemCopy(cmd->itemValue, value, cmd->itemValueLength);
 }
 
 WLAN_STATUS wlanCfgSetGetFw(IN P_ADAPTER_T prAdapter, const PCHAR fwBuffer, int cmdNum, enum _CMD_TYPE_T cmdType)
