@@ -1179,11 +1179,15 @@ rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter,
 			  ENUM_CHNL_EXT_T eExtend,
 			  ENUM_CHANNEL_WIDTH_T eChannelWidth, UINT_8 ucChannelS1, UINT_8 ucChannelS2)
 {
-	UINT_8 ucCenterChannel;
+	UINT_8	ucCenterChannel;
+	UINT_8  ucUpperChannel;
+	UINT_8  ucLowerChannel;
 	BOOLEAN fgValidChannel = TRUE;
+	BOOLEAN fgUpperChannel = TRUE;
+	BOOLEAN fgLowerChannel = TRUE;
 	BOOLEAN fgValidBW = TRUE;
 	BOOLEAN fgValidRfSetting = TRUE;
-	UINT_32 u4PrimaryOffset;
+	UINT_32 u4PrimaryOffset = 0;
 
 	/*DBG msg for Channel InValid */
 	if (eChannelWidth == CW_20_40MHZ) {
@@ -1191,8 +1195,24 @@ rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter,
 
 		/* Check Central Channel Valid or Not */
 		fgValidChannel = rlmDomainCheckChannelEntryValid(prAdapter, ucCenterChannel);
-		if (fgValidChannel == FALSE)
-			DBGLOG(RLM, WARN, "Rf: CentralCh=%d\n", ucCenterChannel);
+		/* Check Upper Channel and Lower Channel*/
+		switch (eExtend) {
+		case CHNL_EXT_SCA:
+			ucUpperChannel = ucPriChannel + 4;
+			ucLowerChannel = ucPriChannel;
+			break;
+		case CHNL_EXT_SCB:
+			ucUpperChannel = ucPriChannel;
+			ucLowerChannel = ucPriChannel - 4;
+			break;
+		default:
+			ucUpperChannel = ucPriChannel;
+			ucLowerChannel = ucPriChannel;
+			break;
+		}
+
+		fgUpperChannel = rlmDomainCheckChannelEntryValid(prAdapter, ucUpperChannel);
+		fgLowerChannel = rlmDomainCheckChannelEntryValid(prAdapter, ucLowerChannel);
 	} else if (eChannelWidth == CW_80MHZ) {
 		ucCenterChannel = ucChannelS1;
 
@@ -1202,39 +1222,34 @@ rlmDomainIsValidRfSetting(P_ADAPTER_T prAdapter,
 			DBGLOG(RLM, WARN, "Rf: CentralCh=%d\n", ucCenterChannel);
 	} else if (eChannelWidth == CW_160MHZ) {
 		ucCenterChannel = ucChannelS2;
-
 		/* Check Central Channel Valid or Not */
 		/*TODo */
 	}
 
 	/* Check BW Setting Correct or Not */
 	if (eBand == BAND_2G4) {
-		if (eChannelWidth != CW_20_40MHZ) {
+		if (eChannelWidth != CW_20_40MHZ)
 			fgValidBW = FALSE;
-			DBGLOG(RLM, WARN, "Rf: B=%d, W=%d\n", eBand, eChannelWidth);
-		}
 	} else {
 		if (eChannelWidth == CW_80MHZ) {
 			u4PrimaryOffset = CAL_CH_OFFSET_80M(ucPriChannel, ucCenterChannel);
-			if (u4PrimaryOffset > 4) {
+			if (u4PrimaryOffset > 4)
 				fgValidBW = FALSE;
-				DBGLOG(RLM, WARN, "Rf: PriOffSet=%d, W=%d\n", u4PrimaryOffset, eChannelWidth);
-			}
 		} else if (eChannelWidth == CW_160MHZ) {
 			u4PrimaryOffset = CAL_CH_OFFSET_160M(ucPriChannel, ucCenterChannel);
-			if (u4PrimaryOffset > 8) {
+			if (u4PrimaryOffset > 8)
 				fgValidBW = FALSE;
-				DBGLOG(RLM, WARN, "Rf: PriOffSet=%d, W=%d\n", u4PrimaryOffset, eChannelWidth);
-			}
-		} else if (eChannelWidth > CW_80P80MHZ) {
-			DBGLOG(RLM, WARN, "Rf: W=%d is invalid\n", eChannelWidth);
+		} else if (eChannelWidth > CW_80P80MHZ)
 			fgValidBW = FALSE;
-		}
 	}
 
-	if ((fgValidBW == FALSE) || (fgValidChannel == FALSE))
+	if (!fgValidBW || !fgValidChannel || !fgUpperChannel || !fgLowerChannel) {
+		DBGLOG(RLM, WARN,
+			"Rf: ValidBw=%d, ValidChnl=%d, UpChnl=%d, LowerChnl=%d, B=%d, W=%d, offset=%d\n",
+			fgValidBW, fgValidChannel, fgUpperChannel,
+			fgLowerChannel, eBand, eChannelWidth, u4PrimaryOffset);
 		fgValidRfSetting = FALSE;
-
+	}
 	return fgValidRfSetting;
 
 }
