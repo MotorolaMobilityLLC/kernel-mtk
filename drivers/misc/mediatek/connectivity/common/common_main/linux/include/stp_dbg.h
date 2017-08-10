@@ -198,7 +198,7 @@ typedef struct mtkstp_dbg_t {
 #define STP_CORE_DUMP_TIMEOUT (5*60*1000)	/* default 5minutes */
 #define STP_OJB_NAME_SZ 20
 #define STP_CORE_DUMP_INFO_SZ 500
-#define STP_CORE_DUMP_INIT_SIZE 512
+#define STP_CORE_DUMP_INIT_SIZE 28
 typedef enum wcn_compress_algorithm_t {
 	GZIP = 0,
 	BZIP2 = 1,
