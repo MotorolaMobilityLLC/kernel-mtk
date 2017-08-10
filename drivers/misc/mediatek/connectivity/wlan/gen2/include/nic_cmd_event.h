@@ -753,6 +753,7 @@ typedef enum _ENUM_CMD_ID_T {
 #if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
 	CMD_ID_SET_FCC_TX_PWR_CERT = 0x6F,	/* 0x6F (Set) */
 #endif
+	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
