@@ -2574,7 +2574,8 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 					fgIsFindFirst = TRUE;
 				} else {
 					/* Can't pass the Encryption Status Check, get next one */
-					DBGLOG(SCN, TRACE, "SEARCH: WAPI cannot pass the Encryption Status Check!\n");
+					DBGLOG(SCN, TRACE, "SEARCH: Encryption check failure, prPrimaryBssDesc=[%pM]\n",
+					       prPrimaryBssDesc->aucBSSID);
 					continue;
 				}
 			} else
