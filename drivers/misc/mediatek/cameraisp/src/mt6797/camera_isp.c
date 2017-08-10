@@ -5531,7 +5531,8 @@ static MINT32 ISP_MARK_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 	if (irqinfo->EventInfo.St_type == SIGNAL_INT) {
 		/* 1. enable marked flag */
 		spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-		IspInfo.IrqInfo.MarkedFlag[irqinfo->Type][irqinfo->EventInfo.UserKey][irqinfo->EventInfo.St_type] |= irqinfo->EventInfo.Status;
+		IspInfo.IrqInfo.MarkedFlag[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
+			irqinfo->EventInfo.Status;
 		spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 
 		/* 2. record mark time */
