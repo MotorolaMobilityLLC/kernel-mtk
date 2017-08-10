@@ -226,7 +226,7 @@ static CHARGER_TYPE mu3d_hal_get_charger_type(void)
 {
 	CHARGER_TYPE chg_type;
 #ifdef BYPASS_PMIC_LINKAGE
-	DBG(0, "force on");
+	os_printk(K_INFO, "force on");
 	chg_type = STANDARD_HOST;
 #else
 	chg_type = mt_get_charger_type();
@@ -239,7 +239,7 @@ static bool mu3d_hal_is_vbus_exist(void)
 	bool vbus_exist;
 
 #ifdef BYPASS_PMIC_LINKAGE
-	DBG(0, "force on");
+	os_printk(K_INFO, "force on");
 	vbus_exist = true;
 #else
 #ifdef CONFIG_POWER_EXT
@@ -282,12 +282,23 @@ static void do_mu3d_test_connect_work(struct work_struct *work)
 }
 void mt_usb_connect_test(int start)
 {
+	static struct wake_lock device_test_wakelock;
+	static int wake_lock_inited;
+
+	if (!wake_lock_inited) {
+		os_printk(K_WARNIN, "%s wake_lock_init\n", __func__);
+		wake_lock_init(&device_test_wakelock, WAKE_LOCK_SUSPEND, "device.test.lock");
+		wake_lock_inited = 1;
+	}
+
 	if (start) {
+		wake_lock(&device_test_wakelock);
 		mu3d_test_connect = 1;
 		INIT_DELAYED_WORK(&mu3d_test_connect_work, do_mu3d_test_connect_work);
 		schedule_delayed_work(&mu3d_test_connect_work, 0);
 	} else {
 		mu3d_test_connect = 0;
+		wake_unlock(&device_test_wakelock);
 	}
 }
 
