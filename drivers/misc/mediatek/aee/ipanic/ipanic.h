@@ -46,19 +46,19 @@
 			pr_debug(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
-#define LOG_ERROR(fmt, ...)			\
+#define LOG_NOTICE(fmt, ...)			\
 	do {	\
 		if (aee_in_nested_panic())			\
 			aee_nested_printf(fmt, ##__VA_ARGS__);	\
 		else						\
-			pr_err(fmt, ##__VA_ARGS__);	\
+			pr_notice(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
 #define LOGV(fmt, msg...)
 #define LOGD LOG_DEBUG
 #define LOGI LOG_DEBUG
-#define LOGW LOG_ERROR
-#define LOGE LOG_ERROR
+#define LOGW LOG_NOTICE
+#define LOGE LOG_NOTICE
 
 struct ipanic_data_header {
 	u32 type;		/* data type(0-31) */

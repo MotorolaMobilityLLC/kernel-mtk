@@ -42,19 +42,19 @@
 			pr_debug(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
-#define LOG_ERROR(fmt, ...)			\
+#define LOG_NOTICE(fmt, ...)			\
 	do {	\
 		if (aee_in_nested_panic())			\
 			aee_nested_printf(fmt, ##__VA_ARGS__);	\
 		else						\
-			pr_err(fmt, ##__VA_ARGS__);	\
+			pr_notice(fmt, ##__VA_ARGS__);	\
 	} while (0)
 
 #define LOGV(fmt, msg...)
 #define LOGD LOG_DEBUG
 #define LOGI LOG_DEBUG
-#define LOGW LOG_ERROR
-#define LOGE LOG_ERROR
+#define LOGW LOG_NOTICE
+#define LOGE LOG_NOTICE
 
 static struct mrdump_mini_elf_header *mrdump_mini_ehdr;
 
@@ -259,22 +259,22 @@ int kernel_addr_valid(unsigned long addr)
 	pgd = pgd_offset_k(addr);
 	if (pgd_none(*pgd))
 		return 0;
-	pr_err("[%08lx] *pgd=%08llx", addr, (long long)pgd_val(*pgd));
+	pr_notice("[%08lx] *pgd=%08llx", addr, (long long)pgd_val(*pgd));
 
 	pud = pud_offset(pgd, addr);
 	if (pud_none(*pud))
 		return 0;
-	pr_err("*pud=%08llx", (long long)pud_val(*pud));
+	pr_notice("*pud=%08llx", (long long)pud_val(*pud));
 
 	pmd = pmd_offset(pud, addr);
 	if (pmd_none(*pmd))
 		return 0;
-	pr_err("*pmd=%08llx", (long long)pmd_val(*pmd));
+	pr_notice("*pmd=%08llx", (long long)pmd_val(*pmd));
 
 	pte = pte_offset_kernel(pmd, addr);
 	if (pte_none(*pte))
 		return 0;
-	pr_err("*pte=%08llx", (long long)pte_val(*pte));
+	pr_notice("*pte=%08llx", (long long)pte_val(*pte));
 
 	return pfn_valid(pte_pfn(*pte));
 }
@@ -298,7 +298,7 @@ void mrdump_mini_add_entry_module(unsigned long addr, unsigned long size)
 
 	mod = __module_address(addr);
 	if (NULL == mod) {
-		pr_err("mrdump: find module failed for address:%lx\n", addr);
+		pr_notice("mrdump: find module failed for address:%lx\n", addr);
 		return;
 	}
 	init_start = (unsigned long)mod->module_init;
@@ -307,19 +307,19 @@ void mrdump_mini_add_entry_module(unsigned long addr, unsigned long size)
 	core_end = ALIGN((core_start + mod->core_size), PAGE_SIZE);
 
 	if ((init_start % PAGE_SIZE) || (core_start % PAGE_SIZE)) {
-		pr_err("mrdump: unaligned init_start:%lx or core_start:%lx\n", init_start, core_start);
+		pr_notice("mrdump: unaligned init_start:%lx or core_start:%lx\n", init_start, core_start);
 		return;
 	}
 
 	hnew = ALIGN(addr + size / 2, PAGE_SIZE);
 	lnew = hnew - ALIGN(size, PAGE_SIZE);
 	if (!virt_addr_valid(addr)) {
-		pr_err("mrdump: never unexpected(module) case for address:%lx\n", addr);
+		pr_notice("mrdump: never unexpected(module) case for address:%lx\n", addr);
 		/* vma = find_vma(&init_mm, addr); */
-		/* pr_err("mirdump: add: %p, vma: %x", addr, vma); */
+		/* pr_notice("mirdump: add: %p, vma: %x", addr, vma); */
 		/* if (!vma) */
 		/*      return; */
-		/* pr_err("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
+		/* pr_notice("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
 		/* hnew = min(vma->vm_end, hnew); */
 		/* lnew = max(vma->vm_start, lnew); */
 		vm = find_vm_area((void *)addr);
@@ -344,12 +344,12 @@ void mrdump_mini_add_entry_module(unsigned long addr, unsigned long size)
 			/* lnew = core_start; */
 			/* hnew = core_end; */
 		} else {
-			pr_err("mrdump: unexpected case for address:%lx\n", addr);
+			pr_notice("mrdump: unexpected case for address:%lx\n", addr);
 			return;
 		}
 
 		if ((lnew % PAGE_SIZE) || (hnew % PAGE_SIZE)) {
-			pr_err("mrdump: unaligned low:%lx or high:%lx\n", lnew, hnew);
+			pr_notice("mrdump: unaligned low:%lx or high:%lx\n", lnew, hnew);
 			return;
 		}
 
@@ -360,7 +360,7 @@ void mrdump_mini_add_entry_module(unsigned long addr, unsigned long size)
 				lcheckaddr = lnew + checkloop * PAGE_SIZE;
 				pcheckaddr = __pfn_to_phys(vmalloc_to_pfn((void *)lcheckaddr));
 				if (pcheckaddr != (paddr + checkloop * PAGE_SIZE)) {
-					/* pr_err("mrdump: non-continuous PA for address:%lx, lnew:%lx(%lx),
+					/* pr_notice("mrdump: non-continuous PA for address:%lx, lnew:%lx(%lx),
 						lcheckaddr:%lx(%lx)\n", addr, lnew, paddr, lcheckaddr, pcheckaddr); */
 					flag = false;
 					break;
@@ -392,7 +392,7 @@ void mrdump_mini_add_entry_module(unsigned long addr, unsigned long size)
 				fill_elf_load_phdr(phdr, hnewtmp - lnew, lnew, paddr);
 			} else {
 				/* break while loop when section is full */
-				pr_err("mrdump: unexpected section full:%d\n", MRDUMP_MINI_NR_SECTION);
+				pr_notice("mrdump: unexpected section full:%d\n", MRDUMP_MINI_NR_SECTION);
 				break;
 			}
 
@@ -432,10 +432,10 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 	lnew = hnew - ALIGN(size, PAGE_SIZE);
 	if (!virt_addr_valid(addr)) {
 		/* vma = find_vma(&init_mm, addr); */
-		/* pr_err("mirdump: add: %p, vma: %x", addr, vma); */
+		/* pr_notice("mirdump: add: %p, vma: %x", addr, vma); */
 		/* if (!vma) */
 		/*      return; */
-		/* pr_err("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
+		/* pr_notice("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
 		/* hnew = min(vma->vm_end, hnew); */
 		/* lnew = max(vma->vm_start, lnew); */
 		vm = find_vm_area((void *)addr);
