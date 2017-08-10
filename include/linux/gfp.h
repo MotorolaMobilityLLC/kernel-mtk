@@ -34,6 +34,7 @@ struct vm_area_struct;
 #define ___GFP_NO_KSWAPD	0x400000u
 #define ___GFP_OTHER_NODE	0x800000u
 #define ___GFP_WRITE		0x1000000u
+#define ___GFP_CMA		0x2000000u
 /* If the above are modified, __GFP_BITS_SHIFT may need updating */
 
 /*
@@ -90,6 +91,7 @@ struct vm_area_struct;
 #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
 #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
 #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
+#define __GFP_CMA	((__force gfp_t)___GFP_CMA)	/* ZONE_MOVABLE need this flag to allocate in */
 
 /*
  * This may seem redundant, but it's a way of annotating false positives vs.
@@ -97,7 +99,7 @@ struct vm_area_struct;
  */
 #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
 
-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
+#define __GFP_BITS_SHIFT 26	/* Room for N __GFP_FOO bits */
 #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
 /* This equals 0, but use constants in case they ever change */
@@ -266,6 +268,13 @@ static inline enum zone_type gfp_zone(gfp_t flags)
 	z = (GFP_ZONE_TABLE >> (bit * ZONES_SHIFT)) &
 					 ((1 << ZONES_SHIFT) - 1);
 	VM_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
+	/* used for limit - only the flags with __GFP_CMA can go into ZONE_MOVABLE */
+
+	/* do not allocate at ZONE_MOVABLE without __GFP_CMA */
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
+		if (z == ZONE_MOVABLE && !(flags & __GFP_CMA))
+			z -= 1;
+
 	return z;
 }
 

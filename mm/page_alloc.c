@@ -2914,13 +2914,17 @@ struct page *
 __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 			struct zonelist *zonelist, nodemask_t *nodemask)
 {
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+	enum zone_type high_zoneidx = gfp_zone(gfp_mask & ~__GFP_MOVABLE);
+#else
 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+#endif
 	struct zone *preferred_zone;
 	struct zoneref *preferred_zoneref;
 	struct page *page = NULL;
 	int migratetype = gfpflags_to_migratetype(gfp_mask);
 	unsigned int cpuset_mems_cookie;
-#if defined(CONFIG_DMAUSER_PAGES)
+#if defined(CONFIG_DMAUSER_PAGES) || defined(CONFIG_ZONE_MOVABLE_CMA)
 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
 #else
 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
@@ -2948,8 +2952,15 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	if (unlikely(!zonelist->_zonerefs->zone))
 		return NULL;
 
-	if (IS_ENABLED(CONFIG_CMA) && migratetype == MIGRATE_MOVABLE)
+	if (IS_ENABLED(CONFIG_CMA) && migratetype == MIGRATE_MOVABLE) {
+		if (gfp_mask & __GFP_CMA) {
+			/* Assign high watermakr for __GFP_CMA page allocation */
+
+			alloc_flags &= ~ALLOC_WMARK_MASK;
+			alloc_flags |= ALLOC_WMARK_HIGH;
+		}
 		alloc_flags |= ALLOC_CMA;
+	}
 
 retry_cpuset:
 	cpuset_mems_cookie = read_mems_allowed_begin();
@@ -2972,6 +2983,9 @@ retry_cpuset:
 		 * can deadlock because I/O on the device might not
 		 * complete.
 		 */
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
+			high_zoneidx = gfp_zone(gfp_mask);
+
 		gfp_mask = memalloc_noio_flags(gfp_mask);
 		page = __alloc_pages_slowpath(gfp_mask, order,
 				zonelist, high_zoneidx, nodemask,
