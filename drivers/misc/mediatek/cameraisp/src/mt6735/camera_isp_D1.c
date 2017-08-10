@@ -3424,37 +3424,54 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT *pRegIo)
 	MUINT32 i;
 	MINT32 Ret = 0;
 	/*      */
-	ISP_REG_STRUCT reg;
-	/* MUINT32 * pData = (MUINT32*)pRegIo->Data; */
-	ISP_REG_STRUCT *pData = (ISP_REG_STRUCT *) pRegIo->pData;
+	ISP_REG_STRUCT *pData = NULL;
+	ISP_REG_STRUCT *pDataArray = NULL;
 
+	if ((pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) || (pRegIo->Count == 0)
+		|| (pRegIo->pData == NULL)) {
+		LOG_ERR("ERROR ISP_ReadReg pRegIo->pData is NULL or pRegIo->Count error:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	pDataArray = kmalloc((pRegIo->Count) * sizeof(ISP_REG_STRUCT), GFP_KERNEL);
+	if (pDataArray == NULL) {
+		LOG_ERR("ERROR ISP_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
+	if (copy_from_user(pDataArray, (void *)pRegIo->pData,
+		(pRegIo->Count)*sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("ERROR ISP_ReadReg copy_from_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	pData = pDataArray;
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (0 != get_user(reg.Addr, (MUINT32 *) pData)) {
-			LOG_ERR("get_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
 		/*      */
-		if ((ISP_ADDR_CAMINF + reg.Addr >= ISP_ADDR)
-		    && (ISP_ADDR_CAMINF + reg.Addr < (ISP_ADDR_CAMINF + ISP_RANGE))) {
-			reg.Val = ISP_RD32(ISP_ADDR_CAMINF + reg.Addr);
+		if ((ISP_ADDR_CAMINF + pData->Addr >= ISP_ADDR_CAMINF)
+			&& (ISP_ADDR_CAMINF + pData->Addr < (ISP_ADDR_CAMINF + ISP_RANGE))) {
+			pData->Val = ISP_RD32(ISP_ADDR_CAMINF + pData->Addr);
 		} else {
-			LOG_ERR("Wrong address(0x%x)", (unsigned int)(ISP_ADDR_CAMINF + reg.Addr));
-			reg.Val = 0;
+			LOG_ERR("ERROR ISP_ReadReg wrong address(0x%x)\n",
+				(unsigned int)(ISP_ADDR_CAMINF + pData->Addr));
+			pData->Val = 0;
 		}
 		/*      */
-
-		if (0 != put_user(reg.Val, (MUINT32 *) &(pData->Val))) {
-			LOG_ERR("put_user failed");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
 		pData++;
-		/*      */
+	}
+	if (copy_to_user((void *)pRegIo->pData, pDataArray,
+		(pRegIo->Count)*sizeof(ISP_REG_STRUCT)) != 0) {
+		LOG_ERR("ERROR ISP_ReadReg copy_to_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
 	}
 	/*      */
 EXIT:
+	if (pDataArray != NULL) {
+		kfree(pDataArray);
+		pDataArray = NULL;
+	}
 	return Ret;
 }
 
@@ -3478,8 +3495,8 @@ static MINT32 ISP_WriteRegToHw(ISP_REG_STRUCT *pReg, MUINT32 Count)
 				(MUINT32) (ISP_ADDR_CAMINF + pReg[i].Addr),
 				(MUINT32) (pReg[i].Val));
 
-		if (((ISP_ADDR_CAMINF + pReg[i].Addr) >= ISP_ADDR)
-		    && ((ISP_ADDR_CAMINF + pReg[i].Addr) < (ISP_ADDR_CAMINF + ISP_RANGE)))
+		if (((ISP_ADDR_CAMINF + pReg[i].Addr) >= ISP_ADDR_CAMINF)
+			&& ((ISP_ADDR_CAMINF + pReg[i].Addr) < (ISP_ADDR_CAMINF + ISP_RANGE)))
 			ISP_WR32(ISP_ADDR_CAMINF + pReg[i].Addr, pReg[i].Val);
 		else
 			LOG_ERR("wrong address(0x%x)",
@@ -3562,7 +3579,8 @@ static MBOOL ISP_BufWrite_Alloc(void)
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
-		IspInfo.BufInfo.Write[i].pData = (MUINT8 *) kmalloc(ISP_BUF_SIZE_WRITE, GFP_ATOMIC);
+		IspInfo.BufInfo.Write[i].pData =
+			kmalloc(ISP_BUF_SIZE_WRITE * sizeof(MUINT8), GFP_ATOMIC);
 		if (IspInfo.BufInfo.Write[i].pData == NULL) {
 			LOG_DBG("ERROR:	i =	%d,	pData is NULL", i);
 			ISP_BufWrite_Free();
@@ -3616,6 +3634,10 @@ static MBOOL ISP_BufWrite_Add(MUINT32 Size,
 	/*      */
 	/* LOG_DBG("- E."); */
 	/*      */
+	if (Size > ISP_BUF_SIZE_WRITE) {
+		LOG_ERR("ERROR ISP_BufWrite_Add Size(%d) > %d", Size, ISP_BUF_SIZE_WRITE);
+		return false;
+	}
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		if (IspInfo.BufInfo.Write[i].Status == ISP_BUF_STATUS_HOLD) {
 			if ((IspInfo.BufInfo.Write[i].Size + Size) > ISP_BUF_SIZE_WRITE) {
@@ -3624,10 +3646,15 @@ static MBOOL ISP_BufWrite_Add(MUINT32 Size,
 				return false;
 			}
 			/*      */
+			if (IspInfo.BufInfo.Write[i].Size > ISP_BUF_SIZE_WRITE) {
+				LOG_ERR("ERROR ISP_BufWrite_Add pData buffer size(%d) > %d\n",
+					IspInfo.BufInfo.Write[i].Size, ISP_BUF_SIZE_WRITE);
+				return false;
+			}
 			if (copy_from_user
-			    ((MUINT8 *) (IspInfo.BufInfo.Write[i].pData +
-					 IspInfo.BufInfo.Write[i].Size), (MUINT8 *) pData,
-			     Size) != 0) {
+				((MUINT8 *) (IspInfo.BufInfo.Write[i].pData +
+					IspInfo.BufInfo.Write[i].Size), (MUINT8 *) pData,
+						Size) != 0) {
 				LOG_ERR("copy_from_user	failed");
 				return false;
 			}
@@ -3640,7 +3667,7 @@ static MBOOL ISP_BufWrite_Add(MUINT32 Size,
 			return true;
 		}
 	}
-	/*      */
+	/*	*/
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		if (IspInfo.BufInfo.Write[i].Status == ISP_BUF_STATUS_EMPTY) {
 			if (Size > ISP_BUF_SIZE_WRITE) {
@@ -3649,8 +3676,8 @@ static MBOOL ISP_BufWrite_Add(MUINT32 Size,
 			}
 			/*      */
 			if (copy_from_user
-			    ((MUINT8 *) (IspInfo.BufInfo.Write[i].pData), (MUINT8 *) pData,
-			     Size) != 0) {
+				((MUINT8 *) (IspInfo.BufInfo.Write[i].pData), (MUINT8 *) pData,
+					Size) != 0) {
 				LOG_ERR("copy_from_user	failed");
 				return false;
 			}
@@ -3852,6 +3879,13 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	/*      */
+	if ((pRegIo->Count > (PAGE_SIZE/sizeof(MUINT32))) || (pRegIo->Count == 0)
+		|| (pRegIo->pData == NULL)) {
+		LOG_ERR("ERROR ISP_WriteReg pRegIo->pData is NULL or pRegIo->Count error:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (IspInfo.DebugMask & ISP_DBG_WRITE_REG) {
 		/* LOG_DBG("Data(0x%08X), Count(%d)", (MUINT32)(pRegIo->pData), (MUINT32)(pRegIo->Count)); */
 		LOG_DBG("Data(0x%p), Count(%d)", (pRegIo->pData), (pRegIo->Count));
@@ -3894,8 +3928,8 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 		}
 		/*      */
 		Ret = ISP_WriteRegToHw(
-					      /* (ISP_REG_STRUCT*)pData, */
-					      pData, pRegIo->Count);
+						/* (ISP_REG_STRUCT*)pData, */
+						pData, pRegIo->Count);
 	}
 	/*      */
 EXIT:
@@ -3955,11 +3989,8 @@ static MINT32 ISP_EnableHoldReg(MBOOL En)
 
 		/*      */
 		Timeout = wait_event_interruptible_timeout(IspInfo.WaitQueueHead,
-							   (IsLock =
-							    spin_trylock_bh(&
-									    (IspInfo.
-									     SpinLockHold))),
-							   ISP_MsToJiffies(500));
+				(IsLock = spin_trylock_bh(&(IspInfo.SpinLockHold))),
+						ISP_MsToJiffies(500));
 		/*      */
 		if (IspInfo.DebugMask & ISP_DBG_TASKLET)
 			LOG_DBG("End wait ");
@@ -4027,7 +4058,10 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 	/*      */
 	if (copy_from_user(&ref_cnt_ctrl, (void __user *)Param, sizeof(ISP_REF_CNT_CTRL_STRUCT)) ==
 	    0) {
-
+		if ((ref_cnt_ctrl.id < 0) || (ref_cnt_ctrl.id >= ISP_REF_CNT_ID_MAX)) {
+			LOG_ERR("[rc] invalid ref_cnt_ctrl.id %d\n", ref_cnt_ctrl.id);
+			return -EFAULT;
+		}
 		if (IspInfo.DebugMask & ISP_DBG_REF_CNT_CTRL)
 			LOG_DBG("[rc]ctrl(%d),id(%d)", ref_cnt_ctrl.ctrl, ref_cnt_ctrl.id);
 
@@ -9900,6 +9934,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			default:
 				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
 				Ret = -EFAULT;
+				goto EXIT;
 				break;
 			}
 			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
@@ -9944,6 +9979,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			default:
 				LOG_ERR("err TG(0x%x)\n", DebugFlag[0]);
 				Ret = -EFAULT;
+				goto EXIT;
 				break;
 			}
 		}
@@ -10312,6 +10348,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		/*      */
 	case ISP_UPDATE_BURSTQNUM:
 		if (copy_from_user(&burstQNum, (void *)Param, sizeof(MINT32)) == 0) {
+			if ((burstQNum > (PAGE_SIZE/sizeof(MINT32))) || (burstQNum < 0)) {
+				LOG_ERR("invalid burstQNum\n");
+				Ret = -EFAULT;
+			}
 			spin_lock((spinlock_t *)(&SpinLockRegScen));
 			P2_Support_BurstQNum = burstQNum;
 			spin_unlock((spinlock_t *)(&SpinLockRegScen));
