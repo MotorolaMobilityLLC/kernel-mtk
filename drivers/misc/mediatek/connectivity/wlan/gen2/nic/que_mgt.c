@@ -2259,6 +2259,7 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 	BOOLEAN fgIsIndependentPkt;
 #endif
 
+
 	/* DbgPrint("QM: Enter qmHandleRxPackets()\n"); */
 
 	DEBUGFUNC("qmHandleRxPackets");
@@ -2394,9 +2395,6 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			}
 #endif
 
-#if CFG_RX_BA_REORDERING_ENHANCEMENT
-			qmInsertNoNeedWaitPkt(prAdapter, prCurrSwRfb, PACKET_DROP_BY_DRIVER);
-#endif
 			QUEUE_INSERT_TAIL(&rReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
 		}
 		/* Reordering is required for this packet */
@@ -2411,7 +2409,7 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			if (fgIsIndependentPkt) {
 				DBGLOG(QM, TRACE, "Insert independentPkt to returnedQue directly\n");
 				QUEUE_INSERT_TAIL(&rReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);
-				qmInsertNoNeedWaitPkt(prAdapter, prCurrSwRfb, PACKET_DROP_BY_INDEPENDENT_PKT);
+				qmProcessIndepentReorderQueue(prAdapter, prCurrSwRfb);
 			} else
 				qmProcessPktWithReordering(prAdapter, prCurrSwRfb, &rReturnedQue);
 #else
@@ -2601,7 +2599,6 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	return;
 
 }
-
 VOID qmProcessBarFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, OUT P_QUE_T prReturnedQue)
 {
 
@@ -2796,8 +2793,9 @@ qmPopOutDueToFallWithin(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQuePa
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 		qmHandleNoNeedWaitPktList(prReorderQueParm);
 #endif
-		DBGLOG(QM, TRACE, "qmPopOutDueToFallWithin SSN: %u, WS: %u\n",
-			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart);
+		DBGLOG(QM, TRACE, "qmPopOutDueToFallWithin SSN: %u, WS: %u, WE: %u\n",
+			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
+
 
 		/* SN == WinStart, so the head packet shall be indicated (advance the window) */
 		if ((prReorderedSwRfb->u2SSN) == (prReorderQueParm->u2WinStart)) {
@@ -2887,8 +2885,8 @@ VOID qmPopOutDueToFallAhead(P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReorderQ
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 		qmHandleNoNeedWaitPktList(prReorderQueParm);
 #endif
-		DBGLOG(QM, TRACE, "qmPopOutDueToFallAhead SSN: %u, WS: %u\n",
-			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart);
+		DBGLOG(QM, TRACE, "qmPopOutDueToFallAhead SSN: %u, WS: %u, WE: %u\n",
+			prReorderedSwRfb->u2SSN, prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 
 		/* SN == WinStart, so the head packet shall be indicated (advance the window) */
 		if ((prReorderedSwRfb->u2SSN) == (prReorderQueParm->u2WinStart)) {
@@ -3249,15 +3247,13 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 
 	prNoNeedWaitPkt = (P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
 
-	prSwRfb->u2SSN = HIF_RX_HDR_GET_SN(prSwRfb->prHifRxHdr);
+
 
 	if (prNoNeedWaitPkt == NULL) {
 		DBGLOG(QM, ERROR, "qmInsertNoNeedWaitPkt alloc error SSN:[%u], DropReason:(%d)\n",
 			prSwRfb->u2SSN, eDropReason);
 		return;
 	}
-
-	prSwRfb->ucTid = (UINT_8) (HIF_RX_HDR_GET_TID(prSwRfb->prHifRxHdr));
 
 	/* Check whether the STA_REC is activated */
 	prStaRec = &(prAdapter->arStaRec[prSwRfb->ucStaRecIdx]);
@@ -3271,6 +3267,7 @@ VOID qmInsertNoNeedWaitPkt(IN P_ADAPTER_T prAdapter,
 		return;
 	}
 
+
 	prNoNeedWaitPkt->u2SSN = prSwRfb->u2SSN;
 	prNoNeedWaitPkt->eDropReason = eDropReason;
 	DBGLOG(QM, INFO, "qmInsertNoNeedWaitPkt SSN:[%u], DropReason:(%d)\n", prSwRfb->u2SSN, eDropReason);
@@ -3281,16 +3278,18 @@ VOID qmHandleEventDropByFW(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 {
 	P_EVENT_PACKET_DROP_BY_FW_T prDropSSNEvt = (P_EVENT_PACKET_DROP_BY_FW_T) prEvent;
 	P_RX_BA_ENTRY_T prRxBaEntry;
-	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
 	UINT_16 u2StartSSN;
 	UINT_8 u1BitmapSSN;
 	UINT_8 u1SetCount, u1Count;
 	UINT_16 u2OfCount;
+	SW_RFB_T rSwRfb;
 
 	u2StartSSN = QM_GET_DROP_BY_FW_SSN(prDropSSNEvt->u2StartSSN);
 
 	/* Get target Rx BA entry */
 	prRxBaEntry = qmLookupRxBaEntry(prAdapter, prDropSSNEvt->ucStaRecIdx, prDropSSNEvt->ucTid);
+	rSwRfb.ucTid = prDropSSNEvt->ucTid;
+	rSwRfb.ucStaRecIdx = prDropSSNEvt->ucStaRecIdx;
 
 	/* Sanity Check */
 	if (!prRxBaEntry) {
@@ -3306,19 +3305,8 @@ VOID qmHandleEventDropByFW(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 
 		for (u1Count = 0; u1Count < 8; u1Count++) {
 			if ((u1BitmapSSN & BIT(0)) == 1) {
-				prNoNeedWaitPkt =
-					(P_NO_NEED_WAIT_PKT_T) kalMemAlloc(sizeof(NO_NEED_WAIT_PKT_T), VIR_MEM_TYPE);
-				if (prNoNeedWaitPkt == NULL) {
-					DBGLOG(QM, ERROR,
-						"qmHandleEventDropByFW alloc error SSN:[%u], DropReason:(%d)\n",
-						(u2StartSSN + u2OfCount), PACKET_DROP_BY_FW);
-					continue;
-				}
-				prNoNeedWaitPkt->u2SSN = u2StartSSN + u2OfCount;
-				prNoNeedWaitPkt->eDropReason = PACKET_DROP_BY_FW;
-				DBGLOG(QM, INFO, "qmHandleEventDropByFW SSN:[%u], DropReason:(%d)\n",
-					prNoNeedWaitPkt->u2SSN, prNoNeedWaitPkt->eDropReason);
-				QUEUE_INSERT_TAIL(&(prRxBaEntry->rNoNeedWaitQue), (P_QUE_ENTRY_T) prNoNeedWaitPkt);
+				rSwRfb.u2SSN = u2StartSSN + u2OfCount;
+				qmInsertNoNeedWaitPkt(prAdapter, &rSwRfb, PACKET_DROP_BY_FW);
 			}
 			u1BitmapSSN >>= 1;
 			u2OfCount++;
@@ -3331,7 +3319,7 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 	P_QUE_T prNoNeedWaitQue;
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitPkt;
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitNextPkt;
-	UINT_16 u2SSN, u2WinStart, u2WinEnd;
+	UINT_16 u2SSN, u2WinStart, u2WinEnd, u2AheadPoint;
 
 	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
 
@@ -3344,19 +3332,38 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 
 		/* Remove all packets that SSN is less than WinStart */
 		do {
+			u2SSN = prNoNeedWaitPkt->u2SSN;
 			prNoNeedWaitNextPkt =
 				(P_NO_NEED_WAIT_PKT_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prNoNeedWaitPkt);
 
-			if	/*0: SSN - Start - End :4095*/
-				(((u2SSN < u2WinStart) && (u2SSN < u2WinEnd))
-				/*0: End - SSN - Start :4095*/
-				|| ((u2SSN < u2WinStart) && (u2SSN > u2WinEnd))
-				/*0: Start - End - SSN :4095*/
-				|| ((u2SSN > u2WinStart) && (u2SSN > u2WinEnd))) {
+			u2AheadPoint = u2WinStart + HALF_SEQ_NO_COUNT;
+			if (u2AheadPoint >= MAX_SEQ_NO_COUNT)
+				u2AheadPoint -= MAX_SEQ_NO_COUNT;
+
+			if	/*0: End - AheadPoint - SSN - Start :4095*/
+				(((u2SSN < u2WinStart)
+					&& (u2AheadPoint < u2SSN)
+					&& (u2WinEnd < u2AheadPoint))
+				/*0: Start - End - AheadPoint - SSN :4095*/
+				|| ((u2AheadPoint < u2SSN)
+					&& (u2WinEnd < u2AheadPoint)
+					&& (u2WinStart < u2WinEnd))
+				/*0: SSN - Start - End - AheadPhoint :4095*/
+				|| ((u2WinEnd < u2AheadPoint)
+					&& (u2WinStart < u2WinEnd)
+					&& (u2SSN < u2WinStart))
+				/*0: AheadPoint - SSN - Start - End :4095*/
+				|| ((u2WinStart < u2WinEnd)
+					&& (u2SSN < u2WinStart)
+					&& (u2AheadPoint < u2SSN))) {
 
 				QUEUE_REMOVE_HEAD(prNoNeedWaitQue, prNoNeedWaitPkt, P_NO_NEED_WAIT_PKT_T);
 				kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
+
+				DBGLOG(QM, TRACE, "qmHandleNoNeedWaitPktList Remove SSN:[%u], WS:%u, WE:%u\n",
+					u2SSN, u2WinStart, u2WinEnd);
 			}
+
 
 			prNoNeedWaitPkt = prNoNeedWaitNextPkt;
 		} while (prNoNeedWaitPkt);
@@ -3365,6 +3372,8 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 		while ((prNoNeedWaitPkt =
 				qmSearchNoNeedWaitPktBySSN(prReorderQueParm, prReorderQueParm->u2WinStart)) != NULL) {
 			prReorderQueParm->u2WinStart = (((prNoNeedWaitPkt->u2SSN) + 1) % MAX_SEQ_NO_COUNT);
+			prReorderQueParm->u2WinEnd =
+			(((prReorderQueParm->u2WinStart) + (prReorderQueParm->u2WinSize) - 1) % MAX_SEQ_NO_COUNT);
 			QUEUE_REMOVE_HEAD(prNoNeedWaitQue, prNoNeedWaitPkt, P_NO_NEED_WAIT_PKT_T);
 			kalMemFree(prNoNeedWaitPkt, VIR_MEM_TYPE, sizeof(NO_NEED_WAIT_PKT_T));
 		}
@@ -3435,50 +3444,43 @@ VOID qmDumpNoNeedWaitPkt(IN P_RX_BA_ENTRY_T prReorderQueParm)
 BOOLEAN qmIsIndependentPkt(IN P_SW_RFB_T prSwRfb)
 {
 	PUINT_8 pucPkt = prSwRfb->pvHeader;
-	UINT_16 u2EtherType = (pucPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pucPkt[ETH_TYPE_LEN_OFFSET + 1]);
-	PUINT_8 pucEthBody = &pucPkt[ETH_HLEN];
+	UINT_16 u2EtherType = kalGetPktEtherType(pucPkt);
+	BOOLEAN fgIsIndependent = FALSE;
 
 	switch (u2EtherType) {
-	case ETH_P_ARP:
-	{
-		DBGLOG(QM, TRACE, "qmIsIndependentPkt : ARP\n");
-		return TRUE;
-	}
-	case ETH_P_IP:
-	{
-		UINT_8 ucIpProto = pucEthBody[9]; /* IP header without options */
-
-		switch (ucIpProto) {
-		case IP_PRO_ICMP:
-		{
-			DBGLOG(QM, TRACE, "qmIsIndependentPkt : ICMP\n");
-			return TRUE;
-		}
-		case IP_PRO_UDP:
-		{
-			PUINT_8 pucUdp = &pucEthBody[20];
-			UINT_16 u2UdpSrcPort;
-			UINT_16 u2UdpDstPort;
-
-			u2UdpDstPort = (pucUdp[2] << 8) | pucUdp[3];
-			u2UdpSrcPort = (pucUdp[0] << 8) | pucUdp[1];
-
-			if ((u2UdpDstPort == UDP_PORT_DHCPS) || (u2UdpDstPort == UDP_PORT_DHCPC)) {
-				DBGLOG(QM, TRACE, "qmIsIndependentPkt : DHCP\n");
-				return TRUE;
-			} else if (u2UdpSrcPort == UDP_PORT_DNS) {
-				DBGLOG(QM, TRACE, "qmIsIndependentPkt : DNS\n");
-				return TRUE;
-			}
-		}
-		}
-			break;
-	}
+	case ENUM_PKT_ARP:
+	case ENUM_PKT_ICMP:
+	case ENUM_PKT_DHCP:
+	case ENUM_PKT_DNS:
+		fgIsIndependent = TRUE;
+		break;
+	default:
+		break;
 	}
 
-	return FALSE;
+	DBGLOG(QM, TRACE, "qmIsIndependentPkt type:%d,fgIsIndependent %d\n", u2EtherType, fgIsIndependent);
+
+	return fgIsIndependent;
+
 }
+VOID qmProcessIndepentReorderQueue(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
+{
+	P_RX_BA_ENTRY_T prRxBaEntry;
+
+	prSwRfb->u2SSN = HIF_RX_HDR_GET_SN(prSwRfb->prHifRxHdr);
+	prSwRfb->ucTid = (UINT_8) (HIF_RX_HDR_GET_TID(prSwRfb->prHifRxHdr));
+
+	/* Insert to NoNeedWaitPkt queue */
+	qmInsertNoNeedWaitPkt(prAdapter, prSwRfb, PACKET_DROP_BY_INDEPENDENT_PKT);
+
+	/* handle NoNeedWaitPkt queue*/
+	prRxBaEntry = qmLookupRxBaEntry(prAdapter, prSwRfb->ucStaRecIdx, prSwRfb->ucTid);
+	qmHandleNoNeedWaitPktList(prRxBaEntry);
+
+}
+
 #endif
+
 
 /*----------------------------------------------------------------------------*/
 /*!
