@@ -29,6 +29,8 @@ int mtk_wdt_confirm_hwreboot(void);
 int mtk_wdt_enable(enum wk_wdt_en en);
 void mtk_wd_resume(void);
 void mtk_wd_suspend(void);
+void mtk_wd_resume_sodi(void);
+void mtk_wd_suspend_sodi(void);
 int mtk_wd_SetNonResetReg2(unsigned int offset, bool value);
 void wdt_dump_reg(void);
 /* used for extend request */

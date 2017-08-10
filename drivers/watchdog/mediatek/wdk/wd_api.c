@@ -42,6 +42,14 @@ static int thermal_direct_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 static int debug_key_eint_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 
+__weak void mtk_wd_suspend_sodi(void)
+{
+}
+
+__weak void mtk_wd_resume_sodi(void)
+{
+}
+
 static struct wd_api g_wd_api_obj = {
 	.ready = 1,
 	.wd_cpu_hot_plug_on_notify = wd_cpu_hot_plug_on_notify,	/* for cpu hot plug */

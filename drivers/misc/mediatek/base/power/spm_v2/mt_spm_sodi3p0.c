@@ -36,6 +36,9 @@
 #include <mt_spm_sodi3.h>
 #include <mt_idle_profile.h>
 
+#if defined(CONFIG_ARCH_MT6755)
+#include "ext_wd_drv.h"
+#endif
 
 /**************************************
  * only for internal debug
@@ -428,7 +431,11 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	wd_ret = get_wd_api(&wd_api);
 	if (!wd_ret) {
 		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+#if defined(CONFIG_ARCH_MT6755)
+		mtk_wd_suspend_sodi();
+#else
 		wd_api->wd_suspend_notify();
+#endif
 	}
 #endif
 
@@ -538,7 +545,11 @@ UNLOCK_SPM:
 	soidle3_after_wfi(cpu);
 #ifdef CONFIG_MTK_WD_KICKER
 	if (!wd_ret) {
+#if defined(CONFIG_ARCH_MT6755)
+		mtk_wd_resume_sodi();
+#else
 		wd_api->wd_resume_notify();
+#endif
 		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
 	}
 #endif
