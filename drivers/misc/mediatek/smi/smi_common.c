@@ -219,6 +219,22 @@ static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
 	larb0_port_backup, larb1_port_backup
 };
 
+#elif defined(SMI_RU)
+
+#define SMI_REG_REGION_MAX 3
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = {
+	SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM
+};
+
+static unsigned short int larb0_port_backup[SMI_LARB0_PORT_NUM];
+static unsigned short int larb1_port_backup[SMI_LARB1_PORT_NUM];
+
+
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {
+	larb0_port_backup, larb1_port_backup
+};
+
 #elif defined(SMI_J)
 #define SMI_REG_REGION_MAX 5
 
@@ -267,7 +283,10 @@ static const unsigned int larb_port_num[SMI_LARB_NR] = {0};
 static unsigned short int *larb_port_backup[SMI_LARB_NR] = {0};
 
 #endif
-
+#if defined(SMI_RU)
+static const char * const gSMINodeName[] = {
+	"mediatek,smi_common", "mediatek,smi_larb0", "mediatek,smi_larb1"};
+#endif
 static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 
 /* SMI COMMON register list to be backuped */
@@ -484,14 +503,14 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 		break;
 	case 1:
 		enable_clock(MT_CG_DISP0_SMI_COMMON, name);
-#if defined(SMI_R)
+#if defined(SMI_R) || defined(SMI_RU)
 		enable_clock(MT_CG_LARB1_SMI_CKPDN, name);
 #else
 		enable_clock(MT_CG_VDEC1_LARB, name);
 #endif
 		break;
 	case 2:
-#if !defined(SMI_R)
+#if !defined(SMI_R) && !defined(SMI_RU)
 		enable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		enable_clock(MT_CG_IMAGE_LARB2_SMI, name);
 #endif
@@ -664,7 +683,7 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		break;
 	case 1:
-#if defined(SMI_R)
+#if defined(SMI_R) || defined(SMI_RU)
 		disable_clock(MT_CG_LARB1_SMI_CKPDN, name);
 #else
 		disable_clock(MT_CG_VDEC1_LARB, name);
@@ -672,7 +691,7 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 		break;
 	case 2:
-#if !defined(SMI_R)
+#if !defined(SMI_R) && !defined(SMI_RU)
 		disable_clock(MT_CG_IMAGE_LARB2_SMI, name);
 		disable_clock(MT_CG_DISP0_SMI_COMMON, name);
 #endif
@@ -1796,7 +1815,10 @@ static int smi_probe(struct platform_device *pdev)
 		for (i = 0; i < SMI_REG_REGION_MAX; i++) {
 			SMIMSG("Save region: %d\n", i);
 			smi_dev->regs[i] = (void *)of_iomap(pdev->dev.of_node, i);
-
+	#if defined(SMI_RU)
+			smi_dev->regs[i] = (void *)of_iomap(
+				of_find_compatible_node(NULL, NULL, gSMINodeName[i]), 0);
+	#endif
 			if (!smi_dev->regs[i]) {
 				SMIERR("Unable to ioremap registers, of_iomap fail, i=%d\n", i);
 				return -ENOMEM;
@@ -1905,6 +1927,13 @@ static int smi_probe(struct platform_device *pdev)
 	gLarbBaseAddr[2] = LARB2_BASE;
 	gLarbBaseAddr[3] = LARB3_BASE;
 #elif defined(SMI_R)
+	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
+	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
+	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];
+
+	gLarbBaseAddr[0] = LARB0_BASE;
+	gLarbBaseAddr[1] = LARB1_BASE;
+#elif defined(SMI_RU)
 	smi_reg_base_common_ext = gSMIBaseAddrs[SMI_COMMON_REG_INDX];
 	smi_reg_base_barb0 = gSMIBaseAddrs[SMI_LARB0_REG_INDX];
 	smi_reg_base_barb1 = gSMIBaseAddrs[SMI_LARB1_REG_INDX];

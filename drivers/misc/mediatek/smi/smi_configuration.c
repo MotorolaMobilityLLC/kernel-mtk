@@ -1319,6 +1319,175 @@ struct SMI_SETTING hdmi4k_setting_config = { 0, NULL, {0}, {0} };
 struct SMI_SETTING n3d_setting_config = { 0, NULL, {0}, {0} };
 struct SMI_SETTING vpmjc_setting_config = { 0, NULL, {0}, {0} };
 
+#elif defined(SMI_RU)
+unsigned int smi_dbg_disp_mask = 1 << 0;
+unsigned int smi_dbg_vdec_mask = 0;
+unsigned int smi_dbg_imgsys_mask = 1 << 1;
+unsigned int smi_dbg_venc_mask = 1 << 1;
+unsigned int smi_dbg_mjc_mask = 0;
+
+unsigned long smi_common_l1arb_offset[SMI_LARB_NR] = {
+	REG_OFFSET_SMI_L1ARB0, REG_OFFSET_SMI_L1ARB1
+};
+
+struct SMI_CLK_INFO smi_clk_info[SMI_CLK_CNT] = {
+	{"MTCMOS", 0, 0x060C}, {"DISP", 0, 0}, {"VDEC", 0, 0x8}, {"ISP", 0, 0}, {"VENC", 0, 0},
+	{"", 0, 0}, {"", 0, 0}, {"", 0, 0}
+};
+
+unsigned long smi_larb0_debug_offset[SMI_LARB0_DEBUG_OFFSET_NUM] = {
+	0x0, 0x8, 0x10, 0x14, 0x24, 0x50, 0x60, 0xa0, 0xa4, 0xa8, 0xac, 0xb0, 0xb4, 0xb8, 0xbc, 0xc0,
+	0xc8, 0xcc, 0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x218, 0x21c, 0x220, 0x224, 0x228, 0x22c,
+	0x230, 0x234, 0x238, 0x23c, 0x240, 0x244, 0x248, 0x24c, 0x280, 0x284, 0x288, 0x28c, 0x290, 0x294,
+	0x298, 0x29c, 0x2a0, 0x2a4, 0x2a8, 0x2ac, 0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc,
+	0x2d0, 0x2d4, 0x2d8, 0x2dc, 0x2e0, 0x2e4, 0x2e8, 0x2ec, 0x2f0, 0x2f4, 0x2f8, 0x2fc
+};
+
+unsigned long smi_larb1_debug_offset[SMI_LARB1_DEBUG_OFFSET_NUM] = {
+	0x0, 0x8, 0x10, 0x14, 0x24, 0x50, 0x60, 0xa0, 0xa4, 0xa8, 0xac, 0xb0, 0xb4, 0xb8, 0xbc, 0xc0,
+	0xc8, 0xcc, 0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x218, 0x21c, 0x220, 0x224, 0x228, 0x22c,
+	0x230, 0x234, 0x238, 0x23c, 0x240, 0x244, 0x248, 0x24c, 0x280, 0x284, 0x288, 0x28c, 0x290, 0x294,
+	0x298, 0x29c, 0x2a0, 0x2a4, 0x2a8, 0x2ac, 0x2b0, 0x2b4, 0x2b8, 0x2bc, 0x2c0, 0x2c4, 0x2c8, 0x2cc,
+	0x2d0, 0x2d4, 0x2d8, 0x2dc, 0x2e0, 0x2e4, 0x2e8, 0x2ec, 0x2f0, 0x2f4, 0x2f8, 0x2fc
+};
+
+unsigned long smi_common_debug_offset[SMI_COMMON_DEBUG_OFFSET_NUM] = {
+	0x100, 0x104, 0x108, 0x10C, 0x110, 0x114, 0x220, 0x230, 0x234, 0x238, 0x300, 0x400, 0x404, 0x408,
+	0x40C, 0x430, 0x440
+};
+
+int smi_larb_debug_offset_num[SMI_LARB_NR] = {
+	SMI_LARB0_DEBUG_OFFSET_NUM, SMI_LARB1_DEBUG_OFFSET_NUM
+};
+
+unsigned long *smi_larb_debug_offset[SMI_LARB_NR] = {
+	smi_larb0_debug_offset, smi_larb1_debug_offset
+};
+
+unsigned int smi_restore_num[SMI_LARB_NR];
+struct SMI_SETTING_VALUE *smi_larb_restore[SMI_LARB_NR];
+
+#define SMI_PROFILE_SETTING_COMMON_INIT_NUM 5
+#define SMI_VC_SETTING_INDEX 0
+
+#define SMI_INITSETTING_LARB0_NUM (SMI_LARB0_PORT_NUM + 1) /* add vc setting */
+#define SMI_INITSETTING_LARB1_NUM (SMI_LARB1_PORT_NUM + 1) /* add vc setting */
+
+/* vc setting */
+struct SMI_SETTING_VALUE smi_vc_setting[SMI_VC_SETTING_NUM] = {
+	{0x20, 0}, {0x20, 2}
+};
+
+/* init_setting */
+struct SMI_SETTING_VALUE smi_profile_setting_common_init[SMI_PROFILE_SETTING_COMMON_INIT_NUM] = {
+	{REG_OFFSET_SMI_L1ARB0, 0x14cb}, {REG_OFFSET_SMI_L1ARB1, 0x1001},
+	{0x100, 0xb},
+	{0x234,
+	(0x1 << 31) + (0x1d << 26) + (0x1f << 21) + (0x0 << 20) + (0x3 << 15)
+	+ (0x4 << 10) + (0x4 << 5) + 0x5},
+	{0x230, (0x3 + (0x8 << 2) + (0x7 << 7))}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb0_init[SMI_INITSETTING_LARB0_NUM] = {
+	{0x20, 0}, {0x200, 0x1c}, {0x204, 4}, {0x208, 6}, {0x20c, 1}, {0x210, 1}, {0x214, 1}, {0x218, 1}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb1_init[SMI_INITSETTING_LARB1_NUM] = {
+	{0x20, 2}, {0x200, 1}, {0x204, 1}, {0x208, 1}, {0x20c, 1}, {0x210, 1}, {0x214, 1}, {0x218, 1},
+	{0x21c, 1}, {0x220, 1}, {0x224, 1}, {0x228, 1}
+};
+
+struct SMI_SETTING init_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_INIT_NUM, smi_profile_setting_common_init,
+	{SMI_INITSETTING_LARB0_NUM, SMI_INITSETTING_LARB1_NUM},
+	{smi_profile_setting_larb0_init, smi_profile_setting_larb1_init}
+};
+
+#define SMI_PROFILE_SETTING_COMMON_VR_NUM SMI_LARB_NR
+/* vr_setting */
+
+struct SMI_SETTING_VALUE smi_profile_setting_common_vr[SMI_PROFILE_SETTING_COMMON_VR_NUM] = {
+	{REG_OFFSET_SMI_L1ARB0, 0x122b}, {REG_OFFSET_SMI_L1ARB1, 0x142c}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb0_vr[SMI_LARB0_PORT_NUM] = {
+	{0x200, 0xa}, {0x204, 1}, {0x208, 1}, {0x20c, 4}, {0x210, 2}, {0x214, 2}, {0x218, 1}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb1_vr[SMI_LARB1_PORT_NUM] = {
+	{0x200, 8}, {0x204, 6}, {0x208, 1}, {0x20c, 1}, {0x210, 4}, {0x214, 1}, {0x218, 1},
+	{0x21c, 1}, {0x220, 3}, {0x224, 2}, {0x228, 2}
+};
+
+struct SMI_SETTING vr_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VR_NUM, smi_profile_setting_common_vr,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vr, smi_profile_setting_larb1_vr}
+};
+
+#define SMI_PROFILE_SETTING_COMMON_VP_NUM SMI_LARB_NR
+/* vp_setting */
+
+struct SMI_SETTING_VALUE smi_profile_setting_common_vp[SMI_PROFILE_SETTING_COMMON_VP_NUM] = {
+	{REG_OFFSET_SMI_L1ARB0, 0x11ff}, {REG_OFFSET_SMI_L1ARB1, 0x1000}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb0_vp[SMI_LARB0_PORT_NUM] = {
+	{0x200, 8}, {0x204, 1}, {0x208, 1}, {0x20c, 3}, {0x210, 1}, {0x214, 4}, {0x218, 1}
+};
+
+struct SMI_SETTING_VALUE smi_profile_setting_larb1_vp[SMI_LARB1_PORT_NUM] = {
+	{0x200, 8}, {0x204, 6}, {0x208, 1}, {0x20c, 1}, {0x210, 4}, {0x214, 1}, {0x218, 1},
+	{0x21c, 1}, {0x220, 3}, {0x224, 2}, {0x228, 2}
+};
+
+struct SMI_SETTING vp_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VP_NUM, smi_profile_setting_common_vp,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vp, smi_profile_setting_larb1_vp}
+};
+
+/* vp series */
+struct SMI_SETTING swdec_vp_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VP_NUM, smi_profile_setting_common_vp,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vp, smi_profile_setting_larb1_vp}
+};
+
+/* vr series */
+struct SMI_SETTING vr_slow_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VR_NUM, smi_profile_setting_common_vr,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vr, smi_profile_setting_larb1_vr}
+};
+
+struct SMI_SETTING icfp_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VR_NUM, smi_profile_setting_common_vr,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vr, smi_profile_setting_larb1_vr}
+};
+
+struct SMI_SETTING venc_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_VR_NUM, smi_profile_setting_common_vr,
+	{SMI_LARB0_PORT_NUM, SMI_LARB1_PORT_NUM},
+	{smi_profile_setting_larb0_vr, smi_profile_setting_larb1_vr}
+};
+
+/* init series */
+struct SMI_SETTING mm_gpu_setting_config = {
+	SMI_PROFILE_SETTING_COMMON_INIT_NUM, smi_profile_setting_common_init,
+	{SMI_INITSETTING_LARB0_NUM, SMI_INITSETTING_LARB1_NUM},
+	{smi_profile_setting_larb0_init, smi_profile_setting_larb1_init}
+};
+
+struct SMI_SETTING vss_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vpwfd_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING ui_idle_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING hdmi_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING hdmi4k_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING n3d_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vpmjc_setting_config = { 0, NULL, {0}, {0} };
+
 #elif defined(SMI_EV)
 unsigned int smi_dbg_disp_mask = 0x21;
 unsigned int smi_dbg_vdec_mask = 1 << 1;

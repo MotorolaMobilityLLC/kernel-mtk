@@ -38,7 +38,7 @@ obj-y += mmdvfs_mgr.o
 else ifeq ($(CONFIG_ARCH_MT6580),y)
 ccflags-y += -DSMI_R
 else ifeq ($(CONFIG_ARCH_MT6570),y)
-ccflags-y += -DSMI_R
+ccflags-y += -DSMI_RU
 else ifeq ($(CONFIG_ARCH_MT6755),y)
 ccflags-y += -DSMI_J
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
