@@ -61,7 +61,7 @@ class KpdObj(ModuleObj):
                             KpdData._usedKeys.append(item)
                     KpdData._usedKeys.append('POWER')
 
-                if node.nodeName == "keyMatrix_ext":
+                if node.nodeName == "keyMatrix_ext" and node.childNodes:
                     content = node.childNodes[0].nodeValue
                     content = content.replace('\t', '')
                     rows = content.split('''\n''')

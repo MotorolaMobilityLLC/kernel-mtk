@@ -101,9 +101,13 @@ class I2cObj(ModuleObj):
     def fill_dtsiFile(self):
         gen_str = ''
         for i in range(0, I2cData._channel_count):
+            if i >= len(self.__busList):
+                break;
             gen_str += '''&i2c%d {\n''' %(i)
             gen_str += '''\t#address-cells = <1>;\n'''
             gen_str += '''\t#size-cells = <0>;\n'''
+
+
             if self.__bBusEnable:
                 gen_str += '''\tclock-frequency = <%d>;\n''' %(string.atoi(self.__busList[i].get_speed()) * 1000)
                 temp_str = ''

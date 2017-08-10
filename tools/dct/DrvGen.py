@@ -16,9 +16,11 @@ from obj.ChipObj import Everest
 from obj.ChipObj import Olympus
 from obj.ChipObj import KiboPlus
 from obj.ChipObj import Rushmore
+from obj.ChipObj import Whitney
 
 from utility.util import LogLevel
 from utility.util import log
+from utility.version import *
 
 def usage():
     print '''
@@ -56,6 +58,8 @@ def is_oldDws(path, gen_spec):
 
 if __name__ == '__main__':
     opts, args = getopt.getopt(sys.argv[1:], '')
+
+    log(LogLevel.info, 'ver_main: #%s ver_sub: #%s sn_build: #%s' %(VER_MAIN, VER_SUB, BUILD_SN))
 
     if len(args) == 0:
         msg = 'Too less arguments!'
@@ -116,6 +120,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     chipId = ChipObj.get_chipId(dws_path)
+    log(LogLevel.info, 'chip id: %s' %(chipId))
     chipObj = None
     if cmp(chipId, 'MT6797') == 0:
         chipObj = Everest(dws_path, gen_path)
@@ -125,6 +130,8 @@ if __name__ == '__main__':
         chipObj = KiboPlus(dws_path, gen_path)
     elif cmp(chipId, 'MT6570') == 0:
         chipObj = Rushmore(dws_path, gen_path)
+    elif cmp(chipId, 'MT6799') == 0:
+        chipObj = Whitney(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 
@@ -137,12 +144,4 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     sys.exit(0)
-
-
-
-
-
-
-
-
 

@@ -24,6 +24,9 @@ class EintObj(ModuleObj):
         self.__count = 0
         self.__map_count = 0
 
+    def set_gpioObj(self, gpio_obj):
+        self.__gpio_obj = gpio_obj
+
     def read(self, node):
         nodes = node.childNodes
 
