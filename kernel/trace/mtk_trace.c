@@ -221,6 +221,7 @@ static void ftrace_events_enable(int enable)
 
 
 		trace_set_clr_event("mtk_events", NULL, 1);
+		trace_set_clr_event("mtk_nand", NULL, 1);
 		trace_set_clr_event("ipi", NULL, 1);
 
 		trace_set_clr_event("met_bio", NULL, 1);

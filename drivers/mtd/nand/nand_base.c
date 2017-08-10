@@ -51,6 +51,22 @@
 #ifdef CONFIG_MTK_MTD_NAND
 #include <asm/cache.h>		/* for ARCH_DMA_MINALIGN */
 #endif
+#ifdef CONFIG_EVENT_MTK_NAND_DRIVER
+#include <trace/events/mtk_nand.h>
+#define EVT_RD_BEGIN(len, from)     trace_nand_read_begin(len, from)
+#define EVT_RD_END(len, from)       trace_nand_read_end(len, from)
+#define EVT_WR_BEGIN(len, to)       trace_nand_write_begin(len, to)
+#define EVT_WR_END(len, to)         trace_nand_write_end(len, to)
+#define EVT_ER_BEGIN(len, addr)     trace_nand_erase_begin(len, addr)
+#define EVT_ER_END(len, addr)       trace_nand_erase_end(len, addr)
+#else
+#define EVT_RD_BEGIN(len, from)
+#define EVT_RD_END(len, from)
+#define EVT_WR_BEGIN(len, to)
+#define EVT_WR_END(len, to)
+#define EVT_ER_BEGIN(len, addr)
+#define EVT_ER_END(len, addr)
+#endif
 #include <asm/div64.h>
 #ifdef MTD_NAND_PFM
 #include <linux/time.h>
@@ -2477,6 +2493,7 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	ops.datbuf = buf;
 	ops.oobbuf = NULL;
 	ops.mode = MTD_OPS_PLACE_OOB;
+	EVT_RD_BEGIN((u64)len, (u64)from);
 #ifdef CONFIG_MTK_MTD_NAND
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if (likely(len > mtd->writesize)) {
@@ -2523,6 +2540,7 @@ static int nand_read(struct mtd_info *mtd, loff_t from, size_t len,
 		PFM_END_R_SLC(pfm_time_read, (*retlen));
 
 	#endif
+	EVT_RD_END((u64)(*retlen), (u64)from);
 	return ret;
 }
 
@@ -3457,6 +3475,7 @@ static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 	PFM_BEGIN(pfm_time_write);
 	#endif
 
+	EVT_WR_BEGIN((u64)len, (u64)to);
 	nand_get_device(mtd, FL_WRITING);
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -3486,6 +3505,7 @@ static int nand_write(struct mtd_info *mtd, loff_t to, size_t len,
 		PFM_END_W_SLC(pfm_time_write, (*retlen));
 
 	#endif
+	EVT_WR_END((u64)(*retlen), (u64)to);
 	return ret;
 }
 
@@ -3707,6 +3727,7 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 	if (check_offs_len(mtd, instr->addr, instr->len))
 		return -EINVAL;
 
+	EVT_ER_BEGIN((u64)instr->len, (u64)instr->addr);
 	/* Grab the lock and see if the device is available */
 	nand_get_device(mtd, FL_ERASING);
 
@@ -3842,6 +3863,7 @@ erase_exit:
 
 	ret = instr->state == MTD_ERASE_DONE ? 0 : -EIO;
 
+	EVT_ER_END((u64)instr->len, (u64)instr->addr);
 	/* Deselect and wake up anyone waiting on the device */
 	chip->select_chip(mtd, -1);
 	nand_release_device(mtd);
