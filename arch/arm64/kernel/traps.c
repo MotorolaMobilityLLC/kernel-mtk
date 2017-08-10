@@ -38,6 +38,7 @@
 #include <asm/stacktrace.h>
 #include <asm/exception.h>
 #include <asm/system_misc.h>
+#include <mt-plat/aee.h>
 #include <mt-plat/mtk_hooks.h>
 
 static const char *handler[]= {
@@ -230,6 +231,9 @@ void die(const char *str, struct pt_regs *regs, int err)
 
 	if (ESR_EL1_EC(err) == ESR_EL1_EC_DABT_EL1)
 		thread->cpu_excp++;
+
+	if (die_owner == -1)
+		aee_save_excp_regs(regs);
 
 	oops_enter();
 
