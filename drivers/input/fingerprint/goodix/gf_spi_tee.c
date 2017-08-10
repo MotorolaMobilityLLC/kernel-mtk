@@ -302,20 +302,6 @@ static void gf_spi_clk_enable(struct gf_device *gf_dev, u8 bonoff)
 	else
 		disable_clock(MT_CG_PERI_SPI0, "spi");
 
-#elif defined(MT6797)
-	/* changed after MT6797 platform */
-	struct mt_spi_t *ms = NULL;
-	static int count;
-
-	ms = spi_master_get_devdata(gf_dev->spi->master);
-
-	if (bonoff && (count == 0)) {
-		mt_spi_enable_clk(ms);
-		count = 1;
-	} else if ((count > 0) && (bonoff == 0)) {
-		mt_spi_disable_clk(ms);
-		count = 0;
-	}
 #else
 	static int count;
 
@@ -987,25 +973,14 @@ static ssize_t gf_debug_store(struct device *dev,
 	struct gf_device *gf_dev =  dev_get_drvdata(dev);
 	int retval = 0;
 	u8 flag = 0;
-	struct mt_spi_t *ms = NULL;
-
-	ms = spi_master_get_devdata(gf_dev->spi->master);
 
 	if (!strncmp(buf, "-8", 2)) {
 		gf_debug(INFO_LOG, "%s: parameter is -8, enable spi clock test===============\n", __func__);
-#if defined(MT6797)
-		mt_spi_enable_clk(ms);
-#else
 		mt_spi_enable_master_clk(gf_dev->spi);
-#endif
 
 	} else if (!strncmp(buf, "-9", 2)) {
 		gf_debug(INFO_LOG, "%s: parameter is -9, disable spi clock test===============\n", __func__);
-#if defined(MT6797)
-		mt_spi_disable_clk(ms);
-#else
 		mt_spi_disable_master_clk(gf_dev->spi);
-#endif
 
 	} else if (!strncmp(buf, "-10", 3)) {
 		gf_debug(INFO_LOG, "%s: parameter is -10, gf init start===============\n", __func__);
