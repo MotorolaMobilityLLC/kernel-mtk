@@ -2333,12 +2333,12 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
 #if CFG_SUPPORT_CFG_FILE
+		wlanCfgInit(prAdapter, NULL, 0, 0);
 #ifdef ENABLED_IN_ENGUSERDEBUG
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
 
-			wlanCfgInit(prAdapter, NULL, 0, 0);
 			pucConfigBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
 			u4ConfigReadLen = 0;
 			DBGLOG(INIT, LOUD, "CFG_FILE: Read File...\n");
