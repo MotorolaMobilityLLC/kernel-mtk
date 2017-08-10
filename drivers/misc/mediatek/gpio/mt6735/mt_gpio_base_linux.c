@@ -29,6 +29,7 @@
 #include <linux/debugfs.h>
 #include <linux/of_gpio.h>
 #include <linux/idr.h>
+#include <linux/irqchip/mt-eic.h>
 
 static const signed int pin_eint_map[MT_GPIO_BASE_MAX] = {
 
@@ -72,13 +73,12 @@ static void mtk_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 
 static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
 {
-	/*return mt_gpio_to_irq(pin);*/
-	return 0;
+	return mt_gpio_to_irq(pin);
 }
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset, unsigned debounce)
 {
-	/*mt_eint_set_hw_debounce(offset, debounce);*/
+	mt_eint_set_hw_debounce(offset, debounce);
 	return 0;
 }
 
