@@ -81,6 +81,27 @@ TRACE_EVENT(mm_lru_activate,
 
 );
 
+DECLARE_EVENT_CLASS(mm_swap_op,
+	TP_PROTO(unsigned swp_entry),
+	TP_ARGS(swp_entry),
+	TP_STRUCT__entry(
+		__field(unsigned, swp_entry)
+	),
+	TP_fast_assign(
+		__entry->swp_entry = swp_entry;
+	),
+	TP_printk("%u", __entry->swp_entry)
+);
+
+DEFINE_EVENT(mm_swap_op, mm_swap_op_rd,
+	TP_PROTO(unsigned swp_entry),
+	TP_ARGS(swp_entry)
+	);
+
+DEFINE_EVENT(mm_swap_op, mm_swap_op_rd_done,
+	TP_PROTO(unsigned swp_entry),
+	TP_ARGS(swp_entry)
+	);
 #endif /* _TRACE_PAGEMAP_H */
 
 /* This part must be outside protection */
