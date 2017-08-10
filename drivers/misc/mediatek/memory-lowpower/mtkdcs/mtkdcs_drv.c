@@ -23,12 +23,14 @@
 #include <linux/uaccess.h>
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
-#include <mt_vcorefs_manager.h>
-#include <mt_spm_vcorefs.h>
 #include "mtkdcs_drv.h"
 
 /* Memory lowpower private header file */
 #include "../internal.h"
+
+#ifdef CONFIG_MTK_DCS
+#include <mt_spm_vcorefs.h>
+#include <mt_vcorefs_manager.h>
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_initialized;
@@ -36,11 +38,44 @@ static int normal_channel_num;
 static int lowpower_channel_num;
 static struct rw_semaphore dcs_rwsem;
 
-static char * const dcs_status_name[DCS_NR_STATUS] = {
+static char * const __dcs_status_name[DCS_NR_STATUS] = {
 	"normal",
 	"low power",
 	"busy",
 };
+
+enum dcs_sysfs_mode {
+	DCS_SYSFS_MODE_START,
+	DCS_SYSFS_ALWAYS_NORMAL = DCS_SYSFS_MODE_START,
+	DCS_SYSFS_ALWAYS_LOWPOWER,
+	DCS_SYSFS_FREERUN,
+	DCS_SYSFS_FREERUN_NORMAL,
+	DCS_SYSFS_NR_MODE,
+};
+
+enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+
+static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
+	"always normal",
+	"always lowpower",
+	"freerun only",
+	"freerun normal",
+};
+
+/*
+ * dcs_status_name
+ * return the status name for the given dcs status
+ * @status: the dcs status
+ *
+ * return the pointer of the name or NULL for invalid status
+ */
+char * const dcs_status_name(enum dcs_status status)
+{
+	if (status < DCS_NR_STATUS)
+		return __dcs_status_name[status];
+	else
+		return NULL;
+}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
@@ -154,19 +189,15 @@ static int dcs_dump_reg_ipi(void) { return 0; }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 /*
- * dcs_dram_channel_switch
+ * __dcs_dram_channel_switch
  *
- * Send a IPI call to SSPM to perform dynamic channel switch.
- * The dynamic channel switch only performed in stable status.
- * i.e., DCS_NORMAL or DCS_LOWPOWER.
- * @status: channel mode
+ * Do the channel switch operation
+ * Callers must hold write semaphore: dcs_rwsem
  *
  * return 0 on success or error code
  */
-int dcs_dram_channel_switch(enum dcs_status status)
+static int __dcs_dram_channel_switch(enum dcs_status status)
 {
-	down_write(&dcs_rwsem);
-
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
 		(sys_dcs_status != status)) {
@@ -179,15 +210,74 @@ int dcs_dram_channel_switch(enum dcs_status status)
 		spm_dvfsrc_set_channel_bw(status == DCS_NORMAL ?
 				DVFSRC_CHANNEL_4 : DVFSRC_CHANNEL_2);
 		sys_dcs_status = status;
-		pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
-		up_write(&dcs_rwsem);
+		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 	} else {
 		pr_info("sys_dcs_status not changed\n");
-		up_write(&dcs_rwsem);
-		return 0;
 	}
 
 	return 0;
+}
+
+/*
+ * dcs_dram_channel_switch
+ *
+ * Send a IPI call to SSPM to perform dynamic channel switch.
+ * The dynamic channel switch only performed in stable status.
+ * i.e., DCS_NORMAL or DCS_LOWPOWER.
+ * @status: channel mode
+ *
+ * return 0 on success or error code
+ */
+int dcs_dram_channel_switch(enum dcs_status status)
+{
+	int ret = 0;
+
+	down_write(&dcs_rwsem);
+
+	if (dcs_sysfs_mode == DCS_SYSFS_FREERUN)
+		ret = __dcs_dram_channel_switch(status);
+
+	up_write(&dcs_rwsem);
+
+	return ret;
+}
+
+/*
+ * dcs_dram_channel_switch_by_sysfs_mode
+ *
+ * Update dcs_sysfs_mode and send a IPI call to SSPM to perform
+ * dynamic channel switch by the sysfs mode.
+ * The dynamic channel switch only performed in stable status.
+ * i.e., DCS_NORMAL or DCS_LOWPOWER.
+ * @mode: sysfs mode
+ *
+ * return 0 on success or error code
+ */
+static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
+{
+	int ret = 0;
+
+	down_write(&dcs_rwsem);
+
+	dcs_sysfs_mode = mode;
+	switch (mode) {
+	case DCS_SYSFS_FREERUN_NORMAL:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		/* fallthrough */
+	case DCS_SYSFS_ALWAYS_NORMAL:
+		ret = __dcs_dram_channel_switch(DCS_NORMAL);
+		break;
+	case DCS_SYSFS_ALWAYS_LOWPOWER:
+		ret = __dcs_dram_channel_switch(DCS_LOWPOWER);
+		break;
+	default:
+		pr_alert("unknown sysfs mode: %d\n", mode);
+		break;
+	}
+
+	up_write(&dcs_rwsem);
+
+	return ret;
 }
 
 /*
@@ -215,7 +305,7 @@ int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 		pr_err("%s:%d, incorrect DCS status=%s\n",
 				__func__,
 				__LINE__,
-				dcs_status_name[sys_dcs_status]);
+				dcs_status_name(sys_dcs_status));
 		goto BUSY;
 	}
 	return 0;
@@ -253,7 +343,7 @@ int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *dcs_status)
 		pr_err("%s:%d, incorrect DCS status=%s\n",
 				__func__,
 				__LINE__,
-				dcs_status_name[sys_dcs_status]);
+				dcs_status_name(sys_dcs_status));
 		goto BUSY;
 	}
 	return 0;
@@ -281,6 +371,82 @@ bool dcs_initialied(void)
 	return dcs_initialized;
 }
 
+static ssize_t mtkdcs_status_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	enum dcs_status dcs_status;
+	int n = 0, ch, ret;
+
+	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
+
+	if (!ret) {
+		/*
+		 * we're holding the rw_sem, so it's safe to use
+		 * dcs_sysfs_mode
+		 */
+		n = sprintf(buf, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+				dcs_status_name(dcs_status),
+				ch,
+				dcs_sysfs_mode_name[dcs_sysfs_mode]);
+		dcs_get_dcs_status_unlock();
+	}
+
+	/* call debug ipi */
+	dcs_set_dummy_write_ipi();
+	dcs_dump_reg_ipi();
+
+	return n;
+}
+
+static ssize_t mtkdcs_mode_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	enum dcs_sysfs_mode mode;
+	int n = 0;
+
+	n += sprintf(buf + n, "available modes:\n");
+	for (mode = DCS_SYSFS_MODE_START; mode < DCS_SYSFS_NR_MODE; mode++)
+		n += sprintf(buf + n, "%s\n", dcs_sysfs_mode_name[mode]);
+
+	return n;
+}
+
+static ssize_t mtkdcs_mode_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t n)
+{
+	enum dcs_sysfs_mode mode;
+	char *name;
+
+	for (mode = DCS_SYSFS_MODE_START; mode < DCS_SYSFS_NR_MODE; mode++) {
+		name = dcs_sysfs_mode_name[mode];
+		if (!strncmp(buf, name, strlen(name)))
+			goto apply_mode;
+	}
+
+	pr_alert("%s:unknown command: %s\n", __func__, buf);
+	return 0;
+
+apply_mode:
+
+	pr_info("mtkdcs_mode_store cmd=%s", buf);
+	dcs_dram_channel_switch_by_sysfs_mode(mode);
+	return n;
+}
+
+static DEVICE_ATTR(status, S_IRUGO, mtkdcs_status_show, NULL);
+static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, mtkdcs_mode_show, mtkdcs_mode_store);
+
+static struct attribute *mtkdcs_attrs[] = {
+	&dev_attr_status.attr,
+	&dev_attr_mode.attr,
+	NULL,
+};
+
+struct attribute_group mtkdcs_attr_group = {
+	.attrs = mtkdcs_attrs,
+	.name = "mtkdcs",
+};
+
 static int __init mtkdcs_init(void)
 {
 	int ret;
@@ -292,8 +458,13 @@ static int __init mtkdcs_init(void)
 	ret = dcs_get_status_ipi(&sys_dcs_status);
 	if (!ret)
 		pr_info("get init dcs status: %s\n",
-			dcs_status_name[sys_dcs_status]);
+			dcs_status_name(sys_dcs_status));
 	else
+		return ret;
+
+	/* Create SYSFS interface */
+	ret = sysfs_create_group(power_kobj, &mtkdcs_attr_group);
+	if (ret)
 		return ret;
 
 	/* read number of dram channels */
@@ -332,7 +503,7 @@ static int mtkdcs_show(struct seq_file *m, void *v)
 	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
 	if (!ret) {
 		seq_printf(m, "dcs currnet channel number=%d, status=%s\n",
-				ch, dcs_status_name[sys_dcs_status]);
+				ch, dcs_status_name(sys_dcs_status));
 		dcs_get_dcs_status_unlock();
 	} else {
 		seq_puts(m, "dcs_get_dcs_status_lock busy\n");
@@ -400,3 +571,29 @@ static int __init mtkdcs_debug_init(void)
 
 late_initcall(mtkdcs_debug_init);
 #endif /* CONFIG_MTKDCS_DEBUG */
+
+#else /* ! CONFIG_MTK_DCS */
+/*
+ * In this case, SSPM is not available. We can only
+ * get the number of channels information from the EMI
+ * API.
+ * We assume the DCS is always in normal mode.
+ * The DCS driver is not initialized.
+ */
+int dcs_dram_channel_switch(enum dcs_status status) { return 0; }
+int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status)
+{
+	*ch = MAX_CHANNELS;
+	*status = DCS_NORMAL;
+	return 0;
+}
+int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status)
+{
+	*ch = MAX_CHANNELS;
+	*status = DCS_NORMAL;
+	return 0;
+}
+void dcs_get_dcs_status_unlock(void) {}
+bool dcs_initialied(void) { return false; }
+char * const dcs_status_name(enum dcs_status status) { return "normal"; }
+#endif /* CONFIG_MTK_DCS */
