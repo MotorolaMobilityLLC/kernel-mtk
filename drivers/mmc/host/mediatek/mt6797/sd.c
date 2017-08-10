@@ -2660,6 +2660,29 @@ static void msdc_dma_start(struct msdc_host *host)
 
 	N_MSG(DMA, "DMA start");
 	/* Schedule delayed work to check if data0 keeps busy */
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (host->hw->host_function == MSDC_EMMC) {
+		if (host->data) {
+			/* insure cmdq read/write timeout */
+			host->cmdq_timeout_ms = 5 * 1000;
+			schedule_delayed_work(&host->cmdq_timeout,
+				msecs_to_jiffies(host->cmdq_timeout_ms));
+			N_MSG(DMA, "CMDQ DMA Data Busy Timeout:%u ms, schedule_delayed_work",
+			host->cmdq_timeout_ms);
+
+		}
+	} else {
+		if (host->data && host->data->flags & MMC_DATA_WRITE) {
+			host->write_timeout_ms = min_t(u32, max_t(u32,
+				host->data->blocks * 500,
+				host->data->timeout_ns / 1000000), 10 * 1000);
+			schedule_delayed_work(&host->write_timeout,
+				msecs_to_jiffies(host->write_timeout_ms));
+		}
+		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
+		host->write_timeout_ms);
+	}
+#else
 	if (host->data && host->data->flags & MMC_DATA_WRITE) {
 		if (host->hw->host_function == MSDC_EMMC)
 			/* insure eMMC write time */
@@ -2673,6 +2696,7 @@ static void msdc_dma_start(struct msdc_host *host)
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
 			host->write_timeout_ms);
 	}
+#endif
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2684,12 +2708,26 @@ static void msdc_dma_stop(struct msdc_host *host)
 		| MSDC_INTEN_DATCRCERR;
 
 	/* Clear DMA data busy timeout */
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if ((host->hw->host_function == MSDC_EMMC) && (host->data)) {
+		cancel_delayed_work(&host->cmdq_timeout);
+		N_MSG(DMA, "CMDQ DMA Data Busy Timeout:%u ms, cancel_delayed_work",
+			host->cmdq_timeout_ms);
+		host->cmdq_timeout_ms = 0; /* clear timeout */
+	} else if (host->data && host->data->flags & MMC_DATA_WRITE) {
+		cancel_delayed_work(&host->write_timeout);
+		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, cancel_delayed_work",
+			host->write_timeout_ms);
+		host->write_timeout_ms = 0; /* clear timeout */
+	}
+#else
 	if (host->data && host->data->flags & MMC_DATA_WRITE) {
 		cancel_delayed_work(&host->write_timeout);
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, cancel_delayed_work",
 			host->write_timeout_ms);
 		host->write_timeout_ms = 0; /* clear timeout */
 	}
+#endif
 	/* handle autocmd12 error in msdc_irq */
 	if (host->autocmd & MSDC_AUTOCMD12)
 		wints |= MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO
@@ -5053,7 +5091,61 @@ tune:   /* DMA DATA transfer crc error */
 		msdc_irq_data_complete(host, data, 1);
 	return IRQ_HANDLED;
 }
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+/* Add this function to check if interrupt is lost by some reason *
+ * and return data->error, retry this request
+ * */
+static void msdc_cmdq_check_timeout(struct work_struct *work)
+{
+	struct msdc_host *host =
+		container_of(work, struct msdc_host, cmdq_timeout.work);
+	void __iomem *base = host->base;
+	struct mmc_data  *data;
+	struct mmc_request *mrq;
+	struct mmc_host *mmc;
+	u32 intsts;
+	u32 inten;
 
+	data = host->data;
+	mrq = host->mrq;
+	mmc = host->mmc;
+
+	if (!data || !mrq || !mmc)
+		return;
+
+	/* disable interrupt */
+	inten = MSDC_READ32(MSDC_INTEN);
+	MSDC_WRITE32(MSDC_INTEN, 0);
+
+	pr_err("[%s]: CMDQ DMA data timeout: %u ms, CMD<%d>",
+		__func__, host->cmdq_timeout_ms, mrq->cmd->opcode);
+	if (msdc_use_async_dma(data->host_cookie)) {
+		if (!mmc->done_mrq) {
+			msdc_dma_stop(host);
+			msdc_dma_clear(host);
+			msdc_clr_fifo(host->id);
+			data->error = (unsigned int)-ETIMEDOUT;
+			host->sw_timeout++;
+			pr_err("msdc: cmdq end this request\n");
+
+			if (mrq->done)
+				mrq->done(mrq);
+			intsts = MSDC_READ32(MSDC_INT);
+			MSDC_WRITE32(MSDC_INT, intsts &
+					(MSDC_INT_XFER_COMPL | MSDC_INT_DATCRCERR | MSDC_INT_DATTMO));
+			msdc_gate_clock(host, 1);
+		} else {
+			pr_err("msdc: this request has already done\n");
+		}
+		MSDC_WRITE32(MSDC_INTEN, inten);
+
+	} else {
+		/* do nothing, since legacy mode or async tuning
+		   have it own timeout. */
+		/* complete(&host->xfer_done); */
+	}
+}
+#endif
 /* Add this function to check if no interrupt back after write.         *
  * It may occur when write crc revice, but busy over data->timeout_ns   */
 static void msdc_check_write_timeout(struct work_struct *work)
@@ -5574,6 +5666,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	INIT_DELAYED_WORK(&host->cmdq_timeout, msdc_cmdq_check_timeout);
+#endif
 	INIT_DELAYED_WORK(&host->work_init, msdc_add_host);
 	/*INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);*/
 	spin_lock_init(&host->lock);

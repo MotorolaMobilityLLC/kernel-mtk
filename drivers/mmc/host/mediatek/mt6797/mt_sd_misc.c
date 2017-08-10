@@ -164,7 +164,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		/* cmdq enabled, turn it off first */
 		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
 		is_cmdq_en = true;
-		ret = mmc_blk_cmdq_switch_tmp(host_ctl->mmc->card, 0);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
 		if (ret) {
 			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
 			mmc_release_host(host_ctl->mmc);
@@ -292,7 +292,7 @@ skip_sbc_prepare:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
-		ret = mmc_blk_cmdq_switch_tmp(host_ctl->mmc->card, 1);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
 		if (ret) {
 			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
 			mmc_release_host(host_ctl->mmc);

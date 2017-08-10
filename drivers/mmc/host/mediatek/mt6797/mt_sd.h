@@ -475,6 +475,7 @@ struct msdc_host {
 	u64                     starttime;
 	struct timer_list       timer;
 	u32                     write_timeout_ms;  /* data write busy timeout ms */
+	u32                     cmdq_timeout_ms;  /* data write busy timeout ms */
 	u8                      autocmd;
 	u32                     sw_timeout;
 	/* msdc autok */
@@ -498,6 +499,7 @@ struct msdc_host {
 	struct wakeup_source	trans_lock;
 	bool                    block_bad_card;
 	struct delayed_work	write_timeout;       /* check if write busy timeout */
+	struct delayed_work	cmdq_timeout;       /* check cmdq data timeout */
 #ifdef SDIO_ERROR_BYPASS
 	int                     sdio_error;     /* sdio error can't recovery */
 #endif
