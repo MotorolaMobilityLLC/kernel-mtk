@@ -1197,8 +1197,6 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 		   }
 	   }
 
-	   return ERROR_NONE;
-
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
 	spin_unlock(&imgsensor_drv_lock);
