@@ -23,7 +23,6 @@
 #include <asm/debugreg.h>
 #include <asm/fpu-internal.h> /* pcntxt_mask */
 #include <asm/cpu.h>
-#include <asm/mmu_context.h>
 
 #ifdef CONFIG_X86_32
 __visible unsigned long saved_context_ebx;
@@ -120,7 +119,9 @@ void save_processor_state(void)
 	__save_processor_state(&saved_context);
 	x86_platform.save_sched_clock_state();
 }
+#ifdef CONFIG_X86_32
 EXPORT_SYMBOL(save_processor_state);
+#endif
 
 static void do_fpu_end(void)
 {

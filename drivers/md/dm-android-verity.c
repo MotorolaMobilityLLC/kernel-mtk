@@ -65,6 +65,7 @@ static struct target_type android_verity_target = {
 	.io_hints               = verity_io_hints,
 };
 
+#ifndef MODULE
 static int __init verified_boot_state_param(char *line)
 {
 	strlcpy(verifiedbootstate, line, sizeof(verifiedbootstate));
@@ -96,6 +97,7 @@ static int __init verity_buildvariant(char *line)
 }
 
 __setup("buildvariant=", verity_buildvariant);
+#endif
 
 static inline bool default_verity_key_id(void)
 {
@@ -657,7 +659,7 @@ static int add_as_linear_device(struct dm_target *ti, char *dev)
 }
 
 static int create_linear_device(struct dm_target *ti, dev_t dev,
-		char *target_device)
+				char *target_device)
 {
 	u64 device_size = 0;
 	int err = find_size(dev, &device_size);
@@ -728,9 +730,8 @@ static int android_verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
 		return -EINVAL;
 	}
 
-	if (is_eng()) {
+	if (is_eng())
 		return create_linear_device(ti, dev, target_device);
-	}
 
 	strreplace(key_id, '#', ' ');
 

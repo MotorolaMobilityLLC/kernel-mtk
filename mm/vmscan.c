@@ -1415,7 +1415,7 @@ static int too_many_isolated(struct zone *zone, int file,
 {
 	unsigned long inactive, isolated;
 
-	if (current_is_kswapd() || sc->hibernation_mode)
+	if (current_is_kswapd())
 		return 0;
 
 	if (!global_reclaim(sc))
@@ -2773,11 +2773,6 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 	unsigned long writeback_threshold;
 	bool zones_reclaimable;
 
-#ifdef CONFIG_FREEZER
-	if (unlikely(pm_freezing && !sc->hibernation_mode))
-		return 0;
-#endif
-
 	delayacct_freepages_start();
 
 	if (global_reclaim(sc))
@@ -3696,11 +3691,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 	if (!populated_zone(zone))
 		return;
 
-#ifdef CONFIG_FREEZER
-	if (pm_freezing)
-		return;
-#endif
-
 	if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
 		return;
 	pgdat = zone->zone_pgdat;
@@ -3725,7 +3715,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
  * LRU order by reclaiming preferentially
  * inactive > active > active referenced > active mapped
  */
-unsigned long shrink_memory_mask(unsigned long nr_to_reclaim, gfp_t mask)
+unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 {
 	struct reclaim_state reclaim_state;
 	struct scan_control sc = {
@@ -3754,13 +3744,6 @@ unsigned long shrink_memory_mask(unsigned long nr_to_reclaim, gfp_t mask)
 
 	return nr_reclaimed;
 }
-EXPORT_SYMBOL_GPL(shrink_memory_mask);
-
-unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
-{
-	return shrink_memory_mask(nr_to_reclaim, GFP_HIGHUSER_MOVABLE);
-}
-EXPORT_SYMBOL_GPL(shrink_all_memory);
 
 /* It's optimal to keep kswapds on the same CPUs as their memory, but
    not required for correctness.  So if the last cpu in a node goes

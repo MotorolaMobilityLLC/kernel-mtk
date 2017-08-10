@@ -152,11 +152,17 @@ ext4_submit_bio_read(struct bio *bio)
 		struct page *first_page = bio->bi_io_vec[0].bv_page;
 
 		if (first_page != NULL) {
+			char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
+
+			path = android_fstrace_get_pathname(pathbuf,
+						    MAX_TRACE_PATHBUF_LEN,
+						    first_page->mapping->host);
 			trace_android_fs_dataread_start(
 				first_page->mapping->host,
 				page_offset(first_page),
 				bio->bi_iter.bi_size,
 				current->pid,
+				path,
 				current->comm);
 		}
 	}
@@ -312,7 +318,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 
 			if (ext4_encrypted_inode(inode) &&
 			    S_ISREG(inode->i_mode)) {
-				ctx = ext4_get_crypto_ctx(inode);
+				ctx = ext4_get_crypto_ctx(inode, GFP_NOFS);
 				if (IS_ERR(ctx))
 					goto set_error_page;
 			}

@@ -2402,6 +2402,16 @@ retry_find_task:
 		tcred = __task_cred(tsk);
 		if (!uid_eq(cred->euid, GLOBAL_ROOT_UID) &&
 		    !uid_eq(cred->euid, tcred->uid) &&
+		    !uid_eq(cred->euid, tcred->suid) &&
+		    !ns_capable(tcred->user_ns, CAP_SYS_NICE)) {
+			rcu_read_unlock();
+			ret = -EACCES;
+			goto out_unlock_cgroup;
+		}
+
+		tcred = __task_cred(tsk);
+		if (!uid_eq(cred->euid, GLOBAL_ROOT_UID) &&
+		    !uid_eq(cred->euid, tcred->uid) &&
 		    !uid_eq(cred->euid, tcred->suid)) {
 			/*
 			 * if the default permission check fails, give each
@@ -2414,9 +2424,7 @@ retry_find_task:
 			};
 			struct css_set *cset;
 			cset = task_css_set(tsk);
-			/* mark for temp, wait for google new patch to fix
-			warning problem(cgroup_migrate_add_src).
-			list_add(&cset->mg_node, &tset.src_csets);*/
+			list_add(&cset->mg_node, &tset.src_csets);
 			ret = cgroup_allow_attach(cgrp, &tset);
 			list_del(&tset.src_csets);
 			if (ret) {

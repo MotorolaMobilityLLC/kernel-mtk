@@ -532,7 +532,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	spin_lock_irq(&ipanic_lock);
 	aee_disable_api();
 	mrdump_mini_ke_cpu_regs(NULL);
-	flush_cache_all();
+	__inner_flush_dcache_all();
 	if (!has_mt_dump_support())
 		emergency_restart();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel PANIC");
@@ -606,15 +606,15 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 		mrdump_mini_save_regs(&saved_regs);
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_NESTED_EXCEPTION, &saved_regs, "Kernel NestedPanic");
 	}
-	flush_cache_all();
+	__inner_flush_dcache_all();
 #ifdef __aarch64__
-	cpu_cache_off();
+	__disable_dcache();
 #else
 	cpu_proc_fin();
 #endif
 	mrdump_mini_ke_cpu_regs(excp_regs);
 	mrdump_mini_per_cpu_regs(cpu, regs);
-	flush_cache_all();
+	__inner_flush_dcache_all();
 	if (!has_mt_dump_support())
 		emergency_restart();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_NESTED_EXCEPTION, "Nested Panic");

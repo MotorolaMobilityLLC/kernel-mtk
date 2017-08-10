@@ -21,7 +21,7 @@ config ARM64
 	select DCACHE_WORD_ACCESS
 	select GENERIC_ALLOCATOR
 	select GENERIC_CLOCKEVENTS
-	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
+	select GENERIC_CLOCKEVENTS_BROADCAST
 	select GENERIC_CPU_AUTOPROBE
 	select GENERIC_EARLY_IOREMAP
 	select GENERIC_IOMAP
@@ -120,10 +120,6 @@ config ARCH_MMAP_RND_COMPAT_BITS_MAX
 config NO_IOPORT_MAP
 	def_bool y if !PCI
 
-config ILLEGAL_POINTER_VALUE
-	hex
-	default 0xdead000000000000
-
 config STACKTRACE_SUPPORT
 	def_bool y
 
@@ -164,6 +160,9 @@ config NEED_DMA_MAP_STATE
 config NEED_SG_DMA_LENGTH
 	def_bool y
 
+config SMP
+	def_bool y
+
 config SWIOTLB
 	def_bool y
 
@@ -176,72 +175,12 @@ config KERNEL_MODE_NEON
 config FIX_EARLYCON_MEM
 	def_bool y
 
-config ARM64_ERRATUM_836870
-	bool "Cortex-A53: 836870: Non-allocating reads might prevent a store exclusive from passing"
-	depends on ARM64
-	help
-	  This option enables the workaround for erratum 836870
-	  affecting Cortex-A53 MPCore with two or more processors (r0p0..r0p3).
-	  If a Cortex-A53 processor is executing a load and store exclusive instruction in a loop then there are certain conditions
-	  that are allowed to cause the store exclusive instruction to repeatedly fail. This includes another processor repeatedly
-	  writing to the same cache line. In addition to these allowed conditions, a non-allocating load from another processor migh
-	  also cause the store exclusive instruction to repeatedly fail.
-
-	  This walkaournd is to ensure system do not use non-allocating load. For 32 bit ATF and 64 bit project,
-	  master cpu's DTAH bit is set to 1 at preloader stage and set to 1 again after suspend through
-	  dormant driver in ATF. Slave cpus's DTAH bit is set to 1 at dormant driver in ATF stage.
-	  For 32 bit non-ATF project, Master cpu's DTAH bit is set to 1 at preloader stage and
-	  set to 1 again after suspend through dormant driver in kernel. Slave cpus's DTAH bit is set to 1
-	  by hotplug driver in kernel.
-
-	  In 64 bit project, this Kernel config do nothing since all patches are in ATF and preloader. and
-	  ATF and preloader are already default enable these patches.
-
-
-config ARM64_ERRATUM_843419
-	bool "Cortex-A53: 843419: A load or store might access an incorrect address"
-	default y
-	help
-	  This option builds kernel modules using the large memory model in
-	  order to avoid the use of the ADRP instruction, which can cause
-	  a subsequent memory access to use an incorrect address on Cortex-A53
-	  parts up to r0p4.
-
-	  Note that the kernel itself must be linked with a version of ld
-	  which fixes potentially affected ADRP instructions through the
-	  use of veneers.
-
-	  If unsure, say Y.
-
-config ARM64_ERRATUM_845719
-	bool "Cortex-A53: 845719: a load might read incorrect data"
-	depends on COMPAT
-	default y
-	help
-	  This option enables the workaround for erratum 845719.
-	  When running a compat (AArch32) userspace on an affected Cortex-A53
-	  part, a load at EL0 from a virtual address that matches the bottom 32
-	  bits of the virtual address used by a recent load at (AArch64) EL1
-	  might return incorrect data.
-
-	  The workaround is to write the contextidr_el1 register on exception
-	  return to a 32-bit task.
-	  Please note that this does not necessarily enable the workaround,
-	  as it depends on the alternative framework, which will only patch
-	  the kernel if an affected CPU is detected.
-
-	  If unsure, say Y.
-
-config ARM64_ERRATUM_855873
-	bool "Cortex-A53: 855873: An eviction might overtake a cache clean operation"
-	default y
-	help
-	  This option adds an alternative code sequence to work around ARM
-	  erratum 855873 on Cortex-A53 parts up to r0p4.
-	  Because of this erratum, the processor might issue an eviction and
-	  an L2 cache clean operation to the interconnect in the wrong order.
-
-	  If unsure, say Y.
+config PGTABLE_LEVELS
+	int
+	default 2 if ARM64_64K_PAGES && ARM64_VA_BITS_42
+	default 3 if ARM64_64K_PAGES && ARM64_VA_BITS_48
+	default 3 if ARM64_4K_PAGES && ARM64_VA_BITS_39
+	default 4 if ARM64_4K_PAGES && ARM64_VA_BITS_48
 
 source "init/Kconfig"
 
@@ -728,6 +667,54 @@ config ARM64_ERRATUM_845719
 
 	  If unsure, say Y.
 
+config ARM64_ERRATUM_836870
+	bool "Cortex-A53: 836870: Non-allocating reads might prevent a store exclusive from passing"
+	depends on ARM64
+	help
+	  This option enables the workaround for erratum 836870
+	  affecting Cortex-A53 MPCore with two or more processors (r0p0..r0p3).
+	  If a Cortex-A53 processor is executing a load and store exclusive instruction in a loop then there are certain conditions
+	  that are allowed to cause the store exclusive instruction to repeatedly fail. This includes another processor repeatedly
+	  writing to the same cache line. In addition to these allowed conditions, a non-allocating load from another processor migh
+	  also cause the store exclusive instruction to repeatedly fail.
+
+	  This walkaournd is to ensure system do not use non-allocating load. For 32 bit ATF and 64 bit project,
+	  master cpu's DTAH bit is set to 1 at preloader stage and set to 1 again after suspend through
+	  dormant driver in ATF. Slave cpus's DTAH bit is set to 1 at dormant driver in ATF stage.
+	  For 32 bit non-ATF project, Master cpu's DTAH bit is set to 1 at preloader stage and
+	  set to 1 again after suspend through dormant driver in kernel. Slave cpus's DTAH bit is set to 1
+	  by hotplug driver in kernel.
+
+	  In 64 bit project, this Kernel config do nothing since all patches are in ATF and preloader. and
+	  ATF and preloader are already default enable these patches.
+
+
+config ARM64_ERRATUM_843419
+	bool "Cortex-A53: 843419: A load or store might access an incorrect address"
+	default y
+	help
+	  This option builds kernel modules using the large memory model in
+	  order to avoid the use of the ADRP instruction, which can cause
+	  a subsequent memory access to use an incorrect address on Cortex-A53
+	  parts up to r0p4.
+
+	  Note that the kernel itself must be linked with a version of ld
+	  which fixes potentially affected ADRP instructions through the
+	  use of veneers.
+
+	  If unsure, say Y.
+
+config ARM64_ERRATUM_855873
+	bool "Cortex-A53: 855873: An eviction might overtake a cache clean operation"
+	default y
+	help
+	  This option adds an alternative code sequence to work around ARM
+	  erratum 855873 on Cortex-A53 parts up to r0p4.
+	  Because of this erratum, the processor might issue an eviction and
+	  an L2 cache clean operation to the interconnect in the wrong order.
+
+	  If unsure, say Y.
+
 endmenu
 
 
@@ -781,34 +768,13 @@ config ARM64_VA_BITS
 	default 42 if ARM64_VA_BITS_42
 	default 48 if ARM64_VA_BITS_48
 
-config ARM64_PGTABLE_LEVELS
-	int
-	default 2 if ARM64_64K_PAGES && ARM64_VA_BITS_42
-	default 3 if ARM64_64K_PAGES && ARM64_VA_BITS_48
-	default 3 if ARM64_4K_PAGES && ARM64_VA_BITS_39
-	default 4 if ARM64_4K_PAGES && ARM64_VA_BITS_48
-
 config CPU_BIG_ENDIAN
 	bool "Build big-endian kernel"
 	help
 	  Say Y if you plan on running a kernel in big-endian mode.
 
-config SMP
-	bool "Symmetric Multi-Processing"
-	help
-	  This enables support for systems with more than one CPU.  If
-	  you say N here, the kernel will run on single and
-	  multiprocessor machines, but will use only one CPU of a
-	  multiprocessor machine. If you say Y here, the kernel will run
-	  on many, but not all, single processor machines. On a single
-	  processor machine, the kernel will run faster if you say N
-	  here.
-
-	  If you don't know what to do here, say N.
-
 config SCHED_MC
 	bool "Multi-core scheduler support"
-	depends on SMP
 	help
 	  Multi-core scheduler support improves the CPU scheduler's decision
 	  making when dealing with multi-core CPU chips at a cost of slightly
@@ -816,7 +782,6 @@ config SCHED_MC
 
 config SCHED_SMT
 	bool "SMT scheduler support"
-	depends on SMP
 	help
 	  Improves the CPU scheduler's decision making when dealing with
 	  MultiThreading at a cost of slightly increased overhead in some
@@ -824,14 +789,11 @@ config SCHED_SMT
 
 config NR_CPUS
 	int "Maximum number of CPUs (2-64)"
-	range 2 64
-	depends on SMP
 	# These have to remain sorted largest to smallest
 	default "64"
 
 config HOTPLUG_CPU
 	bool "Support for hot-pluggable CPUs"
-	depends on SMP
 	help
 	  Say Y here to experiment with turning CPUs off and on.  CPUs
 	  can be controlled through /sys/devices/system/cpu.
@@ -979,6 +941,53 @@ config SETEND_EMULATION
 	  If unsure, say Y
 
 endif
+
+config ARM64_SW_TTBR0_PAN
+	bool "Emulate Privileged Access Never using TTBR0_EL1 switching"
+	help
+	  Enabling this option prevents the kernel from accessing
+	  user-space memory directly by pointing TTBR0_EL1 to a reserved
+	  zeroed area and reserved ASID. The user access routines
+	  restore the valid TTBR0_EL1 temporarily.
+
+menu "ARMv8.1 architectural features"
+
+config ARM64_PAN
+	bool "Enable support for Privileged Access Never (PAN)"
+	default y
+	help
+	 Privileged Access Never (PAN; part of the ARMv8.1 Extensions)
+	 prevents the kernel or hypervisor from accessing user-space (EL0)
+	 memory directly.
+
+	 Choosing this option will cause any unprotected (not using
+	 copy_to_user et al) memory access to fail with a permission fault.
+
+	 The feature is detected at runtime, and will remain as a 'nop'
+	 instruction if the cpu does not implement the feature.
+
+endmenu
+
+config ARM64_UAO
+	bool "Enable support for User Access Override (UAO)"
+	default y
+	help
+	  User Access Override (UAO; part of the ARMv8.2 Extensions)
+	  causes the 'unprivileged' variant of the load/store instructions to
+	  be overriden to be privileged.
+
+	  This option changes get_user() and friends to use the 'unprivileged'
+	  variant of the load/store instructions. This ensures that user-space
+	  really did have access to the supplied memory. When addr_limit is
+	  set to kernel memory the UAO bit will be set, allowing privileged
+	  access to kernel memory.
+
+	  Choosing this option will cause copy_to_user() et al to use user-space
+	  memory permissions.
+
+	  The feature is detected at runtime, the kernel will use the
+	  regular load/store instructions if the cpu does not implement the
+	  feature.
 
 endmenu
 

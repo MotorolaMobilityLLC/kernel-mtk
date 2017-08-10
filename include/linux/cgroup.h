@@ -921,7 +921,7 @@ struct cgroup_subsys_state *css_tryget_online_from_dir(struct dentry *dentry,
  * Returns 0 if this is allowed, or -EACCES otherwise.
  */
 int subsys_cgroup_allow_attach(struct cgroup_subsys_state *css,
-			       struct cgroup_taskset *tset);
+			      struct cgroup_taskset *tset);
 
 
 #else /* !CONFIG_CGROUPS */
@@ -946,10 +946,11 @@ static inline int cgroup_attach_task_all(struct task_struct *from,
 }
 
 static inline int subsys_cgroup_allow_attach(struct cgroup_subsys_state *css,
-					     void *tset)
+					   void *tset)
 {
 	return -EINVAL;
 }
+
 #endif /* !CONFIG_CGROUPS */
 
 #endif /* _LINUX_CGROUP_H */

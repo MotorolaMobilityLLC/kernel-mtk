@@ -20,6 +20,9 @@
 
 #ifndef __ASSEMBLY__
 
+#define __nops(n)	".rept	" #n "\nnop\n.endr\n"
+#define nops(n)		asm volatile(__nops(n))
+
 #define sev()		asm volatile("sev" : : : "memory")
 #define wfe()		asm volatile("wfe" : : : "memory")
 #define wfi()		asm volatile("wfi" : : : "memory")
@@ -32,27 +35,8 @@
 #define rmb()		dsb(ld)
 #define wmb()		dsb(st)
 
-#ifndef CONFIG_SMP
-#define smp_mb()	barrier()
-#define smp_rmb()	barrier()
-#define smp_wmb()	barrier()
-
-#define smp_store_release(p, v)						\
-do {									\
-	compiletime_assert_atomic_type(*p);				\
-	barrier();							\
-	ACCESS_ONCE(*p) = (v);						\
-} while (0)
-
-#define smp_load_acquire(p)						\
-({									\
-	typeof(*p) ___p1 = ACCESS_ONCE(*p);				\
-	compiletime_assert_atomic_type(*p);				\
-	barrier();							\
-	___p1;								\
-})
-
-#else
+#define dma_rmb()	dmb(oshld)
+#define dma_wmb()	dmb(oshst)
 
 #define smp_mb()	dmb(ish)
 #define smp_rmb()	dmb(ishld)
@@ -60,15 +44,21 @@ do {									\
 
 #define smp_store_release(p, v)						\
 do {									\
+	union { typeof(*p) __val; char __c[1]; } __u =			\
+		{ .__val = (__force typeof(*p)) (v) }; 			\
 	compiletime_assert_atomic_type(*p);				\
 	switch (sizeof(*p)) {						\
 	case 4:								\
 		asm volatile ("stlr %w1, %0"				\
-				: "=Q" (*p) : "r" (v) : "memory");	\
+				: "=Q" (*p)				\
+				: "r" (*(__u32 *)__u.__c)		\
+				: "memory");				\
 		break;							\
 	case 8:								\
 		asm volatile ("stlr %1, %0"				\
-				: "=Q" (*p) : "r" (v) : "memory");	\
+				: "=Q" (*p)				\
+				: "r" (*(__u64 *)__u.__c)		\
+				: "memory");				\
 		break;							\
 	}								\
 } while (0)
@@ -89,8 +79,6 @@ do {									\
 	}								\
 	___p1;								\
 })
-
-#endif
 
 #define read_barrier_depends()		do { } while(0)
 #define smp_read_barrier_depends()	do { } while(0)

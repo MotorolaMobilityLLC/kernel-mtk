@@ -443,11 +443,6 @@ static int config_usb_cfg_link(
 	}
 
 	f = usb_get_function(fi);
-	if (f == NULL) {
-		/* Are we trying to symlink PTP without MTP function? */
-		ret = -EINVAL; /* Invalid Configuration */
-		goto out;
-	}
 	if (IS_ERR(f)) {
 		ret = PTR_ERR(f);
 		goto out;
@@ -1711,10 +1706,6 @@ static struct config_group *gadgets_make(
 		const char *name)
 {
 	struct gadget_info *gi;
-	/* -Werror=unused-variable
-	struct device_attribute **attrs;
-	struct device_attribute *attr;
-	int err; */
 
 	gi = kzalloc(sizeof(*gi), GFP_KERNEL);
 	if (!gi)
@@ -1777,10 +1768,6 @@ err:
 
 static void gadgets_drop(struct config_group *group, struct config_item *item)
 {
-	/* -Werror=unused-variable
-	struct device_attribute **attrs;
-	struct device_attribute *attr; */
-
 	config_item_put(item);
 	android_device_destroy();
 }

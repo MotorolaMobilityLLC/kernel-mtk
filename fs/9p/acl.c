@@ -321,6 +321,7 @@ static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
 		name = POSIX_ACL_XATTR_ACCESS;
 		if (acl) {
 			struct iattr iattr;
+			struct posix_acl *old_acl = acl;
 
 			retval = posix_acl_update_mode(inode, &iattr.ia_mode, &acl);
 			if (retval)
@@ -330,16 +331,17 @@ static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
 				 * ACL can be represented
 				 * by the mode bits. So don't
 				 * update ACL.
-			*/
-			value = NULL;
-			size = 0;
-		}
-		iattr.ia_valid = ATTR_MODE;
-		/* FIXME should we update ctime ?
-		 * What is the following setxattr update the
-		 * mode ?
-		 */
-		v9fs_vfs_setattr_dotl(dentry, &iattr);
+				 */
+				posix_acl_release(old_acl);
+				value = NULL;
+				size = 0;
+			}
+			iattr.ia_valid = ATTR_MODE;
+			/* FIXME should we update ctime ?
+			 * What is the following setxattr update the
+			 * mode ?
+			 */
+			v9fs_vfs_setattr_dotl(dentry, &iattr);
 		}
 		break;
 	case ACL_TYPE_DEFAULT:

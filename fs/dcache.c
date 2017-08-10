@@ -2795,7 +2795,6 @@ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
 	spin_lock(&inode->i_lock);
 	if (S_ISDIR(inode->i_mode)) {
 		struct dentry *new = __d_find_any_alias(inode);
-
 		if (unlikely(new)) {
 			write_seqlock(&rename_lock);
 			if (unlikely(d_ancestor(new, dentry))) {
@@ -2804,7 +2803,8 @@ struct dentry *d_splice_alias(struct inode *inode, struct dentry *dentry)
 				dput(new);
 				new = ERR_PTR(-ELOOP);
 				pr_warn_ratelimited(
-					"VFS: Lookup of '%s' in %s %s would have caused loop\n",
+					"VFS: Lookup of '%s' in %s %s"
+					" would have caused loop\n",
 					dentry->d_name.name,
 					inode->i_sb->s_type->name,
 					inode->i_sb->s_id);
