@@ -1,8 +1,21 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef _MT6337_PMIC_H_
 #define _MT6337_PMIC_H_
 
-
-#include "include/sub_upmu_hw.h"
+#include "mt6337_upmu_hw.h"
+#include "mt6337_irq.h"
 
 #define PMIC_DEBUG
 
@@ -61,54 +74,19 @@ do {					\
 #define PMICERR(fmt, arg...)   pr_debug(MT6337TAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #define PMICREG(fmt, arg...)   pr_debug(MT6337TAG fmt, ##arg)
 
-#define MT6337_INT_WIDTH 16
-
-#define MT6337_INTERRUPT_WIDTH 16
-
-#define MT6337_S_INT_GEN(_name)	\
-	{	\
-		.name =  #_name,	\
-	}
-
-#define MT6337_M_INTS_GEN(adr, enA, maskA, interrupt)	\
-	{	\
-		.address =  adr,	\
-		.en = enA,	\
-		.set = (enA) + 2,	\
-		.clear = (enA) + 4,	\
-		.mask = maskA,	\
-		.mask_set =	(maskA) + 2, \
-		.mask_clear = (maskA) + 4,	\
-		.interrupts = interrupt,	\
-	}
-
-struct mt6337_interrupt_bit {
-	const char *name;
-	void (*callback)(void);
-	unsigned int times;
-};
-
-struct mt6337_interrupts {
-	unsigned int address;
-	unsigned int en;
-	unsigned int set;
-	unsigned int clear;
-	unsigned int mask;
-	unsigned int mask_set;
-	unsigned int mask_clear;
-	struct mt6337_interrupt_bit *interrupts;
-};
-
 extern unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val,
 	unsigned int MASK, unsigned int SHIFT);
 extern unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val,
 	unsigned int MASK, unsigned int SHIFT);
+
 extern unsigned int mt6337_read_interface_nolock(unsigned int RegNum, unsigned int *val,
 	unsigned int MASK, unsigned int SHIFT);
 extern unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	unsigned int MASK, unsigned int SHIFT);
+
 extern unsigned int mt6337_upmu_get_reg_value(unsigned int reg);
-void mt6337_upmu_set_reg_value(unsigned int reg, unsigned int reg_val);
+extern void mt6337_upmu_set_reg_value(unsigned int reg, unsigned int reg_val);
+
 extern unsigned short mt6337_set_register_value(MT6337_PMU_FLAGS_LIST_ENUM flagname, unsigned int val);
 extern unsigned short mt6337_get_register_value(MT6337_PMU_FLAGS_LIST_ENUM flagname);
 #endif				/* _MT6337_PMIC_H_ */

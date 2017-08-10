@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
-
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _MT_PMIC_6336_UPMU_HW_H_
 #define _MT_PMIC_6336_UPMU_HW_H_
@@ -142,94 +142,86 @@
 #define MT6336_PMIC_INT_CON9                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x007B))
 #define MT6336_PMIC_INT_CON9_SET                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x007C))
 #define MT6336_PMIC_INT_CON9_CLR                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x007D))
-#define MT6336_PMIC_INT_CON10                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x007E))
-#define MT6336_PMIC_INT_CON10_SET                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x007F))
-#define MT6336_PMIC_INT_CON10_CLR                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0080))
-#define MT6336_PMIC_INT_MASK_CON0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0081))
-#define MT6336_PMIC_INT_MASK_CON0_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0082))
-#define MT6336_PMIC_INT_MASK_CON0_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0083))
-#define MT6336_PMIC_INT_MASK_CON1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0084))
-#define MT6336_PMIC_INT_MASK_CON1_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0085))
-#define MT6336_PMIC_INT_MASK_CON1_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0086))
-#define MT6336_PMIC_INT_MASK_CON2                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0087))
-#define MT6336_PMIC_INT_MASK_CON2_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0088))
-#define MT6336_PMIC_INT_MASK_CON2_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0089))
-#define MT6336_PMIC_INT_MASK_CON3                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x008A))
-#define MT6336_PMIC_INT_MASK_CON3_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008B))
-#define MT6336_PMIC_INT_MASK_CON3_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008C))
-#define MT6336_PMIC_INT_MASK_CON4                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x008D))
-#define MT6336_PMIC_INT_MASK_CON4_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008E))
-#define MT6336_PMIC_INT_MASK_CON4_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008F))
-#define MT6336_PMIC_INT_MASK_CON5                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0090))
-#define MT6336_PMIC_INT_MASK_CON5_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0091))
-#define MT6336_PMIC_INT_MASK_CON5_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0092))
-#define MT6336_PMIC_INT_MASK_CON6                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0093))
-#define MT6336_PMIC_INT_MASK_CON6_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0094))
-#define MT6336_PMIC_INT_MASK_CON6_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0095))
-#define MT6336_PMIC_INT_MASK_CON7                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0096))
-#define MT6336_PMIC_INT_MASK_CON7_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0097))
-#define MT6336_PMIC_INT_MASK_CON7_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0098))
-#define MT6336_PMIC_INT_MASK_CON8                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0099))
-#define MT6336_PMIC_INT_MASK_CON8_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009A))
-#define MT6336_PMIC_INT_MASK_CON8_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009B))
-#define MT6336_PMIC_INT_MASK_CON9                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x009C))
-#define MT6336_PMIC_INT_MASK_CON9_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009D))
-#define MT6336_PMIC_INT_MASK_CON9_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009E))
-#define MT6336_PMIC_INT_MASK_CON10                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x009F))
-#define MT6336_PMIC_INT_MASK_CON10_SET                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A0))
-#define MT6336_PMIC_INT_MASK_CON10_CLR                  ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A1))
-#define MT6336_PMIC_INT_STATUS0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A2))
-#define MT6336_PMIC_INT_STATUS1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A3))
-#define MT6336_PMIC_INT_STATUS2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A4))
-#define MT6336_PMIC_INT_STATUS3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A5))
-#define MT6336_PMIC_INT_STATUS4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A6))
-#define MT6336_PMIC_INT_STATUS5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A7))
-#define MT6336_PMIC_INT_STATUS6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A8))
-#define MT6336_PMIC_INT_STATUS7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A9))
-#define MT6336_PMIC_INT_STATUS8                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AA))
-#define MT6336_PMIC_INT_STATUS9                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AB))
-#define MT6336_PMIC_INT_STATUS10                        ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AC))
-#define MT6336_PMIC_INT_RAW_STATUS0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AD))
-#define MT6336_PMIC_INT_RAW_STATUS1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AE))
-#define MT6336_PMIC_INT_RAW_STATUS2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AF))
-#define MT6336_PMIC_INT_RAW_STATUS3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B0))
-#define MT6336_PMIC_INT_RAW_STATUS4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B1))
-#define MT6336_PMIC_INT_RAW_STATUS5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B2))
-#define MT6336_PMIC_INT_RAW_STATUS6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B3))
-#define MT6336_PMIC_INT_RAW_STATUS7                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B4))
-#define MT6336_PMIC_INT_RAW_STATUS8                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B5))
-#define MT6336_PMIC_INT_RAW_STATUS9                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B6))
-#define MT6336_PMIC_INT_RAW_STATUS10                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B7))
-#define MT6336_PMIC_FQMTR_CON0                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B8))
-#define MT6336_PMIC_FQMTR_WIN_L                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B9))
-#define MT6336_PMIC_FQMTR_WIN_U                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BA))
-#define MT6336_PMIC_FQMTR_DAT_L                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BB))
-#define MT6336_PMIC_FQMTR_DAT_U                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BC))
-#define MT6336_PMIC_TOP_RSV3                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BD))
-#define MT6336_PMIC_TOP_RSV4                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BE))
-#define MT6336_PMIC_TOP_RSV5                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BF))
-#define MT6336_PMIC_TOP_RSV6                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C0))
-#define MT6336_PMIC_TOP_RSV7                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C1))
-#define MT6336_PMIC_TOP_RSV8                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C2))
-#define MT6336_PMIC_TOP_RSV9                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C3))
-#define MT6336_PMIC_TOP_RSV10                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C4))
-#define MT6336_PMIC_TOP_RSV11                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C5))
-#define MT6336_PMIC_TOP_RSV12                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C6))
-#define MT6336_PMIC_TOP_RSV13                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C7))
-#define MT6336_PMIC_TOP_RSV14                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C8))
-#define MT6336_PMIC_TOP_RSV15                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C9))
-#define MT6336_PMIC_ISINKA_ANA_CON_0                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CA))
-#define MT6336_PMIC_ISINK_CON0                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CB))
-#define MT6336_PMIC_CHRIND_CON0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CC))
-#define MT6336_PMIC_CHRIND_CON0_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CD))
-#define MT6336_PMIC_CHRIND_CON1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CE))
-#define MT6336_PMIC_CHRIND_CON1_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CF))
-#define MT6336_PMIC_CHRIND_CON2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D0))
-#define MT6336_PMIC_CHRIND_CON2_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D1))
-#define MT6336_PMIC_CHRIND_CON3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D2))
-#define MT6336_PMIC_CHRIND_EN_CTRL                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D3))
-#define MT6336_PMIC_CHRIND_EN_CTRL_1                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D4))
-#define MT6336_PMIC_CHRIND_EN_CTRL_2                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00D5))
+#define MT6336_PMIC_INT_MASK_CON0                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x007E))
+#define MT6336_PMIC_INT_MASK_CON0_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x007F))
+#define MT6336_PMIC_INT_MASK_CON0_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0080))
+#define MT6336_PMIC_INT_MASK_CON1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0081))
+#define MT6336_PMIC_INT_MASK_CON1_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0082))
+#define MT6336_PMIC_INT_MASK_CON1_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0083))
+#define MT6336_PMIC_INT_MASK_CON2                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0084))
+#define MT6336_PMIC_INT_MASK_CON2_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0085))
+#define MT6336_PMIC_INT_MASK_CON2_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0086))
+#define MT6336_PMIC_INT_MASK_CON3                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0087))
+#define MT6336_PMIC_INT_MASK_CON3_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0088))
+#define MT6336_PMIC_INT_MASK_CON3_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0089))
+#define MT6336_PMIC_INT_MASK_CON4                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x008A))
+#define MT6336_PMIC_INT_MASK_CON4_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008B))
+#define MT6336_PMIC_INT_MASK_CON4_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008C))
+#define MT6336_PMIC_INT_MASK_CON5                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x008D))
+#define MT6336_PMIC_INT_MASK_CON5_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008E))
+#define MT6336_PMIC_INT_MASK_CON5_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x008F))
+#define MT6336_PMIC_INT_MASK_CON6                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0090))
+#define MT6336_PMIC_INT_MASK_CON6_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0091))
+#define MT6336_PMIC_INT_MASK_CON6_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0092))
+#define MT6336_PMIC_INT_MASK_CON7                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0093))
+#define MT6336_PMIC_INT_MASK_CON7_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0094))
+#define MT6336_PMIC_INT_MASK_CON7_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0095))
+#define MT6336_PMIC_INT_MASK_CON8                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0096))
+#define MT6336_PMIC_INT_MASK_CON8_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0097))
+#define MT6336_PMIC_INT_MASK_CON8_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0098))
+#define MT6336_PMIC_INT_MASK_CON9                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x0099))
+#define MT6336_PMIC_INT_MASK_CON9_SET                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009A))
+#define MT6336_PMIC_INT_MASK_CON9_CLR                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x009B))
+#define MT6336_PMIC_INT_STATUS0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x009C))
+#define MT6336_PMIC_INT_STATUS1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x009D))
+#define MT6336_PMIC_INT_STATUS2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x009E))
+#define MT6336_PMIC_INT_STATUS3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x009F))
+#define MT6336_PMIC_INT_STATUS4                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A0))
+#define MT6336_PMIC_INT_STATUS5                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A1))
+#define MT6336_PMIC_INT_STATUS6                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A2))
+#define MT6336_PMIC_INT_STATUS7                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A3))
+#define MT6336_PMIC_INT_STATUS8                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A4))
+#define MT6336_PMIC_INT_STATUS9                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A5))
+#define MT6336_PMIC_INT_RAW_STATUS0                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A6))
+#define MT6336_PMIC_INT_RAW_STATUS1                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A7))
+#define MT6336_PMIC_INT_RAW_STATUS2                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A8))
+#define MT6336_PMIC_INT_RAW_STATUS3                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00A9))
+#define MT6336_PMIC_INT_RAW_STATUS4                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AA))
+#define MT6336_PMIC_INT_RAW_STATUS5                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AB))
+#define MT6336_PMIC_INT_RAW_STATUS6                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AC))
+#define MT6336_PMIC_INT_RAW_STATUS7                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AD))
+#define MT6336_PMIC_INT_RAW_STATUS8                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AE))
+#define MT6336_PMIC_INT_RAW_STATUS9                     ((unsigned int)(MT6336_PMIC_REG_BASE+0x00AF))
+#define MT6336_PMIC_FQMTR_CON0                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B0))
+#define MT6336_PMIC_FQMTR_WIN_L                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B1))
+#define MT6336_PMIC_FQMTR_WIN_U                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B2))
+#define MT6336_PMIC_FQMTR_DAT_L                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B3))
+#define MT6336_PMIC_FQMTR_DAT_U                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B4))
+#define MT6336_PMIC_TOP_RSV3                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B5))
+#define MT6336_PMIC_TOP_RSV4                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B6))
+#define MT6336_PMIC_TOP_RSV5                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B7))
+#define MT6336_PMIC_TOP_RSV6                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B8))
+#define MT6336_PMIC_TOP_RSV7                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00B9))
+#define MT6336_PMIC_TOP_RSV8                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BA))
+#define MT6336_PMIC_TOP_RSV9                            ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BB))
+#define MT6336_PMIC_TOP_RSV10                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BC))
+#define MT6336_PMIC_TOP_RSV11                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BD))
+#define MT6336_PMIC_TOP_RSV12                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BE))
+#define MT6336_PMIC_TOP_RSV13                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00BF))
+#define MT6336_PMIC_TOP_RSV14                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C0))
+#define MT6336_PMIC_TOP_RSV15                           ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C1))
+#define MT6336_PMIC_ISINKA_ANA_CON_0                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C2))
+#define MT6336_PMIC_ISINK_CON0                          ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C3))
+#define MT6336_PMIC_CHRIND_CON0                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C4))
+#define MT6336_PMIC_CHRIND_CON0_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C5))
+#define MT6336_PMIC_CHRIND_CON1                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C6))
+#define MT6336_PMIC_CHRIND_CON1_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C7))
+#define MT6336_PMIC_CHRIND_CON2                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C8))
+#define MT6336_PMIC_CHRIND_CON2_1                       ((unsigned int)(MT6336_PMIC_REG_BASE+0x00C9))
+#define MT6336_PMIC_CHRIND_CON3                         ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CA))
+#define MT6336_PMIC_CHRIND_EN_CTRL                      ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CB))
+#define MT6336_PMIC_CHRIND_EN_CTRL_1                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CC))
+#define MT6336_PMIC_CHRIND_EN_CTRL_2                    ((unsigned int)(MT6336_PMIC_REG_BASE+0x00CD))
 #define MT6336_PMIC_TYPE_C_PHY_RG_0_0                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0100))
 #define MT6336_PMIC_TYPE_C_PHY_RG_0_1                   ((unsigned int)(MT6336_PMIC_REG_BASE+0x0101))
 #define MT6336_PMIC_TYPE_C_PHY_RG_CC_RESERVE_CSR        ((unsigned int)(MT6336_PMIC_REG_BASE+0x0102))
@@ -1207,9 +1199,9 @@
 #define MT6336_I2C_CONFIG_ADDR                                           MT6336_PMIC_TOP_CON
 #define MT6336_I2C_CONFIG_MASK                                           0x1
 #define MT6336_I2C_CONFIG_SHIFT                                          0
-#define MT6336_I2C_RSV_ADDR                                              MT6336_PMIC_TOP_CON
-#define MT6336_I2C_RSV_MASK                                              0x7F
-#define MT6336_I2C_RSV_SHIFT                                             1
+#define MT6336_I2C_RD_LEN_ADDR                                           MT6336_PMIC_TOP_CON
+#define MT6336_I2C_RD_LEN_MASK                                           0x7F
+#define MT6336_I2C_RD_LEN_SHIFT                                          1
 #define MT6336_TEST_OUT0_ADDR                                            MT6336_PMIC_TEST_OUT0
 #define MT6336_TEST_OUT0_MASK                                            0xFF
 #define MT6336_TEST_OUT0_SHIFT                                           0
@@ -2029,42 +2021,42 @@
 #define MT6336_INT_CON4_CLR_ADDR                                         MT6336_PMIC_INT_CON4_CLR
 #define MT6336_INT_CON4_CLR_MASK                                         0xFF
 #define MT6336_INT_CON4_CLR_SHIFT                                        0
-#define MT6336_RG_INT_EN_TYPE_C_L_MIN_ADDR                               MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_L_MIN_MASK                               0x1
-#define MT6336_RG_INT_EN_TYPE_C_L_MIN_SHIFT                              0
-#define MT6336_RG_INT_EN_TYPE_C_L_MAX_ADDR                               MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_L_MAX_MASK                               0x1
-#define MT6336_RG_INT_EN_TYPE_C_L_MAX_SHIFT                              1
-#define MT6336_RG_INT_EN_TYPE_C_H_MIN_ADDR                               MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_H_MIN_MASK                               0x1
-#define MT6336_RG_INT_EN_TYPE_C_H_MIN_SHIFT                              2
-#define MT6336_RG_INT_EN_TYPE_C_H_MAX_ADDR                               MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_H_MAX_MASK                               0x1
-#define MT6336_RG_INT_EN_TYPE_C_H_MAX_SHIFT                              3
-#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_ADDR                              MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_MASK                              0x1
-#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_SHIFT                             4
-#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_ADDR                              MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_MASK                              0x1
-#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_SHIFT                             5
 #define MT6336_RG_INT_EN_CHR_BAT_RECHG_ADDR                              MT6336_PMIC_INT_CON5
 #define MT6336_RG_INT_EN_CHR_BAT_RECHG_MASK                              0x1
-#define MT6336_RG_INT_EN_CHR_BAT_RECHG_SHIFT                             6
-#define MT6336_RG_INT_EN_DD_PE_STATUS_ADDR                               MT6336_PMIC_INT_CON5
-#define MT6336_RG_INT_EN_DD_PE_STATUS_MASK                               0x1
-#define MT6336_RG_INT_EN_DD_PE_STATUS_SHIFT                              7
+#define MT6336_RG_INT_EN_CHR_BAT_RECHG_SHIFT                             0
+#define MT6336_RG_INT_EN_BAT_TEMP_H_ADDR                                 MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_BAT_TEMP_H_MASK                                 0x1
+#define MT6336_RG_INT_EN_BAT_TEMP_H_SHIFT                                1
+#define MT6336_RG_INT_EN_BAT_TEMP_L_ADDR                                 MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_BAT_TEMP_L_MASK                                 0x1
+#define MT6336_RG_INT_EN_BAT_TEMP_L_SHIFT                                2
+#define MT6336_RG_INT_EN_TYPE_C_L_MIN_ADDR                               MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_TYPE_C_L_MIN_MASK                               0x1
+#define MT6336_RG_INT_EN_TYPE_C_L_MIN_SHIFT                              3
+#define MT6336_RG_INT_EN_TYPE_C_L_MAX_ADDR                               MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_TYPE_C_L_MAX_MASK                               0x1
+#define MT6336_RG_INT_EN_TYPE_C_L_MAX_SHIFT                              4
+#define MT6336_RG_INT_EN_TYPE_C_H_MIN_ADDR                               MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_TYPE_C_H_MIN_MASK                               0x1
+#define MT6336_RG_INT_EN_TYPE_C_H_MIN_SHIFT                              5
+#define MT6336_RG_INT_EN_TYPE_C_H_MAX_ADDR                               MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_TYPE_C_H_MAX_MASK                               0x1
+#define MT6336_RG_INT_EN_TYPE_C_H_MAX_SHIFT                              6
+#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_ADDR                              MT6336_PMIC_INT_CON5
+#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_MASK                              0x1
+#define MT6336_RG_INT_EN_TYPE_C_CC_IRQ_SHIFT                             7
 #define MT6336_INT_CON5_SET_ADDR                                         MT6336_PMIC_INT_CON5_SET
 #define MT6336_INT_CON5_SET_MASK                                         0xFF
 #define MT6336_INT_CON5_SET_SHIFT                                        0
 #define MT6336_INT_CON5_CLR_ADDR                                         MT6336_PMIC_INT_CON5_CLR
 #define MT6336_INT_CON5_CLR_MASK                                         0xFF
 #define MT6336_INT_CON5_CLR_SHIFT                                        0
-#define MT6336_RG_INT_EN_BAT_TEMP_H_ADDR                                 MT6336_PMIC_INT_CON6
-#define MT6336_RG_INT_EN_BAT_TEMP_H_MASK                                 0x1
-#define MT6336_RG_INT_EN_BAT_TEMP_H_SHIFT                                0
-#define MT6336_RG_INT_EN_BAT_TEMP_L_ADDR                                 MT6336_PMIC_INT_CON6
-#define MT6336_RG_INT_EN_BAT_TEMP_L_MASK                                 0x1
-#define MT6336_RG_INT_EN_BAT_TEMP_L_SHIFT                                1
+#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_ADDR                              MT6336_PMIC_INT_CON6
+#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_MASK                              0x1
+#define MT6336_RG_INT_EN_TYPE_C_PD_IRQ_SHIFT                             0
+#define MT6336_RG_INT_EN_DD_PE_STATUS_ADDR                               MT6336_PMIC_INT_CON6
+#define MT6336_RG_INT_EN_DD_PE_STATUS_MASK                               0x1
+#define MT6336_RG_INT_EN_DD_PE_STATUS_SHIFT                              1
 #define MT6336_RG_INT_EN_BC12_V2P7_TIMEOUT_ADDR                          MT6336_PMIC_INT_CON6
 #define MT6336_RG_INT_EN_BC12_V2P7_TIMEOUT_MASK                          0x1
 #define MT6336_RG_INT_EN_BC12_V2P7_TIMEOUT_SHIFT                         2
@@ -2095,111 +2087,75 @@
 #define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_RISING_ADDR             MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_RISING_MASK             0x1
 #define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_RISING_SHIFT            1
+#define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_ADDR              MT6336_PMIC_INT_CON7
+#define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_MASK              0x1
+#define MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_SHIFT             2
 #define MT6336_RG_INT_EN_DD_SWCHR_PLUGIN_PULSEB_ADDR                     MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_PLUGIN_PULSEB_MASK                     0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_PLUGIN_PULSEB_SHIFT                    2
+#define MT6336_RG_INT_EN_DD_SWCHR_PLUGIN_PULSEB_SHIFT                    3
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_SHIP_ADDR                      MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_SHIP_MASK                      0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_SHIP_SHIFT                     3
+#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_SHIP_SHIFT                     4
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_OC_ADDR                    MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_OC_MASK                    0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_OC_SHIFT                   4
+#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_OC_SHIFT                   5
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_DEAD_ADDR                  MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_DEAD_MASK                  0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT                 5
+#define MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT                 6
 #define MT6336_RG_INT_EN_DD_SWCHR_BUCK_MODE_ADDR                         MT6336_PMIC_INT_CON7
 #define MT6336_RG_INT_EN_DD_SWCHR_BUCK_MODE_MASK                         0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_BUCK_MODE_SHIFT                        6
-#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_ADDR                         MT6336_PMIC_INT_CON7
-#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_MASK                         0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_SHIFT                        7
+#define MT6336_RG_INT_EN_DD_SWCHR_BUCK_MODE_SHIFT                        7
 #define MT6336_INT_CON7_SET_ADDR                                         MT6336_PMIC_INT_CON7_SET
 #define MT6336_INT_CON7_SET_MASK                                         0xFF
 #define MT6336_INT_CON7_SET_SHIFT                                        0
 #define MT6336_INT_CON7_CLR_ADDR                                         MT6336_PMIC_INT_CON7_CLR
 #define MT6336_INT_CON7_CLR_MASK                                         0xFF
 #define MT6336_INT_CON7_CLR_SHIFT                                        0
+#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_ADDR                         MT6336_PMIC_INT_CON8
+#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_MASK                         0x1
+#define MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE_SHIFT                        0
 #define MT6336_RG_INT_EN_DD_SWCHR_SHIP_MODE_ADDR                         MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_SHIP_MODE_MASK                         0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_SHIP_MODE_SHIFT                        0
+#define MT6336_RG_INT_EN_DD_SWCHR_SHIP_MODE_SHIFT                        1
 #define MT6336_RG_INT_EN_DD_SWCHR_BAT_OC_MODE_ADDR                       MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_BAT_OC_MODE_MASK                       0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_BAT_OC_MODE_SHIFT                      1
+#define MT6336_RG_INT_EN_DD_SWCHR_BAT_OC_MODE_SHIFT                      2
 #define MT6336_RG_INT_EN_DD_SWCHR_BAT_DEAD_MODE_ADDR                     MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_BAT_DEAD_MODE_MASK                     0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_BAT_DEAD_MODE_SHIFT                    2
+#define MT6336_RG_INT_EN_DD_SWCHR_BAT_DEAD_MODE_SHIFT                    3
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_SW_MODE_ADDR                       MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_SW_MODE_MASK                       0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_RST_SW_MODE_SHIFT                      3
+#define MT6336_RG_INT_EN_DD_SWCHR_RST_SW_MODE_SHIFT                      4
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_GLOBAL_MODE_ADDR                   MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_GLOBAL_MODE_MASK                   0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_RST_GLOBAL_MODE_SHIFT                  4
+#define MT6336_RG_INT_EN_DD_SWCHR_RST_GLOBAL_MODE_SHIFT                  5
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_WDT_MODE_ADDR                      MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_WDT_MODE_MASK                      0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_RST_WDT_MODE_SHIFT                     5
+#define MT6336_RG_INT_EN_DD_SWCHR_RST_WDT_MODE_SHIFT                     6
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_LONG_PRESS_MODE_ADDR               MT6336_PMIC_INT_CON8
 #define MT6336_RG_INT_EN_DD_SWCHR_RST_LONG_PRESS_MODE_MASK               0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT              6
-#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_ADDR                 MT6336_PMIC_INT_CON8
-#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_MASK                 0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT                7
+#define MT6336_RG_INT_EN_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT              7
 #define MT6336_INT_CON8_SET_ADDR                                         MT6336_PMIC_INT_CON8_SET
 #define MT6336_INT_CON8_SET_MASK                                         0xFF
 #define MT6336_INT_CON8_SET_SHIFT                                        0
 #define MT6336_INT_CON8_CLR_ADDR                                         MT6336_PMIC_INT_CON8_CLR
 #define MT6336_INT_CON8_CLR_MASK                                         0xFF
 #define MT6336_INT_CON8_CLR_SHIFT                                        0
+#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_ADDR                 MT6336_PMIC_INT_CON9
+#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_MASK                 0x1
+#define MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT                0
 #define MT6336_RG_INT_EN_DD_SWCHR_BUCK_PROTECT_STATE_ADDR                MT6336_PMIC_INT_CON9
 #define MT6336_RG_INT_EN_DD_SWCHR_BUCK_PROTECT_STATE_MASK                0x1
-#define MT6336_RG_INT_EN_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT               0
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_RISING_ADDR                      MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_RISING_MASK                      0x1
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_RISING_SHIFT                     1
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_FALLING_ADDR                     MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_FALLING_MASK                     0x1
-#define MT6336_RG_INT_EN_DD_PAM_MODE_DB_FALLING_SHIFT                    2
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_RISING_ADDR                   MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_RISING_MASK                   0x1
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_RISING_SHIFT                  3
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_FALLING_ADDR                  MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_FALLING_MASK                  0x1
-#define MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_FALLING_SHIFT                 4
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_RISING_ADDR                       MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_RISING_MASK                       0x1
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_RISING_SHIFT                      5
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_FALLING_ADDR                      MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_FALLING_MASK                      0x1
-#define MT6336_RG_INT_EN_DD_CV_MODE_DB_FALLING_SHIFT                     6
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_RISING_ADDR                   MT6336_PMIC_INT_CON9
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_RISING_MASK                   0x1
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_RISING_SHIFT                  7
+#define MT6336_RG_INT_EN_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT               1
+#define MT6336_POLARITY_ADDR                                             MT6336_PMIC_INT_CON9
+#define MT6336_POLARITY_MASK                                             0x1
+#define MT6336_POLARITY_SHIFT                                            2
 #define MT6336_INT_CON9_SET_ADDR                                         MT6336_PMIC_INT_CON9_SET
 #define MT6336_INT_CON9_SET_MASK                                         0xFF
 #define MT6336_INT_CON9_SET_SHIFT                                        0
 #define MT6336_INT_CON9_CLR_ADDR                                         MT6336_PMIC_INT_CON9_CLR
 #define MT6336_INT_CON9_CLR_MASK                                         0xFF
 #define MT6336_INT_CON9_CLR_SHIFT                                        0
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_FALLING_ADDR                  MT6336_PMIC_INT_CON10
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_FALLING_MASK                  0x1
-#define MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_FALLING_SHIFT                 0
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_RISING_ADDR                   MT6336_PMIC_INT_CON10
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_RISING_MASK                   0x1
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_RISING_SHIFT                  1
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_FALLING_ADDR                  MT6336_PMIC_INT_CON10
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_FALLING_MASK                  0x1
-#define MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_FALLING_SHIFT                 2
-#define MT6336_RG_INT_EN_DD_1MS_TIMER_FINISH_ADDR                        MT6336_PMIC_INT_CON10
-#define MT6336_RG_INT_EN_DD_1MS_TIMER_FINISH_MASK                        0x1
-#define MT6336_RG_INT_EN_DD_1MS_TIMER_FINISH_SHIFT                       3
-#define MT6336_POLARITY_ADDR                                             MT6336_PMIC_INT_CON10
-#define MT6336_POLARITY_MASK                                             0x1
-#define MT6336_POLARITY_SHIFT                                            4
-#define MT6336_INT_CON10_SET_ADDR                                        MT6336_PMIC_INT_CON10_SET
-#define MT6336_INT_CON10_SET_MASK                                        0xFF
-#define MT6336_INT_CON10_SET_SHIFT                                       0
-#define MT6336_INT_CON10_CLR_ADDR                                        MT6336_PMIC_INT_CON10_CLR
-#define MT6336_INT_CON10_CLR_MASK                                        0xFF
-#define MT6336_INT_CON10_CLR_SHIFT                                       0
 #define MT6336_RG_INT_MASK_CHR_VBUS_PLUGIN_ADDR                          MT6336_PMIC_INT_MASK_CON0
 #define MT6336_RG_INT_MASK_CHR_VBUS_PLUGIN_MASK                          0x1
 #define MT6336_RG_INT_MASK_CHR_VBUS_PLUGIN_SHIFT                         0
@@ -2350,42 +2306,42 @@
 #define MT6336_INT_MASK_CON4_CLR_ADDR                                    MT6336_PMIC_INT_MASK_CON4_CLR
 #define MT6336_INT_MASK_CON4_CLR_MASK                                    0xFF
 #define MT6336_INT_MASK_CON4_CLR_SHIFT                                   0
-#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_ADDR                             MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_MASK                             0x1
-#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_SHIFT                            0
-#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_ADDR                             MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_MASK                             0x1
-#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_SHIFT                            1
-#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_ADDR                             MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_MASK                             0x1
-#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_SHIFT                            2
-#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_ADDR                             MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_MASK                             0x1
-#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_SHIFT                            3
-#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_ADDR                            MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_MASK                            0x1
-#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_SHIFT                           4
-#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_ADDR                            MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_MASK                            0x1
-#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_SHIFT                           5
 #define MT6336_RG_INT_MASK_CHR_BAT_RECHG_ADDR                            MT6336_PMIC_INT_MASK_CON5
 #define MT6336_RG_INT_MASK_CHR_BAT_RECHG_MASK                            0x1
-#define MT6336_RG_INT_MASK_CHR_BAT_RECHG_SHIFT                           6
-#define MT6336_RG_INT_MASK_DD_PE_STATUS_ADDR                             MT6336_PMIC_INT_MASK_CON5
-#define MT6336_RG_INT_MASK_DD_PE_STATUS_MASK                             0x1
-#define MT6336_RG_INT_MASK_DD_PE_STATUS_SHIFT                            7
+#define MT6336_RG_INT_MASK_CHR_BAT_RECHG_SHIFT                           0
+#define MT6336_RG_INT_MASK_BAT_TEMP_H_ADDR                               MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_BAT_TEMP_H_MASK                               0x1
+#define MT6336_RG_INT_MASK_BAT_TEMP_H_SHIFT                              1
+#define MT6336_RG_INT_MASK_BAT_TEMP_L_ADDR                               MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_BAT_TEMP_L_MASK                               0x1
+#define MT6336_RG_INT_MASK_BAT_TEMP_L_SHIFT                              2
+#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_ADDR                             MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_MASK                             0x1
+#define MT6336_RG_INT_MASK_TYPE_C_L_MIN_SHIFT                            3
+#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_ADDR                             MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_MASK                             0x1
+#define MT6336_RG_INT_MASK_TYPE_C_L_MAX_SHIFT                            4
+#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_ADDR                             MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_MASK                             0x1
+#define MT6336_RG_INT_MASK_TYPE_C_H_MIN_SHIFT                            5
+#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_ADDR                             MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_MASK                             0x1
+#define MT6336_RG_INT_MASK_TYPE_C_H_MAX_SHIFT                            6
+#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_ADDR                            MT6336_PMIC_INT_MASK_CON5
+#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_MASK                            0x1
+#define MT6336_RG_INT_MASK_TYPE_C_CC_IRQ_SHIFT                           7
 #define MT6336_INT_MASK_CON5_SET_ADDR                                    MT6336_PMIC_INT_MASK_CON5_SET
 #define MT6336_INT_MASK_CON5_SET_MASK                                    0xFF
 #define MT6336_INT_MASK_CON5_SET_SHIFT                                   0
 #define MT6336_INT_MASK_CON5_CLR_ADDR                                    MT6336_PMIC_INT_MASK_CON5_CLR
 #define MT6336_INT_MASK_CON5_CLR_MASK                                    0xFF
 #define MT6336_INT_MASK_CON5_CLR_SHIFT                                   0
-#define MT6336_RG_INT_MASK_BAT_TEMP_H_ADDR                               MT6336_PMIC_INT_MASK_CON6
-#define MT6336_RG_INT_MASK_BAT_TEMP_H_MASK                               0x1
-#define MT6336_RG_INT_MASK_BAT_TEMP_H_SHIFT                              0
-#define MT6336_RG_INT_MASK_BAT_TEMP_L_ADDR                               MT6336_PMIC_INT_MASK_CON6
-#define MT6336_RG_INT_MASK_BAT_TEMP_L_MASK                               0x1
-#define MT6336_RG_INT_MASK_BAT_TEMP_L_SHIFT                              1
+#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_ADDR                            MT6336_PMIC_INT_MASK_CON6
+#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_MASK                            0x1
+#define MT6336_RG_INT_MASK_TYPE_C_PD_IRQ_SHIFT                           0
+#define MT6336_RG_INT_MASK_DD_PE_STATUS_ADDR                             MT6336_PMIC_INT_MASK_CON6
+#define MT6336_RG_INT_MASK_DD_PE_STATUS_MASK                             0x1
+#define MT6336_RG_INT_MASK_DD_PE_STATUS_SHIFT                            1
 #define MT6336_RG_INT_MASK_BC12_V2P7_TIMEOUT_ADDR                        MT6336_PMIC_INT_MASK_CON6
 #define MT6336_RG_INT_MASK_BC12_V2P7_TIMEOUT_MASK                        0x1
 #define MT6336_RG_INT_MASK_BC12_V2P7_TIMEOUT_SHIFT                       2
@@ -2416,108 +2372,72 @@
 #define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_RISING_ADDR           MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_RISING_MASK           0x1
 #define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_RISING_SHIFT          1
+#define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_ADDR            MT6336_PMIC_INT_MASK_CON7
+#define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_MASK            0x1
+#define MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_SHIFT           2
 #define MT6336_RG_INT_MASK_DD_SWCHR_PLUGIN_PULSEB_ADDR                   MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_PLUGIN_PULSEB_MASK                   0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_PLUGIN_PULSEB_SHIFT                  2
+#define MT6336_RG_INT_MASK_DD_SWCHR_PLUGIN_PULSEB_SHIFT                  3
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_SHIP_ADDR                    MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_SHIP_MASK                    0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_SHIP_SHIFT                   3
+#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_SHIP_SHIFT                   4
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_OC_ADDR                  MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_OC_MASK                  0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_OC_SHIFT                 4
+#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_OC_SHIFT                 5
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_DEAD_ADDR                MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_DEAD_MASK                0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT               5
+#define MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT               6
 #define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_MODE_ADDR                       MT6336_PMIC_INT_MASK_CON7
 #define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_MODE_MASK                       0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_MODE_SHIFT                      6
-#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_ADDR                       MT6336_PMIC_INT_MASK_CON7
-#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_MASK                       0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_SHIFT                      7
+#define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_MODE_SHIFT                      7
 #define MT6336_INT_MASK_CON7_SET_ADDR                                    MT6336_PMIC_INT_MASK_CON7_SET
 #define MT6336_INT_MASK_CON7_SET_MASK                                    0xFF
 #define MT6336_INT_MASK_CON7_SET_SHIFT                                   0
 #define MT6336_INT_MASK_CON7_CLR_ADDR                                    MT6336_PMIC_INT_MASK_CON7_CLR
 #define MT6336_INT_MASK_CON7_CLR_MASK                                    0xFF
 #define MT6336_INT_MASK_CON7_CLR_SHIFT                                   0
+#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_ADDR                       MT6336_PMIC_INT_MASK_CON8
+#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_MASK                       0x1
+#define MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE_SHIFT                      0
 #define MT6336_RG_INT_MASK_DD_SWCHR_SHIP_MODE_ADDR                       MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_SHIP_MODE_MASK                       0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_SHIP_MODE_SHIFT                      0
+#define MT6336_RG_INT_MASK_DD_SWCHR_SHIP_MODE_SHIFT                      1
 #define MT6336_RG_INT_MASK_DD_SWCHR_BAT_OC_MODE_ADDR                     MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_BAT_OC_MODE_MASK                     0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_BAT_OC_MODE_SHIFT                    1
+#define MT6336_RG_INT_MASK_DD_SWCHR_BAT_OC_MODE_SHIFT                    2
 #define MT6336_RG_INT_MASK_DD_SWCHR_BAT_DEAD_MODE_ADDR                   MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_BAT_DEAD_MODE_MASK                   0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_BAT_DEAD_MODE_SHIFT                  2
+#define MT6336_RG_INT_MASK_DD_SWCHR_BAT_DEAD_MODE_SHIFT                  3
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_SW_MODE_ADDR                     MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_SW_MODE_MASK                     0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_RST_SW_MODE_SHIFT                    3
+#define MT6336_RG_INT_MASK_DD_SWCHR_RST_SW_MODE_SHIFT                    4
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_GLOBAL_MODE_ADDR                 MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_GLOBAL_MODE_MASK                 0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_RST_GLOBAL_MODE_SHIFT                4
+#define MT6336_RG_INT_MASK_DD_SWCHR_RST_GLOBAL_MODE_SHIFT                5
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_WDT_MODE_ADDR                    MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_WDT_MODE_MASK                    0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_RST_WDT_MODE_SHIFT                   5
+#define MT6336_RG_INT_MASK_DD_SWCHR_RST_WDT_MODE_SHIFT                   6
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_LONG_PRESS_MODE_ADDR             MT6336_PMIC_INT_MASK_CON8
 #define MT6336_RG_INT_MASK_DD_SWCHR_RST_LONG_PRESS_MODE_MASK             0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT            6
-#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_ADDR               MT6336_PMIC_INT_MASK_CON8
-#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_MASK               0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT              7
+#define MT6336_RG_INT_MASK_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT            7
 #define MT6336_INT_MASK_CON8_SET_ADDR                                    MT6336_PMIC_INT_MASK_CON8_SET
 #define MT6336_INT_MASK_CON8_SET_MASK                                    0xFF
 #define MT6336_INT_MASK_CON8_SET_SHIFT                                   0
 #define MT6336_INT_MASK_CON8_CLR_ADDR                                    MT6336_PMIC_INT_MASK_CON8_CLR
 #define MT6336_INT_MASK_CON8_CLR_MASK                                    0xFF
 #define MT6336_INT_MASK_CON8_CLR_SHIFT                                   0
+#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_ADDR               MT6336_PMIC_INT_MASK_CON9
+#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_MASK               0x1
+#define MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT              0
 #define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_PROTECT_STATE_ADDR              MT6336_PMIC_INT_MASK_CON9
 #define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_PROTECT_STATE_MASK              0x1
-#define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT             0
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_RISING_ADDR                    MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_RISING_MASK                    0x1
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_RISING_SHIFT                   1
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_FALLING_ADDR                   MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_FALLING_MASK                   0x1
-#define MT6336_RG_INT_MASK_DD_PAM_MODE_DB_FALLING_SHIFT                  2
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_RISING_ADDR                 MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_RISING_MASK                 0x1
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_RISING_SHIFT                3
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_FALLING_ADDR                MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_FALLING_MASK                0x1
-#define MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_FALLING_SHIFT               4
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_RISING_ADDR                     MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_RISING_MASK                     0x1
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_RISING_SHIFT                    5
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_FALLING_ADDR                    MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_FALLING_MASK                    0x1
-#define MT6336_RG_INT_MASK_DD_CV_MODE_DB_FALLING_SHIFT                   6
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_RISING_ADDR                 MT6336_PMIC_INT_MASK_CON9
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_RISING_MASK                 0x1
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_RISING_SHIFT                7
+#define MT6336_RG_INT_MASK_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT             1
 #define MT6336_INT_MASK_CON9_SET_ADDR                                    MT6336_PMIC_INT_MASK_CON9_SET
 #define MT6336_INT_MASK_CON9_SET_MASK                                    0xFF
 #define MT6336_INT_MASK_CON9_SET_SHIFT                                   0
 #define MT6336_INT_MASK_CON9_CLR_ADDR                                    MT6336_PMIC_INT_MASK_CON9_CLR
 #define MT6336_INT_MASK_CON9_CLR_MASK                                    0xFF
 #define MT6336_INT_MASK_CON9_CLR_SHIFT                                   0
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_FALLING_ADDR                MT6336_PMIC_INT_MASK_CON10
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_FALLING_MASK                0x1
-#define MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_FALLING_SHIFT               0
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_RISING_ADDR                 MT6336_PMIC_INT_MASK_CON10
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_RISING_MASK                 0x1
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_RISING_SHIFT                1
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_FALLING_ADDR                MT6336_PMIC_INT_MASK_CON10
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_FALLING_MASK                0x1
-#define MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_FALLING_SHIFT               2
-#define MT6336_RG_INT_MASK_DD_1MS_TIMER_FINISH_ADDR                      MT6336_PMIC_INT_MASK_CON10
-#define MT6336_RG_INT_MASK_DD_1MS_TIMER_FINISH_MASK                      0x1
-#define MT6336_RG_INT_MASK_DD_1MS_TIMER_FINISH_SHIFT                     3
-#define MT6336_INT_MASK_CON10_SET_ADDR                                   MT6336_PMIC_INT_MASK_CON10_SET
-#define MT6336_INT_MASK_CON10_SET_MASK                                   0xFF
-#define MT6336_INT_MASK_CON10_SET_SHIFT                                  0
-#define MT6336_INT_MASK_CON10_CLR_ADDR                                   MT6336_PMIC_INT_MASK_CON10_CLR
-#define MT6336_INT_MASK_CON10_CLR_MASK                                   0xFF
-#define MT6336_INT_MASK_CON10_CLR_SHIFT                                  0
 #define MT6336_RG_INT_STATUS_CHR_VBUS_PLUGIN_ADDR                        MT6336_PMIC_INT_STATUS0
 #define MT6336_RG_INT_STATUS_CHR_VBUS_PLUGIN_MASK                        0x1
 #define MT6336_RG_INT_STATUS_CHR_VBUS_PLUGIN_SHIFT                       0
@@ -2638,36 +2558,36 @@
 #define MT6336_RG_INT_STATUS_VBUS_SOFT_OVP_L_ADDR                        MT6336_PMIC_INT_STATUS4
 #define MT6336_RG_INT_STATUS_VBUS_SOFT_OVP_L_MASK                        0x1
 #define MT6336_RG_INT_STATUS_VBUS_SOFT_OVP_L_SHIFT                       7
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_ADDR                           MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_MASK                           0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_SHIFT                          0
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_ADDR                           MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_MASK                           0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_SHIFT                          1
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_ADDR                           MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_MASK                           0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_SHIFT                          2
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_ADDR                           MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_MASK                           0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_SHIFT                          3
-#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_ADDR                          MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_MASK                          0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_SHIFT                         4
-#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_ADDR                          MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_MASK                          0x1
-#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_SHIFT                         5
 #define MT6336_RG_INT_STATUS_CHR_BAT_RECHG_ADDR                          MT6336_PMIC_INT_STATUS5
 #define MT6336_RG_INT_STATUS_CHR_BAT_RECHG_MASK                          0x1
-#define MT6336_RG_INT_STATUS_CHR_BAT_RECHG_SHIFT                         6
-#define MT6336_RG_INT_STATUS_DD_PE_STATUS_ADDR                           MT6336_PMIC_INT_STATUS5
-#define MT6336_RG_INT_STATUS_DD_PE_STATUS_MASK                           0x1
-#define MT6336_RG_INT_STATUS_DD_PE_STATUS_SHIFT                          7
-#define MT6336_RG_INT_STATUS_BAT_TEMP_H_ADDR                             MT6336_PMIC_INT_STATUS6
+#define MT6336_RG_INT_STATUS_CHR_BAT_RECHG_SHIFT                         0
+#define MT6336_RG_INT_STATUS_BAT_TEMP_H_ADDR                             MT6336_PMIC_INT_STATUS5
 #define MT6336_RG_INT_STATUS_BAT_TEMP_H_MASK                             0x1
-#define MT6336_RG_INT_STATUS_BAT_TEMP_H_SHIFT                            0
-#define MT6336_RG_INT_STATUS_BAT_TEMP_L_ADDR                             MT6336_PMIC_INT_STATUS6
+#define MT6336_RG_INT_STATUS_BAT_TEMP_H_SHIFT                            1
+#define MT6336_RG_INT_STATUS_BAT_TEMP_L_ADDR                             MT6336_PMIC_INT_STATUS5
 #define MT6336_RG_INT_STATUS_BAT_TEMP_L_MASK                             0x1
-#define MT6336_RG_INT_STATUS_BAT_TEMP_L_SHIFT                            1
+#define MT6336_RG_INT_STATUS_BAT_TEMP_L_SHIFT                            2
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_ADDR                           MT6336_PMIC_INT_STATUS5
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_MASK                           0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MIN_SHIFT                          3
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_ADDR                           MT6336_PMIC_INT_STATUS5
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_MASK                           0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_L_MAX_SHIFT                          4
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_ADDR                           MT6336_PMIC_INT_STATUS5
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_MASK                           0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MIN_SHIFT                          5
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_ADDR                           MT6336_PMIC_INT_STATUS5
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_MASK                           0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_H_MAX_SHIFT                          6
+#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_ADDR                          MT6336_PMIC_INT_STATUS5
+#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_MASK                          0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ_SHIFT                         7
+#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_ADDR                          MT6336_PMIC_INT_STATUS6
+#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_MASK                          0x1
+#define MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ_SHIFT                         0
+#define MT6336_RG_INT_STATUS_DD_PE_STATUS_ADDR                           MT6336_PMIC_INT_STATUS6
+#define MT6336_RG_INT_STATUS_DD_PE_STATUS_MASK                           0x1
+#define MT6336_RG_INT_STATUS_DD_PE_STATUS_SHIFT                          1
 #define MT6336_RG_INT_STATUS_BC12_V2P7_TIMEOUT_ADDR                      MT6336_PMIC_INT_STATUS6
 #define MT6336_RG_INT_STATUS_BC12_V2P7_TIMEOUT_MASK                      0x1
 #define MT6336_RG_INT_STATUS_BC12_V2P7_TIMEOUT_SHIFT                     2
@@ -2692,84 +2612,54 @@
 #define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_ADDR         MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_MASK         0x1
 #define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_SHIFT        1
+#define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_ADDR          MT6336_PMIC_INT_STATUS7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_MASK          0x1
+#define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_SHIFT         2
 #define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB_ADDR                 MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB_MASK                 0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB_SHIFT                2
+#define MT6336_RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB_SHIFT                3
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP_ADDR                  MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP_MASK                  0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP_SHIFT                 3
+#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP_SHIFT                 4
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC_ADDR                MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC_MASK                0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC_SHIFT               4
+#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC_SHIFT               5
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_ADDR              MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_MASK              0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT             5
+#define MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT             6
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_MODE_ADDR                     MT6336_PMIC_INT_STATUS7
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_MODE_MASK                     0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_MODE_SHIFT                    6
-#define MT6336_RG_INT_STATUS_DD_SWCHR_LOWQ_MODE_ADDR                     MT6336_PMIC_INT_STATUS7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_MODE_SHIFT                    7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_LOWQ_MODE_ADDR                     MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_LOWQ_MODE_MASK                     0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_LOWQ_MODE_SHIFT                    7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_LOWQ_MODE_SHIFT                    0
 #define MT6336_RG_INT_STATUS_DD_SWCHR_SHIP_MODE_ADDR                     MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_SHIP_MODE_MASK                     0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_SHIP_MODE_SHIFT                    0
+#define MT6336_RG_INT_STATUS_DD_SWCHR_SHIP_MODE_SHIFT                    1
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_OC_MODE_ADDR                   MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_OC_MODE_MASK                   0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_OC_MODE_SHIFT                  1
+#define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_OC_MODE_SHIFT                  2
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_DEAD_MODE_ADDR                 MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_DEAD_MODE_MASK                 0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_DEAD_MODE_SHIFT                2
+#define MT6336_RG_INT_STATUS_DD_SWCHR_BAT_DEAD_MODE_SHIFT                3
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_SW_MODE_ADDR                   MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_SW_MODE_MASK                   0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_SW_MODE_SHIFT                  3
+#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_SW_MODE_SHIFT                  4
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_GLOBAL_MODE_ADDR               MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_GLOBAL_MODE_MASK               0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_GLOBAL_MODE_SHIFT              4
+#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_GLOBAL_MODE_SHIFT              5
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_WDT_MODE_ADDR                  MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_WDT_MODE_MASK                  0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_WDT_MODE_SHIFT                 5
+#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_WDT_MODE_SHIFT                 6
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_ADDR           MT6336_PMIC_INT_STATUS8
 #define MT6336_RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_MASK           0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT          6
-#define MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_ADDR             MT6336_PMIC_INT_STATUS8
+#define MT6336_RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT          7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_ADDR             MT6336_PMIC_INT_STATUS9
 #define MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_MASK             0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT            7
+#define MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT            0
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_ADDR            MT6336_PMIC_INT_STATUS9
 #define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_MASK            0x1
-#define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT           0
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_RISING_ADDR                  MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_RISING_MASK                  0x1
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_RISING_SHIFT                 1
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_FALLING_ADDR                 MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_FALLING_MASK                 0x1
-#define MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_FALLING_SHIFT                2
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_RISING_ADDR               MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_RISING_MASK               0x1
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_RISING_SHIFT              3
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_FALLING_ADDR              MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_FALLING_MASK              0x1
-#define MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_FALLING_SHIFT             4
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_RISING_ADDR                   MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_RISING_MASK                   0x1
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_RISING_SHIFT                  5
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_FALLING_ADDR                  MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_FALLING_MASK                  0x1
-#define MT6336_RG_INT_STATUS_DD_CV_MODE_DB_FALLING_SHIFT                 6
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_RISING_ADDR               MT6336_PMIC_INT_STATUS9
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_RISING_MASK               0x1
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_RISING_SHIFT              7
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_FALLING_ADDR              MT6336_PMIC_INT_STATUS10
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_FALLING_MASK              0x1
-#define MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_FALLING_SHIFT             0
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_RISING_ADDR               MT6336_PMIC_INT_STATUS10
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_RISING_MASK               0x1
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_RISING_SHIFT              1
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_FALLING_ADDR              MT6336_PMIC_INT_STATUS10
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_FALLING_MASK              0x1
-#define MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_FALLING_SHIFT             2
-#define MT6336_RG_INT_STATUS_DD_1MS_TIMER_FINISH_ADDR                    MT6336_PMIC_INT_STATUS10
-#define MT6336_RG_INT_STATUS_DD_1MS_TIMER_FINISH_MASK                    0x1
-#define MT6336_RG_INT_STATUS_DD_1MS_TIMER_FINISH_SHIFT                   3
+#define MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT           1
 #define MT6336_RG_INT_RAW_STATUS_CHR_VBUS_PLUGIN_ADDR                    MT6336_PMIC_INT_RAW_STATUS0
 #define MT6336_RG_INT_RAW_STATUS_CHR_VBUS_PLUGIN_MASK                    0x1
 #define MT6336_RG_INT_RAW_STATUS_CHR_VBUS_PLUGIN_SHIFT                   0
@@ -2890,36 +2780,36 @@
 #define MT6336_RG_INT_RAW_STATUS_VBUS_SOFT_OVP_L_ADDR                    MT6336_PMIC_INT_RAW_STATUS4
 #define MT6336_RG_INT_RAW_STATUS_VBUS_SOFT_OVP_L_MASK                    0x1
 #define MT6336_RG_INT_RAW_STATUS_VBUS_SOFT_OVP_L_SHIFT                   7
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_MASK                       0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_SHIFT                      0
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_MASK                       0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_SHIFT                      1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_MASK                       0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_SHIFT                      2
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_MASK                       0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_SHIFT                      3
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_ADDR                      MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_MASK                      0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_SHIFT                     4
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_ADDR                      MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_MASK                      0x1
-#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_SHIFT                     5
 #define MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG_ADDR                      MT6336_PMIC_INT_RAW_STATUS5
 #define MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG_MASK                      0x1
-#define MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG_SHIFT                     6
-#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
-#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_MASK                       0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_SHIFT                      7
-#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H_ADDR                         MT6336_PMIC_INT_RAW_STATUS6
+#define MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG_SHIFT                     0
+#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H_ADDR                         MT6336_PMIC_INT_RAW_STATUS5
 #define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H_MASK                         0x1
-#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H_SHIFT                        0
-#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L_ADDR                         MT6336_PMIC_INT_RAW_STATUS6
+#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H_SHIFT                        1
+#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L_ADDR                         MT6336_PMIC_INT_RAW_STATUS5
 #define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L_MASK                         0x1
-#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L_SHIFT                        1
+#define MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L_SHIFT                        2
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_MASK                       0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN_SHIFT                      3
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_MASK                       0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX_SHIFT                      4
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_MASK                       0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN_SHIFT                      5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_ADDR                       MT6336_PMIC_INT_RAW_STATUS5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_MASK                       0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX_SHIFT                      6
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_ADDR                      MT6336_PMIC_INT_RAW_STATUS5
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_MASK                      0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ_SHIFT                     7
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_ADDR                      MT6336_PMIC_INT_RAW_STATUS6
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_MASK                      0x1
+#define MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ_SHIFT                     0
+#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_ADDR                       MT6336_PMIC_INT_RAW_STATUS6
+#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_MASK                       0x1
+#define MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS_SHIFT                      1
 #define MT6336_RG_INT_RAW_STATUS_BC12_V2P7_TIMEOUT_ADDR                  MT6336_PMIC_INT_RAW_STATUS6
 #define MT6336_RG_INT_RAW_STATUS_BC12_V2P7_TIMEOUT_MASK                  0x1
 #define MT6336_RG_INT_RAW_STATUS_BC12_V2P7_TIMEOUT_SHIFT                 2
@@ -2944,84 +2834,54 @@
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_ADDR     MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_MASK     0x1
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING_SHIFT    1
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_ADDR      MT6336_PMIC_INT_RAW_STATUS7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_MASK      0x1
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL_SHIFT     2
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGIN_PULSEB_ADDR             MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGIN_PULSEB_MASK             0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGIN_PULSEB_SHIFT            2
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGIN_PULSEB_SHIFT            3
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_SHIP_ADDR              MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_SHIP_MASK              0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_SHIP_SHIFT             3
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_SHIP_SHIFT             4
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_OC_ADDR            MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_OC_MASK            0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_OC_SHIFT           4
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_OC_SHIFT           5
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_ADDR          MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_MASK          0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT         5
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_DEAD_SHIFT         6
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_MODE_ADDR                 MT6336_PMIC_INT_RAW_STATUS7
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_MODE_MASK                 0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_MODE_SHIFT                6
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_LOWQ_MODE_ADDR                 MT6336_PMIC_INT_RAW_STATUS7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_MODE_SHIFT                7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_LOWQ_MODE_ADDR                 MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_LOWQ_MODE_MASK                 0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_LOWQ_MODE_SHIFT                7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_LOWQ_MODE_SHIFT                0
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_SHIP_MODE_ADDR                 MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_SHIP_MODE_MASK                 0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_SHIP_MODE_SHIFT                0
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_SHIP_MODE_SHIFT                1
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_OC_MODE_ADDR               MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_OC_MODE_MASK               0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_OC_MODE_SHIFT              1
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_OC_MODE_SHIFT              2
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_DEAD_MODE_ADDR             MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_DEAD_MODE_MASK             0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_DEAD_MODE_SHIFT            2
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BAT_DEAD_MODE_SHIFT            3
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_SW_MODE_ADDR               MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_SW_MODE_MASK               0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_SW_MODE_SHIFT              3
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_SW_MODE_SHIFT              4
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_GLOBAL_MODE_ADDR           MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_GLOBAL_MODE_MASK           0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_GLOBAL_MODE_SHIFT          4
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_GLOBAL_MODE_SHIFT          5
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_WDT_MODE_ADDR              MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_WDT_MODE_MASK              0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_WDT_MODE_SHIFT             5
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_WDT_MODE_SHIFT             6
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_ADDR       MT6336_PMIC_INT_RAW_STATUS8
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_MASK       0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT      6
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_ADDR         MT6336_PMIC_INT_RAW_STATUS8
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE_SHIFT      7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_ADDR         MT6336_PMIC_INT_RAW_STATUS9
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_MASK         0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT        7
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE_SHIFT        0
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_ADDR        MT6336_PMIC_INT_RAW_STATUS9
 #define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_MASK        0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT       0
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_RISING_ADDR              MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_RISING_MASK              0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_RISING_SHIFT             1
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_FALLING_ADDR             MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_FALLING_MASK             0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_FALLING_SHIFT            2
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_RISING_ADDR           MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_RISING_MASK           0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_RISING_SHIFT          3
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_FALLING_ADDR          MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_FALLING_MASK          0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_FALLING_SHIFT         4
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_RISING_ADDR               MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_RISING_MASK               0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_RISING_SHIFT              5
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_FALLING_ADDR              MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_FALLING_MASK              0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_FALLING_SHIFT             6
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_RISING_ADDR           MT6336_PMIC_INT_RAW_STATUS9
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_RISING_MASK           0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_RISING_SHIFT          7
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_FALLING_ADDR          MT6336_PMIC_INT_RAW_STATUS10
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_FALLING_MASK          0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_FALLING_SHIFT         0
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_RISING_ADDR           MT6336_PMIC_INT_RAW_STATUS10
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_RISING_MASK           0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_RISING_SHIFT          1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_FALLING_ADDR          MT6336_PMIC_INT_RAW_STATUS10
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_FALLING_MASK          0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_FALLING_SHIFT         2
-#define MT6336_RG_INT_RAW_STATUS_DD_1MS_TIMER_FINISH_ADDR                MT6336_PMIC_INT_RAW_STATUS10
-#define MT6336_RG_INT_RAW_STATUS_DD_1MS_TIMER_FINISH_MASK                0x1
-#define MT6336_RG_INT_RAW_STATUS_DD_1MS_TIMER_FINISH_SHIFT               3
+#define MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_PROTECT_STATE_SHIFT       1
 #define MT6336_FQMTR_TCKSEL_ADDR                                         MT6336_PMIC_FQMTR_CON0
 #define MT6336_FQMTR_TCKSEL_MASK                                         0x7
 #define MT6336_FQMTR_TCKSEL_SHIFT                                        0
@@ -8818,7 +8678,7 @@ typedef enum {
 	MT6336_SWCID,
 	MT6336_HWCID,
 	MT6336_I2C_CONFIG,
-	MT6336_I2C_RSV,
+	MT6336_I2C_RD_LEN,
 	MT6336_TEST_OUT0,
 	MT6336_TEST_OUT1,
 	MT6336_RG_MON_GRP_SEL,
@@ -9092,18 +8952,18 @@ typedef enum {
 	MT6336_RG_INT_EN_VBUS_SOFT_OVP_L,
 	MT6336_INT_CON4_SET,
 	MT6336_INT_CON4_CLR,
+	MT6336_RG_INT_EN_CHR_BAT_RECHG,
+	MT6336_RG_INT_EN_BAT_TEMP_H,
+	MT6336_RG_INT_EN_BAT_TEMP_L,
 	MT6336_RG_INT_EN_TYPE_C_L_MIN,
 	MT6336_RG_INT_EN_TYPE_C_L_MAX,
 	MT6336_RG_INT_EN_TYPE_C_H_MIN,
 	MT6336_RG_INT_EN_TYPE_C_H_MAX,
 	MT6336_RG_INT_EN_TYPE_C_CC_IRQ,
-	MT6336_RG_INT_EN_TYPE_C_PD_IRQ,
-	MT6336_RG_INT_EN_CHR_BAT_RECHG,
-	MT6336_RG_INT_EN_DD_PE_STATUS,
 	MT6336_INT_CON5_SET,
 	MT6336_INT_CON5_CLR,
-	MT6336_RG_INT_EN_BAT_TEMP_H,
-	MT6336_RG_INT_EN_BAT_TEMP_L,
+	MT6336_RG_INT_EN_TYPE_C_PD_IRQ,
+	MT6336_RG_INT_EN_DD_PE_STATUS,
 	MT6336_RG_INT_EN_BC12_V2P7_TIMEOUT,
 	MT6336_RG_INT_EN_BC12_V3P2_TIMEOUT,
 	MT6336_RG_INT_EN_DD_BC12_STATUS,
@@ -9114,14 +8974,15 @@ typedef enum {
 	MT6336_INT_CON6_CLR,
 	MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_WDT,
 	MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_RISING,
+	MT6336_RG_INT_EN_DD_SWCHR_PLUGOUT_PULSEB_LEVEL,
 	MT6336_RG_INT_EN_DD_SWCHR_PLUGIN_PULSEB,
 	MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_SHIP,
 	MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_OC,
 	MT6336_RG_INT_EN_DD_SWCHR_TOP_RST_BAT_DEAD,
 	MT6336_RG_INT_EN_DD_SWCHR_BUCK_MODE,
-	MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE,
 	MT6336_INT_CON7_SET,
 	MT6336_INT_CON7_CLR,
+	MT6336_RG_INT_EN_DD_SWCHR_LOWQ_MODE,
 	MT6336_RG_INT_EN_DD_SWCHR_SHIP_MODE,
 	MT6336_RG_INT_EN_DD_SWCHR_BAT_OC_MODE,
 	MT6336_RG_INT_EN_DD_SWCHR_BAT_DEAD_MODE,
@@ -9129,26 +8990,13 @@ typedef enum {
 	MT6336_RG_INT_EN_DD_SWCHR_RST_GLOBAL_MODE,
 	MT6336_RG_INT_EN_DD_SWCHR_RST_WDT_MODE,
 	MT6336_RG_INT_EN_DD_SWCHR_RST_LONG_PRESS_MODE,
-	MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_INT_CON8_SET,
 	MT6336_INT_CON8_CLR,
+	MT6336_RG_INT_EN_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_RG_INT_EN_DD_SWCHR_BUCK_PROTECT_STATE,
-	MT6336_RG_INT_EN_DD_PAM_MODE_DB_RISING,
-	MT6336_RG_INT_EN_DD_PAM_MODE_DB_FALLING,
-	MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_RISING,
-	MT6336_RG_INT_EN_DD_QI_THR_MODE_DB_FALLING,
-	MT6336_RG_INT_EN_DD_CV_MODE_DB_RISING,
-	MT6336_RG_INT_EN_DD_CV_MODE_DB_FALLING,
-	MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_RISING,
+	MT6336_POLARITY,
 	MT6336_INT_CON9_SET,
 	MT6336_INT_CON9_CLR,
-	MT6336_RG_INT_EN_DD_QI_ICL_MODE_DB_FALLING,
-	MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_RISING,
-	MT6336_RG_INT_EN_DD_QI_ICC_MODE_DB_FALLING,
-	MT6336_RG_INT_EN_DD_1MS_TIMER_FINISH,
-	MT6336_POLARITY,
-	MT6336_INT_CON10_SET,
-	MT6336_INT_CON10_CLR,
 	MT6336_RG_INT_MASK_CHR_VBUS_PLUGIN,
 	MT6336_RG_INT_MASK_CHR_VBUS_PLUGOUT,
 	MT6336_RG_INT_MASK_STATE_BUCK_BACKGROUND,
@@ -9199,18 +9047,18 @@ typedef enum {
 	MT6336_RG_INT_MASK_VBUS_SOFT_OVP_L,
 	MT6336_INT_MASK_CON4_SET,
 	MT6336_INT_MASK_CON4_CLR,
+	MT6336_RG_INT_MASK_CHR_BAT_RECHG,
+	MT6336_RG_INT_MASK_BAT_TEMP_H,
+	MT6336_RG_INT_MASK_BAT_TEMP_L,
 	MT6336_RG_INT_MASK_TYPE_C_L_MIN,
 	MT6336_RG_INT_MASK_TYPE_C_L_MAX,
 	MT6336_RG_INT_MASK_TYPE_C_H_MIN,
 	MT6336_RG_INT_MASK_TYPE_C_H_MAX,
 	MT6336_RG_INT_MASK_TYPE_C_CC_IRQ,
-	MT6336_RG_INT_MASK_TYPE_C_PD_IRQ,
-	MT6336_RG_INT_MASK_CHR_BAT_RECHG,
-	MT6336_RG_INT_MASK_DD_PE_STATUS,
 	MT6336_INT_MASK_CON5_SET,
 	MT6336_INT_MASK_CON5_CLR,
-	MT6336_RG_INT_MASK_BAT_TEMP_H,
-	MT6336_RG_INT_MASK_BAT_TEMP_L,
+	MT6336_RG_INT_MASK_TYPE_C_PD_IRQ,
+	MT6336_RG_INT_MASK_DD_PE_STATUS,
 	MT6336_RG_INT_MASK_BC12_V2P7_TIMEOUT,
 	MT6336_RG_INT_MASK_BC12_V3P2_TIMEOUT,
 	MT6336_RG_INT_MASK_DD_BC12_STATUS,
@@ -9221,14 +9069,15 @@ typedef enum {
 	MT6336_INT_MASK_CON6_CLR,
 	MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_WDT,
 	MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_RISING,
+	MT6336_RG_INT_MASK_DD_SWCHR_PLUGOUT_PULSEB_LEVEL,
 	MT6336_RG_INT_MASK_DD_SWCHR_PLUGIN_PULSEB,
 	MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_SHIP,
 	MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_OC,
 	MT6336_RG_INT_MASK_DD_SWCHR_TOP_RST_BAT_DEAD,
 	MT6336_RG_INT_MASK_DD_SWCHR_BUCK_MODE,
-	MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE,
 	MT6336_INT_MASK_CON7_SET,
 	MT6336_INT_MASK_CON7_CLR,
+	MT6336_RG_INT_MASK_DD_SWCHR_LOWQ_MODE,
 	MT6336_RG_INT_MASK_DD_SWCHR_SHIP_MODE,
 	MT6336_RG_INT_MASK_DD_SWCHR_BAT_OC_MODE,
 	MT6336_RG_INT_MASK_DD_SWCHR_BAT_DEAD_MODE,
@@ -9236,25 +9085,12 @@ typedef enum {
 	MT6336_RG_INT_MASK_DD_SWCHR_RST_GLOBAL_MODE,
 	MT6336_RG_INT_MASK_DD_SWCHR_RST_WDT_MODE,
 	MT6336_RG_INT_MASK_DD_SWCHR_RST_LONG_PRESS_MODE,
-	MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_INT_MASK_CON8_SET,
 	MT6336_INT_MASK_CON8_CLR,
+	MT6336_RG_INT_MASK_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_RG_INT_MASK_DD_SWCHR_BUCK_PROTECT_STATE,
-	MT6336_RG_INT_MASK_DD_PAM_MODE_DB_RISING,
-	MT6336_RG_INT_MASK_DD_PAM_MODE_DB_FALLING,
-	MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_RISING,
-	MT6336_RG_INT_MASK_DD_QI_THR_MODE_DB_FALLING,
-	MT6336_RG_INT_MASK_DD_CV_MODE_DB_RISING,
-	MT6336_RG_INT_MASK_DD_CV_MODE_DB_FALLING,
-	MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_RISING,
 	MT6336_INT_MASK_CON9_SET,
 	MT6336_INT_MASK_CON9_CLR,
-	MT6336_RG_INT_MASK_DD_QI_ICL_MODE_DB_FALLING,
-	MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_RISING,
-	MT6336_RG_INT_MASK_DD_QI_ICC_MODE_DB_FALLING,
-	MT6336_RG_INT_MASK_DD_1MS_TIMER_FINISH,
-	MT6336_INT_MASK_CON10_SET,
-	MT6336_INT_MASK_CON10_CLR,
 	MT6336_RG_INT_STATUS_CHR_VBUS_PLUGIN,
 	MT6336_RG_INT_STATUS_CHR_VBUS_PLUGOUT,
 	MT6336_RG_INT_STATUS_STATE_BUCK_BACKGROUND,
@@ -9295,16 +9131,16 @@ typedef enum {
 	MT6336_RG_INT_STATUS_ADC_JEITA_COLD,
 	MT6336_RG_INT_STATUS_VBUS_SOFT_OVP_H,
 	MT6336_RG_INT_STATUS_VBUS_SOFT_OVP_L,
+	MT6336_RG_INT_STATUS_CHR_BAT_RECHG,
+	MT6336_RG_INT_STATUS_BAT_TEMP_H,
+	MT6336_RG_INT_STATUS_BAT_TEMP_L,
 	MT6336_RG_INT_STATUS_TYPE_C_L_MIN,
 	MT6336_RG_INT_STATUS_TYPE_C_L_MAX,
 	MT6336_RG_INT_STATUS_TYPE_C_H_MIN,
 	MT6336_RG_INT_STATUS_TYPE_C_H_MAX,
 	MT6336_RG_INT_STATUS_TYPE_C_CC_IRQ,
 	MT6336_RG_INT_STATUS_TYPE_C_PD_IRQ,
-	MT6336_RG_INT_STATUS_CHR_BAT_RECHG,
 	MT6336_RG_INT_STATUS_DD_PE_STATUS,
-	MT6336_RG_INT_STATUS_BAT_TEMP_H,
-	MT6336_RG_INT_STATUS_BAT_TEMP_L,
 	MT6336_RG_INT_STATUS_BC12_V2P7_TIMEOUT,
 	MT6336_RG_INT_STATUS_BC12_V3P2_TIMEOUT,
 	MT6336_RG_INT_STATUS_DD_BC12_STATUS,
@@ -9313,6 +9149,7 @@ typedef enum {
 	MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_LONG_PRESS,
 	MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_WDT,
 	MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING,
+	MT6336_RG_INT_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL,
 	MT6336_RG_INT_STATUS_DD_SWCHR_PLUGIN_PULSEB,
 	MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_SHIP,
 	MT6336_RG_INT_STATUS_DD_SWCHR_TOP_RST_BAT_OC,
@@ -9328,17 +9165,6 @@ typedef enum {
 	MT6336_RG_INT_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE,
 	MT6336_RG_INT_STATUS_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_RG_INT_STATUS_DD_SWCHR_BUCK_PROTECT_STATE,
-	MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_RISING,
-	MT6336_RG_INT_STATUS_DD_PAM_MODE_DB_FALLING,
-	MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_RISING,
-	MT6336_RG_INT_STATUS_DD_QI_THR_MODE_DB_FALLING,
-	MT6336_RG_INT_STATUS_DD_CV_MODE_DB_RISING,
-	MT6336_RG_INT_STATUS_DD_CV_MODE_DB_FALLING,
-	MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_RISING,
-	MT6336_RG_INT_STATUS_DD_QI_ICL_MODE_DB_FALLING,
-	MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_RISING,
-	MT6336_RG_INT_STATUS_DD_QI_ICC_MODE_DB_FALLING,
-	MT6336_RG_INT_STATUS_DD_1MS_TIMER_FINISH,
 	MT6336_RG_INT_RAW_STATUS_CHR_VBUS_PLUGIN,
 	MT6336_RG_INT_RAW_STATUS_CHR_VBUS_PLUGOUT,
 	MT6336_RG_INT_RAW_STATUS_STATE_BUCK_BACKGROUND,
@@ -9379,16 +9205,16 @@ typedef enum {
 	MT6336_RG_INT_RAW_STATUS_ADC_JEITA_COLD,
 	MT6336_RG_INT_RAW_STATUS_VBUS_SOFT_OVP_H,
 	MT6336_RG_INT_RAW_STATUS_VBUS_SOFT_OVP_L,
+	MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG,
+	MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H,
+	MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MIN,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_L_MAX,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MIN,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_H_MAX,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_CC_IRQ,
 	MT6336_RG_INT_RAW_STATUS_TYPE_C_PD_IRQ,
-	MT6336_RG_INT_RAW_STATUS_CHR_BAT_RECHG,
 	MT6336_RG_INT_RAW_STATUS_DD_PE_STATUS,
-	MT6336_RG_INT_RAW_STATUS_BAT_TEMP_H,
-	MT6336_RG_INT_RAW_STATUS_BAT_TEMP_L,
 	MT6336_RG_INT_RAW_STATUS_BC12_V2P7_TIMEOUT,
 	MT6336_RG_INT_RAW_STATUS_BC12_V3P2_TIMEOUT,
 	MT6336_RG_INT_RAW_STATUS_DD_BC12_STATUS,
@@ -9397,6 +9223,7 @@ typedef enum {
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_LONG_PRESS,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_WDT,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_RISING,
+	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGOUT_PULSEB_LEVEL,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_PLUGIN_PULSEB,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_SHIP,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_TOP_RST_BAT_OC,
@@ -9412,17 +9239,6 @@ typedef enum {
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_RST_LONG_PRESS_MODE,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_CHR_SUSPEND_STATE,
 	MT6336_RG_INT_RAW_STATUS_DD_SWCHR_BUCK_PROTECT_STATE,
-	MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_RISING,
-	MT6336_RG_INT_RAW_STATUS_DD_PAM_MODE_DB_FALLING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_RISING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_THR_MODE_DB_FALLING,
-	MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_RISING,
-	MT6336_RG_INT_RAW_STATUS_DD_CV_MODE_DB_FALLING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_RISING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_ICL_MODE_DB_FALLING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_RISING,
-	MT6336_RG_INT_RAW_STATUS_DD_QI_ICC_MODE_DB_FALLING,
-	MT6336_RG_INT_RAW_STATUS_DD_1MS_TIMER_FINISH,
 	MT6336_FQMTR_TCKSEL,
 	MT6336_FQMTR_BUSY,
 	MT6336_FQMTR_EN,

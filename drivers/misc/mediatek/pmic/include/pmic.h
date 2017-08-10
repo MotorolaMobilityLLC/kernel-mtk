@@ -106,6 +106,7 @@ extern int batt_init_cust_data(void);
 
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
+extern unsigned int upmu_get_rgs_chrdet(void);
 /*---------------------------------------------------*/
 
 struct regulator;
@@ -134,6 +135,10 @@ struct mtk_regulator {
 	struct mtk_regulator_vosel vosel;
 	/*--- BUCK/LDO ---*/
 	const char *type;
+	void (*en_cb)(unsigned int);
+	void (*vol_cb)(unsigned int);
+	unsigned int (*da_en_cb)(void);
+	unsigned int (*da_vol_cb)(void);
 };
 
 #endif				/* _PMIC_SW_H_ */

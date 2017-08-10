@@ -1,21 +1,25 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #ifndef _MT_PMIC_6336_H_
 #define _MT_PMIC_6336_H_
 
-#include "include/mt6336/mt6336_upmu_hw.h"
-
+#include "mt6336_irq.h"
+#ifndef MT6336_E1
+#include "mt6336_upmu_hw.h"
+#else
+#include "mt6336_upmu_hw_e1.h"
+#endif
 
 #define MT6336_DEBUG_PR_DBG
 
@@ -35,49 +39,9 @@
 #define PMICERR(fmt, arg...)   pr_debug(MT6336TAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #define PMICREG(fmt, arg...)   pr_debug(MT6336TAG fmt, ##arg)
 
-#define CHR_INT_WIDTH 8
 
-#define CHR_S_INT_GEN(_name)	\
-	{	\
-		.name =  #_name,	\
-	}
-
-#define CHR_M_INTS_GEN(adr, raw_adr, enA, maskA, interrupt)	\
-	{	\
-		.address =  adr,	\
-		.raw_address = raw_adr,	\
-		.en =  enA,	\
-		.set =  (enA) + 1,	\
-		.clear =  (enA) + 2,	\
-		.mask =  maskA,	\
-		.mask_set =	(maskA) + 1, \
-		.mask_clear =  (maskA) + 2,	\
-		.interrupts = interrupt,	\
-	}
-
-#define MT6336_CON_BIT(flagname)	\
-	({	\
-		const MT6336_PMU_FLAG_TABLE_ENTRY *pFlag = &mt6336_pmu_flags_table[flagname]; \
-		pFlag->mask << pFlag->shift;	\
-	})
-
-struct chr_interrupt_bit {
-	const char *name;
-	void (*callback)(void);
-	unsigned int times;
-};
-
-struct chr_interrupts {
-	unsigned int address;
-	unsigned int raw_address;
-	unsigned int en;
-	unsigned int set;
-	unsigned int clear;
-	unsigned int mask;
-	unsigned int mask_set;
-	unsigned int mask_clear;
-	struct chr_interrupt_bit *interrupts;
-};
+/* multi-read register */
+extern unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len);
 
 /* access register api */
 extern unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsigned char MASK,

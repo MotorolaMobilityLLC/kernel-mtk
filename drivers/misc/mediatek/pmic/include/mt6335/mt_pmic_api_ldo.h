@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #ifndef _MT_PMIC_API_LDO_H_
@@ -49,7 +49,10 @@ void pmic_ldo_vrf12_sw_en(int en_value);
 void pmic_ldo_vcama1_sw_en(int en_value);
 void pmic_ldo_vcama2_sw_en(int en_value);
 void pmic_ldo_vrtc_sw_en(int en_value);
-
-
+void pmic_ldo_vsram_dvfs1_sw_en(int en_value);
+void pmic_ldo_vsram_dvfs2_sw_en(int en_value);
+void pmic_ldo_vsram_vgpu_sw_en(int en_value);
+void pmic_ldo_vsram_vcore_sw_en(int en_value);
+void pmic_ldo_vsram_vmd_sw_en(int en_value);
 
 #endif				/* _MT_PMIC_API_LDO_H_ */

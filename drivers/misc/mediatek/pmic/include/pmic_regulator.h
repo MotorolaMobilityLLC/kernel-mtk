@@ -29,16 +29,15 @@
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
-#include "mt6335/mt_pmic_regulator.h"
-#endif
-
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 #include "mt6353/mt_pmic_regulator.h"
 #endif
 
-#define LDO_REGULATOR_TEST 0
-#define BUCK_REGULATOR_TEST 0
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
+#include "mt6335/mt_pmic_regulator.h"
+#endif
+
+#define REGULATOR_TEST 0
 
 #define GETSIZE(array) (sizeof(array)/sizeof(array[0]))
 extern struct mtk_regulator mtk_ldos[];
@@ -57,8 +56,9 @@ extern int buck_set_voltage(BUCK_TYPE type, unsigned int voltage);
 extern unsigned int buck_get_voltage(BUCK_TYPE type);
 #endif /*--COMMON API after MT6335--*/
 
-#ifdef LDO_REGULATOR_TEST
-extern void PMIC6335_regulator_test(void);
-#endif /*--LDO_REGULATOR_TEST--*/
+#ifdef REGULATOR_TEST
+extern void pmic_regulator_en_test(void);
+extern void pmic_regulator_vol_test(void);
+#endif /*--REGULATOR_TEST--*/
 
 #endif				/* _PMIC_REGULATOR_H_ */

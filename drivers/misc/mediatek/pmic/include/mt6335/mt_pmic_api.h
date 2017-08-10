@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #ifndef _MT_PMIC_API_H_
@@ -2262,6 +2262,8 @@ extern unsigned int mt6335_upmu_get_da_qi_vcn33_mode(void);
 extern void mt6335_upmu_set_rg_vcn33_stbtd(unsigned int val);
 extern unsigned int mt6335_upmu_get_da_qi_vcn33_stb(void);
 extern unsigned int mt6335_upmu_get_da_qi_vcn33_en(void);
+extern unsigned int mt6335_upmu_get_da_qi_vcn33_bt_en(void);
+extern unsigned int mt6335_upmu_get_da_qi_vcn33_wifi_en(void);
 extern void mt6335_upmu_set_rg_vcn33_ocfb_en(unsigned int val);
 extern unsigned int mt6335_upmu_get_da_qi_vcn33_ocfb_en(void);
 extern void mt6335_upmu_set_rg_vcn33_dummy_load(unsigned int val);
@@ -2292,6 +2294,8 @@ extern unsigned int mt6335_upmu_get_da_qi_vcn18_mode(void);
 extern void mt6335_upmu_set_rg_vcn18_stbtd(unsigned int val);
 extern unsigned int mt6335_upmu_get_da_qi_vcn18_stb(void);
 extern unsigned int mt6335_upmu_get_da_qi_vcn18_en(void);
+extern unsigned int mt6335_upmu_get_da_qi_vcn18_wifi_en(void);
+extern unsigned int mt6335_upmu_get_da_qi_vcn18_bt_en(void);
 extern void mt6335_upmu_set_rg_vcn18_ocfb_en(unsigned int val);
 extern unsigned int mt6335_upmu_get_da_qi_vcn18_ocfb_en(void);
 extern void mt6335_upmu_set_rg_vcn18_dummy_load(unsigned int val);
@@ -2840,6 +2844,8 @@ extern void mt6335_upmu_set_rg_vmc_oc_trim(unsigned int val);
 extern void mt6335_upmu_set_rg_vmc_n2lp_ehc_v18(unsigned int val);
 extern void mt6335_upmu_set_rg_vcn33_cal(unsigned int val);
 extern void mt6335_upmu_set_rg_vcn33_vosel(unsigned int val);
+extern void mt6335_upmu_set_rg_vcn33_bt_vosel(unsigned int val);
+extern void mt6335_upmu_set_rg_vcn33_wifi_vosel(unsigned int val);
 extern void mt6335_upmu_set_rg_vcn33_ndis_en(unsigned int val);
 extern void mt6335_upmu_set_rg_vcn33_n2lp_ehc_v18(unsigned int val);
 extern void mt6335_upmu_set_rg_vsim1_cal(unsigned int val);
@@ -4114,6 +4120,8 @@ extern unsigned int mt6335_upmu_get_rg_vcama1_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vcama2_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vmc_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vcn33_vosel(void);
+extern unsigned int mt6335_upmu_get_rg_vcn33_wifi_vosel(void);
+extern unsigned int mt6335_upmu_get_rg_vcn33_bt_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vsim1_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vemc_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vibr_vosel(void);
@@ -4129,6 +4137,8 @@ extern unsigned int mt6335_upmu_get_rg_vcamd2_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vrf18_1_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vrf18_2_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vcn18_vosel(void);
+extern unsigned int mt6335_upmu_get_rg_vcn18_wifi_vosel(void);
+extern unsigned int mt6335_upmu_get_rg_vcn18_bt_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vmipi_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vcamio_vosel(void);
 extern unsigned int mt6335_upmu_get_rg_vgp3_vosel(void);
