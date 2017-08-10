@@ -316,8 +316,14 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	status = 0;
 	pIwc = (iwcCmdqMessage_t *) _pIwc;
 
+	/* check task first */
+	if (!pTask) {
+		CMDQ_ERR("[SEC]SESSION_MSG: Unable to fill message by empty task.\n");
+		return -EFAULT;
+	}
+
 	/* check command size first */
-	if (pTask && (CMDQ_TZ_CMD_BLOCK_SIZE < (pTask->commandSize + reservedCommandSize))) {
+	if (CMDQ_TZ_CMD_BLOCK_SIZE < (pTask->commandSize + reservedCommandSize)) {
 		CMDQ_ERR("[SEC]SESSION_MSG: pTask %p commandSize %d > %d\n",
 			 pTask, pTask->commandSize, CMDQ_TZ_CMD_BLOCK_SIZE);
 		return -EFAULT;
