@@ -795,21 +795,28 @@ static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 #ifdef AUDIO_VCOREFS_SUPPORT
 static int soc_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
+	static bool bEnable;
 	struct fb_event *evdata = data;
 	int blank;
 
 	if (event != FB_EVENT_BLANK)
 		return 0;
 
-	blank = *(int *)evdata->data;
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false && bEnable == false)
+		return 0;
+	pr_debug("%s, MemoryPathEnable %d, bEnable %d\n", __func__,
+			GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1), bEnable);
 
+	blank = *(int *)evdata->data;
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
 		pr_debug("%s SCREEN ON\n", __func__);
+		bEnable = false;
 		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
 		break;
 	case FB_BLANK_POWERDOWN:
 		pr_debug("%s SCREEN OFF\n", __func__);
+		bEnable = true;
 		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_ULTRA_LOW_PWR);
 		break;
 	default:
