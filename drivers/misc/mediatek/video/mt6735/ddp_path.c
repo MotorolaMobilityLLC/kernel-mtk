@@ -229,10 +229,9 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 			if (module_list[i] == mout_map[j].id) {
 				/* find next module which can be connected */
 				step = i + 1;
-				while (module_can_connect[module_list[step]].bit == 0
-				       && step < module_num) {
+				while ((step < module_num) && (module_can_connect[module_list[step]].bit == 0))
 					step++;
-				}
+
 				ASSERT(step < module_num);
 				mout = mout_map[j].reg_val;
 				for (k = 0; k < 5; k++) {
@@ -266,10 +265,9 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 			if (module_list[i] == sel_out_map[j].id) {
 				step = i + 1;
 				/* find next module which can be connected */
-				while (module_can_connect[module_list[step]].bit == 0
-				       && step < module_num) {
+				while ((step < module_num) && (module_can_connect[module_list[step]].bit == 0))
 					step++;
-				}
+
 				ASSERT(step < module_num);
 				for (k = 0; k < 4; k++) {
 					if (sel_out_map[j].id_bit_map[k] == -1)
@@ -291,7 +289,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 			if (module_list[i] == sel_in_map[j].id) {
 				step = i - 1;
 				/* find next module which can be connected */
-				while (module_can_connect[module_list[step]].bit == 0 && step > 0)
+				while ((step > 0) && (module_can_connect[module_list[step]].bit == 0))
 					step--;
 
 				ASSERT(step >= 0);
@@ -329,10 +327,9 @@ static void ddp_check_path_l(int *module_list)
 				mout = 0;
 				/* find next module which can be connected */
 				step = i + 1;
-				while (module_can_connect[module_list[step]].bit == 0
-				       && step < module_num) {
+				while ((step < module_num) && (module_can_connect[module_list[step]].bit == 0))
 					step++;
-				}
+
 				ASSERT(step < module_num);
 				for (k = 0; k < 5; k++) {
 					if (mout_map[j].out_id_bit_map[k].m == -1)
@@ -369,10 +366,9 @@ static void ddp_check_path_l(int *module_list)
 
 			/* find next module which can be connected */
 			step = i + 1;
-			while (module_can_connect[module_list[step]].bit == 0
-			       && step < module_num) {
+			while ((step < module_num) && (module_can_connect[module_list[step]].bit == 0))
 				step++;
-			}
+
 			ASSERT(step < module_num);
 			for (k = 0; k < 4; k++) {
 				if (sel_out_map[j].id_bit_map[k] == -1)
@@ -400,7 +396,7 @@ static void ddp_check_path_l(int *module_list)
 
 			/* find next module which can be connected */
 			step = i - 1;
-			while (module_can_connect[module_list[step]].bit == 0 && step > 0)
+			while ((step > 0) && (module_can_connect[module_list[step]].bit == 0))
 				step--;
 
 			ASSERT(step >= 0);
@@ -446,10 +442,9 @@ static void ddp_disconnect_path_l(int *module_list, void *handle)
 			if (module_list[i] == mout_map[j].id) {
 				/* find next module which can be connected */
 				step = i + 1;
-				while (module_can_connect[module_list[step]].bit == 0
-				       && step < module_num) {
+				while ((step < module_num) && (module_can_connect[module_list[step]].bit == 0))
 					step++;
-				}
+
 				ASSERT(step < module_num);
 				for (k = 0; k < 5; k++) {
 					if (mout_map[j].out_id_bit_map[k].m == -1)
