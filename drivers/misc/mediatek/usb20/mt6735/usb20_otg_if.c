@@ -569,7 +569,8 @@ void musb_h_enumerate(void)
 	struct usb_device_descriptor device_descriptor;
 	struct usb_config_descriptor configuration_descriptor;
 	struct usb_otg_descriptor *otg_descriptor;
-	unsigned char descriptor[255];
+	unsigned char descriptor[65535];
+
 	/* set address */
 	musb_writew(mtk_musb->mregs, MUSB_TXFUNCADDR, 0);
 	setup_packet.bRequestType = USB_DIR_OUT | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
@@ -619,7 +620,13 @@ void musb_h_enumerate(void)
 	setup_packet.wValue = 0x0200;
 	setup_packet.wLength = configuration_descriptor.wTotalLength;
 	musb_h_setup(&setup_packet);
-	musb_h_in_data(descriptor, configuration_descriptor.wTotalLength);
+
+	/*
+	 * According to USB specification,
+	 * the maximum length of wTotalLength is 65535 bytes
+	 */
+	if (configuration_descriptor.wTotalLength <= sizeof(descriptor))
+		musb_h_in_data(descriptor, configuration_descriptor.wTotalLength);
 	musb_h_out_status();
 	DBG(0, "get all configuration descriptor OK!\n");
 	/* get otg descriptor */
