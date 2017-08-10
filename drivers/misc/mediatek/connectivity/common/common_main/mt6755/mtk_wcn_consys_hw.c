@@ -371,7 +371,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		hwPowerOn(MT6353_POWER_LDO_VCN18, VOL_1800 * 1000, "wcn_drv");
 #else
 		if (reg_VCN18) {
-			regulator_set_voltage(reg_VCN18, VOL_1800, VOL_1800);
+			regulator_set_voltage(reg_VCN18, VOL_1800 * 1000, VOL_1800 * 1000);
 			if (regulator_enable(reg_VCN18))
 				WMT_PLAT_ERR_FUNC("enable VCN18 fail\n");
 			else
@@ -385,7 +385,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		hwPowerOn(MT6351_POWER_LDO_VCN18, VOL_1800 * 1000, "wcn_drv");
 #else
 		if (reg_VCN18) {
-			regulator_set_voltage(reg_VCN18, VOL_1800, VOL_1800);
+			regulator_set_voltage(reg_VCN18, VOL_1800 * 1000, VOL_1800 * 1000);
 			if (regulator_enable(reg_VCN18))
 				WMT_PLAT_ERR_FUNC("enable VCN18 fail\n");
 			else
@@ -429,7 +429,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #endif
 #else
 			if (reg_VCN28) {
-				regulator_set_voltage(reg_VCN28, VOL_2800, VOL_2800);
+				regulator_set_voltage(reg_VCN28, VOL_2800 * 1000, VOL_2800 * 1000);
 				if (regulator_enable(reg_VCN28))
 					WMT_PLAT_ERR_FUNC("enable VCN_2V8 fail!\n");
 				else
@@ -974,7 +974,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 #endif
 #else
 		if (reg_VCN33_BT) {
-			regulator_set_voltage(reg_VCN33_BT, VOL_3300, VOL_3300);
+			regulator_set_voltage(reg_VCN33_BT, VOL_3300 * 1000, VOL_3300 * 1000);
 			if (regulator_enable(reg_VCN33_BT))
 				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
 		}
@@ -1029,7 +1029,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 #endif
 #else
 		if (reg_VCN33_WIFI) {
-			regulator_set_voltage(reg_VCN33_WIFI, VOL_3300, VOL_3300);
+			regulator_set_voltage(reg_VCN33_WIFI, VOL_3300 * 1000, VOL_3300 * 1000);
 			if (regulator_enable(reg_VCN33_WIFI))
 				WMT_PLAT_ERR_FUNC("WMT do WIFI PMIC on fail!\n");
 		}
@@ -1085,7 +1085,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 #endif
 #else
 		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, VOL_2800, VOL_2800);
+			regulator_set_voltage(reg_VCN28, VOL_2800 * 1000, VOL_2800 * 1000);
 			if (regulator_enable(reg_VCN28))
 				WMT_PLAT_ERR_FUNC("WMT do VCN28 PMIC on fail!\n");
 		}
