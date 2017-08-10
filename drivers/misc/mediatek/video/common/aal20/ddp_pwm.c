@@ -58,6 +58,7 @@ static volatile int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
 static volatile bool g_pwm_is_power_on;
 static volatile unsigned int g_pwm_value_before_power_off;
+static volatile int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
 
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 
@@ -82,6 +83,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
 	struct device_node *led_node = NULL;
 	int ret = 0;
+	int led_mode;
 	int pwm_config[5] = { 0 };
 
 	led_node = of_find_compatible_node(NULL, NULL, "mediatek,lcd-backlight");
@@ -101,12 +103,84 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 		} else {
 			PWM_ERR("led dts can not get pwm config data.\n");
 		}
+
+		if (g_pwm_led_mode == MT65XX_LED_MODE_NONE) {
+			ret = of_property_read_u32(led_node, "led_mode", &led_mode);
+			if (!ret) {
+				/* Save current LED mode */
+				g_pwm_led_mode = led_mode;
+			} else {
+				PWM_ERR("led dts can not get led mode data.\n");
+			}
+		}
 	}
 
 	if (ret)
 		PWM_ERR("get pwm cust info fail");
 
 	return ret;
+}
+
+static void disp_pwm_backlight_status(bool is_power_on)
+{
+	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	unsigned int high_width;
+
+	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
+		/* Read PWM value from register */
+		high_width = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF) >> 16;
+	} else {
+		/* Set dummy backlight value */
+		if (is_power_on == true)
+			high_width = 1023;
+		else
+			high_width = 0;
+	}
+
+	if (is_power_on == true && high_width > 0) {
+		PWM_NOTICE("backlight is on (%d), ddp_pwm power:(%d)",
+			high_width, is_power_on);
+		/* Change status when backlight turns on */
+		g_pwm_is_power_on = is_power_on;
+	} else if (is_power_on == false) {
+		PWM_NOTICE("backlight is off, ddp_pwm power:(%d)",
+			is_power_on);
+		/* Save vlaue before clock off */
+		g_pwm_value_before_power_off = high_width;
+		g_pwm_is_power_on = is_power_on;
+	}
+}
+
+static void disp_pwm_query_backlight(char *debug_output)
+{
+	char *temp_buf = debug_output;
+	const size_t buf_max_len = 100;
+	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	unsigned int high_width;
+
+	if (g_pwm_is_power_on == true) {
+		if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
+			/* Read PWM value from register */
+			high_width = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF) >> 16;
+		} else {
+			/* Set dummy backlight value */
+			high_width = 1023;
+		}
+	} else {
+		/* Read vlaue before clock off */
+		high_width = g_pwm_value_before_power_off;
+	}
+
+	if (high_width > 0) {
+		/* print backlight status */
+		snprintf(temp_buf, buf_max_len, "backlight is on (%d), ddp_pwm power:(%d)",
+			high_width, g_pwm_is_power_on);
+	} else {
+		snprintf(temp_buf, buf_max_len, "backlight is off, ddp_pwm power:(%d)",
+			g_pwm_is_power_on);
+	}
+
+	PWM_NOTICE("%s", temp_buf);
 }
 
 void disp_pwm_set_force_update_flag(void)
@@ -425,6 +499,10 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		g_pwm_duplicate_count = (g_pwm_duplicate_count + 1) & 63;
 	}
 
+	/* print backlight once after device resumed */
+	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM && g_pwm_is_power_on == false && level_1024 > 0)
+		disp_pwm_backlight_status(true);
+
 	return 0;
 }
 
@@ -434,7 +512,6 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 	unsigned int pwm_src = 0;
 	int ret = -1;
 
-	PWM_MSG("ddp_pwm_power_on: %d\n", module);
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 #ifdef CONFIG_MTK_CLKMGR /* MTK Clock Manager */
@@ -455,20 +532,20 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 	if (!ret)
 		disp_pwm_clksource_enable(pwm_src);
 
-	g_pwm_is_power_on = true;
+	if (g_pwm_led_mode != MT65XX_LED_MODE_CUST_BLS_PWM)
+		disp_pwm_backlight_status(true);
+
 	return 0;
 }
 
 static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 {
-	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
 	int ret = -1;
 
-	PWM_MSG("ddp_pwm_power_off: %d\n", module);
-	g_pwm_value_before_power_off = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF) >> 16;
-	g_pwm_is_power_on = false;
+	disp_pwm_backlight_status(false);
+
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 		atomic_set(&g_pwm_backlight[0], 0);
@@ -693,29 +770,6 @@ static void disp_pwm_dump(void)
 
 		PWM_NOTICE("[DUMP] [+0x%02x] = 0x%08x", offset, val);
 	}
-}
-
-static void disp_pwm_query_backlight(char *debug_output)
-{
-	char *temp_buf = debug_output;
-	const size_t buf_max_len = 100;
-	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
-	unsigned int val, high_width;
-
-	if (g_pwm_is_power_on == true) {
-		val = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF);
-		high_width = val >> 16;
-	} else {
-		/* Read vlaue before clock off */
-		high_width = g_pwm_value_before_power_off;
-	}
-
-	if (high_width > 0)
-		snprintf(temp_buf, buf_max_len, "backlight is on (%d)", high_width);
-	else
-		snprintf(temp_buf, buf_max_len, "backlight is off");
-
-	PWM_NOTICE("%s", temp_buf);
 }
 
 void disp_pwm_test(const char *cmd, char *debug_output)
