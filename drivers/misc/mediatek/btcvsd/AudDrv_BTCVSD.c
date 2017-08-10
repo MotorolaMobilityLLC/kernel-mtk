@@ -273,16 +273,15 @@ static int AudDrv_btcvsd_Allocate_Buffer(struct file *fp, kal_uint8 isRX)
 				    ("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent RX fail\n");
 				return -1;
 			}
-
-			memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0, BT_CVSD_Mem.u4RXBufferSize);
-
-			PRINTK_AUDDRV("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = 0x%x\n",
-			     BT_CVSD_Mem.pucRXVirtBufAddr, BT_CVSD_Mem.pucRXPhysBufAddr);
-
-			btsco.pRX = (BT_SCO_RX_T *) (BT_CVSD_Mem.pucRXVirtBufAddr);
-			btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM * (SCO_RX_PLC_SIZE +
-									   BTSCO_CVSD_PACKET_VALID_SIZE);
 		}
+		memset((void *)BT_CVSD_Mem.pucRXVirtBufAddr, 0, BT_CVSD_Mem.u4RXBufferSize);
+
+		PRINTK_AUDDRV("BT_CVSD_Mem.pucRXVirtBufAddr = %p BT_CVSD_Mem.pucRXPhysBufAddr = 0x%x\n",
+		     BT_CVSD_Mem.pucRXVirtBufAddr, BT_CVSD_Mem.pucRXPhysBufAddr);
+
+		btsco.pRX = (BT_SCO_RX_T *) (BT_CVSD_Mem.pucRXVirtBufAddr);
+		btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM * (SCO_RX_PLC_SIZE +
+								   BTSCO_CVSD_PACKET_VALID_SIZE);
 	} else {
 		writeToBT_cnt = 0;
 		BT_CVSD_Mem.u4TXBufferSize = sizeof(BT_SCO_TX_T);
@@ -299,15 +298,14 @@ static int AudDrv_btcvsd_Allocate_Buffer(struct file *fp, kal_uint8 isRX)
 				    ("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent TX fail\n");
 				return -1;
 			}
-
-			memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
-
-			PRINTK_AUDDRV("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = 0x%x\n",
-			     BT_CVSD_Mem.pucTXVirtBufAddr, BT_CVSD_Mem.pucTXPhysBufAddr);
-
-			btsco.pTX = (BT_SCO_TX_T *) (BT_CVSD_Mem.pucTXVirtBufAddr);
-			btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
 		}
+		memset((void *)BT_CVSD_Mem.pucTXVirtBufAddr, 0, BT_CVSD_Mem.u4TXBufferSize);
+
+		PRINTK_AUDDRV("BT_CVSD_Mem.pucTXVirtBufAddr = 0x%p BT_CVSD_Mem.pucTXPhysBufAddr = 0x%x\n",
+		     BT_CVSD_Mem.pucTXVirtBufAddr, BT_CVSD_Mem.pucTXPhysBufAddr);
+
+		btsco.pTX = (BT_SCO_TX_T *) (BT_CVSD_Mem.pucTXVirtBufAddr);
+		btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
 	}
 	pr_debug("AudDrv_btcvsd_Allocate_Buffer(-)\n");
 	return 0;
@@ -383,11 +381,13 @@ static long AudDrv_btcvsd_ioctl(struct file *fp, unsigned int cmd, unsigned long
 			if (arg == 0)
 				ret = AudDrv_btcvsd_Allocate_Buffer(fp, 0);
 			else if (arg == 1)
-				ret = AudDrv_btcvsd_Free_Buffer(fp, 0);
+				pr_debug("%s(), do nothing\n", __func__);
+				/*ret = AudDrv_btcvsd_Free_Buffer(fp, 0);*/
 			else if (arg == 2)
 				ret = AudDrv_btcvsd_Allocate_Buffer(fp, 1);
 			else if (arg == 3)
-				ret = AudDrv_btcvsd_Free_Buffer(fp, 1);
+				pr_debug("%s(), do nothing\n", __func__);
+				/*ret = AudDrv_btcvsd_Free_Buffer(fp, 1);*/
 			break;
 		}
 
@@ -1279,6 +1279,8 @@ static void AudDrv_btcvsd_mod_exit(void)
 {
 	PRINTK_AUDDRV("+AudDrv_btcvsd_mod_exit\n");
 
+	AudDrv_btcvsd_Free_Buffer(NULL, 0);
+	AudDrv_btcvsd_Free_Buffer(NULL, 1);
 	/*
 	   remove_proc_entry("audio", NULL);
 	   platform_driver_unregister(&AudDrv_btcvsd);
