@@ -2224,7 +2224,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				}
 
 				m4u_dump_buf_info(NULL);
-				if (NULL == gM4uPort[m4u_port].fault_data) {
+				if (m4u_port < M4U_PORT_UNKNOWN && NULL == gM4uPort[m4u_port].fault_data) {
 					m4u_aee_print(
 						"\nCRDISPATCH_KEY:M4U_%s\n, translation fault: port=%s, mva=0x%x, pa=0x%x\n",
 						m4u_get_port_name(m4u_port), m4u_get_port_name(m4u_port),
