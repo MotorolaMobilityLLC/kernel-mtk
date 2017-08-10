@@ -189,7 +189,6 @@ int mtk_smi_larb_clock_on(int larbid, bool pm)
 		return -EINVAL;
 
 	ret = _mtk_smi_larb_get(smi_data->larb[larbid], pm);
-	WARN_ON(ret);
 	if (ret)
 		return ret;
 
@@ -203,7 +202,8 @@ void mtk_smi_larb_clock_off(int larbid, bool pm)
 	if (!smi_data || larbid < 0 || larbid >= smi_data->larb_nr)
 		return;
 
-	WARN_ON(smi_data->larbref[larbid] <= 0);
+	if (smi_data->larbref[larbid] <= 0)
+		SMIMSG("larb ref <=0, larb %d ref %d\n", larbid, smi_data->larbref[larbid]);
 	if (!smi_clk_always_on)
 		_mtk_smi_larb_put(smi_data->larb[larbid], pm);
 	smi_data->larbref[larbid]--;
