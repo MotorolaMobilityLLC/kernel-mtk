@@ -68,7 +68,7 @@ unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
 static bool IRQ_CLR_FLAG;
-static char call_status;
+static int call_status;
 static int button_status;
 struct wake_lock accdet_suspend_lock;
 struct wake_lock accdet_irq_lock;
@@ -1348,8 +1348,8 @@ static ssize_t accdet_store_call_state(struct device_driver *ddri, const char *b
 {
 	int ret;
 
-	ret = sscanf(buf, "%s", &call_status);
-	if (ret != 1) {
+	ret = kstrtoint(buf, 0, &call_status);
+	if (ret != 0) {
 		ACCDET_DEBUG("accdet: Invalid values\n");
 		return -EINVAL;
 	}
@@ -1410,12 +1410,12 @@ static int dbug_thread(void *unused)
 static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const char *buf, size_t count)
 {
 
-	char start_flag;
+	int start_flag;
 	int error;
 	int ret;
 
-	ret = sscanf(buf, "%s", &start_flag);
-	if (ret != 1) {
+	ret = kstrtoint(buf, 0, &start_flag);
+	if (ret != 0) {
 		ACCDET_DEBUG("accdet: Invalid values\n");
 		return -EINVAL;
 	}
@@ -1438,11 +1438,11 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const char *buf, size_t count)
 {
 
-	char value;
+	int value;
 	int ret;
 
-	ret = sscanf(buf, "%s", &value);
-	if (ret != 1) {
+	ret = kstrtoint(buf, 0, &value);
+	if (ret != 0) {
 		ACCDET_DEBUG("accdet: Invalid values\n");
 		return -EINVAL;
 	}
@@ -1454,11 +1454,11 @@ static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const c
 
 static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char *buf, size_t count)
 {
-	char value;
+	int value;
 	int ret;
 
-	ret = sscanf(buf, "%s", &value);
-	if (ret != 1) {
+	ret = kstrtoint(buf, 0, &value);
+	if (ret != 0) {
 		ACCDET_DEBUG("accdet: Invalid values\n");
 		return -EINVAL;
 	}
