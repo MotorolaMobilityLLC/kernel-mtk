@@ -435,6 +435,12 @@ static long CAM_CAL_Ioctl(
 	}
 	CAM_CALDB(" init Working buffer address 0x%p  command is 0x%x\n", pu1Params, a_u4Command);
 
+	if (ptempbuf->u4Length > 65535) {
+		kfree(pBuff);
+		kfree(pu1Params);
+		CAM_CALDB("ptempbuf->u4Length is large\n");
+		return -EFAULT;
+	}
 
 	if (copy_from_user((u8 *)pu1Params, (u8 *)ptempbuf->pu1Params, ptempbuf->u4Length)) {
 		kfree(pBuff);
