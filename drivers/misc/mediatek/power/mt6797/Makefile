@@ -13,6 +13,7 @@
 
 # obj-$(CONFIG_MTK_PMIC)        += mt6311.o
 obj-$(CONFIG_MTK_PMIC)          += pmic.o pmic_irq.o upmu_common.o pmic_auxadc.o pmic_initial_setting.o fan53555.o da9214.o fan49101.o pmic_chr_type_det.o
+obj-$(CONFIG_REGULATOR_RT5735)	+= rt5735.o mtk_gpuregulator_intf.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ifeq ($(CONFIG_MTK_PMIC_DVT_SUPPORT),y)
      obj-$(CONFIG_MTK_PMIC)     += pmic_dvt.o

@@ -1,0 +1,17 @@
+config MTK_GPUREGULATOR_INTF
+	bool "MTK Reaulator Richtek Chip INTF"
+	---help---
+	  This driver provide MTK
+	  GPU Regulator
+	  support.
+	  from Richtek.
+
+config REGULATOR_RT5735
+	bool "RT5735 Regulator As External BUCK for GPU"
+	select MTK_GPUREGULATOR_INTF
+	default y
+	---help---
+	  Say Y here
+	  to enable support
+	  RT5735 Regulator
+	  from Richtek

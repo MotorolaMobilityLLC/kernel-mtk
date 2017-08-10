@@ -112,6 +112,9 @@
 #if defined(EXTERNAL_BUCK_FAN53555)
 #include "fan53555.h"
 #endif
+#ifdef CONFIG_MTK_GPUREGULATOR_INTF
+#include "mtk_gpuregulator_intf.h"
+#endif /* CONFIG_MTK_GPUREGULATOR_INTF */
 #if defined(EXTERNAL_BUCK_DA9214)
 #include "da9214.h"
 #endif
@@ -3669,12 +3672,15 @@ int is_ext_buck_exist(void)
 
 int is_ext_buck2_exist(void)
 {
-#if defined(EXTERNAL_BUCK_FAN53555)
-	if ((is_fan53555_exist() == 1))
+#if defined(EXTERNAL_BUCK_FAN53555) || defined(CONFIG_MTK_GPUREGULATOR_INTF)
+	if (is_fan53555_exist() == 1)
 		return 1;
-	else
-		return 0;
-#else
+#ifdef CONFIG_MTK_GPUREGULATOR_INTF
+	if (rt_is_hw_exist() == 1)
+		return 1;
+#endif /* CONFIG_MTK_GPUREGULATOR_INTF */
+	return 0;
+#else /* defined(EXTERNAL_BUCK_FAN53555) || CONFIG_MTK_GPUREGULATOR_ITNF) */
 	return 0;
 #if 0
 #if defined(CONFIG_MTK_FPGA)

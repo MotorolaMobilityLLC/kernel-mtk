@@ -437,7 +437,7 @@ static int fan53555_driver_probe(struct i2c_client *client, const struct i2c_dev
 		PMICLOG1("[fan53555_driver_probe] return err\n");
 		return err;
 	}
-	mt_gpufreq_fan53555_init();
+	/*mt_gpufreq_ext_ic_init();*/
 	return 0;
 
 exit:
@@ -587,9 +587,6 @@ static int __init fan53555_init(void)
 
 static void __exit fan53555_exit(void)
 {
-	if (new_client != NULL)
-		kfree(new_client);
-
 	i2c_del_driver(&fan53555_driver);
 }
 module_init(fan53555_init);
