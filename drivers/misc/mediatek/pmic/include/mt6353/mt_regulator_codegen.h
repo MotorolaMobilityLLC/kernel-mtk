@@ -16,7 +16,7 @@
 
 /* -------Code Gen Start-------*/
 /* Non regular voltage regulator */
-#define NON_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, array, mode, use, en, vol)	\
+#define NON_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _id, _type, array, mode, use, en, vol)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -30,15 +30,15 @@
 		},	\
 	},	\
 	.pvoltages = (void *)(array),	\
-	.en_att = __ATTR(LDO_##_name##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
-	.voltage_att = __ATTR(LDO_##_name##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
+	.en_att = __ATTR(LDO_##_id##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
+	.voltage_att = __ATTR(LDO_##_id##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
 	.en_reg = (PMU_FLAGS_LIST_ENUM)(en),	\
 	.vol_reg = (PMU_FLAGS_LIST_ENUM)(vol),	\
 	.isUsedable = (use),	\
 }
 
 /* Regular voltage regulator */
-#define REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, min, max, step, min_sel, mode, use, en, vol)	\
+#define REGULAR_VOLTAGE_REGULATOR_GEN(_name, _id, _type, min, max, step, min_sel, mode, use, en, vol)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -54,14 +54,14 @@
 			.valid_ops_mask = (mode),	\
 		},	\
 	},	\
-	.en_att = __ATTR(LDO_##_name##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
-	.voltage_att = __ATTR(LDO_##_name##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
+	.en_att = __ATTR(LDO_##_id##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
+	.voltage_att = __ATTR(LDO_##_id##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
 	.en_reg = (PMU_FLAGS_LIST_ENUM)(en),	\
 	.vol_reg = (PMU_FLAGS_LIST_ENUM)(vol),	\
 	.isUsedable = (use),	\
 }
 /* Fixed voltage regulator */
-#define FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _type, array, mode, use, en)	\
+#define FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(_name, _id, _type, array, mode, use, en)	\
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -75,8 +75,8 @@
 		},	\
 	},	\
 	.pvoltages = (void *)(array),	\
-	.en_att = __ATTR(LDO_##_name##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
-	.voltage_att = __ATTR(LDO_##_name##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
+	.en_att = __ATTR(LDO_##_id##_STATUS, 0664, show_LDO_STATUS, store_LDO_STATUS),	\
+	.voltage_att = __ATTR(LDO_##_id##_VOLTAGE, 0664, show_LDO_VOLTAGE, store_LDO_VOLTAGE),	\
 	.en_reg = (PMU_FLAGS_LIST_ENUM)(en),	\
 	.isUsedable = (use),	\
 }
