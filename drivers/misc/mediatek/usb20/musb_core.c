@@ -2687,12 +2687,8 @@ static int __init musb_init(void)
 	pr_info("%s: version " MUSB_VERSION ", ?dma?, otg (peripheral+host)\n", musb_driver_name);
 	return platform_driver_register(&musb_driver);
 }
-
-#if defined(CONFIG_MACH_MT2701) || defined(CONFIG_ARCH_MT7623) || defined(CONFIG_FPGA_EARLY_PORTING)
 module_init(musb_init);
-#else
-fs_initcall(musb_init);
-#endif
+
 static void __exit musb_cleanup(void)
 {
 	platform_driver_unregister(&musb_driver);
