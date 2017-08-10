@@ -168,7 +168,8 @@ unsigned int emmc_get_wp_size(void)
 		} else {
 			/* use old erase group size and
 			   write protect group size, store in CSD */
-			sg_wp_size = (512 * host_ctl->mmc->card->erase_size);
+			sg_wp_size = (512 * host_ctl->mmc->card->erase_size) *
+				(write_prot_grpsz + 1);
 			pr_err("otp: non-hc unit sg_wp_size %d\n", sg_wp_size);
 		}
 	}
