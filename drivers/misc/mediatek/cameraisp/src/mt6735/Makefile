@@ -45,4 +45,4 @@ else
   endif
 endif
 
-$(info cameraisp drv by platform $(platform_drv))
+# $(info cameraisp drv by platform $(platform_drv))

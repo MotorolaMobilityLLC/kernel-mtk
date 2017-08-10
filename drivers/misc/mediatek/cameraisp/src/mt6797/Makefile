@@ -38,4 +38,4 @@ else
   obj-y += camera_dpe.o
 endif
 
-$(info cameraisp drv by platform $(platform_drv))
+# $(info cameraisp drv by platform $(platform_drv))

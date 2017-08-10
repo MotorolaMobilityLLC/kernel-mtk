@@ -33,4 +33,4 @@ else
   obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
 endif
-$(info cameraisp drv by platform $(platform_drv))
+# $(info cameraisp drv by platform $(platform_drv))

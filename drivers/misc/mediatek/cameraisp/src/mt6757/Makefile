@@ -41,4 +41,4 @@ else
   obj-y += camera_tsf.o
 endif
 
-$(info cameraisp drv by platform $(platform_drv))
+# $(info cameraisp drv by platform $(platform_drv))
