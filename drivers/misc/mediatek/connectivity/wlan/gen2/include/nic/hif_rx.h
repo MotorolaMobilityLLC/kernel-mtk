@@ -139,6 +139,18 @@ typedef struct _HIF_RX_HEADER_T {
 	UINT_8 ucReserved;
 } HIF_RX_HEADER_T, *P_HIF_RX_HEADER_T;
 
+typedef struct _HIF_RX_DESC_T {
+	UINT_8 ucOwn;
+	UINT_8 ucDescChksum;
+	UINT_8 ucEtherTypeOffset;
+	UINT_8 ucChkSumInfo;
+	UINT_32 u4NextDesc;
+	UINT_32 u4BufStartAddr;
+	UINT_16 u2RxBufLen;
+	UINT_16 u2Rsrv1;
+} HIF_RX_DESC_T, *P_HIF_RX_DESC_T;
+
+
 typedef enum _ENUM_HIF_RX_PKT_TYPE_T {
 	HIF_RX_PKT_TYPE_DATA = 0,
 	HIF_RX_PKT_TYPE_EVENT,

@@ -167,6 +167,15 @@ typedef struct _HIF_TX_HEADER_T {
 	UINT_8 aucReserved[2];
 } HIF_TX_HEADER_T, *P_HIF_TX_HEADER_T;
 
+typedef struct _HIF_TX_DESC_T {
+	UINT_8 ucOwn;
+	UINT_8 ucDescChksum;
+	UINT_16 u2Rsrv1;
+	UINT_32 u4NextDesc;
+	UINT_32 u4BufStartAddr;
+	UINT_32 u4Rsrv2;
+} HIF_TX_DESC_T, *P_HIF_TX_DESC_T;
+
 typedef enum _ENUM_HIF_TX_PKT_TYPE_T {
 	HIF_TX_PKT_TYPE_DATA = 0,
 	HIF_TX_PKT_TYPE_CMD,
