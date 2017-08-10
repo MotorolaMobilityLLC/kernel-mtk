@@ -32,6 +32,12 @@
 #include <backend/gpu/mali_kbase_js_internal.h>
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
+#include "mt-plat/mt_chip.h"
+
+extern u32 get_devinfo_with_index(u32 index);
+
+
+
 void kbase_pm_register_access_enable(struct kbase_device *kbdev)
 {
 	struct kbase_pm_callback_conf *callbacks;
@@ -206,6 +212,9 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 	unsigned long irq_flags;
 	int ret;
 
+	unsigned int code;
+	unsigned int gpu_efuse;
+
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
 	mutex_lock(&js_devdata->runpool_mutex);
@@ -230,6 +239,34 @@ int kbase_hwaccess_pm_powerup(struct kbase_device *kbdev,
 			kbdev->pm.debug_core_mask[2] =
 			kbdev->gpu_props.props.raw_props.shader_present;
 
+    // check hw code and efuse.
+	code = mt_get_chip_hw_code();
+	// read GPU efuse info.
+	gpu_efuse = (get_devinfo_with_index(3) >> 7)&0x01;
+	if( gpu_efuse == 1 ) 
+	{
+		//kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+		kbdev->pm.debug_core_mask[0] =
+		kbdev->pm.debug_core_mask[1] =
+		kbdev->pm.debug_core_mask[2] = 1;
+	}
+	else				
+	{
+		//kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+		kbdev->pm.debug_core_mask[0] =
+		kbdev->pm.debug_core_mask[1] =
+		kbdev->pm.debug_core_mask[2] = 3;
+	}
+	
+	if (0x337 == code) //For 3-core
+	{
+		//kbdev->pm.debug_core_mask = (u64)7;
+		kbdev->pm.debug_core_mask[0] =
+		kbdev->pm.debug_core_mask[1] =
+		kbdev->pm.debug_core_mask[2] = 7;
+	}
+	
+	
 	/* Pretend the GPU is active to prevent a power policy turning the GPU
 	 * cores off */
 	kbdev->pm.active_count = 1;
