@@ -919,7 +919,7 @@ static const struct file_operations ccci_ipc_fops = {
 	.poll = ccci_ipc_poll,
 };
 
-int __init ccci_ipc_init(int md_id)
+int ccci_ipc_init(int md_id)
 {
 	int ret = 0;
 	int i = 0;

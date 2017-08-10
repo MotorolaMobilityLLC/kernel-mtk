@@ -608,7 +608,7 @@ void rpc_device_deinit(int md_id)
 }
 #endif				/* CONFIG_MTK_TC1_FEATURE */
 
-int __init ccci_rpc_init(int md_id)
+int ccci_rpc_init(int md_id)
 {
 	int ret;
 	struct rpc_ctl_block_t *ctl_b;

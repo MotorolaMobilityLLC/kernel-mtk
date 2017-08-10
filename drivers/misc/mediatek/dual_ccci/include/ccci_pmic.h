@@ -61,8 +61,8 @@ struct shared_mem_pmic_t {
 	struct pmic6326_ccci_msg_info ccci_msg_info;
 };
 
-int __init ccci_pmic_init(void);
-void __exit ccci_pmic_exit(void);
+int ccci_pmic_init(void);
+void ccci_pmic_exit(void);
 
 #define CCCI_PMIC_SMEM_SIZE sizeof(struct shared_mem_pmic_t)
 #endif				/*  __CCCI_PMIC_H__ */

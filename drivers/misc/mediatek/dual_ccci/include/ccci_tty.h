@@ -33,7 +33,7 @@ struct shared_mem_tty_t {
 };
 
 extern void ccci_reset_buffers(struct shared_mem_tty_t *shared_mem, int size);
-extern int __init ccci_tty_init(int);
-extern void __exit ccci_tty_exit(int);
+extern int  ccci_tty_init(int);
+extern void ccci_tty_exit(int);
 
 #endif				/*  __CCCI_TTY_H__ */

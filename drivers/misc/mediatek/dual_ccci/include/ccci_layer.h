@@ -268,7 +268,7 @@ int ccci_logic_layer_init(int);
 void ccci_logic_layer_exit(int);
 int ccci_write_runtime_data(int md_id, unsigned char buf[], int len);
 
-extern int __init ccif_module_init(void);
-extern void __exit ccif_module_exit(void);
+extern int ccif_module_init(void);
+extern void ccif_module_exit(void);
 
 #endif	/*  __CCCI_LAYER_H__ */

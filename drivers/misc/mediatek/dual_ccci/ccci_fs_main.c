@@ -403,7 +403,7 @@ static const struct file_operations fs_fops = {
 	.release = ccci_fs_release,
 };
 
-int __init ccci_fs_init(int md_id)
+int ccci_fs_init(int md_id)
 {
 	int ret;
 	int major, minor;
