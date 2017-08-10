@@ -58,6 +58,7 @@ typedef enum _ENUM_RESET_STATUS_T {
 typedef struct _RESET_STRUCT_T {
 	ENUM_RESET_STATUS_T rst_data;
 	struct work_struct rst_work;
+	struct work_struct rst_trigger_work;
 } RESET_STRUCT_T;
 
 /* duplicated from wmt_exp.h for better driver isolation */
