@@ -924,7 +924,7 @@ typedef struct {
 	unsigned int mSramLength;
 	unsigned int mBlockSize;
 	unsigned int mBlocknum;
-	Aud_Sram_Block mAud_Sram_Block[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE];
+	Aud_Sram_Block *mAud_Sram_Block;
 } Aud_Sram_Manager;
 
 /*
