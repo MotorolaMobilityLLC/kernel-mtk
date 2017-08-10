@@ -1154,6 +1154,12 @@ struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo
 			u4TblSize = bands[IEEE80211_BAND_2GHZ]->n_channels;
 			break;
 		case BAND_5G:
+#ifdef CONFIG_MTK_TC1_FEATURE
+			if (bands[IEEE80211_BAND_5GHZ] == NULL) {
+				DBGLOG(P2P, ERROR, "kalP2pFuncGetChannelEntry NULL Bands!!\n");
+				break;
+			}
+#endif
 			prTargetChannelEntry = bands[IEEE80211_BAND_5GHZ]->channels;
 			u4TblSize = bands[IEEE80211_BAND_5GHZ]->n_channels;
 			break;
