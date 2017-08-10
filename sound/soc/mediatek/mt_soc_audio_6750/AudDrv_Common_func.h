@@ -51,4 +51,8 @@ bool get_internalmd_status(void);
 int GetGPIO_Info(int type, int *pin, int *pinmode);
 #endif
 
+/* for AUDIO_DL2_ISR_COPY_SUPPORT */
+void mtk_dl2_copy_l(void);
+void mtk_dl2_copy2buffer(const void *addr, uint32_t size);
+
 #endif
