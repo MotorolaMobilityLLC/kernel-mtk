@@ -5036,6 +5036,9 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
 	xhci_dbg(xhci, "Called HCD init\n");
 	return 0;
 error:
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk_xhci_reset(xhci);
+#endif
 	kfree(xhci);
 	return retval;
 }

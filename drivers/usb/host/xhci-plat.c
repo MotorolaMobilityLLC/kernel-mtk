@@ -267,6 +267,9 @@ static int xhci_plat_remove(struct platform_device *dev)
 	if (xhci->quirks & XHCI_MTK_HOST)
 		xhci_mtk_exit_quirk(xhci);
 #endif
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk_xhci_reset(xhci);
+#endif
 	kfree(xhci);
 
 	return 0;

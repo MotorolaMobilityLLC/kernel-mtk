@@ -786,49 +786,43 @@ void mtk_xhci_wakelock_unlock(void)
 	mtk_xhci_mtk_printk(K_DEBUG, "xhci_wakelock_unlock done\n");
 }
 
-void mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci)
+int mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci)
 {
 	struct platform_device *pdev = to_platform_device(hcd->self.controller);
-	struct resource *sif_res, *sif2_res;
+	struct resource *sif_res;
 
 	xhci->base_regs = (unsigned long)hcd->regs;
 
 	sif_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, XHCI_SIF_REGS_ADDR_RES_NAME);
-	if (!sif_res)
+	if (!sif_res) {
 		pr_err("%s(%d): cannot get sif resources\n", __func__, __LINE__);
-	else {
-		xhci->sif_regs = (unsigned long)ioremap(sif_res->start,
+		return -ENXIO;
+	}
+
+	xhci->sif_regs = (unsigned long)ioremap(sif_res->start,
 						resource_size(sif_res));
-
-		mtk_xhci_mtk_printk(K_DEBUG, "%s(%d): sif_base, logic 0x%p, phys 0x%p\n",
-				__func__, __LINE__,
-				(void *)(unsigned long)sif_res->start,
-				(void *)xhci->sif_regs);
+	if (!xhci->sif_regs) {
+		pr_err("xhci->sif_regs map fail\n");
+		return -ENOMEM;
 	}
-
-	sif2_res = platform_get_resource_byname(pdev, IORESOURCE_MEM, XHCI_SIF2_REGS_ADDR_RES_NAME);
-	if (!sif2_res)
-		pr_err("%s(%d): cannot get sif2 resources\n", __func__, __LINE__);
-	else {
-		xhci->sif2_regs = (unsigned long)ioremap(sif2_res->start,
-						resource_size(sif2_res));
-
-		mtk_xhci_mtk_printk(K_DEBUG, "%s(%d): sif2_base, logic 0x%p, phys 0x%p\n",
-				 __func__, __LINE__,
-				(void *)(unsigned long)sif2_res->start,
-				(void *)xhci->sif2_regs);
-	}
+	mtk_xhci_mtk_printk(K_DEBUG, "%s(%d): sif_base, logic 0x%p, phys 0x%p\n",
+			__func__, __LINE__,
+			(void *)(unsigned long)sif_res->start,
+			(void *)xhci->sif_regs);
 
 	mtk_xhci_mtk_printk(K_DEBUG, "mtk_xhci = 0x%p\n", xhci);
 	mtk_xhci = xhci;
+	return 0;
 }
 
 void mtk_xhci_reset(struct xhci_hcd *xhci)
 {
-	iounmap((void __iomem *)xhci->sif_regs);
-	mtk_xhci_mtk_printk(K_DEBUG, "iounmap, sif_reg, 0x%p\n", (void *)xhci->sif_regs);
-	iounmap((void __iomem *)xhci->sif2_regs);
-	mtk_xhci_mtk_printk(K_DEBUG, "iounmap, sif2_reg, 0x%p\n", (void *)xhci->sif2_regs);
+	if (xhci) {
+		if (xhci->sif_regs) {
+			iounmap((void __iomem *)xhci->sif_regs);
+			mtk_xhci_mtk_printk(K_DEBUG, "iounmap, sif_reg, 0x%p\n", (void *)xhci->sif_regs);
+		}
+	}
 	mtk_xhci = NULL;
 }
 
@@ -951,7 +945,11 @@ static int mtk_xhci_phy_init(int argc, char **argv)
 
 int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci)
 {
-	mtk_xhci_set(hcd, xhci);
+	int retval;
+
+	retval = mtk_xhci_set(hcd, xhci);
+	if (retval)
+		goto error;
 
 #ifdef CONFIG_MTK_FPGA
 	u3_base = (void __iomem *)xhci->base_regs;
@@ -978,6 +976,9 @@ int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci)
 	mtk_xhci_ck_timer_init(xhci);
 
 	return 0;
+
+error:
+	return retval;
 }
 
 #if 0

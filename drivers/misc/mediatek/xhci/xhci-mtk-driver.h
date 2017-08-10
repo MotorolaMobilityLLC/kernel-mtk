@@ -140,8 +140,8 @@ extern struct xhci_hcd *mtk_xhci;
 extern int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci);
 
 extern void mtk_xhci_ck_timer_init(struct xhci_hcd *);
-void mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci);
-void mtk_xhci_reset(struct xhci_hcd *xhci);
+extern int mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci);
+extern void mtk_xhci_reset(struct xhci_hcd *xhci);
 extern bool mtk_is_host_mode(void);
 
 #ifdef CONFIG_USB_MTK_DUALMODE
