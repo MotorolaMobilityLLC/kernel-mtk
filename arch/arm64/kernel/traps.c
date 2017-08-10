@@ -33,6 +33,7 @@
 
 #include <asm/atomic.h>
 #include <asm/debug-monitors.h>
+#include <asm/esr.h>
 #include <asm/traps.h>
 #include <asm/stacktrace.h>
 #include <asm/exception.h>
@@ -224,6 +225,9 @@ void die(const char *str, struct pt_regs *regs, int err)
 {
 	struct thread_info *thread = current_thread_info();
 	int ret;
+
+	if (ESR_EL1_EC(err) == ESR_EL1_EC_DABT_EL1)
+		thread->cpu_excp++;
 
 	oops_enter();
 

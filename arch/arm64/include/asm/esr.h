@@ -23,6 +23,8 @@
 #define ESR_EL1_IL		(1 << 25)
 
 #define ESR_EL1_EC_SHIFT	(26)
+#define ESR_EL1_EC_MASK		(UL(0x3F) << ESR_EL1_EC_SHIFT)
+#define ESR_EL1_EC(esr)		(((esr) & ESR_EL1_EC_MASK) >> ESR_EL1_EC_SHIFT)
 #define ESR_EL1_EC_UNKNOWN	(0x00)
 #define ESR_EL1_EC_WFI		(0x01)
 #define ESR_EL1_EC_CP15_32	(0x03)
