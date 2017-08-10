@@ -1650,7 +1650,6 @@ static const struct file_operations debug_heap_fops = {
 	.release = single_release,
 };
 
-#ifdef DEBUG_HEAP_SHRINKER
 static int debug_shrink_set(void *data, u64 val)
 {
 	struct ion_heap *heap = data;
@@ -1688,7 +1687,6 @@ static int debug_shrink_get(void *data, u64 *val)
 
 DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
 			debug_shrink_set, "%llu\n");
-#endif
 
 void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 {
@@ -1740,6 +1738,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 		}
 	}
 #endif
+
 
 	up_write(&dev->lock);
 }
