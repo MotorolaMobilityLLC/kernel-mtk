@@ -132,7 +132,8 @@ enum {
 	RTM_GETMDB = 86,
 #define RTM_GETMDB RTM_GETMDB
 
-		RTM_NORA = 110,
+/*Android NetinkEvent RTM_NORA = 87*/
+	RTM_NORA = 87,
 #define RTM_NORA RTM_NORA
 
 	__RTM_MAX,
