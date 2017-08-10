@@ -268,6 +268,7 @@ static int mtk_capture2_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	pr_warn("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 	SetVULBuffer(substream, hw_params);
+	AudDrv_Emi_Clk_On();
 
 	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
@@ -277,6 +278,9 @@ static int mtk_capture2_pcm_hw_params(struct snd_pcm_substream *substream,
 static int mtk_capture2_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_capture2_pcm_hw_free\n");
+
+	AudDrv_Emi_Clk_Off();
+
 	if (Capture2_dma_buf->area)
 		return 0;
 	else

@@ -434,6 +434,7 @@ static int mtk_pcm_i2s0_hw_params(struct snd_pcm_substream *substream,
 	substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
 	substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
 	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
+	AudDrv_Emi_Clk_On();
 
 	/* ------------------------------------------------------- */
 	PRINTK_AUDDRV("1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
@@ -445,6 +446,7 @@ static int mtk_pcm_i2s0_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_i2s0_hw_free(struct snd_pcm_substream *substream)
 {
+	AudDrv_Emi_Clk_Off();
 	return 0;
 }
 
