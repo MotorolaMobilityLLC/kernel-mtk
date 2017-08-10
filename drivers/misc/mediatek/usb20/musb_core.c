@@ -133,12 +133,15 @@ module_param(kernel_init_done, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe = PIPE_ISOCHRONOUS;
+int mtk_host_qmu_support_max_speed = USB_SPEED_FULL;
 module_param(mtk_host_qmu_concurrent, int, 0644);
 module_param(mtk_host_qmu_pipe, int, 0644);
+module_param(mtk_host_qmu_support_max_speed, int, 0644);
 #endif
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
 int mtk_qmu_dbg_level = LOG_WARN;
+int mtk_qmu_max_gpd_num;
 u32 dma_burst_setting, qmu_ioc_setting;
 #ifdef QMU_TASKLET
 int qmu_tasklet = 1;
@@ -2687,6 +2690,7 @@ static void __exit musb_cleanup(void)
 module_exit(musb_cleanup);
 #ifdef MUSB_QMU_SUPPORT
 module_param(mtk_qmu_dbg_level, int, 0644);
+module_param(mtk_qmu_max_gpd_num, int, 0644);
 #ifdef QMU_TASKLET
 module_param(qmu_tasklet, int, 0644);
 #endif

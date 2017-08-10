@@ -2372,7 +2372,7 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		ret = 0;
 	} else {
 #ifdef MUSB_QMU_SUPPORT_HOST
-		if ((usb_pipetype(urb->pipe)) == mtk_host_qmu_pipe)
+		if ((usb_pipetype(urb->pipe)) == mtk_host_qmu_pipe && urb->dev->speed <= mtk_host_qmu_support_max_speed)
 			qh->is_use_qmu = 1;
 #endif
 		ret = musb_schedule(musb, qh, epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);

@@ -147,6 +147,9 @@ int qmu_init_gpd_pool(struct device *dev)
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 
+	if (!mtk_qmu_max_gpd_num)
+		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
+
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
@@ -154,19 +157,19 @@ int qmu_init_gpd_pool(struct device *dev)
 
 	for (i = 1; i <= RXQ_NUM; i++) {
 		/* Allocate Rx GPD */
-		size = GPD_LEN_ALIGNED * MAX_GPD_NUM;
+		size = GPD_LEN_ALIGNED * mtk_qmu_max_gpd_num;
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 		memset(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
-		init_gpd_list(RXQ, i, ptr, io_ptr, MAX_GPD_NUM);
+		init_gpd_list(RXQ, i, ptr, io_ptr, mtk_qmu_max_gpd_num);
 		Rx_gpd_head[i] = ptr;
 		QMU_INFO("ALLOC RX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Rx_gpd_head[i],
 			 io_ptr);
 		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i];
-		Rx_gpd_free_count[i] = MAX_GPD_NUM - 1; /* one must be for tail */
+		Rx_gpd_free_count[i] = mtk_qmu_max_gpd_num - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[i]);
 		gpd_ptr_align(RXQ, i, Rx_gpd_end[i]);
 		QMU_INFO("RQSAR[%d]=%p\n", i, (void *)gpd_virt_to_phys(Rx_gpd_end[i], RXQ, i));
@@ -174,19 +177,19 @@ int qmu_init_gpd_pool(struct device *dev)
 
 	for (i = 1; i <= TXQ_NUM; i++) {
 		/* Allocate Tx GPD */
-		size = GPD_LEN_ALIGNED * MAX_GPD_NUM;
+		size = GPD_LEN_ALIGNED * mtk_qmu_max_gpd_num;
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 		memset(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
-		init_gpd_list(TXQ, i, ptr, io_ptr, MAX_GPD_NUM);
+		init_gpd_list(TXQ, i, ptr, io_ptr, mtk_qmu_max_gpd_num);
 		Tx_gpd_head[i] = ptr;
 		QMU_INFO("ALLOC TX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Tx_gpd_head[i],
 			 io_ptr);
 		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i];
-		Tx_gpd_free_count[i] = MAX_GPD_NUM - 1; /* one must be for tail */
+		Tx_gpd_free_count[i] = mtk_qmu_max_gpd_num - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[i]);
 		gpd_ptr_align(TXQ, i, Tx_gpd_end[i]);
 		QMU_INFO("TQSAR[%d]=%p\n", i, (void *)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
@@ -197,20 +200,20 @@ int qmu_init_gpd_pool(struct device *dev)
 
 void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 {
-	u32 size = GPD_LEN_ALIGNED * MAX_GPD_NUM;
+	u32 size = GPD_LEN_ALIGNED * mtk_qmu_max_gpd_num;
 
 	/* SW reset */
 	if (isRx) {
 		memset(Rx_gpd_head[ep_num], 0, size);
 		Rx_gpd_end[ep_num] = Rx_gpd_last[ep_num] = Rx_gpd_head[ep_num];
-		Rx_gpd_free_count[ep_num] = MAX_GPD_NUM - 1; /* one must be for tail */
+		Rx_gpd_free_count[ep_num] = mtk_qmu_max_gpd_num - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
 		gpd_ptr_align(isRx, ep_num, Rx_gpd_end[ep_num]);
 
 	} else {
 		memset(Tx_gpd_head[ep_num], 0, size);
 		Tx_gpd_end[ep_num] = Tx_gpd_last[ep_num] = Tx_gpd_head[ep_num];
-		Tx_gpd_free_count[ep_num] = MAX_GPD_NUM - 1; /* one must be for tail */
+		Tx_gpd_free_count[ep_num] = mtk_qmu_max_gpd_num - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
 		gpd_ptr_align(isRx, ep_num, Tx_gpd_end[ep_num]);
 	}
@@ -220,7 +223,7 @@ void qmu_destroy_gpd_pool(struct device *dev)
 {
 
 	int i;
-	u32 size = GPD_LEN_ALIGNED * MAX_GPD_NUM;
+	u32 size = GPD_LEN_ALIGNED * mtk_qmu_max_gpd_num;
 
 	for (i = 1; i <= RXQ_NUM; i++) {
 		dma_free_coherent(dev, size, Rx_gpd_head[i],
