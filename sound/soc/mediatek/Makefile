@@ -53,7 +53,6 @@ else
 
 obj-y += common/
 obj-$(CONFIG_MT_SND_SOC_V3) += mt_soc_audio_v3/
-obj-$(CONFIG_MT_SND_SOC_6570) += mt_soc_audio_6580/
 obj-$(CONFIG_MT_SND_SOC_6580) += mt_soc_audio_6580/
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_audio_6797/
 obj-$(CONFIG_MT_SND_SOC_6755) += mt_soc_audio_6755/
