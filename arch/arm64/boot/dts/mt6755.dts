@@ -273,7 +273,7 @@
 		spm-reserve-memory {
 			compatible = "mediatek,spm-reserve-memory";
 			no-map;
-			size = <0 0xe000>; /* PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX = 8K * 7 */
+			size = <0 0x20000>; /* PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX = 8K * 16 */
 			alignment = <0 0x10000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};

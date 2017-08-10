@@ -56,6 +56,9 @@ extern u32 spm_irq_7;
 extern u32 is_check_scp_freq_req(void);
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+extern int use_new_spmfw;
+#endif
 /**************************************
  * Config and Parameter
  **************************************/
@@ -132,6 +135,7 @@ enum {
 void spm_pmic_power_mode(int mode, int force, int lock);
 void spm_bypass_boost_gpio_set(void);
 void spm_vmd_sel_gpio_set(void);
+int spm_use_mt6311(void);
 #if defined(CONFIG_ARCH_MT6797)
 /* for SPM/SCP debug */
 extern u32 is_check_scp_freq_req(void);

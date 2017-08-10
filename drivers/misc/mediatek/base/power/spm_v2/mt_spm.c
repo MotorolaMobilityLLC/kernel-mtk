@@ -85,6 +85,12 @@ static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1_m.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle_m.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1_m.bin",
+	[DYNA_LOAD_PCM_SUSPEND_R] = "pcm_suspend_r.bin",
+	[DYNA_LOAD_PCM_SUSPEND_BY_MP1_R] = "pcm_suspend_by_mp1_r.bin",
+	[DYNA_LOAD_PCM_SODI_R] = "pcm_sodi_ddrdfs_r.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1_R] = "pcm_sodi_ddrdfs_by_mp1_r.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE_R] = "pcm_deepidle_r.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1_R] = "pcm_deepidle_by_mp1_r.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
 #else
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
@@ -103,6 +109,14 @@ MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE]);
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1]);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_R]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND_BY_MP1_R]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_R]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SODI_BY_MP1_R]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_R]);
+MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1_R]);
+#endif
 #elif defined(CONFIG_ARCH_MT6757)
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
@@ -234,6 +248,9 @@ static int spm_vmd1_gpio;
 #endif /* !defined(CONFIG_MTK_LEGACY) */
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+int use_new_spmfw;
+#endif
 /**************************************
  * Config and Parameter
  **************************************/
@@ -926,6 +943,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 	int i;
 	int offset = 0;
 	int addr_2nd = 0;
+	int check_spm_fw_count = DYNA_LOAD_PCM_MAX;
 
 	if (!pdev)
 		return err;
@@ -948,6 +966,11 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		int j = 0;
 
 		spm_fw[i] = NULL;
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+		if (((use_new_spmfw == 1) && (i < DYNA_LOAD_PCM_SUSPEND_R)) ||
+				((use_new_spmfw == 0) && (i >= DYNA_LOAD_PCM_SUSPEND_R)))
+			continue;
+#endif
 		do {
 			j++;
 			pr_debug("try to request_firmware() %s - %d\n", dyna_load_pcm_path[i], j);
@@ -996,13 +1019,23 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		pdesc->base = (u32 *) dyna_load_pcm[i].buf;
 		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
 
+		spm_crit2(" spm fw version(%d) = %s\n", i, (char *)pdesc->version);
+
 		dyna_load_pcm[i].ready = 1;
 		spm_fw_count++;
 	}
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	if (use_new_spmfw == 1)
+		check_spm_fw_count = DYNA_LOAD_PCM_SUSPEND_R;
+	else if (use_new_spmfw == 0)
+		check_spm_fw_count = DYNA_LOAD_PCM_MAX - DYNA_LOAD_PCM_SUSPEND_R;
+#endif
+
 #if 1 /* enable VCORE DVFS */
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* check addr_2nd */
-	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
+	if (spm_fw_count == check_spm_fw_count) {
 		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
 			struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
 
@@ -1018,7 +1051,8 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		}
 	}
 #endif
-	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
+
+	if (spm_fw_count == check_spm_fw_count) {
 		vcorefs_late_init_dvfs();
 		dyna_load_pcm_done = 1;
 	}
@@ -1031,11 +1065,24 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 
 int spm_load_pcm_firmware_nodev(void)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	u32 segment = get_devinfo_with_index(21) & 0xFF;
+
+	if ((segment == 0xC1) || (segment == 0xC5) ||
+			(segment == 0xC2) || (segment == 0xC6) ||
+			(segment == 0x82) || (segment == 0x86))
+		use_new_spmfw = 1;
+	else
+		use_new_spmfw = 0;
+
+	spm_crit2("#@# %s(%d) use_new_spmfw %d, segment 0x%x\n", __func__, __LINE__, use_new_spmfw, segment);
+#endif
+
 	if (spm_fw_count == -1) {
 		spm_fw_count = 0;
 		spm_load_pcm_firmware(pspmdev);
 	} else
-		spm_crit("spm_fw_count = %d\n", spm_fw_count);
+		spm_crit2("spm_fw_count = %d\n", spm_fw_count);
 	return 0;
 }
 
@@ -1044,6 +1091,7 @@ int spm_load_firmware_status(void)
 	return dyna_load_pcm_done;
 }
 
+#if !defined(CONFIG_ARCH_MT6755)
 void *get_spm_firmware_version(uint32_t index)
 {
 	void *ptr = NULL;
@@ -1074,6 +1122,7 @@ void *get_spm_firmware_version(uint32_t index)
 	return ptr;
 }
 EXPORT_SYMBOL(get_spm_firmware_version);
+#endif
 
 static int spm_dbg_show_firmware(struct seq_file *s, void *unused)
 {
@@ -2073,7 +2122,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN2);
 
 		pmic_ldo_vio28_sw_en(1);
-		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN2);
+		if (!use_new_spmfw)
+			pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN2);
 
 		pmic_ldo_vusb33_sw_en(1);
 		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN2);
@@ -2148,7 +2198,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN0);
 
 		pmic_ldo_vio28_sw_en(1);
-		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
+		if (!use_new_spmfw)
+			pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
 
 		pmic_ldo_vusb33_sw_en(1);
 		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN0);
@@ -2235,7 +2286,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN0);
 
 		pmic_ldo_vio28_sw_en(1);
-		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
+		if (!use_new_spmfw)
+			pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
 
 		pmic_ldo_vusb33_sw_en(1);
 		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN0);
@@ -2343,27 +2395,35 @@ void spm_vmd_sel_gpio_set(void)
 	u32 segment = get_devinfo_with_index(21) & 0xFF;
 
 #if defined(CONFIG_MTK_LEGACY)
-	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40))
+	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40) ||
+			(segment == 0xC1) || (segment == 0xC5))
 		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
-	else if ((segment == 0x42) || (segment == 0x46)) {
+	else if ((segment == 0x42) || (segment == 0x46) ||
+			(segment == 0xC2) || (segment == 0xC6)) {
 #if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
 		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
 #else
 		gpio_nf = 0;
 #endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
-	} else if (segment == 0x43) {
+	} else if ((segment == 0x43) || (segment == 0x4B)) {
+		gpio_nf = 0;
+	} else if ((segment == 0x82) || (segment == 0x86)) {
 		gpio_nf = 0;
 	}
 #else
-	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40))
+	if ((segment == 0x41) || (segment == 0x45) || (segment == 0x40) ||
+			(segment == 0xC1) || (segment == 0xC5))
 		gpio_nf = spm_vmd1_gpio;
-	else if ((segment == 0x42) || (segment == 0x46)) {
+	else if ((segment == 0x42) || (segment == 0x46) ||
+			(segment == 0xC2) || (segment == 0xC6)) {
 #if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
 		gpio_nf = spm_vmd1_gpio;
 #else
 		gpio_nf = 0;
 #endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
 	} else if ((segment == 0x43) || (segment == 0x4B)) {
+		gpio_nf = 0;
+	} else if ((segment == 0x82) || (segment == 0x86)) {
 		gpio_nf = 0;
 	}
 #endif
@@ -2388,6 +2448,21 @@ void spm_vmd_sel_gpio_set(void)
 		spm_write(SPM_BSI_CLK_SR, 0x10006098);
 		spm_write(SPM_SCP_MAILBOX, 0);
 	}
+#endif
+}
+
+int spm_use_mt6311(void)
+{
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	int ret = 0;
+	u32 segment = get_devinfo_with_index(21) & 0xFF;
+
+	if ((segment == 0x82) || (segment == 0x86))
+		ret = 1;
+
+	return ret;
+#else
+	return 0;
 #endif
 }
 

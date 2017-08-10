@@ -403,7 +403,14 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	if (use_new_spmfw)
+		sodi_idx = DYNA_LOAD_PCM_SODI_R + cpu / 4;
+	else
+		sodi_idx = DYNA_LOAD_PCM_SODI + cpu / 4;
+#else
 	sodi_idx = DYNA_LOAD_PCM_SODI + cpu / 4;
+#endif
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
 		sodi3_err("ERROR: LOAD FIRMWARE FAIL\n");
@@ -421,6 +428,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE;	/* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE;	/* PDN mode */
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_flags |= spm_use_mt6311() ? SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL : 0;
+#endif
 
 	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);

@@ -846,7 +846,14 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	/* TODO: lpddr support */
 	/* pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4 + !!is_lpddr4() * 2; */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	if (use_new_spmfw)
+		pcm_index = DYNA_LOAD_PCM_SUSPEND_R + cpu / 4;
+	else
+		pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4;
+#else
 	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4;
+#endif
 
 	if (dyna_load_pcm[pcm_index].ready)
 		pcmdesc = &(dyna_load_pcm[pcm_index].desc);
@@ -858,6 +865,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	pcmdesc = __spm_suspend.pcmdesc;
 #endif
 	pwrctrl = __spm_suspend.pwrctrl;
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_flags |= spm_use_mt6311() ? SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL : 0;
+#endif
 
 	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
@@ -1182,6 +1193,7 @@ void spm_output_sleep_option(void)
 		   SPM_PWAKE_EN, SPM_PCMWDT_EN, SPM_BYPASS_SYSPWREQ);
 }
 
+#if !defined(CONFIG_ARCH_MT6755)
 uint32_t get_suspend_debug_regs(uint32_t index)
 {
 	uint32_t value = 0;
@@ -1228,6 +1240,7 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 	return value;
 }
 EXPORT_SYMBOL(get_suspend_debug_regs);
+#endif
 
 /* record last wakesta */
 u32 spm_get_last_wakeup_src(void)

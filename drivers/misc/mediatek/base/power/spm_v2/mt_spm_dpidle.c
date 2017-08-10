@@ -698,6 +698,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
+	int pcm_index;
 
 	memset(&wakesta, 0, sizeof(struct wake_status));
 
@@ -705,10 +706,23 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER);
 #endif
 
-	if (dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].desc);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	if (use_new_spmfw)
+		pcm_index = DYNA_LOAD_PCM_DEEPIDLE_R + cpu / 4;
+	else
+		pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
+#else
+	pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
+#endif
+
+	if (dyna_load_pcm[pcm_index].ready)
+		pcmdesc = &(dyna_load_pcm[pcm_index].desc);
 	else
 		BUG();
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_flags |= spm_use_mt6311() ? SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL : 0;
+#endif
 
 	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
@@ -835,17 +849,31 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
+	int pcm_index;
 
 	memset(&wakesta, 0, sizeof(struct wake_status));
 
-	if (dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].desc);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	if (use_new_spmfw)
+		pcm_index = DYNA_LOAD_PCM_DEEPIDLE_R + cpu / 4;
+	else
+		pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
+#else
+	pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
+#endif
+
+	if (dyna_load_pcm[pcm_index].ready)
+		pcmdesc = &(dyna_load_pcm[pcm_index].desc);
 	else
 		BUG();
 
 	/* backup original dpidle setting */
 	dpidle_timer_val = pwrctrl->timer_val;
 	dpidle_wake_src = pwrctrl->wake_src;
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_flags |= spm_use_mt6311() ? SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL : 0;
+#endif
 
 	update_pwrctrl_pcm_flags(&spm_flags);
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
