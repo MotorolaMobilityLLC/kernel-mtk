@@ -17,7 +17,7 @@
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
-#include <reg_accdet_mt6353.h>
+#include "reg_accdet_mt6353.h"
 #endif
 
 #else

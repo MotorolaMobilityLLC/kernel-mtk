@@ -6,7 +6,7 @@
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
 
-#include <mt_gpio_base.h>
+#include "mt_gpio_base.h"
 #include <mt-plat/mt_gpio_core.h>
 #include <linux/irqchip/mt-eic.h>
 #include <linux/interrupt.h>

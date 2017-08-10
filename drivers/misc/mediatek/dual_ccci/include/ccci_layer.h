@@ -43,8 +43,8 @@
 #include <linux/bitops.h>
 #include <linux/sched.h>
 #include <linux/wakelock.h>
-#include <ccci_ch.h>
-#include <ccif.h>
+#include "ccci_ch.h"
+#include "ccif.h"
 
 #define CCCI_DEV_NAME "ccci"
 /* #define CCCI_DEV_MAJOR 184 move to platform.h */

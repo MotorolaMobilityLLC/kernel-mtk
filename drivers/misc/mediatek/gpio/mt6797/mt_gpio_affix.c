@@ -4,7 +4,7 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <mt-plat/mt_gpio_core.h>
-#include <6797_gpio.h>
+#include "6797_gpio.h"
 
 
 void mt_gpio_pin_decrypt(unsigned long *cipher)

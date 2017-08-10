@@ -33,7 +33,7 @@
 #include <linux/time.h>
 
 #include <linux/string.h>
-#include <reg_accdet.h>
+#include "reg_accdet.h"
 
 /*----------------------------------------------------------------------
 IOCTL

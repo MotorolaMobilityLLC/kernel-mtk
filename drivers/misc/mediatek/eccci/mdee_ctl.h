@@ -14,7 +14,7 @@
 #ifndef __MDEE_CTL_H__
 #define __MDEE_CTL_H__
 
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 #define CCCI_AED_DUMP_EX_MEM		(1<<0)
 #define CCCI_AED_DUMP_MD_IMG_MEM	(1<<1)

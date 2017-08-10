@@ -14,7 +14,7 @@
 #ifndef __PORT_RPC_H__
 #define __PORT_RPC_H__
 
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 typedef enum {
 	IPC_RPC_CPSVC_SECURE_ALGO_OP = 0x2001,

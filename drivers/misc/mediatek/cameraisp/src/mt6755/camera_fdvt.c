@@ -38,8 +38,8 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#include <inc/mt_typedefs.h>
-#include <inc/camera_fdvt.h>
+#include "inc/mt_typedefs.h"
+#include "inc/camera_fdvt.h"
 
 #include <asm/cacheflush.h>
 

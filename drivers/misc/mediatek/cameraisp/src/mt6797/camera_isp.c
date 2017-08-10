@@ -50,7 +50,7 @@
 #include <linux/init.h>
 
 /*for SMI BW debug log*/
-#include<../../../smi/smi_debug.h>
+#include "../../../smi/smi_debug.h"
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */

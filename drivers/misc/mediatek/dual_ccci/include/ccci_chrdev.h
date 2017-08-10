@@ -18,7 +18,7 @@
 #include <linux/wait.h>
 #include <linux/atomic.h>
 #include <linux/cdev.h>
-#include <ccci_layer.h>
+#include "ccci_layer.h"
 
 #define MAX_BUFFER_MESSAGES  ((1 << 20)/sizeof(struct CCCI_BUFF_T))
 #define DEFAULT_BUFFER (CCCI_FIFO_MAX_LEN*2)

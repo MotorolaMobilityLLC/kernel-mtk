@@ -12,7 +12,7 @@
 /*#ifndef CONFIG_OF
 #include <mach/mt_reg_base.h>
 #endif*/
-#include <6755_gpio.h>
+#include "6755_gpio.h"
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
 /*#include <mach/dcl_sim_gpio.h>*/

@@ -9,14 +9,14 @@
  ******************************************************************************/
 
 
-#include <6735_gpio.h>
+#include "6735_gpio.h"
 #include <linux/types.h>
 #include "mt-plat/sync_write.h"
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
-#include <mt_gpio_base.h>
+#include "mt_gpio_base.h"
 /* autogen */
-#include <gpio_cfg.h>
+#include "gpio_cfg.h"
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
 #endif

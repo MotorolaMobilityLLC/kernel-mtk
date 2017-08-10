@@ -12,7 +12,7 @@
 #include <mach/mt_pmic_wrap.h>*/
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
-#include <mt_gpio_ext.h>
+#include "mt_gpio_ext.h"
 
 /*#define MAX_GPIO_REG_BITS      16*/
 /*#define MAX_GPIO_MODE_PER_REG  5*/

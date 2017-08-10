@@ -30,14 +30,14 @@
 
 #ifndef __CCCI_COMMON_H__
 #define __CCCI_COMMON_H__
-#include <ccci_cfg.h>
-#include <ccci_err_no.h>
-#include <ccci_md.h>
-#include <ccci_layer.h>
-#include <ccci_rpc.h>
-#include <ccci_ipc.h>
-#include <ccci_fs.h>
-#include <ccmni_net.h>
+#include "ccci_cfg.h"
+#include "ccci_err_no.h"
+#include "ccci_md.h"
+#include "ccci_layer.h"
+#include "ccci_rpc.h"
+#include "ccci_ipc.h"
+#include "ccci_fs.h"
+#include "ccmni_net.h"
 #include <ccci_platform_cfg.h>
 #include <mach/mtk_ccci_helper.h>
 /* ======================================================== */

@@ -14,7 +14,7 @@
 #ifndef __CCCI_CFG_H__
 #define __CCCI_CFG_H__
 
-#include <ccci_ch.h>
+#include "ccci_ch.h"
 
 /*******************************************************************/
 /**     ccci version define and explanation                                                   **/

@@ -14,7 +14,7 @@
 #ifndef _6755_GPIO_H
 #define _6755_GPIO_H
 
-#include <mt_gpio_base.h>
+#include "mt_gpio_base.h"
 #include <linux/slab.h>
 #include <linux/device.h>
 

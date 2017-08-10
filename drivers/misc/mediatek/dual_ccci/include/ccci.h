@@ -13,7 +13,7 @@
 
 #ifndef __CCCI_H__
 #define __CCCI_H__
-#include <ccci_common.h>
+#include "ccci_common.h"
 typedef void (*ccci_aed_cb_t) (unsigned int flag, char *aed_str);
 /******************************************************************************/
 /** mdlogger mode define                                                                                           **/

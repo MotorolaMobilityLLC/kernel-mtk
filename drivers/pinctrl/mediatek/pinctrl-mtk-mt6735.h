@@ -12,7 +12,7 @@
 #define __PINCTRL_MTK_MT6735_H
 
 #include <linux/pinctrl/pinctrl.h>
-#include <pinctrl-mtk-common.h>
+#include "pinctrl-mtk-common.h"
 
 static const struct mtk_desc_pin mtk_pins_mt6735[] = {
 	MTK_PIN(
