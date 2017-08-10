@@ -108,6 +108,8 @@ int mtk_p2p_cfg80211_add_key(struct wiphy *wiphy,
 
 	kalMemZero(&rKey, sizeof(P2P_PARAM_KEY_T));
 
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+
 	rKey.u4KeyIndex = key_index;
 	if (mac_addr) {
 		ether_addr_copy(rKey.arBSSID, mac_addr);
@@ -182,6 +184,8 @@ int mtk_p2p_cfg80211_del_key(struct wiphy *wiphy,
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
 		i4Rslt = 0;
 		return i4Rslt;
@@ -232,7 +236,7 @@ int mtk_p2p_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev,
 		if ((wiphy == NULL) || (ndev == NULL) || (sinfo == NULL) || (mac == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_get_station\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_get_station\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 		prP2pGlueInfo = prGlueInfo->prP2PInfo;
@@ -281,7 +285,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_scan\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_scan\n");
 
 		if (prP2pGlueInfo->prScanRequest != NULL) {
 			/* There have been a scan request on-going processing. */
@@ -396,7 +400,7 @@ int mtk_p2p_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
 		if (wiphy == NULL)
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_set_wiphy_params\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_set_wiphy_params\n");
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 		if (changed & WIPHY_PARAM_RETRY_SHORT) {
@@ -499,7 +503,7 @@ int mtk_p2p_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *dev,
 	else
 		value = 0;
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_set_power_mgmt ps=%d.\n", enabled);
+	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_set_power_mgmt ps=%d.\n", enabled);
 
 	/* p2p_set_power_save */
 	kalIoctl(prGlueInfo, wlanoidSetP2pPowerSaveProfile, &value, sizeof(value), FALSE, FALSE, TRUE, TRUE, &u4Leng);
@@ -523,7 +527,7 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 		if ((wiphy == NULL) || (settings == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_start_ap.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_start_ap.\n");
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 #if 1
@@ -671,7 +675,7 @@ int mtk_p2p_cfg80211_change_beacon(struct wiphy *wiphy, struct net_device *dev, 
 		if ((wiphy == NULL) || (info == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_change_beacon.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_change_beacon.\n");
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 		prP2pBcnUpdateMsg = (P_MSG_P2P_BEACON_UPDATE_T) cnmMemAlloc(prGlueInfo->prAdapter,
@@ -781,7 +785,7 @@ int mtk_p2p_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev)
 		if (wiphy == NULL)
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_stop_ap.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_stop_ap.\n");
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 		/* Switch OP MOde. */
@@ -817,7 +821,7 @@ int mtk_p2p_cfg80211_deauth(struct wiphy *wiphy, struct net_device *dev, struct 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 	/* not implemented yet */
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_deauth.\n");
+	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_deauth.\n");
 
 	return -EINVAL;
 }				/* mtk_p2p_cfg80211_deauth */
@@ -831,7 +835,7 @@ int mtk_p2p_cfg80211_disassoc(struct wiphy *wiphy, struct net_device *dev, struc
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_disassoc.\n");
+	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_disassoc.\n");
 
 	/* not implemented yet */
 
@@ -870,7 +874,7 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_remain_on_channel\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_remain_on_channel\n");
 
 		prMsgChnlReq->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_REQ;
 		prMsgChnlReq->u8Cookie = *cookie;
@@ -938,7 +942,7 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 			break;
 		}
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_cancel_remain_on_channel\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_cancel_remain_on_channel\n");
 
 		prMsgChnlAbort->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_ABORT;
 		prMsgChnlAbort->u8Cookie = cookie;
@@ -975,6 +979,8 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 	PUINT_8 pucFrameBuf = (PUINT_8) NULL;
 	UINT_32 u4OriRegValue = 0;
 	UINT_32 u4NextRegValue = 0;
+
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
 
 	do {
 		if ((wiphy == NULL) || (wdev == NULL) || (params == 0) || (cookie == NULL))
@@ -1073,6 +1079,8 @@ int mtk_p2p_cfg80211_change_bss(struct wiphy *wiphy, struct net_device *dev, str
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+
 	switch (params->use_cts_prot) {
 	case -1:
 		DBGLOG(P2P, TRACE, "CTS protection no change\n");
@@ -1134,7 +1142,7 @@ int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, co
 		if (mac == NULL)
 			mac = aucBcMac;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_del_station.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_del_station.\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
@@ -1174,7 +1182,7 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
 		if ((wiphy == NULL) || (dev == NULL) || (sme == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_connect.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_connect.\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
@@ -1327,7 +1335,7 @@ int mtk_p2p_cfg80211_set_channel(IN struct wiphy *wiphy,
 		if (wiphy == NULL)
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_set_channel.\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_set_channel.\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 		mtk_p2p_cfg80211func_channel_format_switch(chandef->chan, chandef->width, &rRfChnlInfo, NULL);
@@ -1354,7 +1362,7 @@ mtk_p2p_cfg80211_set_bitrate_mask(IN struct wiphy *wiphy,
 		if ((wiphy == NULL) || (dev == NULL) || (mask == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_set_bitrate_mask\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_set_bitrate_mask\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
@@ -1379,7 +1387,7 @@ void mtk_p2p_cfg80211_mgmt_frame_register(IN struct wiphy *wiphy,
 		if ((wiphy == NULL) || (wdev == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_mgmt_frame_register\n");
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_mgmt_frame_register\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
@@ -1450,6 +1458,8 @@ mtk_p2p_cfg80211func_channel_format_switch(IN struct ieee80211_channel *channel,
 {
 	BOOLEAN fgIsValid = FALSE;
 
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+
 	do {
 		if (channel == NULL)
 			break;
@@ -1511,6 +1521,8 @@ int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev
 	ASSERT(wiphy);
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
 
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_TEST_PARAMS) data;
@@ -1604,7 +1616,7 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void 
 	prP2pSpecificBssInfo = prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo;
 	prP2pConnSettings = prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings;
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd\n");
+	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd\n");
 
 	if (data && len)
 		memcpy(&rParams, data, len);
@@ -1695,7 +1707,7 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	prP2pSpecificBssInfo = prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo;
 	prP2pConnSettings = prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings;
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_testmode_p2p_sigma_cmd\n");
+	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_testmode_p2p_sigma_cmd\n");
 
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_P2P_SIGMA_PARAMS) data;
@@ -1875,6 +1887,8 @@ int mtk_p2p_cfg80211_testmode_hotspot_block_cmd(IN struct wiphy *wiphy, IN void 
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_HOTSPOT_BLOCK_PARAMS) data;
 	} else {
@@ -1943,6 +1957,8 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 
 	ASSERT(wiphy);
+
+	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 	if (!prGlueInfo) {
