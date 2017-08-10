@@ -105,7 +105,7 @@ static int xhci_plat_start(struct usb_hcd *hcd)
 #endif
 
 #ifdef CONFIG_USB_XHCI_MTK
-static u64 xhci_dma_mask = XHCI_DMA_BIT_MASK;
+/*static u64 xhci_dma_mask = XHCI_DMA_BIT_MASK;*/
 
 static void xhci_hcd_release(struct device *dev)
 {
@@ -139,8 +139,8 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	if (!res)
 		return -ENODEV;
 
-	pdev->dev.coherent_dma_mask = XHCI_DMA_BIT_MASK;
-	pdev->dev.dma_mask = &xhci_dma_mask;
+/*	pdev->dev.coherent_dma_mask = XHCI_DMA_BIT_MASK;*/
+/*	pdev->dev.dma_mask = &xhci_dma_mask;*/
 	pdev->dev.release = xhci_hcd_release;
 #else
 	irq = platform_get_irq(pdev, 0);
