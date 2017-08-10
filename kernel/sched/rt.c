@@ -1837,12 +1837,13 @@ static int find_lowest_rq(struct task_struct *task)
 	int interop_cpu;
 #endif
 
-	mt_sched_printf(sched_rt_info,
-			"1 find_lowest_rq lowest_mask=0x%lx, task->cpus_allowed=0x%lx",
-			lowest_mask->bits[0], task->cpus_allowed.bits[0]);
 	/* Make sure the mask is initialized first */
 	if (unlikely(!lowest_mask))
 		return -1;
+
+	mt_sched_printf(sched_rt_info,
+			"1 find_lowest_rq lowest_mask=0x%lx, task->cpus_allowed=0x%lx",
+			lowest_mask->bits[0], task->cpus_allowed.bits[0]);
 
 	if (task->nr_cpus_allowed == 1)
 		return -1; /* No other targets possible */
