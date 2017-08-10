@@ -674,6 +674,20 @@ void disp_exit_idle_ex(const char *caller)
 	}
 }
 
+static int primary_display_is_secure_path(DISP_SESSION_TYPE session_type)
+{
+	int i;
+	disp_session_input_config *session_input;
+
+	session_input = &cached_session_input[session_type - 1];
+	for (i = 0; i < session_input->config_layer_num; i++) {
+		if (session_input->config[i].layer_enable &&
+		    (session_input->config[i].security == DISP_SECURE_BUFFER))
+			return 1;
+	}
+	return 0;
+}
+
 static int _disp_primary_path_idle_detect_thread(void *data)
 {
 	int ret = 0, idle_time;
@@ -696,7 +710,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			continue;
 
 		_primary_path_lock(__func__);
-		if (primary_get_state() != DISP_ALIVE) {
+		if (primary_get_state() != DISP_ALIVE || primary_display_is_secure_path(DISP_SESSION_PRIMARY)) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagPulse, 1, 0);
 			/* DISPMSG("[ddp_idle]primary display path is slept?? -- skip ddp_idle\n"); */
 #if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
@@ -2031,22 +2045,6 @@ void _cmdq_insert_wait_frame_done_token_mira(void *handle)
 
 	dprec_event_op(DPREC_EVENT_CMDQ_WAIT_STREAM_EOF);
 #endif
-}
-
-
-
-static int primary_display_is_secure_path(DISP_SESSION_TYPE session_type)
-{
-	int i;
-	disp_session_input_config *session_input;
-
-	session_input = &cached_session_input[session_type - 1];
-	for (i = 0; i < session_input->config_layer_num; i++) {
-		if (session_input->config[i].layer_enable &&
-		    (session_input->config[i].security == DISP_SECURE_BUFFER))
-			return 1;
-	}
-	return 0;
 }
 
 static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma)
