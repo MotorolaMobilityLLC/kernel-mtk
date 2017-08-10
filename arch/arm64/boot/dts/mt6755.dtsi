@@ -3098,6 +3098,10 @@
 		status = "disabled";
 	};
 
+	goodix_fp: fingerprint@ {
+		compatible = "mediatek,goodix-fp";
+	};
+
 	usb_typec: usb_typec {
 		compatible = "mediatek,fusb300-eint";
 		status = "disabled";

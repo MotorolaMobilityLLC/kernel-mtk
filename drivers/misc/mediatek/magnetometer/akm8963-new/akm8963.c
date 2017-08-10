@@ -2359,8 +2359,10 @@ static int __init akm8963_init(void)
 	const char *name = "mediatek,akm8963";
 
 	hw = get_mag_dts_func(name, hw);
-	if (!hw)
+	if (!hw){
 		AKMDBG(KERN_ERR "get cust_mag dts info fail\n");
+		return 0;
+	}
 
 	printk("akm8963: i2c_number=%d\n",hw->i2c_num); 
 #ifdef CONFIG_MTK_LEGACY
