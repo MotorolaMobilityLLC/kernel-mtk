@@ -96,6 +96,9 @@
 #define PDMA_DBG(_fmt, ...)
 #endif /* PDMA_DEBUG_SUP */
 
+/* set DMA mask bits */
+#define DMA_MASK_BITS     33
+
 static UINT32 gDmaReg[AP_DMA_HIF_0_LENGTH / 4 + 1];
 #if !defined(CONFIG_MTK_CLKMGR)
 struct clk *g_clk_wifi_pdma;
@@ -185,6 +188,13 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	/* enable PDMA mode */
 	HifInfo->fgDmaEnable = TRUE;
 
+	/*initialize DMA mask*/
+	if (!dma_set_mask(HifInfo->Dev, DMA_BIT_MASK(DMA_MASK_BITS))) {
+		PDMA_DBG("PDMA> Initialize DMA mask OK!\n");
+	} else {
+		PDMA_DBG("PDMA> Initialize DMA mask fail!\n");
+	}
+
 #if 1				/* MPU Setting */
 	/* WIFI using TOP 512KB */
 	DBGLOG(INIT, INFO, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
@@ -242,30 +252,35 @@ static VOID HifPdmaConfig(IN void *HifInfoSrc, IN void *Param)
 	PDMA_DBG("PDMA> AP_DMA_HIF_0_SRC_ADDR = 0x%08lx\n", Conf->Src);
 
 	/* AP_DMA_HIF_0_SRC_ADDR2 */
-	if (sizeof(Conf->Src) > 4) {
-		/* support 64 bit */
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, (ULONG)((UINT_64)(Conf->Src) >> 32));
-		PDMA_DBG("PDMA> AP_DMA_HIF_0_SRC_ADDR2 = 0x%08lx\n", (ULONG)((UINT_64)(Conf->Src) >> 32));
-	} else {
-		/* support 32 bit */
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, 0);
-		PDMA_DBG("PDMA> AP_DMA_HIF_0_SRC_ADDR2 = 0x%08lx\n", 0);
-	}
+#if (__SIZEOF_LONG__  == 4)
+	/* support 32 bit */
+	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, 0);
+	PDMA_DBG("support 32bit, PDMA> AP_DMA_HIF_0_SRC_ADDR2 = 0x%08lx\n", 0);
+#elif (__SIZEOF_LONG__  == 8)
+	/* support 64 bit */
+	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, (ULONG)((UINT_64)(Conf->Src) >> 32));
+	PDMA_DBG("support 64bit, PDMA> AP_DMA_HIF_0_SRC_ADDR2 = 0x%08lx\n", (ULONG)((UINT_64)(Conf->Src) >> 32));
+#else
+	PDMA_DBG("LONG isn't defined !!");
+#endif
 
 	/* AP_DMA_HIF_0_DST_ADDR */
 	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR, Conf->Dst);
 	PDMA_DBG("PDMA> AP_DMA_HIF_0_DST_ADDR = 0x%08lx\n", Conf->Dst);
 
 	/* AP_DMA_HIF_0_DST_ADDR2 */
-	if (sizeof(Conf->Dst) > 4) {
-		/* support 64 bit */
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR2, (ULONG)((UINT_64)(Conf->Dst) >> 32));
-		PDMA_DBG("PDMA> AP_DMA_HIF_0_DST_ADDR2 = 0x%08lx\n", (ULONG)((UINT_64)(Conf->Dst) >> 32));
-	} else {
-		/* support 32 bit */
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, 0);
-		PDMA_DBG("PDMA> AP_DMA_HIF_0_SRC_ADDR2 = 0x%08lx\n", 0);
-	}
+#if (__SIZEOF_LONG__ == 4)
+	/* support 32 bit */
+	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR2, 0);
+	PDMA_DBG("support 32bit, PDMA> AP_DMA_HIF_0_DST_ADDR2 = 0x%08lx\n", 0);
+#elif (__SIZEOF_LONG__ == 8)
+	/* support 64 bit */
+	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR2, (ULONG)((UINT_64)(Conf->Dst) >> 32));
+	PDMA_DBG("support 64bit, PDMA> AP_DMA_HIF_0_DST_ADDR2 = 0x%08lx\n", (ULONG)((UINT_64)(Conf->Dst) >> 32));
+#else
+	PDMA_DBG("LONG isn't defined !!");
+#endif
+
 
 	/* AP_DMA_HIF_0_LEN */
 	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_LEN, (Conf->Count & ADH_CR_LEN));
