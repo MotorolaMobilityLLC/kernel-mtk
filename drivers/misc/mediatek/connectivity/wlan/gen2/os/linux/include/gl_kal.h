@@ -830,4 +830,7 @@ INT_32 kalBoostCpu(UINT_32 core_num);
 INT32 kalSetCpuNumFreq(UINT_32 core_num, UINT_32 freq);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
+#endif
 #endif /* _GL_KAL_H */

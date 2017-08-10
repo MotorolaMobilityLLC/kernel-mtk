@@ -1051,7 +1051,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			/* ensure BSS exists */
 			bss = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), prChannel, arBssid,
-					       ssid.aucSsid, ssid.u4SsidLen, WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
+				ssid.aucSsid, ssid.u4SsidLen, 0, 0);
 
 			if (bss == NULL) {
 				/* create BSS on-the-fly */
@@ -1075,7 +1075,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 				from A to B */
 			while (ucLoopCnt--) {
 				bss_others = cfg80211_get_bss(priv_to_wiphy(prGlueInfo), NULL, arBssid,
-						ssid.aucSsid, ssid.u4SsidLen, WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
+					ssid.aucSsid, ssid.u4SsidLen, 0, 0);
 				if (bss && bss_others && bss_others != bss) {
 					DBGLOG(SCN, INFO, "remove BSSes that only channel different\n");
 					cfg80211_unlink_bss(priv_to_wiphy(prGlueInfo), bss_others);
@@ -1802,18 +1802,24 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	/* return WLAN_STATUS_ADAPTER_NOT_READY; */
 	/* } */
 
-	/* if wait longer than double OID timeout timer, then will show backtrace who held halt lock.
-		at this case, we will return kalIoctl failure because tx_thread may be hung */
-	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD))
+	/*
+	 * if wait longer than double OID timeout timer, then will show backtrace who held halt lock.
+	 * at this case, we will return kalIoctl failure because tx_thread may be hung
+	 */
+	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 		return WLAN_STATUS_FAILURE;
+	}
 
 	if (kalIsHalted()) {
 		kalHaltUnlock();
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_ADAPTER_NOT_READY\n");
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
 	if (down_interruptible(&prGlueInfo->ioctl_sem)) {
 		kalHaltUnlock();
+		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	rHaltCtrl.fgHeldByKalIoctl = TRUE;
@@ -1854,7 +1860,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	wake_up_interruptible(&prGlueInfo->waitq);
 
 	/* <9> Block and wait for event or timeout, current the timeout is 30 secs */
-	if (wait_for_completion_interruptible_timeout(&prGlueInfo->rPendComp, 30 * KAL_HZ)) {
+	if (wait_for_completion_timeout(&prGlueInfo->rPendComp, 30 * KAL_HZ)) {
 		/* if (!wait_for_completion_interruptible(&prGlueInfo->rPendComp)) { */
 		DBGLOG(OID, TEMP, "kalIoctl: before wait, caller: %p\n", __builtin_return_address(0));
 		/*wait_for_completion(&prGlueInfo->rPendComp); {*/
@@ -1864,6 +1870,8 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 			ret = prGlueInfo->rPendStatus;
 		else
 			ret = prIoReq->rStatus;
+		if (ret != WLAN_STATUS_SUCCESS)
+			DBGLOG(OID, WARN, "kalIoctl: ret ErrCode: %d\n", ret);
 	}
 #if 1
 	else {
@@ -2099,6 +2107,7 @@ int tx_thread(void *data)
 	int ret = 0;
 
 	BOOLEAN fgNeedHwAccess = FALSE;
+	BOOLEAN fgAllowOidHandle = FALSE;
 
 	struct sk_buff *prSkb = NULL;
 
@@ -2223,19 +2232,24 @@ int tx_thread(void *data)
 				} else
 #endif
 				{
-					if (FALSE == prIoReq->fgRead) {
+					if (!completion_done(&prGlueInfo->rPendComp))
+						fgAllowOidHandle = TRUE;
+					else
+						fgAllowOidHandle = FALSE;
+					if (fgAllowOidHandle && (prIoReq->fgRead == FALSE)) {
 						prIoReq->rStatus = wlanSetInformation(prIoReq->prAdapter,
 										      prIoReq->pfnOidHandler,
 										      prIoReq->pvInfoBuf,
 										      prIoReq->u4InfoBufLen,
 										      prIoReq->pu4QryInfoLen);
-					} else {
+					} else if (fgAllowOidHandle) {
 						prIoReq->rStatus = wlanQueryInformation(prIoReq->prAdapter,
 											prIoReq->pfnOidHandler,
 											prIoReq->pvInfoBuf,
 											prIoReq->u4InfoBufLen,
 											prIoReq->pu4QryInfoLen);
-					}
+					} else
+						DBGLOG(OID, WARN, "completion_done = true, do nothing\n");
 
 					if (prIoReq->rStatus != WLAN_STATUS_PENDING
 						&& (!completion_done(&prGlueInfo->rPendComp))) {

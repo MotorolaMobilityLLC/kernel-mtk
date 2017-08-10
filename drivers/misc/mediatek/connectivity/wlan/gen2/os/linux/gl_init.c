@@ -938,6 +938,7 @@ int wlanDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	int ret = 0;
 
+	DBGLOG(INIT, INFO, "wlanDoIOCTL Cmd= 0x%04x\n", i4Cmd);
 	/* Verify input parameters for the following functions */
 	ASSERT(prDev && prIfReq);
 	if (!prDev || !prIfReq) {
@@ -968,6 +969,8 @@ int wlanDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd)
 		DBGLOG(INIT, WARN, "Unexpected ioctl command: 0x%04x\n", i4Cmd);
 		ret = -EOPNOTSUPP;
 	}
+	if (ret != 0)
+		DBGLOG(INIT, WARN, "wlanDoIOCTL Ret err: %d\n", ret);
 
 	return ret;
 }				/* end of wlanDoIOCTL() */
@@ -1141,6 +1144,8 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 	struct net_device *prDev = gPrDev;
 
 	fgIsWorkMcStart = TRUE;
+
+	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue\n");
 
 	if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
 		return;
@@ -3010,6 +3015,66 @@ static VOID exitWlan(void)
 	procUninitProcFs();
 
 }				/* end of exitWlan() */
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
+{
+	struct net_device *prDev = NULL;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+	PARAM_POWER_MODE ePowerMode;
+	BOOLEAN fgEnCmdEvent;
+	UINT_8 ucBssIndex;
+	CMD_PS_PROFILE_T arPowerSaveMode[NETWORK_TYPE_INDEX_NUM];
+
+	/* 4 <1> Sanity Check */
+	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+		return;
+	}
+
+	prDev = arWlanDevInfo[u4WlanDevNum - 1].prDev;
+	if (!prDev)
+		return;
+
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prDev));
+	if (!prGlueInfo)
+		return;
+
+	prAdapter = prGlueInfo->prAdapter;
+	if ((!prAdapter) || (!&(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX])))
+		return;
+
+	fgEnCmdEvent = FALSE;
+	ucBssIndex = NETWORK_TYPE_AIS_INDEX;
+	arPowerSaveMode[ucBssIndex].ucNetTypeIndex = ucBssIndex;
+
+	if (enabled) {
+		nicForceSetCAM(TRUE);
+		ePowerMode = Param_PowerModeCAM;
+		arPowerSaveMode[ucBssIndex].ucPsProfile = (UINT_8) ePowerMode;
+		DBGLOG(INIT, INFO, "Enable CAM BssIndex:%d, PowerMode:%d\n",
+		       ucBssIndex, arPowerSaveMode[ucBssIndex].ucPsProfile);
+	} else {
+		nicForceSetCAM(FALSE);
+		arPowerSaveMode[ucBssIndex].ucPsProfile =
+				prAdapter->rWlanInfo.arPowerSaveMode[ucBssIndex].ucPsProfile;
+		DBGLOG(INIT, INFO, "Disable CAM BssIndex:%d, PowerMode:%d\n",
+		       ucBssIndex, arPowerSaveMode[ucBssIndex].ucPsProfile);
+	}
+
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_POWER_SAVE_MODE,
+			    TRUE,
+			    FALSE,
+			    (fgEnCmdEvent ? TRUE : FALSE),
+			    (fgEnCmdEvent ? nicCmdEventSetCommon : NULL),
+			    (fgEnCmdEvent ? nicOidCmdTimeoutCommon : NULL),
+			    sizeof(CMD_PS_PROFILE_T),
+			    (PUINT_8) & (arPowerSaveMode[ucBssIndex]),
+			    NULL, sizeof(PARAM_POWER_MODE));
+}
+#endif
 
 #ifdef MTK_WCN_BUILT_IN_DRIVER
 

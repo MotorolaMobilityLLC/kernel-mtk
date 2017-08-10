@@ -4534,11 +4534,15 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter,
 			u2TxFrameCtrl = (prWlanFrame->u2FrameCtrl) & MASK_FRAME_TYPE;	/* Optimized for ARM */
 
 			if (u2TxFrameCtrl == MAC_FRAME_BEACON) {
-				if (prBssInfo->fgIsNetAbsent)
+				if (prBssInfo->fgIsNetAbsent &&
+					!(prAdapter->rWifiVar.prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)) {
 					return FRAME_ACTION_DROP_PKT;
+				}
 			} else if (u2TxFrameCtrl == MAC_FRAME_PROBE_RSP) {
-				if (prBssInfo->fgIsNetAbsent)
+				if (prBssInfo->fgIsNetAbsent &&
+					!(prAdapter->rWifiVar.prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)) {
 					return FRAME_ACTION_DROP_PKT;
+				}
 			} else if (u2TxFrameCtrl == MAC_FRAME_DEAUTH) {
 				if (prBssInfo->fgIsNetAbsent)
 					break;

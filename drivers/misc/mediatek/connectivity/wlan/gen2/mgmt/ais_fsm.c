@@ -35,6 +35,7 @@ static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 #define CTIA_MAGIC_SSID_LEN                 30
 
 #define AIS_JOIN_TIMEOUT                    7
+#define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -540,10 +541,21 @@ BOOLEAN aisFsmStateInit_RetryJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prSta
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_MSG_JOIN_REQ_T prJoinReqMsg;
-
+	INT_32 rssi = 0;
 	DEBUGFUNC("aisFsmStateInit_RetryJOIN()");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	rssi = RCPI_TO_dBm(prStaRec->ucRCPI);
+	/*check if driver exists pending scan reques and candiate bss's signal is too weak.*/
+	if ((aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, FALSE) == TRUE)
+		&& (rssi < AIS_DEFAULT_ROAMING_THRESHOLD)) {
+		DBGLOG(AIS, WARN
+			, "Retry BSS :[%pM] Rss:%d is too weak!Skipping retry join and doing next scan!\n"
+			, prStaRec->aucMacAddr, rssi);
+		return FALSE;
+	}
+
+	DBGLOG(AIS, INFO, "AvailableAuthTypes = %d\n", prAisFsmInfo->ucAvailableAuthTypes);
 
 	/* Retry other AuthType if possible */
 	if (!prAisFsmInfo->ucAvailableAuthTypes)
@@ -3550,10 +3562,12 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	/* 4 <6> Indicate Disconnected Event to Host */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, fgDelayIndication);
 
+#if 0
 	/*dump package information and ignore disconnect before new connect state*/
 	if (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState != AIS_STATE_REMAIN_ON_CHANNEL &&
 			prAisBssInfo->ucReasonOfDisconnect != DISCONNECT_REASON_CODE_NEW_CONNECTION)
 		wlanPktDebugDumpInfo(prAdapter);
+#endif
 
 	/* 4 <7> Trigger AIS FSM */
 	aisFsmSteps(prAdapter, AIS_STATE_IDLE);
@@ -3799,6 +3813,11 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			eNextState = AIS_STATE_IDLE;
 		}
 #else
+		/*request channel timeout, driver avoid to aisFsmStateInit_RetryJOIN*/
+		if (prAisFsmInfo->ucAvailableAuthTypes != 0)
+			DBGLOG(AIS, INFO, "driver avoids to aisFsmStateInit_RetryJOIN retry!\n");
+
+		prAisFsmInfo->ucAvailableAuthTypes = 0;
 
 		/* keep eNextState the same (so will not do action here), and do action in aisFsmRunEventJoinComplete */
 		prSaaFsmCompMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SAA_FSM_COMP_T));

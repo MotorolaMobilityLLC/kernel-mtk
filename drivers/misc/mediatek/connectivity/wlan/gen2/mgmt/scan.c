@@ -3121,7 +3121,7 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 	else if (cRssi >= -77)
 		u2Score = 30;
 	else if (cRssi <= -88 && cRssi > -100)
-		u2Score = 20;
+		u2Score = 5;
 	else if (cRssi <= -100)
 		u2Score = 0;
 
@@ -3329,8 +3329,8 @@ try_again:
 		}
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID)
 			DBGLOG(SCN, INFO,
-				"Selected %pM base on bssid, when find %s, %pM in %d BSSes, fix channel %d.\n",
-				prCandBssDesc->aucBSSID, prConnSettings->aucSSID,
+				"Selected %pM (%d) base on bssid, when find %s, %pM in %d BSSes, fix channel %d.\n",
+				prCandBssDesc->aucBSSID, RCPI_TO_dBm(prCandBssDesc->ucRCPI), prConnSettings->aucSSID,
 				prConnSettings->aucBSSID, prEssLink->u4NumElem, ucChannel);
 		else
 			DBGLOG(SCN, INFO,

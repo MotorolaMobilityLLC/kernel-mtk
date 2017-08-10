@@ -1168,8 +1168,10 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		if (prAdapter->ucFlushCount >= RX_FW_FLUSH_PKT_THRESHOLD) {
 			DBGLOG(RX, ERROR, "FW flushed continusous packages :%d\n", prAdapter->ucFlushCount);
 			prAdapter->ucFlushCount = 0;
+#if 0
 			kalSendAeeWarning("[Fatal error! FW Flushed PKT too much!]", __func__);
 			glDoChipReset();
+#endif
 		}
 
 		/* call related TX Done Handler */
