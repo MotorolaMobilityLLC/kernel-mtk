@@ -2069,7 +2069,7 @@ EXPORT_SYMBOL(card_dump_func_read);
 
 int has_mt_dump_support(void)
 {
-	return 1;
+	return 0;
 }
 EXPORT_SYMBOL(has_mt_dump_support);
 
