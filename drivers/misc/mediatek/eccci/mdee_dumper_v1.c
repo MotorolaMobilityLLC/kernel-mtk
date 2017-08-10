@@ -222,16 +222,16 @@ static void mdee_dumper_info_dump_v1(struct md_ee *mdee)
 	/* Add additional info */
 	switch (dumper->more_info) {
 	case MD_EE_CASE_ONLY_SWINT:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly SWINT case\n");
+		strncat(ex_info, "\nOnly SWINT case\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case MD_EE_CASE_SWINT_MISSING:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nSWINT missing case\n");
+		strncat(ex_info, "\nSWINT missing case\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case MD_EE_CASE_ONLY_EX:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly EX case\n");
+		strncat(ex_info, "\nOnly EX case\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case MD_EE_CASE_ONLY_EX_OK:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly EX_OK case\n");
+		strncat(ex_info, "\nOnly EX_OK case\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
 		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
@@ -250,16 +250,16 @@ static void mdee_dumper_info_dump_v1(struct md_ee *mdee)
 	CCCI_ERROR_LOG(md_id, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nno ELM info\n");
+		strncat(ex_info, "\nno ELM info\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case 0xAE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM rlat:FAIL\n");
+		strncat(ex_info, "\nELM rlat:FAIL\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case 0xBE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM wlat:FAIL\n");
+		strncat(ex_info, "\nELM wlat:FAIL\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	case 0xDE:
-		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM r/wlat:PASS\n");
+		strncat(ex_info, "\nELM r/wlat:PASS\n", (EE_BUF_LEN - strlen(ex_info)));
 		break;
 	default:
 		break;
