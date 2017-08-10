@@ -313,6 +313,7 @@ static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
 #if defined(CONFIG_ARCH_MT6755)
+static int by_ccif0_count;
 static int by_ccif1_count;
 #elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 static unsigned int last_r12;
@@ -478,6 +479,16 @@ static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_
 
 #if defined(CONFIG_ARCH_MT6755)
 	if ((wakesta->r12 & WAKE_SRC_R12_APXGPT1_EVENT_B) == 0) {
+		if ((wakesta->r12 & WAKE_SRC_R12_CCIF0_EVENT_B)) {
+			if ((by_ccif0_count >= 20) ||
+				((curr_time - sodi_logout_prev_time) > 20U)) {
+				logout = true;
+				by_ccif0_count = 0;
+			} else if (by_ccif0_count == 0) {
+				logout = true;
+			}
+			by_ccif0_count++;
+		}
 		if ((wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)) {
 			if ((by_ccif1_count >= 5) ||
 				((curr_time - sodi_logout_prev_time) > 20U)) {
