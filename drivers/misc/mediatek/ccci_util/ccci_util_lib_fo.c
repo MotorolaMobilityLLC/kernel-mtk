@@ -671,7 +671,7 @@ static void lk_info_parsing_v1(unsigned int *raw_ptr)
 	}
 }
 
-static void lk_info_parsing_v2(unsigned int *raw_ptr)
+static int lk_info_parsing_v2(unsigned int *raw_ptr)
 {
 	ccci_lk_info_t_v2 lk_inf;
 	int i;
@@ -687,16 +687,23 @@ static void lk_info_parsing_v2(unsigned int *raw_ptr)
 	for (i = 0; i < MAX_MD_NUM_AT_LK; i++)
 		lk_load_img_err_no[i] = lk_inf.lk_info_ld_md_errno[i];
 
+	if ((lk_inf.lk_info_base_addr == 0LL) && (s_g_lk_ld_md_errno == 0)) {
+		CCCI_UTIL_ERR_MSG("no image enabled\n");
+		s_g_lk_inf_base = NULL;
+		s_g_lk_load_img_status = 0;
+		return 1;
+	}
+
 	if (lk_inf.lk_info_base_addr == 0LL) {
 		CCCI_UTIL_ERR_MSG("no image load success\n");
 		s_g_lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
-		return;
+		return -1;
 	}
 
 	if (lk_inf.lk_info_size > MAX_LK_INFO_SIZE) {
 		CCCI_UTIL_ERR_MSG("tag info mem size too large\n");
 		s_g_lk_load_img_status |= LK_TAG_BUFF_SIZE_NOT_ENOUGH;
-		return;
+		return -1;
 	}
 
 	s_g_lk_info_tag_version = (unsigned int)lk_inf.lk_info_version;
@@ -707,6 +714,8 @@ static void lk_info_parsing_v2(unsigned int *raw_ptr)
 		CCCI_UTIL_ERR_MSG("ioremap lk info buf fail\n");
 		s_g_lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
 	}
+
+	return 0;
 }
 
 static void verify_md_enable_setting(void)
@@ -779,7 +788,8 @@ static int collect_lk_boot_arguments(void)
 
 	raw_ptr = (unsigned int *)of_get_flat_dt_prop(s_g_dt_chosen_node, "ccci,modem_info_v2", NULL);
 	if (raw_ptr != NULL) {
-		lk_info_parsing_v2(raw_ptr);
+		if (lk_info_parsing_v2(raw_ptr) == 1) /* No md enabled in LK */
+			return 0;
 		goto _common_process;
 	}
 
