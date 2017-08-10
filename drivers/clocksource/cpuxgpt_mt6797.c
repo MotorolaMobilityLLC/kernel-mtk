@@ -64,7 +64,7 @@ static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt8_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt9_irq_handler(int irq, void *dev_id);
 
-static const struct of_device_id cpuxgpt_addr_ids[] __initconst = {
+static const struct of_device_id cpuxgpt_addr_ids[] = {
 	{.compatible = "mediatek,mt6797-cpuxgpt"},
 	{},
 };
