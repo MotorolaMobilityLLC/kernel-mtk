@@ -1,4 +1,17 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+/*
  * Driver for CAM_CAL
  *
  *
@@ -643,7 +656,4 @@ module_init(CAM_CAL_i2C_init);
 module_exit(CAM_CAL_i2C_exit);
 
 MODULE_DESCRIPTION("S5K2P8 CAM_CAL driver");
-MODULE_AUTHOR("LukeHu <luke.hu@Mediatek.com>");
-MODULE_LICENSE("GPL");
-
-
+MODULE_AUTHOR("DreamYeh <Dream.Yeh@Mediatek.com>");
