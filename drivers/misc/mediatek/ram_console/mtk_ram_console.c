@@ -990,6 +990,7 @@ u32 aee_rr_curr_vcore_dvfs_opp(void)
 {
 	return LAST_RR_VAL(vcore_dvfs_opp);
 }
+EXPORT_SYMBOL(aee_rr_curr_vcore_dvfs_opp);
 
 void aee_rr_rec_vcore_dvfs_status(u32 val)
 {

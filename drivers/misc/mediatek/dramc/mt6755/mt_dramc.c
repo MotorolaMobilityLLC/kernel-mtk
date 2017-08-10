@@ -1037,6 +1037,7 @@ unsigned int get_dram_data_rate(void)
 	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
 	return MEMPLL_FOUT;
 }
+EXPORT_SYMBOL(get_dram_data_rate);
 
 #if 0
 unsigned int DRAM_MRR(int MRR_num)

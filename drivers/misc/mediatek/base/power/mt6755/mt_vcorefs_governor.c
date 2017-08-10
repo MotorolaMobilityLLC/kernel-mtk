@@ -631,6 +631,7 @@ int vcorefs_get_curr_vcore(void)
 
 	return vcore < VCORE_INVALID ? vcore_pmic_to_uv(vcore) : 0;
 }
+EXPORT_SYMBOL(vcorefs_get_curr_vcore);
 
 int vcorefs_get_curr_ddr(void)
 {
@@ -1476,6 +1477,7 @@ int vcorefs_enable_debug_isr(bool enable)
 	mutex_unlock(&governor_mutex);
 	return 0;
 }
+EXPORT_SYMBOL(vcorefs_enable_debug_isr);
 
 int vcorefs_enable_perform_bw(bool enable)
 {
