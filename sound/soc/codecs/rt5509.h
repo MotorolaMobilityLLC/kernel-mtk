@@ -18,7 +18,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.4_M"
+#define RT5509_DRV_VER			"1.0.10_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
@@ -48,7 +48,7 @@ enum {
 	RT5509_CFG_ALC,
 	RT5509_CFG_MAX,
 };
-	
+
 struct rt5509_proprietary_param {
 	u8 *cfg[RT5509_CFG_MAX];
 	u32 cfg_size[RT5509_CFG_MAX];
@@ -58,13 +58,30 @@ struct rt5509_pdata {
 	struct rt5509_proprietary_param *p_param;
 };
 
+struct rt5509_calib_classdev {
+	struct device *dev;
+	uint32_t n20db;
+	uint32_t n15db;
+	uint32_t n10db;
+	uint32_t gsense_otp;
+	uint32_t rspk;
+	uint32_t dcr_offset;
+	uint32_t rapp;
+	int32_t rspkmin;
+	int32_t rspkmax;
+	int32_t alphaspk;
+	int (*trigger_read)(struct rt5509_calib_classdev *);
+	int (*trigger_write)(struct rt5509_calib_classdev *);
+	int (*trigger_calculation)(struct rt5509_calib_classdev *);
+};
+
 struct rt5509_chip {
 	struct i2c_client *i2c;
 	struct device *dev;
 	struct rt5509_pdata *pdata;
 	struct snd_soc_codec *codec;
 	struct platform_device *pdev;
-	struct proc_dir_entry *root_entry;
+	struct rt5509_calib_classdev calib_dev;
 	struct rt_regmap_device *rd;
 #if RT5509_SIMULATE_DEVICE
 	void *sim;
@@ -72,7 +89,21 @@ struct rt5509_chip {
 	struct semaphore io_semaphore;
 	atomic_t power_count;
 	u8 chip_rev;
+	u8 mode_store;
+	u8 func_en;
+	u8 spk_prot_en;
+	u8 alc_gain;
+	u8 alc_min_gain;
+	u8 classd_gain_store;
+	u8 pgain_gain_store;
+	u8 sig_gain_store;
+	u16 sig_max_store;
+	u8 recv_spec_set:1;
 	u8 bypass_dsp:1;
+	u8 calibrated:1;
+	u8 tdm_mode:1;
+	u8 rlr_func:1;
+	int dev_cnt;
 };
 
 /* RT5509_REGISTER_LIST */
@@ -250,6 +281,8 @@ struct rt5509_chip {
 #define RT5509_REG_TDM_CTRL		0xB4
 #define RT5509_REG_ECO_CTRL		0xB5
 #define RT5509_REG_BSTTM		0xB8
+#define RT5509_REG_ALCMINGAIN		0xB9
+#define RT5509_REG_RESVECO0		0xBA
 #define RT5509_REG_OTPCONF		0xC0
 #define RT5509_REG_OTPADDR		0xC1
 #define RT5509_REG_OTPDIN		0xC2
@@ -327,7 +360,7 @@ struct rt5509_chip {
 #define RT5509_AMPOC_STATSHFT	3
 #define RT5509_AMPOT_STATSHFT	2
 #define RT5509_BSTOC_STATSHFT	1
-#define RT5509_BSTOT_STATSHFT	0	
+#define RT5509_BSTOT_STATSHFT	0
 
 /* RT5509_REG_CHIPEN: 0x03 */
 #define RT5509_TRIWAVE_ENMASK	0x20
@@ -420,6 +453,9 @@ enum {
 
 /* RT5509_REG_DSPKCONF5: 0x94 */
 #define RT5509_VBG_ENMASK	0x40
+
+/* RT5509_REG_TDM_CTRL: 0xB4 */
+#define RT5509_TDM_ENMASK	0x08
 
 /* RT5509_REG_CLKEN1: 0xF4 */
 #define RT5509_CLKEN1_MASK	0xFF
