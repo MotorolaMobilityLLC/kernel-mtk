@@ -29,6 +29,8 @@ subdir-ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
 subdir-ccflags-$(CONFIG_MTK_FB) += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys \
                                        -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735 \
                                        -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox \
+                                       -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/ \
+                                       -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/mt6735/ \
                                        -I$(srctree)/drivers/misc/mediatek/video/include
 
 LCM_DEFINES := $(shell echo $(CONFIG_CUSTOM_KERNEL_LCM) | tr a-z A-Z)

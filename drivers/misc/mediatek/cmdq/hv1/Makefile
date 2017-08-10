@@ -13,7 +13,7 @@
 
 # drivers/cmdq
 $(warning start to build cmdq normal)
-
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/include/linux
