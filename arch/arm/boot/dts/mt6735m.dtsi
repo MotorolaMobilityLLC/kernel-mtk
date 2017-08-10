@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "MT6735M";
@@ -202,7 +203,6 @@
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
-		ranges;
 
 		cpuxgpt: cpuxgpt@10200000 {
 			compatible = "mediatek,mt6735-cpuxgpt";
@@ -1795,7 +1795,7 @@
 		};
 		barometer@0 {
 			compatible = "mediatek,barometer";
-	};
+		};
 		m_baro_pl@0 {
 			compatible = "mediatek,m_baro_pl";
 		};
@@ -1821,9 +1821,9 @@
 		mediatek,clkbuf-config = <2 1 1 1>;
 	};
 };
-
+#ifndef CONFIG_OF_RESOLVE
 #include <cust.dtsi>
-
+#endif
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";
