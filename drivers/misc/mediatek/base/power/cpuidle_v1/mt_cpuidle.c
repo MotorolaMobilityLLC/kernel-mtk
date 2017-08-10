@@ -736,6 +736,12 @@ void mt_platform_save_context(int flags)
 
 void mt_platform_restore_context(int flags)
 {
+#if defined(CONFIG_ARCH_MT6580) && (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) || defined(CONFIG_TRUSTY))
+	int cpuid, clusterid;
+
+	read_id(&cpuid, &clusterid);
+#endif
+
 	mt_cluster_restore(flags);
 	mt_cpu_restore();
 
@@ -749,6 +755,23 @@ void mt_platform_restore_context(int flags)
 	if (IS_DORMANT_GIC_OFF(flags))
 		restore_edge_gic_spm_irq(gic_id_base);
 #endif
+
+#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	/* SODI/DPIDLE */
+	if (!IS_DORMANT_INNER_OFF(flags)) {
+		if (cpuid == 0)
+			mt_secure_call(MC_FC_SLEEP_CANCELLED, 0, 0, 0);
+	}
+#elif defined(CONFIG_TRUSTY)
+	/* SODI/DPIDLE */
+	if (!IS_DORMANT_INNER_OFF(flags)) {
+		if (cpuid == 0)
+			mt_trusty_call(SMC_FC_CPU_DORMANT_CANCEL, 0, 0, 0);
+	}
+#endif
+#endif /* CONFIG_ARCH_MT6580  */
+
 }
 
 #if !defined(CONFIG_ARM64) && !defined(CONFIG_ARCH_MT6580)
@@ -864,7 +887,8 @@ int mt_cpu_dormant(unsigned long flags)
 #else
 	dormant_data[0].poc.cpu_resume_phys = (void (*)(void))(long)virt_to_phys(cpu_resume);
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-	mt_secure_call(MC_FC_MTK_SLEEP, virt_to_phys(cpu_resume), cpuid, 0);
+	/* CPU_DEEP_SLEEP (0), CPU_MCDI_SLEEP (1)  */
+	mt_secure_call(MC_FC_MTK_SLEEP, virt_to_phys(cpu_resume), cpuid, IS_DORMANT_INNER_OFF(flags) ? 0 : 1);
 #elif defined(CONFIG_TRUSTY) && defined(CONFIG_ARCH_MT6580)
 	mt_trusty_call(SMC_FC_CPU_DORMANT, virt_to_phys(cpu_resume), cpuid, 0);
 #else
