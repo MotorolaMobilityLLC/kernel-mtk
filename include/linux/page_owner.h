@@ -8,7 +8,7 @@ extern struct page_ext_operations page_owner_ops;
 extern void __reset_page_owner(struct page *page, unsigned int order);
 extern void __set_page_owner(struct page *page,
 			unsigned int order, gfp_t gfp_mask);
-extern int dump_pfn_backtrace(unsigned long pfn);
+extern int __dump_pfn_backtrace(unsigned long pfn);
 
 static inline void reset_page_owner(struct page *page, unsigned int order)
 {
@@ -25,6 +25,14 @@ static inline void set_page_owner(struct page *page,
 		return;
 
 	__set_page_owner(page, order, gfp_mask);
+}
+
+static inline int dump_pfn_backtrace(unsigned long pfn)
+{
+	if (likely(!page_owner_inited))
+		return 0;
+
+	return __dump_pfn_backtrace(pfn);
 }
 #else
 static inline void reset_page_owner(struct page *page, unsigned int order)

@@ -76,7 +76,7 @@ void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
 	__set_bit(PAGE_EXT_OWNER, &page_ext->flags);
 }
 
-int dump_pfn_backtrace(unsigned long pfn)
+int __dump_pfn_backtrace(unsigned long pfn)
 {
 	struct page *page = pfn_to_page(pfn);
 	struct page_ext *page_ext = lookup_page_ext(page);
@@ -93,9 +93,6 @@ int dump_pfn_backtrace(unsigned long pfn)
 		.entries = &page_ext->trace_entries[0],
 	};
 #endif
-
-	if (!page_owner_inited)
-		return -1;
 
 	/* Check for holes within a MAX_ORDER area */
 	if (!pfn_valid_within(pfn))
