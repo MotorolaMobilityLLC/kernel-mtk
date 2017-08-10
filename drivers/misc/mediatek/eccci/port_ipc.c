@@ -111,7 +111,7 @@ int port_ipc_recv_match(struct ccci_port *port, struct sk_buff *skb)
 }
 
 static int send_new_time_to_md(struct ccci_modem *md, int tz);
-volatile int current_time_zone = 0;
+volatile int current_time_zone;
 int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;

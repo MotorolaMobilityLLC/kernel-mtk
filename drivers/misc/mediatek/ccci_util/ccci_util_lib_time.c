@@ -13,30 +13,9 @@
 
 #include <linux/module.h>
 #include <linux/device.h>
-#include <linux/fs.h>
-#include <linux/cdev.h>
-#include <linux/interrupt.h>
 #include <linux/spinlock.h>
-#include <linux/uaccess.h>
-#include <linux/mm.h>
-#include <linux/kfifo.h>
-
-#include <linux/firmware.h>
-#include <linux/syscalls.h>
-#include <linux/uaccess.h>
-#include <linux/platform_device.h>
-#include <linux/proc_fs.h>
-#include <linux/seq_file.h>
-#include <linux/of.h>
-#ifdef CONFIG_OF
-#include <linux/of_fdt.h>
-#endif
-#include <asm/setup.h>
-#include <linux/atomic.h>
-#include <mt-plat/mt_boot_common.h>
-
 #include <mt-plat/mt_ccci_common.h>
-
+#include <linux/wait.h>
 static wait_queue_head_t time_update_notify_queue_head;
 static spinlock_t wait_count_lock;
 static volatile unsigned int wait_count;

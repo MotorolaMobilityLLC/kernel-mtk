@@ -24,7 +24,7 @@
 #include "ccci_swtp.h"
 
 #ifdef FEATURE_MTK_SWITCH_TX_POWER
-struct of_device_id swtp_of_match[] = {
+const struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
 	{},
 };

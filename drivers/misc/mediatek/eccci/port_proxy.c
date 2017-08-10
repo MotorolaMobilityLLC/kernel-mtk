@@ -28,7 +28,7 @@
 #define CCCI_DEV_NAME "ccci"
 
 /*******************************************************************************************/
-/*REGION: port class default method implementation												*/
+/*REGION: port class default method implementation*/
 /*******************************************************************************************/
 /* structure initialize */
 static inline void port_struct_init(struct ccci_port *port, struct port_proxy *port_p)
@@ -139,7 +139,7 @@ int port_kthread_handler(void *arg)
 }
 
 /*******************************************************************************************/
-/*REGION: port_proxy class method implementation													*/
+/*REGION: port_proxy class method implementation*/
 /*******************************************************************************************/
 static inline void port_proxy_set_critical_user(struct port_proxy *proxy_p, int user_id, int enabled)
 {
@@ -204,8 +204,10 @@ int port_proxy_user_unregister(struct port_proxy *proxy_p, struct ccci_port *por
 
 __EXIT_FUN__:
 
-	/* 2. check critical nodes for reset, run close check first,
-	      as mdlogger is killed before we gated MD when IPO shutdown */
+	/* 2.
+	 * check critical nodes for reset, run close check first,
+	 * as mdlogger is killed before we gated MD when IPO shutdown
+	 */
 	if (ret == 0 && ccci_md_get_state(proxy_p->md_obj) == GATED)
 		port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_READY_TO_RESET, 0);
 	return ret;
@@ -842,10 +844,12 @@ int ccci_c2k_buffer_push(int ch_id, void *buf, int count)
 
 				memcpy(skb_put(skb, actual_count), buf, actual_count);
 
-				/* for md3, ccci_h->channel will probably change after call send_skb,
-				because md3's channel mapping. */
-				/* do NOT reference request after called this,
-				   modem may have freed it, unless you get -EBUSY */
+				/*
+				 * for md3, ccci_h->channel will probably change after call send_skb,
+				 * because md3's channel mapping.
+				 * do NOT reference request after called this,
+				 * modem may have freed it, unless you get -EBUSY
+				 */
 				ret = port_proxy_send_skb_to_md(proxy_p, port, skb, blk2);
 
 				if (ret) {

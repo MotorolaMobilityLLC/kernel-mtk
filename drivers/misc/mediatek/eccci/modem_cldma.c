@@ -73,7 +73,7 @@ static int md_cd_late_init(struct ccci_modem *md);
 static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { 0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, 0 };
 static int normal_rx_queue_buffer_size[CLDMA_RXQ_NUM] = { SKB_4K, SKB_4K, SKB_4K, SKB_4K, 0, 0, SKB_4K, SKB_16 };
 
-#if 0				/* for debug log dump convenience */
+#if 0	/* for debug log dump convenience */
 static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 16, 16, 16, 0, 0 };
 #else
@@ -91,7 +91,7 @@ static int net_tx_ring2queue[NET_TXQ_NUM] = { 3, 4, 5 };
 static int normal_rx_ring2queue[NORMAL_RXQ_NUM] = { 0, 1, 2, 3, 6, 7 };
 static int normal_tx_ring2queue[NORMAL_TXQ_NUM] = { 0, 1, 2, 3, 6, 7 };
 
-static const unsigned char high_priority_queue_mask = 0x00;
+static const unsigned char high_priority_queue_mask;
 
 #define NET_TX_QUEUE_MASK 0x38	/* 3, 4, 5 */
 #define NET_RX_QUEUE_MASK 0x38	/* 3, 4, 5 */
@@ -912,8 +912,6 @@ static void cldma_rx_ring_init(struct ccci_modem *md, struct cldma_ring *ring)
 		cldma_rgpd_set_next_ptr(gpd, first_item->gpd_addr);
 		caculate_checksum((char *)gpd, 0x81);
 	}
-	if (ring->type == RING_SPD)
-		/* TODO: */;
 }
 
 static void cldma_tx_ring_init(struct ccci_modem *md, struct cldma_ring *ring)
@@ -1070,8 +1068,10 @@ void cldma_disable_irq(struct md_cd_ctrl *md_ctrl)
 void cldma_disable_irq_nosync(struct md_cd_ctrl *md_ctrl)
 {
 	if (atomic_cmpxchg(&md_ctrl->cldma_irq_enabled, 1, 0) == 1)
-		/*may be called in isr, so use disable_irq_nosync.
-		   if use disable_irq in isr, system will hang */
+		/*
+		 * may be called in isr, so use disable_irq_nosync.
+		 * if use disable_irq in isr, system will hang
+		 */
 		disable_irq_nosync(md_ctrl->cldma_irq_id);
 }
 
@@ -1690,8 +1690,10 @@ void wdt_disable_irq(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	if (atomic_cmpxchg(&md_ctrl->wdt_enabled, 1, 0) == 1) {
-		/*may be called in isr, so use disable_irq_nosync.
-		   if use disable_irq in isr, system will hang */
+		/*
+		 * may be called in isr, so use disable_irq_nosync.
+		 * if use disable_irq in isr, system will hang
+		 */
 		disable_irq_nosync(md_ctrl->md_wdt_irq_id);
 		CCCI_NORMAL_LOG(md->index, TAG, "disable wdt irq\n");
 	}
@@ -2276,8 +2278,8 @@ static int check_power_off_en(struct ccci_modem *md)
 	smem_val = *((int *)((long)md->mem_layout.smem_region_vir + 8*1024+31*4));
 	CCCI_NORMAL_LOG(md->index, TAG, "share for power off:%x\n", smem_val);
 	if (smem_val != 0) {
-			CCCI_NORMAL_LOG(md->index, TAG, "[ccci]enable power off check\n");
-			return 1;
+		CCCI_NORMAL_LOG(md->index, TAG, "[ccci]enable power off check\n");
+		return 1;
 	}
 	CCCI_NORMAL_LOG(md->index, TAG, "disable power off check\n");
 	return 0;

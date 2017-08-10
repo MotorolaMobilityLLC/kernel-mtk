@@ -20,7 +20,7 @@
 #define PORT_F_RX_FULLED		(1<<1)	/* rx buffer has been full once */
 #define PORT_F_USER_HEADER		(1<<2)	/* CCCI header will be provided by user, but not by CCCI */
 #define PORT_F_RX_EXCLUSIVE		(1<<3)	/* Rx queue only has this one port */
-#define PORT_F_ADJUST_HEADER	(1<<4)	/* Check wether need remove cccu header while recv skb*/
+#define PORT_F_ADJUST_HEADER	(1<<4)	/* Check whether need remove cccu header while recv skb*/
 
 struct ccci_port_ops {
 	/* must-have */

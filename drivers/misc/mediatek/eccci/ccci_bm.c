@@ -73,7 +73,7 @@ static int my_wp_handler(phys_addr_t addr)
 #endif
 	return 0;
 }
-/*
+#if 0
 static void disable_watchpoint(void)
 {
 	if (atomic_read(&hwp_enable)) {
@@ -81,7 +81,7 @@ static void disable_watchpoint(void)
 		atomic_set(&hwp_enable, 0);
 	}
 }
-*/
+#endif
 static void enable_watchpoint(void *address)
 {
 	int wp_err;
@@ -105,18 +105,18 @@ static int is_in_ccci_skb_pool(struct sk_buff *skb)
 	for (skb_p = skb_pool_16.skb_list.next;
 		skb_p != NULL && skb_p != (struct sk_buff *)&skb_pool_16.skb_list;
 		skb_p = skb_p->next) {
-			if (skb == skb_p) {
-				CCCI_NORMAL_LOG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
-				return 1;
-			}
+		if (skb == skb_p) {
+			CCCI_NORMAL_LOG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
+			return 1;
+		}
 	}
 	for (skb_p = skb_pool_4K.skb_list.next;
 		skb_p != NULL && skb_p != (struct sk_buff *)&skb_pool_4K.skb_list;
 		skb_p = skb_p->next) {
-			if (skb == skb_p) {
-				CCCI_NORMAL_LOG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
-				return 1;
-			}
+		if (skb == skb_p) {
+			CCCI_NORMAL_LOG(-1, BM, "WARN:skb=%p pointer linked in skb_pool_1_5K!\n", skb);
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -372,12 +372,12 @@ void ccci_free_skb(struct sk_buff *skb)
 	DATA_POLICY policy = FREE;
 
 	/*skb is onlink from caller cldma_gpd_bd_tx_collect*/
-	/*
-	if(unlikely(skb->next != NULL || skb->prev != NULL)) {
+#if 0
+	if (unlikely(skb->next != NULL || skb->prev != NULL)) {
 		CCCI_ERROR_LOG(-1, BM, "warning!!!! skb %p is still onlink!\n", skb);
 		dump_stack();
 	}
-	*/
+#endif
 	buf_ctrl = (struct ccci_buffer_ctrl *)(skb->head + NET_SKB_PAD - sizeof(struct ccci_buffer_ctrl));
 	if (buf_ctrl->head_magic == CCCI_BUF_MAGIC) {
 		policy = buf_ctrl->policy;
@@ -398,9 +398,9 @@ void ccci_free_skb(struct sk_buff *skb)
 		skb_reserve(skb, NET_SKB_PAD);
 		/* 2. enqueue */
 		if (skb_size(skb) < SKB_4K)
-				ccci_skb_enqueue(&skb_pool_16, skb);
+			ccci_skb_enqueue(&skb_pool_16, skb);
 		else
-				ccci_skb_enqueue(&skb_pool_4K, skb);
+			ccci_skb_enqueue(&skb_pool_4K, skb);
 		break;
 	case FREE:
 		dev_kfree_skb_any(skb);
@@ -478,11 +478,11 @@ void ccci_mem_dump(int md_id, void *start_addr, int len)
 	char buf[16];
 	int i, j;
 
-	if (NULL == curr_p) {
+	if (curr_p == NULL) {
 		CCCI_NORMAL_LOG(md_id, BM, "NULL point to dump!\n");
 		return;
 	}
-	if (0 == len) {
+	if (len == 0) {
 		CCCI_NORMAL_LOG(md_id, BM, "Not need to dump\n");
 		return;
 	}
@@ -520,11 +520,11 @@ void ccci_cmpt_mem_dump(int md_id, void *start_addr, int len)
 	char buf[64];
 	int i, j;
 
-	if (NULL == curr_p) {
+	if (curr_p == NULL) {
 		CCCI_NORMAL_LOG(md_id, BM, "NULL point to dump!\n");
 		return;
 	}
-	if (0 == len) {
+	if (len == 0) {
 		CCCI_NORMAL_LOG(md_id, BM, "Not need to dump\n");
 		return;
 	}

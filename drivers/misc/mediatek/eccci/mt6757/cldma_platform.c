@@ -224,12 +224,9 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
 	int idx = 0;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "%s: %d\n", __func__, on);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s: on=%d\n", __func__, on);
 	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
 		if (clk_table[idx].clk_ref == NULL)
-			continue;
-		/*cldma clk only for md1*/
-		if (md->index != MD_SYS1 && idx == 1)
 			continue;
 		if (on)
 			clk_prepare_enable(clk_table[idx].clk_ref);
@@ -733,7 +730,7 @@ void md1_pll_on(struct ccci_modem *md)
 	/* close 208M and autoK */
 	/* ccci_write32(map_addr, AP_PLL_CON0, 0x39F3); */
 	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on_before W, 0x%X, 0x%X\n",
-		ccci_read32(map_addr, AP_PLL_CON0), ccci_read32(map_addr, MDPLL1_CON0));
+	ccci_read32(map_addr, AP_PLL_CON0), ccci_read32(map_addr, MDPLL1_CON0));
 	/* ccci_write32(map_addr, MDPLL1_CON0, 0x02E9); */
 	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on_after W, 0x%X\n", ccci_read32(map_addr, MDPLL1_CON0));
 	/* RAnd2W(map_addr, MDPLL1_CON0, 0xfffffffe); */
@@ -745,7 +742,8 @@ void md1_pll_on(struct ccci_modem *md)
 
 	RAnd2W(map_addr, MDPLL1_CON0, ~(0x1<<9));
 	CCCI_DEBUG_LOG(md->index, TAG, "md1_pll_on, (0x%p)0x%X\n", map_addr, ccci_read32(map_addr, MDPLL1_CON0));
-	/* RAnd2W(map_addr, MDPLL1_CON0, 0xfffffdff); */ /* set mdpll control by md1 and c2k */
+	/* set mdpll control by md1 and c2k */
+	/* RAnd2W(map_addr, MDPLL1_CON0, 0xfffffdff); */
 }
 
 void md1_pll_init(struct ccci_modem *md)
@@ -756,20 +754,26 @@ void md1_pll_init(struct ccci_modem *md)
 	md1_pll_on(md);
 	ROr2W(md_pll->md_peri_misc, R_L1_PMS, 0x7);
 
-	/* From everest and then, PSMCU2EMI bus divider need to be 3,
-	 * if it used old value 4 as jade, it can be failed in corner case. */
+	/*
+	* From everest and then, PSMCU2EMI bus divider need to be 3,
+	* if it used old value 4 as jade, it can be failed in corner case.
+	*/
 	ROr2W(md_pll->md_sys_clk, R_PSMCU_AO_CLK_CTL, 0x82);
 
 	ROr2W(md_pll->md_L1_a0, R_L1MCU_PWR_AWARE, (1<<16));
 
 	ROr2W(md_pll->md_L1_a0, R_L1AO_PWR_AWARE, (1<<16));
-	/* busL2 DCM div 8/normal div 1/ clkslow_en/clock from
-	   PLL /debounce enable/ debounce time 7T */
+	/*
+	* busL2 DCM div 8/normal div 1/ clkslow_en/clock from
+	* PLL /debounce enable/ debounce time 7T
+	*/
 	/* L2DCM L1BUS div 16 */
 	ccci_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x0000FDE7); /* <= 1FDE7 */
 	ccci_write32(md_pll->md_L1_a0, R_BUSL2DCM_CON3, 0x1000FDE7); /* toggle setting */
-	/* DCM div 8/normal div 1/clkslow_en/ clock
-	   from PLL / dcm enable /debounce enable /debounce time 15T */
+	/*
+	* DCM div 8/normal div 1/clkslow_en/ clock
+	* from PLL / dcm enable /debounce enable /debounce time 15T
+	*/
 	ccci_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON, 0x0001FDE7);
 	/* DCM config toggle = 0 */
 	ccci_write32(md_pll->md_L1_a0, R_L1MCU_DCM_CON2, 0x00000000);
@@ -795,7 +799,8 @@ void md1_pll_init(struct ccci_modem *md)
 	/*DFE/CMP/ICC/IMC clock src select */
 	ccci_write32(md_pll->md_clkSW, R_FLEXCKGEN_SEL1, 0x30302020);
 	/* Bit 29-28 DFE_CLK src = DFEPLL,  Bit 21-20 CMP_CLK src = DFEPLL
-	   Bit 13-12 ICC_CLK src = IMCPLL,     Bit 5-4   IMC_CLK src = IMCPLL */
+	* Bit 13-12 ICC_CLK src = IMCPLL,     Bit 5-4   IMC_CLK src = IMCPLL
+	*/
 
 	/*IMC/MD2G clock src select */
 	ccci_write32(md_pll->md_clkSW, R_FLEXCKGEN_SEL2, 0x00002030);
@@ -894,16 +899,9 @@ int md_cd_power_on(struct ccci_modem *md)
 	switch (md->index) {
 	case MD_SYS1:
 		clk_buf_set_by_flightmode(false);
-#if defined(CONFIG_MTK_CLKMGR)
-		CCCI_BOOTUP_LOG(md->index, TAG, "Call start md_power_on()\n");
-		ret = md_power_on(SYS_MD1);
-		CCCI_BOOTUP_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
-#else
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
 		clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
-#endif
-
 		kicker_pbm_by_md(KR_MD1, true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,true)\n");
 		break;
@@ -987,12 +985,8 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	/* power off MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
-#if defined(CONFIG_MTK_CLKMGR)
-		ret = md_power_off(SYS_MD1, timeout);
-#else
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
-#endif
 		clk_buf_set_by_flightmode(true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
@@ -1082,8 +1076,10 @@ int ccci_modem_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
-
+	if (pdev == NULL) {
+		CCCI_ERROR_LOG(MD_SYS1, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return ccci_modem_suspend(pdev, PMSG_SUSPEND);
 }
 
@@ -1091,8 +1087,10 @@ int ccci_modem_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
-
+	if (pdev == NULL) {
+		CCCI_ERROR_LOG(MD_SYS1, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return ccci_modem_resume(pdev);
 }
 

@@ -519,11 +519,12 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 {
 	unsigned int tx_channel = 0;
 	int i;
-
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-
 	struct md_hw_info *hw_info = md_ctrl->hw_info;
 
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 1);
+#endif
 	reset_ccirq_hardware();
 
 	/* clear occupied channel */
@@ -544,10 +545,12 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 		ccif_write32(hw_info->md1_pccif_base, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
 		ccif_write32(hw_info->md3_pccif_base, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
 	}
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 0);
+#endif
 	/*clear md1 md3 shared memory*/
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
-
 }
 
 void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg)

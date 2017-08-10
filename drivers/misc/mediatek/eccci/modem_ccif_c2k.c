@@ -113,8 +113,9 @@ struct c2k_port {
 };
 
 static struct c2k_port c2k_ports[] = {
-	/*c2k control channel mapping to 2 pairs of CCCI channels,
-	   please mind the order in this array, make sure CCCI_CONTROL_TX/RX be first. */
+	/* c2k control channel mapping to 2 pairs of CCCI channels,
+	 * please mind the order in this array, make sure CCCI_CONTROL_TX/RX be first.
+	 */
 	{CTRL_CH_C2K, CCCI_CONTROL_TX, CCCI_CONTROL_TX, CCCI_CONTROL_RX,},	/*control channel */
 	{CTRL_CH_C2K, CTRL_CH_C2K, CCCI_STATUS_TX, CCCI_STATUS_RX,},	/*control channel */
 	{AUDIO_CH_C2K, AUDIO_CH_C2K, CCCI_PCM_TX, CCCI_PCM_RX,},	/*audio channel */
@@ -326,11 +327,11 @@ void c2k_mem_dump(void *start_addr, int len)
 	char buf[16];
 	int i, j;
 
-	if (NULL == curr_p) {
+	if (curr_p == NULL) {
 		CCCI_ERROR_LOG(MD_SYS3, TAG, "[C2K-DUMP]NULL point to dump!\n");
 		return;
 	}
-	if (0 == len) {
+	if (len == 0) {
 		CCCI_ERROR_LOG(MD_SYS3, TAG, "[C2K-DUMP]Not need to dump\n");
 		return;
 	}
@@ -489,7 +490,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		spin_unlock_irqrestore(&queue->rx_lock, flags);
 		if (pkg_size < 0) {
 			CCCI_DEBUG_LOG(md->index, TAG, "Q%d Rx:rbf readable ret=%d\n", queue->index, pkg_size);
-			/*BUG_ON(pkg_size!=-CCCI_RINGBUF_EMPTY); */
 			ret = 0;
 			goto OUT;
 		}
@@ -515,18 +515,21 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		}
 		ccci_h = (struct ccci_header *)skb->data;
 		if (md->index == MD_SYS3) {
-			/*md3(c2k) logical channel number is not the same as other modems,
-			   so we need use mapping table to convert channel id here. */
+			/* md3(c2k) logical channel number is not the same as other modems,
+			 * so we need use mapping table to convert channel id here.
+			 */
 			c2k_to_ccci_ch = c2k_ch_to_ccci_ch(md, ccci_h->channel, IN);
 			ccci_h->channel = (u16) c2k_to_ccci_ch;
 
-			/*heart beat msg from c2k control channel, but handled by ECCCI status channel handler,
-			   we hack the channel ID here. */
-			/*if((ccci_h->channel == CCCI_CONTROL_RX) && (ccci_h->data[1] == C2K_HB_MSG))
-			   {
-			   ccci_h->channel == CCCI_STATUS_RX;
-			   CCCI_NORMAL_LOG(md->index, TAG, "heart beat msg received\n");
-			   } */
+			/* heart beat msg from c2k control channel, but handled by ECCCI status channel handler,
+			 * we hack the channel ID here.
+			 */
+#if 0
+			if ((ccci_h->channel == CCCI_CONTROL_RX) && (ccci_h->data[1] == C2K_HB_MSG)) {
+				ccci_h->channel == CCCI_STATUS_RX;
+				CCCI_NORMAL_LOG(md->index, TAG, "heart beat msg received\n");
+			}
+#endif
 			if (ccci_h->channel == CCCI_C2K_LB_DL) {
 				CCCI_DEBUG_LOG(md->index, TAG, "Q%d Rx lb_dl\n", queue->index);
 				/*c2k_mem_dump(data_ptr, pkg_size); */
@@ -797,7 +800,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 	}
 }
 
-unsigned int ccif_irq_cnt = 0;
+unsigned int ccif_irq_cnt;
 static irqreturn_t md_ccif_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
@@ -1076,8 +1079,9 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 		md_ccif_tx_rx_printk(md, skb, qno, 1);
 
 		if (md->index == MD_SYS3) {
-			/*heart beat msg is sent from status channel in ECCCI,
-			   but from control channel in C2K, no status channel in C2K */
+			/* heart beat msg is sent from status channel in ECCCI,
+			 * but from control channel in C2K, no status channel in C2K
+			 */
 			if (ccci_h->channel == CCCI_STATUS_TX) {
 				ccci_h->channel = CCCI_CONTROL_TX;
 				ccci_h->data[1] = C2K_HB_MSG;
@@ -1086,8 +1090,9 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 				ccci_md_inc_tx_seq_num(md, ccci_h);
 			}
 
-			/*md3(c2k) logical channel number is not the same as other modems,
-			   so we need to use mapping table to convert channel id here. */
+			/* md3(c2k) logical channel number is not the same as other modems,
+			 * so we need to use mapping table to convert channel id here.
+			 */
 			ccci_to_c2k_ch = ccci_ch_to_c2k_ch(md, ccci_h->channel, OUT);
 			if (ccci_to_c2k_ch >= 0 && ccci_to_c2k_ch < C2K_OVER_MAX_CH)
 				ccci_h->channel = (u16) ccci_to_c2k_ch;
@@ -1320,9 +1325,10 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *
 		md_ccif_queue_dump(md);
 	}
 	/*normal EE */
-	/*if (flag & DUMP_FLAG_REG) {
+#if 0
+	if (flag & DUMP_FLAG_REG)
 		ccci_dump_req_user_list();
-	}*/
+#endif
 	if (flag & DUMP_FLAG_MD_WDT)
 		dump_c2k_register(md, 1);
 	/*MD boot fail EE */
@@ -1595,7 +1601,10 @@ int md_ccif_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
+	if (pdev == NULL) {
+		CCCI_ERROR_LOG(MD_SYS3, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return md_ccif_suspend(pdev, PMSG_SUSPEND);
 }
 
@@ -1603,7 +1612,10 @@ int md_ccif_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
+	if (pdev == NULL) {
+		CCCI_ERROR_LOG(MD_SYS3, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return md_ccif_resume(pdev);
 }
 

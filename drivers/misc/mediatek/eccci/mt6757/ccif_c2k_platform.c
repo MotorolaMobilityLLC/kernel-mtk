@@ -78,6 +78,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 	}
 #else
 	struct ccci_dev_cfg *dev_cfg_ptr = (struct ccci_dev_cfg *)dev->dev.platform_data;
+
 	dev_cfg->index = dev_cfg_ptr->index;
 
 	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem hw info get idx:%d\n", dev_cfg->index);
@@ -178,11 +179,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 #endif
 
 		/*no boot slave for md3 */
-		/*
-		   hw_info->md_boot_slave_Vector = MD3_BOOT_VECTOR;
-		   hw_info->md_boot_slave_Key = MD3_BOOT_VECTOR_KEY;
-		   hw_info->md_boot_slave_En = MD3_BOOT_VECTOR_EN;
-		 */
+
 		break;
 	default:
 		return -1;
@@ -253,8 +250,6 @@ static int config_c2k_pll(void)
 
 	ccif_write16(c2k_pll_reg.c2k_cppll_con0, 0, ccif_read16(c2k_pll_reg.c2k_cppll_con0, 0) | (0x1 << 15));
 	ccif_write16(c2k_pll_reg.c2k_dsppll_con0, 0, ccif_read16(c2k_pll_reg.c2k_dsppll_con0, 0) | (0x1 << 15));
-	/*ccif_write16(c2k_pll_reg.c2k_cg_amba_clksel, 0,
-		ccif_read16(c2k_pll_reg.c2k_cg_amba_clksel, 0) | (0x1 << 15));*/
 
 	udelay(30);
 
@@ -344,9 +339,9 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		/*step 3: ap hold c2k core */
 		/*c2k may bootup fail if AP access C2K_CONFIG, so ignore */
 		/*
-		   ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-			ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 1));
-		*/
+		 *   ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+		 *	ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) | (0x1 << 1));
+		 */
 
 		/*step 4: wake up C2K */
 #if 1
@@ -400,9 +395,9 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		/*release c2k arm core */
 		/*c2k may bootup fail if AP access C2K_CONFIG, so ignore */
 		/*
-		   ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
-			ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x1 << 1)));
-		*/
+		 *   ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
+		 *	ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x1 << 1)));
+		 */
 
 		break;
 	}
@@ -476,8 +471,13 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void reset_md1_md3_pccif(struct ccci_modem *md)
 {
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 1);
+#endif
 	reset_ccirq_hardware();
-
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 0);
+#endif
 	/*clear md1 md3 shared memory */
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);

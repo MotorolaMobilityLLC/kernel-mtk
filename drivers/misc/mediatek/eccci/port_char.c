@@ -94,7 +94,7 @@ static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 	int i, j;
 
 	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
-		if (((32 <= char_ptr[i]) && (char_ptr[i] <= 126))) {
+		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
 			buf[j++] = char_ptr[i];
 		} else {
 			if (DUMP_BUF_SIZE - j > 4) {
@@ -158,7 +158,10 @@ READ_START:
 		 */
 		if (port->rx_skb_list.qlen == 0)
 			port_proxy_ask_more_req_to_md(port->port_proxy, port);
-		BUG_ON(port->rx_skb_list.qlen < 0);
+		if (port->rx_skb_list.qlen < 0) {
+			CCCI_ERROR_LOG(port->md_id, CHAR, "%s:port->rx_skb_list.qlen < 0 %s\n", __func__, port->name);
+			return -EFAULT;
+		}
 	} else {
 		read_len = count;
 	}
@@ -206,11 +209,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		actual_count = count > (CCCI_MTU + header_len) ? (CCCI_MTU + header_len) : count;
 	else
 		actual_count = count > CCCI_MTU ? CCCI_MTU : count;
-
-	/*if (CCCI_FS_TX != port->tx_ch)
+#if 0
+	if (port->tx_ch != CCCI_FS_TX)
 		CCCI_NORMAL_LOG(port->md_id, CHAR, "write on %s for %zu of %zu, md_s=%d\n",
-			port->name, actual_count, count, port->modem->md_state); */
-
+			port->name, actual_count, count, port->modem->md_state);
+#endif
 	skb = ccci_alloc_skb(actual_count, 1, blocking);
 	if (skb) {
 		/* 1. for Tx packet, who issued it should know whether recycle it  or not */
@@ -248,15 +251,18 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		}
 
 		/* 4. send out */
-		/* for md3, ccci_h->channel will probably change after call send_skb
-		because md3's channel mapping */
+		/*
+		 * for md3, ccci_h->channel will probably change after call send_skb
+		 * because md3's channel mapping
+		 */
 		ret = port_proxy_send_skb_to_md(port->port_proxy, port, skb, blocking);
 			/* do NOT reference request after called this, modem may have freed it, unless you get -EBUSY */
+#if 0
 		if (ccci_h && ccci_h->channel == CCCI_UART2_TX) {
-			/* CCCI_NORMAL_LOG(port->md_id, CHAR,
-				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret); */
+			CCCI_NORMAL_LOG(port->md_id, CHAR,
+				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret);
 		}
-
+#endif
 		if (ret) {
 			if (ret == -EBUSY && !blocking)
 				ret = -EAGAIN;

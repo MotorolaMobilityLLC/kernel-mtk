@@ -51,7 +51,7 @@
 #define IS_CCMNI_LAN(dev)    (strncmp(dev->name, "ccmni-lan", 9) == 0)
 
 ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
-unsigned int ccmni_debug_level = 0;
+unsigned int ccmni_debug_level;
 
 /********************internal function*********************/
 static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
@@ -530,7 +530,7 @@ static const struct net_device_ops ccmni_netdev_ops = {
 	.ndo_select_queue = ccmni_select_queue,
 };
 
-static int ccmni_napi_poll(struct napi_struct *napi , int budget)
+static int ccmni_napi_poll(struct napi_struct *napi, int budget)
 {
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(napi->dev);
 	int md_id = ccmni->md_id;

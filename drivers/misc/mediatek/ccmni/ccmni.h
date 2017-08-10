@@ -81,7 +81,7 @@ typedef struct ccmni_ccci_ops {
 	unsigned int       irat_md_id;  /* with which md on iRAT */
 	unsigned int       napi_poll_weigh;
 	int (*send_pkt)(int md_id, int ccmni_idx, void *data, int is_ack);
-	int (*napi_poll)(int md_id, int ccmni_idx, struct napi_struct *napi , int weight);
+	int (*napi_poll)(int md_id, int ccmni_idx, struct napi_struct *napi, int weight);
 	int (*get_ccmni_ch)(int md_id, int ccmni_idx, struct ccmni_ch *channel);
 } ccmni_ccci_ops_t;
 

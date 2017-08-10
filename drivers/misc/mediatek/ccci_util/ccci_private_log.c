@@ -66,7 +66,7 @@ int ccci_log_write(const char *fmt, ...)
 		return -ENODEV;
 
 	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
-	if (NULL == temp_log) {
+	if (temp_log == NULL) {
 		/*pr_err("[ccci0/util]alloc local buff fail p01\n");*/
 		return -ENODEV;
 	}
@@ -116,7 +116,7 @@ int ccci_log_write_raw(unsigned int set_flags, const char *fmt, ...)
 		return -ENODEV;
 
 	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
-	if (NULL == temp_log) {
+	if (temp_log == NULL) {
 		/*pr_err("[ccci0/util]alloc local buff fail p1\n");*/
 		return -ENODEV;
 	}
@@ -184,8 +184,7 @@ static ssize_t ccci_log_read(struct file *file, char __user *buf, size_t size, l
 			ret = wait_event_interruptible(ccci_log_buf.log_wq, ccci_log_buf.ch_num);
 			if (ret == -ERESTARTSYS)
 				return -EINTR;
-			else
-				goto retry;
+			goto retry;
 		} else {
 			return -EAGAIN;
 		}
@@ -367,7 +366,7 @@ int ccci_dump_write(int md_id, int buf_type, unsigned int flag, const char *fmt,
 	}
 
 	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
-	if (NULL == temp_log) {
+	if (temp_log == NULL) {
 		/*pr_err("[ccci0/util]alloc local buff fail p2\n");*/
 		return -7;
 	}
@@ -719,8 +718,6 @@ static void ccci_dump_buffer_init(void)
 			spin_lock_init(&ptr->lock);
 			if (buff_en_bit_map & (1<<i)) {
 				/* allocate buffer */
-				/* pr_err("[ccci0/util]%d curr node index %d[%d]\n", i, node_ptr->index,
-					node_ptr->init_size); */
 				ptr->buffer = vmalloc(node_ptr->init_size);
 				if (ptr->buffer != NULL) {
 					ptr->buf_size = node_ptr->init_size;
@@ -761,11 +758,11 @@ void ccci_util_mem_dump(int md_id, int buf_type, void *start_addr, int len)
 	char buf[16];
 	int i, j;
 
-	if (NULL == curr_p) {
+	if (curr_p == NULL) {
 		ccci_dump_write(md_id, buf_type, 0, "start_addr <NULL>\n");
 		return;
 	}
-	if (0 == len) {
+	if (len == 0) {
 		ccci_dump_write(md_id, buf_type, 0, "len [0]\n");
 		return;
 	}
@@ -802,11 +799,11 @@ void ccci_util_cmpt_mem_dump(int md_id, int buf_type, void *start_addr, int len)
 	char buf[64];
 	int i, j;
 
-	if (NULL == curr_p) {
+	if (curr_p == NULL) {
 		ccci_dump_write(md_id, buf_type, 0, "start_addr <NULL>\n");
 		return;
 	}
-	if (0 == len) {
+	if (len == 0) {
 		ccci_dump_write(md_id, buf_type, 0, "len [0]\n");
 		return;
 	}
@@ -888,7 +885,7 @@ int ccci_event_log(const char *fmt, ...)
 		return 0;
 
 	temp_log = kmalloc(CCCI_LOG_MAX_WRITE, GFP_ATOMIC);
-	if (NULL == temp_log)
+	if (temp_log == NULL)
 		return 0;
 
 	/* prepare kernel time info */
@@ -972,6 +969,7 @@ int ccci_event_log_cpy(char buf[], int size)
 void ccci_log_init(void)
 {
 	struct proc_dir_entry *ccci_log_proc;
+
 	ccci_log_proc = proc_create("ccci_log", 0444, NULL, &ccci_log_fops);
 	if (ccci_log_proc == NULL) {
 		pr_err("[ccci0/util]fail to create proc entry for log\n");

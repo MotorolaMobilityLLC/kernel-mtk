@@ -342,8 +342,8 @@ static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md check header not exist!\n");
 		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
 	} else if (head->header_verno > header_up) {
-			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]md check header version mis-match to AP:[%d]!\n",
-						  head->header_verno);
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]md check header version mis-match to AP:[%d]!\n",
+			head->header_verno);
 		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
 	} else {
 #ifdef ENABLE_2G_3G_CHECK
@@ -516,8 +516,8 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 	int idx;
 	unsigned char *start, *ptr;
 	struct md_check_header *head = &md_img_header[md_id];
-	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
 
+	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
 	header_size = *(((unsigned int *)parse_addr) - 1);
 	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "MD image header size = %d\n", header_size);
 	if (header_size == sizeof(struct md_check_header_v3)) /* v3, v4 */
@@ -775,7 +775,8 @@ TRY_LOAD_IMG:
 	ret = request_firmware(&fw_entry, img_name, dev);
 	if (ret != 0) {
 		/*CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-			     "Try to load firmware %s failed:ret=%d!\n", img_name, ret);*/
+		 *	"Try to load firmware %s failed:ret=%d!\n", img_name, ret);
+		 */
 		if (i <= MAX_IMG_NUM) {
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
 			if (img->type == IMG_MD)
@@ -1006,6 +1007,7 @@ int get_md_wm_id_map(int ap_wm_id)
 int md_capability(int md_id, int wm_id, int curr_md_type)
 {
 	int md_type;
+
 	if (curr_md_type >= MAX_IMG_NUM)
 		return -1;
 	if (wm_id >= MAX_IMG_NUM)

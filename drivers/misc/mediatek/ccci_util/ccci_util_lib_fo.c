@@ -176,9 +176,10 @@ static unsigned char md_info_tag_val[4];
 /*====================================================== */
 /* Feature option setting support section                */
 /*====================================================== */
-typedef struct fos_item {	/* Feature Option Setting */
+/* Feature Option Setting */
+typedef struct fos_item {
 	char *name;
-	volatile int value;
+	int value;
 } fos_item_t;
 
 /* Default value from config file */
@@ -592,6 +593,7 @@ static int md3_raw_img_size;
 static void md_chk_hdr_info_parse(void)
 {
 	int ret;
+
 	if (s_g_md_usage_case & (1<<MD_SYS1)) {
 		/* The allocated memory will be free after md structure initialized */
 		md1_check_hdr_info = kmalloc(1024, GFP_KERNEL);
@@ -978,8 +980,10 @@ int set_modem_support_cap(int md_id, int new_val)
 				} else {
 					CCCI_UTIL_INF_MSG("md%d: boot arg has val:%d(%d)\n", md_id + 1,
 							meta_md_support[md_id], new_val);
-					/* We hope first write clear meta default setting
-					** then, modem first boot will using meta setting that get from boot arguments*/
+					/*
+					 * We hope first write clear meta default setting
+					 * then, modem first boot will using meta setting that get from boot arguments
+					 */
 					meta_md_support[md_id] = 0;
 					return -1;
 				}
@@ -1075,8 +1079,8 @@ static void cal_md_settings(int md_id)
 	/* MTK_ENABLE_MD* */
 	val = ccci_get_opt_val(tmp_buf);
 	if (val > 0) {
-			md_en = 1;
-			md_support[md_id] = (unsigned int)val;
+		md_en = 1;
+		md_support[md_id] = (unsigned int)val;
 	}
 	if (!(md_en && (s_g_md_usage_case & (1 << md_id)))) {
 		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "md%d is disabled\n", (md_id + 1));
@@ -1152,7 +1156,7 @@ static void cal_md_settings_v2(struct device_node *node)
 	/* MD*_SMEM_SIZE */
 	for (i = 0; i < MAX_MD_NUM_AT_LK; i++) {
 		snprintf(tmp_buf, 30, "mediatek,md%d-smem-size", i+1);
-		if (0 == of_property_read_u32(node, tmp_buf, &tmp)) {
+		if (!of_property_read_u32(node, tmp_buf, &tmp)) {
 			CCCI_UTIL_INF_MSG("DT[%s]:%08X\n", tmp_buf, tmp);
 			md_resv_smem_size[MD_SYS1+i] = tmp;
 		} else
@@ -1161,7 +1165,7 @@ static void cal_md_settings_v2(struct device_node *node)
 
 	/* MD1MD3_SMEM_SIZE*/
 	snprintf(tmp_buf, 30, "mediatek,md1md3-smem-size");
-	if (0 == of_property_read_u32(node, tmp_buf, &tmp)) {
+	if (!of_property_read_u32(node, tmp_buf, &tmp)) {
 		CCCI_UTIL_INF_MSG("DT[%s]:%08X\n", tmp_buf, tmp);
 		md1md3_resv_smem_size = tmp;
 	} else
@@ -1268,6 +1272,7 @@ int ccci_util_fo_init(void)
 {
 	int idx;
 	struct device_node *node = NULL;
+
 	CCCI_UTIL_INF_MSG("ccci_util_fo_init 0.\n");
 
 	CCCI_UTIL_INF_MSG("Dump default setting(@P/K)\n");

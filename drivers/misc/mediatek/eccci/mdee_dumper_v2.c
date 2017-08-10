@@ -134,10 +134,10 @@ static void mdee_output_debug_info_to_buf(struct md_ee *mdee, DEBUG_INFO_T *debu
 				 debug_info->fatal_error.ExStr);
 		}
 		if (debug_info->fatal_error.err_code1 == 0x3104) {
-				mem_layout = ccci_md_get_mem(mdee->md_obj);
-				snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s, MD base = 0x%08X\n\n", ex_info,
-					mdee->ex_mpu_string, (unsigned int)mem_layout->md_region_phy);
-				memset(mdee->ex_mpu_string, 0x0, sizeof(mdee->ex_mpu_string));
+			mem_layout = ccci_md_get_mem(mdee->md_obj);
+			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s, MD base = 0x%08X\n\n", ex_info,
+				mdee->ex_mpu_string, (unsigned int)mem_layout->md_region_phy);
+			memset(mdee->ex_mpu_string, 0x0, sizeof(mdee->ex_mpu_string));
 		}
 		break;
 	case MD_EX_DUMP_2P_EX:
@@ -297,8 +297,10 @@ static void mdee_info_dump_v2(struct md_ee *mdee)
 					smem_layout->ccci_exp_smem_base_vir, (2048 + 512));
 		ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
 					(smem_layout->ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
-		/* otherwise always dump whole share memory,
-				   as MD will fill debug log into its 2nd 1K region after bootup */
+		/*
+		* otherwise always dump whole share memory,
+		* as MD will fill debug log into its 2nd 1K region after bootup
+		*/
 		dump_flag = CCCI_AED_DUMP_EX_MEM;
 		if (dumper->more_info == MD_EE_CASE_NO_RESPONSE)
 			dump_flag |= CCCI_AED_DUMP_CCIF_REG;
@@ -382,9 +384,10 @@ static int mdee_pl_core_parse(int md_id, DEBUG_INFO_T *debug_info, EX_PL_LOG_T *
 		/* Fall through */
 	case MD_EX_CC_ARM7_EXCEPTION:
 		/*
-		md1:(MCU_PCORE)
-		[Fatal error (CC xxx)] err_code1:0x00000xx err_code2:0x00xxx err_code3:0xxxx
-		Offender: */
+		* md1:(MCU_PCORE)
+		* [Fatal error (CC xxx)] err_code1:0x00000xx err_code2:0x00xxx err_code3:0xxxx
+		* Offender:
+		*/
 		ee_type = ee_type - MD_EX_CC_INVALID_EXCEPTION + MD_EX_PL_FATALE_TOTAL;
 		/* Fall through */
 	case MD_EX_PL_UNDEF:

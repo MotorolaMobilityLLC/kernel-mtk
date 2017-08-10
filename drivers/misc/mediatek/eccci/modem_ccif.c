@@ -228,8 +228,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 
 		pkg_size = ccci_ringbuf_readable(md->index, rx_buf);
 		if (pkg_size < 0) {
-			CCCI_DEBUG_LOG(md->index, TAG, "Q%d Rx:rbf readable ret=%d\n", queue->index, pkg_size);
-			BUG_ON(pkg_size != -CCCI_RINGBUF_EMPTY);
+			CCCI_ERROR_LOG(md->index, TAG, "Q%d Rx:rbf readable ret=%d\n", queue->index, pkg_size);
 			ret = 0;
 			goto OUT;
 		}
@@ -253,7 +252,11 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		data_ptr = (unsigned char *)skb_put(skb, pkg_size);
 		/* copy data into skb */
 		ret = ccci_ringbuf_read(md->index, rx_buf, data_ptr, pkg_size);
-		BUG_ON(ret < 0);
+		if (ret < 0) {
+			CCCI_ERROR_LOG(md->index, TAG, "Q%d ccci_ringbuf_read ret=%d\n", queue->index, ret);
+			ret = -ENOMEM;
+			goto OUT;
+		}
 		ccci_h = (struct ccci_header *)skb->data;
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
 			CCCI_NORMAL_LOG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n", queue->index,
@@ -658,14 +661,16 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		ret = ccci_ringbuf_write(md->index, queue->ringbuf, skb->data, skb->len);
 		if (ret != skb->len)
 			CCCI_ERROR_LOG(md->index, TAG, "TX:ERR rbf write: ret(%d)!=req(%d)\n", ret, skb->len);
-		/* ccci_h = (struct ccci_header *)req->skb->data; */
-		/* if(ccci_h->channel == CCCI_CCMNI1_TX) { */
-		/* short *ipid = (short *)(req->skb->data+sizeof(struct ccci_header)+4); */
-		/* int *valid = (int *)(req->skb->data+sizeof(struct ccci_header)+36); */
-		/* CCCI_NORMAL_LOG(md->index, TAG, "tx %p len=%d ipid=%x, valid=%x\n",
-			req->skb->data, req->skb->len, *ipid, *valid); */
-		/* } */
+#if 0
+		ccci_h = (struct ccci_header *)req->skb->data;
+		if (ccci_h->channel == CCCI_CCMNI1_TX) {
+			short *ipid = (short *)(req->skb->data+sizeof(struct ccci_header)+4);
+			int *valid = (int *)(req->skb->data+sizeof(struct ccci_header)+36);
 
+			CCCI_NORMAL_LOG(md->index, TAG, "tx %p len=%d ipid=%x, valid=%x\n",
+				req->skb->data, req->skb->len, *ipid, *valid);
+		}
+#endif
 		/* free request */
 		if (req == NULL)
 			dev_kfree_skb_any(skb);
@@ -742,7 +747,11 @@ static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runti
 	*p = ccif_read32(&runtime->Platform_L, 0);
 	p++;
 	*p = ccif_read32(&runtime->Platform_H, 0);
-	BUG_ON(sizeof(struct modem_runtime) > md_ctrl->sram_size);
+	if (sizeof(struct modem_runtime) > md_ctrl->sram_size) {
+		CCCI_ERROR_LOG(md->index, TAG, "%s: sizeof(struct modem_runtime)%d> %d(sram_size)\n",
+			sizeof(struct modem_runtime), md_ctrl->sram_size);
+		return;
+	}
 	CCCI_NORMAL_LOG(md->index, TAG, "Prefix               %c%c%c%c\n", ctmp[0], ctmp[1], ctmp[2], ctmp[3]);
 	CCCI_NORMAL_LOG(md->index, TAG, "Platform_L           %c%c%c%c\n", ctmp[4], ctmp[5], ctmp[6], ctmp[7]);
 	CCCI_NORMAL_LOG(md->index, TAG, "Platform_H           %c%c%c%c\n", ctmp[8], ctmp[9], ctmp[10], ctmp[11]);
@@ -1145,7 +1154,6 @@ int md_ccif_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
 	return md_ccif_suspend(pdev, PMSG_SUSPEND);
 }
 
@@ -1153,7 +1161,6 @@ int md_ccif_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	BUG_ON(pdev == NULL);
 	return md_ccif_resume(pdev);
 }
 

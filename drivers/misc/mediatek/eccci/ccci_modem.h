@@ -153,8 +153,10 @@ static inline void ccci_reset_seq_num(struct ccci_modem *md)
 	memset(md->seq_nums[IN], -1, sizeof(md->seq_nums[IN]));
 }
 
-/* as one channel can only use one hardware queue,
-	so it's safe we call this function in hardware queue's lock protection */
+/*
+* as one channel can only use one hardware queue,
+* so it's safe we call this function in hardware queue's lock protection
+*/
 static inline void ccci_md_inc_tx_seq_num(struct ccci_modem *md, struct ccci_header *ccci_h)
 {
 #ifdef FEATURE_SEQ_CHECK_EN

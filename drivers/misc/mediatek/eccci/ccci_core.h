@@ -945,8 +945,9 @@ struct modem_runtime {
 #endif
 } __packed;
 
-/*do not modify this c2k structure, because we assume its total size is 32bit,
-   and used as ccci_header's 'reserved' member*/
+/* do not modify this c2k structure, because we assume its total size is 32bit,
+ * and used as ccci_header's 'reserved' member
+ */
 struct c2k_ctrl_port_msg {
 	unsigned char id_hi;
 	unsigned char id_low;

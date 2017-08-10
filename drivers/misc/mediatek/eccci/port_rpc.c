@@ -31,9 +31,6 @@
 #include <mach/mt6605.h>
 #endif
 
-#include <mt-plat/mt_gpio.h>
-#include <mt-plat/mt_gpio_core.h>
-
 #ifdef FEATURE_RF_CLK_BUF
 #include <mt_clkbuf_ctl.h>
 #endif
@@ -63,11 +60,7 @@ static struct gpio_item gpio_mapping_table[] = {
 static int get_md_gpio_val(unsigned int num)
 {
 #if defined(FEATURE_GET_MD_GPIO_VAL)
-#if defined(CONFIG_MTK_LEGACY)
-	return mt_get_gpio_in(num);
-#else
 	return __gpio_get_value(num);
-#endif
 #else
 	return -1;
 #endif
@@ -139,10 +132,11 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 		}
 	}
 
-	/* if gpio_name_from_md and gpio_name_from_dts are the same,
-	   it will not be listed in gpio_mapping_table,
-	   so try read directly from device tree here.
-	*/
+	/*
+	 * if gpio_name_from_md and gpio_name_from_dts are the same,
+	 * it will not be listed in gpio_mapping_table,
+	 * so try read directly from device tree here.
+	 */
 	if (gpio_id < 0) {
 		CCCI_BOOTUP_LOG(0, RPC, "try directly get id from device tree\n");
 		of_property_read_u32(node, gpio_name, &gpio_id);
@@ -442,8 +436,10 @@ static void ccci_rpc_get_gpio_adc_v2(struct ccci_rpc_gpio_adc_intput_v2 *input,
 static void ccci_rpc_work_helper(struct ccci_port *port, struct rpc_pkt *pkt,
 				 struct rpc_buffer *p_rpc_buf, unsigned int tmp_data[])
 {
-	/* tmp_data[] is used to make sure memory address is valid
-	   after this function return, be careful with the size! */
+	/*
+	 * tmp_data[] is used to make sure memory address is valid
+	 * after this function return, be careful with the size!
+	 */
 	int pkt_num = p_rpc_buf->para_num;
 	int md_id = port->md_id;
 
@@ -473,7 +469,7 @@ static void ccci_rpc_work_helper(struct ccci_port *port, struct rpc_pkt *pkt,
 			Direction = *(unsigned char *)pkt[0].buf;
 			ContentAddr = (unsigned long)pkt[1].buf;
 			CCCI_DEBUG_LOG(md_id, RPC,
-				     "RPC_SECURE_ALGO_OP: Content_Addr = 0x%p, RPC_Base = 0x%p, RPC_Len = 0x%zu\n",
+				     "RPC_SECURE_ALGO_OP: Content_Addr = 0x%p, RPC_Base = 0x%p, RPC_Len = %zu\n",
 				     (void *)ContentAddr, p_rpc_buf, sizeof(unsigned int) + RPC_MAX_BUF_SIZE);
 			if (ContentAddr < (unsigned long)p_rpc_buf
 			    || ContentAddr > ((unsigned long)p_rpc_buf + sizeof(unsigned int) + RPC_MAX_BUF_SIZE)) {
@@ -530,7 +526,8 @@ static void ccci_rpc_work_helper(struct ccci_port *port, struct rpc_pkt *pkt,
 #if (defined(ENABLE_MD_IMG_SECURITY_FEATURE) && defined(MTK_SEC_MODEM_NVRAM_ANTI_CLONE))
 			if (!masp_secure_algo_init()) {
 				CCCI_ERROR_LOG(md_id, RPC, "masp_secure_algo_init fail!\n");
-				BUG_ON(1);
+				tmp_data[0] = FS_PARAM_ERROR;
+				goto err1;
 			}
 
 			CCCI_DEBUG_LOG(md_id, RPC,
