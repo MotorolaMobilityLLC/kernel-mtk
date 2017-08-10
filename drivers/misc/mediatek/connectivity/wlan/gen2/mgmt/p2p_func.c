@@ -1126,25 +1126,14 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			/* Packet on driver, not done yet, drop it. */
 			prTxMsduInfo = prMgmtTxReqInfo->prMgmtTxMsdu;
 			if (prTxMsduInfo != NULL) {
-
-				kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo,
-							   prMgmtTxReqInfo->u8Cookie,
-							   FALSE,
-							   prTxMsduInfo->prPacket,
-							   (UINT_32) prTxMsduInfo->u2FrameLength);
-
-				/* Leave it to TX Done handler. */
-				/* cnmMgtPktFree(prAdapter, prTxMsduInfo); */
 				prMgmtTxReqInfo->prMgmtTxMsdu = NULL;
-				DBGLOG(P2P, INFO, "p2pFuncTxMgmtFrame: Drop MGMT cookie: 0x%llx\n",
+				DBGLOG(P2P, INFO, "mgmt has not RX tx done yet cookie: 0x%llx\n",
 					prMgmtTxReqInfo->u8Cookie);
 			}
 			/* 2. prMgmtTxReqInfo->prMgmtTxMsdu == NULL */
 			/* Packet transmitted, wait tx done. (cookie issue) */
 			/* 20120105 frog - use another u8cookie to store this value. */
 		}
-
-		ASSERT(prMgmtTxReqInfo->prMgmtTxMsdu == NULL);
 
 		prWlanHdr = (P_WLAN_MAC_HEADER_T) ((ULONG) prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
 		prStaRec = cnmGetStaRecByAddress(prAdapter, NETWORK_TYPE_P2P_INDEX, prWlanHdr->aucAddr1);
@@ -1177,6 +1166,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		}
 #endif
 		prMgmtTxReqInfo->u8Cookie = u8Cookie;
+		prMgmtTxMsdu->u8Cookie = u8Cookie;
 		prMgmtTxReqInfo->prMgmtTxMsdu = prMgmtTxMsdu;
 		prMgmtTxReqInfo->fgIsMgmtTxRequested = TRUE;
 

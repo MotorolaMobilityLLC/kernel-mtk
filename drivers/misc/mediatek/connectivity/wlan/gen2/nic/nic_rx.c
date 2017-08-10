@@ -135,6 +135,10 @@ VOID nicRxInitialize(IN P_ADAPTER_T prAdapter)
 	QUEUE_INITIALIZE(&prRxCtrl->rReceivedRfbList);
 	QUEUE_INITIALIZE(&prRxCtrl->rIndicatedRfbList);
 
+#if CFG_SUPPORT_MULTITHREAD
+	QUEUE_INITIALIZE(&prRxCtrl->rRxDataRfbList);
+#endif
+
 	pucMemHandle = prRxCtrl->pucRxCached;
 	for (i = CFG_RX_MAX_PKT_NUM; i != 0; i--) {
 		prSwRfb = (P_SW_RFB_T) pucMemHandle;
@@ -218,6 +222,22 @@ VOID nicRxUninitialize(IN P_ADAPTER_T prAdapter)
 			break;
 		}
 	} while (TRUE);
+
+#if CFG_SUPPORT_MULTITHREAD
+	do {
+
+		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		QUEUE_REMOVE_HEAD(&prRxCtrl->rRxDataRfbList, prSwRfb, P_SW_RFB_T);
+		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
+		if (prSwRfb) {
+			if (prSwRfb->pvPacket)
+				kalPacketFree(prAdapter->prGlueInfo, prSwRfb->pvPacket);
+			prSwRfb->pvPacket = NULL;
+		} else {
+			break;
+		}
+	} while (TRUE);
+#endif
 
 }				/* end of nicRxUninitialize() */
 
@@ -1846,8 +1866,14 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 {
 	P_RX_CTRL_T prRxCtrl;
 	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
-
 	KAL_SPIN_LOCK_DECLARATION();
+
+#if CFG_SUPPORT_MULTITHREAD
+	QUE_T rTempRxDataQue;
+	P_QUE_T prTempRxDataQue = &rTempRxDataQue;
+
+	QUEUE_INITIALIZE(prTempRxDataQue);
+#endif
 
 	DEBUGFUNC("nicRxProcessRFBs");
 
@@ -1856,9 +1882,10 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 	prRxCtrl = &prAdapter->rRxCtrl;
 	ASSERT(prRxCtrl);
 
+#if !(CFG_SUPPORT_MULTITHREAD)
 	prRxCtrl->ucNumIndPacket = 0;
 	prRxCtrl->ucNumRetainedPacket = 0;
-
+#endif
 	do {
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
 		QUEUE_REMOVE_HEAD(&prRxCtrl->rReceivedRfbList, prSwRfb, P_SW_RFB_T);
@@ -1871,7 +1898,11 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 #endif
 			switch (prSwRfb->ucPacketType) {
 			case HIF_RX_PKT_TYPE_DATA:
+#if CFG_SUPPORT_MULTITHREAD
+				QUEUE_INSERT_TAIL(prTempRxDataQue, &prSwRfb->rQueEntry);
+#else
 				nicRxProcessDataPacket(prAdapter, prSwRfb);
+#endif
 				break;
 
 			case HIF_RX_PKT_TYPE_EVENT:
@@ -1904,21 +1935,28 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 			break;
 		}
 	} while (TRUE);
-
+#if CFG_SUPPORT_MULTITHREAD
+	if (QUEUE_IS_NOT_EMPTY(prTempRxDataQue)) {
+		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_DATA_QUE);
+		QUEUE_CONCATENATE_QUEUES(&prRxCtrl->rRxDataRfbList, prTempRxDataQue);
+		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_DATA_QUE);
+		kalWakeupRxThread(prAdapter->prGlueInfo);
+	}
+#else
 	if (prRxCtrl->ucNumIndPacket > 0) {
 		RX_ADD_CNT(prRxCtrl, RX_DATA_INDICATION_COUNT, prRxCtrl->ucNumIndPacket);
 		RX_ADD_CNT(prRxCtrl, RX_DATA_RETAINED_COUNT, prRxCtrl->ucNumRetainedPacket);
 
 		/* DBGLOG(RX, INFO, ("%d packets indicated, Retained cnt = %d\n", */
 		/* prRxCtrl->ucNumIndPacket, prRxCtrl->ucNumRetainedPacket)); */
-#if CFG_NATIVE_802_11
+	#if CFG_NATIVE_802_11
 		kalRxIndicatePkts(prAdapter->prGlueInfo, (UINT_32) prRxCtrl->ucNumIndPacket,
 				  (UINT_32) prRxCtrl->ucNumRetainedPacket);
-#else
+	#else
 		kalRxIndicatePkts(prAdapter->prGlueInfo, prRxCtrl->apvIndPacket, (UINT_32) prRxCtrl->ucNumIndPacket);
-#endif
+	#endif
 	}
-
+#endif
 }				/* end of nicRxProcessRFBs() */
 
 #if !CFG_SDIO_INTR_ENHANCE
@@ -2541,7 +2579,6 @@ VOID nicProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 	nicRxProcessRFBs(prAdapter);
 
 	return;
-
 }				/* end of nicProcessRxInterrupt() */
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
@@ -2622,7 +2659,9 @@ VOID nicRxQueryStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuffer, OUT PUINT_
 	SPRINTF(pucCurrBuf, ("\nFREE RFB w/i BUF LIST :%9u", prRxCtrl->rFreeSwRfbList.u4NumElem));
 	SPRINTF(pucCurrBuf, ("\nFREE RFB w/o BUF LIST :%9u", prRxCtrl->rIndicatedRfbList.u4NumElem));
 	SPRINTF(pucCurrBuf, ("\nRECEIVED RFB LIST     :%9u", prRxCtrl->rReceivedRfbList.u4NumElem));
-
+#if CFG_SUPPORT_MULTITHREAD
+	SPRINTF(pucCurrBuf, ("\nRECEIVED DATA RFB LIST:%9u", prRxCtrl->rRxDataRfbList.u4NumElem));
+#endif
 	SPRINTF(pucCurrBuf, ("\n\n"));
 
 	/* *pu4Count = (UINT_32)((UINT_32)pucCurrBuf - (UINT_32)pucBuffer); */

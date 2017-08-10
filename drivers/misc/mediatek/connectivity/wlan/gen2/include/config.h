@@ -678,6 +678,7 @@
  * Flags of Features
  *------------------------------------------------------------------------------
  */
+#define CFG_SUPPORT_MULTITHREAD     0
 
 #define CFG_SUPPORT_QOS             1	/* Enable/disable QoS TX, AMPDU */
 #define CFG_SUPPORT_AMPDU_TX        1

@@ -1854,6 +1854,9 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	init_completion(&prGlueInfo->rScanComp);
 	init_completion(&prGlueInfo->rHaltComp);
 	init_completion(&prGlueInfo->rPendComp);
+#if CFG_SUPPORT_MULTITHREAD
+	init_completion(&prGlueInfo->rRxHaltComp);
+#endif
 #if CFG_ENABLE_WIFI_DIRECT
 	init_completion(&prGlueInfo->rP2pReq);
 	init_completion(&prGlueInfo->rSubModComp);
@@ -1877,6 +1880,9 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 
 	/* 4 <8> Init Queues */
 	init_waitqueue_head(&prGlueInfo->waitq);
+#if CFG_SUPPORT_MULTITHREAD
+	init_waitqueue_head(&prGlueInfo->waitq_rx);
+#endif
 	QUEUE_INITIALIZE(&prGlueInfo->rCmdQueue);
 	QUEUE_INITIALIZE(&prGlueInfo->rTxQueue);
 
@@ -1888,6 +1894,9 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 		return NULL;
 	}
 	KAL_WAKE_LOCK_INIT(prAdapter, &prGlueInfo->rAhbIsrWakeLock, "WLAN AHB ISR");
+#if CFG_SUPPORT_MULTITHREAD
+	KAL_WAKE_LOCK_INIT(prAdapter, &prGlueInfo->rTimeoutWakeLock, "Wlan Timeout");
+#endif
 #if CFG_SUPPORT_PERSIST_NETDEV
 	dev_open(prGlueInfo->prDevHandler);
 	netif_carrier_off(prGlueInfo->prDevHandler);
@@ -2593,6 +2602,10 @@ bailout:
 			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = &mtk_band_5ghz;
 
 		prGlueInfo->main_thread = kthread_run(tx_thread, prGlueInfo->prDevHandler, "tx_thread");
+#if CFG_SUPPORT_MULTITHREAD
+		prGlueInfo->rx_thread = kthread_run(rx_thread, prGlueInfo->prDevHandler, "rx_thread");
+#endif
+		kalChangeSchedParams(prGlueInfo, TRUE);
 		kalSetHalted(FALSE);
 #if CFG_SUPPORT_ROAMING_ENC
 		/* adjust roaming threshold */
@@ -2984,8 +2997,6 @@ static VOID wlanRemove(VOID)
 	DBGLOG(INIT, TRACE, "free IRQ...\n");
 	glBusFreeIrq(prDev, *((P_GLUE_INFO_T *) netdev_priv(prDev)));
 
-	kalMemSet(&(prGlueInfo->prAdapter->rWlanInfo), 0, sizeof(WLAN_INFO_T));
-
 	kalSetHalted(TRUE);	/* before flush_delayed_work() */
 	if (fgIsWorkMcStart == TRUE) {
 		DBGLOG(INIT, TRACE, "flush_delayed_work...\n");
@@ -3007,6 +3018,12 @@ static VOID wlanRemove(VOID)
 	/* 4 <2> Mark HALT, notify main thread to stop, and clean up queued requests */
 /* prGlueInfo->u4Flag |= GLUE_FLAG_HALT; */
 	set_bit(GLUE_FLAG_HALT_BIT, &prGlueInfo->ulFlag);
+#if CFG_SUPPORT_MULTITHREAD
+	DBGLOG(INIT, TRACE, "waiting for rx_thread stop...\n");
+	wake_up_interruptible(&prGlueInfo->waitq_rx);
+	wait_for_completion_interruptible(&prGlueInfo->rRxHaltComp);
+#endif
+
 	DBGLOG(INIT, TRACE, "waiting for tx_thread stop...\n");
 
 	/* wake up main thread */
@@ -3017,14 +3034,21 @@ static VOID wlanRemove(VOID)
 	/* wait main thread stops */
 	wait_for_completion_interruptible(&prGlueInfo->rHaltComp);
 
-	DBGLOG(INIT, TRACE, "mtk_sdiod stopped\n");
+	DBGLOG(INIT, TRACE, "wlan thread(s) stopped\n");
 
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &prGlueInfo->prAdapter->rTxThreadWakeLock);
 	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &prGlueInfo->rAhbIsrWakeLock);
+#if CFG_SUPPORT_MULTITHREAD
+	KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &prGlueInfo->rTimeoutWakeLock);
+#endif
+
+	kalMemSet(&(prGlueInfo->prAdapter->rWlanInfo), 0, sizeof(WLAN_INFO_T));
 
 	/* prGlueInfo->rHifInfo.main_thread = NULL; */
 	prGlueInfo->main_thread = NULL;
-
+#if CFG_SUPPORT_MULTITHREAD
+	prGlueInfo->rx_thread = NULL;
+#endif
 #if CFG_ENABLE_BT_OVER_WIFI
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);

@@ -2121,7 +2121,8 @@ int tx_thread(void *data)
 	prCmdQue = &prGlueInfo->rCmdQueue;
 
 	current->flags |= PF_NOFREEZE;
-
+	if (current->policy == SCHED_NORMAL)
+		current->static_prio = DEFAULT_PRIO - 19;
 	DBGLOG(INIT, INFO, "tx_thread starts running...\n");
 
 	while (TRUE) {
@@ -2386,7 +2387,100 @@ int tx_thread(void *data)
 	return 0;
 
 }
+#if CFG_SUPPORT_MULTITHREAD
+VOID kalWakeupRxThread(P_GLUE_INFO_T prGlueInfo)
+{
+	set_bit(GLUE_FLAG_RX_BIT, &(prGlueInfo->ulFlag));
+	wake_up_interruptible(&(prGlueInfo->waitq_rx));
+}
+int rx_thread(void *data)
+{
+	struct net_device *dev = data;
+	P_GLUE_INFO_T prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(dev));
+	P_ADAPTER_T prAdapter;
+	int ret = 0;
+	P_RX_CTRL_T prRxCtrl = &prGlueInfo->prAdapter->rRxCtrl;
+	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
 
+	KAL_SPIN_LOCK_DECLARATION();
+	KAL_WAKELOCK_DECLARE(rRxThreadWakeLock);
+
+	prAdapter = prGlueInfo->prAdapter;
+	KAL_WAKE_LOCK_INIT(prAdapter, &rRxThreadWakeLock, "WLAN rx_thread");
+	KAL_WAKE_LOCK(prAdapter, &rRxThreadWakeLock);
+
+	if (current->policy == SCHED_NORMAL)
+		current->static_prio = DEFAULT_PRIO - 19;
+	while (TRUE) {
+		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
+			DBGLOG(INIT, INFO, "rx_thread should stop now...\n");
+			break;
+		}
+		/* Unlock wakelock if rx_thread going to idle */
+		if (!(prGlueInfo->ulFlag & GLUE_FLAG_RX_PROCESS))
+			KAL_WAKE_UNLOCK(prAdapter, &rRxThreadWakeLock);
+		/*
+		* sleep on waitqueue if no events occurred.
+		*/
+		do {
+			ret = wait_event_interruptible(prGlueInfo->waitq_rx,
+				((prGlueInfo->ulFlag & GLUE_FLAG_RX_PROCESS) != 0));
+		} while (ret);
+		if (!KAL_WAKE_LOCK_ACTIVE(prAdapter, &rRxThreadWakeLock))
+			KAL_WAKE_LOCK(prAdapter, &rRxThreadWakeLock);
+		if (test_and_clear_bit(GLUE_FLAG_RX_BIT, &prGlueInfo->ulFlag)) {
+			prRxCtrl->ucNumIndPacket = 0;
+			prRxCtrl->ucNumRetainedPacket = 0;
+			do {
+				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_DATA_QUE);
+				QUEUE_REMOVE_HEAD(&prRxCtrl->rRxDataRfbList, prSwRfb, P_SW_RFB_T);
+				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_DATA_QUE);
+
+				if (prSwRfb) {
+					switch (prSwRfb->ucPacketType) {
+					case HIF_RX_PKT_TYPE_DATA:
+						nicRxProcessDataPacket(prAdapter, prSwRfb);
+						break;
+
+					default:
+						/* This case should never happen */
+						RX_INC_CNT(prRxCtrl, RX_TYPE_ERR_DROP_COUNT);
+						RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+						DBGLOG(RX, ERROR, "ucPacketType = %d\n", prSwRfb->ucPacketType);
+						nicRxReturnRFB(prAdapter, prSwRfb);	/* need to free it */
+						break;
+					}
+				} else {
+					break;
+				}
+			} while (TRUE);
+			if (prRxCtrl->ucNumIndPacket > 0) {
+				RX_ADD_CNT(prRxCtrl, RX_DATA_INDICATION_COUNT, prRxCtrl->ucNumIndPacket);
+				RX_ADD_CNT(prRxCtrl, RX_DATA_RETAINED_COUNT, prRxCtrl->ucNumRetainedPacket);
+
+				/* DBGLOG(RX, INFO, ("%d packets indicated, Retained cnt = %d\n", */
+				/* prRxCtrl->ucNumIndPacket, prRxCtrl->ucNumRetainedPacket)); */
+			#if CFG_NATIVE_802_11
+				kalRxIndicatePkts(prAdapter->prGlueInfo,
+						  (UINT_32) prRxCtrl->ucNumIndPacket,
+						  (UINT_32) prRxCtrl->ucNumRetainedPacket);
+			#else
+				kalRxIndicatePkts(prAdapter->prGlueInfo,
+						  prRxCtrl->apvIndPacket,
+						  (UINT_32) prRxCtrl->ucNumIndPacket);
+			#endif
+			}
+			KAL_WAKE_LOCK_TIMEOUT(prAdapter, &prGlueInfo->rTimeoutWakeLock,
+				MSEC_TO_JIFFIES(WAKE_LOCK_RX_TIMEOUT));
+		}
+	}
+	complete(&prGlueInfo->rRxHaltComp);
+	if (KAL_WAKE_LOCK_ACTIVE(prAdapter, &rRxThreadWakeLock))
+		KAL_WAKE_UNLOCK(prAdapter, &rRxThreadWakeLock);
+	KAL_WAKE_LOCK_DESTROY(prAdapter, &rRxThreadWakeLock);
+	return 0;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is used to check if card is removed
@@ -4491,4 +4585,38 @@ VOID kalFbNotifierUnReg(VOID)
 {
 	fb_unregister_client(&wlan_fb_notifier);
 	wlan_fb_notifier_priv_data = NULL;
+}
+/*
+** change scheduler parameters, like schedule policy(RT thread or normal thread) and priority
+** fgNormalThread: true means normal thread, false means RT thread
+*/
+VOID kalChangeSchedParams(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgNormalThread)
+{
+	struct sched_param param = {.sched_priority = 0};
+
+	/* For RT thread */
+	if (!fgNormalThread && prGlueInfo->i4Priority != 0) {
+		param.sched_priority = prGlueInfo->i4Priority;
+		DBGLOG(INIT, INFO, "RT priority %d\n", param.sched_priority);
+		if (prGlueInfo->main_thread && prGlueInfo->main_thread->policy != SCHED_FIFO)
+			sched_setscheduler(prGlueInfo->main_thread, SCHED_FIFO, &param);
+#if CFG_SUPPORT_MULTITHREAD
+		if (prGlueInfo->rx_thread && prGlueInfo->rx_thread->policy != SCHED_FIFO)
+			sched_setscheduler(prGlueInfo->rx_thread, SCHED_FIFO, &param);
+#endif
+		return;
+	}
+	/* For normal thread */
+	if (prGlueInfo->main_thread && prGlueInfo->main_thread->policy != SCHED_NORMAL) {
+		sched_setscheduler(prGlueInfo->main_thread, SCHED_NORMAL, &param);
+		/* set main_thread to highest normal priority */
+		prGlueInfo->main_thread->static_prio = DEFAULT_PRIO - 19;
+	}
+#if CFG_SUPPORT_MULTITHREAD
+	if (prGlueInfo->rx_thread && prGlueInfo->rx_thread->policy != SCHED_NORMAL) {
+		sched_setscheduler(prGlueInfo->rx_thread, SCHED_NORMAL, &param);
+		/* set rx_thread to highest normal priority */
+		prGlueInfo->rx_thread->static_prio = DEFAULT_PRIO - 19;
+	}
+#endif
 }

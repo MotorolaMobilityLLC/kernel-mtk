@@ -5460,6 +5460,8 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 
 		DBGLOG(INIT, INFO, "Ap Mode Uapsd Status: %s\n", aucValue);
 	}
+
+	prAdapter->prGlueInfo->i4Priority = wlanCfgGetInt32(prAdapter, "RTPri", 0);
 	/* TODO: Apply other Config */
 }
 #endif /* CFG_SUPPORT_CFG_FILE */
