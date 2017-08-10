@@ -345,7 +345,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 		/* read chip ID */
 		HifInfo->ChipID = HIF_REG_READL(HifInfo, MCR_WCIR) & 0xFFFF;
 		if (HifInfo->ChipID == 0x0321 || HifInfo->ChipID == 0x0335 || HifInfo->ChipID == 0x0337)
-			HifInfo->ChipID = 0x6735;	/* Denali ChipID transition */
+			HifInfo->ChipID = 0x6735;
 		if (HifInfo->ChipID == 0x0326)
 			HifInfo->ChipID = 0x6755;
 		if (HifInfo->ChipID == 0x0633)
