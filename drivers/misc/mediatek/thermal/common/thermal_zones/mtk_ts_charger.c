@@ -34,7 +34,6 @@ static kgid_t gid = KGIDT_INIT(1000);
 
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 125000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
-static int pre_temp = 60000;
 static unsigned int cl_dev_sysrst_state;
 static struct thermal_zone_device *thz_dev;
 
@@ -47,7 +46,9 @@ static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static int num_trip;
 
-static char g_bind0[20] = "mtktscharger-sysrst"; /* ??? */
+static unsigned long prev_temp = 30000;
+
+static char g_bind0[20] = "mtktscharger-sysrst";
 static char g_bind1[20] = "";
 static char g_bind2[20] = "";
 static char g_bind3[20] = "";
@@ -76,33 +77,13 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, unsigned l
 	*t = 0;
 
 	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
-/*
-	if (da9214_read_interface(0x51, &val, 3, 2) == 1) {
-		switch (val) {
-		case 0:
-			< 125
-			*t = 60000;
-			break;
-		case 1:
-			125 ~ 140
-			*t = 125000;
-			break;
-		case 2:
-		case 3:
-			140 ~ 150
-			*t = 140000;
-			break;
-		default:
-			mtktscharger_dprintk("Error, use the previous temperature\n");
-			*t = pre_temp;
-		}
-	} else {
-		mtktscharger_dprintk("Error, use the previous temperature\n");
-		*t = pre_temp;
-	}
-*/
-	pre_temp = *t;
-	mtktscharger_dprintk("temp =%lu\n", *t);
+	if (ret >= 0) {
+		*t = max_temp * 1000;
+		prev_temp = *t;
+	} else
+		*t = prev_temp;
+
+	mtktscharger_dprintk("temp =%lu min=%d max=%d ret=%d\n", *t, min_temp, max_temp, ret);
 	return 0;
 }
 
