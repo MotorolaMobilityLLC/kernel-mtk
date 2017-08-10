@@ -1066,7 +1066,7 @@ static void createWirelessDevice(void)
 #if CFG_SUPPORT_TDLS
 	TDLSEX_WIPHY_FLAGS_INIT(prWiphy->flags);
 #endif /* CFG_SUPPORT_TDLS */
-	prWiphy->max_remain_on_channel_duration = 5000;
+	prWiphy->max_remain_on_channel_duration = 500;
 	prWiphy->mgmt_stypes = mtk_cfg80211_ais_default_mgmt_stypes;
 	prWiphy->vendor_commands = mtk_wlan_vendor_ops;
 	prWiphy->n_vendor_commands = sizeof(mtk_wlan_vendor_ops) / sizeof(struct wiphy_vendor_command);
