@@ -102,6 +102,11 @@
 #define STP_SDIO_TX_PKT_MAX_CNT (7)	/* Max outstanding tx pkt count, as defined in TX_COMPLETE_COUNT */
 #define STP_SDIO_HDR_SIZE (4)	/* hw,fw,sw follow the same format: 2 bytes length + 2 bytes reserved */
 
+#define STP_SDIO_DBG_SUPPORT 1
+#define STP_SDIO_RXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
+#define STP_SDIO_TXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
+#define STP_TXDBG 1
+
 /* sdio bus settings */
 #define STP_SDIO_BLK_SIZE (512UL)
 
@@ -169,6 +174,8 @@ typedef struct _MTK_WCN_STP_SDIO_PKT_BUF {
 	UINT32 tx_buf_sz[STP_SDIO_TX_BUF_CNT];
 	/* Tx debug timestamp: 1st time when the entry is filled with data */
 	UINT32 tx_buf_ts[STP_SDIO_TX_BUF_CNT];
+	UINT64 tx_buf_local_ts[STP_SDIO_TX_BUF_CNT];
+	ULONG tx_buf_local_nsec[STP_SDIO_TX_BUF_CNT];
 #if KMALLOC_UPDATE
 	PUINT8 rx_buf;
 #else
@@ -271,6 +278,9 @@ extern MTK_WCN_STP_SDIO_HIF_INFO g_stp_sdio_host_info;
 extern INT32 mtk_wcn_hif_sdio_client_reg(const MTK_WCN_HIF_SDIO_CLTINFO *pinfo);
 
 extern INT32 mtk_wcn_stp_sdio_do_own_clr(VOID);
+#if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
+VOID stp_sdio_txdbg_dump(VOID);
+#endif
 
 /* extern INT32 */
 /* mtk_wcn_stp_sdio_do_own_set (void); */

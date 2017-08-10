@@ -22,9 +22,6 @@
 ********************************************************************************
 */
 
-#define STP_SDIO_DBG_SUPPORT 1
-#define STP_SDIO_RXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
-#define STP_SDIO_TXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
 #define STP_SDIO_TXPERFDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
 #define STP_SDIO_OWNBACKDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
 #define STP_SDIO_NEW_IRQ_HANDLER 1
@@ -89,6 +86,8 @@ struct stp_sdio_rxdbg {
 struct stp_sdio_txdbg {
 	UINT32 ts;
 	UINT32 bus_txlen;
+	UINT64 l_sec;
+	ULONG l_nsec;
 	UINT32 four_byte_align_len;
 	UINT8 tx_pkt_buf[STP_SDIO_TX_ENTRY_SIZE];
 };
@@ -104,10 +103,6 @@ static INT32 stp_sdio_irq(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx);
 static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 		const MTK_WCN_HIF_SDIO_FUNCINFO *sdio_func_infop);
 static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx);
-
-#if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
-static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID);
-#endif
 
 static VOID stp_sdio_rx_wkr(struct work_struct *work);
 static VOID stp_sdio_tx_wkr(struct work_struct *work);
@@ -1212,6 +1207,8 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	UINT32 prev_wr_idx;
 	UINT32 buf_allocation;
 	UINT32 room;
+	UINT64 ts;
+	ULONG nsec;
 
 	STPSDIO_LOUD_FUNC("enter\n");
 	osal_ftrace_print("%s|S|L|%d\n", __func__, size);
@@ -1237,6 +1234,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 #endif
 		gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+		osal_get_local_time(&ts, &nsec);
+		gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+		gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 		STPSDIO_DBG_FUNC("(Empty) Enqueue done\n");
 #if KMALLOC_UPDATE
@@ -1335,6 +1335,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][1] =
 			    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			osal_get_local_time(&ts, &nsec);
+			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 			pkt_bufp =
 			    &gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][STP_SDIO_HDR_SIZE];
@@ -1431,6 +1434,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			osal_get_local_time(&ts, &nsec);
+			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 			pkt_bufp = gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx
 				* STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
@@ -1608,6 +1614,8 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 	UINT32 idx;
 	MTK_WCN_STP_SDIO_PKT_BUF *pb;
 	struct timeval now;
+	UINT64 ts;
+	ULONG nsec;
 
 	p_info = container_of(work, MTK_WCN_STP_SDIO_HIF_INFO, tx_work);
 	ret = HIF_SDIO_ERR_SUCCESS;
@@ -1718,9 +1726,12 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
 			do {
+				osal_get_local_time(&ts, &nsec);
 				idx = stp_sdio_txdbg_cnt++ & STP_SDIO_TXDBG_COUNT_MASK;
 				/* skip clear buf */
 				stp_sdio_txdbg_buffer[idx].ts = jiffies;
+				stp_sdio_txdbg_buffer[idx].l_sec = ts;
+				stp_sdio_txdbg_buffer[idx].l_nsec = nsec;
 				stp_sdio_txdbg_buffer[idx].bus_txlen = bus_txlen;
 				stp_sdio_txdbg_buffer[idx].four_byte_align_len =
 				    four_byte_align_len;
@@ -1807,6 +1818,8 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 	UINT32 idx;
 	MTK_WCN_STP_SDIO_PKT_BUF *pb;
 	struct timeval now;
+	UINT64 ts;
+	ULONG nsec;
 
 	p_info = container_of(work, MTK_WCN_STP_SDIO_HIF_INFO, tx_work);
 	ret = HIF_SDIO_ERR_SUCCESS;
@@ -1895,9 +1908,12 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
 			do {
+				osal_get_local_time(&ts, &nsec);
 				idx = stp_sdio_txdbg_cnt++ & STP_SDIO_TXDBG_COUNT_MASK;
 				/* skip clear buf */
 				stp_sdio_txdbg_buffer[idx].ts = jiffies;
+				stp_sdio_txdbg_buffer[idx].l_sec = ts;
+				stp_sdio_txdbg_buffer[idx].l_nsec = nsec;
 				stp_sdio_txdbg_buffer[idx].bus_txlen = bus_txlen;
 				stp_sdio_txdbg_buffer[idx].four_byte_align_len =
 				    four_byte_align_len;
@@ -2801,7 +2817,7 @@ static VOID stp_sdio_txperf_dump(VOID)
 #endif
 }
 
-static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID)
+VOID stp_sdio_txdbg_dump(VOID)
 {
 #if STP_SDIO_TXDBG
 	UINT32 idx;
@@ -2820,8 +2836,8 @@ static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID)
 
 		len = len > STP_SDIO_TXDBG_MAX_SIZE ? STP_SDIO_TXDBG_MAX_SIZE : len;
 		STPSDIO_INFO_FUNC(
-				"stp_sdio_txdbg_buffer idx(%x) bus_txlen(0x%x, %d) ts(%d)\n", idx, len, len,
-			stp_sdio_txdbg_buffer[idx].ts);
+			"stp_sdio_txdbg_buffer idx(%x) bus_txlen(0x%x, %d), time[%llu.%06lu]\n",
+			idx, len, len, stp_sdio_txdbg_buffer[idx].l_sec, stp_sdio_txdbg_buffer[idx].l_nsec);
 		for (j = 0; j < STP_SDIO_TX_ENTRY_SIZE && j < len; j += 16) {
 			pbuf = &stp_sdio_txdbg_buffer[idx].tx_pkt_buf[j];
 			STPSDIO_INFO_FUNC("[0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x]\n",
@@ -2833,7 +2849,7 @@ static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID)
 		}
 		STPSDIO_INFO_FUNC("stp_sdio_txdbg_buffer dump ok\n");
 	}
-
+#if STP_TXDBG
 	for (i = 0; i < STP_SDIO_TXDBG_COUNT; ++i) {
 		idx = (stp_sdio_txdbg_cnt - 1 - i) & STP_SDIO_TXDBG_COUNT_MASK;
 		len = stp_sdio_txdbg_buffer[idx].bus_txlen;
@@ -2884,6 +2900,10 @@ static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID)
 #endif
 		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d)\n",
 				idx, gp_info->pkt_buf.tx_buf_ts[idx], len);
+		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d), time[%llu.%06lu]\n",
+				   idx, gp_info->pkt_buf.tx_buf_ts[idx], len,
+				   gp_info->pkt_buf.tx_buf_local_ts[idx],
+				   gp_info->pkt_buf.tx_buf_local_nsec[idx]);
 		if (0 == len) {
 			STPSDIO_INFO_FUNC("idx(%x) 0 == len dump skip\n", idx);
 			continue;
@@ -2905,6 +2925,7 @@ static _osal_inline_ VOID stp_sdio_txdbg_dump(VOID)
 		}
 		STPSDIO_INFO_FUNC("pkt_buf.tx_buf dump ok\n");
 	}
+#endif
 #endif				/* end of STP_SDIO_TXDBG */
 }
 
