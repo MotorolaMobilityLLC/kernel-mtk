@@ -133,6 +133,8 @@ static unsigned int md3_share_mem_size;
 #define C2K_IRAM_DUMP_SIZE		(0x200)
 static int first_init = 1;
 
+int c2k_plat_log_level = LOG_ERR;
+
 struct md3_log_memory_info {
 	unsigned int magic1;
 	unsigned int magic2;
@@ -212,7 +214,7 @@ static void c2k_hw_info_init(void)
 
 	/*set c2k log memory info at the head of 4K*/
 	c2k_set_log_mem_info(md3_mem_base_virt);
-	pr_info("[C2K] log mem size = 0x%x\n", *((unsigned int *)(md3_mem_base_virt+8)));
+	C2K_BOOTUP_LOG("[C2K] log mem size = 0x%x\n", *((unsigned int *)(md3_mem_base_virt+8)));
 	pr_debug
 	    ("[C2K] infra_ao_base=0x%lx, sleep_base=0x%lx, toprgu_base=0x%lx",
 	     infra_ao_base, sleep_base, toprgu_base);
@@ -223,7 +225,7 @@ static void c2k_hw_info_init(void)
 
 	mt_set_gpio_mode(0x80000000 | GPIO198, GPIO_MODE_00);
 	mt_set_gpio_mode(0x80000000 | GPIO199, GPIO_MODE_00);
-	pr_info("[C2K] set gpio %u and next to mode 0\n", GPIO198);
+	C2K_BOOTUP_LOG("[C2K] set gpio %u and next to mode 0\n", GPIO198);
 }
 
 void c2k_mem_dump(void *start_addr, int len)
@@ -244,10 +246,10 @@ void c2k_mem_dump(void *start_addr, int len)
 		return;
 	}
 
-	pr_debug("[C2K-DUMP]Base: 0x%lx\n", (unsigned long)start_addr);
+	C2K_MEM_LOG_TAG("[C2K-DUMP]Base: 0x%lx\n", (unsigned long)start_addr);
 	/*Fix section */
 	for (i = 0; i < _16_fix_num; i++) {
-		pr_debug("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		C2K_MEM_LOG("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			 i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2),
 			 *(curr_p + 3));
 		curr_p += 4;
@@ -263,7 +265,7 @@ void c2k_mem_dump(void *start_addr, int len)
 		for (; j < 16; j++)
 			buf[j] = 0;
 		curr_p = (unsigned int *)buf;
-		pr_debug("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
+		C2K_MEM_LOG("[C2K-DUMP]%03X: %08X %08X %08X %08X\n",
 			 i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2),
 			 *(curr_p + 3));
 	}
@@ -277,9 +279,9 @@ void dump_c2k_iram(void)
 		return;
 	}
 
-	pr_debug("[C2K] Dump C2K MEM begin, size 4K\n");
+	C2K_MEM_LOG_TAG("[C2K] Dump C2K MEM begin, size 4K\n");
 	c2k_mem_dump((void *)md3_mem_base_virt, C2K_IMG_DUMP_SIZE);
-	pr_debug("[C2K] Dump C2K MEM end\n");
+	C2K_MEM_LOG_TAG("[C2K] Dump C2K MEM end\n");
 }
 
 void dump_c2k_iram_seg2(void)
@@ -294,12 +296,12 @@ void dump_c2k_iram_seg2(void)
 				 i);
 			return;
 		}
-		pr_debug("[C2K] Dump C2K IRAM begin, start at %lx\n",
+		C2K_MEM_LOG_TAG("[C2K] Dump C2K IRAM begin, start at %lx\n",
 			 c2k_iram_base_seg2[i]);
 		c2k_mem_dump((void *)c2k_iram_base_seg2[i], C2K_IRAM_DUMP_SIZE);
 	}
 
-	pr_debug("[C2K] Dump C2K MEM end\n");
+	C2K_MEM_LOG_TAG("[C2K] Dump C2K MEM end\n");
 
 }
 
@@ -323,15 +325,15 @@ void dump_c2k_bootup_status(void)
 		chipid = ioremap_nocache(0x3A00B01C, 8);
 		c2ksys_uart0 = ioremap_nocache(0x3A012000, 0x40);
 	}
-	pr_debug("[C2K] ======== Dump C2K bootup status begin ========\n");
-	pr_debug("[C2K] addr: 0x10211370 (UART GPIO)\n");
+	C2K_MEM_LOG_TAG("[C2K] ======== Dump C2K bootup status begin ========\n");
+	C2K_MEM_LOG_TAG("[C2K] addr: 0x10211370 (UART GPIO)\n");
 	c2k_mem_dump(c2k_uart0, 8);
 
 	/*C2K_CONFIG[12:11] = 00*/
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)&(~(0x3<<11)));
 	while (retry < 20) {
 		retry++;
-		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+		C2K_MEM_LOG_TAG("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 		msleep(20);
@@ -343,7 +345,7 @@ void dump_c2k_bootup_status(void)
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x1<<11));
 	while (retry < 20) {
 		retry++;
-		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+		C2K_MEM_LOG_TAG("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 		msleep(20);
@@ -355,7 +357,7 @@ void dump_c2k_bootup_status(void)
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x1<<12));
 	while (retry < 20) {
 		retry++;
-		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+		C2K_MEM_LOG_TAG("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 		msleep(20);
@@ -366,12 +368,12 @@ void dump_c2k_bootup_status(void)
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x3<<11));
 	while (retry < 20) {
 		retry++;
-		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+		C2K_MEM_LOG_TAG("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
 			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 		msleep(20);
 	}
-	pr_debug("[C2K] ======== Dump C2K bootup status end ========\n");
+	C2K_MEM_LOG_TAG("[C2K] ======== Dump C2K bootup status end ========\n");
 }
 
 #if ENABLE_C2K_EMI_PROTECTION
@@ -417,7 +419,7 @@ void set_c2k_mpu(void)
 	shr_mem_phy_start = rw_mem_phy_end + 0x1;
 	shr_mem_phy_end   = ((shr_mem_phy_start + md3_share_mem_size + 0xFFFF)&(~0xFFFF)) - 0x1;
 
-	pr_debug("[C2K] MPU Start protect MD R/W region<%d:%08x:%08x> %x\n",
+	C2K_BOOTUP_LOG("[C2K] MPU Start protect MD R/W region<%d:%08x:%08x> %x\n",
 		 rw_mem_mpu_id, rw_mem_phy_start, rw_mem_phy_end,
 		 rw_mem_mpu_attr);
 	emi_mpu_set_region_protection(rw_mem_phy_start,	/*START_ADDR */
@@ -425,7 +427,7 @@ void set_c2k_mpu(void)
 				      rw_mem_mpu_id,	/*region */
 				      rw_mem_mpu_attr);
 
-	pr_debug("[C2K] MPU Start protect MD ROM region<%d:%08x:%08x> %x\n",
+	C2K_BOOTUP_LOG("[C2K] MPU Start protect MD ROM region<%d:%08x:%08x> %x\n",
 		 rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end,
 		 rom_mem_mpu_attr);
 	emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
@@ -433,7 +435,7 @@ void set_c2k_mpu(void)
 				      rom_mem_mpu_id,	/*region */
 				      rom_mem_mpu_attr);
 
-	pr_debug("[C2K] MPU Start protect MD Share region<%d:%08x:%08x> %x\n",
+	C2K_BOOTUP_LOG("[C2K] MPU Start protect MD Share region<%d:%08x:%08x> %x\n",
 		 shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end,
 		 shr_mem_mpu_attr);
 	emi_mpu_set_region_protection(shr_mem_phy_start,	/*START_ADDR */
@@ -532,10 +534,10 @@ void c2k_modem_power_on_platform(void)
 		    GPIO_OUT_ZERO, GPIO_PULL_EN_UNSUPPORTED,
 		    GPIO_PULL_UNSUPPORTED, GPIO_SMT_UNSUPPORTED);
 #endif
-	pr_debug("[C2K] c2k_modem_power_on enter\n");
+	C2K_BOOTUP_LOG("[C2K] c2k_modem_power_on enter\n");
 	if (infra_ao_base == 0)
 		c2k_hw_info_init();
-	pr_debug("[C2K] prepare to power on c2k\n");
+	C2K_BOOTUP_LOG("[C2K] prepare to power on c2k\n");
 	/*step 0: power on MTCMOS */
 #if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_on(SYS_MD2);
@@ -545,12 +547,12 @@ void c2k_modem_power_on_platform(void)
 	else
 		atomic_dec(&clock_on);
 #endif
-	pr_debug("[C2K] md_power_on %d\n", ret);
+	C2K_BOOTUP_LOG("[C2K] md_power_on %d\n", ret);
 	/*step 1: set C2K boot mode */
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG,
 		    (c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG) &
 		     (~(0x7 << 8))));
-	pr_debug("[C2K] C2K_CONFIG = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] C2K_CONFIG = 0x%x\n",
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG));
 	/*step 2: config srcclkena selection mask */
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL,
@@ -559,7 +561,7 @@ void c2k_modem_power_on_platform(void)
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL,
 		    c2k_read32(infra_ao_base,
 			       INFRA_AO_C2K_SPM_CTRL) | (0x9 << 2));
-	pr_debug("[C2K] C2K_SPM_CTRL = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] C2K_SPM_CTRL = 0x%x\n",
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL));
 	c2k_write32(sleep_base, SLEEP_CLK_CON,
 		    c2k_read32(sleep_base, SLEEP_CLK_CON) | 0xc);
@@ -569,7 +571,7 @@ void c2k_modem_power_on_platform(void)
 		    c2k_read32(sleep_base, SLEEP_CLK_CON) | (0x1 << 12));
 	c2k_write32(sleep_base, SLEEP_CLK_CON,
 		    c2k_read32(sleep_base, SLEEP_CLK_CON) | (0x1 << 27));
-	pr_debug("[C2K] SLEEP_CLK_CON = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] SLEEP_CLK_CON = 0x%x\n",
 		 c2k_read32(sleep_base, SLEEP_CLK_CON));
 
 	/*step 3: PMIC VTCXO_1 enable */
@@ -582,7 +584,7 @@ void c2k_modem_power_on_platform(void)
 #else
 	mtk_wdt_set_c2k_sysrst(1);
 #endif
-	pr_debug("[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 		 c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST));
 
 	/*step 5: set memory remap */
@@ -594,7 +596,7 @@ void c2k_modem_power_on_platform(void)
 #if ENABLE_C2K_EMI_PROTECTION
 		set_c2k_mpu();
 #endif
-		pr_debug("[C2K] MD3_BANK0_MAP0 = 0x%x\n",
+		C2K_BOOTUP_LOG("[C2K] MD3_BANK0_MAP0 = 0x%x\n",
 			 c2k_read32(infra_ao_base, MD3_BANK0_MAP0));
 	}
 
@@ -603,12 +605,12 @@ void c2k_modem_power_on_platform(void)
 		    c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL) | 0x1);
 	while (!((c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS) >> 1) & 0x1))
 		;
-	pr_debug("[C2K] C2K_STATUS = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] C2K_STATUS = 0x%x\n",
 			 c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL,
 		    c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL) & (~0x1));
-	pr_debug("[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL),
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
 #if 0
@@ -664,14 +666,14 @@ void c2k_modem_power_off_platform(void)
 {
 	int ret = -123;
 
-	pr_debug("[C2K] md_power_off begain\n");
+	C2K_BOOTUP_LOG("[C2K] md_power_off begain\n");
 #if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_off(SYS_MD2, 1000);
 #else
 	atomic_set(&clock_on, 0);
 	clk_disable_unprepare(clk_scp_sys_md2_main);
 #endif
-	pr_debug("[C2K] md_power_off %d\n", ret);
+	C2K_BOOTUP_LOG("[C2K] md_power_off %d\n", ret);
 }
 
 void c2k_modem_reset_platform(void)
@@ -694,7 +696,7 @@ void c2k_modem_reset_platform(void)
 		atomic_dec(&clock_on);
 #endif
 
-	pr_debug("[C2K] md_power_on %d\n", ret);
+	C2K_BOOTUP_LOG("[C2K] md_power_on %d\n", ret);
 
 	/*step 1: reset C2K */
 #if 0
@@ -705,7 +707,7 @@ void c2k_modem_reset_platform(void)
 #else
 	mtk_wdt_set_c2k_sysrst(1);
 #endif
-	pr_debug("[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 		 c2k_read32(toprgu_base, TOP_RGU_WDT_SWSYSRST));
 
 	/*step 2: wake up C2K */
@@ -715,7 +717,7 @@ void c2k_modem_reset_platform(void)
 		;
 	c2k_write32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL,
 		    c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL) & (~0x1));
-	pr_debug("[C2K] C2K_SPM_CTRL = 0x%x\n",
+	C2K_BOOTUP_LOG("[C2K] C2K_SPM_CTRL = 0x%x\n",
 		 c2k_read32(infra_ao_base, INFRA_AO_C2K_SPM_CTRL));
 
 #if 0
@@ -723,7 +725,7 @@ void c2k_modem_reset_platform(void)
 		pr_debug("[C2K] C2K_CHIP_ID = 0x%x\n",
 			 c2k_read32(c2k_chip_id_base, 0));
 	}
-	pr_debug("[C2K] C2K_CHIP_ID = 0x%x\n", c2k_read32(c2k_chip_id_base, 0));
+	C2K_BOOTUP_LOG("[C2K] C2K_CHIP_ID = 0x%x\n", c2k_read32(c2k_chip_id_base, 0));
 #endif
 }
 
