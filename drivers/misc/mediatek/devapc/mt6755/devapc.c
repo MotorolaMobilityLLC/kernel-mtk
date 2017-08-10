@@ -673,8 +673,8 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 		clear_vio_status(i);
 	}
 
-	if (((DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG) || (enable_dynamic_one_core_violation_debug))
-			&& (is_sramrom_vio)) {
+	if ((DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG) || (enable_dynamic_one_core_violation_debug)
+			|| (is_sramrom_vio)) {
 		DEVAPC_VIO_MSG("[DEVAPC] ====== Start dumping Device APC violation tracing ======\n");
 
 		DEVAPC_VIO_MSG("[DEVAPC] **************** [All IRQ Registers] ****************\n");
