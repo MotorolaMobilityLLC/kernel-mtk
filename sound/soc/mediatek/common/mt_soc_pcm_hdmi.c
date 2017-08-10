@@ -405,9 +405,6 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		EnableAfe(false);
 		AudDrv_TDM_Clk_Off();	/* disable HDMI CK */
 		AudDrv_Clk_Off();
-
-		if (hdmi_stream != NULL)
-			free(hdmi_stream);
 	}
 	return 0;
 }
