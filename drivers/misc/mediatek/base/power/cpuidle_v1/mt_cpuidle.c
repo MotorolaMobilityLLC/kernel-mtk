@@ -73,8 +73,10 @@ static unsigned int kp_irq_bit;
 static unsigned int conn_wdt_irq_bit;
 static unsigned int lowbattery_irq_bit;
 static unsigned int md1_wdt_irq_bit;
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 static unsigned int c2k_wdt_irq_bit;
+#endif
 #endif
 
 #if defined(CONFIG_ARCH_MT6735_SERIES) || defined(CONFIG_ARCH_MT6580)
@@ -284,9 +286,11 @@ static void restore_edge_gic_spm_irq(unsigned long gic_distributor_address)
 	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B, &conn_wdt_irq_bit);
 	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B, &lowbattery_irq_bit);
 	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_MD1_WDT_B, &md1_wdt_irq_bit);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B, &c2k_wdt_irq_bit);
-#endif /* #ifdef CONFIG_MTK_C2K_SUPPORT */
+#endif
+#endif
 
 	id->control = backup;
 }
@@ -1015,8 +1019,10 @@ static void get_dts_nodes_irq_bit(void)
 	conn_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mt6735-consys", 6, 3);
 	lowbattery_irq_bit = get_dts_node_irq_bit("mediatek,mt6735-auxadc", 3, 0);
 	md1_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdcldma", 9, 6);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 	c2k_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdc2k", 3, 0);
+#endif
 #endif
 }
 #elif defined(CONFIG_ARCH_MT6755)
@@ -1031,8 +1037,10 @@ static void get_dts_nodes_irq_bit(void)
 	conn_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mt6755-consys", 6, 3);
 	lowbattery_irq_bit = get_dts_node_irq_bit(NULL, 3, 0);
 	md1_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdcldma", 9, 6);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 	c2k_wdt_irq_bit = get_dts_node_irq_bit("mediatek,ap2c2k_ccif", 6, 3);
+#endif
 #endif
 }
 #elif defined(CONFIG_ARCH_MT6797)
@@ -1047,8 +1055,10 @@ static void get_dts_nodes_irq_bit(void)
 	conn_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mt6797-consys", 6, 3);
 	lowbattery_irq_bit = get_dts_node_irq_bit("mediatek,mt6797-auxadc", 3, 0);
 	md1_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdcldma", 9, 6);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#ifdef CONFIG_MTK_MD3_SUPPORT
+#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
 	c2k_wdt_irq_bit = get_dts_node_irq_bit("mediatek,ap2c2k_ccif", 6, 3);
+#endif
 #endif
 }
 #endif
