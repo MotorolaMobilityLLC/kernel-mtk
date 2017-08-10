@@ -193,8 +193,6 @@ uint32_t hal_tui_alloc(
 		g_tui_secmem_handle = pa;
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
-	} else {
-		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 	pr_debug("tui pa=0x%x, size=0x%lx", (uint32_t)pa, size);
 
