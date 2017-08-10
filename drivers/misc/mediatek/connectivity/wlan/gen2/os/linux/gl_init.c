@@ -2544,6 +2544,26 @@ bailout:
 		}
 #endif
 
+#if CFG_SUPPORT_EMI_DEBUG
+		{
+			/* set Driver Read EMI	*/
+			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+			CMD_DRIVER_DUMP_EMI_LOG_T rDriverDumpEmiLog;
+			UINT_32 u4SetInfoLen = 0;
+
+			kalMemZero(&rDriverDumpEmiLog, sizeof(CMD_DRIVER_DUMP_EMI_LOG_T));
+			rDriverDumpEmiLog.fgIsDriverDumpEmiLogEnable = TRUE;
+
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetEnableDumpEMILog,
+					   (PVOID)&rDriverDumpEmiLog,
+					   sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+
+			if (rStatus != WLAN_STATUS_SUCCESS)
+				DBGLOG(INIT, WARN, "set Driver read EMI address fail 0x%x\n", rStatus);
+		}
+#endif
+
 		/* 4 <3> Register the card */
 		DBGLOG(INIT, TRACE, "wlanNetRegister...\n");
 		i4DevIdx = wlanNetRegister(prWdev);

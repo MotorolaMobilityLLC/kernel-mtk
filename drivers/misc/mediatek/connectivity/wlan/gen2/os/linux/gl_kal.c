@@ -2591,6 +2591,23 @@ VOID kalHandleAssocInfo(IN P_GLUE_INFO_T prGlueInfo, IN P_EVENT_ASSOC_INFO prAss
 {
 	/* to do */
 }
+#if CFG_SUPPORT_EMI_DEBUG
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief This routine is used to get EMI address
+*
+* @param settion
+* @param offset
+* @param buff
+* @param len
+* @return PINT
+*/
+/*----------------------------------------------------------------------------*/
+PINT8 kalGetFwInfoFormEmi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len)
+{
+	return wmt_lib_get_fwinfor_from_emi(section, offset, buff, len);
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!

@@ -59,6 +59,8 @@ extern struct delayed_work sched_workq;
 #if defined(MT6620) && CFG_MULTI_ECOVER_SUPPORT
 extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
 #endif
+extern PUINT8 wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+extern PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 
 extern BOOLEAN fgIsUnderSuspend;
 /*******************************************************************************
@@ -780,6 +782,13 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo);
 
 VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo);
+
+#if CFG_SUPPORT_EMI_DEBUG
+/*----------------------------------------------------------------------------*/
+/* WMT Support                                                                 */
+/*----------------------------------------------------------------------------*/
+PINT8 kalGetFwInfoFormEmi(UINT8 section, UINT32 offset, PUINT8 buff, UINT32 len);
+#endif
 
 /*******************************************************************************
 *                              F U N C T I O N S

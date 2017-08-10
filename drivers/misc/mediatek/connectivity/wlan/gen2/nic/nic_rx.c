@@ -1570,6 +1570,17 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	case EVENT_ID_CHECK_REORDER_BUBBLE:
 		qmHandleEventCheckReorderBubble(prAdapter, prEvent);
 		break;
+#if (CFG_SUPPORT_EMI_DEBUG == 1)
+	case EVENT_ID_DRIVER_DUMP_LOG:
+		{
+			P_EVENT_DRIVER_DUMP_EMI_LOG_T prEventDriverDumpEmiLog;
+
+			DBGLOG(RX, TRACE, "EVENT_ID_DRIVER_DUMP_LOG\n");
+			prEventDriverDumpEmiLog = (P_EVENT_DRIVER_DUMP_EMI_LOG_T) (prEvent->aucBuffer);
+			wlanReadFwInfoFromEmi(&(prEventDriverDumpEmiLog->u4RequestDriverDumpAddr));
+			break;
+		}
+#endif
 	case EVENT_ID_FW_LOG_ENV:
 		{
 			P_EVENT_FW_LOG_T prEventLog;
