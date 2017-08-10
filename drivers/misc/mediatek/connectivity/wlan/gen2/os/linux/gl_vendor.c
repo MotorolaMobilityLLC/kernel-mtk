@@ -397,12 +397,12 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 			case GSCAN_ATTRIBUTE_REPORT_EVENTS:
 				prWifiScanCmd->buckets[i].report_events = nla_get_u32(attr[k]);
 				/* parameter validity check */
-				/* if (((prWifiScanCmd->buckets[i].report_events & REPORT_EVENTS_EACH_SCAN)
+				if (((prWifiScanCmd->buckets[i].report_events & REPORT_EVENTS_EACH_SCAN)
 					!= REPORT_EVENTS_EACH_SCAN)
 					&& ((prWifiScanCmd->buckets[i].report_events & REPORT_EVENTS_FULL_RESULTS)
 					!= REPORT_EVENTS_FULL_RESULTS)
 					&& ((prWifiScanCmd->buckets[i].report_events & REPORT_EVENTS_NO_BATCH)
-					!= REPORT_EVENTS_NO_BATCH)) */
+					!= REPORT_EVENTS_NO_BATCH))
 					prWifiScanCmd->buckets[i].report_events = REPORT_EVENTS_EACH_SCAN;
 				len_bucket += NLA_ALIGN(attr[k]->nla_len);
 				break;
