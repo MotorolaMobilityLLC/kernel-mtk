@@ -19,7 +19,7 @@
 #include "disp_session.h"
 #include "disp_drv_platform.h"
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#if defined(COMMON_DISP_LOG)
 #include "disp_recorder.h"
 #include "mtkfb_debug.h"
 #else

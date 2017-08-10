@@ -16,11 +16,11 @@
 #include <mt-plat/sync_write.h>
 /* #include <mach/mt_reg_base.h> */
 #include <linux/types.h>
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "cmdq_record.h"
 #include "cmdq_core.h"
 #include "ddp_hal.h"
-#include "ddp_log.h"
+#include "disp_log.h"
 #include "ddp_path.h"
 
 /* MIPITX and DSI */
@@ -1358,7 +1358,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			return ddp_reg_pa_base[i] + (va & 0xfffl);
 		}
 	}
-	DDPERR("can not find reg addr for va=0x%lx!\n", va);
+	DISPERR("can not find reg addr for va=0x%lx!\n", va);
 	return 0;
 }
 
@@ -1381,7 +1381,7 @@ extern void _disp_primary_path_exit_idle(const char *caller, unsigned int need_p
 #define DISP_REG_SET(handle, reg32, val) \
 	do { \
 		if (isIdlePowerOff == 1) { \
-			DDPAEE("ddp clk error");\
+			DISPAEE("ddp clk error");\
 			_disp_primary_path_exit_idle("ddp_reg", 0); \
 		} \
 		if (handle == 0) {\
@@ -1396,7 +1396,7 @@ extern void _disp_primary_path_exit_idle(const char *caller, unsigned int need_p
 #define DISP_REG_SET_FIELD(handle, field, reg32, val)  \
 	do {  \
 		if (isIdlePowerOff == 1) {\
-			DDPAEE("ddp clk error");\
+			DISPAEE("ddp clk error");\
 			_disp_primary_path_exit_idle("ddp_reg", 0); \
 		} \
 		if (handle == 0) { \

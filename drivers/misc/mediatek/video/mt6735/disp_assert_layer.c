@@ -14,7 +14,7 @@
 #include <linux/types.h>
 #include "primary_display.h"
 #include "ddp_hal.h"
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "disp_assert_layer.h"
 #include <linux/semaphore.h>
 #include <linux/mutex.h>

@@ -19,7 +19,7 @@
 #include "m4u.h"
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "disp_utils.h"
 
 int disp_sw_mutex_lock(struct mutex *m)

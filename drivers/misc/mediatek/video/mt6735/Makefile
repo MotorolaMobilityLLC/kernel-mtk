@@ -16,7 +16,6 @@
 
 obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    disp_assert_layer.o    \
-			    debug.o                \
 			    primary_display.o      \
 			    disp_lcm.o             \
 			    disp_utils.o           \
@@ -25,12 +24,12 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    mtk_ovl.o              \
 			    disp_dts_gpio.o        \
 			    disp_helper.o          \
+			    disp_debug.o           \
 			    ddp_wdma_ex.o          \
 			    ddp_dsi.o              \
 			    ddp_dpi.o              \
 			    ddp_drv.o              \
 			    ddp_path.o             \
-			    ddp_debug.o            \
 			    ddp_dump.o             \
 			    ddp_manager.o          \
 			    ddp_irq.o              \
@@ -38,8 +37,7 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    ddp_color_format.o     \
 			    ddp_pwm_mux.o          \
 			    ddp_mmp.o              \
-			    ddp_met.o              \
-			    display_recorder.o     \
+			    ddp_met.o
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/mt6735/

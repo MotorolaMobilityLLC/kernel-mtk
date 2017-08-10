@@ -12,7 +12,7 @@
  */
 
 #define LOG_TAG "RDMA"
-#include "ddp_log.h"
+#include "disp_log.h"
 
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
@@ -75,7 +75,7 @@ static enum RDMA_INPUT_FORMAT rdma_input_format_convert(DpColorFormat fmt)
 		rdma_fmt = RDMA_INPUT_FORMAT_YUYV;
 		break;
 	default:
-		DDPERR("rdma_input_format_convert fmt=%d, rdma_fmt=%d\n", fmt, rdma_fmt);
+		DISPERR("rdma_input_format_convert fmt=%d, rdma_fmt=%d\n", fmt, rdma_fmt);
 	}
 	return rdma_fmt;
 }
@@ -102,7 +102,7 @@ static unsigned int rdma_input_format_byte_swap(enum RDMA_INPUT_FORMAT inputForm
 		input_swap = 0;
 		break;
 	default:
-		DDPERR("unknown RDMA input format is %d\n", inputFormat);
+		DISPERR("unknown RDMA input format is %d\n", inputFormat);
 		ASSERT(0);
 	}
 	return input_swap;
@@ -132,7 +132,7 @@ static unsigned int rdma_input_format_bpp(enum RDMA_INPUT_FORMAT inputFormat)
 		bpp = 4;
 		break;
 	default:
-		DDPERR("unknown RDMA input format = %d\n", inputFormat);
+		DISPERR("unknown RDMA input format = %d\n", inputFormat);
 		ASSERT(0);
 	}
 	return bpp;
@@ -160,7 +160,7 @@ static unsigned int rdma_input_format_color_space(enum RDMA_INPUT_FORMAT inputFo
 		space = 1;
 		break;
 	default:
-		DDPERR("unknown RDMA input format = %d\n", inputFormat);
+		DISPERR("unknown RDMA input format = %d\n", inputFormat);
 		ASSERT(0);
 	}
 	return space;
@@ -196,7 +196,7 @@ static unsigned int rdma_input_format_reg_value(enum RDMA_INPUT_FORMAT inputForm
 		reg_value = 0x5;
 		break;
 	default:
-		DDPERR("unknown RDMA input format is %d\n", inputFormat);
+		DISPERR("unknown RDMA input format is %d\n", inputFormat);
 		ASSERT(0);
 	}
 	return reg_value;
@@ -230,7 +230,7 @@ static char *rdma_intput_format_name(enum RDMA_INPUT_FORMAT fmt, int swap)
 	case RDMA_INPUT_FORMAT_YUYV:
 		return "eYUY2";
 	default:
-		DDPERR("rdma_intput_format_name unknown fmt=%d, swap=%d\n", fmt, swap);
+		DISPERR("rdma_intput_format_name unknown fmt=%d, swap=%d\n", fmt, swap);
 		break;
 	}
 	return "unknown";
@@ -293,7 +293,7 @@ int rdma_reset(DISP_MODULE_ENUM module, void *handle)
 		udelay(10);
 		if (delay_cnt > 10000) {
 			ret = -1;
-			DDPERR("rdma%d_reset timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
+			DISPERR("rdma%d_reset timeout, stage 1! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
 			       idx, DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
@@ -306,7 +306,7 @@ int rdma_reset(DISP_MODULE_ENUM module, void *handle)
 		udelay(10);
 		if (delay_cnt > 10000) {
 			ret = -1;
-			DDPERR("rdma%d_reset timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
+			DISPERR("rdma%d_reset timeout, stage 2! DISP_REG_RDMA_GLOBAL_CON=0x%x\n",
 			       idx, DISP_REG_GET(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON));
 			break;
 		}
@@ -406,13 +406,13 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, fifo_valid_size);
 
-	DDPDBG("FIFO_VALID_Size      = 0x%03x = %d\n", fifo_valid_size, fifo_valid_size);
-	DDPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
-	DDPDBG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
-	DDPDBG("pre_ultra_high_level = 0x%03x = %d\n", pre_ultra_high_level, pre_ultra_high_level);
-	DDPDBG("ultra_high_ofs       = 0x%03x = %d\n", ultra_high_ofs, ultra_high_ofs);
-	DDPDBG("pre_ultra_low_ofs    = 0x%03x = %d\n", pre_ultra_low_ofs, pre_ultra_low_ofs);
-	DDPDBG("pre_ultra_high_ofs   = 0x%03x = %d\n", pre_ultra_high_ofs, pre_ultra_high_ofs);
+	DISPDBG("FIFO_VALID_Size      = 0x%03x = %d\n", fifo_valid_size, fifo_valid_size);
+	DISPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
+	DISPDBG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
+	DISPDBG("pre_ultra_high_level = 0x%03x = %d\n", pre_ultra_high_level, pre_ultra_high_level);
+	DISPDBG("ultra_high_ofs       = 0x%03x = %d\n", ultra_high_ofs, ultra_high_ofs);
+	DISPDBG("pre_ultra_low_ofs    = 0x%03x = %d\n", pre_ultra_low_ofs, pre_ultra_low_ofs);
+	DISPDBG("pre_ultra_high_ofs   = 0x%03x = %d\n", pre_ultra_high_ofs, pre_ultra_high_ofs);
 }
 
 /* fixme: spec has no RDMA format, fix enum definition here */
@@ -437,14 +437,14 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	unsigned long size_con_handle = 0;
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	DDPMSG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
+	DISPMSG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 		idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width, height, sec);
 #else
-	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
+	DISPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 		idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width, height, sec);
 #endif
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
-		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,
+		DISPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,
 		       RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
 
 	if (input_is_yuv == 1 && output_is_yuv == 0) {
@@ -535,7 +535,7 @@ int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 	}
 #endif
-	DDPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
@@ -557,7 +557,7 @@ int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 	}
 #endif
-	DDPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
@@ -565,60 +565,60 @@ void rdma_dump_reg(DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
 
-	DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
-	DDPDUMP("(0x000)R_INTEN       =0x%x\n",
+	DISPDMP("== DISP RDMA%d REGS ==\n", idx);
+	DISPDMP("(0x000)R_INTEN       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x004)R_INTS        =0x%x\n",
+	DISPDMP("(0x004)R_INTS        =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x010)R_CON         =0x%x\n",
+	DISPDMP("(0x010)R_CON         =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x014)R_SIZE0       =0x%x\n",
+	DISPDMP("(0x014)R_SIZE0       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x018)R_SIZE1       =0x%x\n",
+	DISPDMP("(0x018)R_SIZE1       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x01c)R_TAR_LINE    =0x%x\n",
+	DISPDMP("(0x01c)R_TAR_LINE    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_TARGET_LINE + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x024)R_M_CON       =0x%x\n",
+	DISPDMP("(0x024)R_M_CON       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0xf00)R_M_S_ADDR    =0x%x\n",
+	DISPDMP("(0xf00)R_M_S_ADDR    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x02c)R_M_SRC_PITCH =0x%x\n",
+	DISPDMP("(0x02c)R_M_SRC_PITCH =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x030)R_M_GMC_SET0  =0x%x\n",
+	DISPDMP("(0x030)R_M_GMC_SET0  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x034)R_M_SLOW_CON  =0x%x\n",
+	DISPDMP("(0x034)R_M_SLOW_CON  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x038)R_M_GMC_SET1  =0x%x\n",
+	DISPDMP("(0x038)R_M_GMC_SET1  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x040)R_FIFO_CON    =0x%x\n",
+	DISPDMP("(0x040)R_FIFO_CON    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x044)R_FIFO_LOG    =0x%x\n",
+	DISPDMP("(0x044)R_FIFO_LOG    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x078)R_PRE_ADD0    =0x%x\n",
+	DISPDMP("(0x078)R_PRE_ADD0    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x07c)R_PRE_ADD1    =0x%x\n",
+	DISPDMP("(0x07c)R_PRE_ADD1    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x080)R_PRE_ADD2    =0x%x\n",
+	DISPDMP("(0x080)R_PRE_ADD2    =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x084)R_POST_ADD0   =0x%x\n",
+	DISPDMP("(0x084)R_POST_ADD0   =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x088)R_POST_ADD1   =0x%x\n",
+	DISPDMP("(0x088)R_POST_ADD1   =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x08c)R_POST_ADD2   =0x%x\n",
+	DISPDMP("(0x08c)R_POST_ADD2   =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x090)R_DUMMY       =0x%x\n",
+	DISPDMP("(0x090)R_DUMMY       =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_DUMMY + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x094)R_OUT_SEL     =0x%x\n",
+	DISPDMP("(0x094)R_OUT_SEL     =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x094)R_M_START     =0x%x\n",
+	DISPDMP("(0x094)R_M_START     =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
+	DISPDMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f4)R_IN_LINE_CNT =0x%x\n",
+	DISPDMP("(0x0f4)R_IN_LINE_CNT =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f8)R_OUT_PXL_CNT =0x%x\n",
+	DISPDMP("(0x0f8)R_OUT_PXL_CNT =0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
+	DISPDMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
 }
 
@@ -626,8 +626,8 @@ void rdma_dump_analysis(DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
 
-	DDPDUMP("==DISP RDMA%d ANALYSIS==\n", idx);
-	DDPDUMP("rdma%d: en=%d, memory mode=%d, w=%d, h=%d, pitch=%d, addr=0x%x, fmt=%s, fifo_min=%d,\n",
+	DISPDMP("==DISP RDMA%d ANALYSIS==\n", idx);
+	DISPDMP("rdma%d: en=%d, memory mode=%d, w=%d, h=%d, pitch=%d, addr=0x%x, fmt=%s, fifo_min=%d,\n",
 		idx, DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx) & 0x1,
 		(DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx) & 0x2) ? 1 : 0,
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx) & 0xfff,
@@ -637,14 +637,14 @@ void rdma_dump_analysis(DISP_MODULE_ENUM module)
 		rdma_intput_format_name((DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_INDEX_OFFSET * idx) >> 4) & 0xf,
 				(DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_INDEX_OFFSET * idx) >> 8) & 0x1),
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d, rdma_start_time=%lld ns,rdma_end_time=%lld ns\n",
+	DISPDMP("in_p_cnt=%d, in_l_cnt=%d, out_p_cnt=%d, out_l_cnt=%d, rdma_start_time=%lld ns,rdma_end_time=%lld ns\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx),
 		rdma_start_time[idx], rdma_end_time[idx]);
 
-	DDPDUMP("irq cnt: start=%d, end=%d, underflow=%d, targetline=%d\n",
+	DISPDMP("irq cnt: start=%d, end=%d, underflow=%d, targetline=%d\n",
 		rdma_start_irq_cnt[idx], rdma_done_irq_cnt[idx], rdma_underflow_irq_cnt[idx],
 		rdma_targetline_irq_cnt[idx]);
 }
@@ -685,7 +685,7 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 		rdma_fps[rdma_index(module)] = pConfig->fps / 100;
 
 	if (mode == RDMA_MODE_DIRECT_LINK && r_config->security != DISP_NORMAL_BUFFER)
-		DDPERR("%s: rdma directlink BUT is sec ??!!\n", __func__);
+		DISPERR("%s: rdma directlink BUT is sec ??!!\n", __func__);
 
 	rdma_config(module, mode, (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->address, /* address */
 		    (mode == RDMA_MODE_DIRECT_LINK) ? eRGB888 : r_config->inputFormat, /* inputFormat */
@@ -706,7 +706,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 	cmdq_engine = rdma_idx == 0 ? CMDQ_ENG_DISP_RDMA0 : CMDQ_ENG_DISP_RDMA1;
 
 	if (!handle) {
-		DDPMSG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
+		DISPMSG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
 		return 0;
 	}
 	/* sec setting make sence only in memory mode ! */
@@ -718,7 +718,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 			/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 
 			if (rdma_is_sec[rdma_idx] == 0)
-				DDPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
+				DISPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
 			rdma_is_sec[rdma_idx] = 1;
 		} else {
 			if (rdma_is_sec[rdma_idx]) {
@@ -730,7 +730,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 				    cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 						  &(nonsec_switch_handle));
 				if (ret)
-					DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
+					DISPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 					       __func__, ret);
 
 				cmdqRecReset(nonsec_switch_handle);
@@ -748,7 +748,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 
 				cmdqRecFlush(nonsec_switch_handle);
 				cmdqRecDestroy(nonsec_switch_handle);
-				DDPMSG("[SVP] switch rdma%d to nonsec done\n", rdma_idx);
+				DISPMSG("[SVP] switch rdma%d to nonsec done\n", rdma_idx);
 			}
 			rdma_is_sec[rdma_idx] = 0;
 		}

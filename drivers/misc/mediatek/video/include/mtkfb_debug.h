@@ -45,6 +45,8 @@ extern int lcm_mode_status;
 extern int bypass_blank;
 extern struct dentry *disp_debugDir;
 extern char dbg_buf[2048];
+extern char *debug_buffer;
+extern bool is_buffer_init;
 
 extern int g_display_debug_pattern_index;
 

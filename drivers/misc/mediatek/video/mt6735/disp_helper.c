@@ -23,7 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 
-#include "disp_drv_log.h"
+#include "disp_log.h"
 
 /* #include "mt_boot.h" */
 #include "disp_helper.h"
@@ -116,10 +116,10 @@ const char *disp_helper_option_spy(DISP_HELPER_OPTION option)
 void disp_helper_set_option(DISP_HELPER_OPTION option, int value)
 {
 	if (option < DISP_HELPER_OPTION_NUM) {
-		DISPCHECK("Set Option %d(%s) from (%d) to (%d)\n", option,
+		DISPMSG("Set Option %d(%s) from (%d) to (%d)\n", option,
 			  disp_helper_option_spy(option), disp_helper_get_option(option), value);
 		_disp_helper_option_value[option] = value;
-		DISPCHECK("After set (%s) is (%d)\n", disp_helper_option_spy(option), disp_helper_get_option(option));
+		DISPMSG("After set (%s) is (%d)\n", disp_helper_option_spy(option), disp_helper_get_option(option));
 	} else {
 		DISPERR("Wrong option: %d\n", option);
 	}
@@ -272,7 +272,7 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 	int i = 0;
 
 	for (i = 0; i < DISP_HELPER_OPTION_NUM; i++) {
-		DISPMSG("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i), disp_helper_get_option(i));
+		DISPINFO("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i), disp_helper_get_option(i));
 		len += scnprintf(stringbuf + len, buf_len - len, "Option: [%d][%s] Value: [%d]\n",
 				 i, disp_helper_option_spy(i), disp_helper_get_option(i));
 	}

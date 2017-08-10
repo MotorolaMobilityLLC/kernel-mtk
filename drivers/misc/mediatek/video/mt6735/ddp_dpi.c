@@ -22,9 +22,7 @@
 #include <linux/mutex.h>
 
 #include "cmdq_record.h"
-#include <disp_drv_log.h>
 #endif
-#include <debug.h>
 
 /*#include "mach/mt_typedefs.h"*/
 #include <linux/types.h>
@@ -48,10 +46,9 @@
 #include "ddp_dpi_reg.h"
 #include "ddp_dpi.h"
 #include "ddp_reg.h"
-#include "ddp_log.h"
+#include "disp_log.h"
 
 #include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/of_address.h>
 /*#include <mach/eint.h>*/
 
@@ -792,21 +789,21 @@ int ddp_dpi_dump(DISP_MODULE_ENUM module, int level)
 {
 	unsigned i;
 
-	DDPDUMP("---------- Start dump DPI registers ----------\n");
+	DISPDMP("---------- Start dump DPI registers ----------\n");
 
 	for (i = 0; i <= 0x50; i += 4)
-		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+		DISPDMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
 	for (i = 0x68; i <= 0xd8; i += 4)
-		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+		DISPDMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
 
 /*
-	DDPDUMP("DPI+Color Bar : %04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
-	DDPDUMP("DPI TVDPLL CON0 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON0));
-	DDPDUMP("DPI TVDPLL CON1 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON1));
-	DDPDUMP("DPI TVDPLL CON6 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON6));
-	DDPDUMP("DPI MMSYS_CG_CON1:0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	DDPDUMP("io_driving1:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING1));
-	DDPDUMP("io_driving2:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING2));
+	DISPDMP("DPI+Color Bar : %04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
+	DISPDMP("DPI TVDPLL CON0 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON0));
+	DISPDMP("DPI TVDPLL CON1 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON1));
+	DISPDMP("DPI TVDPLL CON6 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON6));
+	DISPDMP("DPI MMSYS_CG_CON1:0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	DISPDMP("io_driving1:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING1));
+	DISPDMP("io_driving2:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING2));
 */
 
 	return 0;
@@ -817,7 +814,7 @@ void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
 	LCM_DRIVING_CURRENT vsync_io_driving = (io_driving >> 8) & 0xFF;
 	LCM_DRIVING_CURRENT data_io_driving = io_driving & 0xFF;
 
-	DDPDUMP("vsync_io_driving: 0x%x, data_io_driving: 0x%x\n", vsync_io_driving,
+	DISPDMP("vsync_io_driving: 0x%x, data_io_driving: 0x%x\n", vsync_io_driving,
 		data_io_driving);
 
 	switch (data_io_driving) {

@@ -74,7 +74,7 @@
 /* Global variable declarations */
 /* --------------------------------------------------------------------------- */
 unsigned int gEnableUartLog = 0;
-unsigned int gMobilelog = 1;
+unsigned int gMobilelog = 0;
 unsigned int gFencelog = 0; /*Fence Log*/
 unsigned int gLoglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
 unsigned int gRcdlevel = 0;
@@ -95,7 +95,6 @@ static struct dentry *dump_debugfs;
 static struct dentry *mtkfb_debugfs;
 static int debug_init;
 static unsigned int dump_to_buffer;
-static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
 
 /* --------------------------------------------------------------------------- */
 /* DDP debugfs functions */
@@ -426,8 +425,11 @@ void debug_info_dump_to_printk(char *buf, int buf_len)
 
 static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
-	const int debug_bufmax = sizeof(debug_buffer) - 1;
-	int n = 0;
+	const int debug_bufmax = DPREC_ERROR_LOG_BUFFER_LENGTH - 1;
+	static int n;
+
+	if (*ppos != 0 || !is_buffer_init)
+		goto out;
 
 	n = mtkfb_get_debug_state(debug_buffer + n, debug_bufmax - n);
 
@@ -447,6 +449,10 @@ static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t cou
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, debug_buffer + n, debug_bufmax - n);
 
+	n += dprec_logger_get_buf(DPREC_LOGGER_STATUS, debug_buffer + n, debug_bufmax - n);
+
+	debug_buffer[n++] = 0;
+out:
 	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
 

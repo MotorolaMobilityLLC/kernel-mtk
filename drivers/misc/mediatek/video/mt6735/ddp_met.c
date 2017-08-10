@@ -13,7 +13,7 @@
 
 #define LOG_TAG "MET"
 
-#include "ddp_log.h"
+#include "disp_log.h"
 
 #include <mt-plat/met_drv.h>
 #include "ddp_irq.h"

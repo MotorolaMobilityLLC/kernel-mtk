@@ -12,7 +12,6 @@
  */
 
 #define LOG_TAG "OVL"
-#include "ddp_log.h"
 
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
@@ -99,7 +98,7 @@ DISP_OVL1_STATUS ovl_get_status(void)
 /* set ovl1 status */
 void ovl_set_status(DISP_OVL1_STATUS status)
 {
-	DDPMSG("cascade, set_ovl1 from %s to %s!\n", ovl_get_status_name(ovl1_status),
+	DISPMSG("cascade, set_ovl1 from %s to %s!\n", ovl_get_status_name(ovl1_status),
 	       ovl_get_status_name(status));
 	MMProfileLogEx(ddp_mmp_get_events()->ovl1_status, MMProfileFlagPulse, ovl1_status, status);
 	ovl1_status = status;	/* atomic operation */
@@ -147,7 +146,7 @@ static enum OVL_INPUT_FORMAT ovl_input_fmt_convert(DpColorFormat fmt)
 		ovl_fmt = OVL_INPUT_FORMAT_YUYV;
 		break;
 	default:
-		DDPERR("ovl_fmt_convert fmt=%d, ovl_fmt=%d\n", fmt, ovl_fmt);
+		DISPERR("ovl_fmt_convert fmt=%d, ovl_fmt=%d\n", fmt, ovl_fmt);
 		break;
 	}
 	return ovl_fmt;
@@ -169,7 +168,7 @@ static DpColorFormat ovl_input_fmt(enum OVL_INPUT_FORMAT fmt, int swap)
 	case OVL_INPUT_FORMAT_YVYU:
 		return swap ? eYVYU : eYUY2;
 	default:
-		DDPERR("ovl_input_fmt fmt=%d, swap=%d\n", fmt, swap);
+		DISPERR("ovl_input_fmt fmt=%d, swap=%d\n", fmt, swap);
 		break;
 	}
 	return eRGB888;
@@ -197,7 +196,7 @@ static unsigned int ovl_input_fmt_byte_swap(enum OVL_INPUT_FORMAT fmt)
 		input_swap = 0;
 		break;
 	default:
-		DDPERR("unknown input ovl format is %d\n", fmt);
+		DISPERR("unknown input ovl format is %d\n", fmt);
 		ASSERT(0);
 	}
 	return input_swap;
@@ -227,7 +226,7 @@ static unsigned int ovl_input_fmt_bpp(enum OVL_INPUT_FORMAT fmt)
 		bpp = 4;
 		break;
 	default:
-		DDPERR("unknown ovl input format = %d\n", fmt);
+		DISPERR("unknown ovl input format = %d\n", fmt);
 		ASSERT(0);
 	}
 	return bpp;
@@ -255,7 +254,7 @@ static enum OVL_COLOR_SPACE ovl_input_fmt_color_space(enum OVL_INPUT_FORMAT fmt)
 		space = OVL_COLOR_SPACE_YUV;
 		break;
 	default:
-		DDPERR("unknown ovl input format = %d\n", fmt);
+		DISPERR("unknown ovl input format = %d\n", fmt);
 		ASSERT(0);
 	}
 	return space;
@@ -291,7 +290,7 @@ static unsigned int ovl_input_fmt_reg_value(enum OVL_INPUT_FORMAT fmt)
 		reg_value = 0x5;
 		break;
 	default:
-		DDPERR("unknown ovl input format is %d\n", fmt);
+		DISPERR("unknown ovl input format is %d\n", fmt);
 		ASSERT(0);
 	}
 	return reg_value;
@@ -325,7 +324,7 @@ static char *ovl_intput_format_name(enum OVL_INPUT_FORMAT fmt, int swap)
 	case OVL_INPUT_FORMAT_YUYV:
 		return "eYUY2";
 	default:
-		DDPERR("ovl_intput_fmt unknown fmt=%d, swap=%d\n", fmt, swap);
+		DISPERR("ovl_intput_fmt unknown fmt=%d, swap=%d\n", fmt, swap);
 		break;
 	}
 	return "unknown";
@@ -343,7 +342,7 @@ static unsigned int ovl_index(DISP_MODULE_ENUM module)
 		idx = 1;
 		break;
 	default:
-		DDPERR("invalid module=%d\n", module);
+		DISPERR("invalid module=%d\n", module);
 		ASSERT(0);
 	}
 	return idx;
@@ -416,7 +415,7 @@ int ovl_reset(DISP_MODULE_ENUM module, void *handle)
 			delay_cnt++;
 			udelay(10);
 			if (delay_cnt > 2000) {
-				DDPERR("ovl%d_reset timeout!\n", idx);
+				DISPERR("ovl%d_reset timeout!\n", idx);
 				ret = -1;
 				break;
 			}
@@ -432,7 +431,7 @@ int ovl_roi(DISP_MODULE_ENUM module,
 	int idx_offset = idx * DISP_OVL_INDEX_OFFSET;
 
 	if ((bg_w > OVL_MAX_WIDTH) || (bg_h > OVL_MAX_HEIGHT)) {
-		DDPERR("ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
+		DISPERR("ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
 		ASSERT(0);
 	}
 
@@ -465,7 +464,7 @@ int ovl_layer_switch(DISP_MODULE_ENUM module, unsigned layer, unsigned int en, v
 		DISP_REG_SET(handle, idx_offset + DISP_REG_OVL_RDMA3_CTRL, en);
 		break;
 	default:
-		DDPERR("invalid layer=%d\n", layer);
+		DISPERR("invalid layer=%d\n", layer);
 		ASSERT(0);
 	}
 
@@ -519,32 +518,32 @@ static int ovl_layer_config(DISP_MODULE_ENUM module, unsigned int layer,
 		color_matrix = 7;
 		break;		/* BT709 */
 	default:
-		DDPERR("un-recognized yuv_range=%d!\n", yuv_range);
+		DISPERR("un-recognized yuv_range=%d!\n", yuv_range);
 		color_matrix = 4;
 	}
-	/* DDPMSG("color matrix=%d.\n", color_matrix); */
+	/* DISPMSG("color matrix=%d.\n", color_matrix); */
 
 	ASSERT((dst_w <= OVL_MAX_WIDTH) && (dst_h <= OVL_MAX_HEIGHT) && (layer <= 3));
 
 	if (addr == 0) {
-		DDPERR("source from memory, but addr is 0!\n");
+		DISPERR("source from memory, but addr is 0!\n");
 		ASSERT(0);
 	}
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	DDPMSG("ovl%d, layer=%d, source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d), pitch=%d, fmt=%s, addr=%lx,\n",
+	DISPMSG("ovl%d, layer=%d, source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d), pitch=%d, fmt=%s, addr=%lx,\n",
 	       idx, layer, (source == 0) ? "memory" : "dim", src_x, src_y, dst_x, dst_y,
 	       dst_w, dst_h, src_pitch, ovl_intput_format_name(fmt, input_swap));
-	DDPMSG("keyEn=%d, key=%d, aen=%d, alpha=%d, sur_aen=%d,sur_alpha=0x%x, constant_color=0x%x, yuv_range=%d,\n",
+	DISPMSG("keyEn=%d, key=%d, aen=%d, alpha=%d, sur_aen=%d,sur_alpha=0x%x, constant_color=0x%x, yuv_range=%d,\n",
 	       addr, key_en, key, aen, alpha, sur_aen, dst_alpha << 2 | src_alpha, constant_color, yuv_range);
-	DDPMSG("sec=%d,ovlsec=%d\n", sec, is_engine_sec);
+	DISPMSG("sec=%d,ovlsec=%d\n", sec, is_engine_sec);
 #endif
 	if (source == OVL_LAYER_SOURCE_RESERVED) { /* ==1, means constant color */
 
 		if (aen == 0)
-			DDPERR("dim layer ahpha enable should be 1!\n");
+			DISPERR("dim layer ahpha enable should be 1!\n");
 
 		if (fmt != OVL_INPUT_FORMAT_RGB565 && fmt != OVL_INPUT_FORMAT_RGB888) {
-			/* DDPERR("dim layer format should be RGB565"); */
+			/* DISPERR("dim layer format should be RGB565"); */
 			fmt = OVL_INPUT_FORMAT_RGB888;
 			input_fmt = ovl_input_fmt_reg_value(fmt);
 		}
@@ -696,7 +695,7 @@ static void ovl_store_regs(DISP_MODULE_ENUM module)
 		reg_back[idx][i].address = regs[i];
 		reg_back[idx][i].value = DISP_REG_GET(regs[i]);
 	}
-	DDPMSG("store %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
+	DISPMSG("store %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
 
 }
 
@@ -709,7 +708,7 @@ static void ovl_restore_regs(DISP_MODULE_ENUM module, void *handle)
 		i--;
 		DISP_REG_SET(handle, reg_back[idx][i].address, reg_back[idx][i].value);
 	}
-	DDPMSG("restore %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
+	DISPMSG("restore %d cnt registers on ovl %d\n", reg_back_cnt[idx], idx);
 	reg_back_cnt[idx] = 0;
 }
 
@@ -719,7 +718,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	int idx = ovl_index(module);
 
-	DDPMSG("ovl%d_clock_on\n", idx);
+	DISPMSG("ovl%d_clock_on\n", idx);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -738,10 +737,10 @@ int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 	int idx = ovl_index(module);
 
-	DDPMSG("ovl%d_clock_off\n", idx);
+	DISPMSG("ovl%d_clock_off\n", idx);
 #ifdef ENABLE_CLK_MGR
 	if (ovl_clock_cnt[idx] == 0) {
-		DDPERR("ovl_deinit, clock off OVL%d, but it's already off!\n", idx);
+		DISPERR("ovl_deinit, clock off OVL%d, but it's already off!\n", idx);
 		return 0;
 	}
 
@@ -762,7 +761,7 @@ int ovl_resume(DISP_MODULE_ENUM module, void *handle)
 {
 	int idx = ovl_index(module);
 
-	DDPMSG("ovl%d_resume\n", idx);
+	DISPMSG("ovl%d_resume\n", idx);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -780,7 +779,7 @@ int ovl_suspend(DISP_MODULE_ENUM module, void *handle)
 {
 	int idx = ovl_index(module);
 
-	DDPMSG("ovl%d_suspend\n", idx);
+	DISPMSG("ovl%d_suspend\n", idx);
 	ovl_store_regs(module);
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
@@ -899,7 +898,7 @@ void ovl_get_info(int idx, void *data)
 						      (L_CON_FLD_CFMT,
 						       layer_off + DISP_REG_OVL_L0_CON));
 			}
-			DDPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
+			DISPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
 			       i, p->layer_en, p->src_w, p->src_h, p->bpp, p->addr);
 		}
 	} else {
@@ -933,7 +932,7 @@ void ovl_get_info(int idx, void *data)
 						      (L_CON_FLD_CFMT,
 						       layer_off + DISP_REG_OVL_L0_CON));
 			}
-			DDPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
+			DISPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
 			       i, p->layer_en, p->src_w, p->src_h, p->bpp, p->addr);
 		}
 
@@ -967,7 +966,7 @@ void ovl_get_info(int idx, void *data)
 						      (L_CON_FLD_CFMT,
 						       layer_off + DISP_REG_OVL_L0_CON));
 			}
-			DDPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
+			DISPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
 			       i, p->layer_en, p->src_w, p->src_h, p->bpp, p->addr);
 		}
 	}
@@ -976,7 +975,7 @@ void ovl_get_info(int idx, void *data)
 static int ovl_check_input_param(OVL_CONFIG_STRUCT *config)
 {
 	if ((config->addr == 0 && config->source == 0) || config->dst_w == 0 || config->dst_h == 0) {
-		DDPERR("ovl parameter invalidate, addr=%lx, w=%d, h=%d\n",
+		DISPERR("ovl parameter invalidate, addr=%lx, w=%d, h=%d\n",
 		       config->addr, config->dst_w, config->dst_h);
 		ASSERT(0);
 		return -1;
@@ -1065,7 +1064,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 		cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
 		/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 		if (ovl_is_sec[ovl_idx] == 0)
-			DDPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
+			DISPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
 		ovl_is_sec[ovl_idx] = 1;
 	} else {
 		if (ovl_is_sec[ovl_idx] == 1) {
@@ -1083,7 +1082,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 					    &(nonsec_switch_handle));
 			if (ret)
-				DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
+				DISPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 				       __func__, ret);
 
 			cmdqRecReset(nonsec_switch_handle);
@@ -1104,7 +1103,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 			cmdqRecFlush(nonsec_switch_handle);
 			cmdqRecDestroy(nonsec_switch_handle);
-			DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
+			DISPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 		}
 		ovl_is_sec[ovl_idx] = 0;
 	}
@@ -1120,7 +1119,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			if (module == DISP_MODULE_OVL0 &&
 			    i == (layer_max - 1) &&
 			    isAEEEnabled && pConfig->ovl_config[i].addr != get_Assert_Layer_PA()) {
-				DDPMLOG
+				DISPPR_FENCE
 				    ("O - assert layer skip. O%d/L%d/LMax%d/mva0x%lx,reg_addr=0x%x\n",
 				     module, i, layer_max, pConfig->ovl_config[i].addr,
 				     DISP_REG_GET(DISP_REG_OVL_L3_ADDR));
@@ -1131,12 +1130,12 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			}
 
 			if (module == DISP_MODULE_OVL0 && DISP_REG_GET(DISP_REG_OVL_EN) == 0) {
-				/* DDPERR("OVL0 EN=0 while config, force set to 1!\n"); */
+				/* DISPERR("OVL0 EN=0 while config, force set to 1!\n"); */
 				DISP_REG_SET(handle, DISP_REG_OVL_EN, 1);
 			}
 			if (module == DISP_MODULE_OVL1
 			    && DISP_REG_GET(DISP_REG_OVL_EN + DISP_OVL_INDEX_OFFSET) == 0) {
-				/* DDPERR("OVL1 EN=0 while config, force set to 1!\n"); */
+				/* DISPERR("OVL1 EN=0 while config, force set to 1!\n"); */
 				DISP_REG_SET(handle, DISP_REG_OVL_EN + DISP_OVL_INDEX_OFFSET, 1);
 			}
 
@@ -1152,7 +1151,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 					 0xff000000,	/* constant_color */
 					 pConfig->ovl_config[i].yuv_range,
 					 pConfig->ovl_config[i].security, has_sec_layer, handle, pConfig->is_memory);
-			DDPMLOG("O%d/L%d/S%d/%s/0x%lx/(%d,%d)/P%d/(%d,%d,%d,%d).\n",
+			DISPPR_FENCE("O%d/L%d/S%d/%s/0x%lx/(%d,%d)/P%d/(%d,%d,%d,%d).\n",
 				module - DISP_MODULE_OVL0,
 				i,
 				pConfig->ovl_config[i].source,
@@ -1174,7 +1173,7 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 			if (DISP_REG_GET
 			    (DISP_REG_OVL_SRC_CON +
 			     (module - DISP_MODULE_OVL0) * DISP_OVL_INDEX_OFFSET) & (0x1 << i)) {
-				/* DDPMLOG("disable L%d.\n",i%4); */
+				/* DISPPR_FENCE("disable L%d.\n",i%4); */
 				MMProfileLogEx(ddp_mmp_get_events()->ovl_disable,
 					       MMProfileFlagPulse,
 					       ((module - DISP_MODULE_OVL0) << 4) + (i % 4), 0);
@@ -1199,7 +1198,7 @@ int ovl_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STAT
 	int ret = 0;
 
 	if (cmdq_trigger_handle == NULL) {
-		DDPERR("cmdq_trigger_handle is NULL\n");
+		DISPERR("cmdq_trigger_handle is NULL\n");
 		return -1;
 	}
 
@@ -1214,7 +1213,7 @@ int ovl_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_STAT
 				    cmdqRecPoll(cmdq_trigger_handle, DISP_REG_OVL1_STATE_PA, 2,
 						0x3ff);
 			} else {
-				DDPERR("wrong module: %s\n", ddp_get_module_name(module));
+				DISPERR("wrong module: %s\n", ddp_get_module_name(module));
 				return -1;
 			}
 		}
@@ -1232,96 +1231,96 @@ void ovl_dump_reg(DISP_MODULE_ENUM module)
 	unsigned int offset = idx * DISP_OVL_INDEX_OFFSET;
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
-	DDPDUMP("== DISP OVL%d REGS ==\n", idx);
-	DDPDUMP("OVL:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
+	DISPDMP("== DISP OVL%d REGS ==\n", idx);
+	DISPDMP("OVL:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_STA + offset),
 		DISP_REG_GET(DISP_REG_OVL_INTEN + offset),
 		DISP_REG_GET(DISP_REG_OVL_INTSTA + offset), DISP_REG_GET(DISP_REG_OVL_EN + offset));
-	DDPDUMP("OVL:0x010=0x%08x,0x014=0x%08x,0x020=0x%08x,0x024=0x%08x\n",
+	DISPDMP("OVL:0x010=0x%08x,0x014=0x%08x,0x020=0x%08x,0x024=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_TRIG + offset),
 		DISP_REG_GET(DISP_REG_OVL_RST + offset),
 		DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset),
 		DISP_REG_GET(DISP_REG_OVL_DATAPATH_CON + offset));
-	DDPDUMP("OVL:0x028=0x%08x,0x02c=0x%08x\n",
+	DISPDMP("OVL:0x028=0x%08x,0x02c=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_ROI_BGCLR + offset),
 		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset));
 
 	if (src_on & 0x1) {
-		DDPDUMP("OVL:0x030=0x%08x,0x034=0x%08x,0x038=0x%08x,0x03c=0x%08x\n",
+		DISPDMP("OVL:0x030=0x%08x,0x034=0x%08x,0x038=0x%08x,0x03c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L0_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf40=0x%08x,0x044=0x%08x,0x0c0=0x%08x,0x0c8=0x%08x,0x0d0=0x%08x\n",
+		DISPDMP("OVL:0xf40=0x%08x,0x044=0x%08x,0x0c0=0x%08x,0x0c8=0x%08x,0x0d0=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L0_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1e0=0x%08x,0x24c=0x%08x\n",
+		DISPDMP("OVL:0x1e0=0x%08x,0x24c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG + offset));
 	}
 	if (src_on & 0x2) {
-		DDPDUMP("OVL:0x050=0x%08x,0x054=0x%08x,0x058=0x%08x,0x05c=0x%08x\n",
+		DISPDMP("OVL:0x050=0x%08x,0x054=0x%08x,0x058=0x%08x,0x05c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L1_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf60=0x%08x,0x064=0x%08x,0x0e0=0x%08x,0x0e8=0x%08x,0x0f0=0x%08x\n",
+		DISPDMP("OVL:0xf60=0x%08x,0x064=0x%08x,0x0e0=0x%08x,0x0e8=0x%08x,0x0f0=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L1_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1e4=0x%08x,0x250=0x%08x\n",
+		DISPDMP("OVL:0x1e4=0x%08x,0x250=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_DBG + offset));
 	}
 	if (src_on & 0x4) {
-		DDPDUMP("OVL:0x070=0x%08x,0x074=0x%08x,0x078=0x%08x,0x07c=0x%08x\n",
+		DISPDMP("OVL:0x070=0x%08x,0x074=0x%08x,0x078=0x%08x,0x07c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L2_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf80=0x%08x,0x084=0x%08x,0x100=0x%08x,0x110=0x%08x\n",
+		DISPDMP("OVL:0xf80=0x%08x,0x084=0x%08x,0x100=0x%08x,0x110=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L2_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1e8=0x%08x,0x254=0x%08x\n",
+		DISPDMP("OVL:0x1e8=0x%08x,0x254=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_DBG + offset));
 	}
 	if (src_on & 0x8) {
-		DDPDUMP("OVL:0x090=0x%08x,0x094=0x%08x,0x098=0x%08x,0x09c=0x%08x\n",
+		DISPDMP("OVL:0x090=0x%08x,0x094=0x%08x,0x098=0x%08x,0x09c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L3_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_OFFSET + offset));
 
-		DDPDUMP("OVL:0xfa0=0x%08x,0x0a4=0x%08x,0x120=0x%08x,0x130=0x%08x\n",
+		DISPDMP("OVL:0xfa0=0x%08x,0x0a4=0x%08x,0x120=0x%08x,0x130=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L3_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1ec=0x%08x,0x258=0x%08x\n",
+		DISPDMP("OVL:0x1ec=0x%08x,0x258=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_DBG + offset));
 	}
-	DDPDUMP("OVL:0x1d4=0x%08x,0x200=0x%08x,0x240=0x%08x,0x244=0x%08x\n",
+	DISPDMP("OVL:0x1d4=0x%08x,0x200=0x%08x,0x240=0x%08x,0x244=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_DEBUG_MON_SEL + offset),
 		DISP_REG_GET(DISP_REG_OVL_DUMMY_REG + offset),
 		DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG + offset),
 		DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG + offset));
-	DDPDUMP("OVL:0x25c=0x%08x,0x260=0x%08x,0x264=0x%08x,0x268=0x%08x\n",
+	DISPDMP("OVL:0x25c=0x%08x,0x260=0x%08x,0x264=0x%08x,0x268=0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_L0_CLR + offset),
 		DISP_REG_GET(DISP_REG_OVL_L1_CLR + offset),
 		DISP_REG_GET(DISP_REG_OVL_L2_CLR + offset),
@@ -1359,30 +1358,30 @@ static char *ovl_get_state_name(unsigned int status)
 static void ovl_printf_status(int idx, unsigned int status)
 {
 #if 0
-	DDPDUMP("=OVL%d_FLOW_CONTROL_DEBUG=:\n", idx);
-	DDPDUMP("addcon_idle:%d,blend_idle:%d,out_valid:%d,out_ready:%d,out_idle:%d\n",
+	DISPDMP("=OVL%d_FLOW_CONTROL_DEBUG=:\n", idx);
+	DISPDMP("addcon_idle:%d,blend_idle:%d,out_valid:%d,out_ready:%d,out_idle:%d\n",
 		(status >> 10) & (0x1),
 		(status >> 11) & (0x1),
 		(status >> 12) & (0x1), (status >> 13) & (0x1), (status >> 15) & (0x1)
 	    );
-	DDPDUMP("rdma3_idle:%d,rdma2_idle:%d,rdma1_idle:%d, rdma0_idle:%d,rst:%d\n",
+	DISPDMP("rdma3_idle:%d,rdma2_idle:%d,rdma1_idle:%d, rdma0_idle:%d,rst:%d\n",
 		(status >> 16) & (0x1),
 		(status >> 17) & (0x1),
 		(status >> 18) & (0x1), (status >> 19) & (0x1), (status >> 20) & (0x1)
 	    );
-	DDPDUMP("trig:%d,frame_hwrst_done:%d,frame_swrst_done:%d,frame_underrun:%d,frame_done:%d\n",
+	DISPDMP("trig:%d,frame_hwrst_done:%d,frame_swrst_done:%d,frame_underrun:%d,frame_done:%d\n",
 		(status >> 21) & (0x1),
 		(status >> 23) & (0x1),
 		(status >> 24) & (0x1), (status >> 25) & (0x1), (status >> 26) & (0x1)
 	    );
-	DDPDUMP("ovl_running:%d,ovl_start:%d,ovl_clr:%d,reg_update:%d,ovl_upd_reg:%d\n",
+	DISPDMP("ovl_running:%d,ovl_start:%d,ovl_clr:%d,reg_update:%d,ovl_upd_reg:%d\n",
 		(status >> 27) & (0x1),
 		(status >> 28) & (0x1),
 		(status >> 29) & (0x1), (status >> 30) & (0x1), (status >> 31) & (0x1)
 	    );
 #endif
 
-	DDPDUMP("ovl%d, state=0x%x, fms_state:%s\n", idx, status, ovl_get_state_name(status));
+	DISPDMP("ovl%d, state=0x%x, fms_state:%s\n", idx, status, ovl_get_state_name(status));
 }
 
 void ovl_dump_analysis(DISP_MODULE_ENUM module)
@@ -1394,8 +1393,8 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned int offset = index * DISP_OVL_INDEX_OFFSET;
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
-	DDPDUMP("==DISP OVL%d ANALYSIS==\n", index);
-	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),\n",
+	DISPDMP("==DISP OVL%d ANALYSIS==\n", index);
+	DISPDMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),\n",
 		DISP_REG_GET(DISP_REG_OVL_EN + offset),
 		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) & 0x1,
 		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 1) & 0x1,
@@ -1403,7 +1402,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 3) & 0x1,
 		DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) & 0xfff,
 		(DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) >> 16) & 0xfff);
-	DDPDUMP("cur_pos(x=%d,y=%d),layer_hit(%d,%d,%d,%d), ovl_complete_cnt=(%d, %d)\n",
+	DISPDMP("cur_pos(x=%d,y=%d),layer_hit(%d,%d,%d,%d), ovl_complete_cnt=(%d, %d)\n",
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_X, DISP_REG_OVL_ADDCON_DBG + offset),
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_Y, DISP_REG_OVL_ADDCON_DBG + offset),
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_L0_WIN_HIT, DISP_REG_OVL_ADDCON_DBG + offset),
@@ -1416,7 +1415,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 		layer_offset = i * OVL_LAYER_OFFSET + offset;
 		rdma_offset = i * OVL_RDMA_DEBUG_OFFSET + offset;
 		if (src_on & (0x1 << i)) {
-			DDPDUMP
+			DISPDMP
 			     ("layer%d: w=%d,h=%d,off(x=%d,y=%d),pitch=%d,addr=0x%x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
 			     i, DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) & 0xfff,
 			     (DISP_REG_GET(layer_offset + DISP_REG_OVL_L0_SRC_SIZE) >> 16) & 0xfff,
@@ -1436,7 +1435,7 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 										      +
 										      layer_offset),
 			     DISP_REG_GET_FIELD(L_CON_FLD_APHA, DISP_REG_OVL_L0_CON + layer_offset));
-			DDPDUMP("ovl rdma%d status:(en %d)\n", i,
+			DISPDMP("ovl rdma%d status:(en %d)\n", i,
 				DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_CTRL));
 
 		}
@@ -1457,7 +1456,7 @@ static int ovl_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 	int ret = 0;
 
 	if (module != DISP_MODULE_OVL0 && module != DISP_MODULE_OVL1) {
-		DDPDUMP("error, ovl_io unknown module=%d\n", module);
+		DISPDMP("error, ovl_io unknown module=%d\n", module);
 		ret = -1;
 		return ret;
 	}
@@ -1465,7 +1464,7 @@ static int ovl_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 	switch (msg) {
 	case DISP_IOCTL_OVL_ENABLE_CASCADE:
 		{
-			DDPDUMP("enable cascade ovl1\n");
+			DISPDMP("enable cascade ovl1\n");
 			DISP_REG_SET_FIELD(cmdq, DATAPATH_CON_FLD_BGCLR_IN_SEL,
 					   DISP_REG_OVL_DATAPATH_CON, 1);
 
@@ -1479,14 +1478,14 @@ static int ovl_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 		}
 	case DISP_IOCTL_OVL_DISABLE_CASCADE:
 		{
-			DDPDUMP("disable cascade ovl1\n");
+			DISPDMP("disable cascade ovl1\n");
 			DISP_REG_SET_FIELD(cmdq, DATAPATH_CON_FLD_BGCLR_IN_SEL,
 					   DISP_REG_OVL_DATAPATH_CON, 0);
 			/* ovl1_status = DDP_OVL1_STATUS_IDLE; */
 			break;
 		}
 	default:
-		DDPDUMP("error: unknown cmd=%d\n", msg);
+		DISPDMP("error: unknown cmd=%d\n", msg);
 	}
 
 	return ret;

@@ -43,7 +43,7 @@
 #include "ddp_od_reg.h"
 #include "ddp_od_table.h"
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#if defined(COMMON_DISP_LOG)
 #include <disp_debug.h>
 #include <disp_log.h>
 #else

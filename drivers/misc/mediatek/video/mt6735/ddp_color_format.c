@@ -13,7 +13,7 @@
 
 #define LOG_TAG "color_format"
 
-#include "ddp_log.h"
+#include "disp_log.h"
 #include "DpDataType.h"
 
 enum FORMAT_UNIQUE {
@@ -97,7 +97,7 @@ char *fmt_string(DpColorFormat fmt)
 	case eNV12:
 		return "eNV12";
 	default:
-		DDPERR("fmt_string unknown fmt=0x%x\n", fmt);
+		DISPERR("fmt_string unknown fmt=0x%x\n", fmt);
 		break;
 	}
 	return "unknown";
@@ -125,7 +125,7 @@ DpColorFormat fmt_type(int unique, int swap)
 	case FORMAT_UNIQUE_NV21:
 		return swap ? eNV21 : eNV12;
 	default:
-		DDPERR("fmt_type unknown unique=%d, swap=%d\n", unique, swap);
+		DISPERR("fmt_type unknown unique=%d, swap=%d\n", unique, swap);
 		ASSERT(0);
 		break;
 	}

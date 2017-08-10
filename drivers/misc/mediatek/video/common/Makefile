@@ -42,7 +42,7 @@ ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_
 obj-$(CONFIG_MTK_FB) += mtkfb.o
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6755)))
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753)))
 obj-$(CONFIG_MTK_FB) += disp_recorder.o
 obj-$(CONFIG_MTK_FB) += mtkfb_debug.o
 endif

@@ -20,6 +20,7 @@
 #include <linux/mutex.h>
 #include <linux/string.h>
 #include <stdarg.h>
+#include <linux/slab.h>
 #include <mt-plat/met_drv.h>
 
 #include "ddp_mmp.h"
@@ -1048,23 +1049,127 @@ int dprec_mmp_dump_rdma_layer(void *rdma_layer, unsigned int rdma_num)
 }
 
 struct logger_buffer {
-	char (*buffer_ptr)[LOGGER_BUFFER_SIZE];
-	unsigned int len; /* record buffer_ptr offset */
-	unsigned int id;  /* record current count id  */
+	char **buffer_ptr;
+	unsigned int len;
+	unsigned int id;
 	const unsigned int count;
 	const unsigned int size;
 };
 
-static char err_buffer[ERROR_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
-static char fence_buffer[FENCE_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
-static char dbg_buffer[DEBUG_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
-static char dump_buffer[DUMP_BUFFER_COUNT][LOGGER_BUFFER_SIZE];
+static char **err_buffer;
+static char **fence_buffer;
+static char **dbg_buffer;
+static char **dump_buffer;
+static char **status_buffer;
 static struct logger_buffer dprec_logger_buffer[DPREC_LOGGER_PR_NUM] = {
-	{err_buffer, 0, 0, ERROR_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{fence_buffer, 0, 0, FENCE_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{dbg_buffer, 0, 0, DEBUG_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
-	{dump_buffer, 0, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, 0, 0, ERROR_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, 0, 0, FENCE_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, 0, 0, DEBUG_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, 0, 0, DUMP_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
+	{0, 0, 0, STATUS_BUFFER_COUNT, LOGGER_BUFFER_SIZE},
 };
+bool is_buffer_init;
+char *debug_buffer = NULL;
+
+void init_log_buffer(void)
+{
+	int i, buf_size, buf_idx;
+	char *temp_buf;
+
+	/*
+	1. Allocate debug buffer. This buffer used to store the output data.
+	*/
+	debug_buffer = kzalloc(sizeof(char) * DPREC_ERROR_LOG_BUFFER_LENGTH, GFP_KERNEL);
+	if (!debug_buffer)
+		goto err_debug;
+
+	/*
+	2. Allocate Error, Fence, Debug and Dump log buffer slot
+	*/
+	err_buffer = kzalloc(sizeof(char *) * ERROR_BUFFER_COUNT, GFP_KERNEL);
+	if (!err_buffer)
+		goto err_err;
+	fence_buffer = kzalloc(sizeof(char *) * FENCE_BUFFER_COUNT, GFP_KERNEL);
+	if (!fence_buffer)
+		goto err_fence;
+	dbg_buffer = kzalloc(sizeof(char *) * DEBUG_BUFFER_COUNT, GFP_KERNEL);
+	if (!dbg_buffer)
+		goto err_dbg;
+	dump_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
+	if (!dump_buffer)
+		goto err_dump;
+	status_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
+	if (!status_buffer)
+		goto err_status;
+
+	/*
+	3. Allocate log ring buffer.
+	*/
+	buf_size = sizeof(char) * (DPREC_ERROR_LOG_BUFFER_LENGTH - 4096);
+	temp_buf = kzalloc(buf_size, GFP_KERNEL);
+	if (!temp_buf)
+		goto err;
+
+	/*
+	4. Dispatch log ring buffer to each buffer slot
+	*/
+	buf_idx = 0;
+	for (i = 0 ; i < ERROR_BUFFER_COUNT ; i++) {
+		err_buffer[i] = (temp_buf + buf_idx * LOGGER_BUFFER_SIZE);
+		buf_idx++;
+	}
+	dprec_logger_buffer[0].buffer_ptr = err_buffer;
+
+	for (i = 0 ; i < FENCE_BUFFER_COUNT ; i++) {
+		fence_buffer[i] = (temp_buf + buf_idx * LOGGER_BUFFER_SIZE);
+		buf_idx++;
+	}
+	dprec_logger_buffer[1].buffer_ptr = fence_buffer;
+
+	for (i = 0 ; i < DEBUG_BUFFER_COUNT ; i++) {
+		dbg_buffer[i] = (temp_buf + buf_idx * LOGGER_BUFFER_SIZE);
+		buf_idx++;
+	}
+	dprec_logger_buffer[2].buffer_ptr = dbg_buffer;
+
+	for (i = 0 ; i < DUMP_BUFFER_COUNT ; i++) {
+		dump_buffer[i] = (temp_buf + buf_idx * LOGGER_BUFFER_SIZE);
+		buf_idx++;
+	}
+	dprec_logger_buffer[3].buffer_ptr = dump_buffer;
+
+	for (i = 0 ; i < STATUS_BUFFER_COUNT ; i++) {
+		status_buffer[i] = (temp_buf + buf_idx * LOGGER_BUFFER_SIZE);
+		buf_idx++;
+	}
+	dprec_logger_buffer[4].buffer_ptr = status_buffer;
+
+	is_buffer_init = true;
+	pr_warn("[DISP]%s success\n", __func__);
+	return;
+
+err:
+	kfree(status_buffer);
+err_status:
+	kfree(dump_buffer);
+	status_buffer = 0;
+err_dump:
+	kfree(dbg_buffer);
+	dump_buffer = 0;
+err_dbg:
+	kfree(fence_buffer);
+	dbg_buffer = 0;
+err_fence:
+	kfree(err_buffer);
+	fence_buffer = 0;
+err_err:
+	kfree(debug_buffer);
+	err_buffer = 0;
+err_debug:
+	debug_buffer = 0;
+
+	pr_err("[DISP]%s: log buffer allocation fail\n", __func__);
+}
 
 DPREC_LOGGER_PR_TYPE log_type = DPREC_LOGGER_ERROR;
 unsigned int type_offset = 0;
@@ -1072,28 +1177,28 @@ unsigned int type_buffer_len = 0;
 
 void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)err_buffer;
+	*addr = (unsigned long)err_buffer[0];
 	*size = ERROR_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
 	*start = 0;
 }
 
 void get_disp_fence_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)fence_buffer;
+	*addr = (unsigned long)fence_buffer[0];
 	*size = FENCE_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
 	*start = 0;
 }
 
 void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)dbg_buffer;
+	*addr = (unsigned long)dbg_buffer[0];
 	*size = DEBUG_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
 	*start = 0;
 }
 
 void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)dump_buffer;
+	*addr = (unsigned long)dump_buffer[0];
 	*size = DUMP_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
 	*start = 0;
 }
@@ -1226,11 +1331,14 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	unsigned long flags = 0;
 	uint64_t time = get_current_time_us();
 	unsigned long rem_nsec;
-	char (*buf_arr)[LOGGER_BUFFER_SIZE];
+	char **buf_arr;
 	char *buf = NULL;
 	int len = 0;
 
 	if (type >= DPREC_LOGGER_PR_NUM)
+		return -1;
+
+	if (!is_buffer_init)
 		return -1;
 
 	spin_lock_irqsave(&dprec_logger_spinlock, flags);
@@ -1239,7 +1347,7 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 		dprec_logger_buffer[type].id = dprec_logger_buffer[type].id % dprec_logger_buffer[type].count;
 		dprec_logger_buffer[type].len = dprec_logger_buffer[type].size;
 	}
-	buf_arr = (char (*)[LOGGER_BUFFER_SIZE])dprec_logger_buffer[type].buffer_ptr;
+	buf_arr = dprec_logger_buffer[type].buffer_ptr;
 	buf = buf_arr[dprec_logger_buffer[type].id] +
 		dprec_logger_buffer[type].size - dprec_logger_buffer[type].len;
 	len = dprec_logger_buffer[type].len;
@@ -1262,6 +1370,14 @@ int dprec_logger_pr(unsigned int type, char *fmt, ...)
 	return n;
 }
 
+char *get_dprec_status_ptr(int buffer_idx)
+{
+	if (buffer_idx < dprec_logger_buffer[DPREC_LOGGER_STATUS].count)
+		return dprec_logger_buffer[DPREC_LOGGER_STATUS].buffer_ptr[buffer_idx];
+	else
+		return NULL;
+}
+
 static char *_logger_pr_type_spy(DPREC_LOGGER_PR_TYPE type)
 {
 	switch (type) {
@@ -1273,6 +1389,8 @@ static char *_logger_pr_type_spy(DPREC_LOGGER_PR_TYPE type)
 		return "dbg";
 	case DPREC_LOGGER_DUMP:
 		return "dump";
+	case DPREC_LOGGER_STATUS:
+		return "status";
 	default:
 		return "unknown";
 	}
@@ -1300,11 +1418,15 @@ int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int len)
 	int n = 0;
 	int i;
 	int c = dprec_logger_buffer[type].id;
-	char (*buf_arr)[LOGGER_BUFFER_SIZE];
+	char **buf_arr;
 
 	if (type >= DPREC_LOGGER_PR_NUM || len < 0)
 		return 0;
-	buf_arr = (char (*)[LOGGER_BUFFER_SIZE])dprec_logger_buffer[type].buffer_ptr;
+
+	if (!is_buffer_init)
+		return 0;
+
+	buf_arr = dprec_logger_buffer[type].buffer_ptr;
 
 	for (i = 0; i < dprec_logger_buffer[type].count; i++) {
 		c++;

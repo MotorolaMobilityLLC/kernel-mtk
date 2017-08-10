@@ -19,16 +19,6 @@
 #include "disp_event.h"
 #include "ddp_info.h"
 
-#define dprec_string_max_length         512
-#define dprec_dump_max_length           (1024*16*4)
-#define LOGGER_BUFFER_SIZE              (16*1024)
-#define ERROR_BUFFER_COUNT              2
-#define FENCE_BUFFER_COUNT              22
-#define DEBUG_BUFFER_COUNT              4
-#define DUMP_BUFFER_COUNT               2
-#define DPREC_ERROR_LOG_BUFFER_LENGTH   \
-	(1024*16 + LOGGER_BUFFER_SIZE*(ERROR_BUFFER_COUNT+FENCE_BUFFER_COUNT+DEBUG_BUFFER_COUNT+DUMP_BUFFER_COUNT))
-
 #define DPREC_LOGGER_LEVEL_ALL		0xFFFFFFFF
 #define DPREC_LOGGER_LEVEL_DEFAULT	(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
 #define DPREC_LOGGER_LEVEL_UART_LOG	(0x1<<0)
@@ -161,6 +151,7 @@ typedef enum {
 	DPREC_LOGGER_FENCE,
 	DPREC_LOGGER_DEBUG,
 	DPREC_LOGGER_DUMP,
+	DPREC_LOGGER_STATUS,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
@@ -212,5 +203,6 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
 int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l, unsigned int session);
 ssize_t dprec_read_from_buffer(void __user *to, size_t count, loff_t *ppos,
 				const void *from, size_t available);
-
+void init_log_buffer(void);
+char *get_dprec_status_ptr(int buffer_idx);
 #endif

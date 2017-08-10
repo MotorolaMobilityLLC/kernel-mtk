@@ -25,13 +25,12 @@
 #include "ddp_path.h"
 #include "ddp_irq.h"
 #include "ddp_drv.h"
-#include "ddp_debug.h"
 #include "ddp_manager.h"
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_ovl.h"
 
-#include "ddp_log.h"
+#include "disp_log.h"
 #include "ddp_info.h"
 #include "mtkfb_fence.h"
 #include "primary_display.h"
@@ -219,7 +218,7 @@ static int module_power_off(DISP_MODULE_ENUM module)
 
 	if (ddp_modules_driver[module] != 0) {
 		if (ddp_modules_driver[module]->power_off != 0) {
-			DISP_LOG_V("%s power off\n", ddp_get_module_name(module));
+			DISPRCD("%s power off\n", ddp_get_module_name(module));
 			ddp_modules_driver[module]->power_off(module, NULL);	/* now just 0; */
 		}
 	}
@@ -234,7 +233,7 @@ static int module_power_on(DISP_MODULE_ENUM module)
 	}
 	if (ddp_modules_driver[module] != 0) {
 		if (ddp_modules_driver[module]->power_on != 0) {
-			DISP_LOG_V("%s power on\n", ddp_get_module_name(module));
+			DISPRCD("%s power on\n", ddp_get_module_name(module));
 			ddp_modules_driver[module]->power_on(module, NULL);	/* now just 0; */
 		}
 	}
@@ -285,9 +284,9 @@ static int assign_default_irqs_table(DDP_SCENARIO_ENUM scenario, DDP_IRQ_EVENT_M
 		idx = 3;
 		break;
 	default:
-		DISP_LOG_E("unknown scenario %d\n", scenario);
+		DISPERR("unknown scenario %d\n", scenario);
 	}
-	DISP_LOG_I("assign default irqs table index %d\n", idx);
+	DISPDBG("assign default irqs table index %d\n", idx);
 	memcpy(irq_events, ddp_irq_event_list[idx], sizeof(ddp_irq_event_list[idx]));
 	return 0;
 }
@@ -310,7 +309,7 @@ static int acquire_mutex(DDP_SCENARIO_ENUM scenario)
 		++mutex_id;
 	}
 	ASSERT(mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
-	DISP_LOG_I("scenario %s acquire mutex %d , left mutex 0x%x!\n",
+	DISPDBG("scenario %s acquire mutex %d , left mutex 0x%x!\n",
 		   ddp_get_scenario_name(scenario), mutex_id, content->mutex_idx);
 	return mutex_id;
 }
@@ -321,7 +320,7 @@ static int release_mutex(int mutex_idx)
 
 	ASSERT(mutex_idx < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 	content->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
-	DISP_LOG_I("release mutex %d , left mutex 0x%x!\n", mutex_idx, content->mutex_idx);
+	DISPDBG("release mutex %d , left mutex 0x%x!\n", mutex_idx, content->mutex_idx);
 	return 0;
 }
 
@@ -332,7 +331,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 	handle->mode = is_vdo_mode ? DDP_VIDEO_MODE : DDP_CMD_MODE;
-/*    DISP_LOG_I("set scenario %s mode: %s\n",ddp_get_scenario_name(handle->scenario),
+/*    DISPDBG("set scenario %s mode: %s\n",ddp_get_scenario_name(handle->scenario),
 		is_vdo_mode ? "Video_Mode":"Cmd_Mode");*/
 	return 0;
 }
@@ -353,11 +352,11 @@ disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmd
 		path_handle->scenario = scenario;
 		path_handle->hwmutexid = acquire_mutex(scenario);
 		assign_default_irqs_table(scenario, path_handle->irq_event_map);
-		DISP_LOG_I("create handle %p on scenario %s\n", path_handle,
+		DISPDBG("create handle %p on scenario %s\n", path_handle,
 			   ddp_get_scenario_name(scenario));
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
-/*				DISP_LOG_I(" scenario %s include module %s\n",
+/*				DISPDBG(" scenario %s include module %s\n",
 					ddp_get_scenario_name(scenario),ddp_get_module_name(module_name));*/
 			content->module_usage_table[module_name]++;
 			content->module_path_table[module_name] = path_handle;
@@ -366,7 +365,7 @@ disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmd
 		content->handle_cnt++;
 		content->handle_pool[path_handle->hwmutexid] = path_handle;
 	} else {
-		DISP_LOG_E("Fail to create handle on scenario %s\n",
+		DISPERR("Fail to create handle on scenario %s\n",
 			   ddp_get_scenario_name(scenario));
 	}
 	return path_handle;
@@ -394,7 +393,7 @@ int dpmgr_modify_path_power_on_new_modules(disp_path_handle dp_handle,
 		module_name = new_modules[i];
 		if (content->module_usage_table[module_name] == 0) {
 			content->module_usage_table[module_name]++;
-			DISP_LOG_D("add module %s\n", ddp_get_module_name(module_name));
+			DISPDBG("add module %s\n", ddp_get_module_name(module_name));
 
 			content->module_path_table[module_name] = handle;
 			if (!sw_only)
@@ -431,7 +430,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 
 	handle->cmdqhandle = cmdq_handle;
 	handle->scenario = new_scenario;
-	DISP_LOG_I("modify handle %p from %s to %s\n", handle, ddp_get_scenario_name(old_scenario),
+	DISPDBG("modify handle %p from %s to %s\n", handle, ddp_get_scenario_name(old_scenario),
 		   ddp_get_scenario_name(new_scenario));
 
 	for (i = 0; i < new_module_num; i++) {
@@ -439,7 +438,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 		module[module_name]++;
 		if (content->module_usage_table[module_name] == 0) {
 			content->module_usage_table[module_name]++;
-			DISP_LOG_D("add module %s\n", ddp_get_module_name(module_name));
+			DISPDBG("add module %s\n", ddp_get_module_name(module_name));
 
 			content->module_path_table[module_name] = handle;
 			module_power_on(module_name);
@@ -450,7 +449,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 		module_name = old_modules[i];
 		if (module[module_name] == 0) {
 			content->module_usage_table[module_name]--;
-			DISP_LOG_D("remove module %s\n", ddp_get_module_name(module_name));
+			DISPDBG("remove module %s\n", ddp_get_module_name(module_name));
 			content->module_path_table[module_name] = NULL;
 			module_power_off(module_name);
 		}
@@ -482,7 +481,7 @@ int dpmgr_modify_path_power_off_old_modules(DDP_SCENARIO_ENUM old_scenario,
 		module_name = old_modules[i];
 		if (!ddp_is_module_in_scenario(new_scenario, module_name)) {
 			content->module_usage_table[module_name]--;
-			DISP_LOG_D("remove module %s\n", ddp_get_module_name(module_name));
+			DISPDBG("remove module %s\n", ddp_get_module_name(module_name));
 			content->module_path_table[module_name] = NULL;
 			if (!sw_only)
 				module_power_off(module_name);
@@ -508,7 +507,7 @@ int dpmgr_destroy_path(disp_path_handle dp_handle, cmdqRecHandle cmdq_handle)
 	module_num = ddp_get_module_num(handle->scenario);
 	content = _get_context();
 
-	DISP_LOG_I("destroy path handle %p on scenario %s\n", handle,
+	DISPDBG("destroy path handle %p on scenario %s\n", handle,
 		   ddp_get_scenario_name(handle->scenario));
 	if (handle != NULL) {
 		release_mutex(handle->hwmutexid);
@@ -547,7 +546,7 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, ENGINE_DUMP engine, void *
 	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 1) {
-		DDPERR("dpmgr_path_add_memout error, wdma is already in scenario=%s\n",
+		DISPERR("dpmgr_path_add_memout error, wdma is already in scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		/* ASSERT(0); */
 		return -1;
@@ -589,7 +588,7 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	wdma = ddp_is_scenario_on_primary(handle->scenario) ? DISP_MODULE_WDMA0 : DISP_MODULE_WDMA1;
 
 	if (ddp_is_module_in_scenario(handle->scenario, wdma) == 0) {
-		DDPERR("dpmgr_path_remove_memout error, wdma is not in scenario=%s\n",
+		DISPERR("dpmgr_path_remove_memout error, wdma is not in scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		/* ASSERT(0); */
 		return -1;
@@ -634,7 +633,7 @@ int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 	handle = (ddp_path_handle) dp_handle;
 
 	if ((handle->scenario != DDP_SCENARIO_SUB_RDMA1_DISP) && (handle->scenario != DDP_SCENARIO_SUB_DISP)) {
-		DDPERR("dpmgr_insert_ovl1_sub error, handle->scenario=%s\n",
+		DISPERR("dpmgr_insert_ovl1_sub error, handle->scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		return -1;
 	}
@@ -642,7 +641,7 @@ int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 1)
 		return -1;
 
-	DDPMSG("dpmgr_insert_ovl1_sub\n");
+	DISPMSG("dpmgr_insert_ovl1_sub\n");
 	/* update contxt */
 	context = _get_context();
 
@@ -679,7 +678,7 @@ int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 
 	if ((handle->scenario != DDP_SCENARIO_SUB_RDMA1_DISP)
 	    && (handle->scenario != DDP_SCENARIO_SUB_DISP)) {
-		DDPERR("dpmgr_remove_ovl1_sub error, handle->scenario=%s\n",
+		DISPERR("dpmgr_remove_ovl1_sub error, handle->scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		return -1;
 	}
@@ -687,7 +686,7 @@ int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 0)
 		return -1;
 
-	DDPMSG("dpmgr_remove_ovl1_sub\n");
+	DISPMSG("dpmgr_remove_ovl1_sub\n");
 	/* update contxt */
 	context = _get_context();
 
@@ -738,20 +737,20 @@ int dpmgr_path_enable_cascade(disp_path_handle dp_handle, void *cmdq_handle)
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_ALL) &&
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_DITHER_MEMOUT) &&
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_OVL_MEMOUT)) {
-		DDPERR("dpmgr_path_enable_cascade error, handle->scenario=%s\n",
+		DISPERR("dpmgr_path_enable_cascade error, handle->scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		/* ASSERT(0); */
 		return -1;
 	}
 
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 1) {
-		/* DDPERR("dpmgr_path_enable_cascade error, OVL1 is already in scenario=%s\n",
+		/* DISPERR("dpmgr_path_enable_cascade error, OVL1 is already in scenario=%s\n",
 				ddp_get_scenario_name(handle->scenario)); */
 		/* ASSERT(0); */
 		ovl_set_status(DDP_OVL1_STATUS_PRIMARY);
 		return -1;
 	}
-	DDPMSG("dpmgr_path_enable_cascade %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("dpmgr_path_enable_cascade %s\n", ddp_get_scenario_name(handle->scenario));
 	/* update contxt */
 	context = _get_context();
 
@@ -804,20 +803,20 @@ int dpmgr_path_disable_cascade(disp_path_handle dp_handle, void *cmdq_handle)
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_ALL) &&
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_DITHER_MEMOUT) &&
 	    (handle->scenario != DDP_SCENARIO_PRIMARY_OVL_MEMOUT)) {
-		DDPERR("dpmgr_path_disable_cascade error, handle->scenario=%s\n",
+		DISPERR("dpmgr_path_disable_cascade error, handle->scenario=%s\n",
 		       ddp_get_scenario_name(handle->scenario));
 		/* ASSERT(0); */
 		return -1;
 	}
 
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 0) {
-		/* DDPERR("dpmgr_path_disable_cascade error, OVL1 is not in scenario=%s\n",
+		/* DISPERR("dpmgr_path_disable_cascade error, OVL1 is not in scenario=%s\n",
 				ddp_get_scenario_name(handle->scenario));
 		 */
 		/* ASSERT(0); */
 		return -1;
 	}
-	DDPMSG("dpmgr_path_disable_cascade %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("dpmgr_path_disable_cascade %s\n", ddp_get_scenario_name(handle->scenario));
 	/* update contxt */
 	context = _get_context();
 
@@ -867,7 +866,7 @@ int dpmgr_path_set_dst_module(disp_path_handle dp_handle, DISP_MODULE_ENUM dst_m
 	handle = (ddp_path_handle) dp_handle;
 
 	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
-/*    DISP_LOG_I("set dst module on scenario %s, module %s\n",
+/*    DISPDBG("set dst module on scenario %s, module %s\n",
 		ddp_get_scenario_name(handle->scenario),ddp_get_module_name(dst_module));*/
 	return ddp_set_dst_module(handle->scenario, dst_module);
 }
@@ -892,7 +891,7 @@ DISP_MODULE_ENUM dpmgr_path_get_dst_module(disp_path_handle dp_handle)
 	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
 	dst_module = ddp_get_dst_module(handle->scenario);
 
-	DISP_LOG_V("get dst module on scenario %s, module %s\n",
+	DISPRCD("get dst module on scenario %s, module %s\n",
 		   ddp_get_scenario_name(handle->scenario), ddp_get_module_name(dst_module));
 	return dst_module;
 }
@@ -906,7 +905,7 @@ int dpmgr_path_connect(disp_path_handle dp_handle, int encmdq)
 	handle = (ddp_path_handle) dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("dpmgr_path_connect on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("dpmgr_path_connect on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 
 	ddp_connect_path(handle->scenario, cmdqHandle);
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdqHandle);
@@ -923,7 +922,7 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	handle = (ddp_path_handle) dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("dpmgr_path_disconnect on scenario %s\n",
+	DISPDBG("dpmgr_path_disconnect on scenario %s\n",
 		   ddp_get_scenario_name(handle->scenario));
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
@@ -946,7 +945,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* open top clock */
 	path_top_clock_on();
 	/* seting mutex */
@@ -960,7 +959,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->init != 0) {
-				/* DISP_LOG_I("scenario %s init module  %s\n",ddp_get_scenario_name(handle->scenario),
+				/* DISPDBG("scenario %s init module  %s\n",ddp_get_scenario_name(handle->scenario),
 						ddp_get_module_name(module_name));*/
 				ddp_modules_driver[module_name]->init(module_name, cmdqHandle);
 			}
@@ -990,7 +989,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	ddp_disconnect_path(handle->scenario, cmdqHandle);
@@ -998,7 +997,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->deinit != 0) {
-				DISP_LOG_I("scenario %s deinit module  %s\n",
+				DISPDBG("scenario %s deinit module  %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->deinit(module_name, cmdqHandle);
@@ -1028,12 +1027,12 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->start != 0) {
-				DISP_LOG_V("scenario %s start module  %s\n",
+				DISPRCD("scenario %s start module  %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
@@ -1059,12 +1058,12 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path stop on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path stop on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->stop != 0) {
-				DISP_LOG_V("scenario %s  stop module %s\n",
+				DISPRCD("scenario %s  stop module %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->stop(module_name, cmdqHandle);
@@ -1089,7 +1088,7 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, DDP_IOCTL_NA
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("path IOCTL on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path IOCTL on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
@@ -1121,7 +1120,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("path enable irq on scenario %s, level %d\n",
+	DISPDBG("path enable irq on scenario %s, level %d\n",
 		   ddp_get_scenario_name(handle->scenario), irq_level);
 
 	if (irq_level != DDP_IRQ_LEVEL_ALL)
@@ -1133,7 +1132,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->enable_irq != 0) {
-				DISP_LOG_I("scenario %s, module %s enable irq level %d\n",
+				DISPDBG("scenario %s, module %s enable irq level %d\n",
 				       ddp_get_scenario_name(handle->scenario),
 				       ddp_get_module_name(module_name), irq_level);
 				ret +=
@@ -1163,7 +1162,7 @@ int dpmgr_reset_module_handle(disp_path_handle dp_handle)
 
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
-		DISP_LOG_I(" scenario %s reset module %s  handle\n", ddp_get_scenario_name(path_handle->scenario),
+		DISPDBG(" scenario %s reset module %s  handle\n", ddp_get_scenario_name(path_handle->scenario),
 			ddp_get_module_name(module_name));
 		content->module_path_table[module_name] = path_handle;
 	}
@@ -1188,7 +1187,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path reset on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path reset on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* first reset mutex */
 	ddp_mutex_reset(handle->hwmutexid, cmdqHandle);
 
@@ -1196,7 +1195,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->reset != 0) {
-				DISP_LOG_I("scenario %s  reset module %s\n",
+				DISPDBG("scenario %s  reset module %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ret = ddp_modules_driver[module_name]->reset(module_name, cmdqHandle);
@@ -1268,20 +1267,20 @@ int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, 
 	/* switch between single and dual ovl mode */
 #ifdef OVL_CASCADE_SUPPORT
 	if ((config->ovl_dirty == 1) && (ovl_get_status() == DDP_OVL1_STATUS_IDLE)/* && dpmgr_layer_num(config)>=4 */) {
-		/* DDPMSG("cascade switch, call dpmgr_path_enable_cascade() in dpmgr_path_config()"); */
+		/* DISPMSG("cascade switch, call dpmgr_path_enable_cascade() in dpmgr_path_config()"); */
 		dpmgr_path_enable_cascade(dp_handle, cmdq_handle);
 		module_num = ddp_get_module_num(handle->scenario);
 	} else if ((config->ovl_dirty == 1) && (ovl_get_status() == DDP_OVL1_STATUS_SUB_REQUESTING)) {
 		int enable_layers = dpmgr_layer_num(config);
 
 		if (enable_layers <= 4) {
-			DDPMSG("cascade switch, call dpmgr_path_disable_cascade() in dpmgr_path_config() %d\n",
+			DISPMSG("cascade switch, call dpmgr_path_disable_cascade() in dpmgr_path_config() %d\n",
 			       enable_layers);
 			dpmgr_path_disable_cascade(dp_handle, cmdq_handle);
 			module_num = ddp_get_module_num(handle->scenario);
 			ovl_set_status(DDP_OVL1_STATUS_PRIMARY_RELEASING);
 		} else {
-			DDPMSG("cascade: in path_config(), split ovl1 fail, enable_layers=%d\n",
+			DISPMSG("cascade: in path_config(), split ovl1 fail, enable_layers=%d\n",
 			       enable_layers);
 		}
 	}
@@ -1300,7 +1299,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, 
 
 				if (ddp_modules_driver[module_name]->bypass != NULL)
 					ddp_modules_driver[module_name]->bypass(module_name, 1);
-					/* DDPMSG("-- bypass %s\n", ddp_get_module_name(module_name)); */
+					/* DISPMSG("-- bypass %s\n", ddp_get_module_name(module_name)); */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			}
 #endif
@@ -1309,7 +1308,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, 
 #else
 			if (ddp_modules_driver[module_name]->config != 0) {
 #endif
-				DISP_LOG_V("scenario %s  config module %s\n",
+				DISPRCD("scenario %s  config module %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->config(module_name, config,
@@ -1327,7 +1326,7 @@ int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, 
 	    disp_get_session_number() > 1 &&
 	    ovl_get_status() != DDP_OVL1_STATUS_SUB &&
 	    ovl_get_status() != DDP_OVL1_STATUS_IDLE) {	/* all 8 layer disabled */
-		DDPMSG("disable cascade if 8 layer all disabled!\n");
+		DISPMSG("disable cascade if 8 layer all disabled!\n");
 		allLayerDisabled = 1;
 		ret = dpmgr_path_disable_cascade(dp_handle, cmdq_handle);
 		allLayerDisabled = 0;
@@ -1384,7 +1383,7 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle,
 	modules = ddp_get_scenario_list(scenario);
 	module_num = ddp_get_module_num(scenario);
 
-	DISP_LOG_D("path build cmdq on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("path build cmdq on scenario %s\n", ddp_get_scenario_name(scenario));
 
 #if defined(MANUAL_MUTEX_HW_DCM)
 	if (state == CMDQ_BEFORE_STREAM_SOF)
@@ -1398,7 +1397,7 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle, void *trigger_loop_handle,
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->build_cmdq != 0) {
-				DISP_LOG_D("%s build cmdq, state=%d\n", ddp_get_module_name(module_name), state);
+				DISPDBG("%s build cmdq, state=%d\n", ddp_get_module_name(module_name), state);
 				/* now just 0; */
 				ret = ddp_modules_driver[module_name]->build_cmdq(module_name,
 										  trigger_loop_handle, state);
@@ -1420,7 +1419,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 
-	DISP_LOG_V("dpmgr_path_trigger on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPRCD("dpmgr_path_trigger on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1430,7 +1429,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->trigger != 0) {
-				DISP_LOG_V("%s trigger\n", ddp_get_module_name(module_name));
+				DISPRCD("%s trigger\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->trigger(module_name,
 									 trigger_loop_handle);
 			}
@@ -1448,7 +1447,7 @@ int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq)
 	handle = (ddp_path_handle) dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISP_LOG_I("path flush on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path flush on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	return ddp_mutex_enable(handle->hwmutexid, handle->scenario, cmdqHandle);
 }
 
@@ -1465,12 +1464,12 @@ int dpmgr_wdma_path_force_power_off(void)
 	int *modules = ddp_get_scenario_list(scenario);
 	int module_num = ddp_get_module_num(scenario);
 
-	DISP_LOG_I("wdma path power off on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("wdma path power off on scenario %s\n", ddp_get_scenario_name(scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_off != 0) {
-				DISP_LOG_V(" %s power off\n", ddp_get_module_name(module_name));
+				DISPRCD(" %s power off\n", ddp_get_module_name(module_name));
 				/* now just 0; */
 				ddp_modules_driver[module_name]->power_off(module_name, NULL);
 			}
@@ -1494,12 +1493,12 @@ int dpmgr_wdma_path_force_power_on(void)
 	int *modules = ddp_get_scenario_list(scenario);
 	int module_num = ddp_get_module_num(scenario);
 
-	DISP_LOG_I("wdma path power on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("wdma path power on scenario %s\n", ddp_get_scenario_name(scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_on != 0) {
-				DISP_LOG_V("%s power on\n", ddp_get_module_name(module_name));
+				DISPRCD("%s power on\n", ddp_get_module_name(module_name));
 				/* now just 0; */
 				ddp_modules_driver[module_name]->power_on(module_name, NULL);
 			}
@@ -1522,12 +1521,12 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_off != 0) {
-				DISP_LOG_V(" %s power off\n", ddp_get_module_name(module_name));
+				DISPRCD(" %s power off\n", ddp_get_module_name(module_name));
 				/* now just 0; */
 				ddp_modules_driver[module_name]->power_off(module_name, encmdq ?
 									   handle->cmdqhandle : NULL);
@@ -1552,13 +1551,13 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_on != 0) {
-				DISP_LOG_V("%s power on\n", ddp_get_module_name(module_name));
+				DISPRCD("%s power on\n", ddp_get_module_name(module_name));
 				/* now just 0; */
 				ddp_modules_driver[module_name]->power_on(module_name, encmdq ?
 									  handle->cmdqhandle : NULL);
@@ -1587,7 +1586,7 @@ int dpmgr_path_dsi_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	module_name = dst_module;
 	if (ddp_modules_driver[module_name] != 0) {
 		if (ddp_modules_driver[module_name]->power_off != 0) {
-			DISP_LOG_V(" %s power off\n", ddp_get_module_name(module_name));
+			DISPRCD(" %s power off\n", ddp_get_module_name(module_name));
 			/* now just 0; */
 			ddp_modules_driver[module_name]->power_off(module_name, encmdq ? handle->cmdqhandle : NULL);
 		}
@@ -1613,7 +1612,7 @@ int dpmgr_path_dsi_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	module_name = dst_module;
 	if (ddp_modules_driver[module_name] != 0) {
 		if (ddp_modules_driver[module_name]->power_on != 0) {
-			DISP_LOG_V("%s power on\n", ddp_get_module_name(module_name));
+			DISPRCD("%s power on\n", ddp_get_module_name(module_name));
 			/* now just 0; */
 			ddp_modules_driver[module_name]->power_on(module_name, encmdq ? handle->cmdqhandle : NULL);
 		}
@@ -1643,7 +1642,7 @@ int dpmgr_path_dsi_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned i
 		ddp_modules_driver[module_name]->ioctl(module_name, cmdq_handle,
 								DDP_DSI_IDLE_CLK_CLOSED, (unsigned long *)&level);
 	else
-		DISP_LOG_E("dpmgr_path_dsi_off unknown module %d", module_name);
+		DISPERR("dpmgr_path_dsi_off unknown module %d", module_name);
 
 	ddp_path_lp_top_clock_off();
 	return 0;
@@ -1670,7 +1669,7 @@ int dpmgr_path_dsi_on(disp_path_handle dp_handle, void *cmdq_handle, unsigned in
 		ddp_modules_driver[module_name]->ioctl(module_name, cmdq_handle,
 									DDP_DSI_IDLE_CLK_OPEN, (unsigned long *)&level);
 	else
-		DISP_LOG_E("dpmgr_path_dsi_on unknown module %d", module_name);
+		DISPERR("dpmgr_path_dsi_on unknown module %d", module_name);
 
 	return 0;
 }
@@ -1688,7 +1687,7 @@ int dpmgr_path_idle_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned 
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("ddp_idle off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("ddp_idle off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 
 	/* For DSI CMD mode, do not clock pwm_26M, used to make sure MM clock off but MTCMOS on */
 	if (primary_display_is_video_mode() == 0) {
@@ -1703,7 +1702,7 @@ int dpmgr_path_idle_off(disp_path_handle dp_handle, void *cmdq_handle, unsigned 
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_off != 0) {
-				DISP_LOG_V(" %s power off\n", ddp_get_module_name(module_name));
+				DISPRCD(" %s power off\n", ddp_get_module_name(module_name));
 				if (!((module_name == DISP_MODULE_DSIDUAL) || (module_name == DISP_MODULE_DSI0) ||
 					      (module_name == DISP_MODULE_DSI1)))
 					ddp_modules_driver[module_name]->power_off(module_name, cmdq_handle);
@@ -1734,13 +1733,13 @@ int dpmgr_path_idle_on(disp_path_handle dp_handle, void *cmdq_handle, unsigned i
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_I("ddp_idle on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("ddp_idle on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->power_on != 0) {
-				DISP_LOG_V("%s power on\n", ddp_get_module_name(module_name));
+				DISPRCD("%s power on\n", ddp_get_module_name(module_name));
 				if (!((module_name == DISP_MODULE_DSIDUAL) || (module_name == DISP_MODULE_DSI0) ||
 					      (module_name == DISP_MODULE_DSI1)))
 					ddp_modules_driver[module_name]->power_on(module_name, cmdq_handle);
@@ -1841,7 +1840,7 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 		else if (is_module_in_path(DISP_MODULE_COLOR1, handle))
 			dst = DISP_MODULE_COLOR1;
 		else
-			DISP_LOG_W("dpmgr_path_user_cmd color is not on this path\n");
+			pr_warn("dpmgr_path_user_cmd color is not on this path\n");
 
 		if (dst != DISP_MODULE_UNKNOWN) {
 			if (ddp_modules_driver[dst]->cmd != NULL)
@@ -1861,7 +1860,7 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 #endif
 	default:
 	{
-		DISP_LOG_W("dpmgr_path_user_cmd io not supported\n");
+		pr_warn("dpmgr_path_user_cmd io not supported\n");
 		break;
 	}
 	}
@@ -1897,13 +1896,13 @@ int dpmgr_path_is_busy(disp_path_handle dp_handle)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISP_LOG_V("path check busy on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPRCD("path check busy on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->is_busy != 0) {
 				if (ddp_modules_driver[module_name]->is_busy(module_name)) {
-					DISP_LOG_V("%s is busy\n",
+					DISPRCD("%s is busy\n",
 						   ddp_get_module_name(module_name));
 					return 1;
 				}
@@ -1926,12 +1925,12 @@ int dpmgr_set_lcm_utils(disp_path_handle dp_handle, void *lcm_drv)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	/* DISP_LOG_V("path set lcm drv handle %p\n",handle);*/
+	/* DISPRCD("path set lcm drv handle %p\n",handle);*/
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if ((ddp_modules_driver[module_name]->set_lcm_utils != 0) && lcm_drv)
-				/* DISP_LOG_I("%s set lcm utils\n",ddp_get_module_name(module_name));*/
+				/* DISPDBG("%s set lcm utils\n",ddp_get_module_name(module_name));*/
 				ddp_modules_driver[module_name]->set_lcm_utils(module_name, lcm_drv); /* now just 0; */
 
 		}
@@ -1948,7 +1947,7 @@ int dpmgr_enable_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	handle = (ddp_path_handle) dp_handle;
 	wq_handle = &handle->wq_list[event];
 
-	DISP_LOG_I("enable event %s on scenario %s, irtbit 0x%x\n",
+	DISPDBG("enable event %s on scenario %s, irtbit 0x%x\n",
 		   path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario), handle->irq_event_map[event].irq_bit);
 	if (!wq_handle->init) {
@@ -1970,12 +1969,12 @@ int dpmgr_map_event_to_irq(disp_path_handle dp_handle, DISP_PATH_EVENT event, DD
 	irq_table = handle->irq_event_map;
 
 	if (event < DISP_PATH_EVENT_NUM) {
-		DISP_LOG_I("map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
+		DISPDBG("map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
 			   irq_bit, ddp_get_scenario_name(handle->scenario));
 		irq_table[event].irq_bit = irq_bit;
 		return 0;
 	}
-	DISP_LOG_E("fail to map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
+	DISPERR("fail to map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
 		   irq_bit, ddp_get_scenario_name(handle->scenario));
 	return -1;
 }
@@ -1989,7 +1988,7 @@ int dpmgr_disable_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 
-	DISP_LOG_I("disable event %s on scenario %s\n", path_event_name(event),
+	DISPDBG("disable event %s on scenario %s\n", path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario));
 	wq_handle = &handle->wq_list[event];
 	wq_handle->init = 0;
@@ -2005,19 +2004,19 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	int module_num;
 
 	if (primary_display_is_sleepd_nolock()) {
-		DISP_LOG_E("%s when DISP suspended\n", __func__);
+		DISPERR("%s when DISP suspended\n", __func__);
 		return -1;
 	}
 
 	if (dp_handle == NULL) {
-		DISP_LOG_E("check status with NULL handle is invalid.\n");
+		DISPERR("check status with NULL handle is invalid.\n");
 		return -1;	/* avoid kernel to access invalid address. */
 	}
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
-	DISP_LOG_I("check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
 	ddp_check_path(handle->scenario);
@@ -2025,7 +2024,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 
 	/* dump path */
 	{
-		DDPMSG("path:");
+		DISPMSG("path:");
 		for (i = 0; i < module_num; i++)
 			pr_debug("%s-", ddp_get_module_name(modules[i]));
 
@@ -2082,14 +2081,14 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 	if (wq_handle->init) {
 		unsigned long long cur_time = ktime_to_ns(ktime_get());
 
-		DISP_LOG_V("wait event %s on scenario %s\n", path_event_name(event),
+		DISPRCD("wait event %s on scenario %s\n", path_event_name(event),
 			   ddp_get_scenario_name(handle->scenario));
 
 		ret =
 		    wait_event_interruptible_timeout(wq_handle->wq, cur_time < wq_handle->data,
 						     timeout);
 		if (ret == 0) {
-			DISP_LOG_E("wait %s timeout on scenario %s\n", path_event_name(event),
+			DISPERR("wait %s timeout on scenario %s\n", path_event_name(event),
 				   ddp_get_scenario_name(handle->scenario));
 			MMProfileLogEx(ddp_mmp_get_events()->dpmgr_wait_event_timeout,
 				       MMProfileFlagPulse, (unsigned long int)ddp_get_scenario_name(handle->scenario),
@@ -2098,17 +2097,17 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 			/* dpmgr_path_reset(dp_handle, 0); */
 			/* gDDPError = 1; */
 		} else if (ret < 0) {
-			DISP_LOG_E("wait %s interrupt by other timeleft %d on scenario %s\n",
+			DISPERR("wait %s interrupt by other timeleft %d on scenario %s\n",
 				   path_event_name(event), ret,
 				   ddp_get_scenario_name(handle->scenario));
 		} else {
-			DISP_LOG_V("received event %s timeleft %d on scenario %s\n",
+			DISPRCD("received event %s timeleft %d on scenario %s\n",
 				   path_event_name(event), ret,
 				   ddp_get_scenario_name(handle->scenario));
 		}
 		return ret;
 	}
-	DISP_LOG_E("wait event %s not initialized on scenario %s\n", path_event_name(event),
+	DISPERR("wait event %s not initialized on scenario %s\n", path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario));
 	return ret;
 }
@@ -2124,7 +2123,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 	handle = (ddp_path_handle)dp_handle;
 	wq_handle = &handle->wq_list[event];
 	if (!wq_handle->init) {
-		DISP_LOG_E("wait event %s not initialized on scenario %s\n", path_event_name(event),
+		DISPERR("wait event %s not initialized on scenario %s\n", path_event_name(event),
 		ddp_get_scenario_name(handle->scenario));
 		return -2;
 	}
@@ -2133,7 +2132,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 
 	ret = wait_event_interruptible(wq_handle->wq, cur_time < wq_handle->data);
 	if (ret < 0) {
-		DISP_LOG_E("wait %s interrupt by other ret %d on scenario %s\n",
+		DISPERR("wait %s interrupt by other ret %d on scenario %s\n",
 		path_event_name(event), ret,
 		ddp_get_scenario_name(handle->scenario));
 	}
@@ -2163,7 +2162,7 @@ int dpmgr_signal_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	wq_handle = &handle->wq_list[event];
 	if (handle->wq_list[event].init) {
 		wq_handle->data = ktime_to_ns(ktime_get());
-		DISP_LOG_V("wake up evnet %s on scenario %s\n", path_event_name(event),
+		DISPRCD("wake up evnet %s on scenario %s\n", path_event_name(event),
 			   ddp_get_scenario_name(handle->scenario));
 		wake_up_interruptible(&(handle->wq_list[event].wq));
 	}
@@ -2200,7 +2199,7 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 				    irq_bit == handle->irq_event_map[j].irq_bit) {
 					dprec_stub_event(j);
 					handle->wq_list[j].data = ktime_to_ns(ktime_get());
-					DDPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
+					DISPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,
 					       ddp_get_scenario_name(handle->scenario));
 					wake_up_interruptible(&(handle->wq_list[j].wq));
@@ -2215,11 +2214,10 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 
 int dpmgr_init(void)
 {
-	DDPPRINT("ddp manager init\n");
+	pr_warn("ddp manager init\n");
 	if (ddp_manager_init)
 		return 0;
 	ddp_manager_init = 1;
-	ddp_debug_init();
 	disp_init_irq();
 	disp_register_irq_callback(dpmgr_irq_handler);
 
@@ -2233,7 +2231,7 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 {
 	if (ddp_modules_driver[module_name] != 0) {
 		if (ddp_modules_driver[module_name]->ioctl != 0) {
-			DISP_LOG_I(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
+			DISPDBG(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
 			ddp_modules_driver[DISP_MODULE_DPI]->ioctl(module_name, cmdqhandle,
 								   DDP_DPI_FACTORY_TEST, config);
 		}
@@ -2260,17 +2258,17 @@ int dpmgr_wait_ovl_available(int ovl_num)
 
 	while ((ovl_get_status() != DDP_OVL1_STATUS_SUB) && (ovl_get_status() != DDP_OVL1_STATUS_IDLE)
 		&& (loop_cnt++ < 10)) {
-		DISP_LOG_I("wait ovl available, ovl1 status:%d\n", ovl_get_status());
+		DISPDBG("wait ovl available, ovl1 status:%d\n", ovl_get_status());
 
 		/* wait untile primary release OVL1*/
 		ret = wait_event_interruptible_timeout(ovl_wait_queue,
 		(ovl_get_status() == DDP_OVL1_STATUS_SUB || ovl_get_status() == DDP_OVL1_STATUS_IDLE), HZ/2);
 		if (ret < 0)
-			DISP_LOG_E("wait OVL interrupted by other ret=%d\n", ret);
+			DISPERR("wait OVL interrupted by other ret=%d\n", ret);
 		else if (ret == 0)
-			DISP_LOG_E("wait OVL timeout! ret=0!\n");
+			DISPERR("wait OVL timeout! ret=0!\n");
 		else
-			DISP_LOG_I("wait OVL done!\n");
+			DISPDBG("wait OVL done!\n");
 	}
 
 	if (ovl_get_status() == DDP_OVL1_STATUS_IDLE) {

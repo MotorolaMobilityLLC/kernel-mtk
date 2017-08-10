@@ -35,7 +35,7 @@
 #include <mt-plat/dma.h>
 #include <linux/compat.h>
 #include <linux/dma-mapping.h>
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#if defined(COMMON_DISP_LOG)
 #include "disp_log.h"
 #include "disp_debug.h"
 #include "disp_recorder.h"

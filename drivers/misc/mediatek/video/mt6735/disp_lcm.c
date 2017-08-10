@@ -14,7 +14,7 @@
 #include <linux/slab.h>
 
 #include <linux/types.h>
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "lcm_drv.h"
 #include "lcm_define.h"
 #include "disp_drv_platform.h"
@@ -152,29 +152,29 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 		}
 #if 0
 		if (p->type == LCM_TYPE_DSI) {
-			DISPCHECK("[LCM] LANE_NUM: %d,data_format\n", (int)p->dsi.LANE_NUM);
+			DISPMSG("[LCM] LANE_NUM: %d,data_format\n", (int)p->dsi.LANE_NUM);
 #ifdef MT_TODO
 #error
 #endif
-			DISPCHECK("[LCM] vact: %u, vbp: %u, vfp: %u,\n",
+			DISPMSG("[LCM] vact: %u, vbp: %u, vfp: %u,\n",
 				  p->dsi.vertical_sync_active, p->dsi.vertical_backporch, p->dsi.vertical_frontporch);
-			DISPCHECK("vact_line: %u, hact: %u, hbp: %u, hfp: %u, hblank: %u\n",
+			DISPMSG("vact_line: %u, hact: %u, hbp: %u, hfp: %u, hblank: %u\n",
 				  p->dsi.vertical_active_line, p->dsi.horizontal_sync_active,
 				  p->dsi.horizontal_backporch, p->dsi.horizontal_frontporch,
 				  p->dsi.horizontal_blanking_pixel);
-			DISPCHECK("[LCM] pll_select: %d, pll_div1: %d, pll_div2: %d, fbk_div: %d,\n",
+			DISPMSG("[LCM] pll_select: %d, pll_div1: %d, pll_div2: %d, fbk_div: %d,\n",
 				  p->dsi.pll_select, p->dsi.pll_div1, p->dsi.pll_div2, p->dsi.fbk_div);
-			DISPCHECK("fbk_sel: %d, rg_bir: %d\n", p->dsi.fbk_sel, p->dsi.rg_bir);
-			DISPCHECK("[LCM] rg_bic: %d, rg_bp: %d, PLL_CLOCK: %d, dsi_clock: %d,\n",
+			DISPMSG("fbk_sel: %d, rg_bir: %d\n", p->dsi.fbk_sel, p->dsi.rg_bir);
+			DISPMSG("[LCM] rg_bic: %d, rg_bp: %d, PLL_CLOCK: %d, dsi_clock: %d,\n",
 				  p->dsi.rg_bic, p->dsi.rg_bp, p->dsi.PLL_CLOCK, p->dsi.dsi_clock);
-			DISPCHECK("ssc_range: %d, ssc_disable: %d, compatibility_for_nvk: %d, cont_clock: %d\n",
+			DISPMSG("ssc_range: %d, ssc_disable: %d, compatibility_for_nvk: %d, cont_clock: %d\n",
 				  p->dsi.ssc_range, p->dsi.ssc_disable,
 				  p->dsi.compatibility_for_nvk, p->dsi.cont_clock);
-			DISPCHECK("[LCM] lcm_ext_te_enable: %d, noncont_clock: %d, noncont_clock_period: %d\n",
+			DISPMSG("[LCM] lcm_ext_te_enable: %d, noncont_clock: %d, noncont_clock_period: %d\n",
 				  p->dsi.lcm_ext_te_enable, p->dsi.noncont_clock, p->dsi.noncont_clock_period);
 		}
 #endif
-		DISPPRINT("[LCM] %s\n", str_buf);
+		DISPMSG("[LCM] %s\n", str_buf);
 	}
 }
 
@@ -905,8 +905,8 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 	LCM_PARAMS *lcm_param = NULL;
 	disp_lcm_handle *plcm = NULL;
 
-	DISPPRINT("%s\n", __func__);
-	DISPCHECK("plcm_name=%s\n", plcm_name);
+	DISPMSG("%s\n", __func__);
+	DISPMSG("plcm_name=%s\n", plcm_name);
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	if (check_lcm_node_from_DT() == 0) {
@@ -926,7 +926,7 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 		/*if (!is_lcm_inited) {
 			isLCMFound = true;
 			isLCMInited = false;
-			DISPCHECK("LCM not init\n");
+			DISPMSG("LCM not init\n");
 		}*/
 
 		lcmindex = 0;
@@ -1035,7 +1035,7 @@ int disp_lcm_init(disp_lcm_handle *plcm, int force)
 {
 	LCM_DRIVER *lcm_drv = NULL;
 
-	DISPPRINT("%s\n", __func__);
+	DISPMSG("%s\n", __func__);
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 
@@ -1083,7 +1083,7 @@ int disp_lcm_update(disp_lcm_handle *plcm, int x, int y, int w, int h, int force
 {
 	LCM_DRIVER *lcm_drv = NULL;
 
-	DISPDBGFUNC();
+	DISPDBG("%s\n", __func__);
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->update) {
