@@ -679,7 +679,7 @@
 };/* UART GPIO end */
 
 /* IRTX GPIO end */
-&apirtx {
+&irtx_pwm {
 	pinctrl-names = "irtx_gpio_led_default",
 			"irtx_gpio_led_set",
 			"irtx_gpio_en_default",
@@ -706,7 +706,7 @@
 
 	irtx_gpio_led_set:irtx_gpio_led_set@gpio116 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO116__FUNC_IRTX_OUT>;
+			pins = <PINMUX_GPIO116__FUNC_PWM_C>;
 			slew-rate = <1>;
 			output-high;
 		};
