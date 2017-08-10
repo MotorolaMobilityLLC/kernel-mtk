@@ -82,6 +82,7 @@ enum BAR_TRC {
 	BAR_TRC_RAWDATA = 0x02,
 	BAR_TRC_IOCTL   = 0x04,
 	BAR_TRC_FILTER  = 0x08,
+	BAR_TRC_INFO  = 0x10,
 };
 
 /* s/w filter */
@@ -326,8 +327,9 @@ static int bmp_get_chip_type(struct i2c_client *client)
 		break;
 	}
 
-	BAR_LOG("[%s]chip id = %#x, sensor name = %s\n", __func__,
-		chip_id, obj->sensor_name);
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_LOG("[%s]chip id = %#x, sensor name = %s\n", __func__,
+			chip_id, obj->sensor_name);
 
 	if (obj->sensor_type == INVALID_TYPE) {
 		BAR_ERR("unknown pressure sensor\n");
@@ -398,8 +400,9 @@ static int bmp_set_powermode(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_power_mode = 0;
 
-	BAR_LOG("[%s] power_mode = %d, old power_mode = %d\n", __func__,
-		power_mode, obj->power_mode);
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_LOG("[%s] power_mode = %d, old power_mode = %d\n", __func__,
+			power_mode, obj->power_mode);
 
 	if (power_mode == obj->power_mode)
 		return 0;
@@ -441,8 +444,9 @@ static int bmp_set_filter(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_filter = 0;
 
-	BAR_LOG("[%s] hw filter = %d, old hw filter = %d\n", __func__,
-		filter, obj->hw_filter);
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_LOG("[%s] hw filter = %d, old hw filter = %d\n", __func__,
+			filter, obj->hw_filter);
 
 	if (filter == obj->hw_filter)
 		return 0;
@@ -490,8 +494,9 @@ static int bmp_set_oversampling_p(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_oversampling_p = 0;
 
-	BAR_LOG("[%s] oversampling_p = %d, old oversampling_p = %d\n", __func__,
-		oversampling_p, obj->oversampling_p);
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_LOG("[%s] oversampling_p = %d, old oversampling_p = %d\n", __func__,
+			oversampling_p, obj->oversampling_p);
 
 	if (oversampling_p == obj->oversampling_p)
 		return 0;
@@ -541,8 +546,9 @@ static int bmp_set_oversampling_t(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_oversampling_t = 0;
 
-	BAR_LOG("[%s] oversampling_t = %d, old oversampling_t = %d\n", __func__,
-		oversampling_t, obj->oversampling_t);
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_LOG("[%s] oversampling_t = %d, old oversampling_t = %d\n", __func__,
+			oversampling_t, obj->oversampling_t);
 
 	if (oversampling_t == obj->oversampling_t)
 		return 0;
@@ -1429,7 +1435,8 @@ static int bmp_suspend(struct i2c_client *client, pm_message_t msg)
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	BAR_FUN();
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
 		if (NULL == obj) {
@@ -1453,7 +1460,8 @@ static int bmp_resume(struct i2c_client *client)
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
 
-	BAR_FUN();
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_FUN();
 
 	if (NULL == obj) {
 		BAR_ERR("null pointer\n");
