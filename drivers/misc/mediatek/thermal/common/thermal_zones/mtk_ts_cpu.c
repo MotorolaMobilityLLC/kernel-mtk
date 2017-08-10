@@ -71,6 +71,7 @@
 /*=============================================================
  *Local variable definition
  *=============================================================*/
+static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
@@ -1391,8 +1392,10 @@ static void tscpu_unregister_thermal(void)
 
 	tscpu_dprintk("tscpu_unregister_thermal\n");
 	if (thz_dev) {
+		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
+		doing_tz_unregister = 0;
 	}
 
 }
@@ -2275,7 +2278,7 @@ int is_worktimer_en = 1;
 void tscpu_workqueue_cancel_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
-	if (is_worktimer_en && thz_dev) {
+	if (is_worktimer_en && thz_dev && !doing_tz_unregister) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
 
 		tscpu_dprintk("[tTimer] workqueue stopping\n");
@@ -2284,7 +2287,7 @@ void tscpu_workqueue_cancel_timer(void)
 		spin_unlock(&timer_lock);
 	}
 #else
-	if (thz_dev)
+	if (thz_dev && !doing_tz_unregister)
 		cancel_delayed_work(&(thz_dev->poll_queue));
 #endif
 }
@@ -2292,7 +2295,7 @@ void tscpu_workqueue_cancel_timer(void)
 void tscpu_workqueue_start_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
-	if (!is_worktimer_en && thz_dev != NULL && interval != 0) {
+	if (!is_worktimer_en && thz_dev != NULL && interval != 0 && !doing_tz_unregister) {
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), 0);
 
 		tscpu_dprintk("[tTimer] workqueue starting\n");
@@ -2302,7 +2305,7 @@ void tscpu_workqueue_start_timer(void)
 	}
 #else
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0)
+	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 #endif
 
