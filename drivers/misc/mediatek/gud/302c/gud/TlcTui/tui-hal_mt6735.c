@@ -15,7 +15,6 @@
 #include <linux/device.h>
 #include <linux/fb.h>
 
-#define CONFIG_TRUSTONIC_TRUSTED_UI
 #include <t-base-tui.h>
 
 #include "tui_ioctl.h"
@@ -52,7 +51,8 @@ extern int tui_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int tui_region_online(void);
 static struct tui_mempool g_tui_mem_pool;
 static int g_tui_secmem_handle;
-
+extern int display_enter_tui(void);
+extern int display_exit_tui(void);
 /* basic implementation of a memory pool for TUI framebuffer.  This
  * implementation is using kmalloc, for the purpose of demonstration only.
  * A real implementation might prefer using more advanced allocator, like ION,
@@ -157,7 +157,6 @@ uint32_t hal_tui_alloc(
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	phys_addr_t pa;
 	u32 sec_handle = 0;
-	u32 refcount = 0;
 	unsigned long size = 0;
 
 	if (!allocbuffer) {
@@ -252,9 +251,6 @@ void hal_tui_free(void)
  *
  * Return: must return 0 on success, non-zero otherwise.
  */
-
-extern int display_enter_tui();
-extern int display_exit_tui();
 
 uint32_t hal_tui_deactivate(void)
 {

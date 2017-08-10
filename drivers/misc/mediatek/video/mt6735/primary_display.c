@@ -144,6 +144,10 @@ unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and
 disp_ddp_path_config last_primary_config;
 static atomic_t DvfsIsHPM = ATOMIC_INIT(1);
 
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+static struct switch_dev disp_switch_data;
+#endif
+
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
 		    disp_internal_buffer_info *buf)
 {
