@@ -1499,9 +1499,6 @@ static int mtee_probe(struct platform_device *pdev)
 	thread_tz_cm_shrinker = kthread_run(tz_cm_shrinker_thread, NULL,
 						"tz_cm_shrinker");
 	register_shrinker(&tz_cm_shrinker);
-#else
-	/* trigger allocation chunk memory in initialization flow */
-	KREE_TeeTriggerChunkmemAllocation();
 #endif  /* NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE */
 #endif  /* CONFIG_MTEE_CMA_SECURE_MEMORY */
 
@@ -1675,4 +1672,15 @@ static int __init tz_client_init(void)
 device_initcall(tz_client_init);
 #else
 arch_initcall(tz_client_init);
+#endif
+
+#ifdef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
+static int __init tz_client_cma_alloc_init(void)
+{
+	/* trigger allocation chunk memory in initialization flow */
+	KREE_TeeTriggerChunkmemAllocation();
+	return 0;
+}
+/* use late_initcall to be triggered after M4U init is done. */
+late_initcall(tz_client_cma_alloc_init);
 #endif
