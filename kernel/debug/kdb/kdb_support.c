@@ -714,10 +714,10 @@ struct debug_alloc_header {
 static u64 *debug_alloc_pool_aligned;
 static char *debug_alloc_pool;
 
-void init_debug_alloc_pool_aligned(void)
+void __init init_debug_alloc_pool_aligned(void)
 {
 	debug_alloc_pool_aligned =
-		extmem_malloc_page_align(SIZEOF_DEBUG_ALLOC_POOL_ALIGNED);
+		extmem_malloc_page_align_init(SIZEOF_DEBUG_ALLOC_POOL_ALIGNED);
 	if (debug_alloc_pool_aligned == NULL) {
 		pr_err("%s[%s] ext memory alloc failed!!!\n", __FILE__, __func__);
 		debug_alloc_pool = vmalloc(SIZEOF_DEBUG_ALLOC_POOL_ALIGNED);
