@@ -99,7 +99,7 @@
 	} while (0)
 
 /*
- * Log function: DEFALUT_LEVEL
+ * Log function: DEBUG_LEVEL
  *   To print which function has been in. Only print function name.
  *   And this log will be recorded in display log buffer.
  * Input:
@@ -109,7 +109,7 @@
 	do {                                                           \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG,                    \
 			"func|%s\n", __func__);                        \
-		if ((g_mobilelog > 0) && (g_loglevel >= DEFAULT_LEVEL))  \
+		if ((g_mobilelog > 0) && (g_loglevel >= DEBUG_LEVEL))  \
 			pr_debug("[DISP]func|%s\n", __func__);         \
 	} while (0)
 
