@@ -1425,6 +1425,11 @@ typedef struct _CMD_NLO_REQ {
 	NLO_NETWORK arNetworkList[16];
 	UINT_8 aucIE[0];
 	UINT_8 ucScanType;
+#if CFG_NLO_MSP
+	BOOLEAN fgNLOMspEnable; /*Flag for NLO/PNO MSP enable indicator*/
+	UINT_8 ucNLOMspEntryNum; /*indicates the entry num of MSP List */
+	UINT_16 au2NLOMspList[10];
+#endif
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
 typedef struct _CMD_NLO_CANCEL_T {

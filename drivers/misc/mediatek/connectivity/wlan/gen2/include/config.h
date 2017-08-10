@@ -431,6 +431,7 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_MULTI_SSID_SCAN			1
+#define CFG_NLO_MSP 0 /* NLO/PNO Multiple Scan Plan */
 #define CFG_SCAN_SSID_MAX_NUM                   (10)
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 

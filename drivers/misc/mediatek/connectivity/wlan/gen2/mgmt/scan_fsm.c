@@ -1778,6 +1778,59 @@ scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
 	return TRUE;
 }
 
+#if CFG_NLO_MSP
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief        handler for setting MSP parameter to PSCAN
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+
+VOID
+scnSetMspParameterIntoPSCN(IN P_ADAPTER_T prAdapter, IN P_PSCN_PARAM_T prCmdPscnParam)
+{
+	DBGLOG(SCN, TRACE, "--> %s()\n", __func__);
+
+	ASSERT(prAdapter);
+
+#if 0
+	prCmdPscnParam->rCurrentCmdNloReq.fgNLOMspEnable = 1;
+	prCmdPscnParam->rCurrentCmdNloReq.ucNLOMspEntryNum = 10;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[0] = 120;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[1] = 120;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[2] = 240;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[3] = 240;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[4] = 480;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[5] = 480;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[6] = 960;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[7] = 960;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[8] = 960;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[9] = 960;
+#else
+	/* quick test configuration */
+	prCmdPscnParam->rCurrentCmdNloReq.fgNLOMspEnable = 1;
+	prCmdPscnParam->rCurrentCmdNloReq.ucNLOMspEntryNum = 10;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[0] = 10;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[1] = 10;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[2] = 10;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[3] = 15;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[4] = 15;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[5] = 15;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[6] = 20;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[7] = 20;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[8] = 20;
+	prCmdPscnParam->rCurrentCmdNloReq.au2NLOMspList[9] = 25;
+#endif
+
+}
+
+#endif
+
+
+
 VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 {
 	P_SCAN_INFO_T prScanInfo;
@@ -1803,6 +1856,9 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 
 		case PSCN_RESET:
 			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
+#if CFG_NLO_MSP
+			scnSetMspParameterIntoPSCN(prAdapter, prScanInfo->prPscnParam);
+#endif
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
