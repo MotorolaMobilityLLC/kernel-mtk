@@ -1073,6 +1073,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			if (layerInfo->layer_id >= TOTAL_OVL_LAYER_NUM) {
 				DISPERR("MTKFB_SET_OVERLAY_LAYER, layer_id invalid=%d\n",
 					 layerInfo->layer_id);
+				kfree(layerInfo);
+				return -EFAULT;
 			} else {
 				input = &session_input.config[session_input.config_layer_num++];
 				_convert_fb_layer_to_disp_input(layerInfo, input);
