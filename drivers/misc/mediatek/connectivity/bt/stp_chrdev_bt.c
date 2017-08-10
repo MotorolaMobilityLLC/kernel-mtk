@@ -90,7 +90,7 @@ static INT32 bt_ftrace_flag;
  *   2 - reset end, have not sent Hardware Error event yet
  *   3 - reset end, already sent Hardware Error event
  */
-static volatile UINT32 rstflag;
+static UINT32 rstflag;
 static UINT8 HCI_EVT_HW_ERROR[] = {0x04, 0x10, 0x01, 0x00};
 
 /*******************************************************************
