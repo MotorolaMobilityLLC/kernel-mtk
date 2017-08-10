@@ -21,6 +21,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
+#include "fwcfg.h"
 static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -37,6 +38,8 @@ static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 #define AIS_JOIN_TIMEOUT                    7
 #define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
 
+#define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
+#define AIS_DRT_ROAMING_THRESHOLD           -85 /* DRT=Dynamic Roaming Threshold, dbm */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -87,7 +90,9 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter);
 
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter);
-
+#if CFG_SUPPORT_DYNAMOC_ROAM
+static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -247,7 +252,11 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+
 	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
+#if CFG_SUPPORT_DYNAMOC_ROAM
+	prAisFsmInfo->cRoamTriggerThreshold = 0;
+#endif
 
 	/* 4 <1.1> Initiate FSM - Timer INIT */
 	cnmTimerInitTimer(prAdapter,
@@ -2520,6 +2529,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 			/* 4 <1.7> Set the Next State of AIS FSM */
 			eNextState = AIS_STATE_NORMAL_TR;
+#if CFG_SUPPORT_DYNAMOC_ROAM
+			aisFsmSetRoamingThreshold(prAdapter, AIS_DEFAULT_ROAMING_THRESHOLD);
+#endif
 		}
 			/* 4 <2> JOIN was not successful */
 		else {
@@ -5549,4 +5561,27 @@ VOID aisRunEventChnlUtilRsp(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	cnmMemFree(prAdapter, prChUtilRsp);
 	aisFsmSteps(prAdapter, AIS_STATE_SEARCH);
 }
+#if CFG_SUPPORT_DYNAMOC_ROAM
+static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold)
+{
+	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
+	UINT_8 aucRoamingCfgBuf[64];
+	UINT_8 ucRCPI;
 
+	DBGLOG(AIS, INFO, "cThreshold %d, cRoamTriggerThreshold %d\n",
+		cThreshold, prAisFsmInfo->cRoamTriggerThreshold);
+
+#if CFG_SUPPORT_NCHO
+	if (prAdapter->rNchoInfo.fgECHOEnabled)
+		return;
+#endif
+	if (prAisFsmInfo->cRoamTriggerThreshold == cThreshold)
+		return;
+	prAisFsmInfo->cRoamTriggerThreshold = cThreshold;
+	ucRCPI = dBm_TO_RCPI(cThreshold);
+	kalMemZero(aucRoamingCfgBuf, sizeof(aucRoamingCfgBuf));
+	kalSprintf(aucRoamingCfgBuf, "RoamingRCPIGoodValue %d\nRoamingRCPIPoorValue %d", ucRCPI, ucRCPI);
+	if (wlanFwCfgParse(prAdapter, aucRoamingCfgBuf) != WLAN_STATUS_SUCCESS)
+		DBGLOG(AIS, INFO, "set cfg parse failed\n");
+}
+#endif

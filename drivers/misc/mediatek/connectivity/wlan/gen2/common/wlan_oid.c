@@ -12188,7 +12188,7 @@ wlanoidSetNchoEnable(IN P_ADAPTER_T prAdapter,
 	rStatus = wlanFwCfgParse(prAdapter, acCmd);
 	if (rStatus == WLAN_STATUS_SUCCESS) {
 		prAdapter->rNchoInfo.fgECHOEnabled = *pParam;
-		DBGLOG(INIT, TRACE, "NCHO enable is %d\n", *pParam);
+		DBGLOG(INIT, INFO, "NCHO enable is %d\n", *pParam);
 	}
 
 	return rStatus;

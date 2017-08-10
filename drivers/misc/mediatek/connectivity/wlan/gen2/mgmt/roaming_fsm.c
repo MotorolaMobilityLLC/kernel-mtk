@@ -453,8 +453,10 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN P_ROAMING_PARAM_T 
 		/* sync. rcpi with firmware */
 		prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
-		if (prBssDesc)
+		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (prParam->u2Data & 0xff);
+			DBGLOG(ROAMING, INFO, "RCPI %u\n", prBssDesc->ucRCPI);
+		}
 
 		roamingFsmSteps(prAdapter, eNextState);
 	}
