@@ -143,6 +143,12 @@
 
 #endif
 
+#define CFG_BSS_DISAPPEAR_THRESOLD             20	/*unit: sec */
+#define CFG_NEIGHBOR_AP_CHANNEL_NUM            50
+#define CFG_MAX_NUM_OF_CHNL_INFO               50
+#define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM     1
+#define CFG_SELECT_BSS_BASE_ON_RSSI            0
+
 /* 2 Flags for Driver Parameters */
 /*------------------------------------------------------------------------------
  * Flags for EHPI Interface in Colibri Platform
@@ -664,7 +670,7 @@
 #define CFG_SUPPORT_P2P_RSSI_QUERY        0
 
 #define CFG_SHOW_MACADDR_SOURCE     1
-
+#define CFG_SUPPORT_802_11K         0
 #define CFG_SUPPORT_802_11V                    0	/* Support 802.11v Wireless Network Management */
 #define CFG_SUPPORT_802_11V_TIMING_MEASUREMENT 0
 #if (CFG_SUPPORT_802_11V_TIMING_MEASUREMENT == 1) && (CFG_SUPPORT_802_11V == 0)
@@ -693,7 +699,7 @@
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
 
-#define CFG_SUPPORT_RN			0
+#define CFG_SUPPORT_RN                      1
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------

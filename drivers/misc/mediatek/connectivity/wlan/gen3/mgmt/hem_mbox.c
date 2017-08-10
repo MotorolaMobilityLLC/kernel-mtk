@@ -590,8 +590,10 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_SAA_AIS_FSM_ABORT, aisFsmRunEventAbort},
 	{MID_MNY_AIS_REMAIN_ON_CHANNEL, aisFsmRunEventRemainOnChannel},
 	{MID_MNY_AIS_CANCEL_REMAIN_ON_CHANNEL, aisFsmRunEventCancelRemainOnChannel},
-	{MID_MNY_AIS_MGMT_TX, aisFsmRunEventMgmtFrameTx}
-
+	{MID_MNY_AIS_MGMT_TX, aisFsmRunEventMgmtFrameTx},
+	{MID_MNY_CNM_REQ_CH_UTIL, cnmRequestChannelUtilization},
+	{MID_CNM_AIS_RSP_CH_UTIL, aisRunEventChnlUtilRsp},
+	{MID_MNY_CNM_SCAN_CONTINUE, scnFsmMsgStart},
 };
 
 /*******************************************************************************
