@@ -396,7 +396,7 @@ static void mtk_enable_otg_mode(void)
 	bq25898_set_boost_ilim(0x01);
 #else
 	set_chr_enable_otg(0x1);
-	set_chr_boost_current_limit(500);
+	set_chr_boost_current_limit(1500);
 #endif
 }
 

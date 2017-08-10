@@ -1264,6 +1264,8 @@ static signed int charging_set_boost_current_limit(void *data)
 	unsigned int current_limit = 0, reg_ilim = 0;
 
 	current_limit = *((unsigned int *)data);
+	current_limit = bmt_find_closest_level(BOOST_CURRENT_LIMIT,
+		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
 	reg_ilim = charging_parameter_to_value(BOOST_CURRENT_LIMIT,
 		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
 	bq25890_set_boost_ilim(reg_ilim);
