@@ -3468,7 +3468,7 @@ static unsigned int msdc_command_start(struct msdc_host *host,
 	else if (opcode == MMC_SELECT_CARD) {
 		resp = (cmd->arg != 0) ? RESP_R1 : RESP_NONE;
 		host->app_cmd_arg = cmd->arg;
-		pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg);
+		/* pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg); */
 	} else if (opcode == SD_IO_RW_DIRECT || opcode == SD_IO_RW_EXTENDED)
 		resp = RESP_R1;	/* SDIO workaround. */
 	else if (opcode == SD_SEND_IF_COND && (mmc_cmd_type(cmd) == MMC_CMD_BCR))
