@@ -402,7 +402,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 			? preultra_high : (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000);
 
 
-	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate / 10;
+	sodi_threshold_low = (ultra_low_us * 10 + 20) * consume_rate / 10;
 	if (sodi_threshold_low % 1000)
 		sodi_threshold_low = sodi_threshold_low/1000 + 1;
 	else
