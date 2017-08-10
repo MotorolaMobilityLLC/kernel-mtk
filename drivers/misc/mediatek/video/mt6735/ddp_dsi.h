@@ -36,6 +36,7 @@ extern void DSI_sw_clk_trail_cmdq(int module_idx, cmdqRecHandle cmdq);
 void DSI_ForceConfig(int forceconfig);
 int DSI_set_roi(int x, int y);
 int DSI_check_roi(void);
+int dsi_enable_irq(DISP_MODULE_ENUM module, void *handle, unsigned int enable);
 
 /* --------------------------------------------------------------------------- */
 
