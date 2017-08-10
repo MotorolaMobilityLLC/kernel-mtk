@@ -827,9 +827,14 @@ struct _ADAPTER_T {
 	ULONG	ulSuspendFlag;
 	struct PERF_MONITOR_T rPerMonitor;
 
+
 #ifdef CFG_TC1_FEATURE /* for Passive Scan */
 	UINT_8 ucScanType;
 #endif
+
+	/* NLO Timer */
+	TIMER_T rScanNloTimeoutTimer;
+
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
