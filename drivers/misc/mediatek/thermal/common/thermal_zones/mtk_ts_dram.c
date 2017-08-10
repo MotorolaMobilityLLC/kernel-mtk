@@ -70,7 +70,9 @@ do {								\
 
 static int mtktsdram_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 {
+#if !defined(CONFIG_ARCH_MT6570)
 	unsigned char t1, t2;
+#endif
 	/*
 	The value getting from the read_dram_temperature api is only from 0 to 7.
 	000B: SDRAM Low temperature operating limit exceeded
@@ -82,10 +84,14 @@ static int mtktsdram_get_temp(struct thermal_zone_device *thermal, unsigned long
 	110B: 0.25x tREFI, 0.25x tREFIpb, 0.25x tREFW, de-rate SDRAM
 	*/
 	mtktsdram_dprintk("[mtktsdram_get_temp]\n");
+#if !defined(CONFIG_ARCH_MT6570)
 	t1 = read_dram_temperature(CHANNEL_A);
 	t2 = read_dram_temperature(CHANNEL_B);
 
 	*t = (t1 > t2) ? t1 : t2;
+#else
+	*t = read_dram_temperature();
+#endif
 
 	mtktsdram_dprintk("temp =%lu\n", *t);
 	return 0;

@@ -63,12 +63,15 @@ endif
 
 
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580" "mt6570"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_6311buck.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
-#obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6570"))
+obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
+obj-$(CONFIG_THERMAL) += mtk_ts_dram.o
+endif
 #obj-$(CONFIG_THERMAL) += mtk_ts_buck.o
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
