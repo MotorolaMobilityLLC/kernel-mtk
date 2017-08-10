@@ -5578,7 +5578,8 @@ tune:   /* DMA DATA transfer crc error */
 
 	if (!host->async_tuning_in_progress
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		&& !host->mmc->card->ext_csd.cmdq_mode_en
+	 && (!host->mmc->card ||
+	     !host->mmc->card->ext_csd.cmdq_mode_en)
 #endif
 	) {
 		if ((data && data->error)
