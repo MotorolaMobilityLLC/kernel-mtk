@@ -193,22 +193,22 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	unsigned int reg_value;
 
 	md_cd_lock_modem_clock_src(1);
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD Bus status %x\n", MD_BUS_STATUS_BASE);
-	ccci_mem_dump(md->index, md_ctrl->md_bus_status, MD_BUS_STATUS_LENGTH);
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD PC monitor %x\n", MD_PC_MONITOR_BASE);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD Bus status %x\n", MD_BUS_STATUS_BASE);
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_bus_status, MD_BUS_STATUS_LENGTH);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor %x\n", MD_PC_MONITOR_BASE);
 	/* stop MD PCMon */
 	reg_value = ccci_read32(md_ctrl->md_pc_monitor, 0);
 	reg_value &= ~(0x1 << 21);
 	ccci_write32(md_ctrl->md_pc_monitor, 0, reg_value);	/* clear bit[21] */
 	ccci_write32((md_ctrl->md_pc_monitor + 4), 0, 0x80000000);	/* stop MD PCMon */
-	ccci_mem_dump(md->index, md_ctrl->md_pc_monitor, MD_PC_MONITOR_LENGTH);
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_pc_monitor, MD_PC_MONITOR_LENGTH);
 	ccci_write32(md_ctrl->md_pc_monitor + 4, 0, 0x1);	/* restart MD PCMon */
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD TOPSM status %x\n", MD_TOPSM_STATUS_BASE);
-	ccci_mem_dump(md->index, md_ctrl->md_topsm_status, MD_TOPSM_STATUS_LENGTH);
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD OST status %x\n", MD_OST_STATUS_BASE);
-	ccci_mem_dump(md->index, md_ctrl->md_ost_status, MD_OST_STATUS_LENGTH);
-	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD PLL %x\n", MD_PLL_BASE);
-	ccci_mem_dump(md->index, md_ctrl->md_pll, MD_PLL_LENGTH);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status %x\n", MD_TOPSM_STATUS_BASE);
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_topsm_status, MD_TOPSM_STATUS_LENGTH);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status %x\n", MD_OST_STATUS_BASE);
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_ost_status, MD_OST_STATUS_LENGTH);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PLL %x\n", MD_PLL_BASE);
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_pll, MD_PLL_LENGTH);
 	md_cd_lock_modem_clock_src(0);
 }
 
