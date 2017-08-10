@@ -3335,7 +3335,6 @@ int dlpt_check_power_off(void)
 			} else {
 				/*2nd time receive battery voltage < 3.1V, wait FG to call power off */
 				ret = 1;
-				g_low_battery_if_power_off = 0;
 				pr_err("[dlpt_check_power_off] %d %d\n", ret, g_low_battery_if_power_off);
 			}
 		} else {
