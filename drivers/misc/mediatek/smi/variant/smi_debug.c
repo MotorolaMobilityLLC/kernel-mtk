@@ -52,6 +52,7 @@ static void process_dbg_opt(const char *opt)
 {
 	unsigned long addr = 0;
 	int ret = 0;
+	char *buf = debug_buffer + strlen(debug_buffer);
 
 	if (0 == strncmp(opt, "set_reg:", 8)) {
 		unsigned long val = 0;
@@ -66,13 +67,39 @@ static void process_dbg_opt(const char *opt)
 		SMIMSG("set register: 0x%lx = 0x%x\n", addr, (unsigned int)val);
 
 		COM_WriteReg32(addr, val);
-	}
-	if (0 == strncmp(opt, "get_reg:", 8)) {
+	} else if (0 == strncmp(opt, "get_reg:", 8)) {
 		char *p = (char *)opt + 8;
 
 		ret = kstrtoul(p, 16, &addr);
 
 		SMIMSG("get register: 0x%lx = 0x%x\n", addr, COM_ReadReg32(addr));
+	} else if (0 == strncmp(opt, "set_pa:", 7)) {
+		unsigned long val = 0;
+		unsigned long reg_va;
+
+		char *p = (char *)opt + 7;
+
+		ret = kstrtoul(p, 16, &addr);
+		p += 11;
+
+		ret = kstrtoul(p, 16, &val);
+
+		SMIMSG("set register: 0x%lx = 0x%x\n", addr, (unsigned int)val);
+		sprintf(buf, "set register: 0x%lx = 0x%x\n", addr, (unsigned int)val);
+		reg_va = (unsigned long)ioremap_nocache(addr, 0x100);
+		COM_WriteReg32(reg_va, val);
+		iounmap((void *)reg_va);
+	} else if (0 == strncmp(opt, "get_pa:", 7)) {
+		char *p = (char *)opt + 7;
+		unsigned long reg_va;
+
+		ret = kstrtoul(p, 16, &addr);
+		reg_va = (unsigned long)ioremap_nocache(addr, 0x100);
+		SMIMSG("get register: pa 0x%lx = 0x%x\n", addr, COM_ReadReg32(reg_va));
+		sprintf(buf, "get register: pa 0x%lx = 0x%x, va is 0x%lx\n",
+			addr, COM_ReadReg32(reg_va), reg_va);
+
+		iounmap((void *)reg_va);
 	}
 
 }
@@ -81,7 +108,6 @@ static void process_dbg_opt(const char *opt)
 static void process_dbg_cmd(char *cmd)
 {
 	char *tok;
-
 	while ((tok = strsep(&cmd, " ")) != NULL)
 		process_dbg_opt(tok);
 
@@ -103,9 +129,7 @@ static int debug_open(struct inode *inode, struct file *file)
 
 static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
-	int n = 0;
-
-	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
+	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, strlen(debug_buffer));
 }
 
 
@@ -118,6 +142,7 @@ static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t co
 
 	if (count > debug_bufmax)
 		count = debug_bufmax;
+	memset(debug_buffer, 0, sizeof(debug_buffer));
 
 	if (copy_from_user(&debug_buffer, ubuf, count))
 		return -EFAULT;
@@ -140,6 +165,7 @@ static const struct file_operations debug_fops = {
 void SMI_DBG_Init(void)
 {
 	smi_dbgfs = debugfs_create_file("smi", S_IFREG | S_IRUGO, NULL, (void *)0, &debug_fops);
+	memset(debug_buffer, 0, sizeof(debug_buffer));
 }
 
 
