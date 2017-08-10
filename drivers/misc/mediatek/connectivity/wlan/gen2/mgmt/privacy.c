@@ -194,6 +194,9 @@ BOOLEAN secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P
 	P_HIF_RX_HEADER_T prHifRxHdr;
 	UINT_16 u2PktTmpLen;
 
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	P_BSS_DESC_T prBssDesc;
+
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
 
@@ -217,8 +220,18 @@ BOOLEAN secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P
 			return TRUE;
 		}
 #endif
+		/* Skip to send deaut to AP which STA is connecting */
+		if (eNetTypeIndex == NETWORK_TYPE_AIS_INDEX) {
+			prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+			prBssDesc = prAisFsmInfo->prTargetBssDesc;
+			if ((prBssDesc->fgIsConnected == TRUE || prBssDesc->fgIsConnecting == TRUE)
+				&& EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prStaRec->aucMacAddr)) {
+				DBGLOG(RSN, INFO, "Skip to send Deauth to MAC:[%pM] for Rx Class 3",
+					prStaRec->aucMacAddr);
+				return TRUE;
+			}
+		}
 
-#if 0
 		if (WLAN_STATUS_SUCCESS == authSendDeauthFrame(prAdapter,
 							       prStaRec,
 							       NULL,
@@ -230,7 +243,6 @@ BOOLEAN secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P
 		else
 			DBGLOG(RSN, INFO, "Host sends Deauth to [ %pM ] for Rx Class 3 fail.\n",
 					   prStaRec->aucMacAddr);
-#endif
 		DBGLOG(RSN, WARN, "received class 3 data frame !!!");
 
 		/* dump Rx Pkt */
