@@ -92,11 +92,7 @@ struct picachu_info {
 static struct picachu_info *picachu_data;
 static unsigned int picachu_debug;
 
-#if defined(CONFIG_MTK_DISABLE_PICACHU)
 static int picachu_enable;
-#else
-static int picachu_enable = 1;
-#endif
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 {
