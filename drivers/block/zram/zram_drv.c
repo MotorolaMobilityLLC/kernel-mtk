@@ -391,6 +391,25 @@ static inline struct zram *dev_to_zram(struct device *dev)
 	return (struct zram *)dev_to_disk(dev)->private_data;
 }
 
+static ssize_t compact_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t len)
+{
+	struct zram *zram = dev_to_zram(dev);
+	struct zram_meta *meta;
+
+	down_read(&zram->init_lock);
+	if (!init_done(zram)) {
+		up_read(&zram->init_lock);
+		return -EINVAL;
+	}
+
+	meta = zram->meta;
+	zs_compact(meta->mem_pool);
+	up_read(&zram->init_lock);
+
+	return len;
+}
+
 static ssize_t disksize_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -565,6 +584,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
 	struct zram *zram = dev_to_zram(dev);
+	size_t sz;
 
 	down_write(&zram->init_lock);
 	if (init_done(zram)) {
@@ -573,6 +593,12 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		return -EBUSY;
 	}
 	strlcpy(zram->compressor, buf, sizeof(zram->compressor));
+
+	/* ignore trailing newline */
+	sz = strlen(zram->compressor);
+	if (sz > 0 && zram->compressor[sz - 1] == '\n')
+		zram->compressor[sz - 1] = 0x00;
+
 	up_write(&zram->init_lock);
 	return len;
 }
@@ -646,9 +672,10 @@ static void zram_meta_free(struct zram_meta *meta)
 	kfree(meta);
 }
 
-static struct zram_meta *zram_meta_alloc(u64 disksize)
+static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
 {
 	size_t num_pages;
+	char pool_name[8];
 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
 
 	if (!meta)
@@ -661,7 +688,8 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
 		goto free_meta;
 	}
 
-	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
+	snprintf(pool_name, sizeof(pool_name), "zram%d", device_id);
+	meta->mem_pool = zs_create_pool(pool_name, GFP_NOIO | __GFP_HIGHMEM);
 	if (!meta->mem_pool) {
 		pr_err("Error creating memory pool\n");
 		goto free_table;
@@ -1000,11 +1028,13 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 		ret = 0;
 		goto out;
 	}
+
 #ifdef CONFIG_ZSM
 	ret = zcomp_compress_zram(zram->comp, zstrm, uncmem, &clen, &checksum);
 #else
 	ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
 #endif
+
 	if (!is_partial_io(bvec)) {
 		kunmap_atomic(user_mem);
 		user_mem = NULL;
@@ -1286,7 +1316,7 @@ static ssize_t disksize_store(struct device *dev,
 	}
 
 	disksize = PAGE_ALIGN(disksize);
-	meta = zram_meta_alloc(disksize);
+	meta = zram_meta_alloc(zram->disk->first_minor, disksize);
 	if (!meta)
 		return -ENOMEM;
 
@@ -1468,6 +1498,7 @@ static const struct block_device_operations zram_devops = {
 	.owner = THIS_MODULE
 };
 
+static DEVICE_ATTR_WO(compact);
 static DEVICE_ATTR(disksize, S_IRUGO | S_IWUSR,
 		disksize_show, disksize_store);
 static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
@@ -1500,6 +1531,7 @@ static struct attribute *zram_disk_attrs[] = {
 	&dev_attr_num_writes.attr,
 	&dev_attr_failed_reads.attr,
 	&dev_attr_failed_writes.attr,
+	&dev_attr_compact.attr,
 	&dev_attr_invalid_io.attr,
 	&dev_attr_notify_free.attr,
 	&dev_attr_zero_pages.attr,
@@ -1627,7 +1659,16 @@ unsigned long zram_mlog(void)
 #ifdef CONFIG_PROC_FS
 static int zraminfo_proc_show(struct seq_file *m, void *v)
 {
+	struct zs_pool_stats pool_stats;
+
 	if (num_devices == 1 && init_done(zram_devices)) {
+
+		memset(&pool_stats, 0x00, sizeof(struct zs_pool_stats));
+
+		down_read(&zram_devices->init_lock);
+		zs_pool_stats(zram_devices->meta->mem_pool, &pool_stats);
+		up_read(&zram_devices->init_lock);
+
 #define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
 #define B2K(x) (((unsigned long)x) >> (10))
 		seq_printf(m,
@@ -1647,7 +1688,7 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 				"ZSM4k saved:    %8lu kB\n"
 #endif
 				"MaxUsedPages:   %8lu kB\n"
-
+				"PageMigrated:	 %8lu kB\n"
 				,
 				B2K(zram_devices->disksize),
 				P2K(atomic64_read(&zram_devices->stats.pages_stored)),
@@ -1664,9 +1705,8 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 				B2K(atomic64_read(&zram_devices->stats.zsm_saved)),
 				B2K(atomic64_read(&zram_devices->stats.zsm_saved4k)),
 #endif
-				P2K(atomic_long_read(&zram_devices->stats.max_used_pages))
-
-				);
+				P2K(atomic_long_read(&zram_devices->stats.max_used_pages)),
+				P2K(pool_stats.pages_compacted));
 #undef P2K
 #undef B2K
 		seq_printf(m, "Algorithm: [%s]\n", zram_devices->compressor);
