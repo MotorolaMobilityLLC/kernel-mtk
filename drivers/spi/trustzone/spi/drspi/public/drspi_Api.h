@@ -1,18 +1,16 @@
 /*
- * Copyright (c) 2013 TRUSTONIC LIMITED
- * All rights reserved
- * The present software is the confidential and proprietary information of
- * TRUSTONIC LIMITED. You shall not disclose the present software and shall
- * use it only in accordance with the terms of the license agreement you
- * entered into with TRUSTONIC LIMITED. This software may be subject to
- * export or import laws in certain countries.
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
-/**
- * @file   drfoo_Api.h
- * @brief  Contains DCI command definitions and data structures
- *
- */
 
 #ifndef __DRSPIAPI_H__
 #define __DRSPIAPI_H__
