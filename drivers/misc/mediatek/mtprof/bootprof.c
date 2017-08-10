@@ -23,16 +23,13 @@
 #include <log_store_kernel.h>
 
 #include "internal.h"
-#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
-#include "mt_sched_mon.h"
-#endif
-#include <mt_cpufreq.h>
 
 #define BOOT_STR_SIZE 256
-#define BOOT_LOG_NUM 192
+#define BUF_COUNT 12
+#define LOGS_PER_BUF 80
 #define TRACK_TASK_COMM
 
-struct boot_log_struct {
+struct log_t {
 	/* task cmdline for first 16 bytes
 	 * and boot event for the rest
 	 * if TRACK_TASK_COMM is on */
@@ -41,11 +38,12 @@ struct boot_log_struct {
 	pid_t pid;
 #endif
 	u64 timestamp;
-} mt_bootprof[BOOT_LOG_NUM];
+};
 
-static int boot_log_count;
-static DEFINE_MUTEX(mt_bootprof_lock);
-static bool mt_bootprof_enabled;
+static struct log_t *bootprof[BUF_COUNT];
+static unsigned long log_count;
+static DEFINE_MUTEX(bootprof_lock);
+static bool enabled;
 static int bootprof_lk_t, bootprof_pl_t;
 static u64 timestamp_on, timestamp_off;
 int boot_finish = 0;
@@ -58,18 +56,29 @@ module_param_named(lk_t, bootprof_lk_t, int, S_IRUGO | S_IWUSR);
 void log_boot(char *str)
 {
 	unsigned long long ts;
-	struct boot_log_struct *p = &mt_bootprof[boot_log_count];
+	struct log_t *p = NULL;
 	size_t n = strlen(str) + 1;
 
-	if (!mt_bootprof_enabled)
+	if (!enabled)
 		return;
 	ts = sched_clock();
 	pr_err("BOOTPROF:%10Ld.%06ld:%s\n", nsec_high(ts), nsec_low(ts), str);
-	if (boot_log_count >= BOOT_LOG_NUM) {
+
+	mutex_lock(&bootprof_lock);
+	if (log_count >= (LOGS_PER_BUF * BUF_COUNT)) {
 		pr_err("[BOOTPROF] not enuough bootprof buffer\n");
-		return;
+		goto out;
+	} else if (log_count && !(log_count % LOGS_PER_BUF)) {
+		bootprof[log_count / LOGS_PER_BUF] =
+			kzalloc(sizeof(struct log_t) * LOGS_PER_BUF,
+				GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN);
 	}
-	mutex_lock(&mt_bootprof_lock);
+	if (!bootprof[log_count / LOGS_PER_BUF]) {
+		pr_err("no memory for bootprof\n");
+		goto out;
+	}
+	p = &bootprof[log_count / LOGS_PER_BUF][log_count % LOGS_PER_BUF];
+
 	p->timestamp = ts;
 #ifdef TRACK_TASK_COMM
 	p->pid = current->pid;
@@ -78,7 +87,7 @@ void log_boot(char *str)
 	p->comm_event = kzalloc(n, GFP_ATOMIC | __GFP_NORETRY |
 			  __GFP_NOWARN);
 	if (!p->comm_event) {
-		mt_bootprof_enabled = false;
+		enabled = false;
 		goto out;
 	}
 #ifdef TRACK_TASK_COMM
@@ -87,9 +96,9 @@ void log_boot(char *str)
 #else
 	memcpy(p->comm_event, str, n);
 #endif
-	boot_log_count++;
+	log_count++;
 out:
-	mutex_unlock(&mt_bootprof_lock);
+	mutex_unlock(&bootprof_lock);
 }
 
 void bootprof_initcall(initcall_t fn, unsigned long long ts)
@@ -158,34 +167,31 @@ static void bootup_finish(void)
 	mt_sched_monitor_switch(1);
 #endif
 	set_logtoomuch_enable(1);
-#ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
-	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
-#endif
 }
 
 /* extern void (*set_intact_mode)(void); */
 static void mt_bootprof_switch(int on)
 {
-	mutex_lock(&mt_bootprof_lock);
-	if (mt_bootprof_enabled ^ on) {
+	mutex_lock(&bootprof_lock);
+	if (enabled ^ on) {
 		unsigned long long ts = sched_clock();
 
 		pr_err("BOOTPROF:%10Ld.%06ld: %s\n",
 		       nsec_high(ts), nsec_low(ts), on ? "ON" : "OFF");
 
 		if (on) {
-			mt_bootprof_enabled = 1;
+			enabled = 1;
 			timestamp_on = ts;
 		} else {
 			/* boot up complete */
-			mt_bootprof_enabled = 0;
+			enabled = 0;
 			timestamp_off = ts;
 			boot_finish = 1;
 			log_store_bootup();
 			bootup_finish();
 		}
 	}
-	mutex_unlock(&mt_bootprof_lock);
+	mutex_unlock(&bootprof_lock);
 }
 
 static ssize_t
@@ -218,10 +224,10 @@ mt_bootprof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 static int mt_bootprof_show(struct seq_file *m, void *v)
 {
 	int i;
-	struct boot_log_struct *p;
+	struct log_t *p;
 
 	SEQ_printf(m, "----------------------------------------\n");
-	SEQ_printf(m, "%d	    BOOT PROF (unit:msec)\n", mt_bootprof_enabled);
+	SEQ_printf(m, "%d	    BOOT PROF (unit:msec)\n", enabled);
 	SEQ_printf(m, "----------------------------------------\n");
 
 	if (bootprof_pl_t > 0 && bootprof_lk_t > 0) {
@@ -236,8 +242,8 @@ static int mt_bootprof_show(struct seq_file *m, void *v)
 	SEQ_printf(m, "%10Ld.%06ld : ON\n",
 		   nsec_high(timestamp_on), nsec_low(timestamp_on));
 
-	for (i = 0; i < boot_log_count; i++) {
-		p = &mt_bootprof[i];
+	for (i = 0; i < log_count; i++) {
+		p = &bootprof[i / LOGS_PER_BUF][i % LOGS_PER_BUF];
 		if (!p->comm_event)
 			continue;
 #ifdef TRACK_TASK_COMM
@@ -288,7 +294,17 @@ static int __init init_boot_prof(void)
 
 static int __init init_bootprof_buf(void)
 {
+	memset(bootprof, 0, sizeof(struct log_t *) * BUF_COUNT);
+	bootprof[0] = kzalloc(sizeof(struct log_t) * LOGS_PER_BUF,
+			      GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN);
+	if (!bootprof[0])
+		goto fail;
 	mt_bootprof_switch(1);
+	return 0;
+
+fail:
+	kfree(bootprof[0]);
+	bootprof[0] = NULL;
 	return 0;
 }
 
