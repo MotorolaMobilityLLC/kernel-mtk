@@ -1202,11 +1202,12 @@ VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
  */
 
 VOID
-p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
+p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
 {
 	/* P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T)NULL; */
 	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
 	P_WLAN_PROBE_RSP_FRAME_T prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T)NULL;
+	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = NULL;
 	UINT_16 u2TxFrameCtrl;
 	P_WLAN_ACTION_FRAME prActFrame;
 	UINT_8 ucCategory;
@@ -1217,13 +1218,15 @@ p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
 	 * use MASK_FRAME_TYPE is oK for frame type/subtype judge
 	 */
 	u2TxFrameCtrl = prWlanHdr->u2FrameCtrl & MASK_FRAME_TYPE;
+	prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
 
 	switch (u2TxFrameCtrl) {
 	case MAC_FRAME_PROBE_RSP:
 
 		prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T) prWlanHdr;
-		DBGLOG(P2P, INFO, "TX Probe Response Frame, SA: %pM - DA: %pM, cookie: 0x%llx, seqNo: %d\n",
+		DBGLOG(P2P, INFO, "TX Probe Response Frame, SA: %pM - DA: %pM, NoA[%d], cookie: 0x%llx, seqNo: %d\n",
 			prProbRspHdr->aucSrcAddr, prProbRspHdr->aucDestAddr,
+			(prP2pSpecificBssInfo == NULL ? -1 : prP2pSpecificBssInfo->ucNoATimingCount),
 			u8Cookie,
 			prMgmtTxMsdu->ucTxSeqNum);
 
@@ -1318,7 +1321,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		prMgmtTxMsdu->pfTxDoneHandler = p2pFsmRunEventMgmtFrameTxDone;
 		prMgmtTxMsdu->fgIsBasicRate = TRUE;
 
-		p2pFuncTagMgmtFrame(prMgmtTxMsdu, u8Cookie);
+		p2pFuncTagMgmtFrame(prAdapter, prMgmtTxMsdu, u8Cookie);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 

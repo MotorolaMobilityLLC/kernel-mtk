@@ -40,6 +40,8 @@ const UINT_8 aucPriorityParam2TC[] = {
 	TC3_INDEX
 };
 
+#define WLAN_WAIT_READY_BIT_TIMEOUT		3000
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -791,6 +793,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i, u4Value = 0;
+	UINT_32 u4CurrTick;
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 
 	ASSERT(prAdapter);
@@ -824,25 +827,25 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 			};
 
 			/* 3. Wait til RDY bit has been cleaerd */
-			i = 0;
+			u4CurrTick = kalGetTimeTick();
 			while (1) {
 				HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
 
 				if ((u4Value & WCIR_WLAN_READY) == 0)
 					break;
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
-					 || fgIsBusAccessFailed == TRUE || i >= CFG_RESPONSE_POLLING_TIMEOUT) {
+					 || fgIsBusAccessFailed == TRUE ||
+					CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick, WLAN_WAIT_READY_BIT_TIMEOUT)) {
+					g_IsNeedDoChipReset = 1;
+					wlanDumpCommandFwStatus();
 					wlanDumpTcResAndTxedCmd(NULL, 0);
 					cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 					glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
 					/* dump TC4[0] ~ TC4[3] TX_DESC */
 					wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
-					g_IsNeedDoChipReset = 1;
 					kalSendAeeWarning("[Read WCIR_WLAN_READY fail!]", __func__);
 					break;
 				}
-				i++;
-				kalMsleep(10);
 			}
 		}
 
