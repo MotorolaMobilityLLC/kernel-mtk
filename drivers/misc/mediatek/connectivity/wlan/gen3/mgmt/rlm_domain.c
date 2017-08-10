@@ -570,7 +570,7 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains_Passive[] = {
 
 	  {115, BAND_5G, CHNL_SPAN_20, 36, 0, FALSE}
 	  ,			/* CH_SET_UNII_LOW_NA */
-	  {118, BAND_5G, CHNL_SPAN_20, 52, 4, TRUE}
+	  {118, BAND_5G, CHNL_SPAN_20, 52, 0, FALSE}
 	  ,			/* CH_SET_UNII_MID_52_64 */
 	  {121, BAND_5G, CHNL_SPAN_20, 100, 11, TRUE}
 	  ,			/* CH_SET_UNII_WW_100_140 */
