@@ -329,21 +329,12 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	}
 
 	if (isAEEEnabled == 0) {
-		MFC_STATUS r;
 
 		pr_warn("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa %lx\n",
 			primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
 
 		isAEEEnabled = 1;
 		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* default_ui_ layer coniig to changed_ui_layer */
-
-		r = MFC_Open(&mfc_handle, dal_fb_addr, DAL_WIDTH, DAL_HEIGHT,
-					  DAL_BPP, DAL_FG_COLOR, DAL_BG_COLOR);
-		if (MFC_STATUS_OK != r) {
-			pr_debug("DISP/DAL: Warning: call MFC_XXX function failed in %s(), line: %d, ret: %x\n",
-				__func__, __LINE__, r);
-			return r;
-		}
 
 		session_input = &captured_session_input[DISP_SESSION_PRIMARY - 1];
 		session_input->setter = SESSION_USER_AEE;
