@@ -125,8 +125,10 @@ static void set_irtx_duty(int duty_cycle)
 		cdt = cwt / 3;	/* duty=33% */
 	else if (duty_cycle == 30)
 		cdt = cwt * 3 / 10;	/* duty=30% */
-	else
-		pr_debug("[IRTX] non-default duty cycle\n");
+	else {
+		cdt = 0;
+		pr_err("[IRTX] non-default duty cycle\n");
+	}
 
 	irtx_write32(mt_irtx_dev.reg_base, IRTXMT, (cdt << 16) | (cwt & 0xFFFF));
 
