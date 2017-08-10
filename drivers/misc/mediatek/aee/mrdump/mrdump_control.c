@@ -17,7 +17,8 @@
 #include <mt-plat/mrdump.h>
 #include "mrdump_private.h"
 
-mrdump_rsvmem_block_t __initdata rsvmem_block[4];
+#ifdef CONFIG_MTK_AEE_MRDUMP
+mrdump_rsvmem_block_t __initdata rsvmem_block[16];
 
 static __init char *find_next_mrdump_rsvmem(char *p, int len)
 {
@@ -35,33 +36,43 @@ static __init char *find_next_mrdump_rsvmem(char *p, int len)
 	}
 	return tmp_p + 1;
 }
+
 static int __init early_mrdump_rsvmem(char *p)
 {
 	unsigned long start_addr, size;
 	int ret;
 	char *tmp_p = p;
-	int i;
+	int i = 0;
+	int max_count = sizeof(rsvmem_block)/sizeof(mrdump_rsvmem_block_t);
 
-	for (i = 0; i < 4; i++) {
+	while (1) {
+		if (max_count <= 0)
+			break;
 		ret = sscanf(tmp_p, "0x%lx,0x%lx", &start_addr, &size);
 		if (ret != 2) {
 			pr_alert("%s:%s reserve failed ret=%d\n", __func__, p, ret);
 			return 0;
 		}
+
+		if (start_addr == 0 || size == 0) {
+			pr_alert("%s:i=%d start_addr = 0x%lx size=0x%lx skip\n", __func__, i, start_addr, size);
+			continue;
+		}
 		rsvmem_block[i].start_addr = start_addr;
 		rsvmem_block[i].size = size;
+		i++;
+		max_count--;
 		tmp_p = find_next_mrdump_rsvmem(tmp_p, strlen(tmp_p));
 		if (!tmp_p)
 			break;
 	}
-/*
-	for(i = 0;i<4;i++)
-	{
-		if(rsvmem_block[i].start_addr)
+
+	for (i = 0; i < sizeof(rsvmem_block)/sizeof(mrdump_rsvmem_block_t); i++) {
+		if (rsvmem_block[i].start_addr)
 			pr_err(" mrdump region start = %pa size =%pa\n",
-						&rsvmem_block[i].start_addr,&mrdump_rsvmem_block[i].size);
+						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 	}
-*/
+
 	return 0;
 }
 
@@ -74,14 +85,15 @@ __init void mrdump_rsvmem(void)
 			if (!memblock_is_region_reserved(rsvmem_block[i].start_addr, rsvmem_block[i].size))
 				memblock_reserve(rsvmem_block[i].start_addr, rsvmem_block[i].size);
 			else {
-				/*even conflict , we still enable MRDUMP for temp
-				 * because MINI DUMP will reserve the memory in DTSI now
-				 * */
+			       /*even conflict , we still enable MRDUMP for temp
+				* because MINI DUMP will reserve the memory in DTSI now
+				* */
 #if 0
-				mrdump_rsv_conflict = 1;
-				mrdump_enable = 0;
+			       mrdump_rsv_conflict = 1;
+			       mrdump_enable = 0;
 #endif
-				pr_err(" mrdump region start = %pa size =%pa is reserved already\n",
+
+				pr_warn(" mrdump region start = %pa size =%pa is reserved already\n",
 						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 			}
 		}
@@ -89,6 +101,7 @@ __init void mrdump_rsvmem(void)
 }
 
 early_param("mrdump_rsvmem", early_mrdump_rsvmem);
+#endif
 
 #if !defined(CONFIG_MTK_AEE_MRDUMP)
 
