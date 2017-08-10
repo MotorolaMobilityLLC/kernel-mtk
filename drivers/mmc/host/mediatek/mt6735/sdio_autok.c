@@ -181,7 +181,7 @@ do { \
 #define AUTOK_ERR()      do {} while (1)
 #endif
 
-/*#define msdc_retry(expr, retry, cnt, id) \
+#define msdc_sdio_retry(expr, retry, cnt, id) \
 do { \
 	int backup = cnt; \
 	while (retry) { \
@@ -194,32 +194,32 @@ do { \
 	WARN_ON(retry == 0); \
 } while (0)
 
-#define msdc_reset(id) \
+#define msdc_sdio_reset(id) \
 do { \
 	int retry = 3, cnt = 1000; \
 	sdr_set_bits(MSDC_CFG, MSDC_CFG_RST); \
 	mb(); \
-	msdc_retry(sdr_read32(MSDC_CFG) & MSDC_CFG_RST, retry, cnt, id); \
+	msdc_sdio_retry(sdr_read32(MSDC_CFG) & MSDC_CFG_RST, retry, cnt, id); \
 } while (0)
 
-#define msdc_clr_int() \
+#define msdc_sdio_clr_int() \
 do { \
 	volatile u32 val = sdr_read32(MSDC_INT); \
 	sdr_write32(MSDC_INT, val); \
-} while (0)*/
+} while (0)
 
 #define msdc_clr_fifo(id) \
 do { \
 	int retry = 3, cnt = 1000; \
 	sdr_set_bits(MSDC_FIFOCS, MSDC_FIFOCS_CLR); \
-	msdc_retry(sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR, retry, cnt, id); \
+	msdc_sdio_retry(sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_CLR, retry, cnt, id); \
 } while (0)
 
 #define msdc_reset_hw(id) \
 do { \
-	msdc_reset(id); \
+	msdc_sdio_reset(id); \
 	msdc_clr_fifo(id); \
-	msdc_clr_int(); \
+	msdc_sdio_clr_int(); \
 } while (0)
 
 #define msdc_txfifocnt()   ((sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
