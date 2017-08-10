@@ -104,7 +104,7 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 
 void mt_power_gs_dump_suspend(void)
 {
-#ifdef CONFIG_ARCH_MT6580
+#if defined CONFIG_ARCH_MT6580 || defined CONFIG_ARCH_MT6570
 	mt_power_gs_compare("Suspend ", "6325",
 			    MT6325_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6325_PMIC_REG_gs_flightmode_suspend_mode_len);
