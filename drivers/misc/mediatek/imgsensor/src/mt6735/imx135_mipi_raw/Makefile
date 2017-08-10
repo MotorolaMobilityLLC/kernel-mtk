@@ -12,12 +12,7 @@
 #
 
 ifneq ($(CONFIG_MTK_CAM_CAL),y)
-ifeq ($(CONFIG_MODULES),y)
-$(info imx135_otp use module build)
-obj-m += imx135_otp.o
-else
 obj-y += imx135_otp.o
-endif
 endif
 
 obj-y += imx135mipiraw_Sensor.o
