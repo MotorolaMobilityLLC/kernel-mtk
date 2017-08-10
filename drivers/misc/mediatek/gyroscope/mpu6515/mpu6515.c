@@ -1795,7 +1795,7 @@ static int gyroscope_get_data(int *x, int *y, int *z, int *status)
 /*----------------------------------------------------------------------------*/
 static int mpu6515_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, MPU6515_DEV_NAME);
+	strncpy(info->type, MPU6515_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
