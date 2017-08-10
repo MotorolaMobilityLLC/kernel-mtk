@@ -14,7 +14,7 @@
 #ifndef __DDP_AAL_H__
 #define __DDP_AAL_H__
 
-#if defined(CONFIG_MACH_MT6755)
+#if defined(CONFIG_ARCH_MT6755)
 #define AAL_CUSTOMER_GET_PANEL_TYPE            (1)
 #endif
 
