@@ -39,7 +39,7 @@
 
 enum _CMD_VER_T {
 	CMD_VER_1,
-	CMD_VER_2
+	CMD_VER_1_EXT
 };
 
 enum _CMD_TYPE_T {
