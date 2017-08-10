@@ -24,6 +24,8 @@
 #include <linux/sched.h>
 #include "cmdq_def.h"
 
+#define CMDQ_JUMP_MEM
+
 /*  */
 /* address conversion for 4GB ram support: */
 /* .address register: 32 bit */
@@ -440,13 +442,24 @@ typedef struct CmdqModulePAStatStruct {
 } CmdqModulePAStatStruct;
 #endif
 
+struct CmdBufferStruct {
+	struct list_head listEntry;
+	uint32_t *pVABase;	/* virtual address of command buffer */
+	dma_addr_t MVABase;	/* physical address of command buffer */
+};
+
 typedef struct TaskStruct {
 	struct list_head listEntry;
 
 	/* For buffer state */
 	TASK_STATE_ENUM taskState;	/* task life cycle */
+#ifdef CMDQ_JUMP_MEM
+	struct list_head cmd_buffer_list;	/* list of allocated command buffer */
+	uint32_t buf_available_size;		/* available size for last buffer in list */
+#else
 	uint32_t *pVABase;	/* virtual address of command buffer */
 	dma_addr_t MVABase;	/* physical address of command buffer */
+#endif
 	uint32_t bufferSize;	/* size of allocated command buffer */
 	bool useEmergencyBuf;	/* is the command buffer emergency buffer? */
 
@@ -576,6 +589,19 @@ typedef struct RecordStruct {
 	uint32_t otherInstrNUM;
 #endif
 } RecordStruct;
+
+struct MemRecordStruct {
+	size_t alloc_range;		/* max size of this range */
+	uint32_t task_count;	/* how may task in this range */
+};
+
+struct MemMonitorStruct {
+	atomic_t monitor_mem_enable;
+	size_t mem_max_use;
+	size_t mem_max_phy_use;
+	size_t mem_current;
+	size_t mem_phy_current;
+};
 
 typedef struct ErrorStruct {
 	RecordStruct errorRec;	/* the record of the error task */
@@ -879,7 +905,7 @@ extern "C" {
 	int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount,
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
-	int32_t cmdqCoreDebugDumpCommand(TaskStruct *pTask);
+	int32_t cmdqCoreDebugDumpCommand(const TaskStruct *pTask);
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
 
 	int cmdqCorePrintRecordSeq(struct seq_file *m, void *v);
@@ -995,6 +1021,8 @@ extern "C" {
 	void cmdq_core_set_feature(CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
 	uint32_t cmdq_core_get_feature(CMDQ_FEATURE_TYPE_ENUM featureOption);
 	bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption);
+	void cmdq_core_set_mem_monitor(bool enable);
+	void cmdq_core_dump_mem_monitor(void);
 #ifdef __cplusplus
 }
 #endif
