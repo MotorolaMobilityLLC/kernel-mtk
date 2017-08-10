@@ -1182,7 +1182,7 @@ static ssize_t _mtkthermal_cooler_write(struct file *file, const char __user *bu
 #if (3 == MTK_THERMAL_MONITOR_COOLER_MAX_EXTRA_CONDITIONS)
 	_mtkthermal_clear_cooler_conditions(mcdata);
 
-	if (2 <= sscanf(desc, "%s %d %s %d %s %d",
+	if (2 <= sscanf(desc, "%19s %d %19s %d %19s %d",
 			&mcdata->conditions[0][0], &mcdata->threshold[0],
 			&mcdata->conditions[1][0], &mcdata->threshold[1],
 			&mcdata->conditions[2][0], &mcdata->threshold[2])) {
@@ -1321,7 +1321,7 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 		return -EINVAL;
 	}
 
-	if (2 <= sscanf(desc, "%s %d %s", arg_name, &arg_val, trailing)) {
+	if (2 <= sscanf(desc, "%31s %d %127s", arg_name, &arg_val, trailing)) {
 		if ((0 == strncmp(arg_name, "ma_len", 6)) && (arg_val >= 1) && (arg_val <= 60)) {
 			struct mtk_thermal_tz_data *tzdata = NULL;
 
