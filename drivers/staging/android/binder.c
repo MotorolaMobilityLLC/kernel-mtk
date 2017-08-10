@@ -4037,10 +4037,10 @@ static int binder_node_release(struct binder_node *node, int refs)
 	struct binder_work *w;
 
 	BUG_ON(!proc);
-	binder_release_work(&node->async_todo);
 	binder_proc_lock(proc, __LINE__);
 
 	binder_dequeue_work(&node->work, __LINE__);
+	binder_release_work(&node->async_todo);
 
 	_binder_make_node_zombie(node);
 
