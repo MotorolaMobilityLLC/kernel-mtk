@@ -3027,9 +3027,11 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 						   pprBssDesc[i]->ucChannelNum,
 						   RCPI_TO_dBm(pprBssDesc[i]->ucRCPI));
 	}
-	DBGLOG(SCN, INFO, "pending %d sched scan results\n", i);
-	if (i > 0)
+
+	if (i > 0) {
+		DBGLOG(SCN, INFO, "pending %d sched scan results\n", i);
 		kalMemZero(&pprBssDesc[0], i * sizeof(P_BSS_DESC_T));
+	}
 end:
 	kalHaltUnlock();
 	return 0;
