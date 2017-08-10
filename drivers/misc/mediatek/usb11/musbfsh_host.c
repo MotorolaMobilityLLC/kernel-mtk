@@ -179,7 +179,7 @@ static inline void musbfsh_h_tx_start(struct musbfsh_hw_ep *ep)
 	} else {
 		txcsr = musbfsh_readw(ep->regs, MUSBFSH_CSR0);
 		INFO("txcsr=0x%x for ep%d\n", txcsr, ep->epnum);
-		txcsr = MUSBFSH_CSR0_H_SETUPPKT | MUSBFSH_CSR0_TXPKTRDY;
+		txcsr = MUSBFSH_CSR0_H_DIS_PING |  MUSBFSH_CSR0_H_SETUPPKT | MUSBFSH_CSR0_TXPKTRDY;
 		musbfsh_writew(ep->regs, MUSBFSH_CSR0, txcsr);
 		txcsr = musbfsh_readw(ep->regs, MUSBFSH_TXCSR);
 		INFO("txcsr=0x%x for ep%d\n", txcsr, ep->epnum);
