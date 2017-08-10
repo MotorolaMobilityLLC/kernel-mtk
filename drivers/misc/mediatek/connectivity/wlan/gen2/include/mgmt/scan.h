@@ -278,6 +278,7 @@ extern UINT8 aucTdlsTestExtCapElm[];
 */
 /*! Maximum buffer size of SCAN list */
 #define SCN_MAX_BUFFER_SIZE                 (CFG_MAX_NUM_BSS_LIST * ALIGN_4(sizeof(BSS_DESC_T)))
+#define SCN_ROAM_MAX_BUFFER_SIZE	(CFG_MAX_NUM_ROAM_BSS_LIST * ALIGN_4(sizeof(ROAM_BSS_DESC_T)))
 
 #define SCN_RM_POLICY_EXCLUDE_CONNECTED     BIT(0)	/* Remove SCAN result except the connected one. */
 #define SCN_RM_POLICY_TIMEOUT               BIT(1)	/* Remove the timeout one */
@@ -305,6 +306,8 @@ extern UINT8 aucTdlsTestExtCapElm[];
 #define SCN_ADHOC_BSS_DESC_TIMEOUT_SEC      5	/* Second. */
 
 #define SCN_NLO_NETWORK_CHANNEL_NUM         (4)
+
+#define REMOVE_TIMEOUT_TWO_DAY			(60*60*24*2)
 
 /*----------------------------------------------------------------------------*/
 /* MSG_SCN_SCAN_REQ                                                           */
@@ -487,6 +490,13 @@ struct _BSS_DESC_T {
 	OS_SYSTIME rJoinFailTime;
 };
 
+struct _ROAM_BSS_DESC_T {
+	LINK_ENTRY_T rLinkEntry;
+	UINT_8 ucSSIDLen;
+	UINT_8 aucSSID[ELEM_MAX_LEN_SSID];
+	OS_SYSTIME rUpdateTime;
+};
+
 typedef struct _SCAN_PARAM_T {	/* Used by SCAN FSM */
 	/* Active or Passive */
 	ENUM_SCAN_TYPE_T eScanType;
@@ -665,6 +675,10 @@ typedef struct _SCAN_INFO_T {
 	LINK_T rFreeBSSDescList;
 
 	LINK_T rPendingMsgList;
+
+	UINT_8 aucScanRoamBuffer[SCN_ROAM_MAX_BUFFER_SIZE];
+	LINK_T rRoamFreeBSSDescList;
+	LINK_T rRoamBSSDescList;
 
 	/* Sparse Channel Detection */
 	BOOLEAN fgIsSparseChannelValid;
@@ -874,6 +888,12 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 BOOLEAN scanCheckBssIsLegal(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
 
 VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T SpecificprBssDesc);
+
+P_ROAM_BSS_DESC_T scanSearchRoamBssDescBySsid(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc);
+P_ROAM_BSS_DESC_T scanAllocateRoamBssDesc(IN P_ADAPTER_T prAdapter);
+VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc);
+VOID scanSearchBssDescOfRoamSsid(IN P_ADAPTER_T prAdapter);
+VOID scanRemoveRoamBssDescsByTime(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemoveTime);
 
 /*----------------------------------------------------------------------------*/
 /* Routines in scan_fsm.c                                                     */
