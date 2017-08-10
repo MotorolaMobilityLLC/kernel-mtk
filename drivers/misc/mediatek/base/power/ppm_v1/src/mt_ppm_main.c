@@ -1239,7 +1239,7 @@ static void ppm_main_send_request_for_suspend(void)
 {
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
-	int i;
+	int i, j;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -1265,10 +1265,10 @@ static void ppm_main_send_request_for_suspend(void)
 	}
 
 	/* send request to DVFS only */
-	for_each_ppm_clients(i) {
-		if (ppm_main_info.client_info[i].limit_cb
-			&& ppm_main_info.client_info[i].client == PPM_CLIENT_DVFS)
-			ppm_main_info.client_info[i].limit_cb(*c_req);
+	for_each_ppm_clients(j) {
+		if (ppm_main_info.client_info[j].limit_cb
+			&& ppm_main_info.client_info[j].client == PPM_CLIENT_DVFS)
+			ppm_main_info.client_info[j].limit_cb(*c_req);
 	}
 
 	memcpy(last_req->cpu_limit, c_req->cpu_limit,
