@@ -1689,7 +1689,11 @@ static void get_freq_table_cpu(struct eem_det *det)
 				det->max_freq_khz);
 				/* eem_error("2--->Get cpu speed from Device tree = %d\n", cpu_speed); */
 			} else {
+				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+				if (1 == binLevel) {
+				#else
 				if ((1 == binLevel) || (3 == binLevel)) {
+				#endif
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_FY[i] :
 					#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
