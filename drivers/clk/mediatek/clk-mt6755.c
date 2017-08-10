@@ -28,6 +28,8 @@
 static DEFINE_SPINLOCK(mt6755_clk_lock);
 #endif
 #include <dt-bindings/clock/mt6755-clk.h>
+#include "../../misc/mediatek/base/power/mt6755/mt_spm_mtcmos.h"
+#include "../../misc/mediatek/include/mt-plat/mt_devinfo.h"
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
@@ -1728,6 +1730,7 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	void __iomem *base;
 	void __iomem *spm_base;
 	int r;
+	u32 segment = get_devinfo_with_index(21) & 0xFF;
 
 	pr_debug("[CCF] %s: %s\n", __func__, node->name);
 
@@ -1778,6 +1781,12 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	/* OSC CG_EN = 1 */
 		clk_setl(ULPOSC_CON, ULPOSC_CG_EN);
 #endif
+	if (segment == 0x43) {
+		pr_err("segment = 0x43, 6738 chip\n");
+		switch_armpll_l_hwmode(1);
+		switch_armpll_ll_hwmode(1);
+	} else
+		pr_err("segment != 0x43\n");
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6755-apmixedsys",
 		mt_apmixedsys_init);
