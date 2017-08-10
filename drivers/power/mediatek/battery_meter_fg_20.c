@@ -3540,8 +3540,8 @@ static int battery_meter_probe(struct platform_device *dev)
 		temp_strptr =
 		    kzalloc(strlen(saved_command_line) + strlen(" androidboot.mode=charger") + 1,
 			    GFP_KERNEL);
-		strcpy(temp_strptr, saved_command_line);
-		strcat(temp_strptr, " androidboot.mode=charger");
+		strncpy(temp_strptr, saved_command_line, strlen(saved_command_line));
+		strncat(temp_strptr, " androidboot.mode=charger", strlen(" androidboot.mode=charger") + 1);
 		saved_command_line = temp_strptr;
 	}
 #endif
