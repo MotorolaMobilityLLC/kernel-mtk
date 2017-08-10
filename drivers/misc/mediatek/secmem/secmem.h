@@ -21,10 +21,10 @@
 #define MAX_NAME_SIZE   32
 
 struct secmem_param {
-	u32 alignment;		/* IN */
-	u32 size;		/* IN */
-	u32 refcount;		/* INOUT */
-	u32 sec_handle;		/* OUT */
+	u32 alignment;  /* IN */
+	u32 size;       /* IN */
+	u32 refcount;   /* INOUT */
+	u32 sec_handle; /* OUT */
 #ifdef SECMEM_DEBUG_DUMP
 	uint32_t id;
 	uint8_t owner[MAX_NAME_SIZE];
@@ -48,8 +48,9 @@ struct secmem_param {
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 /* SVP CMA API */
-int svp_region_offline(phys_addr_t *pa, unsigned long *size);
-int svp_region_online(void);
+extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
+extern int svp_region_online(void);
+
 /* APIs for ION */
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
