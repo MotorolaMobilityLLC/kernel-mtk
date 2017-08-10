@@ -1335,15 +1335,16 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 		}
 		break;
 	case CCCI_IOC_GET_MD_TYPE:
-		retry = 100;
+		retry = 600;
 		do {
 			md_type = get_legacy_md_type(md_id);
 			if (md_type)
 				break;
-			msleep(200);
+			msleep(500);
 			retry--;
 		} while (retry);
 		CCCI_NORMAL_LOG(md_id, CHAR, "CCCI_IOC_GET_MD_TYPE: %d!\n", md_type);
+		ccci_event_log("md%d: CCCI_IOC_GET_MD_TYPE: 0x%x\n", md_id, md_type);
 		ret = put_user((unsigned int)md_type, (unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_STORE_MD_TYPE:
