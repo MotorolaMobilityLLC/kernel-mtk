@@ -1,16 +1,3 @@
-/*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
-
 #ifndef __LC89821x_STMV__
 #define	__LC89821x_STMV__
 
@@ -212,10 +199,6 @@
 #define	MSNUMR_211		0xA3
 #define ANA2_211		0xA4
 
-
-/*----------------------------------------------------------
-		Initial data table
------------------------------------------------------------*/
 struct INIDATA {
 	unsigned short addr;
 	unsigned short data;
@@ -292,15 +275,14 @@ const struct INIDATA Init_Table_F[] = {
 };
 
 
-typedef struct STMVPAR {
+struct stSmvPar {
 	unsigned short UsSmvSiz;
 	unsigned char UcSmvItv;
 	unsigned char UcSmvEnb;
-} stSmvPar;
+};
 
 extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
-									u16 a_sizeRecvData, u16 i2cId);
+				       u16 a_sizeRecvData, u16 i2cId);
 
 #endif
-

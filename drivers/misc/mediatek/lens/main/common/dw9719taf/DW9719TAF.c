@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2015 MediaTek Inc.
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 /*
@@ -102,9 +102,9 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	return 0;
 }
 
-static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -118,7 +118,7 @@ static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -126,20 +126,10 @@ static inline int getAFInfo(__user stAF_MotorInfo * pstMotorInfo)
 
 static void initdrv(void)
 {
-#if 0
-	char puSendCmd1[2] = { 0x02, 0x01 };	/* SW reset */
-	char puSendCmd2[2] = { 0x02, 0x02 };	/* SAC3 mode */
-	char puSendCmd3[2] = { 0x06, 0x40 };	/* Tvib 9.5ms */
-	char puSendCmd3[2] = { 0x07, 0x60 };
-#endif
 	char puSendCmdArray[5][2] = { {0x02, 0x01}, {0xFE, 0xFE},
 	{0x02, 0x02}, {0x06, 0x40}, {0x07, 0x60}
 	};
 	unsigned char cmd_number;
-#if 0
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-#endif
 
 	LOG_INF("InitDrv[1] %p, %p\n", &(puSendCmdArray[1][0]), puSendCmdArray[1]);
 	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]), puSendCmdArray[2]);
@@ -203,9 +193,10 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
@@ -231,7 +222,7 @@ long DW9719TAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -280,10 +271,11 @@ int DW9719TAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void DW9719TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
-			    int *pAF_Opened)
+int DW9719TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	return 1;
 }

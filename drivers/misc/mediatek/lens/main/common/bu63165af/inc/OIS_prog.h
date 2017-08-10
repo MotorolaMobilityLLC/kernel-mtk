@@ -1,7 +1,20 @@
+/*
+* Copyright (C) Rohm Co.,Ltd. All rights reserved.
+
+* This software is licensed under the terms of the GNU General Public
+* License version 2, as published by the Free Software Foundation, and
+* may be copied, distributed, and modified under those terms.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*/
+
 #ifndef OIS_PROG_H
 #define OIS_PROG_H
 
-const	OIS_UBYTE	DOWNLOAD_BIN[] = {
+const	unsigned char	DOWNLOAD_BIN[] = {
 	0x00,
 	0x41,
 	0x54,
@@ -3083,5 +3096,5 @@ const	OIS_UBYTE	DOWNLOAD_BIN[] = {
 	0x00,
 };
 
-const	OIS_UWORD	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
+const	unsigned short int	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
 #endif

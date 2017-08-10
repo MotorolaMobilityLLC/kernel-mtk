@@ -36,7 +36,8 @@
 #endif
 
 /* if use ISRC mode, should modify variables in init_setting */
-#define USE_ISRC_MODE_S5K2P8_SENSOR
+/* #define USE_ISRC_MODE_S5K2P8_SENSOR */
+#define USE_ISRC_MODE_IMX386_SENSOR
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
@@ -75,7 +76,7 @@ static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
 
-	#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
+	#if defined(USE_ISRC_MODE_S5K2P8_SENSOR) || defined(USE_ISRC_MODE_IMX386_SENSOR)
 	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC4), (char)(a_u2Data & 0xFF)};
 	#else
 	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC0), (char)(a_u2Data & 0xFF)};
@@ -196,9 +197,9 @@ static int init_setting(void)
 }
 #endif
 
-static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -212,7 +213,7 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -232,6 +233,22 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
+
+		#ifdef USE_ISRC_MODE_IMX386_SENSOR
+		char puSendCmd[2];
+
+		puSendCmd[0] = (char)(0xD0);
+		puSendCmd[1] = (char)(0xC8);
+		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+		puSendCmd[0] = (char)(0xC8);
+		puSendCmd[1] = (char)(0x01);
+		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+		puSendCmd[0] = (char)(0xC6);
+		puSendCmd[1] = (char)(0x00);
+		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		#endif
 
 		ret = s4AF_ReadReg(&InitPos);
 		#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
@@ -272,9 +289,10 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
@@ -300,7 +318,7 @@ long BU6429AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned l
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -340,10 +358,6 @@ int BU6429AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		puSendCmd[1] = (char)(0x00);
 		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 		LOG_INF("Wait\n");
-		/*s4AF_WriteReg(200);
-		msleep(20);
-		s4AF_WriteReg(100);
-		msleep(20);*/
 	}
 
 	if (*g_pAF_Opened) {
@@ -361,9 +375,11 @@ int BU6429AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void BU6429AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int BU6429AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	return 1;
 }

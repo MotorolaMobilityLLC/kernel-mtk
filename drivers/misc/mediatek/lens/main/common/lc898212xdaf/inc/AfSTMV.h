@@ -1,58 +1,57 @@
-//********************************************************************************
-//
-//		LC898212 Step Move header
-//
-//	    Program Name	: AfSTMV.h
-//		Design			: Rex.Tang
-//		History			: First edition						2013.07.19 Rex.Tang
-//
-//		Description		: Interface Functions and Definations
-//********************************************************************************
+
 #ifndef __AFSTMV__
 #define	__AFSTMV__
 
-//**************************
-//	Definations 					
-//**************************
-// Convergence Judgement
-#define INI_MSSET_211		(unsigned char)0x00						// Initialize Value For [8Fh]
-#define CHTGX_THRESHOLD		(unsigned short)0x0200						// Convergence Judge Threshold
-#define CHTGOKN_TIME		(unsigned char)0x80						// 64 Sampling Time 1.365msec( EQCLK=12MHz )
-#define CHTGOKN_WAIT		3							// CHTGOKN_WAIT(3ms) > CHTGOKN_TIME(2.732msec) ( CHTGOKN_WAIT has to be longer than CHTGOKN_TIME)
 
-// StepMove
-#define STMV_SIZE			(unsigned short)0x0180						// StepSize(MS1Z12)
-#define STMV_INTERVAL		(unsigned char)0x01						// Step Interval(STMVINT)
+#define INI_MSSET_211		((unsigned char)0x00)
+#define CHTGX_THRESHOLD		((unsigned short)0x0200)
+#define CHTGOKN_TIME		((unsigned char)0x80)
+#define CHTGOKN_WAIT		3
 
-#define	STMCHTG_ON			(unsigned char)0x08						// STMVEN Register Set
-#define STMSV_ON			(unsigned char)0x04
-#define STMLFF_ON			(unsigned char)0x02 
-#define STMVEN_ON			(unsigned char)0x01 
-#define	STMCHTG_OFF			(unsigned char)0x00
-#define STMSV_OFF			(unsigned char)0x00
-#define STMLFF_OFF			(unsigned char)0x00
-#define STMVEN_OFF			(unsigned char)0x00
+#define STMV_SIZE		((unsigned short)0x0180)
+#define STMV_INTERVAL		((unsigned char)0x01)
 
-#define	STMCHTG_SET			STMCHTG_ON					// Convergence Judgement On
-#define STMSV_SET			STMSV_ON					// Setting Target Position = End Position
-#define STMLFF_SET			STMLFF_OFF
+#define	STMCHTG_ON		((unsigned char)0x08)
+#define STMSV_ON		((unsigned char)0x04)
+#define STMLFF_ON		((unsigned char)0x02)
+#define STMVEN_ON		((unsigned char)0x01)
+#define	STMCHTG_OFF		((unsigned char)0x00)
+#define STMSV_OFF		((unsigned char)0x00)
+#define STMLFF_OFF		((unsigned char)0x00)
+#define STMVEN_OFF		((unsigned char)0x00)
+
+#define	STMCHTG_SET		STMCHTG_ON
+#define STMSV_SET		STMSV_ON
+#define STMLFF_SET		STMLFF_OFF
 
 
-typedef struct STMVPAR {
-	unsigned short	UsSmvSiz ;
-	unsigned char	UcSmvItv ;
-	unsigned char	UcSmvEnb ;
-} stSmvPar ;
+struct stSmvPar {
+	unsigned short UsSmvSiz;
+	unsigned char UcSmvItv;
+	unsigned char UcSmvEnb;
+};
 
-/*====================================================================
-	Interface functions (export)
-=====================================================================*/
 /* Step Move Parameter Setting Function */
-extern	void	StmvSet( stSmvPar ) ;
+extern void StmvSet(struct stSmvPar);
 
-/* Step Move to Target Positon Function */	
-extern 	unsigned char	StmvTo( short ) ;
+/* Step Move to Target Position Function */
+extern unsigned char StmvTo(short);
 
+extern void RamWriteA(unsigned short addr, unsigned short data);
 
+extern void RamReadA(unsigned short addr, unsigned short *data);
 
-#endif	/* __AFSTMV__ */
+extern void RegWriteA(unsigned short addr, unsigned char data);
+
+extern void RegReadA(unsigned short addr, unsigned char *data);
+
+extern void WaitTime(unsigned short msec);
+
+extern int s4AF_WriteReg_LC898212XDAF(unsigned char *a_pSendData, unsigned short a_sizeSendData,
+					unsigned short i2cId);
+
+extern int s4AF_ReadReg_LC898212XDAF(unsigned char *a_pSendData, unsigned short a_sizeSendData,
+					unsigned char *a_pRecvData, unsigned short a_sizeRecvData,
+					unsigned short i2cId);
+
+#endif				/* __AFSTMV__ */

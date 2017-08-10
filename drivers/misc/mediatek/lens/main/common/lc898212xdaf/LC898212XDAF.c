@@ -141,7 +141,7 @@ static int convertAF_DAC(short ReadData)
 
 static void LC898212XD_init(void)
 {
-	stSmvPar StSmvPar;
+	struct stSmvPar StSmvPar;
 	u8 val1 = 0, val2 = 0;
 
 	int Hall_Off = 0x80;	/* Please Read Offset from EEPROM or OTP */
@@ -171,8 +171,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0017, &val2);
 		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		if ((0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		if ((HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -222,8 +222,8 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-			if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				Hall_Min = HallMinCheck;
 				Hall_Max = HallMaxCheck;
@@ -247,8 +247,8 @@ static void LC898212XD_init(void)
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F37, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2);
 
-				if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-					(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+				if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+					(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 					Hall_Min = HallMinCheck;
 					Hall_Max = HallMaxCheck;
@@ -281,8 +281,8 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
 			HallCheck = val1;
 
-			if ((HallCheck == 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((HallCheck == 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
@@ -348,8 +348,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-		if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -372,8 +372,8 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC5, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC6, &val2);
 
-			if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				Hall_Min = HallMinCheck;
 				Hall_Max = HallMaxCheck;
@@ -400,8 +400,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-		if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -416,7 +416,7 @@ static void LC898212XD_init(void)
 	}
 
 	/* Range Protection : Min = 0x8001 , Max = 0x7FFF */
-	if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+	if (!(Hall_Max >= 0 && Hall_Max <= 0x7FFF)) {
 		signed short Temp;
 
 		Temp = Hall_Min;
@@ -469,9 +469,9 @@ static unsigned short AF_convert(int position)
 }
 
 
-static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
+static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
-	stAF_MotorInfo stMotorInfo;
+	struct stAF_MotorInfo stMotorInfo;
 
 	stMotorInfo.u4MacroPosition = g_u4AF_MACRO;
 	stMotorInfo.u4InfPosition = g_u4AF_INF;
@@ -485,7 +485,7 @@ static inline int getAFInfo(__user stAF_MotorInfo *pstMotorInfo)
 	else
 		stMotorInfo.bIsMotorOpen = 0;
 
-	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(stAF_MotorInfo)))
+	if (copy_to_user(pstMotorInfo, &stMotorInfo, sizeof(struct stAF_MotorInfo)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
 	return 0;
@@ -519,6 +519,7 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
+		return -1;
 	}
 
 	return 0;
@@ -540,9 +541,9 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
-static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
+static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 {
-	stAF_MotorCalPos stMotorCalPos;
+	struct stAF_MotorCalPos stMotorCalPos;
 	u32 u4AF_CalibData_INF;
 	u32 u4AF_CalibData_MACRO;
 	u8 val1;
@@ -576,7 +577,7 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+		if (!(Hall_Max >= 0 && Hall_Max <= 0x7FFF)) {
 			signed short Temp;
 
 			Temp = Hall_Min;
@@ -614,7 +615,7 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
 			LOG_INF("u4AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
 
-			if (0 < u4AF_CalibData_MACRO && u4AF_CalibData_INF < 1024 &&
+			if (u4AF_CalibData_MACRO > 0 && u4AF_CalibData_INF < 1024 &&
 				u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
 				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
 				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
@@ -622,7 +623,7 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		}
 	}
 
-	if (0 < u4AF_CalibData_INF && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
+	if (u4AF_CalibData_INF > 0 && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
 		stMotorCalPos.u4MacroPos = u4AF_CalibData_MACRO;
 		stMotorCalPos.u4InfPos = u4AF_CalibData_INF;
 	} else {
@@ -643,7 +644,7 @@ long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsign
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -659,7 +660,7 @@ long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsign
 		break;
 
 	case AFIOC_G_MOTORCALPOS:
-		i4RetValue = getAFCalPos((__user stAF_MotorCalPos *) (a_u4Param));
+		i4RetValue = getAFCalPos((__user struct stAF_MotorCalPos *) (a_u4Param));
 		break;
 	default:
 		LOG_INF("No CMD\n");
@@ -703,9 +704,11 @@ int LC898212XDAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-void LC898212XDAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int LC898212XDAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	return 1;
 }

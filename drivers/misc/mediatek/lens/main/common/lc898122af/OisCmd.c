@@ -28,43 +28,10 @@
 #include	"Ois.h"
 #include	"OisDef.h"
 
-/* ************************** */
-/* Local Function Prottype */
-/* ************************** */
-void MesFil(unsigned char);	/* Measure Filter Setting */
-#ifdef	MODULE_CALIBRATION
-#ifndef	HALLADJ_HW
-void LopIni(unsigned char);	/* Loop Gain Initialize */
-#endif
-void LopPar(unsigned char);	/* Loop Gain Parameter initialize */
-#ifndef	HALLADJ_HW
-void LopSin(unsigned char, unsigned char);	/* Loop Gain Sin Wave Output */
-unsigned char LopAdj(unsigned char);	/* Loop Gain Adjust */
-void LopMes(void);		/* Loop Gain Measure */
-#endif
-#endif
-#ifndef	HALLADJ_HW
-unsigned long GinMes(unsigned char);	/* Measure Result Getting */
-#endif
-void GyrCon(unsigned char);	/* Gyro Filter Control */
-short GenMes(unsigned short, unsigned char);	/* General Measure */
-#ifndef	HALLADJ_HW
-/* unsigned long        TnePtp( unsigned char, unsigned char ) ;        // Get Hall Peak to Peak Values */
-/* unsigned char        TneCen( unsigned char, UnDwdVal ) ;                     // Tuning Hall Center */
-unsigned long TneOff(UnDwdVal, unsigned char);	/* Hall Offset Tuning */
-unsigned long TneBia(UnDwdVal, unsigned char);	/* Hall Bias Tuning */
-#endif
-
-void StbOnn(void);		/* Servo ON Slope mode */
-
-void SetSineWave(unsigned char, unsigned char);
-void StartSineWave(void);
-void StopSineWave(void);
-
-void SetMeasFil(unsigned char);
-void ClrMeasFil(void);
-
-
+struct stAdjPar StAdjPar;	/* Execute Command Parameter */
+unsigned char UcOscAdjFlg;	/* For Measure trigger */
+unsigned long UlH1Coefval;	/* H1 coefficient value */
+unsigned char UcH1LvlMod;	/* H1 level coef mode */
 
 /* ************************** */
 /* define */
@@ -133,7 +100,7 @@ void ClrMeasFil(void);
 unsigned char UcAdjBsy;
 
 #else
-unsigned short UsStpSiz = 0;	/* Bias Step Size */
+unsigned short UsStpSiz;	/* Bias Step Size */
 unsigned short UsErrBia, UsErrOfs;
 #endif
 
@@ -208,7 +175,7 @@ unsigned short TneRun(void)
 	unsigned short UsFinSts, UsOscSts;	/* Final Adjustment state */
 	unsigned char UcDrvMod;
 #ifndef	HALLADJ_HW
-	UnDwdVal StTneVal;
+	union UnDwdVal StTneVal;
 #endif
 
 #ifdef	USE_EXTCLK_ALL		/* 24MHz */
@@ -245,7 +212,7 @@ unsigned short TneRun(void)
 	TneHvc();
 #endif				/* NEUTRAL_CENTER */
 #else
-/* StbOnnN( OFF , ON ) ;    */                      /* Y OFF, X ON */
+	/* StbOnnN( OFF , ON ) ;    *//* Y OFF, X ON */
 	WitTim_LC898122AF(TNE);
 
 	StTneVal.UlDwdVal = TnePtp(Y_DIR, PTP_BEFORE);
@@ -353,7 +320,7 @@ unsigned short TneRun(void)
 
 unsigned long TnePtp(unsigned char UcDirSel, unsigned char UcBfrAft)
 {
-	UnDwdVal StTneVal;
+	union UnDwdVal StTneVal;
 
 	MesFil(THROUGH);	/* 測定用フィ?ターを設定する。 */
 
@@ -447,7 +414,7 @@ unsigned long TnePtp(unsigned char UcDirSel, unsigned char UcBfrAft)
 /* History                      : First edition                                                 2009.12.1 YS.Kim */
 /* ******************************************************************************** */
 unsigned short UsValBef, UsValNow;
-unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
+unsigned char TneCen(unsigned char UcTneAxs, union UnDwdVal StTneVal)
 {
 	unsigned char UcTneRst, UcTmeOut, UcTofRst;
 	unsigned short UsOffDif;
@@ -483,7 +450,8 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 				UcTofRst = FAILURE;
 
 			/* Check Tuning Result */
-			if ((StTneVal.StDwdVal.UsHigVal < HALL_MIN_GAP && StTneVal.StDwdVal.UsLowVal < HALL_MIN_GAP)
+			if ((StTneVal.StDwdVal.UsHigVal < HALL_MIN_GAP
+			     && StTneVal.StDwdVal.UsLowVal < HALL_MIN_GAP)
 			    && (StTneVal.StDwdVal.UsHigVal > HALL_MAX_GAP
 				&& StTneVal.StDwdVal.UsLowVal > HALL_MAX_GAP)) {
 				UcTneRst = SUCCESS;
@@ -491,13 +459,12 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 			} else if (UsStpSiz == 0) {
 				UcTneRst = SUCCESS;
 				break;
-			} else {
-				UcTneRst = FAILURE;
-				UcTmeOut++;
 			}
+
+			UcTneRst = FAILURE;
+			UcTmeOut++;
 		} else {
-			if ((StTneVal.StDwdVal.UsHigVal > MARGIN) && (StTneVal.StDwdVal.UsLowVal
-				> MARGIN)) {	/* position check */
+			if ((StTneVal.StDwdVal.UsHigVal > MARGIN) && (StTneVal.StDwdVal.UsLowVal > MARGIN)) {
 				UcTofRst = SUCCESS;
 				UsValBef = UsValNow = 0x0000;
 			} else if ((StTneVal.StDwdVal.UsHigVal <= MARGIN)
@@ -528,9 +495,9 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 				    || (((UsValBef & 0xFF00) == 0x7F00)
 					&& (UsValNow & 0xFF00) == 0x7F00)) {
 					if (!(UcTneAxs & 0x0F))
-						RamReadA_LC898122AF(DAXHLB, &UsBiasVal);	/* 0x147A       Hall X Bias Read */
+						RamReadA_LC898122AF(DAXHLB, &UsBiasVal);
 					else
-						RamReadA_LC898122AF(DAYHLB, &UsBiasVal);	/* 0x14FA       Hall Y Bias Read */
+						RamReadA_LC898122AF(DAYHLB, &UsBiasVal);
 
 					if (UsBiasVal > 0x8000)
 						UsBiasVal -= 0x8000;
@@ -543,9 +510,9 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 					UsBiasVal += 0x8000;
 
 					if (!(UcTneAxs & 0x0F))
-						RamWriteA_LC898122AF(DAXHLB, UsBiasVal);	/* 0x147A       Hall X Bias */
+						RamWriteA_LC898122AF(DAXHLB, UsBiasVal);
 					else
-						RamWriteA_LC898122AF(DAYHLB, UsBiasVal);	/* 0x14FA       Hall Y Bias */
+						RamWriteA_LC898122AF(DAYHLB, UsBiasVal);
 				}
 
 				RamAccFixMod(OFF);	/* Float mode */
@@ -571,11 +538,11 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 		if (UcTneAxs & 0xF0) {
 			if ((UcTmeOut / 2) == TIME_OUT)
 				UcTmeOut = 0;
-				/* Set Time Out Count */
+			/* Set Time Out Count */
 		} else {
 			if (UcTmeOut == TIME_OUT)
 				UcTmeOut = 0;
-				/* Set Time Out Count */
+			/* Set Time Out Count */
 		}
 	}
 
@@ -605,7 +572,7 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 /* Explanation          : Hall Bias Tuning Function */
 /* History                      : First edition                                                 2009.12.1 YS.Kim */
 /* ******************************************************************************** */
-unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
+unsigned long TneBia(union UnDwdVal StTneVal, unsigned char UcTneAxs)
 {
 	long SlSetBia;
 	unsigned short UsSetBia;
@@ -693,8 +660,9 @@ unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
 	if (UcChkFst) {
 		if (UcTneAxs & 0xF0) {
 			/* Calculatiton For Hall BIAS 1/2 Searching */
-			if (((unsigned short)0xFFFF - (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal))
-			      < BIAS_ADJ_RANGE) {
+			if (((unsigned short)0xFFFF -
+			     (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal))
+			    < BIAS_ADJ_RANGE) {
 				if (((unsigned short)0xFFFF -
 				     (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal)) <
 				    BIAS_ADJ_SKIP) {
@@ -715,7 +683,8 @@ unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
 
 		} else {
 			/* Calculatiton For Hall BIAS 1/2 Searching */
-			if ((StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal) / 2 > BIAS_ADJ_BORDER)
+			if ((StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal) / 2 >
+			    BIAS_ADJ_BORDER)
 				SlSetBia += UsStpSiz;
 			else
 				SlSetBia -= UsStpSiz;
@@ -751,7 +720,7 @@ unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
 /* Explanation          : Hall Offset Tuning Function */
 /* History                      : First edition                                                 2009.12.1 YS.Kim */
 /* ******************************************************************************** */
-unsigned long TneOff(UnDwdVal StTneVal, unsigned char UcTneAxs)
+unsigned long TneOff(union UnDwdVal StTneVal, unsigned char UcTneAxs)
 {
 	long SlSetOff;
 	unsigned short UsSetOff;
@@ -1078,14 +1047,13 @@ unsigned char LopGan(unsigned char UcDirSel)
 	SrvCon(X_DIR, OFF);
 	SrvCon(Y_DIR, OFF);
 
-	if (!UcLpAdjSts) {
+	if (!UcLpAdjSts)
 		return EXE_END;
-	} else {
-		if (!UcDirSel)
-			return EXE_LXADJ;
-		else
-			return EXE_LYADJ;
-	}
+
+	if (!UcDirSel)
+		return EXE_LXADJ;
+	else
+		return EXE_LYADJ;
 }
 
 
@@ -1157,7 +1125,7 @@ void LopSin(unsigned char UcDirSel, unsigned char UcSonOff)
 #ifdef	USE_EXTCLK_ALL		/* 24MHz */
 		/* Freq = CmSinFrq * 11.718kHz / 65536 / 16 */
 #ifdef	ACTREG_6P5OHM
-/* UsFreqVal       =       0x30EE ;  */                             /* 139.9Hz */
+		/* UsFreqVal       =       0x30EE ;  *//* 139.9Hz */
 		UsFreqVal = 0x29F1;	/* 119.9Hz */
 #endif
 #ifdef	ACTREG_10P2OHM
@@ -1169,7 +1137,7 @@ void LopSin(unsigned char UcDirSel, unsigned char UcSonOff)
 #else
 		/* Freq = CmSinFrq * 23.4375kHz / 65536 / 16 */
 #ifdef	ACTREG_6P5OHM
-/* UsFreqVal       =       0x1877 ;   */                              /* 139.9Hz */
+		/* UsFreqVal       =       0x1877 ;   *//* 139.9Hz */
 		UsFreqVal = 0x14F8;	/* 119.9Hz */
 #endif
 #ifdef	ACTREG_10P2OHM
@@ -1181,7 +1149,7 @@ void LopSin(unsigned char UcDirSel, unsigned char UcSonOff)
 #endif
 
 		RegWriteA_LC898122AF(WC_SINFRQ0, (unsigned char)UsFreqVal);	/* 0x0181               Freq L */
-		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqVal >> 8));	/* 0x0182               Freq H */
+		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqVal >> 8));
 
 		if (!UcDirSel) {
 
@@ -1232,7 +1200,7 @@ unsigned char LopAdj(unsigned char UcDirSel)
 	unsigned char UcIdxCnt;
 	unsigned char UcIdxCn1;
 	unsigned char UcIdxCn2;
-	UnFltVal UnAdcXg1, UnAdcXg2, UnRtnVa;
+	union UnFltVal UnAdcXg1, UnAdcXg2, UnRtnVa;
 
 	float DfGanVal[5];
 	float DfTemVal;
@@ -1477,7 +1445,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( ON ) ;  */                     /* Auto Gain Control Mode ON */
+		/* AutoGainControlSw( ON ) ;  *//* Auto Gain Control Mode ON */
 #endif
 		ClrGyr(0x000E, CLR_FRAM1);	/* Gyro Delay RAM Clear */
 
@@ -1489,7 +1457,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( ON ) ;  */                      /* Auto Gain Control Mode ON */
+		/* AutoGainControlSw( ON ) ;  *//* Auto Gain Control Mode ON */
 #endif
 
 		RamWrite32A_LC898122AF(sxggf, 0x3F800000);	/* 0x10B5 */
@@ -1504,7 +1472,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( OFF ) ;  */                    /* Auto Gain Control Mode OFF */
+		/* AutoGainControlSw( OFF ) ;  *//* Auto Gain Control Mode OFF */
 #endif
 	}
 }
@@ -1788,9 +1756,9 @@ void SetSinWavePara(unsigned char UcTableVal, unsigned char UcMethodVal)
 			/* 0x01BA       output SYOFFZ1 */
 
 			RegWriteA_LC898122AF(WC_MES1ADD0, (unsigned char)SINXZ);	/* 0x0194       */
-			RegWriteA_LC898122AF(WC_MES1ADD1, (unsigned char)((SINXZ >> 8) & 0x0001));	/* 0x0195       */
+			RegWriteA_LC898122AF(WC_MES1ADD1, (unsigned char)((SINXZ >> 8) & 0x0001));
 			RegWriteA_LC898122AF(WC_MES2ADD0, (unsigned char)SINYZ);	/* 0x0196       */
-			RegWriteA_LC898122AF(WC_MES2ADD1, (unsigned char)((SINYZ >> 8) & 0x0001));	/* 0x0197       */
+			RegWriteA_LC898122AF(WC_MES2ADD1, (unsigned char)((SINYZ >> 8) & 0x0001));
 
 			RegWriteA_LC898122AF(WC_DPON, 0x03);	/* 0x0105       Data pass[1:0] on */
 
@@ -1811,8 +1779,8 @@ void SetSinWavePara(unsigned char UcTableVal, unsigned char UcMethodVal)
 			}
 		}
 
-		RegWriteA_LC898122AF(WC_SINFRQ0, (unsigned char)UsFreqDat);	/* 0x0181               Freq L */
-		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqDat >> 8));	/* 0x0182               Freq H */
+		RegWriteA_LC898122AF(WC_SINFRQ0, (unsigned char)UsFreqDat);
+		RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFreqDat >> 8));
 		RegWriteA_LC898122AF(WC_MESSINMODE, 0x00);	/* 0x0191       Sine 0 cross  */
 
 		RegWriteA_LC898122AF(WH_EQSWX, UcEqSwX);	/* 0x0170       */
@@ -2168,7 +2136,7 @@ void StbOnn(void)
 
 		UcRegIni = 0x11;
 		while ((UcRegIni & 0x77) != 0x66)
-			RegReadA_LC898122AF(RH_SMTSRVSTT, &UcRegIni);	/* 0x01F8               Smooth Servo phase read */
+			RegReadA_LC898122AF(RH_SMTSRVSTT, &UcRegIni);
 
 		RegWriteA_LC898122AF(WH_SMTSRVON, 0x00);	/* 0x017C               Smooth Servo OFF */
 
@@ -2290,7 +2258,7 @@ const signed char ScCselRate[CRATETABLE] = {
 
 
 #define	TARGET_FREQ		48000.0F	/* 48MHz */
-/* #define       TARGET_FREQ          24000.0F */    /* 24MHz */
+
 #define	START_RSEL		0x04	/* Typ */
 #define	START_CSEL		0x08	/* Typ bit4:OSCPMSEL */
 #define	MEAS_MAX		32	/* 上限32回 */
@@ -2310,7 +2278,7 @@ const signed char ScCselRate[CRATETABLE] = {
 unsigned short OscAdj(void)
 {
 	unsigned char UcMeasFlg;	/* Measure check flag */
-	UnWrdVal StClkVal;	/* Measure value */
+	union UnWrdVal StClkVal;	/* Measure value */
 	unsigned char UcMeasCnt;	/* Measure counter */
 	unsigned char UcOscrsel, UcOsccsel;	/* Reg set value */
 	unsigned char UcSrvDivBk;	/* back up value */
@@ -2321,7 +2289,7 @@ unsigned short OscAdj(void)
 	unsigned char UcOsccselP, UcOsccselM;	/* Reg set value */
 	unsigned short UsResult;
 
-/* unsigned char   UcOscsetBk ;  */                                               /* Reg set value */
+	/* unsigned char   UcOscsetBk ;  *//* Reg set value */
 
 	UcMeasFlg = 0;		/* Clear Measure check flag */
 	UcMeasCnt = 0;		/* Clear Measure counter */
@@ -2340,9 +2308,8 @@ unsigned short OscAdj(void)
 		UcMeasCnt++;	/* Measure count up */
 		UcOscAdjFlg = MEASSTR;	/* Start trigger ON */
 
-		while (UcOscAdjFlg != MEASFIX) {
+		while (UcOscAdjFlg != MEASFIX)
 			;
-		}
 
 		UcOscAdjFlg = 0x00;	/* Clear Flag */
 		RegReadA_LC898122AF(OSCCK_CNTR0, &StClkVal.StWrdVal.UcLowVal);	/* 0x025E */
@@ -2475,10 +2442,10 @@ unsigned short OscAdj(void)
 void SetSineWave(unsigned char UcJikuSel, unsigned char UcMeasMode)
 {
 #ifdef	USE_EXTCLK_ALL		/* 24MHz */
-	unsigned short UsFRQ[] = { 0x30EE /*139.9Hz */ , 0x037E /*10Hz */  };
+	unsigned short UsFRQ[] = { 0x30EE, 0x037E }; /*139.9Hz */ /*10Hz */
 	/* { Loop Gain setting , Bias/Offset setting} */
 #else
-	unsigned short UsFRQ[] = { 0x1877 /*139.9Hz */ , 0x01BF /*10Hz */  };
+	unsigned short UsFRQ[] = { 0x1877, 0x01BF  }; /*139.9Hz */ /*10Hz */
 	/* { Loop Gain setting , Bias/Offset setting} */
 #endif
 	unsigned long UlAMP[2][2] = { {0x3CA3D70A, 0x3CA3D70A},	/* Loop Gain   { X amp , Y amp } */
@@ -2503,7 +2470,7 @@ void SetSineWave(unsigned char UcJikuSel, unsigned char UcMeasMode)
 
 	/* Freq */
 	RegWriteA_LC898122AF(WC_SINFRQ0, (unsigned char)UsFRQ[UcMeasMode]);	/* 0x0181               Freq L */
-	RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFRQ[UcMeasMode] >> 8));	/* 0x0182               Freq H */
+	RegWriteA_LC898122AF(WC_SINFRQ1, (unsigned char)(UsFRQ[UcMeasMode] >> 8));
 
 	/* Clear Optional Sine wave input address */
 	RegReadA_LC898122AF(WH_EQSWX, &UcEqSwX);	/* 0x0170       */
