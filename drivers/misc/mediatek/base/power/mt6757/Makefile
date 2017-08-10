@@ -50,12 +50,13 @@ obj-y += mt_clkmgr_common.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
 obj-y += mt_picachu.o
-obj-y += mt_eem.o
 obj-y += mt_cpufreq.o
 obj-y += mt_cpufreq_hybrid.o
 obj-y += mt_udi.o
 obj-y += mt_gpufreq.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
+obj-y += mt_eem.o
+obj-y += mt_eem_turbo.o
 
 ifneq ($(CONFIG_ARM64), y)
 

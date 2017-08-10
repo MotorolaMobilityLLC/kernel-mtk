@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _MT_EEM_
 #define _MT_EEM_
@@ -20,6 +20,7 @@
 #endif
 
 #define EN_EEM_OD (1) /* enable/disable EEM-OD (SW) */
+/* #define EEM_DVT_TEST */
 
 /**
  * 1: Select VCORE_AO ptpod detector
@@ -99,6 +100,12 @@ enum eem_vcore_id {
 	VCORE_VOLT_2
 };
 
+enum mt_eem_cpu_id {
+	MT_EEM_CPU_2L,
+	MT_EEM_CPU_L,
+	NR_MT_EEM_CPU
+};
+
 
 /* Global variable for SW EFUSE*/
 /* TODO: FIXME #include "devinfo.h" */
@@ -110,27 +117,86 @@ extern u32 get_devinfo_with_index(u32 index);
 
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
-	EEM_CPU_2LITTLE_IS_SET_VOLT = 0, /* 2L */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT = 0, /* 2L */
 	EEM_CPU_LITTLE_IS_SET_VOLT,		/* B */
 	EEM_CCI_IS_SET_VOLT,			/* CCI */
 	EEM_GPU_IS_SET_VOLT,            /* GPU */
 };
 
-extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
-extern void aee_rr_rec_ptp_cpu_2_little_volt(u64 val);
-
+extern void aee_rr_rec_ptp_60(u32 val);
+extern void aee_rr_rec_ptp_64(u32 val);
+extern void aee_rr_rec_ptp_68(u32 val);
+extern void aee_rr_rec_ptp_6C(u32 val);
+extern void aee_rr_rec_ptp_78(u32 val);
+extern void aee_rr_rec_ptp_7C(u32 val);
+extern void aee_rr_rec_ptp_80(u32 val);
+extern void aee_rr_rec_ptp_84(u32 val);
+extern void aee_rr_rec_ptp_88(u32 val);
+extern void aee_rr_rec_ptp_8C(u32 val);
+extern void aee_rr_rec_ptp_9C(u32 val);
+extern void aee_rr_rec_ptp_A0(u32 val);
+extern void aee_rr_rec_ptp_vboot(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_3(u64 val);
 extern void aee_rr_rec_ptp_gpu_volt(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_1(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_2(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val);
 extern void aee_rr_rec_ptp_temp(u64 val);
 extern void aee_rr_rec_ptp_status(u8 val);
 extern void aee_rr_rec_eem_pi_offset(u8 val);
 
-extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
-extern u64 aee_rr_curr_ptp_gpu_volt(void);
+extern u32 aee_rr_curr_ptp_60(void);
+extern u32 aee_rr_curr_ptp_64(void);
+extern u32 aee_rr_curr_ptp_68(void);
+extern u32 aee_rr_curr_ptp_6C(void);
+extern u32 aee_rr_curr_ptp_78(void);
+extern u32 aee_rr_curr_ptp_7C(void);
+extern u32 aee_rr_curr_ptp_80(void);
+extern u32 aee_rr_curr_ptp_84(void);
+extern u32 aee_rr_curr_ptp_88(void);
+extern u32 aee_rr_curr_ptp_8C(void);
+extern u32 aee_rr_curr_ptp_9C(void);
+extern u32 aee_rr_curr_ptp_A0(void);
+extern u64 aee_rr_curr_ptp_vboot(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_3(void);
+extern u64 aee_rr_curr_ptp_gpu_volt(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_1(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_2(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_3(void);
 extern u64 aee_rr_curr_ptp_temp(void);
 extern u8 aee_rr_curr_ptp_status(void);
-extern u8 aee_rr_curr_eem_pi_offset(void);
 #endif
+extern int pmic_force_vgpu_pwm(bool enable);
 
 
 /* EEM Extern Function */
@@ -143,6 +209,9 @@ extern int get_ptpod_status(void);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
 extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
+#ifdef EEM_DVT_TEST
+extern void otp_fake_temp_test(void);
+#endif
 
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
