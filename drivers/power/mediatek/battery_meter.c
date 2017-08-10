@@ -4591,7 +4591,7 @@ static int battery_meter_resume(struct platform_device *dev)
 #if defined(FG_BAT_INT)
 #if defined(CONFIG_POWER_EXT)
 #elif defined(SOC_BY_HW_FG)
-	battery_meter_set_columb_interrupt(0);
+	/*battery_meter_set_columb_interrupt(0);*/
 #endif
 #endif				/* #if defined(FG_BAT_INT) */
 
