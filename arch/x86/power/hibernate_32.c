@@ -9,7 +9,6 @@
 #include <linux/gfp.h>
 #include <linux/suspend.h>
 #include <linux/bootmem.h>
-#include <linux/export.h>
 
 #include <asm/page.h>
 #include <asm/pgtable.h>
@@ -160,7 +159,6 @@ int swsusp_arch_resume(void)
 	restore_image();
 	return 0;
 }
-EXPORT_SYMBOL_GPL(swsusp_arch_resume);
 
 /*
  *	pfn_is_nosave - check if given pfn is in the 'nosave' section

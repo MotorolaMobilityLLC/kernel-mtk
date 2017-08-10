@@ -32,12 +32,6 @@
 #define MPIDR_AFFINITY_LEVEL(mpidr, level) \
 	((mpidr >> MPIDR_LEVEL_SHIFT(level)) & MPIDR_LEVEL_MASK)
 
-#define read_cpuid(reg) ({						\
-	u64 __val;							\
-	asm("mrs	%0, " #reg : "=r" (__val));			\
-	__val;								\
-})
-
 #define MIDR_REVISION_MASK	0xf
 #define MIDR_REVISION(midr)	((midr) & MIDR_REVISION_MASK)
 #define MIDR_PARTNUM_SHIFT	4
@@ -73,19 +67,15 @@
 
 #define APM_CPU_PART_POTENZA	0x000
 
-#define ID_AA64MMFR0_BIGENDEL0_SHIFT	16
-#define ID_AA64MMFR0_BIGENDEL0_MASK	(0xf << ID_AA64MMFR0_BIGENDEL0_SHIFT)
-#define ID_AA64MMFR0_BIGENDEL0(mmfr0)	\
-	(((mmfr0) & ID_AA64MMFR0_BIGENDEL0_MASK) >> ID_AA64MMFR0_BIGENDEL0_SHIFT)
-#define ID_AA64MMFR0_BIGEND_SHIFT	8
-#define ID_AA64MMFR0_BIGEND_MASK	(0xf << ID_AA64MMFR0_BIGEND_SHIFT)
-#define ID_AA64MMFR0_BIGEND(mmfr0)	\
-	(((mmfr0) & ID_AA64MMFR0_BIGEND_MASK) >> ID_AA64MMFR0_BIGEND_SHIFT)
-
-#define SCTLR_EL1_CP15BEN	(0x1 << 5)
-#define SCTLR_EL1_SED		(0x1 << 8)
-
 #ifndef __ASSEMBLY__
+
+#include <asm/sysreg.h>
+
+#define read_cpuid(reg) ({						\
+	u64 __val;							\
+	asm("mrs_s	%0, " __stringify(reg) : "=r" (__val));		\
+	__val;								\
+})
 
 /*
  * The CPU ID never changes at run time, so we might as well tell the
@@ -94,12 +84,12 @@
  */
 static inline u32 __attribute_const__ read_cpuid_id(void)
 {
-	return read_cpuid(MIDR_EL1);
+	return read_cpuid(SYS_MIDR_EL1);
 }
 
 static inline u64 __attribute_const__ read_cpuid_mpidr(void)
 {
-	return read_cpuid(MPIDR_EL1);
+	return read_cpuid(SYS_MPIDR_EL1);
 }
 
 static inline unsigned int __attribute_const__ read_cpuid_implementor(void)
@@ -114,13 +104,7 @@ static inline unsigned int __attribute_const__ read_cpuid_part_number(void)
 
 static inline u32 __attribute_const__ read_cpuid_cachetype(void)
 {
-	return read_cpuid(CTR_EL0);
-}
-
-static inline bool id_aa64mmfr0_mixed_endian_el0(u64 mmfr0)
-{
-	return (ID_AA64MMFR0_BIGEND(mmfr0) == 0x1) ||
-		(ID_AA64MMFR0_BIGENDEL0(mmfr0) == 0x1);
+	return read_cpuid(SYS_CTR_EL0);
 }
 #endif /* __ASSEMBLY__ */
 

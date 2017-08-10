@@ -142,12 +142,12 @@ static inline void kvm_set_s2pmd_writable(pmd_t *pmd)
 /*
  * If we are concatenating first level stage-2 page tables, we would have less
  * than or equal to 16 pointers in the fake PGD, because that's what the
- * architecture allows.  In this case, (4 - CONFIG_ARM64_PGTABLE_LEVELS)
+ * architecture allows.  In this case, (4 - CONFIG_PGTABLE_LEVELS)
  * represents the first level for the host, and we add 1 to go to the next
  * level (which uses contatenation) for the stage-2 tables.
  */
 #if PTRS_PER_S2_PGD <= 16
-#define KVM_PREALLOC_LEVEL	(4 - CONFIG_ARM64_PGTABLE_LEVELS + 1)
+#define KVM_PREALLOC_LEVEL	(4 - CONFIG_PGTABLE_LEVELS + 1)
 #else
 #define KVM_PREALLOC_LEVEL	(0)
 #endif
@@ -245,7 +245,8 @@ static inline void __kvm_flush_dcache_pud(pud_t pud)
 
 #define kvm_virt_to_phys(x)		__virt_to_phys((unsigned long)(x))
 
-void stage2_flush_vm(struct kvm *kvm);
+void kvm_set_way_flush(struct kvm_vcpu *vcpu);
+void kvm_toggle_cache(struct kvm_vcpu *vcpu, bool was_enabled);
 
 #endif /* __ASSEMBLY__ */
 #endif /* __ARM64_KVM_MMU_H__ */

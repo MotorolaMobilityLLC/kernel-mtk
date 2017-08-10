@@ -1828,7 +1828,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
 
 	arch_flush_lazy_mmu_mode();
 }
-EXPORT_SYMBOL_GPL(kernel_map_pages);
 
 #ifdef CONFIG_HIBERNATION
 
@@ -1843,7 +1842,6 @@ bool kernel_page_present(struct page *page)
 	pte = lookup_address((unsigned long)page_address(page), &level);
 	return (pte_val(*pte) & _PAGE_PRESENT);
 }
-EXPORT_SYMBOL_GPL(kernel_page_present);
 #endif /* CONFIG_HIBERNATION */
 
 #endif /* CONFIG_DEBUG_PAGEALLOC */

@@ -1,7 +1,6 @@
 /*
  * Functions related to segment and merge handling
  */
-#define DEBUG 1
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/bio.h>

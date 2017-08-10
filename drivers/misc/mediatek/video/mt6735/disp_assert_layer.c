@@ -376,7 +376,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 		return r;
 	}
 
-	flush_cache_all();
+	__inner_flush_dcache_all();
 
 	if (!dal_shown)
 		dal_shown = true;

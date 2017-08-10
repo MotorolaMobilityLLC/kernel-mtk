@@ -1,9 +1,9 @@
 /*
- * arch/arm64/include/asm/cputable.h
+ * Adapted from arm64 version.
  *
- * Copyright (C) 2012 ARM Ltd.
+ * Copyright (C) 2012 ARM Limited
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
@@ -14,17 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Author: Will Deacon <will.deacon@arm.com>
  */
-#ifndef __ASM_CPUTABLE_H
-#define __ASM_CPUTABLE_H
 
-struct cpu_info {
-	unsigned int	cpu_id_val;
-	unsigned int	cpu_id_mask;
-	const char	*cpu_name;
-	unsigned long	(*cpu_setup)(void);
-};
+#include <linux/init.h>
+#include <linux/linkage.h>
+#include <linux/const.h>
+#include <asm/page.h>
 
-extern struct cpu_info *lookup_processor_type(unsigned int);
+	__PAGE_ALIGNED_DATA
 
-#endif
+	.globl vdso_start, vdso_end
+	.balign PAGE_SIZE
+vdso_start:
+	.incbin "arch/arm/vdso/vdso.so"
+	.balign PAGE_SIZE
+vdso_end:
+
+	.previous

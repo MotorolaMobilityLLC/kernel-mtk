@@ -3334,6 +3334,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
 	spia_pedr=
 	spia_peddr=
 
+	stack_guard_gap=	[MM]
+			override the default stack gap protection. The value
+			is in page units and it defines how many pages prior
+			to (for stacks growing down) resp. after (for stacks
+			growing up) the main stack are reserved for no other
+			mapping. Default value is 256 pages.
+
 	stacktrace	[FTRACE]
 			Enabled the stack tracer on boot up.
 
@@ -3700,9 +3707,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
 				nohigh = do not allocate PTE pages in
 					HIGHMEM regardless of setting
 					of CONFIG_HIGHPTE.
-
-	uuid_debug=	(Boolean) whether to enable debugging of TuxOnIce's
-			uuid support.
 
 	vdso=		[X86,SH]
 			On X86_32, this is an alias for vdso32=.  Otherwise:
