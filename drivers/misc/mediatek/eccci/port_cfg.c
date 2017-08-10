@@ -26,9 +26,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 5, "ccmni5",},
 	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 6, "ccmni6",},
 	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 7, "ccmni7",},
-#ifdef FEATURE_DIRECT_TETHERING_LOGGING
-	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 8, "ccmni-lan",},
-#endif
+
 	{CCCI_CCMNI10_TX, CCCI_CCMNI10_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 9, "ccmni9",},
 	{CCCI_CCMNI11_TX, CCCI_CCMNI11_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 10, "ccmni10",},
 	{CCCI_CCMNI12_TX, CCCI_CCMNI12_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 11, "ccmni11",},
@@ -38,6 +36,10 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_CCMNI16_TX, CCCI_CCMNI16_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 15, "ccmni15",},
 	{CCCI_CCMNI17_TX, CCCI_CCMNI17_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 16, "ccmni16",},
 	{CCCI_CCMNI18_TX, CCCI_CCMNI18_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 17, "ccmni17",},
+#ifdef FEATURE_DIRECT_TETHERING_LOGGING
+	/*ccmni-lan port minor id should be same as ccmni_idx in ccci_get_ccmni_channel() function */
+	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xF4, 0xFF, 0, &net_port_ops, 18, "ccmni-lan",},
+#endif
 /* char port, notes ccci_monitor must be first for get_port_by_minor() implement */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 1, "ccci_aud",},
