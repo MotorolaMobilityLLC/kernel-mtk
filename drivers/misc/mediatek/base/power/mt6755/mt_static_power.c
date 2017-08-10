@@ -138,6 +138,7 @@ void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptb
 	for (t = 0; t < tsize(spt); t++) {
 		for (v = 0; v < vsize(spt); v++) {
 			int *p = &mA(spt, v, t);
+
 			p[0] = interpolate(c1, c2, c3,
 					   mA(tab1, v, t),
 					   mA(tab2, v, t));
@@ -147,8 +148,6 @@ void interpolate_table(sptbl_t *spt, int c1, int c2, int c3, sptbl_t *tab1, sptb
 		SPOWER_INFO("\n");
 	}
 	SPOWER_INFO("make sptab done!\n");
-
-	return;
 }
 
 
@@ -214,6 +213,12 @@ int mt_spower_make_table(sptbl_t *spt, spower_raw_t *spower_raw, int wat, int vo
 	/* degree = 30; */
 
 	BUG_ON(spower_raw->table_size < MAX_TABLE_SIZE);
+
+	tab[0].vsize = 0;
+	tab[0].tsize = 0;
+	tab[0].data = NULL;
+	tab[0].vrow = NULL;
+	tab[0].trow = NULL;
 
 	/** structurize the raw data **/
 	spower_tab_construct(&tab, spower_raw);
@@ -300,6 +305,7 @@ void mt_spower_ut(void)
 
 	for (i = 0; i < MT_SPOWER_MAX; i++) {
 		sptbl_t *spt = &sptab[i];
+
 		switch (i) {
 		case  MT_SPOWER_CPU:
 			SPOWER_INFO("[SPOWER] - This is MT_SPOWER_CPU\n");
