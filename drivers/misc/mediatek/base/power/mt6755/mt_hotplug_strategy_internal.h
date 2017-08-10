@@ -294,6 +294,9 @@ extern void hps_task_stop(void);
 extern void hps_task_wakeup_nolock(void);
 extern void hps_task_wakeup(void);
 
+extern int hps_cpu_up(unsigned int cpu);
+extern int hps_cpu_down(unsigned int cpu);
+
 /*
  * mt_hotplug_strategy_algo.c
  */

@@ -130,7 +130,10 @@ static void hps_algo_cpu_cluster_action(unsigned int online_cores, unsigned int 
 	if (target_cores > online_cores) {	/*Power upcpus */
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (!cpu_online(cpu)) {	/* For CPU offline */
-				cpu_up(cpu);
+				if (cpu % 4 == 0)
+					hps_cpu_up(cpu);
+				else
+					cpu_up(cpu);
 				++online_cores;
 			}
 			if (target_cores == online_cores)
