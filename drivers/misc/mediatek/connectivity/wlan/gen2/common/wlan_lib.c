@@ -270,6 +270,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 	UINT_32 i, u4Value = 0;
 	UINT_32 u4WHISR = 0;
+	UINT_32 u4Time, u4Current;
 	UINT_8 aucTxCount[8];
 #if CFG_ENABLE_FW_DOWNLOAD
 	UINT_32 u4FwLoadAddr, u4ImgSecSize;
@@ -381,6 +382,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			fgValidHead = FALSE;
 		}
 
+		u4Time = kalGetTimeTick();
+
+		DBGLOG(INIT, INFO, "<wifi> Start to download firmware, time=%u\n",
+			u4Time);
+
 		/* 3b. engage divided firmware downloading */
 		if (fgValidHead == TRUE) {
 			DBGLOG(INIT, TRACE, "wlanAdapterStart(): fgValidHead == TRUE\n");
@@ -424,6 +430,13 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 						u4Status = WLAN_STATUS_FAILURE;
 						break;
 					}
+					/* timeout exceeding check */
+					u4Current = kalGetTimeTick();
+					if ((u4Current > u4Time)
+					&& ((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT))
+						DBGLOG(RX, WARN, "wlanImageSectionDownload timeout :%d %d %u\n"
+						, i, j, u4Current);
+
 				}
 #endif
 
@@ -458,6 +471,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					u4Status = WLAN_STATUS_FAILURE;
 					break;
 				}
+				/* timeout exceeding check */
+				u4Current = kalGetTimeTick();
+				if ((u4Current > u4Time) && ((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT))
+					DBGLOG(RX, WARN, "wlanImageSectionDownload timeout :%d %u\n"
+					, i, u4Current);
 			}
 #endif
 
