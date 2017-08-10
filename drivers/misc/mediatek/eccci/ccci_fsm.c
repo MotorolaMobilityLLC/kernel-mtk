@@ -217,6 +217,7 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 			if (event->event_id == CCCI_EVENT_HS1) {
 				hs1_got = 1;
 				ccci_fsm_finish_event(md, event);
+				inject_md_status_event(md->index, MD_STA_EV_HS1, NULL);
 			} else if (event->event_id == CCCI_EVENT_HS2 && hs1_got) {
 				hs2_got = 1;
 				ccci_fsm_finish_event(md, event);
@@ -227,8 +228,11 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 			CCCI_ERROR_LOG(md->index, FSM, "early exception detected\n");
 			goto fail_ee;
 		}
-		if (hs2_got)
+
+		if (hs2_got) {
+			inject_md_status_event(md->index, MD_STA_EV_READY, NULL);
 			goto success;
+		}
 		if (atomic_read(&ctl->fs_ongoing))
 			count = 0;
 		else

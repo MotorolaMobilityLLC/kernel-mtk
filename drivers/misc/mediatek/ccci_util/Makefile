@@ -36,6 +36,7 @@ ccci_util_lib-y += ccci_private_log.o
 ccci_util_lib-y += ccci_util_lib_time.o
 ccci_util_lib-y += ccci_util_lib_main.o
 ccci_util_lib-y += ccci_util_ld_md_errno.o
+ccci_util_lib-y += ccci_util_broadcast.o
 
 endif
 

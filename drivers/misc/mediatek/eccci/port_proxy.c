@@ -1143,6 +1143,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_MD_RESET:
 		CCCI_NORMAL_LOG(md_id, CHAR, "MD reset ioctl called by (%d)%s\n", ch, current->comm);
 		ccci_event_log("md%d: MD reset ioctl called by (%d)%s\n", md_id, ch, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_RESET_REQUEST, current->comm);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET_REQUEST, 0);
 #ifdef CONFIG_MTK_ECCCI_C2K
 		if (md_id == MD_SYS1)
@@ -1159,6 +1160,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_FORCE_MD_ASSERT:
 		CCCI_NORMAL_LOG(md_id, CHAR, "Force MD assert ioctl called by (%d)%s\n", ch, current->comm);
 		ccci_event_log("md%d: Force MD assert ioctl called by (%d)%s\n", md_id, ch, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_F_ASSERT_REQUEST, current->comm);
 		ret = ccci_md_force_assert(proxy_p->md_obj, MD_FORCE_ASSERT_BY_USER_TRIGGER, NULL, 0);
 		break;
 	case CCCI_IOC_SEND_RUN_TIME_DATA:
@@ -1211,6 +1213,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 			CCCI_ERROR_LOG(md_id, CHAR, "ignore CCCI_IOC_SEND_STOP_MD_REQUEST when MD is not ready\n");
 			break;
 		}
+		inject_md_status_event(md_id, MD_STA_EV_STOP_REQUEST, current->comm);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FORCE_STOP_REQUEST, 0);
 #ifdef CONFIG_MTK_ECCCI_C2K
 		if (md_id == MD_SYS1)
@@ -1227,6 +1230,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_SEND_START_MD_REQUEST:
 		CCCI_NORMAL_LOG(md_id, CHAR, "start MD request ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: start MD request ioctl called by %s\n", md_id, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_START_REQUEST, current->comm);
 		if (ccci_md_get_state_for_user(proxy_p->md_obj) != MD_STATE_INVALID) {
 			CCCI_ERROR_LOG(md_id, CHAR, "ignore CCCI_IOC_SEND_STOP_MD_REQUEST when MD is not ready\n");
 			break;
@@ -1257,17 +1261,20 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md_id, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_ENTER_FLIGHT_REQUEST, current->comm);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md_id, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md_id, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_LEAVE_FLIGHT_REQUEST, current->comm);
 		port_proxy_start_wake_lock(proxy_p, 10);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT_ENHANCED:
 		CCCI_NOTICE_LOG(md_id, CHAR, "enter MD flight mode enhanced ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md_id, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_ENTER_FLIGHT_E_REQUEST, current->comm);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
 #ifdef CONFIG_MTK_ECCCI_C2K
 		if (md_id == MD_SYS1)
@@ -1279,6 +1286,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT_ENHANCED:
 		CCCI_NOTICE_LOG(md_id, CHAR, "leave MD flight mode enhanced ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md_id, current->comm);
+		inject_md_status_event(md_id, MD_STA_EV_LEAVE_FLIGHT_E_REQUEST, current->comm);
 		port_proxy_start_wake_lock(proxy_p, 10);
 		ret = port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
 #ifdef CONFIG_MTK_ECCCI_C2K

@@ -72,6 +72,23 @@ enum ccci_ipi_op_id {
 	CCCI_OP_ASSERT_TEST,
 };
 
+enum md_bc_event {
+	MD_STA_EV_INVALID = 0,
+	MD_STA_EV_RESET_REQUEST,
+	MD_STA_EV_F_ASSERT_REQUEST,
+	MD_STA_EV_STOP_REQUEST,
+	MD_STA_EV_START_REQUEST,
+	MD_STA_EV_ENTER_FLIGHT_REQUEST,
+	MD_STA_EV_LEAVE_FLIGHT_REQUEST,
+	MD_STA_EV_ENTER_FLIGHT_E_REQUEST,
+	MD_STA_EV_LEAVE_FLIGHT_E_REQUEST,
+	MD_STA_EV_HS1,
+	MD_STA_EV_READY,
+};
+
+void inject_md_status_event(int md_id, int event_type, char reason[]);
+int get_lock_rst_user_cnt(int md_id);
+
 enum {
 	SCP_CCCI_STATE_INVALID = 0,
 	SCP_CCCI_STATE_BOOTING = 1,
