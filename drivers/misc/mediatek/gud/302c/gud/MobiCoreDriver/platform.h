@@ -42,11 +42,12 @@
 /* Enable Fastcall worker thread */
 #define MC_FASTCALL_WORKER_THREAD
 
+#if !defined(CONFIG_ARCH_MT6580)
 /* Enable LPAE */
 #define LPAE_SUPPORT
 
 /* Enable AARCH32 Fast call IDs */
 #define MC_AARCH32_FC
-
+#endif /* !CONFIG_ARCH_MT6580 */
 
 #endif /* _MC_DRV_PLATFORM_H_ */

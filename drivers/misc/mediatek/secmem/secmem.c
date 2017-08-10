@@ -934,8 +934,10 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 			MSG(ERR, "[SECMEM] - after free : 0x%x\n", size);
 #endif
 		} else if (!strcmp(cmd, "4")) {
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 			MSG(ERR, "[SECMEM] - test for command 2\n");
 			tbase_trigger_aee_dump();
+#endif
 		}
 	}
 
