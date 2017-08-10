@@ -108,6 +108,12 @@ extern void cpu_do_resume(void *);
 #endif
 
 extern void cpu_resume(void);
+#define cpu_set_ttbr(nr, val)                                  \
+	do {                                                    \
+		u64 ttbr = val;                                 \
+		__asm__("mcrr   p15, " #nr ", %Q0, %R0, c2"     \
+			: : "r" (ttbr));                        \
+	} while (0)
 
 #include <asm/memory.h>
 
@@ -124,13 +130,6 @@ extern void cpu_resume(void);
 			: "=r" (ttbr));				\
 		ttbr;						\
 	})
-
-#define cpu_set_ttbr(nr, val)					\
-	do {							\
-		u64 ttbr = val;					\
-		__asm__("mcrr	p15, " #nr ", %Q0, %R0, c2"	\
-			: : "r" (ttbr));			\
-	} while (0)
 
 #define cpu_get_pgd()	\
 	({						\

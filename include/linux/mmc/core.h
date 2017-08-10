@@ -142,6 +142,10 @@ struct mmc_request {
 	struct list_head	link;
 	struct list_head	hlist;
 #endif
+#ifdef CONFIG_BLOCK
+	ktime_t			io_start;
+	int			lat_hist_enabled;
+#endif
 };
 
 struct mmc_card;

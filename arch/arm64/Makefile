@@ -94,7 +94,7 @@ zinstall install: vmlinux
 dtbs: scripts
 	$(Q)$(MAKE) $(build)=$(boot)/dts dtbs DTC_FLAGS=$(DTC_FLAGS)
 
-Image.gz-dtb: vmlinux scripts dtbs
+Image-dtb Image.gz-dtb: vmlinux scripts dtbs
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
 
 PHONY += vdso_install

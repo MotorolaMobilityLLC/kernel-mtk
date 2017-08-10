@@ -2896,8 +2896,7 @@ static noinline void __schedule_bug(struct task_struct *prev)
 static inline void schedule_debug(struct task_struct *prev)
 {
 #ifdef CONFIG_SCHED_STACK_END_CHECK
-	if (task_stack_end_corrupted(prev))
-		panic("corrupted stack end detected inside scheduler\n");
+	BUG_ON(unlikely(task_stack_end_corrupted(prev)));
 #endif
 	/*
 	 * Test if we are atomic. Since do_exit() needs to call into
