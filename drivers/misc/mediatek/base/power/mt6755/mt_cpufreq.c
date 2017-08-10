@@ -386,7 +386,11 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 	if (cpu_dvfs_is_extbuck_valid()) {
 		/* If FY */
 		is_extbuck_valid = 1;
-		return CPU_LEVEL_2;
+		/* is real 55s */
+		if (func_code_0 == 0x82 || func_code_0 == 0x86)
+			return CPU_LEVEL_2;
+		else
+			return CPU_LEVEL_0;
 	} else
 		return CPU_LEVEL_0;
 #endif
