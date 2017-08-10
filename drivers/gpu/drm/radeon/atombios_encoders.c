@@ -872,8 +872,6 @@ atombios_dig_encoder_setup(struct drm_encoder *encoder, int action, int panel_mo
 			else
 				args.v1.ucLaneNum = 4;
 
-			if (ENCODER_MODE_IS_DP(args.v1.ucEncoderMode) && (dp_clock == 270000))
-				args.v1.ucConfig |= ATOM_ENCODER_CONFIG_DPLINKRATE_2_70GHZ;
 			switch (radeon_encoder->encoder_id) {
 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
 				args.v1.ucConfig = ATOM_ENCODER_CONFIG_V2_TRANSMITTER1;
@@ -890,6 +888,10 @@ atombios_dig_encoder_setup(struct drm_encoder *encoder, int action, int panel_mo
 				args.v1.ucConfig |= ATOM_ENCODER_CONFIG_LINKB;
 			else
 				args.v1.ucConfig |= ATOM_ENCODER_CONFIG_LINKA;
+
+			if (ENCODER_MODE_IS_DP(args.v1.ucEncoderMode) && (dp_clock == 270000))
+				args.v1.ucConfig |= ATOM_ENCODER_CONFIG_DPLINKRATE_2_70GHZ;
+
 			break;
 		case 2:
 		case 3:
@@ -1586,8 +1588,9 @@ radeon_atom_encoder_dpms_avivo(struct drm_encoder *encoder, int mode)
 		} else
 			atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
 		if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-			args.ucAction = ATOM_LCD_BLON;
-			atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
+			struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+
+			atombios_set_backlight_level(radeon_encoder, dig->backlight_level);
 		}
 		break;
 	case DRM_MODE_DPMS_STANDBY:
@@ -1668,8 +1671,7 @@ radeon_atom_encoder_dpms_dig(struct drm_encoder *encoder, int mode)
 				atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_ON, 0);
 		}
 		if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT))
-			atombios_dig_transmitter_setup(encoder,
-						       ATOM_TRANSMITTER_ACTION_LCD_BLON, 0, 0);
+			atombios_set_backlight_level(radeon_encoder, dig->backlight_level);
 		if (ext_encoder)
 			atombios_external_encoder_setup(encoder, ext_encoder, ATOM_ENABLE);
 		break;

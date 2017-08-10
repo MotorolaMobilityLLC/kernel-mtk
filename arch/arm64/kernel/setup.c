@@ -518,6 +518,10 @@ static int c_show(struct seq_file *m, void *v)
 				loops_per_jiffy / (500000UL/HZ),
 				loops_per_jiffy / (5000UL/HZ) % 100);
 
+		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
+			   loops_per_jiffy / (500000UL/HZ),
+			   loops_per_jiffy / (5000UL/HZ) % 100);
+
 		/*
 		 * Dump out the common processor features in a single line.
 		 * Userspace should read the hwcaps with getauxval(AT_HWCAP)
