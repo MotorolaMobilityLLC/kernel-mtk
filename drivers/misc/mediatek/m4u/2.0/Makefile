@@ -27,4 +27,11 @@ ifeq ($(CONFIG_ARCH_MT6753),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6753/
 endif
 
+ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/$(MTK_PLATFORM)/
+endif
+endif
+
 obj-y += m4u.o m4u_mva.o m4u_pgtable.o m4u_debug.o
