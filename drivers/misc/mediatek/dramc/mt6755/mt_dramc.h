@@ -32,8 +32,10 @@ Registers define
 /*=========================
 Define
 =========================*/
-#define DUAL_FREQ_HIGH		832
-#define DUAL_FREQ_LOW		650
+#define DUAL_FREQ_HIGH_J	832
+#define DUAL_FREQ_LOW_J		650
+#define DUAL_FREQ_HIGH_R	898
+#define DUAL_FREQ_LOW_R		650
 #define DATA_RATE_THRESHOLD	15
 #define MPLL_CON0_OFFSET	0x280
 #define MPLL_CON1_OFFSET	0x284

@@ -47,8 +47,8 @@
 #include <mt-plat/sync_write.h>
 #include <mt_spm_sleep.h>
 #include <mt_spm_reg.h>
-
 #include "mt_dramc.h"
+#include "mt_devinfo.h" /* for get_devinfo_with_index() */
 
 void __iomem *DRAMCAO_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
@@ -984,6 +984,22 @@ unsigned int get_dram_data_rate_from_reg(void)
 	unsigned int MEMPLL_N_INFO, MEMPLL_DIV;
 	unsigned int MEMPLLx_FBDIV, MEMPLLx_M4PDIV;
 	unsigned int onepll_fout, threepll_fout;
+	unsigned int DUAL_FREQ_LOW, DUAL_FREQ_HIGH;
+	unsigned int seg_val;
+
+	seg_val = (get_devinfo_with_index(21)) & 0xFF;
+	if ((seg_val == 0x42) || (seg_val == 0x43) || (seg_val == 0x46) || (seg_val == 0x4b) ||
+	(seg_val == 0x41) || (seg_val == 0x45) || (seg_val == 0x2) || (seg_val == 0x6) ||
+	(seg_val == 0xC1) || (seg_val == 0xC5) || (seg_val == 0xC2) || (seg_val == 0xC6) ||
+	(seg_val == 0x40) || (seg_val == 0x00)) { /* seg_val == 0x00 for Jade */
+		/* JADE serious : 1300/1666 setting */
+		DUAL_FREQ_LOW = DUAL_FREQ_LOW_J;
+		DUAL_FREQ_HIGH = DUAL_FREQ_HIGH_J;
+	} else {
+		/* ROSA : 1300/1800 setting*/
+		DUAL_FREQ_LOW = DUAL_FREQ_LOW_R;
+		DUAL_FREQ_HIGH = DUAL_FREQ_HIGH_R;
+	}
 
 	u4value1 = ucDram_Register_Read(0x600);
 	MEMPLL_N_INFO = (u4value1 & 0x7fffffff) >> 0;
@@ -1099,14 +1115,29 @@ int get_ddr_type(void)
 }
 int dram_steps_freq(unsigned int step)
 {
-	int freq;
+	int freq, freq_high, freq_low;
+	int seg_val;
+
+	seg_val = (get_devinfo_with_index(21)) & 0xFF;
+	if ((seg_val == 0x42) || (seg_val == 0x43) || (seg_val == 0x46) || (seg_val == 0x4b) ||
+	(seg_val == 0x41) || (seg_val == 0x45) || (seg_val == 0x2) || (seg_val == 0x6) ||
+	(seg_val == 0xC1) || (seg_val == 0xC5) || (seg_val == 0xC2) || (seg_val == 0xC6) ||
+	(seg_val == 0x40) || (seg_val == 0x00)) { /* seg_val == 0x00 for Jade */
+		/* JADE serious : 1300/1666 setting */
+		freq_low = (DUAL_FREQ_LOW_J << 1);
+		freq_high = (DUAL_FREQ_HIGH_J << 1);
+	} else {
+		/* ROSA : 1300/1800 setting*/
+		freq_low = (DUAL_FREQ_LOW_R << 1);
+		freq_high = (DUAL_FREQ_HIGH_R << 1);
+	}
 
 	switch (step) {
 	case 0:
-		freq = 1664;/*freq = 1800;*/
+		freq = freq_high;
 		break;
 	case 1:
-		freq = 1300;
+		freq = freq_low;
 		break;
 	default:
 		return -1;
