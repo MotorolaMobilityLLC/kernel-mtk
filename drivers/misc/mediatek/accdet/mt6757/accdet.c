@@ -21,16 +21,23 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 
-#define DEBUG_THREAD 1
+/* Accdet Debug define */
+#define ACCDET_DEBUG(format, args...) pr_info("%s %d "format, __func__, __LINE__, ##args)
+#define ACCDET_INFO(format, args...) pr_info("%s %d "format, __func__, __LINE__, ##args)
+#define ACCDET_ERROR(format, args...) pr_err("%s %d "format, __func__, __LINE__, ##args)
 
 /*----------------------------------------------------------------------
 static variable defination
 ----------------------------------------------------------------------*/
+#define JUST_INPUT_NO_SWITCH 0   /* 0:only use input;   1: input & switch both */
+#define DEBUG_THREAD 1
+#define REGISTER_VALUE(x)   (x - 1)
+#define MICBIAS_DISABLE_TIMER   (6 * HZ)	/*6 seconds*/
+
 /* for accdet_read_audio_res */
 #define RET_LT_5K		-1/* less than 5k ohm, return -1 */
 #define RET_GT_5K		0/* greater than 5k ohm, return 0 */
 
-#define REGISTER_VALUE(x)   (x - 1)
 static int button_press_debounce = 0x400;
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
@@ -39,10 +46,9 @@ int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
 unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low_level trigger */
 struct headset_mode_settings *cust_headset_settings;
-#define ACCDET_DEBUG(format, args...) pr_debug(format, ##args)
-#define ACCDET_INFO(format, args...) pr_warn(format, ##args)
-#define ACCDET_ERROR(format, args...) pr_err(format, ##args)
+#if JUST_INPUT_NO_SWITCH
 static struct switch_dev accdet_data;
+#endif
 static struct input_dev *kpd_accdet_dev;
 static struct cdev *accdet_cdev;
 static struct class *accdet_class;
@@ -76,34 +82,25 @@ struct wake_lock accdet_key_lock;
 struct wake_lock accdet_timer_lock;
 static struct work_struct accdet_work;
 static struct workqueue_struct *accdet_workqueue;
-static DEFINE_MUTEX(accdet_eint_irq_sync_mutex);
-static inline void clear_accdet_interrupt(void);
-static inline void clear_accdet_eint_interrupt(void);
-static void send_key_event(int keycode, int flag);
-#if defined CONFIG_ACCDET_EINT || defined CONFIG_ACCDET_EINT_IRQ
 static struct work_struct accdet_eint_work;
 static struct workqueue_struct *accdet_eint_workqueue;
-static inline void accdet_init(void);
-#define MICBIAS_DISABLE_TIMER   (6 * HZ)	/*6 seconds*/
 struct timer_list micbias_timer;
-static void disable_micbias(unsigned long a);
+
 /* Used to let accdet know if the pin has been fully plugged-in */
 #define EINT_PIN_PLUG_IN        (1)
 #define EINT_PIN_PLUG_OUT       (0)
 int cur_eint_state = EINT_PIN_PLUG_OUT;
 static struct work_struct accdet_disable_work;
 static struct workqueue_struct *accdet_disable_workqueue;
-#else
-/*static int g_accdet_working_in_suspend =0;*/
-#endif/*end CONFIG_ACCDET_EINT*/
+
 #ifndef CONFIG_ACCDET_EINT_IRQ
 struct pinctrl *accdet_pinctrl1;
 struct pinctrl_state *pins_eint_int;
 #endif
+
 #ifdef DEBUG_THREAD
 #endif
-static u32 pmic_pwrap_read(u32 addr);
-static void pmic_pwrap_write(u32 addr, unsigned int wdata);
+
 char *accdet_status_string[5] = {
 	"Plug_out",
 	"Headset_plug_in",
@@ -120,6 +117,16 @@ char *accdet_report_string[4] = {
 	/*"HEADSET_illegal",*/
 	/* "Double_check"*/
 };
+static DEFINE_MUTEX(accdet_eint_irq_sync_mutex);
+static inline void accdet_init(void);
+static void disable_micbias(unsigned long a);
+static inline void clear_accdet_interrupt(void);
+static inline void clear_accdet_eint_interrupt(void);
+static void send_key_event(int keycode, int flag);
+static void send_accdet_status_event(int cable, int status);
+static u32 pmic_pwrap_read(u32 addr);
+static void pmic_pwrap_write(u32 addr, unsigned int wdata);
+
 /****************************************************************/
 /***        export function                                                                        **/
 /****************************************************************/
@@ -136,7 +143,10 @@ int accdet_read_audio_res(unsigned int res_value)
 		cable_type = LINE_OUT_DEVICE;
 		accdet_status = LINE_OUT;
 		/* update state */
+		send_accdet_status_event(cable_type, 1);
+#if JUST_INPUT_NO_SWITCH
 		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
+#endif
 		ACCDET_DEBUG("[accdet_read_audio_res]update state:%d\n", cable_type);
 	}
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -265,6 +275,9 @@ static void accdet_FSA8049_disable(void)
 #endif
 static inline void headset_plug_out(void)
 {
+	/* send input event before switch cable_type to NO_device, to ensure cable_type valid */
+	send_accdet_status_event(cable_type, 0);
+
 	accdet_status = PLUG_OUT;
 	cable_type = NO_DEVICE;
 	/*update the cable_type*/
@@ -273,7 +286,9 @@ static inline void headset_plug_out(void)
 		ACCDET_DEBUG(" [accdet] headset_plug_out send key = %d release\n", cur_key);
 		cur_key = 0;
 	}
+#if JUST_INPUT_NO_SWITCH
 	switch_set_state((struct switch_dev *)&accdet_data, cable_type);
+#endif
 	ACCDET_DEBUG(" [accdet] set state in cable_type = NO_DEVICE\n");
 
 }
@@ -672,6 +687,30 @@ static int key_check(int b)
 }
 
 #endif
+
+static void send_accdet_status_event(int cable, int status)
+{
+	switch (cable) {
+	case HEADSET_NO_MIC:
+		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("HEADSET_NO_MIC(3-pole) %s\n", status?"PlugIn":"PlugOut");
+		break;
+	case HEADSET_MIC:
+		input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("HEADSET_NO_MIC(3-pole) %s\n", status?"PlugIn":"PlugOut");
+		break;
+	case LINE_OUT_DEVICE:
+		input_report_switch(kpd_accdet_dev, SW_LINEOUT_INSERT, status);
+		input_sync(kpd_accdet_dev);
+		ACCDET_DEBUG("LineOut %s\n", status?"PlugIn":"PlugOut");
+		break;
+	default:
+		ACCDET_DEBUG("Invalid cable type\n");
+	}
+}
+
 static void send_key_event(int keycode, int flag)
 {
 	switch (keycode) {
@@ -1133,10 +1172,12 @@ static void accdet_work_callback(struct work_struct *work)
 #endif
 #endif
 	mutex_lock(&accdet_eint_irq_sync_mutex);
-	if (1 == eint_accdet_sync_flag)
+	if (1 == eint_accdet_sync_flag) {
+		send_accdet_status_event(cable_type, 1);
+#if JUST_INPUT_NO_SWITCH
 		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
-	else
-		ACCDET_DEBUG("[Accdet] Headset has plugged out don't set accdet state\n");
+	} else
+		ACCDET_DEBUG("Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
 	ACCDET_DEBUG(" [accdet] set state in cable_type  status\n");
 
@@ -1409,8 +1450,8 @@ static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *b
 		break;
 	case CALL_ACTIVE:
 		ACCDET_DEBUG("[%s]accdet call: active or hold state!\n", __func__);
-		ACCDET_DEBUG("[%s]accdet_ioctl : button_status=%d (state:%d)\n",
-			__func__, button_status, accdet_data.state);
+		ACCDET_DEBUG("[%s]accdet_ioctl : button_status=%d\n",
+			__func__, button_status);
 		/*return button_status;*/
 		break;
 	default:
@@ -1646,14 +1687,16 @@ int mt_accdet_probe(struct platform_device *dev)
 	/*--------------------------------------------------------------------
 	// below register accdet as switch class
 	//------------------------------------------------------------------*/
+#if JUST_INPUT_NO_SWITCH
 	accdet_data.name = "h2w";
 	accdet_data.index = 0;
 	accdet_data.state = NO_DEVICE;
 	ret = switch_dev_register(&accdet_data);
 	if (ret) {
-		ACCDET_ERROR("[Accdet]switch_dev_register returned:%d!\n", ret);
+		ACCDET_ERROR("switch_dev_register returned:%d!\n", ret);
 		return 1;
 	}
+#endif
 	/*----------------------------------------------------------------------
 	// Create normal device for auido use
 	//--------------------------------------------------------------------*/
@@ -1693,6 +1736,11 @@ int mt_accdet_probe(struct platform_device *dev)
 	__set_bit(KEY_VOLUMEDOWN, kpd_accdet_dev->keybit);
 	__set_bit(KEY_VOLUMEUP, kpd_accdet_dev->keybit);
 	__set_bit(KEY_VOICECOMMAND, kpd_accdet_dev->keybit);
+
+	__set_bit(EV_SW, kpd_accdet_dev->evbit);
+	__set_bit(SW_HEADPHONE_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_MICROPHONE_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_LINEOUT_INSERT, kpd_accdet_dev->swbit);
 
 	kpd_accdet_dev->id.bustype = BUS_HOST;
 	kpd_accdet_dev->name = "ACCDET";
@@ -1757,7 +1805,9 @@ void mt_accdet_remove(void)
 	destroy_workqueue(accdet_eint_workqueue);
 #endif
 	destroy_workqueue(accdet_workqueue);
+#if JUST_INPUT_NO_SWITCH
 	switch_dev_unregister(&accdet_data);
+#endif
 	device_del(accdet_nor_device);
 	class_destroy(accdet_class);
 	cdev_del(accdet_cdev);
@@ -1819,9 +1869,9 @@ void mt_accdet_pm_restore_noirq(void)
 {
 	int current_status_restore = 0;
 
-	ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq start!\n");
+	ACCDET_DEBUG("start!\n");
 	/*enable ACCDET unit*/
-	ACCDET_DEBUG("accdet: enable_accdet\n");
+	ACCDET_DEBUG("enable_accdet\n");
 	/*enable clock*/
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);
 #ifdef CONFIG_ACCDET_EINT_IRQ
@@ -1845,20 +1895,28 @@ void mt_accdet_pm_restore_noirq(void)
 	case 0:		/*AB=0*/
 		cable_type = HEADSET_NO_MIC;
 		accdet_status = HOOK_SWITCH;
+		send_accdet_status_event(cable_type, 1);
 		break;
 	case 1:		/*AB=1*/
 		cable_type = HEADSET_MIC;
 		accdet_status = MIC_BIAS;
+		send_accdet_status_event(cable_type, 1);
 		break;
 	case 3:		/*AB=3*/
+		/* send input event before cable_type swutch to no_device, which is invalid type for input */
+		send_accdet_status_event(cable_type, 0);
 		cable_type = NO_DEVICE;
 		accdet_status = PLUG_OUT;
 		break;
 	default:
-		ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq: accdet current status error!\n");
+		ACCDET_DEBUG("accdet current status error!\n");
 		break;
 	}
+
+#if JUST_INPUT_NO_SWITCH
 	switch_set_state((struct switch_dev *)&accdet_data, cable_type);
+#endif
+
 	if (cable_type == NO_DEVICE) {
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 		init_timer(&accdet_disable_ipoh_timer);
@@ -1896,7 +1954,7 @@ long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : CALL_STATE=%d\n", call_status);
 		break;
 	case GET_BUTTON_STATUS:
-		ACCDET_DEBUG("[Accdet]accdet_ioctl : Button_Status=%d (state:%d)\n", button_status, accdet_data.state);
+		ACCDET_DEBUG("[Accdet]accdet_ioctl : Button_Status=%d\n", button_status);
 		return button_status;
 	default:
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : default\n");
