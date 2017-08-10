@@ -796,34 +796,34 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 	/* violation information improvement for Denali-3 */
 	if ((domain_id >= 0) && (domain_id < ARRAY_SIZE(domain_settings))) {
 		if (1 == r_w_violation) {
-			pr_debug("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x, Dom ID:0x%x (%s), VIO_DBG0:0x%x\n",
+			pr_err("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x, Dom ID:0x%x (%s), VIO_DBG0:0x%x\n",
 				current->comm, current->pid, dbg1, master_id, domain_id,
 				domain_settings[domain_id].name, (*DEVAPC0_VIO_DBG0));
 		} else {
-			pr_debug("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x, Dom ID:0x%x (%s), VIO_DBG0:0x%x\n",
+			pr_err("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x, Dom ID:0x%x (%s), VIO_DBG0:0x%x\n",
 			current->comm, current->pid, dbg1, master_id, domain_id,
 			domain_settings[domain_id].name, (*DEVAPC0_VIO_DBG0));
 		}
 	} else {
 		if (1 == r_w_violation) {
-			pr_debug("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x, VIO_DBG0:0x%x\n",
+			pr_err("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x, VIO_DBG0:0x%x\n",
 			current->comm, current->pid, dbg1, master_id, domain_id, (*DEVAPC0_VIO_DBG0));
 		} else {
-			pr_debug("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x, VIO_DBG0:0x%x\n",
+			pr_err("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x, VIO_DBG0:0x%x\n",
 			current->comm, current->pid, dbg1, master_id, domain_id, (*DEVAPC0_VIO_DBG0));
 		}
 	}
 #else
 	if (1 == r_w_violation) {
-		pr_debug("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x\n",
+		pr_err("[DEVAPC] Device Access Permission Write Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x\n",
 			current->comm, current->pid, dbg1, master_id, domain_id);
 	} else {
-		pr_debug("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x\n",
+		pr_err("[DEVAPC] Device Access Permission Read Violation - Process:%s PID:%i Vio Addr:0x%x , Bus ID:0x%x , Dom ID:0x%x\n",
 			current->comm, current->pid, dbg1, master_id, domain_id);
 	}
 #endif
 
-	pr_debug("[DEVAPC] VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
+	pr_err("[DEVAPC] VIO_STA 0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x\n",
 		readl(DEVAPC0_D0_VIO_STA_0), readl(DEVAPC0_D0_VIO_STA_1), readl(DEVAPC0_D0_VIO_STA_2),
 		readl(DEVAPC0_D0_VIO_STA_3), readl(DEVAPC0_D0_VIO_STA_4));
 
@@ -833,7 +833,7 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 		/* violation information improvement */
 
 		if (check_vio_status(i))
-			pr_debug("[DEVAPC] Access Violation Slave: %s (index=%d)\n", devapc_devices[i].device, i);
+			pr_err("[DEVAPC] Access Violation Slave: %s (index=%d)\n", devapc_devices[i].device, i);
 #endif
 
 		clear_vio_status(i);
@@ -857,8 +857,8 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 	dbg1 = readl(DEVAPC0_VIO_DBG1);
 
 	if ((dbg0 != 0) || (dbg1 != 0)) {
-		pr_debug("[DEVAPC] Multi-violation!\n");
-		pr_debug("[DEVAPC] DBG0 = %x, DBG1 = %x\n", dbg0, dbg1);
+		pr_err("[DEVAPC] Multi-violation!\n");
+		pr_err("[DEVAPC] DBG0 = %x, DBG1 = %x\n", dbg0, dbg1);
 	}
 
 	return IRQ_HANDLED;
