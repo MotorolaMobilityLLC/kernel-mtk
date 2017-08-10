@@ -309,6 +309,9 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		rdma_golden_setting = p_golden_setting;
 
 	frame_rate = rdma_golden_setting->fps;
+	if (frame_rate < 75)
+		frame_rate = 60;
+
 	if (idx == 1) {
 		/* hardcode bpp & frame_rate for rdma1 */
 		bpp = 24;
