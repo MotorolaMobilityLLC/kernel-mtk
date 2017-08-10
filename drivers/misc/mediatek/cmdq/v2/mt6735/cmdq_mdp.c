@@ -178,7 +178,7 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 
 m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva, void *data)
 {
-	char dispatchModel[TASK_COMM_LEN];
+	char dispatchModel[MDP_DISPATCH_KEY_STR_LEN] = "MDP";
 
 	CMDQ_ERR("================= [MDP M4U] Dump Begin ================\n");
 	CMDQ_ERR("[MDP M4U]fault call port=%d, mva=0x%x", port, mva);
@@ -202,8 +202,8 @@ m4u_callback_ret_t cmdq_M4U_TranslationFault_callback(int port, unsigned	int	mva
 
 	CMDQ_ERR("=============== [MDP] Frame Information Begin ====================================\n");
 	/* find dispatch module and assign dispatch key */
-	snprintf(dispatchModel, sizeof(dispatchModel), "%s", cmdq_mdp_check_TF_address(mva));
-	CMDQ_ERR("[MDP] TF dispatch model: %s\n", dispatchModel);
+	cmdq_mdp_check_TF_address(mva, dispatchModel);
+	memcpy(data, dispatchModel, sizeof(dispatchModel));
 	CMDQ_ERR("=============== [MDP] Frame Information End ====================================\n");
 	CMDQ_ERR("================= [MDP M4U] Dump End ================\n");
 
@@ -611,10 +611,12 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 
 void cmdqMdpInitialSetting(void)
 {
+	char *data = kzalloc(MDP_DISPATCH_KEY_STR_LEN, GFP_KERNEL);
+
 	/* Register M4U Translation Fault function */
-	m4u_register_fault_callback(M4U_PORT_MDP_RDMA, cmdq_M4U_TranslationFault_callback, NULL);
-	m4u_register_fault_callback(M4U_PORT_MDP_WDMA, cmdq_M4U_TranslationFault_callback, NULL);
-	m4u_register_fault_callback(M4U_PORT_MDP_WROT, cmdq_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_MDP_RDMA, cmdq_M4U_TranslationFault_callback, (void *)data);
+	m4u_register_fault_callback(M4U_PORT_MDP_WDMA, cmdq_M4U_TranslationFault_callback, (void *)data);
+	m4u_register_fault_callback(M4U_PORT_MDP_WROT, cmdq_M4U_TranslationFault_callback, (void *)data);
 }
 
 uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void)

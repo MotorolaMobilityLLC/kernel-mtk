@@ -806,12 +806,15 @@ void cmdq_mdp_dump_wdma(const unsigned long base, const char *label)
 		 ((0 == grep) && (1 == isFIFOFull)));
 }
 
-char *cmdq_mdp_check_TF_address(unsigned int mva)
+void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
 {
 	bool findTFTask = false;
 	char *searchStr = NULL;
 	char bufInfoKey[] = "x";
 	char str2int[MDP_BUF_INFO_STR_LEN + 1] = "";
+	char *callerNameEnd = NULL;
+	char *callerNameStart = NULL;
+	int callerNameLen = TASK_COMM_LEN;
 	int taskIndex = 0;
 	int bufInfoIndex = 0;
 	int tfTaskIndex = -1;
@@ -819,7 +822,6 @@ char *cmdq_mdp_check_TF_address(unsigned int mva)
 	unsigned int bufInfo[MDP_PORT_BUF_INFO_NUM] = {0};
 	unsigned int bufAddrStart = 0;
 	unsigned int bufAddrEnd = 0;
-	char *module = "MDP";
 
 	/* search track task */
 	for (taskIndex = 0; taskIndex < MDP_MAX_TASK_NUM; taskIndex++) {
@@ -864,7 +866,19 @@ char *cmdq_mdp_check_TF_address(unsigned int mva)
 	if (findTFTask == true) {
 		CMDQ_ERR("[MDP] TF caller: %s\n", gCmdqMDPTask[tfTaskIndex].callerName);
 		CMDQ_ERR("%s\n", gCmdqMDPTask[tfTaskIndex].userDebugStr);
-		module = gCmdqMDPTask[tfTaskIndex].callerName;
+		strncat(module, "_", 1);
+
+		/* catch caller name only before - or _ */
+		callerNameStart = gCmdqMDPTask[tfTaskIndex].callerName;
+		callerNameEnd = strchr(gCmdqMDPTask[tfTaskIndex].callerName, '-');
+		if (callerNameEnd != NULL)
+			callerNameLen = callerNameEnd - callerNameStart;
+		else {
+			callerNameEnd = strchr(gCmdqMDPTask[tfTaskIndex].callerName, '_');
+			if (callerNameEnd != NULL)
+				callerNameLen = callerNameEnd - callerNameStart;
+		}
+		strncat(module, gCmdqMDPTask[tfTaskIndex].callerName, callerNameLen);
 	} else {
 		CMDQ_ERR("[MDP] TF Task not found\n");
 		for (taskIndex = 0; taskIndex < MDP_MAX_TASK_NUM; taskIndex++) {
@@ -872,7 +886,5 @@ char *cmdq_mdp_check_TF_address(unsigned int mva)
 			CMDQ_ERR("[MDP] Caller: %s\n", gCmdqMDPTask[taskIndex].callerName);
 			CMDQ_ERR("%s\n", gCmdqMDPTask[taskIndex].userDebugStr);
 		}
-		module = "MDP";
 	}
-	return module;
 }

@@ -126,6 +126,7 @@ typedef struct cmdqMDPFuncStruct {
 #define MDP_MAX_PLANE_NUM 3 /* max color format plane num */
 #define MDP_PORT_BUF_INFO_NUM (MDP_MAX_PLANE_NUM * 2) /* each plane has 2 info address and size */
 #define MDP_BUF_INFO_STR_LEN 8 /* each buf info length */
+#define MDP_DISPATCH_KEY_STR_LEN (TASK_COMM_LEN + 5) /* dispatch key format is MDP_(ThreadName) */
 
 typedef struct cmdqMDPTaskStruct {
 	char callerName[TASK_COMM_LEN];
@@ -160,7 +161,7 @@ extern "C" {
 	void cmdq_mdp_dump_color(const unsigned long base, const char *label);
 	void cmdq_mdp_dump_wdma(const unsigned long base, const char *label);
 
-	char *cmdq_mdp_check_TF_address(unsigned int mva);
+	void cmdq_mdp_check_TF_address(unsigned int mva, char *module);
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
