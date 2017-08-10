@@ -35,6 +35,7 @@
 #include <linux/highmem.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/swap.h>
 
 struct cma {
 	unsigned long	base_pfn;
