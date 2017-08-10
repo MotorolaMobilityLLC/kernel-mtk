@@ -1029,13 +1029,13 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 
 	EXT_DISP_FUNC();
 
+	_ext_disp_path_lock();
 	if (pgc->state == EXTD_DEINIT || pgc->state == EXTD_SUSPEND || pgc->need_trigger_overlay < 1) {
 		EXT_DISP_LOG("trigger ext display is already slept\n");
 		MMProfileLogEx(ddp_mmp_get_events()->Extd_ErrorInfo, MMProfileFlagPulse, Trigger, 0);
+		_ext_disp_path_unlock();
 		return -1;
 	}
-
-	_ext_disp_path_lock();
 
 	if (_should_trigger_interface()) {
 		if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL && DISP_SESSION_DEV(session) == DEV_MHL + 1)
