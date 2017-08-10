@@ -5,4 +5,8 @@ include $(src)/../../Kbuild-mtk-custom-env
 # Don't power-off when early porting
 ccflags-y += -DMTK_GPU_EARLY_PORTING
 
+#Enable VCore DVFS Control
+#Limit VCore DVFS bottom is LPM mode for gaming performance
+ccflags-y += -DENABLE_VCORE_DVFS_CONTROL
+
 obj-y += mtk_config_platform.o

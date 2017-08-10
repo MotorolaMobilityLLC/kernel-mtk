@@ -36,6 +36,10 @@
 #include <ged_dvfs.h>
 #endif
 
+#ifdef ENABLE_VCORE_DVFS_CONTROL
+#include <mt_vcorefs_manager.h>
+#endif
+
 struct mtk_config *g_config;
 volatile void *g_MFG_base;
 
@@ -68,6 +72,11 @@ static int _mtk_pm_callback_power_on(void)
 
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 
+#ifdef ENABLE_VCORE_DVFS_CONTROL
+	if (vcorefs_request_dvfs_opp(KIR_GPU, OPPI_LOW_PWR) < -1 )
+		pr_alert("[MALI]Fail to Vote LPM\n");
+#endif
+
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
 #endif
@@ -90,6 +99,11 @@ static void _mtk_pm_callback_power_off(void)
 #ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
+
+#ifdef ENABLE_VCORE_DVFS_CONTROL
+	vcorefs_request_dvfs_opp(KIR_GPU, OPPI_UNREQ);
+#endif
+
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
 	/* polling mfg idle */
