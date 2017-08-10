@@ -165,17 +165,6 @@ static struct {
 
 #define MAX_DBG_NAME_LENGTH 30
 
-static int parse_strtoull(const char *buf,
-	unsigned long long max, unsigned long long *value)
-{
-	int ret;
-
-	ret = kstrtoull(skip_spaces(buf), 0, value);
-	if (!ret && *value > max)
-		ret = -EINVAL;
-	return ret;
-}
-
 static ssize_t rawfs_proc_write(struct file *filp, const char __user *buf,
 	size_t len, loff_t *ppos)
 {
@@ -187,7 +176,6 @@ static ssize_t rawfs_proc_write(struct file *filp, const char __user *buf,
 	int done = 0;
 	int add;
 	int pos = 0;
-	unsigned long long val;
 
 	RAWFS_PRINT(RAWFS_DBG_SUPER, "rawfs_proc_write, current mask %X, %s\n",
 		rawfs_debug_msg_mask, buf);
@@ -212,11 +200,6 @@ static ssize_t rawfs_proc_write(struct file *filp, const char __user *buf,
 			break;
 		}
 		dbg_name = NULL;
-
-		if (parse_strtoull(buf + pos, -1ULL, &val))
-			return -EINVAL;
-
-		dbg_bit = val;
 
 		for (x = buf + pos, i = 0;
 			 (*x == '_' || (*x >= 'a' && *x <= 'z')) &&
