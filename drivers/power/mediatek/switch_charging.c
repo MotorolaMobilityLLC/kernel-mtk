@@ -149,9 +149,9 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 
 	if (!g_enable_dynamic_cv) {
 		if (batt_cust_data.high_battery_voltage_support)
-			_cv = BATTERY_VOLT_04_340000_V;
+			_cv = BATTERY_VOLT_04_340000_V / 1000;
 		else
-			_cv = BATTERY_VOLT_04_200000_V;
+			_cv = BATTERY_VOLT_04_200000_V / 1000;
 		goto _out;
 	}
 
@@ -188,9 +188,9 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 			&ircmp_resistor);
 	} else {
 		if (batt_cust_data.high_battery_voltage_support)
-			_cv = BATTERY_VOLT_04_340000_V;
+			_cv = BATTERY_VOLT_04_340000_V / 1000;
 		else
-			_cv = BATTERY_VOLT_04_200000_V;
+			_cv = BATTERY_VOLT_04_200000_V / 1000;
 
 		/* Turn on IR compensation */
 		ircmp_volt_clamp = 200;
