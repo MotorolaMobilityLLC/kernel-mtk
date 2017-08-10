@@ -880,6 +880,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	char img_err_str[IMG_ERR_STR_LEN];
 	struct ccci_modem *md1 = NULL;
 	int ret = 0;
+	unsigned int retry_cnt = 0;
 
 	/*something do once*/
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
@@ -887,8 +888,13 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 		md1 = ccci_md_get_modem_by_id(MD_SYS1);
 		if (md1) {
-			while (md1->config.setting & MD_SETTING_FIRST_BOOT)
-				;
+			while (md1->config.setting & MD_SETTING_FIRST_BOOT) {
+				msleep(20);
+				if (retry_cnt++ > 1000) {
+					CCCI_ERROR_LOG(md->index, TAG, "wait MD1 start time out\n");
+					break;
+				}
+			}
 			CCCI_BOOTUP_LOG(md->index, TAG, "wait for MD1 starting done\n");
 		} else
 			CCCI_ERROR_LOG(md->index, TAG, "get MD1 modem struct fail\n");
