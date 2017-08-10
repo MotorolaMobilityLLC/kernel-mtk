@@ -47,7 +47,6 @@
 #include "tz_cross/ta_pm.h"
 #include "tz_ndbg.h"
 
-#include "tz_playready.h"
 
 #include "tz_secure_clock.h"
 #define MTEE_MOD_TAG "MTEE_MOD"
@@ -1194,35 +1193,6 @@ static long tz_client_ioctl_compat(struct file *file, unsigned int cmd,
 #endif
 
 
-/* pm op funcstions */
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static int securetime_savefile(void)
-{
-	int ret = 0;
-
-	KREE_SESSION_HANDLE securetime_session = 0;
-
-	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("[securetime]CreateSession error %d\n", ret);
-
-	TEE_update_pr_time_infile(securetime_session);
-
-	ret = KREE_CloseSession(securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("CloseSession error %d\n", ret);
-
-
-	return ret;
-}
-#endif /* EARLYSUSPEND */
-
-static void st_shutdown(struct platform_device *pdev)
-{
-	pr_warn("[securetime]st_shutdown: kickoff\n");
-}
-#endif
 
 #ifdef CONFIG_PM_SLEEP
 static int tz_suspend(struct device *pdev)
@@ -1475,12 +1445,6 @@ static int mtee_probe(struct platform_device *pdev)
 #ifdef TZ_SECURETIME_SUPPORT
 	struct task_struct *thread_securetime_gb;
 #endif
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-	struct task_struct *thread_securetime;
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&securetime_early_suspend);
-#endif
-#endif
 
 #if defined(CONFIG_MTEE_CMA_SECURE_MEMORY) && \
 	!defined(NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE)
@@ -1554,10 +1518,6 @@ static int mtee_probe(struct platform_device *pdev)
 	}
 	pTzDevice = device_create(pTzClass, NULL, tz_client_dev, NULL,
 					TZ_DEV_NAME);
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-	thread_securetime = kthread_run(update_securetime_thread, NULL,
-						"update_securetime");
-#endif
 
 #ifdef TZ_SECURETIME_SUPPORT
 	thread_securetime_gb = kthread_run(update_securetime_thread_gb, NULL,
@@ -1591,9 +1551,6 @@ static struct platform_driver tz_driver = {
 		.of_match_table = mtee_of_match,
 #endif
 	},
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-	.shutdown   = st_shutdown,
-#endif
 };
 
 /* CMA */
@@ -1675,38 +1632,7 @@ static int __init register_tz_driver(void)
 
 	return ret;
 }
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-
-static void st_early_suspend(struct early_suspend *h)
-{
-	pr_debug("st_early_suspend: start\n");
-	securetime_savefile();
-}
-
-static void st_late_resume(struct early_suspend *h)
-{
-	int ret = 0;
-	KREE_SESSION_HANDLE securetime_session = 0;
-
-	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("[securetime]CreateSession error %d\n", ret);
-
-	TEE_update_pr_time_intee(securetime_session);
-	ret = KREE_CloseSession(securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("[securetime]CloseSession error %d\n", ret);
-}
-
-static struct early_suspend securetime_early_suspend = {
-	.level  = 258,
-	.suspend = st_early_suspend,
-	.resume  = st_late_resume,
-};
-#endif
-#endif
 
 /******************************************************************************
  * tz_client_init
