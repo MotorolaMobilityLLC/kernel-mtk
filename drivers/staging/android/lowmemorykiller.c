@@ -452,15 +452,22 @@ log_again:
 		lowmem_print(1, "Killing '%s' (%d), adj %d, score_adj %hd,\n"
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
-				"   Free memory is %ldkB above reserved\n",
-			     selected->comm, selected->pid,
-				 REVERT_ADJ(selected_oom_score_adj),
-			     selected_oom_score_adj,
-			     selected_tasksize * (long)(PAGE_SIZE / 1024),
-			     current->comm, current->pid,
-			     cache_size, cache_limit,
-			     min_score_adj,
-			     free);
+				"   Free memory is %ldkB above reserved\n"
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+				"   swapfree %lukB of SwapTatal %lukB(decrease %d level)\n"
+#endif
+				, selected->comm, selected->pid,
+				REVERT_ADJ(selected_oom_score_adj),
+				selected_oom_score_adj,
+				selected_tasksize * (long)(PAGE_SIZE / 1024),
+				current->comm, current->pid,
+				cache_size, cache_limit,
+				min_score_adj,
+				free
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+				, swap_pages * 4, total_swap_pages * 4, to_be_aggressive
+#endif
+				);
 		lowmem_deathpending = selected;
 		lowmem_deathpending_timeout = jiffies + HZ;
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
