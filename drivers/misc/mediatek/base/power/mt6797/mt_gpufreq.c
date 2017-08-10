@@ -1121,7 +1121,7 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 #ifdef VGPU_SET_BY_EXTIC
 		if ((get_ext_buck2_type() == EXT_RT5735 && reg_val != 1) ||
 			((get_ext_buck2_type() == EXT_FAN53555) &&
-			((reg_val >> EXTIC_BUCK_EN0_SHIFT) & EXTIC_BUCK_EN0_MASK) != EXTIC_BUCK_EN0_MASK))
+			reg_val != 1))
 #endif
 			BUG();
 	}
