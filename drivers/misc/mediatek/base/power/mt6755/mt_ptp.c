@@ -1633,9 +1633,9 @@ static void restore_default_volt_cpu(struct eem_det *det)
 static void get_freq_table_cpu(struct eem_det *det)
 {
 	int i;
-	unsigned int binLevel, binLevel_eng;
+	unsigned int binLevel;
 	#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	unsigned int freq_bound;
+	unsigned int freq_bound, binLevel_eng;
 	#endif
 	#ifndef EARLY_PORTING
 	enum mt_cpu_dvfs_id cpu;
@@ -4639,9 +4639,9 @@ static int __init vcore_ptp_init(void)
 static int __init eem_conf(void)
 {
 	int i;
-	unsigned int binLevel, binLevel_eng;
+	unsigned int binLevel;
 	#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	unsigned int freq_bound;
+	unsigned int freq_bound, binLevel_eng;
 	#endif
 	struct device_node *cpuSpeedNode = NULL;
 
