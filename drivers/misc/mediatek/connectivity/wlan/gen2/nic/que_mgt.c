@@ -5169,9 +5169,14 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 
 	/* Sanity Check */
 	if (!prReorderQueParm || !prReorderQueParm->fgIsValid || !prReorderQueParm->fgHasBubble) {
-		DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
+		if (prReorderQueParm) {
+			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
 				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid, prReorderQueParm,
 				   prReorderQueParm->fgIsValid, prReorderQueParm->fgHasBubble);
+		} else {
+			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u].\n",
+				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid);
+		}
 		return;
 	}
 
