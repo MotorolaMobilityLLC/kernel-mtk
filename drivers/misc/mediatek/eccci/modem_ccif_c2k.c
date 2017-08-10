@@ -898,6 +898,11 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG, "modem capability 0x%x\n", md->capability);
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1);
+#endif
+
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*enable ccif clk*/
 	ccci_set_clk_cg(md, 1);
@@ -983,6 +988,11 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	/*disable ccif clk*/
 	ccci_set_clk_cg(md, 0);
 #endif
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0);
+#endif
+
 	/*don't reset queue here, some queue may still have unread data */
 	/*md_ccif_reset_queue(md); */
 	ccci_md_broadcast_state(md, GATED);

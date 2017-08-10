@@ -59,6 +59,10 @@ void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA,
 #ifdef FEATURE_CLK_CG_CONTROL
 void ccci_set_clk_cg(struct ccci_modem *md, unsigned int is_on);
 #endif
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on);
+#endif
+
 #ifdef ENABLE_DRAM_API
 extern phys_addr_t get_max_DRAM_size(void);
 extern unsigned int get_phys_offset(void);

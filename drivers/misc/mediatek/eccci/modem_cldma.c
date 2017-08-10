@@ -2119,6 +2119,11 @@ static int md_cd_start(struct ccci_modem *md)
 			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
 
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1);
+#endif
+
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*enable cldma & ccif clk*/
 	ccci_set_clk_cg(md, 1);
@@ -2437,6 +2442,10 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*disable cldma & ccif clk*/
 	ccci_set_clk_cg(md, 0);
+#endif
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0);
 #endif
 
 	return 0;

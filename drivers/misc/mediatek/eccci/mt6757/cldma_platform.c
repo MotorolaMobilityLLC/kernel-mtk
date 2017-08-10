@@ -61,6 +61,12 @@ static struct ccci_clk_node clk_table[] = {
 static void __iomem *md_sram_pms_base;
 static void __iomem *md_sram_pd_psmcusys_base;
 
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+static void __iomem *ap_sleep_base;
+static void __iomem *ap_topckgen_base;
+static atomic_t md_power_on_off_cnt;
+#endif
+
 #if defined(CONFIG_PINCTRL_MT6757)
 static struct pinctrl *mdcldma_pinctrl;
 #endif
@@ -237,6 +243,49 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 }
 #endif
 
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+/*turn on/off bsi_bpi clock & SRAM for mt6757*/
+void ccci_set_bsi_bpi_SRAM_cfg(struct ccci_modem *md, unsigned int power_on)
+{
+	unsigned int cnt, reg_value, md_num;
+
+#ifdef CONFIG_MTK_ECCCI_C2K
+	md_num = 2;
+#else
+	md_num = 1;
+#endif
+	cnt = atomic_read(&md_power_on_off_cnt);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s: power_on=%d, cnt = %d\n", __func__, power_on, cnt);
+
+	if (power_on) {
+		if (atomic_inc_return(&md_power_on_off_cnt) > md_num)
+			atomic_set(&md_power_on_off_cnt, md_num);
+
+		reg_value = ccci_read32(ap_topckgen_base, 0xC0);
+		reg_value &= ~(1 << 15);
+		ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+		reg_value = ccci_read32(ap_sleep_base, 0x370);
+		reg_value &= ~(0x7F);
+		ccci_write32(ap_sleep_base, 0x370, reg_value);
+	} else {
+		if (cnt > 0) {
+			if (atomic_dec_and_test(&md_power_on_off_cnt)) {
+				reg_value = ccci_read32(ap_sleep_base, 0x370);
+				reg_value |= 0x7F;
+				ccci_write32(ap_sleep_base, 0x370, reg_value);
+				reg_value = ccci_read32(ap_topckgen_base, 0xC0);
+				reg_value |= (1 << 15);
+				ccci_write32(ap_topckgen_base, 0xC0, reg_value);
+				CCCI_NORMAL_LOG(md->index, TAG, "%s: power off done, clk:0x%x sleep:0x%x\n",
+					__func__, reg_value, ccci_read32(ap_sleep_base, 0x370));
+			}
+		} else
+			atomic_set(&md_power_on_off_cnt, 0);
+	}
+
+}
+#endif
+
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
@@ -311,6 +360,14 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 
 	md_sram_pms_base = ioremap_nocache(MD_SRAM_PMS_BASE, MD_SRAM_PMS_LEN);
 	md_sram_pd_psmcusys_base = ioremap_nocache(MD_SRAM_PD_PSMCUSYS_SRAM_BASE, MD_SRAM_PD_PSMCUSYS_SRAM_LEN);
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	ap_sleep_base = of_iomap(node, 0);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+	ap_topckgen_base = of_iomap(node, 0);
+	atomic_set(&md_power_on_off_cnt, 0);
+#endif
 	return 0;
 }
 
