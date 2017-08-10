@@ -3815,7 +3815,8 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 						       prSwRfb,
 						       prSwRfb->prRxStatus,
 						       prSwRfb->pvHeader);
-						ASSERT(0);
+						RX_ERROR_LOGDUMP32((PUINT_32)prSwRfb->prRxStatus,
+								   sizeof(*prSwRfb->prRxStatus));
 					}
 					break;
 
