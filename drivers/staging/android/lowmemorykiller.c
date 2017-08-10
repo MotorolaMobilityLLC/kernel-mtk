@@ -168,11 +168,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	int to_be_aggressive = 0;
+	unsigned long swap_pages = 0;
+#endif
 	bool in_cpu_hotplugging = false;
 
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
-	int other_anon = global_page_state(NR_INACTIVE_ANON) - global_page_state(NR_ACTIVE_ANON);
-#endif
 #ifdef CONFIG_MT_ENG_BUILD
 	/* dump memory info when framework low memory*/
 	int pid_dump = -1; /* process which need to be dump */
@@ -220,6 +221,16 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 #endif
 
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	swap_pages = atomic_long_read(&nr_swap_pages);
+	/* More than 1/2 swap usage */
+	if (swap_pages * 2 < total_swap_pages)
+		to_be_aggressive++;
+	/* More than 3/4 swap usage */
+	if (swap_pages * 4 < total_swap_pages)
+		to_be_aggressive++;
+#endif
+
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
 	if (lowmem_minfree_size < array_size)
@@ -227,6 +238,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+			if (to_be_aggressive != 0 && i > 3) {
+				i -= to_be_aggressive;
+				if (i < 3)
+					i = 3;
+			}
+#endif
 			min_score_adj = lowmem_adj[i];
 			break;
 		}
@@ -237,13 +255,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		pr_alert("Aggressive LMK during CPU hotplug!\n");
 		min_score_adj = 0;
 	}
-
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE /* Need removal */
-	if (min_score_adj < 9 && other_anon > 70 * 256) {
-		/* if other_anon > 70MB, don't kill adj <= 8 */
-		min_score_adj = 9;
-	}
-#endif
 
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 			sc->nr_to_scan, sc->gfp_mask, other_free,
