@@ -443,14 +443,25 @@ static void scp_init_work_done(struct work_struct *work)
 static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
+	struct gyro_data data;
+
+	data.x = event->gyroscope_t.x;
+	data.y = event->gyroscope_t.y;
+	data.z = event->gyroscope_t.z;
+	data.status = event->gyroscope_t.status;
+	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+	data.reserved[0] = event->reserve[0];
 
 	if (event->flush_action == FLUSH_ACTION)
 		err = gyro_flush_report();
 	else if (event->flush_action == DATA_ACTION)
-		err = gyro_data_report(event->gyroscope_t.x, event->gyroscope_t.y, event->gyroscope_t.z,
-			event->gyroscope_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
-	else if (event->flush_action == BIAS_ACTION)
-		err = gyro_bias_report(event->gyroscope_t.x_bias, event->gyroscope_t.y_bias, event->gyroscope_t.z_bias);
+		err = gyro_data_report(&data);
+	else if (event->flush_action == BIAS_ACTION) {
+		data.x = event->gyroscope_t.x_bias;
+		data.y = event->gyroscope_t.y_bias;
+		data.z = event->gyroscope_t.z_bias;
+		err = gyro_bias_report(&data);
+	}
 	return err;
 }
 

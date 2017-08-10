@@ -13,6 +13,7 @@
 
 #include <linux/vmalloc.h>
 #include "inc/gyroscope.h"
+#include <performance.h>
 
 struct gyro_context *gyro_context_obj = NULL;
 static struct platform_device *pltfm_dev;
@@ -94,21 +95,21 @@ static void gyro_work_func(struct work_struct *work)
 		GYRO_ERR("get gyro data fails!!\n");
 		goto gyro_loop;
 	} else {
-			cxt->drv_data.gyro_data.values[0] = x+cxt->cali_sw[0];
-			cxt->drv_data.gyro_data.values[1] = y+cxt->cali_sw[1];
-			cxt->drv_data.gyro_data.values[2] = z+cxt->cali_sw[2];
-			cxt->drv_data.gyro_data.status = status;
-			pre_ns = cxt->drv_data.gyro_data.time;
-			cxt->drv_data.gyro_data.time = cur_ns;
-	 }
+		cxt->drv_data.x = x;
+		cxt->drv_data.y = y;
+		cxt->drv_data.z = z;
+		cxt->drv_data.status = status;
+		pre_ns = cxt->drv_data.timestamp;
+		cxt->drv_data.timestamp = cur_ns;
+	}
 
 	if (true ==  cxt->is_first_data_after_enable) {
 		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-	    if (GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[0] ||
-			     GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[1] ||
-			     GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[2]) {
+		if (GYRO_INVALID_VALUE == cxt->drv_data.x ||
+		    GYRO_INVALID_VALUE == cxt->drv_data.y ||
+		    GYRO_INVALID_VALUE == cxt->drv_data.z) {
 			GYRO_LOG(" read invalid data\n");
 			goto gyro_loop;
 	    }
@@ -118,15 +119,13 @@ static void gyro_work_func(struct work_struct *work)
 	/* cxt->drv_data.gyro_data.values[1],cxt->drv_data.gyro_data.values[2]); */
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
+		struct gyro_data tmp_data = cxt->drv_data;
 		pre_ns += delay_ms*1000000LL;
-		gyro_data_report(cxt->drv_data.gyro_data.values[0],
-			cxt->drv_data.gyro_data.values[1], cxt->drv_data.gyro_data.values[2],
-			cxt->drv_data.gyro_data.status, pre_ns);
+		tmp_data.timestamp = pre_ns;
+		gyro_data_report(&tmp_data);
 	}
 
-	gyro_data_report(cxt->drv_data.gyro_data.values[0],
-		cxt->drv_data.gyro_data.values[1], cxt->drv_data.gyro_data.values[2],
-		cxt->drv_data.gyro_data.status, cxt->drv_data.gyro_data.time);
+	gyro_data_report(&cxt->drv_data);
 
 gyro_loop:
 	if (true == cxt->is_polling_run)
@@ -245,9 +244,9 @@ static int gyro_enable_data(int enable)
 					stopTimer(&cxt->hrTimer);
 					smp_mb();/* for memory barrier */
 					cancel_work_sync(&cxt->report);
-					cxt->drv_data.gyro_data.values[0] = GYRO_INVALID_VALUE;
-					cxt->drv_data.gyro_data.values[1] = GYRO_INVALID_VALUE;
-					cxt->drv_data.gyro_data.values[2] = GYRO_INVALID_VALUE;
+					cxt->drv_data.x = GYRO_INVALID_VALUE;
+					cxt->drv_data.y = GYRO_INVALID_VALUE;
+					cxt->drv_data.z = GYRO_INVALID_VALUE;
 			}
 		}
 		gyro_real_enable(enable);
@@ -731,34 +730,37 @@ static int check_repeat_data(int x, int y, int z)
 	return 0;
 }
 
-int gyro_data_report(int x, int y, int z, int status, int64_t nt)
+int gyro_data_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
 
-	check_repeat_data(x, y, z);
+	check_repeat_data(data->x, data->y, data->z);
+	event.time_stamp = data->timestamp;
 	event.flush_action = DATA_ACTION;
-	event.time_stamp = nt;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
-	event.status = status;
+	event.status = data->status;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	event.reserved = data->reserved[0];
 
+	if (event.reserved == 1)
+		mark_timestamp(ID_GYROSCOPE, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
 		GYRO_ERR("failed due to event buffer full\n");
 	return err;
 }
 
-int gyro_bias_report(int x, int y, int z)
+int gyro_bias_report(struct gyro_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
 
 	event.flush_action = BIAS_ACTION;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)

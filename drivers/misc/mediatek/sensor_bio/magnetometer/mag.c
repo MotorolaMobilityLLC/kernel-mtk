@@ -13,6 +13,7 @@
 
 #include <linux/vmalloc.h>
 #include "inc/mag.h"
+#include "performance.h"
 
 struct mag_context *mag_context_obj = NULL;
 static struct mag_init_info *msensor_init_list[MAX_CHOOSE_G_NUM] = {0};
@@ -70,35 +71,31 @@ static void mag_work_func(struct work_struct *work)
 		MAG_ERR("get data fails!!\n");
 		return;
 	}
-	cxt->drv_data.mag_data.values[0] = x;
-	cxt->drv_data.mag_data.values[1] = y;
-	cxt->drv_data.mag_data.values[2] = z;
-	cxt->drv_data.mag_data.status = status;
-	m_pre_ns = cxt->drv_data.mag_data.time;
-	cxt->drv_data.mag_data.time = cur_ns;
+	cxt->drv_data.x = x;
+	cxt->drv_data.y = y;
+	cxt->drv_data.z = z;
+	cxt->drv_data.status = status;
+	m_pre_ns = cxt->drv_data.timestamp;
+	cxt->drv_data.timestamp = cur_ns;
 	if (true ==  cxt->is_first_data_after_enable) {
 		m_pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-		if (MAG_INVALID_VALUE == cxt->drv_data.mag_data.values[0] ||
-			MAG_INVALID_VALUE == cxt->drv_data.mag_data.values[1] ||
-			MAG_INVALID_VALUE == cxt->drv_data.mag_data.values[2]) {
+		if (MAG_INVALID_VALUE == cxt->drv_data.x ||
+			MAG_INVALID_VALUE == cxt->drv_data.y ||
+			MAG_INVALID_VALUE == cxt->drv_data.z) {
 			MAG_LOG(" read invalid data\n");
 			goto mag_loop;
 		}
 	}
 	while ((cur_ns - m_pre_ns) >= delay_ms*1800000LL) {
+		struct mag_data tmp_data = cxt->drv_data;
 		m_pre_ns += delay_ms*1000000LL;
-		mag_data_report(cxt->drv_data.mag_data.values[0],
-			cxt->drv_data.mag_data.values[1],
-			cxt->drv_data.mag_data.values[2],
-			cxt->drv_data.mag_data.status, m_pre_ns);
+		tmp_data.timestamp = m_pre_ns;
+		mag_data_report(&tmp_data);
 	}
 
-	mag_data_report(cxt->drv_data.mag_data.values[0],
-		cxt->drv_data.mag_data.values[1],
-		cxt->drv_data.mag_data.values[2],
-		cxt->drv_data.mag_data.status, cxt->drv_data.mag_data.time);
+	mag_data_report(&cxt->drv_data);
 
 mag_loop:
 		/* MAG_LOG("mag_type(%d) data[%d,%d,%d]\n" ,i,cxt->drv_data[i].mag_data.values[0], */
@@ -187,9 +184,9 @@ static int mag_enable_data(int enable)
 				stopTimer(&cxt->hrTimer);
 				smp_mb();/*for memory barrier*/
 				cancel_work_sync(&cxt->report);
-				cxt->drv_data.mag_data.values[0] = MAG_INVALID_VALUE;
-				cxt->drv_data.mag_data.values[1] = MAG_INVALID_VALUE;
-				cxt->drv_data.mag_data.values[2] = MAG_INVALID_VALUE;
+				cxt->drv_data.x = MAG_INVALID_VALUE;
+				cxt->drv_data.y = MAG_INVALID_VALUE;
+				cxt->drv_data.z = MAG_INVALID_VALUE;
 			}
 		}
 
@@ -651,37 +648,40 @@ static int check_abnormal_data(int x, int y, int z, int status)
 	return 0;
 }
 
-int mag_data_report(int x, int y, int z, int status, int64_t nt)
+int mag_data_report(struct mag_data *data)
 {
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
 
-	check_repeat_data(x, y, z);
-	check_abnormal_data(x, y, z, status);
+	check_repeat_data(data->x, data->y, data->z);
+	check_abnormal_data(data->x, data->y, data->z, data->status);
 	event.flush_action = DATA_ACTION;
-	event.status = status;
-	event.time_stamp = nt;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.status = data->status;
+	event.time_stamp = data->timestamp;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	event.reserved = data->reserved[0];
 
+	if (event.reserved == 1)
+		mark_timestamp(ID_MAGNETIC, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
 		MAG_ERR("failed due to event buffer full\n");
 	return err;
 }
 
-int mag_bias_report(int x, int y, int z)
+int mag_bias_report(struct mag_data *data)
 {
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
 
 	event.flush_action = BIAS_ACTION;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)

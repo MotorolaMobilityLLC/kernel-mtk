@@ -104,9 +104,14 @@ struct gyro_init_info {
 };
 
 struct gyro_data {
-	struct hwm_sensor_data gyro_data;
-	int data_updata;
-};
+	int8_t status;
+	int8_t reserved[3];
+	int x;
+	int y;
+	int z;
+	int64_t timestamp;
+	void *reserved1;
+} __packed;
 
 struct gyro_drv_obj {
 	void *self;
@@ -139,8 +144,8 @@ struct gyro_context {
 };
 
 extern int gyro_driver_add(struct gyro_init_info *obj);
-extern int gyro_data_report(int x, int y, int z, int status, int64_t nt);
-extern int gyro_bias_report(int x, int y, int z);
+extern int gyro_data_report(struct gyro_data *data);
+extern int gyro_bias_report(struct gyro_data *data);
 extern int gyro_flush_report(void);
 extern int gyro_register_control_path(struct gyro_control_path *ctl);
 extern int gyro_register_data_path(struct gyro_data_path *data);
