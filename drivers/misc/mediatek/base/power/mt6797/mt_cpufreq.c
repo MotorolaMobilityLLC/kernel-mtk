@@ -3189,7 +3189,7 @@ static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	else {
 		if (is_tt_segment) {
 			if (idx == 0)
-				ret = BigIDVFSFreq(10296);
+				ret = BigIDVFSFreq(10348);
 			else if (idx == 1)
 				ret = BigIDVFSFreq(9724);
 			else
@@ -5030,7 +5030,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		else {
 			opp_tbl_info = &opp_tbls_0119[id][CPU_LV_TO_OPP_IDX(lv)];
 			if (id == MT_CPU_DVFS_B && is_tt_segment && lv == CPU_LEVEL_1) {
-				opp_tbl_info->opp_tbl[0].cpufreq_khz = 2574000;
+				opp_tbl_info->opp_tbl[0].cpufreq_khz = 2587000;
 				opp_tbl_info->opp_tbl[1].cpufreq_khz = 2431000;
 				opp_tbl_info->opp_tbl[1].cpufreq_volt = 118000;
 				opp_tbl_info->opp_tbl[1].cpufreq_volt_org = 118000;
@@ -5083,9 +5083,9 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		else {
 			opp_tbl_m_info = &opp_tbls_m_0119[id][CPU_LV_TO_OPP_IDX(lv)];
 			if (id == MT_CPU_DVFS_B && is_tt_segment && lv == CPU_LEVEL_1) {
-				opp_tbl_m_info->opp_tbl_m[0].target_f = 2574000;
+				opp_tbl_m_info->opp_tbl_m[0].target_f = 2587000;
 				opp_tbl_m_info->opp_tbl_m[1].target_f = 2431000;
-				opp_tbl_m_info->opp_tbl_m[0].vco_dds = 2574000;
+				opp_tbl_m_info->opp_tbl_m[0].vco_dds = 2587000;
 				opp_tbl_m_info->opp_tbl_m[1].vco_dds = 2431000;
 			}
 		}
