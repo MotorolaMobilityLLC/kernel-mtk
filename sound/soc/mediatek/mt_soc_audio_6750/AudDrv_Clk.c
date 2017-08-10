@@ -366,21 +366,6 @@ void AudDrv_Clk_On(void)
 		/* pr_err("-----------[CCF]AudDrv_Clk_On, aud_infra_clk:%d\n",
 			aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare); */
 
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
-				BUG();
-				goto UNLOCK;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
-			       __func__);
-			BUG();
-			goto UNLOCK;
-		}
-
 		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
 			if (ret) {
@@ -391,6 +376,21 @@ void AudDrv_Clk_On(void)
 			}
 		} else {
 			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_PERI_AUDIO26M fail\n",
+			       __func__);
+			BUG();
+			goto UNLOCK;
+		}
+
+		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
+				       aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
+				BUG();
+				goto UNLOCK;
+			}
+		} else {
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
 			       __func__);
 			BUG();
 			goto UNLOCK;
@@ -503,28 +503,30 @@ void AudDrv_Clk_Off(void)
 		/* Make sure all IRQ status is cleared */
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 0xffff, 0xffff);
 
-		if (aud_clks[CLOCK_AFE].clk_prepare)
-			clk_disable(aud_clks[CLOCK_AFE].clock);
-
-		if (aud_clks[CLOCK_DAC].clk_prepare)
-			clk_disable(aud_clks[CLOCK_DAC].clock);
-
-		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
-			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
-
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
-
 		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 
 		/* CLOCK_SCP_SYS_AUD is MTCMOS */
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
 			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
 
+		spin_lock_irqsave(&auddrv_Clk_lock, flags);
+
+		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
+			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
+
+		if (aud_clks[CLOCK_DAC].clk_prepare)
+			clk_disable(aud_clks[CLOCK_DAC].clock);
+
+		if (aud_clks[CLOCK_AFE].clk_prepare)
+			clk_disable(aud_clks[CLOCK_AFE].clock);
+
+		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
+			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
+
 		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare)
 			clk_disable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
 
-		return;
+		/*return;*/
 #endif
 
 #else
