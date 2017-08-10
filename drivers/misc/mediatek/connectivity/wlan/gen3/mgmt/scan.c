@@ -3100,6 +3100,12 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 			prBssDesc->eBand, prBssDesc->ucChannelNum);
 		return FALSE;
 	}
+#if CFG_SUPPORT_RN
+	if (prAdapter->prAisBssInfo->fgDisConnReassoc == FALSE)
+#endif
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prBssDesc->rUpdateTime,
+					SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+			return FALSE;
 #if CFG_SUPPORT_WAPI
 	if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
 		if (!wapiPerformPolicySelection(prAdapter, prBssDesc))

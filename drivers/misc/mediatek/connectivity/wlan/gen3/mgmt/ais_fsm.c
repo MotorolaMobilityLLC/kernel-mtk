@@ -3519,9 +3519,9 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 		/* 2. Increase Join Failure Count */
 		aisAddBlacklist(prAdapter, prAisFsmInfo->prTargetBssDesc);
-		prAisFsmInfo->prTargetStaRec->ucJoinFailureCount++;
+		prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount++;
 
-		if (prAisFsmInfo->prTargetStaRec->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
+		if (prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
 			/* 3.1 Retreat to AIS_STATE_SEARCH state for next try */
 			eNextState = AIS_STATE_SEARCH;
 		} else if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
