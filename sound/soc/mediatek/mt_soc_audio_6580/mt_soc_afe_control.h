@@ -220,7 +220,7 @@ void SetOffloadEnableFlag(bool bEnable);
 
 unsigned int Align64ByteSize(unsigned int insize);
 
-void AudDrv_checkDLISRStatus(void);
+bool AudDrv_checkDLISRStatus(void);
 
 #ifdef CONFIG_OF
 int GetGPIO_Info(int type, int *pin, int *pinmode);

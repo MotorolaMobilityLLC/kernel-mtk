@@ -542,6 +542,8 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 	AFE_BLOCK_T *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	unsigned long flags;
+	static int DebugCount;
+	static bool dumpcheck;
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 	char *data_w_ptr = (char *)dst;
 
@@ -562,7 +564,12 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 		return 0;
 	}
 
-	AudDrv_checkDLISRStatus();
+	if (dumpcheck == true) {
+		PRINTK_AUDDRV("I2S0dl1_copy dumpcheck cs=%d, WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
+			copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
+	}
+
+	dumpcheck = AudDrv_checkDLISRStatus();
 
 	spin_lock_irqsave(&auddrv_I2S0dl1_lock, flags);
 	copy_size = Afe_Block->u4BufferSize - Afe_Block->u4DataRemained;	/* free space of the buffer */
@@ -578,6 +585,12 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 	copy_size = Align64ByteSize(copy_size);
 #endif
 	PRINTK_AUD_DL1("copy_size=0x%x, count=0x%x\n", copy_size, (unsigned int)count);
+
+	DebugCount++;
+	if ((DebugCount >= 50) || dumpcheck) {
+		PRINTK_AUDDRV("I2S0dl1_copy copy_size=%d, WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
+			copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
+	}
 
 	if (copy_size != 0) {
 		spin_lock_irqsave(&auddrv_I2S0dl1_lock, flags);
@@ -683,6 +696,11 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 		}
 	}
 	PRINTK_AUD_DL1("pcm_copy return\n");
+	if ((DebugCount >= 50) || dumpcheck) {
+		DebugCount = 0;
+		PRINTK_AUDDRV("I2S0dl1_copy end copy_size=%d, WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
+			copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
+	}
 	return 0;
 }
 

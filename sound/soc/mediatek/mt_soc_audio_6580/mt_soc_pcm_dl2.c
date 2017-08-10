@@ -444,7 +444,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 		return 0;
 	}
 
-	AudDrv_checkDLISRStatus();
+	/* AudDrv_checkDLISRStatus(); */
 
 	spin_lock_irqsave(&pMemControl->substream_lock, flags);
 	copy_size = Afe_Block->u4BufferSize - Afe_Block->u4DataRemained;	/* free space of the buffer */

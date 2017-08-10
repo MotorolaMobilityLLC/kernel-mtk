@@ -555,6 +555,9 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 		goto AudDrv_IRQ_handler_exit;
 	}
 
+	/* clear irq */
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0xff);
+
 	if (u4RegValue & INTERRUPT_IRQ1_MCU) {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
 			Auddrv_DL1_Interrupt_Handler();
@@ -579,8 +582,6 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	if (u4RegValue & INTERRUPT_IRQ5_MCU)
 		Auddrv_HDMI_Interrupt_Handler();
 
-	/* clear irq */
-	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0xff);
 AudDrv_IRQ_handler_exit:
 	AudDrv_Clk_Off();
 	return IRQ_HANDLED;
@@ -3346,7 +3347,7 @@ unsigned int Align64ByteSize(unsigned int insize)
 	return align_size;
 }
 
-void AudDrv_checkDLISRStatus(void)
+bool AudDrv_checkDLISRStatus(void)
 {
 	unsigned long flags1;
 	AFE_DL_ABNORMAL_CONTROL_T localctl;
@@ -3394,6 +3395,7 @@ void AudDrv_checkDLISRStatus(void)
 			}
 		}
 	}
+	return dumplog;
 }
 
 /* IRQ Manager */
