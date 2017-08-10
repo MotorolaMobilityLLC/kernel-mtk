@@ -542,7 +542,15 @@ struct page *cma_alloc_large(struct cma *cma, int count, unsigned int align)
 	struct zone *zone;
 	unsigned long wmark_low = 0;
 	struct zone *zones = NODE_DATA(numa_node_id())->node_zones;
-	int retries = 0;
+	int retries = 0, org_swappiness;
+
+	/*
+	 * We are going to make lots of free spaces. Pages swap out during
+	 * the process might be freed soon. Temporary set swappiness to 0 to
+	 * reduce this waste and accelerate freeing.
+	 */
+	org_swappiness = vm_swappiness;
+	vm_swappiness = 0;
 
 	for_each_zone(zone)
 		if (zone != &zones[ZONE_MOVABLE])
@@ -566,10 +574,11 @@ struct page *cma_alloc_large(struct cma *cma, int count, unsigned int align)
 	for (retries = 0; retries < 3; retries++) {
 		page = cma_alloc(cma, count, align);
 		if (page)
-			return page;
+			break;
 	}
 
-	return 0;
+	vm_swappiness = org_swappiness;
+	return page;
 }
 
 static int cma_usage_show(struct seq_file *m, void *v)
