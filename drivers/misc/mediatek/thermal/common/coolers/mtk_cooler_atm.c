@@ -590,6 +590,7 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 			gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 		} else {
 			gpu_power = MIN(highest_possible_gpu_power, cur_gpu_power);
+			gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 		}
 
 		cpu_power = MIN((total_power - gpu_power), MAXIMUM_CPU_POWER);
