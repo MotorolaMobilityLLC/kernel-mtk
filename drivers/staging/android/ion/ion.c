@@ -1371,8 +1371,13 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
-	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
-			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+	if (buffer->heap->type != (int)ION_HEAP_TYPE_FB)
+		dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
+			buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+	else
+		pr_err("%s: can not sync support heap type(%d) to sync\n",
+		       __func__, buffer->heap->type);
+
 	dma_buf_put(dmabuf);
 	return 0;
 }

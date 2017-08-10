@@ -15,12 +15,18 @@
 #define __ION_DRV_PRIV_H__
 
 #include "ion_priv.h"
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#include "secmem.h"
+#endif
 
 /* STRUCT ION_HEAP *G_ION_HEAPS[ION_HEAP_IDX_MAX]; */
 
 /* Import from multimedia heap */
 long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 		unsigned long arg, int from_kernel);
+
+long ion_sec_ioctl(struct ion_client *client, unsigned int cmd,
+			 unsigned long arg, int from_kernel);
 
 void smp_inner_dcache_flush_all(void);
 #ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
@@ -45,6 +51,12 @@ int ion_drv_create_heap(struct ion_platform_heap *heap_data);
 
 #ifdef CONFIG_PM
 extern void shrink_ion_by_scenario(void);
+#endif
+
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount,
+					u32 *sec_handle, uint8_t *owner, uint32_t id);
+extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
 #endif
 
 #endif

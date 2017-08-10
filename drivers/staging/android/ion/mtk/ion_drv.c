@@ -571,6 +571,9 @@ static long _ion_ioctl(struct ion_client *client, unsigned int cmd,
 	case ION_CMD_MULTIMEDIA:
 		ret = ion_mm_ioctl(client, cmd, arg, from_kernel);
 		break;
+	case ION_CMD_MULTIMEDIA_SEC:
+		ret = ion_sec_ioctl(client, cmd, arg, from_kernel);
+		break;
 	}
 	ION_FUNC_LEAVE;
 	return ret;
@@ -650,6 +653,9 @@ struct ion_heap *ion_mtk_heap_create(struct ion_platform_heap *heap_data)
 	case ION_HEAP_TYPE_FB:
 		heap = ion_fb_heap_create(heap_data);
 		break;
+	case ION_HEAP_TYPE_MULTIMEDIA_SEC:
+		heap = ion_sec_heap_create(heap_data);
+		break;
 	default:
 		heap = ion_heap_create(heap_data);
 	}
@@ -677,6 +683,9 @@ void ion_mtk_heap_destroy(struct ion_heap *heap)
 		break;
 	case ION_HEAP_TYPE_FB:
 		ion_fb_heap_destroy(heap);
+		break;
+	case ION_HEAP_TYPE_MULTIMEDIA_SEC:
+		ion_sec_heap_destroy(heap);
 		break;
 	default:
 		ion_heap_destroy(heap);
@@ -795,6 +804,15 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 				.type = ION_HEAP_TYPE_MULTIMEDIA,
 				.id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
 				.name = "ion_mm_heap_for_camera",
+				.base = 0,
+				.size = 0,
+				.align = 0,
+				.priv = NULL,
+		},
+		{
+				.type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+				.id = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+				.name = "ion_sec_heap",
 				.base = 0,
 				.size = 0,
 				.align = 0,
