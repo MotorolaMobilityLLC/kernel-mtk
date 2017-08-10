@@ -250,6 +250,11 @@ PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
 
+ifeq ($(CONFIG_ARCH_MT6735), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
 ifeq ($(CONFIG_ARCH_MT6735M), y)
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
