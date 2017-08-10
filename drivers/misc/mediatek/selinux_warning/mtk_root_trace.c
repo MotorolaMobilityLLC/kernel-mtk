@@ -44,8 +44,9 @@ static struct platform_driver root_trace = {
 };
 
 #define MAX_PATH        (256)
+
 /* the exclusive list for root trace, below is an example, please configure your own list*/
-const char *exclusive_list[] = {
+static const char * const exclusive_list[] = {
 	"/system/bin/app_process32",
 	"/system/bin/app_process64",
 	"/system/bin/pppd"
@@ -53,10 +54,10 @@ const char *exclusive_list[] = {
 
 /*
 *  by default not to traverse exclusive list
-*  0 : not to traverse exclusive list
+*  0 : not to traverse exclusive list (default if not initialise)
 *  1 : traverse exclusive list
 */
-int traverse_exclusive_list = 0;
+static int traverse_exclusive_list;
 
 
 static ssize_t root_trace_show(struct device_driver *driver, char *buf)
