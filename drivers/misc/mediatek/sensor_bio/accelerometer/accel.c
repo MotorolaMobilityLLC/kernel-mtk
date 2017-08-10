@@ -17,6 +17,19 @@
 
 struct acc_context *acc_context_obj = NULL;
 
+/*#define DEBUG_PERFORMANCE */
+#ifdef DEBUG_PERFORMANCE
+int64_t temp_latency = 0;
+int debug_latency = 0;
+module_param(debug_latency, int, 0644);
+int latency = 0;
+module_param(latency, int, 0644);
+int latency_check_number = 0;
+module_param(latency_check_number, int, 0644);
+int clear_result = 0;
+module_param(clear_result, int, 0644);
+#endif
+
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
 
@@ -746,9 +759,22 @@ int acc_data_report(struct acc_data *data)
 	event.reserved = data->reserved[0];
 	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
 #ifdef DEBUG_PERFORMANCE
-	t = ktime_get_raw_ns();
-	pr_err("fwq delta=%llu , flag=%d, [%llu,%llu]\n", t - event.time_stamp, event.reserved, t, event.time_stamp);
+		if (1 == debug_latency && latency_check_number < 2000) {
+			if (1 == event.reserved) {
+				t = ktime_get_raw_ns();
+				temp_latency = temp_latency + (t-event.time_stamp);
+				latency_check_number++;
+				latency = temp_latency / latency_check_number;
+			}
+		}
+		if (1 == clear_result) {
+			latency = 0;
+			latency_check_number = 0;
+			debug_latency = 0;
+			temp_latency = 0;
+		}
 #endif
+
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");
