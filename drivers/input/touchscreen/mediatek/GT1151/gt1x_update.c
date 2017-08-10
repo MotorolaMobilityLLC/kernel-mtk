@@ -291,9 +291,10 @@ int gt1x_auto_update_proc(void *data)
 	gt1x_auto_update_done();
 
 	/* For saving power, if no enable hotknot, exit it */
+#ifdef CONFIG_GTP_HOTKNOT
 	if (!hotknot_enabled)
 		gt1x_send_cmd(GTP_CMD_HN_EXIT_SLAVE, 0);
-
+#endif
 	return 0;
 }
 
