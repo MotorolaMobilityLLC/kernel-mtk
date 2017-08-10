@@ -114,11 +114,23 @@ struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align)
 	if (!zmc_reserved_mem_inited)
 		return cma_alloc(cma, count, align);
 
+
+	/*
+	 * Pre-check with cma bitmap. If there is no enough
+	 * memory in zone movable cma, provide error handling
+	 * for memory reclaim or abort cma_alloc.
+	 */
+	if (!cma_alloc_range_ok(cma, count, align)) {
+		pr_info("No more space in zone movable cma\n");
+		return NULL;
+	}
+
 	return cma_alloc(cma, count, align);
 }
 
 bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
 {
+
 	if (!zmc_reserved_mem_inited)
 		return cma_release(cma, pages, count);
 

@@ -363,6 +363,23 @@ err:
 	return ret;
 }
 
+int cma_alloc_range_ok(struct cma *cma, int count, int align)
+{
+	unsigned long mask;
+	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+
+	mask = cma_bitmap_aligned_mask(cma, align);
+	bitmap_maxno = cma_bitmap_maxno(cma);
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	bitmap_no = bitmap_find_next_zero_area(cma->bitmap,
+			bitmap_maxno, 0, bitmap_count, mask);
+
+	if (bitmap_no >= bitmap_maxno)
+		return false;
+	return true;
+}
+
 /**
  * cma_alloc() - allocate pages from contiguous area
  * @cma:   Contiguous memory region for which the allocation is performed.
