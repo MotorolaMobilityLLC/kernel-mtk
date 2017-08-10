@@ -44,11 +44,6 @@
 		cpu_on          = <2>;
 	};
 
-	memory@80000000 {
-		device_type = "memory";
-		/* this field is going to be adjusted by the hypervisor */
-		reg = <0 0x80000000 0 0x08000000>;
-	};
 
 	gic: interrupt-controller@2c001000 {
 		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";

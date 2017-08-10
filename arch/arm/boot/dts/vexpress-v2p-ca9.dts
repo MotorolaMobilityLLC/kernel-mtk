@@ -62,10 +62,6 @@
 		};
 	};
 
-	memory@60000000 {
-		device_type = "memory";
-		reg = <0x60000000 0x40000000>;
-	};
 
 	clcd@10020000 {
 		compatible = "arm,pl111", "arm,primecell";

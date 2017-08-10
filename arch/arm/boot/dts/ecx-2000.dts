@@ -63,17 +63,7 @@
 		};
 	};
 
-	memory@0 {
-		name = "memory";
-		device_type = "memory";
-		reg = <0x00000000 0x00000000 0x00000000 0xff800000>;
-	};
 
-	memory@200000000 {
-		name = "memory";
-		device_type = "memory";
-		reg = <0x00000002 0x00000000 0x00000003 0x00000000>;
-	};
 
 	soc {
 		ranges = <0x00000000 0x00000000 0x00000000 0xffffffff>;
