@@ -586,7 +586,7 @@ int musbfsh_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
 					  (__le32 *)buf);
 
 		/* port change status is more interesting */
-		WARNING("port status %08x,devctl=0x%x\n", musbfsh->port1_status,
+		INFO("port status %08x,devctl=0x%x\n", musbfsh->port1_status,
 			musbfsh_readb(musbfsh->mregs, MUSBFSH_DEVCTL));
 		break;
 	case SetPortFeature:

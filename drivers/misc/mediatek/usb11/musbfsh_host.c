@@ -1206,7 +1206,7 @@ irqreturn_t musbfsh_h_ep0_irq(struct musbfsh *musbfsh)
 	    ? musbfsh_readb(epio, MUSBFSH_COUNT0)
 	    : 0;
 
-	WARNING("<== csr0 %04x, qh %p, count %d, urb %p, stage %d\n",
+	INFO("<== csr0 %04x, qh %p, count %d, urb %p, stage %d\n",
 		csr, qh, len, urb, musbfsh->ep0_stage);
 
 	/* if we just did status stage, we are done */
