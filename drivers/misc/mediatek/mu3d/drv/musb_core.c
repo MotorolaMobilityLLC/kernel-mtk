@@ -960,6 +960,7 @@ void musb_start(struct musb *musb)
 
 	/* set vbus force enable */
 	os_setmsk(U3D_MISC_CTRL, (VBUS_FRC_EN | VBUS_ON));
+	os_writel(U3D_LTSSM_PARAMETER, (os_readl(U3D_LTSSM_PARAMETER) & ~DISABLE_NUM) | (0xf << DISABLE_NUM_OFST));
 #endif
 
 	/* device responses to u3_exit from host automatically */
@@ -992,10 +993,14 @@ void musb_start(struct musb *musb)
 #endif
 
 	if (musb->softconnect) {
+#ifdef SUPPORT_U3
 		if (musb_speed && (musb->charger_mode == STANDARD_HOST))
 			mu3d_hal_u3dev_en();
 		else
 			mu3d_hal_u2dev_connect();
+#else
+		mu3d_hal_u2dev_connect();
+#endif
 	}
 }
 
@@ -1030,7 +1035,9 @@ static void gadget_stop(struct musb *musb)
 static void set_ssusb_ip_sleep(struct musb *musb)
 {
 	/* Set below sequence to avoid power leakage */
+#if !defined(CONFIG_USB_MU3D_ONLY_U2_MODE)
 	os_setmsk(U3D_SSUSB_U3_CTRL_0P, SSUSB_U3_PORT_PDN | SSUSB_U3_PORT_DIS);
+#endif
 	os_setmsk(U3D_SSUSB_U2_CTRL_0P, SSUSB_U2_PORT_PDN | SSUSB_U2_PORT_DIS);
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL1, SSUSB_IP_HOST_PDN);
