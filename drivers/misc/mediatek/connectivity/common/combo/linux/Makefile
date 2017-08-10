@@ -18,6 +18,4 @@ obj-y	+= stp_sdio.o
 
 obj-$(CONFIG_MTK_COMBO_BT)	+= stp_chrdev_bt.o
 
-obj-$(CONFIG_MTK_COMBO_WIFI)	+= wmt_chrdev_wifi.o
-
 endif

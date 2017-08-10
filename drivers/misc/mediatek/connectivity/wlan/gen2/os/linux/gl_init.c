@@ -675,7 +675,7 @@
 #if CFG_SUPPORT_AGPS_ASSIST
 #include "gl_kal.h"
 #endif
-#if defined(CONFIG_MTK_TC1_FEATURE)
+#if CFG_TC1_FEATURE
 #include <tc1_partition.h>
 #endif
 #include "gl_vendor.h"
@@ -857,14 +857,14 @@ const UINT_32 mtk_cipher_suites[5] = {
 
 /*********************************************************/
 
-#define NIC_INF_NAME    "wlan%d"	/* interface name */
+/* NIC interface name */
+#define NIC_INF_NAME    "wlan%d"
 #if CFG_TC1_FEATURE
 #define NIC_INF_NAME_IN_AP_MODE  "legacy%d"
 #endif
 
 /* support to change debug module info dynamically */
 UINT_8 aucDebugModule[DBG_MODULE_NUM];
-UINT_32 u4DebugModule = 0;
 
 /* 4 2007/06/26, mikewu, now we don't use this, we just fix the number of wlan device to 1 */
 static WLANDEV_INFO_T arWlanDevInfo[CFG_MAX_WLAN_DEVICES] = { {0} };
@@ -1220,7 +1220,7 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		prGlueInfo->fgNvramAvailable = TRUE;
 
 		/* load MAC Address */
-#if !defined(CONFIG_MTK_TC1_FEATURE)
+#if !CFG_TC1_FEATURE
 		for (i = 0; i < PARAM_MAC_ADDR_LEN; i += sizeof(UINT_16)) {
 			kalCfgDataRead16(prGlueInfo,
 					 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, aucMacAddress) + i,
@@ -1688,15 +1688,8 @@ static void createWirelessDevice(void)
 
 #if CFG_SUPPORT_PERSIST_NETDEV
 	/* <2> allocate and register net_device */
-#if CFG_TC1_FEATURE
-	if (wlan_if_changed)
-		prNetDev = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME_IN_AP_MODE, NET_NAME_PREDICTABLE,
-									ether_setup, CFG_MAX_TXQ_NUM);
-	else
-#else
-		prNetDev = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, NET_NAME_PREDICTABLE,
-									ether_setup, CFG_MAX_TXQ_NUM);
-#endif
+	prNetDev = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, NET_NAME_PREDICTABLE,
+				   ether_setup, CFG_MAX_TXQ_NUM);
 	if (!prNetDev) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
 		goto unregister_wiphy;
@@ -1704,7 +1697,7 @@ static void createWirelessDevice(void)
 
 	*((P_GLUE_INFO_T *) netdev_priv(prNetDev)) = (P_GLUE_INFO_T) wiphy_priv(prWiphy);
 
-	 prNetDev->netdev_ops = &wlan_netdev_ops;
+	prNetDev->netdev_ops = &wlan_netdev_ops;
 #ifdef CONFIG_WIRELESS_EXT
 	prNetDev->wireless_handlers = &wext_handler_def;
 #endif
@@ -1723,12 +1716,13 @@ static void createWirelessDevice(void)
 
 	/* <2.3> register net_device */
 	if (register_netdev(prWdev->netdev) < 0) {
-		DBGLOG(INIT, ERROR, "wlanNetRegister: net_device context is not registered.\n");
+		DBGLOG(INIT, ERROR, "Register net_device failed\n");
 		goto unregister_wiphy;
 	}
 #endif /* CFG_SUPPORT_PERSIST_NETDEV */
+
 	gprWdev = prWdev;
-	DBGLOG(INIT, INFO, "create wireless device success\n");
+	DBGLOG(INIT, INFO, "Create wireless device success\n");
 	return;
 
 #if CFG_SUPPORT_PERSIST_NETDEV
@@ -2278,13 +2272,13 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 		i4DevIdx = wlanGetDevIdx(prWdev->netdev);
 		if (i4DevIdx < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device number exceeds.\n");
+			DBGLOG(INIT, ERROR, "net_device number exceed!\n");
 			break;
 		}
 
 #if !CFG_SUPPORT_PERSIST_NETDEV
 		if (register_netdev(prWdev->netdev) < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device context is not registered.\n");
+			DBGLOG(INIT, ERROR, "Register net_device failed\n");
 
 			wiphy_unregister(prWdev->wiphy);
 			wlanClearDevIdx(prWdev->netdev);
@@ -2380,21 +2374,20 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	/*set_wiphy_dev(prWdev->wiphy, prDev);*/
 
 #if !CFG_SUPPORT_PERSIST_NETDEV
-	/* 4 <3> Initial Glue structure */
+	/* 4 <3> Initialize Glue structure */
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 	kalMemZero(prGlueInfo, sizeof(GLUE_INFO_T));
 	/* 4 <3.1> Create net device */
 #if CFG_TC1_FEATURE
-	if (wlan_if_changed) {
+	if (wlan_if_changed)
 		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME_IN_AP_MODE,
-							NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
-	} else {
-		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, NET_NAME_PREDICTABLE,
-							ether_setup, CFG_MAX_TXQ_NUM);
-	}
+							   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
+	else
+		prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME,
+							   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 #else
-	prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME, NET_NAME_PREDICTABLE,
-						ether_setup, CFG_MAX_TXQ_NUM);
+	prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(P_GLUE_INFO_T), NIC_INF_NAME,
+						   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 #endif
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
@@ -2403,7 +2396,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated ifindex=%d\n",
 			prGlueInfo->prDevHandler, prGlueInfo->prDevHandler->ifindex);
 
-	/* 4 <3.1.1> initialize net device varaiables */
+	/* 4 <3.1.1> Initialize net device varaiables */
 	*((P_GLUE_INFO_T *) netdev_priv(prGlueInfo->prDevHandler)) = prGlueInfo;
 
 	prGlueInfo->prDevHandler->netdev_ops = &wlan_netdev_ops;
@@ -2427,7 +2420,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->prDevHandler = gprWdev->netdev;
 #endif /* CFG_SUPPORT_PERSIST_NETDEV */
 
-	/* 4 <3.2> initiali glue variables */
+	/* 4 <3.2> Initialize Glue variables */
 	prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 	prGlueInfo->ePowerState = ParamDeviceStateD0;
 	prGlueInfo->fgIsMacAddrOverride = FALSE;
@@ -2441,6 +2434,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->ucTrScanType = 0;
 	kalMemSet(prGlueInfo->ucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
 	prGlueInfo->puFullScan2PartialChannel = NULL;
+
 #if CFG_SUPPORT_HOTSPOT_2_0
 	/* Init DAD */
 	prGlueInfo->fgIsDad = FALSE;
@@ -2876,12 +2870,6 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 	GLUE_RELEASE_THE_SPIN_LOCK(&g_p2p_lock);
 	return 0;
 #endif
-}
-
-static void set_dbg_level_handler(unsigned char dbg_lvl[DBG_MODULE_NUM])
-{
-	kalMemCopy(aucDebugModule, dbg_lvl, sizeof(aucDebugModule));
-	kalPrint("[wlan] change debug level");
 }
 
 /*----------------------------------------------------------------------------*/
@@ -3509,15 +3497,17 @@ static VOID wlanRemove(VOID)
 static int initWlan(void)
 {
 	int ret = 0, i;
+
+	DBGLOG(INIT, INFO, "initWlan\n");
+
+	/* Set the initial debug level of each module */
 #if DBG
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = DBG_CLASS_MASK; /* enable all */
 #else
-	/* Initial debug level is D1 */
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = DBG_CLASS_ERROR | DBG_CLASS_WARN | DBG_CLASS_INFO | DBG_CLASS_STATE;
 #endif /* DBG */
-	DBGLOG(INIT, INFO, "initWlan\n");
 
 	spin_lock_init(&g_p2p_lock);
 
@@ -3537,9 +3527,6 @@ static int initWlan(void)
 #if (CFG_CHIP_RESET_SUPPORT)
 	glResetInit();
 #endif
-
-	/* register set_dbg_level handler to mtk_wmt_wifi */
-	register_set_dbg_level_handler(set_dbg_level_handler);
 
 	/* Register framebuffer notifier client*/
 	if (gprWdev)
@@ -3565,9 +3552,6 @@ static VOID exitWlan(void)
 
 	/* Unregister framebuffer notifier client*/
 	kalFbNotifierUnReg();
-
-	/* unregister set_dbg_level handler to mtk_wmt_wifi */
-	register_set_dbg_level_handler(NULL);
 
 #if CFG_CHIP_RESET_SUPPORT
 	glResetUninit();

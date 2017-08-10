@@ -70,8 +70,6 @@ mtk_stp_sdio-objs	+= linux/osal.o
 obj-$(CONFIG_MTK_COMBO_BT) += mtk_stp_bt.o
 mtk_stp_bt-objs		:= linux/stp_chrdev_bt.o
 
-obj-$(CONFIG_MTK_COMBO_WIFI) += mtk_wmt_wifi.o
-mtk_wmt_wifi-objs	:= linux/wmt_chrdev_wifi.o
 endif
 
 ifeq ($(CONFIG_MTK_COMBO),y)
