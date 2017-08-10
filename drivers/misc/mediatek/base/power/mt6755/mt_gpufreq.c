@@ -1427,19 +1427,22 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 {
 #define SYSPLL_D3_FREQ	(364000)
 
-	unsigned int cur_volt;
-	unsigned int cur_freq;
+	unsigned int cur_volt, cur_freq, dds, i, found;
+	unsigned int new_oppidx = g_cur_gpu_OPPidx;
+	unsigned int tmp_idx = g_cur_gpu_OPPidx;
 	unsigned int syspll_volt = mt_gpufreqs[0].gpufreq_volt;
-	unsigned int dds;
-	unsigned int i;
-	unsigned int found;
-	unsigned int tmp_idx;
 
 	cur_volt = _mt_gpufreq_get_cur_volt();
 	cur_freq = _mt_gpufreq_get_cur_freq();
+	for (i = 0; i < mt_gpufreqs_num; i++) {
+		if (freq_new == mt_gpufreqs[i].gpufreq_khz) {
+			new_oppidx = i;
+			break;
+		}
+	}
 	dds = mt_gpufreq_dds_calc(freq_new, 1 << post_div);
-	gpufreq_dbg("@%s: request GPU dds = 0x%x, cur_volt = %d, cur_freq = %d\n",
-			__func__, dds, cur_volt, cur_freq);
+	gpufreq_dbg("@%s: request GPU dds=0x%x, cur_volt=%u, cur_freq=%u, new_oppidx=%u\n",
+			__func__, dds, cur_volt, cur_freq, new_oppidx);
 	gpufreq_dbg("@%s: request APMIXED_MMPLL_CON1 = 0x%x\n",
 			__func__, DRV_Reg32(APMIXED_MMPLL_CON1));
 	if ((DRV_Reg32(APMIXED_MMPLL_CON1) & (0x7 << 24)) != ((post_div+1) << 24)) {
@@ -1447,7 +1450,10 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 		for (i = 0; i < mt_gpufreqs_num; i++) {
 			if (mt_gpufreqs[i].gpufreq_khz < SYSPLL_D3_FREQ) {
 				/* record idx since current voltage may not in DVFS table */
-				tmp_idx = i - 1;
+				if (i >= 1)
+					tmp_idx = i - 1;
+				else
+					break;
 				syspll_volt = mt_gpufreqs[tmp_idx].gpufreq_volt;
 				found = 1;
 				gpufreq_dbg("@%s: request GPU syspll_volt = %d\n",
@@ -1459,7 +1465,11 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 		if (found == 1) {
 			/* ramp up volt for SYSPLL */
 			if (cur_volt < syspll_volt)
+#ifndef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 				mt_gpufreq_volt_switch(cur_volt, syspll_volt);
+#else
+				mt_gpufreq_volt_switch(tmp_idx);
+#endif
 
 			/* Step1. Select to SYSPLL_D3 364MHz   */
 			gpu_dvfs_switch_to_syspll(true);
@@ -1471,7 +1481,11 @@ static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_
 
 			/* restore to cur_volt */
 			if (cur_volt < syspll_volt)
+#ifndef MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 				mt_gpufreq_volt_switch(syspll_volt, cur_volt);
+#else
+				mt_gpufreq_volt_switch(new_oppidx);
+#endif
 		} else {
 			gpufreq_dbg("@%s: request GPU syspll_volt not found, khz = %d, volt = %d\n",
 				__func__, mt_gpufreqs[mt_gpufreqs_num - 1].gpufreq_khz,
@@ -1489,7 +1503,7 @@ static void mt_gpufreq_clock_switch(unsigned int freq_new)
 	unsigned int dds;
 
 	/* need clk switch if max freq is over 750M */
-	if (mt_gpufreqs[0].gpufreq_khz > 750000) {
+	if (mt_gpufreqs[g_gpufreq_max_id].gpufreq_khz > 750000) {
 		if (freq_new > 750000)
 			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
 		else if (freq_new < 250000)
