@@ -158,6 +158,8 @@ typedef struct ion_mm_config_buffer_param {
 	int eModuleID;
 	unsigned int security;
 	unsigned int coherent;
+	unsigned int reserve_iova_start;
+	unsigned int reserve_iova_end;
 } ion_mm_config_buffer_param_t;
 
 
