@@ -350,6 +350,8 @@ end:
 					req->limit[0].max_cpu_core = --activeCoreNumLL;
 				if (activeCoreNumL > 0)
 					opp[1] = 7;
+				else
+					LxLL = 0;
 				if (activeCoreNumLL > 0)
 					opp[2] = 7;
 			}
@@ -820,7 +822,12 @@ static void ppm_main_calc_new_limit(void)
 			ppm_unlock(&pos->lock);
 		}
 
-		BUG();
+#ifdef PPM_EFFICIENCY_TABLE_USE_CORE_LIMIT
+		for_each_ppm_clusters(i)
+			ppm_info("Core_limit[%d] = %d\n", i, Core_limit[i]);
+#endif
+
+		WARN_ON(1);
 	}
 
 	FUNC_EXIT(FUNC_LV_MAIN);
@@ -963,13 +970,37 @@ int mt_ppm_main(void)
 	/* reset Core_limit if state changed */
 	if (prev_state != next_state) {
 		struct ppm_power_state_data *state_info = ppm_get_power_state_info();
+		struct ppm_cluster_status cluster_status[NR_PPM_CLUSTERS];
+		int cluster_core_limit[NR_PPM_CLUSTERS];
 
 		for (i = 0; i < ppm_main_info.cluster_num; i++) {
 			if (next_state >= PPM_POWER_STATE_NONE)
-				Core_limit[i] = get_cluster_max_cpu_core(i);
+				cluster_core_limit[i] = get_cluster_max_cpu_core(i);
 			else
-				Core_limit[i] = state_info[next_state].cluster_limit->state_limit[i].max_cpu_core;
+				cluster_core_limit[i] =
+					state_info[next_state].cluster_limit->state_limit[i].max_cpu_core;
+
+			cluster_status[i].core_num = cluster_core_limit[i];
+			cluster_status[i].freq_idx = get_cluster_min_cpufreq_idx(i);
 		}
+
+		/* core limit check */
+		i = NR_PPM_CLUSTERS - 1;
+		while (ppm_find_pwr_idx(cluster_status) > ppm_main_info.min_power_budget) {
+			/* new limit is above current power budget, we must decrease core_limit */
+			if (cluster_core_limit[i] == 0)
+				i--;
+
+			if (unlikely(i < 0))
+				break;
+
+			cluster_core_limit[i]--;
+			cluster_status[i].core_num--;
+		}
+
+		/* update core limit to COBRA */
+		for (i = 0; i < ppm_main_info.cluster_num; i++)
+			Core_limit[i] = cluster_core_limit[i];
 	}
 #endif
 
