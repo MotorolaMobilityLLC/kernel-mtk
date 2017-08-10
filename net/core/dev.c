@@ -6497,21 +6497,10 @@ EXPORT_SYMBOL(netdev_refcnt_read);
  * We can get stuck here if buggy protocols don't correctly
  * call dev_put.
  */
-#if defined(REFCNT_DEBUG) && defined(REFCNT_MEMORY_DEBUG)
-struct refcnt_trace trace_array[MAX_TRACE_LEN];
-unsigned int trace_idx = 0;
-#endif
 static void netdev_wait_allrefs(struct net_device *dev)
 {
 	unsigned long rebroadcast_time, warning_time;
 	int refcnt;
-#if defined(REFCNT_DEBUG) && defined(REFCNT_MEMORY_DEBUG)
-	bool refcnt_trace_dump = false;
-	unsigned int idx = 0;
-	unsigned int info = 0;
-	unsigned int tmp = 0;
-	struct stack_trace trace;
-#endif
 
 	linkwatch_forget_dev(dev);
 
@@ -6555,28 +6544,6 @@ static void netdev_wait_allrefs(struct net_device *dev)
 				 dev->name, refcnt);
 			warning_time = jiffies;
 		}
-
-		#if defined(REFCNT_DEBUG) && defined(REFCNT_MEMORY_DEBUG)
-		if (!strncmp(dev->name, "wlan0", 4) && refcnt &&
-		    !refcnt_trace_dump && time_after(jiffies, warning_time + 1 * HZ)) {
-			refcnt_trace_dump = true;
-			trace.max_entries = MAX_TRACE_DEPTH;
-			trace.skip = TRACE_SKIP_DEPTH;
-
-			pr_emerg("====[ wlan0 refcnt backtrace begin ]===========\n");
-			for (idx = 0; idx < MAX_TRACE_LEN; idx++) {
-				info = trace_array[idx].info;
-				tmp = (info & 0xf0000000) >> 28;
-				pr_emerg("[mtk_net] %s: refcnt=%d, cpu=%d, pid=%d, time=%ld\n",
-					 (tmp == 1) ? "dev_put" : "dev_hold", trace_array[idx].refcnt,
-					 (info & 0x0f000000) >> 24, info & 0x00ffffff, trace_array[idx].time);
-				trace.nr_entries = trace_array[idx].entry_nr;
-				trace.entries = trace_array[idx].entry;
-				print_stack_trace(&trace, 0);
-			}
-			pr_emerg("====[ wlan0 refcnt backtrace end ]===========\n");
-		}
-		#endif
 	}
 }
 

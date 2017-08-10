@@ -2903,56 +2903,9 @@ void netdev_run_todo(void);
  *
  * Release reference to device to allow it to be freed.
  */
-#define REFCNT_DEBUG 1
-#define REFCNT_MEMORY_DEBUG 1
-#if defined(REFCNT_DEBUG) && defined(REFCNT_MEMORY_DEBUG)
-#include <linux/stacktrace.h>
-#define MAX_TRACE_DEPTH 4
-#define MAX_TRACE_LEN  1024
-#define TRACE_SKIP_DEPTH 2
-#define DEV_PUT_FLAG   (1 << 28)
-#define DEV_HOLD_FLAG  (2 << 28)
-
-struct refcnt_trace {
-	int refcnt;
-	unsigned int info;
-	unsigned int entry_nr;
-	unsigned long time;
-	unsigned long entry[MAX_TRACE_DEPTH];
-};
-extern struct refcnt_trace trace_array[MAX_TRACE_LEN];
-extern unsigned int trace_idx;
-#endif
-
 static inline void dev_put(struct net_device *dev)
 {
-#ifdef REFCNT_MEMORY_DEBUG
-	struct stack_trace trace;
-#endif
-
 	this_cpu_dec(*dev->pcpu_refcnt);
-
-	#ifdef REFCNT_DEBUG
-	if (!strncmp(dev->name, "wlan0", 4)) {
-		#ifdef REFCNT_MEMORY_DEBUG
-		trace_array[trace_idx].time = sched_clock();
-		trace_array[trace_idx].refcnt = __this_cpu_read(*dev->pcpu_refcnt);
-		trace_array[trace_idx].info = DEV_PUT_FLAG | current->pid | (smp_processor_id() << 24);
-
-		trace.nr_entries = 0;
-		trace.max_entries = MAX_TRACE_DEPTH;
-		trace.entries = trace_array[trace_idx].entry;
-		trace.skip = TRACE_SKIP_DEPTH;
-		save_stack_trace(&trace);
-		trace_array[trace_idx].entry_nr = trace.nr_entries;
-
-		if (++trace_idx >= MAX_TRACE_LEN)
-			trace_idx = 0;
-		#else
-		dump_stack();
-		#endif
-	}
-	#endif
 }
 
 /**
@@ -2963,33 +2916,7 @@ static inline void dev_put(struct net_device *dev)
  */
 static inline void dev_hold(struct net_device *dev)
 {
-#ifdef REFCNT_MEMORY_DEBUG
-	struct stack_trace trace;
-#endif
-
 	this_cpu_inc(*dev->pcpu_refcnt);
-
-	#ifdef REFCNT_DEBUG
-	if (!strncmp(dev->name, "wlan0", 4)) {
-		#if defined REFCNT_MEMORY_DEBUG
-		trace_array[trace_idx].time = sched_clock();
-		trace_array[trace_idx].refcnt = __this_cpu_read(*dev->pcpu_refcnt);
-		trace_array[trace_idx].info = DEV_HOLD_FLAG | current->pid | (smp_processor_id() << 24);
-
-		trace.nr_entries = 0;
-		trace.max_entries = MAX_TRACE_DEPTH;
-		trace.entries = trace_array[trace_idx].entry;
-		trace.skip = TRACE_SKIP_DEPTH;
-		save_stack_trace(&trace);
-		trace_array[trace_idx].entry_nr = trace.nr_entries;
-
-		if (++trace_idx >= MAX_TRACE_LEN)
-			trace_idx = 0;
-		#else
-		dump_stack();
-		#endif
-	}
-	#endif
 }
 
 /* Carrier loss detection, dial on demand. The functions netif_carrier_on
