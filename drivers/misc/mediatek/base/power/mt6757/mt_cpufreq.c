@@ -3258,14 +3258,10 @@ static ssize_t cpufreq_power_mode_proc_write(struct file *file, const char __use
 	if (!kstrtouint(buf, 10, &mode) && mode < NUM_PPB_POWER_MODE) {
 		dvfs_power_mode = mode;
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
-		cpufreq_lock();
-		if (enable_cpuhvfs && enable_hw_gov) {
-			if (mode == DEFAULT_MODE)
-				cpuhvfs_set_power_mode(POWER_NORMAL);
-			else if (mode == PERFORMANCE_MODE)
-				cpuhvfs_set_power_mode(POWER_SPORTS);
-		}
-		cpufreq_unlock();
+		if (mode == DEFAULT_MODE)
+			cpuhvfs_set_power_mode(POWER_NORMAL);
+		else if (mode == PERFORMANCE_MODE)
+			cpuhvfs_set_power_mode(POWER_SPORTS);
 #endif
 		cpufreq_dbg("%s start\n", power_mode_str[mode]);
 	} else {
