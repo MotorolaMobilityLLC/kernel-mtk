@@ -17,6 +17,12 @@
 #define MOD_NO_IN_1_DEVAPC                  16
 #define DEVAPC_TAG                          "DEVAPC"
 
+/* 1: Force to enable enhanced one-core violation debugging
+ * 0: Enhanced one-core violation debugging can be enabled dynamically
+ * Notice: You should only use one core to debug
+ * (Please note it may trigger PRINTK too much)  */
+#define DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG	0
+
 #if defined(CONFIG_ARCH_MT6735)
 	/*For EMI API DEVAPC0_D0_VIO_STA_3, idx:124*/
 	#define ABORT_EMI                0x10000000
@@ -31,6 +37,9 @@
 #error "Wrong Config type"
 
 #endif
+
+#define DAPC_INPUT_TYPE_DEBUG_ON	200
+#define DAPC_INPUT_TYPE_DEBUG_OFF	100
 
 /*Define constants*/
 #define DEVAPC_DEVICE_NUMBER    140  /* This number must be bigger than total slave */
