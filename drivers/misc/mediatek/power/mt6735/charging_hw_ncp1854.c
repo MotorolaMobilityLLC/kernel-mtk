@@ -435,16 +435,13 @@ static unsigned int charging_get_battery_status(void *data)
 static unsigned int charging_get_charger_det_status(void *data)
 {
 	unsigned int status = STATUS_OK;
-	unsigned int val = 0;
 
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
-	val = 1;
+	*(kal_bool *) (data) = 1;
 	battery_log(BAT_LOG_CRTI, "[charging_get_charger_det_status] chr exist for fpga.\n");
 #else
-	val = pmic_get_register_value(PMIC_RGS_CHRDET);
+	*(kal_bool *) (data) = pmic_get_register_value_nolock(PMIC_RGS_CHRDET);
 #endif
-
-	*(kal_bool *) (data) = val;
 
 	return status;
 }
