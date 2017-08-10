@@ -411,8 +411,10 @@ const long channel_freq[] = {
 
 #define NUM_CHANNELS (sizeof(channel_freq) / sizeof(channel_freq[0]))
 
-#define MAX_SSID_LEN            32
-#define COUNTRY_CODE_LEN	10	/*country code length */
+
+#define MAX_SSID_LEN		32
+#define COUNTRY_CODE_LEN	10	/* country code length */
+
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -2221,7 +2223,7 @@ wext_get_essid(IN struct net_device *prNetDev,
 
 	kalMemFree(prSsid, VIR_MEM_TYPE, sizeof(PARAM_SSID_T));
 
-	return 0;
+	return rStatus;
 }				/* wext_get_essid */
 
 #if 0
@@ -3335,6 +3337,7 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetCountryCode,
 			   &aucCountry[COUNTRY_CODE_LEN - 2], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		DBGLOG(REQ, ERROR, "Set country code error: %x\n", rStatus);
 		return -EFAULT;
@@ -3538,12 +3541,12 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ret = wext_set_scan(prDev, NULL, NULL, NULL);
 #if WIRELESS_EXT > 17
 		else if (iwr->u.data.length == sizeof(struct iw_scan_req)) {
-			prIwScanReq = kalMemAlloc(iwr->u.data.length, VIR_MEM_TYPE);
+			prIwScanReq = kalMemAlloc(sizeof(struct iw_scan_req), VIR_MEM_TYPE);
 			if (!prIwScanReq) {
 				ret = -ENOMEM;
 				break;
 			}
-			if (copy_from_user(prIwScanReq, iwr->u.data.pointer, iwr->u.data.length))
+			if (copy_from_user(prIwScanReq, iwr->u.data.pointer, sizeof(struct iw_scan_req)))
 				ret = -EFAULT;
 			else {
 				if (prIwScanReq->essid_len > IW_ESSID_MAX_SIZE)
@@ -3551,7 +3554,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 				ret = wext_set_scan(prDev, NULL, prIwScanReq, &(prIwScanReq->essid[0]));
 			}
 
-			kalMemFree(prIwScanReq, VIR_MEM_TYPE, iwr->u.data.length);
+			kalMemFree(prIwScanReq, VIR_MEM_TYPE, sizeof(struct iw_scan_req));
 			prIwScanReq = NULL;
 		}
 #endif
@@ -3600,7 +3603,8 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 
 #if 1
 	case SIOCSIWESSID:	/* 0x8B1A, set SSID (network name) */
-		if (iwr->u.essid.length > IW_ESSID_MAX_SIZE) {
+		u4ExtraSize = iwr->u.essid.length;
+		if (u4ExtraSize > IW_ESSID_MAX_SIZE) {
 			ret = -E2BIG;
 			break;
 		}
@@ -3615,7 +3619,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			break;
 		}
 
-		if (copy_from_user(prExtraBuf, iwr->u.essid.pointer, iwr->u.essid.length)) {
+		if (copy_from_user(prExtraBuf, iwr->u.essid.pointer, u4ExtraSize)) {
 			ret = -EFAULT;
 		} else {
 			/* Add trailing '\0' for printk */
@@ -3632,18 +3636,19 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #endif
 
 	case SIOCGIWESSID:	/* 0x8B1B, get SSID */
+		u4ExtraSize = iwr->u.essid.length;
 		if (!iwr->u.essid.pointer) {
 			ret = -EINVAL;
 			break;
 		}
 
-		if (iwr->u.essid.length < IW_ESSID_MAX_SIZE) {
-			DBGLOG(REQ, ERROR, "[wifi] iwr->u.essid.length:%d too small\n", iwr->u.essid.length);
+		if (u4ExtraSize != IW_ESSID_MAX_SIZE && u4ExtraSize != IW_ESSID_MAX_SIZE + 1) {
+			DBGLOG(REQ, ERROR, "[wifi] iwr->u.essid.length:%d too small\n", u4ExtraSize);
 			ret = -E2BIG;	/* let caller try larger buffer */
 			break;
 		}
 
-		prExtraBuf = kalMemAlloc(IW_ESSID_MAX_SIZE, VIR_MEM_TYPE);
+		prExtraBuf = kalMemAlloc(IW_ESSID_MAX_SIZE + 1, VIR_MEM_TYPE);
 		if (!prExtraBuf) {
 			ret = -ENOMEM;
 			break;
@@ -3657,7 +3662,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 				ret = -EFAULT;
 		}
 
-		kalMemFree(prExtraBuf, VIR_MEM_TYPE, IW_ESSID_MAX_SIZE);
+		kalMemFree(prExtraBuf, VIR_MEM_TYPE, IW_ESSID_MAX_SIZE + 1);
 		prExtraBuf = NULL;
 
 		break;
@@ -3700,22 +3705,22 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #if 1
 	case SIOCSIWENCODE:	/* 0x8B2A, set encoding token & mode */
 		/* Only DISABLED case has NULL pointer and length == 0 */
+		u4ExtraSize = iwr->u.encoding.length;
 		if (iwr->u.encoding.pointer) {
-			if (iwr->u.encoding.length > 16) {
+			if (u4ExtraSize > 16) {
 				ret = -E2BIG;
 				break;
 			}
 
-			u4ExtraSize = iwr->u.encoding.length;
 			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 			if (!prExtraBuf) {
 				ret = -ENOMEM;
 				break;
 			}
 
-			if (copy_from_user(prExtraBuf, iwr->u.encoding.pointer, iwr->u.encoding.length))
+			if (copy_from_user(prExtraBuf, iwr->u.encoding.pointer, u4ExtraSize))
 				ret = -EFAULT;
-		} else if (iwr->u.encoding.length != 0) {
+		} else if (u4ExtraSize != 0) {
 			ret = -EINVAL;
 			break;
 		}
@@ -3751,13 +3756,14 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			break;
 
 		/* Fixed length structure */
+		u4ExtraSize = iwr->u.data.length;
+
 #if CFG_SUPPORT_WAPI
-		if (iwr->u.data.length > 42 /* The max wapi ie buffer */) {
+		if (u4ExtraSize > 42 /* The max wapi ie buffer */) {
 			ret = -EINVAL;
 			break;
 		}
 #endif
-		u4ExtraSize = iwr->u.data.length;
 		if (u4ExtraSize == 0)
 			break;
 
@@ -3766,7 +3772,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 			ret = -ENOMEM;
 			break;
 		}
-		if (copy_from_user(prExtraBuf, iwr->u.data.pointer, iwr->u.data.length)) {
+		if (copy_from_user(prExtraBuf, iwr->u.data.pointer, u4ExtraSize)) {
 			ret = -EFAULT;
 		} else {
 #if CFG_SUPPORT_WAPI
@@ -3781,7 +3787,6 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #endif
 #if CFG_SUPPORT_WPS2
 				PUINT_8 prDesiredIE = NULL;
-
 				if (wextSrchDesiredWPSIE(prExtraBuf,
 							 u4ExtraSize,
 							 0xDD, (PUINT_8 *) &prDesiredIE)) {
@@ -3818,13 +3823,18 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 	case SIOCSIWENCODEEXT:	/* 0x8B34, set extended encoding token & mode */
 		if (iwr->u.encoding.pointer) {
 			u4ExtraSize = iwr->u.encoding.length;
+			if (u4ExtraSize > sizeof(struct iw_encode_ext)) {
+				ret = -EINVAL;
+				break;
+			}
+
 			prExtraBuf = kalMemAlloc(u4ExtraSize, VIR_MEM_TYPE);
 			if (!prExtraBuf) {
 				ret = -ENOMEM;
 				break;
 			}
 
-			if (copy_from_user(prExtraBuf, iwr->u.encoding.pointer, iwr->u.encoding.length))
+			if (copy_from_user(prExtraBuf, iwr->u.encoding.pointer, u4ExtraSize))
 				ret = -EFAULT;
 		} else if (iwr->u.encoding.length != 0) {
 			ret = -EINVAL;
