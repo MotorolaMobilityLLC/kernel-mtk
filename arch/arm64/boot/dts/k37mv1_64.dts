@@ -6,7 +6,7 @@
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
 #else
-#include "mt6735m.dtsi"
+#include "mt6735m.dts"
 #endif
 #include <dt-bindings/lcm/otm9608_qhd_dsi_cmd.dtsi>
 
