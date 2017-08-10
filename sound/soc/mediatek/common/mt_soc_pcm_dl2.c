@@ -112,7 +112,7 @@ static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
 
 static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
 
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
@@ -148,7 +148,7 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == true) {
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
 		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUDDRV("[Auddrv] HW_Cur_ReadIdx ==0\n");
+			PRINTK_AUD_DL2("[Auddrv] HW_Cur_ReadIdx ==0\n");
 			HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 		}
 
@@ -207,7 +207,7 @@ static int mtk_pcm_dl2_params(struct snd_pcm_substream *substream,
 	/* struct snd_dma_buffer *dma_buf = &substream->dma_buffer; */
 	int ret = 0;
 
-	PRINTK_AUDDRV("mtk_pcm_dl2_params\n");
+	PRINTK_AUD_DL2("mtk_pcm_dl2_params\n");
 
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
@@ -218,7 +218,7 @@ static int mtk_pcm_dl2_params(struct snd_pcm_substream *substream,
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL2, true, substream->runtime->dma_addr);
 		SetDL2Buffer(substream, hw_params);
 
-	PRINTK_AUDDRV("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	PRINTK_AUD_DL2("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		      substream->runtime->dma_bytes, substream->runtime->dma_area,
 		      (long)substream->runtime->dma_addr);
 	return ret;
@@ -226,7 +226,7 @@ static int mtk_pcm_dl2_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_dl2_hw_free(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUDDRV("mtk_pcm_dl2_hw_free\n");
+	PRINTK_AUD_DL2("mtk_pcm_dl2_hw_free\n");
 	return 0;
 }
 
@@ -242,12 +242,12 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	PRINTK_AUDDRV("mtk_pcm_dl2_open\n");
+	PRINTK_AUD_DL2("mtk_pcm_dl2_open\n");
 
 	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
 	AudDrv_Emi_Clk_On();
 
-	PRINTK_AUDDRV("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
+	PRINTK_AUD_DL2("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
 	       mtk_pcm_dl2_hardware.buffer_bytes_max);
 	runtime->hw = mtk_pcm_dl2_hardware;
 
@@ -278,7 +278,7 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	}
 #endif
 
-	/* PRINTK_AUDDRV("mtk_pcm_dl2_open return\n"); */
+	/* PRINTK_AUD_DL2("mtk_pcm_dl2_open return\n"); */
 	return 0;
 }
 
@@ -367,7 +367,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	/* here start digital part */
 
 	SetIntfConnection(Soc_Aud_InterCon_Connection,
@@ -397,7 +397,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_dl2_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	PRINTK_AUDDRV("mtk_pcm_trigger cmd = %d\n", cmd);
+	PRINTK_AUD_DL2("mtk_pcm_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -596,10 +596,13 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 	Auddrv_Dl2_Spinlock_lock();
 
 	if (unlikely(!ISRCopyBuffer.pBufferIndx))
-		return 0;
+		goto exit;
 
 retry:
 	if (!ISRCopyBuffer.u4IsrConsumeSize) {
+		if (!ISRCopyBuffer.u4BufferSize)
+			goto exit;
+
 		ret = mtk_pcm_dl2_copy_((void *)ISRCopyBuffer.pBufferIndx, &count, Afe_Block, true);
 
 		ISRCopyBuffer.pBufferIndx += count;
@@ -618,6 +621,8 @@ retry:
 			goto retry;
 		}
 	}
+
+exit:
 	Auddrv_Dl2_Spinlock_unlock();
 
 	return ret;
@@ -629,13 +634,13 @@ static int dataTransfer(void *dest, const void *src, uint32_t size)
 	int ret = 0;
 
 	if (unlikely(!access_ok(VERIFY_READ, src, size))) {
-		PRINTK_AUDDRV("AudDrv_write 0ptr invalid data_w_ptr=%p, size=%d\n", src, size);
+		PRINTK_AUD_DL2("AudDrv_write 0ptr invalid data_w_ptr=%p, size=%d\n", src, size);
 	} else {
 		PRINTK_AUD_DL2
 			("memcpy VirtBufAddr+Afe_WriteIdx= %p,data_w_ptr = %p copy_size = 0x%x\n",
 			dest, src, size);
 		if (unlikely(copy_from_user(dest, src, size))) {
-			PRINTK_AUDDRV("AudDrv_write Fail copy from user\n");
+			PRINTK_AUD_DL2("AudDrv_write Fail copy from user\n");
 			ret = -1;
 		}
 	}
@@ -661,7 +666,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 static int mtk_pcm_dl2_silence(struct snd_pcm_substream *substream,
 			   int channel, snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	return 0;		/* do nothing */
 }
 
@@ -669,7 +674,7 @@ static void *dummy_page[2];
 
 static struct page *mtk_pcm_dl2_page(struct snd_pcm_substream *substream, unsigned long offset)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]);	/* the same page */
 }
 
@@ -704,7 +709,7 @@ static const struct of_device_id mt_soc_pcm_dl2_of_ids[] = {
 
 static int mtk_soc_dl2_probe(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
@@ -727,14 +732,14 @@ static int mtk_asoc_pcm_dl2_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int ret = 0;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	return ret;
 }
 
 
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform)
 {
-	PRINTK_AUDDRV("mtk_asoc_dl2_probe\n");
+	PRINTK_AUD_DL2("mtk_asoc_dl2_probe\n");
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL2,
 				   Dl2_MAX_BUFFER_SIZE);
@@ -744,7 +749,7 @@ static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform)
 
 static int mtk_soc_dl2_remove(struct platform_device *pdev)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 	AudDrv_Clk_Deinit(&pdev->dev);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
@@ -770,7 +775,7 @@ static int __init mtk_dl2_soc_platform_init(void)
 {
 	int ret;
 
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 
 #ifndef CONFIG_OF
 	soc_mtkdl2_dev = platform_device_alloc(MT_SOC_DL2_PCM, -1);
@@ -792,7 +797,7 @@ module_init(mtk_dl2_soc_platform_init);
 
 static void __exit mtk_dl2_soc_platform_exit(void)
 {
-	PRINTK_AUDDRV("%s\n", __func__);
+	PRINTK_AUD_DL2("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_dl2_driver);
 }
