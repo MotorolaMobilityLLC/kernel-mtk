@@ -33,4 +33,8 @@ extern void defeature_soidle_by_display(void);
 extern u32 ptp_data[3];
 #endif
 
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+extern int is_teei_ready(void);
+#endif
+
 #endif /* __MT_IDLE_H__ */

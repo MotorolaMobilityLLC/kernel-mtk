@@ -989,6 +989,13 @@ static bool soidle_can_enter(int cpu)
 		goto out;
 	}
 
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
+
 	/* decide when to enable SODI by display driver */
 	if (spm_get_sodi_en() == 0) {
 		reason = BY_OTH;
@@ -1170,6 +1177,13 @@ static bool dpidle_can_enter(void)
 		reason = BY_VTG;
 		goto out;
 	}
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto out;
+	}
+#endif
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
