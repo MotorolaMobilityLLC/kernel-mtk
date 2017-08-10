@@ -4629,7 +4629,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 		pmic_thread_handle = NULL;
 		PMICLOG("[pmic_thread_kthread_mt6325] creation fails\n");
 	} else {
-		wake_up_process(pmic_thread_handle);
 		PMICLOG("[pmic_thread_kthread_mt6325] kthread_create Done\n");
 	}
 
