@@ -1572,6 +1572,8 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	u32 i = 0;
 	PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry\n");
 	for (i = 0; i < 2; i++) {
+		pInfo[i]->SensorHorFOV = 0;
+		pInfo[i]->SensorVerFOV = 0;
 		pInfo[i] =  &ginfo[i];
 		pConfig[i] =  &config[i];
 		pInfo1[i] =  &ginfo1[i];
@@ -1698,6 +1700,8 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	SensorInfo.SCAM_DataNumber                          = pInfo[IDNum]->SCAM_DataNumber;
 	SensorInfo.SCAM_DDR_En                              = pInfo[IDNum]->SCAM_DDR_En;
 	SensorInfo.SCAM_CLK_INV                             = pInfo[IDNum]->SCAM_CLK_INV;
+	SensorInfo.SensorHorFOV                            = pInfo[IDNum]->SensorHorFOV;
+	SensorInfo.SensorVerFOV                            = pInfo[IDNum]->SensorVerFOV;
 	/* TO get preview value */
 	ScenarioId[0] = ScenarioId[1] = MSDK_SCENARIO_ID_CUSTOM1;
 	g_pSensorFunc->SensorGetInfo(pScenarioId, pInfo, pConfig);
