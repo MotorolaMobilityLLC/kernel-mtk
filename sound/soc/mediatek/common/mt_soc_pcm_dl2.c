@@ -160,14 +160,19 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 			    Afe_Block->u4DMAReadIdx;
 		}
 
+#ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 		Afe_consumed_bytes = Align64ByteSize(Afe_consumed_bytes);
+#endif
 
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		PRINTK_AUD_DL2
-		    ("[Auddrv] HW_Cur_ReadIdx =0x%x HW_memory_index = 0x%x Afe_consumed_bytes  = 0x%x\n",
-		     HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
+		    ("[Auddrv] HW_Cur_ReadIdx =0x%x HW_memory_index = 0x%x\n",
+		     HW_Cur_ReadIdx, HW_memory_index);
+		PRINTK_AUD_DL2
+		    ("[Auddrv] Afe_consumed_bytes  = %d, u4DataRemained %d\n",
+		     Afe_consumed_bytes, Afe_Block->u4DataRemained);
 		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
 
 		Frameidx = audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
@@ -438,7 +443,9 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			copy_size = count;
 	}
 
+#ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 	copy_size = Align64ByteSize(copy_size);
+#endif
 	*size = copy_size;
 	PRINTK_AUD_DL2("copy_size=%d, count=%d, bCopy %d, %pf %pf %pf %pf\n", copy_size, (unsigned int)count,
 		bCopy, (void *)CALLER_ADDR0, (void *)CALLER_ADDR1, (void *)CALLER_ADDR2, (void *)CALLER_ADDR3);
@@ -447,6 +454,9 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 		spin_lock_irqsave(&pMemControl->substream_lock, flags);
 		Afe_WriteIdx_tmp = Afe_Block->u4WriteIdx;
 		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
+
+		PRINTK_AUD_DL2("Afe_WriteIdx_tmp %d, copy_size %d, u4BufferSize %d\n",
+			Afe_WriteIdx_tmp, copy_size, Afe_Block->u4BufferSize);
 
 		if (Afe_WriteIdx_tmp + copy_size < Afe_Block->u4BufferSize) {	/* copy once */
 			if (bCopy) {
@@ -464,15 +474,19 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			count -= copy_size;
 
 			PRINTK_AUD_DL2
-			    ("AudDrv_write finish1, copy:%x, WriteIdx:%x,ReadIdx=%x,Remained:%x, count=%d \r\n",
+			    ("AudDrv_write finish1, copy:%x, WriteIdx:%x,ReadIdx=%x,Remained:%d, count=%d \r\n",
 			     copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
 			     Afe_Block->u4DataRemained, (int)count);
 
 		} else {	/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
-
+#ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 			size_1 = Align64ByteSize((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
 			size_2 = Align64ByteSize((copy_size - size_1));
+#else
+			size_1 = Afe_Block->u4BufferSize - Afe_WriteIdx_tmp;
+			size_2 = copy_size - size_1;
+#endif
 			PRINTK_AUD_DL2("size_1=0x%x, size_2=0x%x\n", size_1, size_2);
 			if (bCopy) {
 				if (dataTransfer((Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
@@ -501,7 +515,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			data_w_ptr += copy_size;
 
 			PRINTK_AUD_DL2
-			    ("AudDrv_write finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%x \r\n",
+			    ("AudDrv_write finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%d \r\n",
 			     copy_size, Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
 			     Afe_Block->u4DataRemained);
 		}
@@ -653,9 +667,10 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 {
 	AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
 
-	PRINTK_AUD_DL2("mtk_pcm_dl2_copy pos = %lu count = %lu\n", pos, count);
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
+
+	PRINTK_AUD_DL2("mtk_pcm_dl2_copy+ pos = %lu count = %lu\n", pos, count);
 
 	return mtk_pcm_dl2_copy_(dst, &count, Afe_Block, true);
 }
