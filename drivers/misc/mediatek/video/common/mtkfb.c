@@ -2103,7 +2103,7 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 	/* DISPMSG("%s, update 1000 times, fps=%2d.%2d\n",
 		   __func__, (1000*100/(ttt/1000/1000))/100, (1000*100/(ttt/1000/1000))%100);
 	 */
-	return 0;
+	/* return 0; */
 
 	_internal_test_block_size = 20;
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
