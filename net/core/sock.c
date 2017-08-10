@@ -1843,6 +1843,10 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 #ifdef CONFIG_MTK_NET_LOGGING
 	struct sock_block_info_t debug_block;
 	struct timer_list debug_timer;
+	unsigned long long delay_time = 0;
+
+	/*init debug_block struct*/
+	memset(&debug_block, 0, sizeof(debug_block));
 #endif
 	timeo = sock_sndtimeo(sk, noblock);
 	for (;;) {
@@ -1869,19 +1873,24 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 	debug_block.pid = current->pid;
 	debug_block.process = current->comm;
 	debug_block.when = jiffies;
+	debug_block.sk = sk; /*Mark sk info*/
 	init_timer(&debug_timer);
 	debug_timer.function = print_block_sock_info;
 	debug_timer.expires = jiffies + 10*HZ;
 	debug_timer.data = (unsigned long)&debug_block;
 	add_timer(&debug_timer);
 #endif
-		timeo = sock_wait_for_wmem(sk, timeo);
+	timeo = sock_wait_for_wmem(sk, timeo);
 
 #ifdef CONFIG_MTK_NET_LOGGING
 	del_timer(&debug_timer);
-	if ((jiffies - debug_block.when)/HZ > 5) {
-			pr_info("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
-				header_len, data_len, timeo);
+	delay_time = jiffies - debug_block.when;
+	do_div(delay_time, HZ);
+	if (delay_time > 5) {
+		pr_info("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
+			header_len, data_len, timeo);
+		pr_info("[mtk_net][sock]sockdbg:Warning: Process %s[%d] Block %lld s\n",
+			debug_block.process, debug_block.pid, delay_time);
 	}
 #endif
 	}
