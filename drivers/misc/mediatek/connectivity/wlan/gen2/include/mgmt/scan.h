@@ -221,6 +221,7 @@ struct _BSS_DESC_T {
 #endif
 	BOOLEAN fgIERSN;
 	BOOLEAN fgIEWPA;
+	BOOLEAN fgIEOsen;
 
 	/*! \brief RSN parameters selected for connection */
 	/*! \brief The Select score for final AP selection,

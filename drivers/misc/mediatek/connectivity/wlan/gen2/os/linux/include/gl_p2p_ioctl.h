@@ -280,7 +280,7 @@ typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
 #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
 extern struct ieee80211_supported_band mtk_band_2ghz;
 extern struct ieee80211_supported_band mtk_band_5ghz;
-extern UINT_32 mtk_cipher_suites[5];
+extern UINT_32 mtk_cipher_suites[6];
 #endif
 
 /*******************************************************************************

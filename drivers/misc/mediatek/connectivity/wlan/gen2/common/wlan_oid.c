@@ -1593,6 +1593,9 @@ wlanoidSetAuthMode(IN P_ADAPTER_T prAdapter,
 	}
 
 	switch (*(P_ENUM_PARAM_AUTH_MODE_T) pvSetBuffer) {
+#if CFG_SUPPORT_HOTSPOT_2_0
+	case AUTH_MODE_WPA_OSEN:
+#endif
 	case AUTH_MODE_WPA:
 	case AUTH_MODE_WPA_PSK:
 	case AUTH_MODE_WPA2:
@@ -1675,6 +1678,11 @@ wlanoidSetAuthMode(IN P_ADAPTER_T prAdapter,
 		case AUTH_MODE_WPA2_PSK:
 			u4AkmSuite = RSN_AKM_SUITE_PSK;
 			break;
+#if CFG_SUPPORT_HOTSPOT_2_0
+		case AUTH_MODE_WPA_OSEN:
+			u4AkmSuite = WFA_AKM_SUITE_OSEN;
+			break;
+#endif
 
 		default:
 			u4AkmSuite = 0;
@@ -10436,6 +10444,7 @@ wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
 	kalMemFree(prPacket, VIR_MEM_TYPE, sizeof(PARAM_PACKET_KEEPALIVE_T));
 	return rStatus;
 }
+
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /*----------------------------------------------------------------------------*/
