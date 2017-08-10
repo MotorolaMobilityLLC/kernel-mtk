@@ -166,13 +166,13 @@ int get_md_wakeup_src(int md_id, char *buf, unsigned int len)
 			} else
 				sprintf(str, "%s(%d,%d) ", "unknown",
 					rx_ch[i][0], rx_ch[i][1]);
-
-			curr_str_len += strlen(str);
-			if (curr_str_len < 255)
-				strcat(log_buf, str);
+			if (curr_str_len + strlen(str) < sizeof(log_buf)) {
+				strncat(log_buf, str, sizeof(log_buf) - curr_str_len);
+				curr_str_len += strlen(str);
+			}
 		}
 	}
-	if (curr_str_len > 255) {
+	if (curr_str_len > sizeof(log_buf)) {
 		CCCI_MSG
 		    ("[ccci/ctl] wakeup source buffer not enough(req:%d>255) for MD%d\n",
 		     curr_str_len, md_id + 1);

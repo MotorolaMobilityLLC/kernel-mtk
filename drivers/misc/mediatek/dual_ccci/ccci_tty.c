@@ -298,7 +298,7 @@ static ssize_t ccci_tty_read(struct file *file, char *buf, size_t count,
 	do {
 		size = ccci_tty_readable(tty_instance);
 
-		if (size == 0) {
+		if (size <= 0) {
 			if (file->f_flags & O_NONBLOCK) {
 				ret = -EAGAIN;
 				goto out;
@@ -321,7 +321,7 @@ static ssize_t ccci_tty_read(struct file *file, char *buf, size_t count,
 		} else
 			break;
 
-	} while (size == 0);
+	} while (size <= 0);
 
 	data_be_read = (int)count;
 	if (tty_debug_enable[md_id] & (1UL << tty_instance->idx))
@@ -947,12 +947,21 @@ int ccci_tty_init(int md_id)
 	else if (md_id == MD_SYS2)
 		snprintf(ctlb->node_name, 16, "ccci%d_tty", md_id + 1);
 
-	ccci_uart_base_req(md_id, 0, (int *)&ctlb->uart1_shared_mem, &smem_phy, &smem_size);
+	ret = ccci_uart_base_req(md_id, 0, (int *)&ctlb->uart1_shared_mem,
+		&smem_phy, &smem_size);
+	if (ret) {
+		CCCI_MSG_INF(md_id, "tty", "[Error]ccci_uart_base_req ret=%d\n", ret);
+		goto _DEL_TTY_DRV;
+	}
 	/* CCCI_DBG_MSG(md_id, "tty", "TTY0 %x:%x:%d\n", (unsigned int)ctlb->uart1_shared_mem,  */
 	/*             (unsigned int)smem_phy, smem_size); */
 
 	/*  Get tty config information */
-	ccci_get_sub_module_cfg(md_id, "tty", (char *)&tty_buf_len, sizeof(int));
+	if (ccci_get_sub_module_cfg(md_id, "tty",
+		(char *)&tty_buf_len, sizeof(int)) != sizeof(int)) {
+		CCCI_MSG_INF(md_id, "tty", "[Error]get tty version fail\n");
+		goto _DEL_TTY_DRV;
+	}
 	tty_buf_len = (tty_buf_len - sizeof(struct shared_mem_tty_t)) / 2;
 	ctlb->tty_buf_size = tty_buf_len;
 

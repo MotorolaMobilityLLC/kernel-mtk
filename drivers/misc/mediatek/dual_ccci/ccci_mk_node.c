@@ -398,8 +398,7 @@ int ccci_attr_install(void)
 		return ret;
 	}
 
-	ccci_sys_info->ccci_attr_count =
-	    sizeof(*ccci_default_attrs) / sizeof(struct attribute);
+	ccci_sys_info->ccci_attr_count = ARRAY_SIZE(ccci_default_attrs);
 
 	return ret;
 

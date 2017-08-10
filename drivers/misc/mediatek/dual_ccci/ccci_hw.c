@@ -473,21 +473,18 @@ struct ccif_t *ccif_create_instance(struct ccif_hw_info_t *info, void *ctl_b, in
 		CCCI_MSG_INF(md_id, "cci", "[error]ccif hw info is null\n");
 		return NULL;
 	}
-
-	ccif = kmalloc(sizeof(struct ccif_t), GFP_KERNEL);
-	if (ccif == NULL) {
-		CCCI_MSG_INF(md_id, "cci",
-			     "[error]allocate memory for ccif structure fail\n");
-		return NULL;
-	}
-
 	if (info->md_id != md_id) {
 		CCCI_MSG_INF(md_id, "cci",
 			     "[error]ccif_instance_md_id is mis-match to hw_info_md_id: (%d, %d)\n",
 			     md_id, info->md_id);
 		return NULL;
 	}
-
+	ccif = kmalloc(sizeof(struct ccif_t), GFP_KERNEL);
+	if (ccif == NULL) {
+		CCCI_MSG_INF(md_id, "cci",
+			     "[error]allocate memory for ccif structure fail\n");
+		return NULL;
+	}
 	switch (info->type) {
 	case CCIF_STD_V1:
 		ccif->m_ccif_type = info->type;

@@ -163,6 +163,8 @@ int ccci_pcm_base_req(int md_id, void *addr_vir, void *addr_phy,
 int ccci_uart_base_req(int md_id, int port, void *addr_vir, void *addr_phy,
 		       unsigned int *len)
 {
+	if (md_id < 0 || md_id >= MAX_MD_NUM)
+		return -CCCI_ERR_INVALID_PARAM;
 	if (port >= CCCI_UART_PORT_NUM)
 		return -CCCI_ERR_INVALID_PARAM;
 	if (md_ctlb[md_id] == NULL)
@@ -1801,7 +1803,7 @@ static int set_md_runtime(int md_id,
 		    (md_id, "net_ul_ctl", (char *)&ul_ctl_mem_size,
 		     sizeof(int)) != sizeof(int)) {
 			CCCI_MSG_INF(md_id, "ctl", "Get net_ul_ctl fail\n");
-			dl_ctl_mem_size = 0;
+			ul_ctl_mem_size = 0;
 		}
 		if (dl_ctl_mem_size) {
 			runtime->NetDLCtrlShareMemBase[i] =
@@ -1856,7 +1858,7 @@ static int set_md_runtime(int md_id,
 		runtime->MDExExpInfoBase = 0;
 		runtime->MDExExpInfoSize = 0;
 	}
-	if (ctl_b->smem_table->ccci_md_ex_exp_info_smem_size) {
+	if (ctl_b->smem_table->ccci_misc_info_size) {
 		runtime->MiscInfoBase =
 		    ctl_b->smem_table->ccci_misc_info_base_phy -
 		    get_md2_ap_phy_addr_fixed();
@@ -2042,7 +2044,7 @@ int ccci_pre_stop(int md_id)
 	if (ctl_b == NULL)
 		return -CCCI_ERR_FATAL_ERR;
 	/* prevent another reset modem action from wdt timeout IRQ during modem reset */
-	if (atomic_inc_and_test(&ctl_b->md_reset_on_going) > 1) {
+	if (atomic_inc_return(&ctl_b->md_reset_on_going) > 1) {
 		CCCI_MSG_INF(md_id, "ctl", "One reset flow is on-going\n");
 		return -CCCI_ERR_MD_IN_RESET;
 	}
@@ -2572,18 +2574,17 @@ static ssize_t boot_md_show(char *buf)
 static ssize_t boot_md_store(const char *buf, size_t count)
 {
 	struct md_ctl_block_t *ctl_b;
-	int md_id;
+	int md_id = -1;
 
 	if (buf[0] == '0')
 		md_id = 0;
 	else if (buf[0] == '1')
 		md_id = 1;
-	else {
+	if (md_id < 0 || md_id >= MAX_MD_NUM) {
 		/* md_id = 100;         */
 		CCCI_MSG("[Error] invalid md sys id: %d\n", buf[0]);
 		return 0;
 	}
-
 	ctl_b = md_ctlb[md_id];
 	if (ctl_b == NULL) {
 		CCCI_MSG_INF(md_id, "ctl", "[Error]md ctlb is null\n");
