@@ -2918,7 +2918,10 @@ static VOID wlanRemove(VOID)
 
 	flush_delayed_work(&sched_workq);
 
-	kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC);
+	if (-ETIME == kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC)) {
+		DBGLOG(INIT, ERROR, "Halt Lock, need OidComplete.\n");
+		kalOidComplete(prGlueInfo, FALSE, 0, WLAN_STATUS_NOT_ACCEPTED);
+	}
 	kalSetHalted(TRUE);
 
 	/* 4 <2> Mark HALT, notify main thread to stop, and clean up queued requests */
