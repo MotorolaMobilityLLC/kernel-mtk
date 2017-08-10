@@ -1215,7 +1215,11 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 				      ccci_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x10);
 			break;
 		}
-
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+		/* re-config 8G mode flag for pd register*/
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG,
+				      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_CFG) | 0x40);
+#endif
 		/* set start address */
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			if (ccci_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)) == 0
