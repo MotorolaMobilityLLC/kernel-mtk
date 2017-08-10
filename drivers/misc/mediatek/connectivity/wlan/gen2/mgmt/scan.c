@@ -3002,6 +3002,40 @@ static UINT_16 scanCalculateScoreBySnrRssi(P_BSS_DESC_T prBssDesc)
 	return u2Score;
 }
 #endif
+static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
+	P_BSS_DESC_T prBssDesc, ENUM_BAND_T eBand, UINT_8 ucChannel, BOOLEAN fgIsFixedChannel)
+{
+	if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
+		DBGLOG(SCN, WARN, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
+			prBssDesc->ucPhyTypeSet);
+		return FALSE;
+	}
+	if (prBssDesc->fgIsUnknownBssBasicRate)
+		return FALSE;
+	if (fgIsFixedChannel &&
+		(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum)) {
+		DBGLOG(SCN, INFO, "Fix channel required band %d, channel %d\n", eBand, ucChannel);
+		return FALSE;
+	}
+	if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum)) {
+		DBGLOG(SCN, WARN, "Band %d channel %d is not legal\n",
+			prBssDesc->eBand, prBssDesc->ucChannelNum);
+		return FALSE;
+	}
+#if CFG_SUPPORT_WAPI
+	if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
+		if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
+			return FALSE;
+	} else
+#endif
+	if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
+		return FALSE;
+	if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure) {
+		DBGLOG(SCN, WARN, "Skip while at counter measure period!!!\n");
+		return FALSE;
+	}
+	return TRUE;
+}
 
 /*****
 Bss Characteristics to be taken into account when calculate Score:
@@ -3070,30 +3104,9 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 #if CFG_SELECT_BSS_BASE_ON_RSSI
 	if (prConnSettings->eConnectionPolicy != CONNECT_BY_BSSID) {
 		LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
-			if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
-				DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
-					prBssDesc->ucPhyTypeSet);
+			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
 				continue;
-			}
-			if (prBssDesc->fgIsUnknownBssBasicRate)
-				continue;
-			if (fgIsFixedChannel &&
-				(eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
-				continue;
-			if (!rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum))
-				continue;
-#if CFG_SUPPORT_WAPI
-			if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
-				if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
-					continue;
-			} else
-#endif
-			if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
-				continue;
-			if (prAisSpecificBssInfo->fgCounterMeasure) {
-				DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
-				continue;
-			}
+
 			cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 			if (cRssi > cMaxRssi)
 				cMaxRssi = cRssi;
@@ -3105,8 +3118,9 @@ try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
-			if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
-				DBGLOG(SCN, WARN, "CONNECT_BY_BSSID rsnPerformPolicySelection fail\n");
+			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
+				continue;
+
 			prCandBssDesc = prBssDesc;
 			break;
 		}
@@ -3140,29 +3154,8 @@ try_again:
 				continue;
 		}
 #endif
-		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
-			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n",
-				prBssDesc->ucPhyTypeSet);
+		if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
 			continue;
-		}
-		if (prBssDesc->fgIsUnknownBssBasicRate)
-			continue;
-		if (fgIsFixedChannel && (eBand != prBssDesc->eBand || ucChannel != prBssDesc->ucChannelNum))
-			continue;
-		if (rlmDomainIsLegalChannel(prAdapter, prBssDesc->eBand, prBssDesc->ucChannelNum) == FALSE)
-			continue;
-#if CFG_SUPPORT_WAPI
-		if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
-			if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
-				continue;
-		} else
-#endif
-		if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
-			continue;
-		if (prAisSpecificBssInfo->fgCounterMeasure) {
-			DBGLOG(RSN, INFO, "Skip while at counter measure period!!!\n");
-			continue;
-		}
 
 #if 0	/* currently, we don't take these factors into account */
 		u2ScoreBandwidth = scanCalculateScoreByBandwidth(prAdapter, prBssDesc);

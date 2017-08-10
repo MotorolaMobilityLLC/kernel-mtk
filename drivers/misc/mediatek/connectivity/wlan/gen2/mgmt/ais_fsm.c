@@ -229,6 +229,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 	/* 4 <1.1> Initiate FSM - Timer INIT */
 	cnmTimerInitTimer(prAdapter,
@@ -1043,24 +1044,18 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 #if CFG_SLT_SUPPORT
 			prBssDesc = prAdapter->rWifiVar.rSltInfo.prPseudoBssDesc;
 #else
-#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
-			prBssDesc = scanSearchBssDescByScoreForAis(prAdapter);
-#else
-			prBssDesc = scanSearchBssDescByPolicy(prAdapter, NETWORK_TYPE_AIS_INDEX);
-#endif
-#endif
-#if 0 /* todo: does we need these code?  */
-			/* every time BSS join failure count is integral multiples of SCN_BSS_JOIN_FAIL_THRESOLD,
-			we need to scan again to find if a new BSS is here in the ESS,
-			this can also avoid too frequency to retry the rejected AP */
-			if (prAisFsmInfo->ePreviousState == AIS_STATE_LOOKING_FOR ||
-				((eOriPreState == AIS_STATE_ONLINE_SCAN ||
-				eOriPreState == AIS_STATE_SCAN) && prAisFsmInfo->ePreviousState != eOriPreState)) {
-				/* if previous state is scan/online scan/looking for, don't try to scan again */
-			} else if (prBssDesc && prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD &&
-				((prBssDesc->ucJoinFailureCount - SCN_BSS_JOIN_FAIL_THRESOLD) %
-				SCN_BSS_JOIN_FAIL_THRESOLD) == 0)
+			if (prAisFsmInfo->ucJoinFailCntAfterScan >= 4) {
 				prBssDesc = NULL;
+				DBGLOG(AIS, STATE,
+					"Failed to connect %s more than 4 times after last scan, scan again\n",
+					prConnSettings->aucSSID);
+			} else {
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+				prBssDesc = scanSearchBssDescByScoreForAis(prAdapter);
+#else
+				prBssDesc = scanSearchBssDescByPolicy(prAdapter, NETWORK_TYPE_AIS_INDEX);
+#endif
+			}
 #endif
 			/* we are under Roaming Condition. */
 			if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
@@ -1548,6 +1543,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prScanReqMsg, MSG_SEND_METHOD_BUF);
 			DBGLOG(AIS, TRACE, "SendSR%d\n", prScanReqMsg->ucSeqNum);
 			prAisFsmInfo->fgTryScan = FALSE;	/* Will enable background sleep for infrastructure */
+			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 			prAdapter->ucScanTime++;
 			break;
@@ -2248,6 +2244,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				/* clear rJoinReqTime if there is no more framework roaming connect request */
 				if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)
 					prAisFsmInfo->rJoinReqTime = 0;
+					prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 				/* 4 <1.7> Set the Next State of AIS FSM */
 				eNextState = AIS_STATE_NORMAL_TR;
@@ -2269,6 +2266,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 					/* 3.2 reset local variable */
 					prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
+					prAisFsmInfo->ucJoinFailCntAfterScan++;
 
 					prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
 
