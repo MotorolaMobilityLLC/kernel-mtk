@@ -45,6 +45,8 @@
 #include <linux/clk.h>
 #endif
 
+#include <mach/mt_secure_api.h>
+
 #include "mt_device_apc.h"
 #include "mt_io.h"
 #include "sync_write.h"
@@ -311,6 +313,7 @@ static struct DEVICE_INFO devapc_devices[] = {
 	{"VENC", true},
 	{"JPEGENC", true},
 	{"JPEGDEC", true},
+	{"SRAMROM", true},
 
 };
 
@@ -611,6 +614,7 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 	unsigned int r_w_violation;
 	unsigned int device_count;
 	unsigned int i;
+	unsigned int is_sramrom_vio = 0;
 	struct pt_regs *regs;
 
 	dbg0 = readl(DEVAPC0_VIO_DBG0);
@@ -644,6 +648,13 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 	if (check_vio_status(INDEX_EMI_MPU))
 		DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: EMI_MPU (index=%d)\n", INDEX_EMI_MPU);
 
+	if (check_vio_status(INDEX_SRAMROM)) { /* TODO: Insert callback inside this function check */
+		/* Clear internal SRAMROM violation (Secure Access only) in ATF */
+		mt_secure_call(MTK_SIP_KERNEL_DAPC_CLEAR_SRAMROM_VIO, 0, 0, 0);
+		DEVAPC_VIO_MSG("[DEVAPC] Access Violation Slave: SRAMROM (index=%d)\n", INDEX_SRAMROM);
+		is_sramrom_vio = 1;
+	}
+
 	/* checking and showing violation normal slaves */
 	for (i = 0; i < device_count; i++) {
 		/* violation information improvement */
@@ -662,7 +673,8 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 		clear_vio_status(i);
 	}
 
-	if ((DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG) || (enable_dynamic_one_core_violation_debug)) {
+	if (((DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG) || (enable_dynamic_one_core_violation_debug))
+			&& (is_sramrom_vio)) {
 		DEVAPC_VIO_MSG("[DEVAPC] ====== Start dumping Device APC violation tracing ======\n");
 
 		DEVAPC_VIO_MSG("[DEVAPC] **************** [All IRQ Registers] ****************\n");

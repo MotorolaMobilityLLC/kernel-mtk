@@ -52,6 +52,8 @@
 #define ABORT_EMI_MPU            0x00000040
 #define INDEX_EMI_MPU            166
 
+#define INDEX_SRAMROM            157
+
 #define DAPC_INPUT_TYPE_DEBUG_ON	200
 #define DAPC_INPUT_TYPE_DEBUG_OFF	100
 
