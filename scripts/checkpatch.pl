@@ -7,6 +7,7 @@
 
 use strict;
 use POSIX;
+use File::Basename;
 
 my $P = $0;
 $P =~ s@(.*)/@@g;
@@ -4100,6 +4101,17 @@ sub process {
 					WARN("INCLUDE_LINUX",
 					     "Use #include <linux/$file> instead of <asm/$file>\n" . $herecurr);
 				}
+			}
+		}
+
+# warn if <foo.h> is #included but foo.h is available in current directory
+		if ($tree && $rawline =~ m{^.\s*\#\s*include\s*\<(.*)\.h\>}) {
+			my $file = "$1.h";
+			my $realpath = dirname($realfile);
+			my $checkfile = "$realpath/$file";
+			if (-f "$root/$checkfile") {
+				WARN("SUSPECT_SYSTEM_INCLUDE",
+					"Use #include \"$file\" instead of <$file>\n" . $herecurr);
 			}
 		}
 
