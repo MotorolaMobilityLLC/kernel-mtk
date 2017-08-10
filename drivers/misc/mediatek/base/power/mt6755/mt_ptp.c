@@ -4679,7 +4679,11 @@ static int __init eem_conf(void)
 			eem_debug("1--->The table ----->(fyTbl), cpu_speed = %d\n", cpu_speed);
 		}
 	} else {
+		#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		if (1 == binLevel) {
+		#else
 		if ((1 == binLevel) || (3 == binLevel)) {
+		#endif
 			#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 			if (0) {
 			#else
