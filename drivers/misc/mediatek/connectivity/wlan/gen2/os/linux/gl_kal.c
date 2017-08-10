@@ -3264,9 +3264,10 @@ VOID kalSecurityFrameSendComplete(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	ASSERT(pvPacket);
 
 	dev_kfree_skb((struct sk_buff *)pvPacket);
-	if (prGlueInfo)
+	if (prGlueInfo) {
 		prGlueInfo->u8SkbFreed++;
-	GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum);
+		GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum);
+	}
 }
 
 UINT_32 kalGetTxPendingFrameCount(IN P_GLUE_INFO_T prGlueInfo)
