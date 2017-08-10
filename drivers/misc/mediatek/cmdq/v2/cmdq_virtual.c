@@ -199,6 +199,11 @@ uint64_t cmdq_virtual_flag_from_scenario_legacy(CMDQ_SCENARIO_ENUM scn)
 			(1LL << CMDQ_ENG_DISP_GAMMA) |
 			(1LL << CMDQ_ENG_DISP_RDMA1) | (1LL << CMDQ_ENG_DISP_DSI1_CMD));
 		break;
+#ifdef CONFIG_MTK_CMDQ_TAB
+	case CMDQ_SCENARIO_SUB_MEMOUT:
+		flag = ((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1));
+		break;
+#endif
 	case CMDQ_SCENARIO_SUB_ALL:
 		flag = ((1LL << CMDQ_ENG_DISP_OVL1) |
 			(1LL << CMDQ_ENG_DISP_WDMA1) |
@@ -437,6 +442,8 @@ int cmdq_virtual_get_thread_index(CMDQ_SCENARIO_ENUM scenario, const bool secure
 	case CMDQ_SCENARIO_DISP_MIRROR_MODE:
 	case CMDQ_SCENARIO_DISP_COLOR:
 	case CMDQ_SCENARIO_PRIMARY_MEMOUT:
+	/* tablet use */
+	case CMDQ_SCENARIO_SUB_MEMOUT:
 		return 13;
 	case CMDQ_SCENARIO_USER_MDP:
 	case CMDQ_SCENARIO_USER_SPACE:
@@ -689,11 +696,11 @@ const char *cmdq_virtual_module_from_event_id(const int32_t event,
 
 const char *cmdq_virtual_parse_module_from_reg_addr(uint32_t reg_addr)
 {
-	const uint32_t addr_base_and_page = (reg_addr & 0xFFFFF000);
-
 #ifdef CMDQ_USE_LEGACY
 	return cmdq_virtual_parse_module_from_reg_addr_legacy(reg_addr);
 #else
+	const uint32_t addr_base_and_page = (reg_addr & 0xFFFFF000);
+
 	/* for well-known base, we check them with 12-bit mask */
 	/* defined in mt_reg_base.h */
 	/* TODO: comfirm with SS if IO_VIRT_TO_PHYS workable when enable device tree? */
@@ -808,9 +815,12 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 #else
 		cmdq_dev_enable_clock_SMI_LARB0(enable);
 #endif
+#if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
+		cmdq_mdp_get_func()->mdpSmiLarbEnableClock(enable);
+#endif
 #ifdef CMDQ_USE_LEGACY
 		CMDQ_VERBOSE("[CLOCK] enable MT_CG_DISP0_MUTEX_32K\n");
-		cmdq_dev_enable_clock_MUTEX_32K(enable);
+		cmdq_mdp_get_func()->mdpEnableClockMutex32k(enable);
 #endif
 	} else {
 		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
@@ -823,7 +833,10 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 		cmdq_dev_enable_clock_SMI_COMMON(enable);
 #ifdef CMDQ_USE_LEGACY
 		CMDQ_VERBOSE("[CLOCK] disable MT_CG_DISP0_MUTEX_32K\n");
-		cmdq_dev_enable_clock_MUTEX_32K(enable);
+		cmdq_mdp_get_func()->mdpEnableClockMutex32k(enable);
+#endif
+#if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
+		cmdq_mdp_get_func()->mdpSmiLarbEnableClock(enable);
 #endif
 	}
 #endif				/* CMDQ_PWR_AWARE */
@@ -923,7 +936,7 @@ int cmdq_virtual_dump_smi(const int showSmiDump)
 {
 	int isSMIHang = 0;
 
-#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA)
+#if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_SMI_VARIANT)
 	isSMIHang =
 	    smi_debug_bus_hanging_detect_ext(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
 					     SMI_DBG_VENC | SMI_DBG_MJC, showSmiDump, showSmiDump);
@@ -961,7 +974,7 @@ uint64_t cmdq_virtual_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
 	uint64_t flag = 0;
 
 #ifdef CMDQ_USE_LEGACY
-	cmdq_virtual_flag_from_scenario_legacy(scn);
+	flag = cmdq_virtual_flag_from_scenario_legacy(scn);
 #else
 	switch (scn) {
 	case CMDQ_SCENARIO_PRIMARY_DISP:

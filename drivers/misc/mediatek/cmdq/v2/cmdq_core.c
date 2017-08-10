@@ -6719,7 +6719,7 @@ static void cmdq_core_handle_secure_paths_exec_done_notify(const int32_t notifyT
 		return;
 
 	raisedIRQ = cmdq_core_get_secure_IRQ_status();
-	CMDQ_LOG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
+	CMDQ_MSG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
 		 __func__,
 		 raisedIRQ,
 		 cmdq_core_get_secure_thread_exec_counter(12),
@@ -9203,7 +9203,11 @@ int32_t cmdqCoreLateInitialize(void)
 {
 	int32_t status = 0;
 	struct task_struct *open_th =
-	    kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+#ifndef CONFIG_MTK_CMDQ_TAB
+	kthread_run(cmdq_sec_init_allocate_resource_thread, NULL, "cmdq_WSM_init");
+#else
+	kthread_run(cmdq_sec_init_secure_path, NULL, "cmdq_WSM_init");
+#endif
 	if (IS_ERR(open_th)) {
 		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
 		status = -EFAULT;
@@ -9506,6 +9510,11 @@ void cmdq_core_set_log_level(const int32_t value)
 		/* Modify log level */
 		gCmdqContext.logLevel = (1 << value);
 	}
+}
+
+int32_t cmdq_core_get_log_level(void)
+{
+	return gCmdqContext.logLevel;
 }
 
 bool cmdq_core_should_print_msg(void)
@@ -9884,3 +9893,9 @@ bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return CMDQ_FEATURE_OFF_VALUE == cmdq_core_get_feature(featureOption);
 }
+
+ContextStruct *cmdq_core_get_cmdqcontext(void)
+{
+	return &gCmdqContext;
+}
+

@@ -78,6 +78,11 @@ long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 	return gMMSYS_CONFIG_Base_VA;
 }
 
+void cmdq_dev_set_module_base_VA_MMSYS_CONFIG(long value)
+{
+	gMMSYS_CONFIG_Base_VA = value;
+}
+
 long cmdq_dev_get_APXGPT2_count(void)
 {
 	return gAPXGPT2Count;
@@ -257,9 +262,11 @@ uint32_t cmdq_dev_enable_clock_SMI_COMMON(bool enable)
 #endif				/* !defined(CMDQ_USE_CCF) */
 
 IMP_ENABLE_HW_CLOCK(SMI_LARB0, SMI_LARB0);
+/*
 #ifdef CMDQ_USE_LEGACY
 IMP_ENABLE_HW_CLOCK(MUTEX_32K, MUTEX_32K);
 #endif
+*/
 #undef IMP_ENABLE_HW_CLOCK
 
 /* Common Clock Framework */
@@ -272,6 +279,9 @@ void cmdq_dev_init_module_clk(void)
 					  &gCmdqModuleClock.clk_SMI_LARB0);
 	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "mtcmos-dis",
 					  &gCmdqModuleClock.clk_MTCMOS_DIS);
+#ifdef CMDQ_USE_LEGACY
+	cmdq_mdp_get_func()->mdpInitModuleClkMutex32K();
+#endif
 #endif
 	cmdq_mdp_get_func()->initModuleCLK();
 }
@@ -328,6 +338,9 @@ void cmdq_dev_init_MDP_PA(struct device_node *node)
 	cmdq_dev_get_module_PA("mediatek,mm_mutex", 0,
 					    &module_pa_start,
 					    &module_pa_end);
+
+	if (module_pa_start == 0)
+		cmdq_mdp_get_func()->mdpGetModulePa(&module_pa_start, &module_pa_end);
 
 	if (module_pa_start == 0) {
 		CMDQ_ERR("DEV: init mm_mutex PA fail!!\n");
@@ -565,6 +578,8 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		gCmdqDev.irqSecId = irq_of_parse_and_map(node, 1);
 #ifdef CMDQ_USE_CCF
 		gCmdqDev.clk_gce = devm_clk_get(&pDevice->dev, "GCE");
+		if (IS_ERR(gCmdqDev.clk_gce))
+			gCmdqDev.clk_gce = devm_clk_get(&pDevice->dev, "MT_CG_INFRA_GCE");
 #endif				/* defined(CMDQ_USE_CCF) */
 #endif
 

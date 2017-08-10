@@ -12,7 +12,7 @@
  */
 
 #include <cmdq_core.h>
-#include <cmdq_reg.h>
+/* #include <cmdq_reg.h> */
 
 #if defined(CONFIG_MTK_LEGACY)
 #include <mach/mt_clkmgr.h>

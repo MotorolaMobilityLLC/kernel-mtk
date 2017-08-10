@@ -226,6 +226,32 @@ const char *cmdq_mdp_dispatch_virtual(uint64_t engineFlag)
 	return "MDP";
 }
 
+#if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
+void cmdq_mdp_init_module_clk_MUTEX_32K_virtual(void)
+{
+	/* Do Nothing */
+}
+
+void cmdq_mdp_smi_larb_enable_clock_virtual(bool enable)
+{
+	/* Do Nothing */
+}
+#endif
+
+#ifdef CMDQ_OF_SUPPORT
+void cmdq_mdp_get_module_pa_virtual(long *startPA, long *endPA)
+{
+	/* Do Nothing */
+}
+#endif
+
+#ifdef CMDQ_USE_LEGACY
+void cmdq_mdp_enable_clock_mutex32k(bool enable)
+{
+	/* Do Nothing */
+}
+#endif
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -264,6 +290,18 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp_virtual;
 
 	pFunc->dispatchModule = cmdq_mdp_dispatch_virtual;
+
+#if defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
+	pFunc->mdpInitModuleClkMutex32K = cmdq_mdp_init_module_clk_MUTEX_32K_virtual;
+
+	pFunc->mdpSmiLarbEnableClock = cmdq_mdp_smi_larb_enable_clock_virtual;
+#endif
+#ifdef CMDQ_OF_SUPPORT
+	pFunc->mdpGetModulePa = cmdq_mdp_get_module_pa_virtual;
+#endif
+#ifdef CMDQ_USE_LEGACY
+	pFunc->mdpEnableClockMutex32k = cmdq_mdp_enable_clock_mutex32k;
+#endif
 
 }
 

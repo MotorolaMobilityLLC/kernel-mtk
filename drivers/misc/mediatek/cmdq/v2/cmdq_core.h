@@ -906,6 +906,7 @@ extern "C" {
  * Utilities
  */
 	void cmdq_core_set_log_level(const int32_t value);
+	int32_t cmdq_core_get_log_level(void);
 	ssize_t cmdqCorePrintLogLevel(struct device *dev, struct device_attribute *attr, char *buf);
 	ssize_t cmdqCoreWriteLogLevel(struct device *dev,
 				      struct device_attribute *attr, const char *buf, size_t size);
@@ -1040,6 +1041,7 @@ extern "C" {
 	bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption);
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
+	ContextStruct *cmdq_core_get_cmdqcontext(void);
 #ifdef __cplusplus
 }
 #endif

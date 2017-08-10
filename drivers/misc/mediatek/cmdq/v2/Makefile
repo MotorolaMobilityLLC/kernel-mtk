@@ -54,7 +54,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
+ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
+endif
 
 ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
@@ -86,12 +88,22 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6570" "mt6580" "mt6755" "mt
 ccflags-y += -DCMDQ_DISP_LEGACY_SUB_SCENARIO
 endif
 
+ifeq ($(CONFIG_MTK_CMDQ_TAB), y)
+ccflags-y += -DCMDQ_USE_LEGACY
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl \
+             -I$(srctree)/include/trustzone
+
+ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
+ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
+endif
+endif
+
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
 ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "elbrus"))
 ccflags-y += -DCMDQ_PROFILE_MMP
 endif
 
-ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 # driver module
 obj-y += cmdq_record.o
 obj-y += cmdq_core.o
@@ -102,6 +114,7 @@ obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
+ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 obj-y += cmdq_sec.o
 endif
 
