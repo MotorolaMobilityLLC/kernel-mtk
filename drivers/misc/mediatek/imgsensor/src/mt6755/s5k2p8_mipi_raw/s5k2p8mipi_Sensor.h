@@ -99,6 +99,7 @@ typedef struct imgsensor_info_struct {
 	imgsensor_mode_struct cap1;		//capture for PIP 24fps relative information
     imgsensor_mode_struct cap2;		//capture for PIP 15ps relative information
 	imgsensor_mode_struct normal_video;//normal video  scenario relative information
+	imgsensor_mode_struct normal_video2;	/* normal video for 15ps relative information */
 	imgsensor_mode_struct hs_video;	//high speed video scenario relative information
 	imgsensor_mode_struct slim_video;	//slim video for VT scenario relative information
     imgsensor_mode_struct custom1;      //custom1 scenario relative information

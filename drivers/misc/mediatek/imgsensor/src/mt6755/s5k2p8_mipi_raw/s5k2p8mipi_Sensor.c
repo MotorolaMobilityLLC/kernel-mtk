@@ -158,6 +158,22 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		.max_framerate = 300,
 	},
+	.normal_video2 = {
+		.pclk = 560000000,
+		.linelength = 12224,
+		.framelength = 3174,
+		.startx = 0,
+		.starty = 0,
+#ifdef FIX_VIEW_ANGLE
+		.grabwindow_width = 5312,
+		.grabwindow_height = 2976,
+#else
+		.grabwindow_width = 5328,/* 5334, */
+		.grabwindow_height = 3000,
+#endif
+		.mipi_data_lp2hs_settle_dc = 85,/* unit , ns */
+		.max_framerate = 150,
+	},
 #ifdef SLOW_MOTION_120FPS
 	.hs_video = {
 		.pclk = 560000000,
@@ -4280,7 +4296,10 @@ static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n",currefps);
 
-	normal_capture_setting();
+	if (currefps == 150)
+		pip_capture_15fps_setting();
+	else
+		normal_capture_setting();
 
 }
 static void hs_video_setting(void)
@@ -4908,12 +4927,22 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 {
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
-	imgsensor.pclk = imgsensor_info.normal_video.pclk;
-	imgsensor.line_length = imgsensor_info.normal_video.linelength;
-	imgsensor.frame_length = imgsensor_info.normal_video.framelength;
-	imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
-	//imgsensor.current_fps = 300;
-	imgsensor.autoflicker_en = KAL_FALSE;
+
+	if (imgsensor.current_fps == imgsensor_info.normal_video2.max_framerate) { /* 15fps */
+		imgsensor.pclk = imgsensor_info.normal_video2.pclk;
+		imgsensor.line_length = imgsensor_info.normal_video2.linelength;
+		imgsensor.frame_length = imgsensor_info.normal_video2.framelength;
+		imgsensor.min_frame_length = imgsensor_info.normal_video2.framelength;
+		imgsensor.autoflicker_en = KAL_FALSE;
+	} else { /* 30fps */
+		imgsensor.pclk = imgsensor_info.normal_video.pclk;
+		imgsensor.line_length = imgsensor_info.normal_video.linelength;
+		imgsensor.frame_length = imgsensor_info.normal_video.framelength;
+		imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
+		/* imgsensor.current_fps = 300; */
+		imgsensor.autoflicker_en = KAL_FALSE;
+	}
+
 	spin_unlock(&imgsensor_drv_lock);
 	normal_video_setting(imgsensor.current_fps);
 	set_mirror_flip(IMAGE_NORMAL);
@@ -5345,12 +5374,27 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			if(framerate == 0)
 				return ERROR_NONE;
-			frame_length = imgsensor_info.normal_video.pclk / imgsensor_info.normal_video.linelength / framerate * 10;
-			spin_lock(&imgsensor_drv_lock);
-			imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video.framelength) ? (frame_length - imgsensor_info.normal_video.framelength) : 0;
-			imgsensor.frame_length = imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
-			imgsensor.min_frame_length = imgsensor.frame_length;
-			spin_unlock(&imgsensor_drv_lock);
+
+			if (imgsensor.current_fps == 150) {  /* 15fps */
+				frame_length = imgsensor_info.normal_video2.pclk /
+					imgsensor_info.normal_video2.linelength / framerate * 10;
+				spin_lock(&imgsensor_drv_lock);
+				imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video2.framelength)
+					? (frame_length - imgsensor_info.normal_video2.framelength) : 0;
+				imgsensor.frame_length = imgsensor_info.normal_video2.framelength
+					+ imgsensor.dummy_line;
+				imgsensor.min_frame_length = imgsensor.frame_length;
+				spin_unlock(&imgsensor_drv_lock);
+			} else {
+				frame_length = imgsensor_info.normal_video.pclk /
+					imgsensor_info.normal_video.linelength / framerate * 10;
+				spin_lock(&imgsensor_drv_lock);
+				imgsensor.dummy_line = (frame_length > imgsensor_info.normal_video.framelength)
+					? (frame_length - imgsensor_info.normal_video.framelength) : 0;
+				imgsensor.frame_length = imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
+				imgsensor.min_frame_length = imgsensor.frame_length;
+				spin_unlock(&imgsensor_drv_lock);
+			}
 			set_dummy();
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
