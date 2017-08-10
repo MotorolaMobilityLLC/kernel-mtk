@@ -3281,6 +3281,11 @@ static VOID wlanRemove(VOID)
 
 	kalFbNotifierUnReg();
 	kalPerMonDestroy(prGlueInfo);
+	/* 4 <3> Remove /proc filesystem. */
+#ifdef WLAN_INCLUDE_PROC
+	procRemoveProcfs();
+#endif /* WLAN_INCLUDE_PROC */
+
 #if CFG_ENABLE_WIFI_DIRECT
 	/* avoid remove & p2p off command simultaneously */
 	{
@@ -3364,11 +3369,6 @@ static VOID wlanRemove(VOID)
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);
 #endif
-
-	/* 4 <3> Remove /proc filesystem. */
-#ifdef WLAN_INCLUDE_PROC
-	procRemoveProcfs();
-#endif /* WLAN_INCLUDE_PROC */
 
 #if (CFG_SUPPORT_MET_PROFILING == 1)
 	kalMetRemoveProcfs();
