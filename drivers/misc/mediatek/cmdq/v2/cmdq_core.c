@@ -5345,12 +5345,14 @@ static void cmdq_core_dump_summary(const TaskStruct *pTask, int thread,
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		if (pTask->secStatus) {
 			/* secure status may contains debug information */
-			CMDQ_ERR("Secure status: %d step: %u args: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-				pTask->secStatus->status, (uint32_t)pTask->secStatus->step,
+			CMDQ_ERR("Secure status: %d step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+				pTask->secStatus->status,
+				pTask->secStatus->step,
 				pTask->secStatus->args[0], pTask->secStatus->args[1],
-				pTask->secStatus->args[2], pTask->secStatus->args[3]);
+				pTask->secStatus->args[2], pTask->secStatus->args[3],
+				pTask);
 			for (index = 0; index < pTask->secStatus->inst_index; index += 2) {
-				CMDQ_ERR("Secure instruction %d: 0x%08x:%08x", (index / 2),
+				CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
 					pTask->secStatus->sec_inst[index],
 					pTask->secStatus->sec_inst[index+1]);
 			}

@@ -309,8 +309,8 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
 #ifdef CMDQ_JUMP_MEM
-		struct CmdBufferStruct *cmd_buffer = NULL;
-		uint32_t buffer_index = 0;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+	uint32_t buffer_index = 0;
 #endif
 
 	status = 0;
@@ -557,6 +557,47 @@ int32_t cmdq_sec_setup_context_session(cmdqSecContextHandle handle)
 	return status;
 }
 
+void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const iwcCmdqMessage_t *pIwc,
+	int32_t sec_status_code)
+{
+	int index = 0;
+	const struct iwcCmdqSecStatus_t *secStatus = NULL;
+
+	if (!pIwc)
+		return;
+
+	/* assign status ptr to print without task */
+	secStatus = &pIwc->secStatus;
+
+	if (pTask) {
+		if (pTask->secStatus) {
+			CMDQ_AEE("CMDQ", "Last secure status still exists, task: 0x%p\n", pTask);
+			kfree(pTask->secStatus);
+			pTask->secStatus = NULL;
+		}
+
+		pTask->secStatus = kzalloc(sizeof(struct iwcCmdqSecStatus_t), GFP_KERNEL);
+		if (pTask->secStatus) {
+			memcpy(pTask->secStatus, &pIwc->secStatus, sizeof(struct iwcCmdqSecStatus_t));
+			secStatus = pTask->secStatus;
+		}
+	}
+
+	if (secStatus->status != 0 || sec_status_code != 0) {
+		/* secure status may contains debug information */
+		CMDQ_ERR("Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+			secStatus->status, sec_status_code, secStatus->step,
+			secStatus->args[0], secStatus->args[1],
+			secStatus->args[2], secStatus->args[3],
+			pTask);
+		for (index = 0; index < secStatus->inst_index; index += 2) {
+			CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
+				secStatus->sec_inst[index],
+				secStatus->sec_inst[index+1]);
+		}
+	}
+}
+
 int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
 					       const int32_t iwcCommand, TaskStruct *pTask,
 					       void *data)
@@ -564,29 +605,12 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
 	int32_t status;
 	int32_t iwcRsp;
 	cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
-	int index;
 
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
 	status = iwcRsp;
 
-	if (pTask) {
-		pTask->secStatus = kzalloc(sizeof(struct iwcCmdqSecStatus_t), GFP_KERNEL);
-		if (pTask->secStatus) {
-			memcpy(pTask->secStatus, &pIwc->secStatus, sizeof(struct iwcCmdqSecStatus_t));
-			if (status < 0 || pTask->secStatus->status < 0) {
-				CMDQ_ERR("Secure status: %d step: %u args: 0x%08x 0x%08x 0x%08x 0x%08x\n",
-					pTask->secStatus->status, (uint32_t)pTask->secStatus->step,
-					pTask->secStatus->args[0], pTask->secStatus->args[1],
-					pTask->secStatus->args[2], pTask->secStatus->args[3]);
-				for (index = 0; index < pTask->secStatus->inst_index; index += 2) {
-					CMDQ_ERR("Secure instruction %d: 0x%08x:%08x", (index / 2),
-						pTask->secStatus->sec_inst[index],
-						pTask->secStatus->sec_inst[index+1]);
-				}
-			}
-		}
-	}
+	cmdq_sec_handle_attach_status(pTask, pIwc, status);
 
 	if (CMD_CMDQ_TL_CANCEL_TASK == iwcCommand) {
 		pCancelResult = (cmdqSecCancelTaskResultStruct *) data;
@@ -809,6 +833,8 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   " tgid[%d:%d], config_duration_ms[%d], cmdId[%d]\n",
 				   tgid, pid, duration, iwcCommand);
 
+		cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
+
 		if (msgOffset > 0) {
 			/* print message */
 			if (throwAEE) {
@@ -826,6 +852,8 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   status, pTask, thread, tgid, pid);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
+
+		cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
 
 		if (msgOffset > 0) {
 			/* print message */
