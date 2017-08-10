@@ -281,6 +281,9 @@ static void mtk_i2c_init_hw(struct mtk_i2c *i2c)
 	else
 		writew(I2C_IO_CONFIG_OPEN_DRAIN, i2c->base + OFFSET_IO_CONFIG);
 
+	if (i2c->dev_comp->dcm)
+		writew(I2C_DCM_DISABLE, i2c->base + OFFSET_DCM_EN);
+
 	if (i2c->dev_comp->timing_adjust)
 		writew((i2c->clk_src_div - 1), i2c->base + OFFSET_CLOCK_DIV);
 
