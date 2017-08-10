@@ -2317,10 +2317,12 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 
 		pr_err("[****SD_Debug****]: host id: %d, mode: %d.\n", id, mode);
 		if (mode == 0) {
+#if 0
 			if (rw_thread) {
 				kthread_stop(rw_thread);
-				pr_err("[****SD_Debug****]: stop read/write thread.\n");
 			}
+#endif
+			pr_err("[****SD_Debug****]: stop read/write thread.\n");
 		} else {
 			pr_err("[****SD_Debug****]: start read/write thread.\n");
 			data_for_wr = (id & 0x3) | ((mode & 0x3) << 4);
