@@ -252,8 +252,9 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+#if CFG_SCAN_ABORT_HANDLE
 	prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
-
+#endif
 	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 #if CFG_SUPPORT_DYNAMIC_ROAM
 	prAisFsmInfo->cRoamTriggerThreshold = 0;
@@ -1105,12 +1106,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prScanInfo->fgIsPostponeSchedScan == TRUE)
 						aisPostponedEventOfSchedScanReq(prAdapter, prAisFsmInfo);
 
+#if CFG_SCAN_ABORT_HANDLE
 					if (prAisFsmInfo->fgIsAbortEvnetDuringScan) {
 						DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
 							, prAisBssInfo->ucReasonOfDisconnect);
 						prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
 						aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
 					}
+#endif
 				}
 				if (prAisReq) {
 					/* free the message */
@@ -1868,12 +1871,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					eNextState = AIS_STATE_REQ_REMAIN_ON_CHANNEL;
 					fgIsTransition = TRUE;
 				}
+#if CFG_SCAN_ABORT_HANDLE
 				if (prAisFsmInfo->fgIsAbortEvnetDuringScan) {
 					DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
 						, prAisBssInfo->ucReasonOfDisconnect);
 					prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
 					aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
 				}
+#endif
 			}
 
 			break;
@@ -2156,6 +2161,8 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			break;
 
 		default:
+			DBGLOG(AIS, WARN, "current state[%d],ScanSeqNum=%d can't report SCAN_DONE!\n",
+				   prAisFsmInfo->eCurrentState, prAisFsmInfo->ucSeqNumOfScanReq);
 			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 			break;
 
@@ -2220,8 +2227,10 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	DBGLOG(AIS, STATE, "EVENT-ABORT: Current State %s %d\n",
 			    apucDebugAisState[prAisFsmInfo->eCurrentState], ucReasonOfDisconnect);
 #else
-	DBGLOG(AIS, STATE, "[%d] EVENT-ABORT: Current State [%d %d]\n",
-			    DBG_AIS_IDX, prAisFsmInfo->eCurrentState, ucReasonOfDisconnect);
+	DBGLOG(AIS, STATE, "[%d] EVENT-ABORT: Current State [%d %d] fgIsConnReqIssue:%d\n",
+			    DBG_AIS_IDX, prAisFsmInfo->eCurrentState, ucReasonOfDisconnect
+			    , prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued);
+
 #endif
 
 	GET_CURRENT_SYSTIME(&(prAisFsmInfo->rJoinReqTime));
@@ -2319,7 +2328,13 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 		break;
 
 	case AIS_STATE_SCAN:
-		/*Check Reason Of Disconnect, if pending abort event or report scan result*/
+#if CFG_SCAN_ABORT_HANDLE
+		/*
+		 * when driver received the disconnected event from AP.
+		 * driver will insert a AIS_REQUEST_SCAN, it leads scan request not match when scan_done report before!
+		 * AIS_FSM poended the abort event and wait scan_done to report to upper layer and process
+		 * the disconnected event from AP at Idle state!
+		 */
 		if ((ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) ||
 			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DEAUTHENTICATED) ||
 			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DISASSOCIATED)) {
@@ -2328,10 +2343,22 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 				, prAisBssInfo->ucReasonOfDisconnect);
 			return;
 		}
-
+#endif
 		/* Do abort SCAN */
 		aisFsmStateAbort_SCAN(prAdapter);
 
+#if CFG_SCAN_ABORT_HANDLE
+		/* To avoid the AIS_FSM took a lot of time to connect and leads to scan pending too long
+		 * AIS_FSM abort scan and wait scan_done (scan_cancel) to report to upper layer
+		 * and process AIS_REQUEST_RECONNECT at Idle state.
+		 */
+		if (ucReasonOfDisconnect == DISCONNECT_REASON_CODE_NEW_CONNECTION
+			&& prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued == TRUE) {
+			DBGLOG(AIS, WARN, "Reason code:%d! Abort the AIS scanning and wait for AIS scan done!\n"
+			, prAisBssInfo->ucReasonOfDisconnect);
+			return;
+		}
+#endif
 		/* queue for later handling */
 		if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, FALSE) == FALSE)
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
@@ -2373,7 +2400,13 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 #endif /* CFG_SUPPORT_ADHOC */
 
 	case AIS_STATE_ONLINE_SCAN:
-		/*Check Reason Of Disconnect, if pending abort event or report scan result*/
+#if CFG_SCAN_ABORT_HANDLE
+		/*
+		 * when driver received the disconnected event from AP.
+		 * driver will insert a AIS_REQUEST_SCAN, it leads scan request not match when scan_done report before!
+		 * AIS_FSM poended the abort event and wait scan_done to report to upper layer and process
+		 * the disconnected event from AP at Idle state!
+		 */
 		if ((ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) ||
 			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DEAUTHENTICATED) ||
 			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DISASSOCIATED)) {
@@ -2382,10 +2415,23 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 				, prAisBssInfo->ucReasonOfDisconnect);
 			return;
 		}
-
+#endif
 		/* Do abort SCAN */
 		aisFsmStateAbort_SCAN(prAdapter);
 
+#if CFG_SCAN_ABORT_HANDLE
+		/* New connection will abort the scan
+		 * To avoid the AIS_FSM took a lot of time to connect and leads to scan pending too long
+		 * AIS_FSM abort scan and wait scan_done (scan_cancel) to report to upper layer
+		 * and process AIS_REQUEST_RECONNECT at Idle state.
+		 */
+		if (ucReasonOfDisconnect == DISCONNECT_REASON_CODE_NEW_CONNECTION
+			&& prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued == TRUE) {
+			DBGLOG(AIS, WARN, "Reason code:%d! Abort the AIS scanning and wait for AIS scan done!\n"
+			, prAisBssInfo->ucReasonOfDisconnect);
+			return;
+		}
+#endif
 		/* queue for later handling */
 		if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, FALSE) == FALSE)
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
@@ -3801,6 +3847,10 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	ASSERT(prAdapter);
 
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+
+	DBGLOG(AIS, INFO, "aisFsmDisconnect: ConnectionState=%d fgDelayIndication=%d\n"
+		, prAisBssInfo->eConnectionState
+		, fgDelayIndication);
 
 	nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
