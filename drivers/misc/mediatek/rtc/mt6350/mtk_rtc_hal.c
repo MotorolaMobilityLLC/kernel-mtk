@@ -173,7 +173,7 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 
 void hal_rtc_bbpu_pwdn(void)
 {
-	u16 ret_val, con;
+	u16 con;
 
 	hal_rtc_xinfo("hal_rtc_bbpu_pwdn (RTC_CON=0x%x)\n", rtc_read(RTC_CON));
 	rtc_writeif_unlock();
@@ -184,26 +184,7 @@ void hal_rtc_bbpu_pwdn(void)
 		hal_rtc_xinfo("hal_rtc_bbpu_pwdn (RTC_CON=0x%x)\n", rtc_read(RTC_CON));
 		rtc_write_trigger();
 	}
-	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
-	if (!ret_val && pmic_chrdet_status() == KAL_FALSE) {
-#if defined(CONFIG_MTK_FPGA)
-		hal_rtc_xinfo("hal_rtc_bbpu_pwdn FPGA\n");
-		rtc_bbpu_pwrdown(true);
-#else
-		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
-		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
-		mt_set_gpio_out(GPIO_SRCLKEN_PIN, GPIO_OUT_ZERO);
-		/* 2. pull PWRBB low */
-		hal_rtc_xinfo("hal_rtc_bbpu_pwdn\n");
-		rtc_bbpu_pwrdown(true);
-
-		/* 3.   Switch SRCLKENAs GPIO MUX function to GPIO Mode */
-		mt_set_gpio_mode(GPIO_SRCLKEN_PIN, GPIO_MODE_GPIO);
-#endif
-	} else {
-		hal_rtc_xinfo("hal_rtc_bbpu_pwdn XTAL\n");
-		rtc_bbpu_pwrdown(true);
-	}
+	rtc_bbpu_pwrdown(true);
 }
 
 void hal_rtc_get_pwron_alarm(struct rtc_time *tm, struct rtc_wkalrm *alm)
