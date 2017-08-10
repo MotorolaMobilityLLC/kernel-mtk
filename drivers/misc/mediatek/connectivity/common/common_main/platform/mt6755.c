@@ -763,8 +763,13 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 			/*do BT PMIC on,depenency PMIC API ready */
 			/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
 			/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			hwPowerOn(MT6353_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
+			mt6353_upmu_set_ldo_vcn33_en_ctrl_bt(1);
+#else
 			hwPowerOn(MT6351_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
 			mt6351_upmu_set_rg_vcn33_on_ctrl(1);
+#endif
 #endif
 			WMT_PLAT_INFO_FUNC("WMT do BT/WIFI v3.3 on\n");
 			gBtWifiV33.counter++;
@@ -775,8 +780,13 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 			/*do BT PMIC off */
 			/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+			mt6353_upmu_set_ldo_vcn33_en_ctrl_bt(0);
+			hwPowerDown(MT6353_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
+#else
 			mt6351_upmu_set_rg_vcn33_on_ctrl(0);
 			hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
+#endif
 #endif
 			WMT_PLAT_INFO_FUNC("WMT do BT/WIFI v3.3 off\n");
 			gBtWifiV33.counter--;
@@ -796,7 +806,11 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 #if CONSYS_PMIC_CTRL_ENABLE
 		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
 #if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		hwPowerOn(MT6353_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
+#else
 		hwPowerOn(MT6351_POWER_LDO_VCN33_BT, VOL_3300 * 1000, "wcn_drv");
+#endif
 #else
 		if (reg_VCN33_BT) {
 			regulator_set_voltage(reg_VCN33_BT, VOL_3300, VOL_3300);
@@ -804,7 +818,11 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 				WMT_PLAT_ERR_FUNC("WMT do BT PMIC on fail!\n");
 		}
 #endif
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_BT, 1);
+#else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 1);
+#endif
 
 #endif
 		WMT_PLAT_DBG_FUNC("WMT do BT PMIC on\n");
@@ -812,9 +830,17 @@ static INT32 consys_hw_bt_vcn33_ctrl(UINT32 enable)
 		/*do BT PMIC off */
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_BT, 0);
+#else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 0);
+#endif
 #if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		hwPowerDown(MT6353_POWER_LDO_VCN33_BT, "wcn_drv");
+#else
 		hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
+#endif
 #else
 		if (reg_VCN33_BT)
 			regulator_disable(reg_VCN33_BT);
@@ -836,7 +862,11 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
 #if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		hwPowerOn(MT6353_POWER_LDO_VCN33_WIFI, VOL_3300 * 1000, "wcn_drv");
+#else
 		hwPowerOn(MT6351_POWER_LDO_VCN33_WIFI, VOL_3300 * 1000, "wcn_drv");
+#endif
 #else
 		if (reg_VCN33_WIFI) {
 			regulator_set_voltage(reg_VCN33_WIFI, VOL_3300, VOL_3300);
@@ -844,16 +874,28 @@ static INT32 consys_hw_wifi_vcn33_ctrl(UINT32 enable)
 				WMT_PLAT_ERR_FUNC("WMT do WIFI PMIC on fail!\n");
 		}
 #endif
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_WIFI, 1);
+#else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 1);
+#endif
 #endif
 		WMT_PLAT_DBG_FUNC("WMT do WIFI PMIC on\n");
 	} else {
 		/*do WIFI PMIC off */
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_WIFI, 0);
+#else
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 0);
+#endif
 #if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		hwPowerDown(MT6353_POWER_LDO_VCN33_WIFI, "wcn_drv");
+#else
 		hwPowerDown(MT6351_POWER_LDO_VCN33_WIFI, "wcn_drv");
+#endif
 #else
 		if (reg_VCN33_WIFI)
 			regulator_disable(reg_VCN33_WIFI);
