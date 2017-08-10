@@ -1046,6 +1046,7 @@ void EnableAfe(bool bEnable)
 			EnableAPLLTunerbySampleRate(44100);
 			EnableAPLLTunerbySampleRate(48000);
 		}
+		afe_on = true;
 	}
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
