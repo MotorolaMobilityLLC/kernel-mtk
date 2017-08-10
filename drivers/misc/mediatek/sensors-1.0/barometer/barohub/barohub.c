@@ -35,6 +35,8 @@ struct barohub_ipi_data {
 	atomic_t suspend;
 	struct work_struct init_done_work;
 	atomic_t scp_init_done;
+	bool factory_enable;
+	bool android_enable;
 };
 
 #define BAR_TAG                  "[barometer] "
@@ -198,6 +200,10 @@ static int barohub_delete_attr(struct device_driver *driver)
 static int baro_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
+	struct barohub_ipi_data *obj = obj_ipi_data;
+
+	if (READ_ONCE(obj->android_enable) == false)
+		return 0;
 
 	if (event->flush_action == FLUSH_ACTION)
 		err = baro_flush_report();
@@ -209,6 +215,12 @@ static int baro_recv_data(struct data_unit_t *event, void *reserved)
 static int barohub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
 {
 	int err = 0;
+	struct barohub_ipi_data *obj = obj_ipi_data;
+
+	if (enabledisable == true)
+		WRITE_ONCE(obj->factory_enable, true);
+	else
+		WRITE_ONCE(obj->factory_enable, false);
 
 	if (enabledisable == true) {
 		err = sensor_set_delay_to_hub(ID_PRESSURE, sample_periods_ms);
@@ -288,6 +300,12 @@ static int barohub_enable_nodata(int en)
 {
 	int res = 0;
 	bool power = false;
+	struct barohub_ipi_data *obj = obj_ipi_data;
+
+	if (en == true)
+		WRITE_ONCE(obj->android_enable, true);
+	else
+		WRITE_ONCE(obj->android_enable, false);
 
 	if (en == 1)
 		power = true;
@@ -391,6 +409,8 @@ static int barohub_probe(struct platform_device *pdev)
 
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
+	WRITE_ONCE(obj->factory_enable, false);
+	WRITE_ONCE(obj->android_enable, false);
 
 	atomic_set(&obj->scp_init_done, 0);
 	scp_power_monitor_register(&scp_ready_notifier);

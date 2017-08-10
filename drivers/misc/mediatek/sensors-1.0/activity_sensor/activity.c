@@ -35,7 +35,7 @@ static void act_work_func(struct work_struct *work)
 
 	cxt = act_context_obj;
 	if (cxt->act_data.get_data == NULL)
-		ACT_ERR("act driver not register data path\n");
+		ACT_PR_ERR("act driver not register data path\n");
 
 	time.tv_sec = time.tv_nsec = 0;
 	time = get_monotonic_coarse();
@@ -47,7 +47,7 @@ static void act_work_func(struct work_struct *work)
 	err = cxt->act_data.get_data(&sensor_data, &status);
 
 	if (err) {
-		ACT_ERR("get act data fails!!\n");
+		ACT_PR_ERR("get act data fails!!\n");
 		goto act_loop;
 	} else {
 		cxt->drv_data.probability[0] = sensor_data.probability[0];
@@ -116,7 +116,7 @@ static struct act_context *act_context_alloc_object(void)
 
 	ACT_LOG("act_context_alloc_object++++\n");
 	if (!obj) {
-		ACT_ERR("Alloc act object error!\n");
+		ACT_PR_ERR("Alloc act object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz set work queue delay time 200ms */
@@ -137,7 +137,7 @@ static struct act_context *act_context_alloc_object(void)
 	ACT_LOG("act_context_alloc_object----\n");
 	return obj;
 }
-
+#ifndef CONFIG_NANOHUB
 static int act_enable_and_batch(void)
 {
 	struct act_context *cxt = act_context_obj;
@@ -171,7 +171,7 @@ static int act_enable_and_batch(void)
 		/* turn off the power */
 		err = cxt->act_ctl.enable_nodata(0);
 		if (err) {
-			ACT_ERR("act turn off power err = %d\n", err);
+			ACT_PR_ERR("act turn off power err = %d\n", err);
 			return -1;
 		}
 		ACT_LOG("act turn off power done\n");
@@ -186,7 +186,7 @@ static int act_enable_and_batch(void)
 		ACT_LOG("ACT power on\n");
 		err = cxt->act_ctl.enable_nodata(1);
 		if (err) {
-			ACT_ERR("act turn on power err = %d\n", err);
+			ACT_PR_ERR("act turn on power err = %d\n", err);
 			return -1;
 		}
 		ACT_LOG("act turn on power done\n");
@@ -203,7 +203,7 @@ static int act_enable_and_batch(void)
 		else
 			err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
 		if (err) {
-			ACT_ERR("act set batch(ODR) err %d\n", err);
+			ACT_PR_ERR("act set batch(ODR) err %d\n", err);
 			return -1;
 		}
 		ACT_LOG("act set ODR, fifo latency done\n");
@@ -226,11 +226,11 @@ static int act_enable_and_batch(void)
 	}
 	/* just for debug, remove it when everything is ok */
 	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		ACT_ERR("batch will call firstly in API1.3, do nothing\n");
+		ACT_PR_ERR("batch will call firstly in API1.3, do nothing\n");
 
 	return 0;
 }
-
+#endif
 static ssize_t act_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -244,15 +244,23 @@ static ssize_t act_store_active(struct device *dev, struct device_attribute *att
 	else if (!strncmp(buf, "0", 1))
 		cxt->enable = 0;
 	else {
-		ACT_ERR(" act_store_active error !!\n");
+		ACT_PR_ERR(" act_store_active error !!\n");
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->act_ctl.enable_nodata(cxt->enable);
+	if (err) {
+		ACT_PR_ERR("act turn on power err = %d\n", err);
+		goto err_out;
+	}
+#else
 	err = act_enable_and_batch();
+#endif
 	ACT_LOG(" act_store_active done\n");
 err_out:
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -281,11 +289,21 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 		&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4) {
-		ACT_ERR("act_store_batch param error: err = %d\n", err);
+		ACT_PR_ERR("act_store_batch param error: err = %d\n", err);
 		return -1;
 	}
 	mutex_lock(&act_context_obj->act_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->act_ctl.is_support_batch)
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		ACT_PR_ERR("act set batch(ODR) err %d\n", err);
+#else
 	err = act_enable_and_batch();
+#endif
+
 	mutex_unlock(&act_context_obj->act_op_mutex);
 	return err;
 }
@@ -303,20 +321,20 @@ static ssize_t act_store_flush(struct device *dev, struct device_attribute *attr
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		ACT_ERR("act_store_flush param error: err = %d\n", err);
+		ACT_PR_ERR("act_store_flush param error: err = %d\n", err);
 
-	ACT_ERR("act_store_flush param: handle %d\n", handle);
+	ACT_PR_ERR("act_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&act_context_obj->act_op_mutex);
 	cxt = act_context_obj;
 	if (NULL != cxt->act_ctl.flush)
 		err = cxt->act_ctl.flush();
 	else
-		ACT_ERR("ACT DRIVER OLD ARCHITECTURE DON'T SUPPORT ACT COMMON VERSION FLUSH\n");
+		ACT_PR_ERR("ACT DRIVER OLD ARCHITECTURE DON'T SUPPORT ACT COMMON VERSION FLUSH\n");
 	if (err < 0)
-		ACT_ERR("act enable flush err %d\n", err);
+		ACT_PR_ERR("act enable flush err %d\n", err);
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t act_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -397,7 +415,7 @@ int act_driver_add(struct act_init_info *obj)
 			ACT_LOG("register act driver for the first time\n");
 			err = platform_driver_register(&activity_driver);
 			if (err)
-				ACT_ERR("failed to register act driver already exist\n");
+				ACT_PR_ERR("failed to register act driver already exist\n");
 		}
 
 		if (NULL == activity_init_list[i]) {
@@ -407,7 +425,7 @@ int act_driver_add(struct act_init_info *obj)
 		}
 	}
 	if (NULL == activity_init_list[i]) {
-		ACT_ERR("act driver add err\n");
+		ACT_PR_ERR("act driver add err\n");
 		err = -1;
 	}
 
@@ -452,7 +470,7 @@ static int act_misc_init(struct act_context *cxt)
 	cxt->mdev.fops = &activity_fops;
 	err = sensor_attr_register(&cxt->mdev);
 	if (err)
-		ACT_ERR("unable to register act misc device!!\n");
+		ACT_PR_ERR("unable to register act misc device!!\n");
 
 	return err;
 }
@@ -512,12 +530,12 @@ int act_register_control_path(struct act_control_path *ctl)
 	/* add misc dev for sensor hal control cmd */
 	err = act_misc_init(act_context_obj);
 	if (err) {
-		ACT_ERR("unable to register act misc device!!\n");
+		ACT_PR_ERR("unable to register act misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&act_context_obj->mdev.this_device->kobj, &act_attribute_group);
 	if (err < 0) {
-		ACT_ERR("unable to create act attribute file\n");
+		ACT_PR_ERR("unable to create act attribute file\n");
 		return -3;
 	}
 
@@ -548,7 +566,7 @@ int act_data_report(struct hwm_sensor_data *data, int status)
 
 	err = sensor_input_event(act_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACT_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -561,7 +579,7 @@ int act_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(act_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACT_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -574,19 +592,19 @@ static int act_probe(void)
 	act_context_obj = act_context_alloc_object();
 	if (!act_context_obj) {
 		err = -ENOMEM;
-		ACT_ERR("unable to allocate devobj!\n");
+		ACT_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 	/* init real acteleration driver */
 	err = act_real_driver_init();
 	if (err) {
-		ACT_ERR("act real driver init fail\n");
+		ACT_PR_ERR("act real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 	/* err = act_factory_device_init(); */
 	/* if(err) */
 	/* { */
-	/* ACT_ERR("act_factory_device_init fail\n"); */
+	/* ACT_PR_ERR("act_factory_device_init fail\n"); */
 	/* } */
 
 	ACT_LOG("----act_probe OK !!\n");
@@ -613,7 +631,7 @@ static int act_remove(void)
 
 	err = sensor_attr_deregister(&act_context_obj->mdev);
 	if (err)
-		ACT_ERR("misc_deregister fail: %d\n", err);
+		ACT_PR_ERR("misc_deregister fail: %d\n", err);
 	kfree(act_context_obj);
 
 	return 0;
@@ -623,7 +641,7 @@ static int __init act_init(void)
 	ACT_FUN(f);
 
 	if (act_probe()) {
-		ACT_ERR("failed to register act driver\n");
+		ACT_PR_ERR("failed to register act driver\n");
 		return -ENODEV;
 	}
 

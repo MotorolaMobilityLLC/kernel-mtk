@@ -43,12 +43,12 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
-
+#ifndef CONFIG_NANOHUB
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
 }
-
+#endif
 static void mag_work_func(struct work_struct *work)
 {
 	struct mag_context *cxt = NULL;
@@ -147,6 +147,7 @@ static struct mag_context *mag_context_alloc_object(void)
 	return obj;
 }
 
+#ifndef CONFIG_NANOHUB
 static int mag_enable_and_batch(void)
 {
 	struct mag_context *cxt = mag_context_obj;
@@ -229,6 +230,7 @@ static int mag_enable_and_batch(void)
 
 	return 0;
 }
+#endif
 /*----------------------------------------------------------------------------*/
 static ssize_t mag_show_magdev(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -256,7 +258,16 @@ static ssize_t mag_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->mag_ctl.enable(cxt->enable);
+	if (err) {
+		MAG_PR_ERR("mag turn on power err = %d\n", err);
+		goto err_out;
+	}
+#else
 	err = mag_enable_and_batch();
+#endif
+
 err_out:
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_active done\n");
@@ -290,7 +301,16 @@ static ssize_t mag_store_batch(struct device *dev, struct device_attribute *attr
 	}
 
 	mutex_lock(&mag_context_obj->mag_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->mag_ctl.is_support_batch)
+		err = cxt->mag_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->mag_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		MAG_PR_ERR("mag set batch(ODR) err %d\n", err);
+#else
 	err = mag_enable_and_batch();
+#endif
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_batch done: %d\n", cxt->is_batch_enable);
 	return err;
@@ -333,7 +353,7 @@ static ssize_t mag_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		MAG_PR_ERR("mag enable flush err %d\n", err);
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t mag_show_cali(struct device *dev,
@@ -660,7 +680,7 @@ int mag_data_report(struct mag_data *data)
 		mark_timestamp(ID_MAGNETIC, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -678,7 +698,7 @@ int mag_bias_report(struct mag_data *data)
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -692,7 +712,7 @@ int mag_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
-		MAG_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int mag_probe(void)

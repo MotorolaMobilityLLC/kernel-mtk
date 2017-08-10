@@ -61,6 +61,8 @@ struct maghub_ipi_data {
 	atomic_t first_ready_after_boot;
 	struct work_struct init_done_work;
 	struct data_unit_t m_data_t;
+	bool factory_enable;
+	bool android_enable;
 };
 static int maghub_m_setPowerMode(bool enable)
 {
@@ -284,6 +286,10 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 	struct mag_data data;
+	struct maghub_ipi_data *obj = mag_ipi_data;
+
+	if (READ_ONCE(obj->android_enable) == false)
+		return 0;
 
 	data.x = event->magnetic_t.x;
 	data.y = event->magnetic_t.y;
@@ -292,10 +298,10 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
 	data.reserved[0] = event->reserve[0];
 
-	if (event->flush_action == FLUSH_ACTION)
-		err = mag_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = mag_data_report(&data);
+	else if (event->flush_action == FLUSH_ACTION)
+		err = mag_flush_report();
 	else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->magnetic_t.x_bias;
 		data.y = event->magnetic_t.y_bias;
@@ -497,6 +503,12 @@ static struct miscdevice maghub_misc_device = {
 static int maghub_enable(int en)
 {
 	int res = 0;
+	struct maghub_ipi_data *obj = mag_ipi_data;
+
+	if (en == true)
+		WRITE_ONCE(obj->android_enable, true);
+	else
+		WRITE_ONCE(obj->android_enable, false);
 
 	res = maghub_m_setPowerMode(en);
 	if (res)
@@ -592,6 +604,8 @@ static int maghub_probe(struct platform_device *pdev)
 	}
 	mag_ipi_data = data;
 	atomic_set(&data->trace, 0);
+	WRITE_ONCE(data->factory_enable, false);
+	WRITE_ONCE(data->android_enable, false);
 
 	platform_set_drvdata(pdev, data);
 

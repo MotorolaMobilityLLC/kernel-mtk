@@ -39,10 +39,10 @@
 #include "sensor_attr.h"
 #include "sensor_event.h"
 #define BARO_TAG					"<BAROMETER> "
-#define BARO_FUN(f)				pr_debug(BARO_TAG"%s\n", __func__)
+#define BARO_FUN(f)					pr_debug(BARO_TAG"%s\n", __func__)
 #define BARO_PR_ERR(fmt, args...)	pr_err(BARO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define BARO_LOG(fmt, args...)	pr_debug(BARO_TAG fmt, ##args)
-#define BARO_VER(fmt, args...)	pr_debug(BARO_TAG"%s: "fmt, __func__, ##args)
+#define BARO_LOG(fmt, args...)		pr_debug(BARO_TAG fmt, ##args)
+#define BARO_VER(fmt, args...)		pr_debug(BARO_TAG"%s: "fmt, __func__, ##args)
 
 #define OP_BARO_DELAY		0X01
 #define	OP_BARO_ENABLE		0X02

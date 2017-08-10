@@ -45,7 +45,7 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	static int count;
 
 	if (obj == NULL) {
-		ACC_ERR("NULL pointer\n");
+		ACC_PR_ERR("NULL pointer\n");
 		return;
 	}
 
@@ -70,11 +70,12 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
 
+#ifndef CONFIG_NANOHUB
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
 }
-
+#endif
 static void acc_work_func(struct work_struct *work)
 {
 	struct acc_context *cxt = NULL;
@@ -87,7 +88,7 @@ static void acc_work_func(struct work_struct *work)
 	delay_ms = atomic_read(&cxt->delay);
 
 	if (cxt->acc_data.get_data == NULL) {
-		ACC_ERR("acc driver not register data path\n");
+		ACC_PR_ERR("acc driver not register data path\n");
 		return;
 	}
 
@@ -96,7 +97,7 @@ static void acc_work_func(struct work_struct *work)
 	err = cxt->acc_data.get_data(&x, &y, &z, &status);
 
 	if (err) {
-		ACC_ERR("get acc data fails!!\n");
+		ACC_PR_ERR("get acc data fails!!\n");
 		goto acc_loop;
 	} else {
 			if (0 == x && 0 == y && 0 == z)
@@ -129,7 +130,6 @@ static void acc_work_func(struct work_struct *work)
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		struct acc_data tmp_data = cxt->drv_data;
-
 		pre_ns += delay_ms*1000000LL;
 		tmp_data.timestamp = pre_ns;
 		acc_data_report(&tmp_data);
@@ -160,7 +160,7 @@ static struct acc_context *acc_context_alloc_object(void)
 
 	ACC_LOG("acc_context_alloc_object++++\n");
 	if (!obj) {
-		ACC_ERR("Alloc accel object error!\n");
+		ACC_PR_ERR("Alloc accel object error!\n");
 		return NULL;
 	}
 	atomic_set(&obj->delay, 200);	/*5Hz ,  set work queue delay time 200ms */
@@ -190,6 +190,7 @@ static struct acc_context *acc_context_alloc_object(void)
 	return obj;
 }
 
+#ifndef CONFIG_NANOHUB
 static int acc_enable_and_batch(void)
 {
 	struct acc_context *cxt = acc_context_obj;
@@ -216,7 +217,7 @@ static int acc_enable_and_batch(void)
 		if (cxt->is_active_data == false && cxt->is_active_nodata == false) {
 			err = cxt->acc_ctl.enable_nodata(0);
 			if (err) {
-				ACC_ERR("acc turn off power err = %d\n", err);
+				ACC_PR_ERR("acc turn off power err = %d\n", err);
 				return -1;
 			}
 			ACC_LOG("acc turn off power done\n");
@@ -233,7 +234,7 @@ static int acc_enable_and_batch(void)
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->acc_ctl.enable_nodata(1);
 			if (err) {
-				ACC_ERR("acc turn on power err = %d\n", err);
+				ACC_PR_ERR("acc turn on power err = %d\n", err);
 				return -1;
 			}
 			ACC_LOG("acc turn on power done\n");
@@ -250,7 +251,7 @@ static int acc_enable_and_batch(void)
 		else
 			err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
 		if (err) {
-			ACC_ERR("acc set batch(ODR) err %d\n", err);
+			ACC_PR_ERR("acc set batch(ODR) err %d\n", err);
 			return -1;
 		}
 		ACC_LOG("acc set ODR, fifo latency done\n");
@@ -273,11 +274,11 @@ static int acc_enable_and_batch(void)
 	}
 	/* just for debug, remove it when everything is ok */
 	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		ACC_ERR("batch will call firstly in API1.3, do nothing\n");
+		ACC_PR_ERR("batch will call firstly in API1.3, do nothing\n");
 
 	return 0;
 }
-
+#endif
 static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribute *attr,
 				       const char *buf, size_t count)
 {
@@ -294,7 +295,7 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 		cxt->enable = 0;
 		cxt->is_active_nodata = false;
 	} else {
-		ACC_ERR(" acc_store enable nodata cmd error !!\n");
+		ACC_PR_ERR(" acc_store enable nodata cmd error !!\n");
 		err = -1;
 		goto err_out;
 	}
@@ -302,8 +303,9 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
+#else
+	return count;
 #endif
-	/* return count; */
 }
 
 static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
@@ -329,11 +331,30 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 		cxt->enable = 0;
 		cxt->is_active_data = false;
 	} else {
-		ACC_ERR(" acc_store_active error !!\n");
+		ACC_PR_ERR(" acc_store_active error !!\n");
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
+		err = cxt->acc_ctl.enable_nodata(1);
+		if (err) {
+			ACC_PR_ERR("acc turn on power err = %d\n", err);
+			goto err_out;
+		}
+		ACC_LOG("acc turn on power done\n");
+	} else {
+		err = cxt->acc_ctl.enable_nodata(0);
+		if (err) {
+			ACC_PR_ERR("acc turn off power err = %d\n", err);
+			goto err_out;
+		}
+		ACC_LOG("acc turn off power done\n");
+	}
+#else
 	err = acc_enable_and_batch();
+#endif
+
 err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
@@ -367,12 +388,23 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 		&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4) {
-		ACC_ERR("acc_store_batch param error: err = %d\n", err);
+		ACC_PR_ERR("acc_store_batch param error: err = %d\n", err);
 		return -1;
 	}
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
+
+#ifdef CONFIG_NANOHUB
+	if (cxt->acc_ctl.is_support_batch)
+		err = cxt->acc_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		ACC_PR_ERR("acc set batch(ODR) err %d\n", err);
+#else
 	err = acc_enable_and_batch();
+#endif
+
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
 }
@@ -389,20 +421,20 @@ static ssize_t acc_store_flush(struct device *dev, struct device_attribute *attr
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		ACC_ERR("acc_store_flush param error: err = %d\n", err);
+		ACC_PR_ERR("acc_store_flush param error: err = %d\n", err);
 
-	ACC_ERR("acc_store_flush param: handle %d\n", handle);
+	ACC_PR_ERR("acc_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
 	if (cxt->acc_ctl.flush != NULL)
 		err = cxt->acc_ctl.flush();
 	else
-		ACC_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION FLUSH\n");
+		ACC_PR_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION FLUSH\n");
 	if (err < 0)
-		ACC_ERR("acc enable flush err %d\n", err);
+		ACC_PR_ERR("acc enable flush err %d\n", err);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t acc_show_flush(struct device *dev,
@@ -426,7 +458,7 @@ static ssize_t acc_store_cali(struct device *dev, struct device_attribute *attr,
 
 	cali_buf = vzalloc(count);
 	if (cali_buf == NULL) {
-		ACC_ERR("kzalloc fail\n");
+		ACC_PR_ERR("kzalloc fail\n");
 		return -EFAULT;
 	}
 	memcpy(cali_buf, buf, count);
@@ -436,9 +468,9 @@ static ssize_t acc_store_cali(struct device *dev, struct device_attribute *attr,
 	if (cxt->acc_ctl.set_cali != NULL)
 		err = cxt->acc_ctl.set_cali(cali_buf, count);
 	else
-		ACC_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION FLUSH\n");
+		ACC_PR_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION FLUSH\n");
 	if (err < 0)
-		ACC_ERR("acc set cali err %d\n", err);
+		ACC_PR_ERR("acc set cali err %d\n", err);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	vfree(cali_buf);
 	return count;
@@ -505,14 +537,14 @@ int acc_driver_add(struct acc_init_info *obj)
 	int i = 0;
 
 	if (!obj) {
-		ACC_ERR("ACC driver add fail, acc_init_info is NULL\n");
+		ACC_PR_ERR("ACC driver add fail, acc_init_info is NULL\n");
 		return -1;
 	}
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
 		if ((i == 0) && (gsensor_init_list[0] == NULL)) {
 			ACC_LOG("register gensor driver for the first time\n");
 			if (platform_driver_register(&gsensor_driver))
-				ACC_ERR("failed to register gensor driver already exist\n");
+				ACC_PR_ERR("failed to register gensor driver already exist\n");
 		}
 
 		if (gsensor_init_list[i] == NULL) {
@@ -522,7 +554,7 @@ int acc_driver_add(struct acc_init_info *obj)
 		}
 	}
 	if (i >= MAX_CHOOSE_G_NUM) {
-		ACC_ERR("ACC driver add err\n");
+		ACC_PR_ERR("ACC driver add err\n");
 		err = -1;
 	}
 
@@ -567,9 +599,9 @@ static int acc_misc_init(struct acc_context *cxt)
 	cxt->mdev.name = ACC_MISC_DEV_NAME;
 	cxt->mdev.fops = &accel_fops;
 	err = sensor_attr_register(&cxt->mdev);
-	ACC_ERR("accel_fops address: %p!!\n", &accel_fops);
+	ACC_PR_ERR("accel_fops address: %p!!\n", &accel_fops);
 	if (err)
-		ACC_ERR("unable to register acc misc device!!\n");
+		ACC_PR_ERR("unable to register acc misc device!!\n");
 	/* dev_set_drvdata(cxt->mdev.this_device, cxt); */
 	return err;
 }
@@ -632,12 +664,12 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	/* add misc dev for sensor hal control cmd */
 	err = acc_misc_init(acc_context_obj);
 	if (err) {
-		ACC_ERR("unable to register acc misc device!!\n");
+		ACC_PR_ERR("unable to register acc misc device!!\n");
 		return -2;
 	}
 	err = sysfs_create_group(&acc_context_obj->mdev.this_device->kobj, &acc_attribute_group);
 	if (err < 0) {
-		ACC_ERR("unable to create acc attribute file\n");
+		ACC_PR_ERR("unable to create acc attribute file\n");
 		return -3;
 	}
 
@@ -658,12 +690,12 @@ int acc_data_report(struct acc_data *data)
 	event.word[1] = data->y;
 	event.word[2] = data->z;
 	event.reserved = data->reserved[0];
-	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", data->x, data->y, data->z, data->timestamp); */
+	/* ACC_PR_ERR("x:%d,y:%d,z:%d,time:%lld\n", data->x, data->y, data->z, data->timestamp); */
 	if (event.reserved == 1)
 		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT, ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACC_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -677,10 +709,28 @@ int acc_bias_report(struct acc_data *data)
 	event.word[0] = data->x;
 	event.word[1] = data->y;
 	event.word[2] = data->z;
-	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
+	/* ACC_PR_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACC_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
+	return err;
+}
+
+int acc_cali_report(struct acc_data *data)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	/* ACC_PR_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
+	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
+	if (err < 0)
+		ACC_PR_ERR("failed due to event buffer full\n");
 	return err;
 }
 
@@ -694,7 +744,7 @@ int acc_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACC_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int acc_probe(void)
@@ -707,13 +757,13 @@ static int acc_probe(void)
 	acc_context_obj = acc_context_alloc_object();
 	if (!acc_context_obj) {
 		err = -ENOMEM;
-		ACC_ERR("unable to allocate devobj!\n");
+		ACC_PR_ERR("unable to allocate devobj!\n");
 		goto exit_alloc_data_failed;
 	}
 	/* init real acceleration driver */
 	err = acc_real_driver_init();
 	if (err) {
-		ACC_ERR("acc real driver init fail\n");
+		ACC_PR_ERR("acc real driver init fail\n");
 		goto real_driver_init_fail;
 	}
 
@@ -727,7 +777,7 @@ static int acc_probe(void)
  exit_alloc_data_failed:
 
 
-	ACC_ERR("----accel_probe fail !!!\n");
+	ACC_PR_ERR("----accel_probe fail !!!\n");
 	return err;
 }
 
@@ -741,7 +791,7 @@ static int acc_remove(void)
 
 	err = sensor_attr_deregister(&acc_context_obj->mdev);
 	if (err)
-		ACC_ERR("misc_deregister fail: %d\n", err);
+		ACC_PR_ERR("misc_deregister fail: %d\n", err);
 	kfree(acc_context_obj);
 
 	return 0;
@@ -752,7 +802,7 @@ static int __init acc_init(void)
 	ACC_LOG("acc_init\n");
 
 	if (acc_probe()) {
-		ACC_ERR("failed to register acc driver\n");
+		ACC_PR_ERR("failed to register acc driver\n");
 		return -ENODEV;
 	}
 

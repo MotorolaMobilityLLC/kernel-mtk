@@ -60,7 +60,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 				ALSPS_LOG("ALSPS_SET_PS_MODE fail!\n");
 				return -EINVAL;
 			}
-			ALSPS_ERR("ALSPS_SET_PS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
+			ALSPS_PR_ERR("ALSPS_SET_PS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
 		} else {
 			ALSPS_LOG("ALSPS_SET_PS_MODE NULL\n");
 			return -EINVAL;
@@ -89,7 +89,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 				ALSPS_LOG("ALSPS_SET_ALS_MODE fail!\n");
 				return -EINVAL;
 			}
-			ALSPS_ERR("ALSPS_SET_ALS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
+			ALSPS_PR_ERR("ALSPS_SET_ALS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
 		} else {
 			ALSPS_LOG("ALSPS_SET_ALS_MODE NULL\n");
 			return -EINVAL;
@@ -232,7 +232,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		}
 		return 0;
 	default:
-		ALSPS_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		ALSPS_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 	return 0;
@@ -264,7 +264,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 		err = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)arg32);
 		break;
 	default:
-		ALSPS_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		ALSPS_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		err = -ENOIOCTLCMD;
 		break;
 	}

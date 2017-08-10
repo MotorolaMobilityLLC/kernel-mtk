@@ -42,10 +42,13 @@ struct gyrohub_ipi_data {
 	atomic_t suspend;
 	int32_t static_cali[GYROHUB_AXES_NUM];
 	int32_t dynamic_cali[GYROHUB_AXES_NUM];
+	int32_t temperature_cali[6];
 	struct work_struct init_done_work;
 	/*data */
 	atomic_t scp_init_done;
 	atomic_t first_ready_after_boot;
+	bool factory_enable;
+	bool android_enable;
 };
 static struct gyrohub_ipi_data *obj_ipi_data;
 
@@ -396,6 +399,7 @@ static int gyrohub_delete_attr(struct device_driver *driver)
 
 static void scp_init_work_done(struct work_struct *work)
 {
+	int32_t cfg_data[12] = {0};
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
 
@@ -408,7 +412,21 @@ static void scp_init_work_done(struct work_struct *work)
 			err = gyrohub_WriteCalibration_scp(obj->static_cali);
 			if (err < 0)
 				GYROS_ERR("gyrohub_WriteCalibration_scp fail\n");
-			err = sensor_cfg_to_hub(ID_GYROSCOPE, (uint8_t *)obj->dynamic_cali, sizeof(obj->dynamic_cali));
+			cfg_data[0] = obj->dynamic_cali[0];
+			cfg_data[1] = obj->dynamic_cali[1];
+			cfg_data[2] = obj->dynamic_cali[2];
+
+			cfg_data[3] = obj->static_cali[0];
+			cfg_data[4] = obj->static_cali[1];
+			cfg_data[5] = obj->static_cali[2];
+
+			cfg_data[6] = obj->temperature_cali[0];
+			cfg_data[7] = obj->temperature_cali[1];
+			cfg_data[8] = obj->temperature_cali[2];
+			cfg_data[9] = obj->temperature_cali[3];
+			cfg_data[10] = obj->temperature_cali[4];
+			cfg_data[11] = obj->temperature_cali[5];
+			err = sensor_cfg_to_hub(ID_GYROSCOPE, (uint8_t *)cfg_data, sizeof(cfg_data));
 			if (err < 0)
 				GYROS_ERR("sensor_cfg_to_hub fail\n");
 		}
@@ -421,18 +439,21 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 	struct gyro_data data;
 
-	data.x = event->gyroscope_t.x;
-	data.y = event->gyroscope_t.y;
-	data.z = event->gyroscope_t.z;
-	data.status = event->gyroscope_t.status;
-	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
-	data.reserved[0] = event->reserve[0];
-
-	if (event->flush_action == FLUSH_ACTION)
-		err = gyro_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION) {
+		if (READ_ONCE(obj->android_enable) == false)
+			return 0;
+		data.x = event->gyroscope_t.x;
+		data.y = event->gyroscope_t.y;
+		data.z = event->gyroscope_t.z;
+		data.status = event->gyroscope_t.status;
+		data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+		data.reserved[0] = event->reserve[0];
 		err = gyro_data_report(&data);
-	else if (event->flush_action == BIAS_ACTION) {
+	} else if (event->flush_action == FLUSH_ACTION) {
+		if (READ_ONCE(obj->android_enable) == false)
+			return 0;
+		err = gyro_flush_report();
+	} else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->gyroscope_t.x_bias;
 		data.y = event->gyroscope_t.y_bias;
 		data.z = event->gyroscope_t.z_bias;
@@ -440,12 +461,35 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 		obj->dynamic_cali[GYROHUB_AXIS_X] = event->gyroscope_t.x_bias;
 		obj->dynamic_cali[GYROHUB_AXIS_Y] = event->gyroscope_t.y_bias;
 		obj->dynamic_cali[GYROHUB_AXIS_Z] = event->gyroscope_t.z_bias;
+	} else if (event->flush_action == CALI_ACTION) {
+		data.x = event->gyroscope_t.x_bias;
+		data.y = event->gyroscope_t.y_bias;
+		data.z = event->gyroscope_t.z_bias;
+		err = gyro_bias_report(&data);
+		obj->static_cali[GYROHUB_AXIS_X] = event->gyroscope_t.x_bias;
+		obj->static_cali[GYROHUB_AXIS_Y] = event->gyroscope_t.y_bias;
+		obj->static_cali[GYROHUB_AXIS_Z] = event->gyroscope_t.z_bias;
+	} else if (event->flush_action == TEMP_ACTION) {
+		/* temp action occur when gyro disable, so we always should send data to userspace */
+		err = gyro_temp_report(event->data);
+		obj->temperature_cali[0] = event->data[0];
+		obj->temperature_cali[1] = event->data[1];
+		obj->temperature_cali[2] = event->data[2];
+		obj->temperature_cali[3] = event->data[3];
+		obj->temperature_cali[4] = event->data[4];
+		obj->temperature_cali[5] = event->data[5];
 	}
 	return err;
 }
 static int gyrohub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
 {
 	int err = 0;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
+
+	if (enabledisable == true)
+		WRITE_ONCE(obj->factory_enable, true);
+	else
+		WRITE_ONCE(obj->factory_enable, false);
 
 	if (enabledisable == true) {
 		err = sensor_set_delay_to_hub(ID_GYROSCOPE, sample_periods_ms);
@@ -538,11 +582,16 @@ static int gyrohub_enable_nodata(int en)
 {
 	int res = 0;
 	bool power = false;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	if (en == 1)
+	if (en == 1) {
 		power = true;
-	if (en == 0)
+		WRITE_ONCE(obj->android_enable, true);
+	}
+	if (en == 0) {
 		power = false;
+		WRITE_ONCE(obj->android_enable, false);
+	}
 
 	res = gyrohub_SetPowerMode(power);
 	if (res < 0) {
@@ -591,9 +640,23 @@ static int gyrohub_flush(void)
 
 static int gyrohub_set_cali(uint8_t *data, uint8_t count)
 {
+	int32_t *buf = (int32_t *)data;
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	memcpy(obj->dynamic_cali, data, count);
+	obj->dynamic_cali[0] = buf[0];
+	obj->dynamic_cali[1] = buf[1];
+	obj->dynamic_cali[2] = buf[2];
+
+	obj->static_cali[0] = buf[3];
+	obj->static_cali[1] = buf[4];
+	obj->static_cali[2] = buf[5];
+
+	obj->temperature_cali[0] = buf[6];
+	obj->temperature_cali[1] = buf[7];
+	obj->temperature_cali[2] = buf[8];
+	obj->temperature_cali[3] = buf[9];
+	obj->temperature_cali[4] = buf[10];
+	obj->temperature_cali[5] = buf[11];
 	return sensor_cfg_to_hub(ID_GYROSCOPE, data, count);
 }
 
@@ -691,6 +754,8 @@ static int gyrohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
 	atomic_set(&obj->scp_init_done, 0);
+	WRITE_ONCE(obj->factory_enable, false);
+	WRITE_ONCE(obj->android_enable, false);
 	INIT_WORK(&obj->init_done_work, scp_init_work_done);
 
 	err = gpio_config();

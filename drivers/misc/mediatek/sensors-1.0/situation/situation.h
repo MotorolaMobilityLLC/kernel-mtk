@@ -29,7 +29,7 @@
 
 #define SITUATION_TAG		            "<SITUATION> "
 #define SITUATION_FUN(f)		        pr_warn(SITUATION_TAG"%s\n", __func__)
-#define SITUATION_ERR(fmt, args...)		pr_warn(SITUATION_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define SITUATION_PR_ERR(fmt, args...)	pr_err(SITUATION_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define SITUATION_LOG(fmt, args...)		pr_warn(SITUATION_TAG fmt, ##args)
 #define SITUATION_VER(fmt, args...)		pr_warn(SITUATION_TAG"%s: "fmt, __func__, ##args)
 

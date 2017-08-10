@@ -39,11 +39,11 @@
 #include "sensor_attr.h"
 #include "sensor_event.h"
 
-#define ACT_TAG					"<ACTIVITY> "
-#define ACT_FUN(f)				pr_debug(ACT_TAG"%s\n", __func__)
-#define ACT_ERR(fmt, args...)	pr_err(ACT_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define ACT_LOG(fmt, args...)	pr_debug(ACT_TAG fmt, ##args)
-#define ACT_VER(fmt, args...)   pr_debug(ACT_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define ACT_TAG						"<ACTIVITY> "
+#define ACT_FUN(f)					pr_debug(ACT_TAG"%s\n", __func__)
+#define ACT_PR_ERR(fmt, args...)	pr_err(ACT_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define ACT_LOG(fmt, args...)		pr_debug(ACT_TAG fmt, ##args)
+#define ACT_VER(fmt, args...)		pr_debug(ACT_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
 
 #define OP_ACT_DELAY	0X01
 #define	OP_ACT_ENABLE	0X02

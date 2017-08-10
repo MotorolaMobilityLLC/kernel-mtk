@@ -69,11 +69,12 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
 
+#ifndef CONFIG_NANOHUB
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
 }
-
+#endif
 static void gyro_work_func(struct work_struct *work)
 {
 
@@ -184,6 +185,7 @@ static struct gyro_context *gyro_context_alloc_object(void)
 	return obj;
 }
 
+#ifndef CONFIG_NANOHUB
 static int gyro_enable_and_batch(void)
 {
 	struct gyro_context *cxt = gyro_context_obj;
@@ -271,7 +273,7 @@ static int gyro_enable_and_batch(void)
 
 	return 0;
 }
-
+#endif
 static ssize_t gyro_show_enable_nodata(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
@@ -300,7 +302,26 @@ static ssize_t gyro_store_enable_nodata(struct device *dev, struct device_attrib
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
+			err = cxt->gyro_ctl.enable_nodata(1);
+			if (err) {
+				GYRO_PR_ERR("gyro turn on power err = %d\n", err);
+				goto err_out;
+			}
+			GYRO_LOG("gyro turn on power done\n");
+		} else {
+			err = cxt->gyro_ctl.enable_nodata(0);
+			if (err) {
+				GYRO_PR_ERR("gyro turn off power err = %d\n", err);
+				goto err_out;
+			}
+			GYRO_LOG("gyro turn off power done\n");
+		}
+#else
 	err = gyro_enable_and_batch();
+#endif
+
 err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return err;
@@ -325,7 +346,25 @@ static ssize_t gyro_store_active(struct device *dev, struct device_attribute *at
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
+		err = cxt->gyro_ctl.enable_nodata(1);
+		if (err) {
+			GYRO_PR_ERR("gyro turn on power err = %d\n", err);
+			return -1;
+		}
+		GYRO_LOG("gyro turn on power done\n");
+	} else {
+		err = cxt->gyro_ctl.enable_nodata(0);
+		if (err) {
+			GYRO_PR_ERR("gyro turn off power err = %d\n", err);
+			return -1;
+		}
+		GYRO_LOG("gyro turn off power done\n");
+	}
+#else
 	err = gyro_enable_and_batch();
+#endif
 err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	GYRO_LOG(" gyro_store_active done\n");
@@ -362,7 +401,16 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 	}
 
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->gyro_ctl.is_support_batch)
+		err = cxt->gyro_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->gyro_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		GYRO_PR_ERR("gyro set batch(ODR) err %d\n", err);
+#else
 	err = gyro_enable_and_batch();
+#endif
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return err;
 }
@@ -394,7 +442,7 @@ static ssize_t gyro_store_flush(struct device *dev, struct device_attribute *att
 	if (err < 0)
 		GYRO_INFO("gyro enable flush err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t gyro_show_flush(struct device *dev,
@@ -704,6 +752,45 @@ int gyro_bias_report(struct gyro_data *data)
 
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
+		pr_err_ratelimited("gyro_bias_report failed due to event buffer full\n");
+	return err;
+}
+
+int gyro_cali_report(struct gyro_data *data)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+
+	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
+	if (err < 0)
+		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
+	return err;
+}
+
+int gyro_temp_report(int32_t *temp)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	event.flush_action = TEMP_ACTION;
+	event.word[0] = temp[0];
+	event.word[1] = temp[1];
+	event.word[2] = temp[2];
+	event.word[3] = temp[3];
+	event.word[4] = temp[4];
+	event.word[5] = temp[5];
+
+	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
+	if (err < 0)
 		GYRO_PR_ERR("gyro_bias_report failed due to event buffer full\n");
 	return err;
 }
@@ -718,7 +805,7 @@ int gyro_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		GYRO_PR_ERR("gyro_flush_report failed due to event buffer full\n");
+		pr_err_ratelimited("gyro_flush_report failed due to event buffer full\n");
 	return err;
 }
 

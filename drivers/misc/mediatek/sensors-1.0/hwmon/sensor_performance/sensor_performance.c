@@ -30,10 +30,10 @@ void mark_timestamp(u8 sensor_type, enum SENSOR_STATUS status, u64 current_time,
 			record[i].sum_kernel_time += record[i].check_time - record[i - 1].check_time;
 		if (record[status].count == LIMIT) {
 			for (i = 0; i < STATUS_MAX; i++) {
-				/*pr_warn("Sensor[%d] ====> last event stage[%d] check time:%lld\n",
+				pr_warn("Sensor[%d] ====> last event stage[%d] check time:%lld\n",
 					sensor_type, i, record[i].check_time);
 				pr_warn("sensor[%d] ====> stage[%d] average delta time:%lld on %d events\n",
-					sensor_type, i, record[i].sum_kernel_time / LIMIT, record[i].count);*/
+					sensor_type, i, record[i].sum_kernel_time / LIMIT, record[i].count);
 				record[i].sum_kernel_time = 0;
 				record[i].count = 0;
 			}
@@ -51,8 +51,8 @@ void mark_ipi_timestamp(uint64_t cyc)
 	ipi_time_records.sum_kernel_time += time_ns;
 	ipi_time_records.count++;
 	if (ipi_time_records.count == LIMIT) {
-		/*pr_warn("Sensor ====> ipi average time on 1000 is :%lld\n",
-			ipi_time_records.sum_kernel_time / LIMIT);*/
+		pr_warn("Sensor ====> ipi average time on 1000 is :%lld\n",
+			ipi_time_records.sum_kernel_time / LIMIT);
 		ipi_time_records.sum_kernel_time = 0;
 		ipi_time_records.count = 0;
 	}
