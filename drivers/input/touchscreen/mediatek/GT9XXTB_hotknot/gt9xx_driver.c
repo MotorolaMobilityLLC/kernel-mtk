@@ -2003,10 +2003,6 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 #endif
 
 	/* mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM); */
-	if ((false == tpdIrqIsEnabled) && (1 == tpdGPIOTiedtoIRQ)) {
-		enable_irq(touch_irq);
-		tpdIrqIsEnabled = true;
-	}
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 	ret = gup_init_update_proc(client);
 
@@ -3218,7 +3214,11 @@ static void tpd_suspend(struct device *h)
 
 	if (buf[2] == 0x55) {
 		mutex_unlock(&i2c_access);
+#ifdef CONFIG_GTP_USE_GPIO_BUT_NOT_PINCTRL
 		gtp_irq_free_disable();
+#else
+		disable_irq(touch_irq);
+#endif
 
 		GTP_INFO("GTP early suspend  pair success");
 		return;
