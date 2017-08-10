@@ -228,53 +228,6 @@ static int mtkfb_release(struct fb_info *info, int user)
 	return 0;
 }
 
-/* Store a single color palette entry into a pseudo palette or the hardware
- * palette if one is available. For now we support only 16bpp and thus store
- * the entry only to the pseudo palette.
- */
-static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
-			   u_int blue, u_int transp, struct fb_info *info)
-{
-	int r = 0;
-	unsigned bpp, m;
-
-	/* NOT_REFERENCED(transp); */
-
-	MSG_FUNC_ENTER();
-
-	bpp = info->var.bits_per_pixel;
-	if (bpp < 32) {
-		m = 1 << bpp;
-		if (regno >= m) {
-			r = -EINVAL;
-			goto exit;
-		}
-	}
-
-	switch (bpp) {
-	case 16:
-		/* RGB 565 */
-		((u32 *) (info->pseudo_palette))[regno] =
-		    ((red & 0xF800) | ((green & 0xFC00) >> 5) | ((blue & 0xF800) >> 11));
-		break;
-	case 32:
-		/* ARGB8888 */
-		((u32 *) (info->pseudo_palette))[regno] =
-		    (0xff000000) |
-		    ((red & 0xFF00) << 8) | ((green & 0xFF00)) | ((blue & 0xFF00) >> 8);
-		break;
-
-		/* TODO: RGB888, BGR888, ABGR8888 */
-
-	default:
-		DISPERR("set color info fail,bpp=%d\n", bpp);
-	}
-
-exit:
-	MSG_FUNC_LEAVE();
-	return r;
-}
-
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
@@ -758,8 +711,6 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	disp_input_config *input;
 
 	/* DISPFUNC(); */
-	if (mtkfb_fbi)
-		fbdev->fb_info = mtkfb_fbi;
 	memset(&fb_layer, 0, sizeof(struct fb_overlay_layer));
 	switch (bpp) {
 	case 16:
@@ -1617,7 +1568,6 @@ static struct fb_ops mtkfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_open = mtkfb_open,
 	.fb_release = mtkfb_release,
-	.fb_setcolreg = mtkfb_setcolreg,
 	.fb_pan_display = mtkfb_pan_display_proxy,
 	.fb_fillrect = cfb_fillrect,
 	.fb_copyarea = cfb_copyarea,
