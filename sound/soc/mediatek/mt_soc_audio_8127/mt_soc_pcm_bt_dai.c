@@ -74,7 +74,7 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream)
 	       (unsigned int)(substream->runtime->period_size));
 
 	/* here to set interrupt */
-	mt_afe_set_irq_counter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size >> 1);
+	mt_afe_set_irq_counter(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->period_size);
 	mt_afe_set_irq_rate(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, substream->runtime->rate);
 	mt_afe_set_irq_state(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, true);
 
