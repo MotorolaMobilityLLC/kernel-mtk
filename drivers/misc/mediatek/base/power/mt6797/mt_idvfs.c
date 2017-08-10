@@ -838,6 +838,12 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 /* return 0:Ok, -1: Invalid Parameter */
 int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 {
+	if ((Channelm >= 3) || (EnDis >= 2)) {
+		/* iDVFS disable stage */
+		idvfs_ver("iDVFS channel = %d, EnDis = %d, out of range\n", Channelm, EnDis);
+		return -1;
+	}
+
 	/* call smc */
 	/* function_id = SMC_IDVFS_BigiDVFSChannel */
 	/* rc = SEC_BIGIDVFSCHANNEL(Channelm, EnDis); */
@@ -845,23 +851,27 @@ int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 	switch (Channelm) {
 	case 0:
 		/* SW channel, bit[1] */
-		SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffd) | (EnDis << 1));
-		AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffd) | (EnDis << 1)));
+		SEC_BIGIDVFS_WRITE(0x10222470,
+			(SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffd) | (EnDis << 1));
+		AEE_RR_REC(idvfs_ctrl_reg,
+			((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffd) | (EnDis << 1)));
 		break;
-
 	case 1:
 		/* OCP channel, bit[2] */
 		if (idvfs_init_opt.ocp_endis) {
-			SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffb) | (EnDis << 2));
-			AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffb) | (EnDis << 1)));
+			SEC_BIGIDVFS_WRITE(0x10222470,
+				(SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffb) | (EnDis << 2));
+			AEE_RR_REC(idvfs_ctrl_reg,
+				((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffb) | (EnDis << 1)));
 		}
 		break;
-
-	case 2:
+	default: /* case 2: */
 		/* OTP channel, bit[3] */
 		if (idvfs_init_opt.otp_endis) {
-			SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffff7) | (EnDis << 3));
-			AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffff7) | (EnDis << 1)));
+			SEC_BIGIDVFS_WRITE(0x10222470,
+				(SEC_BIGIDVFS_READ(0x10222470) & 0xfffffff7) | (EnDis << 3));
+			AEE_RR_REC(idvfs_ctrl_reg,
+				((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffff7) | (EnDis << 1)));
 		}
 		break;
 	}
@@ -872,9 +882,6 @@ int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 	idvfs_ver("iDVFS channel %s select success, EnDis = %u.\n",
 		idvfs_init_opt.channel[Channelm].name, EnDis);
 	return 0;
-
-	/* iDVFS disable stage */
-	return -1;
 }
 
 int BigiDVFSChannelGet(unsigned int Channelm)
@@ -1194,15 +1201,12 @@ unsigned int BigiDVFSSRAMLDOGet(void)
 	case 0:
 		volt = 105000;
 		break;
-
 	case 1:
 		volt = 60000;
 		break;
-
 	case 2:
 		volt = 70000;
 		break;
-
 	default:
 		volt = (((vosel - 3) * 2500) + 90000);
 		break;
@@ -1384,7 +1388,9 @@ static int idvfs_probe(struct platform_device *pdev)
 	err = clk_prepare(idvfs_i2c6_clk);
 	if (err) {
 		idvfs_error("FAILED TO PREPARE I2C CLOCK (%u). iDVFS only 750MHz.\n", err);
+		spin_lock(&idvfs_struct_lock);
 		idvfs_init_opt.idvfs_status = 0;
+		spin_unlock(&idvfs_struct_lock);
 		AEE_RR_REC(idvfs_state_manchine, 0);
 		WARN_ON(1);
 		return err;
@@ -1601,7 +1607,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	case 8:
 		seq_printf(m, "Debug POS_DIV = %u.\n", (SEC_BIGIDVFS_READ(0x102224c8) & 0x7));
 		break;
-	case 10:
+	default: /* case 10: */
 		i = SEC_BIGIDVFS_READ(0x102224c8);
 		seq_printf(m, "Debug cur_vsram[7:0] = %u, cur_vproc[15:8] = %umv, next_vproc[15:8] = %umv.\n",
 		(i & 0xff), ((((i & 0xff00) >> 8) * 10) + 300), ((((i & 0xff0000) >> 16) * 10) + 300));
@@ -1656,7 +1662,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 		case 3:
 			idvfs_info("Input = %u, Para = %u, %u.\n", err, func_para[0], func_para[1]);
 			break;
-		case 4:
+		default: /* case 4: */
 			idvfs_info("Input = %u, Para = %u, %u, %u.\n", err, func_para[0], func_para[1], func_para[2]);
 			break;
 		}
@@ -1809,7 +1815,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 				_idvfs_write(IDVFSPIN_UDI_SDCARD, 0x04414440);
 			rc = 0;
 			break;
-		case 19:
+		default: /* case 19: */
 			/* AUXPIMX swithc */
 			/* 0x10001000 0x2000, GPU, L-LL, BIG sarm ldo probe reg */
 			if (err == 3) {
