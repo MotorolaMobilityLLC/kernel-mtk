@@ -582,6 +582,8 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 	ASSERT(prGlueInfo);
 	ASSERT(prRegInfo);
 
+	kalMemZero(aucTmp, sizeof(aucTmp));
+
 	if ((!prGlueInfo) || (!prRegInfo))
 		return;
 

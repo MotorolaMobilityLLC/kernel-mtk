@@ -560,14 +560,16 @@ static void TdlsCmdTestDataSend(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_
 	P_ADAPTER_T prAdapter;
 	struct sk_buff *prMsduInfo;
 	UINT_8 *prPkt;
-	UINT_8 MAC[6];
+	UINT_8 aucMac[6];
 	UINT_8 ucTxStatus;
 
 	/* init */
 	prAdapter = prGlueInfo->prAdapter;
 
 	/* parse arguments */
-	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, MAC);
+	kalMemZero(aucMac, sizeof(aucMac));
+
+	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucMac);
 	ucTxStatus = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 
 	/* allocate a data frame */
@@ -588,7 +590,7 @@ static void TdlsCmdTestDataSend(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_
 	/* init packet */
 	prMsduInfo->len = 1000;
 	kalMemZero(prMsduInfo->data, 100);	/* for QoS field */
-	kalMemCopy(prMsduInfo->data, MAC, 6);
+	kalMemCopy(prMsduInfo->data, aucMac, 6);
 	kalMemCopy(prMsduInfo->data + 6, prAdapter->rMyMacAddr, 6);
 	*(UINT_16 *) (prMsduInfo->data + 12) = 0x0800;
 
@@ -647,11 +649,12 @@ static void TdlsCmdTestDiscoveryReqRecv(GLUE_INFO_T *prGlueInfo, UINT_8 *prInBuf
 	UINT_8 ucDialogToken, aucPeerMac[6], aucBSSID[6], aucZeroMac[6];
 
 	/* parse arguments */
-	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
-	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
-
+	kalMemZero(aucPeerMac, sizeof(aucPeerMac));
 	kalMemZero(aucZeroMac, sizeof(aucZeroMac));
 	kalMemZero(aucBSSID, sizeof(aucBSSID));
+
+	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
+	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
 	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucBSSID);
 
 	DBGLOG(TDLS, INFO,
@@ -1033,6 +1036,8 @@ static void TdlsCmdTestSetupConfirmRecv(GLUE_INFO_T *prGlueInfo, UINT_8 *prInBuf
 	UINT_8 ucDialogToken, ucStatusCode, aucPeerMac[6];
 
 	/* parse arguments */
+	kalMemZero(aucPeerMac, sizeof(aucPeerMac));
+
 	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	ucStatusCode = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
@@ -1142,11 +1147,12 @@ static void TdlsCmdTestSetupReqRecv(GLUE_INFO_T *prGlueInfo, UINT_8 *prInBuf, UI
 	UINT_16 u2CapInfo;
 
 	/* parse arguments */
-	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
-	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
-
+	kalMemZero(aucPeerMac, sizeof(aucPeerMac));
 	kalMemZero(aucZeroMac, sizeof(aucZeroMac));
 	kalMemZero(aucBSSID, sizeof(aucBSSID));
+
+	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
+	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
 	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucBSSID);
 
 	DBGLOG(TDLS, INFO,
@@ -1273,6 +1279,8 @@ static void TdlsCmdTestSetupRspRecv(GLUE_INFO_T *prGlueInfo, UINT_8 *prInBuf, UI
 	UINT_16 u2CapInfo;
 
 	/* parse arguments */
+	kalMemZero(aucPeerMac, sizeof(aucPeerMac));
+
 	ucDialogToken = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	ucStatusCode = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);
@@ -1445,6 +1453,8 @@ static void TdlsCmdTestTearDownRecv(GLUE_INFO_T *prGlueInfo, UINT_8 *prInBuf, UI
 	UINT_32 u4BufLen;
 
 	/* parse arguments */
+	kalMemZero(aucPeerMac, sizeof(aucPeerMac));
+
 	fgIsInitiator = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	ucReasonCode = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	CmdStringMacParse(prInBuf, &prInBuf, &u4InBufLen, aucPeerMac);

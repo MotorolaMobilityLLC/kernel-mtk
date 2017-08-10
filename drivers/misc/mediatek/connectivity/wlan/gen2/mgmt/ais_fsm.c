@@ -3149,6 +3149,7 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 
 		/* 4 <1> Fill EVENT_CONNECTION_STATUS */
 		rEventConnStatus.ucMediaStatus = (UINT_8) eConnectionState;
+		rEventConnStatus.ucEncryptStatus = 0;
 
 		if (eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 			rEventConnStatus.ucReasonOfDisconnect = DISCONNECT_REASON_CODE_RESERVED;
@@ -3163,6 +3164,8 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				rEventConnStatus.u2ATIMWindow = prAisBssInfo->u2ATIMWindow;
 			} else {
 				ASSERT(0);
+				rEventConnStatus.ucInfraMode = 0;
+				rEventConnStatus.u2ATIMWindow = 0;
 			}
 
 			COPY_SSID(rEventConnStatus.aucSsid,

@@ -4806,6 +4806,7 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 				PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
 
 				prAdapter->rWifiVar.fgSupportUAPSD = TRUE;
+				kalMemZero(&rUapsdParams, sizeof(PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T));
 				rUapsdParams.fgEnAPSD = 1;
 				rUapsdParams.fgEnAPSD_AcBe = 1;
 				rUapsdParams.fgEnAPSD_AcBk = 1;
@@ -8337,7 +8338,7 @@ wlanoidQueryNvramRead(IN P_ADAPTER_T prAdapter,
 		      OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
 {
 	P_PARAM_CUSTOM_NVRAM_RW_STRUCT_T prNvramRwInfo;
-	UINT_16 u2Data;
+	UINT_16 u2Data = 0;
 	BOOLEAN fgStatus;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 
