@@ -101,8 +101,6 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 		}
 
 		virq = tz_hwirq_to_virq(param->irq, flags);
-		pr_debug("%s: [irq] of_map got virq:%u, hwirq:%u(gic#)\n"
-			 , __func__, virq, param->irq);
 
 		if (virq > 0)
 			rret = request_irq(virq, KREE_IrqHandler, flags,
@@ -112,7 +110,8 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 
 		if (rret) {
 			kfree(token);
-			pr_warn("request_irq return error: %d\n", rret);
+			pr_warn("%s (virq:%d, hwirq:%d) return error: %d\n",
+				__func__, virq, param->irq, rret);
 			if (rret == -ENOMEM)
 				ret = TZ_RESULT_ERROR_OUT_OF_MEMORY;
 			else
