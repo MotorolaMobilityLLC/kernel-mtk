@@ -9,11 +9,11 @@ ccflags-y += -I$(DRIVER_DIR)/../ump_include/ump
 
 #include mtk kernel header files
 ccflags-y += \
-    -I$(srctree)/arch/arm/mach-mt6580/include/mach \
-    -I$(srctree)/drivers/misc/mediatek/mach/mt6580/include/mach \
-    -I$(srctree)/drivers/misc/mediatek/base/power/mt6580 \
+    -I$(srctree)/arch/arm/mach-${MTK_PLATFORM}/include/mach \
+    -I$(srctree)/drivers/misc/mediatek/mach/${MTK_PLATFORM}/include/mach \
+    -I$(srctree)/drivers/misc/mediatek/base/power/${MTK_PLATFORM} \
     -I$(srctree)/include/linux \
-    -I$(srctree)/arch/arm/mach-mt6580/gpu/mali/mali/linux/license/gpl
+    -I$(srctree)/arch/arm/mach-mt${MTK_PLATFORM}/gpu/mali/mali/linux/license/gpl
 
 #Add MTK custom source code
 ccflags-y += -I$(DRIVER_DIR)/../../mediatek
