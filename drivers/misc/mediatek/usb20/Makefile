@@ -21,6 +21,7 @@ endif
 
 #QMU Flags
 ccflags-$(CONFIG_MTK_MUSB_QMU_SUPPORT) += -DMUSB_QMU_SUPPORT
+ccflags-$(CONFIG_MTK_MUSB_QMU_SUPPORT) += -DMUSB_QMU_SUPPORT_HOST
 ##ccflags-$(CONFIG_MTK_MUSB_QMU_SUPPORT) += -DQMU_TASKLET
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat

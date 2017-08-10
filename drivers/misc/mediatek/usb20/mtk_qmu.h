@@ -324,13 +324,14 @@ u8 PDU_calcCksum(u8 *data, int len);
 
 #define TGPD_FLAG_IOC				0x80
 #define TGPD_SET_IOC(_pd)			(((TGPD *)_pd)->flag |= TGPD_FLAG_IOC)
+#define TGPD_CLR_IOC(_pd)			(((TGPD *)_pd)->flag &= (~TGPD_FLAG_IOC))
 
 extern void qmu_destroy_gpd_pool(struct device *dev);
 extern int qmu_init_gpd_pool(struct device *dev);
 extern void qmu_reset_gpd_pool(u32 ep_num, u8 isRx);
 extern bool mtk_is_qmu_enabled(u8 EP_Num, u8 isRx);
 extern void mtk_qmu_enable(struct musb *musb, u8 EP_Num, u8 isRx);
-extern void mtk_qmu_insert_task(u8 EP_Num, u8 isRx, u8 *buf, u32 length, u8 zlp);
+extern void mtk_qmu_insert_task(u8 EP_Num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc);
 extern void mtk_qmu_resume(u8 EP_Num, u8 isRx);
 extern void qmu_done_rx(struct musb *musb, u8 ep_num);
 extern void qmu_done_tx(struct musb *musb, u8 ep_num);
@@ -339,5 +340,12 @@ extern void mtk_qmu_irq_err(struct musb *musb, u32 qisar);
 extern void flush_ep_csr(struct musb *musb, u8 ep_num, u8 isRx);
 extern void mtk_qmu_stop(u8 ep_num, u8 isRx);
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+#define QMU_RX_SPLIT_BLOCK_SIZE (32*1024)
+#define QMU_RX_SPLIT_THRE	(64*1024)
+extern u32 qmu_free_gpd_count(u8 isRx, u32 num);
+extern void h_qmu_done_rx(struct musb *musb, u8 ep_num);
+extern void h_qmu_done_tx(struct musb *musb, u8 ep_num);
+#endif
 #endif
 #endif

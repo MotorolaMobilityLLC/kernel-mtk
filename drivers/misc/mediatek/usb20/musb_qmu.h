@@ -30,6 +30,9 @@ extern void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num);
 /*FIXME, not good layer present */
 extern void mtk_qmu_enable(struct musb *musb, u8 EP_Num, u8 isRx);
 extern void __iomem *qmu_base;
+#ifdef MUSB_QMU_SUPPORT_HOST
+extern int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *urb);
+#endif
 
 #endif
 #endif

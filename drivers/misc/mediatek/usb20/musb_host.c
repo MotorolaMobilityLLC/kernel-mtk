@@ -48,6 +48,9 @@
 #include "musb_core.h"
 #include "musb_host.h"
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+#include "musb_qmu.h"
+#endif
 
 /* MUSB HOST status 22-mar-2006
  *
@@ -183,7 +186,11 @@ static inline void musb_h_tx_dma_start(struct musb_hw_ep *ep)
 	musb_writew(ep->regs, MUSB_TXCSR, txcsr);
 }
 #endif
+#ifdef MUSB_QMU_SUPPORT_HOST
+void musb_ep_set_qh(struct musb_hw_ep *ep, int is_in, struct musb_qh *qh)
+#else
 static void musb_ep_set_qh(struct musb_hw_ep *ep, int is_in, struct musb_qh *qh)
+#endif
 {
 	if (is_in != 0 || ep->is_shared_fifo)
 		ep->in_qh = qh;
@@ -191,7 +198,11 @@ static void musb_ep_set_qh(struct musb_hw_ep *ep, int is_in, struct musb_qh *qh)
 		ep->out_qh = qh;
 }
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+struct musb_qh *musb_ep_get_qh(struct musb_hw_ep *ep, int is_in)
+#else
 static struct musb_qh *musb_ep_get_qh(struct musb_hw_ep *ep, int is_in)
+#endif
 {
 	return is_in ? ep->in_qh : ep->out_qh;
 }
@@ -389,7 +400,11 @@ static inline void musb_set_toggle(struct musb_qh *qh, int is_in, struct urb *ur
  *
  * Context: caller owns controller lock, IRQs are blocked
  */
+#ifdef MUSB_QMU_SUPPORT_HOST
+void musb_advance_schedule(struct musb *musb, struct urb *urb,
+#else
 static void musb_advance_schedule(struct musb *musb, struct urb *urb,
+#endif
 				  struct musb_hw_ep *hw_ep, int is_in)
 {
 	struct musb_qh *qh = musb_ep_get_qh(hw_ep, is_in);
@@ -421,7 +436,16 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb,
 	if (list_empty(&qh->hep->urb_list)) {
 		struct list_head *head;
 		struct dma_controller *dma = musb->dma_controller;
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+		static int skip_cnt; /* dft to 0 */
 
+		if (USB_ENDPOINT_XFER_ISOC == qh->type) {
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "no URB in QH, possible performance drop, skip_cnt:%d\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
 		DBG(3, "musb_advance_schedule::ep urb_list is empty\n");
 
 		if (is_in) {
@@ -441,6 +465,11 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb,
 		/* Clobber old pointers to this qh */
 		musb_ep_set_qh(ep, is_in, NULL);
 		qh->hep->hcpriv = NULL;
+
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if (qh->is_use_qmu && mtk_is_qmu_enabled(qh->epnum, is_in))
+			mtk_disable_q(musb, qh->epnum, is_in);
+#endif
 
 		switch (qh->type) {
 
@@ -472,7 +501,15 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb,
 	if (qh != NULL && qh->is_ready) {
 		DBG(3, "[MUSB]... next ep%d %cX urb %p\n",
 		    hw_ep->epnum, is_in ? 'R' : 'T', next_urb(qh));
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if (qh->is_use_qmu && !mtk_host_qmu_concurrent) {
+			musb_ep_set_qh(hw_ep, is_in, qh);
+			mtk_kick_CmdQ(musb, is_in ? 1:0, qh, next_urb(qh));
+		} else if (!qh->is_use_qmu)
+			musb_start_urb(musb, is_in, qh);
+#else
 		musb_start_urb(musb, is_in, qh);
+#endif
 	}
 }
 
@@ -1354,6 +1391,11 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 	struct dma_channel *dma;
 	bool transfer_pending = false;
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if (qh && qh->is_use_qmu)
+		return;
+#endif
+
 	musb_ep_select(mbase, epnum);
 	tx_csr = musb_readw(epio, MUSB_TXCSR);
 
@@ -1626,6 +1668,10 @@ void musb_host_rx(struct musb *musb, u8 epnum)
 	struct dma_channel *dma;
 	static bool use_sg;
 	unsigned int sg_flags = SG_MITER_ATOMIC | SG_MITER_TO_SG;
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if (qh && qh->is_use_qmu)
+		return;
+#endif
 
 	musb_ep_select(mbase, epnum);
 
@@ -2001,7 +2047,7 @@ finish:
  */
 static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 {
-	int idle;
+	int idle = 0;
 	int best_diff;
 	int best_end, epnum;
 	struct musb_hw_ep *hw_ep = NULL;
@@ -2081,10 +2127,11 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 #endif
 	}
 
-	if (!hw_ep) {
+	if (!hw_ep || epnum >= musb->nr_endpoints) {
 		DBG(0, "musb::error!not find a ep for the urb\r\n");
-		return -1;
+		return -ENOSPC;
 	}
+
 #if 0
 	/* use bulk reserved ep1 if no other ep is free */
 	if (best_end < 0 && qh->type == USB_ENDPOINT_XFER_BULK) {
@@ -2121,8 +2168,28 @@ success:
 	}
 	qh->hw_ep = hw_ep;
 	qh->hep->hcpriv = qh;
-	if (idle)
+	if (idle) {
+
+		if (USB_ENDPOINT_XFER_ISOC == qh->type) {
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+			static int skip_cnt; /* dft to 0 */
+
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "QH create, 1st transfer, skip_cnt%d\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if (qh->is_use_qmu) {
+			musb_ep_set_qh(hw_ep, is_in, qh);
+			mtk_kick_CmdQ(musb, is_in ? 1:0, qh, next_urb(qh));
+		} else
+			musb_start_urb(musb, is_in, qh);
+#else
 		musb_start_urb(musb, is_in, qh);
+#endif
+	}
 	return 0;
 }
 
@@ -2155,7 +2222,6 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		DBG(4, "qh has been allocated before,%p\n", qh);
 		urb->hcpriv = qh;
 	}
-	spin_unlock_irqrestore(&musb->lock, flags);
 
 	/* DMA mapping was already done, if needed, and this urb is on
 	 * hep->urb_list now ... so we're done, unless hep wasn't yet
@@ -2165,8 +2231,19 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	 * disabled, testing for empty qh->ring and avoiding qh setup costs
 	 * except for the first urb queued after a config change.
 	 */
-	if (qh || ret)
+
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if (mtk_host_qmu_concurrent && qh && qh->is_use_qmu && (ret == 0)) {
+		mtk_kick_CmdQ(musb, (epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK) ? 1:0, qh, urb);
+		spin_unlock_irqrestore(&musb->lock, flags);
 		return ret;
+	}
+#endif
+
+	if (qh || ret) {
+		spin_unlock_irqrestore(&musb->lock, flags);
+		return ret;
+	}
 
 	/* Allocate and initialize qh, minimizing the work done each time
 	 * hw_ep gets reprogrammed, or with irqs blocked.  Then schedule it.
@@ -2174,9 +2251,8 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	 * REVISIT consider a dedicated qh kmem_cache, so it's harder
 	 * for bugs in other kernel code to break this driver...
 	 */
-	qh = kzalloc(sizeof(*qh), mem_flags);
+	qh = kzalloc(sizeof(*qh), GFP_ATOMIC);
 	if (!qh) {
-		spin_lock_irqsave(&musb->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);
 		spin_unlock_irqrestore(&musb->lock, flags);
 		return -ENOMEM;
@@ -2286,7 +2362,6 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	 * until we get real dma queues (with an entry for each urb/buffer),
 	 * we only have work to do in the former case.
 	 */
-	spin_lock_irqsave(&musb->lock, flags);
 	if (hep->hcpriv || !next_urb(qh)) {
 		/* some concurrent activity submitted another urb to hep...
 		 * odd, rare, error prone, but legal.
@@ -2295,8 +2370,13 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		kfree(qh);
 		qh = NULL;
 		ret = 0;
-	} else
+	} else {
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if ((usb_pipetype(urb->pipe)) == mtk_host_qmu_pipe)
+			qh->is_use_qmu = 1;
+#endif
 		ret = musb_schedule(musb, qh, epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK);
+	}
 
 	if (ret == 0) {
 		urb->hcpriv = qh;
@@ -2434,6 +2514,10 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		 * and its URB list has emptied, recycle this qh.
 		 */
 		if (ready && list_empty(&qh->hep->urb_list)) {
+#ifdef MUSB_QMU_SUPPORT_HOST
+			if (qh->is_use_qmu && mtk_is_qmu_enabled(qh->epnum, is_in))
+				mtk_disable_q(musb, qh->epnum, is_in);
+#endif
 			qh->hep->hcpriv = NULL;
 			list_del(&qh->ring);
 			kfree(qh);
@@ -2489,7 +2573,10 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 		 */
 		while (!list_empty(&hep->urb_list))
 			musb_giveback(musb, next_urb(qh), -ESHUTDOWN);
-
+#ifdef MUSB_QMU_SUPPORT_HOST
+		if (mtk_is_qmu_enabled(qh->epnum, is_in))
+			mtk_disable_q(musb, qh->epnum, is_in);
+#endif
 		hep->hcpriv = NULL;
 		list_del(&qh->ring);
 		kfree(qh);

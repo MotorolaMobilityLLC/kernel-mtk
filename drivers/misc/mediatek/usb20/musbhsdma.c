@@ -87,7 +87,12 @@ static struct dma_channel *dma_channel_allocate(struct dma_controller *c,
 	struct dma_channel *channel = NULL;
 	u8 bit;
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+	/* reserve dma channel 0 for QMU */
+	for (bit = 1; bit < MUSB_HSDMA_CHANNELS; bit++) {
+#else
 	for (bit = 0; bit < MUSB_HSDMA_CHANNELS; bit++) {
+#endif
 		if (!(controller->used_channels & (1 << bit))) {
 			controller->used_channels |= (1 << bit);
 			musb_channel = &(controller->channel[bit]);

@@ -95,7 +95,10 @@ extern int musb_connect_legacy;
 extern int musb_removed;
 extern int kernel_init_done;
 extern int musb_force_on;
-
+#ifdef MUSB_QMU_SUPPORT_HOST
+extern int mtk_host_qmu_concurrent;
+extern int mtk_host_qmu_pipe;
+#endif
 extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;
 extern bool mtk_usb_power;

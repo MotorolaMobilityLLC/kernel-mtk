@@ -130,10 +130,16 @@ module_param(musb_fake_disc, int, 0644);
 module_param(musb_fake_CDP, int, 0644);
 module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
+#ifdef MUSB_QMU_SUPPORT_HOST
+int mtk_host_qmu_concurrent = 1;
+int mtk_host_qmu_pipe = PIPE_ISOCHRONOUS;
+module_param(mtk_host_qmu_concurrent, int, 0644);
+module_param(mtk_host_qmu_pipe, int, 0644);
+#endif
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
 int mtk_qmu_dbg_level = LOG_WARN;
-u32 dma_burst_setting;
+u32 dma_burst_setting, qmu_ioc_setting;
 #ifdef QMU_TASKLET
 int qmu_tasklet = 1;
 void qmu_done_tasklet(unsigned long data)
@@ -2504,6 +2510,7 @@ static void musb_save_context(struct musb *musb)
 
 #ifdef MUSB_QMU_SUPPORT
 	dma_burst_setting = musb_readl(musb->mregs, 0x204);
+	qmu_ioc_setting = musb_readl((musb->mregs + MUSB_QISAR), 0x30);
 #endif
 
 	musb->context.power = musb_readb(musb_base, MUSB_POWER);
@@ -2547,6 +2554,7 @@ static void musb_restore_context(struct musb *musb)
 
 #ifdef MUSB_QMU_SUPPORT
 	musb_writel(musb->mregs, 0x204, dma_burst_setting);
+	musb_writel((musb->mregs + MUSB_QISAR), 0x30, qmu_ioc_setting);
 #endif
 
 	musb_writeb(musb_base, MUSB_POWER, musb->context.power);
