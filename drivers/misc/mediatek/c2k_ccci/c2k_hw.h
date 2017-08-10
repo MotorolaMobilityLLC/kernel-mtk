@@ -181,7 +181,8 @@ enum clock_event_nofitiers {
 	MDM_EVT_NOTIFY_IPOH,
 	MDM_EVT_NOTIFY_WDT,
 	MDM_EVT_NOTIFY_EXCP,
-	MDM_EVT_NOTIFY_NUM
+	MDM_EVT_NOTIFY_RESET_ON_SINGLE,
+	MDM_EVT_NOTIFY_NUM,
 };
 
 void modem_notify_event(int event);

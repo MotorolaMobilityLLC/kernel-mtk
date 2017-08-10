@@ -1150,7 +1150,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 #else
 #if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 		if (md_id == MD_SYS1 && ccci_get_opt_val("opt_c2k_lte_mode") == 1)
-			c2k_reset_modem();
+			c2k_reset_modem(1);
 #endif
 #endif
 		break;
@@ -1214,7 +1214,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 #else
 #if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 		if (md_id == MD_SYS1 && ccci_get_opt_val("opt_c2k_lte_mode") == 1)
-			c2k_reset_modem();
+			c2k_reset_modem(1);
 #endif
 #endif
 		break;

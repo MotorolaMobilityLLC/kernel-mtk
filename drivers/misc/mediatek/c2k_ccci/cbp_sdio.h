@@ -209,7 +209,7 @@ extern void SRC_trigger_signal(int i_on);
 #endif
 
 extern void c2k_modem_reset_platform(void);
-extern void c2k_reset_modem(void);
+extern void c2k_reset_modem(int type);
 
 extern void c2k_platform_restore_first_init(void);
 extern void enable_c2k_jtag(int mode);

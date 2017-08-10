@@ -75,6 +75,7 @@ enum ASC_USERSPACE_NOTIFIER_CODE {
 	ASC_USER_MDM_IPOH = (__SI_POLL | 400),
 	ASC_USER_MDM_WDT,
 	ASC_USER_MDM_EXCEPTION,
+	ASC_USER_MDM_RESET_ON_SINGLE,
 };
 
 #define MDM_RST_LOCK_TIME   (120)
@@ -121,7 +122,7 @@ static void modem_signal_user(int event)
 /*Protection for the above */
 static DEFINE_RAW_SPINLOCK(rslock);
 
-void c2k_reset_modem(void)
+void c2k_reset_modem(int type)
 {
 	unsigned long flags;
 
@@ -154,7 +155,10 @@ void c2k_reset_modem(void)
 		c2k_gpio_direction_output(GPIO_C2K_MDM_RST, 0);
 		mdelay(MDM_RST_HOLD_DELAY);
 	}
-	modem_notify_event(MDM_EVT_NOTIFY_RESET_ON);
+	if (type == 0)
+		modem_notify_event(MDM_EVT_NOTIFY_RESET_ON);
+	else if (type == 1)
+		modem_notify_event(MDM_EVT_NOTIFY_RESET_ON_SINGLE);
 	pr_debug("[C2K] Warnning: reset vmodem\n");
 	atomic_set(&reset_on_going, 0);
 }
@@ -291,7 +295,7 @@ ssize_t modem_reset_store(struct kobject *kobj, struct kobj_attribute *attr,
 			  const char *buf, size_t n)
 {
 	/*reset the modem */
-	c2k_reset_modem();
+	c2k_reset_modem(0);
 	return n;
 }
 
@@ -478,6 +482,9 @@ static int modem_reset_notify_misc(struct notifier_block *nb,
 	switch (event) {
 	case MDM_EVT_NOTIFY_RESET_ON:
 		modem_signal_user(ASC_USER_MDM_RESET_ON);
+		break;
+	case MDM_EVT_NOTIFY_RESET_ON_SINGLE:
+		modem_signal_user(ASC_USER_MDM_RESET_ON_SINGLE);
 		break;
 	case MDM_EVT_NOTIFY_RESET_OFF:
 		modem_signal_user(ASC_USER_MDM_RESET_OFF);
@@ -878,7 +885,7 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 	switch (cmd) {
 	case CMDM_IOCTL_RESET:
 		pr_debug("[C2K]Reset C2K.\n");
-		c2k_reset_modem();
+		c2k_reset_modem(0);
 		break;
 	case CMDM_IOCTL_READY:
 		pr_debug("[C2K SDIO]modem boot up done.\n");
@@ -890,7 +897,7 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 		break;
 	case CMDM_IOCTL_RESET_FROM_RIL:
 		pr_debug("[C2K]Reset C2K from RIL.\n");
-		c2k_reset_modem();
+		c2k_reset_modem(0);
 		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE */
 			exec_ccci_kern_func_by_md_id(0, ID_RESET_MD, NULL, 0);
 

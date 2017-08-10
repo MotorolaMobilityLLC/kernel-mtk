@@ -611,7 +611,7 @@ static ssize_t cbp_reset_store(struct kobject *kobj,
 	if (val) {
 		/*sys_reset_cbp(); */
 		/*c2k_modem_reset_platform(); */
-		c2k_reset_modem();
+		c2k_reset_modem(0);
 
 		LOGPRT(LOG_INFO, "AP reset CBP.\n");
 	} else

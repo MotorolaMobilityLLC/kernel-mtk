@@ -324,7 +324,7 @@ static void ccci_routine_wdt(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command *
 #else
 #if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 		if (md->index == MD_SYS1 && ccci_get_opt_val("opt_c2k_lte_mode") == 1)
-			c2k_reset_modem();
+			c2k_reset_modem(1);
 #endif
 #endif
 	}

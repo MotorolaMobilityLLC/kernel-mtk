@@ -106,5 +106,5 @@ int ccci_fsm_append_event(struct ccci_modem *md, CCCI_FSM_EVENT event_id,
 	unsigned char *data, unsigned int length);
 
 #ifndef CONFIG_MTK_ECCCI_C2K
-extern void c2k_reset_modem(void);
+extern void c2k_reset_modem(int type);
 #endif
