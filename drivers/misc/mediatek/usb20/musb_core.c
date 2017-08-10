@@ -2648,7 +2648,6 @@ static int musb_suspend_noirq(struct device *dev)
 	usb_enable_clock(false);
 	mtk_usb_power = false;
 
-	usb_pre_clock(false);
 	/*spin_unlock_irqrestore(&musb->lock, flags); */
 	return 0;
 }
@@ -2657,8 +2656,6 @@ static int musb_suspend_noirq(struct device *dev)
 static int musb_resume_noirq(struct device *dev)
 {
 	struct musb *musb = dev_to_musb(dev);
-
-	usb_pre_clock(true);
 
 	/*Turn on USB clock, before writing a batch of regs */
 	mtk_usb_power = true;

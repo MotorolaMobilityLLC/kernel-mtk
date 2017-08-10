@@ -66,15 +66,6 @@ typedef enum {
 	USB_CONFIGURED
 } usb_state_enum;
 
-#ifdef MUSB_PRE_CLOCK
-extern bool usb_pre_clock(bool enable);
-#else
-static inline bool usb_pre_clock(bool enable)
-{
-	return true;
-}
-#endif
-
 /* USB phy and clock */
 extern void usb_phy_poweron(void);
 extern void usb_phy_recover(void);
