@@ -25,10 +25,11 @@ endif
 
 ccflags-y += \
 	-I$(srctree)/include/ \
-    -I$(MTK_TOP)/include/ \
-    -I$(GED_TOP)/include/ \
-    -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/
-	
+	-I$(MTK_TOP)/include/ \
+	-I$(GED_TOP)/include/ \
+	-I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/ \
+	-I$(srctree)/drivers/misc/mediatek/video/include
+
 $(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])
     
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
