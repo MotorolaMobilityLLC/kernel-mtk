@@ -1,4 +1,17 @@
 /*
+ * Copyright (C) 2016 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+/*
  * This is used to for host and peripheral modes of the tyoec driver.
  */
 
@@ -138,6 +151,11 @@ struct usbtypc {
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
 };
+#elif defined(CONFIG_USB_C_SWITCH_MT6353)
+struct usbtypc {
+	struct typec_switch_data *host_driver;
+	struct typec_switch_data *device_driver;
+};
 #endif
 
 
@@ -146,5 +164,8 @@ extern int unregister_typec_switch_callback(struct typec_switch_data *new_driver
 extern int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat);
 extern int usb_redriver_enter_dps(struct usbtypc *typec);
 extern int usb_redriver_exit_dps(struct usbtypc *typec);
+#if defined(CONFIG_USB_C_SWITCH_MT6353)
+extern void typec_hanlder(void);
+#endif
 
 #endif	/* USB_TYPEC_H */

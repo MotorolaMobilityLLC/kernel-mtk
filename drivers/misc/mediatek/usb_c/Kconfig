@@ -53,3 +53,15 @@ config USB_C_SWITCH_ANX7418
           ANX7418 supports CC detect, PD and DP alt mode.
           And support DRP, aka UFP and DFP mode.
           If unsure, say N.
+
+config USB_C_SWITCH_MT6353
+	bool "MediaTek USB TYPE-C Driver (MT6353)"
+	default n
+	select USB_C_SWITCH
+	---help---
+	  Enable to support usb-c.
+	  Enables support .
+	  usb-c is supported by MT6353 USB TYPE-C (CC only).
+	  MT6353 supports CC detect. And support DRP, aka UFP and DFP mode.
+	  PD and MHL alt mode are not supported.
+	  If unsure, say N.
