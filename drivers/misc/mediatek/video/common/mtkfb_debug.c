@@ -459,7 +459,7 @@ out:
 static ssize_t mtkfb_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = DPREC_ERROR_LOG_BUFFER_LENGTH - 1;
-	size_t ret;
+	size_t ret = 0;
 
 	if (!is_buffer_init)
 		goto out;
