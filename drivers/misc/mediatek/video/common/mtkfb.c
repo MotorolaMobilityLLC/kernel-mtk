@@ -1056,6 +1056,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			if (primary_display_is_sleepd()) {
 				DISPMSG
 				    ("[FB] error, set overlay in early suspend ,skip!\n");
+				kfree(layerInfo);
 				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
 			memset((void *)&session_input, 0, sizeof(session_input));
