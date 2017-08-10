@@ -28,6 +28,7 @@ endif
 ifeq ($(CONFIG_ARCH_MT6735M),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6735m/
 obj-y += mt6735m/
+ccflags-$(CONFIG_ARM64) += -mcmodel=large
 endif
 ifeq ($(CONFIG_ARCH_MT6753),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6753/
