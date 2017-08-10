@@ -2399,6 +2399,14 @@ VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 	if (!prGlueInfo)
 		return;
 
+#if CFG_ROAMING_CTRL_BY_SUSPEND
+	{
+		UINT_32 u4SetInfoLen = 0;
+
+		kalIoctl(prGlueInfo, wlanoidSetRoamingCtrl, &fgEnable, sizeof(fgEnable),
+					FALSE, FALSE, TRUE, &u4SetInfoLen);
+	}
+#endif
 	prDev = prGlueInfo->prDevHandler;
 	if (!prDev)
 		return;
