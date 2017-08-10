@@ -2819,6 +2819,7 @@ wlanoidSetTest(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetB
 		if (u4StatusBufferSize > sizeof(PARAM_AUTH_EVENT_T)) {
 			DBGLOG(OID, TRACE, "prTest->u4Length error %u\n", u4StatusBufferSize);
 			ASSERT(FALSE);
+			return WLAN_STATUS_INVALID_LENGTH;
 		}
 		break;
 
