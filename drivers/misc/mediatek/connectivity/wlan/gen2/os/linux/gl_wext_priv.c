@@ -3316,7 +3316,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 					TxPwrBackOffParam |= prRegInfo->bTxPowerLimitEnable2G;
 					TxPwrBackOffParam |= prRegInfo->cTxBackOffMaxPower2G << 8;
 					TxPwrBackOffParam |= prRegInfo->bTxPowerLimitEnable5G << 16;
-					TxPwrBackOffParam |= prRegInfo->cTxBackOffMaxPower5G << 24;
+					TxPwrBackOffParam |= (ULONG)prRegInfo->cTxBackOffMaxPower5G << 24;
 					rStatus = nicTxPowerBackOff(prGlueInfo->prAdapter, TxPwrBackOffParam);
 				} else {
 					DBGLOG(REQ, INFO, "Stop BackOff\n");
