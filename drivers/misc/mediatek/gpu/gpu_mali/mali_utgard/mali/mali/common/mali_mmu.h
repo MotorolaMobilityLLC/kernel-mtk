@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2007-2015 ARM Limited
+ * (C) COPYRIGHT 2007-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -91,6 +91,7 @@ MALI_STATIC_INLINE enum mali_interrupt_result mali_mmu_get_interrupt_result(stru
 	if (0 == rawstat_used) {
 		return MALI_INTERRUPT_RESULT_NONE;
 	}
+
 	return MALI_INTERRUPT_RESULT_ERROR;
 }
 

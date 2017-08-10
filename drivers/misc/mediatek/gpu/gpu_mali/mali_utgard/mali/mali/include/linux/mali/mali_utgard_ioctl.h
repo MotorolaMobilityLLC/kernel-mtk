@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2007-2015 ARM Limited
+ * (C) COPYRIGHT 2007-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -50,6 +50,7 @@ extern "C" {
 #define MALI_IOC_TIMELINE_CREATE_SYNC_FENCE _IOWR(MALI_IOC_CORE_BASE, _MALI_UK_TIMELINE_CREATE_SYNC_FENCE, _mali_uk_timeline_create_sync_fence_s)
 #define MALI_IOC_SOFT_JOB_START             _IOWR(MALI_IOC_CORE_BASE, _MALI_UK_SOFT_JOB_START, _mali_uk_soft_job_start_s)
 #define MALI_IOC_SOFT_JOB_SIGNAL            _IOWR(MALI_IOC_CORE_BASE, _MALI_UK_SOFT_JOB_SIGNAL, _mali_uk_soft_job_signal_s)
+#define MALI_IOC_PENDING_SUBMIT             _IOWR(MALI_IOC_CORE_BASE, _MALI_UK_PENDING_SUBMIT, _mali_uk_pending_submit_s)
 
 #define MALI_IOC_MEM_ALLOC                  _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_ALLOC_MEM, _mali_uk_alloc_mem_s)
 #define MALI_IOC_MEM_FREE                   _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_FREE_MEM, _mali_uk_free_mem_s)
@@ -57,6 +58,7 @@ extern "C" {
 #define MALI_IOC_MEM_UNBIND                 _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_UNBIND_MEM, _mali_uk_unbind_mem_s)
 #define MALI_IOC_MEM_COW                    _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_COW_MEM, _mali_uk_cow_mem_s)
 #define MALI_IOC_MEM_COW_MODIFY_RANGE       _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_COW_MODIFY_RANGE, _mali_uk_cow_modify_range_s)
+#define MALI_IOC_MEM_RESIZE                 _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_RESIZE_MEM, _mali_uk_mem_resize_s)
 #define MALI_IOC_MEM_DMA_BUF_GET_SIZE       _IOR(MALI_IOC_MEMORY_BASE, _MALI_UK_DMA_BUF_GET_SIZE, _mali_uk_dma_buf_get_size_s)
 #define MALI_IOC_MEM_QUERY_MMU_PAGE_TABLE_DUMP_SIZE _IOR (MALI_IOC_MEMORY_BASE, _MALI_UK_QUERY_MMU_PAGE_TABLE_DUMP_SIZE, _mali_uk_query_mmu_page_table_dump_size_s)
 #define MALI_IOC_MEM_DUMP_MMU_PAGE_TABLE    _IOWR(MALI_IOC_MEMORY_BASE, _MALI_UK_DUMP_MMU_PAGE_TABLE, _mali_uk_dump_mmu_page_table_s)

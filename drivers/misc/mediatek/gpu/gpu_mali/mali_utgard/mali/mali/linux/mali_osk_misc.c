@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2015 ARM Limited
+ * (C) COPYRIGHT 2008-2014, 2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -40,17 +40,6 @@ u32 _mali_osk_snprintf(char *buf, u32 size, const char *fmt, ...)
 
 	va_end(args);
 	return res;
-}
-
-void _mali_osk_ctxprintf(_mali_osk_print_ctx *print_ctx, const char *fmt, ...)
-{
-	va_list args;
-	char buf[512];
-
-	va_start(args, fmt);
-	vscnprintf(buf, 512, fmt, args);
-	seq_printf(print_ctx, buf);
-	va_end(args);
 }
 
 void _mali_osk_abort(void)

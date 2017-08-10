@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2013-2015 ARM Limited
+ * (C) COPYRIGHT 2013-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -190,6 +190,10 @@ struct mali_timeline_tracker {
 	struct sync_fence             *sync_fence;   /**< The sync fence this tracker is waiting on. */
 	_mali_osk_list_t               sync_fence_cancel_list; /**< List node used to cancel sync fence waiters. */
 #endif /* defined(CONFIG_SYNC) */
+
+#if defined(CONFIG_MALI_DMA_BUF_FENCE)
+	struct mali_timeline_waiter   *waiter_dma_fence; /**< A direct pointer to timeline waiter representing dma fence. */
+#endif
 
 	struct mali_timeline_system   *system;       /**< Timeline system. */
 	struct mali_timeline          *timeline;     /**< Timeline, or NULL if not on a timeline. */
@@ -531,5 +535,14 @@ void mali_timeline_debug_direct_print_timeline(struct mali_timeline *timeline);
 void mali_timeline_debug_print_system(struct mali_timeline_system *system, _mali_osk_print_ctx *print_ctx);
 
 #endif /* defined(MALI_TIMELINE_DEBUG_FUNCTIONS) */
+
+#if defined(CONFIG_MALI_DMA_BUF_FENCE)
+/**
+ * The timeline dma fence callback when dma fence signal.
+ *
+ * @param pp_job_ptr The pointer to pp job that link to the signaled dma fence.
+ */
+void mali_timeline_dma_fence_callback(void *pp_job_ptr);
+#endif
 
 #endif /* __MALI_TIMELINE_H__ */

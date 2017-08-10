@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2010-2015 ARM Limited
+ * (C) COPYRIGHT 2010-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -131,6 +131,7 @@ typedef enum {
 	MALI_PROFILING_EVENT_REASON_SUSPEND_RESUME_SW_FB_JOBS_WAIT             = 46, /* USED */
 	MALI_PROFILING_EVENT_REASON_SUSPEND_RESUME_SW_FB_NOFRAMES_WAIT         = 47, /* USED */
 	MALI_PROFILING_EVENT_REASON_SUSPEND_RESUME_SW_FB_NOJOBS_WAIT           = 48, /* USED */
+	MALI_PROFILING_EVENT_REASON_SUSPEND_RESUME_SW_SUBMIT_LIMITER_WAIT      = 49, /* USED */
 } cinstr_profiling_event_reason_suspend_resume_sw_t;
 
 /**

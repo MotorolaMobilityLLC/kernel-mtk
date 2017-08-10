@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2009-2015 ARM Limited
+ * (C) COPYRIGHT 2009-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -143,6 +143,8 @@ _mali_osk_errcode_t mali_pmu_power_down(struct mali_pmu_core *pmu, u32 mask)
 	 */
 	MALI_DEBUG_ASSERT(0 == (stat & mask));
 
+	mask  &= ~(0x1 << MALI_DOMAIN_INDEX_DUMMY);
+
 	if (0 == mask || 0 == ((~stat) & mask)) return _MALI_OSK_ERR_OK;
 
 	mali_hw_core_register_write(&pmu->hw_core,
@@ -195,6 +197,8 @@ _mali_osk_errcode_t mali_pmu_power_up(struct mali_pmu_core *pmu, u32 mask)
 	stat = mali_hw_core_register_read(&pmu->hw_core,
 					  PMU_REG_ADDR_MGMT_STATUS);
 	stat &= pmu->registered_cores_mask;
+
+	mask  &= ~(0x1 << MALI_DOMAIN_INDEX_DUMMY);
 	if (0 == mask || 0 == (stat & mask)) return _MALI_OSK_ERR_OK;
 
 	/*

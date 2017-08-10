@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2015 ARM Limited
+ * (C) COPYRIGHT 2008-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -21,6 +21,28 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef CONFIG_MALI_DEVFREQ
+struct mali_device {
+	struct device *dev;
+#ifdef CONFIG_HAVE_CLK
+	struct clk *clock;
+#endif
+#ifdef CONFIG_REGULATOR
+	struct regulator *regulator;
+#endif
+#ifdef CONFIG_PM_DEVFREQ
+	struct devfreq_dev_profile devfreq_profile;
+	struct devfreq *devfreq;
+	unsigned long current_freq;
+	unsigned long current_voltage;
+#ifdef CONFIG_DEVFREQ_THERMAL
+	struct thermal_cooling_device *devfreq_cooling;
+#endif
+#endif
+	struct mali_pm_metrics_data mali_metrics;
+};
 #endif
 
 /** @addtogroup _mali_osk_miscellaneous
@@ -87,6 +109,38 @@ u32 _mali_osk_get_pmu_switch_delay(void);
  * @return MALI_TRUE if shared interrupts, MALI_FALSE if not.
  */
 mali_bool _mali_osk_shared_interrupts(void);
+
+/** @brief Initialize the gpu secure mode.
+ * The gpu secure mode will initially be in a disabled state.
+ * @return _MALI_OSK_ERR_OK on success, otherwise failure.
+ */
+_mali_osk_errcode_t _mali_osk_gpu_secure_mode_init(void);
+
+/** @brief Deinitialize the gpu secure mode.
+ * @return _MALI_OSK_ERR_OK on success, otherwise failure.
+ */
+_mali_osk_errcode_t _mali_osk_gpu_secure_mode_deinit(void);
+
+/** @brief Reset GPU and enable the gpu secure mode.
+ * @return _MALI_OSK_ERR_OK on success, otherwise failure.
+ */
+_mali_osk_errcode_t _mali_osk_gpu_reset_and_secure_mode_enable(void);
+
+/** @brief Reset GPU and disable the gpu secure mode.
+ * @return _MALI_OSK_ERR_OK on success, otherwise failure.
+ */
+_mali_osk_errcode_t _mali_osk_gpu_reset_and_secure_mode_disable(void);
+
+/** @brief Check if the gpu secure mode has been enabled.
+ * @return MALI_TRUE if enabled, otherwise MALI_FALSE.
+ */
+mali_bool _mali_osk_gpu_secure_mode_is_enabled(void);
+
+/** @brief Check if the gpu secure mode is supported.
+ * @return MALI_TRUE if supported, otherwise MALI_FALSE.
+ */
+mali_bool _mali_osk_gpu_secure_mode_is_supported(void);
+
 
 /** @} */ /* end group _mali_osk_miscellaneous */
 

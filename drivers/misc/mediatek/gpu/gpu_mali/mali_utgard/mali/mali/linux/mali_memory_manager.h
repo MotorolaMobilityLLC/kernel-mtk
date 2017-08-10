@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2013-2015 ARM Limited
+ * (C) COPYRIGHT 2013-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -26,6 +26,7 @@ struct mali_allocation_manager {
 	struct rb_root allocation_mgr_rb;
 	struct list_head head;
 	struct mutex list_mutex;
+	u32 mali_allocation_num;
 };
 
 extern struct idr mali_backend_idr;
@@ -35,8 +36,8 @@ int mali_memory_manager_init(struct mali_allocation_manager *mgr);
 void mali_memory_manager_uninit(struct mali_allocation_manager *mgr);
 
 void  mali_mem_allocation_struct_destory(mali_mem_allocation *alloc);
-
-mali_mem_backend *mali_mem_backend_struct_search(struct mali_allocation_manager *mgr, u32 mali_address);
+_mali_osk_errcode_t mali_mem_add_mem_size(struct mali_session_data *session, u32 mali_addr, u32 add_size);
+mali_mem_backend *mali_mem_backend_struct_search(struct mali_session_data *session, u32 mali_address);
 _mali_osk_errcode_t _mali_ukk_mem_allocate(_mali_uk_alloc_mem_s *args);
 _mali_osk_errcode_t _mali_ukk_mem_free(_mali_uk_free_mem_s *args);
 _mali_osk_errcode_t _mali_ukk_mem_bind(_mali_uk_bind_mem_s *args);
@@ -44,6 +45,7 @@ _mali_osk_errcode_t _mali_ukk_mem_unbind(_mali_uk_unbind_mem_s *args);
 _mali_osk_errcode_t _mali_ukk_mem_cow(_mali_uk_cow_mem_s *args);
 _mali_osk_errcode_t _mali_ukk_mem_cow_modify_range(_mali_uk_cow_modify_range_s *args);
 _mali_osk_errcode_t _mali_ukk_mem_usage_get(_mali_uk_profiling_memory_usage_get_s *args);
+_mali_osk_errcode_t _mali_ukk_mem_resize(_mali_uk_mem_resize_s *args);
 
 #endif
 

@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2012-2015 ARM Limited
+ * (C) COPYRIGHT 2012-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -20,6 +20,7 @@ struct mali_scheduler_job_queue {
 	_MALI_OSK_LIST_HEAD(normal_pri); /* Queued jobs with normal priority */
 	_MALI_OSK_LIST_HEAD(high_pri);   /* Queued jobs with high priority */
 	u32 depth;                       /* Depth of combined queues. */
+	u32 big_job_num;
 };
 
 extern _mali_osk_spinlock_irq_t *mali_scheduler_lock_obj;
@@ -54,10 +55,15 @@ MALI_STATIC_INLINE u32 mali_scheduler_job_gp_count(void)
 {
 	return job_queue_gp.depth;
 }
+MALI_STATIC_INLINE u32 mali_scheduler_job_gp_big_job_count(void)
+{
+	return job_queue_gp.big_job_num;
+}
 
-u32 mali_scheduler_job_physical_head_count(void);
+u32 mali_scheduler_job_physical_head_count(mali_bool gpu_mode_is_secure);
 
 mali_bool mali_scheduler_job_next_is_virtual(void);
+struct mali_pp_job *mali_scheduler_job_pp_next(void);
 
 struct mali_gp_job *mali_scheduler_job_gp_get(void);
 struct mali_pp_job *mali_scheduler_job_pp_physical_peek(void);
@@ -112,6 +118,9 @@ void mali_scheduler_complete_pp_job(struct mali_pp_job *job,
 				    mali_bool dequeued);
 
 void mali_scheduler_abort_session(struct mali_session_data *session);
+
+void mali_scheduler_return_pp_job_to_user(struct mali_pp_job *job,
+		u32 num_cores_in_virtual);
 
 #if MALI_STATE_TRACKING
 u32 mali_scheduler_dump_state(char *buf, u32 size);

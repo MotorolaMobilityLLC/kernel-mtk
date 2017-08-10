@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2011-2015 ARM Limited
+ * (C) COPYRIGHT 2011-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -285,9 +285,9 @@ MALI_STATIC_INLINE struct mali_pp_core *mali_group_get_pp_core(struct mali_group
 
 /** @brief Start GP job
  */
-void mali_group_start_gp_job(struct mali_group *group, struct mali_gp_job *job);
+void mali_group_start_gp_job(struct mali_group *group, struct mali_gp_job *job, mali_bool gpu_secure_mode_pre_enabled);
 
-void mali_group_start_pp_job(struct mali_group *group, struct mali_pp_job *job, u32 sub_job);
+void mali_group_start_pp_job(struct mali_group *group, struct mali_pp_job *job, u32 sub_job, mali_bool gpu_secure_mode_pre_enabled);
 
 /** @brief Start virtual group Job on a virtual group
 */
@@ -410,6 +410,7 @@ MALI_STATIC_INLINE void mali_group_schedule_bottom_half_gp(struct mali_group *gr
 	MALI_DEBUG_ASSERT_POINTER(group->gp_core);
 	_mali_osk_wq_schedule_work(group->bottom_half_work_gp);
 }
+
 
 MALI_STATIC_INLINE void mali_group_schedule_bottom_half_pp(struct mali_group *group)
 {

@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2011-2015 ARM Limited
+ * (C) COPYRIGHT 2011-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -15,6 +15,7 @@
 #include "regs/mali_200_regs.h"
 #include "mali_kernel_common.h"
 #include "mali_kernel_core.h"
+
 #if defined(CONFIG_MALI400_PROFILING)
 #include "mali_osk_profiling.h"
 #endif
@@ -43,7 +44,7 @@ struct mali_pp_core *mali_pp_create(const _mali_osk_resource_t *resource, struct
 		return NULL;
 	}
 
-	core = _mali_osk_malloc(sizeof(struct mali_pp_core));
+	core = _mali_osk_calloc(1, sizeof(struct mali_pp_core));
 	if (NULL != core) {
 		core->core_id = mali_global_num_pp_cores;
 		core->bcast_id = bcast_id;

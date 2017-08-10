@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2015 ARM Limited
+ * (C) COPYRIGHT 2008-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -270,6 +270,11 @@ _mali_osk_errcode_t _mali_ukk_get_user_setting(_mali_uk_get_user_setting_s *args
  * @return _MALI_OSK_ERR_OK on success, otherwise a suitable _mali_osk_errcode_t on failure.
  */
 _mali_osk_errcode_t _mali_ukk_request_high_priority(_mali_uk_request_high_priority_s *args);
+
+/** @brief Make process sleep if the pending big job in kernel  >= MALI_MAX_PENDING_BIG_JOB
+ *
+ */
+_mali_osk_errcode_t _mali_ukk_pending_submit(_mali_uk_pending_submit_s *args);
 
 /** @} */ /* end group _mali_uk_core */
 

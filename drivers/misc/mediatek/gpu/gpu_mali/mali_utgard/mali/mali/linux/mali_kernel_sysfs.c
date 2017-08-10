@@ -1,7 +1,7 @@
 /**
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2011-2015 ARM Limited
+ * (C) COPYRIGHT 2011-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -880,10 +880,17 @@ static const struct file_operations profiling_events_human_readable_fops = {
 
 static int memory_debugfs_show(struct seq_file *s, void *private_data)
 {
-	seq_printf(s, "  %-25s  %-10s  %-10s  %-15s  %-15s  %-10s  %-10s\n"\
-		   "==============================================================================================================\n",
+#ifdef MALI_MEM_SWAP_TRACKING
+	seq_printf(s, "  %-25s  %-10s  %-10s  %-15s  %-15s  %-10s  %-10s %-10s \n"\
+		   "=================================================================================================================================\n",
+		   "Name (:bytes)", "pid", "mali_mem", "max_mali_mem",
+		   "external_mem", "ump_mem", "dma_mem", "swap_mem");
+#else
+	seq_printf(s, "  %-25s  %-10s  %-10s  %-15s  %-15s  %-10s  %-10s \n"\
+		   "========================================================================================================================\n",
 		   "Name (:bytes)", "pid", "mali_mem", "max_mali_mem",
 		   "external_mem", "ump_mem", "dma_mem");
+#endif
 	mali_session_memory_tracking(s);
 	return 0;
 }

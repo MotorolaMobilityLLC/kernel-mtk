@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2013-2015 ARM Limited
+ * (C) COPYRIGHT 2013-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -87,6 +87,18 @@ void mali_memory_session_end(struct mali_session_data *session);
  */
 _mali_osk_errcode_t mali_mem_mali_map_prepare(mali_mem_allocation *descriptor);
 
+/** @brief Resize Mali page tables for mapping
+ *
+ * This function will Resize the Mali page tables for mapping the memory
+ * described by \a descriptor.
+ *
+ * Page tables will be reference counted and allocated, if not yet present.
+ *
+ * @param descriptor Pointer to the memory descriptor to the mapping
+ * @param new_size The new size of descriptor
+ */
+_mali_osk_errcode_t mali_mem_mali_map_resize(mali_mem_allocation *descriptor, u32 new_size);
+
 /** @brief Free Mali page tables for mapping
  *
  * This function will unmap pages from Mali memory and free the page tables
@@ -122,8 +134,10 @@ void _mali_page_node_add_page(struct mali_page_node *node, struct page *page);
 
 void _mali_page_node_add_block_item(struct mali_page_node *node, mali_block_item *item);
 
+void _mali_page_node_add_swap_item(struct mali_page_node *node, struct mali_swap_item *item);
+
 int _mali_page_node_get_ref_count(struct mali_page_node *node);
-dma_addr_t _mali_page_node_get_phy_addr(struct mali_page_node *node);
+dma_addr_t _mali_page_node_get_dma_addr(struct mali_page_node *node);
 unsigned long _mali_page_node_get_pfn(struct mali_page_node *node);
 
 #endif /* __MALI_MEMORY_H__ */

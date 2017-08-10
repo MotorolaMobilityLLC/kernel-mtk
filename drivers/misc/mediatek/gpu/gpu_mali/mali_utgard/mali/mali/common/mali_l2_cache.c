@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2015 ARM Limited
+ * (C) COPYRIGHT 2008-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -203,7 +203,8 @@ void mali_l2_cache_power_up(struct mali_l2_cache_core *cache)
 
 	mali_l2_cache_reset(cache);
 
-	MALI_DEBUG_ASSERT(MALI_FALSE == cache->power_is_on);
+	if ((1 << MALI_DOMAIN_INDEX_DUMMY) != cache->pm_domain->pmu_mask)
+		MALI_DEBUG_ASSERT(MALI_FALSE == cache->power_is_on);
 	cache->power_is_on = MALI_TRUE;
 
 	mali_l2_cache_unlock(cache);

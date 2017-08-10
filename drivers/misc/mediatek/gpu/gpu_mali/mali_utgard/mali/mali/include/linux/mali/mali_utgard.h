@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2012-2015 ARM Limited
+ * (C) COPYRIGHT 2012-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -17,6 +17,13 @@
 #define __MALI_UTGARD_H__
 
 #include "mali_osk_types.h"
+#ifdef CONFIG_MALI_DEVFREQ
+#include <linux/devfreq.h>
+#include "mali_pm_metrics.h"
+#ifdef CONFIG_DEVFREQ_THERMAL
+#include <linux/devfreq_cooling.h>
+#endif
+#endif
 
 #define MALI_GPU_NAME_UTGARD "mali-utgard"
 
@@ -480,6 +487,18 @@
 		void (*get_clock_info)(struct mali_gpu_clock **data);
 		/* Function that get the current clock info, needed when CONFIG_MALI_DVFS enabled */
 		int (*get_freq)(void);
+		/* Function that init the mali gpu secure mode */
+		int (*secure_mode_init)(void);
+		/* Function that deinit the mali gpu secure mode */
+		void (*secure_mode_deinit)(void);
+		/* Function that reset GPU and enable gpu secure mode */
+		int (*gpu_reset_and_secure_mode_enable)(void);
+		/* Function that Reset GPU and disable gpu secure mode */
+		int (*gpu_reset_and_secure_mode_disable)(void);
+		/* ipa related interface customer need register */
+#if defined(CONFIG_MALI_DEVFREQ) && defined(CONFIG_DEVFREQ_THERMAL)
+		struct devfreq_cooling_power *gpu_cooling_ops;
+#endif
 	};
 
 	/**

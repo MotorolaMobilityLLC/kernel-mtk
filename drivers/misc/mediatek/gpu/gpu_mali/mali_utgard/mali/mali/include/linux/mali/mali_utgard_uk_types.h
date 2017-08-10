@@ -1,7 +1,7 @@
 /*
  * This confidential and proprietary software may be used only as
  * authorised by a licensing agreement from ARM Limited
- * (C) COPYRIGHT 2008-2015 ARM Limited
+ * (C) COPYRIGHT 2008-2016 ARM Limited
  * ALL RIGHTS RESERVED
  * The entire notice above must be reproduced on all authorised
  * copies and copies may only be made to the extent permitted
@@ -25,6 +25,8 @@ extern "C" {
 #define MALI_UK_TIMELINE_PP   1
 #define MALI_UK_TIMELINE_SOFT 2
 #define MALI_UK_TIMELINE_MAX  3
+
+#define MALI_UK_BIG_VARYING_SIZE  (1024*1024*2)
 
 typedef struct {
 	u32 points[MALI_UK_TIMELINE_MAX];
@@ -81,6 +83,7 @@ typedef enum {
 	_MALI_UK_TIMELINE_CREATE_SYNC_FENCE,  /**< _mali_ukk_timeline_create_sync_fence() */
 	_MALI_UK_SOFT_JOB_START,              /**< _mali_ukk_soft_job_start() */
 	_MALI_UK_SOFT_JOB_SIGNAL,             /**< _mali_ukk_soft_job_signal() */
+	_MALI_UK_PENDING_SUBMIT,             /**< _mali_ukk_pending_submit() */
 
 	/** Memory functions */
 
@@ -90,6 +93,7 @@ typedef enum {
 	_MALI_UK_UNBIND_MEM,                     /**< _mali_ukk_mem_unbind() */
 	_MALI_UK_COW_MEM,                        /**< _mali_ukk_mem_cow() */
 	_MALI_UK_COW_MODIFY_RANGE,               /**< _mali_ukk_mem_cow_modify_range() */
+	_MALI_UK_RESIZE_MEM,                     /**<._mali_ukk_mem_resize() */
 	_MALI_UK_QUERY_MMU_PAGE_TABLE_DUMP_SIZE, /**< _mali_ukk_mem_get_mmu_page_table_dump_size() */
 	_MALI_UK_DUMP_MMU_PAGE_TABLE,            /**< _mali_ukk_mem_dump_mmu_page_table() */
 	_MALI_UK_DMA_BUF_GET_SIZE,               /**< _mali_ukk_dma_buf_get_size() */
@@ -265,6 +269,9 @@ typedef struct {
 	u32 flush_id;                       /**< [in] flush id within the originating frame builder */
 	_mali_uk_fence_t fence;             /**< [in] fence this job must wait on */
 	u64 timeline_point_ptr;            /**< [in,out] pointer to u32: location where point on gp timeline for this job will be written */
+	u32 varying_memsize;            /** < [in] size of varying memory to use deffer bind*/
+	u32 deferred_mem_num;
+	u64 deferred_mem_list;         /** < [in] memory hanlde list of varying buffer to use deffer bind */
 } _mali_uk_gp_start_job_s;
 
 #define _MALI_PERFORMANCE_COUNTER_FLAG_SRC0_ENABLE (1<<0) /**< Enable performance counter SRC0 for a job */
@@ -279,6 +286,7 @@ typedef struct {
 	u32 heap_current_addr;          /**< [out] value of the GP PLB PL heap start address register */
 	u32 perf_counter0;              /**< [out] value of performance counter 0 (see ARM DDI0415A) */
 	u32 perf_counter1;              /**< [out] value of performance counter 1 (see ARM DDI0415A) */
+	u32 pending_big_job_num;
 } _mali_uk_gp_job_finished_s;
 
 typedef struct {
@@ -303,6 +311,7 @@ typedef struct {
 /** Flag for _mali_uk_pp_start_job_s */
 #define _MALI_PP_JOB_FLAG_NO_NOTIFICATION (1<<0)
 #define _MALI_PP_JOB_FLAG_IS_WINDOW_SURFACE (1<<1)
+#define _MALI_PP_JOB_FLAG_PROTECTED (1<<2)
 
 /** @defgroup _mali_uk_ppstartjob_s Fragment Processor Start Job
  * @{ */
@@ -639,7 +648,7 @@ typedef struct {
  * The 16bit integer is stored twice in a 32bit integer
  * For example, for version 1 the value would be 0x00010001
  */
-#define _MALI_API_VERSION 800
+#define _MALI_API_VERSION 900
 #define _MALI_UK_API_VERSION _MAKE_VERSION_ID(_MALI_API_VERSION)
 
 /**
@@ -719,6 +728,11 @@ typedef struct {
 	u64 ctx;                       /**< [in,out] user-kernel context (trashed on output) */
 } _mali_uk_request_high_priority_s;
 
+/** @brief Arguments for _mali_ukk_pending_submit() */
+typedef struct {
+	u64 ctx;                       /**< [in,out] user-kernel context (trashed on output) */
+} _mali_uk_pending_submit_s;
+
 /** @} */ /* end group _mali_uk_core */
 
 
@@ -727,6 +741,10 @@ typedef struct {
 
 #define _MALI_MEMORY_ALLOCATE_RESIZEABLE  (1<<4) /* BUFFER can trim dow/grow*/
 #define _MALI_MEMORY_ALLOCATE_NO_BIND_GPU (1<<5) /*Not map to GPU when allocate, must call bind later*/
+#define _MALI_MEMORY_ALLOCATE_SWAPPABLE   (1<<6) /* Allocate swappale memory. */
+#define _MALI_MEMORY_ALLOCATE_DEFER_BIND (1<<7) /*Not map to GPU when allocate, must call bind later*/
+#define _MALI_MEMORY_ALLOCATE_SECURE (1<<8) /* Allocate secure memory. */
+
 
 typedef struct {
 	u64 ctx;                                          /**< [in,out] user-kernel context (trashed on output) */
@@ -735,10 +753,7 @@ typedef struct {
 	u32 psize;                                        /**< [in] physical size of the allocation */
 	u32 flags;
 	u64 backend_handle;                               /**< [out] backend handle */
-	struct {
-		/* buffer types*/
-		/* CPU read/write info*/
-	} buffer_info;
+	s32 secure_shared_fd;                           /** < [in] the mem handle for secure mem */
 } _mali_uk_alloc_mem_s;
 
 
@@ -786,9 +801,6 @@ typedef struct {
 			u32 flags;                      /**< [in] flags, see \ref _MALI_MAP_EXTERNAL_MAP_GUARD_PAGE */
 		} bind_dma_buf;
 		struct {
-			/**/
-		} bind_mali_memory;
-		struct {
 			u32 phys_addr;                  /**< [in] physical address */
 			u32 rights;                     /**< [in] rights necessary for accessing memory */
 			u32 flags;                      /**< [in] flags, see \ref _MALI_MAP_EXTERNAL_MAP_GUARD_PAGE */
@@ -805,8 +817,8 @@ typedef struct {
 typedef struct {
 	u64 ctx;                                        /**< [in,out] user-kernel context (trashed on output) */
 	u32 target_handle;                              /**< [in] handle of allocation need to do COW */
-	u32 target_offset;              /**< [in] offset in target allocation to do COW(for support COW  a memory allocated from memory_bank, PAGE_SIZE align)*/
-	u32 target_size;                        /**< [in] size of target allocation to do COW (for support memory bank, PAGE_SIZE align)(in byte) */
+	u32 target_offset;                              /**< [in] offset in target allocation to do COW(for support COW  a memory allocated from memory_bank, PAGE_SIZE align)*/
+	u32 target_size;                                /**< [in] size of target allocation to do COW (for support memory bank, PAGE_SIZE align)(in byte) */
 	u32 range_start;                                /**< [in] re allocate range start offset, offset from the start of allocation (PAGE_SIZE align)*/
 	u32 range_size;                                 /**< [in] re allocate size (PAGE_SIZE align)*/
 	u32 vaddr;                                      /**< [in] mali address for the new allocaiton */
@@ -819,7 +831,7 @@ typedef struct {
 	u32 range_start;                                /**< [in] re allocate range start offset, offset from the start of allocation */
 	u32 size;                                       /**< [in] re allocate size*/
 	u32 vaddr;                                      /**< [in] mali address for the new allocaiton */
-	s32 change_pages_nr;            /**< [out] record the page number change for cow operation */
+	s32 change_pages_nr;                            /**< [out] record the page number change for cow operation */
 } _mali_uk_cow_modify_range_s;
 
 
@@ -832,6 +844,12 @@ typedef struct {
 /** Flag for _mali_uk_map_external_mem_s, _mali_uk_attach_ump_mem_s and _mali_uk_attach_dma_buf_s */
 #define _MALI_MAP_EXTERNAL_MAP_GUARD_PAGE (1<<0)
 
+
+typedef struct {
+	u64 ctx;                                /**< [in,out] user-kernel context (trashed on output) */
+	u64 vaddr;                              /* the buffer to do resize*/
+	u32 psize;                              /* wanted physical size of this memory */
+} _mali_uk_mem_resize_s;
 
 /**
  * @brief Arguments for _mali_uk[uk]_mem_write_safe()
