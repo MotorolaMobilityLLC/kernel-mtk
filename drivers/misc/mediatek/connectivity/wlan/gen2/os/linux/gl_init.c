@@ -3461,7 +3461,8 @@ static int initWlan(void)
 	register_set_dbg_level_handler(set_dbg_level_handler);
 
 	/* Register framebuffer notifier client*/
-	kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
+	if (gprWdev)
+		kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 
 	/* Set the initial DEBUG CLASS of each module */
 	return ret;
