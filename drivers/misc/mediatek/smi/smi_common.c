@@ -1184,7 +1184,7 @@ static void smiclk_subsys_after_on(enum subsys_id sys)
 					on_larb_power_on_with_ccf(i);
 #if defined(SMI_D1)
 					/* inform m4u to restore register value */
-					m4u_larb_backup((int)i4larbid);
+					m4u_larb_backup(i);
 #endif
 				}
 		}
@@ -1210,7 +1210,7 @@ static void smiclk_subsys_before_off(enum subsys_id sys)
 					on_larb_power_off_with_ccf(i);
 #if defined(SMI_D1)
 					/* inform m4u to backup register value */
-					m4u_larb_restore((int)i4larbid);
+					m4u_larb_restore(i);
 #endif
 					}
 
