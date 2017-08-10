@@ -56,6 +56,9 @@ extern void kalDevLoopbkRxHandle(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prS
 
 #define RX_RETURN_INDICATED_RFB_TIMEOUT_SEC      3
 
+#define RX_FW_FLUSH_PKT_THRESHOLD            20
+
+
 #if defined(_HIF_SDIO) && defined(WINDOWS_DDK)
 /*! On XP, maximum Tx+Rx Statue <= 64-4(HISR)*/
 #define SDIO_MAXIMUM_RX_LEN_NUM              0	/*!< 0~15 (0: un-limited) */
