@@ -3735,14 +3735,14 @@ void testcase_get_task_by_engine(void)
 	CMDQ_MSG("%s end\n", __func__);
 }
 
-int32_t _testcase_secure_handle(uint32_t secHandle)
+int32_t _testcase_secure_handle(uint32_t secHandle, enum CMDQ_SCENARIO_ENUM scenario)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	cmdqRecHandle hReqMDP;
 	const uint32_t PATTERN_MDP = (1 << 0) | (1 << 2) | (1 << 16);
 	int32_t status;
 
-	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &hReqMDP);
+	cmdq_task_create(scenario, &hReqMDP);
 	cmdq_task_reset(hReqMDP);
 	cmdq_task_set_secure(hReqMDP, true);
 
@@ -3781,12 +3781,12 @@ void testcase_invalid_handle(void)
 	CMDQ_MSG("%s\n", __func__);
 
 	/* In this case we use an invalid secure handle to check error handling */
-	status = _testcase_secure_handle(0xdeaddead);
+	status = _testcase_secure_handle(0xdeaddead, CMDQ_SCENARIO_SUB_DISP);
 	if (status >= 0)
 		CMDQ_ERR("TEST FAIL: should not success with invalid handle, status: %d\n", status);
 
 	/* Handle 0 will make SW do not translate to PA. */
-	status = _testcase_secure_handle(0x0);
+	status = _testcase_secure_handle(0x0, CMDQ_SCENARIO_DEBUG);
 	if (status >= 0)
 		CMDQ_ERR("TEST FAIL: should not success with handle 0, status: %d\n", status);
 
