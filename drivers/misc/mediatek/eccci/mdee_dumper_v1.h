@@ -76,18 +76,25 @@ typedef struct _ex_fatalerror_t {
 } __packed EX_FATALERR_T;
 
 /* MODEM MAUI Assert fail (296 bytes)*/
-/* enlarge file name zone only for C2K */
 typedef struct _ex_assert_fail_t {
+	u8 filename[24];
+	u32 linenumber;
+	u32 parameters[3];
+	u8 reserved1[256];
+} __packed EX_ASSERTFAIL_T;
+/* enlarge file name zone only for C2K */
+typedef struct _ex_c2k_assert_fail_t {
 	u8 filename[64];
 	u32 linenumber;
 	u32 parameters[3];
 	u8 reserved1[216];
-} __packed EX_ASSERTFAIL_T;
+} __packed EX_C2K_ASSERTFAIL_T;
 
 /* MODEM MAUI Globally exported data structure (300 bytes) */
 typedef union {
 	EX_FATALERR_T fatalerr;
 	EX_ASSERTFAIL_T assert;
+	EX_C2K_ASSERTFAIL_T c2k_assert;
 } __packed EX_CONTENT_T;
 
 /* MODEM MAUI Standard structure of an exception log ( */
