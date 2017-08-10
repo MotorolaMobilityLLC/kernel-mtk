@@ -280,6 +280,9 @@ static int mt6397_irq_suspend(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
 
+	if (!chip->irq_domain)
+		return 0;
+
 	regmap_write(chip->regmap, chip->int_con[0], chip->wake_mask[0]);
 	regmap_write(chip->regmap, chip->int_con[1], chip->wake_mask[1]);
 
@@ -291,6 +294,9 @@ static int mt6397_irq_suspend(struct device *dev)
 static int mt6397_irq_resume(struct device *dev)
 {
 	struct mt6397_chip *chip = dev_get_drvdata(dev);
+
+	if (!chip->irq_domain)
+		return 0;
 
 	regmap_write(chip->regmap, chip->int_con[0], chip->irq_masks_cur[0]);
 	regmap_write(chip->regmap, chip->int_con[1], chip->irq_masks_cur[1]);
@@ -331,12 +337,19 @@ static int mt6397_probe(struct platform_device *pdev)
 		goto fail_irq;
 	}
 
+	mt6397->irq = platform_get_irq(pdev, 0);
+
 	switch (id & 0xff) {
 	case MT6323_CID_CODE:
 		mt6397->int_con[0] = MT6323_INT_CON0;
 		mt6397->int_con[1] = MT6323_INT_CON1;
 		mt6397->int_status[0] = MT6323_INT_STATUS0;
 		mt6397->int_status[1] = MT6323_INT_STATUS1;
+		if (mt6397->irq > 0) {
+			ret = mt6397_irq_init(mt6397);
+			if (ret)
+				return ret;
+		}
 		ret = mfd_add_devices(&pdev->dev, -1, mt6323_devs,
 				ARRAY_SIZE(mt6323_devs), NULL, 0, NULL);
 		break;
@@ -347,6 +360,11 @@ static int mt6397_probe(struct platform_device *pdev)
 		mt6397->int_con[1] = MT6397_INT_CON1;
 		mt6397->int_status[0] = MT6397_INT_STATUS0;
 		mt6397->int_status[1] = MT6397_INT_STATUS1;
+		if (mt6397->irq > 0) {
+			ret = mt6397_irq_init(mt6397);
+			if (ret)
+				return ret;
+		}
 		ret = mfd_add_devices(&pdev->dev, -1, mt6397_devs,
 				ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
 		break;
@@ -355,13 +373,6 @@ static int mt6397_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "unsupported chip: %d\n", id);
 		ret = -ENODEV;
 		break;
-	}
-
-	mt6397->irq = platform_get_irq(pdev, 0);
-	if (mt6397->irq > 0) {
-		ret = mt6397_irq_init(mt6397);
-		if (ret)
-			return ret;
 	}
 
 fail_irq:
