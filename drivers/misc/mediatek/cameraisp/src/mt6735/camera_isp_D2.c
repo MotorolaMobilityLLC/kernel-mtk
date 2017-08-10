@@ -5901,10 +5901,6 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 
 	}
 	nr_camisp_devs = new_count;
-	if (pDev == NULL) {
-		dev_err(&pDev->dev, "pDev is NULL");
-		return -ENXIO;
-	}
 #endif
 
 

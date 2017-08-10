@@ -4560,6 +4560,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm, current->pid, current->tgid);
 		Ret = -ENOMEM;
+		goto EXIT;
 	}
 	/*  */
 	if (copy_from_user(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(ISP_REG_STRUCT)) != 0) {
@@ -5504,7 +5505,8 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
 		} else {
 			/* IrqUserKey_UserInfo[i].userName=userName; */
 			memset((void *)IrqUserKey_UserInfo[i].userName, 0, sizeof(IrqUserKey_UserInfo[i].userName));
-			strcpy((void *)IrqUserKey_UserInfo[i].userName, userName);
+			strncpy((void *)IrqUserKey_UserInfo[i].userName, userName,
+				sizeof(IrqUserKey_UserInfo[i].userName) - 1);
 			IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
 			key = FirstUnusedIrqUserKey;
 			FirstUnusedIrqUserKey++;

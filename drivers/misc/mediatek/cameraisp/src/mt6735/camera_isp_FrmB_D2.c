@@ -1066,15 +1066,18 @@ static void ISP_FBC_DUMP(MUINT32 dma_id, MUINT32 VF_1, MUINT32 VF_2, MUINT32 VF_
 	char str[128];
 	char str2[_rt_dma_max_];
 	MUINT32 dma;
+	MINT32 nleft = 0, nsize = 128, len = 0;
 
 	LOG_INF("================================\n");
 	LOG_INF("pass1 timeout log(timeout port:%d)", dma_id);
 	LOG_INF("================================\n");
 	str[0] = '\0';
+	nleft = nsize - 1; /* minus1 for null terminate */
 	LOG_INF("current activated dmaport");
 	for (z = 0; z < _rt_dma_max_; z++) {
-		sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[z].active);
-		strcat(str, str2);
+		len = sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[z].active);
+		strncat(str, str2, ((nleft < len) ? nleft : len));
+		nleft -= ((nleft < len) ? nleft : len);
 	}
 	LOG_INF("%s", str);
 	LOG_INF("================================\n");
@@ -1083,11 +1086,13 @@ static void ISP_FBC_DUMP(MUINT32 dma_id, MUINT32 VF_1, MUINT32 VF_2, MUINT32 VF_
 		dma = _imgo_;
 		{
 			str[0] = '\0';
+			nleft = nsize - 1;
 			LOG_INF("current fillled buffer(buf cnt): %d\n",
 				pstRTBuf_FrmB->ring_buf[dma].total_count);
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[dma].data[z].bFilled);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[dma].data[z].bFilled);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("================================\n");
@@ -1097,17 +1102,21 @@ static void ISP_FBC_DUMP(MUINT32 dma_id, MUINT32 VF_1, MUINT32 VF_2, MUINT32 VF_
 			LOG_INF("================================\n");
 			LOG_INF("RCNT_RECORD:cur dma_en_recorder\n");
 			str[0] = '\0';
+			nleft = nsize - 1;
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", dma_en_recorder[dma][z]);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", dma_en_recorder[dma][z]);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("================================\n");
 			LOG_INF("RCNT_RECORD:inc record\n");
 			str[0] = '\0';
+			nleft = nsize - 1;
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", mFwRcnt.INC[_IRQ][z]);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", mFwRcnt.INC[_IRQ][z]);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("RCNT_RECORD: dma idx = %d\n", mFwRcnt.DMA_IDX[dma]);
@@ -1120,11 +1129,13 @@ static void ISP_FBC_DUMP(MUINT32 dma_id, MUINT32 VF_1, MUINT32 VF_2, MUINT32 VF_
 		dma = _img2o_;
 		{
 			str[0] = '\0';
+			nleft = nsize - 1;
 			LOG_INF("current fillled buffer(buf cnt): %d\n",
 				pstRTBuf_FrmB->ring_buf[dma].total_count);
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[dma].data[z].bFilled);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", pstRTBuf_FrmB->ring_buf[dma].data[z].bFilled);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("================================\n");
@@ -1134,17 +1145,21 @@ static void ISP_FBC_DUMP(MUINT32 dma_id, MUINT32 VF_1, MUINT32 VF_2, MUINT32 VF_
 			LOG_INF("================================\n");
 			LOG_INF("RCNT_RECORD:cur dma_en_recorder\n");
 			str[0] = '\0';
+			nleft = nsize - 1;
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", dma_en_recorder[dma][z]);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", dma_en_recorder[dma][z]);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("================================\n");
 			LOG_INF("RCNT_RECORD:inc record\n");
 			str[0] = '\0';
+			nleft = nsize - 1;
 			for (z = 0; z < ISP_RT_BUF_SIZE; z++) {
-				sprintf(str2, "%d_", mFwRcnt.INC[_IRQ][z]);
-				strcat(str, str2);
+				len = sprintf(str2, "%d_", mFwRcnt.INC[_IRQ][z]);
+				strncat(str, str2, ((nleft < len) ? nleft : len));
+				nleft -= ((nleft < len) ? nleft : len);
 			}
 			LOG_INF("%s", str);
 			LOG_INF("RCNT_RECORD: dma idx = %d\n", mFwRcnt.DMA_IDX[dma]);
@@ -4053,7 +4068,7 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
 				if (key > 0) {
 				} else {
 					memset(IrqUserKey_UserInfo[i].userName, 0, USERKEY_STR_LEN);
-					strcpy(IrqUserKey_UserInfo[i].userName, m_UserName);
+					strncpy(IrqUserKey_UserInfo[i].userName, m_UserName, USERKEY_STR_LEN-1);
 					IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
 					key = FirstUnusedIrqUserKey;
 					FirstUnusedIrqUserKey++;
