@@ -24,6 +24,7 @@
 #include <linux/init.h>
 #include <linux/rwlock.h>
 #include <linux/sort.h>
+#include <linux/delay.h>
 
 /* Trigger method for screen on/off */
 #include <linux/fb.h>
@@ -69,6 +70,12 @@ static struct wakeup_source mlp_wakeup;
 #define MLPT_CLEAR_ACTION       (0x0)
 #define MLPT_SET_ACTION         (0x1)
 static struct task_struct *memory_lowpower_task;
+#ifdef CONFIG_MTK_PERIODIC_DATA_COLLECTION
+static struct task_struct *periodic_dc_task;
+unsigned long nr_dc;
+unsigned long nr_skip_dc;
+#define DATA_COLLECTION_PERIOD 300000
+#endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
 static enum power_state memory_lowpower_action;
 static atomic_t action_changed;
 static unsigned long memory_lowpower_state;
@@ -499,6 +506,46 @@ static int memory_lowpower_entry(void *p)
 	return 0;
 }
 
+#ifdef CONFIG_MTK_PERIODIC_DATA_COLLECTION
+/*
+ * periodic_dc_entry
+ * Every DATA_COLLECTION_PERIOD ms we check if the free page
+ * numbers of ZONE_MOVABLE is less than 90% of total pages of
+ * ZONE_MOVABLE.
+ */
+static int periodic_dc_entry(void *p)
+{
+	int nid;
+	pg_data_t *pgdat;
+	struct zone *zone;
+	unsigned long free_pages, spanned_pages;
+	int trigger;
+
+	do {
+		trigger = 0;
+		for_each_online_node(nid) {
+			pgdat = NODE_DATA(nid);
+			zone = &pgdat->node_zones[ZONE_MOVABLE];
+			free_pages = zone_page_state(zone, NR_FREE_PAGES);
+			spanned_pages = zone->spanned_pages;
+			if (free_pages < (spanned_pages / 10 * 9)) {
+				trigger = 1;
+				break;
+			}
+		}
+		if (trigger) {
+			get_memory_lowpower_cma();
+			put_memory_lowpower_cma();
+			nr_dc++;
+		} else
+			nr_skip_dc++;
+		msleep(DATA_COLLECTION_PERIOD);
+	} while (1);
+
+	return 0;
+}
+#endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
+
 #ifdef CONFIG_PM
 /* FB event notifier */
 static int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
@@ -604,6 +651,15 @@ int __init memory_lowpower_task_init(void)
 		goto out;
 	}
 
+#ifdef CONFIG_MTK_PERIODIC_DATA_COLLECTION
+	periodic_dc_task = kthread_run(periodic_dc_entry, NULL, "periodic_dc_task");
+	if (IS_ERR(periodic_dc_task)) {
+		MLPT_PRERR("Failed to start periodic_dc_task!\n");
+		ret = PTR_ERR(periodic_dc_task);
+		goto out;
+	}
+#endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
+
 #ifdef CONFIG_PM
 	/* Initialize PM ops */
 	ret = memory_lowpower_init_pm_ops();
@@ -637,6 +693,10 @@ static int memory_lowpower_task_show(struct seq_file *m, void *v)
 			memory_lowpower_statistics.nr_full_acquire,
 			memory_lowpower_statistics.nr_partial_acquire,
 			memory_lowpower_statistics.nr_empty_acquire);
+#ifdef CONFIG_MTK_PERIODIC_DATA_COLLECTION
+	seq_printf(m, "data collection=%lu, skip=%lu, t=%d(ms)\n",
+			nr_dc, nr_skip_dc, DATA_COLLECTION_PERIOD);
+#endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
 
 	return 0;
 }
