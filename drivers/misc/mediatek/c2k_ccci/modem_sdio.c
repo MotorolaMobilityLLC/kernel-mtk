@@ -230,10 +230,10 @@ static void sdio_tx_rx_printk(const void *buf, unsigned char type)
 	count = calc_payload_len(head, NULL);
 	if (type == 1)
 		LOGPRT(LOG_INFO, "write %d to channel%d/[%d]>>",
-			 count, head->chanInfo, sdio_tx_cnt);
+			 count, head->chanInfo + (head->tranHi & EXTEND_CH_BIT), sdio_tx_cnt);
 	else
 		LOGPRT(LOG_INFO, "read %d from channel%d/[%d]<<",
-			 count, head->chanInfo, sdio_rx_cnt);
+			 count, head->chanInfo + (head->tranHi & EXTEND_CH_BIT), sdio_rx_cnt);
 
 	/*if(count > RECORD_DUMP_MAX) */
 	/*count = RECORD_DUMP_MAX; */
@@ -1768,6 +1768,8 @@ static void sdio_write_port_work(struct work_struct *work)
 			/*port->index start from 0, chanInfo start from 1, chan0 is ctrl channel. */
 			msg_head->chanInfo = 0x0F & (port->index + 1);
 			msg_head->tranHi = 0x0F & (todo >> 8);
+			if (port->index >= SDIO_AT4_CHANNEL_NUM - 1)
+				msg_head->tranHi |= EXTEND_CH_BIT;
 			msg_head->tranLow = 0xFF & todo;
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
 			msg_head->hw_head.len_hi =
@@ -2866,6 +2868,7 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 	/*unsigned char pending = 0; */
 	unsigned int hw_len;
 	int raw_val;
+	int ch_id = 0;
 
 	static struct sdio_msg_head *msg_head;
 	static int throughput_count;
@@ -3018,24 +3021,28 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 			}
 		}
 
-		if ((modem->msg->head.chanInfo == SDIO_AT_CHANNEL_NUM) ||
+		if ((!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+			((modem->msg->head.chanInfo == SDIO_AT_CHANNEL_NUM) ||
 		    (modem->msg->head.chanInfo == SDIO_AT2_CHANNEL_NUM) ||
 		    (modem->msg->head.chanInfo == EXCP_MSG_CH_ID) ||
 		    (modem->msg->head.chanInfo == EXCP_CTRL_CH_ID) ||
 		    (modem->msg->head.chanInfo == AGPS_CH_ID) ||
-		    (modem->msg->head.chanInfo == SDIO_AT3_CHANNEL_NUM)) {
+		    (modem->msg->head.chanInfo == SDIO_AT3_CHANNEL_NUM))) ||
+		    (modem->msg->head.tranHi & EXTEND_CH_BIT)) {
 			sdio_tx_rx_printk(modem->msg, 0);
 		}
 
 		if ((modem->status == MD_EXCEPTION
 		     || modem->status == MD_EXCEPTION_ONGOING)) {
 			if (dump_exp_data
-			    && modem->msg->head.chanInfo == EXCP_DATA_CH_ID) {
+			    && (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+			    modem->msg->head.chanInfo == EXCP_DATA_CH_ID)) {
 				sdio_tx_rx_printk(modem->msg, 0);
 				dump_exp_data = 0;
 			}
 			/*make sure each crash file can be dumpped */
-			if (modem->msg->head.chanInfo == EXCP_MSG_CH_ID)
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				modem->msg->head.chanInfo == EXCP_MSG_CH_ID)
 				dump_exp_data = 1;
 
 		}
@@ -3107,7 +3114,8 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 #if 1
 			/*Just for test */
 
-			if (modem->msg->head.chanInfo == CCMNI_AP_LOOPBACK_CH) {
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				modem->msg->head.chanInfo == CCMNI_AP_LOOPBACK_CH) {
 				if (!throughput_count) {
 					LOGPRT(LOG_INFO,
 					       "C2K throughput test begin....\n");
@@ -3131,19 +3139,22 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 				       modem->msg->head.start_flag);
 				goto out;
 			}
-			if (modem->msg->head.chanInfo == EXCP_CTRL_CH_ID
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				modem->msg->head.chanInfo == EXCP_CTRL_CH_ID
 			    && (modem->status == MD_EXCEPTION
 				|| modem->status == MD_EXCEPTION_ONGOING))
 				modem_exception_handler(modem);
 
-			if ((modem->msg->head.chanInfo == EXCP_MSG_CH_ID)
-			    || (modem->msg->head.chanInfo == EXCP_DATA_CH_ID)) {
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				((modem->msg->head.chanInfo == EXCP_MSG_CH_ID)
+			    || (modem->msg->head.chanInfo == EXCP_DATA_CH_ID))) {
 				LOGPRT(LOG_DEBUG,
 				       "excp msg/data received ch[%d]\n",
 				       modem->msg->head.chanInfo);
 			}
 #if ENABLE_CCMNI
-			if ((modem->msg->head.chanInfo & 0x0F) == CCMNI_CH_ID) {
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				((modem->msg->head.chanInfo & 0x0F) == CCMNI_CH_ID)) {
 				index = CCMNI_CH_ID - 1;
 				port = modem->port[index];
 				if (!port->inception) {
@@ -3191,7 +3202,7 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 					total_copy += rx_len;
 					keep_skb = 1;
 					/*the last packet of skb received */
-					if (!(modem->msg->head.tranHi & 0x20)) {
+					if (!(modem->msg->head.tranHi & MORE_DATA_FOLLOWING)) {
 						LOGPRT(LOG_DEBUG,
 						       "%s: data to ccmni...\n",
 						       __func__);
@@ -3209,16 +3220,20 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 			}
 #endif
 #if ENABLE_CHAR_DEV
-			if ((modem->msg->head.chanInfo & 0x0F) == MD_LOG2_CH_ID) {
+			if (!(modem->msg->head.tranHi & EXTEND_CH_BIT) &&
+				((modem->msg->head.chanInfo & 0x0F) == MD_LOG2_CH_ID)) {
 				ret = sdio_modem_log_input(modem, index);
 				if (unlikely(ret < 0))
 					goto out;
 			}
 #endif
-			if (msg_head->chanInfo > 0
-			    && msg_head->chanInfo < (SDIO_TTY_NR + 1)) {
+
+			ch_id = (modem->msg->head.chanInfo & 0x0F) +
+					(modem->msg->head.tranHi & EXTEND_CH_BIT);
+			if (ch_id > 0
+			    && ch_id < (SDIO_TTY_NR + 1)) {
 				/*pay attention to channel mapping with rawbulk in rawbulk_push_upstream_buffer() */
-				index = msg_head->chanInfo - 1;
+				index = ch_id - 1;
 
 				/*
 				   because we've already processed offset info when copy data to as_packet buffer.
@@ -3268,7 +3283,7 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 								      -
 								      payload_offset));
 #if ENABLE_CCMNI
-				} else if (msg_head->chanInfo != CCMNI_CH_ID) {
+				} else if (ch_id != CCMNI_CH_ID) {
 #else
 				} else {
 #endif
@@ -3294,7 +3309,7 @@ static void sdio_pio_intr_handler(struct sdio_func *func)
 						tty_kref_put(tty);
 #endif
 				}
-			} else if (msg_head->chanInfo == 0) {	/*control message analyze */
+			} else if (ch_id == 0) {	/*control message analyze */
 				ctrl_msg_analyze(modem);
 			} else {
 #if ENABLE_CCMNI
@@ -3743,7 +3758,7 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 		msg_head = (struct sdio_msg_head *)buf;
 		print_buf = (unsigned char *)buf;
 	}
-	ch_id = msg_head->chanInfo & 0x0F;
+	ch_id = (msg_head->chanInfo & 0x0F) + (msg_head->tranHi & EXTEND_CH_BIT);
 	tport_id = ch_id - 1;
 
 	if (tport_id >= 0 && tport_id < SDIO_TTY_NR)
@@ -3890,10 +3905,14 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 	    || (ch_id == SDIO_AT2_CHANNEL_NUM)
 	    || (ch_id == SDIO_AT3_CHANNEL_NUM)
 	    || (ch_id == EXCP_CTRL_CH_ID) || (ch_id == EXCP_MSG_CH_ID)
-	    || (ch_id == AGPS_CH_ID) || (ch_id == MD_LOG_CH_ID)) {
+	    || (ch_id == AGPS_CH_ID) || (ch_id == MD_LOG_CH_ID)
+	    || (ch_id == SDIO_AT4_CHANNEL_NUM) || (ch_id == SDIO_AT5_CHANNEL_NUM)
+	    || (ch_id == SDIO_AT6_CHANNEL_NUM) || (ch_id == SDIO_AT7_CHANNEL_NUM)
+	    || (ch_id == SDIO_AT8_CHANNEL_NUM)) {
 		LOGPRT(LOG_NOTICE, "ch_id(%d)\n", ch_id);
 		sdio_tx_rx_printk(buf, 1);
 	}
+
 #if PADDING_BY_BLOCK_SIZE
 	/*sdio_tx_rx_printk(buf, 1); */
 	block_cnt = len / DEFAULT_BLK_SIZE;

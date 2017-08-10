@@ -29,7 +29,7 @@
 
 #define SDIO_TTY_CHAN_ID_BEGIN	1
 #define SDIO_TTY_CHAN_ID_END	13
-#define SDIO_TTY_NR		13	/*Number of UARTs this driver can handle */
+#define SDIO_TTY_NR		20	/*Number of UARTs this driver can handle */
 
 #ifdef CONFIG_EVDO_DT_VIA_SUPPORT
 #define CTRL_CH_ID			0
@@ -57,6 +57,11 @@
 #define EXCP_MSG_CH_ID		12
 #define EXCP_DATA_CH_ID		13
 #define CCMNI_AP_LOOPBACK_CH	(15)
+#define SDIO_AT4_CHANNEL_NUM	(16)
+#define SDIO_AT5_CHANNEL_NUM	(17)
+#define SDIO_AT6_CHANNEL_NUM	(18)
+#define SDIO_AT7_CHANNEL_NUM	(19)
+#define SDIO_AT8_CHANNEL_NUM	(20)
 #endif
 
 #define HEART_BEAT_TIMEOUT		(10000)	/*ms */
@@ -98,6 +103,7 @@
 #define SDIO_MSG_MAX_LEN			4096
 
 #define MORE_DATA_FOLLOWING				(0x20)
+#define EXTEND_CH_BIT					(0x10)
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
 struct sdio_hw_head {
 	unsigned char len_low;
