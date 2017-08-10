@@ -12,6 +12,9 @@
 #
 
 PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753)))
+subdir-ccflags-y += -DCOMMON_DISP_LOG
+endif
 ifeq ($(CONFIG_SINGLE_PANEL_OUTPUT),y)
     ifeq ($(CONFIG_ARCH_MT6735M), y)
     obj-y += common/
