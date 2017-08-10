@@ -177,6 +177,11 @@ static inline bool kmem_cache_has_cpu_partial(struct kmem_cache *s)
  */
 #define DEBUG_METADATA_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER)
 
+/*
+ * Disable SLAG_STORE_USER for low memory device
+ */
+#define DEBUG_LOWMEM_FLAGS (SLAB_RED_ZONE | SLAB_POISON)
+
 #define OO_SHIFT	16
 #define OO_MASK		((1 << OO_SHIFT) - 1)
 #define MAX_OBJS_PER_PAGE	32767 /* since page.objects is u15 */
@@ -1202,7 +1207,11 @@ fail:
 
 static int __init setup_slub_debug(char *str)
 {
+#ifdef CONFIG_MTK_LOW_RAM_DEBUG
+	slub_debug = DEBUG_LOWMEM_FLAGS;
+#else
 	slub_debug = DEBUG_DEFAULT_FLAGS;
+#endif
 	if (*str++ != '=' || !*str)
 		/*
 		 * No options specified. Switch on full debugging.
