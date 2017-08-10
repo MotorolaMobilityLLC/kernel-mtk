@@ -1,0 +1,16 @@
+evb6580*
+evb6735*
+evb6753*
+evb6735m*
+evb6755*
+evb6797*
+tb*
+fpga*
+*_pre_*
+k97v1_64_op01_te_p*
+k97v1_64_op02_te_p*
+huawei6755_m_64_*
+k97v1_64_schem_*
+k97v1_64_om_te_p*
+k97v1_64_op09_te_p*
+*_schem*
