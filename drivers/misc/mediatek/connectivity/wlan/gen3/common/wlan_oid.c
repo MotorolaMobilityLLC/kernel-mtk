@@ -11001,8 +11001,10 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 	if (scnFsmSchedScanRequest(prAdapter,
 				   (UINT_8) (prSchedScanRequest->u4SsidNum),
 				   prSchedScanRequest->arSsid,
+				   prSchedScanRequest->acRssiThresold,
 				   prSchedScanRequest->u4IELength,
-				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
+				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval,
+				   prSchedScanRequest->ucChnlNum, prSchedScanRequest->pucChannels) == TRUE)
 		return WLAN_STATUS_PENDING;
 	else
 		return WLAN_STATUS_FAILURE;

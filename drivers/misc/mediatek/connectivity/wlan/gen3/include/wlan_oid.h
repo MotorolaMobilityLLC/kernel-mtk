@@ -1097,9 +1097,12 @@ typedef struct _PARAM_SCAN_REQUEST_ADV_T {
 typedef struct _PARAM_SCHED_SCAN_REQUEST_T {
 	UINT_32 u4SsidNum;
 	PARAM_SSID_T arSsid[CFG_SCAN_SSID_MATCH_MAX_NUM];
+	INT_8 acRssiThresold[CFG_SCAN_SSID_MATCH_MAX_NUM];
 	UINT_32 u4IELength;
 	PUINT_8 pucIE;
 	UINT_16 u2ScanInterval;	/* in milliseconds */
+	UINT_8 ucChnlNum;
+	PUINT_8 pucChannels;
 } PARAM_SCHED_SCAN_REQUEST, *P_PARAM_SCHED_SCAN_REQUEST;
 
 #if CFG_SUPPORT_PASSPOINT

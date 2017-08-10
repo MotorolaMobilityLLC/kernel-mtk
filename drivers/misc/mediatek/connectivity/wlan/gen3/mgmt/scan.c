@@ -975,14 +975,12 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
-
+#if CFG_SUPPORT_SCN_PSCN
 	if (prScanInfo->prPscnParam)
 		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
-
-	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
-#if CFG_SUPPORT_SCN_PSCN
 	cnmTimerStopTimer(prAdapter, &prScanInfo->rWaitForGscanResutsTimer);
 #endif
+	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
 }				/* end of scnUninit() */
 
 /*----------------------------------------------------------------------------*/
@@ -2728,7 +2726,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 		/* 4 <3> Send SW_RFB_T to HIF when we perform SCAN for HOST */
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
-			if (prConnSettings->fgIsScanReqIssued) {
+			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning) {
 				BOOLEAN fgAddToScanResult;
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);

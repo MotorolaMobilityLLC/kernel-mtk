@@ -2491,7 +2491,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		prRetSwRfb = prNextSwRfb;
 	}
 }
-
+#if CFG_SUPPORT_GSCN
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Process GSCAN event packet
@@ -2698,7 +2698,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	return real_num;
 }
-
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Process HIF event packet

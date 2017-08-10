@@ -263,6 +263,11 @@ typedef enum _ENUM_EVENT_ID_T {
 #define CMD_ID_SET_PSCN_MAC_ADDR     CMD_ID_SET_GSCAN_MAC_ADDR          /* 0x65 (Set) */	/* 0x47 (Set) */
 #define CMD_ID_SET_PSCN_ENABLE      CMD_ID_SET_PSCAN_ENABLE
 
+#define NLO_CHANNEL_TYPE_SPECIFIED	0
+#define NLO_CHANNEL_TYPE_DUAL_BAND	1
+#define NLO_CHANNEL_TYPE_2G4_ONLY	2
+#define NLO_CHANNEL_TYPE_5G_ONLY	3
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1417,13 +1422,18 @@ typedef enum _ENUM_NLO_AUTH_ALGORITHM {
 	NLO_AUTH_ALGO_RSNA_PSK = 7,
 } ENUM_NLO_AUTH_ALGORITHM, *P_ENUM_NLO_AUTH_ALGORITHM;
 
-typedef struct _NLO_NETWORK {
-	UINT_8 ucNumChannelHint[4];
+struct NLO_SSID_MATCH_SETS {
+	INT_8 cRssiThresold;
 	UINT_8 ucSSIDLength;
-	UINT_8 ucCipherAlgo;
-	UINT_16 u2AuthAlgo;
 	UINT_8 aucSSID[32];
-} NLO_NETWORK, *P_NLO_NETWORK;
+};
+
+struct NLO_NETWORK {
+	UINT_8 ucChannelType; /* 0: specific channel; 1: dual band; 2: 2.4G; 3: 5G; 3*/
+	UINT_8 ucChnlNum;
+	UINT_8 aucChannel[94];
+	struct NLO_SSID_MATCH_SETS arMatchSets[16];
+};
 
 typedef struct _CMD_NLO_REQ {
 	UINT_8 ucSeqNum;
@@ -1435,7 +1445,7 @@ typedef struct _CMD_NLO_REQ {
 	UINT_8 ucEntryNum;
 	UINT_8 ucFlag;		/* BIT(0) Check cipher */
 	UINT_16 u2IELen;
-	NLO_NETWORK arNetworkList[16];
+	struct NLO_NETWORK rNLONetwork;
 	UINT_8 aucIE[0];
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 

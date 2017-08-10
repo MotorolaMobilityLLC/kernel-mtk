@@ -658,12 +658,7 @@ typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
 
 	/* Match SSID */
 	UINT_8 ucMatchSSIDNum;
-	UINT_8 ucMatchSSIDLen[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucMatchSSID[SCN_SSID_MATCH_MAX_NUM][ELEM_MAX_LEN_SSID];
-
-	UINT_8 aucCipherAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_16 au2AuthAlgo[SCN_SSID_MATCH_MAX_NUM];
-	UINT_8 aucChannelHint[SCN_SSID_MATCH_MAX_NUM][SCN_NLO_NETWORK_CHANNEL_NUM];
+	struct NLO_NETWORK rNLONetwork;
 	P_BSS_DESC_T aprPendingBssDescToInd[SCN_SSID_MATCH_MAX_NUM];
 } NLO_PARAM_T, *P_NLO_PARAM_T;
 
@@ -983,7 +978,8 @@ BOOLEAN scnQuerySparseChannel(IN P_ADAPTER_T prAdapter, P_ENUM_BAND_T prSparseBa
 BOOLEAN
 scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		       IN UINT_8 ucSsidNum,
-		       IN P_PARAM_SSID_T prSsid, IN UINT_32 u4IeLength, IN PUINT_8 pucIe, IN UINT_16 u2Interval);
+		       IN P_PARAM_SSID_T prSsid, PINT_8 pcRssiThresold, IN UINT_32 u4IeLength, IN PUINT_8 pucIe,
+		       IN UINT_16 u2Interval, UINT_8 ucChnlNum, PUINT_8 pucChannels);
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 

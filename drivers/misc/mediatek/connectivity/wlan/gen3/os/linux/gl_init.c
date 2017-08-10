@@ -1010,10 +1010,8 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_cfg80211_testmode_cmd,
 #endif
-#if 0	/* Remove schedule_scan because we need more verification for NLO */
 	.sched_scan_start = mtk_cfg80211_sched_scan_start,
 	.sched_scan_stop = mtk_cfg80211_sched_scan_stop,
-#endif
 #if CFG_SUPPORT_TDLS
 	.tdls_oper = mtk_cfg80211_tdls_oper,
 	.tdls_mgmt = mtk_cfg80211_tdls_mgmt,
@@ -1046,6 +1044,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_get_capabilities
 	},
+#if CFG_SUPPORT_GSCN
 	{
 		{
 			.vendor_id = GOOGLE_OUI,
@@ -1086,6 +1085,7 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_get_scan_results
 	},
+#endif /* CFG_SUPPORT_GSCN */
 	{
 		{
 			.vendor_id = GOOGLE_OUI,
@@ -2110,6 +2110,9 @@ static void createWirelessDevice(void)
 	prWdev->iftype = NL80211_IFTYPE_STATION;
 	prWiphy->max_scan_ssids = 1;	/* FIXME: for combo scan */
 	prWiphy->max_scan_ie_len = 512;
+	prWiphy->max_sched_scan_ssids     = CFG_SCAN_SSID_MAX_NUM;
+	prWiphy->max_match_sets           = CFG_SCAN_SSID_MATCH_MAX_NUM;
+	prWiphy->max_sched_scan_ie_len    = CFG_CFG80211_IE_BUF_LEN;
 	prWiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_ADHOC);
 	prWiphy->bands[IEEE80211_BAND_2GHZ] = &mtk_band_2ghz;
 	/* always assign 5Ghz bands here, if the chip is not support 5Ghz,
@@ -2118,7 +2121,8 @@ static void createWirelessDevice(void)
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
 	prWiphy->cipher_suites = mtk_cipher_suites;
 	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
-	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL |
+		WIPHY_FLAG_SUPPORTS_SCHED_SCAN;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
 #if CFG_SUPPORT_TDLS
 	TDLSEX_WIPHY_FLAGS_INIT(prWiphy->flags);

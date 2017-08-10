@@ -764,11 +764,9 @@
  *------------------------------------------------------------------------------
  */
 
-#define CFG_SUPPORT_GSCN   1
+#define CFG_SUPPORT_GSCN   0
 
-#if CFG_SUPPORT_GSCN
-#define CFG_SUPPORT_SCN_PSCN   1
-#endif
+#define CFG_SUPPORT_SCN_PSCN   CFG_SUPPORT_GSCN
 
 /*------------------------------------------------------------------------------
  * Flags of Sniffer SUPPORT

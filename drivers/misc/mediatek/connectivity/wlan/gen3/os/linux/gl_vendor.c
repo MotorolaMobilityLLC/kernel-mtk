@@ -253,6 +253,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 	   TRUE,
 	   FALSE,
 	   &u4BufLen); */
+#if CFG_SUPPORT_GSCN
 	rGscanCapabilities.max_scan_cache_size = PSCAN_MAX_SCAN_CACHE_SIZE;
 	rGscanCapabilities.max_scan_buckets = GSCAN_MAX_BUCKETS;
 	rGscanCapabilities.max_ap_cache_per_scan = PSCAN_MAX_AP_CACHE_PER_SCAN;
@@ -261,7 +262,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 	rGscanCapabilities.max_hotlist_aps = MAX_HOTLIST_APS;
 	rGscanCapabilities.max_significant_wifi_change_aps = MAX_SIGNIFICANT_CHANGE_APS;
 	rGscanCapabilities.max_bssid_history_entries = PSCAN_MAX_AP_CACHE_PER_SCAN * PSCAN_MAX_SCAN_CACHE_SIZE;
-
+#endif
 	/* NLA_PUT_U8(skb, NL80211_TESTMODE_STA_STATISTICS_INVALID, 0); */
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_ID, GOOGLE_OUI); */
 	/* NLA_PUT_U32(skb, NL80211_ATTR_VENDOR_SUBCMD, GSCAN_SUBCMD_GET_CAPABILITIES); */
@@ -271,7 +272,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 
 	return i4Status;
 }
-
+#if CFG_SUPPORT_GSCN
 int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	WLAN_STATUS rStatus;
@@ -480,7 +481,7 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	kalMemFree(attr, VIR_MEM_TYPE, (sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1)));
 	return 0;
 }
-
+#endif
 int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wireless_dev *wdev,
 					       const void *data, int data_len)
 {
@@ -699,7 +700,7 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 nla_put_failure:
 	return -1;
 }
-
+#if CFG_SUPPORT_GSCN
 int mtk_cfg80211_vendor_enable_scan(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	WLAN_STATUS rStatus;
@@ -820,7 +821,7 @@ int mtk_cfg80211_vendor_get_scan_results(struct wiphy *wiphy, struct wireless_de
 nla_put_failure:
 	return -1;
 }
-
+#endif
 int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	INT_32 i4Status = -EINVAL;
