@@ -68,6 +68,8 @@ static unsigned int gp_curr_cpu_pwr_limit;
 static unsigned int gp_prev_gpu_pwr_limit;
 static unsigned int gp_curr_gpu_pwr_limit;
 
+static DEFINE_MUTEX(apthermolmt_cpu_mutex);
+
 /*=============================================================
  * Weak functions
  *=============================================================*/
@@ -143,6 +145,8 @@ void apthermolmt_set_cpu_power_limit(struct apthermolmt_user *handle, unsigned i
 	/* decide min CPU limit */
 	handle->cpu_limit = limit;
 
+	mutex_lock(&apthermolmt_cpu_mutex);
+
 #if AP_THERMO_LMT_MAX_USERS == 3
 	final_limit = MIN(_users[0]->cpu_limit, _users[1]->cpu_limit);
 	final_limit = MIN(final_limit, _users[2]->cpu_limit);
@@ -169,6 +173,8 @@ void apthermolmt_set_cpu_power_limit(struct apthermolmt_user *handle, unsigned i
 		if (time_after(jiffies, timeout))
 			tscpu_warn("blocked in cpu limit %u over 100ms\n", apthermolmt_curr_cpu_pwr_lim);
 	}
+
+	mutex_unlock(&apthermolmt_cpu_mutex);
 }
 EXPORT_SYMBOL(apthermolmt_set_cpu_power_limit);
 
