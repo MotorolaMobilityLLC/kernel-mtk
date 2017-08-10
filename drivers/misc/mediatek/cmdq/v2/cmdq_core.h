@@ -24,8 +24,6 @@
 #include <linux/sched.h>
 #include "cmdq_def.h"
 
-#define CMDQ_JUMP_MEM
-
 /*  */
 /* address conversion for 4GB ram support: */
 /* .address register: 32 bit */
@@ -463,15 +461,9 @@ typedef struct TaskStruct {
 
 	/* For buffer state */
 	TASK_STATE_ENUM taskState;	/* task life cycle */
-#ifdef CMDQ_JUMP_MEM
 	struct list_head cmd_buffer_list;	/* list of allocated command buffer */
 	uint32_t buf_available_size;		/* available size for last buffer in list */
-#else
-	uint32_t *pVABase;	/* virtual address of command buffer */
-	dma_addr_t MVABase;	/* physical address of command buffer */
-#endif
 	uint32_t bufferSize;	/* size of allocated command buffer */
-	bool useEmergencyBuf;	/* is the command buffer emergency buffer? */
 
 	/* For execution */
 	int32_t scenario;
@@ -625,13 +617,6 @@ typedef struct WriteAddrStruct {
 	dma_addr_t pa;
 	pid_t user;
 } WriteAddrStruct;
-
-typedef struct EmergencyBufferStruct {
-	bool used;
-	uint32_t size;
-	void *va;
-	dma_addr_t pa;
-} EmergencyBufferStruct;
 
 /**
  * shared memory between normal and secure world
@@ -959,8 +944,6 @@ extern "C" {
 
 	bool cmdq_core_should_print_msg(void);
 	bool cmdq_core_should_full_error(void);
-
-	int32_t cmdq_core_enable_emergency_buffer_test(const bool enable);
 
 	int32_t cmdq_core_parse_instruction(const uint32_t *pCmd, char *textBuf, int bufLen);
 
