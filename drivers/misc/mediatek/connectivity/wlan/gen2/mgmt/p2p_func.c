@@ -890,7 +890,8 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		wlanProcessCommandQueue(prAdapter, &prAdapter->prGlueInfo->rCmdQueue);
 		wlanReleasePowerControl(prAdapter);
 
-		kalMdelay(100);
+		DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
+		kalMdelay(500);
 
 		/* Change Connection Status. */
 		p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
