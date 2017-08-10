@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 /******************************************************************************
  * pwrap_hal.c - Linux pmic_wrapper Driver,hardware_dependent driver
  *
@@ -688,7 +701,7 @@ static s32 _pwrap_wacs2_nochk(u32 write, u32 adr, u32 wdata, u32 *rdata)
 static s32 _pwrap_init_dio(u32 dio_en)
 {
 	u32 arb_en_backup = 0x0;
-	u32 rdata = 0x0;
+	/* u32 rdata = 0x0; */
 	u32 return_value = 0;
 
 	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
@@ -708,14 +721,14 @@ static s32 _pwrap_init_dio(u32 dio_en)
 	/* enable AP DIO mode */
 	WRAP_WR32(PMIC_WRAP_DIO_EN, dio_en);
 	/* Read Test */
-#ifdef SLV_6351
+/* #ifdef SLV_6351
 	pwrap_read_nochk(MT6351_DEW_READ_TEST, &rdata);
 	if (rdata != MT6351_DEFAULT_VALUE_READ_TEST) {
 		PWRAPERR("[Dio_mode][Read Test] fail,dio_en = %x, READ_TEST rdata=%x, exp=%x\n",
 			 dio_en, rdata, MT6351_DEFAULT_VALUE_READ_TEST);
 		return E_PWR_READ_TEST_FAIL;
 	}
-#endif
+#endif */
 	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
 
 	return 0;
@@ -750,8 +763,6 @@ static s32 _pwrap_init_cipher(void)
 	pwrap_write_nochk(MT6351_DEW_CIPHER_EN, 0x1);
 #endif
 
-	PWRAPLOG("mt_pwrap_init---- debug8.1\n");
-
 	/*wait for cipher data ready@AP */
 	return_value =
 	    wait_for_state_ready_init(wait_for_cipher_ready, TIMEOUT_WAIT_IDLE,
@@ -760,7 +771,7 @@ static s32 _pwrap_init_cipher(void)
 		PWRAPERR("wait for cipher data ready@AP fail,return_value=%x\n", return_value);
 		return return_value;
 	}
-	PWRAPLOG("mt_pwrap_init---- debug8.2\n");
+	PWRAPLOG("cipher data ready@AP\n");
 
 	/* wait for cipher data ready@PMIC */
 #ifdef SLV_6351
@@ -778,7 +789,7 @@ static s32 _pwrap_init_cipher(void)
 		return return_value;
 	}
 #endif
-	PWRAPLOG("mt_pwrap_init---- debug8.3\n");
+	PWRAPLOG("cipher data ready@PMIC\n");
 
 	/* wait for cipher mode idle */
 	return_value =
@@ -909,7 +920,8 @@ static s32 _pwrap_init_sistrobe(void)
 						 0x5AA5, 0xA55A, 0x5AA5, 0xA55A, 0x5AA5,
 						 0xA55A, 0x5AA5, 0xA55A, 0x5AA5, 0xA55A,
 						 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27,
-						 0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27};
+		0x1B27, 0x1B27, 0x1B27, 0x1B27, 0x1B27
+	};
 
 	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
 	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, WACS2);	/* only WACS2 */
@@ -928,9 +940,12 @@ static s32 _pwrap_init_sistrobe(void)
 
 			if (rdata != test_data[i]) {
 				fail_cnt++;
-				PWRAPERR("_pwrap_init_sistrobe tuning, index=%d rdata =%x\n", ind, rdata);
+				PWRAPLOG("_pwrap_init_sistrobe tuning, index=%d rdata =%x\n", ind,
+					 rdata);
+				break;
 			} else {
-				PWRAPLOG("_pwrap_init_sistrobe pass,index=%d rdata=%x\n", ind, rdata);
+				PWRAPLOG("_pwrap_init_sistrobe pass,index=%d rdata=%x\n", ind,
+					 rdata);
 			}
 		}
 		if (fail_cnt == 0)
@@ -960,7 +975,8 @@ static s32 _pwrap_init_sistrobe(void)
 	tmp1 = (0x1 << (leading_one + 1)) - 1;
 	tmp2 = (0x1 << tailing_one) - 1;
 	if ((tmp1 - tmp2) != result) {
-		PWRAPERR("_pwrap_init_sistrobe Fail, result = %llx, leading_one:%d, tailing_one:%d\n",
+		PWRAPERR
+		    ("_pwrap_init_sistrobe Fail, result = %llx, leading_one:%d, tailing_one:%d\n",
 				result, leading_one, tailing_one);
 			result_faulty = 0x1;
 		}
@@ -1073,21 +1089,20 @@ s32 pwrap_init(void)
 
 	/* toggle PMIC_WRAP and pwrap_spictl reset */
 	__pwrap_soft_reset();
-	PWRAPLOG("pwrap_init---- debug1 ok\n");
+	PWRAPLOG("soft reset ok\n");
 
 	/* Set SPI_CK_freq = 26MHz. It can marked when use fpga verify, because it has no address on Everest fpga */
 #ifdef CONFIG_MTK_FPGA
 #else
 	__pwrap_spi_clk_set();
 #endif
-
-	PWRAPLOG("pwrap_init---- debug2 ok\n");
+	PWRAPLOG("spi clk set ok\n");
 
 	/* Enable DCM */
 	WRAP_WR32(PMIC_WRAP_DCM_EN, 3);
 	/* no debounce */
 	WRAP_WR32(PMIC_WRAP_DCM_DBC_PRD, DISABLE);
-	PWRAPLOG("pwrap_init---- debug3 ok\n");
+	PWRAPLOG("enable DCM ok\n");
 
 	/* Reset SPISLV */
 	sub_return = _pwrap_reset_spislv();
@@ -1095,21 +1110,13 @@ s32 pwrap_init(void)
 		PWRAPERR("error,_pwrap_reset_spislv fail,sub_return=%x\n", sub_return);
 		return E_PWR_INIT_RESET_SPI;
 	}
-	PWRAPLOG("pwrap_init---- debug4 ok\n");
+	PWRAPLOG("reset spislv ok\n");
 
 	/* Enable WACS2 */
 	WRAP_WR32(PMIC_WRAP_WRAP_EN, ENABLE);
 	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, WACS2);
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, ENABLE);
-	PWRAPLOG("pwrap_init---- debug5 ok\n");
-
-	/* Input data calibration flow; */
-	sub_return = _pwrap_init_sistrobe();
-	if (sub_return != 0) {
-		PWRAPERR("error,DrvPWRAP_InitSiStrobe fail,sub_return=%x\n", sub_return);
-		return E_PWR_INIT_SIDLY;
-	}
-	PWRAPLOG("pwrap_init---- debug6 ok\n");
+	PWRAPLOG("enable WACS2 ok\n");
 
 	/* SPI Waveform Configuration. 0:safe mode, 1:18MHz */
 	sub_return = _pwrap_init_reg_clock(1);
@@ -1117,7 +1124,7 @@ s32 pwrap_init(void)
 		PWRAPERR("error,_pwrap_init_reg_clock fail,sub_return=%x\n", sub_return);
 		return E_PWR_INIT_REG_CLOCK;
 	}
-	PWRAPLOG("pwrap_init---- debug7 ok\n");
+	PWRAPLOG("set reg clock ok\n");
 
 	/* Enable DIO mode */
 	sub_return = _pwrap_init_dio(1);
@@ -1126,7 +1133,15 @@ s32 pwrap_init(void)
 			 sub_return);
 		return E_PWR_INIT_DIO;
 	}
-	PWRAPLOG("pwrap_init---- debug8 ok\n");
+	PWRAPLOG("enable dio ok\n");
+
+	/* Input data calibration flow; */
+	sub_return = _pwrap_init_sistrobe();
+	if (sub_return != 0) {
+		PWRAPERR("error,DrvPWRAP_InitSiStrobe fail,sub_return=%x\n", sub_return);
+		return E_PWR_INIT_SIDLY;
+	}
+	PWRAPLOG("sistrobe ok\n");
 
 	/* Enable Encryption */
 	sub_return = _pwrap_init_cipher();
@@ -1134,7 +1149,7 @@ s32 pwrap_init(void)
 		PWRAPERR("Enable Encryption fail, return=%x\n", sub_return);
 		return E_PWR_INIT_CIPHER;
 	}
-	PWRAPLOG("pwrap_init---- debug9 ok\n");
+	PWRAPLOG("enable cipher ok\n");
 
 	/*  Write test using WACS2.  check Wtiet test default value */
 #ifdef SLV_6351
@@ -1147,7 +1162,7 @@ s32 pwrap_init(void)
 		return E_PWR_INIT_WRITE_TEST;
 	}
 #endif
-	PWRAPLOG("pwrap_init---- debug10 ok\n");
+	PWRAPLOG("write test ok\n");
 
 	/* Status update function initialization
 	 * 1. Signature Checking using CRC (CRC 0 only)
@@ -1156,7 +1171,8 @@ s32 pwrap_init(void)
 	 * 4. Read back Auxadc thermal data for LTE
 	 */
 	_pwrap_adc_set();
-	PWRAPLOG("pwrap_init---- debug11 ok\n");
+	PWRAPLOG("adc set ok\n");
+
 	/* PMIC WRAP priority adjust */
 	WRAP_WR32(PMIC_WRAP_PRIORITY_USER_SEL_0, 0x6543C210);
 	WRAP_WR32(PMIC_WRAP_PRIORITY_USER_SEL_1, 0xFEDBA987);
@@ -1165,11 +1181,11 @@ s32 pwrap_init(void)
 
 	/* PMIC_WRAP starvation setting */
 	_pwrap_starve_set();
-	PWRAPLOG("pwrap_init---- debug12 ok\n");
+	PWRAPLOG("starve set ok\n");
 
 	/* PMIC_WRAP enables */
 	_pwrap_enable();
-	PWRAPLOG("pwrap_init---- debug13 ok\n");
+	PWRAPLOG("enable ok\n");
 
 	/* Initialization Done */
 	WRAP_WR32(PMIC_WRAP_INIT_DONE0, 0x1);
@@ -1257,8 +1273,8 @@ static s32 mt_pwrap_store_hal(const char *buf, size_t count)
 	u32 ut_test = 0;
 
 	if (!strncmp(buf, "-h", 2)) {
-		PWRAPREG
-	("PWRAP debug: [-dump_reg][-trace_wacs2][-init][-rdap][-wrap][-rdpmic][-wrpmic][-readtest][-writetest]\n");
+		PWRAPREG("PWRAP debug: [-dump_reg][-trace_wacs2][-init][-rdap][-wrap][-rdpmic]");
+		PWRAPREG("[-wrpmic][-readtest][-writetest]\n");
 		PWRAPREG("PWRAP UT: [1][2]\n");
 	} else if (!strncmp(buf, "-dump_reg", 9)) {
 		pwrap_dump_all_register();
