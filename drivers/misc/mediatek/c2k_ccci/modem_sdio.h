@@ -380,7 +380,7 @@ enum {
 /*Image type and header defination part*/
 /*=================================================================================*/
 
-#define C2K_IMG_PATH	"/etc/firmware/modem_3_3g_n.img"
+#define C2K_IMG_PATH	"/vendor/firmware/modem_3_3g_n.img"
 
 enum {
 	MD_BOOTING = 0,
