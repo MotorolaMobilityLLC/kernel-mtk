@@ -117,7 +117,7 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 */
 	spin_lock(&boot_lock);
 
-	HOTPLUG_INFO("mt_smp_boot_secondary, cpu: %d\n", cpu);
+	/*HOTPLUG_INFO("mt_smp_boot_secondary, cpu: %d\n", cpu);*/
 	/*
 	 * The secondary processor is waiting to be released from
 	 * the holding pen - release it, then wait for it to flag
