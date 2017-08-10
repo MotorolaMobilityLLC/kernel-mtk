@@ -153,7 +153,7 @@ static int __init get_base_from_node(
 	return 0;
 }
 
-void spm_deepidle_chip_init(void)
+void __init spm_deepidle_chip_init(void)
 {
 	get_base_from_node("mediatek,apmixed", &apmixedsys_base_in_dpidle, 0);
 }

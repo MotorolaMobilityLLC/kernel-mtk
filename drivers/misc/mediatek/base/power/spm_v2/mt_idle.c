@@ -3033,7 +3033,7 @@ static void mt_idle_profile_init(void)
 	mt_idle_block_setting(IDLE_TYPE_RG, rgidle_cnt, NULL, NULL);
 }
 
-void mt_cpuidle_framework_init(void)
+void __init mt_cpuidle_framework_init(void)
 {
 #ifndef USING_STD_TIMER_OPS
 	int err = 0;

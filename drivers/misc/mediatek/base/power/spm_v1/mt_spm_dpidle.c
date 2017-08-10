@@ -1364,7 +1364,7 @@ static void twam_handler(struct twam_sig *twamsig)
 }
 #endif
 
-void spm_deepidle_init(void)
+void __init spm_deepidle_init(void)
 {
 #if defined(CONFIG_ARCH_MT6753)
 #if defined(CONFIG_OF)

@@ -782,7 +782,7 @@ static void spm_register_init(void)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
-int spm_module_init(void)
+int __init spm_module_init(void)
 {
 	int r = 0;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
