@@ -417,6 +417,7 @@ typedef struct layer_config_t {
 	unsigned int dst_offset_x, dst_offset_y;
 	unsigned int dst_width, dst_height;
 	unsigned int ext_sel_layer;
+	unsigned int src_width, src_height;
 } layer_config;
 
 typedef struct disp_layer_info_t {

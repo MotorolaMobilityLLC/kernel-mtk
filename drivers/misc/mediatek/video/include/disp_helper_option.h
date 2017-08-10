@@ -68,6 +68,8 @@ typedef enum {
 	DISP_OPT_SHADOW_MODE,		/* 0:full; 1:force_commit; 2:bypass shadow */
 	DISP_OPT_OVL_EXT_LAYER,		/* is ovl has ext layer support? */
 	DISP_OPT_REG_PARSER_RAW_DUMP,
+	DISP_OPT_RSZ,
+	DISP_OPT_DUAL_PIPE,
 	DISP_OPT_NUM
 } DISP_HELPER_OPT;
 
