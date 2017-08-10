@@ -2744,10 +2744,10 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 #else
 	*cur = 0;
 #endif
-	pr_err("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
+/*	pr_err("do_ptim_internal : bat %d cur %d\n", *bat, *cur); */
 
 #if defined(SWCHR_POWER_PATH)
-	pr_err("do_ptim_internal test: bat %d cur %d\n", *bat, *cur);
+/*	pr_err("do_ptim_internal test: bat %d cur %d\n", *bat, *cur); */
 #endif
 
 
@@ -2946,7 +2946,7 @@ void exec_dlpt_callback(unsigned int dlpt_val)
 			if (dlpt_cb_tb[i].dlpt_cb != NULL) {
 				dlpt_callback = dlpt_cb_tb[i].dlpt_cb;
 				dlpt_callback(g_dlpt_val);
-				pr_debug("[exec_dlpt_callback] g_dlpt_val=%d\n", g_dlpt_val);
+				/* pr_debug("[exec_dlpt_callback] g_dlpt_val=%d\n", g_dlpt_val); */
 			}
 		}
 	}
@@ -3228,8 +3228,8 @@ int get_dlpt_imix(void)
 		volt_avg += ptim_bat_vol;
 		curr_avg += ptim_R_curr;
 #endif
-	PMICLOG("[get_dlpt_imix:%d] %d,%d,%d,%d\n", i, volt[i], curr[i], volt_avg, curr_avg);
 #if 0 /* debug only */
+	PMICLOG("[get_dlpt_imix:%d] %d,%d,%d,%d\n", i, volt[i], curr[i], volt_avg, curr_avg);
 	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_ADC29), (&val), (0xffff), 0);
 	ret_val = pmic_read_interface((unsigned int)(MT6351_AUXADC_ADC30), (&val1), (0xffff), 0);
 	ret_val = pmic_read_interface((unsigned int)(MT6351_FGADC_CON25), (&val2), (0xffff), 0);
