@@ -2007,11 +2007,11 @@ void aee_rr_show_hotplug_footprint(struct seq_file *m, int cpu)
 
 void aee_rr_show_hotplug_status(struct seq_file *m)
 {
-	seq_printf(m, "CPU hotplug status:\n notifier: %d, %d, 0x%llx\n",
+	seq_printf(m, "CPU notifier status: %d, %d, 0x%llx\n",
 		   LAST_RRR_VAL(hotplug_cpu_event),
-		   LAST_RRR_VAL(hotplug_cb_index), LAST_RRR_VAL(hotplug_cb_fp));
+		   LAST_RRR_VAL(hotplug_cb_index),
+		   LAST_RRR_VAL(hotplug_cb_fp));
 }
-
 
 void aee_rr_show_mcdi(struct seq_file *m)
 {
