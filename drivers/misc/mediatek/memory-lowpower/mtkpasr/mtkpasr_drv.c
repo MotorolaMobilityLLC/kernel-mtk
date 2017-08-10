@@ -27,7 +27,7 @@
 static struct mtkpasr_bank *mtkpasr_banks;
 static int num_banks;
 static int mtkpasr_enable = 1;
-static unsigned long bank_pfns;
+static unsigned long max_bank_pfns;
 
 /* Internal control parameters */
 static unsigned long mtkpasr_triggered, mtkpasr_on, mtkpasr_srmask;
@@ -85,7 +85,7 @@ static int mtkpasr_config(int times, get_range_t func)
 	/* Find valid PASR segment */
 	mtkpasr_on = 0x0;
 	for (i = 0; i < num_banks; i++)
-		if (mtkpasr_banks[i].free == bank_pfns)
+		if (mtkpasr_banks[i].free == (mtkpasr_banks[i].end_pfn - mtkpasr_banks[i].start_pfn))
 			mtkpasr_on |= (1 << mtkpasr_banks[i].segment);
 
 	/* APMCU flow */
@@ -256,10 +256,11 @@ static int __init mtkpasr_construct_bankrank(void)
 	/* Init mtkpasr range */
 	start_pfn = memory_lowpower_cma_base() >> PAGE_SHIFT;
 	end_pfn = start_pfn + (memory_lowpower_cma_size() >> PAGE_SHIFT);
-	bank_pfns = 0;
-	ret = mtkpasr_init_range(start_pfn, end_pfn, &bank_pfns);
-	if (ret <= 0 || bank_pfns == 0) {
-		MTKPASR_PRINT("%s: failed to init mtkpasr range ret[%d] bank_pfns[%lu]\n", __func__, ret, bank_pfns);
+	max_bank_pfns = 0;
+	ret = mtkpasr_init_range(start_pfn, end_pfn, &max_bank_pfns);
+	if (ret <= 0 || max_bank_pfns == 0) {
+		MTKPASR_PRINT("%s: failed to init mtkpasr range ret[%d] max_bank_pfns[%lu]\n",
+				__func__, ret, max_bank_pfns);
 		return -1;
 	}
 
@@ -290,8 +291,7 @@ static int __init mtkpasr_construct_bankrank(void)
 
 	/* Aligned allocation is preferred */
 	if (i != 0)
-		set_memory_lowpower_aligned(
-				get_order((mtkpasr_banks[0].end_pfn - mtkpasr_banks[0].start_pfn) << PAGE_SHIFT));
+		set_memory_lowpower_aligned(get_order(max_bank_pfns << PAGE_SHIFT));
 
 	/* Sanity check */
 	if (i != num_banks)

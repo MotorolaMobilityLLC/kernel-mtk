@@ -298,8 +298,8 @@ int __init mtkpasr_init_range(unsigned long start_pfn, unsigned long end_pfn, un
 	MTKPASR_PRINT("Start_pfn[%8lu] End_pfn[%8lu] Valid_segment[0x%8lx] Segments[%u]\n",
 			start_pfn, end_pfn, mtkpasr_segment_bits, ret);
 
-	/* Assume all ranks have the same bank_pfn_size... UGLY... */
-	*bank_pfns = rank_info[0].bank_pfn_size;
+	/* Return max pfns per bank */
+	*bank_pfns = max(rank_info[0].bank_pfn_size, rank_info[1].bank_pfn_size);
 out:
 	return ret;
 }
