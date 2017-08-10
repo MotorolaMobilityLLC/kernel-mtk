@@ -127,7 +127,7 @@ struct batch_context {
 	struct timer_list   timer;  /* polling timer */
 	atomic_t            trace;
 
-	struct wakeup_source read_data_wake_lock;
+	/* struct wake_lock read_data_wake_lock; */
 	struct batch_dev_list	dev_list;
 
 	uint64_t		active_sensor;
