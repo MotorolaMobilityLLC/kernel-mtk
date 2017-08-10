@@ -648,6 +648,11 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 			else {
 				handle = batch_sensors_data.data[i].sensor;
 
+				if (handle < 0 || ID_SENSOR_MAX_HANDLE < handle) {
+					pr_err(BATCH_TAG"%s %d : Wrong handle, %d\n", __func__, __LINE__, handle);
+					continue;
+				}
+
 				if (batch_context_obj->dev_list.data_dev[handle].is_timestamp_supported == 0) {
 					pt = &batch_context_obj->timestamp_info[handle];
 					batch_sensors_data.data[i].time = pt->end_t - pt->start_t;
