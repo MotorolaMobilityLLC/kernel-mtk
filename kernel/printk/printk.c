@@ -69,7 +69,7 @@ int printk_too_much_enable = 0;
 #if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 static int detect_count = CONFIG_LOG_TOO_MUCH_DETECT_COUNT; /*Default max lines per second*/
 static bool detect_count_change; /* detect_count change flag*/
-#define DETECT_TIME 1000000000LU /* 1s = 1000000000ns */
+#define DETECT_TIME 1000000000ULL /* 1s = 1000000000ns */
 #define DELAY_TIME	(CONFIG_LOG_TOO_MUCH_DETECT_GAP*DETECT_TIME*60)
 static u64 delta_time;
 static u64 delta_count;

@@ -28,17 +28,18 @@ extern void aee_wdt_zap_locks(void);
 extern void aee_wdt_logbuf_lock(void);
 #endif
 
+#ifdef CONFIG_PRINTK_MT_PREFIX
+#define KLOG_MODNAME		"[name:"KBUILD_MODNAME"&]"
+#else
+#define KLOG_MODNAME		""
+#endif
 
 #if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
-#define KLOG_MODNAME		"[name:"KBUILD_MODNAME"&]"
-
 extern void set_detect_count(int count);
 extern int get_detect_count(void);
 extern void set_logtoomuch_enable(int value);
 extern int get_logtoomuch_enable(void);
 #else
-#define KLOG_MODNAME		""
-
 static inline void set_detect_count(int count)
 {
 
