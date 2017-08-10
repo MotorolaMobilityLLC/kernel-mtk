@@ -2211,9 +2211,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 			memset(pValue, 0x0, sizeof(MUINT32));
 			*(pFeaturePara_64 + 1) = (uintptr_t)pValue;
-			PK_ERR("[CAMERA_HW] %p %p %p\n",
+			/*PK_DBG("[CAMERA_HW] %p %p %p\n",
 			       (void *)(uintptr_t) (*(pFeaturePara_64 + 1)),
-			       (void *)pFeaturePara_64, (void *)(pValue));
+			       (void *)pFeaturePara_64, (void *)(pValue));*/
 			if (g_pSensorFunc) {
 				ret =
 				    g_pSensorFunc->SensorFeatureControl(pFeatureCtrl->InvokeCamera,
