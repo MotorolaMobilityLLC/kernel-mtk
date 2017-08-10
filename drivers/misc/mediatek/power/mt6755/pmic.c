@@ -1856,11 +1856,11 @@ out:
 
 static int pmic_mt_cust_remove(struct platform_device *pdev)
 {
-       /*platform_driver_unregister(&mt_pmic_driver);*/
+       /*platform_driver_unregister(&mt_pmic_driver_probe);*/
 	return 0;
 }
 
-static struct platform_driver mt_pmic_driver = {
+static struct platform_driver mt_pmic_driver_probe = {
 	.driver = {
 		   .name = "pmic_regulator",
 		   .owner = THIS_MODULE,
@@ -4558,7 +4558,7 @@ static int fb_early_init_dt_get_chosen(unsigned long node, const char *uname, in
 	return 1;
 }
 #endif /*end of #ifdef DLPT_FEATURE_SUPPORT*/
-static int pmic_mt_probe(struct platform_device *dev)
+static int __init pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
 #ifdef DLPT_FEATURE_SUPPORT
@@ -4840,7 +4840,7 @@ struct platform_device pmic_mt_device = {
 	.id = -1,
 };
 
-static struct platform_driver pmic_mt_driver = {
+static struct platform_driver pmic_mt_driver_probe = {
 	.probe = pmic_mt_probe,
 	.remove = pmic_mt_remove,
 	.shutdown = pmic_mt_shutdown,
@@ -4941,12 +4941,12 @@ static int __init pmic_mt_init(void)
 		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
 		return ret;
 	}
-	ret = platform_driver_register(&pmic_mt_driver);
+	ret = platform_driver_register(&pmic_mt_driver_probe);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
 		return ret;
 	}
-	ret = platform_driver_register(&mt_pmic_driver);
+	ret = platform_driver_register(&mt_pmic_driver_probe);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to register driver by DT(%d)\n", ret);
 		return ret;
@@ -4960,7 +4960,7 @@ static int __init pmic_mt_init(void)
 		PMICLOG("****[pmic_mt_init] Unable to device register(%d)\n", ret);
 		return ret;
 	}
-	ret = platform_driver_register(&pmic_mt_driver);
+	ret = platform_driver_register(&pmic_mt_driver_probe);
 	if (ret) {
 		PMICLOG("****[pmic_mt_init] Unable to register driver (%d)\n", ret);
 		return ret;
@@ -4979,7 +4979,7 @@ static void __exit pmic_mt_exit(void)
 {
 #if !defined CONFIG_MTK_LEGACY
 #ifdef CONFIG_OF
-	platform_driver_unregister(&mt_pmic_driver);
+	platform_driver_unregister(&mt_pmic_driver_probe);
 #endif
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
 }
