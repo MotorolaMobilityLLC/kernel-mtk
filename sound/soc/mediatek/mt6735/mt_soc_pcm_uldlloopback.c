@@ -101,12 +101,6 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	AudDrv_ADC_Clk_On();
 	pr_debug("%s\n", __func__);
 
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_debug("%s  with mtk_uldlloopback_open\n", __func__);
-		runtime->rate = 48000;
-		return 0;
-	}
-
 	runtime->hw = mtk_uldlloopback_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware,
 	       sizeof(struct snd_pcm_hardware));
