@@ -3435,9 +3435,11 @@ static const struct file_operations msdc_voltage_flag_fops = {
 #endif
 int msdc_debug_proc_init(void)
 {
+#if 0
 	struct proc_dir_entry *prEntry;
 	struct proc_dir_entry *tune;
 	struct proc_dir_entry *tune_flag;
+#endif
 	kuid_t uid;
 	kgid_t gid;
 #ifdef MSDC_HQA
@@ -3445,7 +3447,7 @@ int msdc_debug_proc_init(void)
 #endif
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
-
+#if 0
 	prEntry = proc_create("msdc_debug", 0660, NULL, &msdc_proc_fops);
 	if (prEntry) {
 		pr_err("[%s]: successfully create /proc/msdc_debug\n", __func__);
@@ -3453,7 +3455,6 @@ int msdc_debug_proc_init(void)
 	} else {
 		pr_err("[%s]: failed to create /proc/msdc_debug\n", __func__);
 	}
-
 	prEntry = proc_create("msdc_help", 0440, NULL, &msdc_help_fops);
 	if (prEntry)
 		pr_err("[%s]: successfully create /proc/msdc_help\n", __func__);
@@ -3473,8 +3474,9 @@ int msdc_debug_proc_init(void)
 	else
 		pr_err("[%s]: failed to create /proc/msdc_DVT\n", __func__);
 #endif
-
+#endif
 	memset(msdc_drv_mode, 0, sizeof(msdc_drv_mode));
+#if 0
 	tune = proc_create("msdc_tune", 0660, NULL, &msdc_tune_fops);
 	if (tune) {
 		proc_set_user(tune, uid, gid);
@@ -3488,6 +3490,7 @@ int msdc_debug_proc_init(void)
 		pr_err("[%s]: successfully create /proc/msdc_tune_flag\n", __func__);
 	else
 		pr_err("[%s]: failed to create /proc/msdc_tune_flag\n", __func__);
+#endif
 #ifdef MSDC_HQA
 	voltage_flag = proc_create("msdc_voltage_flag", 0660, NULL, &msdc_voltage_flag_fops);
 	if (voltage_flag) {
