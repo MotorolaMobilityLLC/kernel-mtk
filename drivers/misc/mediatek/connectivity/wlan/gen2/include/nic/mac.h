@@ -1010,6 +1010,15 @@
 #define ACTION_SA_TIMEOUT_ASSOC_COMEBACK            3
 #endif
 
+/* MTK Vendor Specific OUI */
+#define ELEM_MIN_LEN_MTK_OUI                        7
+#define VENDOR_OUI_MTK                              { 0x00, 0x0C, 0xE7 }
+#define MTK_SYNERGY_CAP_SUPPORT_24G_MCS89           BIT(3)
+#define MTK_SYNERGY_CAP0                            (MTK_SYNERGY_CAP_SUPPORT_24G_MCS89)
+#define MTK_SYNERGY_CAP1                            0x0
+#define MTK_SYNERGY_CAP2                            0x0
+#define MTK_SYNERGY_CAP3                            0x0
+
 /* 7.4.10.1 HT action frame details */
 #define ACTION_HT_NOTIFY_CHANNEL_WIDTH              0	/* Notify Channel Width */
 #define ACTION_HT_SM_POWER_SAVE                     1	/* SM Power Save */
@@ -2173,6 +2182,14 @@ typedef struct _WAPI_INFO_ELEM_T {
 	UINT_16 u2AuthKeyMgtSuiteCount;
 	UCHAR aucAuthKeyMgtSuite1[4];
 } __KAL_ATTRIB_PACKED__ WAPI_INFO_ELEM_T, *P_WAPI_INFO_ELEM_T;
+/* Information Elements from MTK Synergies.*/
+typedef struct _IE_MTK_OUI_T {
+	UINT_8 ucId;
+	UINT_8 ucLength;
+	UINT_8 aucOui[3];
+	UINT_8 aucCapability[4];
+	UINT_8 aucInfoElem[1];
+} __KAL_ATTRIB_PACKED__ IE_MTK_OUI_T, *P_IE_MTK_OUI_T;
 
 #if defined(WINDOWS_DDK) || defined(WINDOWS_CE)
 #pragma pack()
@@ -2243,6 +2260,8 @@ typedef struct _WAPI_INFO_ELEM_T {
 #define SUP_OPERATING_CLASS_IE(fp) ((P_IE_SUP_OPERATING_CLASS_T) fp)
 
 #define QUIET_IE(fp)            ((P_IE_QUIET_T) fp)
+#define MTK_OUI_IE(fp)          ((P_IE_MTK_OUI_T) fp)
+
 
 #if CFG_SUPPORT_DFS		/* Add by Enlai */
 #define SUPPORTED_CHANNELS_IE(fp) ((P_IE_SUPPORTED_CHANNELS_T)fp)

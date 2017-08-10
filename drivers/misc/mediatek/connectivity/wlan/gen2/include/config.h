@@ -722,6 +722,7 @@
 #define CFG_PRINT_RTP_SN_SKIP               0
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
+#define CFG_SUPPORT_MTK_SYNERGY             1
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------

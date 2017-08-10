@@ -5287,6 +5287,14 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 	if (prWifiVar->ucCert11nMode == 1)
 		nicWriteMcr(prAdapter, 0x11111115 , 1);
 #endif
+#if CFG_SUPPORT_MTK_SYNERGY
+	prWifiVar->ucMtkOui = (UINT_8) wlanCfgGetUint32(prAdapter, "MtkOui", 1);
+	prWifiVar->u4MtkOuiCap = (UINT_32) wlanCfgGetUint32(prAdapter, "MtkOuiCap", 0);
+	prWifiVar->aucMtkFeature[0] = 0xff;
+	prWifiVar->aucMtkFeature[1] = 0xff;
+	prWifiVar->aucMtkFeature[2] = 0xff;
+	prWifiVar->aucMtkFeature[3] = 0xff;
+#endif
 
 	if (wlanCfgGet(prAdapter, "5G_support", aucValue, "", 0) == WLAN_STATUS_SUCCESS)
 		prRegInfo->ucSupport5GBand = (*aucValue == 'y') ? 1 : 0;
