@@ -1257,6 +1257,8 @@ UINT_32 nicFreq2ChannelNum(UINT_32 u4FreqInKHz)
 		return 136;
 	case 5700000:
 		return 140;
+	case 5720000:
+		return 144;
 	case 5745000:
 		return 149;
 	case 5765000:
