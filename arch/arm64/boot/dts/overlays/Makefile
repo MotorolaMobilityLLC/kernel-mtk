@@ -1,4 +1,4 @@
-ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 ifeq ($(CONFIG_OF),y)
 # Overlays
 dtb-y += $(addsuffix -overlay.dtb, $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES)))

@@ -276,7 +276,7 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
 
 quiet_cmd_dtc = DTC     $@
 
-ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 cmd_dtc = mkdir -p $(dir ${dtc-tmp}) ; \
 	$(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
 	$(srctree)/scripts/dtc/dtc_overlay -@ -O dtb -o $@ -b 0 \

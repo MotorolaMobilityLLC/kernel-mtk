@@ -13,7 +13,7 @@ endif
 targets += $(DTB_LIST)
 
 dtbs: $(addprefix $(obj)/, $(DTB_LIST))
-ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 	$(Q)$(MAKE) $(build)=arch/arm64/boot/dts/overlays
 endif
 
