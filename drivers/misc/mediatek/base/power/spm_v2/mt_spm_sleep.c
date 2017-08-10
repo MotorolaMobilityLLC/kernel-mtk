@@ -502,6 +502,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	/* set PMIC WRAP table for suspend power control */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	pmic_read_interface_nolock(PMIC_LDO_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_PWR_ON,
@@ -516,6 +517,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VPROC_SHUTDOWN,
 			temp & ~(1 << PMIC_BUCK_VPROC_EN_SHIFT));
+#endif
 #else
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
