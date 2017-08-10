@@ -28,6 +28,7 @@ endef
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
 
+ifneq ($(CONFIG_MTK_IMGSENSOR),m)
 obj-y				+= kd_sensorlist.o
 
 $(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
@@ -52,3 +53,44 @@ obj-y += $(custom_kernel_imgsensor_by_project)
 
 $(info imgsensor drv by platform $(platform_drv))
 $(info imgsensor drv by project $(project_drv))
+
+else
+$(info IMGSENSOR USE MODULE)
+define DRV_FILE_BY_PLATFORM
+drv_path+=$(addprefix $(addsuffix /,$(1)),$(notdir $(wildcard  $(srctree)/drivers/misc/mediatek/imgsensor/src/mt6735m/$(1)/*.c)))
+endef
+
+define DRV_FILE_BY_PROJECT
+drv_path+=$(addprefix $(addsuffix /,$(1)),$(notdir $(wildcard  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)/*.c)))
+endef
+
+ModFiles:=kd_sensorlist.o
+
+$(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
+
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/mt6735m/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
+ModFiles				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/kd_camera_hw.o
+$(info by porject kd_camera_hw)
+else
+ModFiles                           += camera_hw/kd_camera_hw.o
+endif
+
+$(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
+ifeq ($(CONFIG_MTK_EFUSE_DOWNGRADE),y)
+custom_kernel_imgsensor_by_platform := $(subst imx135_mipi_raw,imx135_mipi_raw_cap24fps,$(platform_drv))
+else
+custom_kernel_imgsensor_by_platform := $(platform_drv)
+endif
+
+ifeq ($(project_drv),)
+$(foreach drv,$(custom_kernel_imgsensor_by_platform), $(eval $(call DRV_FILE_BY_PLATFORM,$(drv))))
+else
+$(foreach drv,$(project_drv), $(eval $(call DRV_FILE_BY_PROJECT,$(drv))))
+endif
+
+ModFiles+=$(subst .c,.o,$(drv_path))
+obj-m				+= ImgSenMod.o
+ImgSenMod-objs:= $(ModFiles)
+$(info imgsensor drv by platform $(platform_drv))
+$(info imgsensor drv by project $(project_drv))
+endif

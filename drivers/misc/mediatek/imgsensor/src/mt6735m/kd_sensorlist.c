@@ -434,6 +434,7 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 	}
 	return 0;
 }
+EXPORT_SYMBOL(iReadRegI2C);
 
 
 /*******************************************************************************
@@ -523,6 +524,7 @@ void kdSetI2CSpeed(u32 i2cSpeed)
 	}
 
 }
+EXPORT_SYMBOL(kdSetI2CSpeed);
 
 /*******************************************************************************
 * kdReleaseI2CTriggerLock
@@ -711,6 +713,7 @@ int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId)
 	/* KD_IMGSENSOR_PROFILE("iWriteRegI2C"); */
 	return 0;
 }
+EXPORT_SYMBOL(iWriteRegI2C);
 
 /*******************************************************************************
 * sensor function adapter
@@ -2954,6 +2957,7 @@ bool _hwPowerOn(KD_REGULATOR_TYPE_T type, int powerVolt)
 
 	return ret;
 }
+EXPORT_SYMBOL(_hwPowerOn);
 
 bool _hwPowerDown(KD_REGULATOR_TYPE_T type)
 {
@@ -2986,6 +2990,7 @@ bool _hwPowerDown(KD_REGULATOR_TYPE_T type)
 	}
 	return ret;
 }
+EXPORT_SYMBOL(_hwPowerDown);
 #endif
 
 #ifdef CONFIG_COMPAT

@@ -1,8 +1,10 @@
 config MTK_IMGSENSOR
-	bool "enable MTK cam driver"
+	tristate "enable MTK cam driver"
 	default n
 	help
-	  CONFIG_MTK_IMGSENSOR
+	  It support different sensor.
+          If this option is set to m,
+          it will build module.
 
 config MTK_CAM_MAX_NUMBER_OF_CAMERA
 	int "max number of camera supported"

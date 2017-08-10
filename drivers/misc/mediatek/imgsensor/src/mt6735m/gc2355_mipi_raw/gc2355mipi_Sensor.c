@@ -1632,3 +1632,4 @@ UINT32 GC2355_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
         *pfFunc=&sensor_func;
     return ERROR_NONE;
 }    /*    GC2355_MIPI_RAW_SensorInit    */
+EXPORT_SYMBOL(GC2355_MIPI_RAW_SensorInit);

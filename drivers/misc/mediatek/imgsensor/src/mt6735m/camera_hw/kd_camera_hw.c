@@ -137,6 +137,7 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 	}
 	return ret;
 }
+EXPORT_SYMBOL(mtkcam_gpio_init);
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 {
@@ -268,6 +269,7 @@ void checkPowerBeforClose(char *mode_name)
 	cntVCAMD_SUB = 0;
 
 }
+EXPORT_SYMBOL(checkPowerBeforClose);
 
 
 

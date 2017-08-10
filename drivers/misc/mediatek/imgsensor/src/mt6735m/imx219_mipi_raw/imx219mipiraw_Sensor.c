@@ -611,7 +611,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 		imgsensor.gain = reg_gain;
 		spin_unlock(&imgsensor_drv_lock);
 		write_cmos_sensor(0x0157, (kal_uint8)reg_gain);
-		LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+		LOG_INF("gain = %d , reg_gain = 0x%x\n", gain, reg_gain);
  	}
 
 	return gain;
@@ -2155,3 +2155,4 @@ UINT32 IMX219_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 		*pfFunc=&sensor_func;
 	return ERROR_NONE;
 }	/*	OV5693_MIPI_RAW_SensorInit	*/
+EXPORT_SYMBOL(IMX219_MIPI_RAW_SensorInit);

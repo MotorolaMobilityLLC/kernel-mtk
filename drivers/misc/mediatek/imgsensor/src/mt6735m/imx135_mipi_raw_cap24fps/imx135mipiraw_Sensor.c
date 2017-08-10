@@ -3037,3 +3037,4 @@ UINT32 IMX135_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
         *pfFunc=&sensor_func;
     return ERROR_NONE;
 }   /*  IMX135_MIPI_RAW_SensorInit  */
+EXPORT_SYMBOL(IMX135_MIPI_RAW_SensorInit);
