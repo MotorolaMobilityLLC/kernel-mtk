@@ -291,7 +291,7 @@ static int mtk_compr_offload_gdma_int_copy(struct snd_compr_runtime *runtime, ch
 	u64 app_pointer = div64_u64(runtime->total_bytes_available, runtime->buffer_size);
 
 	app_pointer = runtime->total_bytes_available - (app_pointer * runtime->buffer_size);
-	dstn = afe_offload_block.data_buffer_area + app_pointer;
+	dstn = (char *)afe_offload_block.data_buffer_area + app_pointer;
 	PRINTK_AUD_DL2("%s, dstn:%p, app_pointer:%lu\n", __func__, dstn, (unsigned long)app_pointer);
 
 	if (count <= afe_offload_block.data_buffer_size - app_pointer) {
