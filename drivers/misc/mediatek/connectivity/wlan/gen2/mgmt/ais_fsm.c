@@ -1848,6 +1848,12 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					eNextState = AIS_STATE_REQ_REMAIN_ON_CHANNEL;
 					fgIsTransition = TRUE;
 				}
+
+				if (prAisFsmInfo->fgOnLineScanInBeaconTO) {
+					DBGLOG(AIS, WARN, "Rpt Beacon Timeout after online scan done\n");
+					aisBssBeaconTimeout(prAdapter);
+					prAisFsmInfo->fgOnLineScanInBeaconTO = FALSE;
+				}
 			}
 
 			break;
@@ -4429,6 +4435,14 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
+	if ((prAdapter->rWifiVar.rAisFsmInfo.eCurrentState == AIS_STATE_ONLINE_SCAN) &&
+		(prAdapter->rWifiVar.rScanInfo.eCurrentState == SCAN_STATE_SCANNING)) {
+		prAdapter->rWifiVar.rAisFsmInfo.fgOnLineScanInBeaconTO = TRUE;
+		DBGLOG(AIS, INFO, "Postpone the Beacon Timeout for AIS online scanning\n");
+		goto end;
+	} else
+		prAdapter->rWifiVar.rAisFsmInfo.fgOnLineScanInBeaconTO = FALSE;
+
 	/* 4 <1> Diagnose Connection for Beacon Timeout Event */
 	if (PARAM_MEDIA_STATE_CONNECTED == prAisBssInfo->eConnectionState) {
 		if (OP_MODE_INFRASTRUCTURE == prAisBssInfo->eCurrentOPMode) {
@@ -4462,6 +4476,9 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		}
 		aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 	}
+
+end:
+	return;
 
 }				/* end of aisBssBeaconTimeout() */
 
