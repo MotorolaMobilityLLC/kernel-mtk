@@ -676,7 +676,7 @@ static void otp_NTH_DEBUG_MUX_apply(struct OTP_debug_data *otp_debug_data)
 static void otp_INTERRUPT_CLR_apply(struct OTP_debug_data *otp_debug_data)
 {
 	otp_write(OTP_PID_CTL0, ((otp_read(OTP_PID_CTL0) & 0xFFFFFBFF) |
-	((otp_debug_data->INTERRUPT_CLR << 20) & 0x00000400)));
+	((otp_debug_data->INTERRUPT_CLR << 10) & 0x00000400)));
 }
 
 static void otp_config_data_apply(struct OTP_config_data *otp_config_data)
