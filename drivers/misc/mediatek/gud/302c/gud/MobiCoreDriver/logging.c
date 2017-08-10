@@ -81,10 +81,10 @@ static void log_eol(uint16_t source)
 #endif
 	/* MobiCore Userspace */
 	if (prev_source)
-		pr_debug("%03x|%s\n", prev_source, log_line);
+		dev_info(mcd, "%03x|%s\n", prev_source, log_line);
 	/* MobiCore kernel */
 	else
-		pr_debug("%s\n", log_line);
+		dev_info(mcd, "%s\n", log_line);
 #ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
 	}
 #endif
