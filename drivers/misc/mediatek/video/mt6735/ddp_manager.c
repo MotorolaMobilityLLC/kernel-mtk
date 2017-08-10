@@ -252,7 +252,6 @@ int dpmgr_module_notify(DISP_MODULE_ENUM module, DISP_PATH_EVENT event)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_aalod_trigger, MMProfileFlagPulse,
 		       module, 0);
 	return dpmgr_signal_event(handle, event);
-	return 0;
 }
 
 static int assign_default_irqs_table(DDP_SCENARIO_ENUM scenario, DDP_IRQ_EVENT_MAPPING *irq_events)
