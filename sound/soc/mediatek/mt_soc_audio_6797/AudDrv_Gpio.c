@@ -237,12 +237,16 @@ static int set_aud_dat_mosi(bool _enable)
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MOSI_OFF);
 }
 
+static DEFINE_MUTEX(gpio_aud_dat_miso_mutex);
+
 static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
 {
+	int ret;
 	static bool adda_enable;
 	static bool vow_enable;
 	static bool anc_enable;
 
+	mutex_lock(&gpio_aud_dat_miso_mutex);
 	switch (_usage) {
 	case Soc_Aud_Digital_Block_ADDA_UL:
 		adda_enable = _enable;
@@ -254,15 +258,19 @@ static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
 		anc_enable = _enable;
 		break;
 	default:
+		mutex_unlock(&gpio_aud_dat_miso_mutex);
 		return -EINVAL;
 	}
 
 	if (vow_enable)
-		return AudDrv_GPIO_Select(GPIO_VOW_DAT_MISO_ON);
+		ret = AudDrv_GPIO_Select(GPIO_VOW_DAT_MISO_ON);
 	else if (adda_enable || anc_enable)
-		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_ON);
+		ret = AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_ON);
 	else
-		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_OFF);
+		ret = AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_OFF);
+
+	mutex_unlock(&gpio_aud_dat_miso_mutex);
+	return ret;
 }
 
 static int set_vow_clk_miso(bool _enable)
