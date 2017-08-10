@@ -600,7 +600,7 @@ unsigned int get_mt6325_pmic_chip_version(void)
   *********************************************************/
 void mt6351_dump_register(void)
 {
-	unsigned char i = 0;
+	unsigned int i = 0;
 
 	PMICLOG("dump PMIC 6351 register\n");
 
