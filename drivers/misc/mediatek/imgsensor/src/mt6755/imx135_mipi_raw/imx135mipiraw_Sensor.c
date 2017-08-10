@@ -1986,18 +1986,18 @@ else {
     write_cmos_sensor(0x4087,0x00);//
     write_cmos_sensor(0x4400,0x00);//
 
-    //global timing setting
-    write_cmos_sensor(0x0830,0x6F);//
-    write_cmos_sensor(0x0831,0x27);//
-    write_cmos_sensor(0x0832,0x47);//
-    write_cmos_sensor(0x0833,0x27);//
-    write_cmos_sensor(0x0834,0x27);//
-    write_cmos_sensor(0x0835,0x27);//
-    write_cmos_sensor(0x0836,0x8F);//
-    write_cmos_sensor(0x0837,0x37);//
-    write_cmos_sensor(0x0839,0x1F);//
-    write_cmos_sensor(0x083A,0x17);//
-    write_cmos_sensor(0x083B,0x02);//
+	/* global timing setting */
+	write_cmos_sensor(0x0830, 0x8F);
+	write_cmos_sensor(0x0831, 0x47);
+	write_cmos_sensor(0x0832, 0x7F);
+	write_cmos_sensor(0x0833, 0x4F);
+	write_cmos_sensor(0x0834, 0x47);
+	write_cmos_sensor(0x0835, 0x5F);
+	write_cmos_sensor(0x0836, 0xFF);
+	write_cmos_sensor(0x0837, 0x4F);
+	write_cmos_sensor(0x0839, 0x1F);
+	write_cmos_sensor(0x083A, 0x17);
+	write_cmos_sensor(0x083B, 0x02);
 
     // integration time setting
     write_cmos_sensor(0x0202,0x03);//
