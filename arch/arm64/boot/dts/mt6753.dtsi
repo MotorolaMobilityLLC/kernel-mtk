@@ -1573,6 +1573,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				     <0 0 8>; /*DISP_VENCPLL      */
 		};
 
+		lcm: lcm {
+			compatible = "mediatek,mt6753p1_64-lcm";
+		};
+
 		lcm_mode: lcm_mode {
 			compatible = "mediatek,lcm_mode";
 		};
