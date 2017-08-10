@@ -75,6 +75,8 @@ static void set_aal_need_lock(int aal_need_lock);
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
+static DEFINE_SPINLOCK(g_aal_irq_en_lock);
+
 static DISP_AAL_HIST g_aal_hist = {
 	.serviceFlags = 0,
 	.backlight = -1
@@ -89,6 +91,7 @@ static volatile int g_aal_initialed;
 static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 static volatile int g_led_mode = MT65XX_LED_MODE_NONE;
 static volatile int g_aal_need_lock;
+static atomic_t g_aal_force_enable_irq = ATOMIC_INIT(0);
 
 static volatile unsigned int g_aal_panel_type = CONFIG_BY_CUSTOM_LIB;
 
@@ -239,7 +242,9 @@ static void disp_aal_notify_frame_dirty(void)
 	g_aal_dirty_frame_retrieved = 0;
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
+	spin_lock_irqsave(&g_aal_irq_en_lock, flags);
 	disp_aal_set_interrupt(1);
+	spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 #endif
 }
 
@@ -417,7 +422,12 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
 
 	if (g_aal_is_init_regs_valid) {
+		spin_lock_irqsave(&g_aal_irq_en_lock, flags);
+		/* backlight change : irq can;t be disabled by user command  */
+		atomic_set(&g_aal_force_enable_irq, 1);
 		disp_aal_set_interrupt(1);
+		spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
+
 		/* Backlight latency should be as smaller as possible */
 		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 	}
@@ -452,6 +462,8 @@ static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 
 	if (copy_to_user(hist, &g_aal_hist_db, sizeof(DISP_AAL_HIST)) == 0)
 		ret = 0;
+
+	atomic_set(&g_aal_force_enable_irq, 0);
 
 	AAL_DBG("disp_aal_copy_hist_to_user: %d", ret);
 
@@ -829,6 +841,7 @@ static int aal_ioctl(DISP_MODULE_ENUM module, void *handle,
 static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
+	unsigned long flags;
 
 	if (g_aal_io_mask != 0) {
 		AAL_DBG("aal_ioctl masked");
@@ -845,7 +858,13 @@ static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 				return -EFAULT;
 			}
 
+			spin_lock_irqsave(&g_aal_irq_en_lock, flags);
+			if (atomic_read(&g_aal_force_enable_irq) == 1) {
+				enabled = 1;
+				AAL_NOTICE("force enable aal irq");
+			}
 			disp_aal_set_interrupt(enabled);
+			spin_unlock_irqrestore(&g_aal_irq_en_lock, flags);
 
 			if (enabled)
 				disp_aal_trigger_refresh(AAL_REFRESH_33MS);
