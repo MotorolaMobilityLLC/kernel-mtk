@@ -23,6 +23,8 @@
 #include <linux/uaccess.h>
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
+#include <mt_vcorefs_manager.h>
+#include <mt_spm_vcorefs.h>
 #include "mtkdcs_drv.h"
 
 /* Memory lowpower private header file */
@@ -168,7 +170,14 @@ int dcs_dram_channel_switch(enum dcs_status status)
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
 		(sys_dcs_status != status)) {
+		/* speed up lpdma, use max DRAM frequency */
+		vcorefs_request_dvfs_opp(KIR_DCS, OPP_0);
 		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
+		/* release DRAM frequency */
+		vcorefs_request_dvfs_opp(KIR_DCS, OPP_UNREQ);
+		/* update DVFSRC setting */
+		spm_dvfsrc_set_channel_bw(status == DCS_NORMAL ?
+				DVFSRC_CHANNEL_4 : DVFSRC_CHANNEL_2);
 		sys_dcs_status = status;
 		pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
 		up_write(&dcs_rwsem);
