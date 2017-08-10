@@ -496,6 +496,9 @@ typedef enum _VAL_VCODEC_SCENARIO_T {
 	VAL_VCODEC_SCENARIO_VENC_1080P  = 0x1,          /* /< Camera recording 1080P */
 	VAL_VCODEC_SCENARIO_VDEC_1080P  = 0x2,          /* /< Playback 1080P */
 	VAL_VCODEC_SCENARIO_VENC_WFD    = 0x4,          /* /< Wifi-display encoding */
+	VAL_VCODEC_SCENARIO_VDEC_60FPS  = 0x8,          /* /< Playback 60fps video */
+	VAL_VCODEC_SCENARIO_VDEC_4K     = 0x10,         /* /< Playback 4K */
+	VAL_VCODEC_SCENARIO_VDEC_2K     = 0x20,         /* /< Playback 2K */
 } VAL_VCODEC_SCENARIO_T;
 
 /**
