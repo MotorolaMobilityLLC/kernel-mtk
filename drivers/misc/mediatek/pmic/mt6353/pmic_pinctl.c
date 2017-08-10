@@ -108,7 +108,8 @@ void vmd1_pmic_setting_on(void)
 		pmic_buck_vcore2_hw_vosel(0); /* HW source clock setting */
 		/* 2.Call PMIC driver API configure VCORE2 ON voltage as 1.0V */
 		pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_ON, 0x40); /* set to 1.0V */
-	} else if (segment == 0x42 || segment == 0x43 || segment == 0x46) {/* 0x42: normal 0x43: 6738*/
+	} else if (segment == 0x42 || segment == 0x43 || segment == 0x46 || segment == 0x4B) {
+		/* 0x42: normal 0x43: 6738*/
 		/* Turn on VCORE2 */
 		/* 1.Call PMIC driver API to configure VCORE2 as HW mode */
 		pmic_buck_vcore2_en("VMODEM", 0, 1);
