@@ -2095,6 +2095,8 @@ void wlanHandleSystemResume(void)
 	if (!(prDev->ip_ptr) ||
 	    !((struct in_device *)(prDev->ip_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip_ptr))->ifa_list->ifa_local))) {
+		DBGLOG(INIT, INFO, "ip is not avalible.\n");
+		rStatus = WLAN_STATUS_FAILURE;
 		goto notify_resume;
 	}
 	/* <4> copy the IPv4 address */
@@ -2105,6 +2107,8 @@ void wlanHandleSystemResume(void)
 	if (!prDev || !(prDev->ip6_ptr) ||
 	    !((struct in_device *)(prDev->ip6_ptr))->ifa_list ||
 	    !(&(((struct in_device *)(prDev->ip6_ptr))->ifa_list->ifa_local))) {
+		DBGLOG(INIT, INFO, "ipv6 is not avalible.\n");
+		rStatus = WLAN_STATUS_FAILURE;
 		goto notify_resume;
 	}
 	/* <6> copy the IPv6 address */
@@ -2138,9 +2142,8 @@ notify_resume:
 	DBGLOG(INIT, INFO, "Query BSS result: %d %d %d, IP: %d.%d.%d.%d, rStatus: %u\n",
 		       rParam.eConnectionState, rParam.eCurrentOPMode, rParam.fgIsNetActive,
 		       ip[0], ip[1], ip[2], ip[3], rStatus);
-	if (rStatus != WLAN_STATUS_SUCCESS) {
+	if (rStatus != WLAN_STATUS_SUCCESS)
 		wlanNotifyFwSuspend(prGlueInfo, FALSE);
-	}
 }
 #endif /* ! CONFIG_X86 */
 
