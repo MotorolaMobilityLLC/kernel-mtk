@@ -615,8 +615,10 @@ static void mt6391_spk_auto_trim_offset(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON0, 0x102B, 0xffff);	/* RG DEV ck on */
 	mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
 	udelay(200);
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0301, 0xffff);
+	/* ZCD mux selection as iv buffer*/
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0300, 0x0700);
+	/* ZCD enable */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0001, 0x0001);
 	/* audio bias adjustment */
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
 	/* set DUDIV gain ,iv buffer gain */
@@ -715,7 +717,7 @@ static void mt6391_spk_auto_trim_offset(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_SPK_CON0, 0x0000, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON3, 0x0000, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON11, 0x0000, 0xffff);
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0x0701);
 
 	/* enable LDO ; fix me , separate for UL  DL LDO */
 	mt6391_set_reg(codec_data, MT6397_AUDCLKGEN_CFG0, 0x0000, 0x0001);
@@ -859,7 +861,10 @@ static void mt6391_turn_on_headphone_amp(struct mt6391_priv *codec_data)
 
 	udelay(200);
 
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	/* ZCD mux selection as headphone L & R*/
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0100, 0x0700);
+	/* ZCD enable */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0001, 0x0001);
 	mt6391_set_reg(codec_data, MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG0, 0x0008, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
@@ -923,6 +928,9 @@ static void mt6391_turn_off_headphone_amp(struct mt6391_priv *codec_data)
 	if (mt6391_get_dl_status(codec_data) == false)
 		mt6391_turn_off_dac(codec_data);
 
+	/* Disable ZCD in the turn off sequence to avoid pop noise */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0x0701);
+
 	pr_debug("%s done\n", __func__);
 }
 
@@ -949,8 +957,10 @@ static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff); /* NCP on */
 	/* usleep(1 * 1000); */
 
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0201, 0xffff);
+	/* ZCD mux selection as handset*/
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0200, 0x0700);
+	/* ZCD enable */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0001, 0x0001);
 	/* select charge current l; fix me */
 	mt6391_set_reg(codec_data, MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
 	/* set voice playback with headset */
@@ -1011,6 +1021,9 @@ static void mt6391_turn_off_voice_amp(struct mt6391_priv *codec_data)
 
 	if (!mt6391_get_dl_status(codec_data))
 		mt6391_turn_off_dac(codec_data);
+
+	/* Disable ZCD in the turn off sequence to avoid pop noise */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0x0701);
 }
 
 static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
@@ -1042,8 +1055,10 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
 	udelay(200);
 
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0301, 0xffff);
+	/* ZCD mux selection as iv buffer*/
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0300, 0x0700);
+	/* ZCD enable */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0001, 0x0001);
 	/* audio bias adjustment */
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
 	/* set DUDIV gain ,iv buffer gain */
@@ -1133,8 +1148,8 @@ static void mt6391_turn_off_speaker_amp(struct mt6391_priv *codec_data)
 	if (mt6391_get_dl_status(codec_data) == false)
 		mt6391_turn_off_dac(codec_data);
 
-	/* temp solution, set MT6397_ZCD_CON0 to 0x101 for pop noise */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	/* Disable ZCD in the turn off sequence to avoid pop noise */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0x0701);
 
 	pr_debug("%s done\n", __func__);
 }
@@ -1173,8 +1188,10 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);	/* NCP on */
 	udelay(200);
 
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0301, 0xffff);
+	/* ZCD mux selection as iv buffer*/
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0300, 0x0700);
+	/* ZCD enable */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0001, 0x0001);
 	/* select charge current ; fix me */
 	mt6391_set_reg(codec_data, MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
 	/* set voice playback with headset */
@@ -1274,8 +1291,8 @@ static void mt6391_turn_off_headset_speaker_amp(struct mt6391_priv *codec_data)
 	if (!mt6391_get_dl_status(codec_data))
 		mt6391_turn_off_dac(codec_data);
 
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	/* Disable ZCD in the turn off sequence to avoid pop noise */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0x0701);
 
 	pr_debug("%s done\n", __func__);
 }
@@ -2703,8 +2720,8 @@ static void mt6391_codec_init_reg(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_AUD_NCP0, 0x0000, 0x6000);
 	mt6391_set_reg(codec_data, MT6397_AUDLDO_CFG0, 0x0192, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_AFUNC_AUD_CON2, 0x0000, 0x0080);
-	/* ZCD setting gain step gain and enable */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0101, 0xffff);
+	/* ZCD set as default value */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON0, 0x0000, 0xffff);
 	/* sck inverse */
 	mt6391_set_reg(codec_data, MT6397_AFE_PMIC_NEWIF_CFG2, 1 << 15, 1 << 15);
 	/* default preamp mux */
