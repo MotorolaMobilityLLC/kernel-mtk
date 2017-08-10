@@ -3061,11 +3061,21 @@ static void cmdq_core_reorder_task_array(ThreadStruct *pThread, int32_t thread, 
 			}
 		}
 
+#ifdef CMDQ_JUMP_MEM
+		if (((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+			pThread->pCurTask[nextID]->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA) {
+			/* We reached the last task */
+			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
+				loop, nextID, searchLoop, searchID);
+			break;
+		}
+#else
 		if ((0x10000000 == pThread->pCurTask[nextID]->pCMDEnd[0]) &&
 		    (0x00000008 == pThread->pCurTask[nextID]->pCMDEnd[-1])) {
 			/* We reached the last task */
 			break;
 		}
+#endif
 	}
 
 	pThread->nextCookie -= reorderCount;
@@ -6520,6 +6530,8 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 	} else {
 		loop = pThread->taskCount;
 		for (index = (cookie % cmdq_core_max_task_in_thread(thread)); loop > 0; loop--, index++) {
+			bool is_last_end = false;
+
 			if (index >= cmdq_core_max_task_in_thread(thread))
 				index = 0;
 
@@ -6527,8 +6539,15 @@ static int32_t cmdq_core_force_remove_task_from_thread(TaskStruct *pTask, uint32
 			if (NULL == pExecTask)
 				continue;
 
-			if ((0x10000000 == pExecTask->pCMDEnd[0]) &&
-			    (0x00000008 == pExecTask->pCMDEnd[-1])) {
+#ifdef CMDQ_JUMP_MEM
+			is_last_end = (((pExecTask->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP) &&
+				(pExecTask->pCMDEnd[-1] == CMDQ_GCE_END_ADDR_PA);
+#else
+			is_last_end = (0x10000000 == pExecTask->pCMDEnd[0]) &&
+			    (0x00000008 == pExecTask->pCMDEnd[-1]);
+#endif
+
+			if (is_last_end) {
 				/* We reached the last task */
 				break;
 #ifdef CMDQ_JUMP_MEM
@@ -7337,16 +7356,16 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 					pPrevTask->pCMDEnd[-1] = pTask->pCMDEnd[-1];
 					pPrevTask->pCMDEnd[0] = pTask->pCMDEnd[0];
 
+#ifdef CMDQ_JUMP_MEM
+#else
 					if ((0x10000000 == pTask->pCMDEnd[0]) &&
 						(0x00000008 == pTask->pCMDEnd[-1])) {
 						/* reset end if pTask is last one */
-#ifdef CMDQ_JUMP_MEM
-#else
 						uint32_t EndAddr = CMDQ_PHYS_TO_AREG(
 							pPrevTask->MVABase + pPrevTask->commandSize);
 						CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
-#endif
 					}
+#endif
 
 					if (pNextTask)
 						cmdq_core_reorder_task_array(pThread, thread, index);
@@ -7684,8 +7703,8 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 		}
 
 		if (pPrev->priority < pTask->priority) {
-			CMDQ_MSG("Switch prev(%d, 0x%p) and curr(%d, 0x%p) order\n",
-				 prev, pPrev, index, pTask);
+			CMDQ_MSG("Switch prev(%d, 0x%p, size: %u) and curr(%d, 0x%p, size: %u) order\n",
+				 prev, pPrev, pPrev->bufferSize, index, pTask, pTask->bufferSize);
 
 			pThread->pCurTask[index] = pPrev;
 			pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
@@ -7915,12 +7934,18 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 		/* Boundary case tested: EOC have been executed, but JUMP is not executed */
 		/* Thread PC: 0x9edc0dd8, End: 0x9edc0de0, Curr Cookie: 1, Next Cookie: 2 */
 
+#ifdef CMDQ_JUMP_MEM
+		/* PC = END - 0, All CMDs are executed */
+		if ((CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
+			(CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 0))) {
+#else
 		/* PC = END - 8, EOC is executed */
 		/* PC = END - 0, All CMDs are executed */
 		if ((CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
-		     (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 8)) ||
-		    (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
-		     (CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 0))) {
+			(CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 8)) ||
+			(CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread))) ==
+			(CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread))) - 0))) {
+#endif
 			cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 
 #ifdef CMDQ_JUMP_MEM
