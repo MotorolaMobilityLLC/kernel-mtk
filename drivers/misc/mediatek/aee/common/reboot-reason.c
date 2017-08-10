@@ -304,6 +304,19 @@ static inline void aee_rec_step_nested_panic(int step)
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_NESTED_PANIC + step);
 }
 
+#define TS_MAX_LEN 64
+static const char *get_timestamp_string(char *buf, int bufsize)
+{
+	u64 ts;
+	unsigned long rem_nsec;
+
+	ts = local_clock();
+	rem_nsec = do_div(ts, 1000000000);
+	snprintf(buf, bufsize, "[%5lu.%06lu]",
+		       (unsigned long)ts, rem_nsec / 1000);
+	return buf;
+}
+
 asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 {
 	struct thread_info *thread = current_thread_info();
@@ -315,6 +328,7 @@ asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 	int prev_fiq_step = aee_rr_curr_fiq_step();
 	/* everytime enter nested_panic flow, add 8 */
 	static int step_base = -8;
+	char tsbuf[TS_MAX_LEN] = {0};
 
 	step_base = step_base < 48 ? step_base + 8 : 56;
 
@@ -325,7 +339,8 @@ asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 	aee_rec_step_nested_panic(step_base + 2);
 	/*nested panic may happens more than once on many/single cpus */
 	if (atomic_read(&nested_panic_time) < 3)
-		aee_nested_printf("\nCPU%dpanic%d@%d\n", cpu, nested_panic_time, prev_fiq_step);
+		aee_nested_printf("\nCPU%dpanic%d@%d-%s\n", cpu, nested_panic_time, prev_fiq_step,
+				  get_timestamp_string(tsbuf, TS_MAX_LEN));
 	atomic_inc(&nested_panic_time);
 
 	switch (atomic_read(&nested_panic_time)) {
