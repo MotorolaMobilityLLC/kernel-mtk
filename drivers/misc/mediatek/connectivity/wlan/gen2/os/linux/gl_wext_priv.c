@@ -4651,8 +4651,9 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 				       pFccTxPwrAdjust->fgFccTxPwrAdjust);
 			else {
 				pcCommand += (strlen(CMD_SET_FCC_CERT) + 1);
-				if (*pcCommand != '1' && *pcCommand != '0')
-					DBGLOG(RLM, WARN, "control parameter(%c) is not correct(0 or 1)\n", *pcCommand);
+				if (strnicmp(pcCommand, "-1", strlen("-1")) != 0 && *pcCommand != '0')
+					DBGLOG(RLM, WARN, "control parameter(%s) is not correct(0 or -1)\n",
+					       pcCommand);
 				else {
 					kalMemSet(&rFccTxPwrAdjust, 0, sizeof(rFccTxPwrAdjust));
 #if 0
@@ -4670,7 +4671,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 #else
 					kalMemCopy(&rFccTxPwrAdjust, pFccTxPwrAdjust, sizeof(FCC_TX_PWR_ADJUST));
 #endif
-					rFccTxPwrAdjust.fgFccTxPwrAdjust = *pcCommand == '1' ? 1 : 0;
+					rFccTxPwrAdjust.fgFccTxPwrAdjust = *pcCommand == '0' ? 1 : 0;
 
 					DBGLOG(RLM, INFO, "FCC Cert Control (%d)\n", rFccTxPwrAdjust.fgFccTxPwrAdjust);
 
