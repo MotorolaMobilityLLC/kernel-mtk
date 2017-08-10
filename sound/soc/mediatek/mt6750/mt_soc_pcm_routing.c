@@ -822,6 +822,272 @@ static void GetAudioTrimOffset_HP(int channels)
 	AudDrv_Clk_Off();
 }
 
+static void GetAudioTrimOffset_HPSPK(int channels)
+{
+	const int off_counter = 20, on_counter = 20, Const_DC_OFFSET = 2048;
+	int Buffer_on_value[MAX_HP_GAIN_LEVEL], Buffer_offl_value[MAX_HP_GAIN_LEVEL],
+		Buffer_offr_value[MAX_HP_GAIN_LEVEL];
+	int Buffer_tmp[TRIM_NUM+2];
+	int i, j;
+
+	pr_warn("%s channels = %d\n", __func__, channels);
+	/* open headphone and digital part */
+	AudDrv_Clk_On();
+	AudDrv_Emi_Clk_On();
+	OpenAfeDigitaldl1(true);
+
+	/* AUXADC large scale channel 9- AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
+	Ana_Set_Reg(MT6353_AUXADC_CON2, 0x0200, 0x0200);
+
+	switch (channels) {
+	case AUDIO_OFFSET_TRIM_MUX_HPL:
+	case AUDIO_OFFSET_TRIM_MUX_HPR:{
+		OpenTrimBufferHardware(true);
+
+		/* HP+SPK */
+#ifdef CONFIG_MTK_SPEAKER
+		Ana_Set_Reg(MT6353_ZCD_CON4, 0x0505, 0xffff); /* set IV buffer gain to 0dB */
+#else
+		setLineOutGainZero();
+#endif
+		break;
+		}
+	default:
+		break;
+	}
+
+	/* Get HPL off offset */
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	/*msleep(1); */
+	usleep_range(1 * 1000, 20 * 1000);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
+	setOffsetTrimBufferGain(3);
+	EnableTrimbuffer(true);
+	/*msleep(1); */
+	usleep_range(1 * 1000, 20 * 1000);
+
+	for (j = 0; j < MAX_HP_GAIN_LEVEL; j++) {
+		setHpGain(j);
+		usleep_range(1 * 1000, 20 * 1000);
+
+		for (i = 0; i < (TRIM_NUM + 2); i++) {
+			Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+			/* pr_warn("#%d Buffer_off_value_L = %d\n", i, Buffer_tmp[i]); */
+		}
+		Buffer_offl_value[j] = GetAudioTrimOffsetAverage(Buffer_tmp, TRIM_NUM);
+		/* pr_warn("Buffer_offl_value[%d] = %d\n", j, Buffer_offl_value[j]); */
+	}
+
+	EnableTrimbuffer(false);
+
+	/* Get HPR off offset */
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
+	setOffsetTrimBufferGain(3);
+	EnableTrimbuffer(true);
+
+	/*msleep(1); */
+	usleep_range(1 * 1000, 20 * 1000);
+
+	for (j = 0; j < MAX_HP_GAIN_LEVEL; j++) {
+#if 0
+		setHpGain(j);
+		usleep_range(1 * 1000, 20 * 1000);
+
+		for (i = 0; i < (TRIM_NUM + 2); i++) {
+			Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+			/* pr_warn("#%d Buffer_off_value_R = %d\n", i, Buffer_tmp[i]); */
+		}
+		Buffer_offr_value[j] = GetAudioTrimOffsetAverage(Buffer_tmp, TRIM_NUM);
+		/* pr_warn("Buffer_offl_value[%d] = %d\n", j, Buffer_offl_value[j]); */
+#else
+		Buffer_offr_value[j] = 0; /* not used */
+#endif
+	}
+
+	EnableTrimbuffer(false);
+
+	switch (channels) {
+	case AUDIO_OFFSET_TRIM_MUX_HPL:
+	case AUDIO_OFFSET_TRIM_MUX_HPR:{
+			OpenTrimBufferHardware(false);
+			break;
+		}
+	default:
+		break;
+	}
+
+	/* calibrate HPL offset trim */
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
+	setOffsetTrimBufferGain(3);
+	/* EnableTrimbuffer(true); */
+	/* msleep(5); */
+
+	switch (channels) {
+	case AUDIO_OFFSET_TRIM_MUX_HPL:
+	case AUDIO_OFFSET_TRIM_MUX_HPR:{
+		/* HP+SPK */
+		OpenAnalogHeadphoneSpeaker(true);
+#ifdef CONFIG_MTK_SPEAKER
+		Ana_Set_Reg(MT6353_ZCD_CON4, 0x0505, 0xffff); /* set IV buffer gain to 0dB */
+		Ana_Set_Reg(MT6353_SPK_ANA_CON0, SPK_D_TRIM_INDEX << 11, 0x7800);
+		/* Ana_Set_Reg(MT6353_SPK_ANA_CON0, 1 << 11, 0x7800); */
+		/* set spk pga gain to SPK_D_TRIM_INDEX */
+#else
+		setLineOutGainZero();
+#endif
+		/* set IV buf mux and hp mux */
+		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, (0x2 << 11) | (0x1 << 9), 0x1e00);
+		/* R hp input mux select "Audio playback", L hp input mux select "LoudSPK playback"  */
+		Ana_Set_Reg(MT6353_SPK_ANA_CON3, 0x4 << 6, 0x01c0);
+		/* Set IV buffer MUX select */
+		break;
+		}
+	default:
+		break;
+	}
+	EnableTrimbuffer(true);
+
+	/*msleep(1); */
+	usleep_range(1 * 1000, 20 * 1000);
+
+	for (j = 0; j < MAX_HP_GAIN_LEVEL ; j++) {
+		setHpGain(j);
+		usleep_range(1 * 1000, 20 * 1000);
+
+		for (i = 0; i < (TRIM_NUM + 2); i++) {
+			Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
+			/* pr_warn("#%d Buffer_on_value_L = %d\n", i, Buffer_tmp[i]); */
+		}
+		Buffer_on_value[j] = GetAudioTrimOffsetAverage(Buffer_tmp, TRIM_NUM);
+		/*mHplSpkOffset = Buffer_on_value - Buffer_offl_value + Const_DC_OFFSET;*/
+
+		/* HP+SPK */
+		mHplSpkOffset[j] = Const_DC_OFFSET - (Buffer_on_value[j] - Buffer_offl_value[j]);
+
+		pr_warn("[inverse] Buffer_on_mHplSpkOffset_L = %d, Buffer_off_value_L = %d, mHplSpkOffset = %d\n",
+			Buffer_on_value[j], Buffer_offl_value[j], mHplSpkOffset[j]);
+	}
+	EnableTrimbuffer(false);
+
+	/* calibrate HPR offset trim */
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
+
+	/* HP+SPK */
+	Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, (0x2 << 11) | (0x1 << 9), 0x1e00);
+	/* R hp input mux select "Audio playback", L hp input mux select "LoudSPK playback"  */
+	Ana_Set_Reg(MT6353_SPK_ANA_CON3, 0x4 << 6, 0x01c0);
+	/* Set IV buffer MUX select */
+
+	setOffsetTrimBufferGain(3);
+	EnableTrimbuffer(true);
+
+	/*msleep(1);    */
+	usleep_range(1 * 1000, 20 * 1000);
+
+	/* for(j = 0; j < MAX_HP_GAIN_LEVEL ; j++) */
+	for (j = 0; j < 1 ; j++) {
+		setHpGain(j);
+		usleep_range(1 * 1000, 20 * 1000);
+
+		for (i = 0; i < (TRIM_NUM + 2); i++) {
+			Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
+			/* pr_warn("#%d Buffer_on_value_R = %d\n", i, Buffer_tmp[i]); */
+		}
+		Buffer_on_value[j] = GetAudioTrimOffsetAverage(Buffer_tmp, TRIM_NUM);
+		/* pr_warn("Buffer_on_value[%d] = %d\n", j, Buffer_on_value[j]); */
+
+		/* HP+SPK */
+		mHprSpkOffset = (mHprOffset - Const_DC_OFFSET) + Const_DC_OFFSET;
+
+		pr_warn("[inverse] Buffer_on_mHprSpkOffset_R = %d, Buffer_off_value_R = %d, mHprSpkOffset = %d\n",
+				Buffer_on_value[j], Buffer_offr_value[j], mHprSpkOffset);
+	}
+	switch (channels) {
+	case AUDIO_OFFSET_TRIM_MUX_HPL:
+	case AUDIO_OFFSET_TRIM_MUX_HPR:
+		/* HP+SPK */
+		OpenAnalogHeadphoneSpeaker(false);
+		break;
+	}
+
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+#if 1
+	/* HP+SPK */
+	/* restore IV buf mux and hp mux */
+	Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, (0x0 << 11) | (0x0 << 9), 0x1e00);
+	/* R hp input mux select "Open", L hp input mux select "Open"  */
+	Ana_Set_Reg(MT6353_SPK_ANA_CON3, 0x0 << 6, 0x01c0);
+	/* Set IV buffer MUX select */
+#endif
+	EnableTrimbuffer(false);
+	OpenAfeDigitaldl1(false);
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+	AudDrv_Emi_Clk_Off();
+	AudDrv_Clk_Off();
+}
+
+static int Audio_HpSpkl_Offset_Get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+#ifndef EFUSE_HP_TRIM
+	int i;
+
+	pr_warn("%s\n", __func__);
+	AudDrv_Clk_On();
+	if (mHplSpkCalibrated == false) {
+		GetAudioTrimOffset_HPSPK(AUDIO_OFFSET_TRIM_MUX_HPL);
+		SetHprSpkTrimOffset(mHprSpkOffset);
+		SetHplSpkTrimOffset(mHplSpkOffset);
+		CalculateSPKHP_DCCompenForEachdB();
+		mHplSpkCalibrated = true;
+		mHprSpkCalibrated = true;
+	}
+
+	for (i = 0; i < MAX_HP_GAIN_LEVEL; i++) {
+		ucontrol->value.integer.value[i] = mHplSpkOffset[i];
+		pr_warn("%s(), mHplSpkOffset[%d] = 0x%x\n", __func__, i, mHplSpkOffset[i]);
+	}
+	AudDrv_Clk_Off();
+#else
+	ucontrol->value.integer.value[0] = 2048;
+#endif
+	return 0;
+}
+
+static int Audio_HpSpkl_Offset_Set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+#ifndef EFUSE_HP_TRIM
+	int i;
+
+	pr_warn("%s()\n", __func__);
+
+	for (i = 0; i < MAX_HP_GAIN_LEVEL; i++) {
+		mHplSpkOffset[i] = ucontrol->value.integer.value[i];
+		pr_warn("%s(), mHplSpkOffset[%d] = 0x%x\n", __func__, i, mHplSpkOffset[i]);
+	}
+	SetHplSpkTrimOffset(mHplSpkOffset);
+	CalculateSPKHP_DCCompenForEachdB();
+#else
+	mHplSpkOffset = ucontrol->value.integer.value[0];
+#endif
+	return 0;
+}
+
+static int Audio_HpSpkr_Offset_Get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+#ifndef EFUSE_HP_TRIM
+	pr_warn("%s\n", __func__);
+	ucontrol->value.integer.value[0] = mHprSpkOffset;
+#else
+	ucontrol->value.integer.value[0] = 2048;
+#endif
+	return 0;
+}
+
 static int Audio_HpSpkr_Offset_Set(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
