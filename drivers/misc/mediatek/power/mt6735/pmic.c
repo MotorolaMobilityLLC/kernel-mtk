@@ -372,16 +372,6 @@ void upmu_set_reg_value(unsigned int reg, unsigned int reg_val)
 	ret = pmic_config_interface(reg, reg_val, 0xFFFF, 0x0);
 }
 
-unsigned int get_pmic_mt6325_cid(void)
-{
-	return 0;
-}
-
-unsigned int get_mt6325_pmic_chip_version(void)
-{
-	return 0;
-}
-
 /**********************************************************
   *
   *   [Internal Function]
@@ -536,7 +526,7 @@ void upmu_interrupt_chrdet_int_en(unsigned int val)
 {
 	PMICLOG("[upmu_interrupt_chrdet_int_en] val=%d.\r\n", val);
 
-	/*mt6325_upmu_set_rg_int_en_chrdet(val); */
+	/*mt6328_upmu_set_rg_int_en_chrdet(val); */
 	pmic_set_register_value(PMIC_RG_INT_EN_CHRDET, val);
 }
 EXPORT_SYMBOL(upmu_interrupt_chrdet_int_en);
@@ -549,7 +539,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 {
 	unsigned int val = 0;
 
-	/*val = mt6325_upmu_get_rgs_chrdet(); */
+	/*val = mt6328_upmu_get_rgs_chrdet(); */
 	val = pmic_get_register_value(PMIC_RGS_CHRDET);
 	PMICLOG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
 
@@ -2059,21 +2049,17 @@ void exec_battery_oc_callback(BATTERY_OC_LEVEL battery_oc_level)
 void bat_oc_h_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_RG_INT_EN_FG_CUR_H, en_val);
-	/* mt6325_upmu_set_rg_int_en_fg_cur_h(en_val); */
 }
 
 void bat_oc_l_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_RG_INT_EN_FG_CUR_L, en_val);
-	/*mt6325_upmu_set_rg_int_en_fg_cur_l(en_val); */
 }
 
 void battery_oc_protect_init(void)
 {
 	pmic_set_register_value(PMIC_FG_CUR_HTH, BAT_OC_H_THD);
-	/*mt6325_upmu_set_fg_cur_hth(BAT_OC_H_THD); */
 	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD);
-	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD); */
 
 	bat_oc_h_en_setting(0);
 	bat_oc_l_en_setting(1);
@@ -2093,9 +2079,7 @@ void battery_oc_protect_reinit(void)
 {
 #ifdef BATTERY_OC_PROTECT
 	pmic_set_register_value(PMIC_FG_CUR_HTH, BAT_OC_H_THD_RE);
-	/*mt6325_upmu_set_fg_cur_hth(BAT_OC_H_THD_RE); */
 	pmic_set_register_value(PMIC_FG_CUR_LTH, BAT_OC_L_THD_RE);
-	/*mt6325_upmu_set_fg_cur_lth(BAT_OC_L_THD_RE); */
 
 	pr_err("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
 	       MT6328_FGADC_CON23, upmu_get_reg_value(MT6328_FGADC_CON23),
@@ -2437,8 +2421,6 @@ void enable_dummy_load(unsigned int en)
 
 	if (en == 1) {
 		/*Enable dummy load-------------------------------------------------- */
-		/*mt6325_upmu_set_rg_g_drv_2m_ck_pdn(0); */
-		/*mt6325_upmu_set_rg_drv_32k_ck_pdn(0); */
 
 		/*upmu_set_reg_value(0x23c,0xfeb0); */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0);
@@ -3244,33 +3226,27 @@ struct wake_lock pmicThread_lock;
 void wake_up_pmic(void)
 {
 	PMICLOG("[wake_up_pmic]\r\n");
-	if (pmic_thread_handle != NULL)
-		wake_up_process(pmic_thread_handle);
-
+	if (pmic_thread_handle != NULL) {
 #if !defined CONFIG_HAS_WAKELOCKS
-	__pm_stay_awake(&pmicThread_lock);
+		__pm_stay_awake(&pmicThread_lock);
 #else
-	wake_lock(&pmicThread_lock);
+		wake_lock(&pmicThread_lock);
 #endif
+		wake_up_process(pmic_thread_handle);
+	} else {
+		pr_err(PMICTAG "[%s] pmic_thread_handle not ready\n", __func__);
+		return;
+	}
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
-#if 0				/* def CONFIG_MTK_LEGACY */
-void mt_pmic_eint_irq(void)
-{
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n"); */
-	wake_up_pmic();
-	/*return; */
-}
-#else
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n"); */
-	wake_up_pmic();
 	disable_irq_nosync(irq);
+	PMICLOG("[mt_pmic_eint_irq] disable PMIC irq\n");
+	wake_up_pmic();
 	return IRQ_HANDLED;
 }
-#endif
 
 void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 {
@@ -3371,30 +3347,21 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(43, 1, "PMIC");
 #endif
 
-#if 0
-	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn); */
-	mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);
-	mt_eint_unmask(g_eint_pmic_num);
-#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek, pmic-eint");
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		mt_gpio_set_debounce(ints[0], ints[1]);
 
 		g_pmic_irq = irq_of_parse_and_map(node, 0);
-		ret =
-		    request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE,
-				"pmic-eint", NULL);
+		ret = request_irq(g_pmic_irq, (irq_handler_t)mt_pmic_eint_irq,
+			IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
-		/*enable_irq(g_pmic_irq); */
-		disable_irq(g_pmic_irq);
 		enable_irq_wake(g_pmic_irq);
 	} else
 		PMICLOG("can't find compatible node\n");
-#endif
 
-	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
+	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6328_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
@@ -4853,17 +4820,15 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
 #else
 	/*PMIC Interrupt Service */
-	PMIC_EINT_SETTING();
-	PMICLOG("[PMIC_EINT_SETTING] Done\n");
-
 	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
 	if (IS_ERR(pmic_thread_handle)) {
 		pmic_thread_handle = NULL;
-		PMICLOG("[pmic_thread_kthread_mt6325] creation fails\n");
+		PMICLOG("[pmic_thread_kthread_mt6328] creation fails\n");
 	} else {
-		wake_up_process(pmic_thread_handle);
-		PMICLOG("[pmic_thread_kthread_mt6325] kthread_create Done\n");
+		PMICLOG("[pmic_thread_kthread_mt6328] kthread_create Done\n");
 	}
+	PMIC_EINT_SETTING();
+	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
 
 
