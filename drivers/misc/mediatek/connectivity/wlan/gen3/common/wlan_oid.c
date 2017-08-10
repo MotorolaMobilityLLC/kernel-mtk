@@ -1906,6 +1906,10 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 
 		channel_counts = scan_req_t->n_channels;
 		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
+
+		if (channel_counts > 25)
+			return TRUE;
+
 		if (channel_counts > MAXIMUM_OPERATION_CHANNEL_LIST)
 			return TRUE;
 		/*
