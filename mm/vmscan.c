@@ -253,7 +253,7 @@ EXPORT_SYMBOL(register_shrinker);
 
 static int __init add_shrinker_debug(void)
 {
-	debugfs_create_file("debugfs_shrinker", 0644, NULL, NULL,
+	debugfs_create_file("shrinker", 0644, NULL, NULL,
 			    &debug_shrinker_fops);
 	return 0;
 }
