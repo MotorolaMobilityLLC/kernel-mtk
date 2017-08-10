@@ -593,7 +593,8 @@ TGPD *_ex_mu3d_hal_prepare_tx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 {
 	qmu_printk(K_DEBUG,
 		   "[TX]" "%s gpd=%p, epnum=%d, len=%d, zlp=%d, size(TGPD)=%lld, pBuf=%llx\n",
-		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(TGPD), pBuf);
+		   __func__, gpd, ep_num, data_len, zlp, (u64) sizeof(TGPD),
+		   (unsigned long long) pBuf);
 	/*Set actual data point to "DATA Buffer" */
 	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
 
@@ -851,7 +852,7 @@ TGPD *_ex_mu3d_hal_prepare_rx_gpd(TGPD *gpd, dma_addr_t pBuf, DEV_UINT32 data_le
 				  DEV_UINT8 ioc, DEV_UINT8 bps, DEV_UINT32 cMaxPacketSize)
 {
 	qmu_printk(K_DEBUG, "[RX]" "%s gpd=%p, epnum=%d, len=%d, pBuf=%llx\n", __func__,
-		   gpd, ep_num, data_len, pBuf);
+		   gpd, ep_num, data_len, (unsigned long long) pBuf);
 
 	/*Set actual data point to "DATA Buffer" */
 	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
