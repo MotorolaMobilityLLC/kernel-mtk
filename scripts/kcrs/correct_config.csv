@@ -754,7 +754,6 @@ CONFIG_SERIO,COMMON,Unused,,N,N,N,N,N,N,N,N,N,N,N
 CONFIG_SETEND_EMULATION,PLATFORM,,,X,X,X,X,X,y,y,y,y,y,y
 CONFIG_SLUB_DEBUG,USER;PROJECT,miles.chen,gmo project config,X,X,X,X,,X,X,X,N,X,
 CONFIG_SLUB_DEBUG_ON,USER;PROJECT,miles.chen,gmo project config,X,X,X,X,,X,X,X,X,X,
-CONFIG_SMP,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND_ARM,PLATFORM,,,N,N,X,X,X,X,X,X,X,X,X
 CONFIG_SND_DEBUG,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
