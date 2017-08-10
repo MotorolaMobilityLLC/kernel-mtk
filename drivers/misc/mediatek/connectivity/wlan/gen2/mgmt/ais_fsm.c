@@ -2958,6 +2958,7 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 {
 	P_BSS_INFO_T prAisBssInfo;
 	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_SCAN_INFO_T prScanInfo;
 	BOOLEAN fgFound = TRUE;
 
 	/* firstly, check if we have started postpone indication.
@@ -2971,6 +2972,12 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN) {
 		DBGLOG(AIS, INFO, "CurrentState: %d, don't report disconnect\n",
 				   prAisFsmInfo->eCurrentState);
+		return;
+	}
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	if (prScanInfo->eCurrentState == SCAN_STATE_SCANNING) {
+		DBGLOG(AIS, INFO, "SCANNING, don't report disconnect\n");
 		return;
 	}
 
