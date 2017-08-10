@@ -2047,6 +2047,35 @@ UINT_8 nicChannelNum2Index(IN UINT_8 ucChannelNum)
 		return ucindex;
 }
 
+static UINT_8 scanGetChannel(P_HIF_RX_HEADER_T prHifRxHdr, PUINT_8 pucIE, UINT_16 u2IELen)
+{
+	UINT_8 ucDsChannel = 0;
+	UINT_8 ucHtChannel = 0;
+	UINT_8 ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prHifRxHdr);
+	UINT_8 u2Offset = 0;
+	ENUM_BAND_T eBand = HIF_RX_HDR_GET_RF_BAND(prHifRxHdr);
+
+	IE_FOR_EACH(pucIE, u2IELen, u2Offset) {
+		switch (IE_ID(pucIE)) {
+		case ELEM_ID_DS_PARAM_SET:
+			if (IE_LEN(pucIE) == ELEM_MAX_LEN_DS_PARAMETER_SET)
+				ucDsChannel = DS_PARAM_IE(pucIE)->ucCurrChnl;
+			break;
+		case ELEM_ID_HT_OP:
+			if (IE_LEN(pucIE) == (sizeof(IE_HT_OP_T) - 2))
+				ucHtChannel = ((P_IE_HT_OP_T) pucIE)->ucPrimaryChannel;
+			break;
+		}
+	}
+	DBGLOG(SCN, INFO, "band %d, hw channel %d, ds %d, ht %d\n", eBand, ucHwChannel, ucDsChannel, ucHtChannel);
+	if (eBand == BAND_2G4) {
+		if (ucDsChannel >= 1 && ucDsChannel <= 14)
+			return ucDsChannel;
+		return (ucHtChannel >= 1 && ucHtChannel <= 14) ? ucHtChannel:ucHwChannel;
+	}
+	return (ucHtChannel >= 1 && ucHtChannel < 200) ? ucHtChannel:ucHwChannel;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Parse the content of given Beacon or ProbeResp Frame.
@@ -2072,7 +2101,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 			u2IELen = CFG_IE_BUFFER_SIZE;
 		/* if this is a one antenna only device, the antenna id is always 1. 7.3.2.40 */
 		rRepParams.ucAntennaID = 1;
-		rRepParams.ucChannel = prSwRfb->prHifRxHdr->ucHwChannelNum;
+		rRepParams.ucChannel = scanGetChannel(prSwRfb->prHifRxHdr, prWlanBeacon->aucInfoElem, u2IELen);
 		rRepParams.ucRCPI = prSwRfb->prHifRxHdr->ucRcpi;
 		rRepParams.ucRSNI = 255; /* 255 means RSNI not available. see 7.3.2.41 */
 		rRepParams.ucFrameInfo = 0;
@@ -2207,7 +2236,6 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		u2RemainLen -= ucIeSize;
 		pucSubIE += ucIeSize;
 	}
-	DBGLOG(SCN, INFO, "fgValidChannel %d\n", fgValidChannel);
 	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255) {
 		DBGLOG(SCN, INFO, "channel %d, valid %d\n", prBcnReq->ucChannel, fgValidChannel);
 		return;
