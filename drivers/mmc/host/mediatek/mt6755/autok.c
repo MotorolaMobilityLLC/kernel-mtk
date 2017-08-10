@@ -982,7 +982,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			else
 				cycle_cnt = 2 * (64 - pBdPrev->Bound_Start);
 
-			uDlySel_R = (uBD_mid_prev >= 32) ? 0 : 63;
+			uDlySel_R = 0xFF;
 			uMgLost_R = 0xFF; /* Margin enough donot care margin lost */
 			uDlySel_F = uBD_mid_prev;
 			uMgLost_F = 0xFF; /* Margin enough donot care margin lost */
@@ -1112,7 +1112,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 					uDlySel_R = 63;
 				} else if (pBdPrev->Bound_End == 63) {
 					uDlySel_F = 63;
-					uDlySel_R = 0;
+					uDlySel_R = 0xFF;
 				} else {
 					return -1;
 				}
@@ -1141,14 +1141,14 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 
 					uDlySel_R = uBD_mid_prev;
 					uMgLost_R = 0xFF;
-					uDlySel_F = (uBD_mid_prev >= 32) ? 0 : 63;
+					uDlySel_F = 0xFF;
 					uMgLost_F = 0xFF;
 				} else {
 					cycle_cnt = 128;
 
 					uDlySel_R = (pBdPrev->Bound_Start == 0) ? 0 : 63;
 					uMgLost_R = 0xFF;
-					uDlySel_F = (pBdPrev->Bound_Start == 0) ? 63 : 0;
+					uDlySel_F = 0xFF;
 					uMgLost_F = 0xFF;
 				}
 
