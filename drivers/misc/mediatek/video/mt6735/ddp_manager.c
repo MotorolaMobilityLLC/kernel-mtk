@@ -1813,6 +1813,7 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_GET_PQPARAM:
 	case DISP_IOCTL_SET_PQINDEX:
 	case DISP_IOCTL_GET_PQINDEX:
+	case DISP_IOCTL_SET_COLOR_REG:
 	case DISP_IOCTL_SET_TDSHPINDEX:
 	case DISP_IOCTL_GET_TDSHPINDEX:
 	case DISP_IOCTL_SET_PQ_CAM_PARAM:
