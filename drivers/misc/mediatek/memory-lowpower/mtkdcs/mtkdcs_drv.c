@@ -12,7 +12,6 @@
  */
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
-#define CONFIG_MTKDCS_DEBUG
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -24,13 +23,9 @@
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "mtkdcs_drv.h"
-
-/* Memory lowpower private header file */
-#include "../internal.h"
-
-#ifdef CONFIG_MTK_DCS
 #include <mt_spm_vcorefs.h>
 #include <mt_vcorefs_manager.h>
+#include "sspm_ipi.h"
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_initialized;
@@ -77,8 +72,6 @@ char * const dcs_status_name(enum dcs_status status)
 		return NULL;
 }
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-#include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
 static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
@@ -176,17 +169,6 @@ static int dcs_ipi_register(void)
 
 	return 0;
 }
-#else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static int dcs_get_status_ipi(enum dcs_status *status)
-{
-	*status = DCS_BUSY;
-	return 0;
-}
-static int dcs_ipi_register(void) { return 0; }
-static int dcs_migration_ipi(enum migrate_dir dir) { return 0; }
-static int dcs_set_dummy_write_ipi(void) { return 0; }
-static int dcs_dump_reg_ipi(void) { return 0; }
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 /*
  * __dcs_dram_channel_switch
@@ -232,6 +214,9 @@ int dcs_dram_channel_switch(enum dcs_status status)
 {
 	int ret = 0;
 
+	if (!dcs_initialized)
+		return -ENODEV;
+
 	down_write(&dcs_rwsem);
 
 	if (dcs_sysfs_mode == DCS_SYSFS_FREERUN)
@@ -256,6 +241,9 @@ int dcs_dram_channel_switch(enum dcs_status status)
 static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 {
 	int ret = 0;
+
+	if (!dcs_initialized)
+		return -ENODEV;
 
 	down_write(&dcs_rwsem);
 
@@ -290,6 +278,9 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
  */
 int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 {
+	if (!dcs_initialized)
+		return -ENODEV;
+
 	down_read(&dcs_rwsem);
 
 	*dcs_status = sys_dcs_status;
@@ -324,6 +315,9 @@ BUSY:
  */
 int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *dcs_status)
 {
+	if (!dcs_initialized)
+		return -ENODEV;
+
 	if (!down_read_trylock(&dcs_rwsem)) {
 		/* lock failed */
 		*dcs_status = DCS_BUSY;
@@ -358,6 +352,9 @@ BUSY:
  */
 void dcs_get_dcs_status_unlock(void)
 {
+	if (!dcs_initialized)
+		return;
+
 	up_read(&dcs_rwsem);
 }
 
@@ -454,6 +451,11 @@ static int __init mtkdcs_init(void)
 	/* init rwsem */
 	init_rwsem(&dcs_rwsem);
 
+	/* register IPI */
+	ret = dcs_ipi_register();
+	if (ret)
+		return -EBUSY;
+
 	/* read system dcs status */
 	ret = dcs_get_status_ipi(&sys_dcs_status);
 	if (!ret)
@@ -468,7 +470,7 @@ static int __init mtkdcs_init(void)
 		return ret;
 
 	/* read number of dram channels */
-	normal_channel_num = MAX_CHANNELS;
+	normal_channel_num = get_emi_channel_number();
 
 	/* the channel number must be multiple of 2 */
 	if (normal_channel_num % 2) {
@@ -479,11 +481,6 @@ static int __init mtkdcs_init(void)
 
 	lowpower_channel_num = (normal_channel_num / 2);
 
-	/* register IPI */
-	ret = dcs_ipi_register();
-	if (ret)
-		return -EBUSY;
-
 	dcs_initialized = true;
 
 	return 0;
@@ -491,109 +488,5 @@ static int __init mtkdcs_init(void)
 
 static void __exit mtkdcs_exit(void) { }
 
-device_initcall(mtkdcs_init);
+late_initcall(mtkdcs_init);
 module_exit(mtkdcs_exit);
-
-#ifdef CONFIG_MTKDCS_DEBUG
-static int mtkdcs_show(struct seq_file *m, void *v)
-{
-	int ch = 0, ret = -1;
-	enum dcs_status dcs_status;
-
-	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
-	if (!ret) {
-		seq_printf(m, "dcs currnet channel number=%d, status=%s\n",
-				ch, dcs_status_name(sys_dcs_status));
-		dcs_get_dcs_status_unlock();
-	} else {
-		seq_puts(m, "dcs_get_dcs_status_lock busy\n");
-	}
-
-	/* call debug ipi */
-	dcs_set_dummy_write_ipi();
-	dcs_dump_reg_ipi();
-
-	return 0;
-}
-
-static int mtkdcs_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, &mtkdcs_show, NULL);
-}
-
-static ssize_t mtkdcs_write(struct file *file, const char __user *buffer,
-		size_t count, loff_t *ppos)
-{
-	static char state;
-
-	if (count > 0) {
-		if (get_user(state, buffer))
-			return -EFAULT;
-		state -= '0';
-
-		if (state) {
-			/* low power to normal */
-			pr_alert("state=%d\n", state);
-			dcs_dram_channel_switch(DCS_NORMAL);
-		} else {
-			/* normal to low power */
-			pr_alert("state=%d\n", state);
-			dcs_dram_channel_switch(DCS_LOWPOWER);
-		}
-	}
-
-	return count;
-}
-
-static const struct file_operations mtkdcs_fops = {
-	.open		= mtkdcs_open,
-	.write		= mtkdcs_write,
-	.read		= seq_read,
-	.release	= single_release,
-};
-
-static int __init mtkdcs_debug_init(void)
-{
-	struct dentry *dentry;
-
-	if (!dcs_initialied()) {
-		pr_err("mtkdcs is not inited\n");
-		return 1;
-	}
-
-	dentry = debugfs_create_file("mtkdcs", S_IRUGO, NULL, NULL,
-			&mtkdcs_fops);
-	if (!dentry)
-		pr_warn("Failed to create debugfs mtkdcs file\n");
-
-	return 0;
-}
-
-late_initcall(mtkdcs_debug_init);
-#endif /* CONFIG_MTKDCS_DEBUG */
-
-#else /* ! CONFIG_MTK_DCS */
-/*
- * In this case, SSPM is not available. We can only
- * get the number of channels information from the EMI
- * API.
- * We assume the DCS is always in normal mode.
- * The DCS driver is not initialized.
- */
-int dcs_dram_channel_switch(enum dcs_status status) { return 0; }
-int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status)
-{
-	*ch = MAX_CHANNELS;
-	*status = DCS_NORMAL;
-	return 0;
-}
-int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status)
-{
-	*ch = MAX_CHANNELS;
-	*status = DCS_NORMAL;
-	return 0;
-}
-void dcs_get_dcs_status_unlock(void) {}
-bool dcs_initialied(void) { return false; }
-char * const dcs_status_name(enum dcs_status status) { return "normal"; }
-#endif /* CONFIG_MTK_DCS */
