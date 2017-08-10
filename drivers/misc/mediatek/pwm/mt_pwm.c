@@ -1712,7 +1712,7 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 static ssize_t pwm_debug_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	pwm_debug_show_hal();
-	return sprintf(buf, "%s\n", buf);
+	return snprintf(buf, 32, "pwm power_flag = 0x%08x\n", (unsigned int)pwm_dev->power_flag);
 }
 
 static DEVICE_ATTR(pwm_debug, 0644, pwm_debug_show, pwm_debug_store);
