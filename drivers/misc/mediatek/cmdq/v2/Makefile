@@ -78,7 +78,7 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6580"))
 ccflags-y += -DCMDQ_USE_LARGE_MAX_COOKIE
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6797" "mt6757"))
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 endif
 
