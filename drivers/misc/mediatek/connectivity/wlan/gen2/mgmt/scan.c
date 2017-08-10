@@ -2856,9 +2856,9 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 	(prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx > 3 ? 0 : \
 	(BSS_FULL_SCORE - (prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx) * 25)))
 
-#define CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc) \
+#define CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi) \
 	(WEIGHT_IDX_5G_BAND * \
-	((prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand) ? BSS_FULL_SCORE : 0))
+	((prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand && cRssi > -70) ? BSS_FULL_SCORE : 0))
 
 #define CALCULATE_SCORE_BY_STBC(prAdapter, prBssDesc) \
 	(WEIGHT_IDX_STBC * \
@@ -3045,7 +3045,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 #else
 	fgIsFixedChannel = cnmAisInfraChannelFixed(prAdapter, &eBand, &ucChannel);
 #endif
-
+	aisRemoveTimeoutBlacklist(prAdapter);
 #if CFG_SELECT_BSS_BASE_ON_RSSI
 	if (prConnSettings->eConnectionPolicy != CONNECT_BY_BSSID) {
 		LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
@@ -3151,7 +3151,7 @@ try_again:
 		u2ScoreDeauth = CALCULATE_SCORE_BY_DEAUTH(prBssDesc);
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
-		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc);
+		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
 		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
 
@@ -3196,6 +3196,11 @@ try_again:
 		}
 	}
 	if (prCandBssDesc) {
+		if (prCandBssDesc->fgIsConnected && !fgSearchBlackList && prEssLink->u4NumElem > 0) {
+			fgSearchBlackList = TRUE;
+			DBGLOG(SCN, INFO, "Can't roam out, try blacklist\n");
+			goto try_again;
+		}
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID)
 			DBGLOG(SCN, INFO,
 				"Selected %pM base on bssid, when find %s, %pM in %d BSSes, fix channel %d.\n",

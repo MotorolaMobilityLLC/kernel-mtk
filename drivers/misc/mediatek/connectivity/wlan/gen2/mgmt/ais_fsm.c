@@ -2298,13 +2298,13 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* ASSERT(prBssDesc->fgIsConnecting); */
 					prBssDesc->ucJoinFailureCount++;
 					if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
+						aisAddBlacklist(prAdapter, prBssDesc);
 						GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
 						DBGLOG(AIS, INFO,
 							"Bss %pM join fail %d times,temp disable it at time:%u\n",
 							prBssDesc->aucBSSID,
 							SCN_BSS_JOIN_FAIL_THRESOLD, prBssDesc->rJoinFailTime);
 					}
-					aisAddBlacklist(prAdapter, prBssDesc);
 					if (prBssDesc->prBlack)
 						prBssDesc->prBlack->u2AuthStatus = prStaRec->u2StatusCode;
 
@@ -4631,6 +4631,25 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	}
 	DBGLOG(AIS, TRACE, "%pM is not in blacklist\n", prBssDesc->aucBSSID);
 	return NULL;
+}
+
+VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	struct AIS_BLACKLIST_ITEM *prNextEntry = NULL;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+	P_LINK_T prFreeList = &prConnSettings->rBlackList.rFreeLink;
+	OS_SYSTIME rCurrent;
+
+	GET_CURRENT_SYSTIME(&rCurrent);
+
+	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		if (!CHECK_FOR_TIMEOUT(rCurrent, prEntry->rAddTime, SEC_TO_MSEC(AIS_BLACKLIST_TIMEOUT)))
+			continue;
+		LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
+		LINK_INSERT_HEAD(prFreeList, &prEntry->rLinkEntry);
+	}
 }
 
 static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter)
