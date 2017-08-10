@@ -423,6 +423,15 @@ static void musb_id_pin_work(struct work_struct *data)
 		MUSB_HST_MODE(mtk_musb);
 		switch_int_to_device(mtk_musb);
 	} else {
+		/* for device no disconnect interrupt */
+		spin_lock_irqsave(&mtk_musb->lock, flags);
+		if (mtk_musb->is_active) {
+			DBG(0, "for not receiving disconnect interrupt\n");
+			usb_hcd_resume_root_hub(musb_to_hcd(mtk_musb));
+			musb_root_disconnect(mtk_musb);
+		}
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+
 		DBG(0, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))
@@ -453,7 +462,7 @@ static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 {
 	iddig_cnt++;
 
-	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(sw_deboun_time));
 	DBG(0, "id pin interrupt assert\n");
 	disable_irq_nosync(usb_iddig_number);
 	return IRQ_HANDLED;
@@ -472,7 +481,7 @@ void mt_usb_iddig_int(struct musb *musb)
 	musb_writel(musb->mregs, USB_L1INTP, usb_l1_ploy);
 	musb_writel(musb->mregs, USB_L1INTM, (~IDDIG_INT_STATUS)&musb_readl(musb->mregs, USB_L1INTM));
 
-	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, sw_deboun_time*HZ/1000);
+	queue_delayed_work(mtk_musb->st_wq, &mtk_musb->id_pin_work, msecs_to_jiffies(sw_deboun_time));
 	DBG(0, "id pin interrupt assert\n");
 }
 
