@@ -260,8 +260,10 @@ static int mtk_memcfg_reserve_memory_show(struct seq_file *m, void *v)
 		}
 	} else if (mblock_version == 1) { /* parse memory layout buf */
 		reserved_count = parse_memory_layout_buf(reserved_mem);
-		if (reserved_count <= 0 || reserved_count > MAX_RESERVED_REGIONS)
+		if (reserved_count <= 0 || reserved_count > MAX_RESERVED_REGIONS) {
 			free_reserved_mem(reserved_mem, reserved_count);
+			return 0;
+		}
 	} else {
 		kfree(reserved_mem);
 		return 0;
