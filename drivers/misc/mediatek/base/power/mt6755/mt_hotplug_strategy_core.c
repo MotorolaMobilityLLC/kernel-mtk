@@ -181,6 +181,12 @@ static int _hps_task_main(void *data)
 		/* policy = cpufreq_cpu_get(0); */
 		/* dbs_freq_increase(policy, policy->max); */
 		/* cpufreq_cpu_put(policy); */
+
+		/*Add for update time value of deferrable timer*/
+		spin_lock(&idle_nb_lock);
+		hps_cancel_time = hps_get_current_time_ms();
+		spin_unlock(&idle_nb_lock);
+
 #ifdef CONFIG_CPU_ISOLATION
 		if (hps_ctxt.wake_up_by_fasthotplug) {
 
@@ -413,7 +419,12 @@ int hps_del_timer(void)
 int hps_restart_timer(void)
 {
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
-		if ((hps_get_current_time_ms() - hps_cancel_time) >= HPS_TIMER_INTERVAL_MS)
+		unsigned long long cancel_time;
+
+		spin_lock(&idle_nb_lock);
+		cancel_time = hps_cancel_time;
+		spin_unlock(&idle_nb_lock);
+		if ((hps_get_current_time_ms() - cancel_time) >= HPS_TIMER_INTERVAL_MS)
 			hps_task_wakeup_nolock();
 	} else if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
 		hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
