@@ -57,13 +57,12 @@
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
-
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
 #define MDELAY(n)		(lcm_util.mdelay(n))
 #define UDELAY(n)		(lcm_util.udelay(n))
 
-#define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
-	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
+
+
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update) \
 	lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
 #define dsi_set_cmdq(pdata, queue_size, force_update) \
@@ -173,6 +172,7 @@ int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	int ret = 0;
 	struct i2c_client *client = tps65132_i2c_client;
 	char write_data[2] = { 0 };
+
 	write_data[0] = addr;
 	write_data[1] = value;
 	ret = i2c_master_send(client, write_data, 2);
@@ -204,7 +204,7 @@ static void __exit tps65132_iic_exit(void)
 module_init(tps65132_iic_init);
 module_exit(tps65132_iic_exit);
 
-MODULE_AUTHOR("Mike Liu");
+MODULE_AUTHOR("Xiaokuan Shi");
 MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
 MODULE_LICENSE("GPL");
 #endif
@@ -251,9 +251,6 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-	{0xFF, 1, {0x24} },
-	{0xFB, 1, {0x01} },
-	{0x2D, 1, {0x08} },
 	{0xFF, 1, {0x24} },	/* Return  To      CMD1 */
 	{0x6E, 1, {0x10} },	/* Return  To      CMD1 */
 	{0xFB, 1, {0x01} },	/* Return  To      CMD1 */
@@ -823,9 +820,6 @@ static struct LCM_setting_table init_setting[] = {
 };
 
 static struct LCM_setting_table init_setting2[] = {
-	{0xFF, 1, {0x24} },
-	{0xFB, 1, {0x01} },
-	{0x2D, 1, {0x08} },
 	{0xFF, 1, {0x24} },	/* Return  To      CMD1 */
 	{0x6E, 1, {0x10} },	/* Return  To      CMD1 */
 	{0xFB, 1, {0x01} },	/* Return  To      CMD1 */
@@ -1393,7 +1387,6 @@ static struct LCM_setting_table init_setting2[] = {
 	{0x29, 0, {} },
 	/* {0x51,1,{0xFF}},//writedisplay brightness */
 };
-
 #if 0
 static struct LCM_setting_table lcm_set_window[] = {
 	{0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
@@ -1429,8 +1422,7 @@ static struct LCM_setting_table bl_level[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
-static void push_table(void *cmdq, struct LCM_setting_table *table,
-	unsigned int count, unsigned char force_update)
+static void push_table(struct LCM_setting_table *table, unsigned int count, unsigned char force_update)
 {
 	unsigned int i;
 	unsigned cmd;
@@ -1455,7 +1447,7 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 			break;
 
 		default:
-			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
+			dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
 		}
 	}
 }
@@ -1512,15 +1504,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 20;
 	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.ssc_disable = 1;
+	/* params->dsi.ssc_disable                                                   = 1; */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;	/* this value must be in MTK suggested table */
 #else
 	params->dsi.PLL_CLOCK = 440;	/* this value must be in MTK suggested table */
 #endif
-	params->dsi.PLL_CK_CMD = 420;
-	params->dsi.PLL_CK_VDO = 440;
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
@@ -1534,6 +1524,14 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 
+	params->dsi.lane_swap_en = 1;
+
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_0] = MIPITX_PHY_LANE_CK;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_1] = MIPITX_PHY_LANE_2;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_3;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3] = MIPITX_PHY_LANE_0;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_1;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_1;
 }
 
 #ifdef BUILD_LK
@@ -1675,17 +1673,17 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	if (lcm_dsi_mode == CMD_MODE) {
-		push_table(NULL, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+		push_table(init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
-		push_table(NULL, init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
+		push_table(init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 	}
 }
 
 static void lcm_suspend(void)
 {
-	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
+	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_MTK_LEGACY
@@ -1847,9 +1845,18 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	bl_level[0].para_list[0] = level;
 
-	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
+/*
+static void lcm_setbacklight(unsigned int level)
+{
+	LCM_LOGI("%s,nt35695 backlight: level = %d\n", __func__, level);
 
+	bl_level[0].para_list[0] = level;
+
+	push_table(bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+*/
 static void *lcm_switch_mode(int mode)
 {
 #ifndef BUILD_LK
@@ -1871,8 +1878,8 @@ static void *lcm_switch_mode(int mode)
 }
 
 
-LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_lcm_drv = {
-	.name = "nt35695_fhd_dsi_cmd_truly_nt50358_drv",
+LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_laneswap_lcm_drv = {
+	.name = "nt35695_fhd_dsi_cmd_truly_nt50358_laneswap_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,

@@ -924,6 +924,15 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_QHD)
 	&nt35695_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv,
 #endif
+
+#if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_LANESWAP)
+	&nt35695_fhd_dsi_cmd_truly_nt50358_laneswap_lcm_drv,
+#endif
+
+#if defined(NT35695_FHD_DSI_VDO_TRULY_NT50358_LANESWAP)
+	&nt35695_fhd_dsi_vdo_truly_nt50358_laneswap_lcm_drv,
+#endif
+
 #if defined(RM69032_DSI_CMD)
 	&rm69032_dsi_cmd_lcm_drv,
 #endif
