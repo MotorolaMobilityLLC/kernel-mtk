@@ -32,11 +32,11 @@ void pmic_buck_vproc_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VPROC ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_BUCK_VPROC_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_BUCK_VPROC_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VPROC_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VPROC_EN);
 	PMICLOG("buck : VPROC ; sw en_value readback = %d\n", read_back);
 }
 
@@ -47,11 +47,11 @@ void pmic_buck_vproc_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VPROC ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VPROC_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VPROC_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VPROC_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VPROC_EN_SEL);
 	PMICLOG("buck : VPROC ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -62,12 +62,12 @@ void pmic_buck_vproc_hw_vosel(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VPROC ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VPROC_VOSEL_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VPROC_VSLEEP_EN, 1);
-	pmic_set_register_value(PMIC_BUCK_VPROC_VOSEL_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_VOSEL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_VSLEEP_EN, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_VOSEL_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VPROC_VOSEL_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VPROC_VOSEL_SEL);
 	PMICLOG("buck : VPROC ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -77,10 +77,10 @@ void pmic_buck_vproc_sw_vosel(void)
 {
 	unsigned short read_back;
 
-	pmic_set_register_value(PMIC_BUCK_VPROC_VOSEL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPROC_VOSEL_CTRL, 0);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VPROC_VOSEL_CTRL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VPROC_VOSEL_CTRL);
 	PMICLOG("buck : VPROC ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -93,11 +93,11 @@ void pmic_buck_vs1_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VS1   ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_BUCK_VS1_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_BUCK_VS1_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VS1_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VS1_EN);
 	PMICLOG("buck : VS1   ; sw en_value readback = %d\n", read_back);
 }
 
@@ -108,11 +108,11 @@ void pmic_buck_vs1_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VS1   ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VS1_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VS1_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VS1_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VS1_EN_SEL);
 	PMICLOG("buck : VS1   ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -123,12 +123,12 @@ void pmic_buck_vs1_hw_vosel(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VS1   ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VS1_VOSEL_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VS1_VSLEEP_EN, 1);
-	pmic_set_register_value(PMIC_BUCK_VS1_VOSEL_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_VOSEL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_VSLEEP_EN, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_VOSEL_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VS1_VOSEL_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VS1_VOSEL_SEL);
 	PMICLOG("buck : VS1   ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -138,10 +138,10 @@ void pmic_buck_vs1_sw_vosel(void)
 {
 	unsigned short read_back;
 
-	pmic_set_register_value(PMIC_BUCK_VS1_VOSEL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VS1_VOSEL_CTRL, 0);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VS1_VOSEL_CTRL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VS1_VOSEL_CTRL);
 	PMICLOG("buck : VS1   ; hw en_sel readback = %d\n", read_back);
 }
 /* -------- Buck VS1    API end -------- */
@@ -153,11 +153,11 @@ void pmic_buck_vcore_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_BUCK_VCORE_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE_EN);
 	PMICLOG("buck : VCORE ; sw en_value readback = %d\n", read_back);
 }
 
@@ -168,11 +168,11 @@ void pmic_buck_vcore_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE_EN_SEL);
 	PMICLOG("buck : VCORE ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -183,12 +183,12 @@ void pmic_buck_vcore_hw_vosel(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE_VSLEEP_EN, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_VOSEL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_VSLEEP_EN, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_VOSEL_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE_VOSEL_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE_VOSEL_SEL);
 	PMICLOG("buck : VCORE ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -198,10 +198,10 @@ void pmic_buck_vcore_sw_vosel(void)
 {
 	unsigned short read_back;
 
-	pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE_VOSEL_CTRL, 0);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE_VOSEL_CTRL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE_VOSEL_CTRL);
 	PMICLOG("buck : VCORE ; hw en_sel readback = %d\n", read_back);
 }
 /* -------- Buck VCORE  API end -------- */
@@ -213,11 +213,11 @@ void pmic_buck_vcore2_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE2; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE2_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE2_EN);
 	PMICLOG("buck : VCORE2; sw en_value readback = %d\n", read_back);
 }
 
@@ -228,11 +228,11 @@ void pmic_buck_vcore2_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE2; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE2_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE2_EN_SEL);
 	PMICLOG("buck : VCORE2; hw en_sel readback = %d\n", read_back);
 }
 
@@ -243,12 +243,12 @@ void pmic_buck_vcore2_hw_vosel(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VCORE2; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_CTRL, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_VSLEEP_EN, 1);
-	pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_VOSEL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_VSLEEP_EN, 1);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_VOSEL_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE2_VOSEL_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE2_VOSEL_SEL);
 	PMICLOG("buck : VCORE2; hw en_sel readback = %d\n", read_back);
 }
 
@@ -258,10 +258,10 @@ void pmic_buck_vcore2_sw_vosel(void)
 {
 	unsigned short read_back;
 
-	pmic_set_register_value(PMIC_BUCK_VCORE2_VOSEL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_BUCK_VCORE2_VOSEL_CTRL, 0);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VCORE2_VOSEL_CTRL);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VCORE2_VOSEL_CTRL);
 	PMICLOG("buck : VCORE2; hw en_sel readback = %d\n", read_back);
 }
 
@@ -329,10 +329,10 @@ void pmic_buck_vpa_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VPA   ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_BUCK_VPA_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_BUCK_VPA_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_BUCK_VPA_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_BUCK_VPA_EN);
 	PMICLOG("buck : VPA   ; sw en_value readback = %d\n", read_back);
 }
 /* -------- Buck VPA    API end -------- */
@@ -344,11 +344,11 @@ void pmic_ldo_vsram_proc_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VSRAM_PROC; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN);
 	PMICLOG("buck : VSRAM_PROC; sw en_value readback = %d\n", read_back);
 }
 
@@ -359,11 +359,11 @@ void pmic_ldo_vsram_proc_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VSRAM_PROC; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_SEL);
 	PMICLOG("buck : VSRAM_PROC; hw en_sel readback = %d\n", read_back);
 }
 
@@ -374,12 +374,12 @@ void pmic_ldo_vsram_proc_hw_vosel(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("buck : VSRAM_PROC; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_VSLEEP_EN, 1);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_VOSEL_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_VSLEEP_EN, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_VOSEL_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_SEL);
 	PMICLOG("buck : VSRAM_PROC; hw en_sel readback = %d\n", read_back);
 }
 
@@ -389,10 +389,10 @@ void pmic_ldo_vsram_proc_sw_vosel(void)
 {
 	unsigned short read_back;
 
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL, 0);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_CTRL);
 	PMICLOG("buck : VSRAM_PROC; hw en_sel readback = %d\n", read_back);
 }
 

@@ -22,6 +22,7 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
+#include <linux/preempt.h>
 /*
 #if !defined CONFIG_HAS_WAKELOCKS
 #include <linux/pm_wakeup.h>  included in linux/device.h
@@ -133,7 +134,8 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-	if ((pmic_suspend_state == true || !preemptible()) && irqs_disabled())
+	/*if ((pmic_suspend_state == true || !preemptible()) && irqs_disabled())*/
+	if (preempt_count() > 0 || irqs_disabled() || system_state != SYSTEM_RUNNING || oops_in_progress)
 		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
 	mutex_lock(&pmic_access_mutex);
 
@@ -167,7 +169,8 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
 
-	if ((pmic_suspend_state == true || !preemptible()) && irqs_disabled())
+	/*if ((pmic_suspend_state == true || !preemptible()) && irqs_disabled())*/
+	if (preempt_count() > 0 || irqs_disabled() || system_state != SYSTEM_RUNNING || oops_in_progress)
 		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
 	mutex_lock(&pmic_access_mutex);
 

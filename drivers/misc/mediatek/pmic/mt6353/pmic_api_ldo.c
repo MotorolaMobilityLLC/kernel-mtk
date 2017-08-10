@@ -30,11 +30,11 @@ void pmic_ldo_vtcxo28_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO28; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO28_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO28_EN);
 	PMICLOG("ldo : VTCXO28; sw en_value readback = %d\n", read_back);
 }
 
@@ -45,11 +45,11 @@ void pmic_ldo_vtcxo28_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO28; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO28_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO28_EN_SEL);
 	PMICLOG("ldo : VTCXO28; hw en_sel readback = %d\n", read_back);
 }
 
@@ -61,10 +61,10 @@ void pmic_ldo_vtcxo28_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VTCXO28; sw stb sel = %d\n", sel_value);
 	/* stb = 100, 130 */
-	pmic_set_register_value(PMIC_LDO_VTCXO28_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO28_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO28_STBTD);
 	PMICLOG("ldo : VTCXO28; sel_value readback = %d\n", read_back);
 }
 
@@ -75,11 +75,11 @@ void pmic_ldo_vtcxo28_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO28; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO28_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO28_LP_MODE);
 	PMICLOG("ldo : VTCXO28; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -90,11 +90,11 @@ void pmic_ldo_vtcxo28_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO28; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO28_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO28_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO28_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO28_LP_SEL);
 	PMICLOG("ldo : VTCXO28; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VTCXO28 API end -------- */
@@ -105,12 +105,12 @@ void pmic_ldo_vtcxo24_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO24; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_SWITCH, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_SWITCH, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO24_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO24_EN);
 	PMICLOG("ldo : VTCXO24; sw en_value readback = %d\n", read_back);
 }
 
@@ -123,12 +123,12 @@ void pmic_ldo_vtcxo24_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO24; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_SWITCH, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_SWITCH, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO24_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO24_EN_SEL);
 	PMICLOG("ldo : VTCXO24; hw en_sel readback = %d\n", read_back);
 }
 
@@ -139,10 +139,10 @@ void pmic_ldo_vtcxo24_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VTCXO24; sw stb sel = %d\n", sel_value);
 	/* stb = 100, 130 */
-	pmic_set_register_value(PMIC_LDO_VTCXO24_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO24_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO24_STBTD);
 	PMICLOG("ldo : VTCXO24; sel_value readback = %d\n", read_back);
 }
 
@@ -156,11 +156,11 @@ void pmic_ldo_vtcxo24_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO24; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO24_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO24_LP_MODE);
 	PMICLOG("ldo : VTCXO24; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -171,11 +171,11 @@ void pmic_ldo_vtcxo24_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VTCXO24; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VTCXO24_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VTCXO24_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VTCXO24_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VTCXO24_LP_SEL);
 	PMICLOG("ldo : VTCXO24; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -186,11 +186,11 @@ void pmic_ldo_vxo22_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VXO22 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VXO22_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VXO22_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VXO22_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VXO22_EN);
 	PMICLOG("ldo : VXO22 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -201,11 +201,11 @@ void pmic_ldo_vxo22_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VXO22 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VXO22_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VXO22_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VXO22_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VXO22_EN_SEL);
 	PMICLOG("ldo : VXO22 ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -217,10 +217,10 @@ void pmic_ldo_vxo22_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VXO22 ; sw stb sel = %d\n", sel_value);
 	/* stb = 100, 130 */
-	pmic_set_register_value(PMIC_LDO_VXO22_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VXO22_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VXO22_STBTD);
 	PMICLOG("ldo : VXO22 ; sel_value readback = %d\n", read_back);
 }
 
@@ -231,11 +231,11 @@ void pmic_ldo_vxo22_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VXO22 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VXO22_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VXO22_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VXO22_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VXO22_LP_MODE);
 	PMICLOG("ldo : VXO22 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -246,11 +246,11 @@ void pmic_ldo_vxo22_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VXO22 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VXO22_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VXO22_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VXO22_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VXO22_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VXO22_LP_SEL);
 	PMICLOG("ldo : VXO22 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VXO22  API end -------- */
@@ -262,11 +262,11 @@ void pmic_ldo_vrf18_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF18 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VRF18_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF18_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF18_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF18_EN);
 	PMICLOG("ldo : VRF18 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -277,11 +277,11 @@ void pmic_ldo_vrf18_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF18 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VRF18_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF18_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF18_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF18_EN_SEL);
 	PMICLOG("ldo : VRF18 ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -293,10 +293,10 @@ void pmic_ldo_vrf18_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VRF18 ; sw stb sel = %d\n", sel_value);
 	/* stb = 200, 255 */
-	pmic_set_register_value(PMIC_LDO_VRF18_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF18_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF18_STBTD);
 	PMICLOG("ldo : VRF18 ; sel_value readback = %d\n", read_back);
 }
 
@@ -307,11 +307,11 @@ void pmic_ldo_vrf18_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF18 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VRF18_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF18_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF18_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF18_LP_MODE);
 	PMICLOG("ldo : VRF18 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -322,11 +322,11 @@ void pmic_ldo_vrf18_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF18 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VRF18_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF18_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF18_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF18_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF18_LP_SEL);
 	PMICLOG("ldo : VRF18 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VRF18  API end -------- */
@@ -338,11 +338,11 @@ void pmic_ldo_vrf12_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF12_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_EN);
 	PMICLOG("ldo : VRF12 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -353,11 +353,11 @@ void pmic_ldo_vrf12_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF12_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_EN_SEL);
 	PMICLOG("ldo : VRF12 ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -369,10 +369,10 @@ void pmic_ldo_vrf12_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VRF12 ; sw stb sel = %d\n", sel_value);
 	/* stb = 200, 255 */
-	pmic_set_register_value(PMIC_LDO_VRF12_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_STBTD);
 	PMICLOG("ldo : VRF12 ; sel_value readback = %d\n", read_back);
 }
 
@@ -383,11 +383,11 @@ void pmic_ldo_vrf12_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF12_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_LP_MODE);
 	PMICLOG("ldo : VRF12 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -398,11 +398,11 @@ void pmic_ldo_vrf12_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF12_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_LP_SEL);
 	PMICLOG("ldo : VRF12 ; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -413,11 +413,11 @@ void pmic_ldo_vrf12_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VRF12 ; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -428,11 +428,11 @@ void pmic_ldo_vrf12_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VRF12 ; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -443,11 +443,11 @@ void pmic_ldo_vrf12_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VRF12 ; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -458,11 +458,11 @@ void pmic_ldo_vrf12_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VRF12 ; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VRF12_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VRF12_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VRF12 ; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VRF12  API end -------- */
@@ -473,13 +473,13 @@ void pmic_ldo_vcn33_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_BT, 0);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_BT, en_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_WIFI, 0);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_WIFI, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_BT, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_BT, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_WIFI, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_WIFI, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_EN_BT);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_EN_BT);
 	PMICLOG("ldo : VCN33 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -489,11 +489,11 @@ void pmic_ldo_vcn33_bt_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33_BT; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_BT, 0);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_BT, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_BT, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_BT, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_EN_BT);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_EN_BT);
 	PMICLOG("ldo : VCN33_BT; sw en_value readback = %d\n", read_back);
 }
 
@@ -502,11 +502,11 @@ void pmic_ldo_vcn33_wifi_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33_WIFI; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_WIFI, 0);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_WIFI, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_WIFI, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_WIFI, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_EN_WIFI);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_EN_WIFI);
 	PMICLOG("ldo : VCN33_WIFI; sw en_value readback = %d\n", read_back);
 }
 
@@ -518,13 +518,13 @@ void pmic_ldo_vcn33_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_BT, 1);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_SEL_BT, ensel_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_CTRL_WIFI, 1);
-	pmic_set_register_value(PMIC_LDO_VCN33_EN_SEL_WIFI, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_BT, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_SEL_BT, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_CTRL_WIFI, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_EN_SEL_WIFI, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_EN_SEL_BT);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_EN_SEL_BT);
 	PMICLOG("ldo : VCN33 ; hw en_sel readback = %d\n", read_back);
 }
 /* -------- LDO VCN33  API end -------- */
@@ -536,10 +536,10 @@ void pmic_ldo_vcn33_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCN33 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCN33_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_STBTD);
 	PMICLOG("ldo : VCN33 ; sel_value readback = %d\n", read_back);
 }
 
@@ -550,11 +550,11 @@ void pmic_ldo_vcn33_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VCN33_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_LP_MODE);
 	PMICLOG("ldo : VCN33 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -565,11 +565,11 @@ void pmic_ldo_vcn33_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN33 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VCN33_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VCN33_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN33_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN33_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN33_LP_SEL);
 	PMICLOG("ldo : VCN33 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VCN33  API end -------- */
@@ -581,11 +581,11 @@ void pmic_ldo_vcn28_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN28 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCN28_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VCN28_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN28_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN28_EN);
 	PMICLOG("ldo : VCN28 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -596,11 +596,11 @@ void pmic_ldo_vcn28_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN28 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VCN28_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VCN28_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN28_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN28_EN_SEL);
 	PMICLOG("ldo : VCN28 ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -612,10 +612,10 @@ void pmic_ldo_vcn28_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCN28 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCN28_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN28_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN28_STBTD);
 	PMICLOG("ldo : VCN28 ; sel_value readback = %d\n", read_back);
 }
 
@@ -626,11 +626,11 @@ void pmic_ldo_vcn28_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN28 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCN28_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VCN28_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN28_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN28_LP_MODE);
 	PMICLOG("ldo : VCN28 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -641,11 +641,11 @@ void pmic_ldo_vcn28_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN28 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VCN28_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VCN28_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN28_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN28_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN28_LP_SEL);
 	PMICLOG("ldo : VCN28 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VCN28  API end -------- */
@@ -657,11 +657,11 @@ void pmic_ldo_vcn18_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN18 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCN18_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VCN18_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN18_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN18_EN);
 	PMICLOG("ldo : VCN18 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -672,11 +672,11 @@ void pmic_ldo_vcn18_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN18 ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VCN18_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VCN18_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN18_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN18_EN_SEL);
 	PMICLOG("ldo : VCN18 ; hw en_sel readback = %d\n", read_back);
 }
 
@@ -688,10 +688,10 @@ void pmic_ldo_vcn18_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCN18 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCN18_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN18_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN18_STBTD);
 	PMICLOG("ldo : VCN18 ; sel_value readback = %d\n", read_back);
 }
 
@@ -702,11 +702,11 @@ void pmic_ldo_vcn18_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN18 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCN18_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VCN18_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN18_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN18_LP_MODE);
 	PMICLOG("ldo : VCN18 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -717,11 +717,11 @@ void pmic_ldo_vcn18_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCN18 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VCN18_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VCN18_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VCN18_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCN18_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCN18_LP_SEL);
 	PMICLOG("ldo : VCN18 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VCN18  API end -------- */
@@ -733,10 +733,10 @@ void pmic_ldo_vcama_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMA ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCAMA_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMA_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMA_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMA_EN);
 	PMICLOG("ldo : VCAMA ; sw en_value readback = %d\n", read_back);
 }
 
@@ -748,10 +748,10 @@ void pmic_ldo_vcama_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCAMA ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCAMA_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMA_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMA_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMA_STBTD);
 	PMICLOG("ldo : VCAMA ; sel_value readback = %d\n", read_back);
 }
 
@@ -762,10 +762,10 @@ void pmic_ldo_vcama_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMA ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCAMA_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMA_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMA_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMA_LP_MODE);
 	PMICLOG("ldo : VCAMA ; sw lp mode_value readback = %d\n", read_back);
 }
 /* -------- LDO VCAMA  API end -------- */
@@ -777,10 +777,10 @@ void pmic_ldo_vcamio_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMIO; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCAMIO_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMIO_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMIO_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMIO_EN);
 	PMICLOG("ldo : VCAMIO; sw en_value readback = %d\n", read_back);
 }
 
@@ -792,10 +792,10 @@ void pmic_ldo_vcamio_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCAMIO; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCAMIO_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMIO_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMIO_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMIO_STBTD);
 	PMICLOG("ldo : VCAMIO; sel_value readback = %d\n", read_back);
 }
 
@@ -806,10 +806,10 @@ void pmic_ldo_vcamio_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMIO; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCAMIO_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMIO_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMIO_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMIO_LP_MODE);
 	PMICLOG("ldo : VCAMIO; sw lp mode_value readback = %d\n", read_back);
 }
 /* -------- LDO VCAMIO API end -------- */
@@ -822,11 +822,11 @@ void pmic_ldo_vldo28_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_EN_0, en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_EN_1, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_EN_0, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_EN_1, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_EN_0);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_EN_0);
 	PMICLOG("ldo : VLDO28; sw en_value readback = %d\n", read_back);
 }
 
@@ -835,10 +835,10 @@ void pmic_ldo_vldo28_0_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28_0; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_EN_0, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_EN_0, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_EN_0);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_EN_0);
 	PMICLOG("ldo : VLDO28_0; sw en_value readback = %d\n", read_back);
 }
 
@@ -847,10 +847,10 @@ void pmic_ldo_vldo28_1_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28_1; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_EN_1, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_EN_1, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_EN_1);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_EN_1);
 	PMICLOG("ldo : VLDO28_1; sw en_value readback = %d\n", read_back);
 }
 
@@ -862,10 +862,10 @@ void pmic_ldo_vldo28_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VLDO28; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VLDO28_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_STBTD);
 	PMICLOG("ldo : VLDO28; sel_value readback = %d\n", read_back);
 }
 
@@ -876,11 +876,11 @@ void pmic_ldo_vldo28_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VLDO28_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_LP_MODE);
 	PMICLOG("ldo : VLDO28; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -891,11 +891,11 @@ void pmic_ldo_vldo28_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VLDO28_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_LP_SEL);
 	PMICLOG("ldo : VLDO28; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -906,11 +906,11 @@ void pmic_ldo_vldo28_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VLDO28; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -921,11 +921,11 @@ void pmic_ldo_vldo28_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VLDO28; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -936,11 +936,11 @@ void pmic_ldo_vldo28_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VLDO28; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -951,11 +951,11 @@ void pmic_ldo_vldo28_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VLDO28; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VLDO28_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VLDO28_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VLDO28; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VLDO28 API end -------- */
@@ -967,10 +967,10 @@ void pmic_ldo_vcamd_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMD ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VCAMD_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMD_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMD_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMD_EN);
 	PMICLOG("ldo : VCAMD ; sw en_value readback = %d\n", read_back);
 }
 
@@ -982,10 +982,10 @@ void pmic_ldo_vcamd_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VCAMD ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VCAMD_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMD_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMD_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMD_STBTD);
 	PMICLOG("ldo : VCAMD ; sel_value readback = %d\n", read_back);
 }
 
@@ -996,10 +996,10 @@ void pmic_ldo_vcamd_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VCAMD ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VCAMD_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VCAMD_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VCAMD_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VCAMD_LP_MODE);
 	PMICLOG("ldo : VCAMD ; sw lp mode_value readback = %d\n", read_back);
 }
 /* -------- LDO VCAMD  API end -------- */
@@ -1011,11 +1011,11 @@ void pmic_ldo_vaux18_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUX18; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VAUX18_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VAUX18_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUX18_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUX18_EN);
 	PMICLOG("ldo : VAUX18; sw en_value readback = %d\n", read_back);
 }
 
@@ -1026,11 +1026,11 @@ void pmic_ldo_vaux18_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUX18; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VAUX18_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VAUX18_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUX18_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUX18_EN_SEL);
 	PMICLOG("ldo : VAUX18; hw en_sel readback = %d\n", read_back);
 }
 
@@ -1042,10 +1042,10 @@ void pmic_ldo_vaux18_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VAUX18; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VAUX18_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUX18_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUX18_STBTD);
 	PMICLOG("ldo : VAUX18; sel_value readback = %d\n", read_back);
 }
 
@@ -1056,11 +1056,11 @@ void pmic_ldo_vaux18_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUX18; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VAUX18_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VAUX18_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUX18_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUX18_LP_MODE);
 	PMICLOG("ldo : VAUX18; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1071,11 +1071,11 @@ void pmic_ldo_vaux18_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUX18; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VAUX18_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VAUX18_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUX18_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUX18_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUX18_LP_SEL);
 	PMICLOG("ldo : VAUX18; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VAUX18 API end -------- */
@@ -1087,11 +1087,11 @@ void pmic_ldo_vaud28_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUD28; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VAUD28_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VAUD28_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUD28_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUD28_EN);
 	PMICLOG("ldo : VAUD28; sw en_value readback = %d\n", read_back);
 }
 
@@ -1102,11 +1102,11 @@ void pmic_ldo_vaud28_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUD28; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VAUD28_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VAUD28_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUD28_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUD28_EN_SEL);
 	PMICLOG("ldo : VAUD28; hw en_sel readback = %d\n", read_back);
 }
 
@@ -1118,10 +1118,10 @@ void pmic_ldo_vaud28_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VAUD28; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VAUD28_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUD28_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUD28_STBTD);
 	PMICLOG("ldo : VAUD28; sel_value readback = %d\n", read_back);
 }
 
@@ -1132,11 +1132,11 @@ void pmic_ldo_vaud28_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUD28; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VAUD28_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VAUD28_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUD28_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUD28_LP_MODE);
 	PMICLOG("ldo : VAUD28; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1147,11 +1147,11 @@ void pmic_ldo_vaud28_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VAUD28; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VAUD28_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VAUD28_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VAUD28_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VAUD28_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VAUD28_LP_SEL);
 	PMICLOG("ldo : VAUD28; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VAUD28 API end -------- */
@@ -1164,11 +1164,11 @@ void pmic_ldo_vsram_proc_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSRAM_PROC; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN);
 	PMICLOG("ldo : VSRAM_PROC; sw en_value readback = %d\n", read_back);
 }
 
@@ -1179,11 +1179,11 @@ void pmic_ldo_vsram_proc_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSRAM_PROC; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_EN_SEL);
 	PMICLOG("ldo : VSRAM_PROC; hw en_sel readback = %d\n", read_back);
 }
 #endif
@@ -1195,10 +1195,10 @@ void pmic_ldo_vsram_proc_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VSRAM_PROC; sw stb sel = %d\n", sel_value);
 	/* stb = 200, 255 */
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_STBTD);
 	PMICLOG("ldo : VSRAM_PROC; sel_value readback = %d\n", read_back);
 }
 
@@ -1209,11 +1209,11 @@ void pmic_ldo_vsram_proc_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSRAM_PROC; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_MODE);
 	PMICLOG("ldo : VSRAM_PROC; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1224,11 +1224,11 @@ void pmic_ldo_vsram_proc_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSRAM_PROC; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSRAM_PROC_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSRAM_PROC_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSRAM_PROC_LP_SEL);
 	PMICLOG("ldo : VSRAM_PROC; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VSRAM_PROC API end -------- */
@@ -1240,10 +1240,10 @@ void pmic_ldo_vdram_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_EN);
 	PMICLOG("ldo : VDRAM ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1255,10 +1255,10 @@ void pmic_ldo_vdram_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VDRAM ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VDRAM_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_STBTD);
 	PMICLOG("ldo : VDRAM ; sel_value readback = %d\n", read_back);
 }
 
@@ -1269,11 +1269,11 @@ void pmic_ldo_vdram_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VDRAM_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_LP_MODE);
 	PMICLOG("ldo : VDRAM ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1284,11 +1284,11 @@ void pmic_ldo_vdram_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VDRAM_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_LP_SEL);
 	PMICLOG("ldo : VDRAM ; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -1299,11 +1299,11 @@ void pmic_ldo_vdram_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VDRAM ; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -1314,11 +1314,11 @@ void pmic_ldo_vdram_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VDRAM ; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -1329,11 +1329,11 @@ void pmic_ldo_vdram_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VDRAM ; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -1344,11 +1344,11 @@ void pmic_ldo_vdram_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VDRAM ; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VDRAM_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VDRAM_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VDRAM ; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VDRAM  API end -------- */
@@ -1360,10 +1360,10 @@ void pmic_ldo_vsim1_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM1 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VSIM1_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM1_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM1_EN);
 	PMICLOG("ldo : VSIM1 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1375,10 +1375,10 @@ void pmic_ldo_vsim1_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VSIM1 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VSIM1_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM1_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM1_STBTD);
 	PMICLOG("ldo : VSIM1 ; sel_value readback = %d\n", read_back);
 }
 
@@ -1389,11 +1389,11 @@ void pmic_ldo_vsim1_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM1 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VSIM1_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VSIM1_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM1_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM1_LP_MODE);
 	PMICLOG("ldo : VSIM1 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1404,11 +1404,11 @@ void pmic_ldo_vsim1_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM1 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VSIM1_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSIM1_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM1_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM1_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM1_LP_SEL);
 	PMICLOG("ldo : VSIM1 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VSIM1  API end -------- */
@@ -1420,10 +1420,10 @@ void pmic_ldo_vsim2_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM2 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VSIM2_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM2_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM2_EN);
 	PMICLOG("ldo : VSIM2 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1435,10 +1435,10 @@ void pmic_ldo_vsim2_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VSIM2 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VSIM2_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM2_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM2_STBTD);
 	PMICLOG("ldo : VSIM2 ; sel_value readback = %d\n", read_back);
 }
 
@@ -1449,11 +1449,11 @@ void pmic_ldo_vsim2_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM2 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VSIM2_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VSIM2_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM2_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM2_LP_MODE);
 	PMICLOG("ldo : VSIM2 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1464,11 +1464,11 @@ void pmic_ldo_vsim2_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VSIM2 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VSIM2_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VSIM2_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VSIM2_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VSIM2_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VSIM2_LP_SEL);
 	PMICLOG("ldo : VSIM2 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VSIM2  API end -------- */
@@ -1480,10 +1480,10 @@ void pmic_ldo_vio28_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO28 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VIO28_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO28_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO28_EN);
 	PMICLOG("ldo : VIO28 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1495,10 +1495,10 @@ void pmic_ldo_vio28_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VIO28 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VIO28_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO28_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO28_STBTD);
 	PMICLOG("ldo : VIO28 ; sel_value readback = %d\n", read_back);
 }
 
@@ -1509,11 +1509,11 @@ void pmic_ldo_vio28_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO28 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VIO28_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VIO28_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO28_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO28_LP_MODE);
 	PMICLOG("ldo : VIO28 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1524,11 +1524,11 @@ void pmic_ldo_vio28_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO28 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VIO28_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VIO28_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO28_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO28_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO28_LP_SEL);
 	PMICLOG("ldo : VIO28 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VIO28  API end -------- */
@@ -1540,10 +1540,10 @@ void pmic_ldo_vmc_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VMC_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_EN);
 	PMICLOG("ldo : VMC   ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1555,10 +1555,10 @@ void pmic_ldo_vmc_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VMC   ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VMC_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_STBTD);
 	PMICLOG("ldo : VMC   ; sel_value readback = %d\n", read_back);
 }
 
@@ -1569,11 +1569,11 @@ void pmic_ldo_vmc_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VMC_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMC_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_LP_MODE);
 	PMICLOG("ldo : VMC   ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1584,11 +1584,11 @@ void pmic_ldo_vmc_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VMC_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMC_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_LP_SEL);
 	PMICLOG("ldo : VMC   ; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -1599,11 +1599,11 @@ void pmic_ldo_vmc_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VMC   ; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -1614,11 +1614,11 @@ void pmic_ldo_vmc_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VMC   ; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -1629,11 +1629,11 @@ void pmic_ldo_vmc_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VMC   ; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -1644,11 +1644,11 @@ void pmic_ldo_vmc_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMC   ; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMC_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMC_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VMC   ; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VMC    API end -------- */
@@ -1660,10 +1660,10 @@ void pmic_ldo_vmch_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_EN);
 	PMICLOG("ldo : VMCH  ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1675,10 +1675,10 @@ void pmic_ldo_vmch_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VMCH  ; sw stb sel = %d\n", sel_value);
 	/* stb = 40, 240 */
-	pmic_set_register_value(PMIC_LDO_VMCH_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_STBTD);
 	PMICLOG("ldo : VMCH  ; sel_value readback = %d\n", read_back);
 }
 
@@ -1689,11 +1689,11 @@ void pmic_ldo_vmch_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMCH_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_LP_MODE);
 	PMICLOG("ldo : VMCH  ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1704,11 +1704,11 @@ void pmic_ldo_vmch_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMCH_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_LP_SEL);
 	PMICLOG("ldo : VMCH  ; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -1719,11 +1719,11 @@ void pmic_ldo_vmch_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VMCH  ; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -1734,11 +1734,11 @@ void pmic_ldo_vmch_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VMCH  ; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -1749,11 +1749,11 @@ void pmic_ldo_vmch_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VMCH  ; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -1764,11 +1764,11 @@ void pmic_ldo_vmch_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VMCH  ; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VMCH_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VMCH_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VMCH  ; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VMCH   API end -------- */
@@ -1780,10 +1780,10 @@ void pmic_ldo_vusb33_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VUSB33; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VUSB33_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VUSB33_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VUSB33_EN);
 	PMICLOG("ldo : VUSB33; sw en_value readback = %d\n", read_back);
 }
 
@@ -1795,10 +1795,10 @@ void pmic_ldo_vusb33_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VUSB33; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VUSB33_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VUSB33_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VUSB33_STBTD);
 	PMICLOG("ldo : VUSB33; sel_value readback = %d\n", read_back);
 }
 
@@ -1809,11 +1809,11 @@ void pmic_ldo_vusb33_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VUSB33; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VUSB33_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VUSB33_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VUSB33_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VUSB33_LP_MODE);
 	PMICLOG("ldo : VUSB33; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1824,11 +1824,11 @@ void pmic_ldo_vusb33_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VUSB33; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VUSB33_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VUSB33_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VUSB33_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VUSB33_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VUSB33_LP_SEL);
 	PMICLOG("ldo : VUSB33; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VUSB33 API end -------- */
@@ -1840,10 +1840,10 @@ void pmic_ldo_vemc33_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_EN);
 	PMICLOG("ldo : VEMC33; sw en_value readback = %d\n", read_back);
 }
 
@@ -1855,10 +1855,10 @@ void pmic_ldo_vemc33_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VEMC33; sw stb sel = %d\n", sel_value);
 	/* stb = 40, 240 */
-	pmic_set_register_value(PMIC_LDO_VEMC33_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_STBTD);
 	PMICLOG("ldo : VEMC33; sel_value readback = %d\n", read_back);
 }
 
@@ -1869,11 +1869,11 @@ void pmic_ldo_vemc33_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VEMC33_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_LP_MODE);
 	PMICLOG("ldo : VEMC33; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -1884,11 +1884,11 @@ void pmic_ldo_vemc33_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VEMC33_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_LP_SEL);
 	PMICLOG("ldo : VEMC33; hw mode_sel_value readback = %d\n", read_back);
 }
 
@@ -1899,11 +1899,11 @@ void pmic_ldo_vemc33_sw_fs_trans_dl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; sw fs_trans_dl_en = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_EN);
 	PMICLOG("ldo : VEMC33; sw fs trans dl en_value readback = %d\n", read_back);
 }
 
@@ -1914,11 +1914,11 @@ void pmic_ldo_vemc33_sw_fs_trans_cl(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; sw fs_trans_cl_en = %d", en_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_EN);
 	PMICLOG("ldo : VEMC33; sw fs trans cl en_value readback = %d\n", read_back);
 }
 
@@ -1929,11 +1929,11 @@ void pmic_ldo_vemc33_hw_fs_trans_dl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; hw fs_trans_dl_ensel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_FAST_TRAN_DL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_DL_SRCLKEN_SEL);
 	PMICLOG("ldo : VEMC33; hw fs trans dl ensel_value readback = %d\n", read_back);
 }
 
@@ -1944,11 +1944,11 @@ void pmic_ldo_vemc33_hw_fs_trans_cl(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VEMC33; sw fs_trans_cl_en = %d", ensel_value);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_SRCLKEN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VEMC33_FAST_TRAN_CL_SRCLKEN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VEMC33_FAST_TRAN_CL_SRCLKEN_SEL);
 	PMICLOG("ldo : VEMC33; hw fs trans cl ensel_value readback = %d\n", read_back);
 }
 /* -------- LDO VEMC33 API end -------- */
@@ -1960,10 +1960,10 @@ void pmic_ldo_vio18_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO18 ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VIO18_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO18_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO18_EN);
 	PMICLOG("ldo : VIO18 ; sw en_value readback = %d\n", read_back);
 }
 
@@ -1975,10 +1975,10 @@ void pmic_ldo_vio18_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VIO18 ; sw stb sel = %d\n", sel_value);
 	/* stb = 240, 312 */
-	pmic_set_register_value(PMIC_LDO_VIO18_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO18_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO18_STBTD);
 	PMICLOG("ldo : VIO18 ; sel_value readback = %d\n", read_back);
 }
 
@@ -1989,11 +1989,11 @@ void pmic_ldo_vio18_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO18 ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VIO18_LP_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_VIO18_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_LP_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO18_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO18_LP_MODE);
 	PMICLOG("ldo : VIO18 ; sw lp mode_value readback = %d\n", read_back);
 }
 
@@ -2004,11 +2004,11 @@ void pmic_ldo_vio18_hw_lp_mode(int mode_sel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIO18 ; hw lp_sel = %d\n", mode_sel_value);
-	pmic_set_register_value(PMIC_LDO_VIO18_LP_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_VIO18_LP_SEL, mode_sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_LP_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_VIO18_LP_SEL, mode_sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIO18_LP_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIO18_LP_SEL);
 	PMICLOG("ldo : VIO18 ; hw mode_sel_value readback = %d\n", read_back);
 }
 /* -------- LDO VIO18  API end -------- */
@@ -2020,10 +2020,10 @@ void pmic_ldo_vibr_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIBR  ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_VIBR_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIBR_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIBR_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIBR_EN);
 	PMICLOG("ldo : VIBR  ; sw en_value readback = %d\n", read_back);
 }
 
@@ -2035,10 +2035,10 @@ void pmic_ldo_vibr_sw_stb(int sel_value)
 
 	PMICLOG("ldo : VIBR  ; sw stb sel = %d\n", sel_value);
 	/* stb = 40, 52 */
-	pmic_set_register_value(PMIC_LDO_VIBR_STBTD, sel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIBR_STBTD, sel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIBR_STBTD);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIBR_STBTD);
 	PMICLOG("ldo : VIBR  ; sel_value readback = %d\n", read_back);
 }
 
@@ -2049,10 +2049,10 @@ void pmic_ldo_vibr_sw_lp_mode(int mode_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : VIBR  ; sw lp mode = %d", mode_value);
-	pmic_set_register_value(PMIC_LDO_VIBR_LP_MODE, mode_value);
+	pmic_set_register_value_nolock(PMIC_LDO_VIBR_LP_MODE, mode_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_VIBR_LP_MODE);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_VIBR_LP_MODE);
 	PMICLOG("ldo : VIBR  ; sw lp mode_value readback = %d\n", read_back);
 }
 /* -------- LDO VIBR   API end -------- */
@@ -2064,11 +2064,11 @@ void pmic_ldo_tref_sw_en(int en_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : TREF  ; sw enable = %d\n", en_value);
-	pmic_set_register_value(PMIC_LDO_TREF_EN_CTRL, 0);
-	pmic_set_register_value(PMIC_LDO_TREF_EN, en_value);
+	pmic_set_register_value_nolock(PMIC_LDO_TREF_EN_CTRL, 0);
+	pmic_set_register_value_nolock(PMIC_LDO_TREF_EN, en_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_TREF_EN);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_TREF_EN);
 	PMICLOG("ldo : TREF  ; sw en_value readback = %d\n", read_back);
 }
 
@@ -2079,11 +2079,11 @@ void pmic_ldo_tref_hw_en(int ensel_value)
 	unsigned short read_back;
 
 	PMICLOG("ldo : TREF  ; hw en_sel = %d\n", ensel_value);
-	pmic_set_register_value(PMIC_LDO_TREF_EN_CTRL, 1);
-	pmic_set_register_value(PMIC_LDO_TREF_EN_SEL, ensel_value);
+	pmic_set_register_value_nolock(PMIC_LDO_TREF_EN_CTRL, 1);
+	pmic_set_register_value_nolock(PMIC_LDO_TREF_EN_SEL, ensel_value);
 
 	/* read back check */
-	read_back = pmic_get_register_value(PMIC_LDO_TREF_EN_SEL);
+	read_back = pmic_get_register_value_nolock(PMIC_LDO_TREF_EN_SEL);
 	PMICLOG("ldo : TREF  ; hw en_sel readback = %d\n", read_back);
 }
 
