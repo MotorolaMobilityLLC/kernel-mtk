@@ -974,6 +974,7 @@ config ARCH_MT6570
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM_BS
 	select CRYPTO_SHA2_ARM_CE
+	select MTK_BASE_POWER
 	select ARM_HAS_SG_CHAIN
 	select MTK_EIC
 	select MFD_SYSCON
