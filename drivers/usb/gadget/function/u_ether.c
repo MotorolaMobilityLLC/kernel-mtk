@@ -24,7 +24,7 @@
 
 #include "u_ether.h"
 #include "usb_boost.h"
-
+#include "rndis.h"
 
 /*
  * This component encapsulates the Ethernet link glue needed to provide
@@ -1200,6 +1200,7 @@ struct net_device *gether_setup_name_default(const char *netname)
 	spin_lock_init(&dev->req_lock);
 	INIT_WORK(&dev->work, eth_work);
 	INIT_WORK(&dev->rx_work, process_rx_w);
+	INIT_WORK(&dev->rx_work1, process_rx_w1);
 	INIT_LIST_HEAD(&dev->tx_reqs);
 	INIT_LIST_HEAD(&dev->rx_reqs);
 

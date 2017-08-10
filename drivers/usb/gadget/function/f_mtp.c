@@ -141,7 +141,7 @@ static struct usb_endpoint_descriptor mtp_ss_in_desc = {
 	.bDescriptorType        = USB_DT_ENDPOINT,
 	.bEndpointAddress       = USB_DIR_IN,
 	.bmAttributes           = USB_ENDPOINT_XFER_BULK,
-	.wMaxPacketSize         = __constant_cpu_to_le16(1024),
+	.wMaxPacketSize         = cpu_to_le16(1024),
 };
 
 static struct usb_ss_ep_comp_descriptor mtp_ss_in_comp_desc = {
@@ -155,7 +155,7 @@ static struct usb_endpoint_descriptor mtp_ss_out_desc = {
 	.bDescriptorType        = USB_DT_ENDPOINT,
 	.bEndpointAddress       = USB_DIR_OUT,
 	.bmAttributes           = USB_ENDPOINT_XFER_BULK,
-	.wMaxPacketSize         = __constant_cpu_to_le16(1024),
+	.wMaxPacketSize         = cpu_to_le16(1024),
 };
 
 static struct usb_ss_ep_comp_descriptor mtp_ss_out_comp_desc = {
@@ -1339,7 +1339,7 @@ static void mtp_function_disable(struct usb_function *f)
 	VDBG(cdev, "%s disabled\n", dev->function.name);
 }
 
-static __maybe_unused int mtp_bind_config(struct usb_configuration *c,
+static int mtp_bind_config(struct usb_configuration *c,
 					  bool ptp_config)
 {
 	struct mtp_dev *dev = _mtp_dev;
@@ -1423,7 +1423,7 @@ err1:
 	return ret;
 }
 
-static __maybe_unused int mtp_setup(void)
+static int mtp_setup(void)
 {
 	return __mtp_setup(NULL);
 }

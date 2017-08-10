@@ -871,7 +871,10 @@ static void remove_config(struct usb_composite_dev *cdev,
 			/* may free memory for "f" */
 		}
 	}
-	list_del(&config->list);
+	if (config->cdev != NULL)
+		list_del(&config->list);
+	else
+		INFO(cdev, "%s: config->list has been delete!!!\n", __func__);
 	if (config->unbind) {
 		INFO(cdev, "unbind config '%s'/%p\n", config->label, config);
 		config->unbind(config);
