@@ -34,7 +34,7 @@
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hal_common.h>
 #include <mt_pmic_wrap.h>
-#include <mt-plat/aee.h>
+/*#include <mt-plat/aee.h>*/
 
 #define hal_rtc_xinfo(fmt, args...)		\
 		pr_notice(fmt, ##args)
@@ -332,7 +332,7 @@ void rtc_lp_exception(void)
 		       "RTC_TC_SEC    = %02d\n"
 		       "RTC_TC_SEC    = %02d\n",
 		       bbpu, irqsta, irqen, osc32, pwrkey1, pwrkey2, prot, con, sec1, sec2);
-	aee_kernel_warning("mtk_rtc_hal", "Need to check 32k @%s():%d\n", __func__, __LINE__);
+	/*aee_kernel_warning("mtk_rtc_hal", "Need to check 32k @%s():%d\n", __func__, __LINE__);*/
 
 }
 #endif
