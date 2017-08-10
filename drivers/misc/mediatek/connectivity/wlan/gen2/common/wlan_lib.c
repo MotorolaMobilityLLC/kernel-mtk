@@ -870,9 +870,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 
 	nicRxUninitialize(prAdapter);
 
-	/* MGMT - unitialization */
-	nicUninitMGMT(prAdapter);
-
 	nicTxRelease(prAdapter);
 
 	/* MGMT - unitialization */
