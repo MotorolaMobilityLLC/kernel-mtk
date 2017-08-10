@@ -68,14 +68,14 @@ MODULE_VERSION("1.0");
 static const char longname[] = "Gadget Android";
 
 /* Default vendor and product IDs, overridden by userspace */
-#define VENDOR_ID		0x18D1
+#define VENDOR_ID		0x0BB4
 #define PRODUCT_ID		0x0001
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mt-plat/mt_boot_common.h>
-#define KPOC_USB_FUNC "hid"
+#define KPOC_USB_FUNC "mtp"
 #define KPOC_USB_VENDOR_ID 0x0E8D
-#define KPOC_USB_PRODUCT_ID 0x20FF
+#define KPOC_USB_PRODUCT_ID 0x2008
 #endif
 
 #ifdef CONFIG_SND_RAWMIDI
@@ -1991,6 +1991,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		}
 
 		list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
+			pr_notice("[USB]enable function '%s'/%p\n", f->name, f);
 			if (f->enable)
 				f->enable(f);
 		}
