@@ -1513,7 +1513,7 @@ static int simp_msdc_pio_write(struct simp_msdc_host *host,
 		}
 
 		l_count++;
-		if (l_count > 500) {
+		if (l_count > 50000) {
 			l_count = 0;
 			if (print_count > 0) {
 				pr_err("size= %d, left= %d.\r\n", size, left);
