@@ -607,7 +607,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_debug("==> kva=0x%lx real_mva=%x mva=%x mmaped_size=%d layer_size=%d\n",
 				kva, real_mva, mva, mapped_size, layer_size);
 			ret = copy_to_user(argp,
-				(void *)kva + (mva - real_mva), layer_size - (mva - real_mva)) ? -EFAULT : 0;
+				(void *)kva + (mva - real_mva), layer_size) ? -EFAULT : 0;
 			m4u_mva_unmap_kernel(real_mva, real_size, kva);
 			return ret;
 		} else
