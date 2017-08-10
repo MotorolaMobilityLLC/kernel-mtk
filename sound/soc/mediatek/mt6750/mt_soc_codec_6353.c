@@ -136,6 +136,14 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
+/* Pmic Headphone Impedance varible */
+static unsigned short mhp_impedance;
+static const unsigned short HpImpedanceAuxCable = 10000;
+static const int HpImpedancePhase1Step = 50;
+static const int HpImpedancePhase0AdcValue = 200;
+static const int HpImpedancePhase1AdcValue = 2000;
+static const int HpImpedancePhase2AdcValue = 8800;
+
 #define MAX_HP_GAIN_LEVEL (19)
 #define HP_PGA_RAMP_DELAY (1000)
 
@@ -1555,17 +1563,6 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     .rates = SNDRV_PCM_RATE_8000_192000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
-	 },
-	{
-	 .name = MT_SOC_CODEC_HP_IMPEDANCE_NAME,
-	 .ops = &mt6323_aif1_dai_ops,
-	 .playback = {
-		      .stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
-		      .channels_min = 1,
-		      .channels_max = 2,
-		      .rates = SNDRV_PCM_RATE_8000_192000,
-		      .formats = SND_SOC_ADV_MT_FMTS,
-		      },
 	 },
 	{
 	 .name = MT_SOC_CODEC_FM_I2S_DAI_NAME,
@@ -4897,6 +4894,183 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	Pmic_Loopback_Type = ucontrol->value.integer.value[0];
 	return 0;
 }
+
+static unsigned short Calculate_HP_Impedance(unsigned short dcinit,
+		unsigned short dcinput, unsigned short pcmoffset)
+{
+	unsigned short R_hp;
+	unsigned int dcvalue;
+	unsigned int R_tmp = 0;
+
+	if (dcinput < dcinit)
+		return 0;
+	dcvalue = (unsigned int)(dcinput - dcinit);		/* S32.3 = S32.2 - S32.2 */
+
+	if (pcmoffset == HpImpedancePhase0AdcValue) {
+		R_tmp = (dcvalue * 2417 + 256) >> 9;		/* 200 (S32.0) */
+
+		if (R_tmp < 650) {
+			pr_debug("%s Phase%d detected resistor is %d, smaller than 650, Goto Phase%d\n",
+				__func__, HpImpedancePhase0AdcValue, R_tmp, HpImpedancePhase1AdcValue);
+			R_tmp = 0;
+		}
+	} else if (pcmoffset == HpImpedancePhase1AdcValue) {
+		R_tmp = (dcvalue * 967 + 1024) >> 11;		/* 2000 (S32.0) */
+
+		if (R_tmp < 150) {
+			pr_debug("%s Phase%d detected resistor is %d, smaller than 150, Goto Phase%d\n",
+				__func__, HpImpedancePhase1AdcValue, R_tmp, HpImpedancePhase2AdcValue);
+			R_tmp = 0;
+		}
+	} else if (pcmoffset == HpImpedancePhase2AdcValue) {
+		R_tmp = (dcvalue * 879 + 4096) >> 13;		/* 8800(S32.0) */
+	}
+
+	R_hp = (unsigned short)R_tmp;
+	pr_debug("%s pcmoffset %d dcoffset %d detected resistor is %d\n",
+		__func__, pcmoffset, dcvalue, R_hp);
+
+	return R_hp;
+}
+
+static int Detect_Impedance_By_Phase(void)
+{
+	unsigned int i;
+	unsigned short dcoffset = 0, average = 0;
+	unsigned short ibuffer_v[4];
+	short value = 0;
+	unsigned short detect_impedance = 0;
+
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
+	setOffsetTrimBufferGain(3); /* HPDET trim. buffer gain : 18db */
+	EnableTrimbuffer(true);
+	setHpGain(8); /* 8:0dB */
+	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, 0x0, 0xffff);
+	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0x0, 0xffff);
+	EnableDcCompensation(true);
+
+	for (value = 0; value < (HpImpedancePhase2AdcValue + HpImpedancePhase1Step);
+		value += HpImpedancePhase1Step) {
+
+		if (value > HpImpedancePhase2AdcValue)
+			value = HpImpedancePhase2AdcValue;
+
+		/* apply dc by dc compensation: 16bit and negative value */
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, -value, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, -value, 0xffff);
+
+
+		/* save for DC =0 offset */
+		if (value == 0) {
+			usleep_range(1*1000, 2*1000);
+
+			/* get adc value */
+			dcoffset = 0;
+			for (i = 0; i < 4; i++) {
+				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				dcoffset = dcoffset + ibuffer_v[i];
+			}
+
+			pr_debug("[DCinit] SUM = %d 1st = %d 2nd = %d 3rd= %d 4th = %d\n",
+				dcoffset, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
+		}
+
+		/* start checking */
+		if (value == HpImpedancePhase0AdcValue) {
+			usleep_range(1*1000, 1*2000);
+
+			/* get adc value */
+			average = 0;
+			for (i = 0; i < 4; i++) {
+				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				average = average + ibuffer_v[i];
+			}
+
+			if ((average >> 2) > 4050)
+				detect_impedance = HpImpedanceAuxCable;
+			else
+				detect_impedance = Calculate_HP_Impedance(dcoffset, average, value);
+
+			if (detect_impedance) {
+				pr_debug("[phase %d] SUM = %d 1st = %d 2nd = %d 3rd = %d 4th = %d\n",
+					value, average, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
+				pr_debug("[phase %d]average = %d dcinit_value = %d detect_impedance = %d\n ",
+					value, average, dcoffset, detect_impedance);
+				break;
+			}
+		}
+
+		if (value == HpImpedancePhase1AdcValue || value == HpImpedancePhase2AdcValue) {
+			usleep_range(1*1000, 2*1000);
+
+			/* get adc value */
+			average = 0;
+			for (i = 0; i < 4; i++) {
+				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
+				average = average + ibuffer_v[i];
+			}
+
+			detect_impedance = Calculate_HP_Impedance(dcoffset, average, value);
+
+			if (detect_impedance) {
+				pr_debug("[phase %d] SUM = %d 1st = %d 2nd = %d 3rd = %d 4th = %d\n",
+					value, average, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
+				pr_debug("[phase %d]average = %d dcinit_value = %d detect_impedance = %d\n ",
+					value, average, dcoffset, detect_impedance);
+				break;
+			}
+		}
+		/* usleep_range(1*250, 1*500); */
+		usleep_range(600, 800);
+	}
+
+
+	/* Ramp-Down */
+	while (value > 0) {
+		value = value - HpImpedancePhase1Step;
+		/* apply dc by dc compensation: 16bit and negative value */
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, -value, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, -value, 0xffff);
+
+		/* usleep_range(1*200, 1*400); */
+		usleep_range(600, 800);
+	}
+
+	EnableDcCompensation(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	EnableTrimbuffer(false);
+
+	return detect_impedance;
+}
+
+
+static int Audio_Hp_Impedance_Get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("+%s(), start\n", __func__);
+	if (OpenHeadPhoneImpedanceSetting(true) == true) {
+#if defined(CONFIG_MTK_HP_ANASWITCH)
+		AudDrv_GPIO_HPDEPOP_Select(false);
+#endif
+		mhp_impedance = Detect_Impedance_By_Phase();
+		OpenHeadPhoneImpedanceSetting(false);
+	} else
+		pr_warn("%s(), Pmic DL Busy, HPDET do nothing\n", __func__);
+
+	ucontrol->value.integer.value[0] = mhp_impedance;
+	pr_debug("-%s(), mhp_impedance = %d\n", __func__, mhp_impedance);
+	return 0;
+}
+
+static int Audio_Hp_Impedance_Set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), mhp_impedance = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	mhp_impedance = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+
 static int SineTable_UL2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("%s()\n", __func__);
@@ -5003,6 +5177,8 @@ static const struct snd_kcontrol_new mt6331_pmic_Test_controls[] = {
 		     Voice_Call_DAC_DAC_HS_Set),
 	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[4], SineTable_UL2_Get, SineTable_UL2_Set),
 	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[5], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_SINGLE_EXT("Audio HP ImpeDance Setting", SND_SOC_NOPM, 0, 0x10000, 0,
+		     Audio_Hp_Impedance_Get, Audio_Hp_Impedance_Set),
 };
 
 static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
