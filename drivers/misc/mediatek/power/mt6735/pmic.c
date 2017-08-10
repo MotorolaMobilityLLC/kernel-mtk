@@ -106,6 +106,8 @@
 
 #include <mt-plat/aee.h>
 
+#include "mt_devinfo.h"
+
 /*****************************************************************************
  * PMIC extern variable
  ******************************************************************************/
@@ -3765,6 +3767,44 @@ unsigned short is_battery_remove_pmic(void)
 
 /*extern bool crystal_exist_status(void);*/
 
+void pmic_setting_for_co_tsx(void)
+{
+	unsigned int ret = 0;
+	unsigned int devinfo = get_devinfo_with_index(47) >> 25;
+
+	switch (devinfo) {
+	case 0x41:
+	case 0x42:
+	case 0x43:
+	/* Denali-1+ MT6737T */
+
+	case 0x49:
+	case 0x4A:
+	case 0x4B:
+	/* Denali-2+ MT6737M */
+
+	case 0x51:
+	case 0x52:
+	case 0x53:
+	/* Denali-2+ MT6737 */
+		ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
+		ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
+		ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
+		ret = pmic_config_interface(0x278, 0x0, 0x1, 11);
+		ret = pmic_config_interface(0xF08, 0xC, 0x3FF, 0);
+		ret = pmic_config_interface(0xF08, 0x0, 0x1, 15);
+		ret = pmic_config_interface(0xF0E, 0xC, 0x3FF, 0);
+		ret = pmic_config_interface(0xF0E, 0x1, 0x1, 15);
+		ret = pmic_config_interface(0xF12, 0x0, 0x1, 0);
+		ret = pmic_config_interface(0xF12, 0x0, 0x1, 1);
+		ret = pmic_config_interface(0xF12, 0x1, 0x1, 2);
+		PMICLOG("[Kernel_PMIC_INIT_SETTING_V1] setting for co-TSX\n");
+		break;
+	default:
+		break;
+	}
+}
+
 void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
@@ -4045,19 +4085,7 @@ void PMIC_INIT_SETTING_V1(void)
 		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 6);
 		ret = pmic_config_interface(0xF7A, 0x1, 0x1, 7);
 
-		if (crystal_exist_status() == 0) {
-			ret = pmic_config_interface(0x14, 0x1, 0x1, 5);
-			ret = pmic_config_interface(0x14, 0x1, 0x1, 7);
-			ret = pmic_config_interface(0x25A, 0x0, 0x1, 10);
-			ret = pmic_config_interface(0x278, 0x0, 0x1, 11);
-			ret = pmic_config_interface(0xF08, 0xC, 0x3FF, 0);
-			ret = pmic_config_interface(0xF08, 0x0, 0x1, 15);
-			ret = pmic_config_interface(0xF0E, 0xC, 0x3FF, 0);
-			ret = pmic_config_interface(0xF0E, 0x1, 0x1, 15);
-			ret = pmic_config_interface(0xF12, 0x0, 0x1, 0);
-			ret = pmic_config_interface(0xF12, 0x0, 0x1, 1);
-			ret = pmic_config_interface(0xF12, 0x1, 0x1, 2);
-		}
+		pmic_setting_for_co_tsx();
 	}
 	/*--------------------------------------------------------*/
 
