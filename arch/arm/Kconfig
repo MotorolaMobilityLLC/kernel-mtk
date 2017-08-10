@@ -977,6 +977,8 @@ config ARCH_MT6570
 	select MTK_BASE_POWER
 	select ARM_HAS_SG_CHAIN
 	select MTK_EIC
+	select PINCTRL
+	select PINCTRL_MT6570
 	select MFD_SYSCON
 	select ARM_ERRATA_814220
 	select MTK_IRQ_NEW_DESIGN

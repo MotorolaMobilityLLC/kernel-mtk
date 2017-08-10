@@ -77,3 +77,9 @@ config PINCTRL_ELBRUS
 	default n
 	def_bool MACH_ELBRUS
 	select PINCTRL_MTK_COMMON
+
+config PINCTRL_MT6570
+	bool "Mediatek MT6570 pin control"
+	default n
+	def_bool MACH_MT6570
+	select PINCTRL_MTK_COMMON
