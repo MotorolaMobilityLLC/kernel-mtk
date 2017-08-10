@@ -30,7 +30,6 @@
 #endif
 
 #include "lens_info.h"
-#include "lens_list.h"
 
 #define AF_DRVNAME "MAINAF"
 

@@ -4,6 +4,17 @@ config MTK_LENS
   help
     CONFIG_MTK_LENS
 
+config MTK_LENS_USE_MODULE
+  bool "Mediatek lens driver build as module"
+  default n
+  help
+    Say Y here if you want to build touch driver as xxx.ko.
+
+    If unsure, say N.
+
+    To compile this dirver as a module,
+    It will be called by insmod xxx.ko in init.rc.
+
 #
 # LENS
 #

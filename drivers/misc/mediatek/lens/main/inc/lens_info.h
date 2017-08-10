@@ -16,6 +16,7 @@
 #define _MAIN_LENS_H
 
 #include <linux/ioctl.h>
+#include "lens_list.h"
 
 #define MAX_NUM_OF_LENS 32
 

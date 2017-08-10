@@ -2,5 +2,6 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-$(CONFIG_MTK_LENS)   += main/
-obj-$(CONFIG_MTK_LENS)   += sub/
+obj-y += AD5823AF.o
+
+
