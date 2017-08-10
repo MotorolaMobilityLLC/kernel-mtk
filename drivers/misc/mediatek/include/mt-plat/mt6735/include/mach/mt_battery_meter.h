@@ -34,6 +34,7 @@
 	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
+#define DISABLE_RFG_EXIST_CHECK
 #endif
 
 /* ADC resistor  */
@@ -169,6 +170,7 @@
 	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
+#define DISABLE_RFG_EXIST_CHECK
 #endif
 
 /* ADC resistor  */
@@ -306,6 +308,7 @@
 	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
 #define SWCHR_POWER_PATH
 #define EXTERNAL_SWCHR_SUPPORT
+#define DISABLE_RFG_EXIST_CHECK
 #endif
 
 /* ADC resistor  */
