@@ -395,7 +395,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* 3b. engage divided firmware downloading */
 		if (fgValidHead == TRUE) {
 			DBGLOG(INIT, TRACE, "wlanAdapterStart(): fgValidHead == TRUE\n");
-
+			wlanDumpMcuChipId(prAdapter);
 			for (i = 0; i < prFwHead->u4NumOfEntries; i++) {
 
 #if CFG_START_ADDRESS_IS_1ST_SECTION_ADDR

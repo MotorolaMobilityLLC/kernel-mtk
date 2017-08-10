@@ -414,6 +414,7 @@ VOID wlanFWDLDebugDumpInfo(VOID);
 VOID wlanFWDLDebugUninit(VOID);
 
 
+VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -866,4 +866,13 @@ VOID wlanFWDLDebugUninit(VOID)
 	gprFWDLDebug = NULL;
 	u4FWDL_packet_count = -1;
 }
+VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter)
+{
+	GL_HIF_INFO_T *pHifInfo;
+
+	ASSERT(prAdapter);
+
+	pHifInfo = &prAdapter->prGlueInfo->rHifInfo;
+	DBGLOG(INIT, INFO, "Offset:0x%x, Value:0x%08x ", CONN_MCU_CHIPID, MCU_REG_READL(pHifInfo, CONN_MCU_CHIPID));
+}
 
