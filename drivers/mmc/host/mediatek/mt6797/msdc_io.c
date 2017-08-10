@@ -594,6 +594,10 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 {
 	int i, ret;
 	struct device_node *msdc_backup_node;
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pins_ins;
+	struct msdc_host *host = mmc_priv(mmc);
+
 	static const char const *msdc_names[] = {"msdc0", "msdc1", "msdc2", "msdc3"};
 
 	for (i = 0; i < HOST_MAX_NUM; i++) {
@@ -728,6 +732,27 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	msdc_get_regulators(&(pdev->dev));
 	/* restore original dev.of_node */
 	pdev->dev.of_node = msdc_backup_node;
+
+	/* Set SDcard card detect pin mode: EINT mode */
+	if ((pdev->id == 1) && (host->hw->host_function == MSDC_SD)) {
+		pinctrl = devm_pinctrl_get(&pdev->dev);
+		if (IS_ERR(pinctrl)) {
+			ret = PTR_ERR(pinctrl);
+			dev_err(&pdev->dev, "Cannot find pinctrl!\n");
+			return -1;
+		}
+
+		pins_ins = pinctrl_lookup_state(pinctrl, "insert_cfg");
+		if (IS_ERR(pins_ins)) {
+			ret = PTR_ERR(pins_ins);
+			dev_err(&pdev->dev, "Cannot find pinctrl insert_cfg!\n");
+			return -1;
+		}
+
+		pinctrl_select_state(pinctrl, pins_ins);
+		pr_err("msdc1 pinctl select state\n");
+	}
+
 
 #endif
 

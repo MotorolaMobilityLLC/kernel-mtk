@@ -670,6 +670,10 @@
 		sd-uhs-sdr50;
 		sd-uhs-sdr104;
 		/* sd-uhs-ddr50; */
+		pinctrl-names = "default","insert_cfg";
+		pinctrl-0 = <&mmc1_pins_insert_default>;
+		pinctrl-1 = <&mmc1_pins_insert_cfg>;
+
 		pinctl = <&mmc1_pins_default>;
 		pinctl_sdr104 = <&mmc1_pins_sdr104>;
 		pinctl_sdr50 = <&mmc1_pins_sdr50>;
@@ -679,6 +683,20 @@
 		cd_level = /bits/ 8 <MSDC_CD_LOW>;
 		cd-gpios = <&pio 67 0>;
 		status = "okay";
+};
+
+&pio {
+	mmc1_pins_insert_default: mmc1_ins_default {
+	};
+	mmc1_pins_insert_cfg: mmc1_ins_cfg {
+		pins_insert {
+			pins = <PINMUX_GPIO67__FUNC_EINT6>;
+			input-schmitt-enable =<1>;
+			slew-rate = <0>;
+			bias-pull-up =<00>;
+		};
+	};
+
 };
 /* AUDIO GPIO standardization */
 &audgpio {
