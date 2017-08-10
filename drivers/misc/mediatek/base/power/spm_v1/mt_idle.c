@@ -96,17 +96,36 @@ enum {
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
 #endif
 
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#undef EN_PTP_OD
+#define EN_PTP_OD 0
+
+bool __attribute__((weak)) clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
+{
+	return false;
+}
+unsigned int __attribute__((weak)) clk_id_to_grp_id(unsigned int id)
+{
+	return 0;
+}
+unsigned int __attribute__((weak)) clk_id_to_mask(unsigned int id)
+{
+	return 0;
+}
+void __attribute__((weak)) clkmgr_faudintbus_pll2sq(void)
+{
+}
+void __attribute__((weak)) clkmgr_faudintbus_sq2pll(void)
+{
+}
+#endif
+
 static unsigned long rgidle_cnt[NR_CPUS] = {0};
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
 
 #define INVALID_GRP_ID(grp) (grp < 0 || grp >= NR_GRPS)
-
-/* For early porting*/
-#ifdef CONFIG_ARCH_MT6570
-#undef EN_PTP_OD
-#define EN_PTP_OD 0
-#endif
 
 void __attribute__((weak)) bus_dcm_enable(void)
 {
