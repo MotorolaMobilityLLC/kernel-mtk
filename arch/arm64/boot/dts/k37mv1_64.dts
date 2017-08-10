@@ -1,7 +1,7 @@
 #include <generated/autoconf.h>
+/dts-v1/;
 
 #ifdef CONFIG_MTK_DTBO_FEATURE
-/dts-v1/;
 /plugin/;
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
