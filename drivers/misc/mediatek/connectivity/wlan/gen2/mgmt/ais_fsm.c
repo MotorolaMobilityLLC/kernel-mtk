@@ -4579,12 +4579,17 @@ aisFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_AIS_MGMT_TX_REQ_INFO_T prMgmtTxReqInfo = (P_AIS_MGMT_TX_REQ_INFO_T) NULL;
 	BOOLEAN fgIsSuccess = FALSE;
+	P_WLAN_MAC_HEADER_T prWlanFrame = NULL;
+	P_WLAN_ACTION_FRAME prActFrame = NULL;
+	UINT_16 u2TxFrameCtrl = 0;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
 
 		prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 		prMgmtTxReqInfo = &(prAisFsmInfo->rMgmtTxInfo);
+		prWlanFrame = (P_WLAN_MAC_HEADER_T) prMsduInfo->prPacket;
+		u2TxFrameCtrl = (prWlanFrame->u2FrameCtrl) & MASK_FRAME_TYPE;
 
 		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
 			DBGLOG(AIS, ERROR, "Mgmt Frame TX Fail, Status:%d.\n", rTxDoneStatus);
@@ -4594,6 +4599,23 @@ aisFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 		}
 
 		if (prMgmtTxReqInfo->prMgmtTxMsdu == prMsduInfo) {
+			if (u2TxFrameCtrl == MAC_FRAME_ACTION) {
+				prActFrame = (P_WLAN_ACTION_FRAME) prMsduInfo->prPacket;
+				if (prActFrame->ucCategory == CATEGORY_PUBLIC_ACTION) {
+					switch (prActFrame->ucAction) {
+					case PUBLIC_ACTION_GAS_INITIAL_REQ:
+						DBGLOG(AIS, INFO, "Send GAS Initial Request frame successfully\n");
+						break;
+					case PUBLIC_ACTION_GAS_INITIAL_RESP:
+						DBGLOG(AIS, INFO, "Send GAS Initial Response frame successfully\n");
+						break;
+					default:
+						DBGLOG(AIS, TRACE, "Send other public action frame(%u) successfully\n",
+							prActFrame->ucAction);
+						break;
+					}
+				}
+			}
 			kalIndicateMgmtTxStatus(prAdapter->prGlueInfo,
 						prMgmtTxReqInfo->u8Cookie,
 						fgIsSuccess, prMsduInfo->prPacket, (UINT_32) prMsduInfo->u2FrameLength);
