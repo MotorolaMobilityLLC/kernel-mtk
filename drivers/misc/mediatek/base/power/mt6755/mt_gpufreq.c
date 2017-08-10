@@ -31,6 +31,7 @@
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
 #include <linux/kthread.h>
+#include <linux/clk.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -133,11 +134,7 @@
 /**************************
  * GPU DVFS OPP table setting
  ***************************/
-
-#ifdef MTK_TABLET_TURBO
-#define GPU_DVFS_FREQT (819000)
-#endif
-
+#define GPU_DVFS_FREQT	 (806000)	/* KHz */
 #define GPU_DVFS_FREQ0	 (728000)	/* KHz */
 #define GPU_DVFS_FREQ0_1 (676000)	/* KHz */
 #define GPU_DVFS_FREQ1	 (650000)	/* KHz */
@@ -230,6 +227,13 @@ static unsigned long apmixed_base;
 
 #define APMIXED_NODE		"mediatek,apmixed"
 #define APMIXED_BASE		(apmixed_base) /* 0x1000C000 */
+
+#define GPUFREQ_NODE		"mediatek,mt6755-gpufreq"
+static const struct of_device_id mt_gpufreq_of_match[] = {
+	{.compatible = GPUFREQ_NODE,},
+	{ /* sentinel */ },
+};
+MODULE_DEVICE_TABLE(of, mt_gpufreq_of_match);
 #else /* !defined(CONFIG_OF) */
 #define APMIXED_BASE		0x1000C000
 #endif
@@ -262,17 +266,17 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_1[] = {
 	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT2, 5),
 };
 
-#ifdef MTK_TABLET_TURBO
-/* No use in MT6755: 800M Turbo */
+/* MT6755T: 800M Turbo */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e1_t[] = {
 	GPUOP(GPU_DVFS_FREQT, GPU_DVFS_VOLT0, 0),
 	GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, 1),
-	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT0, 2),
-	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT1, 3),
-	GPUOP(GPU_DVFS_FREQ6, GPU_DVFS_VOLT1, 4),
-	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT1, 5),
+	GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT0, 2),
+	GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT0, 3),
+	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT1, 4),
+	GPUOP(GPU_DVFS_FREQ5, GPU_DVFS_VOLT1, 5),
+	GPUOP(GPU_DVFS_FREQ7, GPU_DVFS_VOLT1, 6),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT2, 7),
 };
-#endif
 #else
 /* For E2 segment, GPU is sourced from Vcore */
 /* E2 Segment1: 680M */
@@ -386,6 +390,7 @@ static unsigned int mt_gpufreqs_num;
 static struct mt_gpufreq_table_info *mt_gpufreqs;
 static struct mt_gpufreq_table_info *mt_gpufreqs_default;
 static struct mt_gpufreq_power_table_info *mt_gpufreqs_power;
+static struct mt_gpufreq_clk_t *mt_gpufreq_clk;
 /* static struct mt_gpufreq_power_table_info *mt_gpufreqs_default_power; */
 
 static bool mt_gpufreq_ptpod_disable;
@@ -494,12 +499,12 @@ EXPORT_SYMBOL(mt_gpufreq_start_low_batt_volume_timer);
 static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 {
 	unsigned int type = 0;
-#ifdef MTK_TABLET_TURBO
-	unsigned int gpu_speed_turbo = 0;
 
-	gpu_speed_turbo = get_devinfo_with_index(3) >> 31;
-	gpufreq_info("GPU freq can be turbo %x?\n", gpu_speed_turbo);
-	if (gpu_speed_turbo == 1)
+#ifdef CONFIG_ARCH_MT6755_TURBO
+	unsigned int segment = get_devinfo_with_index(21) & 0xFF;
+
+	gpufreq_info("check if GPU freq can be turbo by segment=0x%x\n", segment);
+	if (segment == 0x22)
 		return 3;
 #endif
 
@@ -1387,70 +1392,115 @@ int mt_gpufreq_state_set(int enabled)
 EXPORT_SYMBOL(mt_gpufreq_state_set);
 #endif
 
-static unsigned int mt_gpufreq_dds_calc(unsigned int khz)
+static unsigned int mt_gpufreq_dds_calc(unsigned int khz, enum post_div_enum post_div)
 {
 	unsigned int dds = 0;
-#if 1
-	if ((khz >= 250250) && (khz <= 747500))
-		dds = ((khz * 4 / 1000) * 8192) / 13;
-	else {
+
+	gpufreq_dbg("@%s: request freq = %d, div = %d\n", __func__, khz, post_div);
+
+	if ((khz >= 125000) && (khz <= 3000000)) {
+		dds = (((khz / 100 * post_div*2) * 16384) / 26 + 5) / 10;
+	} else {
 		gpufreq_err("@%s: target khz(%d) out of range!\n", __func__, khz);
 		BUG();
 	}
-#else
-	if ((khz >= 250250) && (khz <= 747500))
-		dds = 0x0209A000 + ((khz - 250250) * 4 / 13000) * 0x2000;
-	else if ((khz > 747500) && (khz <= 793000))
-		dds = 0x010E6000 + ((khz - 747500) * 2 / 13000) * 0x2000;
-	else {
-		gpufreq_err("@%s: target khz(%d) out of range!\n", __func__, khz);
-		BUG();
-	}
-#endif
 
 	return dds;
 }
 
-/* static void _mt_gpufreq_set_cur_freq(unsigned int freq_new) */
-static void mt_gpufreq_clock_switch(unsigned int freq_new)
+static void gpu_dvfs_switch_to_syspll(bool on)
 {
-#if 1
-	unsigned int dds = mt_gpufreq_dds_calc(freq_new);
-
-	mt_dfs_mmpll(dds);
-
-	gpufreq_dbg("@%s: freq_new = %d, dds = 0x%x\n", __func__, freq_new, dds);
-#else
-	switch (freq_new) {
-	case GPU_DVFS_FREQ0:	/* 728000 KHz */
-		mt_dfs_mmpll(2912000);
-		break;
-	case GPU_DVFS_FREQ1:	/* 650000 KHz */
-		mt_dfs_mmpll(2600000);
-		break;
-	case GPU_DVFS_FREQ2:	/* 598000 KHz */
-		mt_dfs_mmpll(2392000);
-		break;
-	case GPU_DVFS_FREQ3:	/* 520000 KHz */
-		mt_dfs_mmpll(2080000);
-		break;
-	case GPU_DVFS_FREQ4:	/* 494000 KHz */
-		mt_dfs_mmpll(1976000);
-		break;
-	case GPU_DVFS_FREQ5:	/* 416000 KHz */
-		mt_dfs_mmpll(1664000);
-		break;
-	case GPU_DVFS_FREQ6:	/* 312000 KHz */
-		mt_dfs_mmpll(1248000);
-		break;
-	default:
-		if (mt_gpufreq_fixed_freq_volt_state == true)
-			mt_dfs_mmpll(freq_new * 4);
-		break;
+	clk_prepare_enable(mt_gpufreq_clk->clk_mux);
+	if (on) {
+		clk_set_parent(mt_gpufreq_clk->clk_mux, mt_gpufreq_clk->clk_sub_parent);
+		clk_disable_unprepare(mt_gpufreq_clk->clk_mux);
+	} else {
+		clk_set_parent(mt_gpufreq_clk->clk_mux, mt_gpufreq_clk->clk_main_parent);
+		clk_disable_unprepare(mt_gpufreq_clk->clk_mux);
 	}
 
-	gpufreq_dbg("@%s: freq_new = %d KHz\n", __func__, freq_new);
-#endif
+	/* gpufreq_dbg("@%s: on = %d, CLK_CFG_1 = 0x%x, CLK_CFG_UPDATE = 0x%x\n",
+			__func__, on, DRV_Reg32(CLK_CFG_1), DRV_Reg32(CLK_CFG_UPDATE)); */
+}
+
+static void mt_gpufreq_clock_switch_transient(unsigned int freq_new,  enum post_div_enum post_div)
+{
+#define SYSPLL_D3_FREQ	(364000)
+
+	unsigned int cur_volt;
+	unsigned int cur_freq;
+	unsigned int syspll_volt = mt_gpufreqs[0].gpufreq_volt;
+	unsigned int dds;
+	unsigned int i;
+	unsigned int found;
+	unsigned int tmp_idx;
+
+	cur_volt = _mt_gpufreq_get_cur_volt();
+	cur_freq = _mt_gpufreq_get_cur_freq();
+	dds = mt_gpufreq_dds_calc(freq_new, 1 << post_div);
+	gpufreq_dbg("@%s: request GPU dds = 0x%x, cur_volt = %d, cur_freq = %d\n",
+			__func__, dds, cur_volt, cur_freq);
+	gpufreq_dbg("@%s: request APMIXED_MMPLL_CON1 = 0x%x\n",
+			__func__, DRV_Reg32(APMIXED_MMPLL_CON1));
+	if ((DRV_Reg32(APMIXED_MMPLL_CON1) & (0x7 << 24)) != ((post_div+1) << 24)) {
+		gpufreq_dbg("@%s: switch to syspll\n", __func__);
+		for (i = 0; i < mt_gpufreqs_num; i++) {
+			if (mt_gpufreqs[i].gpufreq_khz < SYSPLL_D3_FREQ) {
+				/* record idx since current voltage may not in DVFS table */
+				tmp_idx = i - 1;
+				syspll_volt = mt_gpufreqs[tmp_idx].gpufreq_volt;
+				found = 1;
+				gpufreq_dbg("@%s: request GPU syspll_volt = %d\n",
+					__func__, syspll_volt);
+				break;
+			}
+		}
+
+		if (found == 1) {
+			/* ramp up volt for SYSPLL */
+			if (cur_volt < syspll_volt)
+				mt_gpufreq_volt_switch(cur_volt, syspll_volt);
+
+			/* Step1. Select to SYSPLL_D3 364MHz   */
+			gpu_dvfs_switch_to_syspll(true);
+			/* Step2. Modify APMIXED_MMPLL_CON1 */
+			DRV_WriteReg32(APMIXED_MMPLL_CON1, (0x80000000) | ((post_div+1) << 24) | dds);
+			/* Step3. Select back to MMPLL */
+			gpu_dvfs_switch_to_syspll(false);
+			DRV_SetReg32(APMIXED_MMPLL_CON1, 0x80000000);
+
+			/* restore to cur_volt */
+			if (cur_volt < syspll_volt)
+				mt_gpufreq_volt_switch(syspll_volt, cur_volt);
+		} else {
+			gpufreq_dbg("@%s: request GPU syspll_volt not found, khz = %d, volt = %d\n",
+				__func__, mt_gpufreqs[mt_gpufreqs_num - 1].gpufreq_khz,
+				mt_gpufreqs[mt_gpufreqs_num - 1].gpufreq_volt);
+			BUG();
+		}
+	} else {
+		gpufreq_dbg("@%s: no need to switch to SYSPLL\n", __func__);
+		DRV_WriteReg32(APMIXED_MMPLL_CON1, 0x80000000 | ((post_div+1) << 24) | dds);
+	}
+}
+
+static void mt_gpufreq_clock_switch(unsigned int freq_new)
+{
+	unsigned int dds;
+
+	/* need clk switch if max freq is over 750M */
+	if (mt_gpufreqs[0].gpufreq_khz > 750000) {
+		if (freq_new > 750000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV2);
+		else if (freq_new < 250000)
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV8);
+		else
+			mt_gpufreq_clock_switch_transient(freq_new, POST_DIV4);
+	} else {
+		dds = mt_gpufreq_dds_calc(freq_new, 1 << POST_DIV4);
+		mt_dfs_mmpll(dds);
+		gpufreq_dbg("@%s: freq_new = %d, dds = 0x%x\n", __func__, freq_new, dds);
+	}
 
 	if (NULL != g_pFreqSampler)
 		g_pFreqSampler(freq_new);
@@ -1549,28 +1599,13 @@ static unsigned int _mt_gpufreq_get_cur_freq(void)
 #if 1
 	unsigned int mmpll = 0;
 	unsigned int freq = 0;
+	unsigned int div = 0;
+	unsigned int n_info = 0;
 
 	mmpll = DRV_Reg32(APMIXED_MMPLL_CON1) & ~0x80000000;
-
-#ifdef MTK_TABLET_TURBO
-	unsigned int div = 1 << ((mmpll & (0x7 << 24)) >> 24);
-	unsigned int n_info = (mmpll & 0x1fffff) >> 14;
-
+	div = 1 << ((mmpll & (0x7 << 24)) >> 24);
+	n_info = (mmpll & 0x1fffff) >> 14;
 	freq = n_info * 26000 / div;
-
-	return freq;
-#endif
-
-	if ((mmpll >= 0x0209A000) && (mmpll <= 0x021CC000)) {
-		freq = 0x0209A000;
-		freq = 250250 + (((mmpll - freq) / 0x2000) * 3250);
-	} else if ((mmpll >= 0x010E6000) && (mmpll <= 0x010F4000)) {
-		freq = 0x010E6000;
-		freq = 747500 + (((mmpll - freq) / 0x2000) * 6500);
-	} else {
-		gpufreq_err("Invalid mmpll value = 0x%x\n", mmpll);
-		BUG();
-	}
 
 	gpufreq_dbg("mmpll = 0x%x, freq = %d\n", mmpll, freq);
 
@@ -2484,6 +2519,57 @@ static int mt_gpufreq_pm_restore_early(struct device *dev)
 	return 0;
 }
 
+#if defined(CONFIG_OF)
+static int mt_gpufreq_dts_map(struct platform_device *pdev)
+{
+	struct device_node *node;
+
+	/* MFGCLK */
+	node = of_find_matching_node(NULL, mt_gpufreq_of_match);
+	if (!node) {
+		gpufreq_err("@%s: find GPUFREQ node failed\n", __func__);
+		BUG();
+	}
+	mt_gpufreq_clk = kzalloc(sizeof(struct mt_gpufreq_clk_t), GFP_KERNEL);
+	if (NULL == mt_gpufreq_clk)
+		return -ENOMEM;
+	mt_gpufreq_clk->clk_mux = devm_clk_get(&pdev->dev, "clk_mux");
+	if (IS_ERR(mt_gpufreq_clk->clk_mux)) {
+		gpufreq_err("cannot get clock mux\n");
+		return PTR_ERR(mt_gpufreq_clk->clk_mux);
+	}
+	mt_gpufreq_clk->clk_main_parent = devm_clk_get(&pdev->dev, "clk_main_parent");
+	if (IS_ERR(mt_gpufreq_clk->clk_main_parent)) {
+		gpufreq_err("cannot get main clock parent\n");
+		return PTR_ERR(mt_gpufreq_clk->clk_main_parent);
+	}
+	mt_gpufreq_clk->clk_sub_parent = devm_clk_get(&pdev->dev, "clk_sub_parent");
+	if (IS_ERR(mt_gpufreq_clk->clk_sub_parent)) {
+		gpufreq_err("cannot get sub clock parent\n");
+		return PTR_ERR(mt_gpufreq_clk->clk_sub_parent);
+	}
+
+	/* apmixed */
+	node = of_find_compatible_node(NULL, NULL, APMIXED_NODE);
+	if (!node) {
+		gpufreq_err("error: cannot find node " APMIXED_NODE);
+		BUG();
+	}
+	apmixed_base = (unsigned long)of_iomap(node, 0);
+	if (!apmixed_base) {
+		gpufreq_err("error: cannot iomap " APMIXED_NODE);
+		BUG();
+	}
+
+	return 0;
+}
+#else
+static int mt_gpufreq_dts_map(struct platform_device *pdev)
+{
+	return 0;
+}
+#endif
+
 static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 {
 	unsigned int reg_val = 0;
@@ -2492,6 +2578,8 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	int rc;
 	struct sched_param param = {.sched_priority = MAX_RT_PRIO - 1 };
 #endif
+
+	mt_gpufreq_dts_map(pdev);
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLUME_POLLING_TIMER
 	ktime_t ktime =
@@ -2557,11 +2645,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else if (mt_gpufreq_dvfs_table_type == 1)	/* Segment2: 550M */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_1,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e1_1));
-#ifdef MTK_TABLET_TURBO
-	else if (mt_gpufreq_dvfs_table_type == 3)	/* 800 */
+	else if (mt_gpufreq_dvfs_table_type == 3)	/* 800M for turbo segment */
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_t,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e1_t));
-#endif
 	else
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_e1_0,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_e1_0));
@@ -2748,6 +2834,9 @@ static struct platform_driver mt_gpufreq_pdrv = {
 		   .name = "mt-gpufreq",
 		   .pm = &mt_gpufreq_pm_ops,
 		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		   .of_match_table = mt_gpufreq_of_match,
+#endif
 		   },
 };
 
@@ -3430,13 +3519,8 @@ static ssize_t mt_gpufreq_fixed_freq_volt_proc_write(struct file *file, const ch
 				mt_gpufreq_fixed_voltage = 0;
 			} else {
 				/* freq (KHz) */
-#ifdef MTK_TABLET_TURBO
 				if ((fixed_freq >= GPUFREQ_LAST_FREQ_LEVEL)
 				    && (fixed_freq <= GPU_DVFS_FREQT)) {
-#else
-				if ((fixed_freq >= GPUFREQ_LAST_FREQ_LEVEL)
-				    && (fixed_freq <= GPU_DVFS_FREQ0)) {
-#endif
 					mt_gpufreq_fixed_freq_volt_state = true;
 					mt_gpufreq_fixed_frequency = fixed_freq;
 					mt_gpufreq_fixed_voltage = g_cur_gpu_volt;
@@ -3623,31 +3707,6 @@ static int mt_gpufreq_create_procfs(void)
 }
 #endif				/* CONFIG_PROC_FS */
 
-#if defined(CONFIG_OF)
-static int mt_gpufreq_dts_map(void)
-{
-	struct device_node *node;
-
-	/* apmixed */
-	node = of_find_compatible_node(NULL, NULL, APMIXED_NODE);
-	if (!node) {
-		gpufreq_err("error: cannot find node " APMIXED_NODE);
-		BUG();
-	}
-	apmixed_base = (unsigned long)of_iomap(node, 0);
-	if (!apmixed_base) {
-		gpufreq_err("error: cannot iomap " APMIXED_NODE);
-		BUG();
-	}
-
-	return 0;
-}
-#else
-static int mt_gpufreq_dts_map(void)
-{
-	return 0;
-}
-#endif
 
 /**********************************
  * mediatek gpufreq initialization
@@ -3657,8 +3716,6 @@ static int __init mt_gpufreq_init(void)
 	int ret = 0;
 
 	gpufreq_info("@%s\n", __func__);
-
-	mt_gpufreq_dts_map();
 
 #ifdef CONFIG_PROC_FS
 
@@ -3709,16 +3766,20 @@ static int __init mt_gpufreq_init(void)
 #endif
 
 	/* register platform device/driver */
+#if !defined(CONFIG_OF)
 	ret = platform_device_register(&mt_gpufreq_pdev);
 	if (ret) {
 		gpufreq_err("fail to register gpufreq device @ %s()\n", __func__);
 		goto out;
 	}
+#endif
 
 	ret = platform_driver_register(&mt_gpufreq_pdrv);
 	if (ret) {
 		gpufreq_err("fail to register gpufreq driver @ %s()\n", __func__);
+#if !defined(CONFIG_OF)
 		platform_device_unregister(&mt_gpufreq_pdev);
+#endif
 	}
 
 out:
@@ -3729,7 +3790,9 @@ out:
 static void __exit mt_gpufreq_exit(void)
 {
 	platform_driver_unregister(&mt_gpufreq_pdrv);
+#if !defined(CONFIG_OF)
 	platform_device_unregister(&mt_gpufreq_pdev);
+#endif
 }
 module_init(mt_gpufreq_init);
 module_exit(mt_gpufreq_exit);
