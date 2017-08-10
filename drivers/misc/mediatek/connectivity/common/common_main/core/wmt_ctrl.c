@@ -815,7 +815,6 @@ INT32 wmt_ctrl_get_patch(P_WMT_CTRL_DATA pWmtCtrlData)
 		WMT_DBG_FUNC("AF get patch, pPatch(%p)\n", pPatch);
 		*ppBuf = (PUINT8)(pPatch)->data;
 		*pSize = (pPatch)->size;
-		gDevWmt.pPatch = pPatch;
 		return 0;
 	}
 
@@ -828,7 +827,6 @@ INT32 wmt_ctrl_get_patch(P_WMT_CTRL_DATA pWmtCtrlData)
 		/*get full name patch success */
 		*ppBuf = (PUINT8)(pPatch)->data;
 		*pSize = (pPatch)->size;
-		gDevWmt.pPatch = pPatch;
 		return 0;
 	}
 	return -1;

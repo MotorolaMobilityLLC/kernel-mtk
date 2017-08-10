@@ -1536,7 +1536,8 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 {
 	INT32 iRet = -1;
 	P_WMT_PATCH patchHdr;
-	PUINT8 pbuf;
+	PUINT8 pBuf = NULL;
+	PUINT8 pPatchBuf = NULL;
 	UINT32 patchSize;
 	UINT32 fragSeq;
 	UINT32 fragNum;
@@ -1574,7 +1575,7 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	ctrlData.ctrlId = WMT_CTRL_GET_PATCH;
 	ctrlData.au4CtrlData[0] = (size_t) NULL;
 	ctrlData.au4CtrlData[1] = (size_t) &gFullPatchName;
-	ctrlData.au4CtrlData[2] = (size_t) &pbuf;
+	ctrlData.au4CtrlData[2] = (size_t) &pBuf;
 	ctrlData.au4CtrlData[3] = (size_t) &patchSize;
 	iRet = wmt_ctrl(&ctrlData);
 
@@ -1585,12 +1586,17 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	}
 
 	/* |<-BCNT_PATCH_BUF_HEADROOM(8) bytes dummy allocated->|<-patch file->| */
-	pbuf += BCNT_PATCH_BUF_HEADROOM;
 	/* patch file with header:
 	 * |<-patch header: 28 Bytes->|<-patch body: X Bytes ----->|
 	 */
-	patchHdr = (P_WMT_PATCH) pbuf;
+	pPatchBuf = osal_malloc(patchSize);
+	if (pPatchBuf == NULL) {
+		WMT_ERR_FUNC("vmalloc pPatchBuf for patch download fail\n");
+		return -2;
+	}
+	osal_memcpy(pPatchBuf, pBuf, patchSize);
 	/* check patch file information */
+	patchHdr = (P_WMT_PATCH) pPatchBuf;
 
 	cDataTime = patchHdr->ucDateTime;
 	u2HwVer = patchHdr->u2HwVer;
@@ -1615,12 +1621,12 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	 * |<-patch body: X Bytes (X=patchSize)--->|
 	 */
 	patchSize -= sizeof(WMT_PATCH);
-	pbuf += sizeof(WMT_PATCH);
+	pPatchBuf += sizeof(WMT_PATCH);
 	patchSizePerFrag = DEFAULT_PATCH_FRAG_SIZE;
 	/* reserve 1st patch cmd space before patch body
 	 *        |<-WMT_CMD: 5Bytes->|<-patch body: X Bytes (X=patchSize)----->|
 	 */
-	pbuf -= sizeof(WMT_PATCH_CMD);
+	pPatchBuf -= sizeof(WMT_PATCH_CMD);
 
 	fragNum = patchSize / patchSizePerFrag;
 	fragNum += ((fragNum * patchSizePerFrag) == patchSize) ? 0 : 1;
@@ -1714,11 +1720,11 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 		cmdLen = 1 + fragSize;
 		osal_memcpy(&WMT_PATCH_CMD[2], &cmdLen, 2);
 		/* copy patch CMD to buf (overwrite last 5-byte in prev frag) */
-		osal_memcpy(pbuf + offset - sizeof(WMT_PATCH_CMD), WMT_PATCH_CMD,
+		osal_memcpy(pPatchBuf + offset - sizeof(WMT_PATCH_CMD), WMT_PATCH_CMD,
 			    sizeof(WMT_PATCH_CMD));
 
 		iRet =
-		    wmt_core_tx(pbuf + offset - sizeof(WMT_PATCH_CMD),
+		    wmt_core_tx(pPatchBuf + offset - sizeof(WMT_PATCH_CMD),
 				fragSize + sizeof(WMT_PATCH_CMD), &u4Res, MTK_WCN_BOOL_FALSE);
 
 		if (iRet || (u4Res != fragSize + sizeof(WMT_PATCH_CMD))) {
@@ -1767,6 +1773,11 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 done:
 	/* WMT_CTRL_FREE_PATCH always return 0 */
 	/* wmt_core_ctrl(WMT_CTRL_FREE_PATCH, NULL, NULL); */
+	if (pPatchBuf != NULL) {
+		osal_free(pPatchBuf);
+		pPatchBuf = NULL;
+		patchHdr = NULL;
+	}
 	ctrlData.ctrlId = WMT_CTRL_FREE_PATCH;
 	ctrlData.au4CtrlData[0] = index + 1;
 	wmt_ctrl(&ctrlData);
