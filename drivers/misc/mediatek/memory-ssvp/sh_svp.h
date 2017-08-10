@@ -44,4 +44,6 @@ extern struct cma *svp_contiguous_default_area;
 #define SVP_REGION_ACQUIRE			_IOR(SVP_REGION_IOC_MAGIC, 6, int)
 #define SVP_REGION_RELEASE			_IOR(SVP_REGION_IOC_MAGIC, 8, int)
 
+void show_pte(struct mm_struct *mm, unsigned long addr);
+
 #endif
