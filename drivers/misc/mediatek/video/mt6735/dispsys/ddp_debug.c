@@ -282,12 +282,13 @@ static void process_dbg_debug(const char *opt)
 	} else if (enable == 11) {
 		unsigned int i = 0;
 		char *buf_temp = buf;
+		unsigned int size = sizeof(dbg_buf) - strlen(dbg_buf);
 
 		for (i = 0; i < DISP_REG_NUM; i++) {
 			DDPDUMP("i=%d, module=%s, va=0x%lx, pa=0x%x, irq(%d,%d)\n",
 				i, ddp_get_reg_module_name(i), dispsys_reg[i],
 				ddp_reg_pa_base[i], dispsys_irq[i], ddp_irq_num[i]);
-			sprintf(buf_temp, "i=%d, module=%s, va=0x%lx, pa=0x%x, irq(%d,%d)\n", i,
+			snprintf(buf_temp, size,  "i=%d, module=%s, va=0x%lx, pa=0x%x, irq(%d,%d)\n", i,
 				ddp_get_reg_module_name(i), dispsys_reg[i],
 				ddp_reg_pa_base[i], dispsys_irq[i], ddp_irq_num[i]);
 			buf_temp += strlen(buf_temp);
@@ -672,6 +673,7 @@ static void process_dbg_opt(const char *opt)
 		unsigned int reg_va_before;
 		unsigned long reg_va;
 		unsigned long reg_pa = 0;
+		unsigned long size;
 
 		p = (char *)opt + 7;
 		ret = kstrtoul(p, 16, (unsigned long int *)&reg_pa);
@@ -681,7 +683,8 @@ static void process_dbg_opt(const char *opt)
 		if (reg_pa < 0x10000000 || reg_pa > 0x18000000) {
 			sprintf(buf, "g_regr, invalid pa=0x%lx\n", reg_pa);
 		} else {
-			reg_va = (unsigned long)ioremap_nocache(reg_pa, sizeof(unsigned long));
+			size = sizeof(unsigned long);
+			reg_va = (unsigned long)ioremap_nocache(reg_pa, size);
 			reg_va_before = DISP_REG_GET(reg_va);
 			pr_debug("g_regr, pa=%lx, va=0x%lx, reg_val=0x%x\n",
 				 reg_pa, reg_va, reg_va_before);
@@ -696,6 +699,7 @@ static void process_dbg_opt(const char *opt)
 		unsigned long int val;
 		unsigned long reg_va;
 		unsigned long reg_pa = 0;
+		unsigned long size;
 
 		p = (char *)opt + 7;
 		ret = kstrtoul(p, 16, (unsigned long int *)&reg_pa);
@@ -709,7 +713,8 @@ static void process_dbg_opt(const char *opt)
 			if (ret)
 				pr_err("DISP/%s: errno %d\n", __func__, ret);
 
-			reg_va = (unsigned long)ioremap_nocache(reg_pa, sizeof(unsigned long));
+			size = sizeof(unsigned long);
+			reg_va = (unsigned long)ioremap_nocache(reg_pa, size);
 			reg_va_before = DISP_REG_GET(reg_va);
 			DISP_CPU_REG_SET(reg_va, val);
 			reg_va_after = DISP_REG_GET(reg_va);
