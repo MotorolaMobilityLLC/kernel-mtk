@@ -1177,29 +1177,35 @@ unsigned int type_buffer_len = 0;
 
 void get_disp_err_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)err_buffer[0];
-	*size = ERROR_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*addr = 0;
+	*size = 0;
 	*start = 0;
 }
 
 void get_disp_fence_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)fence_buffer[0];
-	*size = FENCE_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*addr = 0;
+	*size = 0;
 	*start = 0;
 }
 
 void get_disp_dbg_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)dbg_buffer[0];
-	*size = DEBUG_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
-	*start = 0;
+	if (is_buffer_init) {
+		*addr = (unsigned long)err_buffer[0];
+		*size = (DPREC_ERROR_LOG_BUFFER_LENGTH - 4096);
+		*start = 0;
+	} else {
+		*addr = 0;
+		*size = 0;
+		*start = 0;
+	}
 }
 
 void get_disp_dump_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
 {
-	*addr = (unsigned long)dump_buffer[0];
-	*size = DUMP_BUFFER_COUNT * LOGGER_BUFFER_SIZE;
+	*addr = 0;
+	*size = 0;
 	*start = 0;
 }
 
