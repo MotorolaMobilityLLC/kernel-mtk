@@ -124,6 +124,8 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex, IN P_P2P
 		prScanReqV2->prSsid = (P_PARAM_SSID_T) ((ULONG) prScanReqV2 + sizeof(MSG_SCN_SCAN_REQ_V2));
 
 		/* Copy IE for Probe Request. */
+		if (prScanReqInfo->u4BufLength > MAX_IE_LENGTH)
+			prScanReqInfo->u4BufLength = MAX_IE_LENGTH;
 		kalMemCopy(prScanReqV2->aucIE, prScanReqInfo->aucIEBuf, prScanReqInfo->u4BufLength);
 		prScanReqV2->u2IELen = (UINT_16) prScanReqInfo->u4BufLength;
 

@@ -705,7 +705,7 @@ rlmFuncCommonChannelList(IN P_ADAPTER_T prAdapter,
 	P_P2P_CONNECTION_SETTINGS_T prP2pConnSetting = (P_P2P_CONNECTION_SETTINGS_T) NULL;
 	P_CHANNEL_ENTRY_FIELD_T prChannelEntryI =
 	    (P_CHANNEL_ENTRY_FIELD_T) NULL, prChannelEntryIII = (P_CHANNEL_ENTRY_FIELD_T) NULL;
-	UINT_8 aucCommonChannelList[P2P_MAX_SUPPORTED_CHANNEL_LIST_SIZE];
+	UINT_8 aucCommonChannelList[P2P_MAX_SUPPORTED_CHANNEL_LIST_SIZE] = {0};
 	UINT_8 ucOriChnlSize = 0, ucNewChnlSize = 0;
 
 	do {

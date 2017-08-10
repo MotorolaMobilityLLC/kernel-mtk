@@ -429,6 +429,11 @@ VOID aisFsmStateInit_JOIN(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	prStaRec = bssCreateStaRecFromBssDesc(prAdapter,
 					      STA_TYPE_LEGACY_AP, prAdapter->prAisBssInfo->ucBssIndex, prBssDesc);
 
+	if (prStaRec == NULL) {
+		DBGLOG(AIS, WARN, "Create station record fail\n");
+		return;
+	}
+
 	prAisFsmInfo->prTargetStaRec = prStaRec;
 
 	/* 4 <2.1> sync. to firmware domain */
@@ -662,6 +667,10 @@ VOID aisFsmStateInit_IBSS_MERGE(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc
 	/* 4 <2> Setup corresponding STA_RECORD_T */
 	prStaRec = bssCreateStaRecFromBssDesc(prAdapter,
 					      STA_TYPE_ADHOC_PEER, prAdapter->prAisBssInfo->ucBssIndex, prBssDesc);
+	if (!prStaRec) {
+		DBGLOG(AIS, WARN, "Create station record fail\n");
+		return;
+	}
 
 	prStaRec->fgIsMerging = TRUE;
 
@@ -2263,7 +2272,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 	struct _SW_RFB_T *prAssocRspSwRfb;
 	struct _BSS_INFO_T *prAisBssInfo;
 	OS_SYSTIME rCurrentTime;
-	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
+	UINT_8 aucP2pSsid[ELEM_MAX_LEN_SSID] = CTIA_MAGIC_SSID;
 
 	DEBUGFUNC("aisFsmJoinCompleteAction()");
 
@@ -3286,7 +3295,7 @@ BOOLEAN aisValidateProbeReq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, OUT
 VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 {
 	P_BSS_INFO_T prAisBssInfo;
-	UINT_8 aucP2pSsid[] = CTIA_MAGIC_SSID;
+	UINT_8 aucP2pSsid[ELEM_MAX_LEN_SSID] = CTIA_MAGIC_SSID;
 
 	ASSERT(prAdapter);
 

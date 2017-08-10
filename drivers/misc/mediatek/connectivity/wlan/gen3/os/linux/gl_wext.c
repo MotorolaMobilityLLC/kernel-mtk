@@ -655,7 +655,7 @@ wextSrchDesiredWPSIE(IN PUINT_8 pucIEStart,
 static int
 wext_get_name(IN struct net_device *prNetDev, IN struct iw_request_info *prIwrInfo, OUT char *pcName, IN char *pcExtra)
 {
-	ENUM_PARAM_NETWORK_TYPE_T eNetWorkType;
+	ENUM_PARAM_NETWORK_TYPE_T eNetWorkType = PARAM_NETWORK_TYPE_NUM;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -894,7 +894,7 @@ static int
 wext_get_mode(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, OUT unsigned int *pu4Mode, IN char *pcExtra)
 {
-	ENUM_PARAM_OP_MODE_T eOpMode;
+	ENUM_PARAM_OP_MODE_T eOpMode = NET_TYPE_NUM;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -2034,7 +2034,7 @@ static int
 wext_get_rts(IN struct net_device *prNetDev,
 	     IN struct iw_request_info *prIwrInfo, OUT struct iw_param *prRts, IN char *pcExtra)
 {
-	PARAM_RTS_THRESHOLD u4RtsThresh;
+	PARAM_RTS_THRESHOLD u4RtsThresh = 0;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -2211,7 +2211,7 @@ wext_get_encode(IN struct net_device *prNetDev,
 {
 #if 1
 	/* ENUM_ENCRYPTION_STATUS_T eEncMode; */
-	ENUM_PARAM_ENCRYPTION_STATUS_T eEncMode;
+	ENUM_PARAM_ENCRYPTION_STATUS_T eEncMode = ENUM_WEP_ENABLED;
 
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;

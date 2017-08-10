@@ -361,8 +361,9 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus;
 	PARAM_MAC_ADDRESS arBssid;
-	UINT_32 u4BufLen, u4Rate;
-	INT_32 i4Rssi;
+	UINT_32 u4BufLen;
+	UINT_32 u4Rate = 0;
+	INT_32 i4Rssi = 0;
 	PARAM_GET_STA_STA_STATISTICS rQueryStaStatistics;
 	UINT_32 u4TotalError;
 	struct net_device_stats *prDevStats;
@@ -645,7 +646,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	ENUM_PARAM_ENCRYPTION_STATUS_T eEncStatus;
-	ENUM_PARAM_AUTH_MODE_T eAuthMode;
+	ENUM_PARAM_AUTH_MODE_T eAuthMode = AUTH_MODE_NUM;
 	UINT_32 cipher;
 	PARAM_CONNECT_T rNewSsid;
 	BOOLEAN fgCarryWPSIE = FALSE;
@@ -2136,10 +2137,10 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		i4Status = mtk_cfg80211_testmode_set_key_ext(wiphy, data, len);
 		break;
 #endif
-	case 0x10:
+	case TESTMODE_CMD_ID_STATISTICS:
 		i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
 		break;
-	case 0x20:
+	case TESTMODE_CMD_ID_LINK:
 		i4Status = mtk_cfg80211_testmode_get_link_detection(wiphy, data, len, prGlueInfo);
 		break;
 #if CFG_SUPPORT_PASSPOINT

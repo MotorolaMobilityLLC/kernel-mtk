@@ -3454,8 +3454,9 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 	ASSERT(prAdapter);
 	ASSERT(prCmdInfo);
 
-	if (GET_BSS_INFO_BY_INDEX(prAdapter, prCmdInfo->ucBssIndex)->eNetworkType ==
-	    NETWORK_TYPE_AIS && prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure) {
+	if (prCmdInfo->ucBssIndex <= HW_BSSID_NUM &&
+	    (GET_BSS_INFO_BY_INDEX(prAdapter, prCmdInfo->ucBssIndex)->eNetworkType ==
+	    NETWORK_TYPE_AIS && prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure)) {
 		P_STA_RECORD_T prSta = cnmGetStaRecByIndex(prAdapter, prCmdInfo->ucBssIndex);
 
 		if (prSta) {
@@ -4032,8 +4033,8 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 #if (CFG_SW_NVRAM_VERSION_CHECK == 1)
 	if (CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part1CfgPeerVersion
 	    || CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part2CfgPeerVersion
-	    || prAdapter->rVerInfo.u2Part1CfgOwnVersion < CFG_DRV_PEER_VERSION
-	    || prAdapter->rVerInfo.u2Part2CfgOwnVersion < CFG_DRV_PEER_VERSION) {
+	    || prAdapter->rVerInfo.u2Part1CfgOwnVersion <= CFG_DRV_PEER_VERSION
+	    || prAdapter->rVerInfo.u2Part2CfgOwnVersion <= CFG_DRV_PEER_VERSION) {
 		return WLAN_STATUS_FAILURE;
 	}
 #endif
@@ -4669,10 +4670,10 @@ WLAN_STATUS wlanCheckSystemConfiguration(IN P_ADAPTER_T prAdapter)
 #if (CFG_SUPPORT_PWR_LIMIT_COUNTRY == 1)
 	if (fgIsConfExist == TRUE && (CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part1CfgPeerVersion
 					|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part2CfgPeerVersion
-					|| prAdapter->rVerInfo.u2Part1CfgOwnVersion < CFG_DRV_PEER_VERSION
-					|| prAdapter->rVerInfo.u2Part2CfgOwnVersion < CFG_DRV_PEER_VERSION /* NVRAM */
+					|| prAdapter->rVerInfo.u2Part1CfgOwnVersion <= CFG_DRV_PEER_VERSION
+					|| prAdapter->rVerInfo.u2Part2CfgOwnVersion <= CFG_DRV_PEER_VERSION /* NVRAM */
 					|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2FwPeerVersion
-					|| prAdapter->rVerInfo.u2FwOwnVersion < CFG_DRV_PEER_VERSION
+					|| prAdapter->rVerInfo.u2FwOwnVersion <= CFG_DRV_PEER_VERSION
 					|| (prAdapter->fgIsEmbbededMacAddrValid == FALSE &&
 					  (IS_BMCAST_MAC_ADDR(prRegInfo->aucMacAddr)
 					   || EQUAL_MAC_ADDR(aucZeroMacAddr, prRegInfo->aucMacAddr)))
@@ -4681,10 +4682,10 @@ WLAN_STATUS wlanCheckSystemConfiguration(IN P_ADAPTER_T prAdapter)
 #else
 	if (fgIsConfExist == TRUE && (CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part1CfgPeerVersion
 					|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part2CfgPeerVersion
-					|| prAdapter->rVerInfo.u2Part1CfgOwnVersion < CFG_DRV_PEER_VERSION
-					|| prAdapter->rVerInfo.u2Part2CfgOwnVersion < CFG_DRV_PEER_VERSION /* NVRAM */
+					|| prAdapter->rVerInfo.u2Part1CfgOwnVersion <= CFG_DRV_PEER_VERSION
+					|| prAdapter->rVerInfo.u2Part2CfgOwnVersion <= CFG_DRV_PEER_VERSION /* NVRAM */
 					|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2FwPeerVersion
-					|| prAdapter->rVerInfo.u2FwOwnVersion < CFG_DRV_PEER_VERSION
+					|| prAdapter->rVerInfo.u2FwOwnVersion <= CFG_DRV_PEER_VERSION
 					|| (prAdapter->fgIsEmbbededMacAddrValid == FALSE &&
 					  (IS_BMCAST_MAC_ADDR(prRegInfo->aucMacAddr)
 					   || EQUAL_MAC_ADDR(aucZeroMacAddr, prRegInfo->aucMacAddr)))
@@ -4753,10 +4754,10 @@ WLAN_STATUS wlanCheckSystemConfiguration(IN P_ADAPTER_T prAdapter)
 	if (fgIsConfExist == TRUE) {
 		if ((CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part1CfgPeerVersion
 			|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2Part2CfgPeerVersion
-			|| prAdapter->rVerInfo.u2Part1CfgOwnVersion < CFG_DRV_PEER_VERSION
-			|| prAdapter->rVerInfo.u2Part2CfgOwnVersion < CFG_DRV_PEER_VERSION	/* NVRAM */
+			|| prAdapter->rVerInfo.u2Part1CfgOwnVersion <= CFG_DRV_PEER_VERSION
+			|| prAdapter->rVerInfo.u2Part2CfgOwnVersion <= CFG_DRV_PEER_VERSION	/* NVRAM */
 			|| CFG_DRV_OWN_VERSION < prAdapter->rVerInfo.u2FwPeerVersion
-			|| prAdapter->rVerInfo.u2FwOwnVersion < CFG_DRV_PEER_VERSION))
+			|| prAdapter->rVerInfo.u2FwOwnVersion <= CFG_DRV_PEER_VERSION))
 			u4ErrCode |= NVRAM_ERROR_VERSION_MISMATCH;
 
 		if (prRegInfo->ucTxPwrValid == 0)
@@ -4935,10 +4936,11 @@ VOID wlanDumpBssStatistics(IN P_ADAPTER_T prAdapter, UINT_8 ucBssIdx)
 
 	/* <2>Dump BSS statistics */
 	for (eAci = 0; eAci < WMM_AC_INDEX_NUM; eAci++) {
-		DBGLOG(BSS, TRACE, "LLS BSS[%u] AC[%u]: T[%u] R[%u] T_D[%u] T_F[%u]\n",
-				   prBssInfo->ucBssIndex, eAci, arLLStats[eAci].u4TxMsdu,
-				   arLLStats[eAci].u4RxMsdu, arLLStats[eAci].u4TxDropMsdu,
-				   arLLStats[eAci].u4TxFailMsdu);
+		if (prBssInfo)
+			DBGLOG(BSS, TRACE, "LLS BSS[%u] AC[%u]: T[%u] R[%u] T_D[%u] T_F[%u]\n",
+			       prBssInfo->ucBssIndex, eAci, arLLStats[eAci].u4TxMsdu,
+			       arLLStats[eAci].u4RxMsdu, arLLStats[eAci].u4TxDropMsdu,
+			       arLLStats[eAci].u4TxFailMsdu);
 	}
 }
 

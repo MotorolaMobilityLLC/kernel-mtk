@@ -43,13 +43,13 @@ UINT_8 p2pRoleFsmInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx)
 
 		prP2pRoleFsmInfo = kalMemAlloc(sizeof(P2P_ROLE_FSM_INFO_T), VIR_MEM_TYPE);
 
-		P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, ucRoleIdx) = prP2pRoleFsmInfo;
-
-		prP2pRoleFsmInfo->ucRoleIndex = ucRoleIdx;
-
 		ASSERT_BREAK(prP2pRoleFsmInfo != NULL);
 
 		kalMemZero(prP2pRoleFsmInfo, sizeof(P2P_ROLE_FSM_INFO_T));
+
+		P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, ucRoleIdx) = prP2pRoleFsmInfo;
+
+		prP2pRoleFsmInfo->ucRoleIndex = ucRoleIdx;
 
 		prP2pRoleFsmInfo->eCurrentState = P2P_ROLE_STATE_IDLE;
 

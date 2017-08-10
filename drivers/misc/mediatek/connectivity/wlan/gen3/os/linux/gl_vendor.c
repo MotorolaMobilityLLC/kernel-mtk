@@ -1073,6 +1073,7 @@ int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_de
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, u4BufLen);
 	if (!skb) {
+		kalMemFree(pRadioStat, VIR_MEM_TYPE, u4BufLen);
 		DBGLOG(REQ, TRACE, "%s allocate skb failed:%x\n", __func__, i4Status);
 		return -ENOMEM;
 	}

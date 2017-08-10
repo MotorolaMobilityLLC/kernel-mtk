@@ -1928,8 +1928,8 @@ static INT_32 wlanProbe(PVOID pvData)
 			UINT_32 u4ConfigReadLen;
 			pucConfigBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
 			u4ConfigReadLen = 0;
-			kalMemZero(pucConfigBuf, WLAN_CFG_FILE_BUF_SIZE);
 			if (pucConfigBuf) {
+				kalMemZero(pucConfigBuf, WLAN_CFG_FILE_BUF_SIZE);
 				if (kalReadToFile("/storage/sdcard0/wifi.cfg", pucConfigBuf,
 						  WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0);
 				else
@@ -2042,6 +2042,7 @@ bailout:
 			struct sockaddr MacAddr;
 			UINT_32 u4SetInfoLen = 0;
 
+			kalMemZero(MacAddr.sa_data, sizeof(MacAddr.sa_data));
 			rStatus = kalIoctl(prGlueInfo,
 					   wlanoidQueryCurrentAddr,
 					   &MacAddr.sa_data, PARAM_MAC_ADDR_LEN, TRUE, TRUE, TRUE, &u4SetInfoLen);

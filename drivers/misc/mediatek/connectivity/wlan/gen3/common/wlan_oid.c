@@ -1135,10 +1135,13 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 	pParamConn = (P_PARAM_CONNECT_T) pvSetBuffer;
 	prConnSettings = &prAdapter->rWifiVar.rConnSettings;
 
-	if (pParamConn->u4SsidLen > 32)
+	if (pParamConn->u4SsidLen > 32) {
+		cnmMemFree(prAdapter, prAisAbortMsg);
 		return WLAN_STATUS_INVALID_LENGTH;
-	else if (!pParamConn->pucBssid && !pParamConn->pucSsid)
+	} else if (!pParamConn->pucBssid && !pParamConn->pucSsid) {
+		cnmMemFree(prAdapter, prAisAbortMsg);
 		return WLAN_STATUS_INVALID_LENGTH;
+	}
 
 	prGlueInfo = prAdapter->prGlueInfo;
 	kalMemZero(prConnSettings->aucSSID, sizeof(prConnSettings->aucSSID));
@@ -1215,10 +1218,12 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 			fgIsValidSsid = FALSE;
 
 			for (i = 0; i < ELEM_MAX_LEN_SSID; i++) {
-				if (!((0 < pParamConn->pucSsid[i])
-				      && (pParamConn->pucSsid[i] <= 0x1F))) {
-					fgIsValidSsid = TRUE;
-					break;
+				if (pParamConn->pucSsid) {
+					if (!((0 < pParamConn->pucSsid[i])
+					      && (pParamConn->pucSsid[i] <= 0x1F))) {
+						fgIsValidSsid = TRUE;
+						break;
+					}
 				}
 			}
 		}

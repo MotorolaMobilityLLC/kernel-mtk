@@ -509,30 +509,32 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 		/* SSID */
 		prSsid = request->ssids;
 		prSsidStruct = (P_P2P_SSID_STRUCT_T) prRfChannelInfo;
-		if (request->n_ssids) {
-			ASSERT((ULONG) prSsidStruct == (ULONG)&(prMsgScanRequest->arChannelListInfo[u4Idx]));
-			prMsgScanRequest->prSSID = prSsidStruct;
-		}
+		if (prSsidStruct) {
+			if (request->n_ssids) {
+				ASSERT((ULONG) prSsidStruct == (ULONG)&(prMsgScanRequest->arChannelListInfo[u4Idx]));
+				prMsgScanRequest->prSSID = prSsidStruct;
+			}
 
-		for (u4Idx = 0; u4Idx < request->n_ssids; u4Idx++) {
-			COPY_SSID(prSsidStruct->aucSsid,
-				  prSsidStruct->ucSsidLen, request->ssids->ssid, request->ssids->ssid_len);
+			for (u4Idx = 0; u4Idx < request->n_ssids; u4Idx++) {
+				COPY_SSID(prSsidStruct->aucSsid,
+					  prSsidStruct->ucSsidLen, request->ssids->ssid, request->ssids->ssid_len);
 
-			prSsidStruct++;
-			prSsid++;
-		}
+				prSsidStruct++;
+				prSsid++;
+			}
 
-		prMsgScanRequest->i4SsidNum = request->n_ssids;
+			prMsgScanRequest->i4SsidNum = request->n_ssids;
 
-		DBGLOG(P2P, TRACE, "Finish SSID list:%d.\n", request->n_ssids);
+			DBGLOG(P2P, TRACE, "Finish SSID list:%d.\n", request->n_ssids);
 
-		/* IE BUFFERS */
-		prMsgScanRequest->pucIEBuf = (PUINT_8) prSsidStruct;
-		if (request->ie_len) {
-			kalMemCopy(prMsgScanRequest->pucIEBuf, request->ie, request->ie_len);
-			prMsgScanRequest->u4IELen = request->ie_len;
-		} else {
-			prMsgScanRequest->u4IELen = 0;
+			/* IE BUFFERS */
+			prMsgScanRequest->pucIEBuf = (PUINT_8) prSsidStruct;
+			if (request->ie_len) {
+				kalMemCopy(prMsgScanRequest->pucIEBuf, request->ie, request->ie_len);
+				prMsgScanRequest->u4IELen = request->ie_len;
+			} else {
+				prMsgScanRequest->u4IELen = 0;
+			}
 		}
 
 		DBGLOG(P2P, TRACE, "Finish IE Buffer.\n");
@@ -1981,7 +1983,7 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_P2P_SIGMA_PARAMS) data;
 		if (!prParams) {
-			DBGLOG(P2P, TRACE, "prParams is NULL\n");
+			DBGLOG(P2P, ERROR, "prParams is NULL\n");
 			return -EINVAL;
 		}
 	}

@@ -350,7 +350,8 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 			prStaRec->ucCurrentGtkId = rCmdKey.ucKeyId;
 		else {
 			/* GC WEP? */
-			prBssInfo->ucCurrentGtkId = rCmdKey.ucKeyId;
+			if (prBssInfo)
+				prBssInfo->ucCurrentGtkId = rCmdKey.ucKeyId;
 		}
 	}
 

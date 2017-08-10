@@ -3761,7 +3761,7 @@ UINT_32 kalFileRead(struct file *file, unsigned long long offset, unsigned char 
 	return ret;
 }
 
-UINT_32 kalFileWrite(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
+INT_32 kalFileWrite(struct file *file, unsigned long long offset, unsigned char *data, unsigned int size)
 {
 	mm_segment_t oldfs;
 	int ret;
@@ -3775,18 +3775,20 @@ UINT_32 kalFileWrite(struct file *file, unsigned long long offset, unsigned char
 	return ret;
 }
 
-UINT_32 kalWriteToFile(const PUINT_8 pucPath, BOOLEAN fgDoAppend, PUINT_8 pucData, UINT_32 u4Size)
+INT_32 kalWriteToFile(const PUINT_8 pucPath, BOOLEAN fgDoAppend, PUINT_8 pucData, UINT_32 u4Size)
 {
 	struct file *file = NULL;
-	UINT_32 ret;
+	INT_32 ret = -1;
 	UINT_32 u4Flags = 0;
 
 	if (fgDoAppend)
 		u4Flags = O_APPEND;
 
 	file = kalFileOpen(pucPath, O_WRONLY | O_CREAT | u4Flags, S_IRWXU);
-	ret = kalFileWrite(file, 0, pucData, u4Size);
-	kalFileClose(file);
+	if (file) {
+		ret = kalFileWrite(file, 0, pucData, u4Size);
+		kalFileClose(file);
+	}
 
 	return ret;
 }

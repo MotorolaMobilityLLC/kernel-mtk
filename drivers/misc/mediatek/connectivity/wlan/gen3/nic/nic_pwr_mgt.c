@@ -81,7 +81,7 @@
 /*----------------------------------------------------------------------------*/
 VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 {
-	UINT_32 u4RegValue;
+	UINT_32 u4RegValue = 0;
 
 	ASSERT(prAdapter);
 

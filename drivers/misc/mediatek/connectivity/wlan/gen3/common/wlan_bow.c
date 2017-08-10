@@ -1192,6 +1192,7 @@ VOID wlanbowCmdEventLinkDisconnected(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T p
 	bowGetBowTableEntryByPeerAddress(prAdapter, prBowLinkDisconnected->aucPeerAddress, &ucBowTableIdx);
 	rBowTable.fgIsValid = FALSE;
 	rBowTable.eState = BOW_DEVICE_STATE_DISCONNECTED;
+	kalMemZero(rBowTable.aucPeerAddress, sizeof(rBowTable.aucPeerAddress));
 	bowSetBowTableContent(prAdapter, ucBowTableIdx, &rBowTable);
 
 	/*Indicate BoW event to PAL */
