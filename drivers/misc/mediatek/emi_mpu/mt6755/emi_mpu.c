@@ -689,8 +689,7 @@ static int mpu_check_violation(void)
 					}
 		#endif
 		if ((region == 0) && (mt_emi_reg_read(EMI_MPUA) == 0)
-			&& (mt_emi_reg_read(EMI_MPUI) == 0)
-			&& (!(dbg_pqry & OOR_VIO))) {
+			&& (mt_emi_reg_read(EMI_MPUI) == 0)) {
 				pr_err("[EMI MPU] A strange violation.\n");
 		} else {
 		aee_kernel_exception("EMI MPU",
