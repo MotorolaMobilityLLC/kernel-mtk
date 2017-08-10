@@ -191,12 +191,12 @@ int string2hex(const char *buffer, int cnt)
 	return c;
 }
 
-char *get_hexbuffer(char *data_buffer, char *hex_buffer)
+char *get_hexbuffer(char *data_buffer, char *hex_buffer, int str_len)
 {
 	char *ptr = data_buffer;
 	int index = 0;
 
-	while (*ptr && *++ptr) {
+	while (*ptr && *++ptr && str_len--) {
 		*(hex_buffer + index++) = string2hex(ptr - 1, 2);
 		ptr++;
 	}
@@ -341,7 +341,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 	int operation;
 	int wr_number = 0;
 	int rd_number = 0;
-
+	int data_len = 0;
 	int length = 0;
 	void *vir_addr_wr = NULL;
 	void *vir_addr_rd = NULL;
@@ -352,13 +352,13 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 
 	pr_alert("%s\n", buf);
 	scanf_ret = sscanf
-	    (buf, "%d %x %d %d %d %1023s", &bus_id, &address, &operation, &wr_number, &rd_number,
-	     data_buffer);
+	    (buf, "%d %x %d %d %d %d %1023s", &bus_id, &address, &operation, &wr_number, &rd_number,
+	     &data_len, data_buffer);
 	if (scanf_ret) {
 		pr_alert("bus_id:%d,address:%x,operation:0x%x\n",
 		       bus_id, address, operation);
 		if ((address != 0) && (operation <= 2)) {
-			length = strlen(data_buffer);
+			length = 2 * data_len;
 
 			if (operation == 1) {
 				if ((length >> 1) != wr_number)
@@ -370,7 +370,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 					pr_err("alloc virtual memory failed\n");
 					goto err;
 				}
-				get_hexbuffer(data_buffer, vir_addr_wr);
+				get_hexbuffer(data_buffer, vir_addr_wr, length);
 				pr_alert("data_buffer:%s\n", data_buffer);
 
 
@@ -396,7 +396,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 					pr_err("alloc virtual memory failed\n");
 					goto err;
 				}
-				get_hexbuffer(data_buffer, vir_addr_wr);
+				get_hexbuffer(data_buffer, vir_addr_wr, length);
 				pr_alert("data_buffer:%s\n", data_buffer);
 			}
 
