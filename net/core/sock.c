@@ -1812,8 +1812,7 @@ void print_block_sock_info(unsigned long data)
 	if (!peer) {
 		pr_info("[mtk_net][sock]sockdbg:peer is (NULL)\n");
 	} else {
-		if ((((struct unix_sock *)peer)->path.dentry != NULL) &&
-		    (((struct unix_sock *)peer)->path.dentry->d_iname != NULL)) {
+		if (((struct unix_sock *)peer)->path.dentry) {
 				pr_info("[mtk_net][sock]sockdbg: Peer Name:%s\n",
 					((struct unix_sock *)peer)->path.dentry->d_iname);
 		} else {
