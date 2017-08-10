@@ -1137,16 +1137,16 @@ static int set_memory_buffer(disp_session_input_config *input)
 	unsigned long dst_mva = 0;
 	unsigned int session_id = input->session_id;
 	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
-
 	ovl2mem_in_config input_params[HW_OVERLAY_COUNT];
+
+	if (input->config_layer_num > MAX_OVL_CONFIG - 1)
+		return -EINVAL;
 
 	memset((void *)&input_params, 0, sizeof(input_params));
 
 	for (i = 0; i < input->config_layer_num; i++) {
 		dst_mva = 0;
 
-		if (input->config_layer_num > MAX_OVL_CONFIG - 1)
-			break;
 		layer_id = input->config[i].layer_id;
 		if (input->config[i].layer_enable) {
 			if (input->config[i].buffer_source == DISP_BUFFER_ALPHA) {
@@ -1242,15 +1242,14 @@ static int set_external_buffer(disp_session_input_config *input)
 	unsigned long int mva_offset = 0;
 	disp_session_sync_info *session_info = NULL;
 
+	if (input->config_layer_num > MAX_OVL_CONFIG - 1)
+		return -EINVAL;
+
 	session_id = input->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	for (i = 0; i < input->config_layer_num; ++i) {
 		dst_mva = 0;
-
-		if (input->config_layer_num > MAX_OVL_CONFIG - 1)
-			break;
-
 		layer_id = input->config[i].layer_id;
 		if (input->config[i].layer_enable) {
 			if (input->config[i].buffer_source == DISP_BUFFER_ALPHA) {
@@ -1393,7 +1392,7 @@ static int set_primary_buffer(disp_session_input_config *input)
 		dst_mva = 0;
 		layer_id = input->config[i].layer_id;
 		if (layer_id >= OVL_LAYER_NUM) {
-			DISPERR("set_primary_buffer, invalid layer_id = %d!\n", layer_id);
+			DISPERR("set_primary_buffer, invalid layer_id = %u!\n", layer_id);
 			continue;
 		}
 
