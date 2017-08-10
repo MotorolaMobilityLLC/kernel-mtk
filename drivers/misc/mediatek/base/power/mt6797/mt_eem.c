@@ -4522,10 +4522,6 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				eem_error("The freq percentage is : (%d)\n",
 					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF) * 100 / 2048);
 
-				eem_get_semaphore();
-				BigIDVFSFreq((*(recordTbl + (48 * 8) + 5) & 0x3FFFF) * 100 / 2048);
-				eem_release_semaphore();
-
 				swReq = 0;
 				while ((mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1) >
 					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF)) {
@@ -4533,11 +4529,20 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					if (eem_log_en)
 						eem_error("SWREQ = %x",
 							mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1);
-					if (swReq >= 100)
-						BUG_ON(swReq);
+
+					if (swReq >= 100) {
+						eem_get_semaphore();
+						BigIDVFSFreq((*(recordTbl + (48 * 8) + 5) & 0x3FFFF) * 100 / 2048);
+						eem_release_semaphore();
+						break;
+					}
 					swReq++;
 				}
 				udelay(120);
+
+				if (((mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1) >
+					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF)) && (swReq >= 100))
+							BUG_ON(swReq);
 
 			} else {
 				if (eem_log_en)
