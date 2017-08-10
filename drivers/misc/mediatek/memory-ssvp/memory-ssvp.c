@@ -233,7 +233,7 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 		else
 			set_pmd(pmd, (__pmd(*pmd) & ~PMD_SECT_VALID));
 		spin_unlock(plt);
-		pr_debug("after pmd =%p, *pmd=%016llx\n", (void *)pmd, pmd_val(*pmd));
+		pr_debug("after pmd =%p, *pmd=%016lx\n", (void *)pmd, (u64)pmd_val(*pmd));
 		address += PMD_SIZE;
 	}
 
@@ -300,9 +300,9 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 			if (size)
 				*size = _svpregs[SSVP_TUI].count << PAGE_SHIFT;
 
-			pr_alert("%s %d: pa %llx, size 0x%lx\n",
+			pr_alert("%s %d: pa %lx, size 0x%lx\n",
 					__func__, __LINE__,
-					page_to_phys(page),
+					(u64)page_to_phys(page),
 					_svpregs[SSVP_TUI].count << PAGE_SHIFT);
 		} else {
 			_svpregs[SSVP_TUI].state = SVP_STATE_ON;
@@ -525,9 +525,9 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 offline_done:
 	_svpregs[SSVP_SVP].page = page;
 	_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
-	pr_alert("%s %d: secmem_enable, res %d pa 0x%llx, size 0x%lx\n",
+	pr_alert("%s %d: secmem_enable, res %d pa 0x%lx, size 0x%lx\n",
 			__func__, __LINE__, res,
-			page_to_phys(page),
+			(u64)page_to_phys(page),
 			_svpregs[SSVP_SVP].count << PAGE_SHIFT);
 	if (pa)
 		*pa = page_to_phys(page);
@@ -725,8 +725,8 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 		seq_printf(m, "cma info: tui wrap: %pa\n", &wrap_tui_pages);
 	}
 
-	seq_printf(m, "svp region base:0x%llx, count %lu, state %s\n",
-			_svpregs[SSVP_SVP].page == NULL ? 0 : page_to_phys(_svpregs[SSVP_SVP].page),
+	seq_printf(m, "svp region base:0x%lx, count %lu, state %s\n",
+			_svpregs[SSVP_SVP].page == NULL ? 0 : (u64)page_to_phys(_svpregs[SSVP_SVP].page),
 			_svpregs[SSVP_SVP].count,
 			svp_state_text[_svpregs[SSVP_SVP].state]);
 
