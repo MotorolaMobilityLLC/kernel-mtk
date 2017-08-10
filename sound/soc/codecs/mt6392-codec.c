@@ -111,14 +111,19 @@ static const struct snd_kcontrol_new mt6392_codec_controls[] = {
 		mt6392_speaker_oc_flag_get, NULL),
 };
 
-static int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
+int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
 	int ret = 0;
 
+	dev_dbg(codec->dev, "%s\n", __func__);
+
 	switch (codec_data->speaker_mode) {
 	case MT6392_CLASS_D:
+		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x3400);
+		snd_soc_update_bits(codec, SPK_CON9, 0xffff, 0x0400);
+		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0F00);
 		break;
 	case MT6392_CLASS_AB:
 		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x3404);
@@ -132,15 +137,20 @@ static int mt6392_int_spk_turn_on(struct snd_soc_codec *codec)
 
 	return ret;
 }
+EXPORT_SYMBOL_GPL(mt6392_int_spk_turn_on);
 
-static int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
+int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 {
 	struct mt6392_codec_priv *codec_data =
 			snd_soc_codec_get_drvdata(codec);
 	int ret = 0;
 
+	dev_dbg(codec->dev, "%s\n", __func__);
+
 	switch (codec_data->speaker_mode) {
 	case MT6392_CLASS_D:
+		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x0400);
+		snd_soc_update_bits(codec, SPK_CON12, 0xffff, 0x0055);
 		break;
 	case MT6392_CLASS_AB:
 		snd_soc_update_bits(codec, SPK_CON0, 0xffff, 0x0400);
@@ -153,6 +163,7 @@ static int mt6392_int_spk_turn_off(struct snd_soc_codec *codec)
 
 	return ret;
 }
+EXPORT_SYMBOL_GPL(mt6392_int_spk_turn_off);
 
 static int mt6392_int_spk_amp_wevent(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
