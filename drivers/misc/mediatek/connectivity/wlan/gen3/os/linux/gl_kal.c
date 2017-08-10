@@ -955,6 +955,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	struct cfg80211_bss *bss;
 	UINT_8 ucChannelNum;
 	P_BSS_DESC_T prBssDesc = NULL;
+	UINT_16 u2StatusCode = WLAN_STATUS_AUTH_TIMEOUT;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -1192,16 +1193,17 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		{
 			P_BSS_DESC_T prBssDesc = prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 
-			if (prBssDesc)
+			if (prBssDesc) {
 				COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
-			else
+				u2StatusCode = prBssDesc->u2StatusCode;
+			} else
 				COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
 			cfg80211_connect_result(prGlueInfo->prDevHandler,
 						arBssid,
 						prGlueInfo->aucReqIe,
 						prGlueInfo->u4ReqIeLength,
 						prGlueInfo->aucRspIe,
-						prGlueInfo->u4RspIeLength, WLAN_STATUS_AUTH_TIMEOUT, GFP_KERNEL);
+						prGlueInfo->u4RspIeLength, u2StatusCode, GFP_KERNEL);
 			break;
 		}
 	default:

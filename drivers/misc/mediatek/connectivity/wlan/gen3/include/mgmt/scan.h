@@ -312,6 +312,7 @@ struct _BSS_DESC_T {
 	BOOLEAN fgMultiAnttenaAndSTBC;
 	BOOLEAN fgDeauthLastTime;
 	UINT_32 u4UpdateIdx;
+	UINT_16 u2StatusCode;
 };
 
 struct _ROAM_BSS_DESC_T {

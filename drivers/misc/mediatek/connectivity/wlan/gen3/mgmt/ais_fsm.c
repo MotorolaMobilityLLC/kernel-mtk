@@ -2386,6 +2386,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 				/* ASSERT(prBssDesc); */
 				/* ASSERT(prBssDesc->fgIsConnecting); */
 				prBssDesc->ucJoinFailureCount++;
+				prBssDesc->u2StatusCode = prStaRec->u2StatusCode;
 				if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
 					aisAddBlacklist(prAdapter, prBssDesc);
 					GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
@@ -2964,6 +2965,7 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 		prBssDesc->fgIsConnected = TRUE;
 		aisRemoveBlackList(prAdapter, prBssDesc);
 		prBssDesc->ucJoinFailureCount = 0;
+		prBssDesc->u2StatusCode = 0;
 		/* 4 <4.1> Setup MIB for current BSS */
 		prAisBssInfo->u2BeaconInterval = prBssDesc->u2BeaconInterval;
 	} else {
@@ -3571,6 +3573,7 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 			eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 		} else {
 			/* 3.4 Retreat to AIS_STATE_JOIN_FAILURE to terminate join operation */
+			prAisFsmInfo->prTargetStaRec->u2StatusCode = STATUS_CODE_JOIN_TIMEOUT;
 			eNextState = AIS_STATE_JOIN_FAILURE;
 		}
 
