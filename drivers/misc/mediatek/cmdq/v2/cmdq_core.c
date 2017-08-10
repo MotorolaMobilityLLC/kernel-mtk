@@ -5697,6 +5697,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(T
 								int32_t index)
 {
 	TaskStruct *pTask = NULL;
+	unsigned long flags = 0L;
 
 	if ((NULL == pThread) || (index < 0) || (index >= CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
@@ -5720,10 +5721,12 @@ static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(T
 	}
 
 	CMDQ_VERBOSE("remove task, slot[%d]\n", index);
+	spin_lock_irqsave(&gCmdqExecLock, flags);
 	pTask = NULL;
 	pThread->pCurTask[index] = NULL;
 	pThread->taskCount--;
 	pThread->nextCookie--;
+	spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 	if (0 > pThread->taskCount) {
 		/* Error status print */
@@ -6279,7 +6282,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		/* 3. task's SW thread has been signaled (e.g. SIGKILL) */
 
 		/* dump shared cookie */
-		CMDQ_VERBOSE
+		CMDQ_LOG
 		    ("WAIT: [1]secure path failed, pTask:%p, thread:%d, shared_cookie(%d, %d, %d)\n",
 		     pTask, thread,
 		     cmdq_core_get_secure_thread_exec_counter(12),
@@ -6296,27 +6299,6 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(TaskStruct *pTask,
 		/*     .dump secure HW thread */
 		/*     .reset CMDQ secure HW thread */
 		cmdq_sec_cancel_error_task_unlocked(pTask, thread, &result);
-
-		/* dump shared cookie */
-		CMDQ_ERR
-			("WAIT: [2]pTask:%p thread:%d cookie(%d, %d, %d) waitCookie:%d raisedIRQ:%#x\n",
-			pTask, thread,
-			cmdq_core_get_secure_thread_exec_counter(12),
-			cmdq_core_get_secure_thread_exec_counter(13),
-			cmdq_core_get_secure_thread_exec_counter(14),
-			gCmdqContext.thread[thread].waitCookie,
-			cmdq_core_get_secure_IRQ_status());
-
-		spin_lock_irqsave(&gCmdqExecLock, flags);
-
-		/* confirm pending IRQ first */
-		cmdq_core_handle_secure_thread_done_impl(thread, 0x01, &pTask->wakedUp);
-
-		spin_unlock_irqrestore(&gCmdqExecLock, flags);
-
-		/* check if this task has finished after handling pending IRQ */
-		if (TASK_STATE_DONE == pTask->taskState)
-			break;
 
 		status = -ETIMEDOUT;
 		throwAEE = true;
@@ -6808,9 +6790,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 			/* config failed case, dump for more detail */
 			cmdq_core_attach_error_task(pTask, thread, NULL);
 			cmdq_core_turnoff_first_dump();
-			spin_lock_irqsave(&gCmdqExecLock, flags);
 			cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(pThread, cookie);
-			spin_unlock_irqrestore(&gCmdqExecLock, flags);
 		}
 	} while (0);
 
