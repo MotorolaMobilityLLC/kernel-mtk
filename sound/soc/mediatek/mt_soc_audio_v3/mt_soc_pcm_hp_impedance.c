@@ -73,16 +73,16 @@
 #include <linux/dma-mapping.h>
 
 static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
-/* static const int DCoffsetDefault = 1500;  //95: 1622 */
+/* static const int DCoffsetDefault = 1500;  //95: 1622 denali: 1460*/
 static const int DCoffsetDefault = 1460;  /* denali: 1460 */
 
 static const int DCoffsetVariance = 200;    /* denali 0.2v */
-
+static const unsigned short HpImpedanceAuxCable = 5000;
 static const int mDcRangestep = 7;
-static const int HpImpedancePhase1Step = 150;
-static const int HpImpedancePhase2Step = 400;
+static const int HpImpedancePhase1Step = 100;
+static const int HpImpedancePhase2Step = 100;
 static const int HpImpedancePhase1AdcValue = 1200;
-static const int HpImpedancePhase2AdcValue = 7200;
+static const int HpImpedancePhase2AdcValue = 8800;
 static struct snd_dma_buffer *Dl1_Playback_dma_buf;
 
 /* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
@@ -423,42 +423,8 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int phase1table[] = {7, 13};
-static unsigned short Phase1Check(unsigned short adcvalue,
-				  unsigned int adcoffset)
-{
-	unsigned int AdcDiff = adcvalue - adcoffset;
-
-	if (adcvalue < adcoffset)
-		return 0;
-	if (AdcDiff > 300)
-		return AUDIO_HP_IMPEDANCE32;
-	else if (AdcDiff >= phase1table[1])
-		return AUDIO_HP_IMPEDANCE256;
-	else if ((AdcDiff >= phase1table[0]) && (AdcDiff <= phase1table[1]))
-		return AUDIO_HP_IMPEDANCE128;
-	else
-		return 0;
-}
-
-static int phase2table[] = {10, 26};
-static unsigned short Phase2Check(unsigned short adcvalue,
-				  unsigned int adcoffset)
-{
-	unsigned int AdcDiff = adcvalue - adcoffset;
-
-	if (adcvalue < adcoffset)
-		return AUDIO_HP_IMPEDANCE16;
-	if (AdcDiff < phase2table[0])
-		return AUDIO_HP_IMPEDANCE16;
-	else if (AdcDiff >= phase2table[1])
-		return AUDIO_HP_IMPEDANCE64;
-	else
-		return AUDIO_HP_IMPEDANCE32;
-}
-
 static void FillDatatoDlmemory(volatile unsigned int *memorypointer,
-			       unsigned int fillsize, unsigned short value)
+			       unsigned int fillsize, short value)
 {
 	int addr  = 0;
 	unsigned int tempvalue = value;
@@ -472,101 +438,105 @@ static void FillDatatoDlmemory(volatile unsigned int *memorypointer,
 	}
 }
 
-static unsigned short  dcinit_value;
-static void CheckDcinitValue(void)
+static unsigned short Calculate_HP_Impedance(unsigned short dcinit,
+		unsigned short dcinput, unsigned short pcmoffset)
 {
-	if (dcinit_value > (DCoffsetDefault + DCoffsetVariance)) {
-		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
-		dcinit_value = DCoffsetDefault;
-	} else if (dcinit_value < (DCoffsetDefault - DCoffsetVariance)) {
-		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
-		dcinit_value = DCoffsetDefault;
+	unsigned short R_hp;
+	unsigned int dcvalue;
+	unsigned int R_tmp = 0;
+
+	if (dcinput < dcinit)
+		return 0;
+
+	if (dcinput > 4080*4)					/* For AuxCable case - open path */
+		return HpImpedanceAuxCable;
+
+	dcvalue = (unsigned int)(dcinput - dcinit);		/* S32.2 = S32.2 - S32.2 */
+	if (pcmoffset == HpImpedancePhase1AdcValue) {
+		R_tmp = (dcvalue * 3223 + 2048) >> 12;		/* 1200 (S32.0) */
+		if (R_tmp < 160) {
+			pr_debug("%s Phase 1200 is smaller than 160, resistor %d, Goto Phase 8800\n",
+				__func__, R_tmp);
+			R_tmp = 0;
+		}
+	} else if (pcmoffset == HpImpedancePhase2AdcValue) {
+		R_tmp = (dcvalue * 879 + 4096) >> 13;		/* 8800 (S32.0) */
 	}
+
+	R_hp = (unsigned short)R_tmp;
+	pr_debug("%s pcmoffset %d dcoffset %d resistor %d\n", __func__,
+			pcmoffset, dcvalue, R_hp);
+
+	return R_hp;
 }
 
 static void ApplyDctoDl(void)
 {
 #ifndef DENALI_FPGA_EARLYPORTING
+	unsigned int i;
+	unsigned short dcoffset = 0, average = 0;
+	unsigned short ibuffer_v[4];
+	short value = 0;
 
-	unsigned short  value = 0 , average = 0;
-	unsigned short dcoffset , dcoffset2, dcoffset3;
+	/* pr_debug("%s\n", __func__); */
 
-
-	dcinit_value = DCoffsetDefault;
-	for (value = 0; value <= (HpImpedancePhase2AdcValue + HpImpedancePhase2Step);
-	     value += HpImpedancePhase1Step) {
+	for (value = 0; value < (HpImpedancePhase2AdcValue + HpImpedancePhase1Step);
+		value += HpImpedancePhase1Step) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
 
-		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
-		/* apply to dram */
+		if (value > HpImpedancePhase2AdcValue)
+			value = HpImpedancePhase2AdcValue;
 
-		/* add dcvalue for phase boost */
-		if (value > HpImpedancePhase1AdcValue)
-			value += HpImpedancePhase1Step;
+		/* apply to dram */
+		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
 
 		/* save for DC =0 offset */
-		if (value  == 0) {
-			/* Ana_Log_Print(); */
-			/* Afe_Log_Print(); */
+		if (value == 0) {
+			usleep_range(1*1000, 2*1000);
 
 			/* get adc value */
-			/*msleep(1);*/
-			usleep_range(1*1000, 20*1000);
-			dcoffset = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset2 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset3 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			dcinit_value = average;
-			CheckDcinitValue();
-			pr_warn("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
-			       value);
-
-			/*pr_debug("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
-			pr_debug("PMIC_AFE_TOP_CON0 =0x%x\n", Ana_Get_Reg(PMIC_AFE_TOP_CON0));
-			pr_debug("AUDNCP_CLKDIV_CON0 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON0));
-			pr_debug("AUDNCP_CLKDIV_CON1 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON1));
-			pr_debug("AUDNCP_CLKDIV_CON2 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON2));
-			pr_debug("AUDNCP_CLKDIV_CON3 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON3));
-			pr_debug("AUDNCP_CLKDIV_CON4 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON4));
-			pr_debug("AUDDEC_ANA_CON0 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON0));
-			pr_debug("AUDDEC_ANA_CON1 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON1));
-			pr_debug("AUDDEC_ANA_CON2 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON2));
-			pr_debug("AUDDEC_ANA_CON3 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON3));
-			pr_debug("AUDDEC_ANA_CON4 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON4));
-			pr_debug("AUDDEC_ANA_CON5 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON5));
-			pr_debug("AUDDEC_ANA_CON6 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON6));
-			pr_debug("AUDDEC_ANA_CON7 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON7));
-			pr_debug("AUDDEC_ANA_CON8 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON8));
-			pr_debug("ZCD_CON0 =0x%x\n", Ana_Get_Reg(ZCD_CON0)); */
+			dcoffset = 0;
+			for (i = 0; i < 4; i++) {
+				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
+				dcoffset = dcoffset + ibuffer_v[i];
+			}
+			pr_debug("[DCinit]offset = %d offset1 = %d offset2 = %d offset3= %d offset4 = %d\n",
+				dcoffset, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
 		}
 
 		/* start checking */
-		if (value == HpImpedancePhase1AdcValue) {
+		if (value == HpImpedancePhase1AdcValue || value == HpImpedancePhase2AdcValue) {
+			usleep_range(1*1000, 2*1000);
+
 			/* get adc value */
-			/*msleep(1);*/
-			usleep_range(1*1000, 20*1000);
-			dcoffset = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset2 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset3 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			mhp_impedance = Phase1Check(average, dcinit_value);
-			pr_warn("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
-			       value, average, dcinit_value, mhp_impedance);
-			if (mhp_impedance)
+			average = 0;
+			for (i = 0; i < 4; i++) {
+				ibuffer_v[i] = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
+				average = average + ibuffer_v[i];
+			}
+
+			mhp_impedance = Calculate_HP_Impedance(dcoffset, average, value);
+			if (mhp_impedance) {
+				pr_debug("[phase1]average = %d offset1 = %d offset2 = %d offset3 = %d offset4 = %d\n",
+					average, ibuffer_v[0], ibuffer_v[1], ibuffer_v[2], ibuffer_v[3]);
+				pr_debug("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
+					value, average, dcoffset, mhp_impedance);
 				break;
-		} else if (value >= HpImpedancePhase2AdcValue) {
-			/* get adc value */
-			/*msleep(1);*/
-			usleep_range(1*1000, 20*1000);
-			dcoffset = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset2 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			dcoffset3 = PMIC_IMM_GetOneChannelValue(MT6328_AUX_CH9, 5, 0);
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
-			mhp_impedance = Phase2Check(average, dcinit_value);
-			pr_warn("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
-			       value, average, dcinit_value, mhp_impedance);
-			break;
+			}
 		}
+
+		usleep_range(1*250, 1*500);
+	}
+
+	/* Ramp-Down */
+	while (value > 0) {
+		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
+
+		value = value - HpImpedancePhase1Step;
+		/* apply to dram */
+		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
+
+		usleep_range(1*200, 1*400);
 	}
 #endif
 }
@@ -580,14 +550,14 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
 		/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND); */
 
-		setOffsetTrimBufferGain(2);
+		setOffsetTrimBufferGain(3);
 
 		EnableTrimbuffer(true);
 		setHpGainZero();
 		ApplyDctoDl();
 		SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 		/*msleep(1);*/
-		usleep_range(1*1000, 20*1000);
+		/* usleep_range(0.5*1000, 1*1000); */
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);

@@ -736,6 +736,11 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 
 	if (bEnable == true) {
 		TurnOnDacPower();
+		Ana_Set_Reg(0x0E9C, 0x0200, 0x0200);
+		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
+		Ana_Set_Reg(AUDENC_ANA_CON9, 0x0010, 0x0010);
+		/* Turn on Mic-Bias1 */
+
 		/* upmu_set_rg_vio18_cal(1);// for MT6328 E1 VIO18 patch only */
 #if 0				/* test 6328 sgen */
 		Ana_Set_Reg(AFE_SGEN_CFG0, 0x0080, 0xffff);
@@ -777,6 +782,8 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		   //Enable cap-less LC LDO (1.5V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x28C1, 0xfeeb);
 		/* Enable cap-less LC LDO (1.5V) */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC1, 0xfeeb);
+		/* Enable cap-less LC LDO (1.5V) */
 
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x8000, 0x8000);
 		/* Enable NV regulator (-1.5V) */
@@ -786,65 +793,44 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		   Disable headphone, voice and short-ckt protection. HP and voice MUX is opened */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
 		/* Disable headphone, voice and short-ckt protection. HP and voice MUX is opened */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0400);
+		/* HP output not short to VCM */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0080);
+		/* HP driver output stability enhance option: NO */
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0080, 0x0080);
+		/* Audio headphone speaker detection enable */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0x0001);
+		/* Power down control for IbiasDistrib circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0002, 0x0002);
+		/* Enable AUD_CLK */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE089, 0xffff);
+		/* Enable LCH Audio DAC */
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0900, 0x0f00);
+		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
 
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x28C0, 0xfeeb);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0700, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x5490, 0xffff);	/*  */
-		/* udelay(50); */
-		Ana_Set_Reg(ZCD_CON2, 0x0f9f, 0xffff);	/*  */
-		Ana_Set_Reg(ZCD_CON3, 0x001f, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0480, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x1480, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE090, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x14A0, 0xffff);	/*  */
-		/* udelay(50); */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC2, 0xfeeb);	/* Enable AUD_CLK */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE09F, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF49F, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF4FF, 0xffff);	/*  */
-		/* udelay(50); */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x1480, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0480, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xf4ef, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0300, 0xffff);	/*  */
-		Ana_Set_Reg(ZCD_CON2, 0x0489, 0xffff);	/*  */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xe00f, 0xffff);	/* Enable Audio DAC */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0301, 0xffff);
-		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0985, 0xffff);
-
-
-		/* Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0xffff);
-		   //no De_OSC of HP and disable output STBENH */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0080, 0xffff);
-		   //Audio headphone speaker detection enable */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC0, 0xfeeb);
-		   //Enable IBIST */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC2, 0xfeeb);
-		   //Enable AUD_CLK */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE009, 0xffff);
-		   //Enable Audio DAC */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0900, 0x0f00);
-		   //Audio headphone speaker detection output mux selection:(10)HPR,
-		   Audio headphone speaker detection input mux enable:(01)DACLP */
-		/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0A00, 0x0f00);
-		   //Audio headphone speaker detection output mux selection:(10)HPR,
-		   Audio headphone speaker detection input mux enable:(01)DACLP */
 	} else {
-		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0xffff);
-		/* Disable drivers bias circuit */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0xffff);
-		/* Disable Audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC0, 0xfeeb);
-		/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
+
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x0f00);
+		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
+		/* Disable LCH Audio DAC */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0x0002);
+		/* Disable AUD_CLK */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0x0001);
+		/* Power down control for IbiasDistrib circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x0080);
+		/* Audio headphone speaker detection disable */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 		/* Disable NV regulator (-1.5V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
 		/* Disable cap-less LDOs (1.5V) & Disable IBIST */
-		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x0080);
-		/* Audio headphone speaker detection disable */
-		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x0f00);
-		/* output mux selection:(00)OPEN, input mux selection:(00)OPEN, */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0080, 0x0080);
+		/* HP driver output stability enhance option: NO */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
+
+		Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010);
+		/* Turn off Mic-Bias1 */
 		TurnOffDacPower();
 	}
 	return true;
@@ -869,13 +855,11 @@ static void SetHprOffset(int OffsetTrimming)
 	unsigned short RegValue = 0;
 
 	/*pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);*/
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	/*pr_debug("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);*/
+	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	/*pr_debug("%s RegValue = 0x%x\n", __func__, RegValue);*/
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
 
@@ -886,13 +870,11 @@ static void SetHplOffset(int OffsetTrimming)
 	unsigned short RegValue = 0;
 
 	/*pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);*/
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	/*pr_debug("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);*/
+	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	/*pr_debug("%s RegValue = 0x%x\n", __func__, RegValue);*/
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
 }
 

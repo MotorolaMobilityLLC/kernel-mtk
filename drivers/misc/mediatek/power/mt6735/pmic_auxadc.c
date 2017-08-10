@@ -432,6 +432,9 @@ unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int de
 		adc_result = (ret_data * r_val_temp * VOLTAGE_FULL_RANGE) / 4096;
 		break;
 	case 9:
+		r_val_temp = 1;
+		adc_result = (ret_data * r_val_temp);
+		break;
 	case 10:
 	case 11:
 	case 12:
