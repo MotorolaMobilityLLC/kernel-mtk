@@ -1720,7 +1720,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
 					det->max_freq_khz);
 				#ifdef CONFIG_ARCH_MT6755_TURBO
-				} else if (0x22 == binLevel) {
+				} else if (0x20 == (binLevel & 0xF0)) {
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_P15[i] : bigFreq_P15[i],
 					det->max_freq_khz);
@@ -4754,7 +4754,7 @@ static int __init eem_conf(void)
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
 		#ifdef CONFIG_ARCH_MT6755_TURBO
-		} else if (0x22 == binLevel) {
+		} else if (0x20 == (binLevel & 0xF0)) {
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
 		#endif

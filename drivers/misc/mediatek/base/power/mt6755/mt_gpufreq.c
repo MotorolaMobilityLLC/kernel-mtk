@@ -514,7 +514,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 #ifdef CONFIG_ARCH_MT6755_TURBO
 	gpufreq_info("check if GPU freq can be turbo by segment=0x%x\n", segment);
-	if (segment == 0x22)
+	if ((segment & 0xF0) == 0x20)
 		return 3;
 #endif
 
