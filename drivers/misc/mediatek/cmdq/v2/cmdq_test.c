@@ -3890,6 +3890,93 @@ void testcase_reorder(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+void testcase_reorder_last(void)
+{
+	cmdqRecHandle handleA, handleB, handleC;
+	uint32_t idx = 0;
+	struct TaskStruct *tasks[30] = {0};
+	uint32_t task_idx = 0;
+	uint32_t wait_task_idx = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_1);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleA);
+	cmdq_task_reset(handleA);
+	cmdq_task_set_secure(handleA, gCmdqTestSecure);
+	cmdq_op_wait(handleA, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handleA, false);
+	handleA->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleB);
+	cmdq_task_reset(handleB);
+	cmdq_task_set_secure(handleB, gCmdqTestSecure);
+	cmdq_op_wait_no_clear(handleB, CMDQ_SYNC_TOKEN_USER_1);
+	cmdq_op_finalize_command(handleB, false);
+	handleB->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleC);
+	cmdq_task_reset(handleC);
+	cmdq_task_set_secure(handleC, gCmdqTestSecure);
+	cmdq_op_wait(handleC, CMDQ_SYNC_TOKEN_USER_1);
+	cmdq_op_finalize_command(handleC, false);
+	handleC->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	_test_submit_async(handleA, &tasks[task_idx++]);
+	_test_submit_async(handleA, &tasks[task_idx++]);
+
+	/* full the thread except last one */
+	for (idx = 2; idx < 14; idx++)
+		_test_submit_async(handleB, &tasks[task_idx++]);
+
+	/* do not let last task in thread array run */
+	_test_submit_async(handleC, &tasks[task_idx++]);
+
+	/* this is the last task in thread list, index 15 */
+	_test_submit_async(handleB, &tasks[task_idx++]);
+
+	/* let first 1 task go and insert more one */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	msleep_interruptible(3);
+	wait_task_idx = task_idx;
+	_test_submit_async(handleA, &tasks[task_idx++]);
+	msleep_interruptible(3);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+
+	/* wait the target, this must timeout without KE */
+	CMDQ_LOG("%s wait task: 0x%p, end inst: 0x%08x:%08x\n",
+		__func__, tasks[wait_task_idx],
+		tasks[wait_task_idx]->pCMDEnd[0], tasks[wait_task_idx]->pCMDEnd[-1]);
+	if (cmdqCoreWaitAndReleaseTask(tasks[wait_task_idx], 2500) == 0)
+		CMDQ_ERR("TEST FAIL: Last task should timeout but not success!\n");
+
+	/* clear all */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+	msleep_interruptible(100);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+
+	for (idx = 0; idx < task_idx; idx++) {
+		if (idx == wait_task_idx)
+			continue;
+		CMDQ_LOG("%s keep wait other tasks: 0x%p, end inst: 0x%08x:%08x\n",
+			__func__, tasks[idx],
+			tasks[idx]->pCMDEnd[0], tasks[idx]->pCMDEnd[-1]);
+		if (cmdqCoreWaitAndReleaseTask(tasks[idx], 500) < 0)
+			CMDQ_ERR("TEST FAIL: Other task cannot pass, task: 0x%p\n", tasks[idx]);
+	}
+
+	cmdq_task_destroy(handleA);
+	cmdq_task_destroy(handleB);
+	cmdq_task_destroy(handleC);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3912,6 +3999,7 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 140:
 		testcase_reorder();
+		testcase_reorder_last();
 		break;
 	case 139:
 		testcase_invalid_handle();
