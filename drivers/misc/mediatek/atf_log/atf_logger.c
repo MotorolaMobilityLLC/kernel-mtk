@@ -42,7 +42,9 @@
 #define atf_log_unlock()      spin_unlock(&atf_logger_lock)
 
 static DEFINE_SPINLOCK(atf_logger_lock);
+#if 0
 static unsigned char *atf_crash_log_buf;
+#endif
 static wait_queue_head_t    atf_log_wq;
 
 #ifdef __aarch64__
@@ -514,6 +516,7 @@ static const struct file_operations proc_atf_log_file_operations = {
 	.poll   = atf_log_poll,
 };
 
+#if 0
 static int atf_crash_show(struct seq_file *m, void *v)
 {
 	seq_write(m, atf_crash_log_buf, atf_buf_vir_ctl->info.atf_crash_log_size);
@@ -524,7 +527,6 @@ static int atf_crash_file_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, atf_crash_show, inode->i_private);
 }
-
 static const struct file_operations proc_atf_crash_file_operations = {
 	.owner = THIS_MODULE,
 	.open = atf_crash_file_open,
@@ -532,7 +534,7 @@ static const struct file_operations proc_atf_crash_file_operations = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-
+#endif
 #ifdef MTK_SIP_KERNEL_TIME_SYNC
 static void atf_time_sync_resume(void)
 {
@@ -587,8 +589,10 @@ static int __init atf_log_init(void)
 #ifdef CONFIG_ARCH_MT6797
 	struct proc_dir_entry *atf_log_dump_proc_file;
 #endif
+#if 0
 	struct proc_dir_entry *atf_crash_proc_file;
 	struct proc_dir_entry *atf_last_proc_file;
+#endif
 #ifdef MTK_SIP_KERNEL_TIME_SYNC
 	u64 time_to_sync;
 #endif
@@ -657,7 +661,7 @@ static int __init atf_log_init(void)
 		return -ENOMEM;
 	}
 #endif
-
+#if 0
 	if (atf_buf_vir_ctl->info.atf_crash_flag == ATF_CRASH_MAGIC_NO) {
 		atf_crash_proc_file = proc_create("atf_crash", 0444, atf_log_proc_dir, &proc_atf_crash_file_operations);
 		if (atf_crash_proc_file == NULL) {
@@ -676,7 +680,7 @@ static int __init atf_log_init(void)
 		atf_crash_log_buf = ioremap_wc(atf_buf_vir_ctl->info.atf_crash_log_addr,
 				atf_buf_vir_ctl->info.atf_crash_log_size);
 	}
-
+#endif
 #ifdef MTK_SIP_KERNEL_TIME_SYNC
 	register_syscore_ops(&atf_time_sync_syscore_ops);
 
