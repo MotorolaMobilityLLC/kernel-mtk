@@ -45,6 +45,11 @@
 #define MTK_FB_SODI_SUPPORT
 
 /**
+ * SODI defeature.
+ */
+#define MTK_FB_SODI_DEFEATURE
+
+/**
  * ESD recovery support.
  */
 #define MTK_FB_ESD_ENABLE
