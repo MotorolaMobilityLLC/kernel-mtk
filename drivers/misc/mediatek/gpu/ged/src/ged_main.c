@@ -44,26 +44,25 @@
 #include "ged_ge.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
-
 #define GED_IOCTL_PARAM_BUF_SIZE 0x3000 //12KB
 
 #ifdef GED_DEBUG
 #define GED_LOG_BUF_COMMON_GLES "GLES"
-static GED_LOG_BUF_HANDLE ghLogBuf_GLES = 0;
-GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_GLES;
+GED_LOG_BUF_HANDLE ghLogBuf_GED;
 #endif
 
 #define GED_LOG_BUF_COMMON_HWC "HWC"
-static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC;
+#define GED_LOG_BUF_COMMON_HWC_ERR "HWC_err"
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC_ERR;
 #define GED_LOG_BUF_COMMON_FENCE "FENCE"
-static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_FENCE;
 
-GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
-GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
+GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
+GED_LOG_BUF_HANDLE ghLogBuf_ged_srv;
 
-
-
-static void* gvIOCTLParamBuf = NULL;
+static void *gvIOCTLParamBuf;
 
 /******************************************************************************
  * GED File operations
@@ -317,6 +316,8 @@ static void ged_exit(void)
 	ghLogBuf_FENCE = 0;
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
+	ged_log_buf_free(ghLogBuf_HWC_ERR);
+	ghLogBuf_HWC_ERR = 0;
 
 	ged_dvfs_system_exit();
 
@@ -417,6 +418,8 @@ static int ged_init(void)
 	ghLogBuf_GED = ged_log_buf_alloc(32, 64 * 32, GED_LOG_BUF_TYPE_RINGBUFFER, "GED internal", NULL);
 #endif
 	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
+	ghLogBuf_HWC_ERR = ged_log_buf_alloc(2048, 2048 * 128,
+			GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC_ERR, NULL);
 	ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
 
 #ifdef GED_DVFS_DEBUG_BUF

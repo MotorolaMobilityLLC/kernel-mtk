@@ -25,9 +25,7 @@
 
 #include <mt-plat/mtk_gpu_utility.h>
 #include <trace/events/gpu.h>
-#ifdef GED_DVFS_ENABLE
 #include <mt_gpufreq.h>
-#endif
 
 #include "ged_monitor_3D_fence.h"
 
@@ -71,9 +69,9 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
 	do_div(t,1000);
 
 	ged_monitor_3D_fence_notify();
-#ifdef GED_DVFS_ENABLE	
+
 	ged_dvfs_cal_gpu_utilization_force();
-#endif	
+
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
 
 	ged_log_buf_print(ghLogBuf_DVFS, "[-] ged_monitor_3D_fence_done (ts=%llu) %p", t, psMonitor->psSyncFence);
@@ -190,32 +188,21 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 		int iCount = atomic_add_return (1, &g_i32Count);
 		if (iCount > 1)
 		{
+			unsigned int uiFreqLevelID;
 
-			{
-				unsigned int uiFreqLevelID;
-				if (mtk_get_bottom_gpu_freq(&uiFreqLevelID))
-				{
-#ifdef GED_DVFS_ENABLE
-					if (uiFreqLevelID != mt_gpufreq_get_dvfs_table_num() - 1)
-#else
-						if (uiFreqLevelID != 9999) // NEVER TRUE
-#endif
-						{
+			if (mtk_get_bottom_gpu_freq(&uiFreqLevelID)) {
+				if (uiFreqLevelID != mt_gpufreq_get_dvfs_table_num() - 1) {
 #if 0
 #ifdef CONFIG_MTK_SCHED_TRACERS
-							if (ged_monitor_3D_fence_systrace)
-							{
-								unsigned long long t = cpu_clock(smp_processor_id());
-								trace_gpu_sched_switch("Smart Boost", t, 1, 0, 1);
-							}
-#endif
-#endif
+					if (ged_monitor_3D_fence_systrace) {
+						unsigned long long t = cpu_clock(smp_processor_id());
 
-#ifdef GED_DVFS_ENABLE
-							if(ged_monitor_3D_fence_switch)
-							mtk_set_bottom_gpu_freq(mt_gpufreq_get_dvfs_table_num() - 1);
+						trace_gpu_sched_switch("Smart Boost", t, 1, 0, 1);
+					}
 #endif
-						}
+#endif
+					if (ged_monitor_3D_fence_switch)
+						mtk_set_bottom_gpu_freq(mt_gpufreq_get_dvfs_table_num() - 1);
 				}
 			}
 		}

@@ -17,6 +17,8 @@
 
 #include <linux/file.h>
 #include <linux/fs.h>
+#include <linux/list.h>
+#include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/seq_file.h>
@@ -26,36 +28,60 @@
 
 typedef struct {
 	struct file *file;
-	int ver;
-	int ref;
+	int alloc_fd;
 	int region_num;
-
 	void *data;
 	int *region_sizes; /* sub data */
 	uint32_t **region_data; /* sub data */
+	struct list_head ge_entry_list;
 } GEEntry;
 
 #define GE_PERR(fmt, ...)   pr_err("[GRALLOC_EXTRA,%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 static struct kmem_cache *gPoolCache;
 static struct dentry *gDFSEntry;
-static int active_fd_num;
+static LIST_HEAD(ge_entry_list_head);
+static DEFINE_SPINLOCK(ge_entry_list_lock);
+static int num_entry;
 
 static void *_ge_debugfs_seq_start(struct seq_file *m, loff_t *pos)
 {
-	return SEQ_START_TOKEN;
+	if (*pos == 0) {
+		seq_puts(m, "================================================\n");
+		num_entry = (int)*pos;
+		return list_first_entry(&ge_entry_list_head, GEEntry, ge_entry_list);
+	}
+	return NULL;
 }
 void _ge_debugfs_seq_stop(struct seq_file *m, void *v)
 {
+	seq_puts(m, "================================================\n");
+	seq_printf(m, "Total entries: %d\n", num_entry);
 	/* do nothing */
 }
 void *_ge_debugfs_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
-	return NULL;
+	struct list_head *next = ((GEEntry *)v)->ge_entry_list.next;
+
+	num_entry = (int)++*pos;
+	return (next != &ge_entry_list_head) ? list_entry(next, GEEntry, ge_entry_list) : NULL;
 }
 int _ge_debugfs_seq_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "current active file descriptor num : %d\n", active_fd_num);
+	const GEEntry *entry = v;
+	int memory_size = 0;
+	int memory_ksize = 0;
+	int i;
+
+	memory_size += (sizeof(uint32_t) + sizeof(uint32_t *)) * entry->region_num;
+	memory_ksize += ksize(entry->data);
+	for (i = 0; i < entry->region_num; ++i) {
+		if (entry->region_data[i]) {
+			memory_size += entry->region_sizes[i];
+			memory_ksize += ksize(entry->region_data[i]);
+		}
+	}
+	seq_printf(m, "GEEntry memory size: %d bytes, ksize: %3d bytes\n", memory_size, memory_ksize);
 	return 0;
 }
 static const struct seq_operations gDEFEntryOps = {
@@ -71,14 +97,19 @@ static ssize_t _ge_debugfs_write_entry(const char __user *pszBuffer, size_t uiCo
 
 static int ge_entry_release(struct inode *inode, struct file *file)
 {
+	unsigned long flags;
 	int i;
 	GEEntry *entry = file->private_data;
+
+	spin_lock_irqsave(&ge_entry_list_lock, flags);
+	list_del(&entry->ge_entry_list);
+	spin_unlock_irqrestore(&ge_entry_list_lock, flags);
+
 	/* remove object */
 	for (i = 0; i < entry->region_num; ++i)
 		kfree(entry->region_data[i]);
 	kfree(entry->region_sizes);
 	kmem_cache_free(gPoolCache, entry);
-	active_fd_num--;
 	return 0;
 }
 
@@ -89,7 +120,6 @@ static const struct file_operations GEEntry_fops = {
 int ged_ge_init(void)
 {
 	int flags = 0;
-	active_fd_num = 0;
 
 	gPoolCache = kmem_cache_create("gralloc_extra", sizeof(GEEntry), 0, flags, NULL);
 
@@ -116,18 +146,20 @@ int ged_ge_exit(void)
 
 int ged_ge_alloc(int region_num, uint32_t *region_sizes)
 {
+	unsigned long flags;
 	int i;
-	int fd = get_unused_fd_flags(O_CLOEXEC);
 	GEEntry *entry = (GEEntry *)kmem_cache_zalloc(gPoolCache, GFP_KERNEL);
-
-	if (fd < 0) {
-		GE_PERR("get_unused_fd() return %d\n", fd);
-		goto err_fd;
-	}
 
 	if (!entry) {
 		GE_PERR("alloc entry fail, size:%zu\n", sizeof(GEEntry));
 		goto err_entry;
+	}
+
+	entry->alloc_fd = get_unused_fd_flags(O_CLOEXEC);
+
+	if (entry->alloc_fd < 0) {
+		GE_PERR("get_unused_fd_flags() return %d\n", entry->alloc_fd);
+		goto err_fd;
 	}
 
 	entry->file = anon_inode_getfile("gralloc_extra", &GEEntry_fops, entry, 0);
@@ -150,22 +182,21 @@ int ged_ge_alloc(int region_num, uint32_t *region_sizes)
 	for (i = 0; i < region_num; ++i)
 		entry->region_sizes[i] = region_sizes[i];
 
-	entry->ref = 1;
+	spin_lock_irqsave(&ge_entry_list_lock, flags);
+	list_add_tail(&entry->ge_entry_list, &ge_entry_list_head);
+	spin_unlock_irqrestore(&ge_entry_list_lock, flags);
 
-	fd_install(fd, entry->file);
+	fd_install(entry->alloc_fd, entry->file);
 
-	active_fd_num++;
+	return entry->alloc_fd;
 
-	return fd;
-
-err_entry_file:
 err_kmalloc:
+err_entry_file:
+	put_unused_fd(entry->alloc_fd);
+err_fd:
 	kmem_cache_free(gPoolCache, entry);
 err_entry:
-	put_unused_fd(fd);
-	fd = -1;
-err_fd:
-	return fd;
+	return -1;
 }
 
 int ged_ge_get(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t *output_data)
