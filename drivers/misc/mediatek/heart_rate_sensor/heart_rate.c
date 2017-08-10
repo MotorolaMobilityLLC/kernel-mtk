@@ -401,8 +401,13 @@ static ssize_t hrm_show_flush(struct device *dev, struct device_attribute *attr,
 static ssize_t hrm_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	const char *devname = NULL;
+	struct input_handle *handle;
 
-	devname = dev_name(&hrm_context_obj->idev->dev);
+	list_for_each_entry(handle, &hrm_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 

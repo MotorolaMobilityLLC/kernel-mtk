@@ -333,9 +333,15 @@ static ssize_t grav_show_sensordevnum(struct device *dev, struct device_attribut
 {
 	struct grav_context *cxt = NULL;
 	const char *devname = NULL;
+	struct input_handle *handle;
 
 	cxt = grav_context_obj;
-	devname = dev_name(&cxt->idev->dev);
+	list_for_each_entry(handle, &cxt->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 

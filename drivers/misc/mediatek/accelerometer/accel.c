@@ -408,9 +408,15 @@ static ssize_t acc_show_sensordevnum(struct device *dev,
 	struct acc_context *cxt = NULL;
 	const char *devname = NULL;
 	int ret = 0;
+	struct input_handle *handle;
 
 	cxt = acc_context_obj;
-	devname = dev_name(&cxt->idev->dev);
+	list_for_each_entry(handle, &cxt->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+    
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }

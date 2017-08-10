@@ -533,8 +533,14 @@ static ssize_t step_c_show_flush(struct device *dev, struct device_attribute *at
 static ssize_t step_c_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	const char *devname = NULL;
+	struct input_handle *handle;
 
-	devname = dev_name(&step_c_context_obj->idev->dev);
+	list_for_each_entry(handle, &step_c_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 

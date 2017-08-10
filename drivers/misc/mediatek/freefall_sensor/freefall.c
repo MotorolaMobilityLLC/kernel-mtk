@@ -258,9 +258,14 @@ static ssize_t freefall_show_flush(struct device *dev, struct device_attribute *
 static ssize_t freefall_show_devnum(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	char *devname = NULL;
+	struct input_handle *handle;
 
-	devname = dev_name(&freefall_context_obj->idev->dev);
-	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);	/* TODO: why +5? */
+	list_for_each_entry(handle, &freefall_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 
 static int freefall_remove(struct platform_device *pdev)

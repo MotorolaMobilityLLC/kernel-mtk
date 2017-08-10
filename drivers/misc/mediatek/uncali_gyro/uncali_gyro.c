@@ -340,10 +340,15 @@ static ssize_t uncali_gyro_show_sensordevnum(struct device *dev,
 					     struct device_attribute *attr, char *buf)
 {
 	struct uncali_gyro_context *cxt = NULL;
-	char *devname = NULL;
+	const char *devname = NULL;
+	struct input_handle *handle;
 
 	cxt = uncali_gyro_context_obj;
-	devname = (char *)dev_name(&cxt->idev->dev);
+	list_for_each_entry(handle, &cxt->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 
