@@ -227,7 +227,7 @@ static ssize_t musb_test_mode_write(struct file *file,
 
 	memset(buf, 0x00, sizeof(buf));
 
-	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
+	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
 
 	if (!strncmp(buf, "force host", 9))
@@ -415,7 +415,7 @@ static ssize_t musb_regw_mode_write(struct file *file,
 
 	pr_warn("%s -> Called\n", __func__);
 
-	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
+	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
 
 	if ((!strncmp(buf, "MAC", 3)) || (!strncmp(buf, "mac", 3)))
@@ -493,7 +493,7 @@ static ssize_t musb_regr_mode_write(struct file *file,
 
 	pr_warn("%s -> Called\n", __func__);
 
-	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
+	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
 
 	if ((!strncmp(buf, "MAC", 3)) || (!strncmp(buf, "mac", 3)))
