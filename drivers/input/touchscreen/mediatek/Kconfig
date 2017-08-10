@@ -46,18 +46,6 @@ config TOUCHSCREEN_MTK_GT928
 	  If unsure, say N.
 	  To compile this driver as a module, choose M here.
 
-config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
-	bool "GT9XXTB hotknot for Mediatek package"
-	default n
-	help
-	  Say Y here if you have GT9XXTB hotknot touch panel.
-
-	  If unsure, say N.
-
-	  To compile this dirver as a module, choose M here: the
-	  module will be called.
-
-source "drivers/input/touchscreen/mediatek/GT9XXTB_hotknot/Kconfig"
 
 config TOUCHSCREEN_MTK_GT9XXTB_HN_NEW
 	bool "GT9XXTB hotknot new driver for Mediatek package"
@@ -109,19 +97,6 @@ config TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4
 	  module will be called synaptics_i2c_rmi4.
 
 source "drivers/input/touchscreen/mediatek/synaptics_i2c_rmi4/Kconfig"
-
-config TOUCHSCREEN_MTK_GT910
-	bool "GT910 for Mediatek package"
-	default n
-	help
-	  Say Y here if you have GT910 touch panel.
-
-	  If unsure, say N.
-
-	  To compile this dirver as a module, choose M here: the
-	  module will be called.
-
-source "drivers/input/touchscreen/mediatek/GT910/Kconfig"
 
 config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
 	bool "GT9XX_HOTKNOT_SCP for Mediatek package"
