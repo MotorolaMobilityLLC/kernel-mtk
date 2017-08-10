@@ -679,7 +679,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 	static int end_cnt;
 	static int stop_cnt;
 
-#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_WFD_SUPPORT)
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	idle_time = 2000;
 #else
 	idle_time = 50;
@@ -697,6 +697,9 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		if (primary_get_state() != DISP_ALIVE) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagPulse, 1, 0);
 			/* DISPMSG("[ddp_idle]primary display path is slept?? -- skip ddp_idle\n"); */
+#if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+			idle_time = 500;
+#endif
 			_primary_path_unlock(__func__);
 			continue;
 		}
@@ -709,6 +712,11 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		_primary_path_set_dvfsHPM(false, 0);
 
 		_primary_path_unlock(__func__);
+
+#if !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+		idle_time = 50;
+#endif
+
 		/* _disp_primary_idle_lock(); */
 		_primary_path_esd_check_lock();
 		if (((sched_clock() - last_primary_trigger_time) / 1000) > idle_time * 1000) {
