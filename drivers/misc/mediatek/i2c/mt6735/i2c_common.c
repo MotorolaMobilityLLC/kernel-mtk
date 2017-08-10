@@ -324,7 +324,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 			if (trans_mode == 1) {	/*DMA MODE */
 				/*need GFP_DMA32 flag to confirm DMA alloc PA is 32bit range */
 				vir_addr =
-				    dma_alloc_coherent(dev, length >> 1, &dma_addr,
+				    dma_alloc_coherent(dev, (length >> 1) + 1, &dma_addr,
 						       GFP_KERNEL | GFP_DMA32);
 				if (vir_addr == NULL) {
 
@@ -332,7 +332,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 					goto err;
 				}
 			} else {
-				vir_addr = kzalloc(length >> 1, GFP_KERNEL);
+				vir_addr = kzalloc((length >> 1) + 1, GFP_KERNEL);
 				if (vir_addr == NULL) {
 
 					I2CERR("alloc virtual memory failed\n");
@@ -448,7 +448,7 @@ static DEVICE_ATTR(ut, 0660, show_config, set_config);
 static int i2c_common_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	/* your code here£¬your should save client in your own way */
+	/* your code hereÂ£Â¬your should save client in your own way */
 	I2CLOG("i2c_common device probe\n");
 	ret = device_create_file(&pdev->dev, &dev_attr_ut);
 	return ret;

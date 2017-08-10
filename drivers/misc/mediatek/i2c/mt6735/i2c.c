@@ -479,8 +479,10 @@ static s32 _i2c_deal_result(struct mt_i2c_t *i2c)
 		/*Transfer success ,we need to get data from fifo */
 		if ((!i2c->dma_en) && (i2c->op == I2C_MASTER_RD || i2c->op == I2C_MASTER_WRRD)) {
 			data_size = (i2c_readl(i2c, OFFSET_FIFO_STAT) >> 4) & 0x000F;
-			BUG_ON(data_size > i2c->msg_len);
-			/* I2CLOG("data_size=%d\n",data_size); */
+			if (data_size > i2c->msg_len) {
+				I2CERR("data_size=%d,msg_len=%d\n", data_size, i2c->msg_len);
+				BUG_ON(data_size > i2c->msg_len);
+			}
 			while (data_size--) {
 				*ptr = i2c_readl(i2c, OFFSET_DATA_PORT);
 				/* I2CLOG("addr %x read byte = 0x%x\n", i2c->addr, *ptr); */
