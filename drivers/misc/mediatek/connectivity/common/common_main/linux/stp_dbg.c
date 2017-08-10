@@ -166,15 +166,9 @@ static struct genl_ops stp_dbg_gnl_ops_array[] = {
  */
 static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
 {
-	P_WCN_CORE_DUMP_T dmp = (P_WCN_CORE_DUMP_T) data;
 
 	STP_DBG_INFO_FUNC(" start\n");
 
-	if (dmp) {
-		STP_DBG_WARN_FUNC
-		    (" coredump timer timeout, coredump maybe not finished successfully\n");
-		dmp->sm = CORE_DUMP_TIMEOUT;
-	}
 	stp_btm_notify_coredump_timeout_wq(g_stp_dbg->btm);
 
 	STP_DBG_INFO_FUNC(" end\n");

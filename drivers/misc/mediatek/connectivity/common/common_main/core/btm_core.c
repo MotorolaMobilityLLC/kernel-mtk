@@ -126,7 +126,16 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		break;
 
 	case STP_OPID_BTM_DUMP_TIMEOUT:
+		#define FAKECOREDUMPEND "coredump end - fake"
 		/* Flush dump data, and reset compressor */
+		if (1 == dump_sink) {
+			/* aee case, do nothing */
+		} else if (2 == dump_sink) {
+			/* stp_dump case, append fake coredump end message */
+			STP_BTM_WARN_FUNC("generate fake coredump message\n");
+			stp_dbg_dump_send_retry_handler(FAKECOREDUMPEND, (INT32)osal_strlen(FAKECOREDUMPEND));
+		}
+
 		STP_BTM_INFO_FUNC("Flush dump data\n");
 		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		ret = mtk_wcn_stp_coredump_timeout_handle();
