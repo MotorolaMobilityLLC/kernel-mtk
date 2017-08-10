@@ -670,8 +670,14 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[ID_ANSWER_CALL].sensorType = ID_ANSWER_CALL;
 	mSensorState[ID_ANSWER_CALL].rate = SENSOR_RATE_ONESHOT;
 
-	mSensorState[ID_STATIONARY].sensorType = ID_STATIONARY;
-	mSensorState[ID_STATIONARY].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_STATIONARY_DETECT].sensorType = ID_STATIONARY_DETECT;
+	mSensorState[ID_STATIONARY_DETECT].rate = SENSOR_RATE_ONESHOT;
+
+	mSensorState[ID_MOTION_DETECT].sensorType = ID_MOTION_DETECT;
+	mSensorState[ID_MOTION_DETECT].rate = SENSOR_RATE_ONESHOT;
+
+	mSensorState[ID_DEVICE_ORIENTATION].sensorType = ID_DEVICE_ORIENTATION;
+	mSensorState[ID_DEVICE_ORIENTATION].rate = SENSOR_RATE_ONCHANGE;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)

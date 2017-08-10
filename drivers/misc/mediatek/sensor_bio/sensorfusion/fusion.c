@@ -39,7 +39,7 @@ static struct fusion_context *fusion_context_alloc_object(void)
 	return obj;
 }
 
-int handle_to_index(int handle)
+static int handle_to_index(int handle)
 {
 	int index = -1;
 
