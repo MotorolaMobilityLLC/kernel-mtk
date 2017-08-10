@@ -1556,6 +1556,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 	}
 	break;
 
+#if 0
 	case VCODEC_GET_CPU_LOADING_INFO:
 	{
 		VAL_UINT8_T *user_data_addr;
@@ -1581,6 +1582,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		MODULE_MFV_LOGD("VCODEC_GET_CPU_LOADING_INFO -\n");
 	}
 	break;
+#endif
 
 	case VCODEC_GET_CORE_LOADING:
 	{
