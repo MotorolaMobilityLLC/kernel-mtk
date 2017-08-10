@@ -31,7 +31,7 @@
 
 /* Enable Runtime Power Management */
 #ifdef CONFIG_PM_RUNTIME
- #define MC_PM_RUNTIME
+ //#define MC_PM_RUNTIME
 #endif
 
 #define TBASE_CORE_SWITCHER
