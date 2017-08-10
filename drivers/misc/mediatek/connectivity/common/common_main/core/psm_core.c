@@ -3,6 +3,7 @@
 #include "psm_core.h"
 #include "stp_core.h"
 #include "stp_dbg.h"
+#include "wmt_detect.h"
 #include <mtk_wcn_cmb_stub.h>
 #include <linux/timer.h>
 
@@ -903,21 +904,20 @@ static inline INT32 _stp_psm_wait_wmt_event_wq(MTKSTP_PSM_T *stp_psm)
 		_stp_psm_dbg_dmp_in(g_stp_psm_dbg, stp_psm->flag.data, __LINE__);
 		_stp_psm_set_state(stp_psm, INACT);
 		STP_PSM_DBG_FUNC("mt_combo_plt_enter_deep_idle++\n");
-#if 0
-		switch (wmt_plat_get_comm_if_type()) {
-		case STP_UART_IF_TX:
-			mt_combo_plt_enter_deep_idle(COMBO_IF_UART);
-			break;
-		case STP_SDIO_IF_TX:
+		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
 			mt_combo_plt_enter_deep_idle(COMBO_IF_BTIF);
-			break;
-		case STP_BTIF_IF_TX:
-			mt_combo_plt_enter_deep_idle(COMBO_IF_MSDC);
-			break;
-		default:
-			break;
+		else {
+			switch (wmt_plat_get_comm_if_type()) {
+			case STP_UART_IF_TX:
+				mt_combo_plt_enter_deep_idle(COMBO_IF_UART);
+				break;
+			case STP_SDIO_IF_TX:
+				mt_combo_plt_enter_deep_idle(COMBO_IF_MSDC);
+				break;
+			default:
+				break;
+			}
 		}
-#endif
 		STP_PSM_DBG_FUNC("mt_combo_plt_enter_deep_idle--\n");
 		STP_PSM_DBG_FUNC("sleep-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
 		osal_wake_unlock(&stp_psm->wake_lock);
@@ -1134,19 +1134,20 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 						 osal_wake_lock_count(&stp_psm->wake_lock));
 
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle++\n");
-#if 0
-				switch (wmt_plat_get_comm_if_type()) {
-				case STP_UART_IF_TX:
-					mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
-					break;
-				case STP_SDIO_IF_TX:
-					mt_combo_plt_exit_deep_idle(COMBO_IF_MSDC);
-					break;
-				default:
+				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
 					mt_combo_plt_exit_deep_idle(COMBO_IF_BTIF);
-					break;
+				else {
+					switch (wmt_plat_get_comm_if_type()) {
+					case STP_UART_IF_TX:
+						mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
+						break;
+					case STP_SDIO_IF_TX:
+						mt_combo_plt_exit_deep_idle(COMBO_IF_MSDC);
+						break;
+					default:
+						break;
+					}
 				}
-#endif
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
 				stp_psm->wmt_notify(WAKEUP);
@@ -1166,19 +1167,20 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 						 osal_wake_lock_count(&stp_psm->wake_lock));
 
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle++\n");
-#if 0
-				switch (wmt_plat_get_comm_if_type()) {
-				case STP_UART_IF_TX:
-					mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
-					break;
-				case STP_SDIO_IF_TX:
-					mt_combo_plt_exit_deep_idle(COMBO_IF_MSDC);
-					break;
-				default:
+				if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC)
 					mt_combo_plt_exit_deep_idle(COMBO_IF_BTIF);
-					break;
+				else {
+					switch (wmt_plat_get_comm_if_type()) {
+					case STP_UART_IF_TX:
+						mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
+						break;
+					case STP_SDIO_IF_TX:
+						mt_combo_plt_exit_deep_idle(COMBO_IF_MSDC);
+						break;
+					default:
+						break;
+					}
 				}
-#endif
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
 				stp_psm->wmt_notify(HOST_AWAKE);
