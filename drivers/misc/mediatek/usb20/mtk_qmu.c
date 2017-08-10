@@ -17,19 +17,29 @@
 #include <linux/list.h>
 #include "musb_qmu.h"
 
-static PGPD Rx_gpd_head[15];
-static PGPD Tx_gpd_head[15];
-static PGPD Rx_gpd_end[15];
-static PGPD Tx_gpd_end[15];
-static PGPD Rx_gpd_last[15];
-static PGPD Tx_gpd_last[15];
-static GPD_R Rx_gpd_List[15];
-static GPD_R Tx_gpd_List[15];
-static u64 Rx_gpd_Offset[15];
-static u64 Tx_gpd_Offset[15];
-static u32 Rx_gpd_free_count[15];
-static u32 Tx_gpd_free_count[15];
+static PGPD Rx_gpd_head[MAX_QMU_EP + 1];
+static PGPD Tx_gpd_head[MAX_QMU_EP + 1];
+static PGPD Rx_gpd_end[MAX_QMU_EP + 1];
+static PGPD Tx_gpd_end[MAX_QMU_EP + 1];
+static PGPD Rx_gpd_last[MAX_QMU_EP + 1];
+static PGPD Tx_gpd_last[MAX_QMU_EP + 1];
+static GPD_R Rx_gpd_List[MAX_QMU_EP + 1];
+static GPD_R Tx_gpd_List[MAX_QMU_EP + 1];
+static u64 Rx_gpd_Offset[MAX_QMU_EP + 1];
+static u64 Tx_gpd_Offset[MAX_QMU_EP + 1];
+static u32 Rx_gpd_free_count[MAX_QMU_EP + 1];
+static u32 Tx_gpd_free_count[MAX_QMU_EP + 1];
+static u32 Rx_gpd_max_count[MAX_QMU_EP + 1];
+static u32 Tx_gpd_max_count[MAX_QMU_EP + 1];
 
+
+u32 qmu_used_gpd_count(u8 isRx, u32 num)
+{
+	if (isRx)
+		return (Rx_gpd_max_count[num] - 1) - Rx_gpd_free_count[num];
+	else
+		return (Tx_gpd_max_count[num] - 1) - Tx_gpd_free_count[num];
+}
 
 u32 qmu_free_gpd_count(u8 isRx, u32 num)
 {
@@ -142,7 +152,7 @@ static void init_gpd_list(u8 isRx, int num, PGPD ptr, PGPD io_ptr, u32 size)
 
 int qmu_init_gpd_pool(struct device *dev)
 {
-	u32 i, size, max_gpd_cnt;
+	u32 i, size;
 	TGPD *ptr, *io_ptr;
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
@@ -150,56 +160,58 @@ int qmu_init_gpd_pool(struct device *dev)
 	if (!mtk_qmu_max_gpd_num)
 		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
 
+	for (i = 1; i < isoc_ep_start_idx; i++)
+		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
+
+	for (i = isoc_ep_start_idx; i <= MAX_QMU_EP; i++) {
+		if (isoc_ep_gpd_count > mtk_qmu_max_gpd_num)
+			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = isoc_ep_gpd_count;
+		else
+			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
+	}
+
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
 		QMU_ERR("ERR!!!, GPD SIZE != %d\n", GPD_SZ);
 
 	for (i = 1; i <= RXQ_NUM; i++) {
-		if (isoc_ep_gpd_customization && i == ISOC_EP_IDX)
-			max_gpd_cnt = isoc_ep_gpd_customization;
-		else
-			max_gpd_cnt = mtk_qmu_max_gpd_num;
 
 		/* Allocate Rx GPD */
-		size = GPD_LEN_ALIGNED * max_gpd_cnt;
+		size = GPD_LEN_ALIGNED * Rx_gpd_max_count[i];
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 		memset(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
-		init_gpd_list(RXQ, i, ptr, io_ptr, max_gpd_cnt);
+		init_gpd_list(RXQ, i, ptr, io_ptr, Rx_gpd_max_count[i]);
 		Rx_gpd_head[i] = ptr;
 		QMU_INFO("ALLOC RX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Rx_gpd_head[i],
 			 io_ptr);
 		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i];
-		Rx_gpd_free_count[i] = max_gpd_cnt - 1; /* one must be for tail */
+		Rx_gpd_free_count[i] = Rx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[i]);
 		gpd_ptr_align(RXQ, i, Rx_gpd_end[i]);
 		QMU_INFO("RQSAR[%d]=%p\n", i, (void *)gpd_virt_to_phys(Rx_gpd_end[i], RXQ, i));
 	}
 
 	for (i = 1; i <= TXQ_NUM; i++) {
-		if (isoc_ep_gpd_customization && i == ISOC_EP_IDX)
-			max_gpd_cnt = isoc_ep_gpd_customization;
-		else
-			max_gpd_cnt = mtk_qmu_max_gpd_num;
 
 		/* Allocate Tx GPD */
-		size = GPD_LEN_ALIGNED * max_gpd_cnt;
+		size = GPD_LEN_ALIGNED * Tx_gpd_max_count[i];
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 		memset(ptr, 0, size);
 		io_ptr = (TGPD *) (dma_handle);
 
-		init_gpd_list(TXQ, i, ptr, io_ptr, max_gpd_cnt);
+		init_gpd_list(TXQ, i, ptr, io_ptr, Tx_gpd_max_count[i]);
 		Tx_gpd_head[i] = ptr;
 		QMU_INFO("ALLOC TX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Tx_gpd_head[i],
 			 io_ptr);
 		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i];
-		Tx_gpd_free_count[i] = max_gpd_cnt - 1; /* one must be for tail */
+		Tx_gpd_free_count[i] = Tx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[i]);
 		gpd_ptr_align(TXQ, i, Tx_gpd_end[i]);
 		QMU_INFO("TQSAR[%d]=%p\n", i, (void *)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
@@ -210,27 +222,23 @@ int qmu_init_gpd_pool(struct device *dev)
 
 void qmu_reset_gpd_pool(u32 ep_num, u8 isRx)
 {
-	u32 size, max_gpd_cnt;
+	u32 size;
 
-	if (isoc_ep_gpd_customization && ep_num == ISOC_EP_IDX)
-		max_gpd_cnt = isoc_ep_gpd_customization;
-	else
-		max_gpd_cnt = mtk_qmu_max_gpd_num;
-
-	size = GPD_LEN_ALIGNED * max_gpd_cnt;
 
 	/* SW reset */
 	if (isRx) {
+		size = GPD_LEN_ALIGNED * Rx_gpd_max_count[ep_num];
 		memset(Rx_gpd_head[ep_num], 0, size);
 		Rx_gpd_end[ep_num] = Rx_gpd_last[ep_num] = Rx_gpd_head[ep_num];
-		Rx_gpd_free_count[ep_num] = max_gpd_cnt - 1; /* one must be for tail */
+		Rx_gpd_free_count[ep_num] = Rx_gpd_max_count[ep_num] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[ep_num]);
 		gpd_ptr_align(isRx, ep_num, Rx_gpd_end[ep_num]);
 
 	} else {
+		size = GPD_LEN_ALIGNED * Tx_gpd_max_count[ep_num];
 		memset(Tx_gpd_head[ep_num], 0, size);
 		Tx_gpd_end[ep_num] = Tx_gpd_last[ep_num] = Tx_gpd_head[ep_num];
-		Tx_gpd_free_count[ep_num] = max_gpd_cnt - 1; /* one must be for tail */
+		Tx_gpd_free_count[ep_num] = Tx_gpd_max_count[ep_num] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[ep_num]);
 		gpd_ptr_align(isRx, ep_num, Tx_gpd_end[ep_num]);
 	}
@@ -240,23 +248,14 @@ void qmu_destroy_gpd_pool(struct device *dev)
 {
 
 	int i;
-	u32 max_gpd_cnt;
 
 	for (i = 1; i <= RXQ_NUM; i++) {
-		if (isoc_ep_gpd_customization && i == ISOC_EP_IDX)
-			max_gpd_cnt = isoc_ep_gpd_customization;
-		else
-			max_gpd_cnt = mtk_qmu_max_gpd_num;
-		dma_free_coherent(dev, GPD_LEN_ALIGNED * max_gpd_cnt, Rx_gpd_head[i],
+		dma_free_coherent(dev, GPD_LEN_ALIGNED * Rx_gpd_max_count[i], Rx_gpd_head[i],
 				  gpd_virt_to_phys(Rx_gpd_head[i], RXQ, i));
 	}
 
 	for (i = 1; i <= TXQ_NUM; i++) {
-		if (isoc_ep_gpd_customization && i == ISOC_EP_IDX)
-			max_gpd_cnt = isoc_ep_gpd_customization;
-		else
-			max_gpd_cnt = mtk_qmu_max_gpd_num;
-		dma_free_coherent(dev, GPD_LEN_ALIGNED * max_gpd_cnt, Tx_gpd_head[i],
+		dma_free_coherent(dev, GPD_LEN_ALIGNED * Tx_gpd_max_count[i], Tx_gpd_head[i],
 				  gpd_virt_to_phys(Tx_gpd_head[i], TXQ, i));
 	}
 }

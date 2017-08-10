@@ -54,7 +54,6 @@ int musb_qmu_init(struct musb *musb)
 		return -1;
 	}
 
-	qmu_isoc_ep = musb->endpoints + ISOC_EP_IDX;
 	return 0;
 }
 
@@ -228,7 +227,6 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 }
 #ifdef MUSB_QMU_SUPPORT_HOST
 
-
 int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *urb)
 {
 	void __iomem        *mbase = musb->mregs;
@@ -337,6 +335,26 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, 0);
 
 			mtk_qmu_resume(hw_ep->epnum, isRx);
+		}
+
+		if (mtk_host_qmu_max_active_isoc_gpd < qmu_used_gpd_count(isRx, hw_ep->epnum))
+			mtk_host_qmu_max_active_isoc_gpd = qmu_used_gpd_count(isRx, hw_ep->epnum);
+
+		if (mtk_host_qmu_max_number_of_pkts < urb->number_of_packets)
+			mtk_host_qmu_max_number_of_pkts = urb->number_of_packets;
+
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				DBG(0, "max_isoc gpd:%d, max_pkts:%d, skip_cnt:%d\n",
+						mtk_host_qmu_max_active_isoc_gpd,
+						mtk_host_qmu_max_number_of_pkts,
+						skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
 		}
 	} else {
 		/* Must be the bulk transfer type */

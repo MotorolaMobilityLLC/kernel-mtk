@@ -72,12 +72,14 @@ typedef struct _GPD_RANGE {
 #ifdef MUSB_QMU_SUPPORT_HOST
 extern int mtk_host_qmu_concurrent;
 extern int mtk_host_qmu_pipe_msk;
+extern int mtk_host_qmu_max_active_isoc_gpd;
+extern int mtk_host_qmu_max_number_of_pkts;
 #endif
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;
 extern struct musb_hw_ep *qmu_isoc_ep;
-#define ISOC_EP_IDX 2
-extern int isoc_ep_gpd_customization;
+extern int isoc_ep_start_idx;
+extern int isoc_ep_gpd_count;
 static inline int mtk_dbg_level(unsigned level)
 {
 	return mtk_qmu_dbg_level >= level;
@@ -351,6 +353,7 @@ extern void mtk_qmu_stop(u8 ep_num, u8 isRx);
 #ifdef MUSB_QMU_SUPPORT_HOST
 #define QMU_RX_SPLIT_BLOCK_SIZE (32*1024)
 #define QMU_RX_SPLIT_THRE	(64*1024)
+extern u32 qmu_used_gpd_count(u8 isRx, u32 num);
 extern u32 qmu_free_gpd_count(u8 isRx, u32 num);
 extern void h_qmu_done_rx(struct musb *musb, u8 ep_num);
 extern void h_qmu_done_tx(struct musb *musb, u8 ep_num);

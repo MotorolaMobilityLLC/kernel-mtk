@@ -2067,15 +2067,27 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 	}
 
 #ifdef MUSB_QMU_SUPPORT_HOST
-	if (isoc_ep_gpd_customization
-			&& qh->type == USB_ENDPOINT_XFER_ISOC
-			&& (musb_ep_get_qh(qmu_isoc_ep, is_in) == NULL)) {
-		hw_end = qmu_isoc_ep->epnum;
-		hw_ep = musb->endpoints + hw_end;
-		idle = 1;
-		qh->mux = 0;
-		DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
-		goto success;
+	if (isoc_ep_gpd_count
+			&& qh->type == USB_ENDPOINT_XFER_ISOC) {
+		for (epnum = isoc_ep_start_idx, hw_ep = musb->endpoints + isoc_ep_start_idx;
+				epnum < musb->nr_endpoints; epnum++, hw_ep++) {
+			/* int  diff; */
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
+			break;
+		}
+
+		if (hw_end) {
+			idle = 1;
+			qh->mux = 0;
+			DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+			goto success;
+		}
 	}
 #endif
 
@@ -2086,8 +2098,10 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 			continue;
 
 #ifdef MUSB_QMU_SUPPORT_HOST
-		if (isoc_ep_gpd_customization && (hw_ep == qmu_isoc_ep))
+		if (isoc_ep_gpd_count && (epnum >= isoc_ep_start_idx)) {
+			epnum = musb->nr_endpoints;
 			continue;
+		}
 #endif
 
 		hw_end = epnum;
@@ -2098,13 +2112,21 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 
 #ifdef MUSB_QMU_SUPPORT_HOST
 	/* grab isoc ep if no other ep is available */
-	if (isoc_ep_gpd_customization
+	if (isoc_ep_gpd_count
 			&& !hw_end
-			&& qh->type != USB_ENDPOINT_XFER_ISOC
-			&& (musb_ep_get_qh(qmu_isoc_ep, is_in) == NULL)) {
-		hw_end = qmu_isoc_ep->epnum;
-		hw_ep = musb->endpoints + hw_end;
-		DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+			&& qh->type != USB_ENDPOINT_XFER_ISOC) {
+		for (epnum = isoc_ep_start_idx, hw_ep = musb->endpoints + isoc_ep_start_idx;
+				epnum < musb->nr_endpoints; epnum++, hw_ep++) {
+			/* int  diff; */
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
+			break;
+		}
 	}
 #endif
 
@@ -2136,8 +2158,8 @@ success:
 				skip_cnt++;
 		}
 #ifdef MUSB_QMU_SUPPORT_HOST
-		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_customization is set*/
-		if (isoc_ep_gpd_customization && qh->type == USB_ENDPOINT_XFER_ISOC  && hw_ep != qmu_isoc_ep)
+		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_count is set*/
+		if (isoc_ep_gpd_count && qh->type == USB_ENDPOINT_XFER_ISOC  && hw_end < isoc_ep_start_idx)
 			qh->is_use_qmu = 0;
 
 		if (qh->is_use_qmu) {

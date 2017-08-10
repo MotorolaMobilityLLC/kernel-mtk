@@ -133,8 +133,12 @@ module_param(kernel_init_done, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
+int mtk_host_qmu_max_active_isoc_gpd;
+int mtk_host_qmu_max_number_of_pkts;
 module_param(mtk_host_qmu_concurrent, int, 0644);
 module_param(mtk_host_qmu_pipe_msk, int, 0644);
+module_param(mtk_host_qmu_max_active_isoc_gpd, int, 0644);
+module_param(mtk_host_qmu_max_number_of_pkts, int, 0644);
 #endif
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
@@ -142,10 +146,12 @@ u32 dma_burst_setting, qmu_ioc_setting;
 struct musb_hw_ep *qmu_isoc_ep;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
-int isoc_ep_gpd_customization;
+int isoc_ep_start_idx = 6;
+int isoc_ep_gpd_count = 260;
 module_param(mtk_qmu_dbg_level, int, 0644);
 module_param(mtk_qmu_max_gpd_num, int, 0644);
-module_param(isoc_ep_gpd_customization, int, 0644);
+module_param(isoc_ep_start_idx, int, 0644);
+module_param(isoc_ep_gpd_count, int, 0644);
 #ifdef QMU_TASKLET
 int qmu_tasklet = 1;
 module_param(qmu_tasklet, int, 0644);
