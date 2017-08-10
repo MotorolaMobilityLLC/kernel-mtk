@@ -380,6 +380,11 @@ static int mtk_i2c_set_speed(struct mtk_i2c *i2c, unsigned int parent_clk,
 	return 0;
 }
 
+static inline u32 mtk_i2c_set_4g_mode(dma_addr_t addr)
+{
+	return (addr & BIT_ULL(32)) ? I2C_DMA_4G_MODE : I2C_DMA_CLR_FLAG;
+}
+
 static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			       int num, int left_num)
 {
@@ -387,6 +392,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 	u16 start_reg;
 	u16 control_reg;
 	u16 restart_flag = 0;
+	u32 reg_4g_mode;
 	dma_addr_t rpaddr = 0;
 	dma_addr_t wpaddr = 0;
 	int ret;
@@ -436,8 +442,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			writew((msgs + 1)->len, i2c->base +
 			       OFFSET_TRANSFER_LEN_AUX);
 		} else {
-		writew(msgs->len | ((msgs + 1)->len) << 8,
-		       i2c->base + OFFSET_TRANSFER_LEN);
+			writew(msgs->len | ((msgs + 1)->len) << 8,
+			       i2c->base + OFFSET_TRANSFER_LEN);
 		}
 		writew(I2C_WRRD_TRANAC_VALUE, i2c->base + OFFSET_TRANSAC_LEN);
 	} else {
@@ -455,10 +461,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			return -ENOMEM;
 
 		if (i2c->dev_comp->support_33bits) {
-			if (rpaddr & 0x100000000ULL)
-				writel(I2C_DMA_4G_MODE, i2c->pdmabase + OFFSET_RX_4G_MODE);
-			else
-				writel(I2C_DMA_CLR_FLAG, i2c->pdmabase + OFFSET_RX_4G_MODE);
+			reg_4g_mode = mtk_i2c_set_4g_mode(rpaddr);
+			writel(reg_4g_mode, i2c->pdmabase + OFFSET_RX_4G_MODE);
 		}
 
 		writel((u32)rpaddr, i2c->pdmabase + OFFSET_RX_MEM_ADDR);
@@ -472,10 +476,8 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 			return -ENOMEM;
 
 		if (i2c->dev_comp->support_33bits) {
-			if (wpaddr & 0x100000000ULL)
-				writel(I2C_DMA_4G_MODE, i2c->pdmabase + OFFSET_TX_4G_MODE);
-			else
-				writel(I2C_DMA_CLR_FLAG, i2c->pdmabase + OFFSET_TX_4G_MODE);
+			reg_4g_mode = mtk_i2c_set_4g_mode(wpaddr);
+			writel(reg_4g_mode, i2c->pdmabase + OFFSET_TX_4G_MODE);
 		}
 
 		writel((u32)wpaddr, i2c->pdmabase + OFFSET_TX_MEM_ADDR);
@@ -497,15 +499,11 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 		}
 
 		if (i2c->dev_comp->support_33bits) {
-			if (wpaddr & 0x100000000ULL)
-				writel(I2C_DMA_4G_MODE, i2c->pdmabase + OFFSET_TX_4G_MODE);
-			else
-				writel(I2C_DMA_CLR_FLAG, i2c->pdmabase + OFFSET_TX_4G_MODE);
+			reg_4g_mode = mtk_i2c_set_4g_mode(wpaddr);
+			writel(reg_4g_mode, i2c->pdmabase + OFFSET_TX_4G_MODE);
 
-			if (rpaddr & 0x100000000ULL)
-				writel(I2C_DMA_4G_MODE, i2c->pdmabase + OFFSET_RX_4G_MODE);
-			else
-				writel(I2C_DMA_CLR_FLAG, i2c->pdmabase + OFFSET_RX_4G_MODE);
+			reg_4g_mode = mtk_i2c_set_4g_mode(rpaddr);
+			writel(reg_4g_mode, i2c->pdmabase + OFFSET_RX_4G_MODE);
 		}
 
 		writel((u32)wpaddr, i2c->pdmabase + OFFSET_TX_MEM_ADDR);
@@ -777,9 +775,10 @@ static int mtk_i2c_probe(struct platform_device *pdev)
 	}
 
 	if (i2c->dev_comp->support_33bits) {
-		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(33))) {
+		ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(33));
+		if (ret) {
 			dev_err(&pdev->dev, "dma_set_mask return error.\n");
-			return -EINVAL;
+			return ret;
 		}
 	}
 
