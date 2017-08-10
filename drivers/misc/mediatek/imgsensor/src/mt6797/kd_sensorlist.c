@@ -2807,10 +2807,11 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         }
         break;
      case SENSOR_FEATURE_SET_SENSOR_SYNC:    /* Update new sensor exposure time and gain to keep */
-        if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
-         PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
-         return -EFAULT;
-    }
+	if (copy_from_user((void *)pFeaturePara, (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
+		kfree(pFeaturePara);
+		PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+		return -EFAULT;
+	}
     /* keep the information to wait Vsync synchronize */
     pSensorSyncInfo = (ACDK_KD_SENSOR_SYNC_STRUCT *)pFeaturePara;
     spin_lock(&kdsensor_drv_lock);
@@ -2823,6 +2824,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     g_NewSensorExpGain.uSensorExpDelayFrame = pSensorSyncInfo->uSensorExpDelayFrame;
     g_NewSensorExpGain.uSensorGainDelayFrame = pSensorSyncInfo->uSensorGainDelayFrame;
     g_NewSensorExpGain.uISPGainDelayFrame = pSensorSyncInfo->uISPGainDelayFrame;
+	spin_unlock(&kdsensor_drv_lock);
     /* AE smooth not change shutter to speed up */
     if ((0 == g_NewSensorExpGain.u2SensorNewExpTime) || (0xFFFF == g_NewSensorExpGain.u2SensorNewExpTime)) {
         g_NewSensorExpGain.uSensorExpDelayFrame = 0xFF;
