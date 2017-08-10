@@ -696,6 +696,10 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				}
 				if (0 == (own_fail_counter % 50)) {
 					STPSDIO_ERR_FUNC("set OWN to driver side error!\n");
+					wmt_lib_read_fw_cpupcr(5, 1, 1);
+					mtk_wcn_hif_sdio_readl(clt_ctx, CCIR, &val);
+					STPSDIO_INFO_FUNC("read CCIR value(0x%x)\n", val);
+					val = 0;
 					/*trigger whole chip reset by send fake coredump content */
 					if (0 == own_fail_counter)
 						stp_sdio_issue_fake_coredump
@@ -897,6 +901,10 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 #endif /* COHEC_00006052 */
 			if (iRet) {
 				STPSDIO_ERR_FUNC("set firmware own! (sleeping) fail\n");
+					wmt_lib_read_fw_cpupcr(5, 1, 1);
+					mtk_wcn_hif_sdio_readl(clt_ctx, CCIR, &val);
+					STPSDIO_INFO_FUNC("read CCIR value(0x%x)\n", val);
+					val = 0;
 			} else {
 				iRet = stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx,
 						CHLPCR, &chlcpr_value, 0);
@@ -918,6 +926,10 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 						STPSDIO_ERR_FUNC("set firmware own! (sleeping) fail, set CLR BACK\n");
 						osal_ftrace_print("%s|set firmware own fail, set CLR BACK\n",
 								__func__);
+						wmt_lib_read_fw_cpupcr(5, 1, 1);
+						mtk_wcn_hif_sdio_readl(clt_ctx, CCIR, &val);
+						STPSDIO_INFO_FUNC("read CCIR value(0x%x)\n", val);
+						val = 0;
 						/* if set firmware own not successful (possibly pending interrupts), */
 						/* indicate an own clear event */
 /* [COHEC_00006052] SW work-around solution:
