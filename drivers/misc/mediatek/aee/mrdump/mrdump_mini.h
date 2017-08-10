@@ -12,6 +12,10 @@
  */
 
 #if !defined(__MRDUMP_MINI_H__)
+#ifdef CONFIG_MODULES
+static char modules_info_buf[MODULES_INFO_BUF_SIZE];
+extern int save_modules(char *mbuf, int mbufsize);
+#endif
 int mrdump_mini_init(void);
 extern raw_spinlock_t logbuf_lock;
 extern unsigned long *stack_trace;
