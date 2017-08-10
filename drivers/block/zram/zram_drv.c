@@ -779,7 +779,7 @@ static void zram_free_page(struct zram *zram, size_t index)
 			spin_unlock(&zram_node_mutex);
 		}
 	} else if (!zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE))
-		pr_err("[ZSM]ERROR! try to free noexist ZSM node index %lx\n", (unsigned long)index);
+		pr_err("[ZSM]ERROR! try to free noexist ZSM node index %zu\n", (unsigned long)index);
 	if (ret == 0) {
 		zs_free(meta->mem_pool, handle);
 		atomic64_sub(zram_get_obj_size(meta, index), &zram->stats.compr_data_size);
