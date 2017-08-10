@@ -41,7 +41,6 @@
 #include <mt-plat/partition.h>
 
 #define DRV_NAME_MISC			"otp"
-#define PROCNAME				 "driver/otp"
 
 #ifndef CONFIG_MTK_EMMC_SUPPORT_OTP
 #define CONFIG_MTK_EMMC_SUPPORT_OTP
@@ -84,20 +83,13 @@ unsigned int emmc_get_wp_size(void)
 	}
 
 	pr_debug("[%s:%d]mmc_host = 0x%p\n", __func__, __LINE__, host_ctl->mmc);
-
-	mmc_claim_host(host_ctl->mmc);
-
-	/* pr_debug("[%s:%d]claim host done!\n", __func__, __LINE__);
-	 * pr_debug("claim_status=%d, claim_cnt=%d, claimer=0x%x, current=0x%x\n",
-	 *	host_ctl->mmc->claimed, host_ctl->mmc->claim_cnt, host_ctl->mmc->claimer
-	 *	, current);
-	 */
-
 	/*
 	 * As the ext_csd is so large and mostly unused, we don't store the
 	 * raw block in mmc_card, so re-get it here.
 	 */
+	mmc_claim_host(host_ctl->mmc);
 	mmc_send_ext_csd(host_ctl->mmc->card, l_ext_csd);
+	mmc_release_host(host_ctl->mmc);
 
 #if EMMC_OTP_DEBUG
 	{
@@ -110,9 +102,6 @@ unsigned int emmc_get_wp_size(void)
 		}
 	}
 #endif
-
-	mmc_release_host(host_ctl->mmc);
-
 	/* otp length equal to one write protect group size */
 	if (l_ext_csd[EXT_CSD_ERASE_GROUP_DEF] & 0x1) {
 		/* use high-capacity erase uint size, hc erase timeout, hc wp size,
@@ -136,8 +125,6 @@ unsigned int emmc_get_wp_size(void)
 unsigned int emmc_otp_start(void)
 {
 	unsigned int l_addr;
-/*	unsigned int l_offset;*/	  /* for emmc combo reserved */
-/*	unsigned int l_reserve;*/
 	struct msdc_host *host_ctl;
 	struct hd_struct *lp_hd_struct = NULL;
 
@@ -368,38 +355,6 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 	return l_ret;
 }
 
-/*
-static int emmc_otp_proc_read(char *page, char **start, off_t off,
-	int count, int *eof, void *data)
-{
-	int len;
-	if (off > 0)
-	{
-		return 0;
-	}
-	return len;
-}
-
-static int emmc_otp_proc_write(struct file* file, const char* buffer,
-	unsigned long count, void *data)
-{
-	char buf[16];
-	int len = count;
-
-	if (len >= sizeof(buf))
-	{
-	len = sizeof(buf) - 1;
-	}
-
-	if (copy_from_user(buf, buffer, len))
-	{
-	return -EFAULT;
-	}
-
-	return len;
-}
-*/
-
 static int mt_otp_open(struct inode *inode, struct file *filp)
 {
 	pr_debug("[%s]:(MAJOR)%d:(MINOR)%d\n",
@@ -425,7 +380,6 @@ static int mt_otp_access(unsigned int access_type, unsigned int offset, void *bu
 	int Status = 0;
 
 	char *p_D_Buff;
-	/* char S_Buff[64]; */
 
 	p_D_Buff = kmalloc(l_block_size, GFP_KERNEL);
 
@@ -519,21 +473,11 @@ static long mt_otp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	void __user *uarg = (void __user *)arg;
 	struct otp_ctl otpctl;
 
-	/* Lock */
-	/* spin_lock(&g_emmc_otp_lock); */
-
 	if (copy_from_user(&otpctl, uarg, sizeof(struct otp_ctl))) {
 		ret = -EFAULT;
 		goto exit;
 	}
 
-	/*
-	   if(false == g_bInitDone)
-	   {
-	   pr_err("ERROR: EMMC Flash Not initialized !!\n");
-	   ret = -EFAULT;
-	   goto exit;
-	   } */
 	pbuf = kmalloc_array(otpctl.Length, sizeof(char), GFP_KERNEL);
 
 	if (!pbuf) {
@@ -585,7 +529,6 @@ static long mt_otp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  error:
 	kfree(pbuf);
  exit:
-	/* spin_unlock(&g_emmc_otp_lock); */
 	return ret;
 }
 
@@ -636,8 +579,6 @@ static long mt_otp_ioctl_compat(struct file *file, unsigned int cmd, unsigned lo
 	struct compat_otp_ctl *arg32;
 	struct otp_ctl *arg64;
 
-	/* void __user *uarg = compat_ptr(arg); */
-
 	if (!file->f_op || !file->f_op->unlocked_ioctl)
 		return -ENOTTY;
 
@@ -649,24 +590,19 @@ static long mt_otp_ioctl_compat(struct file *file, unsigned int cmd, unsigned lo
 	ret = compat_get_otp_ctl_allocation(arg32, arg64);
 	if (ret)
 		return ret;
-	/* Lock */
-	/* spin_lock(&g_emmc_otp_lock); */
 
 	switch (cmd) {
 	case COMPAT_EMMC_OTP_GET_LENGTH:
 		ret = mt_otp_ioctl(file, EMMC_OTP_GET_LENGTH, (unsigned long)arg64);
-		/* pr_err("OTP IOCTL: COMPAT_EMMC_OTP_GET_LENGTH\n"); */
 		if (ret)
 			pr_err("EMMC_OTP_GET_LENGTH unlocked_ioctl failed.");
 		break;
 	case COMPAT_EMMC_OTP_READ:
-		/* pr_err("OTP IOCTL: COMPAT_EMMC_OTP_READ\n"); */
 		ret = mt_otp_ioctl(file, EMMC_OTP_READ, (unsigned long)arg64);
 		if (ret)
 			pr_err("EMMC_OTP_READ unlocked_ioctl failed.");
 		break;
 	case COMPAT_EMMC_OTP_WRITE:
-		/* pr_err("OTP IOCTL: COMPAT_EMMC_OTP_WRITE\n"); */
 		ret = mt_otp_ioctl(file, EMMC_OTP_WRITE, (unsigned long)arg64);
 		if (ret)
 			pr_err("EMMC_OTP_WRITE unlocked_ioctl failed.");
@@ -695,69 +631,21 @@ static struct miscdevice emmc_otp_dev = {
 	.fops = &emmc_otp_fops,
 };
 
-
-
-static int emmc_otp_probe(struct platform_device *pdev)
-{
-	int ret = 0;
-
-	pr_debug("in emmc otp probe function\n");
-
-	return ret;
-}
-
-static int emmc_otp_remove(struct platform_device *pdev)
-{
-	return 0;
-}
-
-static struct platform_driver emmc_otp_driver = {
-	.probe = emmc_otp_probe,
-	.remove = emmc_otp_remove,
-
-	.driver = {
-		   .name = DRV_NAME_MISC,
-		   .owner = THIS_MODULE,
-		   },
-};
-
 static int __init emmc_otp_init(void)
 {
 	int err = 0;
 
-	pr_debug("MediaTek EMMC OTP misc driver init\n");
-
-	/* spin_lock_init(&g_emmc_otp_lock); */
-
 	g_emmc_otp_func.query_length = emmc_otp_query_length;
 	g_emmc_otp_func.read		 = emmc_otp_read;
 	g_emmc_otp_func.write		= emmc_otp_write;
-#if 0
-#ifndef USER_BUILD_KERNEL
-	entry = create_proc_entry(PROCNAME, 0660, NULL);
-#else
-	entry = create_proc_entry(PROCNAME, 0440, NULL);
-#endif
-
-	if (entry == NULL) {
-		pr_err("emmc OTP: unable to create /proc entry\n");
-		return -ENOMEM;
-	}
-
-	entry->read_proc = emmc_otp_proc_read;
-	entry->write_proc = emmc_otp_proc_write;
-	/* entry->owner = THIS_MODULE; */
-#endif
-	platform_driver_register(&emmc_otp_driver);
 
 	pr_debug("OTP: register EMMC OTP device ...\n");
 	err = misc_register(&emmc_otp_dev);
 	if (unlikely(err)) {
 		pr_err("OTP: failed to register EMMC OTP device!\n");
-		return err;
 	}
 
-	return 0;
+	return err;
 }
 
 static void __exit emmc_otp_exit(void)
@@ -769,11 +657,7 @@ static void __exit emmc_otp_exit(void)
 	g_emmc_otp_func.query_length = NULL;
 	g_emmc_otp_func.read		 = NULL;
 	g_emmc_otp_func.write		= NULL;
-
-	platform_driver_unregister(&emmc_otp_driver);
-	remove_proc_entry(PROCNAME, NULL);
 }
-
 
 module_init(emmc_otp_init);
 module_exit(emmc_otp_exit);

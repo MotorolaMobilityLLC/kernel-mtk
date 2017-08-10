@@ -1422,6 +1422,9 @@ do { \
 			retry--; mdelay(1); cnt = backup; \
 		} \
 	} \
+	if (retry == 0) { \
+		msdc_dump_info(id); \
+	} \
 	WARN_ON(retry == 0); \
 } while (0)
 

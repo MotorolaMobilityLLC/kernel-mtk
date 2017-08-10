@@ -6652,7 +6652,9 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	struct mmc_data *data;
 	struct mmc_command *stop = NULL;
 	struct mmc_command *sbc = NULL;
+	/*if cmd pin pull-up/down for a long time,please enable this as you want*/
 	u8 cmd13_retry = 0;
+	u8 max_cmd13_retry = 0;
 	/* === for sdio profile === */
 	/* CCJ fix */
 #if 0
@@ -6721,11 +6723,11 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 		/* cmd13 timeout, retry with delay and disable log, mas retry time 1s*/
 		if (cmd->opcode == 13) {
 			sd_register_zone[host->id] = 0;
-			mdelay(50);
-			if (cmd13_retry++ >= 20) {
-				ERR_MSG("CMD13 timeout out of limit.");
+			if (cmd13_retry++ >= max_cmd13_retry) {
+				ERR_MSG("CMD13 timeout out of limit(%d).", max_cmd13_retry);
 				goto out;
 			}
+			mdelay(50);
 		/* read/write command timeout, power cycle and retry */
 		} else if ((sbc && (sbc->error == (unsigned int)-ETIMEDOUT)) ||
 			(stop && (stop->error == (unsigned int)-ETIMEDOUT)) ||
@@ -6887,7 +6889,7 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	host->sw_timeout = 0;
 
  out:
-	sd_register_zone[host->id] = 1;
+	sd_register_zone[host->id] = 1; /* for cmd13 retry*/
 	msdc_reset_crc_tune_counter(host, ALL_TUNE_CNT);
 #ifdef MTK_MSDC_USE_CACHE
 	if (g_flush_error_happend && (host->hw->host_function == MSDC_EMMC)
@@ -7391,26 +7393,21 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		}
 		if (ios->timing == MMC_TIMING_MMC_DDR52)
 			msdc_set_mclk(host, ios->timing, ios->clock);
-#ifdef CONFIG_MMC_FFU
-		if ((host->hw->host_function == MSDC_EMMC) &&
-		    ((ios->timing == MMC_TIMING_LEGACY) && (ios->clock <= 25000000)))
-			emmc_clear_timing();
-#endif
 
 		host->timing = ios->timing;
 	}
-	/* reserve for FFU */
-#ifdef CONFIG_MMC_FFU
-	if ((ios->timing != MSDC_STATE_HS400) &&
-		(host->hw->host_function == MSDC_EMMC))
-		msdc_clock_src[host->id] = MSDC50_CLKSRC_200MHZ;
-#endif
+
 	if (msdc_clock_src[host->id] != host->hw->clk_src) {
 		host->hw->clk_src = msdc_clock_src[host->id];
 		msdc_select_clksrc(host, host->hw->clk_src);
 	}
 
 	if (host->mclk != ios->clock) {
+#ifdef CONFIG_MMC_FFU
+		if ((host->hw->host_function == MSDC_EMMC) && (ios->clock <= 25000000)
+			&& (host->mclk > ios->clock))
+			emmc_clear_timing();
+#endif
 		msdc_set_mclk(host, ios->timing, ios->clock);
 		host->mclk = ios->clock;
 	}
@@ -7779,32 +7776,36 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #endif
 		if (intsts & MSDC_INT_XFER_COMPL) {
 			if ((stop != NULL) && (host->autocmd & MSDC_AUTOCMD12)) {
-				CMD_MSG("CMD<12> @ addr<0x%08x> resp<0x%.8x>",
-					cmd_arg, sdr_read32(SDC_ACMD_RESP));
+				CMD_MSG("CMD<12> resp<0x%.8x> @ addr<0x%08x> blks<0x%x>",
+					sdr_read32(SDC_ACMD_RESP), cmd_arg, data->blocks);
 			}
 			goto done;
 		}
+
 		if (intsts & datsts) {
-			/* do basic reset, or stop command will sdc_busy */
-			if (intsts & MSDC_INT_DATTMO)
-				msdc_dump_info(host->id);
-			if (host->dma_xfer)
-				msdc_reset(host->id);
-			else
-				msdc_reset_hw(host->id);
-
-			atomic_set(&host->abort, 1);	/* For PIO mode exit */
-
+			/*for sd card: ACMD51/ACMD13/CMD6 return error directly*/
 			if (intsts & MSDC_INT_DATTMO) {
 				data->error = (unsigned int)-ETIMEDOUT;
 				ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATTMO",
 					host->mrq->cmd->opcode, host->mrq->cmd->arg);
+				if ((host->mrq->cmd->opcode == SD_APP_SEND_SCR) ||
+					(host->mrq->cmd->opcode == SD_APP_SD_STATUS) ||
+					(host->mrq->cmd->opcode == SD_SWITCH))
+					goto done;
+				msdc_dump_info(host->id);
 			} else if (intsts & MSDC_INT_DATCRCERR) {
 				data->error = (unsigned int)-EIO;
 				/*ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR,SDC_DCRC_STS<0x%x>",
 					host->mrq->cmd->opcode,	host->mrq->cmd->arg,
 					sdr_read32(SDC_DCRC_STS));*/
 			}
+			/* do basic reset, or stop command will sdc_busy */
+			if (host->dma_xfer)
+				msdc_reset(host->id);
+			else
+				msdc_reset_hw(host->id);
+
+			atomic_set(&host->abort, 1);	/* For PIO mode exit */
 			goto tune;
 		}
 		if ((stop != NULL) && (host->autocmd & MSDC_AUTOCMD12)

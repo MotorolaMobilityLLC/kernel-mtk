@@ -2060,7 +2060,7 @@ static int simp_emmc_dump_write(unsigned char *buf, unsigned int len,
 	unsigned char *l_buf;
 	unsigned int ret = 1;	/* != 0 means error occur */
 	int err = 0;
-	static int force;/*for dump info*/
+	static int force;
 
 	if (0 != len % 512) {
 		/* emmc always in slot0 */
