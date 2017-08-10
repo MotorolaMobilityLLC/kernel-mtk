@@ -318,7 +318,7 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_0[] = {
 /* MT6750N */
 static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_e2_1[] = {
 	GPUOP(GPU_DVFS_FREQ4, GPU_DVFS_VOLT1, 0),
-	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT1, 1),
+	GPUOP(GPU_DVFS_FREQ8, GPU_DVFS_VOLT3, 1),
 };
 
 /* Segment3: 350M */
