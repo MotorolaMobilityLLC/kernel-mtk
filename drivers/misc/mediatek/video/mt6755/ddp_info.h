@@ -21,10 +21,6 @@
 #include "ddp_ovl.h"
 #include <disp_session.h>
 
-#define TOTAL_OVL_LAYER_NUM		(12)
-#define OVL_NUM				(4)
-#define PRIMARY_THREE_OVL_CASCADE
-
 #define _UFMT_ID_SHIFT			0
 #define _UFMT_ID_WIDTH			8
 #define _UFMT_RGBSWAP_SHIFT		(_UFMT_ID_SHIFT+_UFMT_ID_WIDTH)

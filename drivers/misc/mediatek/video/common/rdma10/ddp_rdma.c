@@ -15,7 +15,13 @@
 
 #include <linux/delay.h>
 #include "m4u.h"
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#include "disp_debug.h"
+#include "disp_log.h"
+#else
+#include "disp_drv_log.h"
 #include "ddp_log.h"
+#endif
 #include "ddp_reg.h"
 #include "ddp_matrix_para.h"
 #include "ddp_dump.h"
@@ -39,7 +45,7 @@ unsigned int rdma_index(DISP_MODULE_ENUM module)
 		idx = 2;
 		break;
 	default:
-		DDPERR("invalid rdma module=%d\n", module);	/* invalid module */
+		DISPERR("invalid rdma module=%d\n", module);	/* invalid module */
 		ASSERT(0);
 	}
 	ASSERT((idx >= 0) && (idx < RDMA_INSTANCES));

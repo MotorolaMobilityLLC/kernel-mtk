@@ -43,8 +43,11 @@
 #include "ddp_od_reg.h"
 #include "ddp_od_table.h"
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#include <disp_debug.h>
+#include <disp_log.h>
 #else
+#include <disp_drv_log.h>
 #include <ddp_log.h>
 #endif
 
@@ -1106,7 +1109,7 @@ static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_OD, "od");
-	DDPMSG("od_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPMSG("od_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #else
 	ddp_clk_enable(DISP0_DISP_OD);
 #endif /* CONFIG_MTK_CLKMGR */
@@ -1138,7 +1141,7 @@ static int od_clock_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_OD , "od");
-	DDPMSG("od_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPMSG("od_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #else
 	ddp_clk_disable(DISP0_DISP_OD);
 #endif /* CONFIG_MTK_CLKMGR */

@@ -21,7 +21,7 @@
 #include <linux/wait.h>
 #include <linux/types.h>
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
 #include "disp_debug.h"
 #else
 #include "debug.h"

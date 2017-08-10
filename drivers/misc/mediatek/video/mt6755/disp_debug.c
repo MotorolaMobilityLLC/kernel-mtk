@@ -48,7 +48,6 @@
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
 
-#include "ddp_ovl.h"
 #include "ddp_path.h"
 #include "ddp_reg.h"
 #include "disp_debug.h"

@@ -12,7 +12,13 @@
  */
 
 #define LOG_TAG "WDMA"
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
+#include "disp_debug.h"
+#include "disp_log.h"
+#else
+#include "disp_drv_log.h"
 #include "ddp_log.h"
+#endif
 #include <linux/delay.h>
 #include "ddp_reg.h"
 #include "ddp_matrix_para.h"
@@ -37,7 +43,7 @@ unsigned int wdma_index(DISP_MODULE_ENUM module)
 		idx = 1;
 		break;
 	default:
-		DDPERR("[DDP] error: invalid wdma module=%d\n", module);	/* invalid module */
+		DISPERR("[DDP] error: invalid wdma module=%d\n", module);	/* invalid module */
 		ASSERT(0);
 	}
 	return idx;
@@ -66,7 +72,7 @@ int wdma_reset(DISP_MODULE_ENUM module, void *handle)
 			delay_cnt++;
 			udelay(10);
 			if (delay_cnt > 2000) {
-				DDPERR("wdma%d reset timeout!\n", idx);
+				DISPERR("wdma%d reset timeout!\n", idx);
 				break;
 			}
 		}
