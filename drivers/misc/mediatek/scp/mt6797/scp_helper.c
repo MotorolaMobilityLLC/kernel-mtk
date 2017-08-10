@@ -727,7 +727,7 @@ static void scp_reserve_memory_ioremap(void)
 		BUG();
 	}
 	accumlate_memory_size = 0;
-	scp_mem_base_virt = (phys_addr_t)ioremap_nocache(scp_mem_base_phys, scp_mem_size);
+	scp_mem_base_virt = (phys_addr_t)ioremap_wc(scp_mem_base_phys, scp_mem_size);
 	pr_debug("[SCP]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)scp_mem_base_virt,
 		(phys_addr_t)scp_mem_base_virt + (phys_addr_t)scp_mem_size, scp_mem_size);
 	for (id = 0; id < NUMS_MEM_ID; id++) {
