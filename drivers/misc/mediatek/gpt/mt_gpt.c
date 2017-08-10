@@ -24,7 +24,7 @@
 #include <linux/clocksource.h>
 
 #include <linux/io.h>
-#include <asm-generic/uaccess.h>
+#include <linux/uaccess.h>
 
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -504,10 +504,14 @@ static ssize_t gpt_stat_read(struct file *file, char __user *buf, size_t size, l
 	char *p = NULL;
 	char *page = NULL;
 	int len = 0;
+	int copy_len = 0;
 	int i = 0;
 	int in_use;
 	int is_counting;
 	int err = 0;
+
+	if (!buf)
+		return -EFAULT;
 
 	page = kmalloc(PAGE_SIZE, GFP_KERNEL);
 	if (!page) {
@@ -525,20 +529,25 @@ static ssize_t gpt_stat_read(struct file *file, char __user *buf, size_t size, l
 			     in_use ? "Y" : "N", is_counting ? "Y" : "N");
 	}
 	len = p - page;
+	copy_len = size;
 
 	if (*ppos >= len) {
 		kfree(page);
 		return 0;
 	}
 
-	err = copy_to_user(buf, (char *)page, len);
-	*ppos += len;
+	if ((size + *ppos) > len)
+		copy_len = len - *ppos;
+
+	err = copy_to_user(buf, page + *ppos, copy_len);
 	if (err) {
 		kfree(page);
-		return err;
+		return -EFAULT;
 	}
+
+	*ppos += copy_len;
 	kfree(page);
-	return len;
+	return copy_len;
 }
 
 static const struct file_operations xgpt_cmd_proc_fops = {
