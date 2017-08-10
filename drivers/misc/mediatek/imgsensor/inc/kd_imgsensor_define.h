@@ -209,6 +209,7 @@ typedef enum {
 	SENSOR_FEATURE_SET_SHUTTER_BUF_MODE,
 	SENSOR_FEATURE_SET_GAIN_BUF_MODE,
 	SENSOR_FEATURE_SET_I2C_BUF_MODE_EN,
+	SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY,
 	SENSOR_FEATURE_MAX
 } ACDK_SENSOR_FEATURE_ENUM;
 
@@ -425,7 +426,8 @@ typedef struct {
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
-	  3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode*/
+	 * 3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode
+         */
 	MUINT8 PDAF_Support;
 	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
@@ -521,8 +523,9 @@ typedef struct {
 	MUINT16 IHDR_LE_FirstLine;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
-/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
-3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode*/
+	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
+	3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode
+	*/
 	MUINT8 PDAF_Support;
 	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
@@ -702,7 +705,7 @@ typedef struct {
 	MUINT16 VC_PixelNum;
 	MUINT16 ModeSelect;   /* 0: auto mode, 1:direct mode  */
 	MUINT16 EXPO_Ratio;   /* 1/1, 1/2, 1/4, 1/8 */
-	MUINT16 ODValue;      /* OD Vaule */
+	MUINT16 ODValue;      /* OD Value */
 	MUINT16 RG_STATSMODE; /* STATS divistion mdoe 0: 16x16, 1:8x8, 2:4x4, 3:1x1*/
 	MUINT16 VC0_ID;
 	MUINT16 VC0_DataType;
