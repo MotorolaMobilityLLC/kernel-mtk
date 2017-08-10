@@ -139,9 +139,9 @@ int ddp_set_mipi26m(int en)
 	if (ret)
 		return -1;
 	if (en)
-		clk_setl(AP_PLL_CON0, 1 << 6);
+		clk_setl(AP_PLL_CON0, 1 << 12);
 	else
-		clk_clrl(AP_PLL_CON0, 1 << 6);
+		clk_clrl(AP_PLL_CON0, 1 << 12);
 	return ret;
 }
 
