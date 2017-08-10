@@ -75,6 +75,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define KERNEL_ID			0xffffffffL
 #define ISR_ID				0xfffffffdL
 
+extern void __inner_flush_dcache_all(void);
+
 /*************************************************************************/ /*!
 @Function       OSClockns64
 @Description    This function returns the number of ticks since system boot
