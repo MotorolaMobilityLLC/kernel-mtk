@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -12,10 +12,15 @@
  * GNU General Public License for more details.
  */
 
-/*for socket*/
+#ifndef __FP_VENDOR_H__
+#define __FP_VENDOR_H__
 
-#define fp_buffer_size 2048
+enum {
+	FP_VENDOR_INVALID = 0,
+	FPC_VENDOR,
+	GOODIX_VENDOR,
+};
 
-#define ARGS_BLOCK_SIZE 1024
+int get_fp_vendor(void);
 
-int send_fp_command(unsigned long share_memory_size);
+#endif  /*__FP_VENDOR_H__*/

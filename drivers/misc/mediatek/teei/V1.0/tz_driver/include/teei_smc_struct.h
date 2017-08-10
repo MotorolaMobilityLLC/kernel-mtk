@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
+#ifndef __TEEI_SMC_STRUCT_H__
+#define __TEEI_SMC_STRUCT_H__
 
 #include <linux/semaphore.h>
 #define TEE_NAME_SIZE   (255)
@@ -57,3 +60,4 @@ struct teei_session {
 	struct list_head shared_mem_list;       /* link list for the share memory of this session */
 };
 
+#endif

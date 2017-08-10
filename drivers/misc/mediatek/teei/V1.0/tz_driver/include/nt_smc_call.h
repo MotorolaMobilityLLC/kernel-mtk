@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -12,6 +12,15 @@
  * GNU General Public License for more details.
  */
 
+/***********************************************************
+ *  @ file : smc_call.h
+ *  @ brief :  monitor call interface for user,
+ * this implement  is updated to SMC Calling Convention doc
+ * from arm ,Document number: ARM DEN 0028A 2013
+ *  @ author: luocl
+ *  @ author: Steven Meng
+ *  @ copyright microtrust  Corporation
+ *************************************************************/
 #ifndef SMC_CALL_H_
 #define SMC_CALL_H_
 
@@ -113,7 +122,10 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM      \
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+#define N_GET_SE_OS_STATE     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
+#define N_GET_T_FP_DEVICE_ID     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 11)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -134,6 +146,17 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
+
+#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#define NT_I2C_REE	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 10)
+#define NT_I2C_TEE	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE3, 11)
+#endif
+
+
 
 /*For nt side Fast Call*/
 #define N_SWITCH_TO_T_OS_STAGE2_32	\
@@ -163,8 +186,11 @@
 #define N_SWITCH_CORE_32 \
 	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 #define N_GET_NON_IRQ_NUM_32      \
-	MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
-
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 9)
+#define N_GET_SE_OS_STATE_32    \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 10)
+#define N_GET_T_FP_DEVICE_ID_32     \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE2, 11)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T_32		\
@@ -185,7 +211,10 @@
 	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ_32	\
 	MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
-
+#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI_32	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#endif
 
 /* ////////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 #ifdef CONFIG_ARM64
@@ -196,22 +225,24 @@ static inline void n_init_t_boot_stage1(
 	uint64_t *p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
-//	temp[2] = p2;
+	/* temp[2] = p2; */
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 
@@ -220,33 +251,35 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	uint64_t temp[3];
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"mov x1, #0\n\t"
-	"mov x2, #0\n\t"
-	"mov x3, #0\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3",  "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
 static inline void nt_dump_state(void)
 {
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"mov x1, #0\n\t"
-	"mov x2, #0\n\t"
-	"mov x3, #0\n\t"
-	"smc 0\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (NT_DUMP_STATE)
-	: "x0", "x1", "x2", "x3",  "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (NT_DUMP_STATE)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_get_param_in(
@@ -258,20 +291,21 @@ static inline void n_get_param_in(
 	uint64_t temp[4];
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov r0, %[fun_id]\n\t"
-	"mov x1, #0\n\t"
-	"mov x2, #0\n\t"
-	"mov x3, #0\n\t"
-	"smc 0\n\t"
-	"nop"
-	"str x0, [%[temp]]\n\t"
-	"str x1, [%[temp], #8]\n\t"
-	"str x2, [%[temp], #16]\n\t"
-	"str x3, [%[temp], #24]\n\t"
-	: :
-	[fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x0, [%[temp]]\n\t"
+	    "str x1, [%[temp], #8]\n\t"
+	    "str x2, [%[temp], #16]\n\t"
+	    "str x3, [%[temp], #24]\n\t"
+	    : :
+	    [fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 
 	*rtc0 = temp[0];
 	*rtc1 = temp[1];
@@ -279,28 +313,51 @@ static inline void n_get_param_in(
 	*rtc3 = temp[3];
 
 }
+
+static inline void get_t_device_id(uint64_t *rtc0)
+{
+	uint64_t temp[4];
+
+	__asm__ volatile(
+		/* ".arch_extension sec\n" */
+		"mov x0, %[fun_id]\n\t"
+		"mov x1, #0\n\t"
+		"mov x2, #0\n\t"
+		"mov x3, #0\n\t"
+		"smc 0\n\t"
+		"nop\n\t"
+		"str x1, [%[temp], #0]\n\t"
+		: :
+		[fun_id] "r" (N_GET_T_FP_DEVICE_ID), [temp] "r" (temp)
+		: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+		"x13", "x14", "x15", "x16", "x17", "memory");
+	*rtc0 = temp[0];
+}
+
 static inline void n_init_t_fc_buf(
 	uint64_t p0,
 	uint64_t p1,
 	uint64_t *p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
-	//temp[2] = p2;
+	temp[2] = *p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
@@ -309,22 +366,24 @@ static inline void n_invoke_t_fast_call(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -334,17 +393,18 @@ static inline void nt_sched_t(uint64_t *p)
 	uint64_t temp[3];
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"mov x1, #0\n\t"
-	"mov x2, #0\n\t"
-	"mov x3, #0\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p = temp[0];
 }
 
@@ -354,21 +414,23 @@ static inline void n_invoke_t_sys_ctl(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_invoke_t_nq(
@@ -377,22 +439,24 @@ static inline void n_invoke_t_nq(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -402,22 +466,24 @@ static inline void n_invoke_t_drv(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -427,21 +493,23 @@ static inline void n_raise_t_event(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_ack_t_invoke_drv(
@@ -450,22 +518,24 @@ static inline void n_ack_t_invoke_drv(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -475,22 +545,24 @@ static inline void n_invoke_t_load_tee(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
 	temp[0] = (uint64_t)p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
 	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"str x2, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -500,6 +572,162 @@ static inline void n_ack_t_load_img(
 	uint64_t p2)
 {
 	uint64_t temp[3];
+
+	temp[0] = *p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+	*p0 = temp[0];
+}
+
+static inline void nt_sched_t_fiq(
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+}
+
+
+static inline void nt_sched_core(
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+}
+
+static inline void nt_get_non_irq_num(uint64_t *p0)
+{
+	uint64_t temp[3];
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x1, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+	*p0 = temp[0];
+}
+static inline void nt_get_secure_os_state(uint64_t *p0)
+{
+	uint64_t temp[3];
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x1, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+	*p0 = temp[0];
+}
+
+static inline void nt_dump_t(void)
+{
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "mov x1, #0x9527\n\t"
+	    "mov x2, #0\n\t"
+	    "mov x3, #0\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    : :
+	    [fun_id] "r" (NT_SCHED_T)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+}
+
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+
+	temp[0] = *p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	    /* ".arch_extension sec\n" */
+	    "mov x0, %[fun_id]\n\t"
+	    "ldr x1, [%[temp], #0]\n\t"
+	    "ldr x2, [%[temp], #8]\n\t"
+	    "ldr x3, [%[temp], #16]\n\t"
+	    "smc 0\n\t"
+	    "nop\n\t"
+	    "str x2, [%[temp], #0]\n\t"
+	    : :
+	    [fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
+	*p0 = temp[0];
+}
+
+static inline void nt_i2c_ree(
+	uint64_t *p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+
 	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
@@ -511,21 +739,23 @@ static inline void n_ack_t_load_img(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
+	"nop\n\t"
 	"str x2, [%[temp], #0]\n\t"
-	"nop"
 	: :
-	[fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	[fun_id] "r" (NT_I2C_REE), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
-static inline void nt_sched_t_fiq(
-	uint64_t p0,
+static inline void nt_i2c_tee(
+	uint64_t *p0,
 	uint64_t p1,
 	uint64_t p2)
 {
 	uint64_t temp[3];
-	temp[0] = p0;
+
+	temp[0] = *p0;
 	temp[1] = p1;
 	temp[2] = p2;
 
@@ -536,64 +766,24 @@ static inline void nt_sched_t_fiq(
 	"ldr x2, [%[temp], #8]\n\t"
 	"ldr x3, [%[temp], #16]\n\t"
 	"smc 0\n\t"
-	"nop"
+	"nop\n\t"
+	"str x2, [%[temp], #0]\n\t"
 	: :
-	[fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
-}
-
-
-static inline void nt_sched_core(
-	uint64_t p0,
-	uint64_t p1,
-	uint64_t p2)
-{
-	uint64_t temp[3];
-	temp[0] = p0;
-	temp[1] = p1;
-	temp[2] = p2;
-
-	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"ldr x1, [%[temp], #0]\n\t"
-	"ldr x2, [%[temp], #8]\n\t"
-	"ldr x3, [%[temp], #16]\n\t"
-	"smc 0\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
-}
-
-static inline void nt_get_non_irq_num (uint64_t *p0)
-{
-	uint64_t temp[3];
-	__asm__ volatile(
-	/* ".arch_extension sec\n" */
-	"mov x0, %[fun_id]\n\t"
-	"smc 0\n\t"
-	"str x1, [%[temp], #0]\n\t"
-	"nop"
-	: :
-	[fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
-	: "x0", "x1", "memory");
+	[fun_id] "r" (NT_I2C_TEE), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
+#endif
 
-
-
-
-
-/* ///////////////////////////////////////////////////////////////////////////////////////////////////////////// */
 
 
 #else
 
 static inline void smc_out(uint32_t id,
-		uint32_t p0,
-		uint32_t p1,
-		uint32_t p2)
+	uint32_t p0,
+	uint32_t p1,
+	uint32_t p2)
 {
 	uint32_t fun_id = (uint32_t)id;
 	uint32_t temp[3];
@@ -617,7 +807,37 @@ static inline void smc_out(uint32_t id,
 			[fun_id] "r" (fun_id), [temp] "r" (temp)
 			: "r0", "r1", "r2", "r3",  "memory");
 }
+static inline void smc_inout(uint32_t id,
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2,
+		uint32_t *ret)
+{
+	uint32_t fun_id = (uint32_t)id;
+	uint32_t temp[3];
 
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+
+	__asm__ volatile(
+			".arch_extension sec\n"
+			"mov r0, %[fun_id]\n\t"
+			"ldr r1, [%[temp], #0]\n\t"
+			"ldr r2, [%[temp], #4]\n\t"
+			"ldr r3, [%[temp], #8]\n\t"
+			"smc 0\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"nop\n\t"
+			"str r2, [%[temp]]\n\t"
+			: :
+			[fun_id] "r" (fun_id), [temp] "r" (temp)
+			: "r0", "r1", "r2", "r3",  "memory");
+			*ret = temp[0];
+
+}
 
 static inline void smc_in(
 		uint32_t id,
@@ -628,6 +848,7 @@ static inline void smc_in(
 {
 	uint32_t fun_id = (uint32_t)id;
 	uint32_t temp[4];
+
 	*rtc0 =  0;
 	*rtc1 =  0;
 	*rtc2 =  0;
@@ -654,8 +875,6 @@ static inline void smc_in(
 	*rtc1 =  temp[1];
 	*rtc2 =  temp[2];
 	*rtc3 =  temp[3];
-
-
 }
 
 
@@ -664,20 +883,24 @@ static inline void smc_in(
 static inline void n_init_t_boot_stage1(
 		uint32_t p0,
 		uint32_t p1,
-		uint32_t p2)
+		uint64_t *p2)
 {
-	smc_out(N_INIT_T_BOOT_STAGE1_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p2);
 
+	smc_inout(N_INIT_T_BOOT_STAGE1_32, p0, p1, 0, &temp);
+	*p2 = temp;
 }
 
-static inline void n_switch_to_t_os_stage2(void)
+static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 {
-	smc_out(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_SWITCH_TO_T_OS_STAGE2_32, 0, 0, 0, &temp);
+	*p0 = temp;
 }
 
 static inline void nt_dump_state(void)
 {
-
 	smc_out(NT_DUMP_STATE_32, 0, 0, 0);
 }
 
@@ -691,31 +914,52 @@ static inline void n_get_param_in(
 
 }
 
+#if 1
+static inline void get_t_device_id(uint64_t *p0)
+{
+	uint32_t rtc1;
+	uint32_t rtc2;
+	uint32_t rtc3;
+	uint32_t temp;
+
+	temp = (uint32_t)(*p0);
+	smc_in(N_GET_T_FP_DEVICE_ID_32, &rtc1, &temp,  &rtc2, &rtc3);
+	*p0 = temp;
+}
+#endif
+
 
 static inline void n_init_t_fc_buf(
 		uint32_t p0,
 		uint32_t p1,
-		uint32_t p2)
+		uint64_t *p2)
 {
-	smc_out(N_INIT_T_FC_BUF_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p2);
+
+	smc_inout(N_INIT_T_FC_BUF_32, p0, p1, 0, &temp);
+	*p2 = temp;
 
 }
 static inline void n_invoke_t_fast_call(
-		uint32_t p0,
+		uint64_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_FAST_CALL_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_INVOKE_T_FAST_CALL_32, temp, p1, p2, &temp);
+	*p0 = temp;
 }
 
 /*  ==================  NT STANDARD CALL ================   */
-static inline void nt_sched_t(void)
+static inline void nt_sched_t(uint64_t *p)
 {
-	uint32_t p0;
-	uint32_t p1;
-	uint32_t p2;
+	uint32_t p1 = 0;
+	uint32_t p2 = 0;
+	uint32_t temp = (uint32_t)(*p);
 
-	smc_out(NT_SCHED_T_32, p0, p1, p2);
+	smc_inout(NT_SCHED_T_32, temp, p1, p2, &temp);
+	*p = temp;
 
 }
 
@@ -725,60 +969,74 @@ static inline void n_invoke_t_sys_ctl(
 		uint32_t p2)
 {
 	smc_out(N_INVOKE_T_SYS_CTL_32, p0, p1, p2);
-
 }
 
 static inline void n_invoke_t_nq(
-		uint32_t p0,
+		uint64_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_NQ_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_INVOKE_T_NQ_32, temp, p1, p2, &temp);
+	*p0 = temp;
 
 }
 
 static inline void n_invoke_t_drv(
-		uint32_t p0,
+		uint64_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_DRV_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_INVOKE_T_DRV_32, temp, p1, p2, &temp);
+	*p0 = temp;
 
 }
 
 static inline void n_raise_t_event(
-		uint64_t p0,
-		uint64_t p1,
-		uint64_t p2)
+		uint32_t p0,
+		uint32_t p1,
+		uint32_t p2)
 {
 	smc_out(N_RAISE_T_EVENT_32, p0, p1, p2);
 
 }
 
 static inline void n_ack_t_invoke_drv(
-		uint64_t p0,
-		uint64_t p1,
-		uint64_t p2)
+		uint64_t *p0,
+		uint32_t p1,
+		uint32_t p2)
 {
-	smc_out(N_ACK_T_INVOKE_DRV_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_ACK_T_INVOKE_DRV_32, temp, p1, p2, &temp);
+	*p0 = temp;
 
 }
 
 static inline void n_invoke_t_load_tee(
-		uint32_t p0,
+		uint64_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_INVOKE_T_LOAD_TEE_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_INVOKE_T_LOAD_TEE_32, temp, p1, p2, &temp);
+	*p0 = temp;
 
 }
 
 static inline void n_ack_t_load_img(
-		uint32_t p0,
+		uint64_t *p0,
 		uint32_t p1,
 		uint32_t p2)
 {
-	smc_out(N_ACK_T_LOAD_IMG_32, p0, p1, p2);
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_inout(N_ACK_T_LOAD_IMG_32, temp, p1, p2, &temp);
+	*p0 = temp;
 
 }
 
@@ -801,15 +1059,44 @@ static inline void nt_sched_core(
 
 }
 
-static inline void nt_get_non_irq_num(uint32_t *p0)
+static inline void nt_get_non_irq_num(uint64_t *p0)
 {
 	uint32_t rtc1;
 	uint32_t rtc2;
 	uint32_t rtc3;
 
-	smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, p0, &rtc2, &rtc3);
+	uint32_t temp = (uint32_t)(*p0);
+	/*smc_in(N_GET_SE_OS_STATE_32, &rtc1, p0, &rtc2, &rtc3);*/
+	smc_in(N_GET_NON_IRQ_NUM_32, &rtc1, &temp, &rtc2, &rtc3);
+	*p0 = temp;
+}
+static inline void nt_get_secure_os_state(uint64_t *p0)
+{
+	uint32_t rtc1;
+	uint32_t rtc2;
+	uint32_t rtc3;
+
+	uint32_t temp = (uint32_t)(*p0);
+
+	smc_in(N_GET_SE_OS_STATE_32, &rtc1, &temp, &rtc2, &rtc3);
+	*p0 = temp;
+}
+static inline void nt_dump_t(void)
+{
+	smc_out(NT_SCHED_T_32, 0, 0, 0);
 }
 
+
+#ifdef TUI_SUPPORT
+static inline void nt_cancel_t_tui(
+	uint32_t *p0,
+	uint32_t p1,
+	uint32_t p2)
+{
+	smc_inout(NT_CANCEL_T_TUI_32, *p0, p1, p2, p0);
+}
+
+#endif
 
 #endif
 #endif /* SMC_CALL_H_ */

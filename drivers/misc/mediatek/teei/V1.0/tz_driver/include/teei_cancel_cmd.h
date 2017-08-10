@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -12,7 +12,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __UTOS_VERSION_H__
-#define __UTOS_VERSION_H__
-#define UTOS_VERSION  "BS.mt6755.D.2.2.1"
-#endif
+#ifndef TEEI_CANCEL_CMD_H
+#define TEEI_CANCEL_CMD_H
+
+extern unsigned long cancel_message_buff;
+extern struct semaphore fp_lock;
+extern struct mutex pm_mutex;
+
+unsigned long create_cancel_fdrv(int buff_size);
+int send_cancel_command(unsigned long share_memory_size);
+int __send_cancel_command(unsigned long share_memory_size);
+
+#endif /* end of TEEI_CANCEL_CMD_H */

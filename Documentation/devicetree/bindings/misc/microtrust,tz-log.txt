@@ -1,0 +1,10 @@
+MICROTRUST Incorporated
+
+Required properties:
+- compatible : Should be "microtrust,tz-log"
+
+Examples:
+
+         tz-log {
+         compatible = "microtrust,tz-log";
+         };

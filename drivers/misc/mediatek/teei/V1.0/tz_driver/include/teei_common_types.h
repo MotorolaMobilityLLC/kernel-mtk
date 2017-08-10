@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -15,5 +15,7 @@
 
 #ifndef SW_COMMON_TYPES_H
 #define SW_COMMON_TYPES_H
-define size_t (unsigned long)
+
+#define size_t (unsigned long)
+
 #endif

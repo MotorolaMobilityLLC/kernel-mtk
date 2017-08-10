@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -14,5 +14,5 @@
 
 #ifndef __UTOS_VERSION_H__
 #define __UTOS_VERSION_H__
-#define UTOS_VERSION  "tag.base.dbg.2.3.2"
+#define UTOS_VERSION  "tag.base.dbg.2.5.1"
 #endif

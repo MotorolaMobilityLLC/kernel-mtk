@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -69,12 +69,12 @@ enum teeic_param_pos {
  */
 struct teei_encode_meta {
 	int type;
-	int len;			/* data length */
+	int len;                        /* data length */
 	unsigned  long long usr_addr;		/* data address in user space */
-	int ret_len;			/* return sizeof data */
-	int value_flag;			/* value of a or b */
-	int param_pos;			/* param order */
-	int param_pos_type;		/* param type */
+	int ret_len;                    /* return sizeof data */
+	int value_flag;                 /* value of a or b */
+	int param_pos;                  /* param order */
+	int param_pos_type;             /* param type */
 };
 
 /**
@@ -101,5 +101,42 @@ struct teei_smc_cmd {
 	unsigned int    dev_file_id;
 	unsigned int     error_code;
 	struct semaphore *teei_sema;
+};
+
+struct message_head {
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
+};
+
+struct fdrv_message_head {
+	unsigned int driver_type;
+	unsigned int fdrv_param_length;
+};
+
+struct create_fdrv_struct {
+	unsigned int fdrv_type;
+	unsigned int fdrv_phy_addr;
+	unsigned int fdrv_size;
+};
+
+struct ack_fast_call_struct {
+	int retVal;
+};
+
+struct fdrv_call_struct {
+	int fdrv_call_type;
+	int fdrv_call_buff_size;
+	int retVal;
+};
+
+struct service_handler {
+	unsigned int sysno;
+	void *param_buf;
+	unsigned size;
+	long (*init)(struct service_handler *handler);
+	void (*deinit)(struct service_handler *handler);
+	int (*handle)(struct service_handler *handler);
 };
 #endif /* __TEEI_COMMON_H_ */

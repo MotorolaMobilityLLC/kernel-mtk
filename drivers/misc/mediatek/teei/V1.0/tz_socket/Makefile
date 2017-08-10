@@ -10,19 +10,5 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-#
-# Industrial TZ driver configuration
-#
-
-#config MICROTRUST_TZ_EXTENSIONS
-#	bool "Enable microtrust TrustZone extensions"
-#	default y
-#	---help---
-#	  Enables microtrust TrustZone extensions to the Linux kernel.
-
-config MICROTRUST_TZ_DRIVER
-	tristate "Support teei_driver function"
-	default n
-	---help---
-	Enable teei_driver framework.
-	#Communication with the secure OS
+#obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += socketFun.o
+ccflags-y += -D DEBUG_DO -fno-pic
