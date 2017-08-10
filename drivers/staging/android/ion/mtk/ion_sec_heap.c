@@ -83,7 +83,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 		ret = KREE_AllocSecurechunkmemWithTag(ion_session_handle(), &sec_handle, align, size, heap->name);
 		if (ret != TZ_RESULT_SUCCESS) {
 			IONMSG("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n", ret);
-			return ret;
+			return -ENOMEM;
 		}
 	}
 	refcount = 0;
