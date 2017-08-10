@@ -12,7 +12,8 @@
 #
 
 ifeq ($(CONFIG_ARCH_MT6735M), y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/mt6735m
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/mt6735m\
+			 -I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM)/mt6735m
 endif
 
 ifneq ($(CONFIG_ARCH_MT6735M), y)
@@ -24,7 +25,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc\
 					-I$(srctree)/drivers/misc/mediatek/video/include\
 					-I$(srctree)/drivers/misc/mediatek/include/mt-plat\
 					-I$(srctree)/drivers/misc/mediatek/multibridge/$(CONFIG_MTK_PLATFORM)/mt8193/inc\
-					-I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM)/dispsys/\
+					-I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM)/dispsys\
+					-I$(srctree)/drivers/misc/mediatek/video/$(CONFIG_MTK_PLATFORM)\
 					-I$(srctree)/drivers/misc/mediatek/dispsys/$(CONFIG_MTK_PLATFORM)
 
 ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "MT8193")
