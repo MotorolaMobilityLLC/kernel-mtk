@@ -59,7 +59,6 @@
 #include "mtk_ovl.h"
 #include "mt_boot.h"
 #include "disp_helper.h"
-#include "compat_mtkfb.h"
 #include "disp_dts_gpio.h"
 #include "disp_recovery.h"
 #include "ddp_clkmgr.h"

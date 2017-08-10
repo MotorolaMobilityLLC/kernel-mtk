@@ -38,7 +38,7 @@
 obj-$(CONFIG_MTK_FB) += 	mtkfb_fence.o \
 				fbconfig_kdebug.o
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT8160)))
+ifeq (y, $(filter y, $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT8160) $(CONFIG_ARCH_MT6797)))
 obj-$(CONFIG_MTK_FB) += mtkfb.o
 endif
 

@@ -4993,7 +4993,7 @@ static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 }
 #endif
 
-int primary_display_init(char *lcm_name, unsigned int lcm_fps)
+int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
 
@@ -5038,7 +5038,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 #endif
 	_primary_path_lock(__func__);
 
-	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED);
+	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED, is_lcm_inited);
 
 	if (pgc->plcm == NULL) {
 		DISPERR("disp_lcm_probe returns null\n");
@@ -8106,7 +8106,7 @@ out:
 	return ret;
 }
 
-int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int format)
+int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int fb_format)
 {
 	int ret = 0;
 	cmdqRecHandle cmdq_handle = NULL;
@@ -8118,8 +8118,34 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int for
 	unsigned int h_yres = primary_display_get_height();
 	unsigned int pixel_byte = primary_display_get_dc_bpp() / 8; /* bpp is either 32 or 16, can not be other value */
 	int buffer_size = h_yres * w_xres * pixel_byte;
+	int format;
 
 	DISPMSG("primary capture: begin\n");
+
+	switch (fb_format) {
+	case MTK_FB_FORMAT_RGB888:
+		format = eRGB888;
+		break;
+	case MTK_FB_FORMAT_BGR888:
+		format = eBGR888;
+		break;
+	case MTK_FB_FORMAT_ARGB8888:
+		format = eARGB8888;
+		break;
+	case MTK_FB_FORMAT_RGB565:
+		format = eRGB565;
+		break;
+	case MTK_FB_FORMAT_UYVY:
+		format = eYUV_420_2P_UYVY;
+		break;
+	case MTK_FB_FORMAT_BGRA8888:
+		format = eBGRA8888;
+		break;
+	case MTK_FB_FORMAT_ABGR8888:
+	default:
+		format = eABGR8888;
+		break;
+	}
 
 	disp_sw_mutex_lock(&(pgc->capture_lock));
 	_primary_path_lock(__func__);

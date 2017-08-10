@@ -4219,6 +4219,12 @@ int primary_display_ipoh_restore(void)
 	return 0;
 }
 
+int primary_display_ipoh_recover(void)
+{
+	DISPMSG("%s\n", __func__);
+	return 0;
+}
+
 int primary_display_start(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -6181,7 +6187,7 @@ static int _screen_cap_by_cpu(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DIS
 	return 0;
 }
 
-int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COLOR_FMT ufmt)
+int primary_display_capture_framebuffer_ovl(unsigned long pbuf, unsigned int format)
 {
 	int ret = 0;
 	m4u_client_t *m4uClient = NULL;
@@ -6191,10 +6197,30 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COL
 	unsigned int pixel_byte = primary_display_get_bpp() / 8;
 	int buffer_size = h_yres * w_xres * pixel_byte;
 	DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
-	int tmp;
+	int tmp, ufmt;
 
 	DISPMSG("primary capture: begin\n");
-
+	switch (format) {
+	case MTK_FB_FORMAT_RGB888:
+		ufmt = UFMT_RGB888;
+		break;
+	case MTK_FB_FORMAT_BGR888:
+		ufmt = UFMT_BGR888;
+		break;
+	case MTK_FB_FORMAT_ARGB8888:
+		ufmt = UFMT_ARGB8888;
+		break;
+	case MTK_FB_FORMAT_RGB565:
+		ufmt = UFMT_RGB565;
+		break;
+	case MTK_FB_FORMAT_UYVY:
+		ufmt = UFMT_UYVY;
+		break;
+	case MTK_FB_FORMAT_ABGR8888:
+	default:
+		ufmt = UFMT_ABGR8888;
+		break;
+	}
 	disp_sw_mutex_lock(&(pgc->capture_lock));
 
 	if (primary_display_is_sleepd()) {

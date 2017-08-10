@@ -259,8 +259,9 @@ struct sec_session_node {
 
 typedef int (*PRIMARY_DISPLAY_CALLBACK) (unsigned int user_data);
 
-int primary_display_init(char *lcm_name, unsigned int lcm_fps);
+int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited);
 int primary_display_config(unsigned long pa, unsigned long mva);
+int _parse_tag_videolfb(void);
 
 int primary_display_set_frame_buffer_address(unsigned long va, unsigned long mva);
 unsigned long primary_display_get_frame_buffer_mva_address(void);

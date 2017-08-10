@@ -198,6 +198,7 @@ unsigned long primary_display_get_frame_buffer_va_address(void);
 int primary_display_suspend(void);
 int primary_display_resume(void);
 int primary_display_ipoh_restore(void);
+int primary_display_ipoh_recover(void);
 int primary_display_get_width(void);
 int primary_display_get_height(void);
 int primary_display_get_virtual_width(void);

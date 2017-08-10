@@ -19,7 +19,6 @@
 
 extern unsigned char lcm_name_list[][128];
 extern LCM_DRIVER lcm_common_drv;
-extern bool is_lcm_inited;
 
 typedef struct {
 	LCM_PARAMS *params;
@@ -36,7 +35,7 @@ typedef struct {
 #endif
 } disp_lcm_handle, *pdisp_lcm_handle;
 
-disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id);
+disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited);
 int disp_lcm_init(disp_lcm_handle *plcm, int force);
 LCM_PARAMS *disp_lcm_get_params(disp_lcm_handle *plcm);
 LCM_INTERFACE_ID disp_lcm_get_interface_id(disp_lcm_handle *plcm);
