@@ -58,7 +58,6 @@ void SetHplSpkTrimOffset(int Offset);
 void SetHprSpkTrimOffset(int Offset);
 void setHpGainZero(void);
 void setLineOutGainZero(void);
-bool OpenHeadPhoneImpedanceSetting(bool bEnable);
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
 
