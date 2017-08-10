@@ -1000,6 +1000,7 @@ static int larb_clock_all_on(void)
 {
 	int i;
 
+	return 0;
 	for (i = 0 ; i < SMI_LARB_NR ; i++)
 		larb_clock_on(i);
 
@@ -1009,6 +1010,7 @@ static int larb_clock_all_off(void)
 {
 	int i;
 
+	return 0;
 	for (i = 0 ; i < SMI_LARB_NR ; i++)
 		larb_clock_off(i);
 
