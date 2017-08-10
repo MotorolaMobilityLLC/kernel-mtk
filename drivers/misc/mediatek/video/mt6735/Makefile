@@ -20,6 +20,7 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    disp_lcm.o             \
 			    disp_utils.o           \
 			    mtk_disp_mgr.o         \
+			    compat_mtk_disp_mgr.o  \
 			    mtk_mira.o             \
 			    mtk_ovl.o              \
 			    disp_dts_gpio.o        \

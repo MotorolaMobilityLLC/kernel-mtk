@@ -77,6 +77,7 @@
 #include "disp_recorder.h"
 
 #include "mtk_disp_mgr.h"
+#include "compat_mtk_disp_mgr.h"
 
 #include "disp_session.h"
 #include "mtk_ovl.h"
@@ -96,12 +97,6 @@
 #include "extd_hdmi.h"
 #include "external_display.h"
 #endif
-
-typedef enum {
-	PREPARE_INPUT_FENCE,
-	PREPARE_OUTPUT_FENCE,
-	PREPARE_PRESENT_FENCE
-} ePREPARE_FENCE_TYPE;
 
 
 static dev_t mtk_disp_mgr_devno;
@@ -2153,15 +2148,79 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd, unsig
 	long ret = -ENOIOCTLCMD;
 
 	switch (cmd) {
+	case COMPAT_DISP_IOCTL_CREATE_SESSION:
+		return _compat_ioctl_create_session(file, arg);
+	case COMPAT_DISP_IOCTL_DESTROY_SESSION:
+		return _compat_ioctl_destroy_session(file, arg);
+	case COMPAT_DISP_IOCTL_TRIGGER_SESSION:
+		return _compat_ioctl_trigger_session(file, arg);
+	case COMPAT_DISP_IOCTL_GET_PRESENT_FENCE:
+		return _compat_ioctl_prepare_present_fence(file, arg);
+	case COMPAT_DISP_IOCTL_PREPARE_INPUT_BUFFER:
+		return _compat_ioctl_prepare_buffer(file, arg, PREPARE_INPUT_FENCE);
+	case COMPAT_DISP_IOCTL_SET_INPUT_BUFFER:
+		return _compat_ioctl_set_input_buffer(file, arg);
+	case COMPAT_DISP_IOCTL_WAIT_FOR_VSYNC:
+		return _compat_ioctl_wait_vsync(file, arg);
+	case COMPAT_DISP_IOCTL_GET_SESSION_INFO:
+		return _compat_ioctl_get_info(file, arg);
+	case COMPAT_DISP_IOCTL_GET_DISPLAY_CAPS:
+		return _compat_ioctl_get_display_caps(file, arg);
+	case COMPAT_DISP_IOCTL_SET_VSYNC_FPS:
+		return _compat_ioctl_set_vsync(file, arg);
+	case COMPAT_DISP_IOCTL_SET_SESSION_MODE:
+		return _compat_ioctl_set_session_mode(file, arg);
+	case COMPAT_DISP_IOCTL_PREPARE_OUTPUT_BUFFER:
+		return _compat_ioctl_prepare_buffer(file, arg, PREPARE_OUTPUT_FENCE);
+	case COMPAT_DISP_IOCTL_SET_OUTPUT_BUFFER:
+		return _compat_ioctl_set_output_buffer(file, arg);
+	case COMPAT_DISP_IOCTL_GET_IS_DRIVER_SUSPEND:
+		return _compat_ioctl_get_is_driver_suspend(file, arg);
+	case COMPAT_DISP_IOCTL_INSERT_SESSION_BUFFERS:
+		return _compat_ioctl_insert_session_buffers(file, arg);
+	case COMPAT_DISP_IOCTL_SCREEN_FREEZE:
+		return _compat_ioctl_screen_freeze(file, arg);
 
-		/* add cases here for 32bit/64bit conversion */
-		/* ... */
+	case DISP_IOCTL_GET_LCMINDEX:
+		return primary_display_get_lcm_index();
+
+	case DISP_IOCTL_AAL_EVENTCTL:
+	case DISP_IOCTL_AAL_GET_HIST:
+	case DISP_IOCTL_AAL_INIT_REG:
+	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_SET_GAMMALUT:
+	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_SET_PQPARAM:
+	case DISP_IOCTL_GET_PQPARAM:
+	case DISP_IOCTL_SET_PQINDEX:
+	case DISP_IOCTL_GET_PQINDEX:
+	case DISP_IOCTL_SET_TDSHPINDEX:
+	case DISP_IOCTL_GET_TDSHPINDEX:
+	case DISP_IOCTL_SET_PQ_CAM_PARAM:
+	case DISP_IOCTL_GET_PQ_CAM_PARAM:
+	case DISP_IOCTL_SET_PQ_GAL_PARAM:
+	case DISP_IOCTL_GET_PQ_GAL_PARAM:
+	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
+	case DISP_IOCTL_PQ_SET_WINDOW:
+	case DISP_IOCTL_OD_CTL:
+	case DISP_IOCTL_WRITE_REG:
+	case DISP_IOCTL_READ_REG:
+	case DISP_IOCTL_MUTEX_CONTROL:
+	case DISP_IOCTL_PQ_GET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_GET_DC_PARAM:
+	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_DS_PARAM:
+	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
+	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
+	case DISP_IOCTL_WRITE_SW_REG:
+	case DISP_IOCTL_READ_SW_REG:
+		ret = primary_display_user_cmd(cmd, arg);
+		break;
 
 	default:
-		/* DISPERR("mtk_disp_mgr_compat_ioctl, file=0x%x, cmd=0x%x(%s), arg=0x%lx, "
-			   "cmd nr=0x%08x, cmd size=0x%08x\n", file, cmd, _session_ioctl_spy(cmd), arg,
-			   (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd)); */
-		return mtk_disp_mgr_ioctl(file, cmd, arg);
+		DISPERR("[%s]ioctl not supported, 0x%08x\n", __func__, cmd);
+		return -ENOIOCTLCMD;
 	}
 
 	return ret;

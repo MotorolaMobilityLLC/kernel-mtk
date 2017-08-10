@@ -17,6 +17,13 @@
 #include "disp_session.h"
 #include "primary_display.h"
 
+
+typedef enum {
+	PREPARE_INPUT_FENCE,
+	PREPARE_OUTPUT_FENCE,
+	PREPARE_PRESENT_FENCE
+} ePREPARE_FENCE_TYPE;
+
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 extern struct mutex disp_trigger_lock;
 

@@ -245,7 +245,7 @@ typedef struct disp_input_config_t {
 	uint8_t isTdshp;
 	uint8_t identity;
 	uint8_t connected_type;
-	int8_t ext_sel_layer;
+	uint8_t ext_sel_layer;
 } disp_input_config;
 
 typedef struct disp_output_config_t {
@@ -414,7 +414,7 @@ typedef struct layer_config_t {
 	DISP_FORMAT src_fmt;
 	unsigned int dst_offset_x, dst_offset_y;
 	unsigned int dst_width, dst_height;
-	int ext_sel_layer;
+	unsigned int ext_sel_layer;
 } layer_config;
 
 typedef struct disp_layer_info_t {
