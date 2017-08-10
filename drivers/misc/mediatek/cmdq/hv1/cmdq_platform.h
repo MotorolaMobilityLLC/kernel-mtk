@@ -18,6 +18,7 @@
 
 #include "cmdq_def.h"
 #include "cmdq_core.h"
+#include "cmdq_platform_idv.h"
 
 /*
  * GCE capability
