@@ -90,10 +90,20 @@ struct LCM_setting_table {
 };
 
 static struct LCM_setting_table init_setting[] = {
-	{0x32, 1, {0xd} },
-	{REGFLAG_DELAY, 25, {} },
+	{ 0x8f, 1, { 0xa5 } },
+	{ REGFLAG_DELAY, 5, {} },
+	{ 0x01, 1, { 0x00 } },
+	{ REGFLAG_DELAY, 20, {} },
+	{ 0x8f, 1, { 0xa5 } },
+	{ REGFLAG_DELAY, 5, {} },
+	{ 0x83, 1, { 0xaa } },
+	{ 0x84, 1, { 0x11 } },
+	{ 0xa9, 1, { 0x4b } },
+	{ 0x83, 1, { 0x00 } },
+	{ 0x84, 1, { 0x00 } },
+	{ 0x8f, 1, { 0x00 } },
 	/* Setting ending by predefined flag */
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
+	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static void push_table(void *cmdq, struct LCM_setting_table *table,
@@ -139,27 +149,27 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
 
-	params->dsi.mode = SYNC_PULSE_VDO_MODE;
+	params->dsi.mode = SYNC_EVENT_VDO_MODE;
 
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_THREE_LANE;
+	params->dsi.LANE_NUM = LCM_FOUR_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
 
 	/* Video mode setting */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active = 3;
-	params->dsi.vertical_backporch = 2;	/* 3;//4 */
-	params->dsi.vertical_frontporch = 5;
+	params->dsi.vertical_sync_active = 1;
+	params->dsi.vertical_backporch = 25;	/* 3;//4 */
+	params->dsi.vertical_frontporch = 35;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 16;	/* 12;//20; */
-	params->dsi.horizontal_backporch = 8;	/* 32;//48; //10 OK */
-	params->dsi.horizontal_frontporch = 116;
+	params->dsi.horizontal_sync_active = 1;	/* 12;//20; */
+	params->dsi.horizontal_backporch = 60;	/* 32;//48; //10 OK */
+	params->dsi.horizontal_frontporch = 80;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
-	params->dsi.PLL_CLOCK = 468;
+	params->dsi.PLL_CLOCK = 480;
 	params->dsi.cont_clock = 1;
 }
 
