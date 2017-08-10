@@ -46,6 +46,8 @@ static inline TZ_RESULT _allocFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 		break;
 	case TZCMD_MEM_SECUREMEM_ALLOC_WITH_TAG:
 	case TZCMD_MEM_SECURECM_ALLOC_WITH_TAG:
+	case TZCMD_MEM_SECUREMEM_ZALLOC_WITH_TAG:
+	case TZCMD_MEM_SECURECM_ZALLOC_WITH_TAG:
 		p[2].mem.buffer = (void *)tag;
 		if (tag == NULL)
 			p[2].mem.size = 0;
@@ -261,6 +263,19 @@ TZ_RESULT KREE_AllocSecurememWithTag(KREE_SESSION_HANDLE session,
 	return ret;
 }
 
+TZ_RESULT KREE_ZallocSecurememWithTag(KREE_SESSION_HANDLE session,
+				KREE_SECUREMEM_HANDLE *mem_handle,
+				uint32_t alignment, uint32_t size, const char *tag)
+{
+	TZ_RESULT ret;
+
+	ret =
+	    _allocFunc(TZCMD_MEM_SECUREMEM_ZALLOC_WITH_TAG, session, mem_handle,
+			alignment, size, "KREE_ZallocSecuremem", tag);
+
+	return ret;
+}
+
 TZ_RESULT KREE_ReferenceSecuremem(KREE_SESSION_HANDLE session,
 					KREE_SECUREMEM_HANDLE mem_handle)
 {
@@ -317,6 +332,20 @@ TZ_RESULT KREE_AllocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
 	ret =
 	    _allocFunc(TZCMD_MEM_SECURECM_ALLOC_WITH_TAG, session, cm_handle,
 			alignment, size, "KREE_AllocSecurechunkmem", tag);
+
+	return ret;
+}
+
+TZ_RESULT KREE_ZallocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
+					KREE_SECUREMEM_HANDLE *cm_handle,
+					uint32_t alignment,
+					uint32_t size, const char *tag)
+{
+	TZ_RESULT ret;
+
+	ret =
+	    _allocFunc(TZCMD_MEM_SECURECM_ZALLOC_WITH_TAG, session, cm_handle,
+			alignment, size, "KREE_ZallocSecurechunkmem", tag);
 
 	return ret;
 }

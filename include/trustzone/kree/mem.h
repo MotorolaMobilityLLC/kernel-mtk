@@ -181,6 +181,23 @@ TZ_RESULT KREE_AllocSecuremem(KREE_SESSION_HANDLE session,
 TZ_RESULT KREE_AllocSecurememWithTag(KREE_SESSION_HANDLE session,
 	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size,
 	const char *tag);
+
+/**
+ * Zeroed secure memory allocation With Tag
+ *
+ * Same as KREE_AllocSecurememWithTag() but the content is initialized as zero.
+ *
+ * @param session    The session handle.
+ * @param mem_handle    [out] A pointer to secure memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ & @param tag     The string for marking the allocation
+ * @return    return code.
+ */
+TZ_RESULT KREE_ZallocSecurememWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
+
 /**
  * Secure memory reference
  *
@@ -269,6 +286,24 @@ TZ_RESULT KREE_AllocSecurechunkmem(KREE_SESSION_HANDLE session,
  * @return    return code.
  */
 TZ_RESULT KREE_AllocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
+
+
+/**
+ * Zeroed secure chunk memory allocation with tag
+ *
+ * Same as KREE_AllocSecurememWithTag() but the context is initilaized as zero.
+ *
+ * @param session    The session handle.
+ * @param cm_handle    [out] A pointer to secure chunk memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ * @param tag     The string for marking the allocation
+
+ * @return    return code.
+ */
+TZ_RESULT KREE_ZallocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
 	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size,
 	const char *tag);
 
