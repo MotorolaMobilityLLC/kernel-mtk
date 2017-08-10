@@ -142,8 +142,8 @@
 
 
 /* CON6 */
-#define CON6_2XTMR_EN_MASK   0x3F
-#define CON6_2XTMR_EN_SHIFT  2
+#define CON6_VREG_MASK   0x3F
+#define CON6_VREG_SHIFT  2
 
 #define CON6_BATLOWV_MASK   0x1
 #define CON6_BATLOWV_SHIFT  1
@@ -186,6 +186,10 @@
 
 #define CON9_PUMPX_DN   0x1
 #define CON9_PUMPX_DN_SHIFT  0
+
+#define FORCE_ICO_MASK 0x1
+#define FORCE_ICO__SHIFT 7
+
 
 /* CONA */
 #define CONA_BOOST_VLIM_MASK 0xF
@@ -262,12 +266,10 @@
 /* CON0---------------------------------------------------- */
 extern void bq25890_set_en_hiz(unsigned int val);
 extern void bq25890_set_en_ilim(unsigned int val);
-void bq25890_set_iinlim(unsigned int val);
+extern void bq25890_set_iinlim(unsigned int val);
+extern unsigned int bq25890_get_iinlim(void);
 
 /* CON1---------------------------------------------------- */
-/* willcai */
-extern void bq25890_set_vindpm(unsigned int val);
-/*  */
 
 /* CON2---------------------------------------------------- */
 extern void bq25890_ADC_start(unsigned int val);
@@ -290,6 +292,7 @@ extern void bq25890_set_sys_min(unsigned int val);
 /* willcai */
 extern void bq25890_en_pumpx(unsigned int val);
 extern void bq25890_set_ichg(unsigned int val);
+unsigned int bq25890_get_reg_ichg(void);
 
 /*  */
 
@@ -306,6 +309,8 @@ extern void bq25890_set_iterml(unsigned int val);
 extern void bq25890_set_vreg(unsigned int val);
 extern void bq25890_set_batlowv(unsigned int val);
 extern void bq25890_set_vrechg(unsigned int val);
+extern unsigned int bq25890_get_vreg(void);
+
 
 
 /* con7 */
@@ -314,6 +319,7 @@ extern void bq25890_en_term_chg(unsigned int val);
 extern void bq25890_en_state_dis(unsigned int val);
 extern void bq25890_set_wd_timer(unsigned int val);
 extern void bq25890_en_chg_timer(unsigned int val);
+extern unsigned int bq25890_get_chg_timer_enable(void);
 
 extern void bq25890_set_chg_timer(unsigned int val);
 
@@ -364,8 +370,9 @@ unsigned int bq25890_get_bat_state(void);
 unsigned int bq25890_get_ichg(void);
 
 /* CON0D */
-extern void bq25890_set_FORCE_VINDPM(unsigned int val);
-extern void bq25890_set_VINDPM(unsigned int val);
+extern void bq25890_set_force_vindpm(unsigned int val);
+extern void bq25890_set_vindpm(unsigned int val);
+extern unsigned int bq25890_get_vindpm(void);
 
 /* CON11 */
 extern unsigned int bq25890_get_vbus(void);

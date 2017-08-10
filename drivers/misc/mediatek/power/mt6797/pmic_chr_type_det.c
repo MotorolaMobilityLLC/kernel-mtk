@@ -281,6 +281,21 @@ static void hw_bc11_done(void)
 
 }
 
+void hw_charging_enable_dp_voltage(int ison)
+{
+	static int cnt;
+
+	if (ison == 1) {
+		if (cnt == 0)
+			cnt = 1;
+		hw_bc11_init();
+		bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x2);
+	} else if (cnt == 1) {
+		hw_bc11_done();
+		cnt = 0;
+	}
+}
+
 int hw_charging_get_charger_type(void)
 {
 #if 0
