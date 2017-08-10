@@ -461,7 +461,7 @@ static int port_char_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 
 	if (!atomic_read(&port->usage_cnt) &&
 		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT && port->rx_ch != CCCI_PCM_RX &&
-			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX))
+			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX && port->rx_ch != CCCI_MONITOR_CH))
 		return -CCCI_ERR_DROP_PACKET;
 
 #ifdef CONFIG_MTK_ECCCI_C2K
