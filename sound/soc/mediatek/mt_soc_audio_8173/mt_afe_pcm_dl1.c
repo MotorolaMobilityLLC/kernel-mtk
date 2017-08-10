@@ -267,6 +267,10 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O20);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O19);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O20);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O03);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O04);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O03);
+			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O04);
 		} else {
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O03);
 			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O04);
@@ -411,6 +415,8 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream)
 		if (priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O19);
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O20);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
+			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
 		} else {
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I05, INTER_CONN_O03);
 			mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I06, INTER_CONN_O04);
