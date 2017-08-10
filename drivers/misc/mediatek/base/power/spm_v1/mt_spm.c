@@ -286,12 +286,14 @@ static void spm_register_init(void)
 	spm_irq_1 = irq_of_parse_and_map(node, 1);
 	if (!spm_irq_1)
 		spm_err("get spm_irq_1 failed\n");
+#if !defined(CONFIG_ARCH_MT6570)
 	spm_irq_2 = irq_of_parse_and_map(node, 2);
 	if (!spm_irq_2)
 		spm_err("get spm_irq_2 failed\n");
 	spm_irq_3 = irq_of_parse_and_map(node, 3);
 	if (!spm_irq_3)
 		spm_err("get spm_irq_3 failed\n");
+#endif
 #if defined(CONFIG_ARCH_MT6753)
 #define MCUCFG_NODE "mediatek,MCUCFG"
 
@@ -361,7 +363,6 @@ static void spm_register_init(void)
 	spm_i2c2_base = of_iomap(node, 0);
 	if (!spm_i2c2_base)
 		spm_err("base spm_i2c2 failed\n");
-
 	node = of_find_compatible_node(NULL, NULL, "mediatek,MCUCFG");	/* mcucfg */
 	if (!node)
 		spm_err("[MCUCFG] find node failed\n");

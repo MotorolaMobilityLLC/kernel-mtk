@@ -62,6 +62,10 @@
 #if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 #define DISABLE_DLPT_FEATURE
 #endif
+
+#if defined(CONFIG_ARCH_MT6570)
+#define SPM_MAX_PRIO 0
+#endif
 /**************************************
  * only for internal debug
  **************************************/
@@ -1018,8 +1022,13 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	.ca7_wfi0_en = 1,
 	.ca7_wfi1_en = 1,
+#if defined(CONFIG_ARCH_MT6570)
+	.ca7_wfi2_en = 0,
+	.ca7_wfi3_en = 0,
+#else /* CONFIG_ARCH_MT6580 */
 	.ca7_wfi2_en = 1,
 	.ca7_wfi3_en = 1,
+#endif
 	.ca15_wfi0_en = 0,
 	.ca15_wfi1_en = 0,
 	.ca15_wfi2_en = 0,
@@ -1597,7 +1606,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		wd_api->wd_suspend_notify();
 
 #if !defined(CONFIG_ARCH_MT6570)
-	mt_power_gs_dump_suspend();
+	mt_power_gs_dump_suspend(); /* TODO */
 #endif
 	/* spm_suspend_pre_process(pwrctrl); */
 	lockdep_off();
@@ -1674,6 +1683,11 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | (1 << SPM_SUSPEND_ENTER_WFI));
 #endif
 
+#if defined(CONFIG_ARCH_MT6750)
+	/* TODO: check sleep abort */
+	save_prio = mt_get_irq_priority(SPM_IRQ0_ID);
+	mt_set_irq_priority(SPM_IRQ0_ID, SPM_MAX_PRIO);
+#endif
 #if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_set_primask();
 #endif
@@ -1681,7 +1695,9 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 	gic_clear_primask();
 #endif
-
+#if defined(CONFIG_ARCH_MT6750)
+	mt_set_irq_priority(SPM_IRQ0_ID, save_prio);
+#endif
 #if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	mt_cpufreq_set_pmic_phase(PMIC_WRAP_PHASE_NORMAL);
 #endif
