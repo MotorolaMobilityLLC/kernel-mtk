@@ -23,8 +23,6 @@ uint32_t TEE_update_gb_time_intee(KREE_SESSION_HANDLE session,
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	uint32_t file_result = GB_TIME_FILE_OK_SIGN;
-	struct file *file = NULL;
-	UINT64 u8Offset = 0;
 	int i = 0;
 	int err = -ENODEV;
 	struct rtc_time tm;
@@ -49,16 +47,7 @@ uint32_t TEE_update_gb_time_intee(KREE_SESSION_HANDLE session,
 	param[0].mem.size = sizeof(struct TZ_GB_SECURETIME_INFO);
 	param[1].mem.buffer = (void *) &cur_counter;
 	param[1].mem.size = sizeof(DRM_UINT64);
-
-	file = FILE_Open(GB_TIME_FILE_SAVE_PATH, O_RDWR, S_IRWXU);
-	if (file) {
-		FILE_Read(file, (void *) &secure_time,
-			sizeof(struct TZ_GB_SECURETIME_INFO), &u8Offset);
-		filp_close(file, NULL);
-	} else {
-		file_result = GB_NO_SECURETD_FILE;
-		goto err_read;
-	}
+	memset(&secure_time, 0, sizeof(struct TZ_GB_SECURETIME_INFO));
 	for (i = 0; i < sizeof(struct TZ_GB_SECURETIME_INFO); i++)
 		pr_warn("%02x", ((char *)&secure_time)[i]);
 	pr_warn("\n");
@@ -120,8 +109,6 @@ MTEEC_PARAM param[4];
 uint32_t paramTypes;
 
 TZ_RESULT ret = TZ_RESULT_SUCCESS;
-struct file *file = NULL;
-UINT64 u8Offset = 0;
 pr_warn("enter  TEE_update_gb_time_infile\n");
 
 shm_p = kmalloc(sizeof(struct TZ_GB_SECURETIME_INFO), GFP_KERNEL);
@@ -140,15 +127,6 @@ if (ret != TZ_RESULT_SUCCESS) {
 	goto tz_error;
 }
 
-file = FILE_Open(GB_TIME_FILE_SAVE_PATH, O_RDWR|O_CREAT, S_IRWXU);
-if (file) {
-	FILE_Write(file, (void *)shm_p,
-			sizeof(struct TZ_GB_SECURETIME_INFO), &u8Offset);
-	filp_close(file, NULL);
-
-} else {
-	pr_warn("FILE_Open GB_TIME_FILE_SAVE_PATH return NULL\n");
-}
 
 tz_error:
 

@@ -30,7 +30,6 @@
 #include "trustzone/kree/system.h"
 #include "kree_int.h"
 #include "tz_counter.h"
-#include "tz_fileio.h"
 #include <trustzone/kree/mem.h>
 #include "trustzone/kree/system.h"
 #include <tz_cross/ta_mem.h>
@@ -47,7 +46,8 @@
 #include "tz_cross/ta_securetime.h"
 #define GB_TIME_FILE_SAVE_PATH "/data/SecureTD"
 #define DRM_UINT64 unsigned long long
-
+#define UINT64 unsigned long long
+#define INT64 long long
 
 
 
