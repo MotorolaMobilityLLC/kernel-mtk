@@ -330,6 +330,8 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 	}
 	if (i < MRDUMP_MINI_NR_SECTION)
 		fill_elf_load_phdr(phdr, hnew - lnew, lnew, paddr);
+	else
+		LOGE("mrdump: MINI_NR_SECTION overflow!\n");
 }
 
 static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
@@ -609,6 +611,10 @@ static void mrdump_mini_add_loads(void)
 		} else if (prstatus->pr_pid <= NR_CPUS) {
 			cpu = prstatus->pr_pid - 1;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 0);
+			for (i = 0; i < ELF_NGREG; i++) {
+				mrdump_mini_add_entry(((unsigned long *)&regs)[i],
+					MRDUMP_MINI_SECTION_SIZE);
+			}
 		} else {
 			LOGE("mrdump: wrong pr_pid: %d\n", prstatus->pr_pid);
 		}

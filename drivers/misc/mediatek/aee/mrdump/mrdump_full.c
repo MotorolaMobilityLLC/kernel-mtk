@@ -20,7 +20,6 @@
 #include <linux/elf.h>
 #include <linux/elfcore.h>
 #include <linux/kallsyms.h>
-#include <linux/memblock.h>
 #include <linux/miscdevice.h>
 #include <mt-plat/mtk_ram_console.h>
 #include <linux/reboot.h>
@@ -159,7 +158,7 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 	local_fiq_disable();
 	local_irq_disable();
 
-	__inner_flush_dcache_L1();
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 	while (1)
 		cpu_relax();
 }
@@ -195,7 +194,7 @@ static void mrdump_stop_noncore_cpu(void *unused)
 	local_fiq_disable();
 	local_irq_disable();
 
-	__inner_flush_dcache_L1();
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 	while (1)
 		cpu_relax();
 }
@@ -247,7 +246,7 @@ static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 
 	/* FIXME: Check reboot_mode is valid */
 	crash_record->reboot_mode = reboot_mode;
-	__inner_flush_dcache_all();
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 
 	if (reboot_mode == AEE_REBOOT_MODE_NESTED_EXCEPTION) {
 		while (1)
@@ -273,83 +272,37 @@ void aee_kdump_reboot(AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
 void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg, ...)
 {
 	va_list ap;
+	struct mrdump_crash_record *crash_record;
+	int cpu;
+
+	crash_record = &mrdump_cblock.crash_record;
+
+	local_irq_disable();
+	local_fiq_disable();
+
+#if defined(CONFIG_SMP)
+	__mrdump_reboot_stop_all(crash_record);
+#endif
+
+	cpu = get_HW_cpuid();
+	crashing_cpu = cpu;
+	crash_save_cpu(regs, cpu);
+
+	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
 
 	va_start(ap, msg);
-	__mrdump_reboot_va(reboot_mode, regs, msg, ap);
+	vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg, ap);
 	va_end(ap);
+
+	crash_record->fault_cpu = cpu;
+	save_current_task();
+
+	/* FIXME: Check reboot_mode is valid */
+	crash_record->reboot_mode = AEE_REBOOT_MODE_KERNEL_OOPS;
 }
-
-static int mrdump_panic_create_dump(struct notifier_block *this, unsigned long event, void *ptr)
-{
-	if (mrdump_enable) {
-		if (test_taint(TAINT_DIE))
-			aee_kdump_reboot(AEE_REBOOT_MODE_KERNEL_OOPS, "kernel Oops");
-		else
-			aee_kdump_reboot(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel panic");
-	} else
-		pr_info("MT-RAMDUMP no enable");
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block mrdump_panic_blk = {
-	.notifier_call	= mrdump_panic_create_dump,
-};
-
-#if CONFIG_SYSFS
-
-static ssize_t dump_status_show(struct kobject *kobj, struct kobj_attribute *attr,
-			   char *page)
-{
-	return 0;
-}
-
-static ssize_t mrdump_version_show(struct kobject *kobj, struct kobj_attribute *attr,
-				  char *buf)
-{
-	return sprintf(buf, "%s\n", MRDUMP_GO_DUMP);
-}
-
-static ssize_t manual_dump_show(struct kobject *kobj, struct kobj_attribute *attr,
-				char *buf)
-{
-	return sprintf(buf, "Trigger manual dump with message, format \"manualdump:HelloWorld\"\n");
-}
-
-static ssize_t manual_dump_store(struct kobject *kobj, struct kobj_attribute *attr,
-			 const char *buf, size_t count)
-{
-	if (strncmp(buf, "manualdump:", 11) == 0)
-		aee_kdump_reboot(AEE_REBOOT_MODE_MANUAL_KDUMP, buf + 11);
-	return count;
-}
-
-static struct kobj_attribute dump_status_attribute =
-	__ATTR(dump_status, 0400, dump_status_show, NULL);
-
-static struct kobj_attribute mrdump_version_attribute =
-	__ATTR(version, 0600, mrdump_version_show, NULL);
-
-static struct kobj_attribute manual_dump_attribute =
-	__ATTR(manualdump, 0600, manual_dump_show, manual_dump_store);
-
-static struct attribute *attrs[] = {
-	&dump_status_attribute.attr,
-	&mrdump_version_attribute.attr,
-	&manual_dump_attribute.attr,
-	NULL,
-};
-
-static struct attribute_group attr_group = {
-	.attrs = attrs,
-};
-
-#endif
 
 int __init mrdump_platform_init(const struct mrdump_platform *plat)
 {
-#if CONFIG_SYSFS
-	struct kobject *kobj;
-#endif
 	struct mrdump_machdesc *machdesc_p;
 
 	memset(&mrdump_cblock, 0, sizeof(struct mrdump_control_block));
@@ -398,9 +351,62 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 		return -ENOMEM;
 	}
 
-	atomic_notifier_chain_register(&panic_notifier_list, &mrdump_panic_blk);
+	pr_info("%s: init_done.\n", __func__);
+	return 0;
+}
 
 #if CONFIG_SYSFS
+
+static ssize_t dump_status_show(struct kobject *kobj, struct kobj_attribute *attr,
+			   char *page)
+{
+	return 0;
+}
+
+static ssize_t mrdump_version_show(struct kobject *kobj, struct kobj_attribute *attr,
+				  char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", MRDUMP_GO_DUMP);
+}
+
+static ssize_t manual_dump_show(struct kobject *kobj, struct kobj_attribute *attr,
+				char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", "Trigger manual dump with message, format \"manualdump:HelloWorld\"");
+}
+
+static ssize_t manual_dump_store(struct kobject *kobj, struct kobj_attribute *attr,
+			 const char *buf, size_t count)
+{
+	if (strncmp(buf, "manualdump:", 11) == 0)
+		aee_kdump_reboot(AEE_REBOOT_MODE_MANUAL_KDUMP, buf + 11);
+	return count;
+}
+
+static struct kobj_attribute dump_status_attribute =
+	__ATTR(dump_status, 0400, dump_status_show, NULL);
+
+static struct kobj_attribute mrdump_version_attribute =
+	__ATTR(version, 0600, mrdump_version_show, NULL);
+
+static struct kobj_attribute manual_dump_attribute =
+	__ATTR(manualdump, 0600, manual_dump_show, manual_dump_store);
+
+static struct attribute *attrs[] = {
+	&dump_status_attribute.attr,
+	&mrdump_version_attribute.attr,
+	&manual_dump_attribute.attr,
+	NULL,
+};
+
+static struct attribute_group attr_group = {
+	.attrs = attrs,
+};
+
+static int __init mrdump_sysfs_init(void)
+{
+	struct kobject *kobj;
+
 	kobj = kset_find_obj(module_kset, KBUILD_MODNAME);
 	if (kobj) {
 		if (sysfs_create_group(kobj, &attr_group)) {
@@ -411,9 +417,14 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 		pr_err("MT-RAMDUMP: Cannot find module %s object\n", KBUILD_MODNAME);
 		return -EINVAL;
 	}
-#endif
+
+	pr_info("%s: init_done.\n", __func__);
 	return 0;
 }
+
+module_init(mrdump_sysfs_init);
+
+#endif
 
 static int param_set_mrdump_device(const char *val, const struct kernel_param *kp)
 {
@@ -455,7 +466,7 @@ static int param_get_mrdump_device(char *buffer, const struct kernel_param *kp)
 		break;
 	}
 
-	strcpy(buffer, dev);
+	strlcpy(buffer, dev, PAGE_SIZE);
 	return strlen(dev);
 }
 
@@ -522,7 +533,7 @@ static int param_get_mrdump_fstype(char *buffer, const struct kernel_param *kp)
 		dev = "none(unknown)";
 		break;
 	}
-	strcpy(buffer, dev);
+	strlcpy(buffer, dev, PAGE_SIZE);
 	return strlen(dev);
 }
 
@@ -578,79 +589,6 @@ param_check_int(device, &mrdump_output_device);
 module_param_cb(device, &param_ops_mrdump_device, &mrdump_output_device, S_IRUGO | S_IWUSR);
 __MODULE_PARM_TYPE(device, int);
 
-
-mrdump_rsvmem_block_t __initdata rsvmem_block[4];
-
-static __init char *find_next_mrdump_rsvmem(char *p, int len)
-{
-	char *tmp_p;
-
-	tmp_p = memchr(p, ',', len);
-	if (!tmp_p)
-		return NULL;
-	if (*(tmp_p+1) != 0) {
-		tmp_p = memchr(tmp_p+1, ',', strlen(tmp_p));
-		if (!tmp_p)
-			return NULL;
-	} else{
-		return NULL;
-	}
-	return tmp_p + 1;
-}
-static int __init early_mrdump_rsvmem(char *p)
-{
-	unsigned long start_addr, size;
-	int ret;
-	char *tmp_p = p;
-	int i;
-
-	for (i = 0; i < 4; i++) {
-		ret = sscanf(tmp_p, "0x%lx,0x%lx", &start_addr, &size);
-		if (ret != 2) {
-			pr_alert("%s:%s reserve failed ret=%d\n", __func__, p, ret);
-			return 0;
-		}
-		rsvmem_block[i].start_addr = start_addr;
-		rsvmem_block[i].size = size;
-		tmp_p = find_next_mrdump_rsvmem(tmp_p, strlen(tmp_p));
-		if (!tmp_p)
-			break;
-	}
-/*
-	for(i = 0;i<4;i++)
-	{
-		if(rsvmem_block[i].start_addr)
-			pr_err(" mrdump region start = %pa size =%pa\n",
-						&rsvmem_block[i].start_addr,&mrdump_rsvmem_block[i].size);
-	}
-*/
-	return 0;
-}
-
-__init void mrdump_rsvmem(void)
-{
-	int i;
-
-	for (i = 0; i < 4; i++) {
-		if (rsvmem_block[i].start_addr) {
-			if (!memblock_is_region_reserved(rsvmem_block[i].start_addr, rsvmem_block[i].size))
-				memblock_reserve(rsvmem_block[i].start_addr, rsvmem_block[i].size);
-			else {
-				/*even conflict , we still enable MRDUMP for temp
-				 * because MINI DUMP will reserve the memory in DTSI now
-				 * */
-#if 0
-				mrdump_rsv_conflict = 1;
-				mrdump_enable = 0;
-#endif
-				pr_err(" mrdump region start = %pa size =%pa is reserved already\n",
-						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
-			}
-		}
-	}
-}
-
-early_param("mrdump_rsvmem", early_mrdump_rsvmem);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek MRDUMP module");

@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #if !defined(__MRDUMP_H__)
 #define __MRDUMP_H__
 
@@ -95,7 +108,7 @@ struct mrdump_mini_header {
 	struct mrdump_mini_reg_desc reg_desc[ELF_NGREG];
 };
 
-#define MRDUMP_MINI_NR_SECTION 40
+#define MRDUMP_MINI_NR_SECTION 60
 #define MRDUMP_MINI_SECTION_SIZE (32 * 1024)
 #define NT_IPANIC_MISC 4095
 #define MRDUMP_MINI_NR_MISC 20
@@ -152,21 +165,17 @@ typedef struct mrdump_rsvmem_block {
 #define MRDUMP_MINI_BUF_PADDR 0
 #endif
 
-#if defined(CONFIG_MTK_AEE_MRDUMP)
-void mrdump_reserve_memory(void);
-
+int mrdump_init(void);
 void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg,
 			       ...);
+
+#if defined(CONFIG_MTK_AEE_MRDUMP)
+void mrdump_reserve_memory(void);
 
 void aee_kdump_reboot(AEE_REBOOT_MODE, const char *msg, ...);
 
 #else
 static inline void mrdump_reserve_memory(void)
-{
-}
-
-static inline void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs,
-					     const char *msg, ...)
 {
 }
 

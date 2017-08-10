@@ -25,7 +25,7 @@ int mrdump_platform_init(const struct mrdump_platform *plat);
 
 void mrdump_save_current_backtrace(struct pt_regs *regs);
 
+extern void __disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2(void);
 extern void __inner_flush_dcache_all(void);
-extern void __inner_flush_dcache_L1(void);
 
 #endif /* __MRDUMP_PRIVATE_H__ */

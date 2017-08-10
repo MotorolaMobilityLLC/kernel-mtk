@@ -21,6 +21,7 @@
 
 static void mrdump_hw_enable(bool enabled)
 {
+#ifndef CONFIG_MTK_LASTPC_V2
 	int res;
 	struct wd_api *wd_api = NULL;
 
@@ -29,6 +30,7 @@ static void mrdump_hw_enable(bool enabled)
 		pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
 	else
 		wd_api->wd_dram_reserved_mode(enabled);
+#endif
 }
 
 static void mrdump_reboot(void)
@@ -51,9 +53,7 @@ const struct mrdump_platform mrdump_v1_platform = {
 	.reboot = mrdump_reboot
 };
 
-static int __init mrdump_init(void)
+int __init mrdump_init(void)
 {
 	return mrdump_platform_init(&mrdump_v1_platform);
 }
-
-module_init(mrdump_init);

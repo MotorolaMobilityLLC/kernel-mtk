@@ -260,4 +260,6 @@ extern int sysrq_sched_debug_show_at_AEE(void);
 #ifdef CONFIG_MTK_WQ_DEBUG
 extern void wq_debug_dump(void);
 #endif
+extern void __disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2(void);
+
 #endif
