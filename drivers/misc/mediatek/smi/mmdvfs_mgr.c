@@ -685,3 +685,8 @@ static int default_clk_switch_cb(int ori_mmsys_clk_mode, int update_mmsys_clk_mo
 
 	return 1;
 }
+
+int mmdvfs_get_stable_isp_clk(void)
+{
+	return MMSYS_CLK_MEDIUM;
+}

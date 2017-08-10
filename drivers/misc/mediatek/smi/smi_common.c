@@ -2297,6 +2297,14 @@ int is_mmdvfs_disabled(void)
 	return disable_mmdvfs;
 }
 
+void mmdvfs_enable(int enable)
+{
+	if (enable)
+		disable_mmdvfs = 0;
+	else
+		disable_mmdvfs = 1;
+	SMIDBG(1, "disable_mmdvfs=%d, enable=%d", disable_mmdvfs, enable);
+}
 
 int is_mmdvfs_freq_hopping_disabled(void)
 {
