@@ -36,9 +36,9 @@ static DEFINE_MUTEX(gCmdqSecContextLock);	/* lock to protext atomic access gCmdq
 static struct list_head gCmdqSecContextList;	/* secure context list. note each porcess has its own sec context */
 static cmdqSecContextHandle gCmdqSecContextHandle;	/* secure context to cmdqSecTL */
 static KREE_SHAREDMEM_HANDLE gCmdq_share_cookie_handle;
+static uint32_t gSubmitTaskCount;
 #endif
 static uint32_t gSecPrintCount;
-static uint32_t gSubmitTaskCount;
 
 /*
 ** for CMDQ_LOG_LEVEL

@@ -20,16 +20,10 @@ ifneq ($(CONFIG_ARCH_MT6735M),y)
 endif
 
 #ccflags-y += -I$(MTK_PATH_SOURCE)/drivers/jpeg/
-ifeq ($(CONFIG_ARCH_MT8173),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/hv1/mt8173/
-endif
 
-ifneq ($(CONFIG_ARCH_MT8173),y)
 ccflags-y += \
   -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
   -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
-endif
 
 ifeq ($(CONFIG_ARCH_MT8173),y)
 #ccflags-y += -DJPEG_DEV

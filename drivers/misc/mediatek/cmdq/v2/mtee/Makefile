@@ -29,7 +29,6 @@ ccflags-y += -DCMDQ_USE_LEGACY
 endif
 
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
-$(warning start to build mt8163 cmdq secure)
 	ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 endif
 	ccflags-y += -I$(srctree)/include
