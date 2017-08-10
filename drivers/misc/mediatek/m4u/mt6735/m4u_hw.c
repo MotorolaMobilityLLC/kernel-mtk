@@ -40,7 +40,13 @@ int gM4u_port_num = M4U_PORT_UNKNOWN;
 int m4u_invalid_tlb(int m4u_id, int L2_en, int isInvAll, unsigned int mva_start, unsigned int mva_end)
 {
 	unsigned int reg = 0;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	if (mva_start >= mva_end)
 		isInvAll = 1;
@@ -212,7 +218,13 @@ int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set,
 		      int wr, int vir, int io, int bit32,
 		      unsigned int start, unsigned int end, unsigned int port_mask, unsigned int larb_mask)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	if (0 == m4u_base)
 		return -1;
@@ -323,6 +335,11 @@ int __mau_dump_status(int m4u_id, int m4u_slave_id, int mau)
 	int larb, port;
 	struct mau_config_info mau_cfg;
 
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+
 	m4u_base = gM4UBaseAddr[m4u_id];
 	status = M4U_ReadReg32(m4u_base, REG_MMU_MAU_ASSERT_ST(m4u_slave_id));
 
@@ -386,7 +403,14 @@ int m4u_dump_reg(int m4u_index, unsigned int start)
 unsigned int m4u_get_main_descriptor(int m4u_id, int m4u_slave_id, int idx)
 {
 	unsigned int regValue = 0;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	regValue = F_READ_ENTRY_EN
 			| F_READ_ENTRY_MMx_MAIN(m4u_slave_id)
@@ -400,7 +424,14 @@ unsigned int m4u_get_main_descriptor(int m4u_id, int m4u_slave_id, int idx)
 
 unsigned int m4u_get_main_tag(int m4u_id, int m4u_slave_id, int idx)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	return M4U_ReadReg32(m4u_base, REG_MMU_MAIN_TAG(m4u_slave_id, idx));
 }
@@ -539,11 +570,16 @@ int m4u_dump_pfh_tlb(int m4u_id)
 int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
 {
 	unsigned int regval;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
 	int set_nr, way_nr, set, way;
 	int valid;
 	int pfh_id = 0;
 
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 	set_nr = MMU_SET_NR(m4u_id);
 	way_nr = MMU_WAY_NR;
 
@@ -629,10 +665,15 @@ int m4u_confirm_range_invalidated(int m4u_index, unsigned int MVAStart, unsigned
 {
 	unsigned int i = 0;
 	unsigned int regval;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
 	int result = 0;
 	int set_nr, way_nr, set, way;
 
+	if (m4u_index < 0 && m4u_index > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_index);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_index];
 	/* /> check Main TLB part */
 	result = m4u_confirm_main_range_invalidated(m4u_index, 0, MVAStart, MVAEnd);
 	if (result < 0)
@@ -714,9 +755,14 @@ int m4u_confirm_main_all_invalid(int m4u_index, int m4u_slave_id)
 int m4u_confirm_pfh_all_invalid(int m4u_index)
 {
 	unsigned int regval;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long m4u_base;
 	int set_nr, way_nr, set, way;
 
+	if (m4u_index < 0 && m4u_index > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_index);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_index];
 	set_nr = MMU_SET_NR(m4u_index);
 	way_nr = MMU_WAY_NR;
 
@@ -1191,13 +1237,20 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 
 int m4u_config_port(M4U_PORT_STRUCT *pM4uPort) /* native */
 {
-	M4U_PORT_ID PortID = (pM4uPort->ePortID);
-	int m4u_index = m4u_port_2_m4u_id(PortID);
-	int larb = m4u_port_2_larb_id(PortID);
+	M4U_PORT_ID PortID;
+	int m4u_index;
+	int larb;
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
+	if (pM4uPort->ePortID < 0 && pM4uPort->ePortID > M4U_PORT_UNKNOWN) {
+		M4UMSG("error port id, error id is %d\n", pM4uPort->ePortID);
+		return -1;
+	}
+	PortID = pM4uPort->ePortID;
+	m4u_index = m4u_port_2_m4u_id(PortID);
+	larb = m4u_port_2_larb_id(PortID);
 
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
@@ -1349,7 +1402,13 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 
 int m4u_monitor_start(int m4u_id)
 {
-	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_base = gM4UBaseAddr[m4u_id];
 
 	M4UINFO("====m4u_monitor_start: %d======\n", m4u_id);
 	/* clear GMC performance counter */
@@ -1372,8 +1431,15 @@ int m4u_monitor_start(int m4u_id)
 int m4u_monitor_stop(int m4u_id)
 {
 	M4U_PERF_COUNT cnt;
-	int m4u_index = m4u_id;
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	int m4u_index;
+	unsigned long m4u_base;
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+	m4u_index = m4u_id;
+	m4u_base = gM4UBaseAddr[m4u_index];
 
 	/* disable GMC performance monitor */
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_CTRL_REG,
@@ -2132,6 +2198,11 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	gM4U_4G_DRAM_Mode = enable_4G();
 #endif
 	M4UMSG("4G DRAM Mode is: %d\n", gM4U_4G_DRAM_Mode);
+
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
 
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 

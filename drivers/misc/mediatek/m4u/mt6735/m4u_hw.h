@@ -91,10 +91,10 @@ extern int gM4u_port_num;
 
 static inline char *m4u_get_port_name(M4U_PORT_ID portID)
 {
-	if (portID < gM4u_port_num)
+	if (portID >= 0 && portID < gM4u_port_num)
 		return gM4uPort[portID].name;
-	else
-		return "m4u_port_unknown";
+
+	return "m4u_port_unknown";
 }
 
 static inline int m4u_get_port_by_tf_id(int m4u_id, int tf_id)
@@ -106,20 +106,31 @@ static inline int m4u_get_port_by_tf_id(int m4u_id, int tf_id)
 	if (m4u_id == 0)
 		tf_id &= F_MMU0_INT_ID_TF_MSK;
 
-	for (i = 0; i < gM4u_port_num; i++)
+	for (i = 0; i < gM4u_port_num; i++) {
 		if ((gM4uPort[i].tf_id == tf_id) && (gM4uPort[i].m4u_id == m4u_id))
 			return i;
+	}
 	M4UMSG("error: m4u_id=%d, tf_id=0x%x\n", m4u_id, tf_id_old);
 	return gM4u_port_num;
 }
 
 static inline int m4u_port_2_larb_port(M4U_PORT_ID port)
 {
+	if (port < 0  || port > M4U_PORT_UNKNOWN) {
+		M4UMSG("%s, error: port=%d\n", __func__, port);
+		return M4U_PORT_UNKNOWN;
+	}
+
 	return gM4uPort[port].larb_port;
 }
 
 static inline int m4u_port_2_larb_id(M4U_PORT_ID port)
 {
+	if (port < 0 || port > M4U_PORT_UNKNOWN) {
+		M4UMSG("%s, error: port=%d\n", __func__, port);
+		return -1;
+	}
+
 	return gM4uPort[port].larb_id;
 }
 
@@ -135,11 +146,21 @@ static inline int larb_2_m4u_slave_id(int larb)
 
 static inline int m4u_port_2_m4u_id(M4U_PORT_ID port)
 {
+	if (port < 0 || port > M4U_PORT_UNKNOWN) {
+		M4UMSG("%s, error: port=%d\n", __func__, port);
+		return -1;
+	}
+
 	return gM4uPort[port].m4u_id;
 }
 
 static inline int m4u_port_2_m4u_slave_id(M4U_PORT_ID port)
 {
+	if (port < 0 || port > M4U_PORT_UNKNOWN) {
+		M4UMSG("%s, error: port=%d\n", __func__, port);
+		return -1;
+	}
+
 	return gM4uPort[port].m4u_slave;
 }
 
