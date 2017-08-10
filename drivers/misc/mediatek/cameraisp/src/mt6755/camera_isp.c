@@ -5494,6 +5494,17 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										 ring_buf[rt_dma].
 										 data[i].
 										 base_pAddr);
+									/* for openedDma=2,
+									it must update 2 dma's based address,
+									or it will occur tearing */
+					/**/			if (pstRTBuf->ring_buf[ch_imgo].active == MTRUE)
+										ISP_WR32(
+					/**/				    p1_dma_addr_reg[ch_imgo],
+					/**/				    pstRTBuf->ring_buf[ch_imgo].data[i].base_pAddr);
+					/**/			if (pstRTBuf->ring_buf[ch_rrzo].active == MTRUE)
+										ISP_WR32(
+					/**/				    p1_dma_addr_reg[ch_rrzo],
+					/**/				    pstRTBuf->ring_buf[ch_rrzo].data[i].base_pAddr);
 								}
 					/**/			if ((_camsv_imgo_ == rt_dma)
 					/**/			    || (_camsv2_imgo_ == rt_dma)) {
