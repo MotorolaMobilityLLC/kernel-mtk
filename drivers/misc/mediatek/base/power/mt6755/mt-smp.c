@@ -62,8 +62,8 @@ static void __cpuinit write_pen_release(int val)
 
 void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 {
-	pr_debug("Slave cpu init\n");
-	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
+	/*pr_debug("Slave cpu init\n");
+	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);*/
 #ifndef CONFIG_MTK_GIC
 	mt_gic_secondary_init();
 #endif
@@ -107,7 +107,7 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
 
-	pr_crit("Boot slave CPU\n");
+	/*pr_crit("Boot slave CPU\n");*/
 
 	atomic_inc(&hotplug_cpu_count);
 
