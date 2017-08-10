@@ -3857,13 +3857,8 @@ void dsi_analysis(DISP_MODULE_ENUM module)
 
 int ddp_dsi_dump(DISP_MODULE_ENUM module, int level)
 {
-
-	if (level >= 0) {
-		dsi_analysis(module);
-		DSI_DumpRegisters(module, level);
-	} else if (level >= 1) {
-		DSI_DumpRegisters(module, level);
-	}
+	dsi_analysis(module);
+	DSI_DumpRegisters(module, level);
 	return 0;
 }
 
