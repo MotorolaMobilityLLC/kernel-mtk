@@ -391,6 +391,14 @@ config ARCH_MT6755
 	  Support for evb6755 related projects
 	  Support for k55 related projects
 
+config ARCH_MT6755_TURBO
+	bool "MediaTek MT6755 Turbo"
+	help
+	  This enables support for MediaTek MT6755 turbo mode
+	  Support for k55tv1 related projects
+	  CPU: 1.25 + 2.15 GHZ
+	  GPU: 800 HMZ
+
 config ARCH_MT6757
 	bool "MediaTek MT6757"
 	select GENERIC_TIME

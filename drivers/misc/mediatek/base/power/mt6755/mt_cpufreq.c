@@ -410,8 +410,10 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 				return CPU_LEVEL_0;
 			else if ((2 == func_code_0) || (4 == func_code_0))
 				return CPU_LEVEL_1;
+#ifdef CONFIG_ARCH_MT6755_TURBO
 			else if (0x22 == func_code_0)
 				return CPU_LEVEL_2;
+#endif
 			else {
 				if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07)))
 					return CPU_LEVEL_0;
