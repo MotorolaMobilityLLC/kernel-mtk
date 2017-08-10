@@ -1752,6 +1752,8 @@ bool SetI2SAdcEnable(bool bEnable)
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
 #endif
+		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
+		usleep_range(125, 150);
 	}
 
 	AudDrv_GPIO_Request(bEnable, Soc_Aud_Digital_Block_ADDA_UL);

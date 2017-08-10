@@ -1548,11 +1548,15 @@ bool SetI2SAdcEnable(bool bEnable)
 
 	if (bEnable == true) {
 		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0001, 0x0001);
-	} else if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
-		   &&
-		   mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false
-		   && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false) {
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0000, 0x0001);
+	} else {
+		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
+		udelay(125);
+
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0000, 0x0001);
+		}
 	}
 
 	return true;
