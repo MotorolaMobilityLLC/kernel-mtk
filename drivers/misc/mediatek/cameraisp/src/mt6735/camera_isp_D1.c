@@ -7497,6 +7497,7 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 			return ret;
 		} else {
 			if (P2_EDBUF_MList_LastBufIdx != -1) {
+#if 0
 				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, 0, _LOG_DBG,
 					"pD(%d_0x%x) MF/L(%d,%d),(%d,%d),	RF/C/L(%d,%d,%d),(%d,%d,%d),dCq(%d)/Bq(%d)\n",
 						param.processID, param.callerID,
@@ -7509,6 +7510,7 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 						P2_EDBUF_RingList[P2_EDBUF_RList_CurBufIdx].bufSts,
 						P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts,
 						param.p2dupCQIdx, param.p2burstQIdx);
+#endif
 			}
 			/* [2] add new element to the last of the list */
 			if (P2_EDBUF_RList_FirstBufIdx == P2_EDBUF_RList_LastBufIdx
