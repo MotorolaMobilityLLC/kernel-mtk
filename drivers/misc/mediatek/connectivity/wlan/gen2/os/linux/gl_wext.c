@@ -411,7 +411,8 @@ const long channel_freq[] = {
 
 #define NUM_CHANNELS (sizeof(channel_freq) / sizeof(channel_freq[0]))
 
-#define MAX_SSID_LEN    32
+#define MAX_SSID_LEN            32
+#define COUNTRY_CODE_LEN	10	/*country code length */
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -3312,22 +3313,24 @@ static int wext_set_country(IN struct net_device *prNetDev, IN struct iw_point *
 	P_GLUE_INFO_T prGlueInfo;
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
-	UINT_8 aucCountry[2];
+	UINT_8 aucCountry[COUNTRY_CODE_LEN];
 
 	ASSERT(prNetDev);
 
 	/* prData->pointer should be like "COUNTRY US", "COUNTRY EU"
 	 * and "COUNTRY JP"
 	 */
-	if (FALSE == GLUE_CHK_PR2(prNetDev, prData) || !prData->pointer || prData->length < 10)
+	if (FALSE == GLUE_CHK_PR2(prNetDev, prData) || !prData->pointer || prData->length < COUNTRY_CODE_LEN)
 		return -EINVAL;
 
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 
-	aucCountry[0] = *((PUINT_8)prData->pointer + 8);
-	aucCountry[1] = *((PUINT_8)prData->pointer + 9);
+	if (copy_from_user(aucCountry, prData->pointer, COUNTRY_CODE_LEN))
+		return -EFAULT;
 
-	rStatus = kalIoctl(prGlueInfo, wlanoidSetCountryCode, &aucCountry[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetCountryCode,
+			   &aucCountry[COUNTRY_CODE_LEN - 2], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		DBGLOG(REQ, ERROR, "Set country code error: %x\n", rStatus);
 		return -EFAULT;
