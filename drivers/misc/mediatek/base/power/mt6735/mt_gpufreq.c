@@ -398,7 +398,7 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 		case 0x4B:
 			return 0;	/* 35M+: 550M */
 		case 0x51:
-			return 2;	/* 37: 600M */
+			return 1;	/* 37: 450M */
 		case 0x52:
 		case 0x53:
 #ifdef CONFIG_MTK_EFUSE_DOWNGRADE
