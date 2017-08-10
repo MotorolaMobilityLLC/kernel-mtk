@@ -386,7 +386,7 @@ static int __ccif_v1_intr_handler(struct ccif_t *ccif)
 				if ((lg_ch_rx_debug_enable[md_id] &
 				     ENABLE_ALL_RX_LOG)
 				    || (lg_ch_rx_debug_enable[md_id] &
-					(1 << phy_ch_data.channel))) {
+					(1ULL << phy_ch_data.channel))) {
 					CCCI_DBG_MSG(md_id, "cci",
 						     "[RX]: %08X, %08X, %02d, %08X (%02d)\n",
 						     phy_ch_data.data[0],
