@@ -47,7 +47,11 @@ obj-$(CONFIG_ARCH_MT6757) += hps/v2/
 obj-$(CONFIG_ARCH_MT6735) += spm_v1/
 obj-$(CONFIG_ARCH_MT6735M) += spm_v1/
 obj-$(CONFIG_ARCH_MT6753) += spm_v1/
+
+ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_ARCH_MT6570) += spm_v1/
+endif
+
 obj-$(CONFIG_ARCH_MT6580) += spm_v1/
 obj-$(CONFIG_ARCH_MT6755) += spm_v2/
 obj-$(CONFIG_ARCH_MT6757) += spm_v2/
