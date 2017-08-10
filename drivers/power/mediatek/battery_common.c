@@ -164,6 +164,7 @@ kal_bool g_charging_full_reset_bat_meter = KAL_FALSE;
 int g_platform_boot_mode = 0;
 struct timespec g_bat_time_before_sleep;
 int g_smartbook_update = 0;
+int cable_in_uevent = 0;
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 kal_bool g_vcdt_irq_delay_flag = 0;
@@ -1903,6 +1904,9 @@ static void battery_update(struct battery_data *bat_data)
 {
 	struct power_supply *bat_psy = &bat_data->psy;
 	kal_bool resetBatteryMeter = KAL_FALSE;
+	static unsigned int update_cnt = 3;
+	static unsigned int pre_uisoc;
+	static unsigned int pre_chr_state;
 
 	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
 	bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
@@ -1989,7 +1993,34 @@ static void battery_update(struct battery_data *bat_data)
 	}
 #endif
 
-	power_supply_changed(bat_psy);
+	if (update_cnt >= 3) {
+		/* Update per 60 seconds */
+		power_supply_changed(bat_psy);
+		pre_uisoc = BMT_status.UI_SOC;
+		update_cnt = 0;
+		pre_chr_state = BMT_status.bat_charging_state;
+		if (cable_in_uevent == 1)
+			cable_in_uevent = 0;
+	} else if ((pre_uisoc != BMT_status.UI_SOC) || (BMT_status.UI_SOC == 0)) {
+		/* Update when soc change */
+		power_supply_changed(bat_psy);
+		pre_uisoc = BMT_status.UI_SOC;
+		update_cnt = 0;
+	} else if ((BMT_status.charger_exist == KAL_TRUE) &&
+			((pre_chr_state != BMT_status.bat_charging_state) ||
+			(BMT_status.bat_charging_state == CHR_ERROR))) {
+		/* Update when changer status change */
+		power_supply_changed(bat_psy);
+		pre_chr_state = BMT_status.bat_charging_state;
+		update_cnt = 0;
+	} else if (cable_in_uevent == 1) {
+		/*To prevent interrupt-trigger update from being filtered*/
+		power_supply_changed(bat_psy);
+		cable_in_uevent = 0;
+	} else {
+		/* No update */
+		update_cnt++;
+	}
 }
 
 void update_charger_info(int wireless_state)
@@ -3077,6 +3108,8 @@ void do_chrdet_int_task(void)
 		}
 
 		/* Place charger detection and battery update here is used to speed up charging icon display. */
+
+		cable_in_uevent = 1;
 
 		mt_battery_charger_detect_check();
 		if (BMT_status.UI_SOC == 100 && BMT_status.charger_exist == KAL_TRUE) {
