@@ -889,6 +889,24 @@ void EnableApll2(bool bEnable)
 	}
 }
 
+static bool CheckAfeIsOff(void)
+{
+	unsigned int retry = 0;
+	int mask = 0x8000000;	/* bit27: AFE_ON_RETM */
+
+	while ((Afe_Get_Reg(AFE_DAC_CON0) & mask) && ++retry < 100000)
+		udelay(10);
+
+	if (!retry) {
+		return true;
+	} else if (retry < 100000) {
+		pr_debug("%s(), Retry %d times\n", __func__, retry);
+		return true;
+	}
+
+	pr_debug("%s(), WARNING! Retry exceed %d, but AFE is not Off\n", __func__, retry);
+	return false;
+}
 
 static bool CheckMemIfEnable(void)
 {
@@ -974,6 +992,8 @@ void EnableAfe(bool bEnable)
 			DisableAPLLTunerbySampleRate(48000);
 		}
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
+		if (!CheckAfeIsOff())
+			pr_warn("%s(), AFE is NOT off!!!\n", __func__);
 
 		if (afe_on && mtk_soc_always_hd) {
 			DisableALLbySampleRate(44100);
