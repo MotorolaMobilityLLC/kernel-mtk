@@ -1779,6 +1779,9 @@ static long sock_wait_for_wmem(struct sock *sk, long timeo)
 }
 
 #ifdef CONFIG_MTK_NET_LOGGING
+/*2016/8/18
+  *           1. Only AF_UNIX use this debug info
+  */
 struct sock_block_info_t {
 	char *process;
 	int pid;
@@ -1870,27 +1873,31 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 			goto interrupted;
 
 #ifdef CONFIG_MTK_NET_LOGGING
-	debug_block.pid = current->pid;
-	debug_block.process = current->comm;
-	debug_block.when = jiffies;
-	debug_block.sk = sk; /*Mark sk info*/
-	init_timer(&debug_timer);
-	debug_timer.function = print_block_sock_info;
-	debug_timer.expires = jiffies + 10*HZ;
-	debug_timer.data = (unsigned long)&debug_block;
-	add_timer(&debug_timer);
+	if (sk->sk_family == AF_UNIX) {
+		debug_block.pid = current->pid;
+		debug_block.process = current->comm;
+		debug_block.when = jiffies;
+		debug_block.sk = sk; /*Mark sk info*/
+		init_timer(&debug_timer);
+		debug_timer.function = print_block_sock_info;
+		debug_timer.expires = jiffies + 10*HZ;
+		debug_timer.data = (unsigned long)&debug_block;
+		add_timer(&debug_timer);
+	}
 #endif
 	timeo = sock_wait_for_wmem(sk, timeo);
 
 #ifdef CONFIG_MTK_NET_LOGGING
-	del_timer(&debug_timer);
-	delay_time = jiffies - debug_block.when;
-	do_div(delay_time, HZ);
-	if (delay_time > 5) {
-		pr_info("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
-			header_len, data_len, timeo);
-		pr_info("[mtk_net][sock]sockdbg:Warning: Process %s[%d] Block %lld s\n",
-			debug_block.process, debug_block.pid, delay_time);
+	if (sk->sk_family == AF_UNIX) {
+		del_timer(&debug_timer);
+		delay_time = jiffies - debug_block.when;
+		do_div(delay_time, HZ);
+		if (delay_time > 5) {
+			pr_info("[mtk_net][sock]sockdbg: more than 5s wait_for_wmem done, header_len=0x%lx, data_len=0x%lx,timeo =%ld\n",
+				header_len, data_len, timeo);
+			pr_info("[mtk_net][sock]sockdbg:Warning: Process %s[%d] Block %lld s\n",
+				debug_block.process, debug_block.pid, delay_time);
+		}
 	}
 #endif
 	}

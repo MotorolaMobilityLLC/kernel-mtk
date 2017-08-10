@@ -35,6 +35,11 @@
 static DEFINE_MUTEX(afinfo_mutex);
 
 #ifdef CONFIG_MTK_NET_LOGGING
+/* 2016/8/18:
+  *			  1. Fix Bug for debug drop packet message!
+  *			  2. Use local_clock() to record drop time!
+  */
+
 #define IPTABLES_DROP_PACKET_STATICS 10
 
 /*Trace 500 packets*/
@@ -46,7 +51,7 @@ struct drop_packet_info_t {
 	unsigned int len;
 	u_int8_t pf;
 	unsigned int hook;
-	long drop_time;
+	u64 drop_time;
 	char *iface;
 	char *table;
 	int family;
@@ -85,6 +90,15 @@ static __printf(2, 3) int sb_add(struct sbuff *m, const char *f, ...)
 	return -1;
 }
 
+static size_t drop_time(u64 ts, char *buf)
+{
+	unsigned long rem_nsec;
+
+	rem_nsec = do_div(ts, 1000000000);
+	return sprintf(buf, "[%5lu.%06lu] ",
+			   (unsigned long)ts, rem_nsec / 1000);
+}
+
 static void iptables_drop_packet_monitor(unsigned long data)
 {
 	int limit = 0;
@@ -92,9 +106,11 @@ static void iptables_drop_packet_monitor(unsigned long data)
 	int size = 0;
 	int num  = iptables_drop_packets.cnt % 500;
 	struct sbuff m;
+	char time_buff[30];
 
 	m.count = 0;
 	memset(m.buf, 0, sizeof(m.buf));
+	memset(time_buff, 0, sizeof(time_buff));
 	if (num > 10)
 			limit = 10;
 	else
@@ -143,12 +159,14 @@ static void iptables_drop_packet_monitor(unsigned long data)
 				break;
 			}
 
-			sb_add(&m, "[%pS],[%s],[%ld]", iptables_drop_packets.drop_packets[i].table,
+			drop_time(iptables_drop_packets.drop_packets[i].drop_time, time_buff);
+			sb_add(&m, "[%pS],[%s],[%s]", iptables_drop_packets.drop_packets[i].table,
 			       iptables_drop_packets.drop_packets[i].iface,
-			       iptables_drop_packets.drop_packets[i].drop_time);
+			       time_buff);
 			pr_info("%s\n", m.buf);
 			m.count = 0;
 			memset(m.buf, 0, sizeof(m.buf));
+			memset(time_buff, 0, sizeof(time_buff));
 			iptables_drop_packets.drop_packets[i].already_print = 1;
 		}
 	}
@@ -314,12 +332,11 @@ next_hook:
 	} else if ((verdict & NF_VERDICT_MASK) == NF_DROP) {
 #ifdef CONFIG_MTK_NET_LOGGING
 		/*because skb free  need copy some info to ...*/
-	iptables_drop_packets.cnt++;
 	if (iptables_drop_packets.cnt > 100000)
 			iptables_drop_packets.cnt = 1;
 	table = (char *)((struct nf_hook_ops *)elem)->hook;
 	num = iptables_drop_packets.cnt % 500;
-	iptables_drop_packets.drop_packets[num].drop_time = jiffies;
+	iptables_drop_packets.drop_packets[num].drop_time = local_clock();
 	iptables_drop_packets.drop_packets[num].len = skb->len;
 	iptables_drop_packets.drop_packets[num].hook = hook;
 	iptables_drop_packets.drop_packets[num].pf = pf;

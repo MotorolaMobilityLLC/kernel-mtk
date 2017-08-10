@@ -1680,17 +1680,16 @@ SYSCALL_DEFINE4(accept4, int, fd, struct sockaddr __user *, upeer_sockaddr,
 
 	fd_install(newfd, newfile);
 	err = newfd;
+	if ((err >= 0) && newsock && SOCK_INODE(newsock)) {
+#ifdef CONFIG_MTK_NET_LOGGING
+		pr_debug("[mtk_net][socket]socket_accept:fd=%d,server_sock[%lu], newsock[%lu]\n",
+			 err, SOCK_INODE(sock)->i_ino, SOCK_INODE(newsock)->i_ino);
+#endif
+	    }
 
 out_put:
 	fput_light(sock->file, fput_needed);
 out:
-	if ((err >= 0) && newsock && SOCK_INODE(newsock)) {
-		#ifdef CONFIG_MTK_NET_LOGGING
-		pr_debug("[mtk_net][socket]socket_accept:fd=%d,server_sock[%lu], newsock[%lu]\n",
-			 err, SOCK_INODE(sock)->i_ino, SOCK_INODE(newsock)->i_ino);
-		#endif
-	    }
-
 	return err;
 out_fd:
 	fput(newfile);
