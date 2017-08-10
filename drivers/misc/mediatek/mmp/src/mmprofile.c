@@ -900,7 +900,7 @@ MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
 		memcpy(pRegTable->event_info.name, name, MMProfileEventNameMaxLen);
 		pRegTable->event_info.name[MMProfileEventNameMaxLen] = 0;
 	} else
-		strcpy(pRegTable->event_info.name, name);
+		strncpy(pRegTable->event_info.name, name, strlen(name));
 	pRegTable->event_info.parentId = parent;
 	list_add_tail(&(pRegTable->list), &(MMProfile_RegTable.list));
 	MMProfileGlobals.event_state[index] = 0;
