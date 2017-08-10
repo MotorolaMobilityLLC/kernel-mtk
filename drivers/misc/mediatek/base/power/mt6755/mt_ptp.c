@@ -4118,13 +4118,16 @@ int is_have_550(void)
 unsigned int get_vcore_ptp_volt(int uv)
 {
 	unsigned int ret;
+
 	switch (uv) {
 	case VCORE_VOLT_0:
-		ret = vcore0;
+		/* ret = vcore0; */
+		ret = EEM_VOLT_TO_PMIC_VAL(VCORE_VOLT_0 / 10) + EEM_PMIC_OFFSET;
 		break;
 
 	case VCORE_VOLT_1:
-		ret = vcore1;
+		/* ret = vcore1; */
+		ret = EEM_VOLT_TO_PMIC_VAL(VCORE_VOLT_1 / 10) + EEM_PMIC_OFFSET;
 		break;
 
 	/* Jade only use 2 level voltage
@@ -4133,12 +4136,12 @@ unsigned int get_vcore_ptp_volt(int uv)
 		break;
 	*/
 	default:
-		ret = EEM_VOLT_TO_PMIC_VAL(uv/10) + EEM_PMIC_OFFSET;
+		ret = EEM_VOLT_TO_PMIC_VAL(uv / 10) + EEM_PMIC_OFFSET;
 		break;
 	}
 
 	if (ret == 0)
-		ret = EEM_VOLT_TO_PMIC_VAL(uv/10) + EEM_PMIC_OFFSET;
+		ret = EEM_VOLT_TO_PMIC_VAL(uv / 10) + EEM_PMIC_OFFSET;
 
 	return ret;
 }
