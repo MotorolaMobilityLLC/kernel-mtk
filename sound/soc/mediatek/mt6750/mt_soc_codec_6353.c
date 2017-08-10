@@ -593,14 +593,14 @@ static void Apply_Speaker_Gain(void)
 	cur_spk_gain = (Ana_Get_Reg(MT6353_SPK_ANA_CON0) & 0x7800) >> 11;
 	index = Speaker_pga_gain;
 	oldindex = cur_spk_gain;
-	pr_warn("%s Speaker_pga_gain = %d, oldindex = %d\n", __func__, Speaker_pga_gain, oldindex);
+	pr_warn("%s, Speaker_pga_gain = %d, oldindex = %d\n", __func__, Speaker_pga_gain, oldindex);
 
 	if (index > oldindex) {
 		offset = index - oldindex;
 		while (offset > 0) {
 			Ana_Set_Reg(MT6353_SPK_ANA_CON0, (oldindex + count) << 11,
 				    0x7800);
-			pr_warn("%s set reg = 0x%x\n", __func__, (oldindex + count));
+			/* pr_warn("%s, set reg = 0x%x\n", __func__, (oldindex + count)); */
 
 			offset--;
 			count++;
@@ -611,7 +611,7 @@ static void Apply_Speaker_Gain(void)
 		while (offset > 0) {
 			Ana_Set_Reg(MT6353_SPK_ANA_CON0, (oldindex - count) << 11,
 				    0x7800);
-			pr_warn("%s set reg = 0x%x\n", __func__, (oldindex - count));
+			/* pr_warn("%s, set reg = 0x%x\n", __func__, (oldindex - count)); */
 
 			offset--;
 			count++;
@@ -3046,7 +3046,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	int index = 0, oldindex = 0, offset = 0, count = 1;
 
-	/* pr_warn("%s(), index = %d arraysize = %d\n", __func__,
+	/* pr_warn("%s(), index = %d, arraysize = %d\n", __func__,
 	   ucontrol->value.enumerated.item[0], ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)); //mark for 64bit build fail */
 	pr_warn("%s(), index = %ld\n", __func__, ucontrol->value.integer.value[0]);
 
@@ -3065,7 +3065,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		if (oldindex == 0x1f) /* special case (mute) */
 			oldindex = MAX_HP_GAIN_LEVEL;
 
-		pr_warn("%s index = %d oldindex = %d\n", __func__, index, oldindex);
+		/* pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex); */
 		if (index > oldindex) {
 			offset = index - oldindex;
 			while (offset > 0) {
@@ -3099,9 +3099,6 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	}
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] =
 			ucontrol->value.integer.value[0];
-
-	pr_warn("mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = %d\n",
-			mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL]);
 
 	return 0;
 }
@@ -3137,7 +3134,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 		if (oldindex == 0x1f) /* special case(mute) */
 			oldindex = MAX_HP_GAIN_LEVEL;
 
-		pr_warn("%s index = %d oldindex = %d\n", __func__, index, oldindex);
+		/* pr_warn("%s, index = %d, oldindex = %d\n", __func__, index, oldindex); */
 		if (index > oldindex) {
 			offset = index - oldindex;
 			while (offset > 0) {
@@ -3172,9 +3169,6 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	}
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] =
 			ucontrol->value.integer.value[0];
-
-	pr_warn("mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = %d\n",
-			mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR]);
 
 	return 0;
 }
