@@ -57,7 +57,7 @@
 		if (!kstrtouint(buf, 10, &setting))					\
 			var = setting;							\
 		else									\
-			ppm_err("@%s: Bad argument(%d)!\n", __func__, setting);		\
+			ppm_err("@%s: Bad argument!\n", __func__);			\
 											\
 		free_page((unsigned long)buf);						\
 		return count;								\
