@@ -867,6 +867,7 @@ static void receive_file_work(struct work_struct *data)
 				&offset);
 			DBG(cdev, "vfs_write %d\n", ret);
 			if (ret != write_req->actual) {
+				usb_ep_dequeue(dev->ep_out, read_req);
 				r = -EIO;
 				dev->state = STATE_ERROR;
 				break;
