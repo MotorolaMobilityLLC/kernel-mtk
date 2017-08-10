@@ -6702,7 +6702,7 @@ static MINT32 ISP_CAMSV_SOF_Buf_Get(unsigned int dma, CQ_RTBC_FBC camsv_fbc, MUI
 {
 	MUINT32 camsv_imgo_idx = 0;
 	eISPIrq irqT;
-	MUINT32 out;
+	MUINT32 out = 0;
 
 	DMA_TRANS(dma, out);
 
