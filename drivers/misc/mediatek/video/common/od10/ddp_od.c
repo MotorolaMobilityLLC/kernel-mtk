@@ -35,8 +35,6 @@
 #include <m4u.h>
 #include <ddp_drv.h>
 #include <ddp_reg.h>
-#include <ddp_debug.h>
-#include <ddp_log.h>
 #include <lcm_drv.h>
 #include <ddp_dither.h>
 #include <ddp_od.h>
@@ -45,6 +43,10 @@
 #include "ddp_od_reg.h"
 #include "ddp_od_table.h"
 
+#if defined(CONFIG_ARCH_MT6755)
+#else
+#include <ddp_log.h>
+#endif
 
 #define OD_ALLOW_DEFAULT_TABLE
 /* #define OD_LINEAR_TABLE_IF_NONE */

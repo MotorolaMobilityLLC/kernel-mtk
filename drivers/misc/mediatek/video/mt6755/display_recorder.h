@@ -18,6 +18,18 @@
 #include "mmprofile.h"
 #include "disp_event.h"
 #include "ddp_info.h"
+
+#define DPREC_LOGGER_LEVEL_ALL				0xFFFFFFFF
+#define DPREC_LOGGER_LEVEL_DEFAULT			(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
+#define DPREC_LOGGER_LEVEL_UART_LOG			(0x1<<0)
+#define DPREC_LOGGER_LEVEL_MOBILE_LOG			(0x1<<1)
+#define DPREC_LOGGER_LEVEL_MMP				(0x1<<2)
+#define DPREC_LOGGER_LEVEL_SYSTRACE			(0x1<<3)
+#define DPREC_LOGGER_LEVEL_AEE_DUMP			(0x1<<4)
+#define DPREC_LOGGER_LEVEL_LOGGER			(0x1<<5)
+
+#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024*16)
+
 typedef enum {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,
 	DPREC_EVENT_CMDQ_WAIT_STREAM_EOF,
@@ -106,15 +118,6 @@ typedef enum {
 	DPREC_LOGGER_NUM
 } DPREC_LOGGER_ENUM;
 
-#define DPREC_LOGGER_LEVEL_ALL				0xFFFFFFFF
-#define DPREC_LOGGER_LEVEL_DEFAULT			(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
-#define DPREC_LOGGER_LEVEL_UART_LOG			(0x1<<0)
-#define DPREC_LOGGER_LEVEL_MOBILE_LOG			(0x1<<1)
-#define DPREC_LOGGER_LEVEL_MMP				(0x1<<2)
-#define DPREC_LOGGER_LEVEL_SYSTRACE			(0x1<<3)
-#define DPREC_LOGGER_LEVEL_AEE_DUMP			(0x1<<4)
-#define DPREC_LOGGER_LEVEL_LOGGER			(0x1<<5)
-
 
 typedef struct {
 	unsigned long long period_frame;
@@ -146,21 +149,17 @@ typedef struct {
 typedef enum {
 	DPREC_LOGGER_ERROR,
 	DPREC_LOGGER_FENCE,
-	DPREC_LOGGER_HWOP,
+	DPREC_LOGGER_DEBUG,
+	DPREC_LOGGER_DUMP,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
-
-#define DPREC_ERROR_LOG_BUFFER_LENGTH (1024*8)
 extern unsigned int gCapturePriLayerEnable;
 extern unsigned int gCaptureWdmaLayerEnable;
 extern unsigned int gCaptureRdmaLayerEnable;
 extern unsigned int gCapturePriLayerDownX;
 extern unsigned int gCapturePriLayerDownY;
 extern unsigned int gCapturePriLayerNum;
-
-
-
 
 void dprec_event_op(DPREC_EVENT event);
 void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int mask);
@@ -200,7 +199,8 @@ int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num);
 int dprec_mmp_dump_rdma_layer(void *wdma_layer, unsigned int wdma_num);
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence);
 void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
-int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
-			     unsigned int session /*1:primary, 2:external, 3:memory */);
+int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l, unsigned int session);
+ssize_t dprec_read_from_buffer(void __user *to, size_t count, loff_t *ppos,
+				const void *from, size_t available);
 
 #endif

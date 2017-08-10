@@ -21,10 +21,15 @@
 #include <linux/wait.h>
 #include <linux/types.h>
 
+#if defined(CONFIG_ARCH_MT6755)
+#include "disp_debug.h"
+#else
+#include "debug.h"
+#endif
+
 #include "disp_drv_platform.h"
 #include "m4u_priv.h"
 #include "mtkfb.h"
-#include "debug.h"
 #include "lcm_drv.h"
 #include "ddp_path.h"
 #include "fbconfig_kdebug.h"

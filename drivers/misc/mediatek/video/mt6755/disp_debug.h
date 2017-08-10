@@ -14,20 +14,51 @@
 #ifndef __MTKFB_DEBUG_H
 #define __MTKFB_DEBUG_H
 
+
+#include <linux/kernel.h>
+#include "ddp_mmp.h"
+#include "ddp_dump.h"
+#include "disp_log.h"
+#include "mmprofile.h"
+
+#define LP_CUST_DISABLE (0)
+#define LOW_POWER_MODE (1)
+#define JUST_MAKE_MODE (2)
+#define PERFORMANC_MODE (3)
+
+#define DBG_BUF_SIZE		    2048
+#define MAX_DBG_INDENT_LEVEL	    5
+#define DBG_INDENT_SIZE		    3
+#define MAX_DBG_MESSAGES	    0
+
+int get_lp_cust_mode(void);
+void backup_vfp_for_lp_cust(unsigned int vfp);
+unsigned int get_backup_vfp(void);
+void ddp_debug_init(void);
+void ddp_debug_exit(void);
+
+unsigned int  ddp_debug_analysis_to_buffer(void);
+unsigned int  ddp_debug_dbg_log_level(void);
+unsigned int  ddp_debug_irq_log_level(void);
+
+int ddp_mem_test(void);
+int ddp_lcd_test(void);
+/*******************************************************/
+
 void DBG_Init(void);
 void DBG_Deinit(void);
 
-#include "mmprofile.h"
+
 extern int lcm_mode_status;
 extern int bypass_blank;
 
-#ifdef MTKFB_DBG
-#include "disp_drv_log.h"
+/* For Log print Switch */
+extern unsigned int gEnableUartLog;
+extern unsigned int gMobilelog;
+extern unsigned int gLoglevel;
+extern unsigned int gRcdlevel;
 
-#define DBG_BUF_SIZE		    2048
-#define MAX_DBG_INDENT_LEVEL	5
-#define DBG_INDENT_SIZE		    3
-#define MAX_DBG_MESSAGES	    0
+#ifdef MTKFB_DBG
 
 static int dbg_indent;
 static int dbg_cnt;
@@ -47,10 +78,10 @@ static inline void dbg_print(int level, const char *fmt, ...)
 			if (ind > MAX_DBG_INDENT_LEVEL)
 				ind = MAX_DBG_INDENT_LEVEL;
 
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", "%*s", ind * DBG_INDENT_SIZE, "");
+			DISPMSG("%*s", ind * DBG_INDENT_SIZE, "");
 			va_start(args, fmt);
 			vsnprintf(dbg_buf, sizeof(dbg_buf), fmt, args);
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", dbg_buf);
+			DISPMSG(dbg_buf);
 			va_end(args);
 			spin_unlock_irqrestore(&dbg_spinlock, flags);
 		}
@@ -81,7 +112,7 @@ static inline void dbg_print(int level, const char *fmt, ...)
 #define MSG(evt, fmt, args...)                              \
 	do {                                                    \
 		if ((MTKFB_DBG_EVT_##evt) & MTKFB_DBG_EVT_MASK) {   \
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "DBG", fmt, ##args);                            \
+			DISPMSG(fmt, ##args);                            \
 		}                                                   \
 	} while (0)
 

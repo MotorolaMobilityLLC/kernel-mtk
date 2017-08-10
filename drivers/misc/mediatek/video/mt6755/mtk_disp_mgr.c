@@ -48,8 +48,8 @@
 #include "m4u.h"
 
 #include "mtk_sync.h"
-#include "debug.h"
-#include "disp_drv_log.h"
+#include "disp_debug.h"
+#include "disp_log.h"
 #include "disp_lcm.h"
 #include "disp_utils.h"
 #include "mtkfb_console.h"

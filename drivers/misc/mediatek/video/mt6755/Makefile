@@ -19,7 +19,6 @@ obj-y +=	ddp_ovl.o              \
 		ddp_clkmgr.o           \
 		ddp_drv.o              \
 		ddp_path.o             \
-		ddp_debug.o            \
 		ddp_dump.o             \
 		ddp_manager.o          \
 		ddp_irq.o              \
@@ -32,7 +31,7 @@ obj-y +=	ddp_ovl.o              \
 		mtkfb_console.o        \
 		disp_assert_layer.o    \
 		mtkfb.o                \
-		debug.o                \
+		disp_debug.o           \
 		primary_display.o      \
 		disp_lowpower.o        \
 		disp_recovery.o        \

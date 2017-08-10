@@ -41,7 +41,7 @@
 #include "mtkfb.h"
 #include "mtkfb_info.h"
 
-#define DISPCHECK pr_debug
+#define DISPMSG pr_debug
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
@@ -744,7 +744,7 @@ static int _parse_tag_videolfb(void)
 			}
 
 			if (size >= sizeof(mtkfb_lcm_name)) {
-				DISPCHECK("%s: error to get lcmname size=%ld\n", __func__,
+				DISPMSG("%s: error to get lcmname size=%ld\n", __func__,
 					  size);
 				return -1;
 			}

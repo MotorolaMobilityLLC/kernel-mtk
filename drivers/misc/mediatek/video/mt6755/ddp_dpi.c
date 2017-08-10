@@ -22,12 +22,9 @@
 #include <linux/mutex.h>
 
 #include "cmdq_record.h"
-#include <disp_drv_log.h>
 #endif
-#include <debug.h>
 
 #include <linux/types.h>
-
 /*#include <mach/sync_write.h>*/
 #include <mt-plat/sync_write.h>
 
@@ -52,8 +49,8 @@
 #include "ddp_dpi_reg.h"
 #include "ddp_dpi.h"
 #include "ddp_reg.h"
-#include "ddp_log.h"
-
+#include "disp_log.h"
+#include "disp_debug.h"
 #ifndef LOG_TAG
 #define LOG_TAG "DPI"
 #endif
@@ -259,12 +256,12 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 		}
 	default:
 		{
-			DDPERR("[DPI]unknown clock frequency: %d\n", clk_req);
+			DISPERR("[DPI]unknown clock frequency: %d\n", clk_req);
 			break;
 		}
 	}
 
-	DDPMSG("[DPI]TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
+	DISPMSG("[DPI]TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
 
 #ifdef CONFIG_MTK_CLKMGR
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
@@ -466,7 +463,7 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
-	DDPMSG("[DPI]ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
+	DISPMSG("[DPI]ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (!s_isDpiPowerOn) {
 #ifdef CONFIG_MTK_CLKMGR
 		ret += enable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
@@ -476,7 +473,7 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		/*ret += ddp_clk_enable(DISP1_DPI_ENGINE);*/
 #endif
 		if (ret > 0)
-			DDPERR("[DPI]power manager API return FALSE\n");
+			DISPERR("[DPI]power manager API return FALSE\n");
 
 		/* _RestoreDPIRegisters(); */
 		s_isDpiPowerOn = TRUE;
@@ -489,7 +486,7 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
-	DDPMSG("[DPI]ddp_dpi_power_off, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
+	DISPMSG("[DPI]ddp_dpi_power_off, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (s_isDpiPowerOn) {
 #ifdef CONFIG_MTK_CLKMGR
 		/* _BackupDPIRegisters(); */
@@ -500,7 +497,7 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		/*ddp_clk_disable(DISP1_DPI_ENGINE);*/
 #endif
 		if (ret > 0)
-			DDPERR("[DPI]power manager API return FALSE\n");
+			DISPERR("[DPI]power manager API return FALSE\n");
 
 		s_isDpiPowerOn = FALSE;
 	}
@@ -514,14 +511,14 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 	if (s_isDpiConfig == FALSE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 
-		DDPMSG("[DPI]ddp_dpi_config DPI status:%x, width:%d, height:%d\n", INREG32(&DPI_REG->STATUS),
+		DISPMSG("[DPI]ddp_dpi_config DPI status:%x, width:%d, height:%d\n", INREG32(&DPI_REG->STATUS),
 			dpi_config->width, dpi_config->height);
 
 		ddp_dpi_ConfigPclk(cmdq_handle, dpi_config->dpi_clock, dpi_config->clk_pol);
 		ddp_dpi_ConfigSize(cmdq_handle, dpi_config->width, dpi_config->height);
 		/*ddp_dpi_ConfigBG(cmdq_handle, true, dpi_config->bg_width, dpi_config->bg_height);*/
 		cache_bg_parameter = dpi_config->bg_width << 16 | dpi_config->bg_height;
-		DDPMSG("[DPI]bg_width: %d, bg_height: %d\n", dpi_config->bg_width, dpi_config->bg_height);
+		DISPMSG("[DPI]bg_width: %d, bg_height: %d\n", dpi_config->bg_width, dpi_config->bg_height);
 
 		ddp_dpi_ConfigDE(cmdq_handle, dpi_config->de_pol);
 		ddp_dpi_ConfigVsync(cmdq_handle, dpi_config->vsync_pol,
@@ -534,18 +531,18 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		ddp_dpi_ConfigDualEdge(cmdq_handle, dpi_config->i2x_en, dpi_config->i2x_edge);
 
 		s_isDpiConfig = TRUE;
-		DDPDBG("[DPI]ddp_dpi_config done\n");
+		DISPMSG("[DPI]ddp_dpi_config done\n");
 	}
 
 	if (s_isDpiConfig == TRUE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 		int now_bg_parameters = dpi_config->bg_width << 16 | dpi_config->bg_height;
 
-		DDPDBG("[DPI]now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n", now_bg_parameters,
+		DISPMSG("[DPI]now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n", now_bg_parameters,
 			cache_bg_parameter);
 
 		if (now_bg_parameters != cache_bg_parameter) {
-			DDPMSG("[DPI]Need to rechange DPI BG\n");
+			DISPMSG("[DPI]Need to rechange DPI BG\n");
 
 
 			ddp_dpi_ConfigSize(cmdq_handle, dpi_config->width, dpi_config->height);
@@ -563,7 +560,7 @@ int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	struct DPI_REG_RST reset;
 
-	DDPDBG("[DPI]ddp_dpi_reset\n");
+	DISPMSG("[DPI]ddp_dpi_reset\n");
 
 	reset = DPI_REG->DPI_RST;
 	reset.RST = 1;
@@ -584,7 +581,7 @@ int ddp_dpi_start(DISP_MODULE_ENUM module, void *cmdq)
 int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 {
 	if (s_isDpiStart == FALSE) {
-		DDPMSG("[DPI]ddp_dpi_start\n");
+		DISPMSG("[DPI]ddp_dpi_start\n");
 		/*enable vsync interrupt*/
 		ddp_dpi_EnableINT(cmdq, 1, 1);
 		ddp_dpi_reset(module, cmdq);
@@ -598,7 +595,7 @@ int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 
 int ddp_dpi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	DDPMSG("[DPI]ddp_dpi_stop\n");
+	DISPMSG("[DPI]ddp_dpi_stop\n");
 
 	/*disable DPI and background, and reset DPI */
 	ddp_dpi_EnableINT(cmdq_handle, 1, 0);
@@ -639,9 +636,9 @@ irqreturn_t _DPI_InterruptHandler(int irq, void *dev_id)
 		if (dpi_vsync_irq_count > 30)
 			dpi_vsync_irq_count = 0;
 	} else if ((status >> 1) & 0x01) {
-		/*DDPMSG("status.VDE  interrupt coming\n");*/
+		/*DISPMSG("status.VDE  interrupt coming\n");*/
 	} else if ((status >> 2) & 0x01) {
-		/*DDPMSG("status.UNDERFLOW interrupt coming\n");*/
+		/*DISPMSG("status.UNDERFLOW interrupt coming\n");*/
 	}
 
 	ClearDPIIntrStatus();
@@ -654,7 +651,7 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 {
 	struct device_node *node;
 
-	DDPMSG("[DPI]ddp_dpi_init +\n");
+	DISPMSG("[DPI]ddp_dpi_init +\n");
 
 #if 0				/* /def MTKFB_FPGA_ONLY */
 
@@ -685,7 +682,7 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 #if ENABLE_DPI_INTERRUPT
 	if (request_irq(DPI0_IRQ_BIT_ID,
 			_DPI_InterruptHandler, IRQF_TRIGGER_LOW, "mtkdpi", NULL) < 0) {
-		DDPERR("[DPI]fail to request DPI irq\n");
+		DISPERR("[DPI]fail to request DPI irq\n");
 		return DPI_STATUS_ERROR;
 	}
 
@@ -706,14 +703,14 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 		pr_debug("[CLK_APMIXED] base failed\n");
 #endif
 
-	DDPDBG("[DPI]ddp_dpi_init done\n");
+	DISPMSG("[DPI]ddp_dpi_init done\n");
 
 	return 0;
 }
 
 int ddp_dpi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	DDPMSG("[DPI]ddp_dpi_deinit +\n");
+	DISPMSG("[DPI]ddp_dpi_deinit +\n");
 	ddp_dpi_stop(DISP_MODULE_DPI, cmdq_handle);
 	ddp_dpi_power_off(DISP_MODULE_DPI, cmdq_handle);
 
@@ -726,7 +723,7 @@ int ddp_dpi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 
 	DISPFUNC();
 	if (lcm_drv == NULL) {
-		DDPERR("[DPI]lcm_drv is null !\n");
+		DISPERR("[DPI]lcm_drv is null !\n");
 		return -1;
 	}
 
@@ -750,20 +747,20 @@ int ddp_dpi_dump(DISP_MODULE_ENUM module, int level)
 {
 	unsigned i;
 
-	DDPDUMP("---------- Start dump DPI registers ----------\n");
+	DISPDMP("---------- Start dump DPI registers ----------\n");
 
 	for (i = 0; i <= 0x50; i += 4)
-		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+		DISPDMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
 
 	for (i = 0x68; i <= 0x7C; i += 4)
-		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
+		DISPDMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
 
-	DDPDUMP("DPI+Color Bar : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
-	/*DDPDUMP("DPI Addr IO Driving : 0x%08x\n", INREG32(DISPSYS_IO_DRIVING));*/
-	/*DDPDUMP("DPI TVDPLL CON0 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON0));*/
-	/*DDPDUMP("DPI TVDPLL CON1 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON1));*/
-	/*DDPDUMP("DPI TVDPLL CON6 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON6));*/
-	DDPDUMP("DPI MMSYS_CG_CON1:0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	DISPDMP("DPI+Color Bar : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
+	/*DISPDMP("DPI Addr IO Driving : 0x%08x\n", INREG32(DISPSYS_IO_DRIVING));*/
+	/*DISPDMP("DPI TVDPLL CON0 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON0));*/
+	/*DISPDMP("DPI TVDPLL CON1 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON1));*/
+	/*DISPDMP("DPI TVDPLL CON6 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON6));*/
+	DISPDMP("DPI MMSYS_CG_CON1:0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
 	return 0;
 }
 
@@ -773,7 +770,7 @@ int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioc
 {
 	int ret = 0;
 
-	DDPDBG("[DPI]DPI ioctl :  % d\n", ioctl_cmd);
+	DISPMSG("[DPI]DPI ioctl :  % d\n", ioctl_cmd);
 
 	switch (ioctl_cmd) {
 	case DDP_DPI_FACTORY_TEST:

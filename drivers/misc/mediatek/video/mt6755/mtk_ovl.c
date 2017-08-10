@@ -19,9 +19,9 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include "debug.h"
+#include "disp_debug.h"
 
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "disp_utils.h"
 
 #include "ddp_dump.h"

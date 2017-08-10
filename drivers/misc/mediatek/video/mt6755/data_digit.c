@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#include "ddp_debug.h"
+#include "disp_debug.h"
 
 #ifdef DISP_ENABLE_LAYER_FRAME
 unsigned char data_digit[816] = {

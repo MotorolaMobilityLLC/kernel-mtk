@@ -33,7 +33,7 @@
 #include <linux/atomic.h>
 #include <asm/cacheflush.h>
 #include <linux/io.h>
-
+#include <mt-plat/dma.h>
 #include <linux/compat.h>
 #include <linux/dma-mapping.h>
 
@@ -44,15 +44,18 @@
 /* #include "mach/mt_boot.h" */
 /* #include <mach/irqs.h> */
 
-#include <mt-plat/dma.h>
-#include "disp_assert_layer.h"
-
+#if defined(CONFIG_ARCH_MT6755)
+#include "disp_log.h"
+#include "disp_debug.h"
+#else
 #include "debug.h"
-
-#include "ddp_hal.h"
 #include "ddp_log.h"
 #include "disp_drv_log.h"
+#endif
 
+#include "display_recorder.h"
+#include "disp_assert_layer.h"
+#include "ddp_hal.h"
 #include "disp_lcm.h"
 #include "mtkfb.h"
 #include "mtkfb_console.h"
@@ -62,10 +65,8 @@
 #include "disp_drv_platform.h"
 #include "primary_display.h"
 #include "ddp_dump.h"
-#include "display_recorder.h"
 #include "fbconfig_kdebug.h"
 #include "ddp_manager.h"
-
 #include "mtk_ovl.h"
 #include "ion_drv.h"
 #include "ddp_drv.h"
@@ -833,12 +834,12 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	session_input.config_layer_num = 0;
 
 	if (!isAEEEnabled) {
-		/* DISPCHECK("AEE is not enabled, will disable layer 3\n"); */
+		/* DISPMSG("AEE is not enabled, will disable layer 3\n"); */
 		input = &session_input.config[session_input.config_layer_num++];
 		input->layer_id = primary_display_get_option("ASSERT_LAYER");
 		input->layer_enable = 0;
 	} else {
-		DISPCHECK("AEE is enabled, should not disable layer 3\n");
+		DISPMSG("AEE is enabled, should not disable layer 3\n");
 	}
 
 	input = &session_input.config[session_input.config_layer_num++];
@@ -2056,12 +2057,12 @@ int _parse_tag_videolfb(void)
 {
 	struct tag_videolfb *videolfb_tag = NULL;
 	/* not necessary */
-	/* DISPCHECK("[DT][videolfb]isvideofb_parse_done = %d\n",is_videofb_parse_done); */
+	/* DISPMSG("[DT][videolfb]isvideofb_parse_done = %d\n",is_videofb_parse_done); */
 
 	if (is_videofb_parse_done)
 		return 0;
 #ifdef MTK_NO_DISP_IN_LK
-	DISPCHECK("[DT][videolfb] zaikuo, workaround for LK not ready\n"); /* after LK ready, remove this code */
+	DISPMSG("[DT][videolfb] zaikuo, workaround for LK not ready\n"); /* after LK ready, remove this code */
 	return 1;
 #endif
 
@@ -2083,20 +2084,20 @@ int _parse_tag_videolfb(void)
 			DISPPRINT("[DT][videolfb] lcmfound=%d, fps=%d, fb_base=%p, vram=%d, lcmname=%s\n",
 			     islcmconnected, lcd_fps, (void *)fb_base, vramsize, mtkfb_lcm_name);
 #if 0
-			DISPCHECK("[DT][videolfb] islcmfound = %d\n", islcmconnected);
-			DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
-			DISPCHECK("[DT][videolfb] fb_base    = %p\n", (void *)fb_base);
-			DISPCHECK("[DT][videolfb] vram       = %d\n", vramsize);
-			DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+			DISPMSG("[DT][videolfb] islcmfound = %d\n", islcmconnected);
+			DISPMSG("[DT][videolfb] fps        = %d\n", lcd_fps);
+			DISPMSG("[DT][videolfb] fb_base    = %p\n", (void *)fb_base);
+			DISPMSG("[DT][videolfb] vram       = %d\n", vramsize);
+			DISPMSG("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 #endif
 			return 0;
 		}
 
-		DISPCHECK("[DT][videolfb] videolfb_tag not found\n");
+		DISPMSG("[DT][videolfb] videolfb_tag not found\n");
 		return 1;
 	}
 
-	DISPCHECK("[DT][videolfb] of_chosen not found\n");
+	DISPMSG("[DT][videolfb] of_chosen not found\n");
 	return 1;
 }
 
@@ -2573,7 +2574,7 @@ int mtkfb_pm_freeze(struct device *device)
 
 int mtkfb_pm_restore_noirq(struct device *device)
 {
-	DISPCHECK("%s: %d\n", __func__, __LINE__);
+	DISPMSG("%s: %d\n", __func__, __LINE__);
 
 	is_ipoh_bootup = true;
 #ifndef CONFIG_MTK_CLKMGR

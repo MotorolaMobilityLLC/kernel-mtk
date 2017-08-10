@@ -13,8 +13,8 @@
 
 #define LOG_TAG "INFO"
 #include"ddp_info.h"
-#include"ddp_debug.h"
-#include "ddp_log.h"
+#include"disp_debug.h"
+#include "disp_log.h"
 
 char *ddp_get_module_name(DISP_MODULE_ENUM module)
 {
@@ -89,7 +89,7 @@ char *ddp_get_module_name(DISP_MODULE_ENUM module)
 		return "mipi";
 
 	default:
-		DDPMSG("invalid module id=%d", module);
+		DISPMSG("invalid module id=%d", module);
 		return "unknown";
 	}
 }
@@ -140,7 +140,7 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 	case DISP_REG_MIPI:
 		return DISP_MODULE_MIPI;
 	default:
-		DDPERR("%s: invalid reg module id=%d", __func__, reg_module);
+		DISPERR("%s: invalid reg module id=%d", __func__, reg_module);
 		BUG();
 	}
 }
@@ -212,7 +212,7 @@ int ddp_get_module_max_irq_bit(DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER:
 		return 0;
 	default:
-		DDPMSG("invalid module id=%d", module);
+		DISPMSG("invalid module id=%d", module);
 	}
 	return 0;
 }
@@ -252,7 +252,7 @@ unsigned int ddp_module_to_idx(int module)
 		id = 2;
 		break;
 	default:
-		DDPERR("ddp_module_to_idx, module=0x%x\n", module);
+		DISPERR("ddp_module_to_idx, module=0x%x\n", module);
 	}
 
 	return id;

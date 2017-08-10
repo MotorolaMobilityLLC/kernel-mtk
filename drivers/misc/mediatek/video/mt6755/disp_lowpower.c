@@ -34,9 +34,9 @@
 #include "m4u.h"
 
 #include "disp_drv_platform.h"
-#include "debug.h"
-#include "ddp_debug.h"
-#include "disp_drv_log.h"
+#include "disp_debug.h"
+#include "disp_debug.h"
+#include "disp_log.h"
 #include "disp_lcm.h"
 #include "disp_utils.h"
 #include "disp_session.h"
@@ -51,8 +51,6 @@
 #include "ddp_clkmgr.h"
 #include "mt_smi.h"
 /* #include "mmdvfs_mgr.h" */
-#include "disp_drv_log.h"
-#include "ddp_log.h"
 #include "disp_lowpower.h"
 /* device tree */
 #include <linux/of.h>
@@ -537,15 +535,15 @@ void _primary_display_disable_mmsys_clk(void)
 	dpmgr_path_power_off_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 
 	if (primary_display_is_decouple_mode()) {
-		DISPCHECK("[LP]3.1 dpmanager path power off: ovl2men [begin]\n");
+		DISPMSG("[LP]3.1 dpmanager path power off: ovl2men [begin]\n");
 		if (primary_get_ovl2mem_handle())
 			dpmgr_path_power_off(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 		else
 			DISPERR("display is decouple mode, but ovl2mem_path_handle is null\n");
 
-		DISPCHECK("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
+		DISPMSG("[LP]3.1 dpmanager path power off: ovl2men [end]\n");
 	}
-	DISPCHECK("[LP]3.dpmanager path power off[end]\n");
+	DISPMSG("[LP]3.dpmanager path power off[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 
@@ -614,7 +612,7 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	}
 
-	DISPCHECK("[LP]2.dpmanager path config[end]\n");
+	DISPMSG("[LP]2.dpmanager path config[end]\n");
 
 	DISPDBG("[LP]3.dpmgr path start[begin]\n");
 	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
@@ -662,7 +660,7 @@ void _vdo_mode_enter_idle(void)
 			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, primary_get_sess_id(), 0, NULL, 0);
 			set_is_dc(1);
 		} else
-			DISPCHECK("pd_allocate_dc_buffer fail\n");
+			DISPMSG("pd_allocate_dc_buffer fail\n");
 		/* merge setting when the last one */
 		/*
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
@@ -1091,11 +1089,11 @@ void set_rdma_width_height(unsigned int width, unsigned height)
 void enable_idlemgr(unsigned int flag)
 {
 	if (flag) {
-		DISPCHECK("[disp_lowpower]enabel idlemgr\n");
+		DISPMSG("[disp_lowpower]enabel idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 1);
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
 	} else {
-		DISPCHECK("[disp_lowpower]disable idlemgr\n");
+		DISPMSG("[disp_lowpower]disable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 0);
 		primary_display_idlemgr_kick((char *)__func__, 1);
 	}
@@ -1113,11 +1111,11 @@ unsigned int set_idlemgr(unsigned int flag, int need_lock)
 	unsigned int old_flag = atomic_read(&idlemgr_task_wakeup);
 
 	if (flag) {
-		DISPCHECK("[disp_lowpower]enable idlemgr\n");
+		DISPMSG("[disp_lowpower]enable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 1);
 		wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
 	} else {
-		DISPCHECK("[disp_lowpower]disable idlemgr\n");
+		DISPMSG("[disp_lowpower]disable idlemgr\n");
 		atomic_set(&idlemgr_task_wakeup, 0);
 		primary_display_idlemgr_kick((char *)__func__, need_lock);
 	}

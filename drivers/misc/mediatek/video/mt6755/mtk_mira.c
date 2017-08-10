@@ -13,7 +13,7 @@
 
 #define LOG_TAG "mtk_mira"
 
-#include "disp_drv_log.h"
+#include "disp_log.h"
 
 #include <linux/kernel.h>
 #include <linux/mm.h>

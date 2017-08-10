@@ -13,7 +13,7 @@
 
 
 #include "ddp_clkmgr.h"
-#include "ddp_log.h"
+#include "disp_log.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
@@ -41,11 +41,11 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 	int ret = 0;
 
 	if (n >= MAX_DISP_CLK_CNT) {
-		DDPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", n);
+		DISPERR("DISPSYS CLK id=%d is more than MAX_DISP_CLK_CNT\n", n);
 		return -1;
 	}
 	ddp_clk[n] = pclk;
-	DDPMSG("ddp_clk[%d] %p\n", n, ddp_clk[n]);
+	DISPMSG("ddp_clk[%d] %p\n", n, ddp_clk[n]);
 	return ret;
 }
 
@@ -54,12 +54,12 @@ int ddp_clk_prepare(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 	ret = clk_prepare(ddp_clk[id]);
 	if (ret)
-		DDPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
+		DISPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
 
 	return ret;
 }
@@ -69,7 +69,7 @@ int ddp_clk_unprepare(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 	clk_unprepare(ddp_clk[id]);
@@ -81,13 +81,13 @@ int ddp_clk_enable(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 
 	ret = clk_enable(ddp_clk[id]);
 	if (ret)
-		DDPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
+		DISPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
 
 	return ret;
 }
@@ -97,7 +97,7 @@ int ddp_clk_disable(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 	clk_disable(ddp_clk[id]);
@@ -109,12 +109,12 @@ int ddp_clk_prepare_enable(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 	ret = clk_prepare_enable(ddp_clk[id]);
 	if (ret)
-		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
+		DISPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
 
 	return ret;
 }
@@ -124,7 +124,7 @@ int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 	int ret = 0;
 
 	if (NULL == ddp_clk[id]) {
-		DDPERR("DISPSYS CLK %d NULL\n", id);
+		DISPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
 	clk_disable_unprepare(ddp_clk[id]);
@@ -133,7 +133,7 @@ int ddp_clk_disable_unprepare(eDDP_CLK_ID id)
 int ddp_clk_set_parent(eDDP_CLK_ID id, eDDP_CLK_ID parent)
 {
 	if ((NULL == ddp_clk[id]) || (NULL == ddp_clk[parent])) {
-		DDPERR("DISPSYS CLK %d or parent %d NULL\n", id, parent);
+		DISPERR("DISPSYS CLK %d or parent %d NULL\n", id, parent);
 		return -1;
 	}
 	return clk_set_parent(ddp_clk[id], ddp_clk[parent]);
@@ -164,12 +164,12 @@ int ddp_parse_apmixed_base(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
 	if (!node) {
-		DDPERR("[DDP_APMIXED] DISP find apmixed node failed\n");
+		DISPERR("[DDP_APMIXED] DISP find apmixed node failed\n");
 		return -1;
 	}
 	ddp_apmixed_base = of_iomap(node, 0);
 	if (!ddp_apmixed_base) {
-		DDPERR("[DDP_APMIXED] DISP apmixed base failed\n");
+		DISPERR("[DDP_APMIXED] DISP apmixed base failed\n");
 		return -1;
 	}
 	parsed_apmixed = 1;

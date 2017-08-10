@@ -15,7 +15,7 @@
 #include <linux/kernel.h>
 #include <asm-generic/bug.h>
 #include "ddp_info.h"
-#include "ddp_log.h"
+#include "disp_log.h"
 
 char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt)
 {
@@ -154,7 +154,7 @@ enum UNIFIED_COLOR_FMT display_fmt_reg_to_unified_fmt(int fmt_reg_val, int bytes
 			UFMT_GET_RGBSWAP(ufmt) == rgbswap)
 			return ufmt;
 	}
-	DDPERR("unknown_fmt fmt=%d, byteswap=%d, rgbswap=%d\n", fmt_reg_val, byteswap, rgbswap);
+	DISPERR("unknown_fmt fmt=%d, byteswap=%d, rgbswap=%d\n", fmt_reg_val, byteswap, rgbswap);
 	return UFMT_UNKNOWN;
 }
 
@@ -200,7 +200,7 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 	case DISP_FORMAT_PBGRA8888:
 		return UFMT_PBGRA8888;
 	default:
-		DDPERR("Invalid color format: 0x%x\n", src_fmt);
+		DISPERR("Invalid color format: 0x%x\n", src_fmt);
 		BUG();
 		return UFMT_UNKNOWN;
 	}

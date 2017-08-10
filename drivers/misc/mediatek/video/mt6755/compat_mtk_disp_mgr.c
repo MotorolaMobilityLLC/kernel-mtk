@@ -14,8 +14,8 @@
 
 #include "compat_mtk_disp_mgr.h"
 
-#include "disp_drv_log.h"
-#include "debug.h"
+#include "disp_log.h"
+#include "disp_debug.h"
 #include "primary_display.h"
 #include "display_recorder.h"
 #include "mtkfb_fence.h"

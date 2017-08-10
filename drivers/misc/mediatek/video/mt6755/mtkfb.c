@@ -42,10 +42,9 @@
 #include <linux/compat.h>
 #include <mt-plat/aee.h>
 #include <mt-plat/mt_boot.h>
-#include "debug.h"
+#include "disp_debug.h"
 #include "ddp_hal.h"
-#include "ddp_log.h"
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "disp_lcm.h"
 #include "mtkfb.h"
 #include "mtkfb_console.h"
@@ -103,22 +102,22 @@ do {                   \
 #define MTKFB_LOG(fmt, arg...) \
 	do { \
 		if (mtkfb_log_on) \
-			DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", fmt, ##arg); \
+			DISPMSG(fmt, ##arg); \
 	} while (0)
 /* always show this debug info while the global debug log is off */
 #define MTKFB_LOG_DBG(fmt, arg...) \
 	do { \
 		if (!mtkfb_log_on) \
-			DISP_LOG_PRINT(ANDROID_LOG_WARN, "MTKFB", fmt, ##arg); \
+			DISPMSG(fmt, ##arg); \
 	} while (0)
 
 #define MTKFB_FUNC()	\
 	do { \
 		if (mtkfb_log_on) \
-			DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", "[Func]%s\n", __func__); \
+			DISPMSG("[Func]%s\n", __func__); \
 	} while (0)
 
-#define PRNERR(fmt, args...)   DISP_LOG_PRINT(ANDROID_LOG_INFO, "MTKFB", fmt, ## args)
+#define PRNERR(fmt, args...)   DISPMSG(fmt, ## args)
 
 /* --------------------------------------------------------------------------- */
 /* local variables */
@@ -1326,7 +1325,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				}
 				memset((void *)&session_input, 0, sizeof(session_input));
 				if (layerInfo->layer_id >= TOTAL_OVL_LAYER_NUM) {
-					disp_aee_print("MTKFB_SET_OVERLAY_LAYER ,layer_id invalid=%d\n",
+					DISPAEE("MTKFB_SET_OVERLAY_LAYER ,layer_id invalid=%d\n",
 						layerInfo->layer_id);
 				} else {
 					input = &session_input.config[session_input.config_layer_num++];
@@ -1387,8 +1386,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 				for (i = 0; i < VIDEO_LAYER_COUNT; ++i) {
 					if (layerInfo[i].layer_id >= TOTAL_OVL_LAYER_NUM) {
-						disp_aee_print
-						    ("MTKFB_SET_VIDEO_LAYERS, layer_id invalid=%d\n",
+						DISPAEE("MTKFB_SET_VIDEO_LAYERS, layer_id invalid=%d\n",
 						     layerInfo[i].layer_id);
 						continue;
 					}
@@ -1735,7 +1733,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			}
 			memset((void *)&session_input, 0, sizeof(session_input));
 			if (layerInfo.layer_id >= TOTAL_OVL_LAYER_NUM) {
-				disp_aee_print("COMPAT_MTKFB_SET_OVERLAY_LAYER, layer_id invalid:%d\n",
+				DISPAEE("COMPAT_MTKFB_SET_OVERLAY_LAYER, layer_id invalid:%d\n",
 					  layerInfo.layer_id);
 			} else {
 				input = &session_input.config[session_input.config_layer_num++];
@@ -1772,8 +1770,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			for (i = 0; i < VIDEO_LAYER_COUNT; ++i) {
 				compat_convert(&compat_layerInfo[i], &layerInfo);
 				if (layerInfo.layer_id >= TOTAL_OVL_LAYER_NUM) {
-					disp_aee_print
-						    ("COMPAT_MTKFB_SET_VIDEO_LAYERS, layer_id invalid=%d\n",
+					DISPAEE("COMPAT_MTKFB_SET_VIDEO_LAYERS, layer_id invalid=%d\n",
 						     layerInfo.layer_id);
 					continue;
 				}
@@ -2247,7 +2244,7 @@ int __parse_tag_videolfb_extra(unsigned long node)
 	if (!prop)
 		return -1;
 	if (size >= sizeof(mtkfb_lcm_name)) {
-		DISPCHECK("%s: error to get lcmname size=%d\n", __func__, size);
+		DISPMSG("%s: error to get lcmname size=%d\n", __func__, size);
 		return -1;
 	}
 	memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
@@ -2277,7 +2274,7 @@ int __parse_tag_videolfb(unsigned long node)
 		is_lcm_inited = 1;
 		return 0;
 	}
-	DISPCHECK("[DT][videolfb] videolfb_tag not found\n");
+	DISPMSG("[DT][videolfb] videolfb_tag not found\n");
 	return -1;
 }
 
@@ -2287,7 +2284,7 @@ static int _parse_tag_videolfb(void)
 	int ret;
 	unsigned long node = 0;
 
-	DISPCHECK("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
+	DISPMSG("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
 
 	if (is_videofb_parse_done)
 		return 0;
@@ -2301,18 +2298,18 @@ static int _parse_tag_videolfb(void)
 		if (!ret)
 			goto found;
 	} else {
-		DISPCHECK("[DT][videolfb] of_chosen not found\n");
+		DISPMSG("[DT][videolfb] of_chosen not found\n");
 	}
 	return -1;
 
 found:
 	is_videofb_parse_done = 1;
-	DISPCHECK("[DT][videolfb] islcmfound = %d\n", islcmconnected);
-	DISPCHECK("[DT][videolfb] is_lcm_inited = %d\n", is_lcm_inited);
-	DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
-	DISPCHECK("[DT][videolfb] fb_base    = 0x%pa\n", &fb_base);
-	DISPCHECK("[DT][videolfb] vram       = %d\n", vramsize);
-	DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+	DISPMSG("[DT][videolfb] islcmfound = %d\n", islcmconnected);
+	DISPMSG("[DT][videolfb] is_lcm_inited = %d\n", is_lcm_inited);
+	DISPMSG("[DT][videolfb] fps        = %d\n", lcd_fps);
+	DISPMSG("[DT][videolfb] fb_base    = 0x%pa\n", &fb_base);
+	DISPMSG("[DT][videolfb] vram       = %d\n", vramsize);
+	DISPMSG("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 	return 0;
 }
 
@@ -2454,7 +2451,7 @@ static int mtkfb_probe(struct device *dev)
 	fbdev->dev = dev;
 	dev_set_drvdata(dev, fbdev);
 
-	DISPCHECK("mtkfb_probe: fb_pa = 0x%pa\n", &fb_base);
+	DISPMSG("mtkfb_probe: fb_pa = 0x%pa\n", &fb_base);
 
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)&fbdev->fb_va_base, &fb_pa);
@@ -2471,13 +2468,13 @@ static int mtkfb_probe(struct device *dev)
 
 	MTK_FB_BPP = DISP_GetScreenBpp();
 	MTK_FB_PAGES = DISP_GetPages();
-	DISPCHECK
+	DISPMSG
 	    ("MTK_FB_XRES=%d, MTKFB_YRES=%d, MTKFB_BPP=%d, MTK_FB_PAGES=%d, MTKFB_LINE=%d, MTKFB_SIZEV=%d\n",
 	     MTK_FB_XRES, MTK_FB_YRES, MTK_FB_BPP, MTK_FB_PAGES, MTK_FB_LINE, MTK_FB_SIZEV);
 	fbdev->fb_size_in_byte = MTK_FB_SIZEV;
 
 	/* Allocate and initialize video frame buffer */
-	DISPCHECK("[FB Driver] fbdev->fb_pa_base = 0x%pa, fbdev->fb_va_base = 0x%p\n",
+	DISPMSG("[FB Driver] fbdev->fb_pa_base = 0x%pa, fbdev->fb_va_base = 0x%p\n",
 		  &(fbdev->fb_pa_base), fbdev->fb_va_base);
 
 	if (!fbdev->fb_va_base) {
@@ -2583,14 +2580,14 @@ int mtkfb_ipoh_restore(struct notifier_block *nb, unsigned long val, void *ign)
 {
 	switch (val) {
 	case PM_HIBERNATION_PREPARE:
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
+		DISPMSG("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		primary_display_ipoh_restore();
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
+		DISPMSG("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_POST_HIBERNATION:
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
+		DISPMSG("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
@@ -2715,7 +2712,7 @@ int mtkfb_pm_freeze(struct device *device)
 int mtkfb_pm_restore_noirq(struct device *device)
 {
 	/* disphal_pm_restore_noirq(device); */
-	DISPCHECK("%s: %d\n", __func__, __LINE__);
+	DISPMSG("%s: %d\n", __func__, __LINE__);
 	is_ipoh_bootup = true;
 #if 0
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -2726,7 +2723,7 @@ int mtkfb_pm_restore_noirq(struct device *device)
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif
-	DISPCHECK("%s: %d\n", __func__, __LINE__);
+	DISPMSG("%s: %d\n", __func__, __LINE__);
 	return 0;
 
 }
@@ -2826,7 +2823,7 @@ int __init mtkfb_init(void)
 	int r = 0;
 
 	MSG_FUNC_ENTER();
-	DISPCHECK("mtkfb_init Enter\n");
+	DISPMSG("mtkfb_init Enter\n");
 	if (platform_driver_register(&mtkfb_driver)) {
 		PRNERR("failed to register mtkfb driver\n");
 		r = -ENODEV;
@@ -2842,7 +2839,7 @@ int __init mtkfb_init(void)
 	mtkfb_ipo_init();
 exit:
 	MSG_FUNC_LEAVE();
-	DISPCHECK("mtkfb_init LEAVE\n");
+	DISPMSG("mtkfb_init LEAVE\n");
 	return r;
 }
 

@@ -11,8 +11,14 @@
  * GNU General Public License for more details.
  */
 
+#if defined(CONFIG_ARCH_MT6755)
+#include "disp_log.h"
+#include "disp_debug.h"
+#else
 #include "disp_drv_log.h"
-#include "ion_drv.h"
+#include "debug.h"
+#endif
+
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
@@ -20,18 +26,17 @@
 
 #include <linux/wait.h>
 #include <linux/file.h>
-
+#include "ion_drv.h"
 #include "m4u.h"
 #include "mtk_sync.h"
-#include "debug.h"
 #include "ddp_ovl.h"
 #include "mtkfb_fence.h"
 #include "ddp_path.h"
 #include "disp_drv_platform.h"
-#include "display_recorder.h"
 #include "ddp_mmp.h"
 #include "primary_display.h"
 #include "mtk_disp_mgr.h"
+#include "display_recorder.h"
 /************************* log*********************/
 
 static bool mtkfb_fence_on;

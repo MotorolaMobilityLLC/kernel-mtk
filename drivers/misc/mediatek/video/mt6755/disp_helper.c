@@ -22,7 +22,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include "mt-plat/mt_chip.h"
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "primary_display.h"
 
 #include "mt-plat/mt_boot.h"

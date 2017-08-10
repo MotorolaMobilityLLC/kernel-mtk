@@ -14,7 +14,7 @@
 #include <linux/types.h>
 #include "primary_display.h"
 #include "ddp_hal.h"
-#include "disp_drv_log.h"
+#include "disp_log.h"
 #include "disp_assert_layer.h"
 #include <linux/semaphore.h>
 #include <linux/mutex.h>
@@ -52,7 +52,7 @@ DEFINE_SEMAPHORE(dal_sem);
 inline DAL_STATUS DAL_LOCK(void)
 {
 	if (down_interruptible(&dal_sem)) {
-		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Can't get semaphore in %s()\n",
+		DISPMSG("Can't get semaphore in %s()\n",
 		__func__);
 		return DAL_STATUS_LOCK_FAIL;
 	}
@@ -67,8 +67,7 @@ inline MFC_STATUS DAL_CHECK_MFC_RET(MFC_STATUS expr)
 	MFC_STATUS ret = expr;
 
 	if (MFC_STATUS_OK != ret) {
-		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
-		"Warning: call MFC_XXX function failed in %s(), line: %d, ret: %x\n",
+		DISPMSG("Warning: call MFC_XXX function failed in %s(), line: %d, ret: %x\n",
 		__func__, __LINE__, ret);
 		return ret;
 	}
@@ -81,8 +80,7 @@ inline DISP_STATUS DAL_CHECK_DISP_RET(DISP_STATUS expr)
 	DISP_STATUS ret = (expr);
 
 	if (DISP_STATUS_OK != ret) {
-		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
-		"Warning: call DISP_XXX function failed in %s(), line: %d, ret: %x\n",
+		DISPMSG("Warning: call DISP_XXX function failed in %s(), line: %d, ret: %x\n",
 		__func__, __LINE__, ret);
 		return ret;
 	}
@@ -90,7 +88,7 @@ inline DISP_STATUS DAL_CHECK_DISP_RET(DISP_STATUS expr)
 }
 
 #define DAL_LOG(fmt, arg...) \
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DAL", fmt, ##arg)
+	DISPMSG(fmt, ##arg)
 /* --------------------------------------------------------------------------- */
 
 static MFC_HANDLE mfc_handle;

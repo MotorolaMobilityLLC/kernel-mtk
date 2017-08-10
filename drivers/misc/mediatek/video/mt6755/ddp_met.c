@@ -13,7 +13,7 @@
 
 #define LOG_TAG "MET"
 
-#include "ddp_log.h"
+#include "disp_log.h"
 
 #include <mt-plat/met_drv.h>
 #include "ddp_irq.h"
@@ -281,7 +281,7 @@ static void met_irq_handler(DISP_MODULE_ENUM module, unsigned int reg_val)
 	int index = 0;
 	char tag_name[30] = { '\0' };
 	int mutexID;
-	/* DDPERR("met_irq_handler() module=%d, val=0x%x\n", module, reg_val); */
+	/* DISPERR("met_irq_handler() module=%d, val=0x%x\n", module, reg_val); */
 	switch (module) {
 	case DISP_MODULE_RDMA0:
 	case DISP_MODULE_RDMA1:
