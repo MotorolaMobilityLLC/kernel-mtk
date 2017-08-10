@@ -7210,9 +7210,11 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		cmdqsize = cmdqRecGetInstructionCount(handle);
 
 #ifdef MTK_DISP_IDLE_LP
-		/* will write register in dpmgr_path_user_cmd, need to exit idle */
-		last_primary_trigger_time = sched_clock();
-		_disp_primary_path_exit_idle(__func__, 1);
+		if (!primary_display_is_video_mode()) {
+			/* will write register in dpmgr_path_user_cmd, need to exit idle */
+			last_primary_trigger_time = sched_clock();
+			_disp_primary_path_exit_idle(__func__, 1);
+		}
 #endif
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
@@ -7249,9 +7251,11 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		}
 
 #ifdef MTK_DISP_IDLE_LP
-		/* will write register in dpmgr_path_user_cmd, need to exit idle */
-		last_primary_trigger_time = sched_clock();
-		_disp_primary_path_exit_idle(__func__, 0);
+		if (!primary_display_is_video_mode()) {
+			/* will write register in dpmgr_path_user_cmd, need to exit idle */
+			last_primary_trigger_time = sched_clock();
+			_disp_primary_path_exit_idle(__func__, 0);
+		}
 #endif
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
