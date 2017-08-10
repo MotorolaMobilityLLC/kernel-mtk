@@ -29,6 +29,7 @@
  * General Public License.
  */
 
+#define DEBUG 1
 #include "sdcardfs.h"
 #include <linux/lockdep.h>
 #include <linux/dcache.h>
@@ -135,6 +136,12 @@ static void sdcardfs_work_handle_create(struct sdcardfs_work_job *pw)
 	struct path lower_path;
 	const struct cred *saved_cred = NULL;
 
+	if (!dentry->d_fsdata) {
+		pr_err("sdcardfs: %s: dentry %p d_fsdata absent\n", __func__, dentry);
+		err = -ENOENT;
+		goto out_cred;
+	}
+
 	/* save current_cred and override it */
 	saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb));
 	if (!saved_cred) {
@@ -222,12 +229,14 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 			/* if the sbi->obbpath is not available, the lower_path won't be
 			 * changed by setup_obb_dentry() but the lower path is saved to
 			 * its orig_path. this dentry will be revalidated later.
-			 * but now, the lower_path should be NULL */
+			 * but now, the lower_path should be NULL
+			 */
 			sdcardfs_put_reset_lower_path(dentry);
 
 			/* the newly created lower path which saved to its orig_path or
 			 * the lower_path is the base obbpath.
-			 * therefore, an additional path_get is required */
+			 * therefore, an additional path_get is required
+			 */
 			path_get(&lower_path);
 		} else
 			make_nomedia_in_obb = 1;
@@ -355,7 +364,6 @@ static void get_derive_permissions_recursive_internal(struct dentry *parent)
 {
 	struct dentry *dentry;
 
-	dget(parent);
 	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
 		if (dentry && dentry->d_inode) {
 			if (dentry == parent)
@@ -368,7 +376,6 @@ static void get_derive_permissions_recursive_internal(struct dentry *parent)
 			sdcardfs_unlock_dinode(dentry);
 		}
 	}
-	dput(parent);
 }
 
 static void sdcardfs_work_handle_permissions(struct sdcardfs_work_job *pw)
@@ -381,9 +388,8 @@ static void sdcardfs_work_handle_permissions(struct sdcardfs_work_job *pw)
 		get_derive_permissions_recursive_internal(entry);
 		sdcardfs_unlock_dinode(entry);
 		lockdep_on();
-		dput(entry);
 	}
-
+	dput(entry);
 	kmem_cache_free(sdcardfs_work_cachep, pw);
 }
 
@@ -417,6 +423,9 @@ int sdcardfs_work_dispatch_permissions(struct dentry *entry)
 	struct sdcardfs_work_job *pw;
 	bool ret;
 
+	if (!entry)
+		return 0;
+
 	pw = kmem_cache_alloc(sdcardfs_work_cachep, GFP_KERNEL);
 
 	if (!pw)
@@ -430,7 +439,7 @@ int sdcardfs_work_dispatch_permissions(struct dentry *entry)
 	ret = queue_work(sdcardfs_asyn_wq, &pw->work);
 
 	if (!ret)
-		pr_warn("sdcardfs: sdcardfs_work_permissions(): failed %d\n", ret);
+		pr_err("sdcardfs: %s: failed %d\n", __func__, ret);
 
 	return 0;
 }
@@ -453,13 +462,18 @@ int sdcardfs_work_dispatch_syncjob(int operation,
 	pw->entry = dentry;
 	pw->mode = mode;
 	pw->want_excl = want_excl;
-	queue_work(sdcardfs_sync_wq, &pw->work);
+	ret = queue_work(sdcardfs_sync_wq, &pw->work);
+
+	if (!ret) {
+		pr_err("sdcardfs: %s: failed %d\n", __func__, ret);
+		goto out;
+	}
 
 	if (wait_event_interruptible(sdcardfs_work_waitq, pw->operation == SDCARDFS_WQOP_DONE))
 		ret = -EINTR;
 	else
 		ret = pw->result;
-
+out:
 	dput(dentry);
 	kmem_cache_free(sdcardfs_work_cachep, pw);
 	return ret;
