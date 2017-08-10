@@ -1428,9 +1428,6 @@ do { \
 			retry--; mdelay(1); cnt = backup; \
 		} \
 	} \
-	if (retry == 0) { \
-		msdc_dump_info(id); \
-	} \
 	WARN_ON(retry == 0); \
 } while (0)
 
@@ -1573,6 +1570,7 @@ extern void __iomem *apmixed_reg_base1;
 extern void __iomem *topckgen_reg_base;
 
 /* move from board.h */
+typedef void (*msdc_irq_handler_t) (void *);       /* external irq handler */
 typedef void (*pm_callback_t)(pm_message_t state, void *data);
 
 #ifdef CONFIG_MTK_COMBO_COMM
@@ -1726,7 +1724,7 @@ struct msdc_hw {
 	void (*ext_power_off)(void);
 
 	/* external sdio irq operations */
-	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
+	void (*request_sdio_eirq)(msdc_irq_handler_t sdio_irq_handler, void *data);
 	void (*enable_sdio_eirq)(void);
 	void (*disable_sdio_eirq)(void);
 

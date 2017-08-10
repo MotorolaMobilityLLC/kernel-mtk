@@ -181,7 +181,7 @@ do { \
 #define AUTOK_ERR()      do {} while (1)
 #endif
 
-#define msdc_retry(expr, retry, cnt, id) \
+/*#define msdc_retry(expr, retry, cnt, id) \
 do { \
 	int backup = cnt; \
 	while (retry) { \
@@ -206,7 +206,7 @@ do { \
 do { \
 	volatile u32 val = sdr_read32(MSDC_INT); \
 	sdr_write32(MSDC_INT, val); \
-} while (0)
+} while (0)*/
 
 #define msdc_clr_fifo(id) \
 do { \
@@ -2672,10 +2672,10 @@ ReTuneMatrix:
 						     AUTOK_TRANS_BOUND_RISING :
 						     AUTOK_TRANS_BOUND_FALLING) + 1;
 
-						if (CMDMatChar
+						/* if (CMDMatChar
 						    [AUTOK_CYC_SCAN_CHNG_EDGE].pad_trans_s1 < 0)
 							CMDMatChar
-							    [AUTOK_CYC_SCAN_CHNG_EDGE].pad_trans_s1;
+							    [AUTOK_CYC_SCAN_CHNG_EDGE].pad_trans_s1; */
 					} else {
 						CMDMatChar[AUTOK_CYC_SCAN_CHNG_EDGE].pad_trans_e1 =
 						    0;
@@ -2714,10 +2714,10 @@ ReTuneMatrix:
 						     AUTOK_TRANS_BOUND_FALLING :
 						     AUTOK_TRANS_BOUND_RISING) + 1;
 
-						if (CMDMatChar[AUTOK_CYC_SCAN_INIT].pad_trans_s1 <
+						/*if (CMDMatChar[AUTOK_CYC_SCAN_INIT].pad_trans_s1 <
 						    0)
 							CMDMatChar
-							    [AUTOK_CYC_SCAN_INIT].pad_trans_s1;
+							    [AUTOK_CYC_SCAN_INIT].pad_trans_s1;*/
 					} else {
 						CMDMatChar[AUTOK_CYC_SCAN_INIT].pad_trans_e1 = 0;
 						CMDMatChar[AUTOK_CYC_SCAN_INIT].pad_trans_s1 = 0;
