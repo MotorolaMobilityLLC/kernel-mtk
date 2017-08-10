@@ -1495,6 +1495,12 @@
 			clock-names = "clk-irtx-main";
 		};
 
+		irtx_pwm:irtx_pwm {
+			compatible = "mediatek,irtx-pwm";
+			pwm_ch = <2>;
+			pwm_data_invert = <0>;
+		};
+
 		disp_pwm@1100e000 {
 			compatible = "mediatek,disp_pwm";
 			reg = <0x1100e000 0x1000>;
