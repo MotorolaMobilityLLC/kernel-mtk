@@ -3345,7 +3345,7 @@ VOID
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,
-		 IN UINT_32 u4Privacy,
+		 IN UINT_16 u2CapInfo,
 		 IN PARAM_RSSI rRssi,
 		 IN ENUM_PARAM_NETWORK_TYPE_T eNetworkType,
 		 IN P_PARAM_802_11_CONFIG_T prConfiguration,
@@ -3396,7 +3396,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),
@@ -3447,7 +3448,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),
@@ -3496,7 +3498,8 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 			COPY_SSID(prAdapter->rWlanInfo.arScanResult[i].rSsid.aucSsid,
 				  prAdapter->rWlanInfo.arScanResult[i].rSsid.u4SsidLen,
 				  prSsid->aucSsid, prSsid->u4SsidLen);
-			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u4Privacy;
+			prAdapter->rWlanInfo.arScanResult[i].u2CapInfo = u2CapInfo;
+			prAdapter->rWlanInfo.arScanResult[i].u4Privacy = u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0;
 			prAdapter->rWlanInfo.arScanResult[i].rRssi = rRssi;
 			prAdapter->rWlanInfo.arScanResult[i].eNetworkTypeInUse = eNetworkType;
 			kalMemCopy(&(prAdapter->rWlanInfo.arScanResult[i].rConfiguration),

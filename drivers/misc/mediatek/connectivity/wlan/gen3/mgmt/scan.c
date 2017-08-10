@@ -892,19 +892,22 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	/* reset NLO state */
 	prScanInfo->fgNloScanning = FALSE;
 #if CFG_SUPPORT_SCN_PSCN
-	prScanInfo->fgPscnOnnning = FALSE;
-	prScanInfo->prPscnParam = NULL;
+	prScanInfo->fgPscnOngoing = FALSE;
 	prScanInfo->fgGScnConfigSet = FALSE;
-	prScanInfo->fgGscnGetResWaiting = FALSE;
 	prScanInfo->fgGScnParamSet = FALSE;
-	prScanInfo->prPscnParam = kalMemAlloc(sizeof(PSCN_PARAM_T), VIR_MEM_TYPE);
-	kalMemZero(prScanInfo->prPscnParam, sizeof(PSCN_PARAM_T));
+	prScanInfo->prPscnParam = kalMemAlloc(sizeof(CMD_SET_PSCAN_PARAM), VIR_MEM_TYPE);
+	if (prScanInfo->prPscnParam)
+		kalMemZero(prScanInfo->prPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
 
 	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
+#endif
 
-	cnmTimerInitTimer(prAdapter,
-			  &prScanInfo->rWaitForGscanResutsTimer,
-			  (PFN_MGMT_TIMEOUT_FUNC) scnGscnGetResultReplyCheckTimeout, (ULONG) NULL);
+#if CFG_SUPPORT_GSCN
+	prScanInfo->prGscnFullResult = kalMemAlloc(offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data)
+			+ CFG_IE_BUFFER_SIZE, VIR_MEM_TYPE);
+	if (prScanInfo->prGscnFullResult)
+		kalMemZero(prScanInfo->prGscnFullResult,
+			offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
 #endif
 
 	cnmTimerInitTimer(prAdapter,
@@ -976,10 +979,16 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
 #if CFG_SUPPORT_SCN_PSCN
-	if (prScanInfo->prPscnParam)
-		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
-	cnmTimerStopTimer(prAdapter, &prScanInfo->rWaitForGscanResutsTimer);
+	kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
+
+	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
 #endif
+
+#if CFG_SUPPORT_GSCN
+	kalMemFree(prScanInfo->prGscnFullResult, VIR_MEM_TYPE,
+		offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
+#endif
+
 	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
 }				/* end of scnUninit() */
 
@@ -2547,7 +2556,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 	nicAddScanResult(prAdapter,
 			 rMacAddr,
 			 &rSsid,
-			 prWlanBeaconFrame->u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0,
+			 prWlanBeaconFrame->u2CapInfo,
 			 RCPI_TO_dBm(prBssDesc->ucRCPI),
 			 eNetworkType,
 			 &rConfiguration,
@@ -2770,7 +2779,11 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 		/* 4 <3> Send SW_RFB_T to HIF when we perform SCAN for HOST */
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
-			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning) {
+			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning
+#if CFG_SUPPORT_SCN_PSCN
+			|| prAdapter->rWifiVar.rScanInfo.fgPscnOngoing
+#endif
+			) {
 				BOOLEAN fgAddToScanResult;
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);
