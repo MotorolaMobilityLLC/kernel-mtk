@@ -1114,7 +1114,6 @@ end:
 }
 
 
-#ifdef CONFIG_MTK_C2K_SUPPORT
 static char *musb_dbuffer_avail_function_list[] = {
 
 	"adb",
@@ -1218,7 +1217,6 @@ static int check_musb_dbuffer_avail(struct musb *musb, struct musb_ep *musb_ep)
 
 	pr_warn("<%s, %d>, should not be here\n", __func__, __LINE__);
 }
-#endif
 
 static void fifo_setup(struct musb *musb, struct musb_ep *musb_ep)
 {
@@ -1245,12 +1243,9 @@ static void fifo_setup(struct musb *musb, struct musb_ep *musb_ep)
 	if (musb_ep->fifo_mode == MUSB_BUF_DOUBLE
 	    && (musb_ep->type == USB_ENDPOINT_XFER_BULK
 		|| musb_ep->type == USB_ENDPOINT_XFER_ISOC)) {
-#ifdef CONFIG_MTK_C2K_SUPPORT
+
 		if (check_musb_dbuffer_avail(musb, musb_ep))
 			dbuffer_needed = 1;
-#else
-		dbuffer_needed = 1;
-#endif
 	}
 
 	if (dbuffer_needed) {
