@@ -123,9 +123,10 @@ static int _get_dvfs_opp(int kicker, struct vcorefs_profile *pwrctrl)
 	int i;
 	char table[NUM_KICKER * 4 + 1];
 	char *p = table;
+	char *buff_end = table + (NUM_KICKER * 4 + 1);
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, " %d,", kicker_table[i]);
+		p += snprintf(p, buff_end - p, "%d, ", kicker_table[i]);
 
 	vcorefs_debug_mask(kicker, "kr opp: %s\n", table);
 
@@ -389,9 +390,11 @@ void vcorefs_set_kr_req_mask(unsigned int mask)
 static char *vcorefs_get_kicker_info(char *p)
 {
 	int i;
+	char *buff_end = p + PAGE_SIZE;
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, "[%s] opp: %d\n", get_kicker_name(i), kicker_table[i]);
+		p += snprintf(p, buff_end - p,
+			"[%.32s] opp: %d\n", get_kicker_name(i), kicker_table[i]);
 
 	return p;
 }
@@ -400,29 +403,37 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	char *p = buf;
+	char *buff_end = buf + PAGE_SIZE;
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[feature_en   ]: %d\n", feature_en);
-	p += sprintf(p, "[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
-	p += sprintf(p, "[init_done    ]: %d\n", pwrctrl->init_done);
-	p += sprintf(p, "[autok_lock   ]: %d\n", pwrctrl->autok_lock);
-	p += sprintf(p, "[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p,
+		"[feature_en   ]: %d\n", feature_en);
+	p += snprintf(p, buff_end - p,
+		"[plat_init_opp]: %d\n", pwrctrl->plat_init_opp);
+	p += snprintf(p, buff_end - p,
+		"[init_done    ]: %d\n", pwrctrl->init_done);
+	p += snprintf(p, buff_end - p,
+		"[autok_lock   ]: %d\n", pwrctrl->autok_lock);
+	p += snprintf(p, buff_end - p,
+		"[kr_req_mask  ]: 0x%x\n", pwrctrl->kr_req_mask);
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "curr_opp: %d\n", vcorefs_curr_opp);
-	p += sprintf(p, "prev_opp: %d\n", vcorefs_prev_opp);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "curr_opp: %d\n", vcorefs_curr_opp);
+	p += snprintf(p, buff_end - p, "prev_opp: %d\n", vcorefs_prev_opp);
+	p += snprintf(p, buff_end - p, "\n");
 
 	p = vcorefs_get_dvfs_info(p);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
 	p = vcorefs_get_kicker_info(p);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, " [aee] vcore_dvfs_opp    = 0x%x\n", aee_rr_curr_vcore_dvfs_opp());
-	p += sprintf(p, " [aee] vcore_dvfs_status = 0x%x\n", aee_rr_curr_vcore_dvfs_status());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p,
+		" [aee] vcore_dvfs_opp    = 0x%x\n", aee_rr_curr_vcore_dvfs_opp());
+	p += snprintf(p, buff_end - p,
+		" [aee] vcore_dvfs_status = 0x%x\n", aee_rr_curr_vcore_dvfs_status());
+	p += snprintf(p, buff_end - p, "\n");
 
 #ifndef CONFIG_MTK_FPGA
 	p = spm_vcorefs_dump_dvfs_regs(p);
@@ -561,8 +572,9 @@ static ssize_t opp_num_show(struct kobject *kobj, struct kobj_attribute *attr, c
 {
 	char *p = buf;
 	int num = vcorefs_get_num_opp();
+	char *buff_end = p + PAGE_SIZE;
 
-	p += sprintf(p, "%d\n", num);
+	p += snprintf(p, buff_end - p, "%d\n", num);
 
 	return p - buf;
 }

@@ -398,20 +398,26 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 static u32 sram_debug_info[7];
 char *vcorefs_get_sram_debug_info(char *p)
 {
+	char *buff_end = p + PAGE_SIZE;
 	if (p) {
-		p += sprintf(p, "dvs/dfs up_count  : 0x%x / 0x%x\n",
-			     spm_read(VCOREFS_SRAM_DVS_UP_COUNT),
-			     spm_read(VCOREFS_SRAM_DFS_UP_COUNT));
-		p += sprintf(p, "dvs/dfs down_count: 0x%x / 0x%x\n",
-			     spm_read(VCOREFS_SRAM_DVS_DOWN_COUNT),
-			     spm_read(VCOREFS_SRAM_DFS_DOWN_COUNT));
-		p += sprintf(p, "dvfs_up_latency   : 0x%x\n",
-			     spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY));
-		p += sprintf(p, "dvfs_down_latency  : 0x%x\n",
-			     spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
-		p += sprintf(p, "dvfs_latency_spec : 0x%x\n",
-			     spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
-		p += sprintf(p, "\n");
+		p += snprintf(p, buff_end - p,
+			"dvs/dfs up_count  : 0x%x / 0x%x\n",
+			spm_read(VCOREFS_SRAM_DVS_UP_COUNT),
+			spm_read(VCOREFS_SRAM_DFS_UP_COUNT));
+		p += snprintf(p, buff_end - p,
+			"dvs/dfs down_count: 0x%x / 0x%x\n",
+			spm_read(VCOREFS_SRAM_DVS_DOWN_COUNT),
+			spm_read(VCOREFS_SRAM_DFS_DOWN_COUNT));
+		p += snprintf(p, buff_end - p,
+			"dvfs_up_latency   : 0x%x\n",
+			spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY));
+		p += snprintf(p, buff_end - p,
+			"dvfs_down_latency  : 0x%x\n",
+			spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
+		p += snprintf(p, buff_end - p,
+			"dvfs_latency_spec : 0x%x\n",
+			spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
+		p += snprintf(p, buff_end - p, "\n");
 	} else {
 		sram_debug_info[0] = spm_read(VCOREFS_SRAM_DVS_UP_COUNT);
 		sram_debug_info[1] = spm_read(VCOREFS_SRAM_DFS_UP_COUNT);
@@ -654,40 +660,47 @@ char *vcorefs_get_dvfs_info(char *p)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct timing_debug_profile *dbg_ctrl = &timing_debug_ctrl;
+	char *buff_end = p + PAGE_SIZE;
 
 	int uv = vcorefs_get_curr_vcore();
 
-	p += sprintf(p, "[vcore_dvfs  ]: %d\n", gvrctrl->vcore_dvfs_en);
-	p += sprintf(p, "[vcore_dvs   ]: %d\n", gvrctrl->vcore_dvs);
-	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
-	p += sprintf(p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
-	p += sprintf(p, "[fhd_segment ]: %d\n", gvrctrl->is_fhd_segment);
-	p += sprintf(p, "[cpu_dvfs_req]: 0x%x\n", vcorefs_get_cpu_dvfs_req());
-	p += sprintf(p, "[log_mask    ]: 0x%x\n", gvrctrl->log_mask);
-	p += sprintf(p, "[segment_code]: 0x%x\n", gvrctrl->segment_code);
-	p += sprintf(p, "[segment_policy]: 0x%x\n", gvrctrl->segment_policy);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[vcore_dvfs  ]: %d\n", gvrctrl->vcore_dvfs_en);
+	p += snprintf(p, buff_end - p, "[vcore_dvs   ]: %d\n", gvrctrl->vcore_dvs);
+	p += snprintf(p, buff_end - p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
+	p += snprintf(p, buff_end - p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
+	p += snprintf(p, buff_end - p, "[fhd_segment ]: %d\n", gvrctrl->is_fhd_segment);
+	p += snprintf(p, buff_end - p, "[cpu_dvfs_req]: 0x%x\n", vcorefs_get_cpu_dvfs_req());
+	p += snprintf(p, buff_end - p, "[log_mask    ]: 0x%x\n", gvrctrl->log_mask);
+	p += snprintf(p, buff_end - p, "[segment_code]: 0x%x\n", gvrctrl->segment_code);
+	p += snprintf(p, buff_end - p, "[segment_policy]: 0x%x\n", gvrctrl->segment_policy);
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
-	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
+	p += snprintf(p, buff_end - p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[perform_bw  ]: en = %d, lpm_thres = 0x%x, hpm_thres =0x%x\n",
-		     gvrctrl->perform_bw_enable, gvrctrl->perform_bw_lpm_threshold,
-		     gvrctrl->perform_bw_hpm_threshold);
-	p += sprintf(p, "[total_bw    ]: en = %d, lpm_thres = 0x%x, hpm_thres =0x%x\n",
-		     gvrctrl->total_bw_enable, gvrctrl->total_bw_lpm_threshold,
-		     gvrctrl->total_bw_hpm_threshold);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p,
+		"[perform_bw  ]: en = %d, lpm_thres = 0x%x, hpm_thres =0x%x\n",
+		gvrctrl->perform_bw_enable, gvrctrl->perform_bw_lpm_threshold,
+		gvrctrl->perform_bw_hpm_threshold);
+	p += snprintf(p, buff_end - p,
+		"[total_bw    ]: en = %d, lpm_thres = 0x%x, hpm_thres =0x%x\n",
+		gvrctrl->total_bw_enable, gvrctrl->total_bw_lpm_threshold,
+		gvrctrl->total_bw_hpm_threshold);
+	p += snprintf(p, buff_end - p, "\n");
 	p = vcorefs_get_sram_debug_info(p);
-	p += sprintf(p, "[dvfs_latency_spec]: count=%d\n", dbg_ctrl->dvfs_latency_spec);
-	p += sprintf(p, "[hpm_latency*     ]: count=0x%x ,max=%d\n",
-		     dbg_ctrl->long_hpm_latency_count, dbg_ctrl->max_hpm_latency);
-	p += sprintf(p, "[lpm_latency*     ]: count=0x%x ,max=%d\n",
-		     dbg_ctrl->long_lpm_latency_count, dbg_ctrl->max_lpm_latency);
+	p += snprintf(p, buff_end - p,
+		"[dvfs_latency_spec]: count=%d\n", dbg_ctrl->dvfs_latency_spec);
+	p += snprintf(p, buff_end - p,
+		"[hpm_latency*     ]: count=0x%x ,max=%d\n",
+		dbg_ctrl->long_hpm_latency_count, dbg_ctrl->max_hpm_latency);
+	p += snprintf(p, buff_end - p,
+		"[lpm_latency*     ]: count=0x%x ,max=%d\n",
+		dbg_ctrl->long_lpm_latency_count, dbg_ctrl->max_lpm_latency);
 	/*
-	   p += sprintf(p, "[emi_block_time*  ]: count=0x%x ,max=%d\n",
-	   dbg_ctrl->long_emi_block_time_count, dbg_ctrl->max_emi_block_time);
+	   p += snprintf(p, buff_end - p,
+		"[emi_block_time*  ]: count=0x%x ,max=%d\n",
+		dbg_ctrl->long_emi_block_time_count, dbg_ctrl->max_emi_block_time);
 	 */
 	return p;
 }
@@ -702,23 +715,30 @@ char *vcorefs_get_opp_table_info(char *p)
 	struct opp_profile *opp_ctrl_table = opp_table;
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int i;
+	char *buff_end = p + PAGE_SIZE;
 
 	if (gvrctrl->segment_policy == VCOREFS_SEGMENT_LPM) {
 		i = OPPI_LOW_PWR;
-		p += sprintf(p, "[OPP_%d] vcore_uv:    %u (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
-			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-		p += sprintf(p, "[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
-		p += sprintf(p, "\n");
+		p += snprintf(p, buff_end - p,
+			"[OPP_%d] vcore_uv:    %u (0x%x)\n",
+			i, opp_ctrl_table[i].vcore_uv,
+			vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
+		p += snprintf(p, buff_end - p,
+			"[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
+		p += snprintf(p, buff_end - p, "\n");
 	} else {
 		for (i = 0; i < NUM_OPP; i++) {
-			p += sprintf(p, "[OPP_%d] vcore_uv:    %u (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
-				     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-			p += sprintf(p, "[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
-			p += sprintf(p, "\n");
+			p += snprintf(p, buff_end - p,
+				"[OPP_%d] vcore_uv:    %u (0x%x)\n",
+				i, opp_ctrl_table[i].vcore_uv,
+				vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
+			p += snprintf(p, buff_end - p,
+				"[OPP_%d] ddr_khz:     %u\n", i, opp_ctrl_table[i].ddr_khz);
+			p += snprintf(p, buff_end - p, "\n");
 		}
 
 		for (i = 0; i < NUM_TRANS; i++)
-			p += sprintf(p, "[TRANS%d] vcore_uv: %u (0x%x)\n", i + 1, trans[i],
+			p += snprintf(p, buff_end - p, "[TRANS%d] vcore_uv: %u (0x%x)\n", i + 1, trans[i],
 				     vcore_uv_to_pmic(trans[i]));
 	}
 	return p;
