@@ -69,12 +69,12 @@ void musbfsh_disable_q_all(struct musbfsh *musbfsh)
 	QMU_WARN("disable_q_all\n");
 
 	for (ep_num = 1; ep_num <= RXQ_NUM; ep_num++) {
-		if (mtk_is_qmu_enabled(ep_num, RXQ))
-			mtk_disable_q(musb, ep_num, 1);
+		if (mtk11_is_qmu_enabled(ep_num, RXQ))
+			mtk11_disable_q(musbfsh, ep_num, 1);
 	}
 	for (ep_num = 1; ep_num <= TXQ_NUM; ep_num++) {
-		if (mtk_is_qmu_enabled(ep_num, TXQ))
-			mtk_disable_q(musb, ep_num, 0);
+		if (mtk11_is_qmu_enabled(ep_num, TXQ))
+			mtk11_disable_q(musbfsh, ep_num, 0);
 	}
 }
 
@@ -87,12 +87,12 @@ irqreturn_t musbfsh_q_irq(struct musbfsh *musbfsh)
 	QMU_INFO("wQmuVal:%d\n", wQmuVal);
 	for (i = 1; i <= MAX_QMU_EP; i++) {
 		if (wQmuVal & DQMU_M_RX_DONE(i))
-			h_qmu_done_rx(musb, i);
+			h_mtk11_qmu_done_rx(musbfsh, i);
 
 		if (wQmuVal & DQMU_M_TX_DONE(i))
-			h_qmu_done_tx(musb, i);
+			h_mtk11_qmu_done_tx(musbfsh, i);
 	}
-	mtk_qmu_irq_err(musb, wQmuVal);
+	mtk11_qmu_irq_err(musbfsh, wQmuVal);
 
 	return retval;
 }
@@ -100,15 +100,15 @@ irqreturn_t musbfsh_q_irq(struct musbfsh *musbfsh)
 void musbfsh_flush_qmu(u32 ep_num, u8 isRx)
 {
 	QMU_DBG("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
-	mtk_qmu_stop(ep_num, isRx);
+	mtk11_qmu_stop(ep_num, isRx);
 	qmu_reset_gpd_pool(ep_num, isRx);
 }
 
 void musbfsh_restart_qmu(struct musbfsh *musbfsh, u32 ep_num, u8 isRx)
 {
 	QMU_DBG("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
-	flush_ep_csr(musb, ep_num, isRx);
-	mtk_qmu_enable(musb, ep_num, isRx);
+	flush_ep_csr(musbfsh, ep_num, isRx);
+	mtk_qmu_enable(musbfsh, ep_num, isRx);
 }
 
 bool musbfsh_is_qmu_stop(u32 ep_num, u8 isRx)
@@ -194,11 +194,11 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 		return -1; /*KOBE : should we return a value */
 	}
 
-	if (!mtk_is_qmu_enabled(hw_ep->epnum, isRx)) {
+	if (!mtk11_is_qmu_enabled(hw_ep->epnum, isRx)) {
 		DBG(4, "! mtk_is_qmu_enabled\n");
 
 		musbfsh_ep_select(mbase, hw_ep->epnum);
-		flush_ep_csr(musb, hw_ep->epnum,  isRx);
+		flush_ep_csr(musbfsh, hw_ep->epnum,  isRx);
 
 		if (isRx) {
 			DBG(4, "isRX = 1\n");
@@ -258,7 +258,7 @@ int mtk11_kick_CmdQ(struct musbfsh *musbfsh, int isRx, struct musb_qh *qh, struc
 		}
 
 		DBG(4, "mtk_qmu_enable\n");
-		mtk_qmu_enable(musb, hw_ep->epnum, isRx);
+		mtk_qmu_enable(musbfsh, hw_ep->epnum, isRx);
 	}
 
 	gdp_free_count = qmu_free_gpd_count(isRx, hw_ep->epnum);
