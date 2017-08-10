@@ -593,19 +593,16 @@ static int ke_gen_ind_msg(struct aee_oops *oops)
 
 static void ke_destroy_log(void)
 {
+	struct aee_oops *lastlog = aed_dev.kerec.lastlog;
 	LOGD("%s\n", __func__);
 	msg_destroy(&aed_dev.kerec.msg);
 
 	if (aed_dev.kerec.lastlog) {
-		if (strncmp
-		    (aed_dev.kerec.lastlog->module, IPANIC_MODULE_TAG,
-		     strlen(IPANIC_MODULE_TAG)) == 0) {
-			ipanic_oops_free(aed_dev.kerec.lastlog, 0);
-		} else {
-			aee_oops_free(aed_dev.kerec.lastlog);
-		}
-
 		aed_dev.kerec.lastlog = NULL;
+		if (strncmp(lastlog->module, IPANIC_MODULE_TAG, strlen(IPANIC_MODULE_TAG)) == 0)
+			ipanic_oops_free(lastlog, 0);
+		else
+			aee_oops_free(lastlog);
 	}
 }
 
