@@ -252,6 +252,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+	prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
 
 	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 #if CFG_SUPPORT_DYNAMOC_ROAM
@@ -1094,6 +1095,12 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prScanInfo->fgIsPostponeSchedScan == TRUE)
 						aisPostponedEventOfSchedScanReq(prAdapter, prAisFsmInfo);
 
+					if (prAisFsmInfo->fgIsAbortEvnetDuringScan) {
+						DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
+							, prAisBssInfo->ucReasonOfDisconnect);
+						prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
+						aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
+					}
 				}
 				if (prAisReq) {
 					/* free the message */
@@ -1848,6 +1855,12 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					eNextState = AIS_STATE_REQ_REMAIN_ON_CHANNEL;
 					fgIsTransition = TRUE;
 				}
+				if (prAisFsmInfo->fgIsAbortEvnetDuringScan) {
+					DBGLOG(AIS, WARN, "proccess the pending abort event(%d)!\n"
+						, prAisBssInfo->ucReasonOfDisconnect);
+					prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
+					aisFsmStateAbort(prAdapter, prAisBssInfo->ucReasonOfDisconnect, TRUE);
+				}
 			}
 
 			break;
@@ -2287,6 +2300,16 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 		break;
 
 	case AIS_STATE_SCAN:
+		/*Check Reason Of Disconnect, if pending abort event or report scan result*/
+		if ((ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) ||
+			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DEAUTHENTICATED) ||
+			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DISASSOCIATED)) {
+			prAisFsmInfo->fgIsAbortEvnetDuringScan = TRUE;
+			DBGLOG(AIS, INFO, "Reason code:%d! Postpone the evnet of abort for AIS scanning\n"
+				, prAisBssInfo->ucReasonOfDisconnect);
+			return;
+		}
+
 		/* Do abort SCAN */
 		aisFsmStateAbort_SCAN(prAdapter);
 
@@ -2328,6 +2351,16 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 #endif /* CFG_SUPPORT_ADHOC */
 
 	case AIS_STATE_ONLINE_SCAN:
+		/*Check Reason Of Disconnect, if pending abort event or report scan result*/
+		if ((ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) ||
+			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DEAUTHENTICATED) ||
+			(ucReasonOfDisconnect == DISCONNECT_REASON_CODE_DISASSOCIATED)) {
+			prAisFsmInfo->fgIsAbortEvnetDuringScan = TRUE;
+			DBGLOG(AIS, INFO, "Reason code:%d! Postpone the evnet of abort for AIS online scanning\n"
+				, prAisBssInfo->ucReasonOfDisconnect);
+			return;
+		}
+
 		/* Do abort SCAN */
 		aisFsmStateAbort_SCAN(prAdapter);
 
