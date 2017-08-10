@@ -25,42 +25,42 @@ extern int get_current_cpuid(void);
  ******************************/
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length;
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 struct create_vdrv_struct {
-        unsigned int vdrv_type;
-        unsigned int vdrv_phy_addr;
-        unsigned int vdrv_size;
+	unsigned int vdrv_type;
+	unsigned int vdrv_phy_addr;
+	unsigned int vdrv_size;
 };
 
 struct ack_vdrv_struct {
-        unsigned int sysno;
+	unsigned int sysno;
 };
 
 struct ack_fast_call_struct {
-        int retVal;
+	int retVal;
 };
 
 struct service_handler {
-        unsigned int sysno; /*! 服务调用号 */
-        void *param_buf; /*! 双系统通信缓冲区 */
-        unsigned size;
-        long (*init)(struct service_handler *handler); /*! 服务初始化处理 */
-        void (*deinit)(struct service_handler *handler); /*! 服务停止处理 */
-        int (*handle)(struct service_handler *handler); /*! 服务调用 */
+	unsigned int sysno; /*! 服务调用号 */
+	void *param_buf; /*! 双系统通信缓冲区 */
+	unsigned size;
+	long (*init)(struct service_handler *handler); /*! 服务初始化处理 */
+	void (*deinit)(struct service_handler *handler); /*! 服务停止处理 */
+	int (*handle)(struct service_handler *handler); /*! 服务调用 */
 };
 
 enum {
-        TEEI_SERVICE_SOCKET,
-        TEEI_SERVICE_TIME,
-        TEEI_SERVICE_VFS,
-        TEEI_DRIVERS,
-        TEEI_SERVICE_MAX
-}; 
+	TEEI_SERVICE_SOCKET,
+	TEEI_SERVICE_TIME,
+	TEEI_SERVICE_VFS,
+	TEEI_DRIVERS,
+	TEEI_SERVICE_MAX
+};
 
 struct TEEI_printer_command {
 	int func;
@@ -80,15 +80,15 @@ union TEEI_printer_response {
 };
 
 struct reetime_handle_struct {
-        struct service_handler *handler;
-        int retVal;
+	struct service_handler *handler;
+	int retVal;
 };
 
 struct reetime_handle_struct reetime_handle_entry;
 
 struct vfs_handle_struct {
-        struct service_handler *handler;
-        int retVal;
+	struct service_handler *handler;
+	int retVal;
 };
 
 struct vfs_handle_struct vfs_handle_entry;

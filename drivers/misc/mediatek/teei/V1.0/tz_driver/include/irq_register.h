@@ -1,37 +1,37 @@
 #include "utdriver_macro.h"
 
 struct work_entry {
-        int call_no;
-        struct work_struct work;
+	int call_no;
+	struct work_struct work;
 };
 
 struct service_handler {
-        unsigned int sysno; /*! 服务调用号 */
-        void *param_buf; /*! 双系统通信缓冲区 */
-        unsigned size;
-        long (*init)(struct service_handler *handler); /*! 服务初始化处理 */
-        void (*deinit)(struct service_handler *handler); /*! 服务停止处理 */
-        int (*handle)(struct service_handler *handler); /*! 服务调用 */
+	unsigned int sysno;
+	void *param_buf;
+	unsigned size;
+	long (*init)(struct service_handler *handler);
+	void (*deinit)(struct service_handler *handler);
+	int (*handle)(struct service_handler *handler);
 };
 
 struct NQ_entry {
-        unsigned int valid_flag;
-        unsigned int length;
-        unsigned int buffer_addr;
-        unsigned char reserve[20];
+	unsigned int valid_flag;
+	unsigned int length;
+	unsigned int buffer_addr;
+	unsigned char reserve[20];
 };
 
 struct load_soter_entry {
-        unsigned long vfs_addr;
-        struct work_struct work;
+	unsigned long vfs_addr;
+	struct work_struct work;
 };
 
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length;
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 
@@ -51,8 +51,8 @@ extern struct service_handler socket;
 extern struct service_handler vfs_handler;
 extern struct service_handler printer_driver;
 
-extern unsigned long forward_call_flag;
-extern unsigned long soter_error_flag;
+extern unsigned int forward_call_flag;
+extern unsigned int soter_error_flag;
 extern struct semaphore smc_lock;
 extern struct completion global_down_lock;
 extern unsigned long teei_config_flag;

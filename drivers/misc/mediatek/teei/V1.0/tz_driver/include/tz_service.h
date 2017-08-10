@@ -31,7 +31,7 @@ extern struct semaphore boot_sema;
 extern unsigned long boot_vfs_addr;
 extern unsigned long boot_soter_flag;
 extern int forward_call_flag;
-extern unsigned int soter_error_flag; 
+extern unsigned int soter_error_flag;
 
 #ifdef VFS_RDWR_SEM
 extern struct semaphore VFS_rd_sem;
@@ -49,7 +49,7 @@ void set_sch_nq_cmd(void);
 void set_sch_load_img_cmd(void);
 long create_cmd_buff(void);
 void set_fp_command(unsigned long memory_size);
-//int send_fp_command(unsigned long share_memory_size);
+/* int send_fp_command(unsigned long share_memory_size); */
 void set_keymaster_command(unsigned long memory_size);
 int send_keymaster_command(unsigned long share_memory_size);
 void set_gatekeeper_command(unsigned long memory_size);
