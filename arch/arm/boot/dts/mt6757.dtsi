@@ -2255,6 +2255,16 @@
 		compatible = "mediatek,tsf";
 		reg = <0 0x1a057000 0 0x1000>;
 		interrupts = <GIC_SPI 234 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_DIS>,
+			<&mmsys MMSYS_SMI_COMMON>,
+			<&scpsys SCP_SYS_CAM>,
+			<&camsys CAMSYS_LARB2_CGPDN>,
+			<&camsys CAMSYS_TSF_CGPDN>;
+		clock-names = "ISP_SCP_SYS_DIS",
+			"ISP_MMSYS_SMI_COMMON",
+			"ISP_SCP_SYS_CAM",
+			"ISP_CAMSYS_LARB2_CGPDN",
+			"ISP_CAMSYS_TSF_CGPDN";
 	};
 
 	gpufreq {
