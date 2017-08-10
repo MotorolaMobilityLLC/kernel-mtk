@@ -617,7 +617,7 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 
 		COPY_SSID(prP2pStartAPMsg->aucSsid, prP2pStartAPMsg->u2SsidLen, settings->ssid, settings->ssid_len);
 
-		prP2pStartAPMsg->eHiddenSsidType = settings->hidden_ssid;
+		prP2pStartAPMsg->ucHiddenSsidType = settings->hidden_ssid;
 
 		prP2pStartAPMsg->fgIsPrivacy = settings->privacy;
 
