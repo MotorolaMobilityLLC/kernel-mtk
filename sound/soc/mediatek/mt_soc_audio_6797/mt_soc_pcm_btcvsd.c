@@ -766,7 +766,7 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 			BTCVSD_write_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(BTCVSD_Write_Wait_Queue,
 						BTCVSD_write_wait_queue_flag,
-						write_timeout_limit / 1000000 / 10);
+						nsecs_to_jiffies(write_timeout_limit));
 			t2 = sched_clock();
 			t2 = t2 - t1; /* in ns (10^9) */
 
@@ -785,19 +785,18 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 			if (ret < 0) {
 				/* error, -ERESTARTSYS if it was interrupted by a signal */
-				max_timeout_trial--;
-				pr_err("%s(), error, trial left %d\n",
+				pr_err("%s(), error, trial left %d, ret = %d\n",
 				       __func__,
-				       max_timeout_trial);
+				       max_timeout_trial,
+				       ret);
 
-				if (max_timeout_trial <= 0)
-					return written_size;
+				return written_size;
 			} else if (ret == 0) {
 				/* conidtion is false after timeout */
 				max_timeout_trial--;
-				pr_err("%s(), error, timeout, condition is false, trial left %d\n",
-				       __func__,
-				       max_timeout_trial);
+				pr_warn("%s(), warn, timeout, condition is false, trial left %d\n",
+					__func__,
+					max_timeout_trial);
 
 				if (max_timeout_trial <= 0)
 					return written_size;
