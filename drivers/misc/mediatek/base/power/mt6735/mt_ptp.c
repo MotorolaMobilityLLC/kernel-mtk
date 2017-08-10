@@ -150,6 +150,7 @@ unsigned int reg_dump_addr_off[] = {
 #include "mach/mt_thermal.h"
 #include "mach/mt_clkmgr.h"
 #include "mach/mt_freqhopping.h"
+#include "mt-plat/upmu_common.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -1256,16 +1257,25 @@ static void ptp_init_det(struct ptp_det *det, struct ptp_devinfo *devinfo)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
+int __attribute__((weak)) tscpu_is_temp_valid(void)
+{
+	return 1;
+}
+
+void __attribute__((weak)) pmic_force_vproc_pwm(unsigned int en)
+{
+}
 
 static void ptp_set_ptp_volt(struct ptp_det *det)
 {
 #if SET_PMIC_VOLT
 	int i, cur_temp, low_temp_offset;
 	struct ptp_ctrl *ctrl = id_to_ptp_ctrl(det->ctrl_id);
+	int tscpu_bank0_temp_is_valid = tscpu_is_temp_valid();
 
 	 cur_temp = det->ops->get_temp(det);
-	/* ptp_debug("ptp_set_ptp_volt cur_temp = %d\n", cur_temp); */
-	if (cur_temp <= 33000) {
+	ptp_debug("ptp_set_ptp_volt(): cur_temp = %d, valid = %d\n", cur_temp, tscpu_bank0_temp_is_valid);
+	if (!tscpu_bank0_temp_is_valid || cur_temp <= 33000) {
 		low_temp_offset = 10;
 		ctrl->volt_update |= PTP_VOLT_UPDATE;
 	} else {
@@ -1786,8 +1796,11 @@ static int ptp_probe(struct platform_device *pdev)
 	int ret;
 	struct ptp_det *det;
 	struct ptp_ctrl *ctrl;
+	enum mt_cpu_dvfs_id cpu;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
+
+	cpu = MT_CPU_DVFS_LITTLE;
 
 	/* set PTP IRQ */
 	ret = request_irq(ptpod_irq_number, ptp_isr, IRQF_TRIGGER_LOW, "ptp", NULL);
@@ -1809,6 +1822,10 @@ static int ptp_probe(struct platform_device *pdev)
 	/* disable DVFS and set vproc = 1.15v (1 GHz) */
 	mt_cpufreq_disable_by_ptpod(MT_CPU_DVFS_LITTLE);
 
+	/* Enable PWM mode here */
+	if (mt_cpufreq_get_freq_by_idx(cpu, 0) <= 1300000)
+		pmic_force_vproc_pwm(1);
+
 	/*for slow idle */
 	ptp_data[0] = 0xffffffff;
 
@@ -1816,6 +1833,11 @@ static int ptp_probe(struct platform_device *pdev)
 		ptp_init_det(det, &ptp_devinfo);
 	}
 	ptp_init01();
+
+	/* Disable PWM mode here */
+	if (mt_cpufreq_get_freq_by_idx(cpu, 0) <= 1300000)
+		pmic_force_vproc_pwm(0);
+
 	ptp_data[0] = 0;
 	/* enable DVFS */
 	mt_cpufreq_enable_by_ptpod(MT_CPU_DVFS_LITTLE);
