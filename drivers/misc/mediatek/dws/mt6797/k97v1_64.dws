@@ -1889,7 +1889,7 @@
             <gpio110>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
+                <mode_arr>10100000</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1897,7 +1897,7 @@
                 <out>true</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_CAMERA_LDO_EN_PIN</varName0>
-                <varName1></varName1>
+                <varName1>GPIO_VMBUCK_I2C_SDA</varName1>
                 <varName2></varName2>
                 <smt>false</smt>
                 <ies>true</ies>
@@ -1905,7 +1905,7 @@
             <gpio111>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
+                <mode_arr>10100000</mode_arr>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1913,7 +1913,7 @@
                 <out>true</out>
                 <out_high>false</out_high>
                 <varName0>GPIO_HP_DEPOP_SWITCH_PIN</varName0>
-                <varName1></varName1>
+                <varName1>GPIO_VMBUCK_I2C_SCL</varName1>
                 <varName2></varName2>
                 <smt>false</smt>
                 <ies>true</ies>

@@ -31,8 +31,8 @@
 
 		memory-lowpower-reserved-memory {
 			compatible = "mediatek,memory-lowpower";
-			size = <0 0x40000000>;
-			alloc-ranges = <0 0xc0000000 0 0x40000000>;
+			size = <0 0x60000000>;
+			alloc-ranges = <0 0xc0000000 0 0x60000000>;
 		};
 	};
 
