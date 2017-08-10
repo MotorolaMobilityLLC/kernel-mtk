@@ -203,7 +203,7 @@ bool vcorefs_request_init_opp(int kicker, int opp)
 	mutex_lock(&governor_mutex);
 	if (kicker == KIR_GPU) {
 		gpu_kicker_init_opp = opp;
-		vcorefs_info("init_opp request(kr:%d, opp:%d)\n", kicker, opp);
+		vcorefs_debug_mask(kicker, "init_opp request(kr:%d, opp:%d)\n", kicker, opp);
 		accept = true;
 	}
 	mutex_unlock(&governor_mutex);

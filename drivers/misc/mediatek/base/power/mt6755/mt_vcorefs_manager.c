@@ -206,7 +206,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 	int autok_r, autok_lock;
 
 	if (is_vcorefs_feature_enable() && !pwrctrl->init_done) {
-		vcorefs_info("request before init done(kr:%d opp:%d)\n", kicker, opp);
+		vcorefs_debug_mask(kicker, "request before init done(kr:%d opp:%d)\n", kicker, opp);
 		if (vcorefs_request_init_opp(kicker, opp))
 			return 0;
 	}
