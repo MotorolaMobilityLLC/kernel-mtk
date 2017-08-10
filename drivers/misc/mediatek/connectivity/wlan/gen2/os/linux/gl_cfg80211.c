@@ -771,7 +771,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	UINT_32 u4BufLen;
 	UINT_32 num_ssid = 0;
 #if CFG_MULTI_SSID_SCAN
-	UINT_32 i;
+	UINT_32 i, u4ValidIdx;
 #endif
 /* PARAM_SCAN_REQUEST_EXT_T rScanRequest; */
 
@@ -787,21 +787,33 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	}
 
 	num_ssid = (UINT_32)request->n_ssids;
+	DBGLOG(REQ, INFO, "request->n_ssids=%d", request->n_ssids);
+
 	if (request->n_ssids == 0)
 		rScanRequest.u4SsidNum = 0;
 	else if (request->n_ssids <= (SCN_SSID_MAX_NUM + 1)) {
-		if ((request->ssids[request->n_ssids - 1].ssid[0] == 0)
-			|| (request->ssids[request->n_ssids - 1].ssid_len == 0))
-			num_ssid--; /* remove the rear NULL SSID if this is a wildcard scan*/
-
-		if (num_ssid == (SCN_SSID_MAX_NUM + 1)) /* remove the rear SSID if this is a specific scan */
-			num_ssid--;
-
-		rScanRequest.u4SsidNum = num_ssid; /* real SSID number to firmware */
-		for (i = 0; i < rScanRequest.u4SsidNum; i++) {
-			COPY_SSID(rScanRequest.rSsid[i].aucSsid, rScanRequest.rSsid[i].u4SsidLen,
+		u4ValidIdx = 0;
+		for (i = 0; i < request->n_ssids; i++) {
+			if ((request->ssids[i].ssid[0] == 0)
+				|| (request->ssids[i].ssid_len == 0)) {
+				num_ssid--; /* remove if this is a wildcard scan*/
+				DBGLOG(REQ, INFO, "i=%d, num_ssid-- for wildcard scan\n", i);
+				continue;
+			}
+			COPY_SSID(rScanRequest.rSsid[u4ValidIdx].aucSsid,
+				rScanRequest.rSsid[u4ValidIdx].u4SsidLen,
 				request->ssids[i].ssid, request->ssids[i].ssid_len);
+			DBGLOG(REQ, INFO, "i=%d, u4ValidIdx=%d, aucSsid=%s, u4SsidLen=%d\n",
+				i, u4ValidIdx,
+				rScanRequest.rSsid[u4ValidIdx].aucSsid, rScanRequest.rSsid[u4ValidIdx].u4SsidLen);
+
+			u4ValidIdx++;
+			if (u4ValidIdx == SCN_SSID_MAX_NUM) {
+				DBGLOG(REQ, INFO, "i=%d, u4ValidIdx is SCN_SSID_MAX_NUM\n", i);
+				break;
+			}
 		}
+		rScanRequest.u4SsidNum = u4ValidIdx; /* real SSID number to firmware */
 	} else {
 		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
 		return -EINVAL;
