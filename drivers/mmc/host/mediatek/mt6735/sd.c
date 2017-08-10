@@ -6714,13 +6714,15 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ))
 			goto out;	/* sdio not tuning */
-		/* if not read/write command just return error */
-		if ((cmd->opcode != 17) && (cmd->opcode != 18) && (cmd->opcode != 24) &&
-			(cmd->opcode != 25) && (cmd->opcode != 13))
+
+		/* if not read/write command or CMD13 just return error */
+		if ((cmd->error == (unsigned int)-ETIMEDOUT) && (cmd->opcode != 13) &&
+			(cmd->opcode != 17) && (cmd->opcode != 18) &&
+			(cmd->opcode != 24) && (cmd->opcode != 25))
 			goto out;
 
 		/* cmd13 timeout, retry with delay and disable log, mas retry time 1s*/
-		if (cmd->opcode == 13) {
+		if ((cmd->opcode == 13) && (cmd->error == (unsigned int)-ETIMEDOUT)) {
 			sd_register_zone[host->id] = 0;
 			if (cmd13_retry++ >= max_cmd13_retry) {
 				ERR_MSG("CMD13 timeout out of limit(%d).", max_cmd13_retry);
