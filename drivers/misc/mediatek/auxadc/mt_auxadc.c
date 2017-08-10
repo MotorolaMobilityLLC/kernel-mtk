@@ -1415,11 +1415,11 @@ static ssize_t show_AUXADC_chanel(struct device *dev, struct device_attribute *a
 		} else {
 			pr_debug("[adc_driver]: channel[%d]=%d.%d\n", i, data[0], data[1]);
 			sprintf(buf_temp, "channel[%d]=%d.%d\n", i, data[0], data[1]);
-			strcat(buf, buf_temp);
+			strncat(buf, buf_temp, strlen(buf_temp));
 		}
 	}
 	mt_auxadc_dump_register(buf_temp);
-	strcat(buf, buf_temp);
+	strncat(buf, buf_temp, strlen(buf_temp));
 	return strlen(buf);
 }
 
@@ -1463,7 +1463,7 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 	char start_flag;
 	int error;
 
-	if (sscanf(buf, "%s", &start_flag) != 1) {
+	if (strlen(buf) > 1 || sscanf(buf, "%s", &start_flag) != 1) {
 		pr_debug("[adc_driver]: Invalid values\n");
 		return -EINVAL;
 	}
