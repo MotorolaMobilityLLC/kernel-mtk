@@ -4001,7 +4001,7 @@ done:
 			#endif
 			host->async_tuning_done = false;
 		}
-		if (cmd && (cmd->error == (unsigned int)-EILSEQ))
+		if (cmd->error == (unsigned int)-EILSEQ)
 			host->async_tuning_done = false;
 		#ifndef MSDC_WQ_ERROR_TUNE
 		if (!host->async_tuning_done &&
