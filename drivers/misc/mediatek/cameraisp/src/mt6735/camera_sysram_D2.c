@@ -1295,7 +1295,7 @@ static ssize_t SYSRAM_ReadFlag(struct file *pPage,
 
 	length += sprintf(tempStr, "Sysram.DebugFlag = 0x%08lX\r\n", Sysram.DebugFlag);
 
-	strcat(tempStr2, tempStr);
+	strncat(tempStr2, tempStr, length);
 
 	if (copy_to_user(pBuffer, tempStr2, length))
 		return -EFAULT;
