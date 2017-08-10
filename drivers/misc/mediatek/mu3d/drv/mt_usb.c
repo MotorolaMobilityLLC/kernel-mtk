@@ -121,6 +121,7 @@ void connection_work(struct work_struct *data)
 		if ((musb->usb_mode == CABLE_MODE_HOST_ONLY && chg_type == STANDARD_HOST)
 		    || musb->usb_mode == CABLE_MODE_CHRG_ONLY)
 			cmode_effect_on = true;
+/*
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
@@ -129,6 +130,7 @@ void connection_work(struct work_struct *data)
 
 		}
 #endif
+*/
 		os_printk(K_INFO, "%s type=%d, cmode_effect_on=%d, usb_mode:%d\n",
 			  __func__, chg_type, cmode_effect_on, musb->usb_mode);
 

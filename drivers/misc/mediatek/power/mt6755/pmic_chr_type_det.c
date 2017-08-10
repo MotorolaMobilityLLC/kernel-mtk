@@ -82,7 +82,24 @@ int hw_charging_get_charger_type(void)
 */
 static void hw_bc11_init(void)
 {
+	int timeout_count = 20;
+
 	msleep(200);
+	/* add make sure USB Ready */
+	if (is_usb_rdy() == KAL_FALSE) {
+		battery_log(BAT_LOG_CRTI, "CDP, block\n");
+		while (is_usb_rdy() == KAL_FALSE) {
+			msleep(100);
+			timeout_count--;
+			if (!timeout_count) {
+				battery_log(BAT_LOG_CRTI, "CDP, TIMEOUT!!!\n");
+				break;
+			}
+		}
+		battery_log(BAT_LOG_CRTI, "CDP, free\n");
+	} else
+		battery_log(BAT_LOG_CRTI, "CDP, PASS\n");
+
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	/* add delay to make sure android init.rc finish */
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
