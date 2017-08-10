@@ -1754,7 +1754,12 @@ static void mt_afe_dl_interrupt_handler(void)
 	int hw_memory_index;
 	int hw_cur_read_index = 0;
 	struct mt_afe_block_t *const afe_block =
-	    &(afe_mem_control_context[MT_AFE_MEM_CTX_DL1]->block);
+		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_DL1)->block);
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_DL1)->substream;
+
+	if (!substream)
+		return;
 
 #ifdef DEBUG_IRQ_STATUS
 	{
@@ -1802,7 +1807,7 @@ static void mt_afe_dl_interrupt_handler(void)
 	afe_block->read_index += afe_consumed_bytes;
 	afe_block->read_index %= afe_block->buffer_size;
 
-	snd_pcm_period_elapsed(afe_mem_control_context[MT_AFE_MEM_CTX_DL1]->substream);
+	snd_pcm_period_elapsed(substream);
 
 #ifdef DEBUG_IRQ_STATUS
 	gpt_get_cnt(GPT2, &pre_irq1_gpt_cnt);
@@ -1815,7 +1820,12 @@ static void mt_afe_dl2_interrupt_handler(void)
 	int hw_memory_index;
 	int hw_cur_read_index = 0;
 	struct mt_afe_block_t *const afe_block =
-	    &(afe_mem_control_context[MT_AFE_MEM_CTX_DL2]->block);
+		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_DL2)->block);
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_DL2)->substream;
+
+	if (!substream)
+		return;
 
 	hw_cur_read_index = mt_afe_get_reg(AFE_DL2_CUR);
 
@@ -1846,7 +1856,7 @@ static void mt_afe_dl2_interrupt_handler(void)
 	afe_block->read_index += afe_consumed_bytes;
 	afe_block->read_index %= afe_block->buffer_size;
 
-	snd_pcm_period_elapsed(afe_mem_control_context[MT_AFE_MEM_CTX_DL2]->substream);
+	snd_pcm_period_elapsed(substream);
 }
 
 static void mt_afe_ul_interrupt_handler(void)
@@ -1879,6 +1889,11 @@ static void mt_afe_hdmi_interrupt_handler(void)
 	int hw_cur_read_index = 0;
 	struct mt_afe_block_t *const afe_block =
 		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI)->block);
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI)->substream;
+
+	if (!substream)
+		return;
 
 	hw_cur_read_index = mt_afe_get_reg(AFE_HDMI_OUT_CUR);
 	if (hw_cur_read_index == 0) {
@@ -1912,7 +1927,7 @@ static void mt_afe_hdmi_interrupt_handler(void)
 	afe_block->read_index += afe_consumed_bytes;
 	afe_block->read_index %= afe_block->buffer_size;
 
-	snd_pcm_period_elapsed(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI)->substream);
+	snd_pcm_period_elapsed(substream);
 }
 
 static void mt_afe_hdmi_raw_interrupt_handler(void)
@@ -1923,7 +1938,12 @@ static void mt_afe_hdmi_raw_interrupt_handler(void)
 	unsigned int burst_len = 0;
 
 	struct mt_afe_block_t *const afe_block =
-	    &(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI_RAW)->block);
+		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI_RAW)->block);
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI_RAW)->substream;
+
+	if (!substream)
+		return;
 
 	if (mt_afe_get_reg(AFE_IEC_BURST_INFO) & 0x000010000) {
 		pr_debug("%s HW is Not ready to get next burst info\n", __func__);
@@ -1976,7 +1996,7 @@ static void mt_afe_hdmi_raw_interrupt_handler(void)
 	   __func__, burst_len, afe_block->iec_nsadr, afe_block->read_index, afe_consumed_bytes);
 	 */
 
-	snd_pcm_period_elapsed(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_HDMI_RAW)->substream);
+	snd_pcm_period_elapsed(substream);
 }
 
 static void mt_afe_spdif_interrupt_handler(void)
@@ -1988,6 +2008,11 @@ static void mt_afe_spdif_interrupt_handler(void)
 
 	struct mt_afe_block_t *const afe_block =
 		&(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_SPDIF)->block);
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_SPDIF)->substream;
+
+	if (!substream)
+		return;
 
 	if (mt_afe_get_reg(AFE_IEC2_BURST_INFO) & 0x000010000) {
 		pr_debug("%s HW is Not ready to get next burst info\n", __func__);
@@ -2040,7 +2065,7 @@ static void mt_afe_spdif_interrupt_handler(void)
 	   __func__, burst_len, afe_block->iec_nsadr, afe_block->read_index, afe_consumed_bytes);
 	 */
 
-	snd_pcm_period_elapsed(mt_afe_get_mem_ctx(MT_AFE_MEM_CTX_SPDIF)->substream);
+	snd_pcm_period_elapsed(substream);
 }
 
 static void mt_afe_handle_mem_context(enum mt_afe_mem_context mem_context)
@@ -2048,6 +2073,11 @@ static void mt_afe_handle_mem_context(enum mt_afe_mem_context mem_context)
 	uint32_t hw_cur_read_index = 0;
 	int hw_get_bytes = 0;
 	struct mt_afe_block_t *block = NULL;
+	struct snd_pcm_substream *substream =
+		mt_afe_get_mem_ctx(mem_context)->substream;
+
+	if (!substream)
+		return;
 
 	switch (mem_context) {
 	case MT_AFE_MEM_CTX_VUL:
@@ -2089,7 +2119,7 @@ static void mt_afe_handle_mem_context(enum mt_afe_mem_context mem_context)
 	block->write_index += hw_get_bytes;
 	block->write_index %= block->buffer_size;
 
-	snd_pcm_period_elapsed(afe_mem_control_context[mem_context]->substream);
+	snd_pcm_period_elapsed(substream);
 }
 
 static void mt_afe_clean_predistortion(void)
