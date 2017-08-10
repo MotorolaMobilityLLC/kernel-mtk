@@ -204,6 +204,7 @@ class Everest(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Everest())
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
 
     def parse(self):
         return ChipObj.parse(self)
@@ -313,6 +314,7 @@ class MT6750S(ChipObj):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
         ChipObj.replace_obj(self, 'eint', EintObj_MT6750S(ChipObj.get_gpioObj(self)))
+        ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
