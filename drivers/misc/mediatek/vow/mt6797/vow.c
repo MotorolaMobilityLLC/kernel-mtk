@@ -1193,6 +1193,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	case VOW_FAKE_WAKEUP:
 		vow_ipi_reg_ok(0);
 		pr_debug("VOW_FAKE_WAKEUP(%lu)", arg);
+		break;
 	default:
 		pr_debug("WrongParameter(%lu)", arg);
 		break;
