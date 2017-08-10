@@ -152,6 +152,9 @@ int mt_cpu_kill(unsigned int cpu)
 
 #ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
 	switch (cpu) {
+	case 0:
+		spm_mtcmos_ctrl_cpu0(STA_POWER_DOWN, 1);
+		break;
 	case 1:
 		spm_mtcmos_ctrl_cpu1(STA_POWER_DOWN, 1);
 		break;
@@ -222,5 +225,5 @@ int mt_cpu_disable(unsigned int cpu)
 	 */
 	HOTPLUG_INFO("mt_cpu_disable, cpu: %d\n", cpu);
 
-	return cpu == 0 ? -EPERM : 0;
+	return 0;
 }

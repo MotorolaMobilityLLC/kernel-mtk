@@ -135,6 +135,13 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	write_pen_release(cpu);
 
 	switch (cpu) {
+	case 0:
+#ifdef CONFIG_MTK_FPGA
+		mt_reg_sync_writel(SLAVE0_MAGIC_NUM, SLAVE0_MAGIC_REG);
+		HOTPLUG_INFO("SLAVE0_MAGIC_NUM:%x\n", SLAVE0_MAGIC_NUM);
+#endif
+		spm_mtcmos_ctrl_cpu0(STA_POWER_ON, 1);
+		break;
 	case 1:
 #ifdef CONFIG_MTK_FPGA
 		mt_reg_sync_writel(SLAVE1_MAGIC_NUM, SLAVE1_MAGIC_REG);

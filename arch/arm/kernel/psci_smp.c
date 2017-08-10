@@ -25,6 +25,7 @@
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || \
 	defined(CONFIG_ARCH_MT6753) || defined(CONFIG_ARCH_MT6755)
 #include <mt-smp.h>
+#include <hotplug.h>
 #endif
 
 /*
@@ -153,5 +154,8 @@ struct smp_operations __initdata psci_smp_ops = {
 #ifdef CONFIG_HOTPLUG_CPU
 	.cpu_die		= psci_cpu_die,
 	.cpu_kill		= psci_cpu_kill,
+#if defined(CONFIG_ARCH_MT6755)
+	.cpu_disable		= mt_cpu_disable,
+#endif
 #endif
 };
