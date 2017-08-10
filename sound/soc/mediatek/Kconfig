@@ -199,12 +199,13 @@ config MTK_SND_SOC_NEW_ARCH
 	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
 	  Only enable this when you use refactored audio driver architecture.
 
-config MTK_OFFLOAD_PLAYBACK
+config MTK_AUDIO_TUNNELING_SUPPORT
 	bool "Audio playback through dsp"
 	help
-	  If you say Y, enable MTK_OFFLOAD_PLAYBACK.
 	  Only enable this when we have DSP.
-	  This makes audio out pass bitstream, and decoding process is done in DSP.
+	  This makes audio output pass bitstream without any post processing.
+	  The decoding process is done in DSP.
+          Select Y to enable MTK_AUDIO_TUNNELING_SUPPORT for DSP playback.
 
 config MTK_SND_HYBRID_DRE_SUPPORT
 	bool "Audio Hybrid DRE support"
