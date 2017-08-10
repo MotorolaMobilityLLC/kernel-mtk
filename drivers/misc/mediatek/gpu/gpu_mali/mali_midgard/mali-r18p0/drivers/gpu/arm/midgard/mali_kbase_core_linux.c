@@ -1673,7 +1673,7 @@ static int kbase_api_fence_validate(struct kbase_context *kctx,
 static int kbase_api_get_profiling_controls(struct kbase_context *kctx,
 		struct kbase_ioctl_get_profiling_controls *controls)
 {
-	if (controls->count > FBDUMP_CONTROL_MAX)
+	if (controls->count > (FBDUMP_CONTROL_MAX - FBDUMP_CONTROL_MIN))
 		return -EINVAL;
 
 	return copy_to_user(controls->buffer.value,
