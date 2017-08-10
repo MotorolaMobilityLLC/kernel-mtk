@@ -26,7 +26,7 @@
 #include <linux/cpu.h>		/* cpu_up */
 #include <linux/platform_device.h>	/* platform_driver_register */
 #include <linux/wakelock.h>	/* wake_lock_init */
-
+#include <linux/suspend.h>
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
 
@@ -45,6 +45,7 @@
  * config
  */
 #define HPS_TASK_PRIORITY               (MAX_RT_PRIO - 3)
+static int is_suspend;
 
 /*============================================================================*/
 /* Local type definition */
@@ -75,6 +76,33 @@ const struct dev_pm_ops hps_dev_pm_ops = {
 	.restore = hps_restore,
 	.thaw = hps_restore,
 };
+
+#ifndef CONFIG_MTK_FPGA
+int get_suspend_status(void)
+{
+	return is_suspend;
+}
+static int hps_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		is_suspend = 1;
+	break;
+	case PM_POST_SUSPEND:
+		is_suspend = 0;
+	break;
+	default:
+		is_suspend = 0;
+	break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block hps_pm_notifier_func = {
+	.notifier_call = hps_pm_event,
+	.priority = 0,
+};
+#endif /* CONFIG_MTK_FPGA */
 
 /*============================================================================*/
 /* Global variable definition */
@@ -550,11 +578,17 @@ static int __init hps_init(void)
 	if (r)
 		hps_error("platform_driver_register fail(%d)\n", r);
 
+	r = register_pm_notifier(&hps_pm_notifier_func);
+	if (r)
+		hps_error("pm_notifier_register fail(%d)\n", r);
+
 	r = hps_core_init();
 	if (r)
 		hps_error("hps_core_init fail(%d)\n", r);
 
 	hps_ctxt.init_state = INIT_STATE_DONE;
+
+	is_suspend = 0;
 
 	return r;
 }

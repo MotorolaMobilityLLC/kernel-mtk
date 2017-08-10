@@ -542,16 +542,18 @@ ALGO_END_WITH_ACTION:
 						    hps_ctxt.big_cpu_id_max, 1);
 	} else
 		hps_warn("ERROR! root cpu %d\n", target_root_cpu);
-	if (!((little_num_online == target_little_cores) && (big_num_online == target_big_cores))) {
-		hps_warn(
-		"END :(%04lx)(%u)(%u) action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u)\n",
-	hps_ctxt.action, little_num_online, big_num_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
-	hps_ctxt.cur_iowait, hps_ctxt.cur_nr_heavy_task, hps_ctxt.little_num_limit_power_serv,
-	hps_ctxt.big_num_limit_power_serv, hps_ctxt.little_num_base_perf_serv, hps_ctxt.big_num_base_perf_serv,
-	hps_ctxt.up_loads_sum, hps_ctxt.up_loads_count, hps_ctxt.up_loads_history_index, hps_ctxt.down_loads_sum,
-	hps_ctxt.down_loads_count, hps_ctxt.down_loads_history_index, hps_ctxt.rush_count, hps_ctxt.tlp_sum,
-	hps_ctxt.tlp_count, hps_ctxt.tlp_history_index, hps_ctxt.tlp_avg, target_root_cpu, target_little_cores,
-	target_big_cores);
+	if (!get_suspend_status()) {
+		if (!((little_num_online == target_little_cores) && (big_num_online == target_big_cores))) {
+			hps_warn(
+			"END :(%04lx)(%u)(%u) action end(%u)(%u)(%u)(%u) (%u)(%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u) (%u)(%u)(%u)(%u)(%u) (%u)(%u)(%u)\n",
+		hps_ctxt.action, little_num_online, big_num_online, hps_ctxt.cur_loads, hps_ctxt.cur_tlp,
+		hps_ctxt.cur_iowait, hps_ctxt.cur_nr_heavy_task, hps_ctxt.little_num_limit_power_serv,
+		hps_ctxt.big_num_limit_power_serv, hps_ctxt.little_num_base_perf_serv, hps_ctxt.big_num_base_perf_serv,
+		hps_ctxt.up_loads_sum, hps_ctxt.up_loads_count, hps_ctxt.up_loads_history_index,
+		hps_ctxt.down_loads_sum, hps_ctxt.down_loads_count, hps_ctxt.down_loads_history_index,
+		hps_ctxt.rush_count, hps_ctxt.tlp_sum, hps_ctxt.tlp_count, hps_ctxt.tlp_history_index,
+		hps_ctxt.tlp_avg, target_root_cpu, target_little_cores,	target_big_cores);
+		}
 	}
 	hps_ctxt_reset_stas_nolock();
 

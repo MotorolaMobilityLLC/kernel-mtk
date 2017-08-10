@@ -321,7 +321,7 @@ extern int hps_cpu_is_cpu_little(int cpu);
 extern unsigned int hps_cpu_get_percpu_load(int cpu);
 extern unsigned int hps_cpu_get_nr_heavy_task(void);
 extern void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg);
-
+int get_suspend_status(void);
 /*=============================================================*/
 /* End */
 /*=============================================================*/
