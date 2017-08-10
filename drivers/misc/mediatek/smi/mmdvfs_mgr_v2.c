@@ -151,6 +151,9 @@ typedef struct {
 	int is_mhl_enable;
 	int is_wfd_enable;
 	int is_mjc_enable;
+	int is_boost_disable;
+	int is_lpddr4;
+	int step_concurrency[MMDVFS_VOLTAGE_COUNT];
 	mmdvfs_gpu_monitor_struct gpu_monitor;
 
 } mmdvfs_context_struct;
