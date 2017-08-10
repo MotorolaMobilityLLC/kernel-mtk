@@ -48,11 +48,6 @@ mtk_stp_wmt$(EXT_FLAG)-objs	+= linux/pri/stp_exp.o core/stp_core.o core/psm_core
 # WMT stub part (built-in kernel image)
 # obj-y			+= platform/alps/mtk_wcn_consys_stub_alps.o
 
-
-
-obj-$(CONFIG_MTK_COMBO_BT) 	+= mtk_stp_bt$(EXT_FLAG).o
-mtk_stp_bt$(EXT_FLAG)-objs	:= linux/pub/stp_chrdev_bt.o
-
 endif
 
 ifeq ($(CONFIG_MTK_COMBO), y)
