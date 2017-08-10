@@ -1223,7 +1223,7 @@ TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
 	}
 
 	secure_size = cma_get_size(tz_cma);
-	secure_pages = cma_alloc(tz_cma, secure_size / SZ_4K, SZ_1M);
+	secure_pages = cma_alloc_large(tz_cma, secure_size / SZ_4K, get_order(SZ_1M));
 	if (secure_pages == NULL) {
 		pr_warn("%s() cma_alloc() failed!\n", __func__);
 		return TZ_RESULT_ERROR_OUT_OF_MEMORY;
