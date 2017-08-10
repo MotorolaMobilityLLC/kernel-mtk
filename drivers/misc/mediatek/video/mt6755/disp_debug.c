@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/string.h>
 #include <linux/time.h>
 #include <linux/uaccess.h>
@@ -18,28 +19,17 @@
 #include <linux/sched.h>
 #include <linux/debugfs.h>
 #include <linux/wait.h>
-#include <linux/time.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/types.h>
-#include <linux/string.h>
-#include <linux/uaccess.h>
-#include <linux/debugfs.h>
 #include <mt-plat/aee.h>
 #include <linux/dma-mapping.h>
-#include <linux/delay.h>
-#include <linux/sched.h>
 #include <linux/interrupt.h>
-#include <linux/time.h>
-#include <linux/types.h>
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
 #include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
-#endif
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
 #endif
 
 #include "m4u.h"
@@ -48,9 +38,9 @@
 #include "cmdq_reg.h"
 #include "cmdq_core.h"
 
+#include "lcm_drv.h"
 #include "ddp_path.h"
 #include "ddp_reg.h"
-#include "disp_debug.h"
 #include "ddp_drv.h"
 #include "ddp_wdma.h"
 #include "ddp_hal.h"
@@ -62,50 +52,50 @@
 #include "ddp_rdma.h"
 #include "ddp_manager.h"
 #include "ddp_met.h"
-
 #include "disp_log.h"
+#include "disp_debug.h"
 #include "disp_helper.h"
 #include "disp_drv_ddp.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "disp_session.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "disp_assert_layer.h"
-
-#include "disp_debug.h"
-#include "lcm_drv.h"
 #include "mtkfb.h"
 #include "mtkfb_fence.h"
 #include "primary_display.h"
 
-#define LOG_TAG "DEBUG"
 #pragma GCC optimize("O0")
 
-/*****************************************************************/
-/*below is debug.c parameter*/
-/*****************************************************************/
-static struct dentry *mtkfb_dbgfs;
-static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
+/* --------------------------------------------------------------------------- */
+/* Global variable declarations */
+/* --------------------------------------------------------------------------- */
 unsigned int gEnableUartLog = 0;
 unsigned int gMobilelog = 1;
 unsigned int gLoglevel = 3; /*DISPMSG level is DEFAULT_LEVEL==3*/
 unsigned int gRcdlevel = 0;
+unsigned char pq_debug_flag = 0;
+unsigned char aal_debug_flag = 0;
+unsigned int gUltraEnable = 1;
 int lcm_mode_status = 0;
 LCM_DSI_MODE_CON vdo_mode_type;
 int bypass_blank = 0;
-/*****************************************************************/
-/*below is ddp_debug.c parameter*/
-/*****************************************************************/
+
+/* --------------------------------------------------------------------------- */
+/* Local variable declarations */
+/* --------------------------------------------------------------------------- */
 static struct dentry *debugfs;
 static struct dentry *debugDir;
 static struct dentry *debugfs_dump;
+static struct dentry *mtkfb_dbgfs;
 static const long int DEFAULT_LOG_FPS_WND_SIZE = 30;
 static int debug_init;
+static int low_power_cust_mode = LP_CUST_DISABLE;
 static unsigned int dbg_log_level;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
-static int low_power_cust_mode = LP_CUST_DISABLE;
 static unsigned int vfp_backup;
+static char debug_buffer[4096 + DPREC_ERROR_LOG_BUFFER_LENGTH];
 static char DDP_STR_HELP[] =
 	"USAGE:\n"
 	"       echo [ACTION]>/d/dispsys\n"
@@ -118,16 +108,14 @@ static char DDP_STR_HELP[] =
 	"       backlight:level\n"
 	"       dump_aal:arg\n"
 	"       mmp\n"
-	"       dump_reg:moduleID\n" "       dump_path:mutexID\n" "       dpfd_ut1:channel\n";
+	"       dump_reg:moduleID\n"
+	"       dump_path:mutexID\n"
+	"       dpfd_ut1:channel\n";
 
-unsigned char pq_debug_flag = 0;
-unsigned char aal_debug_flag = 0;
-unsigned int gUltraEnable = 1;
+/* --------------------------------------------------------------------------- */
+/* Command Processor */
+/* --------------------------------------------------------------------------- */
 
-
-/*****************************************************************/
-/*below is ddp_debug.c*/
-/*****************************************************************/
 int get_lp_cust_mode(void)
 {
 	return low_power_cust_mode;
@@ -171,7 +159,7 @@ static void ddp_process_dbg_opt(const char *opt)
 
 	if (0 == strncmp(opt, "regr:", 5)) {
 		char *p = (char *)opt + 5;
-		unsigned long addr;
+		unsigned long addr = 0;
 
 		ret = kstrtoul(p, 16, &addr);
 		if (ret) {
@@ -510,8 +498,6 @@ static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, 
 		return simple_read_from_buffer(ubuf, count, ppos, mode2, strlen(mode2));
 	default:
 		return simple_read_from_buffer(ubuf, count, ppos, mode4, strlen(mode4));
-
-
 	}
 
 }
@@ -601,186 +587,7 @@ int ddp_lcd_test(void)
 }
 
 
-/*****************************************************************/
-/*below is debug.c*/
-/*****************************************************************/
-#if 0
-static int draw_buffer(char *va, int w, int h,
-		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
-{
-	int i, j;
-	int Bpp = UFMT_GET_Bpp(ufmt);
 
-	for (i = 0; i < h; i++)
-		for (j = 0; j < w; j++) {
-			int x = j * Bpp + i * w * Bpp;
-
-			if (ufmt == UFMT_RGB888 || ufmt == UFMT_RGBA8888) {
-				va[x++] = r;
-				va[x++] = g;
-				va[x++] = b;
-				if (Bpp == 4)
-					va[x++] = a;
-			}
-
-			if (ufmt == UFMT_RGB565) {
-				va[x++] = (b & 0x1f) | ((g & 0x7) << 5);
-				va[x++] = (g & 0x7) | (r & 0x1f);
-			}
-		}
-	return 0;
-}
-
-static int primary_display_basic_test(int layer_num, int w, int h, DISP_FORMAT fmt, int frame_num,
-				      int vsync)
-{
-	disp_session_input_config *input_config;
-	int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
-	unsigned int Bpp;
-	int frame, i, ret;
-	enum UNIFIED_COLOR_FMT ufmt;
-
-	ufmt = disp_fmt_to_unified_fmt(fmt);
-	Bpp = UFMT_GET_bpp(ufmt) / 8;
-
-	/* allocate buffer */
-	unsigned long size = w * h * Bpp;
-	unsigned char *buf_va;
-	dma_addr_t buf_pa;
-	unsigned int buf_mva;
-	unsigned long size_align = round_up(size, PAGE_SIZE);
-	m4u_client_t *client;
-
-	DISPMSG("%s: layer_num=%u,w=%d,h=%d,fmt=%s,frame_num=%d,vsync=%d, size=%lu\n",
-		__func__, layer_num, w, h, unified_color_fmt_name(ufmt), frame_num, vsync, size);
-
-	input_config = kmalloc(sizeof(*input_config), GFP_KERNEL);
-	if (!input_config)
-		return -ENOMEM;
-
-	buf_va = dma_alloc_coherent(disp_get_device(), size, &buf_pa, GFP_KERNEL);
-	if (!(buf_va)) {
-		DISPMSG("dma_alloc_coherent error!  dma memory not available. size=%lu\n", size);
-		kfree(input_config);
-		return -1;
-	}
-
-	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-		static struct sg_table table;
-
-		struct sg_table *sg_table = &table;
-
-		sg_alloc_table(sg_table, 1, GFP_KERNEL);
-
-		sg_dma_address(sg_table->sgl) = buf_pa;
-		sg_dma_len(sg_table->sgl) = size_align;
-		client = m4u_create_client();
-		if (IS_ERR_OR_NULL(client))
-			DISPMSG("create client fail!\n");
-
-		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
-				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &buf_mva);
-		if (ret)
-			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
-		DISPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
-	}
-
-
-	draw_buffer(buf_va, w, h, ufmt, 255, 0, 0, 255);
-
-	for (frame = 0; frame < frame_num; frame++) {
-
-		memset(input_config, 0, sizeof(*input_config));
-		input_config->config_layer_num = layer_num;
-		input_config->session_id = session_id;
-
-		for (i = 0; i < layer_num; i++) {
-			int enable;
-
-			if (i == frame % (layer_num + 1) - 1)
-				enable = 0;
-			else
-				enable = 1;
-
-			input_config->config[i].layer_id = i;
-			input_config->config[i].layer_enable = enable;
-			input_config->config[i].src_base_addr = 0;
-			if (disp_helper_get_option(DISP_OPT_USE_M4U))
-				input_config->config[i].src_phy_addr = (unsigned long)buf_mva;
-			else
-				input_config->config[i].src_phy_addr = buf_pa;
-			input_config->config[i].next_buff_idx = -1;
-			input_config->config[i].src_fmt = fmt;
-			input_config->config[i].src_pitch = w;
-			input_config->config[i].src_offset_x = 0;
-			input_config->config[i].src_offset_y = 0;
-			input_config->config[i].src_width = w;
-			input_config->config[i].src_height = h;
-
-			input_config->config[i].tgt_offset_x = w * i;
-			input_config->config[i].tgt_offset_y = h * i;
-			input_config->config[i].tgt_width = w;
-			input_config->config[i].tgt_height = h;
-			input_config->config[i].alpha_enable = 1;
-			input_config->config[i].alpha = 0xff;
-			input_config->config[i].security = DISP_NORMAL_BUFFER;
-		}
-		primary_display_config_input_multiple(input_config);
-		primary_display_trigger(0, NULL, 0);
-
-		if (vsync) {
-			disp_session_vsync_config vsync_config;
-
-			vsync_config.session_id = session_id;
-			primary_display_wait_for_vsync(&vsync_config);
-		}
-	}
-
-	/* disable all layers */
-	memset(input_config, 0, sizeof(*input_config));
-	input_config->config_layer_num = layer_num;
-	for (i = 0; i < layer_num; i++)
-		input_config->config[i].layer_id = i;
-
-	primary_display_config_input_multiple(input_config);
-	primary_display_trigger(1, NULL, 0);
-
-	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-		/* dealloc mva */
-		m4u_destroy_client(client);
-	}
-
-	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
-	kfree(input_config);
-	return 0;
-}
-#endif
-#if 0
-static char STR_HELP[] =
-	"\n"
-	"USAGE\n"
-	"        echo [ACTION]... > /d/mtkfb\n"
-	"\n"
-	"        suspend\n"
-	"             enter suspend mode\n"
-	"\n"
-	"        resume\n"
-	"             leave suspend mode\n"
-	"\n"
-	"        lcm:[on|off|init]\n"
-	"             power on/off lcm\n"
-	"\n"
-	"        cabc:[ui|mov|still]\n"
-	"             cabc mode, UI/Moving picture/Still picture\n"
-	"\n"
-	"       esd:[on|off]\n"
-	"             esd kthread on/off\n"
-	"       HQA:[NormalToFactory|FactoryToNormal]\n"
-	"             for HQA requirement\n"
-	"\n"
-	"       dump_layer:[on|off[,down_sample_x[,down_sample_y]][,layer(0:L0,1:L1,2:L2,3:L3,4:L0-3)]\n"
-	"             Start/end to capture current enabled OVL layer every frame\n";
-#endif
 static void mtkfb_process_dbg_opt(const char *opt)
 {
 	int ret;

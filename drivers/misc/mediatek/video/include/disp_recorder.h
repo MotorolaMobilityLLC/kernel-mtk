@@ -96,11 +96,14 @@ typedef enum {
 	DPREC_LOGGER_DISPMGR_RELEASE,
 	DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 	DPREC_LOGGER_DISPMGR_WAIT_VSYNC,
+	DPREC_LOGGER_OVL_FRAME_COMPLETE_1SECOND,
 	DPREC_LOGGER_RDMA0_TRANSFER,
+	DPREC_LOGGER_RDMA0_TRANSFER_1SECOND,
 	DPREC_LOGGER_DSI_EXT_TE,
 	DPREC_LOGGER_ESD_RECOVERY,
 	DPREC_LOGGER_ESD_CHECK,
 	DPREC_LOGGER_ESD_CMDQ,
+	DPREC_LOGGER_IDLEMGR,
 	DPREC_LOGGER_WDMA_DUMP,
 	DPREC_LOGGER_EXTD_START,
 	DPREC_LOGGER_EXTD_STATUS = DPREC_LOGGER_EXTD_START,
@@ -111,6 +114,7 @@ typedef enum {
 	DPREC_LOGGER_EXTD_RELEASE,
 	DPREC_LOGGER_EXTD_IRQ,
 	DPREC_LOGGER_EXTD_END = DPREC_LOGGER_EXTD_IRQ,
+	DPREC_LOGGER_PQ_TRIGGER_1SECOND,
 	DPREC_LOGGER_NUM
 } DPREC_LOGGER_ENUM;
 
@@ -124,6 +128,15 @@ typedef struct {
 	unsigned long long ts_trigger;
 	unsigned long long count;
 } dprec_logger;
+
+typedef struct _fpsEx {
+	unsigned long long fps;
+	unsigned long long fps_low;
+	unsigned long long count;
+	unsigned long long avg;
+	unsigned long long max_period;
+	unsigned long long min_period;
+} fpsEx;
 
 typedef struct {
 	int8_t name[24];
@@ -143,6 +156,7 @@ typedef enum {
 
 extern unsigned int gCapturePriLayerEnable;
 extern unsigned int gCaptureWdmaLayerEnable;
+extern unsigned int gCaptureRdmaLayerEnable;
 extern unsigned int gCapturePriLayerDownX;
 extern unsigned int gCapturePriLayerDownY;
 extern unsigned int gCapturePriLayerNum;
@@ -159,6 +173,7 @@ void dprec_logger_reset(DPREC_LOGGER_ENUM source);
 void dprec_logger_reset_all(void);
 int dprec_logger_get_result_string(DPREC_LOGGER_ENUM source, char *stringbuf, int strlen);
 int dprec_logger_get_result_string_all(char *stringbuf, int strlen);
+int dprec_logger_get_result_value(DPREC_LOGGER_ENUM source, fpsEx *fps);
 void dprec_stub_irq(unsigned int irq_bit);
 void dprec_stub_event(DISP_PATH_EVENT event);
 unsigned int dprec_get_vsync_count(void);
@@ -166,6 +181,7 @@ void dprec_logger_submit(DPREC_LOGGER_ENUM source, unsigned long long period,
 			 unsigned int fence_idx);
 
 void dprec_logger_dump(char *string);
+void dprec_logger_vdump(const char *fmt, ...);
 void dprec_logger_dump_reset(void);
 char *dprec_logger_get_dump_addr(void);
 unsigned int dprec_logger_get_dump_len(void);

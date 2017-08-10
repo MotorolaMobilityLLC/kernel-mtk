@@ -17,7 +17,7 @@
 #include "disp_log.h"
 #include "disp_debug.h"
 #include "primary_display.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "mtkfb_fence.h"
 #include "disp_drv_platform.h"
 

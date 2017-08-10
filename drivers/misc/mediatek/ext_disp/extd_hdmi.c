@@ -61,7 +61,11 @@
 #include "mtkfb.h"
 
 #include "mtkfb_fence.h"
+#if defined(CONFIG_ARCH_MT6755)
+#include "disp_recorder.h"
+#else
 #include "display_recorder.h"
+#endif
 
 #include "ddp_info.h"
 #include "ddp_irq.h"

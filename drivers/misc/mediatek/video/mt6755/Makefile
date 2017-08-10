@@ -27,7 +27,6 @@ obj-y +=	ddp_ovl.o              \
 		ddp_pwm_mux.o          \
 		ddp_mmp.o              \
 		ddp_met.o              \
-		display_recorder.o     \
 		mtkfb_console.o        \
 		disp_assert_layer.o    \
 		mtkfb.o                \

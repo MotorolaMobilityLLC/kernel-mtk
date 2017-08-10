@@ -16,7 +16,7 @@
 #include <mt-plat/aee.h>
 #include <linux/printk.h>
 
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "disp_debug.h"
 #include "disp_drv_platform.h"
 

@@ -54,7 +54,7 @@
 #include "disp_drv_platform.h"
 #include "primary_display.h"
 #include "ddp_dump.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "fbconfig_kdebug.h"
 #include "mtk_ovl.h"
 #include "mt_boot.h"

@@ -39,7 +39,7 @@
 
 #include "ddp_manager.h"
 #include "disp_drv_platform.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "ddp_mmp.h"
 #include "mtk_ovl.h"
 

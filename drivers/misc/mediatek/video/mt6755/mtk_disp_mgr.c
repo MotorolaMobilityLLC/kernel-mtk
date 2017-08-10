@@ -65,7 +65,7 @@
 #include "cmdq_core.h"
 #include "ddp_manager.h"
 #include "disp_drv_platform.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "mtk_disp_mgr.h"
 #include "disp_session.h"
 #include "mtk_ovl.h"

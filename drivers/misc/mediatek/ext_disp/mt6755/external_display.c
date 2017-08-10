@@ -48,7 +48,7 @@
 
 #include "disp_session.h"
 #include "disp_lowpower.h"
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "extd_info.h"
 
 int ext_disp_use_cmdq;

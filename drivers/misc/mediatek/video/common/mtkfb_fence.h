@@ -19,7 +19,7 @@
 #include "disp_session.h"
 #include "disp_drv_platform.h"
 
-#if defined(CONFIG_ARCH_MT6580)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6580)
 #include "disp_recorder.h"
 #else
 #include "display_recorder.h"

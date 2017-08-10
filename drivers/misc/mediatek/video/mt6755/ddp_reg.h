@@ -17,7 +17,7 @@
 /*#include <mt-plat/mt_typedefs.h>*/
 /* #include <mach/mt_reg_base.h> */
 #include <linux/types.h>
-#include "display_recorder.h"
+#include "disp_recorder.h"
 #include "cmdq_record.h"
 #include "cmdq_core.h"
 #include "ddp_hal.h"
