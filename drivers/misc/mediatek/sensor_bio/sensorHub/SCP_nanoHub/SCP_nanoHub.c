@@ -704,7 +704,7 @@ static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
 	}
 }
 
-static int SCP_sensorHub_batch(int handle, int enable, int flag, long long samplingPeriodNs,
+static int SCP_sensorHub_batch(int handle, int flag, long long samplingPeriodNs,
 				  long long maxBatchReportLatencyNs)
 {
 	struct ConfigCmd cmd;
@@ -938,29 +938,14 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 
 int sensor_set_delay_to_hub(uint8_t sensorType, unsigned int delayms)
 {
-	struct ConfigCmd cmd;
 	int ret = 0;
+	long long samplingPeriodNs = delayms * 1000000ULL;
 
 	if (ID_SENSOR_MAX_HANDLE < sensorType) {
 		SCP_ERR("invalid sensor %d\n", sensorType);
 		ret = -1;
 	} else {
-		if (mSensorState[sensorType].sensorType || (sensorType == ID_ACCELEROMETER &&
-				mSensorState[sensorType].sensorType == ID_ACCELEROMETER)) {
-			if (delayms > 0 && mSensorState[sensorType].rate != SENSOR_RATE_ONCHANGE &&
-				mSensorState[sensorType].rate != SENSOR_RATE_ONESHOT)
-				mSensorState[sensorType].rate = 1024000000000ULL / delayms;
-			init_sensor_config_cmd(&cmd, sensorType);
-			ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
-			if (ret < 0) {
-				SCP_ERR("failed enablebatch handle:%d, rate: %d, latency: %lld, cmd:%d\n",
-					sensorType, cmd.rate, cmd.latency, cmd.cmd);
-				return -1;
-			}
-		} else {
-			SCP_ERR("unhandle handle=%d, is inited?\n", sensorType);
-			return -1;
-		}
+		ret = SCP_sensorHub_batch(sensorType, 0, samplingPeriodNs, 0);
 	}
 	return ret < 0 ? ret : 0;
 }
@@ -973,7 +958,7 @@ int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, 
 		SCP_ERR("invalid sensor %d\n", sensorType);
 		ret = -1;
 	} else
-		ret = SCP_sensorHub_batch(sensorType, 0, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+		ret = SCP_sensorHub_batch(sensorType, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	return ret;
 }
 
