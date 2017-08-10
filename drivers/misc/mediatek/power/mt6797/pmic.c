@@ -703,24 +703,19 @@ unsigned int get_mt6325_pmic_chip_version(void)
   *********************************************************/
 void mt6351_dump_register(void)
 {
-	unsigned char i = 0;
+	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[PMU_COMMAND_MAX - 1];
+	unsigned int i = 0;
 
 	PMICLOG("dump PMIC 6351 register\n");
 
-	for (i = 0; i <= 0x0fae; i = i + 10) {
-		pr_debug
-		    ("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
-		     i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
-		     upmu_get_reg_value(i + 2), i + 3, upmu_get_reg_value(i + 3), i + 4,
-		     upmu_get_reg_value(i + 4));
-
-		pr_debug
-		    ("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
-		     i + 5, upmu_get_reg_value(i + 5), i + 6, upmu_get_reg_value(i + 6), i + 7,
-		     upmu_get_reg_value(i + 7), i + 8, upmu_get_reg_value(i + 8), i + 9,
-		     upmu_get_reg_value(i + 9));
+	for (i = 0; i < (pFlag->offset - 10); i = i + 10) {
+		PMICLOG("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
+			i, upmu_get_reg_value(i),
+			i + 2, upmu_get_reg_value(i + 2),
+			i + 4, upmu_get_reg_value(i + 4),
+			i + 6, upmu_get_reg_value(i + 6),
+			i + 8, upmu_get_reg_value(i + 8));
 	}
-
 }
 
 /*****************************************************************************
