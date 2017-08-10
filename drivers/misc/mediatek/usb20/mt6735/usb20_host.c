@@ -314,6 +314,11 @@ void switch_int_to_device(struct musb *musb)
 		DBG(1, "directly return\n");
 		return;
 	}
+
+	if (!usb_iddig_number) {
+		DBG(0, "OTG not inited, directly return\n");
+		return;
+	}
 #ifdef ID_PIN_USE_EX_EINT
 	irq_set_irq_type(usb_iddig_number, IRQF_TRIGGER_HIGH);
 	enable_irq(usb_iddig_number);
@@ -328,6 +333,11 @@ void switch_int_to_host(struct musb *musb)
 {
 	if (host_plug_test_triggered) {
 		DBG(1, "directly return\n");
+		return;
+	}
+
+	if (!usb_iddig_number) {
+		DBG(0, "OTG not inited, directly return\n");
 		return;
 	}
 #ifdef ID_PIN_USE_EX_EINT
@@ -345,6 +355,11 @@ void switch_int_to_host_and_mask(struct musb *musb)
 {
 	if (host_plug_test_triggered) {
 		DBG(1, "directly return\n");
+		return;
+	}
+
+	if (!usb_iddig_number) {
+		DBG(0, "OTG not inited, directly return\n");
 		return;
 	}
 #ifdef ID_PIN_USE_EX_EINT
