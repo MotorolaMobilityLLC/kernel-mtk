@@ -871,7 +871,14 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
 
-		cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
+		if (handle) {
+			/* try to print out secure status if handle exist. */
+			cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
+		} else {
+			/* handle does not exist, output message */
+			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
+				pTask, status);
+		}
 
 		if (msgOffset > 0) {
 			/* print message */
