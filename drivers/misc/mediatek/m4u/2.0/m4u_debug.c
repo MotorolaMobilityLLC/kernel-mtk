@@ -255,6 +255,8 @@ m4u_callback_ret_t test_fault_callback(int port, unsigned int mva, void *data)
 	return M4U_CALLBACK_HANDLED;
 }
 
+static char *data = "ABC";
+
 int m4u_test_tf(unsigned int prot)
 {
 	unsigned int *pSrc, *pDst;
@@ -262,10 +264,9 @@ int m4u_test_tf(unsigned int prot)
 	unsigned int size = 64 * 64 * 3;
 	M4U_PORT_STRUCT port;
 	m4u_client_t *client = m4u_create_client();
-	int data = 88;
 
-	m4u_register_fault_callback(M4U_PORT_DISP_OVL0, test_fault_callback, &data);
-	m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, test_fault_callback, &data);
+	m4u_register_fault_callback(M4U_PORT_DISP_OVL0, test_fault_callback, (void *)data);
+	m4u_register_fault_callback(M4U_PORT_DISP_WDMA0, test_fault_callback, (void *)data);
 
 	pSrc = vmalloc(size);
 	pDst = vmalloc(size);
