@@ -1729,12 +1729,12 @@ int cpuhvfs_module_init(void)
 	}
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
-	if (!is_ext_buck_exist())
+	if (!is_ext_buck_exist() || !is_ext_buck_sw_ready())
 		dvfsp->pcmdesc = &dvfs_pcm;
 #endif
 
-	cpuhvfs_crit("ext_buck = %d, dvfsp_fw = %s\n",
-		     is_ext_buck_exist(), dvfsp->pcmdesc->version);
+	cpuhvfs_crit("ext_buck = %d/%d, dvfsp_fw = %s\n",
+		     is_ext_buck_exist(), is_ext_buck_sw_ready(), dvfsp->pcmdesc->version);
 
 	set_dvfsp_init_done(dvfsp);
 
