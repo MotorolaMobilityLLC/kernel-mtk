@@ -2626,6 +2626,68 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 	return 0;
 }
 
+int AudDrv_Allocate_DL2_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
+{
+#ifdef AUDIO_MEMORY_SRAM
+	kal_uint32 u4PhyAddr = 0;
+#endif
+	AFE_BLOCK_T *pblock;
+
+	/*pr_debug("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);*/
+	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->rBlock);
+	pblock->u4BufferSize = Afe_Buf_Length;
+
+#ifdef AUDIO_MEMORY_SRAM
+	if (Afe_Buf_Length > AFE_INTERNAL_SRAM_SIZE) {
+		PRINTK_AUDDRV("%s(), Afe_Buf_Length > AFE_INTERNAL_SRAM_SIZE\n",
+			      __func__);
+		return -1;
+	}
+#endif
+	/* allocate memory */
+	{
+#ifdef AUDIO_MEMORY_SRAM
+		/* todo , there should be a sram manager to allocate memory for low power. */
+		u4PhyAddr = AFE_INTERNAL_SRAM_PHY_BASE;
+		pblock->pucPhysBufAddr = u4PhyAddr;
+#ifdef AUDIO_MEM_IOREMAP
+		PRINTK_AUDDRV("%s(), length AUDIO_MEM_IOREMAP  = %d\n",
+			      __func__, Afe_Buf_Length);
+		pblock->pucVirtBufAddr = (kal_uint8 *) Get_Afe_SramBase_Pointer();
+#else
+		pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE;
+#endif
+#else
+		PRINTK_AUDDRV("%s(), use dram", __func__);
+		pblock->pucVirtBufAddr =
+		    dma_alloc_coherent(pDev, pblock->u4BufferSize, &pblock->pucPhysBufAddr,
+				       GFP_KERNEL);
+#endif
+	}
+	PRINTK_AUDDRV("%s(), Afe_Buf_Length = %dpucVirtBufAddr = %p\n",
+		      __func__, Afe_Buf_Length, pblock->pucVirtBufAddr);
+
+	/* check 32 bytes align */
+	if ((pblock->pucPhysBufAddr & 0x1f) != 0) {
+		PRINTK_AUDDRV("[Auddrv] %s(), is not aligned (0x%x)\n",
+			      __func__, pblock->pucPhysBufAddr);
+	}
+
+	pblock->u4SampleNumMask = 0x001f;	/* 32 byte align */
+	pblock->u4WriteIdx = 0;
+	pblock->u4DMAReadIdx = 0;
+	pblock->u4DataRemained = 0;
+	pblock->u4fsyncflag = false;
+	pblock->uResetFlag = true;
+
+	/* set sram address top hardware */
+	Afe_Set_Reg(AFE_DL2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
+	Afe_Set_Reg(AFE_DL2_END, pblock->pucPhysBufAddr + (Afe_Buf_Length - 1), 0xffffffff);
+	memset_io(pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
+
+	return 0;
+}
+
 int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlock,
 			       uint32 Buffer_length)
 {

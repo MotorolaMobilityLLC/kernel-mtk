@@ -185,7 +185,7 @@ void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_sub
 
 struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock);
 int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length);
-
+int AudDrv_Allocate_DL2_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length);
 
 bool BackUp_Audio_Register(void);
 bool Restore_Audio_Register(void);
