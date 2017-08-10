@@ -1665,10 +1665,13 @@ bool SetI2SAdcEnable(bool bEnable)
 {
 	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState = bEnable;
 
-	SetULSrcEnable(bEnable);
-	SetADDAEnable(bEnable);
-
-	if (bEnable == false) {
+	if (bEnable) {
+		EnableAfe(true);
+		SetADDAEnable(bEnable);
+		SetULSrcEnable(bEnable);
+	} else {
+		SetULSrcEnable(bEnable);
+		SetADDAEnable(bEnable);
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
 			/* power on adc hires */
 			AudDrv_ADC_Hires_Clk_Off();
@@ -2205,9 +2208,10 @@ bool SetI2SDacEnable(bool bEnable)
 	pr_aud("%s bEnable = %d", __func__, bEnable);
 
 	if (bEnable) {
+		EnableAfe(true);
+		SetADDAEnable(true);
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-		SetADDAEnable(true);
 	} else {
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
