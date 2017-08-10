@@ -3325,6 +3325,11 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitNextPkt;
 	UINT_16 u2SSN, u2WinStart, u2WinEnd, u2AheadPoint;
 
+	if (prReorderQueParm == NULL) {
+		DBGLOG(QM, ERROR, "qmHandleNoNeedWaitPktList for a NULL prReorderQueParm\n");
+		return;
+	}
+
 	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
 
 	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
@@ -3517,6 +3522,11 @@ VOID qmProcessIndepentReorderQueue(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 {
 	P_RX_BA_ENTRY_T prRxBaEntry;
 
+	if ((prSwRfb == NULL) || (prSwRfb->prHifRxHdr == NULL)) {
+		ASSERT(FALSE);
+		return;
+	}
+
 	prSwRfb->u2SSN = HIF_RX_HDR_GET_SN(prSwRfb->prHifRxHdr);
 	prSwRfb->ucTid = (UINT_8) (HIF_RX_HDR_GET_TID(prSwRfb->prHifRxHdr));
 
@@ -3525,6 +3535,11 @@ VOID qmProcessIndepentReorderQueue(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 	/* handle NoNeedWaitPkt queue*/
 	prRxBaEntry = qmLookupRxBaEntry(prAdapter, prSwRfb->ucStaRecIdx, prSwRfb->ucTid);
+
+	if (!(prRxBaEntry) || !(prRxBaEntry->fgIsValid)) {
+		DBGLOG(QM, ERROR, "qmProcessIndepentReorderQueue for a NULL prRxBaEntry\n");
+		return;
+	}
 	qmHandleNoNeedWaitPktList(prRxBaEntry);
 
 }

@@ -165,6 +165,7 @@ struct _BSS_DESC_T {
 				 * don't removed this record from BSS list.
 				 */
 
+	BOOLEAN fgIsValidSSID; /* This flag is TRUE if the SSID is not hidden */
 	BOOLEAN fgIsHiddenSSID;	/* When this flag is TRUE, means the SSID
 				 * of this BSS is not known yet.
 				 */
