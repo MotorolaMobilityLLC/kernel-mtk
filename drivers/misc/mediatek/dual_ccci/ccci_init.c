@@ -32,6 +32,8 @@ static int __init ccci_init(void)
 
 	update_ccci_port_ver(2); /* Using dual ccci */
 
+	ccci_helper_init();
+
 	/* 1. Get and set Support MD nmmber */
 	md_num = get_md_sys_max_num();
 	set_md_sys_max_num(md_num);

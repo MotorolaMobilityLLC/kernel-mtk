@@ -108,6 +108,7 @@ int mk_ccci_dev_node(int md_id);
 void ccci_dev_node_exit(int md_id);
 int statistics_init(int md_id);
 void statistics_exit(int md_id);
+int ccci_helper_init(void);
 
 int get_dev_id_by_md_id(int md_id, char node_name[], int *major, int *minor);
 int get_md_id_by_dev_major(int dev_major);
