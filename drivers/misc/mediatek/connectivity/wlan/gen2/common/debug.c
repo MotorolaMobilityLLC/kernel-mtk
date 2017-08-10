@@ -95,6 +95,18 @@ typedef struct _FWDL_DEBUG_T {
 	UINT_32	u4ResponseTime;
 } FWDL_DEBUG_T, *P_FWDL_DEBUG_T;
 
+typedef struct _BSS_TRACE_RECORD {
+	UINT_8 aucBSSID[MAC_ADDR_LEN];
+	UINT_8 ucRCPI;
+} BSS_TRACE_RECORD, *P_BSS_TRACE_RECORD;
+
+typedef struct _SCAN_TARGET_BSS_LIST {
+	P_BSS_TRACE_RECORD prBssTraceRecord;
+	UINT_32 u4BSSIDCount;
+} SCAN_TARGET_BSS_LIST, *P_SCAN_TARGET_BSS_LIST;
+
+
+
 #define PKT_INFO_BUF_MAX_NUM 50
 #define PKT_INFO_MSG_LENGTH 200
 #define PKT_INFO_MSG_GROUP_RANGE 3
@@ -102,6 +114,9 @@ typedef struct _FWDL_DEBUG_T {
 #define TXED_CMD_TRACE_BUF_MAX_NUM 100
 #define TXED_COMMAND_BUF_MAX_NUM 10
 #define MAX_FW_IMAGE_PACKET_COUNT	500
+#define SCAN_TARGET_BSS_MAX_NUM 20
+#define SCAN_MSG_MAX_LEN 256
+
 
 static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
@@ -110,7 +125,10 @@ static PKT_TRACE_RECORD grPktRec;
 static SCAN_HIF_DESC_RECORD grScanHifDescRecord;
 P_FWDL_DEBUG_T gprFWDLDebug = NULL;
 
+
 UINT_32 u4FWDL_packet_count;
+static SCAN_TARGET_BSS_LIST grScanTargetBssList;
+
 
 VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode)
 {
@@ -269,6 +287,7 @@ VOID wlanDebugInit(VOID)
 	grPktRec.u4RxIndex = 0;
 	/* debug for package info end */
 
+
 	/*debug for scan request tx_description begin*/
 	grScanHifDescRecord.pTxDescScanWriteBefore = kalMemAlloc(NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T)
 		, VIR_MEM_TYPE);
@@ -277,6 +296,14 @@ VOID wlanDebugInit(VOID)
 	, VIR_MEM_TYPE);
 	grScanHifDescRecord.aucFreeBufCntScanWriteDone = 0;
 	/*debug for scan request tx_description end*/
+
+	/*debug for scan target bss begin*/
+	grScanTargetBssList.prBssTraceRecord = kalMemAlloc(SCAN_TARGET_BSS_MAX_NUM * sizeof(BSS_TRACE_RECORD)
+		, VIR_MEM_TYPE);
+	kalMemZero(grScanTargetBssList.prBssTraceRecord, SCAN_TARGET_BSS_MAX_NUM * sizeof(BSS_TRACE_RECORD));
+	grScanTargetBssList.u4BSSIDCount = 0;
+	/*debug for scan target bss end*/
+
 }
 
 VOID wlanDebugUninit(VOID)
@@ -295,6 +322,7 @@ VOID wlanDebugUninit(VOID)
 	grPktRec.u4RxIndex = 0;
 	/* debug for package info end */
 
+
 	/*debug for scan request tx_description begin*/
 	kalMemFree(grScanHifDescRecord.pTxDescScanWriteBefore
 	, VIR_MEM_TYPE, NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T));
@@ -303,6 +331,126 @@ VOID wlanDebugUninit(VOID)
 	, VIR_MEM_TYPE, NIC_TX_BUFF_COUNT_TC4 * sizeof(HIF_TX_DESC_T));
 	grScanHifDescRecord.aucFreeBufCntScanWriteDone = 0;
 	/*debug for scan request tx_description end*/
+
+	/*debug for scan target bss begin*/
+	kalMemFree(grScanTargetBssList.prBssTraceRecord
+	, VIR_MEM_TYPE, SCAN_TARGET_BSS_MAX_NUM * sizeof(BSS_TRACE_RECORD));
+	grScanTargetBssList.u4BSSIDCount = 0;
+	/*debug for scan target bss end*/
+
+
+
+}
+VOID wlanDebugScanTargetBSSRecord(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_SCAN_INFO_T prScanInfo;
+	P_BSS_TRACE_RECORD prBssTraceRecord;
+	UINT_32 i;
+
+	ASSERT(prAdapter);
+
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+
+
+	if (prBssDesc == NULL) {
+		DBGLOG(SCN, LOUD, "Scan Desc bss is null !\n");
+		return;
+	}
+	if (prConnSettings->ucSSIDLen == 0) {
+		DBGLOG(SCN, LOUD, "Target BSS length is 0, ignore it!\n");
+		return;
+	}
+	if (prScanInfo->eCurrentState == SCAN_STATE_IDLE) {
+		DBGLOG(SCN, LOUD, "Ignore beacon/probeRsp, during SCAN Idle!\n");
+		return;
+	}
+
+
+	/*dump beacon and probeRsp by connect setting SSID and ignore null bss*/
+	if (EQUAL_SSID(prBssDesc->aucSSID,
+		prBssDesc->ucSSIDLen,
+		prConnSettings->aucSSID,
+		prConnSettings->ucSSIDLen) && (prConnSettings->ucSSIDLen > 0)) {
+		/*Insert BssDesc and ignore repeats*/
+
+		if (grScanTargetBssList.u4BSSIDCount > SCAN_TARGET_BSS_MAX_NUM) {
+			DBGLOG(SCN, LOUD, "u4BSSIDCount out of bound!\n");
+			return;
+		}
+
+		for (i = 0 ; i < grScanTargetBssList.u4BSSIDCount ; i++) {
+			prBssTraceRecord = &(grScanTargetBssList.prBssTraceRecord[i]);
+			if (EQUAL_MAC_ADDR(prBssTraceRecord->aucBSSID, prBssDesc->aucBSSID)) {
+				/*if exist ,update it*/
+				prBssTraceRecord->ucRCPI = prBssDesc->ucRCPI;
+				break;
+			}
+		}
+		if ((i == grScanTargetBssList.u4BSSIDCount) &&
+			(grScanTargetBssList.u4BSSIDCount < SCAN_TARGET_BSS_MAX_NUM)) {
+			prBssTraceRecord = &(grScanTargetBssList.prBssTraceRecord[i]);
+			/*add the new bssDesc recored*/
+			COPY_MAC_ADDR(prBssTraceRecord->aucBSSID, prBssDesc->aucBSSID);
+			prBssTraceRecord->ucRCPI = prBssDesc->ucRCPI;
+			grScanTargetBssList.u4BSSIDCount++;
+		}
+
+	}
+}
+
+VOID wlanDebugScanTargetBSSDump(P_ADAPTER_T prAdapter)
+{
+
+	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_BSS_TRACE_RECORD prBssTraceRecord;
+	UINT_32 i;
+	UINT_8 aucMsg[SCAN_MSG_MAX_LEN];
+	UINT_8 offset = 0;
+
+	ASSERT(prAdapter);
+
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+
+	if (prConnSettings->ucSSIDLen == 0) {
+		DBGLOG(SCN, LOUD, "Target BSS length is 0, ignore it!\n");
+		return;
+	}
+
+	if (grScanTargetBssList.u4BSSIDCount > SCAN_TARGET_BSS_MAX_NUM) {
+		DBGLOG(SCN, WARN, "u4BSSIDCount out of bound :%d\n", grScanTargetBssList.u4BSSIDCount);
+		return;
+
+	}
+
+	offset += kalSnprintf(aucMsg + offset, SCAN_MSG_MAX_LEN - offset
+		, "[%s: BSSIDNum:%d]:"
+		, prConnSettings->aucSSID
+		, grScanTargetBssList.u4BSSIDCount);
+
+	for (i = 0 ; i < grScanTargetBssList.u4BSSIDCount ; i++) {
+		prBssTraceRecord = &(grScanTargetBssList.prBssTraceRecord[i]);
+
+		DBGLOG(SCN, LOUD, "dump:[%pM],Rssi=%d\n"
+			, prBssTraceRecord->aucBSSID, RCPI_TO_dBm(prBssTraceRecord->ucRCPI));
+
+		if (i == (SCAN_TARGET_BSS_MAX_NUM/2) ||
+			(i == grScanTargetBssList.u4BSSIDCount-1)) {
+			DBGLOG(SCN, INFO, "%s\n", aucMsg);
+			offset = 0;
+			kalMemZero(aucMsg, sizeof(aucMsg));
+		}
+
+		offset += kalSnprintf(aucMsg + offset, SCAN_MSG_MAX_LEN - offset
+			, "%pM/%d,"
+			, prBssTraceRecord->aucBSSID
+			, RCPI_TO_dBm(prBssTraceRecord->ucRCPI));
+	}
+
+	grScanTargetBssList.u4BSSIDCount = 0;
+	kalMemZero(grScanTargetBssList.prBssTraceRecord, sizeof(BSS_TRACE_RECORD) * SCAN_TARGET_BSS_MAX_NUM);
+
 }
 
 VOID wlanDebugHifDescriptorRecord(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type

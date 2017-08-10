@@ -1937,7 +1937,7 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 		prAdapter->rWifiVar.rChnLoadInfo.fgDataReadyBit = TRUE;
 #endif
 	}
-
+	wlanDebugScanTargetBSSDump(prAdapter);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -2111,6 +2111,9 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 							 prSwRfb->prHifRxHdr->ucRcpi);
 			}
 #endif /* CFG_SUPPORT_ADHOC */
+			/*dump beacon and probeRsp by connect setting SSID*/
+			wlanDebugScanTargetBSSRecord(prAdapter, prBssDesc);
+
 		}
 
 		rlmProcessBcn(prAdapter,
