@@ -16,82 +16,129 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/slab.h>
+#include <linux/spinlock.h>
 #include <linux/printk.h>
+#include <mt-plat/mtk_meminfo.h>
 
 /* Memory lowpower private header file */
 #include "../internal.h"
 
-/*
- * config - data collection, trigger LPDMA (4->2)
- */
-static int mtkdcs_config(int times, get_range_t func)
+static enum dcs_status sys_dcs_status;
+static int dcs_initialized;
+static int normal_channel_num;
+static int lowpower_channel_num;
+static DEFINE_SPINLOCK(dcs_lock);
+
+/* dummy IPI APIs */
+enum dcs_status dummy_ipi_read_dcs_status(void)
 {
-	pr_debug("%s:+\n", __func__);
-	/* Trigger LPDMA (4 -> 2) */
-	pr_debug("%s:-\n", __func__);
+	return DCS_NORMAL;
+}
+int dummy_dram_channel_num(void)
+{
+	return 2;
+}
+int dummy_ipi_do_dcs(enum dcs_status status)
+{
 	return 0;
 }
 
 /*
- * enable - Notify PowerMCU to turn off high channels
+ * dcs_dram_channel_switch
+ *
+ * Send a IPI call to SSPM to perform dynamic channel switch.
+ * The dynamic channel switch only performed in stable status.
+ * i.e., DCS_NORMAL or DCS_LOWPOWER.
+ * @status: channel mode
+ *
+ * return 0 on success or error code
  */
-static int mtkdcs_enable(void)
+int dcs_dram_channel_switch(enum dcs_status status)
 {
-	pr_debug("%s:+\n", __func__);
-	/* Turn off high channels */
-	pr_debug("%s:-\n", __func__);
+	if (!spin_trylock(&dcs_lock))
+		return -EBUSY;
+
+	if ((sys_dcs_status < DCS_BUSY) &&
+		(status < DCS_BUSY) &&
+		(sys_dcs_status != DCS_BUSY)) {
+		dummy_ipi_do_dcs(status);
+		sys_dcs_status = DCS_BUSY;
+	}
+	spin_unlock(&dcs_lock);
+	/*
+	 * assume we success doing channel switch, the sys_dcs_status
+	 * should be updated in the ISR
+	 */
+	spin_lock(&dcs_lock);
+	sys_dcs_status = status;
+	spin_unlock(&dcs_lock);
 	return 0;
 }
 
 /*
- * disable - Notify PowerMCU to turn on high channels (May needless)
+ * dcs_get_channel_num_trylock
+ * return the number of DRAM channels and get the dcs lock
+ * @num: address storing the number of DRAM channels.
+ *
+ * return 0 on success or error code
  */
-static int mtkdcs_disable(void)
+int dcs_get_channel_num_trylock(int *num)
 {
-	pr_debug("%s:+\n", __func__);
-	/* Turn on high channels */
-	pr_debug("%s:-\n", __func__);
+	if (!spin_trylock(&dcs_lock))
+		goto BUSY;
+
+	switch (sys_dcs_status) {
+	case DCS_NORMAL:
+		*num = normal_channel_num;
+		break;
+	case DCS_LOWPOWER:
+		*num = lowpower_channel_num;
+		break;
+	default:
+		goto BUSY;
+	}
 	return 0;
+BUSY:
+	*num = -1;
+	return -EBUSY;
 }
 
 /*
- * restore - trigger LPDMA (2->4)
+ * dcs_get_channel_num_unlock
+ * unlock the dcs lock
  */
-static int mtkdcs_restore(void)
+void dcs_get_channel_num_unlock(void)
 {
-	pr_debug("%s:+\n", __func__);
-	/* Trigger LPDMA (2 -> 4) */
-	pr_debug("%s:-\n", __func__);
-	return 0;
+	spin_unlock(&dcs_lock);
 }
 
-static struct memory_lowpower_operation mtkdcs_handler = {
-	.level = MLP_LEVEL_DCS,
-	.config = mtkdcs_config,
-	.enable = mtkdcs_enable,
-	.disable = mtkdcs_disable,
-	.restore = mtkdcs_restore,
-};
+/*
+ * dcs_initialied
+ *
+ * return true if dcs is initialized
+ */
+bool dcs_initialied(void)
+{
+	return dcs_initialized;
+}
 
 static int __init mtkdcs_init(void)
 {
-	pr_debug("%s ++\n", __func__);
+	/* read system dcs status */
+	sys_dcs_status = dummy_ipi_read_dcs_status();
+	/* read number of dram channels */
+	normal_channel_num = dummy_dram_channel_num();
+	lowpower_channel_num = (normal_channel_num / 2) ?
+		(normal_channel_num / 2) : normal_channel_num;
 
-	/* Check whether memory lowpower task is initialized */
-	if (!memory_lowpower_task_inited())
-		goto out;
+	dcs_initialized = true;
 
-	/* Register feature operations */
-	register_memory_lowpower_operation(&mtkdcs_handler);
-out:
-	pr_debug("%s --\n", __func__);
 	return 0;
 }
 
 static void __exit mtkdcs_exit(void)
 {
-	unregister_memory_lowpower_operation(&mtkdcs_handler);
 }
 
-late_initcall(mtkdcs_init);
+device_initcall(mtkdcs_init);
 module_exit(mtkdcs_exit);
