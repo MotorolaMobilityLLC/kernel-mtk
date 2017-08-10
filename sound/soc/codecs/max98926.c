@@ -589,11 +589,11 @@ static inline int max98926_rate_value(struct snd_soc_codec *codec,
 			*n = rate_table[i].divisors[clock][0];
 			*m = rate_table[i].divisors[clock][1];
 			ret = 0;
+			dev_dbg(codec->dev, "%s: sample rate is %d, returning %d\n",
+				__func__, rate_table[i].rate, *value);
 			break;
 		}
 	}
-	dev_dbg(codec->dev, "%s: sample rate is %d, returning %d\n",
-		__func__, rate_table[i].rate, *value);
 	return ret;
 }
 
