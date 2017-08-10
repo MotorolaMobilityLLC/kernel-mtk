@@ -89,15 +89,15 @@
 
 #define FM_IOCTL_SET_SEARCH_THRESHOLD   _IOWR(FM_IOC_MAGIC, 47, struct fm_search_threshold_t*)
 
-#define FM_IOCTL_GET_AUDIO_INFO _IOWR(FM_IOC_MAGIC, 48, fm_audio_info_t*)
-#define FM_IOCTL_FM_SET_STATUS _IOWR(FM_IOC_MAGIC, 49, fm_status_t)
-#define FM_IOCTL_FM_GET_STATUS _IOWR(FM_IOC_MAGIC, 50, fm_status_t)
+#define FM_IOCTL_GET_AUDIO_INFO _IOWR(FM_IOC_MAGIC, 48, struct fm_audio_info_t*)
+#define FM_IOCTL_FM_SET_STATUS _IOWR(FM_IOC_MAGIC, 49, struct fm_status_t)
+#define FM_IOCTL_FM_GET_STATUS _IOWR(FM_IOC_MAGIC, 50, struct fm_status_t)
 
 #define FM_IOCTL_SCAN_NEW       _IOWR(FM_IOC_MAGIC, 60, struct fm_scan_t*)
 #define FM_IOCTL_SEEK_NEW       _IOWR(FM_IOC_MAGIC, 61, struct fm_seek_t*)
 #define FM_IOCTL_TUNE_NEW       _IOWR(FM_IOC_MAGIC, 62, struct fm_tune_t*)
 #define FM_IOCTL_SOFT_MUTE_TUNE _IOWR(FM_IOC_MAGIC, 63, struct fm_softmute_tune_t*)	/*for soft mute tune */
-#define FM_IOCTL_DESENSE_CHECK   _IOWR(FM_IOC_MAGIC, 64, fm_desense_check_t*)
+#define FM_IOCTL_DESENSE_CHECK   _IOWR(FM_IOC_MAGIC, 64, struct fm_desense_check_t*)
 
 #define COMPAT_FM_IOCTL_GET_AUDIO_INFO _IOWR(FM_IOC_MAGIC, 48, int32_t)
 

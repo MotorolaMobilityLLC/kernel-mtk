@@ -10,6 +10,7 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
+
 #include <linux/kernel.h>
 #include <linux/types.h>
 
@@ -21,7 +22,7 @@
 #include "fm_link.h"
 #include "fm_cmd.h"
 
-fm_s32 fm_bop_write(fm_u8 addr, fm_u16 value, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_write(unsigned char addr, unsigned short value, unsigned char *buf, signed int size)
 {
 	if (size < (FM_WRITE_BASIC_OP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -29,7 +30,7 @@ fm_s32 fm_bop_write(fm_u8 addr, fm_u16 value, fm_u8 *buf, fm_s32 size)
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
@@ -37,15 +38,15 @@ fm_s32 fm_bop_write(fm_u8 addr, fm_u16 value, fm_u8 *buf, fm_s32 size)
 	buf[0] = FM_WRITE_BASIC_OP;
 	buf[1] = FM_WRITE_BASIC_OP_SIZE;
 	buf[2] = addr;
-	buf[3] = (fm_u8) ((value) & 0x00FF);
-	buf[4] = (fm_u8) ((value >> 8) & 0x00FF);
+	buf[3] = (unsigned char) ((value) & 0x00FF);
+	buf[4] = (unsigned char) ((value >> 8) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
 
 	return FM_WRITE_BASIC_OP_SIZE + 2;
 }
 
-fm_s32 fm_bop_udelay(fm_u32 value, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_udelay(unsigned int value, unsigned char *buf, signed int size)
 {
 	if (size < (FM_UDELAY_BASIC_OP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -53,24 +54,25 @@ fm_s32 fm_bop_udelay(fm_u32 value, fm_u8 *buf, fm_s32 size)
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
 
 	buf[0] = FM_UDELAY_BASIC_OP;
 	buf[1] = FM_UDELAY_BASIC_OP_SIZE;
-	buf[2] = (fm_u8) ((value) & 0x000000FF);
-	buf[3] = (fm_u8) ((value >> 8) & 0x000000FF);
-	buf[4] = (fm_u8) ((value >> 16) & 0x000000FF);
-	buf[5] = (fm_u8) ((value >> 24) & 0x000000FF);
+	buf[2] = (unsigned char) ((value) & 0x000000FF);
+	buf[3] = (unsigned char) ((value >> 8) & 0x000000FF);
+	buf[4] = (unsigned char) ((value >> 16) & 0x000000FF);
+	buf[5] = (unsigned char) ((value >> 24) & 0x000000FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
 
 	return FM_UDELAY_BASIC_OP_SIZE + 2;
 }
 
-fm_s32 fm_bop_rd_until(fm_u8 addr, fm_u16 mask, fm_u16 value, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_rd_until(unsigned char addr, unsigned short mask, unsigned short value,
+						unsigned char *buf, signed int size)
 {
 	if (size < (FM_RD_UNTIL_BASIC_OP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -78,7 +80,7 @@ fm_s32 fm_bop_rd_until(fm_u8 addr, fm_u16 mask, fm_u16 value, fm_u8 *buf, fm_s32
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
@@ -86,10 +88,10 @@ fm_s32 fm_bop_rd_until(fm_u8 addr, fm_u16 mask, fm_u16 value, fm_u8 *buf, fm_s32
 	buf[0] = FM_RD_UNTIL_BASIC_OP;
 	buf[1] = FM_RD_UNTIL_BASIC_OP_SIZE;
 	buf[2] = addr;
-	buf[3] = (fm_u8) ((mask) & 0x00FF);
-	buf[4] = (fm_u8) ((mask >> 8) & 0x00FF);
-	buf[5] = (fm_u8) ((value) & 0x00FF);
-	buf[6] = (fm_u8) ((value >> 8) & 0x00FF);
+	buf[3] = (unsigned char) ((mask) & 0x00FF);
+	buf[4] = (unsigned char) ((mask >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((value) & 0x00FF);
+	buf[6] = (unsigned char) ((value >> 8) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
@@ -97,7 +99,8 @@ fm_s32 fm_bop_rd_until(fm_u8 addr, fm_u16 mask, fm_u16 value, fm_u8 *buf, fm_s32
 	return FM_RD_UNTIL_BASIC_OP_SIZE + 2;
 }
 
-fm_s32 fm_bop_modify(fm_u8 addr, fm_u16 mask_and, fm_u16 mask_or, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_modify(unsigned char addr, unsigned short mask_and, unsigned short mask_or,
+						unsigned char *buf, signed int size)
 {
 	if (size < (FM_MODIFY_BASIC_OP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -105,7 +108,7 @@ fm_s32 fm_bop_modify(fm_u8 addr, fm_u16 mask_and, fm_u16 mask_or, fm_u8 *buf, fm
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
@@ -113,10 +116,10 @@ fm_s32 fm_bop_modify(fm_u8 addr, fm_u16 mask_and, fm_u16 mask_or, fm_u8 *buf, fm
 	buf[0] = FM_MODIFY_BASIC_OP;
 	buf[1] = FM_MODIFY_BASIC_OP_SIZE;
 	buf[2] = addr;
-	buf[3] = (fm_u8) ((mask_and) & 0x00FF);
-	buf[4] = (fm_u8) ((mask_and >> 8) & 0x00FF);
-	buf[5] = (fm_u8) ((mask_or) & 0x00FF);
-	buf[6] = (fm_u8) ((mask_or >> 8) & 0x00FF);
+	buf[3] = (unsigned char) ((mask_and) & 0x00FF);
+	buf[4] = (unsigned char) ((mask_and >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((mask_or) & 0x00FF);
+	buf[6] = (unsigned char) ((mask_or >> 8) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
@@ -124,7 +127,7 @@ fm_s32 fm_bop_modify(fm_u8 addr, fm_u16 mask_and, fm_u16 mask_or, fm_u8 *buf, fm
 	return FM_MODIFY_BASIC_OP_SIZE + 2;
 }
 
-fm_s32 fm_bop_top_write(fm_u16 addr, fm_u32 value, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_top_write(unsigned short addr, unsigned int value, unsigned char *buf, signed int size)
 {
 	if (size < (FM_TOP_WRITE_BOP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -132,7 +135,7 @@ fm_s32 fm_bop_top_write(fm_u16 addr, fm_u32 value, fm_u8 *buf, fm_s32 size)
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
@@ -140,12 +143,12 @@ fm_s32 fm_bop_top_write(fm_u16 addr, fm_u32 value, fm_u8 *buf, fm_s32 size)
 	buf[0] = FM_TOP_WRITE_BASIC_OP;
 	buf[1] = FM_TOP_WRITE_BOP_SIZE;
 	buf[2] = 04;
-	buf[3] = (fm_u8) ((addr) & 0x00FF);
-	buf[4] = (fm_u8) ((addr >> 8) & 0x00FF);
-	buf[5] = (fm_u8) ((value) & 0x00FF);
-	buf[6] = (fm_u8) ((value >> 8) & 0x00FF);
-	buf[7] = (fm_u8) ((value >> 16) & 0x00FF);
-	buf[8] = (fm_u8) ((value >> 24) & 0x00FF);
+	buf[3] = (unsigned char) ((addr) & 0x00FF);
+	buf[4] = (unsigned char) ((addr >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((value) & 0x00FF);
+	buf[6] = (unsigned char) ((value >> 8) & 0x00FF);
+	buf[7] = (unsigned char) ((value >> 16) & 0x00FF);
+	buf[8] = (unsigned char) ((value >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1],
 		buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8]);
@@ -153,7 +156,8 @@ fm_s32 fm_bop_top_write(fm_u16 addr, fm_u32 value, fm_u8 *buf, fm_s32 size)
 	return FM_TOP_WRITE_BOP_SIZE + 2;
 }
 
-fm_s32 fm_bop_top_rd_until(fm_u16 addr, fm_u32 mask, fm_u32 value, fm_u8 *buf, fm_s32 size)
+signed int fm_bop_top_rd_until(unsigned short addr, unsigned int mask, unsigned int value,
+						unsigned char *buf, signed int size)
 {
 	if (size < (FM_TOP_RD_UNTIL_BOP_SIZE + 2)) {
 		WCN_DBG(FM_ERR | CHIP, "%s : left size(%d)/need size(%d)\n",
@@ -161,7 +165,7 @@ fm_s32 fm_bop_top_rd_until(fm_u16 addr, fm_u32 mask, fm_u32 value, fm_u8 *buf, f
 		return -1;
 	}
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -2;
 	}
@@ -169,16 +173,16 @@ fm_s32 fm_bop_top_rd_until(fm_u16 addr, fm_u32 mask, fm_u32 value, fm_u8 *buf, f
 	buf[0] = FM_TOP_RD_UNTIL_BASIC_OP;
 	buf[1] = FM_TOP_RD_UNTIL_BOP_SIZE;
 	buf[2] = 04;
-	buf[3] = (fm_u8) ((addr) & 0x00FF);
-	buf[4] = (fm_u8) ((addr >> 8) & 0x00FF);
-	buf[5] = (fm_u8) ((mask) & 0x00FF);
-	buf[6] = (fm_u8) ((mask >> 8) & 0x00FF);
-	buf[7] = (fm_u8) ((mask >> 16) & 0x00FF);
-	buf[8] = (fm_u8) ((mask >> 24) & 0x00FF);
-	buf[9] = (fm_u8) ((value) & 0x00FF);
-	buf[10] = (fm_u8) ((value >> 8) & 0x00FF);
-	buf[11] = (fm_u8) ((value >> 16) & 0x00FF);
-	buf[12] = (fm_u8) ((value >> 24) & 0x00FF);
+	buf[3] = (unsigned char) ((addr) & 0x00FF);
+	buf[4] = (unsigned char) ((addr >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((mask) & 0x00FF);
+	buf[6] = (unsigned char) ((mask >> 8) & 0x00FF);
+	buf[7] = (unsigned char) ((mask >> 16) & 0x00FF);
+	buf[8] = (unsigned char) ((mask >> 24) & 0x00FF);
+	buf[9] = (unsigned char) ((value) & 0x00FF);
+	buf[10] = (unsigned char) ((value >> 8) & 0x00FF);
+	buf[11] = (unsigned char) ((value >> 16) & 0x00FF);
+	buf[12] = (unsigned char) ((value >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9],
@@ -187,19 +191,19 @@ fm_s32 fm_bop_top_rd_until(fm_u16 addr, fm_u32 mask, fm_u32 value, fm_u8 *buf, f
 	return FM_TOP_RD_UNTIL_BOP_SIZE + 2;
 }
 
-fm_s32 fm_op_seq_combine_cmd(fm_u8 *buf, fm_u8 opcode, fm_s32 pkt_size)
+signed int fm_op_seq_combine_cmd(unsigned char *buf, unsigned char opcode, signed int pkt_size)
 {
-	fm_s32 total_size = 0;
+	signed int total_size = 0;
 
-	if (NULL == buf) {
+	if (buf == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s :buf invalid pointer\n", __func__);
 		return -1;
 	}
 
 	buf[0] = FM_TASK_COMMAND_PKT_TYPE;
 	buf[1] = opcode;
-	buf[2] = (fm_u8) (pkt_size & 0x00FF);
-	buf[3] = (fm_u8) ((pkt_size >> 8) & 0x00FF);
+	buf[2] = (unsigned char) (pkt_size & 0x00FF);
+	buf[3] = (unsigned char) ((pkt_size >> 8) & 0x00FF);
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x\n", buf[0], buf[1], buf[2], buf[3]);
 
 	total_size = pkt_size + 4;
@@ -217,11 +221,11 @@ fm_s32 fm_op_seq_combine_cmd(fm_u8 *buf, fm_u8 opcode, fm_s32 pkt_size)
  * @seg_len - segment size: segment that will now be sent
  * return package size
  */
-fm_s32 fm_patch_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_id,
-			     const fm_u8 *src, fm_s32 seg_len)
+signed int fm_patch_download(unsigned char *buf, signed int buf_size, unsigned char seg_num, unsigned char seg_id,
+			     const unsigned char *src, signed int seg_len)
 {
-	fm_s32 pkt_size = 0;
-	fm_u8 *dst = NULL;
+	signed int pkt_size = 0;
+	unsigned char *dst = NULL;
 
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -246,8 +250,8 @@ fm_s32 fm_patch_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_i
 		dst++;
 	}
 
-	buf[2] = (fm_u8) ((pkt_size - 4) & 0x00FF);
-	buf[3] = (fm_u8) (((pkt_size - 4) >> 8) & 0x00FF);
+	buf[2] = (unsigned char) ((pkt_size - 4) & 0x00FF);
+	buf[3] = (unsigned char) (((pkt_size - 4) >> 8) & 0x00FF);
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
 
@@ -264,11 +268,11 @@ fm_s32 fm_patch_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_i
  * @seg_len - segment size: segment that will now be sent
  * return package size
  */
-fm_s32 fm_coeff_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_id,
-			     const fm_u8 *src, fm_s32 seg_len)
+signed int fm_coeff_download(unsigned char *buf, signed int buf_size, unsigned char seg_num, unsigned char seg_id,
+			     const unsigned char *src, signed int seg_len)
 {
-	fm_s32 pkt_size = 0;
-	fm_u8 *dst = NULL;
+	signed int pkt_size = 0;
+	unsigned char *dst = NULL;
 
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -293,8 +297,8 @@ fm_s32 fm_coeff_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_i
 		dst++;
 	}
 
-	buf[2] = (fm_u8) ((pkt_size - 4) & 0x00FF);
-	buf[3] = (fm_u8) (((pkt_size - 4) >> 8) & 0x00FF);
+	buf[2] = (unsigned char) ((pkt_size - 4) & 0x00FF);
+	buf[3] = (unsigned char) (((pkt_size - 4) >> 8) & 0x00FF);
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
 
@@ -307,13 +311,15 @@ fm_s32 fm_coeff_download(fm_u8 *buf, fm_s32 buf_size, fm_u8 seg_num, fm_u8 seg_i
  * @buf_size - buffer size
  * @freq - 7600 ~ 10800, freq array
  * @cnt - channel count
- * @type - request type, 1: a single channel; 2: multi channel; 3:multi channel with 100Khz step; 4: multi channel with 50Khz step
+ * @type - request type, 1: a single channel; 2: multi channel;
+ * 3:multi channel with 100Khz step; 4: multi channel with 50Khz step
  *
  * return package size
  */
-fm_s32 fm_full_cqi_req(fm_u8 *buf, fm_s32 buf_size, fm_u16 *freq, fm_s32 cnt, fm_s32 type)
+signed int fm_full_cqi_req(unsigned char *buf, signed int buf_size, unsigned short *freq,
+						signed int cnt, signed int type)
 {
-	fm_s32 pkt_size = 0;
+	signed int pkt_size = 0;
 
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -326,9 +332,9 @@ fm_s32 fm_full_cqi_req(fm_u8 *buf, fm_s32 buf_size, fm_u16 *freq, fm_s32 cnt, fm
 	case 1:
 		buf[pkt_size] = 0x0001;
 		pkt_size++;
-		buf[pkt_size] = (fm_u8) ((*freq) & 0x00FF);
+		buf[pkt_size] = (unsigned char) ((*freq) & 0x00FF);
 		pkt_size++;
-		buf[pkt_size] = (fm_u8) ((*freq >> 8) & 0x00FF);
+		buf[pkt_size] = (unsigned char) ((*freq >> 8) & 0x00FF);
 		pkt_size++;
 		break;
 	case 2:
@@ -344,19 +350,19 @@ fm_s32 fm_full_cqi_req(fm_u8 *buf, fm_s32 buf_size, fm_u16 *freq, fm_s32 cnt, fm
 		pkt_size++;
 		break;
 	default:
-		buf[pkt_size] = (fm_u16) type;
+		buf[pkt_size] = (unsigned short) type;
 		pkt_size++;
 		break;
 	}
 
-	buf[2] = (fm_u8) ((pkt_size - 4) & 0x00FF);
-	buf[3] = (fm_u8) (((pkt_size - 4) >> 8) & 0x00FF);
+	buf[2] = (unsigned char) ((pkt_size - 4) & 0x00FF);
+	buf[3] = (unsigned char) (((pkt_size - 4) >> 8) & 0x00FF);
 
 	return pkt_size;
 }
 
 
-fm_s32 fm_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr)
+signed int fm_get_reg(unsigned char *buf, signed int buf_size, unsigned char addr)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -371,7 +377,7 @@ fm_s32 fm_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr)
 	return 5;
 }
 
-fm_s32 fm_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 value)
+signed int fm_set_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned short value)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -381,17 +387,18 @@ fm_s32 fm_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 value)
 	buf[2] = 0x03;
 	buf[3] = 0x00;
 	buf[4] = addr;
-	buf[5] = (fm_u8) ((value) & 0x00FF);
-	buf[6] = (fm_u8) ((value >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((value) & 0x00FF);
+	buf[6] = (unsigned char) ((value >> 8) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
 	return 7;
 }
 
-fm_s32 fm_set_bits_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 bits, fm_u16 mask)
+signed int fm_set_bits_reg(unsigned char *buf, signed int buf_size, unsigned char addr,
+						unsigned short bits, unsigned short mask)
 {
-	fm_s32 pkt_size = 0;
+	signed int pkt_size = 0;
 
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -401,14 +408,14 @@ fm_s32 fm_set_bits_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u16 bits, fm_
 	pkt_size = 4;
 	pkt_size += fm_bop_modify(addr, mask, bits, &buf[pkt_size], buf_size - pkt_size);
 
-	buf[2] = (fm_u8) ((pkt_size - 4) & 0x00FF);
-	buf[3] = (fm_u8) (((pkt_size - 4) >> 8) & 0x00FF);
+	buf[2] = (unsigned char) ((pkt_size - 4) & 0x00FF);
+	buf[3] = (unsigned char) (((pkt_size - 4) >> 8) & 0x00FF);
 
 	return pkt_size;
 }
 
 /*top register read*/
-fm_s32 fm_top_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr)
+signed int fm_top_get_reg(unsigned char *buf, signed int buf_size, unsigned short addr)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -418,15 +425,15 @@ fm_s32 fm_top_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr)
 	buf[2] = 0x03;
 	buf[3] = 0x00;
 	buf[4] = 0x04;		/* top 04,fm 02 */
-	buf[5] = (fm_u8) ((addr) & 0x00FF);
-	buf[6] = (fm_u8) ((addr >> 8) & 0x00FF);
+	buf[5] = (unsigned char) ((addr) & 0x00FF);
+	buf[6] = (unsigned char) ((addr >> 8) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6]);
 	return 7;
 }
 
-fm_s32 fm_top_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr, fm_u32 value)
+signed int fm_top_set_reg(unsigned char *buf, signed int buf_size, unsigned short addr, unsigned int value)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -436,12 +443,12 @@ fm_s32 fm_top_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr, fm_u32 value)
 	buf[2] = 0x07;
 	buf[3] = 0x00;
 	buf[4] = 0x04;		/* top 04,fm 02 */
-	buf[5] = (fm_u8) ((addr) & 0x00FF);
-	buf[6] = (fm_u8) ((addr >> 8) & 0x00FF);
-	buf[7] = (fm_u8) ((value) & 0x00FF);
-	buf[8] = (fm_u8) ((value >> 8) & 0x00FF);
-	buf[9] = (fm_u8) ((value >> 16) & 0x00FF);
-	buf[10] = (fm_u8) ((value >> 24) & 0x00FF);
+	buf[5] = (unsigned char) ((addr) & 0x00FF);
+	buf[6] = (unsigned char) ((addr >> 8) & 0x00FF);
+	buf[7] = (unsigned char) ((value) & 0x00FF);
+	buf[8] = (unsigned char) ((value >> 8) & 0x00FF);
+	buf[9] = (unsigned char) ((value >> 16) & 0x00FF);
+	buf[10] = (unsigned char) ((value >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0],
 		buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10]);
@@ -449,7 +456,7 @@ fm_s32 fm_top_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u16 addr, fm_u32 value)
 }
 
 /*host register read*/
-fm_s32 fm_host_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr)
+signed int fm_host_get_reg(unsigned char *buf, signed int buf_size, unsigned int addr)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -458,17 +465,17 @@ fm_s32 fm_host_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr)
 	buf[1] = FM_HOST_READ_OPCODE;
 	buf[2] = 0x04;
 	buf[3] = 0x00;
-	buf[4] = (fm_u8) ((addr) & 0x00FF);
-	buf[5] = (fm_u8) ((addr >> 8) & 0x00FF);
-	buf[6] = (fm_u8) ((addr >> 16) & 0x00FF);
-	buf[7] = (fm_u8) ((addr >> 24) & 0x00FF);
+	buf[4] = (unsigned char) ((addr) & 0x00FF);
+	buf[5] = (unsigned char) ((addr >> 8) & 0x00FF);
+	buf[6] = (unsigned char) ((addr >> 16) & 0x00FF);
+	buf[7] = (unsigned char) ((addr >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0], buf[1], buf[2],
 		buf[3], buf[4], buf[5], buf[6], buf[7]);
 	return 8;
 }
 
-fm_s32 fm_host_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr, fm_u32 value)
+signed int fm_host_set_reg(unsigned char *buf, signed int buf_size, unsigned int addr, unsigned int value)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -477,21 +484,21 @@ fm_s32 fm_host_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u32 addr, fm_u32 value)
 	buf[1] = FM_HOST_WRITE_OPCODE;
 	buf[2] = 0x08;
 	buf[3] = 0x00;
-	buf[4] = (fm_u8) ((addr) & 0x00FF);
-	buf[5] = (fm_u8) ((addr >> 8) & 0x00FF);
-	buf[6] = (fm_u8) ((addr >> 16) & 0x00FF);
-	buf[7] = (fm_u8) ((addr >> 24) & 0x00FF);
-	buf[8] = (fm_u8) ((value) & 0x00FF);
-	buf[9] = (fm_u8) ((value >> 8) & 0x00FF);
-	buf[10] = (fm_u8) ((value >> 16) & 0x00FF);
-	buf[11] = (fm_u8) ((value >> 24) & 0x00FF);
+	buf[4] = (unsigned char) ((addr) & 0x00FF);
+	buf[5] = (unsigned char) ((addr >> 8) & 0x00FF);
+	buf[6] = (unsigned char) ((addr >> 16) & 0x00FF);
+	buf[7] = (unsigned char) ((addr >> 24) & 0x00FF);
+	buf[8] = (unsigned char) ((value) & 0x00FF);
+	buf[9] = (unsigned char) ((value >> 8) & 0x00FF);
+	buf[10] = (unsigned char) ((value >> 16) & 0x00FF);
+	buf[11] = (unsigned char) ((value >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11]);
 	return 12;
 }
 
-fm_s32 fm_pmic_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr)
+signed int fm_pmic_get_reg(unsigned char *buf, signed int buf_size, unsigned char addr)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -510,7 +517,7 @@ fm_s32 fm_pmic_get_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr)
 	return 5;
 }
 
-fm_s32 fm_pmic_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 val)
+signed int fm_pmic_set_reg(unsigned char *buf, signed int buf_size, unsigned char addr, unsigned int val)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -523,17 +530,18 @@ fm_s32 fm_pmic_set_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 val)
 	buf[2] = 0x05;
 	buf[3] = 0x00;
 	buf[4] = addr;
-	buf[5] = (fm_u8) ((val) & 0x00FF);
-	buf[6] = (fm_u8) ((val >> 8) & 0x00FF);
-	buf[7] = (fm_u8) ((val >> 16) & 0x00FF);
-	buf[8] = (fm_u8) ((val >> 24) & 0x00FF);
+	buf[5] = (unsigned char) ((val) & 0x00FF);
+	buf[6] = (unsigned char) ((val >> 8) & 0x00FF);
+	buf[7] = (unsigned char) ((val >> 16) & 0x00FF);
+	buf[8] = (unsigned char) ((val >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8]);
 	return 9;
 }
 
-fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and, fm_u32 mask_or)
+signed int fm_pmic_mod_reg(unsigned char *buf, signed int buf_size, unsigned char addr,
+						unsigned int mask_and, unsigned int mask_or)
 {
 	if (buf_size < TX_BUF_SIZE)
 		return -1;
@@ -546,14 +554,14 @@ fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and,
 	buf[2] = 0x09;
 	buf[3] = 0x00;
 	buf[4] = addr;
-	buf[5] = (fm_u8) ((mask_and) & 0x00FF);
-	buf[6] = (fm_u8) ((mask_and >> 8) & 0x00FF);
-	buf[7] = (fm_u8) ((mask_and >> 16) & 0x00FF);
-	buf[8] = (fm_u8) ((mask_and >> 24) & 0x00FF);
-	buf[9] = (fm_u8) ((mask_or) & 0x00FF);
-	buf[10] = (fm_u8) ((mask_or >> 8) & 0x00FF);
-	buf[11] = (fm_u8) ((mask_or >> 16) & 0x00FF);
-	buf[12] = (fm_u8) ((mask_or >> 24) & 0x00FF);
+	buf[5] = (unsigned char) ((mask_and) & 0x00FF);
+	buf[6] = (unsigned char) ((mask_and >> 8) & 0x00FF);
+	buf[7] = (unsigned char) ((mask_and >> 16) & 0x00FF);
+	buf[8] = (unsigned char) ((mask_and >> 24) & 0x00FF);
+	buf[9] = (unsigned char) ((mask_or) & 0x00FF);
+	buf[10] = (unsigned char) ((mask_or >> 8) & 0x00FF);
+	buf[11] = (unsigned char) ((mask_or >> 16) & 0x00FF);
+	buf[12] = (unsigned char) ((mask_or >> 24) & 0x00FF);
 
 	WCN_DBG(FM_DBG | CHIP, "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", buf[0],
 		buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12]);
@@ -561,12 +569,12 @@ fm_s32 fm_pmic_mod_reg(fm_u8 *buf, fm_s32 buf_size, fm_u8 addr, fm_u32 mask_and,
 	return 13;
 }
 
-fm_s32 fm_get_patch_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
+signed int fm_get_patch_path(signed int ver, unsigned char *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
 {
-	fm_s32 i;
-	fm_s32 patch_len = 0;
-	fm_s32 max = FM_ROM_MAX;
-	const fm_s8 *ppath = NULL;
+	signed int i;
+	signed int patch_len = 0;
+	signed int max = FM_ROM_MAX;
+	const signed char *ppath = NULL;
 
 	/* check if the ROM version is defined or not */
 	for (i = 0; i < max; i++) {
@@ -598,12 +606,12 @@ fm_s32 fm_get_patch_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_
 	return -FM_EPATCH;
 }
 
-fm_s32 fm_get_coeff_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
+signed int fm_get_coeff_path(signed int ver, unsigned char *buff, int buffsize, struct fm_patch_tbl *patch_tbl)
 {
-	fm_s32 i;
-	fm_s32 patch_len = 0;
-	const fm_s8 *ppath = NULL;
-	fm_s32 max = FM_ROM_MAX;
+	signed int i;
+	signed int patch_len = 0;
+	const signed char *ppath = NULL;
+	signed int max = FM_ROM_MAX;
 
 	/* check if the ROM version is defined or not */
 	for (i = 0; i < max; i++) {
@@ -641,13 +649,13 @@ fm_s32 fm_get_coeff_path(fm_s32 ver, fm_u8 *buff, int buffsize, struct fm_patch_
 *  @len - patch length in byte
 *  @type - rom/patch/coefficient/hw_coefficient
 */
-fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
+signed int fm_download_patch(const unsigned char *img, signed int len, enum IMG_TYPE type)
 {
-	fm_u8 seg_num;
-	fm_u8 seg_id = 0;
-	fm_s32 seg_len;
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	unsigned char seg_num;
+	unsigned char seg_id = 0;
+	signed int seg_len;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (img == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
@@ -665,13 +673,13 @@ fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
 			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			WCN_DBG(FM_INF | CHIP, "patch,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
 			if (FM_LOCK(cmd_buf_lock))
 				return -FM_ELOCK;
 			pkt_size =
 			    fm_patch_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
 						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			WCN_DBG(FM_INF | CHIP, "pkt_size:%d\n", (signed int) pkt_size);
 			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_PATCH, SW_RETRY_CNT, PATCH_TIMEOUT, NULL);
 			FM_UNLOCK(cmd_buf_lock);
 
@@ -687,13 +695,13 @@ fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
 			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
+			WCN_DBG(FM_INF | CHIP, "coeff,[seg_id:%d],  [seg_len:%d]\n", seg_id, seg_len);
 			if (FM_LOCK(cmd_buf_lock))
 				return -FM_ELOCK;
 			pkt_size =
 			    fm_coeff_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
 						  &img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
+			WCN_DBG(FM_INF | CHIP, "pkt_size:%d\n", (signed int) pkt_size);
 			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_COEFF, SW_RETRY_CNT, COEFF_TIMEOUT, NULL);
 			FM_UNLOCK(cmd_buf_lock);
 
@@ -711,7 +719,7 @@ fm_s32 fm_download_patch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 	return 0;
 }
 
-fm_s32 fm_get_read_result(struct fm_res_ctx *result)
+signed int fm_get_read_result(struct fm_res_ctx *result)
 {
 	if (result == NULL) {
 		WCN_DBG(FM_ERR | CHIP, "%s,invalid pointer\n", __func__);
@@ -722,10 +730,10 @@ fm_s32 fm_get_read_result(struct fm_res_ctx *result)
 	return 0;
 }
 
-fm_s32 fm_reg_read(fm_u8 addr, fm_u16 *val)
+signed int fm_reg_read(unsigned char addr, unsigned short *val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -740,10 +748,10 @@ fm_s32 fm_reg_read(fm_u8 addr, fm_u16 *val)
 	return ret;
 }
 
-fm_s32 fm_reg_write(fm_u8 addr, fm_u16 val)
+signed int fm_reg_write(unsigned char addr, unsigned short val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -754,10 +762,10 @@ fm_s32 fm_reg_write(fm_u8 addr, fm_u16 val)
 	return ret;
 }
 
-fm_s32 fm_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask)
+signed int fm_set_bits(unsigned char addr, unsigned short bits, unsigned short mask)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -769,10 +777,10 @@ fm_s32 fm_set_bits(fm_u8 addr, fm_u16 bits, fm_u16 mask)
 	return ret;
 }
 
-fm_s32 fm_top_reg_read(fm_u16 addr, fm_u32 *val)
+signed int fm_top_reg_read(unsigned short addr, unsigned int *val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -787,10 +795,10 @@ fm_s32 fm_top_reg_read(fm_u16 addr, fm_u32 *val)
 	return ret;
 }
 
-fm_s32 fm_top_reg_write(fm_u16 addr, fm_u32 val)
+signed int fm_top_reg_write(unsigned short addr, unsigned int val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -801,10 +809,10 @@ fm_s32 fm_top_reg_write(fm_u16 addr, fm_u32 val)
 	return ret;
 }
 
-fm_s32 fm_host_reg_read(fm_u32 addr, fm_u32 *val)
+signed int fm_host_reg_read(unsigned int addr, unsigned int *val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -819,10 +827,10 @@ fm_s32 fm_host_reg_read(fm_u32 addr, fm_u32 *val)
 	return ret;
 }
 
-fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val)
+signed int fm_host_reg_write(unsigned int addr, unsigned int val)
 {
-	fm_s32 ret = 0;
-	fm_u16 pkt_size;
+	signed int ret = 0;
+	unsigned short pkt_size;
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -832,4 +840,3 @@ fm_s32 fm_host_reg_write(fm_u32 addr, fm_u32 val)
 
 	return ret;
 }
-

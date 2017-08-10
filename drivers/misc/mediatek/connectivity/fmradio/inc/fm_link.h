@@ -18,14 +18,14 @@
 #include "fm_rds.h"
 #include "fm_utils.h"
 
-typedef enum {
+enum fm_task_parser_state {
 	FM_TASK_RX_PARSER_PKT_TYPE = 0,
 	FM_TASK_RX_PARSER_OPCODE,
 	FM_TASK_RX_PARSER_PKT_LEN_1,
 	FM_TASK_RX_PARSER_PKT_LEN_2,
 	FM_TASK_RX_PARSER_PKT_PAYLOAD,
 	FM_TASK_RX_PARSER_BUFFER_CONGESTION
-} fm_task_parser_state;
+};
 
 enum {
 	FM_TASK_COMMAND_PKT_TYPE = 0x01,
@@ -104,13 +104,13 @@ enum {
 #define FM_SCANTBL_SIZE  16
 #define FM_CQI_BUF_SIZE  96
 struct fm_res_ctx {
-	fm_u16 fspi_rd;
-	fm_u16 seek_result;
-	fm_u16 scan_result[FM_SCANTBL_SIZE];
-	fm_s8 cqi[FM_CQI_BUF_SIZE];
+	unsigned short fspi_rd;
+	unsigned short seek_result;
+	unsigned short scan_result[FM_SCANTBL_SIZE];
+	signed char cqi[FM_CQI_BUF_SIZE];
 	struct rds_rx_t rds_rx_result;
-	fm_u32 cspi_rd;		/* common spi read data */
-	fm_u8 pmic_result[8];
+	unsigned int cspi_rd;		/* common spi read data */
+	unsigned char pmic_result[8];
 };
 
 #define FM_TRACE_ENABLE
@@ -118,31 +118,31 @@ struct fm_res_ctx {
 #define FM_TRACE_FIFO_SIZE 200
 #define FM_TRACE_PKT_SIZE 60
 struct fm_trace_t {
-	fm_s32 type;
-	fm_s32 opcode;
-	fm_s32 len;
-	fm_u8 pkt[FM_TRACE_PKT_SIZE];	/* full packet */
+	signed int type;
+	signed int opcode;
+	signed int len;
+	unsigned char pkt[FM_TRACE_PKT_SIZE];	/* full packet */
 	unsigned long time;
-	fm_s32 tid;
+	signed int tid;
 };
 
 struct fm_trace_fifo_t {
-	fm_s8 name[20 + 1];
+	signed char name[20 + 1];
 	struct fm_trace_t trace[FM_TRACE_FIFO_SIZE];
-	fm_u32 size;
-	fm_u32 in;
-	fm_u32 out;
-	fm_u32 len;
-	fm_s32 (*trace_in)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *new_tra);
-	fm_s32 (*trace_out)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *dst_tra);
+	unsigned int size;
+	unsigned int in;
+	unsigned int out;
+	unsigned int len;
+	signed int (*trace_in)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *new_tra);
+	signed int (*trace_out)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *dst_tra);
 
-	fm_bool (*is_full)(struct fm_trace_fifo_t *thiz);
-	fm_bool (*is_empty)(struct fm_trace_fifo_t *thiz);
+	bool (*is_full)(struct fm_trace_fifo_t *thiz);
+	bool (*is_empty)(struct fm_trace_fifo_t *thiz);
 };
 
 #define FM_TRACE_IN(fifop, tracep)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->trace_in) {          \
 		__ret = (fifop)->trace_in(fifop, tracep);   \
 	}                               \
@@ -151,7 +151,7 @@ struct fm_trace_fifo_t {
 
 #define FM_TRACE_OUT(fifop, tracep)  \
 ({                                    \
-	fm_s32 __ret = (fm_s32)0;              \
+	signed int __ret = (signed int)0;              \
 	if (fifop && (fifop)->trace_out) {          \
 		__ret = (fifop)->trace_out(fifop, tracep);   \
 	}                               \
@@ -160,7 +160,7 @@ struct fm_trace_fifo_t {
 
 #define FM_TRACE_FULL(fifop)  \
 ({                                    \
-	fm_bool __ret = (fm_bool)fm_false;      \
+	bool __ret = (bool)false;      \
 	if (fifop && (fifop)->is_full) {          \
 		__ret = (fifop)->is_full(fifop);   \
 	}                               \
@@ -169,7 +169,7 @@ struct fm_trace_fifo_t {
 
 #define FM_TRACE_EMPTY(fifop)  \
 ({                                    \
-	fm_bool __ret = (fm_bool)fm_false;      \
+	bool __ret = (bool)false;      \
 	if (fifop && (fifop)->is_empty) {          \
 		__ret = (fifop)->is_empty(fifop);   \
 	}                               \
@@ -216,29 +216,29 @@ struct fm_link_event {
 /*
  * FM data and ctrl link APIs: platform related and bus related
  */
-extern fm_s32 fm_link_setup(void *data);
+extern signed int fm_link_setup(void *data);
 
-extern fm_s32 fm_link_release(void);
+extern signed int fm_link_release(void);
 
-extern fm_s32 fm_cmd_tx(fm_u8 *buf, fm_u16 len, fm_s32 mask, fm_s32 cnt, fm_s32 timeout,
-			fm_s32 (*callback)(struct fm_res_ctx *result));
+extern signed int fm_cmd_tx(unsigned char *buf, unsigned short len, signed int mask, signed int cnt, signed int timeout,
+			signed int (*callback)(struct fm_res_ctx *result));
 
-extern fm_s32 fm_event_parser(fm_s32 (*rds_parser)(struct rds_rx_t *, fm_s32));
+extern signed int fm_event_parser(signed int (*rds_parser)(struct rds_rx_t *, signed int));
 
-extern fm_s32 fm_ctrl_rx(fm_u8 addr, fm_u16 *val);
+extern signed int fm_ctrl_rx(unsigned char addr, unsigned short *val);
 
-extern fm_s32 fm_ctrl_tx(fm_u8 addr, fm_u16 val);
+extern signed int fm_ctrl_tx(unsigned char addr, unsigned short val);
 
-extern fm_s32 fm_force_active_event(fm_u32 mask);
+extern signed int fm_force_active_event(unsigned int mask);
 
-extern fm_bool fm_wait_stc_done(fm_u32 sec);
+extern bool fm_wait_stc_done(unsigned int sec);
 
-extern struct fm_trace_fifo_t *fm_trace_fifo_create(const fm_s8 *name);
+extern struct fm_trace_fifo_t *fm_trace_fifo_create(const signed char *name);
 
-extern fm_s32 fm_trace_fifo_release(struct fm_trace_fifo_t *fifo);
+extern signed int fm_trace_fifo_release(struct fm_trace_fifo_t *fifo);
 
-extern fm_s32 fm_print_cmd_fifo(void);
+extern signed int fm_print_cmd_fifo(void);
 
-extern fm_s32 fm_print_evt_fifo(void);
+extern signed int fm_print_evt_fifo(void);
 
 #endif /* __FM_LINK_H__ */

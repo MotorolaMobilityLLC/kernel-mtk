@@ -27,22 +27,21 @@
 #include "fm_stdlib.h"
 #include "fm_utils.h"
 
-fm_s32 fm_delayms(fm_u32 data)
+signed int fm_delayms(unsigned int data)
 {
 	WCN_DBG(FM_DBG | CHIP, "delay %dms\n", data);
 	msleep(data);
 	return 0;
 }
 
-fm_s32 fm_delayus(fm_u32 data)
+signed int fm_delayus(unsigned int data)
 {
 	WCN_DBG(FM_DBG | CHIP, "delay %dus\n", data);
 	udelay(data);
 	return 0;
 }
 
-
-static fm_u32 fm_event_send(struct fm_flag_event *thiz, fm_u32 mask)
+static unsigned int fm_event_send(struct fm_flag_event *thiz, unsigned int mask)
 {
 	thiz->flag |= mask;
 	/* WCN_DBG(FM_DBG|MAIN, "%s set 0x%08x\n", thiz->name, thiz->flag); */
@@ -51,7 +50,7 @@ static fm_u32 fm_event_send(struct fm_flag_event *thiz, fm_u32 mask)
 	return thiz->flag;
 }
 
-static fm_s32 fm_event_wait(struct fm_flag_event *thiz, fm_u32 mask)
+static signed int fm_event_wait(struct fm_flag_event *thiz, unsigned int mask)
 {
 	return wait_event_interruptible(*(wait_queue_head_t *) (thiz->priv), ((thiz->flag & mask) == mask));
 }
@@ -59,7 +58,7 @@ static fm_s32 fm_event_wait(struct fm_flag_event *thiz, fm_u32 mask)
 /**
  * fm_event_check - sleep until a condition gets true or a timeout elapses
  * @thiz: the pointer of current object
- * @mask: bitmap in fm_u32
+ * @mask: bitmap in unsigned int
  * @timeout: timeout, in jiffies
  *
  * fm_event_set() has to be called after changing any variable that could
@@ -68,30 +67,30 @@ static fm_s32 fm_event_wait(struct fm_flag_event *thiz, fm_u32 mask)
  * The function returns 0 if the @timeout elapsed, and the remaining
  * jiffies if the condition evaluated to true before the timeout elapsed.
  */
-long fm_event_wait_timeout(struct fm_flag_event *thiz, fm_u32 mask, long timeout)
+long fm_event_wait_timeout(struct fm_flag_event *thiz, unsigned int mask, long timeout)
 {
 	return wait_event_timeout(*((wait_queue_head_t *) (thiz->priv)), ((thiz->flag & mask) == mask), timeout * HZ);
 }
 
-static fm_u32 fm_event_clr(struct fm_flag_event *thiz, fm_u32 mask)
+static unsigned int fm_event_clr(struct fm_flag_event *thiz, unsigned int mask)
 {
 	thiz->flag &= ~mask;
 	/* WCN_DBG(FM_DBG|MAIN, "%s clr 0x%08x\n", thiz->name, thiz->flag); */
 	return thiz->flag;
 }
 
-static fm_u32 fm_event_get(struct fm_flag_event *thiz)
+static unsigned int fm_event_get(struct fm_flag_event *thiz)
 {
 	return thiz->flag;
 
 }
 
-static fm_u32 fm_event_rst(struct fm_flag_event *thiz)
+static unsigned int fm_event_rst(struct fm_flag_event *thiz)
 {
 	return thiz->flag = 0;
 }
 
-struct fm_flag_event *fm_flag_event_create(const fm_s8 *name)
+struct fm_flag_event *fm_flag_event_create(const signed char *name)
 {
 	struct fm_flag_event *tmp;
 	wait_queue_head_t *wq;
@@ -126,7 +125,7 @@ struct fm_flag_event *fm_flag_event_create(const fm_s8 *name)
 	return tmp;
 }
 
-fm_s32 fm_flag_event_get(struct fm_flag_event *thiz)
+signed int fm_flag_event_get(struct fm_flag_event *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -136,7 +135,7 @@ fm_s32 fm_flag_event_get(struct fm_flag_event *thiz)
 	return 0;
 }
 
-fm_s32 fm_flag_event_put(struct fm_flag_event *thiz)
+signed int fm_flag_event_put(struct fm_flag_event *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -156,9 +155,9 @@ fm_s32 fm_flag_event_put(struct fm_flag_event *thiz)
 }
 
 /* fm lock methods */
-static fm_s32 fm_lock_try(struct fm_lock *thiz, fm_s32 retryCnt)
+static signed int fm_lock_try(struct fm_lock *thiz, signed int retryCnt)
 {
-	fm_s32 retry_cnt = 0;
+	signed int retry_cnt = 0;
 	struct semaphore *sem;
 	struct task_struct *task = current;
 
@@ -189,7 +188,7 @@ static fm_s32 fm_lock_try(struct fm_lock *thiz, fm_s32 retryCnt)
 }
 
 /* fm try lock methods */
-static fm_s32 fm_lock_lock(struct fm_lock *thiz)
+static signed int fm_lock_lock(struct fm_lock *thiz)
 {
 	struct semaphore *sem;
 	struct task_struct *task = current;
@@ -214,7 +213,7 @@ static fm_s32 fm_lock_lock(struct fm_lock *thiz)
 	return 0;
 }
 
-static fm_s32 fm_lock_unlock(struct fm_lock *thiz)
+static signed int fm_lock_unlock(struct fm_lock *thiz)
 {
 	struct semaphore *sem;
 	struct task_struct *task = current;
@@ -234,7 +233,7 @@ static fm_s32 fm_lock_unlock(struct fm_lock *thiz)
 	return 0;
 }
 
-struct fm_lock *fm_lock_create(const fm_s8 *name)
+struct fm_lock *fm_lock_create(const signed char *name)
 {
 	struct fm_lock *tmp;
 	struct semaphore *mutex;
@@ -264,7 +263,7 @@ struct fm_lock *fm_lock_create(const fm_s8 *name)
 	return tmp;
 }
 
-fm_s32 fm_lock_get(struct fm_lock *thiz)
+signed int fm_lock_get(struct fm_lock *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -274,7 +273,7 @@ fm_s32 fm_lock_get(struct fm_lock *thiz)
 	return 0;
 }
 
-fm_s32 fm_lock_put(struct fm_lock *thiz)
+signed int fm_lock_put(struct fm_lock *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -294,7 +293,7 @@ fm_s32 fm_lock_put(struct fm_lock *thiz)
 }
 
 /* fm lock methods */
-static fm_s32 fm_spin_lock_lock(struct fm_lock *thiz)
+static signed int fm_spin_lock_lock(struct fm_lock *thiz)
 {
 	struct task_struct *task = current;
 
@@ -313,7 +312,7 @@ static fm_s32 fm_spin_lock_lock(struct fm_lock *thiz)
 	return 0;
 }
 
-static fm_s32 fm_spin_lock_unlock(struct fm_lock *thiz)
+static signed int fm_spin_lock_unlock(struct fm_lock *thiz)
 {
 	struct task_struct *task = current;
 
@@ -331,7 +330,7 @@ static fm_s32 fm_spin_lock_unlock(struct fm_lock *thiz)
 	return 0;
 }
 
-struct fm_lock *fm_spin_lock_create(const fm_s8 *name)
+struct fm_lock *fm_spin_lock_create(const signed char *name)
 {
 	struct fm_lock *tmp;
 	spinlock_t *spin_lock;
@@ -360,7 +359,7 @@ struct fm_lock *fm_spin_lock_create(const fm_s8 *name)
 	return tmp;
 }
 
-fm_s32 fm_spin_lock_get(struct fm_lock *thiz)
+signed int fm_spin_lock_get(struct fm_lock *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -370,7 +369,7 @@ fm_s32 fm_spin_lock_get(struct fm_lock *thiz)
 	return 0;
 }
 
-fm_s32 fm_spin_lock_put(struct fm_lock *thiz)
+signed int fm_spin_lock_put(struct fm_lock *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -393,8 +392,8 @@ fm_s32 fm_spin_lock_put(struct fm_lock *thiz)
  * fm timer
  *
  */
-static fm_s32 fm_timer_init(struct fm_timer *thiz, void (*timeout) (unsigned long data),
-			    unsigned long data, signed long time, fm_s32 flag)
+static signed int fm_timer_init(struct fm_timer *thiz, void (*timeout) (unsigned long data),
+			    unsigned long data, signed long time, signed int flag)
 {
 	struct timer_list *timerlist = (struct timer_list *)thiz->priv;
 
@@ -411,7 +410,7 @@ static fm_s32 fm_timer_init(struct fm_timer *thiz, void (*timeout) (unsigned lon
 	return 0;
 }
 
-static fm_s32 fm_timer_start(struct fm_timer *thiz)
+static signed int fm_timer_start(struct fm_timer *thiz)
 {
 	struct timer_list *timerlist = (struct timer_list *)thiz->priv;
 
@@ -421,7 +420,7 @@ static fm_s32 fm_timer_start(struct fm_timer *thiz)
 	return 0;
 }
 
-static fm_s32 fm_timer_update(struct fm_timer *thiz)
+static signed int fm_timer_update(struct fm_timer *thiz)
 {
 	struct timer_list *timerlist = (struct timer_list *)thiz->priv;
 
@@ -433,7 +432,7 @@ static fm_s32 fm_timer_update(struct fm_timer *thiz)
 	}
 }
 
-static fm_s32 fm_timer_stop(struct fm_timer *thiz)
+static signed int fm_timer_stop(struct fm_timer *thiz)
 {
 	struct timer_list *timerlist = (struct timer_list *)thiz->priv;
 
@@ -443,13 +442,13 @@ static fm_s32 fm_timer_stop(struct fm_timer *thiz)
 	return 0;
 }
 
-static fm_s32 fm_timer_control(struct fm_timer *thiz, enum fm_timer_ctrl cmd, void *arg)
+static signed int fm_timer_control(struct fm_timer *thiz, enum fm_timer_ctrl cmd, void *arg)
 {
 
 	return 0;
 }
 
-struct fm_timer *fm_timer_create(const fm_s8 *name)
+struct fm_timer *fm_timer_create(const signed char *name)
 {
 	struct fm_timer *tmp;
 	struct timer_list *timerlist;
@@ -481,7 +480,7 @@ struct fm_timer *fm_timer_create(const fm_s8 *name)
 	return tmp;
 }
 
-fm_s32 fm_timer_get(struct fm_timer *thiz)
+signed int fm_timer_get(struct fm_timer *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -491,7 +490,7 @@ fm_s32 fm_timer_get(struct fm_timer *thiz)
 	return 0;
 }
 
-fm_s32 fm_timer_put(struct fm_timer *thiz)
+signed int fm_timer_put(struct fm_timer *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -513,7 +512,7 @@ fm_s32 fm_timer_put(struct fm_timer *thiz)
 /*
  * FM work thread mechanism
  */
-static fm_s32 fm_work_init(struct fm_work *thiz, void (*work_func) (unsigned long data), unsigned long data)
+static signed int fm_work_init(struct fm_work *thiz, void (*work_func) (unsigned long data), unsigned long data)
 {
 	struct work_struct *sys_work = (struct work_struct *)thiz->priv;
 	work_func_t func;
@@ -528,7 +527,7 @@ static fm_s32 fm_work_init(struct fm_work *thiz, void (*work_func) (unsigned lon
 
 }
 
-struct fm_work *fm_work_create(const fm_s8 *name)
+struct fm_work *fm_work_create(const signed char *name)
 {
 	struct fm_work *my_work;
 	struct work_struct *sys_work;
@@ -553,7 +552,7 @@ struct fm_work *fm_work_create(const fm_s8 *name)
 	return my_work;
 }
 
-fm_s32 fm_work_get(struct fm_work *thiz)
+signed int fm_work_get(struct fm_work *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -563,7 +562,7 @@ fm_s32 fm_work_get(struct fm_work *thiz)
 	return 0;
 }
 
-fm_s32 fm_work_put(struct fm_work *thiz)
+signed int fm_work_put(struct fm_work *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -582,7 +581,7 @@ fm_s32 fm_work_put(struct fm_work *thiz)
 	}
 }
 
-static fm_s32 fm_workthread_add_work(struct fm_workthread *thiz, struct fm_work *work)
+static signed int fm_workthread_add_work(struct fm_workthread *thiz, struct fm_work *work)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -597,7 +596,7 @@ static fm_s32 fm_workthread_add_work(struct fm_workthread *thiz, struct fm_work 
 	return 0;
 }
 
-struct fm_workthread *fm_workthread_create(const fm_s8 *name)
+struct fm_workthread *fm_workthread_create(const signed char *name)
 {
 	struct fm_workthread *my_thread;
 	struct workqueue_struct *sys_thread;
@@ -617,7 +616,7 @@ struct fm_workthread *fm_workthread_create(const fm_s8 *name)
 	return my_thread;
 }
 
-fm_s32 fm_workthread_get(struct fm_workthread *thiz)
+signed int fm_workthread_get(struct fm_workthread *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -627,7 +626,7 @@ fm_s32 fm_workthread_get(struct fm_workthread *thiz)
 	return 0;
 }
 
-fm_s32 fm_workthread_put(struct fm_workthread *thiz)
+signed int fm_workthread_put(struct fm_workthread *thiz)
 {
 	if (thiz == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -646,7 +645,7 @@ fm_s32 fm_workthread_put(struct fm_workthread *thiz)
 	}
 }
 
-fm_s32 fm_fifo_in(struct fm_fifo *thiz, void *item)
+signed int fm_fifo_in(struct fm_fifo *thiz, void *item)
 {
 	if (item == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -666,7 +665,7 @@ fm_s32 fm_fifo_in(struct fm_fifo *thiz, void *item)
 	return 0;
 }
 
-fm_s32 fm_fifo_out(struct fm_fifo *thiz, void *item)
+signed int fm_fifo_out(struct fm_fifo *thiz, void *item)
 {
 	if (thiz->len > 0) {
 		if (item) {
@@ -683,27 +682,27 @@ fm_s32 fm_fifo_out(struct fm_fifo *thiz, void *item)
 	return 0;
 }
 
-fm_bool fm_fifo_is_full(struct fm_fifo *thiz)
+bool fm_fifo_is_full(struct fm_fifo *thiz)
 {
-	return (thiz->len == thiz->size) ? fm_true : fm_false;
+	return (thiz->len == thiz->size) ? true : false;
 }
 
-fm_bool fm_fifo_is_empty(struct fm_fifo *thiz)
+bool fm_fifo_is_empty(struct fm_fifo *thiz)
 {
-	return (thiz->len == 0) ? fm_true : fm_false;
+	return (thiz->len == 0) ? true : false;
 }
 
-fm_s32 fm_fifo_get_total_len(struct fm_fifo *thiz)
+signed int fm_fifo_get_total_len(struct fm_fifo *thiz)
 {
 	return thiz->size;
 }
 
-fm_s32 fm_fifo_get_valid_len(struct fm_fifo *thiz)
+signed int fm_fifo_get_valid_len(struct fm_fifo *thiz)
 {
 	return thiz->len;
 }
 
-fm_s32 fm_fifo_reset(struct fm_fifo *thiz)
+signed int fm_fifo_reset(struct fm_fifo *thiz)
 {
 	fm_memset(thiz->obj.priv, 0, thiz->item_size * thiz->size);
 	thiz->in = 0;
@@ -713,7 +712,8 @@ fm_s32 fm_fifo_reset(struct fm_fifo *thiz)
 	return 0;
 }
 
-struct fm_fifo *fm_fifo_init(struct fm_fifo *fifo, void *buf, const fm_s8 *name, fm_s32 item_size, fm_s32 item_num)
+struct fm_fifo *fm_fifo_init(struct fm_fifo *fifo, void *buf, const signed char *name, signed int item_size,
+								signed int item_num)
 {
 	fm_memcpy(fifo->obj.name, name, 20);
 	fifo->size = item_num;
@@ -736,7 +736,7 @@ struct fm_fifo *fm_fifo_init(struct fm_fifo *fifo, void *buf, const fm_s8 *name,
 	return fifo;
 }
 
-struct fm_fifo *fm_fifo_create(const fm_s8 *name, fm_s32 item_size, fm_s32 item_num)
+struct fm_fifo *fm_fifo_create(const signed char *name, signed int item_size, signed int item_num)
 {
 	struct fm_fifo *tmp;
 	void *buf;
@@ -761,7 +761,7 @@ struct fm_fifo *fm_fifo_create(const fm_s8 *name, fm_s32 item_size, fm_s32 item_
 	return tmp;
 }
 
-fm_s32 fm_fifo_release(struct fm_fifo *fifo)
+signed int fm_fifo_release(struct fm_fifo *fifo)
 {
 	if (fifo) {
 		WCN_DBG(FM_NTC | LINK, "%s released\n", fifo->obj.name);

@@ -57,7 +57,7 @@
 #define FM_INF	L6
 #define FM_DBG	L7
 
-extern fm_u32 g_dbg_level;
+extern unsigned int g_dbg_level;
 
 #define WCN_DBG(flag, fmt, args...) \
 	do { \
