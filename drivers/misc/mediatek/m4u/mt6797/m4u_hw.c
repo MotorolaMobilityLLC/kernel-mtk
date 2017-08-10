@@ -1531,7 +1531,7 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	int larb, larb_port;
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
-	unsigned int larb_port, mmu_en = 0, sec_en = 0;
+	unsigned int mmu_en = 0, sec_en = 0;
 #endif
 	if (pM4uPort->ePortID < 0 || pM4uPort->ePortID > M4U_PORT_UNKNOWN) {
 		M4UMSG("port is unknown,error port is %d\n", pM4uPort->ePortID);
