@@ -88,6 +88,7 @@ kal_uint16 GC0310_write_cmos_sensor(kal_uint8 addr, kal_uint8 para)
 {
     char puSendCmd[2] = {(char)(addr & 0xFF) , (char)(para & 0xFF)};
 	
+	kdSetI2CSpeed(400);
 	iWriteRegI2C(puSendCmd , 2, GC0310_WRITE_ID);
 	return 0;
 }
@@ -95,6 +96,8 @@ kal_uint16 GC0310_read_cmos_sensor(kal_uint8 addr)
 {
 	kal_uint16 get_byte=0;
     char puSendCmd = { (char)(addr & 0xFF) };
+	
+	kdSetI2CSpeed(400);
 	iReadRegI2C(&puSendCmd , 1, (u8*)&get_byte, 1, GC0310_READ_ID);
 	
     return get_byte;
@@ -245,20 +248,17 @@ void GC0310_set_contrast(UINT16 para)
 			GC0310_write_cmos_sensor(0xfe, 0x00);	 
 			GC0310_write_cmos_sensor(0xd3, 0x30);
 			GC0310_write_cmos_sensor(0xfe, 0x00); 
-			Sleep(200);
 			break;
         case ISP_CONTRAST_HIGH:			 
 			GC0310_write_cmos_sensor(0xfe, 0x00); 	
 			GC0310_write_cmos_sensor(0xd3, 0x60);
-			GC0310_write_cmos_sensor(0xfe, 0x00);
-			Sleep(200);			
+			GC0310_write_cmos_sensor(0xfe, 0x00);		
 			break;
         case ISP_CONTRAST_MIDDLE: 
         default:
 			GC0310_write_cmos_sensor(0xfe, 0x00);	 
 			GC0310_write_cmos_sensor(0xd3, 0x40);
-			GC0310_write_cmos_sensor(0xfe, 0x00);
-			Sleep(200);			
+			GC0310_write_cmos_sensor(0xfe, 0x00);		
 			break;
         //default:
 		//	break;
@@ -347,9 +347,7 @@ void GC0310_set_brightness(UINT16 para)
     {
         case ISP_BRIGHT_LOW:
 		//case AE_EV_COMP_n13:
-			GC0310_write_cmos_sensor(0xd5, 0xc0);
-			Sleep(5);
-			
+			GC0310_write_cmos_sensor(0xd5, 0xc0);		
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x30);
 			GC0310_SET_PAGE0;
@@ -357,7 +355,6 @@ void GC0310_set_brightness(UINT16 para)
         case ISP_BRIGHT_HIGH:
 		//case AE_EV_COMP_13:
 			GC0310_write_cmos_sensor(0xd5, 0x70);
-			Sleep(5);
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x90);
 		//	GC0310_SET_PAGE0;
@@ -366,7 +363,6 @@ void GC0310_set_brightness(UINT16 para)
         default:
 		//case AE_EV_COMP_00:
 			GC0310_write_cmos_sensor(0xd5, 0x40);
-			Sleep(5);
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x60);
 		//	GC0310_SET_PAGE0;
@@ -386,8 +382,8 @@ void GC0310_set_saturation(UINT16 para)
     {
         case ISP_SAT_HIGH:
 			GC0310_write_cmos_sensor(0xfe, 0x00); 	
-			GC0310_write_cmos_sensor(0xd1, 0x45);
-			GC0310_write_cmos_sensor(0xd2, 0x45);			
+			GC0310_write_cmos_sensor(0xd1, 0x55);
+			GC0310_write_cmos_sensor(0xd2, 0x55);			
 			GC0310_write_cmos_sensor(0xfe, 0x00);
 			break;
         case ISP_SAT_LOW:
@@ -419,18 +415,18 @@ void GC0310_set_edge(UINT16 para)
     {
         case ISP_SAT_HIGH:
 			GC0310_write_cmos_sensor(0xfe, 0x00); 	
-			GC0310_write_cmos_sensor(0x95, 0x65);		
+			GC0310_write_cmos_sensor(0x95, 0xe5);		
 			GC0310_write_cmos_sensor(0xfe, 0x00);
 			break;
         case ISP_SAT_LOW:
 			GC0310_write_cmos_sensor(0xfe, 0x00); 	
-			GC0310_write_cmos_sensor(0x95, 0x25);
+			GC0310_write_cmos_sensor(0x95, 0x00);
 			GC0310_write_cmos_sensor(0xfe, 0x00);
 			break;
         case ISP_SAT_MIDDLE:
         default:
 			GC0310_write_cmos_sensor(0xfe, 0x00); 	
-			GC0310_write_cmos_sensor(0x95, 0x45);
+			GC0310_write_cmos_sensor(0x95, 0x65);
 			GC0310_write_cmos_sensor(0xfe, 0x00);
 			break;
 		//	return KAL_FALSE;
@@ -484,7 +480,7 @@ void GC0310StreamOn(void)
     GC0310_write_cmos_sensor(0xfe,0x03);
     GC0310_write_cmos_sensor(0x10,0x94); 
     GC0310_write_cmos_sensor(0xfe,0x00);    
-    Sleep(50);	
+    Sleep(10);	
 }
 
 void GC0310_MIPI_GetDelayInfo(uintptr_t delayAddr)
@@ -576,13 +572,20 @@ void GC0310_MIPI_GetExifInfo(uintptr_t exifAddr)
 }
 
 #if 0
-void GC0310_MIPI_get_AEAWB_lock(uintptr_t pAElockRet32, uintptr_t pAWBlockRet32)
+void GC0310_MIPI_get_AEAWB_lock(uintptr_t *pAElockRet32, uintptr_t *pAWBlockRet32)
 {
     *pAElockRet32 = 1;
     *pAWBlockRet32 = 1;
     SENSORDB("[GC0310]GetAEAWBLock,AE=%d ,AWB=%d\n,",(int)*pAElockRet32, (int)*pAWBlockRet32);
 }
 #endif
+
+void GC0310_MIPI_get_AEAWB_lock(unsigned long long *pAElockRet,unsigned long long  *pAWBlockRet)
+{
+    *pAElockRet = 1;
+    *pAWBlockRet = 1;
+    SENSORDB("[GC0310]GetAEAWBLock,AE=%d ,AWB=%d\n,", (int)*pAElockRet, (int)*pAWBlockRet);
+}
 
 /*************************************************************************
  * FUNCTION
@@ -1598,15 +1601,15 @@ UINT32 GC0310GetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
     pSensorInfo->SensorVsyncPolarity = SENSOR_CLOCK_POLARITY_LOW;
     pSensorInfo->SensorInterruptDelayLines = 1;
     pSensorInfo->SensroInterfaceType=SENSOR_INTERFACE_TYPE_MIPI;//MIPI setting
-    pSensorInfo->CaptureDelayFrame = 2;
-    pSensorInfo->PreviewDelayFrame = 2;
-    pSensorInfo->VideoDelayFrame = 4;
+    pSensorInfo->CaptureDelayFrame = 0;
+    pSensorInfo->PreviewDelayFrame = 0;
+    pSensorInfo->VideoDelayFrame = 0;
 
     pSensorInfo->SensorMasterClockSwitch = 0;
     pSensorInfo->SensorDrivingCurrent = ISP_DRIVING_6MA;
 
-    pSensorInfo->HighSpeedVideoDelayFrame = 4;
-    pSensorInfo->SlimVideoDelayFrame = 4;
+    pSensorInfo->HighSpeedVideoDelayFrame = 0;
+    pSensorInfo->SlimVideoDelayFrame = 0;
     pSensorInfo->SensorModeNum = 5;
 
     switch (ScenarioId)
@@ -1871,7 +1874,6 @@ BOOL GC0310_set_param_exposure(UINT16 para)
 			GC0310_write_cmos_sensor(0xfe, 0x01);
 			GC0310_write_cmos_sensor(0x13, 0x48);  // 48 to 60
 			GC0310_write_cmos_sensor(0xfe, 0x00);
-			Sleep(200);
 		break;
 		
 		case AE_EV_COMP_20:
@@ -2089,18 +2091,25 @@ UINT32 GC0310FeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 		 //SENSORDB("[4EC] F_GET_EXIF_INFO\n");
 		 GC0310_MIPI_GetExifInfo((uintptr_t)*feature_data);
 		 break;
-
-
 	case SENSOR_FEATURE_GET_AE_AWB_LOCK_INFO:
 		 SENSORDB("[GC0310] F_GET_AE_AWB_LOCK_INFO\n");
-		 //GC0310_MIPI_get_AEAWB_lock((uintptr_t)(*feature_data), (uintptr_t)*(feature_data+1));
+		 GC0310_MIPI_get_AEAWB_lock((feature_data), (feature_data+1));
 	break;    
 
 	case SENSOR_FEATURE_SET_MIN_MAX_FPS:
 		SENSORDB("SENSOR_FEATURE_SET_MIN_MAX_FPS:[%d,%d]\n",*pFeatureData32,*(pFeatureData32+1)); 
 		GC0310_MIPI_SetMaxMinFps((UINT32)*feature_data, (UINT32)*(feature_data+1));
 	break; 
+
+	case SENSOR_FEATURE_GET_AF_MAX_NUM_FOCUS_AREAS:
+		*pFeatureReturnPara32 = 0;
+		*pFeatureParaLen=4;
+	break;
 	
+	case SENSOR_FEATURE_GET_AE_MAX_NUM_METERING_AREAS:
+		*pFeatureReturnPara32 = 0;
+		*pFeatureParaLen=4;
+	break;
     default:
         break;
 	}
