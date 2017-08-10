@@ -2715,25 +2715,30 @@ static void __exit musb_cleanup(void)
 }
 module_exit(musb_cleanup);
 
+static int option;
 static int set_option(const char *val, const struct kernel_param *kp)
 {
-	int rv = param_set_int(val, kp);
-	unsigned char option;
+	int local_option;
+	int rv;
 
+	/* update module parameter */
+	rv = param_set_int(val, kp);
 	if (rv)
 		return rv;
 
-	rv = kstrtol(val, 10, (long *)&option);
+	/* update local_option */
+	rv = kstrtol(val, 10, (long *)&local_option);
 	if (rv != 0)
 		return rv;
-	DBG(0, "option:%d\n", option);
 
-	switch (option) {
+	DBG(0, "option:%d, local_option:%d\n", option, local_option);
+
+	switch (local_option) {
 	case 0:
-		DBG(0, "case %d\n", option);
+		DBG(0, "case %d\n", local_option);
 		break;
 	case 1:
-		DBG(0, "case %d\n", option);
+		DBG(0, "case %d\n", local_option);
 		break;
 	default:
 		break;
@@ -2744,24 +2749,25 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-static int option;
 module_param_cb(option, &option_param_ops, &option, 0644);
 static int set_musb_force_on(const char *val, const struct kernel_param *kp)
 {
-	int rv = param_set_int(val, kp);
-	unsigned char musb_force_on;
+	int option;
+	int rv;
 
-	if (rv)
-		return rv;
-
-	rv = kstrtol(val, 10, (long *)&musb_force_on);
+	rv = kstrtol(val, 10, (long *)&option);
 	if (rv != 0)
 		return rv;
-	DBG(0, "musb_force_on:%d\n", musb_force_on);
 
-	switch (musb_force_on) {
+	DBG(0, "musb_force_on:%d, option:%d\n", musb_force_on, option);
+	if (option == 0 || option == 1) {
+		DBG(0, "update to %d\n", option);
+		musb_force_on = option;
+	}
+
+	switch (option) {
 	case 2:
-		DBG(0, "case %d\n", musb_force_on);
+		DBG(0, "trigger reconnect\n");
 		mt_usb_connect();
 		break;
 	default:
