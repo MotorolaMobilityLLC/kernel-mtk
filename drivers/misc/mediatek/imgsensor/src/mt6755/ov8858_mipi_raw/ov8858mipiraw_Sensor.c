@@ -25,13 +25,13 @@
  * ------------
  *	 Source code of Sensor driver
  *	PengtaoFan
- *  0528:修改get_info,??mipi ??? *  0604:�?init preview 延时??0ms
- *  0604:??�init setting�?stream on,?otp??�?
- *  0608:??�ov???setting
- *  0703:for  修改?non continue mode 4800
+ *  0528:ä¿®æ¹get_info,??mipi ??? *  0604:å¢?init preview å»¶æ¶??0ms
+ *  0604:??­init settingä¸?stream on,?otp??è®?
+ *  0608:??°ov???setting
+ *  0703:for  ä¿®æ¹?non continue mode 4800
  *  0703:for  crc test 0x5002=00
- *  ---RD ??????? *  0714 ??�capture setting full size@30fps 24fps 15fps
- *  15072115172729: ??�nick??full size 30fps setting，for ???size �???��??
+ *  ---RD ??????? *  0714 ??¥capture setting full size@30fps 24fps 15fps
+ *  15072115172729: ??¥nick??full size 30fps settingï¼for ???size ä¸???®é??
  *------------------------------------------------------------------------------
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
@@ -183,7 +183,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.isp_driving_current = ISP_DRIVING_4MA, //mclk driving current
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
-    .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
+	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW8_B,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_2_LANE,//mipi lane num
