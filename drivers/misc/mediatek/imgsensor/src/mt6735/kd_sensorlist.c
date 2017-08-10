@@ -1572,8 +1572,6 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	u32 i = 0;
 	PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry\n");
 	for (i = 0; i < 2; i++) {
-		pInfo[i]->SensorHorFOV = 0;
-		pInfo[i]->SensorVerFOV = 0;
 		pInfo[i] =  &ginfo[i];
 		pConfig[i] =  &config[i];
 		pInfo1[i] =  &ginfo1[i];
@@ -1586,6 +1584,8 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 		pConfig4[i] =  &config4[i];
 		psensorResolution[i] =  &SensorResolution[i];
 		pScenarioId[i] =  &ScenarioId[i];
+		pInfo[i]->SensorHorFOV = 0;
+		pInfo[i]->SensorVerFOV = 0;
 	}
 
 	if (NULL == pSensorGetInfo) {
