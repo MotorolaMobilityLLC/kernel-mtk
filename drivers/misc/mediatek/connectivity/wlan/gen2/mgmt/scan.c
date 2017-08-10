@@ -2196,6 +2196,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 	/* UINT_8 aucChannelLoad[CHANNEL_NUM] = {0}; */
 
 	BOOLEAN fgIsFixedChannel;
+	BOOLEAN fgIsAbsentCandidateBss = TRUE;
 	ENUM_BAND_T eBand = 0;
 	UINT_8 ucChannel = 0;
 
@@ -2726,7 +2727,6 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 							SCN_BSS_JOIN_FAIL_CNT_RESET_SEC);
 					}
 				}
-
 				/* NOTE: To prevent SWING,
 				 * we do roaming only if target AP has at least 5dBm larger than us. */
 				if (prCandidateBssDesc->fgIsConnected) {
@@ -2766,10 +2766,25 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 		}
 	}
 
-
 	if (prCandidateBssDesc != NULL) {
 		DBGLOG(SCN, INFO,
-		       "SEARCH: Candidate BSS: %pM\n", prCandidateBssDesc->aucBSSID);
+		       "SEARCH: Candidate BSS: %pM, RSSI = %d\n", prCandidateBssDesc->aucBSSID,
+		       RCPI_TO_dBm(prCandidateBssDesc->ucRCPI));
+	} else {
+		DBGLOG(SCN, WARN, "SEARCH: Candidate BSS is NULL\n");
+		/* 4 <1> The outer loop to search for a candidate. */
+		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
+			if (EQUAL_SSID(prBssDesc->aucSSID, prBssDesc->ucSSIDLen,
+							prConnSettings->aucSSID, prConnSettings->ucSSIDLen)) {
+				fgIsAbsentCandidateBss = FALSE;
+				DBGLOG(SCN, INFO, "Find %s [%pM] in %d BSS!\n", prBssDesc->aucSSID
+					, prBssDesc->aucBSSID
+					, (UINT_32) prBSSDescList->u4NumElem);
+			}
+		}
+		if (fgIsAbsentCandidateBss == TRUE)
+			DBGLOG(SCN, WARN, "Driver can't find :%s in %d BSS list!\n", prConnSettings->aucSSID
+					, (UINT_32) prBSSDescList->u4NumElem);
 	}
 
 	return prCandidateBssDesc;

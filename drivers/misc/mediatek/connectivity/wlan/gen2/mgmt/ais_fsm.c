@@ -944,6 +944,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	UINT_8 ucChannel;
 	UINT_16 u2ScanIELen;
 	ENUM_AIS_STATE_T eOriPreState;
+	OS_SYSTIME rCurrentTime;
 
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
 
@@ -1182,16 +1183,26 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
 
-					/* Join req timeout means Bss had lost and no need to looking for */
-					if (prAisFsmInfo->rJoinReqTime != 0 &&
-						   CHECK_FOR_TIMEOUT(kalGetTimeTick(),
-								     prAisFsmInfo->rJoinReqTime,
-								     SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
-						prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
-						eNextState = AIS_STATE_IDLE;
-						fgIsTransition = TRUE;
+					/* if alway can't find traget bss, during new connect */
+					GET_CURRENT_SYSTIME(&rCurrentTime);
+					if ((prAisBssInfo->ucReasonOfDisconnect ==
+						    DISCONNECT_REASON_CODE_NEW_CONNECTION) &&
+						prAisFsmInfo->rJoinReqTime != 0 &&
+					   CHECK_FOR_TIMEOUT(rCurrentTime,
+							     prAisFsmInfo->rJoinReqTime,
+							     SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+						/* abort connection trial */
+						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
+						prAdapter->rWifiVar.rConnSettings.eReConnectLevel
+							= RECONNECT_LEVEL_MIN;
+
+						DBGLOG(AIS, WARN,
+							"Target BSS is NULL ,timeout and report disconnect!\n");
 						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
 								     WLAN_STATUS_CONNECT_INDICATION, NULL, 0);
+						eNextState = AIS_STATE_IDLE;
+						fgIsTransition = TRUE;
+						prAisFsmInfo->rJoinReqTime = 0;
 						break;
 					}
 
@@ -1639,6 +1650,11 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			break;
 
 		case AIS_STATE_REQ_CHANNEL_JOIN:
+
+			/*set timeout timer*/
+			cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rChannelTimeoutTimer
+				, AIS_JOIN_CH_REQUEST_INTERVAL);
+
 			/* send message to CNM for acquiring channel */
 			prMsgChReq = (P_MSG_CH_REQ_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_CH_REQ_T));
 			if (!prMsgChReq) {
@@ -2390,9 +2406,11 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 						aisAddBlacklist(prAdapter, prBssDesc);
 						GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
 						DBGLOG(AIS, INFO,
-							"Bss %pM join fail %d times,temp disable it at time:%u\n",
+							"Bss %pM join fail %d > %d times,temp disable it at time:%u\n",
 							prBssDesc->aucBSSID,
-							SCN_BSS_JOIN_FAIL_THRESOLD, prBssDesc->rJoinFailTime);
+							prBssDesc->ucJoinFailureCount,
+							SCN_BSS_JOIN_FAIL_THRESOLD,
+							prBssDesc->rJoinFailTime);
 					}
 					if (prBssDesc->prBlack)
 						prBssDesc->prBlack->u2AuthStatus = prStaRec->u2StatusCode;
@@ -3948,6 +3966,9 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	cnmMemFree(prAdapter, prMsgHdr);
 
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN && prAisFsmInfo->ucSeqNumOfChReq == ucTokenID) {
+		/*release timer*/
+		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rChannelTimeoutTimer);
+
 		/* 2. channel privilege has been approved */
 		prAisFsmInfo->u4ChGrantedInterval = u4GrantInterval;
 
@@ -4601,6 +4622,9 @@ VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
+	DBGLOG(AIS, INFO, "aisFsmRunEventChannelTimeout, CurrentState = [%d]\n"
+		, prAisFsmInfo->eCurrentState);
+
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_REMAIN_ON_CHANNEL) {
 		/* 1. release channel */
 		aisFsmReleaseCh(prAdapter);
@@ -4619,6 +4643,19 @@ VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 			aisFsmSteps(prAdapter, AIS_STATE_NORMAL_TR);
 		else
 			aisFsmSteps(prAdapter, AIS_STATE_IDLE);
+	} else if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN) {
+		/* 1. release channel */
+		aisFsmReleaseCh(prAdapter);
+
+		/* 2. stop channel timeout timer */
+		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rChannelTimeoutTimer);
+
+		prAisFsmInfo->fgIsInfraChannelFinished = FALSE;
+
+		prAisFsmInfo->fgIsChannelGranted = FALSE;
+		/* 3 switch to idle state */
+		aisFsmSteps(prAdapter, AIS_STATE_IDLE);
+
 	} else {
 		DBGLOG(AIS, WARN, "Unexpected remain_on_channel timeout event\n");
 #if DBG
