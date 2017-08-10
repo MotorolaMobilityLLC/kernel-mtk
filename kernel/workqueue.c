@@ -1095,6 +1095,9 @@ static void pwq_activate_delayed_work(struct work_struct *work)
 {
 	struct pool_workqueue *pwq = get_work_pwq(work);
 
+	if (!pwq)
+		pr_err("work(%p:%pf) isn't associated with any pwq\n",
+		       (void *)work, (void *)work->func);
 	trace_workqueue_activate_work(work);
 	move_linked_works(work, &pwq->pool->worklist, NULL);
 	__clear_bit(WORK_STRUCT_DELAYED_BIT, work_data_bits(work));
@@ -1808,8 +1811,12 @@ static void idle_worker_timeout(unsigned long __pool)
 static void send_mayday(struct work_struct *work)
 {
 	struct pool_workqueue *pwq = get_work_pwq(work);
-	struct workqueue_struct *wq = pwq->wq;
+	struct workqueue_struct *wq = NULL;
 
+	if (!pwq)
+		pr_err("work(%p:%pf) isn't associated with any pwq\n",
+		       (void *)work, (void *)work->func);
+	wq = pwq->wq;
 	lockdep_assert_held(&wq_mayday_lock);
 
 	if (!wq->rescuer)
@@ -1967,9 +1974,10 @@ __acquires(&pool->lock)
 {
 	struct pool_workqueue *pwq = get_work_pwq(work);
 	struct worker_pool *pool = worker->pool;
-	bool cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
+	bool cpu_intensive;
 	int work_color;
 	struct worker *collision;
+
 #ifdef CONFIG_LOCKDEP
 	/*
 	 * It is permissible to free the struct work_struct from
@@ -1982,6 +1990,10 @@ __acquires(&pool->lock)
 
 	lockdep_copy_map(&lockdep_map, &work->lockdep_map);
 #endif
+	if (!pwq)
+		pr_err("work(%p:%pf) isn't associated with any pwq\n",
+		       (void *)work, (void *)work->func);
+	cpu_intensive = pwq->wq->flags & WQ_CPU_INTENSIVE;
 	/* ensure we're on the correct CPU */
 	WARN_ON_ONCE(!(pool->flags & POOL_DISASSOCIATED) &&
 		     raw_smp_processor_id() != pool->cpu);
