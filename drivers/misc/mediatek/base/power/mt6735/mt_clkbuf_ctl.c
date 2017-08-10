@@ -230,15 +230,15 @@ static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 	u32 clk_buf_en[CLKBUF_NUM], i;
 	char cmd[32];
 
-	if (sscanf(buf, "%s %x %x %x %x", cmd, &clk_buf_en[0], &clk_buf_en[1], &clk_buf_en[2], &clk_buf_en[3]) != 5)
+	if (sscanf(buf, "%16s %x %x %x %x", cmd, &clk_buf_en[0], &clk_buf_en[1], &clk_buf_en[2], &clk_buf_en[3]) != 5)
 		return -EPERM;
 
 	for (i = 0; i < CLKBUF_NUM; i++)
 		clk_buf_swctrl[i] = clk_buf_en[i];
 
-	if (!strcmp(cmd, "bsi"))
+	if (!strncmp(cmd, "bsi", sizeof(cmd) - 1))
 		spm_clk_buf_ctrl(clk_buf_swctrl);
-	else if (!strcmp(cmd, "apbsi"))
+	else if (!strncmp(cmd, "apbsi", sizeof(cmd) - 1))
 		clk_buf_Send_BSI_CW(clk_buf_swctrl);
 	else
 		return -EINVAL;
