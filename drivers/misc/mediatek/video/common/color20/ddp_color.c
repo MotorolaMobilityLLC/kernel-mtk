@@ -1070,7 +1070,7 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	COLOR_DBG("DpEngine_COLORonInit(), en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
-		  g_split_window_x, g_split_window_y);
+		g_split_window_x, g_split_window_y);
 	_color_reg_mask(cmdq, DISP_COLOR_DBG_CFG_MAIN + offset, g_split_en << 3, 0x00000008);
 	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, g_split_window_x);
 	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, g_split_window_y);
@@ -1135,7 +1135,14 @@ void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, void *__cmdq)
 #endif
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
+#if defined(CONFIG_ARCH_MT6797)
+		/* RDMA & OVL will enable wide-gamut function*/
+		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+#else
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+#endif
+
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
 #else
@@ -1426,7 +1433,14 @@ static void color_write_hw_reg(DISP_MODULE_ENUM module,
 #endif
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
+#if defined(CONFIG_ARCH_MT6797)
+		/* RDMA & OVL will enable wide-gamut function*/
+		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+#else
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+#endif
+
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(cmdq, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);
 #else
@@ -2749,7 +2763,13 @@ void set_color_bypass(DISP_MODULE_ENUM module, int bypass, void *cmdq_handle)
 		_color_reg_mask(cmdq_handle, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
+#if defined(CONFIG_ARCH_MT6797)
+		/* RDMA & OVL will enable wide-gamut function*/
+		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+		_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+#else
 		_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+#endif
 		/* also set no rounding on Y2R */
 		_color_reg_mask(cmdq_handle, DISP_COLOR_CM2_EN + offset, 0x11, 0x11);
 
@@ -2786,7 +2806,14 @@ static int _color_bypass(DISP_MODULE_ENUM module, int bypass)
 		_color_reg_mask(NULL, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
+#if defined(CONFIG_ARCH_MT6797)
+		/* RDMA & OVL will enable wide-gamut function*/
+		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
+		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
+#else
 		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x01);
+#endif
+
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 		_color_reg_mask(NULL, DISP_COLOR_CM2_EN + offset, 0x01, 0x11);	/* also set no rounding on Y2R */
 #else
