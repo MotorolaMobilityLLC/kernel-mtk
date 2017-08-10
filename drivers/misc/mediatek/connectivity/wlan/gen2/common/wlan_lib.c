@@ -5297,6 +5297,8 @@ WLAN_STATUS wlanCfgParse(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32
 	CHAR **args;
 	INT_32 nargs;
 
+	kalMemSet(&state, 0, sizeof(struct WLAN_CFG_PARSE_STATE_S));
+
 	if (pucConfigBuf == NULL) {
 		ASSERT(0);
 		return WLAN_STATUS_FAILURE;
