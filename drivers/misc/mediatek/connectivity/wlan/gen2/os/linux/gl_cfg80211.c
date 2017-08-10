@@ -764,6 +764,9 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 
 	/*prGlueInfo->prScanRequest = request;*/
 #endif
+	/* temp save request ieee80211_channel info */
+	rScanRequest.puPartialScanReq = (PUINT_8)request;
+	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan request=%p\n", rScanRequest.puPartialScanReq);
 
 	prGlueInfo->prScanRequest = request;
 

@@ -572,6 +572,8 @@ struct _GLUE_INFO_T {
 	UINT_32 IsrSoftWareCnt;
 	UINT_32 IsrTxCnt;
 	UINT_32 IsrRxCnt;
+	/* save partial scan channel information */
+	PUINT_8	puScanChannel;
 	UINT_64 u8SkbToDriver;
 	UINT_64 u8SkbFreed;
 };

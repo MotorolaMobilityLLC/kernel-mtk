@@ -815,6 +815,8 @@ typedef struct _PARAM_SCAN_REQUEST_EXT_T {
 	PARAM_SSID_T rSsid;
 	UINT_32 u4IELength;
 	PUINT_8 pucIE;
+	/* partial scan temp save request info */
+	PUINT_8 puPartialScanReq;
 } PARAM_SCAN_REQUEST_EXT_T, *P_PARAM_SCAN_REQUEST_EXT_T;
 
 /*--------------------------------------------------------------*/

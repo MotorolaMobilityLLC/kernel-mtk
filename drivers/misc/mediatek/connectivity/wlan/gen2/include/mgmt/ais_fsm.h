@@ -112,6 +112,8 @@ typedef enum _ENUM_AIS_REQUEST_TYPE_T {
 typedef struct _AIS_REQ_HDR_T {
 	LINK_ENTRY_T rLinkEntry;
 	ENUM_AIS_REQUEST_TYPE_T eReqType;
+	/* temp save partial scan channel info */
+	PUINT_8	pu8ChannelInfo;
 } AIS_REQ_HDR_T, *P_AIS_REQ_HDR_T;
 
 typedef struct _AIS_REQ_CHNL_INFO {

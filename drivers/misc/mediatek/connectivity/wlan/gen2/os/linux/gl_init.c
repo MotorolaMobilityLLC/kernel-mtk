@@ -2421,6 +2421,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	prGlueInfo->fgIsMacAddrOverride = FALSE;
 	prGlueInfo->fgIsRegistered = FALSE;
 	prGlueInfo->prScanRequest = NULL;
+	prGlueInfo->puScanChannel = NULL;
 
 #if CFG_SUPPORT_HOTSPOT_2_0
 	/* Init DAD */

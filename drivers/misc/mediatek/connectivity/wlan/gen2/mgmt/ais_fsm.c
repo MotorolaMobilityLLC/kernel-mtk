@@ -1241,27 +1241,45 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->ucChannelListNum = 1;
 				prScanReqMsg->arChnlInfoList[0].eBand = eBand;
 				prScanReqMsg->arChnlInfoList[0].ucChannelNum = ucChannel;
-			} else {
-#if 0
-				aisFsmSetChannelInfo(prAdapter, prScanReqMsg, prAisFsmInfo->eCurrentState);
-#endif
-				if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
-					== BAND_NULL) {
-					if (prAdapter->fgEnable5GBand == TRUE)
-						prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-					else
-						prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-				} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
-						== BAND_2G4) {
-					prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
-				} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
-						== BAND_5G) {
-					prScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
-				} else {
-					prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
-					ASSERT(0);
-				}
+			} else if ((prAdapter->prGlueInfo != NULL) &&
+				(prAdapter->prGlueInfo->puScanChannel != NULL)) {
+				/* handle partial scan channel info */
+				P_PARTIAL_SCAN_INFO channel_t;
+				UINT_32	u4size;
 
+				channel_t = (P_PARTIAL_SCAN_INFO)prAdapter->prGlueInfo->puScanChannel;
+
+				/* set partial scan */
+				prScanReqMsg->ucChannelListNum = channel_t->ucChannelListNum;
+				u4size = sizeof(channel_t->arChnlInfoList);
+
+				DBGLOG(AIS, TRACE,
+					"SCAN: channel num = %d, total size=%d\n",
+					prScanReqMsg->ucChannelListNum, u4size);
+
+				kalMemCopy(&(prScanReqMsg->arChnlInfoList), &(channel_t->arChnlInfoList),
+					u4size);
+
+				/* clear prGlueInfo partial scan info */
+				prAdapter->prGlueInfo->puScanChannel = NULL;
+				kalMemFree(channel_t, VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+
+				/* set scan channel type for partial scan */
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_NULL) {
+				if (prAdapter->fgEnable5GBand == TRUE)
+					prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+				else
+					prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
+					== BAND_2G4) {
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_2G4;
+			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX]
+					== BAND_5G) {
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_5G;
+			} else {
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
+				ASSERT(0);
 			}
 
 			if (prAisFsmInfo->u4ScanIELength > 0) {
@@ -3836,7 +3854,16 @@ P_AIS_REQ_HDR_T aisFsmGetNextRequest(IN P_ADAPTER_T prAdapter)
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	LINK_REMOVE_HEAD(&(prAisFsmInfo->rPendingReqList), prPendingReqHdr, P_AIS_REQ_HDR_T);
+	/* save partial scan puScanChannel info to prGlueInfo */
+	if ((prPendingReqHdr != NULL) && (prAdapter->prGlueInfo != NULL)) {
+		if (prAdapter->prGlueInfo->puScanChannel != NULL)
+			DBGLOG(INIT, TRACE, "prGlueInfo error puScanChannel=%p", prAdapter->prGlueInfo->puScanChannel);
 
+		if (prPendingReqHdr->pu8ChannelInfo != NULL) {
+			prAdapter->prGlueInfo->puScanChannel = prPendingReqHdr->pu8ChannelInfo;
+			prPendingReqHdr->pu8ChannelInfo = NULL;
+		}
+	}
 	return prPendingReqHdr;
 }
 
@@ -3867,7 +3894,13 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 	}
 
 	prAisReq->eReqType = eReqType;
-
+	prAisReq->pu8ChannelInfo = NULL;
+	/* save partial scan puScanChannel info to pending scan */
+	if ((prAdapter->prGlueInfo != NULL) &&
+		(prAdapter->prGlueInfo->puScanChannel != NULL)) {
+		prAisReq->pu8ChannelInfo = prAdapter->prGlueInfo->puScanChannel;
+		prAdapter->prGlueInfo->puScanChannel = NULL;
+	}
 	/* attach request into pending request list */
 	LINK_INSERT_TAIL(&prAisFsmInfo->rPendingReqList, &prAisReq->rLinkEntry);
 
@@ -3892,8 +3925,13 @@ VOID aisFsmFlushRequest(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 
-	while ((prAisReq = aisFsmGetNextRequest(prAdapter)) != NULL)
+	while ((prAisReq = aisFsmGetNextRequest(prAdapter)) != NULL) {
+		/* for partional scan, if channel infor exist, free channel info */
+		if (prAisReq->pu8ChannelInfo != NULL)
+			kalMemFree(prAisReq->pu8ChannelInfo, VIR_MEM_TYPE, sizeof(PARTIAL_SCAN_INFO));
+
 		cnmMemFree(prAdapter, prAisReq);
+	}
 
 }
 
