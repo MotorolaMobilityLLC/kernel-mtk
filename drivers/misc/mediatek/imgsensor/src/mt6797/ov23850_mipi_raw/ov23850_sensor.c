@@ -3028,7 +3028,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.line_length = imgsensor_info.pre.linelength;
     imgsensor.frame_length = imgsensor_info.pre.framelength;
     imgsensor.min_frame_length = imgsensor_info.pre.framelength;
-    imgsensor.current_fps = imgsensor.current_fps;
+    //imgsensor.current_fps = imgsensor.current_fps;
     //imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
