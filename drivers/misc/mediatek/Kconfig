@@ -339,6 +339,15 @@ config MTK_MEMCFG
 	  fragmentation test tools. The features
 	  cost additional memory.
 
+config MTK_LOW_RAM_DEBUG
+	bool "Disable debug feature for low ram device"
+	default n
+	help
+	  Some debug feature such as SLAB_STORE_USER us lots of memory
+	  which increase huge memory pressure on low memory device.
+	  This option disable some debug feature for low ram devices.
+	  (ex. SLAB_STORE_USER)
+
 config MTK_CACHE_DUMP
 	bool "enable cache dump"
 	depends on MTK_MEM
