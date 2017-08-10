@@ -686,9 +686,12 @@ static void cldma_rx_done(struct work_struct *work)
 	struct md_cd_queue *queue = container_of(work, struct md_cd_queue, cldma_rx_work);
 	struct ccci_modem *md = queue->modem;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	int ret;
 
 	md->latest_q_rx_time[queue->index] = local_clock();
-	queue->tr_ring->handle_rx_done(queue, queue->budget, 1);
+	ret = queue->tr_ring->handle_rx_done(queue, queue->budget, 1);
+	if (ret == ALL_CLEAR)
+		ccci_md_status_notice(md, IN, -1, queue->index, RX_FLUSH);
 	/* enable RX_DONE interrupt */
 	md_cd_lock_cldma_clock_src(1);
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMCR0, CLDMA_BM_ALL_QUEUE & (1 << queue->index));
@@ -1985,6 +1988,7 @@ static int md_cd_broadcast_state(struct ccci_modem *md, MD_STATE state)
 		notify_time_update();
 		break;
 	case RX_IRQ:
+	case RX_FLUSH:
 	case TX_IRQ:
 	case TX_FULL:
 		CCCI_ERROR_LOG(md->index, TAG, "%ps broadcast %d to ports!\n", __builtin_return_address(0), state);
