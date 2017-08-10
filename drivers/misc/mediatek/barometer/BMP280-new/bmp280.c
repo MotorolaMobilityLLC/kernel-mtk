@@ -319,11 +319,11 @@ static int bmp_get_chip_type(struct i2c_client *client)
 	case BMP280_CHIP_ID2:
 	case BMP280_CHIP_ID3:
 		obj->sensor_type = BMP280_TYPE;
-		strcpy(obj->sensor_name, "bmp280");
+		strncpy(obj->sensor_name, "bmp280", sizeof(obj->sensor_name));
 		break;
 	default:
 		obj->sensor_type = INVALID_TYPE;
-		strcpy(obj->sensor_name, "unknown sensor");
+		strncpy(obj->sensor_name, "unknown sensor", sizeof(obj->sensor_name));
 		break;
 	}
 
@@ -1340,7 +1340,7 @@ static long bmp_unlocked_ioctl(struct file *file, unsigned int cmd,
 			err = -EINVAL;
 			break;
 		}
-		strcpy(strbuf, obj->sensor_name);
+		strncpy(strbuf, obj->sensor_name, sizeof(strbuf));
 		if (copy_to_user(data, strbuf, strlen(strbuf)+1)) {
 			err = -EFAULT;
 			break;
@@ -1461,13 +1461,13 @@ static int bmp_resume(struct i2c_client *client)
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
 
-	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
-		BAR_FUN();
-
 	if (NULL == obj) {
 		BAR_ERR("null pointer\n");
 		return -EINVAL;
 	}
+
+	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
+		BAR_FUN();
 
 	bmp_power(obj->hw, 1);
 
@@ -1494,7 +1494,7 @@ static int bmp_resume(struct i2c_client *client)
 static int bmp_i2c_detect(struct i2c_client *client,
 		struct i2c_board_info *info)
 {
-	strcpy(info->type, BMP_DEV_NAME);
+	strncpy(info->type, BMP_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
