@@ -5103,6 +5103,75 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 }
 
+static int msdc_ops_switch_volt_sdio(struct mmc_host *mmc, struct mmc_ios *ios)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	void __iomem *base = host->base;
+	int err = 0;
+	u32 timeout = 100;
+	u32 retry = 10;
+	u32 status;
+
+	if (host->hw->host_function == MSDC_EMMC)
+		return 0;
+
+	if (ios->signal_voltage != MMC_SIGNAL_VOLTAGE_330) {
+		/* make sure SDC is not busy (TBC) */
+		/* WAIT_COND(!SDC_IS_BUSY(), timeout, timeout); */
+		err = (unsigned int)-EILSEQ;
+		msdc_retry(sdc_is_busy(), retry, timeout, host->id);
+		if (retry == 0) {
+			err = (unsigned int)-ETIMEDOUT;
+			goto out;
+		}
+
+		/* pull up disabled in CMD and DAT[3:0]
+		   to allow card drives them to low */
+		/* check if CMD/DATA lines both 0 */
+		if ((MSDC_READ32(MSDC_PS) & ((1 << 24) | (0xF << 16))) == 0) {
+			/* pull up disabled in CMD and DAT[3:0] */
+			msdc_pin_config(host, MSDC_PIN_PULL_NONE);
+
+			if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
+
+				if (host->power_switch)
+					host->power_switch(host, 1);
+
+			}
+			/* wait at least 5ms for card to switch to 1.8v signal*/
+			mdelay(10);
+
+			/* config clock to 10~12MHz mode for
+			   volt switch detection by host. */
+
+			/* For FPGA 13MHz clock, this not work */
+			msdc_set_mclk(host, MMC_TIMING_LEGACY, 260000);
+
+			/* pull up enabled in CMD and DAT[3:0] */
+			msdc_pin_config(host, MSDC_PIN_PULL_UP);
+			mdelay(105);
+
+			/* start to detect volt change
+			   by providing 1.8v signal to card */
+			MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_BV18SDT);
+
+			/* wait at max. 1ms */
+			mdelay(1);
+			/* ERR_MSG("before read status"); */
+
+			while ((status =
+				MSDC_READ32(MSDC_CFG)) & MSDC_CFG_BV18SDT)
+				;
+
+			if (status & MSDC_CFG_BV18PSS)
+				err = 0;
+		}
+	}
+ out:
+
+	return err;
+}
+
 static int msdc_card_busy(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -5206,6 +5275,21 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.card_event                    = msdc_ops_card_event,
 	.enable_sdio_irq               = msdc_ops_enable_sdio_irq,
 	.start_signal_voltage_switch   = msdc_ops_switch_volt,
+	.execute_tuning                = msdc_execute_tuning,
+	.hw_reset                      = msdc_card_reset,
+	.card_busy                     = msdc_card_busy,
+};
+
+static struct mmc_host_ops mt_msdc_ops_sdio = {
+	.post_req                      = msdc_post_req,
+	.pre_req                       = msdc_pre_req,
+	.request                       = msdc_ops_request,
+	.set_ios                       = msdc_ops_set_ios,
+	.get_ro                        = msdc_ops_get_ro,
+	.get_cd                        = msdc_ops_get_cd,
+	.card_event                    = msdc_ops_card_event,
+	.enable_sdio_irq               = msdc_ops_enable_sdio_irq,
+	.start_signal_voltage_switch   = msdc_ops_switch_volt_sdio,
 	.execute_tuning                = msdc_execute_tuning,
 	.hw_reset                      = msdc_card_reset,
 	.card_busy                     = msdc_card_busy,
@@ -5709,6 +5793,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->f_min      = HOST_MIN_MCLK;
 	mmc->f_max      = HOST_MAX_MCLK;
 	mmc->ocr_avail  = MSDC_OCR_AVAIL;
+
+	if (host->hw->host_function == MSDC_SDIO)
+		mmc->ops        = &mt_msdc_ops_sdio;
 
 	/* For sd card: MSDC_SYS_SUSPEND | MSDC_WP_PIN_EN | MSDC_CD_PIN_EN |
 			MSDC_REMOVABLE | MSDC_HIGHSPEED,
