@@ -3224,7 +3224,7 @@ try_again:
 				aisCalculateBlackListScore(prAdapter, prBssDesc);
 
 		cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
-		DBGLOG(SCN, INFO, "cRSSI %d, %pM\n", cRssi, prBssDesc->aucBSSID);
+
 #if CFG_SELECT_BSS_BASE_ON_RSSI
 		if (cMaxRssi >= -55) {
 			if (cRssi < -55)
@@ -3262,8 +3262,8 @@ try_again:
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
 
 		DBGLOG(SCN, INFO,
-			"%pM Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
-			prBssDesc->aucBSSID, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
+			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
 			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
 		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 			if (!prCandBssDescForLowRssi) {
