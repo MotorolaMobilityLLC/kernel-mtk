@@ -102,15 +102,6 @@ static unsigned long timer_pos;
  * PMIC extern function
  ******************************************************************************/
 
-#define PMIC_DEBUG_PR_DBG
-/*
-#define PMICTAG                "[PMIC] "
-#if defined PMIC_DEBUG_PR_DBG
-#define PMICLOG(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
-#else
-#define PMICLOG(fmt, arg...)
-#endif
-*/
 #ifndef CONFIG_KEYBOARD_MTK /* fix kpd build error only */
 void kpd_pwrkey_pmic_handler(unsigned long pressed)
 {}

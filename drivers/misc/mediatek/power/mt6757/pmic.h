@@ -51,6 +51,7 @@ do {					\
 /*#define PMIC_DEBUG_PR_DBG*/
 
 #define PMICTAG                "[PMIC] "
+#if 0
 #ifdef PMIC_DEBUG
 #define PMICDEB(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
 #define PMICFUC(fmt, arg...) pr_debug(PMICTAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
@@ -60,8 +61,22 @@ do {					\
 #else
 #define PMICLOG(fmt, arg...)
 #endif  /*-- defined PMIC_DEBUG_PR_DBG --*/
+#endif
 #define PMICERR(fmt, arg...)   pr_debug(PMICTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #define PMICREG(fmt, arg...)   pr_debug(PMICTAG fmt, ##arg)
+
+extern unsigned int gPMICDbgLvl;
+
+#define PMIC_LOG_DBG     4
+#define PMIC_LOG_INFO    3
+#define PMIC_LOG_NOT     2
+#define PMIC_LOG_WARN    1
+#define PMIC_LOG_ERR     0
+
+#define PMICLOG(fmt, arg...) do { \
+	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
+		pr_err(PMICTAG "%s: " fmt, __func__ , ##arg); \
+} while (0)
 
 #define PMIC_EN REGULATOR_CHANGE_STATUS
 #define PMIC_VOL REGULATOR_CHANGE_VOLTAGE
