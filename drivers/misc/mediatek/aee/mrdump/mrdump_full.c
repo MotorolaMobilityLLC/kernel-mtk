@@ -166,7 +166,7 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 		cpu_relax();
 }
 
-static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record, int cpu)
+static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record)
 {
 	int timeout;
 
@@ -202,7 +202,7 @@ static void mrdump_stop_noncore_cpu(void *unused)
 		cpu_relax();
 }
 
-static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record, int cpu)
+static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record)
 {
 	unsigned long msecs;
 	atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
@@ -234,7 +234,7 @@ static void __mrdump_reboot_va(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	local_fiq_disable();
 
 #if defined(CONFIG_SMP)
-	__mrdump_reboot_stop_all(crash_record, cpu);
+	__mrdump_reboot_stop_all(crash_record);
 #endif
 
 	cpu = get_HW_cpuid();
