@@ -830,6 +830,7 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 {
 	enum ppm_power_state cur_hica_state = ppm_hica_get_cur_state();
 	enum ppm_power_state final_state;
+	enum ppm_power_state perf_state = PPM_POWER_STATE_NONE;
 	struct ppm_policy_data *pos;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
@@ -868,6 +869,16 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 					goto skip_pwr_check;
 				}
 				break;
+			case PPM_POLICY_USER_LIMIT:
+				if (pos->get_power_state_cb) {
+					enum ppm_power_state state = (perf_state == PPM_POWER_STATE_NONE)
+									? pos->get_power_state_cb(cur_hica_state)
+									: pos->get_power_state_cb(perf_state);
+
+					if (state != cur_hica_state)
+						final_state = state;
+				}
+				break;
 			default:
 				/* overwrite original HICA state */
 				if (pos->get_power_state_cb) {
@@ -875,6 +886,8 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 
 					if (state != cur_hica_state)
 						final_state = state;
+					if (pos->policy == PPM_POLICY_PERF_SERV)
+						perf_state = state;
 				}
 				break;
 			}
