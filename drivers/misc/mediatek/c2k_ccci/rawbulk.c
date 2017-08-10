@@ -305,6 +305,7 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 	int ndowns;
 	int upsz;
 	int downsz;
+	long tmp_val;
 
 	struct rawbulk_function *fn;
 
@@ -343,7 +344,8 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 		if (idx == ATTR_ENABLE) {
 			int ret;
 
-			ret = kstrtol(buf, 0, (long *)&enable);
+			ret = kstrtol(buf, 0, (long *)&tmp_val);
+			enable = tmp_val;
 			C2K_NOTE("enable:%d\n", enable);
 
 #ifdef C2K_USB_UT
@@ -454,19 +456,22 @@ static ssize_t rawbulk_attr_store(struct device *dev, struct device_attribute *a
 			if (check_enable_state(fn)) {
 				int val, ret;
 
-				ret = kstrtol(buf, 0, (long *)&val);
+				ret = kstrtol(buf, 0, (long *)&tmp_val);
+				val = tmp_val;
 				modem_dtr_set(val, 1);
 			}
 		}
 	} else if (idx == ATTR_AUTORECONN) {
 		int val, ret;
 
-		ret = kstrtol(buf, 0, (long *)&val);
+		ret = kstrtol(buf, 0, (long *)&tmp_val);
+		val = tmp_val;
 		fn->autoreconn = !!val;
 	} else {
 		int val, ret;
 
-		ret = kstrtol(buf, 0, (long *)&val);
+		ret = kstrtol(buf, 0, (long *)&tmp_val);
+		val = tmp_val;
 		switch (idx) {
 		case ATTR_NUPS:
 			nups = val;
