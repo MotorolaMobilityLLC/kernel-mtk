@@ -1,4 +1,16 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+/*
 ** Id: //Department/DaVinci/BRANCHES/HS2_DEV_SW/MT6620_WIFI_DRIVER_V2_1_HS_2_0/mgmt/hs20.c#2
 */
 
@@ -10,10 +22,6 @@
 
 */
 
-/*
-** Log: hs20.c
- *
- */
 
  /*******************************************************************************
 *                         C O M P I L E R   F L A G S
