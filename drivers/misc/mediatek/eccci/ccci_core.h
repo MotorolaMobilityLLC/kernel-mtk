@@ -161,7 +161,6 @@ struct ccci_modem_cfg {
 #define MD_SETTING_ENABLE (1<<0)
 #define MD_SETTING_RELOAD (1<<1)
 #define MD_SETTING_FIRST_BOOT (1<<2)	/* this is the first time of boot up */
-#define MD_SETTING_STOP_RETRY_BOOT (1<<3)
 #define MD_SETTING_DUMMY  (1<<7)
 
 struct ccci_mem_layout {	/* all from AP view, AP has no haredware remap after MT6592 */
