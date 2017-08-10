@@ -1096,7 +1096,7 @@ static void pchr_turn_on_charging(void)
 		battery_pump_express_algorithm_start();
 #endif
 
-		/* Set Charging Current
+		/* Set Charging Current */
 		if (get_usb_current_unlimited()) {
 			g_temp_CC_value = batt_cust_data.ac_charger_current;
 			battery_log(BAT_LOG_FULL,
@@ -1110,9 +1110,9 @@ static void pchr_turn_on_charging(void)
 				battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 				select_charging_curret();
 			}
-		}*/
+		}
 
-		/* Set Charging Current */
+		/* Set Charging Current
 		if (g_bcct_flag == 1) {
 			battery_log(BAT_LOG_FULL,
 					"[BATTERY] select_charging_curret_bcct !\n");
@@ -1126,7 +1126,7 @@ static void pchr_turn_on_charging(void)
 				battery_log(BAT_LOG_FULL, "[BATTERY] select_charging_current !\n");
 				select_charging_curret();
 			}
-		}
+		} */
 
 		if (g_temp_CC_value == CHARGE_CURRENT_0_00_MA) {
 			charging_enable = KAL_FALSE;
