@@ -388,7 +388,7 @@ static void sdcardfs_work_handle(struct work_struct *w)
 
 	if (pw->operation == SDCARDFS_WQOP_CREATE)
 		sdcardfs_work_handle_create(pw);
-	if (pw->operation == SDCARDFS_WQOP_MKDIR)
+	else if (pw->operation == SDCARDFS_WQOP_MKDIR)
 		sdcardfs_work_handle_mkdir(pw);
 	else if (pw->operation == SDCARDFS_WQOP_UNLINK)
 		sdcardfs_work_handle_unlink(pw);
