@@ -1494,7 +1494,7 @@ static inline int adopt_CAMERA_HW_GetResolution(void *pBuf)
 /*******************************************************************************
 * adopt_CAMERA_HW_GetInfo
 ********************************************************************************/
-static inline int adopt_CAMERA_HW_GetInfo(void *pBuf)
+static int adopt_CAMERA_HW_GetInfo(void *pBuf)
 {
 	ACDK_SENSOR_GETINFO_STRUCT *pSensorGetInfo = (ACDK_SENSOR_GETINFO_STRUCT *)pBuf;
 	MSDK_SENSOR_INFO_STRUCT info[2], *pInfo[2];
@@ -1553,7 +1553,7 @@ MSDK_SENSOR_INFO_STRUCT ginfo2[2];
 MSDK_SENSOR_INFO_STRUCT ginfo3[2];
 MSDK_SENSOR_INFO_STRUCT ginfo4[2];
 /* adopt_CAMERA_HW_GetInfo() */
-static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
+static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 {
 	IMAGESENSOR_GETINFO_STRUCT *pSensorGetInfo = (IMAGESENSOR_GETINFO_STRUCT *)pBuf;
 	ACDK_SENSOR_INFO2_STRUCT SensorInfo = {0};
@@ -1822,7 +1822,7 @@ static inline int adopt_CAMERA_HW_Control(void *pBuf)
 /*******************************************************************************
 * adopt_CAMERA_HW_FeatureControl
 ********************************************************************************/
-static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
+static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 {
 	ACDK_SENSOR_FEATURECONTROL_STRUCT *pFeatureCtrl = (ACDK_SENSOR_FEATURECONTROL_STRUCT *)pBuf;
 	unsigned int FeatureParaLen = 0;
