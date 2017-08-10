@@ -567,22 +567,6 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	return true;
 }
 
-static bool vow_service_SetVowMode(unsigned long arg)
-{
-	bool ret;
-
-	vow_service_GetParameter(arg);
-	vowserv.ipimsgwait = true;
-	vowserv.vow_info_dsp[0] = vowserv.vow_info_apuser[0];
-
-	PRINTK_VOWDRV("SetVowMode:mode_%x\n", vowserv.vow_info_dsp[0]);
-
-	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_SETMODE, (void *)&vowserv.vow_info_dsp[0], 2, 0, 1) == false)
-		;
-	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_SETMODE);
-	return ret;
-}
-
 static bool vow_service_SetSpeakerModel(unsigned long arg)
 {
 	int I;
@@ -647,142 +631,6 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
-}
-
-static bool vow_service_SetInitModel(unsigned long arg)
-{
-/*
-	bool ret;
-	char *ptr8;
-
-	if (vowserv.vow_init_model != NULL) {
-		vfree(vowserv.vow_init_model);
-		vowserv.vow_init_model = NULL;
-	}
-
-	vow_service_GetParameter(arg);
-
-	vowserv.vow_init_model = vmalloc(vowserv.vow_info_apuser[2]);
-
-	PRINTK_VOWDRV("SetInitModel: allocate memory, addr:%lu size:%lu\n",
-		      vowserv.vow_info_apuser[2], (unsigned long)vowserv.vow_init_model);
-
-	if (!vowserv.vow_init_model) {
-		PRINTK_VOWDRV("SetInitModel: allocate memory fail, size:%lu\n",
-			      vowserv.vow_info_apuser[2]);
-		return false;
-	}
-
-	if (vow_service_CopyModel(VOW_MODEL_INIT, 0) != 0)
-		return false;
-
-	ptr8 = (char *)vowserv.vow_init_model;
-
-	PRINTK_VOWDRV("SetInitModel:CheckValue:%x %x %x %x %x\n",
-		      *(int *)&ptr8[0], *(int *)&ptr8[1600], *(int *)&ptr8[2240],
-		      *(short *)&ptr8[2880], *(short *)&ptr8[15360]);
-
-	vowserv.vow_info_dsp[0] = VOW_MODEL_INIT;
-	vowserv.vow_info_dsp[1] = 0;
-	vowserv.vow_info_dsp[2] = dma_map_single(&dev,
-						 vowserv.vow_init_model,
-						 vowserv.vow_info_apuser[2],
-						 DMA_TO_DEVICE);
-	vowserv.vow_info_dsp[3] = vowserv.vow_info_apuser[2];
-	dma_sync_single_for_device(&dev,
-				   vowserv.vow_info_dsp[2],
-				   vowserv.vow_info_apuser[2],
-				   DMA_TO_DEVICE);
-
-	PRINTK_VOWDRV("SetInitModel:model_%x,addr_%x, id_%x, size_%x\n",
-		      vowserv.vow_info_dsp[0], vowserv.vow_info_dsp[2],
-		      vowserv.vow_info_dsp[1], vowserv.vow_info_dsp[3]);
-
-	vowserv.ipimsgwait = true;
-	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
-		;
-	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
-	return ret;
-*/
-	return true;
-}
-
-static bool vow_service_SetNoiseModel(unsigned long arg)
-{
-/*
-	bool ret;
-
-	if (vowserv.vow_noise_model != NULL) {
-		vfree(vowserv.vow_noise_model);
-		vowserv.vow_noise_model = NULL;
-	}
-
-	vow_service_GetParameter(arg);
-	vowserv.vow_noise_model = vmalloc(vowserv.vow_info_apuser[2]);
-	if (vow_service_CopyModel(VOW_MODEL_NOISE, 0) != 0)
-		return false;
-	vowserv.vow_info_dsp[0] = VOW_MODEL_NOISE;
-	vowserv.vow_info_dsp[1] = 0;
-	vowserv.vow_info_dsp[2] = dma_map_single(&dev,
-						 vowserv.vow_noise_model,
-						 vowserv.vow_info_apuser[2],
-						 DMA_TO_DEVICE);
-	vowserv.vow_info_dsp[3] = vowserv.vow_info_apuser[2];
-	dma_sync_single_for_device(&dev,
-				   vowserv.vow_info_dsp[2],
-				   vowserv.vow_info_apuser[2],
-				   DMA_TO_DEVICE);
-
-
-	PRINTK_VOWDRV("SetNoiseModel:addr_%x, size_%x\n", vowserv.vow_info_dsp[0],
-							  vowserv.vow_info_dsp[1]);
-
-	vowserv.ipimsgwait = true;
-	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
-		;
-	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
-	return ret;
-*/
-	return true;
-}
-
-static bool vow_service_SetFirModel(unsigned long arg)
-{
-/*
-	bool ret;
-
-	if (vowserv.vow_fir_model != NULL) {
-		vfree(vowserv.vow_fir_model);
-		vowserv.vow_fir_model = NULL;
-	}
-
-	vow_service_GetParameter(arg);
-	vowserv.vow_fir_model = vmalloc(vowserv.vow_info_apuser[2]);
-	if (vow_service_CopyModel(VOW_MODEL_FIR, 0) != 0)
-		return false;
-
-	vowserv.vow_info_dsp[0] = VOW_MODEL_FIR;
-	vowserv.vow_info_dsp[1] = 0;
-	vowserv.vow_info_dsp[2] = dma_map_single(&dev,
-						 vowserv.vow_fir_model,
-						 vowserv.vow_info_apuser[2],
-						 DMA_TO_DEVICE);
-	vowserv.vow_info_dsp[3] = vowserv.vow_info_apuser[2];
-	dma_sync_single_for_device(&dev,
-				   vowserv.vow_info_dsp[2],
-				   vowserv.vow_info_apuser[2],
-				   DMA_TO_DEVICE);
-
-	PRINTK_VOWDRV("SetFirModel:addr_%x, size_%x\n",
-		      vowserv.vow_info_dsp[0], vowserv.vow_info_dsp[1]);
-
-	vowserv.ipimsgwait = true;
-	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 4, 0, 1) == false)
-		;
-	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
-	return ret;
-*/
-	return true;
 }
 
 static bool vow_service_SetVBufAddr(unsigned long arg)
@@ -1117,17 +965,9 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
 	int  ret = 0;
 
-	PRINTK_VOWDRV("VowDrv_ioctl cmd = %u arg = %lu\n", cmd, arg);
-	PRINTK_VOWDRV("VowDrv_ioctl check arg = %u %u\n", VOWEINT_GET_BUFSIZE, VOW_SET_CONTROL);
+	/* PRINTK_VOWDRV("VowDrv_ioctl cmd = %u arg = %lu\n", cmd, arg); */
+	/* PRINTK_VOWDRV("VowDrv_ioctl check arg = %u %u\n", VOWEINT_GET_BUFSIZE, VOW_SET_CONTROL); */
 	switch ((unsigned int)cmd) {
-	case VOWEINT_GET_BUFSIZE:
-		pr_debug("VOWEINT_GET_BUFSIZE\n");
-		ret = sizeof(VOW_EINT_DATA_STRUCT);
-		break;
-	case VOW_GET_STATUS:
-		pr_debug("VOW_GET_STATUS\n");
-		ret = VowDrv_QueryVowEINTStatus();
-		break;
 	case VOW_SET_CONTROL:
 		switch (arg) {
 		case VOWControlCmd_Init:
@@ -1170,34 +1010,10 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		if (!vow_service_ReleaseSpeakerModel(arg))
 			ret = -EFAULT;
 		break;
-	case VOW_SET_INIT_MODEL:
-		pr_debug("VOW_SET_INIT_MODEL(%lu)", arg);
-		if (!vow_service_SetInitModel(arg))
-			ret = -EFAULT;
-		break;
-	case VOW_SET_FIR_MODEL:
-		pr_debug("VOW_SET_FIR_MODEL(%lu)", arg);
-		if (!vow_service_SetFirModel(arg))
-			ret = -EFAULT;
-		break;
-	case VOW_SET_NOISE_MODEL:
-		pr_debug("VOW_SET_NOISE_MODEL(%lu)", arg);
-		if (!vow_service_SetNoiseModel(arg))
-			ret = -EFAULT;
-		break;
 	case VOW_SET_APREG_INFO:
 		pr_debug("VOW_SET_APREG_INFO(%lu)", arg);
 		if (!vow_service_SetVBufAddr(arg))
 			ret = -EFAULT;
-		break;
-	case VOW_SET_REG_MODE:
-		pr_debug("VOW_SET_MODE(%lu)", arg);
-		if (!vow_service_SetVowMode(arg))
-			ret = -EFAULT;
-		break;
-	case VOW_FAKE_WAKEUP:
-		vow_ipi_reg_ok(0);
-		pr_debug("VOW_FAKE_WAKEUP(%lu)", arg);
 		break;
 	default:
 		pr_debug("WrongParameter(%lu)", arg);
@@ -1218,18 +1034,11 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 		return -ENOTTY;
 	}
 	switch (cmd) {
-	case VOWEINT_GET_BUFSIZE:
-	case VOW_GET_STATUS:
-	case VOW_FAKE_WAKEUP:
-	case VOW_SET_REG_MODE:
 	case VOW_CLR_SPEAKER_MODEL:
 	case VOW_SET_CONTROL:
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, arg);
 		break;
 	case VOW_SET_SPEAKER_MODEL:
-	case VOW_SET_INIT_MODEL:
-	case VOW_SET_FIR_MODEL:
-	case VOW_SET_NOISE_MODEL:
 	case VOW_SET_APREG_INFO: {
 		VOW_MODEL_INFO_KERNEL_T __user *data32;
 
@@ -1241,16 +1050,7 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 
 		data32 = compat_ptr(arg);
 		data = compat_alloc_user_space(sizeof(*data));
-#if 0
-		err  = get_user(l, &data32->id);
-		err |= put_user(l, (compat_size_t *)&data->id);
-		err |= get_user(l, (compat_size_t *)&data32->addr);
-		err |= put_user(l, (compat_size_t *)&data->addr);
-		err |= get_user(l, (compat_size_t *)&data32->size);
-		err |= put_user(l, (compat_size_t *)&data->size);
-		err |= get_user(p, (compat_uptr_t *)&data32->data);
-		err |= put_user(p, (compat_uptr_t *)&data->data);
-#endif
+
 		err  = get_user(l, &data32->id);
 		err |= put_user(l, &data->id);
 		err |= get_user(l, &data32->addr);
