@@ -34,6 +34,7 @@ struct mt_pcm_hdmi_priv {
 	bool is_main_clk_on;
 	bool is_apll_related_clks_on;
 	bool force_clk_on;
+	bool enable_bus_clk_boost;
 	unsigned int hdmi_loop_type;
 	unsigned int hdmi_sinegen_switch;
 	unsigned int hdmi_force_clk_switch;
@@ -157,6 +158,11 @@ static int mt_pcm_hdmi_close(struct snd_pcm_substream *substream)
 		priv->prepared = false;
 	}
 
+	if (priv->enable_bus_clk_boost) {
+		mt_afe_bus_clk_restore();
+		priv->enable_bus_clk_boost = false;
+	}
+
 	if (!priv->force_clk_on && priv->is_main_clk_on) {
 		mt_afe_main_clk_off();
 		mt_afe_emi_clk_off();
@@ -246,6 +252,11 @@ static int mt_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 		priv->is_apll_related_clks_on = true;
 	}
 
+	if (runtime->rate > 48000 && !priv->enable_bus_clk_boost) {
+		mt_afe_bus_clk_boost();
+		priv->enable_bus_clk_boost = true;
+	}
+
 	priv->prepared = true;
 	priv->cached_sample_rate = runtime->rate;
 	priv->cached_channels = runtime->channels;
@@ -255,6 +266,8 @@ static int mt_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 static int mt_pcm_hdmi_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	uint32_t memif_format = (runtime->format == SNDRV_PCM_FORMAT_S24_LE) ?
+		MT_AFE_MEMIF_32_BIT_ALIGN_8BIT_0_24BIT_DATA : MT_AFE_MEMIF_16_BIT;
 
 	pr_debug("%s period_size = %lu\n", __func__, runtime->period_size);
 
@@ -266,7 +279,7 @@ static int mt_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	mt_afe_set_irq_counter(MT_AFE_IRQ_MCU_MODE_IRQ5, runtime->period_size);
 	mt_afe_set_irq_state(MT_AFE_IRQ_MCU_MODE_IRQ5, true);
 
-	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_HDMI, MT_AFE_MEMIF_16_BIT);
+	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_HDMI, memif_format);
 
 	mt_afe_set_hdmi_out_channel(runtime->channels);
 
@@ -379,7 +392,8 @@ static int hdmi_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		mt_afe_enable_hdmi_tdm_i2s_loopback();
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
-			mt_afe_set_i2s_dac_out(priv->cached_sample_rate, MT_AFE_NORMAL_CLOCK);
+			mt_afe_set_i2s_dac_out(priv->cached_sample_rate, MT_AFE_NORMAL_CLOCK,
+					MT_AFE_I2S_WLEN_16BITS);
 			mt_afe_enable_i2s_dac();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);

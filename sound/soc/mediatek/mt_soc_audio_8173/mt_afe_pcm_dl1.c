@@ -38,6 +38,7 @@ struct mt_pcm_dl1_priv {
 	bool enable_i2s0_low_jitter;
 	bool enable_i2s1_low_jitter;
 	bool enable_sram;
+	bool enable_bus_clk_boost;
 	unsigned int playback_mux;
 	unsigned int i2s0_clock_mode;
 	unsigned int i2s1_clock_mode;
@@ -58,8 +59,8 @@ static int mt_pcm_dl1_post_stop(struct snd_pcm_substream *substream);
 static const struct snd_pcm_hardware mt_pcm_dl1_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 		 SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID),
-	.formats = SNDRV_PCM_FMTBIT_S16_LE,
-	.rates = SOC_NORMAL_USE_RATE,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
+	.rates = SOC_HIFI_USE_RATE,
 	.rate_min = SOC_NORMAL_USE_CHANNELS_MIN,
 	.rate_max = SOC_NORMAL_USE_CHANNELS_MIN,
 	.channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
@@ -73,8 +74,8 @@ static const struct snd_pcm_hardware mt_pcm_dl1_hardware = {
 };
 
 static struct snd_pcm_hw_constraint_list mt_pcm_dl1_constraints_rates = {
-	.count = ARRAY_SIZE(soc_normal_supported_sample_rates),
-	.list = soc_normal_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_hifi_supported_sample_rates),
+	.list = soc_hifi_supported_sample_rates,
 	.mask = 0,
 };
 
@@ -133,6 +134,11 @@ static int mt_pcm_dl1_close(struct snd_pcm_substream *substream)
 		mt_pcm_dl1_post_stop(substream);
 		mt_afe_remove_ctx_substream(MT_AFE_MEM_CTX_DL1);
 		priv->prepared = false;
+	}
+
+	if (priv->enable_bus_clk_boost) {
+		mt_afe_bus_clk_restore();
+		priv->enable_bus_clk_boost = false;
 	}
 
 	mt_afe_dac_clk_off();
@@ -221,6 +227,11 @@ static int mt_pcm_dl1_prepare(struct snd_pcm_substream *substream)
 		mt_pcm_dl1_prestart(substream);
 		priv->prepared = true;
 	}
+
+	if (runtime->rate > 48000 && !priv->enable_bus_clk_boost) {
+		mt_afe_bus_clk_boost();
+		priv->enable_bus_clk_boost = true;
+	}
 	return 0;
 }
 
@@ -229,8 +240,14 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
+	uint32_t memif_format = (runtime->format == SNDRV_PCM_FORMAT_S24_LE) ?
+		MT_AFE_MEMIF_32_BIT_ALIGN_8BIT_0_24BIT_DATA : MT_AFE_MEMIF_16_BIT;
+	uint32_t conn_format = snd_pcm_format_width(runtime->format) > 16 ?
+		MT_AFE_CONN_OUTPUT_24BIT : MT_AFE_CONN_OUTPUT_16BIT;
+	uint32_t wlen = snd_pcm_format_width(runtime->format) > 16 ?
+		MT_AFE_I2S_WLEN_32BITS : MT_AFE_I2S_WLEN_16BITS;
 
-	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, MT_AFE_MEMIF_16_BIT);
+	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, memif_format);
 
 	if (priv->playback_mux == MTK_INTERFACE || priv->playback_mux == MTK_INTERFACE_AND_I2S0 ||
 	    priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
@@ -245,20 +262,20 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 		}
 
 		if (priv->playback_mux == MTK_INTERFACE_AND_I2S1_DATA2) {
-			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O19);
-			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O20);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O19);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O20);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O19);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O20);
 		} else {
-			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O03);
-			mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O04);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O03);
+			mt_afe_set_out_conn_format(conn_format, INTER_CONN_O04);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O03);
 			mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O04);
 		}
 
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
-			mt_afe_set_i2s_dac_out(runtime->rate, priv->i2s1_clock_mode);
+			mt_afe_set_i2s_dac_out(runtime->rate, priv->i2s1_clock_mode, wlen);
 			mt_afe_enable_i2s_dac();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
@@ -277,8 +294,8 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 			priv->enable_i2s0_low_jitter = true;
 		}
 
-		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O00);
-		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O01);
+		mt_afe_set_out_conn_format(conn_format, INTER_CONN_O00);
+		mt_afe_set_out_conn_format(conn_format, INTER_CONN_O01);
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O00);
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I06, INTER_CONN_O01);
 
@@ -298,12 +315,12 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 		}
 
 		if (priv->enable_i2s0_low_jitter) {
-			mt_afe_set_2nd_i2s_in(MT_AFE_I2S_WLEN_16BITS,
+			mt_afe_set_2nd_i2s_in(wlen,
 					MT_AFE_I2S_SRC_MASTER_MODE,
 					MT_AFE_BCK_INV_NO_INVERSE,
 					MT_AFE_LOW_JITTER_CLOCK);
 		} else {
-			mt_afe_set_2nd_i2s_in(MT_AFE_I2S_WLEN_16BITS,
+			mt_afe_set_2nd_i2s_in(wlen,
 					MT_AFE_I2S_SRC_MASTER_MODE,
 					MT_AFE_BCK_INV_NO_INVERSE,
 					MT_AFE_NORMAL_CLOCK);
@@ -319,9 +336,9 @@ static int mt_pcm_dl1_prestart(struct snd_pcm_substream *substream)
 		}
 
 		if (priv->enable_i2s0_low_jitter)
-			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_LOW_JITTER_CLOCK);
+			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_LOW_JITTER_CLOCK, wlen);
 		else
-			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_NORMAL_CLOCK);
+			mt_afe_set_2nd_i2s_out(runtime->rate, MT_AFE_NORMAL_CLOCK, wlen);
 
 		mt_afe_enable_2nd_i2s_out();
 

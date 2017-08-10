@@ -18,6 +18,7 @@
 #define PM_MANAGER_API
 #define COMMON_CLOCK_FRAMEWORK_API
 #define IDLE_TASK_DRIVER_API
+#define MT_DCM_API
 #define AUDIO_MEMORY_SRAM
 /* #define AUDIO_BTSCO_MEMORY_SRAM */
 #define AUDIO_MEM_IOREMAP
@@ -94,14 +95,14 @@
      PCM buffer size and period size setting
 */
 
-#define DL1_MAX_BUFFER_SIZE     (128*1024)
-#define DL2_MAX_BUFFER_SIZE     (128*1024)
+#define DL1_MAX_BUFFER_SIZE     (256*1024)
+#define DL2_MAX_BUFFER_SIZE     (256*1024)
 #define UL1_MAX_BUFFER_SIZE     (32*1024)
 #define UL2_MAX_BUFFER_SIZE     (32*1024)
 #define BT_DL_MAX_BUFFER_SIZE   (16*1024)
 #define BT_DAI_MAX_BUFFER_SIZE  (16*1024)
-#define AWB_MAX_BUFFER_SIZE     (64*1024)
-#define HDMI_MAX_BUFFER_SIZE    (256*1024)
+#define AWB_MAX_BUFFER_SIZE     (256*1024)
+#define HDMI_MAX_BUFFER_SIZE    (1024*1024)
 #define SPDIF_MAX_BUFFER_SIZE   (256*1024)
 #define MRGRX_MAX_BUFFER_SIZE   (64*1024)
 
@@ -113,7 +114,7 @@
 #define BTSCO_IN_CHANNELS_MIN     1
 #define BTSCO_IN_CHANNELS_MAX     1
 
-#define HDMI_FORMATS            (SNDRV_PCM_FMTBIT_S16_LE)
+#define HDMI_FORMATS            (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE)
 #define HDMI_RATES              (SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 | \
 				 SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200 | \
 				 SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_176400 | \
@@ -142,13 +143,31 @@
 #define SOC_NORMAL_USE_PERIODS_MAX      256
 #define SOC_NORMAL_USE_PERIOD_SIZE_MIN  (128)
 
+#define SOC_HIFI_USE_RATE             (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
+#define SOC_HIFI_USE_RATE_MIN         8000
+#define SOC_HIFI_USE_RATE_MAX         192000
+
+#define STUB_RATES      SNDRV_PCM_RATE_8000_192000
+#define STUB_FORMATS    (SNDRV_PCM_FMTBIT_S8 | \
+			 SNDRV_PCM_FMTBIT_U8 | \
+			 SNDRV_PCM_FMTBIT_S16_LE | \
+			 SNDRV_PCM_FMTBIT_U16_LE | \
+			 SNDRV_PCM_FMTBIT_S24_LE | \
+			 SNDRV_PCM_FMTBIT_U24_LE | \
+			 SNDRV_PCM_FMTBIT_S32_LE | \
+			 SNDRV_PCM_FMTBIT_U32_LE | \
+			 SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE)
 
 static const unsigned int soc_normal_supported_sample_rates[] = {
 	8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000
 };
 
+static const unsigned int soc_hifi_supported_sample_rates[] = {
+	8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000
+};
+
 static const unsigned int soc_voice_supported_sample_rates[] = {
-	8000, 16000, 32000
+	8000, 16000
 };
 
 static const unsigned int soc_fm_supported_sample_rates[] = {

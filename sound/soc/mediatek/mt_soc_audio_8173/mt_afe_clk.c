@@ -22,6 +22,9 @@
 #ifdef COMMON_CLOCK_FRAMEWORK_API
 #include <linux/clk.h>
 #endif
+#ifdef MT_DCM_API
+#include <mt_dcm.h>
+#endif
 
 enum audio_system_clock_type {
 	CLOCK_INFRA_SYS_AUDIO = 0,
@@ -72,10 +75,12 @@ int aud_apll24m_clk_cntr;
 int aud_apll1_tuner_cntr;
 int aud_apll2_tuner_cntr;
 int aud_emi_clk_cntr;
+int aud_bus_clk_boost_cntr;
 
 static DEFINE_SPINLOCK(afe_clk_lock);
 static DEFINE_MUTEX(afe_clk_mutex);
 static DEFINE_MUTEX(emi_clk_mutex);
+static DEFINE_MUTEX(bus_clk_mutex);
 
 /*****************************************************************************
  *                         INTERNAL FUNCTION
@@ -1038,3 +1043,31 @@ void mt_afe_emi_clk_off(void)
 	mutex_unlock(&emi_clk_mutex);
 #endif
 }
+
+void mt_afe_bus_clk_boost(void)
+{
+#ifdef MT_DCM_API
+	mutex_lock(&bus_clk_mutex);
+	if (aud_bus_clk_boost_cntr == 0)
+		bus_dcm_set_freq_div(BUS_DCM_FREQ_DIV_16, BUS_DCM_AUDIO);
+
+	aud_bus_clk_boost_cntr++;
+	mutex_unlock(&bus_clk_mutex);
+#endif
+}
+
+void mt_afe_bus_clk_restore(void)
+{
+#ifdef MT_DCM_API
+	mutex_lock(&bus_clk_mutex);
+	aud_bus_clk_boost_cntr--;
+	if (aud_bus_clk_boost_cntr == 0) {
+		bus_dcm_set_freq_div(BUS_DCM_FREQ_DEFAULT, BUS_DCM_AUDIO);
+	} else if (aud_bus_clk_boost_cntr < 0) {
+		pr_err("%s aud_bus_clk_boost_cntr:%d<0\n", __func__, aud_bus_clk_boost_cntr);
+		aud_bus_clk_boost_cntr = 0;
+	}
+	mutex_unlock(&bus_clk_mutex);
+#endif
+}
+

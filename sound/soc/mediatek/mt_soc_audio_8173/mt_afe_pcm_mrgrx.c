@@ -208,7 +208,8 @@ static int mt_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 
 		/* start I2S DAC out */
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
-			mt_afe_set_i2s_dac_out(runtime->rate, MT_AFE_NORMAL_CLOCK);
+			mt_afe_set_i2s_dac_out(runtime->rate, MT_AFE_NORMAL_CLOCK,
+					MT_AFE_I2S_WLEN_16BITS);
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
 			mt_afe_enable_i2s_dac();
 		} else {

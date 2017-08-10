@@ -439,7 +439,7 @@ bool mt_afe_get_memory_path_state(uint32_t block)
 	return state;
 }
 
-void mt_afe_set_i2s_dac_out(uint32_t sample_rate, uint32_t clock_mode)
+void mt_afe_set_i2s_dac_out(uint32_t sample_rate, uint32_t clock_mode, uint32_t wlen)
 {
 	uint32_t audio_i2s_dac = 0;
 
@@ -451,7 +451,7 @@ void mt_afe_set_i2s_dac_out(uint32_t sample_rate, uint32_t clock_mode)
 	audio_i2s_dac |= (mt_afe_rate_to_idx(sample_rate) << 8);
 	audio_i2s_dac |= (MT_AFE_INV_LRCK_NO_INVERSE << 5);
 	audio_i2s_dac |= (MT_AFE_I2S_FORMAT_I2S << 3);
-	audio_i2s_dac |= (MT_AFE_I2S_WLEN_16BITS << 1);
+	audio_i2s_dac |= (wlen << 1);
 	mt_afe_set_reg(AFE_I2S_CON1, audio_i2s_dac, MASK_ALL);
 }
 
@@ -595,7 +595,7 @@ void mt_afe_disable_i2s_adc2(void)
 		mt_afe_set_reg(AFE_I2S_CON2, 0x0, 0x1);
 }
 
-void mt_afe_set_2nd_i2s_out(uint32_t sample_rate, uint32_t clock_mode)
+void mt_afe_set_2nd_i2s_out(uint32_t sample_rate, uint32_t clock_mode, uint32_t wlen)
 {
 	uint32_t reg_value = 0;
 
@@ -604,7 +604,7 @@ void mt_afe_set_2nd_i2s_out(uint32_t sample_rate, uint32_t clock_mode)
 	reg_value |= (mt_afe_rate_to_idx(sample_rate) << 8);
 	reg_value |= (MT_AFE_INV_LRCK_NO_INVERSE << 5);
 	reg_value |= (MT_AFE_I2S_FORMAT_I2S << 3);
-	reg_value |= (MT_AFE_I2S_WLEN_16BITS << 1);
+	reg_value |= (wlen << 1);
 	mt_afe_set_reg(AFE_I2S_CON3, reg_value, 0xFFFFFFFE);
 }
 
@@ -1680,7 +1680,7 @@ static irqreturn_t mt_afe_irq_handler(int irq, void *dev_id)
 	if (reg_value & MT_AFE_IRQ2_MCU)
 		mt_afe_ul_interrupt_handler();
 
-	if (reg_value & MT_AFE_IRQ3_MCU)
+	if (reg_value & MT_AFE_IRQ7_MCU)
 		mt_afe_dl2_interrupt_handler();
 
 	if (reg_value & MT_AFE_IRQ5_MCU)

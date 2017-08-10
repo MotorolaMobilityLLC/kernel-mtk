@@ -106,7 +106,7 @@ static void mt_pcm_i2s0_awb_stop_audio_hw(struct snd_pcm_substream *substream)
 static struct snd_pcm_hardware mt_pcm_i2s0_awb_hardware = {
 	.info = (SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
 	.formats = SNDRV_PCM_FMTBIT_S16_LE,
-	.rates = SOC_NORMAL_USE_RATE,
+	.rates = SOC_HIFI_USE_RATE,
 	.rate_min = SOC_NORMAL_USE_RATE_MIN,
 	.rate_max = SOC_NORMAL_USE_RATE_MAX,
 	.channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
@@ -120,8 +120,8 @@ static struct snd_pcm_hardware mt_pcm_i2s0_awb_hardware = {
 };
 
 static struct snd_pcm_hw_constraint_list mt_pcm_i2s0_awb_constraints_rates = {
-	.count = ARRAY_SIZE(soc_normal_supported_sample_rates),
-	.list = soc_normal_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_hifi_supported_sample_rates),
+	.list = soc_hifi_supported_sample_rates,
 };
 
 static int mt_pcm_i2s0_awb_open(struct snd_pcm_substream *substream)

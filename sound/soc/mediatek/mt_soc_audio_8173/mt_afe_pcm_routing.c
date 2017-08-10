@@ -158,7 +158,8 @@ static int ap_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 		/* configure downlink */
 		if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC) == false) {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
-			mt_afe_set_i2s_dac_out(sample_rate, MT_AFE_NORMAL_CLOCK);
+			mt_afe_set_i2s_dac_out(sample_rate, MT_AFE_NORMAL_CLOCK,
+					MT_AFE_I2S_WLEN_16BITS);
 			mt_afe_enable_i2s_dac();
 		} else {
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC);
@@ -213,7 +214,7 @@ static int ap_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 			mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_OUT_2);
 		}
 
-		mt_afe_set_2nd_i2s_out(sample_rate, MT_AFE_NORMAL_CLOCK);
+		mt_afe_set_2nd_i2s_out(sample_rate, MT_AFE_NORMAL_CLOCK, MT_AFE_I2S_WLEN_16BITS);
 		mt_afe_enable_2nd_i2s_out();
 
 		/* i2s0 soft reset end */

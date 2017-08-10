@@ -28,7 +28,7 @@ static int mt_pcm_btsco_close(struct snd_pcm_substream *substream);
 static struct snd_pcm_hardware mt_pcm_btsco_out_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 		 SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID),
-	.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE,
 	.rates = BTSCO_RATE,
 	.rate_min = BTSCO_RATE_MIN,
 	.rate_max = BTSCO_RATE_MAX,
@@ -215,6 +215,8 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct mt_afe_irq_status irq_status;
+	uint32_t memif_format = (runtime->format == SNDRV_PCM_FORMAT_S24_LE) ?
+		MT_AFE_MEMIF_32_BIT_ALIGN_8BIT_0_24BIT_DATA : MT_AFE_MEMIF_16_BIT;
 
 	pr_debug("%s stream[%d] rate = %u channels = %u format = %d period_size = %lu\n",
 		 __func__, substream->stream, runtime->rate, runtime->channels,
@@ -222,7 +224,7 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		mt_afe_add_ctx_substream(MT_AFE_MEM_CTX_DL1, substream);
-		mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, MT_AFE_MEMIF_16_BIT);
+		mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL1, memif_format);
 		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O02);
 
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I05, INTER_CONN_O02);

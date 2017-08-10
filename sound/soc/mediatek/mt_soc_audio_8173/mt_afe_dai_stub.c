@@ -18,8 +18,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_DL1_STREAM_NAME,
-		      .rates = SOC_NORMAL_USE_RATE,
-		      .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		      .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		      },
@@ -28,8 +28,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .capture = {
 		     .stream_name = MT_SOC_UL1_STREAM_NAME,
-		     .rates = SOC_NORMAL_USE_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		     .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		     },
@@ -38,15 +38,15 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_BTSCO_DL_STREAM_NAME,
-		      .rates = BTSCO_RATE,
-		      .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = BTSCO_OUT_CHANNELS_MIN,
 		      .channels_max = BTSCO_OUT_CHANNELS_MAX,
 		      },
 	 .capture = {
 		     .stream_name = MT_SOC_BTSCO_UL_STREAM_NAME,
-		     .rates = BTSCO_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = BTSCO_IN_CHANNELS_MIN,
 		     .channels_max = BTSCO_IN_CHANNELS_MAX,
 		     },
@@ -55,8 +55,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .capture = {
 		     .stream_name = MT_SOC_DL1_AWB_STREAM_NAME,
-		     .rates = SOC_NORMAL_USE_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		     .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		     },
@@ -65,8 +65,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .capture = {
 		     .stream_name = MT_SOC_UL2_STREAM_NAME,
-		     .rates = SOC_NORMAL_USE_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		     .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		     },
@@ -75,8 +75,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_HDMI_PLAYBACK_STREAM_NAME,
-		      .rates = HDMI_RATES,
-		      .formats = HDMI_FORMATS,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = HDMI_CHANNELS_MIN,
 		      .channels_max = HDMI_CHANNELS_MAX,
 		      .rate_min = HDMI_RATE_MIN,
@@ -87,8 +87,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_HDMI_RAW_PLAYBACK_STREAM_NAME,
-		      .rates = SPDIF_RATES,
-		      .formats = SPDIF_FORMATS,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = SPDIF_CHANNELS_MIN,
 		      .channels_max = SPDIF_CHANNELS_MAX,
 		      },
@@ -97,8 +97,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_SPDIF_PLAYBACK_STREAM_NAME,
-		      .rates = SPDIF_RATES,
-		      .formats = SPDIF_FORMATS,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = SPDIF_CHANNELS_MIN,
 		      .channels_max = SPDIF_CHANNELS_MAX,
 		      },
@@ -107,8 +107,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	 {
 	 .capture = {
 		     .stream_name = MT_SOC_I2S0_AWB_STREAM_NAME,
-		     .rates = SOC_NORMAL_USE_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		     .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		     },
@@ -117,8 +117,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .playback = {
 		      .stream_name = MT_SOC_MRGRX_STREAM_NAME,
-		      .rates = SOC_NORMAL_USE_RATE,
-		      .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		      .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		      },
@@ -127,8 +127,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	{
 	 .capture = {
 		     .stream_name = MT_SOC_MRGRX_AWB_STREAM_NAME,
-		     .rates = SOC_NORMAL_USE_RATE,
-		     .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		     .rates = STUB_RATES,
+		     .formats = STUB_FORMATS,
 		     .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		     .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		     },
@@ -137,8 +137,8 @@ static struct snd_soc_dai_driver mt_dai_stub_dai[] = {
 	 {
 	 .playback = {
 		      .stream_name = MT_SOC_DL2_STREAM_NAME,
-		      .rates = SOC_NORMAL_USE_RATE,
-		      .formats = SNDRV_PCM_FMTBIT_S16_LE,
+		      .rates = STUB_RATES,
+		      .formats = STUB_FORMATS,
 		      .channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 		      .channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 		      },

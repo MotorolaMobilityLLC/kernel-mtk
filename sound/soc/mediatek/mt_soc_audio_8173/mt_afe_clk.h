@@ -56,4 +56,7 @@ void mt_afe_apll2tuner_clk_off(void);
 void mt_afe_emi_clk_on(void);
 void mt_afe_emi_clk_off(void);
 
+void mt_afe_bus_clk_boost(void);
+void mt_afe_bus_clk_restore(void);
+
 #endif
