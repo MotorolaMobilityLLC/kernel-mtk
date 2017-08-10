@@ -1515,7 +1515,8 @@ static inline int adopt_CAMERA_HW_CheckIsAlive(void)
 	}
 
 	/* reset sensor state after power off */
-	err1 = g_pSensorFunc->SensorClose();
+    if (g_pSensorFunc)
+	    err1 = g_pSensorFunc->SensorClose();
 	if (ERROR_NONE != err1) {
 		PK_DBG("SensorClose\n");
 	}
