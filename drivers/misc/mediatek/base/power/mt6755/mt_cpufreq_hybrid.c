@@ -940,7 +940,7 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 	if (csram_base)
 		csram_write(OFFS_PAUSE_SRC, pause_src_map);
 
-	if (pause_src_map == 0) {
+	if (pause_src_map == 0 && csram_base /* avoid Coverity complaining */) {
 		r = clk_enable(i2c_clk);
 		if (!r) {
 			rsv4 = cspm_read(CSPM_SW_RSV4);
