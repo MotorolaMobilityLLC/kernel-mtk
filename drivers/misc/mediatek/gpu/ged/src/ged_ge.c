@@ -202,7 +202,7 @@ int ged_ge_alloc(int region_num, uint32_t *region_sizes)
 	}
 
 	entry->region_sizes = (uint32_t *)entry->data;
-	entry->region_data = (uint32_t **)(entry->data + sizeof(uint32_t) * region_num);
+	entry->region_data = (uint32_t **)(entry->region_sizes + region_num);
 	for (i = 0; i < region_num; ++i)
 		entry->region_sizes[i] = region_sizes[i];
 
