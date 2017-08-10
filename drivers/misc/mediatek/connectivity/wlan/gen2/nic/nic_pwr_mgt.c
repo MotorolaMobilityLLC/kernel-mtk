@@ -202,9 +202,11 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			u4WriteTick = u4WriteTickTemp;
 		}
 
-
 		/* Delay for LP engine to complete its operation. */
-		kalMsleep(LP_OWN_BACK_LOOP_DELAY_MS);
+		if (i <= 8)
+			kalMdelay(LP_OWN_BACK_LOOP_DELAY_MS);
+		else
+			kalMsleep(LP_OWN_BACK_LOOP_DELAY_MS);
 		i++;
 	}
 
