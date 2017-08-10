@@ -329,7 +329,7 @@ static ssize_t pedo_store_batch(struct device *dev, struct device_attribute *att
 {
 	struct pedo_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -339,31 +339,13 @@ static ssize_t pedo_store_batch(struct device *dev, struct device_attribute *att
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&pedo_context_obj->pedo_op_mutex);
 	cxt = pedo_context_obj;
-	if (cxt->pedo_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_batch_enable = true;
-			if (true == cxt->is_polling_run) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				del_timer_sync(&cxt->timer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_batch_enable = false;
-			if (false == cxt->is_polling_run) {
-				if (false == cxt->pedo_ctl.is_report_input_direct && true == cxt->is_active_data) {
-					mod_timer(&cxt->timer,
-						  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
-					cxt->is_polling_run = true;
-				}
-			}
-		}
-		else
-			PEDO_ERR(" pedo_store_batch error !!\n");
-	} else {
+	if (false == cxt->pedo_ctl.is_report_input_direct) {
+		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
+		atomic_set(&pedo_context_obj->delay, mdelay);
+	}
+	if (!cxt->pedo_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
-		PEDO_LOG(" pedo_store_batch not support\n");
+		PEDO_LOG("pedo_store_batch not support\n");
 	}
 	if (NULL != cxt->pedo_ctl.batch)
 		err = cxt->pedo_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);

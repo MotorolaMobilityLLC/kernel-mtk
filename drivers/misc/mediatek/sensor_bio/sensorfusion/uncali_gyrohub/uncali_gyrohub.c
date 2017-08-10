@@ -53,6 +53,9 @@ static int uncali_gyro_set_delay(u64 delay)
 }
 static int uncali_gyro_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	uncali_gyro_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_GYROSCOPE_UNCALIBRATED, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

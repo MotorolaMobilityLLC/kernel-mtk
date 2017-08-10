@@ -525,6 +525,9 @@ static int maghub_set_delay(u64 ns)
 }
 static int maghub_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	maghub_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_MAGNETIC, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

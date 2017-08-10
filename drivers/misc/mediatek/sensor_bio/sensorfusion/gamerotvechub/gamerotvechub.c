@@ -71,6 +71,9 @@ static int gamerotvec_set_delay(u64 delay)
 }
 static int gamerotvec_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	gamerotvec_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_GAME_ROTATION_VECTOR, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 

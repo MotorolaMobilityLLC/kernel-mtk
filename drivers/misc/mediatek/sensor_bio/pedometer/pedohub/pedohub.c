@@ -148,6 +148,9 @@ static int pedometer_set_delay(u64 delay)
 }
 static int pedometer_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	pedometer_set_delay(samplingPeriodNs);
+#endif
 	return sensor_batch_to_hub(ID_PEDOMETER, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 }
 static int pedometer_flush(void)
