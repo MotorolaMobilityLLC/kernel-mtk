@@ -3350,6 +3350,11 @@
 		status = "disabled";
 	};
 
+	eint_wpc: eint_wpc {
+		compatible = "mediatek, eint_wpc-eint";
+		status = "disabled";
+	};
+
 	dsi_te: dsi_te {
 		compatible = "mediatek, dsi_te-eint";
 		status = "disabled";
@@ -3376,6 +3381,10 @@
 		mediatek,clkbuf-quantity = <4>;
 		mediatek,clkbuf-config = <2 1 1 2>;
 		mediatek,clkbuf-driving-current = <2 2 2 2>;
+	};
+
+	ext_buck_vmd1:ext_buck_vmd1 {
+		compatible = "mediatek,ext_buck_vmd1";
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/
