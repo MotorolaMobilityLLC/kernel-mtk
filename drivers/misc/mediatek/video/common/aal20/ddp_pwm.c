@@ -293,7 +293,10 @@ static int disp_pwm_level_remap(disp_pwm_id_t id, int level_1024)
 int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 {
 	int ret;
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	/* PWM is excluded from bitfile */
+	return 0;
+#endif
 #ifdef MTK_DISP_IDLE_LP
 	disp_exit_idle_ex("disp_pwm_set_backlight");
 #endif
