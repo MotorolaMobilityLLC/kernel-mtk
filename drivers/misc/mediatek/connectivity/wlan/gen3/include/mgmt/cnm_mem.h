@@ -707,9 +707,13 @@ typedef struct _CMD_PEER_UPDATE_T {
 
 #define cnmMgtPktFree(_prAdapter, _prMsduInfo) \
 	cnmPktFreeWrapper((_prAdapter), (_prMsduInfo), (PUINT_8)__func__)
+
+#define cnmCommonPktAlloc(_prAdapter, _u4Length) \
+	cnmPktAllocWrapper((_prAdapter), (_u4Length), (PUINT_8)__func__)
 #else
 #define cnmMgtPktAlloc cnmPktAlloc
 #define cnmMgtPktFree cnmPktFree
+#define cnmCommonPktAlloc(_prAdapter, _u4Length) cnmPktAlloc
 #endif
 
 /*******************************************************************************

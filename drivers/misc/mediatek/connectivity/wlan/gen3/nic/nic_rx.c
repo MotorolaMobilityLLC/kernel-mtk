@@ -904,7 +904,7 @@ VOID nicRxProcessForwardPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prTxCtrl = &prAdapter->rTxCtrl;
 	prRxCtrl = &prAdapter->rRxCtrl;
 
-	prMsduInfo = cnmPktAlloc(prAdapter, 0);
+	prMsduInfo = cnmCommonPktAlloc(prAdapter, 0);
 
 	if (prMsduInfo &&
 	    kalProcessRxPacket(prAdapter->prGlueInfo,

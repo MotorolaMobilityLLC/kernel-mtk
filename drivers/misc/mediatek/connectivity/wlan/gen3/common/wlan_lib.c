@@ -3381,7 +3381,7 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, 0);
 
 	/* Get MSDU_INFO for TxDone */
-	prMsduInfo = cnmPktAlloc(prAdapter, 0);
+	prMsduInfo = cnmCommonPktAlloc(prAdapter, 0);
 
 	u4PacketLen = (UINT_32) GLUE_GET_PKT_FRAME_LEN(prPacket);
 
@@ -4295,7 +4295,7 @@ WLAN_STATUS wlanEnqueueTxPacket(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prN
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 
-	prMsduInfo = cnmPktAlloc(prAdapter, 0);
+	prMsduInfo = cnmCommonPktAlloc(prAdapter, 0);
 
 	if (!prMsduInfo)
 		return WLAN_STATUS_RESOURCES;

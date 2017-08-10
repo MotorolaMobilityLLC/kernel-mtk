@@ -638,6 +638,7 @@ struct _MSDU_INFO_T {
 	/* Compose TxDesc in tx_thread and place here */
 	UINT_8 aucTxDescBuffer[NIC_TX_DESC_AND_PADDING_LENGTH];
 #endif
+	PUINT_8	pucAllocFunc;
 };
 
 /*!A data structure which is identical with HW MAC TX DMA Descriptor */

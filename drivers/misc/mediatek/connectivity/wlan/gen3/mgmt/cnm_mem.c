@@ -129,7 +129,8 @@ P_MSDU_INFO_T cnmPktAllocWrapper(P_ADAPTER_T prAdapter, UINT_32 u4Length, PUINT_
 
 	prMsduInfo = cnmPktAlloc(prAdapter, u4Length);
 	DBGLOG(MEM, LOUD, "Alloc MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
-
+	if (prMsduInfo)
+		prMsduInfo->pucAllocFunc = pucStr;
 	return prMsduInfo;
 }
 
@@ -145,7 +146,8 @@ P_MSDU_INFO_T cnmPktAllocWrapper(P_ADAPTER_T prAdapter, UINT_32 u4Length, PUINT_
 VOID cnmPktFreeWrapper(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo, PUINT_8 pucStr)
 {
 	DBGLOG(MEM, LOUD, "Free MSDU_INFO[0x%p] by [%s]\n", prMsduInfo, pucStr);
-
+	if (prMsduInfo)
+		prMsduInfo->pucAllocFunc = NULL;
 	cnmPktFree(prAdapter, prMsduInfo);
 }
 

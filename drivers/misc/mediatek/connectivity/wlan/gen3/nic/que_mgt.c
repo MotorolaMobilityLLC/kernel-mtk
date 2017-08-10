@@ -5290,29 +5290,23 @@ VOID qmDumpQueueStatus(IN P_ADAPTER_T prAdapter)
 
 		prMsduInfo1 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 		if (!prMsduInfo1) {
-			DBGLOG(SW4, INFO, "src %d, 1x %d\n", prMsduInfo->eSrc, prMsduInfo->fgIs802_1x);
+			DBGLOG(SW4, INFO, "Alloc Func:%s\n", prMsduInfo->pucAllocFunc);
 			break;
 		}
 		prMsduInfo2 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo1->rQueEntry);
 		if (!prMsduInfo2) {
-			DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d\n",
-				prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
-				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x);
+			DBGLOG(SW4, INFO, "Alloc Func:%s; %s\n",
+				prMsduInfo->pucAllocFunc, prMsduInfo1->pucAllocFunc);
 			break;
 		}
 		prMsduInfo3 = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo2->rQueEntry);
 		if (!prMsduInfo3) {
-			DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d; src %d, 1x %d\n",
-				prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
-				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x,
-				prMsduInfo2->eSrc, prMsduInfo2->fgIs802_1x);
+			DBGLOG(SW4, INFO, "Alloc Func:%s; %s; %s\n", prMsduInfo->pucAllocFunc,
+				prMsduInfo1->pucAllocFunc, prMsduInfo2->pucAllocFunc);
 			break;
 		}
-		DBGLOG(SW4, INFO, "src %d, 1x %d; src %d, 1x %d; src %d, 1x %d; src %d, 1x %d\n",
-			prMsduInfo->eSrc, prMsduInfo->fgIs802_1x,
-				prMsduInfo1->eSrc, prMsduInfo1->fgIs802_1x,
-				prMsduInfo2->eSrc, prMsduInfo2->fgIs802_1x,
-				prMsduInfo3->eSrc, prMsduInfo3->fgIs802_1x);
+		DBGLOG(SW4, INFO, "Alloc Func:%s; %s; %s; %s\n", prMsduInfo->pucAllocFunc,
+			prMsduInfo1->pucAllocFunc, prMsduInfo2->pucAllocFunc, prMsduInfo3->pucAllocFunc);
 		prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo3->rQueEntry);
 	}
 	DBGLOG(SW4, INFO, "---------------------------------\n\n");

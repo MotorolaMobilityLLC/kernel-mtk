@@ -1379,7 +1379,7 @@ WLAN_STATUS nicTxGenerateDescTemplate(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 	for (ucTid = 0; ucTid < TX_DESC_TID_NUM; ucTid++)
 		prStaRec->aprTxDescTemplate[ucTid] = NULL;
 
-	prMsduInfo = cnmPktAlloc(prAdapter, 0);
+	prMsduInfo = cnmCommonPktAlloc(prAdapter, 0);
 
 	if (!prMsduInfo)
 		return WLAN_STATUS_RESOURCES;
