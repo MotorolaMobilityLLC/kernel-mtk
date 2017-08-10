@@ -244,6 +244,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	int buf_size = (count + 3) / 4;	/* when count is 5... */
 
 	pr_warn("[IRTX] irtx write len=0x%x, pwm=%d\n", (unsigned int)count, (unsigned int)irtx_pwm_config.pwm_no);
+
+	/* fix VTS fail issue: if no valid data,just return */
+	if (count == 0)
+		return 0;
+
 	wave_vir = dma_alloc_coherent(&mt_irtx_dev.plat_dev->dev, count, &wave_phy, GFP_KERNEL);
 	if (!wave_vir) {
 		pr_err("[IRTX] alloc memory fail\n");
