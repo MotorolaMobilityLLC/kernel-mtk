@@ -2849,7 +2849,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     }
     /* if the delay frame is 0 or 0xFF, stop to count */
     if ((g_NewSensorExpGain.uISPGainDelayFrame != 0xFF) && (g_NewSensorExpGain.uISPGainDelayFrame != 0)) {
+	spin_lock(&kdsensor_drv_lock);
         g_NewSensorExpGain.uISPGainDelayFrame--;
+	spin_unlock(&kdsensor_drv_lock);
     }
 
 
@@ -2876,6 +2878,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_SET_ESHUTTER_GAIN:
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         PK_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
+	kfree(pFeaturePara);
         return -EFAULT;
         }
         /* keep the information to wait Vsync synchronize */
