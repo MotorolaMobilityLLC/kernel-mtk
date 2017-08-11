@@ -3,9 +3,3 @@ config MTK_THERMAL_PA_VIA_ATCMD
 	help
 	  Internal switch for thermal management to query modem RF
 	  temperature via AT command.
-
-config LCT_THERMAL_BACKLIGHT
-	bool "LCT_THERMAL_BACKLIGHT"
-	default n
-	help
-	   If you say Y, enable LCT_THERMAL_BACKLIGHT
