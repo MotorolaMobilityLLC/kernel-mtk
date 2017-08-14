@@ -38,7 +38,9 @@ static u8 g_proximity_en = 0;
 			//#include "LQ_L3600_OFG_C07_2016-12-03.i"
 			//#include "LQ_L3600_OFG_C08_2016-12-22.i"
 			//#include "LQ_L3600_OFG_C09_2016-12-28.i"
-			#include "LQ_L3600_OFG_C0C_2017-4-14.i"		//modified by zhudaolong 20170417
+			//#include "LQ_L3600_OFG_C0C_2017-4-14.i"		//modified by zhudaolong 20170417
+			//#include "LQ_L3600_OFG_C0D_2017-5-03.i"		//modified by zhudaolong 20170516
+			#include "LQ_L3600_OFG_C0E_2017-8-4.i"            //modified by yangjz 20170804
 	};
 #endif
 #ifdef MTK
@@ -2438,8 +2440,8 @@ static int touch_event_handler(void *ptr)
 
 		//if (private_ts->debug_log_level & BIT(2)) {
 				getnstimeofday(&timeStart);
-				I(" Irq start time = %ld.%06ld s\n",
-					timeStart.tv_sec, timeStart.tv_nsec/1000);//modify by hxl
+				//I(" Irq start time = %ld.%06ld s\n",
+					//timeStart.tv_sec, timeStart.tv_nsec/1000);//modify by hxl
 		//}
 #ifdef HX_SMART_WAKEUP
 	if (atomic_read(&private_ts->suspend_mode)&&(!FAKE_POWER_KEY_SEND)&&(private_ts->SMWP_enable)) {
