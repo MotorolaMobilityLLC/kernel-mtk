@@ -10,6 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/${MTK_PLATFORM}/include/mach
 
 ifeq ($(CONFIG_MTK_FPGA),y)
 obj-y	:= mt_gpio_fpga.o

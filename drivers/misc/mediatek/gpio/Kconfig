@@ -12,3 +12,11 @@ config MTK_GPIO
 config MTK_MT6306_SUPPORT
 	tristate "MediaTek MT6306 GPIO Controller support"
 	default n
+
+config MTK_GPIO_ON_SMC
+	bool "MediaTek GPIO HW access on SMC"
+	default n
+	---help---
+	  This selects GPIO HW access via Secure Monitor Call.
+	  If you want to secure GPIO in secure world, say Y here.
+	  If unsure, say N.

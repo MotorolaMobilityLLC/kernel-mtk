@@ -17,8 +17,18 @@
 #include "mt-plat/sync_write.h"
 #include <mach/gpio_const.h>
 
+#ifdef CONFIG_MTK_GPIO_ON_SMC
+#define GPIO_ON_SMC
+#endif
+
+#ifdef GPIO_ON_SMC
+#define GPIO_WR32(addr, data) mt_mc_gpio_wr32(((unsigned long)addr - (unsigned long) GPIO_BASE), data)
+#define GPIO_RD32(addr) mt_mc_gpio_rd32(((unsigned long)addr - (unsigned long)GPIO_BASE))
+#else
 #define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, (unsigned long)addr)
 #define GPIO_RD32(addr)         __raw_readl(addr)
+#endif
+
 /* #define GPIO_SET_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) = (unsigned long)(BIT)) */
 /* #define GPIO_CLR_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) &= ~((unsigned long)(BIT))) */
 #define GPIO_SW_SET_BITS(BIT, REG)   GPIO_WR32(REG, GPIO_RD32(REG) | ((BIT)))

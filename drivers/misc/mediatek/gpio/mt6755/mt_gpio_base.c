@@ -30,6 +30,10 @@
 #include <linux/of_address.h>
 #endif
 
+#ifdef GPIO_ON_SMC
+#include "mt_secure_api.h"
+#endif
+
 long gpio_pull_select_unsupport[MAX_GPIO_PIN] = { 0 };
 long gpio_pullen_unsupport[MAX_GPIO_PIN] = { 0 };
 long gpio_smt_unsupport[MAX_GPIO_PIN] = { 0 };
@@ -39,6 +43,22 @@ struct mt_gpio_vbase gpio_vbase;
 #define REGCLR (8)
 
 static GPIO_REGS *gpio_reg;
+
+#ifdef GPIO_ON_SMC
+void mt_mc_gpio_wr32(unsigned long addr, u32 data)
+{
+	/*GPIOERR("mt_mc_gpio_wr32 : 0x%lx, 0x%x, 0x%x\n", addr, data, __raw_readl(addr + GPIO_BASE));*/
+	mt_secure_call(MTK_SIP_KERNEL_GPIO_WRITE, (u32)addr, data, 0);
+}
+
+static unsigned long mt_mc_gpio_rd32(u32 addr)
+{
+	/*GPIOERR("mt_mc_gpio_rd32 : %x\n", addr);*/
+	return (u32)mt_secure_call(MTK_SIP_KERNEL_GPIO_READ, (u32)addr, 0, 0);
+}
+#endif
+
+
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_dir_base(unsigned long pin, unsigned long dir)
 {
