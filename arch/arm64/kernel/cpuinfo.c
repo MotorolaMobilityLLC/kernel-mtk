@@ -51,6 +51,9 @@ static char *icache_policy_str[] = {
 
 unsigned long __icache_flags;
 
+/* machine descriptor for arm64 device */
+static const char *machine_desc_str;
+
 static const char *hwcap_str[] = {
 	"fp",
 	"asimd",
@@ -101,10 +104,19 @@ static const char *compat_hwcap2_str[] = {
 };
 #endif /* CONFIG_COMPAT */
 
+/* setup machine descriptor */
+void machine_desc_set(const char *str)
+{
+	machine_desc_str = str;
+}
+
 static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
 	bool compat = personality(current->personality) == PER_LINUX32;
+
+	/* a hint message to notify that some process reads /proc/cpuinfo */
+	pr_err("Dump cpuinfo\n");
 
 	for_each_online_cpu(i) {
 		struct cpuinfo_arm64 *cpuinfo = &per_cpu(cpu_data, i);
@@ -119,6 +131,14 @@ static int c_show(struct seq_file *m, void *v)
 		if (compat)
 			seq_printf(m, "model name\t: ARMv8 Processor rev %d (%s)\n",
 				   MIDR_REVISION(midr), COMPAT_ELF_PLATFORM);
+
+		/*
+		 * backward-compatibility for thrid-party applications:
+		 * Since the cpu_info->cpu_name is deprecated, print "AArch64 Processor" instead
+		 * (As the defined string in arch/arm64/kernel/cputable.c for legacy kernel)
+		 */
+		seq_printf(m, "Processor\t: AArch64 Processor rev %d (%s)\n", MIDR_REVISION(midr), ELF_PLATFORM);
+		seq_printf(m, "model name\t: AArch64 Processor rev %d (%s)\n", MIDR_REVISION(midr), ELF_PLATFORM);
 
 		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
 			   loops_per_jiffy / (500000UL/HZ),
@@ -155,6 +175,9 @@ static int c_show(struct seq_file *m, void *v)
 		seq_printf(m, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
 		seq_printf(m, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
 	}
+
+	/* backward-compatibility for thrid-party applications */
+	seq_printf(m, "Hardware\t: %s\n", machine_desc_str);
 
 	return 0;
 }
