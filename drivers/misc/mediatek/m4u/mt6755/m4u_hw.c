@@ -998,22 +998,10 @@ static int larb_clock_off(int larb)
 
 static int larb_clock_all_on(void)
 {
-	int i;
-
-	return 0;
-	for (i = 0 ; i < SMI_LARB_NR ; i++)
-		larb_clock_on(i);
-
 	return 0;
 }
 static int larb_clock_all_off(void)
 {
-	int i;
-
-	return 0;
-	for (i = 0 ; i < SMI_LARB_NR ; i++)
-		larb_clock_off(i);
-
 	return 0;
 }
 
@@ -1023,14 +1011,8 @@ void smi_common_clock_on(void)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
 #else
-	int ret = 0;
-
 	M4UMSG("error: smi_common_clock_on not support.\n");
 	return;
-	clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
-
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[SMI_COMMON_CLK]);
 #endif
 }
 EXPORT_SYMBOL(smi_common_clock_on);
@@ -1043,7 +1025,6 @@ void smi_common_clock_off(void)
 #else
 	M4UMSG("error: smi_common_clock_off not support.\n");
 	return;
-	clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 #endif
 }
 EXPORT_SYMBOL(smi_common_clock_off);
