@@ -60,6 +60,7 @@ static int ITG1010_suspend(struct i2c_client *client, pm_message_t msg);
 static int ITG1010_resume(struct i2c_client *client);
 static int ITG1010_local_init(struct platform_device *pdev);
 static int  ITG1010_remove(void);
+static int ITG1010_flush(void);
 
 
 static struct gyro_init_info ITG1010_init_info = {
@@ -125,6 +126,7 @@ struct ITG1010_i2c_data {
 	struct mutex			temperature_mutex;/* for temperature protection */
 	struct mutex			raw_data_mutex;/* for inv_cali_raw[] protection */
 #endif
+	bool flush;
 };
 /*----------------------------------------------------------------------------*/
 #ifdef CONFIG_OF
@@ -353,7 +355,13 @@ static int ITG1010_SetPowerMode(struct i2c_client *client, bool enable)
 	/* GYRO_LOG("set power mode ok %d!\n", enable); */
 
 	sensor_power = enable;
-
+	if (obj_i2c_data->flush) {
+		if (sensor_power) {
+			GYRO_LOG("is not flush, will call ITG1010_flush in setPowerMode\n");
+			ITG1010_flush();
+		} else
+			obj_i2c_data->flush = false;
+	}
 	return ITG1010_SUCCESS;
 }
 
@@ -1021,7 +1029,16 @@ static int ITG1010_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRep
 
 static int ITG1010_flush(void)
 {
-	return gyro_flush_report();
+	int err = 0;
+	/*Only flush after sensor was enabled*/
+	if (!sensor_power) {
+		obj_i2c_data->flush = true;
+		return 0;
+	}
+	err = gyro_flush_report();
+	if (err >= 0)
+		obj_i2c_data->flush = false;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/

@@ -151,6 +151,7 @@ struct mc3xxx_i2c_data {
 	atomic_t				fir_en;
 	struct data_filter	  fir;
 	#endif
+	bool flush;
 
 };
 
@@ -184,6 +185,7 @@ static int mc3xxx_remove(void);
 static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable);
 static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXES_NUM]);
 static void MC3XXX_SetGain(void);
+static int mc3410_flush(void);
 
 /*****************************************************************************
  *** STATIC VARIBLE & CONTROL BLOCK DECLARATION
@@ -1117,7 +1119,13 @@ static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable)
 		GSE_LOG("fwq set power mode ok %d!\n", databuf[1]);
 
 	mc3xxx_sensor_power = enable;
-
+	if (mc3xxx_obj_i2c_data->flush) {
+		if (mc3xxx_sensor_power) {
+			GSE_LOG("remain flush, will call mc3410_flush in setPowerMode\n");
+			mc3410_flush();
+		} else
+			mc3xxx_obj_i2c_data->flush = false;
+	}
 	return MC3XXX_RETCODE_SUCCESS;
 }
 
@@ -2235,7 +2243,16 @@ static int mc3410_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRepo
 
 static int mc3410_flush(void)
 {
-	return acc_flush_report();
+	int err = 0;
+	/*Only flush after sensor was enabled*/
+	if (!mc3xxx_sensor_power) {
+		mc3xxx_obj_i2c_data->flush = true;
+		return 0;
+	}
+	err = acc_flush_report();
+	if (err >= 0)
+		mc3xxx_obj_i2c_data->flush = false;
+	return err;
 }
 
 static int mc3410_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)

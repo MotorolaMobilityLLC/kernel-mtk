@@ -70,6 +70,7 @@ static int akm09911_suspend(struct i2c_client *client, pm_message_t msg);
 static int akm09911_resume(struct i2c_client *client);
 static int akm09911_local_init(void);
 static int akm09911_remove(void);
+static int akm09911_flush(void);
 
 static struct mag_init_info akm09911_init_info = {
 	.name = "akm09911",
@@ -95,6 +96,8 @@ struct akm09911_i2c_data {
 	atomic_t layout;
 	atomic_t trace;
 	struct hwmsen_convert cvt;
+	bool flush;
+	bool enable;
 };
 /*----------------------------------------------------------------------------*/
 #ifdef CONFIG_OF
@@ -1455,21 +1458,34 @@ static int akm09911_enable(int en)
 {
 	int value = 0;
 	int err = 0;
+	struct akm09911_i2c_data *f_obj = i2c_get_clientdata(this_client);
+
+	if (NULL == f_obj)
+		return -1;
 
 	value = en;
 	factory_mode = 1;
 	if (value == 1) {
+		f_obj->enable = true;
 		err = AKECS_SetMode(AK09911_MODE_SNG_MEASURE);
 		if (err < 0) {
 			MAGN_ERR("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
 		}
 	} else {
+		f_obj->enable = false;
 		err = AKECS_SetMode(AK09911_MODE_POWERDOWN);
 		if (err < 0) {
 			MAGN_ERR("%s:AKECS_SetMode Error.\n", __func__);
 			return err;
 		}
+	}
+	if (f_obj->flush) {
+		if (value == 1) {
+			MAGN_LOG("will call akm09911_flush in akm09911_enable\n");
+			akm09911_flush();
+		} else
+			f_obj->flush = false;
 	}
 	wake_up(&open_wq);
 	return err;
@@ -1562,7 +1578,21 @@ static int akm09911_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRe
 
 static int akm09911_flush(void)
 {
-	return mag_flush_report();
+	/*Only flush after sensor was enabled*/
+	int err = 0;
+	struct akm09911_i2c_data *f_obj = i2c_get_clientdata(this_client);
+
+	if (NULL == f_obj)
+		return -1;
+
+	if (!f_obj->enable) {
+		f_obj->flush = true;
+		return 0;
+	}
+	err = mag_flush_report();
+	if (err >= 0)
+		f_obj->flush = false;
+	return err;
 }
 
 static int akm09911_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)

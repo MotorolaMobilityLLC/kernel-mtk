@@ -47,6 +47,9 @@ static int cm36652_i2c_remove(struct i2c_client *client);
 static int cm36652_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int cm36652_i2c_suspend(struct i2c_client *client, pm_message_t msg);
 static int cm36652_i2c_resume(struct i2c_client *client);
+static int als_flush(void);
+static int ps_flush(void);
+
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id cm36652_i2c_id[] = {{CM36652_DEV_NAME, 0}, {} };
@@ -106,6 +109,8 @@ struct cm36652_priv {
 	atomic_t	ps_thd_val;
 	ulong		enable;		/*enable mask*/
 	ulong		pending_intr;	/*pending interrupt*/
+	bool als_flush;
+	bool ps_flush;
 
 };
 /*----------------------------------------------------------------------------*/
@@ -1199,6 +1204,13 @@ static int als_enable_nodata(int en)
 #endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
 
 	/* APS_LOG("cm36652_obj als enable value = %d\n", en); */
+	if (cm36652_obj->als_flush) {
+		if (en) {
+			APS_LOG("is not flush, will call als_flush in als_enable_nodata\n");
+			als_flush();
+		} else
+			cm36652_obj->als_flush = false;
+	}
 
 #ifdef CUSTOM_KERNEL_SENSORHUB
 	if (atomic_read(&cm36652_obj->init_done)) {
@@ -1308,6 +1320,13 @@ static int ps_enable_nodata(int en)
 #endif /* #ifdef CUSTOM_KERNEL_SENSORHUB */
 
 	/* APS_LOG("cm36652_obj als enable value = %d\n", en); */
+	if (cm36652_obj->ps_flush) {
+		if (en) {
+			APS_LOG("is not flush, will call ps_flush in als_enable_nodata\n");
+			ps_flush();
+		} else
+			cm36652_obj->ps_flush = false;
+	}
 
 #ifdef CUSTOM_KERNEL_SENSORHUB
 	if (atomic_read(&cm36652_obj->init_done)) {
@@ -1416,7 +1435,16 @@ static int als_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportL
 
 static int als_flush(void)
 {
-	return als_flush_report();
+	int err = 0;
+	/*Only flush after sensor was enabled*/
+	if (!test_bit(CMC_BIT_ALS, &cm36652_obj->enable)) {
+		cm36652_obj->als_flush = true;
+		return 0;
+	}
+	err = als_flush_report();
+	if (err >= 0)
+		cm36652_obj->als_flush = false;
+	return err;
 }
 
 static int ps_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
@@ -1432,7 +1460,16 @@ static int ps_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLa
 
 static int ps_flush(void)
 {
-	return ps_flush_report();
+	int err = 0;
+	/*Only flash after sensor was enabled*/
+	if (!test_bit(CMC_BIT_PS, &cm36652_obj->enable)) {
+		cm36652_obj->ps_flush = true;
+		return 0;
+	}
+	err = ps_flush_report();
+	if (err >= 0)
+		cm36652_obj->ps_flush = false;
+	return err;
 }
 
 /************************************************************/
