@@ -17,6 +17,7 @@
  */
 
 #include <linux/linkage.h>
+#include <asm/alternative.h>
 #include <asm/assembler.h>
 
 /*
@@ -31,6 +32,7 @@ ENTRY(	\name	)
 	mov	x2, #1
 	add	x1, x1, x0, lsr #3	// Get word offset
 	lsl	x3, x2, x3		// Create mask
+alternative_insn  "nop", "dmb sy", ARM64_WORKAROUND_855872
 1:	ldxr	x2, [x1]
 	\instr	x2, x2, x3
 	stxr	w0, x2, [x1]
@@ -46,6 +48,7 @@ ENTRY(	\name	)
 	mov	x2, #1
 	add	x1, x1, x0, lsr #3	// Get word offset
 	lsl	x4, x2, x3		// Create mask
+alternative_insn  "nop", "dmb sy", ARM64_WORKAROUND_855872
 1:	ldxr	x2, [x1]
 	lsr	x0, x2, x3		// Save old value of bit
 	\instr	x2, x2, x4		// toggle bit
