@@ -1830,13 +1830,16 @@ static int mpu6515g_factory_enable_sensor(bool enabledisable, int64_t sample_per
 }
 static int mpu6515g_factory_get_data(int32_t data[3], int *status)
 {
+	int err = 0;
 #if 0
 	return bmi160_gyro_get_data(&data[0], &data[1], &data[2], status);
 #endif
 	/* prevent meta calibration timeout */
 	MPU6515_SetPWR_MGMT_2(mpu6515_i2c_client, true);
 	if (false == sensor_power) {
-		MPU6515_SetPowerMode(mpu6515_i2c_client, true);
+		err = MPU6515_SetPowerMode(mpu6515_i2c_client, true);
+		if (err != 0)
+			GYRO_PR_ERR("MPU6515_SetPowerMode fail\n");
 		msleep(50);
 	}
 	/* MPU6515_ReadGyroData(client, strbuf, MPU6515_BUFSIZE); */
