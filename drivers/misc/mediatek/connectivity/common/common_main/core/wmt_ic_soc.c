@@ -1147,7 +1147,10 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	    (0x0279 == wmt_ic_ops_soc.icId) ||
 	    (0x0326 == wmt_ic_ops_soc.icId) ||
 	    (0x0551 == wmt_ic_ops_soc.icId) ||
-	    (0x0321 == wmt_ic_ops_soc.icId) || (0x0335 == wmt_ic_ops_soc.icId) || (0x0337 == wmt_ic_ops_soc.icId)) {
+	    (0x0321 == wmt_ic_ops_soc.icId) ||
+	    (0x0335 == wmt_ic_ops_soc.icId) ||
+	    (0x0337 == wmt_ic_ops_soc.icId) ||
+	    (0x0633 == wmt_ic_ops_soc.icId)) {
 		wmt_stp_wifi_lte_coex();
 		WMT_DBG_FUNC("wmt_stp_wifi_lte_coex done!\n");
 	}
@@ -1740,7 +1743,9 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 		    (0x0326 == wmt_ic_ops_soc.icId) ||
 		    (0x0551 == wmt_ic_ops_soc.icId) ||
 		    (0x0321 == wmt_ic_ops_soc.icId) ||
-		    (0x0335 == wmt_ic_ops_soc.icId) || (0x0337 == wmt_ic_ops_soc.icId)) {
+		    (0x0335 == wmt_ic_ops_soc.icId) ||
+		    (0x0337 == wmt_ic_ops_soc.icId) ||
+		    (0x0633 == wmt_ic_ops_soc.icId)) {
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_1, osal_array_size(set_wifi_lte_coex_table_1));
 			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_1 %s(%d)\n", iRet ? "fail" : "ok", iRet);
@@ -2165,7 +2170,10 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	    0x0551 == wmt_ic_ops_soc.icId ||
 	    0x0321 == wmt_ic_ops_soc.icId ||
 	    0x0335 == wmt_ic_ops_soc.icId ||
-	    0x0337 == wmt_ic_ops_soc.icId || 0x8163 == wmt_ic_ops_soc.icId || 0x6580 == wmt_ic_ops_soc.icId) {
+	    0x0337 == wmt_ic_ops_soc.icId ||
+	    0x8163 == wmt_ic_ops_soc.icId ||
+	    0x6580 == wmt_ic_ops_soc.icId ||
+	    0x0633 == wmt_ic_ops_soc.icId) {
 		/* MT6571 patch RAM base */
 		WMT_PATCH_ADDRESS_CMD[8] = 0x40;
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0xc8;
