@@ -34,17 +34,24 @@ extern int (*ion_sync_kernel_func)(unsigned long start, size_t size,
 #endif
 
 #ifdef ION_HISTORY_RECORD
-extern int ion_history_init(void);
+int ion_history_init(void);
+void ion_history_count_kick(bool allc, size_t len);
 #else
 static inline int ion_history_init(void)
 {
 	return 0;
+}
+
+void ion_history_count_kick(bool allc, size_t len)
+{
+	/*do nothing*/
 }
 #endif
 
 int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache, size_t size));
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock);
 int ion_drv_create_heap(struct ion_platform_heap *heap_data);
+struct ion_buffer *ion_drv_file_to_buffer(struct file *file);
 
 #ifdef CONFIG_PM
 extern void shrink_ion_by_scenario(int need_lock);

@@ -116,6 +116,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 #endif
 	if (sec_handle <= 0) {
 		IONMSG("%s alloc security memory failed, total size %zu\n", __func__, sec_heap_total_memory);
+		kfree(pBufferInfo);
 		return -ENOMEM;
 	}
 

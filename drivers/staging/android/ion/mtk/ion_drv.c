@@ -234,40 +234,6 @@ static long ion_sys_cache_sync(struct ion_client *client,
 			}
 		}
 
-#if 0
-		unsigned long end, page_num, page_start;
-
-		/* Cache line align */
-		end = start + size;
-		start = (start / L1_CACHE_BYTES * L1_CACHE_BYTES);
-		size = (end - start + L1_CACHE_BYTES - 1) / L1_CACHE_BYTES * L1_CACHE_BYTES;
-		page_num = ((start&(~PAGE_MASK))+size+(~PAGE_MASK))>>PAGE_ORDER;
-		page_start = start & PAGE_MASK;
-
-		/* L2 cache sync */
-		/* printk("[ion_sys_cache_sync]: page_start=0x%08X, page_num=%d\n", page_start, page_num); */
-		for (i = 0; i < page_num; i++, page_start += DEFAULT_PAGE_SIZE) {
-			phys_addr_t phys_addr;
-
-			if (page_start >= VMALLOC_START && page_start <= VMALLOC_END) {
-				ppage = vmalloc_to_page((void *)page_start);
-				if (!ppage) {
-					IONMSG("[ion_sys_cache_sync]: Cannot get vmalloc page. addr=0x%08X\n",
-							page_start);
-					ion_unmap_kernel(client, pParam->handle);
-					return -EFAULT;
-				}
-				phys_addr = page_to_phys(ppage);
-			} else
-				phys_addr = virt_to_phys((void *)page_start);
-			if (pParam->sync_type == ION_CACHE_CLEAN_BY_RANGE)
-				outer_clean_range(phys_addr, phys_addr+DEFAULT_PAGE_SIZE);
-			else if (pParam->sync_type == ION_CACHE_INVALID_BY_RANGE)
-				outer_inv_range(phys_addr, phys_addr+DEFAULT_PAGE_SIZE);
-			else if (pParam->sync_type == ION_CACHE_FLUSH_BY_RANGE)
-				outer_flush_range(phys_addr, phys_addr+DEFAULT_PAGE_SIZE);
-		}
-#endif
 
 		ion_drv_put_kernel_handle(kernel_handle);
 	} else {
@@ -522,29 +488,8 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 	case ION_SYS_DMA_OP:
 		ion_sys_dma_op(client, &Param.dma_param, from_kernel);
 		break;
-	case ION_SYS_SET_HANDLE_BACKTRACE: {
-#if  ION_RUNTIME_DEBUGGER
-		unsigned int i;
-		struct ion_handle *kernel_handle;
-
-		kernel_handle = ion_drv_get_handle(client,
-				-1, Param.record_param.handle, from_kernel);
-		if (IS_ERR(kernel_handle)) {
-			IONMSG("ion_set_handle_bt fail!\n");
-			ret = -EINVAL;
-			break;
-		}
-
-		kernel_handle->dbg.pid = (unsigned int) current->pid;
-		kernel_handle->dbg.tgid = (unsigned int)current->tgid;
-		kernel_handle->dbg.backtrace_num = Param.record_param.backtrace_num;
-
-		for (i = 0; i < Param.record_param.backtrace_num; i++)
-			kernel_handle->dbg.backtrace[i] = Param.record_param.backtrace[i];
-		ion_drv_put_kernel_handle(kernel_handle);
-
-#endif
-	}
+	case ION_SYS_SET_HANDLE_BACKTRACE:
+		IONMSG("[ion_dbg][ion_sys_ioctl]: Error. ION_SYS_SET_HANDLE_BACKTRACE not support.\n");
 		break;
 	default:
 		IONMSG("[ion_dbg][ion_sys_ioctl]: Error. Invalid command.\n");

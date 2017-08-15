@@ -30,6 +30,8 @@
 #include "ion_drv_priv.h"
 #include "mtk/ion_drv.h"
 
+#include <linux/delay.h>
+#include <linux/time.h>
 /* ============================================== */
 /* history record */
 /* ============================================== */
@@ -543,6 +545,9 @@ static int ion_client_write_record(struct history_record *client_history,
 static struct history_record *g_client_history;
 static struct history_record *g_buffer_history;
 struct task_struct *ion_history_kthread;
+wait_queue_head_t ion_history_wq;
+atomic_t ion_history_event = ATOMIC_INIT(0);
+
 #define ION_HISTORY_TIME_INTERVAL (HZ) /* 1s */
 
 static int write_mm_page_pool(int high, int order, int cache, size_t size)
@@ -556,7 +561,7 @@ static int write_mm_page_pool(int high, int order, int cache, size_t size)
 	return 0;
 }
 
-static int ion_history_reocrd(void *data)
+static int ion_history_record(void *data)
 {
 	struct ion_device *dev = g_ion_device;
 	struct rb_node *n;
@@ -569,8 +574,9 @@ static int ion_history_reocrd(void *data)
 			break;
 		}
 
-		set_current_state(TASK_INTERRUPTIBLE);
-		schedule_timeout(ION_HISTORY_TIME_INTERVAL);
+		wait_event_interruptible(ion_history_wq, atomic_read(&ion_history_event));
+		msleep(500);
+		atomic_set(&ion_history_event, 0);
 		if (fatal_signal_pending(current)) {
 			IONMSG("ion history thread being killed\n");
 			break;
@@ -649,7 +655,7 @@ int ion_history_init(void)
 {
 	struct sched_param param = { .sched_priority = 0 };
 
-	g_client_history = history_record_create(2048,
+	g_client_history = history_record_create(3072,
 			sizeof(struct ion_client_record), ion_client_record_show,
 			ion_client_destroy_record, NULL, "client_history",
 			g_ion_device->debug_root);
@@ -662,7 +668,8 @@ int ion_history_init(void)
 	debugfs_create_file("string_hash", 0644, g_ion_device->debug_root, NULL,
 			&string_hash_debug_fops);
 
-	ion_history_kthread = kthread_run(ion_history_reocrd, NULL, "%s",
+	init_waitqueue_head(&ion_history_wq);
+	ion_history_kthread = kthread_run(ion_history_record, NULL, "%s",
 			"ion_history");
 	if (IS_ERR(ion_history_kthread)) {
 		IONMSG("%s: creating thread for ion history\n", __func__);
@@ -670,59 +677,14 @@ int ion_history_init(void)
 	}
 
 	sched_setscheduler(ion_history_kthread, SCHED_IDLE, &param);
-
+	wake_up_process(ion_history_kthread);
 	return 0;
 }
 
-#if 0 /* test history record */
-
-int ion_test_show(struct seq_file *seq, void *record, void *priv)
+void ion_history_count_kick(bool allc, size_t len)
 {
-	seq_printf(seq, "%d\n", *(unsigned int *)record);
+	if (atomic_read(&ion_history_event) == 0) {
+		atomic_set(&ion_history_event, 1);
+		wake_up_interruptible(&ion_history_wq);
+	}
 }
-
-int ion_test_write(struct history_record *history_record, int data)
-{
-	int *record = history_record_get_record(history_record);
-	*record = data;
-	history_record_put_record(history_record, record);
-	return 0;
-}
-
-static int debug_set(void *data, u64 val)
-{
-	struct history_record *history_record = data;
-	int i;
-
-	for (i = 0; i < val; i++)
-		ion_test_write(history_record, i);
-
-	return 0;
-}
-
-static int debug_get(void *data, u64 *val)
-{
-	return 0;
-}
-
-DEFINE_SIMPLE_ATTRIBUTE(debug_test_fops, debug_get, debug_set, "%llu\n");
-
-int ion_test_history_init(void)
-{
-	struct history_record *history_record;
-	int i;
-
-	history_record = history_record_create(100, sizeof(int),
-			ion_test_show,
-			NULL,
-			NULL,
-			"test",
-			g_ion_device->debug_root);
-
-	debugfs_create_file(
-			"record", 0644, g_ion_device->debug_root , history_record,
-			&debug_test_fops);
-	return 0;
-}
-
-#endif

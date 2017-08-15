@@ -22,7 +22,6 @@ obj-$(CONFIG_MTK_ION) += ion_history.o
 
 ifeq ($(CONFIG_MT_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
-#ccflags-y += -DION_HISTORY_RECORD
 else
 ccflags-y += -DION_RUNTIME_DEBUGGER=0
 endif

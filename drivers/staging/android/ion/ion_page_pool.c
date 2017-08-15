@@ -24,7 +24,7 @@
 #include <linux/swap.h>
 #include "ion_priv.h"
 
-static unsigned long long showfreeareas_time = 1ULL;
+static unsigned long long last_alloc_ts;
 static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 {
 	unsigned long long start, end;
@@ -34,15 +34,12 @@ static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 	page = alloc_pages(pool->gfp_mask, pool->order);
 	end = sched_clock();
 
-	if (end - start > 10000000ULL)	{ /* unit is ns, 10ms */
-		trace_printk("warn: ion page pool alloc pages order: %d time: %lld ns\n",
-			     pool->order, end - start);
-		pr_err_ratelimited("warn: ion page pool alloc pages order: %d time: %lld ns\n", pool->order,
+	if ((end - start > 10000000ULL) &&
+	    (end - last_alloc_ts > 500000000ULL))	{
+		IONMSG("warn: page pool alloc pages order: %d time: %lld ns\n", pool->order,
 		       end - start);
-		if (end - showfreeareas_time > 100000000ULL) { /*100ms to limit log show*/
-			show_free_areas(0);
-			showfreeareas_time = end;
-		}
+		show_free_areas(0);
+		last_alloc_ts = end;
 	}
 
 	if (!page)
