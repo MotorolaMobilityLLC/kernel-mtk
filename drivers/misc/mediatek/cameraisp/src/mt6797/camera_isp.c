@@ -859,8 +859,8 @@ typedef enum _eChannel {
 #define nDMA_ERR    (nDMA_ERR_CAM + nDMA_ERR_UNI)
 
 
-static volatile UINT32 g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile MUINT32 g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][nDMA_ERR] = {{0} };
+static UINT32 g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
+static MUINT32 g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][nDMA_ERR] = {{0} };
 
 
 
