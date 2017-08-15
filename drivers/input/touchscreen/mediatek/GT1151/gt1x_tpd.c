@@ -382,8 +382,8 @@ void gt1x_irq_enable(void)
 
 	if (irq_flag == 0) {
 		irq_flag = 1;
-		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		enable_irq(touch_irq);
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
 	} else if (irq_flag == 1) {
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already enabled!");
@@ -403,8 +403,8 @@ void gt1x_irq_disable(void)
 
 	if (irq_flag == 1) {
 		irq_flag = 0;
+		disable_irq_nosync(touch_irq);
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
-		disable_irq(touch_irq);
 	} else if (irq_flag == 0) {
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already disabled!");
@@ -657,8 +657,8 @@ static irqreturn_t tpd_eint_interrupt_handler(unsigned irq, struct irq_desc *des
 	/* enter EINT handler disable INT, make sure INT is disable when handle touch event including top/bottom half */
 	/* use _nosync to avoid deadlock */
 	irq_flag = 0;
-	spin_unlock_irqrestore(&irq_flag_lock, flags);
 	disable_irq_nosync(touch_irq);
+	spin_unlock_irqrestore(&irq_flag_lock, flags);
 	/*GTP_INFO("disable irq_flag=%d",irq_flag);*/
 	wake_up_interruptible(&waiter);
 	return IRQ_HANDLED;
