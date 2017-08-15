@@ -1444,7 +1444,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					fgIsTransition = TRUE;
 				}
 			}
-			if (prBssDesc && prConnSettings->fgUseOkc) {
+			if (prBssDesc && prConnSettings->fgOkcEnabled) {
 				UINT_8 aucBuf[sizeof(PARAM_PMKID_CANDIDATE_LIST_T) + sizeof(PARAM_STATUS_INDICATION_T)];
 				P_PARAM_STATUS_INDICATION_T prStatusEvent = (P_PARAM_STATUS_INDICATION_T)aucBuf;
 				P_PARAM_PMKID_CANDIDATE_LIST_T prPmkidCandicate =
@@ -4507,13 +4507,16 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		prAisFsmInfo->fgIsInfraChannelFinished = FALSE;
 
 		/* 3.3 switch to join state */
-		if (!prAdapter->rWifiVar.rConnSettings.fgUseOkc ||
-		    !prAdapter->rWifiVar.rConnSettings.fgIsSetOkcPmkId ||
+		/* Three cases can switch to join state:
+		** 1. There's an available PMKSA in wpa_supplicant
+		** 2. found okc pmkid entry for this BSS
+		** 3. current state is disconnected. In this case, supplicant may not get a valid pmksa,
+		** so no pmkid will be passed to driver, so we no need to wait pmkid anyway.
+		*/
+		if (!prAdapter->rWifiVar.rConnSettings.fgOkcPmksaReady ||
 		    (rsnSearchPmkidEntry(prAdapter, prAisFsmInfo->prTargetBssDesc->aucBSSID, &u4Entry) &&
-		     prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist)) {
-			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
+		     prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[u4Entry].fgPmkidExist))
 			aisFsmSteps(prAdapter, AIS_STATE_JOIN);
-		}
 
 		prAisFsmInfo->fgIsChannelGranted = TRUE;
 	} else if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_REMAIN_ON_CHANNEL &&
@@ -5356,11 +5359,11 @@ VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
 
+	prAdapter->rWifiVar.rConnSettings.fgOkcPmksaReady = TRUE;
+	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
 	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN &&
-		prAisFsmInfo->fgIsChannelGranted) {
-		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rWaitOkcPMKTimer);
+		prAisFsmInfo->fgIsChannelGranted)
 		aisFsmSteps(prAdapter, AIS_STATE_JOIN);
-	}
 }
 
 static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)

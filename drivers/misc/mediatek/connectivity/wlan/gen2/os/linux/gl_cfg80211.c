@@ -1125,8 +1125,8 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 #if CFG_SUPPORT_HOTSPOT_2_0
 	prGlueInfo->fgConnectHS20AP = FALSE;
 #endif
-	prConnSettings->fgUseOkc = FALSE;
-	prConnSettings->fgIsSetOkcPmkId = FALSE;
+	prConnSettings->fgOkcEnabled = FALSE;
+	prConnSettings->fgOkcPmksaReady = FALSE;
 	if (sme->ie && sme->ie_len > 0) {
 		WLAN_STATUS rStatus;
 		UINT_32 u4BufLen;
@@ -1194,7 +1194,8 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 		}
 #endif
 #if CFG_SUPPORT_OKC
-		if (wextSrchOkcAndPMKID(pucIEStart, sme->ie_len, (PUINT_8 *) &prDesiredIE, &prConnSettings->fgUseOkc)) {
+		wextSrchOkcAndPMKID(pucIEStart, sme->ie_len, (PUINT_8 *)&prDesiredIE, &prConnSettings->fgOkcEnabled);
+		if (prConnSettings->fgOkcEnabled) {
 			UINT_16 u2PmkIdCnt = 0;
 
 			if (prDesiredIE)
