@@ -14,8 +14,9 @@
 obj-y += fliper/
 obj-y += perfmgr/
 obj-y += legacy_controller/
-ifneq ($(CONFIG_ARCH_MT6570),y)
-ifneq ($(CONFIG_ARCH_MT6580),y)
-obj-y += perf_ioctl/
-endif
-endif
+obj-$(CONFIG_ARCH_MT6735) += perf_ioctl/
+obj-$(CONFIG_ARCH_MT6735M) += perf_ioctl/
+obj-$(CONFIG_ARCH_MT6753) += perf_ioctl/
+#obj-$(CONFIG_ARCH_MT6580) += perf_ioctl/
+obj-$(CONFIG_ARCH_MT6755) += perf_ioctl/
+obj-$(CONFIG_ARCH_MT6797) += perf_ioctl/
