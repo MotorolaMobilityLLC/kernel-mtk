@@ -3345,7 +3345,6 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	P_CONNECTION_SETTINGS_T prConnSettings;
 	P_SCAN_INFO_T prScanInfo;
 	BOOLEAN fgFound = TRUE;
-	P_BSS_DESC_T prBssDesc;
 
 	/* firstly, check if we have started postpone indication.
 		otherwise, give a chance to do join before indicate to host */
@@ -3374,18 +3373,6 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 	if (!CHECK_FOR_TIMEOUT(kalGetTimeTick(), prAisFsmInfo->u4PostponeIndStartTime,
 			SEC_TO_MSEC(prConnSettings->ucDelayTimeOfDisconnectEvent)))
 		return;
-    /*Do not post host if find the bssid*/
-#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
-	prBssDesc = scanSearchBssDescByScoreForAis(prAdapter);
-#else
-	prBssDesc = scanSearchBssDescByPolicy(prAdapter, NETWORK_TYPE_AIS_INDEX);
-#endif
-
-	if (prBssDesc) {
-		prAisFsmInfo->u4PostponeIndStartTime = 0;
-		DBGLOG(AIS, INFO, "Do not Post disconnect to host since find the bss again\n");
-		return;
-	}
 
 	/* 4 <1> Deactivate previous AP's STA_RECORD_T in Driver if have. */
 	if (prAisBssInfo->prStaRecOfAP) {
