@@ -856,5 +856,4 @@ VOID kalFbNotifierUnReg(VOID);
 VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
 #endif
 VOID kalChangeSchedParams(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgNormalThread);
-VOID kalValidateScanReqAndReport(IN P_GLUE_INFO_T prGlueInfo, IN struct cfg80211_scan_request *prScanRequest);
 #endif /* _GL_KAL_H */
