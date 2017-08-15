@@ -543,12 +543,14 @@ static int16_t AKECS_SetCert(void)
 		else if (axis_sign[i] < 0)
 			axis_sign[i] = 1;
 	}
+#if 0
 	axis_order[0] = 0;
 	axis_order[1] = 1;
 	axis_order[2] = 2;
 	axis_sign[0] = 0;
 	axis_sign[1] = 0;
 	axis_sign[2] = 0;
+#endif
 	ret = AKECS_AxisInfoToPat(axis_order, axis_sign, &cert);
 	if (ret != 0)
 		return 0;
@@ -1524,6 +1526,7 @@ static int akm09911_get_data(int *x, int *y, int *z, int *status)
 	data[2] = (int16_t)(strbuf[5] | (strbuf[6] << 8));
 
 	akm09911_coordinate_convert(data);
+
 	if (akm_device == 0x04) {/* ak09912 */
 		*x = data[0] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09912(akm_fuse[0]);
 		*y = data[1] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09912(akm_fuse[1]);
@@ -1650,7 +1653,9 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	}
 
 	data->hw = hw;
-
+	/*data->hw->direction from dts is for AKMD, rang is 1-8*/
+	/*now use akm09911_coordinate_convert api, so the rang is 0-7 */
+	data->hw->direction--;
 	err = hwmsen_get_convert(data->hw->direction, &data->cvt);
 	if (err) {
 		MAGN_ERR("invalid direction: %d\n", data->hw->direction);
