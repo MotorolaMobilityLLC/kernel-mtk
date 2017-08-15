@@ -223,10 +223,8 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	char buf[64];
-	int ret;
 	unsigned long arg1, arg2;
-	char option[64], arg[10];
-	int i, j;
+	char option[64];
 
 	arg1 = 0;
 	arg2 = 0;
@@ -238,86 +236,57 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	/* get option */
-	for (i = 0; i < cnt && buf[i] != ' '; i++)
-		option[i] = buf[i];
-	option[i] = '\0';
+	if (3 == sscanf(buf, "%61s %lu %lu", option, &arg1, &arg2) ||
+			2 == sscanf(buf, "%61s %lu", option, &arg1)) {
 
-	/* get arg1 */
-	for (; i < cnt && buf[i] == ' '; i++)
-		;
-	for (j = 0; i < cnt && buf[i] != ' '; i++, j++)
-		arg[j] = buf[i];
-	arg[j] = '\0';
-	if (j > 0) {
-		ret = kstrtoul(arg, 0, (unsigned long *)&arg1);
-		if (ret < 0) {
-			pr_debug(TAG"1 ret of kstrtoul is broke\n");
-			return ret;
-		}
-	}
-
-	/* get arg2 */
-	for (; i < cnt && buf[i] == ' '; i++)
-		;
-	for (j = 0; i < cnt && buf[i] != ' '; i++, j++)
-		arg[j] = buf[i];
-	arg[j] = '\0';
-	if (j > 0) {
-		ret = kstrtoul(arg, 0, (unsigned long *)&arg2);
-		if (ret < 0) {
-			pr_debug(TAG"2 ret of kstrtoul is broke\n");
-			return ret;
-		}
-	}
-
-	if (strncmp(option, "ENABLE_CG", 9) == 0) {
-		enable_cg_fliper(arg1);
-	} else if (strncmp(option, "ENABLE_TOTAL", 12) == 0) {
-		enable_total_fliper(arg1);
-	} else if (strncmp(option, "SET_CG_THRES", 12) == 0) {
-		cg_set_threshold(arg1, arg2);
-	} else if (strncmp(option, "SET_TOTAL_THRES", 15) == 0) {
-		total_set_threshold(arg1, arg2);
-	} else if (strncmp(option, "RESTORE_CG", 10) == 0) {
-		cg_restore_threshold();
-	} else if (strncmp(option, "RESTORE_TOTAL", 13) == 0) {
-		total_restore_threshold();
-	}	else if (strncmp(option, "SET_CG", 6) == 0) {
-		setCG(arg1);
-	}	else if (strncmp(option, "SET_TOTAL", 9) == 0) {
-		setTotal(arg1);
-	}  else if (strncmp(option, "POWER_MODE", 10) == 0) {
-		if (!fliper_debug) {
-			if (arg1 == Default) {
-				pr_debug(TAG"POWER_MODE: default\n");
-				enable_cg_fliper(1);
-				cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
-				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
-			} else if (arg1 == Low_Power_Mode) {
-				pr_debug(TAG"POWER_MODE: LOW_POWER\n");
-				enable_cg_fliper(1);
-				cg_set_threshold(CG_LOW_POWER_LPM, CG_LOW_POWER_HPM);
-				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
-			} else if (arg1 == Just_Make_Mode) {
-				pr_debug(TAG"POWER_MODE: JUST_MAKE\n");
-				enable_cg_fliper(1);
-				cg_set_threshold(CG_JUST_MAKE_LPM, CG_JUST_MAKE_HPM);
-				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
-			} else if (arg1 == Performance_Mode) {
-				pr_debug(TAG"POWER_MODE: PERFORMANCE\n");
-				enable_cg_fliper(1);
+		if (strncmp(option, "ENABLE_CG", 9) == 0) {
+			enable_cg_fliper(arg1);
+		} else if (strncmp(option, "ENABLE_TOTAL", 12) == 0) {
+			enable_total_fliper(arg1);
+		} else if (strncmp(option, "SET_CG_THRES", 12) == 0) {
+			cg_set_threshold(arg1, arg2);
+		} else if (strncmp(option, "SET_TOTAL_THRES", 15) == 0) {
+			total_set_threshold(arg1, arg2);
+		} else if (strncmp(option, "RESTORE_CG", 10) == 0) {
+			cg_restore_threshold();
+		} else if (strncmp(option, "RESTORE_TOTAL", 13) == 0) {
+			total_restore_threshold();
+		}	else if (strncmp(option, "SET_CG", 6) == 0) {
+			setCG(arg1);
+		}	else if (strncmp(option, "SET_TOTAL", 9) == 0) {
+			setTotal(arg1);
+		}  else if (strncmp(option, "POWER_MODE", 10) == 0) {
+			if (!fliper_debug) {
+				if (arg1 == Default) {
+					pr_debug(TAG"POWER_MODE: default\n");
+					enable_cg_fliper(1);
+					cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
+					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
+				} else if (arg1 == Low_Power_Mode) {
+					pr_debug(TAG"POWER_MODE: LOW_POWER\n");
+					enable_cg_fliper(1);
+					cg_set_threshold(CG_LOW_POWER_LPM, CG_LOW_POWER_HPM);
+					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
+				} else if (arg1 == Just_Make_Mode) {
+					pr_debug(TAG"POWER_MODE: JUST_MAKE\n");
+					enable_cg_fliper(1);
+					cg_set_threshold(CG_JUST_MAKE_LPM, CG_JUST_MAKE_HPM);
+					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
+				} else if (arg1 == Performance_Mode) {
+					pr_debug(TAG"POWER_MODE: PERFORMANCE\n");
+					enable_cg_fliper(1);
 #if 0
-				cg_set_threshold(CG_PERFORMANCE_LPM, CG_PERFORMANCE_HPM);
+					cg_set_threshold(CG_PERFORMANCE_LPM, CG_PERFORMANCE_HPM);
 #else
-				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_PERF);
+					vcorefs_request_dvfs_opp(KIR_PERF, OPPI_PERF);
 #endif
+				}
 			}
+		} else if (strncmp(option, "DEBUG", 5) == 0) {
+			fliper_debug = arg1;
+		} else {
+			pr_debug(TAG"unknown option\n");
 		}
-	} else if (strncmp(option, "DEBUG", 5) == 0) {
-		fliper_debug = arg1;
-	} else {
-		pr_debug(TAG"unknown option\n");
 	}
 
 	return cnt;
