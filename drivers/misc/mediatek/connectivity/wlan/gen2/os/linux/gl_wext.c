@@ -3868,7 +3868,8 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 			u4Cmd = IWEVCUSTOM;
 			pucExtraInfo = aucExtraInfoBuf;
 			pucExtraInfo += sprintf(pucExtraInfo, "MLME-MICHAELMICFAILURE.indication ");
-			pucExtraInfo += sprintf(pucExtraInfo,
+			pucExtraInfo += snprintf(pucExtraInfo,
+						10,
 						"%s",
 						(pAuthReq->u4Flags == PARAM_AUTH_REQUEST_GROUP_ERROR) ?
 						"groupcast " : "unicast ");
