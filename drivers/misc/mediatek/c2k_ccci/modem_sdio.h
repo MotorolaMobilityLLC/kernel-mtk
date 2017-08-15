@@ -441,6 +441,7 @@ struct sdio_modem {
 	struct sdio_modem_port *port[SDIO_TTY_NR];
 	struct sdio_modem_ctrl_port *ctrl_port;
 	struct sdio_func *func;
+	atomic_t func_releasing;	/*release func on-going*/
 	struct sdio_msg *msg;
 	unsigned char *trans_buffer;
 	struct cbp_platform_data *cbp_data;

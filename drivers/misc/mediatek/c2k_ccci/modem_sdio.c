@@ -5330,7 +5330,6 @@ void modem_reset_handler(void)
 	spin_unlock_irqrestore(&modem->status_lock, flags);
 
 	asc_tx_reset(modem->cbp_data->tx_handle->name);
-	func = modem->func;
 
 	spin_lock_irqsave(&modem->status_lock, flags);
 	/*when md exception, we will trigger this reset function. but we should keep status not changed. */
@@ -5351,17 +5350,25 @@ void modem_reset_handler(void)
 	dcd_state = 0;
 
 	/*modem_port_remove(modem); */
+	if (atomic_add_return(1, &modem->func_releasing) == 1) {
+		func = modem->func;
+		if (!func || !func->card) {
+			LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
+		} else {
+			sdio_claim_host(func);
+			ret = sdio_disable_func(func);
+			if (ret < 0)
+				LOGPRT(LOG_ERR, "%s: sdio_disable_func failed.\n", __func__);
 
-	sdio_claim_host(func);
-	ret = sdio_disable_func(func);
-	if (ret < 0)
-		LOGPRT(LOG_ERR, "%s: sdio_disable_func failed.\n", __func__);
+			ret = sdio_release_irq(func);
+			if (ret < 0)
+				LOGPRT(LOG_ERR, "%s: sdio_release_irq failed.\n", __func__);
 
-	ret = sdio_release_irq(func);
-	if (ret < 0)
-		LOGPRT(LOG_ERR, "%s: sdio_release_irq failed.\n", __func__);
-
-	sdio_release_host(func);
+			sdio_release_host(func);
+			modem->func = NULL;
+		}
+		atomic_set(&modem->func_releasing, 0);
+	}
  out:
 	LOGPRT(LOG_INFO, "%s %d: Leave.\n", __func__, __LINE__);
 }
@@ -5373,26 +5380,29 @@ void modem_pre_stop(void)
 	struct sdio_func *func = NULL;
 	int ret = 0;
 
-	func = modem->func;
+	if (atomic_add_return(1, &modem->func_releasing) == 1) {
+		func = modem->func;
+		if (!func || !func->card) {
+			LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
+			atomic_set(&modem->func_releasing, 0);
+			return;
+		}
+		LOGPRT(LOG_INFO, "%s %d: Enter.\n", __func__, __LINE__);
 
-	if (!func || !func->card) {
-		LOGPRT(LOG_INFO, "%s %d: card removed, exit.\n", __func__, __LINE__);
-		return;
+		sdio_claim_host(func);
+		ret = sdio_disable_func(func);
+		if (ret < 0)
+			LOGPRT(LOG_ERR, "%s: sdio_disable_func failed.\n", __func__);
+
+		ret = sdio_release_irq(func);
+		if (ret < 0)
+			LOGPRT(LOG_ERR, "%s: sdio_release_irq failed.\n", __func__);
+
+		sdio_release_host(func);
+		modem->func = NULL;
+
+		atomic_set(&modem->func_releasing, 0);
 	}
-	LOGPRT(LOG_INFO, "%s %d: Enter.\n", __func__, __LINE__);
-	sdio_claim_host(func);
-	ret = sdio_disable_func(func);
-	if (ret < 0)
-		LOGPRT(LOG_ERR, "%s: sdio_disable_func failed.\n", __func__);
-
-	ret = sdio_release_irq(func);
-	if (ret < 0)
-		LOGPRT(LOG_ERR, "%s: sdio_release_irq failed.\n", __func__);
-
-	sdio_release_host(func);
-
-	modem->func = NULL;
-
 	LOGPRT(LOG_INFO, "%s %d: Leave.\n", __func__, __LINE__);
 }
 
@@ -6001,6 +6011,7 @@ int modem_sdio_init(struct cbp_platform_data *pdata)
 	modem->fw_own = 1;
 	atomic_set(&modem->as_packet->occupied, 0);
 	atomic_set(&modem->tx_fifo_cnt, TX_FIFO_SZ);
+	atomic_set(&modem->func_releasing, 0);
 	INIT_WORK(&modem->loopback_work, loopback_to_c2k);
 #endif
 
