@@ -145,7 +145,10 @@ static void ion_fb_heap_free(struct ion_buffer *buffer)
 	ion_fb_buffer_info *pBufferInfo = (ion_fb_buffer_info *) buffer->priv_virt;
 	struct sg_table *table = buffer->sg_table;
 
-	if (pBufferInfo && pBufferInfo->MVA)
+	if (!pBufferInfo)
+		return;
+
+	if (pBufferInfo->MVA)
 		m4u_dealloc_mva_sg(pBufferInfo->eModuleID, table, buffer->size, pBufferInfo->MVA);
 	ion_fb_free(heap, pBufferInfo->priv_phys, buffer->size);
 
