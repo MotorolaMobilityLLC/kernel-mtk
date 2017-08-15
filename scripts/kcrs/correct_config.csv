@@ -920,3 +920,4 @@ CONFIG_TARGET_COPY_OUT_ODM,PROJECT,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
+CONFIG_MT_BOOT_TIME_CPU_BOOST,PLATFORM,,,N,y,y,y,N,y,y,y,N,N,N
