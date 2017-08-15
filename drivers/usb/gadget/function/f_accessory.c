@@ -657,6 +657,7 @@ static ssize_t acc_write(struct file *fp, const char __user *buf,
 	struct usb_request *req = 0;
 	ssize_t r = count;
 	unsigned xfer;
+	int sendZLP = 0;
 	int ret;
 
 	pr_debug("acc_write(%zu)\n", count);
@@ -666,7 +667,17 @@ static ssize_t acc_write(struct file *fp, const char __user *buf,
 		return -ENODEV;
 	}
 
-	while (count > 0) {
+	/* we need to send a zero length packet to signal the end of transfer
+	 * if the transfer size is aligned to a packet boundary.
+	 */
+	if ((count & (dev->ep_in->maxpacket - 1)) == 0)
+		sendZLP = 1;
+
+	while (count > 0 || sendZLP) {
+		/* so we exit after sending ZLP */
+		if (count == 0)
+			sendZLP = 0;
+
 		if (!dev->online) {
 			pr_debug("acc_write dev->error\n");
 			r = -EIO;
@@ -682,17 +693,11 @@ static ssize_t acc_write(struct file *fp, const char __user *buf,
 			break;
 		}
 
-		if (count > BULK_BUFFER_SIZE) {
+		if (count > BULK_BUFFER_SIZE)
 			xfer = BULK_BUFFER_SIZE;
-			/* ZLP, They will be more TX requests so not yet. */
-			req->zero = 0;
-		} else {
+		else
 			xfer = count;
-			/* If the data length is a multple of the
-			 * maxpacket size then send a zero length packet(ZLP).
-			*/
-			req->zero = ((xfer % dev->ep_in->maxpacket) == 0);
-		}
+
 		if (copy_from_user(req->buf, buf, xfer)) {
 			r = -EFAULT;
 			break;
