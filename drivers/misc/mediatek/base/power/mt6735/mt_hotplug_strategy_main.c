@@ -460,7 +460,9 @@ static int __init hps_init(void)
 	r = platform_driver_register(&hps_ctxt.pdrv);
 	if (r)
 		hps_error("platform_driver_register fail(%d)\n", r);
-
+#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
+	hps_ctxt.little_num_base_perf_serv = 4,
+#endif
 	hps_ctxt.init_state = INIT_STATE_DONE;
 
 	return r;

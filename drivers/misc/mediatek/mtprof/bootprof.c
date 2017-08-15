@@ -23,7 +23,9 @@
 #include <log_store_kernel.h>
 
 #include "internal.h"
-
+#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
+#include "mt_hotplug_strategy_internal.h"
+#endif
 #define BOOT_STR_SIZE 256
 #define BUF_COUNT 12
 #define LOGS_PER_BUF 80
@@ -164,6 +166,12 @@ void bootprof_pdev_register(unsigned long long ts, struct platform_device *pdev)
 static void bootup_finish(void)
 {
 	initcall_debug = 0;
+
+#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
+	hps_ctxt.little_num_base_perf_serv = 1;
+#endif
+
+
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 	mt_disable_uart();
 #endif
