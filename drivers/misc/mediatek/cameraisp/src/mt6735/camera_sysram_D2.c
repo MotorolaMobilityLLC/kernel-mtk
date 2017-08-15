@@ -937,7 +937,7 @@ static long SYSRAM_Ioctl(struct file *pFile, unsigned int Cmd, unsigned long Par
 					if (pProc->Table == 0) {
 						pProc->Pid = 0;
 						pProc->Tgid = 0;
-						strcpy(pProc->ProcName, SYSRAM_PROC_NAME);
+						strncpy(pProc->ProcName, SYSRAM_PROC_NAME, sizeof(pProc->ProcName));
 					}
 					SYSRAM_SpinUnlock();
 				} else {
