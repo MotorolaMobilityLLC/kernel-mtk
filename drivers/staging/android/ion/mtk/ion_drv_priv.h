@@ -15,9 +15,6 @@
 #define __ION_DRV_PRIV_H__
 
 #include "ion_priv.h"
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-#include "secmem.h"
-#endif
 
 /* STRUCT ION_HEAP *G_ION_HEAPS[ION_HEAP_IDX_MAX]; */
 
@@ -55,14 +52,6 @@ struct ion_buffer *ion_drv_file_to_buffer(struct file *file);
 
 #ifdef CONFIG_PM
 extern void shrink_ion_by_scenario(int need_lock);
-#endif
-
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount,
-					u32 *sec_handle, uint8_t *owner, uint32_t id);
-int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
-	uint32_t id);
-extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
 #endif
 
 #endif
