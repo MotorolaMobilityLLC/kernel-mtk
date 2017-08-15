@@ -2193,9 +2193,6 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 	if (irq == gM4uDev->irq_num[0]) {
 		m4u_base = gM4UBaseAddr[0];
 		m4u_index = 0;
-	} else if (irq == gM4uDev->irq_num[1]) {
-		m4u_base = gM4UBaseAddr[1];
-		m4u_index = 1;
 	} else {
 		M4UMSG("MTK_M4U_isr(), Invalid irq number %d\n", irq);
 		return -1;
