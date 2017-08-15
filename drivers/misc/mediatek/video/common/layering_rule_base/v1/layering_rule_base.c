@@ -1499,7 +1499,9 @@ int layering_rule_start(disp_layer_info *disp_info_user, int debug_mode)
  *
  */
 	ret = dispatch_ovl_id(&layering_info);
+#ifdef HRT_DEBUG_LEVEL1
 	dump_disp_info(&layering_info, DISP_DEBUG_LEVEL_INFO);
+#endif
 	HRT_SET_PATH_SCENARIO(layering_info.hrt_num, l_rule_info->disp_path);
 	HRT_SET_SCALE_SCENARIO(layering_info.hrt_num, l_rule_info->scale_rate);
 	HRT_SET_AEE_FLAG(layering_info.hrt_num, l_rule_info->dal_enable);
