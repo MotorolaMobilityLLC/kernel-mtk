@@ -704,17 +704,6 @@ config ARM64_ERRATUM_843419
 
 	  If unsure, say Y.
 
-config ARM64_ERRATUM_855872
-	bool "Cortex-A53: 855872: A Store-Exclusive instruction might pass when it should fail"
-	default y
-	help
-	  This option adds a DMB to before each LDAXR and LDXR to avoid conditions
-	  of erratum 855872 on Cortex-A53 parts up to r0p4.
-	  Because of this erratum, the processor which acquires lock might pass when it should
-	  fail.
-
-	  If unsure, say Y.
-
 config ARM64_ERRATUM_855873
 	bool "Cortex-A53: 855873: An eviction might overtake a cache clean operation"
 	default y

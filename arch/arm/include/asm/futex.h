@@ -27,7 +27,6 @@
 	smp_mb();						\
 	prefetchw(uaddr);					\
 	__ua_flags = uaccess_save_and_enable();			\
-	errata_855872_dmb();					\
 	__asm__ __volatile__(					\
 	"1:	ldrex	%1, [%3]\n"				\
 	"	" insn "\n"					\
@@ -57,7 +56,6 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 	/* Prefetching cannot fault */
 	prefetchw(uaddr);
 	__ua_flags = uaccess_save_and_enable();
-	errata_855872_dmb();
 	__asm__ __volatile__("@futex_atomic_cmpxchg_inatomic\n"
 	"1:	ldrex	%1, [%4]\n"
 	"	teq	%1, %2\n"

@@ -1651,13 +1651,6 @@ config ARM_ERRATA_824069
 	  to the same address, then this erratum might cause
 	  a clean cache line to be incorrectly marked as dirty.
 
-config ARM_ERRATA_855872
-	bool "Cortex-A53: 855872: A Store-Exclusive instruction might pass when it should fail"
-	help
-	  This option adds a DMB to before each LDAXR and LDXR to avoid conditions
-	  of erratum 855872 on Cortex-A53 parts up to r0p4.
-	  Because of this erratum, the processor which acquires lock might pass when it should
-	  fail.
 endmenu
 
 source "arch/arm/common/Kconfig"

@@ -22,13 +22,11 @@
 #include <linux/uaccess.h>
 
 #include <asm/errno.h>
-#include <asm/alternative.h>
 
 #define __futex_atomic_op(insn, ret, oldval, uaddr, tmp, oparg)		\
 do {									\
 	uaccess_enable();						\
 	asm volatile(							\
-	ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)		\
 "1:	ldxr	%w1, %2\n"						\
 	insn "\n"							\
 "2:	stlxr	%w3, %w0, %2\n"						\
@@ -120,7 +118,6 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 
 	uaccess_enable();
 	asm volatile("// futex_atomic_cmpxchg_inatomic\n"
-	ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 "1:	ldxr	%w1, %2\n"
 "	sub	%w3, %w1, %w4\n"
 "	cbnz	%w3, 3f\n"
