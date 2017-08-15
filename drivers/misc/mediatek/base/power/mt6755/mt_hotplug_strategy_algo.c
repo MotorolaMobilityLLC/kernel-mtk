@@ -146,8 +146,6 @@ static void hps_algo_cpu_cluster_action(int online_cores, int target_cores,
 	} else {		/*Power downcpus */
 
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
-			if (cpu < 0)
-				break;
 			if (cpu_online(cpu)) {
 				cpu_down(cpu);
 				--online_cores;
