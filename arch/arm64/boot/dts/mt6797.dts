@@ -4242,7 +4242,7 @@
 					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 				};
 #endif
 #ifndef CONFIG_MTK_LATE_MOUNT
@@ -4252,9 +4252,22 @@
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 #else
 					fsmgr_flags = "wait,slotselect,verify";
+#endif
+				};
+#endif
+#ifdef CONFIG_TARGET_COPY_OUT_ODM
+				odm {
+					compatible = "android,odm";
+					dev = "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/odm";
+					type = "ext4";
+					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+					fsmgr_flags = "wait";
+#else
+					fsmgr_flags = "wait,slotselect";
 #endif
 				};
 #endif
