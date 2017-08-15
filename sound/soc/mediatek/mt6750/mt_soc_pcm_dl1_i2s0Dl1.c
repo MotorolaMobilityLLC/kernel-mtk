@@ -348,7 +348,7 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
-	PRINTK_AUD_DL1("mtk_I2S0dl1.buffer_max = %zu mPlaybackSramState = %d\n",
+	pr_warn("mtk_I2S0dl1.buffer_max = %zu mPlaybackSramState = %d\n",
 	       mtk_I2S0dl1_hardware.buffer_bytes_max,
 	       mPlaybackSramState);
 	runtime->hw = mtk_I2S0dl1_hardware;
@@ -431,9 +431,9 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 	bool mI2SWLen;
 
 	if (mPrepareDone == false) {
-		PRINTK_AUD_DL1("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
-		       __func__, runtime->format,
-		       SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE);
+		pr_warn("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d, sample rate = %d\n",
+			__func__, runtime->format,
+			SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE, substream->runtime->rate);
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
