@@ -6097,7 +6097,7 @@ int primary_display_lcm_ATA(void)
 	primary_display_esd_check_enable(0);
 	_primary_path_lock(__func__);
 	disp_irq_esd_cust_bycmdq(0);
-	if (pgc->state == 0) {
+	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("ATA_LCM, primary display path is already sleep, skip\n");
 		goto done;
 	}
