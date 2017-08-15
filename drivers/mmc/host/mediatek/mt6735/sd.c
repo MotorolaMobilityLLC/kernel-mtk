@@ -4850,6 +4850,17 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 				 * some emmc card have problem with cmd23, so use cmd12 here */
 				if (host->hw->host_function != MSDC_SDIO)
 					host->autocmd |= MSDC_AUTOCMD12;
+				/*
+				*check the current region is RPMB or not
+				*storage "host->autocmd when operating RPMB"
+				*mask 'MSDC_AUTOCMD12'	when operating RPMB"
+				*/
+				if (host->hw->host_function == MSDC_EMMC) {
+					if (mmc->card && (mmc->card->ext_csd.part_config
+						& EXT_CSD_PART_CONFIG_ACC_MASK)
+						== EXT_CSD_PART_CONFIG_ACC_RPMB)
+						host->autocmd &= ~MSDC_AUTOCMD12;
+				}
 			}
 		} else {
 			/* enable auto cmd23 */
@@ -4868,6 +4879,17 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 					host->autocmd &= ~MSDC_AUTOCMD23;
 					host->autocmd |= MSDC_AUTOCMD12;
 					l_card_no_cmd23 = 1;
+				}
+				/*
+				*check the current region is RPMB or not
+				*storage "host->autocmd when operating RPMB"
+				*mask 'MSDC_AUTOCMD12'	when operating RPMB"
+				*/
+				if (host->hw->host_function == MSDC_EMMC) {
+					if (mmc->card && (mmc->card->ext_csd.part_config
+						& EXT_CSD_PART_CONFIG_ACC_MASK)
+						== EXT_CSD_PART_CONFIG_ACC_RPMB)
+						host->autocmd &= ~MSDC_AUTOCMD12;
 				}
 			}
 		}
