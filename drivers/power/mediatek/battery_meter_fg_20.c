@@ -2394,6 +2394,11 @@ signed int battery_meter_get_VSense(void)
 #endif
 }
 
+signed int battery_meter_get_QMAX25(void)
+{
+	return batt_meter_cust_data.q_max_pos_25;
+}
+
 signed int battery_meter_meta_tool_cali_car_tune(int meta_current)
 {
 	int cali_car_tune;

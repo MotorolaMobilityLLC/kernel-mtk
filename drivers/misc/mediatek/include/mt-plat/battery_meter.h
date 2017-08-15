@@ -386,6 +386,7 @@ extern signed int battery_meter_get_battery_nPercent_UI_SOC(void);	/* tracking p
 
 extern signed int battery_meter_get_tempR(signed int dwVolt);
 extern signed int battery_meter_get_tempV(void);
+extern signed int battery_meter_get_QMAX25(void);
 extern signed int battery_meter_get_VSense(void);/* isense voltage */
 extern void battery_meter_smooth_uisoc2(void);
 extern int wakeup_fg_algo(int flow_state);
