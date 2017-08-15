@@ -1126,7 +1126,8 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 					displayid);
 			}
 
-			if (copy_to_user((void __user *)arg, &(dispif_info[displayid]), sizeof(mtk_dispif_info_t))) {
+			if (copy_to_user((void __user *)arg, &(dispif_info[displayid]),
+					sizeof(struct mtk_dispif_info))) {
 				MTKFB_LOG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			}
@@ -1437,7 +1438,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_GET_CURR_UPDATESPEED:
 		{
-			unsigned int speed;
+			unsigned int speed = 0;
 
 			MTKFB_LOG("[MTKFB] get current update speed\n");
 			/* DISP_Get_Current_UpdateSpeed(&speed); */
@@ -1448,7 +1449,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_CHANGE_UPDATESPEED:
 		{
-			unsigned int speed;
+			unsigned int speed = 0;
 
 			MTKFB_LOG("[MTKFB] change update speed\n");
 
