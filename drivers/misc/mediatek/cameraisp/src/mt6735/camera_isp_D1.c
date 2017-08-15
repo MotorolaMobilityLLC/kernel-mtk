@@ -8128,6 +8128,11 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT irqinfo)
 		return 0;
 	}
 
+	if ((irqinfo.Type >= ISP_IRQ_TYPE_AMOUNT) || (irqinfo.Type < 0)) {
+		LOG_ERR("invalid type(%d), max(%d)\n",
+			irqinfo.Type, ISP_IRQ_TYPE_AMOUNT);
+		return 0;
+	}
 	/* 1. enable signal     */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	IspInfo.IrqInfo.Status[irqinfo.UserNumber][irqinfo.Type] |= irqinfo.Status;
@@ -10347,8 +10352,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				}
 				LOG_INF("[FlushIrq]UserNumber(%d), type(%d), status(0x08%X)\n",
 					IrqInfo.UserNumber, IrqInfo.Type, IrqInfo.Status);
-				if ((IrqInfo.Type < ISP_IRQ_TYPE_AMOUNT) && (IrqInfo.Type >= 0))
-					Ret = ISP_FLUSH_IRQ(IrqInfo);
+				Ret = ISP_FLUSH_IRQ(IrqInfo);
 			} else {	/* v3 flow /v3 IRQ_USER_NUM_MAX */
 				if ((IrqInfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
 				    || (IrqInfo.UserInfo.UserKey < 0)) {
