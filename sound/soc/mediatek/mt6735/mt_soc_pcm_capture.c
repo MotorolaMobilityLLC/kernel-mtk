@@ -495,7 +495,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 
 	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lucount = %lu\n ", pos, count);
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream , count));
+	count = audio_frame_to_bytes(substream , count);
 
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = VUL_Control_context;
