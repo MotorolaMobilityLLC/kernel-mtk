@@ -15,6 +15,7 @@
 #include <linux/delay.h>
 #include <asm/div64.h>
 
+#include <linux/mutex.h>
 #include <mt-plat/upmu_common.h>
 
 #include <mt-plat/battery_meter_hal.h>
@@ -22,9 +23,17 @@
 #include <mach/mt_pmic.h>
 #include <mt-plat/battery_meter.h>
 
+static DEFINE_MUTEX(FGADC_hal_mutex);
 
+static void fgadc_hal_lock(void)
+{
+	mutex_lock(&FGADC_hal_mutex);
+}
 
-
+static void fgadc_hal_unlock(void)
+{
+	mutex_unlock(&FGADC_hal_mutex);
+}
 
 /*============================================================ //
 //define
@@ -45,6 +54,8 @@ signed int chip_diff_trim_value = 0;	/* unit = 0.1 */
 signed int g_hw_ocv_tune_value = 0;
 
 kal_bool g_fg_is_charging = 0;
+
+signed int g_meta_input_cali_current;
 
 /*============================================================ //
 //function prototype
@@ -304,10 +315,7 @@ static signed int fgauge_initialization(void *data)
 #if defined(CONFIG_POWER_EXT)
 	/* */
 #else
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-#else
 	unsigned int ret = 0;
-#endif
 	signed int current_temp = 0;
 	int m = 0;
 
@@ -333,27 +341,20 @@ static signed int fgauge_initialization(void *data)
 #endif
 	/*(3)    Set current mode, auto-calibration mode and 32KHz clock source */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_CAL, 0x2);
-	pmic_set_register_value(PMIC_FG_AUTOCALRATE, 0x2);
-	pmic_set_register_value(PMIC_FG_ON, 0x0);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0028, 0x00FF, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0028, 0x00FF, 0x0);
 #endif
 	/*(4)    Enable FGADC */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_CAL, 0x2);
-	pmic_set_register_value(PMIC_FG_AUTOCALRATE, 0x2);
-	pmic_set_register_value(PMIC_FG_ON, 0x1);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0029, 0x00FF, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0029, 0x00FF, 0x0);
 #endif
 
 	/*reset HW FG */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x1);
-	pmic_set_register_value(PMIC_FG_TIME_RST, 0x1);
-	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x1);
-	pmic_set_register_value(PMIC_FG_SW_CR, 0x1);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x7100, 0xFF00, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x7100, 0xFF00, 0x0);
 #endif
@@ -376,7 +377,7 @@ static signed int fgauge_initialization(void *data)
 			fgauge_read_current(&current_temp);
 			m++;
 			if (m > 1000) {
-				bm_print(BM_LOG_CRTI, "[fgauge_initialization] timeout!\r\n");
+				bm_err("[fgauge_initialization] timeout!\r\n");
 				break;
 			}
 		}
@@ -397,11 +398,10 @@ static signed int fgauge_read_current(void *data)
 	int m = 0;
 	long long Temp_Value = 0;
 	signed int Current_Compensate_Value = 0;
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-#else
 	unsigned int ret = 0;
-#endif
 
+
+	fgadc_hal_lock();
 	/* HW Init
 	 * (1)    i2c_write (0x60, 0xC8, 0x01); // Enable VA2
 	 * (2)    i2c_write (0x61, 0x15, 0x00); // Enable FGADC clock for digital
@@ -412,14 +412,7 @@ static signed int fgauge_read_current(void *data)
 	 * (1)    Set READ command
 	 */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
-	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
-	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+	 ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0200, 0xFF00, 0x0);
 #else
 	 ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0200, 0xFF00, 0x0);
 #endif
@@ -428,7 +421,7 @@ static signed int fgauge_read_current(void *data)
 		while (fg_get_data_ready_status() == 0) {
 			m++;
 			if (m > 1000) {
-				bm_print(BM_LOG_FULL,
+				bm_err(
 				"[fgauge_read_current] fg_get_data_ready_status timeout 1 !\r\n");
 				break;
 			}
@@ -449,8 +442,7 @@ static signed int fgauge_read_current(void *data)
 	 * (6)    Clear status to 0
 	 */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	 pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x1);
-	 pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0800, 0xFF00, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0800, 0xFF00, 0x0);
 #endif
@@ -462,24 +454,19 @@ static signed int fgauge_read_current(void *data)
 		while (fg_get_data_ready_status() != 0) {
 			m++;
 			if (m > 1000) {
-				bm_print(BM_LOG_FULL,
-				 "[fgauge_read_current] fg_get_data_ready_status timeout 2 !\r\n");
+				bm_err(
+				"[fgauge_read_current] fg_get_data_ready_status timeout 2 !\r\n");
 				break;
 			}
 		}
 	/*(8)    Recover original settings */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
-	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
-	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 #endif
+	fgadc_hal_unlock();
+
 
 	/*calculate the real world data    */
 	dvalue = (unsigned int) uvalue16;
@@ -659,10 +646,7 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 
 	signed short m;
 	unsigned int car = *(unsigned int *) (data);
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-#else
 	unsigned int ret = 0;
-#endif
 	signed int value32_CAR;
 
 	bm_print(BM_LOG_FULL, "fgauge_set_columb_interrupt_internal car=%d\n", car);
@@ -742,23 +726,14 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
  * Read HW Raw Data
  * (1)    Set READ command
  */
+
+	fgadc_hal_lock();
+
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	if (reset == 0) {
-		pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
-		pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
-		pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
-	} else {
-		pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_TIME_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
-		pmic_set_register_value(PMIC_FG_SW_CR, 0x1);
-	}
+	if (reset == 0)
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0200, 0xFF00, 0x0);
+	else
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x7300, 0xFF00, 0x0);
 #else
 	if (reset == 0)
 		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0200, 0xFF00, 0x0);
@@ -770,7 +745,7 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 	while (fg_get_data_ready_status() == 0) {
 		m++;
 		if (m > 1000) {
-			bm_print(BM_LOG_FULL,
+			bm_err(
 				 "[fgauge_set_columb_interrupt] fg_get_data_ready_status timeout 1 !");
 			break;
 		}
@@ -801,6 +776,36 @@ signed int fgauge_set_columb_interrupt_internal(void *data, int reset)
 		uvalue32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03)),
 		(pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19)));
 	#endif
+
+	/*
+	 * (5)	  (Read other data)
+	 * (6)	  Clear status to 0
+	 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0800, 0xFF00, 0x0);
+#else
+		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0800, 0xFF00, 0x0);
+#endif
+	/*
+	 * (7)	  Keep i2c read when status = 0 (0x08)
+	 * while ( fg_get_sw_clear_status() != 0 )
+	 */
+		m = 0;
+		while (fg_get_data_ready_status() != 0) {
+			m++;
+			if (m > 1000) {
+				bm_err(
+					 "[fgauge_set_columb_interrupt] fg_get_data_ready_status timeout 2 !\r\n");
+				break;
+			}
+		}
+		/*(8)	 Recover original settings */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0000, 0xFF00, 0x0);
+#else
+		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0000, 0xFF00, 0x0);
+#endif
+	fgadc_hal_unlock();
 
 	/*restore use_chip_trim_value() */
 	car = car * 0x4d14;
@@ -873,10 +878,8 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	signed int dvalue_CAR = 0;
 	int m = 0;
 	long long Temp_Value = 0;
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-#else
 	unsigned int ret = 0;
-#endif
+
 /*
  * HW Init
  * (1)    i2c_write (0x60, 0xC8, 0x01); // Enable VA2
@@ -887,23 +890,12 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
  * Read HW Raw Data
  * (1)    Set READ command
  */
+	fgadc_hal_lock();
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	if (reset == 0) {
-		pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
-		pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
-		pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-		pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
-	} else {
-		pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_TIME_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x1);
-		pmic_set_register_value(PMIC_FG_SW_CR, 0x1);
-	}
+	if (reset == 0)
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0200, 0xFF00, 0x0);
+	else
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x7300, 0xFF00, 0x0);
 #else
 	if (reset == 0)
 		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0200, 0xFF00, 0x0);
@@ -916,7 +908,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	while (fg_get_data_ready_status() == 0) {
 		m++;
 		if (m > 1000) {
-			bm_print(BM_LOG_FULL,
+			bm_err(
 				 "[fgauge_read_columb_internal] fg_get_data_ready_status timeout 1 !\r\n");
 			break;
 		}
@@ -947,14 +939,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
  * (6)    Clear status to 0
  */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
-	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x1);
-	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0800, 0xFF00, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0800, 0xFF00, 0x0);
 #endif
@@ -966,24 +951,18 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	while (fg_get_data_ready_status() != 0) {
 		m++;
 		if (m > 1000) {
-			bm_print(BM_LOG_FULL,
+			bm_err(
 				 "[fgauge_read_columb_internal] fg_get_data_ready_status timeout 2 !\r\n");
 			break;
 		}
 	}
 	/*(8)    Recover original settings */
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_FG_SW_CR, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_READ_PRE, 0x0);
-	pmic_set_register_value(PMIC_FG_LATCHDATA_ST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_CLEAR, 0x0);
-	pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_TIME_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x0);
-	pmic_set_register_value(PMIC_FG_SW_RSTCLR, 0x0);
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 #else
 	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0000, 0xFF00, 0x0);
 #endif
+	fgadc_hal_unlock();
 
 /*calculate the real world data    */
 	dvalue_CAR = (signed int) uvalue32_CAR;
@@ -1088,19 +1067,13 @@ static signed int fgauge_hw_reset(void *data)
 #else
 	volatile unsigned int val_car = 1;
 	unsigned int val_car_temp = 1;
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-#else
 	unsigned int ret = 0;
-#endif
 
 	bm_print(BM_LOG_FULL, "[fgauge_hw_reset] : Start \r\n");
 
 	while (val_car != 0x0) {
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-		pmic_set_register_value(PMIC_FG_CHARGE_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_TIME_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_OFFSET_RST, 0x1);
-		pmic_set_register_value(PMIC_FG_SW_CR, 0x1);
+		ret = pmic_config_interface(MT6353_FGADC_CON0, 0x7100, 0xFF00, 0x0);
 #else
 		ret = pmic_config_interface(MT6351_FGADC_CON0, 0x7100, 0xFF00, 0x0);
 #endif
@@ -1238,7 +1211,171 @@ static signed int read_battery_plug_out_status(void *data)
 	return STATUS_OK;
 }
 
+static signed int fgauge_set_meta_cali_current(void *data)
+{
+	g_meta_input_cali_current = *(signed int *)(data);
 
+	return STATUS_OK;
+}
+
+#if defined(CONFIG_POWER_EXT)
+ /**/
+#else
+static signed int fgauge_get_AUXADC_current_rawdata(unsigned short *uvalue16)
+{
+	unsigned int ret = 0;
+	int m = 0;
+
+	/* (1)    Set READ command */
+	fgadc_hal_lock();
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0200, 0xFF00, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0200, 0xFF00, 0x0);
+#endif
+
+	/*(2)     Keep i2c read when status = 1 (0x06) */
+	m = 0;
+	while (fg_get_data_ready_status() == 0) {
+		m++;
+		if (m > 1000) {
+			bm_err(
+			"[fgauge_get_AUXADC_current_rawdata] fg_get_data_ready_status timeout 1 !\r\n");
+			break;
+		}
+	}
+
+	/* (3)    Read FG_CURRENT_OUT[15:08] */
+	/* (4)    Read FG_CURRENT_OUT[07:00] */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	*uvalue16 = pmic_get_register_value(PMIC_FG_CURRENT_OUT);	/*mt6325_upmu_get_fg_current_out(); */
+
+#else
+	*uvalue16 = pmic_get_register_value(MT6351_PMIC_FG_CURRENT_OUT);	/*mt6325_upmu_get_fg_current_out(); */
+#endif
+
+	/*
+	 * (5)    (Read other data)
+	 * (6)    Clear status to 0
+	 */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0800, 0xFF00, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0800, 0xFF00, 0x0);
+#endif
+	/*
+	 * (7)    Keep i2c read when status = 0 (0x08)
+	 * while ( fg_get_sw_clear_status() != 0 )
+	 */
+	m = 0;
+		while (fg_get_data_ready_status() != 0) {
+			m++;
+			if (m > 1000) {
+				bm_err(
+				 "[fgauge_read_current] fg_get_data_ready_status timeout 2 !\r\n");
+				break;
+			}
+		}
+	/*(8)    Recover original settings */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	ret = pmic_config_interface(MT6353_FGADC_CON0, 0x0000, 0xFF00, 0x0);
+#else
+	ret = pmic_config_interface(MT6351_FGADC_CON0, 0x0000, 0xFF00, 0x0);
+#endif
+	fgadc_hal_unlock();
+
+	return ret;
+}
+#endif
+
+static signed int fgauge_meta_cali_car_tune_value(void *data)
+{
+#if defined(CONFIG_POWER_EXT)
+	return STATUS_OK;
+#else
+	int cali_car_tune;
+	long long sum_all = 0;
+	long long temp_sum = 0;
+	int	avg_cnt = 0;
+	int i;
+	unsigned short uvalue16;
+	unsigned int uvalue32;
+	signed int dvalue = 0;
+	long long Temp_Value1 = 0;
+	long long Temp_Value2 = 0;
+	long long current_from_ADC = 0;
+
+	if (g_meta_input_cali_current != 0) {
+		for (i = 0; i < 60; i++) {
+			if (!fgauge_get_AUXADC_current_rawdata(&uvalue16)) {
+				uvalue32 = (unsigned int) uvalue16;
+				if (uvalue32 <= 0x8000) {
+					Temp_Value1 = (long long)uvalue32;
+					pr_err("[111]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
+						uvalue16, uvalue32, Temp_Value1);
+				} else if (uvalue32 > 0x8000) {
+					/*Temp_Value1 = (long long) (uvalue32 - 65535);*/
+					/*Temp_Value1 = 0 - Temp_Value1;*/
+					Temp_Value1 = (long long) (65535 - uvalue32);
+					pr_err("[222]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
+						uvalue16, uvalue32, Temp_Value1);
+				}
+				sum_all += Temp_Value1;
+				avg_cnt++;
+				/*****************/
+				pr_err("[333]uvalue16 %d uvalue32 %d Temp_Value1 %lld sum_all %lld\n",
+						uvalue16, uvalue32, Temp_Value1, sum_all);
+				/*****************/
+			}
+			mdelay(30);
+		}
+		/*calculate the real world data    */
+		/*current_from_ADC = sum_all / avg_cnt;*/
+		temp_sum = sum_all;
+		pr_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
+			sum_all, temp_sum, avg_cnt, current_from_ADC);
+
+		do_div(temp_sum, avg_cnt);
+		current_from_ADC = temp_sum;
+
+		pr_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
+			sum_all, temp_sum, avg_cnt, current_from_ADC);
+
+		Temp_Value2 = current_from_ADC * UNIT_FGCURRENT;
+
+		pr_err("[555]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
+			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
+
+		do_div(Temp_Value2, 1000000);
+
+		pr_err("[666]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
+			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
+
+		dvalue = (unsigned int) Temp_Value2;
+
+		/* Auto adjust value */
+		if (batt_meter_cust_data.r_fg_value != 20)
+			dvalue = (dvalue * 20) / batt_meter_cust_data.r_fg_value;
+
+		pr_err("[666]dvalue %d batt_meter_cust_data.r_fg_value %d\n", dvalue, batt_meter_cust_data.r_fg_value);
+
+		cali_car_tune = g_meta_input_cali_current * 1000 / dvalue;	/* 1000 base, so multiple by 1000*/
+
+		pr_err("[777]dvalue %d batt_meter_cust_data.r_fg_value %d cali_car_tune %d\n",
+			dvalue, batt_meter_cust_data.r_fg_value, cali_car_tune);
+		*(signed int *) (data) = cali_car_tune;
+
+		pr_err(
+			"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
+			cali_car_tune, g_meta_input_cali_current, current_from_ADC,
+			UNIT_FGCURRENT, batt_meter_cust_data.r_fg_value);
+
+		return STATUS_OK;
+	}
+
+	return STATUS_UNSUPPORTED;
+#endif
+}
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
 signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
@@ -1263,6 +1400,8 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_BATTERY_PLUG_STATUS] = read_battery_plug_out_status;
 		bm_func[BATTERY_METER_CMD_GET_HW_FG_CAR_ACT] = fgauge_read_columb_accurate;
 		bm_func[BATTERY_METER_CMD_GET_IS_HW_OCV_READY] = read_is_hw_ocv_ready;
+		bm_func[BATTERY_METER_CMD_SET_META_CALI_CURRENT] = fgauge_set_meta_cali_current;
+		bm_func[BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE] = fgauge_meta_cali_car_tune_value;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
