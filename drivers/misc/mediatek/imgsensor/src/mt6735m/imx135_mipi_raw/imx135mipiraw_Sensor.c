@@ -1031,10 +1031,10 @@ static void sensor_init(void)
 	otp_update();
 	#endif
 #endif
-
+	spin_lock(&imgsensor_drv_lock);
     imgsensor.update_sensor_otp_awb = 0; // Init to 0
     imgsensor.update_sensor_otp_lsc = 0; // Init to 0
-
+	spin_unlock(&imgsensor_drv_lock);
 
 }   /*  sensor_init  */
 
