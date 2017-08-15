@@ -1639,7 +1639,7 @@ static int load_hrt_test_data(disp_layer_info *disp_info)
 		} else if (strncmp(line_buf, "[test_end]", 10) == 0) {
 			kfree(disp_info->input_config[0]);
 			kfree(disp_info->input_config[1]);
-			memset(disp_info, 0x0, sizeof(layer_config));
+			memset(disp_info, 0x0, sizeof(disp_layer_info));
 			is_end = true;
 		} else if (strncmp(line_buf, "[print_out_test_result]", 23) == 0) {
 			DISPERR("Test case %d is %s\n", (int)test_case, is_test_pass?"Pass":"Fail");
