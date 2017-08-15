@@ -12,16 +12,20 @@
 */
 #include <linux/kernel.h>
 #include "mt-plat/mt_hotplug_strategy.h"
+#include <mach/mt_lbc.h>
 #include "gl_typedef.h"
 #include <mt_vcore_dvfs.h>
 #include "config.h"
+
+#define CLUSTER_NUM	1	/* denali series have only 1 cluster */
+#define MAX_CPU_FREQ	819000	/* denail series' frequency upper bound */
 
 UINT_8 u1VcoreEnb = 0;
 
 INT32 kalBoostCpu(UINT_32 core_num)
 {
-#if CFG_SUPPORT_CPU_BOOST
 	UINT_32 cpu_num;
+	struct ppm_limit_data core_to_set, freq_to_set;
 
 	pr_warn("enter kalBoostCpu, core_num:%d\n", core_num);
 	cpu_num = core_num;
@@ -29,10 +33,21 @@ INT32 kalBoostCpu(UINT_32 core_num)
 		cpu_num += 2; /* For MT6735 only, additional 2 cores for 5G HT40 peak throughput*/
 	if (cpu_num > 4)
 		cpu_num = 4; /* There are only 4 cores for MT6735 */
-	if (cpu_num == 0)
-		cpu_num = 1; /* MT6735 default core is 1*/
 
-	hps_set_cpu_num_base(BASE_WIFI, cpu_num, 0);
+	freq_to_set.max = -1;	/* -1 means don't care */
+	core_to_set.max = -1;	/* -1 means don't care */
+	if (cpu_num != 0) {
+		core_to_set.min = cpu_num;
+		freq_to_set.min = MAX_CPU_FREQ;
+	} else {
+		core_to_set.min = -1;	/* -1 means don't care */
+		freq_to_set.min = -1;	/* -1 means don't care */
+	}
+	pr_warn("update userlimit with cpuNum=%d freq=%d\n", core_to_set.min, freq_to_set.min);
+
+	update_userlimit_cpu_freq(PPM_KIR_WIFI, CLUSTER_NUM, &core_to_set);
+	update_userlimit_cpu_core(PPM_KIR_WIFI, CLUSTER_NUM, &freq_to_set);
+
 #if defined(CONFIG_ARCH_MT6735M)
 	if ((core_num >= 3) && (u1VcoreEnb == 0)) {
 		vcorefs_request_dvfs_opp(KIR_WIFI, OPPI_PERF);
@@ -42,9 +57,7 @@ INT32 kalBoostCpu(UINT_32 core_num)
 		u1VcoreEnb = 0;
 	}
 #endif
-#else
-	pr_warn("enter kalBoostCpu(Not SUPPORT CPU BOOST), core_num:%d\n", core_num);
-#endif
+
 	return 0;
 }
 
