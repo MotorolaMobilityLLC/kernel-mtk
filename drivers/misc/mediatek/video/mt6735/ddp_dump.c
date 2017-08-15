@@ -112,18 +112,18 @@ static int ddp_greq_check(int reg_val)
 		return 0;
 
 	if (reg_val & 0x1)
-		pr_debug("disp_wdma1, ");
+		DISPMSG("disp_wdma1, ");
 	if (reg_val & 0x1)
-		pr_debug("disp_rdma1, ");
+		DISPMSG("disp_rdma1, ");
 	if (reg_val & 0x1)
-		pr_debug("disp_ovl1, ");
+		DISPMSG("disp_ovl1, ");
 	if (reg_val & 0x1)
-		pr_debug("disp_wdma0, ");
+		DISPMSG("disp_wdma0, ");
 	if (reg_val & 0x1)
-		pr_debug("disp_rdma0, ");
+		DISPMSG("disp_rdma0, ");
 	if (reg_val & 0x1)
-		pr_debug("disp_ovl0, ");
-	pr_debug("\n");
+		DISPMSG("disp_ovl0, ");
+	DISPMSG("\n");
 
 	return 0;
 }
@@ -375,39 +375,39 @@ static void mutex_dump_analysis(void)
 
 static void mmsys_config_dump_reg(void)
 {
-	DISPMSG("== DISP Config  ==\n");
-	DISPMSG("(0x0 )MMSYS_INTEN      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTEN));
-	DISPMSG("(0x4 )MMSYS_INTSTA     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA));
-	DISPMSG("(0x30)OVL0_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_MOUT_EN));
+	DISPDMP("== DISP Config  ==\n");
+	DISPDMP("(0x0 )MMSYS_INTEN      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTEN));
+	DISPDMP("(0x4 )MMSYS_INTSTA     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA));
+	DISPDMP("(0x30)OVL0_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL0_MOUT_EN));
 #if defined(MTK_FB_OVL1_SUPPORT)
-	DISPMSG("(0x34)OVL1_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_MOUT_EN));
+	DISPDMP("(0x34)OVL1_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_OVL1_MOUT_EN));
 #endif
-	DISPMSG("(0x38)DITHER_MOUT_EN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER_MOUT_EN));
-	DISPMSG("(0x3C)UFOE_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_MOUT_EN));
-	DISPMSG("(0x40)MMSYS_MOUT_RST   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MOUT_RST));
-	DISPMSG("(0x58)COLOR0_SIN       =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_COLOR0_SEL_IN));
-	DISPMSG("(0x5C)WDMA0_SIN        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA0_SEL_IN));
-	DISPMSG("(0x60)UFOE_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
-	DISPMSG("(0x64)DSI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
-	DISPMSG("(0x68)DPI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
-	DISPMSG("(0x6C)RDMA0_SOUT_SIN   =0x%x\n",
+	DISPDMP("(0x38)DITHER_MOUT_EN   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DITHER_MOUT_EN));
+	DISPDMP("(0x3C)UFOE_MOUT_EN     =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_MOUT_EN));
+	DISPDMP("(0x40)MMSYS_MOUT_RST   =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MOUT_RST));
+	DISPDMP("(0x58)COLOR0_SIN       =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_COLOR0_SEL_IN));
+	DISPDMP("(0x5C)WDMA0_SIN        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_WDMA0_SEL_IN));
+	DISPDMP("(0x60)UFOE_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_UFOE_SEL_IN));
+	DISPDMP("(0x64)DSI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DSI0_SEL_IN));
+	DISPDMP("(0x68)DPI0_SIN         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DPI0_SEL_IN));
+	DISPDMP("(0x6C)RDMA0_SOUT_SIN   =0x%x\n",
 	       DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN));
-	DISPMSG("(0x70)RDMA1_SOUT_SIN   =0x%x\n",
+	DISPDMP("(0x70)RDMA1_SOUT_SIN   =0x%x\n",
 	       DISP_REG_GET(DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN));
-	DISPMSG("(0x0F0)MM_MISC         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MISC));
-	DISPMSG("(0x100)MM_CG_CON0      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
-	DISPMSG("(0x110)MM_CG_CON1      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	DISPMSG("(0x120)MM_HW_DCM_DIS0  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0));
-	DISPMSG("(0x140)MM_SW0_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B));
-	DISPMSG("(0x144)MM_SW1_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW1_RST_B));
-	DISPMSG("(0x150)MM_LCM_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_LCM_RST_B));
-	DISPMSG("(0x880)MM_DBG_OUT_SEL  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL));
-	DISPMSG("(0x890)MM_DUMMY        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY));
-	DISPMSG("(0x8a0)DISP_VALID_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
-	DISPMSG("(0x8a8)DISP_READY_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
-	DISPMSG("(0xc08)C08             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C08));
-	DISPMSG("(0x40 )C09             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C09));
-	DISPMSG("(0x44 )C10             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C10));
+	DISPDMP("(0x0F0)MM_MISC         =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_MISC));
+	DISPDMP("(0x100)MM_CG_CON0      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPDMP("(0x110)MM_CG_CON1      =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	DISPDMP("(0x120)MM_HW_DCM_DIS0  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_HW_DCM_DIS0));
+	DISPDMP("(0x140)MM_SW0_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW0_RST_B));
+	DISPDMP("(0x144)MM_SW1_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_SW1_RST_B));
+	DISPDMP("(0x150)MM_LCM_RST_B    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_LCM_RST_B));
+	DISPDMP("(0x880)MM_DBG_OUT_SEL  =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DEBUG_OUT_SEL));
+	DISPDMP("(0x890)MM_DUMMY        =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_DUMMY));
+	DISPDMP("(0x8a0)DISP_VALID_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0));
+	DISPDMP("(0x8a8)DISP_READY_0    =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0));
+	DISPDMP("(0xc08)C08             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C08));
+	DISPDMP("(0x40 )C09             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C09));
+	DISPDMP("(0x44 )C10             =0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_C10));
 }
 
 /* ------ clock:
@@ -439,10 +439,10 @@ static void mmsys_config_dump_analysis(void)
 	int len = 0;
 	unsigned int valid0, valid1, ready0, ready1, greq;
 
-	pr_debug("==DISP MMSYS_CONFIG ANALYSIS==\n");
-	pr_debug("[ddp] mmsys_clock=0x%x\n", DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK));
+	DISPDMP("==DISP MMSYS_CONFIG ANALYSIS==\n");
+	DISPDMP("[ddp] mmsys_clock=0x%x\n", DISP_REG_GET(DISP_REG_CLK_CFG_0_MM_CLK));
 #ifdef CONFIG_MTK_CLKMGR
-	pr_debug("larb0_force_on=%d, smi_common_force_on=%d\n",
+	DISPDMP("larb0_force_on=%d, smi_common_force_on=%d\n",
 		 clk_is_force_on(MT_CG_DISP0_SMI_LARB0), clk_is_force_on(MT_CG_DISP0_SMI_COMMON));
 #endif
 
@@ -803,13 +803,13 @@ static void dsi_dump_reg(DISP_MODULE_ENUM module)
 	if (DISP_MODULE_DSI0 == module) {
 		DISPDMP("==DISP DSI0 REGS==\n");
 		for (i = 0; i < 25 * 16; i += 16)
-			pr_debug("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DISPDMP("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(DISPSYS_DSI0_BASE + i),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x4),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x8),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0xc));
 
-		pr_debug("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
+		DISPDMP("DSI0 CMDQ+0x200 : 0x%08x  0x%08x  0x%08x  0x%08x\n",
 			 INREG32(DISPSYS_DSI0_BASE + 0x200),
 			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x4),
 			 INREG32(DISPSYS_DSI0_BASE + 0x200 + 0x8),
@@ -828,7 +828,7 @@ static void dsi_dump_reg(DISP_MODULE_ENUM module)
 	else if (DISP_MODULE_DSI1 == module) {
 		DISPDMP("==DISP DSI1 REGS==\n");
 		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DISPDMP("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(DISPSYS_DSI1_BASE + i),
 				 INREG32(DISPSYS_DSI1_BASE + i + 0x4),
 				 INREG32(DISPSYS_DSI1_BASE + i + 0x8),
@@ -837,14 +837,14 @@ static void dsi_dump_reg(DISP_MODULE_ENUM module)
 	} else {
 		DISPDMP("==DISP DSIDUAL REGS==\n");
 		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DISPDMP("DSI0+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(DISPSYS_DSI0_BASE + i),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x4),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0x8),
 				 INREG32(DISPSYS_DSI0_BASE + i + 0xc));
 
 		for (i = 0; i < 20 * 16; i += 16)
-			pr_debug("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
+			DISPDMP("DSI1+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
 				 INREG32(DISPSYS_DSI1_BASE + i),
 				 INREG32(DISPSYS_DSI1_BASE + i + 0x4),
 				 INREG32(DISPSYS_DSI1_BASE + i + 0x8),

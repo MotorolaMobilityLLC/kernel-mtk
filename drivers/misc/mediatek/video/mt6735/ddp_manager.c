@@ -2028,9 +2028,9 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	{
 		DISPMSG("path:");
 		for (i = 0; i < module_num; i++)
-			pr_debug("%s-", ddp_get_module_name(modules[i]));
+			DISPMSG("%s-", ddp_get_module_name(modules[i]));
 
-		pr_debug("\n");
+		DISPMSG("\n");
 	}
 	ddp_dump_analysis(DISP_MODULE_MUTEX);
 
@@ -2042,8 +2042,6 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);
-
-	dump_stack();
 
 	return 0;
 }
