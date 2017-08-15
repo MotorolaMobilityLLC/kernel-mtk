@@ -1784,6 +1784,7 @@ int gen_hrt_pattern(void)
 	layer_config *layer_info;
 	int i;
 
+	memset(&disp_info, 0x0, sizeof(disp_layer_info));
 	disp_info.gles_head[0] = -1;
 	disp_info.gles_head[1] = -1;
 	disp_info.gles_tail[0] = -1;
