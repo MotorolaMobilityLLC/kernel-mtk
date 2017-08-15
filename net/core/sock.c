@@ -1855,7 +1855,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 	long timeo;
 	int err;
 #ifdef CONFIG_MTK_NET_LOGGING
-	struct sock_block_info_t debug_block;
+	static struct sock_block_info_t debug_block;
 	struct timer_list debug_timer;
 	unsigned long long delay_time = 0;
 
