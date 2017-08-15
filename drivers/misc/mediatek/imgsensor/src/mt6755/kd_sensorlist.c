@@ -3001,24 +3001,24 @@ bool Get_Cam_Regulator(void)
 
 bool _hwPowerOn(PowerType type, int powerVolt)
 {
-    bool ret = FALSE;
+	bool ret = FALSE;
 	struct regulator *reg = NULL;
 
 	PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
-    if (type == AVDD) {
-	reg = regVCAMA;
-    } else if (type == DVDD) {
-	reg = regVCAMD;
-    } else if (type == DOVDD) {
-	reg = regVCAMIO;
-    } else if (type == AFVDD) {
-	reg = regVCAMAF;
-    } else if (type == SUB_DVDD) {
-	reg = regSubVCAMD;
-    } else if (type == MAIN2_DVDD) {
-	reg = regMain2VCAMD;
-    } else
-    	return ret;
+	if (type == AVDD) {
+		reg = regVCAMA;
+	} else if (type == DVDD) {
+		reg = regVCAMD;
+	} else if (type == DOVDD) {
+		reg = regVCAMIO;
+	} else if (type == AFVDD) {
+		reg = regVCAMAF;
+	} else if (type == SUB_DVDD) {
+		reg = regSubVCAMD;
+	} else if (type == MAIN2_DVDD) {
+		reg = regMain2VCAMD;
+	} else
+		return ret;
 
 	if (!IS_ERR(reg)) {
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353

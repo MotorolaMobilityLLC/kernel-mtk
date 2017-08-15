@@ -102,8 +102,9 @@ bool page_write_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size)
 bool selective_read_eeprom(kal_uint16 addr, BYTE* data)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-    if(addr > MAX_OFFSET)
-        return false;
+
+	if (addr > MAX_OFFSET)
+		return false;
 	kdSetI2CSpeed(I2C_SPEED);
 
 	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, EEPROM_READ_ID)<0)
@@ -113,9 +114,9 @@ bool selective_read_eeprom(kal_uint16 addr, BYTE* data)
 
 bool sequential_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size)
 {
+	if ((addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
+		return false;
 
-    if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
-        return false;
 	kdSetI2CSpeed(I2C_SPEED);
 	if( iMultiReadReg(addr , (u8*)data , EEPROM_READ_ID, size) <0)
 		return false;
