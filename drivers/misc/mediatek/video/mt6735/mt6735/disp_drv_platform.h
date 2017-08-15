@@ -72,7 +72,7 @@
 /**
  * Enable Ovl time-sharing.
  */
-#define OVL_TIME_SHARING
+/* #define OVL_TIME_SHARING */
 
 /**
  * Build CMDQ command in trigger stage.
