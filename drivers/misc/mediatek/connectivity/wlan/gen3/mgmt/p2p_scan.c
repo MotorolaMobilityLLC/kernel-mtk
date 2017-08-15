@@ -116,6 +116,10 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 			}
 
 		}
+		if (prAdapter->prGlueInfo->prP2PInfo->prScanRequest == NULL) {
+			DBGLOG(P2P, INFO, "Don't indicate bss to cfg80211 if there is no scan on-going\n");
+			return;
+		}
 
 		do {
 			RF_CHANNEL_INFO_T rChannelInfo;
@@ -133,7 +137,12 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 			rChannelInfo.eBand = prBssDesc->eBand;
 			prBssDesc->fgIsP2PReport = TRUE;
 
-			DBGLOG(P2P, STATE, "indicate %s [%d]\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum);
+			DBGLOG(P2P, STATE, "indicate [%pM] [%s] [%s] [ch %d]\n",
+				   prWlanBeaconFrame->aucBSSID,
+				   ieee80211_is_beacon(prWlanBeaconFrame->u2FrameCtrl) ?
+					"Beacon" : "Probe Response",
+				   prBssDesc->aucSSID,
+				   prBssDesc->ucChannelNum);
 
 			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
 					      (PUINT_8) prSwRfb->pvHeader,

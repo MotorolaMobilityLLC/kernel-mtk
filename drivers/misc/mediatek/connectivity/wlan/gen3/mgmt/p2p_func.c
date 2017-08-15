@@ -854,7 +854,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			prMgmtTxMsdu->ucStaRecIndex =
 			    (prStaRec != NULL) ? (prStaRec->ucIndex) : (STA_REC_INDEX_NOT_FOUND);
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, ucBssIndex, prMgmtTxMsdu);
-			ucRetryLimit = 2;
+			ucRetryLimit = 7;
 			break;
 		default:
 			prMgmtTxMsdu->ucBssIndex = ucBssIndex;

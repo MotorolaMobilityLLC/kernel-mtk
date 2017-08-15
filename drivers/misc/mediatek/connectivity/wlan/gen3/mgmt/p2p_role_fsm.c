@@ -406,6 +406,12 @@ p2pRoleFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 		}
 
 		prP2pBssInfo = prAdapter->aprBssInfo[prMsduInfo->ucBssIndex];
+
+		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
+			prStaRec->eAuthAssocState == AAA_STATE_SEND_AUTH2) {
+			DBGLOG(P2P, INFO, "Do not delete STA_REC when wait assoc request\n");
+			break;
+		}
 		/* Change station state. */
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 
@@ -672,7 +678,7 @@ VOID p2pRoleFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T p
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 							 prP2pRoleFsmInfo->ucRoleIndex,
-							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY);
+							 NULL, NULL, 0, REASON_CODE_DEAUTH_LEAVING_BSS);
 
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
 				P_STA_RECORD_T prStaRec = prP2pBssInfo->prStaRecOfAP;
