@@ -185,6 +185,20 @@ if (rt5081_en_lt == RT5081_ENABLE_FLASH) {
 	return ret;
 }
 
+int rt5081_timer_cancel(int ct_index)
+{
+	printk("tqq line = %d\n",__LINE__);	
+	if (ct_index == RT5081_CT_HT)
+		hrtimer_cancel(&fl_timer_ht);
+	else if (ct_index == RT5081_CT_LT)
+		hrtimer_cancel(&fl_timer_lt);
+	else {
+		fl_err("Error ct index\n");
+		return -1;
+	}
+
+	return 0;
+}
 /* flashlight disable function */
 static int rt5081_disable(void)
 {
@@ -193,8 +207,15 @@ static int rt5081_disable(void)
 		fl_err("Failed to disable since no flashlight device.\n");
 		return -1;
 	}
+	printk("aaron rt5081_en_ht = %d , rt5081_en_lt = %d ,line = %d\n",rt5081_en_ht,rt5081_en_lt,__LINE__);	
+	if ((rt5081_en_ht == RT5081_DISABLE)) {
 	ret = flashlight_set_mode(flashlight_dev_ht, FLASHLIGHT_MODE_OFF);
+	rt5081_timer_cancel(RT5081_CT_HT);
+		}
+	if ((rt5081_en_lt == RT5081_DISABLE)) {
 	ret = flashlight_set_mode(flashlight_dev_lt, FLASHLIGHT_MODE_OFF);
+	rt5081_timer_cancel(RT5081_CT_LT);
+		}
 	return ret;
 }
 
@@ -350,21 +371,6 @@ int rt5081_timer_start(int ct_index, ktime_t ktime)
 	return 0;
 }
 
-int rt5081_timer_cancel(int ct_index)
-{
-	printk("tqq line = %d\n",__LINE__);	
-	if (ct_index == RT5081_CT_HT)
-		hrtimer_cancel(&fl_timer_ht);
-	else if (ct_index == RT5081_CT_LT)
-		hrtimer_cancel(&fl_timer_lt);
-	else {
-		fl_err("Error ct index\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 /******************************************************************************
  * Flashlight operation wrapper function
  *****************************************************************************/
@@ -394,8 +400,8 @@ static int rt5081_operate(int ct_index, int enable)
 				(rt5081_en_lt == RT5081_DISABLE)) {
 				fl_err("shen rt5081_disable\n");
 			rt5081_disable();
-			rt5081_timer_cancel(RT5081_CT_HT);
-			rt5081_timer_cancel(RT5081_CT_LT);
+			//rt5081_timer_cancel(RT5081_CT_HT);
+			//rt5081_timer_cancel(RT5081_CT_LT);
 		} else {
 			if(rt5081_is_torch(rt5081_level_ht) || rt5081_is_torch(rt5081_level_lt)) {
 				fl_err("shen  aaa rt5081_enable\n");
