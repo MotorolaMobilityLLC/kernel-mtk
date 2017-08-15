@@ -88,8 +88,10 @@ void mt_gpio_load_base(GPIO_REGS *regs)
 	GPIO_REGS *pReg = (GPIO_REGS *) (GPIO_BASE);
 	int idx;
 
-	if (!regs)
+	if (!regs) {
 		GPIOERR("%s: null pointer\n", __func__);
+		return;
+	}
 	memset(regs, 0x00, sizeof(*regs));
 	for (idx = 0; idx < sizeof(pReg->dir) / sizeof(pReg->dir[0]); idx++)
 		regs->dir[idx].val = __raw_readl(&pReg->dir[idx]);
