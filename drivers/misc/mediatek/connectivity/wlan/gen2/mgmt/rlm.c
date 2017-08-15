@@ -2526,8 +2526,6 @@ VOID rlmTxRadioMeasurementReport(P_ADAPTER_T prAdapter)
 	}
 	DBGLOG(RLM, INFO, "frame length %d\n", prRmRepParam->u2ReportFrameLen);
 	kalMemCopy(prMsduInfo->prPacket, prRmRepParam->pucReportFrameBuff, prRmRepParam->u2ReportFrameLen);
-	/* reset u2ReportFrameLen after tx frame */
-	prRmRepParam->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
 
 	/* 2 Update information of MSDU_INFO_T */
 	prMsduInfo->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;	/* Management frame */
@@ -2541,6 +2539,9 @@ VOID rlmTxRadioMeasurementReport(P_ADAPTER_T prAdapter)
 	prMsduInfo->pfTxDoneHandler = NULL;
 	prMsduInfo->fgIsBasicRate = FALSE;
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
+
+	/* reset u2ReportFrameLen after tx frame */
+	prRmRepParam->u2ReportFrameLen = OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem);
 }
 
 
