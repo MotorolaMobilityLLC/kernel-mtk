@@ -1003,12 +1003,6 @@ static int cmdq_probe(struct platform_device *pDevice)
 	}
 #endif
 
-	/* global ioctl access point (/proc/mtk_cmdq) */
-	if (NULL == proc_create(CMDQ_DRIVER_DEVICE_NAME, 0644, NULL, &cmdqOP)) {
-		CMDQ_ERR("CMDQ procfs node create failed\n");
-		return -EFAULT;
-	}
-
 	/* proc debug access point */
 	cmdq_create_debug_entries();
 
