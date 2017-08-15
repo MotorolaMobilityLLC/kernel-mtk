@@ -25,12 +25,12 @@
 
 static DEFINE_MUTEX(FGADC_hal_mutex);
 
-static void fgadc_hal_lock(void)
+void fgadc_hal_lock(void)
 {
 	mutex_lock(&FGADC_hal_mutex);
 }
 
-static void fgadc_hal_unlock(void)
+void fgadc_hal_unlock(void)
 {
 	mutex_unlock(&FGADC_hal_mutex);
 }
