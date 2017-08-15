@@ -124,6 +124,7 @@ void inject_md_status_event(int md_id, int event_type, char reason[])
 	struct ccci_util_bc_user_ctlb *user_ctlb;
 	unsigned int md_mark;
 	int i;
+	unsigned long flag;
 
 	if (md_id == 0)
 		md_mark = MD1_BC_SUPPORT;
@@ -133,7 +134,7 @@ void inject_md_status_event(int md_id, int event_type, char reason[])
 		md_mark = 0;
 
 	do_gettimeofday(&time_stamp);
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	for (i = 0; i < MD_BC_MAX_NUM; i++) {
 		if (s_bc_ctl_tbl[i]->md_bit_mask & md_mark) {
 			list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[i]->user_list, node)
@@ -141,7 +142,7 @@ void inject_md_status_event(int md_id, int event_type, char reason[])
 			wake_up_interruptible(&s_bc_ctl_tbl[i]->wait);
 		}
 	}
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 }
 
 int get_lock_rst_user_cnt(int md_id)
@@ -158,6 +159,7 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 	int cpy_size;
 	int total_size = 0;
 	struct ccci_util_bc_user_ctlb *user_ctlb;
+	unsigned long flag;
 
 	if (list_buff == NULL) {
 		pr_err("ccci: NULL buffer for lock list\r\n");
@@ -165,7 +167,7 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 	}
 
 	if (md_id == 0) {
-		spin_lock(&s_event_update_lock);
+		spin_lock_irqsave(&s_event_update_lock, flag);
 		list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[0]->user_list, node) {
 			if (user_ctlb->has_request_rst_lock) {
 				cpy_size = snprintf(&list_buff[total_size], size - total_size,
@@ -174,9 +176,9 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 					total_size += cpy_size;
 			}
 		}
-		spin_unlock(&s_event_update_lock);
+		spin_unlock_irqrestore(&s_event_update_lock, flag);
 	} else if (md_id == 2) {
-		spin_lock(&s_event_update_lock);
+		spin_lock_irqsave(&s_event_update_lock, flag);
 		list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[3]->user_list, node) {
 			if (user_ctlb->has_request_rst_lock) {
 				cpy_size = snprintf(&list_buff[total_size], size - total_size,
@@ -185,7 +187,7 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 					total_size += cpy_size;
 			}
 		}
-		spin_unlock(&s_event_update_lock);
+		spin_unlock_irqrestore(&s_event_update_lock, flag);
 	}
 
 	list_buff[total_size] = 0;
@@ -198,6 +200,7 @@ static int ccci_util_bc_open(struct inode *inode, struct file *filp)
 	struct ccci_util_bc_user_ctlb *user_ctlb;
 	struct bc_ctl_block_t *bc_dev;
 	int minor;
+	unsigned long flag;
 
 	minor = iminor(inode);
 	bc_dev = s_bc_ctl_tbl[minor];
@@ -218,9 +221,9 @@ static int ccci_util_bc_open(struct inode *inode, struct file *filp)
 	filp->private_data = user_ctlb;
 	nonseekable_open(inode, filp);
 
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	list_add_tail(&user_ctlb->node, &bc_dev->user_list);
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 
 	return 0;
 }
@@ -229,15 +232,16 @@ static int ccci_util_bc_release(struct inode *inode, struct file *filp)
 {
 	struct ccci_util_bc_user_ctlb *user_ctlb;
 	struct bc_ctl_block_t *bc_dev;
+	unsigned long flag;
 
 	user_ctlb = filp->private_data;
 	bc_dev = user_ctlb->bc_dev_ptr;
 
 	user_ctlb->exit = 1;
 	wake_up_interruptible(&bc_dev->wait);
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	user_ctlb->pending_event_cnt = 0;
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 	if (bc_dev->md_bit_mask & MD1_BC_SUPPORT) {
 		spin_lock(&s_md1_user_lock_cnt_lock);
 		if (user_ctlb->has_request_rst_lock == 1) {
@@ -253,9 +257,9 @@ static int ccci_util_bc_release(struct inode *inode, struct file *filp)
 		}
 		spin_unlock(&s_md3_user_lock_cnt_lock);
 	}
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	list_del(&user_ctlb->node);
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 	kfree(user_ctlb);
 
 	return 0;
@@ -270,8 +274,9 @@ static int read_out_event(struct ccci_util_bc_user_ctlb *user_ctlb, struct md_st
 {
 	int ret;
 	struct md_status_event *src_event;
+	unsigned long flag;
 
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	if (user_ctlb->pending_event_cnt) {
 		src_event = &user_ctlb->event_buf[user_ctlb->curr_r];
 		memcpy(event, src_event, sizeof(struct md_status_event));
@@ -282,7 +287,7 @@ static int read_out_event(struct ccci_util_bc_user_ctlb *user_ctlb, struct md_st
 			user_ctlb->curr_r = 0;
 	} else
 		ret = 0;
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 
 	return ret;
 }
@@ -480,15 +485,16 @@ static unsigned int ccci_util_bc_poll(struct file *filp, struct poll_table_struc
 	unsigned int mask = 0;
 	struct ccci_util_bc_user_ctlb *user_ctlb;
 	struct bc_ctl_block_t *bc_dev;
+	unsigned long flag;
 
 	user_ctlb = (struct ccci_util_bc_user_ctlb *)filp->private_data;
 	bc_dev = user_ctlb->bc_dev_ptr;
 	poll_wait(filp, &bc_dev->wait, wait);
 
-	spin_lock(&s_event_update_lock);
+	spin_lock_irqsave(&s_event_update_lock, flag);
 	if (user_ctlb->pending_event_cnt)
 		mask |= POLLIN|POLLRDNORM;
-	spin_unlock(&s_event_update_lock);
+	spin_unlock_irqrestore(&s_event_update_lock, flag);
 
 	return mask;
 }
