@@ -440,7 +440,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		rdma_golden_setting->dst_height*frame_rate*bpp;
 		do_div(consume_rate, 8*1000);
 	} else {
-		consume_rate = rdma_golden_setting->ext_dst_width
+		consume_rate = (unsigned long long)rdma_golden_setting->ext_dst_width
 		*rdma_golden_setting->ext_dst_height*frame_rate*bpp;
 		do_div(consume_rate, 8*1000);
 	}
@@ -479,7 +479,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 
 
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
-	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp;
+	temp = (unsigned long long)rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp;
 	do_div(temp, 16*8);
 	temp--;
 
