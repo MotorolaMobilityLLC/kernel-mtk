@@ -1723,6 +1723,7 @@ exit_init_failed:
 exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
+	data = NULL;
 exit:
 	MAGN_ERR("%s: err = %d\n", __func__, err);
 	akm09911_init_flag = -1;
