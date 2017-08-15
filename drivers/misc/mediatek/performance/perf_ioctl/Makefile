@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 MediaTek Inc.
+# Copyright (C) 2017 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,11 +11,9 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
-obj-y += perfmgr/
-obj-y += legacy_controller/
-ifneq ($(CONFIG_ARCH_MT6570),y)
-ifneq ($(CONFIG_ARCH_MT6580),y)
-obj-y += perf_ioctl/
+obj-y += perf_ioctl.o
+
+ifneq ($(CONFIG_MTK_PERFMGR_TOUCH_BOOST),y)
+obj-y += $(MTK_PLATFORM)/
 endif
-endif
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,7 +14,7 @@
 #include <linux/seq_file.h>
 #include <linux/kallsyms.h>
 #include <linux/utsname.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/printk.h>
 #include <linux/string.h>
 #include <linux/notifier.h>
