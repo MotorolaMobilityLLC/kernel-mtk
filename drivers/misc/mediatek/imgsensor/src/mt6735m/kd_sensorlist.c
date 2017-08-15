@@ -64,6 +64,7 @@
 #define camera_info_size 128
 #define PDAF_DATA_SIZE 4096
 char mtk_ccm_name[camera_info_size] = { 0 };
+#define FEATURE_CONTROL_MAX_DATA_SIZE 128000
 
 static unsigned int gDrvIndex;
 
@@ -1942,6 +1943,11 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	    ((void *)&FeatureParaLen, (void *)pFeatureCtrl->pFeatureParaLen,
 	     sizeof(unsigned int))) {
 		PK_ERR(" ioctl copy from user failed\n");
+		return -EFAULT;
+	}
+	/* data size exam */
+	if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE) {
+		PK_ERR(" exceed data size limitation\n");
 		return -EFAULT;
 	}
 
