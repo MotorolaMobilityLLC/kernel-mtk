@@ -1406,36 +1406,6 @@ int kdSetExpGain(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera)
 
 }
 
-/*******************************************************************************
-*
-********************************************************************************/
-static UINT32 ms_to_jiffies(MUINT32 ms)
-{
-	return (ms * HZ + 512) >> 10;
-}
-
-
-int kdSensorSetExpGainWaitDone(int *ptime)
-{
-	int timeout;
-
-	PK_DBG("[kd_sensorlist]enter kdSensorSetExpGainWaitDone: time: %d\n", *ptime);
-	timeout = wait_event_interruptible_timeout(kd_sensor_wait_queue,
-						   (setExpGainDoneFlag & 1), ms_to_jiffies(*ptime));
-
-	PK_DBG("[kd_sensorlist]after wait_event_interruptible_timeout\n");
-	if (timeout == 0) {
-		PK_ERR("[kd_sensorlist] kdSensorSetExpGainWait: timeout=%d\n", *ptime);
-
-		return -EAGAIN;
-	}
-
-	return 0;		/* No error. */
-
-}
-
-
-
 
 /*******************************************************************************
 * adopt_CAMERA_HW_Open
@@ -3647,7 +3617,6 @@ static long CAMERA_HW_Ioctl(struct file *a_pstFile,
 		break;
 
 	case KDIMGSENSORIOC_X_SET_SHUTTER_GAIN_WAIT_DONE:
-		i4RetValue = kdSensorSetExpGainWaitDone((int *)pBuff);
 		break;
 
 	case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
