@@ -131,7 +131,7 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 	ENUM_CHIP_DUMP_STATE chip_state;
 	UINT32 dump_phy_addr = 0;
 	PUINT8 dump_vir_addr = NULL;
-	UINT32 dump_len = 0;
+	INT32 dump_len = 0;
 	UINT32 isEnd = 0;
 	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 
