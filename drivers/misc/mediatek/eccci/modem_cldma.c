@@ -2696,9 +2696,13 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 		queue->tr_ring->handle_tx_done(queue, 0, 0, &ret);
 #endif
 		if (blocking) {
-			ret = wait_event_interruptible_exclusive(queue->req_wq, (queue->budget > 0));
+			ret = wait_event_interruptible_exclusive(queue->req_wq,
+				(queue->budget > 0 || (md->md_state != READY && ccci_h.channel == CCCI_IPC_TX)));
 			if (ret == -ERESTARTSYS) {
 				ret = -EINTR;
+				goto __EXIT_FUN;
+			} else if (md->md_state != READY && ccci_h.channel == CCCI_IPC_TX) {
+				ret = -EBUSY;
 				goto __EXIT_FUN;
 			}
 #ifdef CLDMA_TRACE
