@@ -195,7 +195,7 @@ static snd_pcm_uframes_t mtk_capture2_pcm_pointer(struct snd_pcm_substream *subs
 		Frameidx = audio_bytes_to_frame(substream , vul2_Block->u4WriteIdx);
 		return Frameidx;
 #if 0
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_D2_CUR));
+		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_VUL_D2_CUR);
 		if (HW_Cur_ReadIdx == 0) {
 			PRINTK_AUD_UL2("[Auddrv] %s  HW_Cur_ReadIdx ==0\n", __func__);
 			HW_Cur_ReadIdx = vul2_Block->pucPhysBufAddr;
@@ -375,7 +375,7 @@ static int mtk_capture2_pcm_copy(struct snd_pcm_substream *substream,
 
 	PRINTK_AUD_UL2("mtk_capture2_pcm_copy pos = %lucount = %lu\n ", pos, count);
 
-	count = Align64ByteSize(audio_frame_to_bytes(substream , count));    /* get total bytes to copy */
+	count = audio_frame_to_bytes(substream , count);    /* get total bytes to copy */
 
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = VUL2_Control_context;

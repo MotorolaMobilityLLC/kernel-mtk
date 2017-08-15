@@ -234,7 +234,7 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *subst
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == true) {
 
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_CUR));
+		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_VUL_CUR);
 		if (HW_Cur_ReadIdx == 0) {
 			PRINTK_AUD_UL1("[Auddrv] %s HW_Cur_ReadIdx ==0\n", __func__);
 			HW_Cur_ReadIdx = UL1_Block->pucPhysBufAddr;

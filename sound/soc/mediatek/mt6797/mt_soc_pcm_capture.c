@@ -203,7 +203,7 @@ static snd_pcm_uframes_t mtk_capture_pcm_pointer(struct snd_pcm_substream *subst
 		UL1_Block->u4WriteIdx, UL1_Block->u4DataRemained);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == true) {
-		HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_VUL_CUR));
+		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_VUL_CUR);
 		if (HW_Cur_ReadIdx == 0) {
 			PRINTK_AUD_UL1("[Auddrv] %s HW_Cur_ReadIdx ==0\n", __func__);
 			HW_Cur_ReadIdx = UL1_Block->pucPhysBufAddr;
@@ -428,7 +428,7 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 
 	PRINTK_AUD_UL1("mtk_capture_pcm_copy pos = %lucount = %lu\n ", pos, count);
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream , count));
+	count = audio_frame_to_bytes(substream , count);
 
 	/* check which memif nned to be write */
 	pVUL_MEM_ConTrol = VUL_Control_context;
