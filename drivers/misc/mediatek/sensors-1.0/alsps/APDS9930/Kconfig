@@ -1,0 +1,8 @@
+
+config MTK_APDS9930
+	bool "AVAGO APDS9930 for MediaTek package"
+	help
+	  If this option is set, it will support
+	  ambient proximity and light sensor feature.
+	  APDS9930 is a combo sensor chip provided by
+	  AVAGO Technologies.
