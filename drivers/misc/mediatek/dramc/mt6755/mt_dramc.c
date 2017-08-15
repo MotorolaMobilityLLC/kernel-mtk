@@ -1408,7 +1408,7 @@ static int __init last_dramc_test_agent_init(void)
 		pr_warn("[LastDramc] EMI CONA: %x  , EMI CONF: %x\n",
 		readl(IOMEM(EMI_BASE+0x000)), readl(IOMEM(EMI_BASE+0x028)));
 
-	pr_warn("[LastDramc] reserved address before emi: %llx\n", rank0_addr_dramc);
+	pr_warn("[LastDramc] reserved address before emi: %llx\n", (unsigned long long) rank0_addr_dramc);
 	/*emi descramble*/
 	for (bit_scb = 11; bit_scb < 17; bit_scb++) {
 		bit_xor = (emi_conf >> (4*(bit_scb-11))) & 0xf;
@@ -1421,13 +1421,14 @@ static int __init last_dramc_test_agent_init(void)
 	else
 		rank0_addr_dramc -= 0x40000000;
 
-	pr_warn("[LastDramc] reserved address after emi: %llx\n", rank0_addr_dramc);
+	pr_warn("[LastDramc] reserved address after emi: %llx\n", (unsigned long long) rank0_addr_dramc);
 
 	if ((emi_cona & 0x1) != 0) {
 		pr_err("[LastDramc] two channel\n");
 		rank0_addr_dramc = ((rank0_addr_dramc&(0x1ffffffff<<(chn_pos+1)))>>1) |
 		(rank0_addr_dramc&(0x1ffffffff>>(33-chn_pos)));
-		pr_err("[LastDramc] reserved address after emi channel dispatch: %llx\n", rank0_addr_dramc);
+		pr_err("[LastDramc] reserved address after emi channel dispatch: %llx\n",
+				(unsigned long long) rank0_addr_dramc);
 	}
 
 	/*disable self test engine1 and self test engine2*/
