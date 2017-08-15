@@ -9,3 +9,4 @@ obj-$(CONFIG_MTK_BMI160_SPI)   +=  bmi160-spi/
 obj-$(CONFIG_MTK_MC3410_I2C) += mc3410-i2c/
 obj-$(CONFIG_MTK_MPU6515A)		+= mpu6515/
 obj-$(CONFIG_MTK_BMA222E)		+= bma222e/
+obj-$(CONFIG_MTK_MPU6050G)   +=  mpu6050g/
