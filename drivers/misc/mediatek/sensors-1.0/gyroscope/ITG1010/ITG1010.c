@@ -932,7 +932,7 @@ static int ITG1010_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int ITG1010_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strncpy(info->type, ITG1010_DEV_NAME, strlen(ITG1010_DEV_NAME));
+	strlcpy(info->type, ITG1010_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 

@@ -1149,13 +1149,13 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	res = FctShipmntTestProcess_Body();
 	if (1 == res) {
 		MAGN_LOG("shipment_test pass\n");
-		strncpy(result, "y", sizeof(result));
+		strlcpy(result, "y", sizeof(result));
 	} else if (-1 == res) {
 		MAGN_LOG("shipment_test fail\n");
-		strncpy(result, "n", sizeof(result));
+		strlcpy(result, "n", sizeof(result));
 	} else {
 		MAGN_LOG("shipment_test NaN\n");
-		strncpy(result, "NaN", sizeof(result));
+		strlcpy(result, "NaN", sizeof(result));
 	}
 
 	return sprintf(buf, "%s\n", result);
@@ -1447,7 +1447,7 @@ static int akm09911_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int akm09911_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strncpy(info->type, AKM09911_DEV_NAME, sizeof(AKM09911_DEV_NAME));
+	strlcpy(info->type, AKM09911_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
@@ -1699,8 +1699,7 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ctl.flush = akm09911_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
-	strncpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
-	ctl.libinfo.libname[sizeof(ctl.libinfo.libname) - 1] = '\0';
+	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 	ctl.libinfo.layout = AKECS_SetCert();
 	ctl.libinfo.deviceid = akm_device;
 

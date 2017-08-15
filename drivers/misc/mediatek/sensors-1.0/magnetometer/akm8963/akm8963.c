@@ -1015,13 +1015,13 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	res = FctShipmntTestProcess_Body();
 	if (1 == res) {
 		AKMDBG("shipment_test pass\n");
-		strcpy(result, "y");
+		strlcpy(result, "y", sizeof(result));
 	} else if (-1 == res) {
 		AKMDBG("shipment_test fail\n");
-		strcpy(result, "n");
+		strlcpy(result, "n", sizeof(result));
 	} else {
 		AKMDBG("shipment_test NaN\n");
-		strcpy(result, "NaN");
+		strlcpy(result, "NaN", sizeof(result));
 	}
 
 	return sprintf(buf, "%s\n", result);
@@ -2045,7 +2045,7 @@ static void akm8963_late_resume(struct early_suspend *h)
 /*----------------------------------------------------------------------------*/
 static int akm8963_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, AKM8963_DEV_NAME);
+	strlcpy(info->type, AKM8963_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 
@@ -2351,8 +2351,7 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.flush = akm8963_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
-	strncpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
-	ctl.libinfo.libname[sizeof(ctl.libinfo.libname) - 1] = '\0';
+	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 	ctl.libinfo.layout = 0;
 	ctl.libinfo.deviceid = AKM8963_PSEUDO_WIA2;
 

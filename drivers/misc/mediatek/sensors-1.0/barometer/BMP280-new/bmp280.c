@@ -317,11 +317,11 @@ static int bmp_get_chip_type(struct i2c_client *client)
 	case BMP280_CHIP_ID2:
 	case BMP280_CHIP_ID3:
 		obj->sensor_type = BMP280_TYPE;
-		strncpy(obj->sensor_name, "bmp280", sizeof(obj->sensor_name));
+		strlcpy(obj->sensor_name, "bmp280", sizeof(obj->sensor_name));
 		break;
 	default:
 		obj->sensor_type = INVALID_TYPE;
-		strncpy(obj->sensor_name, "unknown sensor", sizeof(obj->sensor_name));
+		strlcpy(obj->sensor_name, "unknown sensor", sizeof(obj->sensor_name));
 		break;
 	}
 
@@ -1289,7 +1289,7 @@ static long bmp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			err = -EINVAL;
 			break;
 		}
-		strncpy(strbuf, obj->sensor_name, sizeof(strbuf));
+		strlcpy(strbuf, obj->sensor_name, sizeof(strbuf));
 		if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
 			err = -EFAULT;
 			break;
@@ -1444,7 +1444,7 @@ static int bmp_resume(struct device *dev)
 
 static int bmp_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strncpy(info->type, BMP_DEV_NAME, sizeof(info->type));
+	strlcpy(info->type, BMP_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 

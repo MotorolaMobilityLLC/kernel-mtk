@@ -1886,7 +1886,7 @@ static int CM36558_i2c_remove(struct i2c_client *client)
 
 static int CM36558_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strncpy(info->type, CM36558_DEV_NAME, sizeof(info->type));
+	strlcpy(info->type, CM36558_DEV_NAME, sizeof(info->type));
 	return 0;
 
 }

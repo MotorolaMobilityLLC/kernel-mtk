@@ -2075,11 +2075,11 @@ static int bmg_get_chip_type(struct bmi160_accelgyro_data *obj)
 	case SENSOR_CHIP_ID_BMI_C2:
 	case SENSOR_CHIP_ID_BMI_C3:
 		obj->gyro_sensor_type = BMI160_GYRO_TYPE;
-		strcpy(obj->gyro_sensor_name, BMG_DEV_NAME);
+		strlcpy(obj->gyro_sensor_name, BMG_DEV_NAME, sizeof(obj->gyro_sensor_name));
 		break;
 	default:
 		obj->gyro_sensor_type = INVALID_TYPE;
-		strcpy(obj->gyro_sensor_name, UNKNOWN_DEV);
+		strlcpy(obj->gyro_sensor_name, UNKNOWN_DEV, sizeof(obj->gyro_sensor_name));
 		break;
 	}
 	if (obj->gyro_sensor_type == INVALID_TYPE) {
