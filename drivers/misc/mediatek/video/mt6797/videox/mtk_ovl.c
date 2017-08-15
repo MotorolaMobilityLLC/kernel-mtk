@@ -528,6 +528,11 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	return ret;
 }
 
+unsigned int ovl2mem_get_max_layer(void)
+{
+	return MEMORY_SESSION_INPUT_LAYER_COUNT;
+}
+
 void ovl2mem_wait_done(void)
 {
 	int loop_cnt = 0;

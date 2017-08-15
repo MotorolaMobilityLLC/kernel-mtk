@@ -163,8 +163,11 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 		return DISP_MODULE_OD;
 	default:
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
-		BUG();
+		WARN(1, "%s: invalid reg module id=%d\n", __func__, reg_module);
+		break;
 	}
+
+	return DISP_MODULE_UNKNOWN;
 }
 
 char *ddp_get_reg_module_name(DISP_REG_ENUM reg_module)

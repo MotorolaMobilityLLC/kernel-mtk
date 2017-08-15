@@ -50,6 +50,7 @@
 #include "disp_lowpower.h"
 #include "display_recorder.h"
 #include "extd_info.h"
+#include "disp_drv_platform.h"
 
 int ext_disp_use_cmdq;
 int ext_disp_use_m4u;
@@ -1181,6 +1182,14 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 	}
 
 	return ret;
+}
+
+int ext_disp_get_max_layer(void)
+{
+	if (_should_config_ovl_input())
+		return EXTERNAL_SESSION_INPUT_LAYER_COUNT;
+
+	return 1;
 }
 
 int ext_disp_is_alive(void)

@@ -72,6 +72,7 @@
 #include "ddp_mmp.h"
 #include "mtkfb_fence.h"
 #include "extd_multi_control.h"
+#include "external_display.h"
 #include "m4u.h"
 #include "mtk_hrt.h"
 #include "compat_mtk_disp_mgr.h"
@@ -340,8 +341,8 @@ static int __trigger_display(disp_session_config *config)
 	}
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
+		pr_err("%s: legacy API are not supported!\n", __func__);
+		WARN(1, "%s: legacy API are not supported!\n", __func__);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		mutex_lock(&disp_session_lock);
 		ret = external_display_trigger(config->tigger_mode, session_id);
@@ -905,6 +906,104 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 	return 0;
 }
 
+#define GET_DISP_FORMAT_ID(fmt) ((fmt) >> 8)
+
+static int _disp_validate_color_fmt(DISP_FORMAT fmt)
+{
+	unsigned int fmt_id = 0;
+
+	fmt_id = GET_DISP_FORMAT_ID(fmt);
+	if (fmt_id < GET_DISP_FORMAT_ID(DISP_FORMAT_RGB565) ||
+	    fmt_id > GET_DISP_FORMAT_ID(DISP_FORMAT_DIM) || fmt_id == 15) {
+		DISPERR("%s: error format 0x%x\n", __func__, fmt);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static unsigned int _get_max_layer(unsigned int session_id)
+{
+	DISP_SESSION_TYPE type = DISP_SESSION_TYPE(session_id);
+
+	switch (type) {
+	case DISP_SESSION_PRIMARY:
+		return primary_display_get_max_layer();
+	case DISP_SESSION_EXTERNAL:
+		return ext_disp_get_max_layer();
+	case DISP_SESSION_MEMORY:
+		return ovl2mem_get_max_layer();
+	default:
+		DISPERR("%s: invalid session id 0x%x\n", __func__, session_id);
+		break;
+	}
+
+	return 0;
+}
+
+static int _disp_validate_frame_cfg(struct disp_frame_cfg_t *cfg)
+{
+	unsigned int i = 0;
+	unsigned int max = _get_max_layer(cfg->session_id);
+
+	if (cfg->input_layer_num > max) {
+		DISPERR("%s: input_layer_num(%u) > max(%u)\n",
+			__func__, cfg->input_layer_num, max);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		if (cfg->input_cfg[i].layer_id >= max) {
+			DISPERR("%s: layer_id(%u) >= max(%u)\n",
+				__func__, cfg->input_cfg[i].layer_id, max);
+			return -EINVAL;
+		}
+
+		if (cfg->input_cfg[i].layer_enable &&
+		    _disp_validate_color_fmt(cfg->input_cfg[i].src_fmt))
+			return -EINVAL;
+	}
+
+	if (cfg->output_en && _disp_validate_color_fmt(cfg->output_cfg.fmt))
+		return -EINVAL;
+
+	return 0;
+}
+
+static int _disp_validate_session_output_params(disp_session_output_config *cfg)
+{
+	if (_disp_validate_color_fmt(cfg->config.fmt))
+		return -EINVAL;
+
+	return 0;
+}
+
+int _disp_validate_session_input_params(disp_session_input_config *cfg)
+{
+	unsigned int i = 0;
+	unsigned int max = _get_max_layer(cfg->session_id);
+
+	if (cfg->config_layer_num > max) {
+		DISPERR("%s: config_layer_num(%u) > max(%u)\n", __func__,
+			cfg->config_layer_num, max);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < cfg->config_layer_num; i++) {
+		if (cfg->config[i].layer_id >= max) {
+			DISPERR("%s: layer_id(%u) >= max(%u)\n", __func__,
+				cfg->config[i].layer_id, max);
+			return -EINVAL;
+		}
+
+		if (cfg->config[i].layer_enable &&
+		    _disp_validate_color_fmt(cfg->config[i].src_fmt))
+			return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int __set_input(disp_session_input_config *session_input, int overlap_layer_num)
 {
 	int ret = 0;
@@ -924,8 +1023,8 @@ static int __set_input(disp_session_input_config *session_input, int overlap_lay
 		     DISP_SESSION_DEV(session_id), session_input->config_layer_num);
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
+		pr_err("%s: legacy API are not supported!\n", __func__);
+		WARN(1, "%s: legacy API are not supported!\n", __func__);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
 		ret = set_external_buffer(session_input);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
@@ -959,7 +1058,12 @@ int _ioctl_set_input_buffer(unsigned long arg)
 		kfree(session_input);
 		return -EFAULT;
 	}
-	ret = __set_input(session_input, 4);
+
+	if (_disp_validate_session_input_params(session_input))
+		ret = -EINVAL;
+	else
+		ret = __set_input(session_input, 4);
+
 	kfree(session_input);
 	return ret;
 }
@@ -1067,8 +1171,8 @@ static int __set_output(disp_session_output_config *session_output)
 		dprec_start(&session_info->event_setoutput, session_output->config.buff_idx, 0);
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		pr_err("%s: legecy API are not supported!\n", __func__);
-		BUG();
+		pr_err("%s: legacy API are not supported!\n", __func__);
+		WARN(1, "%s: legacy API are not supported!\n", __func__);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		disp_mem_output_config primary_output;
 
@@ -1137,6 +1241,9 @@ int _ioctl_set_output_buffer(unsigned long arg)
 		return -EFAULT;
 	}
 
+	if (_disp_validate_session_output_params(&session_output))
+		return -EINVAL;
+
 	return __set_output(&session_output);
 }
 
@@ -1155,7 +1262,11 @@ static int __frame_config_set_input(struct disp_frame_cfg_t *frame_cfg)
 	session_input->config_layer_num = frame_cfg->input_layer_num;
 	memcpy(session_input->config, frame_cfg->input_cfg, sizeof(frame_cfg->input_cfg));
 
-	ret = __set_input(session_input, frame_cfg->overlap_layer_num);
+	if (_disp_validate_session_input_params(session_input))
+		ret = -EINVAL;
+	else
+		ret = __set_input(session_input, frame_cfg->overlap_layer_num);
+
 	kfree(session_input);
 	return ret;
 }
@@ -1169,6 +1280,9 @@ static int __frame_config_set_output(struct disp_frame_cfg_t *frame_cfg)
 
 	session_output.session_id = frame_cfg->session_id;
 	memcpy(&session_output.config, &frame_cfg->output_cfg, sizeof(frame_cfg->output_cfg));
+
+	if (_disp_validate_session_output_params(&session_output))
+		return -EINVAL;
 
 	return __set_output(&session_output);
 }
@@ -1206,6 +1320,12 @@ int _ioctl_frame_config(unsigned long arg)
 		input_config_preprocess(frame_cfg);
 		if (frame_cfg->output_en)
 			output_config_preprocess(frame_cfg);
+
+		if (_disp_validate_frame_cfg(frame_cfg)) {
+			kfree(frame_cfg);
+			return -EINVAL;
+		}
+
 		primary_display_frame_cfg(frame_cfg);
 	} else {
 		/* set input */

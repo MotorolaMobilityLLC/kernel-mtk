@@ -195,7 +195,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 
 	if (option >= DISP_OPT_NUM) {
 		DISPERR("%s: option invalid %d\n", __func__, option);
-		BUG();
+		WARN(1, "%s: option invalid %d\n", __func__, option);
 	}
 
 	switch (option) {

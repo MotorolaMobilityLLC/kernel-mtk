@@ -50,7 +50,8 @@ static inline unsigned long rdma_to_cmdq_engine(DISP_MODULE_ENUM module)
 		return CMDQ_ENG_DISP_RDMA1;
 	default:
 		DDPERR("invalid rdma module=%d\n", module);
-		BUG();
+		WARN(1, "invalid rdma module=%d\n", module);
+		break;
 	}
 	return 0;
 }
@@ -64,7 +65,8 @@ static inline unsigned long rdma_to_cmdq_event_nonsec_end(DISP_MODULE_ENUM modul
 		return CMDQ_SYNC_DISP_RDMA1_2NONSEC_END;
 	default:
 		DDPERR("invalid rdma module=%d\n", module);
-		BUG();
+		WARN(1, "invalid rdma module=%d\n", module);
+		break;
 	}
 
 	return 0;

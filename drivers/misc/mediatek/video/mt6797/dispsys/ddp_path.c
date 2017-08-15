@@ -735,7 +735,8 @@ static int ddp_get_mutex_src(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode,
 	} else {
 		DDPERR("get mutex sof, invalid param dst module = %s(%d), dis mode %s\n",
 		       ddp_get_module_name(dest_module), dest_module, ddp_get_mode_name(ddp_mode));
-		BUG();
+		WARN(1, "get mutex sof, invalid param dst module = %s(%d), dis mode %s\n",
+		     ddp_get_module_name(dest_module), dest_module, ddp_get_mode_name(ddp_mode));
 	}
 
 	if (ddp_mode == DDP_CMD_MODE) {

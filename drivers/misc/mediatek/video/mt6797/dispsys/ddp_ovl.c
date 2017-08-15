@@ -72,7 +72,8 @@ unsigned long ovl_base_addr(DISP_MODULE_ENUM module)
 		return DDP_REG_BASE_DISP_OVL1_2L;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 	return 0;
 }
@@ -90,7 +91,8 @@ static inline unsigned long ovl_layer_num(DISP_MODULE_ENUM module)
 		return 2;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 	return 0;
 }
@@ -108,7 +110,8 @@ static inline unsigned long ovl_to_m4u_port(DISP_MODULE_ENUM module)
 		return M4U_PORT_DISP_2L_OVL1;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 	return 0;
 }
@@ -126,7 +129,8 @@ CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(DISP_MODULE_ENUM module)
 		return CMDQ_SYNC_DISP_2LOVL1_2NONSEC_END;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 	return 0;
 
@@ -145,7 +149,8 @@ static inline unsigned long ovl_to_cmdq_engine(DISP_MODULE_ENUM module)
 		return CMDQ_ENG_DISP_2L_OVL1;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 	return 0;
 }
@@ -159,7 +164,7 @@ unsigned long ovl_to_index(DISP_MODULE_ENUM module)
 			return i;
 	}
 	DDPERR("invalid ovl module=%d\n", module);
-	BUG();
+	WARN(1, "invalid ovl module=%d\n", module);
 	return 0;
 }
 
@@ -167,7 +172,7 @@ static inline DISP_MODULE_ENUM ovl_index_to_module(int index)
 {
 	if (index >= OVL_NUM) {
 		DDPERR("invalid ovl index=%d\n", index);
-		BUG();
+		WARN(1, "invalid ovl index=%d\n", index);
 	}
 
 	return ovl_index_module[index];
@@ -317,16 +322,15 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 				src_x, src_y, dst_x, dst_y, dst_w, dst_h);
 	}
 
-	if (dst_w > OVL_MAX_WIDTH)
-		BUG();
-	if (dst_h > OVL_MAX_HEIGHT)
-		BUG();
-	if (layer > 3)
-		BUG();
+	WARN((dst_w > OVL_MAX_WIDTH), "%s:L%d, dst_w(%d) > max_w(%d)\n",
+		__func__, layer, dst_w, OVL_MAX_WIDTH);
+	WARN((dst_h > OVL_MAX_HEIGHT), "%s:L%d, dst_h(%d) > max_w(%d)\n",
+		__func__, layer, dst_h, OVL_MAX_HEIGHT);
+	WARN((layer > 3), "%s:L%d > 3\n", __func__, layer);
 
 	if (!cfg->addr && cfg->source == OVL_LAYER_SOURCE_MEM) {
 		DDPERR("source from memory, but addr is 0!\n");
-		BUG();
+		WARN(1, "source from memory, but addr is 0!\n");
 	}
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
@@ -535,7 +539,8 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 		break;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 
 #endif
@@ -577,7 +582,8 @@ int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 		break;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		BUG();
+		WARN(1, "invalid ovl module=%d\n", module);
+		break;
 	}
 #endif
 	return 0;
@@ -806,7 +812,8 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 	if (global_layer > TOTAL_OVL_LAYER_NUM - ovl_layer_num(module)) {
 		DDPERR("%s: %s scan error, layer_scanned=%u\n", __func__,
 		       ddp_get_module_name(module), pConfig->ovl_layer_scanned);
-		BUG();
+		WARN(1, "%s: %s scan error, layer_scanned=%u\n", __func__,
+		     ddp_get_module_name(module), pConfig->ovl_layer_scanned);
 	}
 
 	/* check if the ovl module has sec layer */
@@ -1242,7 +1249,7 @@ int ovl_partial_update(DISP_MODULE_ENUM module, unsigned int bg_w,
 
 	if ((bg_w > OVL_MAX_WIDTH) || (bg_h > OVL_MAX_HEIGHT)) {
 		DDPERR("ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
-		ASSERT(0);
+		WARN(1, "ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
 	}
 	DDPDBG("ovl%d partial update\n", module);
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE, bg_h << 16 | bg_w);

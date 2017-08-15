@@ -1677,8 +1677,8 @@ void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARA
 	unsigned int lane_no = dsi_params->LANE_NUM;
 
 	/* unsigned int div2_real; */
-	unsigned int cycle_time;
-	unsigned int ui;
+	unsigned int cycle_time = 0;
+	unsigned int ui = 0;
 	unsigned int hs_trail_m, hs_trail_n;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING

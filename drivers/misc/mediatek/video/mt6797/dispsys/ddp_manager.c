@@ -313,7 +313,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 {
 	ddp_path_handle handle = NULL;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (ddp_path_handle)dp_handle;
 	handle->mode = is_vdo_mode ? DDP_VIDEO_MODE : DDP_CMD_MODE;
 	DDPDBG("set scenario %s mode: %s\n", ddp_get_scenario_name(handle->scenario),
@@ -599,8 +599,8 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, DISP_MODULE_ENUM engine, v
 	} else if (engine == DISP_MODULE_UFOE) {
 		handle->scenario = DDP_SCENARIO_UFOE_1TO2;
 	} else {
-		pr_err("%s error: engine=%d\n", __func__, engine);
-		BUG();
+		DDPERR("%s error: engine=%d\n", __func__, engine);
+		WARN(1, "%s error: engine=%d\n", __func__, engine);
 	}
 	/* update connected */
 	_dpmgr_path_connect(handle->scenario, cmdq_handle);
@@ -621,7 +621,7 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, DISP_MODULE_ENUM engine, v
 int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 {
 
-	DDP_SCENARIO_ENUM dis_scn, new_scn;
+	DDP_SCENARIO_ENUM dis_scn = DDP_SCENARIO_MAX, new_scn = DDP_SCENARIO_MAX;
 	ddp_path_handle handle;
 	DISP_MODULE_ENUM wdma;
 	DDP_MANAGER_CONTEXT *context;
@@ -668,8 +668,8 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 		dis_scn = DDP_SCENARIO_SUB_OVL_MEMOUT;
 		new_scn = DDP_SCENARIO_SUB_DISP;
 	} else {
-		pr_err("%s: error scenario =%d\n", __func__, handle->scenario);
-		BUG();
+		DDPERR("%s: error scenario =%d\n", __func__, handle->scenario);
+		WARN(1, "%s: error scenario =%d\n", __func__, handle->scenario);
 	}
 	_dpmgr_path_disconnect(dis_scn, cmdq_handle);
 	handle->scenario = new_scn;

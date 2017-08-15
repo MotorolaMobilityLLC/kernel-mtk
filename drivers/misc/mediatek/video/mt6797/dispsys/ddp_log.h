@@ -65,7 +65,7 @@ do {                                         \
 	if (expr) \
 		break;                          \
 	pr_err("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__); \
-	BUG();\
+	WARN_ON(1);\
 } while (0)
 #endif
 
@@ -144,7 +144,8 @@ do {\
 		if (expr)				\
 			break;				\
 		pr_err("DDP ASSERT FAILED %s, %d\n",	\
-			__FILE__, __LINE__); BUG();	\
+			__FILE__, __LINE__);		\
+		WARN_ON(1);				\
 	} while (0)
 #endif
 

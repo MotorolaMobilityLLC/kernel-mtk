@@ -587,7 +587,8 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* nothing to free */
 		break;
 	default:
-		BUG();
+		WARN_ON(1);
+		break;
 	}
 }
 
@@ -795,7 +796,7 @@ static int mtkfb_probe(struct device *dev)
 	_parse_tag_videolfb();
 #else
 	pr_error("%s, no device tree ??!!\n", __func__);
-	BUG();
+	WARN(1, "%s: no device tree ??!!\n", __func__);
 #endif
 	init_state = 0;
 

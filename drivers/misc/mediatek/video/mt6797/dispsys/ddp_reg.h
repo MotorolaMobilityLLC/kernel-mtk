@@ -1200,7 +1200,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			return ddp_reg_pa_base[i] + (va & 0xfffl);
 	}
 	pr_err("DDP/can not find reg addr for va=0x%lx!\n", va);
-	BUG();
+	WARN(1, "DDP/can not find reg addr for va=0x%lx!\n", va);
 	return 0;
 }
 

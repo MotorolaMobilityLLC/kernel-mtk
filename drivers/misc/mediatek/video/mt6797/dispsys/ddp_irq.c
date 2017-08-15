@@ -182,7 +182,8 @@ static DISP_MODULE_ENUM disp_irq_module(unsigned int irq)
 			return ddp_get_reg_module(reg_module);
 	}
 	DDPERR("cannot find module for irq %d\n", irq);
-	BUG();
+	WARN(1, "cannot find module for irq %d\n", irq);
+	return DISP_MODULE_UNKNOWN;
 }
 
 /* TODO:  move each irq to module driver */

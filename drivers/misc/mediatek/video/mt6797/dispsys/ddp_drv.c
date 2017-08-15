@@ -669,7 +669,7 @@ static int disp_probe(struct platform_device *pdev)
 
 	if (dispsys_dev) {
 		DDPERR("%s: dispsys_dev=0x%p\n", __func__, dispsys_dev);
-		BUG();
+		WARN(1, "dispsys=%p\n", dispsys_dev);
 	}
 
 	dispsys_dev = kmalloc(sizeof(struct dispsys_device), GFP_KERNEL);
@@ -736,7 +736,7 @@ static int __init disp_probe_1(void)
 #endif
 	if (!dispsys_dev) {
 		DDPERR("%s: dispsys_dev=NULL\n", __func__);
-		BUG();
+		WARN(1, "dispsys_dev=NULL\n");
 	}
 
 	dispsys_dev->dev = &pdev->dev;

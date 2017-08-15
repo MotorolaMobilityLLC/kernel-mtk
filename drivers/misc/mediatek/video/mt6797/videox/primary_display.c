@@ -568,7 +568,7 @@ static int _fps_ctx_reset(struct fps_ctx_t *fps_ctx, int reserve_num)
 
 	if (reserve_num >= FPS_ARRAY_SZ) {
 		pr_err("%s error to reset, reserve=%d\n", __func__, reserve_num);
-		BUG();
+		WARN(1, "%s: error to reset, reserve=%d\n", __func__, reserve_num);
 	}
 	for (i = reserve_num; i < FPS_ARRAY_SZ; i++)
 		fps_ctx->array[i] = 0;
@@ -5248,7 +5248,8 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));
-		BUG();
+		WARN(1, "invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
+		     session_mode_spy(sess_mode));
 	}
 done:
 	MMProfileLogEx(ddp_mmp_get_events()->primary_mode[pgc->session_mode],
