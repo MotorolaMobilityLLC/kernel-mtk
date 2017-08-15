@@ -210,6 +210,7 @@ extern LCM_DRIVER r69338_hd720_5in_dsi_vdo_jdi_dw8768_drv;
 extern LCM_DRIVER db7436_dsi_vdo_fwvga_drv;
 extern LCM_DRIVER r63417_fhd_dsi_cmd_truly_nt50358_lcm_drv;
 extern LCM_DRIVER r63417_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv;
+extern LCM_DRIVER r63417_fhd_dsi_cmd_truly_nt50358_hdplus_lcm_drv;
 extern LCM_DRIVER r63417_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv;
 extern LCM_DRIVER r63417_fhd_dsi_vdo_truly_nt50358_lcm_drv;
 extern LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv;

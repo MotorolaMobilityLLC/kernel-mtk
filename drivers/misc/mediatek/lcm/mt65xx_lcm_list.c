@@ -817,6 +817,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&r63417_fhd_dsi_cmd_truly_nt50358_lcm_drv,
 #endif
 
+#if defined(R63417_FHD_DSI_CMD_TRULY_NT50358_HDPLUS)
+	&r63417_fhd_dsi_cmd_truly_nt50358_hdplus_lcm_drv,
+#endif
+
 #if defined(R63417_FHD_DSI_CMD_TRULY_NT50358_720P)
 	&r63417_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv,
 #endif
@@ -1059,6 +1063,9 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
 	"r63419_wqhd_truly_phantom_2k_cmd_ok",
+#endif
+#if defined(R63417_FHD_DSI_CMD_TRULY_NT50358_HDPLUS)
+	"r63417_fhd_dsi_cmd_truly_nt50358_hdplus_drv",
 #endif
 };
 
