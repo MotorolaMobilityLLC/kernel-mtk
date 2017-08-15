@@ -608,7 +608,7 @@ CONFIG_MTK_VIDEOX,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_VOW_SUPPORT,PROJECT,che-jui.chang,new config in this commit a98a2d4db76d5afef19676fe44e8eb2375f44543,X,X,X,X,,X,X,X,X,O,
 CONFIG_MTK_WAKEHUB,PROJECT,qiangming.xia,,X,X,X,X,,X,X,X,X,O,
 CONFIG_MTK_WAPI_SUPPORT,PROJECT,zhiguo.niu,,O,X,O,X,,X,N,X,X,X,
-CONFIG_MTK_WATCHPOINT,PLATFORM,,,X,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_WATCHPOINT,PLATFORM,,,X,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_WQ_DEBUG,USER,,,X,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_YAS532_NEW,PROJECT,lomen.wu,new config in this commit 4486d5ee565d38da91ef65fd3918a57aaa5263f2,X,X,X,X,,X,X,X,y,X,
 CONFIG_MTPROF,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
