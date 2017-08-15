@@ -418,7 +418,7 @@ void hps_algo_amp(void)
 		++hps_ctxt.down_loads_count;
 		/* XXX: use >= or >, which is benifit? use > */
 		if (hps_ctxt.down_loads_count > hps_ctxt.down_times) {
-			BUG_ON(hps_ctxt.down_loads_sum < val);
+			/*BUG_ON(hps_ctxt.down_loads_sum < val);*/
 			hps_ctxt.down_loads_sum -= val;
 		}
 		if (hps_ctxt.stats_dump_enabled)
