@@ -4935,6 +4935,17 @@ static ssize_t cpufreq_limited_max_freq_by_user_proc_write(struct file *file,
 	return count;
 }
 
+/* cpufreq_limited_by_kdriver */
+static int cpufreq_limited_by_kdriver_proc_show(struct seq_file *m, void *v)
+{
+	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
+
+	seq_printf(m, "min = %d KHz\n", p->limited_min_freq_by_kdriver);
+	seq_printf(m, "max = %d KHz\n", p->limited_max_freq_by_kdriver);
+
+	return 0;
+}
+
 /* cpufreq_power_dump */
 static int cpufreq_power_dump_proc_show(struct seq_file *m, void *v)
 {
@@ -5278,6 +5289,7 @@ PROC_FOPS_RW(cpufreq_limited_by_thermal);
 PROC_FOPS_RW(cpufreq_5A_throttle_enable);
 #endif
 PROC_FOPS_RW(cpufreq_limited_max_freq_by_user);
+PROC_FOPS_RO(cpufreq_limited_by_kdriver);
 PROC_FOPS_RO(cpufreq_power_dump);
 PROC_FOPS_RO(cpufreq_ptpod_freq_volt);
 PROC_FOPS_RW(cpufreq_state);
@@ -5318,6 +5330,7 @@ static int _mt_cpufreq_create_procfs(void)
 	const struct pentry cpu_entries[] = {
 		PROC_ENTRY(cpufreq_limited_by_hevc),
 		PROC_ENTRY(cpufreq_limited_max_freq_by_user),
+		PROC_ENTRY(cpufreq_limited_by_kdriver),
 		PROC_ENTRY(cpufreq_ptpod_freq_volt),
 		PROC_ENTRY(cpufreq_state),
 		PROC_ENTRY(cpufreq_oppidx),	/* <-XXX */
