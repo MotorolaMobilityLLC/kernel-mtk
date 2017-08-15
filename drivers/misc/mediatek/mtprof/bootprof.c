@@ -21,7 +21,9 @@
 #include <linux/printk.h>
 #include <linux/platform_device.h>
 #include <log_store_kernel.h>
-
+#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
+#include <mt_cpufreq.h>
+#endif
 #include "internal.h"
 #ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
 #include "mt_hotplug_strategy_internal.h"
@@ -177,6 +179,9 @@ static void bootup_finish(void)
 #endif
 #ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
 	mt_sched_monitor_switch(1);
+#endif
+#ifdef CONFIG_MT_BOOT_TIME_CPU_BOOST
+	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
 #endif
 	set_logtoomuch_enable(1);
 }

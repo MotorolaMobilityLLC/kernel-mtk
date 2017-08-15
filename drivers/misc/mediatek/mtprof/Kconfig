@@ -119,7 +119,7 @@ config CONSOLE_LOCK_DURATION_DETECT
 
 config MT_BOOT_TIME_CPU_BOOST
 	bool "Boost CPU performance to enhance boot speed"
-	default y
+	default n
 	help
 	  MT_BOOT_TIME_CPU_BOOST is to boost CPU performance to enhance boot
 	  speed and save time cost during system booting. This mechanism
