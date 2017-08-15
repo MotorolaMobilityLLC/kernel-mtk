@@ -1146,6 +1146,7 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 			else {
 				ret = -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
 				CCCI_ERROR_LOG(md->index, TAG, "channel num error (%d)\n", ccci_to_c2k_ch);
+				spin_unlock_irqrestore(&queue->tx_lock, flags);
 				return ret;
 			}
 			if (ccci_h->data[1] == C2K_HB_MSG)
