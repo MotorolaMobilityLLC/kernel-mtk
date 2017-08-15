@@ -413,7 +413,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 1);
+	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
 	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 0);
