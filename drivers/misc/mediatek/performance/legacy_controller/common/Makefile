@@ -11,10 +11,5 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_ARCH_MT6735) += lhd/
-obj-$(CONFIG_ARCH_MT6735M) += lhd/
-obj-$(CONFIG_ARCH_MT6753) += lhd/
-obj-$(CONFIG_ARCH_MT6570) += common/
-obj-$(CONFIG_ARCH_MT6580) += common/
-obj-$(CONFIG_ARCH_MT6755) += ppm/
-obj-$(CONFIG_ARCH_MT6797) += ppm/
+obj-y += legacy_controller.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
