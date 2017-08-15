@@ -20,6 +20,7 @@
 
 #include <linux/bug.h>
 
+#include <asm/alternative.h>
 #include <asm/barrier.h>
 
 static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size)
@@ -29,6 +30,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 	switch (size) {
 	case 1:
 		asm volatile("//	__xchg1\n"
+		ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 		"1:	ldxrb	%w0, %2\n"
 		"	stlxrb	%w1, %w3, %2\n"
 		"	cbnz	%w1, 1b\n"
@@ -38,6 +40,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 		break;
 	case 2:
 		asm volatile("//	__xchg2\n"
+		ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 		"1:	ldxrh	%w0, %2\n"
 		"	stlxrh	%w1, %w3, %2\n"
 		"	cbnz	%w1, 1b\n"
@@ -47,6 +50,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 		break;
 	case 4:
 		asm volatile("//	__xchg4\n"
+		ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 		"1:	ldxr	%w0, %2\n"
 		"	stlxr	%w1, %w3, %2\n"
 		"	cbnz	%w1, 1b\n"
@@ -56,6 +60,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 		break;
 	case 8:
 		asm volatile("//	__xchg8\n"
+		ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 		"1:	ldxr	%0, %2\n"
 		"	stlxr	%w1, %3, %2\n"
 		"	cbnz	%w1, 1b\n"
@@ -88,6 +93,7 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
 	case 1:
 		do {
 			asm volatile("// __cmpxchg1\n"
+			ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 			"	ldxrb	%w1, %2\n"
 			"	mov	%w0, #0\n"
 			"	cmp	%w1, %w3\n"
@@ -103,6 +109,7 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
 	case 2:
 		do {
 			asm volatile("// __cmpxchg2\n"
+			ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 			"	ldxrh	%w1, %2\n"
 			"	mov	%w0, #0\n"
 			"	cmp	%w1, %w3\n"
@@ -118,6 +125,7 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
 	case 4:
 		do {
 			asm volatile("// __cmpxchg4\n"
+			ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 			"	ldxr	%w1, %2\n"
 			"	mov	%w0, #0\n"
 			"	cmp	%w1, %w3\n"
@@ -133,6 +141,7 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
 	case 8:
 		do {
 			asm volatile("// __cmpxchg8\n"
+			ALTERNATIVE("nop", "dmb sy", ARM64_WORKAROUND_855872)
 			"	ldxr	%1, %2\n"
 			"	mov	%w0, #0\n"
 			"	cmp	%1, %3\n"
