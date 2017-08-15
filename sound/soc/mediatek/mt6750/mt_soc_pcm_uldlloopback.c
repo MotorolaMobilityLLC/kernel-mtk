@@ -97,14 +97,13 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s(), stream = %s\n",
+		__func__,
+		substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+		"SNDRV_PCM_STREAM_PLAYBACK" : "SNDRV_PCM_STREAM_CAPTURE");
+
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_err("%s  with mtk_uldlloopback_open\n", __func__);
-		runtime->rate = 48000;
-		return 0;
-	}
+	AudDrv_ADC_Clk_On(); /* TODO: sholud move to later sequence, where can have hires or not info */
 
 	runtime->hw = mtk_uldlloopback_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware,
@@ -126,15 +125,11 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n");
-
 	if (ret < 0) {
 		pr_err("mtk_uldlloopbackpcm_close\n");
 		mtk_uldlloopbackpcm_close(substream);
 		return ret;
 	}
-	pr_warn("mtk_uldlloopback_open return\n");
 	return 0;
 }
 
@@ -248,11 +243,11 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	uint32 u32AudioI2S = 0;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_err("%s  with mtk_uldlloopback_pcm_prepare\n", __func__);
+		pr_debug("%s(), SNDRV_PCM_STREAM_CAPTURE return\n", __func__);
 		return 0;
 	}
 
-	pr_warn("%s rate = %d\n", __func__, runtime->rate);
+	pr_debug("%s(), rate = %d\n", __func__, runtime->rate);
 
 	Afe_Set_Reg(AFE_TOP_CON0, 0x00000000, 0xffffffff);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
