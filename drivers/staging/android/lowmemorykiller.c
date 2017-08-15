@@ -62,6 +62,8 @@ static uint32_t in_lowmem;
 #include <mt-plat/mtk_gpu_utility.h>
 #endif
 
+#define CONFIG_LMK_NO_AMR
+
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 #define CONVERT_ADJ(x) ((x * OOM_SCORE_ADJ_MAX) / -OOM_DISABLE)
 #define REVERT_ADJ(x)  (x * (-OOM_DISABLE + 1) / OOM_SCORE_ADJ_MAX)
@@ -170,7 +172,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 	int print_extra_info = 0;
 	static unsigned long lowmem_print_extra_info_timeout;
-#ifdef CONFIG_SWAP
+#if defined(CONFIG_SWAP) && !defined(CONFIG_LMK_NO_AMR)
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
 #endif
@@ -223,7 +225,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 #endif
 
-#ifdef CONFIG_SWAP
+#if defined(CONFIG_SWAP) && !defined(CONFIG_LMK_NO_AMR)
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
 	if (swap_pages * 2 < total_swap_pages)
@@ -240,7 +242,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
-#ifdef CONFIG_SWAP
+#if defined(CONFIG_SWAP) && !defined(CONFIG_LMK_NO_AMR)
 			if (totalram_pages < 0x40000) {
 				if (to_be_aggressive != 0 && i > 3) {
 					i -= to_be_aggressive;
@@ -467,7 +469,7 @@ log_again:
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
 				"   Free memory is %ldkB above reserved\n"
-#ifdef CONFIG_SWAP
+#if defined(CONFIG_SWAP) && !defined(CONFIG_LMK_NO_AMR)
 				"   swapfree %lukB of SwapTatal %lukB(decrease %d level)\n"
 #endif
 				, selected->comm, selected->pid,
@@ -478,7 +480,7 @@ log_again:
 				cache_size, cache_limit,
 				min_score_adj,
 				free
-#ifdef CONFIG_SWAP
+#if defined(CONFIG_SWAP) && !defined(CONFIG_LMK_NO_AMR)
 				, swap_pages * 4, total_swap_pages * 4, to_be_aggressive
 #endif
 				);
