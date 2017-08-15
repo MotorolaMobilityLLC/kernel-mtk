@@ -111,19 +111,6 @@ config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
 
 source "drivers/input/touchscreen/mediatek/GT9XX_hotknot_scp/Kconfig"
 
-config TOUCHSCREEN_MTK_GT911
-	bool "GT911 for Mediatek package"
-	default n
-	help
-	  Say Y here if you have GT911 touch panel.
-
-	  If unsure, say N.
-
-	  To compile this dirver as a module, choose M here: the
-	  module will be called.
-
-source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
-
 config TOUCHSCREEN_MTK_FT5X0X
 	bool "FT5X0X for Mediatek package"
 	default n
@@ -140,20 +127,6 @@ source "drivers/input/touchscreen/mediatek/ft5x0x/Kconfig"
 config TOUCHSCREEN_MTK_SYNAPTICS_3320_50
 	bool "Synaptics 5.0inch for Mediatek package"
     default n
-
-
-config TOUCHSCREEN_MTK_GT9271TB_HOTKNOT
-	bool "GT911 for Mediatek package"
-	default n
-	help
-	  Say Y here if you have GT9271TB_HOTKNOT touch panel.
-
-	  If unsure, say N.
-
-	  To compile this dirver as a module, choose M here: the
-	  module will be called.
-
-source "drivers/input/touchscreen/mediatek/GT9271TB_hotknot/Kconfig"
 
 config TOUCHSCREEN_UNIFIED_DRIVER_4
 	bool "LGE Unified driver Ver4.0"
