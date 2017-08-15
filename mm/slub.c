@@ -5449,6 +5449,9 @@ static int mtk_memcfg_add_location(struct loc_track *t, struct kmem_cache *s,
 #endif
 			break;
 	}
+	/* copy all addrs if we cannot match track->addr */
+	if (i == TRACK_ADDRS_COUNT)
+		i = 0;
 	cnt = min(MTK_MEMCFG_SLABTRACE_CNT, TRACK_ADDRS_COUNT - i);
 #ifdef MTK_COMPACT_SLUB_TRACK
 	{
