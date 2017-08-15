@@ -1663,11 +1663,6 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 		file = vma->vm_file;
 		flags = vma->vm_flags;
 		if (file) {
-			LOGE("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
-			     flags & VM_READ ? 'r' : '-',
-			     flags & VM_WRITE ? 'w' : '-',
-			     flags & VM_EXEC ? 'x' : '-',
-			     flags & VM_MAYSHARE ? 's' : 'p', (unsigned char *)(file->f_path.dentry->d_iname));
 			Log2Buffer(oops, "%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
 					flags & VM_READ ? 'r' : '-',
 					flags & VM_WRITE ? 'w' : '-',
@@ -1694,11 +1689,6 @@ int DumpThreadNativeInfo(struct aee_oops *oops)
 			/* if (name) */
 			{
 
-				LOGE("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
-				     flags & VM_READ ? 'r' : '-',
-				     flags & VM_WRITE ? 'w' : '-',
-				     flags & VM_EXEC ? 'x' : '-',
-				     flags & VM_MAYSHARE ? 's' : 'p', name);
 				Log2Buffer(oops, "%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start, vma->vm_end,
 						flags & VM_READ ? 'r' : '-',
 						flags & VM_WRITE ? 'w' : '-',
