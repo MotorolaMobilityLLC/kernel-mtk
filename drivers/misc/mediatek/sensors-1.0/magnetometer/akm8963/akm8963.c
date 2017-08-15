@@ -236,7 +236,7 @@ static long AKI2C_RxData(char *rxData, int length)
 	int i;
 	struct i2c_client *client = this_client;
 	struct akm8963_i2c_data *data = i2c_get_clientdata(client);
-	char addr = rxData[0];
+	char addr;
 #endif
 
 	mutex_lock(&akm8963_i2c_mutex);
@@ -245,6 +245,9 @@ static long AKI2C_RxData(char *rxData, int length)
 		mutex_unlock(&akm8963_i2c_mutex);
 		return -EINVAL;
 	}
+#if DEBUG
+	addr = rxData[0];
+#endif
 
 	for (loop_i = 0; loop_i < AKM8963_RETRY_COUNT; loop_i++) {
 		this_client->addr = this_client->addr & I2C_MASK_FLAG;
