@@ -2773,8 +2773,10 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 						qh->is_use_qmu,
 						mtk_host_qmu_concurrent);
 #endif
-			DBG(0, "why here, this is ring case?\n");
-			BUG();
+			if (qh->type != USB_ENDPOINT_XFER_CONTROL) {
+				DBG(0, "why here, this is ring case?\n");
+				BUG();
+			}
 
 			qh->hep->hcpriv = NULL;
 			list_del(&qh->ring);
@@ -2886,8 +2888,10 @@ static void musb_h_disable(struct usb_hcd *hcd, struct usb_host_endpoint *hep)
 			musb_advance_schedule(musb, urb, qh->hw_ep, is_in);
 		}
 	} else {
-		DBG(0, "why here, this is ring case?\n");
-		BUG();
+		if (qh->type != USB_ENDPOINT_XFER_CONTROL) {
+			DBG(0, "why here, this is ring case?\n");
+			BUG();
+		}
 
 		/* Just empty the queue; the hardware is busy with
 		 * other transfers, and since !qh->is_ready nothing
