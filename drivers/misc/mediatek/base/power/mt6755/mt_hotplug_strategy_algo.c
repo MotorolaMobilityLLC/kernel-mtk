@@ -74,11 +74,11 @@
 /* power on_off cpus of cluster*/
 /*Use for Fast hotplug.*/
 #ifdef CONFIG_CPU_ISOLATION
-void hps_algo_cpu_cluster_action(unsigned int online_cores, unsigned int target_cores,
-				 unsigned int cpu_id_min, unsigned int cpu_id_max,
-				 unsigned int cluster)
+void hps_algo_cpu_cluster_action(int online_cores, int target_cores,
+				 int cpu_id_min, int cpu_id_max,
+				 int cluster)
 {
-	unsigned int cpu;
+	int cpu;
 	struct cpumask target_cpu_up_cpumask, target_cpu_down_cpumask, target_cpu_isolate_mask;
 
 	cpumask_clear(&target_cpu_up_cpumask);
@@ -121,12 +121,15 @@ void hps_algo_cpu_cluster_action(unsigned int online_cores, unsigned int target_
 *power on/off cpus of cluster
 *For legacy hotplug use
 */
-static void hps_algo_cpu_cluster_action(unsigned int online_cores, unsigned int target_cores,
-					unsigned int cpu_id_min, unsigned int cpu_id_max,
-					unsigned int cluster)
+static void hps_algo_cpu_cluster_action(int online_cores, int target_cores,
+					int cpu_id_min, int cpu_id_max,
+					int cluster)
 {
-	unsigned int cpu;
+	int cpu;
 
+	if ((online_cores < 0) || (target_cores < 0) || (cpu_id_min < 0)
+		|| (cpu_id_max < 0) || (cluster < 0))
+		return;
 	if (target_cores > online_cores) {	/*Power upcpus */
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
 			if (!cpu_online(cpu)) {	/* For CPU offline */
@@ -143,6 +146,8 @@ static void hps_algo_cpu_cluster_action(unsigned int online_cores, unsigned int 
 	} else {		/*Power downcpus */
 
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
+			if (cpu < 0)
+				break;
 			if (cpu_online(cpu)) {
 				cpu_down(cpu);
 				--online_cores;
