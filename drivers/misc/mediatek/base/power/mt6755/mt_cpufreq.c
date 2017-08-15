@@ -393,8 +393,7 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 			return CPU_LEVEL_0;
 	} else
 		return CPU_LEVEL_0;
-#endif
-
+#else
 	/* get CPU clock-frequency from DT */
 #ifdef CONFIG_OF
 	{
@@ -432,7 +431,7 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 	}
 
 #endif
-
+#endif
 	return lv;
 }
 #else
