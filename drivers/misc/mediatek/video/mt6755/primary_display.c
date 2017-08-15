@@ -4790,6 +4790,8 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 					_cmdq_flush_config_handle_mira(handle, 0);
 				}
 			}
+			MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd,
+					MMProfileFlagEnd, (unsigned long)handle, cmdqsize);
 
 			cmdqRecDestroy(handle);
 		}
@@ -4798,9 +4800,6 @@ user_cmd_unlock:
 		_primary_path_switch_dst_unlock();
 
 	}
-	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd,
-		MMProfileFlagEnd, (unsigned long)handle, cmdqsize);
-
 	return ret;
 }
 
