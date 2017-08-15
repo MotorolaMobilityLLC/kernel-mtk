@@ -456,6 +456,16 @@ static void disp_pwm_log(int level_1024, int log_type)
 
 }
 
+int is_disp_pwm_driver_ready(void)
+{
+	int status = 1;
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
+	|| defined(CONFIG_ARCH_MT6753)
+	status = primary_display_get_init_status();
+#endif
+	return status;
+}
+
 int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 {
 	unsigned long reg_base;
@@ -466,6 +476,11 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 
 	if ((DISP_PWM_ALL & id) == 0) {
 		PWM_ERR("[ERROR] disp_pwm_set_backlight_cmdq: invalid PWM ID = 0x%x", id);
+		return -EFAULT;
+	}
+
+	if (is_disp_pwm_driver_ready() == 0) {
+		PWM_ERR("[ERROR] primary display init not finish");
 		return -EFAULT;
 	}
 

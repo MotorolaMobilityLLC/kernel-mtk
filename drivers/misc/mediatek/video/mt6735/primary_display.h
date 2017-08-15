@@ -395,3 +395,4 @@ int display_freeze_mode(int enable, int need_lock);
 #if defined(OVL_TIME_SHARING)
 int primary_display_disable_ovl2mem(void);
 #endif
+int primary_display_get_init_status(void);

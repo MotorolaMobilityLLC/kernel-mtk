@@ -147,6 +147,8 @@ disp_ddp_path_config last_primary_config;
 static struct switch_dev disp_switch_data;
 #endif
 
+static int g_is_inited;
+
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
 		    disp_internal_buffer_info *buf)
 {
@@ -5506,6 +5508,8 @@ done:
 	enable_soidle_by_bit(MT_CG_DISP0_DISP_WDMA0);
 #endif
 #endif
+	g_is_inited = 1;
+
 	_primary_path_unlock(__func__);
 	/* DISPMSG("primary_display_init end\n"); */
 
@@ -5523,6 +5527,11 @@ int primary_display_deinit(void)
 #endif
 	_primary_path_unlock(__func__);
 	return 0;
+}
+
+int primary_display_get_init_status(void)
+{
+	return g_is_inited;
 }
 
 /* register rdma done event */
