@@ -34,7 +34,11 @@ struct rt5081_pmu_bled_data *bled_data;
 static uint8_t bled_init_data[] = {
 	0x42, /* RT5081_PMU_REG_BLEN */
 	0x89, /* RT5081_PMU_REG_BLBSTCTRL */
+#ifdef CONFIG_L3510_MAINBOARD
+	0x06, /* RT5081_PMU_REG_BLPWM */
+#else
 	0x04, /* RT5081_PMU_REG_BLPWM */
+#endif
 	0x00, /* RT5081_PMU_REG_BLCTRL */
 	0x00, /* RT5081_PMU_REG_BLDIM2 */
 	0x00, /* RT5081_PMU_REG_BLDIM1 */
