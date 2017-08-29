@@ -703,7 +703,13 @@ static void multi_key_detection(int current_status)
 #else	/* ifdef CONFIG_ACCDET_EINT */
 	if (((pmic_pwrap_read(ACCDET_IRQ_STS) & IRQ_STATUS_BIT) != IRQ_STATUS_BIT) || eint_accdet_sync_flag) {
 #endif
-		send_key_event(cur_key, !current_status);
+		if(cur_eint_state != EINT_PIN_PLUG_OUT){
+			send_key_event(cur_key, !current_status);
+		}
+		else{
+			ACCDET_DEBUG("[Accdet]eint_accdet_sync_flag is not reliable as it has been locked so much time, do not report key = %d\n", cur_key);
+			cur_key = NO_KEY;
+		}
 	} else {
 		ACCDET_DEBUG("[Accdet]plug out side effect key press, do not report key = %d\n", cur_key);
 		cur_key = NO_KEY;
