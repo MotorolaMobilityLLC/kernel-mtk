@@ -224,12 +224,16 @@ int Ripi_cpu_dvfs_thread(void *data)
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
 
 				cid = arch_get_cluster_id(p->mt_policy->cpu);
-				if (cid == 0)
+				if (cid == 0) {
 					met_tag_oneshot(0, "sched_dvfs_max_c0", p->mt_policy->max);
-				else if (cid == 1)
+					met_tag_oneshot(0, "sched_dvfs_min_c0", p->mt_policy->min);
+				} else if (cid == 1) {
 					met_tag_oneshot(0, "sched_dvfs_max_c1", p->mt_policy->max);
-				else if (cid == 2)
+					met_tag_oneshot(0, "sched_dvfs_min_c1", p->mt_policy->min);
+				} else if (cid == 2) {
 					met_tag_oneshot(0, "sched_dvfs_max_c2", p->mt_policy->max);
+					met_tag_oneshot(0, "sched_dvfs_min_c2", p->mt_policy->min);
+				}
 
 				/* Policy notification */
 				if (p->idx_opp_tbl != j ||
