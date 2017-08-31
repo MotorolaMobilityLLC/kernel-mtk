@@ -686,6 +686,17 @@ int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 
 	/* OVL clamp_out */
 	val = is_module_rsz(next);
+	if (val) {
+		DISP_REG_SET_FIELD(handle, SRC_CON_FLD_FORCE_RELAY_MODE,
+				   ovl_base + DISP_REG_OVL_SRC_CON, 1);
+		DISP_REG_SET_FIELD(handle, SRC_CON_FLD_RELAY_MODE_EN,
+				   ovl_base + DISP_REG_OVL_SRC_CON, 0);
+	} else {
+		DISP_REG_SET_FIELD(handle, SRC_CON_FLD_FORCE_RELAY_MODE,
+				   ovl_base + DISP_REG_OVL_SRC_CON, 0);
+		DISP_REG_SET_FIELD(handle, SRC_CON_FLD_RELAY_MODE_EN,
+				   ovl_base + DISP_REG_OVL_SRC_CON, 0);
+	}
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, val);
 
@@ -1230,7 +1241,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	DDPDBG("%s enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
 		ddp_get_module_name(module), enabled_layers, enabled_ext_layers, ext_sel_layers>>16);
 
-	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, enabled_layers);
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L_EN, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, enabled_layers);
 	/* ext layer control */
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		     enabled_ext_layers | ext_sel_layers);
