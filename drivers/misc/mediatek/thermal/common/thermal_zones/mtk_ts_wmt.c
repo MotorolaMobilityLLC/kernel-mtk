@@ -29,6 +29,7 @@
 #include "mtk_thermal_timer.h"
 #include <linux/uidgid.h>
 #include <linux/slab.h>
+
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -411,6 +412,11 @@ static unsigned long get_tx_bytes(void)
 	}
 	read_unlock(&dev_base_lock);
 	return tx_bytes;
+}
+
+int tswmt_get_WiFi_tx_tput(void)
+{
+	return tx_throughput;
 }
 
 static int wmt_cal_stats(unsigned long data)

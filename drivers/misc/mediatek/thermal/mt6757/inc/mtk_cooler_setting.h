@@ -30,4 +30,8 @@
 /* 1: turn on adaptive MD throttle cooler; 0: turn off  */
 #define FEATURE_ADAPTIVE_MUTT		(1)
 
+/* mtk_ta.c */
+/* 1: turn on SPA; 0: turn off  */
+#define FEATURE_SPA		(0)
+
 #endif				/* _MTK_COOLER_SETTING_H */

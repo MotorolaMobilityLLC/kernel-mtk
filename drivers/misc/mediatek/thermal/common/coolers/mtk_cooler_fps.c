@@ -185,6 +185,16 @@ void dfrc_fps_limit_cb(int fps_limit)
 EXPORT_SYMBOL(dfrc_fps_limit_cb);
 #endif
 
+int clfps_get_game_mode(void)
+{
+	return in_game_mode;
+}
+
+int clfps_get_disp_fps(void)
+{
+	return tm_input_fps;
+}
+
 static int game_mode_check(void)
 {
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
