@@ -43,6 +43,8 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req_internal.h>
 
+#include <trace/events/mtk_events.h>
+
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
