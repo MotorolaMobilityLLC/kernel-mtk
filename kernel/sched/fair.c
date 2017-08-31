@@ -5311,15 +5311,21 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 	 *   M = B * S, if B is negative
 	 * The obtained M could be used by the caller to "boost" S.
 	 */
-	if (cpu == -1) {
+	/* if use kernel API to update negatice boost,
+	 * don't decrease task utilization.
+	 */
+	if (cpu == -1) { /* task margin */
 		if (boost >= 0) {
 			margin  = SCHED_LOAD_SCALE - signal;
 			margin *= boost;
+		} else if (!global_negative_flag) /* google original path */
+			margin = -signal * boost;
+	} else { /* cpu margin */
+		if (boost >= 0) {
+			margin  = capacity_orig_of(cpu) - signal;
+			margin *= boost;
 		} else
 			margin = -signal * boost;
-	} else {
-		margin  = capacity_orig_of(cpu) - signal;
-		margin *= boost;
 	}
 
 	/*

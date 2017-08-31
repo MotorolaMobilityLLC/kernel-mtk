@@ -47,6 +47,8 @@ int schedtune_normalize_energy(int energy);
 int schedtune_accept_deltas(int nrg_delta, int cap_delta,
 			    struct task_struct *task);
 
+extern bool global_negative_flag;
+
 #else /* CONFIG_SCHED_TUNE */
 
 #define schedtune_cpu_boost(cpu)  0
