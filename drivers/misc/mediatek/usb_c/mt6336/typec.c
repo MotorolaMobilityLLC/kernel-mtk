@@ -1361,10 +1361,20 @@ err_handle:
 	return 1;
 }
 
-static void typec_show_routed_cc(struct typec_hba *hba)
+static void typec_cc_state(struct typec_hba *hba)
 {
+	uint8_t pwr_status = typec_read8(hba, TYPE_C_PWR_STATUS);
+
 	hba->cc = (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_ROUTED_CC) == 0) ? CC1_SIDE : CC2_SIDE);
-	dev_err(hba->dev, "CC%d\n", hba->cc);
+
+	hba->power_role = (pwr_status & RO_TYPE_C_CC_PWR_ROLE) ? PD_ROLE_SOURCE : PD_ROLE_SINK;
+
+	hba->src_rp = pwr_status & RO_TYPE_C_CC_SNK_PWR_ST;
+
+	hba->ra = !!(pwr_status & RO_TYPE_C_DRIVE_VCONN_CAPABLE);
+
+	dev_err(hba->dev, "%s CC%d %s %s\n", hba->power_role?"SRC":"SNK",
+				hba->cc, SRC_CUR(hba->src_rp), ((hba->ra == 1)?"Ra":""));
 }
 
 static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
@@ -1624,14 +1634,14 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 #if ENABLE_ACC
 		/*SNK<->ACC toggle happens ONLY for sink*/
 		if (hba->support_role == TYPEC_ROLE_SINK)
-			typec_int_enable(hba, TYPE_C_INTR_ACC_TOGGLE, 0);
+			typec_int_enable(hba, TYPE_C_INTR_ACC_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
 		else
 #endif
-			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, 0);
+			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
-		typec_show_routed_cc(hba);
+		typec_cc_state(hba);
 
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if (hba->mode == 1)
@@ -1648,7 +1658,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
-		typec_show_routed_cc(hba);
+		typec_cc_state(hba);
 
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if (hba->mode == 1)
@@ -1668,6 +1678,11 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		 * to notify MAC layer.
 		 */
 		schedule_work(&hba->wait_vbus_on_try_wait_snk);
+	}
+
+	if (cc_is2 & TYPE_C_INTR_SRC_ADVERTISE) {
+		if (cc_is2 != (0x1 << hba->src_rp))
+			typec_cc_state(hba);
 	}
 }
 
@@ -1749,6 +1764,9 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 #endif
 
 	mutex_unlock(&hba->typec_lock);
+
+	if (hba->mode == 1)
+		dev_err(hba->dev, "%s cc0=0x%X cc2=0x%X\n", __func__, cc_is0, cc_is2);
 
 	return retval;
 }
