@@ -23,8 +23,7 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <asm/cacheflush.h>
-#include <mach/mt_clkmgr.h>
-#include <mach/mt_freqhopping.h>
+/* #include <mach/mtk_clkmgr.h> */
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_fdt.h>
@@ -32,13 +31,11 @@
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-#include <mt-plat/mt_io.h>
+#include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
-#include <mt_spm_sleep.h>
-#include <mt_spm_reg.h>
 
-#include "mt_dramc.h"
+#include "mtk_dramc.h"
 
 #ifdef DRAM_HQA
 #if defined(HQA_LPDDR4)
