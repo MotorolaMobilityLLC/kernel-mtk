@@ -2759,6 +2759,8 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 {
 	CMDQ_MSG("-->TASK: Release task structure 0x%p begin\n", pTask);
 
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_remove);
+
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
 
@@ -2767,7 +2769,6 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 	pTask->secStatus = NULL;
 #endif
 
-	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_remove);
 	/* remove from active/waiting list */
 	list_del_init(&(pTask->listEntry));
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_remove);
@@ -2786,18 +2787,16 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 
 static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 {
-	struct TaskStruct *pTask = NULL;
-
-	pTask = container_of(workItem, struct TaskStruct, autoReleaseWork);
+	struct TaskStruct *pTask = container_of(workItem, struct TaskStruct, autoReleaseWork);
 
 	CMDQ_MSG("-->Work QUEUE: TASK: Release task structure 0x%p begin\n", pTask);
+
+	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_in_queue);
 
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
 
 	cmdq_core_release_buffer(pTask);
-
-	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_in_queue);
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 	kfree(pTask->secStatus);
@@ -6758,7 +6757,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 	int index = 0;
 	int loop = 0;
 	struct TaskStruct *pExecTask = NULL;
-	struct ThreadStruct *pThread = &(gCmdqContext.thread[thread]);
+	struct ThreadStruct *pThread = NULL;
 	dma_addr_t pa = 0;
 
 	if (unlikely(pTask->use_sram_buffer)) {
@@ -6766,6 +6765,12 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 		return -EFAULT;
 	}
 
+	if (thread == CMDQ_INVALID_THREAD) {
+		CMDQ_ERR("Remove inavlid task:0x%p thread:%d\n", pTask, thread);
+		return -EFAULT;
+	}
+
+	pThread = &gCmdqContext.thread[thread];
 	status = cmdq_core_suspend_HW_thread(thread, __LINE__);
 
 	CMDQ_REG_SET32(CMDQ_THR_INST_CYCLES(thread), cmdq_core_get_task_timeout_cycle(pThread));
