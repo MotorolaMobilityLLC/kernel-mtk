@@ -570,6 +570,43 @@ void chrdet_int_handler(void)
 	do_charger_detect();
 }
 
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+int typec_chrdet_int_handler(int enable)
+{
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	if (enable == 0) {
+		int boot_mode = 0;
+
+		boot_mode = get_boot_mode();
+
+		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+			pr_err("[chrdet_int_handler] Unplug Charger/USB\n");
+			mt_power_off();
+			return -1;
+		}
+	}
+#endif
+	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
+
+	if (enable) {
+		pr_err("charger IN\n");
+		g_chr_type = hw_charging_get_charger_type();
+	} else {
+		pr_err("charger OUT\n");
+		g_chr_type = CHARGER_UNKNOWN;
+	}
+
+	mtk_charger_int_handler();
+
+	if (g_mt_charger) {
+		power_supply_changed(g_mt_charger->charger_psy);
+		power_supply_changed(g_mt_charger->usb_psy);
+	}
+	return 0;
+}
+#endif
+
 /************************************************/
 /* Power Supply Functions
 *************************************************/
@@ -699,8 +736,12 @@ static int mt_charger_probe(struct platform_device *pdev)
 	schedule_work(&chr_work);
 #endif
 
+#if !defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
 	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
+#else
+	register_charger_det_callback(typec_chrdet_int_handler);
+#endif
 	return 0;
 }
 
