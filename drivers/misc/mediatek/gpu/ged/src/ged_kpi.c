@@ -212,6 +212,7 @@ static unsigned int g_gpu_freq_accum;
 static unsigned int g_frame_count;
 
 static int gx_game_mode;
+static int gx_force_cpu_boost;
 static int enable_game_self_frc_detect = 1;
 static unsigned int gx_fps;
 static unsigned int gx_cpu_time_avg;
@@ -232,6 +233,7 @@ static int boost_upper_bound = 100;
 static void (*ged_kpi_cpu_boost_policy_fp)(GED_KPI_HEAD *psHead, GED_KPI *psKPI);
 module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR);
 module_param(gx_game_mode, int, S_IRUGO|S_IWUSR);
+module_param(gx_force_cpu_boost, int, S_IRUGO|S_IWUSR);
 module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
 module_param(boost_amp, int, S_IRUGO|S_IWUSR);
@@ -271,77 +273,118 @@ module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
 static int target_fps_4_main_head = 60;
 static int fps_records[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
 static int cur_fps_idx;
-static int fps_recorded_num;
+static int fps_recorded_num = 1;
+static int reset = 1;
+static int afrc_rst_cnt_down;
+static int afrc_rst_over_target_cnt;
 static void ged_kpi_frc_detection_main_head_reset(int fps)
 {
 	cur_fps_idx = 0;
 	fps_recorded_num = 1;
 	target_fps_4_main_head = fps;
+	afrc_rst_cnt_down = 0;
+	afrc_rst_over_target_cnt = 0;
+	is_game_control_frame_rate = 0;
+	reset = 1;
 }
 static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 {
-	if (enable_game_self_frc_detect) {
+	int fps_grp[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
+	int i;
+
+	if (enable_game_self_frc_detect && fps > 15 && fps <= 61) {
 		fps_records[cur_fps_idx] = fps;
-
-		if (fps_recorded_num == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) {
-			if (fps_records[cur_fps_idx] > target_fps_4_main_head) {
-				if (fps_records[cur_fps_idx] > 26 && fps_records[cur_fps_idx] <= 31) {
-					target_fps_4_main_head = 30;
-				} else if (fps_records[cur_fps_idx] > 31 && fps_records[cur_fps_idx] <= 46) {
-					target_fps_4_main_head = 45;
-				} else if (fps_records[cur_fps_idx] > 46) {
-					target_fps_4_main_head = 60;
-				}
-			} else {
-				int avg_fps = 0;
-				int i;
-
-				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++)
-					avg_fps += fps_records[i];
-				avg_fps /= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
-
-				if (avg_fps <= 24)
-					target_fps_4_main_head = 24;
-				else if (avg_fps > 24 && avg_fps <= 31)
-					target_fps_4_main_head = 30;
-				else if (avg_fps > 31 && avg_fps <= 46)
-					target_fps_4_main_head = 45;
-				else
-					target_fps_4_main_head = 60;
+		if (reset == 0) {
+			if (fps > target_fps_4_main_head + 1 || afrc_rst_cnt_down == 120) {
+				ged_kpi_frc_detection_main_head_reset(60);
+				GED_LOGE("[AFRC] reset: %d, %d, afrc_rst: %d, %d\n",
+					fps, target_fps_4_main_head + 1, afrc_rst_cnt_down, afrc_rst_over_target_cnt);
+			} else if (afrc_rst_over_target_cnt >= 15) {
+				int is_fps_grp_aligned = 1;
 
 				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
-					int fps_diff = 0;
-					int rise_fps_target = 0;
-
-					if (target_fps_4_main_head == 60)
-						break;
-					if (target_fps_4_main_head < fps_records[i])
-						fps_diff = fps_records[i] - target_fps_4_main_head;
-					if (fps_diff >= target_fps_4_main_head * 15 / 100)
-						rise_fps_target = 1;
-
-					if (rise_fps_target && target_fps_4_main_head == 24)
-						target_fps_4_main_head = 30;
-					else if (rise_fps_target && target_fps_4_main_head == 30)
-						target_fps_4_main_head = 45;
-					else if (rise_fps_target && target_fps_4_main_head == 45)
-						target_fps_4_main_head = 60;
+					if (fps_records[i] <= 25)
+						fps_grp[i] = 24;
+					else if (fps_records[i] <= 31)
+						fps_grp[i] = 30;
+					else if (fps_records[i] <= 45)
+						fps_grp[i] = 45;
+					else
+						fps_grp[i] = 60;
 				}
+
+				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE - 1; i++) {
+					if (fps_grp[i] != fps_grp[i + 1]) {
+						is_fps_grp_aligned = 0;
+						break;
+					}
+				}
+
+				if (is_fps_grp_aligned) {
+					target_fps_4_main_head = fps_grp[0];
+					afrc_rst_over_target_cnt = 0;
+					GED_LOGE("[AFRC] retarget to %d FPS due to voer target detection\n",
+						fps_grp[0]);
+				}
+
+			} else {
+				if (fps <= 25)
+					fps = 24;
+				else if (fps <= 31)
+					fps = 30;
+				else if (fps <= 45)
+					fps = 45;
+				else
+					fps = 60;
+
+				if (fps < target_fps_4_main_head)
+					afrc_rst_over_target_cnt++;
+				else
+					afrc_rst_over_target_cnt = 0;
+				afrc_rst_cnt_down++;
 			}
 		} else {
-			fps_recorded_num++;
-		}
+			if (fps_recorded_num == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) {
+				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
+					if (fps_records[i] <= 25)
+						fps_grp[i] = 24;
+					else if (fps_records[i] <= 31)
+						fps_grp[i] = 30;
+					else if (fps_records[i] <= 45)
+						fps_grp[i] = 45;
+					else
+						fps_grp[i] = 60;
+				}
 
+				reset = 0;
+				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE - 1; i++) {
+					if (fps_grp[i] != fps_grp[i + 1]) {
+						reset = 1;
+						break;
+					}
+				}
+
+				GED_LOGE("[AFRC] fps_grp: %d, %d, %d\n", fps_grp[0], fps_grp[1], fps_grp[2]);
+
+				if (reset == 0 && fps_grp[0] < 60) {
+					target_fps_4_main_head = fps_grp[0];
+					is_game_control_frame_rate = 1;
+				} else {
+					reset = 1;
+				}
+			} else {
+				fps_recorded_num++;
+			}
+		}
 		cur_fps_idx++;
 		cur_fps_idx %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
-
-		if (target_fps_4_main_head != 60)
-			is_game_control_frame_rate = 1;
-		else
-			is_game_control_frame_rate = 0;
 	} else {
 		is_game_control_frame_rate = 0;
 	}
+	/* debug AFRC detection */
+	GED_LOGE("[AFRC]: cur_fps: %d, fps_records: %d, %d, %d, target_fps: %d\n",
+		fps, fps_records[0], fps_records[1], fps_records[2], target_fps_4_main_head);
+	/* end of debug AFRC detection */
 }
 /* ----------------------------------------------------------------------------- */
 static inline void ged_kpi_clean_kpi_info(void)
@@ -1028,7 +1071,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psKPI->t_cpu_latest = psHead->t_cpu_latest;
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
 			psHead->last_QedBufferDelay = 0;
-			if (gx_game_mode == 1 && enable_cpu_boost == 1) {
+			if ((gx_game_mode == 1 || gx_force_cpu_boost == 1) && enable_cpu_boost == 1) {
 				/* is_EAS_boost_off = 0; */
 				ged_kpi_cpu_boost(psHead, psKPI);
 			}
@@ -1136,6 +1179,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 						psTimeStamp->i32FrameID,
 						ulID);
 				}
+				target_fps_4_main_head = 60;
 #endif
 			}
 		}
