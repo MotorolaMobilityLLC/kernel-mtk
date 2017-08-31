@@ -49,6 +49,7 @@
 #if !defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
 #define __SW_CHRDET_IN_PROBE_PHASE__
 #endif
+/*#define __CHRDET_RG_DUMP__*/
 
 static CHARGER_TYPE g_chr_type;
 static struct mt_charger *g_mt_charger;
@@ -178,6 +179,10 @@ static unsigned int hw_bc12_step_1(void)
 	 * 1: Jump to 2-b
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/**/
 	if (check_rdm_dwm_requirement()) {
 		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
@@ -223,6 +228,9 @@ static unsigned int hw_bc12_step_2a(void)
 	 * 1: Jump to 3-a
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
 	/**/
 	if (check_rdm_dwm_requirement()) {
 		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
@@ -257,6 +265,10 @@ static unsigned int hw_bc12_step_2b1(void)
 	/* RGS_BC12_CMP_OUT */
 	/* Latch output OUT1 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -285,6 +297,10 @@ static unsigned int hw_bc12_step_2b2(void)
 	/* RGS_BC12_CMP_OUT */
 	/* Latch output OUT2 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -330,6 +346,10 @@ static unsigned int hw_bc12_step_3a(void)
 	 * 1: DCP
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/* Delay 20ms */
 	msleep(20);
 
@@ -361,6 +381,10 @@ static unsigned int hw_bc12_step_3b(void)
 	 * 1: Non-STD Charger
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -388,6 +412,10 @@ static unsigned int hw_bc12_step_4(void)
 
 	/* RGS_BC12_CMP_OUT */
 	wChargerAvail = bc12_set_register_value(MT6336_AD_QI_BC12_CMP_OUT, 0);
+#if defined(__CHRDET_RG_DUMP__)
+	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+#endif
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
