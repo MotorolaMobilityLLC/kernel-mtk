@@ -1438,6 +1438,9 @@ static void __init map_lowmem(void)
 				create_mapping(&map);
 			}
 		}
+
+		if (!(end & ~SECTION_MASK))
+			memblock_set_current_limit(end);
 	}
 }
 
