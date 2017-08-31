@@ -738,7 +738,7 @@ static int autok_check_scan_res64(u64 rawdat, struct AUTOK_SCAN_RES *scan_res, u
 static int autok_check_scan_res64_new(u64 rawdat, struct AUTOK_SCAN_RES_NEW *scan_res, unsigned int bd_filter)
 {
 	unsigned int bit;
-	unsigned char i, j;
+	int i, j;
 	unsigned char fail_bd_info_cnt = 0;
 	unsigned char pass_bd_info_cnt = 0;
 	enum AUTOK_TX_SCAN_STA_E RawScanSta = START_POSITION;
@@ -970,10 +970,6 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 					pInfo->opt_dly_cnt = pBdInfo_Temp[1]->bd_info[0].Bound_Start / 2;
 				else if (max_pass_loca == 1)
 					pInfo->opt_dly_cnt = (63 + pBdInfo_Temp[1]->bd_info[0].Bound_End) / 2;
-				else {
-					pInfo->opt_dly_cnt = (pBdInfo_Temp[1]->bd_info[max_pass_loca].Bound_Start
-					+ pBdInfo_Temp[1]->bd_info[max_pass_loca - 1].Bound_End) / 2;
-				}
 				break;
 			case 0:
 				pInfo->opt_dly_cnt = 31;

@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16101316)
+#define AUTOK_VERSION                   (0x16101814)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -183,22 +183,22 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.busy_ma_val = 1; \
 		autok_para_rx.new_water_hs400 = 8; \
 		autok_para_rx.new_stop_hs400 = 3; \
-		autok_para_rx.new_water_hs200 = 6; \
-		autok_para_rx.new_stop_hs200 = 0; \
+		autok_para_rx.new_water_hs200 = 0; \
+		autok_para_rx.new_stop_hs200 = 6; \
 		autok_para_rx.new_water_ddr208 = 8; \
 		autok_para_rx.new_stop_ddr208 = 3; \
-		autok_para_rx.new_water_sdr104 = 6; \
-		autok_para_rx.new_stop_sdr104 = 0; \
+		autok_para_rx.new_water_sdr104 = 0; \
+		autok_para_rx.new_stop_sdr104 = 6; \
 		autok_para_rx.new_water_hs = 8; \
 		autok_para_rx.new_stop_hs = 3; \
 		autok_para_rx.old_water_hs400 = 8; \
 		autok_para_rx.old_stop_hs400 = 3; \
-		autok_para_rx.old_water_hs200 = 6; \
-		autok_para_rx.old_stop_hs200 = 0; \
+		autok_para_rx.old_water_hs200 = 0; \
+		autok_para_rx.old_stop_hs200 = 6; \
 		autok_para_rx.old_water_ddr208 = 8; \
 		autok_para_rx.old_stop_ddr208 = 3; \
-		autok_para_rx.old_water_sdr104 = 6; \
-		autok_para_rx.old_stop_sdr104 = 0; \
+		autok_para_rx.old_water_sdr104 = 0; \
+		autok_para_rx.old_stop_sdr104 = 6; \
 		autok_para_rx.old_water_hs = 8; \
 		autok_para_rx.old_stop_hs = 3; \
 		autok_para_rx.read_dat_cnt_hs400 = 1; \

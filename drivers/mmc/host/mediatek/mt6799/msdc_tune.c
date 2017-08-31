@@ -287,8 +287,14 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	}
 
 	do {
-		msdc_set_mclk(host, host->saved_para.timing,
-			host->saved_para.hz);
+		if (host->hw->flags & MSDC_SDIO_DDR208) {
+			/* Set HS400 clock mode and DIV = 0 */
+			msdc_clk_stable(host, 3, 0, 1);
+		} else {
+			msdc_set_mclk(host, host->saved_para.timing,
+				host->saved_para.hz);
+		}
+
 		if ((MSDC_READ32(MSDC_CFG) & 0xFFFFFF9F) ==
 		    (host->saved_para.msdc_cfg & 0xFFFFFF9F))
 			break;
