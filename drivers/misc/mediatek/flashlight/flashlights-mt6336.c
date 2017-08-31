@@ -425,8 +425,16 @@ static int mt6336_set_level(int channel, int level)
 	return 0;
 }
 
+static int mt6336_set_scenario(int scenario)
+{
+	/* set decouple mode */
+	mt6336_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+
+	return 0;
+}
+
 /* flashlight init */
-int mt6336_init(int scenario)
+int mt6336_init(void)
 {
 	int ret = 0;
 
@@ -466,8 +474,8 @@ int mt6336_init(int scenario)
 	mt6336_en_ch1 = MT6336_NONE;
 	mt6336_en_ch2 = MT6336_NONE;
 
-	/* set decouple mode */
-	mt6336_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+	/* clear decouple mode */
+	mt6336_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
 	is_preenable = 0;
 
@@ -482,7 +490,7 @@ int mt6336_uninit(void)
 	mt6336_en_ch2 = MT6336_NONE;
 
 	/* clear decouple mode */
-	mt6336_decouple_mode = 0;
+	mt6336_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
 	return mt6336_disable();
 }
@@ -648,6 +656,12 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 		mt6336_set_level(channel, fl_arg->arg);
 		break;
 
+	case FLASH_IOC_SET_SCENARIO:
+		fl_dbg("FLASH_IOC_SET_SCENARIO(%d): %d\n",
+				channel, (int)fl_arg->arg);
+		mt6336_set_scenario(fl_arg->arg);
+		break;
+
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
@@ -685,12 +699,12 @@ static int mt6336_release(void *pArg)
 	return 0;
 }
 
-static int mt6336_set_driver(int scenario)
+static int mt6336_set_driver(void)
 {
 	/* init chip and set usage count */
 	mutex_lock(&mt6336_mutex);
 	if (!use_count)
-		mt6336_init(scenario);
+		mt6336_init();
 	use_count++;
 	mutex_unlock(&mt6336_mutex);
 
@@ -701,7 +715,8 @@ static int mt6336_set_driver(int scenario)
 
 static ssize_t mt6336_strobe_store(struct flashlight_arg arg)
 {
-	mt6336_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
+	mt6336_set_driver();
+	mt6336_set_scenario(FLASHLIGHT_SCENARIO_COUPLE);
 	mt6336_set_level(arg.ct, arg.level);
 
 	if (arg.level < 0)

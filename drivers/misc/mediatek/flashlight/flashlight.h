@@ -122,7 +122,7 @@ struct flashlight_operations {
 	int (*flashlight_release)(void *pArg);
 	int (*flashlight_ioctl)(unsigned int cmd, unsigned long arg);
 	ssize_t (*flashlight_strobe_store)(struct flashlight_arg arg);
-	int (*flashlight_set_driver)(int scenario);
+	int (*flashlight_set_driver)(void);
 };
 
 /* flashlight resiger */
@@ -201,6 +201,7 @@ typedef enum {
 
 /* ioctl protocol version 1.1 */
 #define FLASH_IOC_IS_CHARGER_READY         _IOR(FLASHLIGHT_MAGIC, 210, int)
+#define FLASH_IOC_SET_SCENARIO             _IOWR(FLASHLIGHT_MAGIC, 215, int)
 
 #endif /* _FLASHLIGHT_H */
 
