@@ -5535,6 +5535,7 @@ done:
 int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock)
 {
 	int ret = 0;
+	int prev_session;
 
 	if (need_lock)
 		_primary_path_lock(__func__);
@@ -5549,6 +5550,7 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 	/* Due to HRT condition is dual pipe, have to gear up MMDVFS for assurance */
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL3);
 
+	prev_session = pgc->session_mode;
 	if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = _DL_dual_switch_to_DL_fast(NULL, 1);
 		if (ret)
@@ -5570,6 +5572,11 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 			goto end;
 		pgc->session_mode = DISP_SESSION_RDMA_MODE;
 	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_mode[prev_session],
+				MMPROFILE_FLAG_END, pgc->session_mode, pgc->session_mode);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_mode[pgc->session_mode],
+				MMPROFILE_FLAG_START, pgc->session_mode, pgc->session_mode);
 
 end:
 	DISPMSG("%s end, mode:%d, ret:%d\n", __func__, pgc->session_mode, ret);
@@ -7056,6 +7063,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		bypass = can_bypass_ovl(data_config, &bypass_layer_id);
 		_internal_path_switch(data_config, disp_handle, cmdq_handle, hrt_path, &total_dirty_roi, bypass);
 	}
+
+	DISPMSG("setter:%d, bypass:%d\n", cfg->setter, bypass);
+
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE &&
 	    pgc->session_mode != DISP_SESSION_DUAL_RDMA_MODE) {
 		data_config->ovl_dirty = 1;
