@@ -235,7 +235,7 @@ int mt_set_gpio_smt_base(unsigned long pin, unsigned long enable)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (SMT_offset[pin].offset == -1)
+	if (SMT_offset[pin].offset == (u8)-1)
 		return GPIO_SMT_UNSUPPORTED;
 
 	bit = SMT_offset[pin].offset;
@@ -259,7 +259,7 @@ int mt_get_gpio_smt_base(unsigned long pin)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (SMT_offset[pin].offset == -1)
+	if (SMT_offset[pin].offset == (u8)-1)
 		return GPIO_SMT_UNSUPPORTED;
 
 	bit = SMT_offset[pin].offset;
@@ -277,7 +277,7 @@ int mt_set_gpio_ies_base(unsigned long pin, unsigned long enable)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (IES_offset[pin].offset == -1)
+	if (IES_offset[pin].offset == (u8)-1)
 		return GPIO_IES_UNSUPPORTED;
 
 	bit = IES_offset[pin].offset;
@@ -301,7 +301,7 @@ int mt_get_gpio_ies_base(unsigned long pin)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (IES_offset[pin].offset == -1)
+	if (IES_offset[pin].offset == (u8)-1)
 		return GPIO_IES_UNSUPPORTED;
 
 	bit = IES_offset[pin].offset;
@@ -318,12 +318,12 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (PULLEN_offset[pin].offset == -1 && PUPD_offset[pin].offset == -1) {
+	if (PULLEN_offset[pin].offset == (u8)-1 && PUPD_offset[pin].offset == (u8)-1) {
 		gpio_pullen_unsupport[pin] = -1;
 		return GPIO_PULL_EN_UNSUPPORTED;
 	}
 
-	if (PULLEN_offset[pin].offset != -1) {
+	if (PULLEN_offset[pin].offset != (u8)-1) {
 		base = gpio_vbase.iocfg_regs_array[PULLEN_base_index[pin].index];
 		if (enable == GPIO_PULL_DISABLE)
 			GPIO_CLR_BITS(base + PULLEN_addr[pin].addr,
@@ -368,10 +368,10 @@ int mt_get_gpio_pull_enable_base(unsigned long pin)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (PULLEN_offset[pin].offset == -1 && PUPD_offset[pin].offset == -1)
+	if (PULLEN_offset[pin].offset == (u8)-1 && PUPD_offset[pin].offset == (u8)-1)
 		return GPIO_PULL_EN_UNSUPPORTED;
 
-	if (PULLEN_offset[pin].offset != -1) {
+	if (PULLEN_offset[pin].offset != (u8)-1) {
 		base = gpio_vbase.iocfg_regs_array[PULLEN_base_index[pin].index];
 		bit = PULLEN_offset[pin].offset;
 		data = GPIO_RD32(base + PULLEN_addr[pin].addr);
@@ -394,12 +394,12 @@ int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if ((PULLSEL_offset[pin].offset == -1) && (PUPD_offset[pin].offset == -1)) {
+	if ((PULLSEL_offset[pin].offset == (u8)-1) && (PUPD_offset[pin].offset == (u8)-1)) {
 		gpio_pull_select_unsupport[pin] = -1;
 		return GPIO_PULL_UNSUPPORTED;
 	}
 
-	if (PULLSEL_offset[pin].offset != -1) {
+	if (PULLSEL_offset[pin].offset != (u8)-1) {
 		base = gpio_vbase.iocfg_regs_array[PULLSEL_base_index[pin].index];
 		if (select == GPIO_PULL_DOWN)
 			GPIO_CLR_BITS(base + PULLSEL_addr[pin].addr,
@@ -430,10 +430,10 @@ int mt_get_gpio_pull_select_base(unsigned long pin)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if ((PULLSEL_offset[pin].offset == -1) && (PUPD_offset[pin].offset == -1))
+	if ((PULLSEL_offset[pin].offset == (u8)-1) && (PUPD_offset[pin].offset == (u8)-1))
 		return GPIO_PULL_UNSUPPORTED;
 
-	if (PULLSEL_offset[pin].offset != -1) {
+	if (PULLSEL_offset[pin].offset != (u8)-1) {
 		base = gpio_vbase.iocfg_regs_array[PULLSEL_base_index[pin].index];
 		data = GPIO_RD32(base + PULLSEL_addr[pin].addr);
 		pupd = ((data & (1L << (PULLSEL_offset[pin].offset))) != 0) ? 1 : 0;
