@@ -411,7 +411,8 @@ void chrdet_int_handler(void)
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static void do_charger_detection_work(struct work_struct *data)
 {
-	do_charger_detect();
+	if (pmic_get_register_value(PMIC_RGS_CHRDET))
+		do_charger_detect();
 }
 #endif
 
