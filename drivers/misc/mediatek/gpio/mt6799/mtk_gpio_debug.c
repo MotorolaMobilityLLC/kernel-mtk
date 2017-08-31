@@ -338,7 +338,7 @@ void gpio_dump_regs(void)
 
 	GPIOMSG("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES]\n");
 	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		pr_debug("idx = %3d: %d %d %d %d %d %d %d\n",
+		GPIOMSG("idx = %3d: %d %d %d %d %d %d %d\n",
 		       idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
 		       mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
 		       mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
