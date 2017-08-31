@@ -24,9 +24,11 @@ static unsigned long __read_mostly mark_addr;
 static int fbc_debug, fbc_touch, fbc_touch_pre, fbc_game, fbc_trace;
 static long long frame_budget, twanted, twanted_ms, avg_frame_time;
 static int touch_boost_value, ema, boost_method, super_boost, boost_flag, big_enable;
+static int boost_value, current_max_bv;
 static int first_frame, frame_done, chase, last_frame_done_in_budget, act_switched;
 static long long capacity, touch_capacity, current_max_capacity, avg_capacity, chase_capacity;
 static long long his_cap[2];
+static int his_bv[2];
 static int power_ll[16][2], power_l[16][2], power_b[16][2];
 
 struct fbc_operation_locked {
@@ -200,6 +202,28 @@ void release_freq_and_eas(void)
 	fbc_tracer(-2, "capacity", 0);
 }
 
+void boost_touch_core_eas(void)
+{
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	core_limit[0].min = 4;
+	core_limit[0].max = -1;
+	core_limit[1].min = -1;
+	core_limit[1].max = -1;
+	core_limit[2].min = 1;
+	core_limit[2].max = -1;
+
+	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
+}
+
+void release_eas(void)
+{
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	perfmgr_kick_fg_boost(KIR_FBC, -1);
+}
 /*--------------------FRAME BUDGET TIMER------------------------*/
 static void enable_frame_twanted_timer(void)
 {
@@ -417,18 +441,134 @@ void notify_intended_vsync_legacy(void)
 
 void notify_touch_eas(int touch)
 {
+
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	fbc_touch_pre = fbc_touch;
+	fbc_touch = touch;
+	fbc_tracer(-3, "touch", fbc_touch);
+
+	if (fbc_touch && fbc_touch_pre == 0) {
+		chase = 0;
+		first_frame = 1;
+		last_frame_done_in_budget = 0;
+		his_bv[0] = his_bv[1] = -1;
+
+		if (act_switched) {
+			boost_value = touch_boost_value;
+			act_switched = 0;
+		} else
+			boost_value = touch_boost_value = current_max_bv;
+
+		boost_touch_core_eas();
+
+		boost_flag = 0;
+	} else if (fbc_touch == 0 && fbc_touch_pre) {
+		release_core();
+		if (boost_flag) {
+			release_eas();
+			boost_flag = 0;
+		}
+	}
 }
 
 static void notify_no_render_eas(void)
 {
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	last_frame_done_in_budget = 1;
+	perfmgr_kick_fg_boost(KIR_FBC, -1);
+	/*disable_frame_twanted_timer();*/
+
+	fbc_tracer(-3, "no_render", 1);
+	fbc_tracer(-3, "no_render", 0);
 }
 
 void notify_frame_complete_eas(unsigned long frame_time)
 {
+
+	long long boost_linear = 0;
+	int boost_real = 0;
+
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	frame_done = 1;
+	/*disable_frame_twanted_timer();*/
+
+	if (first_frame)
+		avg_frame_time = frame_time;
+	else
+		avg_frame_time = (ema * frame_time + (10 - ema) * avg_frame_time) / 10;
+
+	boost_linear = (long long)((avg_frame_time - twanted) * 100 / twanted);
+
+	his_bv[1] = his_bv[0];
+	his_bv[0] = boost_value;
+
+	if (boost_linear < 0)
+		boost_real = (-1) * linear_real_boost((-1) * boost_linear);
+	else
+		boost_real = linear_real_boost(boost_linear);
+
+	if (boost_real != 0)
+		boost_value = (100 + boost_real) * (100 + boost_value) / 100 - 100;
+
+	if (boost_value > 100)
+		boost_value = 100;
+	else if (boost_value <= 0)
+		boost_value = 0;
+
+	if (first_frame) {
+		current_max_bv = 0;
+		first_frame = 0;
+	} else {
+		current_max_bv = MAX(current_max_bv, boost_value);
+	}
+
+	if (frame_time < frame_budget) {
+		perfmgr_kick_fg_boost(KIR_FBC, -1);
+		boost_flag = 0;
+		last_frame_done_in_budget = 1;
+	} else {
+		last_frame_done_in_budget = 0;
+	}
+
+	if (!last_frame_done_in_budget) {
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
+		boost_flag = 1;
+	}
+
+#if 0
+	pr_crit(TAG" pid:%d, frame complete FT=%lu, boost_linear=%lld, boost_real=%d, boost_value=%d\n",
+			current->pid, frame_time, boost_linear, boost_real, boost_value);
+	pr_crit(TAG" frame complete FT=%lu", frame_time);
+#endif
+
+	fbc_tracer(-3, "avg_frame_time", avg_frame_time);
+	fbc_tracer(-3, "frame_time", frame_time);
+	fbc_tracer(-3, "boost_linear", boost_linear);
+	fbc_tracer(-3, "boost_real", boost_real);
+	fbc_tracer(-4, "current_max_bv", boost_value);
+	fbc_tracer(-3, "boost_value", boost_value);
+	fbc_tracer(-3, "his_bv[0]", his_bv[0]);
+	fbc_tracer(-3, "his_bv[1]", his_bv[1]);
 }
 
 void notify_intended_vsync_eas(void)
 {
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	/*enable_frame_twanted_timer()*/
+	if (last_frame_done_in_budget) {
+		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
+		boost_flag = 1;
+	}
+
+	fbc_tracer(-3, "last_frame_done_in_budget", last_frame_done_in_budget);
 }
 
 struct fbc_operation_locked fbc_legacy = {
@@ -488,8 +628,10 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		notify_act_switch(arg);
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "init", 4) == 0) {
-		touch_boost_value = arg;
-		touch_capacity = arg;
+		if (boost_method == EAS)
+			touch_boost_value = arg;
+		else
+			touch_capacity = arg;
 	} else if (strncmp(cmd, "twanted", 7) == 0) {
 		if (arg < 60) {
 			twanted = arg * 1000000;
@@ -503,7 +645,10 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		switch (boost_method) {
 		case EAS:
 			fbc_op = &fbc_eas;
+			break;
 		case LEGACY:
+			fbc_op = &fbc_legacy;
+			break;
 		default:
 			fbc_op = &fbc_legacy;
 			break;
@@ -532,11 +677,14 @@ static int device_show(struct seq_file *m, void *v)
 {
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	SEQ_printf(m, "touch: %d\n", fbc_touch);
-	SEQ_printf(m, "init: %lld\n", touch_capacity);
+	if (boost_method == LEGACY)
+		SEQ_printf(m, "init: %lld\n", touch_capacity);
+	else
+		SEQ_printf(m, "init: %d\n", touch_boost_value);
 	SEQ_printf(m, "debug: %d\n", fbc_debug);
 	SEQ_printf(m, "twanted: %lld\n", twanted);
 	SEQ_printf(m, "first frame: %d\n", first_frame);
-	SEQ_printf(m, "ez: %d\n", boost_method);
+	SEQ_printf(m, "method: %d\n", boost_method);
 	SEQ_printf(m, "super_boost: %d\n", super_boost);
 	SEQ_printf(m, "ema: %d\n", ema);
 	SEQ_printf(m, "game mode: %d\n", fbc_game);
