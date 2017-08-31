@@ -19,32 +19,32 @@
 #include "mt6631_fm_reg.h"
 #include "fm_cmd.h"
 
-static fm_bool bRDS_FirstIn = fm_false;
-static fm_u32 gBLER_CHK_INTERVAL = 500;
-static fm_u16 GOOD_BLK_CNT = 0, BAD_BLK_CNT;
-static fm_u8 BAD_BLK_RATIO;
+static bool bRDS_FirstIn; /* false */
+static unsigned int gBLER_CHK_INTERVAL = 500;
+static unsigned short GOOD_BLK_CNT = 0, BAD_BLK_CNT;
+static unsigned char BAD_BLK_RATIO;
 
 static struct fm_basic_interface *fm_bi;
 
-static fm_bool mt6631_RDS_support(void);
-static fm_s32 mt6631_RDS_enable(void);
-static fm_s32 mt6631_RDS_disable(void);
-static fm_u16 mt6631_RDS_Get_GoodBlock_Counter(void);
-static fm_u16 mt6631_RDS_Get_BadBlock_Counter(void);
-static fm_u8 mt6631_RDS_Get_BadBlock_Ratio(void);
-static fm_u32 mt6631_RDS_Get_BlerCheck_Interval(void);
-/* static void mt6631_RDS_GetData(fm_u16 *data, fm_u16 datalen); */
-static void mt6631_RDS_Init_Data(rds_t *pstRDSData);
+static bool mt6631_RDS_support(void);
+static signed int mt6631_RDS_enable(void);
+static signed int mt6631_RDS_disable(void);
+static unsigned short mt6631_RDS_Get_GoodBlock_Counter(void);
+static unsigned short mt6631_RDS_Get_BadBlock_Counter(void);
+static unsigned char mt6631_RDS_Get_BadBlock_Ratio(void);
+static unsigned int mt6631_RDS_Get_BlerCheck_Interval(void);
+/* static void mt6631_RDS_GetData(unsigned short *data, unsigned short datalen); */
+static void mt6631_RDS_Init_Data(struct rds_t *pstRDSData);
 
-static fm_bool mt6631_RDS_support(void)
+static bool mt6631_RDS_support(void)
 {
-	return fm_true;
+	return true;
 }
 
-static fm_s32 mt6631_RDS_enable(void)
+static signed int mt6631_RDS_enable(void)
 {
-	fm_s32 ret = 0;
-	fm_u16 dataRead = 0;
+	signed int ret = 0;
+	unsigned short dataRead = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "rds enable\n");
 	ret = fm_reg_read(FM_RDS_CFG0, &dataRead);
@@ -71,10 +71,10 @@ static fm_s32 mt6631_RDS_enable(void)
 	return ret;
 }
 
-static fm_s32 mt6631_RDS_disable(void)
+static signed int mt6631_RDS_disable(void)
 {
-	fm_s32 ret = 0;
-	fm_u16 dataRead = 0;
+	signed int ret = 0;
+	unsigned short dataRead = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "rds disable\n");
 	ret = fm_reg_read(FM_MAIN_CTRL, &dataRead);
@@ -91,49 +91,49 @@ static fm_s32 mt6631_RDS_disable(void)
 	return ret;
 }
 
-static fm_u16 mt6631_RDS_Get_GoodBlock_Counter(void)
+static unsigned short mt6631_RDS_Get_GoodBlock_Counter(void)
 {
-	fm_u16 tmp_reg;
+	unsigned short tmp_reg;
 
 	fm_reg_read(FM_RDS_GOODBK_CNT, &tmp_reg);
 	GOOD_BLK_CNT = tmp_reg;
-	WCN_DBG(FM_DBG | RDSC, "get good block cnt:%d\n", (fm_s32) tmp_reg);
+	WCN_DBG(FM_DBG | RDSC, "get good block cnt:%d\n", (signed int) tmp_reg);
 
 	return tmp_reg;
 }
 
-static fm_u16 mt6631_RDS_Get_BadBlock_Counter(void)
+static unsigned short mt6631_RDS_Get_BadBlock_Counter(void)
 {
-	fm_u16 tmp_reg;
+	unsigned short tmp_reg;
 
 	fm_reg_read(FM_RDS_BADBK_CNT, &tmp_reg);
 	BAD_BLK_CNT = tmp_reg;
-	WCN_DBG(FM_DBG | RDSC, "get bad block cnt:%d\n", (fm_s32) tmp_reg);
+	WCN_DBG(FM_DBG | RDSC, "get bad block cnt:%d\n", (signed int) tmp_reg);
 
 	return tmp_reg;
 }
 
-static fm_u8 mt6631_RDS_Get_BadBlock_Ratio(void)
+static unsigned char mt6631_RDS_Get_BadBlock_Ratio(void)
 {
-	fm_u16 tmp_reg;
-	fm_u16 gbc;
-	fm_u16 bbc;
+	unsigned short tmp_reg;
+	unsigned short gbc;
+	unsigned short bbc;
 
 	gbc = mt6631_RDS_Get_GoodBlock_Counter();
 	bbc = mt6631_RDS_Get_BadBlock_Counter();
 
 	if ((gbc + bbc) > 0)
-		tmp_reg = (fm_u8) (bbc * 100 / (gbc + bbc));
+		tmp_reg = (unsigned char) (bbc * 100 / (gbc + bbc));
 	else
 		tmp_reg = 0;
 
 	BAD_BLK_RATIO = tmp_reg;
-	WCN_DBG(FM_DBG | RDSC, "get badblock ratio:%d\n", (fm_s32) tmp_reg);
+	WCN_DBG(FM_DBG | RDSC, "get badblock ratio:%d\n", (signed int) tmp_reg);
 
 	return tmp_reg;
 }
 
-static fm_s32 mt6631_RDS_BlockCounter_Reset(void)
+static signed int mt6631_RDS_BlockCounter_Reset(void)
 {
 	mt6631_RDS_disable();
 	mt6631_RDS_enable();
@@ -141,12 +141,12 @@ static fm_s32 mt6631_RDS_BlockCounter_Reset(void)
 	return 0;
 }
 
-static fm_u32 mt6631_RDS_Get_BlerCheck_Interval(void)
+static unsigned int mt6631_RDS_Get_BlerCheck_Interval(void)
 {
 	return gBLER_CHK_INTERVAL;
 }
 
-static fm_s32 mt6631_RDS_BlerCheck(rds_t *dst)
+static signed int mt6631_RDS_BlerCheck(struct rds_t *dst)
 {
 	return 0;
 }
@@ -154,7 +154,7 @@ static fm_s32 mt6631_RDS_BlerCheck(rds_t *dst)
 #if 0
 static void RDS_Recovery_Handler(void)
 {
-	fm_u16 tempData = 0;
+	unsigned short tempData = 0;
 
 	do {
 		fm_reg_read(FM_RDS_DATA_REG, &tempData);
@@ -164,7 +164,7 @@ static void RDS_Recovery_Handler(void)
 #endif
 
 #if 0
-static void mt6631_RDS_GetData(fm_u16 *data, fm_u16 datalen)
+static void mt6631_RDS_GetData(unsigned short *data, unsigned short datalen)
 {
 #define RDS_GROUP_DIFF_OFS          0x007C
 #define RDS_FIFO_DIFF               0x007F
@@ -172,8 +172,8 @@ static void mt6631_RDS_GetData(fm_u16 *data, fm_u16 datalen)
 #define RDS_CRC_CORR_CNT            0x001E
 #define RDS_CRC_INFO                0x0001
 
-	fm_u16 CRC = 0, i = 0, RDS_adj = 0, RDSDataCount = 0, FM_WARorrCnt = 0;
-	fm_u16 temp = 0, OutputPofm_s32 = 0;
+	unsigned short CRC = 0, i = 0, RDS_adj = 0, RDSDataCount = 0, FM_WARorrCnt = 0;
+	unsigned short temp = 0, OutputPofm_s32 = 0;
 
 	WCN_DBG(FM_DBG | RDSC, "get data\n");
 	fm_reg_read(FM_RDS_FIFO_STATUS0, &temp);
@@ -227,10 +227,10 @@ static void mt6631_RDS_GetData(fm_u16 *data, fm_u16 datalen)
 }
 #endif
 
-static void mt6631_RDS_Init_Data(rds_t *pstRDSData)
+static void mt6631_RDS_Init_Data(struct rds_t *pstRDSData)
 {
-	fm_memset(pstRDSData, 0, sizeof(rds_t));
-	bRDS_FirstIn = fm_true;
+	fm_memset(pstRDSData, 0, sizeof(struct rds_t));
+	bRDS_FirstIn = true;
 
 	pstRDSData->event_status = 0x0000;
 	fm_memset(pstRDSData->RT_Data.TextData, 0x20, sizeof(pstRDSData->RT_Data.TextData));
@@ -238,13 +238,13 @@ static void mt6631_RDS_Init_Data(rds_t *pstRDSData)
 	fm_memset(pstRDSData->PS_ON, 0x20, sizeof(pstRDSData->PS_ON));
 }
 
-fm_bool mt6631_RDS_OnOff(rds_t *dst, fm_bool bFlag)
+bool mt6631_RDS_OnOff(struct rds_t *dst, bool bFlag)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
-	if (mt6631_RDS_support() == fm_false) {
+	if (mt6631_RDS_support() == false) {
 		WCN_DBG(FM_ALT | RDSC, "mt6631_RDS_OnOff failed, RDS not support\n");
-		return fm_false;
+		return false;
 	}
 
 	if (bFlag) {
@@ -252,18 +252,18 @@ fm_bool mt6631_RDS_OnOff(rds_t *dst, fm_bool bFlag)
 		ret = mt6631_RDS_enable();
 		if (ret) {
 			WCN_DBG(FM_NTC | RDSC, "mt6630_RDS_OnOff enable failed\n");
-			return fm_false;
+			return false;
 		}
 	} else {
 		mt6631_RDS_Init_Data(dst);
 		ret = mt6631_RDS_disable();
 		if (ret) {
 			WCN_DBG(FM_NTC | RDSC, "mt6630_RDS_OnOff disable failed\n");
-			return fm_false;
+			return false;
 		}
 	}
 
-	return fm_true;
+	return true;
 }
 
 DEFINE_RDSLOG(mt6631_rds_log);
@@ -272,30 +272,31 @@ DEFINE_RDSLOG(mt6631_rds_log);
  * @fm - main data structure of FM driver
  * This function first get RDS raw data, then call RDS spec parser
  */
-static fm_s32 mt6631_rds_parser(rds_t *rds_dst, struct rds_rx_t *rds_raw, fm_s32 rds_size, fm_u16(*getfreq) (void))
+static signed int mt6631_rds_parser(struct rds_t *rds_dst, struct rds_rx_t *rds_raw,
+					signed int rds_size, unsigned short(*getfreq) (void))
 {
 	mt6631_rds_log.log_in(&mt6631_rds_log, rds_raw, rds_size);
 	return rds_parser(rds_dst, rds_raw, rds_size, getfreq);
 }
 
-static fm_s32 mt6631_rds_log_get(struct rds_rx_t *dst, fm_s32 *dst_len)
+static signed int mt6631_rds_log_get(struct rds_rx_t *dst, signed int *dst_len)
 {
 	return mt6631_rds_log.log_out(&mt6631_rds_log, dst, dst_len);
 }
 
-static fm_s32 mt6631_rds_gc_get(struct rds_group_cnt_t *dst, rds_t *rdsp)
+static signed int mt6631_rds_gc_get(struct rds_group_cnt_t *dst, struct rds_t *rdsp)
 {
 	return rds_grp_counter_get(dst, &rdsp->gc);
 }
 
-static fm_s32 mt6631_rds_gc_reset(rds_t *rdsp)
+static signed int mt6631_rds_gc_reset(struct rds_t *rdsp)
 {
 	return rds_grp_counter_reset(&rdsp->gc);
 }
 
-fm_s32 fm_rds_ops_register(struct fm_basic_interface *bi, struct fm_rds_interface *ri)
+signed int fm_rds_ops_register(struct fm_basic_interface *bi, struct fm_rds_interface *ri)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (ri == NULL) {
 		WCN_DBG(FM_ERR | RDSC, "%s,ri invalid pointer\n", __func__);
@@ -319,9 +320,9 @@ fm_s32 fm_rds_ops_register(struct fm_basic_interface *bi, struct fm_rds_interfac
 	return ret;
 }
 
-fm_s32 fm_rds_ops_unregister(struct fm_rds_interface *ri)
+signed int fm_rds_ops_unregister(struct fm_rds_interface *ri)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (ri == NULL) {
 		WCN_DBG(FM_ERR | RDSC, "%s,ri invalid pointer\n", __func__);

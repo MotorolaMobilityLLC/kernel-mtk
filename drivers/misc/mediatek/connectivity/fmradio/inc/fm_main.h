@@ -57,10 +57,10 @@ enum {
 	FM_GPS_RTC_INFO_MAX
 };
 
-typedef enum {
+enum fm_over_bt_enable_state {
 	FM_OVER_BT_DISABLE = 0,
 	FM_OVER_BT_ENABLE
-} fm_over_bt_enable_state;
+};
 
 #define FM_RDS_ENABLE		0x01	/* 1: enable RDS, 0:disable RDS */
 #define FM_RDS_DATA_READY   (1 << 0)
@@ -76,60 +76,60 @@ typedef enum {
 #define FM_SCAN_FAILED  7
 
 struct fm_tune_parm {
-	fm_u8 err;
-	fm_u8 band;
-	fm_u8 space;
-	fm_u8 hilo;
-	fm_u16 freq;		/* IN/OUT parameter */
+	unsigned char err;
+	unsigned char band;
+	unsigned char space;
+	unsigned char hilo;
+	unsigned short freq;		/* IN/OUT parameter */
 };
 
 struct fm_seek_parm {
-	fm_u8 err;
-	fm_u8 band;
-	fm_u8 space;
-	fm_u8 hilo;
-	fm_u8 seekdir;
-	fm_u8 seekth;
-	fm_u16 freq;		/* IN/OUT parameter */
+	unsigned char err;
+	unsigned char band;
+	unsigned char space;
+	unsigned char hilo;
+	unsigned char seekdir;
+	unsigned char seekth;
+	unsigned short freq;		/* IN/OUT parameter */
 };
 
 #ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 struct fm_scan_parm {
-	fm_u8 err;
-	fm_u8 band;
-	fm_u8 space;
-	fm_u8 hilo;
-	fm_u16 freq;		/* OUT parameter */
-	fm_u16 ScanTBL[26];	/* need no less than the chip */
-	fm_u16 ScanTBLSize;	/* IN/OUT parameter */
+	unsigned char err;
+	unsigned char band;
+	unsigned char space;
+	unsigned char hilo;
+	unsigned short freq;		/* OUT parameter */
+	unsigned short ScanTBL[26];	/* need no less than the chip */
+	unsigned short ScanTBLSize;	/* IN/OUT parameter */
 };
 #else
 struct fm_scan_parm {
-	fm_u8 err;
-	fm_u8 band;
-	fm_u8 space;
-	fm_u8 hilo;
-	fm_u16 freq;		/* OUT parameter */
-	fm_u16 ScanTBL[16];	/* need no less than the chip */
-	fm_u16 ScanTBLSize;	/* IN/OUT parameter */
+	unsigned char err;
+	unsigned char band;
+	unsigned char space;
+	unsigned char hilo;
+	unsigned short freq;		/* OUT parameter */
+	unsigned short ScanTBL[16];	/* need no less than the chip */
+	unsigned short ScanTBLSize;	/* IN/OUT parameter */
 };
 #endif
 
 struct fm_cqi {
-	fm_s32 ch;
-	fm_s32 rssi;
-	fm_s32 reserve;
+	signed int ch;
+	signed int rssi;
+	signed int reserve;
 };
 
 struct fm_cqi_req {
-	fm_u16 ch_num;
-	fm_s32 buf_size;
-	fm_s8 *cqi_buf;
+	unsigned short ch_num;
+	signed int buf_size;
+	signed char *cqi_buf;
 };
 
 struct fm_ch_rssi {
-	fm_u16 freq;
-	fm_s32 rssi;
+	unsigned short freq;
+	signed int rssi;
 };
 
 enum fm_scan_cmd_t {
@@ -144,63 +144,63 @@ enum fm_scan_cmd_t {
 
 struct fm_scan_t {
 	enum fm_scan_cmd_t cmd;
-	fm_s32 ret;		/* 0, success; else error code */
-	fm_u16 lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
-	fm_u16 upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
-	fm_s32 space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
-	fm_s32 num;		/* valid channel number */
+	signed int ret;		/* 0, success; else error code */
+	unsigned short lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
+	unsigned short upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
+	signed int space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
+	signed int num;		/* valid channel number */
 	void *priv;
-	fm_s32 sr_size;		/* scan result buffer size in bytes */
+	signed int sr_size;		/* scan result buffer size in bytes */
 	union {
-		fm_u16 *ch_buf;	/* channel buffer */
-		fm_s32 *rssi_buf;	/* rssi buffer */
+		unsigned short *ch_buf;	/* channel buffer */
+		signed int *rssi_buf;	/* rssi buffer */
 		struct fm_ch_rssi *ch_rssi_buf;	/* channel and RSSI buffer */
 	} sr;
 };
 
 struct fm_seek_t {
-	fm_s32 ret;		/* 0, success; else error code */
-	fm_u16 freq;
-	fm_u16 lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
-	fm_u16 upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
-	fm_s32 space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
-	fm_s32 dir;		/* 0: up; 1: down */
-	fm_s32 th;		/* seek threshold in dbm(Eg, -95dbm) */
+	signed int ret;		/* 0, success; else error code */
+	unsigned short freq;
+	unsigned short lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
+	unsigned short upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
+	signed int space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
+	signed int dir;		/* 0: up; 1: down */
+	signed int th;		/* seek threshold in dbm(Eg, -95dbm) */
 	void *priv;
 };
 
 struct fm_tune_t {
-	fm_s32 ret;		/* 0, success; else error code */
-	fm_u16 freq;
-	fm_u16 lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
-	fm_u16 upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
-	fm_s32 space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
+	signed int ret;		/* 0, success; else error code */
+	unsigned short freq;
+	unsigned short lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
+	unsigned short upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
+	signed int space;		/* 5: 50KHz, 10: 100Khz, 20: 200Khz */
 	void *priv;
 };
 
 #ifdef CONFIG_MTK_FM_50KHZ_SUPPORT
 struct fm_rssi_req {
-	fm_u16 num;
-	fm_u16 read_cnt;
+	unsigned short num;
+	unsigned short read_cnt;
 	struct fm_ch_rssi cr[26 * 16];
 };
 #else
 struct fm_rssi_req {
-	fm_u16 num;
-	fm_u16 read_cnt;
+	unsigned short num;
+	unsigned short read_cnt;
 	struct fm_ch_rssi cr[16 * 16];
 };
 #endif
 
 struct fm_rds_tx_parm {
-	fm_u8 err;
-	fm_u16 pi;
-	fm_u16 ps[12];		/* 4 ps */
-	fm_u16 other_rds[87];	/* 0~29 other groups */
-	fm_u8 other_rds_cnt;	/* # of other group */
+	unsigned char err;
+	unsigned short pi;
+	unsigned short ps[12];		/* 4 ps */
+	unsigned short other_rds[87];	/* 0~29 other groups */
+	unsigned char other_rds_cnt;	/* # of other group */
 };
 
-typedef struct fm_rds_tx_req {
+struct fm_rds_tx_req {
 	unsigned char pty;	/* 0~31 integer */
 	unsigned char rds_rbds;	/* 0:RDS, 1:RBDS */
 	unsigned char dyn_pty;	/* 0:static, 1:dynamic */
@@ -214,82 +214,82 @@ typedef struct fm_rds_tx_req {
 	unsigned char tp;	/* traffic program, 0:no, 1:yes */
 	unsigned char ta;	/* traffic announcement, 0:no, 1:yes */
 	unsigned char speech;	/* 0:music, 1:speech */
-} fm_rds_tx_req;
+};
 
 #define TX_SCAN_MAX 10
 #define TX_SCAN_MIN 1
 
 struct fm_tx_scan_parm {
-	fm_u8 err;
-	fm_u8 band;		/* 87.6~108MHz */
-	fm_u8 space;
-	fm_u8 hilo;
-	fm_u16 freq;		/* start freq, if less than band min freq, then will use band min freq */
-	fm_u8 scandir;
-	fm_u16 ScanTBL[TX_SCAN_MAX];	/* need no less than the chip */
-	fm_u16 ScanTBLSize;	/* IN: desired size, OUT: scan result size */
+	unsigned char err;
+	unsigned char band;		/* 87.6~108MHz */
+	unsigned char space;
+	unsigned char hilo;
+	unsigned short freq;		/* start freq, if less than band min freq, then will use band min freq */
+	unsigned char scandir;
+	unsigned short ScanTBL[TX_SCAN_MAX];	/* need no less than the chip */
+	unsigned short ScanTBLSize;	/* IN: desired size, OUT: scan result size */
 };
 
 struct fm_gps_rtc_info {
-	fm_s32 err;		/* error number, 0: success, other: err code */
-	fm_s32 retryCnt;	/* GPS mnl can decide retry times */
-	fm_s32 ageThd;		/* GPS 3D fix time diff threshold */
-	fm_s32 driftThd;	/* GPS RTC drift threshold */
+	signed int err;		/* error number, 0: success, other: err code */
+	signed int retryCnt;	/* GPS mnl can decide retry times */
+	signed int ageThd;		/* GPS 3D fix time diff threshold */
+	signed int driftThd;	/* GPS RTC drift threshold */
 	struct timeval tvThd;	/* time value diff threshold */
-	fm_s32 age;		/* GPS 3D fix time diff */
-	fm_s32 drift;		/* GPS RTC drift */
+	signed int age;		/* GPS 3D fix time diff */
+	signed int drift;		/* GPS RTC drift */
 	union {
 		unsigned long stamp;	/* time stamp in jiffies */
 		struct timeval tv;	/* time stamp value in RTC */
 	};
-	fm_s32 flag;		/* rw flag */
+	signed int flag;		/* rw flag */
 };
 
-typedef struct {
-	fm_s32 freq;
-	fm_s32 rssi;
-} fm_desense_check_t;
+struct fm_desense_check_t {
+	signed int freq;
+	signed int rssi;
+};
 
-typedef struct {
+struct fm_full_cqi_log_t {
 	uint16_t lower;		/* lower band, Eg, 7600 -> 76.0Mhz */
 	uint16_t upper;		/* upper band, Eg, 10800 -> 108.0Mhz */
 	int space;		/* 0x1: 50KHz, 0x2: 100Khz, 0x4: 200Khz */
 	int cycle;		/* repeat times */
-} fm_full_cqi_log_t;
+};
 
-typedef enum {
+enum {
 	FM_RX = 0,
 	FM_TX = 1
-} FM_PWR_T;
+};
 
 struct fm_ctl_parm {
-	fm_u8 err;
-	fm_u8 addr;
-	fm_u16 val;
-	fm_u16 rw_flag;		/* 0:write, 1:read */
+	unsigned char err;
+	unsigned char addr;
+	unsigned short val;
+	unsigned short rw_flag;		/* 0:write, 1:read */
 };
 struct fm_em_parm {
-	fm_u16 group_idx;
-	fm_u16 item_idx;
-	fm_u32 item_value;
+	unsigned short group_idx;
+	unsigned short item_idx;
+	unsigned int item_value;
 };
 struct fm_top_rw_parm {
-	fm_u8 err;
-	fm_u8 rw_flag;		/* 0:write, 1:read */
-	fm_u16 addr;
-	fm_u32 val;
+	unsigned char err;
+	unsigned char rw_flag;		/* 0:write, 1:read */
+	unsigned short addr;
+	unsigned int val;
 };
 struct fm_host_rw_parm {
-	fm_u8 err;
-	fm_u8 rw_flag;		/* 0:write, 1:read */
-	fm_u32 addr;
-	fm_u32 val;
+	unsigned char err;
+	unsigned char rw_flag;		/* 0:write, 1:read */
+	unsigned int addr;
+	unsigned int val;
 };
 struct fm_pmic_rw_parm {
-	fm_u8 err;
-	fm_u8 rw_flag;		/* 0:write, 1:read */
-	fm_u8 addr;
-	fm_u32 val;
+	unsigned char err;
+	unsigned char rw_flag;		/* 0:write, 1:read */
+	unsigned char addr;
+	unsigned int val;
 };
 enum {
 	FM_SUBSYS_RST_OFF,
@@ -316,102 +316,102 @@ enum {
 };
 
 struct fm_softmute_tune_t {
-	fm_s32 rssi;		/* RSSI of current channel */
-	fm_u16 freq;		/* current frequency */
-	fm_bool valid;		/* current channel is valid(true) or not(false) */
+	signed int rssi;		/* RSSI of current channel */
+	unsigned short freq;		/* current frequency */
+	signed int valid;		/* current channel is valid(true) or not(false) */
 };
 struct fm_search_threshold_t {
-	fm_s32 th_type;		/* 0, RSSI. 1,desense RSSI. 2,SMG. */
-	fm_s32 th_val;		/* threshold value */
-	fm_s32 reserve;
+	signed int th_type;		/* 0, RSSI. 1,desense RSSI. 2,SMG. */
+	signed int th_val;		/* threshold value */
+	signed int reserve;
 };
 
-typedef struct {
+struct fm_status_t {
 	int which;
 	bool stat;
-} fm_status_t;
+};
 
 struct fm_chip_mapping {
-	fm_u16 con_chip;
-	fm_u16 fm_chip;
+	unsigned short con_chip;
+	unsigned short fm_chip;
 	enum fm_cfg_chip_type type;
 };
 
 /* init and deinit APIs */
-extern fm_s32 fm_env_setup(void);
-extern fm_s32 fm_env_destroy(void);
-extern struct fm *fm_dev_init(fm_u32 arg);
-extern fm_s32 fm_dev_destroy(struct fm *fm);
+extern signed int fm_env_setup(void);
+extern signed int fm_env_destroy(void);
+extern struct fm *fm_dev_init(unsigned int arg);
+extern signed int fm_dev_destroy(struct fm *fm);
 
 /* fm main basic APIs */
 extern enum fm_pwr_state fm_pwr_state_get(struct fm *fmp);
 extern enum fm_pwr_state fm_pwr_state_set(struct fm *fmp, enum fm_pwr_state sta);
-extern fm_s32 fm_open(struct fm *fmp);
-extern fm_s32 fm_close(struct fm *fmp);
-extern fm_s32 fm_rds_read(struct fm *fmp, fm_s8 *dst, fm_s32 len);
-extern fm_s32 fm_powerup(struct fm *fm, struct fm_tune_parm *parm);
-extern fm_s32 fm_powerdown(struct fm *fm, int type);
-extern fm_s32 fm_cqi_get(struct fm *fm, fm_s32 ch_num, fm_s8 *buf, fm_s32 buf_size);
-extern fm_s32 fm_get_hw_info(struct fm *pfm, struct fm_hw_info *req);
-extern fm_s32 fm_hwscan_stop(struct fm *fm);
-extern fm_s32 fm_ana_switch(struct fm *fm, fm_s32 antenna);
-extern fm_s32 fm_setvol(struct fm *fm, fm_u32 vol);
-extern fm_s32 fm_getvol(struct fm *fm, fm_u32 *vol);
-extern fm_s32 fm_mute(struct fm *fm, fm_u32 bmute);
-extern fm_s32 fm_getrssi(struct fm *fm, fm_s32 *rssi);
-extern fm_s32 fm_read(struct fm *fm, fm_u8 addr, fm_u16 *val);
-extern fm_s32 fm_write(struct fm *fm, fm_u8 addr, fm_u16 val);
-extern fm_s32 fm_top_read(struct fm *fm, fm_u16 addr, fm_u32 *val);
-extern fm_s32 fm_top_write(struct fm *fm, fm_u16 addr, fm_u32 val);
-extern fm_s32 fm_host_read(struct fm *fm, fm_u32 addr, fm_u32 *val);
-extern fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val);
-extern fm_s32 fm_pmic_read(struct fm *fm, fm_u8 addr, fm_u32 *val);
-extern fm_s32 fm_pmic_write(struct fm *fm, fm_u8 addr, fm_u32 val);
-extern fm_s32 fm_chipid_get(struct fm *fm, fm_u16 *chipid);
-extern fm_s32 fm_monostereo_get(struct fm *fm, fm_u16 *ms);
-extern fm_s32 fm_monostereo_set(struct fm *fm, fm_s32 ms);
-extern fm_s32 fm_pamd_get(struct fm *fm, fm_u16 *pamd);
-extern fm_s32 fm_caparray_get(struct fm *fm, fm_s32 *ca);
-extern fm_s32 fm_em_test(struct fm *fm, fm_u16 group, fm_u16 item, fm_u32 val);
-extern fm_s32 fm_rds_onoff(struct fm *fm, fm_u16 rdson_off);
-extern fm_s32 fm_rds_good_bc_get(struct fm *fm, fm_u16 *gbc);
-extern fm_s32 fm_rds_bad_bc_get(struct fm *fm, fm_u16 *bbc);
-extern fm_s32 fm_rds_bler_ratio_get(struct fm *fm, fm_u16 *bbr);
-extern fm_s32 fm_rds_group_cnt_get(struct fm *fm, struct rds_group_cnt_t *dst);
-extern fm_s32 fm_rds_group_cnt_reset(struct fm *fm);
-extern fm_s32 fm_rds_log_get(struct fm *fm, struct rds_rx_t *dst, fm_s32 *dst_len);
-extern fm_s32 fm_rds_block_cnt_reset(struct fm *fm);
-extern fm_s32 fm_i2s_set(struct fm *fm, fm_s32 onoff, fm_s32 mode, fm_s32 sample);
-extern fm_s32 fm_get_i2s_info(struct fm *pfm, struct fm_i2s_info *req);
-extern fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm);
-extern fm_s32 fm_is_dese_chan(struct fm *pfm, fm_u16 freq);
-extern fm_s32 fm_desense_check(struct fm *pfm, fm_u16 freq, fm_s32 rssi);
-extern fm_s32 fm_sys_state_get(struct fm *fmp);
-extern fm_s32 fm_sys_state_set(struct fm *fmp, fm_s32 sta);
-extern fm_s32 fm_set_stat(struct fm *fmp, int which, bool stat);
-extern fm_s32 fm_get_stat(struct fm *fmp, int which, bool *stat);
-extern fm_s32 fm_subsys_reset(struct fm *fm);
-extern fm_s32 fm_cqi_log(void);
-extern fm_s32 fm_soft_mute_tune(struct fm *fm, struct fm_softmute_tune_t *parm);
-extern fm_s32 fm_pre_search(struct fm *fm);
-extern fm_s32 fm_restore_search(struct fm *fm);
+extern signed int fm_open(struct fm *fmp);
+extern signed int fm_close(struct fm *fmp);
+extern signed int fm_rds_read(struct fm *fmp, signed char *dst, signed int len);
+extern signed int fm_powerup(struct fm *fm, struct fm_tune_parm *parm);
+extern signed int fm_powerdown(struct fm *fm, int type);
+extern signed int fm_cqi_get(struct fm *fm, signed int ch_num, signed char *buf, signed int buf_size);
+extern signed int fm_get_hw_info(struct fm *pfm, struct fm_hw_info *req);
+extern signed int fm_hwscan_stop(struct fm *fm);
+extern signed int fm_ana_switch(struct fm *fm, signed int antenna);
+extern signed int fm_setvol(struct fm *fm, unsigned int vol);
+extern signed int fm_getvol(struct fm *fm, unsigned int *vol);
+extern signed int fm_mute(struct fm *fm, unsigned int bmute);
+extern signed int fm_getrssi(struct fm *fm, signed int *rssi);
+extern signed int fm_read(struct fm *fm, unsigned char addr, unsigned short *val);
+extern signed int fm_write(struct fm *fm, unsigned char addr, unsigned short val);
+extern signed int fm_top_read(struct fm *fm, unsigned short addr, unsigned int *val);
+extern signed int fm_top_write(struct fm *fm, unsigned short addr, unsigned int val);
+extern signed int fm_host_read(struct fm *fm, unsigned int addr, unsigned int *val);
+extern signed int fm_host_write(struct fm *fm, unsigned int addr, unsigned int val);
+extern signed int fm_pmic_read(struct fm *fm, unsigned char addr, unsigned int *val);
+extern signed int fm_pmic_write(struct fm *fm, unsigned char addr, unsigned int val);
+extern signed int fm_chipid_get(struct fm *fm, unsigned short *chipid);
+extern signed int fm_monostereo_get(struct fm *fm, unsigned short *ms);
+extern signed int fm_monostereo_set(struct fm *fm, signed int ms);
+extern signed int fm_pamd_get(struct fm *fm, unsigned short *pamd);
+extern signed int fm_caparray_get(struct fm *fm, signed int *ca);
+extern signed int fm_em_test(struct fm *fm, unsigned short group, unsigned short item, unsigned int val);
+extern signed int fm_rds_onoff(struct fm *fm, unsigned short rdson_off);
+extern signed int fm_rds_good_bc_get(struct fm *fm, unsigned short *gbc);
+extern signed int fm_rds_bad_bc_get(struct fm *fm, unsigned short *bbc);
+extern signed int fm_rds_bler_ratio_get(struct fm *fm, unsigned short *bbr);
+extern signed int fm_rds_group_cnt_get(struct fm *fm, struct rds_group_cnt_t *dst);
+extern signed int fm_rds_group_cnt_reset(struct fm *fm);
+extern signed int fm_rds_log_get(struct fm *fm, struct rds_rx_t *dst, signed int *dst_len);
+extern signed int fm_rds_block_cnt_reset(struct fm *fm);
+extern signed int fm_i2s_set(struct fm *fm, signed int onoff, signed int mode, signed int sample);
+extern signed int fm_get_i2s_info(struct fm *pfm, struct fm_i2s_info *req);
+extern signed int fm_tune(struct fm *fm, struct fm_tune_parm *parm);
+extern signed int fm_is_dese_chan(struct fm *pfm, unsigned short freq);
+extern signed int fm_desense_check(struct fm *pfm, unsigned short freq, signed int rssi);
+extern signed int fm_sys_state_get(struct fm *fmp);
+extern signed int fm_sys_state_set(struct fm *fmp, signed int sta);
+extern signed int fm_set_stat(struct fm *fmp, int which, bool stat);
+extern signed int fm_get_stat(struct fm *fmp, int which, bool *stat);
+extern signed int fm_subsys_reset(struct fm *fm);
+extern signed int fm_cqi_log(void);
+extern signed int fm_soft_mute_tune(struct fm *fm, struct fm_softmute_tune_t *parm);
+extern signed int fm_pre_search(struct fm *fm);
+extern signed int fm_restore_search(struct fm *fm);
 
-extern fm_s32 fm_dump_reg(void);
-extern fm_s32 fm_get_gps_rtc_info(struct fm_gps_rtc_info *src);
-extern fm_s32 fm_over_bt(struct fm *fm, fm_s32 flag);
-extern fm_s32 fm_set_search_th(struct fm *fm, struct fm_search_threshold_t parm);
-extern fm_s32 fm_get_aud_info(fm_audio_info_t *data);
+extern signed int fm_dump_reg(void);
+extern signed int fm_get_gps_rtc_info(struct fm_gps_rtc_info *src);
+extern signed int fm_over_bt(struct fm *fm, signed int flag);
+extern signed int fm_set_search_th(struct fm *fm, struct fm_search_threshold_t parm);
+extern signed int fm_get_aud_info(struct fm_audio_info_t *data);
 /*tx function*/
-extern fm_s32 fm_tx_support(struct fm *fm, fm_s32 *support);
+extern signed int fm_tx_support(struct fm *fm, signed int *support);
 
-extern fm_s32 fm_powerup_tx(struct fm *fm, struct fm_tune_parm *parm);
-extern fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm);
-extern fm_s32 fm_powerdowntx(struct fm *fm);
-extern fm_s32 fm_rds_tx(struct fm *fm, struct fm_rds_tx_parm *parm);
-extern fm_s32 fm_rdstx_support(struct fm *fm, fm_s32 *support);
-extern fm_s32 fm_rdstx_enable(struct fm *fm, fm_s32 enable);
-extern fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm);
-fm_s32 fm_full_cqi_logger(fm_full_cqi_log_t *setting);
+extern signed int fm_powerup_tx(struct fm *fm, struct fm_tune_parm *parm);
+extern signed int fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm);
+extern signed int fm_powerdowntx(struct fm *fm);
+extern signed int fm_rds_tx(struct fm *fm, struct fm_rds_tx_parm *parm);
+extern signed int fm_rdstx_support(struct fm *fm, signed int *support);
+extern signed int fm_rdstx_enable(struct fm *fm, signed int enable);
+extern signed int fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm);
+signed int fm_full_cqi_logger(struct fm_full_cqi_log_t *setting);
 
 
 #endif /* __FM_MAIN_H__ */
