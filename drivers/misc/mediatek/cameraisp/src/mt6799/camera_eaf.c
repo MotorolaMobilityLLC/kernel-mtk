@@ -134,7 +134,7 @@ typedef bool MBOOL;
 #define EAF_DEV_NAME                "camera-eaf"
 
 /* #define EAF_WAITIRQ_LOG  */
-/* #define EAF_USE_GCE //QQ */
+#define EAF_USE_GCE
 #define EAF_DEBUG_USE
 /* #define EAF_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
@@ -1297,6 +1297,8 @@ static MINT32 ConfigEAFHW(EAF_Config *pEafConfig)
 
 	cmdqRecWrite(handle, EAF_MAIN_CFG2_HW, 0x01, CMDQ_REG_MASK);
 
+	cmdqRecWait(handle, CMDQ_EVENT_EAF_EOF);
+
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
 	cmdqRecFlushAsync(handle);
 	cmdqRecReset(handle);/* if you want to re-use the handle, please reset the handle */
@@ -1484,10 +1486,6 @@ static MINT32 ConfigEAFHW(EAF_Config *pEafConfig)
 	EAF_WR32(EAF6I_CON_REG, 0x80000020);
 	EAF_WR32(EAF6I_CON2_REG, 0x100010);
 	EAF_WR32(EAF6I_CON3_REG, 0x100010);
-
-
-	LOG_INF("EAF_RD32(EAF6I_CON_REG) %x\n", EAF_RD32(EAF6I_CON_REG));
-
 
 	EAF_WR32(EAF_MAIN_CFG2_REG, 0x01);
 
@@ -3938,9 +3936,8 @@ static irqreturn_t ISP_Irq_EAF(signed int Irq, void *DeviceId)
 		mt_kernel_trace_begin("EAF_irq");
 #endif
 
-#ifndef EAF_USE_GCE
 		EAF_WR32(EAF_INT_STATUS_REG, 1);/* clear IRQ status */
-#endif
+
 		bResulst = UpdateEAF(&ProcessID);
 		/* ConfigEAF(); */
 		if (bResulst == MTRUE) {
