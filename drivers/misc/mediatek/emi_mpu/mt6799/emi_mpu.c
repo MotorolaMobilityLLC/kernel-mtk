@@ -1691,7 +1691,7 @@ static int __init emi_mpu_mod_init(void)
 
 	/* DTS version */
 	if (EMI_BASE_ADDR == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,EMI");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,emi");
 		if (node) {
 			EMI_BASE_ADDR = of_iomap(node, 0);
 			mpu_irq = irq_of_parse_and_map(node, 0);
@@ -1929,25 +1929,26 @@ early_initcall(dram_4gb_init);
 #define EMI_MSEL2                    IOMEM(EMI_BASE_ADDR+0x468)
 #define EMI_BMEN2                    IOMEM(EMI_BASE_ADDR+0x4E8)
 #define EMI_BMRW0                    IOMEM(EMI_BASE_ADDR+0x4F8)
+#define EMI_BCNT                     IOMEM(EMI_BASE_ADDR+0x408)
 #define EMI_WSCT                     IOMEM(EMI_BASE_ADDR+0x428)
 #define EMI_WSCT2                    IOMEM(EMI_BASE_ADDR+0x458)
 #define EMI_WSCT3                    IOMEM(EMI_BASE_ADDR+0x460)
 #define EMI_WSCT4                    IOMEM(EMI_BASE_ADDR+0x464)
 #define EMI_TTYPE1                   IOMEM(EMI_BASE_ADDR+0x500)
-#define EMI_TTYPE9                   IOMEM(EMI_BASE_ADDR+0x540)
 #define EMI_TTYPE2                   IOMEM(EMI_BASE_ADDR+0x508)
-#define EMI_TTYPE10                  IOMEM(EMI_BASE_ADDR+0x548)
 #define EMI_TTYPE3                   IOMEM(EMI_BASE_ADDR+0x510)
-#define EMI_TTYPE11                  IOMEM(EMI_BASE_ADDR+0x550)
 #define EMI_TTYPE4                   IOMEM(EMI_BASE_ADDR+0x518)
-#define EMI_TTYPE12                  IOMEM(EMI_BASE_ADDR+0x558)
 #define EMI_TTYPE5                   IOMEM(EMI_BASE_ADDR+0x520)
-#define EMI_TTYPE13                  IOMEM(EMI_BASE_ADDR+0x560)
 #define EMI_TTYPE6                   IOMEM(EMI_BASE_ADDR+0x528)
-#define EMI_TTYPE14                  IOMEM(EMI_BASE_ADDR+0x568)
 #define EMI_TTYPE7                   IOMEM(EMI_BASE_ADDR+0x530)
-#define EMI_TTYPE15                  IOMEM(EMI_BASE_ADDR+0x570)
 #define EMI_TTYPE8                   IOMEM(EMI_BASE_ADDR+0x538)
+#define EMI_TTYPE9                   IOMEM(EMI_BASE_ADDR+0x540)
+#define EMI_TTYPE10                  IOMEM(EMI_BASE_ADDR+0x548)
+#define EMI_TTYPE11                  IOMEM(EMI_BASE_ADDR+0x550)
+#define EMI_TTYPE12                  IOMEM(EMI_BASE_ADDR+0x558)
+#define EMI_TTYPE13                  IOMEM(EMI_BASE_ADDR+0x560)
+#define EMI_TTYPE14                  IOMEM(EMI_BASE_ADDR+0x568)
+#define EMI_TTYPE15                  IOMEM(EMI_BASE_ADDR+0x570)
 #define EMI_TTYPE16                  IOMEM(EMI_BASE_ADDR+0x578)
 #define EMI_APBDBG                   IOMEM(EMI_BASE_ADDR+0x7FC)
 
@@ -1964,80 +1965,83 @@ early_initcall(dram_4gb_init);
 
 void dump_emi_latency(void)
 {
-	return;
-#if 0
-	/* Disable EMI DCM */
-	pr_err("Disable EMI DCM\n");
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~(1<<7)), MEM_DCM_CTRL);	/* Disable EMI DCM */
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) | (0x1f<<1), MEM_DCM_CTRL);
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) | 0x1,       MEM_DCM_CTRL);
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~0x1),    MEM_DCM_CTRL);
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) | (1<<31),   MEM_DCM_CTRL);	/* Disable EMI DCM */
-	mt_reg_sync_writel(readl(MEM_DCM_CTRL) | (1<<28),   MEM_DCM_CTRL);	/* Disable DDRPHY DCM */
+	unsigned int temp;
+	unsigned int bw_total, bw_apmcu, bw_mdmcu, bw_mm;
+	unsigned int cycle_cnt;
+	unsigned int lat_m0_apmcu0, lat_m1_apmcu1;
+	unsigned int lat_m5_mm0, lat_m2_mm1;
+	unsigned int lat_m3_mdmcu, lat_m4_mdhw;
+	unsigned int lat_m6_peri, lat_m7_gpu;
+	unsigned int cnt_m0_apmcu0, cnt_m1_apmcu1;
+	unsigned int cnt_m5_mm0, cnt_m2_mm1;
+	unsigned int cnt_m3_mdmcu, cnt_m4_mdhw;
+	unsigned int cnt_m6_peri, cnt_m7_gpu;
 
-	mt_reg_sync_writel(readl(MISC_CG_PHY0_CTRL0) | (1<<8),  MISC_CG_PHY0_CTRL0);	/* Disable EMI DCM */
-	mt_reg_sync_writel(readl(MISC_CG_PHY0_CTRL0) | (1<<9),  MISC_CG_PHY0_CTRL0);	/* Disable DDRPHY DCM */
-	mt_reg_sync_writel(readl(MISC_CG_PHY0_CTRL2) | (1<<31), MISC_CG_PHY0_CTRL2);	/* Disable EMI DCM */
-	mt_reg_sync_writel(readl(MISC_CG_PHY0_CTRL2) | (1<<28), MISC_CG_PHY0_CTRL2);	/* Disable DDRPHY DCM */
+	pr_err("[EMI latency] period 5 ms\n");
 
-	/* Disable EMI clock gated */
-	mt_reg_sync_writel(readl(EMI_CONM) | 0xff00f000, EMI_CONM);
-	mt_reg_sync_writel(readl(EMI_CONN) | 0xff000000, EMI_CONN);
+	/* Clear bus monitor */
+	temp = readl(EMI_BMEN) & 0xfffffffc;
+	writel(temp, EMI_BMEN);
 
-	mt_reg_sync_writel(readl(CHN0_EMI_CONB) | 0xff000000, CHN0_EMI_CONB);	/* Disable chn0_emi dcm */
-	mt_reg_sync_writel(readl(CHN1_EMI_CONB) | 0xff000000, CHN1_EMI_CONB);	/* Disable chn1_emi dcm */
+	/* Setup EMI bus monitor:
+	 * 1. Counter for {trans, word, defined type} = {TSCT, WSCT, TTYPE}
+	 * 2. R/W command monitor depends on (global) BMEN[5:4] and (local) BMRW0
+	 */
+	writel(0x00ff0000, EMI_BMEN); /* Reset counter and set WSCT for ALL */
+	writel(0x00240003, EMI_MSEL);
+	writel(0x00000018, EMI_MSEL2);
+	writel(0x02000000, EMI_BMEN2);
+	writel(0xffffffff, EMI_BMRW0);
 
-	/* clear bus monitor */
-	mt_reg_sync_writel(readl(EMI_CONM) | (1 << 30), EMI_CONM);
-	mt_reg_sync_writel(readl(EMI_BMEN) & 0xfffffffc, EMI_BMEN);	/* clear bus monitor */
+	/* Enable bus monitor */
+	temp = readl(EMI_BMEN);
+	writel(temp | 0x1, EMI_BMEN);
 
-	/* Enable EMI bus monitor */
-	pr_err("Enable EMI bus monitor\n");
-	mt_reg_sync_writel(0x00FF0000, EMI_BMEN);	/* Reset counter and set WSCT  for ALL */
-	mt_reg_sync_writel(0x00240003, EMI_MSEL);	/* Set WSCT3 for MM, WSCT2 for APMCU */
-	mt_reg_sync_writel(0x00000018, EMI_MSEL2);	/* Set WSCT4 for MD */
-	mt_reg_sync_writel(0x02000000, EMI_BMEN2);	/* Enable latency monitor */
-	mt_reg_sync_writel(0x55555555, EMI_BMRW0);	/* Set latency monitor for read */
-	mt_reg_sync_writel(readl(EMI_BMEN) | 0x1, EMI_BMEN);	/* Enable bus monitor */
-
-	/* Wait for a while */
 	mdelay(5);
 
-	/* Get latency result */
-	pr_err("Get latency Result\n");
-	mt_reg_sync_writel(readl(EMI_BMEN) | 0x2, EMI_BMEN);	/* Pause bus monitor */
+	/* Pause bus monitor */
+	temp = readl(EMI_BMEN);
+	writel(temp | 0x2, EMI_BMEN);
 
-	pr_err("-----------Get BW RESULT----------------\n");
 	/* Get BW result */
-	pr_err("EMI_WSCT = 0x%x (Total BW)\n", readl(EMI_WSCT));
-	pr_err("EMI_WSCT2 = 0x%x (APMCU(M0) BW)\n", readl(EMI_WSCT2));
-	pr_err("EMI_WSCT3 = 0x%x (MM(M5) BW)\n", readl(EMI_WSCT3));
-	pr_err("EMI_WSCT4 = 0x%x (MDMCU(M3) BW)\n", readl(EMI_WSCT4));
+	cycle_cnt = readl(EMI_BCNT); /* frequency = dram data rate /4 */
+	bw_total = readl(EMI_WSCT); /* Unit: 8 bytes */
+	bw_apmcu = readl(EMI_WSCT2);
+	bw_mdmcu = readl(EMI_WSCT4);
+	bw_mm = readl(EMI_WSCT3);
+
+	pr_err("[EMI latency] Cycle count %d\n", cycle_cnt);
+	pr_err("[EMI latency] Total BW %d\n", bw_total);
+	pr_err("[EMI latency] APMCU BW %d\n", bw_apmcu);
+	pr_err("[EMI latency] MDMCU BW %d\n", bw_mdmcu);
+	pr_err("[EMI latency] MM BW %d\n", bw_mm);
 
 	/* Get latency result */
-	/* APMCU(M0) read latency = EMI_TTYPE1 / EMI_TTYPE9 */
-	pr_err("EMI_TTYPE1 = 0x%x\n", readl(EMI_TTYPE1));
-	pr_err("EMI_TTYPE9 = 0x%x\n", readl(EMI_TTYPE9));
-	/* MDMCU(M3) read latency = EMI_TTYPE4 / EMI_TTYPE12 */
-	pr_err("EMI_TTYPE4 = 0x%x\n", readl(EMI_TTYPE4));
-	pr_err("EMI_TTYPE12 = 0x%x\n", readl(EMI_TTYPE12));
-	/* MDHW(M4)  read latency = EMI_TTYPE5 / EMI_TTYPE13 */
-	pr_err("EMI_TTYPE5 = 0x%x\n", readl(EMI_TTYPE5));
-	pr_err("EMI_TTYPE13 = 0x%x\n", readl(EMI_TTYPE13));
-	/* MM(M5)    read latency = EMI_TTYPE6 / EMI_TTYPE14 */
-	pr_err("EMI_TTYPE6 = 0x%x\n", readl(EMI_TTYPE6));
-	pr_err("EMI_TTYPE14 = 0x%x\n", readl(EMI_TTYPE14));
-	/* GPU(M6)   read latency = EMI_TTYPE7 / EMI_TTYPE15 */
-	pr_err("EMI_TTYPE7 = 0x%x\n", readl(EMI_TTYPE7));
-	pr_err("EMI_TTYPE15 = 0x%x\n", readl(EMI_TTYPE15));
+	lat_m0_apmcu0 = readl(EMI_TTYPE1);
+	lat_m1_apmcu1 = readl(EMI_TTYPE2);
+	lat_m2_mm1 = readl(EMI_TTYPE3);
+	lat_m3_mdmcu = readl(EMI_TTYPE4);
+	lat_m4_mdhw = readl(EMI_TTYPE5);
+	lat_m5_mm0 = readl(EMI_TTYPE6);
+	lat_m6_peri = readl(EMI_TTYPE7);
+	lat_m7_gpu = readl(EMI_TTYPE8);
 
-	pr_err("EMI_CONI  = 0x%x\n", readl(EMI_CONI));	/* GPU OSTD setting when LTE busy */
-	pr_err("EMI_CONM  = 0x%x\n", readl(EMI_CONM));	/* EMI DCM */
-	pr_err("EMI_TEST0 = 0x%x\n", readl(EMI_TEST0));	/* OSTD setting of M0~M3 */
-	pr_err("EMI_TEST1 = 0x%x\n", readl(EMI_TEST1));	/* OSTD settinf of M4~M5 */
-	pr_err("DDRPHY_0_CG = 0x%x\n", readl(MISC_CG_PHY0_CTRL0));	/* [8]: chn_emi CG */
-	pr_err("DDRPHY_1_CG = 0x%x\n", readl(MISC_CG_PHY1_CTRL0));	/* [8]: chn_emi CG */
-	pr_err("MEM_DCM_CTRL  = 0x%x\n", readl(MEM_DCM_CTRL));	/* infra CG enable */
-#endif
+	cnt_m0_apmcu0 = readl(EMI_TTYPE9);
+	cnt_m1_apmcu1 = readl(EMI_TTYPE10);
+	cnt_m2_mm1 = readl(EMI_TTYPE11);
+	cnt_m3_mdmcu = readl(EMI_TTYPE12);
+	cnt_m4_mdhw = readl(EMI_TTYPE13);
+	cnt_m5_mm0 = readl(EMI_TTYPE14);
+	cnt_m6_peri = readl(EMI_TTYPE15);
+	cnt_m7_gpu = readl(EMI_TTYPE16);
+
+	pr_err("[EMI latency] (0)APMCU0 latency %d for %d trans\n", lat_m0_apmcu0, cnt_m0_apmcu0);
+	pr_err("[EMI latency] (1)APMCU1 latency %d for %d trans\n", lat_m1_apmcu1, cnt_m1_apmcu1);
+	pr_err("[EMI latency] (5)MM0 latency %d for %d trans\n", lat_m5_mm0, cnt_m5_mm0);
+	pr_err("[EMI latency] (2)MM1 latency %d for %d trans\n", lat_m2_mm1, cnt_m2_mm1);
+	pr_err("[EMI latency] (3)MDMCU latency %d for %d trans\n", lat_m3_mdmcu, cnt_m3_mdmcu);
+	pr_err("[EMI latency] (4)MDHW latency %d for %d trans\n", lat_m4_mdhw, cnt_m4_mdhw);
+	pr_err("[EMI latency] (6)PERI latency %d for %d trans\n", lat_m6_peri, cnt_m6_peri);
+	pr_err("[EMI latency] (7)GPU latency %d for %d trans\n", lat_m7_gpu, cnt_m7_gpu);
 }
 
