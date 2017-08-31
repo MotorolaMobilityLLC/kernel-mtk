@@ -335,7 +335,7 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
 			       aud_clks[CLOCK_TOP_SYSPLL1_D4].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 	} else if (parentidx == 0) {
@@ -361,7 +361,7 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
 			       aud_clks[CLOCK_CLK26M].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 	}
@@ -407,7 +407,7 @@ void AudDrv_AUD_Sel(int parentidx)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
 			       aud_clks[CLOCK_TOP_SYSPLL3_D4].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 	} else if (parentidx == 0) {
@@ -433,7 +433,7 @@ void AudDrv_AUD_Sel(int parentidx)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_MUX_AUDIO].name,
 			       aud_clks[CLOCK_CLK26M].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 	}
@@ -963,7 +963,7 @@ void AudDrv_APLL22M_Clk_On(void)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 
@@ -1107,7 +1107,7 @@ void AudDrv_APLL24M_Clk_On(void)
 			pr_err("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
 			       aud_clks[CLOCK_TOP_AD_APLL2_CK].name, ret);
-			/* AUDIO_AEE(""); */
+			AUDIO_AEE("");
 			goto EXIT;
 		}
 
@@ -1544,7 +1544,7 @@ void AudDrv_Suspend_Clk_Off(void)
 				pr_err("%s clk_set_parent %s-%s fail %d\n",
 				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 				       aud_clks[CLOCK_CLK26M].name, ret);
-				/* AUDIO_AEE(""); */
+				AUDIO_AEE("");
 				goto EXIT;
 			}
 
@@ -1574,7 +1574,7 @@ void AudDrv_Suspend_Clk_Off(void)
 				pr_err("%s clk_set_parent %s-%s fail %d\n",
 				       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
 				       aud_clks[CLOCK_CLK26M].name, ret);
-				/* AUDIO_AEE(""); */
+				AUDIO_AEE("");
 				goto EXIT;
 			}
 
@@ -1646,7 +1646,7 @@ void AudDrv_Suspend_Clk_On(void)
 				pr_err("%s clk_set_parent %s-%s fail %d\n",
 				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 				       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
-				/* AUDIO_AEE(""); */
+				AUDIO_AEE("");
 				goto EXIT;
 			}
 
@@ -1708,7 +1708,7 @@ void AudDrv_Suspend_Clk_On(void)
 				pr_err("%s clk_set_parent %s-%s fail %d\n",
 				       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
 				       aud_clks[CLOCK_TOP_AD_APLL2_CK].name, ret);
-				/* AUDIO_AEE(""); */
+				AUDIO_AEE("");
 				goto EXIT;
 			}
 
