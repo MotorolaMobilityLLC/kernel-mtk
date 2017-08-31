@@ -1726,10 +1726,9 @@ VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 			if (kalCheckPath(aucPath) == -1) {
 				kalMemSet(aucPath, 0x00, 256);
 				sprintf(aucPath, "/data/dump_%05ld.hex", g_u2DumpIndex);
-				} else
-					kalTrunkPath(aucPath);
-
-				DBGLOG(INIT, INFO, "iCap Create New Dump File dump_%05ld.hex\n", g_u2DumpIndex);
+			} else
+				kalTrunkPath(aucPath);
+			DBGLOG(INIT, INFO, "iCap Create New Dump File dump_%05ld.hex\n", g_u2DumpIndex);
 #else
 			DBGLOG(RFTEST, INFO, "kal_sprintf_ddk(aucPath, sizeof(aucPath),\n");
 			kal_sprintf_ddk(aucPath, sizeof(aucPath),
@@ -1745,7 +1744,7 @@ VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 		}
 
 #if CFG_SUPPORT_QA_TOOL
-				TsfRawData2IqFmt(prEventDumpMem);
+		TsfRawData2IqFmt(prEventDumpMem);
 #endif /* CFG_SUPPORT_QA_TOOL */
 
 		if (prEventDumpMem->u4RemainLength == 0 || prEventDumpMem->u4Address == 0xFFFFFFFF) {
