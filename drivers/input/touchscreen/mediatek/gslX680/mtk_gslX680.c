@@ -676,7 +676,32 @@ void tpd_down(int id, int x, int y, int p)
 {
 
 	GSL_LOGD("------tpd_down id: %d, x:%d, y:%d------\n", id, x, y);
+	#if 0
+	int temp = x;
 
+	x = y;
+	y = temp;
+
+	x = x*1024/600;
+	y = y*600/1024;
+
+	/* x = 1024 - x; */
+	y = 600 - y;
+	#endif
+
+	/* 0->270 */
+	#if 0
+	int temp = x;
+
+	x = y;
+	y = temp;
+
+	x = x*1024/600;
+	y = y*600/1024;
+
+	x = 1024 - x;
+	GSL_LOGE("x = %d,y = %d\n", x, y);
+	#endif
 #if 0
 	if (get_boot_mode() == FACTORY_BOOT || RECOVERY_BOOT == get_boot_mode()) {
 		/* y = y*1024/600; */
@@ -772,10 +797,6 @@ static void report_data_handle(void)
 
 	i2c_smbus_read_i2c_block_data(i2c_client, 0x80, 4, &touch_data[0]);
 	point_num = touch_data[0];
-	/*xing: just for workaround begin*/
-	if (point_num > MAX_FINGERS)
-		point_num = 1;
-	/*xing: just for workaround end*/
 	if (point_num > 0)
 		i2c_smbus_read_i2c_block_data(i2c_client, 0x84, 8, &touch_data[4]);
 	if (point_num > 2)
@@ -803,10 +824,6 @@ static void report_data_handle(void)
 	}
 	cinfo.finger_num = (touch_data[3]<<24)|(touch_data[2]<<16)|
 		(touch_data[1]<<8)|touch_data[0];
-	/*xing: just for workaround begin*/
-	if (cinfo.finger_num > MAX_FINGERS)
-		cinfo.finger_num = 1;
-	/*xing: just for workaround end*/
 	gsl_alg_id_main(&cinfo);
 	tmp1 = gsl_mask_tiaoping();
 	GSL_LOGD("[tp-gsl] tmp1=%x\n", tmp1);
