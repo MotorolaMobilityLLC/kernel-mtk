@@ -25,6 +25,7 @@
 #include <mach/mtk_pmic.h>
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
+#include "include/pmic_regulator.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_debugfs.h"
 #include "pwrap_hal.h"
@@ -372,6 +373,29 @@ unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
 
 	return 0;
 }
+
+/* enable/disable VSRAM_VCORE HW tracking, return 0 if success */
+unsigned int enable_vsram_vcore_hw_tracking(unsigned int en)
+{
+	if (en != 1 && en != 0)
+		return en;
+
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_VBUCK_ON_CTRL, en);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_ON_CTRL, en);
+	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_TRACK_SLEEP_CTRL, en);
+
+	if (pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_VBUCK_ON_CTRL) == en &&
+	    pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_ON_CTRL) == en &&
+	    pmic_get_register_value(PMIC_RG_VSRAM_VCORE_TRACK_SLEEP_CTRL) == en) {
+		pr_err("[PMIC][%s] %s HW TRACKING success\n", __func__, (en == 1)?"enable":"disable");
+		if (en == 0)
+			buck_set_voltage(VSRAM_VCORE, 1000000);
+		return 0;
+	}
+	pr_err("[PMIC][%s] %s HW TRACKING fail\n", __func__, (en == 1)?"enable":"disable");
+	return 1;
+}
+
 
 /**********************************************************
   *
