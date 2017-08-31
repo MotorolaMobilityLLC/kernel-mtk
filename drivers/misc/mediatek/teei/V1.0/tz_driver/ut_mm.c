@@ -11,7 +11,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #include <linux/stddef.h>
 #include <linux/mm.h>
 #include <linux/swap.h>
@@ -60,46 +59,10 @@
 #include <linux/hugetlb.h>
 #include <linux/sched/rt.h>
 #include <linux/mmdebug.h>
-
 #include <asm/tlbflush.h>
 #include <asm/div64.h>
 #include <linux/mmzone.h>
-
-#define ALLOC_NO_WATERMARKS     0x04
-#define ALLOC_WMARK_MASK        (ALLOC_NO_WATERMARKS-1)
-#define ALLOC_WMARK_LOW         WMARK_LOW
-#define ALLOC_CPUSET            0x40
-
-#define ZONE_RECLAIM_NOSCAN     -2
-#define ZONE_RECLAIM_FULL       -1
-#define ZONE_RECLAIM_SOME       0
-#define ZONE_RECLAIM_SUCCESS    1
-
-#define ALLOC_WMARK_MIN         WMARK_MIN
-
-
-#define UT_MAX_MEM              0xD0000000
-
-#define __ut_alloc_pages(gfp_mask, order) \
-                        __ut_alloc_pages_node(numa_node_id(), gfp_mask, order)
-
-extern void expand(struct zone *zone, struct page *page,
-                   int low, int high, struct free_area *area,
-                   int migratetype);
-
-extern int rmqueue_bulk(struct zone *zone, unsigned int order,
-                        unsigned long count, struct list_head *list,
-                        int migratetype, int cold);
-
-extern int prep_new_page(struct page *page, int order, gfp_t gfp_flags);
-
-extern int zlc_zone_worth_trying(struct zonelist *zonelist, struct zoneref *z,
-                                 nodemask_t *allowednodes);
-
-extern nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags);
-extern bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone);
-extern void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z);
-
+#include <imsg_log.h>
 
 static inline void rmv_page_order(struct page *page)
 {
@@ -107,15 +70,13 @@ static inline void rmv_page_order(struct page *page)
 	set_page_private(page, 0);
 }
 
-
-
 /*
  * Go through the free lists for the given migratetype and remove
  * the smallest available page from the freelists
  */
 static inline
 struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,
-                                 int migratetype)
+									int migratetype)
 {
 	unsigned int current_order;
 	struct free_area *area;
@@ -139,12 +100,12 @@ struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,
 			page = list_entry(free_list_ent, struct page, lru);
 
 			if ((unsigned long)(page_to_phys(page)) >= UT_MAX_MEM) {
-				pr_err("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] FAILED! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 0;
 				free_list_ent = free_list_ent->next;
 
 			} else {
-				pr_debug("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
+				IMSG_DEBUG("[%s][%d] SUCCESS! ORDER = %d page_to_phys(page) = %lx\n", __func__, __LINE__, current_order, (unsigned long)page_to_phys(page));
 				page_found = 1;
 				break;
 			}
@@ -163,14 +124,12 @@ struct page *ut_rmqueue_smallest(struct zone *zone, unsigned int order,
 	return NULL;
 }
 
-
-
 /*
  * Do the hard work of removing an element from the buddy allocator.
  * Call me with the zone->lock already held.
  */
 static struct page *ut_rmqueue(struct zone *zone, unsigned int order,
-                               int migratetype)
+								int migratetype)
 {
 	struct page *page;
 
@@ -180,8 +139,6 @@ static struct page *ut_rmqueue(struct zone *zone, unsigned int order,
 	return page;
 }
 
-
-
 /*
  * Really, prep_compound_page() should be called from __rmqueue_bulk().  But
  * we cheat by calling it from here, in the order > 0 path.  Saves a branch
@@ -189,8 +146,8 @@ static struct page *ut_rmqueue(struct zone *zone, unsigned int order,
  */
 static inline
 struct page *ut_buffered_rmqueue(struct zone *preferred_zone,
-                                 struct zone *zone, int order, gfp_t gfp_flags,
-                                 int migratetype)
+									struct zone *zone, int order, gfp_t gfp_flags,
+									int migratetype)
 {
 	unsigned long flags;
 	struct page *page;
@@ -210,8 +167,8 @@ again:
 
 		if (list_empty(list)) {
 			pcp->count += rmqueue_bulk(zone, 0,
-			                           pcp->batch, list,
-			                           migratetype, cold);
+										pcp->batch, list,
+										migratetype, cold);
 
 			if (unlikely(list_empty(list)))
 				goto failed;
@@ -285,7 +242,7 @@ singal_page_fail:
 
 #if !defined(CONFIG_CMA) || !defined(CONFIG_MTK_SVP) /* SVP 16 */
 		__mod_zone_freepage_state(zone, -(1 << order),
-		                          get_pageblock_migratetype(page));
+									get_pageblock_migratetype(page));
 #else
 		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1 << order));
 #endif
@@ -305,23 +262,22 @@ failed:
 	return NULL;
 }
 
-
 /*
  * get_page_from_freelist goes through the zonelist trying to allocate
  * a page.
  */
 static struct page *
 ut_get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
-                          struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
-                          struct zone *preferred_zone, int migratetype)
+							struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
+							struct zone *preferred_zone, int migratetype)
 {
 	struct zoneref *z;
 	struct page *page = NULL;
 	int classzone_idx;
 	struct zone *zone;
 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
-	int zlc_active = 0;             /* set if using zonelist_cache */
-	int did_zlc_setup = 0;          /* just call zlc_setup() one time */
+	int zlc_active = 0;		/* set if using zonelist_cache */
+	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
 
 	classzone_idx = zone_idx(preferred_zone);
 zonelist_scan:
@@ -330,19 +286,19 @@ zonelist_scan:
 	 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
 	 */
 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-	                                high_zoneidx, nodemask) {
+									high_zoneidx, nodemask) {
 #if 1
 
 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
-		                !zlc_zone_worth_trying(zonelist, z, allowednodes))
+		    !zlc_zone_worth_trying(zonelist, z, allowednodes))
 			continue;
 
 		if ((alloc_flags & ALLOC_CPUSET) &&
-		                !cpuset_zone_allowed_softwall(zone, gfp_mask))
+		    !cpuset_zone_allowed_softwall(zone, gfp_mask))
 			continue;
 
 		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-		                (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
+		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
 			goto this_zone_full;
 
 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
@@ -357,11 +313,11 @@ zonelist_scan:
 			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
 
 			if (zone_watermark_ok(zone, order, mark,
-			                      classzone_idx, alloc_flags))
+									classzone_idx, alloc_flags))
 				goto try_this_zone;
 
 			if (IS_ENABLED(CONFIG_NUMA) &&
-			                !did_zlc_setup && nr_online_nodes > 1) {
+			    !did_zlc_setup && nr_online_nodes > 1) {
 				/*
 				 * we do zlc_setup if there are multiple nodes
 				 * and before considering the first zone allowed
@@ -373,7 +329,7 @@ zonelist_scan:
 			}
 
 			if (zone_reclaim_mode == 0 ||
-			                !zone_allows_reclaim(preferred_zone, zone))
+			    !zone_allows_reclaim(preferred_zone, zone))
 				goto this_zone_full;
 
 			/*
@@ -381,48 +337,49 @@ zonelist_scan:
 			 * eligible zone has failed zone_reclaim recently.
 			 */
 			if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
-			                !zlc_zone_worth_trying(zonelist, z, allowednodes))
+			    !zlc_zone_worth_trying(zonelist, z, allowednodes))
 				continue;
 
 			ret = zone_reclaim(zone, gfp_mask, order);
 
 			switch (ret) {
-				case ZONE_RECLAIM_NOSCAN:
-					/* did not scan */
-					continue;
+			case ZONE_RECLAIM_NOSCAN:
+				/* did not scan */
+				continue;
 
-				case ZONE_RECLAIM_FULL:
-					/* scanned but unreclaimable */
-					continue;
+			case ZONE_RECLAIM_FULL:
+				/* scanned but unreclaimable */
+				continue;
 
-				default:
+			default:
 
-					/* did we reclaim enough */
-					if (zone_watermark_ok(zone, order, mark,
-					                      classzone_idx, alloc_flags))
-						goto try_this_zone;
+				/* did we reclaim enough */
+				if (zone_watermark_ok(zone, order, mark,
+										classzone_idx, alloc_flags))
+					goto try_this_zone;
 
-					/*
-					 * Failed to reclaim enough to meet watermark.
-					 * Only mark the zone full if checking the min
-					 * watermark or if we failed to reclaim just
-					 * 1<<order pages or else the page allocator
-					 * fastpath will prematurely mark zones full
-					 * when the watermark is between the low and
-					 * min watermarks.
-					 */
-					if (((alloc_flags & ALLOC_WMARK_MASK) == ALLOC_WMARK_MIN) ||
-					                ret == ZONE_RECLAIM_SOME)
-						goto this_zone_full;
+				/*
+				 * Failed to reclaim enough to meet watermark.
+				 * Only mark the zone full if checking the min
+				 * watermark or if we failed to reclaim just
+				 * 1<<order pages or else the page allocator
+				 * fastpath will prematurely mark zones full
+				 * when the watermark is between the low and
+				 * min watermarks.
+				 */
+				if (((alloc_flags & ALLOC_WMARK_MASK) == ALLOC_WMARK_MIN) ||
+				    ret == ZONE_RECLAIM_SOME)
+					goto this_zone_full;
 
-					continue;
+				continue;
 			}
 		}
 
 #endif
 
 try_this_zone:
-		page = ut_buffered_rmqueue(preferred_zone, zone, order, gfp_mask, migratetype);
+		page = ut_buffered_rmqueue(preferred_zone, zone, order,
+									gfp_mask, migratetype);
 
 		if (page)
 			break;
@@ -453,15 +410,15 @@ this_zone_full:
 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-#if defined(CONFIG_MTK_ENG_BUILD)
+#if defined(CONFIG_MT_ENG_BUILD)
 
 	if (page) {
 		if (_forbid_cma_alloc) {
 			unsigned long vpfn = page_to_pfn(page);
 
 			if (svp_is_in_range(vpfn)) {
-				pr_alert("%s %d: pfn: %lu in _forbid_cma_alloc %d\n",
-				         __func__, __LINE__, vpfn, _forbid_cma_alloc);
+				IMSG_ERROR("%s %d: pfn: %lu in _forbid_cma_alloc %d\n",
+							__func__, __LINE__, vpfn, _forbid_cma_alloc);
 				dump_stack();
 			}
 		}
@@ -473,19 +430,12 @@ this_zone_full:
 	return page;
 }
 
-
-
-
-
-
-
-
 /*
  * This is the 'heart' of the zoned buddy allocator.
  */
 struct page *
 ut_alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
-                        struct zonelist *zonelist, nodemask_t *nodemask)
+						struct zonelist *zonelist, nodemask_t *nodemask)
 {
 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
 	struct zone *preferred_zone;
@@ -525,8 +475,8 @@ retry_cpuset:
 
 	/* The preferred zone is used for statistics later */
 	first_zones_zonelist(zonelist, high_zoneidx,
-	                     nodemask ? : &cpuset_current_mems_allowed,
-	                     &preferred_zone);
+							nodemask ? : &cpuset_current_mems_allowed,
+							&preferred_zone);
 
 	if (!preferred_zone)
 		goto out;
@@ -559,8 +509,8 @@ retry_cpuset:
 
 	/* First allocation attempt */
 	page = ut_get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
-	                                 zonelist, high_zoneidx, alloc_flags,
-	                                 preferred_zone, migratetype);
+										zonelist, high_zoneidx, alloc_flags,
+										preferred_zone, migratetype);
 
 #ifdef __LOG_PAGE_ALLOC_ORDER__
 
@@ -599,14 +549,15 @@ out:
 	return page;
 }
 
-
 static inline struct page *
-ut_alloc_pages(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist)
+ut_alloc_pages(gfp_t gfp_mask, unsigned int order,
+				struct zonelist *zonelist)
 {
 	return ut_alloc_pages_nodemask(gfp_mask, order, zonelist, NULL);
 }
 
-static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
+static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask,
+													unsigned int order)
 {
 	/* Unknown node is current node */
 	if (nid < 0)
@@ -614,8 +565,6 @@ static inline struct page *__ut_alloc_pages_node(int nid, gfp_t gfp_mask, unsign
 
 	return ut_alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
 }
-
-
 
 unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order)
 {
@@ -633,7 +582,4 @@ unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order)
 		return 0;
 
 	return (unsigned long) page_address(page);
-
 }
-
-

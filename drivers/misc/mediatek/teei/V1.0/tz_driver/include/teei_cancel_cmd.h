@@ -11,52 +11,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef TEEI_CANCEL_CMD_H
+#define TEEI_CANCEL_CMD_H
 
-#include "utdriver_macro.h"
-
-struct message_head {
-	unsigned int invalid_flag;
-	unsigned int message_type;
-	unsigned int child_type;
-	unsigned int param_length;
-};
-
-struct fdrv_message_head {
-	unsigned int driver_type;
-	unsigned int fdrv_param_length;
-};
-
-struct create_fdrv_struct {
-	unsigned int fdrv_type;
-	unsigned int fdrv_phy_addr;
-	unsigned int fdrv_size;
-};
-
-struct ack_fast_call_struct {
-	int retVal;
-};
-
-struct cancel_command_struct {
-	unsigned long mem_size;
-	int retVal;
-};
-
-struct cancel_command_struct cancel_command_entry;
-
-extern unsigned long message_buff;
-unsigned long cancel_message_buff;
-extern unsigned long fdrv_message_buff;
-extern int fp_call_flag;
+extern unsigned long cancel_message_buff;
 extern struct semaphore fp_lock;
-extern struct semaphore smc_lock;
-extern struct semaphore boot_sema;
 extern struct mutex pm_mutex;
-extern struct completion global_down_lock;
-extern unsigned long teei_config_flag;
 
-extern int get_current_cpuid(void);
-extern void invoke_fastcall(void);
-extern void ut_pm_mutex_lock(struct mutex *lock);
-extern void ut_pm_mutex_unlock(struct mutex *lock);
-extern struct semaphore fdrv_sema;
-extern struct semaphore fdrv_lock;
+unsigned long create_cancel_fdrv(int buff_size);
+int send_cancel_command(unsigned long share_memory_size);
+int __send_cancel_command(unsigned long share_memory_size);
+
+#endif /* end of TEEI_CANCEL_CMD_H */

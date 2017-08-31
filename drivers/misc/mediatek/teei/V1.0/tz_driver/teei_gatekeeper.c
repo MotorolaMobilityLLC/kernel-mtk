@@ -11,20 +11,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
 #include <linux/delay.h>
+#include <linux/cpu.h>
 #include "teei_gatekeeper.h"
 #include "teei_id.h"
 #include "sched_status.h"
 #include "nt_smc_call.h"
+#include "teei_common.h"
+#include "switch_queue.h"
+#include "teei_client_main.h"
+#include "backward_driver.h"
+#include "utdriver_macro.h"
+#include <imsg_log.h>
 
-#define GK_BUFF_SIZE            (4 * 1024)
-#define GK_SYS_NO               (120)
-
-unsigned long gatekeeper_buff_addr = 0;
+unsigned long gatekeeper_buff_addr;
 
 void set_gatekeeper_command(unsigned long memory_size)
 {
@@ -37,8 +40,6 @@ void set_gatekeeper_command(unsigned long memory_size)
 
 	memcpy((void *)fdrv_message_buff, (void *)(&fdrv_msg_head), sizeof(struct fdrv_message_head));
 	Flush_Dcache_By_Area((unsigned long)fdrv_message_buff, (unsigned long)fdrv_message_buff + MESSAGE_SIZE);
-
-	return;
 }
 
 unsigned long create_gatekeeper_fdrv(int buff_size)
@@ -50,13 +51,13 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	struct ack_fast_call_struct msg_ack;
 
 	if ((unsigned char *)message_buff == NULL) {
-		pr_err("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 	if (buff_size > VDRV_MAX_SIZE) {
-		pr_err("[%s][%d]: gatekeeper Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: gatekeeper Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 #ifdef UT_DMA_ZONE
@@ -65,10 +66,9 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
 #endif
 
-
 	if ((unsigned char *)temp_addr == NULL) {
-		pr_err("[%s][%d]: kmalloc gatekeeper drv buffer failed.\n", __FILE__, __LINE__);
-		return 0;
+		IMSG_ERROR("[%s][%d]: kmalloc gatekeeper drv buffer failed.\n", __FILE__, __LINE__);
+		return (unsigned long)NULL;
 	}
 
 	memset((void *)(&msg_head), 0, sizeof(struct message_head));
@@ -82,10 +82,9 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 
 	msg_body.fdrv_type = GK_SYS_NO;
 	msg_body.fdrv_phy_addr = virt_to_phys((void *)temp_addr);
-
-
 	msg_body.fdrv_size = buff_size;
 
+	/*local_irq_save(irq_flag);*/
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
@@ -101,22 +100,21 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
 	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
 
-
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
 		retVal = msg_ack.retVal;
 
 		if (retVal == 0) {
-			/* pr_debug("[%s][%d]: %s end.\n", __func__, __LINE__, __func__); */
 			return temp_addr;
 		}
-	} else
-		retVal = 0;
+	} else {
+		retVal = (unsigned long)NULL;
+	}
 
 	/* Release the resource and return. */
 	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
 
-	pr_err("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
+	IMSG_ERROR("[%s][%d]: %s failed!\n", __func__, __LINE__, __func__);
 	return retVal;
 
 }
@@ -124,18 +122,18 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 int __send_gatekeeper_command(unsigned long share_memory_size)
 {
 
-	unsigned long smc_type = 2;
+	uint64_t smc_type = 2;
 
 	set_gatekeeper_command(share_memory_size);
 	Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
 
-	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
+	n_invoke_t_drv(&smc_type, 0, 0);
 
-	while (smc_type == 1) {
+	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
-		nt_sched_t((uint64_t *)(&smc_type));
+		nt_sched_t(&smc_type);
 	}
 
 	return 0;
@@ -143,13 +141,14 @@ int __send_gatekeeper_command(unsigned long share_memory_size)
 
 int send_gatekeeper_command(unsigned long share_memory_size)
 {
-        int retVal = 0;
-        struct fdrv_call_struct fdrv_ent;
+
+	int retVal = 0;
+	struct fdrv_call_struct fdrv_ent;
 
 	down(&fdrv_lock);
 	ut_pm_mutex_lock(&pm_mutex);
 
-	pr_info("send_gatekeeper_command start\n");
+	IMSG_DEBUG("send_gatekeeper_command start\n");
 
 	if (teei_config_flag == 1) {
 		complete(&global_down_lock);
@@ -162,6 +161,7 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	wmb();
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
+
 	if (retVal != 0) {
 		up(&smc_lock);
 		ut_pm_mutex_unlock(&pm_mutex);
@@ -170,11 +170,8 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	}
 
 	down(&fdrv_sema);
-	rmb();
-
-	pr_info("send_gatekeeper_command end\n");
-	/* put_online_cpus(); */
-        rmb();
+	IMSG_DEBUG("send_gatekeeper_command end\n");
+    rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
 

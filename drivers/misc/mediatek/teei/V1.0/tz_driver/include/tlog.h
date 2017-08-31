@@ -11,20 +11,21 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef TLOG_H
+#define TLOG_H
 
-#define TLOG_CONTEXT_LEN                (300)
-#define TLOG_MAX_CNT                    (50)
 
-#define TLOG_UNUSE                              (0)
-#define TLOG_INUSE                              (1)
+#define TLOG_CONTEXT_LEN		(300)
+#define TLOG_MAX_CNT			(50)
 
-#define UT_TLOG_VERSION                 (2)
-#define UT_TYPE_STRING                  (1)
-#define TLOG_SIZE                       (256 * 1024)
-#define MAX_LOG_LEN                     (256)
+#define TLOG_UNUSE				(0)
+#define TLOG_INUSE				(1)
 
+#define UT_TLOG_VERSION			(2)
+#define UT_TYPE_STRING			(1)
+#define MAX_LOG_LEN			(250)
 /********************************************
-        structures for LOG IRQ handler
+	structures for LOG IRQ handler
  ********************************************/
 struct tlog_struct {
 	int valid;
@@ -33,7 +34,7 @@ struct tlog_struct {
 };
 
 /********************************************
-        structures for utOS printf
+	structures for utOS printf
  ********************************************/
 struct ut_log_buf_head {
 	int version;
@@ -51,7 +52,7 @@ struct ut_log_entry {
 };
 
 /********************************************
-        structures for uTgate LOG
+	structures for uTgate LOG
  ********************************************/
 struct utgate_log_head {
 	int version;
@@ -61,10 +62,12 @@ struct utgate_log_head {
 };
 
 /*********************************************
-        variables for LOG IRQ handler
+	variables for LOG IRQ handler
  *********************************************/
-static struct tlog_struct tlog_ent[TLOG_MAX_CNT];
-extern unsigned long tlog_message_buff;
-extern struct workqueue_struct *secure_wq;
-extern int irq_call_flag;
-extern struct semaphore smc_lock;
+
+irqreturn_t tlog_handler(void);
+long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
+long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
+void init_tlog_entry(void);
+
+#endif /* end of TLOG_H */
