@@ -227,6 +227,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		/* rd_rdy don't clear and wait for ESD & Read LCM will clear the bit. */
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+		/* When enable dualdisplay, DSI1 sleepout done don't clear and wait for polling will clear the bit. */
+		if (module == DISP_MODULE_DSI1)
+			reg_temp_val = reg_temp_val & 0xffbf;
+#endif
 		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
 
 		if (reg_val & (1 << 0))

@@ -1045,7 +1045,7 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 					break;
 				}
 
-				if (cnt++ > 1000000000) {
+				if (cnt++ > 10000) {
 					DISPERR("polling dsi%d sleepout timeout\n", i);
 					DSI_DumpRegistersWithAee(module, 1, __func__, __LINE__);
 					DSI_Reset(module, NULL);
