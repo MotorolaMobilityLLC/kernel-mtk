@@ -713,7 +713,7 @@ static void _pwrap_InitStaUpd(void)
 #ifndef DUAL_PMICS
 	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xf5);
 #else
-	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0x19f);
+	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0x19C);
 #endif
 #if 0
 	/* CRC */
@@ -914,7 +914,7 @@ static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 
 #ifdef DUAL_PMICS
 	if (dual_si_sample_settings == 1) {
-		si_sample_ctrl = si_sample_ctrl | 0x400;
+		si_sample_ctrl = si_sample_ctrl | 0x40000;
 		/* TINFO = "[DrvPWRAP_InitSiStrobe] SI Strobe Calibration For PMIC 1............" */
 		/* TINFO = "[DrvPWRAP_InitSiStrobe] Scan For The First Valid Sampling Clock Edge." */
 		found = 0;
@@ -1012,10 +1012,12 @@ static int __pwrap_InitSPISLV(void)
 	pwrap_write_nochk(PMIC_TOP_CKHWEN_CON0_SET_ADDR, 0x80); /* turn on SPI slave DCM */
 	pwrap_write_nochk(MT6335_SMT_CON1, 0xf); /* turn on IO SMT function to improve noise immunity */
 	pwrap_write_nochk(PMIC_GPIO_PULLEN0_CLR_ADDR, 0x3c0); /* turn off IO pull function for power saving */
+	pwrap_write_nochk(MT6335_RG_SPI_CON0, 0x1); /* turn off IO pull function for power saving */
 #ifdef DUAL_PMICS
 	pwrap_write_nochk(EXT_FILTER_CON0, 0xf); /* turn on IO filter function */
 	pwrap_write_nochk(EXT_TOP_CKHWEN_CON0_SET, 0x80); /* turn on SPI slave DCM */
 	pwrap_write_nochk(EXT_SMT_CON1, 0xf); /* turn on IO SMT function to improve noise immunity */
+	pwrap_write_nochk(EXT_RG_SPI_CON, 0x1); /* turn off IO pull function for power saving */
 #endif
 
 	return 0;
@@ -1119,7 +1121,7 @@ static int _pwrap_wacs2_write_test(int pmic_no)
 	if (pmic_no == 0) {
 		pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0xa55a);
 		pwrap_read_nochk(PMIC_DEW_WRITE_TEST_ADDR, &rdata);
-		if (rdata != DEFAULT_VALUE_READ_TEST) {
+		if (rdata != 0xa55a) {
 			PWRAPERR("Error: Write Test Failed. DEW_WRITE_TEST rdata = %x, exp = 0xa55a\n", rdata);
 			return E_PWR_WRITE_TEST_FAIL;
 		}

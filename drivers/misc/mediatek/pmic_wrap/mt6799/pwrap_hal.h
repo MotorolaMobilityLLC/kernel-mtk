@@ -49,7 +49,7 @@
 #define PMIC_WRAP_NO_PMIC
 #else
 #undef PMIC_WRAP_NO_PMIC
-#define PWRAP_TIMEOUT
+/* #define PWRAP_TIMEOUT */
 #endif
 #else
 #undef PMIC_WRAP_NO_PMIC
@@ -112,28 +112,33 @@ extern signed int pwrap_init(void);
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
 #define PWRAPLOG(fmt, arg...)   print(PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
-#define PWRAPFUC(fmt, arg...)   print(PWRAPTAG "%s\n", __func__)
+#else
+#define PWRAPFUC(fmt, arg...)
 #define PWRAPLOG(fmt, arg...)
+#endif /* end of #ifdef PMIC_WRAP_DEBUG */
 #define PWRAPERR(fmt, arg...)   print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_LK)
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
 #define PWRAPLOG(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
-#define PWRAPFUC(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "%s\n", __func__)
+#else
+#define PWRAPFUC(fmt, arg...)
 #define PWRAPLOG(fmt, arg...)
+#endif /* end of #ifdef PMIC_WRAP_DEBUG */
 #define PWRAPERR(fmt, arg...)   dprintf(CRITICAL, PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_KERNEL)
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPDEB(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d," fmt, raw_smp_processor_id(), ##arg)
-#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
-#endif
 #define PWRAPLOG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
+#define PWRAPFUC(fmt, arg...)   pr_debug(PWRAPTAG "cpuid=%d,%s\n", raw_smp_processor_id(), __func__)
 #define PWRAPREG(fmt, arg...)   pr_debug(PWRAPTAG fmt, ##arg)
+#else
+#define PWRAPDEB(fmt, arg...)
+#define PWRAPLOG(fmt, arg...)
+#define PWRAPFUC(fmt, arg...)
+#define PWRAPREG(fmt, arg...)
+#endif /* end of #ifdef PMIC_WRAP_DEBUG */
+#define PWRAPERR(fmt, arg...)   pr_err(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_SCP)
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPFUC(fmt, arg...)   PRINTF_D(PWRAPTAG "%s\n", __func__)
@@ -141,16 +146,16 @@ extern signed int pwrap_init(void);
 #else
 #define PWRAPFUC(fmt, arg...)   /*PRINTF_D(PWRAPTAG "%s\n", __FUNCTION__)*/
 #define PWRAPLOG(fmt, arg...)   /*PRINTF_D(PWRAPTAG fmt, ##arg)*/
-#endif
+#endif /* end of #ifdef PMIC_WRAP_DEBUG */
 #define PWRAPERR(fmt, arg...)   PRINTF_E(PWRAPTAG "ERROR, line=%d " fmt, __LINE__, ##arg)
 #elif (PMIC_WRAP_CTP)
 #ifdef PMIC_WRAP_DEBUG
 #define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
 #define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
-#define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#endif
+#else
 #define PWRAPFUC(fmt, arg...)   dbg_print(PWRAPTAG "%s\n", __func__)
 #define PWRAPLOG(fmt, arg...)   dbg_print(PWRAPTAG fmt, ##arg)
+#endif /* end of #ifdef PMIC_WRAP_DEBUG */
 #define PWRAPERR(fmt, arg...)   dbg_print(PWRAPTAG "ERROR,line=%d " fmt, __LINE__, ##arg)
 #else
 ### Compile error, check SW ENV define
