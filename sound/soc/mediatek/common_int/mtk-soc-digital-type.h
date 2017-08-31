@@ -164,6 +164,11 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_NUM_OF_IO_BLOCK
 } Soc_Aud_AFE_IO_Block;
 
+enum audio_usage_id {
+	AUDIO_USAGE_PCM_CAPTURE,
+	AUDIO_USAGE_SCP_SPK_IV_DATA,
+};
+
 typedef enum {
 	Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT,
 	Soc_Aud_MemIF_Direction_DIRECTION_INPUT
