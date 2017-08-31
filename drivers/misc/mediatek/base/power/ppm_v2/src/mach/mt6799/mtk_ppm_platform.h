@@ -21,8 +21,7 @@ extern "C" {
 
 #include "mach/mtk_ppm_api.h"
 #include "mach/mtk_cpufreq_api.h"
-/* TODO: uncomment this */
-/* #include "mtk_ocp.h" */
+#include "mtk_ocp.h"
 
 
 /*==============================================================*/
@@ -36,12 +35,6 @@ extern "C" {
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
-
-/* TODO: remove these */
-#define OCP_FEATURE_ENABLED	(0)
-#define DISABLE_BATTERY_PERCENT_PROTECT
-#define DISABLE_BATTERY_OC_PROTECT
-#define DISABLE_LOW_BATTERY_PROTECT
 
 #if OCP_FEATURE_ENABLED
 #define PPM_HW_OCP_SUPPORT		(1)
@@ -103,7 +96,6 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 /* DLPT mode */
 #define DLPT_MAX_REAL_POWER_FY	(12504)
 #define DLPT_MAX_REAL_POWER_SB	(18381)
-#define DLPT_MAX_REAL_POWER_MB	(12504)	/* TBD */
 
 /* other policy settings */
 #define	LCMOFF_MIN_FREQ		(598000)

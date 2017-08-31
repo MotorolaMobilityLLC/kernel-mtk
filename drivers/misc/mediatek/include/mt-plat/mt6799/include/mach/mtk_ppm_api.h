@@ -52,7 +52,7 @@ enum ppm_cluster_lkg {
 	CLUSTER_LL_LKG = 0,
 	CLUSTER_L_LKG,
 	CLUSTER_B_LKG,
-	TOTAL_LKG,
+	TOTAL_CLUSTER_LKG,
 };
 
 /*==============================================================*/

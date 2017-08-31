@@ -24,6 +24,9 @@
 #include "mtk_ppm_internal.h"
 #include "mtk_static_power.h"
 #include "mtk_unified_power.h"
+#ifdef CONFIG_THERMAL
+#include "mach/mtk_thermal.h"
+#endif
 
 
 static void ppm_get_cluster_status(struct ppm_cluster_status *cl_status)
@@ -107,6 +110,53 @@ static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
 static struct notifier_block __refdata ppm_cpu_hotplug_notifier = {
 	.notifier_call = ppm_cpu_hotplug_callback,
 };
+
+#ifdef CONFIG_THERMAL
+static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
+{
+	unsigned int temp = 85;
+
+	switch (cluster) {
+	case PPM_CLUSTER_LL:
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
+		break;
+	case PPM_CLUSTER_L:
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
+		break;
+	case PPM_CLUSTER_B:
+		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
+		break;
+	default:
+		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
+		break;
+	}
+
+	return temp;
+}
+#endif
+
+static int ppm_get_spower_devid(enum ppm_cluster cluster)
+{
+	int devid = -1;
+
+	switch (cluster) {
+	case PPM_CLUSTER_LL:
+		devid = MTK_SPOWER_CPULL;
+		break;
+	case PPM_CLUSTER_L:
+		devid = MTK_SPOWER_CPUL;
+		break;
+	case PPM_CLUSTER_B:
+		devid = MTK_SPOWER_CPUBIG;
+		break;
+	default:
+		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);
+		break;
+	}
+
+	return devid;
+}
+
 
 int ppm_platform_init(void)
 {
@@ -366,7 +416,7 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 			now = ktime_get();
 #ifdef CONFIG_MTK_UNIFY_POWER
 			dynamic = upower_get_power(i, opp, UPOWER_DYN) / 1000;
-			lkg = mt_ppm_get_leakage_mw(i + 1) / get_cluster_max_cpu_core(i);
+			lkg = mt_ppm_get_leakage_mw((enum ppm_cluster_lkg)i);
 			total = ((((dynamic * 100 + (percentage - 1)) / percentage) + lkg) * core)
 				+ ((upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
 				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG)) / 1000);
@@ -397,15 +447,13 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 
 unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 {
-#if 1
-	return 0;
-#else
-	int temp, dev_id, i;
+	int temp, dev_id, volt;
 	unsigned int mw = 0;
 
 	/* read total leakage */
-	if (cluster >= TOTAL_LKG) {
+	if (cluster >= TOTAL_CLUSTER_LKG) {
 		struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
+		int i;
 
 		ppm_get_cluster_status(cl_status);
 
@@ -413,90 +461,30 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 			if (!cl_status[i].core_num)
 				continue;
 #ifdef CONFIG_THERMAL
-			switch (i) {
-			case CLUSTER_LL_LKG:
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-				dev_id = MT_SPOWER_CPULL;
-				break;
-			case CLUSTER_L_LKG:
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-				dev_id = MT_SPOWER_CPUL;
-				break;
-			case CLUSTER_B_LKG:
-				temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-				/* TODO: fix it */
-				dev_id = MT_SPOWER_CPUL;
-				break;
-			default:
-				ppm_err("@%s: Invalid cluster %d\n", __func__, cluster);
-				return 0;
-			}
+			temp = ppm_get_cpu_temp((enum ppm_cluster)i);
 #else
 			temp = 85;
-
-			switch (i) {
-			case CLUSTER_LL_LKG:
-				dev_id = MT_SPOWER_CPULL;
-				break;
-			case CLUSTER_L_LKG:
-				dev_id = MT_SPOWER_CPUL;
-				break;
-			case CLUSTER_B_LKG:
-				/* TODO: fix it */
-				dev_id = MT_SPOWER_CPUL;
-				break;
-			default:
-				ppm_err("@%s: Invalid cluster %d\n", __func__, cluster);
-				return 0;
-			}
 #endif
-			mw += mt_spower_get_leakage(dev_id,
-				mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)i) / 100, temp);
+			volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)i) / 100;
+			dev_id = ppm_get_spower_devid((enum ppm_cluster)i);
+			if (dev_id < 0)
+				return 0;
+
+			mw += mt_spower_get_leakage(dev_id, volt, temp);
 		}
 	} else {
 #ifdef CONFIG_THERMAL
-		switch (cluster) {
-		case CLUSTER_LL_LKG:
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-			dev_id = MT_SPOWER_CPULL;
-			break;
-		case CLUSTER_L_LKG:
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-			dev_id = MT_SPOWER_CPUL;
-			break;
-		case CLUSTER_B_LKG:
-			temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-			/* TODO: fix it */
-			dev_id = MT_SPOWER_CPUL;
-			break;
-		default:
-			ppm_err("@%s: Invalid cluster %d\n", __func__, cluster);
-			return 0;
-		}
+		temp = ppm_get_cpu_temp((enum ppm_cluster)cluster);
 #else
 		temp = 85;
-
-		switch (cluster) {
-		case CLUSTER_LL_LKG:
-			dev_id = MT_SPOWER_CPULL;
-			break;
-		case CLUSTER_L_LKG:
-			dev_id = MT_SPOWER_CPUL;
-			break;
-		case CLUSTER_B_LKG:
-			/* TODO: fix it */
-			dev_id = MT_SPOWER_CPUL;
-			break;
-		default:
-			ppm_err("@%s: Invalid cluster %d\n", __func__, cluster);
-			return 0;
-		}
 #endif
+		volt = mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)cluster) / 100;
+		dev_id = ppm_get_spower_devid((enum ppm_cluster)cluster);
+		if (dev_id < 0)
+			return 0;
 
-		mw = mt_spower_get_leakage(dev_id,
-			mt_cpufreq_get_cur_volt((enum mt_cpu_dvfs_id)cluster) / 100, temp);
+		mw = mt_spower_get_leakage(dev_id, volt, temp);
 	}
 
 	return mw;
-#endif
 }
