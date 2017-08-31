@@ -358,7 +358,8 @@ extern int hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg);
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 extern unsigned int sched_get_nr_heavy_task2(int cluster_id);
 #endif
-
+extern void hps_power_off_vproc2(void);
+extern void hps_power_on_vproc2(void);
 extern int get_avg_heavy_task_threshold(void);
 extern int get_heavy_task_threshold(void);
 extern unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int threshold);
@@ -368,5 +369,6 @@ extern struct cpumask cpu_domain_little_mask;
 extern int sched_get_nr_running_avg(int *avg, int *iowait_avg);
 extern unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq);
 extern unsigned int sched_get_nr_heavy_task(void);
-
+extern void armpll_control(int id, int on);
+extern void mp_enter_suspend(int id, int suspend);
 #endif

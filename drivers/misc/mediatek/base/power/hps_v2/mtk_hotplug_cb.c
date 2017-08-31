@@ -23,8 +23,13 @@
 #include <linux/bug.h>
 #include <asm/cacheflush.h>
 #include <mt-plat/mtk_secure_api.h>
-/*#include <mt_secure_api.h>*/
+#include <mt-plat/mtk_auxadc_intf.h>
 #include <linux/topology.h>
+#include "mtk_hps_internal.h"
+#include "include/pmic_regulator.h"
+#include "mtk_pmic_regulator.h"
+#include "mach/mtk_freqhopping.h"
+#define CPU_BUCK_CTRL	(0)
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
@@ -53,22 +58,62 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	case CPU_UP_PREPARE_FROZEN:
 		if (cpu < cpumask_weight(mtk_cpu_cluster0_mask)) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster0_mask);
-			if (first_cpu == CONFIG_NR_CPUS)
+			if (first_cpu == CONFIG_NR_CPUS) {
+#if CPU_BUCK_CTRL
+				/*1. Turn on ARM PLL*/
+				armpll_control(1, 1);
+				/*2. Non-pause FQHP function*/
+				mt_pause_armpll(FH_PLL0, 0);
+
+				/*3. Switch to HW mode*/
+				mp_enter_suspend(0, 1);
+#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0, 0);
+			}
 		} else if ((cpu >= cpumask_weight(mtk_cpu_cluster0_mask)) &&
 			(cpu < (cpumask_weight(mtk_cpu_cluster0_mask) +
 				  cpumask_weight(mtk_cpu_cluster1_mask)))) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster1_mask);
-			if (first_cpu == CONFIG_NR_CPUS)
+			if (first_cpu == CONFIG_NR_CPUS) {
+#if CPU_BUCK_CTRL
+				if (hps_ctxt.init_state == INIT_STATE_DONE) {
+					/*1. Power ON VSram*/
+					buck_enable(VSRAM_DVFS2, 1);
+
+					/*2. Set the stttle time to 3000us*/
+					mdelay(3);
+
+					/*3. Power ON Vproc2*/
+					hps_power_on_vproc2();
+
+					/*4. Turn on ARM PLL*/
+					armpll_control(2, 1);
+
+					/*5. Non-pause FQHP function*/
+					mt_pause_armpll(FH_PLL1, 0);
+
+					/*6. Switch to HW mode*/
+					mp_enter_suspend(1, 1);
+				}
+#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
+			}
 		} else if ((cpu >= (cpumask_weight(mtk_cpu_cluster0_mask) +
 				cpumask_weight(mtk_cpu_cluster1_mask))) &&
 				(cpu < (cpumask_weight(mtk_cpu_cluster0_mask) +
 				cpumask_weight(mtk_cpu_cluster1_mask) +
 				cpumask_weight(mtk_cpu_cluster2_mask))))  {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster2_mask);
-			if (first_cpu == CONFIG_NR_CPUS)
+			if (first_cpu == CONFIG_NR_CPUS) {
+#if CPU_BUCK_CTRL
+				/*1. Turn on ARM PLL*/
+				armpll_control(3, 1);
+
+				/*2. Non-pause FQHP function*/
+				mt_pause_armpll(FH_PLL2, 0);
+#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
+			}
 		}
 		break;
 
@@ -82,6 +127,28 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			/*pr_info("Start to power off cluster %d\n", cpu/4);*/
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
+#if CPU_BUCK_CTRL
+			switch (cpu/4) {/*Turn off ARM PLL*/
+			case 0:
+				mp_enter_suspend(0, 0);/*1. Switch to SW mode*/
+				mt_pause_armpll(FH_PLL0, 1);/*2. Pause FQHP function*/
+				armpll_control(1, 0);/*3. Turn off ARM PLL*/
+				break;
+			case 1:
+				mp_enter_suspend(1, 0);/*1. Switch to SW mode*/
+				mt_pause_armpll(FH_PLL1, 1);/*2. Pause FQHP function*/
+				armpll_control(2, 0);/*3. Turn off ARM PLL*/
+				hps_power_off_vproc2(); /*4. Power off Vproc2*/
+				buck_enable(VSRAM_DVFS2, 0);/*5. Turn off VSram*/
+				break;
+			case 2:
+				mt_pause_armpll(FH_PLL2, 1);/*1. Pause FQHP function*/
+				armpll_control(3, 0);/*2. Turn off ARM PLL*/
+				break;
+			default:
+				break;
+			}
+#endif
 		}
 		break;
 #endif /* CONFIG_HOTPLUG_CPU */
@@ -112,6 +179,7 @@ static __init int hotplug_cb_init(void)
 	ret = register_cpu_notifier(&cpu_hotplug_nb);
 	if (ret)
 		return ret;
+
 	pr_info("CPU Hotplug Low Power Notification\n");
 
 	return 0;
