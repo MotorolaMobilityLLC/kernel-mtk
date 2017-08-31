@@ -2757,6 +2757,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_TXSKEW_SEL,
 				AUTOK_MSDC0_HS400_TXSKEW);
+#if !defined(FPGA_PLATFORM)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0,
 				PAD_CLK_TXDLY,
 				AUTOK_MSDC0_HS400_CLKTXDLY);
@@ -2787,6 +2788,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE,
 				PAD_DAT7_TX_DLY,
 				AUTOK_MSDC0_HS400_DAT7TXDLY);
+#endif
 		} else if (ios->timing == MMC_TIMING_MMC_HS200) {
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_TXSKEW_SEL,
@@ -2800,6 +2802,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 				MSDC_SET_FIELD(MSDC_IOCON,
 					MSDC_IOCON_DDR50CKD, 0);
 			}
+#if !defined(FPGA_PLATFORM)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_CTL0,
 				PAD_CLK_TXDLY,
 				AUTOK_MSDC0_CLKTXDLY);
@@ -2830,6 +2833,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE,
 				PAD_DAT7_TX_DLY,
 				AUTOK_MSDC0_DAT7TXDLY);
+#endif
 		}
 	} else if (host->id == 1) {
 		MSDC_SET_FIELD(MSDC_IOCON,
