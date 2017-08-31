@@ -373,7 +373,7 @@ void tscpu_thermal_tempADCPNP(int adc, int order)
 	}
 }
 
-static int max_temperature_in_bank(thermal_bank_name bank)
+static int max_temperature_in_bank(enum thermal_bank_name bank)
 {
 	int j = 0;
 	int max_in_bank = 0;
@@ -1493,7 +1493,7 @@ static void thermal_release_all_periodoc_temp_sensing(void)
 	}
 }
 
-void tscpu_thermal_enable_all_periodoc_sensing_point(thermal_bank_name bank_num)
+void tscpu_thermal_enable_all_periodoc_sensing_point(enum thermal_bank_name bank_num)
 {
 
 	switch (tscpu_g_bank[bank_num].ts_number) {
@@ -1789,7 +1789,7 @@ static int ktp_thread(void *arg)
 }
 #endif
 
-int tscpu_get_temp_by_bank(thermal_bank_name ts_bank)
+int tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
 {
 	int bank_T = 0;
 

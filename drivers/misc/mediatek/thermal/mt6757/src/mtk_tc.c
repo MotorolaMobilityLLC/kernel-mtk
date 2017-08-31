@@ -166,7 +166,7 @@ int tscpu_prev_cpu_temp = 0, tscpu_prev_gpu_temp = 0;
 int tscpu_curr_cpu_temp = 0, tscpu_curr_gpu_temp = 0;
 #endif
 
-thermal_bank_name g_currentBank = THERMAL_BANK0;
+enum thermal_bank_name g_currentBank = THERMAL_BANK0;
 
 static int tscpu_curr_max_ts_temp;
 
@@ -175,7 +175,7 @@ static int tscpu_curr_max_ts_temp;
  *=============================================================
  */
 static __s32 temperature_to_raw_room(__u32 ret, ts_e ts_name);
-static void set_tc_trigger_hw_protect(int temperature, int temperature2, thermal_bank_name bank);
+static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum thermal_bank_name bank);
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -255,7 +255,7 @@ int tscpu_thermal_clock_off(void)
 }
 
 /* TODO: FIXME */
-void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_bank)
+void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, enum thermal_bank_name ts_bank)
 {
 	unsigned int temp0, temp1, temp2;
 	struct TS_PTPOD ts_ptpod;
@@ -887,7 +887,7 @@ static void thermal_reset_and_initial(void)
 /**
  *  temperature2 to set the middle threshold for interrupting CPU. -275000 to disable it.
  */
-static void set_tc_trigger_hw_protect(int temperature, int temperature2, thermal_bank_name bank)
+static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum thermal_bank_name bank)
 {
 	int temp = 0;
 	int raw_high;
@@ -929,7 +929,7 @@ static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, ts_e ts_name,
 }
 
 
-void tscpu_thermal_read_bank_temp(thermal_bank_name bank, ts_e type, int order)
+void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, ts_e type, int order)
 {
 
 	tscpu_dprintk("%s bank %d type %d order %d\n", __func__, bank, type, order);
@@ -1072,7 +1072,7 @@ int tscpu_thermal_fast_init(void)
 	return 0;
 }
 
-int tscpu_switch_bank(thermal_bank_name bank)
+int tscpu_switch_bank(enum thermal_bank_name bank)
 {
 	/* tscpu_dprintk( "tscpu_switch_bank =bank=%d\n",bank); */
 

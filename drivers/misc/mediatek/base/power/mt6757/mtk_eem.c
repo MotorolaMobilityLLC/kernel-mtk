@@ -1544,7 +1544,7 @@ static int base_ops_mon_mode(struct eem_det *det)
 {
 	#if (!defined(EARLY_PORTING))
 	struct TS_PTPOD ts_info;
-	thermal_bank_name ts_bank;
+	enum thermal_bank_name ts_bank;
 	#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -1772,7 +1772,7 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 
 static int base_ops_get_temp(struct eem_det *det)
 {
-	thermal_bank_name ts_bank;
+	enum thermal_bank_name ts_bank;
 
 #if 1 /* TODO: FIXME */
 	FUNC_ENTER(FUNC_LV_HELP);

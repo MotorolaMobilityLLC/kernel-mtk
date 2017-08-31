@@ -356,7 +356,7 @@ extern void tscpu_update_tempinfo(void);
 void tscpu_set_GPIO_toggle_for_monitor(void);
 #endif
 extern void tscpu_thermal_tempADCPNP(int adc, int order);
-extern void tscpu_thermal_enable_all_periodoc_sensing_point(thermal_bank_name bank_num);
+extern void tscpu_thermal_enable_all_periodoc_sensing_point(enum thermal_bank_name bank_num);
 extern void tscpu_update_tempinfo(void);
 extern int tscpu_max_temperature(void);
 
@@ -365,8 +365,8 @@ extern int get_io_reg_base(void);
 extern void tscpu_config_all_tc_hw_protect(int temperature, int temperature2);
 extern void tscpu_reset_thermal(void);
 extern void tscpu_thermal_initial_all_bank(void);
-extern int tscpu_switch_bank(thermal_bank_name bank);
-extern void tscpu_thermal_read_bank_temp(thermal_bank_name bank, ts_e type, int order);
+extern int tscpu_switch_bank(enum thermal_bank_name bank);
+extern void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, ts_e type, int order);
 extern void tscpu_thermal_cal_prepare(void);
 extern void tscpu_thermal_cal_prepare_2(U32 ret);
 extern irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id);
