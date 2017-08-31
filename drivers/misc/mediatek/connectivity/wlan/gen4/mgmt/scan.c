@@ -1687,6 +1687,86 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	return prBssDesc;
 }
 
+/* clear all ESS scan result */
+VOID scanInitEssResult(P_ADAPTER_T prAdapter)
+{
+	prAdapter->rWlanInfo.u4ScanResultEssNum = 0;
+	prAdapter->rWlanInfo.u4ScanDbgTimes1 = 0;
+	prAdapter->rWlanInfo.u4ScanDbgTimes2 = 0;
+	prAdapter->rWlanInfo.u4ScanDbgTimes3 = 0;
+	prAdapter->rWlanInfo.u4ScanDbgTimes4 = 0;
+	kalMemZero(prAdapter->rWlanInfo.arScanResultEss, sizeof(prAdapter->rWlanInfo.arScanResultEss));
+}
+/* print all ESS into log system once scan done */
+/* it is useful to log that, otherwise, we have no information to identify if hardware has seen a specific AP, */
+/* if user complained some AP were not found in scan result list */
+VOID scanLogEssResult(P_ADAPTER_T prAdapter)
+{
+#define NUMBER_SSID_PER_LINE 16
+	struct ESS_SCAN_RESULT_T *prEssResult = &prAdapter->rWlanInfo.arScanResultEss[0];
+	UINT_32 u4ResultNum = prAdapter->rWlanInfo.u4ScanResultEssNum;
+	UINT_32 u4Index = 0;
+
+	if (u4ResultNum == 0) {
+		DBGLOG(SCN, INFO, "0 Bss is found, %d, %d, %d, %d\n",
+			prAdapter->rWlanInfo.u4ScanDbgTimes1, prAdapter->rWlanInfo.u4ScanDbgTimes2,
+			prAdapter->rWlanInfo.u4ScanDbgTimes3, prAdapter->rWlanInfo.u4ScanDbgTimes4);
+		return;
+	}
+
+	DBGLOG(SCN, INFO,
+		"Total:%u; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s\n",
+		u4ResultNum,
+		prEssResult[0].aucSSID, prEssResult[1].aucSSID, prEssResult[2].aucSSID,
+		prEssResult[3].aucSSID, prEssResult[4].aucSSID, prEssResult[5].aucSSID,
+		prEssResult[6].aucSSID, prEssResult[7].aucSSID, prEssResult[8].aucSSID,
+		prEssResult[9].aucSSID, prEssResult[10].aucSSID, prEssResult[11].aucSSID,
+		prEssResult[12].aucSSID, prEssResult[13].aucSSID, prEssResult[14].aucSSID,
+		prEssResult[15].aucSSID);
+	if (u4ResultNum <= NUMBER_SSID_PER_LINE)
+		return;
+	u4ResultNum -= NUMBER_SSID_PER_LINE;
+	prEssResult = &prEssResult[NUMBER_SSID_PER_LINE];
+	u4ResultNum = u4ResultNum / NUMBER_SSID_PER_LINE;
+	if ((u4ResultNum % NUMBER_SSID_PER_LINE) != 0)
+		u4ResultNum++;
+	for (; u4Index < u4ResultNum; u4Index++) {
+		struct ESS_SCAN_RESULT_T *prEss = &prEssResult[NUMBER_SSID_PER_LINE*u4Index];
+
+		DBGLOG(SCN, INFO,
+			"%s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s\n",
+			prEss[0].aucSSID,
+			prEss[1].aucSSID, prEss[2].aucSSID, prEss[3].aucSSID,
+			prEss[4].aucSSID, prEss[5].aucSSID, prEss[6].aucSSID,
+			prEss[7].aucSSID, prEss[8].aucSSID, prEss[9].aucSSID,
+			prEss[10].aucSSID, prEss[11].aucSSID, prEss[12].aucSSID,
+			prEss[13].aucSSID, prEss[14].aucSSID, prEss[15].aucSSID);
+	}
+}
+
+/* record all Scanned ESS, only one BSS was saved for each ESS, and AP who is hidden ssid was excluded. */
+/* maximum we only support record 64 ESSes */
+static VOID scanAddEssResult(P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
+{
+	struct ESS_SCAN_RESULT_T *prEssResult = &prAdapter->rWlanInfo.arScanResultEss[0];
+	UINT_32 u4Index = 0;
+
+	if (prBssDesc->fgIsHiddenSSID)
+		return;
+	if (prAdapter->rWlanInfo.u4ScanResultEssNum >= CFG_MAX_NUM_BSS_LIST)
+		return;
+	for (; u4Index < prAdapter->rWlanInfo.u4ScanResultEssNum; u4Index++) {
+		if (EQUAL_SSID(prEssResult[u4Index].aucSSID, (UINT_8)prEssResult[u4Index].u2SSIDLen,
+			prBssDesc->aucSSID, prBssDesc->ucSSIDLen))
+			return;
+	}
+
+	COPY_SSID(prEssResult[u4Index].aucSSID, prEssResult[u4Index].u2SSIDLen,
+		prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+	COPY_MAC_ADDR(prEssResult[u4Index].aucBSSID, prBssDesc->aucBSSID);
+	prAdapter->rWlanInfo.u4ScanResultEssNum++;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Convert the Beacon or ProbeResp Frame in SW_RFB_T to scan result for query
@@ -1729,6 +1809,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 
 	if (prBssDesc->eBSSType == BSS_TYPE_P2P_DEVICE) {
 		/* NOTE(Kevin): Not supported by WZC(TBD) */
+		DBGLOG(SCN, INFO, "Bss Desc type is P2P\n");
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -1764,6 +1845,8 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 	}
 
 	DBGLOG(SCN, TRACE, "ind %s %d %d\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum, prBssDesc->ucRCPI);
+
+	scanAddEssResult(prAdapter, prBssDesc);
 
 	kalIndicateBssInfo(prAdapter->prGlueInfo,
 			   (PUINT_8) prSwRfb->pvHeader,
@@ -1840,6 +1923,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 #ifndef _lint
 		ASSERT(0);
 #endif /* _lint */
+		DBGLOG(SCN, ERROR, "Ignore invalid Beacon Frame\n");
 		return rStatus;
 	}
 #if CFG_SLT_SUPPORT
@@ -1860,6 +1944,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 
 	/* 4 <1> Parse and add into BSS_DESC_T */
 	prBssDesc = scanAddToBssDesc(prAdapter, prSwRfb);
+	prAdapter->rWlanInfo.u4ScanDbgTimes1++;
 
 	if (prBssDesc) {
 
@@ -1928,13 +2013,17 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 			      (prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) -
 			      (UINT_16) (OFFSET_OF(WLAN_BEACON_FRAME_BODY_T, aucInfoElem[0])));
 
+		prAdapter->rWlanInfo.u4ScanDbgTimes2++;
+
 		/* 4 <3> Send SW_RFB_T to HIF when we perform SCAN for HOST */
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
+			prAdapter->rWlanInfo.u4ScanDbgTimes3++;
 			if (prConnSettings->fgIsScanReqIssued) {
 				BOOLEAN fgAddToScanResult;
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);
+				prAdapter->rWlanInfo.u4ScanDbgTimes4++;
 
 				if (fgAddToScanResult == TRUE)
 					rStatus = scanAddScanResult(prAdapter, prBssDesc, prSwRfb);
