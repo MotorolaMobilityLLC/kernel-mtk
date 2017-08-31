@@ -34,6 +34,7 @@
 #include <mt-plat/sync_write.h>
 
 #include <linux/irqchip/mtk-gic-extend.h> /* for aee dump */
+#include <linux/sched.h> /* for aee dump */
 
 /*
  * CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0:
