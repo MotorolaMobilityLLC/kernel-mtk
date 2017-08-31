@@ -2270,6 +2270,8 @@ static unsigned long migrate_lru_pages(unsigned long *nr, enum lru_list lru,
 
 	/* Update nr[lru] to avoid needless shrinking */
 	nr[lru] -= min(nr[lru], nr_to_scan);
+	if (get_nr_swap_pages() == 0)
+		nr[lru] = 0;
 
 	/* Start isolation & migration */
 	spin_lock_irq(&src_zone->lru_lock);
