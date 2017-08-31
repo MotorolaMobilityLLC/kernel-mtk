@@ -3268,11 +3268,36 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	static DEFINE_RATELIMIT_STATE(dmawarn, (180 * HZ), 1);
 #endif
 	gfp_t alloc_mask; /* The gfp_t that was actually used for allocation */
+#ifndef CONFIG_ZONE_MOVABLE_CMA
 	struct alloc_context ac = {
 		.high_zoneidx = gfp_zone(gfp_mask),
 		.nodemask = nodemask,
 		.migratetype = gfpflags_to_migratetype(gfp_mask),
 	};
+#else
+	struct alloc_context ac = {
+		.nodemask = nodemask,
+	};
+
+	/* special case:
+	 *
+	 * __GFP_HIGHMEM | __GFP_MOVABLE | __GFP_CMA =>
+	 *  first  time: DMA
+	 *  second time: MOVABLE -> DMA
+	 * __GFP_HIGHMEM | __GFP_CMA =>
+	 *  first  time: MOVABLE -> DMA
+	 *  second time: MOVABLE -> DMA
+	 */
+	if ((gfp_mask & (GFP_ZONEMASK | __GFP_CMA)) == (__GFP_HIGHMEM | __GFP_CMA)) {
+		gfp_mask |= __GFP_MOVABLE;
+
+		ac.high_zoneidx = gfp_zone(gfp_mask);
+		ac.migratetype = gfpflags_to_migratetype(gfp_mask);
+	} else {
+		ac.high_zoneidx = gfp_zone(gfp_mask & ~__GFP_MOVABLE);
+		ac.migratetype = gfpflags_to_migratetype(gfp_mask);
+	}
+#endif
 
 	gfp_mask &= gfp_allowed_mask;
 
@@ -3291,8 +3316,14 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	if (unlikely(!zonelist->_zonerefs->zone))
 		return NULL;
 
-	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE)
+	if (IS_ENABLED(CONFIG_CMA) && ac.migratetype == MIGRATE_MOVABLE) {
+		if (gfp_mask & __GFP_CMA) {
+			/* Assign high watermakr for __GFP_CMA page allocation */
+			alloc_flags &= ~ALLOC_WMARK_MASK;
+			alloc_flags |= ALLOC_WMARK_HIGH;
+		}
 		alloc_flags |= ALLOC_CMA;
+	}
 
 retry_cpuset:
 	cpuset_mems_cookie = read_mems_allowed_begin();
@@ -3322,6 +3353,8 @@ retry_cpuset:
 		 */
 		alloc_mask = memalloc_noio_flags(gfp_mask);
 		ac.spread_dirty_pages = false;
+		/* reassign gfp_flags */
+		ac.high_zoneidx = gfp_zone(gfp_mask);
 
 		page = __alloc_pages_slowpath(alloc_mask, order, &ac);
 	}

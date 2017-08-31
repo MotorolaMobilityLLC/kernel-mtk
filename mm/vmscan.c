@@ -2169,7 +2169,7 @@ static struct page *alloc_movable_target(struct page *page, unsigned long privat
 {
 	struct page *newpage;
 
-	newpage = alloc_page(__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_NORETRY);
+	newpage = alloc_page(__GFP_HIGHMEM | __GFP_CMA | __GFP_NORETRY);
 
 	if (newpage != NULL && zone_idx(page_zone(newpage)) != ZONE_MOVABLE) {
 		if (put_page_testzero(newpage))
