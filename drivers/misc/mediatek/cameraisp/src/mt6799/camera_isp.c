@@ -8436,6 +8436,11 @@ EXIT:
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
 		LOG_DBG("isp open G_u4EnableClockCount: %d\n", G_u4EnableClockCount);
+		LOG_DBG("ISP_MCLK_EN Open 0x%x, 0x%x, 0x%x, 0x%x",
+		ISP_RD32(ISP_SENINF0_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF1_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF2_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 	}
 
 
@@ -8670,7 +8675,11 @@ static MINT32 ISP_release(
 	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x80000001);
 	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x80000001);
 	ISP_WR32(ISP_SENINF3_BASE + 0x0600, 0x80000001);
-	LOG_DBG("ISP_MCLK_EN Release");
+	LOG_DBG("ISP_MCLK_EN Release 0x%x, 0x%x, 0x%x, 0x%x",
+		ISP_RD32(ISP_SENINF0_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF1_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF2_BASE + 0x0600),
+		ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 
 EXIT:
 
@@ -10973,7 +10982,7 @@ void ISP_MCLK1_EN(BOOL En)
 		}
 	}
 	temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
-	LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d)", temp, mMclk1User);
+	LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d) En(%d)", temp, mMclk1User, En);
 
 }
 EXPORT_SYMBOL(ISP_MCLK1_EN);
@@ -11003,7 +11012,7 @@ void ISP_MCLK2_EN(BOOL En)
 			ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
 		}
 	}
-	LOG_INF("ISP_MCLK2_EN(%x), mMclk2User(%d)", temp, mMclk2User);
+	LOG_INF("ISP_MCLK2_EN(0x%x), mMclk2User(%d) En(%d)", temp, mMclk2User, En);
 }
 EXPORT_SYMBOL(ISP_MCLK2_EN);
 
@@ -11032,8 +11041,7 @@ void ISP_MCLK3_EN(BOOL En)
 			ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
 		}
 	}
-	LOG_INF("ISP_MCLK3_EN(%x), mMclk3User(%d)", temp, mMclk3User);
-
+	LOG_INF("ISP_MCLK3_EN(%x), mMclk3User(%d) En(%d)", temp, mMclk3User, En);
 }
 EXPORT_SYMBOL(ISP_MCLK3_EN);
 
@@ -11062,7 +11070,7 @@ void ISP_MCLK4_EN(BOOL En)
 			ISP_WR32(ISP_SENINF3_BASE + 0x0600, temp);
 		}
 	}
-	LOG_INF("ISP_MCLK4_EN(%x), mMclk4ser(%d)", temp, mMclk4User);
+	LOG_INF("ISP_MCLK4_EN(%x), mMclk4ser(%d) En(%d)", temp, mMclk4User, En);
 
 }
 EXPORT_SYMBOL(ISP_MCLK4_EN);
