@@ -608,14 +608,37 @@ int mt_ppm_main(void)
 	/* reset Core_limit if state changed */
 	if (prev_state != next_state) {
 		struct ppm_power_state_data *state_info = ppm_get_power_state_info();
+		struct ppm_cluster_status cluster_status[NR_PPM_CLUSTERS];
+		int cluster_core_limit[NR_PPM_CLUSTERS];
 
 		for (i = 0; i < ppm_main_info.cluster_num; i++) {
 			if (next_state >= PPM_POWER_STATE_NONE)
-				ppm_cobra_update_core_limit(i, get_cluster_max_cpu_core(i));
+				cluster_core_limit[i] = get_cluster_max_cpu_core(i);
 			else
-				ppm_cobra_update_core_limit(i,
-					state_info[next_state].cluster_limit->state_limit[i].max_cpu_core);
+				cluster_core_limit[i] =
+					state_info[next_state].cluster_limit->state_limit[i].max_cpu_core;
+
+			cluster_status[i].core_num = cluster_core_limit[i];
+			cluster_status[i].freq_idx = get_cluster_min_cpufreq_idx(i);
 		}
+
+		/* core limit check */
+		i = NR_PPM_CLUSTERS - 1;
+		while (ppm_find_pwr_idx(cluster_status) > ppm_main_info.min_power_budget) {
+			/* new limit is above current power budget, we must decrease core_limit */
+			if (cluster_core_limit[i] == 0)
+				i--;
+
+			if (unlikely(i < 0))
+				break;
+
+			cluster_core_limit[i]--;
+			cluster_status[i].core_num--;
+		}
+
+		/* update core limit to COBRA */
+		for (i = 0; i < ppm_main_info.cluster_num; i++)
+			ppm_cobra_update_core_limit(i, cluster_core_limit[i]);
 	}
 #endif
 
@@ -704,11 +727,11 @@ int mt_ppm_main(void)
 		aee_rr_rec_ppm_policy_mask(policy_mask);
 #endif
 
-#ifdef PPM_PMCU_SUPPORT
+#ifdef PPM_SSPM_SUPPORT
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_ppm_step(5);
 #endif
-		/* update limit to PMCU first */
+		/* update limit to SSPM first */
 		ppm_ipi_update_limit(*c_req);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_ppm_step(6);

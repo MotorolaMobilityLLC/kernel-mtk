@@ -144,10 +144,14 @@ static ssize_t ppm_ptpod_test_proc_write(struct file *file, const char __user *b
 		return -EINVAL;
 
 	if (!kstrtouint(buf, 10, &enabled)) {
+#ifdef PPM_SSPM_SUPPORT
+		ppm_ipi_ptpod_test(enabled);
+#else
 		if (enabled)
 			mt_ppm_ptpod_policy_activate();
 		else
 			mt_ppm_ptpod_policy_deactivate();
+#endif
 	} else
 		ppm_err("@%s: Invalid input!\n", __func__);
 

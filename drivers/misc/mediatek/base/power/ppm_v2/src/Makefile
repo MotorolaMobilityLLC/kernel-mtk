@@ -28,7 +28,7 @@ obj-y += mtk_ppm_api.o
 # for profiling
 obj-y += mtk_ppm_profile.o
 
-# for IPI to PMCU
+# for IPI to SSPM
 obj-y += mtk_ppm_ipi.o
 
 # policies
