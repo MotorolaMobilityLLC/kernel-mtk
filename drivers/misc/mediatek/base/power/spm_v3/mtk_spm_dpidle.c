@@ -17,6 +17,9 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
+#ifdef CONFIG_MTK_SPM_IN_ATF
+#include <mt-plat/mtk_secure_api.h>
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -29,11 +32,11 @@
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mtk_spm_idle.h>
-#include <mt_cpuidle.h>
+#include <mtk_cpuidle.h>
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
-#include <mach/mt_gpt.h>
+#include <mach/mtk_gpt.h>
 #include <mt-plat/mtk_ccci_common.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/upmu_common.h>
@@ -42,7 +45,7 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 
-#include <mt-plat/mt_io.h>
+#include <mt-plat/mtk_io.h>
 
 /*
  * only for internal debug
@@ -87,6 +90,8 @@ enum spm_deepidle_step {
 	SPM_DEEPIDLE_LEAVE = 0x000007ff,
 	SPM_DEEPIDLE_SLEEP_DPIDLE = 0x80000000
 };
+
+static int spm_dormant_sta;
 
 static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 {
@@ -529,6 +534,7 @@ static struct pcm_desc dpidle_pcm = {
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_DPIDLE,
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 0,
 #endif
@@ -723,6 +729,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 };
 
 struct spm_lp_scen __spm_dpidle = {
@@ -735,21 +742,8 @@ struct spm_lp_scen __spm_dpidle = {
 static unsigned int dpidle_log_discard_cnt;
 static unsigned int dpidle_log_print_prev_time;
 
-#undef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
-{
-	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		/* FIXME: */
-		/* if (mt_cpu_dormant(CPU_DPIDLE_MODE) < 0) */
-			/* BUG(); */
-	} else {
-		wfi_with_sync();
-	}
-}
-
-static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
-		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -757,38 +751,78 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
 	spm_d.u.suspend.univpll_status = univpll_is_used();
+
 	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
-	if (ret < 0) {
+	if (ret < 0)
 		spm_crit2("ret %d", ret);
-		/* BUG(); */
-	}
 }
 
-static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
+static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
 {
 	int ret;
 	struct spm_data spm_d;
 
+	__spm_set_pcm_wdt(0);
+
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	spm_d.u.suspend.sleep_dpidle = sleep_dpidle;
+
 	ret = spm_to_sspm_command(SPM_DPIDLE_LEAVE, &spm_d);
-	if (ret < 0) {
+	if (ret < 0)
 		spm_crit2("ret %d", ret);
-		/* BUG(); */
-	}
+}
+#else
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle)
+{
 }
 
-#else
+static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
+{
+}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
+#if defined(CONFIG_MTK_SPM_IN_ATF)
+static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
+{
+	if (is_cpu_pdn(pwrctrl->pcm_flags))
+		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
+	else
+		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_DPIDLE_MODE);
+
+	if (spm_dormant_sta < 0)
+		pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
+}
+
+static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
+		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
+{
+	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle);
+
+	spm_dpidle_pre_process();
+
+	/* TODO */
+	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
+}
+
+static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
+{
+	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle);
+
+	spm_dpidle_post_process();
+}
+
+#else /* SPM config in kernel */
 
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1, v2;
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		/* FIXME: */
-		/* if (mt_cpu_dormant(CPU_DPIDLE_MODE) < 0) */
-			/* BUG(); */
+		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
+		if (spm_dormant_sta < 0)
+			pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 	} else {
+		spm_dormant_sta = -1;
 		/* backup MPx_AXI_CONFIG */
 		v0 = reg_read(MP0_AXI_CONFIG);
 		v1 = reg_read(MP1_AXI_CONFIG);
@@ -797,7 +831,8 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		/* disable snoop function */
 		spm_write(MP0_AXI_CONFIG, v0 | ACINACTM);
 		spm_write(MP1_AXI_CONFIG, v1 | ACINACTM);
-		spm_write(MP2_AXI_CONFIG, v2 | (ACINACTM + 1));
+		spm_write(CPUCFG, 0x1);
+		spm_write(MP2_AXI_CONFIG, v2 | (MP2_ACINACTM));
 
 		wfi_with_sync();
 
@@ -821,10 +856,7 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 	__spm_init_event_vector(pcmdesc);
 
-	/* TODO: modify it according to SPM scenario switch flow */
-#if 0
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-#endif
 
 	__spm_set_power_control(pwrctrl);
 
@@ -835,6 +867,8 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 		__spm_set_pcm_wdt(1);
 #endif
 
+	spm_dpidle_notify_sspm_before_wfi();
+
 	spm_dpidle_pre_process();
 
 	__spm_kick_pcm_to_run(pwrctrl);
@@ -842,6 +876,8 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
 {
+	spm_dpidle_notify_sspm_after_wfi(sleep_dpidle);
+
 	spm_dpidle_post_process();
 
 #if SPM_PCMWDT_EN
@@ -852,8 +888,7 @@ static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
 	__spm_clean_after_wakeup();
 }
 
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 /*
  * wakesrc: WAKE_SRC_XXX
@@ -953,16 +988,16 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
+	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	} else {
+	else
 		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		/* BUG(); */
-	}
 #else
 	pcmdesc = __spm_dpidle.pcmdesc;
 #endif
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
@@ -1081,16 +1116,16 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
+	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	} else {
+	else
 		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		/* BUG(); */
-	}
 #else
 	pcmdesc = __spm_dpidle.pcmdesc;
 #endif
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	/* backup original dpidle setting */
@@ -1108,7 +1143,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	pwrctrl->timer_val = sec * 32768;
 
 	pwrctrl->wake_src = spm_get_sleep_wakesrc();
-	pwrctrl->wake_src |= WAKE_SRC_R12_SYS_CIRQ_IRQ_B;
+	/* TODO: check if needed */
+	/* pwrctrl->wake_src |= WAKE_SRC_R12_SYS_CIRQ_IRQ_B; */
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
