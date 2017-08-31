@@ -513,6 +513,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		prAdapter->fgWiFiInSleepyState = FALSE;
 		prAdapter->rAcpiState = ACPI_STATE_D0;
 
+#if 0
 		/* Online scan option */
 		if (prRegInfo->fgDisOnlineScan == 0)
 			prAdapter->fgEnOnlineScan = TRUE;
@@ -522,19 +523,32 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 		/* Beacon lost detection option */
 		if (prRegInfo->fgDisBcnLostDetection != 0)
 			prAdapter->fgDisBcnLostDetection = TRUE;
+#else
+		if (prAdapter->rWifiVar.fgDisOnlineScan == 0)
+			prAdapter->fgEnOnlineScan = TRUE;
+		else
+			prAdapter->fgEnOnlineScan = FALSE;
+
+		/* Beacon lost detection option */
+		if (prAdapter->rWifiVar.fgDisBcnLostDetection != 0)
+			prAdapter->fgDisBcnLostDetection = TRUE;
+#endif
 
 		/* Load compile time constant */
 		prAdapter->rWlanInfo.u2BeaconPeriod = CFG_INIT_ADHOC_BEACON_INTERVAL;
 		prAdapter->rWlanInfo.u2AtimWindow = CFG_INIT_ADHOC_ATIM_WINDOW;
 
 #if 1				/* set PM parameters */
-		prAdapter->fgEnArpFilter = prRegInfo->fgEnArpFilter;
 		prAdapter->u4PsCurrentMeasureEn = prRegInfo->u4PsCurrentMeasureEn;
-
+#if 0
+		prAdapter->fgEnArpFilter = prRegInfo->fgEnArpFilter;
 		prAdapter->u4UapsdAcBmp = prRegInfo->u4UapsdAcBmp;
-
 		prAdapter->u4MaxSpLen = prRegInfo->u4MaxSpLen;
-
+#else
+		prAdapter->fgEnArpFilter = prAdapter->rWifiVar.fgEnArpFilter;
+		prAdapter->u4UapsdAcBmp = prAdapter->rWifiVar.u4UapsdAcBmp;
+		prAdapter->u4MaxSpLen = prAdapter->rWifiVar.u4MaxSpLen;
+#endif
 		DBGLOG(INIT, TRACE, "[1] fgEnArpFilter:0x%x, u4UapsdAcBmp:0x%x, u4MaxSpLen:0x%x",
 		       prAdapter->fgEnArpFilter, prAdapter->u4UapsdAcBmp, prAdapter->u4MaxSpLen);
 
@@ -1264,6 +1278,8 @@ WLAN_STATUS wlanTxCmdMthread(IN P_ADAPTER_T prAdapter)
 		/* DBGLOG(INIT, INFO,
 		 * ("==> TX CMD QID: %d (Q:%d)\n", prCmdInfo->ucCID, prTempCmdQue->u4NumElem));
 		 */
+
+		GLUE_DEC_REF_CNT(prAdapter->prGlueInfo->i4TxPendingCmdNum);
 		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
 	}
 
@@ -5459,7 +5475,8 @@ UINT_32 wlanGetTxPendingFrameCount(IN P_ADAPTER_T prAdapter)
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
 
-	u4Num = kalGetTxPendingFrameCount(prAdapter->prGlueInfo) + (UINT_32) (prTxCtrl->i4PendingFwdFrameCount);
+	u4Num = kalGetTxPendingFrameCount(prAdapter->prGlueInfo) +
+		(UINT_32) GLUE_GET_REF_CNT(prTxCtrl->i4PendingFwdFrameCount);
 
 	return u4Num;
 }
@@ -6743,6 +6760,15 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 		wlanCfgGetUint32(prAdapter, "WakeLockThreadTO", WAKE_LOCK_THREAD_WAKEUP_TIMEOUT);
 
 	prWifiVar->ucSmartRTS = (UINT_8) wlanCfgGetUint32(prAdapter, "SmartRTS", 0);
+#if 1
+	/* add more cfg from RegInfo */
+	prWifiVar->u4UapsdAcBmp = (UINT_32) wlanCfgGetUint32(prAdapter, "UapsdAcBmp", 0);
+	prWifiVar->u4MaxSpLen = (UINT_32) wlanCfgGetUint32(prAdapter, "MaxSpLen", 0);
+	prWifiVar->fgDisOnlineScan = (UINT_32) wlanCfgGetUint32(prAdapter, "DisOnlineScan", 0);
+	prWifiVar->fgDisBcnLostDetection = (UINT_32) wlanCfgGetUint32(prAdapter, "DisBcnLostDetection", 0);
+	prWifiVar->fgDisRoaming = (UINT_32) wlanCfgGetUint32(prAdapter, "DisRoaming", 0);
+	prWifiVar->fgEnArpFilter = (UINT_32) wlanCfgGetUint32(prAdapter, "EnArpFilter", FEATURE_ENABLED);
+#endif
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
@@ -8510,15 +8536,25 @@ wlanGetStaAddrByWlanIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucIndex)
 }
 
 VOID
-wlanNotifyFwSuspend(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgSuspend)
+wlanNotifyFwSuspend(P_GLUE_INFO_T prGlueInfo, struct net_device *prDev, BOOLEAN fgSuspend)
 {
 	WLAN_STATUS rStatus;
 	UINT_32 u4SetInfoLen;
+	P_NETDEV_PRIVATE_GLUE_INFO prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) NULL;
+	CMD_SUSPEND_MODE_SETTING_T rSuspendCmd;
+
+	prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prDev);
+
+	if (prNetDevPrivate->prGlueInfo != prGlueInfo)
+		DBGLOG(REQ, WARN, "%s: unexpected prGlueInfo(0x%p)!\n", __func__, prNetDevPrivate->prGlueInfo);
+
+	rSuspendCmd.ucBssIndex = prNetDevPrivate->ucBssIdx;
+	rSuspendCmd.ucEnableSuspendMode = fgSuspend;
 
 	rStatus = kalIoctl(prGlueInfo,
 				wlanoidNotifyFwSuspend,
-				(PVOID)&fgSuspend,
-				sizeof(fgSuspend),
+				(PVOID)&rSuspendCmd,
+				sizeof(rSuspendCmd),
 				FALSE,
 				FALSE,
 				TRUE,

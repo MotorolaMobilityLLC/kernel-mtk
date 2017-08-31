@@ -419,6 +419,7 @@ struct _GLUE_INFO_T {
 	INT_32 ai4TxPendingFrameNumPerQueue[HW_BSSID_NUM][CFG_MAX_TXQ_NUM];
 	INT_32 i4TxPendingFrameNum;
 	INT_32 i4TxPendingSecurityFrameNum;
+	INT_32 i4TxPendingCmdNum;
 
 	/* Tx: for NetDev to BSS index mapping */
 	NET_INTERFACE_INFO_T arNetInterfaceInfo[HW_BSSID_NUM];

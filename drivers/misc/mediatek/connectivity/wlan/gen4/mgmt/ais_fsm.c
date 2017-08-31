@@ -194,8 +194,15 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 	/* Features */
 	prConnSettings->fgIsEnableRoaming = FALSE;
 #if CFG_SUPPORT_ROAMING
+#if 0
 	if (prRegInfo)
 		prConnSettings->fgIsEnableRoaming = ((prRegInfo->fgDisRoaming > 0) ? (FALSE) : (TRUE));
+#else
+	if (prAdapter->rWifiVar.fgDisRoaming)
+		prConnSettings->fgIsEnableRoaming = FALSE;
+	else
+		prConnSettings->fgIsEnableRoaming = TRUE;
+#endif
 #endif /* CFG_SUPPORT_ROAMING */
 
 	prConnSettings->fgIsAdHocQoSEnable = FALSE;

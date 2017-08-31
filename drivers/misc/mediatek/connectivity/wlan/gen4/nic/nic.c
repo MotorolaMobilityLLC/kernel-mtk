@@ -1376,7 +1376,7 @@ WLAN_STATUS nicDeactivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 {
-	WLAN_STATUS u4Status;
+	WLAN_STATUS u4Status = WLAN_STATUS_NOT_ACCEPTED;
 	P_BSS_INFO_T prBssInfo;
 	CMD_SET_BSS_INFO rCmdSetBssInfo;
 	P_WIFI_VAR_T prWifiVar = &prAdapter->rWifiVar;
@@ -1385,6 +1385,12 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	ASSERT(ucBssIndex <= MAX_BSS_INDEX);
 
 	prBssInfo = prAdapter->aprBssInfo[ucBssIndex];
+
+	if ((prBssInfo->eDBDCBand != ENUM_BAND_0) && (prBssInfo->eDBDCBand != ENUM_BAND_1)) {
+		DBGLOG(BSS, ERROR, "Wrong eDBDCBand - [%u]\n", prBssInfo->eDBDCBand);
+		prBssInfo->eDBDCBand = ENUM_BAND_0; /* Work around : temp solution */
+		/*ASSERT(0);*/ /* FATAL ERROR */
+	}
 
 	kalMemZero(&rCmdSetBssInfo, sizeof(CMD_SET_BSS_INFO));
 

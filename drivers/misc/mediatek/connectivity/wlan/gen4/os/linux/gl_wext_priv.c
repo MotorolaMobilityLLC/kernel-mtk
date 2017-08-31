@@ -482,6 +482,8 @@ int priv_support_ioctl(IN struct net_device *prNetDev, IN OUT struct ifreq *prIf
 		return priv_qa_agent(prNetDev, &rIwReqInfo, &(prIwReq->u), (char *)&(prIwReq->u));
 #endif
 
+	case IOCTL_GET_STR:
+
 	default:
 		return -EOPNOTSUPP;
 
@@ -2238,6 +2240,8 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 #define CMD_SETMONITOR		"MONITOR"
 #define CMD_SETBUFMODE		"BUFFER_MODE"
 
+#define CMD_USB_INFO		"USB_INFO"
+
 /* miracast related definition */
 #define MIRACAST_MODE_OFF	0
 #define MIRACAST_MODE_SOURCE	1
@@ -3816,7 +3820,7 @@ INT_32 priv_driver_tx_rate_info(IN char *pcCommand, IN int i4TotalLen, BOOLEAN f
 INT_32 priv_driver_rx_rate_info(P_ADAPTER_T prAdapter, IN char *pcCommand, IN int i4TotalLen,
 	IN UINT_8 ucWlanIdx)
 {
-	UINT_32 txmode, rate, frmode, sgi, nsts, ldpc, stbc;
+	UINT_32 txmode, rate, frmode, sgi, nsts, ldpc, stbc, groupid, mu;
 	INT_32 i4BytesWritten = 0;
 	UINT_32 u4RxVector0 = 0, u4RxVector1 = 0;
 	UINT_8 ucStaIdx;
@@ -3835,10 +3839,18 @@ INT_32 priv_driver_rx_rate_info(P_ADAPTER_T prAdapter, IN char *pcCommand, IN in
 	txmode = (u4RxVector0 & RX_VT_RX_MODE_MASK) >> RX_VT_RX_MODE_OFFSET;
 	rate = (u4RxVector0 & RX_VT_RX_RATE_MASK) >> RX_VT_RX_RATE_OFFSET;
 	frmode = (u4RxVector0 & RX_VT_FR_MODE_MASK) >> RX_VT_FR_MODE_OFFSET;
-	nsts = ((u4RxVector1 & RX_VT_NSTS_MASK) >> RX_VT_NSTS_OFFSET) + 1;
+	nsts = ((u4RxVector1 & RX_VT_NSTS_MASK) >> RX_VT_NSTS_OFFSET);
 	stbc = (u4RxVector0 & RX_VT_STBC_MASK) >> RX_VT_STBC_OFFSET;
 	sgi = u4RxVector0 & RX_VT_SHORT_GI;
 	ldpc = u4RxVector0 & RX_VT_LDPC;
+	groupid = (u4RxVector1 & RX_VT_GROUP_ID_MASK) >> RX_VT_GROUP_ID_OFFSET;
+
+	if (groupid && groupid != 63) {
+		mu = 1;
+	} else {
+		mu = 0;
+		nsts += 1;
+	}
 
 	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 		"%-20s%s", "Last RX Rate", " = ");
@@ -3871,8 +3883,15 @@ INT_32 priv_driver_rx_rate_info(P_ADAPTER_T prAdapter, IN char *pcCommand, IN in
 	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 		"%s", stbc == 0 ? " " : "STBC, ");
 
-	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-		"%s, %s\n", txmode < 5 ? HW_TX_MODE_STR[txmode] : HW_TX_MODE_STR[5], ldpc == 0 ? "BCC" : "LDPC");
+	if (mu) {
+		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+			"%s, %s, %s (%d)\n", txmode < 5 ? HW_TX_MODE_STR[txmode] : HW_TX_MODE_STR[5],
+			ldpc == 0 ? "BCC" : "LDPC", "MU", groupid);
+	} else {
+		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+			"%s, %s\n", txmode < 5 ? HW_TX_MODE_STR[txmode] : HW_TX_MODE_STR[5],
+			ldpc == 0 ? "BCC" : "LDPC");
+	}
 
 	return i4BytesWritten;
 }
@@ -3980,13 +3999,19 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 					(0) : (prQueryStaStatistics->ucPer);
 	}
 
-	for (ucDbdcIdx = 0; ucDbdcIdx < ENUM_BAND_NUM; ucDbdcIdx++) {
-		au4RxMpduCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4RxMpduCnt;
-		au4FcsError[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4FcsError;
-		au4RxFifoCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4RxFifoFull;
-		au4AmpduTxSfCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4AmpduTxSfCnt;
-		au4AmpduTxAckSfCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4AmpduTxAckSfCnt;
+	au4RxMpduCnt[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxMpduCnt;
+	au4FcsError[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxFcsErrCnt;
+	au4RxFifoCnt[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxFifoFullCnt;
+	au4AmpduTxSfCnt[ENUM_BAND_0] += prHwMibInfo->rHwTxAmpduMts.u4TxSfCnt;
+	au4AmpduTxAckSfCnt[ENUM_BAND_0] += prHwMibInfo->rHwTxAmpduMts.u4TxAckSfCnt;
 
+	au4RxMpduCnt[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxMpduCnt;
+	au4FcsError[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxFcsErrCnt;
+	au4RxFifoCnt[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxFifoFullCnt;
+	au4AmpduTxSfCnt[ENUM_BAND_1] += prHwMibInfo1->rHwTxAmpduMts.u4TxSfCnt;
+	au4AmpduTxAckSfCnt[ENUM_BAND_1] += prHwMibInfo1->rHwTxAmpduMts.u4TxAckSfCnt;
+
+	for (ucDbdcIdx = 0; ucDbdcIdx < ENUM_BAND_NUM; ucDbdcIdx++) {
 		u4RxPer[ucDbdcIdx] = ((au4RxMpduCnt[ucDbdcIdx] + au4FcsError[ucDbdcIdx]) == 0) ?
 							(0) : (1000 * au4FcsError[ucDbdcIdx] /
 							(au4RxMpduCnt[ucDbdcIdx] + au4FcsError[ucDbdcIdx]));
@@ -5939,6 +5964,40 @@ static int priv_driver_get_hif_info(IN struct net_device *prNetDev, IN char *pcC
 	return halDumpHifStatus(prGlueInfo->prAdapter, pcCommand, i4TotalLen);
 }
 
+#if defined(_HIF_USB)
+static int priv_driver_get_usb_info(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	UINT_32 i4BytesWritten = 0;
+	UCHAR pBuffer[512] = {0};
+
+	ASSERT(prNetDev);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\n");
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\tVenderID: %04x\n",
+		glGetUsbDeviceVendorId(prGlueInfo->rHifInfo.udev));
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\tProductID: %04x\n",
+		glGetUsbDeviceProductId(prGlueInfo->rHifInfo.udev));
+
+	glGetUsbDeviceManufacturerName(prGlueInfo->rHifInfo.udev, pBuffer,
+		sizeof(pBuffer));
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\tManufacturer: %s\n",
+		pBuffer);
+
+	glGetUsbDeviceProductName(prGlueInfo->rHifInfo.udev, pBuffer,
+		sizeof(pBuffer));
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\tProduct: %s\n", pBuffer);
+
+	glGetUsbDeviceSerialNumber(prGlueInfo->rHifInfo.udev, pBuffer,
+		sizeof(pBuffer));
+	LOGBUF(pcCommand, i4TotalLen, i4BytesWritten, "\tSerialNumber: %s\n",
+		pBuffer);
+
+	return i4BytesWritten;
+}
+#endif
+
 INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN INT_32 i4TotalLen)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -6109,6 +6168,10 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			i4BytesWritten = priv_driver_get_mem_info(prNetDev, pcCommand, i4TotalLen);
 		else if (strnicmp(pcCommand, CMD_GET_HIF_INFO, strlen(CMD_GET_HIF_INFO)) == 0)
 			i4BytesWritten = priv_driver_get_hif_info(prNetDev, pcCommand, i4TotalLen);
+#if defined(_HIF_USB)
+		else if (strnicmp(pcCommand, CMD_USB_INFO, strlen(CMD_USB_INFO)) == 0)
+			i4BytesWritten = priv_driver_get_usb_info(prNetDev, pcCommand, i4TotalLen);
+#endif
 		else
 			i4CmdFound = 0;
 	}

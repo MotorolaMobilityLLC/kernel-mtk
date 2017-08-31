@@ -189,6 +189,9 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 			prBssInfo->ucVhtChannelFrequencyS1 = 0;
 			prBssInfo->ucVhtChannelFrequencyS2 = 0;
 		}
+		/* If the S1 is invalid, force to change bandwidth */
+		if (prBssInfo->ucVhtChannelFrequencyS1 == 0)
+			prBssInfo->ucVhtChannelWidth = VHT_OP_CHANNEL_WIDTH_20_40;
 	} else {
 		prBssInfo->ucVhtChannelWidth = VHT_OP_CHANNEL_WIDTH_20_40;
 		prBssInfo->ucVhtChannelFrequencyS1 = 0;

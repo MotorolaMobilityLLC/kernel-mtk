@@ -413,9 +413,8 @@ int mtk_p2p_cfg80211_del_iface(struct wiphy *wiphy, struct wireless_dev *wdev)
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 	/* Check the Scan request is pending and we abort it before delete interface */
 	if (prP2pGlueDevInfo->prScanRequest != NULL) {
-		/* Check the wdev with backup scan req due to
-		 *  the kernel will free this request by error handling
-		 */
+		/* Check the wdev with backup scan req due to */
+		/* the kernel will free this request by error handling */
 		if (prP2pGlueDevInfo->rBackupScanRequest.wdev == UnregRoleHander->ieee80211_ptr) {
 			cfg80211_scan_done(&(prP2pGlueDevInfo->rBackupScanRequest), TRUE);
 			/* clear the request to avoid the Role FSM calls the scan_done again */

@@ -1046,6 +1046,32 @@ BOOLEAN glIsReadClearReg(UINT_32 u4Address)
 	}
 }
 
+UINT_16 glGetUsbDeviceVendorId(struct usb_device *dev)
+{
+	return dev->descriptor.idVendor;
+}				/* end of glGetUsbDeviceVendorId() */
+
+UINT_16 glGetUsbDeviceProductId(struct usb_device *dev)
+{
+	return dev->descriptor.idProduct;
+}				/* end of glGetUsbDeviceProductId() */
+
+INT_32 glGetUsbDeviceManufacturerName(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen)
+{
+	return usb_string(dev, dev->descriptor.iManufacturer, buffer, bufLen);
+}				/* end of glGetUsbDeviceManufacturerName() */
+
+INT_32 glGetUsbDeviceProductName(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen)
+{
+	return usb_string(dev, dev->descriptor.iProduct, buffer, bufLen);
+}				/* end of glGetUsbDeviceManufacturerName() */
+
+INT_32 glGetUsbDeviceSerialNumber(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen)
+{
+	return usb_string(dev, dev->descriptor.iSerialNumber, buffer, bufLen);
+}				/* end of glGetUsbDeviceSerialNumber() */
+
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Read a 32-bit device register

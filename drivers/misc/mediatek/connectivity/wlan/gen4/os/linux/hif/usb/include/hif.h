@@ -350,6 +350,14 @@ void glGetHifDev(P_GL_HIF_INFO_T prHif, struct device **dev);
 
 VOID halGetCompleteStatus(IN P_ADAPTER_T prAdapter, OUT PUINT_32 pu4IntStatus);
 
+UINT_16 glGetUsbDeviceVendorId(struct usb_device *dev);
+UINT_16 glGetUsbDeviceProductId(struct usb_device *dev);
+
+INT_32 glGetUsbDeviceManufacturerName(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen);
+INT_32 glGetUsbDeviceProductName(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen);
+INT_32 glGetUsbDeviceSerialNumber(struct usb_device *dev, UCHAR *buffer, UINT_32 bufLen);
+
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
