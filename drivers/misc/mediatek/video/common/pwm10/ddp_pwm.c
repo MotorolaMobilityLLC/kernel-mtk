@@ -65,14 +65,18 @@ static ddp_module_notify g_ddp_notify;
 #define PWM_TOTAL_MODULE_NUM (2)
 
 static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
+#endif
 static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023, 1023 };
 #else
 #define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
 #define PWM_TOTAL_MODULE_NUM (1)
 
 static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
+#endif
 static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023 };
 #endif
 
