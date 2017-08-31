@@ -1278,6 +1278,16 @@ static INT32 wmt_stp_init_coex(VOID)
 	wmt_core_dump_data(&coex_table[COEX_MISC].cmd[0], coex_table[COEX_MISC].str,
 			   coex_table[COEX_MISC].cmdSz);
 #else
+	coex_table[COEX_WIFI_PATH].cmd[5] =
+		(UINT8)((pWmtGenConf->coex_wmt_wifi_path & 0x00FF) >> 0);
+	coex_table[COEX_WIFI_PATH].cmd[6] =
+		(UINT8)((pWmtGenConf->coex_wmt_wifi_path & 0xFF00) >> 8);
+
+	if (gWmtDbgLvl >= WMT_LOG_DBG) {
+		wmt_core_dump_data(&coex_table[COEX_WIFI_PATH].cmd[0],
+			coex_table[COEX_WIFI_PATH].str, coex_table[COEX_WIFI_PATH].cmdSz);
+	}
+
 	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[5] = pWmtGenConf->coex_wmt_ext_elna_gain_p1_support;
 	/* wmt_ext_elna_gain_p1 D0*/
 	coex_table[COEX_EXT_ELAN_GAIN_P1].cmd[6] =
