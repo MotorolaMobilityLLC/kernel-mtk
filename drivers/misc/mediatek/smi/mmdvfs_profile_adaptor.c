@@ -36,7 +36,7 @@
 static int mmdvfs_get_legacy_mmclk_step_from_mmclk_opp(struct mmdvfs_step_util *self, int mmclk_step);
 static int mmdvfs_get_opp_from_legacy_step(struct mmdvfs_step_util *self, int legacy_step);
 static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
-static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, int client_id);
+static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u32 scenario);
 static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
 	int clients_mask, int clk_id);
 
@@ -685,7 +685,7 @@ static void mmdvfs_single_hw_configuration_dump(struct mmdvfs_adaptor *self,
 static int mmdvfs_determine_step(struct mmdvfs_adaptor *self, int smi_scenario,
 	struct mmdvfs_cam_property *cam_setting, struct mmdvfs_video_property *codec_setting)
 {
-	/* Find the matching scenario from OPP 0 to Max	OPP */
+	/* Find the matching scenario from OPP 0 to Max OPP */
 	int opp_index =	0;
 	int profile_index = 0;
 	struct mmdvfs_step_to_profile_mapping *profile_mappings =
@@ -705,18 +705,16 @@ static int mmdvfs_determine_step(struct mmdvfs_adaptor *self, int smi_scenario,
 		for (profile_index = 0; profile_index < mapping_ptr->total_profiles;
 			profile_index++) {
 			/* Check if the	scenario matches any profile */
-			struct mmdvfs_profile *profile_prt =
-			mapping_ptr->profiles +	profile_index;
+			struct mmdvfs_profile *profile_prt = mapping_ptr->profiles + profile_index;
 			if (smi_scenario == profile_prt->smi_scenario_id) {
 				/* Check cam setting */
-				if (is_camera_profile_matched(cam_setting, &profile_prt->cam_limit) == 0)
+				if (!is_camera_profile_matched(cam_setting, &profile_prt->cam_limit))
 				/* Doesn't match the camera property condition, skip this run */
 					continue;
-				if (is_video_profile_matched(codec_setting,
-				&profile_prt->video_limit) == 0)
+				if (!is_video_profile_matched(codec_setting, &profile_prt->video_limit))
 				/* Doesn't match the video property condition, skip this run */
 					continue;
-				/* Complete match, return the opp index	*/
+				/* Complete match, return the opp index */
 				mmdvfs_single_profile_dump(profile_prt);
 				return opp_index;
 			}
@@ -728,7 +726,7 @@ static int mmdvfs_determine_step(struct mmdvfs_adaptor *self, int smi_scenario,
 }
 
 /* Show each setting of opp */
-static void mmdvfs_hw_configuration_dump(struct	mmdvfs_adaptor *self)
+static void mmdvfs_hw_configuration_dump(struct mmdvfs_adaptor *self)
 {
 	int i =	0;
 	struct mmdvfs_step_to_profile_mapping *mapping =
@@ -749,14 +747,14 @@ static void mmdvfs_hw_configuration_dump(struct	mmdvfs_adaptor *self)
 	}
 }
 
-static int is_camera_profile_matched(struct mmdvfs_cam_property	*cam_setting,
+static int is_camera_profile_matched(struct mmdvfs_cam_property *cam_setting,
 	struct mmdvfs_cam_property *profile_property)
 {
 	int is_match = 1;
 
 	/* Null pointer check: */
 	/* If the scenario doesn't has cam_setting, then there */
-	/* is no need to check the cam property	 */
+	/* is no need to check the cam property */
 	if (!cam_setting || !profile_property) {
 		is_match = 1;
 	} else {
@@ -771,7 +769,7 @@ static int is_camera_profile_matched(struct mmdvfs_cam_property	*cam_setting,
 		if (!(cam_setting->fps >= profile_property->fps))
 			is_match = 0;
 
-		/* Check the if the feature match	*/
+		/* Check the if the feature match */
 		/* Not match if there is no featue matching the	profile's one */
 		/* 1 ==> don't change */
 		/* 0 ==> set is_match to 0 */
@@ -815,9 +813,19 @@ static void mmdvfs_step_util_init(struct mmdvfs_step_util *self)
 		self->mmdvfs_concurrency_of_opps[idx] = 0;
 }
 
+static inline void mmdvfs_adjust_scenario(s32 *mmdvfs_scen_opp_map,
+	u32 changed_scenario, u32 new_scenario)
+{
+	if (mmdvfs_scen_opp_map[changed_scenario] >= 0) {
+		mmdvfs_scen_opp_map[changed_scenario] = -1;
+		MMDVFSDEBUG(5, "[adjust] new scenario (%d) change scenario (%d) to -1!\n",
+			new_scenario, changed_scenario);
+	}
+}
+
 /* updat the step members only (HW independent part) */
 /* return the final step */
-static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, int client_id)
+static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u32 scenario)
 {
 	int scenario_idx = 0;
 	int opp_idx = 0;
@@ -828,10 +836,24 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, in
 		return MMDVFS_FINE_STEP_UNREQUEST;
 
 	/* check invalid scenario */
-	if (client_id < 0 || client_id >= self->total_scenario)
+	if (scenario >= self->total_scenario)
 		return MMDVFS_FINE_STEP_UNREQUEST;
 
-	self->mmdvfs_scenario_mmdvfs_opp[client_id] = step;
+	self->mmdvfs_scenario_mmdvfs_opp[scenario] = step;
+	if (step >= 0) {
+		/* Overwrite CAM related scenario */
+		if (scenario == MMDVFS_PMQOS_ISP) {
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VR, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VR_SLOW, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_VSS, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_CAM_PV, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_CAM_CP, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, SMI_BWC_SCEN_ICFP, scenario);
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, MMDVFS_SCEN_ISP, scenario);
+		} else if (((1 << scenario_idx) & LEGACY_CAM_SCENS)) {
+			mmdvfs_adjust_scenario(self->mmdvfs_scenario_mmdvfs_opp, MMDVFS_PMQOS_ISP, scenario);
+		}
+	}
 
 	if (self->wfd_vp_mix_step >= 0) {
 		/* special configuration for mixed step */
@@ -925,7 +947,7 @@ static s32 get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self, u3
 			int *threshold = setting_ptr->thresholds + threshold_idx;
 			int *opp = setting_ptr->opps + threshold_idx;
 
-			if ((threshold) && (opp) && (value > *threshold)) {
+			if ((threshold) && (opp) && (value >= *threshold)) {
 				MMDVFSDEBUG(5, "value=%d,threshold=%d\n", value, *threshold);
 				step_found = *opp;
 				break;

@@ -195,7 +195,7 @@ struct mmdvfs_step_util {
 	struct mmdvfs_step_util *self, int mmclk_step);
 	int (*get_opp_from_legacy_step)(struct mmdvfs_step_util *self,
 	int legacy_step);
-	int (*set_step)(struct mmdvfs_step_util *self, int step, int client_id);
+	int (*set_step)(struct mmdvfs_step_util *self, s32 step, u32 scenario);
 	int (*get_clients_clk_opp)(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
 	int clients_mask, int clk_id);
 };
