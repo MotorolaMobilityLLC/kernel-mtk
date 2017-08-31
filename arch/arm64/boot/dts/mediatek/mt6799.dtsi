@@ -5238,6 +5238,13 @@
 		compatible = "mediatek,fix_build_error";
 	};
 
+	flashlight_core: flashlight_core {
+		compatible = "mediatek,flashlight_core";
+	};
+
+	flashlights_mt6336: flashlights_mt6336 {
+		compatible = "mediatek,flashlights_mt6336";
+	};
 };
 
 #include "mt6335.dtsi"

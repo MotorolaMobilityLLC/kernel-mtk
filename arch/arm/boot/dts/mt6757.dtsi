@@ -3850,8 +3850,12 @@
 		compatible = "mediatek,gps";
 	};
 
-	flashlight: flashlight {
-		compatible = "mediatek,mt6757-flashlight";
+	flashlight_core: flashlight_core {
+		compatible = "mediatek,flashlight_core";
+	};
+
+	flashlights_lm3643: flashlights_lm3643 {
+		compatible = "mediatek,flashlights_lm3643";
 	};
 
 	gsensor@0 {
