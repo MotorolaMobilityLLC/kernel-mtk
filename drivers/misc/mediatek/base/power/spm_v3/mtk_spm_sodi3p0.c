@@ -684,8 +684,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
 #endif
+
 	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
-		mt_power_gs_dump_sodi3();
+		mt_power_gs_dump_dpidle();
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 

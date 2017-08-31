@@ -169,7 +169,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 };
 
 unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
-	1, /* UNIVPLL */
+	0, /* UNIVPLL, will be checked sperately */
 	0, /* MMPLL */
 	1, /* MSDCPLL */
 	0, /* VENCPLL */

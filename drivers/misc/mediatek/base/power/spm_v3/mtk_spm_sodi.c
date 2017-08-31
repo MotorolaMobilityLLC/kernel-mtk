@@ -41,6 +41,8 @@
 #include <mtk_spm_pmic_wrap.h>
 #include <mt6337_api.h>
 
+#include <mtk_power_gs_api.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -295,9 +297,8 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 								pwrctrl->vcore_volt_pmic_val);
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 
-	wk_mt6337_set_lp_setting();
+	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
 }
 
@@ -305,8 +306,6 @@ static void spm_sodi_post_process(void)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
-	wk_mt6337_restore_lp_setting();
 #endif
 }
 
@@ -625,9 +624,11 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (request_uart_to_sleep()) {
-		wr = WR_UART_BUSY;
-		goto RESTORE_IRQ;
+	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS)) {
+		if (request_uart_to_sleep()) {
+			wr = WR_UART_BUSY;
+			goto RESTORE_IRQ;
+		}
 	}
 #endif
 
@@ -642,6 +643,9 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
 #endif
+
+	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
+		mt_power_gs_dump_dpidle();
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
@@ -658,7 +662,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	request_uart_to_wakeup();
+	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS))
+		request_uart_to_wakeup();
 #endif
 
 	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags);
