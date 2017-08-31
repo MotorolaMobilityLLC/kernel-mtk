@@ -892,7 +892,7 @@ static int smi_larb_clock_prepare(void)
 {
 	int ret, i;
 
-	for (i = 0; i < MTCMOS_MM0; i++) {
+	for (i = 0; i < SMI_CLK_NUM; i++) {
 		ret = clk_prepare(gM4uDev->smi_clk[i]);
 		if (ret)
 			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[i]);
@@ -905,7 +905,7 @@ static int smi_larb_clock_unprepare(void)
 {
 	int i;
 
-	for (i = 0; i < MTCMOS_MM0; i++)
+	for (i = 0; i < SMI_CLK_NUM; i++)
 		clk_unprepare(gM4uDev->smi_clk[i]);
 
 	return 0;
