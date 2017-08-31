@@ -731,7 +731,7 @@ static int init_teei_framework(void)
 	pr_debug("[%s][%d] load TEEs successfully.\n", __func__, __LINE__);
 
 	teei_config_flag = 1;
-
+	complete(&global_down_lock);
 	wake_up(&__fp_open_wq);
 
 	return 0;
