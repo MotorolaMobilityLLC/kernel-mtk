@@ -510,7 +510,7 @@ irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 
-void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
+void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 {
 	unsigned int shift, no;
 
@@ -536,7 +536,7 @@ void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 
 }
 
-void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (void))
+void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void))
 {
 	unsigned int shift, no;
 
