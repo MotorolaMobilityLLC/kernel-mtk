@@ -49,6 +49,12 @@ config PINCTRL_MT6397
 	select PINCTRL_MTK_COMMON
 endif
 
+config PINCTRL_MT6739
+	bool "Mediatek MT6739 pin control"
+	default n
+	depends on !ARCH_MEDIATEK && MACH_MT6739
+	select PINCTRL_MTK_COMMON
+
 config PINCTRL_MT6757
 	bool "Mediatek MT6757 pin control"
 	default n
