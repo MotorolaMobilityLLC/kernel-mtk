@@ -15,7 +15,7 @@
 
 #include <mt-plat/mtk_chip.h>
 
-#define AUTOK_VERSION                   (0x16101918)
+#define AUTOK_VERSION                   (0x16110909)
 
 struct AUTOK_PLAT_PARA_TX {
 	unsigned int chip_hw_ver;
@@ -219,9 +219,9 @@ struct AUTOK_PLAT_FUNC {
 	do { \
 		autok_para_func.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_func.new_path_hs400 = 1; \
-		autok_para_func.new_path_hs200 = 0; \
+		autok_para_func.new_path_hs200 = 1; \
 		autok_para_func.new_path_ddr208 = 1; \
-		autok_para_func.new_path_sdr104 = 0; \
+		autok_para_func.new_path_sdr104 = 1; \
 		autok_para_func.new_path_hs = 1; \
 	} while (0)
 

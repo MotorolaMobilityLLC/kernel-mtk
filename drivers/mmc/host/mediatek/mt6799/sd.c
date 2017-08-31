@@ -1534,7 +1534,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 err:
 	ERR_MSG("XXX %s timeout: before CMD<%d>", str, opcode);
 	cmd->error = (unsigned int)-ETIMEDOUT;
-	msdc_dump_register(host);
+	msdc_dump_info(host->id);
 	msdc_reset_hw(host->id);
 
 	return cmd->error;
@@ -1660,8 +1660,12 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
 			pr_err("[%s]: msdc%d CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
-		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08))
+		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08)) {
 			msdc_dump_info(host->id);
+			/* Set clock to 50Hz */
+			if (host->hw->flags & MSDC_SDIO_DDR208)
+				msdc_clk_stable(host, 3, 1, 0);
+		}
 
 		if ((cmd->opcode != 52) && (cmd->opcode != 8)
 		 && (cmd->opcode != 55) && (cmd->opcode != 19)
@@ -1673,6 +1677,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			mmc_cmd_dump(host->mmc);
 #endif
 			msdc_dump_info(host->id);
+			/* Set clock to 50Hz */
+			if (host->hw->flags & MSDC_SDIO_DDR208)
+				msdc_clk_stable(host, 3, 1, 0);
 		}
 		if (cmd->opcode == MMC_STOP_TRANSMISSION) {
 			cmd->error = 0;
@@ -2682,25 +2689,51 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
 	int dir;
+	unsigned long flags;
 
 	msdc_dma_on();  /* enable DMA mode first!! */
 
 	init_completion(&host->xfer_done);
 
-	if (msdc_command_start(host, cmd, CMD_TIMEOUT) != 0)
-		return -1;
+	if (host->hw->host_function != MSDC_SDIO) {
+		if (msdc_command_start(host, cmd, CMD_TIMEOUT) != 0)
+			return -1;
 
-	dir = data->flags & MMC_DATA_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
-	(void)dma_map_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
+		dir = data->flags & MMC_DATA_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+		(void)dma_map_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
 
-	if (msdc_command_resp_polling(host, cmd, CMD_TIMEOUT) != 0)
-		return -2;
+		if (msdc_command_resp_polling(host, cmd, CMD_TIMEOUT) != 0)
+			return -2;
 
-	/* start DMA after response, so that DMA nned not be stopped
-	 * if response error occurs
-	 */
-	msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
-	msdc_dma_start(host);
+		/* start DMA after response, so that DMA need not be stopped
+		 * if response error occurs
+		 */
+		msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
+		msdc_dma_start(host);
+	} else {
+		dir = data->flags & MMC_DATA_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+		(void)dma_map_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
+		msdc_dma_setup(host, &host->dma, data->sg, data->sg_len);
+
+		/* SDIO must disable interrupt and start dma after send cmd.
+		 * If host send read cmd but DMA not start ASAP,
+		 * The fifo will full and stop clock till DMA start.
+		 * And stop clock when DVFS may cause CRC error.
+		 */
+		local_irq_save(flags);
+		if (msdc_command_start(host, cmd, CMD_TIMEOUT) != 0) {
+			local_irq_restore(flags);
+			return -1;
+		}
+
+		if (msdc_command_resp_polling(host, cmd, CMD_TIMEOUT) != 0) {
+			local_irq_restore(flags);
+			return -2;
+		}
+
+		msdc_dma_start(host);
+		local_irq_restore(flags);
+	}
 
 	spin_unlock(&host->lock);
 	if (!wait_for_completion_timeout(&host->xfer_done, DAT_TIMEOUT)) {
@@ -4386,15 +4419,11 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	struct mmc_command *stop = NULL;
 	void __iomem *base = host->base;
 
-	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY |
-		     MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY |
+	u32 acmdsts = MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY |
 		     MSDC_INT_ACMD19_DONE;
 	u32 datsts = MSDC_INT_DATCRCERR | MSDC_INT_DATTMO;
 	u32 intsts, inten;
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	u32 cmdqsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY;
-#endif
+	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY;
 
 	if (host->hw->flags & MSDC_SDIO_IRQ)
 		spin_lock(&host->sdio_irq_lock);
@@ -4413,13 +4442,11 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	else
 		inten &= intsts;
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	/* Leave CMDQ-related interrupts so that they can be seen
-	 * by response polling function
+	/* CMD TO/CRC/RDY polling status in msdc_command_resp_polling function
+	 * msdc_irq cannot clear here or cause msdc_command_resp_polling
+	 * function SW timeout.
 	 */
-	intsts &= ~cmdqsts;
-#endif
-
+	intsts &= ~cmdsts;
 	MSDC_WRITE32(MSDC_INT, intsts); /* clear interrupts */
 
 	/* sdio interrupt */
@@ -4479,7 +4506,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 	if ((stop != NULL) &&
 	    (host->autocmd & MSDC_AUTOCMD12) &&
-	    (intsts & cmdsts)) {
+	    (intsts & acmdsts)) {
 		if (intsts & MSDC_INT_ACMDRDY)
 			goto skip_data_interrupts;
 		if (intsts & MSDC_INT_ACMDCRCERR) {
@@ -4499,7 +4526,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 skip_data_interrupts:
 	/* command interrupts */
-	if ((cmd == NULL) || !(intsts & cmdsts))
+	if ((cmd == NULL) || !(intsts & acmdsts))
 		goto skip_cmd_interrupts;
 
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
