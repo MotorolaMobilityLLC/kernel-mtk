@@ -44,6 +44,7 @@
 #include <asm/alternative.h>
 #include <linux/cma.h>
 #include <mt-plat/mtk_meminfo.h>
+#include <mt-plat/mrdump.h>
 
 #include "mm.h"
 
@@ -219,6 +220,9 @@ void __init arm64_memblock_init(void)
 	else
 		arm64_dma_phys_limit = PHYS_MASK + 1;
 	dma_contiguous_reserve(arm64_dma_phys_limit);
+
+	/* reserve memory for MT-RAMDUMP */
+	mrdump_rsvmem();
 
 	memblock_allow_resize();
 	memblock_dump_all();

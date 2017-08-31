@@ -12,10 +12,9 @@
 #
 
 subdir-ccflags-y += -Idrivers/misc/mediatek/mtprof/
+subdir-ccflags-y += -Idrivers/misc/mediatek/aee/mrdump/
 subdir-ccflags-y += -Idrivers/watchdog/mediatek/include/
-subdir-ccflags-$(CONFIG_MTK_LASTPC_V2) += -Idrivers/misc/mediatek/debug_latch/plat_sram_flag/
 
-obj-$(CONFIG_MTK_AEE_FEATURE)	+= aee-hw.o
 obj-y	+= aee.o
 aee-y	:=dummy.o
 aee-$(CONFIG_MTK_AEE_FEATURE)	+= aee-common.o reboot-reason.o

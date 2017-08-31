@@ -601,11 +601,6 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	errno = ipanic_header_to_sd(0);
 	if (!IS_ERR(ERR_PTR(errno)))
 		mrdump_mini_ipanic_done();
-	if (ipanic_dt_active(IPANIC_DT_RAM_DUMP)) {
-		aee_nested_printf("RAMDUMP.\n");
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_NESTED_EXCEPTION, excp_regs,
-					  "Nested Panic");
-	}
 	bust_spinlocks(0);
 }
 EXPORT_SYMBOL(ipanic_recursive_ke);
@@ -676,14 +671,14 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_exp_type(2);
-#endif
-	smp_send_stop();
-	LOGI("ipanic: stop cpu as early as possible\n");
-#ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 #endif
-
 	aee_disable_api();
+	if (aee_rr_curr_exp_type() == 1)
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, dargs->regs, "WDT/HWT");
+	else
+		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
+
 	__show_regs(dargs->regs);
 	dump_stack();
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -698,18 +693,12 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 #endif
 
 	mrdump_mini_ke_cpu_regs(dargs->regs);
-	inner_dcache_flush_all();
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
+
 #if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	LOGE("MLC/TLC project, disable ipanic flow\n");
 	ipanic_enable = 0; /*for mlc/tlc nand project, only enable lk flow*/
 #endif
-	if (aee_rr_curr_exp_type() == 1)
-		/* No return for HWT thru mrdump */
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, dargs->regs, "WDT/HWT");
-
-	if (aee_rr_curr_exp_type() == 2)
-		/* No return if mrdump is enable */
-		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
 
 	if (!has_mt_dump_support())
 		emergency_restart();
@@ -738,6 +727,7 @@ static struct notifier_block die_blk = {
 int __init aee_ipanic_init(void)
 {
 	spin_lock_init(&ipanic_lock);
+	mrdump_init();
 	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 	register_die_notifier(&die_blk);
 	register_ipanic_ops(&ipanic_oops_ops);

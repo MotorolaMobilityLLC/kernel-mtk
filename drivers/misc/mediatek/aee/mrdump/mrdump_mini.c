@@ -32,6 +32,7 @@
 #include <linux/of_reserved_mem.h>
 #include "../../../../kernel/sched/sched.h"
 #include "mrdump_mini.h"
+#include "mrdump_private.h"
 
 #define LOG_DEBUG(fmt, ...)			\
 	do {	\
@@ -329,6 +330,8 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 	}
 	if (i < MRDUMP_MINI_NR_SECTION)
 		fill_elf_load_phdr(phdr, hnew - lnew, lnew, paddr);
+	else
+		LOGE("mrdump: MINI_NR_SECTION overflow!\n");
 }
 
 static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
@@ -439,7 +442,7 @@ static inline void ipanic_save_regs(struct pt_regs *regs)
 			  "ldp	x0, x1, [sp],#16\n\t" :  : "r" (regs) : "cc");
 #else
 	asm volatile ("stmia %1, {r0 - r15}\n\t"
-			  "mrs %0, cpsr\n":"=r" (regs->uregs[16]) : "r"(regs) : "memory");
+		      "mrs %0, cpsr\n":"=r" (regs->uregs[16]) : "r"(regs) : "memory");
 #endif
 }
 
@@ -534,12 +537,6 @@ int mrdump_task_info(unsigned char *buffer, size_t sz_buf)
 	return sizeof(struct aee_process_info);
 }
 
-__weak int get_HW_cpuid(void)
-{
-	LOGE("%s:weak function %s\n", __func__, __FILE__);
-	return -99;
-}
-
 static void mrdump_mini_add_loads(void);
 void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 {
@@ -613,9 +610,13 @@ static void mrdump_mini_add_loads(void)
 			cpu = prstatus->pr_pid - 100;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 1);
 			mrdump_mini_add_entry((unsigned long)cpu_rq(cpu), MRDUMP_MINI_SECTION_SIZE);
-		} else if (prstatus->pr_pid < NR_CPUS) {
+		} else if (prstatus->pr_pid <= NR_CPUS) {
 			cpu = prstatus->pr_pid - 1;
 			mrdump_mini_add_tsk_ti(cpu, &regs, 0);
+			for (i = 0; i < ELF_NGREG; i++) {
+				mrdump_mini_add_entry(((unsigned long *)&regs)[i],
+					MRDUMP_MINI_SECTION_SIZE);
+			}
 		} else {
 			LOGE("mrdump: wrong pr_pid: %d\n", prstatus->pr_pid);
 		}

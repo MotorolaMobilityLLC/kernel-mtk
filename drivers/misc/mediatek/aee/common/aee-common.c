@@ -31,6 +31,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/vmalloc.h>
+#include <mrdump_private.h>
 
 static struct aee_kernel_api *g_aee_api;
 #define KERNEL_REPORT_LENGTH 344
@@ -319,7 +320,7 @@ void aee_sram_printk(const char *fmt, ...)
 	va_start(args, fmt);
 
 	preempt_disable();
-	t = cpu_clock(smp_processor_id());
+	t = cpu_clock(get_HW_cpuid());
 	nanosec_rem = do_div(t, 1000000000);
 	tlen = sprintf(sram_printk_buf, ">%5lu.%06lu< ", (unsigned long)t, nanosec_rem / 1000);
 
