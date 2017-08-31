@@ -478,6 +478,7 @@ VOID glUnregisterBus(remove_card pfRemove)
 VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 {
 	P_GL_HIF_INFO_T prHif = NULL;
+	UINT_8 ucIdx;
 
 	prHif = &prGlueInfo->rHifInfo;
 
@@ -506,6 +507,9 @@ VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 
 	/* Reset statistic counter */
 	kalMemZero(&prHif->rStatCounter, sizeof(SDIO_STAT_COUNTER_T));
+
+	for (ucIdx = TC0_INDEX; ucIdx < TC_NUM; ucIdx++)
+		prHif->au4PendingTxDoneCount[ucIdx] = 0;
 
 	mutex_init(&prHif->rRxFreeBufQueMutex);
 	mutex_init(&prHif->rRxDeAggQueMutex);
@@ -1246,12 +1250,14 @@ BOOL kalDevWriteData(IN P_GLUE_INFO_T prGlueInfo, IN P_MSDU_INFO_T prMsduInfo)
 	struct sk_buff *skb;
 	UINT_8 *pucBuf;
 	UINT_32 u4Length;
+	UINT_8 ucTC;
 
 	SDIO_TIME_INTERVAL_DEC();
 
 	skb = (struct sk_buff *)prMsduInfo->prPacket;
 	pucBuf = skb->data;
 	u4Length = skb->len;
+	ucTC = prMsduInfo->ucTC;
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 	pucOutputBuf = prTxCtrl->pucTxCoalescingBufPtr;
@@ -1291,6 +1297,9 @@ BOOL kalDevWriteData(IN P_GLUE_INFO_T prGlueInfo, IN P_MSDU_INFO_T prMsduInfo)
 		kalFreeTxMsdu(prAdapter, prMsduInfo);
 	SDIO_REC_TIME_END();
 	SDIO_ADD_TIME_INTERVAL(prHifInfo->rStatCounter.u4TxDataFreeTime);
+
+	/* Update pending Tx done count */
+	prHifInfo->au4PendingTxDoneCount[ucTC]++;
 
 	prHifInfo->rStatCounter.u4DataPktWriteCnt++;
 
@@ -1395,6 +1404,9 @@ BOOL kalDevWriteCmd(IN P_GLUE_INFO_T prGlueInfo, IN P_CMD_INFO_T prCmdInfo, IN U
 		}
 		prGlueInfo->rHifInfo.rStatCounter.u4CmdPortWriteCnt++;
 	}
+
+	/* Update pending Tx done count */
+	prGlueInfo->rHifInfo.au4PendingTxDoneCount[ucTC]++;
 
 	prGlueInfo->rHifInfo.rStatCounter.u4CmdPktWriteCnt++;
 	return TRUE;

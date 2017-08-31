@@ -143,6 +143,8 @@ kalP2PUpdateAssocInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 /*UINT_32 kalP2PGetFreqInKHz(IN P_GLUE_INFO_T prGlueInfo);*/
 
+INT_32 mtk_Netdev_To_RoleIdx(P_GLUE_INFO_T prGlueInfo, struct net_device *ndev, PUINT_8 pucRoleIdx);
+
 UINT_8 kalP2PGetRole(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIdx);
 
 #if 1

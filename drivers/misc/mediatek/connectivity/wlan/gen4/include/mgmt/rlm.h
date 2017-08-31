@@ -192,6 +192,31 @@ extern UINT_32 g_au4IQData[256];
 *                             D A T A   T Y P E S
 ********************************************************************************
 */
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+typedef struct _RLM_CAL_RESULT_ALL_V2_T {
+	/* Used for checking the Cal Data is damaged */
+	UINT_32 u4MagicNum1;
+
+	/* Thermal Value when do these Calibration */
+	UINT_32 u4ThermalInfo;
+
+	/* Total Rom Data Length Backup in Host Side */
+	UINT_32 u4ValidRomCalDataLength;
+
+	/* Total Ram Data Length Backup in Host Side */
+	UINT_32 u4ValidRamCalDataLength;
+
+	/* All Rom Cal Data Dumpped by FW */
+	UINT_32 au4RomCalData[10000];
+
+	/* All Ram Cal Data Dumpped by FW */
+	UINT_32 au4RamCalData[10000];
+
+	/* Used for checking the Cal Data is damaged */
+	UINT_32 u4MagicNum2;
+} RLM_CAL_RESULT_ALL_V2_T, *P_RLM_CAL_RESULT_ALL_V2_T;
+extern RLM_CAL_RESULT_ALL_V2_T g_rBackupCalDataAllV2;
+#endif
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -329,6 +354,20 @@ rlmChangeVhtOpBwPara(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, UINT_8 ucChannelW
 
 BOOLEAN
 rlmChangeOperationMode(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex, UINT_8 ucChannelWidth, UINT_8 ucNss);
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+WLAN_STATUS rlmCalBackup(
+	P_ADAPTER_T prAdapter,
+	UINT_8		ucReason,
+	UINT_8		ucAction,
+	UINT_8		ucRomRam
+	);
+
+WLAN_STATUS rlmTriggerCalBackup(
+	P_ADAPTER_T prAdapter,
+	BOOLEAN		fgIsCalDataBackuped
+	);
+#endif
 
 VOID rlmModifyVhtBwPara(PUINT_8 pucVhtChannelFrequencyS1, PUINT_8 pucVhtChannelFrequencyS2, PUINT_8 pucVhtChannelWidth);
 

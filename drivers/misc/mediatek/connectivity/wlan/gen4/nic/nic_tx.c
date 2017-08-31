@@ -1144,6 +1144,10 @@ nicTxComposeDesc(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	switch (prMsduInfo->ucRateMode) {
 	case MSDU_RATE_MODE_MANUAL_DESC:
 		HAL_MAC_TX_DESC_SET_DW(prTxDesc, 6, 1, &prMsduInfo->u4FixedRateOption);
+#if CFG_SISO_SW_DEVELOP
+		/* Update spatial extension index setting */
+		HAL_MAC_TX_DESC_SET_SPE_IDX(prTxDesc, wlanGetSpeIdx(prAdapter, prBssInfo->ucBssIndex));
+#endif
 		HAL_MAC_TX_DESC_SET_FIXED_RATE_MODE_TO_DESC(prTxDesc);
 		HAL_MAC_TX_DESC_SET_FIXED_RATE_ENABLE(prTxDesc);
 		break;

@@ -1615,6 +1615,128 @@ UINT_32 TsfRawData2IqFmt(P_EVENT_DUMP_MEM_T prEventDumpMem)
 }
 #endif /* CFG_SUPPORT_QA_TOOL */
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+VOID nicCmdEventQueryCalBackupV2(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+{
+	P_PARAM_CAL_BACKUP_STRUCT_V2_T prCalBackupDataV2Info;
+	P_CMD_CAL_BACKUP_STRUCT_V2_T prEventCalBackupDataV2;
+	UINT_32 u4QueryInfoLen, u4QueryInfo, u4TempAddress;
+	P_GLUE_INFO_T prGlueInfo;
+
+	DBGLOG(RFTEST, INFO, "%s\n", __func__);
+
+	ASSERT(prAdapter);
+	ASSERT(prCmdInfo);
+	ASSERT(pucEventBuf);
+
+
+	prGlueInfo = prAdapter->prGlueInfo;
+	prEventCalBackupDataV2 = (P_CMD_CAL_BACKUP_STRUCT_V2_T) (pucEventBuf);
+
+	u4QueryInfoLen = sizeof(CMD_CAL_BACKUP_STRUCT_V2_T);
+
+	prCalBackupDataV2Info = (P_PARAM_CAL_BACKUP_STRUCT_V2_T) prCmdInfo->pvInformationBuffer;
+#if 0
+	DBGLOG(RFTEST, INFO, "============ Receive a Cal Data EVENT (Info) ============\n");
+	DBGLOG(RFTEST, INFO, "Reason = %d\n", prEventCalBackupDataV2->ucReason);
+	DBGLOG(RFTEST, INFO, "Action = %d\n", prEventCalBackupDataV2->ucAction);
+	DBGLOG(RFTEST, INFO, "NeedResp = %d\n", prEventCalBackupDataV2->ucNeedResp);
+	DBGLOG(RFTEST, INFO, "FragNum = %d\n", prEventCalBackupDataV2->ucFragNum);
+	DBGLOG(RFTEST, INFO, "RomRam = %d\n", prEventCalBackupDataV2->ucRomRam);
+	DBGLOG(RFTEST, INFO, "ThermalValue = %d\n", prEventCalBackupDataV2->u4ThermalValue);
+	DBGLOG(RFTEST, INFO, "Address = 0x%08x\n", prEventCalBackupDataV2->u4Address);
+	DBGLOG(RFTEST, INFO, "Length = %d\n", prEventCalBackupDataV2->u4Length);
+	DBGLOG(RFTEST, INFO, "RemainLength = %d\n", prEventCalBackupDataV2->u4RemainLength);
+	DBGLOG(RFTEST, INFO, "=========================================================\n");
+#endif
+
+	if (prEventCalBackupDataV2->ucReason == 0 && prEventCalBackupDataV2->ucAction == 0) {
+		DBGLOG(RFTEST, INFO, "Received an EVENT for Query Thermal Temp.\n");
+		prCalBackupDataV2Info->u4ThermalValue = prEventCalBackupDataV2->u4ThermalValue;
+		g_rBackupCalDataAllV2.u4ThermalInfo = prEventCalBackupDataV2->u4ThermalValue;
+		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	} else if (prEventCalBackupDataV2->ucReason == 0 && prEventCalBackupDataV2->ucAction == 1) {
+		DBGLOG(RFTEST, INFO, "Received an EVENT for Query Total Cal Data Length.\n");
+		prCalBackupDataV2Info->u4Length = prEventCalBackupDataV2->u4Length;
+
+		if (prEventCalBackupDataV2->ucRomRam == 0)
+			g_rBackupCalDataAllV2.u4ValidRomCalDataLength = prEventCalBackupDataV2->u4Length;
+		else if (prEventCalBackupDataV2->ucRomRam == 1)
+			g_rBackupCalDataAllV2.u4ValidRamCalDataLength = prEventCalBackupDataV2->u4Length;
+
+		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	} else if (prEventCalBackupDataV2->ucReason == 2 && prEventCalBackupDataV2->ucAction == 4) {
+		DBGLOG(RFTEST, INFO, "Received an EVENT for Query All Cal (%s) Data. FragNum = %d\n",
+			prCalBackupDataV2Info->ucRomRam == 0 ? "ROM" : "RAM",
+			prEventCalBackupDataV2->ucFragNum);
+		prCalBackupDataV2Info->u4Address = prEventCalBackupDataV2->u4Address;
+		prCalBackupDataV2Info->u4Length = prEventCalBackupDataV2->u4Length;
+		prCalBackupDataV2Info->u4RemainLength = prEventCalBackupDataV2->u4RemainLength;
+		prCalBackupDataV2Info->ucFragNum = prEventCalBackupDataV2->ucFragNum;
+
+		/* Copy Cal Data From FW to Driver Array */
+		if (prEventCalBackupDataV2->ucRomRam == 0) {
+			u4TempAddress = prEventCalBackupDataV2->u4Address;
+			kalMemCopy((PUINT_8)(g_rBackupCalDataAllV2.au4RomCalData) + u4TempAddress,
+			(PUINT_8)(prEventCalBackupDataV2->au4Buffer),
+			prEventCalBackupDataV2->u4Length);
+		} else if (prEventCalBackupDataV2->ucRomRam == 1) {
+			u4TempAddress = prEventCalBackupDataV2->u4Address;
+			kalMemCopy((PUINT_8)(g_rBackupCalDataAllV2.au4RamCalData) + u4TempAddress,
+			(PUINT_8)(prEventCalBackupDataV2->au4Buffer),
+			prEventCalBackupDataV2->u4Length);
+		}
+
+		if (prEventCalBackupDataV2->u4Address == 0xFFFFFFFF) {
+			DBGLOG(RFTEST, INFO, "RLM CMD : Address Error!!!!!!!!!!!\n");
+		} else if (prEventCalBackupDataV2->u4RemainLength == 0
+					&& prEventCalBackupDataV2->ucRomRam == 1) {
+			DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data from FW (%s). Finish!!!!!!!!!!!\n",
+				prCalBackupDataV2Info->ucRomRam == 0 ? "ROM" : "RAM");
+		} else if (prEventCalBackupDataV2->u4RemainLength == 0
+					&& prEventCalBackupDataV2->ucRomRam == 0) {
+			DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data from FW (%s). Finish!!!!!!!!!!!\n",
+				prCalBackupDataV2Info->ucRomRam == 0 ? "ROM" : "RAM");
+			prCalBackupDataV2Info->ucFragNum = 0;
+			prCalBackupDataV2Info->ucRomRam = 1;
+			prCalBackupDataV2Info->u4ThermalValue = 0;
+			prCalBackupDataV2Info->u4Address = 0;
+			prCalBackupDataV2Info->u4Length = 0;
+			prCalBackupDataV2Info->u4RemainLength = 0;
+			DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data from FW (%s). Start!!!!!!!!!!!!!!!!\n",
+				prCalBackupDataV2Info->ucRomRam == 0 ? "ROM" : "RAM");
+			DBGLOG(RFTEST, INFO, "Thermal Temp = %d\n", g_rBackupCalDataAllV2.u4ThermalInfo);
+			wlanoidQueryCalBackupV2(prAdapter,
+				prCalBackupDataV2Info,
+				sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+				&u4QueryInfo);
+		} else {
+			wlanoidSendCalBackupV2Cmd(prAdapter,
+				   prCmdInfo->pvInformationBuffer, prCmdInfo->u4InformationBufferLength);
+		}
+	} else if (prEventCalBackupDataV2->ucReason == 3 && prEventCalBackupDataV2->ucAction == 5) {
+		DBGLOG(RFTEST, INFO,
+			"Received an EVENT for Send All Cal Data. FragNum = %d\n",
+			prEventCalBackupDataV2->ucFragNum);
+		prCalBackupDataV2Info->u4Address = prEventCalBackupDataV2->u4Address;
+		prCalBackupDataV2Info->u4Length = prEventCalBackupDataV2->u4Length;
+		prCalBackupDataV2Info->u4RemainLength = prEventCalBackupDataV2->u4RemainLength;
+		prCalBackupDataV2Info->ucFragNum = prEventCalBackupDataV2->ucFragNum;
+
+		if (prEventCalBackupDataV2->u4RemainLength == 0
+			|| prEventCalBackupDataV2->u4Address == 0xFFFFFFFF) {
+			kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+		} else {
+			wlanoidSendCalBackupV2Cmd(prAdapter,
+				   prCmdInfo->pvInformationBuffer, prCmdInfo->u4InformationBufferLength);
+		}
+	} else {
+		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	}
+
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to handle dump burst event
@@ -2810,6 +2932,45 @@ VOID nicEventIcapDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 
 	wlanoidQueryMemDump(prAdapter, &rMemDumpInfo, sizeof(rMemDumpInfo), &u4QueryInfo);
 }
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+PARAM_CAL_BACKUP_STRUCT_V2_T	g_rCalBackupDataV2;
+
+VOID nicEventCalAllDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	P_CMD_CAL_BACKUP_STRUCT_V2_T prEventCalBackupDataV2;
+	UINT_32 u4QueryInfo;
+
+	DBGLOG(RFTEST, INFO, "%s\n", __func__);
+
+	memset(&g_rCalBackupDataV2, 0, sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T));
+
+	prEventCalBackupDataV2 = (P_CMD_CAL_BACKUP_STRUCT_V2_T) (prEvent->aucBuffer);
+
+	if (prEventCalBackupDataV2->ucReason == 1 && prEventCalBackupDataV2->ucAction == 2) {
+		DBGLOG(RFTEST, INFO, "Received an EVENT for Trigger Do All Cal Function.\n");
+
+		g_rCalBackupDataV2.ucReason = 2;
+		g_rCalBackupDataV2.ucAction = 4;
+		g_rCalBackupDataV2.ucNeedResp = 1;
+		g_rCalBackupDataV2.ucFragNum = 0;
+		g_rCalBackupDataV2.ucRomRam = 0;
+		g_rCalBackupDataV2.u4ThermalValue = 0;
+		g_rCalBackupDataV2.u4Address = 0;
+		g_rCalBackupDataV2.u4Length = 0;
+		g_rCalBackupDataV2.u4RemainLength = 0;
+
+		DBGLOG(RFTEST, INFO, "RLM CMD : Get Cal Data from FW (%s). Start!!!!!!!!!!!!!!!!\n",
+			g_rCalBackupDataV2.ucRomRam == 0 ? "ROM" : "RAM");
+		DBGLOG(RFTEST, INFO, "Thermal Temp = %d\n", g_rBackupCalDataAllV2.u4ThermalInfo);
+		wlanoidQueryCalBackupV2(prAdapter,
+			&g_rCalBackupDataV2,
+			sizeof(PARAM_CAL_BACKUP_STRUCT_V2_T),
+			&u4QueryInfo);
+	}
+
+}
+#endif
 
 VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 {

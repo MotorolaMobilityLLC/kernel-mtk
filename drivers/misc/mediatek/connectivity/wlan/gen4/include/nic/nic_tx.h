@@ -358,6 +358,10 @@
 #define TX_DESC_GUARD_INTERVAL                  BIT(14)
 #define TX_DESC_FIXED_RATE_MODE                 BIT(15)
 
+/* DW 7 */
+#define TX_DESC_SPE_EXT_IDX_MASK                BITS(11, 15)
+#define TX_DESC_SPE_EXT_IDX_OFFSET              11
+
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
 #define NIC_TX_TIME_THRESHOLD                       100	/* in unit of ms */
 #endif
@@ -1339,6 +1343,11 @@ do { \
 	((_prHwMacTxDesc)->u2FixedRate &= ~TX_DESC_FIXED_RATE_MODE)
 #define HAL_MAC_TX_DESC_SET_FIXED_RATE_MODE_TO_CR(_prHwMacTxDesc) \
 	((_prHwMacTxDesc)->u2FixedRate |= TX_DESC_FIXED_RATE_MODE)
+
+/* DW 7 */
+#define HAL_MAC_TX_DESC_SET_SPE_IDX(_prHwMacTxDesc, _ucSpeIdx) \
+	TX_DESC_SET_FIELD(((_prHwMacTxDesc)->u2SwTxTime), ((UINT_16)_ucSpeIdx), \
+		TX_DESC_SPE_EXT_IDX_MASK, TX_DESC_SPE_EXT_IDX_OFFSET)
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S

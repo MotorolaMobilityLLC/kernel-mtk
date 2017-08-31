@@ -1180,6 +1180,10 @@ WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	return WLAN_STATUS_SUCCESS;
 }
 
+VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
+{
+}
+
 VOID halProcessRxInterrupt(IN P_ADAPTER_T prAdapter)
 {
 #if CFG_USB_RX_HANDLE_IN_HIF_THREAD
