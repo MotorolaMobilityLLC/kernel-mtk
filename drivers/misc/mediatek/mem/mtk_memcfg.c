@@ -116,14 +116,6 @@ static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_
 		}
 
 		for (page_num = 0; page_num < page_count; page_num++) {
-			/* Ignore no-map region */
-			/*
-			if (!pfn_valid(start_pfn + page_num)) {
-				reserved_mem[index].nomap =
-					RESERVED_NO_MAP;
-				continue;
-			}
-			*/
 			page = pfn_to_page(start_pfn + page_num);
 			if (PageReserved(page)) {
 				if (start == 0)
@@ -155,9 +147,8 @@ static int mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_
 				}
 			}
 		}
-		if (start != 0) {
+		if (start != 0)
 			end = start_pfn + page_count;
-		}
 	}
 	return 0;
 }
@@ -854,18 +845,16 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	dram_info = (struct dram_info *)of_get_flat_dt_prop(node,
 			"orig_dram_info", NULL);
 	if (dram_info) {
-		for (i = 0; i < dram_info->rank_num; i++) {
+		for (i = 0; i < dram_info->rank_num; i++)
 			phone_dram_sz += dram_info->rank_info[i].size;
-		}
 	}
 
 	/* mblock_info */
 	mblock_info = (struct mblock_info *)of_get_flat_dt_prop(node,
 			"mblock_info", NULL);
 	if (mblock_info) {
-		for (i = 0; i < mblock_info->mblock_num; i++) {
+		for (i = 0; i < mblock_info->mblock_num; i++)
 			dram_sz += mblock_info->mblock[i].size;
-		}
 	}
 
 	/* lca reserved memory */
