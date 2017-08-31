@@ -74,15 +74,17 @@
 #define picachu_cont(fmt, args...)		\
 	pr_cont(fmt, ##args)
 
-#define PICACHU_PTP1_MTDES_START_BIT    0
-#define PICACHU_PTP1_BDES_START_BIT     8
-#define PICACHU_PTP1_MDES_START_BIT     16
+#define PICACHU_PTP1_MTDES_START_BIT    (0)
+#define PICACHU_PTP1_BDES_START_BIT     (8)
+#define PICACHU_PTP1_MDES_START_BIT     (16)
+
+#define PICACHU_MAGIC	(0xF14455EF)
 
 /*
  * This dedinition indicates that VPROC1 has three clusters:
  *	BIG/Little-little/CCI.
  */
-#define NR_CLUSTERS_VPROC      3
+#define NR_CLUSTERS_VPROC      (3)
 
 #define PICACHU_OP_ENABLE       (1 << 0)
 #define PICACHU_OP_KE           (1 << 1)
@@ -90,9 +92,6 @@
 
 struct picachu_sram_info {
 	unsigned int magic;
-	int vmin[NR_CAL_OPPS];
-	unsigned int timestamp;
-	unsigned int checksum;
 
 	/*
 	 * Bit[7:0]: MTDES
@@ -103,13 +102,14 @@ struct picachu_sram_info {
 
 	unsigned int op : 8;
 	unsigned int wfe_status : 8;
-	unsigned int volt : 8;
+	unsigned int vmin : 8;
 	int index : 8;
 };
 
 enum mt_vproc_id {
-	MT_VPROC1,
-	MT_VPROC2,
+	MT_VPROC1, /* LL Only */
+	MT_VPROC2, /* LL + B */
+	MT_VPROC3, /* L */
 
 	NR_VPROC,
 };
@@ -130,11 +130,8 @@ static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info
 	int i;
 
 	seq_printf(m, "0x%X\n", info->magic);
-	for (i = 0; i < NR_CAL_OPPS; i++)
-		seq_printf(m, "0x%X\n", info->vmin[i]);
+	seq_printf(m, "0x%X\n", info->vmin);
 
-	seq_printf(m, "0x%X\n", info->timestamp);
-	seq_printf(m, "0x%X\n", info->checksum);
 	for (i = 0; i < NR_CLUSTERS_VPROC; i++)
 		seq_printf(m, "0x%X\n", info->ptp1_efuse[i]);
 	seq_printf(m, "0x%X\n", info->op);
@@ -299,8 +296,9 @@ PROC_FOPS_RO(picachu_dump);
 #define PICACHU_PROC_ENTRY_ATTR	(S_IRUGO | S_IWUSR | S_IWGRP)
 
 static struct picachu_proc picachu_proc_list[] = {
-	{"big_2l", MT_VPROC1, PICACHU_PROC_ENTRY_ATTR},
-	{"little", MT_VPROC2, PICACHU_PROC_ENTRY_ATTR},
+	{"2l", MT_VPROC1, PICACHU_PROC_ENTRY_ATTR},
+	{"big_2l", MT_VPROC2, PICACHU_PROC_ENTRY_ATTR},
+	{"little", MT_VPROC3, PICACHU_PROC_ENTRY_ATTR},
 	{0},
 };
 
@@ -365,7 +363,7 @@ static int create_procfs(void)
 static void picachu_update_ptp1_efuse(int *eem_ctrl_id_ptr,
 				     unsigned int *ptp1_efuse)
 {
-	unsigned int i = 0;
+	unsigned int i;
 
 	for (i = 0; i < NR_CLUSTERS_VPROC; i++) {
 
@@ -375,18 +373,22 @@ static void picachu_update_ptp1_efuse(int *eem_ctrl_id_ptr,
 		if (!ptp1_efuse[i])
 			continue;
 
+		picachu_info("[%s] cluster: %d, efuse: 0x%x\n", __func__, i,
+				ptp1_efuse[i]);
+
 		eem_set_pi_efuse(eem_ctrl_id_ptr[i], ptp1_efuse[i]);
 	}
 }
 
 static int __init picachu_init(void)
 {
-	int i;
 	struct picachu_sram_info *pd;
+	int i;
 
 	int eem_ctrl_id_by_vproc[NR_VPROC][NR_CLUSTERS_VPROC] = {
+		{EEM_CTRL_SOC, -1, -1},
 		{EEM_CTRL_BIG, EEM_CTRL_CCI, EEM_CTRL_2L},
-		{EEM_CTRL_L, -1, -1}
+		{EEM_CTRL_L, -1, -1},
 	};
 
 	picachu_data = (struct picachu_sram_info *)
@@ -401,6 +403,9 @@ static int __init picachu_init(void)
 			picachu_info("Error: pd is NULL, cluster id: %d!\n", i);
 			continue;
 		}
+
+		if (pd->magic != PICACHU_MAGIC)
+			continue;
 
 		if (picachu_enable)
 			pd->op |= PICACHU_OP_ENABLE;
