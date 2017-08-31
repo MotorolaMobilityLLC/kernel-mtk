@@ -22,4 +22,4 @@
 void do_ipi_handler(int id, void *data, unsigned int len);
 int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id, int wait);
 int do_ipi_send_dram_addr(u32 addr, scp_core_id scp, int in_isr);
-int do_ipi_send_do_name(char *name, scp_core_id scp);
+int do_ipi_send_do_name(char *name, int load, scp_core_id scp);

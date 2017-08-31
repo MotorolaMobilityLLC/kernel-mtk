@@ -34,7 +34,7 @@ int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id, int w
 	int retry_count = 0;
 	char ipibuf[IPI_BUFF_SIZE];
 
-	pr_debug("do_ipi_send to scp %u, wait = %d\n", id, wait);
+	pr_debug("do_ipi_send to scp %u, wait = %d, type = %u\n", id, wait, type);
 	if (bufsize > IPI_BUFF_SIZE - 1) {
 		pr_err("ERR: payload size exceeds ipi buffer size\n");
 		return -1;
@@ -76,9 +76,12 @@ int do_ipi_send_dram_addr(u32 addr, scp_core_id scp, int in_isr)
 	return do_ipi_send(DO_MSG_DRAM_ADDR, &addr, sizeof(u32), scp, wait);
 }
 
-int do_ipi_send_do_name(char *name, scp_core_id scp)
+int do_ipi_send_do_name(char *name, int load, scp_core_id scp)
 {
-	return do_ipi_send(DO_MSG_LOAD_MODULE, name, strlen(name) + 1 /* include '\0' */, scp, 1);
+	if (load)
+		return do_ipi_send(DO_MSG_LOAD_MODULE, name, strlen(name) + 1 /* include '\0' */, scp, 1);
+	else
+		return do_ipi_send(DO_MSG_UNLOAD_MODULE, name, strlen(name) + 1 /* include '\0' */, scp, 1);
 }
 
 void do_ipi_handler(int id, void *data, unsigned int len)

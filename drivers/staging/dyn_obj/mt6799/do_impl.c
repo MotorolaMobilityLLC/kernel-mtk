@@ -232,7 +232,7 @@ int mt_do_load_do(char *do_name)
 	is_loading = 1;
 
 	pr_debug("mt_do_load_do: load DO %s to scp %u\n", do_name, scp);
-	ret = do_ipi_send_do_name(do_name, scp);
+	ret = do_ipi_send_do_name(do_name, 1, scp);
 	if (!ret) {
 		pr_err("mt_do_load_do: IPI timeout\n");
 		res = 0;
@@ -268,7 +268,7 @@ int mt_do_unload_do(char *do_name)
 
 	/* check if in loading state */
 	if (is_loading) {
-		pr_debug("mt_do_load_do: in loading state, return\n");
+		pr_debug("mt_do_unload_do: in loading state, return\n");
 		return 0;
 	}
 	/* check if the do_name is in the do list first */
@@ -281,7 +281,7 @@ int mt_do_unload_do(char *do_name)
 
 	/* check if DO info are already sent to scp(should not happen) */
 	if (scp > SCP_CORE_TOTAL) {
-		pr_err("mt_do_load_do: scp num %u > SCP_CORE_TOTAL, return\n", scp);
+		pr_err("mt_do_unload_do: scp num %u > SCP_CORE_TOTAL, return\n", scp);
 		return 0;
 	}
 	if (!inited[scp])
@@ -300,13 +300,13 @@ int mt_do_unload_do(char *do_name)
 	/***** critical section *****/
 	ret = mutex_trylock(&do_mutex);
 	if (!ret) {
-		pr_debug("mt_do_load_do: try lock failed - in loading state, return\n");
+		pr_debug("mt_do_unload_do: try lock failed - in loading state, return\n");
 		return 0;
 	}
 	is_loading = 1;
 
-	pr_debug("mt_do_unload_do: load %s\n", do_name);
-	ret = do_ipi_send_do_name(do_name, scp);
+	pr_debug("mt_do_unload_do: try unload %s\n", do_name);
+	ret = do_ipi_send_do_name(do_name, 0, scp);
 	if (!ret) {
 		pr_err("mt_do_unload_do: IPI timeout\n");
 		res = 0;
