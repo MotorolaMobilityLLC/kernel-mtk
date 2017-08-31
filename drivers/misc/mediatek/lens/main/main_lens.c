@@ -245,7 +245,7 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 		if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k99v1", 5) == 0) {
 			stAF_MotorName stMotorName;
 
-			memcpy(stMotorName.uMotorName, AFDRV_AK7371AF, 32);
+			memcpy(stMotorName.uMotorName, AFDRV_AK7371AF, strlen(AFDRV_AK7371AF));
 			AF_SetLensMotorName(stMotorName);
 		}
 		break;
