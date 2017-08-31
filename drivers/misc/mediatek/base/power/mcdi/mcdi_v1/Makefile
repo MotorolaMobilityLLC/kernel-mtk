@@ -20,6 +20,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 
 obj-y += mtk_mcdi.o
 obj-y += mtk_mcdi_state.o
+obj-y += mtk_mcdi_profile.o
 
 ifeq ($(CONFIG_MACH_MT6763), y)
 obj-y += mtk_mcdi_mt6763.o
