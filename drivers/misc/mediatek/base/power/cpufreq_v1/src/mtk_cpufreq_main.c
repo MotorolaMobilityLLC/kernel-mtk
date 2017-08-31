@@ -29,7 +29,7 @@
 #include "mtk_cpufreq_opp_table.h"
 
 /* #define CLUSTER_BUCK_OFF 1 */
-/* #define DCM_ENABLE 1 */
+#define DCM_ENABLE 1
 /*
  * Global Variables
  */
