@@ -24,6 +24,11 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
+# only build-in dummy driver for MT6763
+ifeq ($(CONFIG_MACH_MT6763),y)
+obj-y := mtk_ppm_dummy.o
+else
+
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 # main
 obj-y := mtk_ppm_main.o
@@ -55,5 +60,7 @@ obj-y += mach/
 else
 # dummy driver to avoid build error
 obj-y := mtk_ppm_dummy.o
+endif
+
 endif
 
