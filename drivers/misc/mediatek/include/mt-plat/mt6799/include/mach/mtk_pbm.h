@@ -154,8 +154,9 @@ enum share_mem_mapping {	/* each of 4 byte */
 /*
  * MD1/MD3 Section level (can't more than SECTION_VALUE)
  */
+/* Each section has only 5 bits. The range is from 0 to 31 */
 enum md1_section_level_tbl_2g {
-	VAL_MD1_2G_SECTION_1 = 32,
+	VAL_MD1_2G_SECTION_1 = 31,
 	VAL_MD1_2G_SECTION_2 = 29,
 	VAL_MD1_2G_SECTION_3 = 25,
 	VAL_MD1_2G_SECTION_4 = 19,
