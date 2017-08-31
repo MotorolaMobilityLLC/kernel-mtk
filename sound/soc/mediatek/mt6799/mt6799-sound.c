@@ -1280,8 +1280,7 @@ bool EnableSideToneFilter(bool stf_on)
 
 	if (stf_on == false) {
 		/* bypass STF result & disable */
-		const bool bypass_stf_on = true;
-		uint32_t reg_value = (bypass_stf_on << 31) | (bypass_stf_on << 30) | (stf_on << 8);
+		uint32_t reg_value = (!stf_on << 31) | (!stf_on << 30) | (!stf_on << 29) | (stf_on << 8);
 
 		Afe_Set_Reg(AFE_SIDETONE_CON1, reg_value, MASK_ALL);
 		pr_debug("%s(), AFE_SIDETONE_CON1[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON1,
@@ -1290,10 +1289,9 @@ bool EnableSideToneFilter(bool stf_on)
 		Afe_Set_Reg(AFE_SIDETONE_GAIN, 0, MASK_ALL);
 		pr_debug("%s(), AFE_SIDETONE_GAIN[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_GAIN, 0);
 	} else {
-		const bool bypass_stf_on = false;
 		/* using STF result & enable & set half tap num */
-		uint32_t write_reg_value =
-		    (bypass_stf_on << 31) | (bypass_stf_on << 30) | (stf_on << 8) | kSideToneHalfTapNum;
+		uint32_t write_reg_value = (!stf_on << 31) | (!stf_on << 30) | (!stf_on << 29) | (stf_on << 8)
+					 | kSideToneHalfTapNum;
 		/* set side tone coefficient */
 		const bool enable_read_write = true;	/* enable read/write side tone coefficient */
 		const bool read_write_sel = true;	/* for write case */
@@ -1320,8 +1318,8 @@ bool EnableSideToneFilter(bool stf_on)
 			coef_addr	<< 16 |
 			kSideToneCoefficientTable[coef_addr];
 			Afe_Set_Reg(AFE_SIDETONE_CON0, write_reg_value, 0x39FFFFF);
-			pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
-				write_reg_value);
+			pr_debug("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
+				 write_reg_value);
 
 			/* wait until flag write_ready changed (means write done) */
 			for (try_cnt = 0; try_cnt < 10; try_cnt++) { /* max try 10 times */
