@@ -47,6 +47,31 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
+#define SW_TX_TRACKING
+#ifdef SW_TX_TRACKING
+#define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
+#define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
+#define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
+#define DRAMC_AO_SPCMD		(dramc_ao_chx_base+0x060)
+#define DRAMC_AO_SPCMDCTRL	(dramc_ao_chx_base+0x064)
+#define DRAMC_AO_SLP4_TESTMODE	(dramc_ao_chx_base+0x0C4)
+#define DRAMC_AO_DQSOSCR	(dramc_ao_chx_base+0x0C8)
+#define DRAMC_AO_SHUSTATUS	(dramc_ao_chx_base+0x0E4)
+#define DRAMC_AO_CKECTRL	(dramc_ao_chx_base+0x85C)
+#define DRAMC_AO_DQSOSC_PRD	(dramc_ao_chx_base+0x868)
+#define DRAMC_AO_SHU1RK0_PI	(dramc_ao_chx_base+0xA0C)
+#define DRAMC_AO_SHU1RK0_DQSOSC	(dramc_ao_chx_base+0xA10)
+#define DRAMC_AO_SHU1RK1_PI     (dramc_ao_chx_base+0xB0C)
+#define DRAMC_AO_SHU1RK1_DQSOSC (dramc_ao_chx_base+0xB10)
+#define DRAMC_NAO_MISC_STATUSA	(dramc_nao_chx_base+0x80)
+#define DRAMC_NAO_SPCMDRESP	(dramc_nao_chx_base+0x88)
+#define DRAMC_NAO_MRR_STATUS	(dramc_nao_chx_base+0x8C)
+#define DDRPHY_SHU1_R0_B0_DQ7	(ddrphy_chx_base+0xE1C)
+#define DDRPHY_SHU1_R0_B1_DQ7	(ddrphy_chx_base+0xE6C)
+#define DDRPHY_SHU1_R1_B0_DQ7	(ddrphy_chx_base+0xF1C)
+#define DDRPHY_SHU1_R1_B1_DQ7	(ddrphy_chx_base+0xF6C)
+#endif
+
 #define LAST_DRAMC
 #ifdef LAST_DRAMC
 extern void *mt_emi_base_get(void);
@@ -71,34 +96,25 @@ extern void *mt_emi_base_get(void);
 #define HQA_LPDDR4
 /*#define HQA_LPDDR4X*/
 
-/*#define HQA_ULPM*/
-/*#define HQA_LPM*/
-#define HQA_HPM
-
-#define HVCORE_HVDRAM
+/*#define HVCORE_HVDRAM*/
 /*#define NVCORE_NVDRAM*/
 /*#define LVCORE_LVDRAM*/
 /*#define HVCORE_LVDRAM*/
 /*#define LVCORE_HVDRAM*/
 
-#if defined(HQA_ULPM)
-#define VCORE_LV 0x09
-#define VCORE_NV 0x10
-#define VCORE_HV 0x17
-#elif defined(HQA_LPM)
-#define VCORE_LV 0x09
-#define VCORE_NV 0x10
-#define VCORE_HV 0x17
-#elif defined(HQA_HPM)
-#define VCORE_LV 0x19
-#define VCORE_NV 0x20
-#define VCORE_HV 0x27
-#endif
+extern unsigned int mt_get_chip_hw_ver(void);
+
+#define VCORE_LV_LPM 0x09
+#define VCORE_NV_LPM 0x10
+#define VCORE_HV_LPM 0x17
+#define VCORE_LV_HPM 0x19
+#define VCORE_NV_HPM 0x20
+#define VCORE_HV_HPM 0x27
 
 #if defined(HQA_LPDDR3)
-#define VDRAM_LV 0x31F
-#define VDRAM_NV 0x400
-#define VDRAM_HV 0x503
+#define VDRAM_LV 0x504
+#define VDRAM_NV 0x51E
+#define VDRAM_HV 0x617
 #elif defined(HQA_LPDDR4) || defined(HQA_LPDDR4X)
 #define VDRAM_LV 1060000
 #define VDRAM_NV 1100000
@@ -110,25 +126,30 @@ extern void *mt_emi_base_get(void);
 #define VDDQ_HV 650000
 
 #if defined(HVCORE_HVDRAM)
-#define HQA_VCORE VCORE_HV
-#define HQA_VDRAM VDRAM_HV
-#define HQA_VDDQ VDDQ_HV
+#define HQA_VCORE_LPM	VCORE_HV_LPM
+#define HQA_VCORE_HPM	VCORE_HV_HPM
+#define HQA_VDRAM	VDRAM_HV
+#define HQA_VDDQ	VDDQ_HV
 #elif defined(NVCORE_NVDRAM)
-#define HQA_VCORE VCORE_NV
-#define HQA_VDRAM VDRAM_NV
-#define HQA_VDDQ VDDQ_NV
+#define HQA_VCORE_LPM	VCORE_NV_LPM
+#define HQA_VCORE_HPM	VCORE_NV_HPM
+#define HQA_VDRAM	VDRAM_NV
+#define HQA_VDDQ	VDDQ_NV
 #elif defined(LVCORE_LVDRAM)
-#define HQA_VCORE VCORE_LV
-#define HQA_VDRAM VDRAM_LV
-#define HQA_VDDQ VDDQ_LV
+#define HQA_VCORE_LPM	VCORE_LV_LPM
+#define HQA_VCORE_HPM	VCORE_LV_HPM
+#define HQA_VDRAM	VDRAM_LV
+#define HQA_VDDQ	VDDQ_LV
 #elif defined(HVCORE_LVDRAM)
-#define HQA_VCORE VCORE_HV
-#define HQA_VDRAM VDRAM_LV
-#define HQA_VDDQ VDDQ_LV
+#define HQA_VCORE_LPM	VCORE_HV_LPM
+#define HQA_VCORE_HPM	VCORE_HV_HPM
+#define HQA_VDRAM	VDRAM_LV
+#define HQA_VDDQ	VDDQ_LV
 #elif defined(LVCORE_HVDRAM)
-#define HQA_VCORE VCORE_LV
-#define HQA_VDRAM VDRAM_HV
-#define HQA_VDDQ VDDQ_HV
+#define HQA_VCORE_LPM	VCORE_LV_LPM
+#define HQA_VCORE_HPM	VCORE_LV_HPM
+#define HQA_VDRAM	VDRAM_HV
+#define HQA_VDDQ	VDDQ_HV
 #endif
 
 #endif /*end #ifdef DRAM_HQA*/
