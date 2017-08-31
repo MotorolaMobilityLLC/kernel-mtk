@@ -1496,6 +1496,31 @@ static u32 xhci_get_max_esit_payload(struct usb_device *udev,
 	return max_packet * (max_burst + 1);
 }
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+static bool is_uac_data_endpoint(struct usb_endpoint_descriptor *desc)
+{
+	int is_playback;
+	int attr;
+	bool data_ep = false;
+
+	if (usb_endpoint_xfer_isoc(desc) &&
+			desc->bLength >= USB_DT_ENDPOINT_AUDIO_SIZE) {
+
+		data_ep = true;
+		attr = desc->bmAttributes & USB_ENDPOINT_SYNCTYPE;
+		is_playback = usb_endpoint_dir_out(desc);
+
+		/* check if it is a sync endpoint */
+		if ((!is_playback && (attr == USB_ENDPOINT_SYNC_ASYNC)) ||
+			(is_playback && (attr == USB_ENDPOINT_SYNC_ADAPTIVE))) {
+			if (!desc->bSynchAddress && desc->bRefresh)
+				data_ep = false;
+		}
+	}
+	return data_ep;
+}
+#endif
+
 /* Set up an endpoint with one ring segment.  Do not allocate stream rings.
  * Drivers will have to call usb_alloc_streams() to do that.
  */
@@ -1513,9 +1538,6 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 	enum xhci_ring_type type;
 	u32 max_esit_payload;
 	u32 endpoint_type;
-#ifdef CONFIG_MTK_UAC_POWER_SAVING
-	int in;
-#endif
 	ep_index = xhci_get_endpoint_index(&ep->desc);
 	ep_ctx = xhci_get_ep_ctx(xhci, virt_dev->in_ctx, ep_index);
 
@@ -1525,10 +1547,12 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 	ep_ctx->ep_info2 = cpu_to_le32(endpoint_type);
 
 	type = usb_endpoint_type(&ep->desc);
+
 	/* Set up the endpoint ring */
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
-	if (xhci->msram_virt_addr && type == USB_ENDPOINT_XFER_ISOC) {
-		in = usb_endpoint_dir_in(&ep->desc);
+	if (xhci->msram_virt_addr && is_uac_data_endpoint(&ep->desc)) {
+		int in = usb_endpoint_dir_in(&ep->desc);
+
 		xhci_dbg(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d\n",
 				 ep_index, type, in);
 		if (in)
@@ -1538,8 +1562,8 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 			virt_dev->eps[ep_index].new_ring =
 				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPTX);
 	} else {
-	virt_dev->eps[ep_index].new_ring =
-		xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
+		virt_dev->eps[ep_index].new_ring =
+			xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
 	}
 #else
 	virt_dev->eps[ep_index].new_ring =
