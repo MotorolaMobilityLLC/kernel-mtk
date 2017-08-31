@@ -405,6 +405,8 @@ static tx_result dramc_tx_tracking(int channel)
 	unsigned int dqsosc_inc, dqsosc_dec;
 	unsigned int pi_orig[3][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_new[3][2][2]; /* [shuffle][rank][byte] */
+	unsigned int dqm_orig[3][2][2];
+	unsigned int dqm_new[3][2][2];
 	unsigned int pi_adjust;
 	unsigned int mr1819_base[2][2];
 	unsigned int mr1819_cur[2];
@@ -464,10 +466,17 @@ static tx_result dramc_tx_tracking(int channel)
 	/* pi_orig[shuffle][rank][byte] */
 	for (shu_index = 0; shu_index < 3; shu_index++) {
 		shu_offset_dramc = 0x600 * shu_index;
-		pi_orig[shu_index][0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][0][1] = (Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc) >> 0) & 0x3F;
-		pi_orig[shu_index][1][0] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 8) & 0x3F;
-		pi_orig[shu_index][1][1] = (Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc) >> 0) & 0x3F;
+		temp = Reg_Readl(DRAMC_AO_SHU1RK0_PI + shu_offset_dramc);
+		pi_orig[shu_index][0][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][0][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][0][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][0][1] = (temp >> 16) & 0x3F;
+
+		temp = Reg_Readl(DRAMC_AO_SHU1RK1_PI + shu_offset_dramc);
+		pi_orig[shu_index][1][0] = (temp >> 8) & 0x3F;
+		pi_orig[shu_index][1][1] = (temp >> 0) & 0x3F;
+		dqm_orig[shu_index][1][0] = (temp >> 24) & 0x3F;
+		dqm_orig[shu_index][1][1] = (temp >> 16) & 0x3F;
 	}
 
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL);
@@ -495,6 +504,8 @@ static tx_result dramc_tx_tracking(int channel)
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] - pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d INC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -512,6 +523,8 @@ pi_new[shu_index][rank][byte]);
 						return TX_FAIL_VARIATION;
 					pi_new[shu_index][rank][byte] =
 						(pi_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
+					dqm_new[shu_index][rank][byte] =
+						(dqm_orig[shu_index][rank][byte] + pi_adj) & 0x3F;
 #if 0 /* print message for debugging */
 pr_err("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d DEC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
@@ -531,16 +544,16 @@ pi_new[shu_index][rank][byte]);
 	for (shu_index = 0; shu_index < 3; shu_index++) {
 		shu_offset_ddrphy = 0x500 * shu_index;
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][0] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B0_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][0] << 16)
 										| (pi_new[shu_index][0][0] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][1] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][0][1] << 16)
 										| (pi_new[shu_index][0][1] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][0] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][1][0] << 16)
 										| (pi_new[shu_index][1][0] << 8));
 		temp = Reg_Readl(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][1] << 16)
+		Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy, temp | (dqm_new[shu_index][1][1] << 16)
 										| (pi_new[shu_index][1][1] << 8));
 	}
 
