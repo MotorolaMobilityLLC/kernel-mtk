@@ -1899,6 +1899,12 @@ inline static int adopt_CAMERA_HW_CheckIsAlive(void)
 
             PK_DBG(" Sensor found ID = 0x%x\n", sensorID);
             snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s CAM[%d]:%s;",mtk_ccm_name,g_invokeSocketIdx[i],g_invokeSensorNameStr[i]);
+#ifdef CONFIG_MTK_CCU
+			if (g_invokeSocketIdx[i] == DUAL_CAMERA_MAIN_SENSOR)
+				ccu_set_sensor_i2c_slave_addr(g_invokeSocketIdx[i], (g_pstI2Cclient->addr  << 1));
+			else if (g_invokeSocketIdx[i] == DUAL_CAMERA_SUB_SENSOR)
+				ccu_set_sensor_i2c_slave_addr(g_invokeSocketIdx[i], (g_pstI2Cclient2->addr << 1));
+#endif
             err = ERROR_NONE;
         }
         if (ERROR_NONE != err)

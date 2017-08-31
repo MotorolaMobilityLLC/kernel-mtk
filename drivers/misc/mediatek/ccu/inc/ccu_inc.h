@@ -15,5 +15,6 @@
 #define __CCU_INC_H__
 
 void ccu_set_current_fps(int32_t current_fps);
+void ccu_set_sensor_i2c_slave_addr(int32_t sensorType, int32_t sensorI2cSlaveAddr);
 
 #endif

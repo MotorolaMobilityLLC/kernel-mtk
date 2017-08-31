@@ -43,6 +43,9 @@ static struct mutex cmd_mutex;
 static wait_queue_head_t cmd_wait;
 static volatile bool cmd_done;
 static int32_t g_ccu_sensor_current_fps = -1;
+static int32_t g_ccu_sensor_i2c_slave_addr_main  = -1;
+static int32_t g_ccu_sensor_i2c_slave_addr_main2 = -1;
+static int32_t g_ccu_sensor_i2c_slave_addr_sub   = -1;
 
 volatile ccu_mailbox_t *pMailBox[MAX_MAILBOX_NUM];
 static ccu_msg_t receivedCcuCmd;
@@ -918,4 +921,29 @@ int ccu_read_info_reg(int regNo)
 	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
 
 	return *offset;
+}
+
+void ccu_set_sensor_i2c_slave_addr(int32_t sensorType, int32_t sensorI2cSlaveAddr)
+{
+	if (sensorType == 0) { /*Non-sensor*/
+		LOG_ERR("No sensor been detected.\n");
+	} else if (sensorType == 1) { /*Main*/
+		g_ccu_sensor_i2c_slave_addr_main  = sensorI2cSlaveAddr;
+		LOG_DBG_MUST("ccu catch Main sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
+	} else if (sensorType == 2) { /*Sub*/
+		g_ccu_sensor_i2c_slave_addr_sub   = sensorI2cSlaveAddr;
+		LOG_DBG_MUST("ccu catch Sub sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
+	} else if (sensorType == 4) { /*Main2*/
+		g_ccu_sensor_i2c_slave_addr_main2 = sensorI2cSlaveAddr;
+		LOG_DBG_MUST("ccu catch Main2 sensor i2c slave address : 0x%x\n", sensorI2cSlaveAddr);
+	} else {
+		LOG_DBG_MUST("ccu catch sensor i2c slave address fail!\n");
+	}
+}
+
+void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr)
+{
+	sensorI2cSlaveAddr[0] = g_ccu_sensor_i2c_slave_addr_main;
+	sensorI2cSlaveAddr[1] = g_ccu_sensor_i2c_slave_addr_sub;
+	sensorI2cSlaveAddr[2] = g_ccu_sensor_i2c_slave_addr_main2;
 }
