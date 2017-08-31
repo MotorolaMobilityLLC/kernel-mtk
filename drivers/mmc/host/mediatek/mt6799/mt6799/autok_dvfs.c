@@ -119,11 +119,11 @@ int sdio_autok_res_apply(struct msdc_host *host, int vcore)
 		return ret;
 	}
 
-	size = msdc_file_read(filp, 0, res, TUNING_PARAM_COUNT);
-	if (size == TUNING_PARAM_COUNT) {
+	size = msdc_file_read(filp, 0, res, TUNING_PARA_SCAN_COUNT);
+	if (size == TUNING_PARA_SCAN_COUNT) {
 		autok_tuning_parameter_init(host, res);
 
-		for (i = 1; i < TUNING_PARAM_COUNT; i++)
+		for (i = 1; i < TUNING_PARA_SCAN_COUNT; i++)
 			pr_err("autok result exist!, result[%d] = %d\n", i, res[i]);
 		ret = 0;
 	}
@@ -145,15 +145,14 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 	if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 		vcore = AUTOK_VCORE_LEVEL0;
 
-	memcpy((void *)host->autok_res[AUTOK_VCORE_LEVEL0], (const void *)res, TUNING_PARAM_COUNT);
 	filp = msdc_file_open(sdio_autok_res_path[vcore], O_CREAT | O_WRONLY, 0644);
 	if (filp == NULL) {
 		pr_err("autok result open fail\n");
 		return ret;
 	}
 
-	size = msdc_file_write(filp, 0, res, TUNING_PARAM_COUNT);
-	if (size == TUNING_PARAM_COUNT)
+	size = msdc_file_write(filp, 0, res, TUNING_PARA_SCAN_COUNT);
+	if (size == TUNING_PARA_SCAN_COUNT)
 		ret = 0;
 	vfs_fsync(filp, 0);
 

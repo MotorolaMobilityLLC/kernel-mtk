@@ -1452,6 +1452,8 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 				MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_ENDBIT_CNT, (host->blksz + 17));
 			else
 				MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_ENDBIT_CNT, 273);
+		} else {
+			MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_ENDBIT_CNT, 273);
 		}
 		break;
 	case SD_IO_RW_DIRECT:

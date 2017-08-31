@@ -1801,6 +1801,81 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 	}
 }
 
+static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
+{
+	int i;
+
+	seq_printf(m, "[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
+		host->autok_res[0][AUTOK_VER3],
+		host->autok_res[0][AUTOK_VER2],
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER0]);
+
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		if (!host->autok_res_valid[i])
+			continue;
+
+		seq_printf(m, "[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
+			host->autok_res[i][CMD_SCAN_R0],
+			host->autok_res[i][CMD_SCAN_R1],
+			host->autok_res[i][CMD_SCAN_R2],
+			host->autok_res[i][CMD_SCAN_R3],
+			host->autok_res[i][CMD_SCAN_R4],
+			host->autok_res[i][CMD_SCAN_R5],
+			host->autok_res[i][CMD_SCAN_R6],
+			host->autok_res[i][CMD_SCAN_R7]);
+
+		seq_printf(m, "[AUTOK]CMD Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
+			host->autok_res[i][CMD_SCAN_F0],
+			host->autok_res[i][CMD_SCAN_F1],
+			host->autok_res[i][CMD_SCAN_F2],
+			host->autok_res[i][CMD_SCAN_F3],
+			host->autok_res[i][CMD_SCAN_F4],
+			host->autok_res[i][CMD_SCAN_F5],
+			host->autok_res[i][CMD_SCAN_F6],
+			host->autok_res[i][CMD_SCAN_F7]);
+
+		seq_printf(m, "[AUTOK]DAT Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
+			host->autok_res[i][DAT_SCAN_R0],
+			host->autok_res[i][DAT_SCAN_R1],
+			host->autok_res[i][DAT_SCAN_R2],
+			host->autok_res[i][DAT_SCAN_R3],
+			host->autok_res[i][DAT_SCAN_R4],
+			host->autok_res[i][DAT_SCAN_R5],
+			host->autok_res[i][DAT_SCAN_R6],
+			host->autok_res[i][DAT_SCAN_R7]);
+
+		seq_printf(m, "[AUTOK]DAT Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
+			host->autok_res[i][DAT_SCAN_F0],
+			host->autok_res[i][DAT_SCAN_F1],
+			host->autok_res[i][DAT_SCAN_F2],
+			host->autok_res[i][DAT_SCAN_F3],
+			host->autok_res[i][DAT_SCAN_F4],
+			host->autok_res[i][DAT_SCAN_F5],
+			host->autok_res[i][DAT_SCAN_F6],
+			host->autok_res[i][DAT_SCAN_F7]);
+
+		seq_printf(m, "[AUTOK]DS Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
+			host->autok_res[i][DS_SCAN_0],
+			host->autok_res[i][DS_SCAN_1],
+			host->autok_res[i][DS_SCAN_2],
+			host->autok_res[i][DS_SCAN_3],
+			host->autok_res[i][DS_SCAN_4],
+			host->autok_res[i][DS_SCAN_5],
+			host->autok_res[i][DS_SCAN_6],
+			host->autok_res[i][DS_SCAN_7]);
+
+		seq_printf(m, "[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
+		seq_printf(m, "[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
+		seq_printf(m, "[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
+		seq_printf(m, "[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+	}
+}
+
 int g_count;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
@@ -2290,6 +2365,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			sdio_autok_res_save(host, vcore, res);
 		} else if (mode == 2) {
 			msdc_dump_sdio_setting(host, m);
+		} else if (mode == 3) {
+			msdc_dump_autok_setting(host, m);
+			msdc_dump_autok(host);
 		}
 	} else if (cmd == MMC_CMDQ_STATUS) {
 		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
