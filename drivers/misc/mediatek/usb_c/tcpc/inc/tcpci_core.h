@@ -285,6 +285,7 @@ struct tcpc_device {
 	struct task_struct *timer_task;
 	bool timer_thead_stop;
 	bool event_loop_thead_stop;
+	bool tcpc_event_init_done;
 
 	struct delayed_work	init_work;
 	struct delayed_work	event_init_work;
