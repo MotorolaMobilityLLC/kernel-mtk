@@ -33,7 +33,7 @@
 #define FH_PLL_COUNT		(g_p_fh_hal_drv->pll_cnt)
 static struct mt_fh_hal_driver *g_p_fh_hal_drv;
 
-static fh_pll_t *g_fh_drv_pll;
+static struct fh_pll_t *g_fh_drv_pll;
 static struct freqhopping_ssc *g_fh_drv_usr_def;
 static unsigned int g_drv_pll_count;
 static int mt_freqhopping_ioctl(struct file *file, unsigned int cmd, unsigned long arg);

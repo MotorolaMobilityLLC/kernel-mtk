@@ -101,13 +101,13 @@ enum FH_PLL_ID {
  * keep track the status of each PLL
  * TODO: do we need another "uint mode" for Dynamic FH
  */
-typedef struct {
+struct fh_pll_t {
 	unsigned int	fh_status;
 	unsigned int	pll_status;
 	unsigned int	setting_id;
 	unsigned int	curr_freq;
 	unsigned int	user_defined;
-} fh_pll_t;
+};
 
 
 /* Record the owner of enable freq hopping <==TBD */
