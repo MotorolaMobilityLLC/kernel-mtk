@@ -30,6 +30,7 @@
 #include <linux/mmc/ffu.h>
 
 #include "../core/core.h"
+#include "../core/mmc_ops.h"
 
 #include <linux/uaccess.h>
 
@@ -84,11 +85,6 @@ int mmc_ffu_cache_ctrl(struct mmc_host *host, u8 enable)
 	struct mmc_card *card = host->card;
 	unsigned int timeout;
 	int err = 0;
-
-#ifdef CONFIG_MTK_EMMC_CACHE
-	if (card->quirks & MMC_QUIRK_DISABLE_CACHE)
-		return err;
-#endif
 
 	if (card && mmc_card_mmc(card) &&
 			(card->ext_csd.cache_size > 0)) {
@@ -166,7 +162,8 @@ static void mmc_ffu_prepare_mrq(struct mmc_card *card,
 	struct mmc_request *mrq, struct scatterlist *sg, unsigned int sg_len,
 	u32 arg, unsigned int blocks, unsigned int blksz, int write)
 {
-	WARN_ON(!mrq || !mrq->cmd || !mrq->data || !mrq->stop);
+	if (!mrq || !mrq->cmd || !mrq->data || !mrq->stop)
+		return;
 
 	if (blocks > 1) {
 		mrq->cmd->opcode = write ?
@@ -203,7 +200,8 @@ static void mmc_ffu_prepare_mrq(struct mmc_card *card,
  */
 static int mmc_ffu_check_result(struct mmc_request *mrq)
 {
-	WARN_ON(!mrq || !mrq->cmd || !mrq->data);
+	if (!mrq || !mrq->cmd || !mrq->data)
+		return -EINVAL;
 
 	if (mrq->cmd->error != 0)
 		return -EINVAL;
@@ -576,7 +574,6 @@ static int mmc_ffu_reduce_speed(struct mmc_card *card)
 	/* Some device does not allow FFU in 8 bit mode,
 	 * so switch to 4bit mode
 	 */
-
 	if (card->host->ios.timing == MMC_TIMING_MMC_HS400 ||
 	    card->host->ios.timing == MMC_TIMING_MMC_HS200 ||
 	    card->host->ios.timing == MMC_TIMING_MMC_DDR52) {
@@ -643,6 +640,7 @@ exit:
 
 int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 {
+	u8 *ext_csd_new = NULL;
 	int err;
 	u32 ffu_data_len;
 	u32 timeout;
@@ -714,7 +712,7 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 
 	/* read ext_csd */
 	while (retry--) {
-		err = mmc_send_ext_csd(card, ext_csd);
+		err = mmc_get_ext_csd(card, &ext_csd_new);
 		if (err)
 			pr_err("FFU: %s: sending ext_csd retry times %d\n",
 				mmc_hostname(card->host), retry);
@@ -728,7 +726,7 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	}
 
 	/* return status */
-	err = ext_csd[EXT_CSD_FFU_STATUS];
+	err = ext_csd_new[EXT_CSD_FFU_STATUS];
 	if (!err) {
 		pr_err("FFU: %s: succeed FFU\n",
 			mmc_hostname(card->host));
@@ -739,17 +737,18 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	}
 
 exit:
+	kfree(ext_csd_new);
 	return err;
 }
 
 int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	u8 *data, int buf_bytes)
 {
-	u8 ext_csd[CARD_BLOCK_SIZE];
+	u8 *ext_csd = NULL;
 	int err;
 
 	/* Read the EXT_CSD */
-	err = mmc_send_ext_csd(card, ext_csd);
+	err = mmc_get_ext_csd(card, &ext_csd);
 	if (err) {
 		pr_err("FFU: %s: error %d sending ext_csd\n",
 			mmc_hostname(card->host), err);
@@ -813,6 +812,7 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	}
 
 exit:
+	kfree(ext_csd);
 	return err;
 }
 EXPORT_SYMBOL(mmc_ffu_download);

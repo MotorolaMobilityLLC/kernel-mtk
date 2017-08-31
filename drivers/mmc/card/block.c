@@ -1124,7 +1124,7 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 				(struct mmc_ioc_multi_cmd __user *)arg);
 #ifdef CONFIG_MMC_FFU
 	case MMC_IOC_FFU_CMD:
-		ret = mmc_ffu_ioctl(bdev, (struct mmc_ioc_cmd __user *)arg);
+		return mmc_ffu_ioctl(bdev, (struct mmc_ioc_cmd __user *)arg);
 #endif
 	default:
 		return -EINVAL;
