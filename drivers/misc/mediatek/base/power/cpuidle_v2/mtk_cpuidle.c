@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/psci.h>
 
+#include <asm/arch_timer.h>
 #include <asm/cacheflush.h>
 #include <asm/cpuidle.h>
 #include <asm/irqflags.h>
@@ -41,6 +42,11 @@
 #ifdef CONFIG_MTK_RAM_CONSOLE
 static volatile void __iomem *mtk_cpuidle_aee_phys_addr;
 static volatile void __iomem *mtk_cpuidle_aee_virt_addr;
+#endif
+
+#if MTK_CPUIDLE_TIME_PROFILING
+static u64 mtk_cpuidle_timestamp[CONFIG_NR_CPUS][MTK_CPUIDLE_TIMESTAMP_COUNT];
+static char mtk_cpuidle_timestamp_buf[1024] = { 0 };
 #endif
 
 static unsigned int kp_irq_nr;
@@ -85,21 +91,27 @@ static void mtk_cpuidle_timestamp_init(void)
 
 	for (i = 0; i < CONFIG_NR_CPUS; i++)
 		for (k = 0; k < MTK_CPUIDLE_TIMESTAMP_COUNT; k++)
-			mtk_cpuidle_time[i][k] = 0;
+			mtk_cpuidle_timestamp[i][k] = 0;
 
-	kernel_smc_msg(0, 1, virt_to_phys(mtk_cpuidle_timestamp_log));
+	kernel_smc_msg(0, 1, virt_to_phys(mtk_cpuidle_timestamp));
 #endif
 }
 
-static void mtk_cpuidle_timestamp_print(void)
+static void mtk_cpuidle_timestamp_print(int cpu)
 {
 #if MTK_CPUIDLE_TIME_PROFILING
 	int i;
+	char *p;
 
 	request_uart_to_wakeup();
 
+	p = mtk_cpuidle_timestamp_buf;
+
+	p += sprintf(p, "CPU%d", cpu);
 	for (i = 0; i < MTK_CPUIDLE_TIMESTAMP_COUNT; i++)
-		pr_err("CPU%d,Time%d,%llu\n", cpu, i, mtk_cpuidle_time[cpu][i]);
+		p += sprintf(p, ",%llu", mtk_cpuidle_timestamp[cpu][i]);
+
+	pr_err("%s\n", mtk_cpuidle_timestamp_buf);
 #endif
 }
 
@@ -226,12 +238,14 @@ int mtk_enter_idle_state(int idx)
 		mtk_platform_save_context(cpu, idx);
 
 		mtk_cpuidle_footprint_log(cpu, 3);
+		mtk_cpuidle_timestamp_log(cpu, 1);
 		/*
 		 * Pass idle state index to cpu_suspend which in turn will
 		 * call the CPU ops suspend protocol with idle index as a
 		 * parameter.
 		 */
 		ret = arm_cpuidle_suspend(idx);
+		mtk_cpuidle_timestamp_log(cpu, 14);
 
 		mtk_cpuidle_footprint_log(cpu, 12);
 		mtk_platform_restore_context(cpu, idx);
@@ -250,7 +264,7 @@ int mtk_enter_idle_state(int idx)
 		mtk_cpuidle_footprint_clr(cpu);
 		mtk_cpuidle_timestamp_log(cpu, 15);
 
-		mtk_cpuidle_timestamp_print();
+		mtk_cpuidle_timestamp_print(cpu);
 	}
 
 	return ret ? -1 : idx;

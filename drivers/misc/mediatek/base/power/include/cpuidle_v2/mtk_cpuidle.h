@@ -14,6 +14,8 @@
 #ifndef __MTK_CPUIDLE_H__
 #define __MTK_CPUIDLE_H__
 
+#include <asm/arch_timer.h>
+
 enum mtk_cpuidle_mode {
 	MTK_MCDI_MODE = 1,
 	MTK_SODI_MODE,
@@ -47,7 +49,6 @@ int mtk_enter_idle_state(int idx);
 
 #if MTK_CPUIDLE_TIME_PROFILING
 #define MTK_CPUIDLE_TIMESTAMP_COUNT 16
-static u64 mtk_cpuidle_timestamp[CONFIG_NR_CPUS][MTK_CPUIDLE_TIMESTAMP_COUNT];
 
 #define mtk_cpuidle_timestamp_log(cpu, idx) (				\
 {									\
