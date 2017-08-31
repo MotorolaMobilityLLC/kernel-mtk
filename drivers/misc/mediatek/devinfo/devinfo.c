@@ -62,6 +62,7 @@ u32 devinfo_get_size(void)
 {
 	return g_devinfo_size;
 }
+EXPORT_SYMBOL(devinfo_get_size);
 
 u32 devinfo_ready(void)
 {
@@ -69,6 +70,7 @@ u32 devinfo_ready(void)
 		return 1;
 	return 0;
 }
+EXPORT_SYMBOL(devinfo_ready);
 
 u32 get_devinfo_with_index(u32 index)
 {
@@ -94,6 +96,8 @@ u32 get_devinfo_with_index(u32 index)
 
 	return ret;
 }
+EXPORT_SYMBOL(get_devinfo_with_index);
+
 /**************************************************************************
 *STATIC FUNCTION
 **************************************************************************/
