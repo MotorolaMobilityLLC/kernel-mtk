@@ -924,7 +924,7 @@ static int _rt9465_enable_chip(struct rt9465_info *info, bool enable)
 	}
 
 	/* Wait for chip's enable/disable */
-	mdelay(1);
+	mdelay(10);
 	mutex_unlock(&info->gpio_access_lock);
 
 	return 0;
