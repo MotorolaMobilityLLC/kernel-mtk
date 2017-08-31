@@ -33,7 +33,7 @@
 #include <mt-plat/rt-regmap.h>
 #endif
 
-#define RT9750_DRV_VERSION	"1.0.7_MTK"
+#define RT9750_DRV_VERSION	"1.0.8_MTK"
 
 #define I2C_ACCESS_MAX_RETRY 5
 
@@ -53,7 +53,7 @@ static struct rt9750_desc rt9750_default_desc = {
 	.regmap_represent_slave_addr = RT9750_SLAVE_ADDR,
 	.regmap_name = "rt9750",
 	.alias_name = "rt9750",
-	.chg_dev_name = "load_switch",
+	.chg_dev_name = "primary_load_switch",
 	.eint_name = "rt9750_chr_1",
 	.vbat_reg = 4400000,	/* uV */
 	.vout_reg = 5000000,	/* uV */
@@ -1144,6 +1144,7 @@ static int rt9750_get_ibus_adc(struct charger_device *chg_dev, u32 *ibus_adc)
 	}
 
 	*ibus_adc = ((data[0] & RT9750_MASK_IBUS_ADC2) << 8) + data[1];
+	*ibus_adc *= 1000; /* uA */
 
 	pr_info("%s: ibus_adc = %dmA\n", __func__, *ibus_adc);
 	return ret;
@@ -1397,6 +1398,10 @@ MODULE_VERSION(RT9750_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.8
+ * (1) Modify unit of get_ibus to uA
+ * (2) Modify load switch name to primary_load_switch
+ *
  * 1.0.7
  * (1) Add 1ms delay after enabling chip
  *

@@ -494,13 +494,13 @@ int mtk_dual_switch_charging_init(struct charger_manager *info)
 	if (!swch_alg)
 		return -ENOMEM;
 
-	info->chg1_dev = get_charger_by_name("PrimarySWCHG");
+	info->chg1_dev = get_charger_by_name("primary_chg");
 	if (info->chg1_dev)
 		pr_err("Found primary charger [%s]\n", info->chg1_dev->props.alias_name);
 	else
-		pr_err("*** Error : can't find primary charger [%s]***\n", "PrimarySWCHG");
+		pr_err("*** Error : can't find primary charger [%s]***\n", "primary_chg");
 
-	info->chg2_dev = get_charger_by_name("SecondarySWCHG");
+	info->chg2_dev = get_charger_by_name("secondary_chg");
 	if (info->chg2_dev)
 		pr_err("Found secondary charger [%s]\n", info->chg2_dev->props.alias_name);
 	else
