@@ -184,14 +184,8 @@ int vpu_hw_enable_jtag(bool enabled);
  */
 int vpu_hw_enque_request(struct vpu_request *req);
 
-/* Working buffer's offset */
-#define VPU_OFFSET_COMMAND           (0x00000000)
-#define VPU_OFFSET_LOG               (0x00002000)
-#define VPU_SIZE_LOG_BUF             (0x00002000)
-#define VPU_SIZE_LOG_HEADER          (0x00000010)
-#define VPU_SIZE_WRK_BUF             (0x00004000)
 /**
- * vpu_alloc_working_buffer - provide vpu hw for exchanging data.
+ * Working buffer's offset
  *
  *  [offset]
  *  0x00000000  +-----------------------+
@@ -211,7 +205,10 @@ int vpu_hw_enque_request(struct vpu_request *req);
  *   |{tail_addr}|    {reserved}        |
  *   +-----------+----------------------+
  */
-int vpu_alloc_working_buffer(void);
-
+#define VPU_OFFSET_COMMAND           (0x00000000)
+#define VPU_OFFSET_LOG               (0x00002000)
+#define VPU_SIZE_LOG_BUF             (0x00002000)
+#define VPU_SIZE_LOG_HEADER          (0x00000010)
+#define VPU_SIZE_WORK_BUF            (0x00004000)
 
 #endif

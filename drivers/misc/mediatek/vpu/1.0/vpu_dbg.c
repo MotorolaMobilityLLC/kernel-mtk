@@ -27,30 +27,22 @@
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
 
-#define VPU_USING_M4U      (0)
 #define ALGO_OF_MAX_POWER  (3)
 
 /* global variables */
 int g_vpu_log_level = 1;
 
-/* #ifdef CONFIG_ION */
+#ifdef MTK_VPU_DVT
+
+#include "test/vpu_data_wpp.h"
+
 #if 0
-
-#include <ion.h>
-#include <mtk/ion_drv.h>
-#include <mtk/mtk_ion.h>
-
-#include "../test/datapp.h"
-#include "../test/datasrc.h"
-#include "../test/datadst.h"
-
 #include <linux/fs.h>
 #include <linux/file.h>
 #include <linux/unistd.h>
 #include <linux/uaccess.h>
 
-#if 0
-static void vpu_save_to_file(char *filename, char *buf, int size)
+static void vpu_save_file(char *filename, char *buf, int size)
 {
 	struct file *f = NULL;
 	mm_segment_t fs;
@@ -70,73 +62,40 @@ static void vpu_save_to_file(char *filename, char *buf, int size)
 	filp_close(f, NULL);
 }
 #else
-#define vpu_save_to_file(...)
+#define vpu_save_file(...)
 #endif
 
-static void vpu_test_ion(void)
+static void vpu_test_wpp(void)
 {
-	const int width = 1920;
-	const int height = 1080;
-	const int data_len = 4172;
+	const int width = 640;
+	const int height = 360;
 	const int sett_len = 1024;
+	const int data_len = SIZE_OF_DATAPP_WPP;
 	const int img_size = width * height;
-	const int buf_size = img_size * 2 + data_len + sett_len;
+	/* workaround: dsp accesses the illegal address */
+	const int buf_size = img_size * 2 + data_len + sett_len + 0x200000;
 
 	struct vpu_user *user;
 	struct vpu_request *req;
 	struct vpu_buffer *buf;
 	struct vpu_algo *algo;
 
-	struct ion_client *ion_client;
-	struct ion_handle *buf_handle;
-	struct ion_mm_data mm_data;
-	struct ion_sys_data sys_data;
-
-	void *buf_va;
+	struct vpu_shared_memory *shared_mem;
+	unsigned char *buf_va;
 	unsigned int buf_pa;
+	int ret;
 
-#if VPU_USING_M4U
-	m4u_client_t *m4u_client;
-	struct sg_table *buf_sgtbl;
-#endif
-
-	ion_client = ion_client_create(g_ion_device, "vpu");
-	buf_handle = ion_alloc(ion_client, buf_size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
-
-#if VPU_USING_M4U
-	buf_sgtbl = ion_sg_table(ion_client, buf_handle);
-	buf_pa = 0x70000000;
-	m4u_client = m4u_create_client();
-	m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU, 0, buf_sgtbl, buf_size,
-				  M4U_PROT_READ | M4U_PROT_WRITE,
-				  M4U_FLAGS_FIX_MVA, &buf_pa);
-#else
-	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
-	mm_data.config_buffer_param.kernel_handle = buf_handle;
-	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
-	mm_data.config_buffer_param.security = 0;
-	mm_data.config_buffer_param.coherent = 1;
-	mm_data.config_buffer_param.reserve_iova_start = 0x50000000;
-	mm_data.config_buffer_param.reserve_iova_end = 0x7FFFFFFF;
-	if (ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data) < 0) {
-		LOG_ERR("vpu test: config ion buffer failed.\n");
+	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
+		LOG_ERR("vpu test: alloc memory failed.\n");
 		return;
 	}
 
-	sys_data.sys_cmd = ION_SYS_GET_PHYS;
-	sys_data.get_phys_param.kernel_handle = buf_handle;
-	if (ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data)) {
-		LOG_ERR("vpu test: get phys failed.\n");
-		return;
-	}
-
-	buf_pa = sys_data.get_phys_param.phy_addr;
-	LOG_DBG("vpu test: physical address=0x%x, len=%ld\n",
-		 buf_pa, sys_data.get_phys_param.len);
-#endif
+	buf_pa = shared_mem->pa;
+	buf_va = (unsigned char *) shared_mem->va;
+	LOG_DBG("vpu test: pa=0x%x, va=0x%p\n", buf_pa, buf_va);
 
 	if (vpu_find_algo_by_name("ipu_flo_d2d_k3", &algo) != 0) {
-		LOG_ERR("algo[ipu_flo_d2d_k3] is not existed!\n");
+		LOG_ERR("vpu test: can not find algo!\n");
 		return;
 	}
 
@@ -175,90 +134,65 @@ static void vpu_test_ion(void)
 	buf->planes[0].length = data_len;
 	buf->port_id = 2;
 
-	buf_va = ion_map_kernel(ion_client, buf_handle);
+	/* setting */
+	req->sett_ptr = buf_pa + img_size * 2 + data_len;
+	req->sett_length = sett_len;
 
-	LOG_INF("ion alloced: src_va=0x%p\n", buf_va);
-
-	memcpy(buf_va, g_datasrc_1920x1080_wpp, img_size);
-	memset((char *)buf_va + img_size, 0x19, img_size);
-	memcpy((char *)buf_va + img_size * 2, g_procParam, data_len);
-
-	/* update request's setting */
-	{
-		struct emu_setting {
-			int param1;
-			int param2;
-			int param3;
-			int param4;
-			int param5;
-		};
-		struct emu_setting *sett;
-
-		sett = (struct emu_setting *)((char *)buf_va + (img_size * 2 + data_len));
-		sett->param1 = 1;
-		sett->param2 = 2;
-		sett->param3 = 3;
-		sett->param4 = 4;
-		req->sett_ptr = buf_pa + (img_size * 2 + data_len);
-		req->sett_length = 1024;
-	}
+	memcpy(buf_va, g_datasrc_640x360_wpp, img_size);
+	memset(buf_va + img_size, 0x19, img_size);
+	memcpy(buf_va + img_size * 2, g_datapp_640x360_wpp, data_len);
 
 	vpu_push_request_to_queue(user, req);
 	vpu_pop_request_from_queue(user, &req);
 
 	/* compare with golden */
-	{
-		int ret_cmp;
+	ret = memcmp(buf_va + img_size, g_datadst_640x360_golden_wpp, img_size);
+	LOG_INF("comparison result:%d", ret);
+	vpu_save_file("/data/vpu_result_wpp.raw", buf_va + img_size, img_size);
 
-		ret_cmp = memcmp((char *)buf_va + img_size, g_datadst_1920x1080_golden_wpp, img_size);
-		LOG_INF("comparison result:%d", ret_cmp);
-		vpu_save_to_file("/data/dst.raw", (char *)buf_va + img_size, img_size);
-	}
 	vpu_free_request(req);
 	vpu_delete_user(user);
-
-#if VPU_USING_M4U
-	m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, buf_pa);
-	m4u_destroy_client(m4u_client);
-#endif
-
-	ion_free(ion_client, buf_handle);
-	ion_client_destroy(ion_client);
+	vpu_free_shared_memory(shared_mem);
 }
-
 
 static void vpu_test_be_true(void)
 {
+	struct emu_setting {
+		int param1;
+		int param2;
+		int param3;
+		int param4;
+		int param5;
+	};
+
+	const int width = 64;
+	const int height = 64;
+	const int sett_len = sizeof(struct emu_setting);
+	const int img_size = width * height;
+	const int buf_size = img_size * 2 + sett_len;
+
 	struct vpu_user *user;
 	struct vpu_request *req;
 	struct vpu_buffer *buf;
 	struct vpu_algo *algo;
-	int width, height, size;
+	struct emu_setting *sett;
 
-	m4u_client_t *m4u_client;
-	struct ion_client *ion_client;
-	struct ion_handle *buf_handle;
-
+	struct vpu_shared_memory *shared_mem;
 	unsigned char *buf_va;
 	unsigned int buf_pa;
+	int ret;
 
-	struct sg_table *buf_sgtbl;
+	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
+		LOG_ERR("vpu test: alloc memory failed.\n");
+		return;
+	}
 
-	width = height = 64;
-	size = width * height * 2;
-
-	m4u_client = m4u_create_client();
-	ion_client = ion_client_create(g_ion_device, "vpu");
-
-	buf_handle = ion_alloc(ion_client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
-	buf_sgtbl = ion_sg_table(ion_client, buf_handle);
-	buf_pa = 0x70000000;
-	m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU, 0, buf_sgtbl, size,
-				  M4U_PROT_READ | M4U_PROT_WRITE,
-				  M4U_FLAGS_FIX_MVA, &buf_pa);
+	buf_pa = shared_mem->pa;
+	buf_va = (unsigned char *) shared_mem->va;
+	LOG_DBG("vpu test: pa=0x%x, va=0x%p\n", buf_pa, buf_va);
 
 	if (vpu_find_algo_by_name("ipu_flo_d2d_k5", &algo) != 0) {
-		LOG_ERR("algo[ipu1_flo_d2d_k5] is not existed in pool\n");
+		LOG_ERR("vpu test: can not find algo!\n");
 		return;
 	}
 
@@ -269,41 +203,33 @@ static void vpu_test_be_true(void)
 	req->algo_id = algo->id;
 	req->buffer_count = 0;
 
-	buf_va = (unsigned char *) ion_map_kernel(ion_client, buf_handle);
-	LOG_INF("ion alloced: src_va=0x%p\n", buf_va);
-
 	memset(buf_va, 0x1, width * height);
+
+	/* update request's setting */
+	sett = (struct emu_setting *)(buf_va + img_size * 2);
+	sett->param1 = 1;
+	sett->param2 = 2;
+	sett->param3 = 3;
+	sett->param4 = 4;
+	sett->param5 = 0;
+	req->sett_ptr = buf_pa + img_size * 2;
+	req->sett_length = sett_len;
 
 	vpu_push_request_to_queue(user, req);
 	vpu_pop_request_from_queue(user, &req);
 
-	{
-		int ret_cmp;
+	/* set source buffer to the expected result, and compare with destination buffer */
+	memset(buf_va, 0x2, width * height);
+	ret = memcmp(buf_va, buf_va + width * height, width * height);
+	LOG_INF("vpu test: comparison result=%d and param5=%d", ret, sett->param5);
 
-		memset((char *)buf_va, 0x2, width * height);
-		ret_cmp = memcmp(buf_va, buf_va + width * height, width * height);
-		LOG_INF("comparison result:%d", ret_cmp);
-	}
 	vpu_free_request(req);
 	vpu_delete_user(user);
-
-	m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, buf_pa);
-	m4u_destroy_client(m4u_client);
-
-	ion_free(ion_client, buf_handle);
-	ion_client_destroy(ion_client);
+	vpu_free_shared_memory(shared_mem);
 }
 
-#else
-#define vpu_test_ion(...)
-#define vpu_test_be_true(...)
-#endif
-
-#ifdef MTK_VPU_DVT
 static u64 test_value;
 static struct vpu_user *test_user[10];
-
-
 static int vpu_user_test_case1(void *arg)
 {
 	struct vpu_user *user;
@@ -338,7 +264,6 @@ static int vpu_user_test_case1(void *arg)
 	return 0;
 }
 
-
 static int vpu_user_test_case2(void *arg)
 {
 	struct vpu_user *user;
@@ -369,7 +294,6 @@ static int vpu_user_test_case2(void *arg)
 	vpu_delete_user(user);
 	return 0;
 }
-
 
 static int vpu_user_test_case3(void *arg)
 {
@@ -453,7 +377,7 @@ static int vpu_test_set(void *data, u64 val)
 		vpu_id_t id = (int) val - 10;
 
 		if (vpu_find_algo_by_id(id, &algo))
-			LOG_DBG("algo[%d] is not existed\n", id);
+			LOG_DBG("vpu test: algo(%d) is not existed\n", id);
 
 		break;
 	}
@@ -480,7 +404,7 @@ static int vpu_test_set(void *data, u64 val)
 		int index = val - 60;
 
 		if (vpu_pop_request_from_queue(test_user[index], &req))
-			LOG_ERR("deque failed! user: %d\n", index);
+			LOG_ERR("vpu test: user(%d) deque failed!\n", index);
 		else
 			vpu_free_request(req);
 
@@ -502,7 +426,7 @@ static int vpu_test_set(void *data, u64 val)
 		break;
 	}
 	case 90:
-		vpu_test_ion();
+		vpu_test_wpp();
 		break;
 	case 91:
 		vpu_test_be_true();

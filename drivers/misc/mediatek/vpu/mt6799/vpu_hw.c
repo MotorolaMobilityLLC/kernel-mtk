@@ -35,6 +35,10 @@
 #include <mtk_pmic_info.h>
 #endif
 
+#ifdef MTK_VPU_DVT
+#define VPU_TRACE_ENABLED
+#endif
+
 #include "vpu_hw.h"
 #include "vpu_reg.h"
 #include "vpu_cmn.h"
@@ -43,13 +47,13 @@
 
 #define CMD_WAIT_TIME_MS    (10 * 1000)
 #define PWR_KEEP_TIME_MS    (500)
-#define IOMMU_VA_START      (0x50000000)
+#define IOMMU_VA_START      (0x60000000)
 #define IOMMU_VA_END        (0x7FFFFFFF)
 
 /* working buffer */
-static uint64_t wrk_buf_va;
-static uint32_t wrk_buf_pa;
-static struct ion_handle *wrk_buf_handle;
+static struct vpu_shared_memory *work_buf;
+static uint64_t work_buf_va;
+static uint32_t work_buf_pa;
 
 /* ion & m4u */
 static m4u_client_t *m4u_client;
@@ -147,10 +151,8 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	int ret = 0;
 
 	reg_vimvo = regulator_get(pdev, "vimvo");
-	if (IS_ERR(reg_vimvo)) {
-		LOG_ERR("can not find regulator: vimvo\n");
-		return PTR_ERR(reg_vimvo);
-	}
+	ret = IS_ERR(reg_vimvo);
+	CHECK_RET("can not find regulator: vimvo\n");
 
 #define PREPARE_VPU_MTCMOS(clk) \
 	{ \
@@ -200,37 +202,44 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	PREPARE_VPU_CLK(clk_top_mmpll_d5);
 #undef PREPARE_VPU_CLK
 
+out:
 	return ret;
 }
 
 static int vpu_enable_regulator_and_clock(void)
 {
+	int ret;
+
+	vpu_trace_begin("vpu_enable_regulator_and_clock");
+
 	/* set VSRAM_CORE to 1.0V */
-	if (enable_vsram_vcore_hw_tracking(0)) {
-		LOG_ERR("fail to disable vsram_core tracking!\n");
-		return -1;
-	}
+	vpu_trace_begin("vsram_vcore_tracking:disable");
+	ret = enable_vsram_vcore_hw_tracking(0);
+	vpu_trace_end();
+	CHECK_RET("fail to disable vsram_core tracking!\n");
 	ndelay(40);
 
-	if (enable_vimvo_lp_mode(0)) {
-		LOG_ERR("fail to switch vimvo to normal mode!\n");
-		return -1;
-	}
+	vpu_trace_begin("vimvo:enable_lp_mode");
+	ret = enable_vimvo_lp_mode(0);
+	vpu_trace_end();
+	CHECK_RET("fail to switch vimvo to normal mode!\n");
 
-	if (reg_vimvo != NULL) {
-		if (regulator_enable(reg_vimvo))
-			LOG_WRN("fail to enable regulator: vimvo\n");
-	} else {
-		LOG_WRN("regulator not existed: vimvo\n");
-		return -1;
-	}
+	ret = (reg_vimvo == NULL) ? -1 : 0;
+	CHECK_RET("regulator not existed: vimvo\n");
 
-	if (step_reg_vimvo >= ARRAY_SIZE(map_reg_vimvo)) {
-		LOG_ERR("vimvo has wrong voltage step: %d\n", step_reg_vimvo);
-		return -1;
-	}
-	regulator_set_voltage(reg_vimvo,
+	vpu_trace_begin("vimvo:enable");
+	ret = regulator_enable(reg_vimvo);
+	vpu_trace_end();
+	CHECK_RET("fail to enable regulator: vimvo\n");
+
+	ret = (step_reg_vimvo >= ARRAY_SIZE(map_reg_vimvo)) ? -EINVAL : 0;
+	CHECK_RET("vimvo has wrong voltage step: %d\n", step_reg_vimvo);
+
+	vpu_trace_begin("vimvo:set_voltage");
+	ret = regulator_set_voltage(reg_vimvo,
 		map_reg_vimvo[step_reg_vimvo], map_reg_vimvo[step_reg_vimvo]);
+	vpu_trace_end();
+	CHECK_RET("fail to set vimvo step(%d), ret=%d\n", step_reg_vimvo, ret);
 	ndelay(70);
 
 #define ENABLE_VPU_MTCMOS(clk) \
@@ -243,8 +252,10 @@ static int vpu_enable_regulator_and_clock(void)
 		} \
 	}
 
+	vpu_trace_begin("mtcmos:enable");
 	ENABLE_VPU_MTCMOS(mtcmos_mm0);
 	ENABLE_VPU_MTCMOS(mtcmos_ipu);
+	vpu_trace_end();
 #undef ENABLE_VPU_MTCMOS
 
 #define ENABLE_VPU_CLK(clk) \
@@ -257,6 +268,7 @@ static int vpu_enable_regulator_and_clock(void)
 		} \
 	}
 
+	vpu_trace_begin("clock:enable");
 	ENABLE_VPU_CLK(clk_mm_ipu);
 	ENABLE_VPU_CLK(clk_mm_gals_m0_2x);
 	ENABLE_VPU_CLK(clk_mm_gals_m1_2x);
@@ -276,29 +288,30 @@ static int vpu_enable_regulator_and_clock(void)
 	ENABLE_VPU_CLK(clk_ipu_img_axi);
 	ENABLE_VPU_CLK(clk_top_dsp_sel);
 	ENABLE_VPU_CLK(clk_top_ipu_if_sel);
+	vpu_trace_end();
 #undef ENABLE_VPU_CLK
 
 	/* set dsp frequency - 0:364MHz, 1:480MHz */
 	if (step_clk_dsp == 0)
-		clk_set_parent(clk_top_dsp_sel, clk_top_syspll_d3);
+		ret = clk_set_parent(clk_top_dsp_sel, clk_top_syspll_d3);
 	else if (step_clk_dsp == 1)
-		clk_set_parent(clk_top_dsp_sel, clk_top_mmpll_d5);
-	else {
-		LOG_ERR("dsp has wrong frequency step: %d\n", step_clk_dsp);
-		return -1;
-	}
+		ret = clk_set_parent(clk_top_dsp_sel, clk_top_mmpll_d5);
+	else
+		ret = -EINVAL;
+	CHECK_RET("fail to set dsp frequency(%d), ret=%d\n", step_clk_dsp, ret);
 
 	/* set ipu_if frequency - 0:364MHz, 1:504MHz */
 	if (step_clk_ipu_if == 0)
-		clk_set_parent(clk_top_ipu_if_sel, clk_top_syspll_d3);
+		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_syspll_d3);
 	else if (step_clk_ipu_if == 1)
-		clk_set_parent(clk_top_ipu_if_sel, clk_top_mmpll_d5);
-	else {
-		LOG_ERR("ipu_if has wrong frequency step: %d\n", step_clk_ipu_if);
-		return -1;
-	}
+		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_mmpll_d5);
+	else
+		ret = -EINVAL;
+	CHECK_RET("fail to set ipu_if frequency(%d), ret=%d\n", step_clk_ipu_if, ret);
 
-	return 0;
+out:
+	vpu_trace_end();
+	return ret;
 }
 
 static int vpu_disable_regulator_and_clock(void)
@@ -561,51 +574,6 @@ out:
 
 #endif
 
-int vpu_alloc_working_buffer(void)
-{
-	int ret;
-	struct ion_mm_data mm_data;
-	struct ion_sys_data sys_data;
-
-	if (wrk_buf_pa)
-		return 0;
-
-	wrk_buf_handle = ion_alloc(ion_client, VPU_SIZE_WRK_BUF, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
-	ret = (wrk_buf_handle == NULL) ? -ENOMEM : 0;
-	CHECK_RET("fail to alloc ion buffer for enq!\n");
-
-	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
-	mm_data.config_buffer_param.kernel_handle = wrk_buf_handle;
-	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
-	mm_data.config_buffer_param.security = 0;
-	mm_data.config_buffer_param.coherent = 1;
-	mm_data.config_buffer_param.reserve_iova_start = IOMMU_VA_START;
-	mm_data.config_buffer_param.reserve_iova_end = IOMMU_VA_END;
-	ret = ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data);
-	CHECK_RET("fail to config ion buffer, ret=%d\n", ret);
-
-	sys_data.sys_cmd = ION_SYS_GET_PHYS;
-	sys_data.get_phys_param.kernel_handle = wrk_buf_handle;
-	ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data);
-	CHECK_RET("fail to get ion phys, ret=%d\n", ret);
-
-	wrk_buf_pa = sys_data.get_phys_param.phy_addr;
-
-	wrk_buf_va = (uint64_t) ion_map_kernel(ion_client, wrk_buf_handle);
-	ret = (wrk_buf_va == 0) ? -ENOMEM : 0;
-	CHECK_RET("fail to map va of working buffer!\n");
-
-	return 0;
-
-out:
-	if (wrk_buf_handle != NULL) {
-		ion_free(ion_client, wrk_buf_handle);
-		wrk_buf_handle = NULL;
-	}
-
-	return ret;
-}
-
 static int vpu_dump_power(struct seq_file *s, void *unused)
 {
 	vpu_print_seq(s, "dynamic(rw): %d\n",
@@ -822,9 +790,6 @@ int vpu_init_hw(struct vpu_device *device)
 	}
 	wake_up_process(enque_task);
 
-	ret = vpu_alloc_working_buffer();
-	CHECK_RET("fail to allocate working buffer!\n");
-
 #ifndef MTK_VPU_FPGA_PORTING
 	ret = register_mmdvfs_state_change_cb(MMDVFS_SCEN_VPU, vpu_mmdvfs_receive_event);
 	CHECK_RET("fail to register mmdvfs callback!\n");
@@ -834,7 +799,17 @@ int vpu_init_hw(struct vpu_device *device)
 	CHECK_RET("fail to switch vimvo to low power mode!\n");
 #endif
 
+	ret = vpu_alloc_shared_memory(&work_buf, VPU_SIZE_WORK_BUF);
+	CHECK_RET("fail to allocate working buffer!\n");
+	work_buf_pa = work_buf->pa;
+	work_buf_va = work_buf->va;
+
+	return 0;
+
 out:
+	if (work_buf)
+		vpu_free_shared_memory(work_buf);
+
 	return ret;
 }
 
@@ -847,9 +822,11 @@ int vpu_uninit_hw(void)
 
 	vpu_unprepare_regulator_and_clock();
 
-	if (wrk_buf_pa) {
-		m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, wrk_buf_pa);
-		wrk_buf_pa = 0;
+	if (work_buf) {
+		vpu_free_shared_memory(work_buf);
+		work_buf = NULL;
+		work_buf_pa = 0;
+		work_buf_va = 0;
 	}
 
 	if (m4u_client != NULL) {
@@ -858,10 +835,6 @@ int vpu_uninit_hw(void)
 	}
 
 	if (ion_client != NULL) {
-		if (wrk_buf_handle != NULL) {
-			ion_free(ion_client, wrk_buf_handle);
-			wrk_buf_handle = NULL;
-		}
 		ion_client_destroy(ion_client);
 		ion_client = NULL;
 	}
@@ -938,6 +911,8 @@ int vpu_hw_boot_sequence(void)
 	uint64_t ptr_reset;
 	uint64_t ptr_axi;
 
+	vpu_trace_begin("vpu_hw_boot_sequence");
+
 	lock_command();
 
 	ptr_ctrl = vpu_base + g_vpu_reg_descs[REG_CTRL].offset;
@@ -976,10 +951,12 @@ int vpu_hw_boot_sequence(void)
 	VPU_SET_BIT(ptr_axi, 29);
 
 	/* 2. trigger to run */
+	vpu_trace_begin("dsp:running");
 	VPU_CLR_BIT(ptr_ctrl, 23);      /* RUN_STALL pull down */
 
 	/* 3. wait until done */
 	ret = wait_command();
+	vpu_trace_end();
 	CHECK_RET("timeout of external boot\n");
 
 	/* 4. check the result of boot sequence */
@@ -988,6 +965,7 @@ int vpu_hw_boot_sequence(void)
 
 out:
 	unlock_command();
+	vpu_trace_end();
 	return ret;
 }
 
@@ -995,19 +973,30 @@ int vpu_hw_set_debug(void)
 {
 	int ret;
 
+	vpu_trace_begin("vpu_hw_set_debug");
+
 	lock_command();
 
 	/* 1. set debug */
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_SET_DEBUG);
-	vpu_write_field(FLD_XTENSA_INFO21, wrk_buf_pa + VPU_OFFSET_LOG);
+	vpu_write_field(FLD_XTENSA_INFO21, work_buf_pa + VPU_OFFSET_LOG);
 	vpu_write_field(FLD_XTENSA_INFO22, VPU_SIZE_LOG_BUF);
 	/* 2. trigger interrupt */
+	vpu_trace_begin("dsp:running");
 	vpu_write_field(FLD_INT_CTL_XTENSA00, 1);
 
 	/* 3. wait until done */
 	ret = wait_command();
+	vpu_trace_end();
+	CHECK_RET("timeout of set debug\n");
 
+	/* 4. check the result */
+	ret = vpu_check_result();
+	CHECK_RET("fail to set debug!\n");
+
+out:
 	unlock_command();
+	vpu_trace_end();
 	return ret;
 }
 
@@ -1086,6 +1075,8 @@ int vpu_boot_up(void)
 	if (is_boot_up)
 		return 0;
 
+	vpu_trace_begin("vpu_boot_up");
+
 	ret = vpu_enable_regulator_and_clock();
 	CHECK_RET("fail to enable regulator or clock\n");
 
@@ -1098,6 +1089,7 @@ int vpu_boot_up(void)
 	is_boot_up = true;
 
 out:
+	vpu_trace_end();
 	return ret;
 }
 
@@ -1108,6 +1100,8 @@ int vpu_shut_down(void)
 	if (!is_boot_up)
 		return 0;
 
+	vpu_trace_begin("vpu_shut_down");
+
 	ret = vpu_disable_regulator_and_clock();
 	CHECK_RET("fail to disable regulator and clock\n");
 
@@ -1115,6 +1109,7 @@ int vpu_shut_down(void)
 	is_boot_up = false;
 
 out:
+	vpu_trace_end();
 	return ret;
 }
 
@@ -1129,6 +1124,8 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	if (algo_loaded == algo->id)
 		return 0;
 
+	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id);
+
 	lock_command();
 	LOG_DBG("call vpu to do loader\n");
 	ret = vpu_check_status();
@@ -1142,10 +1139,12 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	vpu_write_field(FLD_XTENSA_INFO16, map_clk_ipu_if[step_clk_ipu_if]);
 
 	/* 2. trigger interrupt */
+	vpu_trace_begin("dsp:running");
 	vpu_write_field(FLD_INT_CTL_XTENSA00, 1);
 
 	/* 3. wait until done */
 	ret = wait_command();
+	vpu_trace_end();
 	CHECK_RET("timeout to command\n");
 
 	/* 4. update the id of loaded algo */
@@ -1153,6 +1152,7 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 
 out:
 	unlock_command();
+	vpu_trace_end();
 	return ret;
 }
 
@@ -1160,6 +1160,8 @@ int vpu_hw_enque_request(struct vpu_request *request)
 {
 	int ret, i, j;
 	unsigned int arg_bufs = 0;
+
+	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id);
 
 	lock_command();
 	LOG_DBG("call vpu to do enque buffers\n");
@@ -1170,24 +1172,24 @@ int vpu_hw_enque_request(struct vpu_request *request)
 		goto out;
 	}
 
-	arg_bufs = wrk_buf_pa;
-	memcpy((void *) wrk_buf_va, request->buffers,
+	arg_bufs = work_buf_pa;
+	memcpy((void *) work_buf_va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
 	if (g_vpu_log_level > 4) {
-		LOG_DBG("dump request - setting: 0x%x, length: %d",
+		LOG_DBG("dump request - setting: 0x%x, length: %d\n",
 				(uint32_t) request->sett_ptr, request->sett_length);
 
 		for (i = 0; i < request->buffer_count; i++) {
 			struct vpu_buffer *buf = &request->buffers[i];
 
-			LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d", i,
+			LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n", i,
 					buf->port_id, buf->width, buf->height, buf->format);
 
 			for (j = 0; j < buf->plane_count; j++) {
 				struct vpu_plane *plane = &buf->planes[j];
 
-				LOG_DBG("  plane[%d] - ptr: 0x%x, length: %d, stride: %d", j,
+				LOG_DBG("  plane[%d] - ptr: 0x%x, length: %d, stride: %d\n", j,
 						(uint32_t) plane->ptr, plane->length, plane->stride);
 			}
 		}
@@ -1201,20 +1203,22 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	vpu_write_field(FLD_XTENSA_INFO15, request->sett_length);       /* size of property buffer */
 
 	/* 2. trigger interrupt */
+	vpu_trace_begin("dsp:running");
 	vpu_write_field(FLD_INT_CTL_XTENSA00, 1);
 
 	/* 3. wait until done */
 	ret = wait_command();
+	vpu_trace_end();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
 		LOG_ERR("timeout to command\n");
 		goto out;
 	}
 	request->status = VPU_REQ_STATUS_SUCCESS;
+
 out:
-
 	unlock_command();
-
+	vpu_trace_end();
 	return ret;
 
 }
@@ -1227,6 +1231,7 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	int sett_desc_count = 0;
 	unsigned int ofs_ports, ofs_info, ofs_info_descs, ofs_sett_descs;
 
+	vpu_trace_begin("vpu_hw_get_algo_info(%d)", algo->id);
 
 	lock_command();
 	LOG_DBG("call vpu to get algo\n");
@@ -1242,16 +1247,19 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 
 	/* 1. write register */
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_GET_ALGO);   /* command: get algo */
-	vpu_write_field(FLD_XTENSA_INFO6, wrk_buf_pa + ofs_ports);
-	vpu_write_field(FLD_XTENSA_INFO7, wrk_buf_pa + ofs_info);
+	vpu_write_field(FLD_XTENSA_INFO6, work_buf_pa + ofs_ports);
+	vpu_write_field(FLD_XTENSA_INFO7, work_buf_pa + ofs_info);
 	vpu_write_field(FLD_XTENSA_INFO8, algo->info_length);
-	vpu_write_field(FLD_XTENSA_INFO10, wrk_buf_pa + ofs_info_descs);
-	vpu_write_field(FLD_XTENSA_INFO12, wrk_buf_pa + ofs_sett_descs);
+	vpu_write_field(FLD_XTENSA_INFO10, work_buf_pa + ofs_info_descs);
+	vpu_write_field(FLD_XTENSA_INFO12, work_buf_pa + ofs_sett_descs);
+
 	/* 2. trigger interrupt */
+	vpu_trace_begin("dsp:running");
 	vpu_write_field(FLD_INT_CTL_XTENSA00, 1);
 
 	/* 3. wait until done */
 	ret = wait_command();
+	vpu_trace_end();
 	CHECK_RET("timeout to command\n");
 
 	/* 4. get the return value */
@@ -1290,18 +1298,18 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	}
 
 	/* 6. write back data from working buffer */
-	memcpy((void *) algo->ports, (void *) (wrk_buf_va + ofs_ports),
+	memcpy((void *) algo->ports, (void *) (work_buf_va + ofs_ports),
 			sizeof(struct vpu_port) * port_count);
-	memcpy((void *) algo->info_ptr, (void *) (wrk_buf_va + ofs_info),
+	memcpy((void *) algo->info_ptr, (void *) (work_buf_va + ofs_info),
 			algo->info_length);
-	memcpy((void *) algo->info_descs, (void *) (wrk_buf_va + ofs_info_descs),
+	memcpy((void *) algo->info_descs, (void *) (work_buf_va + ofs_info_descs),
 			sizeof(struct vpu_prop_desc) * info_desc_count);
-	memcpy((void *) algo->sett_descs, (void *) (wrk_buf_va + ofs_sett_descs),
+	memcpy((void *) algo->sett_descs, (void *) (work_buf_va + ofs_sett_descs),
 			sizeof(struct vpu_prop_desc) * sett_desc_count);
+
 out:
-
 	unlock_command();
-
+	vpu_trace_end();
 	return ret;
 }
 
@@ -1327,6 +1335,75 @@ void vpu_hw_unlock(struct vpu_user *user)
 	} else
 		LOG_ERR("error: not locked, pid:%d, tid:%d\n",
 				user->open_pid, user->open_tgid);
+}
+
+int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size)
+{
+	int ret;
+	struct ion_mm_data mm_data;
+	struct ion_sys_data sys_data;
+	struct ion_handle *handle = NULL;
+
+	*shmem = kzalloc(sizeof(struct vpu_shared_memory), GFP_KERNEL);
+	ret = (*shmem == NULL);
+	CHECK_RET("fail to kzalloc 'struct memory'!\n");
+
+	handle = ion_alloc(ion_client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
+	ret = (handle == NULL) ? -ENOMEM : 0;
+	CHECK_RET("fail to alloc ion buffer, ret=%d\n", ret);
+	(*shmem)->handle = (void *) handle;
+
+	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
+	mm_data.config_buffer_param.kernel_handle = handle;
+	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
+	mm_data.config_buffer_param.security = 0;
+	mm_data.config_buffer_param.coherent = 1;
+	mm_data.config_buffer_param.reserve_iova_start = IOMMU_VA_START;
+	mm_data.config_buffer_param.reserve_iova_end = IOMMU_VA_END;
+	ret = ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data);
+	CHECK_RET("fail to config ion buffer, ret=%d\n", ret);
+
+	sys_data.sys_cmd = ION_SYS_GET_PHYS;
+	sys_data.get_phys_param.kernel_handle = handle;
+	sys_data.get_phys_param.phy_addr = VPU_PORT_OF_IOMMU << 24 | ION_FLAG_GET_FIXED_PHYS;
+	sys_data.get_phys_param.len = ION_FLAG_GET_FIXED_PHYS;
+	ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM, (unsigned long)&sys_data);
+	CHECK_RET("fail to get ion phys, ret=%d\n", ret);
+	(*shmem)->pa = sys_data.get_phys_param.phy_addr;
+	(*shmem)->length = sys_data.get_phys_param.len;
+
+	(*shmem)->va = (uint64_t) ion_map_kernel(ion_client, handle);
+	ret = ((*shmem)->va) ? 0 : -ENOMEM;
+	CHECK_RET("fail to map va of buffer!\n");
+
+	return 0;
+
+out:
+	if (handle)
+		ion_free(ion_client, handle);
+
+	if (*shmem) {
+		kfree(*shmem);
+		*shmem = NULL;
+	}
+
+	return ret;
+}
+
+void vpu_free_shared_memory(struct vpu_shared_memory *shmem)
+{
+	struct ion_handle *handle;
+
+	if (shmem == NULL)
+		return;
+
+	handle = (struct ion_handle *) shmem->handle;
+	if (handle) {
+		ion_unmap_kernel(ion_client, handle);
+		ion_free(ion_client, handle);
+	}
+
+	kfree(shmem);
 }
 
 int vpu_dump_register(struct seq_file *s)
@@ -1441,16 +1518,17 @@ int vpu_dump_image_file(struct seq_file *s)
 
 int vpu_dump_mesg(struct seq_file *s)
 {
-	unsigned char *ptr = NULL;
-	unsigned char *log_head;
+	char *ptr = NULL;
+	char *log_head;
+	char *log_buf = (char *) (work_buf_va + VPU_OFFSET_LOG);
 
-	ptr = (unsigned char *) (wrk_buf_va + VPU_OFFSET_LOG);
 
 	if (g_vpu_log_level > 8) {
 		int i;
 		int line_pos = 0;
 		char line_buffer[16 + 1] = {0};
 
+		ptr = log_buf;
 		vpu_print_seq(s, "Log Buffer:\n");
 		for (i = 0; i < VPU_SIZE_LOG_BUF; i++, ptr++) {
 			line_pos = i % 16;
@@ -1466,7 +1544,9 @@ int vpu_dump_mesg(struct seq_file *s)
 		vpu_print_seq(s, "\n\n");
 	}
 
-    /* set the last byte to '\0' */
+	ptr = log_buf;
+
+	/* set the last byte to '\0' */
 	*(ptr + VPU_SIZE_LOG_BUF - 1) = '\0';
 
 	/* skip the header part */

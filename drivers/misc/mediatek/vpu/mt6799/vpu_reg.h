@@ -50,16 +50,16 @@ enum {
 	VPU_CMD_GET_ALGO        = 0x82,
 
 	/* Extend for test */
-	VPU_CMD_EXT_BUSY = 0xF0,
+	VPU_CMD_EXT_BUSY        = 0xF0
 };
 
 enum {
-	VPU_STATE_NOT_READY,
-	VPU_STATE_READY,
-	VPU_STATE_IDLE,
-	VPU_STATE_BUSY,
-	VPU_STATE_ERROR,
-	VPU_STATE_TERMINATED
+	VPU_STATE_NOT_READY     = 0x00,
+	VPU_STATE_READY         = 0x01,
+	VPU_STATE_IDLE          = 0x02,
+	VPU_STATE_BUSY          = 0x04,
+	VPU_STATE_ERROR         = 0x08,
+	VPU_STATE_TERMINATED    = 0x10
 };
 
 

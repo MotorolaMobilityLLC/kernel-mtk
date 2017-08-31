@@ -53,6 +53,13 @@ struct vpu_user {
 	wait_queue_head_t deque_wait;
 };
 
+struct vpu_shared_memory {
+	void *handle;
+	uint64_t va;
+	uint32_t pa;
+	uint32_t length;
+};
+
 #define DECLARE_VLIST(type) \
 struct type ## _list { \
 	struct type node; \
@@ -176,12 +183,24 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo);
  */
 void vpu_hw_lock(struct vpu_user *user);
 
-
 /**
  * vpu_hw_unlock - release vpu's lock, re-starting to consume requests
  * @user        the user asking to release vpu's lock
  */
 void vpu_hw_unlock(struct vpu_user *user);
+
+/**
+ * vpu_alloc_shared_memory - allocate a memory, which shares with VPU
+ * @shmem:      return the pointer of struct memory
+ * @size:       the size of memory allocation
+ */
+int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, int size);
+
+/**
+ * vpu_free_shared_memory - free a memory
+ * @shmem:      the pointer of struct memory
+ */
+void vpu_free_shared_memory(struct vpu_shared_memory *shmem);
 
 /**
  * vpu_ext_be_busy - change VPU's status to busy for 5 sec.
@@ -320,28 +339,49 @@ int vpu_init_reg(struct vpu_device *vpu_dev);
 		} \
 	}
 
-#define vpu_print_seq(seq_file, fmt, args...) \
+#define vpu_print_seq(seq_file, format, args...) \
 	{ \
-		if (seq_file)\
-			seq_printf(seq_file, fmt, ##args);\
-		else\
-			pr_err(fmt, ##args);\
+		if (seq_file) \
+			seq_printf(seq_file, format, ##args); \
+		else \
+			pr_err(format, ##args); \
 	}
 
 #define vpu_error(format, args...) \
-	do {\
-		pr_err(VPU_TAG " error:"format, ##args);  \
-		aee_kernel_exception("VPU", "[VPU] error:"format, ##args);  \
+	do { \
+		pr_err(VPU_TAG " error:"format, ##args); \
+		aee_kernel_exception("VPU", "[VPU] error:"format, ##args); \
 	} while (0)
 
 #define vpu_aee(format, args...) \
-	do {\
-		char vpu_name[100];\
+	do { \
+		char vpu_name[100]; \
 		snprintf(vpu_name, 100, VPU_TAG format, ##args); \
 		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER | DB_OPT_DUMP_DISPLAY, \
 			vpu_name, VPU_TAG "error" format, ##args); \
-		pr_err(VPU_TAG " error:" format, ##args);  \
+		pr_err(VPU_TAG " error:" format, ##args); \
 	} while (0)
 
+
+/* Performance Measure */
+#ifdef VPU_TRACE_ENABLED
+#include <linux/kallsyms.h>
+#include <linux/trace_events.h>
+static unsigned long __read_mostly vpu_tracing_writer;
+#define vpu_trace_begin(format, args...) \
+	{ \
+		if (vpu_tracing_writer == 0) \
+			vpu_tracing_writer = kallsyms_lookup_name("tracing_mark_write"); \
+		event_trace_printk(vpu_tracing_writer, "B|%d|" format "\n", current->tgid, ##args); \
+	}
+
+#define vpu_trace_end() \
+	{ \
+		event_trace_printk(vpu_tracing_writer, "E\n"); \
+	}
+#else
+#define vpu_trace_begin(...)
+#define vpu_trace_end()
+#endif
 
 #endif
