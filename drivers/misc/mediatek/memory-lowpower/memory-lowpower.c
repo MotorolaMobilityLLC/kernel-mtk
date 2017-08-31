@@ -255,7 +255,7 @@ struct single_cma_registration memory_lowpower_registration = {
 	.prio = ZMC_MLP,
 };
 
-static int memory_lowpower_init(struct reserved_mem *rmem)
+static int __init memory_lowpower_init(struct reserved_mem *rmem)
 {
 	int ret;
 
