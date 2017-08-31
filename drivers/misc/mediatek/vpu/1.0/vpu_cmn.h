@@ -19,11 +19,7 @@
 #include <linux/interrupt.h>
 #include "vpu_drv.h"
 
-#ifdef MTK_VPU_EMULATOR
-#define VPU_OF_M4U_PORT M4U_PORT_CAM_IMGI
-#else
-#define VPU_OF_M4U_PORT M4U_PORT_VPU
-#endif
+#define VPU_PORT_OF_IOMMU M4U_PORT_VPU
 
 /* Common Structure */
 struct vpu_device {
@@ -50,6 +46,7 @@ struct vpu_user {
 	struct mutex data_mutex;
 	bool running;
 	bool flush;
+	bool locked;
 	/* list of vlist_type(struct vpu_request) */
 	struct list_head enque_list;
 	struct list_head deque_list;
@@ -174,12 +171,25 @@ int vpu_get_entry_of_algo(char *name, int *id, int *mva, int *length);
 int vpu_hw_get_algo_info(struct vpu_algo *algo);
 
 /**
+ * vpu_hw_lock - acquire vpu's lock, stopping to consume requests
+ * @user        the user asking to acquire vpu's lock
+ */
+void vpu_hw_lock(struct vpu_user *user);
+
+
+/**
+ * vpu_hw_unlock - release vpu's lock, re-starting to consume requests
+ * @user        the user asking to release vpu's lock
+ */
+void vpu_hw_unlock(struct vpu_user *user);
+
+/**
  * vpu_ext_be_busy - change VPU's status to busy for 5 sec.
  */
 int vpu_ext_be_busy(void);
 
 /**
- * vpu_dump_register - dump the register table, and show the content of every filed.
+ * vpu_dump_register - dump the register table, and show the content of all fields.
  * @s:          the pointer to seq_file.
  */
 int vpu_dump_register(struct seq_file *s);
@@ -190,6 +200,11 @@ int vpu_dump_register(struct seq_file *s);
  */
 int vpu_dump_image_file(struct seq_file *s);
 
+/**
+ * vpu_dump_mesg - dump the log buffer, which is wroted by VPU
+ * @s:          the pointer to seq_file.
+ */
+int vpu_dump_mesg(struct seq_file *s);
 
 /* =============================== define in vpu_drv.c  =============================== */
 
@@ -257,7 +272,9 @@ int vpu_dump_algo(struct seq_file *s);
  */
 int vpu_add_algo_to_pool(struct vpu_algo *algo);
 
-int vpu_find_algo_from_pool(vpu_id_t id, char *name, struct vpu_algo **ralgo);
+int vpu_find_algo_by_id(vpu_id_t id, struct vpu_algo **ralgo);
+
+int vpu_find_algo_by_name(char *name, struct vpu_algo **ralgo);
 
 int vpu_alloc_algo(struct vpu_algo **ralgo);
 

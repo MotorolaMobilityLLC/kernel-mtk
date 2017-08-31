@@ -81,30 +81,67 @@ int vpu_add_algo_to_pool(struct vpu_algo *algo)
 	return 0;
 }
 
-int vpu_find_algo_from_pool(vpu_id_t id, char *name, struct vpu_algo **ralgo)
+int vpu_find_algo_by_id(vpu_id_t id, struct vpu_algo **ralgo)
 {
 	struct vpu_algo *algo;
 	struct list_head *head;
+	char *name;
+
+	if (id < 1)
+		goto err;
 
 	list_for_each(head, &vpu_algo_pool)
 	{
 		algo = vlist_node_of(head, struct vpu_algo);
-		if ((id > 0 && algo->id == id) || (name != NULL && !strcmp(name, algo->name))) {
+		if (algo->id == id) {
 			*ralgo = algo;
 			return 0;
 		}
 	}
-	/* not support to use number id to create algo */
-	if (name != NULL && vpu_create_algo(name, &algo) == 0) {
-		/* add to pool if create successfully*/
+
+	if (vpu_get_name_of_algo(id, &name))
+		goto err;
+
+	if (vpu_create_algo(name, &algo) == 0) {
 		vpu_add_algo_to_pool(algo);
 		*ralgo = algo;
 		return 0;
 	}
 
+err:
 	*ralgo = NULL;
 	return -1;
 }
+
+int vpu_find_algo_by_name(char *name, struct vpu_algo **ralgo)
+{
+	struct vpu_algo *algo;
+	struct list_head *head;
+
+	if (name == NULL)
+		goto err;
+
+	list_for_each(head, &vpu_algo_pool)
+	{
+		algo = vlist_node_of(head, struct vpu_algo);
+		if (!strcmp(name, algo->name)) {
+			*ralgo = algo;
+			return 0;
+		}
+	}
+
+
+	if (vpu_create_algo(name, &algo) == 0) {
+		vpu_add_algo_to_pool(algo);
+		*ralgo = algo;
+		return 0;
+	}
+
+err:
+	*ralgo = NULL;
+	return -1;
+}
+
 
 int vpu_create_algo(char *name, struct vpu_algo **ralgo)
 {
@@ -220,9 +257,12 @@ int vpu_dump_algo(struct seq_file *s)
 #undef LINE_BAR
 
 #define LINE_BAR "  +-----+---------------+-------+-------+------------------------------+\n"
-		vpu_print_seq(s, LINE_BAR);
-		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|%-30s|\n", "Info", "Name", "Type", "Count", "Value");
-		vpu_print_seq(s, LINE_BAR);
+		if (algo->info_desc_count) {
+			vpu_print_seq(s, LINE_BAR);
+			vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|%-30s|\n", "Info", "Name", "Type", "Count", "Value");
+			vpu_print_seq(s, LINE_BAR);
+		}
+
 		for (i = 0; i < algo->info_desc_count; i++) {
 			prop_desc = &algo->info_descs[i];
 			data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
@@ -249,8 +289,11 @@ int vpu_dump_algo(struct seq_file *s)
 					vpu_print_seq(s, "%s|\n", line_buffer);
 			}
 		}
-		vpu_print_seq(s, LINE_BAR);
-		vpu_print_seq(s, "\n");
+
+		if (algo->info_desc_count) {
+			vpu_print_seq(s, LINE_BAR);
+			vpu_print_seq(s, "\n");
+		}
 #undef LINE_BAR
 
 #define LINE_BAR "  +-----+---------------+-------+-------+\n"

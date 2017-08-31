@@ -27,7 +27,8 @@
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
 
-#define VPU_USING_M4U 0
+#define VPU_USING_M4U      (0)
+#define ALGO_OF_MAX_POWER  (3)
 
 /* global variables */
 int g_vpu_log_level = 1;
@@ -106,13 +107,13 @@ static void vpu_test_ion(void)
 	buf_sgtbl = ion_sg_table(ion_client, buf_handle);
 	buf_pa = 0x70000000;
 	m4u_client = m4u_create_client();
-	m4u_alloc_mva(m4u_client, VPU_OF_M4U_PORT, 0, buf_sgtbl, buf_size,
+	m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU, 0, buf_sgtbl, buf_size,
 				  M4U_PROT_READ | M4U_PROT_WRITE,
 				  M4U_FLAGS_FIX_MVA, &buf_pa);
 #else
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
 	mm_data.config_buffer_param.kernel_handle = buf_handle;
-	mm_data.config_buffer_param.module_id = VPU_OF_M4U_PORT;
+	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
 	mm_data.config_buffer_param.security = 0;
 	mm_data.config_buffer_param.coherent = 1;
 	mm_data.config_buffer_param.reserve_iova_start = 0x50000000;
@@ -134,7 +135,7 @@ static void vpu_test_ion(void)
 		 buf_pa, sys_data.get_phys_param.len);
 #endif
 
-	if (vpu_find_algo_from_pool(0, "ipu_flo_d2d_k3", &algo) != 0) {
+	if (vpu_find_algo_by_name("ipu_flo_d2d_k3", &algo) != 0) {
 		LOG_ERR("algo[ipu_flo_d2d_k3] is not existed!\n");
 		return;
 	}
@@ -217,7 +218,7 @@ static void vpu_test_ion(void)
 	vpu_delete_user(user);
 
 #if VPU_USING_M4U
-	m4u_dealloc_mva(m4u_client, VPU_OF_M4U_PORT, buf_pa);
+	m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, buf_pa);
 	m4u_destroy_client(m4u_client);
 #endif
 
@@ -252,11 +253,11 @@ static void vpu_test_be_true(void)
 	buf_handle = ion_alloc(ion_client, size, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
 	buf_sgtbl = ion_sg_table(ion_client, buf_handle);
 	buf_pa = 0x70000000;
-	m4u_alloc_mva(m4u_client, VPU_OF_M4U_PORT, 0, buf_sgtbl, size,
+	m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU, 0, buf_sgtbl, size,
 				  M4U_PROT_READ | M4U_PROT_WRITE,
 				  M4U_FLAGS_FIX_MVA, &buf_pa);
 
-	if (vpu_find_algo_from_pool(0, "ipu_flo_d2d_k5", &algo) != 0) {
+	if (vpu_find_algo_by_name("ipu_flo_d2d_k5", &algo) != 0) {
 		LOG_ERR("algo[ipu1_flo_d2d_k5] is not existed in pool\n");
 		return;
 	}
@@ -286,11 +287,11 @@ static void vpu_test_be_true(void)
 	vpu_free_request(req);
 	vpu_delete_user(user);
 
-	m4u_dealloc_mva(m4u_client, VPU_OF_M4U_PORT, buf_pa);
-	ion_free(ion_client, buf_handle);
-
-	ion_client_destroy(ion_client);
+	m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, buf_pa);
 	m4u_destroy_client(m4u_client);
+
+	ion_free(ion_client, buf_handle);
+	ion_client_destroy(ion_client);
 }
 
 #else
@@ -313,7 +314,7 @@ static int vpu_user_test_case1(void *arg)
 
 	for (i = 0; i < 100; i++) {
 		vpu_alloc_request(&req);
-		req->algo_id = 3;
+		req->algo_id = ALGO_OF_MAX_POWER;
 		req->buffer_count = 0;
 		req->priv = i;
 		vpu_push_request_to_queue(user, req);
@@ -353,7 +354,7 @@ static int vpu_user_test_case2(void *arg)
 			return 0;
 		}
 
-		req->algo_id = 3;
+		req->algo_id = ALGO_OF_MAX_POWER;
 		req->buffer_count = 0;
 		vpu_push_request_to_queue(user, req);
 
@@ -380,7 +381,7 @@ static int vpu_user_test_case3(void *arg)
 
 	for (i = 0; i < 100; i++) {
 		vpu_alloc_request(&req);
-		req->algo_id = 3;
+		req->algo_id = ALGO_OF_MAX_POWER;
 		req->buffer_count = 0;
 		req->priv = i;
 		vpu_push_request_to_queue(user, req);
@@ -406,6 +407,19 @@ static int vpu_user_test_case3(void *arg)
 	return 0;
 }
 
+static int vpu_test_lock(void)
+{
+	struct vpu_user *user;
+
+	vpu_create_user(&user);
+	vpu_hw_lock(user);
+	msleep(10 * 1000);
+	vpu_hw_unlock(user);
+	vpu_delete_user(user);
+
+	return 0;
+}
+
 /*
  * 1: boot up
  * 1X: use algo id to load algo
@@ -414,6 +428,7 @@ static int vpu_user_test_case3(void *arg)
  * 6X: pop a request to user X
  * 7X: flush requests of user X
  * 8X: delete user X
+ * 9X: delete user X
  * 100: let emulator busy
  * 101: run test case1
  * 102: run test case2
@@ -433,17 +448,12 @@ static int vpu_test_set(void *data, u64 val)
 	case 1:
 		vpu_boot_up();
 		break;
-	case 10 ... 19: /* use algo's name to load algo */
+	case 10 ... 19: /* use algo's id to load algo */
 	{
-		char *name = NULL;
-		vpu_id_t id = (int) val - 9;
+		vpu_id_t id = (int) val - 10;
 
-		if (vpu_get_name_of_algo(id, &name)) {
-			LOG_DBG("algo[%d] is not existed in pool\n", id);
-			break;
-		}
-		if (vpu_find_algo_from_pool(0, name, &algo) != 0)
-			LOG_DBG("algo[%s] is not existed in pool\n", name);
+		if (vpu_find_algo_by_id(id, &algo))
+			LOG_DBG("algo[%d] is not existed\n", id);
 
 		break;
 	}
@@ -460,7 +470,7 @@ static int vpu_test_set(void *data, u64 val)
 		int index = val - 50;
 
 		vpu_alloc_request(&req);
-		req->algo_id = 3;
+		req->algo_id = ALGO_OF_MAX_POWER;
 		req->buffer_count = 0;
 		vpu_push_request_to_queue(test_user[index], req);
 		break;
@@ -492,20 +502,17 @@ static int vpu_test_set(void *data, u64 val)
 		break;
 	}
 	case 90:
-	{
 		vpu_test_ion();
 		break;
-	}
 	case 91:
-	{
 		vpu_test_be_true();
 		break;
-	}
+	case 92:
+		vpu_test_lock();
+		break;
 	case 100:
-	{
 		vpu_ext_be_busy();
 		break;
-	}
 	case 101:
 	{
 		struct task_struct *task;
@@ -530,7 +537,6 @@ static int vpu_test_set(void *data, u64 val)
 		wake_up_process(task);
 		break;
 	}
-
 	default:
 		LOG_INF("vpu_test_set error,val=%llu\n", val);
 	}
@@ -639,6 +645,24 @@ const struct file_operations vpu_debug_image_file_fops = {
 	.release = seq_release,
 };
 
+int vpu_debug_mesg_show(struct seq_file *s, void *unused)
+{
+	vpu_dump_mesg(s);
+	return 0;
+}
+
+int vpu_debug_mesg_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, vpu_debug_mesg_show, inode->i_private);
+}
+
+const struct file_operations vpu_debug_mesg_fops = {
+	.open = vpu_debug_mesg_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = seq_release,
+};
+
 int vpu_init_debug(struct vpu_device *vpu_dev)
 {
 	struct dentry *debug_file;
@@ -668,10 +692,14 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	if (IS_ERR_OR_NULL(debug_file))
 		LOG_INF("vpu: failed to create debug files 5.\n");
 
+	debug_file = debugfs_create_file("mesg", 0644, vpu_dev->debug_root, NULL, &vpu_debug_mesg_fops);
+	if (IS_ERR_OR_NULL(debug_file))
+		LOG_INF("vpu: failed to create debug files 6.\n");
+
 #ifdef MTK_VPU_DVT
 	debug_file = debugfs_create_file("test", 0644, vpu_dev->debug_root, NULL, &vpu_test_fops);
 	if (IS_ERR_OR_NULL(debug_file))
-		LOG_INF("vpu: failed to create debug files 6.\n");
+		LOG_INF("vpu: failed to create debug files 7.\n");
 #endif
 
 	return 0;

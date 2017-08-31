@@ -185,9 +185,10 @@ int vpu_hw_enque_request(struct vpu_request *req);
 #define VPU_OFFSET_COMMAND           (0x00000000)
 #define VPU_OFFSET_LOG               (0x00002000)
 #define VPU_SIZE_LOG_BUF             (0x00002000)
+#define VPU_SIZE_LOG_HEADER          (0x00000010)
 #define VPU_SIZE_WRK_BUF             (0x00004000)
 /**
- * vpu_alloc_working_buffer - provider vpu hw for exchanging data.
+ * vpu_alloc_working_buffer - provide vpu hw for exchanging data.
  *
  *  [offset]
  *  0x00000000  +-----------------------+
@@ -197,6 +198,15 @@ int vpu_hw_enque_request(struct vpu_request *req);
  *              |  Log Buffer           |
  *              |              [8KB]    |
  *              +-----------------------+
+ *
+ * the first 16 bytes of log buffer:
+ *   @tail_addr: the mva of log end, which always points to '\0'
+ *
+ *   +-----------+----------------------+
+ *   |   0 ~ 3   |      4 ~ 15          |
+ *   +-----------+----------------------+
+ *   |{tail_addr}|    {reserved}        |
+ *   +-----------+----------------------+
  */
 int vpu_alloc_working_buffer(void);
 

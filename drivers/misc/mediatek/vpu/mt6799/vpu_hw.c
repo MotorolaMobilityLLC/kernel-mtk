@@ -40,6 +40,11 @@
 #include "vpu_algo.h"
 #include "vpu_dbg.h"
 
+#define CMD_WAIT_TIME_MS    (10 * 1000)
+#define PWR_KEEP_TIME_MS    (500)
+#define IOMMU_VA_START      (0x50000000)
+#define IOMMU_VA_END        (0x7FFFFFFF)
+
 /* working buffer */
 static uint64_t wrk_buf_va;
 static uint32_t wrk_buf_pa;
@@ -111,6 +116,11 @@ struct sg_table sg_main_program;
 /* jtag */
 static bool is_jtag_enabled;
 
+/* direct link */
+static bool is_locked;
+static struct mutex lock_mutex;
+static wait_queue_head_t lock_wait;
+
 static inline void lock_command(void)
 {
 	mutex_lock(&cmd_mutex);
@@ -119,8 +129,9 @@ static inline void lock_command(void)
 
 static inline int wait_command(void)
 {
-	return wait_event_interruptible_timeout(cmd_wait, is_cmd_done, msecs_to_jiffies(10 * 1000)) > 0
-		   ? 0 : -ETIMEDOUT;
+	return (wait_event_interruptible_timeout(
+				cmd_wait, is_cmd_done, msecs_to_jiffies(CMD_WAIT_TIME_MS)) > 0)
+			? 0 : -ETIMEDOUT;
 }
 
 static inline void unlock_command(void)
@@ -383,23 +394,28 @@ irqreturn_t vpu_isr_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static bool users_queue_is_empty(void)
+static bool users_queue_are_empty(void)
 {
 	struct list_head *head;
 	struct vpu_user *user;
+	bool is_empty = true;
 
+	mutex_lock(&vpu_dev->user_mutex);
 	list_for_each(head, &vpu_dev->user_list)
 	{
 		user = vlist_node_of(head, struct vpu_user);
-		if (!list_empty(&user->enque_list))
-			return false;
+		if (!list_empty(&user->enque_list)) {
+			is_empty = false;
+			break;
+		}
 	}
-	return true;
+	mutex_unlock(&vpu_dev->user_mutex);
+
+	return is_empty;
 }
 
 static int vpu_enque_routine_loop(void *arg)
 {
-	int ret;
 	struct list_head *head;
 	struct vpu_user *user;
 	struct vpu_request *req;
@@ -408,15 +424,17 @@ static int vpu_enque_routine_loop(void *arg)
 	for (; !kthread_should_stop();) {
 		/* wait requests if there is no one in user's queue */
 		if (is_power_dynamic && is_boot_up) {
-			ret = wait_event_interruptible_timeout(vpu_dev->req_wait,
-					!users_queue_is_empty(),
-					msecs_to_jiffies(500));
-			if (ret < 1) {
+			if (wait_event_interruptible_timeout(vpu_dev->req_wait,
+				!users_queue_are_empty(),
+				msecs_to_jiffies(PWR_KEEP_TIME_MS)) < 1) {
 				vpu_shut_down();
 				continue;
 			}
 		} else
-			wait_event_interruptible(vpu_dev->req_wait, !users_queue_is_empty());
+			wait_event_interruptible(vpu_dev->req_wait, !users_queue_are_empty());
+
+		/* this thread will be stopped if start direct link */
+		wait_event_interruptible(lock_wait, !is_locked);
 
 		/* consume the user's queue */
 		mutex_lock(&vpu_dev->user_mutex);
@@ -432,35 +450,39 @@ static int vpu_enque_routine_loop(void *arg)
 
 			/* get first node from enque list */
 			req = vlist_node_of(user->enque_list.next, struct vpu_request);
-
 			list_del_init(vlist_link(req, struct vpu_request));
+
 			user->running = true;
 			mutex_unlock(&user->data_mutex);
+			/* unlock for avoiding long time locking */
+			mutex_unlock(&vpu_dev->user_mutex);
 
 			if (req->algo_id != algo_loaded) {
-				ret = vpu_find_algo_from_pool(req->algo_id, NULL, &algo);
-				if (ret) {
+				if (vpu_find_algo_by_id(req->algo_id, &algo)) {
 					req->status = VPU_REQ_STATUS_INVALID;
-					LOG_ERR("can not find the specific algo. algo_id=%d\n", req->algo_id);
+					LOG_ERR("can not find the specific algo, id=%d\n", req->algo_id);
 					goto out;
 				}
-				ret = vpu_hw_load_algo(algo);
-				if (ret) {
+				if (vpu_hw_load_algo(algo)) {
 					LOG_ERR("load kernel failed, while enque\n");
 					req->status = VPU_REQ_STATUS_FAILURE;
 					goto out;
 				}
 			}
+
 			vpu_hw_enque_request(req);
 
 out:
+			mutex_lock(&vpu_dev->user_mutex);
 			mutex_lock(&user->data_mutex);
 			list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
 			user->running = false;
 			mutex_unlock(&user->data_mutex);
 
 			wake_up_interruptible_all(&user->deque_wait);
-
+			/* leave loop of round-robin */
+			if (is_locked)
+				break;
 		}
 		mutex_unlock(&vpu_dev->user_mutex);
 		/* release cpu for another operations */
@@ -489,7 +511,7 @@ static int vpu_map_mva_of_bin(uint64_t bin_pa)
 
 	sg_dma_address(sg->sgl) = bin_pa;
 	sg_dma_len(sg->sgl) = VPU_SIZE_RESET_VECTOR;
-	ret = m4u_alloc_mva(m4u_client, VPU_OF_M4U_PORT,
+	ret = m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU,
 			0, sg,
 			VPU_SIZE_RESET_VECTOR,
 			M4U_PROT_READ | M4U_PROT_WRITE,
@@ -503,14 +525,14 @@ static int vpu_map_mva_of_bin(uint64_t bin_pa)
 
 	sg_dma_address(sg->sgl) = bin_pa + VPU_OFFSET_MAIN_PROGRAM;
 	sg_dma_len(sg->sgl) = size_main_program;
-	ret = m4u_alloc_mva(m4u_client, VPU_OF_M4U_PORT,
+	ret = m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU,
 			0, sg,
 			size_main_program,
 			M4U_PROT_READ | M4U_PROT_WRITE,
 			M4U_FLAGS_FIX_MVA, &mva_main_program);
 	if (ret) {
 		LOG_ERR("fail to allocate mva of main program!\n");
-		m4u_dealloc_mva(m4u_client, VPU_OF_M4U_PORT, mva_reset_vector);
+		m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, mva_reset_vector);
 		goto out;
 	}
 
@@ -527,7 +549,7 @@ int vpu_alloc_working_buffer(void)
 	struct ion_mm_data mm_data;
 	struct ion_sys_data sys_data;
 
-	if (wrk_buf_pa != 0)
+	if (wrk_buf_pa)
 		return 0;
 
 	wrk_buf_handle = ion_alloc(ion_client, VPU_SIZE_WRK_BUF, 0, ION_HEAP_MULTIMEDIA_MASK, 0);
@@ -536,11 +558,11 @@ int vpu_alloc_working_buffer(void)
 
 	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER_EXT;
 	mm_data.config_buffer_param.kernel_handle = wrk_buf_handle;
-	mm_data.config_buffer_param.module_id = VPU_OF_M4U_PORT;
+	mm_data.config_buffer_param.module_id = VPU_PORT_OF_IOMMU;
 	mm_data.config_buffer_param.security = 0;
 	mm_data.config_buffer_param.coherent = 1;
-	mm_data.config_buffer_param.reserve_iova_start = 0x50000000;
-	mm_data.config_buffer_param.reserve_iova_end = 0x7FFFFFFF;
+	mm_data.config_buffer_param.reserve_iova_start = IOMMU_VA_START;
+	mm_data.config_buffer_param.reserve_iova_end = IOMMU_VA_END;
 	ret = ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA, (unsigned long)&mm_data);
 	CHECK_RET("fail to config ion buffer, ret=%d\n", ret);
 
@@ -568,16 +590,17 @@ out:
 
 static int vpu_dump_power(struct seq_file *s, void *unused)
 {
-	vpu_print_seq(s, "dynamic: %d\n",
+	vpu_print_seq(s, "dynamic(rw): %d\n",
 			is_power_dynamic);
 
-	vpu_print_seq(s, "dvfs_debug: %d %d %d\n",
+	vpu_print_seq(s, "dvfs_debug(rw): %d %d %d\n",
 			step_reg_vimvo,
 			step_clk_dsp,
 			step_clk_ipu_if);
 
-	vpu_print_seq(s, "jtag: %d\n",
-			is_jtag_enabled);
+	vpu_print_seq(s, "jtag(rw): %d\n", is_jtag_enabled);
+	vpu_print_seq(s, "boot_up(r): %d\n", is_boot_up);
+
 	return 0;
 }
 
@@ -591,7 +614,7 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 {
 	char *tmp, *token, *cursor;
 	int ret, i, cmd, argc;
-	int args[3];
+	unsigned int args[3];
 
 	enum {
 		cmd_dynamic,
@@ -627,7 +650,7 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 
 	/* parse arguments */
 	for (i = 0; i < argc && (token = strsep(&cursor, " ")); i++) {
-		ret = kstrtoint(token, 10, &args[i]);
+		ret = kstrtouint(token, 10, &args[i]);
 		CHECK_RET("vpu: fail to parse args[%d]\n", i);
 	}
 
@@ -637,28 +660,29 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	switch (cmd) {
 	case cmd_dynamic:
 		is_power_dynamic = args[0];
-		/* power on immediately, if not dynamic */
+		/* power on immediately if not dynamic, and vice versa */
 		if (!is_power_dynamic)
 			vpu_boot_up();
-		else
-			wake_up(&vpu_dev->req_wait);
+		else if (users_queue_are_empty())
+			vpu_shut_down();
 
 		break;
 
 	case cmd_dvfs_debug:
 		/* step of vimvo regulator */
-		ret = args[0] < 0 || args[0] >= ARRAY_SIZE(map_reg_vimvo);
+		ret = args[0] >= ARRAY_SIZE(map_reg_vimvo);
 		CHECK_RET("vpu: vimvo step is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
-		step_reg_vimvo = args[0];
 
 		/* step of dsp clock */
-		ret = args[1] < 0 || args[1] >= ARRAY_SIZE(map_clk_dsp);
+		ret = args[1] >= ARRAY_SIZE(map_clk_dsp);
 		CHECK_RET("vpu: dsp step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
-		step_clk_dsp = args[1];
 
 		/* step of ipu if */
-		ret = args[2] < 0 || args[2] >= ARRAY_SIZE(map_clk_ipu_if);
+		ret = args[2] >= ARRAY_SIZE(map_clk_ipu_if);
 		CHECK_RET("vpu: ipu if step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+
+		step_reg_vimvo = args[0];
+		step_clk_dsp = args[1];
 		step_clk_ipu_if = args[2];
 
 		if (is_power_dynamic)
@@ -719,7 +743,9 @@ int vpu_init_hw(struct vpu_device *device)
 	mutex_init(&cmd_mutex);
 	init_waitqueue_head(&cmd_wait);
 
-	algo_loaded = -1;
+	mutex_init(&lock_mutex);
+	init_waitqueue_head(&lock_wait);
+
 	vpu_base = device->vpu_base;
 	bin_base = device->bin_base;
 
@@ -766,7 +792,7 @@ int vpu_uninit_hw(void)
 	vpu_unprepare_regulator_and_clock();
 
 	if (wrk_buf_pa) {
-		m4u_dealloc_mva(m4u_client, VPU_OF_M4U_PORT, wrk_buf_pa);
+		m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, wrk_buf_pa);
 		wrk_buf_pa = 0;
 	}
 
@@ -811,7 +837,6 @@ static int vpu_check_status(void)
 	LOG_ERR("It is still busy after wait 5 seconds.\n");
 	return -EBUSY;
 }
-
 
 static int vpu_check_result(void)
 {
@@ -910,7 +935,7 @@ out:
 	return ret;
 }
 
-int vpu_set_debug(void)
+int vpu_hw_set_debug(void)
 {
 	int ret;
 
@@ -1011,7 +1036,7 @@ int vpu_boot_up(void)
 	ret = vpu_hw_boot_sequence();
 	CHECK_RET("fail to do boot sequence\n");
 
-	ret = vpu_set_debug();
+	ret = vpu_hw_set_debug();
 	CHECK_RET("fail to set debug\n");
 
 	is_boot_up = true;
@@ -1030,7 +1055,7 @@ int vpu_shut_down(void)
 	ret = vpu_disable_regulator_and_clock();
 	CHECK_RET("fail to disable regulator and clock\n");
 
-	algo_loaded = -1;
+	algo_loaded = 0;
 	is_boot_up = false;
 
 out:
@@ -1093,7 +1118,7 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	memcpy((void *) wrk_buf_va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
-	if (g_vpu_log_level >= 5) {
+	if (g_vpu_log_level > 4) {
 		LOG_DBG("dump request - setting: 0x%x, length: %d",
 				(uint32_t) request->sett_ptr, request->sett_length);
 
@@ -1224,6 +1249,30 @@ out:
 	return ret;
 }
 
+void vpu_hw_lock(struct vpu_user *user)
+{
+	if (user->locked)
+		LOG_ERR("error: double lock, pid:%d, tid:%d\n",
+				user->open_pid, user->open_tgid);
+	else {
+		mutex_lock(&lock_mutex);
+		is_locked = true;
+		user->locked = true;
+	}
+}
+
+void vpu_hw_unlock(struct vpu_user *user)
+{
+	if (user->locked) {
+		is_locked = false;
+		user->locked = false;
+		wake_up_interruptible(&lock_wait);
+		mutex_unlock(&lock_mutex);
+	} else
+		LOG_ERR("error: not locked, pid:%d, tid:%d\n",
+				user->open_pid, user->open_tgid);
+}
+
 int vpu_dump_register(struct seq_file *s)
 {
 	int i, j;
@@ -1269,29 +1318,6 @@ int vpu_dump_register(struct seq_file *s)
 	}
 #undef LINE_BAR
 
-#if 1
-	{
-		unsigned char *ptr = NULL;
-		int line_pos = 0;
-		char line_buffer[16 + 1] = {0};
-
-		vpu_print_seq(s, "\n");
-		vpu_print_seq(s, "Log Buffer:\n");
-		ptr = (unsigned char *) (wrk_buf_va + VPU_OFFSET_LOG);
-		for (i = 0; i < VPU_SIZE_LOG_BUF; i++, ptr++) {
-			line_pos = i % 16;
-			if (line_pos == 0)
-				vpu_print_seq(s, "\n%07X0h: ", i / 16);
-
-			line_buffer[line_pos] = isascii(*ptr) && isprint(*ptr) ? *ptr : '.';
-			vpu_print_seq(s, "%02X ", *ptr);
-			if (line_pos == 15)
-				vpu_print_seq(s, " %s", line_buffer);
-
-		}
-		vpu_print_seq(s, "\n");
-	}
-#endif
 	return 0;
 }
 
@@ -1353,6 +1379,46 @@ int vpu_dump_image_file(struct seq_file *s)
 		vpu_print_seq(s, "\n");
 	}
 #endif
+
+	return 0;
+}
+
+int vpu_dump_mesg(struct seq_file *s)
+{
+	unsigned char *ptr = NULL;
+	unsigned char *log_head;
+
+	ptr = (unsigned char *) (wrk_buf_va + VPU_OFFSET_LOG);
+
+	if (g_vpu_log_level > 8) {
+		int i;
+		int line_pos = 0;
+		char line_buffer[16 + 1] = {0};
+
+		vpu_print_seq(s, "Log Buffer:\n");
+		for (i = 0; i < VPU_SIZE_LOG_BUF; i++, ptr++) {
+			line_pos = i % 16;
+			if (line_pos == 0)
+				vpu_print_seq(s, "\n%07X0h: ", i / 16);
+
+			line_buffer[line_pos] = isascii(*ptr) && isprint(*ptr) ? *ptr : '.';
+			vpu_print_seq(s, "%02X ", *ptr);
+			if (line_pos == 15)
+				vpu_print_seq(s, " %s", line_buffer);
+
+		}
+		vpu_print_seq(s, "\n\n");
+	}
+
+    /* set the last byte to '\0' */
+	*(ptr + VPU_SIZE_LOG_BUF - 1) = '\0';
+
+	/* skip the header part */
+	ptr += VPU_SIZE_LOG_HEADER;
+	log_head = strchr(ptr, '\0') + 1;
+
+	vpu_print_seq(s, "%s", log_head);
+	vpu_print_seq(s, "%s", ptr);
 
 	return 0;
 }
