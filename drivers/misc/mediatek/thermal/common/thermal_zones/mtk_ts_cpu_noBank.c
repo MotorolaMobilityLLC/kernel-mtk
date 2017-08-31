@@ -74,6 +74,8 @@
  */
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
+static int isTimerCancelled;
 
 #if !defined(CONFIG_MTK_CLKMGR)
 struct clk *therm_main;		/* main clock for Thermal */
@@ -140,7 +142,6 @@ static int tscpu_num_opp;
 static struct mtk_cpu_power_info *mtk_cpu_power;
 
 static int g_tc_resume;	/* default=0,read temp */
-static int MA_len_temp;
 static int proc_write_flag;
 
 static struct thermal_zone_device *thz_dev;
@@ -201,7 +202,6 @@ static void tscpu_unregister_thermal(void);
 static int a_tscpu_all_temp[MTK_THERMAL_SENSOR_CPU_COUNT] = { 0 };
 
 static DEFINE_MUTEX(MET_GET_TEMP_LOCK);
-static int doing_tz_unregister;
 static met_thermalsampler_funcMET g_pThermalSampler;
 void mt_thermalsampler_registerCB(met_thermalsampler_funcMET pCB)
 {
@@ -1028,7 +1028,6 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	     &ptr_mtktscpu_data->trip[9], &ptr_mtktscpu_data->t_type[9], ptr_mtktscpu_data->bind9,
 	     &ptr_mtktscpu_data->time_msec) == 32) {
 
-		tscpu_dprintk("tscpu_write tscpu_unregister_thermal MA_len_temp=%d\n", MA_len_temp);
 
 		/*      modify for PTPOD, if disable Thermal,
 		*   PTPOD still need to use this function for getting temperature
@@ -1038,6 +1037,8 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		apthermolmt_set_general_cpu_power_limit(900);
 #endif
 
+		down(&sem_mutex);
+		tscpu_dprintk("tscpu_write tscpu_unregister_thermal\n");
 		tscpu_unregister_thermal();
 
 		if (num_trip < 0 || num_trip > 10) {
@@ -1047,6 +1048,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		#endif
 			tscpu_dprintk("tscpu_write bad argument\n");
 			kfree(ptr_mtktscpu_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -1172,6 +1174,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		 */
 		tscpu_dprintk("tscpu_write tscpu_register_thermal\n");
 		tscpu_register_thermal();
+		up(&sem_mutex);
 
 #if defined(CONFIG_ARCH_MT6797)
 		apthermolmt_set_general_cpu_power_limit(0);
@@ -1207,10 +1210,8 @@ static void tscpu_unregister_thermal(void)
 
 	tscpu_dprintk("tscpu_unregister_thermal\n");
 	if (thz_dev) {
-		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
-		doing_tz_unregister = 0;
 	}
 
 }
@@ -1782,36 +1783,67 @@ int is_worktimer_en = 1;
 void tscpu_workqueue_cancel_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
-	if (is_worktimer_en && thz_dev && !doing_tz_unregister) {
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (is_worktimer_en && thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
+		isTimerCancelled = 1;
 
 		tscpu_dprintk("[tTimer] workqueue stopping\n");
 		spin_lock(&timer_lock);
 		is_worktimer_en = 0;
 		spin_unlock(&timer_lock);
 	}
+
+	up(&sem_mutex);
 #else
-	if (thz_dev && !doing_tz_unregister)
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
+		isTimerCancelled = 1;
+	}
+	up(&sem_mutex);
 #endif
 }
 
 void tscpu_workqueue_start_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
-	if (!is_worktimer_en && thz_dev != NULL && interval != 0 && !doing_tz_unregister) {
-		mod_delayed_work(system_freezable_power_efficient_wq, &(thz_dev->poll_queue), 0);
+	if (!isTimerCancelled)
+		return;
+
+	isTimerCancelled = 0;
+
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (!is_worktimer_en && thz_dev != NULL && interval != 0) {
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), 0);
 
 		tscpu_dprintk("[tTimer] workqueue starting\n");
 		spin_lock(&timer_lock);
 		is_worktimer_en = 1;
 		spin_unlock(&timer_lock);
 	}
+
+	up(&sem_mutex);
 #else
+	if (!isTimerCancelled)
+		return;
+
+	isTimerCancelled = 0;
+
+	if (down_trylock(&sem_mutex))
+		return;
+
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
-		mod_delayed_work(system_freezable_power_efficient_wq,
-				&(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+	if (thz_dev != NULL && interval != 0)
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+
+	up(&sem_mutex);
 #endif
 
 }

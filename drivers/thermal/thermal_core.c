@@ -1969,11 +1969,12 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	if (!tz)
 		return;
 
-	cancel_delayed_work_sync(&(tz->poll_queue)); /* force stop pending/running delayed work*/
-
 	tzp = tz->tzp;
 
 	mutex_lock(&thermal_list_lock);
+	tz->polling_delay = 0;
+	cancel_delayed_work_sync(&(tz->poll_queue)); /* force stop pending/running delayed work*/
+
 	list_for_each_entry(pos, &thermal_tz_list, node)
 	    if (pos == tz)
 		break;
