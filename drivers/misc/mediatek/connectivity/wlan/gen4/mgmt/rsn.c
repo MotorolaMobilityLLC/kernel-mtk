@@ -2357,6 +2357,84 @@ void rsnSaQueryAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 }
 #endif
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+static BOOLEAN rsnCheckWpaRsnInfo(P_BSS_INFO_T prBss, P_RSN_INFO_T prWpaRsnInfo)
+{
+	UINT_32 i = 0;
+
+	if (prWpaRsnInfo->u4GroupKeyCipherSuite != prBss->u4RsnSelectedGroupCipher) {
+		DBGLOG(RSN, INFO, "GroupCipherSuite change, old=0x%04x, new=0x%04x\n",
+				prBss->u4RsnSelectedGroupCipher, prWpaRsnInfo->u4GroupKeyCipherSuite);
+		return TRUE;
+	}
+	for (; i < prWpaRsnInfo->u4AuthKeyMgtSuiteCount; i++)
+		if (prBss->u4RsnSelectedAKMSuite == prWpaRsnInfo->au4AuthKeyMgtSuite[i])
+			break;
+	if (i == prWpaRsnInfo->u4AuthKeyMgtSuiteCount) {
+		DBGLOG(RSN, INFO, "KeyMgmt change, not find 0x%04x in new beacon\n",
+				prBss->u4RsnSelectedAKMSuite);
+		return TRUE;
+	}
+
+	for (i = 0; i < prWpaRsnInfo->u4PairwiseKeyCipherSuiteCount; i++)
+		if (prBss->u4RsnSelectedPairwiseCipher == prWpaRsnInfo->au4PairwiseKeyCipherSuite[i])
+			break;
+	if (i == prWpaRsnInfo->u4PairwiseKeyCipherSuiteCount) {
+		DBGLOG(RSN, INFO, "Pairwise Cipher change, not find 0x%04x in new beacon\n",
+				prBss->u4RsnSelectedPairwiseCipher);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+BOOLEAN rsnCheckSecurityModeChanged(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_BSS_DESC_T prBssDesc)
+{
+	ENUM_PARAM_AUTH_MODE_T eAuthMode = prAdapter->rWifiVar.rConnSettings.eAuthMode;
+
+	switch (eAuthMode) {
+	case AUTH_MODE_OPEN: /* original is open system */
+		if ((prBssDesc->u2CapInfo & CAP_INFO_PRIVACY) &&
+			!prAdapter->prGlueInfo->rWpaInfo.fgPrivacyInvoke) {
+			DBGLOG(RSN, INFO, "security change, open->privacy\n");
+			return TRUE;
+		}
+		break;
+	case AUTH_MODE_SHARED: /* original is WEP */
+	case AUTH_MODE_AUTO_SWITCH:
+		if ((prBssDesc->u2CapInfo & CAP_INFO_PRIVACY) == 0) {
+			DBGLOG(RSN, INFO, "security change, WEP->open\n");
+			return TRUE;
+		} else if (prBssDesc->fgIERSN || prBssDesc->fgIEWPA) {
+			DBGLOG(RSN, INFO, "security change, WEP->WPA/WPA2\n");
+			return TRUE;
+		}
+		break;
+	case AUTH_MODE_WPA: /*original is WPA */
+	case AUTH_MODE_WPA_PSK:
+	case AUTH_MODE_WPA_NONE:
+		if (prBssDesc->fgIEWPA)
+			return rsnCheckWpaRsnInfo(prBssInfo, &prBssDesc->rWPAInfo);
+		DBGLOG(RSN, INFO, "security change, WPA->%s\n",
+				prBssDesc->fgIERSN ? "WPA2" :
+				(prBssDesc->u2CapInfo & CAP_INFO_PRIVACY ? "WEP" : "OPEN"));
+		return TRUE;
+	case AUTH_MODE_WPA2: /*original is WPA2 */
+	case AUTH_MODE_WPA2_PSK:
+		if (prBssDesc->fgIERSN)
+			return rsnCheckWpaRsnInfo(prBssInfo, &prBssDesc->rRSNInfo);
+		DBGLOG(RSN, INFO, "security change, WPA2->%s\n",
+				prBssDesc->fgIEWPA ? "WPA" :
+				(prBssDesc->u2CapInfo & CAP_INFO_PRIVACY ? "WEP" : "OPEN"));
+		return TRUE;
+	default:
+		DBGLOG(RSN, WARN, "unknowned eAuthMode=%d\n", eAuthMode);
+		break;
+	}
+	return FALSE;
+}
+#endif
+
 #if CFG_SUPPORT_AAA
 #define WPS_DEV_OUI_WFA                 0x0050f204
 #define ATTR_RESPONSE_TYPE              0x103b
