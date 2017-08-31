@@ -713,10 +713,9 @@ static void GetAudioTrimOffset(int channels)
 		/* pr_warn("#%d Buffer_on_value_L = %d\n", i, Buffer_tmp[i]); */
 	}
 	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	pr_warn("[Average %d times] Buffer_onL_value = %d\n", trim_num, Buffer_on_value);
 	mHplOffset = Buffer_on_value - Buffer_offl_value + Const_DC_OFFSET;
-	pr_warn("Buffer_on_value_L = %d Buffer_off_value_L = %d mHplOffset = %d\n",
-		Buffer_on_value, Buffer_offl_value, mHplOffset);
+	pr_warn("[Average %d times] Buffer_on_value_L = %d, Buffer_off_value_L = %d, mHplOffset = %d\n",
+			trim_num, Buffer_on_value, Buffer_offl_value, mHplOffset);
 
 	EnableTrimbuffer(false);
 
@@ -731,10 +730,9 @@ static void GetAudioTrimOffset(int channels)
 		/* pr_warn("#%d Buffer_on_value_R = %d\n", i, Buffer_tmp[i]); */
 	}
 	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	pr_warn("[Average %d times] Buffer_onR_value = %d\n", trim_num, Buffer_on_value);
 	mHprOffset = Buffer_on_value - Buffer_offr_value + Const_DC_OFFSET;
-	pr_warn("Buffer_on_value_R = %d Buffer_off_value_R = %d mHprOffset = %d\n",
-		Buffer_on_value, Buffer_offr_value, mHprOffset);
+	pr_warn("[Average %d times] Buffer_on_value_R = %d, Buffer_off_value_R = %d, mHprOffset = %d\n",
+			trim_num, Buffer_on_value, Buffer_offr_value, mHprOffset);
 
 	switch (channels) {
 	case AUDIO_OFFSET_TRIM_MUX_HPL:
