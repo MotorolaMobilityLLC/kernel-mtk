@@ -809,13 +809,11 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 	if (enable) {
 		CMDQ_VERBOSE("[CLOCK] Enable SMI & LARB0 Clock\n");
 		/* Use SMI clock API */
-		smi_clk_prepare(0);
-		smi_clk_enable(0);
+		smi_bus_enable(SMI_LARB_MMSYS0, "CMDQ");
 	} else {
 		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
 		/* disable, reverse the sequence */
-		smi_clk_disable(0);
-		smi_clk_unprepare(0);
+		smi_bus_disable(SMI_LARB_MMSYS0, "CMDQ");
 	}
 #endif				/* CMDQ_PWR_AWARE */
 }
