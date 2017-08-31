@@ -289,9 +289,8 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		time_cnt--;
 	} while ((*mr_value == 0) && (time_cnt > 0));
 #if 0
-	if (time_cnt == 0) {
+	if (time_cnt == 0)
 		pr_warn("[DRAMC] read mode reg time out 2\n");
-	}
 #endif
 
 	/* set MRR fire bit MRREN to 0 for next MRR */
@@ -1410,21 +1409,21 @@ int dram_steps_freq(unsigned int step)
 
 	/* wait for DCS API ready */
 	switch (step) {
-		case 0:
-			freq = 3200;
-			break;
-		case 1:
-			freq = 2667;
-			break;
-		case 2:
-			freq = 2667;
-			break;
-		case 3:
-			freq = 800;
-			break;
-		default:
-			return -1;
-		}
+	case 0:
+		freq = 3200;
+		break;
+	case 1:
+		freq = 2667;
+		break;
+	case 2:
+		freq = 2667;
+		break;
+	case 3:
+		freq = 800;
+		break;
+	default:
+		return -1;
+	}
 
 	return freq;
 }
