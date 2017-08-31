@@ -1438,6 +1438,7 @@
 		mediatek,md_id = <0>;
 		mediatek,cldma_capability = <6>;
 		clocks = <&scpsys SCP_SYS_MD1>,
+			<&infrasys INFRACFG_AO_CLDMA_BCLK_CK>,
 			<&infrasys INFRACFG_AO_CCIF_AP_CG>,
 			<&infrasys INFRACFG_AO_CCIF_MD_CG>,
 			<&infrasys INFRACFG_AO_CCIF1_AP_CG>,
@@ -1449,6 +1450,7 @@
 			<&infrasys INFRACFG_AO_MD2MD_CCIF_CG4>,
 			<&infrasys INFRACFG_AO_MD2MD_CCIF_CG5>;
 		clock-names = "scp-sys-md1-main",
+			"infra-cldma-ap",
 			"infra-ccif-ap",
 			"infra-ccif-md",
 			"infra-ap-c2k-ccif-0",
