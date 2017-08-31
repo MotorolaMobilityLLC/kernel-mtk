@@ -1752,7 +1752,7 @@ static kal_bool mt_battery_100Percent_tracking_check(void)
 			BMT_status.UI_SOC, resetBatteryMeter, BMT_status.bat_full, is_uisoc_ever_100);
 	} else if (is_uisoc_ever_100 == KAL_TRUE) {
 		battery_log(BAT_LOG_CRTI, "[100percent-ever100],UI_SOC=%d SOC=%d\n",
-			BMT_status.UI_SOC, BMT_status.UI_SOC);
+			BMT_status.UI_SOC, BMT_status.SOC);
 	} else {
 		/* charging is not full,  UI keep 99% if reaching 100%, */
 
