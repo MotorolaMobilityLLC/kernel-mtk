@@ -20,6 +20,10 @@
 #include <mtk_clkbuf_ctl.h>
 #include "mtk_spm_dpidle_mt6757.h"
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#include <mtk_pmic_api_buck.h>
+#endif
+
 static u32 ap_pll_con0_val;
 static void __iomem *apmixedsys_base_in_dpidle;
 
@@ -100,6 +104,7 @@ static void spm_dpidle_pmic_before_wfi(void)
 
 	__spm_pmic_low_iq_mode(1);
 	__spm_pmic_pg_force_on();
+	wk_auxadc_bgd_ctrl(0);
 
 	if (is_md_c2k_conn_power_off())
 		__spm_backup_pmic_ck_pdn();
@@ -110,6 +115,7 @@ static void spm_dpidle_pmic_after_wfi(void)
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
 
+	wk_auxadc_bgd_ctrl(1);
 	__spm_pmic_pg_force_off();
 	__spm_pmic_low_iq_mode(0);
 }
