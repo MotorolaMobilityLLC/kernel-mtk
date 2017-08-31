@@ -119,9 +119,7 @@ void _mt_spm_pmic_table_init(void)
 		{(unsigned long)PMIC_WRAP_DVFS_ADR15, (unsigned long)PMIC_WRAP_DVFS_WDATA15,},
 	};
 
-
 	memcpy(pw.addr, pwrap_cmd_default, sizeof(pwrap_cmd_default));
-
 }
 
 void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
@@ -159,8 +157,6 @@ void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned i
 	WARN_ON(phase >= NR_PMIC_WRAP_PHASE);
 	WARN_ON(idx >= pw.set[phase].nr_idx);
 
-	/* spm_pwrap_info("@%s: phase = 0x%x, idx = %d, cmd_wdata = 0x%x\n", __func__, phase, idx, cmd_wdata); */
-
 	pmic_wrap_lock(flags);
 
 	pw.set[phase]._[idx].cmd_wdata = cmd_wdata;
@@ -169,7 +165,6 @@ void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned i
 		spm_write(pw.addr[idx].cmd_wdata, cmd_wdata);
 
 	pmic_wrap_unlock(flags);
-
 }
 EXPORT_SYMBOL(mt_spm_pmic_wrap_set_cmd);
 
@@ -181,10 +176,6 @@ void mt_spm_pmic_wrap_set_cmd_full(enum pmic_wrap_phase_id phase, int idx, unsig
 
 	WARN_ON(phase >= NR_PMIC_WRAP_PHASE);
 	WARN_ON(idx >= pw.set[phase].nr_idx);
-
-	/* spm_pwrap_info("@%s: phase = 0x%x, idx = %d, cmd_addr = 0x%x, cmd_wdata = 0x%x\n",
-	 *  __func__, phase, idx, cmd_addr, cmd_wdata);
-	 */
 
 	pmic_wrap_lock(flags);
 
@@ -214,10 +205,6 @@ void mt_spm_pmic_wrap_get_cmd_full(enum pmic_wrap_phase_id phase, int idx, unsig
 	*p_cmd_wdata = pw.set[phase]._[idx].cmd_wdata;
 
 	pmic_wrap_unlock(flags);
-	/* spm_pwrap_info("@%s: phase = 0x%x, idx = %d, original cmd_addr = 0x%x, cmd_wdata = 0x%x\n",
-	 *  __func__, phase, idx, *p_cmd_addr, *p_cmd_wdata);
-	 */
-
 }
 EXPORT_SYMBOL(mt_cpufreq_get_pmic_cmd_full);
 #endif
