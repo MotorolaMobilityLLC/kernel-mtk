@@ -2582,6 +2582,12 @@ void mtk_cpuidle_framework_init(void)
 #ifndef CONFIG_MACH_MT6759
 	dpidle_by_pass_pg = true;
 #endif
+#if defined(CONFIG_MACH_MT6759) && defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "mediatek/k59v1_64_lwctg_lphqa", 29) == 0) {
+		dpidle_force_vcore_lp_mode = 1;
+		sodi3_force_vcore_lp_mode = 1;
+	}
+#endif
 
 	mtk_idle_profile_init();
 }
