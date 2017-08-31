@@ -24,7 +24,6 @@ struct isl91302a_chip {
 #ifdef CONFIG_RT_REGMAP
 	struct rt_regmap_device *regmap_dev;
 #endif /* CONFIG_RT_REGMAP */
-	struct regulator *gpu;
 	int irq;
 };
 

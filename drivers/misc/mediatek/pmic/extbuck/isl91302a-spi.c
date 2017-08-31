@@ -110,40 +110,6 @@ int isl91302a_write_device(void *client,
 	return ret;
 }
 
-static int isl91302a_write_page2(struct spi_device *spi,
-			unsigned char addr, unsigned char value)
-{
-	int ret;
-	struct spi_transfer xfer = {0,}; /* must init spi_transfer here */
-	struct spi_message msg;
-	u32 tx_buf;
-	u32 rx_buf;
-
-	tx_buf = 0x00010002;
-	rx_buf = 0xffffffff;
-
-	tx_buf |= ((value << 24) | (addr << 8));
-
-	xfer.tx_buf = &tx_buf;
-	xfer.rx_buf = &rx_buf;
-	xfer.len = 4;
-
-	spi_message_init(&msg);
-	spi_message_add_tail(&xfer, &msg);
-	ret = spi_sync(spi, &msg);
-	if (ret < 0 || rx_buf == 0xffffffff)
-		return ret;
-
-#if 0
-	pr_info("%s addr 0x%02x = 0x%02x\n", __func__, addr, value);
-	pr_info("%s tx_buf = 0x%08x\n", __func__, tx_buf);
-	pr_info("%s rx_buf = 0x%08x\n", __func__, rx_buf);
-#endif
-	return ret;
-}
-
-
-
 #ifdef CONFIG_RT_REGMAP
 
 RT_REG_DECL(ISL91302A_CHIPNAME_R, 1, RT_VOLATILE, {});
@@ -303,22 +269,17 @@ static void isl91302a_spi_init(struct spi_device *spi)
 
 static void isl91302a_reg_init(struct spi_device *spi)
 {
-	/* Intersil provided */
-	isl91302a_write_byte(spi, 0x37, 0xba);
-	isl91302a_write_byte(spi, 0x36, 0x5e);
-	isl91302a_write_byte(spi, 0x35, 0xba);
-	isl91302a_write_byte(spi, 0x34, 0x11);
-	isl91302a_write_byte(spi, 0x5d, 0xe0);
-	isl91302a_write_byte(spi, 0x68, 0x17);
-	isl91302a_write_byte(spi, 0x69, 0x02);
-	isl91302a_write_byte(spi, 0x85, 0x02);
-	isl91302a_write_byte(spi, 0x5d, 0xb0);
-	isl91302a_write_byte(spi, 0x6f, 0x16);
-	isl91302a_write_page2(spi, 0x44, 0x65);
-	isl91302a_write_page2(spi, 0x46, 0x65);
-	isl91302a_write_page2(spi, 0x48, 0x67);
-	isl91302a_write_page2(spi, 0x4a, 0x67);
+	int ret = 0;
 
+	/* Aaron Tian Provide for SPM Init*/
+	/* VDVFS1 */
+	ret = isl91302a_write_byte(spi, 0x7e, 0x76);
+	ret |= isl91302a_write_byte(spi, 0x7f, 0x00);
+	/* VDVFS2 */
+	ret |= isl91302a_write_byte(spi, 0x64, 0x76);
+	ret |= isl91302a_write_byte(spi, 0x65, 0x00);
+	if (ret < 0)
+		ISL91302A_ERR("%s init fail\n", __func__);
 }
 
 static int isl91302a_check_id(struct spi_device *spi)
@@ -438,6 +399,10 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 	int ret;
 
 	pr_info("%s\n", __func__);
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_info("%s SSPM not need kernel Driver\n", __func__);
+	return -EINVAL;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	chip = devm_kzalloc(&spi->dev,
 		sizeof(struct isl91302a_chip), GFP_KERNEL);
@@ -477,22 +442,6 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 		ISL91302A_ERR("%s regulator init fail\n", __func__);
 		return -EINVAL;
 	}
-
-#if 1 /* temp code */
-	chip->gpu = regulator_get(chip->dev, "ext_buck_gpu");
-	if (chip->gpu == NULL) {
-		ISL91302A_ERR("%s get regulator ext_buck_gpu fail\n", __func__);
-		return -EINVAL;
-	}
-
-	regulator_set_voltage(chip->gpu, 850000, 900000);
-	ret = regulator_enable(chip->gpu);
-
-	ret = regulator_get_voltage(chip->gpu);
-	if (ret >= 0)
-		pr_info("%s voltage = %d\n", __func__, ret);
-
-#endif /* temp code */
 
 	pr_info("%s --OK!!--\n", __func__);
 	return 0;
