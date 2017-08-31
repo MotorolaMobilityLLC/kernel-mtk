@@ -42,7 +42,7 @@
 #endif
 
 #if (DFRC_LOG_LEVEL > 2)
-#define DFRC_INFO(x, ...) pr_debug("[DFRC] " x, ##__VA_ARGS__)
+#define DFRC_INFO(x, ...) pr_info("[DFRC] " x, ##__VA_ARGS__)
 #else
 #define DFRC_INFO(...)
 #endif
@@ -58,11 +58,17 @@ struct DFRC_DRV_POLICY_NODE {
 	struct list_head list;
 };
 
-struct DFRC_DRV_POLICY_STATISTICS {
+struct DFRC_DRV_POLICY_ARR_STATISTICS {
 	int num_config;
 	unsigned long long sequence;
 	int fps;
 	int mode;
+	struct DFRC_DRV_POLICY policy;
+};
+
+struct DFRC_DRV_POLICY_FRR_STATISTICS {
+	int num_config;
+	struct list_head list;
 };
 
 struct DFRC_DRV_PANEL_INFO_LIST {
@@ -88,16 +94,13 @@ static struct DFRC_DRV_INPUT_WINDOW_INFO g_input_window_info;
 static int g_event_count;
 static int g_processed_count;
 static int g_cond_remake;
-static int g_cond_change;
 static int g_run_rrc_fps;
 static int g_allow_rrc_policy = DFRC_ALLOW_VIDEO | DFRC_ALLOW_TOUCH;
-static int g_max_fps = 60;
-static int g_min_fps = 30;
-static int g_current_fps;
 static int g_init_done;
 static struct DFRC_DRV_PANEL_INFO_LIST g_fps_info;
 static struct DFRC_DRV_WINDOW_STATE g_window_state;
 static struct DFRC_DRV_FOREGROUND_WINDOW_INFO g_fg_window_info;
+static struct DFRC_DRV_VSYNC_REQUEST g_request_now;
 
 /* these parameters use to record the request of rrc */
 static struct mutex g_mutex_rrc;
@@ -108,12 +111,13 @@ static struct DFRC_DRV_POLICY g_policy_loading;
 
 /* these parametersuse to notify sw vsync */
 static struct mutex g_mutex_request;
-static int g_request_fps;
-static int g_request_sw_mode;
+static struct DFRC_DRV_VSYNC_REQUEST g_request_notified;
+static struct DFRC_DRV_POLICY *g_request_policy;
 static int g_cond_request;
 
 /* use to store the current vsync mode. only use them in make_policy_kthread */
 /* therefore they do not need to protect by mutex */
+static int g_current_fps;
 static int g_current_sw_mode;
 static int g_current_hw_mode;
 
@@ -229,16 +233,25 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
 		if (node->policy.sequence == policy->sequence) {
 			is_new = false;
-			if (node->policy.fps != policy->fps || node->policy.mode != policy->mode)
+			if (node->policy.fps != policy->fps ||
+					node->policy.mode != policy->mode ||
+					node->policy.target_pid != policy->target_pid ||
+					node->policy.gl_context_id != policy->gl_context_id) {
 				change = true;
-			node->policy.fps = policy->fps;
-			node->policy.mode = policy->mode;
-			break;
+				node->policy.fps = policy->fps;
+				node->policy.mode = policy->mode;
+				node->policy.target_pid = policy->target_pid;
+				node->policy.gl_context_id = policy->gl_context_id;
+				DFRC_INFO("set_policy: [%llu] fps:%d mode:%d t_pid:%d gl_id:%p\n",
+						node->policy.sequence, policy->fps, policy->mode,
+						policy->target_pid, policy->gl_context_id);
+				break;
+			}
 		}
 	}
 
 	if (is_new) {
-		DFRC_INFO("set_fps_policy: can not find policy[%llu]\n", policy->sequence);
+		DFRC_INFO("set_policy: can not find policy[%llu]\n", policy->sequence);
 		res = -ENODEV;
 	} else if (change) {
 		dfrc_remake_policy_locked();
@@ -324,31 +337,36 @@ void dfrc_reset_state(void)
 	mutex_unlock(&g_mutex_data);
 }
 
+long dfrc_get_request_set(struct DFRC_DRC_REQUEST_SET *request_set)
+{
+	long res = 0L;
+	int size;
+
+	mutex_lock(&g_mutex_request);
+	if (g_request_policy != NULL) {
+		size = request_set->num > g_request_notified.num_policy ? g_request_notified.num_policy :
+				request_set->num;
+		size *= sizeof(struct DFRC_DRV_POLICY);
+		if (copy_to_user((void *)request_set->policy, g_request_policy, size)) {
+			DFRC_WRN("get_request_set: failed to copy data to user\n");
+			res = -EFAULT;
+		}
+	}
+	mutex_unlock(&g_mutex_request);
+	return res;
+}
+
 void dfrc_get_vsync_request(struct DFRC_DRV_VSYNC_REQUEST *request)
 {
 	mutex_lock(&g_mutex_request);
-	if (request->fps == g_request_fps && request->mode == g_request_sw_mode) {
+	if (!memcmp(request, &g_request_notified, sizeof(g_request_notified))) {
 		mutex_unlock(&g_mutex_request);
 		wait_event_interruptible(g_wq_vsync_request, g_cond_request);
 		mutex_lock(&g_mutex_request);
 		g_cond_request = 0;
 	}
-	request->fps = g_request_fps;
-	request->mode = g_request_sw_mode;
+	*request = g_request_notified;
 	mutex_unlock(&g_mutex_request);
-}
-
-void dfrc_get_fps(int *fps)
-{
-	mutex_lock(&g_mutex_data);
-	if (*fps == g_current_fps) {
-		mutex_unlock(&g_mutex_data);
-		wait_event_interruptible(g_wq_fps_change, g_cond_change);
-		mutex_lock(&g_mutex_data);
-		g_cond_change = 0;
-	}
-	*fps = g_current_fps;
-	mutex_unlock(&g_mutex_data);
 }
 
 void dfrc_get_panel_info(struct DFRC_DRV_PANEL_INFO *panel_info)
@@ -370,26 +388,14 @@ int dfrc_allow_rrc_adjust_fps(void)
 	return allow;
 }
 
-void dfrc_set_rrc_touch_fps(int fps)
-{
-	mutex_lock(&g_mutex_rrc);
-	g_policy_rrc_input.fps = fps;
-	dfrc_set_policy(&g_policy_rrc_input);
-	mutex_unlock(&g_mutex_rrc);
-}
-
-void dfrc_set_rrc_video_fps(int fps)
-{
-	mutex_lock(&g_mutex_rrc);
-	g_policy_rrc_video.fps = fps;
-	dfrc_set_policy(&g_policy_rrc_video);
-	mutex_unlock(&g_mutex_rrc);
-}
-
 static int rrc_fps_is_invalid_fps_locked(int fps)
 {
 	int res = 1;
 	int i;
+
+	if (fps == -1) {
+		return 0;
+	}
 
 	for (i = 0; i < g_fps_info.num; i++) {
 		if (g_fps_info.range[i].min_fps <= fps && fps <= g_fps_info.range[i].max_fps) {
@@ -416,9 +422,10 @@ void dfrc_set_fg_window(const struct DFRC_DRV_FOREGROUND_WINDOW_INFO *fg_window_
 	mutex_unlock(&g_mutex_data);
 }
 
-long dfrc_set_kernel_policy(int api, int fps, int mode)
+long dfrc_set_kernel_policy(int api, int fps, int mode, int target_pid, void *gl_context_id)
 {
 	long res = 0L;
+	struct DFRC_DRV_POLICY *temp;
 
 	mutex_lock(&g_mutex_data);
 	if (!g_init_done) {
@@ -435,29 +442,29 @@ long dfrc_set_kernel_policy(int api, int fps, int mode)
 
 	switch (api) {
 	case DFRC_DRV_API_RRC_TOUCH:
-		g_policy_rrc_input.fps = fps;
-		g_policy_rrc_input.mode = mode;
-		dfrc_set_policy_locked(&g_policy_rrc_input);
+		temp = &g_policy_rrc_input;
 		break;
 	case DFRC_DRV_API_RRC_VIDEO:
-		g_policy_rrc_video.fps = fps;
-		g_policy_rrc_video.mode = mode;
-		dfrc_set_policy_locked(&g_policy_rrc_video);
+		temp = &g_policy_rrc_video;
 		break;
 	case DFRC_DRV_API_THERMAL:
-		g_policy_thermal.fps = fps;
-		g_policy_thermal.mode = mode;
-		dfrc_set_policy_locked(&g_policy_thermal);
+		temp = &g_policy_thermal;
 		break;
 	case DFRC_DRV_API_LOADING:
-		g_policy_loading.fps = fps;
-		g_policy_loading.mode = mode;
-		dfrc_set_policy_locked(&g_policy_loading);
+		temp = &g_policy_loading;
 		break;
 	default:
 		DFRC_INFO("[RRC_DRV] api_%d failed to set %d fps: api is invalid\n", api, fps);
+		temp = NULL;
 		res = -EINVAL;
 		break;
+	}
+	if (temp != NULL) {
+		temp->fps = fps;
+		temp->mode = mode;
+		temp->target_pid = target_pid;
+		temp->gl_context_id = gl_context_id;
+		dfrc_set_policy_locked(temp);
 	}
 
 set_kernel_policy_exit:
@@ -524,7 +531,7 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct DFRC_DRV_REFRESH_RANGE range;
 	struct DFRC_DRV_WINDOW_STATE window_state;
 	struct DFRC_DRV_FOREGROUND_WINDOW_INFO fg_window_info;
-	int fps;
+	struct DFRC_DRC_REQUEST_SET request_set;
 	long res = 0L;
 
 	switch (cmd) {
@@ -579,6 +586,14 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		dfrc_reset_state();
 		break;
 
+	case DFRC_IOCTL_CMD_GET_REQUEST_SET:
+		if (copy_from_user(&request_set, (void *)arg, sizeof(request_set))) {
+			DFRC_WRN("get_request_set: failed to copy data from user\n");
+			return -EFAULT;
+		}
+		res = dfrc_get_request_set(&request_set);
+		break;
+
 	case DFRC_IOCTL_CMD_GET_VSYNC_REQUEST:
 		if (copy_from_user(&request, (void *)arg, sizeof(request))) {
 			DFRC_WRN("get_vsync_request: failed to copy data from user\n");
@@ -587,18 +602,6 @@ static long dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		dfrc_get_vsync_request(&request);
 		if (copy_to_user((void *)arg, &request, sizeof(request))) {
 			DFRC_WRN("get_vsync_request: failed to copy data to user\n");
-			return -EFAULT;
-		}
-		break;
-
-	case DFRC_IOCTL_CMD_GET_FPS:
-		if (copy_from_user(&fps, (void *)arg, sizeof(fps))) {
-			DFRC_WRN("get_fps: failed to copy data from user\n");
-			return -EFAULT;
-		}
-		dfrc_get_fps(&fps);
-		if (copy_to_user((void *)arg, &fps, sizeof(fps))) {
-			DFRC_WRN("get_fps: failed to copy data to user\n");
 			return -EFAULT;
 		}
 		break;
@@ -656,8 +659,8 @@ static long compat_dfrc_ioctl(struct file *file, unsigned int cmd, unsigned long
 	case DFRC_IOCTL_CMD_SET_HWC_INFO:
 	case DFRC_IOCTL_CMD_SET_INPUT_WINDOW:
 	case DFRC_IOCTL_CMD_RESET_STATE:
+	case DFRC_IOCTL_CMD_GET_REQUEST_SET:
 	case DFRC_IOCTL_CMD_GET_VSYNC_REQUEST:
-	case DFRC_IOCTL_CMD_GET_FPS:
 	case DFRC_IOCTL_CMD_GET_PANEL_INFO:
 		break;
 
@@ -733,9 +736,11 @@ static void dfrc_dump_policy_list(void)
 	dfrc_idump("All Fps Policy\n");
 	list_for_each(iter, &g_fps_policy_list) {
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
-		dfrc_idump("    [%d]  sequence[%llu]  api[%d]  pid[%d]  fps[%d]  mode[%d]\n",
-				i, node->policy.sequence, node->policy.api, node->policy.pid,
-				node->policy.fps, node->policy.mode);
+		dfrc_idump("    [%d]  sequence[%llu]  api[%d]  pid[%d]  fps[%d]  mode[%d]  ",
+				i, node->policy.sequence, node->policy.api,
+				node->policy.pid, node->policy.fps, node->policy.mode);
+		dfrc_idump("target_pid[%d]  context_id[%p]\n",
+				node->policy.target_pid, node->policy.gl_context_id);
 		i++;
 	}
 }
@@ -774,199 +779,269 @@ static ssize_t dfrc_debug_dump_reason_read(struct file *file, char __user *buf, 
 	return res;
 }
 
-static void dfrc_analyze_police_locked(int *fps, int *sw_mode, int *hw_mode)
+static void dfrc_add_policy_to_statistics(struct DFRC_DRV_POLICY *policy,
+					struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
 {
-	struct DFRC_DRV_POLICY_STATISTICS statistics[DFRC_DRV_API_MAXIMUM];
-	struct DFRC_DRV_POLICY_STATISTICS *set;
-	int i;
-	int expected_fps = 0;
-	bool use_config = false;
-	unsigned long long expected_sequence = 0;
-	int expected_mode = 0;
-
-	struct list_head *iter;
+	struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_set;
+	struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_set;
 	struct DFRC_DRV_POLICY_NODE *node;
+
+	if (policy->mode == DFRC_DRV_MODE_FRR) {
+		frr_set = &frr_statistics[policy->api];
+		frr_set->num_config++;
+		node = vmalloc(sizeof(struct DFRC_DRV_POLICY_NODE));
+		if (node == NULL) {
+			DFRC_WRN("forage_police: faile to allocate memory\n");
+		} else {
+			INIT_LIST_HEAD(&node->list);
+			memcpy(&node->policy, policy, sizeof(struct DFRC_DRV_POLICY));
+			list_add(&node->list, &frr_statistics->list);
+		}
+	} else if (policy->mode == DFRC_DRV_MODE_ARR) {
+		arr_set = &arr_statistics[policy->api];
+		arr_set->num_config++;
+		if (policy->fps > arr_set->fps) {
+			arr_set->sequence = policy->sequence;
+			arr_set->fps = policy->fps;
+			arr_set->mode = policy->mode;
+			arr_set->policy = *policy;
+		}
+	}
+}
+
+static int dfrc_forage_police_locked(struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	struct list_head *iter;
 	struct DFRC_DRV_POLICY *policy;
+	int num_valid_policy = 0;
+	struct DFRC_DRV_POLICY_NODE *node;
 
-	for (i = 0; i < DFRC_DRV_API_MAXIMUM; i++)
-		memset(&statistics[i], 0, sizeof(struct DFRC_DRV_POLICY_STATISTICS));
-
-	dfrc_reset_reason_buffer();
-	/* TODO multi-window scenario is too complex, ignore it */
-	if (g_num_fps_policy == 0 || g_hwc_info.num_display > 1) {
-		*fps = 0;
-		*sw_mode = 0;
-		*hw_mode = 0;
+	if (g_num_fps_policy == 0) {
 		dfrc_rdump("Can not find any config, use default setting\n");
+	} else if (g_window_state.window_flag & DFRC_DRV_FLAG_MULTI_WINDOW) {
+		dfrc_rdump("Multi-Window is enabled, use default setting\n");
+	} else if (g_hwc_info.num_display > 1) {
+		dfrc_rdump("In the Multi-Display scenariom use default setting\n");
 	} else {
-		/* find related policy to determine the corrent fps */
 		list_for_each(iter, &g_fps_policy_list) {
 			node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
 			policy = &node->policy;
 			if (policy->fps == -1)
 				continue;
 
-			if (policy->api == DFRC_DRV_API_THERMAL) {
-				set = &statistics[DFRC_DRV_API_THERMAL];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			} else if (policy->api == DFRC_DRV_API_LOADING) {
-				set = &statistics[DFRC_DRV_API_LOADING];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			/* video policy is set by SF, we can ignore the FG pid */
+			/* change condition from touch window to fore window */
+			if (policy->api == DFRC_DRV_API_GIFT &&
+					policy->target_pid == g_input_window_info.pid) {
+				num_valid_policy++;
+				dfrc_add_policy_to_statistics(policy, arr_statistics,
+						frr_statistics);
 			} else if (policy->api == DFRC_DRV_API_VIDEO) {
-				set = &statistics[DFRC_DRV_API_VIDEO];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			/* TODO change the condition from focus pid to fg pid */
-			/* gift policy is set by app. It cancels policy when app is dead. */
-			/* Therefore, we need to check the fg pid. */
-			} else if (policy->api == DFRC_DRV_API_GIFT &&
-					policy->pid == g_input_window_info.pid) {
-				set = &statistics[DFRC_DRV_API_GIFT];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			/* TODO change the condition from focus pid to fg pid */
-			/* frr policy is set by app. It cancels policy when app is dead. */
-			/* Therefore, we need to check the fg pid. */
-			} else if (policy->api == DFRC_DRV_API_FRR &&
-					policy->pid == g_input_window_info.pid) {
-				set = &statistics[DFRC_DRV_API_FRR];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			/* when SF is ready, SF will register it. kernel will set its fps. */
-			/* Therefore, we do not care its pid. if the fps is not -1, it means */
-			/* rrc try to request specific fps for touch boost */
-			} else if (policy->api == DFRC_DRV_API_RRC_TOUCH &&
-					policy->fps != -1) {
-				set = &statistics[DFRC_DRV_API_RRC_TOUCH];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
-			/* when SF is ready, SF will register it. kernel will set its fps. */
-			/* therefore, we do not care its pid. if the fps is not -1, it means */
-			/* rrc try to request specific fps for 120hz mjc */
-			} else if (policy->api == DFRC_DRV_API_RRC_VIDEO &&
-					policy->fps != -1) {
-				set = &statistics[DFRC_DRV_API_RRC_VIDEO];
-				set->num_config++;
-				if (policy->fps > set->fps) {
-					set->fps = policy->fps;
-					set->sequence = policy->sequence;
-					set->mode = policy->mode;
-				}
+			} else if (policy->api == DFRC_DRV_API_RRC_TOUCH) {
+			} else if (policy->api == DFRC_DRV_API_RRC_VIDEO) {
+			} else if (policy->api == DFRC_DRV_API_THERMAL) {
+				num_valid_policy++;
+				dfrc_add_policy_to_statistics(policy, arr_statistics,
+						frr_statistics);
+			} else if (policy->api == DFRC_DRV_API_LOADING) {
+				num_valid_policy++;
+				dfrc_add_policy_to_statistics(policy, arr_statistics,
+						frr_statistics);
+			} else if (policy->api == DFRC_DRV_API_WHITELIST) {
+				num_valid_policy++;
+				dfrc_add_policy_to_statistics(policy, arr_statistics,
+						frr_statistics);
 			}
-		}
-
-		/* rrc need to porcess real time request, so we do not decide rrc fps */
-		/* in this loop. we always decide that rrc can adjust fps by itself */
-		/* in previous loop. therefore rember adjust g_allow_rrc_policy in here. */
-		g_allow_rrc_policy = DFRC_ALLOW_VIDEO;
-		if (statistics[DFRC_DRV_API_THERMAL].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_THERMAL].fps;
-			expected_sequence = statistics[DFRC_DRV_API_THERMAL].sequence;
-			expected_mode = statistics[DFRC_DRV_API_THERMAL].mode;
-			use_config = true;
-			g_allow_rrc_policy = 0;
-		} else if (statistics[DFRC_DRV_API_LOADING].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_LOADING].fps;
-			expected_sequence = statistics[DFRC_DRV_API_LOADING].sequence;
-			expected_mode = statistics[DFRC_DRV_API_LOADING].mode;
-			use_config = true;
-			g_allow_rrc_policy = 0;
-		} else if (statistics[DFRC_DRV_API_FRR].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_FRR].fps;
-			expected_sequence = statistics[DFRC_DRV_API_FRR].sequence;
-			expected_mode = statistics[DFRC_DRV_API_FRR].mode;
-			use_config = true;
-			/* when frr set fps, rrc should not adjust fps, */
-			/* hence clean all rrc allow flag */
-			g_allow_rrc_policy = 0;
-		} else if (statistics[DFRC_DRV_API_RRC_TOUCH].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_RRC_TOUCH].fps;
-			expected_sequence = statistics[DFRC_DRV_API_RRC_TOUCH].sequence;
-			expected_mode = statistics[DFRC_DRV_API_RRC_TOUCH].mode;
-			use_config = true;
-		} else if (statistics[DFRC_DRV_API_RRC_VIDEO].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_RRC_VIDEO].fps;
-			expected_sequence = statistics[DFRC_DRV_API_RRC_VIDEO].sequence;
-			expected_mode = statistics[DFRC_DRV_API_RRC_VIDEO].mode;
-			use_config = true;
-		/* we use video policy when the screen only has one layer or else it may cause */
-		/* that UI can not show smoothly. */
-		} else if (statistics[DFRC_DRV_API_VIDEO].num_config == 1 &&
-				g_hwc_info.single_layer) {
-			expected_fps = statistics[DFRC_DRV_API_VIDEO].fps;
-			expected_sequence = statistics[DFRC_DRV_API_VIDEO].sequence;
-			expected_mode = statistics[DFRC_DRV_API_VIDEO].mode;
-			use_config = true;
-		} else if (statistics[DFRC_DRV_API_GIFT].num_config) {
-			expected_fps = statistics[DFRC_DRV_API_GIFT].fps;
-			expected_sequence = statistics[DFRC_DRV_API_GIFT].sequence;
-			expected_mode = statistics[DFRC_DRV_API_GIFT].mode;
-			use_config = true;
-		}
-
-		if (use_config) {
-			*fps = expected_fps;
-			*sw_mode = 1;
-			*hw_mode = 1;
-			dfrc_rdump("Use config: sequence[%llu]  fps[%d]  mode[%d]\n",
-					expected_sequence, expected_fps, expected_mode);
-		} else if (!use_config && statistics[DFRC_DRV_API_VIDEO].num_config == 1) {
-			*fps = 0;
-			*sw_mode = 1;
-			*hw_mode = 1;
-			dfrc_rdump("Multi-layer and video config\n");
-		} else {
-			*fps = 0;
-			*sw_mode = 0;
-			*sw_mode = 0;
-			dfrc_rdump("Can not find any adaptive config\n");
 		}
 	}
 
-	/* check the fps is invalid or not */
-	if (*fps < g_min_fps || *fps > g_max_fps) {
-		*fps = g_max_fps;
-		dfrc_rdump("this fps is invalid, use default value\n");
+	return num_valid_policy;
+}
+
+static void dfrc_select_policy_locked(int *which,
+		struct DFRC_DRV_POLICY_ARR_STATISTICS **expected_arr,
+		struct DFRC_DRV_POLICY_FRR_STATISTICS **expected_frr,
+		struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+		struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_set;
+	int arr_upper_bound = -1;
+
+	*which = DFRC_DRV_MODE_DEFAULT;
+	*expected_arr = NULL;
+	*expected_frr = NULL;
+
+	if (frr_statistics[DFRC_DRV_API_THERMAL].num_config) {
+		*which = DFRC_DRV_MODE_FRR;
+		*expected_frr = &frr_statistics[DFRC_DRV_API_THERMAL];
+		dfrc_rdump("choose thermal config with frr\n");
+		return;
+	} else if (arr_statistics[DFRC_DRV_API_THERMAL].num_config) {
+		*which = DFRC_DRV_MODE_ARR;
+		*expected_arr = &arr_statistics[DFRC_DRV_API_THERMAL];
+		arr_upper_bound = arr_statistics[DFRC_DRV_API_THERMAL].fps;
+		dfrc_rdump("choose thermal config with arr\n");
+	}
+
+	if (frr_statistics[DFRC_DRV_API_LOADING].num_config && *which == DFRC_DRV_MODE_DEFAULT) {
+		*which = DFRC_DRV_MODE_FRR;
+		*expected_frr = &frr_statistics[DFRC_DRV_API_LOADING];
+		dfrc_rdump("choose loading config with frr\n");
+		return;
+	} else if (arr_statistics[DFRC_DRV_API_LOADING].num_config &&
+			(*which == DFRC_DRV_MODE_DEFAULT || *which == DFRC_DRV_MODE_ARR)) {
+		*which = DFRC_DRV_MODE_ARR;
+		arr_set = &arr_statistics[DFRC_DRV_API_LOADING];
+		if (arr_upper_bound == -1 || arr_set->fps < arr_upper_bound) {
+			*expected_arr = arr_set;
+			if (arr_upper_bound != -1 && arr_set->fps < arr_upper_bound)
+				dfrc_rdump("loading config is lower than upper bound\n");
+		}
+		dfrc_rdump("choose loading config with arr\n");
+		return;
+	}
+
+	if (frr_statistics[DFRC_DRV_API_WHITELIST].num_config && *which == DFRC_DRV_MODE_DEFAULT) {
+		*which = DFRC_DRV_MODE_FRR;
+		*expected_frr = &frr_statistics[DFRC_DRV_API_WHITELIST];
+		dfrc_rdump("choose whitelist config with frr\n");
+		return;
+	} else if (arr_statistics[DFRC_DRV_API_WHITELIST].num_config &&
+			(*which == DFRC_DRV_MODE_DEFAULT || *which == DFRC_DRV_MODE_ARR)) {
+		*which = DFRC_DRV_MODE_ARR;
+		arr_set = &arr_statistics[DFRC_DRV_API_WHITELIST];
+		if (arr_upper_bound == -1 || arr_set->fps < arr_upper_bound) {
+			*expected_arr = arr_set;
+			if (arr_upper_bound != -1 && arr_set->fps < arr_upper_bound)
+				dfrc_rdump("whitelist config is lower than upper bound\n");
+		}
+		dfrc_rdump("choose whitelist config with arr\n");
+		return;
+	}
+
+	if (frr_statistics[DFRC_DRV_API_GIFT].num_config && *which == DFRC_DRV_MODE_DEFAULT) {
+		*which = DFRC_DRV_MODE_FRR;
+		*expected_frr = &frr_statistics[DFRC_DRV_API_GIFT];
+		dfrc_rdump("choose gift config with frr\n");
+		return;
+	} else if (arr_statistics[DFRC_DRV_API_GIFT].num_config &&
+			(*which == DFRC_DRV_MODE_DEFAULT || *which == DFRC_DRV_MODE_ARR)) {
+		*which = DFRC_DRV_MODE_ARR;
+		arr_set = &arr_statistics[DFRC_DRV_API_GIFT];
+		if (arr_upper_bound == -1 || arr_set->fps < arr_upper_bound) {
+			*expected_arr = arr_set;
+			if (arr_upper_bound != -1 && arr_set->fps < arr_upper_bound)
+				dfrc_rdump("gift config is lower than upper bound\n");
+		}
+		dfrc_rdump("choose gift config with arr\n");
+		return;
 	}
 }
 
-static void dfrc_adjust_vsync(int fps, int sw_mode, int hw_mode)
+static void dfrc_pack_choosed_frr_policy(int num, struct DFRC_DRV_POLICY *new_policy,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	int i = 0;
+	struct list_head *iter;
+	struct DFRC_DRV_POLICY_NODE *node;
+
+	list_for_each(iter, &frr_statistics->list) {
+		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
+		if (i < num)
+			new_policy[i] = node->policy;
+		else
+			break;
+		i++;
+	}
+}
+
+static void dfrc_pack_choosed_arr_policy(int num, struct DFRC_DRV_POLICY *new_policy,
+					struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics)
+{
+	int i = 0;
+
+	if (num >= 1) {
+		new_policy[i] = arr_statistics->policy;
+	}
+}
+
+static void dfrc_adjust_vsync(int which,
+				struct DFRC_DRV_POLICY_ARR_STATISTICS *expected_arr,
+				struct DFRC_DRV_POLICY_FRR_STATISTICS *expected_frr,
+				struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+				struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
 {
 	bool change = false;
+	struct DFRC_DRV_VSYNC_REQUEST new_request;
+	int fps = -1;
+	int sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+	int hw_mode = DFRC_DRV_HW_MODE_ARR;
+	struct DFRC_DRV_POLICY *new_policy = NULL;
+	int size;
 
-	/* change the fps and mode of sw vsync */
-	if (fps != g_current_fps || sw_mode != g_current_sw_mode) {
+	if (which == DFRC_DRV_MODE_DEFAULT) {
+		dfrc_rdump("which is default\n");
+		fps = -1;
+		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
+		new_request.fps = -1;
+		new_request.mode = DFRC_DRV_MODE_DEFAULT;
+		new_request.sw_fps = 60;
+		new_request.sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		new_request.valid_info = false;
+		new_request.transient_state = false;
+		new_request.num_policy = 0;
+	} else if (which == DFRC_DRV_MODE_FRR) {
+		dfrc_rdump("which is frr\n");
+		fps = 60;
+		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
+		new_request.fps = -1;
+		new_request.mode = DFRC_DRV_MODE_FRR;
+		new_request.sw_fps = 60;
+		new_request.sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
+		new_request.valid_info = false;
+		new_request.transient_state = false;
+		new_request.num_policy = expected_frr->num_config;
+		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * expected_frr->num_config);
+		dfrc_pack_choosed_frr_policy(expected_frr->num_config, new_policy, frr_statistics);
+	} else if (which == DFRC_DRV_MODE_ARR) {
+		dfrc_rdump("which is arr\n");
+		fps = expected_arr->fps;
+		sw_mode = DFRC_DRV_SW_MODE_PASS_HW;
+		hw_mode = DFRC_DRV_HW_MODE_ARR;
+		new_request.fps = expected_arr->fps;
+		new_request.mode = expected_arr->mode;
+		new_request.sw_fps = expected_arr->fps;
+		new_request.sw_mode = DFRC_DRV_SW_MODE_PASS_HW;
+		new_request.valid_info = true;
+		new_request.transient_state = false;
+		new_request.num_policy = 1;
+		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
+		dfrc_pack_choosed_arr_policy(1, new_policy, arr_statistics);
+	}
+
+	if (memcmp(&new_request, &g_request_now, sizeof(g_request_now))) {
 		change = true;
+	} else {
+		if ((new_policy != NULL && g_request_policy == NULL) ||
+				(new_policy == NULL && g_request_policy != NULL)) {
+			change = true;
+		} else if (new_policy != NULL && g_request_policy != NULL) {
+			size = sizeof(struct DFRC_DRV_POLICY) * new_request.num_policy;
+			if (memcmp(new_policy, g_request_policy, size)) {
+				change = true;
+			}
+		}
+	}
+
+	if (change) {
 		mutex_lock(&g_mutex_request);
-		g_request_fps = fps;
-		g_request_sw_mode = sw_mode;
+		g_request_notified = new_request;
+		if (g_request_policy != NULL)
+			vfree(g_request_policy);
+		g_request_policy = new_policy;
 		g_cond_request = 1;
 		wake_up_interruptible(&g_wq_vsync_request);
 		mutex_unlock(&g_mutex_request);
@@ -974,7 +1049,6 @@ static void dfrc_adjust_vsync(int fps, int sw_mode, int hw_mode)
 
 	/* change the fps of hw vsync */
 	if (fps != g_current_fps || hw_mode != g_current_hw_mode) {
-		change = true;
 		/*primary_display_force_set_vsync_fps(fps);*/
 	}
 
@@ -983,22 +1057,55 @@ static void dfrc_adjust_vsync(int fps, int sw_mode, int hw_mode)
 		DFRC_INFO("adjust vsync: [%d|%d|%d] -> [%d|%d|%d]",
 				g_current_fps, g_current_sw_mode, g_current_hw_mode,
 				fps, sw_mode, hw_mode);
-		mutex_lock(&g_mutex_data);
 		g_current_fps = fps;
-		g_cond_change = 1;
-		wake_up_interruptible(&g_wq_fps_change);
-		mutex_unlock(&g_mutex_data);
-
 		g_current_sw_mode = sw_mode;
 		g_current_hw_mode = hw_mode;
 	}
 }
 
+static void dfrc_reset_statistics(struct DFRC_DRV_POLICY_ARR_STATISTICS *expected_arr,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *expected_frr,
+					struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	int i;
+
+	expected_arr = NULL;
+	expected_frr = NULL;
+	for (i = 0; i < DFRC_DRV_API_MAXIMUM; i++) {
+		memset(&arr_statistics[i], 0, sizeof(struct DFRC_DRV_POLICY_ARR_STATISTICS));
+		memset(&frr_statistics[i], 0, sizeof(struct DFRC_DRV_POLICY_FRR_STATISTICS));
+		frr_statistics[i].list.next = &frr_statistics[i].list;
+		frr_statistics[i].list.prev = &frr_statistics[i].list;
+	}
+}
+
+static void dfrc_clear_statistics(struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
+					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	struct list_head *iter, *next;
+	struct DFRC_DRV_POLICY_NODE *node;
+	struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_set;
+	int i;
+
+	for (i = 0; i < DFRC_DRV_API_MAXIMUM; i++) {
+		frr_set = &frr_statistics[i];
+		list_for_each_safe(iter, next, &frr_set->list) {
+			node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
+			list_del(&node->list);
+			vfree(node);
+		}
+	}
+}
+
 static int dfrc_make_policy_kthread_func(void *data)
 {
-	int fps = 0;
-	int sw_mode = 0;
-	int hw_mode = 0;
+	int which = DFRC_DRV_MODE_DEFAULT;
+	struct DFRC_DRV_POLICY_ARR_STATISTICS arr_statistics[DFRC_DRV_API_MAXIMUM];
+	struct DFRC_DRV_POLICY_FRR_STATISTICS frr_statistics[DFRC_DRV_API_MAXIMUM];
+	struct DFRC_DRV_POLICY_ARR_STATISTICS *expected_arr = NULL;
+	struct DFRC_DRV_POLICY_FRR_STATISTICS *expected_frr = NULL;
+	int num;
 
 	struct sched_param param = { .sched_priority = 94 };
 
@@ -1016,13 +1123,24 @@ static int dfrc_make_policy_kthread_func(void *data)
 			g_cond_remake = 0;
 		}
 
+		dfrc_reset_statistics(expected_arr, expected_frr, arr_statistics, frr_statistics);
+
 		/* find the new fps setting */
-		dfrc_analyze_police_locked(&fps, &sw_mode, &hw_mode);
+		dfrc_reset_reason_buffer();
+		which = DFRC_DRV_MODE_DEFAULT;
+		num = dfrc_forage_police_locked(arr_statistics, frr_statistics);
+		if (num != 0) {
+			dfrc_select_policy_locked(&which, &expected_arr, &expected_frr,
+					arr_statistics, frr_statistics);
+		}
 		g_processed_count = g_event_count;
 		mutex_unlock(&g_mutex_data);
 
 		/* adjust vsync */
-		dfrc_adjust_vsync(fps, sw_mode, hw_mode);
+		dfrc_adjust_vsync(which, expected_arr, expected_frr,
+				arr_statistics, frr_statistics);
+
+		dfrc_clear_statistics(arr_statistics, frr_statistics);
 	}
 
 	return 0;
