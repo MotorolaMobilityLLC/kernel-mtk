@@ -703,6 +703,25 @@ static int xo_pm_suspend(struct device *device)
 
 static int xo_pm_resume(struct device *device)
 {
+	uint32_t value = 0;
+
+	/* re-setting XO audio path for external 32k */
+	if (xo_inst->has_ext_crystal) {
+		bsi_clock_enable(true);
+		/* RG_XO2AUDIO_XO_EN = 0*/
+		value = BSI_read(0x25) & ~(1 << 12);
+		BSI_write(0x25, value);
+		/*XO_EN_MAN = 1*/
+		value = BSI_read(0x29) | (1 << 0);
+		BSI_write(0x29, value);
+		/*delay 100us*/
+		udelay(100);
+		/*XO_EN_MAN = 0*/
+		value = BSI_read(0x29) & ~(1 << 0);
+		BSI_write(0x29, value);
+		bsi_clock_enable(false);
+	}
+
 	return 0;
 }
 
