@@ -416,7 +416,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			regval |= REG_FLD_VAL(OVL_L_CLIP_FLD_RIGHT, 1);
 		}
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, regval);
-	}
+	} else
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, 0);
 
 	switch (cfg->yuv_range) {
 	case 0:
