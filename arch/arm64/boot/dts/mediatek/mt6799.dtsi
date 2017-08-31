@@ -1083,7 +1083,7 @@
 			<0 0x10700000 0 0x1000>; /*MD_CCIF_BASE*/
 		interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
 			     <GIC_SPI 164 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
-			     <GIC_SPI 361 IRQ_TYPE_EDGE_RISING>; /*IRQ_MDWDT*/
+			     <GIC_SPI 361 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
 		mediatek,md_id = <0>;
 		mediatek,cldma_capability = <6>;
 		clocks =  <&scpsys SCP_SYS_MD1>,
