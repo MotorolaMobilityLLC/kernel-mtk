@@ -44,14 +44,14 @@ int rt5081_pmu_reg_read(struct rt5081_pmu_chip *chip, u8 addr)
 	struct rt_reg_data rrd = {0};
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x\n", __func__, addr);
 	ret = rt_regmap_reg_read(chip->rd, &rrd, addr);
 	return (ret < 0 ? ret : rrd.rt_data.data_u32);
 #else
 	u8 data = 0;
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x\n", __func__, addr);
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt5081_pmu_read_device(chip->i2c, addr, 1, &data);
 	rt_mutex_unlock(&chip->io_lock);
@@ -65,12 +65,14 @@ int rt5081_pmu_reg_write(struct rt5081_pmu_chip *chip, u8 addr, u8 data)
 #ifdef CONFIG_RT_REGMAP
 	struct rt_reg_data rrd = {0};
 
-	dev_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__, addr, data);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x data %02x\n", __func__,
+		addr, data);
 	return rt_regmap_reg_write(chip->rd, &rrd, addr, data);
 #else
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__, addr, data);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x data %02x\n", __func__,
+		addr, data);
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt5081_pmu_write_device(chip->i2c, addr, 1, &data);
 	rt_mutex_unlock(&chip->io_lock);
@@ -85,15 +87,17 @@ int rt5081_pmu_reg_update_bits(struct rt5081_pmu_chip *chip, u8 addr,
 #ifdef CONFIG_RT_REGMAP
 	struct rt_reg_data rrd = {0};
 
-	dev_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__, addr, data);
-	dev_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x data %02x\n", __func__,
+		addr, data);
+	dev_dbg_ratelimited(chip->dev, "%s: mask %02x\n", __func__, mask);
 	return rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
 #else
 	u8 orig = 0;
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__, addr, data);
-	dev_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x data %02x\n", __func__,
+		addr, data);
+	dev_dbg_ratelimited(chip->dev, "%s: mask %02x\n", __func__, mask);
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt5081_pmu_read_device(chip->i2c, addr, 1, &orig);
 	if (ret < 0)
@@ -112,12 +116,14 @@ int rt5081_pmu_reg_block_read(struct rt5081_pmu_chip *chip, u8 addr,
 			      int len, u8 *dest)
 {
 #ifdef CONFIG_RT_REGMAP
-	dev_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr, len);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x size %d\n", __func__,
+		addr, len);
 	return rt_regmap_block_read(chip->rd, addr, len, dest);
 #else
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr, len);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x size %d\n", __func__,
+		addr, len);
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt5081_pmu_read_device(chip->i2c, addr, len, dest);
 	rt_mutex_unlock(&chip->io_lock);
@@ -130,12 +136,14 @@ int rt5081_pmu_reg_block_write(struct rt5081_pmu_chip *chip, u8 addr,
 			       int len, const u8 *src)
 {
 #ifdef CONFIG_RT_REGMAP
-	dev_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr, len);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
+		len);
 	return rt_regmap_block_write(chip->rd, addr, len, src);
 #else
 	int ret = 0;
 
-	dev_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr, len);
+	dev_dbg_ratelimited(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
+		len);
 	rt_mutex_lock(&chip->io_lock);
 	ret = rt5081_pmu_write_device(chip->i2c, addr, len, src);
 	rt_mutex_unlock(&chip->io_lock);
@@ -192,7 +200,7 @@ static int rt5081_pmu_suspend(struct device *dev)
 {
 	struct rt5081_pmu_chip *chip = dev_get_drvdata(dev);
 
-	dev_dbg(chip->dev, "%s\n", __func__);
+	dev_dbg_ratelimited(chip->dev, "%s\n", __func__);
 	rt5081_pmu_irq_suspend(chip);
 	return 0;
 }
@@ -201,7 +209,7 @@ static int rt5081_pmu_resume(struct device *dev)
 {
 	struct rt5081_pmu_chip *chip = dev_get_drvdata(dev);
 
-	dev_dbg(dev, "%s\n", __func__);
+	dev_dbg_ratelimited(dev, "%s\n", __func__);
 	rt5081_pmu_irq_resume(chip);
 	return 0;
 }
