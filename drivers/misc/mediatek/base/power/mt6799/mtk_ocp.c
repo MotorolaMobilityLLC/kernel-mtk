@@ -96,7 +96,7 @@
 #define ocp_is_enable(x)	(ocp_info.cl_setting[x].is_enabled)
 #define ocp_is_force_off(x)	(ocp_info.cl_setting[x].is_forced_off_by_user)
 #define ocp_is_available(x)	(ocp_is_enable(x) && !ocp_is_force_off(x))
-#define ocp_use_v2_for_mp0_mp1()	(ocp_info.hw_chip_version == 1)
+#define ocp_is_v2_used(id)	(id != OCP_B && ocp_info.hw_chip_version == 1)
 #define for_each_ocp_cluster(x)	for (x = 0; x < NR_OCP_CLUSTER; x++)
 #define for_each_ocp_isr(x)	for (x = 0; x < NR_OCP_IRQ; x++)
 
@@ -336,8 +336,7 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 	}
 	switch (select) {
 	case IRQ_CLK_PCT_MIN:
-		min = (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
-			? OCP_CLK_PCT_MIN_V3 : OCP_CLK_PCT_MIN_V2;
+		min = (ocp_is_v2_used(cluster)) ? OCP_CLK_PCT_MIN_V2 : OCP_CLK_PCT_MIN_V3;
 
 		if (limit > OCP_CLK_PCT_MAX)
 			limit = OCP_CLK_PCT_MAX;
@@ -346,10 +345,10 @@ static int ocp_int_limit(enum ocp_cluster cluster, enum ocp_int_select select, u
 		break;
 	case IRQ_WA_MAX:
 	case IRQ_WA_MIN:
-		if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
-			limit = (limit > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : limit;
-		else
+		if (ocp_is_v2_used(cluster))
 			limit = (limit > OCP_TARGET_MAX_V2) ? OCP_TARGET_MAX_V2 : limit;
+		else
+			limit = (limit > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : limit;
 		break;
 	default:
 		ocp_err("%s: Invalid select type: %d\n", __func__, select);
@@ -409,13 +408,13 @@ static void ocp_int_status(enum ocp_cluster cluster, unsigned int *irq2, unsigne
 
 	switch (cluster) {
 	case OCP_LL:
-		if (ocp_use_v2_for_mp0_mp1())
+		if (ocp_is_v2_used(cluster))
 			status = ocp_sec_read(MP0_OCPAPBCFG01);
 		else
 			status = ocp_sec_read(MP0_OCPAPB01);
 		break;
 	case OCP_L:
-		if (ocp_use_v2_for_mp0_mp1())
+		if (ocp_is_v2_used(cluster))
 			status = ocp_sec_read(MP1_OCPAPBCFG01);
 		else
 			status = ocp_sec_read(MP1_OCPAPB01);
@@ -452,7 +451,7 @@ static int ocp_val_status(enum ocp_cluster cluster, enum ocp_value_select select
 
 	switch (select) {
 	case TOTAL_LKG:
-		if (ocp_use_v2_for_mp0_mp1() && cluster != OCP_B)
+		if (ocp_is_v2_used(cluster))
 			value = mt_secure_call_ocp(MTK_SIP_KERNEL_OCPVALUESTATUS, cluster, select, 0);
 		break;
 	case CLK_AVG:
@@ -503,9 +502,8 @@ static int ocp_enable_locked(enum ocp_cluster cluster, bool enable, enum ocp_mod
 		ocp_info.cl_setting[cluster].is_enabled = enable;
 		ocp_info.cl_setting[cluster].mode = mode;
 		if (enable) {
-			ocp_info.cl_setting[cluster].target =
-				(cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
-				? OCP_TARGET_MAX_V3 : OCP_TARGET_MAX_V2;
+			ocp_info.cl_setting[cluster].target = (ocp_is_v2_used(cluster))
+				? OCP_TARGET_MAX_V2 : OCP_TARGET_MAX_V3;
 #ifdef CONFIG_OCP_AEE_RR_REC
 			/* TODO: add SRAM debug for each cluster? */
 			if (cluster == OCP_B)
@@ -596,10 +594,10 @@ int mt_ocp_set_target(enum ocp_cluster cluster, unsigned int target)
 		return -1;
 	}
 
-	if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
-		target = (target > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : target;
-	else
+	if (ocp_is_v2_used(cluster))
 		target = (target > OCP_TARGET_MAX_V2) ? OCP_TARGET_MAX_V2 : target;
+	else
+		target = (target > OCP_TARGET_MAX_V3) ? OCP_TARGET_MAX_V3 : target;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -674,10 +672,10 @@ int mt_ocp_set_volt(enum ocp_cluster cluster, unsigned int volt_mv)
 		ocp_err("%s: Invalid cluster id: %d\n", __func__, cluster);
 		return -1;
 	}
-	if (cluster == OCP_B || !ocp_use_v2_for_mp0_mp1())
-		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_V3) ? OCP_VOLTAGE_MAX_V3 : volt_mv;
-	else
+	if (ocp_is_v2_used(cluster))
 		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_V2) ? OCP_VOLTAGE_MAX_V2 : volt_mv;
+	else
+		volt_mv = (volt_mv > OCP_VOLTAGE_MAX_V3) ? OCP_VOLTAGE_MAX_V3 : volt_mv;
 
 	ocp_lock(cluster);
 	/* status check */
@@ -744,7 +742,7 @@ static void ocp_record_data(enum ocp_cluster cluster, unsigned int cnt)
 {
 	unsigned int data;
 
-	if (cluster != OCP_B && ocp_use_v2_for_mp0_mp1()) {
+	if (ocp_is_v2_used(cluster)) {
 		unsigned long addr = (cluster == OCP_LL) ? MP0_OCPSTATUS0 : MP1_OCPSTATUS0;
 
 		data = ocp_sec_read(addr);
@@ -864,7 +862,7 @@ static void ocp_work_mp0(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_LL, IRQ_CLK_PCT_MIN, 0);
-	if (ocp_use_v2_for_mp0_mp1())
+	if (ocp_is_v2_used(OCP_LL))
 		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V2);
 	else
 		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
@@ -895,10 +893,10 @@ static void ocp_work_mp1(struct work_struct *work)
 
 	/* 4. clear int limit */
 	ocp_int_limit(OCP_L, IRQ_CLK_PCT_MIN, 0);
-	if (ocp_use_v2_for_mp0_mp1())
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V2);
+	if (ocp_is_v2_used(OCP_L))
+		ocp_int_limit(OCP_L, IRQ_WA_MAX, OCP_TARGET_MAX_V2);
 	else
-		ocp_int_limit(OCP_LL, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
+		ocp_int_limit(OCP_L, IRQ_WA_MAX, OCP_TARGET_MAX_V3);
 	ocp_int_limit(OCP_L, IRQ_WA_MIN, 0);
 
 	/* 5. re-enable int */
@@ -1290,13 +1288,13 @@ static int ocp_int_enable_proc_show(struct seq_file *m, void *v)
 		if (ocp_is_available(i)) {
 			switch (i) {
 			case OCP_LL:
-				if (ocp_use_v2_for_mp0_mp1())
+				if (ocp_is_v2_used(i))
 					status = ocp_sec_read(MP0_OCPAPBCFG02);
 				else
 					status = ocp_sec_read(MP0_OCPAPB07);
 				break;
 			case OCP_L:
-				if (ocp_use_v2_for_mp0_mp1())
+				if (ocp_is_v2_used(i))
 					status = ocp_sec_read(MP1_OCPAPBCFG02);
 				else
 					status = ocp_sec_read(MP1_OCPAPB07);
@@ -1308,7 +1306,7 @@ static int ocp_int_enable_proc_show(struct seq_file *m, void *v)
 				break;
 			}
 
-			if (i != OCP_B && ocp_use_v2_for_mp0_mp1()) {
+			if (ocp_is_v2_used(i)) {
 				irq2 = GET_BITS_VAL_OCP(18:16, status);
 				irq1 = GET_BITS_VAL_OCP(10:8, status);
 				irq0 = GET_BITS_VAL_OCP(2:0, status);
@@ -1630,16 +1628,22 @@ static int ocp_cpu_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 		switch (action & ~CPU_TASKS_FROZEN) {
 		case CPU_ONLINE:
 		case CPU_DOWN_FAILED:
-			if (cpus == 1)
-				ocp_enable(cluster_id, true, NO_BYPASS);
-			else
+			if (cpus == 1) {
+				if (ocp_is_v2_used(cluster_id))
+					ocp_enable(cluster_id, true, VOLT_MHZ_BYPASS);
+				else
+					ocp_enable(cluster_id, true, NO_BYPASS);
+			} else if (ocp_is_v2_used(cluster_id))
 				mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
 						cluster_id, cpus-1, true);
 			break;
 		case CPU_DOWN_PREPARE:
-			if (cpus == 1)
-				ocp_enable(cluster_id, false, NO_BYPASS);
-			else
+			if (cpus == 1) {
+				if (ocp_is_v2_used(cluster_id))
+					ocp_enable(cluster_id, false, VOLT_MHZ_BYPASS);
+				else
+					ocp_enable(cluster_id, false, NO_BYPASS);
+			} else if (ocp_is_v2_used(cluster_id))
 				mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
 						cluster_id, cpus-1, false);
 			break;
@@ -1792,8 +1796,18 @@ static int __init ocp_init(void)
 	/* check online cluster */
 	for_each_ocp_cluster(i) {
 		cpus = ocp_get_cluster_nr_online_cpu((enum ocp_cluster)i);
-		if (cpus > 0)
-			ocp_enable((enum ocp_cluster)i, true, NO_BYPASS);
+		if (cpus > 0) {
+			if (ocp_is_v2_used((enum ocp_cluster)i)) {
+				ocp_enable((enum ocp_cluster)i, true, VOLT_MHZ_BYPASS);
+
+				/* turn on leakage monitor for OCPv2 */
+				while (--cpus > 0) {
+					mt_secure_call_ocp(MTK_SIP_KERNEL_OCPLKGMONENDIS,
+						(enum ocp_cluster)i, cpus, true);
+				}
+			} else
+				ocp_enable((enum ocp_cluster)i, true, NO_BYPASS);
+		}
 	}
 
 end:
