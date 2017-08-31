@@ -109,8 +109,6 @@
 		clock-names = "bus";
 		mediatek,afe-regmap = <&afe>;
 		mediatek,apmixedsys-regmap = <&apmixedsys>;
-		mediatek,pwrap-regmap = <&pwrap>;
-		mediatek,speaker-mode = <0>; /* 0(CLASSD) 1(CLASSAB) */
 		mediatek,dmic-wire-mode = <1>; /* 0(ONE_WIRE) 1(TWO_WIRE) */
 	};
 
@@ -430,6 +428,11 @@
 	sd-uhs-sdr104;
 	vmmc-supply = <&mt6392_vmch_reg>;
 	vqmmc-supply = <&mt6392_vmc_reg>;
+};
+
+&mt6392_audio_codec {
+	mediatek,speaker-mode = <0>; /* 0(CLASSD) 1(CLASSAB) */
+	status = "okay";
 };
 
 &pio {

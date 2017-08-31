@@ -13,6 +13,14 @@
 
 #include <dt-bindings/pinctrl/mt6392-pinfunc.h>
 
+/ {
+	mt6392_audio_codec: mt6392_audio_codec {
+		compatible = "mediatek,mt6392-codec";
+		mediatek,pwrap-regmap = <&pwrap>;
+		status = "disabled";
+	};
+};
+
 &pwrap {
 	status = "okay";
 
