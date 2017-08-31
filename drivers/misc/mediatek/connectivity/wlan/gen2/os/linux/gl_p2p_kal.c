@@ -1130,7 +1130,7 @@ kalP2PGCIndicateConnectionStatus(IN P_GLUE_INFO_T prGlueInfo,
 		}
 
 		prGlueP2pInfo = prGlueInfo->prP2PInfo;
-		DBGLOG(P2P, INFO, "%s: Reason code: %d\n", __func__, u2StatusReason);
+		DBGLOG(P2P, INFO, "%s: Reason code: %d eStatus=0x%x\n", __func__, u2StatusReason, eStatus);
 
 		if (prP2pConnInfo) {
 			cfg80211_connect_result(prGlueP2pInfo->prDevHandler,	/* struct net_device * dev, */
