@@ -901,6 +901,11 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		mtk_switch_charging_init(info);
 	}
 
+	if (strcmp(info->algorithm_name, "DualSwitchCharging") == 0) {
+		pr_debug("found DualSwitchCharging\n");
+		mtk_dual_switch_charging_init(info);
+	}
+
 	info->enable_sw_safety_timer = of_property_read_bool(np, "enable_sw_safety_timer");
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");

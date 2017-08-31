@@ -170,6 +170,24 @@ int charger_dev_get_input_current(struct charger_device *charger_dev, u32 *uA)
 }
 EXPORT_SYMBOL(charger_dev_get_input_current);
 
+int charger_dev_set_eoc_current(struct charger_device *charger_dev, u32 uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_eoc_current)
+		charger_dev->ops->set_eoc_current(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_eoc_current);
+
+int charger_dev_get_eoc_current(struct charger_device *charger_dev, u32 *uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_eoc_current)
+		return charger_dev->ops->get_eoc_current(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_eoc_current);
+
 int charger_dev_set_constant_voltage(struct charger_device *charger_dev, u32 uV)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_constant_voltage)
