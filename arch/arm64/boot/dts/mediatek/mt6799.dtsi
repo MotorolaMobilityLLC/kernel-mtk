@@ -2083,11 +2083,19 @@
 		 fgpa_i2c_physical_base = <0x111E0000>;
 	};
 
-	 usb3_phy {
+	usb3_phy {
 		 compatible = "mediatek,usb3_phy";
 		 clocks = <&pericfg CLK_PERICFG_RG_USB_P0>;
 		 clock-names = "ssusb_clk";
-	 };
+	};
+
+	xhci0:usb3_xhci@11200000 {
+		compatible = "mediatek,mt67xx-xhci";
+		reg = <0 0x11200000 0 0x10000>, <0 0x112A0700 0 0x100>;
+		reg-names = "ssusb_base", "ssusb_ippc";
+		interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names = "xhci";
+	};
 
 	usb1@11210000 {
 		compatible = "mediatek,usb1";
