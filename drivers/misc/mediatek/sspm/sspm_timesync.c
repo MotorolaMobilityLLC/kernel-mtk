@@ -58,11 +58,6 @@ static DEFINE_MUTEX(sspm_timesync_mutex);
 static unsigned int sspm_sync_cnt;
 #endif
 
-static u64 mtk_timer_src_count(void)
-{
-	return mtk_timer_get_cnt(6);
-}
-
 static void sspm_timesync_timestamp(unsigned long long src, unsigned int *ts_h, unsigned int *ts_l)
 {
 	*ts_l = (unsigned int)(src & 0x00000000FFFFFFFF);

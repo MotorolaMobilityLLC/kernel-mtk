@@ -14,6 +14,7 @@
 #define __SSPM_DEFINE_H__
 
 #include <linux/param.h> /* for HZ */
+#include <asm/arch_timer.h>
 
 #define SSPM_MBOX_MAX		5
 #define SSPM_CFG_OFS_SEMA	0x048
@@ -45,6 +46,8 @@
 #define PLT_TIMESYNC_SYNC	0x504C5405
 
 #define SSPM_MPU_REGION_ID  4
+
+#define mtk_timer_src_count(...)    arch_counter_get_cntvct(__VA_ARGS__)
 
 struct plt_ipi_data_s {
 	unsigned int cmd;
