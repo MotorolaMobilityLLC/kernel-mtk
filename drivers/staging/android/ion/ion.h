@@ -29,10 +29,11 @@ struct ion_client;
 struct ion_buffer;
 
 /*
- * This should be removed some day when phys_addr_t's are fully
- * plumbed in the kernel, and all instances of ion_phys_addr_t should
+ *This should be removed some day when phys_addr_t's are fully
+ *  plumbed in the kernel, and all instances of ion_phys_addr_t should
  * be converted to phys_addr_t.  For the time being many kernel interfaces
  * do not accept phys_addr_t's that would have to
+ *
  */
 #define ion_phys_addr_t unsigned long
 
@@ -182,7 +183,7 @@ void ion_unmap_kernel(struct ion_client *client, struct ion_handle *handle);
  * @handle:	the handle
  */
 struct dma_buf *ion_share_dma_buf(struct ion_client *client,
-						struct ion_handle *handle);
+				  struct ion_handle *handle);
 
 /**
  * ion_share_dma_buf_fd() - given an ion client, create a dma-buf fd
