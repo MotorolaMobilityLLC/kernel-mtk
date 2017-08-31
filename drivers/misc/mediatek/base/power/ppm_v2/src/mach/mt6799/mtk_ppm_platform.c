@@ -192,35 +192,18 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		if (B_core_min <= 0) {
 			new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 				: (L_core_min <= 0 || L_core_max == 0) ? cur_state
-				: ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
-		} else {
-			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
-		}
+				: PPM_POWER_STATE_ALL;
+		} else
+			new_state = PPM_POWER_STATE_ALL;
 		break;
 	case PPM_POWER_STATE_L_ONLY:
 		/* not force Big core on */
 		if (B_core_min <= 0) {
 			new_state = (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
 				: (LL_core_min <= 0 || LL_core_max == 0) ? cur_state
-				: ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
-		} else {
-			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
-		}
-		break;
-	case PPM_POWER_STATE_ALL_B_LIMITED:
-		/* force Big core off */
-		if (B_core_max == 0) {
-			new_state = (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
-				: (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
-				: cur_state;
-		} else {
-			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
-		}
+				: PPM_POWER_STATE_ALL;
+		} else
+			new_state = PPM_POWER_STATE_ALL;
 		break;
 	case PPM_POWER_STATE_ALL:
 		/* force Big core off */
@@ -228,10 +211,8 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 			new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 				: (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
 				: cur_state;
-		} else {
-			new_state = ((B_freq_max) >= PPM_HICA_B_LIMITED_OPP)
-				? PPM_POWER_STATE_ALL_B_LIMITED	: cur_state;
-		}
+		} else
+			new_state = cur_state;
 		break;
 	default:
 		break;
@@ -241,11 +222,11 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	switch (root_cluster) {
 	case PPM_CLUSTER_LL:
 		new_state = (new_state == PPM_POWER_STATE_L_ONLY)
-			? PPM_POWER_STATE_ALL_B_LIMITED : new_state;
+			? PPM_POWER_STATE_ALL : new_state;
 		break;
 	case PPM_CLUSTER_L:
 		new_state = (new_state == PPM_POWER_STATE_LL_ONLY)
-			? PPM_POWER_STATE_ALL_B_LIMITED : new_state;
+			? PPM_POWER_STATE_ALL : new_state;
 		break;
 	default:
 		break;
@@ -253,7 +234,7 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 
 #ifdef PPM_DISABLE_CLUSTER_MIGRATION
 	if (new_state == PPM_POWER_STATE_L_ONLY)
-		new_state = PPM_POWER_STATE_ALL_B_LIMITED;
+		new_state = PPM_POWER_STATE_ALL;
 #endif
 
 	ppm_ver("Judge: output --> [%s]\n", ppm_get_power_state_name(new_state));

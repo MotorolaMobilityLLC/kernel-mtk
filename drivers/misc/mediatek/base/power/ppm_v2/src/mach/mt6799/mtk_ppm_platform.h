@@ -59,6 +59,9 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_HICA_VARIANT_SUPPORT	(0)
 #define PPM_HICA_B_LIMITED_OPP		(8)
 #define PPM_HICA_2P0			(1)
+#define PPM_HICA_LL_CAPACITY		(100)
+#define PPM_HICA_L_CAPACITY		(200)
+#define PPM_HICA_B_CAPACITY		(300)
 
 /* TODO: remove this! */
 /* #include "mt_static_power.h" */
@@ -126,6 +129,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define DVFS_OPP_NUM		(16)
 
 #define PPM_DEFAULT_HOLD_TIME		(4)
+#define PPM_DEFAULT_HVYTSK_TIME		(1)
 #define PPM_DEFAULT_FREQ_HOLD_TIME	(4)
 #define PPM_DEFAULT_DELTA		(20)
 #define PPM_LOADING_UPPER		(400)
@@ -150,7 +154,6 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 enum ppm_power_state {
 	PPM_POWER_STATE_LL_ONLY = 0,
 	PPM_POWER_STATE_L_ONLY,
-	PPM_POWER_STATE_ALL_B_LIMITED,
 	PPM_POWER_STATE_ALL,
 
 	PPM_POWER_STATE_NONE,	/* HICA disabled */
@@ -264,6 +267,8 @@ extern void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_re
 extern void ppm_cobra_init(void);
 extern void ppm_cobra_dump_tbl(struct seq_file *m);
 extern void ppm_cobra_lookup_get_result(struct seq_file *m, enum ppm_cobra_lookup_type type);
+
+extern int sched_get_cluster_utilization(int cluster_id);
 
 #ifdef __cplusplus
 }

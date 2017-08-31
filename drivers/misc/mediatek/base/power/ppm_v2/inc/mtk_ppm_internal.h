@@ -308,6 +308,17 @@ struct ppm_state_transfer_data {
 		bool (*transition_rule)(struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
 
 		/* parameters */
+#ifdef PPM_HICA_2P0
+		unsigned int capacity_hold_time;
+		unsigned int capacity_hold_cnt;
+		unsigned int capacity_bond;
+		unsigned int hvytsk_hold_time;
+		unsigned int hvytsk_hold_cnt;
+		unsigned int hvytsk_l_bond;
+		unsigned int hvytsk_h_bond;
+		unsigned int freq_hold_time;
+		unsigned int freq_hold_cnt;
+#else /* 1p0, 1p5, 1p75 */
 		unsigned int loading_delta;
 		unsigned int loading_hold_time;
 		unsigned int loading_hold_cnt;
@@ -320,6 +331,7 @@ struct ppm_state_transfer_data {
 		unsigned int overutil_l_hold_cnt;
 		unsigned int overutil_h_hold_time;
 		unsigned int overutil_h_hold_cnt;
+#endif
 #endif
 	} *transition_data;
 	size_t size;

@@ -43,17 +43,19 @@ const struct ppm_state_cluster_limit_data cluster_limit_##name = {	\
 	.size = ARRAY_SIZE(state_limit_##name),	\
 }
 
-#define TRANS_DATA(state, mask, rule, delta, hold, bond, f_hold, tlp) {	\
+#define TRANS_DATA(state, mask, rule, c_hold, c_bond, h_hold, h_l_bond, h_h_bond, f_hold) {	\
 	.next_state = PPM_POWER_STATE_##state,	\
 	.mode_mask = mask,	\
 	.transition_rule = rule,	\
-	.loading_delta = delta,	\
-	.loading_hold_time = hold,	\
-	.loading_hold_cnt = 0,	\
-	.loading_bond = bond,	\
+	.capacity_hold_time = c_hold,	\
+	.capacity_hold_cnt = 0,		\
+	.capacity_bond = c_bond,	\
+	.hvytsk_hold_time = h_hold,	\
+	.hvytsk_hold_cnt = 0,	\
+	.hvytsk_l_bond = h_l_bond,	\
+	.hvytsk_h_bond = h_h_bond,	\
 	.freq_hold_time = f_hold,	\
 	.freq_hold_cnt = 0,		\
-	.tlp_bond = tlp,	\
 }
 
 #define STATE_TRANSFER_DATA_PWR(name)	\
@@ -74,23 +76,16 @@ struct ppm_state_transfer_data transfer_by_perf_##name = {	\
 /*==============================================================*/
 static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-static bool ppm_trans_rule_LL_ONLY_to_ALL_B_LIMITED(
+static bool ppm_trans_rule_LL_ONLY_to_ALL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
 static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-static bool ppm_trans_rule_L_ONLY_to_ALL_B_LIMITED(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-static bool ppm_trans_rule_ALL_B_LIMITED_to_LL_ONLY(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-static bool ppm_trans_rule_ALL_B_LIMITED_to_ALL(
+static bool ppm_trans_rule_L_ONLY_to_ALL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
 static bool ppm_trans_rule_ALL_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
 static bool ppm_trans_rule_ALL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-static bool ppm_trans_rule_ALL_to_ALL_B_LIMITED(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings);
-
 
 /*==============================================================*/
 /* Local Variables						*/
@@ -110,13 +105,6 @@ static const struct ppm_cluster_limit state_limit_L_ONLY[] = {
 };
 STATE_LIMIT(L_ONLY);
 
-static const struct ppm_cluster_limit state_limit_ALL_B_LIMITED[] = {
-	[0] = LIMIT(15, 0, 0, 4),
-	[1] = LIMIT(15, 0, 0, 4),
-	[2] = LIMIT(15, PPM_HICA_B_LIMITED_OPP, 0, 2),
-};
-STATE_LIMIT(ALL_B_LIMITED);
-
 static const struct ppm_cluster_limit state_limit_ALL[] = {
 	[0] = LIMIT(15, 0, 0, 4),
 	[1] = LIMIT(15, 0, 0, 4),
@@ -126,20 +114,21 @@ STATE_LIMIT(ALL);
 
 /* state transfer data  by power/performance for each state */
 static struct ppm_state_transfer state_pwr_transfer_LL_ONLY[] = {
-	TRANS_DATA(NONE, 0, NULL, 0, 0, 0, 0, 0),
+	TRANS_DATA(NONE, 0, NULL, 0, 0, 0, 0, 0, 0),
 };
 STATE_TRANSFER_DATA_PWR(LL_ONLY);
 
 static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 	TRANS_DATA(
-		ALL_B_LIMITED,
+		ALL,
 		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_LL_ONLY_to_ALL_B_LIMITED,
-		PPM_DEFAULT_DELTA,
+		ppm_trans_rule_LL_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		0,
-		PPM_TLP_CRITERIA
+		PPM_HICA_LL_CAPACITY * 90 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
+		2,
+		4,
+		0
 		),
 	TRANS_DATA(
 		L_ONLY,
@@ -149,12 +138,12 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		PPM_MODE_MASK_JUST_MAKE_ONLY | PPM_MODE_MASK_PERFORMANCE_ONLY,
 #endif
 		ppm_trans_rule_LL_ONLY_to_L_ONLY,
-		PPM_DEFAULT_DELTA,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		/* PPM_DEFAULT_FREQ_HOLD_TIME, */
-		8,
-		PPM_TLP_CRITERIA
+		PPM_HICA_LL_CAPACITY * 90 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
+		2,
+		4,
+		0
 		),
 };
 STATE_TRANSFER_DATA_PERF(LL_ONLY);
@@ -164,66 +153,40 @@ static struct ppm_state_transfer state_pwr_transfer_L_ONLY[] = {
 		LL_ONLY,
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_L_ONLY_to_LL_ONLY,
+		PPM_DEFAULT_HOLD_TIME,
+		PPM_HICA_L_CAPACITY * 80 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
 		0,
 		0,
-		0,
-		/* PPM_DEFAULT_FREQ_HOLD_TIME, */
-		1,
-		0
+		PPM_DEFAULT_FREQ_HOLD_TIME
 		),
 };
 STATE_TRANSFER_DATA_PWR(L_ONLY);
 
 static struct ppm_state_transfer state_perf_transfer_L_ONLY[] = {
 	TRANS_DATA(
-		ALL_B_LIMITED,
+		ALL,
 		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_L_ONLY_to_ALL_B_LIMITED,
-		PPM_DEFAULT_DELTA,
+		ppm_trans_rule_L_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		0,
+		PPM_HICA_L_CAPACITY * 90 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
+		1,
+		2,
 		0
 		),
 };
 STATE_TRANSFER_DATA_PERF(L_ONLY);
 
-static struct ppm_state_transfer state_pwr_transfer_ALL_B_LIMITED[] = {
+static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 	TRANS_DATA(
 		LL_ONLY,
 		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_ALL_B_LIMITED_to_LL_ONLY,
-		PPM_DEFAULT_DELTA,
+		ppm_trans_rule_ALL_to_LL_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
+		PPM_HICA_LL_CAPACITY * 80 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
 		0,
-		0
-		),
-};
-STATE_TRANSFER_DATA_PWR(ALL_B_LIMITED);
-
-static struct ppm_state_transfer state_perf_transfer_ALL_B_LIMITED[] = {
-	TRANS_DATA(
-		ALL,
-		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_ALL_B_LIMITED_to_ALL,
-		PPM_DEFAULT_DELTA,
-		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		0,
-		0
-		),
-};
-STATE_TRANSFER_DATA_PERF(ALL_B_LIMITED);
-
-static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
-	TRANS_DATA(
-		ALL_B_LIMITED,
-		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_ALL_to_ALL_B_LIMITED,
-		PPM_DEFAULT_DELTA,
-		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
 		0,
 		0
 		),
@@ -231,27 +194,18 @@ static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 		L_ONLY,
 		PPM_MODE_MASK_ALL_MODE,
 		ppm_trans_rule_ALL_to_L_ONLY,
-		PPM_DEFAULT_DELTA,
 		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		0,
-		0
-		),
-	TRANS_DATA(
-		LL_ONLY,
-		PPM_MODE_MASK_ALL_MODE,
-		ppm_trans_rule_ALL_to_LL_ONLY,
-		PPM_DEFAULT_DELTA,
-		PPM_DEFAULT_HOLD_TIME,
-		PPM_LOADING_UPPER,
-		0,
+		PPM_HICA_L_CAPACITY * 80 / 100,
+		PPM_DEFAULT_HVYTSK_TIME,
+		2,
+		4,
 		0
 		),
 };
 STATE_TRANSFER_DATA_PWR(ALL);
 
 static struct ppm_state_transfer state_perf_transfer_ALL[] = {
-	TRANS_DATA(NONE, 0, NULL, 0, 0, 0, 0, 0),
+	TRANS_DATA(NONE, 0, NULL, 0, 0, 0, 0, 0, 0),
 };
 STATE_TRANSFER_DATA_PERF(ALL);
 
@@ -268,11 +222,6 @@ struct ppm_power_state_data pwr_state_info_FY[NR_PPM_POWER_STATE] = {
 		PWR_STATE_INFO(L_ONLY, FY)
 	},
 	[2] = {
-		.name = __stringify(ALL_B_LIMITED),
-		.state = PPM_POWER_STATE_ALL_B_LIMITED,
-		PWR_STATE_INFO(ALL_B_LIMITED, FY)
-	},
-	[3] = {
 		.name = __stringify(ALL),
 		.state = PPM_POWER_STATE_ALL,
 		PWR_STATE_INFO(ALL, FY)
@@ -291,11 +240,6 @@ struct ppm_power_state_data pwr_state_info_SB[NR_PPM_POWER_STATE] = {
 		PWR_STATE_INFO(L_ONLY, SB)
 	},
 	[2] = {
-		.name = __stringify(ALL_B_LIMITED),
-		.state = PPM_POWER_STATE_ALL_B_LIMITED,
-		PWR_STATE_INFO(ALL_B_LIMITED, SB)
-	},
-	[3] = {
 		.name = __stringify(ALL),
 		.state = PPM_POWER_STATE_ALL,
 		PWR_STATE_INFO(ALL, SB)
@@ -305,16 +249,12 @@ struct ppm_power_state_data pwr_state_info_SB[NR_PPM_POWER_STATE] = {
 const unsigned int pwr_idx_search_prio[NR_PPM_POWER_STATE][NR_PPM_POWER_STATE] = {
 	[PPM_POWER_STATE_LL_ONLY] = {PPM_POWER_STATE_NONE,},
 	[PPM_POWER_STATE_L_ONLY] = {PPM_POWER_STATE_LL_ONLY, PPM_POWER_STATE_NONE,},
-	/* no state transfer due to the min power of these 2 state is 0 */
-	[PPM_POWER_STATE_ALL_B_LIMITED] = {PPM_POWER_STATE_NONE,},
 	[PPM_POWER_STATE_ALL] = {PPM_POWER_STATE_NONE,},
 };
 
 const unsigned int perf_idx_search_prio[NR_PPM_POWER_STATE][NR_PPM_POWER_STATE] = {
-	[PPM_POWER_STATE_LL_ONLY] = {PPM_POWER_STATE_L_ONLY, PPM_POWER_STATE_ALL_B_LIMITED,
-					PPM_POWER_STATE_ALL, PPM_POWER_STATE_NONE,},
-	[PPM_POWER_STATE_L_ONLY] = {PPM_POWER_STATE_ALL_B_LIMITED, PPM_POWER_STATE_ALL, PPM_POWER_STATE_NONE,},
-	[PPM_POWER_STATE_ALL_B_LIMITED] = {PPM_POWER_STATE_ALL, PPM_POWER_STATE_NONE,},
+	[PPM_POWER_STATE_LL_ONLY] = {PPM_POWER_STATE_L_ONLY, PPM_POWER_STATE_ALL, PPM_POWER_STATE_NONE,},
+	[PPM_POWER_STATE_L_ONLY] = {PPM_POWER_STATE_ALL, PPM_POWER_STATE_NONE,},
 	[PPM_POWER_STATE_ALL] = {PPM_POWER_STATE_NONE,},
 };
 
@@ -325,8 +265,6 @@ const unsigned int perf_idx_search_prio[NR_PPM_POWER_STATE][NR_PPM_POWER_STATE] 
 static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/*unsigned int cur_freq_LL;*/
-
 	/* keep in LL_ONLY state if root cluster is fixed at cluster 0 */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
 		return false;
@@ -339,60 +277,62 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
-		if (heavy_task > 2 && heavy_task <= 4) {
-			ppm_dbg(HICA, "Go to L_ONLY due to LL heavy task = %d\n", heavy_task);
-			return true;
-		}
+		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
+			settings->hvytsk_hold_cnt++;
+			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+				ppm_dbg(HICA, "Go to L_ONLY due to LL heavy task = %d\n", heavy_task);
+				return true;
+			}
+		} else
+			settings->hvytsk_hold_cnt = 0;
 	}
 #endif
 
-#if 0 /* TODO: check capacity */
-	/* check loading */
-	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
-		&& data.ppm_cur_tlp <= settings->tlp_bond) {
-		settings->loading_hold_cnt++;
-		if (settings->loading_hold_cnt >= settings->loading_hold_time)
-			return true;
-	} else
-		settings->loading_hold_cnt = 0;
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
 
-	/* check freq */
-	cur_freq_LL = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_LL);
-	ppm_dbg(HICA, "LL cur freq = %d\n", cur_freq_LL);
-
-	if (cur_freq_LL >= get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
-		settings->freq_hold_cnt++;
-		if (settings->freq_hold_cnt >= settings->freq_hold_time)
-			return true;
-	} else
-		settings->freq_hold_cnt = 0;
-#endif
+		if (util >= settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
+	}
 
 	return false;
 }
 
-static bool ppm_trans_rule_LL_ONLY_to_ALL_B_LIMITED(
+static bool ppm_trans_rule_LL_ONLY_to_ALL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
+	{
+		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
-	if (heavy_task <= 2 || heavy_task > 4) {
-		ppm_dbg(HICA, "Go to ALL_B_LIMITED due to LL heavy task = %d\n", heavy_task);
-		return true;
+		if ((heavy_task && heavy_task <= settings->hvytsk_l_bond)
+			|| heavy_task > settings->hvytsk_h_bond) {
+			settings->hvytsk_hold_cnt++;
+			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+				ppm_dbg(HICA, "Go to ALL due to LL heavy task = %d\n", heavy_task);
+				return true;
+			}
+		} else
+			settings->hvytsk_hold_cnt = 0;
 	}
 #endif
 
-#if 0 /* TODO: check capacity */
-	/* check loading only */
-	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
-		&& data.ppm_cur_tlp > settings->tlp_bond) {
-		settings->loading_hold_cnt++;
-		if (settings->loading_hold_cnt >= settings->loading_hold_time)
-			return true;
-	} else
-		settings->loading_hold_cnt = 0;
-#endif
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
+
+		if (util >= settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
+	}
 
 	return false;
 }
@@ -400,106 +340,80 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL_B_LIMITED(
 static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	unsigned int cur_freq_L;
-
 	/* keep in L_ONLY state if root cluster is fixed at L */
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L)
 		return false;
 
-	/* stay if L has heavy task, should be transferred to 4L+LL */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
 		if (!heavy_task) {
-			ppm_dbg(HICA, "Go to LL_ONLY due to L heavy task = %d\n", heavy_task);
-			return true;
-		}
+			settings->hvytsk_hold_cnt++;
+			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+				ppm_dbg(HICA, "Go to LL_ONLY due to L heavy task = %d\n", heavy_task);
+				return true;
+			}
+		} else
+			settings->hvytsk_hold_cnt = 0;
 	}
 #endif
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
 
-	cur_freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_L);
-	ppm_dbg(HICA, "L cur freq = %d\n", cur_freq_L);
+		if (util < settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
+	}
+	{
+		/* check freq */
+		unsigned int cur_freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_L);
 
-	if (cur_freq_L < get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
-		settings->freq_hold_cnt++;
-		if (settings->freq_hold_cnt >= settings->freq_hold_time)
-			return true;
-	} else
-		settings->freq_hold_cnt = 0;
+		ppm_dbg(HICA, "L cur freq = %d\n", cur_freq_L);
+
+		if (cur_freq_L < get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
+			settings->freq_hold_cnt++;
+			if (settings->freq_hold_cnt >= settings->freq_hold_time)
+				return true;
+		} else
+			settings->freq_hold_cnt = 0;
+	}
 
 	return false;
 }
 
-static bool ppm_trans_rule_L_ONLY_to_ALL_B_LIMITED(
+static bool ppm_trans_rule_L_ONLY_to_ALL(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
+	{
+		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
-	if (heavy_task <= 2) {
-		ppm_dbg(HICA, "Go to ALL_B_LIMITED due to L heavy task = %d\n", heavy_task);
-		return true;
+		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
+			settings->hvytsk_hold_cnt++;
+			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+				ppm_dbg(HICA, "Go to ALL due to L heavy task = %d\n", heavy_task);
+				return true;
+			}
+		} else
+			settings->hvytsk_hold_cnt = 0;
 	}
 #endif
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_L)*/;
 
-#if 0 /* TODO: check capacity */
-	/* check loading */
-	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)) {
-		settings->loading_hold_cnt++;
-		if (settings->loading_hold_cnt >= settings->loading_hold_time)
-			return true;
-	} else
-		settings->loading_hold_cnt = 0;
-#endif
-
-	return false;
-}
-
-static bool ppm_trans_rule_ALL_B_LIMITED_to_LL_ONLY(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
-{
-	/* stay if LL/L/B has heavy task */
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task;
-	int i;
-
-	for_each_ppm_clusters(i) {
-		heavy_task = hps_get_hvytsk(i);
-		if (heavy_task) {
-			ppm_dbg(HICA, "Stay in ALL_B_LIMITED due to cluster%d heavy task = %d\n", i, heavy_task);
-			settings->loading_hold_cnt = 0;
-			return false;
-		}
+		if (util >= settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
 	}
-#endif
-
-#if 0 /* TODO: check capacity */
-	/* check loading */
-	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {
-		settings->loading_hold_cnt++;
-		if (settings->loading_hold_cnt >= settings->loading_hold_time)
-			return true;
-	} else
-		settings->loading_hold_cnt = 0;
-#endif
-
-	return false;
-}
-
-static bool ppm_trans_rule_ALL_B_LIMITED_to_ALL(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
-{
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
-
-	if (heavy_task) {
-		ppm_dbg(HICA, "Go to ALL due to B heavy task = %d\n", heavy_task);
-		return true;
-	}
-#endif
-
-	/* TODO: check capacity */
 
 	return false;
 }
@@ -507,22 +421,39 @@ static bool ppm_trans_rule_ALL_B_LIMITED_to_ALL(
 static bool ppm_trans_rule_ALL_to_LL_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
-	/* stay if LL/L/B has heavy task */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task;
-	int i;
+	{
+		unsigned int heavy_task, i;
 
-	for_each_ppm_clusters(i) {
-		heavy_task = hps_get_hvytsk(i);
-		if (heavy_task) {
-			ppm_dbg(HICA, "Stay in ALL due to cluster%d heavy task = %d\n", i, heavy_task);
-			settings->loading_hold_cnt = 0;
-			return false;
+		for_each_ppm_clusters(i) {
+			heavy_task = hps_get_hvytsk(i);
+			if (heavy_task) {
+				ppm_dbg(HICA, "Stay in ALL due to cluster%d heavy task = %d\n",
+					i, heavy_task);
+				settings->capacity_hold_cnt = 0;
+				settings->hvytsk_hold_cnt = 0;
+				return false;
+			}
+		}
+
+		settings->hvytsk_hold_cnt++;
+		if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+			ppm_dbg(HICA, "Go to LL_ONLY no heavy task for each cluster!\n");
+			return true;
 		}
 	}
 #endif
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
 
-	/* TODO: check capacity */
+		if (util < settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
+	}
 
 	return false;
 }
@@ -531,45 +462,37 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
 {
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int L_heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
-	unsigned int B_heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
+	{
+		unsigned int L_heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
+		unsigned int B_heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
 
-	if (!B_heavy_task && L_heavy_task > 2 && L_heavy_task <= 4) {
-		ppm_dbg(HICA, "Go to L_ONLY due to L/B heavy task = %d/%d\n",
-			L_heavy_task, B_heavy_task);
-		return true;
+		if (!B_heavy_task && L_heavy_task > settings->hvytsk_l_bond
+			&& L_heavy_task <= settings->hvytsk_h_bond) {
+			settings->hvytsk_hold_cnt++;
+			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
+				ppm_dbg(HICA, "Go to L_ONLY due to L/B heavy task = %d/%d\n",
+					L_heavy_task, B_heavy_task);
+				return true;
+			}
+		} else
+			settings->hvytsk_hold_cnt = 0;
 	}
 #endif
+	{
+		/* check capacity */
+		int util = 100/*sched_get_cluster_utilization(PPM_CLUSTER_LL)*/;
 
-#if 0 /* TODO: check capacity */
-	/* check loading */
-	if (data.ppm_cur_loads <= (settings->loading_bond - settings->loading_delta)) {
-		settings->loading_hold_cnt++;
-		if (settings->loading_hold_cnt >= settings->loading_hold_time)
-			return true;
-	} else
-		settings->loading_hold_cnt = 0;
-#endif
+		if (util < settings->capacity_bond) {
+			settings->capacity_hold_cnt++;
+			if (settings->capacity_hold_cnt >= settings->capacity_hold_time)
+				return true;
+		} else
+			settings->capacity_hold_cnt = 0;
+	}
 
 	return false;
 }
 
-static bool ppm_trans_rule_ALL_to_ALL_B_LIMITED(
-	struct ppm_hica_algo_data data, struct ppm_state_transfer *settings)
-{
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
-	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
-
-	if (!heavy_task) {
-		ppm_dbg(HICA, "Go to ALL_B_LIMITED due to B heavy task = %d\n", heavy_task);
-		return true;
-	}
-#endif
-
-	/* TODO: check capacity */
-
-	return false;
-}
 
 /*==============================================================*/
 /* Global Function Implementation				*/
@@ -624,7 +547,6 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 				: (unsigned int)ppm_main_info.fixed_root_cluster;
 		break;
 	case PPM_POWER_STATE_LL_ONLY:
-	case PPM_POWER_STATE_ALL_B_LIMITED:
 	case PPM_POWER_STATE_ALL:
 	default:
 		break;
