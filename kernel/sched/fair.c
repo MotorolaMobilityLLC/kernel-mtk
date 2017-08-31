@@ -4982,6 +4982,34 @@ static inline bool hybrid_support(void)
 #endif
 }
 
+static inline unsigned long __src_cpu_util(int cpu, int delta, unsigned long task_delta)
+{
+	unsigned long util = cpu_rq(cpu)->cfs.avg.util_avg;
+	unsigned long capacity = capacity_orig_of(cpu);
+
+#ifdef CONFIG_SCHED_WALT
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+		util = (cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT) /
+			walt_ravg_window;
+#endif
+	util = max(util, task_delta);
+	delta += util;
+	if (delta < 0)
+		return 0;
+
+	return (delta >= capacity) ? capacity : delta;
+}
+
+static unsigned long __src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta)
+{
+	int util = __src_cpu_util(cpu, delta, task_delta);
+
+	if (util >= capacity)
+		return SCHED_CAPACITY_SCALE;
+
+	return (util << SCHED_CAPACITY_SHIFT)/capacity;
+}
+
 /*
  * __cpu_norm_util() returns the cpu util relative to a specific capacity,
  * i.e. it's busy ratio, in the range [0..SCHED_LOAD_SCALE] which is useful for
@@ -5020,10 +5048,20 @@ unsigned long group_max_util(struct energy_env *eenv)
 {
 	int i, delta;
 	unsigned long max_util = 0;
+	unsigned long task_delta = task_util(eenv->task);
+	unsigned long cpu_util;
 
 	for_each_cpu(i, sched_group_cpus(eenv->sg_cap)) {
+
 		delta = calc_util_delta(eenv, i);
-		max_util = max(max_util, __cpu_util(i, delta));
+
+		if (i == eenv->src_cpu) {
+			cpu_util = __src_cpu_util(i, delta, task_delta);
+			max_util = max(max_util, cpu_util);
+		} else {
+			max_util = max(max_util, __cpu_util(i, delta));
+		}
+
 		mt_sched_printf(sched_eas_energy_calc, "%s: cpu=%d cpu_util=%d task_delta=%d",
 			__func__, i, (int)__cpu_util(i, delta), delta);
 	}
@@ -5046,11 +5084,15 @@ long group_norm_util(struct energy_env *eenv, struct sched_group *sg)
 	int i, delta;
 	unsigned long util_sum = 0;
 	unsigned long capacity = sg->sge->cap_states[eenv->cap_idx].cap;
+	unsigned long task_delta = task_util(eenv->task);
 
 	for_each_cpu(i, sched_group_cpus(sg)) {
 		delta = calc_util_delta(eenv, i);
-		util_sum += __cpu_norm_util(i, capacity, delta);
-		mt_sched_printf(sched_eas_energy_calc, "%s: cpu=%d norm_util=%d delta=%d target_cap=%d curr_cap=%d",
+		if (i == eenv->src_cpu)
+			util_sum += __src_cpu_norm_util(i, capacity, delta, task_delta);
+		else
+			util_sum += __cpu_norm_util(i, capacity, delta);
+		mt_sched_printf(sched_eas_energy_calc, "%s: cpu=%d norm_util=%d delta=%d target_cap=%d curr_cap=%d ",
 					__func__, i, (int)__cpu_norm_util(i, capacity, delta),
 						delta, (int)capacity, (int)capacity_curr_of(i));
 	}
@@ -5384,6 +5426,7 @@ static int __energy_diff(struct energy_env *eenv)
 		.util_delta	= 0,
 		.src_cpu	= eenv->src_cpu,
 		.dst_cpu	= eenv->dst_cpu,
+		.task           = eenv->task,
 		.nrg		= { 0, 0, 0, 0},
 		.cap		= { 0, 0, 0 },
 	};
@@ -5927,6 +5970,9 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 
 	/* no need energy calculation if the same domain */
 	if (is_the_same_domain(task_cpu(p), target_cpu))
+		return target_cpu;
+
+	if (task_util(p) <= 0)
 		return target_cpu;
 
 	/* no energy comparison if the same cluster */
