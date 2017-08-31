@@ -2869,6 +2869,7 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 
 	switch (musb->xceiv->otg->state) {
 	case OTG_STATE_A_SUSPEND:
+		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
 		return 0;
 	case OTG_STATE_A_WAIT_VRISE:
 		/* ID could be grounded even if there's no device
