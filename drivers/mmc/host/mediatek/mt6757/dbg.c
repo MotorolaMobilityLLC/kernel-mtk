@@ -1589,8 +1589,7 @@ static int msdc_check_emmc_cache_status(struct seq_file *m,
 	struct mmc_card *card;
 
 	if (!host || !host->mmc || !host->mmc->card) {
-		seq_printf(m, "msdc%d: host or mmc or card is NULL\n",
-			host->id);
+		seq_puts(m, "msdc: host or mmc or card is NULL\n");
 		return -1;
 	}
 
