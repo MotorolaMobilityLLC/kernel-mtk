@@ -4066,10 +4066,13 @@
 		reg = <0 0x18041000 0 0x1000>;
 	};
 
-	ccu@18080000 {
+	ccu@180b1000 {
 		compatible = "mediatek,ccu";
-		reg = <0 0x18080000 0 0x1000>;
+		reg = <0 0x18000000 0 0x1000>,
+			<0 0x180b1000 0 0x1000>;
 		interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_LOW>;
+		ccu_dmem_base = <0x18080000>;
+		ccu_dmem_size = <0x8000>;
 	};
 
 	alc@60000000 {
