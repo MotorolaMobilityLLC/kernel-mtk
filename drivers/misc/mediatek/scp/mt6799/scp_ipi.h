@@ -79,7 +79,7 @@ typedef enum ipi_id {
 	IPI_SCP_PLL_CTRL,
 	IPI_DO_AP_MSG,
 	IPI_DO_SCP_MSG,
-	IPI_MET_SCP,
+	IPI_TRACE_SCP,
 	IPI_SCP_TIMER,
 	SCP_NR_IPI,
 } ipi_id;
