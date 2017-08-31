@@ -70,21 +70,6 @@
 #define IRQF_LEVEL_TRIGGER_POLARITY IRQF_TRIGGER_LOW
 #define IRQF_EDGE_TRIGGER_POLARITY IRQF_TRIGGER_FALLING
 /*---- Macro defination remap -----------------------------------------------*/
-/*------ IRQ Section -----------------------*/
-#ifndef CONFIG_OF
-#define UART1_IRQ_ID	UART0_IRQ_BIT_ID
-#define UART2_IRQ_ID	UART1_IRQ_BIT_ID
-#define UART3_IRQ_ID	UART2_IRQ_BIT_ID
-#define UART4_IRQ_ID	UART3_IRQ_BIT_ID
-
-#define UART1_VFF_TX_IRQ_ID  AP_DMA_UART0_TX_IRQ_BIT_ID
-#define UART1_VFF_RX_IRQ_ID  AP_DMA_UART0_RX_IRQ_BIT_ID
-#define UART2_VFF_TX_IRQ_ID  AP_DMA_UART1_TX_IRQ_BIT_ID
-#define UART2_VFF_RX_IRQ_ID  AP_DMA_UART1_RX_IRQ_BIT_ID
-#define UART3_VFF_TX_IRQ_ID  AP_DMA_UART2_TX_IRQ_BIT_ID
-#define UART3_VFF_RX_IRQ_ID  AP_DMA_UART2_RX_IRQ_BIT_ID
-#endif
-
 #if (defined(CONFIG_FIQ_DEBUGGER_CONSOLE) && defined(CONFIG_FIQ_DEBUGGER))
 #define DEFAULT_FIQ_UART_PORT           (3)
 #endif
@@ -401,10 +386,6 @@ typedef struct {
 	u32 dummy:24;
 } UART_IIR_REG;
 /*---------------------------------------------------------------------------*/
-#ifndef CONFIG_OF
-#define VFF_BASE_CH_S           (6)
-#define VFF_BASE_CH(n)          (AP_DMA_BASE+0x0080*(n+1+VFF_BASE_CH_S))
-#endif
 #define VFF_INT_FLAG(_b)        (_b+0x0000)
 #define VFF_INT_EN(_b)          (_b+0x0004)
 #define VFF_EN(_b)              (_b+0x0008)

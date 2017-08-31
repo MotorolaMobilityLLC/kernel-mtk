@@ -26,11 +26,11 @@ irqreturn_t mt_debug_signal_irq(int irq, void *dev_id);
 int mt_fiq_init(void *arg);
 /*---------------------------------------------------------------------------*/
 struct mtk_uart_setting *get_uart_default_settings(int idx);
-#ifdef CONFIG_OF
+
 void *get_apdma_uart0_base(void);
 unsigned int get_uart_vfifo_irq_id(int idx);
 void set_uart_default_settings(int idx);
-#endif
+
 unsigned long get_uart_evt_mask(int idx);
 void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart);
 void mtk_uart_switch_to_tx(struct mtk_uart *uart);
