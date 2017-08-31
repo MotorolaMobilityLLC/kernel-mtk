@@ -269,17 +269,15 @@ int musb_qmu_init(struct musb *musb)
 {
 	/* set DMA channel 0 burst mode to boost QMU speed */
 	musb_writel(musb->mregs, 0x204, musb_readl(musb->mregs, 0x204) | 0x600);
-	musb_writel((musb->mregs + MUSB_QISAR), 0x30, 0);
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	/* eanble DMA channel 0 36-BIT support */
+	musb_writel(musb->mregs, 0x204, musb_readl(musb->mregs, 0x204) | 0x4000);
+#endif
 
-#ifdef CONFIG_OF
 	qmu_base = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
 	/* debug variable to check qmu_base issue */
 	qmu_base_2 = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
-#else
-	qmu_base = (void __iomem *)(USB_BASE + MUSB_QMUBASE);
-	/* debug variable to check qmu_base issue */
-	qmu_base_2 = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
-#endif
+
 	/* finish all hw op before init qmu */
 	mb();
 

@@ -161,6 +161,14 @@ int qmu_init_gpd_pool(struct device *dev)
 	TGPD *ptr, *io_ptr;
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
+	unsigned long addr;
+	u64 coherent_dma_mask;
+
+	/* make sure GPD address no longer than 32-bit */
+	coherent_dma_mask = dev->coherent_dma_mask;
+	dev->coherent_dma_mask = DMA_BIT_MASK(32);
+	QMU_WARN("save coherent<%llx>, force to 32-bit\n",
+			coherent_dma_mask);
 
 	if (!mtk_qmu_max_gpd_num)
 		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
@@ -180,7 +188,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 
 	gpd_sz = (u32) (u64) sizeof(TGPD);
-	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
+	QMU_WARN("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
 		QMU_ERR("ERR!!!, GPD SIZE != %d\n", GPD_SZ);
 
@@ -191,18 +199,22 @@ int qmu_init_gpd_pool(struct device *dev)
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
+
+		/* covert to physical address  for check only */
+		addr = virt_to_phys(ptr);
+
 		memset_io(ptr, 0, size);
 		io_ptr = (TGPD *)(uintptr_t)(dma_handle);
 
 		init_gpd_list(RXQ, i, ptr, io_ptr, Rx_gpd_max_count[i]);
-		Rx_gpd_head[i] = ptr;
-		QMU_INFO("ALLOC RX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Rx_gpd_head[i],
-			 io_ptr);
-		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i];
+		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i] = ptr;
 		Rx_gpd_free_count[i] = Rx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[i]);
 		gpd_ptr_align(RXQ, i, Rx_gpd_end[i]);
-		QMU_INFO("RQSAR[%d]=%p\n", i, (void *)(uintptr_t)gpd_virt_to_phys(Rx_gpd_end[i], RXQ, i));
+		QMU_WARN("RX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, RQSAR<%p>\n",
+				i,
+				Rx_gpd_head[i], io_ptr, (void *)addr,
+				(void *)(uintptr_t)gpd_virt_to_phys(Rx_gpd_end[i], RXQ, i));
 	}
 
 	for (i = 1; i <= TXQ_NUM; i++) {
@@ -212,18 +224,22 @@ int qmu_init_gpd_pool(struct device *dev)
 		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
+
+		/* covert to physical address  for check only */
+		addr = virt_to_phys(ptr);
+
 		memset_io(ptr, 0, size);
 		io_ptr = (TGPD *)(uintptr_t)(dma_handle);
 
 		init_gpd_list(TXQ, i, ptr, io_ptr, Tx_gpd_max_count[i]);
-		Tx_gpd_head[i] = ptr;
-		QMU_INFO("ALLOC TX GPD Head [%d] Virtual Mem=%p, DMA addr=%p\n", i, Tx_gpd_head[i],
-			 io_ptr);
-		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i];
+		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i] = ptr;
 		Tx_gpd_free_count[i] = Tx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[i]);
 		gpd_ptr_align(TXQ, i, Tx_gpd_end[i]);
-		QMU_INFO("TQSAR[%d]=%p\n", i, (void *)(uintptr_t)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
+		QMU_WARN("TX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, TQSAR<%p>\n",
+				i,
+				Tx_gpd_head[i], io_ptr, (void *)addr,
+				(void *)(uintptr_t)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
 	}
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
@@ -231,6 +247,9 @@ int qmu_init_gpd_pool(struct device *dev)
 	Tx_gpd_Offset_dram = Tx_gpd_Offset[ISOC_EP_START_IDX];
 #endif
 
+	dev->coherent_dma_mask = coherent_dma_mask;
+	QMU_WARN("restore coherent from 32-bit to <%llx>\n",
+			coherent_dma_mask);
 	return 0;
 }
 
