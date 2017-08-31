@@ -16,14 +16,14 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/kernel.h>
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 #include <mt-plat/battery_meter.h>
-#include <mach/mt_battery_meter.h>
-#include <mach/mt_charging.h>
-#include <mach/mt_pmic.h>
+#include <mach/mtk_battery_meter.h>
+#include <mach/mtk_charging.h>
+#include <mach/mtk_pmic.h>
 #include "bq25890.h"
-#include <mach/mt_sleep.h>
-#include <mt-plat/mt_gpio.h>
+#include <mach/mtk_sleep.h>
+#include <mt-plat/mtk_gpio.h>
 #include "mtk_bif_intf.h"
 /* ============================================================ // */
 /* Define */

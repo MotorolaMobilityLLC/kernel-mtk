@@ -47,18 +47,15 @@
 #include <linux/vmalloc.h>
 
 
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 #include <mt-plat/mtk_rtc.h>
-
-
-#include <mt-plat/mt_boot_reason.h>
 
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter_hal.h>
-#include <mach/mt_battery_meter.h>
-#include <mach/mt_battery_meter_table.h>
-#include <mach/mt_pmic.h>
+#include <mach/mtk_battery_meter.h>
+#include <mach/mtk_battery_meter_table.h>
+#include <mach/mtk_pmic.h>
 
 
 #include <mt-plat/upmu_common.h>
