@@ -279,12 +279,7 @@ ifeq ($(FW_CUSTOMIZATION), y)
     endif
     COMMON_OBJS += $(COMMON_DIR)fwcfg.o
     ccflags-y += -DFW_CFG_SUPPORT
-    ifeq ($(TARGET_BUILD_VARIANT), eng)
-        ccflags-y += -DENABLED_IN_ENGUSERDEBUG
-    endif
-    ifeq ($(TARGET_BUILD_VARIANT), userdebug)
-        ccflags-y += -DENABLED_IN_ENGUSERDEBUG
-    endif
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
 endif
 # ---------------------------------------------------
 

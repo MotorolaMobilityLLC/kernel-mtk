@@ -125,6 +125,9 @@ p2pStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pFsmInfo != NULL));
+		if (prP2pFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING &&
+			eNextState == P2P_STATE_CHNL_ON_HAND)
+			WARN_ON(1);
 
 		prChnlReqInfo = &(prP2pFsmInfo->rChnlReqInfo);
 

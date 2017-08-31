@@ -163,6 +163,7 @@ struct _BSS_DESC_T {
 				 * don't removed this record from BSS list.
 				 */
 
+	BOOLEAN fgIsValidSSID; /* This flag is TRUE if the SSID is not hidden */
 	BOOLEAN fgIsHiddenSSID;	/* When this flag is TRUE, means the SSID
 				 * of this BSS is not known yet.
 				 */
@@ -275,6 +276,9 @@ struct _BSS_DESC_T {
 	BOOLEAN fgMultiAnttenaAndSTBC;
 	BOOLEAN fgDeauthLastTime;
 	UINT_32 u4UpdateIdx;
+#if CFG_SUPPORT_ROAMING_RETRY
+	BOOLEAN fgIsRoamFail;
+#endif
 };
 
 struct _ROAM_BSS_DESC_T {

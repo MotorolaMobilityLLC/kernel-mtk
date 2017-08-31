@@ -1640,6 +1640,11 @@ wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 				IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
 #endif
+#if CFG_SUPPORT_EMI_DEBUG
+WLAN_STATUS
+wlanoidSetEnableDumpEMILog(IN P_ADAPTER_T prAdapter,
+				IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif
 #endif /* _WLAN_OID_H */
 WLAN_STATUS
 wlanoidSetChipConfig(IN P_ADAPTER_T prAdapter,

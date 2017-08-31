@@ -536,9 +536,9 @@ DOMAIN_INFO_ENTRY arSupportedRegDomains[] = {
 #ifdef CONFIG_MTK_TC1_FEATURE
 	{
 	/* 2.4GHz -> Ch1~11 : Set Active Scan,
-	  * 2.4Ghz -> Ch12~14: Disabled.
-	  * 5Ghz -> All channel : Set Passive Scan
-	  */
+	 * 2.4Ghz -> Ch12~14: Disabled.
+	 * 5Ghz -> All channel : Set Passive Scan
+	 */
 	(PUINT_16) g_u2CountryGroup20, sizeof(g_u2CountryGroup20) / 2,
 	{
 	 {81, BAND_2G4, CHNL_SPAN_5, 1, 11, FALSE}

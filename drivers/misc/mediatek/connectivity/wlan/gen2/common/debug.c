@@ -132,6 +132,11 @@ typedef struct _PKT_STATUS_RECORD {
 #define PKT_STATUS_MSG_GROUP_RANGE 80
 #define PKT_STATUS_MSG_LENGTH 900
 
+#if CFG_SUPPORT_EMI_DEBUG
+#define WLAN_EMI_DEBUG_BUF_SIZE 512
+#define WLAN_EMI_DEBUG_LINE_SIZE 256
+#endif
+
 static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
 static P_COMMAND_ENTRY gprCommandEntry;
@@ -406,7 +411,9 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 	u4PktCnt = grPktStaRec.u4TxIndex = 0;
 	u4PktCnt = grPktStaRec.u4RxIndex = 0;
 }
-
+#if CFG_SUPPORT_EMI_DEBUG
+static UINT32 gPrevIdxPagedtrace;
+#endif
 VOID wlanDebugInit(VOID)
 {
 	/* debug for command/tc4 resource begin */
@@ -418,6 +425,9 @@ VOID wlanDebugInit(VOID)
 
 	gprCommandEntry = kalMemAlloc(TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY), PHY_MEM_TYPE);
 	kalMemZero(gprCommandEntry, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
+#if CFG_SUPPORT_EMI_DEBUG
+	gPrevIdxPagedtrace = 0;
+#endif
 	/* debug for command/tc4 resource end */
 
 	/* debug for package info begin */
@@ -1020,7 +1030,6 @@ VOID wlanFWDLDebugDumpInfo(VOID)
 		, (*(gprFWDLDebug+i)).u4ResponseTime);
 	}
 }
-
 VOID wlanFWDLDebugUninit(VOID)
 {
 	kalMemFree(gprFWDLDebug, VIR_MEM_TYPE, sizeof(FWDL_DEBUG_T)*MAX_FW_IMAGE_PACKET_COUNT);
@@ -1036,4 +1045,124 @@ VOID wlanDumpMcuChipId(P_ADAPTER_T prAdapter)
 	pHifInfo = &prAdapter->prGlueInfo->rHifInfo;
 	DBGLOG(INIT, INFO, "Offset:0x%x, Value:0x%08x ", CONN_MCU_CHIPID, MCU_REG_READL(pHifInfo, CONN_MCU_CHIPID));
 }
+#if CFG_SUPPORT_EMI_DEBUG
+void wlanDumpFwInforPrintBuff(PUINT8 pBuffer, UINT32 u4Len)
+{
+	UINT32 i = 0;
+	UINT32 idx = 0;
+	UINT8 aucOutput[WLAN_EMI_DEBUG_LINE_SIZE];
 
+	DBGLOG(RX, TRACE, "%s Start Print %d B!\n", __func__, u4Len);
+#if 0
+	dumpMemory8(pBuffer, u4Len);
+#endif
+	for (i = 0; i < u4Len; i++) {
+		aucOutput[idx] = pBuffer[i];
+		if (pBuffer[i] == '\n') {
+			aucOutput[idx + 1] = '\0';
+			DBGLOG(RX, INFO, "%s", aucOutput);
+			idx = 0;
+		} else
+			idx++;
+
+		if (idx == WLAN_EMI_DEBUG_LINE_SIZE-1) {
+			pBuffer[idx] = '\0';
+			DBGLOG(RX, INFO, "%s", aucOutput);
+			idx = 0;
+		}
+	}
+}
+
+
+VOID wlanReadFwInfoFromEmi(IN PUINT32 pAddr)
+{
+	UINT32 offset = 0;
+	UINT32 u4Buflen = 0;
+	UINT32 cur_idx_pagedtrace;
+	PUINT8 pEmiBuf;
+	UINT32 i = 0;
+
+	offset = 0;
+	u4Buflen = 0;
+
+	DBGLOG(RX, TRACE, "%s Start !\n", __func__);
+
+	pEmiBuf = kalMemAlloc(WLAN_EMI_DEBUG_BUF_SIZE, VIR_MEM_TYPE);
+	if (pEmiBuf == NULL) {
+		DBGLOG(RX, WARN, "Buffer allocate fail !\n");
+		return;
+	}
+
+	kalMemSet(pEmiBuf, 0, WLAN_EMI_DEBUG_BUF_SIZE);
+	cur_idx_pagedtrace = *pAddr;
+
+	DBGLOG(RX, INFO, ">>Addr:0x%p CurIdx:%d,PreIdx:%d!\n", pAddr, cur_idx_pagedtrace, gPrevIdxPagedtrace);
+
+	if (cur_idx_pagedtrace > gPrevIdxPagedtrace) {
+
+		u4Buflen = cur_idx_pagedtrace - gPrevIdxPagedtrace;
+		if (u4Buflen > WLAN_EMI_DEBUG_BUF_SIZE) {
+			for (offset = gPrevIdxPagedtrace ; offset < cur_idx_pagedtrace
+				; offset += WLAN_EMI_DEBUG_BUF_SIZE) {
+				kalGetFwInfoFormEmi(1, offset, (PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				i++;
+			}
+			u4Buflen = cur_idx_pagedtrace - (i-1)*WLAN_EMI_DEBUG_BUF_SIZE - gPrevIdxPagedtrace;
+			kalGetFwInfoFormEmi(1, (i-1)*WLAN_EMI_DEBUG_BUF_SIZE, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		} else {
+			kalGetFwInfoFormEmi(1, gPrevIdxPagedtrace, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		}
+		gPrevIdxPagedtrace = cur_idx_pagedtrace;
+	} else if (cur_idx_pagedtrace < gPrevIdxPagedtrace) {
+		if (gPrevIdxPagedtrace >= 0x8000) {
+			DBGLOG(RX, WARN, "++ prev_idx_pagedtrace invalid ...+\n");
+			gPrevIdxPagedtrace = 0x8000 - 1;
+			return;
+		}
+
+		i = 0;
+		u4Buflen = 0x8000 - gPrevIdxPagedtrace - 1;
+		DBGLOG(RX, WARN, "-- CONNSYS paged trace ascii output (cont...) --\n");
+		if (u4Buflen > WLAN_EMI_DEBUG_BUF_SIZE) {
+			for (offset = gPrevIdxPagedtrace ; offset < 0x8000
+				; offset += WLAN_EMI_DEBUG_BUF_SIZE) {
+				kalGetFwInfoFormEmi(1, offset, (PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				i++;
+			}
+			u4Buflen = 0x8000 - (i-1)*WLAN_EMI_DEBUG_BUF_SIZE - gPrevIdxPagedtrace-1;
+			kalGetFwInfoFormEmi(1, (i-1)*WLAN_EMI_DEBUG_BUF_SIZE, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		} else {
+			kalGetFwInfoFormEmi(1, gPrevIdxPagedtrace, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		}
+
+		i = 0;
+		u4Buflen = cur_idx_pagedtrace;
+		DBGLOG(RX, WARN, " -- CONNSYS paged trace ascii output (end) --\n");
+		if (u4Buflen > WLAN_EMI_DEBUG_BUF_SIZE) {
+			for (offset = 0x0 ; offset < u4Buflen ; offset += WLAN_EMI_DEBUG_BUF_SIZE) {
+				kalGetFwInfoFormEmi(1, offset, (PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, WLAN_EMI_DEBUG_BUF_SIZE);
+				i++;
+			}
+			u4Buflen = cur_idx_pagedtrace - (i-1)*WLAN_EMI_DEBUG_BUF_SIZE;
+			kalGetFwInfoFormEmi(1, (i-1)*WLAN_EMI_DEBUG_BUF_SIZE, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		} else {
+			kalGetFwInfoFormEmi(1, 0x0, (PUINT_8)pEmiBuf, u4Buflen);
+			wlanDumpFwInforPrintBuff((PUINT_8)pEmiBuf, u4Buflen);
+		}
+
+
+
+		gPrevIdxPagedtrace = cur_idx_pagedtrace;
+	}
+
+	kalMemFree(pEmiBuf, VIR_MEM_TYPE, WLAN_EMI_DEBUG_BUF_SIZE);
+}
+#endif
