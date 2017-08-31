@@ -346,6 +346,9 @@ PHONY += dtbs dtbs_install
 
 dtbs: prepare scripts
 	$(Q)$(MAKE) $(build)=$(boot)/dts
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
+	$(Q)$(MAKE) $(build)=$(boot)/dts/mediatek/overlays
+endif
 
 dtbs_install:
 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts

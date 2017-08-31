@@ -3,4 +3,5 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt8173-evb.dtb
 
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)
+subdir-$(CONFIG_MTK_DTBO_FEATURE)	+= overlays/
 clean-files	:= *.dtb
