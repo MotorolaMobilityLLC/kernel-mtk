@@ -1365,6 +1365,7 @@ static int pmic_buck_vcore_set_voltage_sel(struct regulator_dev *rdev, unsigned 
 	mreg->vosel.cur_sel = selector;
 
 	PMICLOG("buck vcore set_voltage_sel: %d\n", selector);
+	selector--; /* MT6356 VCORE VOSEL workaround */
 	if (mreg->vol_cb != NULL)
 		ret = (mreg->vol_cb)(selector);
 	else {
@@ -1380,6 +1381,7 @@ static int pmic_buck_vcore_get_voltage_sel(struct regulator_dev *rdev)
 {
 	const struct regulator_desc *rdesc = rdev->desc;
 	struct mtk_regulator *mreg;
+	unsigned int selector = 0;
 
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
@@ -1389,7 +1391,11 @@ static int pmic_buck_vcore_get_voltage_sel(struct regulator_dev *rdev)
 		return -1;
 	}
 
-	return (mreg->da_vol_cb)();
+	/* MT6356 VCORE VOSEL workaround */
+	/* Note: VCORE LP mode will get wrong value */
+	selector = (mreg->da_vol_cb)();
+	selector++;
+	return selector;
 }
 
 /* Regulator vmipi enable */
@@ -1651,6 +1657,7 @@ static int pmic_ldo_vsram_others_set_voltage_sel(struct regulator_dev *rdev, uns
 	mreg->vosel.cur_sel = selector;
 
 	PMICLOG("ldo vsram_others set_voltage_sel: %d\n", selector);
+	selector++; /* MT6356 VSRAM_OTHERS VOSEL workaround */
 	if (mreg->vol_cb != NULL)
 		ret = (mreg->vol_cb)(selector);
 	else {
@@ -1666,6 +1673,7 @@ static int pmic_ldo_vsram_others_get_voltage_sel(struct regulator_dev *rdev)
 {
 	const struct regulator_desc *rdesc = rdev->desc;
 	struct mtk_regulator *mreg;
+	unsigned int selector = 0;
 
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
@@ -1675,7 +1683,11 @@ static int pmic_ldo_vsram_others_get_voltage_sel(struct regulator_dev *rdev)
 		return -1;
 	}
 
-	return (mreg->da_vol_cb)();
+	/* MT6356 VCORE VOSEL workaround */
+	/* Note: VCORE LP mode will get wrong value */
+	selector = (mreg->da_vol_cb)();
+	selector--;
+	return selector;
 }
 
 /* Regulator vsram_gpu enable */
@@ -4055,9 +4067,10 @@ static ssize_t show_regulator_voltage(struct device *dev, struct device_attribut
 {
 	struct mtk_regulator *mreg;
 	const int *pVoltage;
+	const int *pVoltidx;
 
 	unsigned short regVal;
-	unsigned int ret_value = 0;
+	unsigned int ret_value = 0, i = 0, ret = 0;
 
 	mreg = container_of(attr, struct mtk_regulator, voltage_att);
 
@@ -4066,7 +4079,14 @@ static ssize_t show_regulator_voltage(struct device *dev, struct device_attribut
 			regVal = (mreg->da_vol_cb)();
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
-				ret_value = pVoltage[regVal];
+				pVoltidx = (const int *)mreg->idxs;
+				for (i = 0; i < mreg->desc.n_voltages; i++) {
+					if (pVoltidx[i] == regVal) {
+						ret = i;
+						break;
+					}
+				}
+				ret_value = pVoltage[ret];
 			} else
 				ret_value = mreg->desc.min_uV + mreg->desc.uV_step * regVal;
 		} else
@@ -4075,7 +4095,9 @@ static ssize_t show_regulator_voltage(struct device *dev, struct device_attribut
 		if (mreg->pvoltages != NULL) {
 			pVoltage = (const int *)mreg->pvoltages;
 			ret_value = pVoltage[0];
-		} else
+		} else if (mreg->desc.fixed_uV)
+			ret_value = mreg->desc.fixed_uV;
+		else
 			pr_err("[EM] %s_VOLTAGE have no pVolatges\n", mreg->desc.name);
 	}
 
@@ -4113,36 +4135,36 @@ struct mtk_regulator mt_bucks[] = {
 #define LDO_VOL REGULATOR_CHANGE_VOLTAGE
 #define LDO_VOL_EN (REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_VOLTAGE)
 struct mtk_regulator mt_ldos[] = {
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim1, ldo, vsim1_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vibr, ldo, vibr_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim1, ldo, vsim1_voltages, vsim1_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vibr, ldo, vibr_voltages, vibr_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vrf12, ldo, 1200000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vusb, ldo, 3000000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vcamio, ldo, 1800000, LDO_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcama, ldo, vcama_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcamd, ldo, vcamd_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcama, ldo, vcama_voltages, vcama_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcamd, ldo, vcamd_voltages, vcamd_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vcn18, ldo, 1800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vfe28, ldo, 2800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaux18, ldo, 1800000, LDO_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmipi, ldo, vmipi_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmipi, ldo, vmipi_voltages, vmipi_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vcn28, ldo, 2800000, LDO_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_others, ldo, 500000, 1293750, 6250, 0, LDO_VOL_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_gpu, ldo, 500000, 1293750, 6250, 0, LDO_VOL_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_proc, ldo, 500000, 1293750, 6250, 0, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vxo22, ldo, vxo22_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmch, ldo, vmch_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vemc, ldo, vemc_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vxo22, ldo, vxo22_voltages, vxo22_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmch, ldo, vmch_voltages, vmch_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vemc, ldo, vemc_voltages, vemc_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vio28, ldo, 2800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(va12, ldo, 1200000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vio18, ldo, 1800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vrf18, ldo, 1810000, LDO_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcn33_bt, ldo, vcn33_bt_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcn33_wifi, ldo, vcn33_wifi_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcn33_bt, ldo, vcn33_bt_voltages, vcn33_bt_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcn33_wifi, ldo, vcn33_wifi_voltages, vcn33_wifi_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vbif28, ldo, 2800000, LDO_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmc, ldo, vmc_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vdram, ldo, vdram_voltages, LDO_VOL_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vldo28, ldo, vldo28_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vmc, ldo, vmc_voltages, vmc_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vdram, ldo, vdram_voltages, vdram_idx, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vldo28, ldo, vldo28_voltages, vldo28_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaud28, ldo, 2800000, LDO_EN, 1),
-	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim2, ldo, vsim2_voltages, LDO_VOL_EN, 1),
+	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim2, ldo, vsim2_voltages, vsim2_idx, LDO_VOL_EN, 1),
 
 };
 
