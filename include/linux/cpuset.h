@@ -137,6 +137,11 @@ static inline void set_mems_allowed(nodemask_t nodemask)
 	task_unlock(current);
 }
 
+#ifdef CONFIG_MTK_USER_SPACE_GLOBAL_CPUSET
+void set_user_space_global_cpuset(struct cpumask *global_cpus);
+void unset_user_space_global_cpuset(void);
+#endif
+
 #else /* !CONFIG_CPUSETS */
 
 static inline bool cpusets_enabled(void) { return false; }
