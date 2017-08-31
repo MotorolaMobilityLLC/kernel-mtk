@@ -843,6 +843,7 @@ static int __frame_config(struct frame_queue_t *frame_node)
 	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 	struct sync_fence *present_fence = NULL;
 	struct disp_session_sync_info *session_info;
+	unsigned int present_fence_idx;
 
 	head = get_frame_queue_head(frame_cfg->session_id);
 	if (!head) {
@@ -850,9 +851,10 @@ static int __frame_config(struct frame_queue_t *frame_node)
 		return -EINVAL;
 	}
 
+	present_fence_idx = frame_cfg->present_fence_idx;
 	session_info = disp_get_session_sync_info_for_debug(frame_cfg->session_id);
 	if (session_info)
-		dprec_start(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+		dprec_start(&session_info->event_frame_cfg, present_fence_idx, 0);
 
 	frame_cfg->setter = SESSION_USER_HWC;
 
@@ -875,7 +877,7 @@ static int __frame_config(struct frame_queue_t *frame_node)
 	frame_queue_push(head, frame_node);
 
 	if (session_info)
-		dprec_done(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+		dprec_done(&session_info->event_frame_cfg, present_fence_idx, 0);
 
 	return 0;
 }
