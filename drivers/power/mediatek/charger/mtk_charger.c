@@ -1327,6 +1327,8 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.ac_charger_current = AC_CHARGER_CURRENT;
 	}
 
+	info->data.pd_charger_current = 3000000;
+
 	if (of_property_read_u32(np, "ac_charger_input_current", &val) >= 0) {
 		info->data.ac_charger_input_current = val;
 	} else {
@@ -2025,6 +2027,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	if (mtk_pe30_init(info) == false)
 		info->enable_pe_3 = false;
+
+	mtk_pdc_init(info);
+
 
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {
