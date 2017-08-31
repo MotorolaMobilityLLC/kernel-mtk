@@ -2847,8 +2847,12 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 	cpufreq_unlock();
 
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+	cpuhvfs_trigger_dvfs_notify();
+#else
 	if (!p->dvfs_disable_by_suspend && kick)
 		_kick_PBM_by_cpu(p);
+#endif
 }
 
 /*

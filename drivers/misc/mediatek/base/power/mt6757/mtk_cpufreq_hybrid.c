@@ -452,6 +452,7 @@ struct cpuhvfs_dvfsp {
 			  unsigned int floor);
 
 	void (*set_notify)(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
+	void (*trig_notify)(struct cpuhvfs_dvfsp *dvfsp);
 
 	void (*set_mode)(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mode);
 	void (*mmc_hint)(struct cpuhvfs_dvfsp *dvfsp, unsigned int start);
@@ -561,6 +562,7 @@ static struct hrtimer nfy_trig_timer;
 
 static struct task_struct *dvfs_nfy_task;
 static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
+static atomic_t nfy_trig = ATOMIC_INIT(0);
 
 /* log_box[MAX_LOG_FETCH] is also used to save last log entry */
 static struct dvfs_log log_box[1 + MAX_LOG_FETCH];
@@ -586,6 +588,7 @@ static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 
 #ifdef CPUHVFS_HW_GOVERNOR
 static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
+static void cspm_trig_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp);
 
 static void cspm_set_power_mode(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mode);
 static void cspm_hint_mmc_event(struct cpuhvfs_dvfsp *dvfsp, unsigned int start);
@@ -628,6 +631,7 @@ static struct cpuhvfs_dvfsp g_dvfsp = {
 	.hw_gov_en	= 1,
 
 	.set_notify	= cspm_set_dvfs_notify,
+	.trig_notify	= cspm_trig_dvfs_notify,
 
 	.set_mode	= cspm_set_power_mode,
 	.mmc_hint	= cspm_hint_mmc_event,
@@ -778,9 +782,9 @@ static inline void stop_notify_trigger_timer(void)
 	hrtimer_cancel(&nfy_trig_timer);
 }
 
-static inline void kick_kthread_to_notify(void)
+static inline void kick_kthread_to_notify(int req)
 {
-	atomic_inc(&dvfs_nfy_req);
+	atomic_add(req, &dvfs_nfy_req);
 	wake_up_process(dvfs_nfy_task);
 }
 #endif
@@ -1421,6 +1425,12 @@ static void cspm_set_power_mode(struct cpuhvfs_dvfsp *dvfsp, enum power_mode mod
 	spin_unlock(&dvfs_lock);
 }
 
+static void cspm_trig_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp)
+{
+	atomic_inc(&nfy_trig);
+	kick_kthread_to_notify(2);
+}
+
 static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback)
 {
 	mutex_lock(&notify_mutex);
@@ -1753,8 +1763,14 @@ static void fetch_dvfs_log_and_notify(struct cpuhvfs_dvfsp *dvfsp)
 				  log_box[i].opp[2], next_log_offs, log_time_curr_offs());
 	}
 
-	if (log_box[0].time == 0 && i >= 2)
+	if (log_box[0].time == 0 && i >= 2) {
 		log_box[0] = log_box[1];
+		if (i == 2)
+			i = 1;
+	}
+
+	if (i == 1)
+		log_box[MAX_LOG_FETCH].time = 0;
 
 	if (i >= 2 && i <= MAX_LOG_FETCH)
 		log_box[MAX_LOG_FETCH] = log_box[i - 1];
@@ -1780,6 +1796,11 @@ static int dvfs_nfy_task_fn(void *data)
 
 		__set_current_state(TASK_RUNNING);
 
+		if (atomic_read(&nfy_trig) > 0) {
+			usleep_range(1100, 1500);
+			atomic_dec(&nfy_trig);
+		}
+
 		fetch_dvfs_log_and_notify(dvfsp);
 		atomic_dec(&dvfs_nfy_req);
 	}
@@ -1789,7 +1810,7 @@ static int dvfs_nfy_task_fn(void *data)
 
 static enum hrtimer_restart nfy_trig_timer_fn(struct hrtimer *timer)
 {
-	kick_kthread_to_notify();
+	kick_kthread_to_notify(1);
 
 	hrtimer_forward_now(timer, ms_to_ktime(DVFS_NOTIFY_INTV));
 
@@ -2310,6 +2331,16 @@ void cpuhvfs_set_power_mode(enum power_mode mode)
 	dvfsp->set_mode(dvfsp, mode);
 }
 
+void cpuhvfs_trigger_dvfs_notify(void)
+{
+	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
+
+	if (is_dvfsp_uninit(dvfsp))
+		return;
+
+	dvfsp->trig_notify(dvfsp);
+}
+
 void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
@@ -2470,4 +2501,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.5");
