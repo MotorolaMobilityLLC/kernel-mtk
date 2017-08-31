@@ -5424,6 +5424,10 @@
 		compatible = "mediatek,mediatek,nfc-gpio-v2";
 	};
 
+	gps {
+		compatible = "mediatek,gps";
+	};
+
 	goodix_fp: goodix_fp {
 		compatible = "mediatek,fix_build_error";
 	};
