@@ -34,31 +34,24 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
-#include <mach/mt_gpt.h>
-#include <mach/mt_cpuxgpt.h>
+/* #include <mach/mt_gpt.h> */
+/* #include <mach/mt_cpuxgpt.h> */
 #include <mtk_spm.h>
 #include <mtk_spm_idle.h>
-#include <hotplug.h>
 #ifdef CONFIG_THERMAL
 #include <mach/mt_thermal.h>
 #endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
-#include <mach/mtk_spm_mtcmos_internal.h>
 #include <mtk_spm_reg.h>
-#include <mt_cpufreq_hybrid.h>
 
 #include <linux/uaccess.h>
 
 #define FEATURE_ENABLE_SODI2P5
 
 #define IDLE_TAG     "Power/swap "
-#define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
-#define spm_alert(fmt, args...)		pr_alert(IDLE_TAG fmt, ##args)
-#define spm_crit(fmt, args...)		pr_crit(IDLE_TAG fmt, ##args)
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
 #define idle_warn(fmt, args...)		pr_warn(IDLE_TAG fmt, ##args)
-#define spm_notice(fmt, args...)	pr_notice(IDLE_TAG fmt, ##args)
 #define idle_info(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_ver(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 #define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
@@ -68,16 +61,7 @@
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
 
-#define idle_gpt GPT4
-
-#define idle_writel(addr, val)   \
-	mt65xx_reg_sync_writel(val, addr)
-
-#define idle_setl(addr, val) \
-	mt65xx_reg_sync_writel(idle_readl(addr) | (val), addr)
-
-#define idle_clrl(addr, val) \
-	mt65xx_reg_sync_writel(idle_readl(addr) & ~(val), addr)
+/* #define IDLE_GPT GPT4 */
 
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
@@ -86,10 +70,6 @@ static atomic_t is_in_hotplug = ATOMIC_INIT(0);
 
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
-
-#ifdef CONFIG_HYBRID_CPU_DVFS
-static bool mt_dvfsp_paused_by_idle;
-#endif
 
 #define NR_CMD_BUF		128
 
@@ -339,7 +319,7 @@ static unsigned long long idle_ratio_start_time[NR_TYPES];
 static unsigned long long idle_ratio_value[NR_TYPES];
 
 
-static unsigned int idle_block_mask[NR_TYPES][NR_GRPS+1];
+static unsigned int idle_block_mask[NR_TYPES][NR_GRPS + 1];
 
 /* DeepIdle */
 static unsigned int     dpidle_time_critera = 2000; /* 2ms */
@@ -350,7 +330,6 @@ static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
-static bool             dpidle_by_pass_i2c_appm_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
@@ -366,7 +345,6 @@ static unsigned long    soidle3_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
-static bool             soidle3_by_pass_i2c_appm_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
@@ -382,7 +360,6 @@ static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
-static bool             soidle_by_pass_i2c_appm_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
@@ -533,13 +510,9 @@ void faudintbus_sq2pll(void)
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-static bool mt_idle_cpu_criteria(void)
+static bool mtk_idle_cpu_criteria(void)
 {
-	unsigned int cpu_pwr_stat = 0;
-
-	cpu_pwr_stat = spm_get_cpu_pwr_status();
-
-	return ((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4)) ? true : false;
+	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
 }
 #endif
 
@@ -597,28 +570,6 @@ static bool soidle3_can_enter(int cpu, int reason)
 		goto out;
 	}
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	/* Try to pause DVFSP, xxidle will be blocked if DVFSP can NOT be paused */
-	if (cpuhvfs_pause_dvfsp_running(PAUSE_IDLE) != 0) {
-		reason = BY_DVFSP;
-		goto out;
-	}
-
-	mt_dvfsp_paused_by_idle = true;
-#endif
-
-	if (soidle3_by_pass_i2c_appm_cg == 0) {
-		/* Check if I2C-appm gated since DVFSP will control it */
-		if (!mt_idle_check_cg_i2c_appm(idle_block_mask[IDLE_TYPE_SO3])) {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-			mt_dvfsp_paused_by_idle = false;
-#endif
-			reason = BY_CLK;
-			goto out;
-		}
-	}
-
 out:
 	if (reason < NR_REASONS) {
 		if (soidle3_block_prev_time == 0)
@@ -674,13 +625,6 @@ void soidle3_before_wfi(int cpu)
 
 void soidle3_after_wfi(int cpu)
 {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	if (mt_dvfsp_paused_by_idle) {
-		cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-		mt_dvfsp_paused_by_idle = false;
-	}
-#endif
-
 	soidle3_cnt[cpu]++;
 }
 
@@ -773,32 +717,6 @@ static bool soidle_can_enter(int cpu, int reason)
 		goto out;
 	}
 
-	#ifndef CONFIG_FPGA_EARLY_PORTING
-	#ifdef CONFIG_HYBRID_CPU_DVFS
-	/* Try to pause DVFSP, xxidle will be blocked if DVFSP can NOT be paused */
-	if (cpuhvfs_pause_dvfsp_running(PAUSE_IDLE) != 0) {
-		reason = BY_DVFSP;
-		goto out;
-	}
-
-	mt_dvfsp_paused_by_idle = true;
-	#endif
-	#endif
-
-	#ifndef CONFIG_FPGA_EARLY_PORTING
-	if (soidle_by_pass_i2c_appm_cg == 0) {
-		/* Check if I2C-appm gated since DVFSP will control it */
-		if (!mt_idle_check_cg_i2c_appm(idle_block_mask[IDLE_TYPE_SO])) {
-	#ifdef CONFIG_HYBRID_CPU_DVFS
-			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-			mt_dvfsp_paused_by_idle = false;
-	#endif
-			reason = BY_CLK;
-			goto out;
-		}
-	}
-	#endif
-
 out:
 	if (reason < NR_REASONS) {
 		if (soidle_block_prev_time == 0)
@@ -859,13 +777,6 @@ void soidle_after_wfi(int cpu)
 {
 #ifdef FEATURE_ENABLE_SODI2P5
 	faudintbus_sq2pll();
-#endif
-
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	if (mt_dvfsp_paused_by_idle) {
-		cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-		mt_dvfsp_paused_by_idle = false;
-	}
 #endif
 
 	soidle_cnt[cpu]++;
@@ -981,41 +892,9 @@ static bool dpidle_can_enter(int cpu, int reason)
 
 	reason = NR_REASONS;
 
-	/* TODO: check if mt_cpufreq_earlysuspend_status_get() should be used */
-#if 0
-	if (dpidle_by_pass_cg == 0) {
-		if (!mt_cpufreq_earlysuspend_status_get()) {
-			reason = BY_VTG;
-			goto out;
-		}
-	}
-#endif
-
 	if (get_next_event_time_us() < dpidle_time_critera) {
 		reason = BY_TMR;
 		goto out;
-	}
-
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	/* Try to pause DVFSP, xxidle will be blocked if DVFSP can NOT be paused */
-	if (cpuhvfs_pause_dvfsp_running(PAUSE_IDLE) != 0) {
-		reason = BY_DVFSP;
-		goto out;
-	}
-
-	mt_dvfsp_paused_by_idle = true;
-#endif
-
-	if (dpidle_by_pass_i2c_appm_cg == 0) {
-		/* Check if I2C-appm gated since DVFSP will control it */
-		if (!mt_idle_check_cg_i2c_appm(idle_block_mask[IDLE_TYPE_DP])) {
-#ifdef CONFIG_HYBRID_CPU_DVFS
-			cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-			mt_dvfsp_paused_by_idle = false;
-#endif
-			reason = BY_CLK;
-			goto out;
-		}
 	}
 
 out:
@@ -1117,7 +996,7 @@ static bool slidle_can_enter(int cpu, int reason)
 	reason = NR_REASONS;
 
 	#ifndef CONFIG_FPGA_EARLY_PORTING
-	if (!mt_idle_cpu_criteria()) {
+	if (!mtk_idle_cpu_criteria()) {
 		reason = BY_CPU;
 		goto out;
 	}
@@ -1337,16 +1216,6 @@ static inline void dpidle_post_handler(void)
 #endif
 }
 
-static void restart_dvfsp(void)
-{
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	if (mt_dvfsp_paused_by_idle) {
-		cpuhvfs_unpause_dvfsp_to_run(PAUSE_IDLE);
-		mt_dvfsp_paused_by_idle = false;
-	}
-#endif
-}
-
 static void update_dpidle_cnt(int cpu)
 {
 	dpidle_cnt[cpu]++;
@@ -1369,8 +1238,6 @@ static void dpidle_post_process(int cpu)
 	mtk_idle_notifier_call_chain(DPIDLE_END);
 
 	dpidle_post_handler();
-
-	restart_dvfsp();
 
 	update_dpidle_cnt(cpu);
 }
@@ -1502,7 +1369,7 @@ int mt_idle_select(int cpu)
 	#ifndef CONFIG_FPGA_EARLY_PORTING
 	#ifdef CONFIG_SMP
 	/* check cpu status */
-	if (!mt_idle_cpu_criteria()) {
+	if (!mtk_idle_cpu_criteria()) {
 		reason = BY_CPU;
 		goto get_idle_idx;
 	}
@@ -1592,7 +1459,7 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_SMP
 	/* check cpu status */
-	if (!mt_idle_cpu_criteria()) {
+	if (!mtk_idle_cpu_criteria()) {
 		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
@@ -1609,9 +1476,6 @@ int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 		reason = BY_VTG;
 		goto get_idle_idx_2;
 	}
-
-	/* FIXME: Bypass following checks due to main core on/off only */
-	goto get_idle_idx_2;
 
 	/* teei ready */
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1810,48 +1674,6 @@ int rgidle_enter(int cpu)
 	return ret;
 }
 EXPORT_SYMBOL(rgidle_enter);
-
-static int mcdi_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
-{
-	if (!idle_switch[IDLE_TYPE_MC])
-		return NOTIFY_OK;
-
-	switch (action) {
-
-	case CPU_UP_PREPARE:
-	case CPU_UP_PREPARE_FROZEN:
-		if (num_online_cpus() == 1)
-			spm_mcdi_switch_on_off(SPM_MCDI_EARLY_SUSPEND, 1);
-
-		break;
-
-#ifdef CONFIG_HOTPLUG_CPU
-	case CPU_DYING:
-	case CPU_DYING_FROZEN:
-		break;
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
-		if (num_online_cpus() == 1)
-			spm_mcdi_switch_on_off(SPM_MCDI_EARLY_SUSPEND, 0);
-
-		break;
-#endif
-
-	default:
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block mcdi_nb = {
-	.notifier_call = mcdi_cpu_notify,
-};
-
-void mt_idle_init(void)
-{
-	register_cpu_notifier(&mcdi_nb);
-}
 
 /***************************/
 /* debugfs                 */
@@ -2073,7 +1895,6 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 			dpidle_blocking_stat[i][k] = 0;
 
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
-	mt_idle_log("dpidle_by_pass_i2c_appm_cg=%u\n", dpidle_by_pass_i2c_appm_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
 	mt_idle_log("(0: None, 1: Reduced, 2: Full\n");
@@ -2118,8 +1939,6 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_time_critera = param;
 		else if (!strcmp(cmd, "bypass"))
 			dpidle_by_pass_cg = param;
-		else if (!strcmp(cmd, "bypass_appm"))
-			dpidle_by_pass_i2c_appm_cg = param;
 		else if (!strcmp(cmd, "bypass_pg")) {
 			dpidle_by_pass_pg = param;
 			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);
@@ -2182,7 +2001,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 
 	mt_idle_log("soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
-	mt_idle_log("soidle3_by_pass_i2c_appm_cg=%u\n", soidle3_by_pass_i2c_appm_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
 	mt_idle_log("sodi3_flags=0x%x\n", sodi3_flags);
 
@@ -2195,7 +2013,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	mt_idle_log("bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 
@@ -2234,9 +2051,6 @@ static ssize_t soidle3_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "bypass")) {
 			soidle3_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle3_by_pass_cg);
-		} else if (!strcmp(cmd, "bypass_appm")) {
-			soidle3_by_pass_i2c_appm_cg = param;
-			idle_dbg("bypass_appm = %d\n", soidle3_by_pass_i2c_appm_cg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle3_by_pass_en = param;
 			idle_dbg("bypass_en = %d\n", soidle3_by_pass_en);
@@ -2291,7 +2105,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	mt_idle_log("soidle_bypass_cg=%u\n", soidle_by_pass_cg);
-	mt_idle_log("soidle_by_pass_i2c_appm_cg=%u\n", soidle_by_pass_i2c_appm_cg);
 	mt_idle_log("soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
 	mt_idle_log("soidle_bypass_en=%u\n", soidle_by_pass_en);
 	mt_idle_log("sodi_flags=0x%x\n", sodi_flags);
@@ -2304,7 +2117,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	mt_idle_log("bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("sodi flags:    echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
 
@@ -2340,9 +2152,6 @@ static ssize_t soidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
-		} else if (!strcmp(cmd, "bypass_appm")) {
-			soidle_by_pass_i2c_appm_cg = param;
-			idle_dbg("bypass_appm = %d\n", soidle_by_pass_i2c_appm_cg);
 		} else if (!strcmp(cmd, "bypass_pg")) {
 			soidle_by_pass_pg = param;
 			idle_warn("bypass_pg = %d\n", soidle_by_pass_pg);
@@ -2536,7 +2345,7 @@ static const struct file_operations reg_dump_fops = {
 /* debugfs entry */
 static struct dentry *root_entry;
 
-static int mt_cpuidle_debugfs_init(void)
+static int mtk_cpuidle_debugfs_init(void)
 {
 	/* TODO: check if debugfs_create_file() failed */
 	/* Initialize debugfs */
@@ -2558,7 +2367,7 @@ static int mt_cpuidle_debugfs_init(void)
 }
 
 /* CPU hotplug notifier, for informing whether CPU hotplug is working */
-static int mt_idle_cpu_callback(struct notifier_block *nfb,
+static int mtk_idle_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
 {
 	switch (action) {
@@ -2584,16 +2393,30 @@ static int mt_idle_cpu_callback(struct notifier_block *nfb,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block mt_idle_cpu_notifier = {
-	.notifier_call = mt_idle_cpu_callback,
+static struct notifier_block mtk_idle_cpu_notifier = {
+	.notifier_call = mtk_idle_cpu_callback,
 	.priority   = INT_MAX,
 };
 
-static int mt_idle_hotplug_cb_init(void)
+static int mtk_idle_hotplug_cb_init(void)
 {
-	register_cpu_notifier(&mt_idle_cpu_notifier);
+	register_cpu_notifier(&mtk_idle_cpu_notifier);
 
 	return 0;
+}
+
+void mtk_idle_gpt_init(void)
+{
+#if 0
+#ifndef USING_STD_TIMER_OPS
+	int err = 0;
+
+	err = request_gpt(IDLE_GPT, GPT_ONE_SHOT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
+			  0, NULL, GPT_NOAUTOEN);
+	if (err)
+		idle_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
+#endif
+#endif
 }
 
 void mt_cpuidle_framework_init(void)
@@ -2601,8 +2424,10 @@ void mt_cpuidle_framework_init(void)
 	idle_ver("[%s]entry!!\n", __func__);
 
 	iomap_init();
-	mt_cpuidle_debugfs_init();
-	mt_idle_hotplug_cb_init();
+	mtk_cpuidle_debugfs_init();
+	mtk_idle_hotplug_cb_init();
+
+	mtk_idle_gpt_init();
 }
 EXPORT_SYMBOL(mt_cpuidle_framework_init);
 

@@ -14,8 +14,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include <mach/mtk_spm_mtcmos_internal.h>
-
 #include <mtk_idle_internal.h>
 
 #define IDLE_TAG     "Power/swap"
@@ -53,11 +51,7 @@ int idle_switch[NR_TYPES] = {
 	0,	/* dpidle switch */
 	0,	/* soidle3 switch */
 	0,	/* soidle switch */
-#ifdef CONFIG_CPU_ISOLATION
-	1,	/* mcidle switch */
-#else
 	0,	/* mcidle switch */
-#endif
 	0,	/* slidle switch */
 	1,	/* rgidle switch */
 };
@@ -144,9 +138,6 @@ static const char *reason_name[NR_REASONS] = {
 	"by_frm",
 	"by_pll",
 	"by_pwm",
-#ifdef CONFIG_CPU_ISOLATION
-	"by_iso",
-#endif
 	"by_dvfsp",
 };
 
