@@ -85,5 +85,6 @@ int cpuhvfs_set_freq(int cluster_id, unsigned int freq);
 int cpuhvfs_get_volt(int buck_id);
 int cpuhvfs_get_freq(int pll_id);
 int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step);
+int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq);
 int dvfs_to_sspm_command(u32 cmd, struct cdvfs_data *cdvfs_d);
 #endif

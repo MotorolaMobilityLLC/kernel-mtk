@@ -12,6 +12,33 @@
 */
 #include "mtk_cpufreq_internal.h"
 
+#ifdef CONFIG_HYBRID_CPU_DVFS
+enum mt_cpu_dvfs_id group(unsigned int cpu)
+{
+	enum mt_cpu_dvfs_id id;
+
+	id = (cpu > 7) ? MT_CPU_DVFS_B :
+		(cpu > 4) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
+
+	return id;
+}
+#endif
+
+int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	enum mt_cpu_dvfs_id id = group(cpu);
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	if (freq > mt_cpufreq_get_freq_by_idx(p, 15) &&
+		freq < mt_cpufreq_get_freq_by_idx(p, 0) && state < NUM_SCHE_TYPE)
+		cpuhvfs_set_cpu_load_freq(cpu, state, freq);
+#endif
+
+	return 0;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load);
+
 int is_in_suspend(void)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(0);

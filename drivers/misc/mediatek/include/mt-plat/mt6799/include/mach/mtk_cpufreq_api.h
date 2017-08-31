@@ -20,6 +20,17 @@
 
 #include "../../../../../base/power/cpufreq_v1/src/mach/mt6799/mtk_cpufreq_config.h"
 
+enum cpu_dvfs_sched_type {
+	SCHE_INVALID,
+	SCHE_VALID,
+	SCHE_ONESHOT,
+
+	NUM_SCHE_TYPE
+};
+
+/* Schedule Assist Input */
+extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq);
+
 /* PTP-OD */
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
 extern unsigned int mt_cpufreq_get_volt_by_idx(enum mt_cpu_dvfs_id id, int idx);

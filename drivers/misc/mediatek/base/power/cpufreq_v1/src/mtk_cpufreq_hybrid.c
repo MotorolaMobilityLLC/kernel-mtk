@@ -346,8 +346,13 @@ static void __iomem *csram_base;
 #define OFFS_TBL_E		0x0250
 #define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
 #define OFFS_DATA_S		0x02a0
+#if 0
 #define OFFS_LOG_S		0x03d0
 #define OFFS_LOG_E		0x0ec0
+#else
+#define OFFS_LOG_S		0x03d0
+#define OFFS_LOG_E		0x1438
+#endif
 /* #define OFFS_LOG_E		0x2ff8 */
 #define DBG_REPO_S		CSRAM_BASE
 #define DBG_REPO_E		(DBG_REPO_S + CSRAM_SIZE)
@@ -363,6 +368,12 @@ static void __iomem *csram_base;
 #define REPO_I_LOG_S		(OFFS_LOG_S / sizeof(u32))
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
+
+#define OFFS_SCHED_S		0x03a4
+#define OFFS_SCHED_E		0x03c8
+#define DBG_REPO_SCHED_S	(DBG_REPO_S + OFFS_SCHED_S)
+#define DBG_REPO_SCHED_E	(DBG_REPO_S + OFFS_SCHED_E)
+
 #define NR_FREQ       16
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
@@ -517,6 +528,37 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 	cdvfs_d.u.set_fv.arg[2] = volt_step;
 
 	dvfs_to_spm2_command(IPI_TURBO_MODE, &cdvfs_d);
+
+	return 0;
+}
+
+unsigned int counter;
+
+int cpuhvfs_set_cpu_load_freq(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
+{
+	enum mt_cpu_dvfs_id id;
+	struct mt_cpu_dvfs *p;
+	int freq_idx = 0;
+	unsigned int buf;
+
+	/* cpufreq_ver("sched: cpu = %d, state = %d, freq = %d\n", cpu, state, freq); */
+
+	counter++;
+	if (counter > 255)
+		counter = 0;
+
+	/* [3:0] freq_idx, [7:4] state, [15:8] counter */
+	id = (cpu > 7) ? MT_CPU_DVFS_B :
+		(cpu > 4) ? MT_CPU_DVFS_L : MT_CPU_DVFS_LL;
+
+	p = id_to_cpu_dvfs(id);
+	freq_idx = _search_available_freq_idx(p, freq, 0);
+
+	buf = ((counter << 8) | (state << 4) | freq_idx);
+
+	csram_write((OFFS_SCHED_S + (cpu * 4)), buf);
+
+	/* cpufreq_ver("sched: buf = 0x%x\n", buf); */
 
 	return 0;
 }
