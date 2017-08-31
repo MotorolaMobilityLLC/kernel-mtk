@@ -115,9 +115,8 @@ static void process_dbg_opt(const char *opt)
 			enable_ut = 1;
 		else if (strncmp(opt + 8, "off", 3) == 0)
 			enable_ut = 0;
-	} else {
+	} else
 		goto Error;
-	}
 	return;
 
  Error:
