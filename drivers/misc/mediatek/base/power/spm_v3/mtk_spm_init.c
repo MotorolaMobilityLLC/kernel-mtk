@@ -20,12 +20,12 @@
 #include <mtk_cpuidle.h>
 #include <mtk_spm_resource_req_internal.h>
 
+int __attribute__ ((weak)) mtk_cpuidle_init(void) { return -EOPNOTSUPP; }
+
 static int __init mt_spm_init(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MACH_MT6759
 	mtk_cpuidle_init();
-#endif
 	spm_module_init();
 #ifndef CONFIG_MACH_MT6759
 	slp_module_init();
