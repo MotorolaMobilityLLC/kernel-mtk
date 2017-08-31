@@ -835,6 +835,7 @@
 #define ELEM_ID_OBSS_SCAN_PARAMS                    74	/* Overlapping BSS Scan Parameters */
 #define ELEM_ID_INTERWORKING                        107	/* Interworking with External Network */
 #define ELEM_ID_ADVERTISEMENT_PROTOCOL              108	/* Advertisement Protocol */
+#define ELEM_ID_QOS_MAP_SET			110 /* QoS Map Set */
 #define ELEM_ID_ROAMING_CONSORTIUM                  111	/* Roaming Consortium */
 #define ELEM_ID_EXTENDED_CAP                        127	/* Extended capabilities */
 
@@ -943,6 +944,7 @@
 #define ELEM_EXT_CAP_BSS_TRANSITION_BIT             19
 #define ELEM_EXT_CAP_UTC_TSF_OFFSET_BIT             27
 #define ELEM_EXT_CAP_INTERWORKING_BIT               31
+#define ELEM_EXT_CAP_QOSMAPSET_BIT			32
 #define ELEM_EXT_CAP_WNM_NOTIFICATION_BIT           46
 
 #if CFG_SUPPORT_HOTSPOT_2_0
@@ -1106,6 +1108,7 @@
 #define ACTION_ADDTS_RSP                            1	/* ADDTS response */
 #define ACTION_DELTS                                2	/* DELTS */
 #define ACTION_SCHEDULE                             3	/* Schedule */
+#define ACTION_QOS_MAP_CONFIGURE		4 /*Qos Map Configure*/
 
 #define ACTION_ADDTS_REQ_FRAME_LEN                  (24+3+63)	/* WMM TSPEC IE: 63 */
 #define ACTION_ADDTS_RSP_FRAME_LEN                  (24+4+63)	/* WMM Status Code: 1; WMM TSPEC IE: 63 */
@@ -1162,6 +1165,7 @@
 #define ACTION_HT_COMPRESSED_BEAMFORM               6	/* Compressed Beamforming */
 #define ACTION_HT_ANT_SEL_INDICES_FB                7	/* Antenna Selection Indices Feedback */
 
+#define ACTION_WNM_NOTIFICATION_REQUEST			26
 /* 802.11v Wireless Network Management */
 #define ACTION_WNM_TIMING_MEASUREMENT_REQUEST       27
 
@@ -2013,6 +2017,21 @@ typedef struct _ACTION_DELTS_FRAME {
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 aucTsInfo[3];	/* TS Info */
 } __KAL_ATTRIB_PACKED__ ACTION_DELTS_FRAME, *P_ACTION_DELTS_FRAME;
+
+/* 7.4.2.3 QOSMAP frame format */
+struct _ACTION_QOS_MAP_CONFIGURE_FRAME {
+	/* QOSMAP CONFIGURE MAC header */
+	UINT_16 u2FrameCtrl;	/* Frame Control */
+	UINT_16 u2DurationID;	/* Duration */
+	UINT_8 aucDestAddr[MAC_ADDR_LEN];	/* DA */
+	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* SA */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* BSSID */
+	UINT_16 u2SeqCtrl;	/* Sequence Control */
+	/* DELTS frame body */
+	UINT_8 ucCategory;	/* Category */
+	UINT_8 ucAction;	/* Action Value */
+	UINT_8 qosMapSet[1];	/* qosmapset */
+};
 
 /* 7.4.4.1 ADDBA Request frame format */
 typedef struct _ACTION_ADDBA_REQ_FRAME_T {

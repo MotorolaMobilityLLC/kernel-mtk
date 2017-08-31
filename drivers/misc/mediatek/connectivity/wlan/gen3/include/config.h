@@ -372,7 +372,9 @@
  *------------------------------------------------------------------------------
  */
 /*! Maximum number of BSS in the SCAN list */
-#define CFG_MAX_NUM_BSS_LIST                    64
+#define CFG_MAX_NUM_BSS_LIST                    128
+
+#define CFG_MAX_NUM_ROAM_BSS_LIST		64
 
 #define CFG_MAX_COMMON_IE_BUF_LEN         ((1500 * CFG_MAX_NUM_BSS_LIST) / 3)
 
@@ -665,6 +667,7 @@
 #define CFG_SUPPORT_UL_PSMP         0
 
 #define CFG_SUPPORT_ROAMING         1	/* Roaming System */
+#define CFG_ROAMING_CTRL_BY_SUSPEND 0
 #define CFG_SUPPORT_SWCR            1
 
 #define CFG_SUPPORT_ANTI_PIRACY     1
@@ -702,6 +705,8 @@
 #define CFG_SUPPORT_MTK_SYNERGY             1
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
+
+#define CFG_SUPPORT_RN			0
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------
@@ -777,6 +782,8 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_SNIFFER                 1
+
+#define CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE 1
 
 /*******************************************************************************
 *                             D A T A   T Y P E S

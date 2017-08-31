@@ -3775,6 +3775,7 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 	UINT_16 u2Offset;
 	PUINT_8 pucIEStart;
 	UINT_8 aucWfaOui[] = VENDOR_OUI_WFA;
+	BOOLEAN hasnoQosMapSetIE = TRUE;
 
 	DEBUGFUNC("mqmProcessAssocRsp");
 
@@ -3832,9 +3833,19 @@ VOID mqmProcessAssocRsp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN PUIN
 			if (IE_LEN(pucIE) == (sizeof(IE_HT_CAP_T) - 2))
 				prStaRec->fgIsQoS = TRUE;
 			break;
+		case ELEM_ID_QOS_MAP_SET:
+			DBGLOG(QM, WARN, "QM: received assoc resp qosmapset ie\n");
+			prStaRec->qosMapSet = qosParseQosMapSet(prAdapter, pucIE);
+			hasnoQosMapSetIE = FALSE;
 		default:
 			break;
 		}
+	}
+
+	if (hasnoQosMapSetIE) {
+		DBGLOG(QM, WARN, "QM: remove assoc resp qosmapset ie\n");
+		QosMapSetRelease(prStaRec);
+		prStaRec->qosMapSet = NULL;
 	}
 
 	/* Parse AC parameters and write to HW CRs */

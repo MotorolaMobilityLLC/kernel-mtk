@@ -26,7 +26,7 @@
 */
 #include "precomp.h"
 
-#if CFG_SUPPORT_802_11V
+#if (CFG_SUPPORT_802_11V || CFG_SUPPORT_PPR2)
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -51,7 +51,7 @@
 ********************************************************************************
 */
 
-static UINT_8 ucTimingMeasToken;
+
 
 /*******************************************************************************
 *                                 M A C R O S
@@ -87,14 +87,19 @@ VOID wnmWNMAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	prRxFrame = (P_WLAN_ACTION_FRAME) prSwRfb->pvHeader;
 
+	switch (prRxFrame->ucAction) {
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
-	if (prRxFrame->ucAction == ACTION_WNM_TIMING_MEASUREMENT_REQUEST) {
+	case ACTION_WNM_TIMING_MEASUREMENT_REQUEST:
 		wnmTimingMeasRequest(prAdapter, prSwRfb);
 		return;
-	}
 #endif
-
-	DBGLOG(WNM, TRACE, "Unsupport WNM action frame: %d\n", prRxFrame->ucAction);
+	case ACTION_WNM_NOTIFICATION_REQUEST:
+	default:
+		DBGLOG(INIT, INFO, "WNM action frame: %d, try to send to supplicant\n", prRxFrame->ucAction);
+		if (HIF_RX_HDR_GET_NETWORK_IDX(prSwRfb->prHifRxHdr) == NETWORK_TYPE_AIS_INDEX)
+			aisFuncValidateRxActionFrame(prAdapter, prSwRfb);
+		break;
+	}
 }
 
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT

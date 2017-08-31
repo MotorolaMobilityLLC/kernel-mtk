@@ -1,23 +1,19 @@
 /*
- * Id: //Department/DaVinci/TRUNK/MT6620_5931_WiFi_Driver/include/mgmt/wnm.h#1
+** Id: qosmap.h#1
+*/
+
+/*
+ * ! \file  qosmap.h
+ *  \brief This file contains the IEEE 802.11 family related 802.11v network management
+ *  for MediaTek 802.11 Wireless LAN Adapters.
  */
 
 /*
- * ! \file  wnm.h
- * \brief This file contains the IEEE 802.11 family related 802.11v network management
- * for MediaTek 802.11 Wireless LAN Adapters.
+ * Log: qosmap.h
  */
 
-/*
- * Log: wnm.h
- *
- * 01 05 2012 tsaiyuan.hsu
- * [WCXRP00001157] [MT6620 Wi-Fi][FW][DRV] add timing measurement support for 802.11v
- * add timing measurement support for 802.11v.
- */
-
-#ifndef _WNM_H
-#define _WNM_H
+#ifndef _QOSMAP_H
+#define _QOSMAP_H
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -39,14 +35,6 @@
 ********************************************************************************
 */
 
-typedef struct _TIMINGMSMT_PARAM_T {
-	BOOLEAN fgInitiator;
-	UINT_8 ucTrigger;
-	UINT_8 ucDialogToken;	/* Dialog Token */
-	UINT_8 ucFollowUpDialogToken;	/* Follow Up Dialog Token */
-	UINT_32 u4ToD;		/* Timestamp of Departure [10ns] */
-	UINT_32 u4ToA;		/* Timestamp of Arrival [10ns] */
-} TIMINGMSMT_PARAM_T, *P_TIMINGMSMT_PARAM_T;
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -62,32 +50,23 @@ typedef struct _TIMINGMSMT_PARAM_T {
 *                                 M A C R O S
 ********************************************************************************
 */
-
+#define DSCP_SUPPORT 1
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-WLAN_STATUS
-wnmRunEventTimgingMeasTxDone(IN P_ADAPTER_T prAdapter,
-			     IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
+VOID handleQosMapConf(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 
-VOID
-wnmComposeTimingMeasFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec, IN PFN_TX_DONE_HANDLER pfTxDoneHandler);
+int qosHandleQosMapConfigure(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 
-VOID wnmTimingMeasRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
+struct _QOS_MAP_SET *qosParseQosMapSet(IN P_ADAPTER_T prAdapter, IN PUINT_8 qosMapSet);
 
-VOID wnmWNMAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
+UINT_8 getUpFromDscp(IN P_GLUE_INFO_T prGlueInfo, IN int type, IN int dscp);
 
-VOID wnmReportTimingMeas(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIndex, IN UINT_32 u4ToD, IN UINT_32 u4ToA);
-
-
-#if WNM_UNIT_TEST
-VOID wnmTimingMeasUnitTest1(P_ADAPTER_T prAdapter, UINT_8 ucStaRecIndex);
-#endif
-
+void QosMapSetRelease(IN P_STA_RECORD_T prStaRec);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
 */
 
-#endif /* _WNM_H */
+#endif /* _QOSMAP_H */

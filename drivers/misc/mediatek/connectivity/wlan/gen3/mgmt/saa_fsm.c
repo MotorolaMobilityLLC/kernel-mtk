@@ -1164,6 +1164,56 @@ WLAN_STATUS saaFsmRunEventRxAssoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 }				/* end of saaFsmRunEventRxAssoc() */
 
+#if CFG_SUPPORT_RN
+static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
+					IN P_BSS_INFO_T prAisBssInfo, IN ENUM_AA_FRM_TYPE_T eFrmType)
+{
+	OS_SYSTIME rCurrentTime;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	GET_CURRENT_SYSTIME(&rCurrentTime);
+
+	/*
+	 * TODO: maybe AP is in DFS channel, it wants to switch channels?
+	 * Wait for beacon timeout?
+	 * Need to do partial scan for the AP channel.
+	 */
+
+	if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
+				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL)) &&
+		/* maybe some packets are queued in HW, we will get many de-auth */
+		(prAisBssInfo->fgDisConnReassoc == FALSE)) {
+		DBGLOG(SAA, INFO, "<drv> AP deauth ok 0x%x %x %x\n",
+					rCurrentTime, prAisBssInfo->rConnTime,
+					SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL));
+		saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
+	} else {
+		DBGLOG(SAA, INFO, "<drv> reassociate\n");
+
+		if (prAisBssInfo->fgDisConnReassoc == FALSE) {
+			/* during reassoc, FW send null then we maybe get deauth again */
+			/* in the case, we will send deauth to supplicant, not here */
+
+			/* avoid re-scan */
+			prAisBssInfo->fgDisConnReassoc = TRUE;
+			prConnSettings->fgIsConnReqIssued = TRUE;
+			prConnSettings->fgIsDisconnectedByNonRequest = FALSE;
+
+			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
+		} else if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
+				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10))) {
+
+			DBGLOG(SAA, INFO, "<drv> AP deauth ok under reassoc 0x%x %x %x\n",
+				rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10));
+
+			prAisBssInfo->fgDisConnReassoc = FALSE;
+			saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
+		}
+		/* else, we are reassociating, skip the deauth */
+	}
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function will check the incoming Deauth Frame.
@@ -1235,7 +1285,11 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 						return WLAN_STATUS_SUCCESS;
 					}
 #endif
+#if CFG_SUPPORT_RN
+					saaAutoReConnect(prAdapter, prStaRec, prAisBssInfo, FRM_DEAUTH);
+#else
 					saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, FRM_DEAUTH);
+#endif
 				}
 			}
 		}
@@ -1424,7 +1478,11 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 						return WLAN_STATUS_SUCCESS;
 					}
 #endif
+#if CFG_SUPPORT_RN
+					saaAutoReConnect(prAdapter, prStaRec, prAisBssInfo, FRM_DISASSOC);
+#else
 					saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, FRM_DISASSOC);
+#endif
 				}
 			}
 		}

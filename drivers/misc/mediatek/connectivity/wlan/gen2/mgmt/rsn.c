@@ -1475,7 +1475,8 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 #endif
 			}
 #if CFG_SUPPORT_OKC
-		} else if (prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
+		} else if (eNetworkId == NETWORK_TYPE_AIS_INDEX &&
+			prConnSettings->fgUseOkc && prConnSettings->fgOkcPmkIdValid) {
 			RSN_IE(pucBuffer)->ucLength = 38;
 			WLAN_SET_FIELD_16(cp, 1);	/* PMKID count */
 			cp += 2;

@@ -262,6 +262,7 @@
 #if CFG_SUPPORT_802_11V
 #include "wnm.h"
 #endif
+#include "qosmap.h"
 
 #include "aa_fsm.h"
 

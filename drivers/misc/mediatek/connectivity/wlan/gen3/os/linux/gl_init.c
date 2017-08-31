@@ -2396,6 +2396,14 @@ VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 	if (!prGlueInfo)
 		return;
 
+#if CFG_ROAMING_CTRL_BY_SUSPEND
+	{
+		UINT_32 u4SetInfoLen = 0;
+
+		kalIoctl(prGlueInfo, wlanoidSetRoamingCtrl, &fgEnable, sizeof(fgEnable),
+					FALSE, FALSE, TRUE, &u4SetInfoLen);
+	}
+#endif
 	prDev = prGlueInfo->prDevHandler;
 	if (!prDev)
 		return;
@@ -2924,7 +2932,10 @@ static VOID wlanRemove(VOID)
 
 	flush_delayed_work(&sched_workq);
 
-	kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC);
+	if (kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC) == -ETIME) {
+		DBGLOG(INIT, ERROR, "Halt Lock, need OidComplete.\n");
+		kalOidComplete(prGlueInfo, FALSE, 0, WLAN_STATUS_NOT_ACCEPTED);
+	}
 	kalSetHalted(TRUE);
 
 	/* 4 <2> Mark HALT, notify main thread to stop, and clean up queued requests */

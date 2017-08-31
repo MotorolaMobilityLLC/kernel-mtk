@@ -531,6 +531,7 @@
 
 /* for CFG80211 IE buffering mechanism */
 #define CFG_CFG80211_IE_BUF_LEN     (512)
+#define GLUE_INFO_WSCIE_LENGTH		500
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
@@ -907,7 +908,7 @@ struct _GLUE_INFO_T {
 #endif
 #endif
 	BOOLEAN fgWpsActive;
-	UINT_8 aucWSCIE[500];	/*for probe req */
+	UINT_8 aucWSCIE[GLUE_INFO_WSCIE_LENGTH];	/*for probe req */
 	UINT_16 u2WSCIELen;
 	UINT_8 aucWSCAssocInfoIE[200];	/*for Assoc req */
 	UINT_16 u2WSCAssocInfoIELen;
