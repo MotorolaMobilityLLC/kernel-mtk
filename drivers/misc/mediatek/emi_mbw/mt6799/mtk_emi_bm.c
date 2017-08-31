@@ -21,7 +21,13 @@
 
 static unsigned char g_cBWL;
 static void __iomem *EMI_BASE_ADDR; /* not initialise statics to 0 or NULL */
-
+#if 0
+unsigned int thr[4][3] = {{100, 200, 300},
+					{150, 250, 350},
+					{170, 270, 370},
+					{400, 500, 600} };
+unsigned int thr2[4] = {100, 200, 300, 400};
+#endif
 
 static struct platform_driver mem_bwm_ctrl = {
 	.driver = {
@@ -101,6 +107,22 @@ void BM_Init(void)
 
 	g_cBWL = 0;
 
+#if 0
+	pr_err("[EMI/BWM] BM_Init test start...\n");
+	mt_set_emi_total_bw_threshold(thr);
+	mt_set_emi_bw1_threshold(thr2);
+	mt_set_emi_bw1_axi_port(0x2);
+	mt_set_emi_total_bw_intr_period(20);
+	mt_set_emi_bw1_intr_period(19);
+	mt_get_emi_bw1_intr_period();
+	mt_get_emi_total_bw_intr_period();
+	mt_set_emi_total_bw_intr_status(1);
+	mt_set_emi_total_bw_intr_status(0);
+	mt_set_emi_bw1_intr_status(1);
+	mt_set_emi_bw1_intr_status(0);
+	mt_get_emi_bw1();
+	mt_get_emi_total_bw();
+#endif
 	/*
 	 * make sure BW limiter counts consumed Soft-mode BW of each master
 	 */
@@ -736,6 +758,14 @@ unsigned int emi_freq_threshold(unsigned int thres_val, unsigned int src, unsign
 	unsigned long val, period, thres;
 	unsigned int interval;
 
+	if (bw_type > 2) {
+		pr_debug("\nError BWM Type =%d", bw_type);
+		return BM_ERR;
+	}
+	if (src > sizeof(peri)/sizeof(unsigned int)) {
+		pr_debug("\nError src=%d", src);
+		return BM_ERR;
+	}
 	/*formula: input_X (MB/sec) = (T x 256K) /(2.5ns x 2^17)
 	*T=(input_X (MB/sec)/256KB) *(2.5 x 10^-9 x 2^17)
 	*/
@@ -747,29 +777,20 @@ unsigned int emi_freq_threshold(unsigned int thres_val, unsigned int src, unsign
 
 	pr_debug("\nthres_val val=%d ,bw_type=%d interval=%d",
 		(int)val, bw_type, interval);
-	return 0;
+	return val;
 
-}
-
-void test_emi_freq_threshold(void)
-{
-	int i;
-
-	for (i = 0; i < 4; i++) {
-		emi_freq_threshold(3000, i, 0);
-		emi_freq_threshold(3000, i, 1);
-	}
 }
 
 unsigned int mt_set_emi_total_bw_threshold(unsigned int threshold[][3])
 {
-	int src, dst, val, freq_threshold;
+	int freq_threshold;
+	unsigned int src, dst, val;
 
 	for (src = 0; src < 4; src++)
 		for (dst = 0; dst < 3; dst++) {
 			freq_threshold = emi_freq_threshold(threshold[src][dst], src, TYPE_TOTAL);
-			if (freq_threshold > 0xff)
-				return -1;
+			if ((freq_threshold > 0xff) || (freq_threshold < 0))
+				return BM_ERR;
 			val = readl(IOMEM(EMI_BWCT1+(src*4)));
 			val  &= ~(0xff<<(8*dst));
 			val |= ((freq_threshold & 0xff) << (8*dst));
@@ -795,7 +816,7 @@ unsigned int mt_set_emi_bw1_threshold(unsigned int *threshold)
 
 	for (dst = 0; dst < 4; dst++) {
 		freq_threshold = emi_freq_threshold(threshold[dst], dst, TYPE_CG);
-		if (freq_threshold > 0xff)
+		if ((freq_threshold > 0xff) || (freq_threshold < 0))
 			return -1;
 
 		val = readl(IOMEM(EMI_BWCT1_2ND));
@@ -803,7 +824,7 @@ unsigned int mt_set_emi_bw1_threshold(unsigned int *threshold)
 		val |= (freq_threshold << (8*dst));
 		mt_reg_sync_writel(val, (EMI_BWCT1_2ND));
 	}
-	pr_debug("\nC+G EMI_BWCT1_2ND=(0x%x)\n", readl(IOMEM(EMI_BWCT1)));
+	pr_debug("\nC+G EMI_BWCT1_2ND=(0x%x)\n", readl(IOMEM(EMI_BWCT1_2ND)));
 	return BM_REQ_OK;
 }
 unsigned int mt_set_emi_bw1_axi_port(int port)

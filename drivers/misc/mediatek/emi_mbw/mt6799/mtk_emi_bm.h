@@ -156,6 +156,7 @@ enum {
 #define BM_REQ_OK           (0)
 #define BM_ERR_WRONG_REQ    (-1)
 #define BM_ERR_OVERRUN      (-2)
+#define BM_ERR (-1)
 
 
 #define TOTAL_THR_SCALE  64
@@ -212,11 +213,11 @@ extern unsigned int mt_set_emi_total_bw_intr_period(int period);
 extern unsigned int mt_set_emi_bw1_intr_period(int period);
 extern unsigned int mt_set_emi_total_bw_intr_status(bool en);
 extern unsigned int mt_set_emi_bw1_intr_status(bool en);
-extern void test_emi_freq_threshold(void);
+extern unsigned int mt_set_emi_bw1_enable(bool en);
+extern unsigned int mt_set_emi_total_bw_enable(bool en);
 extern unsigned int mt_get_emi_bw1(void);
 extern unsigned int mt_get_emi_total_bw(void);
 extern unsigned int mt_get_emi_bw1_intr_period(void);
 extern unsigned int mt_get_emi_total_bw_intr_period(void);
-
 
 #endif				/* !__MT_EMI_BW_H__ */
