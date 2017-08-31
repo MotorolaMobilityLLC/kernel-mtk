@@ -554,8 +554,10 @@ void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) 
 
 }
 
+#define ENABLE_ALL_OC_IRQ 0
+
 /* register general oc interrupt handler */
-void pmic_register_oc_interrupt_callback(unsigned int intNo)
+void pmic_register_oc_interrupt_callback(PMIC_IRQ_ENUM intNo)
 {
 	unsigned int shift, no;
 
@@ -571,6 +573,17 @@ void pmic_register_oc_interrupt_callback(unsigned int intNo)
 
 	interrupts[shift].interrupts[no].oc_callback = oc_int_handler;
 
+}
+
+/* register and enable all oc interrupt */
+void register_all_oc_interrupts(void)
+{
+	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
+
+	for (; oc_interrupt <= INT_VS2_PREOC; oc_interrupt++) {
+		pmic_register_oc_interrupt_callback(oc_interrupt);
+		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+	}
 }
 
 void PMIC_EINT_SETTING(void)
@@ -624,6 +637,10 @@ void PMIC_EINT_SETTING(void)
 #else
 	/* pmic_enable_interrupt(50, 1, "PMIC"); */
 	/* pmic_enable_interrupt(51, 1, "PMIC"); */
+#endif
+
+#if ENABLE_ALL_OC_IRQ
+	register_all_oc_interrupts();
 #endif
 
 	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
