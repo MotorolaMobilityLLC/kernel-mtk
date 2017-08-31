@@ -3663,22 +3663,19 @@ static void testcase_basic_logic(void)
 
 static void testcase_basic_jump_c(void)
 {
-	struct cmdqRecStruct *handle;
-	const unsigned long row_in_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_PQ_COLOR);
-	const unsigned long result_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_2D_SHARPNESS_0);
-	const uint32_t row_in_reg_pa = CMDQ_GPR_R32_PA(CMDQ_DATA_REG_PQ_COLOR);
-	const uint32_t result_reg_pa = CMDQ_GPR_R32_PA(CMDQ_DATA_REG_2D_SHARPNESS_0);
-	const uint32_t max_rows = 10;
-	const uint32_t max_cols = 12;
-	uint32_t row_in_value = 0, col_in_value = 0;
-	uint32_t test_result, expect_result, expect_temp_sum;
+	struct cmdqRecStruct *handle = NULL;
+	struct TaskStruct *task = NULL;
+	const u32 max_rows = 10;
+	const u32 max_cols = 12;
+	u32 row_in_value = 0, col_in_value = 0;
+	u32 test_result, expect_result, expect_temp_sum;
 	CMDQ_VARIABLE cmdq_row, cmdq_col, cmdq_temp_sum, cmdq_result;
+	cmdqBackupSlotHandle slot_handle;
 
 	CMDQ_MSG("%s\n", __func__);
 
-	CMDQ_REG_SET32(row_in_reg, row_in_value);
-
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_alloc_mem(&slot_handle, 1);
 
 	/* test logic assign */
 	cmdq_task_reset(handle);
@@ -3687,12 +3684,11 @@ static void testcase_basic_jump_c(void)
 	cmdq_op_init_variable(&cmdq_temp_sum);
 	cmdq_op_init_variable(&cmdq_result);
 
-	cmdq_op_read_reg(handle, row_in_reg_pa, &cmdq_row, ~0x0);
-	cmdq_op_assign(handle, &cmdq_result, 0);
-
+	cmdq_op_assign(handle, &cmdq_row, row_in_value);
+	cmdq_op_assign(handle, &cmdq_result, 1);
 	cmdq_op_while(handle, cmdq_row, CMDQ_LESS_THAN, max_rows);
 		cmdq_op_assign(handle, &cmdq_col, 0);
-
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
 		cmdq_op_while(handle, cmdq_col, CMDQ_LESS_THAN, max_cols);
 			cmdq_op_add(handle, &cmdq_col, cmdq_col, 1);
 			cmdq_op_if(handle, cmdq_col, CMDQ_GREATER_THAN_AND_EQUAL, 10);
@@ -3706,21 +3702,23 @@ static void testcase_basic_jump_c(void)
 				cmdq_op_add(handle, &cmdq_result, cmdq_result, cmdq_temp_sum);
 			cmdq_op_end_if(handle);
 		cmdq_op_end_while(handle);
-
 		cmdq_op_add(handle, &cmdq_row, cmdq_row, 1);
 	cmdq_op_end_while(handle);
+	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
 
-	cmdq_op_write_reg(handle, result_reg_pa, cmdq_result, ~0x0);
+	cmdq_op_finalize_command(handle, false);
+	_test_submit_async(handle, &task);
+	cmdq_core_dump_task_mem(task);
+	cmdqCoreWaitAndReleaseTask(task, 500);
 
-	cmdq_task_flush_async(handle);
-
-	cmdq_task_dump_command(handle);
+	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
 
 	/* value check */
-	test_result = CMDQ_REG_GET32(result_reg);
-	expect_result = 0;
+	expect_result = 1;
 	while (row_in_value < max_rows) {
 		col_in_value = 0;
+
+		expect_result = expect_result + 1;
 
 		while (col_in_value < max_cols) {
 			col_in_value++;
@@ -3741,13 +3739,88 @@ static void testcase_basic_jump_c(void)
 
 	if (test_result != expect_result) {
 		/* test fail */
-		CMDQ_ERR("TEST jump_c FAIL: value is 0x%08x, not 0x%08x\n",
-			test_result, expect_result);
+		CMDQ_TEST_FAIL("%s value is 0x%08x, not 0x%08x\n",
+			__func__, test_result, expect_result);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testcase_long_jump_c(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	const u32 init_val = 1, post_val = 3;
+	u32 test_result, i;
+	CMDQ_VARIABLE cmdq_result;
+	cmdqBackupSlotHandle slot_handle;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* Test jump_c if cross page */
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_alloc_mem(&slot_handle, 1);
+
+	cmdq_op_init_variable(&cmdq_result);
+	cmdq_op_assign(handle, &cmdq_result, init_val);
+	cmdq_op_if(handle, cmdq_result, CMDQ_CONDITION_NOT_EQUAL, init_val);
+	/* this part of instruction should not execute */
+	for (i = 0; i < CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE; i++)
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+	cmdq_op_end_if(handle);
+	/* add more post instruction */
+	for (i = 0; i < post_val; i++)
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
+
+	cmdq_task_flush_async(handle);
+	/* cmdq_task_dump_command(handle); */
+	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
+
+	if (test_result != init_val + post_val) {
+		/* test fail */
+		CMDQ_TEST_FAIL("%s jump_c if, value is 0x%08x, not 0x%08x\n",
+			__func__, test_result, init_val + 1);
 	}
 
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	/* Test jump_c while and continue cross page */
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+
+	cmdq_op_init_variable(&cmdq_result);
+	cmdq_op_assign(handle, &cmdq_result, init_val);
+	cmdq_op_while(handle, cmdq_result, CMDQ_LESS_THAN_AND_EQUAL, init_val);
+	cmdq_op_if(handle, cmdq_result, CMDQ_GREATER_THAN, init_val);
+	/* this part of instruction should not execute */
+	for (i = 0; i < CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE; i++)
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+	cmdq_op_end_if(handle);
+	/* add more post instruction */
+	for (i = 0; i < post_val; i++)
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
+	cmdq_op_continue(handle);
+	cmdq_op_end_while(handle);
+	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
+	cmdq_task_flush_async(handle);
+	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
+
+	if (test_result != init_val + post_val) {
+		/* test fail */
+		CMDQ_TEST_FAIL("%s jump_c while and break, value is 0x%08x, not 0x%08x\n",
+			__func__, test_result, init_val + 1);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_basic_delay(void)
@@ -4807,6 +4880,7 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 125:
 		testcase_basic_jump_c();
+		testcase_long_jump_c();
 		break;
 	case 124:
 		testcase_basic_logic();
