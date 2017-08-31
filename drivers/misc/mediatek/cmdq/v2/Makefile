@@ -62,7 +62,7 @@ ifeq ($(CONFIG_MTK_CMDQ_TAB), y)
 #ccflags-y += -DCMDQ_USE_LEGACY
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl \
-             -I$(srctree)/include/trustzone
+             -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
 
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT

@@ -238,8 +238,8 @@ static void testcase_async_suspend_resume(void)
 		cmdq_task_reset(hReqA);
 		cmdq_task_set_secure(hReqA, gCmdqTestSecure);
 		cmdq_op_wait(hReqA, CMDQ_SYNC_TOKEN_USER_0);
-		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		ret = _test_submit_async(hReqA, &pTaskA);
 
@@ -299,7 +299,7 @@ static void testcase_errors(void)
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_op_wait(hReq, CMDQ_EVENT_MDP_RSZ0_EOF);
-		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8);	/* JUMP to connect tasks */
+		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8, 0, 0);	/* JUMP to connect tasks */
 		ret = _test_submit_async(hReq, &pTask);
 		msleep_interruptible(500);
 		ret = cmdqCoreWaitAndReleaseTask(pTask, 8000);
@@ -320,7 +320,7 @@ static void testcase_errors(void)
 		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
-		cmdq_append_command(hReq, CMDQ_CODE_JUMP, -1, 0);
+		cmdq_append_command(hReq, CMDQ_CODE_JUMP, -1, 0, 0, 0);
 		cmdq_task_flush(hReq);
 
 		CMDQ_MSG("================= INVALID INSTR: UNKNOWN OP(0x%x) =================\n",
@@ -403,15 +403,15 @@ static void testcase_async_request(void)
 		cmdq_task_reset(hReqA);
 		cmdq_task_set_secure(hReqA, gCmdqTestSecure);
 		cmdq_op_wait(hReqA, CMDQ_SYNC_TOKEN_USER_0);
-		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		cmdq_task_create(CMDQ_SCENARIO_SUB_DISP, &hReqB);
 		cmdq_task_reset(hReqB);
 		cmdq_task_set_secure(hReqB, gCmdqTestSecure);
 		cmdq_op_wait(hReqB, CMDQ_SYNC_TOKEN_USER_1);
-		cmdq_append_command(hReqB, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqB, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqB, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqB, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		ret = _test_submit_async(hReqA, &pTaskA);
 		ret = _test_submit_async(hReqB, &pTaskB);
@@ -768,7 +768,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 0\n");
@@ -777,7 +777,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 1\n");
@@ -785,7 +785,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 500; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 2\n");
@@ -823,7 +823,7 @@ static void testcase_prefetch_scenarios(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < INSTRUCTION_COUNT; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 	}
@@ -2702,7 +2702,7 @@ static void testcase_error_irq(void)
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 	handle->engineFlag = (1LL << CMDQ_ENG_MDP_RDMA0);
-	cmdq_append_command(handle, CMDQ_CODE_JUMP, -1, 0);
+	cmdq_append_command(handle, CMDQ_CODE_JUMP, -1, 0, 0, 0);
 	cmdq_task_dump_command(handle);
 	cmdq_task_flush_async(handle);
 
