@@ -2625,8 +2625,22 @@ int msdc_if_send_stop(struct msdc_host *host,
 }
 
 #ifdef CONFIG_MTK_HW_FDE_AES
-static int msdc_check_fde_enable(struct mmc_queue_req *mq_rq)
+static int msdc_check_fde_enable(struct mmc_queue_req *mq_rq, int id, u32 opcode)
 {
+	if (fde_aes_check_cmd(FDE_AES_EN_FDE, 1, id)) {
+		FDEERR("%s manual control FDE %d\n", __func__, fde_aes_get_fde());
+		return fde_aes_get_fde();
+	}
+
+	if (fde_aes_check_cmd(FDE_AES_EN_RAW, fde_aes_get_raw(), id)) {
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		if (check_mmc_cmd46(opcode))
+			return 0;
+#endif
+		if (check_mmc_cmd1718(opcode))
+			return 0;
+	}
+
 	if (!mq_rq || !mq_rq->req || !mq_rq->req->bio)
 		return 0;
 
@@ -2640,12 +2654,17 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 	struct mmc_blk_request *brq;
 	struct mmc_queue_req *mq_rq;
 	void __iomem *base = host->base;
+	u32	blk_addr, blk_addr_e;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	struct mmc_async_req *areq;
 	unsigned int task_id;
 #endif
 
 	cmd = mrq->cmd;
+
+	if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
+		FDEERR("%s MSDC%d CMD%d\n", __func__, host->id, cmd->opcode);
+
 	BUG_ON(MSDC_READ32(MSDC_AES_SEL));
 
 	if (host->hw == NULL)
@@ -2662,14 +2681,32 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 			areq = mmc->areq_que[task_id];
 			mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
 			if (mq_rq != NULL) {
-				if (msdc_check_fde_enable(mq_rq)) { /* Encrypted */
+				if (!mmc_card_blockaddr(mmc->card))
+					blk_addr = mq_rq->brq.que.arg >> 9;
+				else
+					blk_addr = mq_rq->brq.que.arg;
+				if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
+					blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
+					if (blk_addr < fde_aes_get_range_start())
+						FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
+							__func__, host->id, blk_addr, blk_addr_e);
+					if (blk_addr_e > fde_aes_get_range_end())
+						FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
+							__func__, host->id, blk_addr, blk_addr_e);
+				}
+				if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
+					FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
+						__func__, host->id, cmd->opcode,
+						blk_addr, host->dma.xfersz >> 9,
+						msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
+				if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
 					/* Check data size with 16bytes */
 					BUG_ON(host->dma.xfersz & 0xf);
 					/* Check data addressw with 16bytes alignment */
 					BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
 					brq = &mq_rq->brq;
-					fde_aes_exec(host->id, brq->que.arg, cmd->opcode);
-					MSDC_SET_BIT32(MSDC_AES_SEL, 0x120 | host->id);
+					fde_aes_exec(host->id, blk_addr, cmd->opcode);
+					MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
 					return;
 				}
 			}
@@ -2682,13 +2719,31 @@ static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
 		brq = container_of(mrq, struct mmc_blk_request, mrq);
 		mq_rq = container_of(brq, struct mmc_queue_req, brq);
 		if (mq_rq != NULL) {
-			if (msdc_check_fde_enable(mq_rq)) { /* Encrypted */
+			if (!mmc_card_blockaddr(mmc->card))
+				blk_addr = cmd->arg >> 9;
+			else
+				blk_addr = cmd->arg;
+			if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
+				blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
+				if (blk_addr < fde_aes_get_range_start())
+					FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
+						__func__, host->id, blk_addr, blk_addr_e);
+				if (blk_addr_e > fde_aes_get_range_end())
+					FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
+						__func__, host->id, blk_addr, blk_addr_e);
+			}
+			if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
+				FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
+					__func__, host->id, cmd->opcode,
+					blk_addr, host->dma.xfersz >> 9,
+					msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
+			if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
 				/* Check data size with 16bytes */
 				BUG_ON(host->dma.xfersz & 0xf);
 				/* Check data addressw with 16bytes alignment */
 				BUG_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
-				fde_aes_exec(host->id, cmd->arg, cmd->opcode);
-				MSDC_SET_BIT32(MSDC_AES_SEL, 0x120 | host->id);
+				fde_aes_exec(host->id, blk_addr, cmd->opcode);
+				MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
 				return;
 			}
 		}

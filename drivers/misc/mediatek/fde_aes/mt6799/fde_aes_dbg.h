@@ -16,9 +16,22 @@
 
 #include <linux/types.h>
 
+enum {
+	FDE_AES_NORMAL = 0,
+	FDE_AES_WR_REG  = 1,
+	FDE_AES_DUMP = 2,
+	FDE_AES_DUMP_ALL = 3,
+	FDE_AES_EN_MSG = 4,
+	FDE_AES_EN_FDE = 5,
+	FDE_AES_EN_RAW = 6,
+	FDE_AES_CK_RANGE = 7,
+	FDE_AES_EN_SW_CRYPTO = 8,
+};
+
 /* ============================================================================== */
 /* FDE_AES_DBG Exported Function */
 /* ============================================================================== */
 int fde_aes_proc_init(void);
+u32 fde_aes_check_cmd(u32 cmd, u32 p1, u32 p2);
 
 #endif /* __MT_FDE_AES_DBG_H__ */

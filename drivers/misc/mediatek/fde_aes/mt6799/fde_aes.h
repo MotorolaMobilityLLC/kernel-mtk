@@ -33,8 +33,10 @@
 #define FDE_ENODEV							(ENODEV) /* No such device : 19 */
 #define FDE_EINVAL                          (EINVAL) /* Invalid argument : 22 */
 
-#define FDE_MSDC0	0 /* eMMC */
-#define FDE_MSDC1	1 /* SD */
+
+#define FDE_MSDC0		0	/* eMMC */
+#define FDE_MSDC1		1	/* SD */
+#define FDE_MSDC_MAX	15	/* Others */
 
 /******************************************register operation***********************************/
 /* REGISTER */
@@ -81,27 +83,51 @@ typedef struct mt_fde_aes_t {
 	u8						context_id;
 	u8						context_bp;
 	u8						sector_size; /* 1:512B 2:1024B 3:2048B 4:4096B */
-	u8						reserve;
+	u8						status;		 /* Enable/Disable */
 	/* CONTEXT_WORD1 0x8 */
 	u32						sector_offset_L;
 	u32						sector_offset_H;
 	void __iomem            *base;
 	spinlock_t              lock;
-	u32						status;		/* Enable/Disable */
+	/* TEST CASE */
 	u32						test_case;
-	u32						hw_crypto;
+	u8						hw_crypto;
 	u8						dev_num[2];
-	u8						reserved[2];
+	u8						msdc_id;
+	u8						log;
+	u8						enable_fde;
+	u8						raw;
+	u8						chk_range;
+	u32						chk_start;
+	u32						chk_end;
+	u8						sw_crypto;
+	u8						reserve[3];
 } mt_fde_aes_context;
 
 /* ============================================================================== */
 /* FDE_AES Exported Function */
 /* ============================================================================== */
 void __iomem *fde_aes_get_base(void);
-u32 fde_aes_get_hw(void);
+u8 fde_aes_get_hw(void);
 u8 fde_aes_get_dev(u8 id);
 void fde_aes_set_case(u32 test_case);
 u32 fde_aes_get_case(void);
+void fde_aes_set_log(u8 enable);
+u8 fde_aes_get_log(void);
+void fde_aes_set_msdc_id(u8 id);
+u8 fde_aes_get_msdc_id(void);
+void fde_aes_set_fde(u8 enable);
+u8 fde_aes_get_fde(void);
+void fde_aes_set_raw(u8 enable);
+u8 fde_aes_get_raw(void);
+void fde_aes_set_range(u8 enable);
+u8 fde_aes_get_range(void);
+void fde_aes_set_range_start(u32 start);
+u32 fde_aes_get_range_start(void);
+void fde_aes_set_range_end(u32 end);
+u32 fde_aes_get_range_end(void);
+void fde_aes_set_sw(u8 enable);
+u8 fde_aes_get_sw(void);
 
 s32 fde_aes_check_enable(s32 dev_num, u8 bEnable);
 s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode);

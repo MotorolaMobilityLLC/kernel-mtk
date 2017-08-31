@@ -40,6 +40,11 @@
 #include "dbg.h"
 #include "autok_dvfs.h"
 
+#ifdef CONFIG_MTK_HW_FDE_AES
+#include <fde_aes.h>
+#include <fde_aes_dbg.h>
+#endif
+
 #ifdef CONFIG_MTK_ENG_BUILD
 #define MTK_EMMC_CQ_DEBUG
 #endif
@@ -1026,6 +1031,16 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 		for (forIndex = 0; forIndex < MSDC_MULTI_BUF_LEN; forIndex++)
 			*(wPtr + forIndex) = wData[forIndex % wData_len];
 	}
+
+#ifdef CONFIG_MTK_HW_FDE_AES
+	if (fde_aes_check_cmd(FDE_AES_EN_RAW, fde_aes_get_raw(), host_num)) {
+		fde_aes_set_msdc_id(host_num & 0xff);
+		if (read)
+			fde_aes_set_fde(0);
+		else
+			fde_aes_set_fde(1);
+	}
+#endif
 
 	msdc_cmd.arg = address;
 

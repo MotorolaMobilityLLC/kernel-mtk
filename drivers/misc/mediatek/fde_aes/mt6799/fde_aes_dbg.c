@@ -17,6 +17,7 @@
 #include <linux/uaccess.h>
 #include <mt-plat/mtk_secure_api.h>
 #include "fde_aes.h"
+#include "fde_aes_dbg.h"
 
 static s32 fde_aes_dump_reg(void)
 {
@@ -63,106 +64,182 @@ static s32 fde_aes_dump_reg(void)
 	return FDE_OK;
 }
 
-static void fde_aes_test_case(u32 testcase)
+u32 fde_aes_check_cmd(u32 cmd, u32 p1, u32 p2)
+{
+	u32 ret = 0;
+
+	if (fde_aes_get_case() == cmd) {
+
+		switch (cmd) {
+
+		case FDE_AES_NORMAL:
+		case FDE_AES_WR_REG:
+		case FDE_AES_DUMP:
+		case FDE_AES_DUMP_ALL:
+			ret = 0;
+			break;
+
+		case FDE_AES_EN_MSG:
+		case FDE_AES_EN_FDE:
+		case FDE_AES_EN_RAW:
+		case FDE_AES_CK_RANGE:
+			if (p1 == 1 && fde_aes_get_msdc_id() == p2)
+				ret = 1;
+			break;
+
+		case FDE_AES_EN_SW_CRYPTO:
+			if (p1 == 1)
+				ret = 1;
+			break;
+
+		default:
+			FDEERR("Err Command %d\n", cmd);
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static void fde_aes_test_case(char *buf)
 {
 	void __iomem *FDE_AES_CORE_BASE;
-	u32 status = 0;
+	int sscanf_num;
+	int cmd, p1, p2, p3, p4;
+	int status;
+
+	cmd = p1 = p2 = p3 = p4 = -1;
+	status = 0;
+
+	sscanf_num = sscanf(buf, "%x %x %x %x", &cmd, &p1, &p2, &p3);
+
+	if (cmd == -1)
+		return;
 
 	FDE_AES_CORE_BASE = fde_aes_get_base();
 	if (!FDE_AES_CORE_BASE)
 		return;
 
-	FDEERR("Test Case %d\n", testcase);
-	fde_aes_set_case(testcase);
+	FDEERR("Command %d Para %d %d %d %d\n", cmd, p1, p2, p3, p4);
+	fde_aes_set_case(cmd);
+	fde_aes_set_msdc_id(FDE_MSDC_MAX);
 
-	switch (testcase) {
+	switch (cmd) {
 
-	case 0: /* Normal */
+	case FDE_AES_NORMAL:
 		FDEERR("Normal Test\n");
 		break;
 
-	case 1: /* Normal write/read register */
+	case FDE_AES_WR_REG:
 		FDEERR("Normal write/read secure only register\n");
 		FDE_WRITE32(REG_COM_A, 0xffffffff);
 		if (FDE_READ32(REG_COM_A))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_B, 0xffffffff);
 		if (FDE_READ32(REG_COM_B))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_C, 0xffffffff);
 		if (FDE_READ32(REG_COM_C))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_D, 0xffffffff);
 		if (FDE_READ32(REG_COM_D))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_E, 0xffffffff);
 		if (FDE_READ32(REG_COM_E))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_F, 0xffffffff);
 		if (FDE_READ32(REG_COM_F))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_G, 0xffffffff);
 		if (FDE_READ32(REG_COM_G))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_H, 0xffffffff);
 		if (FDE_READ32(REG_COM_H))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_I, 0xffffffff);
 		if (FDE_READ32(REG_COM_I))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_J, 0xffffffff);
 		if (FDE_READ32(REG_COM_J))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_K, 0xffffffff);
 		if (FDE_READ32(REG_COM_K))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_L, 0xffffffff);
 		if (FDE_READ32(REG_COM_L))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_M, 0xffffffff);
 		if (FDE_READ32(REG_COM_M))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_N, 0xffffffff);
 		if (FDE_READ32(REG_COM_N))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_O, 0xffffffff);
 		if (FDE_READ32(REG_COM_O))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_P, 0xffffffff);
 		if (FDE_READ32(REG_COM_P))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_Q, 0xffffffff);
 		if (FDE_READ32(REG_COM_Q))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_R, 0xffffffff);
 		if (FDE_READ32(REG_COM_R))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_S, 0xffffffff);
 		if (FDE_READ32(REG_COM_S))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_T, 0xffffffff);
 		if (FDE_READ32(REG_COM_T))
-			status |= testcase;
+			status |= cmd;
 		FDE_WRITE32(REG_COM_U, 0xffffffff);
 		if (FDE_READ32(REG_COM_U))
-			status |= testcase;
-		FDEERR("Test Case-%d %s\n", testcase, status == 0 ? "PASS" : "FAIL");
+			status |= cmd;
+		FDEERR("Test Case-%d %s\n", cmd, status == 0 ? "PASS" : "FAIL");
 		break;
 
-	case 2:
+	case FDE_AES_DUMP:
 		fde_aes_dump_reg();
 		break;
 
-	case 10:
+	case FDE_AES_DUMP_ALL:
 		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0, 0xa, 0);
 		break;
 
-	case 11:
-		FDEERR("FDE_AES check storage\n");
+	case FDE_AES_EN_MSG:
+		FDEERR("FDE_AES enable log\n");
+		fde_aes_set_log(p1);
+		fde_aes_set_msdc_id(p2);
+		break;
+
+	case FDE_AES_EN_FDE:
+		FDEERR("FDE_AES enable FDE\n");
+		fde_aes_set_fde(p1);
+		fde_aes_set_msdc_id(p2);
+		break;
+
+	case FDE_AES_EN_RAW:
+		FDEERR("FDE_AES enable raw\n");
+		fde_aes_set_raw(p1);
+		fde_aes_set_msdc_id(p2);
+		break;
+
+	case FDE_AES_CK_RANGE:
+		FDEERR("FDE_AES enable raw\n");
+		fde_aes_set_range(p1);
+		fde_aes_set_msdc_id(p2);
+		fde_aes_set_range_start(p3);
+		fde_aes_set_range_end(p4);
+		break;
+
+	case FDE_AES_EN_SW_CRYPTO:
+		FDEERR("FDE_AES enable sw crypto\n");
+		fde_aes_set_sw(p1);
+		fde_aes_set_msdc_id(p2);
 		break;
 
 	default:
-		FDEERR("Err Case %d\n", testcase);
+		FDEERR("Err Command %d\n", cmd);
 		break;
 	}
 }
@@ -172,7 +249,6 @@ static ssize_t fde_aes_proc_write(struct file *file, const char __user *buffer,
 {
 	char buf[16];
 	size_t len = count;
-	int n;
 
 	if (len >= sizeof(buf))
 		len = sizeof(buf) - 1;
@@ -182,24 +258,49 @@ static ssize_t fde_aes_proc_write(struct file *file, const char __user *buffer,
 
 	buf[len] = '\0';
 
-	if (kstrtol(buf, 10, (long int *)&n))
-		return -EINVAL;
-
-	if (n < 0 || n >= 0xff)
-		return -EFAULT;
-
-	FDEERR("parameter %d\n", n);
-	fde_aes_test_case(n);
+	fde_aes_test_case(buf);
 
 	return len;
 }
 
 static int fde_aes_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "MTK HW FDE_AES : %s\n", fde_aes_get_hw() ? "Enable" : "Disable");
+	seq_puts(m, "\nMTK HW FDE_AES Command :\n");
+	seq_puts(m, "\t echo cmd p1 p2 p3 p4 > /proc/fde_aes\n");
+
+	seq_puts(m, "Normal case :\n");
+	seq_printf(m, "\t echo %d > /proc/fde_aes\n", FDE_AES_NORMAL);
+
+	seq_puts(m, "Write register test :\n");
+	seq_printf(m, "\t echo %d > /proc/fde_aes\n", FDE_AES_WR_REG);
+
+	seq_puts(m, "Dump registers :\n");
+	seq_printf(m, "\t echo %d > /proc/fde_aes\n", FDE_AES_DUMP);
+
+	seq_puts(m, "Dump all registers :\n");
+	seq_printf(m, "\t echo %d > /proc/fde_aes\n", FDE_AES_DUMP_ALL);
+
+	seq_puts(m, "Enable FDE message [enable] [msdc-id] :\n");
+	seq_printf(m, "\t echo %d 1 0 > /proc/fde_aes\n", FDE_AES_EN_MSG);
+
+	seq_puts(m, "Enable FDE [enable] [msdc-id] :\n");
+	seq_printf(m, "\t echo %d 1 0 > /proc/fde_aes\n", FDE_AES_EN_FDE);
+
+	seq_puts(m, "Read cipher data [enable] [msdc-id] :\n");
+	seq_printf(m, "\t echo %d 1 0 > /proc/fde_aes\n", FDE_AES_EN_RAW);
+
+	seq_puts(m, "Check read/write range [enable] [msdc-id] [start-block] [end-block] :\n");
+	seq_printf(m, "\t echo %d 1 1 8800 3AAFDE > /proc/fde_aes\n", FDE_AES_CK_RANGE);
+
+	seq_puts(m, "Enable sw crypto [enable] :\n");
+	seq_printf(m, "\t echo %d 1 > /proc/fde_aes\n", FDE_AES_EN_SW_CRYPTO);
+
+	seq_puts(m, "Please input in HEX\n");
+
+	seq_printf(m, "\nMTK HW FDE_AES : %s\n", fde_aes_get_hw() ? "Enable" : "Disable");
 	seq_printf(m, "\teMMC:%s SD:%s\n", fde_aes_get_dev(FDE_MSDC0) ? "Enable" : "Disable",
 					fde_aes_get_dev(FDE_MSDC1) ? "Enable" : "Disable");
-	seq_printf(m, "\tTest Case %d\n", fde_aes_get_case());
+	seq_printf(m, "\tTest Case %d\n\n", fde_aes_get_case());
 
 	return 0;
 }

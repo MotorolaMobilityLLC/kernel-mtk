@@ -30,7 +30,7 @@ void __iomem *fde_aes_get_base(void)
 	return fde_aes_context.base;
 }
 
-u32 fde_aes_get_hw(void)
+u8 fde_aes_get_hw(void)
 {
 	return fde_aes_context.hw_crypto;
 }
@@ -48,6 +48,86 @@ void fde_aes_set_case(u32 test_case)
 u32 fde_aes_get_case(void)
 {
 	return fde_aes_context.test_case;
+}
+
+void fde_aes_set_log(u8 enable)
+{
+	fde_aes_context.log = enable;
+}
+
+u8 fde_aes_get_log(void)
+{
+	return fde_aes_context.log;
+}
+
+void fde_aes_set_msdc_id(u8 id)
+{
+	fde_aes_context.msdc_id = id;
+}
+
+u8 fde_aes_get_msdc_id(void)
+{
+	return fde_aes_context.msdc_id;
+}
+
+void fde_aes_set_fde(u8 enable)
+{
+	fde_aes_context.enable_fde = enable;
+}
+
+u8 fde_aes_get_fde(void)
+{
+	return fde_aes_context.enable_fde;
+}
+
+void fde_aes_set_raw(u8 enable)
+{
+	fde_aes_context.raw = enable;
+}
+
+u8 fde_aes_get_raw(void)
+{
+	return fde_aes_context.raw;
+}
+
+void fde_aes_set_range(u8 enable)
+{
+	fde_aes_context.chk_range = enable;
+}
+
+u8 fde_aes_get_range(void)
+{
+	return fde_aes_context.chk_range;
+}
+
+void fde_aes_set_range_start(u32 start)
+{
+	fde_aes_context.chk_start = start;
+}
+
+u32 fde_aes_get_range_start(void)
+{
+	return fde_aes_context.chk_start;
+}
+
+void fde_aes_set_range_end(u32 end)
+{
+	fde_aes_context.chk_end = end;
+}
+
+u32 fde_aes_get_range_end(void)
+{
+	return fde_aes_context.chk_end;
+}
+
+void fde_aes_set_sw(u8 enable)
+{
+	fde_aes_context.sw_crypto = enable;
+}
+
+u8 fde_aes_get_sw(void)
+{
+	return fde_aes_context.sw_crypto;
 }
 
 static s32 fde_aes_set_context(void)
@@ -76,8 +156,15 @@ static s32 fde_aes_set_context(void)
 	FDE_WRITE32(CONTEXT_WORD1, fde_aes_context.sector_offset_L);
 	FDE_WRITE32(CONTEXT_WORD3, fde_aes_context.sector_offset_H);
 
-	fde_aes_context.hw_crypto = 1;
 	fde_aes_context.dev_num[fde_aes_context.context_id] = 1;
+	if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), fde_aes_context.context_id))
+		FDEERR("%s MSDC%d Size %d BP %d H 0x%x L 0x%x\n",
+			__func__,
+			fde_aes_context.context_id,
+			fde_aes_context.sector_size,
+			fde_aes_context.context_bp,
+			fde_aes_context.sector_offset_H,
+			fde_aes_context.sector_offset_L);
 
 	return FDE_OK;
 }
@@ -148,11 +235,12 @@ s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 	fde_aes_context.sector_offset_L = blkcnt;
 	fde_aes_context.sector_offset_H = 0;
 
+	if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), dev_num))
+		FDEERR("%s MSDC%d CMD%d block 0x%x\n", __func__, dev_num, opcode, blkcnt);
+
 	status = fde_aes_set_context();
 
 	spin_unlock(&fde_aes_context.lock);
-
-	FDELOG("MSDC%d block 0x%x CMD%d exec\n", dev_num, blkcnt, opcode);
 
 	return status;
 }
@@ -196,12 +284,16 @@ static int __init fde_aes_init(void)
 		ret = -FDE_ENODEV;
 	}
 
+	if (!ret)
+		fde_aes_context.hw_crypto = 1;
+
 	FDELOG("init status %s(%d)\n", ret?"fail":"pass", ret);
 	return ret;
 }
 
 static void __exit fde_aes_exit(void)
 {
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0xb, 0, 0);
 	FDELOG("exit\n");
 }
 

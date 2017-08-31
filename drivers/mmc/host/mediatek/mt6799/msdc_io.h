@@ -25,6 +25,7 @@
 
 #ifdef CONFIG_MTK_HW_FDE_AES
 #include <fde_aes.h>
+#include <fde_aes_dbg.h>
 #endif
 
 extern const struct of_device_id msdc_of_ids[];
