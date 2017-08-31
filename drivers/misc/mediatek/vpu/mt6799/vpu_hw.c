@@ -74,8 +74,9 @@ static vpu_id_t current_algo;
 
 #ifndef MTK_VPU_FPGA_PORTING
 /* regulator */
+#ifdef VIMVO_CTRL_ENABLE
 static struct regulator *reg_vimvo;
-
+#endif
 /* clock */
 static struct clk *clk_top_dsp_sel;
 static struct clk *clk_top_ipu_if_sel;
@@ -163,9 +164,11 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 {
 	int ret = 0;
 
+#ifdef VIMVO_CTRL_ENABLE
 	reg_vimvo = regulator_get(pdev, "vimvo");
 	ret = IS_ERR(reg_vimvo);
 	CHECK_RET("can not find regulator: vimvo\n");
+#endif
 
 #define PREPARE_VPU_MTCMOS(clk) \
 	{ \
@@ -221,8 +224,9 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 		PREPARE_VPU_CLK(clk_top_mmpll_d5);
 	}
 #undef PREPARE_VPU_CLK
-
+#ifdef VIMVO_CTRL_ENABLE
 out:
+#endif
 	return ret;
 }
 
@@ -276,6 +280,7 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 	CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
 
+#ifdef VIMVO_CTRL_ENABLE
 	/* set VSRAM_CORE to 1.0V */
 	vpu_trace_begin("vsram_vcore_tracking:disable");
 	ret = enable_vsram_vcore_hw_tracking(0);
@@ -295,10 +300,12 @@ static int vpu_enable_regulator_and_clock(void)
 	ret = regulator_enable(reg_vimvo);
 	vpu_trace_end();
 	CHECK_RET("fail to enable regulator: vimvo\n");
+#endif
 
 	ret = (opps.vimvo.index >= opps.vimvo.count) ? -EINVAL : 0;
 	CHECK_RET("vimvo has wrong voltage, step=%d\n", opps.vimvo.index);
 
+#ifdef VIMVO_CTRL_ENABLE
 	vpu_trace_begin("vimvo:set_voltage");
 	ret = regulator_set_voltage(reg_vimvo,
 		opps.vimvo.values[opps.vimvo.index],
@@ -306,7 +313,7 @@ static int vpu_enable_regulator_and_clock(void)
 	vpu_trace_end();
 	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", opps.vimvo.index, ret);
 	ndelay(70);
-
+#endif
 #define ENABLE_VPU_MTCMOS(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -367,6 +374,18 @@ out:
 	return ret;
 }
 
+#ifndef VIMVO_CTRL_ENABLE
+int vpu_get_vimvo_parameter(uint32_t *values)
+{
+	int ret = 0;
+
+	ret = (opps.vimvo.index >= opps.vimvo.count) ? -EINVAL : 0;
+
+	*values = opps.vimvo.values[opps.vimvo.index];
+
+	return ret;
+}
+#endif
 
 
 static int vpu_disable_regulator_and_clock(void)
@@ -416,12 +435,13 @@ static int vpu_disable_regulator_and_clock(void)
 	DISABLE_VPU_MTCMOS(mtcmos_mm0);
 #undef DISABLE_VPU_MTCMOS
 
+#ifdef VIMVO_CTRL_ENABLE
 	ret = enable_vimvo_lp_mode(1);
 	CHECK_RET("fail to switch vimvo to sleep mode!\n");
 
 	ret = enable_vsram_vcore_hw_tracking(1);
 	CHECK_RET("fail to enable vsram_core tracking!\n");
-
+#endif
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_UNREQUEST);
 	CHECK_RET("fail to unrequest vcore!\n");
 
@@ -469,6 +489,7 @@ static void vpu_unprepare_regulator_and_clock(void)
 	UNPREPARE_VPU_CLK(clk_mm_smi_common);
 	UNPREPARE_VPU_CLK(clk_mm_smi_common_2x);
 #undef UNPREPARE_VPU_CLK
+#ifdef VIMVO_CTRL_ENABLE
 
 	if (reg_vimvo != NULL)
 		regulator_put(reg_vimvo);
@@ -477,6 +498,7 @@ static void vpu_unprepare_regulator_and_clock(void)
 		LOG_ERR("fail to switch vimvo to sleep mode!\n");
 
 	ndelay(95);
+#endif
 }
 #endif
 
