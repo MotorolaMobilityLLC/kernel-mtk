@@ -196,9 +196,9 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 	if (pCamCalList != NULL && pCamCalFunc != NULL) {
 		CAM_CALDB("pCamCalList!=NULL && pCamCalFunc!= NULL\n");
 		for (i = 0; pCamCalList[i].sensorID != 0; i++) {
-			CAM_CALDB("pCamCalList[%d].sensorID==%x\n", i, pCamCalList[i].sensorID);
 			if (pCamCalList[i].sensorID == sensorID) {
 				(*g_i2c_info[g_curDevIdx]).addr = pCamCalList[i].slaveID >> 1;
+				CAM_CALDB("pCamCalList[%d].sensorID==%x\n", i, pCamCalList[i].sensorID);
 				CAM_CALDB("g_i2c_info[%d].addr =%x\n", g_curDevIdx,
 					  (*g_i2c_info[g_curDevIdx]).addr);
 				if (cam_cal_get_i2c_client(g_i2c_info[g_curDevIdx], &(cmdInfo->client))) {
@@ -558,6 +558,7 @@ static long cam_cal_drv_ioctl(
 			g_lastDevID = ptempbuf->deviceID;
 			cam_cal_set_i2c_bus(ptempbuf->deviceID);
 		}
+		CAM_CALDB("SensorID=%x DeviceID=%x\n", ptempbuf->sensorID, ptempbuf->deviceID);
 
 		pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
 
@@ -754,7 +755,7 @@ module_init(cam_cal_drv_init);
 module_exit(cam_cal_drv_exit);
 
 MODULE_DESCRIPTION("CAM_CAL Driver");
-MODULE_AUTHOR("LukeHu <luke.hu@mediatek.com>");
+MODULE_AUTHOR("DreamYeh <Dream.Yeh@mediatek.com>");
 MODULE_LICENSE("GPL");
 
 
