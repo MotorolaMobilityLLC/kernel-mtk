@@ -402,14 +402,14 @@ u8 PDU_calcCksum(u8 *data, int len);
 #define TGPD_GET_NEXT_TX(_pd)		TGPD_GET_NEXT(_pd)
 #define TGPD_GET_NEXT_RX(_pd)		TGPD_GET_NEXT(_pd)
 
-#define TGPD_SET_NEXT(_pd, _next)   (((TGPD *)_pd)->pNext = (u32)(unsigned long)((TGPD *)_next))
-#define TGPD_GET_NEXT(_pd)			((TGPD *)(unsigned long)((TGPD *)_pd)->pNext)
+#define TGPD_SET_NEXT(_pd, _next)   (((TGPD *)_pd)->pNext = (u32)(uintptr_t)((TGPD *)_next))
+#define TGPD_GET_NEXT(_pd)			((TGPD *)(uintptr_t)((TGPD *)_pd)->pNext)
 
 #define TGPD_GET_DATA_TX(_pd)		TGPD_GET_DATA(_pd)
 #define TGPD_GET_DATA_RX(_pd)		TGPD_GET_DATA(_pd)
 
-#define TGPD_SET_DATA(_pd, _data)   (((TGPD *)_pd)->pBuf = (u32)(unsigned long)_data)
-#define TGPD_GET_DATA(_pd)          ((u8 *)(unsigned long)((TGPD *)_pd)->pBuf)
+#define TGPD_SET_DATA(_pd, _data)   (((TGPD *)_pd)->pBuf = (u32)(uintptr_t)_data)
+#define TGPD_GET_DATA(_pd)          ((u8 *)(uintptr_t)((TGPD *)_pd)->pBuf)
 #endif
 
 #define TGPD_SET_BUF_LEN(_pd, _len) (((TGPD *)_pd)->bufLen = _len)

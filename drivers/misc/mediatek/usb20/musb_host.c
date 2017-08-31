@@ -541,7 +541,7 @@ static void musb_advance_schedule(struct musb *musb, struct urb *urb, struct mus
 	u64 urb_val;
 
 	/* special case to handle QH memory leak */
-	urb_val = (u64)urb;
+	urb_val = (u64)(uintptr_t)urb;
 	switch (urb_val) {
 	case QH_FREE_RESCUE_INTERRUPT:
 	case QH_FREE_RESCUE_EP_DISABLE:
