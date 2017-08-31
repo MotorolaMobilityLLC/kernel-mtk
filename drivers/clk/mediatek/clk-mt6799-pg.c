@@ -502,6 +502,8 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 
 
 #define INFRA_TOPAXI_SI0_CTL	INFRACFG_REG(0x0200)
+#define INFRA_TOPAXI_PROTECTEN	INFRACFG_REG(0x0220)
+#define INFRA_TOPAXI_PROTECTEN_1	INFRACFG_REG(0x0250)
 #define INFRA_TOPAXI_PROTECTSTA0	INFRACFG_REG(0x0224)
 #define INFRASYS_QAXI_CTRL	INFRACFG_REG(0x0F28)
 
@@ -3717,10 +3719,20 @@ int mtcmos_mfg_series_on(void)
 	ret |= (sta & (1U << 1)) && (sta_s & (1U << 1));
 	ret |= ((sta & (1U << 2)) && (sta_s & (1U << 2))) << 1;
 	ret |= ((sta & (1U << 3)) && (sta_s & (1U << 3))) << 2;
-	mfgsys_cg_check();
 	return ret;
 }
 
+void mfgsys_mtcmos_check(void)
+{
+	pr_err("[MFG0_PWR_CON] %08x\r\n", spm_read(MFG0_PWR_CON));
+	pr_err("[MFG1_PWR_CON] %08x\r\n", spm_read(MFG1_PWR_CON));
+	pr_err("[INFRA_TOPAXI_PROTECTEN] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1));
+	pr_err("[INFRA_TOPAXI_PROTECTEN_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_1));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1_1] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_1));
+	pr_err("[INFRA_TOPAXI_PROTECTEN_2_CON] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTEN_2_CON));
+	pr_err("[INFRA_TOPAXI_PROTECTSTA1_2] %08x\r\n", spm_read(INFRA_TOPAXI_PROTECTSTA1_2));
+}
 
 void subsys_if_on(void)
 {
