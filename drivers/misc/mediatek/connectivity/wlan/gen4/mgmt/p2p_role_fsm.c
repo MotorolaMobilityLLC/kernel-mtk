@@ -1711,6 +1711,10 @@ p2pRoleFsmRunEventChnlGrant(IN P_ADAPTER_T prAdapter,
 
 				p2pRoleFsmStateTransition(prAdapter, prP2pRoleFsmInfo, eNextState);
 				break;
+			case P2P_ROLE_STATE_IDLE:
+				DBGLOG(P2P, WARN, "Ignore channel grant event when in ROLE IDLE\n");
+				p2pFuncReleaseCh(prAdapter, prP2pRoleFsmInfo->ucBssIndex, prChnlReqInfo);
+				break;
 			default:
 				/* Channel is granted under unexpected state.
 				 * Driver should cancel channel privileagea before leaving the states.
