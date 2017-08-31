@@ -72,6 +72,7 @@ static struct device *stpbt_dev;
 #endif
 
 #define BT_BUFFER_SIZE              2048
+#define FTRACE_STR_LOG_SIZE         256
 static UINT8 i_buf[BT_BUFFER_SIZE]; /* Input buffer for read */
 static UINT8 o_buf[BT_BUFFER_SIZE]; /* Output buffer for write */
 
@@ -81,6 +82,7 @@ static struct wake_lock bt_wakelock;
 static wait_queue_head_t inq;
 static DECLARE_WAIT_QUEUE_HEAD(BT_wq);
 static INT32 flag;
+static INT32 bt_ftrace_flag;
 /*
  * Reset flag for whole chip reset scenario, to indicate reset status:
  *   0 - normal, no whole chip reset occurs
@@ -133,9 +135,26 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 	}
 }
 
+static INT32 ftrace_print(const PINT8 str, ...)
+{
+#ifdef CONFIG_TRACING
+	va_list args;
+	INT8 temp_string[FTRACE_STR_LOG_SIZE];
+
+	if (bt_ftrace_flag) {
+		va_start(args, str);
+		vsnprintf(temp_string, FTRACE_STR_LOG_SIZE, str, args);
+		va_end(args);
+		trace_printk("%s\n", temp_string);
+	}
+#endif
+	return 0;
+}
+
 VOID BT_event_cb(VOID)
 {
 	BT_DBG_FUNC("BT_event_cb\n");
+	ftrace_print("%s get called", __func__);
 
 	/*
 	 * Hold wakelock for 100ms to avoid system enter suspend in such case:
@@ -157,6 +176,7 @@ VOID BT_event_cb(VOID)
 	flag = 1;
 	wake_up_interruptible(&inq);
 	wake_up(&BT_wq);
+	ftrace_print("%s wake_up triggered", __func__);
 }
 
 unsigned int BT_poll(struct file *filp, poll_table *wait)
@@ -185,6 +205,7 @@ unsigned int BT_poll(struct file *filp, poll_table *wait)
 
 	/* Do we need condition here? */
 	mask |= POLLOUT | POLLWRNORM;	/* Writable */
+	ftrace_print("%s: return mask = 0x%04x", __func__, mask);
 
 	return mask;
 }
@@ -193,6 +214,7 @@ ssize_t BT_write(struct file *filp, const char __user *buf, size_t count, loff_t
 {
 	INT32 retval = 0;
 
+	ftrace_print("%s get called", __func__);
 	down(&wr_mtx);
 
 	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
@@ -240,6 +262,7 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 {
 	INT32 retval = 0;
 
+	ftrace_print("%s get called", __func__);
 	down(&rd_mtx);
 
 	BT_DBG_FUNC("count %zd pos %lld\n", count, *f_pos);
@@ -418,7 +441,9 @@ static int BT_open(struct inode *inode, struct file *file)
 
 	BT_DBG_FUNC("Register BT reset callback!\n");
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_BT, bt_cdev_rst_cb);
+
 	rstflag = 0;
+	bt_ftrace_flag = 1;
 
 	sema_init(&wr_mtx, 1);
 	sema_init(&rd_mtx, 1);
@@ -429,7 +454,9 @@ static int BT_open(struct inode *inode, struct file *file)
 static int BT_close(struct inode *inode, struct file *file)
 {
 	BT_INFO_FUNC("major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
+
 	rstflag = 0;
+	bt_ftrace_flag = 0;
 	mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_BT);
 	mtk_wcn_stp_register_event_cb(BT_TASK_INDX, NULL);
 
