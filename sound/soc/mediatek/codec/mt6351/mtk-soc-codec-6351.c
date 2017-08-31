@@ -48,15 +48,16 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 
+#include <linux/delay.h>
 #include <linux/dma-mapping.h>
-#include <linux/platform_device.h>
-#include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
+#include <linux/platform_device.h>
+#include <linux/slab.h>
+
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
-#include <linux/delay.h>
 
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-ana.h"
@@ -114,6 +115,9 @@ static void VOW32KCK_Enable(bool enable);
 
 static mt6331_Codec_Data_Priv *mCodec_data;
 static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = { 48000, 48000, 48000 };
+
+#define MAX_DL_SAMPLE_RATE (192000)
+#define MAX_UL_SAMPLE_RATE (192000)
 
 static DEFINE_MUTEX(Ana_Ctrl_Mutex);
 static DEFINE_MUTEX(Ana_buf_Ctrl_Mutex);
@@ -2967,6 +2971,44 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	return 0;
 }
 
+static int codec_adc_sample_rate_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = %d\n", __func__,
+			mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);
+	ucontrol->value.integer.value[0] = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	return 0;
+
+}
+
+static int codec_adc_sample_rate_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = ucontrol->value.integer.value[0];
+	pr_warn("%s mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC] = %d\n", __func__,
+			mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);
+	return 0;
+}
+
+static int codec_dac_sample_rate_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = %d\n", __func__,
+			mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]);
+	ucontrol->value.integer.value[0] = mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC];
+	return 0;
+
+}
+
+static int codec_dac_sample_rate_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = ucontrol->value.integer.value[0];
+	pr_warn("%s mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = %d\n", __func__,
+			mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]);
+	return 0;
+}
+
 static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_aud("\%s n", __func__);
@@ -3133,6 +3175,12 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 		     Receiver_Speaker_Switch_Set),
 	SOC_ENUM_EXT("PMIC_REG_CLEAR", Audio_DL_Enum[12], PMIC_REG_CLEAR_Get, PMIC_REG_CLEAR_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
+	SOC_SINGLE_EXT("Codec_ADC_SampleRate", SND_SOC_NOPM, 0, MAX_UL_SAMPLE_RATE, 0,
+			codec_adc_sample_rate_get,
+			codec_adc_sample_rate_set),
+	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, MAX_DL_SAMPLE_RATE, 0,
+			codec_dac_sample_rate_get,
+			codec_dac_sample_rate_set),
 };
 
 static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
