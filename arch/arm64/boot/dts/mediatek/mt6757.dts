@@ -2483,22 +2483,6 @@
 		reg = <0 0x13020000 0 0x1000>;
 	};
 
-	met_mali: met_mali@13040000 {
-		compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
-			reg = <0 0x13040000 0 0x4000>;
-			interrupts = <GIC_SPI 247 IRQ_TYPE_LEVEL_LOW>,
-					<GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>,
-					<GIC_SPI 245 IRQ_TYPE_LEVEL_LOW>;
-			interrupt-names = "JOB", "MMU", "GPU";
-			clock-frequency = <700000000>;
-			clocks = <&mfgsys MFGCFG_BG3D>, <&topckgen TOP_MUX_F52M_MFG>, <&scpsys SCP_SYS_MFG_ASYNC>,
-				 <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_MFG_CORE0>,
-				 <&scpsys SCP_SYS_MFG_CORE1>;
-			clock-names = "mfg-main", "mfg-f52m-sel", "mtcmos-mfg-async",
-				 "mtcmos-mfg", "mtcmos-mfg-core0",
-				 "mtcmos-mfg-core1";
-	};
-
 	mali@13040000 {
 		compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
 			reg = <0 0x13040000 0 0x4000>;
