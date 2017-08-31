@@ -42,7 +42,7 @@
 #define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x890)
 #else
 /* use DUMMY_3(0x89C) because DUMMY_0/1 is CLKMGR SW */
-#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x89C)
+#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x8B0)
 #endif
 
 #define CMDQ_TEST_MMSYS_DUMMY_PA     (0x14000000 + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
@@ -1524,34 +1524,62 @@ static void testcase_update_value_to_slot(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
-static void testcase_poll(void)
+static void testcase_poll_run(u32 poll_value, u32 poll_mask, bool use_mmsys_dummy)
 {
 	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *p_task;
 	uint32_t value = 0;
-	uint32_t pollingVal = 0x00003001;
+	uint32_t dstRegPA;
+	unsigned long dummy_va;
 
-	CMDQ_MSG("%s\n", __func__);
+	if (gCmdqTestSecure || use_mmsys_dummy) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dstRegPA = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dstRegPA = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
+	CMDQ_LOG("%s\n", __func__);
+	CMDQ_LOG("poll value is 0x%08x\n", poll_value);
+	CMDQ_LOG("poll mask is 0x%08x\n", poll_mask);
+	CMDQ_LOG("use_mmsys_dummy is %u\n", use_mmsys_dummy);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 
-	cmdq_op_poll(handle, CMDQ_TEST_GCE_DUMMY_PA, pollingVal, ~0);
+	cmdq_op_poll(handle, dstRegPA, poll_value, poll_mask);
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &p_task);
+	cmdqCoreDebugDumpCommand(p_task);
 
 	/* Set MMSYS dummy register value after clock is on */
-	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, pollingVal);
-	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
-	CMDQ_MSG("target value is 0x%08x\n", value);
+	CMDQ_REG_SET32(dummy_va, poll_value);
+	value = CMDQ_REG_GET32(dummy_va);
+	CMDQ_LOG("target value is 0x%08x\n", value);
 
 	cmdqCoreWaitAndReleaseTask(p_task, 500);
-
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testcase_poll(void)
+{
+	CMDQ_LOG("%s\n", __func__);
+
+	testcase_poll_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00, false);
+	testcase_poll_run(0xdada1818, 0xFFFFFFFF, false);
+	testcase_poll_run(0xdada1818 & 0x0000FF00, 0x0000FF00, false);
+	testcase_poll_run(0x00001818, 0xFFFFFFFF, false);
+	testcase_poll_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00, true);
+	testcase_poll_run(0xdada1818, 0xFFFFFFFF, true);
+	testcase_poll_run(0xdada1818 & 0x0000FF00, 0x0000FF00, true);
+	testcase_poll_run(0x00001818, 0xFFFFFFFF, true);
+
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_write_with_mask(void)
