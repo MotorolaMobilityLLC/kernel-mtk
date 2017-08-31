@@ -56,10 +56,8 @@
 
 USB_ETHERNET_MODULE_PARAMETERS();
 
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
+#ifdef CONFIG_MTK_ECCCI_C2K
 #include "viatel_rawbulk.h"
-#endif
 #endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
@@ -1726,8 +1724,7 @@ static struct android_usb_function audio_source_function = {
 };
 
 
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
+#ifdef CONFIG_MTK_ECCCI_C2K
 static int rawbulk_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -1806,7 +1803,6 @@ static struct android_usb_function rawbulk_gps_function = {
 	.bind_config	= rawbulk_function_bind_config,
 };
 #endif
-#endif
 
 #ifdef CONFIG_SND_RAWMIDI
 static int midi_function_init(struct android_usb_function *f,
@@ -1879,14 +1875,12 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
 #endif
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT /* Using this to check >0 */
+#ifdef CONFIG_MTK_ECCCI_C2K
 	&rawbulk_modem_function,
 	&rawbulk_ets_function,
 	&rawbulk_atc_function,
 	&rawbulk_pcv_function,
 	&rawbulk_gps_function,
-#endif
 #endif
 #ifdef CONFIG_USB_F_SS_LB
 	&loopback_function,
