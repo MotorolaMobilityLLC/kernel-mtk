@@ -1,11 +1,15 @@
 /*
  *  Copyright (C) 2016 Richtek Technology Corp.
- *  cy_huang <cy_huang@richtek.com>
+ *  jeff_chang <jeff_chang@richtek.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -13,7 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
-#include "../rt-flashlight/rtfled.h"
+#include "../../rt-flashlight/rtfled.h"
 
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_fled.h"
@@ -52,16 +56,25 @@ static irqreturn_t rt5081_pmu_fled_tx_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_fled_lvf_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_fled_data *info = data;
+
+	dev_err(info->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_fled2_short_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_fled_data *info = data;
+
+	dev_err(info->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_fled1_short_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_fled_data *info = data;
+
+	dev_err(info->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
@@ -547,7 +560,6 @@ static struct rt_fled_hal rt5081_fled_hal = {
 	.fled_get_strobe_timeout_sel = rt5081_fled_get_strobe_timeout_sel,
 	/* PM shutdown, optional */
 	.fled_shutdown = rt5081_fled_shutdown,
-
 };
 
 static int rt5081_pmu_fled_probe(struct platform_device *pdev)
@@ -614,6 +626,6 @@ static struct platform_driver rt5081_pmu_fled = {
 module_platform_driver(rt5081_pmu_fled);
 
 MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("cy_huang <cy_huang@richtek.com>");
+MODULE_AUTHOR("jeff_chang <jeff_chang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU Fled");
 MODULE_VERSION(RT5081_PMU_FLED_DRV_VERSION);

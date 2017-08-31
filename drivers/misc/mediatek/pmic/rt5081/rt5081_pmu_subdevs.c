@@ -151,7 +151,7 @@ int rt5081_pmu_subdevs_register(struct rt5081_pmu_chip *chip)
 	ret = rt5081_pmu_init_subdevs(chip);
 	if (ret < 0)
 		return ret;
-#if 1 /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)) */
+#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)) */
 	return mfd_add_devices(chip->dev, -1, rt5081_pmu_subdev_cells,
 			RT5081_PMU_DEV_MAX, NULL, 0, NULL);
 #else

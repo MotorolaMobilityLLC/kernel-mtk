@@ -1,14 +1,21 @@
 /*
+<<<<<<< Updated upstream
  *  include/linux/mfd/rt5081_pmu.h
  *  include header file for Richtek RT5081 PMU
  *
+=======
+>>>>>>> Stashed changes
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #ifndef __LINUX_MFD_RT5081_PMU_H
@@ -232,11 +239,13 @@ static inline int rt5081_pmu_reg_set_bit(struct rt5081_pmu_chip *chip, u8 addr,
 {
 	return rt5081_pmu_reg_update_bits(chip, addr, mask, mask);
 }
+
 static inline int rt5081_pmu_reg_clr_bit(struct rt5081_pmu_chip *chip, u8 addr,
 		u8 mask)
 {
 	return rt5081_pmu_reg_update_bits(chip, addr, mask, 0x00);
 }
+
 extern int rt5081_pmu_reg_block_read(struct rt5081_pmu_chip *chip, u8 addr,
 	int len, u8 *dest);
 extern int rt5081_pmu_reg_block_write(struct rt5081_pmu_chip *chip, u8 addr,
