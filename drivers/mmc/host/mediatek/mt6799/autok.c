@@ -2750,7 +2750,10 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 
 void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 {
-	void __iomem *base = host->base, *base_top = host->base_top;
+	void __iomem *base = host->base;
+#if !defined(FPGA_PLATFORM)
+	void __iomem *base_top = host->base_top;
+#endif
 
 	if (host->id == 0) {
 		if (ios->timing == MMC_TIMING_MMC_HS400) {
