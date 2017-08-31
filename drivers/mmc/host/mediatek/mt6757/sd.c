@@ -3965,6 +3965,18 @@ done:
 	if (host->error & REQ_CMD_EIO)
 		host->need_tune = TUNE_ASYNC_CMD;
 
+	if (!is_card_sdio(host)) {
+		if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
+		mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&
+		(mrq->cmd->error == -EILSEQ || (mrq->sbc && mrq->sbc->error == -EILSEQ) ||
+		(mrq->data && mrq->data->error == -EILSEQ) ||
+		(mrq->stop && mrq->stop->error == -EILSEQ) ||
+		(mrq->data && mrq->data->error == -ETIMEDOUT)))	{
+			ERR_MSG("CMD%d, ARG(%08x),ERR retune needed\n",
+				mrq->cmd->opcode, mrq->cmd->arg);
+			mmc_retune_needed(host->mmc);
+		}
+	}
 #ifdef MTK_MSDC_USE_CACHE
 	msdc_update_cache_flush_status(host, mrq, data, 1);
 #endif
@@ -4156,6 +4168,12 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
+	if (!(host->tuning_in_progress) && host->need_tune &&
+		!(host->need_tune & TUNE_AUTOK_PASS)) {
+		msdc_error_tuning(mmc, NULL);
+		return 0;
+	}
+
 	msdc_init_tune_path(host, mmc->ios.timing);
 	host->tuning_in_progress = true;
 
@@ -4176,8 +4194,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return 0;
 }
 
-static int msdc_stop_and_wait_busy(struct msdc_host *host,
-	struct mmc_request *mrq)
+static int msdc_stop_and_wait_busy(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = jiffies + POLLING_BUSY;
@@ -4224,9 +4241,10 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	 * in RCV and DATA status.
 	 * Don't autok/switch edge here, or it will cause switch edge failed
 	 */
-	if ((mrq->cmd->opcode == MMC_SEND_STATUS ||
-	     mrq->cmd->opcode == MMC_STOP_TRANSMISSION)
-	 && host->err_cmd != mrq->cmd->opcode) {
+	if (mrq && ((mrq->cmd->opcode == MMC_SEND_STATUS &&
+		host->err_cmd != MMC_SEND_STATUS) ||
+		(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
+		host->err_cmd != MMC_STOP_TRANSMISSION))) {
 		goto end;
 	}
 
@@ -4235,9 +4253,15 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	host->device_status = 0x0;
 
 	/* force send stop command to turn device to transfer status */
-	if (msdc_stop_and_wait_busy(host, mrq))
+	if (msdc_stop_and_wait_busy(host))
 		goto recovery;
 
+	/*  need low level protect tuning phase fail in re-tuning arch */
+	if (mmc->doing_retune && (autok_err_type == CMD_ERROR)) {
+		autok_low_speed_switch_edge(host, &mmc->ios,
+				autok_err_type);
+		goto end;
+	}
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
 
@@ -4329,8 +4353,8 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
 
-	if (!(host->tuning_in_progress) && host->need_tune &&
-		!(host->need_tune & TUNE_AUTOK_PASS))
+	/*  need low level check if switch phase fail in re-tuning arch */
+	if (mmc->doing_retune)
 		msdc_error_tuning(mmc, mrq);
 
 	/* Async only support  DMA and asyc CMD flow */
@@ -4410,7 +4434,8 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	if (host->mclk != ios->clock) {
 		msdc_set_mclk(host, ios->timing, ios->clock);
-		if (ios->timing == MMC_TIMING_MMC_HS400)
+		if ((ios->timing == MMC_TIMING_MMC_HS400) &&
+			(ios->clock == mmc->f_max))
 			msdc_execute_tuning(host->mmc,
 				MMC_SEND_TUNING_BLOCK_HS200);
 	}
@@ -4829,7 +4854,18 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 			/* FIXME: return as cmd error for retry
 			 * if data CRC error
 			 */
-			mrq->cmd->error = (unsigned int)-EILSEQ;
+			/* mrq->cmd->error = (unsigned int)-EILSEQ; */
+			if (!is_card_sdio(host)) {
+				if ((mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
+					mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&
+					(mrq->cmd->error == -EILSEQ || (mrq->sbc && mrq->sbc->error == -EILSEQ) ||
+					(mrq->data && mrq->data->error == -EILSEQ) ||
+					(mrq->data && mrq->data->error == -ETIMEDOUT) ||
+					(mrq->stop && mrq->stop->error == -EILSEQ) ||
+					(mrq->data && mrq->data->error == -ETIMEDOUT))) {
+					mmc_retune_needed(host->mmc);
+				}
+			}
 		} else {
 			host->error &= ~REQ_DAT_ERR;
 			host->need_tune = TUNE_NONE;
