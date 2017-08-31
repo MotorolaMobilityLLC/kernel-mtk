@@ -1782,7 +1782,18 @@ PWMDBG("pwm base: 0x%p\n", pwm_base);
 		PWMDBG("error creating sysfs files: pwm_debug\n");
 
 #ifdef CONFIG_OF
-	ret = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL);
+	/* ret = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL); */
+	pwm_irqnr = platform_get_irq(pdev, 0);
+	if (pwm_irqnr <= 0)
+		return -EINVAL;
+
+	ret = devm_request_irq(&pdev->dev, pwm_irqnr, mt_pwm_irq,
+		IRQF_TRIGGER_LOW, PWM_DEVICE, NULL);
+	if (ret < 0) {
+		dev_err(&pdev->dev,
+			"[PWM]Request IRQ %d failed-------\n", pwm_irqnr);
+		return ret;
+	}
 #else
 /* request_irq(69, mt_pwm_irq, IRQF_TRIGGER_LOW, "mt6589_pwm", NULL); */
 #endif
