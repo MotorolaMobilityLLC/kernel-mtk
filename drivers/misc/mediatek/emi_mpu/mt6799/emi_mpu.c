@@ -31,6 +31,7 @@
 
 #include <mt-plat/mtk_device_apc.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mtk_ram_console.h>
 /* #include "mach/irqs.h" */
 #include <mt-plat/dma.h>
 #include <linux/of.h>
@@ -61,6 +62,7 @@ void __iomem *CHN0_EMI_BASE_ADDR;
 void __iomem *CHN1_EMI_BASE_ADDR;
 void __iomem *CHN2_EMI_BASE_ADDR;
 void __iomem *CHN3_EMI_BASE_ADDR;
+static void __iomem *INFRA_CFG;
 static unsigned long long vio_addr;
 static unsigned int emi_physical_offset;
 
@@ -2046,6 +2048,17 @@ static int __init emi_mpu_mod_init(void)
 		}
 	}
 
+	if (INFRA_CFG == NULL) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg");
+		if (node) {
+			INFRA_CFG = of_iomap(node, 0);
+			pr_err("get  @ %p\n", INFRA_CFG);
+		} else {
+			pr_err("can't find compatible node\n");
+			return -1;
+		}
+	}
+
 	spin_lock_init(&emi_mpu_lock);
 
 	pr_err("[EMI MPU] EMI_MPUS = 0x%x\n", readl(IOMEM(EMI_MPUS)));
@@ -2190,6 +2203,230 @@ module_exit(emi_mpu_mod_exit);
 #define CHN1_EMI_DBGD                IOMEM(CHN1_EMI_BASE_ADDR+0xA8C)
 
 #include <mtk_dramc.h>
+
+static inline void aee_simple_print(const char *msg, unsigned int val)
+{
+	char buf[128];
+
+	snprintf(buf, sizeof(buf), msg, val);
+	aee_sram_fiq_log(buf);
+}
+
+#define EMI_DBG_SIMPLE_RWR(msg, addr, wval)	do {\
+	aee_simple_print(msg, readl(addr));	\
+	writel(wval, addr);			\
+	aee_simple_print(msg, readl(addr));\
+	} while (0)
+
+#define EMI_DBG_SIMPLE_R(msg, addr)		\
+	aee_simple_print(msg, readl(addr))
+
+/* 0x10230000 - 0x10230fff emi, EMI_BASE_ADDR */
+/* 0x10335000 - 0x10335fff chn0_emi, CHN0_EMI_BASE_ADDR */
+/* 0x1033d000 - 0x1033dfff chn1_emi, CHN1_EMI_BASE_ADDR */
+/* 0x10345000 - 0x10345fff chn2_emi, CHN2_EMI_BASE_ADDR */
+/* 0x1034d000 - 0x1034dfff chn3_emi, CHN3_EMI_BASE_ADDR */
+/* 0x10260000 - 0x10260fff infra_cfg, INFRA_CFG */
+
+void dump_emi_outstanding(void)
+{
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x102300e8 = 0x%x\n",
+				EMI_BASE_ADDR+0xe8, 0x00060121);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10355a80 = 0x%x\n",
+				CHN0_EMI_BASE_ADDR+0xa80, 0x00000001);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00000100);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00000200);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00000300);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00000400);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n",
+				EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n",
+				EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00000500);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00000600);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00000700);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00000400);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00000800);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00000900);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00001200);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00001100);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00001500);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00001600);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00001700);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00001800);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00001900);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00001a00);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00001b00);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00001c00);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00003600);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00003700);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00003800);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00003900);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00002a00);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00002b00);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00002c00);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00002d00);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00002600);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00002700);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00002800);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00002900);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260100 = 0x%x\n",
+				INFRA_CFG+0x100, 0x00002200);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260104 = 0x%x\n",
+				INFRA_CFG+0x104, 0x00002300);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x10260108 = 0x%x\n",
+				INFRA_CFG+0x108, 0x00002400);
+	EMI_DBG_SIMPLE_RWR("[EMI] 0x1026010c = 0x%x\n",
+				INFRA_CFG+0x10c, 0x00002500);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	EMI_DBG_SIMPLE_R("[EMI] 0x102307fc = 0x%x\n", EMI_BASE_ADDR+0x7fc);
+	writel(0x1, CHN0_EMI_BASE_ADDR+0xa80);
+	writel(0x160015, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0x180017, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0x1a0019, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0x1001b, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0x230022, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0x250024, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0x50004, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0x70006, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0xe0008, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0x10000f, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0xa0009, CHN0_EMI_BASE_ADDR+0xa88);
+	writel(0xc000b, CHN0_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10335a84 = 0x%x\n", CHN0_EMI_BASE_ADDR+0xa84);
+	writel(0x1, CHN1_EMI_BASE_ADDR+0xa80);
+	writel(0x160015, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0x180017, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0x1a0019, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0x1001b, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0x230022, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0x250024, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0x50004, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0x70006, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0xe0008, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0x10000f, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0xa0009, CHN1_EMI_BASE_ADDR+0xa88);
+	writel(0xc000b, CHN1_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1033da84 = 0x%x\n", CHN1_EMI_BASE_ADDR+0xa84);
+	writel(0x1, CHN2_EMI_BASE_ADDR+0xa80);
+	writel(0x160015, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0x180017, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0x1a0019, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0x1001b, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0x230022, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0x250024, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0x50004, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0x70006, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0xe0008, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0x10000f, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0xa0009, CHN2_EMI_BASE_ADDR+0xa88);
+	writel(0xc000b, CHN2_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x10345a84 = 0x%x\n", CHN2_EMI_BASE_ADDR+0xa84);
+	writel(0x1, CHN3_EMI_BASE_ADDR+0xa80);
+	writel(0x160015, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0x180017, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	writel(0x1a0019, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0x1001b, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	writel(0x230022, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0x250024, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	writel(0x50004, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0x70006, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	writel(0xe0008, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0x10000f, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	writel(0xa0009, CHN3_EMI_BASE_ADDR+0xa88);
+	writel(0xc000b, CHN3_EMI_BASE_ADDR+0xa8c);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+	EMI_DBG_SIMPLE_R("[EMI] 0x1034da84 = 0x%x\n", CHN3_EMI_BASE_ADDR+0xa84);
+}
 
 void dump_emi_latency(void)
 {

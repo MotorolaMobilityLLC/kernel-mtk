@@ -111,6 +111,9 @@ int in_fiq_handler(void)
 	return atomic_read(&wdt_enter_fiq);
 }
 
+/* debug EMI */
+__weak void dump_emi_outstanding(void) {}
+
 void aee_wdt_dump_info(void)
 {
 	struct task_struct *task;
@@ -531,6 +534,8 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
 #endif
+	dump_emi_outstanding();
+
 	BUG();
 }
 
