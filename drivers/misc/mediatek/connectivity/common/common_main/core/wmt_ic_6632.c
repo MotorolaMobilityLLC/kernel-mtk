@@ -825,7 +825,7 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 				WMT_ERR_FUNC("enalbe deep sleep feature fail\n");
 				return -20;
 			}
-			WMT_INFO_FUNC("chip deep sleep feature is enable\n");
+			WMT_DBG_FUNC("chip deep sleep feature is enable\n");
 			wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_TRUE);
 		} else {
 			WMT_DEEP_SLEEP_CMD[5] = 0;
@@ -1260,7 +1260,7 @@ static INT32 mt6632_ver_check(VOID)
 		return -3;
 	}
 
-	WMT_INFO_FUNC("MT6632: wmt ic info: %s.%s (0x%x, WMTHWVER:%d, patch_ext:%s)\n",
+	WMT_DBG_FUNC("MT6632: wmt ic info: %s.%s (0x%x, WMTHWVER:%d, patch_ext:%s)\n",
 		      p_info->cChipName, p_info->cChipVersion,
 		      p_info->u4HwVer, p_info->eWmtHwVer, p_info->cPatchNameExt);
 
@@ -1977,7 +1977,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 		if (iRet)
 			WMT_ERR_FUNC("wmt_core:set_wifi_lte_coex_table_0 fail(%d)\n", iRet);
 		else
-			WMT_INFO_FUNC("wmt_core:set_wifi_lte_coex_table_0 ok\n");
+			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_0 ok\n");
 	}
 
 	return iRet;
