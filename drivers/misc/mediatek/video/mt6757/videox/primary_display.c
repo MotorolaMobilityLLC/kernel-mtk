@@ -4676,22 +4676,26 @@ static enum DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 static int opt_backup_value[OPT_BACKUP_NUM];
 static unsigned int idlemgr_flag_backup;
 
+static int svp_inited;
+/* svp_inited: make sure the opt_backup & restore_opt functions be used in pairs. */
 static int disp_enter_svp(enum SVP_STATE state)
 {
 	int i;
 
 	if (state == SVP_IN_POINT) {
-
-		for (i = 0; i < OPT_BACKUP_NUM; i++) {
-			opt_backup_value[i] = disp_helper_get_option(opt_backup_name[i]);
-			disp_helper_set_option(opt_backup_name[i], 0);
+		if (svp_inited == 0) {
+			for (i = 0; i < OPT_BACKUP_NUM; i++) {
+				opt_backup_value[i] = disp_helper_get_option(opt_backup_name[i]);
+				disp_helper_set_option(opt_backup_name[i], 0);
+			}
+			idlemgr_flag_backup = set_idlemgr(0, 0);
+			svp_inited = 1;
 		}
 
 		if (primary_display_is_decouple_mode() && (!primary_display_is_mirror_mode())) {
 			/* switch to DL */
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
 		}
-		idlemgr_flag_backup = set_idlemgr(0, 0);
 	}
 
 	return 0;
@@ -4702,11 +4706,13 @@ static int disp_leave_svp(enum SVP_STATE state)
 	int i;
 
 	if (state == SVP_EXIT_POINT) {
+		if (svp_inited == 1) {
+			for (i = 0; i < OPT_BACKUP_NUM; i++)
+				disp_helper_set_option(opt_backup_name[i], opt_backup_value[i]);
 
-		for (i = 0; i < OPT_BACKUP_NUM; i++)
-			disp_helper_set_option(opt_backup_name[i], opt_backup_value[i]);
-
-		set_idlemgr(idlemgr_flag_backup, 0);
+			set_idlemgr(idlemgr_flag_backup, 0);
+			svp_inited = 0;
+		}
 	}
 	return 0;
 }
@@ -4743,6 +4749,7 @@ static int setup_disp_sec(struct disp_ddp_path_config *data_config, struct cmdqR
 		} else {
 			/* switch sec --> nonsec */
 			svp_state = SVP_2_NOMAL;
+			svp_sum = 0;
 			MMProfileLogEx(ddp_mmp_get_events()->sec, MMProfileFlagEnd, 0, 0);
 		}
 	}
