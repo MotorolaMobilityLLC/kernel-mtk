@@ -45,22 +45,35 @@
 static unsigned int func_lv_mask_udi;
 
 /* UDI pin mux ADDR */
-/* 1. Write 0x1000_5330 bit[27:24]=0x3 to switch UDI pin, TCK */
-/* 2. Write 0x1000_5340 bit[15:0]=0x3333 to switch UDI pin, TDI, TDO, TMS and TRST */
+/* 1. Write 0x102D_0410 bit[19:16]=0x6 to switch UDI pin, TCK */
+/* 2. Write 0x102D_0410 bit[31:24]=0x66 to switch UDI pin, TDO and TRST */
+/* 3. Write 0x102D_0410 bit[7:0]=0x66 to switch UDI pin, TDI and TMS */
+
 #ifdef CONFIG_OF
-static void __iomem  *udipin_base;         /* 0x10005000 0x1000, UDI pinmux reg */
+static void __iomem  *udipin_base;         /* 0x102D0000 0x1000, UDI pinmux reg */
 #endif
 
 #ifdef __KERNEL__
 #define UDIPIN_BASE				(udipin_base)
 #else
-#define UDIPIN_BASE				0x10005000
+#define UDIPIN_BASE				0x102D0000
 #endif
 
-/* 0x10005000 0x1000, DFD,UDI pinmux reg */
-#define UDIPIN_UDI_JTAG1		(UDIPIN_BASE+0x330)
-#define UDIPIN_UDI_JTAG2		(UDIPIN_BASE+0x340)
-#define UDIPIN_UDI_EN			(UDIPIN_BASE+0x6E0)
+/* 0x102D0000 0x1000, DFD,UDI pinmux reg */
+#define UDIPIN_UDI_JTAG1			(UDIPIN_BASE+0x410)
+#define UDIPIN_UDI_JTAG1_VALUE		(0x66060066)
+#define UDIPIN_UDI_JTAG1_DEFAULT	(0x66060066)
+#define UDIPIN_UDI_EN				(UDIPIN_BASE+0x6E0)
+#define UDIPIN_UDI_EN_VALUE			(0x80000000)
+#define UDIPIN_UDI_EN_DEFAULT		(0x80000000)
+
+
+
+
+
+/*-----------------------------------------*/
+/* Reused code start                       */
+/*-----------------------------------------*/
 
 #ifdef __KERNEL__
 #define _udi_read(addr)			readl(addr)
@@ -119,9 +132,10 @@ unsigned char IR_byte[UDI_FIFOSIZE], DR_byte[UDI_FIFOSIZE];
 unsigned int IR_bit_count, IR_pause_count;
 unsigned int DR_bit_count, DR_pause_count;
 unsigned int jtag_sw_tck; /* default debug channel = 1 */
-unsigned int udi_addr_phy = 0x10200750;
+unsigned int udi_addr_phy;
 unsigned int tck_bit, tdi_bit, tms_bit, ntrst_bit, tdo_bit;
-
+unsigned int big_udi_flag; /* 0: Little, 1: BIG */
+unsigned int tck_bit_big, tdi_bit_big, tms_bit_big, ntrst_bit_big, tdo_bit_big;
 
 #define CTOI(char_ascii)    ((char_ascii <= 0x39) ? (char_ascii - 0x30) :	\
 							((char_ascii <= 0x46) ? (char_ascii - 55) : (char_ascii - 87)))
@@ -229,6 +243,112 @@ int udi_jtag_clock_read(void)
 
 	return 0;
 }
+
+int udi_jtag_clock_read_big(void)
+{
+	int i, j;
+
+	/* support ID or DR zero */
+	if ((IR_bit_count == 0) && (DR_bit_count == 0))
+		return 0;
+
+	if (IR_bit_count) {
+		/* into idel mode */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 1);
+		/* Jog the state machine arround to shift IR */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 2);
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 2);
+
+		/* Shift the IR bits, assert TMS=1 for last bit */
+		for (i = 0; i < IR_bit_count; i++) {
+			j = udi_jtag_clock_big(jtag_sw_tck, 1, ((i == (IR_bit_count - 1)) ? 1 : 0),
+				(((IR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+			IR_byte[i >> 3] &= ~(1 << (i & 7));
+			IR_byte[i >> 3] |= (j << (i & 7));
+		}
+
+		/* Should be in UPDATE IR */
+		if (IR_pause_count) {
+			udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, IR_pause_count);
+			udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 2);
+		} else
+			udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 1);
+
+		if (DR_bit_count) {
+			/* Jog the state machine arround to shift DR */
+			udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 1);
+			udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 2);
+			/* Shift the DR bits, assert TMS=1 for last bit */
+			for (i = 0; i < DR_bit_count; i++) {
+				j = udi_jtag_clock_big(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
+				(((DR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+				DR_byte[i >> 3] &= ~(1 << (i & 7));
+				DR_byte[i >> 3] |= (j << (i & 7));
+			}
+
+			/* Should be in UPDATE DR */
+			if (DR_pause_count) {
+				udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, DR_pause_count);
+				udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 2);
+			} else
+				udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 1);
+		} else
+			udi_ver("WARNING: IR-Only JTAG Command\n");
+
+		/* Return the state machine to run-test-idle */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 1);
+
+	} else if (DR_bit_count) {
+		udi_ver("WARNING: DR-Only JTAG Command\n");
+
+		/* into idel mode */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 1);
+		/* Jog the state machine arround to shift DR */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 1);
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 2);
+
+		/* Shift the DR bits, assert TMS=1 for last bit */
+		for (i = 0; i < DR_bit_count; i++) {
+			j = udi_jtag_clock_big(jtag_sw_tck, 1, ((i == (DR_bit_count - 1)) ? 1 : 0),
+			(((DR_byte[i >> 3]) >> (i & 7)) & 1), 1);
+			DR_byte[i >> 3] &= ~(1 << (i & 7));
+			DR_byte[i >> 3] |= (j << (i & 7));
+		}
+
+		/* Should be in UPDATE DR */
+		if (DR_pause_count) {
+			udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, DR_pause_count);
+			udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 2);
+		} else
+			udi_jtag_clock_big(jtag_sw_tck, 1, 1, 0, 1);
+
+		/* Return the state machine to run-test-idle */
+		udi_jtag_clock_big(jtag_sw_tck, 1, 0, 0, 1);
+
+	} else
+		udi_error("SCAN command with #IR=0 and #DR=0. Doing nothing!\n");
+
+#ifndef __KERNEL__
+	/* Print the IR/DR readback values to STDOUT */
+	printf("Channel = %d, ", jtag_sw_tck);
+	if (IR_bit_count) {
+		printf("IR %u = ", IR_bit_count);
+		for (i = ((IR_bit_count - 1) >> 3); i >= 0; i--)
+			printf("%x ", IR_byte[i]);
+		printf(" ");
+	}
+
+	if (DR_bit_count) {
+		printf("DR %u = ", DR_bit_count);
+		for (i = ((DR_bit_count - 1) >> 3); i >= 0; i--)
+			printf("%x ", DR_byte[i]);
+		printf("\n");
+	}
+#endif
+
+	return 0;
+}
+
 
 #ifdef __KERNEL__ /* __KERNEL__ */
 /* Device infrastructure */
@@ -343,9 +463,8 @@ static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, 
 /* udi_pinmux_switch */
 static int udi_pinmux_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "UDI pinmux reg[0x1000_5330] = 0x%x.\n", _udi_read(UDIPIN_UDI_JTAG1));
-	seq_printf(m, "UDI pinmux reg[0x1000_5340] = 0x%x.\n", _udi_read(UDIPIN_UDI_JTAG2));
-	seq_printf(m, "UDI pinmux reg[0x1000_56E0] = 0x%x.\n", _udi_read(UDIPIN_UDI_EN));
+	seq_printf(m, "UDI pinmux reg[0x%x] = 0x%x.\n", UDIPIN_UDI_JTAG1, _udi_read(UDIPIN_UDI_JTAG1));
+	seq_printf(m, "UDI pinmux reg[0x%x] = 0x%x.\n", UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN));
 	return 0;
 }
 
@@ -359,16 +478,12 @@ static ssize_t udi_pinmux_proc_write(struct file *file, const char __user *buffe
 
 	if (!kstrtoint(buf, 10, &pin_switch)) {
 		if (pin_switch == 1) {
-			/* 1. Write 0x1000_5330 bit[27:24]=0x3 to switch UDI pin, TCK */
-			/* 2. Write 0x1000_5340 bit[15:0]=0x3333 to switch UDI pin, TDI, TDO, TMS and TRST */
-			_udi_write(UDIPIN_UDI_JTAG1, 0x03000000);
-			_udi_write(UDIPIN_UDI_JTAG2, 0x00003333);
-			_udi_write(UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN)|0x05600000);
+			_udi_write(UDIPIN_UDI_JTAG1, UDIPIN_UDI_JTAG1_VALUE);
+			_udi_write(UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN)|UDIPIN_UDI_EN_VALUE);
 		} else {
 			/* default */
-			_udi_write(UDIPIN_UDI_JTAG1, 0x11100000);
-			_udi_write(UDIPIN_UDI_JTAG2, 0x00001111);
-			_udi_write(UDIPIN_UDI_EN, 0xf801);
+			_udi_write(UDIPIN_UDI_JTAG1, UDIPIN_UDI_JTAG1_DEFAULT);
+			_udi_write(UDIPIN_UDI_EN, UDIPIN_UDI_EN_DEFAULT);
 		}
 	} else
 		udi_error("echo dbg_lv (dec) > /proc/udi/udi_debug\n");
@@ -405,7 +520,10 @@ static int udi_jtag_clock_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 
-	udi_jtag_clock_read();
+	if (big_udi_flag == 0)
+		udi_jtag_clock_read();
+	else
+		udi_jtag_clock_read_big();
 
 	/* Print the IR/DR readback values to STDOUT */
 	seq_printf(m, "IR %u ", IR_bit_count);
@@ -444,7 +562,7 @@ static int udi_jtag_clock_proc_show(struct seq_file *m, void *v)
 *     echo SCAN 0 58 003ffbffbfff807 12 35 7c000003f 5 > /proc/udi/udi_jtag_clock
 *
 *for Olympus/Elbrus:
-*     echo SCAN 1 11 006 11 000 > udi_jtag_clock
+*     echo SCAN 1 11 006 11 000 > /proc/udi/udi_jtag_clock
 *     (ans: IR 11 0000 DR 11 07a8)
 *
 */
@@ -481,12 +599,21 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 		/* 4 parameter */
 		IR_pause_count = 0;
 		DR_pause_count = 0;
-	} else if (sscanf(buf, "%5s", &recv_key_word[0]) == 1) {
+	} else if (sscanf(buf, "%s", &recv_key_word[0]) == 1) {
 		/* RESET */
-		if (!strcmp(recv_key_word, "RESET")) {
+		if (!strcmp(recv_key_word, "GWTAP1")) {
+			big_udi_flag = 1;
+			goto out1;
+		} else if (!strcmp(recv_key_word, "GWTAP0")) {
+			big_udi_flag = 0;
+			goto out1;
+		} else if (!strcmp(recv_key_word, "RESET")) {
 			/* rest mode by TRST = 1 */
 			/* jtag_clock(sw_tck, i_trst, i_tms, i_tdi, count) */
-			udi_jtag_clock(jtag_sw_tck, 0, 0, 0, 4);
+			if (big_udi_flag == 0)
+				udi_jtag_clock(jtag_sw_tck, 0, 0, 0, 4);
+			else
+				udi_jtag_clock_big(jtag_sw_tck, 0, 0, 0, 4);
 			goto out1;
 			}
 	} else {
@@ -502,7 +629,6 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 	udi_ver("Input data: 4 = %u\n", recv_buf[2]);
 	udi_ver("Input data: 5 = %s\n", recv_char[1]);
 	udi_ver("Input data: 6 = %u\n", recv_buf[4]);
-
 
 	/* chekc first key word equ "SCAN" */
 	if (strcmp(recv_key_word, "SCAN")) {
@@ -593,7 +719,7 @@ static int udi_jtag_manual_proc_show(struct seq_file *m, void *v)
 		return 0;
 	}
 
-	seq_puts(m, "================= 2015/11/10 Ver 5.1 ==================\n");
+	seq_puts(m, "================= 2016/08/22 Ver 1.0 ==================\n");
 	seq_printf(m, "UDI Jtag sub-chains = %d\n", jtag_sw_tck);
 
 	seq_printf(m, "IR_bits_count = %u , IR_Pause_count = %u, ", IR_bit_count, IR_pause_count);
@@ -677,7 +803,43 @@ static ssize_t udi_bit_ctrl_proc_write(struct file *file, const char __user *buf
 
 }
 
+static int udi_bit_ctrl_big_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "BIG SW UDI: TCK=%x, TDI=%x, TMS=%x, nTRST=%x, TDO=%x\n",
+			tck_bit_big, tdi_bit_big, tms_bit_big, ntrst_bit_big, tdo_bit_big);
 
+	return 0;
+}
+
+static ssize_t udi_bit_ctrl_big_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned int recv[4];
+
+	char *buf =	_copy_from_user_for_proc(buffer, count);
+
+	tck_bit_big = 0;
+	tdi_bit_big = 0;
+	tms_bit_big = 0;
+	ntrst_bit_big = 0;
+	tdo_bit_big = 0;
+
+	if (!buf)
+		return -EINVAL;
+
+	if (sscanf(buf, "%d %d %d %d", &recv[0], &recv[1], &recv[2], &recv[3]) == 4) {
+		tck_bit_big = recv[0];
+		tdi_bit_big = recv[1];
+		tms_bit_big = recv[2];
+		ntrst_bit_big = recv[3];
+		tdo_bit_big = udi_bit_ctrl_big(recv[0], recv[1], recv[2], recv[3]);
+		udi_info("BIG SW UDI: TCK=%x, TDI=%x, TMS=%x, nTRST=%x, TDO=%x\n",
+				tck_bit_big, tdi_bit_big, tms_bit_big, ntrst_bit_big, tdo_bit_big);
+	}
+
+	free_page((unsigned	long)buf);
+	return count;
+
+}
 
 #define PROC_FOPS_RW(name)                          \
 	static int name ## _proc_open(struct inode *inode, struct file *file)   \
@@ -713,7 +875,8 @@ PROC_FOPS_RW(udi_pinmux);		/* for udi pinmux switch */
 PROC_FOPS_RW(udi_debug);		/* for debug information */
 PROC_FOPS_RW(udi_jtag_clock);	/* for udi jtag interface */
 PROC_FOPS_RW(udi_jtag_manual);	/* for udi jtag mnaual ctrl */
-PROC_FOPS_RW(udi_bit_ctrl);	/* for udi bit ctrl */
+PROC_FOPS_RW(udi_bit_ctrl);		/* for udi bit ctrl */
+PROC_FOPS_RW(udi_bit_ctrl_big);	/* for big udi bit ctrl */
 
 static int _create_procfs(void)
 {
@@ -732,6 +895,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(udi_jtag_clock),
 		PROC_ENTRY(udi_jtag_manual),
 		PROC_ENTRY(udi_bit_ctrl),
+		PROC_ENTRY(udi_bit_ctrl_big),
 	};
 
 	dir = proc_mkdir("udi", NULL);
@@ -766,7 +930,7 @@ static int __init udi_init(void)
 	}
 
 	/* Setup IO addresses and printf */
-	udipin_base = of_iomap(node, 0); /* 0x10005000 0x1000, DFD,UDI pinmux reg */
+	udipin_base = of_iomap(node, 0); /* UDI pinmux reg */
 	udi_ver("udipin_base = 0x%lx.\n", (unsigned long)udipin_base);
 	if (!udipin_base) {
 		udi_error("udi pinmux get some base NULL.\n");

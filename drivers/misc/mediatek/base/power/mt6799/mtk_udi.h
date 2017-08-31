@@ -50,15 +50,19 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 
 /* define for UDI service */
 #ifdef CONFIG_ARM64
-#define MTK_SIP_KERNEL_UDI_WRITE		0xC20003D0 /* MTK_SIP_KERNEL_OCP_WRITE */
-#define MTK_SIP_KERNEL_UDI_READ			0xC20003D1 /* MTK_SIP_KERNEL_OCP_READ */
-#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK	0xC20003A0
-#define MTK_SIP_KERNEL_UDI_BIT_CTRL		0xC20003A1
+#define MTK_SIP_KERNEL_UDI_WRITE			0xC20003D0 /* MTK_SIP_KERNEL_OCP_WRITE */
+#define MTK_SIP_KERNEL_UDI_READ				0xC20003D1 /* MTK_SIP_KERNEL_OCP_READ */
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK		0xC20003A0
+#define MTK_SIP_KERNEL_UDI_BIT_CTRL			0xC20003A1
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK_BIG	0xC20003A2
+#define MTK_SIP_KERNEL_UDI_BIT_CTRL_BIG		0xC20003A3
 #else
-#define MTK_SIP_KERNEL_UDI_WRITE		0x820003D0 /* MTK_SIP_KERNEL_OCP_WRITE */
-#define MTK_SIP_KERNEL_UDI_READ			0x820003D1 /* MTK_SIP_KERNEL_OCP_READ */
-#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK	0x820003A0
-#define MTK_SIP_KERNEL_UDI_BIT_CTRL		0x820003A1
+#define MTK_SIP_KERNEL_UDI_WRITE			0x820003D0 /* MTK_SIP_KERNEL_OCP_WRITE */
+#define MTK_SIP_KERNEL_UDI_READ				0x820003D1 /* MTK_SIP_KERNEL_OCP_READ */
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK		0x820003A0
+#define MTK_SIP_KERNEL_UDI_BIT_CTRL			0x820003A1
+#define MTK_SIP_KERNEL_UDI_JTAG_CLOCK_BIG	0x820003A2
+#define MTK_SIP_KERNEL_UDI_BIT_CTRL_BIG		0x820003A3
 #endif
 
 /*
@@ -86,7 +90,7 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 /* BITS(MSB:LSB, value) => Set value at MSB:LSB  */
 #define BITS_UDI(r, val)	((val << LSB_UDI(r)) & BITMASK_UDI(r))
 
-/* dfine for UDI register service */
+/* define for UDI register service */
 #ifdef __KERNEL__
 #define udi_reg_read(addr)	\
 				mt_secure_call_udi(MTK_SIP_KERNEL_UDI_READ, addr, 0, 0)
@@ -110,12 +114,32 @@ static noinline int mt_secure_call_udi(u64 function_id, u64 arg0, u64 arg1, u64 
 									((i_tms & 0x01) << 1) |	\
 									(i_tdi & 0x01), 0, 0)
 
+#define udi_jtag_clock_big(sw_tck, i_trst, i_tms, i_tdi, count)	\
+				mt_secure_call_udi(MTK_SIP_KERNEL_UDI_JTAG_CLOCK_BIG,	\
+									(((1 << (sw_tck & 0x03)) << 3) |	\
+									((i_trst & 0x01) << 2) |	\
+									((i_tms & 0x01) << 1) |	\
+									(i_tdi & 0x01)),	\
+									count, 0)
+
+#define udi_bit_ctrl_big(sw_tck, i_tdi, i_tms, i_trst)	\
+				mt_secure_call_udi(MTK_SIP_KERNEL_UDI_BIT_CTRL_BIG,	\
+									((sw_tck & 0x0f) << 3) |	\
+									((i_trst & 0x01) << 2) |	\
+									((i_tms & 0x01) << 1) |	\
+									(i_tdi & 0x01), 0, 0)
 #else
 #define udi_reg_read(addr)	\
 				ptp3_reg_read(addr)
 #define udi_reg_write(addr, val)	\
 				ptp3_reg_write(addr, val)
 #define udi_jtag_clock(sw_tck, i_trst, i_tms, i_tdi, count)	\
+				UDIRead((((1 << (sw_tck & 0x03)) << 3) |	\
+						((i_trst & 0x01) << 2) |	\
+						((i_tms & 0x01) << 1) |	\
+						(i_tdi & 0x01)),	\
+						count)
+#define udi_jtag_clock_big(sw_tck, i_trst, i_tms, i_tdi, count)	\
 				UDIRead((((1 << (sw_tck & 0x03)) << 3) |	\
 						((i_trst & 0x01) << 2) |	\
 						((i_tms & 0x01) << 1) |	\
@@ -145,6 +169,7 @@ extern unsigned char IR_byte[UDI_FIFOSIZE], DR_byte[UDI_FIFOSIZE];
 extern unsigned int jtag_sw_tck;	/* default debug channel = 1 */
 
 extern int udi_jtag_clock_read(void);
+extern int udi_jtag_clock_read_big(void);
 #endif /* __KERNEL__ */
 
 #endif /* _MT_UDI_H */
