@@ -300,12 +300,11 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 		err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		ACT_ERR("act set batch(ODR) err %d\n", err);
-		goto err_out;
 	}
 #else
 	err = act_enable_and_batch();
 #endif
-err_out:
+
 	mutex_unlock(&act_context_obj->act_op_mutex);
 	return err;
 }
