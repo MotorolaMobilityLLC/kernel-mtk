@@ -18,7 +18,7 @@
 #include "mtk_dcm_autogen.h"
 
 #ifdef CONFIG_MACH_MT6799
-#define USE_DRAM_API_INSTEAD
+/* #define USE_DRAM_API_INSTEAD */
 #endif
 
 /* #define DCM_DEFAULT_ALL_OFF */
@@ -183,10 +183,10 @@ enum {
 	DCM_CPU_CLUSTER_B	= (1U << 2),
 };
 
-
 #ifdef CONFIG_MACH_MT6799
-#define SYNC_DCM_CLK_MIN_FREQ	52
-#define SYNC_DCM_MAX_DIV_VAL	127
+#define SYNC_DCM_CLK_MIN_FREQ		52
+#define SYNC_DCM_CLK_MIN_FREQ_E2	26
+#define SYNC_DCM_MAX_DIV_VAL		127
 #elif defined(CONFIG_MACH_ELBRUS)
 #define SYNC_DCM_CLK_MIN_FREQ	65
 #define SYNC_DCM_MAX_DIV_VAL	31

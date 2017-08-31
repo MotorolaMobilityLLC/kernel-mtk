@@ -82,6 +82,10 @@ unsigned long dcm_ddrphy2_ao_base;
 unsigned long dcm_ddrphy3_ao_base;
 #endif /* #ifndef USE_DRAM_API_INSTEAD */
 unsigned long dcm_emi_base;
+unsigned long dcm_chn0_emi_base;
+unsigned long dcm_chn1_emi_base;
+unsigned long dcm_chn2_emi_base;
+unsigned long dcm_chn3_emi_base;
 
 #define TOPCKGEN_NODE "mediatek,mt6799-topckgen"
 #define INFRACFG_AO_NODE "mediatek,mt6799-infracfg_ao"
@@ -90,16 +94,13 @@ unsigned long dcm_emi_base;
 #define CCI_NODE "mediatek,mcsi_reg"
 #define LPDMA_NODE "mediatek,lpdma"
 #ifndef USE_DRAM_API_INSTEAD
-#define DRAMC0_AO_NODE "mediatek,dramc0_ao"
-#define DRAMC1_AO_NODE "mediatek,dramc1_ao"
-#define DRAMC2_AO_NODE "mediatek,dramc2_ao"
-#define DRAMC3_AO_NODE "mediatek,dramc3_ao"
-#define DDRPHY0_AO_NODE "mediatek,ddrphy0ao"
-#define DDRPHY1_AO_NODE "mediatek,ddrphy1ao"
-#define DDRPHY2_AO_NODE "mediatek,ddrphy2ao"
-#define DDRPHY3_AO_NODE "mediatek,ddrphy3ao"
+#define DRAMC_NODE "mediatek,dramc"
 #endif /* #ifndef USE_DRAM_API_INSTEAD */
 #define EMI_NODE "mediatek,emi"
+#define CHN0_EMI_NODE "mediatek,chn0_emi"
+#define CHN1_EMI_NODE "mediatek,chn1_emi"
+#define CHN2_EMI_NODE "mediatek,chn2_emi"
+#define CHN3_EMI_NODE "mediatek,chn3_emi"
 #elif defined(CONFIG_MACH_ELBRUS)
 unsigned long dcm_infracfg_ao_base;
 unsigned long pericfg_base;
@@ -134,11 +135,7 @@ short is_dcm_bringup(void)
 	dcm_warn("%s: skipped for bring up\n", __func__);
 	return 1;
 #else
-	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
-		dcm_warn("%s: skipped E2 part only for bring up\n", __func__);
-		return 0; /* set 1 to skip all DCM for E2 platform */
-	} else
-		return 0;
+	return 0;
 #endif
 }
 
@@ -160,6 +157,12 @@ void dcm_pre_init(void)
 	dcm_info("%s: 0x10B00260=0x%x\n", __func__, reg_read(0x10B00260));
 	dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 #endif
+
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		dcm_warn("%s: add DCM modules from E2\n", __func__);
+		init_dcm_type |= GIC_SYNC_DCM_TYPE;
+		init_dcm_type |= RGU_DCM_TYPE;
+	}
 }
 
 #ifdef CONFIG_OF
@@ -260,6 +263,68 @@ int mt_dcm_dts_map(void)
 #endif
 
 #ifndef USE_DRAM_API_INSTEAD
+#ifdef CONFIG_MACH_MT6799
+	/* dramc0_ao */
+	node = of_find_compatible_node(NULL, NULL, DRAMC_NODE);
+	if (!node) {
+		dcm_err("error: cannot find node %s\n", DRAMC_NODE);
+		return -1;
+	}
+	dcm_dramc0_ao_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_dramc0_ao_base) {
+		dcm_err("error: cannot iomap %s[0]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* dramc1_ao */
+	dcm_dramc1_ao_base = (unsigned long)of_iomap(node, 1);
+	if (!dcm_dramc1_ao_base) {
+		dcm_err("error: cannot iomap %s[1]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* dramc2_ao */
+	dcm_dramc2_ao_base = (unsigned long)of_iomap(node, 2);
+	if (!dcm_dramc2_ao_base) {
+		dcm_err("error: cannot iomap %s[2]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* dramc3_ao */
+	dcm_dramc3_ao_base = (unsigned long)of_iomap(node, 3);
+	if (!dcm_dramc3_ao_base) {
+		dcm_err("error: cannot iomap %s[3]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* ddrphy0_ao */
+	dcm_ddrphy0_ao_base = (unsigned long)of_iomap(node, 8);
+	if (!dcm_ddrphy0_ao_base) {
+		dcm_err("error: cannot iomap %s[8]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* ddrphy1_ao */
+	dcm_ddrphy1_ao_base = (unsigned long)of_iomap(node, 9);
+	if (!dcm_ddrphy1_ao_base) {
+		dcm_err("error: cannot iomap %s[9]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* ddrphy2_ao */
+	dcm_ddrphy2_ao_base = (unsigned long)of_iomap(node, 10);
+	if (!dcm_ddrphy2_ao_base) {
+		dcm_err("error: cannot iomap %s[10]\n", DRAMC_NODE);
+		return -1;
+	}
+
+	/* ddrphy3_ao */
+	dcm_ddrphy3_ao_base = (unsigned long)of_iomap(node, 11);
+	if (!dcm_ddrphy3_ao_base) {
+		dcm_err("error: cannot iomap %s[11]\n", DRAMC_NODE);
+		return -1;
+	}
+#elif defined(CONFIG_MACH_ELBRUS)
 	/* dramc0_ao */
 	node = of_find_compatible_node(NULL, NULL, DRAMC0_AO_NODE);
 	if (!node) {
@@ -284,32 +349,6 @@ int mt_dcm_dts_map(void)
 		return -1;
 	}
 
-#ifdef CONFIG_MACH_MT6799
-	/* dramc2_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC2_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC2_AO_NODE);
-		return -1;
-	}
-	dcm_dramc2_ao_base = (unsigned long)of_iomap(node, 0);
-	if (!dcm_dramc2_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DRAMC2_AO_NODE);
-		return -1;
-	}
-
-	/* dramc3_ao */
-	node = of_find_compatible_node(NULL, NULL, DRAMC3_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DRAMC3_AO_NODE);
-		return -1;
-	}
-	dcm_dramc3_ao_base = (unsigned long)of_iomap(node, 0);
-	if (!dcm_dramc3_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DRAMC3_AO_NODE);
-		return -1;
-	}
-#endif
-
 	/* ddrphy0_ao */
 	node = of_find_compatible_node(NULL, NULL, DDRPHY0_AO_NODE);
 	if (!node) {
@@ -333,32 +372,7 @@ int mt_dcm_dts_map(void)
 		dcm_err("error: cannot iomap %s\n", DDRPHY1_AO_NODE);
 		return -1;
 	}
-
-#ifdef CONFIG_MACH_MT6799
-	/* ddrphy2_ao */
-	node = of_find_compatible_node(NULL, NULL, DDRPHY2_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DDRPHY2_AO_NODE);
-		return -1;
-	}
-	dcm_ddrphy2_ao_base = (unsigned long)of_iomap(node, 0);
-	if (!dcm_ddrphy2_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DDRPHY2_AO_NODE);
-		return -1;
-	}
-
-	/* ddrphy3_ao */
-	node = of_find_compatible_node(NULL, NULL, DDRPHY3_AO_NODE);
-	if (!node) {
-		dcm_err("error: cannot find node %s\n", DDRPHY3_AO_NODE);
-		return -1;
-	}
-	dcm_ddrphy3_ao_base = (unsigned long)of_iomap(node, 0);
-	if (!dcm_ddrphy3_ao_base) {
-		dcm_err("error: cannot iomap %s\n", DDRPHY3_AO_NODE);
-		return -1;
-	}
-#endif
+#endif /* #ifdef CONFIG_MACH_MT6799 */
 #endif /* #ifndef USE_DRAM_API_INSTEAD */
 
 	/* emi */
@@ -370,6 +384,54 @@ int mt_dcm_dts_map(void)
 	dcm_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_emi_base) {
 		dcm_err("error: cannot iomap %s\n", EMI_NODE);
+		return -1;
+	}
+
+	/* chn0_emi */
+	node = of_find_compatible_node(NULL, NULL, CHN0_EMI_NODE);
+	if (!node) {
+		dcm_err("error: cannot find node %s\n", CHN0_EMI_NODE);
+		return -1;
+	}
+	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_chn0_emi_base) {
+		dcm_err("error: cannot iomap %s\n", CHN0_EMI_NODE);
+		return -1;
+	}
+
+	/* chn1_emi */
+	node = of_find_compatible_node(NULL, NULL, CHN1_EMI_NODE);
+	if (!node) {
+		dcm_err("error: cannot find node %s\n", CHN1_EMI_NODE);
+		return -1;
+	}
+	dcm_chn1_emi_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_chn1_emi_base) {
+		dcm_err("error: cannot iomap %s\n", CHN1_EMI_NODE);
+		return -1;
+	}
+
+	/* chn2_emi */
+	node = of_find_compatible_node(NULL, NULL, CHN2_EMI_NODE);
+	if (!node) {
+		dcm_err("error: cannot find node %s\n", CHN2_EMI_NODE);
+		return -1;
+	}
+	dcm_chn2_emi_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_chn2_emi_base) {
+		dcm_err("error: cannot iomap %s\n", CHN2_EMI_NODE);
+		return -1;
+	}
+
+	/* chn3_emi */
+	node = of_find_compatible_node(NULL, NULL, CHN3_EMI_NODE);
+	if (!node) {
+		dcm_err("error: cannot find node %s\n", CHN3_EMI_NODE);
+		return -1;
+	}
+	dcm_chn3_emi_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_chn3_emi_base) {
+		dcm_err("error: cannot iomap %s\n", CHN3_EMI_NODE);
 		return -1;
 	}
 
@@ -484,13 +546,16 @@ void dcm_set_fmem_fsel_dbc(unsigned int fsel, unsigned int dbc)
 
 unsigned int sync_dcm_convert_freq2div(unsigned int freq)
 {
-	unsigned int div = 0;
+	unsigned int div = 0, min_freq = SYNC_DCM_CLK_MIN_FREQ;
 
-	if (freq < SYNC_DCM_CLK_MIN_FREQ)
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02)
+		min_freq = SYNC_DCM_CLK_MIN_FREQ_E2;
+
+	if (freq < min_freq)
 		return 0;
 
 	/* max divided ratio = Floor (CPU Frequency / (4 or 5) * system timer Frequency) */
-	div = (freq / SYNC_DCM_CLK_MIN_FREQ) - 1;
+	div = (freq / min_freq) - 1;
 	if (div > SYNC_DCM_MAX_DIV_VAL)
 		return SYNC_DCM_MAX_DIV_VAL;
 
@@ -749,6 +814,7 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	dcm_mcucfg_mp1_sync_dcm_enable(on);
 	/* dcm_mcucfg_mp2_arm_pll_divider_dcm(on); */
 	dcm_mcucfg_mcu_misc_dcm(on);
+	dcm_mcucfg_cntvalue_dcm(on);
 
 	dcm_mcsi_reg_cci_cactive(on);
 	dcm_mcsi_reg_cci_dcm(on);
@@ -867,6 +933,10 @@ int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 	dcm_ddrphy1ao_ddrphy(on);
 	dcm_ddrphy2ao_ddrphy(on);
 	dcm_ddrphy3ao_ddrphy(on);
+	dcm_ddrphy0ao_ddrphy_e2(on);
+	dcm_ddrphy1ao_ddrphy_e2(on);
+	dcm_ddrphy2ao_ddrphy_e2(on);
+	dcm_ddrphy3ao_ddrphy_e2(on);
 #endif /* #ifdef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_ddrphy0ao_ddrphy(on);
@@ -881,8 +951,11 @@ int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 int dcm_emi(ENUM_EMI_DCM on)
 {
 #ifdef CONFIG_MACH_MT6799
-	dcm_emi_emi_dcm_reg_1(on);
-	dcm_emi_emi_dcm_reg_2(on);
+	dcm_emi_emi_dcm_reg(on);
+	dcm_chn0_emi_emi_dcm_reg(on);
+	dcm_chn1_emi_emi_dcm_reg(on);
+	dcm_chn2_emi_emi_dcm_reg(on);
+	dcm_chn3_emi_emi_dcm_reg(on);
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_emi_emi(on);
 #else
@@ -895,7 +968,7 @@ int dcm_emi(ENUM_EMI_DCM on)
 #ifdef CONFIG_MACH_MT6799
 int dcm_gic_sync(ENUM_GIC_SYNC_DCM on)
 {
-	/* TODO: add function */
+	dcm_mcucfg_gic_sync_dcm(on);
 
 	return 0;
 }
@@ -909,7 +982,8 @@ int dcm_last_core(ENUM_LAST_CORE_DCM on)
 
 int dcm_rgu(ENUM_RGU_DCM on)
 {
-	/* TODO: add function */
+	dcm_mcucfg_mp0_rgu_dcm(on);
+	dcm_mcucfg_mp1_rgu_dcm(on);
 
 	return 0;
 }
@@ -1079,19 +1153,20 @@ void dcm_dump_regs(void)
 	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
 		REG_DUMP(MCUCFG_SYNC_DCM_MP2_REG);
 #endif
-
-/* TODO: add function */
-#if 0
-	if (init_dcm_type & LAST_CORE_DCM_TYPE)
-
-	if (init_dcm_type & GIC_SYNC_DCM_TYPE)
-
-	if (init_dcm_type & RGU_DCM_TYPE)
-#endif
+	REG_DUMP(MCUCFG_DBG_CONTROL);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(MCUSYS_GIC_SYNC_DCM);
+		REG_DUMP(MCUCFG_MP0_RGU_DCM);
+		REG_DUMP(MCUCFG_MP1_RGU_DCM);
+	}
 
 	REG_DUMP(PERICFG_PERI_BIU_REG_DCM_CTRL);
 	REG_DUMP(PERICFG_PERI_BIU_EMI_DCM_CTRL);
 	REG_DUMP(PERICFG_PERI_BIU_DBC_CTRL);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(PERICFG_PERI_DCM_EMI_EARLY_CTRL);
+		REG_DUMP(PERICFG_PERI_DCM_REG_EARLY_CTRL);
+	}
 	REG_DUMP(INFRA_BUS_DCM_CTRL);
 	REG_DUMP(INFRA_BUS_DCM_CTRL_1);
 	REG_DUMP(INFRA_MDBUS_DCM_CTRL);
@@ -1101,22 +1176,106 @@ void dcm_dump_regs(void)
 
 	REG_DUMP(EMI_CONM);
 	REG_DUMP(EMI_CONN);
+	REG_DUMP(CHN0_EMI_CHN_EMI_CONB);
+	REG_DUMP(CHN1_EMI_CHN_EMI_CONB);
+	REG_DUMP(CHN2_EMI_CHN_EMI_CONB);
+	REG_DUMP(CHN3_EMI_CHN_EMI_CONB);
 	REG_DUMP(LPDMA_CONB);
 #ifndef USE_DRAM_API_INSTEAD
 	REG_DUMP(DDRPHY0AO_MISC_CG_CTRL0);
 	REG_DUMP(DDRPHY0AO_MISC_CG_CTRL2);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(DDRPHY0AO_MISC_CG_CTRL5);
+		REG_DUMP(DDRPHY0AO_MISC_CTRL3);
+		REG_DUMP(DDRPHY0AO_SHU1_B0_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0XC20);
+		REG_DUMP(DDRPHY0AO_SHU1_B1_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0XCA0);
+		REG_DUMP(DDRPHY0AO_SHU2_B0_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X1120);
+		REG_DUMP(DDRPHY0AO_SHU2_B1_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X11A0);
+		REG_DUMP(DDRPHY0AO_SHU3_B0_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X1620);
+		REG_DUMP(DDRPHY0AO_SHU3_B1_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X16A0);
+		REG_DUMP(DDRPHY0AO_SHU4_B0_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X1B20);
+		REG_DUMP(DDRPHY0AO_SHU4_B1_DQ0);
+		REG_DUMP(DDRPHY0AO_RFU_0X1BA0);
+	}
 	REG_DUMP(DRAMC0_AO_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC0_AO_CLKAR);
 	REG_DUMP(DDRPHY1AO_MISC_CG_CTRL0);
 	REG_DUMP(DDRPHY1AO_MISC_CG_CTRL2);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(DDRPHY1AO_MISC_CG_CTRL5);
+		REG_DUMP(DDRPHY1AO_MISC_CTRL3);
+		REG_DUMP(DDRPHY1AO_SHU1_B0_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0XC20);
+		REG_DUMP(DDRPHY1AO_SHU1_B1_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0XCA0);
+		REG_DUMP(DDRPHY1AO_SHU2_B0_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X1120);
+		REG_DUMP(DDRPHY1AO_SHU2_B1_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X11A0);
+		REG_DUMP(DDRPHY1AO_SHU3_B0_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X1620);
+		REG_DUMP(DDRPHY1AO_SHU3_B1_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X16A0);
+		REG_DUMP(DDRPHY1AO_SHU4_B0_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X1B20);
+		REG_DUMP(DDRPHY1AO_SHU4_B1_DQ0);
+		REG_DUMP(DDRPHY1AO_RFU_0X1BA0);
+	}
 	REG_DUMP(DRAMC1_AO_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC1_AO_CLKAR);
 	REG_DUMP(DDRPHY2AO_MISC_CG_CTRL0);
 	REG_DUMP(DDRPHY2AO_MISC_CG_CTRL2);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(DDRPHY2AO_MISC_CG_CTRL5);
+		REG_DUMP(DDRPHY2AO_MISC_CTRL3);
+		REG_DUMP(DDRPHY2AO_SHU1_B0_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0XC20);
+		REG_DUMP(DDRPHY2AO_SHU1_B1_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0XCA0);
+		REG_DUMP(DDRPHY2AO_SHU2_B0_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X1120);
+		REG_DUMP(DDRPHY2AO_SHU2_B1_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X11A0);
+		REG_DUMP(DDRPHY2AO_SHU3_B0_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X1620);
+		REG_DUMP(DDRPHY2AO_SHU3_B1_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X16A0);
+		REG_DUMP(DDRPHY2AO_SHU4_B0_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X1B20);
+		REG_DUMP(DDRPHY2AO_SHU4_B1_DQ0);
+		REG_DUMP(DDRPHY2AO_RFU_0X1BA0);
+	}
 	REG_DUMP(DRAMC2_AO_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC2_AO_CLKAR);
 	REG_DUMP(DDRPHY3AO_MISC_CG_CTRL0);
 	REG_DUMP(DDRPHY3AO_MISC_CG_CTRL2);
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		REG_DUMP(DDRPHY3AO_MISC_CG_CTRL5);
+		REG_DUMP(DDRPHY3AO_MISC_CTRL3);
+		REG_DUMP(DDRPHY3AO_SHU1_B0_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0XC20);
+		REG_DUMP(DDRPHY3AO_SHU1_B1_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0XCA0);
+		REG_DUMP(DDRPHY3AO_SHU2_B0_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X1120);
+		REG_DUMP(DDRPHY3AO_SHU2_B1_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X11A0);
+		REG_DUMP(DDRPHY3AO_SHU3_B0_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X1620);
+		REG_DUMP(DDRPHY3AO_SHU3_B1_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X16A0);
+		REG_DUMP(DDRPHY3AO_SHU4_B0_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X1B20);
+		REG_DUMP(DDRPHY3AO_SHU4_B1_DQ0);
+		REG_DUMP(DDRPHY3AO_RFU_0X1BA0);
+	}
 	REG_DUMP(DRAMC3_AO_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC3_AO_CLKAR);
 #endif /* #ifndef USE_DRAM_API_INSTEAD */
