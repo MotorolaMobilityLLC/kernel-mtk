@@ -613,6 +613,7 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 					const char *buf, size_t cnt)
 {
 	struct rt5509_chip *chip = dev_get_drvdata(dev);
+	struct snd_soc_dapm_context *dapm = snd_soc_codec_get_dapm(chip->codec);
 	struct rt5509_proprietary_param *param = NULL;
 	int i = 0, size = 0;
 	const u8 *bin_offset;
@@ -670,11 +671,13 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 		bin_offset += param->cfg_size[i];
 	}
 	chip->pdata->p_param = param;
-	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_STANDBY) < 0)
+	if (dapm->bias_level != SND_SOC_BIAS_OFF)
+		goto out_param_write;
+	if (rt5509_power_on(chip, true) < 0)
 		goto out_param_write;
 	rt5509_do_tcsense_fix(chip->codec);
 	rt5509_init_proprietary_setting(chip->codec);
-	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_OFF) < 0)
+	if (rt5509_power_on(chip, false) < 0)
 		goto out_param_write;
 	return cnt;
 out_param_write:
