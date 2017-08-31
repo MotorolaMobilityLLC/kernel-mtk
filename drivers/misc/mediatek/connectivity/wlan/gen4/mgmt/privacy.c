@@ -895,7 +895,7 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 	UINT_8 i;
 	BOOLEAN fgCheckKeyId = TRUE;
 	P_WLAN_TABLE_T prWtbl;
-	/* P_BSS_INFO_T            prBSSInfo = GET_BSS_INFO_BY_INDEX(prAdapter,ucBssIndex); */
+	P_BSS_INFO_T            prBSSInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 
 	prWtbl = prAdapter->rWifiVar.arWtbl;
 	ASSERT(prAdapter);
@@ -907,6 +907,9 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 		fgCheckKeyId = FALSE;
 
 	if (ucKeyId == 0xFF || ucAlg == CIPHER_SUITE_BIP)
+		fgCheckKeyId = FALSE;
+
+	if (prBSSInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 		fgCheckKeyId = FALSE;
 
 	ucStartIDX = 0;
@@ -949,7 +952,7 @@ secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter,
 			kalMemCopy(prWtbl[ucEntry].aucMacAddr, pucAddr, MAC_ADDR_LEN);
 			prWtbl[ucEntry].ucStaIndex = ucStaIdx;
 		}
-		DBGLOG(RSN, TRACE,
+		DBGLOG(RSN, INFO,
 		       "[Wlan index] BSS#%d keyid#%d P=%d use WlanIndex#%d STAIdx=%d " MACSTR
 		       "\n", ucBssIndex, ucKeyId, prWtbl[ucEntry].ucPairwise, ucEntry, ucStaIdx, MAC2STR(pucAddr));
 

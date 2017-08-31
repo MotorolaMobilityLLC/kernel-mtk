@@ -1422,6 +1422,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 			rCmdSetBssInfo.ucBMCWlanIndex = prBssInfo->ucBMCWlanIndexS[prBssInfo->ucBcDefaultKeyIdx];
 	} else
 		rCmdSetBssInfo.ucBMCWlanIndex = prBssInfo->ucBMCWlanIndex;
+	DBGLOG(RSN, TRACE, "Update BSS BMC WlanIdx %u\n", rCmdSetBssInfo.ucBMCWlanIndex);
 
 #ifdef CFG_ENABLE_WIFI_DIRECT
 	rCmdSetBssInfo.ucHiddenSsidMode = prBssInfo->eHiddenSsidType;
