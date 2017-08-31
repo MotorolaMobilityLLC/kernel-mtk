@@ -414,9 +414,8 @@
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
 			status = "disabled";
-			size = <0 0x804000>;
+			size = <0 0x120000>; /* 1M + 128K */
 			alignment = <0 0x400000>;
-			debug-only = <0 0x400000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
 
