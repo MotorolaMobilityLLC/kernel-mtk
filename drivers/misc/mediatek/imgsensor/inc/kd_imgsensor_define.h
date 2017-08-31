@@ -1075,7 +1075,7 @@ typedef struct {
 	MSDK_SENSOR_CONFIG_STRUCT sensorConfigData;
 	SENSOR_STATE_ENUM sensorState;
 #endif
-	MUINT8  version;
+	MUINT8  arch;
 	void   *psensor_inst; /* IMGSENSOR_SENSOR_INST */
 } SENSOR_FUNCTION_STRUCT, *PSENSOR_FUNCTION_STRUCT;
 
