@@ -99,10 +99,22 @@ int __ext4_check_dir_entry(const char *function, unsigned int line,
 	return 1;
 }
 
-inline void ext4_d_drop_if_negative(struct dentry *dentry)
+static void ext4_d_invalidate_if_negative(struct dentry *dir, const char *name, int len)
 {
-	if (dentry && !dentry->d_inode)
-		d_drop(dentry);
+	struct dentry *dentry;
+	struct qstr fname = { .name = name, .len = len};
+
+	if (!dir)
+		return;
+
+	dentry = d_hash_and_lookup(dir, &fname);
+	if (IS_ERR_OR_NULL(dentry))
+		return;
+
+	if (!dentry->d_inode)
+		d_invalidate(dentry);
+	else
+		dput(dentry);
 }
 
 static int ext4_readdir(struct file *file, struct dir_context *ctx)
@@ -258,11 +270,7 @@ static int ext4_readdir(struct file *file, struct dir_context *ctx)
 					if (err < 0)
 						goto errout;
 
-					if (dentry) {
-						struct qstr fname = { .name = fname_crypto_str.name, .len = err};
-
-						ext4_d_drop_if_negative(d_hash_and_lookup(dentry, &fname));
-					}
+					ext4_d_invalidate_if_negative(dentry, fname_crypto_str.name, err);
 
 					if (!dir_emit(ctx,
 					    fname_crypto_str.name, err,
