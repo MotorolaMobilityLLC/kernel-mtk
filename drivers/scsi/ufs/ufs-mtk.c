@@ -1403,6 +1403,7 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	NULL,                         /* dbg_register_dump */
 	ufs_mtk_auto_hibern8,         /* auto_hibern8 */
 	ufs_mtk_pltfrm_deepidle_resource_req, /* deepidle_resource_req */
+	ufs_mtk_pltfrm_deepidle_lock, /* deepidle_lock */
 	ufs_mtk_scsi_dev_cfg,         /* scsi_dev_cfg */
 };
 

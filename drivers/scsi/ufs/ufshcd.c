@@ -49,7 +49,6 @@
 #include "ufs-mtk-platform.h"
 #include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
-#include "mtk_idle.h"
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
@@ -5601,7 +5600,7 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	u32 reg = 0;
 
 	/* MTK PATCH: Lock deepidle/SODI @enter UFS suspend callback */
-	idle_lock_by_ufs(1);
+	ufshcd_vops_deepidle_lock(hba, true);
 
 	hba->pm_op_in_progress = 1;
 	if (!ufshcd_is_shutdown_pm(pm_op)) {
@@ -5770,7 +5769,7 @@ enable_gating:
 out:
 	hba->pm_op_in_progress = 0;
 	/* MTK PATCH: Release deepidle/SODI @enter UFS suspend callback */
-	idle_lock_by_ufs(0);
+	ufshcd_vops_deepidle_lock(hba, false);
 	return ret;
 }
 
@@ -5790,7 +5789,7 @@ static int ufshcd_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	enum uic_link_state old_link_state;
 
 	/* MTK PATCH: Lock deepidle/SODI @enter UFS resume callback */
-	idle_lock_by_ufs(1);
+	ufshcd_vops_deepidle_lock(hba, true);
 
 	hba->pm_op_in_progress = 1;
 	old_link_state = hba->uic_link_state;
@@ -5876,7 +5875,7 @@ disable_irq_and_vops_clks:
 out:
 	hba->pm_op_in_progress = 0;
 	/* MTK PATCH: Release deepidle/SODI @enter UFS resume callback */
-	idle_lock_by_ufs(0);
+	ufshcd_vops_deepidle_lock(hba, false);
 	return ret;
 }
 

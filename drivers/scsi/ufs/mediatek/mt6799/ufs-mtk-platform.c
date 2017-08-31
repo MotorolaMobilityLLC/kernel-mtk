@@ -20,6 +20,7 @@
 
 #include "mtk_spm_resource_req.h"
 #include <mtk_clkbuf_ctl.h>
+#include "mtk_idle.h"
 
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
@@ -135,6 +136,19 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
 void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
 {
 	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
+}
+
+/**
+ * ufs_mtk_pltfrm_deepidle_lock - Deepidle & SODI lock.
+ * @hba: per-adapter instance
+ * @lock: lock or unlock deepidle & SODI entrance.
+ */
+void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
+{
+	if (lock)
+		idle_lock_by_ufs(1);
+	else
+		idle_lock_by_ufs(0);
 }
 
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
