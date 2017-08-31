@@ -31,16 +31,16 @@ struct writeback_control;
 struct bdi_writeback;
 
 struct kernel_reserve_meminfo {
-	unsigned long total;
-	unsigned long available;
-	unsigned long kernel_code;
-	unsigned long rwdata;
-	unsigned long rodata;
-	unsigned long init;
-	unsigned long bss;
-	unsigned long reserved;
+	unsigned long long total;
+	unsigned long long available;
+	unsigned long long kernel_code;
+	unsigned long long rwdata;
+	unsigned long long rodata;
+	unsigned long long init;
+	unsigned long long bss;
+	unsigned long long reserved;
 #ifdef CONFIG_HIGHMEM
-	unsigned long highmem;
+	unsigned long long highmem;
 #endif
 };
 
