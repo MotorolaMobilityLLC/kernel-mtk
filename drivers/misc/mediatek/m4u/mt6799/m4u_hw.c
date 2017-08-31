@@ -2332,10 +2332,14 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 		unsigned long MMconfigBaseAddr;
 		struct device_node *node = NULL;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
-		MMconfigBaseAddr = (unsigned long)of_iomap(node, 0);
-		M4UINFO("MMconfigBaseAddr: 0x%lx\n", MMconfigBaseAddr);
-		M4U_WriteReg32(MMconfigBaseAddr, 0x108, 0xffffffff);
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-mmsys_config");
+		if (node != NULL) {
+			MMconfigBaseAddr = (unsigned long)of_iomap(node, 0);
+			M4UINFO("MMconfigBaseAddr: 0x%lx\n", MMconfigBaseAddr);
+			M4U_WriteReg32(MMconfigBaseAddr, 0x108, 0xffffffff);
+		} else {
+			M4UINFO("mmsys_config no exist, line %d\n", __LINE__);
+		}
 	}
 #endif
 #endif
