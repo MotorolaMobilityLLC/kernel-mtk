@@ -38,6 +38,4 @@ struct CMDQ_MMP_Events_t {
 void cmdq_mmp_init(void);
 struct CMDQ_MMP_Events_t *cmdq_mmp_get_event(void);
 
-extern void MMProfileEnable(int enable);
-extern void MMProfileStart(int start);
 #endif				/* __CMDQ_MMP_H__ */
