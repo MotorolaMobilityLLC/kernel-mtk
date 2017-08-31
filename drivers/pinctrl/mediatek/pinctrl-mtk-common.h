@@ -19,14 +19,22 @@
 #include <linux/regmap.h>
 #include <linux/pinctrl/pinconf-generic.h>
 
-#define NO_EINT_SUPPORT    255
-#define MT_EDGE_SENSITIVE           0
-#define MT_LEVEL_SENSITIVE          1
-#define EINT_DBNC_SET_DBNC_BITS     4
-#define EINT_DBNC_RST_BIT           (0x1 << 1)
-#define EINT_DBNC_SET_EN            (0x1 << 0)
-#define MAX_IP_BASE			10
-#define MTK_PINCTRL_NOT_SUPPORT	(0xffff)
+#define NO_EINT_SUPPORT                 255
+#define MT_EDGE_SENSITIVE               0
+#define MT_LEVEL_SENSITIVE              1
+#define EINT_DBNC_SET_DBNC_BITS         4
+#define EINT_DBNC_RST_BIT               (0x1 << 1)
+#define EINT_DBNC_SET_EN                (0x1 << 0)
+#define MAX_IP_BASE                     10
+#define MTK_PINCTRL_NOT_SUPPORT	        (0xffff)
+#define MTK_PUPD_R1R0_BIT_PUPD          (1 << 0)
+#define MTK_PUPD_R1R0_BIT_R0            (1 << 1)
+#define MTK_PUPD_R1R0_BIT_R1            (1 << 2)
+#define MTK_PUPD_R1R0_BIT_SUPPORT       (1 << 3)
+#define MTK_PUPD_R1R0_GET_PUPD(val)     (val & MTK_PUPD_R1R0_BIT_PUPD)
+#define MTK_PUPD_R1R0_GET_PULLEN(val)   (val & (MTK_PUPD_R1R0_BIT_R0 | MTK_PUPD_R1R0_BIT_R1))
+#define MTK_PUPD_BIT_PD                 (1 << 0)
+#define MTK_PUPD_BIT_PU                 (1 << 1)
 
 /*#define GPIO_DEBUG*/
 /*#define GPIO_BRINGUP*/
@@ -196,12 +204,12 @@ struct mtk_eint_offsets {
 };
 
 /**
- * struct mt_pin_info - For all pins' setting.
- * @pin: The pin number.
- * @offset: The offset of pin setting register.
- * @bit: The offset of setting value register.
- * @width: The width of setting bit.
- * @ip_num: The IP number of setting register use.
+ * struct mt_pin_info - For all pins' setting
+ * @pin: The pin number
+ * @offset: The address offset of pin setting register
+ * @bit: The bit shift at setting register
+ * @width: The bit width at setting register
+ * @ip_num: The IOConfiguration base index
  */
 struct mtk_pin_info {
 	unsigned int pin;
@@ -221,22 +229,22 @@ struct mtk_pin_info {
 	}
 
 struct mtk_pinctrl {
-	struct regmap	*regmap1;
-	struct regmap	*regmap2;
-	struct regmap	*regmap[MAX_IP_BASE];
-	struct pinctrl_desc pctl_desc;
+	struct regmap           *regmap1;
+	struct regmap	        *regmap2;
+	struct regmap	        *regmap[MAX_IP_BASE];
+	struct pinctrl_desc     pctl_desc;
 	struct device           *dev;
 	struct gpio_chip	*chip;
-	struct mtk_pinctrl_group	*groups;
+	struct mtk_pinctrl_group *groups;
 	unsigned int		ngroups;
-	const char          **grp_names;
+	const char              **grp_names;
 	struct pinctrl_dev      *pctl_dev;
 	const struct mtk_pinctrl_devdata  *devdata;
 	void __iomem		*eint_reg_base;
 	struct irq_domain	*domain;
 	int			*eint_dual_edges;
-	u32 *wake_mask;
-	u32 *cur_mask;
+	u32                     *wake_mask;
+	u32                     *cur_mask;
 };
 
 /**
@@ -288,35 +296,41 @@ extern int mt_set_gpio_pull_resistor(unsigned long pin, unsigned long resistors)
 
 struct mtk_pinctrl_devdata {
 	const struct mtk_desc_pin	*pins;
-	unsigned int				npins;
+	unsigned int			npins;
 	const struct mtk_drv_group_desc	*grp_desc;
-	unsigned int	n_grp_cls;
+	unsigned int	                n_grp_cls;
 	const struct mtk_pin_drv_grp	*pin_drv_grp;
-	unsigned int	n_pin_drv_grps;
+	unsigned int	                n_pin_drv_grps;
 	const struct mtk_pin_info	*pin_mode_grps;
-	unsigned int	n_pin_mode;
+	unsigned int	                n_pin_mode;
 	const struct mtk_pin_info	*pin_ies_grps;
-	unsigned int	n_pin_ies;
+	unsigned int	                n_pin_ies;
 	const struct mtk_pin_info	*pin_smt_grps;
-	unsigned int	n_pin_smt;
+	unsigned int	                n_pin_smt;
+	const struct mtk_pin_info	*pin_pullen_grps;
+	unsigned int	                n_pin_pullen;
+	const struct mtk_pin_info	*pin_pullsel_grps;
+	unsigned int	                n_pin_pullsel;
 	const struct mtk_pin_info	*pin_pu_grps;
-	unsigned int	n_pin_pu;
+	unsigned int	                n_pin_pu;
 	const struct mtk_pin_info	*pin_pd_grps;
-	unsigned int	n_pin_pd;
+	unsigned int	                n_pin_pd;
 	const struct mtk_pin_info	*pin_dout_grps;
-	unsigned int	n_pin_dout;
+	unsigned int	                n_pin_dout;
 	const struct mtk_pin_info	*pin_din_grps;
-	unsigned int	n_pin_din;
+	unsigned int	                n_pin_din;
 	const struct mtk_pin_info	*pin_dir_grps;
-	unsigned int	n_pin_dir;
+	unsigned int	                n_pin_dir;
+	const struct mtk_pin_info	*pin_pupd_r1r0_grps;
+	unsigned int	                n_pin_pupd_r1r0;
 	const struct mtk_pin_info	*pin_pupd_grps;
-	unsigned int	n_pin_pupd;
+	unsigned int	                n_pin_pupd;
 	const struct mtk_pin_info	*pin_r0_grps;
-	unsigned int	n_pin_r0;
+	unsigned int	                n_pin_r0;
 	const struct mtk_pin_info	*pin_r1_grps;
-	unsigned int	n_pin_r1;
+	unsigned int	                n_pin_r1;
 	const struct mtk_pin_info	*pin_drv_grps;
-	unsigned int	n_pin_drv;
+	unsigned int	                n_pin_drv;
 	int (*spec_pull_set)(struct regmap *reg, unsigned int pin,
 			unsigned char align, bool isup, unsigned int arg);
 	int (*spec_ies_smt_set)(struct regmap *reg, unsigned int pin,
@@ -346,24 +360,24 @@ struct mtk_pinctrl_devdata {
 		int pin, bool enable, bool isup, unsigned int arg);
 	int (*mtk_pctl_get_pull_sel)(struct mtk_pinctrl *pctl, int pin);
 	int (*mtk_pctl_get_pull_en)(struct mtk_pinctrl *pctl, int pin);
-	unsigned int dir_offset;
-	unsigned int ies_offset;
-	unsigned int smt_offset;
-	unsigned int pullen_offset;
-	unsigned int pullsel_offset;
-	unsigned int drv_offset;
-	unsigned int dout_offset;
-	unsigned int din_offset;
-	unsigned int pinmux_offset;
-	unsigned short type1_start;
-	unsigned short type1_end;
-	unsigned char  port_shf;
-	unsigned char  port_mask;
-	unsigned char  port_align;
-	unsigned int regmap_num;
+	unsigned int    dir_offset;
+	unsigned int    ies_offset;
+	unsigned int    smt_offset;
+	unsigned int    pullen_offset;
+	unsigned int    pullsel_offset;
+	unsigned int    drv_offset;
+	unsigned int    dout_offset;
+	unsigned int    din_offset;
+	unsigned int    pinmux_offset;
+	unsigned short  type1_start;
+	unsigned short  type1_end;
+	unsigned char   port_shf;
+	unsigned char   port_mask;
+	unsigned char   port_align;
+	unsigned int    regmap_num;
 	struct mtk_eint_offsets eint_offsets;
-	unsigned int	ap_num;
-	unsigned int	db_cnt;
+	unsigned int    ap_num;
+	unsigned int    db_cnt;
 };
 
 int mtk_pctrl_init(struct platform_device *pdev,
