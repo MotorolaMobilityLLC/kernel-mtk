@@ -1978,7 +1978,7 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -2028,12 +2028,12 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 		handle = NULL;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	pipe_status = DUAL_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -2076,7 +2076,7 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -2126,12 +2126,12 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 		handle = NULL;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -2180,7 +2180,7 @@ int _DL_dual_switch_to_DC_fast(void)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2291,7 +2291,7 @@ int _DL_dual_switch_to_DC_fast(void)
 	pipe_status = SINGLE_PIPE;
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	/* could switch to lower gear */
 	/* resolution higher than FHD can't switch to lowest gear */
@@ -2371,7 +2371,7 @@ int _DL_dual_switch_to_DC_fast(void)
 	/* disp_cmdq_clear_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	disp_cmdq_wait_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
@@ -2389,7 +2389,7 @@ int _DL_dual_switch_to_DC_fast(void)
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -2459,7 +2459,7 @@ int DL_dual_switch_to_DC_dual(void)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2544,7 +2544,7 @@ int DL_dual_switch_to_DC_dual(void)
 
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	/* could switch to lower gear */
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
@@ -2618,7 +2618,7 @@ int DL_dual_switch_to_DC_dual(void)
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	disp_cmdq_wait_event(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
@@ -2636,7 +2636,7 @@ int DL_dual_switch_to_DC_dual(void)
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 5,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -2700,7 +2700,7 @@ int DC_dual_switch_to_DL_dual(void)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2738,7 +2738,7 @@ int DC_dual_switch_to_DL_dual(void)
 	 */
 	_cmdq_flush_config_handle(1, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
@@ -2753,7 +2753,7 @@ int DC_dual_switch_to_DL_dual(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -2823,7 +2823,7 @@ static int _DL_switch_to_DC_fast(void)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -2927,7 +2927,7 @@ static int _DL_switch_to_DC_fast(void)
 
 	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	/* could switch to lower gear */
 	/* resolution higher than FHD can't switch to lowest gear */
@@ -3033,7 +3033,7 @@ static int _DL_switch_to_DC_fast(void)
 	}
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	/* 11..enable event for new path */
 	/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE); */
@@ -3054,7 +3054,7 @@ static int _DL_switch_to_DC_fast(void)
 	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 5,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -3150,7 +3150,7 @@ static int _DC_switch_to_DL_fast(void)
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -3194,7 +3194,7 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	_cmdq_reset_config_handle();
 	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
@@ -3215,7 +3215,7 @@ static int _DC_switch_to_DL_fast(void)
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -3250,7 +3250,7 @@ static int _DC_switch_to_DL_sw_only(void)
 	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
 	new_scenario = DDP_SCENARIO_PRIMARY_DISP;
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 1);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
@@ -3292,7 +3292,7 @@ static int _DC_switch_to_DL_sw_only(void)
 	if (!primary_display_is_video_mode())
 		_cmdq_build_trigger_loop();
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return ret;
 }
@@ -3337,7 +3337,7 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 		new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -3363,7 +3363,7 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 		handle = NULL;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return 0;
 }
@@ -3397,7 +3397,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 		new_scenario = DDP_SCENARIO_PRIMARY_DISP;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, handle,
@@ -3444,7 +3444,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 		handle = NULL;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
-			 (new_scenario | (old_scenario << 4)));
+			 (new_scenario | (old_scenario << 16)));
 
 	return 0;
 }
@@ -7069,17 +7069,18 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 				handle = NULL;
 			}
 		}
-		_primary_path_unlock(__func__);
 
 		/* only cmd mode & with disable mmsys clk will kick */
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
-			primary_display_idlemgr_kick(__func__, 1);
+			primary_display_idlemgr_kick(__func__, 0);
+
+		_primary_path_unlock(__func__);
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
+		_primary_path_lock(__func__);
 		if (handle) {
 			if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
-				_primary_path_lock(__func__);
 				if (pgc->state == DISP_ALIVE) {
 					/* do not set dirty here, just write register. */
 					/* if set dirty needed, will be implemented by dpmgr_module_notify() */
@@ -7087,13 +7088,14 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 					/* use non-blocking flush here to avoid primary path is locked for too long */
 					_cmdq_flush_config_handle_mira(handle, 0);
 				}
-				_primary_path_unlock(__func__);
 			}
 
 			cmdqsize = disp_cmdq_get_instruction_count(handle);
 			disp_cmdq_destroy(handle, __func__, __LINE__);
 			handle = NULL;
 		}
+		_primary_path_unlock(__func__);
+
 	} else {
 		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
