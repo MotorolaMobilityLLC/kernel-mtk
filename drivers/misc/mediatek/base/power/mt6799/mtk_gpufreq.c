@@ -2419,7 +2419,7 @@ EXPORT_SYMBOL(mt_gpufreq_get_cur_freq_index);
  *************************************************/
 unsigned int mt_gpufreq_get_cur_freq(void)
 {
-#ifdef MTK_GPU_SPM
+#ifdef MTK_SSPM
 	return _mt_gpufreq_get_cur_freq();
 #else
 	gpufreq_dbg("current GPU frequency is %d MHz\n", g_cur_gpu_freq / 1000);
