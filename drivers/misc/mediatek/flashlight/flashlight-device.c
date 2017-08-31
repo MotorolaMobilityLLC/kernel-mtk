@@ -41,9 +41,33 @@
 		{1, 1, 1, "flashlights-none", -1, 0},
 	};
 	#endif
+#elif defined(mt6758)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-rt5081", 0, 0},
+	{0, 1, 0, "flashlights-rt5081", 1, 0},
+	{1, 0, 0, "flashlights-none", -1, 0},
+	{1, 1, 0, "flashlights-none", -1, 0},
+	{0, 0, 1, "flashlights-none", -1, 0},
+	{0, 1, 1, "flashlights-none", -1, 0},
+	{1, 0, 1, "flashlights-none", -1, 0},
+	{1, 1, 1, "flashlights-none", -1, 0},
+};
 #elif defined(mt6759)
 const struct flashlight_device_id flashlight_id[] = {
-	/* {"NAME", TYPE, CT, PART} */
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
+	{0, 0, 0, "flashlights-rt5081", 0, 0},
+	{0, 1, 0, "flashlights-rt5081", 1, 0},
+	{1, 0, 0, "flashlights-none", -1, 0},
+	{1, 1, 0, "flashlights-none", -1, 0},
+	{0, 0, 1, "flashlights-none", -1, 0},
+	{0, 1, 1, "flashlights-none", -1, 0},
+	{1, 0, 1, "flashlights-none", -1, 0},
+	{1, 1, 1, "flashlights-none", -1, 0},
+};
+#elif defined(mt6763)
+const struct flashlight_device_id flashlight_id[] = {
+	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 	{0, 0, 0, "flashlights-rt5081", 0, 0},
 	{0, 1, 0, "flashlights-rt5081", 1, 0},
 	{1, 0, 0, "flashlights-none", -1, 0},

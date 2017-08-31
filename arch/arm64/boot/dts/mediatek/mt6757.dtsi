@@ -3567,6 +3567,10 @@
 		compatible = "mediatek,flashlights_lm3643";
 	};
 
+	flashlights_rt5081: flashlights_rt5081 {
+		compatible = "mediatek,flashlights_rt5081";
+	};
+
 	gsensor@0 {
 		compatible = "mediatek,gsensor";
 		/* vgsensor-supply = <&mt_pmic_vio28_ldo_reg>; */
