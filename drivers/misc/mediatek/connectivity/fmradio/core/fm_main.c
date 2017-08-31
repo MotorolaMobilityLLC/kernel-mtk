@@ -1634,6 +1634,8 @@ fm_s32 fm_pre_search(struct fm *fm)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
+	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
+
 	ret = fm_low_ops.bi.pre_search();
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
@@ -1652,6 +1654,8 @@ fm_s32 fm_restore_search(struct fm *fm)
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
+
+	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
 
 	ret = fm_low_ops.bi.restore_search();
 	FM_UNLOCK(fm_ops_lock);
@@ -2014,7 +2018,8 @@ void fm_rds_reset_work_func(unsigned long data)
 
 	ret = fm_low_ops.ri.rds_blercheck(g_fm_struct->pstRDSData);
 
-	WCN_DBG(FM_NTC | MAIN, "Addr_Cnt=%x\n", g_fm_struct->pstRDSData->AF_Data.Addr_Cnt);
+	WCN_DBG(FM_NTC | MAIN, "ret=%d, Addr_Cnt=0x%02x, event_status=0x%04x\n", ret,
+		g_fm_struct->pstRDSData->AF_Data.Addr_Cnt, g_fm_struct->pstRDSData->event_status);
 	/* check af list get,can't use event==af_list because event will clear after read rds every time */
 	if (g_fm_struct->pstRDSData->AF_Data.Addr_Cnt == 0xFF)
 		g_fm_struct->pstRDSData->event_status |= RDS_EVENT_AF;
@@ -2022,7 +2027,6 @@ void fm_rds_reset_work_func(unsigned long data)
 	if (!ret && g_fm_struct->pstRDSData->event_status)
 		FM_EVENT_SEND(g_fm_struct->rds_event, FM_RDS_DATA_READY);
 
-	WCN_DBG(FM_NTC | MAIN, "rds event check=%x\n", g_fm_struct->pstRDSData->event_status);
 	FM_UNLOCK(fm_rds_cnt);
 	FM_UNLOCK(fm_rxtx_lock);
 }
