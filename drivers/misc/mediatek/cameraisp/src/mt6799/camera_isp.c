@@ -76,6 +76,7 @@
 #include <linux/compat.h>
 #endif
 
+#define DB_SanityFail
 
 /*  */
 /* #include "smi_common.h" */
@@ -14014,9 +14015,19 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				"ERROR: Wrong sub-sample period: 0");
 			goto LB_CAMA_SOF_IGNORE;
 		}
-
+#ifdef DB_SanityFail
+		LOG_ERR("[DB only](%d_%d_%d)_(%p_%p_%p)", reg_module, module,
+			irqDelay, &reg_module, &module, &irqDelay);
+		LOG_ERR("[DB only]Irq_CAM_FrameStatus=%d",
+			Irq_CAM_FrameStatus(reg_module, module, irqDelay));
+		LOG_ERR("[DB only]FrameStatus=%d_%p", FrameStatus[module], &FrameStatus);
+		LOG_ERR("[DB only]FrameStatus+");
+		FrameStatus[module] = 2;
+		LOG_ERR("[DB only]FrameStatus-");
+#endif
 		/* chk this frame have EOF or not, dynimic dma port chk */
 		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module, module, irqDelay);
+
 		if (FrameStatus[module] == CAM_FST_DROP_FRAME) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMA Lost p1 done_%d (0x%x): ",
 				sof_count[module], cur_v_cnt);
