@@ -65,6 +65,7 @@
 extern void spm_dpidle_pre_process(unsigned int operation_cond, struct pwr_ctrl *pwrctrl);
 extern void spm_dpidle_post_process(void);
 extern void spm_deepidle_chip_init(void);
+extern void spm_dpidle_notify_sspm_after_wfi_async_wait(void);
 
 #endif /* __MTK_SPM_DPIDLE_H__ */
 
