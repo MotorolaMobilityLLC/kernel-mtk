@@ -198,10 +198,10 @@ static unsigned int fg_get_data_ready_status(void)
 	unsigned int temp_val = 0;
 
 	ret = pmic_read_interface(PMIC_FG_LATCHDATA_ST_ADDR, &temp_val, 0xFFFF, 0x0);
-
+/*
 	bm_info("[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", PMIC_FG_LATCHDATA_ST_ADDR,
 		 temp_val);
-
+*/
 	temp_val =
 	(temp_val & (PMIC_FG_LATCHDATA_ST_MASK << PMIC_FG_LATCHDATA_ST_SHIFT))
 	>> PMIC_FG_LATCHDATA_ST_SHIFT;
