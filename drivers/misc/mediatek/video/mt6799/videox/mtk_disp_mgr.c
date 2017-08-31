@@ -183,7 +183,7 @@ int disp_create_session(struct disp_session_config *config)
 		if (session_config[i] == session) {
 			is_session_inited = 1;
 			idx = i;
-			DISPMSG("create session is exited:0x%x\n", session);
+			DISPDBG("create session is exited:0x%x\n", session);
 			break;
 		}
 	}
@@ -212,7 +212,7 @@ int disp_create_session(struct disp_session_config *config)
 done:
 	mutex_unlock(&disp_session_lock);
 
-	DISPMSG("new session done\n");
+	DISPDBG("new session done\n");
 	return ret;
 }
 
@@ -342,7 +342,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	int timeline_id = disp_sync_get_present_timeline_id();
 
 	if (copy_from_user(&preset_fence_struct, (void __user *)arg, sizeof(struct disp_present_fence))) {
-		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		DISPPR_ERROR("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
@@ -375,7 +375,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	preset_fence_struct.present_fence_fd = data.fence;
 	preset_fence_struct.present_fence_index = data.value;
 	if (copy_to_user(argp, &preset_fence_struct, sizeof(preset_fence_struct))) {
-		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
+		DISPPR_ERROR("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_get, MMPROFILE_FLAG_PULSE,
@@ -397,12 +397,12 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 	struct mtkfb_fence_buf_info *buf, *buf2;
 
 	if (copy_from_user(&info, (void __user *)arg, sizeof(info))) {
-		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		DISPPR_ERROR("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
 	if (type == PREPARE_INPUT_FENCE)
-		DISPDBG("There is do nothing in input fence.\n");
+		DISPPR_FENCE("There is do nothing in input fence.\n");
 	else if (type == PREPARE_PRESENT_FENCE)
 		info.layer_id = disp_sync_get_present_timeline_id();
 	else if (type == PREPARE_OUTPUT_FENCE)
@@ -457,7 +457,7 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 		info.index = 0;
 	}
 	if (copy_to_user(argp, &info, sizeof(info))) {
-		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
+		DISPPR_ERROR("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
 	return ret;
@@ -917,7 +917,7 @@ static int _ioctl_frame_config(unsigned long arg)
 	frame_cfg = &frame_node->frame_cfg;
 
 	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
-		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		DISPPR_ERROR("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EINVAL;
 	}
 
@@ -1088,7 +1088,7 @@ int _ioctl_set_vsync(unsigned long arg)
 	unsigned int fps = 0;
 
 	if (copy_from_user(&fps, argp, sizeof(unsigned int))) {
-		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 

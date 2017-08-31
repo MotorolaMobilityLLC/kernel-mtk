@@ -337,7 +337,7 @@ static int get_phy_layer_limit(int layer_map_tb, int disp_idx)
 
 void hrt_force_dual_pipe_off(int force_off)
 {
-	DISPMSG("%s: force_off:%d\n", __func__, force_off);
+	DISPINFO("%s: force_off:%d\n", __func__, force_off);
 	force_dual_pipe_off = force_off;
 }
 
@@ -439,26 +439,46 @@ static int get_larb_idx_by_ovl_idx(int ovl_idx, int disp_idx)
 	return larb_idx;
 }
 
-static void dump_disp_info(struct disp_layer_info *disp_info)
+static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LEVEL debug_level)
 {
 	int i, j;
 	struct layer_config *layer_info;
 
-	DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
-		disp_info->hrt_num,	primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
+	if (debug_level < DISP_DEBUG_LEVEL_INFO) {
+		DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
+			disp_info->hrt_num, primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
 
-	for (i = 0 ; i < 2 ; i++) {
-		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
-			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
-			disp_info->gles_head[i], disp_info->gles_tail[i]);
+		for (i = 0 ; i < 2 ; i++) {
+			DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
+				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
+				disp_info->gles_head[i], disp_info->gles_tail[i]);
 
-		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
-			layer_info = &disp_info->input_config[i][j];
-			DISPMSG("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d\n",
-				j, layer_info->ovl_id, layer_info->dst_offset_x, layer_info->dst_offset_y,
-				layer_info->src_width, layer_info->src_height,
-				layer_info->dst_width, layer_info->dst_height,
-				layer_info->src_fmt, layer_info->ext_sel_layer);
+			for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
+				layer_info = &disp_info->input_config[i][j];
+				DISPMSG("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d\n",
+					j, layer_info->ovl_id, layer_info->dst_offset_x, layer_info->dst_offset_y,
+					layer_info->src_width, layer_info->src_height,
+					layer_info->dst_width, layer_info->dst_height,
+					layer_info->src_fmt, layer_info->ext_sel_layer);
+			}
+		}
+	} else {
+		DISPINFO("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
+			disp_info->hrt_num, primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
+
+		for (i = 0 ; i < 2 ; i++) {
+			DISPINFO("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
+				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
+				disp_info->gles_head[i], disp_info->gles_tail[i]);
+
+			for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
+				layer_info = &disp_info->input_config[i][j];
+				DISPINFO("L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d\n",
+					j, layer_info->ovl_id, layer_info->dst_offset_x, layer_info->dst_offset_y,
+					layer_info->src_width, layer_info->src_height,
+					layer_info->dst_width, layer_info->dst_height,
+					layer_info->src_fmt, layer_info->ext_sel_layer);
+			}
 		}
 	}
 }
@@ -740,7 +760,7 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 				}
 #ifdef HRT_DEBUG_LEVEL2
 				DISPMSG("[%s]cannot feet current layer layout\n", __func__);
-				dump_disp_info(disp_info);
+				dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
 #endif
 				ext_id_tunning(disp_info, disp_idx);
 				break;
@@ -781,7 +801,7 @@ static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 
 #ifdef HRT_DEBUG_LEVEL2
 	DISPMSG("[%s result]\n", __func__);
-	dump_disp_info(disp_info);
+	dump_disp_info(disp_info, DISP_DEBUG_LEVEL_INFO);
 #endif
 	return ret;
 }
@@ -1384,7 +1404,7 @@ static bool gles_layer_adjustment_resize(struct disp_layer_info *disp_info)
 
 #ifdef HRT_DEBUG_LEVEL1
 	DISPMSG("[%s] hrt_scale:%d scale_ratio:%d\n", __func__, hrt_scale, scale_ratio);
-	dump_disp_info(disp_info);
+	dump_disp_info(disp_info, DISP_DEBUG_LEVEL_INFO);
 #endif
 
 	return is_invalid;
@@ -1438,7 +1458,7 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 
 #ifdef HRT_DEBUG_LEVEL1
 	DISPMSG("[ext layer grouping]\n");
-	dump_disp_info(disp_info);
+	dump_disp_info(disp_info, DISP_DEBUG_LEVEL_INFO);
 #endif
 
 	return available_layers;
@@ -1569,6 +1589,7 @@ int check_disp_info(struct disp_layer_info *disp_info)
 
 		if ((disp_info->gles_head[disp_idx] < 0 && disp_info->gles_tail[disp_idx] >= 0) ||
 			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0)) {
+			dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
 			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 			return -1;
@@ -1807,7 +1828,7 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
 	print_disp_info_to_log_buffer(&disp_info_hrt);
 #ifdef HRT_DEBUG_LEVEL1
 	DISPMSG("[Input data]\n");
-	dump_disp_info(&disp_info_hrt);
+	dump_disp_info(&disp_info_hrt, DISP_DEBUG_LEVEL_INFO);
 #endif
 
 /**
@@ -1841,7 +1862,7 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
  *
  */
 	ret = dispatch_ovl_id(&disp_info_hrt);
-	dump_disp_info(&disp_info_hrt);
+	dump_disp_info(&disp_info_hrt, DISP_DEBUG_LEVEL_INFO);
 	HRT_SET_PATH_SCENARIO(disp_info_hrt.hrt_num, hrt_path);
 	HRT_SET_SCALE_SCENARIO(disp_info_hrt.hrt_num, hrt_scale);
 	HRT_SET_AEE_FLAG(disp_info_hrt.hrt_num, dal_enable);
@@ -2073,7 +2094,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 
 	filp_close(filp, NULL);
 	set_fs(oldfs);
-	DISPMSG("end set_fs\n");
+	DISPINFO("end set_fs\n");
 	return 0;
 }
 #endif

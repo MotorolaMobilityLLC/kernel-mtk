@@ -145,7 +145,7 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
 
-	DISPCHECK("[ESD]_esd_check_config_handle_cmd ret=%d\n", ret);
+	DISPINFO("[ESD]_esd_check_config_handle_cmd ret=%d\n", ret);
 
 
 	if (ret)
@@ -194,7 +194,7 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	ret = disp_cmdq_flush(handle, __func__, __LINE__);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
-	DISPCHECK("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
+	DISPINFO("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
 
 
 	if (ret)
@@ -369,7 +369,7 @@ int do_esd_check_read(void)
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
 	primary_display_manual_unlock();
 
-	DISPCHECK("[ESD]ESD config thread=%p\n", handle);
+	DISPDBG("[ESD]ESD config thread=%p\n", handle);
 
 	/* 1.use cmdq to read from lcm */
 	if (primary_display_is_video_mode())
@@ -390,7 +390,7 @@ int do_esd_check_read(void)
 		goto destroy_cmdq;
 	}
 
-	DISPCHECK("[ESD]ESD config thread done~\n");
+	DISPDBG("[ESD]ESD config thread done~\n");
 
 	/* 2.check data(*cpu check now) */
 	ret = dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle,
@@ -420,12 +420,12 @@ int primary_display_esd_check(void)
 
 	dprec_logger_start(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_START, 0, 0);
-	DISPCHECK("[ESD]ESD check begin\n");
+	DISPINFO("[ESD]ESD check begin\n");
 
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
 		mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_PULSE, 1, 0);
-		DISPCHECK("[ESD]primary display path is slept?? -- skip esd check\n");
+		DISPERR("[ESD]primary display path is slept?? -- skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
 	}
@@ -438,7 +438,7 @@ int primary_display_esd_check(void)
 
 		mode = get_esd_check_mode();
 		if (mode == GPIO_EINT_MODE) {
-			DISPCHECK("[ESD]ESD check eint\n");
+			DISPINFO("[ESD]ESD check eint\n");
 			mmprofile_log_ex(ddp_mmp_get_events()->esd_extte, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 			primary_display_switch_esd_mode(mode);
@@ -452,7 +452,7 @@ int primary_display_esd_check(void)
 			/* use eint do esd check instead of dsi te irq for lowpower */
 			ret = do_esd_check_dsi_te();
 #else
-			DISPCHECK("[ESD]ESD check read\n");
+			DISPINFO("[ESD]ESD check read\n");
 			ret = do_esd_check_read();
 #endif
 			mode = GPIO_EINT_MODE; /* used for mode switch */
@@ -491,7 +491,8 @@ int primary_display_esd_check(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_rdlcm, MMPROFILE_FLAG_END, 0, ret);
 
 done:
-	DISPCHECK("[ESD]ESD check end, ret = %d\n", ret);
+	if (ret)
+		DISPINFO("[ESD]ESD check end, ret = %d\n", ret);
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_check_t, MMPROFILE_FLAG_END, 0, ret);
 	dprec_logger_done(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	return ret;
@@ -514,7 +515,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 		msleep(2000);/*2s*/
 		ret = wait_event_interruptible(_check_task_wq, atomic_read(&_check_task_wakeup));
 		if (ret < 0) {
-			DISPCHECK("[disp_check]check thread waked up accidently\n");
+			DISPERR("[disp_check]check thread waked up accidently\n");
 			continue;
 		}
 
@@ -585,9 +586,9 @@ int primary_display_esd_recovery(void)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 3);
 
-	DISPDBG("[ESD]display cmdq trigger loop stop[begin]\n");
+	DISPINFO("[ESD]display cmdq trigger loop stop[begin]\n");
 	_cmdq_stop_trigger_loop();
-	DISPCHECK("[ESD]display cmdq trigger loop stop[end]\n");
+	DISPINFO("[ESD]display cmdq trigger loop stop[end]\n");
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 4);
 

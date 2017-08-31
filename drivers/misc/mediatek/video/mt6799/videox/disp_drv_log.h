@@ -18,21 +18,38 @@
 #include "mt-plat/aee.h"
 
 
+enum DISP_DEBUG_LEVEL {
+	DISP_DEBUG_LEVEL_EMERG = 0,	/* emergency */
+	DISP_DEBUG_LEVEL_ALERT,		/* alert */
+	DISP_DEBUG_LEVEL_CRIT,		/* critical */
+	DISP_DEBUG_LEVEL_ERR,		/* error */
+	DISP_DEBUG_LEVEL_WARNING,	/* warning */
+	DISP_DEBUG_LEVEL_NOTICE,	/* notice */
+	DISP_DEBUG_LEVEL_INFO,		/* info */
+	DISP_DEBUG_LEVEL_DEBUG,		/* debug */
+	MAX_DISP_DEBUG_LEVEL,
+};
+
 #define DISP_LOG_PRINT(level, sub_module, fmt, args...)			\
 	dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args)
+
+#define DISPINFO(string, args...)					\
+	do {								\
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
+		if (g_mobilelog)					\
+			pr_debug("[DISP]"string, ##args);		\
+	} while (0)
 
 #define DISPMSG(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		if (g_mobilelog)					\
-			pr_err("[DISP]"string, ##args);		\
+		pr_debug("[DISP]"string, ##args);		\
 	} while (0)
 
 #define DISPCHECK(string, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);	\
-		if (g_mobilelog)					\
-			pr_err("[DISPCHECK]"string, ##args);		\
+		pr_debug("[DISP]"string, ##args);		\
 	} while (0)
 
 #define DISPWARN(string, args...)					\

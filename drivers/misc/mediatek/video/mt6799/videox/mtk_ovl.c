@@ -262,7 +262,7 @@ static int ovl2mem_callback(unsigned int userdata)
 	int fence_idx = 0;
 	int layid = 0;
 
-	DISPMSG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
+	DISPDBG("ovl2mem_callback(%x), current tick=%d, release tick: %d\n", pgc->session,
 		get_ovl2mem_ticket(), userdata);
 	for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT); layid++) {
 		fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
@@ -418,7 +418,7 @@ Exit:
 	_ovl2mem_path_unlock(__func__);
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x01, 1);
 
-	DISPMSG("ovl2mem_init done\n");
+	DISPDBG("ovl2mem_init done\n");
 
 	return ret;
 }
@@ -432,7 +432,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	DISPFUNC();
 
 	if (pgc->need_trigger_path == 0) {
-		DISPCHECK("ovl2mem_trigger do not trigger\n");
+		DISPINFO("ovl2mem_trigger do not trigger\n");
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
 			DISPMSG("ovl2mem_trigger(%x), configue input, but does not config output!!\n", pgc->session);
 			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
@@ -478,7 +478,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger, MMPROFILE_FLAG_PULSE, 0x02,
 			(atomic_read(&g_trigger_ticket)<<16) | atomic_read(&g_release_ticket));
 
-	DISPCHECK("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
+	DISPINFO("ovl2mem_trigger done %d\n", get_ovl2mem_ticket());
 
 	return ret;
 }
@@ -526,7 +526,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 
-	DISPMSG("ovl2mem_input_config done\n");
+	DISPINFO("ovl2mem_input_config done\n");
 	return ret;
 }
 
@@ -666,7 +666,7 @@ void ovl2mem_wait_done(void)
 		loop_cnt++;
 	}
 
-	DISPMSG("ovl2mem_wait_done loop %d, trigger tick:%d, release tick:%d\n", loop_cnt,
+	DISPINFO("ovl2mem_wait_done loop %d, trigger tick:%d, release tick:%d\n", loop_cnt,
 		atomic_read(&g_trigger_ticket), atomic_read(&g_release_ticket));
 
 }

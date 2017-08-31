@@ -453,9 +453,9 @@ static void process_dbg_opt(const char *opt)
 
 		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, para_cnt, para, 1);
 
-		DDPDBG("set_dsi_cmd cmd=0x%x\n", cmd);
+		DDPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
 		for (i = 0; i < para_cnt; i++)
-			DDPDBG("para[%d] = 0x%x\n", i, para[i]);
+			DDPMSG("para[%d] = 0x%x\n", i, para[i]);
 
 	} else if (strncmp(opt, "dsi_read:", 9) == 0) {
 		int cmd;

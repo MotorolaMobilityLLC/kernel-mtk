@@ -79,7 +79,7 @@ static int _do_wait_fence(struct sync_fence **src_fence, int session_id,
 		DISPERR("== display fence wait status error. ret%d,layer%d,fd%d ==>\n",
 				ret, timeline, fence_fd);
 	} else {
-		DISPDBG("== display fence wait done! ret%d,layer%d,fd%d ==\n",
+		DISPPR_FENCE("== display fence wait done! ret%d,layer%d,fd%d ==\n",
 				ret, timeline, fence_fd);
 	}
 

@@ -275,7 +275,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
-		DISPCHECK("mtkfb_blank mtkfb_late_resume\n");
+		DISPDBG("mtkfb_blank mtkfb_late_resume\n");
 		if (bypass_blank) {
 			DISPERR("FB_BLANK_UNBLANK bypass_blank %d\n", bypass_blank);
 			break;
@@ -290,7 +290,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
-		DISPCHECK("mtkfb_blank mtkfb_early_suspend\n");
+		DISPDBG("mtkfb_blank mtkfb_early_suspend\n");
 		if (bypass_blank) {
 			DISPERR("FB_BLANK_POWERDOWN bypass_blank %d\n", bypass_blank);
 			break;
@@ -1145,11 +1145,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return r;
 			}
 
-			DISPMSG("[FB Driver] enter MTKFB_POWEROFF\n");
+			DISPDBG("[FB Driver] enter MTKFB_POWEROFF\n");
 			ret = primary_display_suspend();
 			if (ret < 0)
 				DISPERR("primary display suspend failed\n");
-			DISPMSG("[FB Driver] leave MTKFB_POWEROFF\n");
+			DISPDBG("[FB Driver] leave MTKFB_POWEROFF\n");
 
 			is_early_suspended = TRUE;	/* no care */
 			return r;
@@ -1162,9 +1162,9 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				DISPERR("[FB Driver] is still in MTKFB_POWERON!!!\n");
 				return r;
 			}
-			DISPMSG("[FB Driver] enter MTKFB_POWERON\n");
+			DISPDBG("[FB Driver] enter MTKFB_POWERON\n");
 			primary_display_resume();
-			DISPMSG("[FB Driver] leave MTKFB_POWERON\n");
+			DISPDBG("[FB Driver] leave MTKFB_POWERON\n");
 			is_early_suspended = FALSE;	/* no care */
 			return r;
 		}
@@ -1279,7 +1279,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		{		/* no function */
 			struct fb_overlay_layer *layerInfo;
 
-			DISPMSG(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+			DISPDBG(" mtkfb_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
 
 			layerInfo = kmalloc(sizeof(*layerInfo), GFP_KERNEL);
 			if (!layerInfo)
@@ -1311,7 +1311,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_ERROR_INDEX_UPDATE_TIMEOUT:
 		{
-			DISPMSG("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
+			DISPERR("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
 			/* call info dump function here */
 			/* mtkfb_dump_layer_info(); */
 			return r;
@@ -1319,7 +1319,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_ERROR_INDEX_UPDATE_TIMEOUT_AEE:
 		{
-			DISPMSG("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
+			DISPERR("[DDP] mtkfb_ioctl():MTKFB_ERROR_INDEX_UPDATE_TIMEOUT\n");
 			/* call info dump function here */
 			/* mtkfb_dump_layer_info(); */
 			return r;
@@ -1337,7 +1337,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			struct fb_overlay_layer *layerInfo;
 			int layerInfo_size = sizeof(struct fb_overlay_layer) * VIDEO_LAYER_COUNT;
 
-			DISPMSG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+			DISPDBG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
 
 			layerInfo = kmalloc(layerInfo_size, GFP_KERNEL);
 			if (!layerInfo)
@@ -1373,7 +1373,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	case MTKFB_TRIG_OVERLAY_OUT:
 		{
-			DISPMSG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
+			DISPDBG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
 			primary_display_trigger(1, NULL, 0);
 			return 0;
 		}
@@ -2027,7 +2027,7 @@ static void _mtkfb_draw_block(unsigned long addr, unsigned int x, unsigned int y
 char *mtkfb_find_lcm_driver(void)
 {
 	_parse_tag_videolfb();
-	DISPMSG("%s, %s\n", __func__, mtkfb_lcm_name);
+	DISPDBG("%s, %s\n", __func__, mtkfb_lcm_name);
 	return mtkfb_lcm_name;
 }
 
@@ -2369,7 +2369,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 	fbdev->dev = &(pdev->dev);
 	dev_set_drvdata(&(pdev->dev), fbdev);
 
-	DISPCHECK("mtkfb_probe: fb_pa = 0x%p\n", &fb_base);
+	DISPDBG("mtkfb_probe: fb_pa = 0x%p\n", &fb_base);
 
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)(&fbdev->fb_va_base), &fb_pa);
@@ -2407,7 +2407,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 		goto cleanup;
 	}
 	init_state++;		/* 4 */
-	DISPMSG("\nmtkfb_fbinfo_init done\n");
+	DISPDBG("\nmtkfb_fbinfo_init done\n");
 
 	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		/* dal_init should after mtkfb_fbinfo_init, otherwise layer 3 will show dal background color */
@@ -2500,14 +2500,14 @@ int mtkfb_ipoh_restore(struct notifier_block *nb, unsigned long val, void *ign)
 {
 	switch (val) {
 	case PM_HIBERNATION_PREPARE:
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
+		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		primary_display_ipoh_restore();
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
+		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
 		return NOTIFY_DONE;
 	case PM_POST_HIBERNATION:
-		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
+		DISPDBG("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
@@ -2636,7 +2636,7 @@ int mtkfb_pm_freeze(struct device *device)
 int mtkfb_pm_restore_noirq(struct device *device)
 {
 	/* disphal_pm_restore_noirq(device); */
-	DISPCHECK("%s: %d\n", __func__, __LINE__);
+	DISPDBG("%s: %d\n", __func__, __LINE__);
 	is_ipoh_bootup = true;
 #if 0
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -2648,7 +2648,7 @@ int mtkfb_pm_restore_noirq(struct device *device)
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif
-	DISPCHECK("%s: %d\n", __func__, __LINE__);
+	DISPDBG("%s: %d\n", __func__, __LINE__);
 	return 0;
 
 }

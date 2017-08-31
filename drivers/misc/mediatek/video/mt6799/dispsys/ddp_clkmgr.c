@@ -267,7 +267,7 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_CLOCK_MUX:
 		return -1;
 	default:
-		DDPMSG("invalid module id=%d", module);
+		DDPERR("invalid module id=%d\n", module);
 		return -1;
 	}
 }
@@ -568,7 +568,7 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 		/* no need */
 		break;
 	default:
-		DDPMSG("invalid module id=%d", module);
+		DDPERR("invalid module id=%d\n", module);
 		ret = -1;
 	}
 	return ret;
@@ -731,7 +731,7 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 		/* no need */
 		break;
 	default:
-		DDPMSG("invalid module id=%d", module);
+		DDPERR("invalid module id=%d\n", module);
 		ret = -1;
 	}
 	return ret;
@@ -755,7 +755,7 @@ static int __ddp_set_mipi26m(int idx, int en)
 	int old_cnt;
 
 	if (idx < 0 || idx > 1) {
-		pr_err("set mipi26m error:idx=%d\n", idx);
+		DDPERR("set mipi26m error:idx=%d\n", idx);
 		return -1;
 	}
 
@@ -797,7 +797,7 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 	if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL)
 		__ddp_set_mipi26m(0, en);
 
-	DDPDBG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
+	DDPMSG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
 
 	return ret;
 }
@@ -811,7 +811,7 @@ int ddp_get_mipi26m(void)
 	if (ret)
 		return -1;
 
-	DDPERR("%s val=0x%x\n", __func__, clk_readl(AP_PLL_CON0));
+	DDPMSG("%s val=0x%x\n", __func__, clk_readl(AP_PLL_CON0));
 
 	return ret;
 }

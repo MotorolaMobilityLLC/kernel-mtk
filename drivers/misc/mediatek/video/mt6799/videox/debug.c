@@ -117,7 +117,7 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 
 	buf_va = dma_alloc_coherent(disp_get_device(), size, &buf_pa, GFP_KERNEL);
 	if (!(buf_va)) {
-		DISPMSG("dma_alloc_coherent error!  dma memory not available. size=%lu\n", size);
+		DISPERR("dma_alloc_coherent error!  dma memory not available. size=%lu\n", size);
 		kfree(input_config);
 		return -1;
 	}
@@ -131,12 +131,12 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		sg_dma_len(sg_table->sgl) = size_align;
 		client = m4u_create_client();
 		if (IS_ERR_OR_NULL(client))
-			DISPMSG("create client fail!\n");
+			DISPERR("create client fail!\n");
 
 		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
 				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &buf_mva);
 		if (ret)
-			DISPMSG("m4u_alloc_mva returns fail: %d\n", ret);
+			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
 		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
 	}
 
