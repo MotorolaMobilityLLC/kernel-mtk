@@ -204,6 +204,8 @@
 			compatible = "arm,cortex-a73";
 			reg = <0x200>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2288000000>;
 		};
@@ -213,6 +215,8 @@
 			compatible = "arm,cortex-a73";
 			reg = <0x201>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2288000000>;
 		};
