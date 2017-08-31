@@ -288,13 +288,19 @@ int ddp_set_clk_handle(struct clk *pclk, unsigned int n)
 int ddp_clk_prepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + (0x1 << 16);
 	ret = clk_prepare(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d id %d\n", ret, id);
 
@@ -304,26 +310,39 @@ int ddp_clk_prepare(enum DDP_CLK_ID id)
 int ddp_clk_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - (0x1 << 16);
 	clk_unprepare(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
+
 	return ret;
 }
 
 int ddp_clk_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + 0x1;
 	ret = clk_enable(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
 	if (ret)
 		DDPERR("DISPSYS CLK enable failed: errno %d id=%d\n", ret, id);
 
@@ -333,26 +352,39 @@ int ddp_clk_enable(enum DDP_CLK_ID id)
 int ddp_clk_disable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - 0x1;
 	clk_disable(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
+
 	return ret;
 }
 
 int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] + (0x1 << 16) + 0x1;
 	ret = clk_prepare_enable(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
 	if (ret)
 		DDPERR("DISPSYS CLK prepare failed: errno %d\n", ret);
 
@@ -362,13 +394,20 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
+	int before, after;
 
 	if (ddp_clk[id] == NULL) {
 		DDPERR("DISPSYS CLK %d NULL\n", id);
 		return -1;
 	}
+
+	before = _ddp_clk_cnt[id];
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - (0x1 << 16) - 0x1;
 	clk_disable_unprepare(ddp_clk[id]);
+	after = _ddp_clk_cnt[id];
+
+	DDPMSG("%s %d:%d,%d\n", __func__, id, before, after);
+
 	return ret;
 }
 
@@ -759,6 +798,20 @@ int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en)
 		__ddp_set_mipi26m(0, en);
 
 	DDPDBG("%s en=%d, val=0x%x\n", __func__, en, clk_readl(AP_PLL_CON0));
+
+	return ret;
+}
+
+
+int ddp_get_mipi26m(void)
+{
+	int ret = 0;
+
+	ret = ddp_parse_apmixed_base();
+	if (ret)
+		return -1;
+
+	DDPERR("%s val=0x%x\n", __func__, clk_readl(AP_PLL_CON0));
 
 	return ret;
 }

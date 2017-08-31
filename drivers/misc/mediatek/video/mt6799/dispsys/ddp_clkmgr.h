@@ -101,6 +101,7 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module);
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
 int ddp_parse_apmixed_base(void);
 int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);
+int ddp_get_mipi26m(void);
 
 #endif				/* CONFIG_MTK_CLKMGR */
 
