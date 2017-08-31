@@ -387,7 +387,7 @@ static int param_set_mrdump_enable(const char *val, const struct kernel_param *k
 		retval = param_set_bool(val, kp);
 		if (retval == 0) {
 			mrdump_plat->hw_enable(mrdump_enable);
-			mrdump_cblock.enabled = MRDUMP_ENABLE_COOKIE;
+			mrdump_cblock.enabled = mrdump_enable ? MRDUMP_ENABLE_COOKIE : 0;
 			__inner_flush_dcache_all();
 		}
 	}
