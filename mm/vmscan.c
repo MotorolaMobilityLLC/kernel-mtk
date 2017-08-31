@@ -3721,7 +3721,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
 	wake_up_interruptible(&pgdat->kswapd_wait);
 }
 
-#ifdef CONFIG_HIBERNATION
 /*
  * Try to free `nr_to_reclaim' of memory, system-wide, and return the number of
  * freed pages.
@@ -3730,7 +3729,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
  * LRU order by reclaiming preferentially
  * inactive > active > active referenced > active mapped
  */
-unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+static unsigned long __shrink_all_memory(unsigned long nr_to_reclaim, bool swap)
 {
 	struct reclaim_state reclaim_state;
 	struct scan_control sc = {
@@ -3739,7 +3738,7 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 		.priority = DEF_PRIORITY,
 		.may_writepage = 1,
 		.may_unmap = 1,
-		.may_swap = 1,
+		.may_swap = swap,
 		.hibernation_mode = 1,
 	};
 	struct zonelist *zonelist = node_zonelist(numa_node_id(), sc.gfp_mask);
@@ -3759,7 +3758,16 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
 
 	return nr_reclaimed;
 }
-#endif /* CONFIG_HIBERNATION */
+
+unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+{
+	return __shrink_all_memory(nr_to_reclaim, true);
+}
+
+unsigned long shrink_all_memory_no_swap(unsigned long nr_to_reclaim)
+{
+	return __shrink_all_memory(nr_to_reclaim, false);
+}
 
 /* It's optimal to keep kswapds on the same CPUs as their memory, but
    not required for correctness.  So if the last cpu in a node goes
