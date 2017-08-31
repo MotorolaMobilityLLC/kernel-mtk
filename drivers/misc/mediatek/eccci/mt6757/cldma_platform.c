@@ -222,12 +222,9 @@ void ccci_set_clk_cg(struct ccci_modem *md, unsigned int on)
 {
 	int idx = 0;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "%s: %d\n", __func__, on);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s: on=%d\n", __func__, on);
 	for (idx = 1; idx < ARRAY_SIZE(clk_table); idx++) {
 		if (clk_table[idx].clk_ref == NULL)
-			continue;
-		/*cldma clk only for md1*/
-		if (md->index != MD_SYS1 && idx == 1)
 			continue;
 		if (on)
 			clk_prepare_enable(clk_table[idx].clk_ref);

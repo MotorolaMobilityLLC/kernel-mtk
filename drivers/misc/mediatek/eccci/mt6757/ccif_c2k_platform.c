@@ -471,8 +471,13 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 
 void reset_md1_md3_pccif(struct ccci_modem *md)
 {
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 1);
+#endif
 	reset_ccirq_hardware();
-
+#ifdef FEATURE_CLK_CG_CONTROL
+	ccci_set_clk_cg(md, 0);
+#endif
 	/*clear md1 md3 shared memory */
 	if (md->mem_layout.md1_md3_smem_vir != NULL)
 		memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);

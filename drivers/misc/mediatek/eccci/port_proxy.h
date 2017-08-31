@@ -14,7 +14,7 @@
 #ifndef __PORT_PROXY_H__
 #define __PORT_PROXY_H__
 #include <mt-plat/mtk_ccci_common.h>
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 #define PORT_F_ALLOW_DROP		(1<<0)	/* packet will be dropped if port's Rx buffer full */
 #define PORT_F_RX_FULLED		(1<<1)	/* rx buffer has been full once */

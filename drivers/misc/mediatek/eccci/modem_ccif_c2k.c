@@ -1601,8 +1601,10 @@ int md_ccif_pm_suspend(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	if (pdev == NULL)
+	if (pdev == NULL) {
 		CCCI_ERROR_LOG(MD_SYS3, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return md_ccif_suspend(pdev, PMSG_SUSPEND);
 }
 
@@ -1610,8 +1612,10 @@ int md_ccif_pm_resume(struct device *device)
 {
 	struct platform_device *pdev = to_platform_device(device);
 
-	if (pdev == NULL)
+	if (pdev == NULL) {
 		CCCI_ERROR_LOG(MD_SYS3, TAG, "%s pdev == NULL\n", __func__);
+		return -1;
+	}
 	return md_ccif_resume(pdev);
 }
 
