@@ -979,6 +979,10 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(opp_sw_to_fw(sta->ceiling[i])) |
 					  SW_F_MIN(opp_sw_to_fw(sta->floor[i])) |
+#ifndef CPUHVFS_HW_GOVERNOR
+					  SW_F_DES(opp_sw_to_fw(sta->opp[i])) |
+					  SW_F_ASSIGN |
+#endif
 					  SW_PAUSE);	/* all pause */
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
