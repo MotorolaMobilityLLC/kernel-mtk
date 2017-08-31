@@ -1901,7 +1901,7 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 			break;
 	}
 
-	WARN_ON(i < 0);		/* BUG! */ /* i.e. target_khz > p->opp_tbl[0].cpufreq_khz */
+	BUG_ON(i < 0);		/* i.e. target_khz > p->opp_tbl[0].cpufreq_khz */
 
 	return cpu_dvfs_get_volt_by_idx(p, i);	/* mv * 100 */
 }
@@ -2208,7 +2208,7 @@ static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned in
 			break;
 	}
 
-	WARN_ON(i >= p->nr_opp_tbl);	/* BUG! */
+	BUG_ON(i >= p->nr_opp_tbl);
 
 	return i;
 }
@@ -2840,7 +2840,7 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 		_sync_opp_tbl_idx(p);	/* find OPP with current frequency */
 
 		volt = get_cur_volt_extbuck(p);
-		WARN_ON(volt < EXTBUCK_VAL_TO_VOLT(0));		/* BUG! */
+		BUG_ON(volt < EXTBUCK_VAL_TO_VOLT(0));
 
 		sta->opp[i] = p->idx_opp_tbl;
 		sta->freq[i] = p->ops->get_cur_phy_freq(p);
