@@ -1587,6 +1587,8 @@ static void setDlMtkifSrc(bool enable)
 			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_DAI_DL1]) << 12) |
 			     0x300), 0xf300);
 
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000);
+		/* pmic rxif sck inverse */
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0x0001);
 		/* turn on dl */
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -1945,7 +1947,9 @@ static void Voice_Amp_Change(bool enable)
 
 			udelay(100);
 
-			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x002D, 0x002D);
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8300, 0xff00);
+			/* Enable low-noise mode of DAC  */
+			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x032D, 0xff2D);
 			/* Enable cap-less LDOs (1.6V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0003, 0x0003);
 			/* Enable NV regulator */
@@ -1973,8 +1977,6 @@ static void Voice_Amp_Change(bool enable)
 			/* Enable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0x0009);
 			/* Enable Audio DAC  */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8000, 0xff00);
-			/* Enable low-noise mode of DAC  */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0008, 0x000C);
 			/* Switch HS MUX to audio DAC */
 		}
@@ -2000,7 +2002,7 @@ static void Voice_Amp_Change(bool enable)
 			/* Restore NV regulator to -1.3V */
 			Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0003);
 			/* Disable NV regulator */
-			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x002D);
+			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0xff2D);
 			/* Disable cap-less LDOs (1.6V) */
 			TurnOffDacPower();
 		}
@@ -2812,7 +2814,7 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
 		index = 0x1f;
 
-	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f10);
+	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f80);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR] = index;
 	return 0;
 }
@@ -5564,7 +5566,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 			    ((GetDLNewIFFrequency(dl_rate) << 12) |
 			     0x300), 0xf300);
 
-		/* Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000); */
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x8000, 0x8000);
 		/* set sck inverse in dac newif  */
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0x0001);
 		/* turn on dl */
@@ -6754,7 +6756,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
 	/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010); */
 	/* power off mic bias1 */
-	Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff);
+	/* Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff); */
 	/* [5] = 1, disable LO buffer left short circuit protection */
 	/* Ana_Set_Reg(DRV_CON2, 0xe << 4, 0xf << 4); */
 	/* PAD_AUD_DAT_MISO gpio driving MAX */
