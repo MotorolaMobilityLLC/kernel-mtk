@@ -350,6 +350,44 @@ static void NvregEnable(bool enable)
 	mutex_unlock(&Ana_Clk_Mutex);
 }
 
+static void set_playback_gpio(bool enable)
+{
+	if (enable) {
+		/* set gpio mosi mode */
+		Ana_Set_Reg(GPIO_MODE2_CLR, 0xffff, 0xffff);
+		Ana_Set_Reg(GPIO_MODE2_SET, 0x0249, 0xffff);
+		Ana_Set_Reg(GPIO_MODE2, 0x0249, 0xffff);
+	} else {
+		/* set pad_aud_*_mosi to GPIO mode and dir input
+		 * reason:
+		 * pad_aud_dat_mosi*, because the pin is used as boot strap
+		 */
+		Ana_Set_Reg(GPIO_MODE2_CLR, 0xffff, 0xffff);
+		Ana_Set_Reg(GPIO_MODE2, 0x0000, 0xffff);
+		Ana_Set_Reg(GPIO_DIR0, 0x0, 0xf << 8);
+	}
+}
+
+static void set_capture_gpio(bool enable)
+{
+	if (enable) {
+		/* set gpio miso mode */
+		Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
+		Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
+		Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+	} else {
+		/* set pad_aud_*_miso to GPIO mode and dir input
+		 * reason:
+		 * pad_aud_clk_miso, because when playback only the miso_clk
+		 * will also have 26m, so will have power leak
+		 * pad_aud_dat_miso*, because the pin is used as boot strap
+		 */
+		Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
+		Ana_Set_Reg(GPIO_MODE3, 0x0000, 0xffff);
+		Ana_Set_Reg(GPIO_DIR0, 0x0, 0xf << 12);
+	}
+}
+
 bool hasHpDepopHw(void)
 {
 	return mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW ||
@@ -1339,7 +1377,7 @@ static void TurnOnDacPower(int device)
 	audckbufEnable(true);
 
 	/* gpio mosi mode */
-	Ana_Set_Reg(GPIO_MODE2, 0x249, 0xffff);
+	set_playback_gpio(true);
 
 	/* Enable HP main CMFB Switch */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
@@ -1435,6 +1473,8 @@ static void TurnOffDacPower(void)
 	Ana_Set_Reg(AFE_AUD_PAD_TOP, 0x0000, 0x00ff);
 
 	udelay(250);
+
+	set_playback_gpio(false);
 
 	Topck_Enable(false);
 	ClsqEnable(false);
@@ -1739,7 +1779,7 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	Ana_Set_Reg(DCXO_CW14, 0x1 << 13, 0x1 << 13);
 
 	/* gpio mosi mode */
-	Ana_Set_Reg(GPIO_MODE2, 0x249, 0xffff);
+	set_playback_gpio(true);
 
 	/* Enable HP main CMFB Switch */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
@@ -1842,9 +1882,8 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	/* phone mic dcc */
 
 	/* set gpio miso mode */
-	Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
-	Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
-	Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+	set_capture_gpio(true);
+
 	/* gpio miso driving set to default 6mA, 0xcccc */
 	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
 
@@ -2869,9 +2908,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			ClsqEnable(true);
 
 			/* set gpio miso mode */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+			set_capture_gpio(true);
 
 			/* Enable audio ADC CLKGEN  */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 5, 0x1 << 5);
@@ -3003,10 +3040,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* disable audio ADC CLKGEN  */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0 << 5, 0x1 << 5);
 
-			/* set gpio pad_clk_miso to mode 0, for save power */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0x7, 0x7);
-			Ana_Set_Reg(GPIO_MODE3, 0x0, 0x7);
-			Ana_Set_Reg(GPIO_DIR0, 0x0, 0x1 << 12);
+			set_capture_gpio(false);
 
 			/* AdcClockEnable(false); */
 			Topck_Enable(false);
@@ -3039,9 +3073,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			ClsqEnable(true);
 
 			/* set gpio miso mode */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+			set_capture_gpio(true);
 
 			/* mic bias */
 			/* Enable MICBIAS0, MISBIAS0 = 1P9V */
@@ -3112,10 +3144,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			/* MICBIA0 disable */
 			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xffff);
 
-			/* set gpio pad_clk_miso to mode 0, for save power */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0x7, 0x7);
-			Ana_Set_Reg(GPIO_MODE3, 0x0, 0x7);
-			Ana_Set_Reg(GPIO_DIR0, 0x0, 0x1 << 12);
+			set_capture_gpio(false);
 
 			/* AdcClockEnable(false); */
 			Topck_Enable(false);
@@ -3148,9 +3177,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			ClsqEnable(true);
 
 			/* set gpio miso mode */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3_SET, 0x0249, 0xffff);
-			Ana_Set_Reg(GPIO_MODE3, 0x0249, 0xffff);
+			set_capture_gpio(true);
 
 			/* Enable audio ADC CLKGEN  */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1 << 5, 0x1 << 5);
@@ -3332,10 +3359,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* disable audio ADC CLKGEN  */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0 << 5, 0x1 << 5);
 
-			/* set gpio pad_clk_miso to mode 0, for save power */
-			Ana_Set_Reg(GPIO_MODE3_CLR, 0x7, 0x7);
-			Ana_Set_Reg(GPIO_MODE3, 0x0, 0x7);
-			Ana_Set_Reg(GPIO_DIR0, 0x0, 0x1 << 12);
+			set_capture_gpio(false);
 
 			/* AdcClockEnable(false); */
 			Topck_Enable(false);
@@ -4255,15 +4279,9 @@ static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 	Ana_Set_Reg(AUDDEC_ANA_CON7, 0x1 << 4, 0x1 << 4);
 	/* gpio miso driving set to default 6mA, 0xcccc */
 	Ana_Set_Reg(DRV_CON3, 0xcccc, 0xffff);
-	/* gpio mosi mode */
-	Ana_Set_Reg(GPIO_MODE2, 0x249, 0xffff);
-
-	/* gpio miso mode, pad_aud_clk_miso set mode 0 for power saving */
-	Ana_Set_Reg(GPIO_MODE3_CLR, 0xffff, 0xffff);
-	Ana_Set_Reg(GPIO_MODE3_SET, 0x0248, 0xffff);
-	Ana_Set_Reg(GPIO_MODE3, 0x0248, 0xffff);
-	/* gpio pad_aud_clk_miso set dir input for mode 0 for power saving */
-	Ana_Set_Reg(GPIO_DIR0, 0x0, 0x1 << 12);
+	/* set gpio */
+	set_playback_gpio(false);
+	set_capture_gpio(false);
 
 	audckbufEnable(false);
 }
