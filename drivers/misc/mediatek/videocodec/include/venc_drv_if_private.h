@@ -122,6 +122,7 @@ typedef struct __VENC_HYB_ENCSETTING {
 
 	unsigned char   *pucPrependHeaderStoreBuf;
 	VAL_UINT32_T    u4PrependHeaderStoreSize;
+	VAL_UINT32_T    u4WfdMode;
 } VENC_HYBRID_ENCSETTING;
 
 
