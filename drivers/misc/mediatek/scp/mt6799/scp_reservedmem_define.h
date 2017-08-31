@@ -34,28 +34,10 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.size = 0x400000,/*4MB*/
 	},
 	{
-		.num = FLP_MEM_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x1000,/*4KB*/
-	},
-	{
-		.num = RTOS_MEM_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x100000,/*1MB*/
-	},
-	{
 		.num = OPENDSP_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x200000,/*2MB*/
-	},
-	{
-		.num = SENS_MEM_DIRECT_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x2000,/*8KB*/
 	},
 	{
 		.num = SCP_A_LOGGER_MEM_ID,

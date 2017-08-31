@@ -114,16 +114,13 @@ struct scp_work_struct {
 
 /* scp reserve memory ID definition*/
 typedef enum {
-	VOW_MEM_ID      = 0,
-	SENS_MEM_ID     = 1,
-	MP3_MEM_ID      = 2,
-	FLP_MEM_ID      = 3,
-	RTOS_MEM_ID     = 4,
-	OPENDSP_MEM_ID	= 5,
-	SENS_MEM_DIRECT_ID	= 6,
-	SCP_A_LOGGER_MEM_ID = 7,
-	SCP_B_LOGGER_MEM_ID = 8,
-	NUMS_MEM_ID     = 9,
+	VOW_MEM_ID = 0,
+	SENS_MEM_ID,
+	MP3_MEM_ID,
+	OPENDSP_MEM_ID,
+	SCP_A_LOGGER_MEM_ID,
+	SCP_B_LOGGER_MEM_ID,
+	NUMS_MEM_ID,
 } scp_reserve_mem_id_t;
 
 typedef struct {
