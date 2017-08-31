@@ -768,7 +768,7 @@ static inline int fastpath_in_internal(int iface, struct sk_buff *skb)
 	}
 	if (desc.flag & (DESC_FLAG_UNKNOWN_ETYPE | DESC_FLAG_UNKNOWN_PROTOCOL | DESC_FLAG_IPFRAG)) {
 		/* un-handled packet, so pass it to kernel stack */
-		fp_printk(K_ERR, "%s: Un-handled packet, pass it to kernel stack, flag[%x], skb[%p].\n",
+		fp_printk(K_DEBUG, "%s: Un-handled packet, pass it to kernel stack, flag[%x], skb[%p].\n",
 					__func__, desc.flag, skb);
 		return 0;
 	}
