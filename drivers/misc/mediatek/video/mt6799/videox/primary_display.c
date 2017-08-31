@@ -8891,21 +8891,29 @@ int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsi
 
 		struct sg_table *sg_table = &table;
 
-		sg_alloc_table(sg_table, 1, GFP_KERNEL);
+		ret = sg_alloc_table(sg_table, 1, GFP_KERNEL);
+		if (ret) {
+			DISPERR("sg_alloc_table returns fail: %d\n", ret);
+			goto out;
+		}
 
 		sg_dma_address(sg_table->sgl) = pa_start;
 		sg_dma_len(sg_table->sgl) = (pa_end - pa_start + 1);
 		client = m4u_create_client();
-		if (IS_ERR_OR_NULL(client))
+		if (IS_ERR_OR_NULL(client)) {
 			DISPERR("create client fail!\n");
-
+			ret = -1;
+			goto out;
+		}
 
 		*mva = pa_start & 0xffffffffULL;
 		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, (pa_end - pa_start + 1),
 				    M4U_PROT_READ | M4U_PROT_WRITE, M4U_FLAGS_FIX_MVA, (unsigned int *)mva);
 		/* m4u_alloc_mva(M4U_PORT_DISP_OVL0, pa_start, (pa_end - pa_start + 1), 0, 0, mva); */
-		if (ret)
+		if (ret) {
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
+			goto out;
+		}
 
 		pr_debug("[DISPHAL] FB MVA is 0x%lx PA is 0x%pa\n", *mva, &pa_start);
 
@@ -8913,6 +8921,13 @@ int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsi
 		*mva = pa_start & 0xffffffffULL;
 
 	return 0;
+
+out:
+	*mva = pa_start & 0xffffffffULL;
+	DISPERR("%s:%d, allocate frame buffer error:%d, MVA:0x%lx, PA:0x%pa\n", __func__, __LINE__,
+		ret, *mva, &pa_start);
+
+	return ret;
 }
 
 

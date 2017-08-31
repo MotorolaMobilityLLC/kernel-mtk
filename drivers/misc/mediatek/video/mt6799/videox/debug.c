@@ -127,18 +127,27 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 		static struct sg_table table;
 		struct sg_table *sg_table = &table;
 
-		sg_alloc_table(sg_table, 1, GFP_KERNEL);
+		ret = sg_alloc_table(sg_table, 1, GFP_KERNEL);
+		if (ret) {
+			DISPERR("sg_alloc_table returns fail: %d\n", ret);
+			goto out;
+		}
 
 		sg_dma_address(sg_table->sgl) = buf_pa;
 		sg_dma_len(sg_table->sgl) = size_align;
 		client = m4u_create_client();
-		if (IS_ERR_OR_NULL(client))
+		if (IS_ERR_OR_NULL(client)) {
 			DISPERR("create client fail!\n");
+			ret = -1;
+			goto out;
+		}
 
 		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, 0, sg_table, size_align,
 				    M4U_PROT_READ | M4U_PROT_WRITE, 0, &buf_mva);
-		if (ret)
+		if (ret) {
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
+			goto out;
+		}
 		DDPMSG("%s MVA is 0x%x PA is 0x%pa\n", __func__, buf_mva, &buf_pa);
 	}
 
@@ -208,6 +217,13 @@ static int primary_display_basic_test(int layer_num, int w, int h, enum DISP_FOR
 	kfree(input_config);
 
 	return 0;
+
+out:
+	dma_free_coherent(disp_get_device(), size, buf_va, buf_pa);
+	kfree(input_config);
+	DISPERR("%s:%d, allocate frame buffer error:%d\n", __func__, __LINE__, ret);
+
+	return -1;
 }
 
 #if 0 /* defined but not used */
