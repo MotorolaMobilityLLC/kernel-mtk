@@ -132,9 +132,9 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.hs_video = {
-		.pclk = 600000000,				//record different mode's pclk
+		.pclk = 594000000,				/*record different mode's pclk*/
 		.linelength  = 4296,				//record different mode's linelength
-		.framelength = 1160,			//record different mode's framelength
+		.framelength = 1152,			/*record different mode's framelength*/
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width  = 1296,		//record different mode's width of grabwindow
