@@ -136,28 +136,6 @@ struct cpufreq_interactive_tunables {
 	bool io_is_busy;
 };
 
-/*
- * HACK: FIXME: Bring back cpufreq_{get,put}_global_kobject()
- * definition removed by upstream commit 8eec1020f0c0 "cpufreq:
- * create cpu/cpufreq at boot time" to fix build failures.
- */
-static int cpufreq_global_kobject_usage;
-
-int cpufreq_get_global_kobject(void)
-{
-	if (!cpufreq_global_kobject_usage++)
-		return kobject_add(cpufreq_global_kobject,
-				&cpu_subsys.dev_root->kobj, "%s", "cpufreq");
-
-	return 0;
-}
-
-void cpufreq_put_global_kobject(void)
-{
-	if (!--cpufreq_global_kobject_usage)
-		kobject_del(cpufreq_global_kobject);
-}
-
 /* For cases where we have single governor instance for system */
 static struct cpufreq_interactive_tunables *common_tunables;
 
@@ -571,6 +549,58 @@ static void cpufreq_interactive_idle_end(void)
 	up_read(&pcpu->enable_sem);
 }
 
+static void cpufreq_interactive_get_policy_info(struct cpufreq_policy *policy,
+						unsigned int *pmax_freq,
+						u64 *phvt, u64 *pfvt)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	unsigned int max_freq = 0;
+	u64 hvt = ~0ULL, fvt = 0;
+	unsigned int i;
+
+	for_each_cpu(i, policy->cpus) {
+		pcpu = &per_cpu(cpuinfo, i);
+
+		fvt = max(fvt, pcpu->loc_floor_val_time);
+		if (pcpu->target_freq > max_freq) {
+			max_freq = pcpu->target_freq;
+			hvt = pcpu->loc_hispeed_val_time;
+		} else if (pcpu->target_freq == max_freq) {
+			hvt = min(hvt, pcpu->loc_hispeed_val_time);
+		}
+	}
+
+	*pmax_freq = max_freq;
+	*phvt = hvt;
+	*pfvt = fvt;
+}
+
+static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
+					   struct cpufreq_policy *policy)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	u64 hvt, fvt;
+	unsigned int max_freq;
+	int i;
+
+	cpufreq_interactive_get_policy_info(policy, &max_freq, &hvt, &fvt);
+
+	for_each_cpu(i, policy->cpus) {
+		pcpu = &per_cpu(cpuinfo, i);
+		pcpu->pol_floor_val_time = fvt;
+	}
+
+	if (max_freq != policy->cur) {
+		__cpufreq_driver_target(policy, max_freq, CPUFREQ_RELATION_H);
+		for_each_cpu(i, policy->cpus) {
+			pcpu = &per_cpu(cpuinfo, i);
+			pcpu->pol_hispeed_val_time = hvt;
+		}
+	}
+
+	trace_cpufreq_interactive_setspeed(cpu, max_freq, policy->cur);
+}
+
 static int cpufreq_interactive_speedchange_task(void *data)
 {
 	unsigned int cpu;
@@ -599,49 +629,18 @@ static int cpufreq_interactive_speedchange_task(void *data)
 		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
 		for_each_cpu(cpu, &tmp_mask) {
-			unsigned int j;
-			unsigned int max_freq = 0;
-			struct cpufreq_interactive_cpuinfo *pjcpu;
-			u64 hvt = ~0ULL, fvt = 0;
-
 			pcpu = &per_cpu(cpuinfo, cpu);
-			if (!down_read_trylock(&pcpu->enable_sem))
-				continue;
-			if (!pcpu->governor_enabled) {
+
+			down_write(&pcpu->policy->rwsem);
+
+			if (likely(down_read_trylock(&pcpu->enable_sem))) {
+				if (likely(pcpu->governor_enabled))
+					cpufreq_interactive_adjust_cpu(cpu,
+							pcpu->policy);
 				up_read(&pcpu->enable_sem);
-				continue;
 			}
 
-			for_each_cpu(j, pcpu->policy->cpus) {
-				pjcpu = &per_cpu(cpuinfo, j);
-
-				fvt = max(fvt, pjcpu->loc_floor_val_time);
-				if (pjcpu->target_freq > max_freq) {
-					max_freq = pjcpu->target_freq;
-					hvt = pjcpu->loc_hispeed_val_time;
-				} else if (pjcpu->target_freq == max_freq) {
-					hvt = min(hvt, pjcpu->loc_hispeed_val_time);
-				}
-			}
-			for_each_cpu(j, pcpu->policy->cpus) {
-				pjcpu = &per_cpu(cpuinfo, j);
-				pjcpu->pol_floor_val_time = fvt;
-			}
-
-			if (max_freq != pcpu->policy->cur) {
-				__cpufreq_driver_target(pcpu->policy,
-							max_freq,
-							CPUFREQ_RELATION_H);
-				for_each_cpu(j, pcpu->policy->cpus) {
-					pjcpu = &per_cpu(cpuinfo, j);
-					pjcpu->pol_hispeed_val_time = hvt;
-				}
-			}
-			trace_cpufreq_interactive_setspeed(cpu,
-						     pcpu->target_freq,
-						     pcpu->policy->cur);
-
-			up_read(&pcpu->enable_sem);
+			up_write(&pcpu->policy->rwsem);
 		}
 	}
 
@@ -661,8 +660,19 @@ static void cpufreq_interactive_boost(struct cpufreq_interactive_tunables *tunab
 
 	for_each_online_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
-		if (tunables != pcpu->policy->governor_data)
+
+		if (!down_read_trylock(&pcpu->enable_sem))
 			continue;
+
+		if (!pcpu->governor_enabled) {
+			up_read(&pcpu->enable_sem);
+			continue;
+		}
+
+		if (tunables != pcpu->policy->governor_data) {
+			up_read(&pcpu->enable_sem);
+			continue;
+		}
 
 		spin_lock_irqsave(&pcpu->target_freq_lock, flags[1]);
 		if (pcpu->target_freq < tunables->hispeed_freq) {
@@ -673,6 +683,8 @@ static void cpufreq_interactive_boost(struct cpufreq_interactive_tunables *tunab
 			anyboost = 1;
 		}
 		spin_unlock_irqrestore(&pcpu->target_freq_lock, flags[1]);
+
+		up_read(&pcpu->enable_sem);
 	}
 
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags[0]);
@@ -1242,7 +1254,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		policy->governor_data = tunables;
 		if (!have_governor_per_policy()) {
 			common_tunables = tunables;
-			WARN_ON(cpufreq_get_global_kobject());
 		}
 
 		rc = sysfs_create_group(get_governor_parent_kobj(policy),
@@ -1252,7 +1263,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			policy->governor_data = NULL;
 			if (!have_governor_per_policy()) {
 				common_tunables = NULL;
-				cpufreq_put_global_kobject();
 			}
 			return rc;
 		}
@@ -1275,9 +1285,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 			sysfs_remove_group(get_governor_parent_kobj(policy),
 					get_sysfs_attr());
-
-			if (!have_governor_per_policy())
-				cpufreq_put_global_kobject();
 
 			kfree(tunables);
 			common_tunables = NULL;
