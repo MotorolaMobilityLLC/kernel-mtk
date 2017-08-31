@@ -9,7 +9,7 @@ config MTK_NFC_SUPPORT
 
 config NFC_CHIP_SUPPORT
 	string "STMicroelectronics ST21NFC NFC Controller Driver"
-	default "ST21NFCD"
+	default "no"
 	depends on I2C
 	help
 	  STMicroelectronics ST21NFC Near Field Communication controller support.
