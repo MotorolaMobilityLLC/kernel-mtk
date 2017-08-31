@@ -258,12 +258,12 @@ static uint16 Handset_DMIC_PeriodicOnOff[7][22] = {
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM */
 static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
-	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0xC000, 0x81EC, 0x0000,
-	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 90% */
-	{0x828F, 0x828F, 0x8439, 0x0000, 0x0000, 0x0000, 0x0000, 0x828F, 0xC28F, 0x847B, 0x0000,
-	 0x1917, 0x82B0, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 80% */
-	{0x851F, 0x851F, 0x86C9, 0x0000, 0x0000, 0x0000, 0x0000, 0x851F, 0xC51F, 0x870A, 0x0000,
-	 0x1917, 0x853F, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 70% */
+	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
+	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
+	{0x828F, 0x828F, 0x8439, 0x0000, 0x0000, 0x0000, 0x0000, 0x828F, 0x0000, 0x847B, 0x0000,
+	 0x1917, 0x82B0, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 80% */
+	{0x851F, 0x851F, 0x86C9, 0x0000, 0x0000, 0x0000, 0x0000, 0x851F, 0x0000, 0x870A, 0x0000,
+	 0x1917, 0x853F, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 70% */
 	{0x87AE, 0x87AE, 0x8958, 0x0000, 0x0000, 0x80A4, 0x0000, 0x87AE, 0xC0A4, 0x899A, 0x0000,
 	 0x1917, 0x87CF, 0x1917, 0x0000, 0x0000, 0x1917, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 60% */
 	{0x8A3D, 0x8A3D, 0x8BE7, 0x0000, 0x0000, 0x8333, 0x0000, 0x8A3D, 0xC333, 0x8C29, 0x0000,
@@ -3772,9 +3772,12 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 		VOW32KCK_Enable(false);
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x0000, 0x8000);
-		for (i = 0; i < 22; i++)
-			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
-
+		for (i = 0; i < 22; i++) {
+			if ((i == 11) || (i == 12)) /*AFE_VOW_PERIODIC_CFG13 & 14 */
+				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0x3FFF);
+			else
+				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
+		}
 		/* Set Period */
 		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x0000, 0xFFFF);
 
@@ -3802,25 +3805,41 @@ static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 			break;
 		}
 		if (On_period > 0) {
+			uint16 value;
+
+			/* send ipi to SCP */
+			VowDrv_SetPeriodicEnable(true);
+
 			/*  <Periodic ON>  */
 			/* 32k_switch, [15]=0 */
-			/* vow_pwrapper_write_bits(AFE_VOW_PERIODIC_CFG13, 0, 15, 1); */
-			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x0000, 0x8000);
+			/*  Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x0000, 0x8000); */
 			/* vow_snrdet_periodic_cfg  = 1 */
-			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x8000, 0x8000);
+			/*  Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x8000, 0x8000); */
 			for (i = 0; i < 22; i++) {
-				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i], 0xFFFF);
+				/* Only set periodic cycle value */
+				if (i < 11) /* ON periodic */
+					value = pBuf[On_period - 1][i] & 0x3FFF;
+				else if (i == 11)
+					value = 0x8000 | (pBuf[On_period - 1][i] & 0x3FFF);
+				else
+					value = pBuf[On_period - 1][i] & 0xFFFF;
+
+				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), value, 0xFFFF);
 				pr_aud("Addr:%x, Value:%x\n",
 					AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i]);
 			}
 		} else {
 			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
 			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x0000, 0x8000);
-			for (i = 0; i < 22; i++)
-				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
+			for (i = 0; i < 22; i++) {
+				if ((i == 11) || (i == 12)) /* AFE_VOW_PERIODIC_CFG13 & 14 */
+					Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0x3FFF);
+				else
+					Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
+			}
 		}
 		/* Set Period */
-		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x999A, 0xFFFF);
+		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x999A, 0x3FFF);
 		pr_warn("AFE_VOW_PERIODIC_CFG0:%x\n", Ana_Get_Reg(AFE_VOW_PERIODIC_CFG0));
 	}
 }

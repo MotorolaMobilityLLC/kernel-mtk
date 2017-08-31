@@ -1018,13 +1018,22 @@ bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
 
 void VowDrv_SetDmicLowPower(bool enable)
 {
-
 	if (!is_scp_ready(SCP_B_ID)) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
 		return;
 	}
 
 	VowDrv_SetFlag(VOW_FLAG_DMIC_LOWPOWER, enable);
+}
+
+void VowDrv_SetPeriodicEnable(bool enable)
+{
+	if (!is_scp_ready(SCP_B_ID)) {
+		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
+		return;
+	}
+
+	VowDrv_SetFlag(VOW_FLAG_PERIODIC_ENABLE, enable);
 }
 
 static int VowDrv_SetVowEINTStatus(int status)
@@ -1393,13 +1402,14 @@ static int VowDrv_mod_init(void)
 
 	/* Register platform DRIVER */
 	ret = platform_driver_register(&VowDrv_driver);
-	if (ret) {
+	if (ret != 0) {
 		PRINTK_VOWDRV("VowDrv Fail:%d - Register DRIVER\n", ret);
 		return ret;
 	}
 
 	/* register MISC device */
-	if (ret == misc_register(&VowDrv_misc_device)) {
+	ret = misc_register(&VowDrv_misc_device);
+	if (ret != 0) {
 		PRINTK_VOWDRV("VowDrv_probe misc_register Fail:%d\n", ret);
 		return ret;
 	}

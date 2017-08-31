@@ -17,4 +17,5 @@ int VowDrv_ChangeStatus(void);
 int VowDrv_EnableHW(int status);
 void VowDrv_SetDmicLowPower(bool enable);
 void VowDrv_SetSmartDevice(void);
+void VowDrv_SetPeriodicEnable(bool enable);
 #endif
