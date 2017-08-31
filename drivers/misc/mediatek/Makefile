@@ -147,7 +147,6 @@ obj-$(CONFIG_MTK_MET) += met/
 endif
 obj-$(CONFIG_MTK_CCCI_DEVICES)	+=  ccci_util/
 obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
-#obj-$(CONFIG_MTK_CCCI_EXT)     +=  dual_ccci/
 #obj-$(CONFIG_MTK_ECCCI_DRIVER) += c2k_ccci/
 obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 
