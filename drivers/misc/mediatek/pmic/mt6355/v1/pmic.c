@@ -139,6 +139,17 @@ void vmd1_pmic_setting_off(void)
 		(pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_EN) & 0x1));
 }
 
+int vcore_pmic_set_mode(unsigned char mode)
+{
+	unsigned char ret = 0;
+
+	pmic_set_register_value(PMIC_RG_VCORE_FPWM, mode);
+
+	ret = pmic_get_register_value(PMIC_RG_VCORE_FPWM);
+
+	return (ret == mode) ? (0) : (-1);
+}
+
 /* [Export API] */
 
 /* SCP set VCORE voltage, return 0 if success, otherwise return set voltage(uV) */
