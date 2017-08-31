@@ -750,7 +750,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 			break;
 		}
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_scan.\n");
+		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_scan.\n");
 
 		if (prP2pGlueDevInfo->prScanRequest != NULL) {
 			/* There have been a scan request on-going processing. */
@@ -1546,6 +1546,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		kalMemCopy(pucFrameBuf, params->buf, params->len);
 
 		*pu8GlCookie = *cookie;
+		DBGLOG(P2P, INFO, "cfg80211: Tx frame with cookie: 0x%llx\n", *cookie);
 
 		prMgmtFrame->u2FrameLength = params->len;
 

@@ -497,19 +497,26 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 	UINT_8 ucRetryLimit = 30;	/* TX_DESC_TX_COUNT_NO_LIMIT; */
 	BOOLEAN fgDrop = FALSE;
+	BOOLEAN fgProbeResp = FALSE;
 	P_BSS_INFO_T prBssInfo;
+	PUINT_64 pu8GlCookie = (PUINT_64) NULL;
+	UINT_64 u8GlCookie;
 
 	do {
 		ASSERT_BREAK(prAdapter != NULL);
 
 		/* Drop this frame if BSS inactive */
 		if (!IS_NET_ACTIVE(prAdapter, ucBssIndex)) {
-			p2pDevFsmRunEventMgmtFrameTxDone(prAdapter, prMgmtTxMsdu, TX_RESULT_DROPPED_IN_DRIVER);
+			p2pDevFsmRunEventMgmtFrameTxDone(prAdapter, prMgmtTxMsdu, TX_RESULT_INACTIVE_BSS);
 			cnmMgtPktFree(prAdapter, prMgmtTxMsdu);
-			fgDrop = TRUE;
 
 			break;
 		}
+		pu8GlCookie =
+			(PUINT_64) ((ULONG) prMgmtTxMsdu->prPacket +
+				(ULONG) prMgmtTxMsdu->u2FrameLength + MAC_TX_RESERVED_FIELD);
+
+		u8GlCookie = *pu8GlCookie;
 
 		prWlanHdr = (P_WLAN_MAC_HEADER_T) ((ULONG) prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
 		prStaRec = cnmGetStaRecByAddress(prAdapter, ucBssIndex, prWlanHdr->aucAddr1);
@@ -520,7 +527,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			DBGLOG(P2P, TRACE, "TX Probe Resposne Frame\n");
 			prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 			if ((!nicTxIsMgmtResourceEnough(prAdapter)) || (prBssInfo->fgIsNetAbsent)) {
-				DBGLOG(P2P, TRACE, "Drop Tx probe response due to resource issue\n");
+				DBGLOG(P2P, INFO, "Drop Tx probe response due to resource issue\n");
 				fgDrop = TRUE;
 
 				break;
@@ -531,6 +538,17 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 			/* and AP do not need send it after STA left */
 			nicTxSetPktLifeTime(prMgmtTxMsdu, 100);
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, ucBssIndex, prMgmtTxMsdu);
+
+			/*
+			 * Not check prMsduInfo sanity as p2pFuncProcessP2pProbeRsp will always
+			 * return a MsduInfo
+			 */
+			pu8GlCookie =
+				(PUINT_64) ((ULONG) prMgmtTxMsdu->prPacket +
+					(ULONG) prMgmtTxMsdu->u2FrameLength + MAC_TX_RESERVED_FIELD);
+			/* Restore cookie as it will be corrupted in p2pFuncProcessP2pProbeRsp */
+			*pu8GlCookie = u8GlCookie;
+			fgProbeResp = TRUE;
 			ucRetryLimit = 6;
 			break;
 		default:
@@ -545,6 +563,12 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 
 			break;
 		}
+
+		/* Add Cookie information for supplicant & driver sync */
+		DBGLOG(P2P, INFO, "TX %s frame cookie: 0x%llx [%pM][%pM][%pM]\n",
+				fgProbeResp ? "Probe Response" : "Action",
+				u8GlCookie,
+				prWlanHdr->aucAddr1, prWlanHdr->aucAddr2, prWlanHdr->aucAddr3);
 
 		TX_SET_MMPDU(prAdapter,
 			     prMgmtTxMsdu,
@@ -2713,7 +2737,8 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBs
 
 		u2EstimateSize += u2EstimatedExtraIELen;
 		if ((u2EstimateSize) > (prRetMsduInfo->u2FrameLength)) {
-			prRetMsduInfo = cnmMgtPktAlloc(prAdapter, u2EstimateSize);
+			/* add sizeof(UINT_64) for Cookie */
+			prRetMsduInfo = cnmMgtPktAlloc(prAdapter, u2EstimateSize + sizeof(UINT_64));
 
 			if (prRetMsduInfo == NULL) {
 				DBGLOG(P2P, WARN, "No packet for sending new probe response, use original one\n");
