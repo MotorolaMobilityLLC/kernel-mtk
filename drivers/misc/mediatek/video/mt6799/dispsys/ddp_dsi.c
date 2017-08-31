@@ -3580,6 +3580,9 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 	disp_register_module_irq_callback(DISP_MODULE_DSI1, _DSI_INTERNAL_IRQ_Handler);
 	disp_register_module_irq_callback(DISP_MODULE_DSIDUAL, _DSI_INTERNAL_IRQ_Handler);
 
+	if (module == DISP_MODULE_DSI1)
+		DSI_PHY_clk_switch(module, NULL, false);
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	if (MIPITX_IsEnabled(module, cmdq) || module == DISP_MODULE_DSI1) {
 		dsi_idx = DSI_MODULE_BEGIN(module);

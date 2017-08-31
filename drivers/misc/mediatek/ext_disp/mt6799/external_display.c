@@ -877,13 +877,13 @@ static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int user
 		return -2;
 	}
 	if (pgc->lcm_state == EXTD_LCM_NO_INIT) {
-		disp_lcm_init(pgc->plcm, 1);
+/*		disp_lcm_init(pgc->plcm, 1);	*/
 		external_display_esd_check_enable(1);
 		pgc->lcm_state = EXTD_LCM_INITED;
 	} else if (pgc->lcm_state == EXTD_LCM_SUSPEND) {
-/*		EXT_DISP_LOG("[POWER]lcm resume[begin]\n");*/
+		EXT_DISP_LOG("[POWER]lcm resume[begin]\n");
 		disp_lcm_resume(pgc->plcm);
-/*		EXT_DISP_LOG("[POWER]lcm resume[end]\n");*/
+		EXT_DISP_LOG("[POWER]lcm resume[end]\n");
 		external_display_esd_check_enable(1);
 		pgc->lcm_state = EXTD_LCM_RESUME;
 	}
@@ -1490,9 +1490,9 @@ int ext_disp_suspend(unsigned int session)
 
 	if (DISP_SESSION_DEV(session) == DEV_LCM) {
 		external_display_esd_check_enable(0);
-/*		EXT_DISP_LOG("lcm suspend[begin]\n");*/
+		EXT_DISP_LOG("lcm suspend[begin]\n");
 		disp_lcm_suspend(pgc->plcm);
-/*		EXT_DISP_LOG("lcm suspend[end]\n");*/
+		EXT_DISP_LOG("lcm suspend[end]\n");
 		pgc->lcm_state = EXTD_LCM_SUSPEND;
 	}
 
