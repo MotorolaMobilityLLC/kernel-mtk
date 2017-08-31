@@ -151,10 +151,12 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *setCurr_HWLockSlot_Thread_ID(VAL_VCODEC_THREAD_ID_T
 	}
 
 	for (i = 0; i < a_prVcodecThreadID.u4VCodecThreadNum; i++) {
+		if (i < VCODEC_THREAD_MAX_NUM) {
 		MODULE_MFV_PR_DEBUG
 		    ("[VCODEC][setCurr_HWLockSlot_Thread_ID] VCodecThreadNum = %d, VCodecThreadID = %d\n",
 		     a_prVcodecThreadID.u4VCodecThreadNum, a_prVcodecThreadID.u4VCodecThreadID[i]
 			);
+	}
 	}
 
 	/* check if current tids exist in oal_hw_context[i].ObjId */
@@ -162,8 +164,9 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *setCurr_HWLockSlot_Thread_ID(VAL_VCODEC_THREAD_ID_T
 		if (oal_hw_context[i].u4VCodecThreadNum != VCODEC_THREAD_MAX_NUM) {
 			for (j = 0; j < oal_hw_context[i].u4VCodecThreadNum; j++) {
 				for (k = 0; k < a_prVcodecThreadID.u4VCodecThreadNum; k++) {
-					if (oal_hw_context[i].u4VCodecThreadID[j] ==
-					    a_prVcodecThreadID.u4VCodecThreadID[k]) {
+					if ((k < VCODEC_THREAD_MAX_NUM) &&
+					 (oal_hw_context[i].u4VCodecThreadID[j] ==
+					 a_prVcodecThreadID.u4VCodecThreadID[k])) {
 						MODULE_MFV_PR_DEBUG
 						    ("[VCODEC][setCurr_HWLockSlot_Thread_ID]\n");
 						MODULE_MFV_PR_DEBUG("Curr Already exist in %d Slot\n", i);
@@ -180,11 +183,13 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *setCurr_HWLockSlot_Thread_ID(VAL_VCODEC_THREAD_ID_T
 		if (oal_hw_context[i].u4VCodecThreadNum == VCODEC_THREAD_MAX_NUM) {
 			oal_hw_context[i].u4VCodecThreadNum = a_prVcodecThreadID.u4VCodecThreadNum;
 			for (j = 0; j < a_prVcodecThreadID.u4VCodecThreadNum; j++) {
+				if (j < VCODEC_THREAD_MAX_NUM) {
 				oal_hw_context[i].u4VCodecThreadID[j] =
 				    a_prVcodecThreadID.u4VCodecThreadID[j];
 				MODULE_MFV_PR_DEBUG
 				    ("[VCODEC][setCurr_HWLockSlot_Thread_ID] setCurr %d Slot, %d\n",
 				     i, oal_hw_context[i].u4VCodecThreadID[j]);
+			}
 			}
 			*a_prIndex = i;
 			return &oal_hw_context[i];
@@ -196,9 +201,11 @@ VAL_VCODEC_OAL_HW_CONTEXT_T *setCurr_HWLockSlot_Thread_ID(VAL_VCODEC_THREAD_ID_T
 			 VCODEC_MULTIPLE_INSTANCE_NUM);
 		oal_hw_context[0].u4VCodecThreadNum = a_prVcodecThreadID.u4VCodecThreadNum;
 		for (i = 0; i < oal_hw_context[0].u4VCodecThreadNum; i++) {
+			if (i < VCODEC_THREAD_MAX_NUM) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 			oal_hw_context[0].u4VCodecThreadID[i] =
 			    a_prVcodecThreadID.u4VCodecThreadID[i];
+		}
 		}
 		*a_prIndex = 0;
 		return &oal_hw_context[0];
@@ -340,8 +347,8 @@ void Force_Free_NonCacheMemoryList(VAL_UINT32_T a_u4Tid)
 					    VCODEC_THREAD_MAX_NUM;
 					for (u4K = 0; u4K < VCODEC_THREAD_MAX_NUM; u4K++) {
 						/* Add one line comment for avoid kernel coding style,
-						 * WARNING:BRACES:
-						 */
+						*  WARNING:BRACES:
+						*/
 						grNonCacheMemoryList[u4I].u4VCodecThreadID[u4K] =
 						    0xffffffff;
 					}
