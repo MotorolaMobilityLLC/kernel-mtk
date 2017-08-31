@@ -39,7 +39,6 @@ void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
 void __iomem *INT_POL_CTL1;
 static void __iomem *GIC_REDIST_BASE;
-static u32 wdt_irq;
 static u32 reg_len_pol0;
 
 #ifndef readq
@@ -67,14 +66,6 @@ static int gic_populate_rdist(void __iomem **rdist_base)
 	*rdist_base = GIC_REDIST_BASE + cpu*SZ_64K*2;
 
 	return 0;
-}
-
-bool mt_is_secure_irq(struct irq_data *d)
-{
-	if (gic_irq(d) == wdt_irq)
-		return true;
-	else
-		return false;
 }
 
 bool mt_get_irq_gic_targets(struct irq_data *d, cpumask_t *mask)
@@ -445,9 +436,6 @@ void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
 int __init mt_gic_ext_init(void)
 {
 	struct device_node *node;
-#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
-	int i;
-#endif
 
 	node = of_find_compatible_node(NULL, NULL, "arm,gic-v3");
 	if (!node) {
@@ -476,16 +464,6 @@ int __init mt_gic_ext_init(void)
 	if (of_property_read_u32(node, "mediatek,reg_len_pol0",
 				&reg_len_pol0))
 		reg_len_pol0 = 0;
-
-#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
-	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
-		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
-		spin_lock_init(&(irq_need_migrate_list[i].lock));
-	}
-
-	if (of_property_read_u32(node, "mediatek,wdt_irq", &wdt_irq))
-		wdt_irq = 0;
-#endif
 
 	pr_warn("### gic-v3 init done. ###\n");
 
