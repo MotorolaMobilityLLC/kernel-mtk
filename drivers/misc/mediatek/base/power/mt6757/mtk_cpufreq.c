@@ -345,10 +345,18 @@ static unsigned int do_dvfs_stress_test;
 static unsigned int dvfs_power_mode;
 
 enum ppb_power_mode {
-	Default = 0,
-	Low_power_Mode = 1,
-	Just_Make_Mode = 2,
-	Performance_Mode = 3,
+	DEFAULT_MODE,		/* normal mode */
+	LOW_POWER_MODE,
+	JUST_MAKE_MODE,
+	PERFORMANCE_MODE,	/* sports mode */
+	NUM_POWER_MODE
+};
+
+static const char *power_mode_str[NUM_POWER_MODE] = {
+	"Default(Normal) mode",
+	"Low Power mode",
+	"Just Make mode",
+	"Performance(Sports) mode"
 };
 
 /*
@@ -3265,20 +3273,9 @@ static ssize_t cpufreq_debug_proc_write(struct file *file, const char __user *bu
 
 static int cpufreq_power_mode_proc_show(struct seq_file *m, void *v)
 {
-	switch (dvfs_power_mode) {
-	case Default:
-		seq_puts(m, "Default\n");
-		break;
-	case Low_power_Mode:
-		seq_puts(m, "Low_power_Mode\n");
-		break;
-	case Just_Make_Mode:
-		seq_puts(m, "Just_Make_Mode\n");
-		break;
-	case Performance_Mode:
-		seq_puts(m, "Performance_Mode\n");
-		break;
-	};
+	unsigned int mode = dvfs_power_mode;
+
+	seq_printf(m, "%s\n", mode < NUM_POWER_MODE ? power_mode_str[mode] : "Unknown");
 
 	return 0;
 }
@@ -3290,17 +3287,19 @@ int mt_cpufreq_get_ppb_state(void)
 
 static ssize_t cpufreq_power_mode_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-	unsigned int do_power_mode;
+	unsigned int mode;
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 10, &do_power_mode))
-		dvfs_power_mode = do_power_mode;
-	else
+	if (!kstrtoint(buf, 10, &mode) && mode < NUM_POWER_MODE) {
+		dvfs_power_mode = mode;
+		cpufreq_dbg("%s start\n", power_mode_str[mode]);
+	} else {
 		cpufreq_err("echo 0/1/2/3 > /proc/cpufreq/cpufreq_power_mode\n");
+	}
 
 	free_page((unsigned long)buf);
 	return count;
