@@ -499,7 +499,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 		writew(num, i2c->base + OFFSET_TRANSAC_LEN);
 	}
 
-	if (i2c->adap.nr != 0) {
+	if ((i2c->adap.nr != 0) && (i2c->adap.nr != 1)) {
 		/* Prepare buffer data to start transfer */
 		if (i2c->op == I2C_MASTER_RD) {
 			writel(I2C_DMA_INT_FLAG_NONE, i2c->pdmabase + OFFSET_INT_FLAG);
@@ -581,7 +581,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 	}
 	writew(start_reg, i2c->base + OFFSET_START);
 
-	if (i2c->adap.nr != 0) {
+	if ((i2c->adap.nr != 0) && (i2c->adap.nr != 1)) {
 		if (i2c->op == I2C_MASTER_RD)
 			writel(I2C_DMA_START_EN, i2c->pdmabase + OFFSET_EN);
 	}
@@ -593,7 +593,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 	writew(~(restart_flag | I2C_HS_NACKERR | I2C_ACKERR |
 	       I2C_TRANSAC_COMP), i2c->base + OFFSET_INTR_MASK);
 
-	if (i2c->adap.nr != 0) {
+	if ((i2c->adap.nr != 0) && (i2c->adap.nr != 1)) {
 		if (i2c->op == I2C_MASTER_WR) {
 			dma_unmap_single(i2c->dev, wpaddr,
 				 msgs->len, DMA_TO_DEVICE);
@@ -622,7 +622,7 @@ static int mtk_i2c_do_transfer(struct mtk_i2c *i2c, struct i2c_msg *msgs,
 		return -ENXIO;
 	}
 
-	if (i2c->adap.nr == 0) {
+	if ((i2c->adap.nr == 0) || (i2c->adap.nr == 1)) {
 		if ((i2c->op == I2C_MASTER_RD) || (i2c->op == I2C_MASTER_WRRD)) {
 			ptr = (i2c->op == I2C_MASTER_RD) ?
 				msgs->buf : (msgs + 1)->buf;
