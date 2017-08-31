@@ -2842,7 +2842,9 @@ static struct mtk_mem_blk_ops mem_blk_ops = {
 
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	.trigger_mtkaif_calibration = platform_mtkaif_calibration,
+#endif
 };
 
 void init_afe_ops(void)
