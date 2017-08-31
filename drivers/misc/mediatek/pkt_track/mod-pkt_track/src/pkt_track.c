@@ -464,7 +464,7 @@ static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
 
 	/* Transfer msg to usb gadget driver */
 	pkt_printk(K_INFO, "%s: Transfer ilm to usb gadget driver.\n", __func__);
-	musb_md_msg_hdlr(ilm);
+	rndis_md_msg_hdlr(ilm);
 
 	return 0;
 }

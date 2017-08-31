@@ -1327,6 +1327,16 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 }
 
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+static int musb_gadget_get_address(struct usb_gadget *gadget)
+{
+	struct musb *musb = gadget_to_musb(gadget);
+
+	if (musb != NULL && musb->set_address == true)
+		return musb->address;
+	else
+		return 0;
+}
+
 static void musb_gadget_suspend_control(struct usb_ep *ep)
 {
 	struct musb_ep	*musb_ep = to_musb_ep(ep);
@@ -1633,7 +1643,10 @@ static const struct usb_gadget_ops musb_gadget_operations = {
 	.vbus_draw = musb_gadget_vbus_draw,
 	.pullup = musb_gadget_pullup,
 	.udc_start = musb_gadget_start,
-	.udc_stop		= musb_gadget_stop,
+	.udc_stop = musb_gadget_stop,
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+	.get_address =	musb_gadget_get_address,
+#endif
 	/*REVISIT-J: Do we need implement "get_config_params" to config U1/U2 */
 };
 

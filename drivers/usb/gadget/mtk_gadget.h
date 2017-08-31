@@ -16,6 +16,8 @@
 
 extern bool usb_cable_connected(void);
 extern void composite_setup_complete(struct usb_ep *ep, struct usb_request *req);
+extern struct usb_composite_dev *android_get_composite_device(void);
+
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 typedef enum {
 	DIRECT_STATE_NONE = 0,
@@ -175,16 +177,6 @@ typedef struct _ufpm_md_fast_path_common_rsp {
 	u8 reserved[2];
 } __packed ufpm_md_fast_path_common_rsp_t;
 
-extern u8 musb_get_usb_addr(void);
-extern int musb_enable_md_fast_path(u32 mode);
-extern int musb_disable_md_fast_path(ufpm_md_fast_path_common_req_t *req);
-extern int musb_activate_md_fast_path(ufpm_activate_md_func_req_t *req);
-extern int musb_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req);
-extern int musb_send_md_ep0_msg(ufpm_send_md_ep0_msg_t *req, u32 msg_id);
-#endif
-
-#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
-
 typedef enum {
 	RNDIS_NETWORK_TYPE_NONE = 0,
 	RNDIS_NETWORK_TYPE_MOBILE,
@@ -194,7 +186,8 @@ typedef enum {
 extern int rndis_get_direct_tethering_state(struct usb_function *f);
 extern int rndis_send_ep0_response(struct usb_composite_dev *cdev,
 		struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer);
-extern void rndis_get_pkt_info(struct rndis_params *params, u32 *maxPacketsPerTransfer, u32 *maxTransferSize);
+extern void rndis_get_pkt_info(struct rndis_params *params,
+		u32 *maxPacketsPerTransfer, u32 *maxTransferSize);
 extern void rndis_get_net_stats(struct rndis_params *params, tethering_net_stats_t *net_stats);
 extern void rndis_set_net_stats(struct rndis_params *params, tethering_net_stats_t *net_stats);
 #endif

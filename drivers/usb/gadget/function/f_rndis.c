@@ -33,6 +33,7 @@
 #include "port_ipc.h"
 #include "ccci_ipc_msg_id.h"
 #include "mtk_gadget.h"
+#include "pkt_track.h"
 #endif
 
 #define F_RNDIS_LOG "[USB_RNDIS]"
@@ -409,14 +410,8 @@ static void rndis_resume_data_control(struct f_rndis *rndis)
 	usb_ep_resume_control(rndis->port.out_ep);
 }
 
-int rndis_get_direct_tethering_state(struct usb_function *f)
-{
-	struct f_rndis *rndis = func_to_rndis(f);
-
-	return rndis->direct_state;
-}
-
-void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
+static void rndis_activate_direct_tethering(struct usb_function *f,
+						bool suspend)
 {
 	struct f_rndis *rndis = func_to_rndis(f);
 	struct eth_dev *dev;
@@ -428,16 +423,9 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 	memset(&activate_req, 0, sizeof(ufpm_activate_md_func_req_t));
 
 	activate_req.mode = UFPM_FUNC_MODE_TETHER;
-	activate_req.address = musb_get_usb_addr();
+	activate_req.address = usb_gadget_get_address(f->config->cdev->gadget);
 	activate_req.configuration = f->config->bConfigurationValue;
 
-/* need fix*/
-#if 1
-	if (gadget_is_dualspeed(f->config->cdev->gadget))
-		activate_req.speed = USBC_USB_SPEED_USB20;
-	else
-		activate_req.speed = USBC_USB_SPEED_USB11;
-#else
 
 	if (gadget_is_superspeed(f->config->cdev->gadget))
 		activate_req.speed = USBC_USB_SPEED_USB30;
@@ -445,7 +433,6 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 		activate_req.speed = USBC_USB_SPEED_USB20;
 	else
 		activate_req.speed = USBC_USB_SPEED_USB11;
-#endif
 
 	/* TODO: U3 endpoint is double FIFO but U2 endpoint might not be double FIFO */
 	activate_req.ap_usb_map[0].type = ENDPOINT_USED | USB_MAP_TYPE_ENDPOINT
@@ -485,14 +472,12 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 			activate_req.tethering_meta_info.init_cmplt_max_packets_per_transfer,
 			activate_req.tethering_meta_info.init_cmplt_max_transfer_size);
 
-		if (suspend) {
-			usb_ep_suspend_control(rndis->port.in_ep);
-			usb_ep_suspend_control(rndis->port.out_ep);
-		}
+	if (suspend) {
+		usb_ep_suspend_control(rndis->port.in_ep);
+		usb_ep_suspend_control(rndis->port.out_ep);
+	}
 
-	if (musb_activate_md_fast_path(&activate_req) >= 0) {
-		pr_info("%s, ok\n", __func__);
-	} else {
+	if (pkt_track_activate_md_fast_path(&activate_req) < 0) {
 		usb_ep_resume_control(rndis->port.in_ep);
 		usb_ep_resume_control(rndis->port.out_ep);
 		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
@@ -501,14 +486,16 @@ void rndis_activate_direct_tethering(struct usb_function *f, bool suspend)
 	pr_info("%s, state: %d\n", __func__, rndis->direct_state);
 }
 
-int rndis_deactivate_direct_tethering(struct usb_function *f)
+static int rndis_deactivate_direct_tethering(struct usb_function *f)
 {
 	struct f_rndis *rndis = func_to_rndis(f);
 	ufpm_md_fast_path_common_req_t req;
 	int ret;
 
 	req.mode = UFPM_FUNC_MODE_TETHER;
-	ret = musb_deactivate_md_fast_path(&req);
+
+	ret = pkt_track_deactivate_md_fast_path(&req);
+
 	if (ret >= 0)
 		rndis->direct_state = DIRECT_STATE_DEACTIVATING;
 
@@ -517,7 +504,7 @@ int rndis_deactivate_direct_tethering(struct usb_function *f)
 	return ret;
 }
 
-static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
+static int rndis_handle_md_msg(struct usb_function *f, int msg_id, void *data)
 {
 	struct f_rndis *rndis = func_to_rndis(f);
 	int handled = 0;
@@ -612,15 +599,51 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 	return handled;
 }
 
-static bool rndis_md_status_qry(struct usb_function *f)
+static int enable_md_fast_path(u32 mode)
 {
-	struct f_rndis *rndis = func_to_rndis(f);
+	ufpm_enable_md_func_req_t req;
+	struct ccci_emi_info emi_info;
+	int ret = 0;
 
-	if (rndis != NULL && (rndis->direct_state == DIRECT_STATE_ACTIVATING ||
-		rndis->direct_state == DIRECT_STATE_ACTIVATED))
-		return true;
+	memset(&req, 0, sizeof(req));
 
-	return false;
+	ret = ccci_get_emi_info(0, &emi_info);
+
+	if (ret >= 0) {
+		req.mpuInfo.apUsbDomainId = emi_info.ap_domain_id;
+		req.mpuInfo.mdCldmaDomainId = emi_info.md_domain_id;
+		req.mpuInfo.memBank0BaseAddr = emi_info.ap_view_bank0_base;
+		req.mpuInfo.memBank0Size = emi_info.bank0_size;
+		req.mpuInfo.memBank4BaseAddr = emi_info.ap_view_bank4_base;
+		req.mpuInfo.memBank4Size = emi_info.bank4_size;
+		req.mode = mode;
+
+		pr_info("memBank0BaseAddr=0x%llx\n",
+				  req.mpuInfo.memBank0BaseAddr);
+		pr_info("memBank0Size=0x%llx\n",
+				  req.mpuInfo.memBank0Size);
+		pr_info("memBank4BaseAddr=0x%llx\n",
+				  req.mpuInfo.memBank4BaseAddr);
+		pr_info("memBank4Size=0x%llx\n",
+				  req.mpuInfo.memBank4Size);
+
+		ret = pkt_track_enable_md_fast_path(&req);
+	}
+
+	pr_info("%s ret=%d\n", __func__, ret);
+	return ret;
+}
+
+static int disable_md_fast_path(ufpm_md_fast_path_common_req_t *req)
+{
+	int ret = 0;
+
+	if (req->mode == UFPM_FUNC_MODE_TETHER) {
+		/* Call AP Packet Tracking module's API */
+		ret = pkt_track_disable_md_fast_path(req);
+	}
+	pr_info("%s ret=%d\n", __func__, ret);
+	return ret;
 }
 
 static bool rndis_md_fast_path_enable(struct usb_function *f)
@@ -630,12 +653,20 @@ static bool rndis_md_fast_path_enable(struct usb_function *f)
 	if (rndis->direct_feature_on) {
 		pr_info("%s enable direct tethering\n", __func__);
 		/* Enable direct tethering */
-		if (musb_enable_md_fast_path(UFPM_FUNC_MODE_TETHER) >= 0) {
+		if (enable_md_fast_path(UFPM_FUNC_MODE_TETHER) >= 0) {
 			rndis->direct_state = DIRECT_STATE_ENABLING;
 			return true;
 		}
 	}
 	return false;
+}
+
+
+int rndis_get_direct_tethering_state(struct usb_function *f)
+{
+	struct f_rndis *rndis = func_to_rndis(f);
+
+	return rndis->direct_state;
 }
 
 void rndis_set_direct_tethering(struct usb_function *f, bool direct)
@@ -678,6 +709,24 @@ void rndis_set_direct_tethering(struct usb_function *f, bool direct)
 			}
 		}
 	}
+}
+
+int rndis_md_msg_hdlr(ipc_ilm_t *ilm)
+{
+	struct usb_composite_dev *cdev = android_get_composite_device();
+	struct usb_function *f;
+
+	if (cdev && cdev->config) {
+		list_for_each_entry(f, &cdev->config->functions, list) {
+			if (f && !strcmp(f->name, "rndis")) {
+				/* hadle the msg from md */
+				rndis_handle_md_msg(f, ilm->msg_id,
+						(void *)ilm->local_para_ptr);
+				return 0;
+			}
+		}
+	}
+	return -EFAULT;
 }
 #endif
 
@@ -807,6 +856,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 #else
 	status = rndis_msg_parser(rndis->params, (u8 *)req->buf);
 #endif
+
 	if (status < 0)
 		pr_err("RNDIS command error %d, %d/%d\n",
 			status, req->actual, req->length);
@@ -1267,7 +1317,7 @@ rndis_old_unbind(struct usb_configuration *c, struct usb_function *f)
 		ufpm_md_fast_path_common_req_t req;
 
 		req.mode = UFPM_FUNC_MODE_TETHER;
-		if (musb_disable_md_fast_path(&req) >= 0)
+		if (disable_md_fast_path(&req) >= 0)
 			rndis->direct_state = DIRECT_STATE_DISABLING;
 		else
 			rndis->direct_state = DIRECT_STATE_NONE;
@@ -1330,8 +1380,6 @@ rndis_bind_config_vendor(struct usb_configuration *c, u8 ethaddr[ETH_ALEN],
 	rndis->port.func.disable = rndis_disable;
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
-	rndis->port.func.md_msg_hdlr = rndis_md_msg_hdlr;
-	rndis->port.func.md_status_qry = rndis_md_status_qry;
 	rndis->direct_feature_on = direct_feature_on;
 	rndis->direct_state = DIRECT_STATE_NONE;
 	if (direct_value == 1)

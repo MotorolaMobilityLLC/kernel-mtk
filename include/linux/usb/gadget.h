@@ -579,6 +579,9 @@ struct usb_gadget_ops {
 	struct usb_ep *(*match_ep)(struct usb_gadget *,
 			struct usb_endpoint_descriptor *,
 			struct usb_ss_ep_comp_descriptor *);
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+	int	(*get_address)(struct usb_gadget *);
+#endif
 };
 
 /**
@@ -1012,6 +1015,22 @@ static inline int usb_gadget_activate(struct usb_gadget *gadget)
 	return 0;
 }
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+/**
+ * usb_gadget_get_number - returns the current address
+ * @gadget: controller that reports the address
+ *
+ * Returns the usb address,	or negative errno if this device
+ * doesn't support this capability.
+ */
+static inline int usb_gadget_get_address(struct usb_gadget *gadget)
+{
+	if (!gadget->ops->get_address)
+		return -EOPNOTSUPP;
+	return gadget->ops->get_address(gadget);
+}
+#endif
+
 /*-------------------------------------------------------------------------*/
 
 /**
@@ -1094,11 +1113,6 @@ struct usb_gadget_driver {
 	void			(*suspend)(struct usb_gadget *);
 	void			(*resume)(struct usb_gadget *);
 	void			(*reset)(struct usb_gadget *);
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
-	int			(*md_msg_hdlr)(struct usb_gadget *, int, void *);
-	bool			(*md_status_qry)(struct usb_gadget *);
-#endif
-
 	/* FIXME support safe rmmod */
 	struct device_driver	driver;
 };
