@@ -56,10 +56,6 @@ static struct pinctrl *mdcldma_pinctrl;
 
 static void __iomem *md_sram_pd_psmcusys_base;
 
-void __attribute__((weak)) clk_buf_set_by_flightmode(bool is_flightmode_on)
-{
-}
-
 #define TAG "mcd"
 void md_cldma_hw_reset(struct ccci_modem *md)
 {
@@ -580,6 +576,9 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x180, ~(0x1 << i));
 
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x17C, ~(0x1 << i));
+
 	for (i = 31; i >= 24; i--)
 		RAnd2W(base, 0x178, ~(0x1 << i));
 
@@ -589,10 +588,9 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x160, ~(0x1 << i));
 
-	cldma_write32(base, 0x17c, 0);
-
-	CCCI_BOOTUP_LOG(md->index, TAG, "md1_pcore_sram reg: 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X\n",
+	CCCI_BOOTUP_LOG(md->index, TAG, "md1_pcore_sram reg: 0x%X, 0x%X, 0x%X, 0x%X 0x%X, 0x%X, 0x%X\n",
 		ccci_read32(base, 0x188), ccci_read32(base, 0x184), ccci_read32(base, 0x180),
+		ccci_read32(base, 0x17C),
 		ccci_read32(base, 0x178), ccci_read32(base, 0x164), ccci_read32(base, 0x160));
 }
 
@@ -643,6 +641,7 @@ void md1_pll_init(struct ccci_modem *md)
 	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
 
 	cldma_write32(md_pll->md_top_Pll, 0x48, 0x801A2762);
+	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
 	cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
 	cldma_write32(md_pll->md_top_Pll, 0x90, 0x8019F627);
 	cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
@@ -661,7 +660,7 @@ void md1_pll_init(struct ccci_modem *md)
 	cldma_write32(md_pll->md_top_Pll, 0x318, 0xFFFF);
 
 	/*make a record that means MD pll has been initialized.*/
-	cldma_write32(md_pll->md_top_Pll, 0xF00, 0x62920000);
+	cldma_write32(md_pll->md_top_clkSW, 0xF00, 0x62920000);
 }
 
 
@@ -671,13 +670,11 @@ void __attribute__((weak)) kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
 {
-	clk_buf_set_by_flightmode(true);
 	return 0;
 }
 
 int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 {
-	clk_buf_set_by_flightmode(false);
 	return 0;
 }
 
@@ -693,7 +690,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* steip 1: power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
-		clk_buf_set_by_flightmode(false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
 		clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done\n");
@@ -763,7 +759,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	case MD_SYS1:
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
-		clk_buf_set_by_flightmode(true);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
 		kicker_pbm_by_md(KR_MD1, false);
