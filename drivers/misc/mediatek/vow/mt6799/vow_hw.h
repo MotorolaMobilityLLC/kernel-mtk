@@ -15,7 +15,7 @@
 #define __VOW_HW_H__
 
 /* which the GPIO NUM is corresponed to EINT0~15  */
-typedef enum VOW_EINT_NUM {
+enum VOW_EINT_NUM {
 	VOW_EINT_NUM_0 = 0,
 	VOW_EINT_NUM_1 = 1,
 	VOW_EINT_NUM_2 = 2,
@@ -33,7 +33,7 @@ typedef enum VOW_EINT_NUM {
 	VOW_EINT_NUM_14 = 14,
 	VOW_EINT_NUM_15 = 15,
 	VOW_EINT_SUM = 16
-} VOW_EINT_NUM;
+};
 
 unsigned int vow_check_scp_status(void);
 unsigned int vow_query_eint_num(unsigned int eint_gpio);

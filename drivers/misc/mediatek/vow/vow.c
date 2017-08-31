@@ -106,7 +106,7 @@ static bool vow_IPICmd_Send(audio_ipi_msg_data_t data_type,
 static void vow_IPICmd_Received(ipi_msg_t *ipi_msg);
 static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg);
 static void vow_Task_Unloaded_Handling(void);
-static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set);
+static bool VowDrv_SetFlag(int type, bool set);
 static int VowDrv_GetHWStatus(void);
 
 /*****************************************************************************
@@ -115,10 +115,7 @@ static int VowDrv_GetHWStatus(void);
 
 static struct
 {
-	void                 *vow_init_model;
-	void                 *vow_noise_model;
-	void                 *vow_fir_model;
-	VOW_SPEAKER_MODEL_T  vow_speaker_model[MAX_VOW_SPEAKER_MODEL];
+	struct vow_speaker_model_t  vow_speaker_model[MAX_VOW_SPEAKER_MODEL];
 	unsigned long        vow_info_apuser[MAX_VOW_INFO_LEN];
 	unsigned int         vow_info_dsp[MAX_VOW_INFO_LEN];
 	unsigned long        voicedata_user_addr;
@@ -130,8 +127,8 @@ static struct
 	bool                 scp_command_flag;
 	bool                 recording_flag;
 	int                  scp_command_id;
-	VOW_EINT_STATUS      eint_status;
-	VOW_PWR_STATUS       pwr_status;
+	int                  eint_status;
+	int                  pwr_status;
 	int                  send_ipi_count;
 	bool                 suspend_lock;
 	bool                 firstRead;
@@ -147,6 +144,7 @@ static struct
 	unsigned int         enter_phase3_cnt;
 	unsigned int         force_phase_stage;
 	bool                 swip_log_enable;
+	struct vow_eint_data_struct_t  vow_eint_data_struct;
 } vowserv;
 
 static struct device dev = {
@@ -306,9 +304,6 @@ static void vow_service_Init(void)
 		vowserv.force_phase_stage = NO_FORCE;
 		vowserv.swip_log_enable   = true;
 		spin_unlock(&vowdrv_lock);
-		vowserv.vow_init_model    = NULL;
-		vowserv.vow_noise_model   = NULL;
-		vowserv.vow_fir_model     = NULL;
 		for (I = 0; I < MAX_VOW_SPEAKER_MODEL; I++) {
 			vowserv.vow_speaker_model[I].model_ptr = NULL;
 			vowserv.vow_speaker_model[I].id        = -1;
@@ -369,50 +364,21 @@ int vow_service_GetParameter(unsigned long arg)
 	return 0;
 }
 
-static int vow_service_CopyModel(int model, int slot)
+static int vow_service_CopyModel(int slot)
 {
-	switch (model) {
-	case VOW_MODEL_INIT:
-		if (copy_from_user((void *)(vowserv.vow_init_model),
-				   (const void __user *)(vowserv.vow_info_apuser[1]),
-				   vowserv.vow_info_apuser[2])) {
-			pr_debug("Copy Init Model Fail\n");
-			return -EFAULT;
-		}
-		break;
-	case VOW_MODEL_SPEAKER:
-		if (vowserv.vow_info_apuser[2] > scp_get_reserve_mem_size(VOW_MEM_ID)) {
-			pr_debug("DMA Size Too Large\n");
-			return -EFAULT;
-		}
-		if (copy_from_user((void *)(vowserv.vow_speaker_model[slot].model_ptr),
-				   (const void __user *)(vowserv.vow_info_apuser[1]),
-				   vowserv.vow_info_apuser[2])) {
-			pr_debug("Copy Speaker Model Fail\n");
-			return -EFAULT;
-		}
-		vowserv.vow_speaker_model[slot].enabled = 1;
-		vowserv.vow_speaker_model[slot].id      = vowserv.vow_info_apuser[0];
-		break;
-	case VOW_MODEL_NOISE:
-		if (copy_from_user((void *)(vowserv.vow_noise_model),
-				   (const void __user *)(vowserv.vow_info_apuser[1]),
-				   vowserv.vow_info_apuser[2])) {
-			pr_debug("Copy Noise Model Fail\n");
-			return -EFAULT;
-		}
-		break;
-	case VOW_MODEL_FIR:
-		if (copy_from_user((void *)(vowserv.vow_fir_model),
-				   (const void __user *)(vowserv.vow_info_apuser[1]),
-				   vowserv.vow_info_apuser[2])) {
-			pr_debug("Copy FIR Model Fail\n");
-			return -EFAULT;
-		}
-		break;
-	default:
-		break;
+	if (vowserv.vow_info_apuser[2] > scp_get_reserve_mem_size(VOW_MEM_ID)) {
+		pr_debug("DMA Size Too Large\n");
+		return -EFAULT;
 	}
+	if (copy_from_user((void *)(vowserv.vow_speaker_model[slot].model_ptr),
+			   (const void __user *)(vowserv.vow_info_apuser[1]),
+			   vowserv.vow_info_apuser[2])) {
+		pr_debug("Copy Speaker Model Fail\n");
+		return -EFAULT;
+	}
+	vowserv.vow_speaker_model[slot].enabled = 1;
+	vowserv.vow_speaker_model[slot].id = vowserv.vow_info_apuser[0];
+
 	return 0;
 }
 
@@ -504,7 +470,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 
 	vowserv.vow_speaker_model[I].model_ptr = (void *)scp_get_reserve_mem_virt(VOW_MEM_ID);
 
-	if (vow_service_CopyModel(VOW_MODEL_SPEAKER, I) != 0)
+	if (vow_service_CopyModel(I) != 0)
 		return false;
 
 	ptr8 = (char *)vowserv.vow_speaker_model[I].model_ptr;
@@ -534,21 +500,6 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 			      sizeof(unsigned int) * 4, 0,
 			      (char *)&vowserv.vow_info_dsp[0]);
 	return ret;
-}
-
-static bool vow_service_SetInitModel(unsigned long arg)
-{
-	return true;
-}
-
-static bool vow_service_SetNoiseModel(unsigned long arg)
-{
-	return true;
-}
-
-static bool vow_service_SetFirModel(unsigned long arg)
-{
-	return true;
 }
 
 static bool vow_service_SetVBufAddr(unsigned long arg)
@@ -817,7 +768,7 @@ void VowDrv_SetSmartDevice_GPIO(bool enable)
 	}
 }
 
-static bool VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
+static bool VowDrv_SetFlag(int type, bool set)
 {
 	bool ret;
 
@@ -1039,7 +990,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	switch ((unsigned int)cmd) {
 	case VOWEINT_GET_BUFSIZE:
 		pr_debug("VOWEINT_GET_BUFSIZE\n");
-		ret = sizeof(VOW_EINT_DATA_STRUCT);
+		ret = sizeof(struct vow_eint_data_struct_t);
 		break;
 	case VOW_GET_STATUS:
 		pr_debug("VOW_GET_STATUS\n");
@@ -1089,18 +1040,12 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		break;
 	case VOW_SET_INIT_MODEL:
 		pr_debug("VOW_SET_INIT_MODEL(%lu)", arg);
-		if (!vow_service_SetInitModel(arg))
-			ret = -EFAULT;
 		break;
 	case VOW_SET_FIR_MODEL:
 		pr_debug("VOW_SET_FIR_MODEL(%lu)", arg);
-		if (!vow_service_SetFirModel(arg))
-			ret = -EFAULT;
 		break;
 	case VOW_SET_NOISE_MODEL:
 		pr_debug("VOW_SET_NOISE_MODEL(%lu)", arg);
-		if (!vow_service_SetNoiseModel(arg))
-			ret = -EFAULT;
 		break;
 	case VOW_SET_APREG_INFO:
 		pr_debug("VOW_SET_APREG_INFO(%lu)", arg);
@@ -1128,7 +1073,6 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 {
 	long ret = 0;
 
-	/*int err;*/
 	/*PRINTK_VOWDRV("++VowDrv_compat_ioctl cmd = %u arg = %lu\n", cmd, arg);*/
 	if (!fp->f_op || !fp->f_op->unlocked_ioctl) {
 		(void)ret;
@@ -1148,9 +1092,9 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 	case VOW_SET_FIR_MODEL:
 	case VOW_SET_NOISE_MODEL:
 	case VOW_SET_APREG_INFO: {
-		VOW_MODEL_INFO_KERNEL_T __user *data32;
+		struct vow_model_info_kernel_t __user *data32;
 
-		VOW_MODEL_INFO_T __user *data;
+		struct vow_model_info_t __user *data;
 
 		int err;
 		compat_size_t l;
@@ -1220,10 +1164,10 @@ static ssize_t VowDrv_read(struct file *fp,  char __user *data, size_t count, lo
 		}
 	}
 
-	VOW_EINT_DATA_STRUCT.eint_status = VowDrv_QueryVowEINTStatus();
+	vowserv.vow_eint_data_struct.eint_status = VowDrv_QueryVowEINTStatus();
 	read_count = copy_to_user((void __user *)data,
-				  &VOW_EINT_DATA_STRUCT,
-				  sizeof(VOW_EINT_DATA_STRUCT));
+				  &vowserv.vow_eint_data_struct,
+				  sizeof(struct vow_eint_data_struct_t));
 	PRINTK_VOWDRV("+VowDrv_read-\n");
 	return read_count;
 }
