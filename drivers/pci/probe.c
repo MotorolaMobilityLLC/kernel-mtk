@@ -226,7 +226,8 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 			mask64 = (u32)PCI_BASE_ADDRESS_MEM_MASK;
 		}
 	} else {
-		res->flags |= (l & IORESOURCE_ROM_ENABLE);
+		if (l & PCI_ROM_ADDRESS_ENABLE)
+			res->flags |= IORESOURCE_ROM_ENABLE;
 		l64 = l & PCI_ROM_ADDRESS_MASK;
 		sz64 = sz & PCI_ROM_ADDRESS_MASK;
 		mask64 = (u32)PCI_ROM_ADDRESS_MASK;
@@ -1019,6 +1020,7 @@ void set_pcie_port_type(struct pci_dev *pdev)
 	pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
 	if (!pos)
 		return;
+
 	pdev->pcie_cap = pos;
 	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
 	pdev->pcie_flags_reg = reg16;
@@ -1026,13 +1028,14 @@ void set_pcie_port_type(struct pci_dev *pdev)
 	pdev->pcie_mpss = reg16 & PCI_EXP_DEVCAP_PAYLOAD;
 
 	/*
-	 * A Root Port is always the upstream end of a Link.  No PCIe
-	 * component has two Links.  Two Links are connected by a Switch
-	 * that has a Port on each Link and internal logic to connect the
-	 * two Ports.
+	 * A Root Port or a PCI-to-PCIe bridge is always the upstream end
+	 * of a Link.  No PCIe component has two Links.  Two Links are
+	 * connected by a Switch that has a Port on each Link and internal
+	 * logic to connect the two Ports.
 	 */
 	type = pci_pcie_type(pdev);
-	if (type == PCI_EXP_TYPE_ROOT_PORT)
+	if (type == PCI_EXP_TYPE_ROOT_PORT ||
+	    type == PCI_EXP_TYPE_PCIE_BRIDGE)
 		pdev->has_secondary_link = 1;
 	else if (type == PCI_EXP_TYPE_UPSTREAM ||
 		 type == PCI_EXP_TYPE_DOWNSTREAM) {
@@ -1415,6 +1418,21 @@ static void program_hpp_type1(struct pci_dev *dev, struct hpp_type1 *hpp)
 		dev_warn(&dev->dev, "PCI-X settings not supported\n");
 }
 
+static bool pcie_root_rcb_set(struct pci_dev *dev)
+{
+	struct pci_dev *rp = pcie_find_root_port(dev);
+	u16 lnkctl;
+
+	if (!rp)
+		return false;
+
+	pcie_capability_read_word(rp, PCI_EXP_LNKCTL, &lnkctl);
+	if (lnkctl & PCI_EXP_LNKCTL_RCB)
+		return true;
+
+	return false;
+}
+
 static void program_hpp_type2(struct pci_dev *dev, struct hpp_type2 *hpp)
 {
 	int pos;
@@ -1444,9 +1462,20 @@ static void program_hpp_type2(struct pci_dev *dev, struct hpp_type2 *hpp)
 			~hpp->pci_exp_devctl_and, hpp->pci_exp_devctl_or);
 
 	/* Initialize Link Control Register */
-	if (pcie_cap_has_lnkctl(dev))
+	if (pcie_cap_has_lnkctl(dev)) {
+
+		/*
+		 * If the Root Port supports Read Completion Boundary of
+		 * 128, set RCB to 128.  Otherwise, clear it.
+		 */
+		hpp->pci_exp_lnkctl_and |= PCI_EXP_LNKCTL_RCB;
+		hpp->pci_exp_lnkctl_or &= ~PCI_EXP_LNKCTL_RCB;
+		if (pcie_root_rcb_set(dev))
+			hpp->pci_exp_lnkctl_or |= PCI_EXP_LNKCTL_RCB;
+
 		pcie_capability_clear_and_set_word(dev, PCI_EXP_LNKCTL,
 			~hpp->pci_exp_lnkctl_and, hpp->pci_exp_lnkctl_or);
+	}
 
 	/* Find Advanced Error Reporting Enhanced Capability */
 	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);

@@ -67,7 +67,7 @@ u64 x86_perf_event_update(struct perf_event *event)
 	int shift = 64 - x86_pmu.cntval_bits;
 	u64 prev_raw_count, new_raw_count;
 	int idx = hwc->idx;
-	s64 delta;
+	u64 delta;
 
 	if (idx == INTEL_PMC_IDX_FIXED_BTS)
 		return 0;
@@ -1996,8 +1996,8 @@ static int x86_pmu_event_init(struct perf_event *event)
 
 static void refresh_pce(void *ignored)
 {
-	if (current->mm)
-		load_mm_cr4(current->mm);
+	if (current->active_mm)
+		load_mm_cr4(current->active_mm);
 }
 
 static void x86_pmu_event_mapped(struct perf_event *event)

@@ -337,8 +337,10 @@ static int ext4_update_inline_data(handle_t *handle, struct inode *inode,
 
 	len -= EXT4_MIN_INLINE_DATA_SIZE;
 	value = kzalloc(len, GFP_NOFS);
-	if (!value)
+	if (!value) {
+		error = -ENOMEM;
 		goto out;
+	}
 
 	error = ext4_xattr_ibody_get(inode, i.name_index, i.name,
 				     value, len);
@@ -501,8 +503,16 @@ int ext4_readpage_inline(struct inode *inode, struct page *page)
 		return -EAGAIN;
 	}
 
-	trace_android_fs_dataread_start(inode, page_offset(page), PAGE_SIZE,
-					current->pid, current->comm);
+	if (trace_android_fs_dataread_start_enabled()) {
+		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
+
+		path = android_fstrace_get_pathname(pathbuf,
+						    MAX_TRACE_PATHBUF_LEN,
+						    inode);
+		trace_android_fs_dataread_start(inode, page_offset(page),
+						PAGE_SIZE, current->pid,
+						path, current->comm);
+	}
 
 	/*
 	 * Current inline data can only exist in the 1st page,
@@ -937,8 +947,15 @@ int ext4_da_write_inline_data_end(struct inode *inode, loff_t pos,
 				  struct page *page)
 {
 	int i_size_changed = 0;
+	int ret;
 
-	copied = ext4_write_inline_data_end(inode, pos, len, copied, page);
+	ret = ext4_write_inline_data_end(inode, pos, len, copied, page);
+	if (ret < 0) {
+		unlock_page(page);
+		put_page(page);
+		return ret;
+	}
+	copied = ret;
 
 	/*
 	 * No need to use i_size_read() here, the i_size
@@ -1155,10 +1172,9 @@ static int ext4_finish_convert_inline_dir(handle_t *handle,
 	set_buffer_uptodate(dir_block);
 	err = ext4_handle_dirty_dirent_node(handle, inode, dir_block);
 	if (err)
-		goto out;
+		return err;
 	set_buffer_verified(dir_block);
-out:
-	return err;
+	return ext4_mark_inode_dirty(handle, inode);
 }
 
 static int ext4_convert_inline_data_nolock(handle_t *handle,
