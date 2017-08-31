@@ -4937,15 +4937,10 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 			return -1;
 		}
 	} else if (state == CMDQ_CHECK_IDLE_AFTER_STREAM_EOF) {
-		/* need waiting te */
-		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[dsi_i]->DSI_INTSTA, 0x80000000,
+		/* polling for DSI idle */
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			DSI_POLLREG32(cmdq_trigger_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000,
 				      0);
-		}
-
-		else {
-			DISPERR("wrong module: %s\n", ddp_get_module_name(module));
-			return -1;
 		}
 	} else if (state == CMDQ_ESD_CHECK_READ) {
 		/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
