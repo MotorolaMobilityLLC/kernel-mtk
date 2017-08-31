@@ -7567,7 +7567,7 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		sw_only = 1;
 	}
 
-	DISPMSG("primary display will switch from %s to %s\n", session_mode_spy(pgc->session_mode),
+	DISPINFO("primary display will switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 		session_mode_spy(sess_mode));
 
 	if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
@@ -7683,7 +7683,7 @@ done:
 				MMPROFILE_FLAG_START, pgc->session_mode, sess_mode);
 
 	pgc->session_mode = sess_mode;
-	DISPMSG("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
+	DISPINFO("primary display is %s mode now\n", session_mode_spy(pgc->session_mode));
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, pgc->session_mode, sess_mode);
 
 	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(sess_mode));
