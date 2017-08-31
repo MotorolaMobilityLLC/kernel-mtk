@@ -36,6 +36,12 @@ enum {
 	CHARGER_NOTIFY_NORMAL,
 };
 
+enum {
+	MAIN_CHARGER = 0,
+	SLAVE_CHARGER = 1,
+	DIRECT_CHARGER = 10,
+};
+
 struct charger_consumer {
 	struct device *dev;
 	void *cm;
@@ -57,6 +63,8 @@ extern int charger_manager_get_pe30_input_current_limit(struct charger_consumer 
 extern int charger_manager_get_current_charging_type(struct charger_consumer *consumer);
 extern int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb);
+extern int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
+	int idx, int *tchg_min,	int *tchg_max);
 extern int unregister_charger_manager__notifier(struct charger_consumer *consumer,
 				struct notifier_block *nb);
 
