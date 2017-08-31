@@ -426,7 +426,7 @@ VOID wlanDebugInit(VOID)
 	gprCommandEntry = kalMemAlloc(TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY), PHY_MEM_TYPE);
 	kalMemZero(gprCommandEntry, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
 #if CFG_SUPPORT_EMI_DEBUG
-	gPrevIdxPagedtrace = 0;
+	gPrevIdxPagedtrace = 0xFFFF;
 #endif
 	/* debug for command/tc4 resource end */
 
@@ -1086,6 +1086,13 @@ VOID wlanReadFwInfoFromEmi(IN PUINT32 pAddr)
 	u4Buflen = 0;
 
 	DBGLOG(RX, TRACE, "%s Start !\n", __func__);
+
+	if (gPrevIdxPagedtrace == 0xFFFF) {
+		/* FW will provide start index for the first time. */
+		gPrevIdxPagedtrace = *pAddr;
+		DBGLOG(RX, WARN, "Invalid PreIdx, reset PreIdx to %d\n", gPrevIdxPagedtrace);
+		return;
+	}
 
 	pEmiBuf = kalMemAlloc(WLAN_EMI_DEBUG_BUF_SIZE, VIR_MEM_TYPE);
 	if (pEmiBuf == NULL) {
