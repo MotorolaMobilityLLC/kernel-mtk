@@ -2777,6 +2777,14 @@ static int set_musb_force_on(const char *val, const struct kernel_param *kp)
 		DBG(0, "trigger reconnect\n");
 		mt_usb_connect();
 		break;
+	case 3:
+		DBG(0, "disable USB IRQ\n");
+		disable_irq(mtk_musb->nIrq);
+		break;
+	case 4:
+		DBG(0, "enable USB IRQ\n");
+		enable_irq(mtk_musb->nIrq);
+		break;
 	default:
 		break;
 	}
