@@ -2413,8 +2413,8 @@
 
 	usb0:usb3@11270000 {
 		compatible = "mediatek,usb3";
-		reg = <0 0x11270000 0 0x10000>, <0 0x11280000 0 0x10000>, <0 0x11290000 0 0x10000>;
-		reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
+		reg = <0 0x11270000 0 0x10000>, <0 0x11280700 0 0x100>, <0 0x11290000 0 0x10000>;
+		reg-names = "ssusb_base", "ssusb_ippc", "ssusb_sif2";
 		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_LOW>,
 				<GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-names = "musb-hdrc", "xhci";

@@ -696,15 +696,15 @@ void usb_phy_sib_enable_switch(bool enable)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
 			  RG_SSUSB_VUSB10_ON, 1);
 	/* SSUSB_IP_SW_RST = 0 */
-	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x700), 0x00031000);
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0x0), 0x00031000);
 	/* SSUSB_IP_HOST_PDN = 0 */
-	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x704), 0x00000000);
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0x4), 0x00000000);
 	/* SSUSB_IP_DEV_PDN = 0 */
-	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x708), 0x00000000);
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0x8), 0x00000000);
 	/* SSUSB_IP_PCIE_PDN = 0 */
-	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x70C), 0x00000000);
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0xC), 0x00000000);
 	/* SSUSB_U3_PORT_DIS/SSUSB_U3_PORT_PDN = 0*/
-	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x730), 0x0000000C);
+	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0x30), 0x0000000C);
 
 	/*
 	 * USBMAC mode is 0x62910002 (bit 1)

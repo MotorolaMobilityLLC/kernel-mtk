@@ -114,7 +114,7 @@
 #define HARDCODE_EP
 
 extern void __iomem *u3_base;
-extern void __iomem *u3_sif_base;
+extern void __iomem *u3_ippc_base;
 extern void __iomem *u3_sif2_base;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -139,7 +139,7 @@ extern u32 i2c_physical_base;
 /*
  * 0x1128_0000 for sifslv register in Infra
  */
-#define SSUSB_SIFSLV_IPPC_BASE		(u3_sif_base+0x700)
+#define SSUSB_SIFSLV_IPPC_BASE		(u3_ippc_base)
 
 #ifdef CONFIG_PROJECT_PHY
 /*
