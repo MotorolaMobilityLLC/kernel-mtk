@@ -28,12 +28,12 @@
 #include "mach/mtk_thermal.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
-#include <tspmic_settings.h>
+#include <tspmic_settings1.h>
 /*=============================================================
  *Local variable definition
  *=============================================================
  */
-int mtktspmic_debug_log;
+int mtktspmic_debug_log1;
 /* Cali */
 static __s32 g_o_vts;
 static __s32 g_degc_cali;
@@ -48,6 +48,22 @@ static __s32 g_intercept;
 static DEFINE_MUTEX(TSPMIC_lock);
 static int pre_temp1 = 0, PMIC_counter;
 /*=============================================================*/
+
+
+unsigned int __attribute__ ((weak))
+pmic_Read_Efuse_HPOffset(int i)
+{
+	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	return 0;
+}
+
+unsigned int __attribute__ ((weak))
+PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount, int trimd)
+{
+	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	return 0;
+}
+
 
 static __s32 pmic_raw_to_temp(__u32 ret)
 {
@@ -67,47 +83,46 @@ static void mtktspmic_read_efuse(void)
 	__u32 efusevalue[3] = {0};
 
 	mtktspmic_info("[pmic_debug]  start\n");
-	/* The efuse data of MT6335 is auto-load,
-	* so we don't need to use pmic_Read_Efuse_HPOffset API to get data.
-	* We can read the following registers to get what we need
-	* PMIC_RG_OTP_DOUT_368_383,
-	* PMIC_RG_OTP_DOUT_384_399,
-	* PMIC_RG_OTP_DOUT_400_415,
+	/*
+	*   0x0  512     527
+	*   0x1  528     543
+	*   0x2  544     559
+	*  Thermal data from 519 to 546
 	*/
 
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	efusevalue[0] = pmic_get_register_value(PMIC_RG_OTP_DOUT_368_383);
-	efusevalue[1] = pmic_get_register_value(PMIC_RG_OTP_DOUT_384_399);
-	efusevalue[2] = pmic_get_register_value(PMIC_RG_OTP_DOUT_400_415);
+	efusevalue[0] = pmic_Read_Efuse_HPOffset(0x0);
+	efusevalue[1] = pmic_Read_Efuse_HPOffset(0x1);
+	efusevalue[2] = pmic_Read_Efuse_HPOffset(0x2);
 #endif
 
-	mtktspmic_info("[pmic_debug] 6335_efuse:\n"
+	mtktspmic_info("[pmic_debug] 6336_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
 		       "efusevalue[1]=0x%x\n"
 		       "efusevalue[2]=0x%x\n\n",
 			efusevalue[0], efusevalue[1], efusevalue[2]);
 
-	g_adc_cali_en = ((efusevalue[0] & _BIT_(15)) >> 15);
-	g_degc_cali = (efusevalue[1] & _BITMASK_(5:0));
-	g_o_vts = ((efusevalue[2] & _BITMASK_(2:0)) << 10) + ((efusevalue[1] & _BITMASK_(15:6)) >> 6);
-	g_o_slope_sign = ((efusevalue[2] & _BIT_(3)) >> 3);
-	g_o_slope = ((efusevalue[2] & _BITMASK_(9:4)) >> 4);
-	g_id = ((efusevalue[2] & _BIT_(10)) >> 10);
+	g_adc_cali_en = ((efusevalue[0] & _BIT_(7)) >> 7);
+	g_degc_cali = ((efusevalue[0] & _BITMASK_(13:8)) >> 8);
+	g_o_vts = ((efusevalue[1] & _BITMASK_(10:0)) << 2) + ((efusevalue[0] & _BITMASK_(15:14)) >> 14);
+	g_o_slope_sign = ((efusevalue[1] & _BIT_(11)) >> 11);
+	g_o_slope = ((efusevalue[2] & _BITMASK_(1:0)) << 4) + ((efusevalue[1] & _BITMASK_(15:12)) >> 12);
+	g_id = ((efusevalue[2] & _BIT_(2)) >> 2);
 
 	/* Note: O_SLOPE is signed integer. */
 	/* O_SLOPE_SIGN=1 ' it is Negative. */
 	/* O_SLOPE_SIGN=0 ' it is Positive. */
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_o_vts        = %d\n", g_o_vts);
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_degc_cali    = %d\n", g_degc_cali);
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_o_slope      = %d\n", g_o_slope);
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
-	mtktspmic_dprintk("[pmic_debug] 6335_efuse: g_id           = %d\n", g_id);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_o_vts        = %d\n", g_o_vts);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_degc_cali    = %d\n", g_degc_cali);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_o_slope      = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
+	mtktspmic_dprintk("[pmic_debug] 6336_efuse: g_id           = %d\n", g_id);
 
 	mtktspmic_info("[pmic_debug]  end\n");
 }
 
-void mtktspmic_cali_prepare(void)
+void mtktspmic_cali_prepare_1(void)
 {
 	mtktspmic_read_efuse();
 
@@ -137,7 +152,7 @@ void mtktspmic_cali_prepare(void)
 
 }
 
-void mtktspmic_cali_prepare2(void)
+void mtktspmic_cali_prepare2_1(void)
 {
 
 	__s32 vbe_t;
@@ -145,16 +160,16 @@ void mtktspmic_cali_prepare2(void)
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
 	if (g_o_slope_sign == 0)
-		g_slope2 = -(1598 + g_o_slope);
+		g_slope2 = -(1698 + g_o_slope);
 	else
-		g_slope2 = -(1598 - g_o_slope);
+		g_slope2 = -(1698 - g_o_slope);
 
 	vbe_t = (-1) * ((((g_o_vts) * 1800)) / 4096) * 1000;
 
 	if (g_o_slope_sign == 0)
-		g_intercept = (vbe_t * 1000) / (-(1598 + g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(1698 + g_o_slope * 10));	/*0.001 degree */
 	else
-		g_intercept = (vbe_t * 1000) / (-(1598 - g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(1698 - g_o_slope * 10));	/*0.001 degree */
 
 	g_intercept = g_intercept + (g_degc_cali * (1000 / 2));	/* 1000 is for 0.1 degree */
 
@@ -162,14 +177,14 @@ void mtktspmic_cali_prepare2(void)
 		       g_slope1, g_slope2, g_intercept, vbe_t);
 }
 
-int mtktspmic_get_hw_temp(void)
+int mtktspmic_get_hw_temp_1(void)
 {
 	int temp = 0, temp1 = 0;
 
 	mutex_lock(&TSPMIC_lock);
 
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6335_CHIP_TEMP);
+	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6336_CHIP_TEMP);
 #endif
 
 	temp1 = pmic_raw_to_temp(temp);

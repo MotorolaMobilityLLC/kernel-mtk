@@ -34,16 +34,16 @@
 
 #define mtktspmic_dprintk(fmt, args...)   \
 do {									\
-	if (mtktspmic_debug_log == 1) {				\
+	if (mtktspmic_debug_log1 == 1) {				\
 		pr_debug("[Power/PMIC_Thermal] " fmt, ##args); \
 	}								   \
 } while (0)
 
-extern int mtktspmic_debug_log;
-/* for PMIC MT6335 */
-extern void mtktspmic_cali_prepare(void);
-extern void mtktspmic_cali_prepare2(void);
-extern int mtktspmic_get_hw_temp(void);
+extern int mtktspmic_debug_log1;
+/* for PMIC MT6336 */
+extern void mtktspmic_cali_prepare_1(void);
+extern void mtktspmic_cali_prepare2_1(void);
+extern int mtktspmic_get_hw_temp_1(void);
 
 extern u32 pmic_Read_Efuse_HPOffset(int i);
 #endif	/* __TSPMIC_SETTINGS_H__ */

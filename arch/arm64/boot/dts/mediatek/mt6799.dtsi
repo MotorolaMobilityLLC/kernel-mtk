@@ -1225,9 +1225,11 @@
 	};
 
 	therm_ctrl@102a0000 {
-		compatible = "mediatek,therm_ctrl";
+		compatible = "mediatek,mt6799-therm_ctrl";
 		reg = <0 0x102a0000 0 0x1000>;
-		interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao CLK_INFRA_THERM_BCLK>;
+		clock-names = "therm-main";
 	};
 
 	ap_dma@11000000 {

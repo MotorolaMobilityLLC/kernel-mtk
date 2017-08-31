@@ -27,10 +27,13 @@
 #include "mtk_gpufreq.h"
 
 /*
-*Bank0 : CPU-LL    (TS_MCU1)
-*Bank1 : CPU-L     (TS_MCU2)
-*Bank2 : CCI       (TS_MCU1 + TS_MCU2)
-*Bank3 : GPU       (TS_MCU3 + TS_MCU4 + TS_MCU5)
+*Bank0: MCU12(BIG)	(TS_MCU7)
+*Bank1: MCU1(MCUSYS)	(TS_MCU6 + TS_MCU7 + TS_MCU8)
+*Bank2: GPU		(TS_MCU4)
+*Bank3: MCU2(LL)	(TS_MCU6)
+*Bank4: MCU7(L)		(TS_MCU8)
+*Bank5: X		X
+*Bank6: Core_Soc	(TS_MCU1, TS_MCU3)
 */
 typedef enum thermal_sensor_enum {
 	TS_MCU1 = 0,
@@ -38,18 +41,24 @@ typedef enum thermal_sensor_enum {
 	TS_MCU3,
 	TS_MCU4,
 	TS_MCU5,
+	TS_MCU6,
+	TS_MCU7,
+	TS_MCU8,
+	TS_MCU9,
 	TS_ABB,
-	TS_ENUM_MAX,
+	TS_ENUM_MAX
 } ts_e;
 
 typedef enum {
-	THERMAL_BANK0     = 0,
-	THERMAL_BANK1     = 1,
-	THERMAL_BANK2     = 2,
-	THERMAL_BANK3     = 3,
+	THERMAL_BANK0 = 0,
+	THERMAL_BANK1,
+	THERMAL_BANK2,
+	THERMAL_BANK3,
+	THERMAL_BANK4,
+	THERMAL_BANK5,
+	THERMAL_BANK6,
 	THERMAL_BANK_NUM
 } thermal_bank_name;
-
 
 struct TS_PTPOD {
 	unsigned int ts_MTS;
@@ -65,11 +74,12 @@ extern int tscpu_get_temp_by_bank(thermal_bank_name ts_bank);
 
 #define THERMAL_WRAP_WR32(val, addr)        mt_reg_sync_writel((val), ((void *)addr))
 
-
+extern int get_immediate_cpuB_wrap(void);
+extern int get_immediate_mcusys_wrap(void);
 extern int get_immediate_gpu_wrap(void);
-extern int get_immediate_cpuL_wrap(void);
 extern int get_immediate_cpuLL_wrap(void);
-extern int get_immediate_mcucci_wrap(void);
+extern int get_immediate_cpuL_wrap(void);
+extern int get_immediate_coreSoC_wrap(void);
 
 /*add for DLPT*/
 extern int tscpu_get_min_cpu_pwr(void);
@@ -82,6 +92,10 @@ typedef enum {
 	MTK_THERMAL_SENSOR_TS3,
 	MTK_THERMAL_SENSOR_TS4,
 	MTK_THERMAL_SENSOR_TS5,
+	MTK_THERMAL_SENSOR_TS6,
+	MTK_THERMAL_SENSOR_TS7,
+	MTK_THERMAL_SENSOR_TS8,
+	MTK_THERMAL_SENSOR_TS9,
 	MTK_THERMAL_SENSOR_TSABB,
 
 	ATM_CPU_LIMIT,
@@ -107,6 +121,10 @@ extern int get_immediate_ts2_wrap(void);
 extern int get_immediate_ts3_wrap(void);
 extern int get_immediate_ts4_wrap(void);
 extern int get_immediate_ts5_wrap(void);
+extern int get_immediate_ts6_wrap(void);
+extern int get_immediate_ts7_wrap(void);
+extern int get_immediate_ts8_wrap(void);
+extern int get_immediate_ts9_wrap(void);
 extern int get_immediate_tsabb_wrap(void);
 extern int (*get_immediate_tsX[TS_ENUM_MAX])(void);
 
