@@ -947,6 +947,12 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_SW_RSV5, start_log_offs + 0x8);
 	cspm_write(CSPM_RSV_CON, start_log_offs + 0xc);
 
+	cspm_write(CSPM_PCM_EVENT_VECTOR1, 0x3e60000);
+	cspm_write(CSPM_PCM_EVENT_VECTOR6, 0x3e60000);
+
+	cspm_write(CSPM_PCM_EVENT_VECTOR4, 0);
+	cspm_write(CSPM_PCM_EVENT_VECTOR9, 0);
+
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(opp_sw_to_fw(sta->ceiling[i])) |
 					  SW_F_MIN(opp_sw_to_fw(sta->floor[i])) |
@@ -1058,12 +1064,14 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("SW_RSV1: 0x%x\n", rsv1);
 	cspm_err("SW_RSV2: 0x%x\n", rsv2);
 
-	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x)\n",
+	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x)\n",
 			       cspm_read(CSPM_PCM_EVENT_VECTOR2),
 			       cspm_read(CSPM_PCM_EVENT_VECTOR3),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR4),
 			       cspm_read(CSPM_PCM_EVENT_VECTOR5),
 			       cspm_read(CSPM_PCM_EVENT_VECTOR7),
 			       cspm_read(CSPM_PCM_EVENT_VECTOR8),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR9),
 			       cspm_read(CSPM_PCM_EVENT_VECTOR10));
 
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
@@ -1820,9 +1828,11 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_puts(m,   "============\n");
 	seq_printf(m, "EVT_VEC2   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
 	seq_printf(m, "EVT_VEC3   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
+	seq_printf(m, "EVT_VEC4   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR4));
 	seq_printf(m, "EVT_VEC5   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
 	seq_printf(m, "EVT_VEC7   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
 	seq_printf(m, "EVT_VEC8   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
+	seq_printf(m, "EVT_VEC9   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR9));
 	seq_printf(m, "EVT_VEC10  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
 	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
