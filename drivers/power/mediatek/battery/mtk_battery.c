@@ -126,9 +126,21 @@ static struct gauge_consumer coulomb_minus;
 static struct gauge_consumer soc_plus;
 static struct gauge_consumer soc_minus;
 
-struct timespec sw_iavg_time;
-int sw_iavg_car;
-int sw_iavg;
+/*sw average current*/
+static struct timespec sw_iavg_time;
+static int sw_iavg_car;
+static int sw_iavg;
+static int sw_iavg_ht;
+static int sw_iavg_lt;
+static int sw_iavg_gap = 3000;
+
+/*sw low battery interrupt*/
+int sw_low_battery_ht_en;
+int sw_low_battery_ht_threshold;
+int sw_low_battery_lt_en;
+int sw_low_battery_lt_threshold;
+static DEFINE_MUTEX(sw_low_battery_mutex);
+
 
 #ifdef GAUGE_COULOMB_INTERRUPT_TEST
 static struct gauge_consumer coulomb_test1;
@@ -345,6 +357,54 @@ int gauge_set_zcv_interrupt_en(int zcv_intr_en)
 int gauge_get_hw_version(void)
 {
 	return gauge_dev_get_hw_version(gauge_dev);
+}
+
+int gauge_enable_vbat_low_interrupt(int en)
+{
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		gauge_dev_enable_vbat_low_interrupt(gauge_dev, en);
+	} else {
+		mutex_lock(&sw_low_battery_mutex);
+		sw_low_battery_lt_en = en;
+		mutex_unlock(&sw_low_battery_mutex);
+	}
+	return 0;
+}
+
+int gauge_enable_vbat_high_interrupt(int en)
+{
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		gauge_dev_enable_vbat_high_interrupt(gauge_dev, en);
+	} else {
+		mutex_lock(&sw_low_battery_mutex);
+		sw_low_battery_ht_en = en;
+		mutex_unlock(&sw_low_battery_mutex);
+	}
+	return 0;
+}
+
+int gauge_set_vbat_low_threshold(int threshold)
+{
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		gauge_dev_set_vbat_low_threshold(gauge_dev, threshold);
+	} else {
+		mutex_lock(&sw_low_battery_mutex);
+		sw_low_battery_lt_threshold = threshold;
+		mutex_unlock(&sw_low_battery_mutex);
+	}
+	return 0;
+}
+
+int gauge_set_vbat_high_threshold(int threshold)
+{
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+		gauge_dev_set_vbat_high_threshold(gauge_dev, threshold);
+	} else {
+		mutex_lock(&sw_low_battery_mutex);
+		sw_low_battery_ht_threshold = threshold;
+		mutex_unlock(&sw_low_battery_mutex);
+	}
+	return 0;
 }
 
 /* ============================================================ */
@@ -2726,10 +2786,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_FG_CURRENT_AVG:
 	{
-		int fg_current_iavg;
+		int fg_current_iavg = sw_iavg;
 		bool valid;
 
-		fg_current_iavg = gauge_get_average_current(&valid);
+		if (gauge_get_hw_version() >= GAUGE_HW_V2000)
+			fg_current_iavg = gauge_get_average_current(&valid);
 
 		ret_msg->fgd_data_len += sizeof(fg_current_iavg);
 		memcpy(ret_msg->fgd_data, &fg_current_iavg, sizeof(fg_current_iavg));
@@ -2740,10 +2801,12 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID:
 	{
 		bool valid = false;
-		int iavg_valid;
+		int iavg_valid = true;
 
-		gauge_get_average_current(&valid);
-		iavg_valid = valid;
+		if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+			gauge_get_average_current(&valid);
+			iavg_valid = valid;
+		}
 
 		ret_msg->fgd_data_len += sizeof(iavg_valid);
 		memcpy(ret_msg->fgd_data, &iavg_valid, sizeof(iavg_valid));
@@ -2805,7 +2868,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_l_en;
 
 		memcpy(&fg_vbat_l_en, &msg->fgd_data[0], sizeof(fg_vbat_l_en));
-		gauge_dev_enable_vbat_low_interrupt(gauge_dev, fg_vbat_l_en);
+		gauge_enable_vbat_low_interrupt(fg_vbat_l_en);
 		bm_debug("[fg_res] FG_DAEMON_CMD_ENABLE_FG_VBAT_L_INT = %d\n", fg_vbat_l_en);
 	}
 	break;
@@ -2815,7 +2878,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_h_en;
 
 		memcpy(&fg_vbat_h_en, &msg->fgd_data[0], sizeof(fg_vbat_h_en));
-		gauge_dev_enable_vbat_high_interrupt(gauge_dev, fg_vbat_h_en);
+		gauge_enable_vbat_high_interrupt(fg_vbat_h_en);
 		bm_debug("[fg_res] FG_DAEMON_CMD_ENABLE_FG_VBAT_H_INT = %d\n", fg_vbat_h_en);
 	}
 	break;
@@ -2825,7 +2888,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_l_thr;
 
 		memcpy(&fg_vbat_l_thr, &msg->fgd_data[0], sizeof(fg_vbat_l_thr));
-		gauge_dev_enable_vbat_low_threshold(gauge_dev, fg_vbat_l_thr);
+		gauge_set_vbat_low_threshold(fg_vbat_l_thr);
 		set_shutdown_vbat_lt(fg_vbat_l_thr, fg_cust_data.vbat2_det_voltage1);
 		bm_debug("[fg_res] FG_DAEMON_CMD_SET_FG_VBAT_L_TH = %d\n", fg_vbat_l_thr);
 	}
@@ -2836,7 +2899,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_h_thr;
 
 		memcpy(&fg_vbat_h_thr, &msg->fgd_data[0], sizeof(fg_vbat_h_thr));
-		gauge_dev_enable_vbat_high_threshold(gauge_dev, fg_vbat_h_thr);
+		gauge_set_vbat_high_threshold(fg_vbat_h_thr);
 		bm_debug("[fg_res] FG_DAEMON_CMD_SET_FG_VBAT_H_TH = %d\n", fg_vbat_h_thr);
 	}
 	break;
@@ -3218,7 +3281,27 @@ void fg_bat_temp_int_sw_check(void)
 		fg_bat_sw_temp_int_l_handler();
 }
 
-void fg_update_iavg(void)
+static void sw_iavg_init(void)
+{
+	int is_bat_charging = 0;
+	int bat_current = 0;
+
+	get_monotonic_boottime(&sw_iavg_time);
+	sw_iavg_car = gauge_get_coulomb();
+
+	/* BAT_DISCHARGING = 0 */
+	/* BAT_CHARGING = 1 */
+	is_bat_charging = gauge_get_current(&bat_current);
+
+	if (is_bat_charging == 1)
+		sw_iavg = bat_current;
+	else
+		sw_iavg = -bat_current;
+	sw_iavg_ht = sw_iavg + sw_iavg_gap;
+	sw_iavg_lt = sw_iavg - sw_iavg_gap;
+}
+
+void fg_update_sw_iavg(void)
 {
 	struct timespec now_time, diff;
 	int fg_coulomb;
@@ -3226,24 +3309,59 @@ void fg_update_iavg(void)
 	get_monotonic_boottime(&now_time);
 
 	diff = timespec_sub(now_time, sw_iavg_time);
-	bm_debug("[fg_update_iavg]diff time:%ld\n", diff.tv_sec);
+	bm_debug("[fg_update_sw_iavg]diff time:%ld\n", diff.tv_sec);
 	if (diff.tv_sec >= 60) {
 		fg_coulomb = gauge_get_coulomb();
-		bm_debug("[fg_update_iavg]time:%ld car:%d %d iavg:%d\n",
-			diff.tv_sec, fg_coulomb, sw_iavg_car, sw_iavg);
 		sw_iavg = (fg_coulomb - sw_iavg_car) * 60;
 		sw_iavg_time = now_time;
 		sw_iavg_car = fg_coulomb;
+		if (sw_iavg >= sw_iavg_ht || sw_iavg <= sw_iavg_lt) {
+			sw_iavg_ht = sw_iavg + sw_iavg_gap;
+			sw_iavg_lt = sw_iavg - sw_iavg_gap;
+			if (gauge_get_hw_version() < GAUGE_HW_V2000)
+				wakeup_fg_algo(FG_INTR_IAVG);
+		}
+		bm_debug("[fg_update_sw_iavg]time:%ld car:%d %d iavg:%d ht:%d lt:%d gap:%d\n",
+			diff.tv_sec, fg_coulomb, sw_iavg_car, sw_iavg,
+			sw_iavg_ht, sw_iavg_lt, sw_iavg_gap);
 	}
+
+}
+
+void fg_update_sw_low_battery_check(void)
+{
+	int vbat;
+
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
+		return;
+
+	vbat = pmic_get_battery_voltage();
+
+	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
+		vbat, sw_low_battery_ht_en, sw_low_battery_ht_threshold,
+		sw_low_battery_lt_en, sw_low_battery_lt_threshold);
+	mutex_lock(&sw_low_battery_mutex);
+	if (sw_low_battery_ht_en == 1 && vbat >= sw_low_battery_ht_threshold) {
+		sw_low_battery_ht_en = 0;
+		sw_low_battery_lt_en = 0;
+		wakeup_fg_algo(FG_INTR_VBAT2_L);
+	}
+	if (sw_low_battery_lt_en == 1 && vbat <= sw_low_battery_lt_threshold) {
+		sw_low_battery_ht_en = 0;
+		sw_low_battery_lt_en = 0;
+		wakeup_fg_algo(FG_INTR_VBAT2_H);
+	}
+	mutex_unlock(&sw_low_battery_mutex);
 }
 
 void fg_drv_update_hw_status(void)
 {
 	static bool fg_current_state;
 	signed int chr_vol;
-	int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status, tmp, bat_plugout_time;
+	int fg_current, fg_coulomb, bat_vol, plugout_status, tmp, bat_plugout_time;
 	int fg_current_iavg;
 	bool valid = false;
+	static unsigned int cnt;
 
 	bm_debug("[fg_drv_update_hw_status]=>\n");
 
@@ -3254,7 +3372,8 @@ void fg_drv_update_hw_status(void)
 		if (list_empty(&coulomb_test2.list) == true)
 			gauge_coulomb_start(&coulomb_test2, -10);
 #endif
-	fg_update_iavg();
+	fg_update_sw_iavg();
+	fg_update_sw_low_battery_check();
 
 	gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status, &bat_plugout_time);
 
@@ -3262,12 +3381,11 @@ void fg_drv_update_hw_status(void)
 	fg_coulomb = gauge_get_coulomb();
 	bat_vol = pmic_get_battery_voltage();
 	chr_vol = pmic_get_vbus();
-	hwocv = gauge_get_hwocv();
 	tmp = force_get_tbat(true);
 
-	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d hwocv:%d soc:%d %d gm3:%d %d %d\n",
+	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d\n",
 		fg_coulomb, coulomb_plus.end, coulomb_minus.end, soc_plus.end, soc_minus.end,
-		fg_current_state, fg_current, bat_vol, chr_vol, hwocv,
+		fg_current_state, fg_current, bat_vol, chr_vol,
 		battery_get_bat_soc(), battery_get_bat_uisoc(),
 		gDisableGM30, fg_cust_data.disable_nafg, ntc_disable_nafg);
 
@@ -3278,12 +3396,14 @@ void fg_drv_update_hw_status(void)
 
 	fg_current_iavg = gauge_get_average_current(&valid);
 
-
 	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d sw_iavg:%d %d %d\n",
 		tmp, fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
 		fg_bat_int2_ht, fg_bat_int2_lt,
 		fg_get_system_sec(), sw_iavg, fg_current_iavg, valid);
 
+	if (cnt % 10 == 0)
+		gauge_dev_dump(gauge_dev, NULL);
+	cnt++;
 
 	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
 
@@ -3489,8 +3609,8 @@ void fg_vbat2_l_int_handler(void)
 	int lt_ht_en = 0;
 
 	bm_err("[fg_vbat2_l_int_handler]\n");
-	gauge_dev_enable_vbat_high_interrupt(gauge_dev, lt_ht_en);
-	gauge_dev_enable_vbat_low_interrupt(gauge_dev, lt_ht_en);
+	gauge_enable_vbat_high_interrupt(lt_ht_en);
+	gauge_enable_vbat_low_interrupt(lt_ht_en);
 	wakeup_fg_algo(FG_INTR_VBAT2_L);
 
 	fg_bat_temp_int_sw_check();
@@ -3501,8 +3621,8 @@ void fg_vbat2_h_int_handler(void)
 	int lt_ht_en = 0;
 
 	bm_err("[fg_vbat2_h_int_handler]\n");
-	gauge_dev_enable_vbat_high_interrupt(gauge_dev, lt_ht_en);
-	gauge_dev_enable_vbat_low_interrupt(gauge_dev, lt_ht_en);
+	gauge_enable_vbat_high_interrupt(lt_ht_en);
+	gauge_enable_vbat_low_interrupt(lt_ht_en);
 	disable_shutdown_cond(LOW_BAT_VOLT);
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
 
@@ -4687,8 +4807,7 @@ static int __init battery_probe(struct platform_device *dev)
 #endif
 	is_init_done = true;
 
-	get_monotonic_boottime(&sw_iavg_time);
-	sw_iavg_car = gauge_get_coulomb();
+	sw_iavg_init();
 
 	return 0;
 }
@@ -4738,7 +4857,7 @@ static int battery_resume(struct platform_device *dev)
 	bm_err("******** battery_resume!! ********\n");
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
-	fg_update_iavg();
+	fg_update_sw_iavg();
 	return 0;
 }
 

@@ -135,8 +135,8 @@ struct gauge_ops {
 	int (*gauge_enable_iavg_interrupt)(struct gauge_device *gauge_dev, int iavg_gap);
 	int (*gauge_enable_vbat_low_interrupt)(struct gauge_device *gauge_dev, int en);
 	int (*gauge_enable_vbat_high_interrupt)(struct gauge_device *gauge_dev, int en);
-	int (*gauge_enable_vbat_low_threshold)(struct gauge_device *gauge_dev, int threshold);
-	int (*gauge_enable_vbat_high_threshold)(struct gauge_device *gauge_dev, int threshold);
+	int (*gauge_set_vbat_low_threshold)(struct gauge_device *gauge_dev, int threshold);
+	int (*gauge_set_vbat_high_threshold)(struct gauge_device *gauge_dev, int threshold);
 	int (*gauge_enable_car_tune_value_calibration)(struct gauge_device *gauge_dev, int init_current,
 		int *car_tune_value);
 	int (*gauge_set_rtc_ui_soc)(struct gauge_device *gauge_dev, int ui_soc);
@@ -213,8 +213,8 @@ extern int gauge_dev_enable_bat_plugout_interrupt(struct gauge_device *gauge_dev
 extern int gauge_dev_enable_iavg_interrupt(struct gauge_device *gauge_dev, int iavg_gap);
 extern int gauge_dev_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en);
 extern int gauge_dev_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en);
-extern int gauge_dev_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold);
-extern int gauge_dev_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold);
+extern int gauge_dev_set_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold);
+extern int gauge_dev_set_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold);
 extern int gauge_dev_enable_car_tune_value_calibration(struct gauge_device *gauge_dev,
 	int init_current, int *car_tune_value);
 extern int gauge_dev_set_rtc_ui_soc(struct gauge_device *gauge_dev, int ui_soc);
