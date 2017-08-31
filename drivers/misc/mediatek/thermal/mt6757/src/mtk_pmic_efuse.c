@@ -79,7 +79,7 @@ static __s32 pmic_raw_to_temp(__u32 ret)
 
 static void mtktspmic_read_efuse(void)
 {
-	__u32 efusevalue[3];
+	__u32 efusevalue[4];
 
 	mtktspmic_info("[pmic_debug]  start\n");
 	/*
@@ -87,6 +87,54 @@ static void mtktspmic_read_efuse(void)
 	*   0x1  528     543
 	*  Thermal data from 512 to 539
 	*/
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/*
+	*   ADC_CALI_EN		0	0x3364[8]
+	*   DEGC_CALI[5:0]	0	0x3364[5:0]
+	*   O_VTS[12:0]		0	0x3366[12:0]
+	*   O_SLOPE_SIGN		0	0x3368[8]
+	*   O_SLOPE[5:0]		0	0x3368[5:0]
+	*   ID				0	0x336A[4]
+	*/
+	pmic_read_interface(MT6355_AUXADC_EFUSE_1, &efusevalue[0], 0xFFFF, 0);
+	pmic_read_interface(MT6355_AUXADC_EFUSE_2, &efusevalue[1], 0xFFFF, 0);
+	pmic_read_interface(MT6355_AUXADC_EFUSE_3, &efusevalue[2], 0xFFFF, 0);
+	pmic_read_interface(MT6355_AUXADC_EFUSE_4, &efusevalue[3], 0xFFFF, 0);
+
+	mtktspmic_info("[pmic_debug] 6355_efuse:0x3364=0x%x 0x3366=0x%x 0x3368=0x%x 0x336A=0x%x",
+					efusevalue[0], efusevalue[1], efusevalue[2], efusevalue[3]);
+
+	g_adc_cali_en = ((efusevalue[0] & _BIT_(8)) >> 8);
+	g_degc_cali = ((efusevalue[0] & _BITMASK_(5:0)) >> 0);
+	g_o_vts = ((efusevalue[1] & _BITMASK_(12:0)) >> 0); /*0x3366(12:0)*/
+	g_o_slope_sign = ((efusevalue[2] & _BIT_(8)) >> 8);
+	g_o_slope = ((efusevalue[2] & _BITMASK_(5:0)) >> 0);
+	g_id = ((efusevalue[3] & _BIT_(4)) >> 4); /*0x336A[4]*/
+	/* Note: O_SLOPE is signed integer. */
+	/* O_SLOPE_SIGN=1 ' it is Negative. */
+	/* O_SLOPE_SIGN=0 ' it is Positive. */
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_vts        = %d\n", g_o_vts);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_degc_cali    = %d\n", g_degc_cali);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope	   = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse: g_id		   = %d\n", g_id);
+
+	g_adc_cali_en = pmic_get_register_value(PMIC_AUXADC_EFUSE_ADC_CALI_EN);
+	g_degc_cali = pmic_get_register_value(PMIC_AUXADC_EFUSE_DEGC_CALI);
+	g_o_vts = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_VTS);
+	g_o_slope_sign = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE_SIGN);
+	g_o_slope = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE);
+	g_id = pmic_get_register_value(PMIC_AUXADC_EFUSE_ID);
+
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_vts        = %d\n", g_o_vts);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_degc_cali    = %d\n", g_degc_cali);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_adc_cali_en  = %d\n", g_adc_cali_en);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_slope      = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_o_slope_sign = %d\n", g_o_slope_sign);
+	mtktspmic_dprintk("[pmic_debug] 6355_efuse2: g_id		   = %d\n", g_id);
+#else /* defined(CONFIG_MTK_PMIC_CHIP_MT6355) */
 	efusevalue[0] = pmic_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = pmic_Read_Efuse_HPOffset(0x1);
 	mtktspmic_info("[pmic_debug] 6351_efuse:\n"
@@ -106,9 +154,11 @@ static void mtktspmic_read_efuse(void)
 	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_vts        = %d\n", g_o_vts);
 	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_degc_cali    = %d\n", g_degc_cali);
 	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_slope      = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_slope	   = %d\n", g_o_slope);
 	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
-	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_id           = %d\n", g_id);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_id		   = %d\n", g_id);
+#endif /* defined(CONFIG_MTK_PMIC_CHIP_MT6355) */
+
 
 	mtktspmic_info("[pmic_debug]  end\n");
 }
@@ -147,20 +197,27 @@ void mtktspmic_cali_prepare2(void)
 {
 
 	__s32 vbe_t;
+	int factor;
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	factor = 1720;
+#else
+	factor = 1598;
+#endif
 
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
 	if (g_o_slope_sign == 0)
-		g_slope2 = -(1598 + g_o_slope);
+		g_slope2 = -(factor + g_o_slope);
 	else
-		g_slope2 = -(1598 - g_o_slope);
+		g_slope2 = -(factor - g_o_slope);
 
 	vbe_t = (-1) * ((((g_o_vts) * 1800)) / 4096) * 1000;
 
 	if (g_o_slope_sign == 0)
-		g_intercept = (vbe_t * 1000) / (-(1598 + g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(factor + g_o_slope * 10));	/*0.001 degree */
 	else
-		g_intercept = (vbe_t * 1000) / (-(1598 - g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (-(factor - g_o_slope * 10));	/*0.001 degree */
 
 	g_intercept = g_intercept + (g_degc_cali * (1000 / 2));	/* 1000 is for 0.1 degree */
 
