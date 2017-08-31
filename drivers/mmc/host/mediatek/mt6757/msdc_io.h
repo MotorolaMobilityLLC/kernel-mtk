@@ -26,6 +26,17 @@
 extern const struct of_device_id msdc_of_ids[];
 extern unsigned int cd_gpio;
 
+#define MSDC_MIN_CLK           (260000)
+#define MSDC_350K_CLK          (350000)
+#define MSDC_400K_CLK          (400000)
+#define MSDC_25M_CLK           (25000000)
+#define MSDC_26M_CLK           (26000000)
+#define MSDC_50M_CLK           (50000000)
+#define MSDC_52M_CLK           (52000000)
+#define MSDC_100M_CLK          (100000000)
+#define MSDC_200M_CLK          (200000000)
+#define MSDC_208M_CLK          (208000000)
+
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 
 /**************************************************************/

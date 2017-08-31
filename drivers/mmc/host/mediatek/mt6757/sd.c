@@ -243,6 +243,19 @@ static void msdc_dump_dbg_register(struct msdc_host *host)
 	msdc_dump_dbg_register_core(host->id, host->base);
 }
 
+static void msdc_dump_mmc_info(struct msdc_host *host)
+{
+	struct mmc_host *mmc = host->mmc;
+
+	if (!mmc)
+		return;
+
+	pr_err("mmc%d: clock %dhz, timing %d\n",
+		host->id,
+		mmc->ios.clock,
+		mmc->ios.timing);
+}
+
 void msdc_dump_info(u32 id)
 {
 	struct msdc_host *host = mtk_msdc_host[id];
@@ -271,7 +284,10 @@ void msdc_dump_info(u32 id)
 	base = host->base;
 
 	msdc_dump_register(host);
-	INIT_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
+	INIT_MSG("latest_INT_status<0x%.8x>, host->err_cmd=%d",
+		latest_int_status[id], host->err_cmd);
+
+	msdc_dump_mmc_info(host);
 
 	mdelay(10);
 
@@ -329,6 +345,8 @@ void msdc_raw_dump_info(u32 id)
 #else
 	pr_err("no last dma time stamp\n");
 #endif
+
+	msdc_dump_mmc_info(host);
 
 	mdelay(10);
 
@@ -830,8 +848,6 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	/* need because clk changed.*/
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
 
-	msdc_set_smpl_all(host, mode);
-
 	pr_err("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
 		hs400_div_dis);
@@ -997,6 +1013,9 @@ static void msdc_init_hw(struct msdc_host *host)
 	host->need_tune = TUNE_NONE;
 	host->tune_smpl_times = 0;
 	host->reautok_times = 0;
+
+	/* Set default sample edge, use mode 0 for init */
+	msdc_set_smpl_all(host, 0);
 
 	msdc_gate_clock(host, 1);
 
@@ -4261,8 +4280,8 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	}
 #else
 	if ((mrq->cmd->opcode == MMC_SEND_STATUS ||
-	     mrq->cmd->opcode == MMC_STOP_TRANSMISSION)
-	 && host->err_cmd != mrq->cmd->opcode) {
+		mrq->cmd->opcode == MMC_STOP_TRANSMISSION) &&
+		host->err_cmd != mrq->cmd->opcode) {
 		goto end;
 	}
 #endif
@@ -4277,7 +4296,6 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 
 	if (host->hw->host_function == MSDC_EMMC ||
 		host->hw->host_function == MSDC_SD) {
-
 #ifdef MMC_K44_RETUNE
 		/*  need low level protect tuning phase fail in re-tuning arch */
 		if (mmc->doing_retune) {
@@ -4287,9 +4305,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			goto end;
 		}
 #endif
-
 		msdc_pmic_force_vcore_pwm(true);
-
 		switch (mmc->ios.timing) {
 		case MMC_TIMING_UHS_SDR104:
 		case MMC_TIMING_UHS_SDR50:
@@ -4298,26 +4314,31 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 			ret = autok_execute_tuning(host, NULL);
 			break;
 		case MMC_TIMING_MMC_HS200:
-			pr_err("msdc%d: eMMC HS200 re-autok %d times\n",
-				host->id, ++host->reautok_times);
-			ret = hs200_execute_tuning(host, NULL);
-			break;
+			if (mmc->ios.clock > MSDC_52M_CLK) {
+				pr_err("msdc%d: eMMC HS200 re-autok %d times\n",
+					host->id, ++host->reautok_times);
+				ret = hs200_execute_tuning(host, NULL);
+				break;
+			}
+		/* fall through */
 		case MMC_TIMING_MMC_HS400:
-			pr_err("msdc%d: eMMC HS400 re-autok %d times\n",
-				host->id, ++host->reautok_times);
-			ret = hs400_execute_tuning(host, NULL);
-			break;
+			if (mmc->ios.clock > MSDC_52M_CLK) {
+				pr_err("msdc%d: eMMC HS400 re-autok %d times\n",
+					host->id, ++host->reautok_times);
+				ret = hs400_execute_tuning(host, NULL);
+				break;
+			}
+		/* fall through */
 		/* Other speed mode will tune smpl */
 		default:
 			tune_smpl = 1;
-			pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
+			pr_err("msdc%d: tune smpl %d times, timing:%d, clock %dKhz, err: %d\n",
 				host->id, ++host->tune_smpl_times,
-				mmc->ios.timing, autok_err_type);
+				mmc->ios.timing, mmc->ios.clock/1000, autok_err_type);
 			autok_low_speed_switch_edge(host, &mmc->ios,
 				autok_err_type);
 			break;
 		}
-
 		msdc_pmic_force_vcore_pwm(false);
 
 		if (ret) {
