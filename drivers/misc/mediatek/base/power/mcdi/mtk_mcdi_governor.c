@@ -539,7 +539,7 @@ void mcdi_avail_cpu_cluster_update(void)
 
 	update_avail_cpu_mask_to_mcdi_controller(cpu_mask);
 
-#if 1
+#if 0
 	pr_warn("online = %d, avail: mcusys = %d, cluster[0] = %d, [1] = %d, cpu_mask = %04x, cluster_mask = %04x\n",
 		num_online_cpus(),
 		mcdi_gov_data.avail_cnt_mcusys,
