@@ -167,7 +167,7 @@ bypass_dcs:
 		enter_dcs_pasr_dpd_config(mtkpasr_vec[chconfig].pasr_on & 0xFF,
 					mtkpasr_vec[chconfig].pasr_on >> 0x8);
 		/* Step3 - Turn off DDRPHY */
-		if (mtkppasr_vec[chconfig].pasr_on == query_channel_segment_bits())
+		if (mtkpasr_vec[chconfig].pasr_on == query_channel_segment_bits())
 			dram_dcs_turn_on_off_ch(0);
 	} else {
 		pr_warn("%s: should not be here\n", __func__);
