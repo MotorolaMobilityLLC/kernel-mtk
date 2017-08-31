@@ -69,6 +69,8 @@ extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 #define PPM_DISABLE_BIG_FOR_LP_MODE	(1)
 /*#define PPM_DISABLE_LL_ONLY		(1)*/
 #define PPM_1LL_MIN_FREQ		(741000)
+#define PPM_1LL_MIN_FREQ_E2		(648000)
+
 
 /* for COBRA algo */
 #define PPM_COBRA_USE_CORE_LIMIT	(1)

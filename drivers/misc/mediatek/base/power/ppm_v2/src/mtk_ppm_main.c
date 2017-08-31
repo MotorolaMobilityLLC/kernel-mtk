@@ -28,6 +28,9 @@
 #include <linux/sched/rt.h>
 #include <linux/string.h>
 #include <linux/topology.h>
+#ifdef CONFIG_MACH_MT6799
+#include <mt-plat/mtk_chip.h>	/* to get chip version */
+#endif
 #include <trace/events/mtk_events.h>
 
 #include "mtk_ppm_internal.h"
@@ -1103,6 +1106,17 @@ static int ppm_main_data_init(void)
 	aee_rr_rec_ppm_policy_mask(0);
 	aee_rr_rec_ppm_step(0);
 	aee_rr_rec_ppm_waiting_for_pbm(0);
+#endif
+
+#ifdef CONFIG_MACH_MT6799
+	{
+		unsigned int ver;
+
+		/* update single core floor freq for E2 or later */
+		ver = mt_get_chip_sw_ver();
+		if (ver >= (unsigned int)CHIP_SW_VER_02)
+			ppm_main_info.min_freq_1LL = PPM_1LL_MIN_FREQ_E2;
+	}
 #endif
 
 	ppm_info("@%s: done!\n", __func__);
