@@ -28,6 +28,7 @@
 
 #include "mtk_sd.h"
 #include "dbg.h"
+#include "include/pmic_regulator.h"
 
 
 struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL};
@@ -327,7 +328,7 @@ EXPORT_SYMBOL(msdc_sd_power_off);
 void msdc_pmic_force_vcore_pwm(bool enable)
 {
 #if !defined(FPGA_PLATFORM)
-	pmic_set_register_value(PMIC_RG_VCORE_MODESET, (enable ? 1 : 0));
+	buck_set_mode(VCORE, enable);
 #endif
 }
 
