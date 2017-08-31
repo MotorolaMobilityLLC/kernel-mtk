@@ -34,7 +34,7 @@ static bool pep20_is_connect;
 static bool pep20_is_enabled = true;
 
 
-static pep20_profile_t pep20_profile[] = {
+static struct _pep20_profile pep20_profile[] = {
 	{3400, VBAT3400_VBUS},
 	{3500, VBAT3500_VBUS},
 	{3600, VBAT3600_VBUS},
