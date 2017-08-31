@@ -19,56 +19,89 @@
 extern "C" {
 #endif
 
-#define MMProfileEventNameMaxLen 31
+#define MMPROFILE_EVENT_NAME_MAX_LEN 31
 
-typedef unsigned int MMP_Event;
+#define MMP_Event mmp_event
 
-typedef enum {
-	MMProfileFlagStart = 1,
-	MMProfileFlagEnd = 2,
-	MMProfileFlagPulse = 4,
-	MMProfileFlagEventSeparator = 8,
-	MMProfileFlagSystrace = 0x80000000,
-	MMProfileFlagMax = 0xFFFFFFFF
-} MMP_LogType;
+typedef unsigned int mmp_event;
 
-typedef enum {
-	MMProfileMetaStringMBS = 1,
-	MMProfileMetaStringWCS,
-	MMProfileMetaStructure,
-	MMProfileMetaBitmap,
-	MMProfileMetaRaw,
-	MMProfileMetaUser = 0x10000000,
-	MMProfileMetaUserM4UReg,
-	MMProfileMetaMax = 0xFFFFFFFF
-} MMP_MetaDataType;
+#define MMProfileFlagStart          MMPROFILE_FLAG_START
+#define MMProfileFlagEnd            MMPROFILE_FLAG_END
+#define MMProfileFlagPulse          MMPROFILE_FLAG_PULSE
+#define MMProfileFlagEventSeparator MMPROFILE_FLAG_EVENT_SEPARATOR
+#define MMProfileFlagSystrace       MMPROFILE_FLAG_SYSTRACE
+#define MMProfileFlagMax            MMPROFILE_FLAG_MAX
+#define MMP_LogType                 mmp_log_type
 
 typedef enum {
-	MMProfileBitmapRGB565 = 1,
-	MMProfileBitmapRGB888,
-	MMProfileBitmapRGBA8888,
-	MMProfileBitmapBGR888,
-	MMProfileBitmapBGRA8888,
-	MMProfileBitmapMax = 0xFFFFFFFF
-} MMP_PixelFormat;
+	MMPROFILE_FLAG_START = 1,
+	MMPROFILE_FLAG_END = 2,
+	MMPROFILE_FLAG_PULSE = 4,
+	MMPROFILE_FLAG_EVENT_SEPARATOR = 8,
+	MMPROFILE_FLAG_SYSTRACE = 0x80000000,
+	MMPROFILE_FLAG_MAX = 0xFFFFFFFF
+} mmp_log_type;
+
+#define MMProfileMetaStringMBS  MMPROFILE_META_STRING_MBS
+#define MMProfileMetaStringWCS  MMPROFILE_META_STRING_WCS
+#define MMProfileMetaStructure  MMPROFILE_META_STRUCTURE
+#define MMProfileMetaBitmap     MMPROFILE_META_BITMAP
+#define MMProfileMetaRaw        MMPROFILE_META_RAW
+#define MMProfileMetaUser       MMPROFILE_META_USER
+#define MMProfileMetaUserM4UReg MMPROFILE_META_USER_M4U_REG
+#define MMProfileMetaMax        MMPROFILE_META_MAX
+#define MMP_MetaDataType        mmp_metadata_type
+
+typedef enum {
+	MMPROFILE_META_STRING_MBS = 1,
+	MMPROFILE_META_STRING_WCS,
+	MMPROFILE_META_STRUCTURE,
+	MMPROFILE_META_BITMAP,
+	MMPROFILE_META_RAW,
+	MMPROFILE_META_USER = 0x10000000,
+	MMPROFILE_META_USER_M4U_REG,
+	MMPROFILE_META_MAX = 0xFFFFFFFF
+} mmp_metadata_type;
+
+#define MMProfileBitmapRGB565 MMPROFILE_BITMAP_RGB565
+#define MMProfileBitmapRGB888 MMPROFILE_BITMAP_RGB888
+#define MMProfileBitmapRGBA8888 MMPROFILE_BITMAP_RGBA8888
+#define MMProfileBitmapBGR888 MMPROFILE_BITMAP_BGR888
+#define MMProfileBitmapBGRA8888 MMPROFILE_BITMAP_BGRA8888
+#define MMProfileBitmapMax MMPROFILE_BITMAP_MAX
+#define MMP_PixelFormat mmp_pixel_format
+
+typedef enum {
+	MMPROFILE_BITMAP_RGB565 = 1,
+	MMPROFILE_BITMAP_RGB888,
+	MMPROFILE_BITMAP_RGBA8888,
+	MMPROFILE_BITMAP_BGR888,
+	MMPROFILE_BITMAP_BGRA8888,
+	MMPROFILE_BITMAP_MAX = 0xFFFFFFFF
+} mmp_pixel_format;
+
+#define MMP_MetaData_t mmp_metadata_t
 
 typedef struct {
 	unsigned int data1;         /* data1 (user defined) */
 	unsigned int data2;         /* data2 (user defined) */
-	MMP_MetaDataType data_type; /* meta data type */
+	mmp_metadata_type data_type; /* meta data type */
 	unsigned int size;          /* meta data size */
 	void *pData;                /* meta data pointer */
-} MMP_MetaData_t;
+} mmp_metadata_t;
 
 #ifdef CONFIG_COMPAT
-struct Compat_MMP_MetaData_t {
+#define Compat_MMP_MetaData_t compat_mmp_metadata_t
+struct compat_mmp_metadata_t {
 	unsigned int data1;         /* data1 (user defined) */
 	unsigned int data2;         /* data2 (user defined) */
-	MMP_MetaDataType data_type; /* meta data type */
+	mmp_metadata_type data_type; /* meta data type */
 	unsigned int size;          /* meta data size */
 	unsigned int pData;        /* meta data pointer */
 };
 #endif
+
+#define MMP_MetaDataStructure_t mmp_metadata_structure_t
 
 typedef struct {
 	unsigned int data1;         /* data1 (user defined) */
@@ -76,14 +109,16 @@ typedef struct {
 	unsigned int struct_size;   /* structure size (bytes) */
 	void *pData;                /* structure pointer */
 	char struct_name[32];       /* structure name */
-} MMP_MetaDataStructure_t;
+} mmp_metadata_structure_t;
+
+#define MMP_MetaDataBitmap_t mmp_metadata_bitmap_t
 
 typedef struct {
 	unsigned int data1;         /* data1 (user defined) */
 	unsigned int data2;         /* data2 (user defined) */
 	unsigned int width;         /* image width */
 	unsigned int height;        /* image height */
-	MMP_PixelFormat format;     /* image pixel format */
+	mmp_pixel_format format;     /* image pixel format */
 	unsigned int start_pos;     /* start offset of image data (base on pData) */
 	unsigned int bpp;           /* bits per pixel */
 	int pitch;                  /* image pitch (bytes per line) */
@@ -91,37 +126,56 @@ typedef struct {
 	unsigned int down_sample_x; /* horizontal down sample rate (>=1) */
 	unsigned int down_sample_y; /* vertical down sample rate (>=1) */
 	void *pData;                /* image buffer address */
-} MMP_MetaDataBitmap_t;
+} mmp_metadata_bitmap_t;
+
+#define MMProfileRegisterEvent(parent, name) mmprofile_register_event(parent, name)
+#define MMProfileFindEvent(parent, name) mmprofile_find_event(parent, name)
+#define MMProfileEnableEvent(event, enable) mmprofile_enable_event(event, enable)
+#define MMProfileEnableFTraceEvent(event, enable, ftrace) mmprofile_enable_ftrace_event(event, enable, ftrace)
+#define MMProfileEnableEventRecursive(event, enable) mmprofile_enable_event_recursive(event, enable)
+#define MMProfileEnableFTraceEventRecursive(event, enable, ftrace) \
+	mmprofile_enable_ftrace_event_recursive(event, enable, ftrace)
+#define MMProfileQueryEnable(event) mmprofile_query_enable(event)
+#define MMProfileLog(event, type) mmprofile_log(event, type)
+#define MMProfileLogEx(event, type, data1, data2) mmprofile_log_ex(event, type, data1, data2)
+#define MMProfileLogMeta(event, type, pMetaData) mmprofile_log_meta(event, type, pMetaData)
+#define MMProfileLogMetaString(event, type, str) mmprofile_log_meta_string(event, type, str)
+#define MMProfileLogMetaStringEx(event, type, data1, data2, str) \
+	mmprofile_log_meta_string_ex(event, type, data1, data2, str)
+#define MMProfileLogMetaStructure(event, type, pMetaData) mmprofile_log_meta_structure(event, type, pMetaData)
+#define MMProfileLogMetaBitmap(event, type, pMetaData) mmprofile_log_meta_bitmap(event, type, pMetaData)
+#define MMProfileStart(start) mmprofile_start(start)
+#define MMProfileEnable(enable) mmprofile_enable(enable)
 
 #ifdef CONFIG_MMPROFILE
-MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name);
-MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name);
-void MMProfileEnableEvent(MMP_Event event, long enable);
-void MMProfileEnableFTraceEvent(MMP_Event event, long enable, long ftrace);
-void MMProfileEnableEventRecursive(MMP_Event event, long enable);
-void MMProfileEnableFTraceEventRecursive(MMP_Event event, long enable, long ftrace);
-long MMProfileQueryEnable(MMP_Event event);
-void MMProfileLog(MMP_Event event, MMP_LogType type);
-void MMProfileLogEx(MMP_Event event, MMP_LogType type, unsigned long data1, unsigned long data2);
-long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData);
-long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, const char *str);
-long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type,
+mmp_event mmprofile_register_event(mmp_event parent, const char *name);
+mmp_event mmprofile_find_event(mmp_event parent, const char *name);
+void mmprofile_enable_event(mmp_event event, long enable);
+void mmprofile_enable_ftrace_event(mmp_event event, long enable, long ftrace);
+void mmprofile_enable_event_recursive(mmp_event event, long enable);
+void mmprofile_enable_ftrace_event_recursive(mmp_event event, long enable, long ftrace);
+long mmprofile_query_enable(mmp_event event);
+void mmprofile_log(mmp_event event, mmp_log_type type);
+void mmprofile_log_ex(mmp_event event, mmp_log_type type, unsigned long data1, unsigned long data2);
+long mmprofile_log_meta(mmp_event event, mmp_log_type type, mmp_metadata_t *pMetaData);
+long mmprofile_log_meta_string(mmp_event event, mmp_log_type type, const char *str);
+long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type,
 		unsigned long data1, unsigned long data2, const char *str);
-long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type, MMP_MetaDataStructure_t *pMetaData);
-long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData);
-void MMProfileStart(int start);
-void MMProfileEnable(int enable);
+long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type, mmp_metadata_structure_t *pMetaData);
+long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *pMetaData);
+void mmprofile_start(int start);
+void mmprofile_enable(int enable);
 #endif
 
-#define MMProfileLogStructure(event, type, pStruct, struct_type) \
+#define MMProfileLogStructure(event, type, p_struct, struct_type) \
 { \
-	MMP_MetaDataStructure_t MetaData; \
-	MetaData.data1 = 0; \
-	MetaData.data2 = 0; \
-	strcpy(MetaData.struct_name, #struct_type); \
-	MetaData.struct_size = sizeof(struct_type); \
-	MetaData.pData = (void *)(pStruct); \
-	MMProfileLogMetaStructure(event, type, &MetaData); \
+	mmp_metadata_structure_t meta_data; \
+	meta_data.data1 = 0; \
+	meta_data.data2 = 0; \
+	strcpy(meta_data.struct_name, #struct_type); \
+	meta_data.struct_size = sizeof(struct_type); \
+	meta_data.pData = (void *)(p_struct); \
+	mmprofile_log_meta_structure(event, type, &meta_data); \
 }
 
 /*
@@ -130,77 +184,77 @@ void MMProfileEnable(int enable);
  * , the mmp/ driver is compiled but not built-in. Put dummy API implementation here.
  */
 #ifndef CONFIG_MMPROFILE
-static inline MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
+static inline mmp_event mmprofile_register_event(mmp_event parent, const char *name)
 {
 	return 0;
 }
 
-static inline MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name)
+static inline mmp_event mmprofile_find_event(mmp_event parent, const char *name)
 {
 	return 0;
 }
 
-static inline void MMProfileEnableEvent(MMP_Event event, long enable)
+static inline void mmprofile_enable_event(mmp_event event, long enable)
 {
 }
 
-static inline void MMProfileEnableEventRecursive(MMP_Event event, long enable)
+static inline void mmprofile_enable_event_recursive(mmp_event event, long enable)
 {
 }
 
-static inline void MMProfileEnableFTraceEvent(MMP_Event event, long enable, long ftrace)
+static inline void mmprofile_enable_ftrace_event(mmp_event event, long enable, long ftrace)
 {
 }
 
-static inline void MMProfileEnableFTraceEventRecursive(MMP_Event event, long enable, long ftrace)
+static inline void mmprofile_enable_ftrace_event_recursive(mmp_event event, long enable, long ftrace)
 {
 }
 
-static inline long MMProfileQueryEnable(MMP_Event event)
-{
-	return 0;
-}
-
-static inline void MMProfileLogEx(MMP_Event event, MMP_LogType type, unsigned long data1, unsigned long data2)
-{
-}
-
-static inline void MMProfileLog(MMP_Event event, MMP_LogType type)
-{
-}
-
-static inline long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData)
+static inline long mmprofile_query_enable(mmp_event event)
 {
 	return 0;
 }
 
-static inline long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
-				MMP_MetaDataStructure_t *pMetaData)
+static inline void mmprofile_log_ex(mmp_event event, mmp_log_type type, unsigned long data1, unsigned long data2)
+{
+}
+
+static inline void mmprofile_log(mmp_event event, mmp_log_type type)
+{
+}
+
+static inline long mmprofile_log_meta(mmp_event event, mmp_log_type type, mmp_metadata_t *pMetaData)
 {
 	return 0;
 }
 
-static inline long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long data1,
+static inline long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type,
+				mmp_metadata_structure_t *pMetaData)
+{
+	return 0;
+}
+
+static inline long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type, unsigned long data1,
 				unsigned long data2, const char *str)
 {
 	return 0;
 }
 
-static inline long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, const char *str)
+static inline long mmprofile_log_meta_string(mmp_event event, mmp_log_type type, const char *str)
 {
 	return 0;
 }
 
-static inline long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData)
+static inline long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *pMetaData)
 {
 	return 0;
 }
 
-static inline void MMProfileStart(int start)
+static inline void mmprofile_start(int start)
 {
 }
 
-static inline void MMProfileEnable(int enable)
+static inline void mmprofile_enable(int enable)
 {
 }
 #endif
