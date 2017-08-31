@@ -34,10 +34,10 @@
 /*#include <mach/hardware.h>*/
 /* #include <mach/mt6593_pll.h> */
 #include "inc/camera_gepf.h"
-#include <mach/irqs.h>
+/* #include <mach/irqs.h> */
 /* #include <mach/mt_reg_base.h> */
 /* #if defined(CONFIG_MTK_LEGACY) */
-#include <mach/mt_clkmgr.h>	/* For clock mgr APIS. enable_clock()/disable_clock(). */
+/* #include <mach/mt_clkmgr.h> */	/* For clock mgr APIS. enable_clock()/disable_clock(). */
 /* #endif */
 #include <mt-plat/sync_write.h>	/* For mt65xx_reg_sync_writel(). */
 /* #include <mach/mt_spm_idle.h>	 For spm_enable_sodi()/spm_disable_sodi(). */
@@ -1102,7 +1102,8 @@ static MINT32 ConfigGEPFHW(GEPF_Config *pGepfConfig)
 #if !BYPASS_REG
 {
 #ifdef GEPF_USE_GCE
-		cmdqRecHandle handle;
+		struct cmdqRecStruct *handle;	/* kernel-4.4 usage */
+		/* cmdqRecHandle handle; */ /* kernel-3.18 usage */
 		uint64_t engineFlag = (1L << CMDQ_ENG_GEPF);
 #endif
 
