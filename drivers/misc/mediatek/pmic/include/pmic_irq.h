@@ -23,12 +23,17 @@
 		.name =  #_name,	\
 	}
 
+struct pmic_irq_dbg_st {
+	unsigned int dbg_id;
+};
+
 /* pmic irq extern variable */
 extern int interrupts_size;
 extern struct pmic_interrupts interrupts[];
 
 /* pmic irq extern functions */
 extern void PMIC_EINT_SETTING(void);
+extern int pmic_irq_debug_init(struct dentry *);
 void buck_oc_detect(void);
 
 #endif /*--PMIC_IRQ_H--*/
