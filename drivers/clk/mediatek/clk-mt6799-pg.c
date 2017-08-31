@@ -26,7 +26,9 @@
 #include <dt-bindings/clock/mt6799-clk.h>
 
 /*#define TOPAXI_PROTECT_LOCK*/
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define IGNORE_MTCMOS_CHECK	1
+#endif
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP  1
@@ -2895,10 +2897,10 @@ static int disable_subsys(enum subsys_id id)
 	/*pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);*/
 	switch (id) {
 	case SYS_MD1:
-		/*spm_mtcmos_ctrl_md1(STA_POWER_DOWN);*/
+		spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 		break;
 	case SYS_C2K:
-		/*spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);*/
+		spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
 		break;
 	default:
 		break;
@@ -3235,26 +3237,24 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 #if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
-	/*disable_subsys(SYS_MD1);*/
-	/*disable_subsys(SYS_C2K);*/
+	disable_subsys(SYS_MD1);
+	disable_subsys(SYS_C2K);
 #else				/*power on all subsys for bring up */
-#if 0
-	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core1(STA_POWER_ON);
-
-	spm_mtcmos_ctrl_dis(STA_POWER_ON);
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	spm_mtcmos_ctrl_mfg0(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_mfg3(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_c2k(STA_POWER_ON);
+	spm_mtcmos_ctrl_md1(STA_POWER_ON);
+	spm_mtcmos_ctrl_aud(STA_POWER_ON);
+	spm_mtcmos_ctrl_mjc(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
+	spm_mtcmos_ctrl_ipu_shut_down(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_ipu_sleep(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
 	spm_mtcmos_ctrl_vde(STA_POWER_ON);
-	spm_mtcmos_ctrl_isp(STA_POWER_ON);
-
-	spm_mtcmos_ctrl_mdsys_intf_infra(STA_POWER_ON);
-	spm_mtcmos_ctrl_md1(STA_POWER_ON);
-	spm_mtcmos_ctrl_c2k(STA_POWER_ON);
-
-	spm_mtcmos_ctrl_audio(STA_POWER_ON);
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
