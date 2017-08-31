@@ -2946,7 +2946,8 @@
 				<0 0x15021000 0 0x1000>,   /* SMI LARB5 */
 				<0 0x18001000 0 0x1000>,   /* SMI LARB6 */
 				<0 0x17010000 0 0x1000>,   /* SMI LARB7 */
-				<0 0x12002000 0 0x1000>;   /* SMI LARB8 */
+				<0 0x12002000 0 0x1000>,   /* SMI LARB8 */
+				<0 0x14000000 0 0x1000>;   /* MMSYS */
 		clocks = <&mmsys_config CLK_MM_CG1_B16>,
 							<&mmsys_config CLK_MM_CG1_B17>,
 							<&mmsys_config CLK_MM_CG1_B14>,
