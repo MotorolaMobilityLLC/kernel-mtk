@@ -327,6 +327,14 @@ void ldo_oc_int_handler(void)
 }
 
 /*****************************************************************************
+ * General OC Int Handler
+ ******************************************************************************/
+void oc_int_handler(const char *int_name)
+{
+	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
+}
+
+/*****************************************************************************
  * Low battery call back function
  ******************************************************************************/
 #define LBCB_NUM 16
@@ -546,6 +554,25 @@ void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (
 
 }
 
+/* register general oc interrupt handler */
+void pmic_register_oc_interrupt_callback(unsigned int intNo)
+{
+	unsigned int shift, no;
+
+	shift = intNo / PMIC_INT_WIDTH;
+	no = intNo % PMIC_INT_WIDTH;
+
+	if (shift >= ARRAY_SIZE(interrupts)) {
+		pr_err(PMICTAG "[pmic_register_oc_interrupt_callback] fail intno=%d\r\n", intNo);
+		return;
+	}
+
+	PMICLOG("[pmic_register_oc_interrupt_callback] intno=%d\r\n", intNo);
+
+	interrupts[shift].interrupts[no].oc_callback = oc_int_handler;
+
+}
+
 void PMIC_EINT_SETTING(void)
 {
 	struct device_node *node = NULL;
@@ -638,10 +665,13 @@ static void pmic_int_handler(void)
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
 				PMICLOG("[PMIC_INT][%s]\n", interrupts[i].interrupts[j].name);
-				if (interrupts[i].interrupts[j].callback != NULL) {
+				interrupts[i].interrupts[j].times++;
+
+				if (interrupts[i].interrupts[j].callback != NULL)
 					interrupts[i].interrupts[j].callback();
-					interrupts[i].interrupts[j].times++;
-				}
+				if (interrupts[i].interrupts[j].oc_callback != NULL)
+					interrupts[i].interrupts[j].oc_callback(interrupts[i].interrupts[j].name);
+
 				ret = pmic_config_interface(interrupts[i].address, 0x1, 0x1, j);
 			}
 		}
