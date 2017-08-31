@@ -20,6 +20,7 @@
 
 #include "btif_pub.h"
 #include "btif_priv.h"
+#include "mtk_btif.h"
 
 #define BTIF_USER_ID "btif_driver"
 
@@ -46,7 +47,7 @@ MTK_BTIF_IRQ_STR mtk_btif_irq = {
  * but we may need to access these registers in case of btif clock control logic is wrong in clock manager
  */
 
-MTK_BTIF_INFO_STR mtk_btif = {
+MTK_BTIF_INFO_STR mtk_btif_info = {
 #ifndef CONFIG_OF
 	.base = MTK_BTIF_REG_BASE,
 #endif
@@ -204,16 +205,17 @@ static int _btif_tx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif_info)
 static void _btif_set_default_setting(void)
 {
 	struct device_node *node = NULL;
-	unsigned int irq_info[3] = {0, 0, 0};
+	/* the three array member is a set of, {irq type, irq number, irq trigger mode, ...}*/
+	unsigned int irq_info[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	unsigned int phy_base;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,btif");
+	node = ((struct device *)(g_btif[0].private_data))->of_node;
 	if (node) {
-		mtk_btif.p_irq->irq_id = irq_of_parse_and_map(node, 0);
+		mtk_btif_info.p_irq->irq_id = irq_of_parse_and_map(node, 0);
 		/*fixme, be compitable arch 64bits*/
-		mtk_btif.base = (unsigned long)of_iomap(node, 0);
+		mtk_btif_info.base = (unsigned long)of_iomap(node, 0);
 		BTIF_INFO_FUNC("get btif irq(%d),register base(0x%lx)\n",
-			mtk_btif.p_irq->irq_id, mtk_btif.base);
+			mtk_btif_info.p_irq->irq_id, mtk_btif_info.base);
 	} else {
 		BTIF_ERR_FUNC("get btif device node fail\n");
 	}
@@ -222,8 +224,8 @@ static void _btif_set_default_setting(void)
 	if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
 		BTIF_ERR_FUNC("get interrupt flag from DTS fail\n");
 	} else {
-		mtk_btif.p_irq->irq_flags = irq_info[2];
-		BTIF_INFO_FUNC("get interrupt flag(0x%x)\n", mtk_btif.p_irq->irq_flags);
+		mtk_btif_info.p_irq->irq_flags = irq_info[2];
+		BTIF_INFO_FUNC("get interrupt flag(0x%x)\n", mtk_btif_info.p_irq->irq_flags);
 	}
 
 	if (of_property_read_u32_index(node, "reg", 0, &phy_base))
@@ -247,7 +249,7 @@ P_MTK_BTIF_INFO_STR hal_btif_info_get(void)
 #if NEW_TX_HANDLING_SUPPORT
 	int i_ret = 0;
 /*tx fifo and fifo lock init*/
-	i_ret = _btif_tx_fifo_init(&mtk_btif);
+	i_ret = _btif_tx_fifo_init(&mtk_btif_info);
 	if (i_ret == 0)
 		BTIF_INFO_FUNC("_btif_tx_fifo_init succeed\n");
 	else
@@ -261,7 +263,7 @@ P_MTK_BTIF_INFO_STR hal_btif_info_get(void)
 
 	spin_lock_init(&g_clk_cg_spinlock);
 
-	return &mtk_btif;
+	return &mtk_btif_info;
 }
 /*****************************************************************************
 * FUNCTION
@@ -1391,6 +1393,6 @@ void mtk_btif_read_cpu_sw_rst_debug_plat(void)
 {
 #define CONSYS_AP2CONN_WAKEUP_OFFSET	0x00000064
 	BTIF_WARN_FUNC("+CONSYS_AP2CONN_WAKEUP_OFFSET(0x%x)\n",
-			   BTIF_READ32(mtk_btif.base + CONSYS_AP2CONN_WAKEUP_OFFSET));
+			   BTIF_READ32(mtk_btif_info.base + CONSYS_AP2CONN_WAKEUP_OFFSET));
 }
 

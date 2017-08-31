@@ -2034,22 +2034,6 @@
 		interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	btif_tx: btif_tx@11000980 {
-		compatible = "mediatek,btif_tx";
-		#address-cells = <2>;
-		#size-cells = <2>;
-		reg = <0 0x11000980 0 0x80>;
-		interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	btif_rx: btif_rx@11000a00 {
-		compatible = "mediatek,btif_rx";
-		#address-cells = <2>;
-		#size-cells = <2>;
-		reg = <0 0x11000a00 0 0x80>;
-		interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	auxadc: auxadc@11001000 {
 		compatible = "mediatek,mt6757-auxadc";
 		reg = <0 0x11001000 0 0x1000>;
@@ -2183,9 +2167,14 @@
 		compatible = "mediatek,btif";
 		#address-cells = <2>;
 		#size-cells = <2>;
-		reg = <0 0x1100c000 0 0x1000>;
-		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
-		clocks = <&infrasys INFRACFG_AO_BTIF_CG>,<&infrasys INFRACFG_AO_AP_DMA_CG>;
+		reg = <0 0x1100c000 0 0x1000>,	/*btif base*/
+		    <0 0x11000980 0 0x80>,	/*btif tx dma base*/
+		    <0 0x11000a00 0 0x80>;	/*btif rx dma base*/
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,	/*btif irq*/
+			   <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>,	/*btif tx dma irq*/
+			   <GIC_SPI 124 IRQ_TYPE_LEVEL_LOW>;	/*btif rx dma irq*/
+		clocks = <&infrasys INFRACFG_AO_BTIF_CG>,	/*btif clock*/
+		       <&infrasys INFRACFG_AO_AP_DMA_CG>;	/*ap dma clock*/
 		clock-names = "btifc","apdmac";
 	};
 

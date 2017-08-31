@@ -20,6 +20,7 @@
 #define DFT_TAG "MTK-BTIF-DMA"
 
 #include "btif_dma_priv.h"
+#include "mtk_btif.h"
 
 #define DMA_USER_ID "btif_driver"
 
@@ -156,15 +157,16 @@ static int hal_dma_receive_data(P_MTK_DMA_INFO_STR p_dma_info,
 static void hal_dma_set_default_setting(ENUM_DMA_DIR dma_dir)
 {
 	struct device_node *node = NULL;
-	unsigned int irq_info[3] = {0, 0, 0};
+	/* the three array member is a set of, {irq type, irq number, irq trigger mode, ...}*/
+	unsigned int irq_info[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	unsigned int phy_base;
 
 	if (dma_dir == DMA_DIR_RX) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,btif_rx");
+		node = ((struct device *)(g_btif[0].private_data))->of_node;
 		if (node) {
-			mtk_btif_rx_dma.p_irq->irq_id = irq_of_parse_and_map(node, 0);
+			mtk_btif_rx_dma.p_irq->irq_id = irq_of_parse_and_map(node, 2);
 			/*fixme, be compitable arch 64bits*/
-			mtk_btif_rx_dma.base = (unsigned long)of_iomap(node, 0);
+			mtk_btif_rx_dma.base = (unsigned long)of_iomap(node, 2);
 			BTIF_INFO_FUNC("get rx_dma irq(%d),register base(0x%lx)\n",
 				mtk_btif_rx_dma.p_irq->irq_id, mtk_btif_rx_dma.base);
 		} else {
@@ -174,11 +176,11 @@ static void hal_dma_set_default_setting(ENUM_DMA_DIR dma_dir)
 		if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
 			BTIF_ERR_FUNC("get interrupt flag from DTS fail\n");
 		} else {
-			mtk_btif_rx_dma.p_irq->irq_flags = irq_info[2];
+			mtk_btif_rx_dma.p_irq->irq_flags = irq_info[8];
 			BTIF_INFO_FUNC("get interrupt flag(0x%x)\n",
 				mtk_btif_rx_dma.p_irq->irq_flags);
 		}
-		if (of_property_read_u32_index(node, "reg", 0, &phy_base)) {
+		if (of_property_read_u32_index(node, "reg", 2, &phy_base)) {
 			BTIF_ERR_FUNC("get register phy base from DTS fail,dma_dir(%d)\n",
 					dma_dir);
 		} else {
@@ -186,11 +188,11 @@ static void hal_dma_set_default_setting(ENUM_DMA_DIR dma_dir)
 					dma_dir, (unsigned int)phy_base);
 		}
 	} else if (dma_dir == DMA_DIR_TX) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,btif_tx");
+		node = ((struct device *)(g_btif[0].private_data))->of_node;
 		if (node) {
-			mtk_btif_tx_dma.p_irq->irq_id = irq_of_parse_and_map(node, 0);
+			mtk_btif_tx_dma.p_irq->irq_id = irq_of_parse_and_map(node, 1);
 			/*fixme, be compitable arch 64bits*/
-			mtk_btif_tx_dma.base = (unsigned long)of_iomap(node, 0);
+			mtk_btif_tx_dma.base = (unsigned long)of_iomap(node, 1);
 			BTIF_INFO_FUNC("get tx_dma irq(%d),register base(0x%lx)\n",
 				mtk_btif_tx_dma.p_irq->irq_id, mtk_btif_tx_dma.base);
 		} else {
@@ -200,12 +202,12 @@ static void hal_dma_set_default_setting(ENUM_DMA_DIR dma_dir)
 		if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
 			BTIF_ERR_FUNC("get interrupt flag from DTS fail\n");
 		} else {
-			mtk_btif_tx_dma.p_irq->irq_flags = irq_info[2];
+			mtk_btif_tx_dma.p_irq->irq_flags = irq_info[5];
 			BTIF_INFO_FUNC("get interrupt flag(0x%x)\n",
 				mtk_btif_tx_dma.p_irq->irq_flags);
 		}
 
-		if (of_property_read_u32_index(node, "reg", 0, &phy_base)) {
+		if (of_property_read_u32_index(node, "reg", 1, &phy_base)) {
 			BTIF_ERR_FUNC("get register phy base from DTS fail,dma_dir(%d)\n",
 				dma_dir);
 		} else {
