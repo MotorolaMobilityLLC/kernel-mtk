@@ -164,4 +164,11 @@
 #define EXTERNAL_SWCHR_SUPPORT
 #endif
 
+/* Dynamic CV threshold */
+#define MTK_DYNAMIC_CV_THRESHOLD 4300 /* mV */
+#define MTK_DYNAMIC_CV_VOLTAGE 4550 /* mV */
+#define MTK_CV_VOLTAGE 4350000 /* uV */
+#define MTK_IRCMP_VOLT_CLAMP 200 /* mV */
+#define MTK_IRCMP_RESISTOR 80 /* mohm */
+
 #endif /* _CUST_BAT_H_ */

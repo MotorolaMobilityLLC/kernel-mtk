@@ -61,6 +61,7 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 unsigned char bq25890_reg[bq25890_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(bq25890_i2c_access);
+static DEFINE_MUTEX(bq25890_access_lock);
 
 int g_bq25890_hw_exist;
 
@@ -232,17 +233,20 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 				    unsigned char SHIFT)
 {
 	unsigned char bq25890_reg = 0;
+	unsigned char bq25890_reg_ori = 0;
 	unsigned int ret = 0;
 
+	mutex_lock(&bq25890_access_lock);
 	ret = bq25890_read_byte(RegNum, &bq25890_reg);
-	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] Reg[%x]=0x%x\n", RegNum, bq25890_reg);
 
+	bq25890_reg_ori = bq25890_reg;
 	bq25890_reg &= ~(MASK << SHIFT);
 	bq25890_reg |= (val << SHIFT);
 
 	ret = bq25890_write_byte(RegNum, bq25890_reg);
-	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] write Reg[%x]=0x%x\n", RegNum,
-		    bq25890_reg);
+	mutex_unlock(&bq25890_access_lock);
+	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
+		    bq25890_reg, bq25890_reg_ori);
 
 	/* Check */
 	/* bq25890_read_byte(RegNum, &bq25890_reg); */
@@ -505,9 +509,21 @@ void bq25890_set_vreg(unsigned int val)
 
 	ret = bq25890_config_interface((unsigned char) (bq25890_CON6),
 				       (unsigned char) (val),
-				       (unsigned char) (CON6_2XTMR_EN_MASK),
-				       (unsigned char) (CON6_2XTMR_EN_SHIFT)
+				       (unsigned char) (CON6_VREG_MASK),
+				       (unsigned char) (CON6_VREG_SHIFT)
 	    );
+}
+
+unsigned int bq25890_get_vreg(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_CON6),
+				     (&val),
+				     (unsigned char) (CON6_VREG_MASK), (unsigned char) (CON6_VREG_SHIFT)
+	    );
+	return val;
 }
 
 void bq25890_set_batlowv(unsigned int val)
@@ -579,6 +595,19 @@ void bq25890_en_chg_timer(unsigned int val)
 	    );
 }
 
+unsigned int bq25890_get_chg_timer_enable(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_CON7),
+				     &val,
+				     (unsigned char) (CON7_EN_TIMER_MASK),
+				     (unsigned char) (CON7_EN_TIMER_SHIFT));
+
+	return val;
+}
+
 void bq25890_set_chg_timer(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -642,11 +671,25 @@ void bq25890_pumpx_up(unsigned int val)
 					       (unsigned char) (CON9_PUMPX_DN_SHIFT)
 		    );
 	}
-/* Input current limit = 800 mA, changes after port detection*/
-	bq25890_set_iinlim(0x14);
-/* CC mode current = 2048 mA*/
+
+	/* Input current limit = 500 mA, changes after PE+ detection */
+	bq25890_set_iinlim(0x08);
+
+	/* CC mode current = 2048 mA */
 	bq25890_set_ichg(0x20);
+
 	msleep(3000);
+}
+
+void bq25890_set_force_ico(void)
+{
+	unsigned int ret = 0;
+
+	ret = bq25890_config_interface((unsigned char) (bq25890_CON9),
+				       (unsigned char) (1),
+				       (unsigned char) (FORCE_ICO_MASK),
+				       (unsigned char) (FORCE_ICO__SHIFT)
+	    );
 }
 
 /* CONA---------------------------------------------------- */
@@ -798,7 +841,7 @@ unsigned int bq25890_get_bat_state(void)
 
 
 /* COND */
-void bq25890_set_FORCE_VINDPM(unsigned int val)
+void bq25890_set_force_vindpm(unsigned int val)
 {
 	unsigned int ret = 0;
 
@@ -809,7 +852,7 @@ void bq25890_set_FORCE_VINDPM(unsigned int val)
 	    );
 }
 
-void bq25890_set_VINDPM(unsigned int val)
+void bq25890_set_vindpm(unsigned int val)
 {
 	unsigned int ret = 0;
 
@@ -818,6 +861,19 @@ void bq25890_set_VINDPM(unsigned int val)
 				       (unsigned char) (COND_VINDPM_MASK),
 				       (unsigned char) (COND_VINDPM_SHIFT)
 	    );
+}
+
+unsigned int bq25890_get_vindpm(void)
+{
+	int ret = 0;
+	unsigned char val = 0;
+
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_COND),
+				     (&val),
+				     (unsigned char) (COND_VINDPM_MASK),
+				     (unsigned char) (COND_VINDPM_SHIFT));
+	return val;
 }
 
 /* CONDE */
@@ -935,10 +991,12 @@ void bq25890_dump_register(void)
 	unsigned char vdpm = 0;
 	unsigned char fault = 0;
 
-	/*bq25890_ADC_start(1);*/
-	for (i = 0; i < bq25890_REG_NUM; i++) {
-		/*bq25890_read_byte(i, &bq25890_reg[i]);*/
-		battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
+	if (Enable_BATDRV_LOG > BAT_LOG_CRTI) {
+		bq25890_ADC_start(1);
+		for (i = 0; i < bq25890_REG_NUM; i++) {
+			bq25890_read_byte(i, &bq25890_reg[i]);
+			battery_log(BAT_LOG_FULL, "[bq25890 reg@][0x%x]=0x%x ", i, bq25890_reg[i]);
+		}
 	}
 	bq25890_ADC_start(1);
 	iinlim = bq25890_get_iinlim();
@@ -965,7 +1023,6 @@ void bq25890_hw_init(void)
 
 static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-
 	battery_log(BAT_LOG_CRTI, "[bq25890_driver_probe]\n");
 
 	new_client = client;
@@ -997,25 +1054,26 @@ static ssize_t store_bq25890_access(struct device *dev, struct device_attribute 
 				    const char *buf, size_t size)
 {
 	int ret = 0;
-	/*char *pvalue = NULL;*/
+	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
-	unsigned long int reg_address = 0;
-	int rv;
+	unsigned int reg_address = 0;
 
 	battery_log(BAT_LOG_CRTI, "[store_bq25890_access]\n");
 
 	if (buf != NULL && size != 0) {
 		battery_log(BAT_LOG_CRTI, "[store_bq25890_access] buf is %s and size is %zu\n", buf,
 			    size);
-		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
-		rv = kstrtoul(buf, 0, &reg_address);
-			if (rv != 0)
-				return -EINVAL;
-		/*ret = kstrtoul(buf, 16, reg_address); *//* This must be a null terminated string */
+
+		pvalue = (char *)buf;
 		if (size > 3) {
-			/*NEED to check kstr*/
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*ret = kstrtoul(buf + 3, 16, reg_value); */
+			addr = strsep(&pvalue, " ");
+			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+		} else
+			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+
+		if (size > 3) {
+			val = strsep(&pvalue, " ");
+			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 			battery_log(BAT_LOG_CRTI,
 				    "[store_bq25890_access] write bq25890 reg 0x%x with value 0x%x !\n",
 				    (unsigned int) reg_address, reg_value);
