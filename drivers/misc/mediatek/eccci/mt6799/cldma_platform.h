@@ -172,6 +172,7 @@
 struct ccci_clk_node {
 	struct clk *clk_ref;
 	unsigned char *clk_name;
+	unsigned char version;
 };
 
 struct md_pll_reg {

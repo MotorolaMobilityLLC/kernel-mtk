@@ -30,6 +30,7 @@
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
+#include <mt-plat/mtk_chip.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
@@ -38,25 +39,23 @@
 #include "modem_reg_base.h"
 #include "mtk_clkbuf_ctl.h"
 static struct ccci_clk_node clk_table[] = {
-	{ NULL,	"scp-sys-md1-main"},
-	{ NULL,	"infra-cldma-ap"},
-	{ NULL,	"infra-cldma-ap-hclk"},
-	{ NULL,	"infra-ccif-ap"},
-	{ NULL,	"infra-ccif-md"},
-	{ NULL,	"infra-ap-c2k-ccif-0"},
-	{ NULL,	"infra-ap-c2k-ccif-1"},
-	{ NULL,	"infra-scp-md1-ccif-0"},
-	{ NULL,	"infra-scp-md1-ccif-1"},
-	{ NULL,	"infra-scp-c2k-ccif-0"},
-	{ NULL,	"infra-scp-c2k-ccif-1"},
-	{ NULL,	"infra-md2md-ccif-0"},
-#if 0
-	{ NULL,	"infra-md2md-ccif-1"},
-#endif
-	{ NULL,	"infra-md2md-ccif-2"},
-	{ NULL,	"infra-md2md-ccif-3"},
-	{ NULL,	"infra-md2md-ccif-4"},
-	{ NULL,	"infra-md2md-ccif-5"},
+	{ NULL,	"scp-sys-md1-main", CHIP_SW_VER_01},
+	{ NULL,	"infra-cldma-ap", CHIP_SW_VER_01},
+	{ NULL,	"infra-cldma-ap-hclk", CHIP_SW_VER_01},
+	{ NULL,	"infra-ccif-ap", CHIP_SW_VER_01},
+	{ NULL,	"infra-ccif-md", CHIP_SW_VER_01},
+	{ NULL,	"infra-ap-c2k-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-ap-c2k-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-md1-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-md1-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-c2k-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-c2k-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-1", CHIP_SW_VER_02},
+	{ NULL,	"infra-md2md-ccif-2", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-3", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-4", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-5", CHIP_SW_VER_01},
 };
 #if defined(CONFIG_PINCTRL_ELBRUS)
 static struct pinctrl *mdcldma_pinctrl;
@@ -101,6 +100,7 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 {
 	struct device_node *node = NULL;
 	int idx = 0;
+	unsigned int ver = 0;
 
 	memset(dev_cfg, 0, sizeof(struct ccci_dev_cfg));
 	memset(hw_info, 0, sizeof(struct md_hw_info));
@@ -155,7 +155,13 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 #else
 		CCCI_ERROR_LOG(dev_cfg->index, TAG, "gpio pinctrl is not ready yet, use workaround.\n");
 #endif
+		ver = mt_get_chip_sw_ver();
 		for (idx = 0; idx < ARRAY_SIZE(clk_table); idx++) {
+			if (ver == CHIP_SW_VER_01 && clk_table[idx].version != CHIP_SW_VER_01) {
+				CCCI_INIT_LOG(dev_cfg->index, TAG, "md%d get %s bypass on ver%x\n",
+								dev_cfg->index + 1, clk_table[idx].clk_name, ver);
+				continue;
+			}
 			clk_table[idx].clk_ref = devm_clk_get(&dev_ptr->dev, clk_table[idx].clk_name);
 			if (IS_ERR(clk_table[idx].clk_ref)) {
 				CCCI_ERROR_LOG(dev_cfg->index, TAG, "md%d get %s failed\n",
