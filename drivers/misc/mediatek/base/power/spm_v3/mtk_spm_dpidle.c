@@ -944,7 +944,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	static bool timer_out_too_short;
 
 	if (log_cond & DEEPIDLE_LOG_FULL) {
-		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
 
 		if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
@@ -972,7 +972,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 			dpidle_dbg("dpidle_log_discard_cnt = %d, timer_out_too_short = %d\n",
 						dpidle_log_discard_cnt,
 						timer_out_too_short);
-			wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+			wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
 
 			if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
 				spm_resource_req_dump();
@@ -1239,7 +1239,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	request_uart_to_wakeup();
 #endif
 
-	last_wr = __spm_output_wake_reason(&wakesta, pcmdesc, true);
+	last_wr = __spm_output_wake_reason(&wakesta, pcmdesc, true, "sleep_dpidle");
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:

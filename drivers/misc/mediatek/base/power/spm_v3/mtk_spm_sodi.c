@@ -457,7 +457,7 @@ static wake_reason_t spm_sodi_output_log(
 		sodi_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
 				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 				spm_read(DUMMY1_PWR_CON));
-		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "sodi");
 	} else {
 		/*
 		 * Log reduction mechanism, print debug information criteria :
