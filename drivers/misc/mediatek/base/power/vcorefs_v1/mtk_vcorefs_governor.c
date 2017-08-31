@@ -865,10 +865,8 @@ int vcorefs_late_init_dvfs(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int flag;
 
-	/*
-	 *if (!can_spm_pmic_set_vcore_voltage())
-	 *	gvrctrl->vcore_dvs = 0;
-	 */
+	if (!can_spm_pmic_set_vcore_voltage())
+		gvrctrl->vcore_dvs = 0;
 
 	gvrctrl->ddr_type = get_ddr_type();
 	if (gvrctrl->ddr_type == TYPE_LPDDR3)

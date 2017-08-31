@@ -24,7 +24,7 @@
 
 #include <mach/mtk_clkmgr.h>
 #include <mach/mtk_freqhopping.h>
-#include "mtk_vcorefs_manager.h"
+#include <mtk_vcorefs_manager.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -180,9 +180,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 				/* switch to HW mode */
 				switch_armpll_l_hwmode(1);
 				#endif
-				#ifdef CONFIG_VCOREFS_CTRL
 				vcorefs_request_dvfs_opp(KIR_CPU, OPPI_LOW_PWR);
-				#endif
 			}
 		} else {
 			pr_debug("CPU%d is not exist\n", cpu);
@@ -218,9 +216,7 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 				/* turn off arm pll */
 				disable_armpll_l();
 				#endif
-				#ifdef CONFIG_VCOREFS_CTRL
 				vcorefs_request_dvfs_opp(KIR_CPU, OPPI_UNREQ);
-				#endif
 			}
 		} else {
 			pr_debug("CPU%d is not exist\n", cpu);
