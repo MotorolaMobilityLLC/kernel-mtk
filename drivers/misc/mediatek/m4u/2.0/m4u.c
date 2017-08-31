@@ -1889,7 +1889,6 @@ out:
 int m4u_sec_init(void)
 {
 		uint32_t deviceId = 0;
-		uint32_t i;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	enum mc_result mcRet;
 
@@ -1902,11 +1901,7 @@ int m4u_sec_init(void)
 	}
 
 	M4UMSG("call m4u_sec_init in nornal m4u driver\n");
-#if defined(CONFIG_MACH_MT6763)
-	M4UMSG("enable smi larb\n");
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_on(i, 1);
-#endif
+
 	/* Initialize session handle data */
 	memset(&m4u_dci_session, 0, sizeof(m4u_dci_session));
 
@@ -1962,10 +1957,6 @@ m4u_sec_reinit:
 	}
 #endif
 
-#if defined(CONFIG_MACH_MT6763)
-	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_off(i, 1);
-#endif
 	m4u_close_trustlet(deviceId);
 
 	m4u_tee_en = 1;
