@@ -1279,7 +1279,7 @@ uint32 GetULFrequency(uint32 frequency)
 {
 	uint32 Reg_value = 0;
 
-	pr_warn("%s frequency =%d\n", __func__, frequency);
+	pr_aud("%s frequency =%d\n", __func__, frequency);
 	switch (frequency) {
 	case 8000:
 	case 16000:
@@ -1691,7 +1691,7 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 
 static void TurnOnDacPower(void)
 {
-	pr_warn("TurnOnDacPower\n");
+	pr_aud("%s(),\n", __func__);
 	audckbufEnable(true);
 	SwOperationEnable(true); /* SW operation enable */
 	NvregEnable(true);	/* Enable AUDGLB */
@@ -1734,7 +1734,7 @@ static void TurnOnDacPower(void)
 
 static void TurnOffDacPower(void)
 {
-	pr_warn("TurnOffDacPower\n");
+	pr_aud("%s(),\n", __func__);
 
 	setDlMtkifSrc(false);
 
@@ -1761,9 +1761,9 @@ static void TurnOffDacPower(void)
 
 static void setDlMtkifSrc(bool enable)
 {
-	pr_warn("%s(), enable = %d, freq = %d\n", __func__, enable,
-		mBlockSampleRate[AUDIO_DAI_DL1]);
 	if (enable) {
+		pr_warn("%s(), enable = %d, freq = %d\n", __func__, enable,
+			mBlockSampleRate[AUDIO_DAI_DL1]);
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0,
 			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_DAI_DL1]) << 12) |
 			     0x330), 0xfff0);
@@ -3656,7 +3656,7 @@ static bool audio_dmic_enable(bool enable, AUDIO_ANALOG_DEVICE_TYPE device_in)
 
 static bool TurnOnADcPowerDCC(AUDIO_ANALOG_DEVICE_TYPE device_in, bool enable, int ECMmode)
 {
-	pr_warn("%s(), enable %d, device_in %d\n", __func__, enable, device_in);
+	pr_aud("%s(), enable %d, device_in %d\n", __func__, enable, device_in);
 
 	if (enable) {
 		if (get_analog_input_status() == false) {
