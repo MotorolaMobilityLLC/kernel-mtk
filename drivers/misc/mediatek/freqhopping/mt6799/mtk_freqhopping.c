@@ -322,7 +322,6 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 	} else
 		fh_write32(reg_dst, (fh_read32(reg_src) & MASK22b) | BIT32);
 
-	return;
 }
 
 static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *setting)
@@ -336,7 +335,7 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 		     __func__, setting->lowbnd, setting->upbnd, setting->df, setting->dt,
 		     setting->dds);
 
-	mb();
+	mb();/* prevent reg setting value not sync */
 
 	g_fh_pll[pll_id].fh_status = FH_FH_ENABLE_SSC;
 
@@ -355,7 +354,8 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 
 	/* Switch to FHCTL */
 	fh_switch2fhctl(pll_id, 1);
-	mb();
+	mb();/* prevent reg setting value not sync */
+
 
 	/* Enable SSC */
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);
@@ -380,7 +380,7 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	/* Set the relative registers */
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
-	mb();
+	mb();/* prevent reg setting value not sync */
 	fh_switch2fhctl(pll_id, 0);
 	g_fh_pll[pll_id].fh_status = FH_FH_DISABLE;
 
@@ -558,7 +558,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	/* 3. switch to hopping control */
 	fh_switch2fhctl(pll_id, 1);
-	mb();
+	mb(); /* prevent reg setting value not sync */
 
 	/* FH_MSG("3. switch to hopping control"); */
 
@@ -602,7 +602,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	/* 6. switch to register control */
 	fh_switch2fhctl(pll_id, 0);
-	mb();
+	mb(); /* prevent reg setting value not sync */
 
 	/* FH_MSG("6. switch to register control"); */
 
@@ -962,7 +962,7 @@ static void mt_fh_hal_popod_save(void)
 		/* switch to register control */
 		fh_switch2fhctl(pll_id, 0);
 
-		mb();
+		mb(); /* prevent reg setting value not sync */
 	}
 }
 
@@ -1518,6 +1518,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	/* unsigned long flags = 0; */
 	unsigned long reg_cfg = 0;
 	unsigned long flags = 0;
+
 	if (g_initialize == 0) {
 		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
 		return -1;
