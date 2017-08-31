@@ -73,6 +73,7 @@ static void gyro_work_func(struct work_struct *work)
 
 	struct gyro_context *cxt = NULL;
 	int x, y, z, status;
+	int temperature = -32768;	/* =0xFFFF_8000 */
 	int64_t pre_ns, cur_ns;
 	int64_t delay_ms;
 	int err = 0;
@@ -86,6 +87,13 @@ static void gyro_work_func(struct work_struct *work)
 	}
 
 	cur_ns = getCurNS();
+
+	/* gyro driver has register temperature path */
+	if (cxt->gyro_data.get_temperature) {
+		err = cxt->gyro_data.get_temperature(&temperature);
+		if (err)
+			GYRO_ERR("get gyro temperature fails!!\n");
+	}
 
     /* add wake lock to make sure data can be read before system suspend */
 	err = cxt->gyro_data.get_data(&x, &y, &z, &status);
@@ -123,12 +131,12 @@ static void gyro_work_func(struct work_struct *work)
 		pre_ns += delay_ms*1000000LL;
 		gyro_data_report(cxt->drv_data.gyro_data.values[0],
 			cxt->drv_data.gyro_data.values[1], cxt->drv_data.gyro_data.values[2],
-			cxt->drv_data.gyro_data.status, pre_ns);
+			cxt->drv_data.gyro_data.status, pre_ns, temperature);
 	}
 
 	gyro_data_report(cxt->drv_data.gyro_data.values[0],
 		cxt->drv_data.gyro_data.values[1], cxt->drv_data.gyro_data.values[2],
-		cxt->drv_data.gyro_data.status, cxt->drv_data.gyro_data.time);
+		cxt->drv_data.gyro_data.status, cxt->drv_data.gyro_data.time, temperature);
 
 gyro_loop:
 	if (true == cxt->is_polling_run)
@@ -592,6 +600,7 @@ static int gyro_input_init(struct gyro_context *cxt)
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_GYRO_X);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_GYRO_Y);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_GYRO_Z);
+	input_set_capability(dev, EV_ABS, EVENT_TYPE_GYRO_TEMPERATURE);
 	input_set_capability(dev, EV_ABS, EVENT_TYPE_GYRO_STATUS);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_GYRO_UPDATE);
 	input_set_capability(dev, EV_REL, EVENT_TYPE_GYRO_TIMESTAMP_HI);
@@ -600,6 +609,7 @@ static int gyro_input_init(struct gyro_context *cxt)
 	input_set_abs_params(dev, EVENT_TYPE_GYRO_X, GYRO_VALUE_MIN, GYRO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GYRO_Y, GYRO_VALUE_MIN, GYRO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GYRO_Z, GYRO_VALUE_MIN, GYRO_VALUE_MAX, 0, 0);
+	input_set_abs_params(dev, EVENT_TYPE_GYRO_TEMPERATURE, GYRO_VALUE_MIN+1, GYRO_VALUE_MAX, 0, 0);
 	input_set_abs_params(dev, EVENT_TYPE_GYRO_STATUS, GYRO_STATUS_MIN, GYRO_STATUS_MAX, 0, 0);
 	input_set_drvdata(dev, cxt);
 
@@ -640,6 +650,7 @@ int gyro_register_data_path(struct gyro_data_path *data)
 
 	cxt = gyro_context_obj;
 	cxt->gyro_data.get_data = data->get_data;
+	cxt->gyro_data.get_temperature = data->get_temperature;
 	cxt->gyro_data.vender_div = data->vender_div;
 	cxt->gyro_data.get_raw_data = data->get_raw_data;
 	GYRO_LOG("gyro register data path vender_div: %d\n", cxt->gyro_data.vender_div);
@@ -647,6 +658,9 @@ int gyro_register_data_path(struct gyro_data_path *data)
 		GYRO_LOG("gyro register data path fail\n");
 		return -1;
 	}
+	if (cxt->gyro_data.get_temperature == NULL)
+		GYRO_LOG("gyro not register temperature path\n");
+
 	return 0;
 }
 
@@ -709,7 +723,7 @@ static int check_repeat_data(int x, int y, int z)
 	return 0;
 }
 
-int gyro_data_report(int x, int y, int z, int status, int64_t nt)
+int gyro_data_report(int x, int y, int z, int status, int64_t nt, int temperature)
 {
 	struct gyro_context *cxt = NULL;
 	int err = 0;
@@ -719,6 +733,8 @@ int gyro_data_report(int x, int y, int z, int status, int64_t nt)
 	input_report_abs(cxt->idev, EVENT_TYPE_GYRO_X, x);
 	input_report_abs(cxt->idev, EVENT_TYPE_GYRO_Y, y);
 	input_report_abs(cxt->idev, EVENT_TYPE_GYRO_Z, z);
+	if (temperature != -32768)
+		input_report_abs(cxt->idev, EVENT_TYPE_GYRO_TEMPERATURE, temperature);
 	input_report_abs(cxt->idev, EVENT_TYPE_GYRO_STATUS, status);
 	input_report_rel(cxt->idev, EVENT_TYPE_GYRO_UPDATE, 1);
 	input_report_rel(cxt->idev, EVENT_TYPE_GYRO_TIMESTAMP_HI, nt >> 32);
