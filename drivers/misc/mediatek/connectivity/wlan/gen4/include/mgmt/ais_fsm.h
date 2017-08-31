@@ -163,6 +163,8 @@ typedef enum _ENUM_AIS_REQUEST_TYPE_T {
 typedef struct _AIS_REQ_HDR_T {
 	LINK_ENTRY_T rLinkEntry;
 	ENUM_AIS_REQUEST_TYPE_T eReqType;
+	/* temp save partial scan channel info */
+	PUINT_8	pucChannelInfo;
 } AIS_REQ_HDR_T, *P_AIS_REQ_HDR_T;
 
 typedef struct _AIS_REQ_CHNL_INFO {
@@ -420,8 +422,8 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PUINT_8 pucIe, IN UINT_32 u4IeLength);
 
 VOID
-aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
-		     IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid, IN PUINT_8 pucIe, IN UINT_32 u4IeLength);
+aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid,
+		     IN PUINT_8 pucIe, IN UINT_32 u4IeLength, IN UINT_8 ucSetChannel);
 
 /*----------------------------------------------------------------------------*/
 /* Internal State Checking                                                    */

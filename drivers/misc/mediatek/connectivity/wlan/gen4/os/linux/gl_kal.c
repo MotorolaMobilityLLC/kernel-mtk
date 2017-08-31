@@ -1117,6 +1117,18 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 #endif
 
 		netif_carrier_off(prGlueInfo->prDevHandler);
+		/*Full2Partial*/
+		DBGLOG(INIT, TRACE, "Full2Partial disconenct reset value\n");
+		prGlueInfo->u4LastFullScanTime = 0;
+		prGlueInfo->ucTrScanType = 0;
+		kalMemSet(prGlueInfo->aucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+		if (prGlueInfo->pucFullScan2PartialChannel != NULL) {
+			kalMemSet(prGlueInfo->pucFullScan2PartialChannel,
+					0, sizeof(PARTIAL_SCAN_INFO));
+
+			prGlueInfo->pucFullScan2PartialChannel = NULL;
+		}
+
 		if (prGlueInfo->fgIsRegistered == TRUE) {
 			P_BSS_INFO_T prBssInfo = prGlueInfo->prAdapter->prAisBssInfo;
 			UINT_16 u2DeauthReason = 0;

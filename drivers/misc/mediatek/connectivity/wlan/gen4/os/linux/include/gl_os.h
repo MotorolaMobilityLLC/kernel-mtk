@@ -280,6 +280,9 @@ extern const INT_32 mtk_iface_combinations_sta_num;
 
 #define WAKE_LOCK_RX_TIMEOUT                            300	/* ms */
 #define WAKE_LOCK_THREAD_WAKEUP_TIMEOUT                 50	/* ms */
+/*Full2Partial*/
+#define UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT             60      /* s */
+#define FULL_SCAN_MAX_CHANNEL_NUM                       40
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -608,7 +611,20 @@ struct _GLUE_INFO_T {
 	UINT_32 IsrSoftWareCnt;
 	UINT_32 IsrTxCnt;
 	UINT_32 IsrRxCnt;
+
 	UINT_64 u8HifIntTime;
+
+	/* save partial scan channel information */
+	PARTIAL_SCAN_INFO rScanChannelInfo;
+	PUINT_8	pucScanChannel;
+
+	/* Full2Partial */
+	OS_SYSTIME u4LastFullScanTime;
+	/* full scan or partial scan */
+	UINT_8 ucTrScanType;
+	UINT_8 aucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
+	PARTIAL_SCAN_INFO rFullScanApChannel;
+	PUINT_8 pucFullScan2PartialChannel;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);
