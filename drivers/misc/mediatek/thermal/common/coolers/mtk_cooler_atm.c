@@ -2524,7 +2524,8 @@ static int atm_loop(void)
 #endif
 #endif
 
-	wake_up_process(krtatm_thread_handle);
+	if (krtatm_thread_handle != NULL)
+		wake_up_process(krtatm_thread_handle);
 
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT

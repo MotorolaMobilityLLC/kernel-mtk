@@ -465,7 +465,7 @@ static int adp_calc_fps_limit(void)
 		if (fps_limit - sma_fps > fps_limit * (fps_error_threshold + fps_target_bias) / 100) {
 			/* TODO: TBD: is "sma_fpa < 40" still necessary? */
 #ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
-			if (is_system_too_busy()) {
+			if (is_system_too_busy() && (!is_cpu_power_unlimit())) {
 				sma_fps = sma_fps + fps_limit * fps_target_bias / 100;
 #else
 			if (sma_fps < 40 && is_system_too_busy()) {
