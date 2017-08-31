@@ -249,7 +249,7 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 	int ret = 0;
 	struct st21nfc_dev *st21nfc_dev = NULL;
 
-	if (enable_debug_log) {
+	if (enable_debug_log)
 		pr_info("%s:%d dev_open", __FILE__, __LINE__);
 
 	if (device_open) {
