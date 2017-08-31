@@ -123,6 +123,7 @@ static GED_LOG_BUF* ged_log_buf_from_handle(GED_LOG_BUF_HANDLE hLogBuf)
 
 static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt, va_list args, int attrs)
 {
+	GED_LOG_BUF_LINE *curline;
 	int buf_n;
 	int len;
 
@@ -173,15 +174,17 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 		}
 	}
 
-	psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].offset = psGEDLogBuf->i32BufferCurrent;
-	psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].tattrs = 0;
-	psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].time = 0;
+	curline = &psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent];
+
+	curline->offset = psGEDLogBuf->i32BufferCurrent;
+	curline->tattrs = 0;
+	curline->time = 0;
 
 	/* record the kernel time */
 	if (attrs & GED_LOG_ATTR_TIME)
 	{
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].tattrs = GED_LOG_ATTR_TIME;
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].time = ged_get_time();
+		curline->tattrs = GED_LOG_ATTR_TIME;
+		curline->time = ged_get_time();
 	}
 
 	/* record the user time */
@@ -193,15 +196,21 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 		do_gettimeofday(&time);
 		local_time = (u32)(time.tv_sec - (sys_tz.tz_minuteswest * 60));
 
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].tattrs = GED_LOG_ATTR_TIME_TPT;
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].time = local_time;
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].time_usec = time.tv_usec;
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].pid = current->tgid;
-		psGEDLogBuf->psLine[psGEDLogBuf->i32LineCurrent].tid = current->pid;
+		curline->tattrs = GED_LOG_ATTR_TIME_TPT;
+		curline->time = local_time;
+		curline->time_usec = time.tv_usec;
+		curline->pid = current->tgid;
+		curline->tid = current->pid;
 	}
 
 	buf_n = psGEDLogBuf->i32BufferSize - psGEDLogBuf->i32BufferCurrent;
 	len = vsnprintf(psGEDLogBuf->pcBuffer + psGEDLogBuf->i32BufferCurrent, buf_n, fmt, args);
+
+	/* if 'len' >= 'buf_n', the resulting string is truncated.
+	 * let 'len' be a safe number
+	 */
+	if (len > buf_n)
+		len = buf_n;
 
 	if (psGEDLogBuf->pcBuffer[psGEDLogBuf->i32BufferCurrent + len - 1] == '\n')
 	{
@@ -209,8 +218,6 @@ static GED_ERROR __ged_log_buf_vprint(GED_LOG_BUF *psGEDLogBuf, const char *fmt,
 		psGEDLogBuf->pcBuffer[psGEDLogBuf->i32BufferCurrent + len - 1] = 0;
 		len -= 1;
 	}
-
-	if (len > buf_n) len = buf_n;
 
 	buf_n -= len;
 
