@@ -581,6 +581,8 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 {
 	int ret = 0;
 	unsigned int session_id = 0;
+	int i = 0;
+	int layer_id = 0;
 	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
 	struct dprec_logger_event *input_event, *output_event, *trigger_event;
 
@@ -595,6 +597,17 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	}
 
 	_ovl2mem_path_lock(__func__);
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		layer_id = cfg->input_cfg[i].layer_id;
+#ifdef MTK_FB_ION_SUPPORT
+		mtkfb_update_buf_ticket(session_id, layer_id, cfg->input_cfg[i].next_buff_idx,
+					get_ovl2mem_ticket());
+#endif
+	}
+
+	mtkfb_update_buf_ticket(session_id, disp_sync_get_output_timeline_id(),
+					cfg->output_cfg.buff_idx, get_ovl2mem_ticket());
 
 	if (pgc->state == 0) {
 		DISPERR("ovl2mem is already slept\n");
@@ -619,7 +632,7 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
 		dprec_start(trigger_event, proc_name, 0);
 	}
-	DISPPR_FENCE("T+/M%d\n", DISP_SESSION_DEV(session_id));
+	DISPPR_FENCE("T+/M%d /t%d\n", DISP_SESSION_DEV(session_id), get_ovl2mem_ticket());
 	ovl2mem_trigger(1, NULL, 0);
 
 	dprec_done(trigger_event, 0, 0);
