@@ -18,7 +18,7 @@
 #define DIFFERENCE_FULLOCV_ITH	150	/* mA */
 #define SHUTDOWN_1_TIME	60
 #define SHUTDOWN_GAUGE1_XMINS 1
-#define KEEP_100_PERCENT 3
+#define KEEP_100_PERCENT 5
 #define R_FG_VALUE	10				/* mOhm */
 #define POWERON_SYSTEM_IBOOT 1000	/* mA */
 #define EMBEDDED_SEL 0
@@ -53,9 +53,13 @@
 #define FG_PRE_TRACKING_EN 0
 #define VBAT2_DET_TIME 5
 #define VBAT2_DET_COUNTER 6
-#define VBAT2_DET_VOLTAGE 32000 /* 0.1mV */
+#define VBAT2_DET_VOLTAGE1	34500
+#define VBAT2_DET_VOLTAGE2	32000
+#define VBAT2_DET_VOLTAGE3	35000
 
 /* PCB setting */
+#define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL
+#define CALI_CAR_TUNE_AVG_NUM	60
 #define CAR_TUNE_VALUE	100 /*1.00 */
 #define FG_METER_RESISTANCE	50
 #define MTK_CHR_EXIST 1
@@ -81,7 +85,7 @@
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
-#define BAT_PLUG_OUT_TIME	5
+#define BAT_PLUG_OUT_TIME	30
 #define EXT_HWOCV_SWOCV		300
 
 /* fgc & fgv threshold */
@@ -124,5 +128,11 @@
 #define UNIT_FGCAR_ZCV     (190735)     /* unit 2^0 LSB */
 #define UNIT_FG_IAVG		(190735)
 #define CAR_TO_REG_FACTOR  (0x49BD)
+
+/* extern function */
+extern int get_rac(void);
+extern void get_ptim(unsigned int*, signed int*);
+extern int do_ptim(bool);
+
 
 #endif
