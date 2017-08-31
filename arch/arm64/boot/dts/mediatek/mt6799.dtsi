@@ -3980,6 +3980,8 @@
 		interrupts = <GIC_SPI 356 IRQ_TYPE_LEVEL_LOW>;
 		ccu_dmem_base = <0x18080000>;
 		ccu_dmem_size = <0x8000>;
+		clocks = <&camsys CLK_CAM_CCU>;
+		clock-names = "CCU_CLK_CAM_CCU";
 	};
 
 	alc@60000000 {

@@ -722,7 +722,8 @@ int ccu_power(ccu_power_t *power)
 		/*ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);*/
 
 		/*1. Enable CCU CAMSYS_CG_CON bit12 CCU_CGPDN=0*/
-		CCU_CLR_BIT(camsys_base, 12);
+		ccu_clock_enable();
+
 		LOG_DBG("CG released\n");
 		/*mdelay(1);*/
 		/**/
@@ -754,8 +755,8 @@ int ccu_power(ccu_power_t *power)
 
 		/*Set CCU_A_RESET. CCU_HW_RST=1*/
 		ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);
-		/*CG*/
-		CCU_SET_BIT(camsys_base, 12);
+		/*CCF*/
+		ccu_clock_disable();
 
 		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
