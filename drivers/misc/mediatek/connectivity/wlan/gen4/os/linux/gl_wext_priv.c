@@ -5982,9 +5982,10 @@ static int priv_driver_get_version(IN struct net_device *prNetDev, IN char *pcCo
 		aucBuf, prTailer->ram_built_date, prTailer->chip_info,
 		prTailer->eco_code + 1);
 #endif
+
 	if (!prVerInfo->fgPatchIsDlByDrv) {
 		u4Offset += snprintf(pcCommand + u4Offset, i4TotalLen - u4Offset,
-			"Patch is not downloaded by driver, read patch binary\n");
+			"MCU patch is not downloaded by wlan driver, read patch info\n");
 		wlanGetPatchInfo(prAdapter);
 	}
 

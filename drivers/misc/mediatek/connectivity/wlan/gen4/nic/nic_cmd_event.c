@@ -2185,7 +2185,7 @@ VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 				prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx] =
 					prEvent->rLteSafeChn.au4SafeChannelBitmask[ucIdx];
 
-				DBGLOG(P2P, INFO,
+				DBGLOG(P2P, TRACE,
 				       "[ACS]LTE safe channels[%d]=0x%08x\n", ucIdx,
 				       prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
 			}

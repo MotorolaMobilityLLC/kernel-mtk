@@ -257,7 +257,7 @@ VOID scnFreeAllPendingScanRquests(IN P_ADAPTER_T prAdapter)
 		if (prMsgHdr) {
 			prScanReqMsg = (P_MSG_SCN_SCAN_REQ) prMsgHdr;
 			DBGLOG(SCN, INFO,
-			       "free scan request eMsgId[%d] ucSeqNum [%d] BSSID[%d]!!\n", prMsgHdr->eMsgId,
+			       "Free scan request eMsgId[%d] ucSeqNum [%d] BSSID[%d]!!\n", prMsgHdr->eMsgId,
 			       prScanReqMsg->ucSeqNum, prScanReqMsg->ucBssIndex);
 			cnmMemFree(prAdapter, prMsgHdr);
 		} else {
@@ -266,8 +266,6 @@ VOID scnFreeAllPendingScanRquests(IN P_ADAPTER_T prAdapter)
 		}
 		/* switch to next state */
 	}
-
-	DBGLOG(SCN, INFO, "%s()\n", __func__);
 }
 
 /*----------------------------------------------------------------------------*/
