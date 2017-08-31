@@ -26,9 +26,29 @@
 #include <mtk_vcorefs_manager.h>
 
 #include <mtk_spm_vcore_dvfs.h>
+#if !defined(CONFIG_MACH_MT6758) /* TODO: 6758 EP */
 #include <mtk_dramc.h>
+#endif
 #include <mtk_eem.h>
 #include "mmdvfs_mgr.h"
+
+#if defined(CONFIG_MACH_MT6758) /* TODO: 6758 EP */
+__weak int get_ddr_type(void)
+{
+	return 0;
+}
+
+__weak unsigned int get_dram_data_rate(void)
+{
+	return 0;
+}
+
+__weak int dram_steps_freq(unsigned int step)
+{
+	return 0;
+}
+
+#endif
 
 __weak int emmc_autok(void)
 {
@@ -148,7 +168,7 @@ void vcorefs_update_opp_table(void)
 bool is_vcorefs_feature_enable(void)
 {
 #if 1
-#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)  /* TODO: 6759 EP */
 	if (!dram_can_support_fh()) {
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
