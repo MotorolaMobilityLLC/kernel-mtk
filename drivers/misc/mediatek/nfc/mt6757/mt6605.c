@@ -844,6 +844,10 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		forceExitBlockingRead = 1;
 		mutex_unlock(&mt6605_dev->read_mutex);
 
+		mt_nfc_pinctrl_select(gpctrl, st_ven_h);
+		mt_nfc_pinctrl_select(gpctrl, st_rst_l);
+		mt6605_disable_irq(nfc_irq);
+
 		wake_up_interruptible(&mt6605_dev->read_wq);
 		pr_debug("mt6605_dev_unlocked_ioctl,SW Release IRQ.\n");
 		return 0;
