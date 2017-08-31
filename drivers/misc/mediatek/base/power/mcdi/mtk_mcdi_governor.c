@@ -310,6 +310,11 @@ bool mcdi_controller_token_get(int cpu)
 
 	for (cnt = 0; cnt < NF_CHECK_MCDI_CONTROLLER_TOKEN; cnt++) {
 
+		if (is_cpu_pwr_on_event_pending()) {
+			token_get = false;
+			break;
+		}
+
 		if (mcdi_cpu_cluster_on_off_stat_check(cpu)) {
 			token_get = true;
 			break;
