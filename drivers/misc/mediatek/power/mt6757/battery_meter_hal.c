@@ -1198,7 +1198,7 @@ static signed int read_battery_plug_out_status(void *data)
 
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
-signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
+signed int bm_ctrl_cmd(enum BATTERY_METER_CTRL_CMD cmd, void *data)
 {
 	signed int status = STATUS_UNSUPPORTED;
 	static signed int init = -1;
