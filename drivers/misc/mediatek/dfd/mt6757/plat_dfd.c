@@ -11,9 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <mt-plat/mt_chip.h>
-
 unsigned int check_dfd_support(void)
 {
-	return (mt_get_chip_sw_ver() >= CHIP_SW_VER_02) ? 1 : 0;
+	return 0;
 }
