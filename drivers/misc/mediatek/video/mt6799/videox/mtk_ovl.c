@@ -324,12 +324,14 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
-	if (ret) {
-		DISPERR("disp_cmdq_create FAIL, ret=%d\n", ret);
-		goto Exit;
+	if (pgc->cmdq_handle_config == NULL) {
+		ret = disp_cmdq_create(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
+		if (ret) {
+			DISPERR("disp_cmdq_create FAIL, ret=%d\n", ret);
+			goto Exit;
+		}
+		DISPDBG("disp_cmdq_create SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
 	}
-	DISPDBG("disp_cmdq_create SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
 	disp_cmdq_reset(pgc->cmdq_handle_config);
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);

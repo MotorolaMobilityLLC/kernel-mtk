@@ -1167,10 +1167,12 @@ static void _cmdq_build_trigger_loop(void)
 {
 	int ret = 0;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
-	if (ret) {
-		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-		ASSERT(0);
+	if (pgc->cmdq_handle_trigger == NULL) {
+		ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
+		if (ret) {
+			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+			ASSERT(0);
+		}
 	}
 	DISPMSG("primary path trigger thread cmd handle=%p\n", pgc->cmdq_handle_trigger);
 
@@ -3833,21 +3835,25 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			goto done;
 		}
 
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config));
-		if (ret) {
-			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-			ret = DISP_STATUS_ERROR;
-			ASSERT(0);
+		if (pgc->cmdq_handle_config == NULL) {
+			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config));
+			if (ret) {
+				DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+				ret = DISP_STATUS_ERROR;
+				ASSERT(0);
+			}
+			DISPDBG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
 		}
-		DISPDBG("disp_cmdq_create SUCCESS, g_cmdq_handle=%p\n", pgc->cmdq_handle_config);
 		disp_cmdq_reset(pgc->cmdq_handle_config);
 
 		/* create ovl2mem path cmdq handle */
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
-		if (ret) {
-			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-			ret = DISP_STATUS_ERROR;
-			ASSERT(0);
+		if (pgc->cmdq_handle_ovl1to2_config == NULL) {
+			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
+			if (ret) {
+				DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
+				ret = DISP_STATUS_ERROR;
+				ASSERT(0);
+			}
 		}
 		disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	} else {
