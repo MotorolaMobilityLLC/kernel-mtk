@@ -1412,7 +1412,6 @@ int ext_disp_deinit(unsigned int session)
 int ext_disp_wait_for_vsync(void *config, unsigned int session)
 {
 	int ret = 0;
-	unsigned long long ts = 0ULL;
 	struct disp_session_vsync_config *c = (struct disp_session_vsync_config *) config;
 
 	/*EXT_DISP_FUNC();*/
@@ -1429,10 +1428,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 
 	_ext_disp_vsync_lock(session);
 
-	if ((DISP_SESSION_DEV(session) == DEV_LCM) && (!disp_lcm_is_video_mode(pgc->plcm)))
-		ret = dpmgr_wait_event_ts(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, &ts);
-	else
-		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ / 10);
+	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, HZ / 10);
 
 	if (ret == -2) {
 		EXT_DISP_LOG("vsync for ext display path not enabled yet\n");
@@ -1440,10 +1436,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 		return -1;
 	}
 	/*EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");*/
-	if ((DISP_SESSION_DEV(session) == DEV_LCM) && (!disp_lcm_is_video_mode(pgc->plcm)))
-		c->vsync_ts = ts;
-	else
-		c->vsync_ts = get_current_time_us();
+	c->vsync_ts = get_current_time_us();
 	c->vsync_cnt++;
 
 	_ext_disp_vsync_unlock(session);
