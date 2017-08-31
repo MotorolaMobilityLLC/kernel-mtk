@@ -74,7 +74,7 @@ int init_cg_monitor(void)
 	mt_set_emi_bw1_axi_port(cg_port);
 	mt_set_emi_bw1_intr_period(cg_period);
 	mt_set_emi_bw1_intr_status(cg_intr);
-	/*mt_set_emi_bw1_enable(cg_enable);*/
+	mt_set_emi_bw1_enable(cg_enable);
 #endif
 
 	return 0;
@@ -89,7 +89,7 @@ int init_total_monitor(void)
 
 	mt_set_emi_total_bw_intr_period(total_period);
 	mt_set_emi_total_bw_intr_status(total_intr);
-	/*mt_set_emi_total_bw_enable(total_enable);*/
+	mt_set_emi_total_bw_enable(total_enable);
 #endif
 	return 0;
 }
