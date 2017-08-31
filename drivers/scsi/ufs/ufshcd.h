@@ -585,11 +585,18 @@ struct ufs_hba {
 	bool is_sys_suspended;
 
 	/* MTK PATCH */
-	u32 manu_id;                          /* record vendor id for vendor-specific configurations */
-	u32 dev_quirks;                       /* device quirks */
+
+	/* record vendor id for vendor-specific configurations */
+	u32 manu_id;
+
+	/* device quirks */
+	u32 dev_quirks;
+
 	struct device_attribute rpm_info_attr;
 	struct device_attribute spm_info_attr;
 
+	/* hwfde key index */
+	int hwfde_key_idx;
 
 	int			latency_hist_enabled;
 	struct io_latency_state io_lat_s;
