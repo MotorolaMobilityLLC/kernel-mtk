@@ -19,31 +19,18 @@
 
 #include "autok_dvfs.h"
 #include "mtk_sd.h"
+#include <mmc/core/sdio_ops.h>
 
-#define SDIO_AUTOK_HIGH_RES_PATH    "/data/sdio_autok_high"
-#define SDIO_AUTOK_LOW_RES_PATH     "/data/sdio_autok_low"
+
+#define SDIO_AUTOK_0_RES_PATH    "/data/sdio_autok_0"
+#define SDIO_AUTOK_1_RES_PATH    "/data/sdio_autok_1"
+#define SDIO_AUTOK_2_RES_PATH    "/data/sdio_autok_2"
+#define SDIO_AUTOK_3_RES_PATH    "/data/sdio_autok_3"
 
 #define SDIO_AUTOK_DIFF_MARGIN      3
 
-#define SDIO_ABACKUP_REG_COUNT      10
-static u32 sdio_reg_backup[2][SDIO_ABACKUP_REG_COUNT];
-
-#if 0
-/* maybe move it to msdc_cust.c */
-static u32 get_current_vcore(void)
-{
-	u32 ldo_vol, vcore_mv;
-
-	pmic_read_interface(REG_VCORE_VOSEL_SW, &ldo_vol,
-			VCORE_VOSEL_SW_MASK, 0);
-	/* pmic_read_interface(REG_VCORE_VOSEL_SW, &ldo_vol,
-	 *	VCORE_VOSEL_HW_MASK, 0);
-	*/
-
-	/* return ldo_vol; */
-	return 1000000;
-}
-#endif
+#define SDIO_BACKUP_REG_COUNT      18
+static u32 sdio_reg_backup[AUTOK_VCORE_NUM][SDIO_BACKUP_REG_COUNT];
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -98,16 +85,30 @@ int sdio_autok_res_exist(struct msdc_host *host)
 {
 	struct file *filp = NULL;
 
-	filp = msdc_file_open(SDIO_AUTOK_LOW_RES_PATH, O_RDONLY, 0644);
+	filp = msdc_file_open(SDIO_AUTOK_0_RES_PATH, O_RDONLY, 0644);
 	if (filp == NULL) {
-		pr_err("autok result open fail\n");
+		pr_err("autok result not exist\n");
 		return 0;
 	}
 	filp_close(filp, NULL);
 
-	filp = msdc_file_open(SDIO_AUTOK_HIGH_RES_PATH, O_RDONLY, 0644);
+	filp = msdc_file_open(SDIO_AUTOK_1_RES_PATH, O_RDONLY, 0644);
 	if (filp == NULL) {
-		pr_err("autok result open fail\n");
+		pr_err("autok result not exist\n");
+		return 0;
+	}
+	filp_close(filp, NULL);
+
+	filp = msdc_file_open(SDIO_AUTOK_2_RES_PATH, O_RDONLY, 0644);
+	if (filp == NULL) {
+		pr_err("autok result not exist\n");
+		return 0;
+	}
+	filp_close(filp, NULL);
+
+	filp = msdc_file_open(SDIO_AUTOK_3_RES_PATH, O_RDONLY, 0644);
+	if (filp == NULL) {
+		pr_err("autok result not exist\n");
 		return 0;
 	}
 	filp_close(filp, NULL);
@@ -123,12 +124,18 @@ int sdio_autok_res_apply(struct msdc_host *host, int vcore)
 	int ret = -1;
 	int i;
 
-	if (vcore <= AUTOK_VCORE_LOW) {
-		res = host->autok_res[AUTOK_VCORE_LOW];
-		filp = msdc_file_open(SDIO_AUTOK_LOW_RES_PATH, O_RDONLY, 0644);
-	} else {
-		res = host->autok_res[AUTOK_VCORE_HIGH];
-		filp = msdc_file_open(SDIO_AUTOK_HIGH_RES_PATH, O_RDONLY, 0644);
+	if (vcore <= AUTOK_VCORE_LEVEL0) {
+		res = host->autok_res[AUTOK_VCORE_LEVEL0];
+		filp = msdc_file_open(SDIO_AUTOK_0_RES_PATH, O_RDONLY, 0644);
+	} else if (vcore == AUTOK_VCORE_LEVEL1) {
+		res = host->autok_res[AUTOK_VCORE_LEVEL1];
+		filp = msdc_file_open(SDIO_AUTOK_1_RES_PATH, O_RDONLY, 0644);
+	} else if (vcore == AUTOK_VCORE_LEVEL2) {
+		res = host->autok_res[AUTOK_VCORE_LEVEL2];
+		filp = msdc_file_open(SDIO_AUTOK_2_RES_PATH, O_RDONLY, 0644);
+	} else if (vcore >= AUTOK_VCORE_LEVEL3) {
+		res = host->autok_res[AUTOK_VCORE_LEVEL3];
+		filp = msdc_file_open(SDIO_AUTOK_3_RES_PATH, O_RDONLY, 0644);
 	}
 
 	if (filp == NULL) {
@@ -159,12 +166,18 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 	if (res == NULL)
 		return ret;
 
-	if (vcore <= AUTOK_VCORE_LOW) {
-		memcpy((void *)host->autok_res[AUTOK_VCORE_LOW], (const void *)res, TUNING_PARAM_COUNT);
-		filp = msdc_file_open(SDIO_AUTOK_LOW_RES_PATH, O_CREAT | O_WRONLY, 0644);
-	} else {
-		memcpy((void *)host->autok_res[AUTOK_VCORE_HIGH], (const void *)res, TUNING_PARAM_COUNT);
-		filp = msdc_file_open(SDIO_AUTOK_HIGH_RES_PATH, O_CREAT | O_WRONLY, 0644);
+	if (vcore <= AUTOK_VCORE_LEVEL0) {
+		memcpy((void *)host->autok_res[AUTOK_VCORE_LEVEL0], (const void *)res, TUNING_PARAM_COUNT);
+		filp = msdc_file_open(SDIO_AUTOK_0_RES_PATH, O_CREAT | O_WRONLY, 0644);
+	} else if (vcore == AUTOK_VCORE_LEVEL1) {
+		memcpy((void *)host->autok_res[AUTOK_VCORE_LEVEL1], (const void *)res, TUNING_PARAM_COUNT);
+		filp = msdc_file_open(SDIO_AUTOK_1_RES_PATH, O_CREAT | O_WRONLY, 0644);
+	} else if (vcore == AUTOK_VCORE_LEVEL2) {
+		memcpy((void *)host->autok_res[AUTOK_VCORE_LEVEL2], (const void *)res, TUNING_PARAM_COUNT);
+		filp = msdc_file_open(SDIO_AUTOK_2_RES_PATH, O_CREAT | O_WRONLY, 0644);
+	} else if (vcore >= AUTOK_VCORE_LEVEL3) {
+		memcpy((void *)host->autok_res[AUTOK_VCORE_LEVEL3], (const void *)res, TUNING_PARAM_COUNT);
+		filp = msdc_file_open(SDIO_AUTOK_3_RES_PATH, O_CREAT | O_WRONLY, 0644);
 	}
 
 	if (filp == NULL) {
@@ -214,30 +227,15 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 void sdio_dvfs_reg_restore(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
+	void __iomem *addr;
+	int i, j;
 
-	/* High Vcore */
-	MSDC_WRITE32(MSDC_IOCON_1,      sdio_reg_backup[0][0]);
-	MSDC_WRITE32(MSDC_PATCH_BIT0_1, sdio_reg_backup[0][1]);
-	MSDC_WRITE32(MSDC_PATCH_BIT1_1, sdio_reg_backup[0][2]);
-	MSDC_WRITE32(MSDC_PATCH_BIT2_1, sdio_reg_backup[0][3]);
-	MSDC_WRITE32(MSDC_PAD_TUNE0_1,  sdio_reg_backup[0][4]);
-	MSDC_WRITE32(MSDC_PAD_TUNE1_1,  sdio_reg_backup[0][5]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY0_1, sdio_reg_backup[0][6]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY1_1, sdio_reg_backup[0][7]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY2_1, sdio_reg_backup[0][8]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY3_1, sdio_reg_backup[0][9]);
-
-	/* Low Vcore */
-	MSDC_WRITE32(MSDC_IOCON_2,      sdio_reg_backup[1][0]);
-	MSDC_WRITE32(MSDC_PATCH_BIT0_2, sdio_reg_backup[1][1]);
-	MSDC_WRITE32(MSDC_PATCH_BIT1_2, sdio_reg_backup[1][2]);
-	MSDC_WRITE32(MSDC_PATCH_BIT2_2, sdio_reg_backup[1][3]);
-	MSDC_WRITE32(MSDC_PAD_TUNE0_2,  sdio_reg_backup[1][4]);
-	MSDC_WRITE32(MSDC_PAD_TUNE1_2,  sdio_reg_backup[1][5]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY0_2, sdio_reg_backup[1][6]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY1_2, sdio_reg_backup[1][7]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY2_2, sdio_reg_backup[1][8]);
-	MSDC_WRITE32(MSDC_DAT_RDDLY3_2, sdio_reg_backup[1][9]);
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		for (j = 0; j < SDIO_BACKUP_REG_COUNT; i++) {
+			addr = base + OFFSET_MSDC_IOCON_1 + (0x48 * i) + (4 * j);
+			MSDC_WRITE32(addr, sdio_reg_backup[i][j]);
+		}
+	}
 
 	/* Enable HW DVFS */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
@@ -247,67 +245,44 @@ void sdio_dvfs_reg_restore(struct msdc_host *host)
 static void sdio_dvfs_reg_backup(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
+	void __iomem *addr;
+	int i, j;
 
-	/* High Vcore */
-	sdio_reg_backup[0][0] = MSDC_READ32(MSDC_IOCON_1);
-	sdio_reg_backup[0][1] = MSDC_READ32(MSDC_PATCH_BIT0_1);
-	sdio_reg_backup[0][2] = MSDC_READ32(MSDC_PATCH_BIT1_1);
-	sdio_reg_backup[0][3] = MSDC_READ32(MSDC_PATCH_BIT2_1);
-	sdio_reg_backup[0][4] = MSDC_READ32(MSDC_PAD_TUNE0_1);
-	sdio_reg_backup[0][5] = MSDC_READ32(MSDC_PAD_TUNE1_1);
-	sdio_reg_backup[0][6] = MSDC_READ32(MSDC_DAT_RDDLY0_1);
-	sdio_reg_backup[0][7] = MSDC_READ32(MSDC_DAT_RDDLY1_1);
-	sdio_reg_backup[0][8] = MSDC_READ32(MSDC_DAT_RDDLY2_1);
-	sdio_reg_backup[0][9] = MSDC_READ32(MSDC_DAT_RDDLY3_1);
-
-	/* Low Vcore */
-	sdio_reg_backup[1][0] = MSDC_READ32(MSDC_IOCON_2);
-	sdio_reg_backup[1][1] = MSDC_READ32(MSDC_PATCH_BIT0_2);
-	sdio_reg_backup[1][2] = MSDC_READ32(MSDC_PATCH_BIT1_2);
-	sdio_reg_backup[1][3] = MSDC_READ32(MSDC_PATCH_BIT2_2);
-	sdio_reg_backup[1][4] = MSDC_READ32(MSDC_PAD_TUNE0_2);
-	sdio_reg_backup[1][5] = MSDC_READ32(MSDC_PAD_TUNE1_2);
-	sdio_reg_backup[1][6] = MSDC_READ32(MSDC_DAT_RDDLY0_2);
-	sdio_reg_backup[1][7] = MSDC_READ32(MSDC_DAT_RDDLY1_2);
-	sdio_reg_backup[1][8] = MSDC_READ32(MSDC_DAT_RDDLY2_2);
-	sdio_reg_backup[1][9] = MSDC_READ32(MSDC_DAT_RDDLY3_2);
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		for (j = 0; j < SDIO_BACKUP_REG_COUNT; i++) {
+			addr = base + OFFSET_MSDC_IOCON_1 + (0x48 * i) + (4 * j);
+			sdio_reg_backup[i][j] = MSDC_READ32(addr);
+		}
+	}
 }
 
-void sdio_set_hw_dvfs(int vcore, int done, struct msdc_host *host)
+static void sdio_set_hw_dvfs(int vcore, struct msdc_host *host)
 {
 	void __iomem *base = host->base;
+	void __iomem *addr;
+	int i;
 
-	if (vcore >= AUTOK_VCORE_HIGH) {
-		MSDC_WRITE32(MSDC_IOCON_1,      MSDC_READ32(MSDC_IOCON));
-		MSDC_WRITE32(MSDC_PATCH_BIT0_1, MSDC_READ32(MSDC_PATCH_BIT0));
-		MSDC_WRITE32(MSDC_PATCH_BIT1_1, MSDC_READ32(MSDC_PATCH_BIT1));
-		MSDC_WRITE32(MSDC_PATCH_BIT2_1, MSDC_READ32(MSDC_PATCH_BIT2));
-		MSDC_WRITE32(MSDC_PAD_TUNE0_1,  MSDC_READ32(MSDC_PAD_TUNE0));
-		MSDC_WRITE32(MSDC_PAD_TUNE1_1,  MSDC_READ32(MSDC_PAD_TUNE1));
-		MSDC_WRITE32(MSDC_DAT_RDDLY0_1, MSDC_READ32(MSDC_DAT_RDDLY0));
-		MSDC_WRITE32(MSDC_DAT_RDDLY1_1, MSDC_READ32(MSDC_DAT_RDDLY1));
-		MSDC_WRITE32(MSDC_DAT_RDDLY2_1, MSDC_READ32(MSDC_DAT_RDDLY2));
-		MSDC_WRITE32(MSDC_DAT_RDDLY3_1, MSDC_READ32(MSDC_DAT_RDDLY3));
-	} else {
-		MSDC_WRITE32(MSDC_IOCON_2,      MSDC_READ32(MSDC_IOCON));
-		MSDC_WRITE32(MSDC_PATCH_BIT0_2, MSDC_READ32(MSDC_PATCH_BIT0));
-		MSDC_WRITE32(MSDC_PATCH_BIT1_2, MSDC_READ32(MSDC_PATCH_BIT1));
-		MSDC_WRITE32(MSDC_PATCH_BIT2_2, MSDC_READ32(MSDC_PATCH_BIT2));
-		MSDC_WRITE32(MSDC_PAD_TUNE0_2,  MSDC_READ32(MSDC_PAD_TUNE0));
-		MSDC_WRITE32(MSDC_PAD_TUNE1_2,  MSDC_READ32(MSDC_PAD_TUNE1));
-		MSDC_WRITE32(MSDC_DAT_RDDLY0_2, MSDC_READ32(MSDC_DAT_RDDLY0));
-		MSDC_WRITE32(MSDC_DAT_RDDLY1_2, MSDC_READ32(MSDC_DAT_RDDLY1));
-		MSDC_WRITE32(MSDC_DAT_RDDLY2_2, MSDC_READ32(MSDC_DAT_RDDLY2));
-		MSDC_WRITE32(MSDC_DAT_RDDLY3_2, MSDC_READ32(MSDC_DAT_RDDLY3));
-	}
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		addr = base + OFFSET_MSDC_IOCON_1 + (0x48 * i);
 
-	if (done) {
-		/* Enable HW DVFS */
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
-
-		/* Backup the register, restore when resume */
-		sdio_dvfs_reg_backup(host);
+		MSDC_WRITE32((addr + 0x00), MSDC_READ32(MSDC_IOCON));
+		MSDC_WRITE32((addr + 0x04), MSDC_READ32(MSDC_PATCH_BIT0));
+		MSDC_WRITE32((addr + 0x08), MSDC_READ32(MSDC_PATCH_BIT1));
+		MSDC_WRITE32((addr + 0x0C), MSDC_READ32(MSDC_PATCH_BIT2));
+		MSDC_WRITE32((addr + 0x10), MSDC_READ32(MSDC_PAD_TUNE0));
+		MSDC_WRITE32((addr + 0x14), MSDC_READ32(MSDC_PAD_TUNE1));
+		MSDC_WRITE32((addr + 0x18), MSDC_READ32(MSDC_DAT_RDDLY0));
+		MSDC_WRITE32((addr + 0x1C), MSDC_READ32(MSDC_DAT_RDDLY1));
+		MSDC_WRITE32((addr + 0x20), MSDC_READ32(MSDC_DAT_RDDLY2));
+		MSDC_WRITE32((addr + 0x24), MSDC_READ32(MSDC_DAT_RDDLY3));
+		MSDC_WRITE32((addr + 0x28), MSDC_READ32(EMMC50_PAD_DS_TUNE));
+		MSDC_WRITE32((addr + 0x2C), MSDC_READ32(EMMC50_PAD_CMD_TUNE));
+		MSDC_WRITE32((addr + 0x30), MSDC_READ32(EMMC50_PAD_DAT01_TUNE));
+		MSDC_WRITE32((addr + 0x34), MSDC_READ32(EMMC50_PAD_DAT23_TUNE));
+		MSDC_WRITE32((addr + 0x38), MSDC_READ32(EMMC50_PAD_DAT45_TUNE));
+		MSDC_WRITE32((addr + 0x3C), MSDC_READ32(EMMC50_PAD_DAT67_TUNE));
+		MSDC_WRITE32((addr + 0x40), MSDC_READ32(EMMC50_CFG0));
+		MSDC_WRITE32((addr + 0x44), MSDC_READ32(EMMC50_CFG1));
 	}
 }
 
@@ -323,7 +298,6 @@ void sdio_autok_wait_dvfs_ready(void)
 {
 	int dvfs;
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	dvfs = is_vcorefs_can_work();
 
 	/* DVFS not ready, just wait */
@@ -332,9 +306,6 @@ void sdio_autok_wait_dvfs_ready(void)
 		msleep(100);
 		dvfs = is_vcorefs_can_work();
 	}
-#else   /* FIX ME: temp for build pass, remove it later */
-	dvfs = -1;
-#endif
 
 	if (dvfs == -1)
 		pr_err("DVFS feature not enable\n");
@@ -347,21 +318,17 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
 
-	msdc_pmic_force_vcore_pwm(true);
-
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
 		if (host->is_autok_done == 0) {
 			pr_err("[AUTOK]SDcard autok\n");
-			ret = autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
+			ret = autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
 			host->is_autok_done = 1;
 		} else {
 			autok_init_sdr104(host);
-			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
 		}
 	}
-
-	msdc_pmic_force_vcore_pwm(false);
 
 	return ret;
 }
@@ -369,8 +336,6 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 {
 	int ret = 0;
-
-	msdc_pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
@@ -390,25 +355,21 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 		}
 	}
 
-	msdc_pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
-
 	return ret;
 }
 
-void sdio_execute_dvfs_autok(struct msdc_host *host)
+static void sdio_execute_dvfs_autok_sdr104(struct msdc_host *host)
 {
+	void __iomem *base = host->base;
 	int sdio_res_exist = 0;
-
-	msdc_pmic_force_vcore_pwm(true);
+	int vcore;
+	int i;
 
 	if (host->is_autok_done) {
 		autok_init_sdr104(host);
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 		/* Check which vcore setting to apply */
-		if (vcorefs_get_hw_opp() == OPPI_PERF)
-			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
-		else
-			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LOW]);
+		vcore = vcorefs_get_hw_opp();
+		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		if (host->use_hw_dvfs == 0) {
 			pr_err("[AUTOK] No need change para when dvfs\n");
@@ -420,7 +381,6 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 			/* Enable DVFS handshake */
 			spm_msdc_dvfs_setting(MSDC3_DVFS, 1);
 		}
-#endif
 		return;
 	}
 	/* HQA need read autok setting from file */
@@ -430,57 +390,122 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Performance mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_PERF) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
-	if (sdio_res_exist)
-		sdio_autok_res_apply(host, AUTOK_VCORE_HIGH);
-	else
-		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, i) != 0)
+			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
 
-	sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+		if (sdio_res_exist)
+			sdio_autok_res_apply(host, i);
+		else
+			autok_execute_tuning(host, host->autok_res[i]);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Low power mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_LOW_PWR fail!\n");
-#endif
-	if (sdio_res_exist)
-		sdio_autok_res_apply(host, AUTOK_VCORE_LOW);
-	else
-		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_LOW]);
+		sdio_set_hw_dvfs(i, host);
+	}
 
 	/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 	 * Setting at register offset >=0x300 will effect after SPM handshakes
 	 * with MSDC.
 	 */
-	sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
 
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_HIGH],
-			host->autok_res[AUTOK_VCORE_LOW]) == 0) {
+	/* Backup the register, restore when resume */
+	sdio_dvfs_reg_backup(host);
+
+	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
+			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
 		pr_err("[AUTOK] No need change para when dvfs\n");
 	} else {
 		pr_err("[AUTOK] Need change para when dvfs\n");
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
 		/* Enable DVFS handshake */
 		spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
-#endif
 	}
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
+
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
+}
 
-	msdc_pmic_force_vcore_pwm(false);
+static void sdio_execute_dvfs_autok_ddr208(struct msdc_host *host)
+{
+	/* char res[256]; */
+	/* execute_online_tuning_sdio30_plus(host,res); */
+}
+
+#define SDIO_CCCR_MTK_DDR208       0xF2
+#define SDIO_MTK_DDR208            0x3
+#define SDIO_MTK_DDR208_SUPPORT    0x2
+void sdio_execute_dvfs_autok(struct msdc_host *host)
+{
+	int ret = 0;
+	unsigned char data;
+	struct mmc_card *card = host->mmc->card;
+
+	/* Find SDR104 timing first, or read CCCR command maybe fail */
+	if (host->hw->flags & MSDC_SDIO_DDR208) {
+		autok_execute_tuning(host, NULL);
+	} else {
+		sdio_execute_dvfs_autok_sdr104(host);
+		return;
+	}
+
+	/* Read SDIO Device CCCR[0x00F2]
+	 * Bit[1] Always 1, Support DDR208 Mode.
+	 * Bit[0]
+	 *        1:Enable DDR208.
+	 *        0:Disable DDR208.
+	 */
+	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
+	if (ret) {
+		pr_err("Read SDIO_CCCR_MTK_DDR208 fail\n");
+		goto end;
+	}
+	if ((data & SDIO_MTK_DDR208_SUPPORT) == 0) {
+		pr_err("Device not support SDIO_MTK_DDR208\n");
+		goto end;
+	}
+
+	/* Switch to DDR208 Flow :
+	 * 1. First switch to DDR50 mode;
+	 * 2. Then Host CMD52 Write 0x03/0x01 to CCCR[0x00F2]
+	 */
+	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_SPEED, 0, &data);
+	if (ret) {
+		pr_err("Read SDIO_CCCR_SPEED fail\n");
+		goto end;
+	}
+
+	data = (data & (~SDIO_SPEED_BSS_MASK)) | SDIO_SPEED_DDR50;
+	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_SPEED, data, NULL);
+	if (ret) {
+		pr_err("Set SDIO_CCCR_SPEED to DDR fail\n");
+		goto end;
+	}
+
+	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_MTK_DDR208,
+		SDIO_MTK_DDR208, NULL);
+	if (ret) {
+		pr_err("Set SDIO_MTK_DDR208 fail\n");
+		goto end;
+	}
+
+	/* Set HS400 clock mode and DIV = 0 */
+	msdc_clk_stable(host, 3, 0, 1);
+
+	/* Find DDR208 timing */
+	sdio_execute_dvfs_autok_ddr208(host);
+
+	return;
+
+end:
+	pr_err("Switch to SDIO_MTK_DDR208 fail\n");
+
 }
 
 int emmc_autok(void)
@@ -498,29 +523,23 @@ int emmc_autok(void)
 #if 0 /* Wait Light confirm */
 	mmc_claim_host(mmc);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_PERF) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
 
 	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-		host->autok_res[AUTOK_VCORE_HIGH]);
+		host->autok_res[AUTOK_VCORE_LEVEL1]);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Low power mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_LOW_PWR) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
 
 	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-		host->autok_res[AUTOK_VCORE_LOW]);
+		host->autok_res[AUTOK_VCORE_LEVEL0]);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
 
 	mmc_release_host(mmc);
 #endif
@@ -546,29 +565,23 @@ int sd_autok(void)
 #if 0 /* Wait Cool confirm */
 	mmc_claim_host(mmc);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_PERF) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
 
 	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_HIGH]);
+		host->autok_res[AUTOK_VCORE_LEVEL1]);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Low power mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_LOW_PWR) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
 
 	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_LOW]);
+		host->autok_res[AUTOK_VCORE_LEVEL0]);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
 
 	mmc_release_host(mmc);
 #endif

@@ -153,6 +153,7 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_EXT_SDIO_IRQ   (1 << 4)  /* use external sdio irq         */
 #define MSDC_REMOVABLE      (1 << 5)  /* removable slot                */
 #define MSDC_SYS_SUSPEND    (1 << 6)  /* suspended by system           */
+#define MSDC_SDIO_DDR208    (1 << 7)  /* ddr208 mode used by 6632      */
 /* for some board, need SD power always on!! or cannot recognize the sd card*/
 #define MSDC_SD_NEED_POWER  (1 << 31)
 

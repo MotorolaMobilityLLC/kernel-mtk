@@ -519,22 +519,18 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 
 		/* Enable DVFS handshake need check restore done */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 			if ((host->use_hw_dvfs == 1)
 			 && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
 				spm_msdc_dvfs_setting(MSDC3_DVFS, 1);
-#endif
 		}
 	} else if ((!on) && (host->core_clkon == 1) &&
 		 (!((host->hw->flags & MSDC_SDIO_IRQ) && src_clk_control))) {
 
 		/* Disable DVFS handshake */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 			if ((host->use_hw_dvfs == 1)
 			 && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5))
 				spm_msdc_dvfs_setting(MSDC3_DVFS, 0);
-#endif
 		}
 
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
@@ -3691,10 +3687,12 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	msdc_init_tune_path(host, mmc->ios.timing);
-	host->tuning_in_progress = true;
-
 	msdc_ungate_clock(host);
+	msdc_init_tune_path(host, mmc->ios.timing);
+
+	host->tuning_in_progress = true;
+	msdc_pmic_force_vcore_pwm(true);
+
 	if (host->hw->host_function == MSDC_SD)
 		ret = sd_execute_dvfs_autok(host, opcode, NULL);
 	else if (host->hw->host_function == MSDC_EMMC)
@@ -3702,7 +3700,9 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	else if (host->hw->host_function == MSDC_SDIO)
 		sdio_execute_dvfs_autok(host);
 
+	msdc_pmic_force_vcore_pwm(false);
 	host->tuning_in_progress = false;
+
 	if (ret)
 		msdc_dump_info(host->id);
 

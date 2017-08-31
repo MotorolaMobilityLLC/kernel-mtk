@@ -261,6 +261,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 	int retry = 3;
 	int emmc = (host->hw->host_function == MSDC_EMMC) ? 1 : 0;
 	int sdio = (host->hw->host_function == MSDC_SDIO) ? 1 : 0;
+	int vcore;
 
 	if (sdio) {
 		msdc_reset_hw(host->id); /* force bit5(BV18SDT) to 0 */
@@ -303,15 +304,16 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
 
-		autok_init_sdr104(host);
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-		if (vcorefs_get_hw_opp() == OPPI_PERF)
-			autok_tuning_parameter_init(host,
-				host->autok_res[AUTOK_VCORE_HIGH]);
+		#if 0 /* Peter remove after autok ddr208 ready */
+		if (host->hw->flags & MSDC_SDIO_DDR208)
+			autok_init_ddr208(host);
 		else
-			autok_tuning_parameter_init(host,
-				host->autok_res[AUTOK_VCORE_LOW]);
-#endif
+		#endif
+			autok_init_sdr104(host);
+
+		vcore = vcorefs_get_hw_opp();
+		autok_tuning_parameter_init(host, host->autok_res[vcore]);
+
 		sdio_dvfs_reg_restore(host);
 
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;

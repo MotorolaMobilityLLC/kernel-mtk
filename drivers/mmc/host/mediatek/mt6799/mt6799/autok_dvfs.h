@@ -14,9 +14,26 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
+#if 0 /* Peter remove after dvfs ready */
 #include <mt_vcorefs_manager.h>
 #include <mt_spm_vcore_dvfs.h>
+#else
+#define MSDC0_DVFS 0
+#define MSDC1_DVFS 1
+#define MSDC2_DVFS 2
+#define MSDC3_DVFS 3
+
+#define OPPI_PERF 0
+#define OPPI_LOW_PWR 1
+#define OPPI_ULTRA_LOW_PWR 2
+#define OPPI_UNREQ -1
+
+#define KIR_AUTOK_SDIO 10
+
+#define is_vcorefs_can_work() -1
+#define vcorefs_request_dvfs_opp(a, b)	0
+#define vcorefs_get_hw_opp() OPPI_PERF
+#define spm_msdc_dvfs_setting(a, b)
 #endif
 #include "autok.h"
 
@@ -26,8 +43,10 @@
 /* #define SDIO_HW_DVFS_CONDITIONAL */
 
 enum AUTOK_VCORE {
-	AUTOK_VCORE_LOW = 0,
-	AUTOK_VCORE_HIGH,
+	AUTOK_VCORE_LEVEL0 = 0,
+	AUTOK_VCORE_LEVEL1,
+	AUTOK_VCORE_LEVEL2,
+	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_NUM
 };
 
@@ -42,9 +61,7 @@ extern int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
 extern int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
 extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
-
 extern int autok_res_check(u8 *res_h, u8 *res_l);
-extern void sdio_set_hw_dvfs(int vcore, int done, struct msdc_host *host);
 extern void sdio_dvfs_reg_restore(struct msdc_host *host);
 
 #endif /* _AUTOK_DVFS_H_ */

@@ -520,12 +520,10 @@ void msdc_clk_status(int *status)
 #if !defined(FPGA_PLATFORM)
 void msdc_dump_vcore(void)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	if (vcorefs_get_hw_opp() == OPPI_PERF)
-		pr_err("%s: Vcore 0.8V\n", __func__);
-	else
-		pr_err("%s: Vcore 0.7V\n", __func__);
-#endif
+	int vcore;
+
+	vcore = vcorefs_get_hw_opp();
+	pr_err("%s: Vcore %d\n", __func__, vcore);
 }
 
 void msdc_dump_padctl_by_id(u32 id)
@@ -755,13 +753,13 @@ void msdc_get_tdsel_by_id(u32 id, u32 *value)
 void msdc_get_rdsel_by_id(u32 id, u32 *value)
 {
 	if (id == 0) {
-		MSDC_GET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_TDSEL_CMD_MASK,
+		MSDC_GET_FIELD(MSDC0_GPIO_RDSEL_ADDR, MSDC0_RDSEL_CMD_MASK,
 			*value);
 	} else if (id == 1) {
-		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_TDSEL_CMD_MASK,
+		MSDC_GET_FIELD(MSDC1_GPIO_RDSEL_ADDR, MSDC1_RDSEL_CMD_MASK,
 			*value);
 	} else if (id == 3) {
-		MSDC_GET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_TDSEL_ALL_MASK,
+		MSDC_GET_FIELD(MSDC3_GPIO_RDSEL_ADDR, MSDC3_RDSEL_ALL_MASK,
 			*value);
 	}
 }
@@ -1043,6 +1041,9 @@ int msdc_of_parse(struct mmc_host *mmc)
 	/* get msdc flag(caps)*/
 	if (of_find_property(np, "msdc-sys-suspend", &len))
 		host->hw->flags |= MSDC_SYS_SUSPEND;
+
+	if (of_find_property(np, "sd-uhs-ddr208", &len))
+		host->hw->flags |= MSDC_SDIO_DDR208;
 
 	/* Returns 0 on success, -EINVAL if the property does not exist,
 	 * -ENODATA if property does not have a value, and -EOVERFLOW if the
