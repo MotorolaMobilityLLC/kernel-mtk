@@ -5883,7 +5883,7 @@ void cgroup_exit(struct task_struct *tsk)
 		ss->exit(tsk);
 
 #if defined(CONFIG_CPUSETS) && !defined(CONFIG_MTK_ACAO)
-	if (excl_task_count > 0 && tsk)
+	if (excl_task_count > 0)
 		remove_set_exclusive_task(tsk->pid, 1);
 #endif
 }
