@@ -30,16 +30,6 @@
 #include "linux/hdmitx.h"
 
 
-/*
- * void DBG_Init(void);
- * void DBG_Deinit(void);
- *
- * extern void hdmi_log_enable(int enable);
- * extern void hdmi_cable_fake_plug_in(void);
- * extern void hdmi_cable_fake_plug_out(void);
- *
-*/
-
 /* --------------------------------------------------------------------------- */
 /* External variable declarations */
 /* --------------------------------------------------------------------------- */
@@ -60,15 +50,9 @@ static char STR_HELP[] =
 	"             enable hdmi video output\n"
 	"\n";
 
-/* extern void hdmi_log_enable(int enable); */
-/* TODO: this is a temp debug solution */
-/* extern void hdmi_cable_fake_plug_in(void); */
-/* extern int hdmi_drv_init(void); */
+
 static void process_dbg_opt(const char *opt)
 {
-	if (0)
-		;/* to do*/
-
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 	else if (strncmp(opt, "on", 2) == 0) {
 		hdmi_power_on();
@@ -78,10 +62,6 @@ static void process_dbg_opt(const char *opt)
 		hdmi_suspend();
 	} else if (strncmp(opt, "resume", 6) == 0) {
 		hdmi_resume();
-	/* } else if (0 == strncmp(opt, "colorbar", 8)) { */
-
-	/*} else if (0 == strncmp(opt, "ldooff", 6)) { */
-
 	} else if (strncmp(opt, "loglv:", 6) == 0) {
 		unsigned int lv = *(opt + 6) - '0';
 
