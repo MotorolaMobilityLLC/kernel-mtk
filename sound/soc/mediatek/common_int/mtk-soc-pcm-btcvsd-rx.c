@@ -509,6 +509,35 @@ static int btcvsd_rx_timeout_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
+{
+	int ret = 0;
+	struct time_buffer_info time_buffer_info_rx;
+
+	if (size > sizeof(struct time_buffer_info))
+		return -EINVAL;
+
+	get_rx_timestamp(&time_buffer_info_rx);
+
+	pr_debug("%s(), timestamp_us:%llu, data_count_equi_time:%llu, sizeof(time_buffer_info) = %zu",
+		 __func__,
+		 time_buffer_info_rx.timestamp_us, time_buffer_info_rx.data_count_equi_time,
+		 sizeof(struct time_buffer_info));
+
+	if (copy_to_user(data, &time_buffer_info_rx, sizeof(struct time_buffer_info))) {
+		pr_err("%s(), Fail copy to user Ptr:%p,r_sz:%zu",
+		       __func__, &time_buffer_info_rx, sizeof(struct time_buffer_info));
+		ret = -EFAULT;
+	}
+
+	return ret;
+}
+
+static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int size)
+{
+	return 0;
+}
+
 static const struct snd_kcontrol_new btcvsd_controls[] = {
 	SOC_ENUM_EXT("btcvsd_band",
 		     btcvsd_enum[0], btcvsd_band_get, btcvsd_band_set),
@@ -522,6 +551,10 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 		     btcvsd_enum[3],
 		     btcvsd_rx_timeout_get,
 		     btcvsd_rx_timeout_set),
+	SND_SOC_BYTES_TLV("btcvsd_rx_timestamp",
+			  sizeof(struct time_buffer_info),
+			  btcvsd_rx_timestamp_get,
+			  btcvsd_rx_timestamp_set),
 };
 
 static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
