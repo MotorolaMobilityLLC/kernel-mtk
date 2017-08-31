@@ -103,10 +103,18 @@ struct i2c_client *mClient;
 unsigned int mhl_eint_number = 0xffff;
 unsigned int mhl_eint_gpio_number = DP_EINT_GPIO_NUMBER;
 unsigned int mhl_comm_eint_number = 0xffff;
-unsigned int mhl_comm_eint_gpio_number = DP_COMM_EINT_GPIO_NUMBER;
 
 static unsigned int mask_flag;
 static unsigned int mask_flag_comm;
+
+struct anx7625_platform_gpio_data {
+	int anx7625_gpio_p_on;
+	int anx7625_gpio_reset;
+	int anx7625_gpio_cbl_det;
+	int anx7625_gpio_intr_comm;
+};
+
+struct anx7625_platform_gpio_data *anx7625_pdata;
 
 int get_mhl_irq_num(void)
 {
@@ -119,12 +127,12 @@ int get_mhl_comm_irq_num(void)
 
 int confirm_mhl_irq_level(void)
 {
-	return gpio_get_value(mhl_eint_gpio_number);
+	return gpio_get_value(anx7625_pdata->anx7625_gpio_cbl_det);
 }
 
 int confirm_mhl_comm_irq_level(void)
 {
-	return gpio_get_value(mhl_comm_eint_gpio_number);
+	return gpio_get_value(anx7625_pdata->anx7625_gpio_intr_comm);
 }
 
 
@@ -573,9 +581,47 @@ void cust_power_on(int enable)
 {
 }
 
+static int anx7625_gpio_parse_dt(struct device *dev,
+			    struct anx7625_platform_gpio_data *pdata)
+{
+	struct device_node *np = dev->of_node;
+	int gpio;
+
+	gpio = of_get_named_gpio(np, "analogix,anx7625_power-on-gpio", 0);
+	if (gpio_is_valid(gpio))
+		pdata->anx7625_gpio_p_on = gpio;
+	else
+		pr_err("can not get valid gpio analogix,anx7625_power-on-gpio\n");
+
+	gpio = of_get_named_gpio(np, "analogix,anx7625_reset-gpio", 0);
+	if (gpio_is_valid(gpio))
+		pdata->anx7625_gpio_reset = gpio;
+	else
+		pr_err("can not get valid gpio analogix,anx7625_reset-gpio\n");
+
+	gpio = of_get_named_gpio(np, "analogix,anx7625_cbl-det-gpio", 0);
+	if (gpio_is_valid(gpio))
+		pdata->anx7625_gpio_cbl_det = gpio;
+	else
+		pr_err("can not get valid gpio analogix,anx7625_cbl-det-gpio\n");
+
+	gpio = of_get_named_gpio(np, "analogix,anx7625_intr-comm-gpio", 0);
+	if (gpio_is_valid(gpio))
+		pdata->anx7625_gpio_intr_comm = gpio;
+	else
+		pr_err("can not get valid gpio analogix,anx7625_intr-comm-gpio\n");
+
+	SLIMPORT_DBG("anx7625 p_on=%d, reset=%d, cbl_det=%d, intp=%d\n",
+	       pdata->anx7625_gpio_p_on, pdata->anx7625_gpio_reset,
+	       pdata->anx7625_gpio_cbl_det, pdata->anx7625_gpio_intr_comm);
+
+	return 0;
+}
+
 void slimport_platform_init(void)
 {
 	int ret = 0;
+	int retval = 0;
 
 	SLIMPORT_DBG("slimport_platform_init start !!\n");
 
@@ -679,6 +725,16 @@ void slimport_platform_init(void)
 	pmic_set_register_value(PMIC_RG_VGP3_VOSEL, 0x0);
 	pmic_set_register_value(PMIC_RG_VGP3_SW_EN, 0x1);
 #endif
+
+	anx7625_pdata = devm_kzalloc(ext_dev_context,
+			     sizeof(struct anx7625_platform_gpio_data),
+			     GFP_KERNEL);
+
+	/* device tree parsing function call */
+	retval = anx7625_gpio_parse_dt(ext_dev_context, anx7625_pdata);
+	if (retval != 0)	/* if occurs error */
+		retval = -1;
+
 plat_init_exit:
 	SLIMPORT_DBG("mhl_platform_init init done !!\n");
 }

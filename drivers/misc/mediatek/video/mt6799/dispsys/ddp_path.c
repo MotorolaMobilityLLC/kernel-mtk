@@ -867,6 +867,8 @@ char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 		return "sub_disp";
 	case DDP_SCENARIO_SUB_RDMA1_DISP:
 		return "sub_rdma1_disp";
+	case DDP_SCENARIO_SUB_DISP_4K:
+		return "sub_4K_disp";
 	case DDP_SCENARIO_SUB_OVL_MEMOUT:
 		return "sub_ovl_memout";
 	case DDP_SCENARIO_PRIMARY_ALL:
