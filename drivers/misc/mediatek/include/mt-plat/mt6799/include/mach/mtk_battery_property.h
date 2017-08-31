@@ -18,7 +18,7 @@
 #define DIFFERENCE_FULLOCV_ITH	150	/* mA */
 #define SHUTDOWN_1_TIME	60
 #define SHUTDOWN_GAUGE1_XMINS 1
-#define KEEP_100_PERCENT 5
+#define KEEP_100_PERCENT 2
 #define R_FG_VALUE	10				/* mOhm */
 #define POWERON_SYSTEM_IBOOT 1000	/* mA */
 #define EMBEDDED_SEL 0
@@ -85,7 +85,7 @@
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
-#define BAT_PLUG_OUT_TIME	30
+#define BAT_PLUG_OUT_TIME	5
 #define EXT_HWOCV_SWOCV		300
 
 /* fgc & fgv threshold */
@@ -112,7 +112,9 @@
 /* Additional battery table */
 #define ADDITIONAL_BATTERY_TABLE_EN 0
 
-#define DC_RATIO_SEL	5	/* not implement */
+#define DC_RATIO_SEL	5
+#define DC_R_CNT	0
+
 #define BAT_PAR_I 4000	/* not implement */
 
 #define PSEUDO1_SEL	2
@@ -129,8 +131,11 @@
 #define UNIT_FG_IAVG		(190735)
 #define CAR_TO_REG_FACTOR  (0x49BD)
 
+/*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
+
 /* extern function */
 extern int get_rac(void);
+extern int get_imix(void);
 extern void get_ptim(unsigned int*, signed int*);
 extern int do_ptim(bool);
 

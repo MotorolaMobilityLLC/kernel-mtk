@@ -21,6 +21,8 @@
 #define RBAT_PULL_UP_VOLT_BY_BIF
 /* #define INIT_BAT_CUR_FROM_PTIM */
 
+#define FG_RG_INT_STATUS_CHRDET  5
+
 #define FG_RG_INT_EN_BAT2_H  20
 #define FG_RG_INT_EN_BAT2_L  21
 

@@ -266,6 +266,7 @@ typedef enum {
 	FG_DAEMON_CMD_GET_HW_INFO,
 	FG_DAEMON_CMD_SET_KERNEL_SOC,
 	FG_DAEMON_CMD_SET_KERNEL_UISOC,
+	FG_DAEMON_CMD_SET_KERNEL_INIT_VBAT,
 	FG_DAEMON_CMD_SET_BAT_PLUGOUT_INTR,
 	FG_DAEMON_CMD_SET_IAVG_INTR,
 	FG_DAEMON_CMD_SET_FG_SHUTDOWN_COND,
@@ -346,7 +347,7 @@ typedef struct {
 	int sw_ocv;
 	int soc;
 	int ui_soc;
-	int avgvbat;
+	int nafg_vbat;
 	bool flag_hw_ocv_unreliable;
 	int is_bat_charging;
 	signed int sw_car_nafg_cnt;
@@ -574,6 +575,7 @@ struct fuel_gauge_custom_data {
 	int sleep_current_avg;
 
 	int dc_ratio_sel;
+	int dc_r_cnt;
 
 	/* shutdown_hl_zcv */
 	int shutdown_hl_zcv_t0;
@@ -764,6 +766,8 @@ extern void mtk_power_misc_init(struct platform_device *pdev);
 extern void notify_fg_shutdown(void);
 extern int set_shutdown_cond(int shutdown_cond);
 extern int get_shutdown_cond(void);
+extern void set_shutdown_vbat_lt(int, int);
+
 extern void notify_fg_dlpt_sd(void);
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */

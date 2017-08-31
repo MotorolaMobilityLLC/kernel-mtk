@@ -57,7 +57,7 @@ signed int battery_get_bat_voltage(void)
 signed int battery_get_bat_avg_voltage(void)
 {
 	/*return battery_get_bat_voltage();*/
-	return FG_status.avgvbat;
+	return FG_status.nafg_vbat;
 }
 
 signed int battery_get_bat_soc(void)

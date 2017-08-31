@@ -132,11 +132,19 @@ void fg_dump_register(void)
 }
 #endif
 
-signed int MV_to_REG_temperature(signed int _reg)
+signed int MV_to_REG_12_value(signed int _reg)
+{
+	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
+
+	bm_warn("[MV_to_REG_12_value] %d => %d\n", _reg, ret);
+	return ret;
+}
+
+signed int MV_to_REG_12_temp_value(signed int _reg)
 {
 	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_2);
 
-	bm_warn("[MV_to_REG_temperature] %d => %d\n", _reg, ret);
+	bm_warn("[MV_to_REG_12_temp_value] %d => %d\n", _reg, ret);
 	return ret;
 }
 
@@ -1239,7 +1247,7 @@ signed int fgauge_set_time_interrupt(void *data)
 
 	pmic_enable_interrupt(FG_TIME_NO, 0, "GM30");
 	pmic_set_register_value(PMIC_FG_TIME_HTH_15_00, (time & 0xffff));
-	pmic_set_register_value(PMIC_FG_TIME_HTH_29_16, (time & 0x3fff0000));
+	pmic_set_register_value(PMIC_FG_TIME_HTH_29_16, ((time & 0x3fff0000) >> 16));
 	pmic_enable_interrupt(FG_TIME_NO, 1, "GM30");
 
 
@@ -1263,7 +1271,7 @@ signed int fgauge_set_time_interrupt(void *data)
 
 		bm_notice(
 			 "[fgauge_set_time_interrupt] now:%ld time:%ld\r\n",
-			 now/2, time/2);
+			 time2/2, time/2);
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 		m = 0;
@@ -1278,7 +1286,7 @@ signed int fgauge_set_time_interrupt(void *data)
 		/*(8)    Recover original settings */
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
-		bm_debug(
+		bm_notice(
 			 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:%ld %ld\r\n",
 			 pmic_get_register_value(PMIC_FG_TIME_HTH_15_00),
 			 pmic_get_register_value(PMIC_FG_TIME_HTH_29_16), time, time2);
@@ -2164,7 +2172,7 @@ static signed int fg_set_fg_bat_tmp_int_lt(void *data)
 	int _tmp_int_value;
 
 	_tmp_int_value = *(unsigned int *) (data);
-	tmp_int_lt = MV_to_REG_temperature(_tmp_int_value);
+	tmp_int_lt = MV_to_REG_12_temp_value(_tmp_int_value);
 
 	bm_notice("[FG_TEMP_INT][fg_set_fg_bat_tmp_int_lt] mv:%d reg:%d\n",
 			_tmp_int_value, tmp_int_lt);
@@ -2177,7 +2185,7 @@ static signed int fg_set_fg_bat_tmp_int_ht(void *data)
 	int _tmp_int_value;
 
 	_tmp_int_value = *(unsigned int *) (data);
-	tmp_int_ht = MV_to_REG_temperature(_tmp_int_value);
+	tmp_int_ht = MV_to_REG_12_temp_value(_tmp_int_value);
 
 	bm_notice("[FG_TEMP_INT][fg_set_fg_bat_tmp_int_ht] mv:%d reg:%d\n",
 			_tmp_int_value, tmp_int_ht);
@@ -2648,7 +2656,7 @@ static signed int fg_set_vbat2_h_en(void *data)
 static signed int fg_set_vbat2_l_th(void *data)
 {
 	int vbat2_l_th_mv =  *(signed int *) (data);
-	int vbat2_l_th_reg = MV_to_REG_value(vbat2_l_th_mv);
+	int vbat2_l_th_reg = MV_to_REG_12_value(vbat2_l_th_mv);
 	int vbat2_det_time_15_0 = ((1000 * fg_cust_data.vbat2_det_time) & 0xffff);
 	int vbat2_det_time_19_16 = ((1000 * fg_cust_data.vbat2_det_time) & 0xffff0000) >> 16;
 	int vbat2_det_counter = fg_cust_data.vbat2_det_counter;
@@ -2658,13 +2666,20 @@ static signed int fg_set_vbat2_l_th(void *data)
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16, vbat2_det_time_19_16);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN, vbat2_det_counter);
 
+	pr_err("[fg_set_vbat2_l_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+		vbat2_l_th_reg, vbat2_det_time_15_0, vbat2_det_time_19_16, vbat2_det_counter,
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MIN),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN));
+
 	return STATUS_OK;
 }
 
 static signed int fg_set_vbat2_h_th(void *data)
 {
 	int vbat2_h_th_mv =  *(signed int *) (data);
-	int vbat2_h_th_reg = MV_to_REG_value(vbat2_h_th_mv);
+	int vbat2_h_th_reg = MV_to_REG_12_value(vbat2_h_th_mv);
 	int vbat2_det_time_15_0 = ((1000 * fg_cust_data.vbat2_det_time) & 0xffff);
 	int vbat2_det_time_19_16 = ((1000 * fg_cust_data.vbat2_det_time) & 0xffff0000) >> 16;
 	int vbat2_det_counter = fg_cust_data.vbat2_det_counter;
@@ -2673,6 +2688,13 @@ static signed int fg_set_vbat2_h_th(void *data)
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0, vbat2_det_time_15_0);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16, vbat2_det_time_19_16);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX, vbat2_det_counter);
+
+	pr_err("[fg_set_vbat2_h_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+		vbat2_h_th_reg, vbat2_det_time_15_0, vbat2_det_time_19_16, vbat2_det_counter,
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16),
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX));
 
 	return STATUS_OK;
 }
