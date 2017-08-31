@@ -2419,6 +2419,13 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
 			/* Add all dirty buffers to mpd */
 			lblk = ((ext4_lblk_t)page->index) <<
 				(PAGE_CACHE_SHIFT - blkbits);
+#ifdef CONFIG_SDCARD_FS
+			if (!page_has_buffers(page)) {
+				unsigned blocksize = mpd->inode->i_sb->s_blocksize;
+
+				create_empty_buffers(page, blocksize, 0);
+			}
+#endif
 			head = page_buffers(page);
 			err = mpage_process_page_bufs(mpd, head, head, lblk);
 			if (err <= 0)

@@ -19,6 +19,7 @@
  */
 
 #include "sdcardfs.h"
+#include <linux/lockdep.h>
 
 /* copy derived state from parent inode */
 static void inherit_derived_state(struct inode *parent, struct inode *child)
@@ -109,21 +110,30 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 	get_derived_permission_new(parent, dentry, dentry);
 }
 
-void get_derive_permissions_recursive(struct dentry *parent) {
+
+static void get_derive_permissions_recursive_internal(struct dentry *parent)
+{
 	struct dentry *dentry;
 	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
 		if (dentry && dentry->d_inode) {
-			mutex_lock(&dentry->d_inode->i_mutex);
+			mutex_lock(&d_inode(dentry)->i_mutex);
 			get_derived_permission(parent, dentry);
 			fix_derived_permission(dentry->d_inode);
-			get_derive_permissions_recursive(dentry);
-			mutex_unlock(&dentry->d_inode->i_mutex);
+			get_derive_permissions_recursive_internal(dentry);
+			mutex_unlock(&d_inode(dentry)->i_mutex);
 		}
 	}
 }
 
+void get_derive_permissions_recursive(struct dentry *parent)
+{
+	lockdep_off();
+	get_derive_permissions_recursive_internal(parent);
+	lockdep_on();
+}
+
 /* main function for updating derived permission */
-inline void update_derived_permission_lock(struct dentry *dentry)
+inline void update_derived_permission(struct dentry *dentry)
 {
 	struct dentry *parent;
 
@@ -131,11 +141,7 @@ inline void update_derived_permission_lock(struct dentry *dentry)
 		printk(KERN_ERR "sdcardfs: %s: invalid dentry\n", __func__);
 		return;
 	}
-	/* FIXME:
-	 * 1. need to check whether the dentry is updated or not
-	 * 2. remove the root dentry update
-	 */
-	mutex_lock(&dentry->d_inode->i_mutex);
+
 	if(IS_ROOT(dentry)) {
 		//setup_default_pre_root_state(dentry->d_inode);
 	} else {
@@ -146,7 +152,24 @@ inline void update_derived_permission_lock(struct dentry *dentry)
 		}
 	}
 	fix_derived_permission(dentry->d_inode);
-	mutex_unlock(&dentry->d_inode->i_mutex);
+}
+
+inline void update_derived_permission_lock(struct dentry *dentry)
+{
+	if (!dentry || !dentry->d_inode) {
+		pr_err("sdcardfs: %s: invalid dentry\n", __func__);
+		return;
+	}
+	/* FIXME:
+	 * 1. need to check whether the dentry is updated or not
+	 * 2. remove the root dentry update
+	 */
+
+	lockdep_off();
+	mutex_lock(&d_inode(dentry)->i_mutex);
+	update_derived_permission(dentry);
+	mutex_unlock(&d_inode(dentry)->i_mutex);
+	lockdep_on();
 }
 
 int need_graft_path(struct dentry *dentry)
