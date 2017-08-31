@@ -473,8 +473,6 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 			/* Use HW DVFS */
 			msdc_dvfs_reg_restore(host);
-			/* Enable DVFS handshake */
-			/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
 		}
 
 		return;
@@ -522,14 +520,14 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		 */
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
-
-		/* Enable DVFS handshake */
-		spm_msdc_dvfs_setting(host->dvfs_id, 1);
 	}
 
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPP_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
+
+	/* Tell DVFS can start now because AUTOK done */
+	spm_msdc_dvfs_setting(host->dvfs_id, 1);
 
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
