@@ -499,7 +499,7 @@ static int kwdt_thread(void *arg)
 						/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
 					}
 					pr_debug
-					    ("[WDK],local_bit:0x%x,cpu:%d,check bit0x:%x,%d,%d,%lld,RT[%lld]\n",
+					    ("[WDK],local_bit:0x%x,cpu:%d,check bit:0x%x,%d,%d,%lld,RT[%lld]\n",
 					     local_bit, cpu, wk_check_kick_bit(), lasthpg_cpu, lasthpg_act,
 					     lasthpg_t, sched_clock());
 					if (local_bit == wk_check_kick_bit()) {
@@ -709,12 +709,8 @@ static int wk_cpu_callback(struct notifier_block *nfb, unsigned long action, voi
 	switch (action) {
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:
-/* watchdog_prepare_cpu(hotcpu); */
+		/* watchdog_prepare_cpu(hotcpu); */
 		wk_cpu_update_bit_flag(hotcpu, 1);
-		break;
-	case CPU_ONLINE:
-	case CPU_ONLINE_FROZEN:
-
 		/* wk_cpu_update_bit_flag(hotcpu, 1); */
 		if (g_kicker_init == 1)
 			kicker_cpu_bind(hotcpu);
@@ -725,8 +721,10 @@ static int wk_cpu_callback(struct notifier_block *nfb, unsigned long action, voi
 		/* kick local wdt */
 		mpcore_wdt_restart(WD_TYPE_NORMAL);
 #endif
-
 		/* pr_alert("[WDK]cpu %d plug on kick wdt\n", hotcpu); */
+		break;
+	case CPU_ONLINE:
+	case CPU_ONLINE_FROZEN:
 		break;
 #ifdef CONFIG_HOTPLUG_CPU
 #ifdef CONFIG_LOCAL_WDT
