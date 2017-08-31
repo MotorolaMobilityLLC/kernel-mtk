@@ -1310,6 +1310,11 @@ void usb_phy_recover(unsigned int clk_on)
 		U3PhyWriteField32((phys_addr_t) (uintptr_t) ((u3_sif2_base + 0xb00) + offset), 3,
 				(0x1<<3), val);
 
+		/* 0x11C30958[31:28], rg_ssusb_cdr_bic_ltr[3:0] from 4'b1111 to 4'b0100, analog circuit performance */
+		val = 0x4;
+		offset = 0x58;
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) ((u3_sif2_base + 0x900) + offset), 28,
+				(0xf<<28), val);
 	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
