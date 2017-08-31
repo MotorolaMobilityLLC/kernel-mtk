@@ -1594,7 +1594,7 @@ static void TdlsCmdTestTxTdlsFrame(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UI
 {
 	PARAM_CUSTOM_TDLS_CMD_STRUCT_T rCmd;
 	UINT32 u4Subcmd;
-	UINT_32 u4BufLen;
+	UINT_32 u4BufLen = 0;
 
 	/* parse sub-command */
 	u4Subcmd = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
