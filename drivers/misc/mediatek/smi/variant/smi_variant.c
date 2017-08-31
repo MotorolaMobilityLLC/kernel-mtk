@@ -49,8 +49,10 @@
 #include "m4u.h"
 
 /* workaround for bringup */
+#if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #define CONFIG_FPGA_EARLY_PORTING
+#endif
 #endif
 /*#include "mmdvfs_mgr.h"*/
 
