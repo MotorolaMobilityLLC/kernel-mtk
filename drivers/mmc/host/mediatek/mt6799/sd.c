@@ -890,8 +890,8 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Disable HW DVFS */
 	if (host->hw->host_function == MSDC_SDIO) {
 		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+		MSDC_WRITE32(MSDC_CFG,
+			MSDC_READ32(MSDC_CFG) & ~(MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
 		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 	}
 
