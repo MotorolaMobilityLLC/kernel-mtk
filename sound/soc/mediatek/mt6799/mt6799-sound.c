@@ -3249,6 +3249,7 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 
 	if (!dpd_param.efuse_on || !enable) {
 		Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x0 << 31, 0x80000000);
+		Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x0 << 31, 0x80000000);
 		return true;
 	}
 
@@ -3262,6 +3263,7 @@ static bool platform_set_dpd_module(bool enable, int impedance)
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON3, dpd_param.a5_rch, 0x00000FFF);
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON2, 0x1 << 31, 0x80000000);
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0x1 << 31, 0x80000000);
+	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0x1 << 31, 0x80000000);
 
 	return true;
 }
