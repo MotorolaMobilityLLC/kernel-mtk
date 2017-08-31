@@ -2052,9 +2052,7 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 
 #if CFG_SUPPORT_ROAMING
 			/* if user space roaming is enabled, we should disable driver/fw roaming */
-#ifdef CONFIG_CFG80211_ALLOW_RECONNECT
 			if (prAdapter->rWifiVar.rConnSettings.eConnectionPolicy != CONNECT_BY_BSSID)
-#endif
 				roamingFsmRunEventStart(prAdapter);
 #endif /* CFG_SUPPORT_ROAMING */
 
