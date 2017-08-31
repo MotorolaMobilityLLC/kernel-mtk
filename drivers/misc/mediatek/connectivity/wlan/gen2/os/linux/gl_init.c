@@ -2372,6 +2372,8 @@ static int readMac(char *file, char *buf, unsigned int bsize)
 {
 	struct file *mfilp;
 	unsigned int size;
+	loff_t pos;
+	char __user *p;
 
 	if (!file)
 		return -1;
@@ -2390,7 +2392,11 @@ static int readMac(char *file, char *buf, unsigned int bsize)
 		DBGLOG(INIT, ERROR, "file size: %d > %d\n", size, bsize);
 		return -1;
 	}
-	mfilp->f_op->read(mfilp, buf, bsize, &mfilp->f_pos);
+
+	p = (__force char __user *)buf;
+	pos = (loff_t)mfilp->f_pos;
+	__vfs_read(mfilp, p, bsize, &pos);
+
 	filp_close(mfilp, NULL);
 	DBGLOG(INIT, INFO, "MAC ASCII: %s\n", buf);
 	return 0;
