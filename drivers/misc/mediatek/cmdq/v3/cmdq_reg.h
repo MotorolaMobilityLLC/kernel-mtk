@@ -72,7 +72,10 @@
 #define CMDQ_SYNC_TOKEN_VAL_PA       (GCE_BASE_PA + 0x064)
 #define CMDQ_THR_EXEC_CNT_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x128)
 
-#define CMDQ_GCE_END_ADDR_PA         (GCE_BASE_PA + 0xFF0)
+#define CMDQ_GCE_END_ADDR_PA         (GCE_BASE_PA + 0xC00)
+#define CMDQ_THR_FIX_END_ADDR(id)    (CMDQ_GCE_END_ADDR_PA | (id << 4))
+#define CMDQ_IS_END_ADDR(addr)       ((addr & CMDQ_GCE_END_ADDR_PA) == CMDQ_GCE_END_ADDR_PA)
+
 #define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
 
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)
