@@ -390,9 +390,15 @@ u16 rtc_rdwr_uart_bits(u16 *val)
 void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
+	unsigned char exist;
 	bool charger_status;
 
-	charger_status = pmic_chrdet_status();
+	mtk_chr_is_charger_exist(&exist);
+	if (exist == 1)
+		charger_status = true;
+	else
+		charger_status = false;
+	rtc_xinfo("charger_status = %d\n", charger_status);
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_bbpu_pwdn(charger_status);
 	spin_unlock_irqrestore(&rtc_lock, flags);
@@ -402,7 +408,9 @@ void mt_power_off(void)
 {
 #if !defined(CONFIG_POWER_EXT)
 	int count = 0;
+	unsigned char exist;
 #endif
+
 	rtc_xinfo("mt_power_off\n");
 	dump_stack();
 	/* pull PWRBB low */
@@ -414,10 +422,12 @@ void mt_power_off(void)
 		rtc_xinfo("EVB without charger\n");
 #else
 		/* Phone */
-		mdelay(100);
 		rtc_xinfo("Phone with charger\n");
+		mdelay(100);
+		rtc_xinfo("arch_reset\n");
 #ifdef CONFIG_MTK_SMART_BATTERY
-		if (pmic_chrdet_status() == KAL_TRUE || count > 10)
+		mtk_chr_is_charger_exist(&exist);
+		if (exist == 1 || count > 10)
 			arch_reset(0, "charger");
 #endif
 		count++;
