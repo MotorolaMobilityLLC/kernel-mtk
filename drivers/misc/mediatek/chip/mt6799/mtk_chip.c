@@ -119,7 +119,8 @@ unsigned int __chip_date_code(void)
 
 unsigned int __chip_proj_code(void)
 {
-	return get_devinfo_with_index(29);
+	/*[29:16]*/
+	return (get_devinfo_with_index(29) >> 16) & 0x3FFF;
 }
 
 unsigned int __chip_fab_code(void)
@@ -171,9 +172,9 @@ static chip_info_cb g_cbs[CHIP_INFO_MAX] = {
 	__chip_sw_ver,
 
 	__chip_func_code,
-	NULL,
-	NULL,
-	NULL,
+	__chip_date_code,
+	__chip_proj_code,
+	__chip_fab_code,
 	NULL,
 };
 
