@@ -101,11 +101,6 @@ enum {
 	CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT,
 };
 
-/* Data of notifier from charger device */
-struct chgdev_notify {
-	bool vbusov_stat;
-};
-
 /*
 *Software Jeita
 *T0:-10

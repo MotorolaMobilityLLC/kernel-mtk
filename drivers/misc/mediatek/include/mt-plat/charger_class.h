@@ -26,8 +26,14 @@ struct charger_properties {
 	const char *alias_name;
 };
 
+/* Data of notifier from charger device */
+struct chgdev_notify {
+	bool vbusov_stat;
+};
+
 struct charger_device {
 	struct charger_properties props;
+	struct chgdev_notify noti;
 	const struct charger_ops *ops;
 	struct mutex ops_lock;
 	struct device dev;
