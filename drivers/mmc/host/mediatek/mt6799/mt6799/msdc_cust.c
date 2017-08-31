@@ -476,6 +476,11 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			pericfg_base + 0x290,
 			/* mux at bit 3 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 3) & 1);
+		buf_ptr += sprintf(buf_ptr,
+			"CLK_CFG_4= 0x%x, CLK_CFG_5= 0x%x\n",
+			MSDC_READ32(topckgen_base + 0x140),
+			MSDC_READ32(topckgen_base + 0x150));
+
 		*buf_ptr = '\0';
 		if (!m)
 			pr_err("%s", buffer);
@@ -511,6 +516,9 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 
 void msdc_dump_dvfs_reg(struct msdc_host *host)
 {
+	void __iomem *base = host->base;
+
+	pr_err("SDC_STS:0x%x", MSDC_READ32(SDC_STS));
 	if (sleep_base) {
 		/* bit24 high is in dvfs request status, which cause sdc busy */
 		pr_err("DVFS_REQUEST@0x%p = 0x%x, bit[24] shall 0b\n",
