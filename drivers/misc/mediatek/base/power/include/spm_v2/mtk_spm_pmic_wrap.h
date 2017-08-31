@@ -18,11 +18,7 @@
 #ifndef __MT_SPM_PMIC_WRAP__H__
 #define __MT_SPM_PMIC_WRAP__H__
 
-#if defined(CONFIG_MACH_MT6755)
-
-#include "mt_spm_pmic_wrap_mt6755.h"
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "mtk_spm_pmic_wrap_mt6757.h"
 
