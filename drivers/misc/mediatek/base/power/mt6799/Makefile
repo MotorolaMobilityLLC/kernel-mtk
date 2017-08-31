@@ -53,7 +53,6 @@ obj-y += mtk_udi.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 obj-y += mtk_eem_turbo.o
 obj-y += mtk_lowpower.o
-obj-y += mtk_static_power.o
 obj-y += mtk_ocp.o
 
 endif
