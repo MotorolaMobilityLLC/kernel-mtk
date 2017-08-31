@@ -405,9 +405,6 @@ static int tsbat_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsig
 
 static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
-#ifdef CONFIG_MTK_AEE_FEATURE
-	static int tsbat_sysrst_triggered;
-#endif
 
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
@@ -416,16 +413,7 @@ static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
-#if 0
 		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
-#else
-#ifdef CONFIG_MTK_AEE_FEATURE
-		if (tsbat_sysrst_triggered == 0) {
-			aee_kernel_warning("tsbat_sysrst", "Battery SW protection triggered");
-			tsbat_sysrst_triggered = 1;
-		}
-#endif
-#endif
 	}
 	return 0;
 }
