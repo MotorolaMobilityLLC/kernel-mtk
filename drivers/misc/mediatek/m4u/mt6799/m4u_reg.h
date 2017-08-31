@@ -238,9 +238,10 @@
 #define REG_MMU_INT_ID(mmu)	     (0x150+((mmu)<<2))
 #define F_MMU0_INT_ID_TF_MSK	F_MSK(10, 2)      /* only for MM iommu. */
 
-
-#define REG_MMU_PF_L1_CNT(mmu)	       (0x1a8+(mmu<<5))
-#define REG_MMU_PF_L2_CNT(mmu)	       (0x1ac+(mmu<<5))
+#define REG_MMU_PF_L1_MSCNT        (0x1a0)
+#define REG_MMU_PF_L2_MSCNT        (0x1a4)
+#define REG_MMU_PF_L1_CNT	       (0x1a8)
+#define REG_MMU_PF_L2_CNT	       (0x1ac)
 #define REG_MMU_ACC_CNT(mmu)	       (0x1c0+(mmu<<5))
 #define REG_MMU_MAIN_L1_MSCNT(mmu)     (0x1c4+(mmu<<5))
 #define REG_MMU_MAIN_L2_MSCNT(mmu)     (0x1c8+(mmu<<5))

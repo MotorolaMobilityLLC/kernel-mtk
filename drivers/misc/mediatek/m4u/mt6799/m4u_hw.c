@@ -1535,13 +1535,22 @@ void m4u_get_perf_counter(int m4u_index, int m4u_slave_id, M4U_PERF_COUNT *pM4U_
 
 	pM4U_perf_count->transaction_cnt = M4U_ReadReg32(m4u_base, REG_MMU_ACC_CNT(m4u_slave_id));
 	/* Transaction access count */
+
+	pM4U_perf_count->lookup_cnt = M4U_ReadReg32(m4u_base, REG_MMU_LOOKUP_CNT(m4u_slave_id));
+	/* lookup count */
+
 	pM4U_perf_count->main_tlb_miss_cnt = M4U_ReadReg32(m4u_base, REG_MMU_MAIN_L1_MSCNT(m4u_slave_id))
 		+ M4U_ReadReg32(m4u_base, REG_MMU_MAIN_L2_MSCNT(m4u_slave_id));
 	/* Main TLB miss count */
-	pM4U_perf_count->pfh_tlb_miss_cnt = M4U_ReadReg32(m4u_base, REG_MMU_MAIN_L2_MSCNT(m4u_slave_id));
+
+	pM4U_perf_count->pfh_tlb_miss_cnt = M4U_ReadReg32(m4u_base, REG_MMU_PF_L1_MSCNT)
+		+ M4U_ReadReg32(m4u_base, REG_MMU_PF_L2_MSCNT);
 	/* Prefetch TLB miss count */
-	pM4U_perf_count->pfh_cnt = M4U_ReadReg32(m4u_base, REG_MMU_PF_L1_CNT(m4u_slave_id))
-		+ M4U_ReadReg32(m4u_base, REG_MMU_PF_L2_CNT(m4u_slave_id));     /*  Prefetch count */
+
+	pM4U_perf_count->pfh_cnt = M4U_ReadReg32(m4u_base, REG_MMU_PF_L1_CNT)
+		+ M4U_ReadReg32(m4u_base, REG_MMU_PF_L2_CNT);
+	/*  Prefetch count */
+
 	pM4U_perf_count->rs_perf_cnt = M4U_ReadReg32(m4u_base, REG_MMU_RS_PERF_CNT(m4u_slave_id));
 }
 
@@ -1600,8 +1609,8 @@ void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg)
 
 	M4UINFO("====m4u performance count for %s m4u%d_%d======\n", msg, m4u_index, m4u_slave_id);
 	m4u_get_perf_counter(m4u_index, m4u_slave_id, &cnt);
-	M4UINFO("total trans=%u, main_miss=%u, pfh_miss=%u, pfh_cnt=%u, rs_perf_cnt=%u\n",
-		cnt.transaction_cnt, cnt.main_tlb_miss_cnt, cnt.pfh_tlb_miss_cnt, cnt.pfh_cnt,
+	M4UINFO("total trans=%u, lookup=%u, main_miss=%u, pfh_miss=%u, pfh_cnt=%u, rs_perf_cnt=%u\n",
+		cnt.transaction_cnt, cnt.lookup_cnt, cnt.main_tlb_miss_cnt, cnt.pfh_tlb_miss_cnt, cnt.pfh_cnt,
 		cnt.rs_perf_cnt);
 }
 

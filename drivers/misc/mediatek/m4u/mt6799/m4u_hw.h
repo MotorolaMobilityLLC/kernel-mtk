@@ -47,6 +47,7 @@
 
 typedef struct _M4U_PERF_COUNT {
 	unsigned int transaction_cnt;
+	unsigned int lookup_cnt;
 	unsigned int main_tlb_miss_cnt;
 	unsigned int pfh_tlb_miss_cnt;
 	unsigned int pfh_cnt;
