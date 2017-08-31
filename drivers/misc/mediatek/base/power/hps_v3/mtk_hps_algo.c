@@ -62,7 +62,27 @@ int hps_current_core(void)
 static int hps_algo_big_task_det(void)
 {
 	int i, ret;
+	unsigned int idle_det_time;
+	unsigned int window_length_ms = 0;
+	hps_idle_ratio_t ratio;
 
+	ret = 0;
+	mtk_idle_recent_ratio_get(&window_length_ms, &ratio);
+	idle_det_time = idle_get_current_time_ms() - ratio.last_end_ts + window_length_ms;
+	hps_ctxt.idle_ratio = (((ratio.value * window_length_ms) / idle_det_time) * 100) / idle_det_time;
+
+	if ((idle_det_time < window_length_ms) || (!ratio.value))
+		goto BIG_TASK_DET;
+
+	if (hps_ctxt.idle_det_enabled) {
+		if (hps_ctxt.idle_ratio >= hps_ctxt.idle_threshold) {
+			hps_ctxt.is_idle = 1;
+			return ret;
+		}
+		hps_ctxt.is_idle = 0;
+	}
+
+BIG_TASK_DET:
 	ret = 0;
 	for (i = 1 ; i < hps_sys.cluster_num ; i++) {
 		if (hps_sys.cluster_info[i].bigTsk_value > hps_sys.cluster_info[i].target_core_num) {
@@ -454,6 +474,10 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_EAS);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_EAS);
+	if (!hps_ctxt.idle_det_enabled)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_IDLE_DET);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_IDLE_DET);
 }
 
 void hps_algo_main(void)
@@ -722,12 +746,12 @@ HPS_END:
 
 
 				snprintf(str1, sizeof(str1),
-	"(0x%X)%s action end (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u)",
+	"(0x%X)%s action end (%u)(%u)(%u) %s %s[%u](%u) %s %s%s (%u)(%u)(%u)(%u)",
 						((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
 						str_online, hps_ctxt.cur_loads,
 						hps_ctxt.cur_tlp, hps_ctxt.cur_iowait,
-						str_hvytsk, str_bigtsk, str_pwrseq,
-						str_criteria_limit, str_criteria_base,
+						str_hvytsk, str_bigtsk, hps_ctxt.is_idle, hps_ctxt.idle_ratio,
+						str_pwrseq, str_criteria_limit, str_criteria_base,
 						hps_sys.up_load_avg,
 						hps_sys.down_load_avg,
 						hps_sys.tlp_avg, hps_sys.rush_cnt);
