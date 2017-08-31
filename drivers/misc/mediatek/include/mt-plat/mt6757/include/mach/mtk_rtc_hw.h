@@ -130,11 +130,13 @@ extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
 
 /*
  * RTC_NEW_SPARE3: RTC_AL_MTH bit0~3
- *        bit 8 ~ 15 : reserved bits
+ * bit 8 ~ 15 : Fuel Gauge
  */
 #define RTC_AL_MTH            (RTC_BASE + 0x0022)
 #define RTC_NEW_SPARE3    0xff00
 #define RTC_AL_MTH_MASK 0x000f
+#define RTC_AL_MTH_FG_SHIFT	8
+#define RTC_AL_MTH_FG_MASK	0xff00
 
 #define RTC_AL_YEA            (RTC_BASE + 0x0024)
 #define RTC_K_EOSC_RSV_7        (1U << 15)
@@ -287,6 +289,10 @@ extern unsigned int pmic_config_interface_nospinlock(unsigned int RegNum,
 #define RTC_CON_GE8            (1U << 13)
 #define RTC_CON_GPI            (1U << 14)
 #define RTC_CON_LPSTA_RAW        (1U << 15)    /* 32K was stopped */
+
+#define RTC_INT_CNT            (RTC_BASE + 0x0202)
+#define RTC_INT_CNT_MASK        0x7FF
+#define RTC_INT_CNT_SHIFT       0
 
 /* power on alarm time setting */
 

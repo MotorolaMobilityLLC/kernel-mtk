@@ -70,7 +70,7 @@ static int rtc_suspend(struct device *dev)
 
 	getnstimeofday64(&old_system);
 	old_rtc.tv_sec = rtc_tm_to_time64(&tm);
-
+	old_rtc.tv_nsec = tm.tm_cnt*(1000000000/32768);
 
 	/*
 	 * To avoid drift caused by repeated suspend/resumes,
@@ -118,7 +118,7 @@ static int rtc_resume(struct device *dev)
 	}
 
 	new_rtc.tv_sec = rtc_tm_to_time64(&tm);
-	new_rtc.tv_nsec = 0;
+	new_rtc.tv_nsec = tm.tm_cnt*(1000000000/32768);
 
 	if (new_rtc.tv_sec < old_rtc.tv_sec) {
 		pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));

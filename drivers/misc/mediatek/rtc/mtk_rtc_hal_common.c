@@ -159,6 +159,7 @@ static void rtc_get_tick(struct rtc_time *tm)
 	tm->tm_mday = rtc_read(RTC_TC_DOM);
 	tm->tm_mon = rtc_read(RTC_TC_MTH);
 	tm->tm_year = rtc_read(RTC_TC_YEA);
+	tm->tm_cnt = rtc_read(RTC_INT_CNT);
 }
 
 void hal_rtc_get_tick_time(struct rtc_time *tm)
@@ -169,7 +170,7 @@ void hal_rtc_get_tick_time(struct rtc_time *tm)
 	rtc_write(RTC_BBPU, bbpu);
 	rtc_write_trigger();
 	rtc_get_tick(tm);
-	if (rtc_read(RTC_TC_SEC) < tm->tm_sec) {	/* SEC has carried */
+	if (rtc_read(RTC_INT_CNT) < tm->tm_cnt) {	/* SEC has carried */
 		rtc_get_tick(tm);
 	}
 }
