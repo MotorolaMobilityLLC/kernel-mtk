@@ -430,7 +430,8 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 				set_adc_enable(false);
-
+		} else {
+			pr_debug("%s(), bypass disable adc, already disable before.", __func__);
 			is_adc1_closed_before = false;
 		}
 
