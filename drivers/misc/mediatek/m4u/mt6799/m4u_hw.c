@@ -878,10 +878,10 @@ static int m4u_clock_off(void)
 
 #if !defined(CONFIG_MTK_CLKMGR)
 const char *smi_clk_name[] = {
-	"m4u_mm_smi_common", "m4u_mm_smi_larb0", "m4u_vdec_cken", "m4u_vdec_larb1_cken",
-	"m4u_cam_larb2", "m4u_venc_1", "m4u_mjc_smi_larb", "m4u_mjc_larb4_asif",
-	"m4u_mm_smi_larb5", "m4u_img_larb6", "m4u_mtcmos_dis", "m4u_mtcmos_vde",
-	"m4u_mtcmos_ven", "m4u_mtcmos_mjc", "m4u_mtcmos_isp"
+	"m4u_mm_smi_larb0", "m4u_mm_smi_larb1", "m4u_vdec_cken", "m4u_vdec_larb1_cken",
+	"m4u_img_larb5", "m4u_cam_larb6", "m4u_venc_1", "m4u_mjc_smi_larb",
+	"m4u_mtcmos_dis", "m4u_mtcmos_vde", "m4u_mtcmos_img", "m4u_mtcmos_cam",
+	"m4u_mtcmos_ven", "m4u_mtcmos_mjc"
 };
 
 #endif
@@ -890,56 +890,23 @@ const char *smi_clk_name[] = {
 #if !defined(CONFIG_MTK_CLKMGR)
 static int smi_larb_clock_prepare(void)
 {
-	int ret;
+	int ret, i;
 
-	ret = clk_prepare(gM4uDev->smi_clk[MM_SMI_COMMON]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MM_SMI_COMMON]);
-
-	ret = clk_prepare(gM4uDev->smi_clk[MM_SMI_LARB0]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MM_SMI_LARB0]);
-	ret = clk_prepare(gM4uDev->smi_clk[VDEC_CKEN]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC_CKEN]);
-	ret = clk_prepare(gM4uDev->smi_clk[VDEC_LARB1_CKEN]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC_LARB1_CKEN]);
-	ret = clk_prepare(gM4uDev->smi_clk[CAM_LARB2]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[CAM_LARB2]);
-	ret = clk_prepare(gM4uDev->smi_clk[VENC_1]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_1]);
-	ret = clk_prepare(gM4uDev->smi_clk[MJC_SMI_LARB]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MJC_SMI_LARB]);
-	ret = clk_prepare(gM4uDev->smi_clk[MJC_LARB4_ASIF]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MJC_LARB4_ASIF]);
-	ret = clk_prepare(gM4uDev->smi_clk[MM_SMI_LARB5]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MM_SMI_LARB5]);
-	ret = clk_prepare(gM4uDev->smi_clk[IMG_LARB6]);
-	if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[IMG_LARB6]);
+	for (i = 0; i < SMI_CLK_NUM; i++) {
+		ret = clk_prepare(gM4uDev->smi_clk[i]);
+		if (ret)
+			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[i]);
+	}
 
 	return 0;
 }
 
 static int smi_larb_clock_unprepare(void)
 {
-	clk_unprepare(gM4uDev->smi_clk[MM_SMI_COMMON]);
+	int i;
 
-	clk_unprepare(gM4uDev->smi_clk[MM_SMI_LARB0]);
-	clk_unprepare(gM4uDev->smi_clk[VDEC_CKEN]);
-	clk_unprepare(gM4uDev->smi_clk[VDEC_LARB1_CKEN]);
-	clk_unprepare(gM4uDev->smi_clk[CAM_LARB2]);
-	clk_unprepare(gM4uDev->smi_clk[VENC_1]);
-	clk_unprepare(gM4uDev->smi_clk[MJC_SMI_LARB]);
-	clk_unprepare(gM4uDev->smi_clk[MJC_LARB4_ASIF]);
-	clk_unprepare(gM4uDev->smi_clk[MM_SMI_LARB5]);
-	clk_unprepare(gM4uDev->smi_clk[IMG_LARB6]);
+	for (i = 0; i < SMI_CLK_NUM; i++)
+		clk_unprepare(gM4uDev->smi_clk[i]);
 
 	return 0;
 }
@@ -948,50 +915,34 @@ static int smi_larb_clock_unprepare(void)
 
 static int larb_clock_on(int larb, bool config_mtcmos)
 {
-#if defined(CONFIG_MTK_CLKMGR)
-	switch (larb) {
-	case 0:
-		enable_clock(MT_CG_MM_SMI_LARB0, "m4u_larb0");
-		break;
-	case 1:
-		enable_clock(MT_CG_VDEC_CKEN, "m4u_larb1");
-		enable_clock(MT_CG_VDEC_LARB1_CKEN, "m4u_larb1");
-		break;
-	case 2:
-		enable_clock(MT_CG_CAM_LARB2, "m4u_larb2");
-		break;
-	case 3:
-		enable_clock(MT_CG_VENC_1, "m4u_larb3");
-		break;
-	case 4:
-		enable_clock(MT_CG_MJC_SMI_LARB, "m4u_larb4");
-		enable_clock(MT_CG_MJC_LARB4_ASIF, "m4u_larb4");
-		break;
-	case 5:
-		enable_clock(MT_CG_MM_SMI_LARB5, "m4u_larb5");
-		break;
-	case 6:
-		enable_clock(MT_CG_IMG_LARB6, "m4u_larb6");
-		break;
-	default:
-		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
-		break;
-	}
-#else
 	int ret;
 
 	switch (larb) {
 	case 0:
 		if (config_mtcmos) {
-			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_DIS]);
+			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_MM0]);
 			if (ret)
-				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_DIS]);
+				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_MM0]);
 		}
 		ret = clk_enable(gM4uDev->smi_clk[MM_SMI_LARB0]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MM_SMI_LARB0]);
 	break;
 	case 1:
+		if (config_mtcmos) {
+			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_MM0]);
+			if (ret)
+				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_MM0]);
+		}
+		ret = clk_enable(gM4uDev->smi_clk[MM_SMI_LARB1]);
+		if (ret)
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MM_SMI_LARB1]);
+	break;
+	case 2:
+	case 3:
+		M4UMSG("error: No config larb %d, %s!\n", larb, __func__);
+	break;
+	case 4:
 		if (config_mtcmos) {
 			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_VDE]);
 			if (ret)
@@ -1004,17 +955,27 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VDEC_LARB1_CKEN]);
 	break;
-	case 2:
+	case 5:
 		if (config_mtcmos) {
-			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_ISP]);
+			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_IMG]);
 			if (ret)
-				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_ISP]);
+				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_IMG]);
 		}
-		ret = clk_enable(gM4uDev->smi_clk[CAM_LARB2]);
+		ret = clk_enable(gM4uDev->smi_clk[IMG_LARB5]);
 		if (ret)
-			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[CAM_LARB2]);
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[IMG_LARB5]);
 	break;
-	case 3:
+	case 6:
+		if (config_mtcmos) {
+			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_CAM]);
+			if (ret)
+				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_CAM]);
+		}
+		ret = clk_enable(gM4uDev->smi_clk[CAM_LARB6]);
+		if (ret)
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[CAM_LARB6]);
+	break;
+	case 7:
 		if (config_mtcmos) {
 			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_VEN]);
 			if (ret)
@@ -1024,7 +985,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_1]);
 	break;
-	case 4:
+	case 8:
 		if (config_mtcmos) {
 			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_MJC]);
 			if (ret)
@@ -1033,129 +994,61 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 		ret = clk_enable(gM4uDev->smi_clk[MJC_SMI_LARB]);
 		if (ret)
 			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MJC_SMI_LARB]);
-		ret = clk_enable(gM4uDev->smi_clk[MJC_LARB4_ASIF]);
-		if (ret)
-			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MJC_LARB4_ASIF]);
-	break;
-	case 5:
-		if (config_mtcmos) {
-			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_DIS]);
-			if (ret)
-				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_DIS]);
-		}
-		ret = clk_enable(gM4uDev->smi_clk[MM_SMI_LARB5]);
-		if (ret)
-			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MM_SMI_LARB5]);
-	break;
-	case 6:
-		if (config_mtcmos) {
-			ret = clk_prepare(gM4uDev->smi_clk[MTCMOS_ISP]);
-			if (ret)
-				M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[MTCMOS_ISP]);
-		}
-		ret = clk_enable(gM4uDev->smi_clk[IMG_LARB6]);
-		if (ret)
-			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[IMG_LARB6]);
-	break;
-	case 7:
-		M4UMSG("%s, need fix clk, larb id: %d\n", __func__, larb);
-	break;
-	case 8:
-		M4UMSG("%s, need fix clk, larb id: %d\n", __func__, larb);
 	break;
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 		break;
 	}
-#endif
-
-
 	return 0;
 }
 
 static int larb_clock_off(int larb, bool config_mtcmos)
 {
-#if defined(CONFIG_MTK_CLKMGR)
-	switch (larb) {
-	case 0:
-		disable_clock(MT_CG_MM_SMI_LARB0, "m4u_larb0");
-		break;
-	case 1:
-		disable_clock(MT_CG_VDEC_CKEN, "m4u_larb1");
-		disable_clock(MT_CG_VDEC_LARB1_CKEN, "m4u_larb1");
-		break;
-	case 2:
-		disable_clock(MT_CG_CAM_LARB2, "m4u_larb2");
-		break;
-	case 3:
-		disable_clock(MT_CG_VENC_1, "m4u_larb3");
-		break;
-	case 4:
-		disable_clock(MT_CG_MJC_SMI_LARB, "m4u_larb4");
-		disable_clock(MT_CG_MJC_LARB4_ASIF, "m4u_larb4");
-		break;
-	case 5:
-		disable_clock(MT_CG_MM_SMI_LARB5, "m4u_larb5");
-		break;
-	case 6:
-		disable_clock(MT_CG_IMG_LARB6, "m4u_larb6");
-		break;
-	default:
-		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
-		break;
-	}
-#else
 	switch (larb) {
 	case 0:
 		clk_disable(gM4uDev->smi_clk[MM_SMI_LARB0]);
 		if (config_mtcmos)
-			clk_unprepare(gM4uDev->smi_clk[MTCMOS_DIS]);
+			clk_unprepare(gM4uDev->smi_clk[MTCMOS_MM0]);
 	break;
 	case 1:
+		clk_disable(gM4uDev->smi_clk[MM_SMI_LARB1]);
+		if (config_mtcmos)
+			clk_unprepare(gM4uDev->smi_clk[MTCMOS_MM0]);
+	break;
+	case 2:
+	case 3:
+		M4UMSG("error: No config larb %d, %s!\n", larb, __func__);
+	break;
+	case 4:
 		clk_disable(gM4uDev->smi_clk[VDEC_CKEN]);
 		clk_disable(gM4uDev->smi_clk[VDEC_LARB1_CKEN]);
 		if (config_mtcmos)
 			clk_unprepare(gM4uDev->smi_clk[MTCMOS_VDE]);
 	break;
-	case 2:
-		clk_disable(gM4uDev->smi_clk[CAM_LARB2]);
+	case 5:
+		clk_disable(gM4uDev->smi_clk[IMG_LARB5]);
 		if (config_mtcmos)
-			clk_unprepare(gM4uDev->smi_clk[MTCMOS_ISP]);
+			clk_unprepare(gM4uDev->smi_clk[MTCMOS_IMG]);
 	break;
-	case 3:
+	case 6:
+		clk_disable(gM4uDev->smi_clk[CAM_LARB6]);
+		if (config_mtcmos)
+			clk_unprepare(gM4uDev->smi_clk[MTCMOS_CAM]);
+	break;
+	case 7:
 		clk_disable(gM4uDev->smi_clk[VENC_1]);
 		if (config_mtcmos)
 			clk_unprepare(gM4uDev->smi_clk[MTCMOS_VEN]);
 	break;
-	case 4:
+	case 8:
 		clk_disable(gM4uDev->smi_clk[MJC_SMI_LARB]);
-		clk_disable(gM4uDev->smi_clk[MJC_LARB4_ASIF]);
 		if (config_mtcmos)
 			clk_unprepare(gM4uDev->smi_clk[MTCMOS_MJC]);
-	break;
-	case 5:
-		clk_disable(gM4uDev->smi_clk[MM_SMI_LARB5]);
-		if (config_mtcmos)
-			clk_unprepare(gM4uDev->smi_clk[MTCMOS_DIS]);
-	break;
-	case 6:
-		clk_disable(gM4uDev->smi_clk[IMG_LARB6]);
-		if (config_mtcmos)
-			clk_unprepare(gM4uDev->smi_clk[MTCMOS_ISP]);
-	break;
-	case 7:
-		M4UMSG("%s, need fix clk, larb id: %d\n", __func__, larb);
-	break;
-	case 8:
-		M4UMSG("%s, need fix clk, larb id: %d\n", __func__, larb);
 	break;
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
 	}
-#endif
-
-
 	return 0;
 }
 
@@ -1178,32 +1071,6 @@ static int larb_clock_all_off(void)
 
 	return 0;
 }
-
-void smi_common_clock_on(void)
-{
-#if defined(CONFIG_MTK_CLKMGR)
-	enable_clock(MT_CG_MM_SMI_COMMON, "smi_common");
-	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
-#else
-	int ret = clk_enable(gM4uDev->smi_clk[MM_SMI_COMMON]);
-
-	if (ret)
-		M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[MM_SMI_COMMON]);
-#endif
-}
-EXPORT_SYMBOL(smi_common_clock_on);
-
-void smi_common_clock_off(void)
-{
-#if defined(CONFIG_MTK_CLKMGR)
-	disable_clock(MT_CG_MM_SMI_COMMON, "smi_common");
-	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x0); */
-#else
-	clk_disable(gM4uDev->smi_clk[MM_SMI_COMMON]);
-#endif
-}
-EXPORT_SYMBOL(smi_common_clock_off);
-
 
 int m4u_config_pfh_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, int sel)
 {
@@ -1492,11 +1359,9 @@ static inline void _m4u_port_clock_toggle(int m4u_index, int larb, int on)
 	if (m4u_index == 0) {
 		start = sched_clock();
 		if (on) {
-			smi_common_clock_on();
 			larb_clock_on(larb, 1);
 		} else {
 			larb_clock_off(larb, 1);
-			smi_common_clock_off();
 		}
 		end = sched_clock();
 
@@ -1927,7 +1792,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "m4u_print_port_status ========>\n");
 
-	smi_common_clock_on();
 	larb_clock_all_on();
 
 	for (port = 0; port < gM4u_port_num; port++) {
@@ -1953,7 +1817,6 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	}
 
 	larb_clock_all_off();
-	smi_common_clock_off();
 
 	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
 }
@@ -2476,7 +2339,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	}
 #endif
 
-	for (i = MM_SMI_COMMON; i < SMI_CLK_NUM; i++) {
+	for (i = 0; i < SMI_CLK_NUM; i++) {
 		gM4uDev->smi_clk[i] = devm_clk_get(gM4uDev->pDev[m4u_id], smi_clk_name[i]);
 		if (IS_ERR(gM4uDev->smi_clk[i])) {
 			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
@@ -2484,7 +2347,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		}
 	}
 	smi_larb_clock_prepare();
-	smi_common_clock_on();
 #endif
 #endif
 

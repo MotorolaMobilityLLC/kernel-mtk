@@ -91,30 +91,25 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 
 extern void smp_inner_dcache_flush_all(void);
 
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#else
 #include <linux/clk.h>
-#endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
 
 enum {
-	MM_SMI_COMMON,
 	MM_SMI_LARB0,
+	MM_SMI_LARB1,
 	VDEC_CKEN,
 	VDEC_LARB1_CKEN,
-	CAM_LARB2,
+	IMG_LARB5,
+	CAM_LARB6,
 	VENC_1,
 	MJC_SMI_LARB,
-	MJC_LARB4_ASIF,
-	MM_SMI_LARB5,
-	IMG_LARB6,
-	MTCMOS_DIS,
+	MTCMOS_MM0,
 	MTCMOS_VDE,
+	MTCMOS_IMG,
+	MTCMOS_CAM,
 	MTCMOS_VEN,
 	MTCMOS_MJC,
-	MTCMOS_ISP,
 	SMI_CLK_NUM,
 };
 

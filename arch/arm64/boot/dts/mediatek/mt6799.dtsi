@@ -1022,6 +1022,34 @@
 		compatible = "mediatek,mm_iommu";
 		reg = <0 0x102b0000 0 0x1000>;
 		interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_CG2_B9>,
+			<&mmsys_config CLK_MM_CG2_B10>,
+			<&vdec_gcon CLK_VDEC_CKEN>,
+			<&vdec_gcon CLK_VDEC_LARB1_CKEN>,
+			<&imgsys CLK_IMG_LARB5>,
+			<&camsys CLK_CAM_LARB6>,
+			<&venc_global_con CLK_VENC_GLOBAL_CON_CKE0>,
+			<&mjc_config CLK_MJC_SMI_LARB>,
+			<&scpsys SCP_SYS_MM0>,
+			<&scpsys SCP_SYS_VDE>,
+			<&scpsys SCP_SYS_ISP>,
+			<&scpsys SCP_SYS_CAM>,
+			<&scpsys SCP_SYS_VEN>,
+			<&scpsys SCP_SYS_MJC>;
+		clock-names = "m4u_mm_smi_larb0",
+			"m4u_mm_smi_larb1",
+			"m4u_vdec_cken",
+			"m4u_vdec_larb1_cken",
+			"m4u_img_larb5",
+			"m4u_cam_larb6",
+			"m4u_venc_1",
+			"m4u_mjc_smi_larb",
+			"m4u_mtcmos_dis",
+			"m4u_mtcmos_vde",
+			"m4u_mtcmos_img",
+			"m4u_mtcmos_cam",
+			"m4u_mtcmos_ven",
+			"m4u_mtcmos_mjc";
 	};
 
 	peri_m1_dfp@11ae0000 {
