@@ -18,7 +18,7 @@
 #define DIFFERENCE_FULLOCV_ITH	150	/* mA */
 #define SHUTDOWN_1_TIME	60
 #define SHUTDOWN_GAUGE1_XMINS 1
-#define KEEP_100_PERCENT 5
+#define KEEP_100_PERCENT 3
 #define R_FG_VALUE	10				/* mOhm */
 #define POWERON_SYSTEM_IBOOT 1000	/* mA */
 #define EMBEDDED_SEL 0
@@ -43,22 +43,22 @@
 #define PSEUDO1_EN 1
 #define PSEUDO100_EN 1
 #define DIFF_SOC_SETTING 50	/* 0.01% */
-#define DIFF_BAT_TEMP_SETTING 1
+#define DIFF_BAT_TEMP_SETTING 10
 #define DISCHARGE_TRACKING_TIME 10
 #define CHARGE_TRACKING_TIME 60
 #define DIFFERENCE_FULLOCV_VTH	1000	/* 0.1mV */
-#define CHARGE_PSEUDO_FULL_LEVEL 8000
+#define CHARGE_PSEUDO_FULL_LEVEL 9000
 
 /* pre tracking */
 #define FG_PRE_TRACKING_EN 0
-#define VBAT2_DET_TIME 1
+#define VBAT2_DET_TIME 5
 #define VBAT2_DET_COUNTER 6
-#define VBAT2_DET_VOLTAGE 31500 /* 0.1mV */
+#define VBAT2_DET_VOLTAGE 32000 /* 0.1mV */
 
 /* PCB setting */
 #define CAR_TUNE_VALUE	100 /*1.00 */
 #define FG_METER_RESISTANCE	50
-#define MT6336_EXIST 1
+#define MTK_CHR_EXIST 1
 
 /* Aging Compensation 1*/
 #define DIFFERENCE_VOLTAGE_UPDATE 50
@@ -81,7 +81,7 @@
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
-#define BAT_PLUG_OUT_TIME	30
+#define BAT_PLUG_OUT_TIME	5
 #define EXT_HWOCV_SWOCV		300
 
 /* fgc & fgv threshold */

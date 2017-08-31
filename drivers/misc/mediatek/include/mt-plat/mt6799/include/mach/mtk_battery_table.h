@@ -27,7 +27,7 @@
 
 /* multiple battery profile compile options */
 /*#define MTK_GET_BATTERY_ID_BY_AUXADC*/
-#define BATTERY_ID_CHANNEL_NUM 2
+#define BATTERY_ID_CHANNEL_NUM 1
 #define TOTAL_BATTERY_NUMBER 4
 /*#define MTK_GET_BATTERY_ID_BY_GPIO*/
 
@@ -44,7 +44,7 @@ int g_Q_MAX_T2_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2418, 2132, 2010, 1646};
 int g_Q_MAX_T3_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2235, 1691, 1558, 1573};
 int g_Q_MAX_T4_H_CURRENT[TOTAL_BATTERY_NUMBER] = { 2223, 1660, 1543, 1551};
 
-int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3400, 3400, 3400, 3400};
+int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3200, 3200, 3200, 3200};
 
 /* 0~0.5V for battery 0, 0.5~1V for battery 1*/
 /* 1~1.5V for battery 2, -1 for the last one (battery 3) */
@@ -134,8 +134,8 @@ FUELGAUGE_TEMPERATURE Fg_Temperature_Table[17] = {
  * ============================================================
  */
 
-#define TEMPERATURE_T0	50
-#define TEMPERATURE_T1	25
+#define TEMPERATURE_T0	25
+#define TEMPERATURE_T1	10
 #define TEMPERATURE_T2	0
 #define TEMPERATURE_T3	-10
 #define TEMPERATURE_T4	-20
