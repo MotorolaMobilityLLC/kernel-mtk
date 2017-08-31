@@ -273,6 +273,7 @@ static int by_md2ap_count;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
+#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
 
@@ -305,7 +306,7 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
-
+#endif
 	__spm_sync_pcm_flags(pwrctrl);
 }
 
@@ -633,10 +634,10 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
-
+#ifndef CONFIG_MACH_MT6759
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
-
+#endif
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
 #ifdef SPM_SODI_PROFILE_TIME

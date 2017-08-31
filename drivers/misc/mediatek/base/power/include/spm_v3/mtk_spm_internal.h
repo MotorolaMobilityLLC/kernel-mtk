@@ -24,6 +24,10 @@
 #include <mtk_lpae.h>
 #include <mtk_gpio.h>
 
+#if defined(CONFIG_MACH_MT6759)
+#define SUP_MCSODI_FS
+#endif
+
 /**************************************
  * Config and Parameter
  **************************************/
@@ -512,6 +516,10 @@ enum {
 	SPM_LEAVE_SODI,
 	SPM_ENTER_SODI3,
 	SPM_LEAVE_SODI3,
+#ifdef SUP_MCSODI_FS
+	SPM_ENTER_MCSODI,
+	SPM_LEAVE_MCSODI,
+#endif
 	SPM_SUSPEND_PREPARE,
 	SPM_POST_SUSPEND,
 	SPM_DPIDLE_PREPARE,
@@ -520,11 +528,18 @@ enum {
 	SPM_POST_SODI,
 	SPM_SODI3_PREPARE,
 	SPM_POST_SODI3,
+#ifdef SUP_MCSODI_FS
+	SPM_MCSODI_PREPARE,
+	SPM_POST_MCSODI,
+#endif
 	SPM_VCORE_PWARP_CMD,
 	SPM_PWR_CTRL_SUSPEND,
 	SPM_PWR_CTRL_DPIDLE,
 	SPM_PWR_CTRL_SODI,
 	SPM_PWR_CTRL_SODI3,
+#ifdef SUP_MCSODI_FS
+	SPM_PWR_CTRL_MCSODI,
+#endif
 	SPM_PWR_CTRL_VCOREFS,
 };
 
@@ -610,6 +625,9 @@ extern struct spm_lp_scen __spm_dpidle;
 extern struct spm_lp_scen __spm_sodi3;
 extern struct spm_lp_scen __spm_sodi;
 extern struct spm_lp_scen __spm_mcdi;
+#ifdef SUP_MCSODI_FS
+extern struct spm_lp_scen __spm_mcsodi;
+#endif
 extern struct spm_lp_scen __spm_vcorefs;
 
 extern int __spm_check_opp_level(int ch);

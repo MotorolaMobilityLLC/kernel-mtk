@@ -66,6 +66,7 @@ int idle_switch[NR_TYPES] = {
 	1,	/* soidle3 switch */
 	1,	/* soidle switch */
 	0,	/* mcidle switch */
+	0,	/* mcsodi switch */
 	0,	/* slidle switch */
 	1,	/* rgidle switch */
 };
@@ -156,6 +157,32 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0},
+	/* mcsodi_condition_mask */
+	[IDLE_TYPE_MCSO] = {
+		0x00400800, /* INFRA0: */
+		0x00080000, /* INFRA1: */
+		0x00000000, /* INFRA2: */
+		0x03FF00FF, /* PERI0 */
+		0x07FF00FE, /* PERI1 */
+		0x00010000, /* PERI2 */
+		0x00000173, /* PERI3 */
+		0x10000043, /* PERI4 */
+		0x00000000, /* PERI5 */
+		0x00000000, /* AUDIO0 */
+		0x00000000, /* AUDIO1 */
+		0x000201FF, /* DISP0 */
+		0x00040FC1, /* DISP1 */
+		0x0000A070, /* DISP2 */
+		0x00001FC7, /* CAM */
+		0x00000DFF, /* IMAGE */
+		0x0000000F, /* MFG */
+		0x00000001, /* VDEC0 */
+		0x00000001, /* VDEC1 */
+		0x00000001, /* VENC0 */
+		0x00111111, /* VENC1 */
+		0x0000007F, /* MJC */
+		0x000003FF, /* IPU */
+	},
 	/* slidle_condition_mask */
 	[IDLE_TYPE_SL] = {
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -485,6 +512,7 @@ static const char *idle_name[NR_TYPES] = {
 	"soidle3",
 	"soidle",
 	"mcidle",
+	"mcsodi",
 	"slidle",
 	"rgidle",
 };
@@ -722,6 +750,18 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 				}
 			}
 			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) && !soidle_by_pass_pg) {
+				unsigned int flag =
+					SC_MFG1_PWR_ACK |
+					SC_ISP_PWR_ACK |
+					SC_VDE_PWR_ACK |
+					SC_VEN_PWR_ACK;
+
+				if (sta & flag) {
+					block_mask[i][NR_GRPS + 0] |= 0x4;
+					block_mask[i][NR_GRPS + 1] = (sta & flag);
+				}
+			}
+			if (i == IDLE_TYPE_MCSO && !mcsodi_by_pass_pg) {
 				unsigned int flag =
 					SC_MFG1_PWR_ACK |
 					SC_ISP_PWR_ACK |

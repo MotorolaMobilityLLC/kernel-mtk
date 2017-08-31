@@ -100,6 +100,7 @@ static struct mtk_idle_prof idle_prof[NR_TYPES] = {
 	[IDLE_TYPE_SO3] = DEFINE_ATTR("SODI3", "soidle3", 30000),
 	[IDLE_TYPE_SO]  = DEFINE_ATTR("SODI", "soidle", 30000),
 	[IDLE_TYPE_MC]  = DEFINE_ATTR("MC", "mcidle", ~0),
+	[IDLE_TYPE_MCSO]  = DEFINE_ATTR("MCSODI", "mcsodi", 30000),
 	[IDLE_TYPE_SL]  = DEFINE_ATTR("SL", "slidle", ~0),
 	[IDLE_TYPE_RG]  = DEFINE_ATTR("RG", "rgidle", ~0)
 };
@@ -355,6 +356,7 @@ void mtk_idle_dump_cnt_in_interval(void)
 	mtk_idle_dump_cnt(IDLE_TYPE_DP);
 	mtk_idle_dump_cnt(IDLE_TYPE_SO3);
 	mtk_idle_dump_cnt(IDLE_TYPE_SO);
+	mtk_idle_dump_cnt(IDLE_TYPE_MCSO);
 
 	/* dump log */
 	idle_prof_warn("%s\n", get_log());

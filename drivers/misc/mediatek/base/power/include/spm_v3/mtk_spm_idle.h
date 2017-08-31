@@ -115,4 +115,12 @@ bool spm_is_cpu_irq_occur(int core_id);
 
 bool go_to_mcidle(int cpu);
 
+/*
+ * for Multi Core Screen On/Off Deep Idle
+ */
+void spm_mcsodi_init(void);
+void spm_go_to_mcsodi(u32 spm_flags, u32 spm_data, u32 mcsodi_flags, u32 operation_cond);
+int spm_leave_mcsodi(u32 cpu, u32 operation_cond);
+bool spm_mcsodi_start(void);
+
 #endif

@@ -95,6 +95,7 @@ const char *wakesrc_str[32] = {
  **************************************/
 int __spm_check_opp_level_impl(int ch)
 {
+#ifndef CONFIG_MACH_MT6759
 	int opp = vcorefs_get_sw_opp();
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
@@ -104,6 +105,9 @@ int __spm_check_opp_level_impl(int ch)
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 
 	return opp;
+#else
+	return 0;
+#endif
 }
 
 int __spm_check_opp_level(int ch)
@@ -129,6 +133,8 @@ int __spm_check_opp_level(int ch)
 unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 {
 	unsigned int vcore_volt_pmic_val = 0;
+#ifndef CONFIG_MACH_MT6759
+
 	int opp = 0;
 
 	opp = __spm_check_opp_level_impl(ch);
@@ -139,7 +145,7 @@ unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 	}
 
 	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
-
+#endif
 	return vcore_volt_pmic_val;
 }
 
@@ -232,12 +238,14 @@ do {						\
 
 void rekick_vcorefs_scenario(void)
 {
+#ifndef CONFIG_MACH_MT6759
 	int flag;
 
 	if (spm_read(PCM_REG15_DATA) == 0x0) {
 		flag = spm_dvfs_flag_init();
 		spm_go_to_vcorefs(flag);
 	}
+#endif
 }
 
 wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,

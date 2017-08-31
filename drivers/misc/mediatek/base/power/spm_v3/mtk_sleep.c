@@ -77,7 +77,9 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 	SPM_FLAG_DIS_ULPOSC_OFF |
+#ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_VCORE_NORMAL_0P65 |
+#endif
 	SPM_FLAG_SUSPEND_OPTION
 };
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -195,13 +197,13 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-
+#ifndef CONFIG_MACH_MT6759
 	if (is_sspm_ipi_lock_spm()) {
 		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
 		slp_error("SPM FIRMWARE IS NOT READY\n");
