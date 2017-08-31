@@ -43,7 +43,7 @@
 #endif
 
 /* for LED&Backlight bringup, define the dummy API */
-#ifndef CONFIG_MTK_PMIC
+#ifndef CONFIG_MTK_PMIC_NEW_ARCH
 u16 pmic_set_register_value(u32 flagname, u32 val)
 {
 	return 0;
