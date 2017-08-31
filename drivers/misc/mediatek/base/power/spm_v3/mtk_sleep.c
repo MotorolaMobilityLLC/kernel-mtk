@@ -29,6 +29,7 @@
 #include <mtk_spm_idle.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
+#include <mtk_hps_internal.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -69,6 +70,9 @@ static bool slp_ck26m_on;
 bool slp_dump_gpio;
 
 static u32 slp_spm_flags = {
+#if !(CPU_BUCK_CTRL)
+	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
+#endif
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
