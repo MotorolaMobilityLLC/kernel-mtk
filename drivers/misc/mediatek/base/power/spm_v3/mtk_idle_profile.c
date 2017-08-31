@@ -13,6 +13,7 @@
 #include <linux/kernel.h>
 #include <mach/mtk_gpt.h>
 #include "mtk_cpuidle.h"
+#include "mtk_idle_internal.h"
 #include "mtk_idle_profile.h"
 #include "mtk_spm_resource_req_internal.h"
 
@@ -59,6 +60,18 @@ struct mtk_idle_block {
 	bool init;
 };
 
+#define IDLE_RATIO_WINDOW_MS 1000        /* 1000 ms */
+/* xxidle recent idle ratio */
+static struct mtk_idle_recent_ratio recent_ratio = {
+	.value = 0,
+	.value_dp = 0,
+	.value_so3 = 0,
+	.value_so = 0,
+	.last_end_ts = 0,
+	.start_ts = 0,
+	.end_ts = 0,
+};
+
 struct mtk_idle_ratio {
 	char *name;
 	unsigned long long start;
@@ -70,17 +83,17 @@ struct mtk_idle_prof {
 	struct mtk_idle_block block;
 };
 
-#define DEFINE_ATTR(abbr_name, block_name, block_ms)	\
-	{						\
-		.ratio = {					\
-			.name = (abbr_name),			\
-		},						\
-		.block = {					\
-			.name = (block_name),			\
-			.time_critera = (block_ms),		\
-			.init = false,				\
-		}						\
-	} \
+#define DEFINE_ATTR(abbr_name, block_name, block_ms)   \
+	{                                                  \
+		.ratio = {                                     \
+			.name = (abbr_name),                       \
+		},                                             \
+		.block = {                                     \
+			.name = (block_name),                      \
+			.time_critera = (block_ms),                \
+			.init = false,                             \
+		}                                              \
+	}                                                  \
 
 static struct mtk_idle_prof idle_prof[NR_TYPES] = {
 	[IDLE_TYPE_DP]  = DEFINE_ATTR("DP", "dpidle", 30000),
@@ -161,10 +174,22 @@ void mtk_idle_twam_enable(u32 event)
 	idle_twam.running = true;
 }
 
+static DEFINE_SPINLOCK(recent_idle_ratio_spin_lock);
+
 void mtk_idle_ratio_calc_start(int type, int cpu)
 {
+	unsigned long flags;
+
 	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
 		idle_prof[type].ratio.start = idle_get_current_time_ms();
+
+	if (type < IDLE_TYPE_MC) {
+		spin_lock_irqsave(&recent_idle_ratio_spin_lock, flags);
+
+		recent_ratio.start_ts = idle_get_current_time_ms();
+
+		spin_unlock_irqrestore(&recent_idle_ratio_spin_lock, flags);
+	}
 
 #if SPM_MET_TAGGING
 	if (type < IDLE_TYPE_MC)
@@ -176,6 +201,58 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 {
 	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
 		idle_prof[type].ratio.value += idle_get_current_time_ms() - idle_prof[type].ratio.start;
+
+	if (type < IDLE_TYPE_MC) {
+		struct mtk_idle_recent_ratio *ratio = NULL;
+		unsigned long flags;
+		unsigned long long interval = 0;
+		unsigned long long last_idle_time = 0;
+		unsigned long long last_ratio = 0;
+		unsigned long long last_ratio_dp = 0;
+		unsigned long long last_ratio_so3 = 0;
+		unsigned long long last_ratio_so = 0;
+
+		spin_lock_irqsave(&recent_idle_ratio_spin_lock, flags);
+
+		ratio = &recent_ratio;
+
+		ratio->end_ts = idle_get_current_time_ms();
+		interval = ratio->end_ts - ratio->last_end_ts;
+		last_idle_time = ratio->end_ts - ratio->start_ts;
+		last_ratio = ratio->value;
+		last_ratio_dp = ratio->value_dp;
+		last_ratio_so3 = ratio->value_so3;
+		last_ratio_so = ratio->value_so;
+
+		if (interval >= IDLE_RATIO_WINDOW_MS) {
+			ratio->value = (last_idle_time >= IDLE_RATIO_WINDOW_MS) ?
+							IDLE_RATIO_WINDOW_MS : last_idle_time;
+			ratio->value_dp = (type == IDLE_TYPE_DP) ? ratio->value : 0;
+			ratio->value_so3 = (type == IDLE_TYPE_SO3) ? ratio->value : 0;
+			ratio->value_so = (type == IDLE_TYPE_SO) ? ratio->value : 0;
+		} else {
+			ratio->value = ((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio / IDLE_RATIO_WINDOW_MS)
+							+ last_idle_time;
+			ratio->value_dp = ((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_dp / IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_DP) ? last_idle_time : 0);
+			ratio->value_so3 = ((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so3 / IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO3) ? last_idle_time : 0);
+			ratio->value_so = ((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so / IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
+		}
+#if 0
+		idle_prof_err("XXIDLE %llu, %llu, %llu, %llu, %llu, %llu, %llu, %llu, %d\n",
+			ratio->last_end_ts, ratio->start_ts, ratio->end_ts,
+			ratio->value, ratio->value_dp, ratio->value_so3, ratio->value_so, last_ratio, type);
+#endif
+		ratio->last_end_ts = ratio->end_ts;
+
+		spin_unlock_irqrestore(&recent_idle_ratio_spin_lock, flags);
+	}
 
 #if SPM_MET_TAGGING
 	if (type < IDLE_TYPE_MC) {
@@ -389,6 +466,26 @@ void mtk_idle_block_setting(int type, unsigned long *cnt, unsigned long *block_c
 		p_idle->init = true;
 	else
 		idle_prof_err("IDLE BLOCKING INFO SETTING FAIL (type:%d)\n", type);
+}
+
+void mtk_idle_recent_ratio_get(int *window_length_ms, struct mtk_idle_recent_ratio *ratio)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&recent_idle_ratio_spin_lock, flags);
+
+	if (window_length_ms != NULL)
+		*window_length_ms = IDLE_RATIO_WINDOW_MS;
+
+	if (ratio != NULL) {
+		ratio->value       = recent_ratio.value;
+		ratio->value_dp    = recent_ratio.value_dp;
+		ratio->value_so3   = recent_ratio.value_so3;
+		ratio->value_so    = recent_ratio.value_so;
+		ratio->last_end_ts = recent_ratio.last_end_ts;
+	}
+
+	spin_unlock_irqrestore(&recent_idle_ratio_spin_lock, flags);
 }
 
 void mtk_idle_twam_init(void)
