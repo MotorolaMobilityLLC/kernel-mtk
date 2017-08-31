@@ -1,9 +1,21 @@
 /*
- *   ! \file
- *   \brief  Declaration of library functions
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+/*! \file
+ *    \brief  Declaration of library functions
  *
  *   Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
- */
+*/
 
 #ifndef _MTK_WCN_CONSYS_HW_H_
 #define _MTK_WCN_CONSYS_HW_H_
@@ -60,14 +72,12 @@ struct CONSYS_BASE_ADDRESS {
 */
 
 /*tag start:new platform need to make sure these define */
-#if defined(CONFIG_ARCH_MT6757)
 #define PLATFORM_SOC_CHIP 0x6757
-#endif
 
 #define CONSYS_BT_WIFI_SHARE_V33 0
 
 #define CONSYS_PMIC_CTRL_ENABLE 1
-#define CONSYS_EMI_MPU_SETTING 1
+#define CONSYS_EMI_MPU_SETTING 0
 #define CONSYS_AHB_CLK_MAGEMENT 1
 #define CONSYS_USE_PLATFORM_WRITE 1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE 1
