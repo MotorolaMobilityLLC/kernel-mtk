@@ -1660,7 +1660,8 @@ void nicTxMsduDoneCb(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_T prQue)
 
 			prMsduInfo = prNextMsduInfo;
 		}
-
+		wlanTxLifetimeTagPacketQue(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue),
+			TX_PROF_TAG_DRV_TX_DONE);
 		nicTxReturnMsduInfo(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue));
 	}
 }
@@ -1682,8 +1683,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 	P_MSDU_INFO_T prMsduInfo;
 	P_TX_CTRL_T prTxCtrl;
 	P_NATIVE_PACKET prNativePacket;
-	QUE_T rFreeQueue;
-	P_QUE_T prFreeQueue;
 
 	ASSERT(prAdapter);
 	ASSERT(prQue);
@@ -1694,9 +1693,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 	prTxCtrl->u4TotalTxAccessNum++;
 	prTxCtrl->u4TotalTxPacketNum += prQue->u4NumElem;
 #endif
-
-	prFreeQueue = &rFreeQueue;
-	QUEUE_INITIALIZE(prFreeQueue);
 
 	while (QUEUE_IS_NOT_EMPTY(prQue)) {
 		QUEUE_REMOVE_HEAD(prQue, prMsduInfo, P_MSDU_INFO_T);
@@ -1725,21 +1721,11 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 			QUEUE_INSERT_TAIL(&(prTxCtrl->rTxMgmtTxingQueue), (P_QUE_ENTRY_T) prMsduInfo);
 			KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
-		} else {
-			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
-				cnmMgtPktFree(prAdapter, prMsduInfo);
-			} else {
-				/* only free MSDU when it is not a MGMT frame */
-				QUEUE_INSERT_TAIL(prFreeQueue, (P_QUE_ENTRY_T) prMsduInfo);
-			}
 		}
 		HAL_WRITE_TX_DATA(prAdapter, prMsduInfo);
 	}
 
 	HAL_KICK_TX_DATA(prAdapter);
-
-	wlanTxLifetimeTagPacketQue(prAdapter, (P_MSDU_INFO_T) QUEUE_GET_HEAD(&rFreeQueue),
-			TX_PROF_TAG_DRV_TX_DONE);
 
 	return WLAN_STATUS_SUCCESS;
 }
