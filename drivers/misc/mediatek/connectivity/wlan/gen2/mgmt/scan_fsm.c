@@ -1343,6 +1343,9 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 
+	/* stop Nlo timeout timer */
+	cnmTimerStopTimer(prAdapter, &prAdapter->rScanNloTimeoutTimer);
+
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prNloParam = &prScanInfo->rNloParam;
 	prScanParam = &prNloParam->rScanParam;
