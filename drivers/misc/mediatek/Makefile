@@ -213,9 +213,6 @@ obj-n += crypto/
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
 obj-y += sspm/
-ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
-obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
-endif
 obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
 obj-$(CONFIG_USB)	+= usb_boost/
 #obj-$(CONFIG_RT_REGMAP) += rt-regmap/
