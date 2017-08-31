@@ -294,13 +294,11 @@ int gauge_get_hwocv(void)
 
 int gauge_set_coulomb_interrupt1_ht(int car)
 {
-	bm_err("gauge_set_coulomb_interrupt1_ht\n");
 	return gauge_dev_set_coulomb_interrupt1_ht(gauge_dev, car);
 }
 
 int gauge_set_coulomb_interrupt1_lt(int car)
 {
-	bm_err("gauge_set_coulomb_interrupt1_lt\n");
 	return gauge_dev_set_coulomb_interrupt1_lt(gauge_dev, car);
 }
 
@@ -2037,9 +2035,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			int temperture = 0;
 
 			memcpy(&update, &msg->fgd_data[0], sizeof(update));
-			bm_debug("[fg_res] FG_DAEMON_CMD_GET_TEMPERTURE update = %d\n", update);
 			temperture = force_get_tbat(update);
-			bm_debug("[fg_res] temperture = %d\n", temperture);
+			bm_debug("[fg_res] FG_DAEMON_CMD_GET_TEMPERTURE update = %d tmp:%d\n",
+				update, temperture);
 			ret_msg->fgd_data_len += sizeof(temperture);
 			memcpy(ret_msg->fgd_data, &temperture, sizeof(temperture));
 			/* gFG_temp = temperture; */
@@ -2670,7 +2668,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
 
 		intr_no = gauge_dev_get_hw_status(gauge_dev, &FG_status, intr_no);
-		bm_err("[fg_res] FG_DAEMON_CMD_GET_HW_INFO = %d\n", intr_no);
+		bm_trace("[fg_res] FG_DAEMON_CMD_GET_HW_INFO = %d\n", intr_no);
 	}
 	break;
 
