@@ -170,7 +170,6 @@ extern void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC
 
 extern unsigned short is_battery_remove_pmic(void);
 
-extern void pmic_auxadc_init(void);
 extern void lockadcch3(void);
 extern void unlockadcch3(void);
 
@@ -186,6 +185,7 @@ extern unsigned int pmic_get_vbif28_volt(void);
 extern void pmic_auxadc_debug(int index);
 #ifndef CONFIG_MACH_MT8167
 #ifndef CONFIG_MTK_PMIC_NEW_ARCH
+extern void pmic_auxadc_init(void);
 extern signed int PMIC_IMM_GetCurrent(void);
 extern unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount,
 					      int trimd);
