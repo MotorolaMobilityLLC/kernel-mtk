@@ -49,5 +49,7 @@ struct mt6392_codec_priv {
 
 int mt6392_codec_probe(struct snd_soc_codec *codec);
 int mt6392_codec_remove(struct snd_soc_codec *codec);
+int mt6392_int_spk_turn_on(struct snd_soc_codec *codec);
+int mt6392_int_spk_turn_off(struct snd_soc_codec *codec);
 
 #endif
