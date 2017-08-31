@@ -533,13 +533,6 @@ int cpu_down(unsigned int cpu)
 	aee_rr_rec_cpu_callee(cpu);
 #endif
 	cpu_maps_update_begin();
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-/*Temp solution: workaround for timer framework of ACAO of MT6763*/
-	if (cpu == 0) {
-		err = -EBUSY;
-		goto out;
-	}
-#endif
 	if (cpu_hotplug_disabled) {
 		err = -EBUSY;
 		goto out;
