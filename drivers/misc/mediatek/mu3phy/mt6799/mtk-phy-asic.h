@@ -161,7 +161,6 @@ struct u2phy_reg_e {
 #define RG_USB20_DM_ABIST_SELE             (0xf<<0)	/* 3:0 */
 
 /* U3D_USBPHYACR6 */
-#define RG_USB20_ISO_EN                    (0x1U<<31)	/* 31:31 */
 #define RG_USB20_PHY_REV_6                  (0x1<<30)	/* 31:31 */
 #define RG_USB20_PHY_REV                   (0xef<<24)	/* 31:24 */
 #define RG_USB20_BC11_SW_EN                (0x1<<23)	/* 23:23 */
@@ -420,7 +419,6 @@ struct u2phy_reg_e {
 #define RG_USB20_DM_ABIST_SELE_OFST        (0)
 
 /* U3D_USBPHYACR6 */
-#define RG_USB20_ISO_EN_OFST               (31)
 #define RG_USB20_PHY_REV_6_OFST             (30)
 #define RG_USB20_PHY_REV_OFST              (24)
 #define RG_USB20_BC11_SW_EN_OFST           (23)
