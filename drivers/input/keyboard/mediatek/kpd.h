@@ -109,11 +109,11 @@ extern int kpd_klog_en;
 #if KPD_DEBUG
 #define kpd_print(fmt, arg...)	do { \
 	if (kpd_klog_en) \
-		pr_info(KPD_SAY fmt, ##arg); \
+		pr_info_ratelimited(KPD_SAY fmt, ##arg); \
 	} while (0)
 #define kpd_info(fmt, arg...)	do { \
 	if (kpd_klog_en) \
-		pr_info(KPD_SAY fmt, ##arg); \
+		pr_info_ratelimited(KPD_SAY fmt, ##arg); \
 	} while (0)
 #else
 #define kpd_print(fmt, arg...)	do {} while (0)
