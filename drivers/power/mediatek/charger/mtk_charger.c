@@ -698,7 +698,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 		vbat_threshold[2] = info->data.bif_threshold2;
 		_cv_temp = info->data.bif_cv_under_threshold2;
 
-		if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
+		if (vbat < vbat_threshold[1])
 			_cv = 4608000;
 		else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
 			_cv = _cv_temp;
@@ -766,11 +766,8 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 	info->charger_thread_polling = true;
 
 	info->can_charging = true;
+	info->enable_dynamic_cv = true;
 	info->safety_timeout = false;
-	info->chg1_data.thermal_charging_current_limit = -1;
-	info->chg1_data.thermal_input_current_limit = -1;
-	info->chg2_data.thermal_charging_current_limit = -1;
-	info->chg2_data.thermal_input_current_limit = -1;
 
 	pr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);
 	if (info->plug_in != NULL)
@@ -2082,6 +2079,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	init_waitqueue_head(&info->wait_que);
 	info->polling_interval = 10;
 	info->enable_dynamic_cv = true;
+
+	info->chg1_data.thermal_charging_current_limit = -1;
+	info->chg1_data.thermal_input_current_limit = -1;
+	info->chg2_data.thermal_charging_current_limit = -1;
+	info->chg2_data.thermal_input_current_limit = -1;
 
 	mtk_charger_init_timer(info);
 
