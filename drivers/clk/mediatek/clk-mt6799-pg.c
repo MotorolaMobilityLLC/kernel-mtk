@@ -872,6 +872,9 @@ int spm_mtcmos_ctrl_mfg2(int state)
 		}
 #endif
 		/* TINFO="Finish to turn on MFG2" */
+		switch_mfg_clk(0);
+		switch_mfg_clk(1);
+
 	}
 	return err;
 }

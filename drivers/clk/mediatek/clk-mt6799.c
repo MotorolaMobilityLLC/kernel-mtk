@@ -46,6 +46,138 @@ while (0)
 #define clk_clrl(addr, val) \
 	mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
 
+const char *ckgen_array[] = {
+"hf_faxi_ck",
+"hf_fmem_ck",
+"hf_fddrphycfg_ck",
+"hf_fmm_ck",
+"hf_fsflash_ck",
+"f_fpwm_ck",
+"f_fdisppwm_ck",
+"hf_fvdec_ck",
+"hf_fvenc_ck",
+"hf_fmfg_ck",
+"f_fcamtg_ck",
+"f_fi2c_ck",
+"f_fuart_ck",
+"hf_fspi_ck",
+"hf_faxi_peri_ck",
+"f_fusb20_ck",
+"f_fusb30_p0_ck",
+"hf_fmsdc50_0_hclk_ck",
+"hf_fmsdc50_0_ck",
+"hf_fmsdc30_1_ck",
+"f_fi3c_ck",
+"hf_fmsdc30_3_ck",
+"hf_fmsdc50_3_hclk_ck",
+"hf_fsmi0_2x_ck",
+"hf_faudio_ck",
+"hf_faud_intbus_ck",
+"hf_fpmicspi_ck",
+"hf_fscp_ck",
+"hf_fatb_ck",
+"hf_fmjc_ck",
+"hf_fdpi0_ck",
+"hf_fdsp_ck",
+"hf_faud_1_ck",
+"hf_faud_2_ck",
+"hf_faud_engen1_ck",
+"hf_faud_engen2_ck",
+"hf_fdfp_mfg_ck",
+"hf_fcam_ck",
+"hf_fipu_if_ck",
+"hf_fsmi1_2x_ck",
+"hf_faxi_mfg_in_as_ck",
+"hf_fimg_ck",
+"hf_fufo_enc_ck",
+"hf_fufo_dec_ck",
+"hf_fpcie_mac_ck",
+"hf_femi_ck",
+"hf_faes_ufsfde_ck",
+"hf_faes_fde_ck",
+"hf_faudio_h_ck",
+"hf_fpwrmcu_ck",
+"hf_fancmd32_ck",
+"hf_fslow_mfg_ck",
+"hf_fufs_card_ck",
+"hf_fbsi_spi_ck",
+"hf_fdxcc_ck",
+"f_fseninf_ck",
+"hf_fdfp_ck",
+"hf_fsmi1_2x_ck",
+"hf_faes_fde_ck",
+"hf_faudio_h_ck",
+"hf_fpwrmcu_ck",
+"f_frtc_ck",
+"f_f26m_ck"
+};
+
+const char *abist_array[] = {
+"AD_MDPLL_FS26M_CK",
+"AD_MDPLL_FS208M_CK",
+"AD_OSC_CK",
+"AD_CSI0A_CDPHY_DELAYCAL_CK",
+"AD_CSI0B_CDPHY_DELAYCAL_CK",
+"AD_CSI1A_CDPHY_DELAYCAL_CK",
+"AD_CSI1B_CDPHY_DELAYCAL_CK",
+"AD_CSI2A_CDPHY_DELAYCAL_CK",
+"AD_CSI2B_CDPHY_DELAYCAL_CK",
+"AD_DSI0_CKG_DSICLK",
+"AD_DSI0_TEST_CK",
+"AD_DSI1_CKG_DSICLK",
+"AD_DSI1_TEST_CK",
+"AD_CCIPLL_CK_VCORE",
+"AD_MAINPLL_CK",
+"AD_UNIVPLL_CK",
+"AD_MSDCPLL_CK",
+"AD_EMIPLL_CK",
+"AD_GPUPLL_CK",
+"AD_TVDPLL_CK",
+"AD_MMPLL_CK",
+"AD_VCODECPLL_CK",
+"AD_APLL1_CK",
+"AD_APLL2_CK",
+"AD_MDMCUPLL_CK",
+"AD_MDINFRAPLL_CK",
+"AD_BRPPLL_CK",
+"AD_EQPLL_CK",
+"AD_IMCPLL_CK",
+"AD_ICCPLL_CK",
+"AD_MPCPLL_CK",
+"AD_DFEPLL_CK",
+"AD_MD2GPLL_CK",
+"AD_INTFPLL_CK",
+"AD_C2KCPPLL_CK",
+"AD_FSMIPLL_CK",
+"AD_LTXBPLL_CK",
+"AD_USB20_192M_CK",
+"AD_MPLL_CK",
+"AD_ARMPLL2_CK",
+"AD_ARMPLL3_CK",
+"AD_CCIPLL_CK",
+"AD_RAKEPLL_CK",
+"AD_CSPLL_CK",
+"AD_TVDPLL_DIV4_CK",
+"AD_PLLGP_TSTDIV2_CK",
+"AD_MP_PLL_CK_ABIST_OUT",
+"AD_MP_RX0_TSTCK_DIV2",
+"mp_tx_mon_div2_ck",
+"mp_rx20_mon_div2_ck",
+"AD_ARMPLL_L_CK_VCORE",
+"AD_ARMPLL_M_CK_VCORE",
+"AD_ARMPLL_B_CK_VCORE",
+"AD_ARMPLL_ML_CK_VCORE",
+"AD_OSC_SYNC_CK",
+"AD_OSC_SYNC_CK_2",
+"msdc_01_in_ck",
+"msdc_02_in_ck",
+"msdc_11_in_ck",
+"msdc_12_in_ck",
+"msdc_31_in_ck",
+"msdc_31_in_ck",
+"AD_OSC_CK_2",
+};
+
 static DEFINE_SPINLOCK(mt6799_clk_lock);
 
 /* Total 13 subsys */
@@ -62,6 +194,15 @@ void __iomem *pericfg_base;
 void __iomem *mjc_base;
 void __iomem *vdec_gcon_base;
 void __iomem *venc_gcon_base;
+
+/* CKSYS */
+#define CLK_CFG_20		(cksys_base + 0x210)
+#define CLK_CFG_21		(cksys_base + 0x214)
+#define CLK_MISC_CFG_1		(cksys_base + 0x414)
+#define CLK26CALI_0		(cksys_base + 0x520)
+#define CLK26CALI_1		(cksys_base + 0x524)
+#define CLK26CALI_2		(cksys_base + 0x528)
+#define TOP_CLK2		(cksys_base + 0x0120)
 
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
@@ -2442,6 +2583,82 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,mt6799-venc_global_con",
 		mtk_venc_global_con_init);
 
+unsigned int mt_get_ckgen_freq(unsigned int ID)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_2;
+
+	clk_dbg_cfg = clk_readl(CLK_CFG_21);
+	clk_writel(CLK_CFG_21, (clk_dbg_cfg & 0xFF80FFFF)|(ID << 16));
+
+	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
+	clk_writel(CLK_MISC_CFG_1, 0x00000000);
+
+	clk26cali_2 = clk_readl(CLK26CALI_2);
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+	clk_writel(CLK26CALI_0, 0x80);
+	clk_writel(CLK26CALI_0, 0x90);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x10) {
+	mdelay(10);
+	i++;
+	if (i > 10)
+		break;
+	}
+
+	temp = clk_readl(CLK26CALI_2) & 0xFFFF;
+
+	output = (temp * 26000) / 1024;
+
+	clk_writel(CLK_CFG_21, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
+	clk_writel(CLK26CALI_0, clk26cali_0);
+	clk_writel(CLK26CALI_2, clk26cali_2);
+
+	/*print("ckgen meter[%d] = %d Khz\n", ID, output);*/
+	return output;
+
+}
+
+unsigned int mt_get_abist_freq(unsigned int ID)
+{
+	int output = 0, i = 0;
+	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_1, clk26cali_1;
+
+	clk_dbg_cfg = clk_readl(CLK_CFG_20);
+	clk_writel(CLK_CFG_20, (clk_dbg_cfg & 0xFFFF80FF)|(ID << 8)|(0x01 << 31));
+
+	clk_misc_cfg_1 = clk_readl(CLK_MISC_CFG_1);
+	clk_writel(CLK_MISC_CFG_1, 0x00000000);
+
+	clk26cali_1 = clk_readl(CLK26CALI_1);
+	clk26cali_0 = clk_readl(CLK26CALI_0);
+
+	clk_writel(CLK26CALI_0, 0x80);
+	clk_writel(CLK26CALI_0, 0x81);
+
+	/* wait frequency meter finish */
+	while (clk_readl(CLK26CALI_0) & 0x01) {
+		mdelay(10);
+		i++;
+		if (i > 10)
+		break;
+	}
+
+	temp = clk_readl(CLK26CALI_1) & 0xFFFF;
+
+	output = (temp * 26000) / 1024;
+
+	clk_writel(CLK_CFG_20, clk_dbg_cfg);
+	clk_writel(CLK_MISC_CFG_1, clk_misc_cfg_1);
+	clk_writel(CLK26CALI_0, clk26cali_0);
+	clk_writel(CLK26CALI_1, clk26cali_1);
+
+	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
+	return output;
+}
+
 int univpll_is_used(void)
 {
 	/*
@@ -2449,6 +2666,14 @@ int univpll_is_used(void)
 	* 1: univpll is used, sspm cannot disable
 	*/
 	return 1;
+}
+
+void switch_mfg_clk(int src)
+{
+	if (src == 0)
+		clk_writel(TOP_CLK2, clk_readl(TOP_CLK2)&0xfffffcff);
+	else
+		clk_writel(TOP_CLK2, (clk_readl(TOP_CLK2)&0xfffffcff)|(0x01<<8));
 }
 
 static int __init clk_mt6799_init(void)
