@@ -39,6 +39,9 @@
 #define PMIC_RG_RST_DU_MASK  0x3
 #define PMIC_RG_RST_DU_SHIFT  8
 
+static struct wake_lock pwrkey_lock;
+#define PWRKEY_INITIAL_STATE (0)
+
 struct pmic_keys_regs {
 	u32 deb_reg;
 	u32 deb_mask;
@@ -140,6 +143,7 @@ static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
 {
 	struct pmic_keys_info *info = data;
 	u32 key_deb, pressed;
+	static int key_down = PWRKEY_INITIAL_STATE;
 
 	regmap_read(info->keys->regmap, info->regs->deb_reg, &key_deb);
 
@@ -147,11 +151,27 @@ static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
 
 	pressed = !key_deb;
 
+	if (pressed)
+		key_down = 1;
+	else {
+		if (!key_down) {
+			input_report_key(info->keys->input_dev, info->keycode, 1);
+			input_sync(info->keys->input_dev);
+			dev_info(info->keys->dev, "[PMICKEYS] PWRKEY interrupt mismatch: No pressed before released!!!\n");
+			dev_info(info->keys->dev, "[PMICKEYS] add pressed key =%d using PMIC\n", info->keycode);
+		} else
+			dev_info(info->keys->dev, "[PMICKEYS] PWRKEY interrupt matched!!!, key_down = %d\n", key_down);
+		key_down = 0;
+		dev_info(info->keys->dev, "[PMICKEYS]  key_down = %d after release\n", key_down);
+	}
+
 	input_report_key(info->keys->input_dev, info->keycode, pressed);
 	input_sync(info->keys->input_dev);
 
 	dev_info(info->keys->dev, "[PMICKEYS] (%s) key =%d using PMIC\n",
 		pressed ? "pressed" : "released", info->keycode);
+
+	wake_lock_timeout(&pwrkey_lock, HZ/2);
 
 	return IRQ_HANDLED;
 }
@@ -252,6 +272,8 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
 
 	keys->pwrkey.hw_irq = res->start;
 	keys->homekey.hw_irq = res->end;
+
+	wake_lock_init(&pwrkey_lock, WAKE_LOCK_SUSPEND, "pwrkey wakelock");
 
 	keys->input_dev = input_dev = devm_input_allocate_device(keys->dev);
 	if (!input_dev) {
