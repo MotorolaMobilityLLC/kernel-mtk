@@ -3232,9 +3232,10 @@
 		interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	dip_a0@15022000 {
-		compatible = "mediatek,dip_a0";
-		reg = <0 0x15022000 0 0x1000>;
+	/* this device node is added manually for dip use */
+	dip_a@15022000 {
+		compatible = "mediatek,dip_a";
+		reg = <0 0x15022000 0 0x2800>;
 		interrupts = <GIC_SPI 238 IRQ_TYPE_LEVEL_LOW>;
 	};
 
