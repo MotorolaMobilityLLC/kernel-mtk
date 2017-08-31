@@ -55,6 +55,110 @@ enum {
 	NR_GRPS,
 };
 
+enum {
+	PDN_MASK         = 0,
+	PDN_VALUE,
+	PUP_MASK,
+	PUP_VALUE,
+	NF_CLKMUX_MASK,
+};
+
+enum {
+	/* CLK_CFG_0 */
+	CLKMUX_MM             = 0,
+	CLKMUX_DDRPHY         = 1,
+	CLKMUX_MEM            = 2,
+	CLKMUX_AXI            = 3,
+
+	/* CLK_CFG_1 */
+	CLKMUX_VDEC           = 4,
+	CLKMUX_DISPPWM        = 5,
+	CLKMUX_PWM            = 6,
+	CLKMUX_SFLASH         = 7,
+
+	/* CLK_CFG_2 */
+	CLKMUX_I2C            = 8,
+	CLKMUX_CAMTG          = 9,
+	CLKMUX_MFG            = 10,
+	CLKMUX_VENC           = 11,
+
+	/* CLK_CFG_3 */
+	CLKMUX_USB20          = 12,
+	CLKMUX_AXI_PERI       = 13,
+	CLKMUX_SPI            = 14,
+	CLKMUX_UART           = 15,
+
+	/* CLK_CFG_4 */
+	CLKMUX_MSDC30_1       = 16,
+	CLKMUX_MSDC50_0       = 17,
+	CLKMUX_MSDC50_0_HCLK  = 18,
+	CLKMUX_USB30_P0       = 19,
+
+	/* CLK_CFG_5 */
+	CLKMUX_SMI0_2X        = 20,
+	CLKMUX_MSDC50_3_HCLK  = 21,
+	CLKMUX_MSDC30_3       = 22,
+	CLKMUX_I3C            = 23,
+
+	/* CLK_CFG_6 */
+	CLKMUX_SCP            = 24,
+	CLKMUX_PMICSPI        = 25,
+	CLKMUX_AUD_INTBUS     = 26,
+	CLKMUX_AUDIO          = 27,
+
+	/* CLK_CFG_7 */
+	CLKMUX_DSP            = 28,
+	CLKMUX_DPI0           = 29,
+	CLKMUX_MJC            = 30,
+	CLKMUX_ATB            = 31,
+
+	/* CLK_CFG_8 */
+	CLKMUX_AUD_ENGEN2     = 32,
+	CLKMUX_AUD_ENGEN1     = 33,
+	CLKMUX_AUD_2          = 34,
+	CLKMUX_AUD_1          = 35,
+
+	/* CLK_CFG_9 */
+	CLKMUX_SENINF         = 36,
+	CLKMUX_IPU_IF         = 37,
+	CLKMUX_CAM            = 38,
+	CLKMUX_DFP_MFG        = 39,
+
+	/* CLK_CFG_10 */
+	CLKMUX_UFO_DEC        = 40,
+	CLKMUX_UFO_ENC        = 41,
+	CLKMUX_IMG            = 42,
+	CLKMUX_AXI_MFG_IN_AS  = 43,
+
+	/* CLK_CFG_11 */
+	CLKMUX_AES_FDE        = 44,
+	CLKMUX_AES_UFSFDE     = 45,
+	CLKMUX_EMI            = 46,
+	CLKMUX_PCIE_MAC       = 47,
+
+	/* CLK_CFG_12 */
+	CLKMUX_SLOW_MFG       = 48,
+	CLKMUX_ANCMD32        = 49,
+	CLKMUX_SSPM           = 50,
+	CLKMUX_AUDIO_H        = 51,
+
+	/* CLK_CFG_13 */
+	CLKMUX_SMI1_2X        = 52,
+	CLKMUX_DXCC           = 53,
+	CLKMUX_BSI_SPI        = 54,
+	CLKMUX_UFS_CARD       = 55,
+
+	/* CLK_CFG_14 */
+	CLKMUX_RSV_0          = 56,
+	CLKMUX_RSV_1          = 57,
+	CLKMUX_RSV_2          = 58,
+	CLKMUX_DFP            = 59,
+
+	NF_CLKMUX,
+};
+
+#define NF_CLK_CFG            15     /* = NF_CLKMUX / 4 */
+
 extern bool             soidle_by_pass_pg;
 extern bool             dpidle_by_pass_pg;
 
@@ -127,12 +231,13 @@ extern void __iomem  *apmixed_base_in_idle;
 #define SPM_PWR_STATUS      SPM_REG(0x0190)
 #define SPM_PWR_STATUS_2ND  SPM_REG(0x0194)
 
-#define	CLK_CFG_UPDATE        TOPCKSYS_REG(0x004)
-#define CLK_CFG_6             TOPCKSYS_REG(0x160)
-#define CLK_CFG_6_SET         TOPCKSYS_REG(0x164)
-#define CLK_CFG_6_CLR         TOPCKSYS_REG(0x168)
+#define CLK_CFG_0_BASE        TOPCKSYS_REG(0x100)
+#define CLK_CFG_0_SET_BASE    TOPCKSYS_REG(0x104)
+#define CLK_CFG_0_CLR_BASE    TOPCKSYS_REG(0x108)
+#define CLK_CFG(n)            (CLK_CFG_0_BASE + n * 0x10)
+#define CLK_CFG_SET(n)        (CLK_CFG_0_SET_BASE + n * 0x10)
+#define CLK_CFG_CLR(n)        (CLK_CFG_0_CLR_BASE + n * 0x10)
 #define CLK6_AUDINTBUS_MASK   0x700
-#define CLK_CFG_7             TOPCKSYS_REG(0x0B0)
 
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)
@@ -229,6 +334,7 @@ const char *mtk_get_pll_group_name(int id);
 
 bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
 bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
+bool mtk_idle_check_clkmux(int idle_type, unsigned int block_mask[NR_TYPES][NF_CLK_CFG]);
 
 void __init iomap_init(void);
 

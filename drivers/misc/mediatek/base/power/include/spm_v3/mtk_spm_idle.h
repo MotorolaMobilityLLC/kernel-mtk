@@ -50,14 +50,14 @@ extern long int spm_get_current_time_ms(void);
 void spm_deepidle_init(void);
 void spm_dpidle_before_wfi(int cpu);		 /* can be redefined */
 void spm_dpidle_after_wfi(int cpu, u32 spm_debug_flag);		 /* can be redefined */
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log);
+wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 operation_cond);
 wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);
 bool spm_set_dpidle_pcm_init_flag(void);
 
-#define DEEPIDLE_LOG_NONE      0
-#define DEEPIDLE_LOG_REDUCED   1
-#define DEEPIDLE_LOG_FULL      2
+#define DEEPIDLE_LOG_REDUCED             (1 << 0)
+#define DEEPIDLE_LOG_FULL                (1 << 1)
+#define DEEPIDLE_LOG_RESOURCE_USAGE      (1 << 2)
 
 /*
  * for Screen On Deep Idle 3.0
