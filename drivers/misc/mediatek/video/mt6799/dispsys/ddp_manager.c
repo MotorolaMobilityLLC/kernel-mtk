@@ -1856,6 +1856,7 @@ static bool can_dual_PQ(unsigned int cmd)
 	case DISP_IOCTL_AAL_SET_PARAM:
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_CCORR_EVENTCTL:
 	case DISP_IOCTL_SET_PQPARAM:
 	case DISP_IOCTL_SET_COLOR_REG:
 	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
@@ -1928,6 +1929,8 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 		}
 		break;
 	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_CCORR_EVENTCTL:
+	case DISP_IOCTL_CCORR_GET_IRQ:
 		dst = DISP_MODULE_CCORR0;
 		if (ddp_modules_driver[dst]->cmd != NULL)
 			ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);

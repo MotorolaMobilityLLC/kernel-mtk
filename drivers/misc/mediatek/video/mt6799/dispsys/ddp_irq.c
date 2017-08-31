@@ -27,6 +27,7 @@
 #include "ddp_reg.h"
 #include "ddp_irq.h"
 #include "ddp_aal.h"
+#include "ddp_gamma.h"
 #include "ddp_drv.h"
 #include "disp_helper.h"
 #include "cmdq_def.h"
@@ -495,6 +496,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		module = DISP_MODULE_AAL1;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA + (DISPSYS_AAL1_BASE - DISPSYS_AAL0_BASE));
 		disp_aal_on_end_of_frame_by_module(DISP_AAL1);
+	} else if (irq == dispsys_irq[DISP_REG_CCORR0]) {
+		module = DISP_MODULE_CCORR0;
+		reg_val = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+		disp_ccorr_on_end_of_frame();
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
 		if (reg_val & (1 << 0))
