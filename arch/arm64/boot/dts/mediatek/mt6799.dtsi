@@ -11,6 +11,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6799-msdc.h>
 #include <dt-bindings/pinctrl/mt6799-pinfunc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "mt6799";
@@ -5396,6 +5397,10 @@
 				273 2889
 				273 2889>;
 	};
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	#include "battery_prop.dtsi"
+#endif
 
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";

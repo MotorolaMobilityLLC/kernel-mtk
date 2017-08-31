@@ -148,6 +148,8 @@ int battery_in_data[1] = { 0 };
 int battery_out_data[1] = { 0 };
 bool g_ADC_Cali;
 
+static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
+
 /*****************************************/
 
 #if 0
@@ -382,26 +384,6 @@ int get_sw_ocv(void)
 	return FG_status.sw_ocv;
 }
 
-int get_soc(void)
-{
-	return FG_status.soc;
-}
-
-int get_ui_soc(void)
-{
-	return FG_status.ui_soc;
-}
-
-int get_hw_ocv_unreliable(void)
-{
-	return FG_status.flag_hw_ocv_unreliable;
-}
-
-int get_is_bat_charging(void)
-{
-	return FG_status.is_bat_charging;
-}
-
 void set_hw_ocv_unreliable(bool _flag_unreliable)
 {
 	FG_status.flag_hw_ocv_unreliable = _flag_unreliable;
@@ -454,6 +436,7 @@ static ssize_t store_Battery_Temperature(struct device *dev, struct device_attri
 static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
 		   store_Battery_Temperature);
 
+#if 0
 unsigned long BAT_Get_Battery_Current(int polling_mode)
 {
 	int bat_current;
@@ -510,6 +493,7 @@ signed int battery_meter_get_charger_voltage(void)
 {
 	return pmic_get_vbus();
 }
+#endif
 /* ============================================================ */
 /* Internal function */
 /* ============================================================ */
@@ -558,6 +542,65 @@ void fgauge_get_profile_id(void)
 		g_fg_battery_id = 0;
 }
 #endif
+
+static void mt_battery_average_method_init(BATTERY_AVG_ENUM type, unsigned int *bufferdata,
+					   unsigned int data, signed int *sum)
+{
+	unsigned int i;
+	static bool batteryBufferFirst = true;
+	static unsigned char index;
+
+	bm_notice("batteryBufferFirst =%d, data= (%d)\n", batteryBufferFirst, data);
+
+	if (batteryBufferFirst == true) {
+		for (i = 0; i < BATTERY_AVERAGE_SIZE; i++)
+			bufferdata[i] = data;
+
+		*sum = data * BATTERY_AVERAGE_SIZE;
+	}
+
+	index++;
+	if (index >= BATTERY_AVERAGE_DATA_NUMBER) {
+		index = BATTERY_AVERAGE_DATA_NUMBER;
+		batteryBufferFirst = false;
+	}
+}
+
+
+
+static unsigned int mt_battery_average_method(BATTERY_AVG_ENUM type, unsigned int *bufferdata,
+					      unsigned int data, signed int *sum, unsigned char batteryIndex)
+{
+	unsigned int avgdata;
+
+	mt_battery_average_method_init(type, bufferdata, data, sum);
+
+	*sum -= bufferdata[batteryIndex];
+	*sum += data;
+	bufferdata[batteryIndex] = data;
+	avgdata = (*sum) / BATTERY_AVERAGE_SIZE;
+
+	bm_notice("bufferdata[%d]= (%d)\n", batteryIndex, bufferdata[batteryIndex]);
+	return avgdata;
+
+}
+
+void fg_update_nag_vbat_avg(int nag_vbat)
+{
+	static signed int bat_vbat_buf[BATTERY_AVERAGE_SIZE];
+	static signed int bat_vbat_sum;
+	static unsigned char bat_vbat_index = 0xff;
+
+	if (bat_vbat_index == 0xff)
+		bat_vbat_index = 0;
+
+	FG_status.avgvbat = mt_battery_average_method(BATTERY_AVG_VBAT, &bat_vbat_buf[0],
+		nag_vbat, &bat_vbat_sum, bat_vbat_index);
+
+	bat_vbat_index++;
+	if (bat_vbat_index >= BATTERY_AVERAGE_SIZE)
+		bat_vbat_index = 0;
+}
 
 void fg_custom_init(void)
 {
@@ -1004,11 +1047,6 @@ int force_get_tbat(bool update)
 	}
 	return bat_temperature_val;
 #endif
-}
-
-signed int battery_meter_get_battery_temperature(void)
-{
-	return force_get_tbat(true);
 }
 
 unsigned int battery_meter_get_fg_time(void)
@@ -1774,6 +1812,8 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		ret_msg->fgd_data_len += sizeof(nafg_vbat);
 		memcpy(ret_msg->fgd_data, &nafg_vbat, sizeof(nafg_vbat));
 		bm_debug("[fg_res] FG_DAEMON_CMD_GET_NAFG_VBAT = %d\n", nafg_vbat);
+
+		fg_update_nag_vbat_avg(nafg_vbat);
 	}
 	break;
 
@@ -1804,17 +1844,27 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
-	case FG_DAEMON_CMD_SET_ANDROID_UI:
+	case FG_DAEMON_CMD_SET_KERNEL_SOC:
+	{
+		int daemon_soc;
+
+		memcpy(&daemon_soc, &msg->fgd_data[0], sizeof(daemon_soc));
+		FG_status.soc = daemon_soc;
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d\n", daemon_soc);
+	}
+	break;
+
+	case FG_DAEMON_CMD_SET_KERNEL_UISOC:
 	{
 		int daemon_ui_soc;
 
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0], sizeof(daemon_ui_soc));
+		FG_status.ui_soc = daemon_ui_soc;
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d\n", daemon_ui_soc);
+
 		battery_main.BAT_CAPACITY = (daemon_ui_soc + 50) / 100;
 		/* ac_update(&ac_main); */
 		battery_update(&battery_main);
-
-		bm_err("[fg_res] FG_DAEMON_CMD_UPDATE_ANDROID_UI = %d (%d)\n",
-			battery_main.BAT_CAPACITY, daemon_ui_soc);
 	}
 	break;
 
@@ -2227,6 +2277,9 @@ void fg_bat_int1_l_handler(void)
 	pr_err("[fg_bat_int1_l_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
+
+	if (FG_status.avgvbat < BAT_VOLTAGE_HIGH_BOUND)
+		set_shutdown_cond(LOW_BAT_VOLT);
 }
 
 void fg_bat_int2_h_handler(void)
@@ -2730,6 +2783,35 @@ void exec_BAT_EC(int cmd, int param)
 
 }
 
+static ssize_t show_FG_daemon_log_level(struct device *dev, struct device_attribute *attr,
+					char *buf)
+{
+	bm_err("[FG] show FG_daemon_log_level : %d\n", gFG_daemon_log_level);
+	return sprintf(buf, "%d\n", gFG_daemon_log_level);
+}
+
+static ssize_t store_FG_daemon_log_level(struct device *dev, struct device_attribute *attr,
+					 const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[FG_daemon_log_level]\n");
+
+	if (buf != NULL && size != 0) {
+		bm_err("[FG_daemon_log_level] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err("[FG_daemon_log_level] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		gFG_daemon_log_level = val;
+		bm_err("[FG_daemon_log_level] gFG_daemon_log_level=%d\n", gFG_daemon_log_level);
+	}
+	return size;
+}
+static DEVICE_ATTR(FG_daemon_log_level, 0664, show_FG_daemon_log_level, store_FG_daemon_log_level);
+
 static ssize_t show_BAT_EC(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	bm_err("[FG_IT] show_BAT_EC\n");
@@ -2778,6 +2860,7 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 	case CHARGER_NOTIFY_EOC:
 		{
 /* CHARGING FULL */
+			notify_fg_chr_full();
 		}
 		break;
 	case CHARGER_NOTIFY_START_CHARGING:
@@ -2895,11 +2978,11 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (adc_in_data[0] == 0) {
 			/* I_SENSE */
-			adc_out_data[0] = BAT_Get_Battery_Voltage(true) * adc_in_data[1];
+			adc_out_data[0] = battery_get_bat_avg_voltage() * adc_in_data[1];
 		} else if (adc_in_data[0] == 1) {
 			/* BAT_SENSE */
 			adc_out_data[0] =
-			    BAT_Get_Battery_Voltage(true) * adc_in_data[1];
+			    battery_get_bat_avg_voltage() * adc_in_data[1];
 		} else if (adc_in_data[0] == 3) {
 			/* V_Charger */
 			adc_out_data[0] = battery_meter_get_charger_voltage() * adc_in_data[1];
@@ -2908,10 +2991,10 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			/* V_Bat_temp magic number */
 			adc_out_data[0] = battery_meter_get_battery_temperature() * adc_in_data[1];
 		} else if (adc_in_data[0] == 66) {
-			adc_out_data[0] = (battery_meter_get_battery_current()) / 10;
+			adc_out_data[0] = (battery_get_bat_current()) / 10;
 
-			if (battery_meter_get_battery_current_sign() == true)
-				adc_out_data[0] = 0 - adc_out_data[0];	/* charging */
+		if (battery_get_bat_current_sign() == true)
+			adc_out_data[0] = 0 - adc_out_data[0];	/* charging */
 
 		} else {
 			bm_notice("unknown channel(%d,%d)\n",
@@ -2994,6 +3077,7 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_META_BAT_VOL:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		BMT_status.bat_vol = battery_get_bat_avg_voltage();
 		adc_out_data[0] = BMT_status.bat_vol;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
@@ -3001,6 +3085,7 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_META_BAT_SOC:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		BMT_status.UI_SOC2 = battery_get_bat_uisoc();
 		adc_out_data[0] = BMT_status.UI_SOC2;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
@@ -3119,9 +3204,6 @@ static int battery_probe(struct platform_device *dev)
 	bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
 	ret = device_create_file(&(dev->dev), &dev_attr_Battery_Temperature);
 
-	fgtimer_init(&tracking_timer, &dev->dev, "tracking_timer");
-	tracking_timer.callback = tracking_timer_callback;
-
 	wake_lock_init(&battery_lock, WAKE_LOCK_SUSPEND, "battery wakelock");
 	wake_lock(&battery_lock);
 
@@ -3161,8 +3243,12 @@ static int battery_probe(struct platform_device *dev)
 	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
 
 	/* sysfs node */
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	fgtimer_service_init();
+
+	fgtimer_init(&tracking_timer, &dev->dev, "tracking_timer");
+	tracking_timer.callback = tracking_timer_callback;
 
 	fg_bat_temp_int_init();
 	mtk_power_misc_init(dev);
@@ -3201,7 +3287,7 @@ static int battery_dts_probe(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id mtk_bat_of_match[] = {
-	{.compatible = "mediatek,battery",},
+	{.compatible = "mediatek,bat_gm30",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, mtk_bat_of_match);

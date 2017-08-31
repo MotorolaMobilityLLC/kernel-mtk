@@ -19,7 +19,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-	obj-y += mtk_pe30_hal.o
+	obj-y += mtk_pe30_hal.o mtk_battery_intf.o
 else
 	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_hal.o
 endif
