@@ -35,8 +35,6 @@ extern struct mtk_regulator mtk_ldos[];
 extern struct of_regulator_match pmic_regulator_matches[];
 extern int mtk_ldos_size;
 extern int pmic_regulator_matches_size;
-/* for update VBIF28 by AUXADC */
-extern unsigned int g_pmic_pad_vbif28_vol;
 
 #ifndef CONFIG_MTK_PMIC_CHIP_MT6353
 /*---extern variable---*/
