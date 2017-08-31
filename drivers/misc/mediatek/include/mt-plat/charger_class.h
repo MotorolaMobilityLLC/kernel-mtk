@@ -124,6 +124,7 @@ struct charger_ops {
 	int (*get_ibus_adc)(struct charger_device *, u32 *ibus);
 	int (*get_tchg_adc)(struct charger_device *, int *tchg_min,
 		int *tchg_max);
+	int (*get_zcv)(struct charger_device *, u32 *uV);
 };
 
 static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)
@@ -180,6 +181,7 @@ extern int charger_dev_enable_chg_type_det(struct charger_device *charger_dev, b
 extern int charger_dev_enable_otg(struct charger_device *charger_dev, bool en);
 extern int charger_dev_enable_discharge(struct charger_device *charger_dev, bool en);
 extern int charger_dev_set_boost_current_limit(struct charger_device *charger_dev, u32 uA);
+extern int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV);
 
 
 /* PE 2.0 */
