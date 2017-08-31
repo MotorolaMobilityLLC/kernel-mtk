@@ -30,7 +30,7 @@ enum {
 enum {
 	QUERY_FREQ,
 	QUERY_VOLT,
-	QUERY_VGPU_VSRAM,
+/*	QUERY_VGPU_VSRAM,*/
 	QUERY_POWER,
 };
 
