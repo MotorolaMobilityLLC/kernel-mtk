@@ -889,6 +889,19 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Disable HW DVFS */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	while (sdc_is_busy()) {
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+
+		pr_err("%s: Wait sdc busy before stop DVFS!\n", __func__);
+		while (sdc_is_busy())
+			;
+		/* Reset */
+		msdc_reset_hw(host->id);
+
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	}
 
 	/* Reset */
 	msdc_reset_hw(host->id);
