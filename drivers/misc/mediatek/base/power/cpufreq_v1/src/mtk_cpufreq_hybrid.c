@@ -39,12 +39,12 @@
 #include <linux/suspend.h>
 #include <linux/topology.h>
 #include <mt-plat/sync_write.h>
-#include <mt-plat/mt_io.h>
+#include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
 
 #include "sspm_ipi.h"
-#include "mt_cpufreq_internal.h"
-#include "mt_cpufreq_hybrid.h"
+#include "mtk_cpufreq_internal.h"
+#include "mtk_cpufreq_hybrid.h"
 
 #define DEFINE_FOPS_RO(fname)						\
 static int fname##_open(struct inode *inode, struct file *file)		\
@@ -368,11 +368,8 @@ static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
 #define REPO_I_LOG_S		(OFFS_LOG_S / sizeof(u32))
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
-#ifdef USE_16_OPP
 #define NR_FREQ       16
-#else
-#define NR_FREQ       4
-#endif
+
 #define MAX_LOG_FETCH		20
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
@@ -777,7 +774,6 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 * Module driver
 */
 #define ARRAY_ROW_SIZE 4
-#ifdef USE_16_OPP
 unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
 	{1638, 0x5C, 1, 2},/* (LL) */
@@ -848,30 +844,6 @@ unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
 	{390, 0x1C, 2, 2},
 	{221, 0x18, 2, 2},
 };
-#else
-unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
-/* Freq, Vproc, post_div, clk_div */
-	{1638, 0x5C, 1, 2},/* (LL) */
-	{1248, 0x43, 1, 2},
-	{845, 0x30, 1, 2},
-	{507, 0x20, 2, 2},
-
-	{2340, 0x5C, 1, 1},/* (L) */
-	{1872, 0x43, 1, 1},
-	{1300, 0x30, 2, 1},
-	{793, 0x20, 2, 2},
-
-	{2548, 0x5C, 1, 1},/* (B) */
-	{1911, 0x43, 1, 1},
-	{1339, 0x38, 2, 1},
-	{897, 0x38, 2, 1},
-
-	{1391, 0x5C, 1, 2},/* (CCI) */
-	{1066, 0x43, 1, 2},
-	{741, 0x30, 2, 2},
-	{442, 0x20, 2, 2},
-};
-#endif
 
 u32 *recordRef;
 static unsigned int *recordTbl;

@@ -10,8 +10,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
+ccflags-y +=	\
+	-I$(CPUFREQ_ROOT_DIR)/inc \
+	-I$(CPUFREQ_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \
+	-I$(srctree)/drivers/misc/mediatek/include/	\
+	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/ \
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/ \
+	-I$(srctree)/drivers/misc/mediatek/pmic
 
-export CPUFREQ_ROOT_DIR ?= $(srctree)/drivers/misc/mediatek/base/power/cpufreq_v1
+obj-y += mtk_cpufreq_platform.o
 
-#obj-$(CONFIG_MTK_PMIC_CHIP_MT6335) += src/
-obj-y += src/

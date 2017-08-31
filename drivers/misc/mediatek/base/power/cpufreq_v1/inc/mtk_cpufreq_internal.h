@@ -48,7 +48,7 @@ extern "C" {
 #include <linux/suspend.h>
 #include <linux/topology.h>
 #include <mt-plat/sync_write.h>
-#include <mt-plat/mt_io.h>
+#include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
 
 #ifdef CONFIG_OF
@@ -56,11 +56,9 @@ extern "C" {
 #include <linux/of_address.h>
 #endif
 
-#include "mach/mt_cpufreq_api.h"
-#include "mt_cpufreq_config.h"
-#include "mt_cpufreq_struct.h"
-
-/* #define USE_16_OPP 1 */
+#include "mach/mtk_cpufreq_api.h"
+#include "mtk_cpufreq_config.h"
+#include "mtk_cpufreq_struct.h"
 
 #define CPU_LEVEL_0             (0x0)
 #define CPU_LEVEL_1             (0x1)
@@ -106,23 +104,22 @@ extern struct mutex cpufreq_para_mutex;
 
 /* Debugging */
 extern unsigned int func_lv_mask;
-
 #define DEBUG 1
 #undef TAG
 #define TAG     "[Power/cpufreq] "
 
-#define cpufreq_err(fmt, args...)       \
+#define cpufreq_err(fmt, args...)		\
 	pr_err(TAG"[ERROR]"fmt, ##args)
-#define cpufreq_warn(fmt, args...)      \
+#define cpufreq_warn(fmt, args...)		\
 	pr_warn(TAG"[WARNING]"fmt, ##args)
-#define cpufreq_info(fmt, args...)      \
+#define cpufreq_info(fmt, args...)		\
 	pr_warn(TAG""fmt, ##args)
-#define cpufreq_dbg(fmt, args...)       \
+#define cpufreq_dbg(fmt, args...)		\
 	pr_debug(TAG""fmt, ##args)
-#define cpufreq_ver(fmt, args...)       \
-	do {                                \
-		if (func_lv_mask)           \
-			cpufreq_info(TAG""fmt, ##args);    \
+#define cpufreq_ver(fmt, args...)		\
+	do {					\
+		if (func_lv_mask)		\
+			cpufreq_info(TAG""fmt, ##args);	\
 	} while (0)
 
 #define FUNC_LV_MODULE         BIT(0)  /* module, platform driver interface */

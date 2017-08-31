@@ -10,7 +10,7 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-#include "mt_cpufreq_internal.h"
+#include "mtk_cpufreq_internal.h"
 
 void aee_record_cpu_dvfs_in(struct mt_cpu_dvfs *p)
 {
