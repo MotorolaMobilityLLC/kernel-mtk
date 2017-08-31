@@ -84,6 +84,7 @@
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
 #include <sound/jack.h>
+#include "mtk-soc-pcm-platform.h"
 
 /*
 * define for PCM settings
@@ -122,6 +123,12 @@
 #define SOC_NORMAL_USE_BUFFERSIZE_MAX     (48*1024)	/* TODO: KC: need to reserve 4k for md32 */
 
 #define SOC_HIFI_BUFFER_SIZE (Dl1_MAX_BUFFER_SIZE * 4)
+
+#ifdef Dl1_DATA2_MAX_BUFFER_SIZE
+#define SOC_HIFI_DEEP_BUFFER_SIZE (Dl1_DATA2_MAX_BUFFER_SIZE * 4)
+#else
+#define SOC_HIFI_DEEP_BUFFER_SIZE (Dl1_MAX_BUFFER_SIZE * 4)
+#endif
 
 #define SOC_HIGH_USE_RATE        (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
 #define SOC_HIGH_USE_RATE_MIN        8000
