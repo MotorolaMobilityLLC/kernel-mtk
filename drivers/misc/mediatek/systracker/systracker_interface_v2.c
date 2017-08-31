@@ -249,7 +249,7 @@ static void tracker_print(void)
 
 irqreturn_t systracker_isr(void)
 {
-	unsigned int con, con_infra;
+	unsigned int con;
 
 #ifdef SYSTRACKER_TEST_SUIT
 	systracker_test_cleanup();
@@ -258,11 +258,9 @@ irqreturn_t systracker_isr(void)
 	save_entry();
 	pr_err("Sys Tracker ISR\n");
 
-	con_infra = readl(IOMEM(BUS_DBG_CON_INFRA));
-	writel(con_infra | BUS_DBG_CON_IRQ_CLR, IOMEM(BUS_DBG_CON_INFRA));
-	mb();
-
 	con = readl(IOMEM(BUS_DBG_CON));
+	writel(con | BUS_DBG_CON_IRQ_CLR, IOMEM(BUS_DBG_CON));
+	mb();
 
 	if (con & BUS_DBG_CON_IRQ_WP_STA)
 		pr_err("[TRACKER] Watch address: 0x%x was touched\n", track_config.wp_phy_address);
@@ -295,7 +293,7 @@ static int systracker_watchpoint_enable_default(void)
 	track_config.enable_wp = 1;
 	writel(track_config.wp_phy_address, IOMEM(BUS_DBG_WP));
 	writel(0x0000000F, IOMEM(BUS_DBG_WP_MASK));
-	writel(readl(IOMEM(BUS_DBG_CON)) | BUS_DBG_CON_WP_EN, IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON_INFRA)) | BUS_DBG_CON_WP_EN, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 
 	return 0;
@@ -312,7 +310,7 @@ int systracker_watchpoint_enable(void)
 static int systracker_watchpoint_disable_default(void)
 {
 	track_config.enable_wp = 0;
-	writel(readl(IOMEM(BUS_DBG_CON)) & ~BUS_DBG_CON_WP_EN, IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON_INFRA)) & ~BUS_DBG_CON_WP_EN, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 
 	return 0;
@@ -395,10 +393,10 @@ void systracker_enable_default_ex(void)
 	}
 
 	con |= BUS_DBG_CON_HALT_ON_EN;
-	writel(con, IOMEM(BUS_DBG_CON));
+	writel(con, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 	con |= BUS_DBG_CON_IRQ_WP_EN;
-	writel(con, IOMEM(BUS_DBG_CON));
+	writel(con, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 }
 
@@ -435,10 +433,10 @@ void systracker_enable_default(void)
 	}
 
 	con |= BUS_DBG_CON_HALT_ON_EN;
-	writel(con, IOMEM(BUS_DBG_CON));
+	writel(con, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 	con |= BUS_DBG_CON_IRQ_WP_EN;
-	writel(con, IOMEM(BUS_DBG_CON));
+	writel(con, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 }
 
@@ -458,7 +456,7 @@ void enable_systracker(void)
 static void systracker_disable_default(void)
 {
 	track_config.state = 0;
-	writel(readl(IOMEM(BUS_DBG_CON)) & ~BUS_DBG_CON_BUS_DBG_EN, IOMEM(BUS_DBG_CON));
+	writel(readl(IOMEM(BUS_DBG_CON_INFRA)) & ~BUS_DBG_CON_BUS_DBG_EN, IOMEM(BUS_DBG_CON_INFRA));
 	mb();
 
 }
@@ -599,7 +597,9 @@ int tracker_dump(char *buf)
 
 static ssize_t tracker_run_show(struct device_driver *driver, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%x\n", readl(IOMEM(BUS_DBG_CON)));
+	return snprintf(buf, PAGE_SIZE, "BUS_DBG_CON=0x%x, BUS_DBG_CON_INFRA=0x%x\n",
+			readl(IOMEM(BUS_DBG_CON)),
+			readl(IOMEM(BUS_DBG_CON_INFRA)));
 }
 
 static ssize_t tracker_run_store(struct device_driver *driver, const char *buf, size_t count)
