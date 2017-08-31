@@ -61,6 +61,8 @@ int tcpm_hard_reset(void *ptr)
 	return 0;
 }
 
+#define MTK_PE30_VSAFE5V 2000
+
 int tcpm_set_direct_charge_en(void *ptr, bool en)
 {
 	struct pd_direct_chrg *dc = get_dc();
@@ -69,9 +71,9 @@ int tcpm_set_direct_charge_en(void *ptr, bool en)
 		return -1;
 
 	if (mtk_is_pep30_en_unlock()) {
-		pr_info("%s vbus_absent(snk), Dircet Charging\n", (en?"Ignore":"Detect"));
+		pr_info("%s vSafe5v @ Dircet Charging\n", (en?"Decrease":"Restore"));
 
-		typec_vbus_det_enable(dc->hba, !en);
+		typec_set_vsafe5v(dc->hba, (en ? MTK_PE30_VSAFE5V : PD_VSAFE5V_LOW));
 	}
 
 	return 0;
@@ -133,13 +135,16 @@ int queue_dc_command(struct pd_direct_chrg *dc, uint32_t vid, int op, int cmd, c
 		goto end;
 	}
 
+	pr_err("%s cmd=%x\n", __func__, (op|cmd));
+
 	mutex_lock(&dc->vdm_event_lock);
+
+	dc->data_in = false;
 
 	ret = pd_send_vdm(dc->hba, vid, op|cmd, data, cnt);
 	if (!ret) {
 		complete(&dc->hba->event);
-		reinit_completion(&dc->rx_event);
-		if (wait_for_completion_timeout(&dc->rx_event, MTK_VDM_TIMEOUT) > 0) {
+		if (wait_event_timeout(dc->wq, dc->data_in, msecs_to_jiffies(MTK_VDM_TIMEOUT)) > 0) {
 			if (DC_VDO_ACTION(dc->vdm_payload[0]) != OP_ACK)
 				pr_err("%s return action error\n", __func__);
 			else if (DC_VDO_CMD(dc->vdm_payload[0]) != cmd)
@@ -694,6 +699,25 @@ static ssize_t de_write(struct file *file,
 	case 11:
 		tcpm_hard_reset(dc);
 		break;
+	case 12:
+		{
+			int i = 0;
+			struct mtk_vdm_ta_cap cap;
+
+			tcpm_set_direct_charge_en(NULL, 1);
+
+			for (i = 0; i < 100; i++) {
+				pr_info("[%d]+\n", i);
+
+				memset(&cap, 0, sizeof(struct mtk_vdm_ta_cap));
+
+				mtk_get_ta_current_cap(NULL, &cap);
+				pr_info("[%d]-\n", i);
+			}
+
+			tcpm_set_direct_charge_en(NULL, 0);
+		}
+		break;
 	default:
 		pr_info("%s unsupport cmd\n", __func__);
 		break;
@@ -721,11 +745,12 @@ int mtk_direct_charge_vdm_init(void)
 	g_dc = dc;
 
 	if (!dc->dc_vdm_inited) {
-		init_completion(&dc->rx_event);
+		init_waitqueue_head(&dc->wq);
 
 		mutex_init(&dc->vdm_event_lock);
 		mutex_init(&dc->vdm_payload_lock);
 
+		dc->data_in = false;
 		dc->auth_pass = -1;
 		dc->dc_vdm_inited = true;
 

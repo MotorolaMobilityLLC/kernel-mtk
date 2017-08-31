@@ -301,12 +301,9 @@ void pd_basic_settings(struct typec_hba *hba)
 		dev_err(hba->dev, "0x2F3=0x%x [0x2]\n", typec_read8(hba, 0x2F3));
 #endif
 
-#ifdef NEVER
 	typec_write8(hba, (1<<CLK_TYPE_C_PD_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON0_SET);
 	if (is_print)
 		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON0=0x%x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON0));
-#endif /* NEVER */
-
 }
 
 void pd_init(struct typec_hba *hba)
@@ -1968,8 +1965,14 @@ int pd_task(void *data)
 			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
+			hba->vsafe_5v = PD_VSAFE5V_LOW;
 
 			schedule_work(&hba->usb_work);
+
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+			if (hba->charger_det_notify)
+				hba->charger_det_notify(0);
+#endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			if (state_changed(hba))
@@ -2449,6 +2452,11 @@ int pd_task(void *data)
 				pd[port].polarity ? cc2 : cc1);
 			typec_set_input_current_limit(
 				port, typec_curr, TYPE_C_VOLTAGE);
+#endif
+
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+			if (hba->charger_det_notify)
+				hba->charger_det_notify(1);
 #endif
 
 			#if !PD_DVT

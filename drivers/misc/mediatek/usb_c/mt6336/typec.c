@@ -380,6 +380,22 @@ void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg)
 
 }
 
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+int register_charger_det_callback(int (*func)(int))
+{
+	struct typec_hba *hba = get_hba();
+
+	pr_info("%s Register charger det driver\n", __func__);
+
+	if (!hba)
+		return -1;
+
+	hba->charger_det_notify = func;
+	return 0;
+}
+EXPORT_SYMBOL_GPL(register_charger_det_callback);
+#endif
+
 #if 0
 BLOCKING_NOTIFIER_HEAD(type_notifier_list);
 void typec_notifier_register(struct notifier_block *n)
@@ -586,6 +602,12 @@ void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable)
 		dev_err(hba->dev, "VBUS_DET %s", ((enable) ? "ON" : "OFF"));
 
 	hba->vbus_det_en = (enable ? 1 : 0);
+}
+
+void typec_set_vsafe5v(struct typec_hba *hba, int val)
+{
+	dev_err(hba->dev, "%s %dv", __func__, val);
+	hba->vsafe_5v = val;
 }
 
 #ifdef MT6336_E1
@@ -1312,15 +1334,13 @@ static void typec_basic_settings(struct typec_hba *hba)
 		dev_err(hba->dev, "0x02F1=0x%x [0x20]\n", typec_read8(hba, PD_PHY_RG_PD_0+1));
 #endif
 
-#ifdef NEVER
 	typec_write8(hba, (1<<CLK_TYPE_C_CSR_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON1_SET);
 	if (is_print)
-		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON1=0x%x %x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON1));
+		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON1=0x%x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON1));
 
 	typec_write8(hba, (1<<CLK_TYPE_C_CC_LOWQ_PDN_DIS_OFST), CLK_LOWQ_PDN_DIS_CON0_SET);
 	if (is_print)
-		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON0=0x%x %x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON0));
-#endif /* NEVER */
+		dev_err(hba->dev, "CLK_LOWQ_PDN_DIS_CON0=0x%x\n", typec_read8(hba, CLK_LOWQ_PDN_DIS_CON0));
 }
 
 static void typec_set_default_param(struct typec_hba *hba)
@@ -1560,7 +1580,7 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
 		int val = typec_vbus(hba);
 
-		if (hba->vbus_det_en && (val < PD_VSAFE5V_LOW)) {
+		if (hba->vbus_det_en && (val < hba->vsafe_5v)) {
 
 			if (val > PD_VSAFE0V_HIGH) {
 				typec_set(hba, TYPE_C_SW_CC_DET_DIS, TYPE_C_CC_SW_CTRL);
@@ -2191,6 +2211,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->dbg_lvl = TYPEC_DBG_LVL_3;
 	hba->hr_auto_sent = 0;
 	hba->vbus_en = 0;
+	hba->vsafe_5v = PD_VSAFE5V_LOW;
 
 #if USE_AUXADC
 	init_completion(&hba->auxadc_event);
