@@ -36,64 +36,64 @@ static struct layering_rule_info_t l_rule_info;
 
 static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K */
-	{-1, 4, 4, 4},
+	{-1, 400, 400, 400},
 	/* HRT_BOUND_TYPE_2K_DUAL */
-	{1, 4, 4, 4},
+	{1, 400, 400, 400},
 	/* HRT_BOUND_TYPE_FHD */
-	{2, 6, 6, 8},
+	{200, 600, 600, 800},
 	/* HRT_BOUND_TYPE_2K 4 channel*/
-	{-1, 9, 9, 11},
+	{-1, 900, 900, 1100},
 	/* HRT_BOUND_TYPE_2K_DUAL 4 channel*/
-	{2, 18, 18, 22},
+	{200, 1800, 1800, 2200},
 	/* HRT_BOUND_TYPE_FHD 4 channel*/
-	{4, 12, 12, 12},
+	{400, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
 	/* HRT_BOUND_TYPE_2K_E2 */
-	{-1, 5, 6, 6},
+	{-1, 500, 600, 600},
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 */
-	{3, 5, 6, 6},
+	{300, 500, 600, 600},
 	/* HRT_BOUND_TYPE_FHD_E2 */
-	{2, 8, 12, 12},
+	{200, 800, 1200, 1200},
 	/* HRT_BOUND_TYPE_2K_E2 4 channel*/
-	{-1, 9, 9, 11},
+	{-1, 900, 900, 1100},
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
-	{6, 9, 9, 11},
+	{600, 900, 900, 1100},
 	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
-	{11, 12, 12, 12},
+	{1100, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_2K_DSC_E2 4 channel*/
-	{6, 9, 9, 11},
+	{600, 900, 900, 1100},
 };
 
 static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K */
-	{-1, 4, 5, 5},
+	{-1, 400, 500, 500},
 	/* HRT_BOUND_TYPE_2K_DUAL */
-	{4, 8, 10, 10},
+	{400, 800, 1000, 1000},
 	/* HRT_BOUND_TYPE_FHD */
-	{4, 7, 9, 9},
+	{400, 700, 900, 900},
 	/* HRT_BOUND_TYPE_2K 4 channel*/
-	{-1, 4, 5, 5},
+	{-1, 400, 500, 500},
 	/* HRT_BOUND_TYPE_2K_DUAL 4 channel*/
-	{4, 8, 10, 10},
+	{400, 800, 1000, 1000},
 	/* HRT_BOUND_TYPE_FHD 4 channel*/
-	{4, 7, 9, 9},
+	{400, 700, 900, 900},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
 	/* HRT_BOUND_TYPE_2K_E2 */
-	{-1, 4, 5, 6},
+	{-1, 400, 500, 600},
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 */
-	{6, 8, 10, 12},
+	{600, 800, 1000, 1200},
 	/* HRT_BOUND_TYPE_FHD_E2 */
-	{5, 7, 9, 10},
+	{500, 700, 900, 1000},
 	/* HRT_BOUND_TYPE_2K_E2 4 channel*/
-	{-1, 4, 5, 6},
+	{-1, 400, 500, 600},
 	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
-	{6, 8, 10, 12},
+	{600, 800, 1000, 1200},
 	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
-	{5, 7, 9, 10},
+	{500, 700, 900, 1000},
 	/* HRT_BOUND_TYPE_2K_DSC_E2 4 channel*/
-	{3, 4, 5, 6},
+	{300, 400, 500, 600},
 };
 
 /**
