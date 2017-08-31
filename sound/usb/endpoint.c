@@ -776,7 +776,8 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
 
 		/* This is a special case for latency requirement.*/
 		/* Limit the max packets and max queuein a single URB */
-		if (max_packs_per_period <= 5 && periods_per_buffer == 4) {
+		if ((frames_per_period/frame_bits) <= 5 &&
+			periods_per_buffer == 4) {
 			max_packs_per_urb = packs_per_ms;
 			max_queue = LOW_LATENCY_MAX_QUEUE;
 		}
