@@ -3103,6 +3103,8 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define smi0_2x_sel	"smi0_2x_sel"
 #define vdec_sel	"vdec_sel"
 #define infra_smi_l2c	"infra_smi_l2c"
+#define img_sel	"img_sel"
+#define cam_sel	"cam_sel"
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -3132,11 +3134,11 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MFG1, pg_mfg1, NULL, slow_mfg_sel, SYS_MFG1),
 	PGATE(SCP_SYS_MFG2, pg_mfg2, NULL, slow_mfg_sel, SYS_MFG2),
 	PGATE(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, SYS_MFG3),
-	PGATE(SCP_SYS_ISP, pg_isp, NULL, smi0_2x_sel, SYS_ISP),
+	PGATE(SCP_SYS_ISP, pg_isp, NULL, img_sel, SYS_ISP),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, infra_smi_l2c, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, audio_sel, SYS_AUDIO),
-	PGATE(SCP_SYS_CAM, pg_cam, NULL, smi0_2x_sel, SYS_CAM),
+	PGATE(SCP_SYS_CAM, pg_cam, NULL, cam_sel, SYS_CAM),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
 	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mjc_sel, SYS_MJC),
 };
