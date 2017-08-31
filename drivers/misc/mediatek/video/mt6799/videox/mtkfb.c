@@ -2057,6 +2057,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 	/* ttt = get_current_time_us()-ttt; */
 	return 0;
 
+#if 0
 	_internal_test_block_size = 20;
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
 		color = (i & 0x1) * 0xff;
@@ -2083,6 +2084,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 	primary_display_trigger(1, NULL, 0);
 
 	return 0;
+#endif
 }
 
 #ifdef CONFIG_OF
