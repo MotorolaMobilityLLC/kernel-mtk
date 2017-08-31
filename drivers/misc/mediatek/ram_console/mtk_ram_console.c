@@ -111,18 +111,18 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_oppidx;
 	uint8_t gpu_dvfs_status;
 
-	uint32_t ptp_60;
-	uint32_t ptp_64;
-	uint32_t ptp_68;
-	uint32_t ptp_6C;
-	uint32_t ptp_78;
-	uint32_t ptp_7C;
-	uint32_t ptp_80;
-	uint32_t ptp_84;
-	uint32_t ptp_88;
-	uint32_t ptp_8C;
-	uint32_t ptp_9C;
-	uint32_t ptp_A0;
+	uint32_t ptp_e0;
+	uint32_t ptp_e1;
+	uint32_t ptp_e2;
+	uint32_t ptp_e3;
+	uint32_t ptp_e4;
+	uint32_t ptp_e5;
+	uint32_t ptp_e6;
+	uint32_t ptp_e7;
+	uint32_t ptp_e8;
+	uint32_t ptp_e9;
+	uint32_t ptp_e10;
+	uint32_t ptp_e11;
 	uint64_t ptp_vboot;
 	uint64_t ptp_cpu_big_volt;
 	uint64_t ptp_cpu_big_volt_1;
@@ -1161,88 +1161,88 @@ u8 aee_rr_curr_gpu_dvfs_status(void)
 	return LAST_RR_VAL(gpu_dvfs_status);
 }
 
-void aee_rr_rec_ptp_60(u32 val)
+void aee_rr_rec_ptp_e0(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_60, val);
+	LAST_RR_SET(ptp_e0, val);
 }
 
-void aee_rr_rec_ptp_64(u32 val)
+void aee_rr_rec_ptp_e1(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_64, val);
+	LAST_RR_SET(ptp_e1, val);
 }
 
-void aee_rr_rec_ptp_68(u32 val)
+void aee_rr_rec_ptp_e2(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_68, val);
+	LAST_RR_SET(ptp_e2, val);
 }
 
-void aee_rr_rec_ptp_6C(u32 val)
+void aee_rr_rec_ptp_e3(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_6C, val);
+	LAST_RR_SET(ptp_e3, val);
 }
 
-void aee_rr_rec_ptp_78(u32 val)
+void aee_rr_rec_ptp_e4(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_78, val);
+	LAST_RR_SET(ptp_e4, val);
 }
 
-void aee_rr_rec_ptp_7C(u32 val)
+void aee_rr_rec_ptp_e5(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_7C, val);
+	LAST_RR_SET(ptp_e5, val);
 }
 
-void aee_rr_rec_ptp_80(u32 val)
+void aee_rr_rec_ptp_e6(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_80, val);
+	LAST_RR_SET(ptp_e6, val);
 }
 
-void aee_rr_rec_ptp_84(u32 val)
+void aee_rr_rec_ptp_e7(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_84, val);
+	LAST_RR_SET(ptp_e7, val);
 }
 
-void aee_rr_rec_ptp_88(u32 val)
+void aee_rr_rec_ptp_e8(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_88, val);
+	LAST_RR_SET(ptp_e8, val);
 }
 
-void aee_rr_rec_ptp_8C(u32 val)
+void aee_rr_rec_ptp_e9(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_8C, val);
+	LAST_RR_SET(ptp_e9, val);
 }
 
-void aee_rr_rec_ptp_9C(u32 val)
+void aee_rr_rec_ptp_e10(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_9C, val);
+	LAST_RR_SET(ptp_e10, val);
 }
 
-void aee_rr_rec_ptp_A0(u32 val)
+void aee_rr_rec_ptp_e11(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(ptp_A0, val);
+	LAST_RR_SET(ptp_e11, val);
 }
 
 void aee_rr_rec_ptp_vboot(u64 val)
@@ -1543,64 +1543,64 @@ void aee_rr_rec_ocp_2_enable(u8 val)
 	LAST_RR_SET(ocp_2_enable, val);
 }
 
-u32 aee_rr_curr_ptp_60(void)
+u32 aee_rr_curr_ptp_e0(void)
 {
-	return LAST_RR_VAL(ptp_60);
+	return LAST_RR_VAL(ptp_e0);
 }
 
-u32 aee_rr_curr_ptp_64(void)
+u32 aee_rr_curr_ptp_e1(void)
 {
-	return LAST_RR_VAL(ptp_64);
+	return LAST_RR_VAL(ptp_e1);
 }
 
-u32 aee_rr_curr_ptp_68(void)
+u32 aee_rr_curr_ptp_e2(void)
 {
-	return LAST_RR_VAL(ptp_68);
+	return LAST_RR_VAL(ptp_e2);
 }
 
-u32 aee_rr_curr_ptp_6C(void)
+u32 aee_rr_curr_ptp_e3(void)
 {
-	return LAST_RR_VAL(ptp_6C);
+	return LAST_RR_VAL(ptp_e3);
 }
 
-u32 aee_rr_curr_ptp_78(void)
+u32 aee_rr_curr_ptp_e4(void)
 {
-	return LAST_RR_VAL(ptp_78);
+	return LAST_RR_VAL(ptp_e4);
 }
 
-u32 aee_rr_curr_ptp_7C(void)
+u32 aee_rr_curr_ptp_e5(void)
 {
-	return LAST_RR_VAL(ptp_7C);
+	return LAST_RR_VAL(ptp_e5);
 }
 
-u32 aee_rr_curr_ptp_80(void)
+u32 aee_rr_curr_ptp_e6(void)
 {
-	return LAST_RR_VAL(ptp_80);
+	return LAST_RR_VAL(ptp_e6);
 }
 
-u32 aee_rr_curr_ptp_84(void)
+u32 aee_rr_curr_ptp_e7(void)
 {
-	return LAST_RR_VAL(ptp_84);
+	return LAST_RR_VAL(ptp_e7);
 }
 
-u32 aee_rr_curr_ptp_88(void)
+u32 aee_rr_curr_ptp_e8(void)
 {
-	return LAST_RR_VAL(ptp_88);
+	return LAST_RR_VAL(ptp_e8);
 }
 
-u32 aee_rr_curr_ptp_8C(void)
+u32 aee_rr_curr_ptp_e9(void)
 {
-	return LAST_RR_VAL(ptp_8C);
+	return LAST_RR_VAL(ptp_e9);
 }
 
-u32 aee_rr_curr_ptp_9C(void)
+u32 aee_rr_curr_ptp_e10(void)
 {
-	return LAST_RR_VAL(ptp_9C);
+	return LAST_RR_VAL(ptp_e10);
 }
 
-u32 aee_rr_curr_ptp_A0(void)
+u32 aee_rr_curr_ptp_e11(void)
 {
-	return LAST_RR_VAL(ptp_A0);
+	return LAST_RR_VAL(ptp_e11);
 }
 
 u64 aee_rr_curr_ptp_vboot(void)
@@ -2118,64 +2118,64 @@ void aee_rr_show_gpu_dvfs_status(struct seq_file *m)
 	seq_printf(m, "gpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_status));
 }
 
-void aee_rr_show_ptp_60(struct seq_file *m)
+void aee_rr_show_ptp_e0(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES0 = 0x%X\n", LAST_RRR_VAL(ptp_60));
+	seq_printf(m, "M_HW_RES0 = 0x%X\n", LAST_RRR_VAL(ptp_e0));
 }
 
-void aee_rr_show_ptp_64(struct seq_file *m)
+void aee_rr_show_ptp_e1(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES1 = 0x%X\n", LAST_RRR_VAL(ptp_64));
+	seq_printf(m, "M_HW_RES1 = 0x%X\n", LAST_RRR_VAL(ptp_e1));
 }
 
-void aee_rr_show_ptp_68(struct seq_file *m)
+void aee_rr_show_ptp_e2(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES2 = 0x%X\n", LAST_RRR_VAL(ptp_68));
+	seq_printf(m, "M_HW_RES2 = 0x%X\n", LAST_RRR_VAL(ptp_e2));
 }
 
-void aee_rr_show_ptp_6C(struct seq_file *m)
+void aee_rr_show_ptp_e3(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES3 = 0x%X\n", LAST_RRR_VAL(ptp_6C));
+	seq_printf(m, "M_HW_RES3 = 0x%X\n", LAST_RRR_VAL(ptp_e3));
 }
 
-void aee_rr_show_ptp_78(struct seq_file *m)
+void aee_rr_show_ptp_e4(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES6 = 0x%X\n", LAST_RRR_VAL(ptp_78));
+	seq_printf(m, "M_HW_RES6 = 0x%X\n", LAST_RRR_VAL(ptp_e4));
 }
 
-void aee_rr_show_ptp_7C(struct seq_file *m)
+void aee_rr_show_ptp_e5(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES7 = 0x%X\n", LAST_RRR_VAL(ptp_7C));
+	seq_printf(m, "M_HW_RES7 = 0x%X\n", LAST_RRR_VAL(ptp_e5));
 }
 
-void aee_rr_show_ptp_80(struct seq_file *m)
+void aee_rr_show_ptp_e6(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES8 = 0x%X\n", LAST_RRR_VAL(ptp_80));
+	seq_printf(m, "M_HW_RES8 = 0x%X\n", LAST_RRR_VAL(ptp_e6));
 }
 
-void aee_rr_show_ptp_84(struct seq_file *m)
+void aee_rr_show_ptp_e7(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES9 = 0x%X\n", LAST_RRR_VAL(ptp_84));
+	seq_printf(m, "M_HW_RES9 = 0x%X\n", LAST_RRR_VAL(ptp_e7));
 }
 
-void aee_rr_show_ptp_88(struct seq_file *m)
+void aee_rr_show_ptp_e8(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESA = 0x%X\n", LAST_RRR_VAL(ptp_88));
+	seq_printf(m, "M_HW_RESA = 0x%X\n", LAST_RRR_VAL(ptp_e8));
 }
 
-void aee_rr_show_ptp_8C(struct seq_file *m)
+void aee_rr_show_ptp_e9(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESB = 0x%X\n", LAST_RRR_VAL(ptp_8C));
+	seq_printf(m, "M_HW_RESB = 0x%X\n", LAST_RRR_VAL(ptp_e9));
 }
 
-void aee_rr_show_ptp_9C(struct seq_file *m)
+void aee_rr_show_ptp_e10(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESF = 0x%X\n", LAST_RRR_VAL(ptp_9C));
+	seq_printf(m, "M_HW_RESF = 0x%X\n", LAST_RRR_VAL(ptp_e10));
 }
 
-void aee_rr_show_ptp_A0(struct seq_file *m)
+void aee_rr_show_ptp_e11(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES10 = 0x%X\n", LAST_RRR_VAL(ptp_A0));
+	seq_printf(m, "M_HW_RES10 = 0x%X\n", LAST_RRR_VAL(ptp_e11));
 }
 
 void aee_rr_show_ptp_vboot(struct seq_file *m)
@@ -2651,18 +2651,18 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
-	aee_rr_show_ptp_60,
-	aee_rr_show_ptp_64,
-	aee_rr_show_ptp_68,
-	aee_rr_show_ptp_6C,
-	aee_rr_show_ptp_78,
-	aee_rr_show_ptp_7C,
-	aee_rr_show_ptp_80,
-	aee_rr_show_ptp_84,
-	aee_rr_show_ptp_88,
-	aee_rr_show_ptp_8C,
-	aee_rr_show_ptp_9C,
-	aee_rr_show_ptp_A0,
+	aee_rr_show_ptp_e0,
+	aee_rr_show_ptp_e1,
+	aee_rr_show_ptp_e2,
+	aee_rr_show_ptp_e3,
+	aee_rr_show_ptp_e4,
+	aee_rr_show_ptp_e5,
+	aee_rr_show_ptp_e6,
+	aee_rr_show_ptp_e7,
+	aee_rr_show_ptp_e8,
+	aee_rr_show_ptp_e9,
+	aee_rr_show_ptp_e10,
+	aee_rr_show_ptp_e11,
 	aee_rr_show_ptp_vboot,
 	aee_rr_show_ptp_cpu_big_volt,
 	aee_rr_show_ptp_cpu_big_volt_1,
