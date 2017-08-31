@@ -474,7 +474,7 @@ static void mtkts_allts_start_timer(void)
 			continue;
 
 		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0)
-			mod_delayed_work(system_freezable_wq, &(g_tsData[i].thz_dev->poll_queue),
+			mod_delayed_work(system_freezable_power_efficient_wq, &(g_tsData[i].thz_dev->poll_queue),
 				round_jiffies(msecs_to_jiffies(1000)));
 
 		up(&g_tsData[i].sem_mutex);

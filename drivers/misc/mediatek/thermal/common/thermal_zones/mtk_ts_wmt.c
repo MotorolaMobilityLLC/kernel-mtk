@@ -1343,7 +1343,7 @@ static void mtkts_wmt_start_thermal_timer(void)
 		return;
 
 	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
-		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
+		mod_delayed_work(system_freezable_power_efficient_wq, &(p_linux_if->thz_dev->poll_queue),
 				 round_jiffies(msecs_to_jiffies(2000)));
 	up(&sem_mutex);
 }
