@@ -317,10 +317,14 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 
 		/* step 1: config C2K boot mode */
 		/* step 1.1: let CBP boot from EMI: [10:8] = 3'b101 */
-		reg_value = ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG);
-		reg_value &= (~(7<<8));
-		reg_value |= (5<<8);
-		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG, reg_value);
+		if (mt_get_chip_sw_ver() == CHIP_SW_VER_01) {
+			CCCI_BOOTUP_LOG(md->index, TAG, "V1, C2K using EMI mode\n");
+			reg_value = ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG);
+			reg_value &= (~(7<<8));
+			reg_value |= (5<<8);
+			ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG, reg_value);
+		}
+
 		/* step 1.2: make CS_DEBUGOUT readable: [12:11] = 2'b00 */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG,
 				ccif_read32(md_ctrl->hw_info->infra_ao_base, C2K_CONFIG) & (~(0x3 << 11)));
