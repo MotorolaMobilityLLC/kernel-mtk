@@ -327,12 +327,12 @@ static int t_dev_lpm(int argc, char **argv);
 
 /**************************************************************************/
 
-typedef struct {
+struct CMD_TBL_T {
 	char name[256];
 	int (*cb_func)(int argc, char **argv);
-} CMD_TBL_T;
+};
 
-CMD_TBL_T _arPCmdTbl_host[] = {
+struct CMD_TBL_T _arPCmdTbl_host[] = {
 	{"hcd.init", &t_hcd_init},
 	{"hcd.cleanup", &t_hcd_cleanup},
 	{"hcd.drvvbus", &t_drv_vbus},
@@ -471,7 +471,7 @@ int call_function_host(char *buf)
 	if (!argv)
 		return -ENOMEM;
 
-	for (i = 0; i < sizeof(_arPCmdTbl_host) / sizeof(CMD_TBL_T); i++) {
+	for (i = 0; i < sizeof(_arPCmdTbl_host) / sizeof(struct CMD_TBL_T); i++) {
 		if ((!strcmp(_arPCmdTbl_host[i].name, argv[0])) && (_arPCmdTbl_host[i].cb_func != NULL)) {
 			ret = _arPCmdTbl_host[i].cb_func(argc, argv);
 			pr_alert("==========argc %d==========\n", argc);
@@ -6811,7 +6811,7 @@ static int t_hub_configurehub(int argc, char **argv)
 	int i;
 	int port_index;
 	struct xhci_port *port;
-	USB_DEV_SPEED speed;
+	enum USB_DEV_SPEED speed;
 	u32 temp;
 	u32 __iomem *addr;
 	int port_id;
@@ -7295,7 +7295,7 @@ static int t_hub_reset_dev(int argc, char **argv)
 	int hub_num, port_num, dev_num;
 	/*int transfer_type, bInterval, maxp;*/
 	struct usb_device *udev;
-	USB_DEV_SPEED speed = 0;
+	enum USB_DEV_SPEED speed = 0;
 	int ret;
 
 	hub_num = 1;
@@ -7387,7 +7387,7 @@ static int t_hub_remotewakeup_dev(int argc, char **argv)
 	int hub_num, port_num, dev_num;
 	/*int transfer_type, bInterval, maxp;*/
 	struct usb_device *udev;
-	/*USB_DEV_SPEED speed;*/
+	/*enum USB_DEV_SPEED speed;*/
 	int ret;
 	int length;
 	int bdp, gpd_buf_size, bd_buf_size;
@@ -7681,7 +7681,7 @@ static int t_dev_lpm(int argc, char **argv)
 
 static int t_dev_reset(int argc, char **argv)
 {
-	USB_DEV_SPEED speed;
+	enum USB_DEV_SPEED speed;
 	int ret;
 
 	ret = 0;
@@ -9589,6 +9589,7 @@ static int u2ct_disconnect_detect(void)
 	/* let SW doesn't do reset after get discon/conn events */
 	/* g_hs_block_reset = true; */
 	g_port_connect = false;
+	/* ensure  the PORT_PWER is set*/
 	mb();
 	mtk_test_dbg("[OTG_H] u2ct_disconnect_detect, g_port_connect is %d\n", g_port_connect);
 
@@ -10901,7 +10902,7 @@ static int __init mtk_test_init(void)
 	g_cmd_status = CMD_DONE;
 	g_exec_done = true;
 	g_stopped = true;
-	mb();
+
 
 	pr_err("[OTG_H] mtk_test_init, g_port_connect is %d\n", g_port_connect);
 	if (!misc_register(&mu3h_test_uevent_device))
@@ -10942,7 +10943,7 @@ static int xhci_dbg_probe(struct platform_device *pdev)
 	g_cmd_status = CMD_DONE;
 	g_exec_done = true;
 	g_stopped = true;
-	mb();
+
 	mtk_test_dbg("xhci_dbg_probe\n");
 	root = debugfs_create_dir("xhci_dbg", NULL);
 	if (!root) {
