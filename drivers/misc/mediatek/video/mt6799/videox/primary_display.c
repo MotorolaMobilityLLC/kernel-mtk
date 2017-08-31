@@ -4302,15 +4302,16 @@ done:
 
 int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int block, int need_lock)
 {
-	int ret = 0, sw_only = 0;
+	int ret = 0;
 
 	if (need_lock)
 		_primary_path_lock(__func__);
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("%s in suspend state!!!\n",     __func__);
-		sw_only = 1;
+		return 0;
 	}
 
+	primary_display_idlemgr_kick(__func__, 0);
 	DISPMSG("%s mode:%d\n", __func__, pgc->session_mode);
 	if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = _DL_dual_switch_to_DL_fast(NULL, 1);
