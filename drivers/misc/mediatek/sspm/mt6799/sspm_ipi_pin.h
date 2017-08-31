@@ -16,7 +16,7 @@
 /* define module id here ... */
 /* use bit 0 - 7 of IN_IRQ of mailbox 0 */
 #define IPI_ID_DCS          0  /* the following will use mbox 0 */
-#define IPI_ID_MET          1
+#define IPI_ID_TST1         1
 #define IPI_ID_PLATFORM     2
 #define IPI_ID_PTPOD        3
 #define IPI_ID_CPU_DVFS     4

@@ -235,10 +235,10 @@ int Sipi_met_thread(void *data)
 	uint32_t retdata, retchk;
 	uint32_t ipi_buf[4];
 
-	pr_debug("Info: IPI MET thread...\n");
+	pr_debug("Info: IPI TST1 thread...\n");
 	do {
 		if (atomic_read(&myipi_err) == 0) {
-			i = IPI_ID_MET;
+			i = IPI_ID_TST1;
 			for (j = 0; j < pin_size[i]; j++)
 				ipi_buf[j] = i + 1 + j;
 
@@ -772,12 +772,12 @@ int Ripi_met_thread(void *data)
 	int i, ret;
 	uint32_t adata;
 
-	pr_debug("MET received thread\n");
+	pr_debug("TST1 received thread\n");
 
 	met_act.data = (void *)met_buf;
-	ret = sspm_ipi_recv_registration(IPI_ID_MET, &met_act);
+	ret = sspm_ipi_recv_registration(IPI_ID_TST1, &met_act);
 	if (ret != 0) {
-		pr_debug("Error: ipi_recv_registration MET error: %d\n", ret);
+		pr_debug("Error: ipi_recv_registration TST1 error: %d\n", ret);
 		do {
 			msleep(1000);
 		} while (!kthread_should_stop());
@@ -788,13 +788,13 @@ int Ripi_met_thread(void *data)
 	i = 0;
 	do {
 		i++;
-		sspm_ipi_recv_wait(IPI_ID_MET);
-		pr_debug("Info: MET thread received ID=%d, i=%d\n", met_act.id, i);
+		sspm_ipi_recv_wait(IPI_ID_TST1);
+		pr_debug("Info: TST1 thread received ID=%d, i=%d\n", met_act.id, i);
 		chkdata("DCS", &met_act, &adata);
-		pr_debug("Info: MET Task send back ack data=%08X\n", adata);
-		ret = sspm_ipi_send_ack(IPI_ID_MET, &adata);
+		pr_debug("Info: TST1 Task send back ack data=%08X\n", adata);
+		ret = sspm_ipi_send_ack(IPI_ID_TST1, &adata);
 		if (ret != 0)
-			pr_debug("Error: ipi_send_ack MET error: %d\n", ret);
+			pr_debug("Error: ipi_send_ack TST1 error: %d\n", ret);
 
 	} while (!kthread_should_stop());
 	return 0;

@@ -28,9 +28,9 @@
 #define IPI_MBOX4_SLOTS ((IPI_MBOX4_64D+1)*32)
 
 
-/* definition of slot size for received PINs */
+/* definition of slot size for send PINs */
 #define PINS_SIZE_DCS            6  /* the following will use mbox 0 */
-#define PINS_SIZE_MET            4
+#define PINS_SIZE_TST1           4
 #define PINS_SIZE_PLATFORM       3
 #define PINS_SIZE_PTPOD          4
 #define PINS_SIZE_CPU_DVFS       4
@@ -55,8 +55,8 @@
 
 /* definition of slot offset for PINs */
 #define PINS_OFFSET_DCS          0  /* the following will use mbox 0 */
-#define PINS_OFFSET_MET          (PINS_OFFSET_DCS + PINS_SIZE_DCS)
-#define PINS_OFFSET_PLATFORM     (PINS_OFFSET_MET + PINS_SIZE_MET)
+#define PINS_OFFSET_TST1         (PINS_OFFSET_DCS + PINS_SIZE_DCS)
+#define PINS_OFFSET_PLATFORM     (PINS_OFFSET_TST1 + PINS_SIZE_TST1)
 #define PINS_OFFSET_PTPOD        (PINS_OFFSET_PLATFORM + PINS_SIZE_PLATFORM)
 #define PINS_OFFSET_CPU_DVFS     (PINS_OFFSET_PTPOD + PINS_SIZE_PTPOD)
 #define PINS_OFFSET_GPU_DVFS     (PINS_OFFSET_CPU_DVFS + PINS_SIZE_CPU_DVFS)
@@ -88,7 +88,7 @@
 /* mutex_send, sema_ack, mbox, slot, size, shared, retdata, lock, share_grp, polling, unused */
 struct _pin_send send_pintable[] = {
 	{{{0} }, {0}, 0, PINS_OFFSET_DCS, PINS_SIZE_DCS, 0, 1, 0, 0, 0, 0}, /* DCS */
-	{{{0} }, {0}, 0, PINS_OFFSET_MET, PINS_SIZE_MET, 0, 1, 0, 0, 0, 0}, /* on-die-met */
+	{{{0} }, {0}, 0, PINS_OFFSET_TST1, PINS_SIZE_TST1, 0, 1, 0, 0, 0, 0}, /* on-die-met */
 	{{{0} }, {0}, 0, PINS_OFFSET_PLATFORM, PINS_SIZE_PLATFORM, 0, 1, 0, 0, 0, 0}, /* platform */
 	{{{0} }, {0}, 0, PINS_OFFSET_PTPOD,  PINS_SIZE_PTPOD, 0, 1, 0, 0, 0, 0},  /* PTPOD */
 	{{{0} }, {0}, 0, PINS_OFFSET_CPU_DVFS, PINS_SIZE_CPU_DVFS, 0, 1, 0, 0, 0, 0}, /* CPU DVFS */
@@ -114,15 +114,15 @@ struct _pin_send send_pintable[] = {
 
 /* definition of slot size for received PINs */
 #define PINR_SIZE_DCS            6  /* the following will use mbox 2 */
-#define PINR_SIZE_MET            4
+#define PINR_SIZE_TST1           4
 #define PINR_SIZE_PLATFORM       3
 #define PINR_SIZE_PTPOD          4
 #define PINR_SIZE_CPU_DVFS       4
 #define PINR_SIZE_GPU_DVFS       3
 /* definition of slot offset for PINs */
 #define PINR_OFFSET_DCS          0  /* the following will use mbox 0 */
-#define PINR_OFFSET_MET          (PINR_OFFSET_DCS + PINR_SIZE_DCS)
-#define PINR_OFFSET_PLATFORM     (PINR_OFFSET_MET + PINR_SIZE_MET)
+#define PINR_OFFSET_TST1          (PINR_OFFSET_DCS + PINR_SIZE_DCS)
+#define PINR_OFFSET_PLATFORM     (PINR_OFFSET_TST1 + PINR_SIZE_TST1)
 #define PINR_OFFSET_PTPOD        (PINR_OFFSET_PLATFORM + PINR_SIZE_PLATFORM)
 #define PINR_OFFSET_CPU_DVFS     (PINR_OFFSET_PTPOD + PINR_SIZE_PTPOD)
 #define PINR_OFFSET_GPU_DVFS     (PINR_OFFSET_CPU_DVFS + PINR_SIZE_CPU_DVFS)
@@ -134,7 +134,7 @@ struct _pin_send send_pintable[] = {
 /* act, mbox, slot, size, shared, retdata, lock, share_grp, unused */
 struct _pin_recv recv_pintable[] = {
 	{NULL, 2, PINR_OFFSET_DCS, PINR_SIZE_DCS, 0, 1, 0, 0, 0},   /* DCS */
-	{NULL, 2, PINR_OFFSET_MET, PINR_SIZE_MET, 0, 1, 0, 0, 0},   /* on-die-met */
+	{NULL, 2, PINR_OFFSET_TST1, PINR_SIZE_TST1, 0, 1, 0, 0, 0},   /* on-die-met */
 	{NULL, 2, PINR_OFFSET_PLATFORM, PINR_SIZE_PLATFORM, 0, 1, 0, 0, 0},   /* platform */
 	{NULL, 2, PINR_OFFSET_PTPOD, PINR_SIZE_PTPOD, 0, 1, 0, 0, 0},   /* ptpod */
 	{NULL, 2, PINR_OFFSET_CPU_DVFS, PINR_SIZE_CPU_DVFS, 0, 1, 0, 0, 0},   /* CPU DVFS */
@@ -154,7 +154,7 @@ struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 #ifdef IPI_MONITOR
 static char *pin_name[IPI_ID_TOTAL] = {
 	"DCS",
-	"MET",
+	"TST1",
 	"PLATFORM",
 	"PTPOD",
 	"CPU_DVFS",
