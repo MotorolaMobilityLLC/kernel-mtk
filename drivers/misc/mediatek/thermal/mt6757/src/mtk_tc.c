@@ -891,12 +891,12 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2, enum th
 }
 
 
-static int read_tc_raw_and_temp(volatile u32 *tempmsr_name, enum thermal_sensor ts_name,
+static int read_tc_raw_and_temp(u32 *tempmsr_name, enum thermal_sensor ts_name,
 				int *ts_raw)
 {
 	int temp = 0, raw = 0;
 
-	raw = (tempmsr_name != 0) ? (readl((tempmsr_name)) & 0x0fff) : 0;
+	raw = (tempmsr_name != 0) ? (readl(tempmsr_name) & 0x0fff) : 0;
 	temp = (tempmsr_name != 0) ? raw_to_temperature_roomt(raw, ts_name) : 0;
 
 	*ts_raw = raw;
@@ -914,7 +914,7 @@ void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sens
 	switch (order) {
 	case 0:
 		tscpu_bank_ts[bank][type] =
-		    read_tc_raw_and_temp((volatile u32 *)TEMPMSR0, type,
+		    read_tc_raw_and_temp(TEMPMSR0, type,
 					 &tscpu_bank_ts_r[bank][type]);
 		tscpu_dprintk("%s order %d bank %d type %d tscpu_bank_ts %d tscpu_bank_ts_r %d\n",
 			      __func__, order, bank, type, tscpu_bank_ts[bank][type],
@@ -922,7 +922,7 @@ void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sens
 		break;
 	case 1:
 		tscpu_bank_ts[bank][type] =
-		    read_tc_raw_and_temp((volatile u32 *)TEMPMSR1, type,
+		    read_tc_raw_and_temp(TEMPMSR1, type,
 					 &tscpu_bank_ts_r[bank][type]);
 		tscpu_dprintk("%s order %d bank %d type %d tscpu_bank_ts %d tscpu_bank_ts_r %d\n",
 			      __func__, order, bank, type, tscpu_bank_ts[bank][type],
@@ -930,7 +930,7 @@ void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sens
 		break;
 	case 2:
 		tscpu_bank_ts[bank][type] =
-		    read_tc_raw_and_temp((volatile u32 *)TEMPMSR2, type,
+		    read_tc_raw_and_temp(TEMPMSR2, type,
 					 &tscpu_bank_ts_r[bank][type]);
 		tscpu_dprintk("%s order %d bank %d type %d tscpu_bank_ts %d tscpu_bank_ts_r %d\n",
 			      __func__, order, bank, type, tscpu_bank_ts[bank][type],
@@ -938,7 +938,7 @@ void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sens
 		break;
 	case 3:
 		tscpu_bank_ts[bank][type] =
-		    read_tc_raw_and_temp((volatile u32 *)TEMPMSR3, type,
+		    read_tc_raw_and_temp(TEMPMSR3, type,
 					 &tscpu_bank_ts_r[bank][type]);
 		tscpu_dprintk("%s order %d bank %d type %d tscpu_bank_ts %d tscpu_bank_ts_r %d\n",
 			      __func__, order, bank, type, tscpu_bank_ts[bank][type],
@@ -946,7 +946,7 @@ void tscpu_thermal_read_bank_temp(enum thermal_bank_name bank, enum thermal_sens
 		break;
 	default:
 		tscpu_bank_ts[bank][type] =
-		    read_tc_raw_and_temp((volatile u32 *)TEMPMSR0, type,
+		    read_tc_raw_and_temp(TEMPMSR0, type,
 					 &tscpu_bank_ts_r[bank][type]);
 		tscpu_dprintk("%s order %d bank %d type %d tscpu_bank_ts %d tscpu_bank_ts_r %d\n",
 			      __func__, order, bank, type, tscpu_bank_ts[bank][type],
