@@ -133,12 +133,16 @@ const char *wakesrc_str[32] = {
  **************************************/
 int __spm_check_opp_level_impl(int ch)
 {
-	int opp = vcorefs_get_sw_opp();
+	/* 20170407 Owen fix build error */
+	/* int opp = vcorefs_get_sw_opp(); */
+	int opp = 0;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
 #endif
 
 #ifdef CONFIG_MACH_MT6759
+	opp = (opp > OPP_1) ? OPP_1 : opp;
+#elif defined(CONFIG_MACH_MT6758)
 	opp = (opp > OPP_1) ? OPP_1 : opp;
 #endif
 
@@ -154,6 +158,8 @@ int __spm_check_opp_level(int ch)
 {
 	int opp;
 #ifdef CONFIG_MACH_MT6759
+	int level[4] = {2, 1, 0, 0};
+#elif defined(CONFIG_MACH_MT6758)
 	int level[4] = {2, 1, 0, 0};
 #else
 	int level[4] = {4, 3, 1, 0};
@@ -185,8 +191,8 @@ unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
 		spm_crit2("%s: error opp number %d\n", __func__, opp);
 		opp = 0;
 	}
-
-	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
+	/* 20170407 Owen fix build error */
+	/* vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp); */
 	return vcore_volt_pmic_val;
 }
 

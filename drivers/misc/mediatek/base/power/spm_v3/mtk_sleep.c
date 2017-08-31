@@ -29,11 +29,17 @@
 #include <mtk_spm_idle.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
+/* 20170407 Owen fix build errot */
+#if !defined(CONFIG_MACH_MT6758)
 #include <mtk_hps_internal.h>
+#endif
 #include <mt-plat/mtk_chip.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
+/* 20170407 Owen fix build errot */
+#if !defined(CONFIG_MACH_MT6758)
 #include <mtk-soc-afe-control.h>
+#endif
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 
 /**************************************
@@ -75,7 +81,7 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #if !(CPU_BUCK_CTRL)
 		SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 #endif
@@ -93,7 +99,7 @@ static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	SPM_FLAG_ENABLE_ATF_ABORT |
 #endif
 	SPM_FLAG_DEEPIDLE_OPTION
@@ -231,7 +237,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #else
 	if (slp_ck26m_on)
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
+#endif
 	else
 #endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
@@ -327,16 +335,24 @@ void slp_set_infra_on(bool infra_on)
 {
 	if (infra_on) {
 		slp_spm_flags |= SPM_FLAG_DIS_INFRA_PDN;
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
 		slp_spm_deepidle_flags |= SPM_FLAG_DIS_INFRA_PDN;
 #endif
+#endif
 	} else {
 		slp_spm_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
 		slp_spm_deepidle_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
 #endif
+#endif
 	}
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+	slp_notice("slp_set_infra_on (%d): 0x%x\n", infra_on, slp_spm_flags);
+#else
 	slp_notice("slp_set_infra_on (%d): 0x%x, 0x%x\n", infra_on, slp_spm_flags, slp_spm_deepidle_flags);
+#endif
 }
 
 void slp_module_init(void)

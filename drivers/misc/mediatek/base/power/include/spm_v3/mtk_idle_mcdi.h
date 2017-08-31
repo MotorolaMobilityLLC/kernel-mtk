@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,22 +11,20 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_IDLE_PROFILE_COMMON_H__
-#define __MTK_IDLE_PROFILE_COMMON_H__
+#ifndef __MTK_IDLE_MCDI_H__
+#define __MTK_IDLE_MCDI_H__
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759)
+extern int mtk_idle_select(int cpu);
 
-#include "spm_v3/mtk_idle_profile.h"
+/* IDLE_TYPE is used for idle_switch in mt_idle.c */
+enum {
+	IDLE_TYPE_DP = 0,
+	IDLE_TYPE_SO3,
+	IDLE_TYPE_SO,
+	IDLE_TYPE_MC,
+	IDLE_TYPE_SL,
+	IDLE_TYPE_RG,
+	NR_TYPES,
+};
 
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_idle_profile.h"
-
-#elif defined(CONFIG_MACH_MT6757)
-
-#include "spm_v2/mtk_idle_profile.h"
-
-#endif
-
-#endif /* __MTK_IDLE_PROFILE_COMMON_H__ */
-
+#endif /* __MTK_IDLE_MCDI_H__ */

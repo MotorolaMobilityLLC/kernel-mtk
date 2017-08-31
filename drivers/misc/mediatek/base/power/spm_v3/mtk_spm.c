@@ -23,7 +23,10 @@
 #include "include/pmic_api_buck.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
+/* 20170407 Owen fix build error */
+#ifndef CONFIG_MACH_MT6758
 #include <mtk_dramc.h>
+#endif
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -169,7 +172,7 @@ static void spm_register_init(void)
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 
 	/* kp_irq_b */
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,kp");
 	if (!node) {
 		spm_err("find keypad node failed\n");
