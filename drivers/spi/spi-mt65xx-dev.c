@@ -557,7 +557,11 @@ static int spi_test_probe(struct spi_device *spi)
 	return 0;
 }
 
-struct spi_device_id spi_id_table = {"spi-ut", 0};
+struct spi_device_id spi_id_table[] = {
+	{"spi-ut", 0},
+	{},
+};
+
 static const struct of_device_id spidev_dt_ids[] = {
 	{ .compatible = "mediatek,spi-mt65xx-test" },
 	{},
@@ -573,7 +577,7 @@ static struct spi_driver spi_test_driver = {
 	},
 	.probe = spi_test_probe,
 	.remove = spi_test_remove,
-	.id_table = &spi_id_table,
+	.id_table = spi_id_table,
 };
 
 static int __init spi_dev_init(void)
