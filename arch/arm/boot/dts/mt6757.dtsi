@@ -3781,7 +3781,7 @@
 		regulator-min-microvolt = <350000>;
 		regulator-max-microvolt = <1143750>;
 		regulator-ramp-delay = <32000>;
-		//regulator-always-on;
+		regulator-always-on;
 	};
 
 	/* Add dummy nodes for cust.dtsi */

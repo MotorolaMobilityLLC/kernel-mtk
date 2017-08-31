@@ -1,14 +1,12 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * fan53528_regulator.c
+ * FAN53528 Regulator / Buck_Driver
+ * Copyright (C) 2014
+ * Author: Sakya <jeff_chang@richtek.com>
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -25,13 +23,12 @@
 #include <linux/debugfs.h>
 #endif /* CONFIG_DEBUG_FS */
 
-#define FAN53528_REAL_CHIP	(1)
-#define FAN53528_DEBUG	1
-#if FAN53528_DEBUG
-#define FAN53528_INFO(format, args...)	pr_info(format, ##args)
-#else
-#define FAN52528_INFO(format, args...)
-#endif /* FAN53528_DEBUG */
+static u8 fan53528_trace_flag;
+static u8 fan53528_info_flag;
+#define FAN53528_INFO(format, args...) do {\
+	if (fan53528_info_flag)	\
+		pr_info(format, ##args);\
+} while (0)
 
 #define FAN53528_CHIP_ID	(0x8108)
 
@@ -75,33 +72,35 @@ struct fan53528_regulator_info {
 	u8 reg_addr;
 };
 
-#if !FAN53528_REAL_CHIP
-static unsigned char fan53528_regval[6] = {0x00, 0x00, 0x42, 0x81, 0x08, 0x80};
-#endif /* !FAN53528_REAL_CHIP */
-
 static int fan53528_read_device(void *client, u32 addr, int len, void *dst)
 {
-#if !FAN53528_REAL_CHIP
-	memcpy(dst, &fan53528_regval[addr], len);
-	return 0;
-#else
+	int ret = 0;
 	struct i2c_client *i2c = (struct i2c_client *)client;
 
-	return i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
-#endif /* FAN53528_REAL_CHIP */
+	ret = i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
+
+	if (ret < 0)
+		FAN53528_INFO("%s: I2CR[0x%02x] failed\n", __func__, addr);
+	else
+		FAN53528_INFO("%s: I2CR[0x%02x] = 0x%02x\n",
+				__func__, addr, *((u8 *)dst));
+	return ret;
 }
 
 static int fan53528_write_device(void *client, u32 addr,
-					int len, const void *src)
+		int len, const void *src)
 {
-#if !FAN53528_REAL_CHIP
-	memcpy(&fan53528_regval[addr], src, len);
-	return 0;
-#else
+	int ret = 0;
 	struct i2c_client *i2c = (struct i2c_client *)client;
 
-	return i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
-#endif /* FAN53528_REAL_CHIP */
+	ret = i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
+	if (ret < 0)
+		FAN53528_INFO("%s: I2CW[0x%02x] = 0x%02x failed\n",
+				__func__, addr, *((u8 *)src));
+	else
+		FAN53528_INFO("%s: I2CW[0x%02x] = 0x%02x\n",
+				__func__, addr, *((u8 *)src));
+	return ret;
 }
 
 static int fan53528_read_byte(struct i2c_client *i2c,
@@ -168,13 +167,15 @@ struct rt_debug_st {
 };
 
 struct dentry *debugfs_rt_dir;
-struct dentry *debugfs_file[3];
-struct rt_debug_st rtdbg_data[3];
+struct dentry *debugfs_file[5];
+struct rt_debug_st rtdbg_data[5];
 
 enum {
 	FAN53528_DBG_REG,
 	FAN53528_DBG_DATA,
 	FAN53528_DBG_REGS,
+	FAN53528_DBG_INFO,
+	FAN53528_DBG_TRACE,
 };
 
 static int de_open(struct inode *inode, struct file *file)
@@ -211,6 +212,12 @@ static ssize_t de_read(struct file *file,
 				"reg0x%02x = 0x%02x\n", i, regval);
 		}
 			break;
+	case FAN53528_DBG_INFO:
+		sprintf(tmp, "fan53528_info_flag = %d\n", fan53528_info_flag);
+		break;
+	case FAN53528_DBG_TRACE:
+		sprintf(tmp, "fan53528_trace_flag = %d\n", fan53528_trace_flag);
+		break;
 	default:
 		break;
 	}
@@ -241,6 +248,12 @@ static ssize_t de_write(struct file *file,
 		break;
 	case FAN53528_DBG_DATA:
 		fan53528_write_byte(info->i2c, info->reg_addr, yo);
+		break;
+	case FAN53528_DBG_INFO:
+		fan53528_info_flag = yo > 0 ? 1 : 0;
+		break;
+	case FAN53528_DBG_TRACE:
+		fan53528_trace_flag = yo > 0 ? 1 : 0;
 		break;
 	default:
 		break;
@@ -278,6 +291,8 @@ static int fan53528_set_voltage_sel(
 	const int count = rdev->desc->n_voltages;
 
 	FAN53528_INFO("%s selector = %d\n", __func__, selector);
+	if (fan53528_trace_flag)
+		WARN_ON(1);
 	if (selector > count)
 		return -EINVAL;
 
@@ -304,6 +319,8 @@ static int fan53528_enable(struct regulator_dev *rdev)
 	struct fan53528_regulator_info *info = rdev_get_drvdata(rdev);
 
 	FAN53528_INFO("%s\n", __func__);
+	if (fan53528_trace_flag)
+		WARN_ON(1);
 	return fan53528_set_bit(info->i2c,
 			FAN53528_REG_VSEL1, FAN53528_VSELEN_MASK);
 }
@@ -313,6 +330,8 @@ static int fan53528_disable(struct regulator_dev *rdev)
 	struct fan53528_regulator_info *info = rdev_get_drvdata(rdev);
 
 	FAN53528_INFO("%s\n", __func__);
+	if (fan53528_trace_flag)
+		WARN_ON(1);
 	return fan53528_clr_bit(info->i2c,
 			FAN53528_REG_VSEL1, FAN53528_VSELEN_MASK);
 }
@@ -338,6 +357,8 @@ static int fan53528_set_mode(
 	int ret;
 
 	FAN53528_INFO("%s mode =%d\n", __func__, mode);
+	if (fan53528_trace_flag)
+		WARN_ON(1);
 	switch (mode) {
 	case REGULATOR_MODE_FAST: /* force pwm mode */
 		ret = fan53528_set_bit(info->i2c,
@@ -427,7 +448,7 @@ static struct regulator_ops fan53528_regulator_ops = {
 
 static struct regulator_desc fan53528_regulator_desc = {
 	.id = 0,
-	.name = "ext_buck_lp4",
+	.name = "ext_buck_lp4x",
 	.n_voltages = 128,
 	.ops = &fan53528_regulator_ops,
 	.type = REGULATOR_VOLTAGE,
@@ -602,6 +623,16 @@ static int fan53528_regulator_probe(struct i2c_client *i2c,
 		rtdbg_data[2].id = FAN53528_DBG_REGS;
 		debugfs_file[2] = debugfs_create_file("regs", S_IFREG|S_IRUGO,
 			debugfs_rt_dir, (void *)&rtdbg_data[2], &debugfs_fops);
+
+		rtdbg_data[3].data_ptr = ri;
+		rtdbg_data[3].id = FAN53528_DBG_INFO;
+		debugfs_file[3] = debugfs_create_file("info", S_IFREG|S_IRUGO,
+			debugfs_rt_dir, (void *)&rtdbg_data[3], &debugfs_fops);
+
+		rtdbg_data[4].data_ptr = ri;
+		rtdbg_data[4].id = FAN53528_DBG_TRACE;
+		debugfs_file[4] = debugfs_create_file("trace", S_IFREG|S_IRUGO,
+			debugfs_rt_dir, (void *)&rtdbg_data[4], &debugfs_fops);
 	}
 #endif /* CONFIG_DEBUG_FS */
 	pr_info("%s Successfully\n", __func__);
