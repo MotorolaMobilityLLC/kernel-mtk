@@ -211,12 +211,12 @@ static int dcs_ipi_register(void)
 }
 
 /*
- * dcs_froce_acc_low
+ * dcs_froce_acc_low_ipi
  * set or unset force access low function
  *
  * return 0 on success, otherwise error code
  */
-static int dcs_froce_acc_low(int enable)
+static int dcs_froce_acc_low_ipi(int enable)
 {
 	int ipi_data_ret = 0, err;
 	unsigned int ipi_buf[32];
@@ -309,6 +309,7 @@ static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 static int dcs_set_dummy_write_ipi(void) { return 0; }
 static int dcs_dump_reg_ipi(void) { return 0; }
 static int dcs_ipi_register(void) { return 0; }
+static int dcs_froce_acc_low_ipi(int enable) { return 0; }
 static int __dcs_dram_channel_switch(enum dcs_status status) { return 0; }
 #endif /* end of CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
@@ -446,7 +447,11 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 
 	mutex_lock(&dcs_kicker_lock);
 	wake_lock(&dcs_wake_lock);
-	down_write(&dcs_rwsem);
+	ret = down_write_trylock(&dcs_rwsem);
+	if (!ret) {
+		ret = -EBUSY;
+		goto out_busy;
+	}
 
 	/* only 'always' commands can overwrite 'always' commands */
 	if ((dcs_sysfs_mode <= DCS_SYSFS_ALWAYS_LOWPOWER) &&
@@ -482,6 +487,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 
 out:
 	up_write(&dcs_rwsem);
+out_busy:
 	wake_unlock(&dcs_wake_lock);
 	mutex_unlock(&dcs_kicker_lock);
 
@@ -715,7 +721,7 @@ int dcs_mpu_protection(int enable)
 {
 	int err;
 
-	err = dcs_froce_acc_low(enable);
+	err = dcs_froce_acc_low_ipi(enable);
 	if (err) {
 		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
 		BUG(); /* fatal error */
