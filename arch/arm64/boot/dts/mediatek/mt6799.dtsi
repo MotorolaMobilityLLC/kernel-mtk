@@ -150,6 +150,14 @@
 		compatible = "mediatek,pwrap";
 		reg = <0 0x10010000 0 0x1000>;
 		interrupts = <GIC_SPI 194 IRQ_TYPE_LEVEL_HIGH>;
+		mt6335_pmic: mt6335 {
+			compatible = "mediatek,mt6335-pmic";
+			interrupt-controller;
+		};
+		mt6337_pmic: mt6337 {
+			compatible = "mediatek,mt6337-pmic";
+			interrupt-controller;
+		};
 	};
 
 	pwrap_p2p@109cb000 {
@@ -2982,6 +2990,14 @@
 		reg = <0 0xa0701000 0 0x1000>;
 	};
 
+	mt6336_chr:mt6336_chr {
+		compatible = "mediatek,mt6336_chr";
+	};
+
 };
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
+#include "mt6335.dtsi"
+#endif
 
 #include "cust_mt6799_msdc.dtsi"
