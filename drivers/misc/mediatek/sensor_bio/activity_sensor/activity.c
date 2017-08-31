@@ -137,7 +137,7 @@ static struct act_context *act_context_alloc_object(void)
 	ACT_LOG("act_context_alloc_object----\n");
 	return obj;
 }
-
+#ifndef CONFIG_NANOHUB
 static int act_enable_and_batch(void)
 {
 	struct act_context *cxt = act_context_obj;
@@ -230,7 +230,7 @@ static int act_enable_and_batch(void)
 
 	return 0;
 }
-
+#endif
 static ssize_t act_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -248,7 +248,15 @@ static ssize_t act_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->act_ctl.enable_nodata(cxt->enable);
+	if (err) {
+		ACT_ERR("act turn on power err = %d\n", err);
+		return -1;
+	}
+#else
 	err = act_enable_and_batch();
+#endif
 	ACT_LOG(" act_store_active done\n");
 err_out:
 	mutex_unlock(&act_context_obj->act_op_mutex);
@@ -285,7 +293,18 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 		return -1;
 	}
 	mutex_lock(&act_context_obj->act_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->act_ctl.is_support_batch)
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
+	if (err) {
+		ACT_ERR("act set batch(ODR) err %d\n", err);
+		return -1;
+	}
+#else
 	err = act_enable_and_batch();
+#endif
 	mutex_unlock(&act_context_obj->act_op_mutex);
 	return err;
 }
