@@ -1031,5 +1031,5 @@ static int __init mt_fh_driver_init(void)
 	return 0;
 }
 
-arch_initcall(mt_fh_driver_init);
+subsys_initcall(mt_fh_driver_init);
 /* TODO: module_exit(cpufreq_exit); */
