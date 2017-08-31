@@ -960,6 +960,9 @@ int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
 #ifdef FEATURE_RF_CLK_BUF
 	clk_buf_set_by_flightmode(true);
 #endif
+	pmic_config_interface(0x404, 3, 3, 4);
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_soft_power_off set pmic done\n");
+
 	return 0;
 }
 
@@ -968,6 +971,9 @@ int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 #ifdef FEATURE_RF_CLK_BUF
 	clk_buf_set_by_flightmode(false);
 #endif
+	pmic_config_interface(0x404, 0, 3, 4);
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_soft_power_on set pmic done\n");
+
 	return 0;
 }
 
