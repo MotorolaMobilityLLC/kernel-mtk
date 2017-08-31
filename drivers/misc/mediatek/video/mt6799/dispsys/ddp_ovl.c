@@ -899,7 +899,7 @@ static inline int ovl_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
+int _ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle, int is_dual)
 {
 	unsigned int ovl_idx = ovl_to_index(module);
 	enum CMDQ_ENG_ENUM cmdq_engine;
@@ -923,7 +923,7 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		disp_cmdq_reset(nonsec_switch_handle);
 		/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
 
-		if (module != DISP_MODULE_OVL1) {
+		if (module != DISP_MODULE_OVL1 || is_dual) {
 			/*Primary Mode*/
 			if (primary_display_is_decouple_mode())
 				disp_cmdq_wait_event_no_clear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
@@ -971,6 +971,15 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
+int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
+{
+	/** This function is called by secondary display driver only while
+	 *  the secondary path disconnected. The is_dual parameter can fill
+	 *  as 0 since dual pipe is not supported with 2nd display cases.
+	 */
+	return _ovl_switch_to_nonsec(module, handle, 0);
+}
+
 static int setup_ovl_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
 {
 	int ret;
@@ -993,7 +1002,7 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 	if (has_sec_layer == 1)
 		ret = ovl_switch_to_sec(module, handle);
 	else
-		ret = ovl_switch_to_nonsec(module, NULL); /*hadle = NULL, use the sync flush method*/
+		ret = _ovl_switch_to_nonsec(module, NULL, pConfig->is_dual); /*hadle = NULL, use the sync flush method*/
 	if (ret)
 		DDPAEE("[SVP]fail to setup_ovl_sec: %s ret=%d\n",
 			__func__, ret);
