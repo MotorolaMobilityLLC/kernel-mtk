@@ -43,10 +43,10 @@ unsigned int thermal_to_sspm(unsigned int cmd, struct thermal_ipi_data *thermal_
 	case THERMAL_IPI_INIT_GRP5:
 	case THERMAL_IPI_INIT_GRP6:
 		thermal_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_THERMAL, IPI_OPT_LOCK_POLLING, thermal_data,
-			THERMAL_SLOT_NUM, &ackData);
+		ret = sspm_ipi_send_sync_new(IPI_ID_THERMAL, IPI_OPT_WAIT, thermal_data,
+			THERMAL_SLOT_NUM, &ackData, 1);
 		if (ret != 0)
-			tscpu_printk("sspm_ipi_send_sync error(THERMAL_IPI_INIT) ret:%d - %d\n",
+			tscpu_printk("sspm_ipi_send_sync_new error(THERMAL_IPI_INIT) ret:%d - %d\n",
 					ret, ackData);
 		else if (ackData < 0)
 			tscpu_printk("cmd(%d) return error(%d)\n", cmd, ackData);
@@ -54,9 +54,10 @@ unsigned int thermal_to_sspm(unsigned int cmd, struct thermal_ipi_data *thermal_
 
 	case THERMAL_IPI_GET_TEMP:
 		thermal_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_THERMAL, IPI_OPT_LOCK_POLLING, thermal_data, 0, &ackData);
+		ret = sspm_ipi_send_sync_new(IPI_ID_THERMAL, IPI_OPT_WAIT, thermal_data,
+			0, &ackData, 1);
 		if (ret != 0)
-			tscpu_printk("sspm_ipi_send_sync error(THERMAL_IPI_GET_TEMP) ret:%d - %d\n",
+			tscpu_printk("sspm_ipi_send_sync_new error(THERMAL_IPI_GET_TEMP) ret:%d - %d\n",
 					ret, ackData);
 		else if (ackData < 0)
 			tscpu_printk("cmd(%d) return error(%d)\n", cmd, ackData);
@@ -106,8 +107,8 @@ int atm_to_sspm(unsigned int cmd, int data_len, struct thermal_ipi_data *thermal
 	case THERMAL_IPI_GET_ATM_CPU_LIMIT:
 	case THERMAL_IPI_GET_ATM_GPU_LIMIT:
 		thermal_data->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_THERMAL, IPI_OPT_LOCK_POLLING, thermal_data,
-			(data_len+1), ackData);
+		ret = sspm_ipi_send_sync_new(IPI_ID_THERMAL, IPI_OPT_WAIT, thermal_data,
+			(data_len+1), ackData, 1);
 		if ((ret != 0) || (*ackData < 0))
 			tscpu_printk("%s cmd %d ret %d ack %d\n",
 				__func__, cmd, ret, *ackData);
