@@ -15,11 +15,11 @@
 #define __DISP_DRV_PLATFORM_H__
 
 #include <linux/dma-mapping.h>
-#include "mt-plat/mt_gpio.h"
+#include "mt-plat/mtk_gpio.h"
 #include "m4u.h"
 /* #include <mach/mt_reg_base.h> */
 #ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
+#include <mach/mtk_clkmgr.h>
 #endif
 /* #include <mach/mt_irq.h> */
 #include "mt-plat/sync_write.h"

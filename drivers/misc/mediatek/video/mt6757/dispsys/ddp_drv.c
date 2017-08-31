@@ -50,11 +50,11 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
-#include "mt-plat/mt_smi.h"
-#include <mach/irqs.h>
+#include "mt-plat/mtk_smi.h"
+/* #include <mach/irqs.h> */
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
-#include <mach/irqs.h>
+/* #include <mach/irqs.h> */
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -62,7 +62,7 @@
 #endif
 /* #include "mach/mt_irq.h" */
 #include "mt-plat/sync_write.h"
-#include "mt-plat/mt_smi.h"
+#include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 
 #include "ddp_drv.h"

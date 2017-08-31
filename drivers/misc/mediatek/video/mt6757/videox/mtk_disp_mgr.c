@@ -77,7 +77,8 @@
 #include "compat_mtk_disp_mgr.h"
 #include "external_display.h"
 #include "extd_platform.h"
-
+#include "disp_partial.h"
+#include "frame_queue.h"
 
 
 #define DDP_OUTPUT_LAYID 4
@@ -564,15 +565,7 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 }
 #endif
 
-#define _DISP_PRINT_FENCE_OR_ERR(is_err, string, args...) \
-	do { \
-		if (is_err) \
-			DISPERR(string, ##args); \
-		else \
-			DISPPR_FENCE(string, ##args); \
-	} while (0)
-
-static void _dump_input_cfg_info(disp_input_config *input_cfg, unsigned int session_id, int is_err)
+void dump_input_cfg_info(disp_input_config *input_cfg, unsigned int session_id, int is_err)
 {
 	_DISP_PRINT_FENCE_OR_ERR(is_err,
 		"S+/%sL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/mva%p/t%d/s%d\n",
@@ -630,6 +623,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 
 		if (cfg->input_cfg[i].layer_enable) {
 			unsigned int Bpp, x, y, pitch;
+			struct sync_fence *src_fence = NULL;
 
 			if (cfg->input_cfg[i].buffer_source == DISP_BUFFER_ALPHA) {
 				DISPPR_FENCE("%sL %d is dim layer,fence %d\n",
@@ -643,16 +637,17 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[i].src_pitch = cfg->input_cfg[i].src_width;
 				cfg->input_cfg[i].src_phy_addr = (void *)get_dim_layer_mva_addr();
 				cfg->input_cfg[i].next_buff_idx = 0;
+				cfg->input_cfg[i].src_fence_struct = NULL;
 				/* force dim layer as non-sec */
 				cfg->input_cfg[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (cfg->input_cfg[i].src_phy_addr) {
 				dst_mva = (unsigned long)(cfg->input_cfg[i].src_phy_addr);
 			} else {
-				disp_sync_query_buf_info(session_id, layer_id,
+				disp_sync_query_buf_info_nosync(session_id, layer_id,
 						(unsigned int)cfg->input_cfg[i].next_buff_idx,
-						(unsigned long *)&dst_mva, &dst_size);
-			}
+						&dst_mva, &dst_size);
+				}
 
 			cfg->input_cfg[i].src_phy_addr = (void *)dst_mva;
 
@@ -662,6 +657,14 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[i].layer_enable = 0;
 				is_err = 1;
 			}
+			/* get src fence */
+			src_fence = sync_fence_fdget(cfg->input_cfg[i].src_fence_fd);
+			if (!src_fence && cfg->input_cfg[i].src_fence_fd != -1) {
+				DISPERR("error to get src_fence from fd %d\n",
+					cfg->input_cfg[i].src_fence_fd);
+				is_err = 1;
+			}
+			cfg->input_cfg[i].src_fence_struct = src_fence;
 			/* OVL addr is not the start address of buffer, which is calculated by pitch and ROI. */
 			x = cfg->input_cfg[i].src_offset_x;
 			y = cfg->input_cfg[i].src_offset_y;
@@ -673,8 +676,9 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 					      cfg->input_cfg[i].next_buff_idx, mva_offset,
 					      cfg->input_cfg[i].frm_sequence);
 
-			_dump_input_cfg_info(&cfg->input_cfg[i], session_id, is_err);
+			dump_input_cfg_info(&cfg->input_cfg[i], session_id, is_err);
 		} else {
+			cfg->input_cfg[i].src_fence_struct = NULL;
 			DISPPR_FENCE("S+/%sL%d/e%d/id%d\n", disp_session_mode_spy(session_id),
 				cfg->input_cfg[i].layer_id, cfg->input_cfg[i].layer_enable,
 				cfg->input_cfg[i].next_buff_idx);
@@ -688,7 +692,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 		disp_sync_put_cached_layer_info(session_id, layer_id, &cfg->input_cfg[i], dst_mva);
 
 		if (session_info) {
-			dprec_submit(&session_info->event_setinput, cfg->input_cfg[i].next_buff_idx,
+			dprec_submit(&session_info->event_frame_cfg, cfg->input_cfg[i].next_buff_idx,
 						 (cfg->input_layer_num << 28) | (cfg->input_cfg[i].layer_id << 24)
 						 | (cfg->input_cfg[i].src_fmt << 12) | cfg->input_cfg[i].layer_enable);
 		}
@@ -700,7 +704,9 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 {
 	unsigned int session_id = 0;
 	unsigned long dst_mva = 0;
+	unsigned int dst_size;
 	disp_session_sync_info *session_info;
+	struct sync_fence *src_fence;
 
 	session_id = cfg->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
@@ -708,8 +714,8 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 	if (cfg->output_cfg.pa) {
 		dst_mva = (unsigned long)(cfg->output_cfg.pa);
 	} else {
-		dst_mva = mtkfb_query_buf_mva(session_id, disp_sync_get_output_timeline_id(),
-						cfg->output_cfg.buff_idx);
+		disp_sync_query_buf_info_nosync(session_id, disp_sync_get_output_timeline_id(),
+				cfg->output_cfg.buff_idx, &dst_mva, &dst_size);
 	}
 	cfg->output_cfg.pa = (void *)dst_mva;
 
@@ -718,7 +724,13 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 		cfg->output_en = 0;
 		goto out;
 	}
-
+/* get src fence */
+	src_fence = sync_fence_fdget(cfg->output_cfg.src_fence_fd);
+	if (!src_fence && cfg->output_cfg.src_fence_fd != -1) {
+		DISPERR("error to get src_fence from output fd %d\n",
+			cfg->output_cfg.src_fence_fd);
+	}
+	cfg->output_cfg.src_fence_struct = src_fence;
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		/* must be mirror mode */
 		if (primary_display_is_decouple_mode()) {
@@ -748,7 +760,7 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 			      cfg->output_cfg.frm_sequence);
 
 	if (session_info) {
-		dprec_submit(&session_info->event_setoutput, cfg->output_cfg.buff_idx,
+		dprec_submit(&session_info->event_frame_cfg, cfg->output_cfg.buff_idx,
 			     dst_mva);
 	}
 	DISPDBG("_ioctl_set_output_buffer done idx 0x%x, mva %lx, fmt %x, w %x, h %x (%x %x), p %x\n",
@@ -759,26 +771,10 @@ out:
 	return 0;
 }
 
-int _ioctl_frame_config(unsigned long arg)
+static int do_frame_config(struct frame_queue_t *frame_node)
 {
-	struct disp_frame_cfg_t *frame_cfg = kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
+	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 
-	if (frame_cfg == NULL) {
-		/*pr_err("error: kzalloc %zu memory fail!\n", sizeof(*frame_cfg));*/
-		return -EFAULT;
-	}
-
-	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
-		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
-		kfree(frame_cfg);
-		return -EFAULT;
-	}
-
-	frame_cfg->setter = SESSION_USER_HWC;
-
-	input_config_preprocess(frame_cfg);
-	if (frame_cfg->output_en)
-		output_config_preprocess(frame_cfg);
 	if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_PRIMARY)
 		primary_display_frame_cfg(frame_cfg);
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_EXTERNAL)
@@ -786,11 +782,86 @@ int _ioctl_frame_config(unsigned long arg)
 	else if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_MEMORY)
 		ovl2mem_frame_cfg(frame_cfg);
 
-	kfree(frame_cfg);
-
 	return 0;
 }
 
+static int __frame_config(struct frame_queue_t *frame_node)
+{
+	struct frame_queue_head_t *head;
+	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
+	struct sync_fence *present_fence = NULL;
+	disp_session_sync_info *session_info;
+
+	head = get_frame_queue_head(frame_cfg->session_id);
+	if (!head) {
+		disp_aee_print("error to get frame queue!!\n");
+		return -EINVAL;
+	}
+
+	session_info = disp_get_session_sync_info_for_debug(frame_cfg->session_id);
+	if (session_info)
+		dprec_start(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+
+	frame_cfg->setter = SESSION_USER_HWC;
+
+	/* get present fence */
+	if (frame_cfg->prev_present_fence_fd != -1) {
+		present_fence = sync_fence_fdget(frame_cfg->prev_present_fence_fd);
+		if (!present_fence) {
+			DISPERR("error to get prev_present_fence from fd %d\n",
+				frame_cfg->prev_present_fence_fd);
+		}
+	}
+	frame_cfg->prev_present_fence_struct = present_fence;
+
+	frame_node->do_frame_cfg = do_frame_config;
+
+	input_config_preprocess(frame_cfg);
+	if (frame_cfg->output_en)
+		output_config_preprocess(frame_cfg);
+
+	frame_queue_push(head, frame_node);
+
+	if (session_info)
+		dprec_done(&session_info->event_frame_cfg, frame_cfg->present_fence_idx, 0);
+
+	return 0;
+}
+static int _ioctl_frame_config(unsigned long arg)
+{
+	struct frame_queue_t *frame_node;
+	struct disp_frame_cfg_t *frame_cfg;
+
+	frame_node = frame_queue_node_create();
+	if (IS_ERR_OR_NULL(frame_node))
+		return PTR_ERR(frame_node);
+
+	frame_cfg = &frame_node->frame_cfg;
+
+	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
+		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EINVAL;
+	}
+
+	return __frame_config(frame_node);
+
+}
+
+static int _ioctl_wait_all_jobs_done(unsigned long arg)
+{
+	unsigned int session_id = (unsigned int)arg;
+	struct frame_queue_head_t *head;
+	int ret = 0;
+
+	head = get_frame_queue_head(session_id);
+	if (!head) {
+		disp_aee_print("%s:error to get frame queue!!\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = frame_queue_wait_all_jobs_done(head);
+	return ret;
+}
 int disp_mgr_get_session_info(disp_session_info *info)
 {
 	unsigned int session_id = 0;
@@ -885,13 +956,13 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.is_output_rotated = 1;
 #endif
 
-	if (primary_display_partial_support())
+	if (disp_partial_is_support())
 		caps_info.disp_feature |= DISP_FEATURE_PARTIAL;
 
 	if (disp_helper_get_option(DISP_OPT_HRT))
 		caps_info.disp_feature |= DISP_FEATURE_HRT;
-
-	DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
+		caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
+		DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
 		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
@@ -1145,6 +1216,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		{
 			return _ioctl_frame_config(arg);
 		}
+	case DISP_IOCTL_WAIT_ALL_JOBS_DONE:
+		return _ioctl_wait_all_jobs_done(arg);
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
 			return primary_display_get_lcm_index();

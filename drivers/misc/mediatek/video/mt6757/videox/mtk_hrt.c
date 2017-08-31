@@ -24,12 +24,13 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 
-#include "mt_dramc.h"
+#include "mtk_dramc.h"
 #include "mtk_hrt.h"
 
-static int emi_extreme_lower_bound;
-static int emi_lower_bound;
-static int emi_upper_bound;
+static int emi_ulpm_bound;
+static int emi_lpm_bound;
+static int emi_hpm_bound;
+
 static int larb_lower_bound;
 static int larb_upper_bound;
 static int primary_max_input_layer_num;
@@ -132,17 +133,17 @@ static void print_disp_info_to_log_buffer(disp_layer_info *disp_info)
 		"Last hrt query data[start]\n");
 	for (i = 0 ; i < 2 ; i++) {
 		n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
-			"HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d\n",
+			"HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d/dal:%d\n",
 			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
-			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps);
+			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps, dal_enable);
 
 		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
 			layer_info = &disp_info->input_config[i][j];
 			n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
-				"L%d->%d/of(%d,%d)/wh(%d,%d)/fmt:0x%x\n",
+				"L%d->%d/of(%d,%d)/wh(%d,%d)/fmt:0x%x/ext:%d\n",
 				j, layer_info->ovl_id, layer_info->dst_offset_x,
 				layer_info->dst_offset_y, layer_info->dst_width, layer_info->dst_height,
-				layer_info->src_fmt);
+				layer_info->src_fmt, layer_info->ext_sel_layer);
 		}
 	}
 	n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
@@ -180,7 +181,9 @@ static int rollback_to_GPU(disp_layer_info *disp_info, int disp_idx, int availab
  */
 static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 {
-	int ovl_num_limit, disp_index, curr_ovl_num, available_ovl_num;
+	int ovl_num_limit, disp_index, curr_ovl_num;
+	int i;
+	layer_config *layer_info;
 
 	/* 0->primary display, 1->secondary display */
 	for (disp_index = 0 ; disp_index < 2 ; disp_index++) {
@@ -199,7 +202,7 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 
 		if (disp_info->layer_num[disp_index] <= ovl_num_limit)
 			continue;
-
+#if 0
 		curr_ovl_num = disp_info->layer_num[disp_index] - (disp_info->gles_tail[disp_index] -
 			disp_info->gles_head[disp_index]);
 		/** reserve 1 layer for FBT if needed */
@@ -209,7 +212,30 @@ static int filter_by_ovl_cnt(disp_layer_info *disp_info)
 			continue;
 
 		rollback_to_GPU(disp_info, disp_index, ovl_num_limit);
+#else
+		curr_ovl_num = 0;
+		for (i = 0 ; i < disp_info->layer_num[disp_index] ; i++) {
+			layer_info = &disp_info->input_config[disp_index][i];
 
+			if (disp_info->gles_head[disp_index] == -1) {
+				disp_info->gles_head[disp_index] = ovl_num_limit - 1;
+				disp_info->gles_tail[disp_index] = disp_info->layer_num[disp_index] - 1;
+			} else {
+				if (ovl_num_limit > disp_info->gles_head[disp_index]) {
+					int tmp_tail = 0;
+
+					curr_ovl_num = ovl_num_limit - disp_info->gles_head[disp_index] - 1;
+					tmp_tail = disp_info->layer_num[disp_index] - curr_ovl_num - 1;
+					if (tmp_tail > disp_info->gles_tail[disp_index])
+						disp_info->gles_tail[disp_index] = tmp_tail;
+				} else {
+					disp_info->gles_head[disp_index] = ovl_num_limit - 1;
+					disp_info->gles_tail[disp_index] = disp_info->layer_num[disp_index] - 1;
+				}
+			}
+
+		}
+#endif
 	}
 
 #ifdef HRT_DEBUG
@@ -431,12 +457,11 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 		else
 			return HRT_OVER_LIMIT;
 	} else {
-		if (sum_overlap_w <= emi_extreme_lower_bound * BYTES_PER_SECOND_FULLSCREEN && primary_fps == 60)
+		if (sum_overlap_w <= emi_ulpm_bound * BYTES_PER_SECOND_FULLSCREEN && primary_fps == 60)
 			return HRT_LEVEL_EXTREME_LOW;
-
-		if (sum_overlap_w <= emi_lower_bound * BYTES_PER_SECOND_FULLSCREEN)
+		if (sum_overlap_w <= emi_lpm_bound * BYTES_PER_SECOND_FULLSCREEN)
 			return HRT_LEVEL_LOW;
-		else if (sum_overlap_w <= emi_upper_bound * BYTES_PER_SECOND_FULLSCREEN)
+		else if (sum_overlap_w <= emi_hpm_bound * BYTES_PER_SECOND_FULLSCREEN)
 			return HRT_LEVEL_HIGH;
 		else
 			return HRT_OVER_LIMIT;
@@ -526,7 +551,7 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 
 	/* total bytes per second */
 	sum_overlap_w = 0;
-	overlap_lower_bound = emi_lower_bound * BYTES_PER_SECOND_FULLSCREEN;
+	overlap_lower_bound = emi_lpm_bound * BYTES_PER_SECOND_FULLSCREEN;
 
 	/* To check if has GPU layer for input layers */
 	if (disp_info->gles_head[disp_index] != -1 &&
@@ -534,8 +559,10 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 		disp_info->gles_head[disp_index] <= end_layer)
 		has_gles = true;
 
-	/*2.Add each layer info to layer list and sort it by yoffset.*/
-	/*Also add up each layer overlap weight.*/
+	/*
+	*2.Add each layer info to layer list and sort it by yoffset.
+	*Also add up each layer overlap weight.
+	*/
 	for (i = start_layer ; i <= end_layer ; i++) {
 		layer_info = &disp_info->input_config[disp_index][i];
 
@@ -554,8 +581,10 @@ static int _calc_hrt_num(disp_layer_info *disp_info, int disp_index,
 	if (has_dal_layer)
 		sum_overlap_w += 120;
 
-	/*3.Calculate the HRT bound if the total layer weight over the lower bound*/
-	/*or has secondary display.*/
+	/*
+	*3.Calculate the HRT bound if the total layer weight over the lower bound
+	*or has secondary display.
+	*/
 	if (sum_overlap_w > overlap_lower_bound ||
 		has_hrt_limit(disp_info, HRT_SECONDARY) ||
 		force_scan_y) {
@@ -679,8 +708,10 @@ static int calc_hrt_num(disp_layer_info *disp_info)
 					false, false);
 
 	hrt_level = get_hrt_level(sum_overlay_w, false);
-	/*The larb bound always meet the limit for HRT_LEVEL_LOW in 8+4 ovl architecture.*/
-	/*So calculate larb bound only for HRT_LEVEL_LOW.*/
+	/*
+	*The larb bound always meet the limit for HRT_LEVEL_LOW in 8+4 ovl architecture.
+	*So calculate larb bound only for HRT_LEVEL_LOW.
+	*/
 	disp_info->hrt_num = hrt_level;
 #ifdef HRT_DEBUG
 	DISPMSG("EMI hrt level:%d\n", hrt_level);
@@ -881,40 +912,64 @@ static int dispatch_ovl_id(disp_layer_info *disp_info, int available)
 
 	/* Dispatch gles range if necessary */
 	if (disp_info->hrt_num > HRT_LEVEL_HIGH) {
-		valid_ovl_cnt = emi_upper_bound;
+		valid_ovl_cnt = emi_hpm_bound;
 
 		if (dal_enable)
-			valid_ovl_cnt = emi_upper_bound - 1;
+			valid_ovl_cnt = emi_hpm_bound - 1;
 
-		/*Arrange 4 ovl layers to secondary display, so no need to*/
-		/*redistribute gles layer since it's already meet the larb*/
-		/*limit.*/
+		/*
+		*Arrange 4 ovl layers to secondary display, so no need to
+		*redistribute gles layer since it's already meet the larb
+		*limit.
+		*/
 		if (has_hrt_limit(disp_info, HRT_SECONDARY))
 			valid_ovl_cnt -= get_ovl_layer_cnt(disp_info, HRT_SECONDARY);
-
+#if 0
 		if (has_hrt_limit(disp_info, HRT_PRIMARY))
 			rollback_to_GPU(disp_info, HRT_PRIMARY, valid_ovl_cnt);
+#else
+		if (has_hrt_limit(disp_info, HRT_PRIMARY)) {
 
+			if (disp_info->gles_head[HRT_PRIMARY] == -1) {
+				disp_info->gles_head[HRT_PRIMARY] = valid_ovl_cnt - 1;
+				disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
+			} else {
+				if (disp_info->gles_head[HRT_PRIMARY] + 1 - valid_ovl_cnt >= 0) {
+					disp_info->gles_head[HRT_PRIMARY] = valid_ovl_cnt - 1;
+					disp_info->gles_tail[HRT_PRIMARY] = disp_info->layer_num[HRT_PRIMARY] - 1;
+				} else {
+					int tail_ovl_num = valid_ovl_cnt - disp_info->gles_head[HRT_PRIMARY] + 1;
+
+					if (disp_info->gles_tail[HRT_PRIMARY] <
+						disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num) {
+						disp_info->gles_tail[HRT_PRIMARY] =
+							disp_info->layer_num[HRT_PRIMARY] - tail_ovl_num;
+					}
+				}
+			}
+		}
+#endif
 		disp_info->hrt_num = HRT_LEVEL_HIGH;
 	}
 	/* the max layer count of current HRT level */
 	if (valid_ovl_cnt == 0) {
 		if (disp_info->hrt_num <= HRT_LEVEL_EXTREME_LOW)
-			valid_ovl_cnt = emi_extreme_lower_bound;
+			valid_ovl_cnt = emi_ulpm_bound;
 		else if (disp_info->hrt_num <= HRT_LEVEL_LOW)
-			valid_ovl_cnt = emi_lower_bound;
+			valid_ovl_cnt = emi_lpm_bound;
 		else if (disp_info->hrt_num <= HRT_LEVEL_HIGH)
-			valid_ovl_cnt = emi_upper_bound;
+			valid_ovl_cnt = emi_hpm_bound;
 		else
-			valid_ovl_cnt = emi_upper_bound;
+			valid_ovl_cnt = emi_hpm_bound;
 
 		if (dal_enable)
 			valid_ovl_cnt -= 1;
 	}
 	/* The layer num of HRT allow to enter is more than HW capability(PHY+EXT) */
-	if (available != 0 && valid_ovl_cnt > available)
+	if (available != 0 && valid_ovl_cnt > available) {
+		DISPERR("still overflow hw capability\n");
 		rollback_to_GPU(disp_info, HRT_PRIMARY, available);
-
+	}
 	/* Dispatch OVL id */
 	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
 		int gles_count, ovl_cnt;
@@ -966,7 +1021,9 @@ int check_disp_info(disp_layer_info *disp_info)
 		}
 
 		if ((disp_info->gles_head[disp_idx] < 0 && disp_info->gles_tail[disp_idx] >= 0) ||
-			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0)) {
+			(disp_info->gles_tail[disp_idx] < 0 && disp_info->gles_head[disp_idx] >= 0) ||
+			(disp_info->gles_head[disp_idx] < -1 || disp_info->gles_tail[disp_idx] < -1)) {
+			dump_disp_info(disp_info);
 			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 			return -1;
@@ -1104,8 +1161,8 @@ static int set_hrt_bound(void)
 	int ddr_type;
 
 	if (primary_display_get_lcm_refresh_rate() == 120) {
-		emi_lower_bound = OD_EMI_LOWER_BOUND;
-		emi_upper_bound = OD_EMI_UPPER_BOUND;
+		emi_lpm_bound = OD_EMI_LOWER_BOUND;
+		emi_hpm_bound = OD_EMI_UPPER_BOUND;
 		larb_lower_bound = OD_LARB_LOWER_BOUND;
 		larb_upper_bound = OD_LARB_UPPER_BOUND;
 #ifdef HRT_DEBUG
@@ -1116,13 +1173,14 @@ static int set_hrt_bound(void)
 	/* LP3 or LP4 */
 	ddr_type = get_ddr_type();
 	if (ddr_type == TYPE_LPDDR3) {
-		emi_lower_bound = EMI_LP3_LOWER_BOUND;
-		emi_upper_bound = EMI_LP3_UPPER_BOUND;
-		emi_extreme_lower_bound = EMI_LP3_EXTREME_LOWER_BOUND;
-	} else if (ddr_type == TYPE_LPDDR4) {
-		emi_lower_bound = EMI_LP4_LOWER_BOUND;
-		emi_upper_bound = EMI_LP4_UPPER_BOUND;
-		emi_extreme_lower_bound = EMI_LP4_EXTREME_LOWER_BOUND;
+		emi_ulpm_bound = EMI_LP3_ULPM_BOUND;
+		emi_lpm_bound = EMI_LP3_LPM_BOUND;
+		emi_hpm_bound = EMI_LP3_HPM_BOUND;
+	} else {
+		/* LPDDR4 or LPDDR4x */
+		emi_ulpm_bound = EMI_LP4_ULPM_BOUND;
+		emi_lpm_bound = EMI_LP4_LPM_BOUND;
+		emi_hpm_bound = EMI_LP4_HPM_BOUND;
 	}
 
 	larb_lower_bound = LARB_LOWER_BOUND;
@@ -1245,13 +1303,17 @@ int dispsys_hrt_calc(disp_layer_info *disp_info_user)
 	/* Set corresponding hrt bound for 60HZ and 120HZ. */
 	primary_fps = set_hrt_bound();
 
-	/*If the number of input layr over the real layer number OVL hw can support,*/
-	/*set some of these layers as GLES layer to meet the hw capability.*/
+	/*
+	*If the number of input layr over the real layer number OVL hw can support,
+	*set some of these layers as GLES layer to meet the hw capability.
+	*/
 	ret = filter_by_ovl_cnt(&disp_info_hrt);
 
-	/*Calculate overlap number of available input layers.*/
-	/*If the overlap number is out of bound, then decrease the number of available layers*/
-	/*to overlap number.*/
+	/*
+	*Calculate overlap number of available input layers.
+	*If the overlap number is out of bound, then decrease the number of available layers
+	*to overlap number.
+	*/
 	calc_hrt_num(&disp_info_hrt);
 
 	/* Fill layer id for each input layers. All the gles layer set as same layer id. */
@@ -1268,8 +1330,8 @@ int dispsys_hrt_calc(disp_layer_info *disp_info_user)
 				DISPERR("still overflow HW capability\n");
 		}
 	}
-
-	dump_disp_info(&disp_info_hrt);
+	print_disp_info_to_log_buffer(&disp_info_hrt);
+	check_disp_info(&disp_info_hrt);
 
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	/* Make hrt number with primary fps. */

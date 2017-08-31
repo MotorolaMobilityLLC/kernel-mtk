@@ -53,7 +53,7 @@
 #include "display_recorder.h"
 #include "disp_session.h"
 #include "ddp_mmp.h"
-#include <linux/ftrace_event.h>
+#include <linux/trace_events.h>
 
 #if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 unsigned int gCapturePriLayerEnable;
@@ -475,7 +475,9 @@ void dprec_logger_event_init(dprec_logger_event *p, char *name, uint32_t level,
 			     MMP_Event *mmp_root)
 {
 	if (p) {
-		scnprintf(p->name, ARRAY_SIZE(p->name) / sizeof(p->name[0]), name);
+		/* scnprintf(p->name, ARRAY_SIZE(p->name) / sizeof(p->name[0]), name); */
+		scnprintf(p->name, ARRAY_SIZE(p->name), name); /* rogerhsu */
+
 		if (mmp_root)
 			p->mmp = MMProfileRegisterEvent(*mmp_root, name);
 		else
@@ -492,36 +494,33 @@ void dprec_logger_event_init(dprec_logger_event *p, char *name, uint32_t level,
 
 #ifdef CONFIG_TRACING
 
-static unsigned long __read_mostly tracing_mark_write_addr;
-static inline void __mt_update_tracing_mark_write_addr(void)
+unsigned long disp_get_tracing_mark(void)
 {
+	static unsigned long __read_mostly tracing_mark_write_addr;
+
 	if (unlikely(tracing_mark_write_addr == 0))
 		tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+
+	return tracing_mark_write_addr;
+
 }
 
-static inline void mmp_kernel_trace_begin(char *name)
+static void mmp_kernel_trace_begin(char *name)
 {
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
-	preempt_enable();
+	DISP_SYSTRACE_BEGIN("%s\n", name);
 }
 
-static inline void mmp_kernel_trace_counter(char *name, int count)
+void mmp_kernel_trace_counter(char *name, int count)
 {
-	__mt_update_tracing_mark_write_addr();
 	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "C|%d|%s|%d\n",
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|%s|%d\n",
 			   in_interrupt() ? -1 : current->tgid, name, count);
 	preempt_enable();
 }
 
-static inline void mmp_kernel_trace_end(void)
+static void mmp_kernel_trace_end(void)
 {
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "E\n");
-	preempt_enable();
+	DISP_SYSTRACE_END();
 }
 
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence)
@@ -536,10 +535,10 @@ void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence
 	}
 
 	if (dprec_met_info[device_type].begin_frm_seq != frm_sequence) {
-		__mt_update_tracing_mark_write_addr();
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "S|%d|%s|%d\n", current->tgid,
+		event_trace_printk(disp_get_tracing_mark(), "S|%d|%s|%d\n", current->tgid,
 				   dprec_met_info[device_type].log_name, frm_sequence);
+
 		preempt_enable();
 		dprec_met_info[device_type].begin_frm_seq = frm_sequence;
 	}
@@ -557,9 +556,9 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence)
 	}
 
 	if (dprec_met_info[device_type].end_frm_seq != frm_sequence) {
-		__mt_update_tracing_mark_write_addr();
+
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "F|%d|%s|%d\n", current->tgid,
+		event_trace_printk(disp_get_tracing_mark(), "F|%d|%s|%d\n", current->tgid,
 				   dprec_met_info[device_type].log_name, frm_sequence);
 		preempt_enable();
 		dprec_met_info[device_type].end_frm_seq = frm_sequence;
@@ -567,6 +566,12 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence)
 }
 
 #else
+
+unsigned long disp_get_tracing_mark(void)
+{
+	return 0UL;
+}
+
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence)
 {
 
@@ -773,7 +778,8 @@ void dprec_logger_reset_all(void)
 {
 	int i = 0;
 
-	for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++)
+	/* for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++) */
+	for (i = 0; i < ARRAY_SIZE(logger) ; i++) /* rogerhsu */
 		dprec_logger_reset(i);
 	ts_dprec_reset = get_current_time_us();
 }

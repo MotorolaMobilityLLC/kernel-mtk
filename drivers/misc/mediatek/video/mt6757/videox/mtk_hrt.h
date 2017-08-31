@@ -22,9 +22,14 @@
 #include "display_recorder.h"
 
 /* LP4 limiter simulation: mm_clk=302MHz, FHD */
-#define EMI_LP4_EXTREME_LOWER_BOUND 4
-#define EMI_LP4_LOWER_BOUND 8
-#define EMI_LP4_UPPER_BOUND 10
+#define EMI_LP4_ULPM_BOUND 4
+#define EMI_LP4_LPM_BOUND 8
+#define EMI_LP4_HPM_BOUND 10
+
+/* LP3 limiter */
+#define EMI_LP3_ULPM_BOUND 4
+#define EMI_LP3_LPM_BOUND 6
+#define EMI_LP3_HPM_BOUND 8
 
 #define LARB_LOWER_BOUND 3
 #define LARB_UPPER_BOUND 4
@@ -33,10 +38,7 @@
 #define OD_LARB_LOWER_BOUND 2
 #define OD_LARB_UPPER_BOUND 3
 
-/* LP3 limiter */
-#define EMI_LP3_EXTREME_LOWER_BOUND 4
-#define EMI_LP3_LOWER_BOUND 4
-#define EMI_LP3_UPPER_BOUND 6
+
 
 
 /**

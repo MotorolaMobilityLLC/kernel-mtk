@@ -113,7 +113,7 @@ static inline unsigned long ovl_to_m4u_port(DISP_MODULE_ENUM module)
 	return 0;
 }
 
-CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(DISP_MODULE_ENUM module)
+enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_OVL0:
@@ -715,11 +715,20 @@ void ovl_get_info(DISP_MODULE_ENUM module, void *data)
 	}
 }
 
+extern int m4u_query_mva_info(unsigned int mva, unsigned int size,
+				  unsigned int *real_mva,
+				  unsigned int *real_size);
 static int ovl_check_input_param(OVL_CONFIG_STRUCT *config)
 {
-	if ((config->addr == 0 && config->source == 0) || config->dst_w == 0 || config->dst_h == 0) {
-		DDPERR("ovl parameter invalidate, addr=%lu, w=%d, h=%d\n",
-		       config->addr, config->dst_w, config->dst_h);
+	unsigned int mva, size = 0;
+	int ret = 0;
+
+	if (config->addr != 0)
+		ret = m4u_query_mva_info(config->addr, config->src_pitch * config->dst_h, &mva, &size);
+	if ((config->addr == 0 && config->source == 0) || config->dst_w == 0 || config->dst_h == 0 ||
+			(config->addr != 0 && size == 0 && config->security == DISP_NORMAL_BUFFER)) {
+		DDPERR("ovl parameter invalidate, addr=%lu, w=%d, h=%d, size=%d\n",
+		       config->addr, config->dst_w, config->dst_h, size);
 		ASSERT(0);
 		return -1;
 	}
@@ -748,7 +757,7 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 	int i = 0;
 
 	int ovl_idx = ovl_to_index(module);
-	CMDQ_ENG_ENUM cmdq_engine;
+	enum CMDQ_ENG_ENUM cmdq_engine;
 	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 	cmdq_engine = ovl_to_cmdq_engine(module);
 	/*cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);*/
@@ -765,7 +774,7 @@ static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_se
 	} else {
 		if (ovl_is_sec[ovl_idx] == 1) {
 			/* ovl is in sec stat, we need to switch it to nonsec */
-			struct cmdqRecStruct nonsec_switch_handle;
+			struct cmdqRecStruct *nonsec_switch_handle;
 			int ret;
 
 			ret =
@@ -1360,6 +1369,31 @@ static void ovl_dump_layer_info(int layer, unsigned long layer_offset)
 	    );
 }
 
+static void ovl_dump_ext_layer_info(int layer, unsigned long layer_offset)
+{
+	enum UNIFIED_COLOR_FMT fmt;
+
+	fmt = display_fmt_reg_to_unified_fmt(DISP_REG_GET_FIELD
+					   (L_CON_FLD_CFMT, DISP_REG_OVL_EL0_CON + layer_offset),
+					   DISP_REG_GET_FIELD(L_CON_FLD_BTSW,
+							      DISP_REG_OVL_EL0_CON + layer_offset),
+						DISP_REG_GET_FIELD(L_CON_FLD_RGB_SWAP,
+							      DISP_REG_OVL_EL0_CON + layer_offset));
+
+	DDPDUMP("ext layer%d: w=%d,h=%d,off(x=%d,y=%d),pitch=%d,addr=0x%x,fmt=%s,source=%s,aen=%d,alpha=%d\n",
+	     layer, DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_SRC_SIZE) & 0xfff,
+	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_SRC_SIZE) >> 16) & 0xfff,
+	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_OFFSET) & 0xfff,
+	     (DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_OFFSET) >> 16) & 0xfff,
+	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_PITCH) & 0xffff,
+	     DISP_REG_GET(layer_offset + DISP_REG_OVL_EL0_ADDR), unified_color_fmt_name(fmt),
+	     (DISP_REG_GET_FIELD(L_CON_FLD_LARC, DISP_REG_OVL_EL0_CON + layer_offset) ==
+	      0) ? "memory" : "constant_color", DISP_REG_GET_FIELD(L_CON_FLD_AEN,
+								   DISP_REG_OVL_EL0_CON +
+								   layer_offset),
+	     DISP_REG_GET_FIELD(L_CON_FLD_APHA, DISP_REG_OVL_EL0_CON + layer_offset)
+	    );
+}
 void ovl_dump_analysis(DISP_MODULE_ENUM module)
 {
 	int i = 0;
@@ -1367,6 +1401,8 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 	unsigned long rdma_offset = 0;
 	unsigned long offset = ovl_base_addr(module);
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
+
+	unsigned int ext_on = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset);
 
 	DDPDUMP("== DISP %s ANALYSIS ==\n", ddp_get_module_name(module));
 	DDPDUMP("ovl_en=%d,layer_enable(%d,%d,%d,%d),bg(w=%d, h=%d),",
@@ -1377,6 +1413,13 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 		(DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset) >> 3) & 0x1,
 		DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) & 0xfff,
 		(DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset) >> 16) & 0xfff);
+	DDPDUMP("ext layer: layer_enable(%d,%d,%d), attach_layer(%d,%d,%d)\n",
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<0),
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<1),
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<2),
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<16),
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<20),
+		DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset) & (1<<24));
 	DDPDUMP("cur_pos(x=%d,y=%d),layer_hit(%d,%d,%d,%d),bg_mode=%s,sta=0x%x\n",
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_X, DISP_REG_OVL_ADDCON_DBG + offset),
 		DISP_REG_GET_FIELD(ADDCON_DBG_FLD_ROI_Y, DISP_REG_OVL_ADDCON_DBG + offset),
@@ -1403,6 +1446,15 @@ void ovl_dump_analysis(DISP_MODULE_ENUM module)
 			REG_FLD_VAL_GET(RDMA0_CTRL_FLD_RMDA_FIFO_USED_SZ, rdma_ctrl),
 			DISP_REG_GET(layer_offset + DISP_REG_OVL_RDMA0_MEM_GMC_SETTING));
 		ovl_print_ovl_rdma_status(DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG + rdma_offset));
+	}
+	/* ext layer detail info */
+	for (i = 0; i < 3; i++) {
+		layer_offset = i * OVL_LAYER_OFFSET + offset;
+		rdma_offset = i * OVL_RDMA_DEBUG_OFFSET + offset;
+		if (ext_on & (0x1 << i))
+			ovl_dump_ext_layer_info(i, layer_offset);
+		else
+			DDPDUMP("ext layer%d: disabled\n", i);
 	}
 	ovl_printf_status(DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG + offset));
 }

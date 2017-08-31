@@ -43,7 +43,7 @@
 #include <linux/compat.h>
 #include "mt-plat/aee.h"
 
-#include "mt-plat/mt_boot.h"
+#include "mt-plat/mtk_boot.h"
 #include "debug.h"
 #include "ddp_hal.h"
 #include "disp_drv_log.h"
@@ -59,7 +59,7 @@
 #include "display_recorder.h"
 #include "fbconfig_kdebug_x.h"
 #include "mtk_ovl.h"
-#include "mt_boot.h"
+#include "mtk_boot.h"
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
 #include "disp_dts_gpio.h"
@@ -2286,29 +2286,30 @@ static int update_test_kthread(void *data)
 }
 #endif
 
-static int mtkfb_probe(struct device *dev)
+/* static int mtkfb_probe(struct device *dev) */
+static int mtkfb_probe(struct platform_device *pdev)
 {
 	struct mtkfb_device *fbdev = NULL;
 	struct fb_info *fbi;
 	int init_state;
 	int r = 0;
 
-	struct platform_device *pdev;
+	/* struct platform_device *pdev; */
 	long dts_gpio_state = 0;
 
-	pr_debug("mtkfb_probe\n");
+	pr_debug("mtkfb_probe name [%s]  = [%s][%p]\n", pdev->name, pdev->dev.init_name, (void *)&pdev->dev);
 
 	_parse_tag_videolfb();
 
 	init_state = 0;
 
-	pdev = to_platform_device(dev);
+	/* pdev = to_platform_device(dev); */
 	/* repo call DTS gpio module, if not necessary, invoke nothing */
 	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
 	if (dts_gpio_state != 0)
 		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
 
-	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
+	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), &(pdev->dev));
 	if (!fbi) {
 		DISPERR("unable to allocate memory for device info\n");
 		r = -ENOMEM;
@@ -2318,8 +2319,8 @@ static int mtkfb_probe(struct device *dev)
 
 	fbdev = (struct mtkfb_device *)fbi->par;
 	fbdev->fb_info = fbi;
-	fbdev->dev = dev;
-	dev_set_drvdata(dev, fbdev);
+	fbdev->dev = &(pdev->dev);
+	dev_set_drvdata(&(pdev->dev), fbdev);
 
 	DISPDBG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
 
@@ -2625,13 +2626,13 @@ static const struct dev_pm_ops mtkfb_pm_ops = {
 };
 
 static struct platform_driver mtkfb_driver = {
+	.probe = mtkfb_probe,
 	.driver = {
 		   .name = MTKFB_DRIVER,
 #ifdef CONFIG_PM
 		   .pm = &mtkfb_pm_ops,
 #endif
 		   .bus = &platform_bus_type,
-		   .probe = mtkfb_probe,
 		   .remove = mtkfb_remove,
 		   .suspend = mtkfb_suspend,
 		   .resume = mtkfb_resume,

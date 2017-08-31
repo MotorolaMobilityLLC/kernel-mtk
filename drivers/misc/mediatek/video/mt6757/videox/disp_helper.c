@@ -25,11 +25,11 @@
 #include "disp_drv_log.h"
 #include "primary_display.h"
 
-#include "mt_boot.h"
+#include "mtk_boot.h"
 #include "disp_helper.h"
 #include "disp_drv_platform.h"
 #include "primary_display.h"
-#include "mt-plat/mt_chip.h"
+#include "mt-plat/mtk_chip.h"
 
 /* use this magic_code to detect memory corruption */
 #define MAGIC_CODE 0xDEADAAA0U

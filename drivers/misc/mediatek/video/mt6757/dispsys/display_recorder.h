@@ -216,4 +216,47 @@ int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
 			     unsigned int session /*1:primary, 2:external, 3:memory */);
 void init_log_buffer(void);
 char *get_dprec_status_ptr(int buffer_idx);
+
+/* systrace utils functions */
+#include <linux/trace_events.h>
+unsigned long disp_get_tracing_mark(void);
+
+#define __DISP_SYSTRACE_BEGIN(pid, fmt, args...) do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "B|%d|"fmt, pid, ##args);\
+	preempt_enable();\
+} while (0)
+
+#define DISP_SYSTRACE_BEGIN(fmt, args...) \
+	__DISP_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
+
+#if 0
+#define __DISP_SYSTRACE_COUNTER(pid, cnt, fmt, args...) do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|"fmt"|%d\n",\
+			   pid, ##args, cnt);\
+	preempt_enable();\
+} while (0)
+#endif
+
+#define DISP_SYSTRACE_END() do {\
+	preempt_disable();\
+	event_trace_printk(disp_get_tracing_mark(), "E\n");\
+	preempt_enable();\
+} while (0)
+
+
+#if 0
+void mmp_kernel_trace_counter(char *name, int count)
+{
+	preempt_disable();
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|%s|%d\n",
+			   in_interrupt() ? -1 : current->tgid, name, count);
+	preempt_enable();
+}
+
+
+#endif
+
+
 #endif

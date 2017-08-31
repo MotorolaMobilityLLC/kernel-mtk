@@ -20,15 +20,17 @@
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
-#include <leds_drv.h>
+#include <mtk_leds_drv.h>
 #include <cmdq_record.h>
 #include <ddp_reg.h>
 #include <ddp_drv.h>
 #include <ddp_path.h>
 #include <primary_display.h>
 #include <disp_drv_platform.h>
-#include <mt_smi.h>
+#ifdef CONFIG_MTK_SMI_EXT
+#include <mtk_smi.h>
 #include <smi_public.h>
+#endif
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -64,7 +66,7 @@ int aal_dbg_en;
 #ifdef CONFIG_MTK_AAL_SUPPORT
 static int disp_aal_write_init_regs(void *cmdq);
 #endif
-static int disp_aal_write_param_to_reg(struct cmdqRecStruct cmdq, const DISP_AAL_PARAM *param);
+static int disp_aal_write_param_to_reg(struct cmdqRecStruct *cmdq, const DISP_AAL_PARAM *param);
 
 static DECLARE_WAIT_QUEUE_HEAD(g_aal_hist_wq);
 static DEFINE_SPINLOCK(g_aal_hist_lock);
@@ -114,8 +116,9 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 #ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 static int disp_aal_get_latency_lowerbound(void)
 {
-	MTK_SMI_BWC_SCEN bwc_scen;
 	int aalrefresh;
+#ifdef	CONFIG_MTK_SMI_EXT
+	MTK_SMI_BWC_SCEN bwc_scen;
 
 	bwc_scen = smi_get_current_profile();
 	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
@@ -124,7 +127,10 @@ static int disp_aal_get_latency_lowerbound(void)
 
 		aalrefresh = AAL_REFRESH_33MS;
 	else
-		aalrefresh = AAL_REFRESH_17MS;
+	  aalrefresh = AAL_REFRESH_17MS;
+#else
+	aalrefresh = AAL_REFRESH_17MS;
+#endif
 
 	return aalrefresh;
 }
@@ -494,7 +500,7 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 #define DRE_REG_2(v0, off0, v1, off1)           (((v1) << (off1)) | ((v0) << (off0)))
 #define DRE_REG_3(v0, off0, v1, off1, v2, off2) (((v2) << (off2)) | (v1 << (off1)) | ((v0) << (off0)))
 
-static int disp_aal_write_param_to_reg(struct cmdqRecStruct cmdq, const DISP_AAL_PARAM *param)
+static int disp_aal_write_param_to_reg(struct cmdqRecStruct *cmdq, const DISP_AAL_PARAM *param)
 {
 	int i;
 	const int *gain;

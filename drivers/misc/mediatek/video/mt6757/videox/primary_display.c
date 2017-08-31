@@ -24,12 +24,12 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 #include <linux/switch.h>
-#include "mt_idle.h"
-#include "mt_spm.h"	/* for sodi reg addr define */
-#include "mt_spm_idle.h"
+/* #include "mtk_idle.h" */
+#include "mtk_spm.h"	/* for sodi reg addr define */
+/* #include "mtk_spm_idle.h" */
 /* #include "mach/eint.h" */
 /* #include <cust_eint.h> */
-#include "mt-plat/mt_smi.h"
+#include "mt-plat/mtk_smi.h"
 #include "mtk_ion.h"
 #include "ion_drv.h"
 #include "m4u.h"
@@ -69,7 +69,7 @@
 #include "m4u.h"
 #include "mtkfb_console.h"
 #if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
+#include <mach/mtk_gpio.h>
 #include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
@@ -77,12 +77,12 @@
 #include "mt-plat/aee.h"
 
 #include "ddp_clkmgr.h"
-#include "mmdvfs_mgr.h" /* FIXME: this header file copied to dispsys tmp */
-#include "mt_vcorefs_governor.h" /* FIXME: this header file copied to dispsys tmp */
-#include "mt_vcorefs_manager.h" /* FIXME: this header file copied to dispsys tmp */
+/* #include "mmdvfs_mgr.h" // FIXME: this header file copied to dispsys tmp */
+/* #include "mtk_vcorefs_governor.h" // FIXME: this header file copied to dispsys tmp  */
+/* #include "mtk_vcorefs_manager.h" // FIXME: this header file copied to dispsys tmp */
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
-#include "mt_spm_sodi_cmdq.h"
+/* #include "mt_spm_sodi_cmdq.h" */
 #include "ddp_od.h"
 #include "mtk_hrt.h"
 #include "disp_rect.h"
@@ -187,12 +187,12 @@ typedef struct {
 	struct mutex capture_lock;
 	struct mutex switch_dst_lock;
 	disp_lcm_handle *plcm;
-	struct cmdqRecStruct cmdq_handle_config_esd;
-	struct cmdqRecStruct cmdq_handle_config;
+	struct cmdqRecStruct *cmdq_handle_config_esd;
+	struct cmdqRecStruct *cmdq_handle_config;
 	disp_path_handle dpmgr_handle;
 	disp_path_handle ovl2mem_path_handle;
-	struct cmdqRecStruct cmdq_handle_ovl1to2_config;
-	struct cmdqRecStruct cmdq_handle_trigger;
+	struct cmdqRecStruct *cmdq_handle_ovl1to2_config;
+	struct cmdqRecStruct *cmdq_handle_trigger;
 	char *mutex_locker;
 	int vsync_drop;
 	unsigned int dc_buf_id;
@@ -216,6 +216,8 @@ typedef struct {
 #define pgc	_get_context()
 
 static int smart_ovl_try_switch_mode_nolock(void);
+
+
 
 static display_primary_path_context *_get_context(void)
 {
@@ -340,7 +342,7 @@ int primary_display_partial_support(void)
 }
 
 int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
-		struct cmdqRecStruct cmdq_handle)
+		struct cmdqRecStruct *cmdq_handle)
 {
 	struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
 
@@ -1284,7 +1286,7 @@ void disp_spm_enter_power_down_mode(void)
 static void _cmdq_build_monitor_loop(void)
 {
 	int ret = 0;
-	struct cmdqRecStruct g_cmdq_handle_monitor;
+	struct cmdqRecStruct *g_cmdq_handle_monitor;
 
 	cmdqRecCreate(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor));
 	DISPMSG("primary path monitor thread cmd handle=%p\n", g_cmdq_handle_monitor);
@@ -1362,7 +1364,7 @@ static void _cmdq_set_config_handle_dirty(void)
 	}
 }
 
-static void _cmdq_handle_clear_dirty(struct cmdqRecStruct cmdq_handle)
+static void _cmdq_handle_clear_dirty(struct cmdqRecStruct *cmdq_handle)
 {
 	if (!primary_display_is_video_mode()) {
 		dprec_logger_trigger(DPREC_LOGGER_PRIMARY_CMDQ_SET_DIRTY, 0, 1);
@@ -1496,7 +1498,7 @@ static void update_frm_seq_info(unsigned int addr, unsigned int addr_offset, uns
 }
 
 static int _config_wdma_output(WDMA_CONFIG_STRUCT *wdma_config,
-			       disp_path_handle disp_handle, struct cmdqRecStruct cmdq_handle)
+			       disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
 
@@ -1507,7 +1509,7 @@ static int _config_wdma_output(WDMA_CONFIG_STRUCT *wdma_config,
 }
 
 static int _config_rdma_input_data(RDMA_CONFIG_STRUCT *rdma_config,
-				   disp_path_handle disp_handle, struct cmdqRecStruct cmdq_handle)
+				   disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(disp_handle);
 
@@ -1520,8 +1522,8 @@ static int _config_rdma_input_data(RDMA_CONFIG_STRUCT *rdma_config,
 static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_ENUM after_engine)
 {
 	int ret = 0;
-	struct cmdqRecStruct cmdq_handle = NULL;
-	struct cmdqRecStruct cmdq_wait_handle = NULL;
+	struct cmdqRecStruct *cmdq_handle = NULL;
+	struct cmdqRecStruct *cmdq_wait_handle = NULL;
 	disp_ddp_path_config *pconfig = NULL;
 
 	/* create config thread */
@@ -2012,7 +2014,7 @@ static int DC_switch_to_DL_fast(int sw_only)
 	return ret;
 }
 
-static int DL_switch_to_rdma_mode(struct cmdqRecStruct handle, int block)
+static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 {
 	int ret;
 	DDP_SCENARIO_ENUM old_scenario, new_scenario;
@@ -2052,7 +2054,7 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct handle, int block)
 	return 0;
 }
 
-static int rdma_mode_switch_to_DL(struct cmdqRecStruct handle, int block)
+static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 {
 	int ret;
 	DDP_SCENARIO_ENUM old_scenario, new_scenario;
@@ -2460,7 +2462,7 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 }
 
 int _trigger_ovl_to_memory(disp_path_handle disp_handle,
-				  struct cmdqRecStruct cmdq_handle,
+				  struct cmdqRecStruct *cmdq_handle,
 				  CmdqAsyncFlushCB callback, unsigned int data)
 {
 	int layer = 0;
@@ -2558,7 +2560,7 @@ static int __primary_check_trigger(void)
 	dprec_logger_trigger(DPREC_LOGGER_PQ_TRIGGER_1SECOND, 0, 0);
 
 	if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
-		static struct cmdqRecStruct handle;
+		static struct cmdqRecStruct *handle;
 		disp_ddp_path_config *data_config = NULL;
 
 		if (!handle)
@@ -2752,7 +2754,7 @@ static int _decouple_update_rdma_config_nolock(void)
 	int ret = 0;
 
 	if (primary_display_is_decouple_mode()) {
-		static struct cmdqRecStruct cmdq_handle;
+		static struct cmdqRecStruct *cmdq_handle;
 		unsigned int rdma_pitch_sec;
 
 		layer = disp_sync_get_output_timeline_id();
@@ -2966,8 +2968,8 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 static int primary_display_remove_output(void *callback, unsigned int userdata)
 {
 	int ret = 0;
-	static struct cmdqRecStruct cmdq_handle;
-	static struct cmdqRecStruct cmdq_wait_handle;
+	static struct cmdqRecStruct *cmdq_handle;
+	static struct cmdqRecStruct *cmdq_wait_handle;
 
 	/* create config thread */
 	if (cmdq_handle == NULL)
@@ -3591,7 +3593,7 @@ static void _display_set_refresh_rate_post_proc(int fps)
 static int request_lcm_refresh_rate_change(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	static struct cmdqRecStruct cmdq_handle, cmdq_pre_handle;
+	static struct cmdqRecStruct *cmdq_handle, cmdq_pre_handle;
 	int ret;
 
 	if (pgc->state == DISP_SLEPT) {
@@ -3636,7 +3638,7 @@ static int request_lcm_refresh_rate_change(int fps)
 int _display_set_lcm_refresh_rate(int fps)
 {
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	static struct cmdqRecStruct cmdq_handle, cmdq_pre_handle;
+	static struct cmdqRecStruct *cmdq_handle, cmdq_pre_handle;
 	disp_path_handle disp_handle;
 	disp_ddp_path_config *pconfig = NULL;
 	int ret = 0;
@@ -3883,7 +3885,7 @@ int primary_suspend_release_fence(void)
 int suspend_to_full_roi(void)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle = NULL;
+	struct cmdqRecStruct *handle = NULL;
 	disp_ddp_path_config *data_config = NULL;
 
 	if (!disp_partial_is_support())
@@ -4590,7 +4592,7 @@ static int decouple_trigger_worker_thread(void *data)
 }
 
 static int config_wdma_output(disp_path_handle disp_handle,
-			      struct cmdqRecStruct cmdq_handle, disp_output_config *output)
+			      struct cmdqRecStruct *cmdq_handle, disp_output_config *output)
 {
 	disp_ddp_path_config *pconfig = NULL;
 
@@ -4637,7 +4639,7 @@ static int primary_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 {
 	int ret = 0;
 	disp_path_handle disp_handle;
-	struct cmdqRecStruct cmdq_handle = NULL;
+	struct cmdqRecStruct *cmdq_handle = NULL;
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("mem out is already slept or mode wrong(%d)\n", pgc->session_mode);
@@ -4739,7 +4741,7 @@ static int disp_leave_svp(SVP_STATE state)
 	return 0;
 }
 
-static int setup_disp_sec(disp_ddp_path_config *data_config, struct cmdqRecStruct cmdq_handle,
+static int setup_disp_sec(disp_ddp_path_config *data_config, struct cmdqRecStruct *cmdq_handle,
 			  int is_locked)
 {
 	int i, has_sec_layer = 0;
@@ -4877,7 +4879,7 @@ static int evaluate_bandwidth_save(disp_ddp_path_config *cfg, int *ori, int *act
 }
 
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
-			     disp_path_handle disp_handle, struct cmdqRecStruct cmdq_handle)
+			     disp_path_handle disp_handle, struct cmdqRecStruct *cmdq_handle)
 {
 	int ret = 0, i = 0, layer = 0;
 	disp_ddp_path_config *data_config = NULL;
@@ -5122,7 +5124,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	int ret = 0;
 	unsigned int wdma_mva = 0;
 	disp_path_handle disp_handle;
-	struct cmdqRecStruct cmdq_handle;
+	struct cmdqRecStruct *cmdq_handle;
 
 	if (gTriggerDispMode > 0)
 		return 0;
@@ -5235,12 +5237,12 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 #endif
 
 	/* set input */
-	dprec_start(input_event, cfg->overlap_layer_num, cfg->input_layer_num);
+	dprec_start(input_event, cfg->present_fence_idx, cfg->input_layer_num);
 	primary_frame_cfg_input(cfg);
-	dprec_done(input_event, 0, 0);
+	dprec_done(input_event, cfg->overlap_layer_num, 0);
 
 	if (cfg->output_en) {
-		dprec_start(output_event, cfg->output_cfg.buff_idx, 0);
+		dprec_start(output_event, cfg->present_fence_idx, cfg->output_cfg.buff_idx);
 		primary_frame_cfg_output(cfg);
 		dprec_done(output_event, 0, 0);
 	}
@@ -5249,7 +5251,7 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 		/* to debug UI thread or MM thread */
 		unsigned int proc_name = (current->comm[0] << 24) |
 		    (current->comm[1] << 16) | (current->comm[2] << 8) | (current->comm[3] << 0);
-		dprec_start(trigger_event, proc_name, 0);
+		dprec_start(trigger_event, cfg->present_fence_idx, proc_name);
 	}
 
 	if (cfg->present_fence_idx != (unsigned int)-1)
@@ -5267,7 +5269,7 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle = NULL;
+	struct cmdqRecStruct *handle = NULL;
 	int cmdqsize = 0;
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart, (unsigned long)handle, 0);
@@ -5356,7 +5358,7 @@ user_cmd_unlock:
 }
 
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
-					struct cmdqRecStruct handle, int block)
+					struct cmdqRecStruct *handle, int block)
 {
 	int ret = 0, sw_only = 0;
 
@@ -5891,7 +5893,7 @@ int primary_display_vsync_switch(int method)
 int _set_backlight_by_cmdq(unsigned int level)
 {
 	int ret = 0;
-	struct cmdqRecStruct cmdq_handle_backlight = NULL;
+	struct cmdqRecStruct *cmdq_handle_backlight = NULL;
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagPulse, 1, 1);
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
@@ -6035,7 +6037,7 @@ int primary_display_setbacklight(unsigned int level)
 int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigned int *lcm_value)
 {
 	int ret = 0;
-	struct cmdqRecStruct cmdq_handle_lcm_cmd = NULL;
+	struct cmdqRecStruct *cmdq_handle_lcm_cmd = NULL;
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_cmd, MMProfileFlagPulse, 1, 1);
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_lcm_cmd);
@@ -6113,7 +6115,7 @@ int primary_display_setlcm_cmd(unsigned int *lcm_cmd, unsigned int *lcm_count,
 
 int primary_display_mipi_clk_change(unsigned int clk_value)
 {
-	struct cmdqRecStruct cmdq_handle = NULL;
+	struct cmdqRecStruct *cmdq_handle = NULL;
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("Sleep State clk change invald\n");
@@ -6230,8 +6232,8 @@ LCM_DRIVER *DISP_GetLcmDrv(void)
 static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DISP_MODULE_ENUM after_eng)
 {
 	int ret = 0;
-	struct cmdqRecStruct cmdq_handle = NULL;
-	struct cmdqRecStruct cmdq_wait_handle = NULL;
+	struct cmdqRecStruct *cmdq_handle = NULL;
+	struct cmdqRecStruct *cmdq_wait_handle = NULL;
 	disp_ddp_path_config *pconfig = NULL;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
@@ -6748,6 +6750,11 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 		/* for video mode, we need to force trigger here */
 		/* for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW when trigger loop start */
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+				disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
+			dpmgr_path_mutex_get(pgc->dpmgr_handle, NULL);
+			dpmgr_path_mutex_release(pgc->dpmgr_handle, NULL);
+		}
 		force_trigger_path = 0;
 	}
 	_cmdq_start_trigger_loop();
@@ -6843,7 +6850,7 @@ int primary_display_switch_dst_mode(int mode)
 #ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
 	/* set power down mode forbidden */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(1);
+		/*spm_sodi_mempll_pwr_mode(1);// move by Cui*/
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 0);

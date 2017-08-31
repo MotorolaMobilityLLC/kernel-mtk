@@ -15,6 +15,7 @@
 #define __DISP_DRV_LOG_H__
 #include "display_recorder.h"
 #include "ddp_debug.h"
+#include "mt-plat/aee.h"
 
 #if 0 /*set 1 to output log to mobilelog */
 #define DISP_LOG_PRINT(level, sub_module, fmt, arg...)      \
@@ -151,5 +152,15 @@
 		disp_name, "[DISP] error"string, ##args);		\
 	pr_err("DISP error: "string, ##args);				\
 } while (0)
+
+#define _DISP_PRINT_FENCE_OR_ERR(is_err, string, args...) \
+	do { \
+		if (is_err) \
+			DISPERR(string, ##args); \
+		else \
+			DISPPR_FENCE(string, ##args); \
+	} while (0)
+
+
 #endif
 #endif				/* __DISP_DRV_LOG_H__ */

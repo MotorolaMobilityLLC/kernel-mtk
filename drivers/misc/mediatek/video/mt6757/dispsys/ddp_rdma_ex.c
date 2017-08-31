@@ -30,8 +30,8 @@
 #include "m4u_port.h"
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-#include "mt_spm.h"
-#include "mt_smi.h"
+#include "mtk_spm.h"
+#include "mtk_smi.h"
 /* #include "mmdvfs_mgr.h" */
 #include "disp_lowpower.h"
 
@@ -931,8 +931,8 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
 {
 	static int rdma_is_sec[2];
-	CMDQ_ENG_ENUM cmdq_engine;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+	enum CMDQ_ENG_ENUM cmdq_engine;
+	enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
 	int rdma_idx = rdma_index(module);
 	DISP_BUFFER_TYPE security = pConfig->rdma_config.security;
 	enum RDMA_MODE mode = rdma_config_mode(pConfig->rdma_config.address);
@@ -959,7 +959,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 		} else {
 			if (rdma_is_sec[rdma_idx]) {
 				/* rdma is in sec stat, we need to switch it to nonsec */
-				struct cmdqRecStruct nonsec_switch_handle;
+				struct cmdqRecStruct *nonsec_switch_handle;
 				int ret;
 
 				ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,

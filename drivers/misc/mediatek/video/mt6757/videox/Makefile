@@ -31,7 +31,8 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_dts_gpio.o		\
 			disp_rect.o		\
 			disp_partial.o		\
-			mtk_hrt.o
+			mtk_hrt.o \
+			frame_queue.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/
 #obj-y += mtkfb_dummy.o
@@ -83,5 +84,7 @@ endif
 ifeq ($(MTK_MIRAVISION_SUPPORT), yes)
     ccflags-y += -DCONFIG_FOR_SOURCE_PQ
 endif
+
+ccflags-y += -DNO_SPM
 
 ccflags-$(CONFIG_MTK_LCM_DEVICE_TREE_SUPPORT) += -DMTK_LCM_DEVICE_TREE_SUPPORT

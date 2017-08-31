@@ -264,7 +264,7 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP WDMA%d ANALYSIS ==\n", index);
 	DDPDUMP("wdma%d:en=%d,w=%d,h=%d,clip=(%d,%d,%d,%d),pitch=(W=%d,UV=%d),addr=(0x%x,0x%x,0x%x),fmt=%s\n",
-	     index, DISP_REG_GET(DISP_REG_WDMA_EN + idx_offst),
+	     index, DISP_REG_GET(DISP_REG_WDMA_EN + idx_offst) & 0x01,
 	     DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + idx_offst) & 0x3fff,
 	     (DISP_REG_GET(DISP_REG_WDMA_SRC_SIZE + idx_offst) >> 16) & 0x3fff,
 	     DISP_REG_GET(DISP_REG_WDMA_CLIP_COORD + idx_offst) & 0x3fff,
@@ -278,7 +278,7 @@ void wdma_dump_analysis(DISP_MODULE_ENUM module)
 	     DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + idx_offst),
 	     unified_color_fmt_name(display_fmt_reg_to_unified_fmt
 				    ((DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 4) & 0xf,
-				     (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 11) & 0x1, 0))
+				     (DISP_REG_GET(DISP_REG_WDMA_CFG + idx_offst) >> 10) & 0x1, 0))
 	    );
 	DDPDUMP("wdma%d:status=%s,in_req=%d(prev sent data),in_ack=%d(ask data to prev),exec=%d,in_pix=(L:%d,P:%d)\n",
 		index,
@@ -300,7 +300,7 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 		unsigned int idx = wdma_index(module);
 		unsigned long module_base = DDP_REG_BASE_DISP_WDMA0 + idx * DISP_WDMA_INDEX_OFFSET;
 
-		DDPDUMP("== START: DISP WDMA0 REGS ==\n");
+		DDPDUMP("== START: DISP WDMA%d REGS ==\n", idx);
 		DDPDUMP("WDMA0: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
 			0x0, INREG32(module_base + 0x0),
 			0x4, INREG32(module_base + 0x4),
@@ -540,9 +540,9 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 
 	WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
 	int wdma_idx = wdma_index(module);
-	CMDQ_ENG_ENUM cmdq_engine;
-	CMDQ_EVENT_ENUM cmdq_event;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+	enum CMDQ_ENG_ENUM cmdq_engine;
+	enum CMDQ_EVENT_ENUM cmdq_event;
+	enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
 
 	if (!pConfig->wdma_dirty)
 		return 0;
@@ -563,7 +563,7 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 	} else {
 		if (wdma_is_sec[wdma_idx]) {
 			/* wdma is in sec stat, we need to switch it to nonsec */
-			struct cmdqRecStruct nonsec_switch_handle;
+			struct cmdqRecStruct *nonsec_switch_handle;
 			int ret;
 
 			ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,

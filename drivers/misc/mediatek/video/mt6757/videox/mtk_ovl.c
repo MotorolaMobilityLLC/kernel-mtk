@@ -66,8 +66,8 @@ typedef struct {
 	int max_layer;
 	int need_trigger_path;
 	struct mutex lock;
-	struct cmdqRecStruct cmdq_handle_config;
-	struct cmdqRecStruct cmdq_handle_trigger;
+	struct cmdqRecStruct *cmdq_handle_config;
+	struct cmdqRecStruct *cmdq_handle_trigger;
 	disp_path_handle dpmgr_handle;
 	char *mutex_locker;
 } ovl2mem_path_context;

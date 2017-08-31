@@ -61,7 +61,7 @@ static int ufoe_deinit(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-int ufoe_start(DISP_MODULE_ENUM module, struct cmdqRecStruct cmdq)
+int ufoe_start(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	if (ufoe_enable)
 		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1);

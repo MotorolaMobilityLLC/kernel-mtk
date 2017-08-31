@@ -136,6 +136,7 @@ typedef struct compat_disp_caps_t {
 	compat_uint_t disp_feature;
 	compat_uint_t is_support_frame_cfg_ioctl;
 	compat_uint_t is_output_rotated;
+	compat_uint_t fence_wait_supported;
 } compat_disp_caps_info;
 
 

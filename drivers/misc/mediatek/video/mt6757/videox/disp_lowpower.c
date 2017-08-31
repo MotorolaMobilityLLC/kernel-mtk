@@ -25,12 +25,12 @@
 #include <linux/slab.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
-#include "mt_idle.h"
+/* #include "mtk_idle.h" */
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
-#include "mt_boot_common.h"
+#include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-#include "mt_spm_idle.h"
-#include "mt-plat/mt_smi.h"
+/* #include "mtk_spm_idle.h" */
+#include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 #include "m4u_port.h"
 
@@ -49,13 +49,13 @@
 #include "ddp_manager.h"
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
-#include "mt_smi.h"
+#include "mtk_smi.h"
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
 #include "disp_rect.h"
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
-#include "mt_dramc.h"
+#include "mtk_dramc.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -63,7 +63,7 @@
 #include <linux/of_address.h>
 #include <linux/io.h>
 
-#include "mmdvfs_mgr.h"
+/* #include "mmdvfs_mgr.h" */
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 
@@ -241,7 +241,7 @@ static int primary_display_set_idle_stat(int is_idle)
 int _blocking_flush(void)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle = NULL;
+	struct cmdqRecStruct *handle = NULL;
 
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	if (ret) {
@@ -259,7 +259,7 @@ int _blocking_flush(void)
 int primary_display_dsi_vfp_change(int state)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle = NULL;
+	struct cmdqRecStruct *handle = NULL;
 
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
@@ -288,7 +288,7 @@ int primary_display_dsi_vfp_change(int state)
 
 void _idle_set_golden_setting(void)
 {
-	struct cmdqRecStruct handle;
+	struct cmdqRecStruct *handle;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	/* no need lock */
@@ -310,9 +310,9 @@ void _idle_set_golden_setting(void)
 }
 
 /* Share wrot sram for vdo mode increase enter sodi ratio */
-void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
+void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	struct cmdqRecStruct handle;
+	struct cmdqRecStruct *handle;
 
 	int32_t acquireResult;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
@@ -361,7 +361,7 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	cmdqRecDestroy(handle);
 }
 
-static int32_t _acquire_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
+static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	primary_display_manual_lock();
 	_acquire_wrot_resource_nolock(resourceEvent);
@@ -371,9 +371,9 @@ static int32_t _acquire_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
 }
 
 
-void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
+void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	struct cmdqRecStruct handle;
+	struct cmdqRecStruct *handle;
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
@@ -405,7 +405,7 @@ void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	cmdqRecDestroy(handle);
 }
 
-static int32_t _release_wrot_resource(CMDQ_EVENT_ENUM resourceEvent)
+static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* need lock  */
 	primary_display_manual_lock();
@@ -434,7 +434,7 @@ int _switch_mmsys_clk_callback(unsigned int need_disable_pll)
 int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle;
+	struct cmdqRecStruct *handle;
 	/*unsigned int need_disable_pll = 0;*/
 	disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
@@ -842,16 +842,16 @@ int primary_display_request_dvfs_perf(int req)
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_HIGH:
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH);
+			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); */
 			break;
 		case HRT_LEVEL_LOW:
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW);
+			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); */
 			break;
 		case HRT_LEVEL_EXTREME_LOW:
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW_LOW);
+			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW_LOW); */
 			break;
 		case HRT_LEVEL_DEFAULT:
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_DEFAULT_STEP);
+			/* mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_DEFAULT_STEP); */
 			break;
 		default:
 			break;
@@ -1053,7 +1053,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 }
 
 #if 0
-void exit_pd_by_cmdq(struct cmdqRecStruct handler)
+void exit_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
 	/* Enable SPM CG Mode(Force 30+ times to ensure write success, need find root cause and fix later) */
 	cmdqRecWrite(handler, 0x100062B0, 0x2, ~0);
@@ -1061,22 +1061,22 @@ void exit_pd_by_cmdq(struct cmdqRecStruct handler)
 	cmdqRecPoll(handler, 0x1000611C, 0x10000, 0x10000);
 }
 
-void enter_pd_by_cmdq(struct cmdqRecStruct handler)
+void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
 	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
 }
 #endif
 
-void __attribute__((weak)) exit_pd_by_cmdq(struct cmdqRecStruct handler)
+void __attribute__((weak)) exit_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
 }
 
-void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct handler)
+void __attribute__((weak)) enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
 }
 
 
-void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)
+void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register call back first */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1,
@@ -1086,7 +1086,7 @@ void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)
 	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
 }
 
-void leave_share_sram(CMDQ_EVENT_ENUM resourceEvent)
+void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
 	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1, NULL, NULL);

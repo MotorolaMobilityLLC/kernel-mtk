@@ -22,7 +22,7 @@
 
 #define TOTAL_OVL_LAYER_NUM	(6+3+3) /* Prim total support layer num */
 #define OVL_NUM			(4)
-#define PRIMARY_THREE_OVL_CASCADE
+#define PRIMARY_OVL0_OVL0_2L_CASCADE
 
 /* start overlay module */
 int ovl_start(DISP_MODULE_ENUM module, void *handle);

@@ -26,11 +26,11 @@
 #include <linux/interrupt.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
-#include "mt_idle.h"
-#include "mt_spm_reg.h"
+/* #include "mtk_idle.h" */
+#include "mtk_spm_reg.h"
 /* #include "pcm_def.h" */
-#include "mt_spm_idle.h"
-#include "mt_smi.h"
+/* #include "mtk_spm_idle.h" */
+#include "mtk_smi.h"
 #include "m4u.h"
 #include "m4u_port.h"
 
@@ -50,7 +50,7 @@
 #include "ddp_manager.h"
 #include "disp_lcm.h"
 #include "ddp_clkmgr.h"
-#include "mt_smi.h"
+#include "mtk_smi.h"
 /* #include "mmdvfs_mgr.h" */
 #include "disp_drv_log.h"
 #include "ddp_log.h"
@@ -62,7 +62,7 @@
 #include <linux/io.h>
 /* #include "mach/eint.h" */
 #if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
+#include <mach/mtk_gpio.h>
 #include <cust_gpio_usage.h>
 #include <cust_eint.h>
 #else
@@ -118,7 +118,7 @@ static unsigned int _need_do_esd_check(void)
 
 /* For Cmd Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_cmd(struct cmdqRecStruct handle)
+int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 {
 	int ret = 0;		/* 0:success */
 
@@ -159,7 +159,7 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct handle)
 
 /* For Vdo Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_vdo(struct cmdqRecStruct handle)
+int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 {
 	int ret = 0;		/* 0:success , 1:fail */
 
@@ -365,7 +365,7 @@ int do_esd_check_dsi_te(void)
 int do_esd_check_read(void)
 {
 	int ret = 0;
-	struct cmdqRecStruct handle;
+	struct cmdqRecStruct *handle;
 
 	/* 0.create esd check cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);

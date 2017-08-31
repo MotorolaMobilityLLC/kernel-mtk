@@ -27,5 +27,6 @@ int disp_create_session(disp_session_config *config);
 int disp_destroy_session(disp_session_config *config);
 int set_session_mode(disp_session_config *config_info, int force);
 char *disp_session_mode_spy(unsigned int session_id);
+void dump_input_cfg_info(disp_input_config *input_cfg, unsigned int session_id, int is_err);
 
 #endif
