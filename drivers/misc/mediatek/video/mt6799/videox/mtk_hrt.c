@@ -285,26 +285,28 @@ static int get_scale_scenario(struct layer_config *layer_info)
 			return HRT_SCALE_UNKNOWN;
 	}
 
-	if (layer_info->src_width * 2 == layer_info->dst_width) {
-		if (layer_info->src_height * 2 == layer_info->dst_height)
+	scale_diff = layer_info->dst_width / 2 - layer_info->src_width;
+	if (scale_diff >= -1 && scale_diff <= 1) {
+		scale_diff = layer_info->dst_height / 2 - layer_info->src_height;
+		if (scale_diff >= -1 && scale_diff <= 1)
 			return HRT_SCALE_200;
 		else
 			return HRT_SCALE_UNKNOWN;
 	}
 
-	scale_diff = layer_info->dst_width * 2 - layer_info->src_width * 3;
-	if (scale_diff >= -2 && scale_diff <= 2) {
-		scale_diff = layer_info->dst_height * 2 - layer_info->src_height * 3;
-		if (scale_diff >= -2 && scale_diff <= 2)
+	scale_diff = layer_info->dst_width * 2 / 3 - layer_info->src_width;
+	if (scale_diff >= -1 && scale_diff <= 1) {
+		scale_diff = layer_info->dst_height * 2 / 3 - layer_info->src_height;
+		if (scale_diff >= -1 && scale_diff <= 1)
 			return HRT_SCALE_150;
 		else
 			return HRT_SCALE_UNKNOWN;
 	}
 
-	scale_diff = layer_info->dst_width * 3 - layer_info->src_width * 4;
-	if (scale_diff >= -3 && scale_diff <= 3) {
-		scale_diff = layer_info->dst_height * 3 - layer_info->src_height * 4;
-		if (scale_diff >= -3 && scale_diff <= 3)
+	scale_diff = layer_info->dst_width * 3 / 4 - layer_info->src_width;
+	if (scale_diff >= -1 && scale_diff <= 1) {
+		scale_diff = layer_info->dst_height * 3 / 4 - layer_info->src_height;
+		if (scale_diff >= -1 && scale_diff <= 1)
 			return HRT_SCALE_133;
 		else
 			return HRT_SCALE_UNKNOWN;
