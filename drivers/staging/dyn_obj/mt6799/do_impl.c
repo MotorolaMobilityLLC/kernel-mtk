@@ -30,8 +30,6 @@ int is_loading;
 struct mutex do_mutex; /* For do loading critical section */
 struct completion loading;
 
-#define INIT_TIME_VERIFY 1
-
 /********************** API helpers *********************/
 void clear_info(struct do_list_node *root, int deep_clean)
 {
