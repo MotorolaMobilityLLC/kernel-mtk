@@ -155,7 +155,7 @@ void ged_dvfs_last_and_target_cb(int t_gpu_target, int boost_accum_gpu)
 {
 	g_ui32TargetPeriod_us = t_gpu_target;
 	g_ui32BoostValue = boost_accum_gpu;
-	mtk_gpu_ged_hint(g_ui32TargetPeriod_us, g_ui32BoostValue);
+	/* mtk_gpu_ged_hint(g_ui32TargetPeriod_us, g_ui32BoostValue); */
 }
 
 static bool ged_dvfs_policy(
