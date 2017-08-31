@@ -91,14 +91,14 @@
 #define SODI_TAG     "[SODI] "
 #define SODI3_TAG    "[SODI3] "
 
-#define sodi_err(fmt, args...)     pr_err(SODI_TAG fmt, ##args)
-#define sodi_warn(fmt, args...)    pr_warn(SODI_TAG fmt, ##args)
-#define sodi_debug(fmt, args...)   pr_debug(SODI_TAG fmt, ##args)
-#define sodi3_err(fmt, args...)	   pr_err(SODI3_TAG fmt, ##args)
-#define sodi3_warn(fmt, args...)   pr_warn(SODI3_TAG fmt, ##args)
-#define sodi3_debug(fmt, args...)  pr_debug(SODI3_TAG fmt, ##args)
-#define so_err(fg, fmt, args...)   ((fg&SODI_FLAG_3P0)?pr_err(SODI3_TAG fmt, ##args):pr_err(SODI_TAG fmt, ##args))
-#define so_warn(fg, fmt, args...)  ((fg&SODI_FLAG_3P0)?pr_warn(SODI3_TAG fmt, ##args):pr_warn(SODI_TAG fmt, ##args))
+#define sodi_err(fmt, args...)     pr_info(SODI_TAG fmt, ##args)
+#define sodi_warn(fmt, args...)    pr_info(SODI_TAG fmt, ##args)
+#define sodi_debug(fmt, args...)   pr_info(SODI_TAG fmt, ##args)
+#define sodi3_err(fmt, args...)	   pr_info(SODI3_TAG fmt, ##args)
+#define sodi3_warn(fmt, args...)   pr_info(SODI3_TAG fmt, ##args)
+#define sodi3_debug(fmt, args...)  pr_info(SODI3_TAG fmt, ##args)
+#define so_err(fg, fmt, args...)   ((fg&SODI_FLAG_3P0)?pr_info(SODI3_TAG fmt, ##args):pr_info(SODI_TAG fmt, ##args))
+#define so_warn(fg, fmt, args...)  ((fg&SODI_FLAG_3P0)?pr_info(SODI3_TAG fmt, ##args):pr_info(SODI_TAG fmt, ##args))
 #define so_debug(fg, fmt, args...)				\
 	do {										\
 		if (fg&SODI_FLAG_3P0)					\

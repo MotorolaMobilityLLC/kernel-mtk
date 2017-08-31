@@ -154,7 +154,7 @@ enum {
 	NF_CLKMUX,
 };
 
-#define NF_CLK_CFG            15     /* = NF_CLKMUX / 4 */
+#define NF_CLK_CFG            (NF_CLKMUX/4)
 
 extern bool             soidle_by_pass_pg;
 extern bool             mcsodi_by_pass_pg;
