@@ -24,7 +24,7 @@
 #include <linux/seq_file.h>
 #include <linux/module.h>
 #include <linux/list_sort.h>
-#include "mt_rt_mon.h"
+#include "mtk_rt_mon.h"
 #include "mtk_ram_console.h"
 
 #define MAX_THROTTLE_COUNT 5

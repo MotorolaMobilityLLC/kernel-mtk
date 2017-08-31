@@ -19,7 +19,7 @@
 #include <linux/sched.h>
 #include "mtk_ram_console.h"
 #ifdef CONFIG_MT_RT_THROTTLE_MON
-#include "mt_rt_mon.h"
+#include "mtk_rt_mon.h"
 #endif
 
 #include "sched.h"
