@@ -2789,7 +2789,6 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 
 			if (ucOuiType == VENDOR_OUI_TYPE_WMM)
 				break;
-
 		}
 		if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
 			(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
