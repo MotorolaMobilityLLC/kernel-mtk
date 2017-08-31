@@ -16,7 +16,7 @@
 #ifndef __CROS_EC_USB_PD_H
 #define __CROS_EC_USB_PD_H
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 /* PD Host command timeout */
 #define PD_HOST_COMMAND_TIMEOUT_US SECOND
@@ -816,6 +816,8 @@ enum pd_data_msg_type {
 /* Data role */
 #define PD_ROLE_UFP    0
 #define PD_ROLE_DFP    1
+
+#define PD_NO_ROLE  U8_MAX
 
 /* Vconn role */
 #define PD_ROLE_VCONN_OFF 0

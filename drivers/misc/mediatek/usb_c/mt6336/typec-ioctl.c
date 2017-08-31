@@ -12,7 +12,7 @@
  */
 
 #include <linux/version.h>
-#include "mt_typec.h"
+#include "mtk_typec.h"
 #include "typec-ioctl.h"
 #include "typec_reg.h"
 

@@ -17,6 +17,7 @@
 #include <linux/of_irq.h>
 #include <linux/notifier.h>
 #include <typec.h>
+#include "usb_switch.h"
 
 #ifdef CONFIG_MTK_LEGACY
 #include <cust_gpio_usage.h>
@@ -29,7 +30,7 @@
 #include <mt6336/mt6336.h>
 
 #include "typec-ioctl.h"
-#include "mt_typec.h"
+#include "mtk_typec.h"
 #include "typec_reg.h"
 
 struct typec_hba *g_hba;
@@ -406,48 +407,80 @@ void typec_notifier_call_chain(void)
 	blocking_notifier_call_chain(&type_notifier_list, type, event);
 }
 #else
-static struct usbtypc g_typec;
-static bool g_host_connected;
-static bool g_device_connected;
-
-void typec_platform_hanlder(uint16_t cc_is0)
+void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
 {
 #if !CC_STANDALONE_COMPLIANCE
-	if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SRC_INTR) {
-		if (g_typec.host_driver && g_host_connected == true)
-			g_typec.host_driver->disable(g_typec.host_driver->priv_data);
-		g_host_connected = false;
-	} else if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
-		if (g_typec.host_driver && g_host_connected == false)
-			g_typec.host_driver->enable(g_typec.host_driver->priv_data);
-		g_host_connected = true;
-	} else if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SNK_INTR) {
-		if (g_typec.device_driver && g_device_connected == true)
-			g_typec.device_driver->disable(g_typec.device_driver->priv_data);
-		g_device_connected = false;
-	} else if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
-		if (g_typec.device_driver && g_device_connected == false)
-			g_typec.device_driver->enable(g_typec.device_driver->priv_data);
-		g_device_connected = true;
+	struct usbtypc *typec = get_usbtypec();
+
+	if (!typec)
+		return;
+
+	if (dir != DONT_CARE)
+		usb3_switch_sel(typec, dir);
+
+	if ((type == HOST_TYPE) && (stat == ENABLE)) {
+		if (typec->host_driver && typec->host_driver->on == DISABLE) {
+			typec->host_driver->enable(typec->host_driver->priv_data);
+			typec->host_driver->on = ENABLE;
+			dev_err(hba->dev, "Attached.SRC enable host");
+		}
+	} else if ((type == DEVICE_TYPE) && (stat == ENABLE)) {
+		if (typec->device_driver && typec->device_driver->on == DISABLE) {
+			typec->device_driver->enable(typec->device_driver->priv_data);
+			typec->device_driver->on = ENABLE;
+			dev_err(hba->dev, "Attached.SNK enable device");
+		}
+	} else if (stat == DISABLE) {
+		/*
+		 * As SNK, when disconnect Attached.SNK should go to Unattached.SNK
+		 * As SRC, when disconnect Attached.SRC should go to Unattached.SRC
+		 * However, As DRP, when disconnect Attached.SRC should go to Unattached.SNK
+		 * Attached.SNK should go to Unattached.SRC. So just check both driver status
+		 * And turn off the driver was on.
+		 */
+		if (typec->device_driver && typec->device_driver->on == ENABLE) {
+			typec->device_driver->disable(typec->device_driver->priv_data);
+			typec->device_driver->on = DISABLE;
+			dev_err(hba->dev, "Unattach.SNK disable device");
+		} else if (typec->host_driver && typec->device_driver->on == ENABLE) {
+			typec->host_driver->disable(typec->host_driver->priv_data);
+			typec->host_driver->on = DISABLE;
+			dev_err(hba->dev, "Unattach.SRC disable host");
+		}
 	}
 #endif
 }
 
 int register_typec_switch_callback(struct typec_switch_data *new_driver)
 {
+	struct usbtypc *typec = get_usbtypec();
+
+	pr_info("Register driver %s %d\n", new_driver->name, new_driver->type);
+
+	if (!typec)
+		return -1;
+
 	if (new_driver->type == DEVICE_TYPE) {
-		g_typec.device_driver = new_driver;
-		g_typec.device_driver->on = 0;
-		if (g_device_connected)
-			g_typec.device_driver->enable(g_typec.device_driver->priv_data);
+		typec->device_driver = new_driver;
+		typec->device_driver->on = DISABLE;
+#if SUPPORT_PD
+		if (g_hba && g_hba->data_role == PD_ROLE_UFP)
+#else
+		if ((g_hba->cc > 0) && (g_hba->vbus_en == 0))
+#endif
+			typec->device_driver->enable(typec->device_driver->priv_data);
 		return 0;
 	}
 
 	if (new_driver->type == HOST_TYPE) {
-		g_typec.host_driver = new_driver;
-		g_typec.host_driver->on = 0;
-		if (g_host_connected)
-			g_typec.host_driver->enable(g_typec.host_driver->priv_data);
+		typec->host_driver = new_driver;
+		typec->host_driver->on = DISABLE;
+#if SUPPORT_PD
+		if (g_hba && g_hba->data_role == PD_ROLE_DFP)
+#else
+		if ((g_hba->cc > 0) && (g_hba->vbus_en == 1))
+#endif
+			typec->host_driver->enable(typec->host_driver->priv_data);
 		return 0;
 	}
 
@@ -457,11 +490,16 @@ EXPORT_SYMBOL_GPL(register_typec_switch_callback);
 
 int unregister_typec_switch_callback(struct typec_switch_data *new_driver)
 {
-	if ((new_driver->type == DEVICE_TYPE) && (g_typec.device_driver == new_driver))
-		g_typec.device_driver = NULL;
+	struct usbtypc *typec = get_usbtypec();
 
-	if ((new_driver->type == HOST_TYPE) && (g_typec.host_driver == new_driver))
-		g_typec.host_driver = NULL;
+	if (!typec)
+		return -1;
+
+	if ((new_driver->type == DEVICE_TYPE) && (typec->device_driver == new_driver))
+		typec->device_driver = NULL;
+
+	if ((new_driver->type == HOST_TYPE) && (typec->host_driver == new_driver))
+		typec->host_driver = NULL;
 
 	return 0;
 }
@@ -1333,7 +1371,8 @@ err_handle:
 
 static void typec_show_routed_cc(struct typec_hba *hba)
 {
-	dev_err(hba->dev, "CC%d\n", (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_ROUTED_CC) == 0) ? 1 : 2));
+	hba->cc = (((typec_readw(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_ROUTED_CC) == 0) ? CC1_SIDE : CC2_SIDE);
+	dev_err(hba->dev, "CC%d\n", hba->cc);
 }
 
 static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
@@ -1559,17 +1598,17 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	uint16_t toggle = TYPE_C_INTR_DRP_TOGGLE;
 	#endif
 
-	/* enable/disable usb device/host function */
-	/*
-	 * FIXME: Dont enable/disable usb device/host driver first.
-	 * Host driver will turn on VBUS at their own side.
-	 * No~ Should be controlled by PD driver
-	 */
-	/*typec_platform_hanlder(cc_is0);*/
-
 	/*serve interrupts according to power role*/
-	/*TODO: move to main loop*/
 	if (cc_is0 & (TYPE_C_CC_ENT_DISABLE_INTR | toggle)) {
+
+#if SUPPORT_PD
+		/* Move trigger host/device driver to pd_task */
+#else
+		if (hba->cc > DONT_CARE)
+			trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
+#endif
+		hba->cc = DONT_CARE;
+
 		/*ignore SNK<->SRC & SNK<->ACC*/
 		typec_int_disable(hba, toggle, 0);
 
@@ -1604,6 +1643,12 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
 		typec_show_routed_cc(hba);
+
+#if SUPPORT_PD
+		/*Move trigger host/device driver to pd_task*/
+#else
+		trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
+#endif
 		/* At Attached.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
 		 * to notify MAC layer.
@@ -1617,6 +1662,12 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
 		typec_show_routed_cc(hba);
+
+#if SUPPORT_PD
+		/*Move trigger host/device driver to pd_task*/
+#else
+		trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
+#endif
 
 		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
 		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
@@ -2000,6 +2051,10 @@ static int __init typec_module_init(void)
 	int err;
 
 	err = typec_cdev_module_init();
+	if (err)
+		return err;
+
+	err = usbc_pinctrl_init();
 	if (err)
 		return err;
 

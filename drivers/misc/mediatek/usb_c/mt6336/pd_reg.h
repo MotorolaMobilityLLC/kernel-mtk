@@ -14,7 +14,7 @@
 #ifndef _TYPEC_PD_REG_H
 #define _TYPEC_PD_REG_H
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 
 /* PD_REG REGISTER DEFINITION */
 #define PD_TX_PARAMETER                           (PD_REG_BASE+0x0004)

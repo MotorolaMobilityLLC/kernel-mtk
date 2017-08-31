@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mt_typec.h"
+#include "mtk_typec.h"
 #include "typec-test.h"
 #include "typec-ioctl.h"
 
