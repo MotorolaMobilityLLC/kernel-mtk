@@ -3652,7 +3652,7 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			/* thread 0 - CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT are preserved for DISPSYS */
 			const bool isDisplayThread = thread_prio > CMDQ_THR_PRIO_DISPLAY_TRIGGER;
 			int startIndex = isDisplayThread ? 0 : CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT;
-#ifdef CMDQ_SECTRACE_SUPPORT
+#ifdef CMDQ_SECURE_PATH_SUPPORT
 			int endIndex = isDisplayThread ?
 			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT :
 			    CMDQ_MAX_THREAD_COUNT - CMDQ_MAX_SECURE_THREAD_COUNT;
