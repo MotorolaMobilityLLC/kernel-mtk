@@ -67,9 +67,7 @@ static IMG_CPU_PHYADDR gsRegsPBase;
 typedef void* IMG_PVOID;
 
 
-#if defined(MTK_USE_HW_APM)
 static IMG_PVOID g_pvRegsKM = NULL;
-#endif
 #ifdef MTK_CAL_POWER_INDEX
 static IMG_PVOID g_pvRegsBaseKM = NULL;
 #endif
@@ -115,6 +113,7 @@ struct clk *mtcmos_mfg1;
 struct clk *mtcmos_mfg2;
 struct clk *mtcmos_mfg3;
 
+static int SetAsyncFIFO(void);
 
 #ifdef CONFIG_MTK_SEGMENT_TEST
 static IMG_UINT32 efuse_mfg_enable =0;
@@ -274,6 +273,24 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock"));
+}
+
+static int SetAsyncFIFO(void)
+{
+	unsigned int regval;
+
+	g_pvRegsKM = OSMapPhysToLin(gsRegsPBase, 0x1000, 0);
+	if (gpu_debug_enable) {
+		PVR_DPF((PVR_DBG_ERROR, "g_pvRegsKM = 0x%p", g_pvRegsKM));
+		PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+	}
+
+	regval = mfg_readl(g_pvRegsKM+0x01c);
+	regval = regval + 0x8;
+	mfg_writel(regval, (g_pvRegsKM+0x01c));
+
+	PVR_DPF((PVR_DBG_ERROR, "LV1 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
+	PVR_DPF((PVR_DBG_ERROR, "SetAsyncFIFO"));
 }
 
 #if defined(MTK_USE_HW_APM)
@@ -1478,16 +1495,17 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 		*/
 	}
 
-#if defined(MTK_USE_HW_APM)
 
 	if (psDevConfig && (!g_pvRegsKM)) {
 		gsRegsPBase = psDevConfig->sRegsCpuPBase;
 		gsRegsPBase.uiAddr += 0xffe000;
+		SetAsyncFIFO();
+#if defined(MTK_USE_HW_APM)
 		MTKInitHWAPM();
+#endif
 	}
 	else 
 		PVR_DPF((PVR_DBG_ERROR, "psDevConfig = 0x%p, g_pvRegsKM = 0x%p", psDevConfig, g_pvRegsKM));
-#endif
 
 }
 

@@ -5,7 +5,7 @@
 #include "rgxdevice.h"
 
 /* control APM is enabled or not  */
-#define MTK_PM_SUPPORT 1
+/* #define MTK_PM_SUPPORT 1 */
 
 //extern to be used by PVRCore_Init in RGX DDK module.c 
 PVRSRV_ERROR MTKMFGSystemInit(void);
