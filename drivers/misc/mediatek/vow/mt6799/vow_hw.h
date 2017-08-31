@@ -15,7 +15,6 @@
 #define __VOW_HW_H__
 
 /* which the GPIO NUM is corresponed to EINT0~15  */
-/* if the GPIO NUM=0xFF, means there is not support this EINT */
 typedef enum VOW_EINT_NUM {
 	VOW_EINT_NUM_0 = 0,
 	VOW_EINT_NUM_1 = 1,
@@ -37,5 +36,6 @@ typedef enum VOW_EINT_NUM {
 } VOW_EINT_NUM;
 
 unsigned int vow_check_scp_status(void);
+unsigned int vow_query_eint_num(unsigned int eint_gpio);
 
 #endif /*__VOW_HW_H__ */
