@@ -759,7 +759,7 @@ void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p, int 
 		/* for heavy task avg */
 		prev_heavy_nr = per_cpu(nr_heavy, cpu);
 		per_cpu(nr_heavy, cpu) = prev_heavy_nr + heavy_nr_inc;
-		WARN_ON((int)per_cpu(nr_heavy, cpu) < 0);
+		/* WARN_ON((int)per_cpu(nr_heavy, cpu) < 0); */
 
 		diff = (s64) (curr_time - per_cpu(last_heavy_time, cpu));
 		if (diff < 0)
