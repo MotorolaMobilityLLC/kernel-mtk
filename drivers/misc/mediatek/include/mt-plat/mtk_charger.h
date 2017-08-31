@@ -22,8 +22,15 @@
 #include <linux/wait.h>
 #include <linux/hrtimer.h>
 #include <linux/wakelock.h>
+#include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
 
+/* charger_manager notify charger_consumer */
+enum {
+	CHARGER_NOTIFY_EOC,
+};
+
+/* charger_dev notify charger_manager */
 enum {
 	CHARGER_DEV_NOTIFY_VBUS_OVP,
 	CHARGER_DEV_NOTIFY_BAT_OVP,
@@ -33,13 +40,13 @@ enum {
 };
 
 /*
- *Software Jeita
- *T0:-10
- *T1:0
- *T2:10
- *T3:45
- *T4:50
- */
+Software Jeita
+T0:-10
+T1:0
+T2:10
+T3:45
+T4:50
+*/
 typedef enum {
 	TEMP_BELOW_T0 = 0,
 	TEMP_T0_TO_T1,
@@ -53,6 +60,7 @@ struct sw_jeita_data {
 	int sm;
 	int cv;
 	bool charging;
+	bool error_recovery_flag;
 };
 
 /* battery thermal protection */
@@ -82,13 +90,17 @@ struct charger_custom_data {
 	int charging_host_charger_current;
 };
 
+struct charger_consumer {
+	struct device *dev;
+	struct charger_manager *cm;
+};
 
-
-struct charger_info {
+struct charger_manager {
 	const char *algorithm_name;
 	struct platform_device *pdev;
 
 	struct charger_device *primary_chg;
+	struct notifier_block charger_dev_nb;
 	void	*algorithm_data;
 
 	CHARGER_TYPE chr_type;
@@ -101,14 +113,16 @@ struct charger_info {
 	int input_current_limit;
 	int charging_current_limit;
 
-	int (*do_algorithm)(struct charger_info *);
-	int (*plug_in)(struct charger_info *);
-	int (*plug_out)(struct charger_info *);
-	int (*do_charging)(struct charger_info *, bool en);
+	int (*do_algorithm)(struct charger_manager *);
+	int (*plug_in)(struct charger_manager *);
+	int (*plug_out)(struct charger_manager *);
+	int (*do_charging)(struct charger_manager *, bool en);
+	int (*do_event)(struct notifier_block *nb, unsigned long event, void *v);
 
-	struct notifier_block charger_dev_nb;
+	/*notify charger user*/
+	struct srcu_notifier_head evt_nh;
+	/*receive from battery*/
 	struct notifier_block psy_nb;
-	struct mutex charger_lock;
 
 	/* common info */
 	int battery_temperature;
@@ -133,14 +147,30 @@ struct charger_info {
 	struct fgtimer charger_kthread_fgtimer;
 
 	struct wake_lock charger_wakelock;
+	struct mutex charger_lock;
+	spinlock_t slock;
 	unsigned int polling_interval;
 	bool charger_thread_timeout;
 	wait_queue_head_t  wait_que;
 	bool charger_thread_polling;
 };
 
+/* charger related module interface */
+extern int charger_manager_notifier(struct charger_manager *info, int event);
+extern int mtk_switch_charging_init(struct charger_manager *);
+extern void wake_up_charger(struct charger_manager *);
 
-extern int mtk_switch_charging_init(struct charger_info *);
+/* charger consumer interface */
+extern struct charger_consumer *charger_manager_get(struct device *dev,
+	const char *supply_name);
+extern void charger_manager_set_input_current_limit(struct charger_consumer *consumer,
+	int input_current);
+extern void charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
+	int charging_current);
+extern int register_charger_manager_notifier(struct charger_consumer *consumer,
+	struct notifier_block *nb);
+extern int unregister_charger_manager__notifier(struct charger_consumer *consumer,
+				struct notifier_block *nb);
 
 
 #endif /* __MTK_CHARGER_H__ */
