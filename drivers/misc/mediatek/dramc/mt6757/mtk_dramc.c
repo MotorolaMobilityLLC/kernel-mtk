@@ -36,6 +36,7 @@
 #include <mt-plat/sync_write.h>
 
 #include "mtk_dramc.h"
+#include "dramc.h"
 
 #ifdef DRAM_HQA
 #if defined(HQA_LPDDR4)
@@ -59,7 +60,6 @@ void __iomem *DRAMC_NAO_CHA_BASE_ADDR;
 void __iomem *DRAMC_NAO_CHB_BASE_ADDR;
 void __iomem *DDRPHY_CHA_BASE_ADDR;
 void __iomem *DDRPHY_CHB_BASE_ADDR;
-void __iomem *SLEEP_BASE_ADDR;
 #define DRAM_RSV_SIZE 0x1000
 
 #ifdef LAST_DRAMC
@@ -361,68 +361,7 @@ late_initcall(last_dramc_test_agent_init);
 #endif
 
 #ifdef CONFIG_MTK_DRAMC_PASR
-static DEFINE_SPINLOCK(dramc_lock);
 #define __ETT__ 0
-#if !__ETT__
-static int acquire_dram_ctrl(void)
-{
-	unsigned int cnt;
-	unsigned long save_flags;
-
-	/* acquire SPM HW SEMAPHORE to avoid race condition */
-
-	if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
-		return -1;
-
-	spin_lock_irqsave(&dramc_lock, save_flags);
-
-	cnt = 100;
-	do {
-		if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) != 0x1) {
-			writel(0x1, PDEF_SPM_AP_SEMAPHORE);
-			if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
-				break;
-		} else {
-			spin_unlock_irqrestore(&dramc_lock, save_flags);
-			pr_err("[DRAMC] another AP has got SPM HW SEMAPHORE!\n");
-			/* BUG(); */
-		}
-
-		cnt--;
-		/* pr_err("[DRAMC] wait for SPM HW SEMAPHORE\n"); */
-		udelay(10);
-	} while (cnt > 0);
-
-	if (cnt == 0) {
-		spin_unlock_irqrestore(&dramc_lock, save_flags);
-		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
-		return -1;
-	}
-
-	/* pr_err("[DRAMC] get SPM HW SEMAPHORE success!\n"); */
-
-	spin_unlock_irqrestore(&dramc_lock, save_flags);
-	return 0;
-}
-
-static int release_dram_ctrl(void)
-{
-	/* release SPM HW SEMAPHORE to avoid race condition */
-	if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x0) {
-		pr_err("[DRAMC] has NOT acquired SPM HW SEMAPHORE\n");
-		/* BUG(); */
-	}
-
-	writel(0x1, PDEF_SPM_AP_SEMAPHORE);
-	if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1) {
-		pr_err("[DRAMC] release SPM HW SEMAPHORE fail!\n");
-		/* BUG(); */
-	}
-	/* pr_err("[DRAMC] release SPM HW SEMAPHORE success!\n"); */
-	return 0;
-}
-#endif
-
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 			   unsigned char segment_rank1)
 {

@@ -14,6 +14,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/
 
 obj-$(CONFIG_MTK_DRAMC) := mtk_dramc.o
 ccflags-$(CONFIG_MTK_DRAMC) += -DDEBUG
