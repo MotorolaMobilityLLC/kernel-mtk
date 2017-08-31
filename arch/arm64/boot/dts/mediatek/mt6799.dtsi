@@ -527,16 +527,17 @@
 		#clock-cells = <1>;
 	};
 
+	mrdump_ext_rst: mrdump_ext_rst {
+		compatible = "mediatek, mrdump_ext_rst-eint";
+		source = "EINT";
+		mode = "IRQ";
+		status = "okay";
+	};
 
 	keypad: keypad@10030000 {
 		compatible = "mediatek,mt6799-keypad";
 		reg = <0 0x10030000 0 0x1000>;
 		interrupts = <GIC_SPI 195 IRQ_TYPE_EDGE_FALLING>;
-
-		mrdump_ext_rst: mrdump_ext_rst {
-			compatible = "mediatek, mrdump_ext_rst-eint";
-			status = "disabled";
-		};
 	};
 
 	pmu {
