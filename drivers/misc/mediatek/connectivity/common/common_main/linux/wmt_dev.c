@@ -421,21 +421,15 @@ INT32 wmt_dev_read_file(PUINT8 pName, const PPUINT8 ppBufPtr, INT32 offset, INT3
 	*ppBufPtr = NULL;
 
 	fd = filp_open(pName, O_RDONLY, 0);
-	if (!fd || IS_ERR(fd) || !fd->f_op) {
-		if (!fd)
-			WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-		if (IS_ERR(fd))
-			WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-		if (!fd->f_op)
-			WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-		if (!fd->f_op->read)
-			WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-
-		WMT_ERR_FUNC("failed to open or read!(0x%p, %d, %d, %d)\n", fd, PTR_ERR(fd), cred->fsuid,
-				cred->fsgid);
-		if (IS_ERR(fd))
-			WMT_ERR_FUNC("error code:%d\n", PTR_ERR(fd));
+	if (IS_ERR(fd)) {
+		WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
+		WMT_ERR_FUNC("failed to open or read!(0x%p, %d, %d, %d)\n",
+				fd, PTR_ERR(fd), cred->fsuid, cred->fsgid);
 		return -1;
+	}
+	if (!fd->f_op) {
+		WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
+		return -2;
 	}
 
 	file_len = fd->f_path.dentry->d_inode->i_size;
