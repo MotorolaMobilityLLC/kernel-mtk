@@ -856,7 +856,7 @@ typedef struct {
 	defined(CONFIG_ARCH_MT6735M) ||\
 	defined(CONFIG_ARCH_MT6753) ||\
 	defined(CONFIG_ARCH_MT6580) ||\
-	defined(CONFIG_ARCH_MT8160)
+	defined(CONFIG_MACH_MT8167)
 extern LCM_DRIVER *lcm_driver_list[];
 extern unsigned int lcm_count;
 #endif
