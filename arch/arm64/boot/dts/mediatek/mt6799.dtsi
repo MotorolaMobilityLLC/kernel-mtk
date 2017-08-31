@@ -2690,6 +2690,32 @@
 		compatible = "mediatek,gepf";
 		reg = <0 0x1502c000 0 0x1000>;
 		interrupts = <GIC_SPI 328 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_MM0>,
+			<&mmsys_config CLK_MM_CG2_B11>,
+			<&mmsys_config CLK_MM_CG2_B12>,
+			<&mmsys_config CLK_MM_CG1_B12>,
+			<&mmsys_config CLK_MM_CG1_B13>,
+			<&mmsys_config CLK_MM_CG1_B14>,
+			<&mmsys_config CLK_MM_CG1_B15>,
+			<&mmsys_config CLK_MM_CG1_B16>,
+			<&mmsys_config CLK_MM_CG1_B17>,
+			<&mmsys_config CLK_MM_CG1_B10>,
+			<&scpsys SCP_SYS_ISP>,
+			<&imgsys CLK_IMG_LARB5>,
+			<&imgsys CLK_IMG_GEPF>;
+		clock-names = "GEPF_SCP_SYS_MM0",
+			"GEPF_CLK_MM_CG2_B11",
+			"GEPF_CLK_MM_CG2_B12",
+			"GEPF_CLK_MM_CG1_B12",
+			"GEPF_CLK_MM_CG1_B13",
+			"GEPF_CLK_MM_CG1_B14",
+			"GEPF_CLK_MM_CG1_B15",
+			"GEPF_CLK_MM_CG1_B16",
+			"GEPF_CLK_MM_CG1_B17",
+			"GEPF_CLK_MM_CG1_B10",
+			"GEPF_SCP_SYS_ISP",
+			"GEPF_CLK_IMG_LARB",
+			"GEPF_CLK_IMG_GEPF";
 	};
 
 	eaf_dma@1502d000 {
