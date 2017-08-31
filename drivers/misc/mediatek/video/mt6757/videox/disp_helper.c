@@ -135,6 +135,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_SHADOW_MODE",
 	"DISP_OPT_OVL_EXT_LAYER",
 	"DISP_OPT_REG_PARSER_RAW_DUMP",
+	"DISP_OPT_AOD"
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -381,6 +382,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 1);
 
 	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 0);
+
+	disp_helper_set_option(DISP_OPT_AOD, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

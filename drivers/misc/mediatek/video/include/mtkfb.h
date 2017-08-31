@@ -74,6 +74,9 @@
 #define MTKFB_GET_FRAMEBUFFER_MVA              MTK_IOR(26, unsigned int)
 #define MTKFB_SLT_AUTO_CAPTURE                 MTK_IOWR(27, struct fb_slt_catpure)
 
+/* 0:MTKFB_AOD_DOZE, 1:MTKFB_AOD_DOZE_SUSPEND */
+#define MTKFB_SET_AOD_POWER_MODE		MTK_IOW(28, unsigned int)
+
 /*error handling*/
 #define MTKFB_META_RESTORE_SCREEN              MTK_IOW(101, unsigned long)
 #define MTKFB_ERROR_INDEX_UPDATE_TIMEOUT       MTK_IO(103)
@@ -152,6 +155,12 @@ enum MTK_FB_OVL_LAYER_SECURE_MODE {
 struct disp_dfo_item {
 	char name[32];
 	int value;
+};
+
+enum mtkfb_aod_power_mode {
+	MTKFB_AOD_DOZE = 0,
+	MTKFB_AOD_DOZE_SUSPEND,
+	MTKFB_AOD_POWER_MODE_ERROR
 };
 
 /* -------------------------------------------------------------------------- */
