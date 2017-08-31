@@ -21,6 +21,6 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 
 obj-$(CONFIG_THERMAL) += mtk_tc.o
-#obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o
+obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse1.o
