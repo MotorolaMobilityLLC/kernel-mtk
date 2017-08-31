@@ -27,35 +27,34 @@ that executes the KAT.
 #include "ssi_hash.h"
 #include "ssi_request_mgr.h"
 
+static long fips_cipher_error = -1;
+static long fips_cmac_error = -1;
+static long fips_hash_error = -1;
+static long fips_hmac_error = -1;
+static long fips_ccm_error = -1;
+static long fips_gcm_error = -1;
+static const uint8_t zero_array[SEP_DIGEST_SIZE_MAX] = {0x0};
 
 #ifdef TRUSTONIC_FIPS_SUPPORT
 #include <linux/module.h>
 
-static long fips_cipher_error = -1;
 module_param(fips_cipher_error, long, 0644);
 MODULE_PARM_DESC(fips_cipher_error, "FIPS cipher test with error case: -1 (no error case)");
 
-static long fips_cmac_error = -1;
 module_param(fips_cmac_error, long, 0644);
 MODULE_PARM_DESC(fips_cmac_error, "FIPS cmac test with error case: -1 (no error case)");
 
-static long fips_hash_error = -1;
 module_param(fips_hash_error, long, 0644);
 MODULE_PARM_DESC(fips_hash_error, "FIPS hash test with error case: -1 (no error case)");
 
-static long fips_hmac_error = -1;
 module_param(fips_hmac_error, long, 0644);
 MODULE_PARM_DESC(fips_hmac_error, "FIPS hmac test with error case: -1 (no error case)");
 
-static long fips_ccm_error = -1;
 module_param(fips_ccm_error, long, 0644);
 MODULE_PARM_DESC(fips_ccm_error, "FIPS ccm test with error case: -1 (no error case)");
 
-static long fips_gcm_error = -1;
 module_param(fips_gcm_error, long, 0644);
 MODULE_PARM_DESC(fips_gcm_error, "FIPS gcm test with error case: -1 (no error case)");
-
-static const uint8_t zero_array[SEP_DIGEST_SIZE_MAX] = {0x0};
 #endif
 
 
