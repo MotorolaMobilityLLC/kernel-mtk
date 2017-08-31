@@ -406,6 +406,9 @@ static void ufozip_hclkctrl(enum platform_ops ops)
 		}
 	} else {
 		if (--hclk_count == 0) {
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+			wake_up_process(ufozip_task);
+#endif
 #ifdef MTK_UFOZIP_USING_CCF
 			disable_ufozip_clock();
 #endif
@@ -442,7 +445,7 @@ static int ufozip_entry(void *p)
 #define HIGH_FREQ	(0x2)
 #define LOW_FREQ	(0x1)
 #define KEEP_FREQ	(0x0)	/* no actions */
-#define LOW_COUNT	(100)
+#define LOW_COUNT	(10)
 #define TIME_AFTER	(HZ/LOW_COUNT)
 
 	int curr_freq = LOW_FREQ;
@@ -474,6 +477,7 @@ static int ufozip_entry(void *p)
 		if (set_freq == LOW_FREQ) {
 			if (requested_low_count++ < LOW_COUNT)
 				set_freq = KEEP_FREQ;
+			/* If no actions in 1s, let it be in low freq. */
 		} else {
 			requested_low_count = 0;
 		}
@@ -493,7 +497,12 @@ static int ufozip_entry(void *p)
 			curr_freq = set_freq;
 
 		/* Schedule me */
-		schedule_timeout_interruptible(TIME_AFTER);
+		if (requested_low_count) {
+			schedule_timeout_interruptible(TIME_AFTER);
+		} else {
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule();
+		}
 	} while (1);
 
 	return 0;
