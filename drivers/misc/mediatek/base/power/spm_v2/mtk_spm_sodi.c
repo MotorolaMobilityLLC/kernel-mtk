@@ -700,7 +700,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 		goto UNLOCK_SPM;
 	}
 	mt_irq_mask_all(mask);
-	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 	unmask_edge_trig_irqs_for_cirq();
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
