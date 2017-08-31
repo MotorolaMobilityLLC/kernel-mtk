@@ -48,7 +48,7 @@ const int is_pre_reserve_memory;
 #define SSVP_ALIGN_SHIFT (SSVP_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
 #define SSVP_ALIGN (1 << SSVP_ALIGN_SHIFT)
 
-static unsigned long ssvp_upper_limit = UPPER_LIMIT64;
+static u64 ssvp_upper_limit = UPPER_LIMIT64;
 
 #include <mt-plat/aee.h>
 #include "mt-plat/mtk_meminfo.h"
@@ -347,7 +347,7 @@ void ssvp_debug_occupy_region(void)
 }
 
 static int memory_region_offline(struct SSVP_Region *region,
-		phys_addr_t *pa, unsigned long *size, unsigned long upper_limit)
+		phys_addr_t *pa, unsigned long *size, u64 upper_limit)
 {
 	int offline_retry = 0;
 	int ret_map;
@@ -361,7 +361,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 		page_phys = page_to_phys(region->cache_page);
 	else
 		page_phys = 0;
-	pr_info("%s[%d]: upper_limit: %lx, region{ count: %lu, is_unmapping: %c, use_cache_memory: %c, cache_page: %pa}\n",
+	pr_info("%s[%d]: upper_limit: %llx, region{ count: %lu, is_unmapping: %c, use_cache_memory: %c, cache_page: %pa}\n",
 			__func__, __LINE__, upper_limit,
 			region->count, region->is_unmapping ? 'Y' : 'N',
 			region->use_cache_memory ? 'Y' : 'N', &page_phys);
@@ -390,7 +390,7 @@ static int memory_region_offline(struct SSVP_Region *region,
 		phys_addr_t end = start + (region->count << PAGE_SHIFT);
 
 		if (end > upper_limit) {
-			pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%lx)\n",
+			pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%llx)\n",
 					&end, upper_limit);
 			cma_release(cma, page, region->count);
 			page = NULL;
@@ -478,12 +478,12 @@ static int memory_region_online(struct SSVP_Region *region)
 }
 
 int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
-		unsigned long upper_limit)
+		u64 upper_limit)
 {
 	int retval = 0;
 	struct SSVP_Region *region = &_svpregs[SSVP_TUI];
 
-	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%llx\n", __func__, __LINE__,
 			svp_state_text[region->state], upper_limit);
 
 	if (region->state != SVP_STATE_ON) {
@@ -583,12 +583,12 @@ int svp_start_wdt(void)
 }
 
 int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
-		unsigned long upper_limit)
+		u64 upper_limit)
 {
 	int retval = 0;
 	struct SSVP_Region *region = &_svpregs[SSVP_SVP];
 
-	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%lx\n", __func__, __LINE__,
+	pr_info("%s %d: >>>>>> state: %s, upper_limit:0x%llx\n", __func__, __LINE__,
 			svp_state_text[region->state], upper_limit);
 
 	if (region->state != SVP_STATE_ON) {
@@ -717,7 +717,7 @@ static ssize_t memory_ssvp_write(struct file *file, const char __user *user_buf,
 	else if (strncmp(buf, "tui=off", 7) == 0)
 		_tui_region_offline(NULL, NULL, ssvp_upper_limit);
 	else if (strncmp(buf, "32mode", 6) == 0)
-		ssvp_upper_limit = 0x100000000UL;
+		ssvp_upper_limit = 0x100000000ULL;
 	else if (strncmp(buf, "64mode", 6) == 0)
 		ssvp_upper_limit = UPPER_LIMIT64;
 	else if (strncmp(buf, "debug_64only=on", 15) == 0) {
@@ -761,7 +761,7 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 	seq_printf(m, "cma usage: %lu pages\n", svp_usage_count);
 
 	seq_puts(m, "[CONFIG]:\n");
-	seq_printf(m, "ssvp_upper_limit: 0x%lx\n", ssvp_upper_limit);
+	seq_printf(m, "ssvp_upper_limit: 0x%llx\n", ssvp_upper_limit);
 	if (dummy_alloc.is_debug) {
 		int i;
 		phys_addr_t page_phys;
