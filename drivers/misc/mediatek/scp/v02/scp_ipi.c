@@ -181,20 +181,6 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			return ERROR;
 		}
 
-		/* SRAM protection need to bypass ADB wake up cmd */
-		if ((SCP_A_SLEEP_DEBUG_REG & 0xE) && (id != IPI_DVFS_WAKE)) {
-			/* bit:
-			* [4]IN_ACTIVE
-			* [3]ENTERING_ACTIVE
-			* [2]IN_SLEEP
-			* [1]ENTERING_SLEEP
-			* [0]IN_DEBUG_IDLE
-			*/
-			pr_err("scp_ipi_send: SCP A state = %x\n", SCP_A_SLEEP_DEBUG_REG);
-			pr_err("scp_ipi_send: SCP A is not in [4]IN_ACTIVE or [0]IN_DEBUG_IDLE, it should not access scp\n");
-			return ERROR;
-		}
-
 		if (id >= SCP_NR_IPI) {
 			pr_err("scp_ipi_send: SCP A ipi id is incorrect\n");
 			return ERROR;
@@ -261,20 +247,6 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		/*Send IPI to SCP B*/
 		if (is_scp_ready(SCP_B_ID) == 0) {
 			pr_err("scp_ipi_send: SCP B not enabled\n");
-			return ERROR;
-		}
-
-		/* SRAM protection need to bypass ADB wake up cmd */
-		if ((SCP_B_SLEEP_DEBUG_REG & 0xE) && (id != IPI_DVFS_WAKE)) {
-			/* bit:
-			* [4]IN_ACTIVE
-			* [3]ENTERING_ACTIVE
-			* [2]IN_SLEEP
-			* [1]ENTERING_SLEEP
-			* [0]IN_DEBUG_IDLE
-			*/
-			pr_err("scp_ipi_send: SCP B state = %x\n", SCP_B_SLEEP_DEBUG_REG);
-			pr_err("scp_ipi_send: SCP B is not in [4]IN_ACTIVE or [0]IN_DEBUG_IDLE, it should not access scp\n");
 			return ERROR;
 		}
 
