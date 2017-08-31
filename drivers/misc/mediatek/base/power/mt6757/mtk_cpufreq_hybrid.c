@@ -37,6 +37,9 @@
 /**************************************
  * [Hybrid DVFS] Config
  **************************************/
+#ifndef CONFIG_MTK_PMIC_CHIP_MT6355
+#define CPUHVFS_USE_I2C
+#endif
 
 
 /**************************************
@@ -499,7 +502,9 @@ static void __iomem *sema_reg[NUM_SEMA_USER];
 static unsigned int swctrl_offs[NUM_CPU_CLUSTER];
 static unsigned int hwsta_offs[NUM_CPU_CLUSTER];
 
+#ifdef CPUHVFS_USE_I2C
 static struct clk *i2c_clk;
+#endif
 
 static u32 cspm_probe_done;
 
@@ -1126,7 +1131,9 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 
 		if (r >= 0) {	/* pause done */
 			r = 0;
+#ifdef CPUHVFS_USE_I2C
 			clk_disable(i2c_clk);
+#endif
 
 #ifdef CPUHVFS_HW_GOVERNOR
 			if (dvfsp->hw_gov_en)
@@ -1152,7 +1159,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 
 static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 {
-	int i, r, all_pause = 1;
+	int i, r = 0, all_pause = 1;
 	u32 swctrl;
 
 	/* @dvfsp may be uninitialized (PAUSE_INIT is set) */
@@ -1162,7 +1169,9 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 		csram_write(OFFS_PAUSE_SRC, pause_src_map);
 
 	if (pause_src_map == 0 && csram_base /* avoid Coverity complaining */) {
+#ifdef CPUHVFS_USE_I2C
 		r = clk_enable(i2c_clk);
+#endif
 		if (GEN_DB_ON(r, "Clock Enable Failed"))
 			goto restore_map;
 
@@ -1198,7 +1207,9 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 	return;
 
 restore_clk:
+#ifdef CPUHVFS_USE_I2C
 	clk_disable(i2c_clk);
+#endif
 restore_map:
 	pause_src_map |= psf;
 	csram_write(OFFS_PAUSE_SRC, pause_src_map);
@@ -1263,7 +1274,11 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 	int n = DIV_ROUND_UP(SEMA_GET_TIMEOUT, 10);
 
 	if (user == SEMA_I2C_DRV)
+#ifdef CPUHVFS_USE_I2C
 		return cspm_pause_pcm_running(dvfsp, PAUSE_I2CDRV);
+#else
+		return 0;
+#endif
 
 	if (is_dvfsp_uninit(dvfsp))
 		return 0;
@@ -1289,7 +1304,9 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 {
 	if (user == SEMA_I2C_DRV) {
+#ifdef CPUHVFS_USE_I2C
 		cspm_unpause_pcm_to_run(dvfsp, PAUSE_I2CDRV);
+#endif
 		return;
 	}
 
@@ -1801,7 +1818,9 @@ static int create_resource_for_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp)
 
 static int cspm_probe(struct platform_device *pdev)
 {
+#ifdef CPUHVFS_USE_I2C
 	int r;
+#endif
 
 	cspm_base = of_iomap(pdev->dev.of_node, 0);
 	if (!cspm_base) {
@@ -1815,6 +1834,7 @@ static int cspm_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+#ifdef CPUHVFS_USE_I2C
 	i2c_clk = devm_clk_get(&pdev->dev, "i2c");
 	if (IS_ERR(i2c_clk)) {
 		cspm_err("FAILED TO GET I2C CLOCK (%ld)\n", PTR_ERR(i2c_clk));
@@ -1825,6 +1845,7 @@ static int cspm_probe(struct platform_device *pdev)
 		cspm_err("FAILED TO PREPARE I2C CLOCK (%d)\n", r);
 		return r;
 	}
+#endif
 
 	/* build register mapping for general access */
 	swctrl_reg[CPU_CLUSTER_LL] = CSPM_SW_RSV6;
