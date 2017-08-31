@@ -39,19 +39,6 @@
 
 struct typec_hba *g_hba;
 
-
-#if DBG_PROBE
-inline void typec_sw_probe(struct typec_hba *hba, uint32_t msk, uint32_t val)
-{
-	typec_writew_msk(hba, msk, val, TYPE_C_SW_DEBUG_PORT_0);
-	typec_writew_msk(hba, (msk>>16), (val>>16), TYPE_C_SW_DEBUG_PORT_1);
-}
-#else
-inline void typec_sw_probe(struct typec_hba *hba, uint32_t msk, uint32_t val)
-{
-}
-#endif
-
 #if USE_AUXADC
 
 #define AUXADC_TYPEC_H_DEBT_MAX 0x37D
@@ -298,13 +285,30 @@ void typec_write8(struct typec_hba *hba, uint8_t val, unsigned int reg)
 
 void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg)
 {
-	uint8_t high_val = (val >> 8) & 0xFF;
-	uint8_t low_val = val & 0xFF;
+	uint8_t v[2];
+	int ret;
 
-	/*Write high*/
-	typec_write8(hba, high_val, reg+1);
-	/*Write low*/
-	typec_write8(hba, low_val, reg);
+	v[0] = val & 0xFF;
+	v[1] = (val >> 8) & 0xFF;
+
+	ret = mt6336_write_bytes(reg, v, 2);
+	if (ret < 0)
+		dev_err(hba->dev, "i2c write fail");
+}
+
+void typec_writedw(struct typec_hba *hba, uint32_t val, unsigned int reg)
+{
+	uint8_t v[4];
+	int ret;
+
+	v[0] = val & 0xFF;
+	v[1] = (val >> 8) & 0xFF;
+	v[2] = (val >> 16) & 0xFF;
+	v[3] = (val >> 24) & 0xFF;
+
+	ret = mt6336_write_bytes(reg, v, 4);
+	if (ret < 0)
+		dev_err(hba->dev, "i2c write fail");
 }
 
 uint8_t typec_read8(struct typec_hba *hba, unsigned int reg)
@@ -506,7 +510,6 @@ void typec_vbus_present(struct typec_hba *hba, uint8_t enable)
 		dev_err(hba->dev, "VBUS_PRESENT %s", ((enable) ? "ON" : "OFF"));
 
 	hba->vbus_present = (enable ? 1 : 0);
-	typec_sw_probe(hba, DBG_VBUS_PRESENT, (enable<<DBG_VBUS_PRESENT_OFST));
 }
 
 void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable)
@@ -515,7 +518,6 @@ void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable)
 		dev_err(hba->dev, "VBUS_DET %s", ((enable) ? "ON" : "OFF"));
 
 	hba->vbus_det_en = (enable ? 1 : 0);
-	typec_sw_probe(hba, DBG_VBUS_DET_EN, (enable<<DBG_VBUS_DET_EN_OFST));
 }
 
 #ifdef MT6336_E1
@@ -883,8 +885,6 @@ skip:
 		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
 
 	hba->vbus_en = (on ? 1 : 0);
-	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
-
 }
 
 #else
@@ -1010,7 +1010,6 @@ skip:
 		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
 
 	hba->vbus_en = (on ? 1 : 0);
-	typec_sw_probe(hba, DBG_VBUS_EN, (on<<DBG_VBUS_EN_OFST));
 }
 #endif
 
@@ -1179,13 +1178,6 @@ static void typec_set_default_param(struct typec_hba *hba)
 	typec_set(hba, TYPEC_ACC_EN, TYPE_C_CTRL);
 	#else
 	typec_clear(hba, TYPEC_ACC_EN, TYPE_C_CTRL);
-	#endif
-
-	#if DBG_PROBE
-	/* debug probe setting */
-	typec_writew(hba, 0x0000, REG_TYPE_C_DBG_MOD_SEL); /*typec debug signal*/
-	typec_writew(hba, 0x2423, TYPE_C_DEBUG_PORT_SELECT_0);
-	typec_writew(hba, 0x2625, TYPE_C_DEBUG_PORT_SELECT_1);
 	#endif
 }
 
@@ -1666,16 +1658,14 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 #endif
 
 	/* TYPEC */
-	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_CC<<DBG_INTR_STATE_OFST));
-
 	cc_is0 = typec_readw(hba, TYPE_C_INTR_0);
-	cc_is2 = typec_readw(hba, TYPE_C_INTR_2);
+	cc_is2 = typec_read8(hba, TYPE_C_INTR_2);
 
 	typec_writew(hba, cc_is0, TYPE_C_INTR_0);
-	typec_writew(hba, cc_is2, TYPE_C_INTR_2);
+	typec_write8(hba, cc_is2, TYPE_C_INTR_2);
 
 	cc_is0 = cc_is0 & typec_readw(hba, TYPE_C_INTR_EN_0);
-	cc_is2 = cc_is2 & typec_readw(hba, TYPE_C_INTR_EN_2);
+	cc_is2 = cc_is2 & typec_read8(hba, TYPE_C_INTR_EN_2);
 
 	if (cc_is0 | cc_is2)
 		typec_intr(hba, cc_is0, cc_is2);
@@ -1684,8 +1674,6 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 #if SUPPORT_PD
 	if (hba->mode == 2) {
 		/* PD */
-		typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_PD<<DBG_INTR_STATE_OFST));
-
 		pd_is0 = typec_readw(hba, PD_INTR_0);
 		pd_is1 = typec_readw(hba, PD_INTR_1);
 #if PD_SW_WORKAROUND1_2
@@ -1705,7 +1693,6 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 #endif
 
 	/*check if at least 1 interrupt has been served this time*/
-	typec_sw_probe(hba, DBG_INTR_STATE, (DBG_INTR_NONE<<DBG_INTR_STATE_OFST));
 	if (handled)
 		retval = IRQ_HANDLED;
 

@@ -107,8 +107,15 @@ enum { /* charge status */
  *	3. register tcp notifier
  *	4. add debugfs node
  */
+extern bool mtk_is_pd_chg_ready(void);
+extern int tcpm_hard_reset(void *ptr);
+extern int tcpm_set_direct_charge_en(void *ptr, bool en);
+extern int tcpm_get_cable_capability(void *ptr, unsigned char *capability);
+extern bool mtk_is_pep30_en_unlock(void);
+
 extern int mtk_direct_charge_vdm_init(void);
 extern int mtk_get_ta_id(void *ptr);
+extern int mtk_clr_ta_pingcheck_fault(void *ptr);
 extern int mtk_get_ta_charger_status(void *ptr, struct pd_ta_stat *ta);
 extern int mtk_get_ta_temperature(void *ptr, int *temp);
 extern int mtk_set_ta_boundary_cap(void *ptr, struct mtk_vdm_ta_cap *cap);
