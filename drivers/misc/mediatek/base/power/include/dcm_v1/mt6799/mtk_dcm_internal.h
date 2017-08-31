@@ -56,6 +56,8 @@
 #define REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
 #define SECURE_REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, mcsi_reg_read(addr##_PHYS & 0xFFFF))
 
+extern unsigned int dcm_chip_sw_ver;
+
 typedef enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
 	ARMCORE_DCM_MODE1 = DCM_ON,
@@ -337,6 +339,7 @@ int mt_dcm_dts_map(void);
 void dcm_pre_init(void);
 void dcm_set_hotplug_nb(void);
 short dcm_get_cpu_cluster_stat(void);
+unsigned int dcm_get_chip_sw_ver(void);
 int sync_dcm_set_cpu_freq(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1, unsigned int mp2);
 

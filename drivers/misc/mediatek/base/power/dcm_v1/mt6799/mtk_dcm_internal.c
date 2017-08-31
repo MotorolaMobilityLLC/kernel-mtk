@@ -17,6 +17,7 @@
 #include <linux/cpu.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mtk_chip.h>
 #include <mt-plat/mtk_secure_api.h>
 #include <emi_mpu.h>
 
@@ -27,6 +28,7 @@
 #endif /* #ifdef USE_DRAM_API_INSTEAD */
 
 static short dcm_cpu_cluster_stat;
+unsigned int dcm_chip_sw_ver = CHIP_SW_VER_01;
 
 #ifdef CONFIG_HOTPLUG_CPU
 static struct notifier_block dcm_hotplug_nb;
@@ -125,7 +127,27 @@ unsigned long dcm_cci_phys_base;
 #endif
 #endif /* #if defined(__KERNEL__) && defined(CONFIG_OF) */
 
-void mt_dcm_pre_init(void)
+short is_dcm_bringup(void)
+{
+	dcm_chip_sw_ver = mt_get_chip_sw_ver();
+#ifdef DCM_BRINGUP
+	dcm_warn("%s: skipped for bring up\n", __func__);
+	return 1;
+#else
+	if (dcm_chip_sw_ver >= CHIP_SW_VER_02) {
+		dcm_warn("%s: skipped E2 for bring up\n", __func__);
+		return 1;
+	} else
+		return 0;
+#endif
+}
+
+unsigned int dcm_get_chip_sw_ver(void)
+{
+	return dcm_chip_sw_ver;
+}
+
+void dcm_pre_init(void)
 {
 #if 0 /* WORKAROUND: Disable big core reg protection */
 	reg_write(0x10202008, aor(reg_read(0x10202008), ~(0x3), 0x1));
@@ -1209,7 +1231,7 @@ int dcm_smc_get_cnt(int type_id)
 	return dcm_smc_read_cnt(type_id);
 }
 
-void dcm_smc_send_msg(unsigned int msg)
+void dcm_smc_msg_send(unsigned int msg)
 {
 	dcm_smc_msg(msg);
 }

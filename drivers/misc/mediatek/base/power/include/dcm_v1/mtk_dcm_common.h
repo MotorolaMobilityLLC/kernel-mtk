@@ -60,6 +60,7 @@ extern struct mutex dcm_lock;
 void dcm_dump_regs(void);
 int dcm_smc_get_cnt(int);
 void dcm_smc_msg_send(unsigned int);
+short is_dcm_bringup(void);
 
 #endif /* #ifndef __MTK_DCM_COMMON_H__ */
 

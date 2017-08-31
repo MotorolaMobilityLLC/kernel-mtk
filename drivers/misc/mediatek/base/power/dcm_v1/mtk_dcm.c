@@ -24,6 +24,16 @@ DEFINE_MUTEX(dcm_lock);
 short dcm_debug;
 short dcm_initiated;
 
+short __attribute__((weak)) is_dcm_bringup(void)
+{
+	return 0;
+}
+
+unsigned int __attribute__((weak)) dcm_get_chip_sw_ver(void)
+{
+	return 0;
+}
+
 void __attribute__((weak)) dcm_pre_init(void)
 {
 	dcm_warn("weak function of %s\n", __func__);
@@ -329,6 +339,8 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"dcm_cpu_cluster_stat=%d\n",
 			dcm_get_cpu_cluster_stat());
+	len += snprintf(buf+len, PAGE_SIZE-len, "dcm_get_chip_sw_ver=0x%x\n",
+			dcm_get_chip_sw_ver());
 
 	return len;
 }
@@ -409,10 +421,8 @@ static struct kobj_attribute dcm_state_attr = {
 
 int mt_dcm_init(void)
 {
-#ifdef DCM_BRINGUP
-	dcm_warn("%s: skipped for bring up\n", __func__);
-	return 0;
-#endif
+	if (is_dcm_bringup())
+		return 0;
 
 	if (dcm_initiated)
 		return 0;
