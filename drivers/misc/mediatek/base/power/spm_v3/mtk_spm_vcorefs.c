@@ -1154,7 +1154,6 @@ int spm_dvfs_flag_init(void)
 		flag |= SPM_FLAG_DIS_VCORE_DFS;
 
 	/* flag = SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS; */
-	spm_vcorefs_warn("pcm_flag: 0x%x\n", flag);
 
 	return flag;
 }
@@ -1278,6 +1277,8 @@ void spm_go_to_vcorefs(int spm_flags)
 #endif
 	pwrctrl = __spm_vcorefs.pwrctrl;
 
+	spm_vcorefs_warn("pcm_flag: 0x%x\n", spm_flags);
+
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* need be called after set_pwrctrl_pcm_flags1() */
 	/* spm_set_dummy_read_addr(false); */
@@ -1301,6 +1302,8 @@ void spm_go_to_vcorefs(int spm_flags)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 #else
+	spm_vcorefs_warn("pcm_flag: 0x%x\n", spm_flags);
+
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_1, spm_flags, 0);
