@@ -27,6 +27,12 @@ class KpdObj(ModuleObj):
 
         KpdData._keyValueMap['NC'] = 0
 
+        cp.read(ModuleObj.get_figPath())
+        if cp.has_option('KEYPAD_EXTEND_TYPE', 'KEY_ROW'):
+            KpdData.set_row_ext(string.atoi(cp.get('KEYPAD_EXTEND_TYPE', 'KEY_ROW')))
+        if cp.has_option('KEYPAD_EXTEND_TYPE', 'KEY_COLUMN'):
+            KpdData.set_col_ext(string.atoi(cp.get('KEYPAD_EXTEND_TYPE', 'KEY_COLUMN')))
+
         return True
 
     def read(self, node):
@@ -54,6 +60,16 @@ class KpdObj(ModuleObj):
                         if cmp(item, 'NC') != 0:
                             KpdData._usedKeys.append(item)
                     KpdData._usedKeys.append('POWER')
+
+                if node.nodeName == "keyMatrix_ext" and node.childNodes:
+                    content = node.childNodes[0].nodeValue
+                    content = content.replace('\t', '')
+                    rows = content.split('''\n''')
+                    matrix = []
+                    for row in rows:
+                        for item in row.split(' '):
+                            matrix.append(item)
+                    KpdData.set_matrix_ext(matrix)
 
                 if node.nodeName == 'downloadKey':
                     keys = node.childNodes[0].nodeValue
@@ -137,20 +153,35 @@ class KpdObj(ModuleObj):
         gen_str += '''\n'''
         gen_str += '''#define KPD_KEY_DEBOUNCE\t%d\n''' %(KpdData.get_pressTime())
         gen_str += '''#define KPD_PWRKEY_MAP\tKEY_%s\n''' %(KpdData.get_utility())
-        gen_str += '''#define MTK_PMIC_PWR_KEY\t%d\n''' %(KpdData.get_col() - 1)
-        gen_str += '''#define KPD_PMIC_RSTKEY_MAP\tKEY_%s\n''' %(KpdData.get_homeKey())
-        gen_str += '''#define MTK_PMIC_RST_KEY\t\t%d\n''' %(2*KpdData.get_col() - 1)
-        gen_str += '''\n'''
-        gen_str += '''#define KPD_USE_EXTEND_TYPE\tKPD_NO\n'''
+        # do not gen this macro if the home key is null
+        if KpdData.get_homeKey() != '':
+            gen_str += '''#define KPD_PMIC_RSTKEY_MAP\tKEY_%s\n''' %(KpdData.get_homeKey())
+        if cmp(KpdData.get_keyType(), 'EXTEND_TYPE') != 0:
+            gen_str += '''#define MTK_PMIC_PWR_KEY\t%d\n''' %(KpdData.get_col() - 1)
+            if KpdData.get_homeKey() != '':
+                gen_str += '''#define MTK_PMIC_RST_KEY\t\t%d\n''' %(2*KpdData.get_col() - 1)
+            gen_str += '''\n'''
+            gen_str += '''#define KPD_USE_EXTEND_TYPE\tKPD_NO\n'''
+        else:
+            gen_str += '''#define MTK_PMIC_PWR_KEY\t%d\n''' %(KpdData.get_col_ext() - 1)
+            if KpdData.get_keyType() != '':
+                gen_str += '''#define MTK_PMIC_RST_KEY\t\t%d\n''' %(2*KpdData.get_col_ext() - 1)
+            gen_str += '''\n'''
+            gen_str += '''#define KPD_USE_EXTEND_TYPE\tKPD_YES\n'''
         gen_str += '''\n'''
         gen_str += '''/* HW keycode [0 ~ 71] -> Linux keycode */\n'''
         gen_str += '''#define KPD_INIT_KEYMAP()\t\\\n'''
         gen_str += '''{\t\\\n'''
 
 
-        for key in KpdData.get_matrix():
-            if cmp(key, 'NC') != 0:
-                gen_str += '''\t[%d] = KEY_%s,\t\\\n''' %(KpdData.get_matrix().index(key), key)
+        if KpdData.get_keyType() == 'NORMAL_TYPE':
+            for key in KpdData.get_matrix():
+                if cmp(key, 'NC') != 0:
+                    gen_str += '''\t[%d] = KEY_%s,\t\\\n''' %(KpdData.get_matrix().index(key), key)
+        else:
+            for key in KpdData.get_matrix_ext():
+                if cmp(key, 'NC') != 0:
+                    gen_str += '''\t[%d] = KEY_%s,\t\\\n''' %(KpdData.get_matrix_ext().index(key), key)
 
         gen_str += '''}\n'''
         gen_str += '''\n'''
@@ -184,29 +215,55 @@ class KpdObj(ModuleObj):
         return gen_str
 
     def get_matrixIdx(self, value):
-        if cmp(value, 'POWER') == 0:
-            return KpdData.get_col() - 1
-        elif cmp(value, KpdData.get_homeKey()) == 0:
-            return 2 * KpdData.get_col() - 1
-        else:
-            return KpdData.get_matrix().index(value)
-
+        if KpdData.get_keyType() == 'NORMAL_TYPE':
+            if cmp(value, 'POWER') == 0:
+                return KpdData.get_col() - 1
+            elif cmp(value, KpdData.get_homeKey()) == 0:
+                return 2 * KpdData.get_col() - 1
+            else:
+                return KpdData.get_matrix().index(value)
+        elif KpdData.get_keyType() == 'EXTEND_TYPE':
+            if cmp(value, 'POWER') == 0:
+                return KpdData.get_col_ext() - 1
+            elif cmp(value, KpdData.get_homeKey()) == 0:
+                return 2 * KpdData.get_col_ext() - 1
+            else:
+                return KpdData.get_matrix_ext().index(value)
 
     def fill_dtsiFile(self):
         gen_str = '''&keypad {\n'''
         gen_str += '''\tmediatek,kpd-key-debounce = <%d>;\n''' %(KpdData.get_pressTime())
         gen_str += '''\tmediatek,kpd-sw-pwrkey = <%d>;\n''' %(KpdData._keyValueMap[KpdData.get_utility()])
-        gen_str += '''\tmediatek,kpd-hw-pwrkey = <%d>;\n''' %(KpdData.get_col()-1)
-        gen_str += '''\tmediatek,kpd-sw-rstkey  = <%d>;\n''' %(KpdData._keyValueMap[KpdData.get_homeKey()])
-        gen_str += '''\tmediatek,kpd-hw-rstkey = <%d>;\n''' %(2*KpdData.get_col() - 1)
-        gen_str += '''\tmediatek,kpd-use-extend-type = <0>;\n'''
+        if KpdData.get_keyType() == 'NORMAL_TYPE':
+            gen_str += '''\tmediatek,kpd-hw-pwrkey = <%d>;\n''' %(KpdData.get_col()-1)
+        else:
+            gen_str += '''\tmediatek,kpd-hw-pwrkey = <%d>;\n''' %(KpdData.get_col_ext()-1)
+
+        #gen_str += '''\tmediatek,kpd-sw-rstkey  = <%d>;\n''' %(KpdData._keyValueMap[KpdData.get_homeKey()])
+        if KpdData.get_homeKey() != '':
+            gen_str += '''\tmediatek,kpd-sw-rstkey  = <%d>;\n''' %(KpdData.get_keyVal(KpdData.get_homeKey()))
+        if KpdData.get_keyType() == 'NORMAL_TYPE':
+            if KpdData.get_homeKey() != '':
+                gen_str += '''\tmediatek,kpd-hw-rstkey = <%d>;\n''' %(2*KpdData.get_col() - 1)
+            gen_str += '''\tmediatek,kpd-use-extend-type = <0>;\n'''
+        else:
+            if KpdData.get_homeKey() != '':
+                gen_str += '''\tmediatek,kpd-hw-rstkey = <%d>;\n''' %(2*KpdData.get_col_ext() - 1)
+            gen_str += '''\tmediatek,kpd-use-extend-type = <1>;\n'''
+
+        #gen_str += '''\tmediatek,kpd-use-extend-type = <0>;\n'''
         gen_str += '''\t/*HW Keycode [0~%d] -> Linux Keycode*/\n''' %(KpdData.get_row() * KpdData.get_col() - 1)
         gen_str += '''\tmediatek,kpd-hw-map-num = <%d>;\n''' %(KpdData.get_row() * KpdData.get_col())
         gen_str += '''\tmediatek,kpd-hw-init-map = <'''
 
-        for key in KpdData.get_matrix():
-            idx = KpdData._keyValueMap[key]
-            gen_str += '''%d ''' %(idx)
+        if KpdData.get_keyType() == 'NORMAL_TYPE':
+            for key in KpdData.get_matrix():
+                idx = KpdData._keyValueMap[key]
+                gen_str += '''%d ''' %(idx)
+        else:
+            for key in KpdData.get_matrix_ext():
+                idx = KpdData._keyValueMap[key]
+                gen_str += '''%d ''' %(idx)
 
         gen_str.rstrip()
         gen_str += '''>;\n'''
@@ -226,6 +283,7 @@ class KpdObj(ModuleObj):
         gen_str += '''};\n'''
 
         return gen_str
+
 
 
 

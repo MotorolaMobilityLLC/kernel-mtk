@@ -24,6 +24,7 @@ class PmicObj(ModuleObj):
         self.__appCount = -1
         self.__func = ''
         self.__paraList = []
+        self.__headerList = []
 
 
     def get_cfgInfo(self):
@@ -32,6 +33,8 @@ class PmicObj(ModuleObj):
 
         PmicData._var_list = cp.options('APPLICATION')
 
+        if self.__chipName == '':
+            return
         #parse the pmic config file
         cmpPath = os.path.join(sys.path[0], 'config', self.__chipName + '.cmp')
         if not os.path.exists(cmpPath) or not os.path.isfile(cmpPath):
@@ -57,6 +60,8 @@ class PmicObj(ModuleObj):
         for node in nodes:
             if node.nodeType == xml.dom.Node.ELEMENT_NODE:
                 if cmp(node.nodeName, 'chip') == 0:
+                    if len(node.childNodes) == 0:
+                       break
                     self.__chipName = node.childNodes[0].nodeValue
                     continue
                 if cmp(node.nodeName, 'count') == 0:
@@ -198,4 +203,3 @@ class PmicObj(ModuleObj):
         gen_str += '''}\n'''
 
         return gen_str
-

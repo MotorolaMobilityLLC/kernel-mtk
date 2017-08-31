@@ -48,4 +48,3 @@ class I2cData:
 
 
 
-

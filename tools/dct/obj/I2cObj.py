@@ -17,6 +17,7 @@ class I2cObj(ModuleObj):
     def __init__(self):
         ModuleObj.__init__(self, 'cust_i2c.h', 'cust_i2c.dtsi')
         self.__busList = []
+        self.__bBusEnable = True
 
     def get_cfgInfo(self):
         cp = ConfigParser.ConfigParser(allow_no_value=True)
@@ -24,6 +25,11 @@ class I2cObj(ModuleObj):
 
         I2cData._i2c_count = string.atoi(cp.get('I2C', 'I2C_COUNT'))
         I2cData._channel_count = string.atoi(cp.get('I2C', 'CHANNEL_COUNT'))
+
+        if cp.has_option('Chip Type', 'I2C_BUS'):
+            flag = cp.get('Chip Type', 'I2C_BUS')
+            if flag == '0':
+                self.__bBusEnable = False
 
     def read(self, node):
         nodes = node.childNodes
@@ -95,18 +101,22 @@ class I2cObj(ModuleObj):
     def fill_dtsiFile(self):
         gen_str = ''
         for i in range(0, I2cData._channel_count):
+            if i >= len(self.__busList):
+                break;
             gen_str += '''&i2c%d {\n''' %(i)
             gen_str += '''\t#address-cells = <1>;\n'''
             gen_str += '''\t#size-cells = <0>;\n'''
 
-            gen_str += '''\tclock-frequency = <%d>;\n''' %(string.atoi(self.__busList[i].get_speed()) * 1000)
-            temp_str = ''
 
-            if cmp(self.__busList[i].get_enable(), 'false') == 0:
-                temp_str = 'use-open-drain'
-            elif cmp(self.__busList[i].get_enable(), 'true') == 0:
-                temp_str = 'use-push-pull'
-            gen_str += '''\tmediatek,%s;\n''' %(temp_str)
+            if self.__bBusEnable:
+                gen_str += '''\tclock-frequency = <%d>;\n''' %(string.atoi(self.__busList[i].get_speed()) * 1000)
+                temp_str = ''
+
+                if cmp(self.__busList[i].get_enable(), 'false') == 0:
+                    temp_str = 'use-open-drain'
+                elif cmp(self.__busList[i].get_enable(), 'true') == 0:
+                    temp_str = 'use-push-pull'
+                gen_str += '''\tmediatek,%s;\n''' %(temp_str)
 
             for key in sorted_key(ModuleObj.get_data(self).keys()):
                 value = ModuleObj.get_data(self)[key]

@@ -15,6 +15,8 @@ from ModuleObj import ModuleObj
 import ChipObj
 from utility.util import compare
 from utility.util import sorted_key
+from utility.util import log
+from utility.util import LogLevel
 
 class GpioObj(ModuleObj):
     def __init__(self):
@@ -82,6 +84,9 @@ class GpioObj(ModuleObj):
                 smtNode = node.getElementsByTagName('smt')
                 iesNode = node.getElementsByTagName('ies')
 
+                num = string.atoi(node.nodeName[4:])
+                if num >= len(ModuleObj.get_data(self)):
+                    break
                 data = ModuleObj.get_data(self)[node.nodeName]
 
                 if len(eintNode):
@@ -284,9 +289,10 @@ class GpioObj(ModuleObj):
             gen_str += '''//Configuration for %s\n''' %(key.upper())
 
             mode_name = GpioData.get_modeName(key, value.get_defMode())
+            val = ''
             if mode_name != '':
                 flag = False
-                val = ''
+                #val = ''
                 if mode_name.find('//') != -1:
                     flag = True
 
@@ -562,4 +568,20 @@ class GpioObj(ModuleObj):
         gen_str += '''};\n'''
         return gen_str
 
+class GpioObj_whitney(GpioObj):
+    def __init__(self):
+        GpioObj.__init__(self)
+
+    def parse(self, node):
+        log(LogLevel.info, 'GpioObj_whitney parse')
+        GpioObj.parse(self, node)
+
+    def gen_files(self):
+        GpioObj.gen_files(self)
+
+    def gen_spec(self, para):
+        GpioObj.gen_spec(self, para)
+
+    def is_i2cPadPin(self, name):
+        return False
 

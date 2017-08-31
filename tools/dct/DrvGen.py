@@ -4,6 +4,7 @@
 import os, sys
 import getopt
 import traceback
+import subprocess
 import xml.dom.minidom
 
 sys.path.append('.')
@@ -13,6 +14,8 @@ from obj.ChipObj import ChipObj
 from obj.ChipObj import Everest
 from obj.ChipObj import Olympus
 from obj.ChipObj import KiboPlus
+from obj.ChipObj import Rushmore
+from obj.ChipObj import Whitney
 
 from utility.util import LogLevel
 from utility.util import log
@@ -29,7 +32,7 @@ log_path    :    where to store the log files
 paras        :    parameter for generate wanted file
 '''
 
-def is_oldDws(path):
+def is_oldDws(path, gen_spec):
     if not os.path.exists(path):
         log(LogLevel.error, 'Can not find %s' %(path))
         sys.exit(-1)
@@ -42,7 +45,8 @@ def is_oldDws(path):
             log(LogLevel.warn, 'Please use old DCT UI to gen all files!')
             return True
         old_dct = os.path.join(sys.path[0], 'old_dct', 'DrvGen')
-        if os.execl(old_dct, dws_path, gen_path, log_path, gen_spec[0]):
+        cmd = old_dct + ' ' + dws_path + ' ' + gen_path + ' ' + log_path + ' ' + gen_spec[0]
+        if 0 == subprocess.call(cmd, shell=True):
             return True
         else:
             log(LogLevel.error, '%s format error!' %(dws_path))
@@ -108,10 +112,11 @@ if __name__ == '__main__':
         log(LogLevel.error, 'Can not find "%s", log path not exist!' %(log_path))
         sys.exit(-1)
 
-    if is_oldDws(dws_path):
+    if is_oldDws(dws_path, gen_spec):
         sys.exit(0)
 
     chipId = ChipObj.get_chipId(dws_path)
+    log(LogLevel.info, 'chip id: %s' %(chipId))
     chipObj = None
     if cmp(chipId, 'MT6797') == 0:
         chipObj = Everest(dws_path, gen_path)
@@ -119,6 +124,10 @@ if __name__ == '__main__':
         chipObj = Olympus(dws_path, gen_path)
     elif cmp(chipId, 'KIBOPLUS') == 0:
         chipObj = KiboPlus(dws_path, gen_path)
+    elif cmp(chipId, 'MT6570') == 0:
+        chipObj = Rushmore(dws_path, gen_path)
+    elif cmp(chipId, 'MT6799') == 0:
+        chipObj = Whitney(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 
@@ -131,12 +140,4 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     sys.exit(0)
-
-
-
-
-
-
-
-
 
