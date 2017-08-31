@@ -23,11 +23,11 @@
 
 #include <mt-plat/met_drv.h>
 
-typedef enum {
+enum overutil_type_t {
 	NO_OVERUTIL = 0,
 	L_OVERUTIL,
 	H_OVERUTIL
-} overutil_type_t;
+};
 
 static DEFINE_PER_CPU(u64, nr_prod_sum);
 static DEFINE_PER_CPU(u64, nr_heavy_prod_sum);
@@ -41,7 +41,7 @@ static DEFINE_PER_CPU(spinlock_t, nr_heavy_lock) = __SPIN_LOCK_UNLOCKED(nr_heavy
 static u64 last_get_time;
 static int init_heavy;
 
-typedef struct overutil_stats {
+struct overutil_stats_t {
 	int nr_overutil_l;
 	int nr_overutil_h;
 	int overutil_thresh_l;
@@ -53,9 +53,9 @@ typedef struct overutil_stats {
 	int max_task_util;
 	int max_boost_util;
 	int max_task_pid;
-} overutil_stats_t;
+};
 
-static overutil_stats_t __percpu *cpu_overutil_state;
+static struct overutil_stats_t __percpu *cpu_overutil_state;
 
 struct cluster_heavy_tbl_t {
 	u64 last_get_heavy_time;
@@ -162,9 +162,9 @@ int show_btask(char *buf, int buf_size)
 	return len;
 }
 
-overutil_type_t is_task_overutil(struct task_struct *p)
+enum overutil_type_t is_task_overutil(struct task_struct *p)
 {
-	overutil_stats_t *cpu_overutil;
+	struct overutil_stats_t *cpu_overutil;
 	/* int cid; */
 	/* int cluster_nr = arch_get_nr_clusters(); */
 	u64 task_util;
@@ -211,7 +211,7 @@ static int gb_boosted_util;
 void sched_max_util_task_tracking(void)
 {
 	int cpu;
-	overutil_stats_t *cpu_overutil;
+	struct overutil_stats_t *cpu_overutil;
 	int max_util = 0;
 	int boost_util = 0;
 	int max_cpu = 0;
@@ -338,7 +338,7 @@ int reset_heavy_task_stats(int cpu)
 	int nr_heavy_tasks;
 	int nr_overutil_l = 0, nr_overutil_h = 0;
 	unsigned long flags;
-	overutil_stats_t *cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu);
+	struct overutil_stats_t *cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu);
 
 	spin_lock_irqsave(&per_cpu(nr_heavy_lock, cpu), flags);
 	nr_heavy_tasks = per_cpu(nr_heavy, cpu);
@@ -402,9 +402,9 @@ void overutil_thresh_chg_notify(void)
 	int cpu;
 	unsigned long flags;
 	struct task_struct *p;
-	overutil_type_t over_type = 0;
+	enum overutil_type_t over_type = NO_OVERUTIL;
 	int nr_overutil_l, nr_overutil_h;
-	overutil_stats_t *cpu_overutil;
+	struct overutil_stats_t *cpu_overutil;
 	int cid;
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 	int overutil_threshold = get_overutil_threshold();
@@ -658,7 +658,7 @@ int sched_get_nr_overutil_avg(int cluster_id, int *l_avg, int *h_avg)
 
 	/* visit all cpus of this cluster */
 	for_each_cpu(cpu, &cls_cpus) {
-		overutil_stats_t *cpu_overutil;
+		struct overutil_stats_t *cpu_overutil;
 
 		spin_lock_irqsave(&per_cpu(nr_heavy_lock, cpu), flags);
 
@@ -878,7 +878,7 @@ int get_overutil_stats(char *buf, int buf_size)
 {
 	int cpu;
 	int len = 0;
-	overutil_stats_t *cpu_overutil;
+	struct overutil_stats_t *cpu_overutil;
 
 	for_each_possible_cpu(cpu) {
 		cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu);
@@ -908,7 +908,7 @@ void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p, int 
 	unsigned long prev_heavy_nr;
 	int ack_cap = -1;
 #endif
-	overutil_type_t over_type = 0;
+	enum overutil_type_t over_type = NO_OVERUTIL;
 
 	if (!init_heavy) {
 		init_heavy_tlb();
@@ -924,7 +924,7 @@ void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p, int 
 	over_type = is_task_overutil(p);
 
 	if (over_type) {
-		overutil_stats_t *cpu_overutil;
+		struct overutil_stats_t *cpu_overutil;
 
 		cpu_overutil = per_cpu_ptr(cpu_overutil_state, cpu);
 
@@ -1063,7 +1063,7 @@ static int init_heavy_tlb(void)
 		int i;
 		int cid;
 		struct cpumask cls_cpus;
-		overutil_stats_t *cpu_overutil;
+		struct overutil_stats_t *cpu_overutil;
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		int overutil_threshold = get_overutil_threshold();
 #else
@@ -1076,7 +1076,7 @@ static int init_heavy_tlb(void)
 		gb_task_cpu = 0;
 
 		/* allocation for overutilization statistics */
-		cpu_overutil_state = alloc_percpu_gfp(overutil_stats_t, GFP_ATOMIC);
+		cpu_overutil_state = alloc_percpu_gfp(struct overutil_stats_t, GFP_ATOMIC);
 		if (!cpu_overutil_state)
 			return 0;
 

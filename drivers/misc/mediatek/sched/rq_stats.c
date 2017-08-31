@@ -72,10 +72,10 @@ struct cpu_load_data {
 static DEFINE_PER_CPU(struct cpu_load_data, cpuload);
 static DEFINE_PER_CPU(struct cpufreq_policy, cpupolicy);
 
-typedef enum {
+enum AVG_LOAD_ID {
 	AVG_LOAD_IGNORE,
 	AVG_LOAD_UPDATE
-} AVG_LOAD_ID;
+};
 
 int get_overutil_threshold(void)
 {
@@ -136,7 +136,7 @@ static inline cputime64_t get_cpu_iowait_time(unsigned int cpu,
 	return iowait_time;
 }
 
-static int update_average_load(AVG_LOAD_ID id, unsigned int freq, unsigned int cpu)
+static int update_average_load(enum AVG_LOAD_ID id, unsigned int freq, unsigned int cpu)
 {
 
 	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
