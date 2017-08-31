@@ -1067,7 +1067,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	WMT_DBG_FUNC("patch total num = [%d]\n", patch_num);
 
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId == 0x0279 || wmt_ic_ops_soc.icId == 0x0507) {
+	if (wmt_ic_ops_soc.icId == 0x0279 ||
+		wmt_ic_ops_soc.icId == 0x0507 ||
+		wmt_ic_ops_soc.icId == 0x0668) {
 		iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
 		if (iRet)
 			WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
@@ -1092,7 +1094,9 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #if CFG_WMT_PATCH_DL_OPTM
-	if (wmt_ic_ops_soc.icId == 0x0279 || wmt_ic_ops_soc.icId == 0x0507) {
+	if (wmt_ic_ops_soc.icId == 0x0279 ||
+		wmt_ic_ops_soc.icId == 0x0507 ||
+		wmt_ic_ops_soc.icId == 0x0688) {
 		iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
 		if (iRet)
 			WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
@@ -1141,16 +1145,17 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 #if CFG_WMT_FILTER_MODE_SETTING
 	if ((wmt_ic_ops_soc.icId == 0x6580) ||
-	    (wmt_ic_ops_soc.icId == 0x8163) ||
-	    (wmt_ic_ops_soc.icId == 0x6752) ||
-	    (wmt_ic_ops_soc.icId == 0x6582) ||
-	    (wmt_ic_ops_soc.icId == 0x6592) ||
-	    (wmt_ic_ops_soc.icId == 0x0279) ||
-	    (wmt_ic_ops_soc.icId == 0x0507) ||
-	    (wmt_ic_ops_soc.icId == 0x0326) ||
-	    (wmt_ic_ops_soc.icId == 0x0551) ||
-	    (wmt_ic_ops_soc.icId == 0x0321) ||
+		(wmt_ic_ops_soc.icId == 0x8163) ||
+		(wmt_ic_ops_soc.icId == 0x6752) ||
+		(wmt_ic_ops_soc.icId == 0x6582) ||
+		(wmt_ic_ops_soc.icId == 0x6592) ||
+		(wmt_ic_ops_soc.icId == 0x0279) ||
+		(wmt_ic_ops_soc.icId == 0x0507) ||
+		(wmt_ic_ops_soc.icId == 0x0326) ||
+		(wmt_ic_ops_soc.icId == 0x0551) ||
+		(wmt_ic_ops_soc.icId == 0x0321) ||
 		(wmt_ic_ops_soc.icId == 0x0335) ||
+		(wmt_ic_ops_soc.icId == 0x0688) ||
 		(wmt_ic_ops_soc.icId == 0x0337)) {
 		wmt_stp_wifi_lte_coex();
 		WMT_DBG_FUNC("wmt_stp_wifi_lte_coex done!\n");
@@ -1514,7 +1519,9 @@ static INT32 mtk_wcn_soc_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 	/* gen3(6631) CONSYS can not access reg:0x80050078 and no need to do GPS SYNC
 	 * may cause bus hang
 	 */
-	if (wmt_ic_ops_soc.icId != 0x0279 && wmt_ic_ops_soc.icId != 0x0507) {
+	if (wmt_ic_ops_soc.icId != 0x0279 &&
+		wmt_ic_ops_soc.icId != 0x0507 &&
+		wmt_ic_ops_soc.icId != 0x0688) {
 		if (state == WMT_IC_PIN_MUX)
 			uVal = 0x1 << 28;
 		else
@@ -1750,7 +1757,9 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 			iRet =
 			    wmt_core_init_script(set_wifi_lte_coex_table_1, osal_array_size(set_wifi_lte_coex_table_1));
 			WMT_DBG_FUNC("wmt_core:set_wifi_lte_coex_table_1 %s(%d)\n", iRet ? "fail" : "ok", iRet);
-		} else if (wmt_ic_ops_soc.icId == 0x0279 || wmt_ic_ops_soc.icId == 0x0507) {
+		} else if (wmt_ic_ops_soc.icId == 0x0279 ||
+				wmt_ic_ops_soc.icId == 0x0507 ||
+				wmt_ic_ops_soc.icId == 0x0688) {
 			/* add WMT_COXE_CONFIG_EXT_COMPONENT_OPCODE command for 2G4 eLNA demand*/
 			if (pWmtGenConf->coex_wmt_ext_component) {
 				WMT_INFO_FUNC("coex_wmt_ext_component:0x%x\n", pWmtGenConf->coex_wmt_ext_component);
@@ -2167,21 +2176,22 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		wmt_ic_ops_soc.icId == 0x8163 ||
 		wmt_ic_ops_soc.icId == 0x6580 ||
 		wmt_ic_ops_soc.icId == 0x8167) {
-		/* MT6571 patch RAM base */
+		/* ROMv2 patch RAM base */
 		WMT_PATCH_ADDRESS_CMD[8] = 0x40;
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0xc8;
 	}
 	/*send wmt part patch address command */
 	if (wmt_ic_ops_soc.icId == 0x0279) {
-		/* MT6797 patch RAM base */
+		/* ROMv3 patch RAM base */
 		WMT_PATCH_ADDRESS_CMD[8] = 0x08;
 		WMT_PATCH_ADDRESS_CMD[9] = 0x05;
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0x2c;
 		WMT_PATCH_P_ADDRESS_CMD[9] = 0x0b;
 	}
 
-	if (wmt_ic_ops_soc.icId == 0x0507) {
-		/* MT6759 patch RAM base */
+	if (wmt_ic_ops_soc.icId == 0x0507 ||
+		wmt_ic_ops_soc.icId == 0x0688) {
+		/* ROMv4 patch RAM base */
 		WMT_PATCH_ADDRESS_CMD[8] = 0x18;
 		WMT_PATCH_ADDRESS_CMD[9] = 0x05;
 		WMT_PATCH_P_ADDRESS_CMD[8] = 0x7c;
