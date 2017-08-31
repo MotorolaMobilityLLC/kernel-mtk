@@ -274,6 +274,7 @@ extern int turbo_flag;
 
 extern void _kick_PBM_by_cpu(void);
 extern unsigned int dvfs_power_mode;
+extern unsigned int sched_dvfs_enable;
 extern unsigned int do_dvfs_stress_test;
 extern int dvfs_disable_flag;
 extern ktime_t now[NR_SET_V_F];
