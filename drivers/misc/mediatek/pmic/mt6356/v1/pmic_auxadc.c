@@ -175,7 +175,7 @@ int bat_temp_filter(int *arr, unsigned short size)
 
 void wk_auxadc_dbg_dump(void)
 {
-	unsigned char reg_log[860] = "", reg_str[20] = "";
+	unsigned char reg_log[861] = "", reg_str[21] = "";
 	unsigned char i;
 	unsigned short j;
 
@@ -189,13 +189,13 @@ void wk_auxadc_dbg_dump(void)
 		for (j = 0; adc_dbg_addr[j] != 0; j++) {
 			if (j % 43 == 0) {
 				pr_err("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
-				strcpy(reg_log, "");
+				strncpy(reg_log, "", 860);
 			}
 			snprintf(reg_str, 20, "Reg[0x%x]=0x%x, ", adc_dbg_addr[j], pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
 		pr_err("[%s] %d %d %s\n", __func__, dbg_stamp, pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
-		strcpy(reg_log, "");
+		strncpy(reg_log, "", 860);
 		dbg_stamp++;
 		if (dbg_stamp >= 4)
 			dbg_stamp = 0;
@@ -225,7 +225,8 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 	pr_err("BAT_TEMP1: %d, BAT_TEMP2:%d, VBIF:%d, BAT_TEMP3:%d, BATID:%d, DA_VBIF28_STB:%d\n",
 		bat_temp, bat_temp2, vbif, bat_temp3, bat_id, pmic_get_register_value(PMIC_DA_VBIF28_STB));
 
-	if (bat_temp < 200 || (bat_temp - battmp) > 100 || (battmp - bat_temp) > 100) {
+	if (bat_temp < 200 ||
+		(battmp != 0 && (bat_temp - battmp > 100 || battmp - bat_temp > 100))) {
 		wk_auxadc_dbg_dump();
 		for (i = 0; i < 5; i++)
 			arr_bat_temp[i] = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
