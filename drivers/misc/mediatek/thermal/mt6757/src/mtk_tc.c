@@ -415,42 +415,19 @@ void tscpu_thermal_cal_prepare(void)
 
 	/*
 	*   chip dependent
-	*   ADC_GE_T    [9:0] *(0x10206184)[31:22]
-	*   ADC_OE_T    [9:0] *(0x10206184)[21:12]
 	*/
 	g_adc_ge_t = ((temp0 & _BITMASK_(31:22)) >> 22);
 	g_adc_oe_t = ((temp0 & _BITMASK_(21:12)) >> 12);
-
-	/*
-	*   O_VTSMCU1    (9b) *(0x10206180)[25:17]
-	*   O_VTSMCU2    (9b) *(0x10206180)[16:8]
-	*   O_VTSMCU3    (9b) *(0x10206184)[8:0]
-	*   O_VTSMCU4    (9b) *(0x10206188)[31:23]
-	*   O_VTSMCU5    (9b) *(0x10206188)[13:5]
-	*   O_VTSABB     (9b) *(0x10206188)[22:14]
-	*/
 	g_o_vtsmcu1 = ((temp1 & _BITMASK_(25:17)) >> 17);
 	g_o_vtsmcu2 = ((temp1 & _BITMASK_(16:8)) >> 8);
 	g_o_vtsmcu3 = (temp0 & _BITMASK_(8:0));
 	g_o_vtsmcu4 = ((temp2 & _BITMASK_(31:23)) >> 23);
 	g_o_vtsmcu5 = ((temp2 & _BITMASK_(13:5)) >> 5);
 	g_o_vtsabb = ((temp2 & _BITMASK_(22:14)) >> 14);
-
-	/*
-	*   DEGC_cali    (6b) *(0x10206180)[6:1]
-	*   ADC_CALI_EN_T(1b) *(0x10206180)[0]
-	*/
 	g_degc_cali = ((temp1 & _BITMASK_(6:1)) >> 1);
 	g_adc_cali_en_t = (temp1 & _BIT_(0));
-
-	/*
-	*   O_SLOPE_SIGN (1b) *(0x10206180)[7]
-	*   O_SLOPE      (6b) *(0x10206180)[31:26]
-	*/
 	g_o_slope_sign = ((temp1 & _BIT_(7)) >> 7);
 	g_o_slope = ((temp1 & _BITMASK_(31:26)) >> 26);
-
-	/*ID           (1b) *(0x10206184)[9] */
 	g_id = ((temp0 & _BIT_(9)) >> 9);
 
 	/*

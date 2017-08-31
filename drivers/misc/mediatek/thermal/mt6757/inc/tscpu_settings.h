@@ -124,9 +124,9 @@
 #define TS_TURN_ON       0xFFFFFFCF /* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
 #define TS_TURN_OFF      0x00000030 /* turn off thermal*/
 /*chip dependent*/
-#define ADDRESS_INDEX_0  46  /*0x10206184*/
-#define ADDRESS_INDEX_1	 45  /*0x10206180*/
-#define ADDRESS_INDEX_2	 47  /*0x10206188*/
+#define ADDRESS_INDEX_0  46
+#define ADDRESS_INDEX_1	 45
+#define ADDRESS_INDEX_2	 47
 
 #define CLEAR_TEMP 26111
 
