@@ -262,6 +262,7 @@ struct tcpm_remote_power_cap {
 	int min_mv[TCPM_PDO_MAX_SIZE];
 	int ma[TCPM_PDO_MAX_SIZE];
 };
+
 /* Inquire TCPM status */
 
 enum tcpc_cc_voltage_status {
@@ -857,10 +858,36 @@ extern uint8_t tcpm_inquire_pd_charging_policy(struct tcpc_device *tcpc);
 extern bool tcpm_inquire_during_direct_charge(struct tcpc_device *tcpc);
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
+extern int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
+					struct tcpm_remote_power_cap *cap);
+extern int tcpm_set_remote_power_cap(struct tcpc_device *tcpc,
+					int mv, int ma);
+
+#else	/* CONFIG_USB_POWER_DELIVERY */
+
+static inline bool tcpm_inquire_pd_prev_connected(
+	struct tcpc_device *tcpc_dev)
+{
+	return false;
+}
+
+static inline int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
+					struct tcpm_remote_power_cap *cap)
+{
+	return 0;
+}
+
+
+static inline int tcpm_set_remote_power_cap(struct tcpc_device *tcpc,
+					int mv, int ma)
+{
+	return 0;
+}
+
 #endif	/* CONFIG_USB_POWER_DELIVERY */
+
 extern bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc);
 extern void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en);
 extern bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc);
-extern int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
-					struct tcpm_remote_power_cap *cap);
+
 #endif /* TCPM_H_ */
