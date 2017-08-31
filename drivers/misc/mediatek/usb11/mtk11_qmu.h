@@ -14,10 +14,10 @@
 #ifndef _MTKFSH_QMU_H_
 #define _MTKFSH_QMU_H_
 
-#ifdef MUSBFSH_QMU_SUPPORT_HOST
+#ifdef CONFIG_MTK_MUSBFSH_QMU_SUPPORT
 
 /* for musb_read/write api */
-/* #include "mtk_musb.h" */
+/*#include "mtk_musb.h"*/
 #include "musbfsh_debug.h"
 #include "musbfsh_io.h"
 
@@ -80,6 +80,11 @@ typedef struct _GPD_RANGE {
 
 #define QMU_DBG_ON
 #ifdef QMU_DBG_ON
+static inline int mtk11_dbg_level(unsigned level)
+{
+	return mtk11_qmu_dbg_level >= level;
+}
+
 #define QMU_ERR(format, args...) do {if (mtk11_dbg_level(LOG_ERR)) \
 	pr_warn("QMU_ERR,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 	while (0)
@@ -233,41 +238,41 @@ typedef struct _GPD_RANGE {
 #define DQMU_M_RQ_DIS_IOC(n)   (0x100<<((n)-1))
 
 #define MGC_ReadQMU8(base, _offset) \
-	musb_readb(base, (USB_HW_QMU_OFF + _offset))
+	musbfsh_readb(base, (USB_HW_QMU_OFF + _offset))
 
 #define MGC_ReadQUCS8(base, _offset) \
-	musb_readb(base, (USB_HW_QUCS_OFF + _offset))
+	musbfsh_readb(base, (USB_HW_QUCS_OFF + _offset))
 
 #define MGC_ReadQIRQ8(base, _offset) \
-	musb_readb(base, (USB_HW_QIRQ_OFF + _offset))
+	musbfsh_readb(base, (USB_HW_QIRQ_OFF + _offset))
 
 #define MGC_ReadQMU16(base, _offset) \
-	musb_readw(base, (USB_HW_QMU_OFF + _offset))
+	musbfsh_readw(base, (USB_HW_QMU_OFF + _offset))
 
 #define MGC_ReadQUCS16(base, _offset) \
-	musb_readw(base, (USB_HW_QUCS_OFF + _offset))
+	musbfsh_readw(base, (USB_HW_QUCS_OFF + _offset))
 
 #define MGC_ReadQIRQ16(base, _offset) \
-	musb_readw(base, (USB_HW_QIRQ_OFF + _offset))
+	musbfsh_readw(base, (USB_HW_QIRQ_OFF + _offset))
 #define MGC_ReadQMU32(base, _offset) \
-	musb_readl(base, (USB_HW_QMU_OFF + _offset))
+	musbfsh_readl(base, (USB_HW_QMU_OFF + _offset))
 
 #define MGC_ReadQUCS32(base, _offset) \
-	musb_readl(base, (USB_HW_QUCS_OFF + _offset))
+	musbfsh_readl(base, (USB_HW_QUCS_OFF + _offset))
 
 #define MGC_ReadQIRQ32(base, _offset) \
-	musb_readl(base, (USB_HW_QIRQ_OFF + _offset))
+	musbfsh_readl(base, (USB_HW_QIRQ_OFF + _offset))
 
 #define MGC_WriteQMU32(base, _offset, _data) \
-	musb_writel(base, (USB_HW_QMU_OFF + _offset), _data)
+	musbfsh_writel(base, (USB_HW_QMU_OFF + _offset), _data)
 
 #define MGC_WriteQUCS32(base, _offset, _data) \
-	musb_writel(base, (USB_HW_QUCS_OFF + _offset), _data)
+	musbfsh_writel(base, (USB_HW_QUCS_OFF + _offset), _data)
 
 #define MGC_WriteQIRQ32(base, _offset, _data) \
-	musb_writel(base, (USB_HW_QIRQ_OFF + _offset), _data)
+	musbfsh_writel(base, (USB_HW_QIRQ_OFF + _offset), _data)
 
-u8 PDU_calcCksum(u8 *data, int len);
+u8 mtk11_PDU_calcCksum(u8 *data, int len);
 
 /* brief Define DMAQ GPD format */
 #define TGPD_FLAGS_HWO              0x01
@@ -281,8 +286,8 @@ u8 PDU_calcCksum(u8 *data, int len);
 
 #define TGPD_SET_FLAG(_pd, _flag)   (((TGPD *)_pd)->flag = (((TGPD *)_pd)->flag&(~TGPD_FLAGS_HWO))|(_flag))
 #define TGPD_GET_FLAG(_pd)             (((TGPD *)_pd)->flag & TGPD_FLAGS_HWO)
-#define TGPD_SET_CHKSUM(_pd, _n)    (((TGPD *)_pd)->chksum = PDU_calcCksum((u8 *)_pd, _n))
-#define TGPD_SET_CHKSUM_HWO(_pd, _n)    (((TGPD *)_pd)->chksum = PDU_calcCksum((u8 *)_pd, _n)-1)
+#define TGPD_SET_CHKSUM(_pd, _n)    (((TGPD *)_pd)->chksum = mtk11_PDU_calcCksum((u8 *)_pd, _n))
+#define TGPD_SET_CHKSUM_HWO(_pd, _n)    (((TGPD *)_pd)->chksum = mtk11_PDU_calcCksum((u8 *)_pd, _n)-1)
 #define TGPD_GET_CHKSUM(_pd)        (((TGPD *)_pd)->chksum)
 #define TGPD_SET_FORMAT(_pd, _fmt)  (((TGPD *)_pd)->flag = (((TGPD *)_pd)->flag&(~TGPD_FORMAT_BDP))|(_fmt))
 #define TGPD_GET_FORMAT(_pd)        (((((TGPD *)_pd)->flag & TGPD_FORMAT_BDP)>>1))
@@ -320,21 +325,22 @@ u8 PDU_calcCksum(u8 *data, int len);
 #define TGPD_SET_IOC(_pd)			(((TGPD *)_pd)->flag |= TGPD_FLAG_IOC)
 #define TGPD_CLR_IOC(_pd)			(((TGPD *)_pd)->flag &= (~TGPD_FLAG_IOC))
 
-extern void qmu_destroy_gpd_pool(struct device *dev);
-extern int qmu_init_gpd_pool(struct device *dev);
-extern void qmu_reset_gpd_pool(u32 ep_num, u8 isRx);
-extern bool mtk_is_qmu_enabled(u8 EP_Num, u8 isRx);
-extern void mtk_qmu_insert_task(u8 EP_Num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc);
-extern void mtk11_disable_q(struct musb *musb, u8 ep_num, u8 isRx);
-extern void mtk_qmu_irq_err(struct musb *musb, u32 qisar);
-extern void flush_ep_csr(struct musb *musb, u8 ep_num, u8 isRx);
-extern void mtk_qmu_stop(u8 ep_num, u8 isRx);
+extern void mtk11_qmu_destroy_gpd_pool(struct device *dev);
+extern int mtk11_qmu_init_gpd_pool(struct device *dev);
+extern void mtk11_qmu_reset_gpd_pool(u32 ep_num, u8 isRx);
+extern bool mtk11_is_qmu_enabled(u8 EP_Num, u8 isRx);
+extern void mtk11_qmu_insert_task(u8 EP_Num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc);
+extern void mtk11_qmu_resume(u8 ep_num, u8 isRx);
+extern void mtk11_disable_q(struct musbfsh *musbfsh, u8 ep_num, u8 isRx);
+extern void mtk11_qmu_irq_err(struct musbfsh *musbfsh, u32 qisar);
+extern void mtk11_flush_ep_csr(struct musbfsh *musbfsh, u8 ep_num, u8 isRx);
+extern void mtk11_qmu_stop(u8 ep_num, u8 isRx);
 
 #define QMU_RX_SPLIT_BLOCK_SIZE (32*1024)
 #define QMU_RX_SPLIT_THRE	(64*1024)
-extern u32 qmu_used_gpd_count(u8 isRx, u32 num);
-extern u32 qmu_free_gpd_count(u8 isRx, u32 num);
-extern void h_qmu_done_rx(struct musb *musb, u8 ep_num);
-extern void h_qmu_done_tx(struct musb *musb, u8 ep_num);
+extern u32 mtk11_qmu_used_gpd_count(u8 isRx, u32 num);
+extern u32 mtk11_qmu_free_gpd_count(u8 isRx, u32 num);
+extern void h_mtk11_qmu_done_rx(struct musbfsh *musbfsh, u8 ep_num);
+extern void h_mtk11_qmu_done_tx(struct musbfsh *musbfsh, u8 ep_num);
 #endif
 #endif
