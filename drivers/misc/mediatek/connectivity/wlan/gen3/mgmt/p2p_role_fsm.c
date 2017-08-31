@@ -859,6 +859,11 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
 			break;
 
+		if (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
+			DBGLOG(P2P, ERROR, "Request connect while driver is in connected state! ignoring...\n");
+			break;
+		}
+
 		SET_NET_PWR_STATE_ACTIVE(prAdapter, prP2pBssInfo->ucBssIndex);
 
 		/* Make sure the state is in IDLE state. */
