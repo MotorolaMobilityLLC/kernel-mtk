@@ -170,6 +170,7 @@ static int Auddrv_BTCVSD_Address_Map(void)
 static int mtk_pcm_btcvsd_rx_stop(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
+	Set_BTCVSD_State(BT_SCO_RXSTATE_ENDING);
 	return 0;
 }
 
@@ -252,8 +253,6 @@ static int mtk_pcm_btcvsd_rx_hw_params(struct snd_pcm_substream *substream,
 static int mtk_pcm_btcvsd_rx_hw_free(struct snd_pcm_substream *substream)
 {
 	LOGBT("%s\n", __func__);
-
-	Set_BTCVSD_State(BT_SCO_RXSTATE_ENDING);
 
 	if (BT_CVSD_Mem.RX_btcvsd_dma_buf.area)
 		return 0;

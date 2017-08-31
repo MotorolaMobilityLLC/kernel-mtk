@@ -253,12 +253,7 @@ static int mtk_fm_i2s_awb_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_warn("mtk_fm_i2s_awb_pcm_open runtime rate = %d channels = %d\n",
-	       runtime->rate, runtime->channels);
-
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
-	else
+	if (substream->stream != SNDRV_PCM_STREAM_CAPTURE)
 		return -1;
 	/* here open audio clocks */
 	AudDrv_Clk_On();
