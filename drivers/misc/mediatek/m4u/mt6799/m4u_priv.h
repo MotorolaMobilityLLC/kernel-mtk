@@ -33,9 +33,9 @@
 
 #include "m4u_hw.h"
 
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define M4U_FPGAPORTING
-
+#endif
 
 #ifndef M4U_FPGAPORTING
 #define M4U_PROFILE

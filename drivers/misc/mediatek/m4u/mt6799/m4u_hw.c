@@ -2285,6 +2285,7 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 #ifndef M4U_FPGAPORTING
 			m4uHw_set_field_by_mask(m4u_base, REG_MMU_MISC_CTRL, F_MMU_INORDERWR(i), 0);
 #endif
+			M4UMSG("m4u inorder setting: 0x%x\n", M4U_ReadReg32(m4u_base, REG_MMU_MISC_CTRL));
 
 			/* 3 non-standard AXI mode */
 			m4uHw_set_field_by_mask(m4u_base, REG_MMU_MISC_CTRL, F_MMU_STD_AXI_MODE(i), 0);
@@ -2342,7 +2343,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		gM4uDev->smi_clk[i] = devm_clk_get(gM4uDev->pDev[m4u_id], smi_clk_name[i]);
 		if (IS_ERR(gM4uDev->smi_clk[i])) {
 			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
-			return PTR_ERR(gM4uDev->smi_clk[i]);
+			/* return PTR_ERR(gM4uDev->smi_clk[i]); */
 		}
 	}
 	smi_larb_clock_prepare();
