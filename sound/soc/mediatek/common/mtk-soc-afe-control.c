@@ -455,6 +455,7 @@ bool InitAfeControl(struct device *pDev)
 	PowerDownAllI2SDiv();
 #endif
 	init_afe_ops();
+	trigger_mtkaif_calibration();
 	/* set APLL clock setting */
 	AfeControlMutexUnLock();
 
@@ -3835,6 +3836,17 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	}
 	memset_io((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 	return 0;
+}
+
+void trigger_mtkaif_calibration(void)
+{
+	/* by platform to implement*/
+	if (s_afe_platform_ops->trigger_mtkaif_calibration != NULL) {
+		s_afe_platform_ops->trigger_mtkaif_calibration();
+		return;
+	}
+
+	pr_warn("%s(), not support this platform", __func__);
 }
 
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops)

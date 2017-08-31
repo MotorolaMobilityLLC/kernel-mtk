@@ -419,12 +419,16 @@ typedef struct {
 #define APLL2_CON3 0x02c0
 
 /* move to clksys 10210000*/
-#define CLKSYS_BASE             (0x10210000L)
+#define CLKSYS_BASE               (0x10210000L)
 #define CLK_AUDDIV_0              (CLKSYS_BASE + 0x0320)
 #define CLK_AUDDIV_1              (CLKSYS_BASE + 0x0324)
 #define CLK_AUDDIV_2              (CLKSYS_BASE + 0x0328)
 #define CLK_AUDDIV_3              (CLKSYS_BASE + 0x032c)
 #define CLK_AUDDIV_4              (CLKSYS_BASE + 0x0330)
+
+/* clksys register for mtkaif calibration */
+#define TOP_AUD_TOP_CFG               (0x0340)
+#define TOP_AUD_TOP_MON               (0x0344)
 
 /*Afe register*/
 #define AUDIO_TOP_CON0                 (AFE_BASE + 0x0000)

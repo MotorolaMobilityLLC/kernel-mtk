@@ -68,12 +68,14 @@ enum audio_system_gpio_type {
 	GPIO_AUD_DAT_MISO_ON,
 	GPIO_AUD_DAT_MOSI_OFF,
 	GPIO_AUD_DAT_MOSI_ON,
+	GPIO_AUD_DAT_MISO2_OFF,
+	GPIO_AUD_DAT_MISO2_ON,
+	GPIO_AUD_DAT_MOSI2_OFF,
+	GPIO_AUD_DAT_MOSI2_ON,
 	GPIO_VOW_DAT_MISO_OFF,
 	GPIO_VOW_DAT_MISO_ON,
 	GPIO_VOW_CLK_MISO_OFF,
 	GPIO_VOW_CLK_MISO_ON,
-	GPIO_ANC_DAT_MOSI_OFF,
-	GPIO_ANC_DAT_MOSI_ON,
 	GPIO_SMARTPA_RESET,
 	GPIO_SMARTPA_ON,
 	GPIO_TDM_MODE0,
@@ -109,12 +111,14 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_AUD_DAT_MISO_ON] = {"aud_dat_miso_on", false, NULL},
 	[GPIO_AUD_DAT_MOSI_OFF] = {"aud_dat_mosi_off", false, NULL},
 	[GPIO_AUD_DAT_MOSI_ON] = {"aud_dat_mosi_on", false, NULL},
+	[GPIO_AUD_DAT_MISO2_OFF] = {"aud_dat_miso2_off", false, NULL},
+	[GPIO_AUD_DAT_MISO2_ON] = {"aud_dat_miso2_on", false, NULL},
+	[GPIO_AUD_DAT_MOSI2_OFF] = {"aud_dat_mosi2_off", false, NULL},
+	[GPIO_AUD_DAT_MOSI2_ON] = {"aud_dat_mosi2_on", false, NULL},
 	[GPIO_VOW_DAT_MISO_OFF] = {"vow_dat_miso_off", false, NULL},
 	[GPIO_VOW_DAT_MISO_ON] = {"vow_dat_miso_on", false, NULL},
 	[GPIO_VOW_CLK_MISO_OFF] = {"vow_clk_miso_off", false, NULL},
 	[GPIO_VOW_CLK_MISO_ON] = {"vow_clk_miso_on", false, NULL},
-	[GPIO_ANC_DAT_MOSI_OFF] = {"anc_dat_mosi_off", false, NULL},
-	[GPIO_ANC_DAT_MOSI_ON] = {"anc_dat_mosi_on", false, NULL},
 
 	[GPIO_SMARTPA_RESET] = {"aud_smartpa_reset", false, NULL},
 	[GPIO_SMARTPA_ON] = {"aud_smartpa_on", false, NULL},
@@ -256,7 +260,6 @@ static int set_aud_dat_miso_l(bool _enable, Soc_Aud_Digital_Block _usage)
 {
 	static bool adda_enable;
 	static bool vow_enable;
-	static bool anc_enable;
 
 	switch (_usage) {
 	case Soc_Aud_Digital_Block_ADDA_UL:
@@ -265,20 +268,16 @@ static int set_aud_dat_miso_l(bool _enable, Soc_Aud_Digital_Block _usage)
 	case Soc_Aud_Digital_Block_ADDA_VOW:
 		vow_enable = _enable;
 		break;
-	case Soc_Aud_Digital_Block_ADDA_ANC:
-		anc_enable = _enable;
-		break;
 	default:
 		return -EINVAL;
 	}
 
 	if (vow_enable)
 		return AudDrv_GPIO_Select(GPIO_VOW_DAT_MISO_ON);
-	else if (adda_enable || anc_enable)
+	else if (adda_enable)
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_ON);
 	else
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_OFF);
-
 }
 
 static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
@@ -291,20 +290,28 @@ static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
 	return ret;
 }
 
+static int set_aud_dat_mosi2(bool _enable)
+{
+	if (_enable)
+		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MOSI2_ON);
+	else
+		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MOSI2_OFF);
+}
+
+static int set_aud_dat_miso2(bool _enable)
+{
+	if (_enable)
+		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO2_ON);
+	else
+		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO2_OFF);
+}
+
 static int set_vow_clk_miso(bool _enable)
 {
 	if (_enable)
 		return AudDrv_GPIO_Select(GPIO_VOW_CLK_MISO_ON);
 	else
 		return AudDrv_GPIO_Select(GPIO_VOW_CLK_MISO_OFF);
-}
-
-static int set_anc_dat_mosi(bool _enable)
-{
-	if (_enable)
-		return AudDrv_GPIO_Select(GPIO_ANC_DAT_MOSI_ON);
-	else
-		return AudDrv_GPIO_Select(GPIO_ANC_DAT_MOSI_OFF);
 }
 
 int AudDrv_GPIO_Request(bool _enable, Soc_Aud_Digital_Block _usage)
@@ -324,8 +331,15 @@ int AudDrv_GPIO_Request(bool _enable, Soc_Aud_Digital_Block _usage)
 		break;
 	case Soc_Aud_Digital_Block_ADDA_ANC:
 		set_aud_clk_mosi(_enable);
-		set_aud_dat_miso(_enable, _usage);
-		set_anc_dat_mosi(_enable);
+		set_aud_dat_miso2(_enable);
+		set_aud_dat_mosi2(_enable);
+		break;
+	case Soc_Aud_Digital_Block_ADDA_ALL:
+		set_aud_clk_mosi(_enable);
+		set_aud_dat_mosi(_enable);
+		set_aud_dat_mosi2(_enable);
+		set_aud_dat_miso(_enable, Soc_Aud_Digital_Block_ADDA_UL);
+		set_aud_dat_miso2(_enable);
 		break;
 	default:
 		return -EINVAL;

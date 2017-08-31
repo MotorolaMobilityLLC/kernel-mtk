@@ -54,9 +54,11 @@
 #include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
 #include "mtk-auddrv-kernel.h"
+#include "mtk-auddrv-gpio.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-platform.h"
 #include "mtk-soc-digital-type.h"
+#include "mtk-soc-codec-63xx.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -2743,12 +2745,104 @@ bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, Au
 	return true;
 }
 
+static int choose_mtkaif_phase(unsigned int cycles[])
+{
+	int phase;
+	int change_point[2] = {0};
+	int i = 0;
+
+	for (phase = 1; phase < 32 ; phase++) {
+		if (cycles[phase] - cycles[phase - 1] > 0)
+			change_point[i++] = phase;
+	}
+
+	/* mtkaif choose  algorithem
+	  * Scenario 1 : receive the same cycle number
+	  *                       choose the middle of array is phase 15
+	  * Scenario 2 : receive two cycle number
+	  *                       choose the 11rd phase before/after the change point
+	  * Scenario 3 : receive three cycle number
+	  *                       choose the mid phase of the mid number
+	  */
+	if (change_point[1] > 0) /* Scenario 3 */
+		phase = (change_point[0] + change_point[1]) / 2;
+	else if (change_point[0] == 0) /* Scenario 1 */
+		phase = MTKAIF_SCENARIO1_DEFAULT;
+	else if (change_point[0] > 15) /* Scenario 2 */
+		phase = change_point[0] - MTKAIF_SCENARIO2_SHIFT;
+	else
+		phase = change_point[0] + MTKAIF_SCENARIO2_SHIFT - 1;
+
+	pr_debug("%s(), phase = %d, change_point = [%d] , [%d]\n",
+		 __func__, phase, change_point[0], change_point[1]);
+	return phase;
+}
+
+void platform_mtkaif_calibration(void)
+{
+	void *top_clksys_addr;
+	int phase = 0;
+	int miso1_phase, miso2_phase;
+	bool miso1_done, miso2_done;
+	unsigned int miso1_cycle[32], miso2_cycle[32];
+
+	volatile unsigned int *aud_top_config, *aud_top_monitor;
+
+	top_clksys_addr = ioremap_nocache(CLKSYS_BASE, 0x1000);
+
+	if (top_clksys_addr == NULL) {
+		pr_err("%s(), top_clksys_addr is null\n", __func__);
+		return;
+	}
+
+	aud_top_config = (volatile unsigned int *)(top_clksys_addr + TOP_AUD_TOP_CFG);
+	aud_top_monitor = (volatile unsigned int *)(top_clksys_addr + TOP_AUD_TOP_MON);
+
+	*aud_top_config = 0x4;  /* bit[2] : set  test_type to synchronizer pulse */
+	AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_ALL);
+	mtkaif_calibration_set_loopback(true);
+
+	for (phase = 0; phase < 32 ; phase++) {
+		mtkaif_calibration_set_phase(phase, phase);
+
+		/* Test On */
+		*aud_top_config = 0x5;  /* bit[0] : test on/off */
+
+		miso1_done = false;
+		miso2_done = false;
+
+		while (miso1_done == false || miso2_done == false) {
+			if (((*aud_top_monitor >> 20) & 0x1) == 1) {
+				miso1_done = true;
+				miso1_cycle[phase] = *aud_top_monitor & 0xf;
+			}
+			if (((*aud_top_monitor >> 24) & 0x1) == 1) {
+				miso2_done = true;
+				miso2_cycle[phase] = (*aud_top_monitor >> 4) & 0xf;
+			}
+			pr_aud("%s(), TestPhase[%d]  miso1_cycle = %x, miso2_cycle = %x\n",
+			       __func__, phase, miso1_cycle[phase], miso2_cycle[phase]);
+		}
+		/* Test OFF */
+		*aud_top_config = 0x4;
+	}
+	*aud_top_config = 0x0;
+
+	miso1_phase = choose_mtkaif_phase(miso1_cycle);
+	miso2_phase = choose_mtkaif_phase(miso2_cycle);
+	mtkaif_calibration_set_phase(miso1_phase, miso2_phase);
+	mtkaif_calibration_set_loopback(false);
+	AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_ALL);
+	iounmap(top_clksys_addr);
+}
+
 static struct mtk_mem_blk_ops mem_blk_ops = {
 	.set_memif_addr = set_mem_blk_addr,
 };
 
 static struct mtk_afe_platform_ops afe_platform_ops = {
 	.set_sinegen = set_chip_sine_gen_enable,
+	.trigger_mtkaif_calibration = platform_mtkaif_calibration,
 };
 
 void init_afe_ops(void)

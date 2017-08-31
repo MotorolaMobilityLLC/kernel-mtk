@@ -281,6 +281,7 @@ struct mtk_mem_blk_ops {
 
 struct mtk_afe_platform_ops {
 	bool (*set_sinegen)(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *(AudioMEMIF[]));
+	void (*trigger_mtkaif_calibration)(void);
 };
 
 
@@ -299,7 +300,7 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
 void init_afe_ops(void);
 void set_afe_platform_ops(struct mtk_afe_platform_ops *ops);
-
+void trigger_mtkaif_calibration(void);
 
 /* for vcore dvfs */
 int vcore_dvfs(bool *enable, bool reset);
