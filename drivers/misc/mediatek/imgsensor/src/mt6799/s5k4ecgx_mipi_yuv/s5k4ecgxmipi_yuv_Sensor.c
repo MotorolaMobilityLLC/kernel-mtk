@@ -10664,6 +10664,7 @@ UINT32 S5K4ECGX_MIPI_GetInfo(MSDK_SCENARIO_ID_ENUM ScenarioId,
 
     //Samuel Add for 72 HDR Ev capture
     pSensorInfo->AEShutDelayFrame = 0;
+	pSensorInfo->AEISPGainDelayFrame = 2;
 
     //Sophie: Maigh need to remove the assignments?
     //pSensorInfo->SensorDriver3D = SENSOR_3D_NOT_SUPPORT;
