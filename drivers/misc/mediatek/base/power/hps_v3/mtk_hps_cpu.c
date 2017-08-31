@@ -180,6 +180,12 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[i].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[i].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	}
+#if 0
+/* Change default power sequence of HPS*/
+	hps_sys.cluster_info[0].pwr_seq = 0;
+	hps_sys.cluster_info[1].pwr_seq = 2;
+	hps_sys.cluster_info[2].pwr_seq = 1;
+#endif
 #if 0  /*For EAS  evaluation*/
 		hps_sys.cluster_info[0].up_threshold = 20;
 		hps_sys.cluster_info[0].down_threshold = 10;
