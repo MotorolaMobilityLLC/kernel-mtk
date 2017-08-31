@@ -29,3 +29,4 @@ int cg_restore_threshold(void);
 int total_restore_threshold(void);
 extern int dram_steps_freq(unsigned int step);
 extern int get_ddr_type(void);
+int notify_bwm_dcs(int chan_num);
