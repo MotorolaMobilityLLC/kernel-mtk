@@ -1123,58 +1123,6 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 	return count;
 }
 
-#ifdef FEATURE_GARBAGE_FILTER_SUPPORT
-static ssize_t md_cd_filter_show(struct ccci_modem *md, char *buf)
-{
-	int count = 0;
-	int i;
-
-	count += snprintf(buf + count, 128, "register port:");
-	for (i = 0; i < GF_PORT_LIST_MAX; i++) {
-		if (gf_port_list_reg[i] != 0)
-			count += snprintf(buf + count, 128, "%d,", gf_port_list_reg[i]);
-		else
-			break;
-	}
-	count += snprintf(buf + count, 128, "\n");
-	count += snprintf(buf + count, 128, "unregister port:");
-	for (i = 0; i < GF_PORT_LIST_MAX; i++) {
-		if (gf_port_list_unreg[i] != 0)
-			count += snprintf(buf + count, 128, "%d,", gf_port_list_unreg[i]);
-		else
-			break;
-	}
-	count += snprintf(buf + count, 128, "\n");
-	return count;
-}
-
-static ssize_t md_cd_filter_store(struct ccci_modem *md, const char *buf, size_t count)
-{
-	char command[16];
-	int start_id = 0, end_id = 0, i, temp_valu;
-
-	temp_valu = sscanf(buf, "%s %d %d%*s", command, &start_id, &end_id);
-	if (temp_valu < 0)
-		CCCI_ERROR_LOG(md->index, TAG, "sscanf retrun fail: %d\n", temp_valu);
-	CCCI_NORMAL_LOG(md->index, TAG, "%s from %d to %d\n", command, start_id, end_id);
-	if (strncmp(command, "add", sizeof(command)) == 0) {
-		memset(gf_port_list_reg, 0, sizeof(gf_port_list_reg));
-		for (i = 0; i < GF_PORT_LIST_MAX && i <= (end_id - start_id); i++)
-			gf_port_list_reg[i] = start_id + i;
-		ccci_ipc_set_garbage_filter(md, 1);
-	}
-	if (strncmp(command, "remove", sizeof(command)) == 0) {
-		memset(gf_port_list_unreg, 0, sizeof(gf_port_list_unreg));
-		for (i = 0; i < GF_PORT_LIST_MAX && i <= (end_id - start_id); i++)
-			gf_port_list_unreg[i] = start_id + i;
-		ccci_ipc_set_garbage_filter(md, 0);
-	}
-	return count;
-}
-
-CCCI_MD_ATTR(NULL, filter, 0660, md_cd_filter_show, md_cd_filter_store);
-#endif
-
 static ssize_t md_cd_parameter_show(struct ccci_modem *md, char *buf)
 {
 	int count = 0;
@@ -1212,12 +1160,6 @@ static void md_cd_sysfs_init(struct ccci_modem *md)
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_parameter.attr);
 	if (ret)
 		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_parameter.attr.name, ret);
-#ifdef FEATURE_GARBAGE_FILTER_SUPPORT
-	ccci_md_attr_filter.modem = md;
-	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_filter.attr);
-	if (ret)
-		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_filter.attr.name, ret);
-#endif
 }
 
 static struct syscore_ops md_cldma_sysops = {
