@@ -10,11 +10,16 @@ struct target_nrg {
 	unsigned long min_power;
 	unsigned long max_power;
 	struct reciprocal_value rdiv;
+	unsigned long max_dyn_pwr[32];
+	unsigned long max_stc_pwr[32];
 };
 
 extern struct target_nrg schedtune_target_nrg;
 
 extern int stune_task_threshold;
+
+void show_ste_info(void);
+void show_pwr_info(void);
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
