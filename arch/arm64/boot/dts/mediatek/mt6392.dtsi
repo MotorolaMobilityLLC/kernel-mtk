@@ -19,6 +19,14 @@
 	pmic: mt6392 {
 		compatible = "mediatek,mt6392";
 
+		mt6392keys: mt6392keys {
+			compatible = "mediatek,mt6392-keys";
+			mediatek,pwrkey-code = <116>;
+			mediatek,homekey-code = <114>;
+			mediatek,long-press-mode = <1>;
+			mediatek,long-press-duration = <0>;
+		};
+
 		mt6392pmic: mt6392pmic {
 			compatible = "mediatek,mt6392-pmic";
 		};
