@@ -917,6 +917,17 @@ u32 spm_vcorefs_get_MD_status(void)
 	return spm_read(MD2SPM_DVFS_CON);
 }
 
+void spm_msdc_wqhd_workaround(bool screen)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, screen, 0);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+}
+
 static void spm_dvfsfw_init(int curr_opp, u32 channel)
 {
 	unsigned long flags;
