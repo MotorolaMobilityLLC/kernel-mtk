@@ -144,5 +144,6 @@ extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int iReadReg(u16 a_u2Addr, u8 *a_puBuff, u16 i2cId);
 extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
+extern bool s5k3p8_read_otp_pdaf_data(kal_uint16 addr, BYTE *data, kal_uint32 size);
 
 #endif				/* _S5K3P38SRMIPI_SENSOR_H */

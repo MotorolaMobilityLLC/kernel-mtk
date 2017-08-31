@@ -166,7 +166,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,	/* sensor_interface_type */
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,	/* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
 	.mipi_settle_delay_mode = 0,	/* 0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL */
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_4CELL_Gb,
 	.mclk = 24,		/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x20, 0x5a, 0xff},	/* record sensor support all write id addr,
@@ -176,7 +176,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
+	.mirror = IMAGE_HV_MIRROR,	/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,	/* IMGSENSOR_MODE enum value,record current sensor mode,such as:
 						 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
 						 */
@@ -535,17 +535,22 @@ static void night_mode(kal_bool enable)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-static void check_stremoff(void)
-{
-	unsigned int i = 0, framecnt = 0;
 
-	for (i = 0; i < 100; i++) {
-		framecnt = read_cmos_sensor_8(0x0005);
-		if (framecnt == 0xFF)
-			return;
+static void check_streamoff(void)
+{
+	unsigned int i = 0;
+	int timeout = (10000 / imgsensor.current_fps) + 1;
+
+	mdelay(3);
+	for (i = 0; i < timeout; i++) {
+		if (read_cmos_sensor_8(0x0005) != 0xFF)
+			mdelay(1);
+		else
+			break;
 	}
-	LOG_INF(" Stream Off Fail!\n");
+	LOG_INF(" check_streamoff exit!\n");
 }
+
 
 #define USE_TNP_BURST	0
 #if USE_TNP_BURST
@@ -790,9 +795,6 @@ static void sensor_init(void)
 static void preview_setting(void)
 {
 	LOG_INF("preview_setting() E\n");
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff();
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -833,9 +835,7 @@ static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting() E! currefps:%d\n", currefps);
 
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff();
+
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -868,17 +868,12 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
-	/* stream on */
-	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("normal_video_setting() E! currefps:%d\n", currefps);
 
-	/* stream off */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff();
 
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x0136, 0x1800);
@@ -911,16 +906,12 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x317A, 0x0130);
 	write_cmos_sensor(0x31A4, 0x0102);
 
-	/* stream on */
-	write_cmos_sensor_8(0x0100, 0x01);
 }
 
 static void hs_video_setting(void)
 {
 	LOG_INF("hs_video_setting() E\n");
 	/* 720p 120fps */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff();
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -1009,8 +1000,6 @@ static void slim_video_setting(void)
 {
 	LOG_INF("slim_video_setting() E\n");
 	/* 1080p 60fps */
-	write_cmos_sensor_8(0x0100, 0x00);
-	check_stremoff();
 	if (chip_id == 0xA0) {
 		write_cmos_sensor(0x6028, 0x2000);
 		write_cmos_sensor(0x6214, 0x7971);
@@ -1117,6 +1106,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+	kal_uint16 sp8spFlag = 0;
+
 	/* sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address */
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1136,7 +1127,18 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					LOG_INF("RWB sensor of S5k3p8\n");
 				}
 #endif
+			sp8spFlag = (((read_cmos_sensor(0x000C) & 0xFF) << 8)
+						|((read_cmos_sensor(0x000E) >> 8) & 0xFF));
+			LOG_INF("sp8Flag(0x%x),0x5003 used by s5k3p8sp\n", sp8spFlag);
+
+			if (sp8spFlag == 0x5003) {
+				LOG_INF("it is s5k3p8sp\n");
 				return ERROR_NONE;
+			}
+			LOG_INF("3p8 type is 0x(%x),0x000C(0x%x),0x000E(0x%x)\n", sp8spFlag,
+				read_cmos_sensor(0x000C), read_cmos_sensor(0x000E));
+			*sensor_id = 0xFFFFFFFF;
+			return ERROR_SENSOR_CONNECT_FAIL;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id);
 			retry--;
@@ -1533,6 +1535,18 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }				/*      get_info  */
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+
+	if (enable) {
+		write_cmos_sensor_8(0x0100, 0X01);
+	} else {
+		write_cmos_sensor_8(0x0100, 0x00);
+		check_streamoff();
+	}
+	return ERROR_NONE;
+}
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
 			  MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -1801,7 +1815,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		get_imgsensor_id(feature_return_para_32);
 		break;
 	case SENSOR_FEATURE_SET_AUTO_FLICKER_MODE:
-		set_auto_flicker_mode((BOOL) * feature_data_16, *(feature_data_16 + 1));
+		set_auto_flicker_mode((BOOL) *feature_data_16, *(feature_data_16 + 1));
 		break;
 	case SENSOR_FEATURE_SET_MAX_FRAME_RATE_BY_SCENARIO:
 		set_max_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM) *feature_data,
@@ -1812,22 +1826,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 						  (MUINT32 *) (uintptr_t) (*(feature_data + 1)));
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
-		set_test_pattern_mode((BOOL) * feature_data);
+		set_test_pattern_mode((BOOL) *feature_data);
 		break;
 	case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:	/* for factory mode auto testing */
 		*feature_return_para_32 = imgsensor_info.checksum_value;
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%d\n", (UINT32) *feature_data);
+		LOG_INF("current fps :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = *feature_data;
+		imgsensor.current_fps = (UINT16)*feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("ihdr enable :%d\n", (BOOL) * feature_data);
+		LOG_INF("ihdr enable :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_mode = *feature_data;
+		imgsensor.ihdr_mode = (UINT8)*feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
@@ -1871,6 +1885,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n", (UINT16) *feature_data,
 			(UINT16) *(feature_data + 1));
 		/* ihdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1)); */
+		break;
+	case SENSOR_FEATURE_GET_PDAF_DATA:	/*get cal data from eeprom*/
+		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA\n");
+		s5k3p8_read_otp_pdaf_data((kal_uint16)(*feature_data),
+								(BYTE *)(uintptr_t)(*(feature_data+1)),
+								(kal_uint32)(*(feature_data+2)));
+		LOG_INF("SENSOR_FEATURE_GET_PDAF_DATA success\n");
 		break;
 		/******************** PDAF START >>> *********/
 		/*
@@ -1941,7 +1962,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		 * break;
 		 */
 		/******************** PDAF END   <<< *********/
-
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 	default:
 		break;
 	}

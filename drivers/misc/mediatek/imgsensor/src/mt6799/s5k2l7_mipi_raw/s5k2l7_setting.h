@@ -33,9 +33,13 @@
 #include "s5k2l7_setting_mode1.h"
 #include "s5k2l7_setting_mode2.h"
 #include "s5k2l7_setting_mode3.h"
+#include "s5k2l7_setting_mode1_v2.h"
+#include "s5k2l7_setting_mode2_v2.h"
+#include "s5k2l7_setting_mode3_v2.h"
 
+#define HV_MIRROR_FLIP
 
-#define S5K2L7_SENSOR_MODE 1 // open this define for m1, close this define for m2
+#define S5K2L7_SENSOR_MODE 1 /* open this define for m1, close this define for m2 */
 
 UINT16 pdaf_sensor_mode = S5K2L7_SENSOR_MODE;
 UINT16 proc_pdaf_sensor_mode = S5K2L7_SENSOR_MODE;

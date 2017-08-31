@@ -38,9 +38,11 @@ obj-y				+= kd_sensorlist.o
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
+subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 #$(info by porject kd_camera_hw)
 else
-obj-y                           += camera_hw/
+obj-y				+= camera_hw/
+subdir-ccflags-y		+= -I$(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_hw
 endif
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
