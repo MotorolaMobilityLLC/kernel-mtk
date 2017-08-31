@@ -589,7 +589,7 @@ struct wakeup_source isp_wake_lock;
 #else
 struct wake_lock isp_wake_lock;
 #endif
-static int g_bWaitLock;
+static int g_WaitLockCt;
 /*
 * static void __iomem *g_isp_base_dase;
 * static void __iomem *g_isp_inner_base_dase;
@@ -763,7 +763,7 @@ unsigned long g_Flash_SpinLock;
 
 
 static unsigned int G_u4EnableClockCount;
-static bool suspend_clockoff;
+static atomic_t G_u4DevNodeCt;
 
 int pr_detect_count;
 
@@ -4933,6 +4933,12 @@ static void ISP_EnableClock(bool En)
 #else
 		/*LOG_INF("CCF:disable_unprepare clk\n");*/
 		spin_lock(&(IspInfo.SpinLockClock));
+		if (G_u4EnableClockCount == 0) {
+			spin_unlock(&(IspInfo.SpinLockClock));
+			LOG_INF("G_u4EnableClockCount aleady be 0, do nothing\n");
+			return;
+		}
+
 		G_u4EnableClockCount--;
 		if (G_u4EnableClockCount == 0) {
 			setReg = ISP_RD32(CLOCK_CELL_BASE);
@@ -7732,30 +7738,31 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		} else {
 			if (wakelock_ctrl == 1) {       /* Enable     wakelock */
-				if (g_bWaitLock) {
-					g_bWaitLock++;
-					LOG_DBG("add wakelock cnt(%d)\n", g_bWaitLock);
+				if (g_WaitLockCt) {
+					g_WaitLockCt++;
+					LOG_DBG("add wakelock cnt(%d)\n", g_WaitLockCt);
 				} else {
 #ifdef CONFIG_PM_WAKELOCKS
 				__pm_stay_awake(&isp_wake_lock);
 #else
 				wake_lock(&isp_wake_lock);
 #endif
-				g_bWaitLock++;
-				LOG_DBG("wakelock enable!! cnt(%d)\n", g_bWaitLock);
+				g_WaitLockCt++;
+				LOG_DBG("wakelock enable!! cnt(%d)\n", g_WaitLockCt);
 				}
 			} else {        /* Disable wakelock */
-				if (g_bWaitLock) {
-					g_bWaitLock--;
-					LOG_DBG("subtract wakelock cnt(%d)\n", g_bWaitLock);
-				}
-				if (g_bWaitLock == 0) {
+				if (g_WaitLockCt)
+					g_WaitLockCt--;
+
+				if (g_WaitLockCt)
+					LOG_DBG("subtract wakelock cnt(%d)\n", g_WaitLockCt);
+				else {
 #ifdef CONFIG_PM_WAKELOCKS
 					__pm_relax(&isp_wake_lock);
 #else
 					wake_unlock(&isp_wake_lock);
 #endif
-					LOG_DBG("wakelock disable!! cnt(%d)\n", g_bWaitLock);
+					LOG_DBG("wakelock disable!! cnt(%d)\n", g_WaitLockCt);
 				}
 			}
 		}
@@ -9336,8 +9343,9 @@ EXIT:
 		ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 	}
 
+	LOG_INF("- X. Ret: %d. UserCount: %d. G_u4EnableClockCount:%d\n", Ret,
+		IspInfo.UserCount, G_u4EnableClockCount);
 
-	LOG_INF("- X. Ret: %d. UserCount: %d.\n", Ret, IspInfo.UserCount);
 	return Ret;
 
 }
@@ -9521,13 +9529,14 @@ static signed int ISP_release(
 	/* why i add this wake_unlock here, because     the     Ap is not expected to be dead. */
 	/* The driver must releae the wakelock, otherwise the system will not enter     */
 	/* the power-saving mode */
-	if (g_bWaitLock) {
+	if (g_WaitLockCt) {
+		LOG_INF("wakelock disable!! cnt(%d)\n", g_WaitLockCt);
 #ifdef CONFIG_PM_WAKELOCKS
 		__pm_relax(&isp_wake_lock);
 #else
 		wake_unlock(&isp_wake_lock);
 #endif
-		g_bWaitLock = 0;
+		g_WaitLockCt = 0;
 	}
 	/* reset */
 	/*      */
@@ -9647,16 +9656,22 @@ static signed int ISP_release(
 		ISP_RD32(ISP_SENINF2_BASE + 0x0600),
 		ISP_RD32(ISP_SENINF3_BASE + 0x0600));
 
-EXIT:
-
 	/* Disable clock.
 	*  1. clkmgr: G_u4EnableClockCount=0, call clk_enable/disable
 	*  2. CCF: call clk_enable/disable every time
+	*     -> when IspInfo.UserCount, disable all ISP clk
 	*/
-	ISP_EnableClock(MFALSE);
-	LOG_DBG("isp release G_u4EnableClockCount: %d", G_u4EnableClockCount);
+	spin_lock(&(IspInfo.SpinLockClock));
+	i = G_u4EnableClockCount;
+	spin_unlock(&(IspInfo.SpinLockClock));
+	while (i > 0) {
+		ISP_EnableClock(MFALSE);
+		i--;
+	}
 
-	LOG_INF("- X. UserCount: %d.", IspInfo.UserCount);
+EXIT:
+	LOG_INF("- X. UserCount: %d. G_u4EnableClockCount:%d", IspInfo.UserCount,
+		G_u4EnableClockCount);
 	return 0;
 }
 
@@ -9841,6 +9856,7 @@ static signed int ISP_probe(struct platform_device *pDev)
 	}
 
 	nr_isp_devs += 1;
+	atomic_inc(&G_u4DevNodeCt);
 #if 1
 	_ispdev = krealloc(isp_devs, sizeof(struct isp_device) * nr_isp_devs, GFP_KERNEL);
 	if (!_ispdev) {
@@ -11042,7 +11058,6 @@ static signed int ISP_suspend(
 	pm_message_t            Mesg
 )
 {
-#if 1
 	unsigned int regVal;
 	signed int IrqType, ret, module;
 	char moduleName[128];
@@ -11057,13 +11072,27 @@ static signed int ISP_suspend(
 	module = -1;
 	strncpy(moduleName, pDev->dev.of_node->name, 127);
 
-	if (IspInfo.UserCount == 0) {
-		/* Only print cama log */
-		if (strcmp(moduleName, IRQ_CB_TBL[ISP_IRQ_TYPE_INT_CAM_A_ST].device_name) == 0)
-			LOG_DBG("%s - X. UserCount=0\n", moduleName);
+	/* update device node count*/
+	atomic_dec(&G_u4DevNodeCt);
 
-		return 0;
+	/* Check clock counter instead of check IspInfo.UserCount
+	*  for ensuring current clocks are on or off
+	*/
+	spin_lock(&(IspInfo.SpinLockClock));
+	if (!G_u4EnableClockCount) {
+		spin_unlock(&(IspInfo.SpinLockClock));
+		/* Only print cama log */
+		if (strcmp(moduleName, IRQ_CB_TBL[ISP_IRQ_TYPE_INT_CAM_A_ST].device_name) == 0) {
+			LOG_DBG("%s - X. UserCount=%d,wakelock:%d,devct:%d\n", moduleName,
+				IspInfo.UserCount, G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
+		} else if (IspInfo.UserCount != 0) {
+			LOG_INF("%s - X. UserCount=%d,G_u4EnableClockCount=0,wakelock:%d,devct:%d\n",
+				moduleName, IspInfo.UserCount, G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
+		}
+
+		return ret;
 	}
+	spin_unlock(&(IspInfo.SpinLockClock));
 
 	for (IrqType = 0; IrqType < ISP_IRQ_TYPE_AMOUNT; IrqType++) {
 		if (strcmp(moduleName, IRQ_CB_TBL[IrqType].device_name) == 0)
@@ -11105,7 +11134,7 @@ static signed int ISP_suspend(
 	}
 
 	if (module < 0)
-		return ret;/*return here for those modules who is not linked with sensor*/
+		goto EXIT;
 
 	if (module == ISP_CAMSV5_IDX)
 		LOG_INF("%s_suspend: E.\n", moduleName);
@@ -11114,6 +11143,9 @@ static signed int ISP_suspend(
 	/*LOG_DBG("%s: Rs_TG(0x%08x)\n", moduleName, regVal);*/
 
 	if (regVal & 0x01) {
+		LOG_INF("%s_suspend,disable VF,wakelock:%d,clk:%d,devct:%d\n", moduleName,
+			g_WaitLockCt, G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
+
 		SuspnedRecord[module] = 1;
 		/* disable VF */
 		ISP_WR32(CAM_REG_TG_VF_CON(module), (regVal & (~0x01)));
@@ -11168,93 +11200,26 @@ static signed int ISP_suspend(
 		g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt;
 		regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
 		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal & (~0x01)));
-		Disable_Unprepare_cg_clock();
-	} else
+	} else {
+		LOG_INF("%s_suspend,wakelock:%d,clk:%d,devct:%d\n", moduleName, g_WaitLockCt,
+			G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
 		SuspnedRecord[module] = 0;
-
-	spin_lock(&(IspInfo.SpinLockClock));
-	if (G_u4EnableClockCount)
-		suspend_clockoff = MTRUE;
-	spin_unlock(&(IspInfo.SpinLockClock));
-
-	if (suspend_clockoff)
-		ISP_EnableClock(MFALSE);
-
-#else
-	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
-	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
-	struct ISP_WAIT_IRQ_STRUCT waitirq;
-	signed int ret = 0;
-
-	LOG_DBG("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
-		bPass1_On_In_Resume_TG1, bPass1_On_In_Resume_TG2, regTG1Val, regTG2Val);
-
-	bPass1_On_In_Resume_TG1 = 0;
-	if (regTG1Val & 0x01) {  /* For TG1 Main sensor. */
-		bPass1_On_In_Resume_TG1 = 1;
-		ISP_WR32(ISP_ADDR + 0x414, (regTG1Val & (~0x01)));
-		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_A_ST;
-		waitirq.EventInfo.Timeout = 100;
-		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
-		waitirq.EventInfo.Status = SW_PASS1_DON_ST;
-		waitirq.EventInfo.UserKey = 0;
-		ret = ISP_WaitIrq(&waitirq);
 	}
 
-	bPass1_On_In_Resume_TG2 = 0;
-	if (regTG2Val & 0x01) {  /* For TG2 Sub sensor. */
-		bPass1_On_In_Resume_TG2 = 1;
-		ISP_WR32(ISP_ADDR + 0x2414, (regTG2Val & (~0x01)));
-		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_B_ST;
-		waitirq.EventInfo.Timeout = 100;
-		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
-		waitirq.EventInfo.Status = SW_PASS1_DON_ST;
-		waitirq.EventInfo.UserKey = 0;
-		ret = ISP_WaitIrq(&waitirq);
+EXIT:
+	/* last dev node will disable clk "G_u4EnableClockCount" times */
+	if (!atomic_read(&G_u4DevNodeCt)) {
+		spin_lock(&(IspInfo.SpinLockClock));
+		loopCnt = G_u4EnableClockCount;
+		spin_unlock(&(IspInfo.SpinLockClock));
+
+		LOG_INF("%s - X. wakelock:%d, last dev node,disable clk:%d\n",
+			moduleName, g_WaitLockCt, loopCnt);
+		while (loopCnt > 0) {
+			ISP_EnableClock(MFALSE);
+			loopCnt--;
+		}
 	}
-
-
-#ifdef ISP_Recovery
-	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
-	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
-	struct ISP_WAIT_IRQ_STRUCT waitirq;
-	signed int ret = 0;
-
-	LOG_DBG("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
-		bPass1_On_In_Resume_TG1, bPass1_On_In_Resume_TG2, regTG1Val, regTG2Val);
-
-	bPass1_On_In_Resume_TG1 = 0;
-	if (regTG1Val & 0x01) {  /* For TG1 Main sensor. */
-		bPass1_On_In_Resume_TG1 = 1;
-		ISP_WR32(ISP_ADDR + 0x414, (regTG1Val & (~0x01)));
-		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_A_ST;
-		waitirq.EventInfo.Timeout = 100;
-		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
-		waitirq.EventInfo.Status = SW_PASS1_DON_ST;
-		waitirq.EventInfo.UserKey = 0;
-		ret = ISP_WaitIrq(&waitirq);
-	}
-
-	bPass1_On_In_Resume_TG2 = 0;
-	if (regTG2Val & 0x01) {  /* For TG2 Sub sensor. */
-		bPass1_On_In_Resume_TG2 = 1;
-		ISP_WR32(ISP_ADDR + 0x2414, (regTG2Val & (~0x01)));
-		waitirq.Type = ISP_IRQ_TYPE_INT_CAM_B_ST;
-		waitirq.EventInfo.Timeout = 100;
-		waitirq.EventInfo.Clear = ISP_IRQ_CLEAR_WAIT;
-		waitirq.EventInfo.Type = ISP_IRQ_TYPE_INT_CAM_B_ST;
-		waitirq.EventInfo.Status = SW_PASS1_DON_ST;
-		waitirq.EventInfo.UserKey = 0;
-		ret = ISP_WaitIrq(&waitirq);
-	}
-	if ((regTG1Val & 0x01) || (regTG2Val & 0x01)) {
-		sensorPowerOff();
-		backRegister();
-		/* ISP_DumpReg(); */
-		ISP_EnableClock(MFALSE);
-	}
-#endif
-#endif
 
 	return 0;
 }
@@ -11264,7 +11229,7 @@ static signed int ISP_suspend(
 ********************************************************************************/
 static signed int ISP_resume(struct platform_device *pDev)
 {
-#if 1
+
 	unsigned int regVal;
 	signed int IrqType, ret, module;
 	char moduleName[128];
@@ -11273,10 +11238,9 @@ static signed int ISP_resume(struct platform_device *pDev)
 	module = -1;
 	strncpy(moduleName, pDev->dev.of_node->name, 127);
 
-	if (suspend_clockoff) {
-		ISP_EnableClock(MTRUE);
-		suspend_clockoff = MFALSE;
-	}
+	/* update device node count*/
+	atomic_inc(&G_u4DevNodeCt);
+
 	if (IspInfo.UserCount == 0) {
 		/* Only print cama log */
 		if (strcmp(moduleName, IRQ_CB_TBL[ISP_IRQ_TYPE_INT_CAM_A_ST].device_name) == 0)
@@ -11327,10 +11291,11 @@ static signed int ISP_resume(struct platform_device *pDev)
 	if (module < 0)
 		return ret;
 
-	if (module == ISP_CAMSV5_IDX)
-		LOG_INF("%s_resume: E.\n", moduleName);
+	ISP_EnableClock(MTRUE);
 
 	if (SuspnedRecord[module]) {
+		LOG_INF("%s_resume,enable VF,wakelock:%d,clk:%d,devct:%d\n", moduleName,
+			g_WaitLockCt, G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
 		SuspnedRecord[module] = 0;
 
 		Prepare_Enable_cg_clock();
@@ -11341,9 +11306,11 @@ static signed int ISP_resume(struct platform_device *pDev)
 		/*vf*/
 		regVal = ISP_RD32(CAM_REG_TG_VF_CON(module));
 		ISP_WR32(CAM_REG_TG_VF_CON(module), (regVal | 0x01));
+	} else {
+		LOG_INF("%s_resume,wakelock:%d,clk:%d,devct:%d\n", moduleName,
+			g_WaitLockCt, G_u4EnableClockCount, atomic_read(&G_u4DevNodeCt));
 	}
 
-#endif
 	return 0;
 }
 
@@ -11914,6 +11881,8 @@ static signed int __init ISP_Init(void)
 	int i;
 	/*  */
 	LOG_DBG("- E.");
+	/*  */
+	atomic_set(&G_u4DevNodeCt, 0);
 	/*  */
 	Ret = platform_driver_register(&IspDriver);
 	if ((Ret) < 0) {
