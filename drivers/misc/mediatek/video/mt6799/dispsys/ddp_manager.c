@@ -1860,6 +1860,7 @@ static bool can_dual_PQ(unsigned int cmd)
 	case DISP_IOCTL_SET_COLOR_REG:
 	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
 	case DISP_IOCTL_PQ_SET_WINDOW:
+	case DISP_IOCTL_WRITE_REG:
 		return true;
 	default:
 		return false;
