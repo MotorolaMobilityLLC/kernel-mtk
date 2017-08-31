@@ -28,7 +28,11 @@
 #include <asm/errno.h>
 #include <asm/esr.h>
 #include <asm/memory.h>
+#include <asm/irq.h>
+#include <asm/memory.h>
+#include <asm/ptrace.h>
 #include <asm/thread_info.h>
+#include <asm/uaccess.h>
 #include <asm/unistd.h>
 
 /*
@@ -89,9 +93,12 @@
 
 	.if	\el == 0
 	mrs	x21, sp_el0
-	get_thread_info tsk			// Ensure MDSCR_EL1.SS is clear,
+	mov	tsk, sp
+	and	tsk, tsk, #~(THREAD_SIZE - 1)	// Ensure MDSCR_EL1.SS is clear,
 	ldr	x19, [tsk, #TI_FLAGS]		// since we can unmask debug
 	disable_step_tsk x19, x20		// exceptions when scheduling.
+
+	mov	x29, xzr			// fp pointed to user-space
 	.else
 	add	x21, sp, #S_FRAME_SIZE
 	get_thread_info tsk
@@ -100,10 +107,39 @@
 	str	x20, [sp, #S_ORIG_ADDR_LIMIT]
 	mov	x20, #TASK_SIZE_64
 	str	x20, [tsk, #TI_ADDR_LIMIT]
+	ALTERNATIVE(nop, SET_PSTATE_UAO(0), ARM64_HAS_UAO, CONFIG_ARM64_UAO)
 	.endif /* \el == 0 */
 	mrs	x22, elr_el1
 	mrs	x23, spsr_el1
 	stp	lr, x21, [sp, #S_LR]
+
+#ifdef CONFIG_ARM64_SW_TTBR0_PAN
+	/*
+	 * Set the TTBR0 PAN bit in SPSR. When the exception is taken from
+	 * EL0, there is no need to check the state of TTBR0_EL1 since
+	 * accesses are always enabled.
+	 * Note that the meaning of this bit differs from the ARMv8.1 PAN
+	 * feature as all TTBR0_EL1 accesses are disabled, not just those to
+	 * user mappings.
+	 */
+alternative_if_not ARM64_HAS_PAN
+	nop
+alternative_else
+	b	1f				// skip TTBR0 PAN
+alternative_endif
+
+	.if	\el != 0
+	mrs	x21, ttbr0_el1
+	tst	x21, #0xffff << 48		// Check for the reserved ASID
+	orr	x23, x23, #PSR_PAN_BIT		// Set the emulated PAN in the saved SPSR
+	b.eq	1f				// TTBR0 access already disabled
+	and	x23, x23, #~PSR_PAN_BIT		// Clear the emulated PAN in the saved SPSR
+	.endif
+
+	uaccess_ttbr0_disable x21
+1:
+#endif
+
 	stp	x22, x23, [sp, #S_PC]
 
 	/*
@@ -112,6 +148,13 @@
 	.if	\el == 0
 	mvn	x21, xzr
 	str	x21, [sp, #S_SYSCALLNO]
+	.endif
+
+	/*
+	 * Set sp_el0 to current thread_info.
+	 */
+	.if	\el == 0
+	msr	sp_el0, tsk
 	.endif
 
 	/*
@@ -128,11 +171,49 @@
 	/* Restore the task's original addr_limit. */
 	ldr	x20, [sp, #S_ORIG_ADDR_LIMIT]
 	str	x20, [tsk, #TI_ADDR_LIMIT]
+
+	/* No need to restore UAO, it will be restored from SPSR_EL1 */
 	.endif
 
 	ldp	x21, x22, [sp, #S_PC]		// load ELR, SPSR
 	.if	\el == 0
 	ct_user_enter
+	.endif
+
+#ifdef CONFIG_ARM64_SW_TTBR0_PAN
+	/*
+	 * Restore access to TTBR0_EL1. If returning to EL0, no need for SPSR
+	 * PAN bit checking.
+	 */
+alternative_if_not ARM64_HAS_PAN
+	nop
+alternative_else
+	b	2f				// skip TTBR0 PAN
+alternative_endif
+
+	.if	\el != 0
+	tbnz	x22, #_PSR_PAN_BIT, 1f		// Skip re-enabling TTBR0 access if previously disabled
+	.endif
+
+	uaccess_ttbr0_enable x0
+
+	.if	\el == 0
+	/*
+	 * Enable errata workarounds only if returning to user. The only
+	 * workaround currently required for TTBR0_EL1 changes are for the
+	 * Cavium erratum 27456 (broadcast TLBI instructions may cause I-cache
+	 * corruption).
+	 */
+	post_ttbr0_update_workaround
+	.endif
+1:
+	.if	\el != 0
+	and	x22, x22, #~PSR_PAN_BIT		// ARMv8.0 CPUs do not understand this bit
+	.endif
+2:
+#endif
+
+	.if	\el == 0
 	ldr	x23, [sp, #S_SP]		// load return stack pointer
 	msr	sp_el0, x23
 #ifdef CONFIG_ARM64_ERRATUM_845719
@@ -154,6 +235,7 @@ alternative_else
 alternative_endif
 #endif
 	.endif
+
 	msr	elr_el1, x21			// set up the return data
 	msr	spsr_el1, x22
 	ldp	x0, x1, [sp, #16 * 0]
@@ -176,9 +258,41 @@ alternative_endif
 	eret					// return to kernel
 	.endm
 
-	.macro	get_thread_info, rd
-	mov	\rd, sp
-	and	\rd, \rd, #~(THREAD_SIZE - 1)	// top of stack
+	.macro	irq_stack_entry
+	mov	x19, sp			// preserve the original sp
+
+	/*
+	 * Compare sp with the current thread_info, if the top
+	 * ~(THREAD_SIZE - 1) bits match, we are on a task stack, and
+	 * should switch to the irq stack.
+	 */
+	and	x25, x19, #~(THREAD_SIZE - 1)
+	cmp	x25, tsk
+	b.ne	9998f
+
+	this_cpu_ptr irq_stack, x25, x26
+	mov	x26, #IRQ_STACK_START_SP
+	add	x26, x25, x26
+
+	/* switch to the irq stack */
+	mov	sp, x26
+
+	/*
+	 * Add a dummy stack frame, this non-standard format is fixed up
+	 * by unwind_frame()
+	 */
+	stp     x29, x19, [sp, #-16]!
+	mov	x29, sp
+
+9998:
+	.endm
+
+	/*
+	 * x19 should be preserved between irq_stack_entry and
+	 * irq_stack_exit.
+	 */
+	.macro	irq_stack_exit
+	mov	sp, x19
 	.endm
 
 /*
@@ -196,10 +310,11 @@ tsk	.req	x28		// current thread_info
  * Interrupt handling.
  */
 	.macro	irq_handler
-	adrp	x1, handle_arch_irq
-	ldr	x1, [x1, #:lo12:handle_arch_irq]
+	ldr_l	x1, handle_arch_irq
 	mov	x0, sp
+	irq_stack_entry
 	blr	x1
+	irq_stack_exit
 	.endm
 
 	.text
@@ -242,7 +357,7 @@ END(vectors)
  * Invalid mode handlers
  */
 	.macro	inv_entry, el, reason, regsize = 64
-	kernel_entry el, \regsize
+	kernel_entry \el, \regsize
 	mov	x0, sp
 	mov	x1, #\reason
 	mrs	x2, esr_el1
@@ -320,6 +435,8 @@ el1_sync_nest_skip:
 	lsr	x24, x1, #ESR_ELx_EC_SHIFT	// exception class
 	cmp	x24, #ESR_ELx_EC_DABT_CUR	// data abort in EL1
 	b.eq	el1_da
+	cmp	x24, #ESR_ELx_EC_IABT_CUR	// instruction abort in EL1
+	b.eq	el1_ia
 	cmp	x24, #ESR_ELx_EC_SYS64		// configurable trap
 	b.eq	el1_undef
 	cmp	x24, #ESR_ELx_EC_SP_ALIGN	// stack alignment exception
@@ -331,6 +448,11 @@ el1_sync_nest_skip:
 	cmp	x24, #ESR_ELx_EC_BREAKPT_CUR	// debug exception in EL1
 	b.ge	el1_dbg
 	b	el1_inv
+
+el1_ia:
+	/*
+	 * Fall through to the Data abort case
+	 */
 el1_da:
 	/*
 	 * Data abort handling
@@ -404,7 +526,6 @@ el1_irq:
 	irq_handler
 
 #ifdef CONFIG_PREEMPT
-	get_thread_info tsk
 	ldr	w24, [tsk, #TI_PREEMPT]		// get preempt count
 	cbnz	w24, 1f				// preempt count != 0
 	ldr	x0, [tsk, #TI_FLAGS]		// get flags
@@ -527,7 +648,7 @@ el0_ia:
 	enable_dbg_and_irq
 	ct_user_exit
 	mov	x0, x26
-	orr	x1, x25, #1 << 24		// use reserved ISS bit for instruction aborts
+	mov	x1, x25
 	mov	x2, sp
 	bl	do_mem_abort
 	b	ret_to_user
@@ -642,6 +763,8 @@ ENTRY(cpu_switch_to)
 	ldp	x29, x9, [x8], #16
 	ldr	lr, [x8]
 	mov	sp, x9
+	and	x9, x9, #~(THREAD_SIZE - 1)
+	msr	sp_el0, x9
 	ret
 ENDPROC(cpu_switch_to)
 
@@ -669,14 +792,14 @@ ret_fast_syscall_trace:
 work_pending:
 	tbnz	x1, #TIF_NEED_RESCHED, work_resched
 	/* TIF_SIGPENDING, TIF_NOTIFY_RESUME or TIF_FOREIGN_FPSTATE case */
-	ldr	x2, [sp, #S_PSTATE]
 	mov	x0, sp				// 'regs'
-	tst	x2, #PSR_MODE_MASK		// user mode regs?
-	b.ne	no_work_pending			// returning to kernel
 	enable_irq				// enable interrupts for do_notify_resume()
 	bl	do_notify_resume
 	b	ret_to_user
 work_resched:
+#ifdef CONFIG_TRACE_IRQFLAGS
+	bl	trace_hardirqs_off		// the IRQs are off here, inform the tracing code
+#endif
 	bl	schedule
 
 /*
@@ -688,7 +811,6 @@ ret_to_user:
 	and	x2, x1, #_TIF_WORK_MASK
 	cbnz	x2, work_pending
 	enable_step_tsk x1, x2
-no_work_pending:
 	kernel_exit 0
 ENDPROC(ret_to_user)
 
