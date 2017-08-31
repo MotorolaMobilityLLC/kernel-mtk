@@ -3519,6 +3519,7 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 	else if (lcm_cmd.cmd_if == (unsigned int)LCM_INTERFACE_DSI1)
 		i = 1;
 	else {
+		i = 0;
 		DDPMSG("dsi switch not support this cmd IF:%d\n", lcm_cmd.cmd_if);
 		/* return -1; */
 	}
