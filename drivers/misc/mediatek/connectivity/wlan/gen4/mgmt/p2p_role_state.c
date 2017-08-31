@@ -91,6 +91,7 @@ VOID p2pRoleStateAbort_SCAN(IN P_ADAPTER_T prAdapter, IN P_P2P_ROLE_FSM_INFO_T p
 
 		p2pFuncCancelScan(prAdapter, prP2pRoleFsmInfo->ucBssIndex, prScanInfo);
 
+		DBGLOG(P2P, INFO, "Ignore report scan done event on role interface\n");
 		/* TODO: May need indicate port index to upper layer. */
 		kalP2PIndicateScanDone(prAdapter->prGlueInfo, prP2pRoleFsmInfo->ucRoleIndex, prScanInfo->fgIsAbort);
 	} while (FALSE);
