@@ -2186,6 +2186,17 @@
 		mmsys_dummy_reg_offset = <0x8ac>;
 	};
 
+	cqdma@10212c00 {
+		compatible = "mediatek,mt-cqdma-v1";
+		reg = <0 0x10212c00 0 0x100>,
+			<0 0x10212d00 0 0x100>;
+		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
+		nr_channel = <2>;
+		clocks = <&infrasys INFRACFG_AO_GCE_CG>;
+		clock-names = "cqdma";
+	};
+
 	md2md_md2_ccif0@10213000 {
 		compatible = "mediatek,md2md_md2_ccif0";
 		reg = <0 0x10213000 0 0x1000>;
