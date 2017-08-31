@@ -711,8 +711,11 @@ void ion_mm_heap_memory_detail(void)
 			     "client", "dbg_name", "pid", "size", "address");
 	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 
-	if (!down_read_trylock(&dev->lock))
-		return;
+	if (!down_read_trylock(&dev->lock)) {
+		ION_PRINT_LOG_OR_SEQ(NULL, "detail trylock fail(%16zu)\n", mm_heap_total_memory);
+		goto skip_client_entry;
+	}
+
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client
 		*client = rb_entry(n, struct ion_client, node);
@@ -734,6 +737,8 @@ void ion_mm_heap_memory_detail(void)
 	up_read(&dev->lock);
 	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 	ION_PRINT_LOG_OR_SEQ(NULL, "orphaned allocations (info is from last known client):\n");
+
+skip_client_entry:
 
 	if (mutex_trylock(&dev->buffer_lock)) {
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
@@ -757,6 +762,7 @@ void ion_mm_heap_memory_detail(void)
 		ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 		ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %16zu\n", "total orphaned", total_orphaned_size);
 		ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %16zu\n", "total ", total_size);
+		ION_PRINT_LOG_OR_SEQ(NULL, "ion mm + cam total: %16zu\n", mm_heap_total_memory);
 		ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
 	} else {
 		ION_PRINT_LOG_OR_SEQ(NULL, "ion mm heap total memory: %16zu\n", mm_heap_total_memory);
