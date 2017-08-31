@@ -14,26 +14,39 @@
 #include <linux/pm_qos.h>
 #include "mtk_ppm_api.h"
 #include "usb_boost.h"
+#include <mtk_vcorefs_manager.h>
 
 /* platform specific parameter here */
 #ifdef CONFIG_MACH_MT6799
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
+static int dram_vcore_test_para[] = {1, 5, 500, 0};
+
 /* -1 denote not used*/
 struct act_arg_obj cpu_freq_test_arg = {2000000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
+struct act_arg_obj dram_vcore_test_arg = {OPP_UNREQ, -1, -1};
+
 #elif defined(CONFIG_MACH_MT6759)
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
+static int dram_vcore_test_para[] = {1, 5, 500, 0};
+
 /* -1 denote not used*/
 struct act_arg_obj cpu_freq_test_arg = {2000000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
+struct act_arg_obj dram_vcore_test_arg = {OPP_UNREQ, -1, -1};
+
 #elif defined(CONFIG_MACH_MT6763)
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
+static int dram_vcore_test_para[] = {1, 5, 500, 0};
+
 /* -1 denote not used*/
 struct act_arg_obj cpu_freq_test_arg = {2500000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
+struct act_arg_obj dram_vcore_test_arg = {OPP_0, -1, -1};
+
 #elif defined(CONFIG_ARCH_MT6XXX)
 /* add new here */
 #endif
@@ -73,23 +86,53 @@ static int core_release(struct act_arg_obj *arg)
 	return 0;
 }
 
+static int vcorefs_hold(struct act_arg_obj *arg)
+{
+	int vcore_ret;
+
+	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, arg->arg1);
+	if (vcore_ret)
+		USB_BOOST_DBG("hold VCORE fail (%d)\n", vcore_ret);
+	else
+		USB_BOOST_DBG("hold VCORE ok\n");
+
+	return 0;
+}
+
+static int vcorefs_release(struct act_arg_obj *arg)
+{
+	int vcore_ret;
+
+	vcore_ret = vcorefs_request_dvfs_opp(KIR_USB, OPP_UNREQ);
+	if (vcore_ret)
+		USB_BOOST_DBG("release VCORE fail(%d)\n", vcore_ret);
+	else
+		USB_BOOST_DBG("release VCORE ok\n");
+
+	return 0;
+}
+
 static int __init init(void)
 {
-
 	/* mandatory, related resource inited*/
 	usb_boost_init();
 
 	/* optional, change setting for alorithm other than default*/
 	usb_boost_set_para_and_arg(TYPE_CPU_FREQ, cpu_freq_test_para,
-			sizeof(cpu_freq_test_para)/sizeof(int), &cpu_freq_test_arg);
+			ARRAY_SIZE(cpu_freq_test_para), &cpu_freq_test_arg);
 	usb_boost_set_para_and_arg(TYPE_CPU_CORE, cpu_core_test_para,
-			sizeof(cpu_core_test_para)/sizeof(int), &cpu_core_test_arg);
+			ARRAY_SIZE(cpu_core_test_para), &cpu_core_test_arg);
+	usb_boost_set_para_and_arg(TYPE_DRAM_VCORE, dram_vcore_test_para,
+			ARRAY_SIZE(dram_vcore_test_para), &dram_vcore_test_arg);
 
 	/* mandatory, hook callback depends on platform */
 	register_usb_boost_act(TYPE_CPU_FREQ, ACT_HOLD, freq_hold);
 	register_usb_boost_act(TYPE_CPU_FREQ, ACT_RELEASE, freq_release);
 	register_usb_boost_act(TYPE_CPU_CORE, ACT_HOLD, core_hold);
 	register_usb_boost_act(TYPE_CPU_CORE, ACT_RELEASE, core_release);
+	register_usb_boost_act(TYPE_DRAM_VCORE, ACT_HOLD, vcorefs_hold);
+	register_usb_boost_act(TYPE_DRAM_VCORE, ACT_RELEASE, vcorefs_release);
+
 
 	pm_qos_add_request(&pm_qos_req, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 

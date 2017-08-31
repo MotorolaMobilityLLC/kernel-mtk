@@ -79,6 +79,7 @@ enum{
 static char *type_name[_TYPE_MAXID] = {
 	"cpu_freq",
 	"cpu_core",
+	"dram_vcore",
 };
 #define MAX_LEN_WQ_NAME 32
 static int trigger_cnt_disabled;
@@ -87,6 +88,7 @@ static int inited;
 static struct class *usb_boost_class;
 static int cpu_freq_dft_para[_ATTR_PARA_RW_MAXID] = {1, 3, 300, 0};
 static int cpu_core_dft_para[_ATTR_PARA_RW_MAXID] = {1, 3, 300, 0};
+static int dram_vcore_dft_para[_ATTR_PARA_RW_MAXID] = {1, 3, 300, 0};
 static void __usb_boost_empty(void) { return; }
 static void __usb_boost_cnt(void) { trigger_cnt_disabled++; return; }
 static void __usb_boost_by_id_empty(int id) { return; }
@@ -101,11 +103,14 @@ struct boost_ops {
 struct boost_ops __the_boost_ops = {
 	__usb_boost_empty,
 	{__usb_boost_by_id_empty,
+	 __usb_boost_by_id_empty,
 	 __usb_boost_by_id_empty} };
 
 /* -1 denote not used*/
 static struct act_arg_obj cpu_freq_dft_arg = {1000000000, -1, -1};
 static struct act_arg_obj cpu_core_dft_arg = {2, -1, -1};
+static struct act_arg_obj dram_vcore_dft_arg = {-1, -1, -1};
+
 static int test_diff_sec, test_diff_usec;
 
 struct control_ops {
@@ -301,9 +306,13 @@ static void boost_work(struct work_struct *work_struct)
 static void default_setting(void)
 {
 	usb_boost_set_para_and_arg(TYPE_CPU_FREQ, cpu_freq_dft_para,
-			sizeof(cpu_freq_dft_para)/sizeof(int), &cpu_freq_dft_arg);
+			ARRAY_SIZE(cpu_freq_dft_para), &cpu_freq_dft_arg);
+
 	usb_boost_set_para_and_arg(TYPE_CPU_CORE, cpu_core_dft_para,
-			sizeof(cpu_core_dft_para)/sizeof(int), &cpu_core_dft_arg);
+			ARRAY_SIZE(cpu_core_dft_para), &cpu_core_dft_arg);
+
+	usb_boost_set_para_and_arg(TYPE_DRAM_VCORE, dram_vcore_dft_para,
+			ARRAY_SIZE(dram_vcore_dft_para), &dram_vcore_dft_arg);
 }
 
 static int which_attr(struct mtk_usb_boost *inst, struct device_attribute
