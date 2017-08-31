@@ -324,7 +324,6 @@ struct rt9468_desc {
 	bool enable_wdt;
 	int regmap_represent_slave_addr;
 	const char *regmap_name;
-	int gpio_ceb_pin;
 };
 
 /* These default values will be used if there's no property in dts */
@@ -726,7 +725,7 @@ err_read_irq:
 	return IRQ_HANDLED;
 }
 
-static int rt9468_irq_init(struct rt9468_info *info)
+static int rt9468_irq_register(struct rt9468_info *info)
 {
 	int ret = 0;
 	struct device_node *np;
@@ -773,6 +772,26 @@ static int rt9468_enable_all_irq(struct rt9468_info *info, bool enable)
 	 */
 	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_STATC_CTRL,
 		ARRAY_SIZE(irq_data), irq_data);
+
+	return ret;
+}
+
+static int rt9468_irq_init(struct rt9468_info *info)
+{
+	int ret = 0;
+
+	/* Enable all IRQ */
+	ret = rt9468_enable_all_irq(info, true);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: enable all irq failed\n",
+			__func__);
+
+	/* Mask AICR loop event */
+	ret = rt9468_set_bit(info, RT9468_REG_CHG_STATC_CTRL,
+		RT9468_MASK_CHG_AICRM);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: mask AICR loop event failed\n",
+			__func__);
 
 	return ret;
 }
@@ -1213,18 +1232,9 @@ static int rt9468_sw_init(struct rt9468_info *info)
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
-	/* Enable all IRQ */
-	ret = rt9468_enable_all_irq(info, true);
+	ret = rt9468_irq_init(info);
 	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: enable all irq failed\n",
-			__func__);
-
-	/* Mask AICR loop event */
-	ret = rt9468_set_bit(info, RT9468_REG_CHG_STATC_CTRL,
-		RT9468_MASK_CHG_AICRM);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: mask AICR loop event failed\n",
-			__func__);
+		battery_log(BAT_LOG_CRTI, "%s: irq init failed\n", __func__);
 
 	/* Disable hardware ILIM */
 	ret = rt9468_enable_ilim(info, false);
@@ -1562,16 +1572,16 @@ static int rt9468_sw_reset(struct rt9468_info *info)
 	int ret = 0;
 
 	/* Register 0x01 ~ 0x10 */
-	u8 reg_default_data1[16] = {
+	const u8 reg_default_data1[] = {
 		0x10, 0x07, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA3,
 		0x3C, 0x58, 0x2C, 0x02, 0x52, 0x05, 0x00, 0x10
 	};
 
 	/* Register 0x12 ~ 0x14 */
-	u8 reg_default_data2[3] = {0xD0, 0x20, 0x20};
+	const u8 reg_default_data2[] = {0xD0, 0x20, 0x20};
 
 	/* Register 0x18 ~ 0x1D */
-	u8 reg_default_data3[6] = {0x20, 0x00, 0x40, 0x58, 0xB1, 0x24};
+	const u8 reg_default_data3[] = {0x20, 0x00, 0x40, 0x58, 0xB1, 0x24};
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
@@ -1674,7 +1684,7 @@ static int rt_charger_enable_hz(struct mtk_charger_info *mchr_info,
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
 	ret = (enable ? rt9468_set_bit : rt9468_clr_bit)
-		(info, RT9468_REG_CHG_CTRL1, RT9468_MASK_CHG_EN);
+		(info, RT9468_REG_CHG_CTRL1, RT9468_MASK_HZ_EN);
 
 	return ret;
 }
@@ -1862,11 +1872,11 @@ static int rt_charger_set_mivr(struct mtk_charger_info *mchr_info, void *data)
 {
 	int ret = 0;
 	u32 mivr = *((u32 *)data);
-	bool is_power_path_enable = true;
+	bool enable = true;
 	struct rt9468_info *info = (struct rt9468_info *)mchr_info;
 
-	ret = rt_charger_is_power_path_enable(mchr_info, &is_power_path_enable);
-	if (!is_power_path_enable) {
+	ret = rt_charger_is_power_path_enable(mchr_info, &enable);
+	if (!enable) {
 		battery_log(BAT_LOG_CRTI,
 			"%s: power path is disabled, cannot adjust mivr\n",
 			__func__);
@@ -2618,10 +2628,10 @@ static int rt9468_probe(struct i2c_client *i2c,
 		goto err_parse_dt;
 	}
 
-	ret = rt9468_irq_init(info);
+	ret = rt9468_irq_register(info);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: irq init failed\n", __func__);
-		goto err_irq_init;
+		goto err_irq_register;
 	}
 
 #ifdef CONFIG_RT_REGMAP
@@ -2680,7 +2690,7 @@ err_register_regmap:
 #endif
 err_no_dev:
 err_parse_dt:
-err_irq_init:
+err_irq_register:
 	mutex_destroy(&info->i2c_access_lock);
 	mutex_destroy(&info->adc_access_lock);
 	return ret;

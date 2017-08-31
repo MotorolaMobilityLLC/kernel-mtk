@@ -298,8 +298,10 @@ enum rt9466_reg_addr {
 
 /* ========== CHG_STATC 0x50 ============ */
 #define RT9466_SHIFT_CHG_MIVR	6
+#define RT9466_SHIFT_CHG_AICR	5
 
 #define RT9466_MASK_CHG_MIVR	(1 << RT9466_SHIFT_CHG_MIVR)
+#define RT9466_MASK_CHG_AICR	(1 << RT9466_SHIFT_CHG_AICR)
 
 /* ========== CHG_IRQ2 0x54 ============ */
 #define RT9466_SHIFT_CHG_IIN_MEASI	0
@@ -314,5 +316,12 @@ enum rt9466_reg_addr {
 
 #define RT9466_MASK_ADC_DONEI	(1 << RT9466_SHIFT_ADC_DONEI)
 #define RT9466_MASK_PUMPX_DONEI	(1 << RT9466_SHIFT_PUMPX_DONEI)
+
+/* ========== CHG_STATC_CTRL 0x60 ============ */
+#define RT9466_SHIFT_CHG_MIVRM	6
+#define RT9466_SHIFT_CHG_AICRM	5
+
+#define RT9466_MASK_CHG_MIVRM	(1 << RT9466_SHIFT_CHG_MIVRM)
+#define RT9466_MASK_CHG_AICRM	(1 << RT9466_SHIFT_CHG_AICRM)
 
 #endif /* __RT9466_CHARGER_H */
