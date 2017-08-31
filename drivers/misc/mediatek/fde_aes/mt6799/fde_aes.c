@@ -174,11 +174,12 @@ s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
 {
 	#define MSDC_MAX_ID 2 /* 0:eMMC; 1:SD; 2:SDIO */
 	static int iCnt[MSDC_MAX_ID] = {0};
+	unsigned long flags;
 
 	if (dev_num >= 2) /* SDIO etc */
 		return 0;
 
-	spin_lock(&fde_aes_context.lock);
+	spin_lock_irqsave(&fde_aes_context.lock, flags);
 
 	FDELOG("Before check MSDC%d dev-%s use-%s status-%s\n",
 		dev_num, iCnt[dev_num]?"enable":"disable",
@@ -213,7 +214,7 @@ s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
 	if (iCnt[dev_num] < 0) /* WARN_ON(iCnt[dev_num] < 0); */
 		iCnt[dev_num] = 0;
 
-	spin_unlock(&fde_aes_context.lock);
+	spin_unlock_irqrestore(&fde_aes_context.lock, flags);
 
 	return 0;
 }
@@ -221,13 +222,14 @@ s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
 s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 {
 	s32 status;
+	unsigned long flags;
 
 	if (!fde_aes_context.status) /* Need to enable FDE when MSDC send command */
 		FDEERR("MSDC%d block 0x%x CMD%d exec\n", dev_num, blkcnt, opcode);
 
 	BUG_ON(!fde_aes_context.status);
 
-	spin_lock(&fde_aes_context.lock);
+	spin_lock_irqsave(&fde_aes_context.lock, flags);
 
 	fde_aes_context.context_id = dev_num;
 	fde_aes_context.context_bp = 1;
@@ -240,7 +242,7 @@ s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 
 	status = fde_aes_set_context();
 
-	spin_unlock(&fde_aes_context.lock);
+	spin_unlock_irqrestore(&fde_aes_context.lock, flags);
 
 	return status;
 }
