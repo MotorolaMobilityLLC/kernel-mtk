@@ -160,11 +160,13 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
 {
 	struct class_device;
 	struct class_device *class_dev = NULL;
+	int ret = 0;
 
 	pr_err("\n=== MTKFB_VSYNC probe ===\n");
 
-	if (alloc_chrdev_region(&mtkfb_vsync_devno, 0, 1, MTKFB_VSYNC_DEVNAME)) {
-		VSYNC_ERR("can't get device major number...\n");
+	ret = alloc_chrdev_region(&mtkfb_vsync_devno, 0, 1, MTKFB_VSYNC_DEVNAME);
+	if (ret) {
+		VSYNC_ERR("[%s]can't get device major number:%d, line:%d\n", __func__, ret, __LINE__);
 		return -EFAULT;
 	}
 
@@ -174,7 +176,11 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
 	mtkfb_vsync_cdev->owner = THIS_MODULE;
 	mtkfb_vsync_cdev->ops = &mtkfb_vsync_fops;
 
-	cdev_add(mtkfb_vsync_cdev, mtkfb_vsync_devno, 1);
+	ret = cdev_add(mtkfb_vsync_cdev, mtkfb_vsync_devno, 1);
+	if (ret) {
+		VSYNC_ERR("[%s]add chrdev failed:%d, line:%d\n", __func__, ret, __LINE__);
+		return -EFAULT;
+	}
 
 	mtkfb_vsync_class = class_create(THIS_MODULE, MTKFB_VSYNC_DEVNAME);
 	class_dev =
