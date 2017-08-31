@@ -329,7 +329,7 @@ void musb_kick_D_CmdQ(struct musb *musb, struct musb_request *request)
 	/* note tx needed additional zlp field */
 	mtk_qmu_insert_task(request->epnum,
 			    isRx,
-			    (u8 *) request->request.dma,
+			    request->request.dma,
 			    request->request.length, ((request->request.zero == 1) ? 1 : 0), 1);
 
 	mtk_qmu_resume(request->epnum, isRx);
@@ -400,6 +400,7 @@ bool musb_is_qmu_stop(u32 ep_num, u8 isRx)
 	}
 }
 
+#ifndef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 {
 	/* sent ZLP through PIO */
@@ -441,6 +442,7 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 		QMU_ERR("TX ZLP sent fail???\n");
 	QMU_WARN("TX ZLP sent done\n");
 }
+#endif
 
 int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *urb)
 {
@@ -450,7 +452,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 	void __iomem		*epio = hw_ep->regs;
 	unsigned int offset = 0;
 	u8 bIsIoc;
-	u8 *pBuffer;
+	dma_addr_t pBuffer;
 	u32 dwLength;
 	u16 i;
 	u32 gdp_free_count = 0;
@@ -533,7 +535,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 		u32 gdp_used_count;
 
 		DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
-		pBuffer = (uint8_t *)urb->transfer_dma;
+		pBuffer = urb->transfer_dma;
 
 		if (gdp_free_count < urb->number_of_packets) {
 			DBG(0, "gdp_free_count:%d, number_of_packets:%d\n", gdp_free_count, urb->number_of_packets);
@@ -547,7 +549,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			/* If interrupt on complete ? */
 			bIsIoc = (i == (urb->number_of_packets-1)) ? 1 : 0;
 			DBG(4, "mtk_qmu_insert_task\n");
-			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer + offset, dwLength, 0, bIsIoc);
 
 			mtk_qmu_resume(hw_ep->epnum, isRx);
 		}
@@ -617,7 +619,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 	} else {
 		/* Must be the bulk transfer type */
 		QMU_WARN("non isoc\n");
-		pBuffer = (uint8_t *)urb->transfer_dma;
+		pBuffer = urb->transfer_dma;
 		if (urb->transfer_buffer_length < QMU_RX_SPLIT_THRE) {
 			if (gdp_free_count < 1) {
 				DBG(0, "gdp_free_count:%d, number_of_packets:%d\n",
@@ -630,7 +632,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			dwLength = urb->transfer_buffer_length;
 			bIsIoc = 1;
 
-			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer + offset, dwLength, 0, bIsIoc);
 			mtk_qmu_resume(hw_ep->epnum, isRx);
 		} else {
 			/*reuse isoc urb->unmber_of_packets*/
@@ -653,7 +655,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 				if (dwLength == 0)
 					dwLength = QMU_RX_SPLIT_BLOCK_SIZE;
 
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer + offset, dwLength, 0, bIsIoc);
 				mtk_qmu_resume(hw_ep->epnum, isRx);
 			}
 		}

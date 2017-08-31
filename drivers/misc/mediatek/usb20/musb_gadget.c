@@ -361,8 +361,6 @@ static void txstate(struct musb *musb, struct musb_request *req)
 	DBG(1, "hw_ep%d, maxpacket %d, fifo count %d, txcsr %03x\n",
 	    epnum, musb_ep->packet_sz, fifo_count, csr);
 
-	USB_LOGGER(TXSTATE, TXSTATE, epnum, musb_ep->packet_sz, fifo_count, csr);
-
 	if (is_buffer_mapped(req)) {
 		struct dma_controller *c = musb->dma_controller;
 		size_t request_size;
@@ -429,9 +427,6 @@ static void txstate(struct musb *musb, struct musb_request *req)
 	    request->actual, request->length,
 	    musb_readw(epio, MUSB_TXCSR), fifo_count, musb_readw(epio, MUSB_TXMAXP));
 
-	USB_LOGGER(TXSTATE_END, TXSTATE, musb_ep->end_point.name, use_dma ? "dma" : "pio",
-		   request->actual, request->length, musb_readw(epio, MUSB_TXCSR), fifo_count,
-		   musb_readw(epio, MUSB_TXMAXP));
 }
 
 /*
@@ -454,9 +449,6 @@ void musb_g_tx(struct musb *musb, u8 epnum)
 
 	csr = musb_readw(epio, MUSB_TXCSR);
 	DBG(1, "<== %s, txcsr %04x\n", musb_ep->end_point.name, csr);
-
-
-	USB_LOGGER(MUSB_G_TX, MUSB_G_TX, musb_ep->end_point.name, csr);
 
 	dma = is_dma_capable() ? musb_ep->dma : NULL;
 
@@ -872,9 +864,6 @@ void musb_g_rx(struct musb *musb, u8 epnum)
 
 	DBG(1, "<== %s, rxcsr %04x%s %p\n", musb_ep->end_point.name,
 	    csr, dma ? " (dma)" : "", request);
-
-	USB_LOGGER(MUSB_G_RX, MUSB_G_RX, musb_ep->end_point.name, csr,
-		   (dma != NULL) ? "DMA" : "PIO", request);
 
 	if (csr & MUSB_RXCSR_P_SENTSTALL) {
 		csr |= MUSB_RXCSR_P_WZC_BITS;
@@ -1640,11 +1629,15 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 		if (request->tx) {
 			/* TX QMU don't have info for length sent, set this field in advance */
 			request->request.actual = request->request.length;
+#ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
+			if (request->request.length >= 0) {
+#else
 			/* only enqueue for length > 0 packet. Don't send ZLP here for MSC protocol. */
 			if (request->request.length > 0) {
-
+#endif
 				musb_kick_D_CmdQ(musb, request);
 
+#ifndef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 			} else if (request->request.length == 0) {	/* for UMS special case */
 				int cnt = 50; /* 50*200us, total 10 ms */
 				int is_timeout = 1;
@@ -1669,7 +1662,7 @@ static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t g
 					QMU_WARN("TX ZLP sent in qmu_done_tx\n");
 					goto cleanup;
 				}
-
+#endif
 			} else {
 				QMU_ERR("ERR, TX, request->request.length(%d)\n",
 					request->request.length);

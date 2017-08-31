@@ -670,10 +670,6 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 		le16_to_cpu(req->wIndex),
 		le16_to_cpu(req->wLength));
 
-	USB_LOGGER(MUSB_READ_SETUP, MUSB_READ_SETUP, req->bRequestType,
-		req->bRequest, le16_to_cpu(req->wValue), le16_to_cpu(req->wIndex),
-		le16_to_cpu(req->wLength));
-
 	/* clean up any leftover transfers */
 	r = next_ep0_request(musb);
 	if (r)
@@ -720,9 +716,6 @@ __acquires(musb->lock)
 		return -EOPNOTSUPP;
 	spin_unlock(&musb->lock);
 
-	USB_LOGGER(FORWARD_TO_DRIVER,	FORWARD_TO_DRIVER,
-		musb->gadget_driver->driver.name);
-
 	retval = musb->gadget_driver->setup(&musb->g, ctrlrequest);
 
 	if (ctrlrequest->bRequest == USB_REQ_SET_CONFIGURATION) {
@@ -757,9 +750,6 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 
 	DBG(2, "csr %04x, count %d, ep0stage %s\n",
 			csr, len, decode_ep0stage(musb->ep0_state));
-
-	USB_LOGGER(MUSB_G_EP0_IRQ, MUSB_G_EP0_IRQ, csr, len,
-		musb_readb(mbase, MUSB_FADDR), decode_ep0stage(musb->ep0_state));
 
 	if (csr & MUSB_CSR0_P_DATAEND) {
 		/*
