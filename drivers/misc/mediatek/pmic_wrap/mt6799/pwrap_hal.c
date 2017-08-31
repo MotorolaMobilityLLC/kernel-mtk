@@ -787,7 +787,6 @@ static void _pwrap_InitStaUpd(void)
 	* WRAP_WR32(PMIC_WRAP_ADC_RDATA_ADDR, AUXADC_ADC16);
 	*/
 	WRAP_WR32(PMIC_WRAP_GPS_ADC_RDATA_ADDR, AUXADC_ADC36);
-	return;
 }
 
 static void _pwrap_starve_set(void)
