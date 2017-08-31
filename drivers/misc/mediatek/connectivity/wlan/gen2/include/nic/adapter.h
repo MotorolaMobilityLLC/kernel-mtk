@@ -179,6 +179,10 @@ struct _BSS_INFO_T {
 
 	BOOLEAN fgIsNetActive;	/* TRUE if this network has been activated */
 
+#if CFG_SUPPORT_RLM_ACT_NETWORK
+	UINT_8 ucNetActiveSrc;	/* Trigger source: connect/scan/pno */
+#endif
+
 	UINT_8 ucNetTypeIndex;	/* ENUM_NETWORK_TYPE_INDEX_T */
 
 	UINT_8 ucReasonOfDisconnect;	/* Used by media state indication */

@@ -169,6 +169,14 @@ struct RADIO_MEASUREMENT_REPORT_PARAMS {
 	LINK_T rReportLink; /* a link to save received report entry */
 	LINK_T rFreeReportLink;
 };
+
+typedef enum _ENUM_NET_ACTIVE_SRC_T {
+	NET_ACTIVE_SRC_NONE = 0,
+	NET_ACTIVE_SRC_CONNECT = 1,
+	NET_ACTIVE_SRC_SCAN = 2,
+	NET_ACTIVE_SRC_SCHED_SCAN = 4,
+	NET_ACTIVE_SRC_NUM
+} ENUM_NET_ACTIVE_SRC_T, *P_ENUM_NET_ACTIVE_SRC_T;
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -359,6 +367,14 @@ VOID rlmGenerateECSAIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 VOID  rlmFreqToChannelExt(unsigned int freq,
 			int sec_channel,
 			u8 *op_class, u8 *channel);
+#endif
+
+#if CFG_SUPPORT_RLM_ACT_NETWORK
+VOID rlmActivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
+			ENUM_NET_ACTIVE_SRC_T eNetActiveSrcIdx);
+
+VOID rlmDeactivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
+			ENUM_NET_ACTIVE_SRC_T eNetActiveSrcIdx);
 #endif
 /*******************************************************************************
 *                              F U N C T I O N S
