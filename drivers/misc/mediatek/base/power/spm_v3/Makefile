@@ -31,7 +31,7 @@ ccflags-y += -I$(srctree)/drivers/scsi/ufs/
 
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
-ccflags-y += -I$(srctree)/sound/soc/mediatek/common/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/common_int/
 endif
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
