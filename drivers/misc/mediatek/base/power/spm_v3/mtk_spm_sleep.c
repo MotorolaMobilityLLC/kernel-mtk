@@ -713,7 +713,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		spm_crit2("FAILED TO GET WD API\n");
 #endif
 	/* need be called before spin_lock_irqsave() */
-	ch = get_channel_lock();
+	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 
