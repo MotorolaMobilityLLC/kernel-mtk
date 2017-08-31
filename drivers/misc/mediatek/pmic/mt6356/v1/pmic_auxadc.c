@@ -48,7 +48,7 @@
 #include <mt-plat/mtk_battery.h>
 #endif
 
-#define AEE_DBG 1
+#define AEE_DBG 0
 
 static int count_time_out = 100;
 static int battmp;
