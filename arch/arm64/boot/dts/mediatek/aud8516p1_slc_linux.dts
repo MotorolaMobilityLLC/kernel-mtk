@@ -460,6 +460,7 @@
 				 <MT8167_PIN_56_I2S_LRCK__FUNC_I2S0_LRCK>,
 				 <MT8167_PIN_57_I2S_BCK__FUNC_I2S0_BCK>,
 				 <MT8167_PIN_66_LCM_RST__FUNC_I2S0_MCK>;
+				 drive-strength = <MTK_DRIVE_4mA>;
 		};
 	};
 
