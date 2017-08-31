@@ -23,10 +23,37 @@
 #define PMIC_WRAP_DEBUG
 #define PMIC_WRAP_SUPPORT
 /****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
+#if (PMIC_WRAP_PRELOADER)
+#if CFG_FPGA_PLATFORM
+#define PMIC_WRAP_NO_PMIC
+#else
+#undef PMIC_WRAP_NO_PMIC
+#define PWRAP_TIMEOUT
+#endif
+#elif (PMIC_WRAP_LK)
+#if defined(MACH_FPGA)
+#define PMIC_WRAP_NO_PMIC
+#else
+#undef PMIC_WRAP_NO_PMIC
+#define PWRAP_TIMEOUT
+#endif
+#elif (PMIC_WRAP_KERNEL)
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
 #define PMIC_WRAP_NO_PMIC
 #else
 #undef PMIC_WRAP_NO_PMIC
+#define PWRAP_TIMEOUT
+#endif
+#elif (PMIC_WRAP_CTP)
+#if defined(CONFIG_MTK_FPGA)
+#define PMIC_WRAP_NO_PMIC
+#else
+#undef PMIC_WRAP_NO_PMIC
+#define PWRAP_TIMEOUT
+#endif
+#else
+#undef PMIC_WRAP_NO_PMIC
+#define PWRAP_TIMEOUT
 #endif
 
 #define MTK_PLATFORM_MT6799      1

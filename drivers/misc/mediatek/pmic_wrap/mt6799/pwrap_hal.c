@@ -42,9 +42,6 @@
 
 /************* marco    ******************************************************/
 #if (PMIC_WRAP_PRELOADER)
-#if !CFG_FPGA_PLATFORM
-#define PWRAP_TIMEOUT
-#endif
 #elif (PMIC_WRAP_LK)
 #elif (PMIC_WRAP_KERNEL)
 #ifdef CONFIG_OF
