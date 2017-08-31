@@ -193,12 +193,12 @@ void __attribute__((weak)) spm_sodi_mempll_pwr_mode(bool pwr_mode)
 
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
+wake_reason_t __attribute__((weak)) spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	return WR_UNKNOWN;
 }
 
-wake_reason_t __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
+wake_reason_t __attribute__((weak)) spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	return WR_UNKNOWN;
 }
@@ -259,9 +259,6 @@ static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
 static bool             sodi3_force_vcore_lp_mode;
-#ifdef SPM_SODI3_PROFILE_TIME
-unsigned int            soidle3_profile[4];
-#endif
 
 /* SODI */
 static unsigned int     soidle_time_criteria = 26000; /* 2ms */
@@ -271,9 +268,6 @@ static bool             soidle_by_pass_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32              sodi_flags = SODI_FLAG_REDUCE_LOG;
-#ifdef SPM_SODI_PROFILE_TIME
-unsigned int            soidle_profile[4];
-#endif
 
 /* MCDI */
 static unsigned int     mcidle_time_criteria = 3000; /* 3ms */
@@ -448,6 +442,49 @@ static void timer_setting_after_wfi(bool f26m_off)
 #endif
 }
 
+#if defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME)
+#define PROFILE_DATA_NUMBER		(NR_PIDX*2)
+static unsigned int idle_profile[NR_TYPES][PROFILE_DATA_NUMBER];
+void idle_latency_profile(unsigned int idle_type, int idx)
+{
+	unsigned int cur_count = 0;
+	unsigned int *data;
+
+	data = &idle_profile[idle_type][0];
+
+	gpt_get_cnt(GPT2, &cur_count);
+
+	if (idx % 2 == 0)
+		data[idx/2] = cur_count;
+	else
+		data[idx/2] = cur_count > data[idx/2] ?
+			(cur_count - data[idx/2]) : (data[idx/2] - cur_count);
+}
+
+static char profile_log[4096] = { 0 };
+#define plog(fmt, args...)	log2buf(p, profile_log, fmt, ##args)
+
+void idle_latency_dump(unsigned int idle_type)
+{
+	unsigned int i;
+	unsigned int *data;
+	int len = 0;
+	char *p = profile_log;
+
+	data = &idle_profile[idle_type][0];
+
+	plog("idle_latency %d (%u/%u),", idle_type,
+		mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1));
+
+	for (i = 0; i < PROFILE_DATA_NUMBER; i++)
+		plog("%u%s", data[i], (i == PROFILE_DATA_NUMBER - 1) ? "":",");
+
+	len = p - profile_log;
+
+	idle_err("%s\n", profile_log);
+}
+#endif /* defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME) */
+
 static unsigned int idle_spm_lock;
 static DEFINE_SPINLOCK(idle_spm_spin_lock);
 
@@ -548,13 +585,6 @@ static bool mtk_idle_cpu_criteria(void)
 
 static bool soidle3_can_enter(int cpu, int reason)
 {
-	#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[0]);
-	#endif
-	#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
-	#endif
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (soidle3_by_pass_cg == 0) {
@@ -671,10 +701,6 @@ static void disable_soidle_by_bit(int id)
 
 static bool soidle_can_enter(int cpu, int reason)
 {
-	#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
-	#endif
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (soidle_by_pass_cg == 0) {
@@ -1025,7 +1051,7 @@ void ufs_cb_after_xxidle(void)
 #endif
 }
 
-static inline unsigned int soidle_pre_handler(void)
+unsigned int soidle_pre_handler(void)
 {
 	unsigned int op_cond = 0;
 
@@ -1044,7 +1070,7 @@ static inline unsigned int soidle_pre_handler(void)
 	return op_cond;
 }
 
-static inline void soidle_post_handler(void)
+void soidle_post_handler(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef CONFIG_MTK_ACAO_SUPPORT
@@ -1162,6 +1188,9 @@ int mtk_idle_select(int cpu)
 	bool dcs_lock_get = false;
 #endif
 
+	profile_so_start(PIDX_SELECT);
+	profile_so3_start(PIDX_SELECT);
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
@@ -1270,6 +1299,12 @@ get_idle_idx_2:
 		dcs_get_dcs_status_unlock();
 #endif
 
+	profile_so_end(PIDX_SELECT);
+	profile_so3_end(PIDX_SELECT);
+
+	profile_so_start(PIDX_SELECT_TO_ENTER);
+	profile_so3_start(PIDX_SELECT_TO_ENTER);
+
 	return i;
 }
 
@@ -1349,27 +1384,30 @@ EXPORT_SYMBOL(dpidle_enter);
 int soidle3_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_SO3;
-	u32 operation_cond = 0;
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
 
 	/* don't check lock dependency */
 	lockdep_off();
 
+	profile_so3_end(PIDX_SELECT_TO_ENTER);
+
+	profile_so3_start(PIDX_ENTER_TOTAL);
+
 	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 
+	profile_so3_start(PIDX_IDLE_NOTIFY_ENTER);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE3_ENTER);
-
-	operation_cond |= soidle_pre_handler();
+	profile_so3_end(PIDX_IDLE_NOTIFY_ENTER);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
+	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags);
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi3_flags */
 	sodi3_flags &= (~SODI_FLAG_DUMP_LP_GS);
@@ -1378,9 +1416,9 @@ int soidle3_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
-	soidle_post_handler();
-
+	profile_so3_start(PIDX_IDLE_NOTIFY_LEAVE);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE3_LEAVE);
+	profile_so3_end(PIDX_IDLE_NOTIFY_LEAVE);
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
@@ -1389,14 +1427,10 @@ int soidle3_enter(int cpu)
 		idle_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
 	}
 
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[3]);
-	idle_ver("SODI3: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
-			soidle3_profile[1] - soidle3_profile[0],
-			soidle3_profile[2] - soidle3_profile[1],
-			soidle3_profile[3] - soidle3_profile[2]);
-#endif
+	profile_so3_end(PIDX_LEAVE_TOTAL);
+
+	/* dump latency profiling result */
+	profile_so3_dump();
 
 	lockdep_on();
 
@@ -1407,27 +1441,30 @@ EXPORT_SYMBOL(soidle3_enter);
 int soidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_SO;
-	u32 operation_cond = 0;
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
 
 	/* don't check lock dependency */
 	lockdep_off();
 
+	profile_so_end(PIDX_SELECT_TO_ENTER);
+
+	profile_so_start(PIDX_ENTER_TOTAL);
+
 	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 
+	profile_so_start(PIDX_IDLE_NOTIFY_ENTER);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE_ENTER);
-
-	operation_cond |= soidle_pre_handler();
+	profile_so_end(PIDX_IDLE_NOTIFY_ENTER);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags, operation_cond);
+	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi_flags */
 	sodi_flags &= (~SODI_FLAG_DUMP_LP_GS);
@@ -1436,9 +1473,9 @@ int soidle_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
-	soidle_post_handler();
-
+	profile_so_start(PIDX_IDLE_NOTIFY_LEAVE);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE_LEAVE);
+	profile_so_end(PIDX_IDLE_NOTIFY_LEAVE);
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
@@ -1447,14 +1484,10 @@ int soidle_enter(int cpu)
 		idle_dbg("SO: soidle_residency = %llu\n", soidle_residency);
 	}
 
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[3]);
-	idle_ver("SODI: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
-			soidle_profile[1] - soidle_profile[0],
-			soidle_profile[2] - soidle_profile[1],
-			soidle_profile[3] - soidle_profile[2]);
-#endif
+	profile_so_end(PIDX_LEAVE_TOTAL);
+
+	/* dump latency profiling result */
+	profile_so_dump();
 
 	lockdep_on();
 

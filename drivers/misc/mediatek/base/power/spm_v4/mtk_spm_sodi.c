@@ -43,6 +43,8 @@
 #include <mtk_power_gs_api.h>
 #include <trace/events/mtk_events.h>
 
+#include <mtk_idle_internal.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -281,6 +283,10 @@ wake_reason_t spm_sodi_output_log(struct wake_status *wakesta,
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
+	#if defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME)
+	return wr;
+	#endif
+
 	if (!(flags & SODI_FLAG_REDUCE_LOG) || (flags & SODI_FLAG_RESIDENCY)) {
 
 		so_warn(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, oper_cond = 0x%x\n",
@@ -370,7 +376,7 @@ wake_reason_t spm_sodi_output_log(struct wake_status *wakesta,
 	return wr;
 }
 
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
+wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
@@ -381,8 +387,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
+	unsigned int operation_cond = 0;
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
+
+	profile_so_start(PIDX_PRE_HANDLER);
+	operation_cond |= soidle_pre_handler();
+	profile_so_end(PIDX_PRE_HANDLER);
 
 	if (spm_get_sodi_mempll() == 1)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE; /* CG mode */
@@ -398,7 +409,9 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 
 	spm_sodi_footprint(SPM_SODI_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
+	profile_so_start(PIDX_SSPM_BEFORE_WFI);
 	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
+	profile_so_end(PIDX_SSPM_BEFORE_WFI);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
@@ -406,16 +419,22 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
+	profile_so_start(PIDX_PRE_IRQ_PROCESS);
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
+	profile_so_end(PIDX_PRE_IRQ_PROCESS);
 
 	spm_sodi_footprint(SPM_SODI_ENTER_SPM_FLOW);
 
+	profile_so_start(PIDX_PCM_SETUP_BEFORE_WFI);
 	spm_sodi_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
+	profile_so_end(PIDX_PCM_SETUP_BEFORE_WFI);
 
+	profile_so_start(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 	spm_sodi_notify_sspm_before_wfi_async_wait();
+	profile_so_end(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
@@ -431,24 +450,20 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3(GS_ALL);
 
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
-#endif
-
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
 
 	trace_sodi(cpu, 1);
 
+	profile_so_end(PIDX_ENTER_TOTAL);
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+	profile_so_start(PIDX_LEAVE_TOTAL);
 
 	trace_sodi(cpu, 0);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
-
-#ifdef SPM_SODI_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[2]);
-#endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS))
@@ -458,22 +473,28 @@ RESTORE_IRQ:
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 #endif
 
+	profile_so_start(PIDX_SSPM_AFTER_WFI);
 	spm_sodi_notify_sspm_after_wfi(operation_cond);
+	profile_so_end(PIDX_SSPM_AFTER_WFI);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
+	profile_so_start(PIDX_PCM_SETUP_AFTER_WFI);
 	spm_sodi_pcm_setup_after_wfi(operation_cond);
+	profile_so_end(PIDX_PCM_SETUP_AFTER_WFI);
 
 	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags, operation_cond);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_SPM_FLOW);
 
+	profile_so_start(PIDX_POST_IRQ_PROCESS);
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
+	profile_so_end(PIDX_POST_IRQ_PROCESS);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
@@ -485,7 +506,13 @@ RESTORE_IRQ:
 
 	spm_sodi_footprint(SPM_SODI_LEAVE);
 
+	profile_so_start(PIDX_POST_HANDLER);
+	soidle_post_handler();
+	profile_so_end(PIDX_POST_HANDLER);
+
+	profile_so_start(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
 	spm_sodi_notify_sspm_after_wfi_async_wait();
+	profile_so_end(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
 
 	spm_sodi_reset_footprint();
 
