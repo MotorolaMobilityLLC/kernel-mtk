@@ -12,31 +12,165 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 #include <linux/threads.h>
+#include <linux/sched.h>
 #include "precomp.h"
 #include "mach/mtk_ppm_api.h"
 
-#define FREQUENCY_M(x)					(x*1000)	/*parameter for mt_ppm_sysboost_freq in kHZ*/
-#define CLUSTER_B_CORE_MAX_FREQ			1638		/*E1 is 1638000 KHz, E2 is TBD */
-#define CLUSTER_L_CORE_MAX_FREQ			1378		/*E1 is 1378000 KHz  E2 is TBD */
+#define FREQUENCY_M(x)					(x * 1000)	/*parameter for mt_ppm_sysboost_freq in kHZ*/
+#define MT_PPM_DEFAULT					(-1)
 
 INT_32 kalBoostCpu(IN P_ADAPTER_T prAdapter, IN UINT_32 u4TarPerfLevel, IN UINT_32 u4BoostCpuTh)
 {
 	BOOLEAN fgBoostCpu = FALSE;
+	cpumask_t rMainCpuMask, rRxCpuMask, rHifCpuMask;
+	INT_32 i4MinCoreLL, i4MinCoreL, i4MinCoreB;
+	INT_32 i4MinFreqLL, i4MinFreqL, i4MinFreqB;
+
+	/* Reset to default */
+	i4MinCoreLL = MT_PPM_DEFAULT;
+	i4MinCoreL = MT_PPM_DEFAULT;
+	i4MinCoreB = MT_PPM_DEFAULT;
+	i4MinFreqLL = MT_PPM_DEFAULT;
+	i4MinFreqL = MT_PPM_DEFAULT;
+	i4MinFreqB = MT_PPM_DEFAULT;
+
+	cpumask_clear(&rMainCpuMask);
+	cpumask_clear(&rRxCpuMask);
+	cpumask_clear(&rHifCpuMask);
+
+	cpumask_setall(&rMainCpuMask);
+	cpumask_setall(&rRxCpuMask);
+	cpumask_setall(&rHifCpuMask);
 
 	if (u4TarPerfLevel >= u4BoostCpuTh) {
 		fgBoostCpu = TRUE;
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, CLUSTER_B_LKG, 2, 2);
-		mt_ppm_sysboost_set_freq_limit(BOOST_BY_WIFI, CLUSTER_B_LKG,
-			FREQUENCY_M(CLUSTER_B_CORE_MAX_FREQ), FREQUENCY_M(CLUSTER_B_CORE_MAX_FREQ));
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, CLUSTER_L_LKG, 4, 4);
-		mt_ppm_sysboost_set_freq_limit(BOOST_BY_WIFI, CLUSTER_L_LKG,
-			FREQUENCY_M(CLUSTER_L_CORE_MAX_FREQ), FREQUENCY_M(CLUSTER_L_CORE_MAX_FREQ));
-	} else {
-		fgBoostCpu = FALSE;
-		mt_ppm_sysboost_core(BOOST_BY_WIFI, 0);
-		mt_ppm_sysboost_freq(BOOST_BY_WIFI, FREQUENCY_M(0));
+
+		switch (u4TarPerfLevel) {
+		case 1:
+		case 2:
+		case 3:
+			i4MinCoreL = 1;
+
+			i4MinFreqL = FREQUENCY_M(u4TarPerfLevel * 200);
+			break;
+
+		case 4:
+		case 5:
+		case 6:
+			i4MinCoreB = 1;
+			i4MinCoreL = 2;
+
+			i4MinFreqB = FREQUENCY_M(u4TarPerfLevel * 220);
+			i4MinFreqL = FREQUENCY_M(u4TarPerfLevel * 200);
+
+			cpumask_clear(&rMainCpuMask);
+			cpumask_clear(&rRxCpuMask);
+			cpumask_clear(&rHifCpuMask);
+
+			cpumask_set_cpu(4, &rMainCpuMask);
+			cpumask_set_cpu(5, &rMainCpuMask);
+			cpumask_set_cpu(6, &rMainCpuMask);
+			cpumask_set_cpu(7, &rMainCpuMask);
+
+			cpumask_set_cpu(4, &rRxCpuMask);
+			cpumask_set_cpu(5, &rRxCpuMask);
+			cpumask_set_cpu(6, &rRxCpuMask);
+			cpumask_set_cpu(7, &rRxCpuMask);
+			cpumask_set_cpu(8, &rRxCpuMask);
+			cpumask_set_cpu(9, &rRxCpuMask);
+
+			cpumask_set_cpu(8, &rHifCpuMask);
+			cpumask_set_cpu(9, &rHifCpuMask);
+			break;
+
+		case 7:
+		case 8:
+		case 9:
+			i4MinCoreB = 2;
+			i4MinCoreL = 2;
+			i4MinCoreLL = 3;
+
+			i4MinFreqB = FREQUENCY_M(u4TarPerfLevel * 280);
+			i4MinFreqL = FREQUENCY_M(u4TarPerfLevel * 240);
+			i4MinFreqLL = FREQUENCY_M(u4TarPerfLevel * 210);
+
+			cpumask_clear(&rMainCpuMask);
+			cpumask_clear(&rRxCpuMask);
+			cpumask_clear(&rHifCpuMask);
+
+			cpumask_set_cpu(4, &rMainCpuMask);
+			cpumask_set_cpu(5, &rMainCpuMask);
+			cpumask_set_cpu(6, &rMainCpuMask);
+			cpumask_set_cpu(7, &rMainCpuMask);
+
+			cpumask_set_cpu(4, &rRxCpuMask);
+			cpumask_set_cpu(5, &rRxCpuMask);
+			cpumask_set_cpu(6, &rRxCpuMask);
+			cpumask_set_cpu(7, &rRxCpuMask);
+			cpumask_set_cpu(8, &rRxCpuMask);
+			cpumask_set_cpu(9, &rRxCpuMask);
+
+			cpumask_set_cpu(8, &rHifCpuMask);
+			cpumask_set_cpu(9, &rHifCpuMask);
+			break;
+
+		case 10:
+			i4MinCoreB = 2;
+			i4MinCoreL = 4;
+			i4MinCoreLL = 4;
+
+			i4MinFreqB = FREQUENCY_M(u4TarPerfLevel * 280);
+			i4MinFreqL = FREQUENCY_M(u4TarPerfLevel * 240);
+			i4MinFreqLL = FREQUENCY_M(u4TarPerfLevel * 210);
+
+			cpumask_clear(&rMainCpuMask);
+			cpumask_clear(&rRxCpuMask);
+			cpumask_clear(&rHifCpuMask);
+
+			cpumask_set_cpu(4, &rMainCpuMask);
+			cpumask_set_cpu(5, &rMainCpuMask);
+			cpumask_set_cpu(6, &rMainCpuMask);
+			cpumask_set_cpu(7, &rMainCpuMask);
+
+			cpumask_set_cpu(4, &rRxCpuMask);
+			cpumask_set_cpu(5, &rRxCpuMask);
+			cpumask_set_cpu(6, &rRxCpuMask);
+			cpumask_set_cpu(7, &rRxCpuMask);
+			cpumask_set_cpu(8, &rRxCpuMask);
+			cpumask_set_cpu(9, &rRxCpuMask);
+
+			cpumask_set_cpu(8, &rHifCpuMask);
+			cpumask_set_cpu(9, &rHifCpuMask);
+			break;
+
+		case 0:
+		default:
+			fgBoostCpu = FALSE;
+
+			break;
+		}
 	}
-	DBGLOG(SW4, WARN, "BoostCpu:%d,TarPerfLevel:%d,u4BoostCpuTh:%d\n",
+
+	/* Set B core */
+	mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, CLUSTER_B_LKG, i4MinCoreB, MT_PPM_DEFAULT);
+	mt_ppm_sysboost_set_freq_limit(BOOST_BY_WIFI, CLUSTER_B_LKG, i4MinFreqB, MT_PPM_DEFAULT);
+
+	/* Set L core */
+	mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, CLUSTER_L_LKG, i4MinCoreL, MT_PPM_DEFAULT);
+	mt_ppm_sysboost_set_freq_limit(BOOST_BY_WIFI, CLUSTER_L_LKG, i4MinFreqL, MT_PPM_DEFAULT);
+
+	/* Set LL core */
+	mt_ppm_sysboost_set_core_limit(BOOST_BY_WIFI, CLUSTER_LL_LKG, i4MinCoreLL, MT_PPM_DEFAULT);
+	mt_ppm_sysboost_set_freq_limit(BOOST_BY_WIFI, CLUSTER_LL_LKG, i4MinFreqLL, MT_PPM_DEFAULT);
+
+	/* Set affinity */
+	set_cpus_allowed_ptr(prAdapter->prGlueInfo->main_thread, &rMainCpuMask);
+	set_cpus_allowed_ptr(prAdapter->prGlueInfo->rx_thread, &rRxCpuMask);
+	set_cpus_allowed_ptr(prAdapter->prGlueInfo->hif_thread, &rHifCpuMask);
+
+	DBGLOG(SW4, WARN, "BoostCpu:%d, TarPerfLevel:%d, u4BoostCpuTh:%d\n",
 		fgBoostCpu, u4TarPerfLevel, u4BoostCpuTh);
+
 	return 0;
 }
+
