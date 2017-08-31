@@ -1439,8 +1439,8 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 
 void EnableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
-		 APLL1Counter, APLL2Counter, SampleRate);
+	pr_aud("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
+	       APLL1Counter, APLL2Counter, SampleRate);
 
 	switch (GetApllbySampleRate(SampleRate)) {
 	case Soc_Aud_APLL1:
@@ -1468,8 +1468,8 @@ void EnableALLbySampleRate(uint32 SampleRate)
 
 void DisableALLbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
-		 APLL1Counter, APLL2Counter, SampleRate);
+	pr_aud("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
+	       APLL1Counter, APLL2Counter, SampleRate);
 
 	switch (GetApllbySampleRate(SampleRate)) {
 	case Soc_Aud_APLL1:
@@ -1518,7 +1518,7 @@ void EnableI2SCLKDiv(uint32 I2snum, bool bEnable)
 
 void EnableApll1(bool enable)
 {
-	pr_warn("%s enable = %d\n", __func__, enable);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0)
@@ -1534,7 +1534,7 @@ void EnableApll1(bool enable)
 
 void EnableApll2(bool enable)
 {
-	pr_warn("%s enable = %d\n", __func__, enable);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0)
