@@ -1031,7 +1031,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 	return ret;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_ZONE_MOVABLE_CMA
 void shrink_ion_by_scenario(void)
 {
 	int nr_to_reclaim, nr_reclaimed;
