@@ -59,9 +59,9 @@
 #define BYTE               unsigned char
 
 static BOOL read_spc_flag = FALSE;
-/*
+
 #define HIGH_SPEED_240FPS
-*/
+
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static BYTE imx318_SPC_data[352]={0};
