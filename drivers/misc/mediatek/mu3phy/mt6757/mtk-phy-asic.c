@@ -214,21 +214,17 @@ void usb20_pll_settings(bool host, bool forceOn)
 		if (forceOn) {
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
 				RG_SSUSB_RESERVE6, 0x1);
-			if (verion < CHIP_SW_VER_02) {
-				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
-					RG_USB20_TX_BIAS_EN, 0x1);
-				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
-					RG_USB20_PHY_REV_6, 0x1);
-			}
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
+				RG_USB20_TX_BIAS_EN, 0x1);
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+				RG_USB20_PHY_REV_6, 0x1);
 		} else {
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
 				RG_SSUSB_RESERVE6, 0x0);
-			if (verion < CHIP_SW_VER_02) {
-				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
-					RG_USB20_TX_BIAS_EN, 0x0);
-				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
-					RG_USB20_PHY_REV_6, 0x0);
-			}
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_TX_BIAS_EN_OFST,
+				RG_USB20_TX_BIAS_EN, 0x0);
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+				RG_USB20_PHY_REV_6, 0x0);
 		}
 	}
 }

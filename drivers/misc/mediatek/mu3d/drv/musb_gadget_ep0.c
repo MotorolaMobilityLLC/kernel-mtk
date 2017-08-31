@@ -40,6 +40,9 @@
 #include "mu3d_hal_osal.h"
 #include "mu3d_hal_usb_drv.h"
 #include "mu3d_hal_hw.h"
+#ifdef CONFIG_PROJECT_PHY
+#include "mtk-phy-asic.h"
+#endif
 
 /* ep0 is always musb->endpoints[0].ep_in */
 #define	next_ep0_request(musb)	next_in_request(&(musb)->endpoints[0])
@@ -481,11 +484,17 @@ __releases(musb->lock) __acquires(musb->lock)
 						pr_debug("TEST_J\n");
 						/* TEST_J */
 						musb->test_mode_nr = TEST_J_MODE;
+#ifdef CONFIG_PROJECT_PHY
+						usb20_rev6_setting(0, false);
+#endif
 						break;
 					case 2:
 						/* TEST_K */
 						pr_debug("TEST_K\n");
 						musb->test_mode_nr = TEST_K_MODE;
+#ifdef CONFIG_PROJECT_PHY
+						usb20_rev6_setting(0, false);
+#endif
 						break;
 					case 3:
 						/* TEST_SE0_NAK */
