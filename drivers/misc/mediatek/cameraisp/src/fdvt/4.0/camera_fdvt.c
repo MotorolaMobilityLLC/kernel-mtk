@@ -163,111 +163,124 @@ static FDVTDBuffRegMap pFDVTWriteBuffer;
 #define FDVT_START                 (FDVT_ADDR+0x0)
 #define FDVT_ENABLE                (FDVT_ADDR+0x4)
 #define FDVT_RS                    (FDVT_ADDR+0x8)
-#define FDVT_RSCON_ADR             (FDVT_ADDR+0xC)
+#define FDVT_RSCON_BASE_ADR        (FDVT_ADDR+0xC)
 #define FDVT_RGB2Y0                (FDVT_ADDR+0x10)
 #define FDVT_RGB2Y1                (FDVT_ADDR+0x14)
 #define FDVT_INVG0                 (FDVT_ADDR+0x18)
 #define FDVT_INVG1                 (FDVT_ADDR+0x1C)
 #define FDVT_INVG2                 (FDVT_ADDR+0x20)
-#define FD_FNUM_0                  (FDVT_ADDR+0x24)
-#define FD_FNUM_1                  (FDVT_ADDR+0x28)
-#define FD_FNUM_2                  (FDVT_ADDR+0x2C)
-#define FD_FNUM_3                  (FDVT_ADDR+0x30)
-#define VT_FNUM_0                  (FDVT_ADDR+0x34)
-#define VT_FNUM_1                  (FDVT_ADDR+0x38)
-#define VT_FNUM_2                  (FDVT_ADDR+0x3C)
-#define VT_FNUM_3                  (FDVT_ADDR+0x40)
-#define FE_FNUM_0                  (FDVT_ADDR+0x44)
-#define FE_FNUM_1                  (FDVT_ADDR+0x48)
-#define FE_FNUM_2                  (FDVT_ADDR+0x4C)
-#define FE_FNUM_3                  (FDVT_ADDR+0x50)
-#define LD_BADR_0                  (FDVT_ADDR+0x54)
-#define LD_BADR_1                  (FDVT_ADDR+0x58)
-#define LD_BADR_2                  (FDVT_ADDR+0x5C)
-#define LD_BADR_3                  (FDVT_ADDR+0x60)
-#define LD_BADR_4                  (FDVT_ADDR+0x64)
-#define LD_BADR_5                  (FDVT_ADDR+0x68)
-#define LD_BADR_6                  (FDVT_ADDR+0x6C)
-#define LD_BADR_7                  (FDVT_ADDR+0x70)
+#define FDVT_FNUM_0                (FDVT_ADDR+0x24)
+#define FDVT_FNUM_1                (FDVT_ADDR+0x28)
+#define FDVT_FNUM_2                (FDVT_ADDR+0x2C)
+#define FDVT_FNUM_3                (FDVT_ADDR+0x30)
+#define FDVT_T_FNUM_4              (FDVT_ADDR+0x34)
+#define FDVT_T_FNUM_5              (FDVT_ADDR+0x38)
+#define FDVT_T_FNUM_6              (FDVT_ADDR+0x3C)
+#define FDVT_T_FNUM_7              (FDVT_ADDR+0x40)
+#define FDVT_FF_NUM_0              (FDVT_ADDR+0x44)
+#define FDVT_FF_NUM_1              (FDVT_ADDR+0x48)
+#define FDVT_FF_NUM_2              (FDVT_ADDR+0x4C)
+#define FDVT_FF_NUM_3              (FDVT_ADDR+0x50)
+#define FDVT_FF_BASE_ADR_0         (FDVT_ADDR+0x54)
+#define FDVT_FF_BASE_ADR_1         (FDVT_ADDR+0x58)
+#define FDVT_FF_BASE_ADR_2         (FDVT_ADDR+0x5C)
+#define FDVT_FF_BASE_ADR_3         (FDVT_ADDR+0x60)
+#define FDVT_FF_BASE_ADR_4         (FDVT_ADDR+0x64)
+#define FDVT_FF_BASE_ADR_5         (FDVT_ADDR+0x68)
+#define FDVT_FF_BASE_ADR_6         (FDVT_ADDR+0x6C)
+#define FDVT_FF_BASE_ADR_7         (FDVT_ADDR+0x70)
 #define FDVT_RMAP_0                (FDVT_ADDR+0x74)
 #define FDVT_RMAP_1                (FDVT_ADDR+0x78)
-#define FDVT_FD_SET                (FDVT_ADDR+0x7C)
+#define FDVT_FD                    (FDVT_ADDR+0x7C)
 #define FDVT_FD_CON_BASE_ADR       (FDVT_ADDR+0x80)
-#define FDVT_GFD_SKIP              (FDVT_ADDR+0x84)
+#define FDVT_GFD                   (FDVT_ADDR+0x84)
 #define FDVT_LFD                   (FDVT_ADDR+0x88)
-#define FDVT_GFD_POSITION_0        (FDVT_ADDR+0x8C)
-#define FDVT_GFD_POSITION_1        (FDVT_ADDR+0x90)
+#define FDVT_GFD_POS_0             (FDVT_ADDR+0x8C)
+#define FDVT_GFD_POS_1             (FDVT_ADDR+0x90)
 #define FDVT_GFD_DET0              (FDVT_ADDR+0x94)
 #define FDVT_GFD_DET1              (FDVT_ADDR+0x98)
 #define FDVT_FD_RLT_BASE_ADR       (FDVT_ADDR+0x9C)
-
-#define LFD_CTRL_0                 (FDVT_ADDR+0xA4)
-#define LFD_TL_0                   (FDVT_ADDR+0xA8)
-#define LFD_BR_0                   (FDVT_ADDR+0xAC)
-#define LFD_CTRL_1                 (FDVT_ADDR+0xB0)
-#define LFD_TL_1                   (FDVT_ADDR+0xB4)
-#define LFD_BR_1                   (FDVT_ADDR+0xB8)
-#define LFD_CTRL_2                 (FDVT_ADDR+0xBC)
-#define LFD_TL_2                   (FDVT_ADDR+0xC0)
-#define LFD_BR_2                   (FDVT_ADDR+0xC4)
-#define LFD_CTRL_3                 (FDVT_ADDR+0xC8)
-#define LFD_TL_3                   (FDVT_ADDR+0xCC)
-#define LFD_BR_3                   (FDVT_ADDR+0xD0)
-#define LFD_CTRL_4                 (FDVT_ADDR+0xD4)
-#define LFD_TL_4                   (FDVT_ADDR+0xD8)
-#define LFD_BR_4                   (FDVT_ADDR+0xDC)
-#define LFD_CTRL_5                 (FDVT_ADDR+0xE0)
-#define LFD_TL_5                   (FDVT_ADDR+0xE4)
-#define LFD_BR_5                   (FDVT_ADDR+0xE8)
-#define LFD_CTRL_6                 (FDVT_ADDR+0xEC)
-#define LFD_TL_6                   (FDVT_ADDR+0xF0)
-#define LFD_BR_6                   (FDVT_ADDR+0xF4)
-#define LFD_CTRL_7                 (FDVT_ADDR+0xF8)
-#define LFD_TL_7                   (FDVT_ADDR+0xFC)
-#define LFD_BR_7                   (FDVT_ADDR+0x100)
-#define LFD_CTRL_8                 (FDVT_ADDR+0x104)
-#define LFD_TL_8                   (FDVT_ADDR+0x108)
-#define LFD_BR_8                   (FDVT_ADDR+0x10C)
-#define LFD_CTRL_9                 (FDVT_ADDR+0x110)
-#define LFD_TL_9                   (FDVT_ADDR+0x114)
-#define LFD_BR_9                   (FDVT_ADDR+0x118)
-#define LFD_CTRL_10                (FDVT_ADDR+0x11C)
-#define LFD_TL_10                  (FDVT_ADDR+0x120)
-#define LFD_BR_10                  (FDVT_ADDR+0x124)
-#define LFD_CTRL_11                (FDVT_ADDR+0x128)
-#define LFD_TL_11                  (FDVT_ADDR+0x12C)
-#define LFD_BR_11                  (FDVT_ADDR+0x130)
-#define LFD_CTRL_12                (FDVT_ADDR+0x134)
-#define LFD_TL_12                  (FDVT_ADDR+0x138)
-#define LFD_BR_12                  (FDVT_ADDR+0x13C)
-#define LFD_CTRL_13                (FDVT_ADDR+0x140)
-#define LFD_TL_13                  (FDVT_ADDR+0x144)
-#define LFD_BR_13                  (FDVT_ADDR+0x148)
-#define LFD_CTRL_14                (FDVT_ADDR+0x14C)
-#define LFD_TL_14                  (FDVT_ADDR+0x150)
-#define LFD_BR_14                  (FDVT_ADDR+0x154)
-#define FDVT_RESULT                (FDVT_ADDR+0x158)
+#define FDVT_LFD_INFO_CTRL_0       (FDVT_ADDR+0xA4)
+#define FDVT_LFD_INFO_XPOS_0       (FDVT_ADDR+0xA8)
+#define FDVT_LFD_INFO_YPOS_0       (FDVT_ADDR+0xAC)
+#define FDVT_LFD_INFO_CTRL_1       (FDVT_ADDR+0xB0)
+#define FDVT_LFD_INFO_XPOS_1       (FDVT_ADDR+0xB4)
+#define FDVT_LFD_INFO_YPOS_1       (FDVT_ADDR+0xB8)
+#define FDVT_LFD_INFO_CTRL_2       (FDVT_ADDR+0xBC)
+#define FDVT_LFD_INFO_XPOS_2       (FDVT_ADDR+0xC0)
+#define FDVT_LFD_INFO_YPOS_2       (FDVT_ADDR+0xC4)
+#define FDVT_LFD_INFO_CTRL_3       (FDVT_ADDR+0xC8)
+#define FDVT_LFD_INFO_XPOS_3       (FDVT_ADDR+0xCC)
+#define FDVT_LFD_INFO_YPOS_3       (FDVT_ADDR+0xD0)
+#define FDVT_LFD_INFO_CTRL_4       (FDVT_ADDR+0xD4)
+#define FDVT_LFD_INFO_XPOS_4       (FDVT_ADDR+0xD8)
+#define FDVT_LFD_INFO_YPOS_4       (FDVT_ADDR+0xDC)
+#define FDVT_LFD_INFO_CTRL_5       (FDVT_ADDR+0xE0)
+#define FDVT_LFD_INFO_XPOS_5       (FDVT_ADDR+0xE4)
+#define FDVT_LFD_INFO_YPOS_5       (FDVT_ADDR+0xE8)
+#define FDVT_LFD_INFO_CTRL_6       (FDVT_ADDR+0xEC)
+#define FDVT_LFD_INFO_XPOS_6       (FDVT_ADDR+0xF0)
+#define FDVT_LFD_INFO_YPOS_6       (FDVT_ADDR+0xF4)
+#define FDVT_LFD_INFO_CTRL_7       (FDVT_ADDR+0xF8)
+#define FDVT_LFD_INFO_XPOS_7       (FDVT_ADDR+0xFC)
+#define FDVT_LFD_INFO_YPOS_7       (FDVT_ADDR+0x100)
+#define FDVT_LFD_INFO_CTRL_8       (FDVT_ADDR+0x104)
+#define FDVT_LFD_INFO_XPOS_8       (FDVT_ADDR+0x108)
+#define FDVT_LFD_INFO_YPOS_8       (FDVT_ADDR+0x10C)
+#define FDVT_LFD_INFO_CTRL_9       (FDVT_ADDR+0x110)
+#define FDVT_LFD_INFO_XPOS_9       (FDVT_ADDR+0x114)
+#define FDVT_LFD_INFO_YPOS_9       (FDVT_ADDR+0x118)
+#define FDVT_LFD_INFO_CTRL_10      (FDVT_ADDR+0x11C)
+#define FDVT_LFD_INFO_XPOS_10      (FDVT_ADDR+0x120)
+#define FDVT_LFD_INFO_YPOS_10      (FDVT_ADDR+0x124)
+#define FDVT_LFD_INFO_CTRL_11      (FDVT_ADDR+0x128)
+#define FDVT_LFD_INFO_XPOS_11      (FDVT_ADDR+0x12C)
+#define FDVT_LFD_INFO_YPOS_11      (FDVT_ADDR+0x130)
+#define FDVT_LFD_INFO_CTRL_12      (FDVT_ADDR+0x134)
+#define FDVT_LFD_INFO_XPOS_12      (FDVT_ADDR+0x138)
+#define FDVT_LFD_INFO_YPOS_12      (FDVT_ADDR+0x13C)
+#define FDVT_LFD_INFO_CTRL_13      (FDVT_ADDR+0x140)
+#define FDVT_LFD_INFO_XPOS_13      (FDVT_ADDR+0x144)
+#define FDVT_LFD_INFO_YPOS_13      (FDVT_ADDR+0x148)
+#define FDVT_LFD_INFO_CTRL_14      (FDVT_ADDR+0x14C)
+#define FDVT_LFD_INFO_XPOS_14      (FDVT_ADDR+0x150)
+#define FDVT_LFD_INFO_YPOS_14      (FDVT_ADDR+0x154)
+#define FDVT_TC_ENABLE_RESULT      (FDVT_ADDR+0x158)
 #define FDVT_INT_EN                (FDVT_ADDR+0x15C)
 #define FDVT_SRC_WD_HT             (FDVT_ADDR+0x160)
-/* #define FDVT_SRC_IMG_BASE_ADDR     (FDVT_ADDR+0x164) */
 #define FDVT_INT                   (FDVT_ADDR+0x168)
-#define DEBUG_INFO_1               (FDVT_ADDR+0x16C)
-#define DEBUG_INFO_2               (FDVT_ADDR+0x170)
-#define DEBUG_INFO_3               (FDVT_ADDR+0x174)
-#define FDVT_RESULTNUM             (FDVT_ADDR+0x178)
-#define FDVT_MAX_OFFSET            0x178
+#define FDVT_DEBUG_INFO_1          (FDVT_ADDR+0x16C)
+#define FDVT_DEBUG_INFO_2          (FDVT_ADDR+0x170)
+#define FDVT_DEBUG_INFO_3          (FDVT_ADDR+0x174)
+#define FDVT_RESULT                (FDVT_ADDR+0x178)
+#define FDVT_SPARE_CELL			   (FDVT_ADDR+0x198)
+#define FDVT_CTRL				   (FDVT_ADDR+0x19C)
+#define FDVT_VERSION			   (FDVT_ADDR+0x1A0)
+
+#define FDVT_FF_NUM_4              (FDVT_ADDR+0x1C4)
+#define FDVT_FF_NUM_5              (FDVT_ADDR+0x1C8)
+#define FDVT_FF_NUM_6              (FDVT_ADDR+0x1CC)
+#define FDVT_FF_NUM_7              (FDVT_ADDR+0x1D0)
+#define FDVT_FF_NUM_8              (FDVT_ADDR+0x1D4)
+
+#define FDVT_FF_BASE_ADR_8         (FDVT_ADDR+0x1A4)
+#define FDVT_FF_BASE_ADR_9         (FDVT_ADDR+0x1A8)
+#define FDVT_FF_BASE_ADR_10        (FDVT_ADDR+0x1AC)
+#define FDVT_FF_BASE_ADR_11        (FDVT_ADDR+0x1B0)
+#define FDVT_FF_BASE_ADR_12        (FDVT_ADDR+0x1B4)
+#define FDVT_FF_BASE_ADR_13        (FDVT_ADDR+0x1B8)
+#define FDVT_FF_BASE_ADR_14        (FDVT_ADDR+0x1BC)
+#define FDVT_FF_BASE_ADR_15        (FDVT_ADDR+0x1C0)
+#define FDVT_FF_BASE_ADR_16        (FDVT_ADDR+0x1D8)
+#define FDVT_FF_BASE_ADR_17        (FDVT_ADDR+0x1DC)
+
+#define FDVT_MAX_OFFSET            0x1DC
 
 #ifdef CONFIG_OF
 struct fdvt_device {
 	void __iomem *regs[FDVT_BASEADDR_NUM];
 	struct device *dev;
 	int irq[FDVT_IRQ_IDX_NUM];
-#ifndef CONFIG_MTK_CLKMGR /* CCF */
-	struct clk *clk_SCP_SYS_DIS;
-	struct clk *clk_SCP_SYS_ISP;
-	struct clk *clk_SMI_COMMON;
-	struct clk *clk_FD;
-#endif
 };
 
 static struct fdvt_device *fdvt_devs;
@@ -277,91 +290,106 @@ static int nr_fdvt_devs;
 void FDVT_basic_config(void)
 {
 	FDVT_WR32(0x00000111, FDVT_ENABLE);
-	FDVT_WR32(0x0000040B, FDVT_RS);
-	FDVT_WR32(0x00000000, FDVT_RSCON_ADR);
+	FDVT_WR32(0x0000040C, FDVT_RS);
+	FDVT_WR32(0x0C000000, FDVT_RSCON_BASE_ADR);
 	FDVT_WR32(0x02590132, FDVT_RGB2Y0);
 	FDVT_WR32(0x00000075, FDVT_RGB2Y1);
-	FDVT_WR32(0x66553520, FDVT_INVG0);
-	FDVT_WR32(0xB8A28D79, FDVT_INVG1);
-	FDVT_WR32(0xFFF4E7CF, FDVT_INVG2);
-	FDVT_WR32(0x01D10203, FD_FNUM_0);
-	FDVT_WR32(0x02A10213, FD_FNUM_1);
-	FDVT_WR32(0x03F102B1, FD_FNUM_2);
-	FDVT_WR32(0x046103C1, FD_FNUM_3);
-	FDVT_WR32(0x01450168, VT_FNUM_0);
-	FDVT_WR32(0x01D70173, VT_FNUM_1);
-	FDVT_WR32(0x02C201E2, VT_FNUM_2);
-	FDVT_WR32(0x031002A0, VT_FNUM_3);
-	FDVT_WR32(0x00600060, FE_FNUM_0);
-	FDVT_WR32(0x00000000, FE_FNUM_1);
-	FDVT_WR32(0x00000000, FE_FNUM_2);
-	FDVT_WR32(0x00000000, FE_FNUM_3);
-	FDVT_WR32(0x00000000, LD_BADR_0);
-	FDVT_WR32(0x00000000, LD_BADR_1);
-	FDVT_WR32(0x00000000, LD_BADR_2);
-	FDVT_WR32(0x00000000, LD_BADR_3);
-	FDVT_WR32(0x00000000, LD_BADR_4);
-	FDVT_WR32(0x00000000, LD_BADR_5);
-	FDVT_WR32(0x00000000, LD_BADR_6);
-	FDVT_WR32(0x00000000, LD_BADR_7);
-	FDVT_WR32(0x3F000000, FDVT_RMAP_0);
-	FDVT_WR32(0x01230101, FDVT_RMAP_1);
-	FDVT_WR32(0x000F010B, FDVT_FD_SET);
-	FDVT_WR32(0x00000000, FDVT_FD_CON_BASE_ADR);
-	FDVT_WR32(0x00000011, FDVT_GFD_SKIP);
+	FDVT_WR32(0x66553520, FDVT_INVG0); /*?*/
+	FDVT_WR32(0xB8A28D79, FDVT_INVG1); /*?*/
+	FDVT_WR32(0xFFF4E7CF, FDVT_INVG2); /*?*/
+	FDVT_WR32(0x02A402EE, FDVT_FNUM_0);
+	FDVT_WR32(0x02A402EE, FDVT_FNUM_1);
+	FDVT_WR32(0x0DAC0DAC, FDVT_FNUM_2);
+	FDVT_WR32(0x0DAC02A4, FDVT_FNUM_3);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_4);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_5);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_6);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_7);
+	FDVT_WR32(0x02EE02A4, FDVT_FF_NUM_0);
+	FDVT_WR32(0x02A402A4, FDVT_FF_NUM_1);
+	FDVT_WR32(0x02A402EE, FDVT_FF_NUM_2);
+	FDVT_WR32(0x02EE02A4, FDVT_FF_NUM_3);
+	FDVT_WR32(0x000002A4, FDVT_FF_NUM_4);
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_5);
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_6);
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_7);
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_8);
+	FDVT_WR32(0x0D000000, FDVT_FF_BASE_ADR_0);
+	FDVT_WR32(0x0D010000, FDVT_FF_BASE_ADR_1);
+	FDVT_WR32(0x0D020000, FDVT_FF_BASE_ADR_2);
+	FDVT_WR32(0x0D030000, FDVT_FF_BASE_ADR_3);
+	FDVT_WR32(0x0D040000, FDVT_FF_BASE_ADR_4);
+	FDVT_WR32(0x0D050000, FDVT_FF_BASE_ADR_5);
+	FDVT_WR32(0x0D060000, FDVT_FF_BASE_ADR_6);
+	FDVT_WR32(0x0D070000, FDVT_FF_BASE_ADR_7);
+	FDVT_WR32(0x0D080000, FDVT_FF_BASE_ADR_8);
+	FDVT_WR32(0x0D090000, FDVT_FF_BASE_ADR_9);
+	FDVT_WR32(0x0D0A0000, FDVT_FF_BASE_ADR_10);
+	FDVT_WR32(0x0D0B0000, FDVT_FF_BASE_ADR_11);
+	FDVT_WR32(0x0D0C0000, FDVT_FF_BASE_ADR_12);
+	FDVT_WR32(0x0D0D0000, FDVT_FF_BASE_ADR_13);
+	FDVT_WR32(0x0D0E0000, FDVT_FF_BASE_ADR_14);
+	FDVT_WR32(0x0D0F0000, FDVT_FF_BASE_ADR_15);
+	FDVT_WR32(0x0D110000, FDVT_FF_BASE_ADR_16);
+	FDVT_WR32(0x0D120000, FDVT_FF_BASE_ADR_17);
+	FDVT_WR32(0x00000000, FDVT_RMAP_0);
+	FDVT_WR32(0x00000001, FDVT_RMAP_1);
+	FDVT_WR32(0x0400000C, FDVT_FD);
+	FDVT_WR32(0x0D100000, FDVT_FD_CON_BASE_ADR);
+	FDVT_WR32(0x00000000, FDVT_GFD);
 	FDVT_WR32(0x01130000, FDVT_LFD);
-	FDVT_WR32(0x00000000, FDVT_GFD_POSITION_0);
-	FDVT_WR32(0x00F00140, FDVT_GFD_POSITION_1);
-	FDVT_WR32(0x00000001, FDVT_GFD_DET0);
+	FDVT_WR32(0x00000000, FDVT_GFD_POS_0);
+	FDVT_WR32(0x012C0190, FDVT_GFD_POS_1);
+	FDVT_WR32(0x00000207, FDVT_GFD_DET0);
 	FDVT_WR32(0x00000000, FDVT_GFD_DET1);
-	FDVT_WR32(0x00000000, FDVT_FD_RLT_BASE_ADR);
-	FDVT_WR32(0x00000000, LFD_CTRL_0);
-	FDVT_WR32(0x00000000, LFD_TL_0);
-	FDVT_WR32(0x00000000, LFD_BR_0);
-	FDVT_WR32(0x00000000, LFD_CTRL_1);
-	FDVT_WR32(0x00000000, LFD_TL_1);
-	FDVT_WR32(0x00000000, LFD_BR_1);
-	FDVT_WR32(0x00000000, LFD_CTRL_2);
-	FDVT_WR32(0x00000000, LFD_TL_2);
-	FDVT_WR32(0x00000000, LFD_BR_2);
-	FDVT_WR32(0x00000000, LFD_CTRL_3);
-	FDVT_WR32(0x00000000, LFD_TL_3);
-	FDVT_WR32(0x00000000, LFD_BR_3);
-	FDVT_WR32(0x00000000, LFD_CTRL_4);
-	FDVT_WR32(0x00000000, LFD_TL_4);
-	FDVT_WR32(0x00000000, LFD_BR_4);
-	FDVT_WR32(0x00000000, LFD_CTRL_5);
-	FDVT_WR32(0x00000000, LFD_TL_5);
-	FDVT_WR32(0x00000000, LFD_BR_5);
-	FDVT_WR32(0x00000000, LFD_CTRL_6);
-	FDVT_WR32(0x00000000, LFD_TL_6);
-	FDVT_WR32(0x00000000, LFD_BR_6);
-	FDVT_WR32(0x00000000, LFD_CTRL_7);
-	FDVT_WR32(0x00000000, LFD_TL_7);
-	FDVT_WR32(0x00000000, LFD_BR_7);
-	FDVT_WR32(0x00000000, LFD_CTRL_8);
-	FDVT_WR32(0x00000000, LFD_TL_8);
-	FDVT_WR32(0x00000000, LFD_BR_8);
-	FDVT_WR32(0x00000000, LFD_CTRL_9);
-	FDVT_WR32(0x00000000, LFD_TL_9);
-	FDVT_WR32(0x00000000, LFD_BR_9);
-	FDVT_WR32(0x00000000, LFD_CTRL_10);
-	FDVT_WR32(0x00000000, LFD_TL_10);
-	FDVT_WR32(0x00000000, LFD_BR_10);
-	FDVT_WR32(0x00000000, LFD_CTRL_11);
-	FDVT_WR32(0x00000000, LFD_TL_11);
-	FDVT_WR32(0x00000000, LFD_BR_11);
-	FDVT_WR32(0x00000000, LFD_CTRL_12);
-	FDVT_WR32(0x00000000, LFD_TL_12);
-	FDVT_WR32(0x00000000, LFD_BR_12);
-	FDVT_WR32(0x00000000, LFD_CTRL_13);
-	FDVT_WR32(0x00000000, LFD_TL_13);
-	FDVT_WR32(0x00000000, LFD_BR_13);
-	FDVT_WR32(0x00000000, LFD_CTRL_14);
-	FDVT_WR32(0x00000000, LFD_TL_14);
-	FDVT_WR32(0x00000000, LFD_BR_14);
+	FDVT_WR32(0x11223300, FDVT_FD_RLT_BASE_ADR);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_0);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_0);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_0);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_1);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_1);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_1);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_2);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_2);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_2);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_3);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_3);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_3);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_4);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_4);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_4);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_5);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_5);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_5);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_6);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_6);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_6);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_7);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_7);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_7);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_8);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_8);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_8);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_9);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_9);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_9);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_10);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_10);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_10);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_11);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_11);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_11);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_12);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_12);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_12);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_13);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_13);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_13);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_CTRL_14);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_XPOS_14);
+	FDVT_WR32(0x00000000, FDVT_LFD_INFO_YPOS_14);
 	FDVT_WR32(0x00000000, FDVT_INT_EN);
-	FDVT_WR32(0x014000F0, FDVT_SRC_WD_HT);
+	FDVT_WR32(0x0190012C, FDVT_SRC_WD_HT);
 }
 
 /*******************************************************************************
@@ -389,7 +417,7 @@ static inline void FD_Prepare_ccf_clock(void)
 {
 	int ret;
 
-	smi_clk_prepare(SMI_LARB_IMGSYS0, "camera_fdvt", 1);
+	smi_clk_prepare(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 
 	ret = clk_prepare(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -401,7 +429,7 @@ static inline void FD_Enable_ccf_clock(void)
 {
 	int ret;
 
-	smi_clk_enable(SMI_LARB_IMGSYS0, "camera_fdvt", 1);
+	smi_clk_enable(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 
 	ret = clk_enable(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -413,7 +441,7 @@ static inline void FD_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
 
-	smi_bus_enable(SMI_LARB_IMGSYS0, "camera_fdvt");
+	smi_bus_enable(SMI_LARB_IMGSYS1, "camera_fdvt");
 
 	ret = clk_prepare_enable(fd_clk.CG_IMGSYS_FDVT);
 	if (ret)
@@ -425,19 +453,19 @@ static inline void FD_Prepare_Enable_ccf_clock(void)
 static inline void FD_Unprepare_ccf_clock(void)
 {
 	clk_unprepare(fd_clk.CG_IMGSYS_FDVT);
-	smi_clk_unprepare(SMI_LARB_IMGSYS0, "camera_fdvt", 1);
+	smi_clk_unprepare(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 }
 
 static inline void FD_Disable_ccf_clock(void)
 {
 	clk_disable(fd_clk.CG_IMGSYS_FDVT);
-	smi_clk_disable(SMI_LARB_IMGSYS0, "camera_fdvt", 1);
+	smi_clk_disable(SMI_LARB_IMGSYS1, "camera_fdvt", 1);
 }
 
 static inline void FD_Disable_Unprepare_ccf_clock(void)
 {
 	clk_disable_unprepare(fd_clk.CG_IMGSYS_FDVT);
-	smi_bus_disable(SMI_LARB_IMGSYS0, "camera_fdvt");
+	smi_bus_disable(SMI_LARB_IMGSYS1, "camera_fdvt");
 }
 #endif
 
@@ -470,38 +498,43 @@ static int mt_fdvt_clk_ctrl(int en)
 
 void FaceDetecteConfig(void)
 {
-	FDVT_WR32(0x01D10203, FD_FNUM_0);
-	FDVT_WR32(0x02A10213, FD_FNUM_1);
-	FDVT_WR32(0x03F102B1, FD_FNUM_2);
-	FDVT_WR32(0x046103C1, FD_FNUM_3);
-	FDVT_WR32(0x01450168, VT_FNUM_0);
-	FDVT_WR32(0x01D70173, VT_FNUM_1);
-	FDVT_WR32(0x02C201E2, VT_FNUM_2);
-	FDVT_WR32(0x031002A0, VT_FNUM_3);
-	FDVT_WR32(0x00600060, FE_FNUM_0);
-	FDVT_WR32(0x00000000, FE_FNUM_1);
-	FDVT_WR32(0x00000000, FE_FNUM_2);
-	FDVT_WR32(0x00000000, FE_FNUM_3);
-	/* FDVT_WR32(0x000F010B,FDVT_FD_SET);   //LDVT Disable */
+	FDVT_WR32(0x02A402EE, FDVT_FNUM_0);
+	FDVT_WR32(0x02A402EE, FDVT_FNUM_1);
+	FDVT_WR32(0x0DAC0DAC, FDVT_FNUM_2);
+	FDVT_WR32(0x0DAC02A4, FDVT_FNUM_3);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_4);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_5);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_6);
+	FDVT_WR32(0x00000000, FDVT_T_FNUM_7);
+	FDVT_WR32(0x02EE02A4, FDVT_FF_NUM_0);
+	FDVT_WR32(0x02A402A4, FDVT_FF_NUM_1);
+	FDVT_WR32(0x02A402EE, FDVT_FF_NUM_2);
+	FDVT_WR32(0x02EE02A4, FDVT_FF_NUM_3);
+	FDVT_WR32(0x00C802A4, FDVT_FF_NUM_4);/*0x000002A4*/
+	FDVT_WR32(0x00640064, FDVT_FF_NUM_5);/*0x00000000*/
+	FDVT_WR32(0x00DC00DC, FDVT_FF_NUM_6);/*0x00000000*/
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_7);
+	FDVT_WR32(0x00000000, FDVT_FF_NUM_8);
+	/* FDVT_WR32(0x000F010B,FDVT_FD);   //LDVT Disable */
 }
 /*=======================================================================*/
 /* FDVT SD Config Registers */
 /*=======================================================================*/
 void SmileDetecteConfig(void)
 {
-	FDVT_WR32(0x01210171, FD_FNUM_0);
-	FDVT_WR32(0x00D10081, FD_FNUM_1);
-	FDVT_WR32(0x00F100D1, FD_FNUM_2);
-	FDVT_WR32(0x00F100D1, FD_FNUM_3);
-	FDVT_WR32(0x00E70127, VT_FNUM_0);
-	FDVT_WR32(0x00A70067, VT_FNUM_1);
-	FDVT_WR32(0x00C000A7, VT_FNUM_2);
-	FDVT_WR32(0x00C000A7, VT_FNUM_3);
-	FDVT_WR32(0x00180018, FE_FNUM_0);
-	FDVT_WR32(0x00180018, FE_FNUM_1);
-	FDVT_WR32(0x00180018, FE_FNUM_2);
-	FDVT_WR32(0x00180018, FE_FNUM_3);
-	FDVT_WR32(0x000F010B, FDVT_FD_SET);
+	FDVT_WR32(0x01210171, FDVT_FNUM_0);
+	FDVT_WR32(0x00D10081, FDVT_FNUM_1);
+	FDVT_WR32(0x00F100D1, FDVT_FNUM_2);
+	FDVT_WR32(0x00F100D1, FDVT_FNUM_3);
+	FDVT_WR32(0x00E70127, FDVT_T_FNUM_4);
+	FDVT_WR32(0x00A70067, FDVT_T_FNUM_5);
+	FDVT_WR32(0x00C000A7, FDVT_T_FNUM_6);
+	FDVT_WR32(0x00C000A7, FDVT_T_FNUM_7);
+	FDVT_WR32(0x00180018, FDVT_FF_NUM_0);
+	FDVT_WR32(0x00180018, FDVT_FF_NUM_1);
+	FDVT_WR32(0x00180018, FDVT_FF_NUM_2);
+	FDVT_WR32(0x00180018, FDVT_FF_NUM_3);
+	FDVT_WR32(0x000F010B, FDVT_FD);
 }
 
 /*=======================================================================*/
@@ -557,8 +590,8 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR &&
 			(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
-			LOG_DBG("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n", (unsigned long)pFDVTWriteBuffer.u4Addr[i],
-			(unsigned long)(FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]), (unsigned long)pFDVTWriteBuffer.u4Data[i]);
+			/* LOG_DBG("Write: FDVT[0x%03x](0x%08x) = 0x%08x\n", pFDVTWriteBuffer.u4Addr[i],*/
+			/*FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
 			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n",*/
@@ -1025,12 +1058,12 @@ static int FDVT_probe(struct platform_device *dev)
 	LOG_DBG("[FDVT_DEBUG] FDVT_probe\n");
 
 	if (dev == NULL) {
-		dev_err(&dev->dev, "dev is NULL");
+		dev_info(&dev->dev, "dev is NULL");
 		return -ENXIO;
 	}
 
 	new_count = nr_fdvt_devs + 1;
-	tempFdvt = krealloc(fdvt_devs, sizeof(struct fdvt_device) * new_count, GFP_KERNEL);
+	tempFdvt = krealloc(fdvt_devs,	sizeof(struct fdvt_device) * new_count, GFP_KERNEL);
 	if (!tempFdvt) {
 		dev_info(&dev->dev, "Unable to realloc fdvt_devs\n");
 		return -ENOMEM;
@@ -1049,32 +1082,6 @@ static int FDVT_probe(struct platform_device *dev)
 		gFDVT_Reg[i] = (unsigned long)fdvt_dev->regs[i];
 		LOG_INF("DT, i=%d, map_addr=0x%lx\n", i, gFDVT_Reg[i]);
 	}
-
-#ifdef CONFIG_MTK_CLKMGR
-#else
-	/*of_property_read_u32(pdev->dev.of_node, "clock-frequency", &speed_hz);*/
-	/*of_property_read_u32(pdev->dev.of_node, "clock-div", &clk_src_div);*/
-	fdvt_devs->clk_SCP_SYS_DIS = devm_clk_get(fdvt_dev->dev, "FD-SCP_SYS_DIS");
-	if (!fdvt_devs->clk_SCP_SYS_DIS) {
-		LOG_ERR("cannot get clock: FD-SCP_SYS_DIS\n");
-		return -ENOMEM;
-	}
-	fdvt_devs->clk_SCP_SYS_ISP = devm_clk_get(fdvt_dev->dev, "FD-SCP_SYS_ISP");
-	if (!fdvt_devs->clk_SCP_SYS_ISP) {
-		LOG_ERR("cannot get clock: FD-SCP_SYS_ISP\n");
-		return -ENOMEM;
-	}
-	fdvt_devs->clk_SMI_COMMON = devm_clk_get(fdvt_dev->dev, "FD-MM_DISP0_SMI_COMMON");
-	if (!fdvt_devs->clk_SMI_COMMON) {
-		LOG_ERR("cannot get clock: FD-MM_DISP0_SMI_COMMON\n");
-		return -ENOMEM;
-	}
-	fdvt_devs->clk_FD = devm_clk_get(fdvt_dev->dev, "FD-IMG_IMAGE_FD");
-	if (!fdvt_devs->clk_FD) {
-		LOG_ERR("cannot get clock: FD-IMG_IMAGE_FD\n");
-		return -ENOMEM;
-	}
-#endif
 
 	/* get IRQ ID and request IRQ */
 
@@ -1128,7 +1135,7 @@ static int FDVT_probe(struct platform_device *dev)
 #if LDVT_EARLY_PORTING_NO_CCF
 #else
     /*CCF: Grab clock pointer (struct clk*) */
-	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "IMG_FDVT");
+	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "FD_CLK_IMG_FDVT");
 
 	if (IS_ERR(fd_clk.CG_IMGSYS_FDVT)) {
 		LOG_ERR("cannot get CG_IMGSYS_FDVT clock\n");
