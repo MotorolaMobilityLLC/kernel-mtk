@@ -1117,6 +1117,11 @@ static int calc_hrt_num(struct disp_layer_info *disp_info)
 #endif
 		disp_info->hrt_num = emi_hrt_level;
 
+#ifdef HAS_LARB_HRT
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, emi_hrt_level, larb_hrt_level);
+#else
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, emi_hrt_level, 0);
+#endif
 	return disp_info->hrt_num;
 }
 
