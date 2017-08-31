@@ -54,13 +54,13 @@ struct cpu_dvfs_log_box {
 enum cpu_dvfs_ipi_type {
 	IPI_DVFS_INIT_PTBL,
 	IPI_DVFS_INIT,
-	IPI_SET_DVFS,
 	IPI_SET_CLUSTER_ON_OFF,
-	/* IPI_SET_VOLT, */
+#if 0
+	IPI_SET_VOLT,
 	IPI_SET_FREQ,
 	IPI_GET_VOLT,
 	IPI_GET_FREQ,
-	IPI_PAUSE_DVFS,
+#endif
 	IPI_TURBO_MODE,
 
 	NR_DVFS_IPI,
@@ -77,11 +77,13 @@ typedef struct cdvfs_data {
 
 int cpuhvfs_module_init(void);
 int cpuhvfs_set_init_sta(void);
+int cpuhvfs_set_turbo_scale(unsigned int turbo_f, unsigned int turbo_v);
 int cpuhvfs_set_mix_max(int cluster_id, int base, int limit);
 int cpuhvfs_set_cluster_on_off(int cluster_id, int state);
 int cpuhvfs_set_dvfs(int cluster_id, unsigned int freq);
 int cpuhvfs_set_volt(int cluster_id, unsigned int volt);
 int cpuhvfs_set_freq(int cluster_id, unsigned int freq);
+int cpuhvfs_get_cur_volt(int cluster_id);
 int cpuhvfs_get_volt(int buck_id);
 int cpuhvfs_get_freq(int pll_id);
 int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step);
