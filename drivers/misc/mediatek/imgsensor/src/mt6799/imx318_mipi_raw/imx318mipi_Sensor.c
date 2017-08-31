@@ -201,9 +201,9 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{ 5488, 4112,    0,	 0, 5488, 4112, 5488, 4112, 0000, 0000, 5488, 4112,    0,    0, 5488, 4112},    /*capture*/
 	{ 5488, 4112,    0,	 0, 5488, 4112, 5488, 4112,  824,  976, 3840, 2160,    0,    0, 3840, 2160},    /* video*/
 #ifdef HIGH_SPEED_240FPS
-	{ 5488, 4112,    0,	 0, 5488, 2880, 1372,  772, 0000, 0000, 1372,  772,    0,    0, 1372,  772},
+	{ 5488, 4112,    0,	 516, 5488, 3088, 1372,  772, 0000, 0000, 1372, 772,    0,    0, 1372,  772},
 #else
-	{ 5488, 4112,    0,	 0, 5488, 2880, 2744, 1544, 0000, 0000, 2744, 1544,    0,    0, 2744, 1544},    /*hight speed video*/
+	{ 5488, 4112,    0,	 512, 5488, 3088, 2744, 1544, 0000, 0000, 2744, 1544,    0,    0, 2744, 1544},
 #endif
 	{ 5488, 4112,    0,	 0, 5488, 3006, 1280,  720, 0000, 0000, 1280,  720,    0,    0, 1280,  720}     /*slim video*/
 };
@@ -1351,7 +1351,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0xD080, 0x0A);
 
 	write_cmos_sensor(0xD081, 0x10);
-	write_cmos_sensor(0x0138, 0x01); /*enable temperature sensor, TEMP_SEN_CTL:*/   	
+	write_cmos_sensor(0x0138, 0x01); /*enable temperature sensor, TEMP_SEN_CTL:*/
 }    /*    sensor_init  */
 
 
