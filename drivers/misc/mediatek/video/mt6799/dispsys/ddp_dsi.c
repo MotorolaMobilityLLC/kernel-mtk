@@ -191,6 +191,14 @@ do {	\
 #define MIPITX_MASKREG32(x, y, z)  MIPITX_OUTREG32(x, (MIPITX_INREG32(x)&~(y))|(z))
 #endif
 
+static int ddp_dsi_dbg_on;
+#define DDP_DSI_DBG(string, args...)					\
+	do {								\
+		if (ddp_dsi_dbg_on) {			\
+			DISPMSG(string, ##args);			\
+		}							\
+	} while (0)
+
 struct t_dsi_context {
 	unsigned int lcm_width;
 	unsigned int lcm_height;
@@ -4622,25 +4630,27 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 				}
 			}
 
-			DISPDBG("[DSI]enter cmp read_data0 byte0=0x%x byte1=0x%x byte2=0x%x byte3=0x%x\n",
+			DDP_DSI_DBG
+			    ("[DSI]enter cmp read_data0 byte0=0x%x byte1=0x%x byte2=0x%x byte3=0x%x\n",
 			     read_data0.byte0, read_data0.byte1, read_data0.byte2,
 			     read_data0.byte3);
-			DISPDBG("[DSI]enter cmp check_table cmd=0x%x,count=0x%x,para_list[0]=0x%x,para_list[1]=0x%x\n",
+			DDP_DSI_DBG
+			    ("[DSI]enter cmp check_table cmd=0x%x,count=0x%x,para_list[0]=0x%x,para_list[1]=0x%x\n",
 			     dsi_params->lcm_esd_check_table[i].cmd,
 			     dsi_params->lcm_esd_check_table[i].count,
 			     dsi_params->lcm_esd_check_table[i].para_list[0],
 			     dsi_params->lcm_esd_check_table[i].para_list[1]);
-			DISPDBG("[DSI]enter cmp DSI+0x200=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x200=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x200));
-			DISPDBG("[DSI]enter cmp DSI+0x204=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x204=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x204));
-			DISPDBG("[DSI]enter cmp DSI+0x60=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x60=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x60));
-			DISPDBG("[DSI]enter cmp DSI+0x74=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x74=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x74));
-			DISPDBG("[DSI]enter cmp DSI+0x88=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x88=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x88));
-			DISPDBG("[DSI]enter cmp DSI+0x0c=0x%x\n",
+			DDP_DSI_DBG("[DSI]enter cmp DSI+0x0c=0x%x\n",
 				AS_UINT32(DDP_REG_BASE_DSI0 + 0x0c));
 
 			if (read_data0.byte1 == dsi_params->lcm_esd_check_table[i].para_list[0]) {
