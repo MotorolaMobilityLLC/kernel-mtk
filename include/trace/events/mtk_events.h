@@ -401,6 +401,72 @@ TRACE_EVENT(mcdi,
 	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
 );
 
+TRACE_EVENT(sodi,
+
+	TP_PROTO(
+		int cpu,
+		int enter
+	),
+
+	TP_ARGS(cpu, enter),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+	),
+
+	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
+);
+
+TRACE_EVENT(sodi3,
+
+	TP_PROTO(
+		int cpu,
+		int enter
+	),
+
+	TP_ARGS(cpu, enter),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+	),
+
+	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
+);
+
+TRACE_EVENT(dpidle,
+
+	TP_PROTO(
+		int cpu,
+		int enter
+	),
+
+	TP_ARGS(cpu, enter),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, enter)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->enter = enter;
+	),
+
+	TP_printk("cpu = %d %d", (int)__entry->cpu, (int)__entry->enter)
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */
