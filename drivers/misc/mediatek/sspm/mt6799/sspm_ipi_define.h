@@ -151,6 +151,31 @@ struct _mbox_info mbox_table[IPI_MBOX_TOTAL] = {
 	{0, 0, 0, 0, 0}, /* mbox 4 */
 };
 
+#ifdef IPI_MONITOR
+static char *pin_name[IPI_ID_TOTAL] = {
+	"DCS",
+	"MET",
+	"PLATFORM",
+	"PTPOD",
+	"CPU_DVFS",
+	"GPU_DVFS",
+	"UNUSED1",
+	"UNUSED2",
+	"PMIC_WRAP",
+	"CLOCK",
+	"THERMAL",
+	"DEEP_IDLE",
+	"MCDI",
+	"SODI",
+	"SPM_SUSPEND",
+	"FHCTL",
+	"PMIC",
+	"PPM",
+	"OCP",
+	"EXT_BUCK"
+};
+#endif /* IPI_MONITOR */
+
 static inline int check_table_tag(int mcnt)
 {
 	int i, j = 0, k = 0, n = 0;
