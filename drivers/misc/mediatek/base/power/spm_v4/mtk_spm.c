@@ -46,7 +46,7 @@
 
 #include <trace/events/mtk_events.h>
 
-int __spmfw_idx;
+int __spmfw_idx = -1;
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
@@ -395,6 +395,8 @@ static void __spm_check_dram_type(void)
 
 int __spm_get_dram_type(void)
 {
+	if (__spmfw_idx == -1)
+		__spm_check_dram_type();
 	return __spmfw_idx;
 }
 
@@ -414,6 +416,11 @@ int __init spm_module_init(void)
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
+
+#ifdef CONFIG_MTK_DRAMC
+	/* get __spmfw_idx */
+	__spm_check_dram_type();
+#endif /* CONFIG_MTK_DRAMC */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
@@ -454,15 +461,11 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-#ifdef CONFIG_MTK_DRAMC
-	/* get __spmfw_idx */
-	__spm_check_dram_type();
-#endif /* CONFIG_MTK_DRAMC */
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 	is_ext_buck = is_ext_buck_exist();
 #endif
 	pr_info("#@# %s(%d) is_ext_buck_exist() 0x%x\n", __func__, __LINE__, is_ext_buck);
-	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spmfw_idx, is_ext_buck);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spm_get_dram_type(), is_ext_buck);
 
 	spm_vcorefs_init();
 
@@ -656,7 +659,7 @@ int spm_golden_setting_cmp(bool en)
 	if (!en)
 		return r;
 
-	switch (__spmfw_idx) {
+	switch (__spm_get_dram_type()) {
 	case SPMFW_LP4X_2CH:
 		ddrphy_setting = ddrphy_setting_lp4_2ch;
 		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
