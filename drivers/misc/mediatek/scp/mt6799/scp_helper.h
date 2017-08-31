@@ -78,6 +78,7 @@ enum SEMAPHORE_3WAY_FLAG {
 };
 
 struct scp_regs {
+	void __iomem *scpsys;
 	void __iomem *sram;
 	void __iomem *cfg;
 	void __iomem *clkctrl;

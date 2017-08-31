@@ -17,6 +17,8 @@
 #include "scp_reg.h"
 
 #define SHARE_BUF_SIZE 288
+/* scp awake timout count definition*/
+#define SCP_AWAKE_TIMEOUT 5000
 
 /* scp Core ID definition*/
 typedef enum scp_core_id {
@@ -117,5 +119,6 @@ extern char *core_ids[SCP_CORE_TOTAL];
 
 extern int scp_awake_lock(scp_core_id scp_id);
 extern int scp_awake_unlock(scp_core_id scp_id);
+extern void scp_awake_init(void);
 extern unsigned int is_scp_ready(scp_core_id scp_id);
 #endif
