@@ -28,7 +28,7 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 
-#include "mach/emi_bwl.h"
+#include "emi_bwl.h"
 
 DEFINE_SEMAPHORE(emi_bwl_sem);
 void __iomem *EMI_BASE_ADDR;
@@ -79,57 +79,57 @@ static int cur_con_sce = 0x0FFFFFFF;
 static const char * const con_sce_str[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, \
 arbd, arbe, arbf, arbg, arbh) (#con_sce),
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
 
 /****************** For LPDDR3-1866******************/
 
-static const unsigned int emi_arba_lpddr3_1866_val[] = {
+static const unsigned int emi_arba_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arba,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbb_lpddr3_1866_val[] = {
+static const unsigned int emi_arbb_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbb,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbc_lpddr3_1866_val[] = {
+static const unsigned int emi_arbc_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbc,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbd_lpddr3_1866_val[] = {
+static const unsigned int emi_arbd_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbd,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbe_lpddr3_1866_val[] = {
+static const unsigned int emi_arbe_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbe,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbf_lpddr3_1866_val[] = {
+static const unsigned int emi_arbf_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbf,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbg_lpddr3_1866_val[] = {
+static const unsigned int emi_arbg_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbg,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbh_lpddr3_1866_val[] = {
+static const unsigned int emi_arbh_lpddr4_3200_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbh,
-#include "mach/con_sce_lpddr3_1866.h"
+#include "con_sce_lpddr4_3200.h"
 #undef X_CON_SCE
 };
 
 
 int get_dram_type(void)
 {
-		return LPDDR3_1866;
+		return LPDDR4_3200;
 }
 
 
@@ -173,15 +173,15 @@ int mtk_mem_bw_ctrl(int sce, int op)
 
     /* set new EMI bandwidth limiter value */
 	if (highest != cur_con_sce) {
-		if (get_dram_type() == LPDDR3_1866) {
-			writel(emi_arba_lpddr3_1866_val[highest], EMI_ARBA);
-			writel(emi_arbb_lpddr3_1866_val[highest], EMI_ARBB);
-			writel(emi_arbc_lpddr3_1866_val[highest], EMI_ARBC);
-			writel(emi_arbd_lpddr3_1866_val[highest], EMI_ARBD);
-			writel(emi_arbe_lpddr3_1866_val[highest], EMI_ARBE);
-			writel(emi_arbf_lpddr3_1866_val[highest], EMI_ARBF);
-			writel(emi_arbg_lpddr3_1866_val[highest], EMI_ARBG);
-			mt_reg_sync_writel(emi_arbh_lpddr3_1866_val[highest],
+		if (get_dram_type() == LPDDR4_3200) {
+			writel(emi_arba_lpddr4_3200_val[highest], EMI_ARBA);
+			writel(emi_arbb_lpddr4_3200_val[highest], EMI_ARBB);
+			writel(emi_arbc_lpddr4_3200_val[highest], EMI_ARBC);
+			writel(emi_arbd_lpddr4_3200_val[highest], EMI_ARBD);
+			writel(emi_arbe_lpddr4_3200_val[highest], EMI_ARBE);
+			writel(emi_arbf_lpddr4_3200_val[highest], EMI_ARBF);
+			writel(emi_arbg_lpddr4_3200_val[highest], EMI_ARBG);
+			mt_reg_sync_writel(emi_arbh_lpddr4_3200_val[highest],
 			EMI_ARBH);
 			}
 			cur_con_sce = highest;
@@ -198,8 +198,8 @@ int mtk_mem_bw_ctrl(int sce, int op)
  */
 static ssize_t ddr_type_show(struct device_driver *driver, char *buf)
 {
-	if (get_dram_type() == LPDDR3_1866)
-		sprintf(buf, "LPDDR3_1866\n");
+	if (get_dram_type() == LPDDR4_3200)
+		sprintf(buf, "LPDDR4_3200\n");
 	else if (get_dram_type() == LPDDR2_1066)
 		sprintf(buf, "LPDDR2_1066\n");
 
