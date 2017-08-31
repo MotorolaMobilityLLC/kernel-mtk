@@ -38,12 +38,18 @@
 #include "../../../../crypto/tcrypt.h"
 #include "../../../../crypto/internal.h"
 #include <linux/proc_fs.h>
+#include <linux/slab.h>
 
 #define TCRYPT_FS_PROC
 /*
  * Need slab memory for testing (size in number of pages).
  */
-#define TVMEMSIZE	4
+
+/* #define TVMEMSIZE	32 */
+#define TVMEMSIZE	128
+/* 64K = 2^4 4K-pages */
+#define PAGE_ORDER  4UL
+#define SIZE_64K    65536UL
 
 /*
 * Used by test_cipher_speed()
@@ -68,6 +74,7 @@ static u32 type;
 static u32 mask;
 static int mode;
 static char *tvmem[TVMEMSIZE];
+static unsigned char *sgmem[TVMEMSIZE];
 
 static char *check[] = {
 	"des", "md5", "des3_ede", "rot13", "sha1", "sha224", "sha256",
@@ -247,7 +254,51 @@ out:
 	return ret;
 }
 
-static u32 block_sizes[] = { 16, 64, 256, 512,  1024, 8192, 14336, 0 };
+/*
+ * static u32 block_sizes[] = { 16, 64, 256, 512,  1024, 2048, 4096, 8192, 14336, 0 };
+ * static u32 block_sizes[] = { 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384,
+				32768, 65536, 131072, 262144, 524288, 0 };
+ */
+static u32 block_sizes[] = { 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 0 };
+/*
+ * static u32 block_sizes_64K[] = { 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
+			65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 0 };
+ * static u32 block_sizes_64K[] = { 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288,
+					1048576, 2097152, 4194304, 8388608, 0 };
+ */
+static u32 block_sizes_64K[] = { 8388608, 0 };
+
+static struct hash_speed generic_hash_speed_template_64K[] = {
+	{ .blen = 4096,	.plen = 4096, },
+	{ .blen = 8192,	.plen = 4096, },
+	{ .blen = 16384,	.plen = 4096, },
+	{ .blen = 32768,	.plen = 4096, },
+	{ .blen = 65536,	.plen = 4096, },
+	{ .blen = 131072,	.plen = 4096, },
+	{ .blen = 262144,	.plen = 4096, },
+	{ .blen = 524288,	.plen = 4096, },
+	{ .blen = 1048576,	.plen = 4096, },
+	{ .blen = 2097152,	.plen = 4096, },
+	{ .blen = 4194304,	.plen = 4096, },
+	{ .blen = 8388608,	.plen = 4096, },
+/*
+ *	{ .blen = 8388608,	.plen = 8192, },
+ *	{ .blen = 8388608,	.plen = 16384, },
+ *	{ .blen = 8388608,	.plen = 32768, },
+ *	{ .blen = 8388608,	.plen = 65536, },
+ *	{ .blen = 8388608,	.plen = 131072, },
+ *	{ .blen = 8388608,	.plen = 262144, },
+ *	{ .blen = 8388608,	.plen = 524288, },
+ *	{ .blen = 8388608,	.plen = 1048576, },
+ *	{ .blen = 8388608,	.plen = 2097152, },
+ *	{ .blen = 8388608,	.plen = 4194304, },
+ *	{ .blen = 8388608,	.plen = 8388608, },
+ */
+	/* End marker */
+	{  .blen = 0,	.plen = 0, }
+};
+
+
 static u32 aead_sizes[] = { 16, 64, 256, 512, 1024, 2048, 4096, 8192, 0 };
 
 #define XBUFSIZE 8
@@ -456,7 +507,7 @@ out_noxbuf:
 	kfree(iv);
 }
 
-static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
+static void test_cipher_speed_64K(const char *algo, int enc, unsigned int secs,
 			      struct cipher_speed_template *template,
 			      unsigned int tcount, u8 *keysize)
 {
@@ -467,6 +518,7 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
 	struct blkcipher_desc desc;
 	const char *e;
 	u32 *b_size;
+	struct scatterlist *sg;
 
 	if (enc == ENCRYPT)
 		e = "encryption";
@@ -486,24 +538,51 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
 	pr_cont("\ntesting speed of %s (%s) %s\n", algo,
 			get_driver_name(crypto_blkcipher, tfm), e);
 
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out;
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		/* sgmem[i] = kmalloc(SIZE_64K, GFP_KERNEL); */
+		sgmem[i] = (void *)__get_free_pages(GFP_KERNEL, PAGE_ORDER);
+		if (!sgmem[i]) {
+			pr_err("[vink] __get_free_pages is gg\n");
+			goto out;
+		}
+	}
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		memset(sgmem[i], 0xff, SIZE_64K);
+		memset(tvmem[i], 0xff, PAGE_SIZE);
+	}
+
 	i = 0;
 	do {
 
-		b_size = block_sizes;
+		b_size = block_sizes_64K;
 		do {
-			struct scatterlist sg[TVMEMSIZE];
+/*
+ *			struct scatterlist sg[TVMEMSIZE];
+ *
+ *			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+ *				pr_cont("template (%u) too big for tvmem (%lu)\n",
+ *				       *keysize + *b_size,
+ *				       TVMEMSIZE * PAGE_SIZE);
+ *				goto out;
+ *			}
+ */
 
-			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+			if (*b_size > TVMEMSIZE * SIZE_64K) {
 				pr_cont("template (%u) too big for tvmem (%lu)\n",
-				       *keysize + *b_size,
-				       TVMEMSIZE * PAGE_SIZE);
+				       *b_size,
+				       TVMEMSIZE * SIZE_64K);
 				goto out;
 			}
 
 			pr_cont("test %u (%d bit key, %d byte blocks): ", i,
 					*keysize * 8, *b_size);
 
-			memset(tvmem[0], 0xff, PAGE_SIZE);
+			/* memset(tvmem[0], 0xff, PAGE_SIZE); */
 
 			/* set key, plain text and IV */
 			key = tvmem[0];
@@ -522,11 +601,18 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
 			}
 
 			sg_init_table(sg, TVMEMSIZE);
-			sg_set_buf(sg, tvmem[0] + *keysize,
-				   PAGE_SIZE - *keysize);
-			for (j = 1; j < TVMEMSIZE; j++) {
-				sg_set_buf(sg + j, tvmem[j], PAGE_SIZE);
-				memset(tvmem[j], 0xff, PAGE_SIZE);
+/*
+ *			sg_set_buf(sg, tvmem[0] + *keysize,
+ *				   PAGE_SIZE - *keysize);
+ *			for (j = 1; j < TVMEMSIZE; j++) {
+ *				sg_set_buf(sg + j, tvmem[j], PAGE_SIZE);
+ *				memset(tvmem[j], 0xff, PAGE_SIZE);
+ *			}
+ */
+
+			for (j = 0; j < TVMEMSIZE; j++) {
+				sg_set_buf(sg + j, sgmem[j], SIZE_64K);
+				/* memset(tvmem[j], 0xff, PAGE_SIZE); */
 			}
 
 			iv_len = crypto_blkcipher_ivsize(tfm);
@@ -553,6 +639,149 @@ static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
 	} while (*keysize);
 
 out:
+	for (i = 0; i < TVMEMSIZE; ++i)
+		/* kfree(sgmem[i]); */
+		free_pages((unsigned long)sgmem[i], PAGE_ORDER);
+	kfree(sg);
+	crypto_free_blkcipher(tfm);
+}
+
+static void test_cipher_speed(const char *algo, int enc, unsigned int secs,
+			      struct cipher_speed_template *template,
+			      unsigned int tcount, u8 *keysize)
+{
+	unsigned int ret, i, j, iv_len;
+	const char *key;
+	char iv[128];
+	struct crypto_blkcipher *tfm;
+	struct blkcipher_desc desc;
+	const char *e;
+	u32 *b_size;
+	struct scatterlist *sg;
+
+	if (enc == ENCRYPT)
+		e = "encryption";
+	else
+		e = "decryption";
+
+	tfm = crypto_alloc_blkcipher(algo, 0, CRYPTO_ALG_ASYNC);
+
+	if (IS_ERR(tfm)) {
+		pr_cont("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		return;
+	}
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	pr_cont("\ntesting speed of %s (%s) %s\n", algo,
+			get_driver_name(crypto_blkcipher, tfm), e);
+
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out;
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		/* sgmem[i] = kmalloc(PAGE_SIZE, GFP_KERNEL); */
+		sgmem[i] = (void *)__get_free_pages(GFP_KERNEL, 0);
+		if (!sgmem[i]) {
+			pr_err("[vink] __get_free_pages is gg\n");
+			goto out;
+		}
+	}
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		memset(sgmem[i], 0xff, PAGE_SIZE);
+		memset(tvmem[i], 0xff, PAGE_SIZE);
+	}
+
+	i = 0;
+	do {
+
+		b_size = block_sizes;
+		do {
+/*
+ *			struct scatterlist sg[TVMEMSIZE];
+ *
+ *			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
+ *				pr_cont("template (%u) too big for tvmem (%lu)\n",
+ *				       *keysize + *b_size,
+ *				       TVMEMSIZE * PAGE_SIZE);
+ *				goto out;
+ *			}
+ */
+
+			if (*b_size > TVMEMSIZE * PAGE_SIZE) {
+				pr_cont("template (%u) too big for tvmem (%lu)\n",
+				       *b_size,
+				       TVMEMSIZE * PAGE_SIZE);
+				goto out;
+			}
+
+			pr_cont("test %u (%d bit key, %d byte blocks): ", i,
+					*keysize * 8, *b_size);
+
+			/* memset(tvmem[0], 0xff, PAGE_SIZE); */
+
+			/* set key, plain text and IV */
+			key = tvmem[0];
+			for (j = 0; j < tcount; j++) {
+				if (template[j].klen == *keysize) {
+					key = template[j].key;
+					break;
+				}
+			}
+
+			ret = crypto_blkcipher_setkey(tfm, key, *keysize);
+			if (ret) {
+				pr_cont("setkey() failed flags=%x\n",
+						crypto_blkcipher_get_flags(tfm));
+				goto out;
+			}
+
+			sg_init_table(sg, TVMEMSIZE);
+/*
+ *			sg_set_buf(sg, tvmem[0] + *keysize,
+ *				   PAGE_SIZE - *keysize);
+ *			for (j = 1; j < TVMEMSIZE; j++) {
+ *				sg_set_buf(sg + j, tvmem[j], PAGE_SIZE);
+ *				memset(tvmem[j], 0xff, PAGE_SIZE);
+ *			}
+ */
+
+			for (j = 0; j < TVMEMSIZE; j++) {
+				sg_set_buf(sg + j, sgmem[j], PAGE_SIZE);
+				/* memset(tvmem[j], 0xff, PAGE_SIZE); */
+			}
+
+			iv_len = crypto_blkcipher_ivsize(tfm);
+			if (iv_len) {
+				memset(&iv, 0xff, iv_len);
+				crypto_blkcipher_set_iv(tfm, iv, iv_len);
+			}
+
+			if (secs)
+				ret = test_cipher_jiffies(&desc, enc, sg,
+							  *b_size, secs);
+			else
+				ret = test_cipher_cycles(&desc, enc, sg,
+							 *b_size);
+
+			if (ret) {
+				pr_cont("%s() failed flags=%x\n", e, desc.flags);
+				break;
+			}
+			b_size++;
+			i++;
+		} while (*b_size);
+		keysize++;
+	} while (*keysize);
+
+out:
+	for (i = 0; i < TVMEMSIZE; ++i)
+		/* kfree(sgmem[i]); */
+		free_pages((unsigned long)sgmem[i], 0);
+	kfree(sg);
 	crypto_free_blkcipher(tfm);
 }
 
@@ -563,7 +792,7 @@ static int test_hash_jiffies_digest(struct hash_desc *desc,
 	unsigned long start, end;
 	int bcount;
 	int ret;
-
+	/* pr_cont("[vink] test_hash_jiffies_digest\n"); */
 	for (start = jiffies, end = start + secs * HZ, bcount = 0;
 	     time_before(jiffies, end); bcount++) {
 		ret = crypto_hash_digest(desc, sg, blen, out);
@@ -584,6 +813,7 @@ static int test_hash_jiffies(struct hash_desc *desc, struct scatterlist *sg,
 	int bcount, pcount;
 	int ret;
 
+	/* pr_cont("[vink] go jiffies\n"); */
 	if (plen == blen)
 		return test_hash_jiffies_digest(desc, sg, blen, out, secs);
 
@@ -658,7 +888,7 @@ static int test_hash_cycles(struct hash_desc *desc, struct scatterlist *sg,
 	unsigned long cycles = 0;
 	int i, pcount;
 	int ret;
-
+	/* pr_cont("[vink] go cycles\n"); */
 	if (plen == blen)
 		return test_hash_cycles_digest(desc, sg, blen, out);
 
@@ -725,10 +955,11 @@ static void test_hash_sg_init(struct scatterlist *sg)
 	}
 }
 
-static void test_hash_speed(const char *algo, unsigned int secs,
+static void test_hash_speed_64K(const char *algo, unsigned int secs,
 			    struct hash_speed *speed)
 {
-	struct scatterlist sg[TVMEMSIZE];
+	/* struct scatterlist sg[TVMEMSIZE]; */
+	struct scatterlist *sg;
 	struct crypto_hash *tfm;
 	struct hash_desc desc;
 	static char output[1024];
@@ -749,14 +980,140 @@ static void test_hash_speed(const char *algo, unsigned int secs,
 	desc.tfm = tfm;
 	desc.flags = 0;
 
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out;
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		/* sgmem[i] = kmalloc(SIZE_64K, GFP_KERNEL); */
+		sgmem[i] = (void *)__get_free_pages(GFP_KERNEL, PAGE_ORDER);
+		if (!sgmem[i]) {
+			pr_err("[vink] __get_free_pages is gg\n");
+			goto out;
+		}
+	}
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		memset(sgmem[i], 0xff, SIZE_64K);
+		memset(tvmem[i], 0xff, PAGE_SIZE);
+	}
+
 	if (crypto_hash_digestsize(tfm) > sizeof(output)) {
 		pr_cont("digestsize(%u) > outputbuffer(%zu)\n",
 		       crypto_hash_digestsize(tfm), sizeof(output));
 		goto out;
 	}
 
-	test_hash_sg_init(sg);
+	/* test_hash_sg_init(sg); */
+
+	sg_init_table(sg, TVMEMSIZE);
+	for (i = 0; i < TVMEMSIZE; i++)
+		sg_set_buf(sg + i, sgmem[i], SIZE_64K);
+
 	for (i = 0; speed[i].blen != 0; i++) {
+/*
+ *		if (speed[i].blen > TVMEMSIZE * PAGE_SIZE) {
+ *			pr_cont("template (%u) too big for tvmem (%lu)\n",
+ *			       speed[i].blen, TVMEMSIZE * PAGE_SIZE);
+ *			goto out;
+ *		}
+ */
+		if (speed[i].blen > TVMEMSIZE * SIZE_64K) {
+			pr_cont("template (%u) too big for tvmem (%lu)\n",
+			       speed[i].blen, TVMEMSIZE * SIZE_64K);
+			goto out;
+		}
+
+		if (speed[i].klen)
+			crypto_hash_setkey(tfm, tvmem[0], speed[i].klen);
+
+		pr_cont("test%3u (%5u byte blocks,%5u bytes per update,%4u updates): ",
+		       i, speed[i].blen, speed[i].plen, speed[i].blen / speed[i].plen);
+
+		if (secs)
+			ret = test_hash_jiffies(&desc, sg, speed[i].blen,
+						speed[i].plen, output, secs);
+		else
+			ret = test_hash_cycles(&desc, sg, speed[i].blen,
+						speed[i].plen, output);
+
+		if (ret) {
+			pr_cont("hashing failed ret=%d\n", ret);
+			break;
+		}
+	}
+
+out:
+	for (i = 0; i < TVMEMSIZE; ++i)
+		/* kfree(sgmem[i]); */
+		free_pages((unsigned long)sgmem[i], PAGE_ORDER);
+	kfree(sg);
+	crypto_free_hash(tfm);
+}
+
+static void test_hash_speed(const char *algo, unsigned int secs,
+			    struct hash_speed *speed)
+{
+	/* struct scatterlist sg[TVMEMSIZE]; */
+	struct scatterlist *sg;
+	struct crypto_hash *tfm;
+	struct hash_desc desc;
+	static char output[1024];
+	int i;
+	int ret;
+
+	tfm = crypto_alloc_hash(algo, 0, CRYPTO_ALG_ASYNC);
+
+	if (IS_ERR(tfm)) {
+		pr_cont("failed to load transform for %s: %ld\n", algo,
+		       PTR_ERR(tfm));
+		return;
+	}
+
+	pr_cont("\ntesting speed of %s (%s)\n", algo,
+			get_driver_name(crypto_hash, tfm));
+
+	desc.tfm = tfm;
+	desc.flags = 0;
+
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out;
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		/* sgmem[i] = kmalloc(PAGE_SIZE, GFP_KERNEL); */
+		sgmem[i] = (void *)__get_free_pages(GFP_KERNEL, 0);
+		if (!sgmem[i]) {
+			pr_err("[vink] __get_free_pages is gg\n");
+			goto out;
+		}
+	}
+
+	for (i = 0; i < TVMEMSIZE; ++i) {
+		memset(sgmem[i], 0xff, PAGE_SIZE);
+		memset(tvmem[i], 0xff, PAGE_SIZE);
+	}
+
+	if (crypto_hash_digestsize(tfm) > sizeof(output)) {
+		pr_cont("digestsize(%u) > outputbuffer(%zu)\n",
+		       crypto_hash_digestsize(tfm), sizeof(output));
+		goto out;
+	}
+
+	/* test_hash_sg_init(sg); */
+
+	sg_init_table(sg, TVMEMSIZE);
+	for (i = 0; i < TVMEMSIZE; i++)
+		sg_set_buf(sg + i, sgmem[i], PAGE_SIZE);
+
+	for (i = 0; speed[i].blen != 0; i++) {
+/*
+ *		if (speed[i].blen > TVMEMSIZE * PAGE_SIZE) {
+ *			pr_cont("template (%u) too big for tvmem (%lu)\n",
+ *			       speed[i].blen, TVMEMSIZE * PAGE_SIZE);
+ *			goto out;
+ *		}
+ */
 		if (speed[i].blen > TVMEMSIZE * PAGE_SIZE) {
 			pr_cont("template (%u) too big for tvmem (%lu)\n",
 			       speed[i].blen, TVMEMSIZE * PAGE_SIZE);
@@ -783,6 +1140,10 @@ static void test_hash_speed(const char *algo, unsigned int secs,
 	}
 
 out:
+	for (i = 0; i < TVMEMSIZE; ++i)
+		/* kfree(sgmem[i]); */
+		free_pages((unsigned long)sgmem[i], 0);
+	kfree(sg);
 	crypto_free_hash(tfm);
 }
 
@@ -948,7 +1309,8 @@ out:
 static void test_ahash_speed(const char *algo, unsigned int secs,
 			     struct hash_speed *speed)
 {
-	struct scatterlist sg[TVMEMSIZE];
+	/* struct scatterlist sg[TVMEMSIZE]; */
+	struct scatterlist *sg;
 	struct tcrypt_result tresult;
 	struct ahash_request *req;
 	struct crypto_ahash *tfm;
@@ -964,6 +1326,10 @@ static void test_ahash_speed(const char *algo, unsigned int secs,
 
 	pr_cont("\ntesting speed of async %s (%s)\n", algo,
 			get_driver_name(crypto_ahash, tfm));
+
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out;
 
 	if (crypto_ahash_digestsize(tfm) > MAX_DIGEST_SIZE) {
 		pr_err("digestsize(%u) > %d\n", crypto_ahash_digestsize(tfm),
@@ -1018,6 +1384,7 @@ out_nomem:
 
 out:
 	crypto_free_ahash(tfm);
+	kfree(sg);
 }
 
 static inline int do_one_acipher_op(struct ablkcipher_request *req, int ret)
@@ -1117,6 +1484,7 @@ static void test_acipher_speed(const char *algo, int enc, unsigned int secs,
 	struct crypto_ablkcipher *tfm;
 	const char *e;
 	u32 *b_size;
+	struct scatterlist *sg;
 
 	if (enc == ENCRYPT)
 		e = "encryption";
@@ -1147,11 +1515,14 @@ static void test_acipher_speed(const char *algo, int enc, unsigned int secs,
 					tcrypt_complete, &tresult);
 
 	i = 0;
+	sg = kmalloc(sizeof(struct scatterlist)*TVMEMSIZE, GFP_KERNEL);
+	if (!sg)
+		goto out_free_req;
 	do {
 		b_size = block_sizes;
 
 		do {
-			struct scatterlist sg[TVMEMSIZE];
+			/* struct scatterlist sg[TVMEMSIZE]; */
 
 			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
 				pr_err("template (%u) too big for tvmem (%lu)\n",
@@ -1229,6 +1600,7 @@ static void test_acipher_speed(const char *algo, int enc, unsigned int secs,
 
 out_free_req:
 	ablkcipher_request_free(req);
+	kfree(sg);
 out:
 	crypto_free_ablkcipher(tfm);
 }
@@ -1596,26 +1968,30 @@ static int do_test(const char *alg, u32 type, u32 mask, int m)
 		ret += tcrypt_test("authenc(hmac(sha512),cbc(des3_ede))");
 		break;
 	case 200:
-		test_cipher_speed("ecb(aes)", ENCRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
-		test_cipher_speed("ecb(aes)", DECRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
+/*
+ *		test_cipher_speed("ecb(aes)", ENCRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ *		test_cipher_speed("ecb(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ */
 		test_cipher_speed("cbc(aes)", ENCRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
-		test_cipher_speed("cbc(aes)", DECRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
-		test_cipher_speed("lrw(aes)", ENCRYPT, sec, NULL, 0,
-				speed_template_32_40_48);
-		test_cipher_speed("lrw(aes)", DECRYPT, sec, NULL, 0,
-				speed_template_32_40_48);
-		test_cipher_speed("xts(aes)", ENCRYPT, sec, NULL, 0,
-				speed_template_32_48_64);
-		test_cipher_speed("xts(aes)", DECRYPT, sec, NULL, 0,
-				speed_template_32_48_64);
-		test_cipher_speed("ctr(aes)", ENCRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
-		test_cipher_speed("ctr(aes)", DECRYPT, sec, NULL, 0,
-				speed_template_16_24_32);
+				speed_template_16_32);
+/*
+ *		test_cipher_speed("cbc(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ *		test_cipher_speed("lrw(aes)", ENCRYPT, sec, NULL, 0,
+ *				speed_template_32_40_48);
+ *		test_cipher_speed("lrw(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_32_40_48);
+ *		test_cipher_speed("xts(aes)", ENCRYPT, sec, NULL, 0,
+ *				speed_template_32_48_64);
+ *		test_cipher_speed("xts(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_32_48_64);
+ *		test_cipher_speed("ctr(aes)", ENCRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ *		test_cipher_speed("ctr(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ */
 		break;
 
 	case 201:
@@ -1830,7 +2206,7 @@ static int do_test(const char *alg, u32 type, u32 mask, int m)
 
 	case 304:
 		test_hash_speed("sha256", sec, generic_hash_speed_template);
-		if (mode > 300 && mode < 400)
+		/* if (mode > 300 && mode < 400) */
 			break;
 
 	case 305:
@@ -2227,6 +2603,30 @@ static int do_test(const char *alg, u32 type, u32 mask, int m)
 
 	case 1000:
 		test_available();
+		break;
+	case 2000:
+/*
+ *		test_cipher_speed_64K("ecb(aes)", ENCRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ *		test_cipher_speed_64K("ecb(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ */
+		test_cipher_speed_64K("cbc-aes-dx", ENCRYPT, sec, NULL, 0,
+				speed_template_16_32);
+/*
+ *		test_cipher_speed_64K("cbc(aes)", DECRYPT, sec, NULL, 0,
+ *				speed_template_16_24_32);
+ */
+		break;
+	case 2005:
+		test_cipher_speed_64K("cbc(aes-ce)", ENCRYPT, sec, NULL, 0,
+				speed_template_16_32);
+		break;
+	case 3040:
+		test_hash_speed_64K("sha256", sec, generic_hash_speed_template_64K);
+		break;
+	case 3045:
+		test_hash_speed_64K("sha256-ce", sec, generic_hash_speed_template_64K);
 		break;
 	}
 
