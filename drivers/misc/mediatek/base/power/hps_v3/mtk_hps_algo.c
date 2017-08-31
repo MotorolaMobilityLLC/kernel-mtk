@@ -585,16 +585,6 @@ HPS_ALGO_END:
 	/*
 	 * algo - end
 	 */
-	/* [FIXME] postpone big core online time in booting 20s */
-	if ((u64) ktime_to_ms(ktime_get()) <= 20000) {
-		hps_sys.cluster_info[1].target_core_num +=
-			hps_sys.cluster_info[2].target_core_num;
-
-		if (hps_sys.cluster_info[1].target_core_num > 4)
-			hps_sys.cluster_info[1].target_core_num = 4;
-
-		hps_sys.cluster_info[2].target_core_num = 0;
-	}
 
 	/*Base and limit check */
 	hps_check_base_limit(&hps_sys);
