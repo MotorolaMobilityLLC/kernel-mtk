@@ -93,7 +93,7 @@ struct ccci_smem_region md1_6292_noncacheable_fat[] = {
 {SMEM_USER_RAW_USB,		104*1024,	4*1024,		0, },
 {SMEM_USER_RAW_AUDIO,		108*1024,	20*1024,	0, },
 #if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
-{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	SMF_CLR_RESET, },
+{SMEM_USER_RAW_MD2MD,		2*1024*1024,	2*1024*1024,	0, },
 #endif
 {SMEM_USER_MAX, }, /* tail guard */
 };
@@ -113,7 +113,7 @@ struct ccci_smem_region md1_6292_cacheable[] = {
 };
 
 struct ccci_smem_region md3_6292_noncacheable_fat[] = {
-{SMEM_USER_RAW_MD2MD,		0,				2*1024*1024,	SMF_CLR_RESET, },
+{SMEM_USER_RAW_MD2MD,		0,				2*1024*1024,	0, },
 {SMEM_USER_RAW_MDCCCI_DBG,	2*1024*1024,			2*1024,		0, },
 {SMEM_USER_RAW_MDSS_DBG,	(2*1024 + 2)*1024,		2*1024,		0, },
 {SMEM_USER_RAW_RESERVED,	(2*1024 + 4)*1024,		54*1024,	0, },
