@@ -175,8 +175,7 @@ static int md1_scenario_pwr[SCENARIO_NUM] = { PW_STANDBY,
 					    PW_3G_TALKING,
 					    PW_3G_DATALINK,
 					    PW_4G_DL_1CC,
-					    PW_4G_DL_2CC,
-					    PW_4G_DL_3CC };
+					    PW_4G_DL_2CC };
 
 static int md1_pa_pwr_2g[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_2G_SECTION_1,
@@ -452,8 +451,8 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 
 	switch (scenario) {
 	case S_STANDBY:
-		/* if bit 2 to bit 11 are not asserted */
-		if ((share_reg & _BITMASK_(11:2)) == 0)
+		/* if bit 2 to bit 7 are not asserted */
+		if ((share_reg & _BITMASK_(7:2)) == 0)
 			hit = 1;
 		break;
 	case S_2G_TALKING_OR_DATALINK:
@@ -479,11 +478,6 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 	case S_4G_DL_2CC:
 		/* if bit 6 or bit 7 is asserted */
 		if ((share_reg & _BITMASK_(7:6)) != 0)
-			hit = 1;
-		break;
-	case S_4G_DL_3CC:
-		/* if bit 8 or bit 9 is asserted */
-		if ((share_reg & _BITMASK_(9:8)) != 0)
 			hit = 1;
 		break;
 	default:
@@ -524,10 +518,6 @@ static u32 set_fake_share_reg(int scenario)
 	case S_4G_DL_2CC:
 		/* if bit 6 or bit 7 is asserted */
 		fShareReg = _BITMASK_(7:6);
-		break;
-	case S_4G_DL_3CC:
-		/* if bit 8 or bit 9 is asserted */
-		fShareReg = _BITMASK_(9:8);
 		break;
 	default:
 		pbm_crit("[%s] ERROR, unknown scenario [%d]\n", __func__, scenario);
@@ -789,14 +779,12 @@ static int get_md1_dBm_power(int scenario)
 	}
 
 	if (scenario == S_2G_TALKING_OR_DATALINK) {
-		dbm_power = get_md1_2g_dbm_power(share_mem);
-		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
-		dbm_power_max = MAX(dbm_power, dbm_power_max);
+		dbm_power_max = get_md1_2g_dbm_power(share_mem);
 	} else if (scenario == S_3G_TALKING || scenario == S_3G_DATALINK) {
 		dbm_power = get_md1_3g_dbm_power(share_mem);
 		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
 		dbm_power_max = MAX(dbm_power, dbm_power_max);
-	} else if (scenario == S_4G_DL_1CC || scenario == S_4G_DL_2CC || scenario == S_4G_DL_3CC) {
+	} else if (scenario == S_4G_DL_1CC) {
 		/* TO-DO:
 		 * Add one RF power or two RF power?
 		 */
@@ -804,6 +792,12 @@ static int get_md1_dBm_power(int scenario)
 		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
 		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
 		dbm_power_max = MAX(dbm_power, dbm_power_max);
+	} else if (scenario == S_4G_DL_2CC) {
+		/* TO-DO:
+		 * Add one RF power or two RF power?
+		 */
+		dbm_power_max = get_md1_4g_upL1_dbm_power(share_mem);
+		dbm_power_max += get_md1_4g_upL2_dbm_power(share_mem);
 	} else {
 		dbm_power_max = 0;
 	}
