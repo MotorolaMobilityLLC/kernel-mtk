@@ -97,6 +97,7 @@
 #define PROC_RX_STATISTICS                      "rx_statistics"
 #define PROC_TX_STATISTICS                      "tx_statistics"
 #define PROC_DBG_LEVEL_NAME                     "dbgLevel"
+#define PROC_PKT_DELAY_DBG			"pktDelay"
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
 #define PROC_RX_STATISTICS_MAX_USER_INPUT_LEN   10
@@ -359,6 +360,121 @@ static const struct file_operations mcr_ops = {
 	.write = procMCRWrite,
 };
 
+static ssize_t procPktDelayDbgCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	UINT_8 *temp = &g_aucProcBuf[0];
+	UINT_32 u4CopySize = 0;
+	UINT_8 ucTxRxFlag;
+	UINT_8 ucTxIpProto;
+	UINT_16 u2TxUdpPort;
+	UINT_32 u4TxDelayThreshold;
+	UINT_8 ucRxIpProto;
+	UINT_16 u2RxUdpPort;
+	UINT_32 u4RxDelayThreshold;
+
+	/* if *f_ops>0, we should return 0 to make cat command exit */
+	if (*f_pos > 0)
+		return 0;
+
+	kalStrCpy(temp,
+		"\nUsage: txLog/rxLog/reset 1(ICMP)/6(TCP)/11(UDP) Dst/SrcPortNum DelayThreshold(us)\n"
+		"Print tx delay log,                                   such as: echo txLog 0 0 0 > pktDelay\n"
+		"Print tx UDP delay log,                               such as: echo txLog 11 0 0 > pktDelay\n"
+		"Print tx UDP dst port19305 delay log,                 such as: echo txLog 11 19305 0 > pktDelay\n"
+		"Print rx UDP src port19305 delay more than 500us log, such as: echo rxLog 11 19305 500 > pktDelay\n"
+		"Print tx TCP delay more than 500us log,               such as: echo txLog 6 0 500 > pktDelay\n"
+		"Close log,                                            such as: echo reset 0 0 0 > pktDelay\n\n");
+	temp += kalStrLen(temp);
+
+	StatsEnvGetPktDelay(&ucTxRxFlag, &ucTxIpProto, &u2TxUdpPort, &u4TxDelayThreshold,
+		&ucRxIpProto, &u2RxUdpPort, &u4RxDelayThreshold);
+
+	if (ucTxRxFlag & BIT(0)) {
+		SPRINTF(temp, ("txLog %x %d %d\n", ucTxIpProto, u2TxUdpPort, u4TxDelayThreshold));
+		temp += kalStrLen(temp);
+	}
+	if (ucTxRxFlag & BIT(1)) {
+		SPRINTF(temp, ("rxLog %x %d %d\n", ucRxIpProto, u2RxUdpPort, u4RxDelayThreshold));
+		temp += kalStrLen(temp);
+	}
+	if (ucTxRxFlag == 0)
+		SPRINTF(temp, ("reset 0 0 0, there is no tx/rx delay log\n"));
+
+	u4CopySize = kalStrLen(g_aucProcBuf);
+	if (u4CopySize > count)
+		u4CopySize = count;
+	if (copy_to_user(buf, g_aucProcBuf, u4CopySize)) {
+		pr_err("copy to user failed\n");
+		return -EFAULT;
+	}
+
+	*f_pos += u4CopySize;
+	return (ssize_t)u4CopySize;
+}
+
+static ssize_t procPktDelayDbgCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+#define MODULE_NAME_LENGTH 7
+#define MODULE_RESET 0
+#define MODULE_TX 1
+#define MODULE_RX 2
+
+	UINT_32 u4CopySize = sizeof(g_aucProcBuf);
+	UINT_8 *temp = &g_aucProcBuf[0];
+	UINT_8 aucModule[MODULE_NAME_LENGTH];
+	UINT_32 u4DelayThreshold = 0;
+	UINT_16 u2PortNum = 0;
+	UINT_32 u4IpProto = 0;
+	UINT_8 aucResetArray[MODULE_NAME_LENGTH] = "reset";
+	UINT_8 aucTxArray[MODULE_NAME_LENGTH] = "txLog";
+	UINT_8 aucRxArray[MODULE_NAME_LENGTH] = "rxLog";
+	UINT_8 ucTxOrRx = 0;
+
+	kalMemSet(g_aucProcBuf, 0, u4CopySize);
+	if (u4CopySize >= count + 1)
+		u4CopySize = count;
+
+	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
+		pr_err("error of copy from user\n");
+		return -EFAULT;
+	}
+	g_aucProcBuf[u4CopySize] = '\0';
+
+	while (temp) {
+		/* pick up a string and teminated after meet : */
+		if (sscanf(temp, "%s %x %d %d", aucModule, &u4IpProto, &u2PortNum, &u4DelayThreshold) != 4)  {
+			pr_info("read param fail, aucModule=%s\n", aucModule);
+			break;
+		}
+
+		if (kalStrnCmp(aucModule, aucResetArray, MODULE_NAME_LENGTH) == 0) {
+			ucTxOrRx = MODULE_RESET;
+		} else if (kalStrnCmp(aucModule, aucTxArray, MODULE_NAME_LENGTH) == 0) {
+			ucTxOrRx = MODULE_TX;
+		} else if (kalStrnCmp(aucModule, aucRxArray, MODULE_NAME_LENGTH) == 0) {
+			ucTxOrRx = MODULE_RX;
+		} else {
+			pr_info("input module error!\n");
+			break;
+		}
+
+		temp = kalStrChr(temp, ',');
+		if (!temp)
+			break;
+		temp++; /* skip ',' */
+	}
+
+	StatsEnvSetPktDelay(ucTxOrRx, (UINT_8)u4IpProto, u2PortNum, u4DelayThreshold);
+
+	return count;
+}
+
+static const struct file_operations proc_pkt_delay_dbg_ops = {
+	.owner = THIS_MODULE,
+	.read  = procPktDelayDbgCfgRead,
+	.write = procPktDelayDbgCfgWrite,
+};
+
 #if CFG_SUPPORT_DEBUG_FS
 static ssize_t procRoamRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
@@ -539,6 +655,7 @@ INT_32 procRemoveProcfs(VOID)
 {
 	remove_proc_entry(PROC_MCR_ACCESS, gprProcRoot);
 
+	remove_proc_entry(PROC_PKT_DELAY_DBG, gprProcRoot);
 #if CFG_SUPPORT_DEBUG_FS
 	remove_proc_entry(PROC_ROAM_PARAM, gprProcRoot);
 	remove_proc_entry(PROC_COUNTRY, gprProcRoot);
@@ -558,6 +675,14 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		DBGLOG(INIT, ERROR, "Unable to create /proc entry\n\r");
 		return -1;
 	}
+
+	prEntry = proc_create(PROC_PKT_DELAY_DBG, 0664, gprProcRoot, &proc_pkt_delay_dbg_ops);
+	if (prEntry == NULL) {
+		pr_err("Unable to create /proc entry SetCAM\n\r");
+		return -ENOENT;
+	}
+	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
 #if CFG_SUPPORT_DEBUG_FS
 	prEntry = proc_create(PROC_ROAM_PARAM, 0664, gprProcRoot, &roam_ops);
 	if (prEntry == NULL) {

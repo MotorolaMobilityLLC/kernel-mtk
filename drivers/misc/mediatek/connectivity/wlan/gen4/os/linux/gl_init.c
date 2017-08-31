@@ -1094,6 +1094,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 
 	kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
 
+	STATS_TX_TIME_ARRIVE(prSkb);
+
 	if (kalHardStartXmit(prSkb, prDev, prGlueInfo, ucBssIndex) == WLAN_STATUS_SUCCESS) {
 		/* Successfully enqueue to Tx queue */
 		/* Successfully enqueue to Tx queue */

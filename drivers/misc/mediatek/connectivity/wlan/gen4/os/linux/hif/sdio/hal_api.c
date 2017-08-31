@@ -1875,6 +1875,7 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 	PUINT_8 pucSrcAddr;
 	UINT_16 u2PktLength;
 	BOOLEAN fgReschedule = FALSE;
+	UINT_64 u8Current = 0;
 
 	KAL_SPIN_LOCK_DECLARATION();
 	SDIO_TIME_INTERVAL_DEC();
@@ -1927,6 +1928,7 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 
 		pucSrcAddr = prRxBuf->pvRxCoalescingBuf;
 
+		u8Current = sched_clock();
 		SDIO_REC_TIME_START();
 		for (i = 0; i < prRxBuf->u4PktCount; i++) {
 			u2PktLength = HAL_RX_STATUS_GET_RX_BYTE_CNT((P_HW_MAC_RX_DESC_T)pucSrcAddr);
@@ -1935,6 +1937,10 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 			kalMemCopy(prSwRfb->pucRecvBuff, pucSrcAddr, ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
 
 			prSwRfb->ucPacketType = (UINT_8)HAL_RX_STATUS_GET_PKT_TYPE(prSwRfb->prRxStatus);
+
+			GLUE_RX_SET_PKT_INT_TIME(prSwRfb->pvPacket, prAdapter->prGlueInfo->u8HifIntTime);
+
+			GLUE_RX_SET_PKT_RX_TIME(prSwRfb->pvPacket, u8Current);
 
 			QUEUE_INSERT_TAIL(prTempRxRfbList, &prSwRfb->rQueEntry);
 

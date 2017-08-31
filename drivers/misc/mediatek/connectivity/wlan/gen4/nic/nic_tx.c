@@ -1722,6 +1722,9 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 			QUEUE_INSERT_TAIL(&(prTxCtrl->rTxMgmtTxingQueue), (P_QUE_ENTRY_T) prMsduInfo);
 			KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TXING_MGMT_LIST);
 		}
+
+		StatsEnvTxTime2Hif(prAdapter, prMsduInfo);
+
 		HAL_WRITE_TX_DATA(prAdapter, prMsduInfo);
 	}
 
