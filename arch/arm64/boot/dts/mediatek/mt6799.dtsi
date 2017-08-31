@@ -1386,7 +1386,7 @@
 		max_prefetch_cnt = <4>;
 		prefetch_size = <160 32 32 32>;
 		sram_share_cnt = <2>;
-		sram_share_engine = <11 12>;
+		sram_share_engine = <13 14>;
 		sram_share_event = <460 461>;
 		clocks = <&infracfg_ao CLK_INFRA_GCE>;
 		clock-names = "GCE";
