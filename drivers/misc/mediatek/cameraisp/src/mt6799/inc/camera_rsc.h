@@ -116,6 +116,22 @@ typedef struct {
 	unsigned int RSC_MVO_STRIDE;
 	unsigned int RSC_BVO_BASE_ADDR;
 	unsigned int RSC_BVO_STRIDE;
+#define RSC_TUNABLE
+#ifdef RSC_TUNABLE
+	unsigned int RSC_MV_OFFSET;
+	unsigned int RSC_GMV_OFFSET;
+	unsigned int RSC_CAND_NUM;
+	unsigned int RSC_RAND_HORZ_LUT;
+	unsigned int RSC_RAND_VERT_LUT;
+	unsigned int RSC_SAD_CTRL;
+	unsigned int RSC_SAD_EDGE_GAIN_CTRL;
+	unsigned int RSC_SAD_CRNR_GAIN_CTRL;
+	unsigned int RSC_STILL_STRIP_CTRL0;
+	unsigned int RSC_STILL_STRIP_CTRL1;
+	unsigned int RSC_RAND_PNLTY_CTRL;
+	unsigned int RSC_RAND_PNLTY_GAIN_CTRL0;
+	unsigned int RSC_RAND_PNLTY_GAIN_CTRL1;
+#endif
 } RSC_Config;
 
 /*

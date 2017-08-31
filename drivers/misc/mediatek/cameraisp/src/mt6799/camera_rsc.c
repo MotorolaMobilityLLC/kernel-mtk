@@ -1129,7 +1129,21 @@ static signed int ConfigRSCHW(RSC_Config *pRscConfig)
 	cmdqRecWrite(handle, RSC_MVO_STRIDE_HW, pRscConfig->RSC_MVO_STRIDE, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, RSC_BVO_BASE_ADDR_HW, pRscConfig->RSC_BVO_BASE_ADDR, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, RSC_BVO_STRIDE_HW, pRscConfig->RSC_BVO_STRIDE, CMDQ_REG_MASK);
-
+#ifdef RSC_TUNABLE
+	cmdqRecWrite(handle, RSC_MV_OFFSET_HW, pRscConfig->RSC_MV_OFFSET, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_GMV_OFFSET_HW, pRscConfig->RSC_GMV_OFFSET, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_CAND_NUM_HW, pRscConfig->RSC_CAND_NUM, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_RAND_HORZ_LUT_HW, pRscConfig->RSC_RAND_HORZ_LUT, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_RAND_VERT_LUT_HW, pRscConfig->RSC_RAND_VERT_LUT, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_SAD_CTRL_HW, pRscConfig->RSC_SAD_CTRL, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_SAD_EDGE_GAIN_CTRL_HW, pRscConfig->RSC_SAD_EDGE_GAIN_CTRL, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_SAD_CRNR_GAIN_CTRL_HW, pRscConfig->RSC_SAD_CRNR_GAIN_CTRL, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_STILL_STRIP_CTRL_0_HW, pRscConfig->RSC_STILL_STRIP_CTRL0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_STILL_STRIP_CTRL_1_HW, pRscConfig->RSC_STILL_STRIP_CTRL1, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_RAND_PNLTY_CTRL_HW, pRscConfig->RSC_RAND_PNLTY_CTRL, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_RAND_PNLTY_GAIN_CTRL_0_HW, pRscConfig->RSC_RAND_PNLTY_GAIN_CTRL0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, RSC_RAND_PNLTY_GAIN_CTRL_1_HW, pRscConfig->RSC_RAND_PNLTY_GAIN_CTRL1, CMDQ_REG_MASK);
+#endif
 	cmdqRecWrite(handle, RSC_START_HW, 0x1, CMDQ_REG_MASK);	/* RSC Interrupt read-clear mode */
 
 	cmdqRecWait(handle, CMDQ_EVENT_RSC_EOF);
