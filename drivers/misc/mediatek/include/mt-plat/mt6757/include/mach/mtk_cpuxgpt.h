@@ -16,7 +16,7 @@
 
 #include <linux/types.h>
 
-typedef enum cpuxgpt_num {
+enum cpuxgpt_num {
 	CPUXGPT0 = 0,
 	CPUXGPT1,
 	CPUXGPT2,
@@ -28,7 +28,7 @@ typedef enum cpuxgpt_num {
 	CPUXGPT8,
 	CPUXGPT9,
 	CPUXGPTNUMBERS,
-} CPUXGPT_NUM;
+};
 
 /* REG */
 #define INDEX_CTL_REG  0x000
@@ -66,7 +66,7 @@ void enable_cpuxgpt(void);
 void set_cpuxgpt_clk(unsigned int div);
 void disable_cpuxgpt(void);
 int cpu_xgpt_set_timer(int id, u64 ns);
-int cpu_xgpt_set_cmp(CPUXGPT_NUM cpuxgpt_num, u64 count);
+int cpu_xgpt_set_cmp(enum cpuxgpt_num cpuxgpt_num, u64 count);
 int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *dev_id));
 void cpu_xgpt_set_init_count(unsigned int countH, unsigned int  countL);
 void cpu_xgpt_halt_on_debug_en(int en);

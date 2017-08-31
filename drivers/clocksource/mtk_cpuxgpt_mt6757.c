@@ -60,7 +60,7 @@ static irqreturn_t __cpuxgpt5_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt6_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id);
 
-static const struct of_device_id cpuxgpt_addr_ids[] __initconst = {
+static const struct of_device_id cpuxgpt_addr_ids[] = {
 	{.compatible = "mediatek,cpuxgpt"},
 	{},
 };
@@ -199,7 +199,7 @@ spin_lock(&cpuxgpt_reg_lock);
 	return 0;
 }
 
-static unsigned int __cpuxgpt_set_cmp(CPUXGPT_NUM cpuxgpt_num, int countH, int countL)
+static unsigned int __cpuxgpt_set_cmp(enum cpuxgpt_num cpuxgpt_num, int countH, int countL)
 {
 	spin_lock(&cpuxgpt_reg_lock);
 	__write_cpuxgpt(INDEX_CMP_BASE+(cpuxgpt_num*0x8)+0x4, countH);
@@ -266,7 +266,7 @@ static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-int cpu_xgpt_set_cmp_HL(CPUXGPT_NUM cpuxgpt_num, int countH, int countL)
+int cpu_xgpt_set_cmp_HL(enum cpuxgpt_num cpuxgpt_num, int countH, int countL)
 {
 	__cpuxgpt_set_cmp(cpuxgpt_num, countH, countL);
 	__cpuxgpt_irq_en(cpuxgpt_num);
@@ -496,7 +496,7 @@ unsigned int cpu_xgpt_irq_dis(int cpuxgpt_num)
 }
 EXPORT_SYMBOL(cpu_xgpt_irq_dis);
 
-int cpu_xgpt_set_cmp(CPUXGPT_NUM cpuxgpt_num, u64 count)
+int cpu_xgpt_set_cmp(enum cpuxgpt_num cpuxgpt_num, u64 count)
 {
 
 	unsigned int set_count_lo = 0;
