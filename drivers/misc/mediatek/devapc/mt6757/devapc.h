@@ -67,32 +67,32 @@
 ******************************************************************************/
 
 /* Device APC PD */
-#define DEVAPC0_D0_VIO_MASK_0       ((volatile unsigned int *)(devapc_pd_base+0x0000))
-#define DEVAPC0_D0_VIO_MASK_1       ((volatile unsigned int *)(devapc_pd_base+0x0004))
-#define DEVAPC0_D0_VIO_MASK_2       ((volatile unsigned int *)(devapc_pd_base+0x0008))
-#define DEVAPC0_D0_VIO_MASK_3       ((volatile unsigned int *)(devapc_pd_base+0x000C))
-#define DEVAPC0_D0_VIO_MASK_4       ((volatile unsigned int *)(devapc_pd_base+0x0010))
-#define DEVAPC0_D0_VIO_MASK_5       ((volatile unsigned int *)(devapc_pd_base+0x0014))
-#define DEVAPC0_D0_VIO_MASK_6       ((volatile unsigned int *)(devapc_pd_base+0x0018))
-#define DEVAPC0_D0_VIO_MASK_7       ((volatile unsigned int *)(devapc_pd_base+0x001C))
+#define DEVAPC0_D0_VIO_MASK_0       ((unsigned int *)(devapc_pd_base+0x0000))
+#define DEVAPC0_D0_VIO_MASK_1       ((unsigned int *)(devapc_pd_base+0x0004))
+#define DEVAPC0_D0_VIO_MASK_2       ((unsigned int *)(devapc_pd_base+0x0008))
+#define DEVAPC0_D0_VIO_MASK_3       ((unsigned int *)(devapc_pd_base+0x000C))
+#define DEVAPC0_D0_VIO_MASK_4       ((unsigned int *)(devapc_pd_base+0x0010))
+#define DEVAPC0_D0_VIO_MASK_5       ((unsigned int *)(devapc_pd_base+0x0014))
+#define DEVAPC0_D0_VIO_MASK_6       ((unsigned int *)(devapc_pd_base+0x0018))
+#define DEVAPC0_D0_VIO_MASK_7       ((unsigned int *)(devapc_pd_base+0x001C))
 
-#define DEVAPC0_D0_VIO_STA_0        ((volatile unsigned int *)(devapc_pd_base+0x0400))
-#define DEVAPC0_D0_VIO_STA_1        ((volatile unsigned int *)(devapc_pd_base+0x0404))
-#define DEVAPC0_D0_VIO_STA_2        ((volatile unsigned int *)(devapc_pd_base+0x0408))
-#define DEVAPC0_D0_VIO_STA_3        ((volatile unsigned int *)(devapc_pd_base+0x040C))
-#define DEVAPC0_D0_VIO_STA_4        ((volatile unsigned int *)(devapc_pd_base+0x0410))
-#define DEVAPC0_D0_VIO_STA_5        ((volatile unsigned int *)(devapc_pd_base+0x0414))
-#define DEVAPC0_D0_VIO_STA_6        ((volatile unsigned int *)(devapc_pd_base+0x0418))
-#define DEVAPC0_D0_VIO_STA_7        ((volatile unsigned int *)(devapc_pd_base+0x041C))
+#define DEVAPC0_D0_VIO_STA_0        ((unsigned int *)(devapc_pd_base+0x0400))
+#define DEVAPC0_D0_VIO_STA_1        ((unsigned int *)(devapc_pd_base+0x0404))
+#define DEVAPC0_D0_VIO_STA_2        ((unsigned int *)(devapc_pd_base+0x0408))
+#define DEVAPC0_D0_VIO_STA_3        ((unsigned int *)(devapc_pd_base+0x040C))
+#define DEVAPC0_D0_VIO_STA_4        ((unsigned int *)(devapc_pd_base+0x0410))
+#define DEVAPC0_D0_VIO_STA_5        ((unsigned int *)(devapc_pd_base+0x0414))
+#define DEVAPC0_D0_VIO_STA_6        ((unsigned int *)(devapc_pd_base+0x0418))
+#define DEVAPC0_D0_VIO_STA_7        ((unsigned int *)(devapc_pd_base+0x041C))
 
-#define DEVAPC0_VIO_DBG0            ((volatile unsigned int *)(devapc_pd_base+0x0900))
-#define DEVAPC0_VIO_DBG1            ((volatile unsigned int *)(devapc_pd_base+0x0904))
+#define DEVAPC0_VIO_DBG0            ((unsigned int *)(devapc_pd_base+0x0900))
+#define DEVAPC0_VIO_DBG1            ((unsigned int *)(devapc_pd_base+0x0904))
 
-#define DEVAPC0_PD_APC_CON          ((volatile unsigned int *)(devapc_pd_base+0x0F00))
+#define DEVAPC0_PD_APC_CON          ((unsigned int *)(devapc_pd_base+0x0F00))
 
-#define DEVAPC0_DEC_ERR_CON         ((volatile unsigned int *)(devapc_pd_base+0x0F80))
-#define DEVAPC0_DEC_ERR_ADDR        ((volatile unsigned int *)(devapc_pd_base+0x0F84))
-#define DEVAPC0_DEC_ERR_ID          ((volatile unsigned int *)(devapc_pd_base+0x0F88))
+#define DEVAPC0_DEC_ERR_CON         ((unsigned int *)(devapc_pd_base+0x0F80))
+#define DEVAPC0_DEC_ERR_ADDR        ((unsigned int *)(devapc_pd_base+0x0F84))
+#define DEVAPC0_DEC_ERR_ID          ((unsigned int *)(devapc_pd_base+0x0F88))
 
 
 struct DEVICE_INFO {
