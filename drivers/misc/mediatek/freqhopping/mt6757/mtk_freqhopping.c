@@ -697,7 +697,7 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 			fh_write32(reg_pll_con1,
 				(fh_read32(g_reg_mon[pll_id])&MASK22b)
-				|(fh_read32(reg_pll_con1)&0xFFE00000)|(BIT32));
+				|(fh_read32(reg_pll_con1)&0xFFC00000)|(BIT32));
 			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK22b));
 		}
 	}
@@ -1117,7 +1117,7 @@ static void mt_fh_hal_popod_save(void)
 		/* write back to ncpo, only for MAINPLL. Don't need to add MEMPLL handle. */
 		fh_write32(g_reg_pll_con1[pll_id],
 					(fh_read32(g_reg_dds[pll_id])&MASK22b)|
-					(fh_read32(g_reg_pll_con1[pll_id])&0xFFE00000)|(BIT32));
+					(fh_read32(g_reg_pll_con1[pll_id])&0xFFC00000)|(BIT32));
 		FH_MSG_DEBUG("MAINPLL_CON1: 0x%08x", (fh_read32(g_reg_pll_con1[pll_id])&MASK22b));
 
 		/* switch to register control */
