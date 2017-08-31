@@ -356,6 +356,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 */
 int dpmgr_path_power_off(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq);
 int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq);
+int dpmgr_path_power_off_default(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq);
 
 /* set lcm utils. now only dis/dpi used.
  * return 0.

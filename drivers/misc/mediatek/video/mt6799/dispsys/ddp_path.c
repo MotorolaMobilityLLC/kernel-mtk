@@ -622,6 +622,7 @@ static struct module_map_s module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RSZ0, 5, 1},
 	{DISP_MODULE_RSZ1, 6, 1},
 	{DISP_MODULE_MTCMOS, -1, 0},
+	{DISP_MODULE_FAKE_ENG, -1, 0},
 	{DISP_MODULE_UNKNOWN, -1, 0},
 };
 
@@ -672,6 +673,7 @@ static struct module_map_s module_can_connect[DISP_MODULE_NUM] = {
 	{DISP_MODULE_RSZ0, 1, 0},
 	{DISP_MODULE_RSZ1, 1, 0},
 	{DISP_MODULE_MTCMOS, 0, 0},
+	{DISP_MODULE_FAKE_ENG, 0, 0},
 	{DISP_MODULE_UNKNOWN, 0, 0},
 };
 
@@ -1345,6 +1347,47 @@ static void ddp_check_clk_all_l(int clk_on)
 		DDPDUMP("clk_path: %d mismatch, all_clk not correct!!!\n", clk_error);
 }
 
+static void ddp_clk_enable_path_l(int *module_list, int clk_on)
+{
+	unsigned int i;
+	unsigned int module_num = ddp_get_module_num_l(module_list);
+
+	/* enable/disable clk */
+	if (clk_on) {
+		for (i = 0; i < module_num; i++) {
+			if (ddp_clk_is_exist(module_list[i]) == 0)
+				continue;
+			ddp_clk_enable_by_module(i);
+		}
+	} else {
+		for (i = 0; i < module_num; i++) {
+			if (ddp_clk_is_exist(module_list[i]) == 0)
+				continue;
+			ddp_clk_disable_by_module(i);
+		}
+	}
+}
+
+static void ddp_clk_enable_all_l(int clk_on)
+{
+	unsigned int i;
+
+	/* enable/disable clk */
+	if (clk_on) {
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (ddp_clk_is_exist(i) == 0)
+				continue;
+			ddp_clk_enable_by_module(i);
+		}
+	} else {
+		for (i = 0; i < DISP_MODULE_NUM; i++) {
+			if (ddp_clk_is_exist(i) == 0)
+				continue;
+			ddp_clk_disable_by_module(i);
+		}
+	}
+}
+
 static void ddp_disconnect_path_l(int *module_list, void *handle)
 {
 	unsigned int i, j, k;
@@ -1852,6 +1895,34 @@ void ddp_check_clk_all(int clk_on)
 {
 	DDPDBG("check clk all: %d\n", clk_on);
 	ddp_check_clk_all_l(clk_on);
+}
+
+void ddp_clk_enable_path(enum DDP_SCENARIO_ENUM scenario, int clk_on)
+{
+	DDPDBG("path clk enable path on scenario %s: %d\n", ddp_get_scenario_name(scenario), clk_on);
+
+	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], clk_on);
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_DITHER_1TO2) {
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DITHER_MEMOUT], clk_on);
+	} else if (scenario == DDP_SCENARIO_UFOE_1TO2) {
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], clk_on);
+		ddp_clk_enable_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_UFOE_MEMOUT], clk_on);
+	} else {
+		ddp_clk_enable_path_l(module_list_scenario[scenario], clk_on);
+	}
+
+}
+
+void ddp_clk_enable_all(int clk_on)
+{
+	DDPDBG("clk enable all: %d\n", clk_on);
+	ddp_clk_enable_all_l(clk_on);
 }
 
 void ddp_check_mutex(int mutex_id, enum DDP_SCENARIO_ENUM scenario, enum DDP_MODE mode)

@@ -67,6 +67,8 @@ enum DDP_CLK_ID {
 	DISP1_DSI1_MM_CLOCK,
 	DISP1_DSI1_INTERFACE_CLOCK,
 	DISP1_DPI_MM_CLOCK,
+	DISP1_FAKE_ENG2,
+	DISP1_FAKE_ENG,
 	MUX_DPI0,
 	TVDPLL_D2,
 	TVDPLL_D4,
@@ -94,6 +96,8 @@ int ddp_clk_disable(enum DDP_CLK_ID id);
 int ddp_clk_prepare_enable(enum DDP_CLK_ID id);
 int ddp_clk_disable_unprepare(enum DDP_CLK_ID id);
 int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent);
+int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module);
+int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module);
 int ddp_set_clk_handle(struct clk *pclk, unsigned int n);
 int ddp_parse_apmixed_base(void);
 int ddp_set_mipi26m(enum DISP_MODULE_ENUM module, int en);

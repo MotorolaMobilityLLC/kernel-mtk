@@ -2687,6 +2687,8 @@
 			<&mmsys_config CLK_MM_CG2_B2>, /*DISP_DSI1_MM_CLOCK*/
 			<&mmsys_config CLK_MM_CG2_B3>, /*DISP_DSI1_INTERFACE_CLOCK*/
 			<&mmsys_config CLK_MM_CG2_B4>,	/*DISP_DPI_MM_CLOCK*/
+			<&mmsys_config CLK_MM_CG2_B5>,	/*DISP_FAKE_ENG2*/
+			<&mmsys_config CLK_MM_CG2_B6>,	/*DISP_FAKE_ENG*/
 
 			<&topckgen CLK_TOP_DPI0_SEL>,	/*MUX_DPI0*/
 			<&topckgen CLK_TOP_TVDPLL_D2>,	/*TVDPLL_D2*/
@@ -2747,6 +2749,8 @@
 			"DISP_DSI1_MM_CLOCK",
 			"DISP_DSI1_INTERFACE_CLOCK",
 			"DISP_DPI_MM_CLOCK",
+			"DISP_FAKE_ENG2",
+			"DISP_FAKE_ENG",
 
 			"MUX_DPI0",
 			"TVDPLL_D2",

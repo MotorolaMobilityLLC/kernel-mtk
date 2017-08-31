@@ -3303,6 +3303,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
 	dpmgr_path_init(pgc->dpmgr_handle, use_cmdq);
+	/* power off default on clk */
+	dpmgr_path_power_off_default(NULL, CMDQ_DISABLE);
+	dpmgr_check_clk(pgc->dpmgr_handle, 1);
 
 	/* use fake timer to generate vsync signal for cmd mode w/o LCM(originally using LCM TE Signal as VSYNC) */
 	/* so we don't need to modify display driver's behavior. */

@@ -107,6 +107,8 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 		return "ovl1_2l_virtual ";
 	case DISP_MODULE_MTCMOS:
 		return "mtcmos ";
+	case DISP_MODULE_FAKE_ENG:
+		return "fake_eng ";
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return "unknown";
@@ -367,5 +369,6 @@ struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,					/* DISP_MODULE_RSZ0 */
 	0,					/* DISP_MODULE_RSZ1 */
 	0,					/* DISP_MODULE_MTCMOS */
+	0,					/* DISP_MODULE_FAKE_ENG */
 	0,					/* DISP_MODULE_UNKNOWN, */
 };

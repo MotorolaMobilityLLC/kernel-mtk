@@ -2856,6 +2856,7 @@ void DSI_ChangeClk(enum DISP_MODULE_ENUM module, UINT32 clk)
 #ifdef ENABLE_CLK_MGR
 static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
 {
+#if 0  /* move to ddp_clk_enable_path() for all module clocks */
 	static int not_first_time;
 	int ret = 0;
 
@@ -2881,6 +2882,9 @@ static int __close_dsi_default_clock(enum DISP_MODULE_ENUM module)
 	/* ddp_set_mipi26m(DISP_MODULE_DSI1, 0); */
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 #endif
 

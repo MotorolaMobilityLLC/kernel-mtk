@@ -87,6 +87,7 @@ static int ddp_clk_exist[DISP_MODULE_NUM] = {
 	1, /* DISP_MODULE_RSZ0, */
 	1, /* DISP_MODULE_RSZ1, */
 	1, /* DISP_MODULE_MTCMOS, */
+	1, /* DISP_MODULE_FAKE_ENG, */
 	0, /* DISP_MODULE_UNKNOWN, */
 };
 
@@ -254,6 +255,14 @@ int ddp_clk_cnt(enum DISP_MODULE_ENUM module)
 		return -1;
 	case DISP_MODULE_MTCMOS:
 		return _ddp_clk_cnt[DISP_MTCMOS_CLK];
+	case DISP_MODULE_FAKE_ENG:
+		if (_ddp_clk_cnt[DISP1_FAKE_ENG] != _ddp_clk_cnt[DISP1_FAKE_ENG2]) {
+			DDPERR("%d clk mismatch 0x%x, 0x%x\n", module,
+			       _ddp_clk_cnt[DISP1_FAKE_ENG],
+			       _ddp_clk_cnt[DISP1_FAKE_ENG2]);
+			return -1;
+		}
+		return _ddp_clk_cnt[DISP1_FAKE_ENG];
 	default:
 		DDPMSG("invalid module id=%d", module);
 		return -1;
@@ -357,6 +366,326 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 	}
 	_ddp_clk_cnt[id] = _ddp_clk_cnt[id] - (0x1 << 16) - 0x1;
 	clk_disable_unprepare(ddp_clk[id]);
+	return ret;
+}
+
+int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
+{
+	int i;
+	int ret = 0;
+
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		ddp_clk_enable(DISP0_DISP_OVL0);
+		ddp_clk_enable(DISP1_DISP_OVL0_MOUT);
+		break;
+	case DISP_MODULE_OVL1:
+		ddp_clk_enable(DISP0_DISP_OVL1);
+		break;
+	case DISP_MODULE_OVL0_2L:
+		ddp_clk_enable(DISP0_DISP_OVL0_2L);
+		break;
+	case DISP_MODULE_OVL1_2L:
+		ddp_clk_enable(DISP0_DISP_OVL1_2L);
+		break;
+	case DISP_MODULE_RDMA0:
+		ddp_clk_enable(DISP0_DISP_RDMA0);
+		break;
+	case DISP_MODULE_RDMA1:
+		ddp_clk_enable(DISP0_DISP_RDMA1);
+		break;
+	case DISP_MODULE_RDMA2:
+		ddp_clk_enable(DISP0_DISP_RDMA2);
+		break;
+	case DISP_MODULE_WDMA0:
+		ddp_clk_enable(DISP0_DISP_WDMA0);
+		break;
+	case DISP_MODULE_WDMA1:
+		ddp_clk_enable(DISP0_DISP_WDMA1);
+		break;
+	case DISP_MODULE_COLOR0:
+		ddp_clk_enable(DISP0_DISP_COLOR0);
+		break;
+	case DISP_MODULE_COLOR1:
+		ddp_clk_enable(DISP0_DISP_COLOR1);
+		break;
+	case DISP_MODULE_CCORR0:
+		ddp_clk_enable(DISP0_DISP_CCORR0);
+		break;
+	case DISP_MODULE_CCORR1:
+		ddp_clk_enable(DISP0_DISP_CCORR1);
+		break;
+	case DISP_MODULE_AAL0:
+		ddp_clk_enable(DISP0_DISP_AAL0);
+		break;
+	case DISP_MODULE_AAL1:
+		ddp_clk_enable(DISP0_DISP_AAL1);
+		break;
+	case DISP_MODULE_GAMMA0:
+		ddp_clk_enable(DISP0_DISP_GAMMA0);
+		break;
+	case DISP_MODULE_GAMMA1:
+		ddp_clk_enable(DISP0_DISP_GAMMA1);
+		break;
+	case DISP_MODULE_OD:
+		ddp_clk_enable(DISP0_DISP_OD);
+		break;
+	case DISP_MODULE_DITHER0:
+		ddp_clk_enable(DISP0_DISP_DITHER0);
+		break;
+	case DISP_MODULE_DITHER1:
+		ddp_clk_enable(DISP0_DISP_DITHER1);
+		break;
+	case DISP_PATH0:
+		/* no need */
+		break;
+	case DISP_PATH1:
+		/* no need */
+		break;
+	case DISP_MODULE_UFOE:
+		ddp_clk_enable(DISP0_DISP_UFOE);
+		break;
+	case DISP_MODULE_DSC:
+		ddp_clk_enable(DISP0_DISP_DSC);
+		break;
+	case DISP_MODULE_DSC_2ND:
+		ddp_clk_enable(DISP0_DISP_DSC);
+		break;
+	case DISP_MODULE_SPLIT0:
+		ddp_clk_enable(DISP0_DISP_SPLIT);
+		break;
+	case DISP_MODULE_DPI:
+		ddp_clk_enable(DISP1_DPI_MM_CLOCK);
+		ddp_clk_enable(DISP1_DPI_INTERFACE_CLOCK);
+		break;
+	case DISP_MODULE_DSI0:
+		ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
+		break;
+	case DISP_MODULE_DSI1:
+		ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+		ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
+		break;
+	case DISP_MODULE_DSIDUAL:
+		ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
+		ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+		ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
+		break;
+	case DISP_MODULE_PWM0:
+		ddp_clk_enable(DISP_CLK_PWM0);
+		break;
+	case DISP_MODULE_PWM1:
+		ddp_clk_enable(DISP_CLK_PWM1);
+		break;
+	case DISP_MODULE_CONFIG:
+		/* no need */
+		break;
+	case DISP_MODULE_MUTEX:
+		/* no need */
+		break;
+	case DISP_MODULE_SMI_COMMON:
+		for (i = 0; i < DDP_CLK_SMI_NUM; i++)
+			ddp_clk_enable(ddp_clk_smi_map[i]);
+		break;
+	case DISP_MODULE_SMI_LARB0:
+		ddp_clk_enable(DISP0_SMI_LARB0);
+		break;
+	case DISP_MODULE_SMI_LARB1:
+		ddp_clk_enable(DISP0_SMI_LARB1);
+		break;
+	case DISP_MODULE_MIPI0:
+		/* no need */
+		break;
+	case DISP_MODULE_MIPI1:
+		/* no need */
+		break;
+	case DISP_MODULE_RSZ0:
+		ddp_clk_enable(DISP0_DISP_RSZ0);
+		break;
+	case DISP_MODULE_RSZ1:
+		ddp_clk_enable(DISP0_DISP_RSZ1);
+		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_MTCMOS:
+		ddp_clk_enable(DISP_MTCMOS_CLK);
+		break;
+	case DISP_MODULE_FAKE_ENG:
+		ddp_clk_enable(DISP1_FAKE_ENG);
+		ddp_clk_enable(DISP1_FAKE_ENG2);
+		break;
+	default:
+		DDPMSG("invalid module id=%d", module);
+		ret = -1;
+	}
+	return ret;
+}
+
+int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
+{
+	int i;
+	int ret = 0;
+
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		ddp_clk_disable(DISP1_DISP_OVL0_MOUT);
+		ddp_clk_disable(DISP0_DISP_OVL0);
+		break;
+	case DISP_MODULE_OVL1:
+		ddp_clk_disable(DISP0_DISP_OVL1);
+		break;
+	case DISP_MODULE_OVL0_2L:
+		ddp_clk_disable(DISP0_DISP_OVL0_2L);
+		break;
+	case DISP_MODULE_OVL1_2L:
+		ddp_clk_disable(DISP0_DISP_OVL1_2L);
+		break;
+	case DISP_MODULE_RDMA0:
+		ddp_clk_disable(DISP0_DISP_RDMA0);
+		break;
+	case DISP_MODULE_RDMA1:
+		ddp_clk_disable(DISP0_DISP_RDMA1);
+		break;
+	case DISP_MODULE_RDMA2:
+		ddp_clk_disable(DISP0_DISP_RDMA2);
+		break;
+	case DISP_MODULE_WDMA0:
+		ddp_clk_disable(DISP0_DISP_WDMA0);
+		break;
+	case DISP_MODULE_WDMA1:
+		ddp_clk_disable(DISP0_DISP_WDMA1);
+		break;
+	case DISP_MODULE_COLOR0:
+		ddp_clk_disable(DISP0_DISP_COLOR0);
+		break;
+	case DISP_MODULE_COLOR1:
+		ddp_clk_disable(DISP0_DISP_COLOR1);
+		break;
+	case DISP_MODULE_CCORR0:
+		ddp_clk_disable(DISP0_DISP_CCORR0);
+		break;
+	case DISP_MODULE_CCORR1:
+		ddp_clk_disable(DISP0_DISP_CCORR1);
+		break;
+	case DISP_MODULE_AAL0:
+		ddp_clk_disable(DISP0_DISP_AAL0);
+		break;
+	case DISP_MODULE_AAL1:
+		ddp_clk_disable(DISP0_DISP_AAL1);
+		break;
+	case DISP_MODULE_GAMMA0:
+		ddp_clk_disable(DISP0_DISP_GAMMA0);
+		break;
+	case DISP_MODULE_GAMMA1:
+		ddp_clk_disable(DISP0_DISP_GAMMA1);
+		break;
+	case DISP_MODULE_OD:
+		ddp_clk_disable(DISP0_DISP_OD);
+		break;
+	case DISP_MODULE_DITHER0:
+		ddp_clk_disable(DISP0_DISP_DITHER0);
+		break;
+	case DISP_MODULE_DITHER1:
+		ddp_clk_disable(DISP0_DISP_DITHER1);
+		break;
+	case DISP_PATH0:
+		/* no need */
+		break;
+	case DISP_PATH1:
+		/* no need */
+		break;
+	case DISP_MODULE_UFOE:
+		ddp_clk_disable(DISP0_DISP_UFOE);
+		break;
+	case DISP_MODULE_DSC:
+		ddp_clk_disable(DISP0_DISP_DSC);
+		break;
+	case DISP_MODULE_DSC_2ND:
+		ddp_clk_disable(DISP0_DISP_DSC);
+		break;
+	case DISP_MODULE_SPLIT0:
+		ddp_clk_disable(DISP0_DISP_SPLIT);
+		break;
+	case DISP_MODULE_DPI:
+		ddp_clk_disable(DISP1_DPI_INTERFACE_CLOCK);
+		ddp_clk_disable(DISP1_DPI_MM_CLOCK);
+		break;
+	case DISP_MODULE_DSI0:
+		ddp_clk_disable(DISP1_DSI0_INTERFACE_CLOCK);
+		ddp_clk_disable(DISP1_DSI0_MM_CLOCK);
+		break;
+	case DISP_MODULE_DSI1:
+		ddp_clk_disable(DISP1_DSI1_INTERFACE_CLOCK);
+		ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
+		break;
+	case DISP_MODULE_DSIDUAL:
+		ddp_clk_disable(DISP1_DSI1_INTERFACE_CLOCK);
+		ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
+		ddp_clk_disable(DISP1_DSI0_INTERFACE_CLOCK);
+		ddp_clk_disable(DISP1_DSI0_MM_CLOCK);
+		break;
+	case DISP_MODULE_PWM0:
+		ddp_clk_disable(DISP_CLK_PWM0);
+		break;
+	case DISP_MODULE_PWM1:
+		ddp_clk_disable(DISP_CLK_PWM1);
+		break;
+	case DISP_MODULE_CONFIG:
+		/* no need */
+		break;
+	case DISP_MODULE_MUTEX:
+		/* no need */
+		break;
+	case DISP_MODULE_SMI_COMMON:
+		for (i = (DDP_CLK_SMI_NUM - 1); i >= 0; i--)
+			ddp_clk_disable(ddp_clk_smi_map[i]);
+		break;
+	case DISP_MODULE_SMI_LARB0:
+		ddp_clk_disable(DISP0_SMI_LARB0);
+		break;
+	case DISP_MODULE_SMI_LARB1:
+		ddp_clk_disable(DISP0_SMI_LARB1);
+		break;
+	case DISP_MODULE_MIPI0:
+		/* no need */
+		break;
+	case DISP_MODULE_MIPI1:
+		/* no need */
+		break;
+	case DISP_MODULE_RSZ0:
+		ddp_clk_disable(DISP0_DISP_RSZ0);
+		break;
+	case DISP_MODULE_RSZ1:
+		ddp_clk_disable(DISP0_DISP_RSZ1);
+		break;
+	case DISP_MODULE_OVL0_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL0_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_OVL1_2L_VIRTUAL:
+		/* no need */
+		break;
+	case DISP_MODULE_MTCMOS:
+		ddp_clk_disable(DISP_MTCMOS_CLK);
+		break;
+	case DISP_MODULE_FAKE_ENG:
+		ddp_clk_disable(DISP1_FAKE_ENG2);
+		ddp_clk_disable(DISP1_FAKE_ENG);
+		break;
+	default:
+		DDPMSG("invalid module id=%d", module);
+		ret = -1;
+	}
 	return ret;
 }
 

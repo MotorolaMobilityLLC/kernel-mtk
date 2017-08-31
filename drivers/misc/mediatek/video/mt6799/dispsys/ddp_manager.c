@@ -1416,6 +1416,26 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, enum CMDQ_SWITCH 
 	return 0;
 }
 
+int dpmgr_path_power_off_default(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
+{
+	struct ddp_path_handle *handle;
+
+	if (dp_handle == NULL) {
+		DDPDUMP("--> power off default all\n");
+		ddp_clk_enable_all(1);
+		ddp_clk_enable_all(0);
+		return 0;
+	}
+
+	handle = (struct ddp_path_handle *)dp_handle;
+
+	DDPDUMP("--> power off default on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	ddp_clk_enable_path(handle->scenario, 1);
+	ddp_clk_enable_path(handle->scenario, 0);
+
+	return 0;
+}
+
 static int is_module_in_path(enum DISP_MODULE_ENUM module, struct ddp_path_handle *handle)
 {
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
