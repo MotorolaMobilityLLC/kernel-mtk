@@ -20,7 +20,9 @@
 #include "ddp_wdma.h"
 #include "ddp_wdma_ex.h"
 #include "primary_display.h"
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
+#endif
 
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
