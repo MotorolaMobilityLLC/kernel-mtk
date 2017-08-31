@@ -193,10 +193,7 @@ static unsigned int fg_get_data_ready_status(void)
 	unsigned int temp_val = 0;
 
 	ret = pmic_read_interface(PMIC_FG_LATCHDATA_ST_ADDR, &temp_val, 0xFFFF, 0x0);
-/*
-	bm_info("[fg_get_data_ready_status] Reg[0x%x]=0x%x\r\n", PMIC_FG_LATCHDATA_ST_ADDR,
-		 temp_val);
-*/
+
 	temp_val =
 	(temp_val & (PMIC_FG_LATCHDATA_ST_MASK << PMIC_FG_LATCHDATA_ST_SHIFT))
 	>> PMIC_FG_LATCHDATA_ST_SHIFT;
@@ -239,9 +236,9 @@ void preloader_init(void)
 		pmic_set_register_value(PMIC_FG_SOFF_SLP_EN, 1);
 
 		/* reset CON1 */
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x1F04, 0xFFFF, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x1F04, 0xFFFF, 0x0);
 		mdelay(1);
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x1F04, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x1F04, 0x0);
 
 	}
 
@@ -330,7 +327,7 @@ static signed int fgauge_read_current(void *data)
 	/* Read HW Raw Data
 	 *(1)    Set READ command
 	 */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x000F, 0x0);
 	/*(2)     Keep i2c read when status = 1 (0x06) */
 	m = 0;
 		while (fg_get_data_ready_status() == 0) {
@@ -351,7 +348,7 @@ static signed int fgauge_read_current(void *data)
 	 *(5)    (Read other data)
 	 *(6)    Clear status to 0
 	 */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	/*
 	 *(7)    Keep i2c read when status = 0 (0x08)
 	 * while ( fg_get_sw_clear_status() != 0 )
@@ -366,7 +363,7 @@ static signed int fgauge_read_current(void *data)
 			}
 		}
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	/*calculate the real world data    */
 	dvalue = (unsigned int) uvalue16;
@@ -522,7 +519,7 @@ static signed int fg_get_current_iavg(void *data)
 	int ret, m;
 
 	/* Set Read Latchdata */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() == 0) {
 			m++;
@@ -579,7 +576,7 @@ static signed int fg_get_current_iavg(void *data)
 	}
 
 	/* recover read */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() != 0) {
 			m++;
@@ -589,7 +586,7 @@ static signed int fg_get_current_iavg(void *data)
 				break;
 			}
 		}
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	*(signed int *)(data) = fg_hw_info.current_avg;
 
@@ -807,9 +804,9 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
  *(1)    Set READ command
 */
 	if (reset == 0) {
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F0F, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F0F, 0x0);
 	} else {
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x1F05, 0xFF0F, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x1F05, 0xFF0F, 0x0);
 		bm_err("[fgauge_set_columb_interrupt_internal1] reset fgadc 0x1F05\n");
 	}
 
@@ -923,9 +920,9 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	/*fg_dump_register();*/
 
 	if (reset == 0)
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	else {
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0705, 0x1F05, 0x0); /*weiching0803*/
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0705, 0x1F05, 0x0);
 		bm_err("[fgauge_read_columb_internal] reset fgadc 0x0705\n");
 	}
 
@@ -978,7 +975,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
  *(5)    (Read other data)
  *(6)    Clear status to 0
 */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 /*
  *(7)    Keep i2c read when status = 0 (0x08)
  * while ( fg_get_sw_clear_status() != 0 )
@@ -993,7 +990,7 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 		}
 	}
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 /*calculate the real world data    */
 	dvalue_CAR = (signed int) uvalue32_CAR;
@@ -1068,7 +1065,7 @@ signed int fgauge_get_time(void *data)
 	unsigned int ret = 0;
 	long long time = 0;
 
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
 	while (fg_get_data_ready_status() == 0) {
@@ -1093,7 +1090,7 @@ signed int fgauge_get_time(void *data)
 		 time_15_00, time_29_16, time, ret_time);
 
 
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 	m = 0;
 	while (fg_get_data_ready_status() != 0) {
@@ -1105,7 +1102,7 @@ signed int fgauge_get_time(void *data)
 		}
 	}
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	*(unsigned int *) (data) = ret_time;
 
@@ -1124,7 +1121,7 @@ signed int fgauge_get_soff_time(void *data)
 	unsigned int ret = 0;
 	long long time = 0;
 
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
 	while (fg_get_data_ready_status() == 0) {
@@ -1149,7 +1146,7 @@ signed int fgauge_get_soff_time(void *data)
 		 soff_time_15_00, soff_time_29_16, time, ret_time);
 
 
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 	m = 0;
 	while (fg_get_data_ready_status() != 0) {
@@ -1161,7 +1158,7 @@ signed int fgauge_get_soff_time(void *data)
 		}
 	}
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	*(unsigned int *) (data) = ret_time;
 
@@ -1188,7 +1185,7 @@ signed int fgauge_set_time_interrupt(void *data)
 	}
 
 	do {
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
 	while (fg_get_data_ready_status() == 0) {
@@ -1211,7 +1208,7 @@ signed int fgauge_set_time_interrupt(void *data)
 	bm_debug(
 			 "[fgauge_set_time_interrupt] now:%lld time:%lld\r\n",
 			 now/2, time/2);
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 	m = 0;
 	while (fg_get_data_ready_status() != 0) {
@@ -1223,7 +1220,7 @@ signed int fgauge_set_time_interrupt(void *data)
 		}
 	}
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	pmic_enable_interrupt(FG_TIME_NO, 0, "GM30");
 	pmic_set_register_value(PMIC_FG_TIME_HTH_15_00, (time & 0xffff));
@@ -1232,7 +1229,7 @@ signed int fgauge_set_time_interrupt(void *data)
 
 
 		/*read again to confirm */
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 		/*(2)    Keep i2c read when status = 1 (0x06) */
 		m = 0;
 		while (fg_get_data_ready_status() == 0) {
@@ -1252,7 +1249,7 @@ signed int fgauge_set_time_interrupt(void *data)
 		bm_debug(
 			 "[fgauge_set_time_interrupt] now:%lld time:%lld\r\n",
 			 time2/2, time/2);
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 		m = 0;
 		while (fg_get_data_ready_status() != 0) {
@@ -1264,7 +1261,7 @@ signed int fgauge_set_time_interrupt(void *data)
 			}
 		}
 		/*(8)    Recover original settings */
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 		bm_trace(
 			 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:%lld %lld\r\n",
@@ -1302,7 +1299,7 @@ static signed int fgauge_hw_reset(void *data)
 	bm_trace("[fgauge_hw_reset] : Start \r\n");
 
 	while (val_car != 0x0) {
-		ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0600, 0x1F00, 0x0);
+		ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0600, 0x1F00, 0x0);
 		bm_err("[fgauge_hw_reset] reset fgadc 0x0600\n");
 
 		fgauge_read_columb_internal(&val_car_temp, 0, 0);
@@ -1695,7 +1692,7 @@ static signed int read_fg_hw_info(void *data)
 	Intr_Number_to_Name(intr_name, intr_no);
 
 	/* Set Read Latchdata */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() == 0) {
 			m++;
@@ -1743,7 +1740,7 @@ static signed int read_fg_hw_info(void *data)
 
 
 	/* recover read */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() != 0) {
 			m++;
@@ -1753,7 +1750,7 @@ static signed int read_fg_hw_info(void *data)
 				break;
 			}
 		}
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 
 	*(signed int *) (data) = 0;
@@ -2016,7 +2013,7 @@ static signed int fg_is_bat_charging(void *data)
 	int fg_iavg_reg_27_16;
 
 	/* Set Read Latchdata */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() == 0) {
 			m++;
@@ -2039,7 +2036,7 @@ static signed int fg_is_bat_charging(void *data)
 	}
 
 	/* recover read */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	m = 0;
 		while (fg_get_data_ready_status() != 0) {
 			m++;
@@ -2049,7 +2046,7 @@ static signed int fg_is_bat_charging(void *data)
 				break;
 			}
 		}
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	*(signed int *)(data) = is_bat_charging;
 
@@ -2139,6 +2136,9 @@ static signed int fg_get_nafg_c_dltv(void *data)
 
 void fg_set_nafg_intr_internal(int _prd, int _zcv_mv, int _thr_mv)
 {
+#if defined(CONFIG_POWER_EXT)
+	return;
+#else
 	int NAG_C_DLTV_Threashold_26_16;
 	int NAG_C_DLTV_Threashold_15_0;
 	int _zcv_reg = MV_to_REG_value(_zcv_mv);
@@ -2164,7 +2164,7 @@ void fg_set_nafg_intr_internal(int _prd, int _zcv_mv, int _thr_mv)
 
 	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x]\n",
 		_prd, _zcv_mv, _zcv_reg, _thr_mv, _thr_reg, NAG_C_DLTV_Threashold_26_16, NAG_C_DLTV_Threashold_15_0);
-
+#endif
 }
 
 static signed int fg_set_nag_zcv(void *data)
@@ -2201,6 +2201,9 @@ static signed int fg_set_fg_bat_tmp_en(void *data)
 
 void fg_set_fg_bat_tmp_int_internal(int tmp_int_lt, int tmp_int_ht)
 {
+#if defined(CONFIG_POWER_EXT)
+	return;
+#else
 	pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_L, 1);
 	pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_H, 1);
 	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_VOLT_MAX, tmp_int_lt);	/* MAX is high temp */
@@ -2213,6 +2216,7 @@ void fg_set_fg_bat_tmp_int_internal(int tmp_int_lt, int tmp_int_ht)
 	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN, 1);
 	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX, 1);
 	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_EN_MIN, 1);
+#endif
 }
 
 static signed int fg_set_fg_bat_tmp_int_lt(void *data)
@@ -2376,9 +2380,9 @@ static signed int fg_reset_soff_time(void *data)
 {
 	int ret;
 
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x1000, 0x1000, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x1000, 0x1000, 0x0);
 	mdelay(1);
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x1000, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x1000, 0x0);
 
 	return STATUS_OK;
 }
@@ -2895,13 +2899,6 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 
 	/* raise 15b to reset */
-#if 0
-	temp_value = spare0_reg | (1<<7);
-	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
-	mdelay(1);
-	temp_value &= 0x7f;
-	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
-#else
 	if ((hw_id & 0xff00) == 0x3500) {
 		temp_value = 0x80;
 		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
@@ -2915,7 +2912,7 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 		temp_value = 0x20;
 		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
 	}
-#endif
+
 	/* read spare0 again */
 	after_rst_spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 
@@ -3123,7 +3120,7 @@ static signed int fgauge_get_AUXADC_current_rawdata(unsigned short *uvalue16)
 	int m;
 	int ret;
 	/* (1)    Set READ command */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0001, 0x000F, 0x0);
 
 	/*(2)     Keep i2c read when status = 1 (0x06) */
 	m = 0;
@@ -3142,7 +3139,7 @@ static signed int fgauge_get_AUXADC_current_rawdata(unsigned short *uvalue16)
 
 	/* (5)    (Read other data) */
 	/* (6)    Clear status to 0 */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 	/* (7)    Keep i2c read when status = 0 (0x08) */
 	m = 0;
@@ -3156,7 +3153,7 @@ static signed int fgauge_get_AUXADC_current_rawdata(unsigned short *uvalue16)
 	}
 
 	/*(8)    Recover original settings */
-	ret = pmic_config_interface(MT6355_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	ret = pmic_config_interface(MT6356_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 	return ret;
 }

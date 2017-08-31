@@ -1417,6 +1417,20 @@ int get_dlpt_imix_spm(void)
 	return 1;
 }
 
+int get_rac(void)
+{
+	return 0;
+}
+
+int get_imix(void)
+{
+	return 0;
+}
+
+int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
+{
+	return 0;
+}
 
 #endif				/*#ifdef DLPT_FEATURE_SUPPORT */
 

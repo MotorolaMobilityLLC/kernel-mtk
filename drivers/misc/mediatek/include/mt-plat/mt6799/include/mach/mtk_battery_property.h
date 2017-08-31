@@ -90,6 +90,8 @@
 
 /* threshold */
 #define HWOCV_SWOCV_DIFF	300
+#define HWOCV_SWOCV_DIFF_LT	1500
+#define HWOCV_SWOCV_DIFF_LT_TEMP	5
 #define HWOCV_OLDOCV_DIFF	300
 #define SWOCV_OLDOCV_DIFF	300
 #define VBAT_OLDOCV_DIFF	1000
@@ -100,6 +102,8 @@
 #define PMIC_SHUTDOWN_TIME	30
 #define BAT_PLUG_OUT_TIME	32
 #define EXT_HWOCV_SWOCV		300
+#define EXT_HWOCV_SWOCV_LT		1500
+#define EXT_HWOCV_SWOCV_LT_TEMP		5
 
 /* fgc & fgv threshold */
 #define DIFFERENCE_FGC_FGV_TH1 500
@@ -122,6 +126,7 @@
 /* ZCV INTR */
 #define ZCV_SUSPEND_TIME 6
 #define SLEEP_CURRENT_AVG 100 /*0.1mA*/
+#define ZCV_CAR_GAP_PERCENTAGE 5
 
 /* Additional battery table */
 #define ADDITIONAL_BATTERY_TABLE_EN 0
@@ -149,6 +154,10 @@
 #define CAR_TO_REG_FACTOR  (0x49BA)
 
 /*#define SHUTDOWN_CONDITION_LOW_BAT_VOLT*/
+#define BATTERY_TMP_TO_DISABLE_GM30 -50
+#define BATTERY_TMP_TO_DISABLE_NAFG -25
+#define BATTERY_TMP_TO_ENABLE_NAFG -20
+/* #define GM30_DISABLE_NAFG */
 
 /* extern function */
 extern int get_rac(void);

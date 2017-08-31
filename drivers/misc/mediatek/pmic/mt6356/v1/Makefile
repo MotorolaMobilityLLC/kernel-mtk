@@ -7,6 +7,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 obj-y += pmic_ipi.o
 endif
 
+ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery_hal.o pmic_timer_service.o
+endif
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6356)	+= pmic.o pmic_common.o \
 		pmic_debugfs.o \
 		pmic_irq.o \

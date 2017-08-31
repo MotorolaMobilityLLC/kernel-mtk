@@ -90,7 +90,11 @@ int g_FG_PSEUDO1_OFFSET[TOTAL_BATTERY_NUMBER] = {0, 0, 0, 0};
 #define BIF_NTC_R 16000
 
 #if (BAT_NTC_10 == 1)
-FUELGAUGE_TEMPERATURE Fg_Temperature_Table[17] = {
+FUELGAUGE_TEMPERATURE Fg_Temperature_Table[21] = {
+		{-40, 195652},
+		{-35, 148171},
+		{-30, 113347},
+		{-25, 87559},
 		{-20, 68237},
 		{-15, 53650},
 		{-10, 42506},
@@ -112,7 +116,11 @@ FUELGAUGE_TEMPERATURE Fg_Temperature_Table[17] = {
 #endif
 
 #if (BAT_NTC_47 == 1)
-FUELGAUGE_TEMPERATURE Fg_Temperature_Table[17] = {
+FUELGAUGE_TEMPERATURE Fg_Temperature_Table[21] = {
+		{-40, 1747920},
+		{-35, 1245428},
+		{-30, 898485},
+		{-25, 655802},
 		{-20, 483954},
 		{-15, 360850},
 		{-10, 271697},

@@ -63,35 +63,35 @@ do {									\
 #define bm_warn(fmt, args...)   \
 do {									\
 	if (bat_get_debug_level() >= BMLOG_WARNING_LEVEL) {		\
-		pr_debug(fmt, ##args); \
+		pr_err(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_notice(fmt, args...)   \
 do {									\
 	if (bat_get_debug_level() >= BMLOG_NOTICE_LEVEL) {			\
-		pr_debug(fmt, ##args); \
+		pr_err(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_info(fmt, args...)   \
 do {									\
 	if (bat_get_debug_level() >= BMLOG_INFO_LEVEL) {		\
-		pr_debug(fmt, ##args); \
+		pr_err(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_debug(fmt, args...)   \
 do {									\
 	if (bat_get_debug_level() >= BMLOG_DEBUG_LEVEL) {		\
-		pr_debug(fmt, ##args); \
+		pr_err(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define bm_trace(fmt, args...)\
 do {									\
 	if (bat_get_debug_level() >= BMLOG_TRACE_LEVEL) {			\
-		pr_debug(fmt, ##args);\
+		pr_err(fmt, ##args);\
 	}						\
 } while (0)
 
@@ -120,8 +120,8 @@ typedef enum {
 	BATTERY_METER_CMD_GET_HW_OCV,
 	BATTERY_METER_CMD_DUMP_REGISTER,
 	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT1,
-	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT,
-	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT,
+	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT_GAP,
+	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT_GAP,
 	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT_EN,
 	BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT_EN,
 	BATTERY_METER_CMD_GET_BOOT_BATTERY_PLUG_STATUS,
@@ -209,6 +209,7 @@ typedef enum {
 	FG_INTR_BAT_TMP_C_HT = 0x400000,
 	FG_INTR_BAT_TMP_C_LT = 0x800000,
 	FG_INTR_BAT_INT1_CHECK = 0x1000000,
+	FG_INTR_DUMP_INFO = 0x2000000,
 
 } FG_INTERRUPT_FLAG;
 
@@ -236,9 +237,9 @@ typedef enum {
 	FG_DAEMON_CMD_GET_FG_HW_CAR,
 	FG_DAEMON_CMD_SET_FG_BAT_INT1_GAP,
 	FG_DAEMON_CMD_SET_FG_BAT_TMP_GAP,
-	FG_DAEMON_CMD_SET_FG_BAT_INT2_HT,
+	FG_DAEMON_CMD_SET_FG_BAT_INT2_HT_GAP,
 	FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_HT,
-	FG_DAEMON_CMD_SET_FG_BAT_INT2_LT,
+	FG_DAEMON_CMD_SET_FG_BAT_INT2_LT_GAP,
 	FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_LT,
 	FG_DAEMON_CMD_IS_BAT_PLUGOUT,
 	FG_DAEMON_CMD_IS_BAT_CHARGING,
@@ -294,6 +295,7 @@ typedef enum {
 	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
 	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
 	FG_DAEMON_CMD_GET_RTC_INVALID,
+	FG_DAEMON_CMD_GET_VBAT,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -549,15 +551,17 @@ struct fuel_gauge_custom_data {
 
 
 	/* threshold */
-	int hwocv_swocv_diff;	/* mv */
-	int hwocv_oldocv_diff;	/* mv */
-	int swocv_oldocv_diff;	/* mv */
-	int vbat_oldocv_diff;	/* mv */
+	int hwocv_swocv_diff;	/* 0.1 mv */
+	int hwocv_swocv_diff_lt;	/* 0.1 mv */
+	int hwocv_swocv_diff_lt_temp;	/* degree */
+	int hwocv_oldocv_diff;	/* 0.1 mv */
+	int swocv_oldocv_diff;	/* 0.1 mv */
+	int vbat_oldocv_diff;	/* 0.1 mv */
 	int tnew_told_pon_diff;	/* degree */
 	int tnew_told_pon_diff2;/* degree */
 	int pmic_shutdown_time;	/* sec */
 	int bat_plug_out_time;	/* min */
-	int swocv_oldocv_diff_emb;	/* mv */
+	int swocv_oldocv_diff_emb;	/* 0.1 mv */
 
 	/* fgc & fgv threshold */
 	int difference_fgc_fgv_th1;
@@ -629,7 +633,12 @@ struct fuel_gauge_custom_data {
 	int aging_factor_min;
 	int aging_factor_diff;
 	int keep_100_percent_minsoc;
+	int battery_tmp_to_disable_gm30;
+	int battery_tmp_to_disable_nafg;
+	int battery_tmp_to_enable_nafg;
+	int disable_nafg;
 
+	int zcv_car_gap_percentage;
 /*======old setting ======*/
 	/* cust_battery_meter.h */
 	int soc_flow;
@@ -738,10 +747,12 @@ extern int get_sw_ocv(void);
 extern void set_hw_ocv_unreliable(bool);
 extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
 extern void battery_dump_info(struct seq_file *m);
+extern void battery_dump_nag(void);
+
 extern signed int battery_meter_get_battery_temperature(void);
 extern unsigned int battery_meter_get_fg_time(void);
 extern unsigned int battery_meter_set_fg_timer_interrupt(unsigned int sec);
-
+extern void fg_charger_in_handler(void);
 
 extern void do_chrdet_int_task(void);
 extern int bat_get_debug_level(void);
@@ -776,6 +787,9 @@ extern unsigned int battery_get_is_kpoc(void);
 extern unsigned int bat_is_kpoc(void);
 extern bool battery_is_battery_exist(void);
 /************** End New Interface *******************/
+
+extern int battery_get_charger_zcv(void);
+extern int fg_get_battery_temperature_for_zcv(void);
 
 /* pmic battery adc service */
 extern int pmic_get_vbus(void);

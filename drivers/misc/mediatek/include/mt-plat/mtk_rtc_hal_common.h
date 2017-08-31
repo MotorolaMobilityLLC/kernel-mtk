@@ -43,6 +43,7 @@ typedef enum {
 	RTC_SHIFT
 } rtc_reg_set;
 
+#ifdef CONFIG_MTK_RTC
 extern u16 rtc_read(u16 addr);
 extern void rtc_write(u16 addr, u16 data);
 extern void rtc_write_trigger(void);
@@ -65,4 +66,14 @@ extern void hal_rtc_read_rg(void);
 extern void rtc_lp_exception(void);
 #endif
 
+#else
+static inline void hal_rtc_set_spare_register(rtc_spare_enum cmd, u16 val)
+{
+}
+
+static inline u16 hal_rtc_get_spare_register(rtc_spare_enum cmd)
+{
+	return 0;
+}
+#endif
 #endif

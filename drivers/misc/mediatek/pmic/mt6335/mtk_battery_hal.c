@@ -598,34 +598,50 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 #if defined(CONFIG_POWER_EXT)
 	return STATUS_OK;
 #else
-	signed int upperbound_31_16 = 0;
-	signed int upperbound_15_14 = 0;
-	signed int lowbound_31_16 = 0;
-	signed int lowbound_15_14 = 0;
-	signed int thr2 = *(unsigned int *) (data);
-	signed long thr = thr2;
+	unsigned int upperbound_31_16 = 0;
+	unsigned int upperbound_15_14 = 0;
+	unsigned int lowbound_31_16 = 0;
+	unsigned int lowbound_15_14 = 0;
+	unsigned int car_31_16 = 0;
+	unsigned int car_15_0 = 0;
+	unsigned int now_car = 0;
+	unsigned int thr2 = *(unsigned int *) (data);
+	unsigned long thr = thr2;
+
+	car_31_16 = pmic_get_register_value(PMIC_FG_CAR_31_16);
+	car_15_0 = pmic_get_register_value(PMIC_FG_CAR_15_00);
+	now_car = (car_31_16 << 16) | car_15_0;
 
 	if (is_ht == 1)
-		bm_err("fgauge_set_columb_interrupt_internal2 ht_thr %ld %d\n", thr, thr2);
+		bm_err("[fgauge_set_columb_interrupt_internal2] ht_thr %ld %d car %d[0x%x 0x%x]\n",
+			thr, thr2, now_car, car_31_16, car_15_0);
 	if (is_ht == 0)
-		bm_err("fgauge_set_columb_interrupt_internal2 lt_thr %ld %d\n", thr, thr2);
-
+		bm_err("[fgauge_set_columb_interrupt_internal2] lt_thr %ld %d car %d[0x%x 0x%x]\n",
+			thr, thr2, now_car, car_31_16, car_15_0);
 
 	/* gap to register-base */
 	if (fg_cust_data.r_fg_value != 100)
 		thr = (thr * fg_cust_data.r_fg_value) / 100;
 
+		bm_err("[fgauge_set_columb_interrupt_internal2] thr 0x%lx r_fg_value %d\n",
+			thr, fg_cust_data.r_fg_value);
+
 	thr = ((thr * 1000) / fg_cust_data.car_tune_value);
 	thr = thr * CAR_TO_REG_FACTOR / 10;
+
+	if (thr < (1 << 14)) {
+		bm_err("[fgauge_set_columb_interrupt_internal2] thr 0x%lx is smaller than 2^14\n", thr);
+		thr = (1 << 14);
+	}
 
 	thr2 = thr;
 
 	if (is_ht) {
-		upperbound_31_16 = (thr2 & 0xffff0000) >> 16;
-		upperbound_15_14 = (thr2 & 0xffff) >> 14;
+		upperbound_31_16 = ((now_car + thr2) & 0xffff0000) >> 16;
+		upperbound_15_14 = ((now_car + thr2) & 0xffff) >> 14;
 
-		bm_err("[fgauge_set_columb_interrupt_internal2] upper_thr 0x%lx 0x%x 31_16 0x%x 15_14 0x%x\n",
-			thr, thr2, upperbound_31_16, upperbound_15_14);
+		bm_err("[fgauge_set_columb_interrupt_internal2] upper_thr 0x%lx 0x%x car [0x%x 0x%x] upper [0x%x 0x%x]\n",
+			thr, thr2, car_31_16, car_15_0, upperbound_31_16, upperbound_15_14);
 
 		pmic_enable_interrupt(FG_BAT0_INT_H_NO, 0, "GM30");
 		pmic_set_register_value(PMIC_FG_BAT0_HTH_15_14, upperbound_15_14);
@@ -641,11 +657,11 @@ signed int fgauge_set_columb_interrupt_internal2(void *data, int is_ht)
 			pmic_get_register_value(PMIC_FG_BAT0_HTH_31_16));
 
 	} else {
-		lowbound_31_16 = (thr2 & 0xffff0000) >> 16;
-		lowbound_15_14 = (thr2 & 0xffff) >> 14;
+		lowbound_31_16 = ((now_car - thr2) & 0xffff0000) >> 16;
+		lowbound_15_14 = ((now_car - thr2) & 0xffff) >> 14;
 
-		bm_err("[fgauge_set_columb_interrupt_internal2] low_thr 0x%lx 0x%x 31_16 0x%x 15_14 0x%x\n",
-			thr, thr2, lowbound_31_16, lowbound_15_14);
+		bm_err("[fgauge_set_columb_interrupt_internal2] low_thr 0x%lx 0x%x car [0x%x 0x%x] lower [0x%x 0x%x]\n",
+			thr, thr2, car_31_16, car_15_0, lowbound_31_16, lowbound_15_14);
 
 
 		pmic_enable_interrupt(FG_BAT0_INT_L_NO, 0, "GM30");
@@ -822,6 +838,11 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 		car = (car * fg_cust_data.r_fg_value) / 100;
 
 	car = ((car * 1000) / fg_cust_data.car_tune_value);
+
+	if (car < (1 << 14)) {
+		bm_err("[fgauge_set_columb_interrupt_internal1] car 0x%llx is smaller than 2^14\n", car);
+		car = (1 << 14);
+	}
 
 	upperbound = value32_CAR;
 	lowbound = value32_CAR;
@@ -1749,29 +1770,34 @@ static signed int read_nafg_vbat(void *data)
 	*(signed int *) (data) = 42002;
 	return STATUS_OK;
 #else
-	int nag_vbat_reg, nag_vbat_mv, nag_vbat_rdy;
-	int retry_cnt = 0;
+	unsigned int nag_vbat_reg, vbat_val;
+	int nag_vbat_mv, i = 0;
 
-	nag_vbat_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_NAG);
-	while (nag_vbat_rdy != 1) {
-		mdelay(1);
-		nag_vbat_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_NAG);
+	do {
+		nag_vbat_reg = upmu_get_reg_value(PMIC_AUXADC_ADC_OUT_NAG_ADDR);
+		if ((nag_vbat_reg & 0x8000) != 0)
+			break;
+		msleep(30);
+		i++;
+	} while (i >= 5);
 
-		retry_cnt++;
-		if (retry_cnt > 20) {
-			bm_err("[FGADC_intr_end][read_nafg_vbat] Timeout!!!\n");
-			*(signed int *) (data) = 0;
-			return STATUS_UNSUPPORTED;
-		}
-	}
 
-	nag_vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_NAG);
-	nag_vbat_mv = REG_to_MV_value(nag_vbat_reg);
+	vbat_val = nag_vbat_reg & 0x7fff;
+	nag_vbat_mv = REG_to_MV_value(vbat_val);
 
 	*(signed int *) (data) = nag_vbat_mv;
 
-	bm_err("[FGADC_intr_end][read_nafg_vbat] nag_vbat_rdy %d nag_vbat_reg 0x%x nag_vbat_mv %d\n",
-		nag_vbat_rdy, nag_vbat_reg, nag_vbat_mv);
+	bm_err("[read_nafg_vbat] i:%d nag_vbat_reg 0x%x nag_vbat_mv %d zcv:0x%x 0x%x 0x%x %d %d %d %d %d\n",
+		i, nag_vbat_reg, nag_vbat_mv,
+		pmic_get_register_value(PMIC_AUXADC_NAG_ZCV),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_26_16),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0),
+		pmic_get_register_value(PMIC_AUXADC_NAG_PRD),
+		pmic_get_register_value(PMIC_AUXADC_NAG_VBAT1_SEL),
+		pmic_get_register_value(PMIC_AUXADC_NAG_IRQ_EN),
+		pmic_get_register_value(PMIC_AUXADC_NAG_EN),
+		pmic_get_battery_voltage()
+		);
 
 	return STATUS_OK;
 #endif
@@ -2551,6 +2577,14 @@ int read_hw_ocv_6335_power_on_rdy(void)
 #endif
 }
 
+static int charger_zcv;
+static int pmic_in_zcv;
+static int pmic_zcv;
+static int pmic_rdy;
+static int swocv;
+static int zcv_from;
+static int zcv_tmp;
+
 static signed int read_hw_ocv(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -2567,13 +2601,21 @@ static signed int read_hw_ocv(void *data)
 	int _hw_ocv_35_pon_rdy;
 	int _hw_ocv_chgin;
 	int _hw_ocv_chgin_rdy;
+	int now_temp;
+	int now_thr;
 
 	_hw_ocv_35_pon_rdy = read_hw_ocv_6335_power_on_rdy();
 	_hw_ocv_35_pon = read_hw_ocv_6335_power_on();
 	_hw_ocv_35_plugin = read_hw_ocv_6335_plug_in();
-	_hw_ocv_chgin = read_hw_ocv_6336_charger_in();
+	_hw_ocv_chgin = battery_get_charger_zcv() / 100;
+	now_temp = fg_get_battery_temperature_for_zcv();
 
-	if (_hw_ocv_chgin < 0)
+	if (now_temp > EXT_HWOCV_SWOCV_LT_TEMP)
+		now_thr = EXT_HWOCV_SWOCV;
+	else
+		now_thr = EXT_HWOCV_SWOCV_LT;
+
+	if (_hw_ocv_chgin < 25000)
 		_hw_ocv_chgin_rdy = 0;
 	else
 		_hw_ocv_chgin_rdy = 1;
@@ -2597,7 +2639,7 @@ static signed int read_hw_ocv(void *data)
 				_hw_ocv_src = FROM_6335_PON_ON;
 			}
 
-			if (abs(_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
+			if (abs(_hw_ocv - _sw_ocv) > now_thr) {
 				_prev_hw_ocv = _hw_ocv;
 				_prev_hw_ocv_src = _hw_ocv_src;
 				_hw_ocv = _sw_ocv;
@@ -2612,7 +2654,7 @@ static signed int read_hw_ocv(void *data)
 			_hw_ocv = _sw_ocv;
 			_hw_ocv_src = FROM_SW_OCV;
 			if (_hw_ocv_chgin_rdy != 1) {
-				if (abs(_hw_ocv - _sw_ocv) > EXT_HWOCV_SWOCV) {
+				if (abs(_hw_ocv - _sw_ocv) > now_thr) {
 					_prev_hw_ocv = _hw_ocv;
 					_prev_hw_ocv_src = _hw_ocv_src;
 					_hw_ocv = _sw_ocv;
@@ -2631,14 +2673,22 @@ static signed int read_hw_ocv(void *data)
 
 	*(signed int *) (data) = _hw_ocv;
 
-	bm_debug("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
+	charger_zcv = _hw_ocv_chgin;
+	pmic_rdy = _hw_ocv_35_pon_rdy;
+	pmic_zcv = _hw_ocv_35_pon;
+	pmic_in_zcv = _hw_ocv_35_plugin;
+	swocv = _sw_ocv;
+	zcv_from = _hw_ocv_src;
+	zcv_tmp = now_temp;
+
+	bm_err("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
 		g_fg_is_charger_exist, _hw_ocv_chgin_rdy);
-	bm_debug("[read_hw_ocv] _hw_ocv %d _sw_ocv %d EXT_HWOCV_SWOCV %d\n",
-		_prev_hw_ocv, _sw_ocv, EXT_HWOCV_SWOCV);
-	bm_debug("[read_hw_ocv] _hw_ocv %d _hw_ocv_src %d _prev_hw_ocv %d _prev_hw_ocv_src %d _flag_unreliable %d\n",
+	bm_err("[read_hw_ocv] _hw_ocv %d _sw_ocv %d now_thr %d\n",
+		_prev_hw_ocv, _sw_ocv, now_thr);
+	bm_err("[read_hw_ocv] _hw_ocv %d _hw_ocv_src %d _prev_hw_ocv %d _prev_hw_ocv_src %d _flag_unreliable %d\n",
 		_hw_ocv, _hw_ocv_src, _prev_hw_ocv, _prev_hw_ocv_src, _flag_unreliable);
-	bm_debug("[read_hw_ocv] _hw_ocv_35_pon_rdy %d _hw_ocv_35_pon %d _hw_ocv_35_plugin %d _hw_ocv_chgin %d _sw_ocv %d\n",
-		_hw_ocv_35_pon_rdy, _hw_ocv_35_pon, _hw_ocv_35_plugin, _hw_ocv_chgin, _sw_ocv);
+	bm_debug("[read_hw_ocv] _hw_ocv_35_pon_rdy %d _hw_ocv_35_pon %d _hw_ocv_35_plugin %d _hw_ocv_chgin %d _sw_ocv %d now_temp %d now_thr %d\n",
+		_hw_ocv_35_pon_rdy, _hw_ocv_35_pon, _hw_ocv_35_plugin, _hw_ocv_chgin, _sw_ocv, now_temp, now_thr);
 
 #endif
 	return STATUS_OK;
@@ -3165,10 +3215,45 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 #endif
 }
 
+void battery_dump_nag(void)
+{
+	unsigned int nag_vbat_reg, vbat_val;
+	int nag_vbat_mv, i = 0;
+
+	do {
+		nag_vbat_reg = upmu_get_reg_value(PMIC_AUXADC_ADC_OUT_NAG_ADDR);
+		if ((nag_vbat_reg & 0x8000) != 0)
+			break;
+		msleep(30);
+		i++;
+	} while (i >= 5);
+
+	vbat_val = nag_vbat_reg & 0x7fff;
+	nag_vbat_mv = REG_to_MV_value(vbat_val);
+
+	bm_err("[read_nafg_vbat] i:%d nag_vbat_reg 0x%x nag_vbat_mv %d:%d zcv:0x%x 0x%x 0x%x 0x%x %d %d %d %d %d\n",
+		i, nag_vbat_reg, nag_vbat_mv, vbat_val,
+		pmic_get_register_value(PMIC_AUXADC_NAG_ZCV),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_26_16),
+		pmic_get_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0),
+		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_RAW),
+		pmic_get_register_value(PMIC_AUXADC_NAG_PRD),
+		pmic_get_register_value(PMIC_AUXADC_NAG_VBAT1_SEL),
+		pmic_get_register_value(PMIC_AUXADC_NAG_IRQ_EN),
+		pmic_get_register_value(PMIC_AUXADC_NAG_EN),
+		pmic_get_battery_voltage()
+		);
+
+}
+
+
 void battery_dump_info(struct seq_file *m)
 {
 	seq_printf(m, "rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg);
+
+	seq_printf(m, "charger_zcv %d pmic_zcv %d pmic_in_zcv:%d pmic_rdy:%d swocv:%d from:%d tmp:%d\n",
+			charger_zcv, pmic_zcv, pmic_in_zcv, pmic_rdy, swocv, zcv_from, zcv_tmp);
 }
 
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
@@ -3196,8 +3281,8 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_HW_OCV] = read_hw_ocv;
 		bm_func[BATTERY_METER_CMD_DUMP_REGISTER] = dump_register_fgadc;
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT1] = fgauge_set_columb_interrupt1;
-		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT] = fgauge_set_columb_interrupt2_ht;
-		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT] = fgauge_set_columb_interrupt2_lt;
+		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT_GAP] = fgauge_set_columb_interrupt2_ht;
+		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT_GAP] = fgauge_set_columb_interrupt2_lt;
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT_EN] = fgauge_set_columb_interrupt2_ht_en;
 		bm_func[BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT_EN] = fgauge_set_columb_interrupt2_lt_en;
 		bm_func[BATTERY_METER_CMD_GET_BOOT_BATTERY_PLUG_STATUS] = read_boot_battery_plug_out_status;
