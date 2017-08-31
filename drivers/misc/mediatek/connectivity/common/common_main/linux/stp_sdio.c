@@ -2900,6 +2900,7 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 				ret_1 = mtk_wcn_hif_sdio_readl(clt_ctx, CCIR, &value);
 				STPSDIO_ERR_FUNC("sdio read or write timeout, ret:%d ret_1:%d, read chip id:%x\n",
 						ret, ret_1, value);
+				stp_sdio_dump_register();
 			}
 			/* sdio CRC error read CSR */
 			if (type == HIF_TYPE_READ_BUF || type == HIF_TYPE_WRITE_BUF) {

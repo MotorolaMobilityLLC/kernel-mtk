@@ -41,6 +41,7 @@
 #include "wmt_plat.h"
 #include "wmt_detect.h"
 #include "stp_sdio.h"
+#include "stp_core.h"
 
 
 UINT32 gStpDbgLogOut;
@@ -1959,7 +1960,10 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 			}
 		}
 	}
-
+	if (chip_type == WMT_CHIP_TYPE_COMBO) {
+		STP_DBG_INFO_FUNC("dump sdio register for debug\n");
+		mtk_stp_dump_sdio_register();
+	}
 	return 0;
 }
 
