@@ -27,13 +27,14 @@
  *	   0 = timeout
  *	  -1 = IPI error
  */
-int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id)
+int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id, int wait)
 {
 	ipi_status status;
 	struct do_msg *header;
 	int retry_count = 0;
 	char ipibuf[IPI_BUFF_SIZE];
 
+	pr_debug("do_ipi_send to scp %u, wait = %d\n", id, wait);
 	if (bufsize > IPI_BUFF_SIZE - 1) {
 		pr_err("ERR: payload size exceeds ipi buffer size\n");
 		return -1;
@@ -47,7 +48,7 @@ int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id)
 		memcpy((void *)&header->payload, buf, bufsize);
 
 	while (1) {
-		status = scp_ipi_send(IPI_DO_AP_MSG, ipibuf, bufsize + sizeof(struct do_msg) - 1, 1, id);
+		status = scp_ipi_send(IPI_DO_AP_MSG, ipibuf, bufsize + sizeof(struct do_msg) - 1, wait, id);
 		if (status == BUSY) {
 			msleep(IPI_WAIT_INTERVAL_MS);
 			retry_count++;
@@ -67,15 +68,17 @@ int do_ipi_send(u32 type, void *buf, unsigned int bufsize, scp_core_id id)
 	return 1;
 }
 
-int do_ipi_send_dram_addr(u32 addr, scp_core_id scp)
+int do_ipi_send_dram_addr(u32 addr, scp_core_id scp, int in_isr)
 {
+	int wait = in_isr ? 0 : 1;
+
 	pr_debug("send dram addr to scp %d: 0x%x\n", scp, addr);
-	return do_ipi_send(DO_MSG_DRAM_ADDR, &addr, sizeof(u32), scp);
+	return do_ipi_send(DO_MSG_DRAM_ADDR, &addr, sizeof(u32), scp, wait);
 }
 
 int do_ipi_send_do_name(char *name, scp_core_id scp)
 {
-	return do_ipi_send(DO_MSG_LOAD_MODULE, name, strlen(name) + 1 /* include '\0' */, scp);
+	return do_ipi_send(DO_MSG_LOAD_MODULE, name, strlen(name) + 1 /* include '\0' */, scp, 1);
 }
 
 void do_ipi_handler(int id, void *data, unsigned int len)
@@ -86,7 +89,7 @@ void do_ipi_handler(int id, void *data, unsigned int len)
 
 	switch (header->type) {
 	case DO_MSG_GET_INFO:
-		do_send_dram_start_addr();
+		do_send_dram_start_addr(1);
 		break;
 	case DO_MSG_UPDATE_CURRENT_DO:
 		scp_update_current_do(&header->payload, header->len, header->scp_num);

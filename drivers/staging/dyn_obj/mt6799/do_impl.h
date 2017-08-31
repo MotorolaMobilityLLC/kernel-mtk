@@ -30,5 +30,6 @@ void scp_update_current_do(char *str, uint32_t len, uint32_t scp);
 uint32_t mt_do_init_infos(struct do_info *info, uint32_t len, uint32_t scp);
 void deinit_do_infos(void);
 void set_do_api_enable(void);
+void reset_do_api(void);
 struct do_item *get_detail_do_infos(void);
-int do_send_dram_start_addr(void);
+int do_send_dram_start_addr(int in_isr);

@@ -468,6 +468,13 @@ void set_do_api_enable(void)
 #endif
 }
 
+void reset_do_api(void)
+{
+	int i;
+
+	for (i = 0; i < SCP_CORE_TOTAL; i++)
+		inited[i] = 0;
+}
 /************** deinit DO infos  ***************/
 void deinit_do_infos(void)
 {

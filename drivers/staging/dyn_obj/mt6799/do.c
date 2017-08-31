@@ -35,6 +35,8 @@
 #include "do_ipi.h"
 #include "do_impl.h"
 
+#include <linux/notifier.h>
+
 #define DO_MPU_REG_NUM 21
 #define MAX_RETRY_COUNT 10
 
@@ -63,13 +65,38 @@ static struct miscdevice do_device = {
 	.fops = &fops
 };
 
+/************ scp ready callbacks **************/
+static int do_scp_event_handler(struct notifier_block *this, unsigned long event, void *ptr)
+{
+	switch (event) {
+	case SCP_EVENT_READY:
+		pr_debug("do_scp_handler: scp READY\n");
+		if (!do_send_dram_start_addr(1)) { /* send in isr */
+			pr_err("DO DRAM addr is not sent to scp successfully.\n");
+		}
+		break;
+	case SCP_EVENT_STOP:
+		pr_debug("do_scp_handler: scp STOP\n");
+		reset_do_api();
+		break;
+	default:
+		/* do nothing */
+		break;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block scp_notifier = {
+	.notifier_call = do_scp_event_handler
+};
+
 /************* init DRAM memory in device tree **********/
 #define SCP_GENERAL_DT "mediatek,scp"
 
 phys_addr_t phys_base_a;
 phys_addr_t phys_base_b;
 
-int do_mem_init(void)
+static int do_mem_init(void)
 {
 	/* find the device node */
 	struct device_node *node;
@@ -98,14 +125,14 @@ int do_mem_init(void)
 	return 1;
 }
 
-int do_send_dram_start_addr(void)
+int do_send_dram_start_addr(int in_isr)
 {
 	int ret = 1;
 
 	if (phys_base_a)
-		ret &= do_ipi_send_dram_addr((uint32_t)phys_base_a, SCP_A_ID);
+		ret &= do_ipi_send_dram_addr((uint32_t)phys_base_a, SCP_A_ID, in_isr);
 	if (phys_base_b)
-		ret &= do_ipi_send_dram_addr((uint32_t)phys_base_b, SCP_B_ID);
+		ret &= do_ipi_send_dram_addr((uint32_t)phys_base_b, SCP_B_ID, in_isr);
 	return ret;
 }
 
@@ -249,13 +276,10 @@ static int __init do_service_init(void)
 
 	res = do_mem_init();
 	if (res) {
-		/* NOTE: assume that dram addr only uses the first 32 bits */
-		if (!do_send_dram_start_addr()) {
-			pr_err("DO DRAM addr is not sent to scp successfully.\n");
-			pr_err("DO APIs will be disabled\n");
-		} else {
-			set_do_api_enable();
-		}
+		set_do_api_enable();
+		/* SCP A currently disabled */
+		/* scp_A_register_notify(&scp_notifier); */
+		scp_B_register_notify(&scp_notifier);
 	} else {
 		pr_err("find device tree failed: %d\n", res);
 		return -1;
