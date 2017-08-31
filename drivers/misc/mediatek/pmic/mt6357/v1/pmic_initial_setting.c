@@ -138,7 +138,7 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
 	pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vaux18_lp(SRCLKEN0, 1, HW_LP);
-	pmic_ldo_vaud28_lp(SW, 1, SW_OFF);
+	pmic_ldo_vaud28_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vio28_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vio18_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vdram_lp(SRCLKEN0, 1, HW_LP);
