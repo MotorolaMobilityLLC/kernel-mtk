@@ -436,6 +436,7 @@ struct typec_hba {
 	uint8_t vdo_count;
 	/* VDO to retry if UFP responder replied busy. */
 	uint32_t vdo_retry;
+	uint16_t alt_mode_svid;
 
 	unsigned int vbus_on_polling;
 	unsigned int vbus_off_polling;
