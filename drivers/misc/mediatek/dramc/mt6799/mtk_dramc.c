@@ -980,8 +980,8 @@ unsigned int get_dram_data_rate(void)
 
 	u4DataRate = u4VCOFreq>>u4CKDIV4;
 
-	pr_err("[DRAMC Driver] PCW=0x%X, u4PREDIV=%d, u4POSDIV=%d, CKDIV4=%d, DataRate=%d\n",
-	u4SDM_PCW, u4PREDIV, u4POSDIV, u4CKDIV4, u4DataRate);
+	pr_err("[DRAMC Driver] u4ShuLevel=%d, PCW=0x%X, u4PREDIV=%d, u4POSDIV=%d, CKDIV4=%d, DataRate=%d\n",
+	u4ShuLevel, u4SDM_PCW, u4PREDIV, u4POSDIV, u4CKDIV4, u4DataRate);
 
 	if (DRAM_TYPE == TYPE_LPDDR4X) {
 		if (u4DataRate == 3198)
@@ -990,6 +990,8 @@ unsigned int get_dram_data_rate(void)
 			u4DataRate = 2667;
 		else if (u4DataRate == 1599)
 			u4DataRate = 1600;
+		else if (u4DataRate == 799)
+			u4DataRate = 800;
 		else
 			u4DataRate = 0;
 	} else
@@ -1023,7 +1025,7 @@ int dram_steps_freq(unsigned int step)
 			freq = 2667;
 			break;
 		case 2:
-			freq = 1600;
+			freq = 2667;
 			break;
 		case 3:
 			freq = 800;
@@ -1041,6 +1043,16 @@ int dram_can_support_fh(void)
 		return -1;
 	else
 		return 1;
+}
+
+int dram_kernel_memory_test(void)
+{
+	if (dram_info_dummy_read.rank_num == 2) {
+		pr_err("[DRAMC Driver] rank1 dummy read addr=0x%llx,\n",
+		dram_info_dummy_read.rank_info[1].start);
+		return 1;
+	} else
+		return 0;
 }
 
 #ifdef CONFIG_OF_RESERVED_MEM
@@ -1336,6 +1348,11 @@ static int __init dram_test_init(void)
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
+
+	if (dram_kernel_memory_test())
+		pr_err("[DRAMC Driver] Rank1 memory test pass\n");
+	else
+		pr_err("[DRAMC Driver] Rank1 memory test fail\n");
 
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");
