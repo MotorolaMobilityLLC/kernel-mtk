@@ -275,7 +275,7 @@ int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 	scp_ipi_tx_msg.data[0] = *((u32 *)data);
 	CCCI_NORMAL_LOG(scp_ipi_tx_msg.md_id, CORE, "IPI send %d/0x%x, %ld\n",
 				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], sizeof(struct ccci_ipi_msg));
-	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1) != DONE) {
+	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1, SCP_A_ID) != DONE) {
 		CCCI_ERROR_LOG(md_id, CORE, "IPI send fail!\n");
 		ret = -CCCI_ERR_MD_NOT_READY;
 	}
