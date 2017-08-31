@@ -1453,7 +1453,8 @@ static signed int pwrap_wacs2_ipi(unsigned int  adr, unsigned int wdata, unsigne
 	ipi_buf[1] = flag;
 	ipi_buf[2] = wdata;
 
-	err = sspm_ipi_send_sync(IPI_ID_PMIC_WRAP, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	err = sspm_ipi_send_sync_new(IPI_ID_PMIC_WRAP, IPI_OPT_POLLING, (void *)ipi_buf, 4, &ipi_data_ret, 1);
+
 	if (err != 0)
 		PWRAPERR("ipi_write error: %d\n", err);
 	else
