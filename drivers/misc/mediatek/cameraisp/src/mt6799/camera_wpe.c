@@ -104,7 +104,6 @@ typedef signed char MINT8;
 /* #include "../../cmdq/mt6797/cmdq_core.h" */
 
 /* CCF */
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 struct WPE_CLK_STRUCT {
 	struct clk *CG_SCP_SYS_MM0;
@@ -122,7 +121,6 @@ struct WPE_CLK_STRUCT {
 	struct clk *CG_IMGSYS_WPE;
 };
 struct WPE_CLK_STRUCT wpe_clk;
-#endif                                /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
 typedef signed int MINT32;
 /*  */
 typedef bool MBOOL;
@@ -860,7 +858,6 @@ static SV_LOG_STR gSvLog[WPE_IRQ_TYPE_AMOUNT];
 #define WPE_DMA_RSV3_REG					(ISP_WPE_BASE + 0x0504)
 #define WPE_DMA_RSV4_REG					(ISP_WPE_BASE + 0x0508)
 #define WPE_DMA_DEBUG_SEL_REG				(ISP_WPE_BASE + 0x050C)
-#define WPE_DIRECT_LINK_REG					(ISP_WPE_BASE + (0x15020030 - 0x1502a000))
 
 
 
@@ -2279,7 +2276,6 @@ static MINT32 WPE_DumpReg(void)
 
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(WPE_WPE_START_HW),
 		(unsigned int)WPE_RD32(WPE_WPE_START_REG));
-	LOG_INF("[0x15020030 %08X]\n", (unsigned int)WPE_RD32(WPE_DIRECT_LINK_REG));
 
 	for (i = 0; i < _SUPPORT_MAX_WPE_REQUEST_RING_SIZE_; i++) {
 		LOG_INF
@@ -2307,7 +2303,7 @@ static MINT32 WPE_DumpReg(void)
 	return Ret;
 }
 #endif
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
+
 static inline void WPE_Prepare_ccf_clock(void)
 {
 	int ret;
@@ -2536,7 +2532,6 @@ static inline void WPE_Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(wpe_clk.CG_SCP_SYS_MM0);
 }
 
-#endif
 #define IMGSYS_REG_CG_CLR               (15020000 + 0x8)
 #define IMGSYS_REG_CG_SET               (15020000 + 0x4)
 
@@ -2545,39 +2540,12 @@ static inline void WPE_Disable_Unprepare_ccf_clock(void)
 ********************************************************************************/
 static void WPE_EnableClock(MBOOL En)
 {
-#if defined(EP_NO_CLKMGR)
-	MUINT32 setReg;
-#endif
 
 	if (En) {		/* Enable clock. */
 		/* LOG_DBG("Dpe clock enbled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
 		switch (g_u4EnableClockCount) {
 		case 0:
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
-#ifndef EP_NO_CLKMGR
-
 			WPE_Prepare_Enable_ccf_clock();
-#else
-			/* Enable clock by hardcode:
-			 * 1. CAMSYS_CG_CLR (0x1A000008) = 0xffffffff;
-			 * 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
-			 */
-
-			setReg = 0xFFFFFFFF;
-			/* WPE_WR32(CAMSYS_REG_CG_CLR, setReg); */
-			WPE_WR32(IMGSYS_REG_CG_CLR, setReg);
-#endif
-#else
-			enable_clock(MT_CG_DRSC0_SMI_COMMON, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* enable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-
-			enable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
-#endif      /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
 			break;
 		default:
 			break;
@@ -2593,31 +2561,7 @@ static void WPE_EnableClock(MBOOL En)
 		spin_unlock(&(WPEInfo.SpinLockWPE));
 		switch (g_u4EnableClockCount) {
 		case 0:
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
-#ifndef EP_NO_CLKMGR
 			WPE_Disable_Unprepare_ccf_clock();
-#else
-			/* Disable clock by hardcode:
-			 * 1. CAMSYS_CG_SET (0x1A000004) = 0xffffffff;
-			 * 2. IMG_CG_SET (0x15000004) = 0xffffffff;
-			 */
-
-			setReg = 0xFFFFFFFF;
-			/* WPE_WR32(CAMSYS_REG_CG_SET, setReg); */
-			WPE_WR32(IMGSYS_REG_CG_SET, setReg);
-#endif
-#else
-			/* do disable clock */
-
-			disable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* disable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-			disable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
-			disable_clock(MT_CG_DRSC0_SMI_COMMON, "CAMERA");
-#endif      /* #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) */
 			break;
 		default:
 			break;
@@ -4290,10 +4234,6 @@ static MINT32 WPE_probe(struct platform_device *pDev)
 			dev_err(&pDev->dev, "register char failed");
 			return Ret;
 		}
-#ifndef EP_NO_CLKMGR
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
-		/*CCF: Grab clock pointer (struct clk*) */
-
 
 		wpe_clk.CG_SCP_SYS_MM0 = devm_clk_get(&pDev->dev, "WPE_SCP_SYS_MM0");
 		wpe_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "WPE_CLK_MM_CG2_B11");
@@ -4367,8 +4307,6 @@ static MINT32 WPE_probe(struct platform_device *pDev)
 			LOG_ERR("cannot get CG_IMGSYS_WPE clock\n");
 			return PTR_ERR(wpe_clk.CG_IMGSYS_WPE);
 		}
-#endif                                /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
-#endif
 
 		/* Create class register */
 		pWPEClass = class_create(THIS_MODULE, "WPEdrv");
@@ -5035,12 +4973,6 @@ static irqreturn_t ISP_Irq_WPE(MINT32 Irq, void *DeviceId)
 
 	if (WPEStatus & WPE_INT_ST)
 		tasklet_schedule(WPE_tasklet[WPE_IRQ_TYPE_INT_WPE_ST].pWPE_tkt);
-#else
-	MUINT32 WPEStatus;
-
-	WPEStatus = WPE_RD32(WPE_CTL_INT_STATUS_REG);	/* WPE Status */
-	printk("WPE INTERRUPT Handler reads WPE_INT_STATUS(0x%x)\n", WPEStatus);
-
 #endif
 	return IRQ_HANDLED;
 }
