@@ -3136,6 +3136,11 @@ bool platform_set_smartpa_i2s(int sidegen_control, int hdoutput_control, int ext
 		if (!mtk_soc_always_hd)
 			EnableALLbySampleRate(samplerate);
 
+		SetCLkMclk(Soc_Aud_I2S1, samplerate); /* select I2S */
+		SetCLkMclk(Soc_Aud_I2S2, samplerate); /* select I2S */
+
+		EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
+		EnableI2SCLKDiv(Soc_Aud_I2S2_MCKDIV, true);
 		/* first turn off 2nd I2S out, ADC in */
 		Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
 		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
@@ -3209,6 +3214,8 @@ bool platform_set_smartpa_i2s(int sidegen_control, int hdoutput_control, int ext
 		}
 		if (!mtk_soc_always_hd)
 			DisableALLbySampleRate(samplerate);
+		EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
+		EnableI2SCLKDiv(Soc_Aud_I2S2_MCKDIV, false);
 		AudDrv_Clk_Off();
 	}
 

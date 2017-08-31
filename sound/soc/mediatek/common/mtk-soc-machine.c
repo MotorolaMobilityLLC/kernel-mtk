@@ -572,6 +572,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_NAME,
 		.playback_only = true,
 	},
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	{
+		.name = "DL1SCPSPKOUTPUT",
+		.stream_name = MT_SOC_DL1SCPSPK_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_DL1SCPSPK_NAME,
+		.platform_name  = MT_SOC_DL1SCPSPK_PCM,
+		.codec_dai_name = MT_SOC_CODEC_SPKSCPTXDAI_NAME,
+		.codec_name = MT_SOC_CODEC_NAME,
+	},
+#endif
 };
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
