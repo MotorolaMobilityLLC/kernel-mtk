@@ -918,7 +918,7 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	mt_eint_register();
 #endif
 
-#ifdef CONIFG_KPD_ACCESS_PMIC_REGMAP
+#ifdef CONFIG_KPD_ACCESS_PMIC_REGMAP
 	/*kpd_hal access pmic registers via regmap interface*/
 	err = kpd_init_pmic_regmap(pdev);
 	if (err)
