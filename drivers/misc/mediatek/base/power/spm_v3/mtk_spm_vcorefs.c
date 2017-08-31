@@ -1280,7 +1280,7 @@ void spm_go_to_vcorefs(int spm_flags)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* need be called after set_pwrctrl_pcm_flags1() */
-	spm_set_dummy_read_addr(false);
+	/* spm_set_dummy_read_addr(false); */
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
