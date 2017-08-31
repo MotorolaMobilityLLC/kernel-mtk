@@ -73,10 +73,26 @@ extern void vde_mtcmos_patch(int on);
 extern void cam_mtcmos_patch(int on);
 extern void check_mjc_clk_sts(void);
 extern void check_ven_clk_sts(void);
+extern void check_ipu_clk_sts(void);
+extern void check_cam_clk_sts(void);
+extern void check_isp_clk_sts(void);
+extern void check_suspend_clk_sts(void);
 extern void mfgsys_cg_check(void);
+extern void vpu_mtcmos_check(void);
 extern void mfgsys_cg_sts(void);
 extern int mt_gpufreq_query_volt_enable_state(void);
 extern unsigned int mt_gpufreq_get_cur_volt(void);
+extern void smi_dumpCommonDebugMsg(int output_gce_buffer);
+extern void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer);
+extern int ipu_is_used(void);
+extern void check_vde_clk_sts(void);
+extern unsigned int enable_vsram_vcore_hw_tracking(unsigned int en);
+extern unsigned int enable_vimvo_lp_mode(unsigned lp);
+extern int vpu_get_vimvo_parameter(uint32_t *values);
+extern int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
+	int output_gce_buffer, int enable_m4u_reg_dump);
+extern void mmsys_cg_check(void);
+extern void mm_clk_restore(void);
 /*ram console api*/
 /*
 *[0] bus protect reg
