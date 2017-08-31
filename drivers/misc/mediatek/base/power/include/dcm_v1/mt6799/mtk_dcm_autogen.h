@@ -14,7 +14,7 @@
 #ifndef __MTK_DCM_AUTOGEN_H__
 #define __MTK_DCM_AUTOGEN_H__
 
-#include "mtk_dcm.h"
+#include <mtk_dcm.h>
 
 #if defined(__KERNEL__) && defined(CONFIG_OF)
 extern unsigned long dcm_topckgen_base;

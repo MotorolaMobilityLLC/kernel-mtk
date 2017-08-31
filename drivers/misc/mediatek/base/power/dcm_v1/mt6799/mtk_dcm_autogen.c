@@ -11,34 +11,13 @@
  * GNU General Public License for more details.
  */
 
-#include <mtk_dcm.h>
-
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_secure_api.h>
 
+#include <mtk_dcm_internal.h>
 #include <mtk_dcm_autogen.h>
-
-#define reg_read(addr)	__raw_readl(IOMEM(addr))
-#define reg_write(addr, val)	mt_reg_sync_writel((val), ((void *)addr))
-
-#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-#define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
-#ifndef mcsi_reg_read
-#define mcsi_reg_read(offset) \
-	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 0, offset, 0)
-#endif
-#ifndef mcsi_reg_write
-#define mcsi_reg_write(val, offset) \
-	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 1, offset, val)
-#endif
-#define MCSI_SMC_WRITE(addr, val)  mcsi_reg_write(val, (addr##_PHYS & 0xFFFF))
-#define MCSI_SMC_READ(addr)  mcsi_reg_read(addr##_PHYS & 0xFFFF)
-#else
-#define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
-#define MCSI_SMC_WRITE(addr, val)  reg_write(addr, val)
-#define MCSI_SMC_READ(addr)  reg_read(addr)
-#endif
+#include <mtk_dcm.h>
 
 #define INFRACFG_AO_AXI_REG0_MASK ((0x1 << 0) | \
 			(0x1 << 1) | \
