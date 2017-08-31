@@ -127,7 +127,10 @@ READ_START:
 	/* 1. get incoming request */
 	if (skb_queue_empty(&port->rx_skb_list)) {
 		if (!(file->f_flags & O_NONBLOCK)) {
-			ret = wait_event_interruptible(port->rx_wq, !skb_queue_empty(&port->rx_skb_list));
+			spin_lock_irq(&port->rx_wq.lock);
+			ret = wait_event_interruptible_locked_irq(port->rx_wq,
+				!skb_queue_empty(&port->rx_skb_list));
+			spin_unlock_irq(&port->rx_wq.lock);
 			if (ret == -ERESTARTSYS) {
 				ret = -EINTR;
 				goto exit;
@@ -532,7 +535,9 @@ int port_recv_skb(struct port_t *port, struct sk_buff *skb)
 		port->rx_pkg_cnt++;
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		wake_lock_timeout(&port->rx_wakelock, HZ);
-		wake_up_all(&port->rx_wq);
+		spin_lock_irqsave(&port->rx_wq.lock, flags);
+		wake_up_all_locked(&port->rx_wq);
+		spin_unlock_irqrestore(&port->rx_wq.lock, flags);
 
 		return 0;
 	}
