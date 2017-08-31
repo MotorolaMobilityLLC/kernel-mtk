@@ -262,32 +262,32 @@ int pmic_dump_exception_reg(void)
 	kernel_dump_exception_reg();
 
 	/* clear UVLO off */
-	ret_val = pmic_config_interface(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
+	ret_val = pmic_config_interface_nospinlock(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
 
 	/* clear thermal shutdown 150 */
-	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x1);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_STRUP_THR_CLR, 0x1);
 	udelay(200);
-	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_STRUP_THR_CLR, 0x0);
 
 	/* clear power not good */
-	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x1);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_STRUP_PG_STATUS_CLR, 0x1);
 	udelay(200);
-	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_STRUP_PG_STATUS_CLR, 0x0);
 
 	/* clear Long press shutdown */
-	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x1);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_CLR_JUST_RST, 0x1);
 	udelay(200);
-	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_CLR_JUST_RST, 0x0);
 	udelay(200);
 	kernel_output_reg(MT6351_STRUP_CON12);
 
 	/* clear WDTRST */
-	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_SET, 0x8, 0xFFFF, 0);
+	ret_val = pmic_config_interface_nospinlock(MT6351_TOP_RST_MISC_SET, 0x8, 0xFFFF, 0);
 	udelay(100);
-	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_CLR, 0x8, 0xFFFF, 0);
+	ret_val = pmic_config_interface_nospinlock(MT6351_TOP_RST_MISC_CLR, 0x8, 0xFFFF, 0);
 
 	/* clear BUCK OC */
-	ret_val = pmic_config_interface(MT6351_BUCK_OC_CON0, 0xFFFF, 0xFFFF, 0);
+	ret_val = pmic_config_interface_nospinlock(MT6351_BUCK_OC_CON0, 0xFFFF, 0xFFFF, 0);
 	udelay(200);
 
 	/* clear Additional(TBD) */
@@ -341,22 +341,21 @@ int pmic_pre_wdt_reset(void)
 	local_irq_disable();
 
 	/* for olympus pre wdt reset */
-	ret_val = pmic_set_register_value(PMIC_RG_VCORE_VSLEEP_SEL, 0x0);
-	ret_val = pmic_set_register_value(PMIC_RG_VSRAM_MD_VSLEEP_SEL, 0x0);
-	ret_val = pmic_set_register_value(PMIC_RG_VMODEM_VSLEEP_SEL, 0x0);
-	ret_val = pmic_set_register_value(PMIC_RG_VMD1_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_VCORE_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_VSRAM_MD_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_VMODEM_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_RG_VMD1_VSLEEP_SEL, 0x0);
 
-	ret_val = pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_SLEEP, 0x10);
-	ret_val = pmic_set_register_value(PMIC_BUCK_VMD1_VOSEL_SLEEP, 0x10);
-	ret_val = pmic_set_register_value(PMIC_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
-	ret_val = pmic_set_register_value(PMIC_BUCK_VSRAM_MD_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_BUCK_VCORE_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_BUCK_VMD1_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value_nospinlock(PMIC_BUCK_VSRAM_MD_VOSEL_SLEEP, 0x10);
 
 	pmic_dump_exception_reg();
 #if DUMP_ALL_REG
 	pmic_dump_all_reg();
 #endif
 	return 0;
-
 }
 
 int pmic_pre_condition1(void)
@@ -887,6 +886,51 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 	}
 	PMICLOG("[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);
 #endif
+
+	if (met_show_pmic_info)
+		met_show_pmic_info(RegNum, pmic_reg);
+
+#else
+	/*PMICLOG("[pmic_config_interface] Can not access HW PMIC\n"); */
+#endif
+
+	return return_value;
+}
+
+unsigned int pmic_config_interface_nospinlock(unsigned int RegNum, unsigned int val,
+	unsigned int MASK, unsigned int SHIFT)
+{
+	unsigned int return_value = 0;
+
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
+	unsigned int pmic_reg = 0;
+	unsigned int rdata;
+
+	/*1. mt_read_byte(RegNum, &pmic_reg); */
+	/*return_value = pwrap_wacs2(0, (RegNum), 0, &rdata);*/
+	return_value = pwrap_read((RegNum), &rdata);
+	pmic_reg = rdata;
+	if (return_value != 0) {
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap read data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
+		return return_value;
+	}
+	/*PMICLOG"[pmic_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+
+	pmic_reg &= ~(MASK << SHIFT);
+	pmic_reg |= (val << SHIFT);
+
+	/*2. mt_write_byte(RegNum, pmic_reg); */
+	pmic_config_interface_buck_vsleep_check(RegNum, val, MASK, SHIFT);
+	/*return_value = pwrap_wacs2(1, (RegNum), pmic_reg, &rdata);*/
+	return_value = pwrap_write((RegNum), pmic_reg);
+	if (return_value != 0) {
+		pr_err(PMICTAG "[pmic_config_interface] Reg[%x] val=%x MASK=%x SHIFT=%x pmic_wrap write data fail\n",
+			RegNum, val, MASK, SHIFT);
+		pr_err(PMICTAG "[pmic_config_interface] PWRAP Error return value=%d\n", return_value);
+		return return_value;
+	}
 
 	if (met_show_pmic_info)
 		met_show_pmic_info(RegNum, pmic_reg);
