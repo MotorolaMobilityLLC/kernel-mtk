@@ -16,14 +16,20 @@
 
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	150	/* mA */
+#define MTK_CHR_EXIST 1
 #define SHUTDOWN_1_TIME	60
-#define SHUTDOWN_GAUGE0 1
-#define SHUTDOWN_GAUGE1_XMINS 1
 #define KEEP_100_PERCENT 2
 #define R_FG_VALUE	10				/* mOhm */
-#define POWERON_SYSTEM_IBOOT 1000	/* mA */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
+#define FG_METER_RESISTANCE	50
+#define CAR_TUNE_VALUE	100 /*1.00 */
+
+#define SHUTDOWN_GAUGE0 1
+#define SHUTDOWN_GAUGE1_XMINS 1
+
+#define POWERON_SYSTEM_IBOOT 1000	/* mA */
+
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
 
@@ -63,9 +69,6 @@
 /* PCB setting */
 #define CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL
 #define CALI_CAR_TUNE_AVG_NUM	60
-#define CAR_TUNE_VALUE	100 /*1.00 */
-#define FG_METER_RESISTANCE	50
-#define MTK_CHR_EXIST 1
 
 /* Aging Compensation 1*/
 #define DIFFERENCE_VOLTAGE_UPDATE 50
