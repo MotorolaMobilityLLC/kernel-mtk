@@ -583,6 +583,8 @@ extern void pd_set_data_role(struct typec_hba *hba, int role);
 extern void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload);
 extern int pd_is_power_swapping(struct typec_hba *hba);
 
+extern void pmic_enable_chrdet(unsigned char en);
+
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 extern int mt_dual_role_phy_init(struct typec_hba *hba);
 #endif
