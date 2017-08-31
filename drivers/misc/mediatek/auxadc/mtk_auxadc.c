@@ -1395,11 +1395,11 @@ static ssize_t show_AUXADC_chanel(struct device *dev, struct device_attribute *a
 		} else {
 			pr_debug("[adc_driver]: channel[%d]=%d.%d\n", i, data[0], data[1]);
 			sprintf(buf_temp, "channel[%d]=%d.%d\n", i, data[0], data[1]);
-			strcat(buf, buf_temp);
+			strncat(buf, buf_temp, strlen(buf_temp));
 		}
 	}
 	mt_auxadc_dump_register(buf_temp);
-	strcat(buf, buf_temp);
+	strncat(buf, buf_temp, strlen(buf_temp));
 	return strlen(buf);
 }
 
@@ -1440,16 +1440,17 @@ static int dbug_thread(void *unused)
 static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute *attr,
 				    const char *buf, size_t size)
 {
-	char start_flag;
+	char start_flag[10];
 	int error;
 
-	if (sscanf(buf, "%s", &start_flag) != 1) {
+	if (strlen(buf) != 1) {
 		pr_debug("[adc_driver]: Invalid values\n");
 		return -EINVAL;
-	}
-	pr_debug("[adc_driver] start flag =%d\n", start_flag);
-	g_start_debug_thread = start_flag;
-	if ('1' == start_flag) {
+	} else
+		snprintf(start_flag, sizeof(start_flag), "%s", buf);
+	pr_debug("[adc_driver] start flag =%d\n", start_flag[0]);
+	g_start_debug_thread = start_flag[0];
+	if ('1' == start_flag[0]) {
 		thread = kthread_run(dbug_thread, 0, "AUXADC");
 
 		if (IS_ERR(thread)) {
@@ -1460,6 +1461,7 @@ static ssize_t store_AUXADC_channel(struct device *dev, struct device_attribute 
 
 	return size;
 }
+
 
 static DEVICE_ATTR(AUXADC_read_channel, 0664, show_AUXADC_chanel, store_AUXADC_channel);
 
