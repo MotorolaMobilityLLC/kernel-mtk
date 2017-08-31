@@ -806,12 +806,8 @@ extern ssize_t musb_cmode_store(struct device *dev, struct device_attribute *att
 
 extern void usb20_pll_settings(bool host, bool forceOn);
 
-#if defined(FOR_BRING_UP) || !defined(CONFIG_MTK_SMART_BATTERY)
-/* implement static function in mt_usb.c */
-#else
 extern bool upmu_is_chr_det(void);
 extern u32 upmu_get_rgs_chrdet(void);
-#endif
 
 #ifdef CONFIG_USB_MTK_DUALMODE
 extern bool mtk_is_host_mode(void);

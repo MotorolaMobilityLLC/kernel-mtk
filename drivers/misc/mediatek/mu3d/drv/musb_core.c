@@ -134,6 +134,7 @@ struct musb *_mu3d_musb;
 
 
 u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
+/* u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO; */
 u32 fake_CDP;
 
 module_param(debug_level, int, 0644);
@@ -1976,7 +1977,7 @@ static void musb_suspend_work(struct work_struct *data)
 		  musb->is_clk_on);
 
 	if (musb->is_clk_on == 1
-	    && (!usb_cable_connected() || (musb->usb_mode != CABLE_MODE_NORMAL))) {
+	    && !usb_cable_connected()) {
 
 #ifdef EP_PROFILING
 		cancel_delayed_work_sync(&musb->ep_prof_work);
