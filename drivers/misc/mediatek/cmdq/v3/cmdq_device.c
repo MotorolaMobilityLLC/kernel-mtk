@@ -30,9 +30,7 @@
 
 struct CmdqDeviceStruct {
 	struct device *pDev;
-#ifdef CMDQ_USE_CCF
 	struct clk *clk_gce;
-#endif				/* defined(CMDQ_USE_CCF) */
 	long regBaseVA;		/* considering 64 bit kernel, use long */
 	long regBasePA;
 	uint32_t irqId;
@@ -142,31 +140,6 @@ long cmdq_dev_get_gce_node_PA(struct device_node *node, int index)
 	return regBasePA;
 }
 
-#ifndef CMDQ_USE_CCF
-#define IMP_ENABLE_HW_CLOCK(FN_NAME, HW_NAME)	\
-uint32_t cmdq_dev_enable_clock_##FN_NAME(bool enable)	\
-{		\
-	return cmdq_dev_enable_mtk_clock(enable, MT_CG_DISP0_##HW_NAME, "CMDQ_MDP_"#HW_NAME);	\
-}
-
-uint32_t cmdq_dev_enable_mtk_clock(bool enable, cgCLKID gateId, char *name)
-{
-	if (enable)
-		enable_clock(gateId, name);
-	else
-		disable_clock(gateId, name);
-	return 0;
-}
-
-bool cmdq_dev_mtk_clock_is_enable(cgCLKID gateId)
-{
-	return clock_is_on(gateId);
-}
-
-IMP_ENABLE_HW_CLOCK(SMI_COMMON, SMI_COMMON);
-
-#else
-
 struct CmdqModuleClock {
 	struct clk *clk_SMI_COMMON;
 	struct clk *clk_SMI_LARB0;
@@ -249,7 +222,6 @@ uint32_t cmdq_dev_enable_clock_SMI_COMMON(bool enable)
 	}
 	return 0;
 }
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 IMP_ENABLE_HW_CLOCK(SMI_LARB0, SMI_LARB0);
 #ifdef CMDQ_USE_LEGACY
@@ -260,7 +232,7 @@ IMP_ENABLE_HW_CLOCK(MUTEX_32K, MUTEX_32K);
 /* Common Clock Framework */
 void cmdq_dev_init_module_clk(void)
 {
-#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
+#if defined(CMDQ_OF_SUPPORT)
 	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-common",
 					  &gCmdqModuleClock.clk_SMI_COMMON);
 	cmdq_dev_get_module_clock_by_name("mediatek,smi_common", "smi-larb0",
@@ -273,20 +245,12 @@ void cmdq_dev_init_module_clk(void)
 
 void cmdq_dev_enable_gce_clock(bool enable)
 {
-#ifndef CMDQ_USE_CCF
-	cmdq_dev_enable_mtk_clock(enable, MT_CG_INFRA_GCE, "mtk_cmdq");
-#else
 	cmdq_dev_enable_device_clock(enable, gCmdqDev.clk_gce, "gce-clk");
-#endif
 }
 
 bool cmdq_dev_gce_clock_is_enable(void)
 {
-#ifndef CMDQ_USE_CCF
-	return cmdq_dev_mtk_clock_is_enable(MT_CG_INFRA_GCE);
-#else
 	return cmdq_dev_device_clock_is_enable(gCmdqDev.clk_gce);
-#endif
 }
 
 void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *endPA)
@@ -545,9 +509,7 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		gCmdqDev.regBasePA = cmdq_dev_get_gce_node_PA(node, 0);
 		gCmdqDev.irqId = irq_of_parse_and_map(node, 0);
 		gCmdqDev.irqSecId = irq_of_parse_and_map(node, 1);
-#ifdef CMDQ_USE_CCF
 		gCmdqDev.clk_gce = devm_clk_get(&pDevice->dev, "GCE");
-#endif				/* defined(CMDQ_USE_CCF) */
 #endif
 
 		CMDQ_LOG

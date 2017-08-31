@@ -17,9 +17,6 @@
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
-#ifndef CMDQ_USE_CCF
-#include <mach/mt_clkmgr.h>
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 /* unmark after m4u ready */
 /* #include "m4u.h" */
@@ -42,18 +39,6 @@ struct CmdqMdpModuleBaseVA {
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 static atomic_t gSMILarb4Usage;
 
-#ifndef CMDQ_USE_CCF
-#define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
-uint32_t cmdq_mdp_enable_clock_##FN_NAME(bool enable)	\
-{		\
-	return cmdq_dev_enable_mtk_clock(enable, MT_CG_DISP0_##HW_NAME, "CMDQ_MDP_"#HW_NAME);	\
-}
-#define IMP_MDP_HW_CLOCK_IS_ENABLE(FN_NAME, HW_NAME)	\
-bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
-{		\
-	return cmdq_dev_mtk_clock_is_enable(MT_CG_DISP0_##HW_NAME);	\
-}
-#else
 struct CmdqMdpModuleClock {
 	struct clk *clk_CAM_MDP;
 	struct clk *clk_MDP_RDMA0;
@@ -81,7 +66,6 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 {		\
 	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
 }
-#endif				/* !defined(CMDQ_USE_CCF) */
 
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA0);
@@ -508,7 +492,7 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 /* Common Clock Framework */
 void cmdq_mdp_init_module_clk(void)
 {
-#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
+#if defined(CMDQ_OF_SUPPORT)
 	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
@@ -925,7 +909,7 @@ uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 
 void testcase_clkmgr_mdp(void)
 {
-#if defined(CMDQ_PWR_AWARE) && defined(CMDQ_USE_CCF)
+#if defined(CMDQ_PWR_AWARE)
 	/* RDMA clk test with src buffer addr */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_RDMA0,
 			     "CMDQ_TEST_MDP_RDMA0",
@@ -981,7 +965,7 @@ void testcase_clkmgr_mdp(void)
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_COLOR0,
 				 "CMDQ_TEST_MDP_COLOR",
 				 MDP_COLOR_BASE + 0x438, 0x000001AB, MDP_COLOR_BASE + 0x438, true);
-#endif				/* defined(CMDQ_USE_CCF) */
+#endif
 }
 
 void cmdq_mdp_platform_function_setting(void)

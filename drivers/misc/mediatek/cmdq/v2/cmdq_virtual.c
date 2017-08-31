@@ -756,10 +756,6 @@ ssize_t cmdq_virtual_print_status_clock(char *buf)
 	/* MT_CG_DISP0_MUTEX_32K is removed in this platform */
 	pBuffer += sprintf(pBuffer, "MT_CG_INFRA_GCE: %d\n", cmdq_dev_gce_clock_is_enable());
 
-#if !defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
-	pBuffer += sprintf(pBuffer, ", MT_CG_DISP0_MUTEX_32K: %d", clock_is_on(MT_CG_DISP0_MUTEX_32K));
-#endif
-
 	pBuffer += sprintf(pBuffer, "\n");
 #endif
 
@@ -772,10 +768,6 @@ void cmdq_virtual_print_status_seq_clock(struct seq_file *m)
 #ifdef CMDQ_PWR_AWARE
 	/* MT_CG_DISP0_MUTEX_32K is removed in this platform */
 	seq_printf(m, "MT_CG_INFRA_GCE: %d", cmdq_dev_gce_clock_is_enable());
-
-#if !defined(CMDQ_USE_CCF) && defined(CMDQ_USE_LEGACY)
-	seq_printf(m, ", MT_CG_DISP0_MUTEX_32K: %d", clock_is_on(MT_CG_DISP0_MUTEX_32K));
-#endif
 
 	seq_puts(m, "\n");
 #endif
@@ -888,18 +880,6 @@ void cmdq_virtual_dump_clock_gating(void)
 #ifdef CMDQ_USE_LEGACY
 	value[2] = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + 0x890);
 	CMDQ_ERR("MMSYS_DUMMY_REG: 0x%08x\n", value[2]);
-#endif
-
-#if !defined(CMDQ_USE_CCF) && !defined(CONFIG_MTK_FPGA)
-	CMDQ_ERR("DisSys clock state %d\n", subsys_is_on(SYS_DIS));
-
-#ifdef CMDQ_DUMP_IMG_CLOCK_STATE
-	CMDQ_ERR("IMGSys clock state %d\n", subsys_is_on(SYS_IMG));
-#else
-	CMDQ_ERR("ISPSys clock state %d\n", subsys_is_on(SYS_ISP));
-	CMDQ_ERR("VDESys clock state %d\n", subsys_is_on(SYS_VDE));
-#endif
-
 #endif
 }
 
