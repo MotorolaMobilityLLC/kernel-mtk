@@ -2097,11 +2097,6 @@ UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en)
 }
 #endif
 
-VOID wmt_lib_read_fw_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
-{
-	stp_dbg_poll_cpupcr(times, sleep, cmd);
-}
-
 #if CONSYS_ENALBE_SET_JTAG
 UINT32 wmt_lib_jtag_flag_set(UINT32 en)
 {

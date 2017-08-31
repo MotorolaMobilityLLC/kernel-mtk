@@ -741,6 +741,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 	UINT32 while_loop_counter = 0;
 	UINT32 own_fail_counter = 0;
 	UINT32 val = 0;
+	UINT32 delay_us = 10000;
+	UINT32 chisr_error_count = 3;
 
 	STPSDIO_INFO_FUNC("stp_tx_rx_thread start running...\n");
 	if (pInfo == NULL) {
@@ -817,31 +819,36 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 
 			if (chisr == 0x0) {
 				STPSDIO_ERR_FUNC("******CHISR == 0*****\n");
-
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CCIR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CCIR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHLPCR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CHLPCR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CSDIOCSR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CSDIOCSR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHCR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CHCR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHISR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CHISR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHIER,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CHIER == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CTFSR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CTFSR == 0x%x*****\n", val);
-				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CRPLR,
-						&val, 0);
-				STPSDIO_ERR_FUNC("******CRPLR == 0x%x*****\n", val);
+				while (chisr_error_count) {
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CCIR, &val, 0);
+					STPSDIO_ERR_FUNC("******CCIR == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CHLPCR, &val, 0);
+					STPSDIO_ERR_FUNC("******CHLPCR == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CSDIOCSR, &val, 0);
+					STPSDIO_ERR_FUNC("******CSDIOCSR == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CHCR, &val, 0);
+					STPSDIO_ERR_FUNC("******CHCR == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CHISR, &chisr, 0);
+					STPSDIO_ERR_FUNC("******CHISR == 0x%x*****\n", chisr);
+					if (chisr)
+						break;
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CHIER, &val, 0);
+					STPSDIO_ERR_FUNC("******CHIER == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CTFSR, &val, 0);
+					STPSDIO_ERR_FUNC("******CTFSR == 0x%x*****\n", val);
+					stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT,
+							  clt_ctx, CRPLR, &val, 0);
+					STPSDIO_ERR_FUNC("******CRPLR == 0x%x*****\n", val);
+					chisr_error_count--;
+					osal_usleep_range(delay_us, 2 * delay_us);
+				}
 			}
 
 			if (chisr & FW_OWN_BACK_INT)
