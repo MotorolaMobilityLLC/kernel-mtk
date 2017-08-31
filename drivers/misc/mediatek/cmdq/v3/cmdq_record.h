@@ -66,8 +66,6 @@ struct cmdqRecStruct {
 	uint8_t local_var_num;
 	struct cmdq_stack_node *if_stack_node;
 	struct cmdq_stack_node *while_stack_node;
-	/* sub-function */
-	struct cmdq_sub_function sub_function;
 
 	/* profile marker */
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
@@ -889,44 +887,6 @@ extern "C" {
  */
 	s32 cmdq_op_wait_event_timeout(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out,
 			enum CMDQ_EVENT_ENUM wait_event, u32 timeout_time);
-
-/**
- * Create sub-function handle
- * Parameter:
- *     handle: the command queue recorder handle
- *     inCount: input number of arguments
- *     outCount: output number of arguments
- * Return:
- *     0 for success; else the error code is returned
- */
-	int32_t cmdq_func_create(struct cmdqRecStruct **handle, uint32_t in_num, uint32_t out_num);
-
-/**
- * Mark this sub-function handle can be use
- * Parameter:
- *     handle: the command queue recorder handle
- * Return:
- *     0 for success; else the error code is returned
- */
-	int32_t cmdq_func_end(struct cmdqRecStruct *handle);
-
-/**
- * Call sub-function handle
- * Parameter:
- *     handle: the command queue recorder handle
- * Return:
- *     0 for success; else the error code is returned
- */
-	int32_t cmdq_func_call(struct cmdqRecStruct *handle, struct cmdqRecStruct *sub_func_handle, ...);
-
-/**
- * Destroy sub-function handle
- * Parameter:
- *     handle: the command queue recorder handle
- * Return:
- *     0 for success; else the error code is returned
- */
-	int32_t cmdq_func_destroy(struct cmdqRecStruct *handle);
 
 /**
  * Append write command to the recorder
