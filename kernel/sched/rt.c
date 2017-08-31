@@ -8,8 +8,6 @@
 #include <trace/events/sched.h>
 #endif
 
-#include <mt-plat/aee.h>
-
 #include <linux/slab.h>
 #include <linux/irq_work.h>
 #ifdef CONFIG_MT_RT_THROTTLE_MON
@@ -182,8 +180,7 @@ void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
 
 	lockdep_set_class(&rt_rq->rt_runtime_lock, &per_cpu(spin_key[idx], cpu));
 	per_cpu(spin_key_idx, cpu)++;
-	if (per_cpu(spin_key_idx, cpu) >= MAX_SPIN_KEY)
-		aee_kernel_exception("Sched exception", "init_rt_rq: spin_key_idx >= MAX_SPIN_KEY");
+	BUG_ON(per_cpu(spin_key_idx, cpu) >= MAX_SPIN_KEY);
 	raw_spin_unlock(&rt_rq_runtime_spinlock);
 #endif
 

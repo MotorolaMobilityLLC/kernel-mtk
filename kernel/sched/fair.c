@@ -31,8 +31,6 @@
 #include <linux/migrate.h>
 #include <linux/task_work.h>
 
-#include <mt-plat/aee.h>
-
 #include <trace/events/sched.h>
 
 #include "sched.h"
@@ -4216,8 +4214,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		add_nr_running(rq, 1);
 #ifndef CONFIG_CFS_BANDWIDTH
-		if (rq->cfs.nr_running > rq->cfs.h_nr_running)
-			aee_kernel_exception("Sched exception", "enqueue_task_fair: cfs.nr_running > cfs.h_nr_running");
+		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
 #endif
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		inc_nr_heavy_running(__func__, p, 1, false);
@@ -4284,8 +4281,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		sub_nr_running(rq, 1);
 #ifndef CONFIG_CFS_BANDWIDTH
-		if (rq->cfs.nr_running > rq->cfs.h_nr_running)
-			aee_kernel_exception("Sched exception", "dequeue_task_fair: cfs.nr_running > cfs.h_nr_running");
+		BUG_ON(rq->cfs.nr_running > rq->cfs.h_nr_running);
 #endif
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		inc_nr_heavy_running(__func__, p, -1, false);
