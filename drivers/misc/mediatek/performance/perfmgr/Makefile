@@ -19,6 +19,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 ccflags-y += -DMTK_BOOST_SUPPORT
 obj-y += $(MTK_PLATFORM)/
+else
+obj-y += common/
 endif
 
 ifeq ($(CONFIG_MTK_PERFMGR_TOUCH_BOOST),y)

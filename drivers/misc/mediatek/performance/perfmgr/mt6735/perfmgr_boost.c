@@ -58,3 +58,8 @@ void perfmgr_boost(int enable, int core, int freq)
 	}
 }
 
+/* redundant API */
+void perfmgr_forcelimit_cpuset_cancel(void)
+{
+
+}
