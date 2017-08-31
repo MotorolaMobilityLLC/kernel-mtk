@@ -3480,7 +3480,7 @@ bool _hwPowerOn(PowerType type, int powerVolt)
 			//PK_DBG("pmic_get_register_value(PMIC_RG_VCAMD2_CAL) %d;\n", pmic_get_register_value(PMIC_RG_VCAMD2_CAL));
 		//}
 		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
-			PK_DBG("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
+			PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
 			//return ret;
 		}
 		if (regulator_enable(reg) != 0) {
