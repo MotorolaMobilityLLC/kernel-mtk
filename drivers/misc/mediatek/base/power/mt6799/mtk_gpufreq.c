@@ -758,7 +758,7 @@ static void mt_gpufreq_set_initial(void)
 		gpufreq_err
 			("Set to LPM since GPU idx not found according to current Vcore = %d mV\n",
 			 cur_volt / 100);
-		g_cur_gpu_OPPidx = mt_gpufreqs_num - 1;
+		g_cur_gpu_OPPidx = 0;
 		mt_gpufreq_set(cur_freq, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_khz,
 				   cur_volt, mt_gpufreqs[g_cur_gpu_OPPidx].gpufreq_volt);
 	}
@@ -1366,10 +1366,10 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 	if (volt_new > volt_old) {
 		/* VSRAM */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
-							target_vsram*10, PMIC_MAX_VSRAM_VGPU*10);
+							target_vsram*10, (PMIC_MAX_VSRAM_VGPU*10) + 125);
 		/* VGPU */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
-							volt_new*10, PMIC_MAX_VGPU*10);
+							volt_new*10, (PMIC_MAX_VGPU*10) + 125);
 	} else {
 		/* VGPU */
 		regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
