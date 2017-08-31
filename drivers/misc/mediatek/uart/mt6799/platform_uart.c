@@ -1588,7 +1588,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 #ifdef POWER_FEATURE
 
 #if !defined(CONFIG_MTK_CLKMGR)
-		clk_en_ret = clk_prepare_enable(setting->clk_uart_main);
+		clk_en_ret = clk_enable(setting->clk_uart_main);
 		if (clk_en_ret) {
 			pr_err("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_main:%p\n", uart->nport,
 			       clk_en_ret, setting->clk_uart_main);
@@ -1597,7 +1597,7 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 				  setting->clk_uart_main);
 			if ((uart != console_port)
 			    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
-				clk_en_ret = clk_prepare_enable(clk_uart_dma);
+				clk_en_ret = clk_enable(clk_uart_dma);
 				if (clk_en_ret) {
 					pr_err("[UART%d][CCF]enable clk_uart_main failed. ret:%d, clk_dma:%p\n",
 					       uart->nport, clk_en_ret, clk_uart_dma);
@@ -1643,10 +1643,10 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 		pr_debug("[UART%d][CCF]disable clk_uart%d_main:%p\n", uart->nport, uart->nport,
 			  setting->clk_uart_main);
 
-		clk_disable_unprepare(setting->clk_uart_main);
+		clk_disable(setting->clk_uart_main);
 		if ((uart != console_port)
 		    && (uart->tx_mode == UART_TX_VFIFO_DMA || uart->rx_mode == UART_RX_VFIFO_DMA)) {
-			clk_disable_unprepare(clk_uart_dma);
+			clk_disable(clk_uart_dma);
 			pr_debug("[UART%d][CCF]disable clk_uart_dma:%p\n", uart->nport, clk_uart_dma);
 		}
 #else				/* !defined(CONFIG_MTK_CLKMGR) */
