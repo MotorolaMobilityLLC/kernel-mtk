@@ -52,6 +52,9 @@ void __iomem *clk_apmixed_base1;
 static void mt_reg_sync_writel(u32 val, volatile u32 *addr)
 {
 	*addr = val;
+/* Memory barrier necessary as speculative write
+*of the register write.
+*/
 	mb();
 }
 
