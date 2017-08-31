@@ -22,6 +22,7 @@ config RT5081_PMU_CHARGER_TYPE_DETECT
 	bool "RT5081 PMU Charger Type Detect"
 	depends on RT5081_PMU_CHARGER
 	depends on MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	default MTK_EXTERNAL_CHARGER_TYPE_DETECT
 	help
 	  Say Y here
 	  to enable
