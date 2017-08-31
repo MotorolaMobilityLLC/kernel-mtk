@@ -233,6 +233,16 @@ void __iomem *venc_gcon_base;
 #define APLL2_CON0		(apmixed_base + 0x02C0)
 #define APLL2_PWR_CON0		(apmixed_base + 0x02D8)
 
+#define ARMPLL1_CON0		(apmixed_base + 0x0310)
+#define ARMPLL1_CON1		(apmixed_base + 0x0314)
+#define ARMPLL1_PWR_CON0	(apmixed_base + 0x031C)
+#define ARMPLL2_CON0		(apmixed_base + 0x0320)
+#define ARMPLL2_CON1		(apmixed_base + 0x0324)
+#define ARMPLL2_PWR_CON0	(apmixed_base + 0x032C)
+#define ARMPLL3_CON0		(apmixed_base + 0x0330)
+#define ARMPLL3_CON1		(apmixed_base + 0x0334)
+#define ARMPLL3_PWR_CON0	(apmixed_base + 0x033C)
+
 #define AUDIO_TOP_CON0		(audio_base + 0x0000)
 #define AUDIO_TOP_CON1		(audio_base + 0x0004)
 
@@ -2853,6 +2863,53 @@ void pll_force_off(void)
 	clk_clrl(APLL2_CON0, PLL_EN);
 	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
+}
+
+void armpll_control(int id, int on)
+{
+	if (id == 1) {
+		if (on) {
+			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) | 0x01), ARMPLL1_PWR_CON0);
+			udelay(100);
+			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) & 0xfffffffd), ARMPLL1_PWR_CON0);
+			udelay(10);
+			mt_reg_sync_writel((clk_readl(ARMPLL1_CON1) | 0x80000000), ARMPLL1_CON1);
+			mt_reg_sync_writel((clk_readl(ARMPLL1_CON0) | 0x01), ARMPLL1_CON0);
+			udelay(100);
+		} else {
+			mt_reg_sync_writel((clk_readl(ARMPLL1_CON0) & 0xfffffffe), ARMPLL1_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) | 0x00000002), ARMPLL1_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL1_PWR_CON0) & 0xfffffffe), ARMPLL1_PWR_CON0);
+		}
+	} else if (id == 2) {
+		if (on) {
+			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) | 0x01), ARMPLL2_PWR_CON0);
+			udelay(100);
+			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) & 0xfffffffd), ARMPLL2_PWR_CON0);
+			udelay(10);
+			mt_reg_sync_writel((clk_readl(ARMPLL2_CON1) | 0x80000000), ARMPLL2_CON1);
+			mt_reg_sync_writel((clk_readl(ARMPLL2_CON0) | 0x01), ARMPLL2_CON0);
+			udelay(100);
+		} else {
+			mt_reg_sync_writel((clk_readl(ARMPLL2_CON0) & 0xfffffffe), ARMPLL2_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) | 0x00000002), ARMPLL2_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL2_PWR_CON0) & 0xfffffffe), ARMPLL2_PWR_CON0);
+		}
+	} else if (id == 3) {
+		if (on) {
+			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) | 0x01), ARMPLL3_PWR_CON0);
+			udelay(100);
+			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) & 0xfffffffd), ARMPLL3_PWR_CON0);
+			udelay(10);
+			mt_reg_sync_writel((clk_readl(ARMPLL3_CON1) | 0x80000000), ARMPLL3_CON1);
+			mt_reg_sync_writel((clk_readl(ARMPLL3_CON0) | 0x01), ARMPLL3_CON0);
+			udelay(100);
+		} else {
+			mt_reg_sync_writel((clk_readl(ARMPLL3_CON0) & 0xfffffffe), ARMPLL3_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) | 0x00000002), ARMPLL3_PWR_CON0);
+			mt_reg_sync_writel((clk_readl(ARMPLL3_PWR_CON0) & 0xfffffffe), ARMPLL3_PWR_CON0);
+		}
+	}
 }
 
 static int __init clk_mt6799_init(void)
