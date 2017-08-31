@@ -125,6 +125,8 @@ enum {
 
 	TCP_NOTIFY_EXT_DISCHARGE,
 
+	TCP_NOTIFY_HARD_RESET_STATE,
+
 #ifdef CONFIG_USB_PD_REV30
 	TCP_NOTIFY_ALERT,
 	TCP_NOTIFY_STATUS,
@@ -236,6 +238,31 @@ struct tcp_ny_uvdm {
 	uint32_t *uvdm_data;
 };
 
+/*
+ * TCP_NOTIFY_HARD_RESET_STATE
+ *
+ * Please don't expect that every signal will have a corresponding result.
+ * The signal can be generated multiple times before receiving a result.
+ */
+
+enum {
+	/* HardReset finished because recv GoodCRC or TYPE-C only */
+	TCP_HRESET_RESULT_DONE = 0,
+
+	/* HardReset failed because detach or error recovery */
+	TCP_HRESET_RESULT_FAIL,
+
+	/* HardReset signal from Local Policy Engine */
+	TCP_HRESET_SIGNAL_SEND,
+
+	/* HardReset signal from Port Partner */
+	TCP_HRESET_SIGNAL_RECV,
+};
+
+struct tcp_ny_hard_reset_state {
+	uint8_t state;
+};
+
 struct tcp_notify {
 	union {
 		struct tcp_ny_enable_state en_state;
@@ -248,6 +275,7 @@ struct tcp_notify {
 		struct tcp_ny_ama_dp_attention ama_dp_attention;
 		struct tcp_ny_ama_dp_hpd_state ama_dp_hpd_state;
 		struct tcp_ny_uvdm uvdm_msg;
+		struct tcp_ny_hard_reset_state hreset_state;
 	};
 };
 

@@ -393,7 +393,11 @@ void chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_err("[chrdet_int_handler] Unplug Charger/USB\n");
+#ifndef CONFIG_TCPC_CLASS
 			mt_power_off();
+#else
+			return;
+#endif
 		}
 	}
 #endif

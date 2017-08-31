@@ -513,6 +513,18 @@ int charger_manager_get_zcv(struct charger_consumer *consumer, int idx, u32 *uV)
 	return 0;
 }
 
+int charger_manager_enable_kpoc_shutdown(struct charger_consumer *consumer,
+	bool en)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (en)
+		atomic_set(&info->enable_kpoc_shdn, 1);
+	else
+		atomic_set(&info->enable_kpoc_shdn, 0);
+	return 0;
+}
+
 int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb)
 {
@@ -1127,8 +1139,9 @@ static void kpoc_power_off_check(struct charger_manager *info)
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
 			__func__, vbus, boot_mode);
-		if (!mtk_is_pe30_running(info) && vbus < 2500) {
-			chr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
+		if (!mtk_is_pe30_running(info) && vbus < 2500
+			&& atomic_read(&info->enable_kpoc_shdn)) {
+			pr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
 			kernel_power_off();
 		}
 	}
@@ -1996,6 +2009,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mtk_charger_parse_dt(info, &pdev->dev);
 
 	mutex_init(&info->charger_lock);
+	atomic_set(&info->enable_kpoc_shdn, 1);
 	wake_lock_init(&info->charger_wakelock, WAKE_LOCK_SUSPEND, "charger suspend wakelock");
 	spin_lock_init(&info->slock);
 

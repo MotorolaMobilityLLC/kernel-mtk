@@ -79,5 +79,7 @@ extern int charger_manager_enable_high_voltage_charging(struct charger_consumer 
 extern int charger_manager_enable_power_path(struct charger_consumer *consumer,
 	int idx, bool en);
 extern int charger_manager_get_zcv(struct charger_consumer *consumer, int idx, u32 *uV);
+extern int charger_manager_enable_kpoc_shutdown(struct charger_consumer *consumer,
+	bool en);
 
 #endif /* __MTK_CHARGER_H__ */

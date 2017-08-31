@@ -601,6 +601,18 @@ static inline int tcpci_disable_force_discharge(
 }
 
 #ifdef CONFIG_USB_POWER_DELIVERY
+
+static inline int tcpci_notify_hard_reset_state(
+	struct tcpc_device *tcpc, uint8_t state)
+{
+	struct tcp_notify tcp_noti;
+
+	tcp_noti.hreset_state.state = state;
+
+	return srcu_notifier_call_chain(&tcpc->evt_nh,
+				TCP_NOTIFY_HARD_RESET_STATE, &tcp_noti);
+}
+
 static inline int tcpci_enter_mode(struct tcpc_device *tcpc,
 	uint16_t svid, uint8_t ops, uint32_t mode)
 {

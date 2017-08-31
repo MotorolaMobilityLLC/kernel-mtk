@@ -355,6 +355,9 @@ struct charger_manager {
 	bool charger_thread_timeout;
 	wait_queue_head_t  wait_que;
 	bool charger_thread_polling;
+
+	/* kpoc */
+	atomic_t enable_kpoc_shdn;
 };
 
 /* charger related module interface */
