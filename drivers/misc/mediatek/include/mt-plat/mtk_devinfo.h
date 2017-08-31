@@ -17,6 +17,7 @@
 #include <linux/types.h>
 
 extern u32 get_devinfo_with_index(u32 index);
+extern u32 devinfo_ready(void);
 extern u32 devinfo_get_size(void);
 #endif
 
