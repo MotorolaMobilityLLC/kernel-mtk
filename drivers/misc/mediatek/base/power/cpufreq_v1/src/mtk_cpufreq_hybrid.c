@@ -76,6 +76,7 @@ int Ripi_cpu_dvfs_thread(void *data)
 	unsigned long flags;
 	uint32_t pwdata[4];
 	struct cpufreq_freqs freqs;
+	int previous_limit = -1;
 
 	/* cpufreq_info("CPU DVFS received thread\n"); */
 	ptpod_act.data = (void *)ptpod_buf;
@@ -116,7 +117,17 @@ int Ripi_cpu_dvfs_thread(void *data)
 			/* Avoid memory issue */
 			if (p->mt_policy && p->mt_policy->governor && p->mt_policy->governor_enabled &&
 				(p->mt_policy->cpu < 10) && (p->mt_policy->cpu >= 0)) {
-				if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF)) {
+				/* Update policy min/max */
+				previous_limit = p->idx_opp_ppm_limit;
+				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
+				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i)) & 0xF);
+				p->mt_policy->min =
+					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
+				p->mt_policy->max =
+					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+				/* Policy notification */
+				if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF) ||
+					(p->idx_opp_ppm_limit != previous_limit)) {
 					cpufreq_ver("DVFS - cpu%d do postchange\n", p->mt_policy->cpu);
 					freqs.cpu = p->mt_policy->cpu;
 					freqs.old = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl);
@@ -125,13 +136,6 @@ int Ripi_cpu_dvfs_thread(void *data)
 					cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
 					p->idx_opp_tbl = (int)(pwdata[0] >> (8*i) & 0xF);
 				}
-				/* Update policy min/max */
-				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
-				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i)) & 0xF);
-				p->mt_policy->min =
-					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
-				p->mt_policy->max =
-					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
 			}
 		}
 		cpufreq_unlock(flags);
@@ -151,15 +155,14 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	unsigned long flags;
 
 	/* cpufreq_ver("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd); */
-
+	spin_lock_irqsave(&cpudvfs_send_lock, flags);
 	switch (cmd) {
 	case IPI_DVFS_INIT_PTBL:
 		cdvfs_d->cmd = cmd;
 
 		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -173,8 +176,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -190,11 +192,8 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
 		aee_record_cpu_dvfs_cb(6);
-		spin_lock_irqsave(&cpudvfs_send_lock, flags);
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
 		aee_record_cpu_dvfs_cb(7);
-
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -210,8 +209,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("I'd like to set cluster%d freq to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -226,8 +224,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("I'd like to set cluster%d volt to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -241,8 +238,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		cpufreq_ver("I'd like to get volt from Buck%d\n", cdvfs_d->u.set_fv.arg[0]);
 
-		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		cpufreq_ver("Get volt = %d\n", ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
@@ -257,12 +253,8 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cdvfs_d->cmd = cmd;
 
 		cpufreq_ver("I'd like to get freq from pll%d\n", cdvfs_d->u.set_fv.arg[0]);
-		if (is_in_suspend()) {
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
-		} else
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 		cpufreq_ver("Get freq = %d\n", ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
@@ -279,10 +271,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("I'd like to set turbo mode to %d(%d, %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1], cdvfs_d->u.set_fv.arg[2]);
 
-		spin_lock_irqsave(&cpudvfs_send_lock, flags);
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
-
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -295,6 +284,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
+	spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
 
 	return ret;
 }
@@ -1092,8 +1082,6 @@ int cpuhvfs_module_init(void)
 
 	/* SW Governor Report */
 	spin_lock_init(&cpudvfs_lock);
-	/* ipi send and ack */
-	spin_lock_init(&cpudvfs_send_lock);
 	Ripi_cpu_dvfs_task = kthread_run(Ripi_cpu_dvfs_thread, NULL, "ipi_cpu_dvfs_rtask");
 
 	return 0;
@@ -1149,6 +1137,9 @@ static int cpuhvfs_pre_module_init(void)
 	}
 
 	init_cpuhvfs_debug_repo();
+
+	/* ipi send and ack */
+	spin_lock_init(&cpudvfs_send_lock);
 	cpuhvfs_pvt_tbl_create();
 	cpuhvfs_set_init_ptbl();
 
