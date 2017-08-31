@@ -173,7 +173,7 @@ static struct fp_cb *add_track_table(struct sk_buff *skb, struct fp_desc *desc)
 	struct fp_track_table_t *tmp_track_table = NULL;
 
 	if (!skb || !desc) {
-		fp_printk(K_INFO, "%s: Null input, skb[%p], desc[%p].\n", __func__, skb, desc);
+		fp_printk(K_ERR, "%s: Null input, skb[%p], desc[%p].\n", __func__, skb, desc);
 		goto out;
 	}
 
@@ -204,7 +204,7 @@ static struct fp_cb *add_track_table(struct sk_buff *skb, struct fp_desc *desc)
 	} else {
 		while (curr_track_table) {
 			if (list_cnt >= MAX_TRACK_TABLE_LIST) {
-				fp_printk(K_DEBUG, "%s: JQ_debug: Reach max hash list! Don't add track table[%p], skb[%p], hash[%d], remain buffer[%d].\n",
+				fp_printk(K_ERR, "%s: Reach max hash list! Don't add track table[%p], skb[%p], hash[%d], remain buffer[%d].\n",
 							__func__, track_table, skb, hash, buffer_cnt+1);
 
 				if (track_table)
@@ -866,6 +866,9 @@ void fastpath_out_nf_ipv4(
 					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
 					skb_tag->info.port = cb->dport;
 				}
+				fp_printk(K_DEBUG, "%s: Add IPv4 TCP MDT tag, in_netif[%d], out_netif[%d], port[%x], skb[%p], ip_id[%x], ip_checksum[%x].\n",
+							__func__, skb_tag->info.in_netif_id, skb_tag->info.out_netif_id,
+							skb_tag->info.port, skb, ip->ip_id, ip->ip_sum);
 			} else {
 				fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
 							__func__, skb, skb_headroom(skb));
@@ -902,6 +905,9 @@ void fastpath_out_nf_ipv4(
 						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
 						skb_tag->info.port = cb->dport;
 					}
+					fp_printk(K_DEBUG, "%s: Add IPv4 UDP MDT tag, in_netif[%d], out_netif[%d], port[%x], skb[%p], ip_id[%x], ip_checksum[%x].\n",
+							__func__, skb_tag->info.in_netif_id, skb_tag->info.out_netif_id,
+							skb_tag->info.port, skb, ip->ip_id, ip->ip_sum);
 				} else {
 					fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
 								__func__, skb, skb_headroom(skb));
@@ -1005,6 +1011,9 @@ void fastpath_out_nf_ipv6(
 					skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
 					skb_tag->info.port = cb->dport;
 				}
+				fp_printk(K_DEBUG, "%s: Add IPv6 TCP MDT tag, in_netif[%d], out_netif[%d], port[%x], skb[%p], tcp_checksum[%x].\n",
+							__func__, skb_tag->info.in_netif_id, skb_tag->info.out_netif_id,
+							skb_tag->info.port, skb, tcp->th_sum);
 			} else {
 				fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
 							__func__, skb, skb_headroom(skb));
@@ -1058,6 +1067,9 @@ void fastpath_out_nf_ipv6(
 						skb_tag->info.out_netif_id = fastpath_dev_name_to_id(out->name);
 						skb_tag->info.port = cb->dport;
 					}
+					fp_printk(K_DEBUG, "%s: Add IPv6 UDP MDT tag, in_netif[%d], out_netif[%d], port[%x], skb[%p], udp_checksum[%x].\n",
+							__func__, skb_tag->info.in_netif_id, skb_tag->info.out_netif_id,
+							skb_tag->info.port, skb, udp->uh_check);
 				} else {
 					fp_printk(K_ERR, "%s: Headroom of skb[%p] is not enough to add MDT tag, headroom[%d].\n",
 								__func__, skb, skb_headroom(skb));
