@@ -104,6 +104,9 @@ struct bmg_i2c_data {
 	atomic_t	trace;
 	atomic_t	suspend;
 	atomic_t	filter;
+	atomic_t gyro_debounce;	/*debounce time after enabling gyro */
+	atomic_t gyro_deb_on;	/*indicates if the debounce is on */
+	atomic_t gyro_deb_end;	/*the jiffies representing the end of debounce */
 	/* unmapped axis value */
 	s16	cali_sw[BMG_AXES_NUM+1];
 	/* hw offset */
@@ -531,7 +534,7 @@ static int bmg_set_powermode(struct i2c_client *client,
 		err += bmg_i2c_write_block(client,
 			BMI160_CMD_COMMANDS__REG, &data, 1);
 #endif
-		mdelay(55);
+		/* mdelay(55); */
 	}
 	if (err < 0) {
 		GYRO_ERR("set power mode failed, err = %d, sensor name = %s\n",
@@ -539,6 +542,19 @@ static int bmg_set_powermode(struct i2c_client *client,
 	}else {
 		obj->power_mode = power_mode;
 	}
+	/* set debounce */
+	if (power_mode == BMG_SUSPEND_MODE) {
+		atomic_set(&obj->gyro_deb_on, 0);
+	} else if (power_mode == BMG_NORMAL_MODE) {
+		atomic_set(&obj->gyro_deb_on, 1);
+		atomic_set(&obj->gyro_deb_end, jiffies + atomic_read(&obj->gyro_debounce) / (1000 / HZ));
+	} else {
+		err = -EINVAL;
+		GYRO_ERR("invalid power mode = %d\n", power_mode);
+		mutex_unlock(&obj->lock);
+		return err;
+	}
+	/* */
 	mutex_unlock(&obj->lock);
 	GYRO_LOG("set power mode = %d ok.\n", (int)data);
 	return err;
@@ -703,6 +719,18 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 	int gyro[BMG_AXES_NUM] = {0};
 	int err = 0;
 	struct bmg_i2c_data *obj = obj_i2c_data;
+
+	if (atomic_read(&obj->gyro_deb_on) == 1)	{
+		unsigned long endt = atomic_read(&obj->gyro_deb_end);
+
+		if (time_after(jiffies, endt))
+			atomic_set(&obj->gyro_deb_on, 0);
+
+		if (atomic_read(&obj->gyro_deb_on) == 1) {
+			err = -1;
+			return err;
+		}
+	}
 	err = bmg_read_raw_data(client, databuf);
 	if (err) {
 		GYRO_ERR("bmg read raw data failed.\n");
@@ -1440,8 +1468,12 @@ static int bmi160_gyro_set_delay(u64 ns)
 
 static int bmi160_gyro_get_data(int* x ,int* y,int* z, int* status)
 {
+	int err = 0;
 	char buff[BMG_BUFSIZE] = {0};
-	bmg_read_sensor_data(obj_i2c_data->client, buff, BMG_BUFSIZE);
+	err = bmg_read_sensor_data(obj_i2c_data->client, buff, BMG_BUFSIZE);
+	if (err)
+		return err;
+
 	sscanf(buff, "%x %x %x", x, y, z);		
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	return 0;
@@ -1474,6 +1506,11 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	obj_i2c_data = obj;
 	obj->client = bmi160_acc_i2c_client;
 	i2c_set_clientdata(obj->client, obj);
+	/*-----------------------------set debounce-----------------------------------------*/
+	atomic_set(&obj->gyro_debounce, 55);	/* bmi160 gyro typical start up time 55ms */
+	atomic_set(&obj->gyro_deb_on, 0);
+	atomic_set(&obj->gyro_deb_end, 0);
+	/*-----------------------------set debounce-----------------------------------------*/
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
 	obj->power_mode = BMG_UNDEFINED_POWERMODE;
