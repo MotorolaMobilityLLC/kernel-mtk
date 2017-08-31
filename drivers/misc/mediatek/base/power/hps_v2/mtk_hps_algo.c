@@ -219,8 +219,11 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				return 1;
 			}
 			if (!cpu_online(cpu)) {	/* For CPU offline */
-				if (cpu_up(cpu))
-					hps_warn("[Info]CPU %d ++!\n", cpu);
+				/*
+				 * if (cpu_up(cpu))
+				 *	hps_warn("[Info]CPU %d ++!\n", cpu);
+				 */
+				cpu_up(cpu);
 				++online_cores;
 			}
 			if (target_cores == online_cores)
@@ -253,8 +256,11 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				return 1;
 			}
 			if (cpu_online(cpu)) {
-				if (cpu_down(cpu))
-					hps_warn("[Info]CPU %d --!\n", cpu);
+				/*
+				 * if (cpu_down(cpu))
+				 *	hps_warn("[Info]CPU %d --!\n", cpu);
+				 */
+				cpu_down(cpu);
 				--online_cores;
 			}
 			if (target_cores == online_cores)
@@ -412,7 +418,8 @@ void hps_algo_main(void)
 	 * run algo or not by hps_ctxt.enabled
 	 */
 	if ((u64) ktime_to_ms(ktime_sub(ktime_get(), hps_ctxt.hps_hrt_ktime)) >= HPS_HRT_DBG_MS)
-		action_print = hrtbt_dbg = 1;
+		/*action_print = hrtbt_dbg = 1;*/
+		hrtbt_dbg = 1;
 	else
 		hrtbt_dbg = 0;
 
