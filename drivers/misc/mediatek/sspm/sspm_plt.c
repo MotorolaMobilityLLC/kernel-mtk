@@ -128,7 +128,10 @@ int __init sspm_plt_init(void)
 	struct task_struct *sspm_task;
 #endif
 	int ret, ackdata;
-	unsigned int last_ofs, last_sz;
+	unsigned int last_ofs;
+#if (SSPM_COREDUMP_SUPPORT || SSPM_LOGGER_SUPPORT || SSPM_TIMESYNC_SUPPORT)
+	unsigned int last_sz;
+#endif
 	unsigned int *mark;
 	unsigned char *b;
 
