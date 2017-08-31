@@ -331,9 +331,6 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	if (HifInfo->APMcuRegBaseAddr == NULL)
 		HifInfo->APMcuRegBaseAddr = ioremap(AP_MCU_DRV_BASE, AP_MCU_TX_RX_LENGTH);
 
-	DBGLOG(INIT, INFO, "[WiFi/HIF]HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
-	       HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
-
 	/* default disable DMA */
 	HifInfo->fgDmaEnable = FALSE;
 	HifInfo->DmaRegBaseAddr = 0;
@@ -360,7 +357,10 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 			break;
 		}
 	}
-	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID = 0x%x\n", HifInfo->ChipID);
+
+	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID=0x%x, HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
+		HifInfo->ChipID, HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
+
 #ifdef CONFIG_OF
 #if !defined(CONFIG_MTK_CLKMGR)
 	HifInfo->clk_wifi_dma = devm_clk_get(&HifAhbPDev->dev, "wifi-dma");

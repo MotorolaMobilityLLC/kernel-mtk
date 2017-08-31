@@ -1262,11 +1262,13 @@ VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 			for (ucIdx = 0; ucIdx < 5; ucIdx++) {
 				prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx] =
 					prEvent->rLteSafeChn.au4SafeChannelBitmask[ucIdx];
-
-				DBGLOG(P2P, INFO,
-				       "[ACS]LTE safe channels[%d]=0x%08x\n", ucIdx,
-				       prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
 			}
+			DBGLOG(P2P, INFO, "[ACS]LTE safe channel bitmask: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+			    prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[0],
+			    prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[1],
+			    prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[2],
+			    prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[3],
+			    prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[4]);
 		}
 
 		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
