@@ -155,6 +155,10 @@ int qmu_init_gpd_pool(struct device *dev)
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 
+	#ifdef MUSB_QMU_LIMIT_SUPPORT
+	for (i = 1; i <= MAX_QMU_EP; i++)
+		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = isoc_ep_gpd_count;
+	#else
 	if (!mtk_qmu_max_gpd_num)
 		mtk_qmu_max_gpd_num = DFT_MAX_GPD_NUM;
 
@@ -167,7 +171,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		else
 			Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 	}
-
+	#endif
 	gpd_sz = (u32) (u64) sizeof(TGPD);
 	QMU_INFO("sizeof(TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
@@ -399,9 +403,11 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		csr |= MUSB_RXCSR_DMAENAB;
 
 		/* check ISOC */
-		musb_ep = &musb->endpoints[ep_num].ep_out;
-		if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
+		if (!musb->is_host) {
+			musb_ep = &musb->endpoints[ep_num].ep_out;
+			if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
 			csr |= MUSB_RXCSR_P_ISO;
+		}
 		musb_writew(epio, MUSB_RXCSR, csr);
 
 		/* turn off intrRx */
@@ -465,9 +471,12 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		csr |= MUSB_TXCSR_DMAENAB;
 
 		/* check ISOC */
-		musb_ep = &musb->endpoints[ep_num].ep_in;
-		if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
-			csr |= MUSB_TXCSR_P_ISO;
+		if (!musb->is_host) {
+			musb_ep = &musb->endpoints[ep_num].ep_in;
+			if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
+				csr |= MUSB_TXCSR_P_ISO;
+		}
+
 		musb_writew(epio, MUSB_TXCSR, csr);
 
 		/* turn off intrTx */
@@ -1187,7 +1196,7 @@ void mtk_qmu_host_rx_err(struct musb *musb, u8 epnum)
 	u16 rx_csr, val;
 	struct musb_hw_ep *hw_ep = musb->endpoints + epnum;
 	void __iomem *epio = hw_ep->regs;
-	struct musb_qh *qh = hw_ep->out_qh;
+	struct musb_qh *qh = hw_ep->in_qh;
 	bool done = false;
 	u32 status = 0;
 	void __iomem *mbase = musb->mregs;
@@ -1264,9 +1273,9 @@ finished:
 
 		sprintf(string, "USB20_HOST, RXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
-#ifdef CONFIG_MEDIATEK_SOLUTION
+		#ifdef CONFIG_MEDIATEK_SOLUTION
 		aee_kernel_warning(string, string);
-#endif
+		#endif
 	}
 }
 
@@ -1373,16 +1382,69 @@ finished:
 
 }
 
+static void flush_urb_status(struct musb_qh	*qh, struct urb *urb)
+{
+	qh->iso_idx = 0;
+	qh->offset = 0;
+	urb->actual_length = 0;
+	urb->status = -EINPROGRESS;
+	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
+		struct usb_iso_packet_descriptor	*d;
+		int index;
+
+		for (index = 0; index < urb->number_of_packets; index++) {
+			d = urb->iso_frame_desc + qh->iso_idx;
+			d->actual_length = 0;
+			d->status = -EXDEV;
+		}
+	}
+}
+
+static void mtk_qmu_host_err(struct musb *musb, u8 ep_num, u8 isRx)
+{
+	struct urb *urb;
+	struct musb_hw_ep *hw_ep = musb->endpoints + ep_num;
+	struct musb_qh			*qh;
+	struct usb_host_endpoint	*hep;
+
+	if (isRx)
+		qh = hw_ep->in_qh;
+	else
+		qh = hw_ep->out_qh;
+
+	hep = qh->hep;
+	/* same action as musb_flush_qmu */
+	mtk_qmu_stop(ep_num, isRx);
+	qmu_reset_gpd_pool(ep_num, isRx);
+
+	urb = next_urb(qh);
+	if (unlikely(!urb)) {
+		QMU_WARN("No URB.\n");
+		return;
+	}
+
+	flush_ep_csr(musb, ep_num, isRx);
+	if (usb_pipeisoc(urb->pipe)) {
+		mtk_qmu_enable(musb, ep_num, isRx);
+		list_for_each_entry(urb, &hep->urb_list, urb_list) {
+			QMU_WARN("%s qh:0x%p flush and kick urb:0x%p\n", __func__, qh, urb);
+			flush_urb_status(qh, urb);
+			mtk_kick_CmdQ(musb, isRx, qh, urb);
+		}
+	} else {
+		if (isRx)
+			mtk_qmu_host_rx_err(musb, ep_num);
+		else
+			mtk_qmu_host_tx_err(musb, ep_num);
+	}
+}
 void mtk_qmu_err_recover(struct musb *musb, u8 ep_num, u8 isRx, bool is_len_err)
 {
 	struct musb_ep *musb_ep;
 	struct musb_request *request;
 
 	if (musb->is_host) {
-		if (isRx)
-			mtk_qmu_host_rx_err(musb, ep_num);
-		else
-			mtk_qmu_host_tx_err(musb, ep_num);
+		mtk_qmu_host_err(musb, ep_num, isRx);
 		return;
 	}
 
@@ -1448,9 +1510,9 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 	u32 wQmuVal;
 	u32 wRetVal;
 	void __iomem *base = qmu_base;
-	u8 err_ep_num = 0;
+	u8 rx_err_ep_num = 0; /*RX & TX would be occur the same time*/
+	u8 tx_err_ep_num = 0;
 	bool is_len_err = false;
-	u8 isRx;
 
 	wQmuVal = qisar;
 
@@ -1461,15 +1523,14 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 				   MGC_O_QIRQ_RQEIR) & (~(MGC_ReadQIRQ32(base, MGC_O_QIRQ_RQEIMR)));
 		QMU_ERR("RQ error in QMU mode![0x%x]\n", wRetVal);
 
-		isRx = RXQ;
 		for (i = 1; i <= RXQ_NUM; i++) {
 			if (wRetVal & DQMU_M_RX_GPDCS_ERR(i)) {
 				QMU_ERR("RQ %d GPD checksum error!\n", i);
-				err_ep_num = i;
+				rx_err_ep_num = i;
 			}
 			if (wRetVal & DQMU_M_RX_LEN_ERR(i)) {
 				QMU_ERR("RQ %d receive length error!\n", i);
-				err_ep_num = i;
+				rx_err_ep_num = i;
 				is_len_err = true;
 			}
 			if (wRetVal & DQMU_M_RX_ZLP_ERR(i))
@@ -1480,7 +1541,6 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 
 	/* TXQ ERROR */
 	if (wQmuVal & DQMU_M_TXQ_ERR) {
-		isRx = TXQ;
 		wRetVal =
 		    MGC_ReadQIRQ32(base,
 				   MGC_O_QIRQ_TQEIR) & (~(MGC_ReadQIRQ32(base, MGC_O_QIRQ_TQEIMR)));
@@ -1489,15 +1549,15 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 		for (i = 1; i <= RXQ_NUM; i++) {
 			if (wRetVal & DQMU_M_TX_BDCS_ERR(i)) {
 				QMU_ERR("TQ %d BD checksum error!\n", i);
-				err_ep_num = i;
+				tx_err_ep_num = i;
 			}
 			if (wRetVal & DQMU_M_TX_GPDCS_ERR(i)) {
 				QMU_ERR("TQ %d GPD checksum error!\n", i);
-				err_ep_num = i;
+				tx_err_ep_num = i;
 			}
 			if (wRetVal & DQMU_M_TX_LEN_ERR(i)) {
 				QMU_ERR("TQ %d buffer length error!\n", i);
-				err_ep_num = i;
+				tx_err_ep_num = i;
 				is_len_err = true;
 			}
 		}
@@ -1506,7 +1566,6 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 
 	/* RX EP ERROR */
 	if (wQmuVal & DQMU_M_RXEP_ERR) {
-		isRx = RXQ;
 		wRetVal =
 		    MGC_ReadQIRQ32(base,
 				   MGC_O_QIRQ_REPEIR) &
@@ -1516,7 +1575,7 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 		for (i = 1; i <= RXQ_NUM; i++) {
 			if (wRetVal & DQMU_M_RX_EP_ERR(i)) {
 				QMU_ERR("RX EP %d ERR\n", i);
-				err_ep_num = i;
+				rx_err_ep_num = i;
 			}
 		}
 
@@ -1525,7 +1584,6 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 
 	/* TX EP ERROR */
 	if (wQmuVal & DQMU_M_TXEP_ERR) {
-		isRx = TXQ;
 		wRetVal =
 		    MGC_ReadQIRQ32(base,
 				   MGC_O_QIRQ_TEPEIR) &
@@ -1535,7 +1593,7 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 		for (i = 1; i <= TXQ_NUM; i++) {
 			if (wRetVal & DQMU_M_TX_EP_ERR(i)) {
 				QMU_ERR("TX EP %d ERR\n", i);
-				err_ep_num = i;
+				tx_err_ep_num = i;
 			}
 		}
 
@@ -1571,6 +1629,9 @@ void mtk_qmu_irq_err(struct musb *musb, u32 qisar)
 	}
 
 	/* QMU ERR RECOVER , only servie one ep error ? */
-	if (err_ep_num)
-		mtk_qmu_err_recover(musb, err_ep_num, isRx, is_len_err);
+	if (rx_err_ep_num)
+		mtk_qmu_err_recover(musb, rx_err_ep_num, 1, is_len_err);
+
+	if (tx_err_ep_num)
+		mtk_qmu_err_recover(musb, tx_err_ep_num, 0, is_len_err);
 }

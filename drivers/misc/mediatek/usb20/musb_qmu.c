@@ -483,7 +483,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 
 			musb_writew(epio, MUSB_RXCSR, MUSB_RXCSR_DMAENAB);
 			/*CC: speed */
-			musb_writeb(epio, MUSB_RXTYPE, qh->type_reg);
+			musb_writeb(epio, MUSB_RXTYPE, (qh->type_reg | usb_pipeendpoint(urb->pipe)));
 			musb_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
 #ifdef CONFIG_USB_MTK_HDRC
 			if (musb->is_multipoint) {
@@ -504,7 +504,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			musb_writew(epio, MUSB_TXMAXP, qh->maxpacket);
 			musb_writew(epio, MUSB_TXCSR, MUSB_TXCSR_DMAENAB);
 			/*CC: speed?*/
-			musb_writeb(epio, MUSB_TXTYPE, qh->type_reg);
+			musb_writeb(epio, MUSB_TXTYPE, (qh->type_reg | usb_pipeendpoint(urb->pipe)));
 			musb_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
 #ifdef CONFIG_USB_MTK_HDRC
 			if (musb->is_multipoint) {
