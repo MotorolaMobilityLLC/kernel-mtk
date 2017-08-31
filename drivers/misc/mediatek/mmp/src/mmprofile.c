@@ -404,8 +404,7 @@ static void mmprofile_force_start(int start)
 	MMP_LOG(ANDROID_LOG_DEBUG, "+start %d", start);
 	if (start && (!mmprofile_globals.start)) {
 		mmprofile_init_buffer();
-		if (start == 0)
-			mmprofile_reset_buffer();
+		mmprofile_reset_buffer();
 	}
 	mmprofile_globals.start = start;
 	MMP_LOG(ANDROID_LOG_DEBUG, "-start=%d", mmprofile_globals.start);
@@ -438,8 +437,7 @@ static void mmprofile_remote_start(int start)
 	MMP_LOG(ANDROID_LOG_DEBUG, "remote +start %d", start);
 	if (start && (!mmprofile_globals.start)) {
 		mmprofile_init_buffer();
-		if (start == 0)
-			mmprofile_reset_buffer();
+		mmprofile_reset_buffer();
 	}
 	mmprofile_globals.start = start;
 	MMP_LOG(ANDROID_LOG_DEBUG, "remote -start=%d", mmprofile_globals.start);
