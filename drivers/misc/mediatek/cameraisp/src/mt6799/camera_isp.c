@@ -18,6 +18,11 @@
  *     This file provid the other drivers ISP relative functions
  *
  ******************************************************************************/
+/* MET: define to enable MET*/
+#define ISP_MET_READY
+
+
+
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/cdev.h>
@@ -90,6 +95,12 @@
 #include <linux/of_irq.h>       /* for device tree */
 #include <linux/of_address.h>   /* for device tree */
 #endif
+
+#if defined(ISP_MET_READY)
+/*MET:met mmsys profile*/
+#include <mt-plat/met_drv.h>
+#endif
+
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
@@ -8854,6 +8865,15 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		return -ENOMEM;
 	}
 	isp_devs = _ispdev;
+
+
+	#if defined(ISP_MET_READY)
+	/*MET: met mmsys profile*/
+	if (met_mmsys_config_isp_base_addr)
+		met_mmsys_config_isp_base_addr((unsigned long *)isp_devs);
+	#endif
+
+
 #else
 	/* WARNING:KREALLOC_ARG_REUSE:Reusing the krealloc arg is almost always a bug */
 	isp_devs = KREALLOC(isp_devs, sizeof(struct isp_device) * nr_isp_devs, GFP_KERNEL);
@@ -13888,6 +13908,20 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	fbc_ctrl2[0].Raw = ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module));
 	fbc_ctrl2[1].Raw = ISP_RD32(CAM_REG_FBC_RRZO_CTL2(reg_module));
 
+	#if defined(ISP_MET_READY)
+	/*MET:ISP EOF*/
+	if (IrqStatus & HW_PASS1_DON_ST) {
+		if (met_mmsys_event_isp_pass1_end)
+			met_mmsys_event_isp_pass1_end(0);
+	}
+
+	if (IrqStatus & SOF_INT_ST) {
+		/*met mmsys profile*/
+		if (met_mmsys_event_isp_pass1_begin)
+			met_mmsys_event_isp_pass1_begin(0);
+	}
+	#endif
+
 	/* sof , done order chech . */
 	if ((IrqStatus & HW_PASS1_DON_ST) || (IrqStatus & SOF_INT_ST))
 		/*cur_v_cnt = ((ISP_RD32(CAM_REG_TG_INTER_ST(reg_module)) & 0x00FF0000) >> 16);*/
@@ -14361,6 +14395,21 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	fbc_ctrl2[0].Raw = ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module));
 	fbc_ctrl2[1].Raw = ISP_RD32(CAM_REG_FBC_RRZO_CTL2(reg_module));
 
+
+	#if defined(ISP_MET_READY)
+	/*CLS:Test*/
+	if (IrqStatus & HW_PASS1_DON_ST) {
+		if (met_mmsys_event_isp_pass1_end)
+			met_mmsys_event_isp_pass1_end(1);
+	}
+
+	if (IrqStatus & SOF_INT_ST) {
+		/*met mmsys profile*/
+		if (met_mmsys_event_isp_pass1_begin)
+			met_mmsys_event_isp_pass1_begin(1);
+	}
+	#endif
+
 	/* sof , done order chech . */
 	if ((IrqStatus & HW_PASS1_DON_ST) || (IrqStatus & SOF_INT_ST))
 		/*cur_v_cnt = ((ISP_RD32(CAM_REG_TG_INTER_ST(reg_module)) & 0x00FF0000) >> 16);*/
@@ -14816,4 +14865,3 @@ module_exit(ISP_Exit);
 MODULE_DESCRIPTION("Camera ISP driver");
 MODULE_AUTHOR("ME8");
 MODULE_LICENSE("GPL");
-
