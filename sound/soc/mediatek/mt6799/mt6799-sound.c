@@ -139,55 +139,67 @@ typedef enum {
 } AUDIO_APLL_DIVIDER_GROUP;
 
 static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_DAC_CON1, 0, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_DAC_CON1, 4, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_DAC_CON0, 24, 0x3}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON2, 8, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 12, 0xf}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_DAC_CON1, 30, 0x3}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_DAC_CON0, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 20, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_DAC_CON1, 8, 0xf}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 0, 0xf},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 4, 0xf},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 16, 0xf},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_DAC_CON0, 24, 0x3},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_DAC_CON2, 8, 0xf},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 12, 0xf},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_DAC_CON1, 30, 0x3},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_DAC_CON0, 16, 0xf},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 20, 0xf},
+	[Soc_Aud_Digital_Block_MEM_VUL2] = {AFE_DAC_CON2, 4, 0xf},
+	[Soc_Aud_Digital_Block_MEM_DAI2] = {AFE_DAC_CON2, 12, 0xf},
+	[Soc_Aud_Digital_Block_MEM_AWB2] = {AFE_DAC_CON2, 16, 0xf},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_DAC_CON1, 8, 0xf},
 };
 
 static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_DAC_CON1, 21, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_DAC_CON1, 22, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 27, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON1, 23, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 24, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_DAC_CON1, 20, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 10, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 21, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 22, 0x1},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 27, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_DAC_CON1, 23, 0x1},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 24, 0x1},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_DAC_CON1, 20, 0x1},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 10, 0x1},
+	[Soc_Aud_Digital_Block_MEM_VUL2] = {AFE_DAC_CON2, 0, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB2] = {AFE_DAC_CON2, 20, 0x1},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 28, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 25, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 11, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 28, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 25, 0x1},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 11, 0x1},
+	[Soc_Aud_Digital_Block_MEM_VUL2] = {AFE_DAC_CON2, 1, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB2] = {AFE_DAC_CON2, 21, 0x1},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_DAC_CON1, 29, 0x1}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_DAC_CON0, 26, 0x1}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_DAC_CON1, 29, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_DAC_CON0, 26, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DAI2] = {AFE_DAC_CON2, 2, 0x1},
+	[Soc_Aud_Digital_Block_MEM_AWB2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = { /* audio block, reg, bit position */
@@ -200,6 +212,9 @@ static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = 
 	{Soc_Aud_Digital_Block_MEM_MOD_DAI, AFE_DAC_CON0, 7},
 	{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},
 	{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 9},
+	{Soc_Aud_Digital_Block_MEM_VUL2, AFE_DAC_CON0, 27},
+	{Soc_Aud_Digital_Block_MEM_DAI2, AFE_DAC_CON0, 28},
+	{Soc_Aud_Digital_Block_MEM_AWB2, AFE_DAC_CON0, 29},
 };
 
 const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
@@ -251,7 +266,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 		{AFE_IRQ_MCU_CLR, 20, 0x1}, /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 4, 0x1}, /* irq status */
 		{AFE_IRQ_MCU_EN, 4, 0x1}, /* irq enable */
-		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+		 Soc_Aud_IRQ_CM4 /* irq use for specify purpose */
 	},
 	{	/*IRQ5*/
 		{AFE_IRQ_MCU_CON0, 5, 0x1}, /* irq on */
@@ -399,8 +414,21 @@ static int set_mem_blk_addr(int mem_blk, dma_addr_t addr, size_t size)
 		Afe_Set_Reg(AFE_AWB_END, addr + (size - 1), 0xffffffff);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+		Afe_Set_Reg(AFE_DL1_D2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL1_D2_END, addr + (size - 1), 0xffffffff);
+		break;
 	case Soc_Aud_Digital_Block_MEM_DL3:
+		Afe_Set_Reg(AFE_DL3_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DL3_END, addr + (size - 1), 0xffffffff);
+		break;
 	case Soc_Aud_Digital_Block_MEM_HDMI:
+		Afe_Set_Reg(AFE_HDMI_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_HDMI_END, addr + (size - 1), 0xffffffff);
+		break;
+	case Soc_Aud_Digital_Block_MEM_DAI2:
+		Afe_Set_Reg(AFE_DAI2_BASE, addr, 0xffffffff);
+		Afe_Set_Reg(AFE_DAI2_END, addr + (size - 1), 0xffffffff);
+		break;
 	default:
 		    pr_warn("%s not suuport mem_blk = %d", __func__, mem_blk);
 	}
@@ -1480,6 +1508,14 @@ bool set_chip_adc2_in(unsigned int rate)
 	return true;
 }
 
+bool set_chip_proximity_src_enable(bool enable)
+{
+	/* TODO CW : proximity fix rate 96k, and output ch1 */
+	Afe_Set_Reg(AFE_ADDA6_PROXIMITYUL_SRC_CON0, 0x3 << 17, 0x3 << 17); /* set UL 96k */
+	Afe_Set_Reg(AFE_ADDA6_PROXIMITYUL_SRC_CON0, 0x0 << 6, 0x1 << 6); /* select ch1 */
+	Afe_Set_Reg(AFE_ADDA6_PROXIMITYUL_SRC_CON0, enable, 0x1); /* ul src on */
+	return true;
+}
 
 bool setChipDmicPath(bool _enable, uint32 sample_rate)
 {
@@ -1523,6 +1559,9 @@ bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+	case Soc_Aud_Digital_Block_MEM_VUL2:
+	case Soc_Aud_Digital_Block_MEM_DAI2:
+	case Soc_Aud_Digital_Block_MEM_AWB2:
 		Afe_Set_Reg(mMemIfSampleRate[Aud_block][0], SampleRate << mMemIfSampleRate[Aud_block][1],
 			mMemIfSampleRate[Aud_block][2] << mMemIfSampleRate[Aud_block][1]);
 		break;
@@ -1558,11 +1597,14 @@ bool SetChannels(uint32 Memory_Interface, uint32 channel)
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+	case Soc_Aud_Digital_Block_MEM_VUL2:
+	case Soc_Aud_Digital_Block_MEM_AWB2:
 		Afe_Set_Reg(mMemIfChannels[Memory_Interface][0], mono << mMemIfChannels[Memory_Interface][1],
 			    mMemIfChannels[Memory_Interface][2] << mMemIfChannels[Memory_Interface][1]);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+	case Soc_Aud_Digital_Block_MEM_DAI2:
 		SetMemDuplicateWrite(Memory_Interface, channel == 2 ? 1 : 0);
 		break;
 	default:
@@ -1579,6 +1621,8 @@ int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch)
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+	case Soc_Aud_Digital_Block_MEM_VUL2:
+	case Soc_Aud_Digital_Block_MEM_AWB2:
 		Afe_Set_Reg(mMemIfMonoChSelect[Memory_Interface][0],
 			mono_use_r_ch << mMemIfMonoChSelect[Memory_Interface][1],
 			mMemIfMonoChSelect[Memory_Interface][2] << mMemIfMonoChSelect[Memory_Interface][1]);
@@ -1596,6 +1640,7 @@ bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite)
 	switch (InterfaceType) {
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+	case Soc_Aud_Digital_Block_MEM_DAI2:
 		Afe_Set_Reg(mMemDuplicateWrite[InterfaceType][0], dupwrite << mMemDuplicateWrite[InterfaceType][1],
 			mMemDuplicateWrite[InterfaceType][2] << mMemDuplicateWrite[InterfaceType][1]);
 		break;
@@ -1687,6 +1732,18 @@ bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
 	case Soc_Aud_Digital_Block_MEM_HDMI:
 			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 10, 1 << 10);
 			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 20, 3 << 20);
+			break;
+	case Soc_Aud_Digital_Block_MEM_VUL2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 7, 1 << 7);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 14, 3 << 14);
+			break;
+	case Soc_Aud_Digital_Block_MEM_DAI2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 13, 1 << 13);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 26, 3 << 26);
+			break;
+	case Soc_Aud_Digital_Block_MEM_AWB2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 14, 1 << 14);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 28, 3 << 28);
 			break;
 	default:
 		return false;

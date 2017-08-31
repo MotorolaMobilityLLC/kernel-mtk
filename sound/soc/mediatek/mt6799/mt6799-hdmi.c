@@ -126,28 +126,28 @@ void mtk_Hdmi_Set_Interconnection(void *hdmi_stream_format)
 	/*follow CEA861E (0x13)*/
 	AudioHDMIFormat *hdmi_stream = (AudioHDMIFormat *) hdmi_stream_format;
 
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I30,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I30,
 			  Soc_Aud_InterConnectionOutput_O30);
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I31,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I31,
 			  Soc_Aud_InterConnectionOutput_O31);
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I34,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I34,
 			  Soc_Aud_InterConnectionOutput_O34);
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I35,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I35,
 			  Soc_Aud_InterConnectionOutput_O35);
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I36,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I36,
 			  Soc_Aud_InterConnectionOutput_O36);
-	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I37,
+	SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I37,
 			  Soc_Aud_InterConnectionOutput_O37);
 
 	if (hdmi_stream->mHDMI_DisplayType == HDMI_DISPLAY_SILMPORT) {
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I32,
+		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I32,
 			Soc_Aud_InterConnectionOutput_O32);
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I33,
+		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I33,
 			Soc_Aud_InterConnectionOutput_O33);
 	} else {
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I32,
+		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I32,
 			Soc_Aud_InterConnectionOutput_O33);	/* O33 center */
-		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I33,
+		SetHDMIConnection(Soc_Aud_InterCon_Connection, Soc_Aud_Hdmi_InterConnectionInput_I33,
 			Soc_Aud_InterConnectionOutput_O32);	/* O32 LFE */
 	}
 }

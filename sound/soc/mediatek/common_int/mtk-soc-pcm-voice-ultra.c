@@ -72,7 +72,6 @@
  */
 static bool mDlPrepareDone;
 static bool mUlPrepareDone;
-static AudioDigtalI2S mAudioDigitalI2S;
 
 static bool voice_ultra_status;
 bool get_voice_ultra_status(void)
@@ -202,10 +201,10 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* connect */
 		/* i3i4 -> pcm1 o7o8 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		/* pcm1 i9 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
 
 		Voice2IntPcm.mPcmModeWidebandSel = SampleRateTransform(runtime->rate,
 								       Soc_Aud_Digital_Block_MODEM_PCM_2_O);
@@ -216,10 +215,10 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* disconnect */
 		/* i3i4 -> pcm1 o7o8 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
+				  Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		/* pcm1 i9 --> awb o5 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
 
 		SetModemPcmEnable(MODEM_EXTERNAL, false);
 	}
@@ -243,8 +242,7 @@ static int send_ipi_enable(bool enable)
 		payload[3] = ultra_info.memif_byte;	/* memif format byte */
 		payload[4] = ultra_info.memif_period_count; /* memif period count */
 
-		register_feature(OPEN_DSP_FEATURE_ID);
-		request_freq();
+		scp_register_feature(OPEN_DSP_FEATURE_ID);
 
 		audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOICE_ULTRASOUND, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
 				   AUDIO_IPI_PAYLOAD,
@@ -268,8 +266,7 @@ static int send_ipi_enable(bool enable)
 		/* change to wait ack when ready */
 		udelay(5 * 1000);
 
-		deregister_feature(OPEN_DSP_FEATURE_ID);
-		request_freq();
+		scp_deregister_feature(OPEN_DSP_FEATURE_ID);
 	}
 #endif
 	return 0;
@@ -289,29 +286,34 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 		pr_warn("%s(), with SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 		/* dl3 i23 --> o3 o4 */
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				Soc_Aud_AFE_IO_Block_MEM_DL3_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+				  Soc_Aud_AFE_IO_Block_MEM_DL3_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 
-		SetI2SDacEnable(false);
+		/* stop DAC output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
-
-		/* disable 260k ul record */
-		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 11, 0x1 << 11);
+		if (GetI2SDacEnable() == false)
+			SetI2SDacEnable(false);
 
 		/* disable irq */
 		irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE);
 
-		/* disable memif */
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);*/
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);*/
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false);*/
 	}
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE && mUlPrepareDone) {
 		mUlPrepareDone = false;
 		pr_warn("%s(), with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_PROXIMITY_CIC, Soc_Aud_AFE_IO_Block_MEM_DAI2);
+
+		set_chip_proximity_src_enable(false);
+
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 			set_adc_enable(false);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+			set_adc2_enable(false);
 
 		if (md_select)
 			ultra_md2_enable(false, substream->runtime);
@@ -380,7 +382,7 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 		pr_warn("%s(), with SNDRV_PCM_STREAM_PLAYBACK\n", __func__);
 		/* dl3 i23 --> o3 o4 */
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_MEM_DL3_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+				  Soc_Aud_AFE_IO_Block_MEM_DL3_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 
 		/* set format */
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
@@ -389,57 +391,46 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_AWB,
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
-			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DAI2,
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					Soc_Aud_AFE_IO_Block_I2S1_DAC);
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					Soc_Aud_AFE_IO_Block_MEM_AWB);
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_AFE_IO_Block_MEM_DAI2);
 
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 			ultra_info.memif_byte = 4;
 		} else {
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL3, AFE_WLEN_16_BIT);
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_AWB, AFE_WLEN_16_BIT);
-			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_WLEN_16_BIT);
+			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DAI2, AFE_WLEN_16_BIT);
 
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-					Soc_Aud_AFE_IO_Block_I2S1_DAC);
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-					Soc_Aud_AFE_IO_Block_MEM_AWB);
-			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-					Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_DAI2);
 
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 			ultra_info.memif_byte = 2;
 		}
 
 		/* start I2S DAC out */
-		SetI2SDacOut(substream->runtime->rate, false, mI2SWLen);
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-		SetI2SDacEnable(true);
-
-		/* enable 260k ul record */
-		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 11, 0x1 << 11);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			SetI2SDacOut(substream->runtime->rate, false, mI2SWLen);
+			SetI2SDacEnable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+		}
 
 		/* set memif, enable memif in cm4 */
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, ultra_info.dl_rate);
 		SetChannels(Soc_Aud_Digital_Block_MEM_DL3, runtime->channels);
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);*/
 
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_AWB, ultra_info.voice_dl_rate);
 		SetChannels(Soc_Aud_Digital_Block_MEM_AWB, runtime->channels);
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, true);*/
 
-		SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL_DATA2, ultra_info.ultra_ul_rate);
-		SetChannels(Soc_Aud_Digital_Block_MEM_VUL_DATA2, runtime->channels);
-		/*SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);*/
-
-		/* ultra use reference mic */
-		SetMemifMonoSel(Soc_Aud_Digital_Block_MEM_VUL_DATA2, true);
+		SetSampleRate(Soc_Aud_Digital_Block_MEM_DAI2, ultra_info.ultra_ul_rate);
+		SetChannels(Soc_Aud_Digital_Block_MEM_DAI2, 1);
 
 		/* enable irq */
 		irq_add_user(substream,
@@ -451,12 +442,25 @@ static int mtk_voice_ultra_prepare(struct snd_pcm_substream *substream)
 		mUlPrepareDone = true;
 		pr_warn("%s(), with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_PROXIMITY_CIC, Soc_Aud_AFE_IO_Block_MEM_DAI2);
+
+		set_chip_proximity_src_enable(true);
+
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
 			set_adc_in(substream->runtime->rate);
 			set_adc_enable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		}
+
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+			set_adc2_in(substream->runtime->rate);
+			set_adc2_enable(true);
+		} else {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
 		}
 
 		if (md_select)
@@ -502,7 +506,7 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 				   (ultra_info.voice_dl_rate / 100)) /
 				   (ultra_info.dl_rate / 100);
 
-	ultra_info.ultra_ul_rate = 260000;
+	ultra_info.ultra_ul_rate = 96000;
 	ultra_info.ultra_ul_size = (ultra_info.dl_size *
 				   (ultra_info.ultra_ul_rate / 100)) /
 				   (ultra_info.dl_rate / 100);
@@ -534,10 +538,9 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* set memif for dl*/
-	Afe_Set_Reg(AFE_DL3_BASE, ultra_info.dl_dma_addr, 0xffffffff);
-	Afe_Set_Reg(AFE_DL3_END,
-		    ultra_info.dl_dma_addr + (ultra_info.dl_size - 1),
-		    0xffffffff);
+	set_memif_addr(Soc_Aud_Digital_Block_MEM_DL3,
+		       ultra_info.dl_dma_addr,
+		       ultra_info.dl_size);
 	memset_io(ultra_info.dl_dma_area, 0, ultra_info.dl_size);
 	SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false, ultra_info.dl_dma_addr);
 
@@ -549,11 +552,11 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 	SetHighAddr(Soc_Aud_Digital_Block_MEM_AWB, false, ultra_info.voice_dl_dma_addr);
 
 	/* set memif for ultra ul */
-	set_memif_addr(Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+	set_memif_addr(Soc_Aud_Digital_Block_MEM_DAI2,
 		       ultra_info.ultra_ul_dma_addr,
 		       ultra_info.ultra_ul_size);
 	memset_io(ultra_info.ultra_ul_dma_area, 0, ultra_info.ultra_ul_size);
-	SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false, ultra_info.ultra_ul_dma_addr);
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_DAI2, false, ultra_info.ultra_ul_dma_addr);
 
 	pr_warn("%s(), dl: bytes = %d, area = %p, addr = 0x%lx\n",
 		__func__,

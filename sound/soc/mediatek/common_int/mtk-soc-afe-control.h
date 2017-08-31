@@ -95,6 +95,7 @@ bool set_chip_adda_enable(bool bEnable);
 bool set_chip_ul_src_enable(bool enable);
 bool set_chip_ul2_src_enable(bool enable);
 bool set_chip_dl_src_enable(bool enable);
+bool set_chip_proximity_src_enable(bool enable);
 
 bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetExtI2SAdcInEnable(bool bEnable);
