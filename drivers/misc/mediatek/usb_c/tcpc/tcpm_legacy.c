@@ -40,7 +40,6 @@ int tcpm_power_role_swap(struct tcpc_device *tcpc_dev)
 
 	return tcpm_dpm_pd_power_swap(tcpc_dev, role, NULL);
 }
-EXPORT_SYMBOL(tcpm_power_role_swap);
 
 int tcpm_data_role_swap(struct tcpc_device *tcpc_dev)
 {
@@ -53,7 +52,6 @@ int tcpm_data_role_swap(struct tcpc_device *tcpc_dev)
 
 	return tcpm_dpm_pd_data_swap(tcpc_dev, role, NULL);
 }
-EXPORT_SYMBOL(tcpm_data_role_swap);
 
 int tcpm_vconn_swap(struct tcpc_device *tcpc_dev)
 {
@@ -66,25 +64,21 @@ int tcpm_vconn_swap(struct tcpc_device *tcpc_dev)
 
 	return tcpm_dpm_pd_vconn_swap(tcpc_dev, role, NULL);
 }
-EXPORT_SYMBOL(tcpm_vconn_swap);
 
 int tcpm_goto_min(struct tcpc_device *tcpc_dev)
 {
 	return tcpm_dpm_pd_goto_min(tcpc_dev, NULL);
 }
-EXPORT_SYMBOL(tcpm_goto_min);
 
 int tcpm_soft_reset(struct tcpc_device *tcpc_dev)
 {
 	return tcpm_dpm_pd_soft_reset(tcpc_dev, NULL);
 }
-EXPORT_SYMBOL(tcpm_soft_reset);
 
 int tcpm_hard_reset(struct tcpc_device *tcpc_dev)
 {
 	return tcpm_dpm_pd_hard_reset(tcpc_dev);
 }
-EXPORT_SYMBOL(tcpm_hard_reset);
 
 int tcpm_get_source_cap(
 	struct tcpc_device *tcpc_dev, struct tcpm_power_cap *cap)
@@ -94,7 +88,6 @@ int tcpm_get_source_cap(
 
 	return tcpm_inquire_pd_source_cap(tcpc_dev, cap);
 }
-EXPORT_SYMBOL(tcpm_get_source_cap);
 
 int tcpm_get_sink_cap(
 	struct tcpc_device *tcpc_dev, struct tcpm_power_cap *cap)
@@ -104,25 +97,21 @@ int tcpm_get_sink_cap(
 
 	return tcpm_inquire_pd_sink_cap(tcpc_dev, cap);
 }
-EXPORT_SYMBOL(tcpm_get_sink_cap);
 
 int tcpm_bist_cm2(struct tcpc_device *tcpc_dev)
 {
 	return tcpm_dpm_pd_bist_cm2(tcpc_dev, NULL);
 }
-EXPORT_SYMBOL(tcpm_bist_cm2);
 
 int tcpm_request(struct tcpc_device *tcpc_dev, int mv, int ma)
 {
 	return tcpm_dpm_pd_request(tcpc_dev, mv, ma, NULL);
 }
-EXPORT_SYMBOL(tcpm_request);
 
 int tcpm_error_recovery(struct tcpc_device *tcpc_dev)
 {
 	return tcpm_dpm_pd_error_recovery(tcpc_dev);
 }
-EXPORT_SYMBOL(tcpm_error_recovery);
 
 int tcpm_discover_cable(struct tcpc_device *tcpc_dev, uint32_t *vdos)
 {
@@ -131,7 +120,6 @@ int tcpm_discover_cable(struct tcpc_device *tcpc_dev, uint32_t *vdos)
 
 	return tcpm_inquire_cable_inform(tcpc_dev, vdos);
 }
-EXPORT_SYMBOL(tcpm_discover_cable);
 
 int tcpm_vdm_request_id(
 	struct tcpc_device *tcpc_dev, uint32_t *vdos)
@@ -141,7 +129,6 @@ int tcpm_vdm_request_id(
 
 	return tcpm_inquire_pd_partner_inform(tcpc_dev, vdos);
 }
-EXPORT_SYMBOL(tcpm_vdm_request_id);
 
 #ifdef CONFIG_USB_PD_ALT_MODE
 
@@ -150,7 +137,6 @@ int tcpm_dp_attention(
 {
 	return tcpm_dpm_dp_attention(tcpc_dev, dp_status, 0xffffffff, NULL);
 }
-EXPORT_SYMBOL(tcpm_dp_attention);
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
 
@@ -159,14 +145,12 @@ int tcpm_dp_status_update(
 {
 	return tcpm_dpm_dp_status_update(tcpc_dev, dp_status, 0xffffffff, NULL);
 }
-EXPORT_SYMBOL(tcpm_dp_status_update);
 
 int tcpm_dp_configuration(
 	struct tcpc_device *tcpc_dev, uint32_t dp_config)
 {
 	return tcpm_dpm_dp_config(tcpc_dev, dp_config, 0xffffffff, NULL);
 }
-EXPORT_SYMBOL(tcpm_dp_configuration);
 
 #endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 #endif	/* CONFIG_USB_PD_ALT_MODE */

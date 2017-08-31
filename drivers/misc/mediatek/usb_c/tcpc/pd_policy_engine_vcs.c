@@ -23,23 +23,28 @@
  * [PD2.0] Figure 8-57 VCONN Swap State Diagram
  */
 
-void pe_vcs_send_swap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_send_swap_entry(struct pd_port *pd_port, struct pd_event *pd_event)
 {
+	pd_port->pd_wait_sender_response = true;
+
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_VCONN_SWAP);
 }
 
-void pe_vcs_evaluate_swap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_evaluate_swap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_dpm_vcs_evaluate_swap(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_vcs_accept_swap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_accept_swap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_ACCEPT);
 }
 
-void pe_vcs_reject_vconn_swap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_reject_vconn_swap_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	if (pd_event->msg_sec == PD_DPM_NAK_REJECT)
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_REJECT);
@@ -47,30 +52,35 @@ void pe_vcs_reject_vconn_swap_entry(struct __pd_port *pd_port, struct __pd_event
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_WAIT);
 }
 
-void pe_vcs_wait_for_vconn_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_wait_for_vconn_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_enable_timer(pd_port, PD_TIMER_VCONN_ON);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_vcs_wait_for_vconn_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_wait_for_vconn_exit(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VCONN_ON);
 }
 
-void pe_vcs_turn_off_vconn_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_turn_off_vconn_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_dpm_vcs_enable_vconn(pd_port, false);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_vcs_turn_on_vconn_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_turn_on_vconn_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_dpm_vcs_enable_vconn(pd_port, true);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_vcs_send_ps_rdy_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
+void pe_vcs_send_ps_rdy_entry(
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
 }

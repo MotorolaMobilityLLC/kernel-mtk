@@ -22,33 +22,60 @@ struct dpm_select_info_t {
 	uint8_t policy;
 };
 
+static inline void dpm_extract_apdo_info(
+		uint32_t pdo, struct dpm_pdo_info_t *info)
+{
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+	switch (APDO_TYPE(pdo)) {
+	case APDO_TYPE_PPS:
+		info->apdo_type = DPM_APDO_TYPE_PPS;
+
+		if (pdo & APDO_PPS_CURR_FOLDBACK)
+			info->apdo_type |= DPM_APDO_TYPE_PPS_CF;
+
+		info->ma = APDO_PPS_EXTRACT_CURR(pdo);
+		info->vmin = APDO_PPS_EXTRACT_MIN_VOLT(pdo);
+		info->vmax = APDO_PPS_EXTRACT_MAX_VOLT(pdo);
+		info->uw = info->ma * info->vmax;
+		return;
+	}
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
+	info->type = TCPM_POWER_CAP_VAL_TYPE_UNKNOWN;
+}
+
 void dpm_extract_pdo_info(
 			uint32_t pdo, struct dpm_pdo_info_t *info)
 {
 	memset(info, 0, sizeof(struct dpm_pdo_info_t));
 
-	info->type = DPM_PDO_TYPE(pdo);
+	info->type = PDO_TYPE_VAL(pdo);
 
-	switch (info->type) {
-	case DPM_PDO_TYPE_FIXED:
+	switch (PDO_TYPE(pdo)) {
+	case PDO_TYPE_FIXED:
 		info->ma = PDO_FIXED_EXTRACT_CURR(pdo);
 		info->vmax = info->vmin = PDO_FIXED_EXTRACT_VOLT(pdo);
 		info->uw = info->ma * info->vmax;
 		break;
-
-	case DPM_PDO_TYPE_VAR:
+	case PDO_TYPE_VARIABLE:
 		info->ma = PDO_VAR_EXTRACT_CURR(pdo);
 		info->vmin = PDO_VAR_EXTRACT_MIN_VOLT(pdo);
 		info->vmax = PDO_VAR_EXTRACT_MAX_VOLT(pdo);
 		info->uw = info->ma * info->vmax;
 		break;
 
-	case DPM_PDO_TYPE_BAT:
+	case PDO_TYPE_BATTERY:
 		info->uw = PDO_BATT_EXTRACT_OP_POWER(pdo) * 1000;
 		info->vmin = PDO_BATT_EXTRACT_MIN_VOLT(pdo);
 		info->vmax = PDO_BATT_EXTRACT_MAX_VOLT(pdo);
 		info->ma = info->uw / info->vmin;
 		break;
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+	case PDO_TYPE_APDO:
+		dpm_extract_apdo_info(pdo, info);
+		break;
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
 	}
 }
 
@@ -165,7 +192,7 @@ static inline bool dpm_is_valid_pdo_pair(struct dpm_pdo_info_t *sink,
 		return false;
 
 	if (policy & DPM_CHARGING_POLICY_IGNORE_MISMATCH_CURR)
-		return (sink->ma <= source->ma);
+		return sink->ma <= source->ma;
 
 	return true;
 }
@@ -209,6 +236,34 @@ static bool dpm_select_pdo_from_max_power(
 }
 
 /*
+ * Select PDO from PPS
+ */
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+static bool dpm_select_pdo_from_pps(
+		struct dpm_select_info_t *select_info,
+		struct dpm_pdo_info_t *sink, struct dpm_pdo_info_t *source)
+{
+	if (sink->type != DPM_PDO_TYPE_FIXED ||
+			source->type != DPM_PDO_TYPE_APDO)
+		return false;
+
+	if (!(source->apdo_type & DPM_APDO_TYPE_PPS))
+		return false;
+
+	if (sink->vmax > source->vmax)
+		return false;
+
+	if (sink->vmin < source->vmin)
+		return false;
+
+	select_info->max_uw = sink->uw;
+	select_info->cur_mv = sink->vmax;
+	return true;
+}
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
+/*
   * Select PDO from defined rule ...
   */
 
@@ -217,8 +272,8 @@ typedef bool (*dpm_select_pdo_fun)(
 	struct dpm_pdo_info_t *sink, struct dpm_pdo_info_t *source);
 
 bool dpm_find_match_req_info(struct dpm_rdo_info_t *req_info,
-	uint32_t snk_pdo, int cnt, uint32_t *src_pdos,
-	int min_uw, uint32_t policy)
+		uint32_t snk_pdo, int cnt, uint32_t *src_pdos,
+		int min_uw, uint32_t policy)
 {
 	int i;
 	struct dpm_select_info_t select;
@@ -232,28 +287,43 @@ bool dpm_find_match_req_info(struct dpm_rdo_info_t *req_info,
 	select.max_uw = min_uw;
 	select.policy = policy;
 
-	switch (policy & 0x0f) {
+	switch (policy & DPM_CHARGING_POLICY_MASK) {
+	case DPM_CHARGING_POLICY_MAX_POWER:
+		select_pdo_fun = dpm_select_pdo_from_max_power;
+		break;
+
+	case DPM_CHARGING_POLICY_CUSTOM:
+		select_pdo_fun = dpm_select_pdo_from_custom;
+		break;
+
 #ifdef CONFIG_USB_PD_ALT_MODE_RTDC
 	case DPM_CHARGING_POLICY_DIRECT_CHARGE:
 		select_pdo_fun = dpm_select_pdo_from_direct_charge;
 		break;
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
-	case DPM_CHARGING_POLICY_CUSTOM:
-		select_pdo_fun = dpm_select_pdo_from_custom;
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+	case DPM_CHARGING_POLICY_PPS:
+		select_pdo_fun = dpm_select_pdo_from_pps;
 		break;
-	case DPM_CHARGING_POLICY_MAX_POWER:
-		select_pdo_fun = dpm_select_pdo_from_max_power;
-		break;
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
 	default: /* DPM_CHARGING_POLICY_VSAFE5V */
 		select_pdo_fun = dpm_select_pdo_from_vsafe5v;
 		break;
 	}
 
 	for (i = 0; i < cnt; i++) {
+		if (policy == DPM_CHARGING_POLICY_PPS)
+			i = req_info->pos - 1;
+
 		dpm_extract_pdo_info(src_pdos[i], &source);
 
 		if (select_pdo_fun(&select, &sink, &source))
 			select.pos = i+1;
+
+		if (policy == DPM_CHARGING_POLICY_PPS)
+			break;
 	}
 
 	if (select.pos > 0) {
@@ -277,10 +347,16 @@ bool dpm_find_match_req_info(struct dpm_rdo_info_t *req_info,
 			req_info->oper_ma = MIN(sink.ma, source.ma);
 		}
 
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+		if (source.type == DPM_PDO_TYPE_APDO) {
+			req_info->vmax = sink.vmax;
+			req_info->vmin = sink.vmin;
+		}
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
 		return true;
 	}
 
 	return false;
 }
-
 #endif	/* CONFIG_USB_POWER_DELIVERY */

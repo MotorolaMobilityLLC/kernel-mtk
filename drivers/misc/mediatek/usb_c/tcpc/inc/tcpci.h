@@ -171,7 +171,7 @@ static inline int tcpci_set_cc(struct tcpc_device *tcpc, int pull)
 		else
 #endif	/* CONFIG_TYPEC_CHECK_LEGACY_CABLE2 */
 			pull = TYPEC_CC_RP_1_5;
-		TCPC_DBG("LC->Toggling (%d)\r\n", pull);
+		TCPC_DBG2("LC->Toggling (%d)\r\n", pull);
 	}
 #endif /* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
 
@@ -246,7 +246,7 @@ static inline int tcpci_idle_poll_ctrl(
 		tcpc->tcpc_busy_cnt++;
 	} else {	/* idle mode */
 		if (tcpc->tcpc_busy_cnt <= 0)
-			TCPC_DBG("tcpc_busy_cnt<=0\r\n");
+			TCPC_DBG2("tcpc_busy_cnt<=0\r\n");
 		else
 			tcpc->tcpc_busy_cnt--;
 
@@ -278,9 +278,10 @@ static inline int tcpci_set_watchdog(struct tcpc_device *tcpc, bool en)
 #ifdef CONFIG_USB_POWER_DELIVERY
 
 static inline int tcpci_set_msg_header(
-	struct tcpc_device *tcpc, int power_role, int data_role)
+	struct tcpc_device *tcpc, int power_role, int data_role, uint8_t pd_rev)
 {
-	return tcpc->ops->set_msg_header(tcpc, power_role, data_role);
+	return tcpc->ops->set_msg_header(
+		tcpc, power_role, data_role, pd_rev);
 }
 
 static inline int tcpci_set_rx_enable(struct tcpc_device *tcpc, uint8_t enable)
@@ -368,7 +369,7 @@ static inline int tcpci_set_intrst(struct tcpc_device *tcpc, bool en)
 
 static inline int tcpci_enable_watchdog(struct tcpc_device *tcpc, bool en)
 {
-	TCPC_DBG("enable_WG: %d\r\n", en);
+	TCPC_DBG2("enable_WG: %d\r\n", en);
 
 #ifdef CONFIG_TCPC_WATCHDOG_EN
 	if (tcpc->typec_watchdog == en)
@@ -736,7 +737,7 @@ static inline int tcpci_dp_notify_config_done(struct tcpc_device *tcpc,
 static inline int tcpci_notify_uvdm(struct tcpc_device *tcpc, bool ack)
 {
 	struct tcp_notify tcp_noti;
-	struct __pd_port *pd_port = &tcpc->pd_port;
+	struct pd_port *pd_port = &tcpc->pd_port;
 
 	tcp_noti.uvdm_msg.ack = ack;
 
@@ -763,6 +764,27 @@ static inline int tcpci_dc_notify_en_unlock(struct tcpc_device *tcpc)
 		TCP_NOTIFY_DC_EN_UNLOCK, &tcp_noti);
 }
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+
+/* ---- Policy Engine (PD30) ---- */
+
+#ifdef CONFIG_USB_PD_REV30
+
+#ifdef CONFIG_USB_PD_REV30_PPS_SINK
+static inline int tcpci_notify_pps_ready(struct tcpc_device *tcpc)
+{
+	struct tcp_notify tcp_noti;
+
+	return srcu_notifier_call_chain(&tcpc->evt_nh,
+		TCP_NOTIFY_PPS_READY, &tcp_noti);
+}
+#endif	/* CONFIG_USB_PD_REV30_PPS_SINK */
+
+static inline int tcpci_notify_alert(struct tcpc_device *tcpc)
+{
+	return 0;
+}
+
+#endif	/* CONFIG_USB_PD_REV30 */
 
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
