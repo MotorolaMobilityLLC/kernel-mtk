@@ -22,13 +22,16 @@
 #include "ddp_path.h"
 #include "ddp_ovl.h"
 #include "ddp_rdma.h"
-#include "DpDataType.h"
 
-#define DDP_IRQ_EER_ID				(0xFFFF0000)
-#define DDP_IRQ_FPS_ID				(DDP_IRQ_EER_ID + 1)
-#define DDP_IRQ_LAYER_FPS_ID		(DDP_IRQ_EER_ID + 2)
-#define DDP_IRQ_LAYER_SIZE_ID		(DDP_IRQ_EER_ID + 3)
-#define DDP_IRQ_LAYER_FORMAT_ID	(DDP_IRQ_EER_ID + 4)
+#define DDP_IRQ_ERR_ID				(0xFFFF0000)
+#define DDP_IRQ_FPS_ID				(DDP_IRQ_ERR_ID + 1)
+#define DDP_IRQ_LAYER_FPS_ID		(DDP_IRQ_ERR_ID + 2)
+#define DDP_IRQ_WND_MIN_FPS_ID		(DDP_IRQ_ERR_ID + 3)
+#define DDP_IRQ_WND_MAX_FPS_ID		(DDP_IRQ_ERR_ID + 4)
+#define DDP_IRQ_WND_FPS_SLP_ID		(DDP_IRQ_ERR_ID + 5)
+#define DDP_IRQ_CONTINUOUS_DROP_ID	(DDP_IRQ_ERR_ID + 6)
+
+#define DDP_IRQ_WTPF_ID				(DDP_IRQ_ERR_ID + 10)
 
 #define MAX_PATH_NUM (3)
 #define RDMA_NUM (2)
@@ -36,40 +39,22 @@
 #define OVL_LAYER_NUM_PER_OVL (4)
 
 
-unsigned int met_tag_on;
-#if 0
-static const char *const parse_color_format(DpColorFormat fmt)
-{
-	switch (fmt) {
-	case eBGR565:
-		return "eBGR565";
-	case eRGB565:
-		return "eRGB565";
-	case eRGB888:
-		return "eRGB888";
-	case eBGR888:
-		return "eBGR888";
-	case eRGBA8888:
-		return "eRGBA8888";
-	case eBGRA8888:
-		return "eBGRA8888";
-	case eARGB8888:
-		return "eARGB8888";
-	case eABGR8888:
-		return "eABGR8888";
-	case eVYUY:
-		return "eVYUY";
-	case eUYVY:
-		return "eUYVY";
-	case eYVYU:
-		return "eYVYU";
-	case eYUY2:
-		return "eYUY2";
-	default:
-		return "DEFAULT";
-	}
-}
-#endif
+struct SWindowFps {
+	unsigned long long last_time;
+	unsigned int frame_num;
+};
+static unsigned int met_tag_on;
+
+/* Calc fps per WND_xx_SIZE frames, this can be changed through adb shell cmd */
+unsigned int DISP_FPS_WND_MIN_SIZE = 2;
+unsigned int DISP_FPS_WND_MAX_SIZE = 10;
+
+static struct SWindowFps window_min_fps;
+static struct SWindowFps window_max_fps;
+static int last_wnd_min_fps;
+static int last_wnd_min_slope;
+static unsigned long long last_config;
+static unsigned int continuous_drop_frame;
 
 /**
  * check if it's decouple mode
@@ -98,61 +83,114 @@ int dpp_disp_is_decouple(void)
  */
 static void ddp_disp_refresh_tag_start(unsigned int index)
 {
-	static unsigned long sBufAddr[RDMA_NUM];
+	static unsigned long rdma_buf_addr[RDMA_NUM];
+	static unsigned long ovl_buf_addr[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
 
-	static struct RDMA_BASIC_STRUCT rdmaInfo;
+	struct RDMA_BASIC_STRUCT rdma_info;
+	struct OVL_BASIC_STRUCT ovl_info[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
+	int has_layer_changed;
+	int i, j, idx;
 
 	char tag_name[30] = { '\0' };
+	int wnd_min_fps;
+	int wnd_min_slope;
 
 	if (dpp_disp_is_decouple() == 1) {
 
-		rdma_get_info(index, &rdmaInfo);
-		if (rdmaInfo.addr == 0 || (rdmaInfo.addr != 0 && sBufAddr[index] != rdmaInfo.addr)) {
-			sBufAddr[index] = rdmaInfo.addr;
+		rdma_get_info(index, &rdma_info);
+		if (rdma_info.addr != 0 && rdma_buf_addr[index] != rdma_info.addr) {
+			rdma_buf_addr[index] = rdma_info.addr;
 			sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
 			met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+			continuous_drop_frame = 0;
+		} else {
+			continuous_drop_frame++;
 		}
 
+		if (window_min_fps.last_time == 0) {
+			window_min_fps.last_time = sched_clock();
+			window_max_fps.last_time = sched_clock();
+		}
+		window_min_fps.frame_num++;
+		window_max_fps.frame_num++;
 	} else {
-		static struct OVL_BASIC_STRUCT old_ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
-		static struct OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
-		int ovl_index;
-		int b_layer_changed;
-		int i, j;
 
-		b_layer_changed = 0;
+		has_layer_changed = 0;
 
 		/*Traversal layers and get layer info*/
-		memset(ovlInfo, 0, sizeof(ovlInfo));/*essential for structure comparision*/
+		memset(ovl_info, 0, sizeof(ovl_info));/*essential for structure comparision*/
 
 		for (i = 0; i < OVL_NUM; i++) {
 
-			ovl_get_info(i, &(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]));
+			ovl_get_info(i, &(ovl_info[i*OVL_LAYER_NUM_PER_OVL]));
 
 			for (j = 0; j < OVL_LAYER_NUM_PER_OVL; j++) {
-				ovl_index = (i * OVL_LAYER_NUM_PER_OVL) + j;
+				idx = (i * OVL_LAYER_NUM_PER_OVL) + j;
 
-				if (memcmp(&(ovlInfo[ovl_index]), &(old_ovlInfo[ovl_index]),
-						sizeof(struct OVL_BASIC_STRUCT)) == 0)
-					continue;
-
-				if (ovlInfo[ovl_index].layer_en)
-					b_layer_changed = 1;
+				if ((ovl_info[idx].layer_en && (ovl_info[idx].addr != ovl_buf_addr[idx]))
+					|| (!ovl_info[idx].layer_en && ovl_buf_addr[idx] != 0)) {
+					has_layer_changed = 1;
+					if (ovl_info[idx].layer_en)
+						ovl_buf_addr[idx] = ovl_info[idx].addr;
+					else
+						ovl_buf_addr[idx] = 0x0;
+				}
 			}
-
-			/*store old value*/
-			memcpy(&(old_ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
-				&(ovlInfo[i*OVL_LAYER_NUM_PER_OVL]),
-				OVL_LAYER_NUM_PER_OVL*sizeof(struct OVL_BASIC_STRUCT));
-
 		}
 
-		if (b_layer_changed) {
+		if (has_layer_changed) {
 			sprintf(tag_name, index ? "ExtDispRefresh" : "PrimDispRefresh");
 			met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+			if (window_min_fps.last_time == 0) {
+				window_min_fps.last_time = sched_clock();
+				window_max_fps.last_time = sched_clock();
+			}
+			window_min_fps.frame_num++;
+			window_max_fps.frame_num++;
+			continuous_drop_frame = 0;
+		} else {
+			continuous_drop_frame++;
 		}
-
 	}
+	/* output little window size fps and it's slope */
+	if (window_min_fps.frame_num >= DISP_FPS_WND_MIN_SIZE) {
+		wnd_min_fps = 1000*1000*1000/((sched_clock()-window_min_fps.last_time)/window_min_fps.frame_num);
+		sprintf(tag_name, index ? "ExtWndFps(%df)" : "PrimWndFps(%df)", DISP_FPS_WND_MIN_SIZE);
+		met_tag_oneshot(DDP_IRQ_WND_MIN_FPS_ID, tag_name, wnd_min_fps);
+		wnd_min_slope = wnd_min_fps - last_wnd_min_fps;
+
+		sprintf(tag_name, index ? "ExtWndFpsSoS" : "PrimWndFpsSoS");
+		if (last_wnd_min_slope != 0)
+			met_tag_oneshot(DDP_IRQ_WND_FPS_SLP_ID, tag_name,
+							(wnd_min_slope-last_wnd_min_slope)*100/wnd_min_slope);
+		last_wnd_min_fps = wnd_min_fps;
+		last_wnd_min_slope = wnd_min_slope;
+		/* clean up for next window stat */
+		window_min_fps.frame_num = 0;
+		window_min_fps.last_time = sched_clock();
+	}
+	/* output big window size fps */
+#if 0
+	if (window_max_fps.frame_num >= DISP_FPS_WND_MAX_SIZE) {
+		wnd_max_fps = 1000*1000*1000/((sched_clock()-window_max_fps.last_time)/window_max_fps.frame_num);
+		sprintf(tag_name, index ? "ExtMaxWndFps(%df)" : "PrimMaxWndFps(%df)", DISP_FPS_WND_MAX_SIZE);
+		met_tag_oneshot(DDP_IRQ_WND_MAX_FPS_ID, tag_name, wnd_max_fps);
+
+		last_wnd_max_fps = wnd_max_fps;
+		/* clean up for next window stat */
+		window_max_fps.frame_num = 0;
+		window_max_fps.last_time = sched_clock();
+	}
+#endif
+	/* output waste time per frame -- WTPF(ms) */
+	if (last_config != 0) {
+		sprintf(tag_name, "WTPF(ms)");
+		met_tag_oneshot(DDP_IRQ_WTPF_ID, tag_name, (sched_clock()-last_config)/1000/1000);
+	}
+
+	/* output continuous drop frame */
+	sprintf(tag_name, index ? "ExtContinuousDrop" : "PrimContinuousDrop");
+	met_tag_oneshot(DDP_IRQ_CONTINUOUS_DROP_ID, tag_name, continuous_drop_frame);
 }
 
 static void ddp_disp_refresh_tag_end(unsigned int index)
@@ -176,8 +214,7 @@ static void ddp_inout_info_tag(unsigned int index)
 
 	struct OVL_BASIC_STRUCT ovlInfo[OVL_NUM*OVL_LAYER_NUM_PER_OVL];
 	unsigned int flag, i, idx, enLayerCnt, layerCnt;
-	unsigned int width, height, bpp, fmt;
-	char *fmtStr;
+
 	char tag_name[30] = { '\0' };
 	uint32_t layer_change_bits = 0;
 	uint32_t layer_enable_bits = 0;
@@ -198,8 +235,6 @@ static void ddp_inout_info_tag(unsigned int index)
 
 		idx = i % OVL_LAYER_NUM_PER_OVL;
 
-		fmtStr = parse_color_format(ovlInfo[i].fmt);
-
 		if (ovlInfo[i].layer_en) {
 			enLayerCnt++;
 			layer_enable_bits |= (1 << i);
@@ -209,31 +244,8 @@ static void ddp_inout_info_tag(unsigned int index)
 				met_tag_oneshot(DDP_IRQ_LAYER_FPS_ID, tag_name, i+1);
 				layer_change_bits |= 1 << i;
 			}
-#if 0
-			if (sLayerBufFmt[index][idx] != ovlInfo[i].fmt) {
-				sLayerBufFmt[index][idx] = ovlInfo[i].fmt;
-				sprintf(tag_name, "OVL%dL%d_Fmt_%s", index, idx, fmtStr);
-				met_tag_oneshot(DDP_IRQ_LAYER_FORMAT_ID, tag_name, i+1);
-				layer_change_bits |= 1 << i;
-			}
-			if (sLayerBufWidth[index][idx] != ovlInfo[i].src_w) {
-				sLayerBufWidth[index][idx] = ovlInfo[i].src_w;
-				sprintf(tag_name, "OVL%dL%d_Width", index, idx);
-				met_tag_oneshot(DDP_IRQ_LAYER_SIZE_ID, tag_name, ovlInfo[i].src_w);
-				layer_change_bits |= 1 << i;
-			}
-			if (sLayerBufHeight[index][idx] != ovlInfo[i].src_h) {
-				sLayerBufHeight[index][idx] = ovlInfo[i].src_h;
-				sprintf(tag_name, "OVL%dL%d_Height", index, idx);
-				met_tag_oneshot(DDP_IRQ_LAYER_SIZE_ID, tag_name, ovlInfo[i].src_h);
-				layer_change_bits |= 1 << i;
-			}
-#endif
 		} else {
 			sLayerBufAddr[index][idx] = 0;
-			sLayerBufFmt[index][idx] = 0;
-			sLayerBufWidth[index][idx] = 0;
-			sLayerBufHeight[index][idx] = 0;
 		}
 
 		if ((i == (OVL_LAYER_NUM_PER_OVL - 1)) || (i == (OVL_LAYER_NUM - 1))) {
@@ -273,7 +285,8 @@ static void ddp_inout_info_tag(unsigned int index)
 
 static void ddp_err_irq_met_tag(const char *name)
 {
-	met_tag_oneshot(DDP_IRQ_EER_ID, name, 0);
+	met_tag_oneshot(DDP_IRQ_ERR_ID, name, 1);
+	met_tag_oneshot(DDP_IRQ_ERR_ID, name, 0);
 }
 
 static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
@@ -283,15 +296,19 @@ static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
 	int mutexID;
 	/* DDPERR("met_irq_handler() module=%d, val=0x%x\n", module, reg_val); */
 	switch (module) {
+	case DISP_MODULE_DSI0:
+	case DISP_MODULE_DSI1:
+		index = module - DISP_MODULE_DSI0;
+		if (reg_val & (1 << 2))	/* TE signal */
+			ddp_disp_refresh_tag_start(index);
+
+		if (reg_val & (1 << 4)) /* frame done signal */
+			ddp_disp_refresh_tag_end(index);
+
+		break;
 	case DISP_MODULE_RDMA0:
 	case DISP_MODULE_RDMA1:
 		index = module - DISP_MODULE_RDMA0;
-		if (reg_val & (1 << 2))
-			ddp_disp_refresh_tag_end(index);/*Always process eof prior to sof*/
-
-		if (reg_val & (1 << 1))
-			ddp_disp_refresh_tag_start(index);
-
 		if (reg_val & (1 << 4)) {
 			sprintf(tag_name, "rdma%d_underflow", index);
 			ddp_err_irq_met_tag(tag_name);
@@ -335,6 +352,7 @@ void ddp_init_met_tag(int state, int rdma0_mode, int rdma1_mode)
 {
 	if ((!met_tag_on) && state) {
 		met_tag_on = state;
+
 		disp_register_irq_callback(met_irq_handler);
 	}
 	if (met_tag_on && (!state)) {
