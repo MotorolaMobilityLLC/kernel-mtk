@@ -884,6 +884,55 @@ void cldma_dump_register(struct ccci_modem *md)
 
 }
 
+void cldma_dump_reg_notice(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA Tx pdn register, active=%x\n", md_ctrl->txq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_pdn_base + CLDMA_AP_UL_START_ADDR_0,
+		      CLDMA_AP_UL_LAST_UPDATE_ADDR_4MSB - CLDMA_AP_UL_START_ADDR_0 + 4);
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA Tx ao register, active=%x\n", md_ctrl->txq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_ao_base + CLDMA_AP_UL_START_ADDR_BK_0,
+		      CLDMA_AP_UL_CURRENT_ADDR_BK_4MSB - CLDMA_AP_UL_START_ADDR_BK_0 + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA Rx pdn register, active=%x\n", md_ctrl->rxq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_pdn_base + CLDMA_AP_SO_ERROR,
+		      CLDMA_AP_SO_STOP_CMD - CLDMA_AP_SO_ERROR + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA Rx ao register, active=%x\n", md_ctrl->rxq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_ao_base + CLDMA_AP_SO_CFG,
+		      CLDMA_AP_SO_NEXT_BUF_PTR_4MSB - CLDMA_AP_SO_CFG + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA MISC pdn register\n");
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_pdn_base + CLDMA_AP_L2TISAR0,
+		      CLDMA_AP_L3TIMSR2 - CLDMA_AP_L2TISAR0 + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump AP CLDMA MISC ao register\n");
+	ccci_error_dump(md->index, md_ctrl->cldma_ap_ao_base + CLDMA_AP_L2RIMR0,
+						CLDMA_AP_DUMMY - CLDMA_AP_L2RIMR0 + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA Tx pdn register, active=%x\n", md_ctrl->txq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_md_pdn_base + CLDMA_AP_UL_START_ADDR_0,
+		      CLDMA_AP_UL_LAST_UPDATE_ADDR_4MSB - CLDMA_AP_UL_START_ADDR_0 + 4);
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA Tx ao register, active=%x\n", md_ctrl->txq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_md_ao_base + CLDMA_AP_UL_START_ADDR_BK_0,
+		      CLDMA_AP_UL_CURRENT_ADDR_BK_4MSB - CLDMA_AP_UL_START_ADDR_BK_0 + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA Rx pdn register, active=%x\n", md_ctrl->rxq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_md_pdn_base + CLDMA_AP_SO_ERROR,
+		      CLDMA_AP_SO_STOP_CMD - CLDMA_AP_SO_ERROR + 4);
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA Rx ao register, active=%x\n", md_ctrl->rxq_active);
+	ccci_error_dump(md->index, md_ctrl->cldma_md_ao_base + CLDMA_AP_SO_CFG,
+		      CLDMA_AP_SO_NEXT_BUF_PTR_4MSB - CLDMA_AP_SO_CFG + 4);
+
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA MISC pdn register\n");
+	ccci_error_dump(md->index, md_ctrl->cldma_md_pdn_base + CLDMA_AP_L2TISAR0,
+		      CLDMA_AP_L3TIMSR2 - CLDMA_AP_L2TISAR0 + 4);
+	CCCI_NOTICE_LOG(md->index, TAG, "dump MD CLDMA MISC ao register\n");
+	ccci_error_dump(md->index, md_ctrl->cldma_md_ao_base + CLDMA_AP_L2RIMR0,
+						CLDMA_AP_DUMMY - CLDMA_AP_L2RIMR0 + 4);
+}
+
 int ccci_modem_remove(struct platform_device *dev)
 {
 	return 0;

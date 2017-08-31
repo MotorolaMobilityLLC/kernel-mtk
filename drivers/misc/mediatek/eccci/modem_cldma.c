@@ -428,6 +428,11 @@ static void cldma_timeout_timer_func(unsigned long data)
 }
 #endif
 
+void __weak cldma_dump_reg_notice(struct ccci_modem *md)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
+}
+
 /* may be called from workqueue or NAPI or tasklet (queue0) context, only NAPI and tasklet with blocking=false */
 static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int blocking)
 {
@@ -480,15 +485,16 @@ again:
 		/*init skb struct*/
 		skb->len = 0;
 		skb_reset_tail_pointer(skb);
-		/*set data len*/
 		if (unlikely(rgpd->data_buff_len + skb->tail > skb->end)) {
+			cldma_dump_reg_notice(md);
 			tmp = (unsigned int *)rgpd;
-			CCCI_NOTICE_LOG(md->index, TAG, "dump cldma_rgpd(%p):(%x/%x/%x/%x)\n",
+			CCCI_NOTICE_LOG(md->index, TAG, "dump cldma_rgpd(%p):(%X/%X/%X/%X)\n",
 							rgpd, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 			tmp = (unsigned int *)skb->data;
-			CCCI_NOTICE_LOG(md->index, TAG, "dump skb->data(%p):(%x/%x/%x/%x)\n",
-							rgpd, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			CCCI_NOTICE_LOG(md->index, TAG, "dump skb->data(%p):(%X/%X/%X/%X)\n",
+							skb->data, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 		}
+		/*set data len*/
 		skb_put(skb, rgpd->data_buff_len);
 		skb_bytes = skb->len;
 #ifdef ENABLE_FAST_HEADER

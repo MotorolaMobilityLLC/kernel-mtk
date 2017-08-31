@@ -284,6 +284,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md);
 void md_cd_dump_md_bootup_status(struct ccci_modem *md);
 void md_cd_check_emi_state(struct ccci_modem *md, int polling);
 void cldma_dump_register(struct ccci_modem *md);
+void cldma_dump_reg_notice(struct ccci_modem *md);
 void md_cldma_hw_reset(struct ccci_modem *md);
 int md_cd_pccif_send(struct ccci_modem *md, int channel_id);
 void md_cd_dump_pccif_reg(struct ccci_modem *md);

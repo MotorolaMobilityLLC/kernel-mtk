@@ -469,6 +469,48 @@ static void __16_reload_work(struct work_struct *work)
  * transition (FLYING->IDLE/COMPLETE->FLYING) and wait forever.
  */
 
+void ccci_error_dump(int md_id, void *start_addr, int len)
+{
+	unsigned int *curr_p = (unsigned int *)start_addr;
+	unsigned char *curr_ch_p;
+	int _16_fix_num = len / 16;
+	int tail_num = len % 16;
+	char buf[16];
+	int i, j;
+
+	if (curr_p == NULL) {
+		CCCI_NOTICE_LOG(md_id, BM, "NULL point to dump!\n");
+		return;
+	}
+	if (len == 0) {
+		CCCI_NOTICE_LOG(md_id, BM, "Not need to dump\n");
+		return;
+	}
+
+	CCCI_NOTICE_LOG(md_id, BM, "Base: %p\n", start_addr);
+	/* Fix section */
+	for (i = 0; i < _16_fix_num; i++) {
+		CCCI_NOTICE_LOG(md_id, BM, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+		curr_p += 4;
+	}
+
+	/* Tail section */
+	if (tail_num > 0) {
+		curr_ch_p = (unsigned char *)curr_p;
+		for (j = 0; j < tail_num; j++) {
+			buf[j] = *curr_ch_p;
+			curr_ch_p++;
+		}
+		for (; j < 16; j++)
+			buf[j] = 0;
+		curr_p = (unsigned int *)buf;
+		CCCI_NOTICE_LOG(md_id, BM, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+	}
+}
+EXPORT_SYMBOL(ccci_error_dump);
+
 void ccci_mem_dump(int md_id, void *start_addr, int len)
 {
 	unsigned int *curr_p = (unsigned int *)start_addr;
