@@ -2317,8 +2317,11 @@ static int elf_core_dump(struct coredump_params *cprm)
 				page_cache_release(page);
 			} else
 				stop = !dump_skip(cprm, PAGE_SIZE);
-			if (stop)
+			if (stop) {
+				pr_err("%s: stop addr:0x%lx, vm_start:0x%lx, vm_end:0x%lx, dump_size:0x%lx\n",
+						__func__, addr, vma->vm_start, vma->vm_end, end - vma->vm_start);
 				goto end_coredump;
+			}
 		}
 	}
 
