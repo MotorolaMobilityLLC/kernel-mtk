@@ -76,7 +76,7 @@ static imgsensor_info_struct imgsensor_info =
 {
     .sensor_id = S5K2L7_SENSOR_ID,   /* record sensor id defined in Kd_imgsensor.h */
 
-    .checksum_value = 0xafb5098f,    /* checksum value for Camera Auto Test  */
+	.checksum_value = 0xb4cb9203,    /* checksum value for Camera Auto Test  */
 
     .pre = {
 
@@ -845,11 +845,11 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 
     if (enable)
     {
-        write_cmos_sensor(0x0600, 0x000C); // Grayscale
+		write_cmos_sensor_twobyte(0x0600, 0x0002); /* 100% colour bars*/
     }
     else
     {
-        write_cmos_sensor(0x0600, 0x0000); // Off
+		write_cmos_sensor_twobyte(0x0600, 0x0000);
     }
     spin_lock(&imgsensor_drv_lock);
     imgsensor.test_pattern = enable;

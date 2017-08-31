@@ -37,7 +37,7 @@
 {                                                                                                              \
     .sensor_id = S5K2L7_SENSOR_ID, /* record sensor id defined in Kd_imgsensor.h */                            \
                                                                                                                \
-    .checksum_value = 0xafb5098f,  /* checksum value for Camera Auto Test */                                   \
+	.checksum_value = 0xb4cb9203,  /* checksum value for Camera Auto Test */                                   \
                                                                                                                \
     .pre = {                                                                                                   \
                                                                                                                \

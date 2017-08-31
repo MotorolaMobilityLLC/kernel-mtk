@@ -90,7 +90,6 @@ static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
 /*Clock meter*/
 /* \drivers\misc\mediatek\base\power\{platform}\mt_pm_init.c */
-/*extern unsigned int abist_meter(int ID);*/
 static DEFINE_SPINLOCK(kdsensor_drv_lock);
 static DEFINE_SPINLOCK(kdsensor_drv_i2c_lock);
 
@@ -3935,41 +3934,14 @@ static long CAMERA_HW_Ioctl(
 	*(unsigned int *)pBuff = ISP_CLK_HIGH;
 #endif
 	break;
-/*
+
     case KDIMGSENSORIOC_X_GET_CSI_CLK:
-		//AD_CSI0A_DELAYCAL_CK_MUX =	54
-		//AD_CSI0B_DELAYCAL_CK_MUX	=	55
-		//AD_CSI1A_DELAYCAL_CK_MUX =	56
-		//AD_CSI1B_DELAYCAL_CK_MUX	=	57
-		//AD_CSI2_DELAYCAL_CK_MUX	=	58
-		//Case 18:AD_IMGPLL_450M_CK
-		PK_DBG("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
-		switch(*(unsigned int*)pBuff)
-		{
-			case 18 :
-			*(unsigned int*)pBuff = abist_meter(18);
-			break;
-			case 1 :
-			*(unsigned int*)pBuff = abist_meter(54);
-			break;
-			case 2 :
-			*(unsigned int*)pBuff = abist_meter(55);
-			break;
-			case 3 :
-			*(unsigned int*)pBuff = abist_meter(56);
-			break;
-			case 4 :
-			*(unsigned int*)pBuff = abist_meter(57);
-			break;
-			case 5 :
-			*(unsigned int*)pBuff = abist_meter(58);
-			break;
-			default:
-			PK_ERR("No such case");
-			break;
-		}
+		*(unsigned int *)pBuff = mt_get_ckgen_freq(*(unsigned int *)pBuff);
+		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(11));
+		PK_DBG("hf_fcam_ck = %d\n", mt_get_ckgen_freq(38));
+		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(56));
     break;
-*/
+
     default:
         PK_DBG("No such command %d\n",a_u4Command);
         i4RetValue = -EPERM;

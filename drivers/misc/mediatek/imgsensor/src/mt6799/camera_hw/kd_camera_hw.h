@@ -115,6 +115,7 @@ extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
 extern void ISP_MCLK3_EN(BOOL En);
 extern void ISP_MCLK4_EN(BOOL En);
+extern unsigned int mt_get_ckgen_freq(int ID);
 
 
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
