@@ -1361,11 +1361,11 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 							 prAdapter->prAisBssInfo->ucBssIndex,
 							 prAdapter->rWlanInfo.rCurrBssId.arMacAddress);
 			if (prStaRec) {
-				DBGLOG(RSN, EVENT, "MIC_ERR_PKT\n");
+				DBGLOG(RSN, ERROR, "MIC_ERR_PKT\n");
 				rsnTkipHandleMICFailure(prAdapter, prStaRec, 0);
 			}
 		} else if (HAL_RX_STATUS_IS_LLC_MIS(prRxStatus)) {
-			DBGLOG(RSN, EVENT, "LLC_MIS_ERR\n");
+			DBGLOG(RSN, ERROR, "LLC_MIS_ERR\n");
 			fgDrop = TRUE;	/* Drop after send de-auth  */
 		}
 	}
