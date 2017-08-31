@@ -1,5 +1,5 @@
-config MTK_PMIC_WRAP
-	tristate "MediaTek PMIC_WRAP driver"
+config MTK_PMIC_WRAP_HAL
+	bool "MediaTek PMIC_WRAP driver"
 	default y
 	---help---
 	  MediaTek PMIC_WRAP driver.
