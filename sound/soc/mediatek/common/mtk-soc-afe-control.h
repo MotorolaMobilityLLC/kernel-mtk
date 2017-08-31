@@ -317,4 +317,8 @@ struct mtk_afe_platform_ops *get_afe_platform_ops(void);
 int vcore_dvfs(bool *enable, bool reset);
 void set_screen_state(bool state);
 
+/* low latency debug */
+int get_LowLatencyDebug(void);
+void set_LowLatencyDebug(bool bFlag);
+
 #endif
