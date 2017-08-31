@@ -7010,6 +7010,9 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	_cmdq_handle_clear_dirty(cmdq_handle);
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 
+	disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+
 	_primary_path_lock(__func__);
 
 	primary_display_idlemgr_kick(__func__, 0);
@@ -7039,6 +7042,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
 	/* wait wdma0 sof */
 	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	disp_cmdq_wait_event(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	disp_cmdq_flush(cmdq_wait_handle, __func__, __LINE__);
 	DISPMSG("primary capture:Flush wait wdma sof\n");
 	disp_cmdq_reset(cmdq_handle);
@@ -7048,6 +7052,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	dpmgr_path_remove_memout(pgc->dpmgr_handle, cmdq_handle);
 
 	disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
+	disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	/* flush remove memory to cmdq */
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
