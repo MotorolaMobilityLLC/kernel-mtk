@@ -145,13 +145,13 @@
 
 	mmc3_pins_default: mmc3@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
