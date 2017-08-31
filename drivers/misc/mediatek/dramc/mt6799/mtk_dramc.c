@@ -2128,7 +2128,7 @@ static int __init dram_calib_perf_check(void)
 }
 
 /* NOTE: must be called after aed driver initialized (i.e. must be later than arch_initcall) */
-late_initcall_sync(dram_calib_perf_check);
+late_initcall(dram_calib_perf_check);
 #endif
 
 int dcm_dramc_ao_switch(unsigned int ch, int on)
