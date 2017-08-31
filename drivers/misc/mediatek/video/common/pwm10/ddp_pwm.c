@@ -665,7 +665,7 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 
 static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_MACH_MT6759)
+#ifndef CONFIG_MACH_MT6759
 	ddp_pwm_power_on(module, cmq_handle);
 #endif
 	return 0;
