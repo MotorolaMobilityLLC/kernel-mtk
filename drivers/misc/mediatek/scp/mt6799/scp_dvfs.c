@@ -48,7 +48,11 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
+
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_pmic_info.h"
+#endif
+
 /*
  * LOG
  */
@@ -187,8 +191,9 @@ unsigned int scp_get_dvfs_opp(void)
 
 short  scp_set_pmic_vcore(unsigned int cur_freq)
 {
-	unsigned short ret_vc, ret_vs;
 	short ret = 0;
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	unsigned short ret_vc, ret_vs;
 	unsigned int ret_val[2];
 
 #ifdef DVFS_FIRST_VERSION
@@ -222,7 +227,7 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE, 1);
 	ret_val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
 	ret_val[1] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_VOSEL);
-	scp_dvfs_err("scp_cur_volt %d\n", scp_cur_volt);
+	scp_dvfs_info("scp_cur_volt %d\n", scp_cur_volt);
 	scp_dvfs_info("vcore vosel, vsram vosel = (0x%x, 0x%x)\n", ret_val[0], ret_val[1]);
 #else
 	if (cur_freq > CLK_OPP3) {
@@ -250,6 +255,7 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 		ret = -1;
 		scp_dvfs_err("scp vcore / vsram setting error, (%d, %d)", ret_vc, ret_vs);
 	}
+#endif
 
 	return ret;
 }
@@ -265,7 +271,6 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 	int ret = 0;
 
 	/* scp_dvfs_info("flag = %d, sel = %d\n", pll_ctrl_flag, pll_sel); */
-#if 1
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
 		if (ret)
@@ -293,7 +298,6 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP4)
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
 
-#endif
 	return ret;
 }
 void scp_pll_ctrl_handler(int id, void *data, unsigned int len)
@@ -1026,6 +1030,7 @@ static struct platform_driver mt_scp_dvfs_pdrv = {
  ***********************************/
 void mt_pmic_sshub_init(void)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int ret[6];
 
 	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
@@ -1050,6 +1055,7 @@ void mt_pmic_sshub_init(void)
 	ret[5] = pmic_get_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_VOSEL);
 	scp_dvfs_info("vcore on, mode, vsram on, mode = (0x%x, 0x%x, 0x%x, 0x%x)\n", ret[0], ret[1], ret[2], ret[3]);
 	scp_dvfs_info("vcore vosel, vsram vosel = (0x%x, 0x%x)\n", ret[4], ret[5]);
+#endif
 }
 
 void mt_scp_dvfs_ipi_init(void)

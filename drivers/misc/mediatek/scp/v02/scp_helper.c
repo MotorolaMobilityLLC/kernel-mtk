@@ -1651,7 +1651,7 @@ int scp_request_freq(void)
 		goto fatal_error;
 	}
 	wake_unlock(&scp_suspend_lock);
-	pr_err("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	pr_info("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
 	return 0;
 
 fail_to_set_freq:
