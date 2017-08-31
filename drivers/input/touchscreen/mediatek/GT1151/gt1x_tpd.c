@@ -383,6 +383,7 @@ void gt1x_irq_enable(void)
 		irq_flag = 1;
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		enable_irq(touch_irq);
+		GTP_DEBUG("gt1x_irq_enable, irq_flag=%d", irq_flag);
 	} else if (irq_flag == 1) {
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already enabled!");
@@ -404,6 +405,7 @@ void gt1x_irq_disable(void)
 		irq_flag = 0;
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		disable_irq(touch_irq);
+		GTP_DEBUG("gt1x_irq_disable, irq_flag=%d", irq_flag);
 	} else if (irq_flag == 0) {
 		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already disabled!");
@@ -667,6 +669,7 @@ static irqreturn_t tpd_eint_interrupt_handler(unsigned irq, struct irq_desc *des
 	irq_flag = 0;
 	spin_unlock_irqrestore(&irq_flag_lock, flags);
 	disable_irq_nosync(touch_irq);
+	GTP_DEBUG("eint disable irq_flat=%d", irq_flag);
 	/*GTP_INFO("disable irq_flag=%d",irq_flag);*/
 	wake_up_interruptible(&waiter);
 	return IRQ_HANDLED;
@@ -1147,7 +1150,7 @@ static void tpd_resume(struct device *h)
 #endif
 	}
 #endif
-
+	gt1x_irq_disable();
 	ret = gt1x_wakeup_sleep();
 	if (ret < 0)
 		GTP_ERROR("GTP later resume failed.");

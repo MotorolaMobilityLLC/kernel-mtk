@@ -803,7 +803,7 @@ s32 gt1x_wakeup_sleep(void)
 	GTP_DEBUG("GTP wakeup begin.");
 
 #ifdef CONFIG_GTP_POWER_CTRL_SLEEP	/* power manager unit control the procedure */
-	gt1x_power_reset();
+	gt1x_power_reset2();
 	GTP_INFO("Ic wakeup by poweron");
 	return 0;
 #else				/* gesture wakeup & int port wakeup */
@@ -890,6 +890,40 @@ s32 gt1x_send_cmd(u8 cmd, u8 data)
 	mutex_unlock(&cmd_mutex);
 
 	return ret;
+}
+
+/**
+ * gt1x_power_reset2 - compare with gt1x_power_reset(), remove irq operation
+ * additional irq operation may lead to flow: enable->irq(disable)->enable
+ * if irq and second enable are very close, it could lead to touch hang
+ */
+
+void gt1x_power_reset2(void)
+{
+	s32 i = 0;
+	s32 ret = 0;
+
+	if (is_resetting || update_info.status)
+		return;
+	GTP_INFO("force_reset_guitar");
+	is_resetting = 1;
+	gt1x_power_switch(SWITCH_OFF);
+	msleep(30);
+	gt1x_power_switch(SWITCH_ON);
+	msleep(30);
+
+	for (i = 0; i < 5; i++) {
+		ret = gt1x_reset_guitar();
+		if (ret < 0)
+			continue;
+		ret = gt1x_send_cfg(gt1x_config, gt1x_cfg_length);
+		if (ret < 0) {
+			msleep(500);
+			continue;
+		}
+		break;
+	}
+	is_resetting = 0;
 }
 
 void gt1x_power_reset(void)
