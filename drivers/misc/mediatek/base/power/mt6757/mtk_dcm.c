@@ -960,7 +960,7 @@ static int mtk_dcm_dts_map(void)
 int mtk_dcm_init(void)
 {
 	unsigned int hw_ver;
-	u32 efuse;
+	u32 feature, segment;
 
 	/* if the dcm_initiated equals DCM_INIT_SUCCESS or DCM_INIT_FAIL, then return */
 	if (dcm_initiated)
@@ -972,19 +972,20 @@ int mtk_dcm_init(void)
 	}
 
 	hw_ver = mt_get_chip_hw_ver();
+	segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5; /* 0x10206054 */
 
 	if (hw_ver >= 0xCB00) {
-		efuse = get_devinfo_with_index(50); /* 0x10206580 */
+		feature = get_devinfo_with_index(50); /* 0x10206580 */
 
-		if ((efuse >> 21) & 0x1) {
+		if ((feature >> 21) & 0x1) {
 			init_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
 			enhance_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
 		}
 
-		if ((efuse >> 22) & 0x1)
+		if ((feature >> 22) & 0x1)
 			enhance_dcm_type |= STALL_DCM_TYPE;
 
-		if ((efuse >> 23) & 0x1) {
+		if ((segment == 0x1) && (feature >> 23) & 0x1) {
 			init_dcm_type |= LAST_CORE_DCM_TYPE;
 			enhance_dcm_type |= LAST_CORE_DCM_TYPE;
 		}
