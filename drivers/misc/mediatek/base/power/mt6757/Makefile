@@ -31,8 +31,6 @@ endif
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 
 #obj-y += mt_pm_init.o
-#obj-y += mt_static_power.o
-
 
 #obj-$(CONFIG_ARCH_MT6757) += mt_clkmgr.o
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
@@ -61,6 +59,7 @@ obj-y += mtk_eem_turbo.o
 obj-y += mtk_vcorefs_manager.o
 obj-y += mtk_vcorefs_governor.o
 #obj-y += mt_lowpower.o
+obj-y += mtk_static_power.o
 
 ifneq ($(CONFIG_ARM64), y)
 
