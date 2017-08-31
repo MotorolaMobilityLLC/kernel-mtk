@@ -1,26 +1,35 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
-/*
-* @file mt_cpufreq_internal.h
-* @brief CPU DVFS driver interface
-*/
+#ifndef __MTK_CPUFREQ_STRUCT_H__
+#define __MTK_CPUFREQ_STRUCT_H__
 
-#ifndef __MT_CPUFREQ_STRUCT_H__
-#define __MT_CPUFREQ_STRUCT_H__
+#include <linux/cpufreq.h>
+#include "mtk_cpufreq_config.h"
+
+struct mt_cpu_freq_method {
+	const char pos_div;
+	const char clk_div;
+};
+
+struct mt_cpu_freq_info {
+	const unsigned int cpufreq_khz;
+	unsigned int cpufreq_volt;
+};
 
 struct mt_cpu_dvfs {
 	const char *name;
+	const enum mt_cpu_dvfs_id id;
 	unsigned int cpu_id;
 	unsigned int cpu_level;
 	struct cpufreq_policy *mt_policy;
@@ -85,4 +94,5 @@ struct pll_ctrl_ops {
 	enum top_ckmuxsel (*get_clksrc)(struct pll_ctrl_t *pll_p);
 	int (*set_sync_dcm)(unsigned int mhz); /* set mhz */
 };
-#endif
+
+#endif	/* __MTK_CPUFREQ_STRUCT_H__ */
