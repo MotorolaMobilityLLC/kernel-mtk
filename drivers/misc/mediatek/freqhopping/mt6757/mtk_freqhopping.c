@@ -1748,3 +1748,11 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 	return 0;
 }
 
+static int mt_fh_init(void)
+{
+	mt_freqhopping_init();
+	return 0;
+}
+
+arch_initcall(mt_fh_init);
+

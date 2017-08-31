@@ -65,7 +65,7 @@ static int __init mt_power_management_init(void)
 
 	/*spm_module_init();*/ /* move to mtk_spm_init.c */
 	/*slp_module_init();*/ /* move to mtk_spm_init.c */
-	mt_freqhopping_init();
+	/* mt_freqhopping_init(); // FH init is back to done by FHCTL driver from kernel-4.4*/
 
 	/* mt_pm_log_init(); // power management log init */
 
