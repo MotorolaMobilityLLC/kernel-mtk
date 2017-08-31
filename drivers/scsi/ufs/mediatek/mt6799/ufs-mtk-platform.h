@@ -16,6 +16,12 @@
 #include "ufshcd.h"
 
 /*
+ * Platform dependent quirks
+ */
+
+#define UFS_MTK_PLATFORM_UFS_HCI_PERF_HEURISTIC
+
+/*
  * Platform dependent definitions
  */
 enum {

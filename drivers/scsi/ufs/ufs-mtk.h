@@ -270,6 +270,8 @@ int              ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute,
 					u16 gen_select_index, u32 *value, unsigned long retry_ms);
 void             ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
 void             ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
+int              ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+void             ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 int              ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int              ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int              ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
