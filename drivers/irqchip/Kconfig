@@ -193,3 +193,54 @@ config IRQ_MXS
 	def_bool y if MACH_ASM9260 || ARCH_MXS
 	select IRQ_DOMAIN
 	select STMP_DEVICE
+
+config MTK_EIC
+	bool
+	select IRQ_DOMAIN
+	help
+	  This option is used to enable external interrupt controller for
+	  MediaTek solutions.
+
+config MTK_SEC_DEINT_SUPPORT
+	bool
+	def_bool n
+	depends on MTK_EIC
+	help
+	  This option is used to enable a feature called secure direct eint support.
+	  This feature have to be enabled with MTK_SEC_DEIC_SUPPORT in ATF. ATF direct
+	  secure EINT driver have provide secure DEINT Configuration and Release command
+	  for SMC call originated from TEE and filter the SMC call from kernel. The change for
+	  kernel EINT driver is that mt_eint_set_deint() will check the wanted deint is secure
+	  direct eint, if yes, skip the configuration. if not, kernel can configure this deint.
+	  Since not every platform support secure direct eint, you must enable this config carefully.
+
+config MTK_INTPOL
+	bool
+	help
+	  Support for MediaTek intpol used on mt65xx/mt81xx.
+
+
+config MTK_EIC_HISTORY_DUMP
+	bool "Enable MTK EIC HISTORY Debugger"
+	def_bool n
+	depends on MTK_EIC
+	help
+	  This option is a debugging feature used to collect last eint interupts
+	  and its property before WDT TIMEOUT.
+	  With thie option, we could know which eint interrupt is triggered
+	  too often to cause system watchdog timeout.
+
+config MTK_IRQ_NEW_DESIGN
+	bool
+	help
+	  Support for new interrupt distribution design for MediaTek solutions.
+	  With this feature enabled, the SPI interrupts would be routed to all the
+	  cores rather than cpu0 to achieve better load balance of interrupt handling.
+
+config MTK_IRQ_NEW_DESIGN_DEBUG
+	bool
+	select MTK_IRQ_NEW_DESIGN
+	help
+	  Support for debugging feature for MediaTek new interrupt design.
+	  With this feature enabled, system would assert when an error occurs rather than
+	  output warning messages.
