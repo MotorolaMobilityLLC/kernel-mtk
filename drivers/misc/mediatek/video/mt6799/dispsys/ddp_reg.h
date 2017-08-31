@@ -1464,6 +1464,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 
 #define DISP_PWM_EN_OFF                         (0x00)
+#define DISP_PWM_RST_RX                         (0x04)
 #define DISP_PWM_COMMIT_OFF                     (0x0C)
 #define DISP_PWM_CON_0_OFF                      (0x18)
 #define DISP_PWM_CON_1_OFF                      (0x1C)
