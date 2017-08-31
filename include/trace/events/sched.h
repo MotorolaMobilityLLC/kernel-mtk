@@ -935,7 +935,7 @@ sched_trace(sched_preempt);
  #endif
 
 // mtk scheduling interopertion enhancement
- #ifdef CONFIG_MT_SCHED_INTEROP
+ #ifdef CONFIG_MTK_SCHED_INTEROP
 sched_trace(sched_interop);
  #endif
 #endif /* CONFIG_MTK_SCHED_TRACE */
