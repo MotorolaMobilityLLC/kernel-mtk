@@ -32,19 +32,16 @@ enum AUTOK_VCORE {
 };
 
 /**********************************************************
-* Variable Declaration                                    *
-**********************************************************/
-extern u8 sdio_autok_res[2][TUNING_PARAM_COUNT];
-extern u8 emmc_autok_res[2][TUNING_PARAM_COUNT];
-extern u8 sd_autok_res[2][TUNING_PARAM_COUNT];
-
-/**********************************************************
 * Function Declaration                                    *
 **********************************************************/
 extern int sdio_autok_res_exist(struct msdc_host *host);
 extern int sdio_autok_res_apply(struct msdc_host *host, int vcore);
 extern int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res);
 extern void sdio_autok_wait_dvfs_ready(void);
+extern int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
+extern int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
+extern void sdio_execute_dvfs_autok(struct msdc_host *host);
+
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void sdio_set_hw_dvfs(int vcore, int done, struct msdc_host *host);

@@ -18,18 +18,32 @@
 #include <linux/fs.h>
 
 #include "autok_dvfs.h"
+#include "mtk_sd.h"
 
-#define SDIO_AUTOK_HIGH_RES_PATH    "/data/sdio_autok_high"  /* E1 only use high */
-#define SDIO_AUTOK_LOW_RES_PATH     "/data/sdio_autok_low"   /* E2 use low and high with DFFS */
+#define SDIO_AUTOK_HIGH_RES_PATH    "/data/sdio_autok_high"
+#define SDIO_AUTOK_LOW_RES_PATH     "/data/sdio_autok_low"
 
 #define SDIO_AUTOK_DIFF_MARGIN      3
 
-u8 sdio_autok_res[2][TUNING_PARAM_COUNT];
-u8 emmc_autok_res[2][TUNING_PARAM_COUNT];
-u8 sd_autok_res[2][TUNING_PARAM_COUNT];
-
 #define SDIO_ABACKUP_REG_COUNT      10
 static u32 sdio_reg_backup[2][SDIO_ABACKUP_REG_COUNT];
+
+#if 0
+/* maybe move it to msdc_cust.c */
+static u32 get_current_vcore(void)
+{
+	u32 ldo_vol, vcore_mv;
+
+	pmic_read_interface(REG_VCORE_VOSEL_SW, &ldo_vol,
+			VCORE_VOSEL_SW_MASK, 0);
+	/* pmic_read_interface(REG_VCORE_VOSEL_SW, &ldo_vol,
+	 *	VCORE_VOSEL_HW_MASK, 0);
+	*/
+
+	/* return ldo_vol; */
+	return 1000000;
+}
+#endif
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -110,10 +124,10 @@ int sdio_autok_res_apply(struct msdc_host *host, int vcore)
 	int i;
 
 	if (vcore <= AUTOK_VCORE_LOW) {
-		res = sdio_autok_res[AUTOK_VCORE_LOW];
+		res = host->autok_res[AUTOK_VCORE_LOW];
 		filp = msdc_file_open(SDIO_AUTOK_LOW_RES_PATH, O_RDONLY, 0644);
 	} else {
-		res = sdio_autok_res[AUTOK_VCORE_HIGH];
+		res = host->autok_res[AUTOK_VCORE_HIGH];
 		filp = msdc_file_open(SDIO_AUTOK_HIGH_RES_PATH, O_RDONLY, 0644);
 	}
 
@@ -146,10 +160,10 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 		return ret;
 
 	if (vcore <= AUTOK_VCORE_LOW) {
-		memcpy((void *)sdio_autok_res[AUTOK_VCORE_LOW], (const void *)res, TUNING_PARAM_COUNT);
+		memcpy((void *)host->autok_res[AUTOK_VCORE_LOW], (const void *)res, TUNING_PARAM_COUNT);
 		filp = msdc_file_open(SDIO_AUTOK_LOW_RES_PATH, O_CREAT | O_WRONLY, 0644);
 	} else {
-		memcpy((void *)sdio_autok_res[AUTOK_VCORE_HIGH], (const void *)res, TUNING_PARAM_COUNT);
+		memcpy((void *)host->autok_res[AUTOK_VCORE_HIGH], (const void *)res, TUNING_PARAM_COUNT);
 		filp = msdc_file_open(SDIO_AUTOK_HIGH_RES_PATH, O_CREAT | O_WRONLY, 0644);
 	}
 
@@ -180,8 +194,9 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > SDIO_AUTOK_DIFF_MARGIN))
 				ret = -1;
 		} else if ((i == CMD_RD_D_DLY1_SEL) || (i == DAT_RD_D_DLY1_SEL)) {
-			/* this is cover by previous check, */
-			/* just by pass if 0 and 1 in cmd/dat delay */
+			/* this is cover by previous check,
+			 * just by pass if 0 and 1 in cmd/dat delay
+			 */
 		} else {
 			if (res_h[i] != res_l[i])
 				ret = -1;
@@ -328,6 +343,143 @@ void sdio_autok_wait_dvfs_ready(void)
 		pr_err("DVFS ready\n");
 }
 
+int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
+{
+	int ret = 0;
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(true);
+#endif
+
+	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
+	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
+		if (host->is_autok_done == 0) {
+			pr_err("[AUTOK]SDcard autok\n");
+			ret = autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
+			host->is_autok_done = 1;
+		} else {
+			autok_init_sdr104(host);
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
+		}
+	}
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(false);
+#endif
+
+	return ret;
+}
+
+int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
+{
+	int ret = 0;
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(true); /* set PWM mode for MT6351 */
+#endif
+
+	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
+		if (opcode == MMC_SEND_STATUS) {
+			pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
+			ret = hs200_execute_tuning_cmd(host, res);
+		} else {
+			pr_err("[AUTOK]eMMC HS200 Tune\n");
+			ret = hs200_execute_tuning(host, res);
+		}
+	} else if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400) {
+		if (opcode == MMC_SEND_STATUS) {
+			pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
+			ret = hs400_execute_tuning_cmd(host, res);
+		} else {
+			pr_err("[AUTOK]eMMC HS400 Tune\n");
+			ret = hs400_execute_tuning(host, res);
+		}
+	}
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(false); /* set non-PWM mode for MT6351 */
+#endif
+
+	return ret;
+}
+
+void sdio_execute_dvfs_autok(struct msdc_host *host)
+{
+	int sdio_res_exist = 0;
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(true);
+#endif
+
+	if (host->is_autok_done) {
+		autok_init_sdr104(host);
+#ifdef ENABLE_FOR_MSDC_KERNEL44
+		/* Check which vcore setting to apply */
+		if (vcorefs_get_hw_opp() == OPPI_PERF)
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
+		else
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LOW]);
+#else
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
+#endif
+		return;
+	}
+	/* HQA need read autok setting from file */
+	sdio_res_exist = sdio_autok_res_exist(host);
+
+	pr_err("[AUTOK]SDIO SDR104 Tune\n");
+	/* Wait DFVS ready for excute autok here */
+	sdio_autok_wait_dvfs_ready();
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
+	/* Performance mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_PERF) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+#endif
+	if (sdio_res_exist)
+		sdio_autok_res_apply(host, AUTOK_VCORE_HIGH);
+	else
+		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
+	sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
+	/* Low power mode, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_LOW_PWR fail!\n");
+#endif
+	if (sdio_res_exist)
+		sdio_autok_res_apply(host, AUTOK_VCORE_LOW);
+	else
+		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_LOW]);
+	sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+
+	if (autok_res_check(host->autok_res[AUTOK_VCORE_HIGH],
+			host->autok_res[AUTOK_VCORE_LOW]) == 0) {
+		pr_err("[AUTOK] No need change para when dvfs\n");
+	} else {
+		pr_err("[AUTOK] Need change para when dvfs\n");
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
+		/* Use HW DVFS */
+		sdio_use_dvfs = 1;
+		/* Enable DVFS handshake */
+		spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
+#endif
+	}
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
+	/* Un-request, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+#endif
+	host->is_autok_done = 1;
+	complete(&host->autok_done);
+
+#ifndef FPGA_PLATFORM
+	pmic_force_vcore_pwm(false);
+#endif
+}
+
 int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
@@ -343,33 +495,29 @@ int emmc_autok(void)
 #if 0 /* Wait Light confirm */
 	mmc_claim_host(mmc);
 
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_PERF) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+#endif
 
-	if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
-		pr_err("[AUTOK]eMMC HS200 Tune\r\n");
-		hs200_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_HIGH]);
-	} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
-		pr_err("[AUTOK]eMMC HS400 Tune\r\n");
-		hs400_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_HIGH]);
-	}
+	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
+		host->autok_res[AUTOK_VCORE_HIGH]);
 
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Low power mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_LOW_PWR) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+#endif
 
-	if (mmc->ios.timing == MMC_TIMING_MMC_HS200) {
-		pr_err("[AUTOK]eMMC HS200 Tune\r\n");
-		hs200_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_LOW]);
-	} else if (mmc->ios.timing == MMC_TIMING_MMC_HS400) {
-		pr_err("[AUTOK]eMMC HS400 Tune\r\n");
-		hs400_execute_tuning(host, emmc_autok_res[AUTOK_VCORE_LOW]);
-	}
+	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
+		host->autok_res[AUTOK_VCORE_LOW]);
 
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+#endif
 
 	mmc_release_host(mmc);
 #endif
@@ -378,6 +526,9 @@ int emmc_autok(void)
 }
 EXPORT_SYMBOL(emmc_autok);
 
+/* FIX ME: Since card can be insert at any time but this is invoked only once
+ * when DVFS ready, this function is not suitable for card insert after boot
+ */
 int sd_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[1];
@@ -389,23 +540,32 @@ int sd_autok(void)
 	}
 
 	pr_err("sd autok\n");
-
 #if 0 /* Wait Cool confirm */
 	mmc_claim_host(mmc);
 
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_PERF) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-	autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_HIGH]);
+#endif
 
+	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
+		host->autok_res[AUTOK_VCORE_HIGH]);
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Low power mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_LOW_PWR) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-	autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_LOW]);
+#endif
 
+	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
+		host->autok_res[AUTOK_VCORE_LOW]);
+
+#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+#endif
 
 	mmc_release_host(mmc);
 #endif

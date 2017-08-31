@@ -25,11 +25,10 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 
-#include <dt-bindings/mmc/mt6757-msdc.h>
+#include "msdc_cust.h"
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#include <linux/mutex.h>
-#endif
+#include "autok.h"
+#include "autok_dvfs.h"
 
 /* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
@@ -52,21 +51,6 @@
 #ifdef MTK_MSDC_USE_CMD23
 #define MSDC_USE_AUTO_CMD23             (1)
 #endif
-
-#ifdef MTK_MSDC_USE_CACHE
-#ifndef MMC_ENABLED_EMPTY_QUEUE_FLUSH
-#endif
-#endif
-
-#define HOST_MAX_NUM                    (3)
-#define MAX_REQ_SZ                      (512 * 1024)
-
-#ifdef FPGA_PLATFORM
-#define HOST_MAX_MCLK                   (200000000)
-#else
-#define HOST_MAX_MCLK                   (200000000)
-#endif
-#define HOST_MIN_MCLK                   (260000)
 
 /* ================================= */
 
@@ -116,9 +100,6 @@
 #define MSDC_AUTOCMD19          (0x0003)
 #define MSDC_AUTOCMD53          (0x0004)
 
-#define MSDC_EMMC_BOOTMODE0     (0)     /* Pull low CMD mode */
-#define MSDC_EMMC_BOOTMODE1     (1)     /* Reset CMD mode */
-
 enum {
 	RESP_NONE = 0,
 	RESP_R1,
@@ -142,7 +123,6 @@ enum {
 #define TYPE_CMD_RESP_EDGE              (0)
 #define TYPE_WRITE_CRC_EDGE             (1)
 #define TYPE_READ_DATA_EDGE             (2)
-#define TYPE_WRITE_DATA_EDGE            (3)
 
 #define CARD_READY_FOR_DATA             (1<<8)
 #define CARD_CURRENT_STATE(x)           ((x&0x00001E00)>>9)
@@ -171,52 +151,42 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_EXT_SDIO_IRQ   (1 << 4)  /* use external sdio irq         */
 #define MSDC_REMOVABLE      (1 << 5)  /* removable slot                */
 #define MSDC_SYS_SUSPEND    (1 << 6)  /* suspended by system           */
-#define MSDC_SD_NEED_POWER  (1 << 31) /* for some board, need SD power always on!! or cannot recognize the sd card*/
+/* for some board, need SD power always on!! or cannot recognize the sd card*/
+#define MSDC_SD_NEED_POWER  (1 << 31)
 
+/*
 #define MSDC_CMD_PIN        (0)
 #define MSDC_DAT_PIN        (1)
 #define MSDC_CD_PIN         (2)
 #define MSDC_WP_PIN         (3)
 #define MSDC_RST_PIN        (4)
+*/
 
 #define MSDC_DATA1_INT      (1)
 
 #define MSDC_BOOT_EN        (1)
+
+struct msdc_hw_driving {
+	unsigned char cmd_drv;  /* command pad driving */
+	unsigned char dat_drv;  /* data pad driving */
+	unsigned char clk_drv;  /* clock pad driving */
+	unsigned char rst_drv;  /* RST-N pad driving */
+	unsigned char ds_drv;   /* eMMC5.0 DS pad driving */
+};
 
 struct msdc_hw {
 	unsigned char clk_src;  /* host clock source */
 	unsigned char cmd_edge; /* command latch edge */
 	unsigned char rdata_edge;       /* read data latch edge */
 	unsigned char wdata_edge;       /* write data latch edge */
-	unsigned char clk_drv;  /* clock pad driving */
-	unsigned char cmd_drv;  /* command pad driving */
-	unsigned char dat_drv;  /* data pad driving */
-	unsigned char rst_drv;  /* RST-N pad driving */
-	unsigned char ds_drv;   /* eMMC5.0 DS pad driving */
-	unsigned char clk_drv_sd_18;    /* clock pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char cmd_drv_sd_18;    /* command pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char dat_drv_sd_18;    /* data pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char clk_drv_sd_18_sdr50;      /* clock pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char cmd_drv_sd_18_sdr50;      /* command pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char dat_drv_sd_18_sdr50;      /* data pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char clk_drv_sd_18_ddr50;      /* clock pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char cmd_drv_sd_18_ddr50;      /* command pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char dat_drv_sd_18_ddr50;      /* data pad driving for SD card at 1.8v ddr50 mode */
-	unsigned long flags;    /* hardware capability flags */
+	struct msdc_hw_driving *driving_applied;
+	struct msdc_hw_driving driving;
+	struct msdc_hw_driving driving_sd_sdr104;
+	struct msdc_hw_driving driving_sd_sdr50;
+	struct msdc_hw_driving driving_sd_ddr50;
+	unsigned long flags;            /* hardware capability flags */
 
-	unsigned char datrddly[8];      /*read; range: 0~31*/
-	unsigned char datwrddly;        /*write; range: 0~31*/
-	unsigned char cmdrrddly;        /*cmd; range: 0~31*/
-	unsigned char cmdrddly;         /*cmd; range: 0~31*/
-
-	unsigned char cmdrtactr_sdr50;  /* command response turn around counter, sdr 50 mode*/
-	unsigned char wdatcrctactr_sdr50;       /* write data crc turn around counter, sdr 50 mode*/
-	unsigned char intdatlatcksel_sdr50;     /* internal data latch CK select, sdr 50 mode*/
-	unsigned char cmdrtactr_sdr200; /* command response turn around counter, sdr 200 mode*/
-	unsigned char wdatcrctactr_sdr200;      /* write data crc turn around counter, sdr 200 mode*/
-	unsigned char intdatlatcksel_sdr200;    /* internal data latch CK select, sdr 200 mode*/
-
-	unsigned int  boot;              /* define boot host */
+	unsigned char boot;             /* define boot host */
 	unsigned char host_function;    /* define host function */
 	unsigned char cd_level;         /* card detection level */
 
@@ -293,12 +263,6 @@ struct msdc_dma {
 	u8  mode;                    /* dma mode        */
 	u8  burstsz;                 /* burst size      */
 	u8  intr;                    /* dma done interrupt */
-	u8  padding;                 /* padding */
-	u32 cmd;                     /* enhanced mode command */
-	u32 arg;                     /* enhanced mode arg */
-	u32 rsp;                     /* enhanced mode command response */
-	u32 autorsp;                 /* auto command response */
-
 	struct gpd_t *gpd;           /* pointer to gpd array */
 	struct bd_t  *bd;            /* pointer to bd array */
 	dma_addr_t gpd_addr;         /* the physical address of gpd array */
@@ -315,8 +279,8 @@ struct msdc_saved_para {
 	u32 ddly1;
 	u8 suspend_flag;
 	u32 msdc_cfg;
-	u32 mode;
-	u32 div;
+	u32 mode;	/* FIX ME: maybe removed */
+	u32 div;	/* FIX ME: maybe removed */
 	u32 sdc_cfg;
 	u32 iocon;
 	u8 timing;
@@ -324,16 +288,6 @@ struct msdc_saved_para {
 	u8 int_dat_latch_ck_sel;
 	u8 ckgen_msdc_dly_sel;
 	u8 inten_sdio_irq;
-
-	/* for write: 3T need wait before host
-	 * check busy after crc status
-	 */
-	u8 write_busy_margin;
-	/* for write: host check timeout change
-	 * to 16T
-	 */
-	u8 write_crc_margin;
-
 	u8 ds_dly1;
 	u8 ds_dly3;
 	u32 emmc50_pad_cmd_tune;
@@ -343,22 +297,8 @@ struct msdc_saved_para {
 	u32 emmc50_dat67;
 	u32 pb1;
 	u32 pb2;
+	u32 sdc_fifo_cfg;
 };
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#define dbg_max_cnt (100)
-struct dbg_run_host_log {
-	unsigned long long time_sec;
-	unsigned long long time_usec;
-	int type;
-	int cmd;
-	int arg;
-	int arg1;
-	int arg2;
-};
-
-#define dbg_claimed_cnt (100)
-#endif
 
 struct msdc_host {
 	struct msdc_hw          *hw;
@@ -369,13 +309,10 @@ struct msdc_host {
 	struct mmc_request      *mrq;
 	int                     err_cmd;
 	int                     cmd_rsp;
-	int                     cmd_rsp_done;
-	int                     cmd_r1b_done;
 
 	int                     error;
 	spinlock_t              lock;           /* mutex */
 	spinlock_t              clk_gate_lock;
-
 	/* to solve removing bad card
 	 * race condition with hot-plug enable
 	 */
@@ -394,9 +331,6 @@ struct msdc_host {
 
 	struct msdc_dma         dma;            /* dma channel */
 	u64                     dma_mask;
-	u32                     dma_addr;       /* dma transfer address */
-	u32                     dma_left_size;  /* dma transfer left size */
-	u32                     dma_xfer_size;  /* dma transfer size in bytes */
 	int                     dma_xfer;       /* dma transfer mode */
 
 	u32                     write_timeout_ms; /* write busy timeout ms */
@@ -407,10 +341,9 @@ struct msdc_host {
 
 	int                     irq;            /* host interrupt */
 
-	struct tasklet_struct   card_tasklet;
 	struct completion       autok_done;
 
-	struct completion       cmd_done;
+	struct completion       cmd_done;	/* FIX ME, try to removed it */
 	struct completion       xfer_done;
 	struct pm_message       pm_state;
 
@@ -423,21 +356,21 @@ struct msdc_host {
 	u8                      bus_width;
 	u8                      card_inserted;  /* card inserted ? */
 	u8                      suspend;        /* host suspended ? */
+	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
 	u32                     app_cmd_arg;
-	u64                     starttime;
 	struct timer_list       timer;
-	u8                      autocmd;
 	u32                     sw_timeout;
-	/* msdc autok */
 	bool                    tuning_in_progress;
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
 	bool                    is_autok_done;
+	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
 	u32                     device_status;
 	int                     tune_smpl_times;
 	u32                     tune_latch_ck_cnt;
+	u32                     total_sectors;
 	struct msdc_saved_para  saved_para;
 	struct wakeup_source    trans_lock;
 	bool                    block_bad_card;
@@ -448,43 +381,14 @@ struct msdc_host {
 	void    (*power_control)(struct msdc_host *host, u32 on);
 	void    (*power_switch)(struct msdc_host *host, u32 on);
 	u32                     vmc_cal_default;
+	u32                     power_io;
+	u32                     power_flash;
 
-	struct clk *clock_control;
+	struct clk              *clock_control;
 	struct delayed_work	work_init; /* for init mmc card */
 	struct platform_device  *pdev;
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	u32                     cmdq_enable;
-	struct mmc_request      *data_mrq; /* the mrq of data of cmd46&47 is transferring */
-	struct work_struct      work_cmdq; /* new thread for cmdq */
-
-	bool                    need_tune_cq;
-	bool                    need_tune_cq_cmd;
-	bool                    need_tune_cq_data;
-	bool                    cq_doing_task;
-
-	wait_queue_head_t       cq_tune_que;
-	struct mmc_command      chk_cmd;
-	struct mmc_request      chk_mrq;
-	/* the reuests in msdc cmdq queue which are handling. */
-	struct mmc_request      *cmdq_mrq[EMMC_MAX_QUEUE_DEPTH];
-
-	struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
-	int dbg_host_cnt;
-
-	spinlock_t              cmd_dump_lock;
-
-	/* cmd13 and cmd46&47 can not be send at the same time in ws */
-	struct mutex            cq_cmd_lock;
-#endif
-
 	int                     prev_cmd_cause_dump;
-};
-
-enum {
-	TRAN_MOD_PIO,
-	TRAN_MOD_DMA,
-	TRAN_MOD_NUM
 };
 
 enum {
@@ -498,14 +402,6 @@ struct dma_addr {
 	u32 size;
 	u8 end;
 	struct dma_addr *next;
-};
-
-struct msdc_reg_control {
-	ulong addr;
-	u32 mask;
-	u32 value;
-	u32 default_value;
-	/*int (*restore_func)(int restore);*/
 };
 
 static inline unsigned int uffs(unsigned int x)
@@ -588,6 +484,17 @@ static inline unsigned int uffs(unsigned int x)
 #define sdc_is_busy()           (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
 #define sdc_is_cmd_busy()       (MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define sdc_send_cmdq_cmd(opcode, arg) \
+	do { \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN \
+			| MSDC_EMMC51_CFG_NUM | MSDC_EMMC51_CFG_RSPTYPE \
+			| MSDC_EMMC51_CFG_DTYPE, (0x81) | (opcode << 1)); \
+		MSDC_WRITE32(SDC_ARG, (arg)); \
+		MSDC_WRITE32(SDC_CMD, (0x0)); \
+	} while (0)
+#endif
+
 #define sdc_send_cmd(cmd, arg) \
 	do { \
 		MSDC_WRITE32(SDC_ARG, (arg)); \
@@ -654,6 +561,10 @@ static inline unsigned int uffs(unsigned int x)
 
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
+extern u32 latest_int_status[];
+extern unsigned int msdc_latest_op[];
+extern unsigned int sd_register_zone[];
+
 #ifdef MSDC_DMA_ADDR_DEBUG
 extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
 #endif
@@ -665,11 +576,8 @@ enum {
 	MODE_PIO = 0,
 	MODE_DMA = 1,
 	MODE_SIZE_DEP = 2,
+	MODE_NONE = 3,
 };
-
-/* Variable declared in dbg.c */
-extern u32 msdc_host_mode[];
-extern u32 msdc_host_mode2[];
 
 extern unsigned int sd_debug_zone[];
 extern u32 drv_mode[];
@@ -682,6 +590,8 @@ extern bool emmc_sleep_failed;
 
 extern int msdc_rsp[];
 
+extern u16 msdc_offsets[];
+
 /**********************************************************/
 /* Functions                                               */
 /**********************************************************/
@@ -693,14 +603,12 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 void msdc_clr_fifo(unsigned int id);
 unsigned int msdc_do_command(struct msdc_host *host,
 	struct mmc_command *cmd,
-	int                 tune,
 	unsigned long       timeout);
 void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
 void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
-void msdc_get_cache_region(struct work_struct *work);
-void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
+int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
@@ -708,16 +616,26 @@ int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 int msdc_get_dma_status(int host_id);
 struct msdc_host *msdc_get_host(int host_function, bool boot,
 	bool secondary);
+void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
 void msdc_select_clksrc(struct msdc_host *host, int clksrc);
 void msdc_send_stop(struct msdc_host *host);
 void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz);
 void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 	u8 *edge);
 void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode);
+void msdc_set_check_endbit(struct msdc_host *host, bool enable);
 int msdc_switch_part(struct msdc_host *host, char part_id);
-int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
+
+/* Function provided by msdc_tune.c */
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+unsigned int msdc_do_cmdq_command(struct msdc_host *host,
+	struct mmc_command *cmd,
+	unsigned long timeout);
+#endif
+
 /* Function provided by msdc_partition.c */
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 void msdc_proc_emmc_create(void);
@@ -730,15 +648,12 @@ u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
 
 /* Function provided by mmc/core/sd.c */
+/* FIX ME: maybe removed in kernel 4.4 */
 int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr,
 	struct mmc_card *card);
 
 /* Function provided by mmc/core/bus.c */
 void mmc_remove_card(struct mmc_card *card);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-void msdc_cmdq_mode_switch(struct msdc_host *host, int enable);
-#endif
 
 #define check_mmc_cache_ctrl(card) \
 	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
@@ -746,24 +661,34 @@ void msdc_cmdq_mode_switch(struct msdc_host *host, int enable);
 	((cmd->opcode == MMC_SWITCH) && \
 	 (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE) && \
 	 (((cmd->arg >> 8) & 0x1)))
-#define check_mmc_cmd2425(opcode) \
-	((opcode == MMC_WRITE_MULTIPLE_BLOCK) || \
-	 (opcode == MMC_WRITE_BLOCK))
+
+#define check_mmc_cmd001213(opcode) \
+	((opcode == MMC_GO_IDLE_STATE) || \
+	 (opcode == MMC_STOP_TRANSMISSION) || \
+	 (opcode == MMC_SEND_STATUS))
+
+#define check_mmc_cmd081921(opcode) \
+	((opcode == MMC_SEND_EXT_CSD) || \
+	 (opcode == MMC_SEND_TUNING_BLOCK) || \
+	 (opcode == MMC_SEND_TUNING_BLOCK_HS200))
+
 #define check_mmc_cmd1718(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_READ_SINGLE_BLOCK))
-
+#define check_mmc_cmd2425(opcode) \
+	((opcode == MMC_WRITE_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_WRITE_BLOCK))
 #define check_mmc_cmd1825(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
 
-#define check_mmc_cmd01213(opcode) \
-	((opcode == MMC_GO_IDLE_STATE) || \
-	 (opcode == MMC_STOP_TRANSMISSION) || \
-	 (opcode == MMC_SEND_STATUS))
 #define check_mmc_cmd4445(opcode) \
 	((opcode == MMC_SET_QUEUE_CONTEXT) || \
 	 (opcode == MMC_QUEUE_READ_ADDRESS))
+#define check_mmc_cmd46(opcode) \
+	(opcode == MMC_READ_REQUESTED_QUEUE)
+#define check_mmc_cmd47(opcode) \
+	(opcode == MMC_WRITE_REQUESTED_QUEUE)
 #define check_mmc_cmd4647(opcode) \
 	((opcode == MMC_READ_REQUESTED_QUEUE) || \
 	 (opcode == MMC_WRITE_REQUESTED_QUEUE))

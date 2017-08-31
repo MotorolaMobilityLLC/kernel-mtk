@@ -38,8 +38,6 @@ enum {
 	MMC_PERF_DEBUG = 15,
 	MMC_PERF_DEBUG_PRINT = 16,
 	SD_TOOL_SET_RDTDSEL = 17,
-	MMC_REGISTER_READ = 18,
-	MMC_REGISTER_WRITE = 19,
 	MSDC_READ_WRITE = 20,
 	MMC_ERROR_TUNE = 21,
 	MMC_EDC_EMMC_CACHE = 22,
@@ -47,13 +45,9 @@ enum {
 	MMC_ETT_TUNE = 24,
 	MMC_CRC_STRESS = 25,
 	ENABLE_AXI_MODULE = 26,
-	MMC_DUMP_EXT_CSD = 27,
-	MMC_DUMP_CSD = 28,
 	DO_AUTOK_OFFLINE_TUNE_TX = 29,
 	SDIO_AUTOK_RESULT = 30,
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	MMC_CMDQ_STATUS = 31,
-#endif
 };
 
 /* Debug message event */
@@ -68,7 +62,7 @@ enum {
 #define DBG_EVT_FIO         (1 << 7)    /* FIFO operation event */
 #define DBG_EVT_WRN         (1 << 8)    /* Warning event */
 #define DBG_EVT_PWR         (1 << 9)    /* Power event */
-#define DBG_EVT_CLK         (1 << 10)   /* Trace clock gate/ungate operation */
+#define DBG_EVT_CLK         (1 << 10)   /* Clock gate/ungate operation */
 #define DBG_EVT_CHE         (1 << 11)   /* eMMC cache feature operation */
 /* ==================================================== */
 #define DBG_EVT_RW          (1 << 12)   /* Trace the Read/Write Command */
@@ -82,7 +76,7 @@ enum {
 do {    \
 	if ((DBG_EVT_##evt) & sd_debug_zone[host->id]) { \
 		pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-			host->id,  ##args, __func__, __LINE__, \
+			host->id, ##args, __func__, __LINE__, \
 			current->comm, current->pid); \
 	}   \
 } while (0)
@@ -90,7 +84,7 @@ do {    \
 #if 1
 #define ERR_MSG(fmt, args...) \
 	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-		host->id,  ##args, __func__, __LINE__, current->comm, \
+		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
 #else
@@ -103,7 +97,7 @@ do { \
 		msdc_print_start_time = sched_clock(); \
 		pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
 			"PID<%s><0x%x>\n", \
-			host->id,  ##args, __func__, __LINE__, \
+			host->id, ##args, __func__, __LINE__, \
 			current->comm, current->pid); \
 	} else { \
 		msdc_print_end_time = sched_clock();    \
@@ -111,14 +105,14 @@ do { \
 			MAX_PRINT_PERIOD) { \
 			pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : L<%d> " \
 				"PID<%s><0x%x>\n", \
-				host->id,  ##args, __func__, __LINE__, \
+				host->id, ##args, __func__, __LINE__, \
 				current->comm, current->pid); \
 			print_nums = 0; \
 		} \
 		if (print_nums <= MAX_PRINT_NUMS_OVER_PERIOD) { \
 			pr_err(TAGMSDC"MSDC", TAG"%d -> "fmt" <- %s() : " \
 				"L<%d> PID<%s><0x%x>\n", \
-				host->id,  ##args, __func__, \
+				host->id, ##args, __func__, \
 				__LINE__, current->comm, current->pid); \
 			print_nums++;   \
 		} \
@@ -128,22 +122,22 @@ do { \
 
 #define INIT_MSG(fmt, args...) \
 	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-		host->id,  ##args, __func__, __LINE__, current->comm, \
+		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
 #define SIMPLE_INIT_MSG(fmt, args...) \
-	pr_err("%d:"fmt"\n", id,  ##args)
+	pr_err("%d:"fmt"\n", id, ##args)
 
 #define INFO_MSG(fmt, args...) \
 	pr_debug(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-		host->id,  ##args, __func__, __LINE__, current->comm, \
+		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
 #if 0
 /* PID in ISR in not corrent */
 #define IRQ_MSG(fmt, args...) \
 	pr_err(TAGMSDC"%d -> "fmt" <- %s() : L<%d>\n", \
-		host->id,  ##args, __func__, __LINE__)
+		host->id, ##args, __func__, __LINE__)
 #else
 #define IRQ_MSG(fmt, args...)
 #endif
@@ -151,20 +145,23 @@ do { \
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
-void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq);
-u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
+void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode,
+	int cmdq);
+void sdio_get_time(struct mmc_request *mrq, struct timespec *time_now);
+void sdio_calc_time(struct mmc_request *mrq, struct timespec *time_start);
 
-void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
-	struct mmc_command *sbc, u32 *intsts);
-void msdc_error_tune_debug2(struct msdc_host *host, struct mmc_command *stop,
-	u32 *intsts);
-void msdc_error_tune_debug3(struct msdc_host *host, struct mmc_command *cmd,
-	u32 *intsts);
+void msdc_error_tune_debug1(struct msdc_host *host,
+	struct mmc_command *cmd, struct mmc_command *sbc, u32 *intsts);
+void msdc_error_tune_debug2(struct msdc_host *host,
+	struct mmc_command *stop, u32 *intsts);
+void msdc_error_tune_debug3(struct msdc_host *host,
+	struct mmc_command *cmd, u32 *intsts);
 int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-void dbg_add_host_log(struct msdc_host *host, int type, int cmd, int arg, int arg1, int arg2);
-void mmc_cmd_dump(struct msdc_host *host);
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
+void mmc_cmd_dump(struct mmc_host *mmc);
 #endif
+void msdc_cmdq_status_print(struct msdc_host *host);
 
 #endif

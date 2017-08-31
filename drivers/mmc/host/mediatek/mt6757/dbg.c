@@ -131,9 +131,8 @@ struct sdio_profile {
 static char cmd_buf[256];
 
 /* for driver profile */
-#define TICKS_ONE_MS  (13000)
-u32 gpt_enable;
-u32 sdio_pro_enable;	/* make sure gpt is enabled */
+#define TICKS_ONE_MS  (1000000)
+u32 sdio_pro_enable;
 static unsigned long long sdio_pro_time = 30;	/* no more than 30s */
 static unsigned long long sdio_profiling_start;
 struct sdio_profile sdio_perfomance = { 0 };
@@ -151,13 +150,8 @@ static struct dma_addr *msdc_get_dma_address(int host_id)
 	struct msdc_host *host;
 	void __iomem *base;
 
-	if (host_id < 0 || host_id >= HOST_MAX_NUM) {
+	if (host_id < 0 || host_id >= HOST_MAX_NUM || !mtk_msdc_host[host_id]) {
 		pr_err("[%s] invalid host_id %d\n", __func__, host_id);
-		return NULL;
-	}
-
-	if (!mtk_msdc_host[host_id]) {
-		pr_err("[%s] msdc%d does not exist\n", __func__, host_id);
 		return NULL;
 	}
 
@@ -212,228 +206,291 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
-#define pr_register(m, OFFSET, REG)     \
-	seq_printf(m, "R[%x]=0x%.8x\n", OFFSET, MSDC_READ32(REG))
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-void msdc_cmdq_status_print(struct seq_file *m, struct msdc_host *host)
-{
-	struct mmc_host *mmc = host->mmc;
+#if 0 /* def MTK_EMMC_CQ_DEBUG */
+#define dbg_max_cnt (500)
+struct dbg_run_host_log {
+	unsigned long long time_sec;
+	unsigned long long time_usec;
+	int type;
+	int cmd;
+	int arg;
+};
+static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
+static int dbg_host_cnt;
+static int is_lock_init;
+static spinlock_t cmd_dump_lock;
 
-	if (!mmc)
-		return;
-
-	seq_puts(m, "===============================\n");
-	seq_printf(m, "cmdq support : %s\n",
-		mmc->card->ext_csd.cmdq_support ? "yes":"no");
-	seq_printf(m, "cmdq mode    : %s\n",
-		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
-	seq_printf(m, "cmdq depth   : %d\n",
-		mmc->card->ext_csd.cmdq_depth);
-	seq_puts(m, "===============================\n");
-}
-
-#ifdef MTK_EMMC_CQ_DEBUG
 static unsigned int printk_cpu_test = UINT_MAX;
 struct timeval cur_tv;
-struct timeval prev_tv, curr_tv;
 
-void dbg_add_host_log(struct msdc_host *host, int type, int cmd, int arg,
-	int arg1, int arg2)
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
 	unsigned long long t;
 	unsigned long long nanosec_rem;
 	unsigned long flags;
 
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
+	if (!is_lock_init) {
+		spin_lock_init(&cmd_dump_lock);
+		is_lock_init = 1;
+	}
+
+	spin_lock_irqsave(&cmd_dump_lock, flags);
 	t = cpu_clock(printk_cpu_test);
 	nanosec_rem = do_div(t, 1000000000)/1000;
 	do_gettimeofday(&cur_tv);
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_sec = t;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].time_usec = nanosec_rem;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].type = type;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].cmd = cmd;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].arg = arg;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].arg1 = arg1;
-	host->dbg_run_host_log_dat[host->dbg_host_cnt].arg2 = arg2;
-	host->dbg_host_cnt++;
-	if (host->dbg_host_cnt >= dbg_max_cnt)
-		host->dbg_host_cnt = 0;
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+	dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
+	dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
+	dbg_run_host_log_dat[dbg_host_cnt].type = type;
+	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
+	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
+	dbg_host_cnt++;
+	if (dbg_host_cnt >= dbg_max_cnt)
+		dbg_host_cnt = 0;
+	spin_unlock_irqrestore(&cmd_dump_lock, flags);
 }
 
-void mmc_cmd_dump(struct msdc_host *host)
+void mmc_cmd_dump(struct mmc_host *mmc)
 {
 	int i;
 	int tag = -1;
 	unsigned long flags;
+	struct msdc_host *host = mmc_priv(mmc);
+
+	if (!is_lock_init) {
+		spin_lock_init(&cmd_dump_lock);
+		is_lock_init = 1;
+	}
 
 	pr_err("-------------------------------------------------------------------------------\n");
-	spin_lock_irqsave(&host->cmd_dump_lock, flags);
-	for (i = host->dbg_host_cnt; i < dbg_max_cnt; i++) {
-		if (host->dbg_run_host_log_dat[i].cmd == 44
-			&& (host->dbg_run_host_log_dat[i].type == 0)) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x tag=%d type=%s\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg,
-				host->dbg_run_host_log_dat[i].arg1,
-				host->dbg_run_host_log_dat[i].arg2, tag,
-				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write");
-		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
-			|| host->dbg_run_host_log_dat[i].cmd == 47)
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x tag=%d\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg,
-				host->dbg_run_host_log_dat[i].arg1,
-				host->dbg_run_host_log_dat[i].arg2, tag);
+	spin_lock_irqsave(&cmd_dump_lock, flags);
+	for (i = dbg_host_cnt; i < dbg_max_cnt; i++) {
+		if (dbg_run_host_log_dat[i].cmd == 44
+			&& (dbg_run_host_log_dat[i].type == 0)) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag,
+				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				);
+		} else if ((dbg_run_host_log_dat[i].cmd == 46
+			|| dbg_run_host_log_dat[i].cmd == 47)
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag);
 		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x\n", i,
-			host->dbg_run_host_log_dat[i].time_sec,
-			host->dbg_run_host_log_dat[i].time_usec,
-			host->dbg_run_host_log_dat[i].type,
-			host->dbg_run_host_log_dat[i].cmd,
-			host->dbg_run_host_log_dat[i].arg,
-			host->dbg_run_host_log_dat[i].arg1,
-			host->dbg_run_host_log_dat[i].arg2);
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg);
 	}
 
-	for (i = 0; i < host->dbg_host_cnt; i++) {
-		if (host->dbg_run_host_log_dat[i].cmd == 44
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x tag=%d type=%s\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg,
-				host->dbg_run_host_log_dat[i].arg1,
-				host->dbg_run_host_log_dat[i].arg2, tag,
-				((host->dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write");
-		} else if ((host->dbg_run_host_log_dat[i].cmd == 46
-			|| host->dbg_run_host_log_dat[i].cmd == 47)
-			&& !host->dbg_run_host_log_dat[i].type) {
-			tag = (host->dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x tag=%d\n", i,
-				host->dbg_run_host_log_dat[i].time_sec,
-				host->dbg_run_host_log_dat[i].time_usec,
-				host->dbg_run_host_log_dat[i].type,
-				host->dbg_run_host_log_dat[i].cmd,
-				host->dbg_run_host_log_dat[i].arg,
-				host->dbg_run_host_log_dat[i].arg1,
-				host->dbg_run_host_log_dat[i].arg2, tag);
+	for (i = 0; i < dbg_host_cnt; i++) {
+		if (dbg_run_host_log_dat[i].cmd == 44
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag,
+				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
+				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
+				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
+				);
+		} else if ((dbg_run_host_log_dat[i].cmd == 46
+			|| dbg_run_host_log_dat[i].cmd == 47)
+			&& !dbg_run_host_log_dat[i].type) {
+			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg, tag);
 		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x 0x%08x 0x%08x\n", i,
-			host->dbg_run_host_log_dat[i].time_sec,
-			host->dbg_run_host_log_dat[i].time_usec,
-			host->dbg_run_host_log_dat[i].type,
-			host->dbg_run_host_log_dat[i].cmd,
-			host->dbg_run_host_log_dat[i].arg,
-			host->dbg_run_host_log_dat[i].arg1,
-			host->dbg_run_host_log_dat[i].arg2);
+			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n",
+				i, dbg_run_host_log_dat[i].time_sec,
+				dbg_run_host_log_dat[i].time_usec,
+				dbg_run_host_log_dat[i].type,
+				dbg_run_host_log_dat[i].cmd,
+				dbg_run_host_log_dat[i].arg);
 	}
-	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
+	spin_unlock_irqrestore(&cmd_dump_lock, flags);
+	msdc_cmdq_status_print(host);
 }
 #else
-void dbg_add_host_log(struct msdc_host *host, int type, int cmd, int arg,
-	int arg1, int arg2)
+void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
 }
 
-void mmc_cmd_dump(struct msdc_host *host)
+void mmc_cmd_dump(struct mmc_host *mmc)
+{
+}
+#endif
+
+#ifdef CONFIG_MTK_EMMC_CQ_MET_USR_DEF
+void emmc_cq_state(void)
+{
+	MET_PRINTK("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+		dbg_cq_state[0], dbg_cq_state[1], dbg_cq_state[2],
+		dbg_cq_state[3], dbg_cq_state[4], dbg_cq_state[5],
+		dbg_cq_state[6], dbg_cq_state[7], dbg_cq_state[8],
+		dbg_cq_state[9], dbg_cq_state[10], dbg_cq_state[11],
+		dbg_cq_state[12], dbg_cq_state[13], dbg_cq_state[14],
+		dbg_cq_state[15], dbg_cq_state[16], dbg_cq_state[17],
+		dbg_cq_state[18], dbg_cq_state[19], dbg_cq_state[20],
+		dbg_cq_state[21], dbg_cq_state[22], dbg_cq_state[23],
+		dbg_cq_state[24], dbg_cq_state[25], dbg_cq_state[26],
+		dbg_cq_state[27], dbg_cq_state[28], dbg_cq_state[29],
+		dbg_cq_state[30], dbg_cq_state[31]);
+}
+
+void emmc_cq_state_log(struct mmc_host *mmc, unsigned int idx,
+	unsigned int val)
+{
+	dbg_cq_state[idx] = val;
+	emmc_cq_state();
+}
+
+void emmc_cq_state_pr(struct mmc_host *mmc, unsigned int idx,
+	unsigned int val)
+{
+	dbg_cq_state[idx] = val;
+}
+#else
+void emmc_cq_state_log(struct mmc_host *mmc, unsigned int idx,
+	unsigned int val)
+{
+}
+
+void emmc_cq_state_pr(struct mmc_host *mmc, unsigned int idx,
+	unsigned int val)
 {
 }
 #endif
 #endif
+
+void msdc_cmdq_status_print(struct msdc_host *host)
+{
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_host *mmc = host->mmc;
+
+	if (!mmc)
+		return;
+
+	pr_err("===============================\n");
+	pr_err("cmdq support : %s\n",
+		mmc->card->ext_csd.cmdq_support ? "yes":"no");
+	pr_err("cmdq mode    : %s\n",
+		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
+	pr_err("cmdq depth   : %d\n",
+		mmc->card->ext_csd.cmdq_depth);
+	pr_err("===============================\n");
+	pr_err("areq_cnt     : %d\n",
+		atomic_read(&mmc->areq_cnt));
+	pr_err("task_id_index: %08lx\n",
+		mmc->task_id_index);
+	pr_err("cq_wait_rdy  : %d\n",
+		atomic_read(&mmc->cq_wait_rdy));
+	pr_err("cq_rdy_cnt  : %d\n",
+		atomic_read(&mmc->cq_rdy_cnt));
+	pr_err("cq_tuning_now: %d\n",
+		atomic_read(&mmc->cq_tuning_now));
+
+#else
+	pr_err("driver not supported\n");
+#endif
+}
+
+void msdc_cmdq_func(struct msdc_host *host, const int num)
+{
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	void __iomem *base = host->base;
+	int a, b;
+#endif
+
+	if (!host || !host->mmc || !host->mmc->card)
+		return;
+
+	switch (num) {
+	case 0:
+		msdc_cmdq_status_print(host);
+		break;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	case 1:
+		pr_err("force enable cmdq\n");
+		host->mmc->card->ext_csd.cmdq_support = 1;
+		host->mmc->cmdq_support_changed = 1;
+		break;
+	case 2:
+		mmc_cmd_dump(host->mmc);
+		break;
+	case 3:
+		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
+		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
+		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
+		pr_err("force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
+		break;
+	case 4:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
+		break;
+	case 5:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
+		break;
+	case 6:
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
+		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
+		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
+		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
+		break;
+#endif
+	default:
+		pr_err("unknown function id %d\n", num);
+		break;
+	}
+}
 
 void msdc_dump_register_debug(struct seq_file *m, u32 id, void __iomem *base)
 {
-	pr_register(m, OFFSET_MSDC_CFG,                 MSDC_CFG);
-	pr_register(m, OFFSET_MSDC_IOCON,               MSDC_IOCON);
-	pr_register(m, OFFSET_MSDC_PS,                  MSDC_PS);
-	pr_register(m, OFFSET_MSDC_INT,                 MSDC_INT);
-	pr_register(m, OFFSET_MSDC_INTEN,               MSDC_INTEN);
-	pr_register(m, OFFSET_MSDC_FIFOCS,              MSDC_FIFOCS);
-	pr_register(m, OFFSET_SDC_CFG,                  SDC_CFG);
-	pr_register(m, OFFSET_SDC_CMD,                  SDC_CMD);
-	pr_register(m, OFFSET_SDC_ARG,                  SDC_ARG);
-	pr_register(m, OFFSET_SDC_STS,                  SDC_STS);
-	pr_register(m, OFFSET_SDC_RESP0,                SDC_RESP0);
-	pr_register(m, OFFSET_SDC_RESP1,                SDC_RESP1);
-	pr_register(m, OFFSET_SDC_RESP2,                SDC_RESP2);
-	pr_register(m, OFFSET_SDC_RESP3,                SDC_RESP3);
-	pr_register(m, OFFSET_SDC_BLK_NUM,              SDC_BLK_NUM);
-	pr_register(m, OFFSET_SDC_VOL_CHG,              SDC_VOL_CHG);
-	pr_register(m, OFFSET_SDC_CSTS,                 SDC_CSTS);
-	pr_register(m, OFFSET_SDC_CSTS_EN,              SDC_CSTS_EN);
-	pr_register(m, OFFSET_SDC_DCRC_STS,             SDC_DCRC_STS);
-	pr_register(m, OFFSET_EMMC_CFG0,                EMMC_CFG0);
-	pr_register(m, OFFSET_EMMC_CFG1,                EMMC_CFG1);
-	pr_register(m, OFFSET_EMMC_STS,                 EMMC_STS);
-	pr_register(m, OFFSET_EMMC_IOCON,               EMMC_IOCON);
-	pr_register(m, OFFSET_SDC_ACMD_RESP,            SDC_ACMD_RESP);
-	pr_register(m, OFFSET_SDC_ACMD19_TRG,           SDC_ACMD19_TRG);
-	pr_register(m, OFFSET_SDC_ACMD19_STS,           SDC_ACMD19_STS);
-	pr_register(m, OFFSET_MSDC_DMA_SA_HIGH,         MSDC_DMA_SA_HIGH);
-	pr_register(m, OFFSET_MSDC_DMA_SA,              MSDC_DMA_SA);
-	pr_register(m, OFFSET_MSDC_DMA_CA,              MSDC_DMA_CA);
-	pr_register(m, OFFSET_MSDC_DMA_CTRL,            MSDC_DMA_CTRL);
-	pr_register(m, OFFSET_MSDC_DMA_CFG,             MSDC_DMA_CFG);
-	pr_register(m, OFFSET_MSDC_DMA_LEN,             MSDC_DMA_LEN);
-	pr_register(m, OFFSET_MSDC_DBG_SEL,             MSDC_DBG_SEL);
-	pr_register(m, OFFSET_MSDC_DBG_OUT,             MSDC_DBG_OUT);
-	pr_register(m, OFFSET_MSDC_PATCH_BIT0,          MSDC_PATCH_BIT0);
-	pr_register(m, OFFSET_MSDC_PATCH_BIT1,          MSDC_PATCH_BIT1);
-	pr_register(m, OFFSET_MSDC_PATCH_BIT2,          MSDC_PATCH_BIT2);
+	u16 i;
 
-	if ((id != 2) && (id != 3))
-		goto skip_sdio_tune_reg;
+	for (i = 0; msdc_offsets[i] != 0xFFFF; i++) {
+		if (((id != 2) && (id != 3))
+		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
+		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
+			continue;
 
-	pr_register(m, OFFSET_DAT0_TUNE_CRC,            DAT0_TUNE_CRC);
-	pr_register(m, OFFSET_DAT0_TUNE_CRC,            DAT1_TUNE_CRC);
-	pr_register(m, OFFSET_DAT0_TUNE_CRC,            DAT2_TUNE_CRC);
-	pr_register(m, OFFSET_DAT0_TUNE_CRC,            DAT3_TUNE_CRC);
-	pr_register(m, OFFSET_CMD_TUNE_CRC,             CMD_TUNE_CRC);
-	pr_register(m, OFFSET_SDIO_TUNE_WIND,           SDIO_TUNE_WIND);
+		if ((id != 0)
+		 && (msdc_offsets[i] >= OFFSET_EMMC50_PAD_DS_TUNE))
+			break;
 
-skip_sdio_tune_reg:
-	pr_register(m, OFFSET_MSDC_PAD_TUNE0,           MSDC_PAD_TUNE0);
-	pr_register(m, OFFSET_MSDC_PAD_TUNE1,           MSDC_PAD_TUNE1);
-	pr_register(m, OFFSET_MSDC_DAT_RDDLY0,          MSDC_DAT_RDDLY0);
-	pr_register(m, OFFSET_MSDC_DAT_RDDLY1,          MSDC_DAT_RDDLY1);
-	pr_register(m, OFFSET_MSDC_DAT_RDDLY2,          MSDC_DAT_RDDLY2);
-	pr_register(m, OFFSET_MSDC_DAT_RDDLY3,          MSDC_DAT_RDDLY3);
-	pr_register(m, OFFSET_MSDC_HW_DBG,              MSDC_HW_DBG);
-	pr_register(m, OFFSET_MSDC_VERSION,             MSDC_VERSION);
-
-	if (id != 0)
-		goto skip_emmc50_reg;
-
-	pr_register(m, OFFSET_EMMC50_PAD_DS_TUNE,       EMMC50_PAD_DS_TUNE);
-	pr_register(m, OFFSET_EMMC50_PAD_CMD_TUNE,      EMMC50_PAD_CMD_TUNE);
-	pr_register(m, OFFSET_EMMC50_PAD_DAT01_TUNE,    EMMC50_PAD_DAT01_TUNE);
-	pr_register(m, OFFSET_EMMC50_PAD_DAT23_TUNE,    EMMC50_PAD_DAT23_TUNE);
-	pr_register(m, OFFSET_EMMC50_PAD_DAT45_TUNE,    EMMC50_PAD_DAT45_TUNE);
-	pr_register(m, OFFSET_EMMC50_PAD_DAT67_TUNE,    EMMC50_PAD_DAT67_TUNE);
-	pr_register(m, OFFSET_EMMC51_CFG0,              EMMC51_CFG0);
-	pr_register(m, OFFSET_EMMC50_CFG0,              EMMC50_CFG0);
-	pr_register(m, OFFSET_EMMC50_CFG1,              EMMC50_CFG1);
-	pr_register(m, OFFSET_EMMC50_CFG2,              EMMC50_CFG2);
-	pr_register(m, OFFSET_EMMC50_CFG3,              EMMC50_CFG3);
-	pr_register(m, OFFSET_EMMC50_CFG4,              EMMC50_CFG4);
-	pr_register(m, OFFSET_SDC_FIFO_CFG,             SDC_FIFO_CFG);
-
-skip_emmc50_reg:
-	return;
+		seq_printf(m, "R[%x]=0x%.8x\n", msdc_offsets[i],
+			MSDC_READ32(base + msdc_offsets[i]));
+	}
 }
 
 /* Clone from core/mmc.c since it is static in mmc.c */
@@ -584,21 +641,17 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 		break;
 	}
 
-	/* FIX ME */
-	/*msdc_get_host_mode_speed(m, mmc);*/
-
-#if 0
-	if (cmdq)
-		pr_err("[SD_Debug] enable command queue feature\n");
-	else
-		pr_err("[SD_Debug] disable command queue feature\n");
-#endif
+	/* invoke msdc_get_host_mode_speed for printing purpose */
+	#if 0
+	msdc_get_host_mode_speed(m, mmc);
+	#endif
 
 	if (!mmc->card || mmc_card_sd(mmc->card))
 		return;
 
-	/* For suppressing msdc_dump_info() caused by */
-	/* cmd13 do in mmc_reset()@mmc.c */
+	/* For suppressing msdc_dump_info() caused by
+	 * cmd13 do in mmc_reset()@mmc.c
+	 */
 	msdc_select_card_type(mmc);
 	g_emmc_mode_switch = 1;
 
@@ -609,13 +662,15 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 		msdc_cache_ctrl(host, 0, NULL);
 	}
 
-	/* Since only mmc_hw_reset() is public, */
-	/* so use mmc_hw_reset() to reinit card */
+	/* Since only mmc_hw_reset() is public,
+	 * so use mmc_hw_reset() to reinit card
+	 */
 	mmc->caps |= MMC_CAP_HW_RESET;
 
-	/* Must set mmc_host ios.time = MMC_TIMING_LEGACY, */
-	/* or clock will not be setted to 400K before mmc_init_card */
-	/* CMD1 will timeout */
+	/* Must set mmc_host ios.time = MMC_TIMING_LEGACY,
+	 * or clock will not be setted to 400K before mmc_init_card
+	 * CMD1 will timeout
+	 */
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 
 	if (mmc_hw_reset(mmc))
@@ -661,44 +716,6 @@ static void msdc_get_field(struct seq_file *m, void __iomem *address,
 		seq_printf(m, "[SD_Debug]Reg:0x%p start_bit(%d)len(%d)(0x%x)\n",
 			address, start_bit, len, value);
 	}
-}
-
-static void msdc_init_gpt(void)
-{
-#if 0
-	GPT_CONFIG config;
-
-	config.num = GPT6;
-	config.mode = GPT_FREE_RUN;
-	config.clkSrc = GPT_CLK_SRC_SYS;
-	config.clkDiv = GPT_CLK_DIV_1;	/* 13MHz GPT6 */
-
-	if (GPT_Config(config) == FALSE)
-		return;
-
-	GPT_Start(GPT6);
-#endif
-}
-
-u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32)
-{
-	u32 ret = 0;
-
-	if (new_H32 == old_H32) {
-		ret = new_L32 - old_L32;
-	} else if (new_H32 == (old_H32 + 1)) {
-		if (new_L32 > old_L32) {
-			pr_debug("msdc old_L<0x%x> new_L<0x%x>\n",
-				old_L32, new_L32);
-		}
-		ret = (0xffffffff - old_L32);
-		ret += new_L32;
-	} else {
-		pr_debug("msdc old_H<0x%x> new_H<0x%x>\n",
-			old_H32, new_H32);
-	}
-
-	return ret;
 }
 
 void msdc_sdio_profile(struct sdio_profile *result)
@@ -828,7 +845,44 @@ void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks)
 		sdio_profiling_start = endtime;
 	}
 
+}
 
+void sdio_get_time(struct mmc_request *mrq, struct timespec *time_now)
+{
+	if (mrq->cmd->opcode == 52 || mrq->cmd->opcode == 53)
+		get_monotonic_boottime(time_now);
+}
+
+void sdio_calc_time(struct mmc_request *mrq, struct timespec *time_start)
+{
+	struct timespec time_end;
+	u32 ticks = 0, sizes = 0, bRx = 0;
+
+	if (mrq->cmd->opcode == 52 || mrq->cmd->opcode == 53) {
+		get_monotonic_boottime(&time_end);
+		if (time_end.tv_sec == time_start->tv_sec) {
+			ticks = time_end.tv_nsec == time_start->tv_nsec;
+		} else if (time_end.tv_sec > time_start->tv_sec) {
+			ticks = (time_end.tv_sec - time_start->tv_sec)
+				* 1000000000UL
+				+ time_end.tv_nsec - time_start->tv_nsec;
+		} else {
+			pr_err("Shall not happen\n");
+			return;
+		}
+
+		if (mrq->cmd->data) {
+			sizes = mrq->cmd->data->blocks *
+				mrq->cmd->data->blksz;
+			bRx = mrq->cmd->data->flags & MMC_DATA_READ ?
+				1 : 0;
+		} else {
+			bRx = mrq->cmd->arg & 0x80000000 ? 1 : 0;
+		}
+
+		if (!mrq->cmd->error)
+			msdc_performance(mrq->cmd->opcode, sizes, bRx, ticks);
+	}
 }
 
 #define COMPARE_ADDRESS_MMC             0x402000
@@ -841,7 +895,7 @@ void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks)
 static DEFINE_MUTEX(sd_lock);
 static DEFINE_MUTEX(emmc_lock);
 
-u8 read_write_state;	/* 0:stop, 1:read, 2:write */
+u8 read_write_state; /* 0:stop, 1:read, 2:write */
 
 static u8 wData_emmc[16] = {
 	0x67, 0x45, 0x23, 0x01,
@@ -901,7 +955,8 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	struct mmc_host *mmc;
 	int result = 0, forIndex = 0;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int is_cmdq_en = false;
+	int is_cmdq_en;
+	int ret;
 #endif
 
 	u8 wData_len;
@@ -948,18 +1003,23 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	mmc_claim_host(mmc);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	is_cmdq_en = false;
 	if (host_num == 0 && host_ctl->mmc->card->ext_csd.cmdq_mode_en) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
-		is_cmdq_en = true;
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		if (ret) {
+			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			result = -1;
+			goto free;
+		} else
+			is_cmdq_en = true;
 	}
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
 	if (host_ctl->hw->host_function == MSDC_EMMC)
 		msdc_switch_part(host_ctl, 0);
-#endif
 
 	memset(&msdc_data, 0, sizeof(struct mmc_data));
 	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
@@ -1022,7 +1082,11 @@ skip_check:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		if (ret)
+			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
+		else
+			is_cmdq_en = false;
 	}
 #endif
 
@@ -1057,8 +1121,10 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 		return 0;
 
 	for (i = 0; i < count; i++) {
-		/* pr_err("== cpu[%d] pid[%d]: start %d time compare ==\n", */
-		/* task_cpu(current), current->pid, i); */
+		#if 0
+		pr_err("== cpu[%d] pid[%d]: start %d time compare ==\n",
+			task_cpu(current), current->pid, i);
+		#endif
 
 		mutex_lock(rw_mutex);
 		/* write */
@@ -1138,8 +1204,9 @@ static uint smp_address_on_sd[MAX_THREAD_NUM_FOR_SMP] = {
 	0x6b0000,
 };
 
-/* cause the system run on the emmc storage, */
-/* so do not to access the first 2GB region */
+/* cause the system run on the emmc storage,
+ * so do not to access the first 2GB region
+ */
 static uint smp_address_on_mmc[MAX_THREAD_NUM_FOR_SMP] = {
 	0x402000,
 	0x410000,
@@ -1171,9 +1238,10 @@ struct write_read_data {
 };
 
 static struct write_read_data wr_data[HOST_MAX_NUM][MAX_THREAD_NUM_FOR_SMP];
-/* 2012-03-25 */
-/* the SMP thread function */
-/* do read after write the memory card, and bit by bit comparison */
+/* 2012-03-25
+ * the SMP thread function
+ * do read after write the memory card, and bit by bit comparison
+ */
 
 struct task_struct *rw_thread;
 
@@ -1327,15 +1395,6 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "            [voltage]           1: 18v, 0: 33v\n");
 	seq_printf(m, "        get driving:       echo %x 0 [host_id]  > msdc_debug\n",
 		SD_TOOL_SET_DRIVING);
-	seq_puts(m, "\n   DESENSE control:\n");
-	seq_printf(m, "          write register:    echo %x 0 [value] > msdc_debug\n",
-		SD_TOOL_DESENSE);
-	seq_printf(m, "          read register:     echo %x 1 > msdc_debug\n",
-		SD_TOOL_DESENSE);
-	seq_printf(m, "          write mask:        echo %x 2 [start_bit] [len] [value] > msdc_debug\n",
-		SD_TOOL_DESENSE);
-	seq_printf(m, "          read mask:         echo %x 3 [start_bit] [len] > msdc_debug\n",
-		SD_TOOL_DESENSE);
 	seq_printf(m, "\n   RW_COMPARE test:       echo %x [host_id] [compare_count] > msdc_debug\n",
 		RW_BIT_BY_BIT_COMPARE);
 	seq_puts(m, "          [compare_count]    how many time you want to \"write=>read=>compare\"\n");
@@ -1392,16 +1451,6 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "\n   CRC Stress Test:       echo %x [action_id]> /proc/msdc_debug\n",
 		MMC_CRC_STRESS);
 	seq_puts(m, "            [action_id]        0:disable 1:enable\n");
-	seq_printf(m, "\n   Enable AXI Modules:    echo %x [action_id][module_id]> /proc/msdc_debug\n",
-		ENABLE_AXI_MODULE);
-	seq_puts(m, "            [action_id]        0:disable 1:enable\n");
-	/* FIX ME, consider to remove it */
-	seq_printf(m, "\n   Dump ext_csd register:       echo %x [host_id]> /proc/msdc_debug\n",
-			MMC_DUMP_EXT_CSD);
-	/* FIX ME, consider to remove it */
-	seq_printf(m, "\n   Dump csd register:       echo %x [host_id]> /proc/msdc_debug\n",
-			MMC_DUMP_CSD);
-
 	seq_printf(m, "\n   SDIO AutoK Result :    echo %x [host_id][vcore][rw]> /proc/msdc_debug\n",
 		SDIO_AUTOK_RESULT);
 	seq_puts(m, "            [host_id]  2:sdio\n");
@@ -1414,32 +1463,6 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n=============================================\n\n");
 
 	return 0;
-}
-
-/* FIX ME: check if this function can be removed*/
-void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
-{
-	int i;
-
-	seq_printf(m, "hw->clk_src = %x\n", hw->clk_src);
-	seq_printf(m, "hw->cmd_edge = %x\n", hw->cmd_edge);
-	seq_printf(m, "hw->rdata_edge = %x\n", hw->rdata_edge);
-	seq_printf(m, "hw->wdata_edge = %x\n", hw->wdata_edge);
-	seq_printf(m, "hw->clk_drv = %x\n", hw->clk_drv);
-	seq_printf(m, "hw->cmd_drv = %x\n", hw->cmd_drv);
-	seq_printf(m, "hw->dat_drv = %x\n", hw->dat_drv);
-	seq_printf(m, "hw->rst_drv = %x\n", hw->rst_drv);
-	seq_printf(m, "hw->ds_drv = %x\n", hw->ds_drv);
-	seq_printf(m, "hw->flags = %x\n", (unsigned int)hw->flags);
-
-	for (i = 0; i < 8; i++)
-		seq_printf(m, "hw->dat%drddly = %x\n", i, hw->datrddly[i]);
-
-	seq_printf(m, "hw->datwrddly = %x\n", hw->datwrddly);
-	seq_printf(m, "hw->cmdrrddly = %x\n", hw->cmdrrddly);
-	seq_printf(m, "hw->cmdrddly = %x\n", hw->cmdrddly);
-	seq_printf(m, "hw->host_function = %x\n", (u32)hw->host_function);
-	seq_printf(m, "hw->boot = %x\n", hw->boot);
 }
 
 /*
@@ -1519,8 +1542,11 @@ void msdc_dump_gpd_bd(int id)
 	if (gpd == NULL) {
 		pr_err("GPD is NULL\n");
 	} else {
-		pr_err("gpd high addr:0x%lx\n", (ulong)(host->dma.gpd_addr >> 32));
-		pr_err("gpd low addr:0x%lx\n", (ulong)(host->dma.gpd_addr & 0xFFFFFFFFUL));
+#ifdef CONFIG_ARM64
+		pr_err("gbd addr:0x%llx\n", host->dma.gpd_addr);
+#else
+		pr_err("gbd addr:0x%x\n", (unsigned int)host->dma.gpd_addr);
+#endif
 		pr_err("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
 			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum,
 			gpd->intr, gpd->rsv1, (unsigned int)gpd->nexth4,
@@ -1534,8 +1560,11 @@ void msdc_dump_gpd_bd(int id)
 	if (bd == NULL) {
 		pr_err("BD is NULL\n");
 	} else {
-		pr_err("bd high addr:0x%lx\n", (ulong)(host->dma.bd_addr >> 32));
-		pr_err("bd low addr:0x%lx\n", (ulong)(host->dma.bd_addr & 0xFFFFFFFFUL));
+#ifdef CONFIG_ARM64
+		pr_err("bd addr:0x%llx\n", host->dma.bd_addr);
+#else
+		pr_err("bd addr:0x%x\n", (unsigned int)host->dma.bd_addr);
+#endif
 		for (i = 0; i < host->dma.sglen; i++) {
 			pr_err("the %d BD\n", i);
 			pr_err("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
@@ -1549,314 +1578,15 @@ void msdc_dump_gpd_bd(int id)
 	}
 }
 
-/* FIX ME, consider to remove it */
-static void msdc_dump_csd(struct seq_file *m, struct msdc_host *host)
-{
-	struct mmc_csd *csd = &host->mmc->card->csd;
-	u32 *resp = host->mmc->card->raw_csd;
-	int i;
-	unsigned int csd_struct;
-	static const char * const sd_csd_ver[] = {"v1.0", "v2.0"};
-	static const char * const mmc_csd_ver[] = {"v1.0", "v1.1", "v1.2", "Ver. in EXT_CSD"};
-	static const char * const mmc_cmd_cls[] = {"basic", "stream read", "block read",
-		"stream write", "block write", "erase", "write prot", "lock card",
-		"app-spec", "I/O", "rsv.", "rsv."};
-	static const char * const sd_cmd_cls[] = {"basic", "rsv.", "block read",
-		"rsv.", "block write", "erase", "write prot", "lock card",
-		"app-spec", "I/O", "switch", "rsv."};
-
-	if (mmc_card_sd(host->mmc->card)) {
-		csd_struct = UNSTUFF_BITS(resp, 126, 2);
-		seq_printf(m, "[CSD] CSD %s\n", sd_csd_ver[csd_struct]);
-		seq_printf(m, "[CSD] TACC_NS: %d ns, TACC_CLKS: %d clks\n", csd->tacc_ns, csd->tacc_clks);
-		if (csd_struct == 1) {
-			seq_puts(m, "[CSD] Read/Write Blk Len = 512bytes\n");
-		} else {
-			seq_printf(m, "[CSD] Read Blk Len = %d, Write Blk Len = %d\n",
-					1 << csd->read_blkbits, 1 << csd->write_blkbits);
-		}
-		seq_puts(m, "[CSD] CMD Class:");
-		for (i = 0; i < 12; i++) {
-			if ((csd->cmdclass >> i) & 0x1)
-				seq_printf(m, "'%s' ", sd_cmd_cls[i]);
-		}
-		seq_puts(m, "\n");
-		seq_printf(m, "[CSD] MAX frequence: %dHZ\n", csd->max_dtr);
-	} else {
-		csd_struct = UNSTUFF_BITS(resp, 126, 2);
-		seq_printf(m, "[CSD] CSD %s\n", mmc_csd_ver[csd_struct]);
-		seq_printf(m, "[CSD] MMCA Spec v%d\n", csd->mmca_vsn);
-		seq_printf(m, "[CSD] TACC_NS: %d ns, TACC_CLKS: %d clks\n", csd->tacc_ns, csd->tacc_clks);
-		seq_printf(m, "[CSD] Read Blk Len = %d, Write Blk Len = %d\n",
-				1 << csd->read_blkbits, 1 << csd->write_blkbits);
-		seq_puts(m, "[CSD] CMD Class:");
-		for (i = 0; i < 12; i++) {
-			if ((csd->cmdclass >> i) & 0x1)
-				seq_printf(m, "'%s' ", mmc_cmd_cls[i]);
-		}
-		seq_puts(m, "\n");
-		seq_printf(m, "[CSD] MAX frequence: %dHZ\n", csd->max_dtr);
-	}
-}
-
-/* FIX ME, consider to remove it */
-void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
-{
-#ifndef FPGA_PLATFORM
-	if (topckgen_reg_base) {
-		/* CLK_CFG_3 control msdc clock source PLL */
-		seq_printf(m, " CLK_CFG_3 register address is 0x%p\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
-		seq_puts(m, " bit[9~8]=01b,     bit[15]=0b\n");
-		seq_puts(m, " bit[19~16]=0001b, bit[23]=0b\n");
-		seq_puts(m, " bit[26~24]=0010b, bit[31]=0b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
-	}
-	if (apmixed_reg_base) {
-		/* bit0 is enables PLL, 0: disable 1: enable */
-		seq_printf(m, " MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
-		seq_puts(m, " bit[0]=1b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
-
-		seq_printf(m, " MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
-
-		seq_printf(m, " MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
-
-		seq_printf(m, " MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
-		seq_puts(m, " bit[0]=1b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
-	}
-#endif
-}
-
-/* FIX ME, consider to remove it */
-void msdc_dump_ext_csd(struct seq_file *m, struct msdc_host *host)
-{
-	/*u8 ext_csd[512];*/
-	u8 *ext_csd;
-	int err;
-	u32 tmp;
-	static const char * const rev[] = {
-		"4.0", "4.1", "4.2", "4.3", "Obsolete", "4.41", "4.5", "5.0", "5.1"};
-
-	mmc_claim_host(host->mmc);
-	err = mmc_get_ext_csd(host->mmc->card, &ext_csd);
-	mmc_release_host(host->mmc);
-
-	if (err) {
-		seq_puts(m, "get ext csd error!\n");
-		return;
-	}
-
-	seq_puts(m, "===========================================================\n");
-	seq_printf(m, "[EXT_CSD] EXT_CSD rev.              : v1.%d (MMCv%s)\n",
-			ext_csd[EXT_CSD_REV], rev[ext_csd[EXT_CSD_REV]]);
-	seq_printf(m, "[EXT_CSD] CSD struct rev.           : v1.%d\n",
-			ext_csd[EXT_CSD_STRUCTURE]);
-	/* seq_printf(m, "[EXT_CSD] Supported command sets    : %xh\n", ext_csd[EXT_CSD_S_CMD_SET]); */
-	seq_printf(m, "[EXT_CSD] HPI features              : %xh\n",
-			ext_csd[EXT_CSD_HPI_FEATURES]);
-	seq_printf(m, "[EXT_CSD] Cache control             : %xh\n",
-			ext_csd[EXT_CSD_CACHE_CTRL]);
-	seq_printf(m, "[EXT_CSD] BG operations support     : %xh\n",
-			ext_csd[EXT_CSD_BKOPS_SUPPORT]);
-	seq_printf(m, "[EXT_CSD] BG operations status      : %xh\n",
-			ext_csd[EXT_CSD_BKOPS_STATUS]);
-#if 0
-	memcpy(&tmp, &ext_csd[EXT_CSD_CORRECT_PRG_SECTS_NUM], 4);
-	seq_printf(m, "[EXT_CSD] Correct prg. sectors      : %xh\n", tmp);
-	seq_printf(m, "[EXT_CSD] 1st init time after part. : %d ms\n", ext_csd[EXT_CSD_INI_TIMEOUT_AP] * 100);
-	seq_printf(m, "[EXT_CSD] Min. write perf.(DDR,52MH,8b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_DDR_W_8_52]);
-	seq_printf(m, "[EXT_CSD] Min. read perf. (DDR,52MH,8b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_DDR_R_8_52]);
-#endif
-	seq_printf(m, "[EXT_CSD] TRIM timeout: %d ms\n",
-			ext_csd[EXT_CSD_TRIM_MULT] & 0xFF * 300);
-	seq_printf(m, "[EXT_CSD] Secure feature support: %xh\n",
-			ext_csd[EXT_CSD_SEC_FEATURE_SUPPORT]);
-	seq_printf(m, "[EXT_CSD] Secure erase timeout  : %d ms\n",
-			300 * ext_csd[EXT_CSD_ERASE_TIMEOUT_MULT] *
-			ext_csd[EXT_CSD_SEC_ERASE_MULT]);
-	seq_printf(m, "[EXT_CSD] Secure trim timeout   : %d ms\n", 300 *
-			ext_csd[EXT_CSD_ERASE_TIMEOUT_MULT] *
-			ext_csd[EXT_CSD_SEC_TRIM_MULT]);
-	/* seq_printf(m, "[EXT_CSD] Access size           : %d bytes\n", ext_csd[EXT_CSD_ACC_SIZE] * 512); */
-	seq_printf(m, "[EXT_CSD] HC erase unit size    : %d kbytes\n",
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] * 512);
-	seq_printf(m, "[EXT_CSD] HC erase timeout      : %d ms\n",
-			ext_csd[EXT_CSD_ERASE_TIMEOUT_MULT] * 300);
-#if 0
-	seq_printf(m, "[EXT_CSD] HC write prot grp size: %d kbytes\n", 512 *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE]);
-#endif
-	seq_printf(m, "[EXT_CSD] HC erase grp def.     : %xh\n",
-			ext_csd[EXT_CSD_ERASE_GROUP_DEF]);
-	seq_printf(m, "[EXT_CSD] Reliable write sect count: %xh\n",
-			ext_csd[EXT_CSD_REL_WR_SEC_C]);
-#if 0
-	seq_printf(m, "[EXT_CSD] Sleep current (VCC) : %xh\n", ext_csd[EXT_CSD_S_C_VCC]);
-	seq_printf(m, "[EXT_CSD] Sleep current (VCCQ): %xh\n", ext_csd[EXT_CSD_S_C_VCCQ]);
-#endif
-	seq_printf(m, "[EXT_CSD] Sleep/awake timeout : %d ns\n",
-			100 * (2 << ext_csd[EXT_CSD_S_A_TIMEOUT]));
-	memcpy(&tmp, &ext_csd[EXT_CSD_SEC_CNT], 4);
-	seq_printf(m, "[EXT_CSD] Sector count : %xh\n", tmp);
-#if 0
-	seq_printf(m, "[EXT_CSD] Min. WR Perf.  (52MH,8b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_W_8_52]);
-	seq_printf(m, "[EXT_CSD] Min. Read Perf.(52MH,8b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_R_8_52]);
-	seq_printf(m, "[EXT_CSD] Min. WR Perf.  (26MH,8b,52MH,4b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_W_8_26_4_25]);
-	seq_printf(m, "[EXT_CSD] Min. Read Perf.(26MH,8b,52MH,4b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_R_8_26_4_25]);
-	seq_printf(m, "[EXT_CSD] Min. WR Perf.  (26MH,4b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_W_4_26]);
-	seq_printf(m, "[EXT_CSD] Min. Read Perf.(26MH,4b): %xh\n", ext_csd[EXT_CSD_MIN_PERF_R_4_26]);
-#endif
-	seq_printf(m, "[EXT_CSD] Power class: %x\n",
-			ext_csd[EXT_CSD_POWER_CLASS]);
-	seq_printf(m, "[EXT_CSD] Power class(DDR,52MH,3.6V): %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_DDR_52_360]);
-	seq_printf(m, "[EXT_CSD] Power class(DDR,52MH,1.9V): %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_DDR_52_195]);
-	seq_printf(m, "[EXT_CSD] Power class(26MH,3.6V)    : %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_26_360]);
-	seq_printf(m, "[EXT_CSD] Power class(52MH,3.6V)    : %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_52_360]);
-	seq_printf(m, "[EXT_CSD] Power class(26MH,1.9V)    : %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_26_195]);
-	seq_printf(m, "[EXT_CSD] Power class(52MH,1.9V)    : %xh\n",
-			ext_csd[EXT_CSD_PWR_CL_52_195]);
-	seq_printf(m, "[EXT_CSD] Part. switch timing    : %xh\n",
-			ext_csd[EXT_CSD_PART_SWITCH_TIME]);
-	seq_printf(m, "[EXT_CSD] Out-of-INTR busy timing: %xh\n",
-			ext_csd[EXT_CSD_OUT_OF_INTERRUPT_TIME]);
-	seq_printf(m, "[EXT_CSD] Card type       : %xh\n",
-			ext_csd[EXT_CSD_CARD_TYPE]);
-#if 0
-	seq_printf(m, "[EXT_CSD] Command set     : %xh\n", ext_csd[EXT_CSD_CMD_SET]);
-	seq_printf(m, "[EXT_CSD] Command set rev.: %xh\n", ext_csd[EXT_CSD_CMD_SET_REV]);
-#endif
-	seq_printf(m, "[EXT_CSD] HS timing       : %xh\n",
-			ext_csd[EXT_CSD_HS_TIMING]);
-	seq_printf(m, "[EXT_CSD] Bus width       : %xh\n",
-			ext_csd[EXT_CSD_BUS_WIDTH]);
-	seq_printf(m, "[EXT_CSD] Erase memory content : %xh\n",
-			ext_csd[EXT_CSD_ERASED_MEM_CONT]);
-#if 0
-	seq_printf(m, "[EXT_CSD] Partition config      : %xh\n",
-			ext_csd[EXT_CSD_PART_CFG]);
-	seq_printf(m, "[EXT_CSD] Boot partition size   : %d kbytes\n",
-			ext_csd[EXT_CSD_BOOT_SIZE_MULT] * 128);
-	seq_printf(m, "[EXT_CSD] Boot information      : %xh\n", ext_csd[EXT_CSD_BOOT_INFO]);
-	seq_printf(m, "[EXT_CSD] Boot config protection: %xh\n", ext_csd[EXT_CSD_BOOT_CONFIG_PROT]);
-	seq_printf(m, "[EXT_CSD] Boot bus width        : %xh\n", ext_csd[EXT_CSD_BOOT_BUS_WIDTH]);
-#endif
-	seq_printf(m, "[EXT_CSD] Boot area write prot  : %xh\n",
-			ext_csd[EXT_CSD_BOOT_WP]);
-#if 0
-	seq_printf(m, "[EXT_CSD] User area write prot  : %xh\n", ext_csd[EXT_CSD_USR_WP]);
-	seq_printf(m, "[EXT_CSD] FW configuration      : %xh\n", ext_csd[EXT_CSD_FW_CONFIG]);
-	seq_printf(m, "[EXT_CSD] RPMB size : %d kbytes\n",
-			ext_csd[EXT_CSD_RPMB_SIZE_MULT] * 128);
-	seq_printf(m, "[EXT_CSD] Write rel. setting  : %xh\n", ext_csd[EXT_CSD_WR_REL_SET]);
-#endif
-	seq_printf(m, "[EXT_CSD] Write rel. parameter: %xh\n",
-			ext_csd[EXT_CSD_WR_REL_PARAM]);
-	seq_printf(m, "[EXT_CSD] Start background ops : %xh\n",
-			ext_csd[EXT_CSD_BKOPS_START]);
-	seq_printf(m, "[EXT_CSD] Enable background ops: %xh\n",
-			ext_csd[EXT_CSD_BKOPS_EN]);
-	seq_printf(m, "[EXT_CSD] H/W reset function   : %xh\n",
-			ext_csd[EXT_CSD_RST_N_FUNCTION]);
-	seq_printf(m, "[EXT_CSD] HPI management       : %xh\n",
-			ext_csd[EXT_CSD_HPI_MGMT]);
-#if 0
-	memcpy(&tmp, &ext_csd[EXT_CSD_MAX_ENH_SIZE_MULT], 4);
-	seq_printf(m, "[EXT_CSD] Max. enhanced area size : %xh (%d kbytes)\n",
-			tmp & 0x00FFFFFF, (tmp & 0x00FFFFFF) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] * ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-#endif
-	seq_printf(m, "[EXT_CSD] Part. support  : %xh\n",
-			ext_csd[EXT_CSD_PARTITION_SUPPORT]);
-	seq_printf(m, "[EXT_CSD] Part. attribute: %xh\n",
-			ext_csd[EXT_CSD_PARTITION_ATTRIBUTE]);
-	seq_printf(m, "[EXT_CSD] Part. setting  : %xh\n",
-			ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED]);
-#if 0
-	seq_printf(m, "[EXT_CSD] General purpose 1 size : %xh (%d kbytes)\n",
-			(ext_csd[EXT_CSD_GP1_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP1_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP1_SIZE_MULT + 2] << 16),
-			(ext_csd[EXT_CSD_GP1_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP1_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP1_SIZE_MULT + 2] << 16) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-	seq_printf(m, "[EXT_CSD] General purpose 2 size : %xh (%d kbytes)\n",
-			(ext_csd[EXT_CSD_GP2_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP2_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP2_SIZE_MULT + 2] << 16),
-			(ext_csd[EXT_CSD_GP2_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP2_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP2_SIZE_MULT + 2] << 16) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-	seq_printf(m, "[EXT_CSD] General purpose 3 size : %xh (%d kbytes)\n",
-			(ext_csd[EXT_CSD_GP3_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP3_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP3_SIZE_MULT + 2] << 16),
-			(ext_csd[EXT_CSD_GP3_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP3_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP3_SIZE_MULT + 2] << 16) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-	seq_printf(m, "[EXT_CSD] General purpose 4 size : %xh (%d kbytes)\n",
-			(ext_csd[EXT_CSD_GP4_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP4_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP4_SIZE_MULT + 2] << 16),
-			(ext_csd[EXT_CSD_GP4_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_GP4_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_GP4_SIZE_MULT + 2] << 16) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-	seq_printf(m, "[EXT_CSD] Enh. user area size : %xh (%d kbytes)\n",
-			(ext_csd[EXT_CSD_ENH_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_ENH_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_ENH_SIZE_MULT + 2] << 16),
-			(ext_csd[EXT_CSD_ENH_SIZE_MULT + 0] |
-			 ext_csd[EXT_CSD_ENH_SIZE_MULT + 1] << 8 |
-			 ext_csd[EXT_CSD_ENH_SIZE_MULT + 2] << 16) * 512 *
-			ext_csd[EXT_CSD_HC_WP_GPR_SIZE] *
-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE]);
-	seq_printf(m, "[EXT_CSD] Enh. user area start: %xh\n",
-			(ext_csd[EXT_CSD_ENH_START_ADDR + 0] |
-			 ext_csd[EXT_CSD_ENH_START_ADDR + 1] << 8 |
-			 ext_csd[EXT_CSD_ENH_START_ADDR + 2] << 16 |
-			 ext_csd[EXT_CSD_ENH_START_ADDR + 3]) << 24);
-	seq_printf(m, "[EXT_CSD] Bad block mgmt mode: %xh\n", ext_csd[EXT_CSD_BADBLK_MGMT]);
-#endif
-	seq_puts(m, "===========================================================\n");
-
-	kfree(ext_csd);
-}
-
+/* FIX ME: Move to user space */
 static int msdc_check_emmc_cache_status(struct seq_file *m,
 		struct msdc_host *host)
 {
 	struct mmc_card *card;
 
-	WARN_ON(!host || !host->mmc || !host->mmc->card);
-
 	if (!host || !host->mmc || !host->mmc->card) {
-		seq_printf(m, "msdc%d: host or mmc or card is NULL\n", host->id);
+		seq_printf(m, "msdc%d: host or mmc or card is NULL\n",
+			host->id);
 		return -1;
 	}
 
@@ -1880,6 +1610,7 @@ static int msdc_check_emmc_cache_status(struct seq_file *m,
 	return card->ext_csd.cache_ctrl;
 }
 
+/* FIX ME: Move to user space */
 static void msdc_enable_emmc_cache(struct seq_file *m,
 		struct msdc_host *host, int enable)
 {
@@ -1925,7 +1656,8 @@ unsigned int g_err_tune_dbg_cmd;
 unsigned int g_err_tune_dbg_arg;
 unsigned int g_err_tune_dbg_error = MTK_MSDC_ERROR_NONE;
 
-static void msdc_error_tune_debug_print(struct seq_file *m, int p1, int p2, int p3, int p4, int p5)
+static void msdc_error_tune_debug_print(struct seq_file *m, int p1, int p2,
+	int p3, int p4, int p5)
 {
 	g_err_tune_dbg_host = p1;
 	g_err_tune_dbg_cmd = p2;
@@ -1986,14 +1718,12 @@ void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
 	if ((g_err_tune_dbg_cmd == MMC_SET_BLOCK_COUNT) &&
 	    sbc &&
 	    (host->autocmd & MSDC_AUTOCMD23)) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO)
 			*intsts = MSDC_INT_ACMDTMO;
-		} else if (g_err_tune_dbg_error
-			& MTK_MSDC_ERROR_ACMD_CRC) {
+		else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_CRC)
 			*intsts = MSDC_INT_ACMDCRCERR;
-		} else {
+		else
 			return;
-		}
 		pr_err("[%s]: got the error cmd:%d, dbg error=%d, sbc->error=%d, count=%d\n",
 			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
 			sbc->error, g_err_tune_dbg_count);
@@ -2068,15 +1798,70 @@ void msdc_error_tune_debug3(struct msdc_host *host,
 }
 #endif /*ifdef MTK_MSDC_ERROR_TUNE_DEBUG*/
 
+static u16 sdio_setting_offsets[] = {
+	OFFSET_MSDC_CFG,
+	OFFSET_SDC_STS,
+
+	OFFSET_MSDC_IOCON,
+	OFFSET_MSDC_PATCH_BIT0,
+	OFFSET_MSDC_PATCH_BIT1,
+	OFFSET_MSDC_PATCH_BIT2,
+	OFFSET_MSDC_PAD_TUNE0,
+	OFFSET_MSDC_PAD_TUNE1,
+	OFFSET_MSDC_DAT_RDDLY0,
+	OFFSET_MSDC_DAT_RDDLY1,
+	OFFSET_MSDC_DAT_RDDLY2,
+	OFFSET_MSDC_DAT_RDDLY3,
+
+	OFFSET_MSDC_IOCON_1,
+	OFFSET_MSDC_PATCH_BIT0_1,
+	OFFSET_MSDC_PATCH_BIT1_1,
+	OFFSET_MSDC_PATCH_BIT2_1,
+	OFFSET_MSDC_PAD_TUNE0_1,
+	OFFSET_MSDC_PAD_TUNE1_1,
+	OFFSET_MSDC_DAT_RDDLY0_1,
+	OFFSET_MSDC_DAT_RDDLY1_1,
+	OFFSET_MSDC_DAT_RDDLY2_1,
+	OFFSET_MSDC_DAT_RDDLY3_1,
+
+	OFFSET_MSDC_IOCON_2,
+	OFFSET_MSDC_PATCH_BIT0_2,
+	OFFSET_MSDC_PATCH_BIT1_2,
+	OFFSET_MSDC_PATCH_BIT2_2,
+	OFFSET_MSDC_PAD_TUNE0_2,
+	OFFSET_MSDC_PAD_TUNE1_2,
+	OFFSET_MSDC_DAT_RDDLY0_2,
+	OFFSET_MSDC_DAT_RDDLY1_2,
+	OFFSET_MSDC_DAT_RDDLY2_2,
+	OFFSET_MSDC_DAT_RDDLY3_2,
+
+	0xFFFF /*as mark of end */
+};
+
+static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
+{
+	void __iomem *base = host->base;
+	int i;
+
+	MSDC_GET_FIELD(SDC_STS, SDC_STS_DVFS_LEVEL, i);
+	seq_printf(m, "SDIO : DVFS_LEVEL : %d\n", i);
+
+	for (i = 0; sdio_setting_offsets[i] != 0xFFFF; i++) {
+		seq_printf(m, "R[%x]=0x%.8x\n", OFFSET_MSDC_IOCON,
+			MSDC_READ32(base + sdio_setting_offsets[i]));
+	}
+}
+
 int g_count;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
 {
+	int ret;
 	int cmd = -1;
 	int sscanf_num;
 	int p1, p2, p3, p4, p5, p6, p7, p8;
 	int id, zone, vcore;
-	int mode, size;
+	int mode;
 	int thread_num, compare_count, multi_address;
 	void __iomem *base = NULL;
 	ulong data_for_wr;
@@ -2107,43 +1892,33 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 	if (cmd == SD_TOOL_ZONE) {
 		id = p1;
+		if (id >= HOST_MAX_NUM || id < 0)
+			goto invalid_host_id;
+
 		host = mtk_msdc_host[id];
 		zone = p2;	/* zone &= 0x3ff; */
 		seq_printf(m, "[SD_Debug] msdc host<%d> debug zone<0x%.8x>\n",
 				id, zone);
+
+		sd_debug_zone[id] = zone;
 		if (host) {
 			seq_printf(m, "[SD_Debug] msdc host<%d> caps<0x%.8x>\n",
 					id, host->mmc->caps);
 			seq_printf(m, "[SD_Debug] msdc host<%d> caps2<0x%.8x>\n",
 					id, host->mmc->caps2);
 		}
-
-		if (id > HOST_MAX_NUM || id < 0)
-			goto invalid_host_id;
-		if (id == HOST_MAX_NUM) {
-			sd_debug_zone[0] = sd_debug_zone[1] = zone;
-			sd_debug_zone[2] = zone;
-			sd_debug_zone[3] = zone;
-		} else {
-			sd_debug_zone[id] = zone;
-		}
 	} else if (cmd == SD_TOOL_DMA_SIZE) {
 		id = p2;
-		mode = p3;
-		size = p4;
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		if (p1 == 0) {
-			drv_mode[id] = mode;
-			dma_size[id] = size;
-			seq_printf(m, "[SD_Debug] msdc host[%d] mode<%d> size<%d>\n",
-				 id, drv_mode[id], dma_size[id]);
-
-		} else {
-			seq_printf(m, "[SD_Debug] msdc host[%d] mode<%d> size<%d>\n",
-				 id, drv_mode[id], dma_size[id]);
+			drv_mode[id] = p3;
+			dma_size[id] = p4;
 		}
+		seq_printf(m, "[SD_Debug] msdc host[%d] mode<%d> size<%d>\n",
+			 id, drv_mode[id], dma_size[id]);
 	} else if (cmd == SD_TOOL_CLK_SRC_SELECT) {
+		/* FIX ME: remove this since clock source may not be changed */
 		id = p2;
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
@@ -2175,10 +1950,14 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto out;
 		}
 
-		msdc_clk_enable(host);
+		ret = msdc_clk_enable(host);
+		if (ret < 0)
+			pr_err("msdc%d enable clock fail\n", host->id);
 
 		if (p1 == 0) {
-			/* FIX ME, shall use different offset limitation for each host */
+			/* FIX ME, shall use different offset limitation for
+			 * each host
+			 */
 			if (offset > 0x228) {
 				seq_puts(m, "invalid register offset\n");
 				goto out;
@@ -2199,70 +1978,55 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_get_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 4) {
 			msdc_dump_register_debug(m, host->id, base);
-		} else if (p1 == 5) {
-			msdc_dump_register_debug(m, host->id, base);
 		}
 
 		/* prevent clock off before device ready */
 		/*msdc_clk_disable(host);*/
 	} else if (cmd == SD_TOOL_SET_DRIVING) {
+		char *device_str, *get_set_str;
+
 		id = p2;
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
+
+		if (id == 0) {
+			device_str = "eMMC";
+		} else if (id == 1) {
+			if (p8 == 1)
+				device_str = "SD30";
+			else
+				device_str = "SD20";
+		} else {
+			device_str = "SDIO";
+		}
+
 		if (p1 == 1) {
+			get_set_str = "set";
 			if ((unsigned char)p3 > 7 || (unsigned char)p4 > 7 ||
 			    (unsigned char)p5 > 7 || (unsigned char)p6 > 7 ||
 			    (unsigned char)p7 > 7) {
 				seq_puts(m, "[SD_Debug]Some drving value was invalid(invalid:0~7)\n");
 				goto out;
 			}
-			if (id == 0) {
-				host->hw->clk_drv = (unsigned char)p3;
-				host->hw->cmd_drv = (unsigned char)p4;
-				host->hw->dat_drv = (unsigned char)p5;
-				host->hw->rst_drv = (unsigned char)p6;
-				host->hw->ds_drv = (unsigned char)p7;
-				msdc_set_driving(host, host->hw, 0);
-				seq_printf(m, "[SD_Debug] eMMC set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-					host->hw->clk_drv, host->hw->cmd_drv,
-					host->hw->dat_drv, host->hw->rst_drv,
-					host->hw->ds_drv);
 
-			} else if (id == 1 && p8 == 1) {
-				/* SD card 1.8v Driving is different */
-				host->hw->clk_drv_sd_18 = (unsigned char)p3;
-				host->hw->cmd_drv_sd_18 = (unsigned char)p4;
-				host->hw->dat_drv_sd_18 = (unsigned char)p5;
-				msdc_set_driving(host, host->hw, 1);
-				seq_printf(m, "[SD_Debug] SD30 set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-					host->hw->clk_drv, host->hw->cmd_drv,
-					host->hw->dat_drv, host->hw->rst_drv,
-					host->hw->ds_drv);
-
-			} else if (id == 1 && p8 == 0) {
-				host->hw->clk_drv = (unsigned char)p3;
-				host->hw->cmd_drv = (unsigned char)p4;
-				host->hw->dat_drv = (unsigned char)p5;
-				msdc_set_driving(host, host->hw, 0);
-				seq_printf(m, "[SD_Debug] SD20 set driving: clk_drv_sd_18=%d, cmd_drv_sd_18=%d, dat_drv_sd_18=%d, rst_drv=%d, ds_drv=%d\n",
-					host->hw->clk_drv_sd_18,
-					host->hw->cmd_drv_sd_18,
-					host->hw->dat_drv_sd_18,
-					host->hw->rst_drv,
-					host->hw->ds_drv);
-			}
+			host->hw->driving_applied->clk_drv = (unsigned char)p3;
+			host->hw->driving_applied->cmd_drv = (unsigned char)p4;
+			host->hw->driving_applied->dat_drv = (unsigned char)p5;
+			host->hw->driving_applied->rst_drv = (unsigned char)p6;
+			host->hw->driving_applied->ds_drv = (unsigned char)p7;
+			msdc_set_driving(host, host->hw->driving_applied);
 		} else {
-			seq_printf(m, "[SD_Debug] Get driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-				host->hw->clk_drv, host->hw->cmd_drv,
-				host->hw->dat_drv, host->hw->rst_drv,
-				host->hw->ds_drv);
-			if (id == 1)
-				seq_printf(m, "[SD_Debug]              clk_drv_sd_18=%d, cmd_drv_sd_18=%d, dat_drv_sd_18=%d\n",
-					host->hw->clk_drv_sd_18,
-					host->hw->cmd_drv_sd_18,
-					host->hw->dat_drv_sd_18);
+			get_set_str = "get";
 		}
+
+		seq_printf(m, "[SD_Debug] %s %s driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
+			device_str, get_set_str,
+			host->hw->driving_applied->clk_drv,
+			host->hw->driving_applied->cmd_drv,
+			host->hw->driving_applied->dat_drv,
+			host->hw->driving_applied->rst_drv,
+			host->hw->driving_applied->ds_drv);
 	} else if (cmd == SD_TOOL_ENABLE_SLEW_RATE) {
 		id = p1;
 		if (id >= HOST_MAX_NUM || id < 0)
@@ -2284,10 +2048,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		host = mtk_msdc_host[id];
 		if ((p2 < 0) || (p2 > 2)) {
 			seq_puts(m, "[SD_Debug]invalid option ( set rd:0, set td:1, get td/rd: 2)\n");
-		} else if ((p2 == 0 && (unsigned char)p3 > 0xffff)
-			|| (p2 == 1 && (unsigned char)p3 > 0xffff)) {
-			seq_puts(m, "[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xffff << 0))\n");
 		} else {
+			/* p3 is checked in msdc_set_tdsel/msdc_set_rdsel */
 			if (p2 == 0) {
 				msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, p3);
 				seq_printf(m, "[SD_Debug]msdc%d, set rd=%d\n",
@@ -2388,7 +2150,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 				"Write from DRAM to SD in DMA mode\n"
 			};
 			dma_status = msdc_get_dma_status(id);
-			seq_printf(m, ">>>> msdc%d: dma_status=%d, ", id, dma_status);
+			seq_printf(m, ">>>> msdc%d: dma_status=%d, ", id,
+				dma_status);
 			seq_printf(m, "%s", str[dma_status+1]);
 			if (dma_status == -1)
 				goto out;
@@ -2412,7 +2175,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			seq_puts(m, "please enable MSDC_DMA_ADDR_DEBUG at mtk_sd.h if you want dump dma address\n");
 #endif
 		} else if (p2 == 1) {
-			seq_printf(m, ">>>> msdc%d: start dma violation test\n", id);
+			seq_printf(m, ">>>> msdc%d: start dma violation test\n",
+				id);
 			g_dma_debug[id] = 1;
 			multi_rw_compare(m, id, COMPARE_ADDRESS_SD, 3,
 				MMC_TYPE_SD, 0);
@@ -2433,10 +2197,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_enable_emmc_cache(m, host, 1);
 			break;
 		case 2:
-			msdc_check_emmc_cache_status(m, host);
-			break;
 		default:
-			seq_puts(m, "ERROR:3rd parameter is wrong, please see the msdc_help\n");
+			msdc_check_emmc_cache_status(m, host);
 			break;
 		}
 	} else if (cmd == MMC_DUMP_GPD) {
@@ -2448,10 +2210,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_dump_gpd_bd(id);
 	} else if (cmd == SD_TOOL_SDIO_PROFILE) {
 		if (p1 == 1) {	/* enable profile */
-			if (gpt_enable == 0) {
-				msdc_init_gpt();
-				gpt_enable = 1;
-			}
 			sdio_pro_enable = 1;
 			if (p2 == 0)
 				p2 = 1;
@@ -2467,16 +2225,14 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		thread_num = p2;
 		compare_count = p3;
 		multi_address = p4;
-		smp_test_on_hosts(m, thread_num, id, compare_count, multi_address);
+		smp_test_on_hosts(m, thread_num, id, compare_count,
+			multi_address);
 	} else if (cmd == SMP_TEST_ON_ALL_HOST) {
 		thread_num = p1;
 		compare_count = p2;
 		multi_address = p3;
 		smp_test_on_hosts(m, thread_num, HOST_MAX_NUM, compare_count,
 			multi_address);
-	} else if (cmd == MMC_REGISTER_READ) {
-		seq_printf(m, "p1 = 0x%x\n", p1);
-		seq_printf(m, "regiser: 0x%x = 0x%x\n", p1, MSDC_READ32((ulong) p1));
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 	} else if (cmd == MMC_PERF_DEBUG) {
 		/* 1 enable; 0 disable */
@@ -2519,8 +2275,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			seq_puts(m, "----------------------------------\n");
 			for (j = 0; j < sizeof(g_time_mark)/sizeof(char *);
 				j++) {
-				seq_printf(m, "%d. %llu %s\n", j, g_mmcqd_buf[i][j],
-					g_time_mark[j]);
+				seq_printf(m, "%d. %llu %s\n", j,
+					g_mmcqd_buf[i][j], g_time_mark[j]);
 			}
 			seq_puts(m, "==================================\n");
 		}
@@ -2553,33 +2309,22 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		msdc_error_tune_debug_print(m, p1, p2, p3, p4, p5);
 #endif
 	} else if (cmd == MMC_CRC_STRESS) {
+		/* FIX ME, move to user space */
 		seq_puts(m, "==== CRC Stress Test ====\n");
+		base = mtk_msdc_host[0]->base;
 		if (p1 == 0) {
-			g_reset_tune = 0;
-		} else {
-			g_reset_tune = 1;
-			base = mtk_msdc_host[0]->base;
+			/* do nothing */
+		} else if (p1 == 1)  {
 			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
 				MSDC_EMMC50_PAD_DS_TUNE_DLY1, 0x1c);
 			MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE,
 				MSDC_EMMC50_PAD_DS_TUNE_DLY3, 0xe);
+		} else if (p1 == 2)  {
+			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, 1);
+			MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY,
+				p2);
+			pr_err("[****MMC_CRC_STRESS****] CMDRDLY<%d>\n", p2);
 		}
-	} else if (cmd == MMC_DUMP_EXT_CSD) {
-		id = p1;
-		if (id != 0)
-			goto invalid_host_id;
-
-		host = mtk_msdc_host[id];
-		msdc_dump_ext_csd(m, host);
-	} else if (cmd == MMC_DUMP_CSD) {
-		id = p1;
-		if (id > 1)
-			goto invalid_host_id;
-
-		host = mtk_msdc_host[id];
-		msdc_dump_csd(m, host);
-		seq_puts(m, "[SD_Debug]: Dump clock status\n");
-		dbg_msdc_dump_clock_sts(m, host);
 	} else if (cmd == DO_AUTOK_OFFLINE_TUNE_TX) {
 		host = mtk_msdc_host[p1]; /*p1 = id */
 		mmc_claim_host(host->mmc);
@@ -2597,11 +2342,11 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		vcore = p2;
 		mode = p3;
 		host = mtk_msdc_host[id];
-		base = host->base;
-		pr_err("[****AutoK test****]msdc host_id<%d> vcore<%d> mode<%d>\n", id, vcore, mode);
+		pr_err("[****AutoK test****]msdc host_id<%d> vcore<%d> mode<%d>\n",
+			id, vcore, mode);
 
 		vcore = (vcore <= 0) ? AUTOK_VCORE_LOW : AUTOK_VCORE_HIGH;
-		res = sdio_autok_res[vcore];
+		res = host->autok_res[vcore];
 
 		if (mode == 0) {
 			if (sdio_autok_res_apply(host, vcore) != 0)
@@ -2609,26 +2354,15 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (mode == 1) {
 			sdio_autok_res_save(host, vcore, res);
 		} else if (mode == 2) {
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_IOCON, MSDC_READ32(MSDC_IOCON));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_PATCH_BIT0, MSDC_READ32(MSDC_PATCH_BIT0));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_PATCH_BIT1, MSDC_READ32(MSDC_PATCH_BIT1));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_PATCH_BIT2, MSDC_READ32(MSDC_PATCH_BIT2));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_PAD_TUNE0, MSDC_READ32(MSDC_PAD_TUNE0));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_PAD_TUNE1, MSDC_READ32(MSDC_PAD_TUNE1));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_DAT_RDDLY0, MSDC_READ32(MSDC_DAT_RDDLY0));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_DAT_RDDLY1, MSDC_READ32(MSDC_DAT_RDDLY1));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_DAT_RDDLY2, MSDC_READ32(MSDC_DAT_RDDLY2));
-			pr_err("%d R[%x]=0x%.8x\n", id, OFFSET_MSDC_DAT_RDDLY3, MSDC_READ32(MSDC_DAT_RDDLY3));
+			msdc_dump_sdio_setting(host, m);
 		}
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	} else if (cmd == MMC_CMDQ_STATUS) {
 		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
 		id = p1;
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
-		msdc_cmdq_status_print(m, host);
-#endif
+		msdc_cmdq_func(host, p2);
 	}
 
 out:
@@ -2678,77 +2412,6 @@ static const struct file_operations msdc_help_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-
-#ifdef MSDC_HQA
-u32 sdio_vio18_flag, sdio_vcore1_flag, sdio_vcore2_flag;
-u32 vio18_reg, vcore1_reg, vcore2_reg;
-
-static ssize_t msdc_voltage_proc_write(struct file *file,
-	const char __user *buf, size_t count, loff_t *data)
-{
-	int ret;
-	int sscanf_num;
-
-	ret = copy_from_user(cmd_buf, buf, count);
-	if (ret < 0)
-		return -1;
-
-	cmd_buf[count] = '\0';
-	pr_err("[SD_Debug]msdc Write %s\n", cmd_buf);
-
-	sscanf_num = sscanf(cmd_buf, "%d %d %d", &sdio_vio18_flag,
-		&sdio_vcore1_flag, &sdio_vcore2_flag);
-
-	if (sscanf_num < 3)
-		return -1;
-
-	if (sdio_vio18_flag >= 1730 && sdio_vio18_flag <= 1880) {
-		/* 0.01V per step */
-		if (sdio_vio18_flag > 1800)
-			vio18_reg = 8-(sdio_vio18_flag-1800)/10;
-		else
-			vio18_reg = (1800-sdio_vio18_flag)/10;
-		pmic_config_interface(REG_VIO18_CAL, vio18_reg,
-			VIO18_CAL_MASK, VIO18_CAL_SHIFT);
-	}
-
-	/*Vcore2 is VCORE_AO*/
-	if (sdio_vcore2_flag > 900 && sdio_vcore2_flag < 1200) {
-		/* 0.00625V per step */
-		/* Originally divied by 12.5, to avoid floating-point division, */
-		/* amplify numerator and denominator by 4 */
-		vcore2_reg = ((sdio_vcore2_flag-600)<<2)/25;
-		pmic_config_interface(REG_VCORE_VOSEL_SW, vcore2_reg,
-			VCORE_VOSEL_SW_MASK, VCORE_VOSEL_SW_SHIFT);
-		pmic_config_interface(REG_VCORE_VOSEL_HW, vcore2_reg,
-			VCORE_VOSEL_HW_MASK, VCORE_VOSEL_HW_SHIFT);
-	}
-
-	return count;
-}
-
-static int msdc_voltage_flag_proc_read_show(struct seq_file *m, void *data)
-{
-	seq_printf(m, "vio18: %d 0x%X\n", sdio_vio18_flag, vio18_reg);
-	seq_printf(m, "vcore1: %d 0x%X\n", sdio_vcore1_flag,  vcore1_reg);
-	seq_printf(m, "vcore2: %d 0x%X\n", sdio_vcore2_flag, vcore2_reg);
-	return 0;
-}
-
-static int msdc_voltage_flag_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, msdc_voltage_flag_proc_read_show,
-		inode->i_private);
-}
-
-static const struct file_operations msdc_voltage_flag_fops = {
-	.open = msdc_voltage_flag_proc_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-	.write = msdc_voltage_proc_write,
-};
-#endif
 
 #ifndef USER_BUILD_KERNEL
 #define PROC_PERM		0660

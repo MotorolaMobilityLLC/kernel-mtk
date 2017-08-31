@@ -26,22 +26,11 @@
 #include "autok.h"
 #include "autok_dvfs.h"
 
-/* do not record the pass settigns, but try the worst
- * setting of each request.
- */
-int g_reset_tune;
-
-/* FIX ME: check if it can be removed since it is set
- * but referenced
- */
-u32 sdio_tune_flag;
-
 void msdc_sdio_restore_after_resume(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 
 	if (host->saved_para.hz) {
-		/* Peter */
 		if ((host->saved_para.suspend_flag) ||
 				((host->saved_para.msdc_cfg != 0) &&
 				((host->saved_para.msdc_cfg&0xFFFFFF9F) !=
@@ -77,7 +66,8 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
 	}
 
-	if (((save_mode == 1) || (save_mode == 4)) && (hw->host_function == MSDC_EMMC)) {
+	if (((save_mode == 1) || (save_mode == 4))
+	 && (hw->host_function == MSDC_EMMC)) {
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
 			host->saved_para.ds_dly1);
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
@@ -124,6 +114,8 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
+	host->saved_para.sdc_fifo_cfg = MSDC_READ32(SDC_FIFO_CFG);
+
 	/*msdc_dump_register(host);*/
 }
 
@@ -155,7 +147,6 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
 			/* do nothing */
-			/*tasklet_hi_schedule(&host->card_tasklet);*/
 		} else
 #endif
 		{
@@ -214,11 +205,12 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, mode);
 		div += 1;
 		if (div > EMMC_MAX_FREQ_DIV) {
-			pr_err("msdc%d: max lower freq dev: %d\n", host->id, div);
+			pr_err("msdc%d: max lower freq: %d\n", host->id, div);
 			return 1;
 		}
 		msdc_clk_stable(host, mode, div, 1);
-		host->sclk = (div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
+		host->sclk =
+			(div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
 		pr_err("msdc%d: HS200 mode lower frequence to %dMhz\n",
 			host->id, host->sclk / 1000000);
 	}
@@ -243,25 +235,17 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
 		pr_err("msdc%d remove UHS_SDR104 mode\n", host->id);
-		goto power_reinit;
-	}
-	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
+	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
 		pr_err("msdc%d remove UHS_DDR50 mode\n", host->id);
-		goto power_reinit;
-	}
-	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
+	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
 		pr_err("msdc%d remove UHS_SDR50 mode\n", host->id);
-		goto power_reinit;
-	}
-	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
+	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
 		pr_err("msdc%d remove UHS_SDR25 mode\n", host->id);
-		goto power_reinit;
 	}
 
-power_reinit:
 	pr_err("msdc%d reinit card\n", host->id);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	mmc->ios.clock = 260000;
@@ -274,7 +258,7 @@ power_reinit:
 }
 /*
  * register as callback function of WIFI(combo_sdio_register_pm) .
- *  can called by msdc_drv_suspend/resume too.
+ * can called by msdc_drv_suspend/resume too.
  */
 void msdc_restore_timing_setting(struct msdc_host *host)
 {
@@ -314,6 +298,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
+	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
 
 	if (sdio) {
 		MSDC_SET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_INT_DAT_LATCH_CK_SEL,
@@ -325,13 +310,15 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 
 		autok_init_sdr104(host);
 #ifdef ENABLE_FOR_MSDC_KERNEL44
-		/* Check which vcore setting to apply */
 		if (vcorefs_get_hw_opp() == OPPI_PERF)
-			autok_tuning_parameter_init(host, sdio_autok_res[AUTOK_VCORE_HIGH]);
+			autok_tuning_parameter_init(host,
+				host->autok_res[AUTOK_VCORE_HIGH]);
 		else
-			autok_tuning_parameter_init(host, sdio_autok_res[AUTOK_VCORE_LOW]);
+			autok_tuning_parameter_init(host,
+				host->autok_res[AUTOK_VCORE_LOW]);
 #else
-		autok_tuning_parameter_init(host, sdio_autok_res[AUTOK_VCORE_HIGH]);
+		autok_tuning_parameter_init(host,
+			host->autok_res[AUTOK_VCORE_HIGH]);
 #endif
 		sdio_dvfs_reg_restore(host);
 
@@ -354,11 +341,6 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.emmc50_dat45);
 		MSDC_WRITE32(EMMC50_PAD_DAT67_TUNE,
 			host->saved_para.emmc50_dat67);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (host->mmc->card->ext_csd.cmdq_mode_en)
-			msdc_cmdq_mode_switch(host, 1);
-#endif
 	}
 
 	/*msdc_dump_register(host);*/
@@ -393,31 +375,23 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 
 	MSDC_CLR_BIT32(EMMC50_CFG0, MSDC_EMMC50_CFG_CMD_RESP_SEL);
 
-	/* tune path and related key hw fixed setting should be wrappered follow interface */
 	autok_path_sel(host);
 }
 
 void msdc_init_tune_setting(struct msdc_host *host)
 {
-	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base;
 
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
 		MSDC_CLKTXDLY);
-	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATWRDLY,
-		hw->datwrddly);
-	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRRDLY,
-		hw->cmdrrddly);
-	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY,
-		hw->cmdrddly);
 
 	MSDC_WRITE32(MSDC_IOCON, 0x00000000);
 
 	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);
 	MSDC_WRITE32(MSDC_DAT_RDDLY1, 0x00000000);
 
-	MSDC_WRITE32(MSDC_PATCH_BIT0, 0x403C0006);
-	MSDC_WRITE32(MSDC_PATCH_BIT1, 0xFFE20349);
+	MSDC_WRITE32(MSDC_PATCH_BIT0, MSDC_PB0_DEFAULT_VAL);
+	MSDC_WRITE32(MSDC_PATCH_BIT1, MSDC_PB1_DEFAULT_VAL);
 
 	/* Fix HS400 mode */
 	MSDC_CLR_BIT32(EMMC50_CFG0, MSDC_EMMC50_CFG_TXSKEW_SEL);
@@ -427,16 +401,13 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	MSDC_SET_BIT32(MSDC_PATCH_BIT2, MSDC_PB2_DDR50_SEL);
 
 	/* 64T + 48T cmd <-> resp */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT, 3);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, 0);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, 0);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT,
+		MSDC_PB2_DEFAULT_RESPWAITCNT);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
+		MSDC_PB2_DEFAULT_RESPSTENSEL);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
+		MSDC_PB2_DEFAULT_CRCSTSENSEL);
 
-	if (host->id == 1) {
-		MSDC_CLR_BIT32(SDC_CMD_STS, SDC_CMD_STS_INDEX_CHECK);
-		MSDC_CLR_BIT32(SDC_CMD_STS, SDC_CMD_STS_ENDBIT_CHECK);
-	}
-
-	/* low speed mode should be switch data tune path too even if not covered by autok */
 	autok_path_sel(host);
 }
 

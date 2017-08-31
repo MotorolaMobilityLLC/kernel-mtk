@@ -14,17 +14,6 @@
 #ifndef	_MSDC_REG_H_
 #define	_MSDC_REG_H_
 
-#include <linux/bitops.h>
-#include <mt-plat/sync_write.h>
-#if !defined(CONFIG_MTK_LEGACY)
-#include <linux/clk.h>
-#endif /* !defined(CONFIG_MTK_LEGACY) */
-
-/*--------------------------------------------------------------------------*/
-/* Common Macro								    */
-/*--------------------------------------------------------------------------*/
-#define	REG_ADDR(x)			((volatile u32 *)(base + OFFSET_##x))
-
 /*--------------------------------------------------------------------------*/
 /* Register Offset							    */
 /*--------------------------------------------------------------------------*/
@@ -419,6 +408,7 @@
 #define	SDC_STS_CMD_WR_BUSY		(0x1  << 16)	/* W1C */
 #define	SDC_STS_DAT_TMO_TYPE		(0x3  << 17)	/* RO  */
 #define	SDC_STS_CMD_TMO_TYPE		(0x3  << 19)	/* RO  */
+#define	SDC_STS_DVFS_LEVEL		(0xf  << 27)	/* RO  */
 #define	SDC_STS_SWR_COMPL		(0x1  << 31)	/* RO  */
 
 /* SDC_STS mask	*/
@@ -429,11 +419,11 @@
 #define	SDC_DCRC_STS_NEG		(0xff << 8)	/* RO */
 
 /* SDC_CMD_STS mask */
-#define SDC_CMD_STS_RESP_CRC	(0x7f  << 0) /* R */
-#define SDC_CMD_STS_RESP_INDEX	(0x3f  << 7) /* R */
-#define SDC_CMD_STS_RESP_ENDBIT	(0x1  << 13) /* R */
+#define SDC_CMD_STS_RESP_CRC		(0x7f  << 0) /* R */
+#define SDC_CMD_STS_RESP_INDEX		(0x3f  << 7) /* R */
+#define SDC_CMD_STS_RESP_ENDBIT		(0x1  << 13) /* R */
 #define SDC_CMD_STS_ENDBIT_CHECK	(0x1  << 14) /* W1C */
-#define SDC_CMD_STS_INDEX_CHECK	(0x1  << 15) /* W1C */
+#define SDC_CMD_STS_INDEX_CHECK		(0x1  << 15) /* W1C */
 
 /* EMMC_CFG0 mask */
 #define	EMMC_CFG0_BOOTSTART		(0x1  << 0)	/* W  */
@@ -542,6 +532,7 @@
 #define	MSDC_PB2_CFGRESPCNT		(0x7 <<	12)
 #define	MSDC_PB2_CFGRESP		(0x1 <<	15)
 #define	MSDC_PB2_RESPSTENSEL		(0x7 <<	16)
+#define	MSDC_PB2_DDR50SEL		(0x1 <<	19)
 #define	MSDC_PB2_POPENCNT		(0xf <<	20)
 #define	MSDC_PB2_CFG_CRCSTS_SEL		(0x1 <<	24)
 #define	MSDC_PB2_CFGCRCSTSEDGE		(0x1 <<	25)
@@ -661,12 +652,12 @@
 #define	MSDC_EMMC50_PAD_DAT7_TXDLY	(0x1F << 22)
 
 /* EMMC51_CFG0 mask */
-#define MSDC_EMMC51_CFG0_CMDQ_WDAT_CNT         (0x3ffUL << 22)
-#define MSDC_EMMC51_CFG0_CMDQ_RDAT_CNT         (0x3ff << 12)
-#define MSDC_EMMC51_CFG0_CMDQ_DTYPE            (0x3 << 10)
-#define MSDC_EMMC51_CFG0_CMDQ_RSPTYP           (0x7 << 7)
-#define MSDC_EMMC51_CFG0_CMDQ_NUM              (0x3f << 1)
-#define MSDC_EMMC51_CFG0_CMDQ_EN               (0x1 << 0)
+#define MSDC_EMMC51_CFG_CMDQEN          (0x1    <<  0)
+#define MSDC_EMMC51_CFG_NUM             (0x3F   <<  1)
+#define MSDC_EMMC51_CFG_RSPTYPE         (0x7    <<  7)
+#define MSDC_EMMC51_CFG_DTYPE           (0x3    << 10)
+#define MSDC_EMMC51_CFG_RDATCNT         (0x3FF  << 12)
+#define MSDC_EMMC51_CFG_WDATCNT         (0x3FF  << 22)
 
 /* EMMC50_CFG0 mask */
 #define	MSDC_EMMC50_CFG_PADCMD_LATCHCK	(0x1 <<	0)

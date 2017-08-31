@@ -19,20 +19,21 @@
 
 #define MSDC0_DDR50_DDRCKD              1
 
+#define MSDC_PB0_DEFAULT_VAL            0x403C0006
+#define MSDC_PB1_DEFAULT_VAL            0xFFE20349
+
+#define MSDC_PB2_DEFAULT_RESPWAITCNT    0x3
+#define MSDC_PB2_DEFAULT_RESPSTENSEL    0x0
+#define MSDC_PB2_DEFAULT_CRCSTSENSEL    0x0
+
 /* Declared in msdc_tune.c */
 /* FIX ME: move it to another file */
 extern int g_reset_tune;
-
-/* FIX ME: check if it can be removed since it is set
- * but referenced
- */
-extern u32 sdio_tune_flag;
 
 /* sdio function */
 void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
-void emmc_clear_timing(void);
 void msdc_sdio_restore_after_resume(struct msdc_host *host);
 void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
 void msdc_restore_timing_setting(struct msdc_host *host);

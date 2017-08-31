@@ -34,4 +34,5 @@ endif
 
 ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
 obj-$(CONFIG_MMC_MTK_PRO) += emmc_rpmb.o

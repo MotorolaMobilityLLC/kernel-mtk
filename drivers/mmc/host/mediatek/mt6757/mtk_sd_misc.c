@@ -41,7 +41,7 @@
 #define DRV_NAME_MISC           "misc-sd"
 
 #define DEBUG_MMC_IOCTL         0
-#define DEBUG_MSDC_SSC          1
+
 /*
  * For simple_sd_ioctl
  */
@@ -87,7 +87,8 @@ int msdc_reinit(struct msdc_host *host)
 	if (host->block_bad_card)
 		ERR_MSG("Need block this bad SD card from re-initialization");
 
-	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE) || (host->block_bad_card != 0))
+	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
+	 || (host->block_bad_card != 0))
 		goto skip_reinit1;
 	mmc_claim_host(mmc);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
@@ -136,16 +137,13 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	struct mmc_data msdc_data;
 	struct mmc_command msdc_cmd;
 	struct mmc_command msdc_stop;
+	int ret = 0;
+	char part_id;
+	int no_single_rw;
+	u32 total_size;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int is_cmdq_en = false;
 #endif
-
-	int ret = 0;
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-	char part_id;
-#endif
-	int no_single_rw;
-	u32 total_size;
 
 #ifdef MTK_MSDC_USE_CMD23
 	struct mmc_command msdc_sbc;
@@ -208,29 +206,32 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	if (mmc->card->ext_csd.cmdq_mode_en) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
-		is_cmdq_en = true;
-		mmc_blk_cmdq_switch(mmc->card, 0);
+		ret = mmc_blk_cmdq_switch(mmc->card, 0);
+		if (ret) {
+			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
+			goto rw_end;
+		} else
+			is_cmdq_en = true;
 	}
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-	switch (msdc_ctl->partition) {
-	case EMMC_PART_BOOT1:
-		part_id = 1;
-		break;
-	case EMMC_PART_BOOT2:
-		part_id = 2;
-		break;
-	default:
-		/* make sure access partition is user data area */
-		part_id = 0;
-		break;
+	if (host_ctl->hw->host_function == MSDC_EMMC) {
+		switch (msdc_ctl->partition) {
+		case EMMC_PART_BOOT1:
+			part_id = 1;
+			break;
+		case EMMC_PART_BOOT2:
+			part_id = 2;
+			break;
+		default:
+			/* make sure access partition is user data area */
+			part_id = 0;
+			break;
+		}
+
+		if (msdc_switch_part(host_ctl, part_id))
+			goto rw_end;
 	}
-
-	if (msdc_switch_part(host_ctl, part_id))
-		goto rw_end;
-
-#endif
 
 	memset(&msdc_data, 0, sizeof(struct mmc_data));
 	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
@@ -329,6 +330,17 @@ skip_sbc_prepare:
 	if (msdc_ctl->partition)
 		msdc_switch_part(host_ctl, 0);
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (is_cmdq_en) {
+		pr_debug("[MSDC_DBG] turn on cmdq\n");
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		if (ret)
+			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
+		else
+			is_cmdq_en = false;
+	}
+#endif
+
 	mmc_release_host(mmc);
 	if (!msdc_ctl->iswrite) {
 		if (msdc_ctl->opcode != MSDC_CARD_DUNM_FUNC) {
@@ -349,6 +361,16 @@ skip_sbc_prepare:
 	goto rw_end_without_release;
 
 rw_end:
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (is_cmdq_en) {
+		pr_debug("[MSDC_DBG] turn on cmdq\n");
+		ret = mmc_blk_cmdq_switch(mmc->card, 1);
+		if (ret)
+			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
+		else
+			is_cmdq_en = false;
+	}
+#endif
 	mmc_release_host(mmc);
 
 rw_end_without_release:
@@ -671,6 +693,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 {
 	void __iomem *base;
 	struct msdc_host *host;
+	int ret;
 
 	host = mtk_msdc_host[msdc_ctl->host_num];
 	if (host == NULL)
@@ -678,7 +701,11 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
+	ret = msdc_clk_enable(host);
+	if (ret < 0) {
+		pr_err("host%d enable clock fail\n", msdc_ctl->host_num);
+		return -EINVAL;
+	}
 
 #if DEBUG_MMC_IOCTL
 	pr_debug("set: clk driving is 0x%x\n", msdc_ctl->clk_pu_driving);
@@ -687,15 +714,12 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	pr_debug("set: rst driving is 0x%x\n", msdc_ctl->rst_pu_driving);
 	pr_debug("set: ds driving is 0x%x\n", msdc_ctl->ds_pu_driving);
 #endif
-	host->hw->clk_drv = msdc_ctl->clk_pu_driving;
-	host->hw->cmd_drv = msdc_ctl->cmd_pu_driving;
-	host->hw->dat_drv = msdc_ctl->dat_pu_driving;
-	host->hw->rst_drv = msdc_ctl->rst_pu_driving;
-	host->hw->ds_drv = msdc_ctl->ds_pu_driving;
-	host->hw->clk_drv_sd_18 = msdc_ctl->clk_pu_driving;
-	host->hw->cmd_drv_sd_18 = msdc_ctl->cmd_pu_driving;
-	host->hw->dat_drv_sd_18 = msdc_ctl->dat_pu_driving;
-	msdc_set_driving(host, host->hw, 0);
+	host->hw->driving_applied->clk_drv = msdc_ctl->clk_pu_driving;
+	host->hw->driving_applied->cmd_drv = msdc_ctl->cmd_pu_driving;
+	host->hw->driving_applied->dat_drv = msdc_ctl->dat_pu_driving;
+	host->hw->driving_applied->rst_drv = msdc_ctl->rst_pu_driving;
+	host->hw->driving_applied->ds_drv = msdc_ctl->ds_pu_driving;
+	msdc_set_driving(host, host->hw->driving_applied);
 #if DEBUG_MMC_IOCTL
 #if 0
 	msdc_dump_padctl(host);
@@ -709,6 +733,8 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 {
 	void __iomem *base;
 	struct msdc_host *host;
+	struct msdc_hw_driving driving;
+	int ret;
 
 	host = mtk_msdc_host[msdc_ctl->host_num];
 	if (host == NULL)
@@ -716,22 +742,21 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 	base = host->base;
 
-	msdc_clk_enable(host);
-
-	msdc_get_driving(host, host->hw);
-
-	if ((host->id == 1) && (g_msdc1_io == 1800000)) {
-		msdc_ctl->clk_pu_driving = host->hw->clk_drv_sd_18;
-		msdc_ctl->cmd_pu_driving = host->hw->cmd_drv_sd_18;
-		msdc_ctl->dat_pu_driving = host->hw->dat_drv_sd_18;
-	} else {
-		msdc_ctl->clk_pu_driving = host->hw->clk_drv;
-		msdc_ctl->cmd_pu_driving = host->hw->cmd_drv;
-		msdc_ctl->dat_pu_driving = host->hw->dat_drv;
+	ret = msdc_clk_enable(host);
+	if (ret < 0) {
+		pr_err("host%d enable clock fail\n", msdc_ctl->host_num);
+		return -EINVAL;
 	}
+
+	msdc_get_driving(host, &driving);
+
+	msdc_ctl->clk_pu_driving = driving.clk_drv;
+	msdc_ctl->cmd_pu_driving = driving.cmd_drv;
+	msdc_ctl->dat_pu_driving = driving.dat_drv;
+
 	if (host->id == 0) {
-		msdc_ctl->rst_pu_driving = host->hw->rst_drv;
-		msdc_ctl->ds_pu_driving = host->hw->ds_drv;
+		msdc_ctl->rst_pu_driving = driving.rst_drv;
+		msdc_ctl->ds_pu_driving = driving.ds_drv;
 	} else {
 		msdc_ctl->rst_pu_driving = 0;
 		msdc_ctl->ds_pu_driving = 0;
@@ -865,6 +890,7 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 		info->emmc_capacity = msdc_get_capacity(1);
 		break;
 	case EMMC_RESERVE:
+		/* FIX ME: check if this case can be removed */
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 		info->emmc_reserve = 0;
 #endif

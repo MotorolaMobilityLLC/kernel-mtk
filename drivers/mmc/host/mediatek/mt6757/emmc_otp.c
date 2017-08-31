@@ -112,6 +112,7 @@ unsigned int emmc_get_wp_size(void)
 	int ret = 0;
 	u32 *csd = NULL;
 	u32 write_prot_grpsz = 0;
+	int err;
 
 	if (sg_wp_size == 0) {
 		/* not to change ERASE_GRP_DEF after card initialized */
@@ -140,9 +141,11 @@ unsigned int emmc_get_wp_size(void)
 			host_ctl->mmc->claim_cnt, host_ctl->mmc->claimer,
 			current);
 #endif
-		/* As the ext_csd is large and mostly unused, raw ext_csd is */
-		/* not stored in mmc_card, so get it again. */
+		/* As the ext_csd is large and mostly unused, raw ext_csd is
+		 * not stored in mmc_card, so get it again.
+		 */
 		ret = mmc_get_ext_csd(host_ctl->mmc->card, &l_ext_csd);
+		mmc_release_host(host_ctl->mmc);
 		if (ret) {
 			pr_err("mmc_get_ext_csd err\n");
 			return -1;
@@ -158,22 +161,23 @@ unsigned int emmc_get_wp_size(void)
 			}
 		}
 #endif
-		mmc_release_host(host_ctl->mmc);
 
 		csd = host_ctl->mmc->card->raw_csd;
 		write_prot_grpsz = UNSTUFF_BITS(csd, 32, 5);
 		pr_err("otp: write_prot_grpsz %d\n", write_prot_grpsz);
 		/* otp length equal to one write protect group size */
 		if (l_ext_csd[EXT_CSD_ERASE_GROUP_DEF] & 0x1) {
-			/* use high-capacity erase uint size, hc erase timeout, */
-			/* hc wp size, store in EXT_CSD */
+			/* use high-capacity erase uint size, hc erase timeout,
+			 * hc wp size, store in EXT_CSD
+			 */
 			sg_wp_size = (512 * 1024 *
 				l_ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 				l_ext_csd[EXT_CSD_HC_WP_GRP_SIZE]);
 			pr_err("otp: hc unit sg_wp_size %d\n", sg_wp_size);
 		} else {
-			/* use old erase group size and */
-			/* write protect group size, store in CSD */
+			/* use old erase group size and
+			 * write protect group size, store in CSD
+			 */
 			sg_wp_size = (512 * host_ctl->mmc->card->erase_size) *
 				(write_prot_grpsz + 1);
 			pr_err("otp: non-hc unit sg_wp_size %d\n", sg_wp_size);
@@ -244,6 +248,7 @@ unsigned int emmc_otp_read(unsigned int blk_offset, void *BufferPtr)
 	struct msdc_host *host_ctl;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int is_cmdq_en = false;
+	int ret;
 #endif
 
 	/* check parameter */
@@ -267,11 +272,17 @@ unsigned int emmc_otp_read(unsigned int blk_offset, void *BufferPtr)
 	mmc_claim_host(host_ctl->mmc);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	is_cmdq_en = false;
 	if (host_ctl->mmc->card->ext_csd.cmdq_mode_en) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("EMMC_OTP: cmdq enabled, turn it off\n");
 		is_cmdq_en = true;
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		if (ret) {
+			pr_debug("EMMC_OTP turn off cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
 	}
 #endif
 
@@ -323,7 +334,12 @@ unsigned int emmc_otp_read(unsigned int blk_offset, void *BufferPtr)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("EMMC_OTP turn on cmdq\n");
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		if (ret) {
+			pr_debug("EMMC_OTP turn on cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
 	}
 #endif
 
@@ -355,8 +371,9 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 	struct mmc_command msdc_sbc;
 #endif
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int is_cmdq_en = false;
-#endif
+	int is_cmdq_en;
+	int ret;
+#enndif
 
 	/* check parameter */
 	l_addr = emmc_otp_start();
@@ -377,11 +394,17 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 	mmc_claim_host(host_ctl->mmc);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	is_cmdq_en = false;
 	if (host_ctl->mmc->card->ext_csd.cmdq_mode_en) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("EMMC_OTP: cmdq enabled, turn it off\n");
 		is_cmdq_en = true;
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
+		if (ret) {
+			pr_debug("EMMC_OTP: turn off cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
 	}
 #endif
 
@@ -447,7 +470,12 @@ unsigned int emmc_otp_write(unsigned int blk_offset, void *BufferPtr)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (is_cmdq_en) {
 		pr_debug("EMMC_OTP turn on cmdq\n");
-		mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		if (ret) {
+			pr_debug("EMMC_OTP turn on cmdq en failed\n");
+			mmc_release_host(host_ctl->mmc);
+			return ret;
+		}
 	}
 #endif
 

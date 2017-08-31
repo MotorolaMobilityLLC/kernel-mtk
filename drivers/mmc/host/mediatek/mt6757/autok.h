@@ -24,7 +24,8 @@
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
 #include <linux/mmc/sdio.h>
-#include "mtk_sd.h"
+
+struct msdc_host;
 
 #define E_RESULT_PASS     (0)
 #define E_RESULT_CMD_TMO  (1<<0)
@@ -91,15 +92,17 @@ enum AUTOK_PARAM {
 	/* write data crc status async fifo out edge select */
 	WD_FIFO_EDGE,
 
-	/* [Data Tune]CMD Pad RX Delay Line1 Control. This register is used to */
-	/* fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune] */
+	/* [Data Tune]CMD Pad RX Delay Line1 Control. This register is used to
+	 * fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune]
+	 */
 	CMD_RD_D_DLY1,
 
 	/* [Data Tune]CMD Pad RX Delay Line1 Sel-> delay cell1 enable */
 	CMD_RD_D_DLY1_SEL,
 
-	/* [Data Tune]CMD Pad RX Delay Line2 Control. This register is used to */
-	/* fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune] */
+	/* [Data Tune]CMD Pad RX Delay Line2 Control. This register is used to
+	 * fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune]
+	 */
 	CMD_RD_D_DLY2,
 
 	/* [Data Tune]CMD Pad RX Delay Line1 Sel-> delay cell2 enable */
@@ -123,15 +126,17 @@ enum AUTOK_PARAM {
 	/* DS Pad Z clk delay count, range: 0~63, Z dly1(0~31)+Z dly2(0~31) */
 	EMMC50_DS_Z_DLY1,
 
-	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]: */
-	/* dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable, */
+	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]:
+	 * dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable
+	 */
 	EMMC50_DS_Z_DLY1_SEL,
 
 	/* DS Pad Z clk delay count, range: 0~63, Z dly1(0~31)+Z dly2(0~31) */
 	EMMC50_DS_Z_DLY2,
 
-	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]: */
-	/* dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable, */
+	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]:
+	 * dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable,
+	 */
 	EMMC50_DS_Z_DLY2_SEL,
 
 	/* DS Pad Z_DLY clk delay count, range: 0~31 */
@@ -151,19 +156,22 @@ enum AUTOK_PARAM {
 	EMMC50_DAT7_TX_DLY,
 	TUNING_PARAM_COUNT,
 
-	/* Data line rising/falling latch  fine tune selection in read transaction. */
-	/* 1'b0: All data line share one value indicated by MSDC_IOCON.R_D_SMPL. */
-	/* 1'b1: Each data line has its own  selection value indicated by Data line (x): MSDC_IOCON.R_D(x)_SMPL */
+	/* Data line rising/falling latch  fine tune selection in read transaction.
+	 * 1'b0: All data line share one value indicated by MSDC_IOCON.R_D_SMPL.
+	 * 1'b1: Each data line has its own  selection value indicated by Data line (x): MSDC_IOCON.R_D(x)_SMPL
+	 */
 	READ_DATA_SMPL_SEL,
 
-	/* Data line rising/falling latch  fine tune selection in write transaction. */
-	/* 1'b0: All data line share one value indicated by MSDC_IOCON.W_D_SMPL. */
-	/* 1'b1: Each data line has its own selection value indicated by Data line (x): MSDC_IOCON.W_D(x)_SMPL */
+	/* Data line rising/falling latch  fine tune selection in write transaction.
+	 * 1'b0: All data line share one value indicated by MSDC_IOCON.W_D_SMPL.
+	 * 1'b1: Each data line has its own selection value indicated by Data line (x): MSDC_IOCON.W_D(x)_SMPL
+	 */
 	WRITE_DATA_SMPL_SEL,
 
-	/* Data line delay line fine tune selection. 1'b0: All data line share one delay */
-	/* selection value indicated by PAD_TUNE.PAD_DAT_RD_RXDLY. 1'b1: Each data line has its */
-	/* own delay selection value indicated by Data line (x): DAT_RD_DLY(x).DAT0_RD_DLY */
+	/* Data line delay line fine tune selection. 1'b0: All data line share one delay
+	 * selection value indicated by PAD_TUNE.PAD_DAT_RD_RXDLY. 1'b1: Each data line has its
+	 * own delay selection value indicated by Data line (x): DAT_RD_DLY(x).DAT0_RD_DLY
+	 */
 	DATA_DLYLINE_SEL,
 
 	/* [Data Tune]CMD & DATA Pin tune Data Selection[Data Tune Sel] */
@@ -187,12 +195,14 @@ enum AUTOK_PARAM {
 	/* CKBUF in CKGEN Delay Selection. Total 32 stages */
 	CKGEN_MSDC_DLY_SEL,
 
-	/* CMD response turn around period. The turn around cycle = CMD_RSP_TA_CNTR + 2, */
-	/* Only for USH104 mode, this register should be set to 0 in non-UHS104 mode */
+	/* CMD response turn around period. The turn around cycle = CMD_RSP_TA_CNTR + 2,
+	 * Only for USH104 mode, this register should be set to 0 in non-UHS104 mode
+	 */
 	CMD_RSP_TA_CNTR,
 
-	/* Write data and CRC status turn around period. The turn around cycle = WRDAT_CRCS_TA_CNTR + 2, */
-	/* Only for USH104 mode,  this register should be set to 0 in non-UHS104 mode */
+	/* Write data and CRC status turn around period. The turn around cycle = WRDAT_CRCS_TA_CNTR + 2,
+	 * Only for USH104 mode,  this register should be set to 0 in non-UHS104 mode
+	 */
 	WRDAT_CRCS_TA_CNTR,
 
 	/* CLK Pad TX Delay Control. This register is used to add delay to CLK phase. Total 32 stages */

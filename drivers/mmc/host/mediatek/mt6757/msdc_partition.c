@@ -45,7 +45,7 @@ u64 msdc_get_user_capacity(struct msdc_host *host)
 	u32 legacy_capacity = 0;
 	struct mmc_card *card;
 
-	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+	if (host && host->mmc && host->mmc->card)
 		card = host->mmc->card;
 	else
 		return 0;
@@ -136,6 +136,7 @@ void msdc_get_cache_region(struct work_struct *work)
 		g_usrdata_part_start, g_usrdata_part_end);
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
+
 static struct delayed_work get_cache_info;
 static int __init init_get_cache_work(void)
 {
@@ -151,7 +152,7 @@ u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 	int i;
 	struct mmc_card *card;
 
-	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+	if (host && host->mmc && host->mmc->card)
 		card = host->mmc->card;
 	else
 		return 0;
