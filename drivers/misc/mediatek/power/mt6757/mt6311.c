@@ -7623,6 +7623,7 @@ void mt6311_eint_setting(void)
 	ret = request_irq(g_mt6311_irq, mt6311_eint_handler, g_cust_eint_mt_pmic_mt6311_type, "mt6311-eint", NULL);
 	if (ret)
 		PMICLOG("[CUST_EINT] Fail to register an irq=%d , err=%d\n", g_mt6311_irq, ret);
+	enable_irq_wake(g_mt6311_irq); /* let irq can wake up suspend */
 
 	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6311_NUM=%d\n", g_eint_pmic_mt6311_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n",
