@@ -472,7 +472,7 @@ static int mtk_pcm_hdmi_stop(struct snd_pcm_substream *substream)
 
 	pr_warn("mtk_pcm_hdmi_stop\n");
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_HDMI));
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 
@@ -792,7 +792,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	/* ALPS01889945 , stereo , multi channel switch A/V sync issue */
 	/* 32bit , stereo , 64 BCK  for one count, (hal size)8192 bytes/(64/8) = 1024 count */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_HDMI),
 		     substream->runtime->rate,
 		     1024);
 

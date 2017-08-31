@@ -100,8 +100,6 @@ static bool usb_prepare_done[2] = {false, false};
 static bool usb_use_dram;
 static int usb_mem_blk[2] = {Soc_Aud_Digital_Block_MEM_DL1,
 			     Soc_Aud_Digital_Block_MEM_AWB};
-static int usb_irq[2] = {Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
-			 Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE};
 
 static struct snd_pcm_hardware mtk_pcm_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
@@ -349,7 +347,7 @@ static int mtk_usb_echoref_start(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     usb_irq[stream],
+		     irq_request_number(usb_mem_blk[stream]),
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
 
@@ -371,7 +369,7 @@ static int mtk_usb_echoref_stop(struct snd_pcm_substream *substream)
 	}
 #endif
 
-	irq_remove_user(substream, usb_irq[stream]);
+	irq_remove_user(substream, irq_request_number(usb_mem_blk[stream]));
 
 	SetMemoryPathEnable(usb_mem_blk[stream], false);
 

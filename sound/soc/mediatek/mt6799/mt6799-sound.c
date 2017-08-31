@@ -2776,12 +2776,16 @@ const struct Aud_RegBitsInfo *GetIRQPurposeReg(enum Soc_Aud_IRQ_PURPOSE irqPurpo
 }
 
 /*Irq handler function array*/
+static void Aud_IRQ0_Handler(void)
+{
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2))
+		Auddrv_DL2_Interrupt_Handler();
+}
+
 static void Aud_IRQ1_Handler(void)
 {
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1))
 		Auddrv_DL1_Interrupt_Handler();
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2))
-		Auddrv_DL2_Interrupt_Handler();
 }
 static void Aud_IRQ2_Handler(void)
 {
@@ -2803,7 +2807,7 @@ static void Aud_IRQ5_Handler(void)
 }
 
 static void (*Aud_IRQ_Handler_Funcs[Soc_Aud_IRQ_MCU_MODE_NUM])(void) = {
-	NULL,
+	Aud_IRQ0_Handler,
 	Aud_IRQ1_Handler,
 	Aud_IRQ2_Handler,
 	NULL,
@@ -2827,6 +2831,29 @@ void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex)
 	else
 		pr_aud("%s(), Aud_IRQ%d_Handler is Null", __func__, irqIndex);
 }
+
+enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block)
+{
+	switch (mem_block) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ0_MCU_MODE;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+	case Soc_Aud_Digital_Block_MEM_AWB:
+	case Soc_Aud_Digital_Block_MEM_DAI:
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE;
+	case Soc_Aud_Digital_Block_MEM_HDMI:
+		return Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE;
+	default:
+		pr_err("%s, can't request irq_num by this mem_block = %d", __func__, mem_block);
+		AUDIO_ASSERT(0);
+		return Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE;
+	}
+}
+
 
 bool IsNeedToSetHighAddr(bool usingdram, dma_addr_t addr)
 {

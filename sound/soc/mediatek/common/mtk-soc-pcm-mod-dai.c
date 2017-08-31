@@ -95,7 +95,7 @@ static void StopAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 	  *SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
 	*/
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_MOD_DAI));
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI, false);
 
@@ -147,7 +147,7 @@ static void StartAudioModDaiCaptureHardware(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI, true);
 
 	irq_add_user(substream,
-		Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		irq_request_number(Soc_Aud_Digital_Block_MEM_MOD_DAI),
 		substream->runtime->rate,
 		substream->runtime->period_size);
 
