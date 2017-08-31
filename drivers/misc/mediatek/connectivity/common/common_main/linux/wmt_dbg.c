@@ -158,14 +158,14 @@ static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
 	for (i = 0; i < len; i++) {
 		buf_emi[idx] = gEmiBuf[i];
 		if (gEmiBuf[i] == '\n') {
-			pr_debug("%s", buf_emi);
+			WMT_INFO_FUNC("%s", buf_emi);
 			osal_memset(buf_emi, 0, BUF_LEN_MAX);
 			idx = 0;
 		} else {
 			idx++;
 			if (idx == BUF_LEN_MAX-1) {
 				buf_emi[idx] = '\0';
-				pr_debug("%s", buf_emi);
+				WMT_INFO_FUNC("%s", buf_emi);
 				osal_memset(buf_emi, 0, BUF_LEN_MAX);
 				idx = 0;
 			}
@@ -173,7 +173,7 @@ static VOID wmt_dbg_fwinfor_print_buff(UINT32 len)
 	}
 	if ((idx != 0) && (idx < BUF_LEN_MAX)) {
 		buf_emi[idx] = '\0';
-		pr_debug("%s", buf_emi);
+		WMT_INFO_FUNC("%s", buf_emi);
 		osal_memset(buf_emi, 0, BUF_LEN_MAX);
 		idx = 0;
 	}
@@ -551,19 +551,19 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 
 			if (cur_idx_pagedtrace < prev_idx_pagedtrace) {
 				if (prev_idx_pagedtrace >= 0x8000) {
-					pr_debug("++ prev_idx_pagedtrace invalid ...++\n\\n");
+					WMT_INFO_FUNC("++ prev_idx_pagedtrace invalid ...++\n\\n");
 					prev_idx_pagedtrace = 0x8000 - 1;
 					continue;
 				}
 
 				len = 0x8000 - prev_idx_pagedtrace - 1;
 				wmt_lib_get_fwinfor_from_emi(1, prev_idx_pagedtrace, &gEmiBuf[0], len);
-				pr_debug("\n\n -- CONNSYS paged trace ascii output (cont...) --\n\n");
+				WMT_INFO_FUNC("\n\n -- CONNSYS paged trace ascii output (cont...) --\n\n");
 				wmt_dbg_fwinfor_print_buff(len);
 
 				len = cur_idx_pagedtrace;
 				wmt_lib_get_fwinfor_from_emi(1, 0x0, &gEmiBuf[0], len);
-				pr_debug("\n\n -- CONNSYS paged trace ascii output (end) --\n\n");
+				WMT_INFO_FUNC("\n\n -- CONNSYS paged trace ascii output (end) --\n\n");
 				wmt_dbg_fwinfor_print_buff(len);
 				prev_idx_pagedtrace = cur_idx_pagedtrace;
 			}
@@ -571,7 +571,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 		} while (isBreak);
 	}
 
-	pr_debug("\n\n -- control word --\n\n");
+	WMT_INFO_FUNC("\n\n -- control word --\n\n");
 	wmt_dbg_fwinfor_print_buff(256);
 	if (len > 1024 * 4)
 		len = 1024 * 4;
@@ -580,9 +580,9 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	osal_memset(&gEmiBuf[0], 0, WMT_EMI_DEBUG_BUF_SIZE);
 	wmt_lib_get_fwinfor_from_emi(1, offset, &gEmiBuf[0], len);
 
-	pr_debug("\n\n -- paged trace hex output --\n\n");
+	WMT_INFO_FUNC("\n\n -- paged trace hex output --\n\n");
 	wmt_dbg_fwinfor_print_buff(len);
-	pr_debug("\n\n -- paged trace ascii output --\n\n");
+	WMT_INFO_FUNC("\n\n -- paged trace ascii output --\n\n");
 	wmt_dbg_fwinfor_print_buff(len);
 	kfree(buf_emi);
 
