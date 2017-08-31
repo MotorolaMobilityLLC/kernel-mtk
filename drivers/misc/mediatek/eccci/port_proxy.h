@@ -24,6 +24,9 @@
 #define PORT_F_CH_TRAFFIC	(1<<5)	/* Enable port channel traffic*/
 #define PORT_F_DUMP_RAW_DATA	(1<<6)	/* Dump raw data if CH_TRAFFIC set*/
 
+#define PORT_F_TX_DATA_FULLED	(1<<1)	/* used for net tx, Data queue, same bit as RX_FULLED */
+#define PORT_F_TX_ACK_FULLED	(1<<7)
+
 enum {
 	PORT_DBG_DUMP_RILD = 0,
 	PORT_DBG_DUMP_AUDIO,
