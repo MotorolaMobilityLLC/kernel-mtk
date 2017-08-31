@@ -772,7 +772,7 @@ void VowDrv_SetSmartDevice(bool enable)
 {
 	bool ret;
 	unsigned int eint_num;
-	unsigned ints[2] = {0, 0};
+	unsigned int ints[2] = {0, 0};
 
 	if (!vow_check_scp_status()) {
 		PRINTK_VOWDRV("SCP is off, do not support VOW\n");
@@ -783,62 +783,61 @@ void VowDrv_SetSmartDevice(bool enable)
 	if (vowserv.node) {
 		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
 		switch (ints[0]) {
-		case 61:
+		case VOW_EINT_NUM_0:
 			eint_num = 0;
 			break;
-		case 62:
+		case VOW_EINT_NUM_1:
 			eint_num = 1;
 			break;
-		case 63:
+		case VOW_EINT_NUM_2:
 			eint_num = 2;
 			break;
-		case 64:
+		case VOW_EINT_NUM_3:
 			eint_num = 3;
 			break;
-		case 65:
+		case VOW_EINT_NUM_4:
 			eint_num = 4;
 			break;
-		case 66:
+		case VOW_EINT_NUM_5:
 			eint_num = 5;
 			break;
-		case 67:
+		case VOW_EINT_NUM_6:
 			eint_num = 6;
 			break;
-		case 68:
+		case VOW_EINT_NUM_7:
 			eint_num = 7;
 			break;
-		case 85:
+		case VOW_EINT_NUM_8:
 			eint_num = 8;
 			break;
-		case 86:
+		case VOW_EINT_NUM_9:
 			eint_num = 9;
 			break;
-		case 87:
+		case VOW_EINT_NUM_10:
 			eint_num = 10;
 			break;
-		case 88:
+		case VOW_EINT_NUM_11:
 			eint_num = 11;
 			break;
-		case 89:
+		case VOW_EINT_NUM_12:
 			eint_num = 12;
 			break;
-		case 90:
+		case VOW_EINT_NUM_13:
 			eint_num = 13;
 			break;
-		case 91:
+		case VOW_EINT_NUM_14:
 			eint_num = 14;
 			break;
-		case 92:
+		case VOW_EINT_NUM_15:
 			eint_num = 15;
-			break;
-		case 93:
-			eint_num = 16;
 			break;
 		default:
 			eint_num = 0xFF;
 			break;
 		}
 		if (enable == false)
+			eint_num = 0xFF;
+		if (eint_num >= VOW_EINT_SUM)
 			eint_num = 0xFF;
 
 		vowserv.vow_info_dsp[0] = enable;
