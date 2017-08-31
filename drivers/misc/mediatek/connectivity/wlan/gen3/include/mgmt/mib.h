@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/mib.h#1
 */
 
@@ -6,42 +20,6 @@
  *  \brief This file contains the IEEE 802.11 family related MIB definition
  *         for MediaTek 802.11 Wireless LAN Adapters.
  */
-
-/*
-** Log: mib.h
-**
-** 07 25 2014 eason.tsai
-** AOSP
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*
-* 11 08 2010 wh.su
-* [WCXRP00000171] [MT6620 Wi-Fi][Driver] Add message check code same behavior as mt5921
-* add the message check code from mt5921.
-*
-* 07 24 2010 wh.su
-*
-* .support the Wi-Fi RSN
-*
-* 07 08 2010 cp.wu
-*
-* [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
-*
-* 06 07 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* add aa_fsm.h, ais_fsm.h, bss.h, mib.h and scan.h.
-*
-* 02 04 2010 kevin.huang
-* [BORA00000603][WIFISYS] [New Feature] AAA Module Support
-* Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
-*
-* Nov 23 2009 mtk01461
-* [BORA00000018] Integrate WIFI part into BORA for the 1st time
-*
-*/
 
 #ifndef _MIB_H
 #define _MIB_H

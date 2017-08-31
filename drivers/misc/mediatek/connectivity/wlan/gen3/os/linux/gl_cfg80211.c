@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: @(#) gl_cfg80211.c@@
 */
 
@@ -8,106 +22,6 @@
  *
  *  This file contains the support routines of Linux driver for MediaTek Inc. 802.11
  *  Wireless LAN Adapters.
- */
-
-/*
- * Log: gl_cfg80211.c
- *
- * 09 05 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * correct calls to wlanoidSetBssid()
- *
- * 08 28 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * fix typo
- *
- * 08 28 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * add more protection in case cfg80211_sched_scan_request->match_sets[] == NULL
- *
- * 08 28 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * fix for KE issues because referring to wrong data member
- *
- * 08 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add GTK re-key driver handle function
- *
- * 08 19 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * use kalMemFree() instead of kfree()
- *
- * 08 19 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * change to use dynamic-allocated memory for schedule scan to avoid stack overflow
- *
- * 08 15 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * enlarge  match_ssid_num to 16 for PNO support
- *
- * 08 12 2013 cp.wu
- * [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
- * 1. fix on cancel_remain_on_channel() interface
- * 2. queue initialization for another linux kal API
- *
- * 08 09 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * 1. integrate scheduled scan functionality
- * 2. condition compilation for linux-3.4 & linux-3.8 compatibility
- * 3. correct CMD queue access to reduce lock scope
- *
- * 07 30 2013 cp.wu
- * [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
- * add kernel version awareness for building success between different version of linux kernel
- *
- * 07 29 2013 cp.wu
- * [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
- * Preparation for porting remain_on_channel support
- *
- * 07 23 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Sync the latest jb2.mp 11w code as draft version
- * Not the CM bit for avoid wapi 1x drop at re-key
- *
- * 07 05 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Fix to let the wpa-psk ok
- *
- * 07 02 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Refine security BMC wlan index assign
- * Fix some compiling warning
- *
- * 07 01 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add some debug code, fixed some compiling warning
- *
- * 03 20 2013 wh.su
- * [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
- * Add the security code for wlan table assign operation
- *
- * 11 15 2012 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * sync..
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 08 30 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * check pending scan only by the pointer instead of fgIsRegistered flag.
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * .
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- *
  */
 
 /*******************************************************************************

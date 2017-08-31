@@ -1,222 +1,26 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/auth.c#1
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/auth.c#1
+*/
 
 /*
  * ! \file   "auth.c"
  *  \brief  This file includes the authentication-related functions.
  *
  *   This file includes the authentication-related functions.
- */
-
-/*
- * Log: auth.c
- *
- * 04 22 2014 eason.tsai
- * [ALPS01511962] [WFD][Case Fail]Device can't connect to another AP successfully after connect to WFD.
- * remove force tx de-auth
- *
- * 04 21 2014 eason.tsai
- * [ALPS01511962] [WFD][Case Fail]Device can't connect to another AP successfully after connect to WFD.
- *
- * [ALPS01511962] [WFD][Case Fail]Device can't connect to another AP successfully after connect to WFD.
- *	deauth retry limit 100ms and force to TX
- *
- *
- * 08 13 2013 terry.wu
- * [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
- * Remove unused code
- *
- * 03 12 2013 terry.wu
- * [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
- * Update Tx utility function for management frame
- *
- * 02 27 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Add aaa_fsm.c, p2p_ie.c, fix compile warning & error.
- *
- * 02 19 2013 cp.wu
- * [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
- * take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
- * for correctly indexing of BSS-INFO pointers
- *
- * 02 06 2013 yuche.tsai
- * [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
- * Fix BSS index to BSS Info MACRO
- *
- * 01 22 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * modification for ucBssIndex migration
- *
- * 01 07 2013 terry.wu
- * [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
- * <saved by Perforce>
- * Fix reassoc req issue
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 02 13 2012 cp.wu
- * NULL
- * show error message only instead of raise assertion when
- * received authentication frame is carrying illegal parameters.
- *
- * 11 09 2011 yuche.tsai
- * NULL
- * Fix a network index & station record index issue when TX deauth frame.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 06 22 2011 yuche.tsai
- * NULL
- * Fix coding error.
- *
- * 06 20 2011 yuche.tsai
- * [WCXRP00000796] [Volunteer Patch][MT6620][Driver] Add BC deauth frame TX feature.
- * BC deauth support.
- *
- * 04 21 2011 terry.wu
- * [WCXRP00000674] [MT6620 Wi-Fi][Driver] Refine AAA authSendAuthFrame
- * Add network type parameter to authSendAuthFrame.
- *
- * 04 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add BOW short range mode.
- *
- * 02 08 2011 yuche.tsai
- * [WCXRP00000245] 1. Invitation Request/Response.
-2. Provision Discovery Request/Response
-
- * 1. Fix Service Disocvery Logical issue.
- * 2. Fix a NULL pointer access violation issue when sending deauthentication packet to a class error station.
- *
- * 01 24 2011 cp.wu
- * [WCXRP00000382] [MT6620 Wi-Fi][Driver] Track forwarding packet number with notifying tx thread for serving
- * 1. add an extra counter for tracking pending forward frames.
- * 2. notify TX service thread as well when there is pending forward frame
- * 3. correct build errors leaded by introduction of Wi-Fi direct separation module
- *
- * 01 21 2011 terry.wu
- * [WCXRP00000381] [MT6620 Wi-Fi][Driver] Kernel panic when replying unaccept Auth in AP mode
- * In AP mode, use STA_REC_INDEX_NOT_FOUND(0xFE) instead of StaRec index when replying an unaccept Auth frame.
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * use definition macro to replace hard-coded constant
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 16 2010 cp.wu
- * NULL
- * Replace CFG_SUPPORT_BOW by CFG_ENABLE_BT_OVER_WIFI.
- * There is no CFG_SUPPORT_BOW in driver domain source.
- *
- * 08 16 2010 kevin.huang
- * NULL
- * Refine AAA functions
- *
- * 08 03 2010 cp.wu
- * NULL
- * surpress compilation warning.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 28 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * send MMPDU in basic rate.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * specify correct value for management frames.
- *
- * 06 18 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Provide cnmMgtPktAlloc() and alloc/free function of msg/buf
- *
- * 06 14 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add management dispatching function table.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * auth.c is migrated.
- *
- * 05 28 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Update authSendDeauthFrame() for correct the value of eNetTypeIndex in MSDU_INFO_T
- *
- * 05 24 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Check Net is active before sending Deauth frame.
- *
- * 05 24 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Refine authSendAuthFrame() for NULL STA_RECORD_T case and minimum deauth interval.
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * g_aprBssInfo[] depends on CFG_SUPPORT_P2P and CFG_SUPPORT_BOW
- *
- * 04 19 2010 kevin.huang
- * [BORA00000714][WIFISYS][New Feature]Beacon Timeout Support
- * Add Send Deauth for Class 3 Error and Leave Network Support
- *
- * 02 23 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Fix compile warning
- *
- * 02 05 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add debug message for abnormal authentication frame from AP
- *
- * 02 04 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
- *
- * 01 11 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add Deauth and Disassoc Handler
- *
- * 01 07 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
- * Fix the Debug Label
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Dec 7 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Update the authComposeAuthFrameHeader()
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the send deauth frame function
- *
- * Dec 3 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Integrate send Auth with TXM
- *
- * Nov 24 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Revise MGMT Handler with Retain Status
- *
- * Nov 23 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
  */
 
 /*******************************************************************************

@@ -1,181 +1,24 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/rlm.h#2
 */
 
 /*
  * ! \file   "rlm.h"
  *  \brief
- */
-
-/*
- * Log: rlm.h
- *
- * 07 12 2013 terry.wu
- * [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
- * 1. Update VHT IE composing function
- * 2. disable bow
- * 3. Exchange bss/sta rec update sequence for temp solution
- *
- * 01 17 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Use ucBssIndex to replace eNetworkTypeIndex
- *
- * 11 06 2012 eason.tsai
- * [BORA00002255] [MT6630 Wi-Fi][Driver] develop
- * .
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 09 30 2011 cm.chang
- * [WCXRP00001020] [MT6620 Wi-Fi][Driver] Handle secondary channel offset of AP in 5GHz band
- * .
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 01 13 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Refine function when rcv a 20/40M public action frame
- *
- * 01 13 2011 cm.chang
- * [WCXRP00000354] [MT6620 Wi-Fi][Driver][FW] Follow NVRAM bandwidth setting
- * Use SCO of BSS_INFO to replace user-defined setting variables
- *
- * 01 12 2011 cm.chang
- * [WCXRP00000354] [MT6620 Wi-Fi][Driver][FW] Follow NVRAM bandwidth setting
- * User-defined bandwidth is for 2.4G and 5G individually
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000239] MT6620 Wi-Fi][Driver][FW] Merge concurrent branch back to maintrunk
- * 1. BSSINFO include RLM parameter
- * 2. free all sta records when network is disconnected
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * 1. Country code is from NVRAM or supplicant
- * 2. Change band definition in CMD/EVENT.
- *
- * 10 18 2010 cm.chang
- * [WCXRP00000114] [MT6620 Wi-Fi] [Driver] Fix compiling warning in Linux about RLM network index checking
- * Enum member cannot be used as compiling option decision in Linux
- *
- * 09 10 2010 cm.chang
- * NULL
- * Always update Beacon content if FW sync OBSS info
- *
- * 08 31 2010 kevin.huang
- * NULL
- * Use LINK LIST operation to process SCAN result
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 08 23 2010 chinghwa.yu
- * NULL
- * Update for BOW.
- *
- * 08 20 2010 cm.chang
- * NULL
- * Migrate RLM code to host from FW
- *
- * 08 16 2010 cp.wu
- * NULL
- * Replace CFG_SUPPORT_BOW by CFG_ENABLE_BT_OVER_WIFI.
- * There is no CFG_SUPPORT_BOW in driver domain source.
- *
- * 08 02 2010 yuche.tsai
- * NULL
- * P2P Group Negotiation Code Check in.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Check draft RLM code for HT cap
- *
- * 06 28 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * 1st draft code for RLM module
- *
- * 06 02 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add RX HT GF compiling option
- *
- * 06 02 2010 chinghwa.yu
- * [BORA00000563]Add WiFi CoEx BCM module
- * Roll back to remove CFG_SUPPORT_BCM_TEST.
- *
- * 06 01 2010 chinghwa.yu
- * [BORA00000563]Add WiFi CoEx BCM module
- * Update BCM Test and RW configuration.
- *
- * 05 31 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add some compiling options to control 11n functions
- *
- * 05 18 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Ad-hoc Beacon should not carry HT OP and OBSS IEs
- *
- * 05 17 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * MT6620 does not support L-SIG TXOP
- *
- * 05 05 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * First draft support for 20/40M bandwidth for AP mode
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * g_aprBssInfo[] depends on CFG_SUPPORT_P2P and CFG_SUPPORT_BOW
- *
- * 04 22 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * First draft code to support protection in AP mode
- *
- * 04 07 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Different invoking order for WTBL entry of associated AP
- *
- * 03 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Not carry  HT cap when being associated with b/g only AP
- *
- * 03 03 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Move default value of HT capability to rlm.h
- *
- * 02 12 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Use bss info array for concurrent handle
- *
- * 01 22 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support protection and bandwidth switch
- *
- * 01 08 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- *
- * Modify the prototype of rlmRecAssocRspHtInfo()
- *
- * Dec 9 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add several function prototypes for HT operation
- *
- * Nov 18 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
  */
 
 #ifndef _RLM_H
