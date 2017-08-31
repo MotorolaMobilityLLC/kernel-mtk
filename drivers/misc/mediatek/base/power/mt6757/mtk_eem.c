@@ -3855,41 +3855,39 @@ void eem_init01(void)
 
 	/* for_each_det_ctrl(det, ctrl) { */
 	for_each_det(det) {
-		{
-			unsigned long flag;
-			unsigned int vboot = 0;
+		unsigned long flag;
+		unsigned int vboot = 0;
 
-			if (det->ops->get_volt != NULL)
-				vboot = VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det));
+		if (det->ops->get_volt != NULL)
+			vboot = VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det));
 
-			eem_debug("%s, vboot = %d, VBOOT = %d\n",
-				((char *)(det->name) + 8), vboot, det->VBOOT);
+		eem_debug("%s, vboot = %d, VBOOT = %d\n",
+			((char *)(det->name) + 8), vboot, det->VBOOT);
 #ifdef __KERNEL__
 
-			if (vboot != det->VBOOT) {
-				eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
-					__func__, __LINE__, det->name, vboot, det->VBOOT);
-				#ifndef KERNEL44
-				aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
-					__func__, __LINE__, det->name, vboot, det->VBOOT);
-				#endif
-			}
+		if (vboot != det->VBOOT) {
+			eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
+				__func__, __LINE__, det->name, vboot, det->VBOOT);
+			#ifndef KERNEL44
+			aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
+				__func__, __LINE__, det->name, vboot, det->VBOOT);
+			#endif
+		}
 
 #ifndef EARLY_PORTING
-			/* To check is there are only 4 cpus enabled */
-			if (setup_max_cpus != 4) {
-				#ifdef KERNEL44
-				/* WARN_ON(VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
-				#else
-				/* BUG_ON(VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
-				#endif
-			}
-#endif
-#endif
-			mt_ptp_lock(&flag); /* <-XXX */
-			det->ops->init01(det);
-			mt_ptp_unlock(&flag); /* <-XXX */
+		/* To check is there are only 4 cpus enabled */
+		if (setup_max_cpus != 4) {
+			#ifdef KERNEL44
+			/* WARN_ON(VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
+			#else
+			/* BUG_ON(VOLT_TO_EEM_PMIC_VAL(det->ops->get_volt(det)) != det->VBOOT); */
+			#endif
 		}
+#endif
+#endif
+		mt_ptp_lock(&flag); /* <-XXX */
+		det->ops->init01(det);
+		mt_ptp_unlock(&flag); /* <-XXX */
 
 		/*
 		 * VCORE_AO and VCORE_PDN use the same controller.
@@ -4144,131 +4142,151 @@ static int eem_probe(struct platform_device *pdev)
 	int ret;
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
-	#if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR) && !defined(EARLY_PORTING))
+#if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR) && !defined(EARLY_PORTING))
 		struct clk *clk_thermal;
 		struct clk *clk_mfg, *clk_mfg_scp; /* for gpu clock use */
-	#endif
+#endif
 	/* unsigned int code = mt_get_chip_hw_code(); */
+#ifdef CONFIG_OF
+		struct device_node *node = NULL;
+#endif
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	#ifdef __KERNEL__
-		#ifndef EARLY_PORTING
-		#if !defined(CONFIG_MTK_CLKMGR)
-			/* enable thermal CG */
-			clk_thermal = devm_clk_get(&pdev->dev, "therm-eem");
-			if (IS_ERR(clk_thermal)) {
-				eem_error("cannot get thermal clock\n");
-				return PTR_ERR(clk_thermal);
-			}
+#ifdef CONFIG_OF
+	node = pdev->dev.of_node;
+	if (!node) {
+		eem_error("get eem device node err\n");
+		return -ENODEV;
+	}
+	/* Setup IO addresses */
+	eem_base = of_iomap(node, 0);
+	eem_debug("[EEM] eem_base = 0x%p\n", eem_base);
+	eem_irq_number = irq_of_parse_and_map(node, 0);
+	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
+	if (!eem_irq_number) {
+		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
+		return 0;
+	}
+#endif
 
-			/* get GPU clock */
-			clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
-			if (IS_ERR(clk_mfg)) {
-				eem_error("cannot get mfg main clock\n");
-				return PTR_ERR(clk_mfg);
-			}
+#ifdef __KERNEL__
+#ifndef EARLY_PORTING
+#if !defined(CONFIG_MTK_CLKMGR)
+	/* enable thermal CG */
+	clk_thermal = devm_clk_get(&pdev->dev, "therm-eem");
+	if (IS_ERR(clk_thermal)) {
+		eem_error("cannot get thermal clock\n");
+		return PTR_ERR(clk_thermal);
+	}
 
-			/* get GPU mtcomose */
-			clk_mfg_scp = devm_clk_get(&pdev->dev, "mtcmos-mfg");
-			if (IS_ERR(clk_mfg_scp)) {
-				eem_error("cannot get mtcmos mfg\n");
-				return PTR_ERR(clk_mfg_scp);
-			}
-			eem_debug("thmal=%p, gpu_clk=%p, gpu_mtcmos=%p",
-				clk_thermal,
-				clk_mfg,
-				clk_mfg_scp);
+	/* get GPU clock */
+	clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
+	if (IS_ERR(clk_mfg)) {
+		eem_error("cannot get mfg main clock\n");
+		return PTR_ERR(clk_mfg);
+	}
+
+	/* get GPU mtcomose */
+	clk_mfg_scp = devm_clk_get(&pdev->dev, "mtcmos-mfg");
+	if (IS_ERR(clk_mfg_scp)) {
+		eem_error("cannot get mtcmos mfg\n");
+		return PTR_ERR(clk_mfg_scp);
+	}
+	eem_debug("thmal=%p, gpu_clk=%p, gpu_mtcmos=%p",
+		clk_thermal,
+		clk_mfg,
+		clk_mfg_scp);
+#else
+	enable_clock(MT_CG_INFRA_THERM, "PTPOD");
+	enable_clock(MT_CG_MFG_BG3D, "PTPOD");
+#endif
+#endif
+
+	/* set EEM IRQ */
+	ret = request_irq(eem_irq_number, eem_isr, IRQF_TRIGGER_LOW, "ptp", NULL);
+
+	if (ret) {
+		eem_debug("EEM IRQ register failed (%d)\n", ret);
+		#ifdef KERNEL44
+		WARN_ON(1);
 		#else
-			enable_clock(MT_CG_INFRA_THERM, "PTPOD");
-			enable_clock(MT_CG_MFG_BG3D, "PTPOD");
+		/* BUG_ON(1); */
 		#endif
-		#endif
-
-		/* set EEM IRQ */
-		ret = request_irq(eem_irq_number, eem_isr, IRQF_TRIGGER_LOW, "ptp", NULL);
-
-		if (ret) {
-			eem_debug("EEM IRQ register failed (%d)\n", ret);
-			#ifdef KERNEL44
-			WARN_ON(1);
-			#else
-			/* BUG_ON(1); */
-			#endif
-		}
-		eem_debug("Set EEM IRQ OK.\n");
-	#endif
+	}
+	eem_debug("Set EEM IRQ OK.\n");
+#endif
 
 	/* eem_level = mt_eem_get_level(); */
 	eem_debug("In eem_probe\n");
 	/* atomic_set(&eem_init01_cnt, 0); */
 
-	#if (defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING))
-		_mt_eem_aee_init();
-	#endif
+#if (defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING))
+	_mt_eem_aee_init();
+#endif
 
 	for_each_ctrl(ctrl) {
 		eem_init_ctrl(ctrl);
 	}
-	#ifdef __KERNEL__
-		#ifndef EARLY_PORTING
-			/* disable frequency hopping (main PLL) */
-			mt_fh_popod_save();/* I-Chang */
+#ifdef __KERNEL__
+#ifndef EARLY_PORTING
+	/* disable frequency hopping (main PLL) */
+	mt_fh_popod_save();/* I-Chang */
 
-			/* disable DVFS and set vproc = 850mV (LITTLE = 689 MHz)(BIG = 1196 MHz) */
-			mt_ppm_ptpod_policy_activate();
-			#ifndef EARLY_PORTING_GPU
-			mt_gpufreq_disable_by_ptpod(); /* GPU bulk enable*/
-			#endif
+	/* disable DVFS and set vproc = 850mV (LITTLE = 689 MHz)(BIG = 1196 MHz) */
+	mt_ppm_ptpod_policy_activate();
+#ifndef EARLY_PORTING_GPU
+	mt_gpufreq_disable_by_ptpod(); /* GPU bulk enable*/
+#endif
 
-			#if !defined(CONFIG_MTK_CLKMGR)
-			ret = clk_prepare_enable(clk_thermal); /* Thermal clock enable */
-			if (ret)
-				eem_error("clk_prepare_enable failed when enabling THERMAL\n");
+#if !defined(CONFIG_MTK_CLKMGR)
+	ret = clk_prepare_enable(clk_thermal); /* Thermal clock enable */
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling THERMAL\n");
 
-			ret = clk_prepare_enable(clk_mfg_scp); /* GPU MTCMOS enable*/
-			if (ret)
-				eem_error("clk_prepare_enable failed when enabling mfg MTCMOS\n");
+	ret = clk_prepare_enable(clk_mfg_scp); /* GPU MTCMOS enable*/
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling mfg MTCMOS\n");
 
-			ret = clk_prepare_enable(clk_mfg); /* GPU CLOCK */
-			if (ret)
-				eem_error("clk_prepare_enable failed when enabling mfg clock\n");
-			#endif
+	ret = clk_prepare_enable(clk_mfg); /* GPU CLOCK */
+	if (ret)
+		eem_error("clk_prepare_enable failed when enabling mfg clock\n");
+#endif
 
-			/* for Jade/Everest/Olympus(MT6351) */
-			#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-				/* pmic_config_interface(0x462, 0x1, 0x1, 1); */ /* set PWM mode for MT6355 */
-				pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x1,
-					PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
+	/* for Jade/Everest/Olympus(MT6351) */
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/* pmic_config_interface(0x462, 0x1, 0x1, 1); */ /* set PWM mode for MT6355 */
+	pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x1,
+		PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
 
-				/* set Vprog PWM mode */
-				pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x1); /*--for kibo+(MT6355) PWM mode--*/
-			#else
-				/* set PWM mode for MT6351 */
-				pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x1,
-					MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
-				/* pmic_force_vgpu_pwm(true); */
+	/* set Vprog PWM mode */
+	pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x1); /*--for kibo+(MT6355) PWM mode--*/
+#else
+	/* set PWM mode for MT6351 */
+	pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x1,
+		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
+	/* pmic_force_vgpu_pwm(true); */
 
-				/* set Vprog PWM mode */
-				/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
-				mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
-			#endif
+	/* set Vprog PWM mode */
+	/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
+	mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
+#endif
 
-		#endif
-	#else
-			/* dvfs_disable_by_ptpod(); */
-			/* gpu_dvfs_disable_by_ptpod(); */
-	#endif
+#endif
+#else
+	dvfs_disable_by_ptpod();
+	gpu_dvfs_disable_by_ptpod();
+#endif
 
-	#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
-	{
-		/*
-		* extern unsigned int ckgen_meter(int val);
-		* eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
-		*	__func__, ckgen_meter(1), ckgen_meter(2));
-		*/
-	}
-	#endif
+#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
+{
+	/*
+	* extern unsigned int ckgen_meter(int val);
+	* eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
+	*	__func__, ckgen_meter(1), ckgen_meter(2));
+	*/
+}
+#endif
 
 #ifdef EEM_DVT_TEST
 	otp_fake_temp_test();
@@ -4281,64 +4299,64 @@ static int eem_probe(struct platform_device *pdev)
 		eem_init_det(det, &eem_devinfo);
 
 
-	#ifdef __KERNEL__
-	#ifndef EARLY_PORTING_NO_PRI_TBL
-		mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM);
-	#endif
-		eem_init01();
-	#endif
+#ifdef __KERNEL__
+#ifndef EARLY_PORTING_NO_PRI_TBL
+	mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM);
+#endif
+	eem_init01();
+#endif
 	ptp_data[0] = 0;
 
-	#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
-		/*
-		* unsigned int ckgen_meter(int val);
-		* eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
-		*	__func__,
-		*	ckgen_meter(1),
-		*	ckgen_meter(2));
-		*/
+#if (defined(__KERNEL__) && !defined(EARLY_PORTING))
+	/*
+	* unsigned int ckgen_meter(int val);
+	* eem_debug("@%s(), hf_faxi_ck = %d, hd_faxi_ck = %d\n",
+	*	__func__,
+	*	ckgen_meter(1),
+	*	ckgen_meter(2));
+	*/
+#endif
+
+
+#ifdef __KERNEL__
+#ifndef EARLY_PORTING
+#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/*--for kibo+(MT6355) Non PWM mode--*/
+	pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x0);
+
+	/* set non-PWM mode for MT6355 */
+	pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x0,
+		PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
+#else
+	/* for Jade/Everest/Olympus(MT6351) */
+	/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
+	mt6311_set_rg_vdvfs11_modeset(0);
+
+	/* set PWM mode for MT6351 */
+	pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
+		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
+	/* pmic_force_vgpu_pwm(false); */
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	clk_disable_unprepare(clk_mfg); /* Disable GPU clock */
+	clk_disable_unprepare(clk_mfg_scp); /* Disable GPU MTCMOSE */
+	#ifndef EEM_DVT_TEST
+	clk_disable_unprepare(clk_thermal); /* Disable Thermal clock */
 	#endif
+#endif
+#ifndef EARLY_PORTING_GPU
+	mt_gpufreq_enable_by_ptpod();/* Disable GPU bulk */
+#endif
+	mt_ppm_ptpod_policy_deactivate();
 
-
-	#ifdef __KERNEL__
-		#ifndef EARLY_PORTING
-			#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-				/*--for kibo+(MT6355) Non PWM mode--*/
-				pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x0);
-
-				/* set non-PWM mode for MT6355 */
-				pmic_config_interface(PMIC_RG_VGPU_FPWM_ADDR, 0x0,
-					PMIC_RG_VGPU_FPWM_MASK, PMIC_RG_VGPU_FPWM_SHIFT); /*--for kibo+(MT6355)--*/
-			#else
-				/* for Jade/Everest/Olympus(MT6351) */
-				/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
-				mt6311_set_rg_vdvfs11_modeset(0);
-
-				/* set PWM mode for MT6351 */
-				pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
-					MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
-				/* pmic_force_vgpu_pwm(false); */
-			#endif
-
-			#if !defined(CONFIG_MTK_CLKMGR)
-				clk_disable_unprepare(clk_mfg); /* Disable GPU clock */
-				clk_disable_unprepare(clk_mfg_scp); /* Disable GPU MTCMOSE */
-				#ifndef EEM_DVT_TEST
-				clk_disable_unprepare(clk_thermal); /* Disable Thermal clock */
-				#endif
-			#endif
-		#ifndef EARLY_PORTING_GPU
-		mt_gpufreq_enable_by_ptpod();/* Disable GPU bulk */
-		#endif
-		mt_ppm_ptpod_policy_deactivate();
-
-		/* enable frequency hopping (main PLL) */
-		mt_fh_popod_restore();/* I-Chang */
-		#endif
-	#else
-		/* gpu_dvfs_enable_by_ptpod(); */
-		/* dvfs_enable_by_ptpod(); */
+	/* enable frequency hopping (main PLL) */
+	mt_fh_popod_restore();/* I-Chang */
 	#endif
+#else
+	gpu_dvfs_enable_by_ptpod();
+	dvfs_enable_by_ptpod();
+#endif
 
 #if defined(EEM_ENABLE_VTURBO)
 	register_hotcpu_notifier(&_mt_eem_cpu_notifier);
@@ -4524,7 +4542,7 @@ unsigned int ptp_init01_ptp(int id)
 
 	/* Add wait time to receive mornitor mode isr */
 	while (1) {
-		if ((eemMonSts > BIT(EEM_CTRL_L)) || (timeout == 600)) {
+		if ((eemMonSts >= 0x7) || (timeout == 600)) {
 			eem_error("ptp_init01_ptp finish time is %d, bankmask:0x%x\n", timeout, eemMonSts);
 			break;
 		}
@@ -4538,9 +4556,15 @@ unsigned int ptp_init01_ptp(int id)
 
 unsigned int *eem_get_cur_volt_tbl(enum eem_det_id id)
 {
-	struct eem_det *det = id_to_eem_det(id);
+	struct eem_det *det;
 
-	return &(det->volt_tbl_pmic);
+	if ((eemMonSts & BIT(id)) == BIT(id))  {
+		det = id_to_eem_det(id);
+
+		return &(det->volt_tbl_pmic);
+	} else {
+		return NULL;
+	}
 }
 
 #endif
@@ -5552,28 +5576,9 @@ int __init eem_init(void)
 #endif
 {
 	int err = 0;
-#ifdef __KERNEL__
-	struct device_node *node = NULL;
-#endif
+
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-#ifdef __KERNEL__
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6757-eem_fsm");
-
-	if (node) {
-		/* Setup IO addresses */
-		eem_base = of_iomap(node, 0);
-		eem_debug("[EEM] eem_base = 0x%p\n", eem_base);
-	}
-
-	/*get eem irq num*/
-	eem_irq_number = irq_of_parse_and_map(node, 0);
-	eem_debug("[THERM_CTRL] eem_irq_number=%d\n", eem_irq_number);
-	if (!eem_irq_number) {
-		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
-		return 0;
-	}
-#endif
 	get_devinfo(&eem_devinfo);
 #ifdef __KERNEL__
 	if (new_eem_val == 0) {
