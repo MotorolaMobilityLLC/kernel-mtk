@@ -223,6 +223,7 @@
 #define MUSB_DEVCTL		0x60	/* 8 bit */
 
 #define MUSB_OPSTATE    0x620
+#define MUSB_SUSPEND    0x631
 #define OTG_IDLE 0
 
 /*
