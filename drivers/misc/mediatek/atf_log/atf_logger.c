@@ -374,7 +374,7 @@ static struct miscdevice atf_log_dev = {
 	.mode       = 0644,
 };
 
-static int __init dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
+static int dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
 	__be32 *reg, *endp;
@@ -415,7 +415,7 @@ static int __init dt_scan_memory(unsigned long node, const char *uname, int dept
 	return node;
 }
 
-static unsigned long long __init atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
+static unsigned long long atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
 {
 	unsigned long node = 0;
 	struct mem_desc *mem_desc = NULL;
@@ -528,7 +528,7 @@ static struct syscore_ops atf_time_sync_syscore_ops = {
 	.resume = atf_time_sync_resume,
 };
 
-static int __init atf_logger_probe(struct platform_device *pdev)
+static int atf_logger_probe(struct platform_device *pdev)
 {
 	/* register module driver */
 	int err;
@@ -617,7 +617,7 @@ static int atf_logger_remove(struct platform_device *dev)
 	return 0;
 }
 
-static struct platform_driver atf_logger_driver __initdata = {
+static struct platform_driver atf_logger_driver = {
 	.probe = atf_logger_probe,
 	.remove = atf_logger_remove,
 	.driver = {
