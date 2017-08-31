@@ -3329,8 +3329,8 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 		}
 
 		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);
-		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
-			     _dsi_context[i].lcm_height);
+		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[0].lcm_width,
+			     _dsi_context[0].lcm_height);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
 
 	} else if (module == DISP_MODULE_DSI0) {
