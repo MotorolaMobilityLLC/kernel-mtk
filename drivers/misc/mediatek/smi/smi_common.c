@@ -2471,37 +2471,37 @@ int is_force_camera_hpm(void)
 	return force_camera_hpm;
 }
 
-int smi_bus_enable(enum SMI_LARB_ID larb_id, char *user_name)
+int smi_bus_enable(enum SMI_MASTER_ID master_id, char *user_name)
 {
 	SMIMSG("smi_bus_enable is not support in this platform\n");
 	return -1;
 }
 
-int smi_bus_disable(enum SMI_LARB_ID larb_id, char *user_name)
+int smi_bus_disable(enum SMI_MASTER_ID master_id, char *user_name)
 {
 	SMIMSG("smi_bus_disable is not support in this platform\n");
 	return -1;
 }
 
-int smi_clk_prepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
 	SMIMSG("smi_clk_prepare is not support in this platform\n");
 	return -1;
 }
 
-int smi_clk_enable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+int smi_clk_enable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
 	SMIMSG("smi_clk_enable is not support in this platform\n");
 	return -1;
 }
 
-int smi_clk_unprepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+int smi_clk_unprepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
 	SMIMSG("smi_clk_unprepare is not support in this platform\n");
 	return -1;
 }
 
-int smi_clk_disable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos)
 {
 	SMIMSG("smi_clk_disable is not support in this platform\n");
 	return -1;
