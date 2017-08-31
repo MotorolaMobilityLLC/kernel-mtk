@@ -166,6 +166,8 @@ static int dvfs_last_ovl_req = HRT_LEVEL_LEVEL0;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
+static atomic_t dal_configured = ATOMIC_INIT(0);
+
 struct display_primary_path_context {
 	enum DISP_POWER_STATE state;
 	unsigned int lcm_fps;
@@ -6222,8 +6224,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (cfg->setter != SESSION_USER_AEE && is_DAL_Enabled()) {
 		if (!data_config->rsz_enable && HRT_GET_AEE_FLAG(cfg->overlap_layer_num)) {
 			layer = primary_display_get_option("ASSERT_LAYER");
-			if (data_config->ovl_config[layer].layer_en == 0) {
+			if (data_config->ovl_config[layer].layer_en == 0 &&
+			    atomic_read(&dal_configured)) {
 				data_config->ovl_config[layer].layer_en = 1;
+				atomic_set(&dal_configured, 0);
 				DISPMSG("show DAL (HRT knows and RSZ is disabled)\n");
 			}
 		}
@@ -6257,6 +6261,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			if (ovl_cfg->layer_en == 1) {
 				if (data_config->rsz_enable || !HRT_GET_AEE_FLAG(cfg->overlap_layer_num)) {
 					ovl_cfg->layer_en = 0;
+					atomic_set(&dal_configured, 1);
 					DISPMSG("DAL occurs but will be shown until HRT knows and RSZ is disabled\n");
 				}
 			}
@@ -6524,7 +6529,15 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			int layer = cfg->input_cfg[0].layer_id;
 
 			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
-					&cfg->input_cfg[0]);
+							 &cfg->input_cfg[0]);
+
+			if (data_config->ovl_config[layer].layer_en == 1) {
+				if (data_config->rsz_enable || !HRT_GET_AEE_FLAG(cfg->overlap_layer_num)) {
+					data_config->ovl_config[layer].layer_en = 0;
+					atomic_set(&dal_configured, 1);
+					DISPMSG("(DISP_SLEPT)DAL occurs but will be shown later\n");
+				}
+			}
 		}
 
 		goto done;
