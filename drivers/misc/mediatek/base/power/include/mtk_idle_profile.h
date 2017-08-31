@@ -14,7 +14,7 @@
 #ifndef __MTK_IDLE_PROFILE_COMMON_H__
 #define __MTK_IDLE_PROFILE_COMMON_H__
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 
 #include "spm_v3/mtk_idle_profile.h"
 
