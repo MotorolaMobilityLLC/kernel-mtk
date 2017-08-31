@@ -293,7 +293,7 @@
 		combo_pins {
 			pins = <PINMUX_GPIO72__FUNC_PTA_RXD>;
 			slew-rate = <0>;
-			bias-disable;
+			bias-pull-up;
 		};
 	};
 
