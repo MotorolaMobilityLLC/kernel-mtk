@@ -127,9 +127,9 @@ typedef struct _MSG_SCN_FSM_T {
 } MSG_SCN_FSM_T, *P_MSG_SCN_FSM_T;
 
 typedef enum _ENUM_PSCAN_STATE_T {
-	PSCN_IDLE = 1,
-	PSCN_SCANNING,
+	PSCN_IDLE = 0,
 	PSCN_RESET,
+	PSCN_SCANNING,
 	PSCAN_STATE_T_NUM
 } ENUM_PSCAN_STATE_T;
 
@@ -342,7 +342,7 @@ typedef struct _NLO_PARAM_T {	/* Used by SCAN FSM */
 
 typedef struct _GSCN_CHANNEL_INFO_T {
 	UINT_8 ucBand;
-	UINT_8 ucChannel;	/* frequency */
+	UINT_8 ucChannelNumber;	/* Channel Number */
 	UINT_8 ucPassive;	/* 0 => active, 1 => passive scan; ignored for DFS */
 	UINT_8 aucReserved[1];
 
@@ -350,28 +350,34 @@ typedef struct _GSCN_CHANNEL_INFO_T {
 	/* Add channel class */
 } GSCN_CHANNEL_INFO_T, *P_GSCN_CHANNEL_INFO_T;
 
-typedef struct _GSCAN_CHANNEL_BUCKET_T {
-
+typedef struct _GSCAN_BUCKET_T {
 	UINT_16 u2BucketIndex;	/* bucket index, 0 based */
 	UINT_8 ucBucketFreqMultiple;	/*
 					 * desired period, in millisecond;
 					 * if this is too low, the firmware should choose to generate
 					 * results as fast as it can instead of failing the command
-					 */
-	/*
-	 * report_events semantics -
-	 *  0 => report only when scan history is % full
-	 *  1 => same as 0 + report a scan completion event after scanning this bucket
-	 *  2 => same as 1 + forward scan results (beacons/probe responses + IEs) in real time to HAL
-	 *  3 => same as 2 + forward scan results (beacons/probe responses + IEs) in real time to
-	 * supplicant as well (optional) .
-	 */
+					*/
+	 /* report_events semantics -
+	  *  This is a bit field; which defines following bits -
+	  *  REPORT_EVENTS_EACH_SCAN	=> report a scan completion event after scan. If this is not set
+	  *				    then scan completion events should be reported if
+	  *				    report_threshold_percent or report_threshold_num_scans is
+	  *				    reached.
+	  *  REPORT_EVENTS_FULL_RESULTS => forward scan results (beacons/probe responses + IEs)
+	  *				    in real time to HAL, in addition to completion events
+	  *				    Note: To keep backward compatibility, fire completion
+	  *				    events regardless of REPORT_EVENTS_EACH_SCAN.
+	  *  REPORT_EVENTS_NO_BATCH	=> controls if scans for this bucket should be placed in the
+	  *				    history buffer
+	  */
 	UINT_8 ucReportFlag;
+	UINT_8 ucMaxBucketFreqMultiple; /* max_period / base_period */
+	UINT_8 ucStepCount;
 	UINT_8 ucNumChannels;
-	UINT_8 aucReserved[3];
+	UINT_8 aucReserved[1];
 	WIFI_BAND eBand;	/* when UNSPECIFIED, use channel list */
 	GSCN_CHANNEL_INFO_T arChannelList[GSCAN_MAX_CHANNELS];	/* channels to scan; these may include DFS channels */
-} GSCAN_CHANNEL_BUCKET_T, *P_GSCAN_CHANNEL_BUCKET_T;
+} GSCAN_BUCKET_T, *P_GSCAN_BUCKET_T;
 
 typedef struct _CMD_GSCN_REQ_T {
 	UINT_8 ucFlags;
@@ -383,15 +389,15 @@ typedef struct _CMD_GSCN_REQ_T {
 	UINT_32 u4MaxApPerScan;	/* number of APs to store in each scan in the */
 	/* BSSID/RSSI history buffer (keep the highest RSSI APs) */
 
-	GSCAN_CHANNEL_BUCKET_T arChannelBucket[GSCAN_MAX_BUCKETS];
+	GSCAN_BUCKET_T arBucket[GSCAN_MAX_BUCKETS];
 } CMD_GSCN_REQ_T, *P_CMD_GSCN_REQ_T;
 
 #endif
 
 typedef struct _CMD_GSCN_SCN_COFIG_T {
 	UINT_8 ucNumApPerScn;		/* GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN */
-	UINT_32 u4NumScnToCache;	/* GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE */
 	UINT_32 u4BufferThreshold;	/* GSCAN_ATTRIBUTE_REPORT_THRESHOLD */
+	UINT_32 u4NumScnToCache;	/* GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE */
 } CMD_GSCN_SCN_COFIG_T, *P_CMD_GSCN_SCN_COFIG_T;
 
 typedef struct _CMD_GET_GSCAN_RESULT {
@@ -419,16 +425,16 @@ typedef struct _CMD_BATCH_REQ_T {
 	CHANNEL_INFO_T arChannelList[32];	/* channels */
 } CMD_BATCH_REQ_T, *P_CMD_BATCH_REQ_T;
 
-typedef struct _PSCN_PARAM_T {
+typedef struct _CMD_SET_PSCAN_PARAM {
 	UINT_8 ucVersion;
-	CMD_NLO_REQ rCurrentCmdNloReq;
-	CMD_BATCH_REQ_T rCurrentCmdBatchReq;
-	CMD_GSCN_REQ_T rCurrentCmdGscnReq;
+	CMD_NLO_REQ rCmdNloReq;
+	CMD_BATCH_REQ_T rCmdBatchReq;
+	CMD_GSCN_REQ_T rCmdGscnReq;
 	BOOLEAN fgNLOScnEnable;
 	BOOLEAN fgBatchScnEnable;
 	BOOLEAN fgGScnEnable;
 	UINT_32 u4BasePeriod;	/* GSCAN_ATTRIBUTE_BASE_PERIOD */
-} PSCN_PARAM_T, *P_PSCN_PARAM_T;
+} CMD_SET_PSCAN_PARAM, *P_CMD_SET_PSCAN_PARAM;
 
 typedef struct _SCAN_INFO_T {
 	ENUM_SCAN_STATE_T eCurrentState;	/* Store the STATE variable of SCAN FSM */
@@ -458,11 +464,17 @@ typedef struct _SCAN_INFO_T {
 
 	/* NLO scanning state tracking */
 	BOOLEAN fgNloScanning;
+#if CFG_SUPPORT_SCN_PSCN
 	BOOLEAN fgPscnOngoing;
 	BOOLEAN fgGScnConfigSet;
 	BOOLEAN fgGScnParamSet;
-	P_PSCN_PARAM_T prPscnParam;
+	P_CMD_SET_PSCAN_PARAM prPscnParam;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
+#endif
+#if CFG_SUPPORT_GSCN
+	P_PARAM_WIFI_GSCAN_FULL_RESULT prGscnFullResult;
+#endif
+
 	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;
 
@@ -552,17 +564,6 @@ typedef struct _AGPS_AP_LIST_T {
 	AGPS_AP_INFO_T arApInfo[32];
 } AGPS_AP_LIST_T, *P_AGPS_AP_LIST_T;
 #endif
-
-typedef struct _CMD_SET_PSCAN_PARAM {
-	UINT_8 ucVersion;
-	CMD_NLO_REQ rCmdNloReq;
-	CMD_BATCH_REQ_T rCmdBatchReq;
-	CMD_GSCN_REQ_T rCmdGscnReq;
-	BOOLEAN fgNLOScnEnable;
-	BOOLEAN fgBatchScnEnable;
-	BOOLEAN fgGScnEnable;
-	UINT_32 u4BasePeriod;
-} CMD_SET_PSCAN_PARAM, *P_CMD_SET_PSCAN_PARAM;
 
 typedef struct _CMD_SET_PSCAN_ADD_HOTLIST_BSSID {
 	UINT_8 aucMacAddr[6];
@@ -675,6 +676,8 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 
 WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc, IN P_SW_RFB_T prSwRfb);
 
+BOOLEAN scanCheckBssIsLegal(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+
 VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T SpecificprBssDesc);
 
 P_ROAM_BSS_DESC_T scanSearchRoamBssDescBySsid(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc);
@@ -740,57 +743,44 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 
 BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter);
 
-BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPscanAct);
+#if CFG_SUPPORT_SCN_PSCN
+BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_ACT_T ucPscanAct);
 
 BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
 BOOLEAN scnFsmGSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
 
-#if 0
-
-BOOLEAN scnFsmGSCNSetRssiSignificatn(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam);
-#endif
-
 BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_SWC_BSSID prCmdPscnAddSWCBssId);
 
 BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_ADDR prCmdPscnSetMacAddr);
 
-#if 1				/* CFG_SUPPORT_GSCN_NONSYNC_BROADCOM */
-BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
+BOOLEAN scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
+				 IN P_CMD_NLO_REQ prCmdNloReq,
+				 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
+				 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
+				 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
+				 IN BOOLEAN fgRemoveNLOfromPSCN,
+				 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
 
-#else
-BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_REQ_T prCmdGscnParam);
-
+VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState);
 #endif
 
-BOOLEAN
-scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
-			 IN P_CMD_NLO_REQ prCmdNloReq,
-			 IN P_CMD_BATCH_REQ_T prCmdBatchReq,
-			 IN P_CMD_GSCN_REQ_T prCmdGscnReq,
-			 IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
-			 IN BOOLEAN fgRemoveNLOfromPSCN,
-			 IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN);
+#if CFG_SUPPORT_GSCN
+BOOLEAN scnSetGSCNParam(IN P_ADAPTER_T prAdapter, IN P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam);
 
-BOOLEAN scnFsmSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
+BOOLEAN scnSetGSCNConfig(IN P_ADAPTER_T prAdapter, IN P_CMD_GSCN_SCN_COFIG_T prCmdGscnScnConfig);
 
-BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_T prGetGscnScnResultCmd);
+BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter,
+			    IN P_CMD_GET_GSCAN_RESULT_T prGetGscnResultCmd, OUT PUINT_32 pu4SetInfoLen);
 
-VOID
-scnPSCNFsm(IN P_ADAPTER_T prAdapter,
-	   ENUM_PSCAN_STATE_T eNextPSCNState,
-	   IN P_CMD_NLO_REQ prCmdNloReq,
-	   IN P_CMD_BATCH_REQ_T prCmdBatchReq,
-	   IN P_CMD_GSCN_REQ_T prCmdGscnReq,
-	   IN P_CMD_GSCN_SCN_COFIG_T prNewCmdGscnConfig,
-	   IN BOOLEAN fgRemoveNLOfromPSCN,
-	   IN BOOLEAN fgRemoveBatchSCNfromPSCN, IN BOOLEAN fgRemoveGSCNfromPSCN, IN BOOLEAN fgEnableGSCN);
-
-#endif /* _SCAN_H */
+BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T prEventBuffer);
+#endif
 
 #if CFG_SUPPORT_AGPS_ASSIST
 VOID scanReportScanResultToAgps(P_ADAPTER_T prAdapter);
 #endif
 P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter);
 VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
+
+#endif /* _SCAN_H */
 

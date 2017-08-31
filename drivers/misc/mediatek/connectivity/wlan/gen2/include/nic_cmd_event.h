@@ -1391,7 +1391,7 @@ typedef struct _CMD_NLO_REQ {
 	UINT_16 u2IELen;
 	NLO_NETWORK arNetworkList[16];
 	UINT_8 aucIE[0];
-	UINT_8 ucScanType;
+	/* UINT_8 ucScanType; */
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
 typedef struct _CMD_NLO_CANCEL_T {
@@ -1452,9 +1452,10 @@ typedef struct _EVENT_GSCAN_RESULT_T {
 } EVENT_GSCAN_RESULT_T, *P_EVENT_GSCAN_RESULT_T;
 
 typedef struct _EVENT_GSCAN_FULL_RESULT_T {
-	UINT_8 ucVersion;
-	UINT_8 aucReserved[3];
 	WIFI_GSCAN_RESULT_T rResult;
+	UINT_32 u4BucketMask;		/* scan chbucket bitmask */
+	UINT_32 u4IeLength;		/* byte length of Information Elements */
+	UINT_8  ucIeData[1];		/* IE data to follow */
 } EVENT_GSCAN_FULL_RESULT_T, *P_EVENT_GSCAN_FULL_RESULT_T;
 
 typedef struct GSCAN_SWC_NET {
@@ -1613,6 +1614,8 @@ VOID nicCmdEventQueryMcastAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdIn
 VOID nicCmdEventQueryEepromRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 
 VOID nicCmdEventSetMediaStreamMode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+
+VOID nicCmdEventSetStopSchedScan(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 
 /* Statistics responder */
 VOID nicCmdEventQueryXmitOk(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
