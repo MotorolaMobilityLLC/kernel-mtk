@@ -39,6 +39,7 @@ static struct spi_device *spi_test;
 
 struct mtk_spi {
 	void __iomem *base;
+	void __iomem *peri_regs;
 	u32 state;
 	int pad_num;
 	u32 *pad_sel;
@@ -48,7 +49,9 @@ struct mtk_spi {
 	struct scatterlist *tx_sgl, *rx_sgl;
 	u32 tx_sgl_len, rx_sgl_len;
 	const struct mtk_spi_compatible *dev_comp;
+	u32 dram_8gb_offset;
 };
+
 
 
 #ifdef SPI_TRUSTONIC_TEE_SUPPORT
