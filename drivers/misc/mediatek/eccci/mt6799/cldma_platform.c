@@ -112,10 +112,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 
 	of_property_read_u32(dev_ptr->dev.of_node, "mediatek,md_id", &dev_cfg->index);
 	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "modem hw info get idx:%d\n", dev_cfg->index);
-	if (!get_modem_is_enabled(dev_cfg->index)) {
-		CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d not enable, exit\n", dev_cfg->index + 1);
-		return -1;
-	}
 
 	switch (dev_cfg->index) {
 	case 0:		/* MD_SYS1 */
@@ -200,18 +196,23 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		return -1;
 	}
 
-	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "dev_major:%d,minor_base:%d,capability:%d\n",
+	CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "dev_major:%d,minor_base:%d,capability:%d\n",
 							dev_cfg->major,
 		     dev_cfg->minor_base, dev_cfg->capability);
-	CCCI_DEBUG_LOG(dev_cfg->index, TAG,
+	CCCI_BOOTUP_LOG(dev_cfg->index, TAG,
 		     "ap_cldma: ao_base=0x%p, pdn_base=0x%p,md_cldma: ao_base=0x%p, pdn_base=0x%p\n",
 		     (void *)hw_info->cldma_ap_ao_base, (void *)hw_info->cldma_ap_pdn_base,
 		     (void *)hw_info->cldma_md_ao_base, (void *)hw_info->cldma_md_pdn_base);
 
-	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p, md_ccif_base:0x%p\n",
+	CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p, md_ccif_base:0x%p\n",
 					(void *)hw_info->ap_ccif_base, (void *)hw_info->md_ccif_base);
-	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "cldma_irq:%d,ccif_irq:%d,md_wdt_irq:%d\n",
+	CCCI_BOOTUP_LOG(dev_cfg->index, TAG, "cldma_irq:%d,ccif_irq:%d,md_wdt_irq:%d\n",
 					hw_info->cldma_irq_id, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
+
+	if (!get_modem_is_enabled(dev_cfg->index)) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d not enable, exit\n", dev_cfg->index + 1);
+		return -1;
+	}
 
 	return 0;
 }
