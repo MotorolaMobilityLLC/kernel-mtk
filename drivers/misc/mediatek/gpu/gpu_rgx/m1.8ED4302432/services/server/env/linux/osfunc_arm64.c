@@ -73,7 +73,7 @@ static void per_cpu_cache_flush(void *arg)
 			- Disable KM cache maintenance support in UM cache.c
 			- Remove this PVR_LOG message
 	*/
-	PVR_LOG(("arm64: Global d-cache flush assembly not implemented"));
+	/* PVR_LOG(("arm64: Global d-cache flush assembly not implemented")); */
 #else
 	flush_cache_all();
 #endif
