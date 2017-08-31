@@ -44,6 +44,8 @@ typedef unsigned int	UINT32;
 #define AUXADC_CHN_RQST0				((UINT32)(MT6337_REG_BASE+0x1428))
 #define AUXADC_RQST0_CH_SET				((UINT32)(MT6337_REG_BASE+0x142A))
 #define AUXADC_RQST0_CH_CLR				((UINT32)(MT6337_REG_BASE+0x142C))
+#define AUXADC_AVG_NUM_SEL				((UINT32)(MT6337_REG_BASE+0x143C))/* set average num */
+
 
 #define AUXADC_AUTO_SPL					((UINT32)(MT6337_REG_BASE+0x145A))
 
@@ -158,6 +160,10 @@ typedef unsigned int	UINT32;
 
 /* 0x942C:  Auxadc CH5 request, relevant 0x9428 */
 #define AUXADC_RQST_CH5_CLR					(1<<5)
+
+/* 0x943C: AUXADC_AVG_NUM_SEL */
+#define AUXADC_AVG_CH5_NUM_SEL				(0x02A0)
+
 
 /* 0x945A:  ACCDET auto request enable/disable*/
 #define AUXADC_ACCDET_AUTO_SPL_EN			(1<<0)/* ACCDET auto request enable */
