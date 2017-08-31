@@ -661,11 +661,7 @@ void _primary_display_disable_mmsys_clk(void)
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 	DISPINFO("[LP]2.primary display path stop[end]\n");
 
-	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
-		DISPERR("[LP]2.stop display path failed, still busy\n");
-		dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
-		/* even path is busy(stop fail), we still need to continue power off other module/devices */
-	}
+	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 
 	/* can not release fence here */
 	dpmgr_path_power_off_bypass_pwm(primary_get_dpmgr_handle(), CMDQ_DISABLE);
