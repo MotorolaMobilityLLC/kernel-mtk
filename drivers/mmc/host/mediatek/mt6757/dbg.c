@@ -1522,6 +1522,15 @@ static int rwThread(void *data)
 	return 0;
 }
 
+static u8 _msdc_dma_calcs(u8 *buf, u32 len)
+{
+	u32 i, sum = 0;
+
+	for (i = 0; i < len; i++)
+		sum += buf[i];
+	return 0xFF - (u8) sum;
+}
+
 void msdc_dump_gpd_bd(int id)
 {
 	struct msdc_host *host;
@@ -1536,7 +1545,7 @@ void msdc_dump_gpd_bd(int id)
 
 	host = mtk_msdc_host[id];
 	if (host == NULL) {
-		pr_err("[%s]: host0 or host0->dma is NULL\n", __func__);
+		pr_notice("[%s]: host0 or host0->dma is NULL\n", __func__);
 		return;
 	}
 	gpd = host->dma.gpd;
@@ -1544,40 +1553,42 @@ void msdc_dump_gpd_bd(int id)
 
 	pr_err("================MSDC GPD INFO ==================\n");
 	if (gpd == NULL) {
-		pr_err("GPD is NULL\n");
+		pr_notice("GPD is NULL\n");
 	} else {
 #ifdef CONFIG_ARM64
-		pr_err("gbd addr:0x%llx\n", host->dma.gpd_addr);
+		pr_notice("gbd addr:0x%llx\n", host->dma.gpd_addr);
 #else
-		pr_err("gbd addr:0x%x\n", (unsigned int)host->dma.gpd_addr);
+		pr_notice("gbd addr:0x%x\n", (unsigned int)host->dma.gpd_addr);
 #endif
-		pr_err("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
+		pr_notice("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
 			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum,
 			gpd->intr, gpd->rsv1, (unsigned int)gpd->nexth4,
 			(unsigned int)gpd->ptrh4);
-		pr_err("next:0x%x, ptr:0x%x, buflen:0x%x, extlen:0x%x, arg:0x%x,blknum:0x%x,cmd:0x%x\n",
+		pr_notice("next:0x%x, ptr:0x%x, buflen:0x%x, extlen:0x%x, arg:0x%x,blknum:0x%x,cmd:0x%x\n",
 			(unsigned int)gpd->next, (unsigned int)gpd->ptr,
 			gpd->buflen, gpd->extlen, gpd->arg, gpd->blknum,
 			gpd->cmd);
 	}
-	pr_err("================MSDC BD INFO ===================\n");
+	pr_notice("================MSDC BD INFO ===================\n");
 	if (bd == NULL) {
-		pr_err("BD is NULL\n");
+		pr_notice("BD is NULL\n");
 	} else {
 #ifdef CONFIG_ARM64
-		pr_err("bd addr:0x%llx\n", host->dma.bd_addr);
+		pr_notice("bd addr:0x%llx\n", host->dma.bd_addr);
 #else
-		pr_err("bd addr:0x%x\n", (unsigned int)host->dma.bd_addr);
+		pr_notice("bd addr:0x%x\n", (unsigned int)host->dma.bd_addr);
 #endif
 		for (i = 0; i < host->dma.sglen; i++) {
-			pr_err("the %d BD\n", i);
-			pr_err("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
+			pr_notice("the %d BD\n", i);
+			pr_notice("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
 				bd->eol, bd->rsv0, bd->chksum, bd->rsv1,
 				bd->blkpad, bd->dwpad, bd->rsv2);
-			pr_err("        nexth4:0x%x, ptrh4:0x%x, next:0x%x, ptr:0x%x, buflen:0x%x, rsv3:0x%x\n",
+			pr_notice("        nexth4:0x%x, ptrh4:0x%x, next:0x%x, ptr:0x%x, buflen:0x%x, rsv3:0x%x\n",
 				(unsigned int)bd->nexth4,
 				(unsigned int)bd->ptrh4, (unsigned int)bd->next,
 				(unsigned int)bd->ptr, bd->buflen, bd->rsv3);
+			pr_notice("        re-cal:0x%x\n", _msdc_dma_calcs((u8 *)bd, 16));
+			bd++;
 		}
 	}
 }

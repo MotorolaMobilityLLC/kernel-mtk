@@ -37,7 +37,7 @@ static void __iomem *fpga_pwr_gpio_eo;
 void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 	void __iomem *fpga_pwr_gpio_eo)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO_EO);
 	MSDC_WRITE16(PWR_GPIO_EO,
@@ -66,7 +66,7 @@ void msdc_fpga_pwr_init(void)
 
 bool hwPowerOn_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -84,7 +84,7 @@ EXPORT_SYMBOL(hwPowerOn_fpga);
 
 bool hwPowerSwitch_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 	MSDC_WRITE16(PWR_GPIO, (l_val & ~(PWR_MASK_VOL_33)));
@@ -99,7 +99,7 @@ EXPORT_SYMBOL(hwPowerSwitch_fpga);
 
 bool hwPowerDown_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 #ifdef CONFIG_MTK_EMMC_SUPPORT

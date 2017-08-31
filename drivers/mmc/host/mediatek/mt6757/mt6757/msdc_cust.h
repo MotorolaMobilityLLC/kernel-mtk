@@ -17,6 +17,7 @@
 #include <dt-bindings/mmc/mt6757-msdc.h>
 #include <dt-bindings/clock/mt6757-clk.h>
 
+#include <linux/gpio.h>
 
 
 /**************************************************************/

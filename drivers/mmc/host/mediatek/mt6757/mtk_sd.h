@@ -482,9 +482,9 @@ static inline unsigned int uffs(unsigned int x)
 	return r;
 }
 
-#define MSDC_READ8(reg)           __raw_readb((const volatile void *)reg)
-#define MSDC_READ16(reg)          __raw_readw((const volatile void *)reg)
-#define MSDC_READ32(reg)          __raw_readl((const volatile void *)reg)
+#define MSDC_READ8(reg)           __raw_readb(reg)
+#define MSDC_READ16(reg)          __raw_readw(reg)
+#define MSDC_READ32(reg)          __raw_readl(reg)
 #define MSDC_WRITE8(reg, val)     mt_reg_sync_writeb(val, reg)
 #define MSDC_WRITE16(reg, val)    mt_reg_sync_writew(val, reg)
 #define MSDC_WRITE32(reg, val)    mt_reg_sync_writel(val, reg)
@@ -504,21 +504,21 @@ static inline unsigned int uffs(unsigned int x)
 
 #define MSDC_SET_BIT32(reg, bs) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg);\
+		unsigned int tv = MSDC_READ32(reg);\
 		tv |= (u32)(bs); \
 		MSDC_WRITE32(reg, tv); \
 	} while (0)
 
 #define MSDC_CLR_BIT32(reg, bs) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg);\
+		unsigned int tv = MSDC_READ32(reg);\
 		tv &= ~((u32)(bs)); \
 		MSDC_WRITE32(reg, tv); \
 	} while (0)
 
 #define MSDC_SET_FIELD(reg, field, val) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg); \
+		unsigned int tv = MSDC_READ32(reg); \
 		tv &= ~(field); \
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
 		MSDC_WRITE32(reg, tv); \
@@ -526,7 +526,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define MSDC_GET_FIELD(reg, field, val) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg); \
+		unsigned int tv = MSDC_READ32(reg); \
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 
@@ -576,7 +576,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define msdc_clr_int() \
 	do { \
-		volatile u32 val = MSDC_READ32(MSDC_INT); \
+		u32 val = MSDC_READ32(MSDC_INT); \
 		MSDC_WRITE32(MSDC_INT, val); \
 	} while (0)
 
@@ -637,7 +637,7 @@ extern unsigned char msdc_clock_src[];
 extern u32 sdio_pro_enable;
 
 extern bool emmc_sleep_failed;
-extern volatile bool sdio_autok_busy;
+extern atomic_t sdio_autok_busy;
 
 extern int msdc_rsp[];
 

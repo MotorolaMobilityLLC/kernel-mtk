@@ -4796,6 +4796,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (host->hw->host_function == MSDC_EMMC)
 		mmc->caps |= MMC_CAP_CMD23;
 #endif
+	if (host->hw->host_function == MSDC_SD)
+		mmc->caps |= MMC_CAP_RUNTIME_RESUME;
+
 	mmc->caps |= MMC_CAP_ERASE;
 
 	/* If 0  < mmc->max_busy_timeout < cmd.busy_timeout,

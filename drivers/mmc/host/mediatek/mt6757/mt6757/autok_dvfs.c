@@ -417,7 +417,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	sdio_autok_wait_dvfs_ready();
 
 	/* Set sdio busy and wait eMMC access done */
-	sdio_autok_busy = 1;
+	atomic_set(&sdio_autok_busy, 1);
 	for (;;) {
 		if (!sdc_is_busy())
 			break;
@@ -463,7 +463,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
 
 	/* Clear sdio busy after sdio autok done. */
-	sdio_autok_busy = 0;
+	atomic_set(&sdio_autok_busy, 0);
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
 }

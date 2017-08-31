@@ -25,6 +25,7 @@
 
 extern const struct of_device_id msdc_of_ids[];
 extern unsigned int cd_gpio;
+extern unsigned int cd_debounce;
 
 #define MSDC_MIN_CLK           (260000)
 #define MSDC_350K_CLK          (350000)

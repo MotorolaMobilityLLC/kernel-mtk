@@ -128,6 +128,8 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 		pr_err("WARN: host is NULL");
 		return;
 	}
+
+	host->block_bad_card = 1;
 	host->card_inserted = 0;
 
 	if ((host->mmc == NULL) || (host->mmc->card == NULL)) {
@@ -137,8 +139,6 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 
 	if (host->mmc->card) {
 		spin_lock_irqsave(&host->remove_bad_card, flags);
-		host->block_bad_card = 1;
-
 		mmc_card_set_removed(host->mmc->card);
 		spin_unlock_irqrestore(&host->remove_bad_card, flags);
 
@@ -147,7 +147,8 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 #else
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
-			/* do nothing */
+			ERR_MSG("Schedule remove card");
+			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else
 #endif
 		{
