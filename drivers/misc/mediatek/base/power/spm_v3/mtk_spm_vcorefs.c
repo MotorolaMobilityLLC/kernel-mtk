@@ -933,7 +933,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 
 int spm_vcorefs_pwarp_cmd(void)
 {
-#if 1
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	/* PMIC_WRAP_PHASE_ALLINONE */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL3, get_vcore_ptp_volt(OPP_0));
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL2, get_vcore_ptp_volt(OPP_1));
