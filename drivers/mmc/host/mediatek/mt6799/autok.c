@@ -29,7 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16081915)
+#define AUTOK_VERSION                   (0x16082917)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -41,7 +41,7 @@
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
 #define AUTOK_LATCH_CK_SD_TUNE_TIMES    (20) /* 4.5IP 1KB fifo CMD19 need send 20 times  */
 #define AUTOK_CMD_TIMES                 (20)
-#define AUTOK_TUNING_INACCURACY         (3) /* scan result may find xxxxooxxx */
+#define AUTOK_TUNING_INACCURACY         (10) /* scan result may find xxxxooxxx */
 #define AUTOK_MARGIN_THOLD              (5)
 #define AUTOK_BD_WIDTH_REF              (3)
 
@@ -783,7 +783,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 				pInfo->opt_dly_cnt = 31;
 				break;
 			default:
-				return -1;
+				break;
 			}
 			return ret;
 		}
@@ -2173,8 +2173,13 @@ int autok_init_ddr208(struct msdc_host *host)
 	/* LATCH_TA_EN Config for CMD Path non_HS400 */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_DDR208_PORT3_VALUE);
 	/* response path switch to emmc50 */
+#if SDIO_PLUS_CMD_TUNE
+	autok_write_param(host, EMMC50_CMD_MUX_EN, 0);
+	autok_write_param(host, EMMC50_CMD_RESP_LATCH, 0);
+#else
 	autok_write_param(host, EMMC50_CMD_MUX_EN, 1);
 	autok_write_param(host, EMMC50_CMD_RESP_LATCH, 1);
+#endif
 	MSDC_SET_FIELD(EMMC50_CFG1, MSDC_EMMC50_CFG1_DSCFG, 1);
 	/* write path switch to emmc50 */
 	autok_write_param(host, EMMC50_WDATA_MUX_EN, 1);
@@ -2752,7 +2757,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 					MSDC_WRITE32(MSDC_INT, 0xffffffff);
 					RawData64 |= (u64) (1LL << j);
 					break;
-				} else if (ret == E_RESULT_FATAL_ERR)
+				} else if ((ret & E_RESULT_FATAL_ERR) != 0)
 					return -1;
 			}
 		}
@@ -2810,6 +2815,10 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
 			ret = autok_send_tune_cmd(host, opcode, TUNE_SDIO_PLUS);
 			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
+				AUTOK_RAWPRINT
+				    ("[AUTOK]Error Autok CMD Failed while tune DS Delay\r\n");
+				return -1;
+			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
 				RawData64 |= (u64) (1LL << j);
 				break;
 			} else if ((ret & E_RESULT_FATAL_ERR) != 0)

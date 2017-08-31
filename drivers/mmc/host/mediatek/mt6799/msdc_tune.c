@@ -321,11 +321,9 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
 
-		#if 0 /* Peter remove after autok ddr208 ready */
 		if (host->hw->flags & MSDC_SDIO_DDR208)
 			autok_init_ddr208(host);
 		else
-		#endif
 			autok_init_sdr104(host);
 
 		vcore = vcorefs_get_hw_opp();

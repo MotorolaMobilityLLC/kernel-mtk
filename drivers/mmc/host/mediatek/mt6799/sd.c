@@ -269,14 +269,14 @@ static void msdc_dump_autok(struct msdc_host *host)
 {
 	int i;
 
-	pr_err("[AUTOK]VER : 0x%x%x%x%x\r\n",
-		host->autok_res[0][AUTOK_VER0],
-		host->autok_res[0][AUTOK_VER1],
+	pr_err("[AUTOK]VER : 0x%02x%02x%02x%02x\r\n",
+		host->autok_res[0][AUTOK_VER3],
 		host->autok_res[0][AUTOK_VER2],
-		host->autok_res[0][AUTOK_VER3]);
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		pr_err("[AUTOK]CMD Rising Window : 0x%x%x%x%x%x%x%x%x\r\n",
+		pr_err("[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][CMD_SCAN_R0],
 			host->autok_res[i][CMD_SCAN_R1],
 			host->autok_res[i][CMD_SCAN_R2],
@@ -286,7 +286,7 @@ static void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][CMD_SCAN_R6],
 			host->autok_res[i][CMD_SCAN_R7]);
 
-		pr_err("[AUTOK]CMD Falling Window : 0x%x%x%x%x%x%x%x%x\r\n",
+		pr_err("[AUTOK]CMD Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][CMD_SCAN_F0],
 			host->autok_res[i][CMD_SCAN_F1],
 			host->autok_res[i][CMD_SCAN_F2],
@@ -296,7 +296,7 @@ static void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][CMD_SCAN_F6],
 			host->autok_res[i][CMD_SCAN_F7]);
 
-		pr_err("[AUTOK]DAT Rising Window : 0x%x%x%x%x%x%x%x%x\r\n",
+		pr_err("[AUTOK]DAT Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][DAT_SCAN_R0],
 			host->autok_res[i][DAT_SCAN_R1],
 			host->autok_res[i][DAT_SCAN_R2],
@@ -306,7 +306,7 @@ static void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][DAT_SCAN_R6],
 			host->autok_res[i][DAT_SCAN_R7]);
 
-		pr_err("[AUTOK]DAT Falling Window : 0x%x%x%x%x%x%x%x%x\r\n",
+		pr_err("[AUTOK]DAT Falling Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][DAT_SCAN_F0],
 			host->autok_res[i][DAT_SCAN_F1],
 			host->autok_res[i][DAT_SCAN_F2],
@@ -316,7 +316,7 @@ static void msdc_dump_autok(struct msdc_host *host)
 			host->autok_res[i][DAT_SCAN_F6],
 			host->autok_res[i][DAT_SCAN_F7]);
 
-		pr_err("[AUTOK]DS Window : 0x%x%x%x%x%x%x%x%x\r\n",
+		pr_err("[AUTOK]DS Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][DS_SCAN_0],
 			host->autok_res[i][DS_SCAN_1],
 			host->autok_res[i][DS_SCAN_2],
@@ -3318,13 +3318,14 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	/* clear device status */
 	host->device_status = 0x0;
 
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->need_tune = TUNE_NONE;
+		goto end;
+	}
+
 	/* force send stop command to turn device to transfer status */
 	if (msdc_stop_and_wait_busy(host))
 		goto recovery;
-
-	if (host->hw->host_function != MSDC_EMMC
-	 && host->hw->host_function != MSDC_SD)
-		goto end;
 
 	/*  need low level protect tuning phase fail in re-tuning arch */
 #ifdef MMC_K44_RETUNE
@@ -3830,6 +3831,15 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	if (!(host->tuning_in_progress) && host->need_tune &&
 		!(host->need_tune & TUNE_AUTOK_PASS)) {
 		msdc_error_tuning(mmc, NULL);
+		return 0;
+	}
+#else
+	/* SDIO3.0+ need disable retune, othrewise
+	 * mmc may tune SDR104 when device in DDR208 mode
+	 * and autok error when mode incorrect.
+	 */
+	if ((host->hw->host_function == MSDC_SDIO) && (mmc->doing_retune)) {
+		pr_err("msdc%d: mmc retune do nothing\n", host->id);
 		return 0;
 	}
 #endif

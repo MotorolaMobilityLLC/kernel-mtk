@@ -473,11 +473,12 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		/* Check which vcore setting to apply */
 		vcore = vcorefs_get_hw_opp();
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
+		pr_err("[AUTOK]Apply first tune para\n");
 
 		if (host->use_hw_dvfs == 0) {
-			pr_err("[AUTOK] No need change para when dvfs\n");
+			pr_err("[AUTOK]No need change para when dvfs\n");
 		} else {
-			pr_err("[AUTOK] Need change para when dvfs\n");
+			pr_err("[AUTOK]Need change para when dvfs\n");
 
 			/* Use HW DVFS */
 			msdc_dvfs_reg_restore(host);
@@ -515,9 +516,9 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
 			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
-		pr_err("[AUTOK] No need change para when dvfs\n");
+		pr_err("[AUTOK]No need change para when dvfs\n");
 	} else {
-		pr_err("[AUTOK] Need change para when dvfs\n");
+		pr_err("[AUTOK]Need change para when dvfs\n");
 
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;

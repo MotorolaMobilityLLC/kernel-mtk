@@ -22,32 +22,6 @@
 #include <mtk_vcorefs_manager.h>
 #include <mtk_spm_vcore_dvfs.h>
 
-#else
-#define MSDC0_DVFS 0
-#define MSDC1_DVFS 1
-#define MSDC2_DVFS 2
-#define MSDC3_DVFS 3
-
-#define OPPI_0 0
-#define OPPI_1 1
-#define OPPI_2 2
-#define OPPI_3 3
-#define OPPI_UNREQ -1
-
-#define KIR_AUTOK_SDIO 10
-
-#define is_vcorefs_can_work() -1
-#define vcorefs_request_dvfs_opp(a, b)	0
-#define vcorefs_get_hw_opp() OPPI_PERF
-#define spm_msdc_dvfs_setting(a, b)
-
-#endif
-
-#define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
-
-/* Enable later@Peter */
-/* #define SDIO_HW_DVFS_CONDITIONAL */
-
 enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL0 = 0,
 	AUTOK_VCORE_LEVEL1,
@@ -55,6 +29,39 @@ enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_NUM
 };
+#else
+#define MSDC0_DVFS 0
+#define MSDC1_DVFS 1
+#define MSDC2_DVFS 2
+#define MSDC3_DVFS 3
+
+enum dvfs_opp {
+	OPP_UNREQ = -1,
+	OPP_0 = 0,
+	OPP_1,
+	OPP_2,
+	OPP_3,
+	NUM_OPP,
+};
+
+#define KIR_AUTOK_SDIO 10
+
+#define is_vcorefs_can_work() -1
+#define vcorefs_request_dvfs_opp(a, b)	0
+#define vcorefs_get_hw_opp() OPP_0
+#define spm_msdc_dvfs_setting(a, b)
+
+#define AUTOK_VCORE_LEVEL0	0
+#define AUTOK_VCORE_LEVEL1	0
+#define AUTOK_VCORE_LEVEL2	0
+#define AUTOK_VCORE_LEVEL3	0
+#define AUTOK_VCORE_NUM		1
+#endif
+
+#define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
+
+/* Enable later@Peter */
+/* #define SDIO_HW_DVFS_CONDITIONAL */
 
 /**********************************************************
 * Function Declaration                                    *
