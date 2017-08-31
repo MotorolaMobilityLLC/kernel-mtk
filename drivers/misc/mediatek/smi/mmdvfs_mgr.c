@@ -53,10 +53,6 @@
 #define MMDVFS_PIXEL_NUM_SENSOR_6M  (5800000)
 #define MMDVFS_PIXEL_NUM_SENSOR_8M  (7800000)
 
-/* mmdvfs display sizes */
-#define MMDVFS_DISPLAY_SIZE_HD  (1280 * 832)
-#define MMDVFS_DISPLAY_SIZE_FHD (1920 * 1216)
-
 /* + 1 for MMDVFS_CAM_MON_SCEN */
 static mmdvfs_voltage_enum g_mmdvfs_scenario_voltage[MMDVFS_SCEN_COUNT] = {
 MMDVFS_VOLTAGE_DEFAULT};
@@ -83,22 +79,8 @@ enum mmdvfs_step_enum {
 /* HIGH */
 };
 
-/* lcd size */
-enum mmdvfs_lcd_size_enum {
-	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
-};
-
 static struct mmdvfs_context_struct g_mmdvfs_mgr_cntx;
 static struct mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
-
-static enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
-{
-	if (DISP_GetScreenWidth() * DISP_GetScreenHeight()
-	<= MMDVFS_DISPLAY_SIZE_HD)
-		return MMDVFS_LCD_SIZE_HD;
-
-	return MMDVFS_LCD_SIZE_FHD;
-}
 
 static int vdec_ctrl_func_checked(vdec_ctrl_cb func, char *msg);
 static int notify_cb_func_checked(clk_switch_cb func, int ori_mmsys_clk_mode, int update_mmsys_clk_mode, char *msg);
