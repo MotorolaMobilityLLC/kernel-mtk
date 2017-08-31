@@ -205,10 +205,13 @@ static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	return show_pwr_ctrl(__spm_suspend.pwrctrl, buf);
 }
 
+/* FIXME: */
+#if 0
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
 }
+#endif
 
 static ssize_t sodi3_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -220,11 +223,14 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
 }
 
+/* FIXME: */
+#if 0
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
 }
+#endif
 #endif
 
 
@@ -744,11 +750,14 @@ static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 	return store_pwr_ctrl(SPM_PWR_CTRL_SUSPEND, __spm_suspend.pwrctrl, buf, count);
 }
 
+/* FIXME */
+#if 0
 static ssize_t dpidle_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				 const char *buf, size_t count)
 {
 	return store_pwr_ctrl(SPM_PWR_CTRL_DPIDLE, __spm_dpidle.pwrctrl, buf, count);
 }
+#endif
 
 static ssize_t sodi3_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				const char *buf, size_t count)
@@ -762,6 +771,8 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 	return store_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf, count);
 }
 
+/* FIXME: */
+#if 0
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
@@ -770,6 +781,7 @@ static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute
 	/* return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf, count); */
 	return 0;
 }
+#endif
 #endif
 
 /**************************************
@@ -787,22 +799,26 @@ static ssize_t fm_suspend_show(struct kobject *kobj, struct kobj_attribute *attr
  * Init Function
  **************************************/
 DEFINE_ATTR_RW(suspend_ctrl);
-DEFINE_ATTR_RW(dpidle_ctrl);
+/* FIXME: */
+/* DEFINE_ATTR_RW(dpidle_ctrl); */
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-DEFINE_ATTR_RW(vcore_dvfs_ctrl);
+/* FIXME: */
+/* DEFINE_ATTR_RW(vcore_dvfs_ctrl); */
 #endif
 DEFINE_ATTR_RO(fm_suspend);
 
 static struct attribute *spm_attrs[] = {
 	/* for spm_lp_scen.pwrctrl */
 	__ATTR_OF(suspend_ctrl),
-	__ATTR_OF(dpidle_ctrl),
+	/* FIXME: */
+	/* __ATTR_OF(dpidle_ctrl), */
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	__ATTR_OF(vcore_dvfs_ctrl),
+	/* FIXME: */
+	/* __ATTR_OF(vcore_dvfs_ctrl), */
 #endif
 	__ATTR_OF(fm_suspend),
 
