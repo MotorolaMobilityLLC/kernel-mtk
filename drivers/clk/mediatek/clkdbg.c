@@ -1639,6 +1639,7 @@ struct provider_clk_state {
 	bool enabled;
 	unsigned int enable_count;
 	unsigned long rate;
+	struct clk *parent;
 };
 
 struct save_point {
@@ -1679,6 +1680,7 @@ static void save_all_clks_state(struct provider_clk_state *clks_states,
 
 		st->enable_count = __clk_get_enable_count(c);
 		st->rate = clk_hw_get_rate(c_hw);
+		st->parent = IS_ERR_OR_NULL(c) ? NULL : clk_get_parent(c);
 	}
 }
 
@@ -1688,13 +1690,14 @@ static void dump_provider_clk_state(struct provider_clk_state *st,
 	struct provider_clk *pvdck = st->pvdck;
 	struct clk_hw *c_hw = __clk_get_hw(pvdck->ck);
 
-	seq_printf(s, "[%10s: %-17s: %3s, %3d, %3d, %10ld]\n",
+	seq_printf(s, "[%10s: %-17s: %3s, %3d, %3d, %10ld, %17s]\n",
 		pvdck->provider_name ? pvdck->provider_name : "/ ",
 		clk_hw_get_name(c_hw),
 		st->enabled ? "ON" : "off",
 		st->prepared,
 		st->enable_count,
-		st->rate);
+		st->rate,
+		st->parent ? clk_hw_get_name(__clk_get_hw(st->parent)) : "- ");
 }
 
 static void store_save_point(struct save_point *sp)
