@@ -156,44 +156,51 @@ void cmdq_mdp_dump_mmsys_config(void)
 	int i = 0;
 	uint32_t value = 0;
 	static const struct RegDef configRegisters[] = {
-		{0x01c, "ISP_MOUT_EN"},
-		{0x020, "MDP_RDMA0_MOUT_EN"},
-		{0x024, "MDP_PRZ0_MOUT_EN"},
-		{0x028, "MDP_PRZ1_MOUT_EN"},
-		{0x02C, "MDP_PRZ2_MOUT_EN"},
-		{0x030, "MDP_COLOR_MOUT_EN"},
+		{0xfa0, "ISP_MOUT_EN"},
+		{0xfa4, "MDP_RDMA0_MOUT_EN"},
+		{0xfa8, "MDP_PRZ0_MOUT_EN"},
+		{0xfac, "MDP_PRZ1_MOUT_EN"},
+		{0xfb0, "MDP_PRZ2_MOUT_EN"},
+		{0xfb4, "MDP_COLOR_MOUT_EN"},
 		/* {0x02C, "MDP_TDSHP_MOUT_EN"},*/
-		{0x034, "DISP_OVL0_MOUT_EN"},
-		{0x038, "DISP_OVL1_MOUT_EN"},
-		{0x03C, "DISP_DITHER_MOUT_EN"},
-		{0x040, "DISP_UFOE_MOUT_EN"},
-		/* {0x040, "MMSYS_MOUT_RST"}, */
-		{0x04C, "MDP_PRZ0_SEL_IN"},
-		{0x050, "MDP_PRZ1_SEL_IN"},
-		{0x054, "MDP_PRZ2_SEL_IN"},
-		{0x058, "MDP_TDSHP_SEL_IN"},
-		{0x05C, "MDP_WDMA_SEL_IN"},
-		{0x060, "MDP_WROT0_SEL_IN"},
-		{0x064, "MDP_WROT1_SEL_IN"},
-		{0x068, "DISP_COLOR_SEL_IN"},
-		{0x06C, "DISP_WDMA0_SEL_IN"},
-		{0x070, "DISP_WDMA1_SEL_IN"},
-		{0x074, "DISP_UFOE_SEL_IN"},
-		{0x07C, "DSI0_SEL_IN"},
-		{0x084, "DPI0_SEL_IN"},
-		{0x090, "DISP_RDMA0_SOUT_SEL_IN"},
-		{0x094, "DISP_RDMA1_SOUT_SEL_IN"},
-		{0x0F0, "MMSYS_MISC"},
+		{0xf00, "DISP_OVL0_MOUT_EN"},
+		{0xf08, "DISP_OVL1_MOUT_EN"},
+		{0xf10, "DISP_DITHER0_MOUT_EN"},
+		{0xf14, "DISP_DITHER1_MOUT_EN"},
+		{0xf18, "DISP_UFOE_MOUT_EN"},
+		{0xfb8, "MDP_PRZ0_SEL_IN"},
+		{0xfbc, "MDP_PRZ1_SEL_IN"},
+		{0xfc0, "MDP_PRZ2_SEL_IN"},
+		{0xfc4, "MDP_TDSHP_SEL_IN"},
+		{0xfc8, "MDP_WDMA_SEL_IN"},
+		{0xfcc, "MDP_WROT0_SEL_IN"},
+		{0xfd0, "MDP_WROT1_SEL_IN"},
+		{0xf24, "DISP_COLOR0_SEL_IN"},
+		{0xf28, "DISP_COLOR1_SEL_IN"},
+		{0xf2c, "DISP_WDMA0_SEL_IN"},
+		{0xf30, "DISP_WDMA1_SEL_IN"},
+		{0xf34, "DISP_UFOE_SEL_IN"},
+		{0xf3c, "DSI0_SEL_IN"},
+		{0xf40, "DSI1_SEL_IN"},
+		{0xf44, "DPI0_SEL_IN"},
+		{0xf74, "DISP_RDMA0_SOUT_SEL_IN"},
+		{0xf78, "DISP_RDMA1_SOUT_SEL_IN"},
+		{0xf7c, "DISP_RDMA2_SOUT_SEL_IN"},
+		{0x0f0, "MMSYS_MISC"},
 		/* ACK and REQ related */
-		{0x8A0, "DISP_DL_VALID_0"},
-		{0x8A4, "DISP_DL_VALID_1"},
-		{0x8A8, "DISP_DL_READY_0"},
-		{0x8AC, "DISP_DL_READY_1"},
-		{0x8B0, "MDP_DL_VALID_0"},
-		{0x8B4, "MDP_DL_VALID_1"},
-		{0x8B8, "MDP_DL_READY_0"},
-		{0x8BC, "MDP_DL_READY_1"},
-		{0x8D4, "MDP_MOUT_MASK"}
+		{0x8b4, "DISP_DL_VALID_0"},
+		{0x8b8, "DISP_DL_VALID_1"},
+		{0x8bc, "DISP_DL_VALID_2"},
+		{0x8c0, "DISP_DL_VALID_3"},
+		{0x8c4, "DISP_DL_READY_0"},
+		{0x8c8, "DISP_DL_READY_1"},
+		{0x8cc, "DISP_DL_READY_2"},
+		{0x8d0, "DISP_DL_READY_3"},
+		{0x8d4, "MDP_DL_VALID_0"},
+		{0x8d8, "MDP_DL_VALID_1"},
+		{0x8dc, "MDP_DL_READY_0"},
+		{0x8e0, "MDP_DL_READY_1"},
+		{0x8f0, "MDP_MOUT_MASK"}
 	};
 	for (i = 0; i < ARRAY_SIZE(configRegisters); ++i) {
 		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE + configRegisters[i].offset);
@@ -202,7 +209,7 @@ void cmdq_mdp_dump_mmsys_config(void)
 }
 int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 {
-	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x140);
+	long MMSYS_SW0_RST_B_REG = MMSYS_CONFIG_BASE + (0x170);
 	int i = 0;
 	uint32_t reset_bits = 0L;
 	static const int engineResetBit[32] = {
