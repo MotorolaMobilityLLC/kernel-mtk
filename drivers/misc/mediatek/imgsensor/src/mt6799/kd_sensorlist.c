@@ -61,6 +61,10 @@
 #include <linux/compat.h>
 #endif
 
+#ifdef CONFIG_MTK_CCU
+#include "ccu_inc.h"
+#endif
+
 #ifndef CONFIG_MTK_CLKMGR
 /*CCF*/
 struct clk *g_camclk_camtg_sel;
@@ -3188,6 +3192,10 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 								pFeatureCtrl->FeatureId,
 								(unsigned char *)pFeaturePara,
 								(unsigned int *)&FeatureParaLen);
+#ifdef CONFIG_MTK_CCU
+			if (pFeatureCtrl->FeatureId == SENSOR_FEATURE_SET_FRAMERATE)
+				ccu_set_current_fps(*((int32_t *)pFeaturePara));
+#endif
 		} else {
 			PK_DBG("[CAMERA_HW]ERROR:NULL g_pSensorFunc\n");
 		}

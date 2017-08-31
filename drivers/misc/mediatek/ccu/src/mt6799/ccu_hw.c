@@ -26,6 +26,7 @@
 
 #include <linux/io.h> /*for mb();*/
 
+#include "ccu_inc.h"
 #include "ccu_hw.h"
 #include "ccu_reg.h"
 #include "ccu_cmn.h"
@@ -669,7 +670,7 @@ out:
 void ccu_set_current_fps(int32_t current_fps)
 {
 	g_ccu_sensor_current_fps = current_fps;
-	LOG_DBG("ccu catch current fps :%d\n", current_fps);
+	LOG_DBG_MUST("ccu catch current fps :%d\n", current_fps);
 }
 
 int32_t ccu_get_current_fps(void)
