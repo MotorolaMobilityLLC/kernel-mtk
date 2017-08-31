@@ -21,15 +21,15 @@
 #include <asm/setup.h>
 
 #ifndef CONFIG_ARM64
-/* #include <mach/irqs.h> */
+/* #include <mach/irqs.h> */ /* TODO */
 #else
 #include <linux/irqchip/mtk-gic.h>
 #endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
-/* #include <mach/mtk_clkmgr.h> */
-/* #include "mtk_cpuidle.h" */
+#include <mach/mtk_clkmgr.h>
+#include "mtk_cpuidle.h"
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
@@ -43,7 +43,7 @@
 #endif
 
 #include "mtk_spm_internal.h"
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_spm_pmic_wrap.h"
 #endif
 
@@ -57,8 +57,7 @@
 #include "mt_vcorefs_governor.h"
 #endif
 
-/* #include <mtk_power_gs-v1.h> */
-/* #include <mtk_golden_setting.h> */
+#include <mtk_power_gs.h>
 
 /**************************************
  * only for internal debug
@@ -85,7 +84,7 @@
 #endif
 #define ACINACTM                (1<<4)
 
-/* int spm_dormant_sta = MT_CPU_DORMANT_RESET; */
+int spm_dormant_sta = MT_CPU_DORMANT_RESET;
 int spm_ap_mdsrc_req_cnt;
 
 struct wake_status suspend_info[20];
@@ -201,11 +200,6 @@ int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
 
 void __attribute__((weak)) mt_eint_print_status(void)
 {
-}
-
-int __attribute__((weak)) snapshot_golden_setting(const char *func, const unsigned int line)
-{
-	return 0;
 }
 
 #if defined(CONFIG_ARCH_MT6797)
@@ -482,7 +476,7 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int temp;
 #endif
 
@@ -507,7 +501,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		spm_dpd_init();
 
 #elif defined(CONFIG_MACH_MT6757)
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
@@ -537,7 +531,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 			temp & ~(3 << MT6351_PMIC_RG_VCORE_VSLEEP_SEL_SHIFT));
 #endif
 
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
 #endif
 
@@ -567,7 +561,7 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 #endif
 
 	/* set PMIC WRAP table for normal power control */
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 #endif
 
@@ -613,24 +607,16 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 	sync_hw_gating_value();	/* for Vcore DVFS */
 #endif
 
-#if 0
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		spm_dormant_sta = mt_cpu_dormant(CPU_SHUTDOWN_MODE /* | DORMANT_SKIP_WFI */);
 		switch (spm_dormant_sta) {
 		case MT_CPU_DORMANT_RESET:
-			break;
-		case MT_CPU_DORMANT_ABORT:
-			break;
-		case MT_CPU_DORMANT_BREAK:
 			break;
 		case MT_CPU_DORMANT_BYPASS:
 			break;
 		}
 	} else {
 		spm_dormant_sta = -1;
-#else
-	{
-#endif
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
 #if defined(CONFIG_ARCH_MT6797)
@@ -661,10 +647,8 @@ static void spm_clean_after_wakeup(void)
 static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status)
 {
 	wake_reason_t wr;
-#if 0
 	u32 md32_flag = 0;
 	u32 md32_flag2 = 0;
-#endif
 
 	wr = __spm_output_wake_reason(wakesta, pcmdesc, true);
 
@@ -684,10 +668,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		log_wakesta_index = 0;
 #endif
 
-#if 0
 	spm_crit2("suspend dormant state = %d, md32_flag = 0x%x, md32_flag2 = %d, vcore_status = %d\n",
 		  spm_dormant_sta, md32_flag, md32_flag2, vcore_status);
-#endif
 	if (spm_ap_mdsrc_req_cnt != 0)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
@@ -806,13 +788,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 	u32 cpu = smp_processor_id();
 	int pcm_index;
-
-#if defined(CONFIG_MACH_MT6757)
-	if (((spm_read(spm_dramc_ch0_top0_base + 0x284) & (1 << 8)) == 0) ||
-	    ((spm_read(spm_dramc_ch1_top0_base + 0x284) & (1 << 8)) == 0)) {
-		spm_crit2("ERROR: setting of ddrphy dcm is incorrect, sleep abort!\n");
-		return last_wr;
-	}
+#if defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+	static int slp_count;
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -829,7 +806,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 
 #if defined(CONFIG_MACH_MT6757)
-	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4 /* + !(get_ddr_type() == TYPE_LPDDR3) * 2 */;
+	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4 + !(get_ddr_type() == TYPE_LPDDR3) * 2;
 #else
 	pcm_index = DYNA_LOAD_PCM_SUSPEND + cpu / 4;
 #endif
@@ -839,6 +816,11 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	else
 		WARN_ON(1);
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
+#if defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+	slp_count++;
+	pr_warn("[%d] vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
+		   slp_count, vcorefs_get_hw_opp(), spm_read(SPM_SW_RSV_5));
+#endif
 
 	pwrctrl = __spm_suspend.pwrctrl;
 
@@ -862,10 +844,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_pre_process(pwrctrl);
 
-#if defined(CONFIG_MACH_MT6757)
-	snapshot_golden_setting(__func__, 0);
-#endif
-
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mt_irq_mask_all(&mask);
@@ -885,6 +863,9 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
 
+#if defined(CONFIG_MACH_MT6757)
+	snapshot_golden_setting(__func__, 0);
+#endif
 	mt_power_gs_dump_suspend();
 
 	if (request_uart_to_sleep()) {
@@ -901,7 +882,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-#if 0 /* !defined(CONFIG_FPGA_EARLY_PORTING) */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif

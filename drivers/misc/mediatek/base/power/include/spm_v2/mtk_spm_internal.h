@@ -576,6 +576,10 @@ extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
 extern struct dram_info *g_dram_info_dummy_read;
 
+#if defined(CONFIG_MACH_MT6757)
+extern int can_spm_pmic_set_vcore_voltage(void);
+#endif
+
 #if defined(CONFIG_ARCH_MT6797)
 extern u32 spm_get_pcm_vcorefs_index(void);
 #endif
