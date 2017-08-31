@@ -1342,7 +1342,11 @@ uint32 SampleRateTransformI2s(uint32 SampleRate)
 bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus)
 {
 	uint32 Audio_I2S_Adc = 0;
-	AudioDigtalI2S *audioAdcI2S = kzalloc(sizeof(AudioDigtalI2S), GFP_KERNEL);
+	AudioDigtalI2S *audioAdcI2S = NULL;
+
+	audioAdcI2S = kzalloc(sizeof(AudioDigtalI2S), GFP_NOWAIT);
+	if (audioAdcI2S == NULL)
+		return false;
 
 	memcpy((void *)audioAdcI2S, (void *)DigtalI2S, sizeof(AudioDigtalI2S));
 	if (false == audioAdcI2SStatus) {

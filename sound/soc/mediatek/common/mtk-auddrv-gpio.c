@@ -142,6 +142,8 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 
 static unsigned int extbuck_fan53526_exist;
 
+static DEFINE_MUTEX(gpio_aud_dat_miso_mutex);
+
 void AudDrv_GPIO_probe(void *dev)
 {
 #if 1
@@ -246,7 +248,7 @@ static int set_aud_dat_mosi(bool _enable)
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MOSI_OFF);
 }
 
-static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
+static int set_aud_dat_miso_l(bool _enable, Soc_Aud_Digital_Block _usage)
 {
 	static bool adda_enable;
 	static bool vow_enable;
@@ -272,6 +274,17 @@ static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_ON);
 	else
 		return AudDrv_GPIO_Select(GPIO_AUD_DAT_MISO_OFF);
+
+}
+
+static int set_aud_dat_miso(bool _enable, Soc_Aud_Digital_Block _usage)
+{
+	int ret = 0;
+
+	mutex_lock(&gpio_aud_dat_miso_mutex);
+	ret = set_aud_dat_miso_l(_enable, _usage);
+	mutex_unlock(&gpio_aud_dat_miso_mutex);
+	return ret;
 }
 
 static int set_vow_clk_miso(bool _enable)
