@@ -287,6 +287,7 @@ static void pmic_clk_buf_ctrl_aud(short on)
 
 static void pmic_clk_buf_ctrl_pd(short on)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (on)
 		pmic_config_interface(PMIC_DCXO_CW11_SET_ADDR, 0x1,
 				      PMIC_XO_EXTBUF6_EN_M_MASK,
@@ -295,10 +296,12 @@ static void pmic_clk_buf_ctrl_pd(short on)
 		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR, 0x1,
 				      PMIC_XO_EXTBUF6_EN_M_MASK,
 				      PMIC_XO_EXTBUF6_EN_M_SHIFT);
+#endif
 }
 
 static void pmic_clk_buf_ctrl_ext(short on)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (on)
 		pmic_config_interface(PMIC_DCXO_CW11_SET_ADDR, 0x1,
 				      PMIC_XO_EXTBUF7_EN_M_MASK,
@@ -307,6 +310,7 @@ static void pmic_clk_buf_ctrl_ext(short on)
 		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR, 0x1,
 				      PMIC_XO_EXTBUF7_EN_M_MASK,
 				      PMIC_XO_EXTBUF7_EN_M_SHIFT);
+#endif
 }
 
 static void pmic_clk_buf_ctrl_multi(void)

@@ -33,7 +33,7 @@ config COMMON_CLK_MT6759
 	bool "Clock driver for Mediatek MT6759"
 	depends on COMMON_CLK
 	select COMMON_CLK_MEDIATEK_NEW
-	default y if MACH_MT6759 && !MTK_CLKMGR
+	default y if MACH_MT6759 && !MTK_CLKMGR && !FPGA_EARLY_PORTING
 	---help---
 	  This driver supports Mediatek MT6759 clocks.
 	  Use the config to support CCF on MT6759,
