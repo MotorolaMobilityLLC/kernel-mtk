@@ -1700,9 +1700,7 @@ struct larb_monitor larb_monitor_handler = {
 int smi_common_init(void)
 {
 	int i;
-#if defined(DEBUG_TEST)
-	int cur_bus_optimization;
-#endif
+
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct pg_callbacks *pold = 0;
@@ -1722,26 +1720,7 @@ int smi_common_init(void)
 			SMIERR("pLarbRegBackUp kmalloc fail %d\n", i);
 	}
 
-#if defined(DEBUG_TEST)
-	SMIMSG("before test, bus_optimization=0x%x\n", bus_optimization);
-	cur_bus_optimization = bus_optimization;
-	for (i = 0; i < SMI_LARB_NUM; i++) {
-		SMIMSG("test larb%d enable clock\n", i);
-		bus_optimization = 1 << i;
-		smi_bus_optimization_clock_control(bus_optimization, SMI_PREPARE_CLK);
-		smi_bus_optimization_clock_control(bus_optimization, SMI_ENABLE_CLK);
 
-		smi_apply_mmu_setting();
-		smi_apply_basic_setting();
-		smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
-
-		smi_bus_optimization_clock_control(bus_optimization, SMI_DISABLE_CLK);
-		smi_bus_optimization_clock_control(bus_optimization, SMI_UNPREPARE_CLK);
-		bus_optimization = 0;
-	}
-	bus_optimization = cur_bus_optimization;
-	SMIMSG("after test, bus_optimization=0x%x\n", bus_optimization);
-#endif
 	/* apply init setting after kernel boot */
 	smi_bus_optimization_clock_control(bus_optimization, SMI_PREPARE_CLK);
 	smi_bus_optimization_clock_control(bus_optimization, SMI_ENABLE_CLK);
@@ -2130,10 +2109,10 @@ static int smi_probe(struct platform_device *pdev)
 		smi_dev->gals_venc2mm_clk = get_smi_clk("gals-venc2mm");
 		/* MTCMOS */
 		smi_dev->mm_mtcmos = get_smi_clk("mtcmos-mm");
-		smi_dev->img_mtcmos = get_smi_clk("mtcmos-cam");
-		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-isp");
-		smi_dev->vde_mtcmos = get_smi_clk("mtcmos-ven");
-		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-vde");
+		smi_dev->img_mtcmos = get_smi_clk("mtcmos-isp");
+		smi_dev->cam_mtcmos = get_smi_clk("mtcmos-cam");
+		smi_dev->vde_mtcmos = get_smi_clk("mtcmos-vde");
+		smi_dev->ven_mtcmos = get_smi_clk("mtcmos-ven");
 #endif
 #endif
 	} else {
