@@ -10527,3 +10527,34 @@ WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 	return rStatus;
 }
 #endif
+
+WLAN_STATUS
+wlanoidSetDrvRoamingPolicy(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	UINT_32 u4RoamingPoily;
+	P_ROAMING_INFO_T prRoamingFsmInfo;
+
+	ASSERT(prAdapter);
+	ASSERT(pvSetBuffer);
+
+	u4RoamingPoily = *(PUINT_32)pvSetBuffer;
+
+	prRoamingFsmInfo = (P_ROAMING_INFO_T) &(prAdapter->rWifiVar.rRoamingInfo);
+
+	if (u4RoamingPoily == 1) {
+		if (((prAdapter->rWifiVar.rAisFsmInfo.eCurrentState == AIS_STATE_NORMAL_TR)
+			|| (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState == AIS_STATE_ONLINE_SCAN))
+			&& (prRoamingFsmInfo->eCurrentState == ROAMING_STATE_IDLE))
+			roamingFsmRunEventStart(prAdapter);
+	} else {
+		if (prRoamingFsmInfo->eCurrentState != ROAMING_STATE_IDLE)
+			roamingFsmRunEventAbort(prAdapter);
+	}
+	prRoamingFsmInfo->DrvRoamingAllow = u4RoamingPoily;
+
+	DBGLOG(REQ, INFO, "wlanoidSetDrvRoamingPolicy, RoamingPoily= %d\n", u4RoamingPoily);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
