@@ -22,5 +22,9 @@
 #include "upower_v1/mtk_unified_power.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6763)
+#include "upower_v2/mtk_unified_power.h"
+#endif
+
 #endif /* _COMMON_MTK_UPOWER_H */
 

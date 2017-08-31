@@ -18,3 +18,7 @@ ccflags-y += \
 obj-$(CONFIG_MACH_MT6759) += mtk_static_power.o
 
 obj-$(CONFIG_MACH_MT6759) += mtk_static_power_mt6759.o
+
+obj-$(CONFIG_MACH_MT6763) += mtk_static_power.o
+
+obj-$(CONFIG_MACH_MT6763) += mtk_static_power_mt6763.o

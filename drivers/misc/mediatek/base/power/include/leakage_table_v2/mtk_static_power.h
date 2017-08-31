@@ -20,6 +20,10 @@
 #if defined(CONFIG_MACH_MT6759)
 #include "mtk_static_power_mt6759.h"
 #endif
+
+#if defined(CONFIG_MACH_MT6763)
+#include "mtk_static_power_mt6763.h"
+#endif
 /*
  * bit operation
  */
