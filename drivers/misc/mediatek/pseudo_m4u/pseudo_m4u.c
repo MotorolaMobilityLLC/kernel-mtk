@@ -2151,7 +2151,8 @@ static int pseudo_probe(struct platform_device *pdev)
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 {
-	unsigned int sec_mem_size;
+	/* init the sec_mem_size to 400M to avoid build error. */
+	unsigned int sec_mem_size = 400 * 0x100000;
 	/*reserve mva range for sec */
 	struct device *dev = &pdev->dev;
 
