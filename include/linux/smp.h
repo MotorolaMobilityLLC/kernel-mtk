@@ -12,6 +12,7 @@
 #include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/llist.h>
+#include <linux/spinlock.h>
 
 typedef void (*smp_call_func_t)(void *info);
 struct call_single_data {
@@ -71,6 +72,123 @@ struct profile_cpu_stats {
 };
 
 extern struct profile_cpu_stats *cpu_stats;
+#endif
+
+/* for Hotplug timestamp profiling */
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+#define TIMESTAMP_REC_SIZE 300
+#define TIMESTAMP_FILTER 1
+struct timestamp_rec {
+	struct {
+		const char *func;
+		int line;
+		unsigned long long timestamp_us;
+		unsigned long long delta_us;
+		unsigned long note1;	/* cpu id */
+		unsigned long note2;	/* callback event */
+		unsigned long note3;	/* callback index */
+		unsigned long note4;	/* reservation */
+	} rec[TIMESTAMP_REC_SIZE];
+
+	unsigned int rec_idx;
+	unsigned int filter;
+};
+extern struct timestamp_rec hotplug_ts_rec;
+extern spinlock_t hotplug_timestamp_lock;
+extern unsigned int timestamp_enable;
+long hotplug_get_current_time_us(void);
+
+#define SET_TIMESTAMP_FILTER(ts, f) \
+do { \
+	if (timestamp_enable) {\
+		ts.filter = (f);\
+	} \
+} while (0)
+
+#define BEGIN_TIMESTAMP_REC(ts, f, cpu, event, index, n4) \
+do { \
+	if (timestamp_enable) {\
+		spin_lock(&hotplug_timestamp_lock);\
+		if (ts.filter & (f)) { \
+			ts.rec[0].func = __func__; \
+			ts.rec[0].line = __LINE__; \
+			ts.rec[0].timestamp_us = hotplug_get_current_time_us(); \
+			ts.rec[0].delta_us = 0; \
+			ts.rec[0].note1 = (cpu); \
+			ts.rec[0].note2 = (event); \
+			ts.rec[0].note3 = (index); \
+			ts.rec[0].note4 = (n4); \
+			ts.rec_idx = 1; \
+		} \
+		spin_unlock(&hotplug_timestamp_lock);\
+	} \
+} while (0)
+
+#define TIMESTAMP_REC(ts, f, cpu, event, index, n4) \
+do { \
+	if (timestamp_enable) {\
+		spin_lock(&hotplug_timestamp_lock);\
+		if (ts.rec_idx < TIMESTAMP_REC_SIZE && (ts.filter & (f))) { \
+			ts.rec[ts.rec_idx].func = __func__; \
+			ts.rec[ts.rec_idx].line = __LINE__; \
+			ts.rec[ts.rec_idx].timestamp_us = hotplug_get_current_time_us(); \
+			ts.rec[ts.rec_idx].delta_us = ts.rec[ts.rec_idx].timestamp_us - \
+			ts.rec[ts.rec_idx-1].timestamp_us; \
+			ts.rec[ts.rec_idx].note1 = (cpu); \
+			ts.rec[ts.rec_idx].note2 = (event); \
+			ts.rec[ts.rec_idx].note3 = (index); \
+			ts.rec[ts.rec_idx].note4 = (n4); \
+			ts.rec_idx++; \
+		} \
+		spin_unlock(&hotplug_timestamp_lock);\
+	} \
+} while (0)
+
+#define END_TIMESTAMP_REC(ts, f, cpu, event, index, n4) \
+do { \
+	int i; \
+	if (timestamp_enable) {\
+		spin_lock(&hotplug_timestamp_lock);\
+		if (ts.rec_idx < TIMESTAMP_REC_SIZE && (ts.filter & (f))) { \
+			ts.rec[ts.rec_idx].func = __func__; \
+			ts.rec[ts.rec_idx].line = __LINE__; \
+			ts.rec[ts.rec_idx].timestamp_us = hotplug_get_current_time_us(); \
+			ts.rec[ts.rec_idx].delta_us = ts.rec[ts.rec_idx].timestamp_us - \
+			ts.rec[ts.rec_idx-1].timestamp_us; \
+			ts.rec[ts.rec_idx].note1 = (cpu); \
+			ts.rec[ts.rec_idx].note2 = (event); \
+			ts.rec[ts.rec_idx].note3 = (index); \
+			ts.rec[ts.rec_idx].note4 = (n4); \
+			ts.rec_idx++; \
+		} \
+		pr_warn("hotplug timestamp:\ttime\t\tposition\tdelta\tcpu\tevent\tindex\tn4\n"); \
+		for (i = 0; i < ts.rec_idx; i++) { \
+			pr_warn("hotplug timestamp: %lld\t%s():%d\t%lld\t%ld\t%ld\t%ld\t%p\n",\
+			 ts.rec[i].timestamp_us, ts.rec[i].func, ts.rec[i].line, ts.rec[i].delta_us, \
+			 ts.rec[i].note1, ts.rec[i].note2, ts.rec[i].note3, (void *)ts.rec[i].note4); \
+		} \
+		spin_unlock(&hotplug_timestamp_lock);\
+	} \
+} while (0)
+
+#else /* CONFIG_MTK_CPU_HOTPLUG_DEBUG_3 */
+
+#define BEGIN_TIMESTAMP_REC(ts, f, cpu, event, index, n4) /* foo */
+#define TIMESTAMP_REC(ts, f, cpu, event, index, n4) /* foo */
+#define END_TIMESTAMP_REC(ts, f, cpu, event, index, n4) /* foo */
+
+#endif
+
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_cpu_caller(u32 val);
+extern void aee_rr_rec_cpu_callee(u32 val);
+extern void aee_rr_rec_cpu_up_prepare_ktime(u64 val);
+extern void aee_rr_rec_cpu_starting_ktime(u64 val);
+extern void aee_rr_rec_cpu_online_ktime(u64 val);
+extern void aee_rr_rec_cpu_down_prepare_ktime(u64 val);
+extern void aee_rr_rec_cpu_dying_ktime(u64 val);
+extern void aee_rr_rec_cpu_dead_ktime(u64 val);
+extern void aee_rr_rec_cpu_post_dead_ktime(u64 val);
 #endif
 
 /*

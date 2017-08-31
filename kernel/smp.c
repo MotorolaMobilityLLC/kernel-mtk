@@ -14,6 +14,7 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
+#include <linux/seq_file.h>
 #ifdef CONFIG_PROFILE_CPU
 #include <linux/slab.h>
 #include <linux/proc_fs.h>
@@ -567,17 +568,73 @@ void __weak smp_announce(void)
 	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
 }
 
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+struct timestamp_rec hotplug_ts_rec;
+DEFINE_SPINLOCK(hotplug_timestamp_lock);
+unsigned int timestamp_enable = 1;
+
+long hotplug_get_current_time_us(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);
+}
+
+static ssize_t timestamp_enable_proc_write(struct file *f, const char *data, size_t len, loff_t *offset)
+{
+	int r;
+	unsigned int enable_val;
+
+	r = kstrtouint_from_user(data, len, 0, &enable_val);
+
+	if (r)
+		return -EINVAL;
+
+	timestamp_enable = enable_val;
+
+	return len;
+}
+static int timestamp_enable_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", timestamp_enable);
+	return 0;
+}
+
+static int profile_timestamp_init(void)
+{
+	int ret = 0;
+	int i = 0;
+
+	spin_lock(&hotplug_timestamp_lock);
+	for (i = 0; i < TIMESTAMP_REC_SIZE; i++) {
+		hotplug_ts_rec.rec[i].func = NULL;
+		hotplug_ts_rec.rec[i].line = 0;
+		hotplug_ts_rec.rec[i].timestamp_us = 0;
+		hotplug_ts_rec.rec[i].delta_us = 0;
+		hotplug_ts_rec.rec[i].note1 = 0;
+		hotplug_ts_rec.rec[i].note2 = 0;
+		hotplug_ts_rec.rec[i].note3 = 0;
+		hotplug_ts_rec.rec[i].note4 = 0;
+	}
+
+	hotplug_ts_rec.rec_idx = 0;
+	hotplug_ts_rec.filter = 0;
+
+	SET_TIMESTAMP_FILTER(hotplug_ts_rec, TIMESTAMP_FILTER);
+	timestamp_enable = 0;
+	spin_unlock(&hotplug_timestamp_lock);
+
+	return ret;
+}
+#endif /* #ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3 */
+
 #ifdef CONFIG_PROFILE_CPU
 struct profile_cpu_stats *cpu_stats;
 
 DEFINE_SPINLOCK(profile_cpu_stats_lock);
 
-static ssize_t proc_write(struct file *f, const char *data, size_t len, loff_t *offset)
-{
-	return 0;
-}
-
-static int proc_show(struct seq_file *m, void *v)
+static int cpu_lat_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int cpu;
 
@@ -617,23 +674,6 @@ static int proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static int proc_open(struct inode *inode, struct  file *file)
-{
-	int ret;
-
-	ret = single_open(file, proc_show, NULL);
-
-	return ret;
-}
-
-static const struct file_operations proc_fops = {
-	.owner = THIS_MODULE,
-	.open = proc_open,
-	.read = seq_read,
-	.write = proc_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
 
 static int profile_cpu_stats_init(void)
 {
@@ -655,11 +695,94 @@ static int profile_cpu_stats_init(void)
 		cpu_stats[cpu].hotplug_down_lat_min = 0;
 	}
 
-	proc_create("cpu_lat", 0, NULL, &proc_fops);
 
 	return ret;
 }
+#endif /* ifdef CONFIG_PROFILE_CPU */
+
+#define PROC_FOPS_RW(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+	.write          = name ## _proc_write,				\
+}
+
+#define PROC_FOPS_RO(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+}
+
+#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
+
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+PROC_FOPS_RW(timestamp_enable);
 #endif
+#ifdef CONFIG_PROFILE_CPU
+PROC_FOPS_RO(cpu_lat);
+#endif
+static int create_procfs(void)
+{
+	struct proc_dir_entry *dir = NULL;
+	int i = 0;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+#ifdef CONFIG_PROFILE_CPU
+	const struct pentry entries_ro[] = {
+		PROC_ENTRY(cpu_lat),
+	};
+#endif
+
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+	const struct pentry entries_rw[] = {
+		PROC_ENTRY(timestamp_enable),
+	};
+#endif
+
+	dir = proc_mkdir("cpu_hotplug", NULL);
+
+	if (!dir)
+		return -ENOMEM;
+
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+
+	for (i = 0; i < ARRAY_SIZE(entries_rw); i++) {
+		if (!proc_create(entries_rw[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries_rw[i].fops))
+			return -ENOMEM;
+	}
+
+#endif
+
+#ifdef CONFIG_PROFILE_CPU
+
+	for (i = 0; i < ARRAY_SIZE(entries_ro); i++) {
+		if (!proc_create(entries_ro[i].name, 0, dir, entries_ro[i].fops))
+			return -ENOMEM;
+	}
+
+#endif
+
+	return 0;
+
+}
 
 /* Called by boot processor to activate the rest. */
 void __init smp_init(void)
@@ -668,8 +791,16 @@ void __init smp_init(void)
 
 	idle_threads_init();
 
+#if defined(CONFIG_PROFILE_CPU) || defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
+	create_procfs();
+#endif
+
 #ifdef CONFIG_PROFILE_CPU
 	profile_cpu_stats_init();
+#endif
+
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
+	profile_timestamp_init();
 #endif
 
 	/* FIXME: This should be done in userspace --RR */
