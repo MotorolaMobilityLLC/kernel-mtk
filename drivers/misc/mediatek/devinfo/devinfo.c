@@ -27,8 +27,14 @@
 #ifdef CONFIG_OF
 #include <linux/of_fdt.h>
 #endif
+#include <linux/atomic.h>
 #include <asm/setup.h>
 #include "devinfo.h"
+
+enum {
+	DEVINFO_UNINIT = 0,
+	DEVINFO_INITIALIZING_OR_INITIALIZED = 1
+} DEVINFO_INIT_STATE;
 
 static u32 *g_devinfo_data;
 static u32 g_devinfo_size;
@@ -37,6 +43,8 @@ static struct class *devinfo_class;
 static dev_t devinfo_dev;
 static struct dentry *devinfo_segment_root;
 static char devinfo_segment_buff[128];
+static atomic_t g_devinfo_init_status = ATOMIC_INIT(DEVINFO_UNINIT);
+static atomic_t g_devinfo_init_errcnt = ATOMIC_INIT(0);
 
 /*****************************************************************************
 *FUNCTION DEFINITION
@@ -45,6 +53,7 @@ static int devinfo_open(struct inode *inode, struct file *filp);
 static int devinfo_release(struct inode *inode, struct file *filp);
 static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 static ssize_t devinfo_segment_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos);
+static void init_devinfo_exclusive(void);
 
 /**************************************************************************
 *EXTERN FUNCTION
@@ -65,6 +74,15 @@ u32 get_devinfo_with_index(u32 index)
 {
 	int size = devinfo_get_size();
 	u32 ret = 0;
+
+#ifdef CONFIG_OF
+	if (size == 0) {
+		/* Devinfo API users may call this API earlier than devinfo data is ready from dt. */
+		/* If the earlier API users found, make the devinfo data init earlier at that time. */
+		init_devinfo_exclusive();
+		size = devinfo_get_size();
+	}
+#endif
 
 	if (((index >= 0) && (index < size)) && (g_devinfo_data != NULL))
 		ret = g_devinfo_data[index];
@@ -244,22 +262,41 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 
 		memcpy(g_devinfo_data, tags->data, (size * sizeof(u32)));
 
-		/* print chip id for debugging purpose */
-		pr_debug("tag_devinfo_data size:%d\n", size);
+		pr_err("tag_devinfo_data size:%d\n", size);
 
 		sprintf(devinfo_segment_buff, "segment code=0x%x\n", g_devinfo_data[DEVINFO_SEGCODE_INDEX]);
 
 		pr_err("[devinfo][SegCode] Segment Code=0x%x\n", g_devinfo_data[DEVINFO_SEGCODE_INDEX]);
 
-	} else
+	} else {
 		sprintf(devinfo_segment_buff, "segment code=[Fail in parsing DT]\n");
+
+		pr_err("'atag,devinfo' is not found\n");
+	}
 
 	return 1;
 }
 
+static void init_devinfo_exclusive(void)
+{
+	if (atomic_read(&g_devinfo_init_status) == DEVINFO_INITIALIZING_OR_INITIALIZED) {
+		atomic_inc(&g_devinfo_init_errcnt);
+		pr_err("devinfo data already init done earlier. 'init_devinfo_exclusive' extra times: %d\n",
+			atomic_read(&g_devinfo_init_errcnt));
+		return;
+	}
+
+	if (atomic_read(&g_devinfo_init_status) == DEVINFO_UNINIT)
+		atomic_set(&g_devinfo_init_status, DEVINFO_INITIALIZING_OR_INITIALIZED);
+	else
+		return;
+
+	of_scan_flat_dt(devinfo_parse_dt, NULL);
+}
+
 static int __init devinfo_of_init(void)
 {
-	of_scan_flat_dt(devinfo_parse_dt, NULL);
+	init_devinfo_exclusive();
 	return 0;
 }
 #endif
