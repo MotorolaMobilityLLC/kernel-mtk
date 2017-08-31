@@ -95,6 +95,12 @@ void wake_up_gauge_coulomb(void)
 		return;
 	}
 
+	if (is_fg_disable()) {
+		gauge_set_coulomb_interrupt1_ht(0);
+		gauge_set_coulomb_interrupt1_lt(0);
+		return;
+	}
+
 	ft_err("wake_up_gauge_coulomb %d %d %d %d\n",
 		wake_lock_active(&wlock),
 		coulomb_thread_timeout,
@@ -247,6 +253,12 @@ void gauge_coulomb_start(struct gauge_consumer *coulomb, int car)
 		return;
 	}
 
+	if (is_fg_disable()) {
+		gauge_set_coulomb_interrupt1_ht(0);
+		gauge_set_coulomb_interrupt1_lt(0);
+		return;
+	}
+
 	if (car == 0)
 		return;
 
@@ -324,6 +336,12 @@ void gauge_coulomb_stop(struct gauge_consumer *coulomb)
 {
 	if (init == false) {
 		ft_err("[%s]gauge_coulomb service is not rdy\n", __func__);
+		return;
+	}
+
+	if (is_fg_disable()) {
+		gauge_set_coulomb_interrupt1_ht(0);
+		gauge_set_coulomb_interrupt1_lt(0);
 		return;
 	}
 
