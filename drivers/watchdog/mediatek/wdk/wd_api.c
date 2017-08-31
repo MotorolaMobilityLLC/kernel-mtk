@@ -20,6 +20,7 @@
 #include <linux/reboot.h>
 #include <mt-plat/mtk_reboot.h>
 #include <mt-plat/mtk_rtc.h>
+#include <asm/system_misc.h>
 
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
@@ -666,6 +667,8 @@ static int mtk_arch_reset_handle(struct notifier_block *this, unsigned long mode
 static int __init mtk_arch_reset_init(void)
 {
 	int ret;
+
+	arm_pm_restart = NULL;
 	mtk_restart_handler.notifier_call = mtk_arch_reset_handle;
 	mtk_restart_handler.priority = 128;
 	pr_alert("\n register_restart_handler- 0x%p, Notify call: - 0x%p\n",
