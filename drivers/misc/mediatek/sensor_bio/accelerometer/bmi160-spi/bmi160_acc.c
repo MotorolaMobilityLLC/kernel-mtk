@@ -36,6 +36,7 @@
 #include <accel.h>
 #include <cust_acc.h>
 #include <hwmsensor.h>
+
 #include <sensors_io.h>
 
 #include "bmi160_acc.h"
@@ -112,8 +113,6 @@ struct bmi160_acc_data {
 	struct mutex mutex_ring_buf;
 	atomic_t wkqueue_en;
 	atomic_t delay;
-	bool power;
-	int64_t samplingPeriodNs;
 	int IRQ;
 	uint16_t gpio_pin;
 	struct work_struct irq_work;
@@ -1975,6 +1974,7 @@ static int bmi160_acc_delete_attr(struct device_driver *driver)
 	return err;
 }
 
+#if 0
 static int bmi160_acc_open(struct inode *inode, struct file *file)
 {
 	file->private_data = obj_data;
@@ -2203,6 +2203,7 @@ static struct miscdevice bmi160_acc_device = {
 	.name = "gsensor",
 	.fops = &bmi160_acc_fops,
 };
+#endif
 
 #ifdef CONFIG_PM
 static int bmi160_acc_suspend(void)
@@ -2292,70 +2293,6 @@ static struct spi_driver bmi160_acc_spi_driver = {
 	.remove = bmi160_acc_spi_remove,
 };
 
-/*!
- * @brief if use this type of enable,
- * Gsensor should report inputEvent(x, y, z, status, div) to HAL
- *
- * @param[in] int open true or false
- *
- * @return zero success, non-zero failed
- */
-static int bmi160_acc_open_report_data(int open)
-{
-#if 0
-	/* should queue work to report event if is_report_input_direct=true */
-	struct bmi160_acc_data *obj = obj_data;
-
-	if (obj->is_input_enable == true) {
-		if (open == 0) {
-			atomic_set(&obj->wkqueue_en, 0);
-			cancel_delayed_work_sync(&obj->work);
-		} else {
-			atomic_set(&obj->wkqueue_en, 1);
-			schedule_delayed_work(&obj->work,
-			msecs_to_jiffies(atomic_read(&obj->delay)));
-		}
-	}
-#endif
-	return 0;
-}
-
-static int bmi160_acc_enable_and_batch(void)
-{
-	int err = 0;
-	u8 bwrate;
-	int value = (int)obj_data->samplingPeriodNs / 1000 / 1000;
-
-	if (obj_data->power && obj_data->samplingPeriodNs) {
-		/* power on */
-		err = BMI160_ACC_SetPowerMode(obj_data, true);
-		if (err < 0)
-			goto power_failed;
-		/* set ODR */
-		if (value <= 5)
-			bwrate = BMI160_ACCEL_ODR_400HZ;
-		else if (value <= 10)
-			bwrate = BMI160_ACCEL_ODR_200HZ;
-		else
-			bwrate = BMI160_ACCEL_ODR_100HZ;
-		err = BMI160_ACC_SetBWRate(obj_data, bwrate);
-		if (err < 0)
-			goto batch_failed;
-	} else if (obj_data->power == false) {
-		/* power off */
-		err = BMI160_ACC_SetPowerMode(obj_data, false);
-		if (err < 0)
-			goto power_failed;
-		obj_data->samplingPeriodNs = 0;
-	}
-	return err;
-power_failed:
-	GSE_ERR("BMI160_ACC_SetPowerMode failed.\n");
-	return -1;
-batch_failed:
-	GSE_ERR("set delay parameter error!\n");
-	return -1;
-}
 
 /*!
  * @brief If use this type of enable, Gsensor only enabled but not report inputEvent to HAL
@@ -2367,30 +2304,50 @@ batch_failed:
 static int bmi160_acc_enable_nodata(int en)
 {
 	int err = 0;
+	bool power = false;
 
 	if (en == 1)
-		obj_data->power = true;
-	else if (en == 0)
-		obj_data->power = false;
+		power = true;
+	else
+		power = false;
 
-	err = bmi160_acc_enable_and_batch();
+	err = BMI160_ACC_SetPowerMode(obj_data, power);
+	if (err < 0) {
+		GSE_ERR("BMI160_ACC_SetPowerMode failed.\n");
+		return -1;
+	}
 	GSE_LOG("bmi160_acc_enable_nodata ok!\n");
 	return err;
 }
 
 /*!
- * @brief set the delay value for acc
+ * @brief set ODR rate value for acc
  *
- * @param[in] u64 ns for dealy
+ * @param[in] u64 ns for sensor delay
  *
  * @return zero success, non-zero failed
  */
 
 static int bmi160_acc_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	obj_data->samplingPeriodNs = samplingPeriodNs;
+	int value = 0;
+	int sample_delay = 0;
+	int err = 0;
 
-	return bmi160_acc_enable_and_batch();
+	value = (int)samplingPeriodNs/1000/1000;
+	if (value <= 5)
+		sample_delay = BMI160_ACCEL_ODR_400HZ;
+	else if (value <= 10)
+		sample_delay = BMI160_ACCEL_ODR_200HZ;
+	else
+		sample_delay = BMI160_ACCEL_ODR_100HZ;
+	err = BMI160_ACC_SetBWRate(obj_data, sample_delay);
+	if (err < 0) {
+		GSE_ERR("set delay parameter error!\n");
+		return -1;
+	}
+	GSE_LOG("bmi160 acc set delay = (%d) ok.\n", value);
+	return 0;
 }
 
 static int bmi160_acc_flush(void)
@@ -2444,6 +2401,107 @@ static int bmi160_acc_get_data(int *x, int *y, int *z, int *status)
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	return 0;
 }
+
+static int bmi160_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+
+	err = bmi160_acc_enable_nodata(enabledisable == true ? 1 : 0);
+	if (err) {
+		GSE_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = bmi160_acc_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GSE_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int bmi160_factory_get_data(int32_t data[3], int *status)
+{
+	return bmi160_acc_get_data(&data[0], &data[1], &data[2], status);
+}
+static int bmi160_factory_get_raw_data(int32_t data[3])
+{
+	char strbuf[BMI160_BUFSIZE] = { 0 };
+
+	BMI160_ACC_ReadRawData(obj_data, strbuf);
+	GSE_ERR("don't support bmi160_factory_get_raw_data!\n");
+	return 0;
+}
+static int bmi160_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int bmi160_factory_clear_cali(void)
+{
+	int err = 0;
+
+	err = BMI160_ACC_ResetCalibration(obj_data);
+	if (err) {
+		GSE_ERR("bmi160_ResetCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int bmi160_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	cali[BMI160_ACC_AXIS_X] = data[0]
+		* obj_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[BMI160_ACC_AXIS_Y] = data[1]
+		* obj_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[BMI160_ACC_AXIS_Z] = data[2]
+		* obj_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	err = BMI160_ACC_WriteCalibration(obj_data, cali);
+	if (err) {
+		GSE_ERR("bmi160_WriteCalibration failed!\n");
+		return -1;
+	}
+	return 0;
+}
+static int bmi160_factory_get_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+
+	err = BMI160_ACC_ReadCalibration(obj_data, cali);
+	if (err) {
+		GSE_ERR("bmi160_ReadCalibration failed!\n");
+		return -1;
+	}
+	data[0] = cali[BMI160_ACC_AXIS_X]
+		* GRAVITY_EARTH_1000 / obj_data->reso->sensitivity;
+	data[1] = cali[BMI160_ACC_AXIS_Y]
+		* GRAVITY_EARTH_1000 / obj_data->reso->sensitivity;
+	data[2] = cali[BMI160_ACC_AXIS_Z]
+		* GRAVITY_EARTH_1000 / obj_data->reso->sensitivity;
+	return 0;
+}
+static int bmi160_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct accel_factory_fops bmi160_factory_fops = {
+	.enable_sensor = bmi160_factory_enable_sensor,
+	.get_data = bmi160_factory_get_data,
+	.get_raw_data = bmi160_factory_get_raw_data,
+	.enable_calibration = bmi160_factory_enable_calibration,
+	.clear_cali = bmi160_factory_clear_cali,
+	.set_cali = bmi160_factory_set_cali,
+	.get_cali = bmi160_factory_get_cali,
+	.do_self_test = bmi160_factory_do_self_test,
+};
+
+static struct accel_factory_public bmi160_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &bmi160_factory_fops,
+};
 
 int bmi160_set_intr_fifo_wm(u8 v_channel_u8, u8 v_intr_fifo_wm_u8)
 {
@@ -3379,7 +3437,7 @@ static struct platform_driver bmi160acc_driver = {
 		   }
 };
 
-static int bmi160acc_setup_eint(void)
+static int bmi160acc_setup_eint(struct spi_device *spi)
 {
 	int ret;
 	struct device_node *node = NULL;
@@ -3389,7 +3447,7 @@ static int bmi160acc_setup_eint(void)
 	u32 ints[2] = { 0, 0 };
 	struct bmi160_acc_data *obj = obj_data;
 	/* gpio setting */
-	pinctrl = devm_pinctrl_get(&accelPltFmDev->dev);
+	pinctrl = devm_pinctrl_get(&spi->dev);
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		GSE_ERR("Cannot find step pinctrl!\n");
@@ -3513,14 +3571,15 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 	if (err)
 		GSE_ERR("could not request irq\n");
 #else
-	err = bmi160acc_setup_eint();
+	err = bmi160acc_setup_eint(spi);
 	if (err)
 		GSE_ERR("could not request irq\n");
 #endif
 
-	err = misc_register(&bmi160_acc_device);
+	/* err = misc_register(&bmi160_acc_device); */
+	err = accel_factory_device_register(&bmi160_factory_device);
 	if (err) {
-		GSE_ERR("bmi160_acc_device register failed.\n");
+		GSE_ERR("acc_factory register failed.\n");
 		goto exit_misc_device_register_failed;
 	}
 
@@ -3529,12 +3588,10 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 		GSE_ERR("create attribute failed.\n");
 		goto exit_create_attr_failed;
 	}
-	ctl.open_report_data = bmi160_acc_open_report_data;
 	ctl.enable_nodata = bmi160_acc_enable_nodata;
-	/* ///ctl.set_delay = bmi160_acc_set_delay; */
 	ctl.batch = bmi160_acc_batch;
 	ctl.flush = bmi160_acc_flush;
-	ctl.is_support_batch = true;	/* /// */
+	ctl.is_support_batch = false;	/* using customization info */
 	ctl.is_report_input_direct = false;
 	/* obj->is_input_enable = ctl.is_report_input_direct; */
 
@@ -3594,7 +3651,7 @@ static int bmi160_acc_spi_probe(struct spi_device *spi)
 	return 0;
 
 exit_create_attr_failed:
-	misc_deregister(&bmi160_acc_device);
+	/* misc_deregister(&bmi160_acc_device); */
 exit_misc_device_register_failed:
 exit_init_failed:
 	spi_clk_enable(obj, 0);
@@ -3627,7 +3684,8 @@ static int bmi160_acc_spi_remove(struct spi_device *spi)
 	spi_set_drvdata(spi, NULL);
 	obj->spi = NULL;
 
-	misc_deregister(&bmi160_acc_device);
+	/* misc_deregister(&bmi160_acc_device); */
+	accel_factory_device_deregister(&bmi160_factory_device);
 
 	kfree(obj_data);
 	return 0;

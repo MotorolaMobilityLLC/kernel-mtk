@@ -1236,6 +1236,7 @@ int temperature_operate(void *self, uint32_t command, void *buff_in,
 }
 #endif				/* CONFIG_ID_TEMPERATURE */
 
+#if 0
 static int bmp_open(struct inode *inode, struct file *file)
 {
 	file->private_data = obj_i2c_data;
@@ -1377,6 +1378,7 @@ static struct miscdevice bmp_device = {
 	.name = "barometer",
 	.fops = &bmp_fops,
 };
+#endif
 
 #ifdef CONFIG_PM_SLEEP
 static int bmp_suspend(struct device *dev)
@@ -1517,6 +1519,75 @@ static int bmp_get_data(int *value, int *status)
 	return 0;
 }
 
+static int bmp_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err = 0;
+
+	err = bmp_enable_nodata(enabledisable == true ? 1 : 0);
+	if (err) {
+		BAR_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = bmp_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		BAR_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int bmp_factory_get_data(int32_t *data)
+{
+	int err = 0, status = 0;
+
+	err = bmp_get_data(data, &status);
+	if (err < 0) {
+		BAR_ERR("%s get data fail\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int bmp_factory_get_raw_data(int32_t *data)
+{
+	return 0;
+}
+static int bmp_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int bmp_factory_clear_cali(void)
+{
+	return 0;
+}
+static int bmp_factory_set_cali(int32_t offset)
+{
+	return 0;
+}
+static int bmp_factory_get_cali(int32_t *offset)
+{
+	return 0;
+}
+static int bmp_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct baro_factory_fops bmp_factory_fops = {
+	.enable_sensor = bmp_factory_enable_sensor,
+	.get_data = bmp_factory_get_data,
+	.get_raw_data = bmp_factory_get_raw_data,
+	.enable_calibration = bmp_factory_enable_calibration,
+	.clear_cali = bmp_factory_clear_cali,
+	.set_cali = bmp_factory_set_cali,
+	.get_cali = bmp_factory_get_cali,
+	.do_self_test = bmp_factory_do_self_test,
+};
+
+static struct baro_factory_public bmp_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &bmp_factory_fops,
+};
+
 static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct bmp_i2c_data *obj;
@@ -1569,9 +1640,10 @@ static int bmp_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (err)
 		goto exit_init_client_failed;
 
-	err = misc_register(&bmp_device);
+	/* err = misc_register(&bmp_device); */
+	err = baro_factory_device_register(&bmp_factory_device);
 	if (err) {
-		BAR_ERR("misc device register failed, err = %d\n", err);
+		BAR_ERR("baro_factory device register failed, err = %d\n", err);
 		goto exit_misc_device_register_failed;
 	}
 
@@ -1635,7 +1707,7 @@ exit_hwmsen_attach_temperature_failed:
 exit_hwmsen_attach_pressure_failed:
 	bmp_delete_attr(&(bmp_init_info.platform_diver_addr->driver));
 exit_create_attr_failed:
-	misc_deregister(&bmp_device);
+	/* misc_deregister(&bmp_device); */
 exit_misc_device_register_failed:
 exit_init_client_failed:
 	kfree(obj);
@@ -1664,7 +1736,8 @@ static int bmp_i2c_remove(struct i2c_client *client)
 	if (err)
 		BAR_ERR("bmp_delete_attr failed, err = %d\n", err);
 
-	misc_deregister(&bmp_device);
+	/* misc_deregister(&bmp_device); */
+	baro_factory_device_deregister(&bmp_factory_device);
 
 	obj_i2c_data = NULL;
 	i2c_unregister_device(client);

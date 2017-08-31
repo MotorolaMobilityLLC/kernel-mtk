@@ -125,6 +125,10 @@ struct acc_context {
 	bool is_first_data_after_enable;
 	bool is_polling_run;
 	bool is_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
+	int power;
+	int enable;
+	int64_t delay_ns;
+	int64_t latency_ns;
 };
 
 
