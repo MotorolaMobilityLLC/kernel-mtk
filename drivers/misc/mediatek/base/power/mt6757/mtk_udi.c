@@ -361,9 +361,10 @@ static ssize_t udi_pinmux_proc_write(struct file *file, const char __user *buffe
 		if (pin_switch == 1) {
 			/* 1. Write 0x1000_5330 bit[27:24]=0x3 to switch UDI pin, TCK */
 			/* 2. Write 0x1000_5340 bit[15:0]=0x3333 to switch UDI pin, TDI, TDO, TMS and TRST */
+			/* 3. 0x07600000 = UDI + DFD enable, 0x05600000 = UDI enable */
 			_udi_write(UDIPIN_UDI_JTAG1, 0x03000000);
 			_udi_write(UDIPIN_UDI_JTAG2, 0x00003333);
-			_udi_write(UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN)|0x05600000);
+			_udi_write(UDIPIN_UDI_EN, _udi_read(UDIPIN_UDI_EN)|0x07600000);
 		} else {
 			/* default */
 			_udi_write(UDIPIN_UDI_JTAG1, 0x11100000);
