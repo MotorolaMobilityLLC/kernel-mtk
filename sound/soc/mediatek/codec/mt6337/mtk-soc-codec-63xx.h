@@ -68,7 +68,6 @@ struct mtk_dpd_param {
 };
 
 void audckbufEnable(bool enable);
-void OpenClassAB(void);
 void OpenAnalogHeadphone(bool bEnable);
 void OpenAnalogTrimHardware(bool bEnable);
 void SetSdmLevel(unsigned int level);
@@ -88,7 +87,6 @@ void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
 int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
 
 void SetAnalogSuspend(bool bEnable);
-void OpenTrimBufferHardware(bool bEnable);
 
 /* mtk audio interface calibration function */
 void mtkaif_calibration_set_loopback(bool enable);
