@@ -1067,6 +1067,7 @@ sched_trace(sched_rt_info);
 sched_trace(sched_lb);
 sched_trace(sched_lb_info);
 sched_trace(sched_eas_energy_calc);
+sched_trace(sched_dvfs);
 
  #ifdef CONFIG_MTK_DEBUG_PREEMPT
 sched_trace(sched_preempt);

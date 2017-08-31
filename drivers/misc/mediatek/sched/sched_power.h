@@ -31,6 +31,7 @@
 #endif
 
 extern int stune_task_threshold;
+extern int sched_dvfs_type;
 
 struct power_tuning_t {
 	int turning_point; /* max=100, default: 65% capacity */
