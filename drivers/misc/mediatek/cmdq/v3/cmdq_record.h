@@ -35,7 +35,7 @@ enum CMDQ_STACK_TYPE_ENUM {
 #define CMDQ_BIT_VAR			(1LL)
 #define CMDQ_TASK_CPR_INITIAL_VALUE	(0)
 #define CMDQ_REC_DEFAULT_PRIORITY	(100)
-#define CMDQ_REC_MAX_PRIORITY		(0xFFFFFFFF)
+#define CMDQ_REC_MAX_PRIORITY		(0x7FFFFFFF)
 
 struct cmdq_stack_node {
 	uint32_t position;
