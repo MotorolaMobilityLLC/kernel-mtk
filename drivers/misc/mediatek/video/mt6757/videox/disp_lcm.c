@@ -1044,10 +1044,8 @@ int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 		lcm_drv = plcm->drv;
 
 		if (lcm_drv->init_power) {
-			if (!disp_lcm_is_inited(plcm) || force) {
 				pr_debug("lcm init power()\n");
 				lcm_drv->init_power();
-			}
 		}
 
 		if (lcm_drv->init) {

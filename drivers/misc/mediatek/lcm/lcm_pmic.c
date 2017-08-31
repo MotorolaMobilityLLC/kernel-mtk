@@ -53,8 +53,7 @@ int display_bias_enable(void)
 	int ret = 0;
 	int retval = 0;
 
-	if (!regulator_inited)
-		return ret;
+	display_bias_regulator_init();
 
 	/* set voltage with min & max*/
 	ret = regulator_set_voltage(disp_bias_pos, 5400000, 5400000);
@@ -99,8 +98,7 @@ int display_bias_disable(void)
 	int ret = 0;
 	int retval = 0;
 
-	if (!regulator_inited)
-		return ret;
+	display_bias_regulator_init();
 
 	ret = regulator_disable(disp_bias_neg);
 	if (ret < 0)
