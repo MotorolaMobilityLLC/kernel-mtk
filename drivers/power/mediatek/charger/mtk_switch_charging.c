@@ -249,6 +249,7 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 	/* check bif */
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
 		if (pmic_is_bif_exist() != 1) {
+			pr_err("CONFIG_MTK_BIF_SUPPORT but no bif , stop charging\n");
 			swchgalg->state = CHR_ERROR;
 			charger_manager_notifier(info, CHARGER_NOTIFY_ERROR);
 		}
@@ -341,7 +342,7 @@ int mtk_switch_pe30(struct charger_manager *info)
 	return 0;
 }
 
-static int mtk_switch_charge_current(struct charger_manager *info)
+static int mtk_switch_charging_current(struct charger_manager *info)
 {
 	swchg_select_charging_current_limit(info);
 	return 0;
@@ -419,7 +420,7 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	info->plug_out = mtk_switch_charging_plug_out;
 	info->do_charging = mtk_switch_charging_do_charging;
 	info->do_event = charger_dev_event;
-	info->change_current_setting = mtk_switch_charge_current;
+	info->change_current_setting = mtk_switch_charging_current;
 
 	return 0;
 }

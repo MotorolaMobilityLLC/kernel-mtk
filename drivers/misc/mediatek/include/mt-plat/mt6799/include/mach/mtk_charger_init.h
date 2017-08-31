@@ -78,10 +78,10 @@
 #define VBAT_CABLE_IMP_THRESHOLD 3900
 
 /* bif */
-#define bif_threshold1 4250	/* mV */
-#define bif_threshold2 4300	/* mV */
-#define bif_cv_under_threshold2 4450	/* mV */
-#define bif_cv 4352
+#define bif_threshold1 4250000	/* uV */
+#define bif_threshold2 4300000	/* uV */
+#define bif_cv_under_threshold2 4450000	/* uV */
+#define bif_cv BATTERY_CV /* uV */
 
 /* sw jeita */
 #define JEITA_TEMP_ABOVE_T4_CV_VOLTAGE	4240000

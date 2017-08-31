@@ -154,6 +154,7 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 	/* BIF exists, check CV & VBAT */
 	if (bif_exist) {
 		ret = mtk_get_dynamic_cv(pinfo, &cv);
+		cv = cv / 1000;
 		vbat = pmic_get_battery_voltage();
 		if (ret == 0) {
 			if (vbat >= cv && current_sign &&

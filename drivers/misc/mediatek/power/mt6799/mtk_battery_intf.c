@@ -85,6 +85,16 @@ signed int battery_get_vbus(void)
 	return pmic_get_vbus();
 }
 
+bool battery_is_battery_exist(void)
+{
+	int is_bat_exist = 0;
+
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_BAT_EXIST, &is_bat_exist);
+	if (is_bat_exist == 1)
+		return true;
+	return false;
+}
+
 /************** Old Interface *******************/
 void wake_up_bat(void)
 {
