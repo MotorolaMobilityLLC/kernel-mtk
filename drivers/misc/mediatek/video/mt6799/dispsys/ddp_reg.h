@@ -2451,6 +2451,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_RDMA_ENTER_DRS_SETTING			(0x0dc)
 #define DISP_REG_RDMA_DBG_OUT					(0x100)
 #define DISP_REG_RDMA_LINE_BUF_USE				(0x110)
+#define DISP_REG_RDMA_DEBUG						(0x11c)
 
 #define DISP_REG_RDMA_IN_P_CNT                                  (0x0f0)
 #define DISP_REG_RDMA_IN_LINE_CNT                               (0x0f4)

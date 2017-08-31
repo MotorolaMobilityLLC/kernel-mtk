@@ -524,6 +524,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			cnt_rdma_underflow[index]++;
 			DDPERR("IRQ: RDMA%d underflow! cnt=%d\n", index,
 			       cnt_rdma_underflow[index]);
+			DDPERR("RDMA DBG:0x%x\n", DISP_REG_GET(DISP_REG_RDMA_DEBUG + base_addr));
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE))
 				DDPAEE("RDMA%d underflow!cnt=%d\n", index, cnt_rdma_underflow[index]);
 			disp_irq_log_module |= 1 << module;
