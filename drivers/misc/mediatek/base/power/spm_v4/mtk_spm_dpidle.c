@@ -57,7 +57,6 @@
 
 #define SPM_PWAKE_EN            1
 #define SPM_PCMWDT_EN           1
-#define SPM_BYPASS_SYSPWREQ     1
 
 #define I2C_CHANNEL 2
 
@@ -525,154 +524,7 @@ static struct pcm_desc dpidle_pcm = {
 };
 #endif
 
-static struct pwr_ctrl dpidle_ctrl = {
-	.wake_src = WAKE_SRC_FOR_DPIDLE,
-
-	/* Auto-gen Start */
-
-	/* SPM_AP_STANDBY_CON */
-	.wfi_op = WFI_OP_AND, /* 0x1 */
-	.mp0_cputop_idle_mask = 0,
-	.mp1_cputop_idle_mask = 0,
-	.mcusys_idle_mask = 0,
-	.mm_mask_b = 0,
-	.md_ddr_en_0_dbc_en = 0x1,
-	.md_ddr_en_1_dbc_en = 0,
-	.md_mask_b = 0x1,
-	.sspm_mask_b = 0x1,
-	.lte_mask_b = 0,
-	.srcclkeni_mask_b = 0x1,
-	.md_apsrc_1_sel = 0,
-	.md_apsrc_0_sel = 0,
-	.conn_ddr_en_dbc_en = 0x1,
-	.conn_mask_b = 0x1,
-	.conn_apsrc_sel = 0,
-
-	/* SPM_SRC_REQ */
-	.spm_apsrc_req = 0,
-	.spm_f26m_req = 0,
-	.spm_lte_req = 0,
-	.spm_infra_req = 0,
-	.spm_vrf18_req = 0,
-	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
-	.spm_ddren_req = 0,
-	.spm_rsv_src_req = 0,
-	.spm_ddren_2_req = 0,
-	.cpu_md_dvfs_sop_force_on = 0,
-
-	/* SPM_SRC_MASK */
-#if SPM_BYPASS_SYSPWREQ
-	.csyspwreq_mask = 0x1,
-#endif
-	.ccif0_md_event_mask_b = 0x1,
-	.ccif0_ap_event_mask_b = 0x1,
-	.ccif1_md_event_mask_b = 0x1,
-	.ccif1_ap_event_mask_b = 0x1,
-	.ccifmd_md1_event_mask_b = 0,
-	.ccifmd_md2_event_mask_b = 0,
-	.dsi0_vsync_mask_b = 0,
-	.dsi1_vsync_mask_b = 0,
-	.dpi_vsync_mask_b = 0,
-	.isp0_vsync_mask_b = 0,
-	.isp1_vsync_mask_b = 0,
-	.md_srcclkena_0_infra_mask_b = 0x1,
-	.md_srcclkena_1_infra_mask_b = 0,
-	.conn_srcclkena_infra_mask_b = 0x1,
-	.sspm_srcclkena_infra_mask_b = 0,
-	.srcclkeni_infra_mask_b = 0,
-	.md_apsrc_req_0_infra_mask_b = 0,
-	.md_apsrc_req_1_infra_mask_b = 0,
-	.conn_apsrcreq_infra_mask_b = 0,
-	.sspm_apsrcreq_infra_mask_b = 0,
-	.md_ddr_en_0_mask_b = 0x1,
-	.md_ddr_en_1_mask_b = 0,
-	.md_vrf18_req_0_mask_b = 0x1,
-	.md_vrf18_req_1_mask_b = 0,
-	.md1_dvfs_req_mask = 0x1,
-	.cpu_dvfs_req_mask = 0x1,
-	.emi_bw_dvfs_req_mask = 0x1,
-	.md_srcclkena_0_dvfs_req_mask_b = 0,
-	.md_srcclkena_1_dvfs_req_mask_b = 0,
-	.conn_srcclkena_dvfs_req_mask_b = 0,
-
-	/* SPM_SRC2_MASK */
-	.dvfs_halt_mask_b = 0,
-	.vdec_req_mask_b = 0,
-	.gce_req_mask_b = 0,
-	.cpu_md_dvfs_req_merge_mask_b = 0,
-	.md_ddr_en_dvfs_halt_mask_b = 0,
-	.dsi0_vsync_dvfs_halt_mask_b = 0,
-	.dsi1_vsync_dvfs_halt_mask_b = 0,
-	.dpi_vsync_dvfs_halt_mask_b = 0,
-	.isp0_vsync_dvfs_halt_mask_b = 0,
-	.isp1_vsync_dvfs_halt_mask_b = 0,
-	.conn_ddr_en_mask_b = 0x1,
-	.disp_req_mask_b = 0,
-	.disp1_req_mask_b = 0,
-	.mfg_req_mask_b = 0,
-	.ufs_srcclkena_mask_b = 0x1, /* ufs hw signal */
-	.ufs_vrf18_req_mask_b = 0x1, /* ufs hw signal */
-	.ps_c2k_rccif_wake_mask_b = 0,
-	.l1_c2k_rccif_wake_mask_b = 0,
-	.sdio_on_dvfs_req_mask_b = 0,
-	.emi_boost_dvfs_req_mask_b = 0,
-	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
-	.emi_boost_dvfs_req_2_mask_b = 0,
-	.emi_bw_dvfs_req_2_mask = 0,
-	.gce_vrf18_req_mask_b = 0,
-
-	/* SPM_WAKEUP_EVENT_MASK */
-	.spm_wakeup_event_mask = 0xF1683A08,
-
-	/* SPM_WAKEUP_EVENT_EXT_MASK */
-	.spm_wakeup_event_ext_mask = 0xFFFFFFFF,
-
-	/* SPM_SRC3_MASK */
-	.md_ddr_en_2_0_mask_b = 0,
-	.md_ddr_en_2_1_mask_b = 0,
-	.conn_ddr_en_2_mask_b = 0,
-	.dramc_spcmd_apsrc_req_2_mask_b = 0,
-	.spare1_ddren_2_mask_b = 0,
-	.spare2_ddren_2_mask_b = 0,
-	.ddren_emi_self_refresh_ch0_mask_b = 0,
-	.ddren_emi_self_refresh_ch1_mask_b = 0,
-	.ddren_mm_state_mask_b = 0,
-	.ddren_sspm_apsrc_req_mask_b = 0,
-	.ddren_dqssoc_req_mask_b = 0,
-	.ddren2_emi_self_refresh_ch0_mask_b = 0,
-	.ddren2_emi_self_refresh_ch1_mask_b = 0,
-	.ddren2_mm_state_mask_b = 0,
-	.ddren2_sspm_apsrc_req_mask_b = 0,
-	.ddren2_dqssoc_req_mask_b = 0,
-
-	/* MP0_CPU0_WFI_EN */
-	.mp0_cpu0_wfi_en = 1,
-
-	/* MP0_CPU1_WFI_EN */
-	.mp0_cpu1_wfi_en = 1,
-
-	/* MP0_CPU2_WFI_EN */
-	.mp0_cpu2_wfi_en = 1,
-
-	/* MP0_CPU3_WFI_EN */
-	.mp0_cpu3_wfi_en = 1,
-
-	/* MP1_CPU0_WFI_EN */
-	.mp1_cpu0_wfi_en = 1,
-
-	/* MP1_CPU1_WFI_EN */
-	.mp1_cpu1_wfi_en = 1,
-
-	/* MP1_CPU2_WFI_EN */
-	.mp1_cpu2_wfi_en = 1,
-
-	/* MP1_CPU3_WFI_EN */
-	.mp1_cpu3_wfi_en = 1,
-
-	/* Auto-gen End */
-};
+static struct pwr_ctrl dpidle_ctrl;
 
 struct spm_lp_scen __spm_dpidle = {
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -768,8 +620,11 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
-	else
-		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_DPIDLE_MODE);
+	else {
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_DPIDLE, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_DPIDLE_FINISH, 0, 0);
+	}
 
 	if (spm_dormant_sta < 0)
 		pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
