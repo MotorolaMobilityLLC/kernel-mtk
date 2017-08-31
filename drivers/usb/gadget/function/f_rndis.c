@@ -719,7 +719,7 @@ int rndis_md_msg_hdlr(ipc_ilm_t *ilm)
 	if (cdev && cdev->config) {
 		list_for_each_entry(f, &cdev->config->functions, list) {
 			if (f && !strcmp(f->name, "rndis")) {
-				/* hadle the msg from md */
+				/* handle the msg from md */
 				rndis_handle_md_msg(f, ilm->msg_id,
 						(void *)ilm->local_para_ptr);
 				return 0;
