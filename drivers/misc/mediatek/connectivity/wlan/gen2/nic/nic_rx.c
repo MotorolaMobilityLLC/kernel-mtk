@@ -1589,7 +1589,26 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			DBGLOG(RX, INFO, "[F-L]%s\n", prEventLog->log);
 		}
 		break;
+	case EVENT_ID_ADD_PKEY_DONE:
+		{
+			struct EVENT_ADD_KEY_DONE_INFO *prKeyDone =
+				(struct EVENT_ADD_KEY_DONE_INFO *)prEvent->aucBuffer;
+			P_STA_RECORD_T prStaRec = NULL;
 
+			prStaRec = cnmGetStaRecByAddress(prAdapter, prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
+
+			if (!prStaRec) {
+				DBGLOG(RX, INFO, "AddPKeyDone, Net %d, Addr %pM, StaRec is NULL\n",
+					prKeyDone->ucNetworkType, prKeyDone->aucStaAddr);
+				break;
+			}
+			prStaRec->fgIsTxKeyReady = TRUE;
+			if (prStaRec->fgIsValid)
+				prStaRec->fgIsTxAllowed = TRUE;
+			DBGLOG(RX, INFO, "AddPKeyDone, Net %d, Addr %pM, Tx Allowed %d\n",
+				prKeyDone->ucNetworkType, prKeyDone->aucStaAddr, prStaRec->fgIsTxAllowed);
+			break;
+		}
 	default:
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
@@ -1600,7 +1619,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				kalOidComplete(prAdapter->prGlueInfo, prCmdInfo->fgSetQuery, 0, WLAN_STATUS_SUCCESS);
 			/* return prCmdInfo */
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
-		}
+		} else if (prEvent->ucEID == EVENT_ID_GET_TSM_STATISTICS)/* in case of unsolicited event */
+			wmmComposeTsmRpt(prAdapter, NULL, prEvent->aucBuffer);
 
 		break;
 	}
@@ -2857,8 +2877,13 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 
 	switch (prActFrame->ucCategory) {
 	case CATEGORY_QOS_ACTION:
-		DBGLOG(RX, INFO, "received dscp action frame: %d\n", __LINE__);
-		handleQosMapConf(prAdapter, prSwRfb);
+	case CATEGORY_WME_MGT_NOTIFICATION:
+		if (prActFrame->ucCategory == CATEGORY_QOS_ACTION) {
+			DBGLOG(RX, INFO, "received dscp action frame: %d\n", __LINE__);
+			handleQosMapConf(prAdapter, prSwRfb);
+		}
+		wmmParseQosAction(prAdapter, prSwRfb);
+
 		break;
 	case CATEGORY_PUBLIC_ACTION:
 		if (prActFrame->ucAction == PUBLIC_ACTION_GAS_INITIAL_REQ) /* GAS Initial Request */
@@ -2930,6 +2955,23 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		break;
 #endif
 
+#if CFG_SUPPORT_802_11K
+	case CATEGORY_RM_ACTION:
+		switch (prActFrame->ucAction) {
+		case RM_ACTION_RM_REQUEST:
+			rlmProcessRadioMeasurementRequest(prAdapter, prSwRfb);
+			break;
+		/*case RM_ACTION_LM_REQUEST:
+		*	rlmProcessLinkMeasurementRequest(prAdapter, prActFrame);
+		*	break;*/ /* Link Measurement is handled in Firmware
+		*/
+		case RM_ACTION_REIGHBOR_RESPONSE:
+			rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+			break;
+	}
+	break;
+#endif
+
 #if (CFG_SUPPORT_TDLS == 1)
 	case 12:		/* shall not be here */
 		/*
@@ -2939,15 +2981,6 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		 */
 		break;
 #endif /* CFG_SUPPORT_TDLS */
-#if CFG_SUPPORT_802_11K
-	case CATEGORY_RM_ACTION:
-		switch (prActFrame->ucAction) {
-		case RM_ACTION_REIGHBOR_RESPONSE:
-			rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
-			break;
-		}
-		break;
-#endif
 
 	default:
 		break;

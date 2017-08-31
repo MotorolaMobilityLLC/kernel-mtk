@@ -90,6 +90,28 @@
 #define CONFIG_BW_20_40M            0
 #define CONFIG_BW_20M               1	/* 20MHz only */
 
+/* Radio Measurement Request Mode definition */
+#define RM_REQ_MODE_PARALLEL_BIT                    BIT(0)
+#define RM_REQ_MODE_ENABLE_BIT                      BIT(1)
+#define RM_REQ_MODE_REQUEST_BIT                     BIT(2)
+#define RM_REQ_MODE_REPORT_BIT                      BIT(3)
+#define RM_REQ_MODE_DURATION_MANDATORY_BIT          BIT(4)
+#define RM_REP_MODE_LATE                            BIT(0)
+#define RM_REP_MODE_INCAPABLE                       BIT(1)
+#define RM_REP_MODE_REFUSED                         BIT(2)
+
+/* Radio Measurement Report Frame Max Length */
+#define RM_REPORT_FRAME_MAX_LENGTH                  1600
+
+/* beacon request mode definition */
+#define RM_BCN_REQ_PASSIVE_MODE                     0
+#define RM_BCN_REQ_ACTIVE_MODE                      1
+#define RM_BCN_REQ_TABLE_MODE                       2
+
+#define RLM_INVALID_POWER_LIMIT                     -127 /* dbm */
+#define RLM_MAX_TX_PWR		20	/* dbm */
+#define RLM_MIN_TX_PWR		8	/* dbm */
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -99,6 +121,54 @@ struct SUB_ELEMENT_LIST {
 	struct SUB_ELEMENT_T rSubIE;
 };
 
+enum BCN_RM_STATE {
+	RM_NO_REQUEST,
+	RM_ON_GOING,
+	RM_WAITING, /*waiting normal scan done */
+};
+
+enum RM_REQ_PRIORITY {
+	RM_PRI_BROADCAST,
+	RM_PRI_MULTICAST,
+	RM_PRI_UNICAST
+};
+
+struct NORMAL_SCAN_PARAMS {
+	P_PARAM_SSID_T prSSID;
+	PUINT_8 pucScanIE;
+	UINT_32 u4IELen;
+	BOOLEAN fgExist;
+};
+
+/* Beacon RM related parameters */
+struct BCN_RM_PARAMS {
+	BOOLEAN fgExistBcnReq;
+	enum BCN_RM_STATE eState;
+	struct NORMAL_SCAN_PARAMS rNormalScan;
+};
+
+struct RADIO_MEASUREMENT_REQ_PARAMS {
+	/* Remain Request Elements Length, started at prMeasElem. if it is 0, means RM is done */
+	UINT_16 u2RemainReqLen;
+	UINT_16 u2ReqIeBufLen;
+	P_IE_MEASUREMENT_REQ_T prCurrMeasElem;
+	OS_SYSTIME rStartTime;
+	UINT_16 u2Repetitions;
+	PUINT_8 pucReqIeBuf;
+	enum RM_REQ_PRIORITY ePriority;
+	BOOLEAN fgRmIsOngoing;
+	BOOLEAN fgInitialLoop;
+
+	struct BCN_RM_PARAMS rBcnRmParam;
+};
+
+struct RADIO_MEASUREMENT_REPORT_PARAMS {
+	UINT_16 u2ReportFrameLen; /* the total length of Measurement Report elements */
+	PUINT_8 pucReportFrameBuff;
+	/* Variables to collect report */
+	LINK_T rReportLink; /* a link to save received report entry */
+	LINK_T rFreeReportLink;
+};
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -113,6 +183,9 @@ struct SUB_ELEMENT_LIST {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define RM_EXIST_REPORT(_prRmReportParam) \
+	(((struct RADIO_MEASUREMENT_REPORT_PARAMS *)_prRmReportParam)->u2ReportFrameLen == \
+	OFFSET_OF(ACTION_RM_REPORT_FRAME, aucInfoElem))
 
 /* It is used for RLM module to judge if specific network is valid
  * Note: Ad-hoc mode of AIS is not included now. (TBD)
@@ -231,6 +304,40 @@ VOID rlmProcessNeighborReportResonse(
 	P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen);
 VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec,
 		struct SUB_ELEMENT_LIST *prSubIEs);
+
+VOID rlmGernerateRRMEnabledCapIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
+
+VOID rlmGerneratePowerCapIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
+
+VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb);
+
+VOID rlmProcessLinkMeasurementRequest(P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction);
+
+VOID rlmProcessNeighborReportResonse(P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen);
+
+VOID rlmFillRrmCapa(PUINT_8 pucCapa);
+
+VOID rlmSetMaxTxPwrLimit(IN P_ADAPTER_T prAdapter, INT_8 cLimit, UINT_8 ucEnable);
+
+VOID rlmStartNextMeasurement(P_ADAPTER_T prAdapter, BOOLEAN fgNewStarted);
+
+BOOLEAN rlmBcnRmRunning(P_ADAPTER_T prAdapter);
+
+BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg);
+
+VOID rlmDoBeaconMeasurement(P_ADAPTER_T prAdapter, ULONG ulParam);
+
+VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, struct SUB_ELEMENT_LIST *prSubIEs);
+
+VOID rlmTxRadioMeasurementReport(P_ADAPTER_T prAdapter);
+
+VOID rlmCancelRadioMeasurement(P_ADAPTER_T prAdapter);
+
+enum RM_REQ_PRIORITY rlmGetRmRequestPriority(PUINT_8 pucDestAddr);
+
+VOID rlmRunEventProcessNextRm(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
+
+VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter);
 
 /*******************************************************************************
 *                              F U N C T I O N S

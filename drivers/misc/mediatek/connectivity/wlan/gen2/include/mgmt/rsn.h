@@ -47,6 +47,10 @@
 #define RSN_AKM_SUITE_NONE              0x00AC0F00
 #define RSN_AKM_SUITE_802_1X            0x01AC0F00
 #define RSN_AKM_SUITE_PSK               0x02AC0F00
+#define RSN_AKM_SUITE_FT_802_1X         0x03AC0F00
+#define RSN_AKM_SUITE_FT_PSK            0x04AC0F00
+#define WLAN_AKM_SUITE_FT_8021X         0x000FAC03
+#define WLAN_AKM_SUITE_FT_PSK           0x000FAC04
 #if CFG_SUPPORT_802_11W
 #define RSN_AKM_SUITE_802_1X_SHA256     0x05AC0F00
 #define RSN_AKM_SUITE_PSK_SHA256        0x06AC0F00
@@ -184,6 +188,11 @@ BOOLEAN rsnCheckRxMgmt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN UINT_
 #endif
 BOOLEAN rsnCheckSecurityModeChanged(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_BSS_DESC_T prBssDesc);
 BOOLEAN rsnParseOsenIE(P_ADAPTER_T prAdapter, struct IE_WFA_OSEN *prInfoElem, P_RSN_INFO_T prOsenInfo);
+
+UINT_32
+rsnCalculateFTIELen(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex, P_STA_RECORD_T prStaRec);
+
+VOID rsnGenerateFTIE(IN P_ADAPTER_T prAdapter, IN OUT P_MSDU_INFO_T prMsduInfo);
 
 /*******************************************************************************
 *                              F U N C T I O N S

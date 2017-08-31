@@ -70,6 +70,9 @@
 #define CMD_OKC_SET_PMK		"SET_PMK"
 #define CMD_OKC_ENABLE		"OKC_ENABLE"
 
+#define CMD_ADD_TS          "addts"
+#define CMD_DELETE_TS		"delts"
+
 /* miracast related definition */
 #define MIRACAST_MODE_OFF	0
 #define MIRACAST_MODE_SOURCE	1
@@ -2405,7 +2408,9 @@ _priv_set_string(IN struct net_device *prNetDev,
 	if (copy_from_user(pucInBuf, prIwReqData->data.pointer, u4BufLen))
 		return -EFAULT;
 
-	subcmd = CmdStringDecParse(prIwReqData->data.pointer, &pucInBuf, &u4BufLen);
+	DBGLOG(REQ, INFO, "orig str cmd %s, %u\n", pucInBuf, u4BufLen);
+
+	subcmd = CmdStringDecParse(pucInBuf, &pucInBuf, &u4BufLen);
 	DBGLOG(REQ, INFO, "priv_set_string> command = %u\n", (UINT32) subcmd);
 
 	/* handle the command */
@@ -2423,10 +2428,84 @@ _priv_set_string(IN struct net_device *prNetDev,
 		break;
 	}
 #endif /* CFG_SUPPORT_TXR_ENC */
+	case PRIV_CMD_OTHER:
+	{
+		INT_32 i4BytesWritten;
+
+		if (!kalStrniCmp(pucInBuf, "addts", 5) || !kalStrniCmp(pucInBuf, "delts", 5))
+			kalIoctl(GlueInfo, wlanoidTspecOperation, (PVOID)pucInBuf,
+					 u4BufLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		else if (!kalStrniCmp(pucInBuf, "RM-IT", 5))
+			kalIoctl(GlueInfo, wlanoidRadioMeasurementIT, (PVOID)(pucInBuf+6),
+					 u4BufLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		break;
+	}
 	default:
 		break;
 	}
 
+	return status;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief The routine handles a get operation for a single OID.
+*
+* \param[in] pDev Net device requested.
+* \param[in] ndisReq Ndis request OID information copy from user.
+* \param[out] outputLen_p If the call is successful, returns the number of
+*                         bytes written into the query buffer. If the
+*                         call failed due to invalid length of the query
+*                         buffer, returns the amount of storage needed..
+*
+* \retval 0 On success.
+* \retval -EOPNOTSUPP If cmd is not supported.
+*
+*/
+/*----------------------------------------------------------------------------*/
+static int
+_priv_get_string(IN struct net_device *prNetDev,
+		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
+{
+	UINT_32 u4SubCmd = 0;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	int status = 0;
+
+	if (!prNetDev || !prIwReqData || !pcExtra) {
+		DBGLOG(REQ, INFO, "priv_get_struct(): invalid param(0x%p, 0x%p)\n", prNetDev, prIwReqData);
+		return -EINVAL;
+	}
+
+	u4SubCmd = (UINT_32) prIwReqData->data.flags;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+	if (!prGlueInfo) {
+		DBGLOG(REQ, INFO, "priv_get_struct(): invalid prGlueInfo(0x%p, 0x%p)\n",
+				   prNetDev, *((P_GLUE_INFO_T *) netdev_priv(prNetDev)));
+		return -EINVAL;
+	}
+	if (copy_from_user(pcExtra, prIwReqData->data.pointer, prIwReqData->data.length)) {
+		DBGLOG(REQ, INFO, "copy from user failed\n");
+		return -EFAULT;
+	}
+	switch (u4SubCmd) {
+	case PRIV_CMD_DUMP_DRIVER:
+	{
+		INT_32 i4BytesWritten = 0;
+
+		if (!kalStrniCmp(pcExtra, "dumpts", 6))
+			kalIoctl(prGlueInfo, wlanoidTspecOperation, (PVOID)pcExtra,
+					 512, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		else if (!kalStrniCmp(pcExtra, "dumpuapsd", 9))
+			kalIoctl(prGlueInfo, wlanoidDumpUapsdSetting, (PVOID)pcExtra,
+					 512, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		prIwReqData->data.length = i4BytesWritten;
+		DBGLOG(REQ, INFO, "returned Bytes %d\n", i4BytesWritten);
+		break;
+	}
+	default:
+		DBGLOG(REQ, WARN, "Unknown SubCmd %u with param %s\n", u4SubCmd, pcExtra);
+		break;
+	}
 	return status;
 }
 
@@ -2936,7 +3015,11 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		else if (strncasecmp(pcCommand, CMD_CH_ENV_GET, strlen(CMD_CH_ENV_GET)) == 0)
 			scanEnvResult(prGlueInfo, pcCommand, i4TotalLen, &i4BytesWritten);
 #endif
-
+		else if (kalStrniCmp(pcCommand, CMD_ADD_TS, strlen(CMD_ADD_TS)) == 0 ||
+			kalStrniCmp(pcCommand, CMD_DELETE_TS, strlen(CMD_DELETE_TS)) == 0) {
+			kalIoctl(prGlueInfo, wlanoidTspecOperation, (PVOID)pcCommand,
+					 i4TotalLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
+		}
 #if 0
 
 		else if (strncasecmp(pcCommand, CMD_RSSI, strlen(CMD_RSSI)) == 0) {
@@ -3143,6 +3226,15 @@ int
 priv_set_string(IN struct net_device *prNetDev,
 		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_set_string);
+	return _priv_set_string(prNetDev, prIwReqInfo, prIwReqData, pcExtra);
+	/*return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_set_string);*/
+}
+
+int
+priv_get_string(IN struct net_device *prNetDev,
+		IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
+{
+	return _priv_get_string(prNetDev, prIwReqInfo, prIwReqData, pcExtra);
+	/*return compat_priv(prNetDev, prIwReqInfo, prIwReqData, pcExtra, _priv_get_string);*/
 }
 

@@ -1166,3 +1166,51 @@ VOID wlanReadFwInfoFromEmi(IN PUINT32 pAddr)
 	kalMemFree(pEmiBuf, VIR_MEM_TYPE, WLAN_EMI_DEBUG_BUF_SIZE);
 }
 #endif
+
+/* Begin: Functions used to breakdown packet jitter, for test case VoE 5.7 */
+static VOID wlanSetBE32(UINT_32 u4Val, PUINT_8 pucBuf)
+{
+	PUINT_8 littleEn = (PUINT_8)&u4Val;
+
+	pucBuf[0] = littleEn[3];
+	pucBuf[1] = littleEn[2];
+	pucBuf[2] = littleEn[1];
+	pucBuf[3] = littleEn[0];
+}
+
+VOID wlanFillTimestamp(P_ADAPTER_T prAdapter, PVOID pvPacket, UINT_8 ucPhase)
+{
+	struct sk_buff *skb = (struct sk_buff *)pvPacket;
+	PUINT_8 pucEth = NULL;
+	UINT_32 u4Length = 0;
+	PUINT_8 pucUdp = NULL;
+	struct timeval tval;
+
+	if (!prAdapter || !prAdapter->rDebugInfo.fgVoE5_7Test || !skb)
+		return;
+	pucEth = skb->data;
+	u4Length = skb->len;
+	if (u4Length < 200 ||
+		((pucEth[ETH_TYPE_LEN_OFFSET] << 8) | (pucEth[ETH_TYPE_LEN_OFFSET + 1])) != ETH_P_IP)
+		return;
+	if (pucEth[ETH_HLEN+9] != IP_PRO_UDP)
+		return;
+	pucUdp = &pucEth[ETH_HLEN+28];
+	if (kalStrnCmp(pucUdp, "1345678", 7))
+		return;
+	do_gettimeofday(&tval);
+	switch (ucPhase) {
+	case PHASE_XMIT_RCV: /* xmit */
+		pucUdp += 20;
+		break;
+	case PHASE_ENQ_QM: /* enq */
+		pucUdp += 28;
+		break;
+	case PHASE_HIF_TX: /* tx */
+		pucUdp += 36;
+		break;
+	}
+	wlanSetBE32(tval.tv_sec, pucUdp);
+	wlanSetBE32(tval.tv_usec, pucUdp+4);
+}
+/* End: Functions used to breakdown packet jitter, for test case VoE 5.7 */

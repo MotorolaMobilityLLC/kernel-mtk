@@ -423,6 +423,7 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	struct ESS_CHNL_INFO arCurEssChnlInfo[CFG_MAX_NUM_OF_CHNL_INFO];
 	UINT_8 ucCurEssChnlInfoNum;
 	LINK_T rCurEssLink;
+	struct BSS_TRANSITION_MGT_PARAM_T rBTMParam;
 };
 
 struct _BOW_SPECIFIC_BSS_INFO_T {
@@ -543,6 +544,10 @@ typedef struct _WIFI_VAR_T {
 	UINT_32 u4MtkOuiCap;
 	UINT_8 aucMtkFeature[4];
 #endif
+	struct RADIO_MEASUREMENT_REQ_PARAMS rRmReqParams;
+	struct RADIO_MEASUREMENT_REPORT_PARAMS rRmRepParams;
+
+	struct WMM_INFO rWmmInfo;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
@@ -858,6 +863,7 @@ struct _ADAPTER_T {
 
 	/* NLO Timer */
 	TIMER_T rScanNloTimeoutTimer;
+	struct WLAN_DEBUG_INFO rDebugInfo;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************

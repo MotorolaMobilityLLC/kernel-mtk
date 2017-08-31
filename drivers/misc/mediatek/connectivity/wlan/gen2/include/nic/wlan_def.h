@@ -629,9 +629,9 @@ typedef enum _ENUM_BSS_TYPE_T {
 
 #define MAX_NUM_SUPPORTED_CIPHER_SUITES 9	/* max number of supported cipher suites */
 #if CFG_SUPPORT_802_11W
-#define MAX_NUM_SUPPORTED_AKM_SUITES    9	/* max number of supported AKM suites */
+#define MAX_NUM_SUPPORTED_AKM_SUITES    11	/* max number of supported AKM suites */
 #else
-#define MAX_NUM_SUPPORTED_AKM_SUITES    7	/* max number of supported AKM suites */
+#define MAX_NUM_SUPPORTED_AKM_SUITES    9	/* max number of supported AKM suites */
 #endif
 
 /* Structure of RSN Information */

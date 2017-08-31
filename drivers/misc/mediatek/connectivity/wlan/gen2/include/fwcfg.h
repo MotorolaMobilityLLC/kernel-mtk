@@ -46,6 +46,7 @@
 
 #define FW_CFG_FILE_1 "/etc/firmware/wifi_fw.cfg"
 #define FW_CFG_FILE_2 "/vendor/firmware/wifi_fw.cfg"
+#define FW_CFG_FILE_3 "/data/misc/wifi/wifi_fw.cfg"
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
