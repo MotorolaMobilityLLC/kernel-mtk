@@ -122,7 +122,7 @@ static unsigned int hdmi_resolution_param_table[][3] = {
 	{1920, 1080, 60},
 };
 
-static DEFINE_SEMAPHORE(hdmi_update_mutex);
+DEFINE_SEMAPHORE(hdmi_update_mutex);
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the gloable variable~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -774,11 +774,6 @@ static void hdmi_state_reset(void)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugout, 0);
 
-	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
-		return;
-	}
-
 	SET_HDMI_STANDBY();
 	hdmi_drv->suspend();
 	p->is_mhl_video_on = false;
@@ -792,7 +787,6 @@ static void hdmi_state_reset(void)
 
 	first_frame_done = 0;
 	rdmafpscnt = 0;
-	up(&hdmi_update_mutex);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugout, 0);
 }
@@ -805,15 +799,9 @@ static void hdmi_state_reset(void)
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_START, Plugin, 0);
 
-	if (down_interruptible(&hdmi_update_mutex)) {
-		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
-		return;
-	}
-
 	SET_HDMI_ON();
 	p->is_clock_on = true;
 	hdmi_drv->resume();
-	up(&hdmi_update_mutex);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->Extd_State, MMPROFILE_FLAG_END, Plugin, 0);
 }
