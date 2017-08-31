@@ -1773,7 +1773,9 @@ static void Voice_Amp_Change(bool enable)
 			/* Enable HS driver core circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0093, 0xffff);
 			/* Set HS gain to normal gain step by step */
-			Ana_Set_Reg(ZCD_CON3, 0x9, 0xffff);
+			Ana_Set_Reg(ZCD_CON3,
+				    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL],
+				    0xffff);
 			/* Enable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
 			/* Enable Audio DAC  */
@@ -4308,6 +4310,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTR] = 8;
 
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] =
 	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
