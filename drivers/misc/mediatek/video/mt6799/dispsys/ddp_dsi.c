@@ -626,12 +626,13 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-	unsigned int irq_en[2];
-	/* DSI_RESET Protect: backup & disable dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		irq_en[i] = AS_UINT32(&DSI_REG[i]->DSI_INTEN);
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, 0);
-		DDPMSG("\nDSI_RESET backup dsi%d irq:0x%08x ", i, irq_en[i]);
+
+	if (!_dsi_is_video_mode(module)) {
+		if (module != DISP_MODULE_DSIDUAL) {
+			for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+				DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, DSI_START, 0);
+		} else
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
 	}
 
 	/* do reset */
@@ -640,12 +641,6 @@ static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[i]->DSI_COM_CTRL, DSI_RESET, 0);
 	}
 
-	/* DSI_RESET Protect: restore dsi interrupt */
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_INTEN, irq_en[i]);
-		DDPMSG("\nDSI_RESET restore dsi%d irq:0x%08x ", i,
-			AS_UINT32(&DSI_REG[i]->DSI_INTEN));
-	}
 	return DSI_STATUS_OK;
 }
 
@@ -653,12 +648,20 @@ static int _dsi_is_video_mode(enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
+	if (module != DISP_MODULE_DSIDUAL) {
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
+				return 0;
+			else
+				return 1;
+		}
+	} else {
+		if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE)
 			return 0;
 		else
 			return 1;
 	}
+
 	return 0;
 }
 
@@ -1776,8 +1779,14 @@ void DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmd
 			MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, tmp);
 
 			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_PREDIV,
+					 prediv);
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_POSDIV,
 					 posdiv);
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_SDM_FRA_EN,
+					 1);
 		}
 		/* step 4 */
 		/* PLL EN */
