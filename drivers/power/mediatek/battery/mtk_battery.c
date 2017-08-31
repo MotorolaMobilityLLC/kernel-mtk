@@ -4836,20 +4836,22 @@ MODULE_DEVICE_TABLE(of, mtk_bat_of_match);
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
-	bm_err("******** battery_suspend!! ********\n");
-	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+	bm_err("******** battery_suspend!! iavg=%d ********\n", FG_status.iavg_intr_flag);
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+		if (gauge_dev->fg_hw_info.iavg_lt > 0)
+			pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 	}
 	return 0;
 }
 
 static int battery_resume(struct platform_device *dev)
 {
-	bm_err("******** battery_resume!! ********\n");
-	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+	bm_err("******** battery_resume!! iavg=%d ********\n", FG_status.iavg_intr_flag);
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
-	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
+		if (gauge_dev->fg_hw_info.iavg_lt > 0)
+			pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
 	}
 	fg_update_sw_iavg();
 	return 0;
