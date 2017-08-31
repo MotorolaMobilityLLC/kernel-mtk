@@ -980,6 +980,7 @@ static void dump_retrieve_info(void)
 	u64 array[2], md1_mem_addr;
 	char buf[32];
 	int ret;
+	int free_in_kernel = -1;
 
 	md1_mem_addr =  md_resv_mem_addr[MD_SYS1];
 
@@ -996,8 +997,14 @@ static void dump_retrieve_info(void)
 			CCCI_UTIL_INF_MSG("AP view(0x%llx ~ 0x%llx), MD view(0x%llx ~ 0x%llx)\n",
 					array[0], array[0] + array[1],
 					array[0] - md1_mem_addr, array[0] + array[1] - md1_mem_addr);
-			ret = free_reserved_memory(array[0], array[0] + array[1]);
-			CCCI_UTIL_INF_MSG("free_reserved_memory result=%d\n", ret);
+
+			if (find_ccci_tag_inf("free_in_kernel", (char *)&free_in_kernel, sizeof(int))
+					&& free_in_kernel == 1) {
+				ret = free_reserved_memory(array[0], array[0] + array[1]);
+				CCCI_UTIL_INF_MSG("free_reserved_memory result=%d\n", ret);
+			} else {
+				CCCI_UTIL_INF_MSG("no free_in_kernel found, free_in_kernel=%d\n", free_in_kernel);
+			}
 		}
 	}
 }
