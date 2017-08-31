@@ -36,3 +36,12 @@ config LOG_TOO_MUCH_DETECT_GAP
 	hex "detect log too much delay time"
 	default 10
 	depends on LOG_TOO_MUCH_WARNING
+
+config CONSOLE_LOCK_DURATION_DETECT
+	bool "Console lock duration detection"
+	default y
+	help
+	  When one cpu exec console_unlock, it may be writing to console for long time
+	  if log is too much. This may Trigger HWT.
+	  We should better detect the duration in console.
+	  If the duration is over criteria, it will Report DB.
