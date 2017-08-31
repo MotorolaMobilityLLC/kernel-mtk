@@ -39,18 +39,18 @@
  * @param len Length of the data to process.
  * @param data Data to be processed
  */
-typedef struct {
+struct cmd_t {
 	dciCommandHeader_t  header;     /**< Command header */
 	uint32_t            len;        /**< Length of data to process */
-} cmd_t;
+};
 
 /**
  * Response structure
  */
-typedef struct {
+struct rsp_t {
 	dciResponseHeader_t header;     /**< Response header */
 	uint32_t            len;
-} rsp_t;
+};
 
 
 /*
@@ -66,27 +66,27 @@ typedef struct {
 #define MAX_RPMB_REQUEST_SIZE (512*MAX_RPMB_TRANSFER_BLK) /* 512B(1blks) per requests. */
 #endif
 
-typedef struct {
+struct rpmb_req_t {
 	uint8_t frame[MAX_RPMB_REQUEST_SIZE];
 	uint32_t frameLen;
 	uint16_t type;
 	uint16_t addr;
 	uint16_t blks;
 	uint16_t result;
-} rpmb_req_t;
+};
 
 /*
  * DCI message data.
  */
-typedef struct {
+struct dciMessage_t {
 	union {
-		cmd_t     command;
-		rsp_t     response;
+		struct cmd_t  command;
+		struct rsp_t  response;
 	};
 
-	rpmb_req_t    request;
+	struct rpmb_req_t request;
 
-} dciMessage_t;
+};
 
 /*
  * Driver UUID. Update accordingly after reserving UUID

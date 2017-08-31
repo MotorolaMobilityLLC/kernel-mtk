@@ -95,7 +95,7 @@
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)                     ((volatile u32 *)(base + OFFSET_##x))
+#define REG_ADDR(x)                     (base + OFFSET_##x)
 
 /*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
@@ -181,14 +181,6 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_SYS_SUSPEND    (1 << 6)  /* suspended by system           */
 /* for some board, need SD power always on!! or cannot recognize the sd card*/
 #define MSDC_SD_NEED_POWER  (1 << 31)
-
-/*
-#define MSDC_CMD_PIN        (0)
-#define MSDC_DAT_PIN        (1)
-#define MSDC_CD_PIN         (2)
-#define MSDC_WP_PIN         (3)
-#define MSDC_RST_PIN        (4)
-*/
 
 #define MSDC_DATA1_INT      (1)
 
