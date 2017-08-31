@@ -174,7 +174,7 @@ static int fallback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int 
 		disp_info->gles_head[disp_idx] = available - 1;
 		disp_info->gles_tail[disp_idx] = total - 1;
 	} else {
-		if (head > available) {
+		if (head >= available) {
 			for (i = available - 1 ; i > 0; i--) {
 				info = &disp_info->input_config[disp_idx][i];
 				if (info->ext_sel_layer == -1)
@@ -190,7 +190,7 @@ static int fallback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int 
 			tmp_tail = left + head;
 			if (tmp_tail > tail) {
 				i = tail;
-				while (left >= 0) {
+				while ((left > 0) && (i < total - 1)) {
 					i++;
 					info = &disp_info->input_config[disp_idx][i];
 					if (info->ext_sel_layer == -1) {
