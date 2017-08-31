@@ -753,8 +753,8 @@ static void mtk_qmu_disable(u8 ep_num, u8 isRx)
 
 void mtk_qmu_insert_task(u8 ep_num, u8 isRx, dma_addr_t buf, u32 length, u8 zlp, u8 isioc)
 {
-	QMU_INFO("mtk_qmu_insert_task ep_num: %d, isRx: %d, buf: %llx, length: %d zlp: %d isioc: %d\n",
-			ep_num, isRx, buf, length, zlp, isioc);
+	QMU_INFO("mtk_qmu_insert_task ep_num: %d, isRx: %d, buf: %p, length: %d zlp: %d isioc: %d\n",
+			ep_num, isRx, (void *)(uintptr_t)buf, length, zlp, isioc);
 	if (isRx) /* rx don't care zlp input */
 		prepare_rx_gpd(buf, length, ep_num, isioc);
 	else
