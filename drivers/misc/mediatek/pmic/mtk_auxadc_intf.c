@@ -17,6 +17,12 @@
 #include <linux/platform_device.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+#include "include/mt6336/mt6336.h"
+
+struct mt6336_ctrl *auxadc_intf_ctrl;
+#endif
+
 static struct mtk_auxadc_intf *auxadc_intf;
 
 const char *pmic_auxadc_channel_name[] = {
@@ -54,20 +60,29 @@ EXPORT_SYMBOL(pmic_get_auxadc_name);
 
 int pmic_get_auxadc_value(u8 list)
 {
+	int value = 0;
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 	if (list >= AUXADC_LIST_MT6335_START &&
-				list <= AUXADC_LIST_MT6335_END)
-		return mt6335_get_auxadc_value(list);
+				list <= AUXADC_LIST_MT6335_END) {
+		value = mt6335_get_auxadc_value(list);
+		return value;
+	}
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6335 */
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 	if (list >= AUXADC_LIST_MT6336_START &&
-			list <= AUXADC_LIST_MT6336_END)
-		return mt6336_get_auxadc_value(list);
+			list <= AUXADC_LIST_MT6336_END) {
+		mt6336_ctrl_enable(auxadc_intf_ctrl);
+		value = mt6336_get_auxadc_value(list);
+		mt6336_ctrl_disable(auxadc_intf_ctrl);
+		return value;
+	}
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6336 */
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6337
 	if (list >= AUXADC_LIST_MT6337_START &&
-			list <= AUXADC_LIST_MT6337_END)
-		return mt6337_get_auxadc_value(list);
+			list <= AUXADC_LIST_MT6337_END) {
+		value = mt6337_get_auxadc_value(list);
+		return value;
+	}
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6337 */
 
 	pr_err("%s Invalid AUXADC LIST\n", __func__);
@@ -263,6 +278,9 @@ static int mtk_auxadc_intf_probe(struct platform_device *pdev)
 		pr_err("%s create sysfs fail\n", __func__);
 		return -EINVAL;
 	}
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+	auxadc_intf_ctrl = mt6336_ctrl_get("auxadc_intf");
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6336 */
 
 	return 0;
 }
