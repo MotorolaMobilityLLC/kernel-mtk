@@ -25,9 +25,11 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 {
 	struct snd_soc_dai_driver *sub_dai_drivers;
 	struct snd_soc_component_driver *sub_component;
+	struct snd_kcontrol_new *controls;
 	struct snd_soc_dapm_widget *dapm_widgets;
 	struct snd_soc_dapm_route *dapm_routes;
 	size_t num_dai_drivers = 0, dai_idx = 0;
+	size_t num_control = 0, control_idx = 0;
 	size_t num_widget = 0, widget_idx = 0;
 	size_t num_route = 0, route_idx = 0;
 	int i;
@@ -45,13 +47,14 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 
 		if (afe->sub_dais[i].component != NULL) {
 			sub_component = afe->sub_dais[i].component;
+			num_control += sub_component->num_controls;
 			num_widget += sub_component->num_dapm_widgets;
 			num_route += sub_component->num_dapm_routes;
 		}
 	}
 
-	dev_info(afe->dev, "%s(), num of dai %zd, widget %zd, route %zd\n",
-		 __func__, num_dai_drivers, num_widget, num_route);
+	dev_info(afe->dev, "%s(), num of dai %zd, control %zd, widget %zd, route %zd\n",
+		 __func__, num_dai_drivers, num_control, num_widget, num_route);
 
 	/* combine sub_dais */
 	afe->num_dai_drivers = num_dai_drivers;
@@ -60,6 +63,13 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 					sizeof(struct snd_soc_dai_driver),
 					GFP_KERNEL);
 	if (!afe->dai_drivers)
+		return -ENOMEM;
+
+	controls = devm_kcalloc(afe->dev,
+				num_control,
+				sizeof(struct snd_kcontrol_new),
+				GFP_KERNEL);
+	if (!controls)
 		return -ENOMEM;
 
 	dapm_widgets = devm_kcalloc(afe->dev,
@@ -91,6 +101,13 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 		if (afe->sub_dais[i].component != NULL) {
 			sub_component = afe->sub_dais[i].component;
 
+			/* component driver, controls */
+			memcpy(&controls[control_idx],
+			       sub_component->controls,
+			       sub_component->num_controls *
+			       sizeof(struct snd_kcontrol_new));
+			control_idx += sub_component->num_controls;
+
 			/* component driver, dapm_widgets */
 			memcpy(&dapm_widgets[widget_idx],
 			       sub_component->dapm_widgets,
@@ -107,6 +124,8 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 		}
 	}
 
+	afe->component_driver.num_controls = num_control;
+	afe->component_driver.controls = controls;
 	afe->component_driver.num_dapm_widgets = num_widget;
 	afe->component_driver.dapm_widgets = dapm_widgets;
 	afe->component_driver.num_dapm_routes = num_route;
