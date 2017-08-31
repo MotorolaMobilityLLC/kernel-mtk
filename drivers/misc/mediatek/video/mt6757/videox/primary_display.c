@@ -4014,6 +4014,30 @@ out:
 	return ret;
 }
 
+int primary_display_wait_for_vsync_timeout(int timeout)
+{
+	int has_vsync = 1;
+
+	/* this function is used for AV-sync which contributes to lowpower of VP
+	 * So we don't need to kick display to exit idle state.
+	 * We just wait until timeout if display is in idle and has no vsync.
+	 */
+	/* primary_display_idlemgr_kick(__func__, 1); */
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	if (!primary_display_is_video_mode())
+		has_vsync = 0;	/* fpga has no TE signal */
+#endif
+	if (!islcmconnected || !has_vsync) {
+		DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
+			  islcmconnected, has_vsync);
+		msleep(20);
+		return 0;
+	}
+
+	return dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, timeout);
+}
+
 unsigned int primary_display_get_ticket(void)
 {
 	return dprec_get_vsync_count();
