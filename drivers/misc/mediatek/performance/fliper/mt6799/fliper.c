@@ -451,6 +451,7 @@ static int __init init_fliper(void)
 	struct proc_dir_entry *fliperfs_dir;
 	struct proc_dir_entry *perf_dir, *cg_threshold_dir,
 		*cg_enable_dir, *total_enable_dir, *fliper_dir, *dump_dir;
+	int ret = 0;
 
 	/*initialize*/
 	cg_thr = 4000;
@@ -490,9 +491,12 @@ static int __init init_fliper(void)
 
 	channel = 2;
 #if defined(CONFIG_MTK_DCS)
-	dcs_get_dcs_status_trylock(&channel, &dcs_status);
+	ret = dcs_get_dcs_status_trylock(&channel, &dcs_status);
 	dcs_get_dcs_status_unlock();
 #endif
+
+	if (ret)
+		pr_debug(TAG"DCS Warring dcs_get_dcs_status_lock busy");
 
 	pr_debug(TAG"init fliper driver start\n");
 	fliperfs_dir = proc_mkdir("fliperfs", NULL);
@@ -521,7 +525,7 @@ static int __init init_fliper(void)
 		return -ENOMEM;
 
 	dump_dir = proc_create("dump", 0644, fliperfs_dir, &mt_dump_fops);
-	if (!fliper_dir)
+	if (!dump_dir)
 		return -ENOMEM;
 
 	perf_now = -1;
