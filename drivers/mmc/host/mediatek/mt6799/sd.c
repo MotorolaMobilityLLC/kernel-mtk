@@ -559,9 +559,16 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 
 		msdc_clk_enable(host);
 
-		if (sdc_is_busy()) {
-			ERR_MSG("sdc_busy when clock enable");
-			msdc_dump_info(host->id);
+		/* This is workaround solution, will remove after formal soultion */
+		while (sdc_is_busy()) {
+			if ((host->use_hw_dvfs == 1) && (MSDC_READ32(MSDC_CFG) >> 28 == 0x5)) {
+				pr_err("%s: sdc_busy when clock enable!\n", __func__);
+				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_RE_TRIG, 1);
+				while (sdc_is_busy())
+					;
+				MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+			}
 		}
 
 		host->core_clkon = 1;
