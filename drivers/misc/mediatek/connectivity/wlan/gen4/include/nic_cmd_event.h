@@ -1696,21 +1696,27 @@ typedef struct _CMD_SET_DOMAIN_INFO_T {
 /* CMD_SET_PWR_LIMIT_TABLE */
 typedef struct _CMD_CHANNEL_POWER_LIMIT {
 	UINT_8 ucCentralCh;
+
 	INT_8 cPwrLimitCCK;
-	INT_8 cPwrLimit20;
-	INT_8 cPwrLimit40;
-	INT_8 cPwrLimit80;
-	INT_8 cPwrLimit160;
-	UINT_8 ucFlag;
+	INT_8 cPwrLimit20L; /* MCS0~4 */
+	INT_8 cPwrLimit20H; /* MCS5~8 */
+	INT_8 cPwrLimit40L; /* MCS0~4 */
+	INT_8 cPwrLimit40H; /* MCS5~9 */
+	INT_8 cPwrLimit80L; /* MCS0~4 */
+	INT_8 cPwrLimit80H; /* MCS5~9 */
+	INT_8 cPwrLimit160L; /* MCS0~4 */
+	INT_8 cPwrLimit160H; /* MCS5~9 */
+
+	UINT_8 ucFlag; /*Not used in driver*/
 	UINT_8 aucReserved[1];
 } CMD_CHANNEL_POWER_LIMIT, *P_CMD_CHANNEL_POWER_LIMIT;
 
 typedef struct _CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T {
 	UINT_16 u2CountryCode;
-	UINT_8 ucCountryFlag;
-	UINT_8 ucNum;
+	UINT_8 ucCountryFlag; /*Not used in driver*/
+	UINT_8 ucNum; /*Numbers of channel to set power limit*/
 	UINT_8 aucReserved[4];
-	CMD_CHANNEL_POWER_LIMIT rChannelPowerLimit[1];
+	CMD_CHANNEL_POWER_LIMIT rChannelPowerLimit[1]; /*Channel power limit entries to be set*/
 } CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T, *P_CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T;
 
 #endif

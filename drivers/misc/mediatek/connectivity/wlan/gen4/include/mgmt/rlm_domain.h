@@ -363,10 +363,14 @@
 
 typedef enum _ENUM_POWER_LIMIT_T {
 	PWR_LIMIT_CCK = 0,
-	PWR_LIMIT_20M = 1,
-	PWR_LIMIT_40M = 2,
-	PWR_LIMIT_80M = 3,
-	PWR_LIMIT_160M = 4,
+	PWR_LIMIT_20M_L = 1,
+	PWR_LIMIT_20M_H = 2,
+	PWR_LIMIT_40M_L = 3,
+	PWR_LIMIT_40M_H = 4,
+	PWR_LIMIT_80M_L = 5,
+	PWR_LIMIT_80M_H = 6,
+	PWR_LIMIT_160M_L = 7,
+	PWR_LIMIT_160M_H = 8,
 	PWR_LIMIT_NUM
 } ENUM_POWER_LIMIT_T, *P_ENUM_POWER_LIMIT_T;
 
@@ -459,6 +463,7 @@ typedef struct _DOMAIN_INFO_ENTRY {
 
 #if CFG_SUPPORT_PWR_LIMIT_COUNTRY
 
+#if 1 /*[TODO]To modify the following definition before using:  set power limit with high/low rate */
 typedef struct _CHANNEL_POWER_LIMIT {
 	UINT_8 ucCentralCh;
 	INT_8 cPwrLimitCCK;
@@ -490,6 +495,7 @@ typedef struct _COUNTRY_CHANNEL_POWER_LIMIT {
 	.ucFlag                = (_ucFlag),                \
 	.aucReserved           = {0}                       \
 }
+#endif
 
 typedef struct _COUNTRY_POWER_LIMIT_TABLE_DEFAULT {
 	UINT_8 aucCountryCode[2];
@@ -513,7 +519,7 @@ typedef struct _SUBBAND_CHANNEL_T {
 	UINT_8 ucReserved;
 } SUBBAND_CHANNEL_T, *P_SUBBAND_CHANNEL_T;
 
-#endif
+#endif /* CFG_SUPPORT_PWR_LIMIT_COUNTRY */
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
