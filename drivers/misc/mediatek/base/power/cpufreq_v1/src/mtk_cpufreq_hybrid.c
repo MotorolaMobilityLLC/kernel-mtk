@@ -112,27 +112,26 @@ int Ripi_cpu_dvfs_thread(void *data)
 			if (!p->armpll_is_available)
 				continue;
 
-			if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF)) {
-				freqs.old = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl);
-				freqs.new = cpu_dvfs_get_freq_by_idx(p, (int)(pwdata[0] >> (8*i)) & 0xF);
-				p->idx_opp_tbl = (int)(pwdata[0] >> (8*i) & 0xF);
-				if (p->mt_policy) {
+			/* Avoid memory issue */
+			if (p->mt_policy && p->mt_policy->governor && p->mt_policy->governor_enabled &&
+				(p->mt_policy->cpu < 10) && (p->mt_policy->cpu >= 0)) {
+				if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF)) {
+					cpufreq_ver("DVFS - cpu%d do postchange\n", p->mt_policy->cpu);
 					freqs.cpu = p->mt_policy->cpu;
+					freqs.old = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl);
+					freqs.new = cpu_dvfs_get_freq_by_idx(p, (int)(pwdata[0] >> (8*i)) & 0xF);
 					cpufreq_freq_transition_begin(p->mt_policy, &freqs);
 					cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
+					p->idx_opp_tbl = (int)(pwdata[0] >> (8*i) & 0xF);
 				}
-			}
-			/* cpufreq_para_lock(para_flags); */
-			if (p->mt_policy && p->mt_policy->governor) {
+				/* Update policy min/max */
 				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
 				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i)) & 0xF);
-
 				p->mt_policy->min =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 				p->mt_policy->max =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
 			}
-			/* cpufreq_para_lock(para_flags); */
 		}
 		cpufreq_unlock(flags);
 
@@ -1000,42 +999,42 @@ void cpuhvfs_pvt_tbl_create(void)
 		recordRef[i] =
 			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 1) & 0xFFF) << 16) |
 			(*(recordTbl + (i * ARRAY_ROW_SIZE)) & 0xFFFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i, recordRef[i]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i, recordRef[i]);
 		/* LL [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + NR_FREQ] =
 			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 3) & 0xFF) << 16) |
 			(*(recordTbl + (i * ARRAY_ROW_SIZE) + 2) & 0xFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + NR_FREQ, recordRef[i + NR_FREQ]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + NR_FREQ, recordRef[i + NR_FREQ]);
 		/* L [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 36] =
 			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 36, recordRef[i + 36]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36, recordRef[i + 36]);
 		/* L [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 36 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 3) & 0xFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 36 + NR_FREQ, recordRef[i + 36 + NR_FREQ]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 36 + NR_FREQ, recordRef[i + 36 + NR_FREQ]);
 		/* CCI [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 72] =
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
 		/* CCI [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 72 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 3) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
 		/* BIG [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 108] =
 			((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
 		/* BIG [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 108 + NR_FREQ] =
 			((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 3) & 0xFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
-		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 108 + NR_FREQ, recordRef[i + 108 + NR_FREQ]);
+		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n", i + 108 + NR_FREQ, recordRef[i + 108 + NR_FREQ]);
 	}
 	recordRef[i*2] = 0xffffffff;
 	recordRef[i*2+36] = 0xffffffff;
