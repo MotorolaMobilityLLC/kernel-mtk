@@ -111,7 +111,7 @@ bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
 static struct workqueue_struct *wq_init;
 
-bool sdio_autok_busy;
+volatile bool sdio_autok_busy;
 
 #define DRV_NAME                "mtk-msdc"
 
