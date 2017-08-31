@@ -1228,10 +1228,14 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	else
 		pr_err("ssusb_clk prepare fail\n");
 #endif
+
+	/* FIXME */
+#if 0
 	if (mt_get_chip_sw_ver() >= CHIP_SW_VER_02)
 		usb20_phy_rev6 = 1;
 	else
 		usb20_phy_rev6 = 0;
+#endif
 	return retval;
 }
 
