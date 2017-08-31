@@ -827,16 +827,6 @@ void update_av_info_edid(
 }
 unsigned int si_mhl_get_av_info(void)
 {
-	unsigned int temp = SINK_1080P30;
-
-	if (pal_resulution & SINK_1080P60)
-		pal_resulution &= (~temp);
-
-#ifdef MHL_RESOLUTION_LIMIT_720P_60
-	pal_resulution &= (~SINK_1080P60);
-	pal_resulution &= (~SINK_1080P30);
-#endif
-
 	return pal_resulution;
 }
 void reset_av_info(void)
