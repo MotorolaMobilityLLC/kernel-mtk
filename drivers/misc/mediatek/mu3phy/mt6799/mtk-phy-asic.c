@@ -606,17 +606,24 @@ int usb2jtag_usb_init(void)
 		return -1;
 	}
 
+	/* rg_usb20_gpio_ctl: bit[9] = 1 */
 	temp = readl(usb3_sif2_base + 0x820);
-	writel(temp | 0x0000f300, usb3_sif2_base + 0x820);
+	writel(temp | (1 << 9), usb3_sif2_base + 0x820);
 
+	/* RG_USB20_BC11_SW_EN: bit[23] = 0 */
 	temp = readl(usb3_sif2_base + 0x818);
-	writel(temp & 0xff7fffff, usb3_sif2_base + 0x818);
+	writel(temp & ~(1 << 23), usb3_sif2_base + 0x818);
 
+	/* RG_USB20_BGR_EN: bit[0] = 1 */
 	temp = readl(usb3_sif2_base + 0x800);
-	writel(temp | 0x00000001, usb3_sif2_base + 0x800);
+	writel(temp | (1 << 0), usb3_sif2_base + 0x800);
 
+	/* rg_sifslv_mac_bandgap_en: bit[17] = 0 */
 	temp = readl(usb3_sif2_base + 0x808);
-	writel(temp & 0xfffdffff, usb3_sif2_base + 0x808);
+	writel(temp & ~(1 << 17), usb3_sif2_base + 0x808);
+
+	/* wait stable */
+	mdelay(1);
 
 	iounmap(usb3_sif2_base);
 
