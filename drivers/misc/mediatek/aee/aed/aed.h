@@ -47,6 +47,12 @@ enum AEE_FORCE_RED_SCREEN_VALUE {
 	AEE_FORCE_NOT_SET
 };
 
+enum AEE_FORCE_EXP {
+	AEE_FORCE_EXP_DISABLE = 0,
+	AEE_FORCE_EXP_ENABLE,
+	AEE_FORCE_EXP_NOT_SET
+};
+
 enum AE_ERR {
 	AE_SUCC,
 	AE_FAIL
@@ -163,6 +169,7 @@ struct aee_thread_user_stack {
 #define AEEIOCTL_SET_SF_STATE _IOR('p', 0x0C, long long)
 #define AEEIOCTL_GET_SF_STATE _IOW('p', 0x0D, long long)
 #define AEEIOCTL_USER_IOCTL_TO_KERNEL_WANING _IOR('p', 0x0E, int)
+#define AEEIOCTL_SET_AEE_FORCE_EXP _IOR('p', 0x0F, int)
 
 #define AED_FILE_OPS(entry) \
 	static const struct file_operations proc_##entry##_fops = { \
