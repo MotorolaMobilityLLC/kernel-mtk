@@ -931,7 +931,6 @@
  *MSDC TOP REG
  */
 /* #define MSDC_TOP_BASE                   (0x11d60000) */
-#define MSDC_TOP_BASE
 
 /* TOP REGISTER */
 #define OFFSET_EMMC_TOP_CONTROL         (0x00)

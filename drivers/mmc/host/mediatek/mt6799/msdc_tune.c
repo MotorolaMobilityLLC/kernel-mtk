@@ -376,9 +376,11 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
 
-	MSDC_WRITE32(MSDC_PAD_TUNE0,   0x00000000);
+	MSDC_WRITE32(MSDC_PAD_TUNE0, 0x00000000);
 
 	if (host->base_top) {
+		/* FIX ME: toggle these fields accroding to timing */
+		/* FIX ME: maybe unnecessary if autok can take care */
 		MSDC_CLR_BIT32(EMMC_TOP_CONTROL, DATA_K_VALUE_SEL);
 		MSDC_CLR_BIT32(EMMC_TOP_CONTROL, DELAY_EN);
 		MSDC_CLR_BIT32(EMMC_TOP_CONTROL, PAD_DAT_RD_RXDLY);
@@ -396,6 +398,7 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 		MSDC_CLR_BIT32(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATRRDLYSEL);
 		MSDC_CLR_BIT32(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_DATRRDLY2SEL);
 		if (host->base_top) {
+			/* FIX ME: maybe unnecessary if autok can take care */
 			MSDC_CLR_BIT32(EMMC_TOP_CONTROL, PAD_DAT_RD_RXDLY_SEL);
 			MSDC_CLR_BIT32(EMMC_TOP_CONTROL, PAD_DAT_RD_RXDLY2_SEL);
 		}
@@ -403,6 +406,7 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 		MSDC_SET_BIT32(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATRRDLYSEL);
 		MSDC_CLR_BIT32(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_DATRRDLY2SEL);
 		if (host->base_top) {
+			/* FIX ME: maybe unnecessary if autok can take care */
 			MSDC_SET_BIT32(EMMC_TOP_CONTROL, PAD_DAT_RD_RXDLY_SEL);
 			MSDC_CLR_BIT32(EMMC_TOP_CONTROL, PAD_DAT_RD_RXDLY2_SEL);
 		}
@@ -419,7 +423,8 @@ void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
 	MSDC_SET_BIT32(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRRDLYSEL);
 	MSDC_CLR_BIT32(MSDC_PAD_TUNE1, MSDC_PAD_TUNE1_CMDRRDLY2SEL);
 
-	if (host->base_top) {
+	if ((timing == MMC_TIMING_MMC_HS400) && (host->base_top)) {
+		/* FIX ME: maybe unnecessary if autok can take care */
 		MSDC_SET_BIT32(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY_SEL);
 		MSDC_CLR_BIT32(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY2_SEL);
 	}
@@ -433,6 +438,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
 
+	/* FIX ME: check if always convered by autok */
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
 		MSDC_CLKTXDLY);
 	if (host->base_top) {

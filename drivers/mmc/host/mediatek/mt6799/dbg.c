@@ -477,25 +477,6 @@ void msdc_cmdq_func(struct msdc_host *host, const int num)
 	}
 }
 
-void msdc_dump_register_debug(struct seq_file *m, u32 id, void __iomem *base)
-{
-	u16 i;
-
-	for (i = 0; msdc_offsets[i] != 0xFFFF; i++) {
-		if (((id != 2) && (id != 3))
-		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
-		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
-			continue;
-
-		if ((id != 0)
-		 && (msdc_offsets[i] >= OFFSET_EMMC50_PAD_DS_TUNE))
-			break;
-
-		seq_printf(m, "R[%x]=0x%.8x\n", msdc_offsets[i],
-			MSDC_READ32(base + msdc_offsets[i]));
-	}
-}
-
 /* Clone from core/mmc.c since it is static in mmc.c */
 static void msdc_select_card_type(struct mmc_host *host)
 {
@@ -1922,7 +1903,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (p1 == 3) {
 			msdc_get_field(m, base + offset, p4, p5, p6);
 		} else if (p1 == 4) {
-			msdc_dump_register_debug(m, host->id, base);
+			msdc_dump_register_core(host, m);
 		}
 
 		/* prevent clock off before device ready */

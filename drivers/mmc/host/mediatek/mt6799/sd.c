@@ -38,6 +38,7 @@
 #include <linux/gpio.h>
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/mtk_lpae.h>
+#include <linux/seq_file.h>
 
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
@@ -101,9 +102,6 @@ unsigned char g_emmc_cache_quirk[256];
 static u16 u_sdio_irq_counter;
 static u16 u_msdc_irq_counter;
 
-struct msdc_host *ghost;
-int src_clk_control;
-
 bool emmc_sleep_failed;
 static struct workqueue_struct *wq_init;
 
@@ -159,13 +157,14 @@ int msdc_rsp[] = {
 #define PRINTF_REGISTER_BUFFER_SIZE 512
 #define ONE_REGISTER_STRING_SIZE    14
 
-void msdc_dump_register_core(u32 id, void __iomem *base)
+void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 {
+	void __iomem *base = host->base;
+	u32 id = host->id;
 	u32 msg_size = 0;
 	u16 i;
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 	char *buffer_cur_ptr = buffer;
-	struct msdc_host *host = mtk_msdc_host[id];
 
 	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
 	pr_err("MSDC%d normal register\n", id);
@@ -175,6 +174,12 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 		 && (msdc_offsets[i] >= OFFSET_DAT0_TUNE_CRC)
 		 && (msdc_offsets[i] <= OFFSET_SDIO_TUNE_WIND))
 			continue;
+
+		if (m) {
+			seq_printf(m, "R[%x]=0x%.8x\n", msdc_offsets[i],
+				MSDC_READ32(base + msdc_offsets[i]));
+			continue;
+		}
 
 		msg_size += ONE_REGISTER_STRING_SIZE;
 		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
@@ -190,7 +195,8 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
 	}
 
-	pr_err("%s\n", buffer);
+	if (!m)
+		pr_err("%s\n", buffer);
 
 	if (!host->base_top)
 		return;
@@ -201,6 +207,12 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 	pr_err("MSDC%d top register\n", id);
 
 	for (i = 0;  msdc_offsets_top[i] != (u16)0xFFFF; i++) {
+		if (m) {
+			seq_printf(m, "TOP_R[%x]=0x%.8x\n", msdc_offsets_top[i],
+				MSDC_READ32(host->base_top + msdc_offsets_top[i]));
+			continue;
+		}
+
 		msg_size += ONE_REGISTER_STRING_SIZE;
 		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
 			pr_err("%s", buffer);
@@ -215,16 +227,18 @@ void msdc_dump_register_core(u32 id, void __iomem *base)
 		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
 	}
 
-	pr_err("%s\n", buffer);
+	if (!m)
+		pr_err("%s\n", buffer);
 }
 
 void msdc_dump_register(struct msdc_host *host)
 {
-	msdc_dump_register_core(host->id, host->base);
+	msdc_dump_register_core(host, NULL);
 }
 
-void msdc_dump_dbg_register_core(u32 id, void __iomem *base)
+void msdc_dump_dbg_register(struct msdc_host *host)
 {
+	void __iomem *base = host->base;
 	u32 msg_size = 0;
 	u16 i;
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
@@ -249,11 +263,6 @@ void msdc_dump_dbg_register_core(u32 id, void __iomem *base)
 	pr_err("%s\n", buffer);
 
 	MSDC_WRITE32(MSDC_DBG_SEL, 0);
-}
-
-static void msdc_dump_dbg_register(struct msdc_host *host)
-{
-	msdc_dump_dbg_register_core(host->id, host->base);
 }
 
 static void msdc_dump_autok(struct msdc_host *host)
@@ -628,8 +637,7 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 				spm_msdc_dvfs_setting(host->dvfs_id, 1);
 		}
 
-	} else if ((!on) && (host->core_clkon == 1) &&
-		 (!((host->hw->flags & MSDC_SDIO_IRQ) && src_clk_control))) {
+	} else if ((!on) && (host->core_clkon == 1)) {
 
 		/* Enable DVFS handshake when clonk is off */
 		if (host->use_hw_dvfs == 1) {
@@ -938,7 +946,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	MSDC_SET_BIT32(SDC_CFG, SDC_CFG_SDIO);
 
 	if (host->hw->flags & MSDC_SDIO_IRQ) {
-		ghost = host;
 		/* enable sdio detection when drivers needs */
 		MSDC_SET_BIT32(SDC_CFG, SDC_CFG_SDIOIDE);
 	} else {
@@ -1159,7 +1166,7 @@ int msdc_switch_part(struct msdc_host *host, char part_id)
 
 	if ((part_id >= 0) && (part_id != (l_buf[EXT_CSD_PART_CONFIG] & 0x7))) {
 		l_buf[EXT_CSD_PART_CONFIG] &= ~0x7;
-		l_buf[EXT_CSD_PART_CONFIG] |= 0x0;
+		l_buf[EXT_CSD_PART_CONFIG] |= (part_id & 0x7);
 		ret = mmc_switch(host->mmc->card, 0, EXT_CSD_PART_CONFIG,
 			l_buf[EXT_CSD_PART_CONFIG], 1000);
 	}
@@ -4561,29 +4568,6 @@ static void msdc_timer_pm(unsigned long data)
 
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
 }
-
-void SRC_trigger_signal(int i_on)
-{
-	if ((ghost != NULL) && (ghost->hw->flags & MSDC_SDIO_IRQ)) {
-		pr_debug("msdc2 SRC_trigger_signal %d\n", i_on);
-		src_clk_control = i_on;
-		if (src_clk_control) {
-			msdc_clksrc_onoff(ghost, 1);
-			/* mb(); */
-			if (ghost->mmc->sdio_irq_thread &&
-			    (atomic_read(&ghost->mmc->sdio_irq_thread_abort)
-				== 0)) {/* if (ghost->mmc->sdio_irq_thread) */
-				mmc_signal_sdio_irq(ghost->mmc);
-				if (u_msdc_irq_counter < 3)
-					pr_debug("msdc2 SRC_trigger_signal mmc_signal_sdio_irq\n");
-			}
-			/* pr_debug("msdc2 SRC_trigger_signal ghost->id=%d\n",
-			 *	ghost->id);
-			 */
-		}
-	}
-}
-EXPORT_SYMBOL(SRC_trigger_signal);
 
 #ifdef CONFIG_MTK_HIBERNATION
 int msdc_drv_pm_restore_noirq(struct device *device)

@@ -599,8 +599,11 @@ end:
 
 int emmc_autok(void)
 {
+#if 1 /* Wait Light confirm */
 	struct msdc_host *host = mtk_msdc_host[0];
 	struct mmc_host *mmc = host->mmc;
+	void __iomem *base = host->base;
+	int i;
 
 	if (mmc == NULL) {
 		pr_err("eMMC device not ready\n");
@@ -608,6 +611,44 @@ int emmc_autok(void)
 	}
 
 	pr_err("emmc autok\n");
+
+	mmc_claim_host(mmc);
+
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		if (host->autok_res_valid[i])
+			continue;
+		#if 0
+		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
+			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
+		#endif
+		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
+			host->autok_res[i]);
+	}
+
+	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
+			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
+		pr_err("[AUTOK] No need change para when dvfs\n");
+	} else {
+		pr_err("[AUTOK] Need change para when dvfs\n");
+
+		/* Backup the register, restore when resume */
+		msdc_dvfs_reg_backup(host);
+
+		/* Use HW DVFS */
+		host->use_hw_dvfs = 1;
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+		host->dvfs_id = MSDC0_DVFS;
+		/* Enable DVFS handshake */
+		spm_msdc_dvfs_setting(host->dvfs_id, 1);
+	}
+
+	/* Un-request, return 0 pass */
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+
+	mmc_release_host(mmc);
+#endif
 
 	return 0;
 }

@@ -123,27 +123,27 @@
 #define MSDCPLL_CON1_OFFSET     (0x254)
 #define MSDCPLL_CON2_OFFSET     (0x258)
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
-/* Clock config register offset */
-#define MSDC_CLK_CFG_4_OFFSET   (0x140)
-#define MSDC_CLK_CFG_5_OFFSET   (0x150)
+#endif
 
-#define MSDC_PERI_PDN_SET0_OFFSET       (0x0008)
-#define MSDC_PERI_PDN_CLR0_OFFSET       (0x0010)
-#define MSDC_PERI_PDN_STA0_OFFSET       (0x0018)
+/* E1 */
+#define MSDCPLL_FREQ            624000000
+/* E2 : use undefined MT6799_E2_CLK to disable this section */
+#ifdef MT6799_E2_CLK
+#define MSDCPLL_FREQ            800000000
 #endif
 
 #define MSDC0_SRC_0             260000
-#define MSDC0_SRC_1             400000000
-#define MSDC0_SRC_2             800000000
+#define MSDC0_SRC_1             (MSDCPLL_FREQ/2)
+#define MSDC0_SRC_2             MSDCPLL_FREQ
 #define MSDC0_SRC_3             156000000
 #define MSDC0_SRC_4             182000000
 #define MSDC0_SRC_5             364000000
-#define MSDC0_SRC_6             200000000
+#define MSDC0_SRC_6             (MSDCPLL_FREQ/4)
 #define MSDC0_SRC_7             312000000
 
 #define MSDC1_SRC_0             260000
 #define MSDC1_SRC_1             208000000
-#define MSDC1_SRC_2             200000000
+#define MSDC1_SRC_2             (MSDCPLL_FREQ/4)
 #define MSDC1_SRC_3             156000000
 #define MSDC1_SRC_4             182000000
 #define MSDC1_SRC_5             156000000
@@ -152,12 +152,12 @@
 
 #define MSDC3_SRC_0             260000
 #define MSDC3_SRC_1             208000000
-#define MSDC3_SRC_2             400000000
+#define MSDC3_SRC_2             (MSDCPLL_FREQ/2)
 #define MSDC3_SRC_3             156000000
 #define MSDC3_SRC_4             182000000
 #define MSDC3_SRC_5             312000000
 #define MSDC3_SRC_6             364000000
-#define MSDC3_SRC_7             200000000
+#define MSDC3_SRC_7             (MSDCPLL_FREQ/4)
 
 #define MSDC_SRC_FPGA		12000000
 
@@ -277,11 +277,7 @@
 #define MSDC0_RDSEL_RSTB_MASK   (0x3f <<  0)
 #define MSDC0_RDSEL_ALL_MASK    (0x3fffffff << 0)
 /* MSDC0 SR mask*/
-#define MSDC0_SR_DAT_MASK       (0x1  << 19)
-#define MSDC0_SR_CMD_MASK       (0x1  << 15)
-#define MSDC0_SR_CLK_MASK       (0x1  << 11)
-#define MSDC0_SR_DSL_MASK       (0x1  <<  7)
-#define MSDC0_SR_RSTB_MASK      (0x1  <<  3)
+/* Note: 10nm 1.8V IO does not have SR control */
 /* MSDC0 DRV mask*/
 #define MSDC0_DRV_DAT_MASK      (0x7  << 16)
 #define MSDC0_DRV_CMD_MASK      (0x7  << 12)
@@ -354,7 +350,7 @@
 /* MSDC3 RDSEL mask */
 #define MSDC3_RDSEL_ALL_MASK    (0x3f << 6)
 /* MSDC3 SR mask */
-#define MSDC3_SR_ALL_MASK       (0x1 << 15)
+/* Note: 10nm 1.8V IO does not have SR control */
 /* MSDC3 DRV mask */
 #define MSDC3_DRV_ALL_MASK      (0x7 << 12)
 /* MSDC3 PUPD mask */
@@ -408,18 +404,13 @@
 #define EMMC_MAX_FREQ_DIV               4 /* lower frequence to 12.5M */
 #define MSDC_CLKTXDLY                   0
 
-#define MSDC0_DDR50_DDRCKD              1
+#define MSDC0_DDR50_DDRCKD              1 /* FIX ME: may be removed */
 
 #define MSDC_PB0_DEFAULT_VAL            0x403C0006
 #define MSDC_PB1_DEFAULT_VAL            0xFFE20349
 
 #define MSDC_PB2_DEFAULT_RESPWAITCNT    0x3
-#define MSDC_PB2_DEFAULT_RESPSTENSEL    0x0
-#define MSDC_PB2_DEFAULT_CRCSTSENSEL    0x0
-
-#define STOP_DLY_SEL_ONE_BLK    6
-#define POPENCNT_ONE_BLK        0
-#define STOP_DLY_SEL_MULTI_BLK  3
-#define POPENCNT_MULTI_BLK      8
+#define MSDC_PB2_DEFAULT_RESPSTENSEL    0x1
+#define MSDC_PB2_DEFAULT_CRCSTSENSEL    0x1
 
 #endif /* _MSDC_CUST_MT6799_H_ */

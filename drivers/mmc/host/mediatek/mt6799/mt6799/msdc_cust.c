@@ -89,12 +89,11 @@ const struct of_device_id msdc_of_ids[] = {
 	{ },
 };
 
-void __iomem *gpio_base;
+static void __iomem *gpio_base;
 
-void __iomem *infracfg_ao_reg_base;
-void __iomem *infracfg_reg_base;
-void __iomem *apmixed_reg_base;
-void __iomem *topckgen_reg_base;
+static void __iomem *pericfg_base;
+static void __iomem *apmixed_base;
+static void __iomem *topckgen_base;
 
 void __iomem *msdc_io_cfg_bases[HOST_MAX_NUM];
 
@@ -408,86 +407,80 @@ void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 		host->id, clksrc, host->hclk/1000);
 }
 
-void msdc_dump_clock_sts(struct msdc_host *host)
+#include <linux/seq_file.h>
+static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 {
-	if (topckgen_reg_base) {
-		/* CLK_CFG_4/5 for msdc clock source PLL*/
-		pr_err(" CLK_CFG_4@0x%p = 0x%x\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET,
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET));
-		pr_err(" MUX@bit[18~16]=001b, PDN@bit[23]=0b\n");
-		pr_err(" MUX@bit[26~24]=110b, PDN@bit[31]=0b\n");
-		pr_err(" CLK_CFG_5@0x%p = 0x%x\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET,
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET));
-		pr_err(" MUX@bit[10~8]=010b, PDN@bit[15]=0b\n");
+	char buffer[512];
+	char *buf_ptr = buffer;
+
+	if (topckgen_base && pericfg_base) {
+		buf_ptr += sprintf(buffer,
+			"MSDC0 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d, %d\n",
+			topckgen_base + 0x240,
+			/* mux at bits16~18 */
+			(MSDC_READ32(topckgen_base + 0x240) >> 16) & 7,
+			pericfg_base + 0x290,
+			/* cg at bit 0, 24 */
+			(MSDC_READ32(pericfg_base + 0x290) >> 0) & 1,
+			(MSDC_READ32(pericfg_base + 0x290) >> 24) & 1);
+		buf_ptr += sprintf(buffer,
+			"MSDC1 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
+			topckgen_base + 0x240,
+			/* mux at bits24~26 */
+			(MSDC_READ32(topckgen_base + 0x240) >> 24) & 7,
+			pericfg_base + 0x290,
+			/* mux at bit 1 */
+			(MSDC_READ32(pericfg_base + 0x290) >> 1) & 1);
+		buf_ptr += sprintf(buffer,
+			"MSDC3 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
+			topckgen_base + 0x250,
+			/* mux at bits8~10 */
+			(MSDC_READ32(topckgen_base + 0x250) >> 8) & 7,
+			pericfg_base + 0x290,
+			/* mux at bit 3 */
+			(MSDC_READ32(pericfg_base + 0x290) >> 3) & 1);
+		*buf_ptr = '0';
+		if (!m)
+			pr_err("%s", buffer);
+		else
+			seq_printf(m, "%s", buffer);
 	}
-	if (apmixed_reg_base) {
+
+	buf_ptr = buffer;
+	if (apmixed_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
-		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n",
-			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
-		pr_err(" bit[0]=1b\n");
-		pr_err(" Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
+		buf_ptr += sprintf(buffer, "MSDCPLL_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
+			apmixed_base + MSDCPLL_CON0_OFFSET,
+			MSDC_READ32(apmixed_base + MSDCPLL_CON0_OFFSET));
 
-		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n",
-			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
-		pr_err(" Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
+		buf_ptr += sprintf(buffer, "MSDCPLL_CON1@0x%p = 0x%x\n",
+			apmixed_base + MSDCPLL_CON1_OFFSET,
+			MSDC_READ32(apmixed_base + MSDCPLL_CON1_OFFSET));
 
-		pr_err(" MSDCPLL_CON2_OFFSET register address is 0x%p\n",
-			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
-		pr_err(" Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
+		buf_ptr += sprintf(buffer, "MSDCPLL_CON2@0x%p = 0x%x\n",
+			apmixed_base + MSDCPLL_CON2_OFFSET,
+			MSDC_READ32(apmixed_base + MSDCPLL_CON2_OFFSET));
 
-		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n",
-			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
-		pr_err(" bit[0]=1b\n");
-		pr_err(" Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
+		buf_ptr += sprintf(buffer, "MSDCPLL_PWR_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
+			apmixed_base + MSDCPLL_PWR_CON0_OFFSET,
+			MSDC_READ32(apmixed_base + MSDCPLL_PWR_CON0_OFFSET));
+		*buf_ptr = '0';
+		if (!m)
+			pr_err("%s", buffer);
+		else
+			seq_printf(m, "%s", buffer);
 	}
 }
 
+void msdc_dump_clock_sts(struct msdc_host *host)
+{
+	msdc_dump_clock_sts_core(host, NULL);
+}
+
 /* FIX ME, consider to remove it */
-#include <linux/seq_file.h>
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 {
-	if (topckgen_reg_base) {
-		/* CLK_CFG_4/5 for msdc clock source PLL*/
-		seq_printf(m, " CLK_CFG_4@0x%p = 0x%x\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET,
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET));
-		seq_puts(m, " MUX@bit[18~16]=001b, PDN@bit[23]=0b\n");
-		seq_puts(m, " MUX@bit[26~24]=110b, PDN@bit[31]=0b\n");
-		seq_printf(m, " CLK_CFG_5@0x%p = 0x%x\n\n",
-			topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET,
-			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_5_OFFSET));
-		seq_puts(m, " MUX@bit[10~8]=010b, PDN@bit[15]=0b\n");
-	}
-	if (apmixed_reg_base) {
-		/* bit0 is enables PLL, 0: disable 1: enable */
-		seq_printf(m, " MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
-		seq_puts(m, " bit[0]=1b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
-
-		seq_printf(m, " MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
-
-		seq_printf(m, " MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
-
-		seq_printf(m, " MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
-			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
-		seq_puts(m, " bit[0]=1b\n");
-		seq_printf(m, " Read value is       0x%x\n",
-			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
-	}
+	msdc_dump_clock_sts_core(host, m);
 }
 
 void msdc_clk_status(int *status)
@@ -759,16 +752,7 @@ void msdc_get_rdsel_by_id(u32 id, u32 *value)
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 {
 	if (id == 0) {
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_CMD_MASK,
-			(cmd != 0));
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_DSL_MASK,
-			(ds != 0));
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_CLK_MASK,
-			(clk != 0));
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_DAT_MASK,
-			(dat != 0));
-		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_SR_RSTB_MASK,
-			(rst != 0));
+		/* do nothing since 10nm does not have SR control for 1.8V */
 	} else if (id == 1) {
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_CMD_MASK,
 			(cmd != 0));
@@ -777,8 +761,7 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 		MSDC_SET_FIELD(MSDC1_GPIO_DRV_ADDR, MSDC1_SR_DAT_MASK,
 			(dat != 0));
 	} else if (id == 3) {
-		MSDC_SET_FIELD(MSDC3_GPIO_DRV_ADDR, MSDC3_SR_ALL_MASK,
-			(dat != 0));
+		/* do nothing since 10nm does not have SR control for 1.8V */
 	}
 }
 
@@ -1141,26 +1124,25 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 			id, msdc_io_cfg_bases[id]);
 	}
 
-	if (infracfg_ao_reg_base == NULL) {
-		np = of_find_compatible_node(NULL, NULL,
-			"mediatek,infracfg_ao");
-		infracfg_ao_reg_base = of_iomap(np, 0);
-		pr_debug("of_iomap for infracfg_ao base @ 0x%p\n",
-			infracfg_ao_reg_base);
-	}
-
-	if (apmixed_reg_base == NULL) {
+	if (apmixed_base == NULL) {
 		np = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
-		apmixed_reg_base = of_iomap(np, 0);
+		apmixed_base = of_iomap(np, 0);
 		pr_debug("of_iomap for apmixed base @ 0x%p\n",
-			apmixed_reg_base);
+			apmixed_base);
 	}
 
-	if (topckgen_reg_base == NULL) {
+	if (topckgen_base == NULL) {
 		np = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
-		topckgen_reg_base = of_iomap(np, 0);
+		topckgen_base = of_iomap(np, 0);
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
-			topckgen_reg_base);
+			topckgen_base);
+	}
+
+	if (pericfg_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
+		pericfg_base = of_iomap(np, 0);
+		pr_debug("of_iomap for pericfg base @ 0x%p\n",
+			pericfg_base);
 	}
 
 #endif

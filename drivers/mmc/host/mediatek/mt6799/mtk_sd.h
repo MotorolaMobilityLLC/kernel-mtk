@@ -608,8 +608,7 @@ unsigned int msdc_do_command(struct msdc_host *host,
 	struct mmc_command *cmd, unsigned long       timeout);
 void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
-void msdc_dump_register_core(u32 id, void __iomem *base);
-void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
+void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
