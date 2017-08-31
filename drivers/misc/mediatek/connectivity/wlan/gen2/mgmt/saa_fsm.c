@@ -1167,7 +1167,8 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 		return WLAN_STATUS_FAILURE;
 
 	prDeauthFrame = (P_WLAN_DEAUTH_FRAME_T) prSwRfb->pvHeader;
-	DBGLOG(SAA, INFO, "Rx Deauth frame from BSSID=[ %pM ].\n", prDeauthFrame->aucBSSID);
+	DBGLOG(SAA, INFO, "Rx Deauth frame from BSSID=[ %pM ], reason: %d.\n",
+		prDeauthFrame->aucBSSID, prDeauthFrame->u2ReasonCode);
 
 	do {
 		if (IS_STA_IN_AIS(prStaRec)) {
