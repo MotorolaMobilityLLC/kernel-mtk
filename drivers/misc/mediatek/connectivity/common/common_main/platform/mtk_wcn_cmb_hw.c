@@ -241,6 +241,7 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 	UINT32 chip_id = 0x0;
 
 	WMT_INFO_FUNC("CMB-HW, hw_rst start, eirq should be disabled before this step\n");
+	chip_id = mtk_wcn_wmt_chipid_query();
 	iRet += wmt_plat_gpio_ctrl(PIN_UART_GRP, PIN_STA_INIT);
 	if (0x6630 == chip_id || 0x6632 == chip_id) {
 		switch (wmt_plat_get_comm_if_type()) {
