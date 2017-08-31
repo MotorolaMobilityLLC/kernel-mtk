@@ -64,7 +64,11 @@ struct vcorefs_profile {
 static struct vcorefs_profile vcorefs_ctrl = {
 	.plat_init_opp	= 0,
 	.init_done	= 0,
+#if defined(CONFIG_MACH_MT6759)
+	.autok_finish   = 1,
+#else
 	.autok_finish   = 0,
+#endif
 	.autok_lock	= 0,
 	.dvfs_lock	= 0,
 	.dvfs_request   = 0,

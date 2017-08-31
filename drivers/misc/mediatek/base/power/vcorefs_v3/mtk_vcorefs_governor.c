@@ -328,6 +328,9 @@ static void set_vcorefs_en(void)
 	flag = spm_dvfs_flag_init();
 	spm_go_to_vcorefs(flag);
 	mutex_unlock(&governor_mutex);
+#if defined(CONFIG_MACH_MT6759)
+	vcorefs_late_init_dvfs();
+#endif
 }
 
 int governor_debug_store(const char *buf)
