@@ -2638,6 +2638,11 @@ mtk_cfg80211_testmode_set_packet_filter(IN struct wiphy *wiphy, IN void *data, I
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_RXFILTER_PARAMS)data;
+	else {
+		DBGLOG(QM, ERROR, "mtk_cfg80211_testmode_set_packet_filter, data is NULL\n");
+		return -EINVAL;
+	}
+
 
 	kalMemZero(&cmdBuf, sizeof(cmdBuf));
 
