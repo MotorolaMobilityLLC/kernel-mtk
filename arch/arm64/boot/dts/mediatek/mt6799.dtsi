@@ -5420,6 +5420,10 @@
 		compatible = "mediatek,als_ps";
 	};
 
+	rgbw: rgbw@0 {
+		compatible = "mediatek,rgbw";
+	};
+
 	mse: mse {
 		compatible = "mediatek,fix_build_error";
 	};
