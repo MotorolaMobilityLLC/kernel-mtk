@@ -196,7 +196,7 @@ VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter)
 				/*ucIpProto = 0x11 UPD */
 				/*ucIpProto = 0x06 TCP */
 				offsetMsg += kalSnprintf(pucMsg + offsetMsg
-				, PKT_INFO_MSG_LENGTH
+				, PKT_INFO_MSG_LENGTH - offsetMsg
 				, "(%2d)t=%llu s=%d e=0x%02x,p=0x%2x id=0x%4x,op=%d  "
 				, index, prPktInfo->u8Timestamp
 				, prPktInfo->status

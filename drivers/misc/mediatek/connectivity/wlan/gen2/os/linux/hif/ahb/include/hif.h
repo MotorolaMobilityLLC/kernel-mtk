@@ -72,8 +72,9 @@ extern void upmu_set_vcn33_on_ctrl_wifi(UINT_32 val);
 #define AP_MCU_TX_DESC_ADDR              0x0000
 #define AP_MCU_RX_DESC_ADDR              0x8080
 #define AP_MCU_BANK_OFFSET               0x1010
+
 #if (CFG_SRAM_SIZE_OPTION == 0)
-#define AP_MCU_TC_INDEX_4_ADDR          0x2848
+#define AP_MCU_TC_INDEX_4_ADDR          0x1E50
 #elif (CFG_SRAM_SIZE_OPTION == 1)
 #define AP_MCU_TC_INDEX_4_ADDR          0x2848
 #elif (CFG_SRAM_SIZE_OPTION == 2)

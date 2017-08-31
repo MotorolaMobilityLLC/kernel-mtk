@@ -227,6 +227,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 	/* 4 <1.1> Initiate FSM - Timer INIT */
 	cnmTimerInitTimer(prAdapter,
@@ -1516,6 +1517,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prScanReqMsg, MSG_SEND_METHOD_BUF);
 			DBGLOG(AIS, TRACE, "SendSR%d\n", prScanReqMsg->ucSeqNum);
 			prAisFsmInfo->fgTryScan = FALSE;	/* Will enable background sleep for infrastructure */
+			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 			prAdapter->ucScanTime++;
 			break;
@@ -2216,6 +2218,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				/* clear rJoinReqTime if there is no more framework roaming connect request */
 				if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)
 					prAisFsmInfo->rJoinReqTime = 0;
+					prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
 				/* 4 <1.7> Set the Next State of AIS FSM */
 				eNextState = AIS_STATE_NORMAL_TR;
@@ -2237,6 +2240,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 					/* 3.2 reset local variable */
 					prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
+					prAisFsmInfo->ucJoinFailCntAfterScan++;
 
 					prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
 
@@ -2266,13 +2270,13 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					/* ASSERT(prBssDesc->fgIsConnecting); */
 					prBssDesc->ucJoinFailureCount++;
 					if (prBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD) {
+						aisAddBlacklist(prAdapter, prBssDesc);
 						GET_CURRENT_SYSTIME(&prBssDesc->rJoinFailTime);
 						DBGLOG(AIS, INFO,
 							"Bss %pM join fail %d times,temp disable it at time:%u\n",
 							prBssDesc->aucBSSID,
 							SCN_BSS_JOIN_FAIL_THRESOLD, prBssDesc->rJoinFailTime);
 					}
-					aisAddBlacklist(prAdapter, prBssDesc);
 					if (prBssDesc->prBlack)
 						prBssDesc->prBlack->u2AuthStatus = prStaRec->u2StatusCode;
 
@@ -4604,6 +4608,25 @@ aisQueryBlackList(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	}
 	DBGLOG(AIS, TRACE, "%pM is not in blacklist\n", prBssDesc->aucBSSID);
 	return NULL;
+}
+
+VOID aisRemoveTimeoutBlacklist(P_ADAPTER_T prAdapter)
+{
+	P_CONNECTION_SETTINGS_T prConnSettings = &prAdapter->rWifiVar.rConnSettings;
+	struct AIS_BLACKLIST_ITEM *prEntry = NULL;
+	struct AIS_BLACKLIST_ITEM *prNextEntry = NULL;
+	P_LINK_T prBlackList = &prConnSettings->rBlackList.rUsingLink;
+	P_LINK_T prFreeList = &prConnSettings->rBlackList.rFreeLink;
+	OS_SYSTIME rCurrent;
+
+	GET_CURRENT_SYSTIME(&rCurrent);
+
+	LINK_FOR_EACH_ENTRY_SAFE(prEntry, prNextEntry, prBlackList, rLinkEntry, struct AIS_BLACKLIST_ITEM) {
+		if (!CHECK_FOR_TIMEOUT(rCurrent, prEntry->rAddTime, SEC_TO_MSEC(AIS_BLACKLIST_TIMEOUT)))
+			continue;
+		LINK_REMOVE_KNOWN_ENTRY(prBlackList, &prEntry->rLinkEntry);
+		LINK_INSERT_HEAD(prFreeList, &prEntry->rLinkEntry);
+	}
 }
 
 static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter)
