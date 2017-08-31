@@ -1108,6 +1108,8 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		ovl_cfg = &pConfig->ovl_config[TOTAL_OVL_LAYER_NUM - 1];
 		ovl_cfg->ovl_index = DISP_MODULE_OVL0_2L;
 		ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0_2L) - 1;
+		ovl_cfg->ext_sel_layer = -1;
+		ovl_cfg->ext_layer = -1;
 	}
 
 	return 1;
@@ -1555,6 +1557,44 @@ void ovl_dump_reg(enum DISP_MODULE_ENUM module)
 			DISP_REG_GET(DISP_REG_OVL_ADDCON_DBG + offset),
 			DISP_REG_GET(DISP_REG_OVL_FUNC_DCM0 + offset),
 			DISP_REG_GET(DISP_REG_OVL_FUNC_DCM1 + offset));
+
+		if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
+			src_on = DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset);
+			DDPDUMP("0x324: 0x%08x\n", DISP_REG_GET(DISP_REG_OVL_DATAPATH_EXT_CON + offset));
+			if (src_on & 0x1) {
+				DDPDUMP("0x330: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					DISP_REG_GET(DISP_REG_OVL_EL0_CON + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL0_SRCKEY + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL0_SRC_SIZE + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL0_OFFSET + offset));
+
+				DDPDUMP("0xfb0=0x%08x,0x344=0x%08x,\n",
+					DISP_REG_GET(DISP_REG_OVL_EL0_ADDR + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL0_PITCH + offset));
+			}
+			if (src_on & 0x2) {
+				DDPDUMP("0x350: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					DISP_REG_GET(DISP_REG_OVL_EL1_CON + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL1_SRCKEY + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL1_SRC_SIZE + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL1_OFFSET + offset));
+
+				DDPDUMP("0xf44=0x%08x,0x364=0x%08x,\n",
+					DISP_REG_GET(DISP_REG_OVL_EL1_ADDR + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL1_PITCH + offset));
+			}
+			if (src_on & 0x4) {
+				DDPDUMP("0x370: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+					DISP_REG_GET(DISP_REG_OVL_EL2_CON + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL2_SRCKEY + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL2_SRC_SIZE + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL2_OFFSET + offset));
+
+				DDPDUMP("0xf80=0x%08x,0x384=0x%08x,\n",
+					DISP_REG_GET(DISP_REG_OVL_EL2_ADDR + offset),
+					DISP_REG_GET(DISP_REG_OVL_EL2_PITCH + offset));
+			}
+		}
 	}
 }
 
