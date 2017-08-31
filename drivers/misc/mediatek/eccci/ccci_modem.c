@@ -68,7 +68,7 @@ struct ccci_smem_region md1_6293_cacheable[] = {
 {SMEM_USER_RAW_DHL,		4*1024*1024,	28*1024*1024,	0, },
 {SMEM_USER_RAW_LWA,		32*1024*1024,	0*1024*1024,	0, },
 {SMEM_USER_RAW_MD_CONSYS,	32*1024*1024,	0*1024*1024,	0, },
-{SMEM_USER_RAW_PHY_CAP,		32*1024*1024,	0*1024*1024,	0, },
+{SMEM_USER_RAW_PHY_CAP,		32*1024*1024,	0*1024*1024,	SMF_NCLR_FIRST, },
 {SMEM_USER_MAX, },
 };
 
@@ -297,9 +297,12 @@ void ccci_md_config(struct ccci_modem *md)
 			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.size);
 
-	md->mem_layout.md_bank4_cacheable_total.base_md_view_phy =
-		0x48000000 + md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
-		round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x02000000);
+	if (md->index == MD_SYS1) {
+		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy = 0x40000000
+			+ get_md_smem_cachable_offset(MD_SYS1)
+			+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
+			round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x00100000);
+	}
 #endif
 	CCCI_BOOTUP_LOG(md->index, TAG, "smem info: (%lx %lx %p %d) (%lx %lx %p %d)\n",
 			(unsigned long)md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
@@ -337,6 +340,18 @@ void ccci_md_config(struct ccci_modem *md)
 	if (md->index == MD_SYS1) {
 		md->mem_layout.md_bank4_noncacheable = md1_6293_noncacheable_fat;
 		md->mem_layout.md_bank4_cacheable = md1_6293_cacheable;
+		{
+			/* Runtime adjust md_phy_capture size */
+			unsigned int i;
+
+			for (i = 0; i < (sizeof(md1_6293_cacheable)/sizeof(struct ccci_smem_region)); i++) {
+				if (md1_6293_cacheable[i].id == SMEM_USER_RAW_PHY_CAP) {
+					md1_6293_cacheable[i].size = get_md_resv_phy_cap_size(MD_SYS1);
+					CCCI_BOOTUP_LOG(md->index, TAG, "PHY size:%d\n", md1_6293_cacheable[i].size);
+					break;
+				}
+			}
+		}
 	} else {
 		WARN_ON(1);
 	}
@@ -612,7 +627,10 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 
 #if (MD_GENERATION >= 6293)
 	ap_side_md_feature->feature_set[CCISM_SHARE_MEMORY_EXP].support_mask = CCCI_FEATURE_MUST_SUPPORT;
-	ap_side_md_feature->feature_set[MD_PHY_CAPTURE].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	if ((md->index == MD_SYS1) && (get_md_resv_phy_cap_size(MD_SYS1) > 0))
+		ap_side_md_feature->feature_set[MD_PHY_CAPTURE].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	else
+		ap_side_md_feature->feature_set[MD_PHY_CAPTURE].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	ap_side_md_feature->feature_set[MD_CONSYS_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #else
