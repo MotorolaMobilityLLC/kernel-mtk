@@ -448,7 +448,6 @@ static int hps_suspend(struct device *dev)
 
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.enabled_backup = hps_ctxt.enabled;
-	hps_ctxt.enabled = 0;
 	mutex_unlock(&hps_ctxt.lock);
 
 suspend_end:

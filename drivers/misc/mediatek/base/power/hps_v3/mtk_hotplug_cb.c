@@ -33,6 +33,7 @@
 #endif
 
 static struct notifier_block cpu_hotplug_nb;
+static struct notifier_block hps_pm_notifier_func;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
 struct cpumask *mtk_cpu_cluster0_mask = to_cpumask(cpu_cluster0_bits);
@@ -215,6 +216,27 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	}
 	return NOTIFY_OK;
 }
+
+/*HPS PM notifier*/
+static int hps_pm_event(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		mutex_lock(&hps_ctxt.lock);
+		hps_ctxt.enabled_backup = hps_ctxt.enabled;
+		hps_ctxt.enabled = 0;
+		mutex_unlock(&hps_ctxt.lock);
+		return NOTIFY_DONE;
+	case PM_POST_SUSPEND:
+		mutex_lock(&hps_ctxt.lock);
+		hps_ctxt.enabled = hps_ctxt.enabled_backup;
+		mutex_unlock(&hps_ctxt.lock);
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
+}
+
 static __init int hotplug_cb_init(void)
 {
 	int ret;
@@ -237,8 +259,19 @@ static __init int hotplug_cb_init(void)
 	ret = register_cpu_notifier(&cpu_hotplug_nb);
 	if (ret)
 		return ret;
-
 	pr_info("CPU Hotplug Low Power Notification\n");
+
+	hps_pm_notifier_func = (struct notifier_block){
+		.notifier_call = hps_pm_event,
+		.priority = 0,
+	};
+
+	ret = register_pm_notifier(&hps_pm_notifier_func);
+	if (ret) {
+		pr_debug("Failed to register HPS PM notifier.\n");
+		return ret;
+	}
+	pr_info("HPS PM Notification\n");
 
 	return 0;
 }
