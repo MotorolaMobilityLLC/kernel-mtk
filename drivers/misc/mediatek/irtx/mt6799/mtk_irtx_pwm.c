@@ -208,17 +208,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		}
 	}
 
-	mt_set_intr_enable(0);
-	mt_set_intr_enable(1);
-	mt_pwm_26M_clk_enable_hal(1);
-
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 
-	mt_set_intr_ack(0);
-	mt_set_intr_ack(1);
 	ret = pwm_set_spec_config(&irtx_pwm_config);
 	pr_debug("[IRTX] pwm is triggered, %d\n", ret);
 

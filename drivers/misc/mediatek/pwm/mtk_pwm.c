@@ -1301,6 +1301,7 @@ s32 pwm_set_spec_config(struct pwm_spec_config *conf)
 		break;
 	case PWM_MODE_MEMORY:
 		PWMDBG("PWM_MODE_MEMORY\n");
+		mt_pwm_26M_clk_enable_hal(1);
 		mt_set_pwm_con_oldmode(conf->pwm_no, OLDMODE_DISABLE);
 		mt_set_pwm_con_datasrc(conf->pwm_no, MEMORY);
 		mt_set_pwm_con_mode(conf->pwm_no, PERIOD);
