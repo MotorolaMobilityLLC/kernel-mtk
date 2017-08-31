@@ -12,8 +12,9 @@
 #
 
 ccflags-y += \
-	-I$(srctree)/drivers/misc/mediatek/base/power/upower_v2/inc	\
-	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v1	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/upower_v2	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v2	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(CONFIG_MTK_PLATFORM)/inc	\
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
