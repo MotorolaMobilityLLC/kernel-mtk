@@ -488,14 +488,14 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 		err = cxt->acc_ctl.enable_nodata(1);
 		if (err) {
 			ACC_PR_ERR("acc turn on power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		ACC_LOG("acc turn on power done\n");
 	} else {
 		err = cxt->acc_ctl.enable_nodata(0);
 		if (err) {
 			ACC_PR_ERR("acc turn off power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		ACC_LOG("acc turn off power done\n");
 	}
@@ -545,11 +545,12 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 			err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
 		if (err) {
 			ACC_ERR("acc set batch(ODR) err %d\n", err);
-			return -1;
+			goto err_out;
 		}
 #else
 		err = acc_enable_and_batch();
 #endif
+err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
 }
@@ -580,7 +581,7 @@ static ssize_t acc_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ACC_PR_ERR("acc enable flush err %d\n", err);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t acc_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -794,14 +795,14 @@ static ssize_t gyro_store_active(struct device *dev, struct device_attribute *at
 		err = cxt->gyro_ctl.enable_nodata(1);
 		if (err) {
 			GYRO_PR_ERR("gyro turn on power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		GYRO_LOG("gyro turn on power done\n");
 	} else {
 		err = cxt->gyro_ctl.enable_nodata(0);
 		if (err) {
 			GYRO_PR_ERR("gyro turn off power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		GYRO_LOG("gyro turn off power done\n");
 	}
@@ -850,11 +851,12 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 		err = cxt->gyro_ctl.batch(0, atomic_read(&t_obj->delay) * 1000 * 1000, 0);
 	if (err) {
 		GYRO_PR_ERR("gyro set batch(ODR) err %d\n", err);
-		return -1;
+		goto err_out;
 	}
 #else
 	err = gyro_enable_and_batch();
 #endif
+err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return err;
 }
@@ -885,7 +887,7 @@ static ssize_t gyro_store_flush(struct device *dev, struct device_attribute *att
 	if (err < 0)
 		GYRO_INFO("gyro enable flush err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t gyro_show_flush(struct device *dev, struct device_attribute *attr, char *buf)

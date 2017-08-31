@@ -252,7 +252,7 @@ static ssize_t act_store_active(struct device *dev, struct device_attribute *att
 	err = cxt->act_ctl.enable_nodata(cxt->enable);
 	if (err) {
 		ACT_ERR("act turn on power err = %d\n", err);
-		return -1;
+		goto err_out;
 	}
 #else
 	err = act_enable_and_batch();
@@ -260,7 +260,7 @@ static ssize_t act_store_active(struct device *dev, struct device_attribute *att
 	ACT_LOG(" act_store_active done\n");
 err_out:
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -300,11 +300,12 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 		err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		ACT_ERR("act set batch(ODR) err %d\n", err);
-		return -1;
+		goto err_out;
 	}
 #else
 	err = act_enable_and_batch();
 #endif
+err_out:
 	mutex_unlock(&act_context_obj->act_op_mutex);
 	return err;
 }
@@ -335,7 +336,7 @@ static ssize_t act_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ACT_ERR("act enable flush err %d\n", err);
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t act_show_flush(struct device *dev, struct device_attribute *attr, char *buf)

@@ -452,33 +452,33 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 	switch (handle) {
 	case ID_STEP_COUNTER:
 		if (1 == en)
-			step_c_enable_data(1);
+			res = step_c_enable_data(1);
 		else if (0 == en)
-			step_c_enable_data(0);
+			res = step_c_enable_data(0);
 		else
 			STEP_C_PR_ERR(" step_c_store_active error !!\n");
 		break;
 	case ID_STEP_DETECTOR:
 		if (1 == en)
-			step_d_real_enable(1);
+			res = step_d_real_enable(1);
 		else if (0 == en)
-			step_d_real_enable(0);
+			res = step_d_real_enable(0);
 		else
 			STEP_C_PR_ERR(" step_d_real_enable error !!\n");
 		break;
 	case ID_SIGNIFICANT_MOTION:
 		if (1 == en)
-			significant_real_enable(1);
+			res = significant_real_enable(1);
 		else if (0 == en)
-			significant_real_enable(0);
+			res = significant_real_enable(0);
 		else
 			STEP_C_PR_ERR(" significant_real_enable error !!\n");
 		break;
 	case ID_FLOOR_COUNTER:
 		if (en == 1)
-			floor_c_enable_data(1);
+			res = floor_c_enable_data(1);
 		else if (en == 0)
-			floor_c_enable_data(0);
+			res = floor_c_enable_data(0);
 		else
 			STEP_C_PR_ERR(" fc_real_enable error !!\n");
 		break;
@@ -486,7 +486,7 @@ static ssize_t step_c_store_active(struct device *dev, struct device_attribute *
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_active done\n");
-	return count;
+	return res;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -504,7 +504,7 @@ static ssize_t step_c_show_active(struct device *dev, struct device_attribute *a
 static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	int delay;
+	int delay = 0, err = 0;
 	int mdelay = 0;
 	struct step_c_context *cxt = NULL;
 
@@ -513,23 +513,23 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 	if (NULL == cxt->step_c_ctl.step_c_set_delay) {
 		STEP_C_LOG("step_c_ctl step_c_set_delay NULL\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-		return count;
+		return -1;
 	}
 
 	if (0 != kstrtoint(buf, 10, &delay)) {
 		STEP_C_PR_ERR("invalid format!!\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-		return count;
+		return -1;
 	}
 
 	if (false == cxt->step_c_ctl.is_report_input_direct) {
 		mdelay = (int)delay / 1000 / 1000;
 		atomic_set(&step_c_context_obj->delay, mdelay);
 	}
-	cxt->step_c_ctl.step_c_set_delay(delay);
+	err = cxt->step_c_ctl.step_c_set_delay(delay);
 	STEP_C_LOG(" step_c_delay %d ns\n", delay);
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-	return count;
+	return err;
 
 }
 
@@ -599,7 +599,7 @@ static ssize_t step_c_store_batch(struct device *dev, struct device_attribute *a
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	STEP_C_LOG(" step_c_store_batch done: %d\n", cxt->is_step_c_batch_enable);
-	return count;
+	return res;
 }
 
 static ssize_t step_c_show_batch(struct device *dev, struct device_attribute *attr, char *buf)
@@ -652,7 +652,7 @@ static ssize_t step_c_store_flush(struct device *dev, struct device_attribute *a
 
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t step_c_show_flush(struct device *dev, struct device_attribute *attr, char *buf)

@@ -367,7 +367,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 		err = cxt->als_ctl.enable_nodata(cxt->als_enable);
 		if (err) {
 			ALSPS_ERR("als turn on als_power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 	} else {
 		if (aal_use == 0)
@@ -376,7 +376,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 			err = cxt->als_ctl.batch(0, AAL_DELAY, 0);
 		if (err) {
 			ALSPS_ERR("als turn off als_power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 	}
 #else
@@ -457,7 +457,7 @@ static ssize_t als_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ALSPS_ERR("als enable flush err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t als_show_flush(struct device *dev,
@@ -656,7 +656,7 @@ static ssize_t ps_store_flush(struct device *dev, struct device_attribute *attr,
 	if (err < 0)
 		ALSPS_ERR("ps enable flush err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t ps_show_flush(struct device *dev,
