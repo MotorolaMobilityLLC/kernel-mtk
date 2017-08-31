@@ -176,7 +176,7 @@ static struct port_t md1_ccci_ports[] = {
 		&smem_port_ops, SMEM_USER_RAW_LWA, "ccci_raw_lwa",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, SMEM_Q, SMEM_Q, 0xFF, 0xFF, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_CCB_MD_MONITOR, "ccci_ccb_md_monitor",},
-	{CCCI_SMEM_CH, CCCI_SMEM_CH, SMEM_Q, SMEM_Q, 0xFF, 0xFF, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, SMEM_Q, SMEM_Q, SMEM_Q, SMEM_Q, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_CCB_META, "ccci_ccb_meta",},
 };
 
