@@ -1914,12 +1914,12 @@ static INT_32 wlanProbe(PVOID pvData)
 #endif
 
 #if CFG_SUPPORT_CFG_FILE
+		wlanCfgInit(prAdapter, NULL, 0, 0);
 #ifdef ENABLED_IN_ENGUSERDEBUG
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
 
-			wlanCfgInit(prAdapter, NULL, 0, 0);
 			pucConfigBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
 			u4ConfigReadLen = 0;
 			kalMemZero(pucConfigBuf, WLAN_CFG_FILE_BUF_SIZE);
