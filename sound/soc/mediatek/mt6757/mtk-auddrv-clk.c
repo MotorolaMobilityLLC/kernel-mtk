@@ -65,6 +65,12 @@
 #include "mtk_idle.h"
 #include "mtk_clk_id.h"
 #endif
+
+#define _MT_SPM_RESOURCE
+#ifdef _MT_SPM_RESOURCE
+#include "mtk_spm_resource_req.h"
+#endif
+
 #include <linux/err.h>
 #include <linux/platform_device.h>
 
@@ -1816,10 +1822,17 @@ void AudDrv_Emi_Clk_On(void)
 {
 	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_EMI_cntr == 0) {
+#ifdef _MT_SPM_RESOURCE
+		/* CPU can sleep and be waked up when receiving interrupt */
+		spm_resource_req(SPM_RESOURCE_USER_AUDIO,
+				SPM_RESOURCE_DRAM);
+				/* SPM_RESOURCE_CPU | SPM_RESOURCE_DRAM); */
+#else
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
 		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
 		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
+#endif
 #endif
 	}
 	Aud_EMI_cntr++;
@@ -1831,10 +1844,14 @@ void AudDrv_Emi_Clk_Off(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
+#ifdef _MT_SPM_RESOURCE
+		spm_resource_req(SPM_RESOURCE_USER_AUDIO, 0);
+#else
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 		/* mutex is used in these api */
 		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
 		enable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
+#endif
 #endif
 	}
 
