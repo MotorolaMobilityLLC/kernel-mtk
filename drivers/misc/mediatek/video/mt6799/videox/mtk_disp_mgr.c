@@ -82,7 +82,7 @@
 
 #define DDP_OUTPUT_LAYID 4
 
-#define NO_PQ_IOCTL
+/* #define NO_PQ_IOCTL */
 
 static unsigned int session_config[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);

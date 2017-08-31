@@ -1844,8 +1844,29 @@ static int is_module_in_path(enum DISP_MODULE_ENUM module, struct ddp_path_handl
 	return 0;
 }
 
-int get_pq_dual_module(enum DISP_MODULE_ENUM module)
+static bool can_dual_PQ(unsigned int cmd)
 {
+	switch (cmd) {
+	case DISP_IOCTL_AAL_EVENTCTL:
+	case DISP_IOCTL_AAL_INIT_REG:
+	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_SET_GAMMALUT:
+	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_SET_PQPARAM:
+	case DISP_IOCTL_SET_COLOR_REG:
+	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
+	case DISP_IOCTL_PQ_SET_WINDOW:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static int get_pq_dual_module(enum DISP_MODULE_ENUM module, int msg)
+{
+	if (can_dual_PQ(msg) == false)
+		return DISP_MODULE_UNKNOWN;
+
 	switch (module) {
 	case DISP_MODULE_COLOR0:
 		return DISP_MODULE_COLOR1;
@@ -1855,10 +1876,8 @@ int get_pq_dual_module(enum DISP_MODULE_ENUM module)
 		return DISP_MODULE_AAL1;
 	case DISP_MODULE_GAMMA0:
 		return DISP_MODULE_GAMMA1;
-	case DISP_MODULE_DITHER0:
-		return DISP_MODULE_DITHER1;
 	default:
-		return -1;
+		return DISP_MODULE_UNKNOWN;
 	}
 }
 
@@ -1878,45 +1897,40 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_AAL_SET_PARAM:
 		/* TODO: just for verify rootcause, will be removed soon */
 #ifndef CONFIG_FOR_SOURCE_PQ
-		if (is_module_in_path(DISP_MODULE_AAL0, handle)) {
-			if (ddp_modules_driver[DISP_MODULE_AAL0]->cmd != NULL)
-				ret =
-				    ddp_modules_driver[DISP_MODULE_AAL0]->cmd(DISP_MODULE_AAL0, msg,
-									     arg, cmdqhandle);
+		dst = DISP_MODULE_AAL0;
+		if (is_module_in_path(dst, handle)) {
+			if (ddp_modules_driver[dst]->cmd != NULL)
+				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 
-		}
-
-		if (ddp_path_is_dual(handle->scenario)) {
-			if (is_module_in_path(DISP_MODULE_AAL1, handle)) {
-				if (ddp_modules_driver[DISP_MODULE_AAL1]->cmd != NULL)
-					ret =
-						ddp_modules_driver[DISP_MODULE_AAL1]->cmd(DISP_MODULE_AAL1, msg,
-											 arg, cmdqhandle);
+			dst = get_pq_dual_module(dst, msg);
+			if (dst != DISP_MODULE_UNKNOWN && ddp_path_is_dual(handle->scenario) &&
+				is_module_in_path(dst, handle)) {
+				if (ddp_modules_driver[dst]->cmd != NULL)
+					ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 			}
 		}
-
 #endif
 		break;
 	case DISP_IOCTL_SET_GAMMALUT:
-		if (ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd != NULL) {
-			ret =
-			    ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd(DISP_MODULE_GAMMA0, msg, arg,
-								       cmdqhandle);
-			if (ddp_path_is_dual(handle->scenario))
-				ret =
-					ddp_modules_driver[DISP_MODULE_GAMMA1]->cmd(DISP_MODULE_GAMMA0, msg, arg,
-											cmdqhandle);
+		dst = DISP_MODULE_GAMMA0;
+		if (ddp_modules_driver[dst]->cmd != NULL)
+			ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
+
+		if (ddp_path_is_dual(handle->scenario)) {
+			dst = get_pq_dual_module(dst, msg);
+			if (dst != DISP_MODULE_UNKNOWN && ddp_modules_driver[dst]->cmd != NULL)
+				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 		}
 		break;
 	case DISP_IOCTL_SET_CCORR:
-		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL) {
-			ret =
-			    ddp_modules_driver[DISP_MODULE_CCORR0]->cmd(DISP_MODULE_CCORR0, msg, arg,
-								       cmdqhandle);
-			if (ddp_path_is_dual(handle->scenario))
-				ret =
-					ddp_modules_driver[DISP_MODULE_CCORR1]->cmd(DISP_MODULE_CCORR1, msg, arg,
-										   cmdqhandle);
+		dst = DISP_MODULE_CCORR0;
+		if (ddp_modules_driver[dst]->cmd != NULL)
+			ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
+
+		if (ddp_path_is_dual(handle->scenario)) {
+			dst = get_pq_dual_module(dst, msg);
+			if (dst != DISP_MODULE_UNKNOWN && ddp_modules_driver[dst]->cmd != NULL)
+				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 		}
 		break;
 
@@ -1956,10 +1970,9 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 
 			if (ddp_modules_driver[dst]->cmd != NULL)
 				ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
-
 			if (ddp_path_is_dual(handle->scenario)) {
-				dst = get_pq_dual_module(dst);
-				if (dst != -1)
+				dst = get_pq_dual_module(dst, msg);
+				if (dst != DISP_MODULE_UNKNOWN && ddp_modules_driver[dst]->cmd != NULL)
 					ret = ddp_modules_driver[dst]->cmd(dst, msg, arg, cmdqhandle);
 			}
 		}

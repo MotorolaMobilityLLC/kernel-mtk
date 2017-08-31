@@ -32,6 +32,7 @@
 	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
+#include <primary_display.h>
 
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
@@ -72,12 +73,15 @@ int dither_dbg_en;
 
 #define DITHER_REG(reg_base, index) ((reg_base) + 0x100 + (index) * 4)
 
+static unsigned int g_dither_relay_value;
+
 void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 			     unsigned int dither_bpp, void *cmdq)
 {
 	const int offset = dither_get_offset(module);
 	unsigned long reg_base = DITHER0_BASE_NAMING + offset;
 	unsigned int enable;
+	unsigned int cfg_val;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 6), 0x00003002, ~0);
@@ -114,7 +118,8 @@ void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 	}
 
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN + offset, enable, 0x1);
-	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG + offset, enable << 1, 1 << 1);
+	cfg_val = (enable << 1) | g_dither_relay_value;
+	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG + offset, cfg_val, 0x3);
 	/* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
@@ -158,8 +163,12 @@ static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
 {
 	int relay = 0;
 
-	if (bypass)
+	if (bypass) {
 		relay = 1;
+		g_dither_relay_value = 0x1;
+	} else {
+		g_dither_relay_value = 0x0;
+	}
 
 	DISP_REG_MASK(NULL, DISP_REG_DITHER_CFG + dither_get_offset(module), relay, 0x1);
 
@@ -314,8 +323,9 @@ void dither_test(const char *cmd, char *debug_output)
 	int i;
 	int config_module_num = 1;
 
-#ifdef _DUAL_PIPE_DUMMY_
-	config_module_num = DITHER_TOTAL_MODULE_NUM;
+#if defined(CONFIG_MACH_MT6799)
+	if (primary_display_get_pipe_status() == DUAL_PIPE)
+		config_module_num = DITHER_TOTAL_MODULE_NUM;
 #endif
 
 	debug_output[0] = '\0';
