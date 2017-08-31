@@ -3703,6 +3703,22 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6799-scpsys", mt_scpsys_init);
 
+int mtcmos_mfg_series_on(void)
+{
+	unsigned int sta = spm_read(PWR_STATUS);
+	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
+
+	int ret;
+
+	ret = 0;
+	ret |= (sta & (1U << 1)) && (sta_s & (1U << 1));
+	ret |= ((sta & (1U << 2)) && (sta_s & (1U << 2))) << 1;
+	ret |= ((sta & (1U << 3)) && (sta_s & (1U << 3))) << 2;
+	mfgsys_cg_check();
+	return ret;
+}
+
+
 void subsys_if_on(void)
 {
 	unsigned int sta = spm_read(PWR_STATUS);

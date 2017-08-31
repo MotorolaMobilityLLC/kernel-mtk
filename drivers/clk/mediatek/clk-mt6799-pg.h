@@ -73,6 +73,7 @@ extern void vde_mtcmos_patch(int on);
 extern void cam_mtcmos_patch(int on);
 extern void check_mjc_clk_sts(void);
 extern void check_ven_clk_sts(void);
+extern void mfgsys_cg_check(void);
 /*ram console api*/
 /*
 *[0] bus protect reg
