@@ -66,8 +66,9 @@ struct cmdqRecStruct {
 	uint8_t local_var_num;
 	struct cmdq_stack_node *if_stack_node;
 	struct cmdq_stack_node *while_stack_node;
-	CMDQ_VARIABLE arg_poll_source;
-	CMDQ_VARIABLE arg_poll_value;
+	CMDQ_VARIABLE arg_source;	/* poll source, wait_timeout event */
+	CMDQ_VARIABLE arg_value;	/* poll value, wait_timeout start */
+	CMDQ_VARIABLE arg_timeout;	/* wait_timeout timeout */
 
 	/* profile marker */
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
