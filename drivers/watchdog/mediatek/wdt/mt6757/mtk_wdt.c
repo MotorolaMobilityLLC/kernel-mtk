@@ -477,7 +477,7 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 	return 0;
 }
 
-int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
+int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en)
 {
 	int res = 0;
 	unsigned int tmp, ext_req_con;
@@ -541,7 +541,7 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 	return res;
 }
 
-int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
+int mtk_wdt_request_mode_set(int mark_bit, enum wk_req_mode mode)
 {
 	int res = 0;
 	unsigned int tmp;
@@ -720,8 +720,8 @@ void mtk_wd_suspend(void){}
 void mtk_wd_resume(void){}
 void wdt_dump_reg(void){}
 int mtk_wdt_swsysret_config(int bit, int set_value) { return 0; }
-int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode) {return 0; }
-int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
+int mtk_wdt_request_mode_set(int mark_bit, enum wk_req_mode mode) {return 0; }
+int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en) {return 0; }
 void mtk_wdt_set_c2k_sysrst(unsigned int flag) {}
 int mtk_rgu_dram_reserved(int enable) {return 0; }
 int mtk_rgu_mcu_cache_preserve(int enable) {return 0; }

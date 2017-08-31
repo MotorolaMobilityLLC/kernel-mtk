@@ -29,32 +29,32 @@
   #define TRUE  (1)
 #endif
 
-typedef enum ext_wdt_mode {
+enum ext_wdt_mode {
 	WDT_IRQ_ONLY_MODE,
 	WDT_HW_REBOOT_ONLY_MODE,
 	WDT_DUAL_MODE,
-} WD_MODE;
+};
 
-typedef enum wk_wdt_en {
+enum wk_wdt_en {
 	WK_WDT_DIS,
 	WK_WDT_EN,
-} WD_CTL;
+};
 
 
-typedef enum wd_restart_type {
+enum wd_restart_type {
 	WD_TYPE_NORMAL,
 	WD_TYPE_NOLOCK,
-} WD_RES_TYPE;
+};
 
-typedef enum wk_req_en {
+enum wk_req_en {
 	WD_REQ_DIS,
 	WD_REQ_EN,
-} WD_REQ_CTL;
+};
 
-typedef enum wk_req_mode {
+enum wk_req_mode {
 	WD_REQ_IRQ_MODE,
 	WD_REQ_RST_MODE,
-} WD_REQ_MODE;
+};
 
 struct wd_api {
 	long ready;
@@ -72,13 +72,13 @@ struct wd_api {
 	void (*wd_resume_notify)(void);
 	unsigned int (*wd_get_check_bit)(void);
 	unsigned int (*wd_get_kick_bit)(void);
-	int (*wd_spmwdt_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
-	int (*wd_thermal_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
+	int (*wd_spmwdt_mode_config)(enum wk_req_en en, enum wk_req_mode mode);
+	int (*wd_thermal_mode_config)(enum wk_req_en en, enum wk_req_mode mode);
 	int (*wd_dram_reserved_mode)(bool enabled);
 	int (*wd_mcu_cache_preserve)(bool enabled);
-	int (*wd_thermal_direct_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
-	int (*wd_debug_key_eint_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
-	int (*wd_debug_key_sysrst_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
+	int (*wd_thermal_direct_mode_config)(enum wk_req_en en, enum wk_req_mode mode);
+	int (*wd_debug_key_eint_config)(enum wk_req_en en, enum wk_req_mode mode);
+	int (*wd_debug_key_sysrst_config)(enum wk_req_en en, enum wk_req_mode mode);
 	int (*wd_dfd_count_en)(int value);
 	int (*wd_dfd_thermal1_dis)(int value);
 	int (*wd_dfd_thermal2_dis)(int value);

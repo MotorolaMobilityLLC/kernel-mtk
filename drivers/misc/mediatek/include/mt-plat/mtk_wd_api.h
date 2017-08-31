@@ -40,7 +40,6 @@ enum wk_wdt_en {
 	WK_WDT_EN,
 };
 
-
 enum wd_restart_type {
 	WD_TYPE_NORMAL,
 	WD_TYPE_NOLOCK,
@@ -85,11 +84,13 @@ struct wd_api {
 	int (*wd_dfd_timeout)(int value);
 };
 
-int wd_api_init(void);
-int get_wd_api(struct wd_api **obj);
-void wk_cpu_update_bit_flag(int cpu, int plug_status);
 unsigned int get_check_bit(void);
 unsigned int get_kick_bit(void);
+int get_wd_api(struct wd_api **obj);
+int wd_api_init(void);
+void wk_cpu_update_bit_flag(int cpu, int plug_status);
+
 extern void aee_wdt_printf(const char *fmt, ...);
 
 #endif				/* _MT_WD_API_H_ */
+
