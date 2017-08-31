@@ -86,21 +86,21 @@ static dev_t disp_devno;
 static struct cdev *disp_cdev;
 static struct class *disp_class;
 
-struct disp_node_struct {
+typedef struct {
 	pid_t open_pid;
 	pid_t open_tgid;
 	struct list_head testList;
 	spinlock_t node_lock;
-};
+} disp_node_struct;
 
 static struct platform_device mydev;
 static struct dispsys_device *dispsys_dev;
 unsigned int dispsys_irq[DISP_REG_NUM] = { 0 };
-unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
+volatile unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
 
-unsigned long mipi_tx0_reg;
-unsigned long mipi_tx1_reg;
-unsigned long dsi_reg_va[2] = { 0 };
+volatile unsigned long mipi_tx0_reg;
+volatile unsigned long mipi_tx1_reg;
+volatile unsigned long dsi_reg_va[2] = { 0 };
 /* from DTS, should be synced with DTS */
 unsigned long ddp_reg_pa_base[DISP_REG_NUM];
 
@@ -454,18 +454,18 @@ static long disp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long
 
 static int disp_open(struct inode *inode, struct file *file)
 {
-	struct disp_node_struct *pNode = NULL;
+	disp_node_struct *pNode = NULL;
 
 	DDPDBG("enter disp_open() process:%s\n", current->comm);
 
 	/* Allocate and initialize private data */
-	file->private_data = kmalloc(sizeof(struct disp_node_struct), GFP_ATOMIC);
+	file->private_data = kmalloc(sizeof(disp_node_struct), GFP_ATOMIC);
 	if (file->private_data == NULL) {
 		DDPMSG("Not enough entry for DDP open operation\n");
 		return -ENOMEM;
 	}
 
-	pNode = (struct disp_node_struct *) file->private_data;
+	pNode = (disp_node_struct *) file->private_data;
 	pNode->open_pid = current->pid;
 	pNode->open_tgid = current->tgid;
 	INIT_LIST_HEAD(&(pNode->testList));
@@ -482,11 +482,11 @@ static ssize_t disp_read(struct file *file, char __user *data, size_t len, loff_
 
 static int disp_release(struct inode *inode, struct file *file)
 {
-	struct disp_node_struct *pNode = NULL;
+	disp_node_struct *pNode = NULL;
 	/* unsigned int index = 0; */
 	DDPDBG("enter disp_release() process:%s\n", current->comm);
 
-	pNode = (struct disp_node_struct *) file->private_data;
+	pNode = (disp_node_struct *) file->private_data;
 
 	spin_lock(&pNode->node_lock);
 
@@ -535,7 +535,7 @@ struct dispsys_device {
 };
 
 
-static int disp_is_intr_enable(enum DISP_REG_ENUM module)
+static int disp_is_intr_enable(DISP_REG_ENUM module)
 {
 	switch (module) {
 	case DISP_REG_OVL0:
@@ -577,7 +577,7 @@ static int disp_is_intr_enable(enum DISP_REG_ENUM module)
 
 m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 {
-	enum DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
+	DISP_MODULE_ENUM module = DISP_MODULE_OVL0;
 
 	DDPERR("fault call port=%d, mva=0x%lx, data=0x%p\n", port, mva, data);
 	switch (port) {
@@ -654,8 +654,8 @@ static int disp_probe(struct platform_device *pdev)
 	memcpy(&mydev, pdev, sizeof(mydev));
 
 	if (dispsys_dev) {
-		DDPAEE("disp probe fail, dispsys_dev=0x%p\n", dispsys_dev);
-		return -1;
+		DDPERR("%s: dispsys_dev=0x%p\n", __func__, dispsys_dev);
+		WARN_ON(1);
 	}
 
 	dispsys_dev = kmalloc(sizeof(struct dispsys_device), GFP_KERNEL);
@@ -729,7 +729,10 @@ static int __init disp_probe_1(void)
 	/* secure video path implementation: a physical address is allocated to place a handle for decryption buffer. */
 	init_tplay_handle(&(pdev->dev));	/* non-zero value for valid VA */
 #endif
-	ASSERT(!dispsys_dev);
+	if (!dispsys_dev) {
+		DDPERR("%s: dispsys_dev=NULL\n", __func__);
+		WARN_ON(1);
+	}
 
 	dispsys_dev->dev = &pdev->dev;
 

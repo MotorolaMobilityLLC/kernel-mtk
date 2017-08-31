@@ -59,7 +59,7 @@ static int ovl2mem_layer_num;
 int ovl2mem_use_m4u = 1;
 int ovl2mem_use_cmdq = CMDQ_ENABLE;
 
-struct ovl2mem_path_context {
+typedef struct {
 	int state;
 	unsigned int session;
 	unsigned int lcm_fps;
@@ -70,7 +70,7 @@ struct ovl2mem_path_context {
 	struct cmdqRecStruct *cmdq_handle_trigger;
 	disp_path_handle dpmgr_handle;
 	char *mutex_locker;
-};
+} ovl2mem_path_context;
 
 atomic_t g_trigger_ticket = ATOMIC_INIT(1);
 atomic_t g_release_ticket = ATOMIC_INIT(1);
@@ -78,19 +78,19 @@ atomic_t g_release_ticket = ATOMIC_INIT(1);
 
 #define pgc	_get_context()
 
-static struct ovl2mem_path_context *_get_context(void)
+static ovl2mem_path_context *_get_context(void)
 {
-	static struct ovl2mem_path_context g_context;
+	static ovl2mem_path_context g_context;
 
 	if (!is_context_inited) {
-		memset((void *)&g_context, 0, sizeof(struct ovl2mem_path_context));
+		memset((void *)&g_context, 0, sizeof(ovl2mem_path_context));
 		is_context_inited = 1;
 	}
 
 	return &g_context;
 }
 
-enum CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
+CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
 {
 	return ovl2mem_use_cmdq;
 }
@@ -181,7 +181,7 @@ int ovl2mem_get_info(void *info)
 }
 
 
-static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, disp_input_config *src)
+static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
 	int ret = 0;
 	int force_disable_alpha = 0;
@@ -272,10 +272,10 @@ static int ovl2mem_callback(unsigned int userdata)
 	layid = disp_sync_get_output_timeline_id();
 	fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid, userdata);
 	if (fence_idx >= 0) {
-		struct disp_ddp_path_config *data_config =
+		disp_ddp_path_config *data_config =
 			dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		if (data_config) {
-			struct WDMA_CONFIG_STRUCT wdma_layer;
+			WDMA_CONFIG_STRUCT wdma_layer;
 
 			wdma_layer.dstAddress = mtkfb_query_buf_mva(pgc->session, layid, fence_idx);
 			wdma_layer.outputFormat = data_config->wdma_config.outputFormat;
@@ -348,7 +348,7 @@ int ovl2mem_init(unsigned int session)
 
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
-	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,enum DISP_MODULE_ENUM dst_module) */
+	/* dpmgr_path_set_dst_module(pgc->dpmgr_handle,DISP_MODULE_ENUM dst_module) */
 
 	sPort.ePortID = M4U_PORT_DISP_OVL1;
 	sPort.Virtuality = ovl2mem_use_m4u;
@@ -505,7 +505,7 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	int ret = -1;
 	int i = 0;
 	int config_layer_id = 0;
-	struct disp_ddp_path_config *data_config;
+	disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
 
 	DISPFUNC();
@@ -555,7 +555,7 @@ static int ovl2mem_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 {
 	int ret = -1;
 	unsigned int dst_mva = 0;
-	struct disp_ddp_path_config *data_config;
+	disp_ddp_path_config *data_config;
 	unsigned int session_id = cfg->session_id;
 
 	if (cfg->output_cfg.pa) {
@@ -617,7 +617,7 @@ int ovl2mem_frame_cfg(struct disp_frame_cfg_t *cfg)
 	int ret = 0;
 	unsigned int session_id = 0;
 	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(cfg->session_id);
-	struct dprec_logger_event *input_event, *output_event, *trigger_event;
+	dprec_logger_event *input_event, *output_event, *trigger_event;
 
 	session_id = cfg->session_id;
 

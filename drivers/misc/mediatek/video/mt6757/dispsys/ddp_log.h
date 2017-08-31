@@ -143,7 +143,7 @@ do {\
 		if (expr)				\
 			break;				\
 		pr_err("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__); \
-		aee_kernel_exception("DDP", "[DDP] assert error:", expr);  \
+		WARN_ON(1);  \
 	} while (0)
 #endif
 

@@ -14,11 +14,11 @@
 #ifndef _DISP_LOWPOWER_H_
 #define _DISP_LOWPOWER_H_
 
-unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module);
+unsigned int dsi_phy_get_clk(DISP_MODULE_ENUM module);
 void primary_display_idlemgr_enter_idle_nolock(void);
 
 
-struct golden_setting_context *get_golden_setting_pgc(void);
+golden_setting_context *get_golden_setting_pgc(void);
 int primary_display_lowpower_init(void);
 void primary_display_sodi_rule_init(void);
 void kick_logger_dump(char *string);

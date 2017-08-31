@@ -16,11 +16,11 @@
 #include "disp_session.h"
 #include <linux/fs.h>
 
-enum ePREPARE_FENCE_TYPE {
+typedef enum {
 	PREPARE_INPUT_FENCE,
 	PREPARE_OUTPUT_FENCE,
 	PREPARE_PRESENT_FENCE
-};
+} ePREPARE_FENCE_TYPE;
 
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 int disp_create_session(disp_session_config *config);

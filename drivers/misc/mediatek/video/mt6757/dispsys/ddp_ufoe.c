@@ -39,7 +39,7 @@ static void ufoe_dump(void)
 	DDPDUMP("(0x104)UFOE_CFG1=0x%x\n", DISP_REG_GET(DISP_REG_UFO_CFG_1B));
 }
 
-static int ufoe_init(enum DISP_MODULE_ENUM module, void *handle)
+static int ufoe_init(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
@@ -50,7 +50,7 @@ static int ufoe_init(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ufoe_deinit(enum DISP_MODULE_ENUM module, void *handle)
+static int ufoe_deinit(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
@@ -61,7 +61,7 @@ static int ufoe_deinit(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-int ufoe_start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+int ufoe_start(DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	if (ufoe_enable)
 		DISP_REG_SET_FIELD(cmdq, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1);
@@ -71,14 +71,14 @@ int ufoe_start(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 }
 
 
-int ufoe_stop(enum DISP_MODULE_ENUM module, void *cmdq_handle)
+int ufoe_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	DISP_REG_SET_FIELD(cmdq_handle, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 0);
 	DDPMSG("ufoe_stop, ufoe_start:0x%x\n", DISP_REG_GET(DISP_REG_UFO_START));
 	return 0;
 }
 
-static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
+static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
 {
 	LCM_PARAMS *disp_if_config = &(pConfig->dispif_config);
 	LCM_DSI_PARAMS *lcm_config = &(disp_if_config->dsi);
@@ -130,7 +130,7 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 
 }
 
-static int ufoe_clock_on(enum DISP_MODULE_ENUM module, void *handle)
+static int ufoe_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
@@ -143,7 +143,7 @@ static int ufoe_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ufoe_clock_off(enum DISP_MODULE_ENUM module, void *handle)
+static int ufoe_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
@@ -156,7 +156,7 @@ static int ufoe_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ufoe_reset(enum DISP_MODULE_ENUM module, void *handle)
+static int ufoe_reset(DISP_MODULE_ENUM module, void *handle)
 {
 	DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_SW_RST_ENGINE, DISP_REG_UFO_START, 1);
 	DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_SW_RST_ENGINE, DISP_REG_UFO_START, 0);
@@ -164,7 +164,7 @@ static int ufoe_reset(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int _ufoe_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *handle)
+static int _ufoe_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle)
 {
 	struct disp_rect *roi = (struct disp_rect *)arg;
 	int width = roi->width;
@@ -189,11 +189,11 @@ static int _ufoe_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *h
 	return 0;
 }
 
-int ufoe_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle,
+int ufoe_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle,
 		unsigned int ioctl_cmd, unsigned long *params)
 {
 	int ret = -1;
-	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME) ioctl_cmd;
+	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
 
 	switch (ioctl) {
 	case DDP_PARTIAL_UPDATE:
@@ -207,11 +207,11 @@ int ufoe_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle,
 }
 
 /* ufoe */
-struct DDP_MODULE_DRIVER ddp_driver_ufoe = {
+DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.init = ufoe_init,
 	.deinit = ufoe_deinit,
 	.config = ufoe_config,
-	.start = (int (*)(enum DISP_MODULE_ENUM, void *))ufoe_start,
+	.start = (int (*)(DISP_MODULE_ENUM, void *))ufoe_start,
 	.trigger = NULL,
 	.stop = ufoe_stop,
 	.reset = ufoe_reset,
@@ -219,9 +219,9 @@ struct DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.power_off = ufoe_clock_off,
 	.is_idle = NULL,
 	.is_busy = NULL,
-	.dump_info = (int (*)(enum DISP_MODULE_ENUM, int))ufoe_dump,
+	.dump_info = (int (*)(DISP_MODULE_ENUM, int))ufoe_dump,
 	.bypass = NULL,
 	.build_cmdq = NULL,
 	.set_lcm_utils = NULL,
-	.ioctl = (int (*)(enum DISP_MODULE_ENUM, void *, enum DDP_IOCTL_NAME, void *))ufoe_ioctl,
+	.ioctl = (int (*)(DISP_MODULE_ENUM, void *, DDP_IOCTL_NAME, void *))ufoe_ioctl,
 };

@@ -131,16 +131,16 @@ typedef struct {
 typedef struct {
 	unsigned int session_id;
 	disp_sync_info session_layer_info[DISP_SESSION_TIMELINE_COUNT];
-	struct dprec_logger_event event_prepare;
-	struct dprec_logger_event event_setinput;
-	struct dprec_logger_event event_setoutput;
-	struct dprec_logger_event event_trigger;
-	struct dprec_logger_event event_findidx;
-	struct dprec_logger_event event_release;
-	struct dprec_logger_event event_waitvsync;
-	struct dprec_logger_event event_err;
-	struct dprec_logger_event event_wait_fence;
-	struct dprec_logger_event event_frame_cfg;
+	dprec_logger_event event_prepare;
+	dprec_logger_event event_setinput;
+	dprec_logger_event event_setoutput;
+	dprec_logger_event event_trigger;
+	dprec_logger_event event_findidx;
+	dprec_logger_event event_release;
+	dprec_logger_event event_waitvsync;
+	dprec_logger_event event_err;
+	dprec_logger_event event_wait_fence;
+	dprec_logger_event event_frame_cfg;
 } disp_session_sync_info;
 
 

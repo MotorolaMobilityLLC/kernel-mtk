@@ -202,7 +202,8 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt)
 	case DISP_FORMAT_PBGRA8888:
 		return UFMT_PBGRA8888;
 	default:
-		pr_err("[Color] invalid format, formar=0x%x\n", src_fmt);
+		DDPERR("Invalid color format: 0x%x\n", src_fmt);
+		WARN_ON(1);
 		return UFMT_UNKNOWN;
 	}
 }

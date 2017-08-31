@@ -370,7 +370,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	return ret;
 }
 
-int _ioctl_prepare_buffer(unsigned long arg, enum ePREPARE_FENCE_TYPE type)
+int _ioctl_prepare_buffer(unsigned long arg, ePREPARE_FENCE_TYPE type)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
@@ -862,7 +862,7 @@ static int _ioctl_wait_all_jobs_done(unsigned long arg)
 	ret = frame_queue_wait_all_jobs_done(head);
 	return ret;
 }
-int disp_mgr_get_session_info(struct disp_session_info_t *info)
+int disp_mgr_get_session_info(disp_session_info *info)
 {
 	unsigned int session_id = 0;
 
@@ -889,7 +889,7 @@ int _ioctl_get_info(unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
-	struct disp_session_info_t info;
+	disp_session_info info;
 
 	if (copy_from_user(&info, argp, sizeof(info))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
@@ -925,7 +925,7 @@ int _ioctl_get_is_driver_suspend(unsigned long arg)
 int _ioctl_get_display_caps(unsigned long arg)
 {
 	int ret = 0;
-	struct disp_caps_t caps_info;
+	disp_caps_info caps_info;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&caps_info, argp, sizeof(caps_info))) {
@@ -1022,7 +1022,7 @@ int _ioctl_set_vsync(unsigned long arg)
 int _ioctl_query_valid_layer(unsigned long arg)
 {
 	int ret = 0;
-	struct disp_layer_info_t disp_info_user;
+	disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {

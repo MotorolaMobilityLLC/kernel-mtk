@@ -26,7 +26,7 @@
 
 static int is_partial_support;
 
-static void _update_layer_dirty(struct OVL_CONFIG_STRUCT *old, disp_input_config *src,
+static void _update_layer_dirty(OVL_CONFIG_STRUCT *old, disp_input_config *src,
 		struct disp_rect *layer_roi)
 {
 #if 0
@@ -87,7 +87,7 @@ static void _convert_picture_to_ovl_dirty(disp_input_config *src,
 }
 
 int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
-		struct disp_ddp_path_config *old_cfg, struct disp_rect *result)
+		disp_ddp_path_config *old_cfg, struct disp_rect *result)
 {
 	int i = 0;
 	int j = 0;
@@ -95,7 +95,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 	int num = 0;
 	int disable_layer = 0;
 	void __user *roi_addr = NULL;
-	struct OVL_CONFIG_STRUCT *old_ovl_cfg = NULL;
+	OVL_CONFIG_STRUCT *old_ovl_cfg = NULL;
 	static struct layer_dirty_roi layers[20];
 	struct layer_dirty_roi *layer_roi_addr = &layers[0];
 	struct disp_rect layer_roi = {0, 0, 0, 0};
@@ -180,7 +180,7 @@ int disp_partial_is_support(void)
 	return is_partial_support;
 }
 
-int disp_partial_check_support(struct disp_lcm_handle *plcm)
+int disp_partial_check_support(disp_lcm_handle *plcm)
 {
 	if (disp_lcm_is_partial_support(plcm) && !disp_lcm_is_video_mode(plcm))
 		is_partial_support = 1;
@@ -207,7 +207,7 @@ int is_equal_full_lcm(const struct disp_rect *roi)
 	return rect_equal(&full_roi, roi);
 }
 
-void disp_patial_lcm_validate_roi(struct disp_lcm_handle *plcm, struct disp_rect *roi)
+void disp_patial_lcm_validate_roi(disp_lcm_handle *plcm, struct disp_rect *roi)
 {
 	int x = roi->x;
 	int y = roi->y;

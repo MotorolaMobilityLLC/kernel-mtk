@@ -154,7 +154,7 @@ static void _ext_disp_vsync_unlock(unsigned int session)
 	mutex_unlock(&(pgc->vsync_lock));
 }
 
-static enum DISP_MODULE_ENUM _get_dst_module_by_lcm(disp_path_handle pHandle)
+static DISP_MODULE_ENUM _get_dst_module_by_lcm(disp_path_handle pHandle)
 {
 	return DISP_MODULE_DPI;
 }
@@ -328,7 +328,7 @@ static int _build_path_direct_link(void)
 	int ret = 0;
 	M4U_PORT_STRUCT sPort;
 
-	enum DISP_MODULE_ENUM dst_module = 0;
+	DISP_MODULE_ENUM dst_module = 0;
 
 	EXT_DISP_FUNC();
 	pgc->mode = EXTD_DIRECT_LINK_MODE;
@@ -398,7 +398,7 @@ static int _build_path_rdma_dpi(void)
 	int ret = 0;
 	M4U_PORT_STRUCT sPort;
 
-	enum DISP_MODULE_ENUM dst_module = 0;
+	DISP_MODULE_ENUM dst_module = 0;
 
 	pgc->mode = EXTD_RDMA_DPI_MODE;
 
@@ -585,7 +585,7 @@ static void _cmdq_insert_wait_frame_done_token(int clear_event)
 	/* /dprec_event_op(DPREC_EVENT_CMDQ_WAIT_STREAM_EOF); */
 }
 
-static int _convert_disp_input_to_rdma(struct RDMA_CONFIG_STRUCT *dst, disp_input_config *src,
+static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst, disp_input_config *src,
 	unsigned int screen_w, unsigned int screen_h)
 {
 /*	int right_edge = 0;
@@ -636,7 +636,7 @@ static int _convert_disp_input_to_rdma(struct RDMA_CONFIG_STRUCT *dst, disp_inpu
 	return 0;
 }
 
-static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, disp_input_config *src)
+static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
 	int force_disable_alpha = 0;
 	enum UNIFIED_COLOR_FMT tmp_fmt;
@@ -868,7 +868,7 @@ void ext_disp_probe(void)
 
 int ext_disp_init(char *lcm_name, unsigned int session)
 {
-	struct disp_ddp_path_config *data_config = NULL;
+	disp_ddp_path_config *data_config = NULL;
 	enum EXT_DISP_STATUS ret;
 
 	EXT_DISP_FUNC();
@@ -937,7 +937,7 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	if (data_config) {
-		memset((void *)data_config, 0, sizeof(struct disp_ddp_path_config));
+		memset((void *)data_config, 0, sizeof(disp_ddp_path_config));
 		memcpy(&(data_config->dispif_config), &extd_lcm_params, sizeof(LCM_PARAMS));
 
 		data_config->dst_w = extd_lcm_params.dpi.width;
@@ -1314,7 +1314,7 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	int layer_cnt = 0;
 	int config_layer_id = 0;
 	M4U_PORT_STRUCT sPort;
-	struct disp_ddp_path_config *data_config;
+	disp_ddp_path_config *data_config;
 	unsigned int ext_last_fence, ext_cur_fence, ext_sub, input_source;
 	struct ddp_io_golden_setting_arg gset_arg;
 
@@ -1411,7 +1411,7 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 		dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	} else {
-		struct OVL_CONFIG_STRUCT ovl_config;
+		OVL_CONFIG_STRUCT ovl_config;
 
 		_convert_disp_input_to_ovl(&ovl_config, &(cfg->input_cfg[0]));
 		dprec_mmp_dump_ovl_layer(&ovl_config, cfg->input_cfg[0].layer_id, 2);
@@ -1553,12 +1553,12 @@ int ext_disp_diagnose(void)
 	return ret;
 }
 
-enum CMDQ_SWITCH ext_disp_cmdq_enabled(void)
+CMDQ_SWITCH ext_disp_cmdq_enabled(void)
 {
 	return ext_disp_use_cmdq;
 }
 
-int ext_disp_switch_cmdq(enum CMDQ_SWITCH use_cmdq)
+int ext_disp_switch_cmdq(CMDQ_SWITCH use_cmdq)
 {
 	_ext_disp_path_lock();
 

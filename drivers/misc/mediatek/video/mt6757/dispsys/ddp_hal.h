@@ -25,7 +25,7 @@
 #define DISP_MUTEX_INT_MSK	((__DISP_MUTEX_INT_MSK << DISP_MUTEX_TOTAL) | __DISP_MUTEX_INT_MSK)
 
 /* DISP MODULE */
-enum DISP_MODULE_ENUM {
+typedef enum {
 	DISP_MODULE_OVL0 = 0, /* must start from 0 */
 	DISP_MODULE_OVL1,
 	DISP_MODULE_OVL0_2L,
@@ -73,19 +73,19 @@ enum DISP_MODULE_ENUM {
 	DISP_MODULE_MIPI1,
 	DISP_MODULE_UNKNOWN,
 	DISP_MODULE_NUM
-};
+} DISP_MODULE_ENUM;
 
 enum dst_module_type {
 	DST_MOD_REAL_TIME,
 	DST_MOD_WDMA,
 };
 
-static inline int check_ddp_module(enum DISP_MODULE_ENUM module)
+static inline int check_ddp_module(DISP_MODULE_ENUM module)
 {
 	return module < DISP_MODULE_UNKNOWN;
 }
 
-enum DISP_REG_ENUM {
+typedef enum {
 	DISP_REG_CONFIG,
 	DISP_REG_OVL0,
 	DISP_REG_OVL1,
@@ -121,7 +121,7 @@ enum DISP_REG_ENUM {
 	DISP_REG_MIPI0,
 	DISP_REG_MIPI1,
 	DISP_REG_NUM
-};
+} DISP_REG_ENUM;
 
 enum OVL_LAYER_SOURCE {
 	OVL_LAYER_SOURCE_MEM = 0,
@@ -136,12 +136,12 @@ enum OVL_LAYER_SECURE_MODE {
 	OVL_LAYER_PROTECTED_BUFFER = 2
 };
 
-enum CMDQ_SWITCH {
+typedef enum {
 	CMDQ_DISABLE = 0,
 	CMDQ_ENABLE
-};
+} CMDQ_SWITCH;
 
-enum CMDQ_STATE {
+typedef enum {
 	CMDQ_WAIT_LCM_TE,
 	CMDQ_BEFORE_STREAM_SOF,
 	CMDQ_WAIT_STREAM_EOF_EVENT,
@@ -156,13 +156,13 @@ enum CMDQ_STATE {
 	CMDQ_DSI_RESET,
 	CMDQ_AFTER_STREAM_SOF,
 	CMDQ_DSI_LFR_MODE,
-};
+} CMDQ_STATE;
 
-enum DDP_IRQ_LEVEL {
+typedef enum {
 	DDP_IRQ_LEVEL_ALL = 0,
 	DDP_IRQ_LEVEL_NONE,
 	DDP_IRQ_LEVEL_ERROR
-};
+} DDP_IRQ_LEVEL;
 
 
 #endif

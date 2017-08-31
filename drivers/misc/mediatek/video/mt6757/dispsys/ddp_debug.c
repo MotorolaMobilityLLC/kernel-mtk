@@ -290,9 +290,9 @@ static void process_dbg_opt(const char *opt)
 			/* char *p = (char *)opt + 14; */
 			unsigned int red, green, blue;
 
-			struct rdma_color_matrix matrix = { 0 };
-			struct rdma_color_pre pre = { 0 };
-			struct rdma_color_post post = { 255, 0, 0 };
+			rdma_color_matrix matrix = { 0 };
+			rdma_color_pre pre = { 0 };
+			rdma_color_post post = { 255, 0, 0 };
 
 			ret = sscanf(opt, "rdma_color:on,%d,%d,%d\n", &red, &green, &blue);
 			if (ret != 3) {

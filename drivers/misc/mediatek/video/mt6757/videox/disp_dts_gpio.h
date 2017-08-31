@@ -22,7 +22,7 @@
 #include <linux/platform_device.h>	/* struct platform_device */
 
 /* DTS state */
-enum DTS_GPIO_STATE {
+typedef enum tagDTS_GPIO_STATE {
 	DTS_GPIO_STATE_TE_MODE_GPIO = 0,	/* mode_te_gpio */
 	DTS_GPIO_STATE_TE_MODE_TE,	/* mode_te_te */
 	DTS_GPIO_STATE_LCM_RST_OUT0,
@@ -30,7 +30,7 @@ enum DTS_GPIO_STATE {
 	DTS_GPIO_STATE_LCD_BIAS_ENN,
 	DTS_GPIO_STATE_LCD_BIAS_ENP,
 	DTS_GPIO_STATE_MAX,	/* for array size */
-};
+} DTS_GPIO_STATE;
 
 /* this function MUST be called in mtkfb_probe.
  *  @param *pdev    - reference of struct platform_device which contains pinctrl
@@ -45,7 +45,7 @@ long disp_dts_gpio_init(struct platform_device *pdev);
  *  @param s        - state which describes GPIO statement.
  *  @return         - 0 for OK, otherwise returns PTR_ERR(pdev).
  */
-long disp_dts_gpio_select_state(enum DTS_GPIO_STATE s);
+long disp_dts_gpio_select_state(DTS_GPIO_STATE s);
 
 /* repo of initialization */
 #ifdef CONFIG_MTK_LEGACY

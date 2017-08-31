@@ -157,7 +157,7 @@ static ddp_module_notify g_od_ddp_notify;
 
 #if defined(CONFIG_MTK_OD_SUPPORT)
 
-static int od_start(enum DISP_MODULE_ENUM module, void *cmdq);
+static int od_start(DISP_MODULE_ENUM module, void *cmdq);
 
 static void _od_reg_init(void *cmdq)
 {
@@ -703,7 +703,7 @@ void disp_od_hwc_force(int allow_enabled)
 void disp_od_set_smi_clock(int enabled)
 {
 #ifndef CONFIG_MTK_CLKMGR
-	enum disp_clk_id larb_clk;
+	eDDP_CLK_ID larb_clk;
 
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
 
@@ -773,11 +773,11 @@ void disp_od_start_read(void *cmdq)
 }
 
 
-static int disp_od_ioctl_ctlcmd(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_od_ioctl_ctlcmd(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
-	struct DISP_OD_CMD cmd;
+	DISP_OD_CMD cmd;
 
-	if (copy_from_user((void *)&cmd, (void *)arg, sizeof(struct DISP_OD_CMD)))
+	if (copy_from_user((void *)&cmd, (void *)arg, sizeof(DISP_OD_CMD)))
 		return -EFAULT;
 
 	ODDBG(OD_LOG_ALWAYS, "OD ioctl cmdq %lx", (unsigned long)cmdq);
@@ -856,14 +856,14 @@ static int disp_od_ioctl_ctlcmd(enum DISP_MODULE_ENUM module, int msg, unsigned 
 		break;
 	}
 
-	if (copy_to_user((void *)arg, (void *)&cmd, sizeof(struct DISP_OD_CMD)))
+	if (copy_to_user((void *)arg, (void *)&cmd, sizeof(DISP_OD_CMD)))
 		return -EFAULT;
 
 	return 0;
 }
 
 #if defined(CONFIG_ARCH_MT6797)
-static int _od_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmdq)
+static int _od_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
 	int width = roi->width;
@@ -873,8 +873,8 @@ static int _od_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *cmd
 	return 0;
 }
 
-static int disp_od_io(enum DISP_MODULE_ENUM module, void *handle,
-		enum DDP_IOCTL_NAME ioctl_cmd, void *params)
+static int disp_od_io(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = -1;
 
@@ -886,7 +886,7 @@ static int disp_od_io(enum DISP_MODULE_ENUM module, void *handle,
 }
 #endif
 
-static int disp_od_ioctl(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+static int disp_od_ioctl(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	switch (msg) {
 	case DISP_IOCTL_OD_CTL:
@@ -909,7 +909,7 @@ static void ddp_bypass_od(unsigned int width, unsigned int height, void *handle)
 }
 
 
-static int od_config_od(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
+static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 #if defined(CONFIG_MTK_OD_SUPPORT)
 	const LCM_PARAMS *lcm_param = &(pConfig->dispif_config);
@@ -989,7 +989,7 @@ static void od_set_debug_function(void *cmdq)
 
 
 #if defined(CONFIG_MTK_OD_SUPPORT)
-static int od_start(enum DISP_MODULE_ENUM module, void *cmdq)
+static int od_start(DISP_MODULE_ENUM module, void *cmdq)
 {
 	ODDBG(OD_LOG_ALWAYS, "od_start()");
 
@@ -1093,7 +1093,7 @@ static int od_start(enum DISP_MODULE_ENUM module, void *cmdq)
 #endif /* defined(CONFIG_MTK_OD_SUPPORT) */
 
 
-static int od_clock_on(enum DISP_MODULE_ENUM module, void *handle)
+static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	M4U_PORT_STRUCT m4u_port;
 
@@ -1127,7 +1127,7 @@ static int od_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 }
 
 
-static int od_clock_off(enum DISP_MODULE_ENUM module, void *handle)
+static int od_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
@@ -1156,7 +1156,7 @@ int disp_od_is_enabled(void)
 }
 
 
-static int od_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int od_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_od_ddp_notify = notify;
 	return 0;
@@ -1164,7 +1164,7 @@ static int od_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notif
 
 
 /* OD driver module */
-struct DDP_MODULE_DRIVER ddp_driver_od = {
+DDP_MODULE_DRIVER ddp_driver_od = {
 	.init            = od_clock_on,
 	.deinit          = od_clock_off,
 	.config          = od_config_od,

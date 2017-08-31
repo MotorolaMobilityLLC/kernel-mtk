@@ -22,8 +22,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -60,7 +59,7 @@ static DEFINE_SPINLOCK(g_pwm_log_lock);
 
 
 typedef struct {
-	int value;
+	unsigned int value;
 	unsigned long tsec;
 	unsigned long tusec;
 } PWM_LOG;
@@ -73,7 +72,6 @@ enum PWM_LOG_TYPE {
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
-static volatile bool g_pwm_force_backlight_update;
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
@@ -89,7 +87,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
 						       ARRAY_SIZE(pwm_config));
 		if (!ret) {
-			/* PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",*/
+			/*PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",*/
 			/* pwm_config[0], pwm_config[1], pwm_config[2], pwm_config[3], pwm_config[4]);*/
 
 			*clocksource = pwm_config[0];
@@ -105,13 +103,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 	return ret;
 }
 
-void disp_pwm_set_force_update_flag(void)
-{
-	g_pwm_force_backlight_update = true;
-	PWM_NOTICE("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
-}
-
-static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
@@ -143,7 +135,7 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 }
 
 
-static int disp_pwm_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
+static int disp_pwm_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 	int ret = 0;
 
@@ -307,12 +299,12 @@ int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 
 
 static volatile int g_pwm_duplicate_count;
-#define LOGBUFFERSIZE 384
+
 static void disp_pwm_log(int level_1024, int log_type)
 {
 	int i;
 	struct timeval pwm_time;
-	char buffer[LOGBUFFERSIZE] = "";
+	char buffer[256] = "";
 	int print_log;
 
 	do_gettimeofday(&pwm_time);
@@ -328,7 +320,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 	if (g_pwm_log_index >= g_pwm_log_num || level_1024 == 0) {
 		sprintf(buffer + strlen(buffer), "(latest=%2u): ", g_pwm_log_index);
 		for (i = 0; i < g_pwm_log_index; i += 1) {
-			sprintf(buffer + strlen(buffer), "%5d(%4lu,%4lu)",
+			sprintf(buffer + strlen(buffer), "%5u(%4lu,%4lu)",
 				g_pwm_log_buffer[i].value,
 				g_pwm_log_buffer[i].tsec,
 				g_pwm_log_buffer[i].tusec);
@@ -338,8 +330,8 @@ static void disp_pwm_log(int level_1024, int log_type)
 		print_log = 1;
 
 		for (i = 0; i < PWM_LOG_BUFFER_SIZE; i += 1) {
-			g_pwm_log_buffer[i].tsec = 0;
-			g_pwm_log_buffer[i].tusec = 0;
+			g_pwm_log_buffer[i].tsec = -1;
+			g_pwm_log_buffer[i].tusec = -1;
 			g_pwm_log_buffer[i].value = -1;
 		}
 	}
@@ -361,26 +353,16 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	int old_pwm;
 	int index;
 	int abs_diff;
-	bool force_update = false;
 
 	if ((DISP_PWM_ALL & id) == 0) {
 		PWM_ERR("[ERROR] disp_pwm_set_backlight_cmdq: invalid PWM ID = 0x%x", id);
 		return -EFAULT;
 	}
 
-	/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
-	if (g_pwm_force_backlight_update == true && cmdq != NULL)
-		force_update = true;
-
 	index = index_of_pwm(id);
 
 	old_pwm = atomic_xchg(&g_pwm_backlight[index], level_1024);
-	if (old_pwm != level_1024 || force_update == true) {
-		if (force_update == true) {
-			PWM_NOTICE("PWM force set backlight to 0 again\n");
-			g_pwm_force_backlight_update = false;
-		}
-
+	if (old_pwm != level_1024) {
 		abs_diff = level_1024 - old_pwm;
 		if (abs_diff < 0)
 			abs_diff = -abs_diff;
@@ -420,7 +402,7 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	return 0;
 }
 
-static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
+static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
@@ -450,7 +432,7 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
+static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
@@ -481,13 +463,13 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int ddp_pwm_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
+static int ddp_pwm_init(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_pwm_power_on(module, cmq_handle);
 	return 0;
 }
 
-static int ddp_pwm_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify notify)
+static int ddp_pwm_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify)
 {
 	g_ddp_notify = notify;
 	return 0;
@@ -495,7 +477,7 @@ static int ddp_pwm_set_listener(enum DISP_MODULE_ENUM module, ddp_module_notify 
 
 
 
-struct DDP_MODULE_DRIVER ddp_driver_pwm = {
+DDP_MODULE_DRIVER ddp_driver_pwm = {
 	.init = ddp_pwm_init,
 	.config = disp_pwm_config,
 	.power_on = ddp_pwm_power_on,

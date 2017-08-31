@@ -16,7 +16,7 @@
 #include"ddp_debug.h"
 #include "ddp_log.h"
 
-char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
+char *ddp_get_module_name(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_OVL0:
@@ -101,7 +101,7 @@ char *ddp_get_module_name(enum DISP_MODULE_ENUM module)
 	}
 }
 
-enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
+DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 {
 	switch (reg_module) {
 	case DISP_REG_CONFIG:
@@ -179,12 +179,12 @@ enum DISP_MODULE_ENUM ddp_get_reg_module(enum DISP_REG_ENUM reg_module)
 
 }
 
-char *ddp_get_reg_module_name(enum DISP_REG_ENUM reg_module)
+char *ddp_get_reg_module_name(DISP_REG_ENUM reg_module)
 {
 	return ddp_get_module_name(ddp_get_reg_module(reg_module));
 }
 
-int ddp_get_module_max_irq_bit(enum DISP_MODULE_ENUM module)
+int ddp_get_module_max_irq_bit(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_OVL0:
@@ -286,7 +286,7 @@ unsigned int ddp_module_to_idx(int module)
 
 
 /*#define DISP_NO_DPI*/ /* FIXME: tmp define */
-struct DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
+DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL0 = 0, */
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL1  , */
 	&ddp_driver_ovl,		/* DISP_MODULE_OVL0_2L  , */

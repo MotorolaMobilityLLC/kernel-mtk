@@ -42,7 +42,7 @@ static char *split_state(unsigned int state)
 	return "unknown";
 }
 
-static int split_clock_on(enum DISP_MODULE_ENUM module, void *handle)
+static int split_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	if (module == DISP_MODULE_SPLIT0) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -55,7 +55,7 @@ static int split_clock_on(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int split_clock_off(enum DISP_MODULE_ENUM module, void *handle)
+static int split_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 	DDPMSG("Split0 Clockoff CG\n");
 #ifdef CONFIG_MTK_CLKMGR
@@ -66,54 +66,54 @@ static int split_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int split_init(enum DISP_MODULE_ENUM module, void *handle)
+static int split_init(DISP_MODULE_ENUM module, void *handle)
 {
 	split_clock_on(module, handle);
 	return 0;
 }
 
-static int split_deinit(enum DISP_MODULE_ENUM module, void *handle)
+static int split_deinit(DISP_MODULE_ENUM module, void *handle)
 {
 	split_clock_off(module, handle);
 	return 0;
 }
 
-static int split_start(enum DISP_MODULE_ENUM module, void *handle)
+static int split_start(DISP_MODULE_ENUM module, void *handle)
 {
 	DISP_REG_SET_FIELD(handle, DEBUG_FLD_PIXEL_CNT_EN, DISP_REG_SPLIT_DEBUG, 1);
 	DISP_REG_SET(handle, DISP_REG_SPLIT_ENABLE, 0x01);
 	return 0;
 }
 
-static int split_stop(enum DISP_MODULE_ENUM module, void *handle)
+static int split_stop(DISP_MODULE_ENUM module, void *handle)
 {
 	DISP_REG_SET(handle, DISP_REG_SPLIT_ENABLE, 0x0);
 	DISP_REG_SET_FIELD(handle, DEBUG_FLD_PIXEL_CNT_EN, DISP_REG_SPLIT_DEBUG, 0);
 	return 0;
 }
 
-static int split_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
+static int split_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
 {
 	DISP_REG_SET(handle, DISP_REG_SPLIT_CFG, 0x00);/* 0: even pixel first, 1: odd pexel first */
 
 	return 0;
 }
 
-static int split_busy(enum DISP_MODULE_ENUM module)
+static int split_busy(DISP_MODULE_ENUM module)
 {
 	unsigned int state = DISP_REG_GET_FIELD(DEBUG_FLD_SPLIT_FSM, DISP_REG_SPLIT_DEBUG);
 
 	return (state & 0x4);
 }
 
-static int split_idle(enum DISP_MODULE_ENUM module)
+static int split_idle(DISP_MODULE_ENUM module)
 {
 	unsigned int state = DISP_REG_GET_FIELD(DEBUG_FLD_SPLIT_FSM, DISP_REG_SPLIT_DEBUG);
 
 	return (state & 0x3);
 }
 
-int split_reset(enum DISP_MODULE_ENUM module, void *handle)
+int split_reset(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int delay_cnt = 0;
 
@@ -131,7 +131,7 @@ int split_reset(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-static int split_dump_regs(enum DISP_MODULE_ENUM module)
+static int split_dump_regs(DISP_MODULE_ENUM module)
 {
 	if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP)) {
 		DDPDUMP("== START: DISP SPLIT REGS ==\n");
@@ -152,7 +152,7 @@ static int split_dump_regs(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static int split_dump_analysis(enum DISP_MODULE_ENUM module)
+static int split_dump_analysis(DISP_MODULE_ENUM module)
 {
 	unsigned int pixel = DISP_REG_GET_FIELD(DEBUG_FLD_IN_PIXEL_CNT, DISP_REG_SPLIT_DEBUG);
 	unsigned int state = DISP_REG_GET_FIELD(DEBUG_FLD_SPLIT_FSM, DISP_REG_SPLIT_DEBUG);
@@ -162,7 +162,7 @@ static int split_dump_analysis(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static int split_dump(enum DISP_MODULE_ENUM module, int level)
+static int split_dump(DISP_MODULE_ENUM module, int level)
 {
 	split_dump_analysis(module);
 	split_dump_regs(module);
@@ -170,7 +170,7 @@ static int split_dump(enum DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-struct DDP_MODULE_DRIVER ddp_driver_split = {
+DDP_MODULE_DRIVER ddp_driver_split = {
 	.init		= split_init,
 	.deinit		= split_deinit,
 	.config		= split_config,
