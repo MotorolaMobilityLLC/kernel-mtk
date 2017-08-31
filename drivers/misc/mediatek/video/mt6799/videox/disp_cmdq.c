@@ -648,6 +648,7 @@ int disp_cmdq_flush(struct cmdqRecStruct *handle, const char *func, int line)
 	if (ret) {
 		DISPERR("%s:%d, flush failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
+		_disp_cmdq_remove_all_state(handle);
 
 		return ret;
 	}
@@ -669,6 +670,7 @@ int disp_cmdq_flush_async(struct cmdqRecStruct *handle, const char *func, int li
 	if (ret) {
 		DISPERR("%s:%d, flush async failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
+		_disp_cmdq_remove_all_state(handle);
 
 		return ret;
 	}
@@ -691,6 +693,7 @@ int disp_cmdq_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFlushC
 	if (ret) {
 		DISPERR("%s:%d, flush async callback failed:%d\n", func, line, ret);
 		_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_ERROR);
+		_disp_cmdq_remove_all_state(handle);
 
 		return ret;
 	}

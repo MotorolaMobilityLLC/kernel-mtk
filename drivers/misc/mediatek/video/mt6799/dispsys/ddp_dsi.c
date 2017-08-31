@@ -1225,7 +1225,7 @@ unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 	unsigned int posdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1.RG_DSI0_PLL_POSDIV));
 
 
-	DISPMSG("%s, pcw: %d, prediv: %d, posdiv: %d\n", __func__, pcw,
+	DISPINFO("%s, pcw: %d, prediv: %d, posdiv: %d\n", __func__, pcw,
 		prediv, posdiv);
 	j = prediv * posdiv;
 	if (j > 0)
@@ -3237,12 +3237,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 
 	DISPFUNC();
 
-	if (module == DISP_MODULE_DSIDUAL)
-		i = 0;
-	else
-		i = DSI_MODULE_to_ID(module);
-	DISPINFO("===>run here 00 Pmaster: clk:%d\n", _dsi_context[i].dsi_params.PLL_CLOCK);
-
 	dsi_config = &(config->dispif_config.dsi);
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3266,15 +3260,6 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 				DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 		}
 	}
-
-	/* dump DSI parameters */
-	if (module == DISP_MODULE_DSIDUAL)
-		i = 0;
-	else
-		i = DSI_MODULE_to_ID(module);
-	_dump_dsi_params(&(_dsi_context[i].dsi_params));
-
-	DISPINFO("===>01Pmaster: clk:%d\n", _dsi_context[i].dsi_params.PLL_CLOCK);
 
 	if (dsi_config->mode != CMD_MODE)
 		dsi_currect_mode = 1;
