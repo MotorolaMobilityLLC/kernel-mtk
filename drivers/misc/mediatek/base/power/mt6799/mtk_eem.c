@@ -201,9 +201,9 @@ const unsigned int reg_dump_addr_off[] = {
 	#include "mt-plat/mt6799/include/mach/mtk_cpufreq_api.h"
 	#include "mtk_eem.h"
 	#include "mtk_defeem.h"
+	#include "mtk_spm_vcore_dvfs.h"
 	/*
 	#include "mt_gpufreq.h"
-	#include "mt_spm_vcorefs.h"
 	#include  "mt-plat/elbrus/include/mach/mt_cpufreq_api.h"
 	#include "mach/mt_ppm_api.h"
 	*/

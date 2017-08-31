@@ -30,3 +30,4 @@ obj-$(CONFIG_MACH_KIBOPLUS) += ppm_v2/
 obj-$(CONFIG_MACH_MT6799) += ppm_v2/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/
 obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
