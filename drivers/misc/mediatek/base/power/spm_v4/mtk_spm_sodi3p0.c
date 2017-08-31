@@ -301,7 +301,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 		(1 << SPM_SODI3_B4) | (1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
 
-	trace_sodi3(cpu, 1);
+	trace_sodi3_rcuidle(cpu, 1);
 
 	profile_so3_end(PIDX_ENTER_TOTAL);
 
@@ -309,7 +309,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	profile_so3_start(PIDX_LEAVE_TOTAL);
 
-	trace_sodi3(cpu, 0);
+	trace_sodi3_rcuidle(cpu, 0);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 
