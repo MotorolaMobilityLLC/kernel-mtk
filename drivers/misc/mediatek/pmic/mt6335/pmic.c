@@ -569,25 +569,6 @@ bool is_charger_detection_rdy(void)
 		return false;
 }
 
-int is_ext_buck2_exist(void)
-{
-#ifndef CONFIG_MTK_EXTBUCK
-	return 0;
-#else
-	#ifdef CONFIG_REGULATOR_RT5738
-	struct mtk_regulator reg;
-	int ret = 0;
-
-	ret = mtk_regulator_get(NULL, "ext_buck_vdram", &reg);
-	if (ret < 0)
-		return 0;
-	mtk_regulator_put(&reg);
-	return 1;
-	#endif /* CONFIG_REGULATOR_RT5738 */
-	return 0;
-#endif /* if not CONIFG_MTK_EXTBUCK */
-}
-
 int is_ext_vbat_boost_exist(void)
 {
 	return 0;
@@ -620,44 +601,6 @@ int get_ext_buck_i2c_ch_num(void)
 		return -1;
 }
 
-int is_ext_buck_sw_ready(void)
-{
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
-	if ((is_mt6313_sw_ready() == 1))
-		return 1;
-#endif
-		return 0;
-}
-
-int is_ext_buck_exist(void)
-{
-#ifndef CONFIG_MTK_EXTBUCK
-	return 0;
-#else
-	#ifdef CONFIG_REGULATOR_ISL91302A
-	struct mtk_regulator reg;
-	int ret = 0;
-
-	ret = mtk_regulator_get(NULL, "ext_buck_proc1", &reg);
-	if (ret < 0)
-		return 0;
-	mtk_regulator_put(&reg);
-	return 1;
-	#endif /* CONFIG_REGULATOR_ISL91302A */
-	#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
-	if ((is_mt6313_exist() == 1))
-		return 1;
-	#endif /* CONFIG_MTK_PMIC_CHIP_MT6313 */
-#endif /* if not CONFIG_MTK_EXTBUCK */
-	return 0;
-}
-
-int is_ext_buck_gpio_exist(void)
-{
-	return pmic_get_register_value(PMIC_RG_STRUP_EXT_PMIC_EN);
-}
-
-
 /*****************************************************************************
  * FTM
  ******************************************************************************/
@@ -685,8 +628,7 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_IS_EXT_BUCK_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		/*adc_out_data[0] = is_ext_buck_exist();*/
-		adc_out_data[0] = is_ext_buck_gpio_exist();
+		adc_out_data[0] = is_ext_buck_exist();
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK_EXIST:%d\n", adc_out_data[0]);
 		break;

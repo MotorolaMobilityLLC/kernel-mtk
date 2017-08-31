@@ -2,7 +2,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
-#include <linux/regulator/mtk_regulator_core.h>
+#include <linux/regulator/mediatek/mtk_regulator_core.h>
 
 #define ISL91302A_BUCK_DRV_VERSION	"1.0.0_MTK"
 

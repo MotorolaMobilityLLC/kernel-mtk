@@ -13,6 +13,7 @@
  * GNU General Public License for more details.
  */
 
+#if 0
 #include <mt-plat/upmu_common.h>
 #include <sspm_ipi_pin.h>
 #include <sspm_ipi.h>
@@ -56,3 +57,4 @@ unsigned int mtk_regulator_ipi_to_sspm(void *buffer, void *retbuf,
 }
 
 
+#endif

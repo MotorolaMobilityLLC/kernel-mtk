@@ -19,9 +19,8 @@
 #include <linux/spi/spi.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
-#include <mt_spi.h>
+#include <mtk_spi.h>
 #include <linux/delay.h>
-#include <linux/mfd/core.h>
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
 #ifdef CONFIG_RT_REGMAP
@@ -496,8 +495,8 @@ static int isl91302a_spi_remove(struct spi_device *spi)
 	struct isl91302a_chip *chip = spi_get_drvdata(spi);
 
 	if (chip) {
+		isl91302a_regulator_deinit(chip);
 		mutex_destroy(&chip->io_lock);
-		mfd_remove_devices(chip->dev);
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->regmap_dev);
 #endif /* #ifdef CONFIG_RT_REGMAP */
