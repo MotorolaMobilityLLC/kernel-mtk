@@ -168,7 +168,7 @@ static unsigned long mmsys_reg;
 #define SMI_REG_REGION_MAX 1
 #endif
 
-#define SMI_MMIT_PORTING 1
+#define SMI_MMIT_PORTING 0
 
 static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 
