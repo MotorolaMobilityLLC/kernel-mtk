@@ -6351,6 +6351,42 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 				/* 2. Keep at Fast PS */
 				/* 5. Enable Beacon Timeout Detection */
 				rWlanStatus = nicEnterCtiaMode(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1260) {
+				/* Disable On-Line Scan */
+				rWlanStatus = nicEnterCtiaModeOfScan(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1261) {
+				/* Enable On-Line Scan */
+				rWlanStatus = nicEnterCtiaModeOfScan(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1262) {
+				/* Disable Roaming */
+				rWlanStatus = nicEnterCtiaModeOfRoaming(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1263) {
+				/* Enable Roaming */
+				rWlanStatus = nicEnterCtiaModeOfRoaming(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1264) {
+				/* Keep at CAM mode */
+				rWlanStatus = nicEnterCtiaModeOfCAM(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1265) {
+				/* Keep at Fast PS */
+				rWlanStatus = nicEnterCtiaModeOfCAM(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1266) {
+				/* Disable Beacon Timeout Detection */
+				rWlanStatus = nicEnterCtiaModeOfBCNTimeout(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1267) {
+				/* Enable Beacon Timeout Detection */
+				rWlanStatus = nicEnterCtiaModeOfBCNTimeout(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1268) {
+				/* Disalbe auto tx power */
+				rWlanStatus = nicEnterCtiaModeOfAutoTxPower(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1269) {
+				/* Enable auto tx power */
+				rWlanStatus = nicEnterCtiaModeOfAutoTxPower(prAdapter, FALSE, TRUE);
+			} else if (u2SubId == 0x1270) {
+				/* Disalbe FIFO FULL no ack  */
+				rWlanStatus = nicEnterCtiaModeOfFIFOFullNoAck(prAdapter, TRUE, TRUE);
+			} else if (u2SubId == 0x1271) {
+				/* Enable FIFO FULL no ack */
+				rWlanStatus = nicEnterCtiaModeOfFIFOFullNoAck(prAdapter, FALSE, TRUE);
 			}
 #endif
 #if CFG_MTK_STAGE_SCAN
