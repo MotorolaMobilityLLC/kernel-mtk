@@ -1627,18 +1627,18 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 /* This is prepared for the future extension since currently the sizes of 32 bits */
 /* and 64 bits smi parameters are the same. */
 
-typedef struct {
+struct MTK_SMI_COMPAT_BWC_CONFIG {
 	compat_int_t scenario;
 	compat_int_t b_on_off;	/* 0 : exit this scenario , 1 : enter this scenario */
-} MTK_SMI_COMPAT_BWC_CONFIG;
+};
 
-typedef struct {
+struct MTK_SMI_COMPAT_BWC_INFO_SET {
 	compat_int_t property;
 	compat_int_t value1;
 	compat_int_t value2;
-} MTK_SMI_COMPAT_BWC_INFO_SET;
+};
 
-typedef struct {
+struct MTK_SMI_COMPAT_BWC_MM_INFO {
 	compat_uint_t flag;	/* Reserved */
 	compat_int_t concurrent_profile;
 	compat_int_t sensor_size[2];
@@ -1649,13 +1649,13 @@ typedef struct {
 	compat_int_t video_encode_codec;
 	compat_int_t video_decode_codec;
 	compat_int_t hw_ovl_limit;
-} MTK_SMI_COMPAT_BWC_MM_INFO;
+};
 
-#define COMPAT_MTK_IOC_SMI_BWC_CONFIG      MTK_IOW(24, MTK_SMI_COMPAT_BWC_CONFIG)
-#define COMPAT_MTK_IOC_SMI_BWC_INFO_SET    MTK_IOWR(28, MTK_SMI_COMPAT_BWC_INFO_SET)
-#define COMPAT_MTK_IOC_SMI_BWC_INFO_GET    MTK_IOWR(29, MTK_SMI_COMPAT_BWC_MM_INFO)
+#define COMPAT_MTK_IOC_SMI_BWC_CONFIG      MTK_IOW(24, struct MTK_SMI_COMPAT_BWC_CONFIG)
+#define COMPAT_MTK_IOC_SMI_BWC_INFO_SET    MTK_IOWR(28, struct MTK_SMI_COMPAT_BWC_INFO_SET)
+#define COMPAT_MTK_IOC_SMI_BWC_INFO_GET    MTK_IOWR(29, struct MTK_SMI_COMPAT_BWC_MM_INFO)
 
-static int compat_get_smi_bwc_config_struct(MTK_SMI_COMPAT_BWC_CONFIG __user *data32,
+static int compat_get_smi_bwc_config_struct(struct MTK_SMI_COMPAT_BWC_CONFIG __user *data32,
 					    MTK_SMI_BWC_CONFIG __user *data)
 {
 
@@ -1671,7 +1671,7 @@ static int compat_get_smi_bwc_config_struct(MTK_SMI_COMPAT_BWC_CONFIG __user *da
 	return err;
 }
 
-static int compat_get_smi_bwc_mm_info_set_struct(MTK_SMI_COMPAT_BWC_INFO_SET __user *data32,
+static int compat_get_smi_bwc_mm_info_set_struct(struct MTK_SMI_COMPAT_BWC_INFO_SET __user *data32,
 						 MTK_SMI_BWC_INFO_SET __user *data)
 {
 
@@ -1689,7 +1689,7 @@ static int compat_get_smi_bwc_mm_info_set_struct(MTK_SMI_COMPAT_BWC_INFO_SET __u
 	return err;
 }
 
-static int compat_get_smi_bwc_mm_info_struct(MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
+static int compat_get_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
 					     MTK_SMI_BWC_MM_INFO __user *data)
 {
 	compat_uint_t u;
@@ -1723,7 +1723,7 @@ static int compat_get_smi_bwc_mm_info_struct(MTK_SMI_COMPAT_BWC_MM_INFO __user *
 	return err;
 }
 
-static int compat_put_smi_bwc_mm_info_struct(MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
+static int compat_put_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
 					     MTK_SMI_BWC_MM_INFO __user *data)
 {
 
@@ -1772,8 +1772,8 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 								  (unsigned long)compat_ptr(arg));
 			} else {
 
-				MTK_SMI_COMPAT_BWC_CONFIG __user *data32;
-				MTK_SMI_BWC_CONFIG __user *data;
+				struct MTK_SMI_COMPAT_BWC_CONFIG __user *data32;
+				struct MTK_SMI_BWC_CONFIG __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
@@ -1801,8 +1801,8 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 								  (unsigned long)compat_ptr(arg));
 			} else {
 
-				MTK_SMI_COMPAT_BWC_INFO_SET __user *data32;
-				MTK_SMI_BWC_INFO_SET __user *data;
+				struct MTK_SMI_COMPAT_BWC_INFO_SET __user *data32;
+				struct MTK_SMI_BWC_INFO_SET __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
@@ -1827,8 +1827,8 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				return filp->f_op->unlocked_ioctl(filp, cmd,
 								  (unsigned long)compat_ptr(arg));
 			} else {
-				MTK_SMI_COMPAT_BWC_MM_INFO __user *data32;
-				MTK_SMI_BWC_MM_INFO __user *data;
+				struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32;
+				struct MTK_SMI_BWC_MM_INFO __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
