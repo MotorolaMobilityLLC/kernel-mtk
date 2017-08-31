@@ -495,6 +495,11 @@ static void gic_cpu_sys_reg_init(void)
 	gic_write_grpen1(1);
 }
 
+void mt_gic_cpu_init_for_low_power(void)
+{
+	gic_cpu_sys_reg_init();
+}
+
 static int gic_dist_supports_lpis(void)
 {
 	return !!(readl_relaxed(gic_data.dist_base + GICD_TYPER) & GICD_TYPER_LPIS);
