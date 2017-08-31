@@ -592,37 +592,19 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x164, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 25; i >= 0; i--)
 		RAnd2W(base, 0x168, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x16C, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x170, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x174, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x178, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x17C, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x180, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
+	for (i = 31; i >= 16; i--)
 		RAnd2W(base, 0x184, ~(0x1 << i));
 
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x188, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 25; i >= 0; i--)
 		RAnd2W(base, 0x18C, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 28; i >= 23; i--)
 		RAnd2W(base, 0x190, ~(0x1 << i));
 
 	CCCI_BOOTUP_LOG(md->index, TAG, "md1_pcore_sram reg: 0x%X, 0x%X, 0x%X, 0x%X 0x%X, 0x%X, 0x%X\n",
