@@ -9,7 +9,7 @@ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6335)+= -I$(srctree)/drivers/misc/mediat
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6353)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6353
 #ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/$(CONFIG_MTK_PLATFORM)/
 
-#ifeq ($(CONFIG_MT_ENG_BUILD),y)
+#ifeq ($(CONFIG_MTK_ENG_BUILD),y)
 CFLAGS_scp_logger.o += -DDEBUG
 CFLAGS_scp_helper.o += -DDEBUG
 CFLAGS_scp_excep.o += -DDEBUG
