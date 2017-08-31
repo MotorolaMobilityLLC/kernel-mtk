@@ -934,10 +934,6 @@ enum {
 #ifdef CONFIG_OF
 void __iomem *eem_base;
 static u32 eem_irq_number;
-#if defined(EEM_ENABLE_VTURBO)
-void __iomem *eem_apmixed_base;
-#define REG_ARMPLL_L_CON1		(eem_apmixed_base + 0x214)
-#endif
 #endif
 
 /**
@@ -2829,6 +2825,7 @@ static void eem_turnoff_vturbo(struct eem_det *det)
 #endif
 #endif
 	/* [26:22] = dcmdiv, [21:12] = DDS, [11:7] = clkdiv, [6:4] = postdiv, [3:0] = CFindex */
+	/* Add 16 to L's recordTbl, and choose first record to apply frequency */
 	det->recordRef[1] =
 		((*(recordTbl + ((0 + 16) * NUM_ELM_SRAM) + 0) & 0x1F) << 22) |
 		((*(recordTbl + ((0 + 16) * NUM_ELM_SRAM) + 1) & 0x3FF) << 12) |
@@ -2888,6 +2885,9 @@ static inline void handle_init01_isr(struct eem_det *det)
 	 * AGEVALUES.AGEVOFFSET for later use in INIT2 procedure
 	 */
 	det->DCVOFFSETIN = ~(eem_read(DCVALUES) & 0xffff) + 1; /* hw bug, workaround */
+	/* check if DCVALUES is minus and set DCVOFFSETIN to zero */
+	if (det->DCVOFFSETIN & 0x8000)
+		det->DCVOFFSETIN = 0;
 	det->AGEVOFFSETIN = eem_read(AGEVALUES) & 0xffff;
 
 	/*
@@ -3761,23 +3761,16 @@ static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void
 				mt_ptp_unlock(&flags);
 				timeout = 0;
 				/* To make sure dvfs already change L freq */
-#if 0
+
 				while ((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0) {
-#else
-				while (((eem_read(REG_ARMPLL_L_CON1) >> 12) & 0x3FF) >
-					*(recordTbl + (16 * NUM_ELM_SRAM) + 1)) {
-#endif
 					udelay(120);
 					if (timeout == 100) {
+						eem_error("set freq fail, timeout:%d, read EEMSPARE1:%x !!",
+						timeout, eem_read(EEMSPARE1));
+
 						#ifdef KERNEL44
-						#if 0
-						eem_error("set freq fail, timeout:%d, read freq:%x, rec:%x !!",
-						timeout, ((eem_read(REG_ARMPLL_L_CON1) >> 12) & 0x3FF),
-							*(recordTbl + (16 * NUM_ELM_SRAM) + 1));
-						#endif
 						WARN_ON((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0);
 						#else
-						eem_error("set freq fail, timeout:%d !!", timeout);
 						/* BUG_ON((eem_read(EEMSPARE1) & TURBO_FREQ_CHK_BIT) != 0); */
 						#endif
 					}
@@ -3940,6 +3933,9 @@ static void eem_get_freq_data(void)
 #else
 	segCode = (eem_read(0x10206054) & 0x000000E0) >> 5;
 #endif
+
+	ctrl_VTurbo = 0;
+
 	switch (segCode) {
 	case 0:
 		max_vproc_pmic = VMAX_VAL;
@@ -3978,6 +3974,9 @@ static void eem_get_freq_data(void)
 		llFreq_FY = llFreq_FY_KBP_6355;
 		littleFreq_FY = littleFreq_FY_KBP_6355;
 		cciFreq_FY = cciFreq_FY_KBP_6355;
+		#ifdef EEM_ENABLE_VTURBO
+			ctrl_VTurbo = 1;
+		#endif
 #else
 		/* Kibo */
 		max_vproc_pmic = VMAX_VAL_KB;
@@ -4090,8 +4089,6 @@ void get_devinfo(struct eem_devinfo *p)
 #endif
 
 	#ifdef EEM_ENABLE_VTURBO
-		ctrl_VTurbo = 1; /* t */
-
 		#ifdef EEM_ENABLE_TTURBO
 			ctrl_TTurbo = 1;
 		#endif
@@ -4099,12 +4096,11 @@ void get_devinfo(struct eem_devinfo *p)
 			ctrl_ITurbo = 0;
 		#endif
 	#else
-		ctrl_VTurbo = 0; /* u */
 		#ifdef EEM_ENABLE_TTURBO
-		ctrl_TTurbo = 0;
+			ctrl_TTurbo = 0;
 		#endif
 		#ifdef EEM_ENABLE_ITURBO
-		ctrl_ITurbo = 0;
+			ctrl_ITurbo = 0;
 		#endif
 	#endif
 
@@ -4799,7 +4795,7 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t eem_cur_volt_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
-	int ret, index;
+	int ret, index, tmpSramPmic;
 	char *buf = (char *) __get_free_page(GFP_USER);
 	unsigned int voltValue = 0, voltProc = 0, voltSram = 0, voltPmic = 0, i;
 	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
@@ -4834,7 +4830,11 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				det->VMIN + EEM_PMIC_OFFSET,
 				det->VMAX + EEM_PMIC_OFFSET);
 
-			voltSram = clamp((unsigned int)(voltProc + AP_PMIC_TO_SRAM_OFFSET + VSRAM_GAP),
+			tmpSramPmic = record_tbl_locked[i] + VSRAM_GAP + AP_PMIC_TO_SRAM_OFFSET;
+			if (tmpSramPmic < 0)
+				tmpSramPmic = 0;
+
+			voltSram = clamp((unsigned int)tmpSramPmic,
 				(unsigned int)(VMIN_SRAM),
 				(unsigned int)max_vsram_pmic);
 
@@ -5129,7 +5129,7 @@ out:
  * set EEM ITurbo enable by procfs interface
  */
 
-static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
+static int eem_turbo_en_proc_show(struct seq_file *m, void *v)
 {
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -5139,7 +5139,7 @@ static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static ssize_t eem_iturbo_en_proc_write(struct file *file,
+static ssize_t eem_turbo_en_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
 	int ret;
@@ -5181,8 +5181,13 @@ static ssize_t eem_iturbo_en_proc_write(struct file *file,
 		break;
 
 	case 1:
-		eem_debug("eem Turbo enabled.\n");
-		ctrl_VTurbo = 2;
+		if ((segCode == 3) || (segCode == 7)) {
+			#if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+			/* Kibo+ */
+			eem_debug("eem Turbo enabled.\n");
+			ctrl_VTurbo = 2;
+			#endif
+		}
 		break;
 
 	default:
@@ -5236,7 +5241,7 @@ PROC_FOPS_RW(eem_log_en);
 PROC_FOPS_RO(eem_status);
 PROC_FOPS_RW(eem_cur_volt);
 PROC_FOPS_RW(eem_offset);
-PROC_FOPS_RW(eem_iturbo_en);
+PROC_FOPS_RW(eem_turbo_en);
 
 static int create_procfs(void)
 {
@@ -5261,7 +5266,7 @@ static int create_procfs(void)
 		PROC_ENTRY(eem_dump),
 		PROC_ENTRY(eem_log_en),
 		PROC_ENTRY(eem_stress_result),
-		PROC_ENTRY(eem_iturbo_en),
+		PROC_ENTRY(eem_turbo_en),
 	};
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -5544,15 +5549,6 @@ int __init eem_init(void)
 		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
 		return 0;
 	}
-
-	#if defined(EEM_ENABLE_VTURBO)
-	/* apmixed */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
-	if (node) {
-		eem_apmixed_base = of_iomap(node, 0);
-		eem_debug("[EEM] eem_apmixed_base = 0x%p\n", eem_apmixed_base);
-	}
-	#endif
 #endif
 	get_devinfo(&eem_devinfo);
 #ifdef __KERNEL__
