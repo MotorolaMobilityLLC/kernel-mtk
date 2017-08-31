@@ -31,7 +31,7 @@
 #define DISABLE_DLPT_FEATURE
 
 #else
-#if 1
+#if 0
 /*Define for disable low battery protect feature, default no define for enable low battery protect.*/
 #define DISABLE_LOW_BATTERY_PROTECT
 
