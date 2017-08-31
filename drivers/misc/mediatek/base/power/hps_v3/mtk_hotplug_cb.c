@@ -62,7 +62,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 		if (cpu < cpumask_weight(mtk_cpu_cluster0_mask)) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster0_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
-#if CPU_BUCK_CTRL
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -76,7 +75,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(0, 1);
-#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0, 0);
 			}
 		} else if ((cpu >= cpumask_weight(mtk_cpu_cluster0_mask)) &&
@@ -84,8 +82,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				  cpumask_weight(mtk_cpu_cluster1_mask)))) {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster1_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
-#if CPU_BUCK_CTRL
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
+#if CPU_BUCK_CTRL
 					pr_info("MP1_ON:[1,");
 					/*1. Power ON VSram*/
 					buck_enable(VSRAM_DVFS2, 1);
@@ -96,6 +94,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					/*3. Power ON Vproc2*/
 					hps_power_on_vproc2();
 					pr_info("3],[4,");
+#endif
+				}
 					/*4. Turn on ARM PLL*/
 					armpll_control(2, 1);
 					pr_info("4],[5,");
@@ -112,8 +112,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
 					pr_info("6]\n");
-				}
-#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
 			}
 		} else if ((cpu >= (cpumask_weight(mtk_cpu_cluster0_mask) +
@@ -123,7 +121,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				cpumask_weight(mtk_cpu_cluster2_mask))))  {
 			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster2_mask);
 			if (first_cpu == CONFIG_NR_CPUS) {
-#if CPU_BUCK_CTRL
 				/*1. Turn on ARM PLL*/
 				armpll_control(3, 1);
 
@@ -136,7 +133,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					mt_pause_armpll(FH_PLL2, 0);
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(2, 1);
-#endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 			}
 		}
@@ -152,7 +148,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			/*pr_info("Start to power off cluster %d\n", cpu/4);*/
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
-#if CPU_BUCK_CTRL
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
 				/*1. Switch to SW mode*/
@@ -182,6 +177,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				armpll_control(2, 0);
 				pr_info("3],[4,");
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
+#if CPU_BUCK_CTRL
 					/*4. Power off Vproc2*/
 					hps_power_off_vproc2();
 					pr_info("4],[5,");
@@ -189,6 +185,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					/*5. Turn off VSram*/
 					buck_enable(VSRAM_DVFS2, 0);
 					pr_info("5]\n");
+#endif
 				}
 				break;
 			case 2:
@@ -206,7 +203,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			default:
 				break;
 			}
-#endif
 		}
 		break;
 #endif /* CONFIG_HOTPLUG_CPU */
