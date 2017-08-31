@@ -320,14 +320,14 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 
-		EnableAfe(false);
-
 		if (mI2S0dl1_hdoutput_control == true) {
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
-			/* here to open APLL */
-			if (!mtk_soc_always_hd)
+			/* here to close APLL */
+			if (!mtk_soc_always_hd) {
+				DisableAPLLTunerbySampleRate(substream->runtime->rate);
 				DisableALLbySampleRate(substream->runtime->rate);
+			}
 #if 0
 			EnableI2SDivPower(AUDIO_APLL12_DIV1, false);
 			EnableI2SDivPower(AUDIO_APLL12_DIV3, false);
@@ -336,6 +336,7 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, false);
 #endif
 		}
+		EnableAfe(false);
 		mPrepareDone = false;
 	}
 
@@ -399,9 +400,13 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 		if (mI2S0dl1_hdoutput_control == true) {
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
+
 			/* here to open APLL */
-			if (!mtk_soc_always_hd)
+			if (!mtk_soc_always_hd) {
 				EnableALLbySampleRate(runtime->rate);
+				EnableAPLLTunerbySampleRate(runtime->rate);
+			}
+
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
 #if 0

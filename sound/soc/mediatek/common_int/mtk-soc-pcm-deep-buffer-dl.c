@@ -297,17 +297,19 @@ static int mtk_deep_buffer_dl_close(struct snd_pcm_substream *substream)
 
 		RemoveMemifSubStream(deep_buffer_mem_blk, substream);
 
-		EnableAfe(false);
-
 		if (deep_buffer_dl_hdoutput == true) {
 			pr_debug("%s deep_buffer_dl_hdoutput == %d\n", __func__,
 				 deep_buffer_dl_hdoutput);
+
 			/* here to close APLL */
-			if (!mtk_soc_always_hd)
+			if (!mtk_soc_always_hd) {
+				DisableAPLLTunerbySampleRate(substream->runtime->rate);
 				DisableALLbySampleRate(substream->runtime->rate);
+			}
 
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
 		}
+		EnableAfe(false);
 		mPrepareDone = false;
 	}
 
@@ -392,8 +394,10 @@ static int mtk_deep_buffer_dl_prepare(struct snd_pcm_substream *substream)
 			pr_debug("%s deep_buffer_dl_hdoutput == %d\n", __func__,
 				 deep_buffer_dl_hdoutput);
 			/* here to open APLL */
-			if (!mtk_soc_always_hd)
+			if (!mtk_soc_always_hd) {
 				EnableALLbySampleRate(runtime->rate);
+				EnableAPLLTunerbySampleRate(runtime->rate);
+			}
 
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
