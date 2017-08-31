@@ -460,6 +460,20 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 	return 0;
 }
 
+static void aee_rr_show_in_log(void)
+{
+	if (ram_console_check_header(ram_console_old))
+		pr_err("ram_console: no valid data\n");
+	else {
+		pr_err("ram_console: CPU notifier status: %d, %d, 0x%llx, %llu\n",
+				LAST_RRR_VAL(hotplug_cpu_event),
+				LAST_RRR_VAL(hotplug_cb_index),
+				LAST_RRR_VAL(hotplug_cb_fp),
+				LAST_RRR_VAL(hotplug_cb_times));
+		pr_err("ram_console: last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
+	}
+}
+
 static int __init ram_console_save_old(struct ram_console_buffer *buffer, size_t buffer_size)
 {
 	ram_console_old = kmalloc(buffer_size, GFP_KERNEL);
@@ -468,6 +482,7 @@ static int __init ram_console_save_old(struct ram_console_buffer *buffer, size_t
 		return -1;
 	}
 	memcpy(ram_console_old, buffer, buffer_size);
+	aee_rr_show_in_log();
 	return 0;
 }
 
