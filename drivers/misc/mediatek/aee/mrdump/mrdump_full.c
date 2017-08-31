@@ -96,7 +96,8 @@ static void crash_save_cpu(struct pt_regs *regs, int cpu)
 
 	if ((cpu < 0) || (cpu >= nr_cpu_ids))
 		return;
-
+	if (!crash_notes)
+		return;
 	buf = (u32 *)per_cpu_ptr(crash_notes, cpu);
 	if (!buf)
 		return;
@@ -150,7 +151,6 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 		     : "r" (svc_sp), "r" (ptregs->ARM_fp)
 		);
 	cpu = get_HW_cpuid();
-
 	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu], ptregs);
 	crash_save_cpu((struct pt_regs *)regs, cpu);
 	local_fiq_disable();
@@ -306,6 +306,14 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 	memset(&mrdump_cblock, 0, sizeof(struct mrdump_control_block));
 
 	mrdump_plat = plat;
+
+	/* Allocate memory for saving cpu registers. */
+	crash_notes = alloc_percpu(note_buf_t);
+	if (!crash_notes) {
+		pr_err("MT-RAMDUMP: Memory allocation for saving cpu register failed\n");
+		return -ENOMEM;
+	}
+
 	if (mrdump_plat == NULL) {
 		mrdump_enable = 0;
 		pr_err("%s: MT-RAMDUMP platform no init\n", __func__);
@@ -342,14 +350,6 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 	machdesc_p->phys_offset = (uint64_t)PHYS_OFFSET;
 	machdesc_p->master_page_table = (uintptr_t)&swapper_pg_dir;
 
-	/* Allocate memory for saving cpu registers. */
-	crash_notes = alloc_percpu(note_buf_t);
-	if (!crash_notes) {
-		pr_err("MT-RAMDUMP: Memory allocation for saving cpu register failed\n");
-		return -ENOMEM;
-	}
-
-	pr_info("%s: init_done.\n", __func__);
 	return 0;
 }
 
