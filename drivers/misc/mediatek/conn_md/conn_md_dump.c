@@ -50,7 +50,7 @@ int conn_md_dmp_deinit(struct conn_md_dmp_msg_log *p_log)
 	return i_ret;
 }
 
-int __conn_md_dmp_in(ipc_ilm_t *p_ilm, enum conn_md_msg_type msg_type, struct conn_md_dmp_msg_log *p_msg_log)
+int __conn_md_dmp_in(struct ipc_ilm *p_ilm, enum conn_md_msg_type msg_type, struct conn_md_dmp_msg_log *p_msg_log)
 {
 	struct timeval now;
 	struct conn_md_dmp_msg_str *p_msg = NULL;
@@ -68,7 +68,7 @@ int __conn_md_dmp_in(ipc_ilm_t *p_ilm, enum conn_md_msg_type msg_type, struct co
 	p_msg->type = msg_type;
 
 	/*Log p_ilm */
-	memcpy(&p_msg->ilm, p_ilm, sizeof(ipc_ilm_t));
+	memcpy(&p_msg->ilm, p_ilm, sizeof(struct ipc_ilm));
 
 	/*Log msg length */
 	p_msg->msg_len = p_ilm->local_para_ptr->msg_len;
@@ -92,7 +92,7 @@ int __conn_md_dmp_in(ipc_ilm_t *p_ilm, enum conn_md_msg_type msg_type, struct co
 	return 0;
 }
 
-int conn_md_dmp_in(ipc_ilm_t *p_ilm, enum conn_md_msg_type msg_type, struct conn_md_dmp_msg_log *p_msg_log)
+int conn_md_dmp_in(struct ipc_ilm *p_ilm, enum conn_md_msg_type msg_type, struct conn_md_dmp_msg_log *p_msg_log)
 {
 	int i_ret = -1;
 
@@ -109,7 +109,7 @@ int conn_md_dmp_in(ipc_ilm_t *p_ilm, enum conn_md_msg_type msg_type, struct conn
 
 int __conn_md_dmp_msg_filter(struct conn_md_dmp_msg_str *p_msg, uint32 src_id, uint32 dst_id)
 {
-	ipc_ilm_t *p_ilm = &p_msg->ilm;
+	struct ipc_ilm *p_ilm = &p_msg->ilm;
 	int i = 0;
 
 	if (((src_id == 0) || (src_id == p_ilm->src_mod_id)) && ((dst_id == 0) || (dst_id == p_ilm->dest_mod_id))) {

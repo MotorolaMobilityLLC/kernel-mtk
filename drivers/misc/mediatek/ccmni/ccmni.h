@@ -148,8 +148,8 @@ struct ccmni_dev_ops {
 	int  skb_alloc_size;
 	int  (*init)(int md_id, struct ccmni_ccci_ops *ccci_info);
 	int  (*rx_callback)(int md_id, int ccmni_idx, struct sk_buff *skb, void *priv_data);
-	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state);
-	void (*queue_state_callback)(int md_id, int ccmni_idx, HIF_STATE state, int is_ack);
+	void (*md_state_callback)(int md_id, int ccmni_idx, enum MD_STATE state);
+	void (*queue_state_callback)(int md_id, int ccmni_idx, enum HIF_STATE state, int is_ack);
 	void (*exit)(int md_id);
 	void (*dump)(int md_id, int ccmni_idx, unsigned int flag);
 	void (*dump_rx_status)(int md_id, unsigned long long *status);

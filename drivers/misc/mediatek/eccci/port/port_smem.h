@@ -39,7 +39,7 @@ struct ccci_ccb_ctrl {
 };
 
 struct ccci_smem_port {
-	SMEM_USER_ID user_id;
+	enum SMEM_USER_ID user_id;
 	unsigned char type;
 	unsigned short core_id;
 

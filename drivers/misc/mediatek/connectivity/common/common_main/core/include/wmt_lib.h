@@ -335,7 +335,7 @@ extern INT32 wmt_lib_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 
 
 #if CFG_WMT_LTE_COEX_HANDLING
-extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor);
+extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(struct ipc_ilm *idc_infor);
 #endif
 #if WMT_FOR_SDIO_1V_AUTOK
 extern UINT32 wmt_lib_get_drv_status(UINT32 type);

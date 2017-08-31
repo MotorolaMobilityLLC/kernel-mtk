@@ -52,7 +52,7 @@ static struct ccci_fsm_command *fsm_check_for_ee(struct ccci_fsm_ctl *ctl, int x
 	return next;
 }
 
-static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl, MD_STATE state)
+static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl, enum MD_STATE state)
 {
 	if (unlikely(ctl->md_state != BOOT_WAITING_FOR_HS2 && state == READY)) {
 		CCCI_NORMAL_LOG(ctl->md_id, FSM, "ignore HS2 when md_state=%d\n", ctl->md_state);
@@ -587,7 +587,7 @@ int ccci_fsm_init(int md_id)
 	return 0;
 }
 
-MD_STATE ccci_fsm_get_md_state(int md_id)
+enum MD_STATE ccci_fsm_get_md_state(int md_id)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
 
@@ -597,7 +597,7 @@ MD_STATE ccci_fsm_get_md_state(int md_id)
 		return INVALID;
 }
 
-MD_STATE_FOR_USER ccci_fsm_get_md_state_for_user(int md_id)
+enum MD_STATE_FOR_USER ccci_fsm_get_md_state_for_user(int md_id)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
 
