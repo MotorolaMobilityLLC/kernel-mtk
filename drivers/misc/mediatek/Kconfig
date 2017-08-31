@@ -317,6 +317,7 @@ source "drivers/misc/mediatek/usb2jtag/Kconfig"
 source "drivers/misc/mediatek/usb_c/Kconfig"
 source "drivers/misc/mediatek/vibrator/Kconfig"
 source "drivers/misc/mediatek/xhci/Kconfig"
+source "drivers/misc/mediatek/pcie_ut/Kconfig"
 
 endmenu  # Peripheral
 

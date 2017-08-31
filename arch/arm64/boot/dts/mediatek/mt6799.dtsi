@@ -1730,15 +1730,53 @@
 		reg = <0 0x11cd0000 0 0x1000>;
 	};
 
-	pcie@193f0000 {
-		compatible = "mediatek,pcie";
-		reg = <0 0x193f0000 0 0x1000>;
-		interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>;
+	pcie_phy: pcie-phy@11e20000 {
+		compatible = "mediatek,a60931";
+		reg = <0 0x11e20000 0 0x1000>;
+		#phy-cells = <1>;
 	};
 
-	pcie_phy@11e20000 {
-		compatible = "mediatek,pcie_phy";
-		reg = <0 0x11e20000 0 0x1000>;
+	pcie@193f0000 {
+		compatible = "mediatek,pcie";
+		device_type = "pci";
+		reg = <0 0x193f0000 0 0x2000>;
+		interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>;
+		bus-range = <0x00 0xff>;
+
+		#address-cells = <3>;
+		#size-cells = <2>;
+		ranges = <0x82000000 0 0x19400000 0x0 0x19400000 0 0x00400000>;
+
+		phys = <&pcie_phy 1>;
+		phy-names = "pcie-phy";
+
+	/*	clocks = <&infrasys INFRA_MSDC0>;*/
+	/*	clock-names = "pcie-mac"; */
+
+		pcie0: pcie@1,0 {
+			device_type = "pci";
+			assigned-addresses = <0x82000800 0 0x19400000 0 0x400000>; /* non-prefetchable memory 4MB */
+			reg = <0x0800 0 0 0 0>;
+			#address-cells = <3>;
+			#size-cells = <2>;
+			#interrupt-cells = <1>;
+
+			ranges;
+			interrupt-map-mask = <0 0 0 7>;
+			interrupt-map = <0 0 0 1 &pcie_intc1 1>,
+					<0 0 0 2 &pcie_intc1 2>,
+					<0 0 0 3 &pcie_intc1 3>,
+					<0 0 0 4 &pcie_intc1 4>;
+			pcie-port = <0>;
+			num-lanes = <1>;
+			status = "okay";
+
+			pcie_intc1: interrupt-controller {
+				interrupt-controller;
+				#address-cells = <0>;
+				#interrupt-cells = <1>;
+			};
+		};
 	};
 
 	efusec@11f10000 {
