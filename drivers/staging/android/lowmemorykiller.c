@@ -135,6 +135,19 @@ static unsigned long lowmem_count(struct shrinker *s,
 		global_page_state(NR_INACTIVE_FILE);
 }
 
+static void dump_memory_status(void)
+{
+	show_free_areas(0);
+#ifdef CONFIG_MTK_ION
+	/* Show ION status */
+	ion_mm_heap_memory_detail();
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+	if (mtk_dump_gpu_memory_usage() == false)
+		lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
+#endif
+}
+
 static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
@@ -503,6 +516,7 @@ log_again:
 					send_sig(SIGSTOP, selected, 0);
 					rcu_read_unlock();
 					spin_unlock(&lowmem_shrink_lock);
+					dump_memory_status();
 					return rem;
 				}
 			} else {
@@ -529,19 +543,9 @@ log_again:
 	spin_unlock(&lowmem_shrink_lock);
 
 	/* Dump HW memory outside the lock */
-	if (selected && output_expect(enable_candidate_log)) {
-		if (print_extra_info) {
-			show_free_areas(0);
-#ifdef CONFIG_MTK_ION
-			/* Show ION status */
-			ion_mm_heap_memory_detail();
-#endif
-#ifdef CONFIG_MTK_GPU_SUPPORT
-			if (mtk_dump_gpu_memory_usage() == false)
-				lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
-#endif
-		}
-	}
+	if (selected && output_expect(enable_candidate_log))
+		if (print_extra_info)
+			dump_memory_status();
 
 	return rem;
 }
