@@ -2674,7 +2674,7 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 		g_config_color30 = true;
 	}
 #endif
-#if defined(CONFIG_MACH_MT6763)  || defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MACH_MT6763)
 	g_config_color30 = true;
 #endif
 
