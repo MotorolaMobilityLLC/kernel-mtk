@@ -2180,14 +2180,8 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 		return -EINVAL;
 	}
 
-#if CFG_SUPPORT_SCN_PSCN
 	if (prGlueInfo->prSchedScanRequest != NULL)
 		prGlueInfo->prSchedScanRequest = NULL;
-
-	DBGLOG(SCN, TRACE, "start work queue to send event\n");
-	schedule_delayed_work(&sched_workq, 0);
-	DBGLOG(SCN, TRACE, "tx_thread return from kalSchedScanStoppped\n");
-#endif
 
 	return 0;
 }
