@@ -4873,7 +4873,6 @@ static uint32_t *cmdq_core_dump_pc(const struct TaskStruct *pTask, int thread, c
 			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s, value:(%d)",
 			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction, regValue);
-			cmdq_core_dump_resource_status(eventID);
 		} else {
 			CMDQ_LOG("[%s]Thread %d PC(VA): 0x%p, 0x%08x:0x%08x => %s",
 			 tag, thread, pcVA, insts[2], insts[3], parsedInstruction);
