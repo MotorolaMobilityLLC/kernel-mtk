@@ -503,6 +503,7 @@ int i2c_read_bytes(struct i2c_client *client, u16 addr, u8 *rxbuf, int len)
 	u8 buffer[GTP_ADDR_LENGTH];
 	u16 left = len;
 	u16 offset = 0;
+	u8 *data = NULL;
 
 	struct i2c_msg msg[2] = {
 		{
@@ -526,6 +527,14 @@ int i2c_read_bytes(struct i2c_client *client, u16 addr, u8 *rxbuf, int len)
 	if (rxbuf == NULL)
 		return -1;
 
+	data =
+	    kmalloc(MAX_TRANSACTION_LENGTH <
+			   (len + GTP_ADDR_LENGTH) ? MAX_TRANSACTION_LENGTH : (len + GTP_ADDR_LENGTH), GFP_KERNEL);
+	if (data == NULL)
+		return -1;
+	msg[1].buf = data;
+
+
 	GTP_DEBUG("i2c_read_bytes to device %02X address %04X len %d", client->addr, addr, len);
 
 	while (left > 0) {
@@ -545,10 +554,12 @@ int i2c_read_bytes(struct i2c_client *client, u16 addr, u8 *rxbuf, int len)
 
 		if (i2c_transfer(client->adapter, &msg[0], 2) != 2) {
 			GTP_ERROR("I2C read 0x%X length=%d failed", addr + offset, len);
+			kfree(data);
 			return -1;
 		}
 	}
 
+	kfree(data);
 	return 0;
 }
 
