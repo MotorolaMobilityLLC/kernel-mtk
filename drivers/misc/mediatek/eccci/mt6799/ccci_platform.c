@@ -42,7 +42,7 @@ int Is_MD_EMI_voilation(void)
 	int violation_port = MASTER_MDMCU;
 
 	violation_port = emi_mpu_get_violation_port();
-	if ((violation_port == MASTER_MDMCU) || (violation_port == MASTER_MDDMA))
+	if ((violation_port == MASTER_MDMCU) || (violation_port == MASTER_MDHW))
 		return 1;
 	return 0;
 #else
