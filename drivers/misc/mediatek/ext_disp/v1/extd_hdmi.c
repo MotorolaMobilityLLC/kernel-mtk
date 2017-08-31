@@ -1299,6 +1299,7 @@ int hdmi_set_resolution(int res)
 			mtkfb_release_layer_fence(session_id, i);
 	}
 
+	hdmi_drv->tmdsonoff(0);
 	hdmi_resolution_setting(res);
 	p->is_mhl_video_on = false;
 	first_frame_done = 0;
