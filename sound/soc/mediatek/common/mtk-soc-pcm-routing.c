@@ -631,7 +631,7 @@ static int Audio_LowLatencyDebug_Get(struct snd_kcontrol *kcontrol,
 static int Audio_LowLatencyDebug_Set(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
-	set_LowLatencyDebug((bool)ucontrol->value.integer.value[0] ? 1 : 0);
+	set_LowLatencyDebug((bool)ucontrol->value.integer.value[0]);
 	return 0;
 }
 

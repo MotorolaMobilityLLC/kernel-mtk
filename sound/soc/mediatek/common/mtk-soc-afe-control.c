@@ -147,7 +147,7 @@ static struct mtk_afe_platform_ops *s_afe_platform_ops;
 
 static bool ScreenState;
 
-static bool LowLatencyDebug;
+static uint32 LowLatencyDebug;
 
 
 /*
@@ -2501,22 +2501,16 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
 	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->rBlock);
-
-	/* substreamList *Temp = NULL; */
 	unsigned long flags;
 
-	if (Mem_Block == NULL) {
-		pr_err("-%s(), Mem_Block == NULL\n", __func__);
+	if (Mem_Block == NULL)
 		return;
-	}
 
 	Auddrv_Dl2_Spinlock_lock();
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false) {
-		PRINTK_AUD_DL2
-		    ("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ",
-		     __func__);
+		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == false, return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		Auddrv_Dl2_Spinlock_unlock();
 		return;
@@ -2525,7 +2519,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
 
 	if (HW_Cur_ReadIdx == 0) {
-		PRINTK_AUD_DL2("[Auddrv] DL2 HW_Cur_ReadIdx ==0\n");
+		PRINTK_AUDDRV("[Auddrv] DL2 HW_Cur_ReadIdx ==0\n");
 		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 	}
 
@@ -2546,8 +2540,8 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
 	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
-	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx,
-	Afe_Block->u4DataRemained, Afe_consumed_bytes, HW_memory_index);
+	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
+	Afe_consumed_bytes, HW_memory_index);
 
 	if (Afe_Block->u4DataRemained < Afe_consumed_bytes
 	    || Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained >
@@ -2596,7 +2590,6 @@ void Auddrv_DL2_Interrupt_Handler(void)
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
-
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
@@ -4551,7 +4544,7 @@ int get_LowLatencyDebug(void)
 	return LowLatencyDebug;
 }
 
-void set_LowLatencyDebug(bool bFlag)
+void set_LowLatencyDebug(uint32 bFlag)
 {
 	LowLatencyDebug = bFlag;
 	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);

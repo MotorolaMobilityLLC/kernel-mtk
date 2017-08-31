@@ -335,7 +335,7 @@ void set_screen_state(bool state);
 
 /* low latency debug */
 int get_LowLatencyDebug(void);
-void set_LowLatencyDebug(bool bFlag);
+void set_LowLatencyDebug(uint32 bFlag);
 
 /* DC trim API, implement by platform */
 int get_trim_buffer_diff(int channels);
