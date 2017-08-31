@@ -827,6 +827,70 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
     return gain;
 }    /*    set_gain  */
+/*************************************************************************
+* FUNCTION
+*    set_dual_gain
+*
+* DESCRIPTION
+*    This function is to set dual gain to sensor.
+*
+* PARAMETERS
+*    iGain : sensor dual gain(base: 0x40)
+*
+* RETURNS
+*    the actually gain set to sensor.
+*
+* GLOBALS AFFECTED
+*
+*************************************************************************/
+static kal_uint16 set_dual_gain(kal_uint16 gain1, kal_uint16 gain2)
+{
+	kal_uint16 reg_gain1, reg_gain2;
+
+    /* 0x350A[0:1], 0x350B[0:7] AGC real gain */
+    /* [0:3] = N meams N /16 X    */
+    /* [4:9] = M meams M X         */
+    /* Total gain = M + N /16 X   */
+
+
+	if (gain1 < BASEGAIN || gain1 > 8 * BASEGAIN) {
+		LOG_INF("Error gain1 setting");
+
+		if (gain1 < BASEGAIN)
+			gain1 = BASEGAIN;
+		else if (gain1 > 8 * BASEGAIN)
+			gain1 = 8 * BASEGAIN;
+	}
+
+	if (gain2 < BASEGAIN || gain2 > 8 * BASEGAIN) {
+		LOG_INF("Error gain2 setting");
+
+		if (gain2 < BASEGAIN)
+			gain2 = BASEGAIN;
+		else if (gain2 > 8 * BASEGAIN)
+			gain2 = 8 * BASEGAIN;
+	}
+
+	reg_gain1 = gain2reg(gain1);
+	reg_gain2 = gain2reg(gain2);
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.gain = reg_gain1;
+	spin_unlock(&imgsensor_drv_lock);
+	LOG_INF("gain1 = %d , reg_gain1 = 0x%x, gain2 = %d , reg_gain2 = 0x%x\n ", gain1, reg_gain1, gain2, reg_gain2);
+
+	write_cmos_sensor(0x0104, 0x01);
+	/* Global analog Gain for Long expo*/
+	write_cmos_sensor(0x0204, (reg_gain1>>8) & 0xFF);
+	write_cmos_sensor(0x0205, reg_gain1 & 0xFF);
+	/* Global analog Gain for Short expo*/
+	write_cmos_sensor(0x0216, (reg_gain2>>8) & 0xFF);
+	write_cmos_sensor(0x0217, reg_gain2 & 0xFF);
+	write_cmos_sensor(0x0104, 0x00);
+
+	return gain1;
+
+}    /*    set_dual_gain  */
 
 static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
@@ -3789,6 +3853,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
         case SENSOR_FEATURE_SET_GAIN:
             set_gain((UINT16) *feature_data);
             break;
+		case SENSOR_FEATURE_SET_DUAL_GAIN:
+			set_dual_gain((UINT16) * feature_data, (UINT16) * (feature_data+1));
+			break;
         case SENSOR_FEATURE_SET_FLASHLIGHT:
             break;
         case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
