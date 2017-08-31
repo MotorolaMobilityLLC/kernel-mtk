@@ -81,6 +81,8 @@ const char *pmic_auxadc_channel_name[] = {
 	"TSX",
 	"HP",
 	"ISENSE",
+	"BUCK1_TEMP",
+	"BUCK2_TEMP",
 #endif
 };
 #define PMIC_AUXADC_CHANNEL_MAX	ARRAY_SIZE(pmic_auxadc_channel_name)
