@@ -998,8 +998,8 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 
 void setHpGainZero(void)
 {
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG0, 0x000c, 0x003f);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG0, 0x000c, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x000c, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x000c, 0x003f);
 }
 
 void SetSdmLevel(unsigned int level)
@@ -1745,8 +1745,8 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Enable HP main output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0700, 0x3f00);
 			/* Enable HPP/N main output stage step by step */
-			Ana_Set_Reg(AFE_DL_DRE_L_CFG0, 0x0006, 0x007f);
-			Ana_Set_Reg(AFE_DL_DRE_R_CFG0, 0x0006, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0006, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0006, 0x007f);
 			/* Increase HPL and HPR gain to normal gain step by step */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0001, 0x0001);
 			/* Enable AUD_CLK  */
@@ -1807,8 +1807,8 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0001);
 			/* Disable AUD_CLK */
-			Ana_Set_Reg(AFE_DL_DRE_L_CFG0, 0x002C, 0x007f);
-			Ana_Set_Reg(AFE_DL_DRE_R_CFG0, 0x002C, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x002C, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x002C, 0x007f);
 			/* Increase HPL and HPR gain to normal gain step by step */
 
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x3f00);
@@ -2444,8 +2444,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Enable HP main output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0700, 0x3f00);
 		/* Enable HPP/N main output stage step by step */
-		Ana_Set_Reg(AFE_DL_DRE_L_CFG0, 0x0006, 0x007f);
-		Ana_Set_Reg(AFE_DL_DRE_R_CFG0, 0x0006, 0x007f);
+		Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x0006, 0x007f);
+		Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x0006, 0x007f);
 		/* Increase HPL and HPR gain to normal gain step by step */
 
 		/* Apply digital DC compensation value to DAC */
@@ -2473,8 +2473,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0001);
 			/* Disable AUD_CLK */
 
-			Ana_Set_Reg(AFE_DL_DRE_L_CFG0, 0x002C, 0x007f);
-			Ana_Set_Reg(AFE_DL_DRE_R_CFG0, 0x002C, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, 0x002C, 0x007f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, 0x002C, 0x007f);
 			/* Increase HPL and HPR gain to normal gain step by step */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x3f00);
 			/* Enable HPP/N main output stage step by step */
@@ -2846,7 +2846,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG0, index, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, index, 0x003f);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	return 0;
 }
@@ -2875,7 +2875,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG0, index, 0x003f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, index, 0x003f);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
 }
@@ -5865,23 +5865,23 @@ static int Audio_HyBridNLE_getDigitalIdx(int32 Db, uint32 *pDigitalIdx)
 
 static void Audio_NLE_RegDump(void)
 {
-	pr_warn("AFE_DL_NLE_R_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG0));
-	pr_warn("AFE_DL_NLE_R_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG1));
-	pr_warn("AFE_DL_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG2));
-	pr_warn("AFE_DL_NLE_R_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_R_CFG3));
-	pr_warn("AFE_DL_NLE_L_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG0));
-	pr_warn("AFE_DL_NLE_L_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG1));
-	pr_warn("AFE_DL_NLE_L_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG2));
-	pr_warn("AFE_DL_NLE_L_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_DL_DRE_L_CFG3));
+	pr_warn("AFE_DL_NLE_R_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_R_CFG0));
+	pr_warn("AFE_DL_NLE_R_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_R_CFG1));
+	pr_warn("AFE_DL_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_R_CFG2));
+	pr_warn("AFE_DL_NLE_R_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_R_CFG3));
+	pr_warn("AFE_DL_NLE_L_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_L_CFG0));
+	pr_warn("AFE_DL_NLE_L_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_L_CFG1));
+	pr_warn("AFE_DL_NLE_L_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_L_CFG2));
+	pr_warn("AFE_DL_NLE_L_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_DL_NLE_L_CFG3));
 
-	pr_warn("AFE_RGS_NLE_R_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG0));
-	pr_warn("AFE_RGS_NLE_R_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG1));
-	pr_warn("AFE_RGS_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG3));
-	pr_warn("AFE_RGS_NLE_R_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_R_CFG3));
-	pr_warn("AFE_RGS_NLE_L_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG0));
-	pr_warn("AFE_RGS_NLE_L_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG1));
-	pr_warn("AFE_RGS_NLE_L_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG2));
-	pr_warn("AFE_RGS_NLE_L_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_RGS_DRE_L_CFG3));
+	pr_warn("AFE_RGS_NLE_R_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG0));
+	pr_warn("AFE_RGS_NLE_R_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG1));
+	pr_warn("AFE_RGS_NLE_R_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG3));
+	pr_warn("AFE_RGS_NLE_R_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_R_CFG3));
+	pr_warn("AFE_RGS_NLE_L_CFG0	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG0));
+	pr_warn("AFE_RGS_NLE_L_CFG1	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG1));
+	pr_warn("AFE_RGS_NLE_L_CFG2	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG2));
+	pr_warn("AFE_RGS_NLE_L_CFG3	= 0x%x\n", Ana_Get_Reg(AFE_RGS_NLE_L_CFG3));
 }
 
 static int Audio_HyBridNLE_TurnOn_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -5917,37 +5917,37 @@ static int Audio_HyBridNLE_TurnOn_Set(struct snd_kcontrol *kcontrol, struct snd_
 		return -1;
 	}
 	pr_aud("%s %d %d enter\n", __func__, rg_nle_delay_ana_idx, rg_nle_gain_ana_tar_idx);
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG3);
 	if ((rg_temp_value & 0x00C0) != 0x40) {
 		pr_err("%s R Err rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_NLE_RegDump();
 		return -2;
 	}
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG3);
 	if ((rg_temp_value & 0x0080) != 0) {
 		pr_err("%s L Err rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_NLE_RegDump();
 		return -3;
 	}
 
-	rg_nle_r_gain_dig_tar = Ana_Get_Reg(AFE_DL_DRE_R_CFG0) & 0x3f00;
-	rg_nle_l_gain_dig_tar = Ana_Get_Reg(AFE_DL_DRE_L_CFG0) & 0x3f00;
+	rg_nle_r_gain_dig_tar = Ana_Get_Reg(AFE_DL_NLE_R_CFG0) & 0x3f00;
+	rg_nle_l_gain_dig_tar = Ana_Get_Reg(AFE_DL_NLE_L_CFG0) & 0x3f00;
 	if (rg_nle_r_gain_dig_tar > 0 || rg_nle_l_gain_dig_tar > 0) {
 		/* It should be zero */
 		pr_err("%s Err %d %d\n", __func__, rg_nle_r_gain_dig_tar, rg_nle_l_gain_dig_tar);
 		Audio_NLE_RegDump();
 	}
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (0 << 6) | rg_nle_delay_ana_idx, 0x7f);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, rg_nle_delay_ana_idx, 0x3f);
-	rg_nle_r_initiate = (Ana_Get_Reg(AFE_DL_DRE_R_CFG2) & 0x0100);
-	rg_nle_l_initiate = (Ana_Get_Reg(AFE_DL_DRE_L_CFG2) & 0x0100);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG2, rg_nle_r_initiate?0:0x100, 0x0100);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG2, rg_nle_l_initiate?0:0x100, 0x0100);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (1<<7), 0x80);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, (1<<7), 0x80);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG3, (0 << 6) | rg_nle_delay_ana_idx, 0x7f);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG3, rg_nle_delay_ana_idx, 0x3f);
+	rg_nle_r_initiate = (Ana_Get_Reg(AFE_DL_NLE_R_CFG2) & 0x0100);
+	rg_nle_l_initiate = (Ana_Get_Reg(AFE_DL_NLE_L_CFG2) & 0x0100);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG2, rg_nle_r_initiate?0:0x100, 0x0100);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG2, rg_nle_l_initiate?0:0x100, 0x0100);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG3, (1<<7), 0x80);
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG3, (1<<7), 0x80);
 	pr_aud("%s exit\n", __func__);
 	return 0;
 }
@@ -5998,45 +5998,45 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 
 	pr_aud("%s %d %d enter\n", __func__, rg_nle_delay_ana_idx, rg_nle_gain_ana_tar_idx);
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG3);
 	if ((rg_temp_value & 0x00C0) != 0x0080) {
 		pr_warn("%s R Warn Off rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_NLE_RegDump();
 		return 0;
 	}
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG3);
 	if ((rg_temp_value & 0x0080) != 0x0080) {
 		pr_warn("%s L Warn Off rg_temp_value 0x%x\n", __func__, rg_temp_value);
 		Audio_NLE_RegDump();
 		return 0;
 	}
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG0);
 	rg_nle_r_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
 	rg_nle_r_gain_ana_tar = rg_temp_value & 0x003f;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG0);
 	rg_nle_l_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
 	rg_nle_l_gain_ana_tar = rg_temp_value & 0x003f;
 
 	do {
 		if (bRTargeted == false) {
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG0);
 			nle_r_gain_dig_cur = (rg_temp_value & 0x3f00) >> 8;
 			nle_r_gain_ana_cur = rg_temp_value & 0x003f;
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG3);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG3);
 			nle_r_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 			nle_r_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
 			if (rg_nle_r_gain_dig_tar != 0 || rg_nle_r_gain_ana_tar != rg_nle_gain_ana_tar_idx) {
 				if (bRNoZCEEnable == false) {
 					/* Send NonZeroEvent*/
-					Ana_Set_Reg(AFE_DL_DRE_R_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
-					Ana_Set_Reg(AFE_DL_DRE_R_CFG1, 0x8000, 0xB700);
-					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG2) & 0x01;
-					Ana_Set_Reg(AFE_DL_DRE_R_CFG2, rg_temp_value?0:1, 0x0001);
+					Ana_Set_Reg(AFE_DL_NLE_R_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
+					Ana_Set_Reg(AFE_DL_NLE_R_CFG1, 0x8000, 0xB700);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG2) & 0x01;
+					Ana_Set_Reg(AFE_DL_NLE_R_CFG2, rg_temp_value?0:1, 0x0001);
 					bRNoZCEEnable = true;
-					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG0);
 					rg_nle_r_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
 					rg_nle_r_gain_ana_tar = rg_temp_value & 0x003f;
 					bSleepFlg = true;
@@ -6070,21 +6070,21 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 		}
 
 		if (bLTargeted == false) {
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG0);
 			nle_l_gain_dig_cur = (rg_temp_value & 0x3f00) >> 8;
 			nle_l_gain_ana_cur = rg_temp_value & 0x003f;
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG3);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG3);
 			nle_l_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 			nle_l_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
 			if (rg_nle_l_gain_dig_tar != 0 || rg_nle_l_gain_ana_tar != rg_nle_gain_ana_tar_idx) {
 				if (bLNoZCEEnable == false) {
 					/* Send NonZeroEvent*/
-					Ana_Set_Reg(AFE_DL_DRE_L_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
-					Ana_Set_Reg(AFE_DL_DRE_L_CFG1, 0x8000, 0xB700);
-					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG2) & 0x01;
-					Ana_Set_Reg(AFE_DL_DRE_L_CFG2, rg_temp_value?0:1, 0x0001);
+					Ana_Set_Reg(AFE_DL_NLE_L_CFG0, rg_nle_gain_ana_tar_idx, 0x3f3f);
+					Ana_Set_Reg(AFE_DL_NLE_L_CFG1, 0x8000, 0xB700);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG2) & 0x01;
+					Ana_Set_Reg(AFE_DL_NLE_L_CFG2, rg_temp_value?0:1, 0x0001);
 					bLNoZCEEnable = true;
-					rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+					rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG0);
 					rg_nle_l_gain_dig_tar = (rg_temp_value & 0x3f00) >> 8;
 					rg_nle_l_gain_ana_tar = rg_temp_value & 0x3f;
 					bSleepFlg = true;
@@ -6130,8 +6130,8 @@ static int Audio_HyBridNLE_TurnOff_Set(struct snd_kcontrol *kcontrol, struct snd
 		} else
 			break;
 	} while (1);
-	Ana_Set_Reg(AFE_DL_DRE_L_CFG3, 0, 0x0080);
-	Ana_Set_Reg(AFE_DL_DRE_R_CFG3, (1 << 6), 0x00C0);  /* pdn last trigger on+pdn*/
+	Ana_Set_Reg(AFE_DL_NLE_L_CFG3, 0, 0x0080);
+	Ana_Set_Reg(AFE_DL_NLE_R_CFG3, (1 << 6), 0x00C0);  /* pdn last trigger on+pdn*/
 
 	pr_aud("%s exit\n", __func__);
 	return 0;
@@ -6142,67 +6142,67 @@ static int Audio_HyBridNLE_Info_Get(struct snd_kcontrol *kcontrol, struct snd_ct
 	uint32 rg_temp_value;
 
 	pr_aud("%s enter\n", __func__);
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG0);
 	ucontrol->value.bytes.data[0] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[1] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG1);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG1);
 	ucontrol->value.bytes.data[2] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[3] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG2);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG2);
 	ucontrol->value.bytes.data[4] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[5] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG3);
 	ucontrol->value.bytes.data[6] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[7] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG0);
 	ucontrol->value.bytes.data[8] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[9] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG1);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG1);
 	ucontrol->value.bytes.data[10] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[11] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG2);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG2);
 	ucontrol->value.bytes.data[12] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[13] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG3);
 	ucontrol->value.bytes.data[14] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[15] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG0);
 	ucontrol->value.bytes.data[16] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[17] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG1);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG1);
 	ucontrol->value.bytes.data[18] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[19] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG2);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG2);
 	ucontrol->value.bytes.data[20] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[21] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG3);
 	ucontrol->value.bytes.data[22] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[23] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG0);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG0);
 	ucontrol->value.bytes.data[24] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[25] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG1);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG1);
 	ucontrol->value.bytes.data[26] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[27] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG2);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG2);
 	ucontrol->value.bytes.data[28] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[29] = (rg_temp_value & 0x0000ff00) >> 8;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG3);
 	ucontrol->value.bytes.data[30] = rg_temp_value & 0x000000ff;
 	ucontrol->value.bytes.data[31] = (rg_temp_value & 0x0000ff00) >> 8;
 	pr_aud("%s exit\n", __func__);
@@ -6222,10 +6222,10 @@ static int Audio_HyBridNLE_Targeted_Get(struct snd_kcontrol *kcontrol,
 	uint32 nle_r_dig_gain_targeted, nle_r_ana_gain_targeted;
 	uint32 nle_l_dig_gain_targeted, nle_l_ana_gain_targeted;
 
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG3);
 	nle_r_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 	nle_r_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
-	rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG3);
+	rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG3);
 	nle_l_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 	nle_l_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
 
@@ -6295,15 +6295,15 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 	zerocount = (zerocount << 8) | ((uint32) ucontrol->value.bytes.data[1]);
 	pr_aud("%d AlgIdx %d(%d dB) dgtIdx %d(%d dB)\n", nle_channel, gainHPIndex, gainHPDb, gainNleIndex, gainNleDb);
 	if (nle_channel == AUDIO_NLE_CHANNEL_R) {
-		rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG3);
+		rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG3);
 		nle_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 		nle_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
 		if (nle_dig_gain_targeted && nle_ana_gain_targeted) {
 			if (zerocount == 0) {
-				Ana_Set_Reg(AFE_DL_DRE_R_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
-				Ana_Set_Reg(AFE_DL_DRE_R_CFG1, 0x8000|(dGainStepIndex << 8), 0xB700);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
+				Ana_Set_Reg(AFE_DL_NLE_R_CFG1, 0x8000|(dGainStepIndex << 8), 0xB700);
 			} else {
-				rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+				rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG0);
 				if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8),
 					&srcGainNleDb) < 0) {
 					pr_err("%s R-3\n", __func__);
@@ -6311,12 +6311,12 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			}
 		} else {
-			rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG0);
 			if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8), &srcGainNleDb) < 0) {
 				pr_err("%s R-4\n", __func__);
 				return -4;
 			}
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_R_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_R_CFG0);
 			if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8),
 				&srcCurGainNleDb) < 0) {
 				pr_err("%s R-5\n", __func__);
@@ -6361,21 +6361,21 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			}
 			dGainStepIndex = dGainStep - 1;
-			Ana_Set_Reg(AFE_DL_DRE_R_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
-			Ana_Set_Reg(AFE_DL_DRE_R_CFG1, (dGainStepIndex << 8) | dToogleNum, 0xB73f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG1, (dGainStepIndex << 8) | dToogleNum, 0xB73f);
 		}
-		rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_R_CFG2) & 0x01;
-		Ana_Set_Reg(AFE_DL_DRE_R_CFG2, rg_temp_value?0:1, 0x0001);
+		rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_R_CFG2) & 0x01;
+		Ana_Set_Reg(AFE_DL_NLE_R_CFG2, rg_temp_value?0:1, 0x0001);
 	} else if (nle_channel == AUDIO_NLE_CHANNEL_L) {
-		rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG3);
+		rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG3);
 		nle_dig_gain_targeted = (rg_temp_value & 0x8000) >> 15;
 		nle_ana_gain_targeted = (rg_temp_value & 0x1000) >> 12;
 		if (nle_dig_gain_targeted && nle_ana_gain_targeted) {
 			if (zerocount == 0) {
-				Ana_Set_Reg(AFE_DL_DRE_L_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
-				Ana_Set_Reg(AFE_DL_DRE_L_CFG1, 0x8000 | (dGainStepIndex << 8), 0xB700);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
+				Ana_Set_Reg(AFE_DL_NLE_L_CFG1, 0x8000 | (dGainStepIndex << 8), 0xB700);
 			} else {
-				rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+				rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG0);
 				if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8),
 					&srcGainNleDb) < 0) {
 					pr_err("%s R-3\n", __func__);
@@ -6383,12 +6383,12 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			}
 		} else {
-			rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG0);
 			if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8), &srcGainNleDb) < 0) {
 				pr_err("%s R-4\n", __func__);
 				return -4;
 			}
-			rg_temp_value = Ana_Get_Reg(AFE_RGS_DRE_L_CFG0);
+			rg_temp_value = Ana_Get_Reg(AFE_RGS_NLE_L_CFG0);
 			if (Audio_HyBridNLE_getDbFromDigitalIdx(((rg_temp_value & 0x3f00) >> 8),
 				&srcCurGainNleDb) < 0) {
 				pr_err("%s R-5\n", __func__);
@@ -6433,11 +6433,11 @@ static int Audio_HyBridNLE_SetGain_Set(struct snd_kcontrol *kcontrol, struct snd
 				}
 			}
 			dGainStepIndex = dGainStep - 1;
-			Ana_Set_Reg(AFE_DL_DRE_L_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
-			Ana_Set_Reg(AFE_DL_DRE_L_CFG1, (dGainStepIndex << 8) | dToogleNum, 0xB73f);
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, (gainNleIndex << 8) | gainHPIndex, 0x3f3f);
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG1, (dGainStepIndex << 8) | dToogleNum, 0xB73f);
 		}
-		rg_temp_value = Ana_Get_Reg(AFE_DL_DRE_L_CFG2) & 0x01;
-		Ana_Set_Reg(AFE_DL_DRE_L_CFG2, rg_temp_value?0:1, 0x0001);
+		rg_temp_value = Ana_Get_Reg(AFE_DL_NLE_L_CFG2) & 0x01;
+		Ana_Set_Reg(AFE_DL_NLE_L_CFG2, rg_temp_value?0:1, 0x0001);
 	} else
 		pr_warn("%s err no channel match\n", __func__);
 	pr_aud("%s exit\n", __func__);
