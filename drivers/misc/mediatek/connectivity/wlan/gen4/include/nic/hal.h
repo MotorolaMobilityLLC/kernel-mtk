@@ -599,7 +599,7 @@ do { \
 	if ((u4Value & WCIR_WLAN_READY) == 0) { \
 		*_pfgResult = TRUE; \
 	} \
-	halPrintMailbox(prAdapter);\
+	halPrintMailbox(_prAdapter);\
 	halPollDbgCr(_prAdapter, LP_DBGCR_POLL_ROUND); \
 } while (0)
 
