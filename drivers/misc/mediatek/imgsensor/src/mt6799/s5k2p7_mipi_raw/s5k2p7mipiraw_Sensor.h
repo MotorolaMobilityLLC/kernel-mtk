@@ -1,18 +1,16 @@
-/*****************************************************************************
+/*
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * Filename:
- * ---------
- *	 imx214mipi_Sensor.h
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
- * Project:
- * --------
- *	 ALPS
- *
- * Description:
- * ------------
- *	 CMOS sensor header file
- *
- ****************************************************************************/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef _S5K2P7MIPI_SENSOR_H
 #define _S5K2P7MIPI_SENSOR_H
 
