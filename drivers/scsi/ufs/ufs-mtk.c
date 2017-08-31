@@ -1077,6 +1077,21 @@ static int ufs_mtk_scsi_dev_cfg(struct scsi_device *sdev, enum ufs_scsi_dev_cfg 
 	return 0;
 }
 
+void ufs_mtk_runtime_pm_init(struct scsi_device *sdev)
+{
+	/*
+	 * If runtime PM is enabled for UFS device, use auto-suspend mechanism
+	 * if assigned.
+	 *
+	 * This is only for those SCSI devices which runtime PM is not managed by
+	 * block layer. Thus autosuspend of this device is not configured by sd_probe_async.
+	 */
+	if (ufs_mtk_rpm_enabled && sdev->autosuspend_delay >= 0) {
+		pm_runtime_set_autosuspend_delay(&sdev->sdev_gendev, sdev->autosuspend_delay);
+		pm_runtime_use_autosuspend(&sdev->sdev_gendev);
+	}
+}
+
 static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 {
 	/* if auto-hibern8 is not enabled by device tree, return */
