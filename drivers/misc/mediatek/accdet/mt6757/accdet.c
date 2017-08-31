@@ -45,7 +45,6 @@
 /*
  * static variable defination
  */
-#define JUST_INPUT_NO_SWITCH 0   /* 0:only use input;   1: input & switch both */
 #define DEBUG_THREAD 1
 #define REGISTER_VALUE(x)   (x - 1)
 #define MICBIAS_DISABLE_TIMER   (6 * HZ)	/*6 seconds*/
@@ -61,9 +60,6 @@ int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
 unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low_level trigger */
 struct headset_mode_settings *cust_headset_settings;
-#if JUST_INPUT_NO_SWITCH
-static struct switch_dev accdet_data;
-#endif
 static struct input_dev *kpd_accdet_dev;
 static struct cdev *accdet_cdev;
 static struct class *accdet_class;
@@ -149,9 +145,6 @@ int accdet_read_audio_res(unsigned int res_value)
 		accdet_status = LINE_OUT;
 		/* update state */
 		send_accdet_status_event(cable_type, 1);
-#if JUST_INPUT_NO_SWITCH
-		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
-#endif
 		ACCDET_DEBUG("[accdet_read_audio_res]update state:%d\n", cable_type);
 	}
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -271,9 +264,6 @@ static inline void headset_plug_out(void)
 		ACCDET_DEBUG(" [accdet] headset_plug_out send key = %d release\n", cur_key);
 		cur_key = 0;
 	}
-#if JUST_INPUT_NO_SWITCH
-	switch_set_state((struct switch_dev *)&accdet_data, cable_type);
-#endif
 	ACCDET_DEBUG(" [accdet] set state in cable_type = NO_DEVICE\n");
 }
 /* Accdet only need this func */
@@ -1085,12 +1075,9 @@ static void accdet_work_callback(struct work_struct *work)
 #endif
 #endif
 	mutex_lock(&accdet_eint_irq_sync_mutex);
-	if (eint_accdet_sync_flag == 1) {
+	if (eint_accdet_sync_flag == 1)
 		send_accdet_status_event(cable_type, 1);
-#if JUST_INPUT_NO_SWITCH
-		switch_set_state((struct switch_dev *)&accdet_data, cable_type);
-#endif
-	} else
+	else
 		ACCDET_DEBUG("[Accdet] Headset has plugged out don't set accdet state\n");
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
 	ACCDET_DEBUG(" [accdet] set state in cable_type  status\n");
@@ -1132,7 +1119,7 @@ int accdet_get_dts_data(void)
 #endif
 		memcpy(&accdet_dts_data.headset_debounce, debounce, sizeof(debounce));
 		cust_headset_settings = &accdet_dts_data.headset_debounce;
-		ACCDET_INFO("[Accdet]pwm_width = %x, pwm_thresh = %x\n deb0 = %x, deb1 = %x, mic_mode = %d\n",
+		ACCDET_INFO("[Accdet]pwm_width = %x, pwm_thresh = %x deb0 = %x, deb1 = %x, mic_mode = %d\n",
 		     cust_headset_settings->pwm_width, cust_headset_settings->pwm_thresh,
 		     cust_headset_settings->debounce0, cust_headset_settings->debounce1,
 		     accdet_dts_data.accdet_mic_mode);
@@ -1402,8 +1389,6 @@ static ssize_t store_accdet_call_state(struct device_driver *ddri, const char *b
 		break;
 	case CALL_ACTIVE:
 		ACCDET_INFO("[%s]accdet call: active or hold state!\n", __func__);
-		ACCDET_INFO("[%s]accdet_ioctl : button_status=%d\n",
-			__func__, button_status);
 		/*return button_status;*/
 		break;
 	default:
@@ -1621,16 +1606,6 @@ int mt_accdet_probe(struct platform_device *dev)
 /*
 * below register accdet as switch class
 */
-#if JUST_INPUT_NO_SWITCH
-	accdet_data.name = "h2w";
-	accdet_data.index = 0;
-	accdet_data.state = NO_DEVICE;
-	ret = switch_dev_register(&accdet_data);
-	if (ret) {
-		ACCDET_ERROR("switch_dev_register returned:%d!\n", ret);
-		return 1;
-	}
-#endif
 /* Create normal device for auido use */
 	ret = alloc_chrdev_region(&accdet_devno, 0, 1, ACCDET_DEVNAME);
 	if (ret)
@@ -1732,9 +1707,6 @@ void mt_accdet_remove(void)
 	destroy_workqueue(accdet_eint_workqueue);
 #endif
 	destroy_workqueue(accdet_workqueue);
-#if JUST_INPUT_NO_SWITCH
-	switch_dev_unregister(&accdet_data);
-#endif
 	device_del(accdet_nor_device);
 	class_destroy(accdet_class);
 	cdev_del(accdet_cdev);
@@ -1827,9 +1799,6 @@ void mt_accdet_pm_restore_noirq(void)
 		ACCDET_DEBUG("[Accdet]accdet_pm_restore_noirq: accdet current status error!\n");
 		break;
 	}
-#if JUST_INPUT_NO_SWITCH
-	switch_set_state((struct switch_dev *)&accdet_data, cable_type);
-#endif
 	if (cable_type == NO_DEVICE) {
 #ifdef CONFIG_ACCDET_PIN_RECOGNIZATION
 		init_timer(&accdet_disable_ipoh_timer);
