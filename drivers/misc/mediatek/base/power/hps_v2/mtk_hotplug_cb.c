@@ -31,8 +31,12 @@
 #include "mtk_pmic_regulator.h"
 #include "mach/mtk_freqhopping.h"
 #endif
-#define CPU_BUCK_CTRL	(0)
 
+#ifdef CONFIG_MACH_MT6799
+#define CPU_BUCK_CTRL	(1)
+#else
+#define CPU_BUCK_CTRL	(0)
+#endif
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
