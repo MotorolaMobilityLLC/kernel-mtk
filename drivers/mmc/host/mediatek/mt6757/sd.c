@@ -4665,6 +4665,27 @@ static int msdc_ops_switch_volt_sdio(struct mmc_host *mmc, struct mmc_ios *ios)
 	return err;
 }
 
+static int msdc_sdio_card_busy(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	void __iomem *base = host->base;
+	u32 status;
+
+	/* SDIO check card busy before send request in kernel 4.4.
+	 * So that host need ungate/gate clock first otherwise read busy fail.
+	 * eMMC and SD still use ungate/gate clock when sending request
+	 */
+	msdc_ungate_clock(host);
+	status = MSDC_READ32(MSDC_PS);
+	msdc_gate_clock(host, 1);
+
+	/* Check if DAT[0] is low, DAT[1] is interrupt so it cannot check */
+	if (((status >> 16) & 0x1) != 0x1)
+		return 1;
+
+	return 0;
+}
+
 static int msdc_card_busy(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4796,7 +4817,7 @@ static struct mmc_host_ops mt_msdc_ops_sdio = {
 	.start_signal_voltage_switch   = msdc_ops_switch_volt_sdio,
 	.execute_tuning                = msdc_execute_tuning,
 	.hw_reset                      = msdc_card_reset,
-	.card_busy                     = msdc_card_busy,
+	.card_busy                     = msdc_sdio_card_busy,
 };
 
 static void msdc_irq_data_complete(struct msdc_host *host,
