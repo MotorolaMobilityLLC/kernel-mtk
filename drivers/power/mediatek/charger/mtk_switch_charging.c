@@ -406,6 +406,13 @@ int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 		if (info->chg1_dev->is_polling_mode == false)
 			_wake_up_charger(info);
 	}
+
+	if (event == CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT) {
+		info->safety_timeout = true;
+		if (info->chg1_dev->is_polling_mode == false)
+			_wake_up_charger(info);
+	}
+
 	return NOTIFY_DONE;
 }
 
