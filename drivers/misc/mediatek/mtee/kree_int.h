@@ -33,6 +33,7 @@ typedef TZ_RESULT(*KREE_REE_Service_Func) (u32 op,
 					u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 
 struct clk *mtee_clk_get(const char *clk_name);
+struct device *mtee_pmdev_get(const char *pm_name);
 
 /* REE Services function prototype */
 TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
@@ -41,5 +42,7 @@ TZ_RESULT KREE_ServEnableIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 TZ_RESULT KREE_ServEnableClock(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 TZ_RESULT KREE_ServDisableClock(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 
+TZ_RESULT KREE_ServPMGet(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
+TZ_RESULT KREE_ServPMPut(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 
 #endif				/* __KREE_INT_H__ */

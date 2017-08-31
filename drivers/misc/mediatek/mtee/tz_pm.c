@@ -13,9 +13,15 @@
 
 
 #include <linux/module.h>
+#include <linux/platform_device.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/pm_runtime.h>
 
 #include "trustzone/kree/system.h"
 #include "tz_cross/ta_pm.h"
+#include "tz_cross/ree_service.h"
+#include "kree_int.h"
 
 static KREE_SESSION_HANDLE pm_session;
 
@@ -86,4 +92,34 @@ int kree_pm_device_ops(int state)
 		pr_warn("%s error: %s\n", __func__, TZ_GetErrorString(ret));
 
 	return ret;
+}
+
+TZ_RESULT KREE_ServPMGet(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
+{
+	struct device *dev;
+	int *res = (int *)uparam;
+
+	dev = mtee_pmdev_get(uparam);
+
+	if (dev) {
+		*res = pm_runtime_get_sync(dev);
+		return TZ_RESULT_SUCCESS;
+	}
+
+	return TZ_RESULT_ERROR_GENERIC;
+}
+
+TZ_RESULT KREE_ServPMPut(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
+{
+	struct device *dev;
+	int *res = (int *)uparam;
+
+	dev = mtee_pmdev_get(uparam);
+
+	if (dev) {
+		*res = pm_runtime_put_sync(dev);
+		return TZ_RESULT_SUCCESS;
+	}
+
+	return TZ_RESULT_ERROR_GENERIC;
 }
