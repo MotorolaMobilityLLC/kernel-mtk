@@ -109,7 +109,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 
 	mcdi_log("mcdi_cnt_cluster: ");
 	for (i = 0; i < NF_CLUSTER; i++)
-		mcdi_log("%lu ", mcdi_cnt_cluster[i]);
+		mcdi_log("%u ", mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i));
 	mcdi_log("\n");
 
 	len = p - dbg_buf;
@@ -370,16 +370,7 @@ bool mcdi_task_pause(bool paused)
 	bool ret = false;
 
 	/* TODO */
-#if 0
-	unsigned long flags;
-
-	spin_lock_irqsave(&mcdi_enabled_spin_lock, flags);
-
-	if (mcdi_paused == paused) {
-		ret = false;
-		goto release_lock;
-	}
-
+#if 1
 	if (paused) {
 		/* Notify SSPM to disable MCDI */
 		mcdi_mbox_write(MCDI_MBOX_PAUSE_ACTION, 1);
@@ -393,11 +384,8 @@ bool mcdi_task_pause(bool paused)
 		mcdi_mbox_write(MCDI_MBOX_PAUSE_ACTION, 0);
 	}
 
-	mcdi_paused = paused;
 	ret = true;
 
-release_lock:
-	spin_unlock_irqrestore(&mcdi_enabled_spin_lock, flags);
 #endif
 	return ret;
 }
