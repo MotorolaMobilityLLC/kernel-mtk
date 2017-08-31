@@ -137,12 +137,13 @@ static int mtk_nand_read_pages(struct mtk_nand_chip_info *info,
 		}
 		ret = mtk_nand_exec_read_page(mtd, page_addr, page_size, tmp_buf, fdm_buf);
 		memcpy(data_buffer, tmp_buf+offset, size);
-		memcpy(oob_buffer, fdm_buf+start_sect*2, sect_read*2);
+		memcpy(oob_buffer, fdm_buf+start_sect*host->hw->nand_fdm_size,
+			sect_read*host->hw->nand_fdm_size);
 		kfree(tmp_buf);
 #else
 		ret = mtk_nand_exec_read_sector_single(mtd, page_addr, col_addr, page_size,
 				data_buffer, fdm_buf, sect_read);
-		memcpy(oob_buffer, fdm_buf, oob_size);
+		memcpy(oob_buffer, fdm_buf, sect_read*host->hw->nand_fdm_size);
 #endif
 	} else {
 		ret = mtk_nand_exec_read_page(mtd, page_addr, page_size, data_buffer, fdm_buf);
@@ -1375,8 +1376,9 @@ static int mtk_chip_info_init(struct mtk_nand_chip_info *chip_info)
 	chip_info->log_block_num =
 		data_info->partition_info.total_block - chip_info->data_block_num;
 
-	chip_info->data_oob_size = 32;
-	chip_info->log_oob_size = 32;
+	chip_info->data_oob_size = (devinfo.pagesize >> host->hw->nand_sec_shift)
+					* host->hw->nand_fdm_size;
+	chip_info->log_oob_size = chip_info->data_oob_size;
 
 	chip_info->slc_ratio = data_info->partition_info.slc_ratio;
 	chip_info->start_block = data_info->partition_info.start_block;
@@ -1861,7 +1863,7 @@ static int check_data_empty(void *data, unsigned size)
 #ifdef MTK_NAND_READ_COMPARE
 static int compare_data(unsigned char *sbuf, unsigned char *dbuf, unsigned size)
 {
-	unsigned i, j, ret = 0;
+	unsigned i, ret = 0;
 
 	for (i = 0; i < size; i++) {
 		if (sbuf[i] != dbuf[i]) {
@@ -1995,12 +1997,10 @@ void mtk_chip_unit_test(void)
 			memcpy(oob_buf, oob_buffer, chip_info->data_oob_size);
 #endif
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
-			if (j == 0) {
-				nand_debug("write blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, chip_info->data_page_size);
-				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, 32);
-			}
+			nand_debug("write blk:0x%x page:0x%x data dump", i, j);
+			dump_buf_data(data_buffer, chip_info->data_oob_size);
+			nand_debug("oob dump here");
+			dump_buf_data(oob_buffer, chip_info->data_oob_size);
 #endif
 			userdata = (i*chip_info->data_page_num + j) | (1<<30);
 
@@ -2059,7 +2059,7 @@ void mtk_chip_unit_test(void)
 READ_DISTUB:
 		nand_err("block:0x%x, read_cnt:0x%x", i, read_cnt);
 
-		for (j = 0; j < 2; j++) {
+		for (j = 0; j < pages_per_blk; j++) {
 			memset(data_buffer, 0, chip_info->data_page_size);
 			memset(oob_buffer, 0, chip_info->data_oob_size);
 
@@ -2073,9 +2073,9 @@ READ_DISTUB:
 
 			if (j == 0) {
 				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, 32);
+				dump_buf_data(data_buffer, chip_info->data_oob_size);
 				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, 32);
+				dump_buf_data(oob_buffer, chip_info->data_oob_size);
 			}
 			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer, i, j,
 				chip_info->data_page_size/4, chip_info->data_page_size/4);
@@ -2086,9 +2086,9 @@ READ_DISTUB:
 
 			if (j == 0) {
 				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, 32);
+				dump_buf_data(data_buffer, chip_info->data_oob_size);
 				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, 32);
+				dump_buf_data(oob_buffer, chip_info->data_oob_size);
 			}
 
 			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer, i, j,
@@ -2101,9 +2101,9 @@ READ_DISTUB:
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
 			if (j == 0) {
 				nand_debug("read blk:0x%x page:0x%x data dump", i, j);
-				dump_buf_data(data_buffer, 32);
+				dump_buf_data(data_buffer, chip_info->data_oob_size);
 				nand_debug("oob dump here");
-				dump_buf_data(oob_buffer, 32);
+				dump_buf_data(oob_buffer, chip_info->data_oob_size);
 			}
 #endif
 
@@ -2122,12 +2122,14 @@ READ_DISTUB:
 
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
 			nand_err("read blk:0x%x page:0x%x data first 64 bytes dump", i, j);
-			dump_buf_data(data_buffer, 64);
+			dump_buf_data(data_buffer, chip_info->data_oob_size);
 			nand_err("data last 64 bytes dump");
-			dump_buf_data((data_buffer-64), 64);
+			dump_buf_data((data_buffer+chip_info->data_page_size
+					-chip_info->data_oob_size),
+					chip_info->data_oob_size);
 
 			nand_err("oob dump here");
-			dump_buf_data(oob_buffer, 32);
+			dump_buf_data(oob_buffer, chip_info->data_oob_size);
 #endif
 
 #ifdef MTK_NAND_READ_COMPARE
@@ -2139,7 +2141,7 @@ READ_DISTUB:
 #endif
 		}
 
-		if (read_cnt++ < 10000)
+		if (read_cnt++ < 1)
 			goto READ_DISTUB;
 #endif
 	}
