@@ -28,6 +28,7 @@
 #include "mtk_unified_power_internal.h"
 #include "mtk_unified_power.h"
 #include "mtk_unified_power_data.h"
+#include "mtk_devinfo.h"
 
 #ifndef EARLY_PORTING_SPOWER
 	#include "mtk_static_power.h"
@@ -52,8 +53,7 @@ int degree_set[NR_UPOWER_DEGREE] = {
 
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
-
-struct upower_tbl_info upower_tbl_infos[NR_UPOWER_BANK] = {
+struct upower_tbl_info upower_tbl_infos_FY[NR_UPOWER_BANK] = {
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_FY),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_FY),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_B, upower_tbl_b_FY),
@@ -74,8 +74,10 @@ struct upower_tbl_info upower_tbl_infos_SB[NR_UPOWER_BANK] = {
 };
 
 /* points to all the raw tables */
-struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos[0];
+struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos_FY[0];
 struct upower_tbl_info *new_p_tbl_infos;
+struct upower_tbl_info *upower_tbl_infos;
+static unsigned int binLevel;
 
 #if 0
 static void print_tbl(void)
@@ -386,6 +388,7 @@ static int upower_update_tbl_ref(void)
 
 	return ret;
 }
+
 static int __init upower_get_tbl_ref(void)
 {
 	/* get table address on sram */
@@ -523,6 +526,18 @@ static int create_procfs(void)
 	return 0;
 }
 
+static void get_original_table(void)
+{
+	/*binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(UPOWER_SEG_IDX));*/
+	binLevel = 0;
+	if (binLevel == 0)
+		upower_tbl_infos = &upower_tbl_infos_FY[0];
+	else
+		upower_tbl_infos = &upower_tbl_infos_SB[0];
+
+	upower_error("binLevel=%d\n", binLevel);
+}
+
 static int __init upower_init(void)
 {
 	if (upower_enable == 0) {
@@ -531,8 +546,9 @@ static int __init upower_init(void)
 	}
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
+	get_original_table();
 	upower_debug("upower tbl orig location([0](%p)= %p\n",
-					&upower_tbl_infos[0], upower_tbl_infos[0].p_upower_tbl);
+					upower_tbl_infos, upower_tbl_infos[0].p_upower_tbl);
 
 	#ifdef UPOWER_UT
 	upower_debug("--------- (UT)before tbl ready--------------\n");
@@ -564,6 +580,7 @@ static int __init upower_init(void)
 	#endif
 
 	create_procfs();
+
 	return 0;
 }
 #ifdef __KERNEL__
