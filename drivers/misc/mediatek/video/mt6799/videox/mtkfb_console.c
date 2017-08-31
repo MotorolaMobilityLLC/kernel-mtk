@@ -34,7 +34,7 @@
 #define MFC_FONT_HEIGHT     (MFC_FONT.height)
 #define MFC_FONT_DATA       (MFC_FONT.data)
 
-#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH)
+#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * ctxt->scale * MFC_PITCH)
 #define MFC_ROW_FIRST       ((BYTE *)(ctxt->fb_addr))
 #define MFC_ROW_SECOND      (MFC_ROW_FIRST + MFC_ROW_SIZE)
 #define MFC_ROW_LAST        (MFC_ROW_FIRST + MFC_SIZE - MFC_ROW_SIZE)
@@ -51,6 +51,7 @@ UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 	UINT32 offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
 			ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
 
+	offset *= ctxt->scale;
 	return offset;
 }
 
