@@ -512,13 +512,15 @@ void pmic_dump_register(struct seq_file *m)
 int pmic_pre_wdt_reset(void)
 {
 	int ret = 0;
-
+/* remove dump exception status before wdt, since we will recore it at next boot preloader */
+#if 0
 	preempt_disable();
 	local_irq_disable();
 	pr_err(PMICTAG "[%s][pmic_boot_status]\n", __func__);
 	pmic_dump_exception_reg();
 #if DUMP_ALL_REG
 	pmic_dump_register();
+#endif
 #endif
 	return ret;
 
