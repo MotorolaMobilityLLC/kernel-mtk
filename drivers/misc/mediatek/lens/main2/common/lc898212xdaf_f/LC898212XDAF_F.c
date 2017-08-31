@@ -331,6 +331,11 @@ static void LC898212XD_init(void)
 	    ("=====LC898212XD:=init=hall_max:0x%x==hall_min:0x%x====halloff:0x%x, hallbias:0x%x===\n",
 	     Hall_Max, Hall_Min, Hall_Off, Hall_Bias);
 
+	/* Wake up */
+	s4AF_WriteReg(0x80, 0x68);
+	s4AF_WriteReg(0x80, 0x64);
+	s4AF_WriteReg(0x95, 0x00);
+
 	LC898212XDAF_F_MONO_init(Hall_Off, Hall_Bias);
 }
 
