@@ -53,6 +53,9 @@
 #define IOCTL_WRITE_IV _IOW(DEV_IOCTL_IV, 10, int)
 #define DEV_IOCTL_NR 0xF0
 #define IOCTL_WRITE_NR _IOW(DEV_IOCTL_NR, 10, int)
+#define DEV_IOCTL_QB 0xF1
+#define IOCTL_WRITE_QB _IOW(DEV_IOCTL_QB, 10, int)
+
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define HPS_LATENCY 20000000
