@@ -1561,10 +1561,11 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 		else
 			virt_dev->eps[ep_index].new_ring =
 				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPTX);
-	} else {
+	}
+
+	if (!virt_dev->eps[ep_index].new_ring)
 		virt_dev->eps[ep_index].new_ring =
 			xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
-	}
 #else
 	virt_dev->eps[ep_index].new_ring =
 		xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
@@ -2576,7 +2577,8 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 	if (xhci->msram_virt_addr)
 		xhci_mtk_allocate_sram(XHCI_DCBAA, &dma, (unsigned char **) &xhci->dcbaa);
-	else
+
+	if (!xhci->dcbaa)
 		xhci->dcbaa = dma_alloc_coherent(dev, sizeof(*xhci->dcbaa), &dma,
 			GFP_KERNEL);
 #else
@@ -2682,7 +2684,8 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 	if (xhci->msram_virt_addr)
 		xhci->event_ring = xhci_ring_alloc_sram(xhci, 1, 1, TYPE_EVENT,
 						flags, XHCI_EVENTRING);
-	else
+
+	if (!xhci->event_ring)
 		xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, 1, TYPE_EVENT,
 						flags);
 #else
@@ -2697,7 +2700,8 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 	if (xhci->msram_virt_addr)
 		xhci_mtk_allocate_sram(XHCI_ERST, &dma, (unsigned char **) &xhci->erst.entries);
-	else
+
+	if (!xhci->erst.entries)
 		xhci->erst.entries = dma_alloc_coherent(dev,
 			sizeof(struct xhci_erst_entry) * ERST_NUM_SEGS, &dma,
 			GFP_KERNEL);
@@ -2705,7 +2709,6 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 	xhci->erst.entries = dma_alloc_coherent(dev,
 			sizeof(struct xhci_erst_entry) * ERST_NUM_SEGS, &dma,
 			GFP_KERNEL);
-
 #endif
 
 	if (!xhci->erst.entries)
