@@ -808,6 +808,41 @@ static ssize_t dfrc_debug_dump_reason_read(struct file *file, char __user *buf, 
 	return res;
 }
 
+static void dfrc_rdump_vsync_request(struct DFRC_DRV_VSYNC_REQUEST *request)
+{
+	dfrc_rdump("fps:%d  mode:%d  sw_fps:%d  sw_mode: %d  valid_info:%d  transient:%d  num:%d\n",
+		request->fps, request->mode, request->sw_fps, request->sw_mode,
+		request->valid_info, request->transient_state, request->num_policy);
+}
+
+static void dfrc_rdump_arr_statistics(struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics)
+{
+	dfrc_rdump("num:%d\n", arr_statistics->num_config);
+	dfrc_rdump("    + seq:%llu  fps:%d  mode:%d\n", arr_statistics->sequence,
+			arr_statistics->fps, arr_statistics->mode);
+	dfrc_rdump("      policy detail:\n");
+	dfrc_rdump("      seq[%llu]  api[%d]  pid[%d]  fps[%d]  mode[%d]  t_pid[%d]  gl_id[%llu]\n",
+			arr_statistics->policy.sequence, arr_statistics->policy.api,
+			arr_statistics->policy.pid, arr_statistics->policy.mode,
+			arr_statistics->policy.target_pid, arr_statistics->policy.gl_context_id);
+}
+
+static void dfrc_rdump_frr_statistics(struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
+{
+	struct list_head *iter;
+	struct DFRC_DRV_POLICY_NODE *node;
+	struct DFRC_DRV_POLICY *policy;
+
+	dfrc_rdump("num:%d\n", frr_statistics->num_config);
+	list_for_each(iter, &frr_statistics->list) {
+		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
+		policy = &node->policy;
+		dfrc_rdump("+    seq[%llu]  api[%d]  pid[%d]  mode[%d]  t_pid[%d]  gl_id[%d]\n",
+				policy->sequence, policy->api, policy->pid,
+				policy->mode, policy->target_pid, policy->gl_context_id);
+	}
+}
+
 static void dfrc_add_policy_to_statistics(struct DFRC_DRV_POLICY *policy,
 					struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_statistics,
 					struct DFRC_DRV_POLICY_FRR_STATISTICS *frr_statistics)
@@ -862,7 +897,7 @@ static int dfrc_forage_police_locked(struct DFRC_DRV_POLICY_ARR_STATISTICS *arr_
 
 			/* change condition from touch window to fore window */
 			if (policy->api == DFRC_DRV_API_GIFT &&
-					policy->target_pid == g_input_window_info.pid) {
+					policy->target_pid == g_fg_window_info.pid) {
 				num_valid_policy++;
 				dfrc_add_policy_to_statistics(policy, arr_statistics,
 						frr_statistics);
@@ -1013,7 +1048,7 @@ static void dfrc_adjust_vsync(int which,
 
 	memset(&new_request, 0, sizeof(new_request));
 	if (which == DFRC_DRV_MODE_DEFAULT) {
-		dfrc_rdump("which is default\n");
+		dfrc_rdump("use default mode\n");
 		fps = -1;
 		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
 		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
@@ -1024,9 +1059,10 @@ static void dfrc_adjust_vsync(int which,
 		new_request.valid_info = false;
 		new_request.transient_state = false;
 		new_request.num_policy = 0;
+		dfrc_rdump_vsync_request(&new_request);
 		ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID, GED_FRR_TABLE_FOR_ALL_CID, GED_FRR_TABLE_ZERO);
 	} else if (which == DFRC_DRV_MODE_FRR) {
-		dfrc_rdump("which is frr\n");
+		dfrc_rdump("use frr mode\n");
 		fps = 60;
 		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
 		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
@@ -1037,6 +1073,9 @@ static void dfrc_adjust_vsync(int which,
 		new_request.valid_info = false;
 		new_request.transient_state = false;
 		new_request.num_policy = expected_frr->num_config;
+		dfrc_rdump_vsync_request(&new_request);
+		dfrc_rdump_frr_statistics(frr_statistics);
+
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * expected_frr->num_config);
 		dfrc_pack_choosed_frr_policy(expected_frr->num_config, new_policy, frr_statistics);
 
@@ -1052,7 +1091,7 @@ static void dfrc_adjust_vsync(int which,
 			}
 		}
 	} else if (which == DFRC_DRV_MODE_ARR) {
-		dfrc_rdump("which is arr\n");
+		dfrc_rdump("use arr mode\n");
 		fps = expected_arr->fps;
 		sw_mode = DFRC_DRV_SW_MODE_PASS_HW;
 		hw_mode = DFRC_DRV_HW_MODE_ARR;
@@ -1063,6 +1102,15 @@ static void dfrc_adjust_vsync(int which,
 		new_request.valid_info = true;
 		new_request.transient_state = false;
 		new_request.num_policy = 1;
+		if (g_input_window_info.pid != g_fg_window_info.pid &&
+				(expected_arr->policy.api != DFRC_DRV_API_THERMAL ||
+				expected_arr->policy.api != DFRC_DRV_API_LOADING)) {
+			new_request.fps = 60;
+			new_request.transient_state = true;
+		}
+		dfrc_rdump_vsync_request(&new_request);
+		dfrc_rdump_arr_statistics(arr_statistics);
+
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
 		dfrc_pack_choosed_arr_policy(1, new_policy, arr_statistics);
 		ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID, GED_FRR_TABLE_FOR_ALL_CID,
