@@ -58,6 +58,10 @@
 
 	};
 
+	msdc1_ins: msdc1_ins@0 {
+		compatible = "mediatek,mt6799-sdcard-ins";
+	};
+
 	mtk-ufs.0 {
 		compatible = "simple-bus";
 		#address-cells = <1>;
