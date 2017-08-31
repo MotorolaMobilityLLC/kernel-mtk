@@ -310,6 +310,9 @@ unsigned int MT6335_settletime(unsigned int old_volt, unsigned int new_volt)
 		return (((((old_volt) - (new_volt)) * 2)  / 625) + PMIC_CMD_DELAY_TIME);
 }
 
+/* PMIC Part */
+void prepare_pmic_config(struct mt_cpu_dvfs *p)	{}
+
 int __attribute__((weak)) sync_dcm_set_mp0_freq(unsigned int mhz)
 {
 	return 0;

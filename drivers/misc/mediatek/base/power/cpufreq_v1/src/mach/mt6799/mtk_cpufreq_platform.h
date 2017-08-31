@@ -62,6 +62,7 @@ unsigned int MT6335_transfer2volt(unsigned int val);
 unsigned int MT6335_settletime(unsigned int old_volt, unsigned int new_volt);
 
 void prepare_pll_addr(enum mt_cpu_dvfs_pll_id pll_id);
+void prepare_pmic_config(struct mt_cpu_dvfs *p);
 void adjust_freq_hopping(struct pll_ctrl_t *pll_p, unsigned int dds);
 unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p);
 void adjust_clkdiv(struct pll_ctrl_t *pll_p, unsigned int clk_div);
