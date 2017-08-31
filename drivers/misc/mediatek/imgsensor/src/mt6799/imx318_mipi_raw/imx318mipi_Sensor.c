@@ -412,7 +412,7 @@ static void imx318_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 		cur_startpos = startpos;
 		cur_size = size;
 	}
-	
+
 	start_x_pos = (startpos >> 16) & 0xFFFF;
 	start_y_pos = startpos & 0xFFFF;
 	focus_width = (size >> 16) & 0xFFFF;
@@ -434,23 +434,23 @@ static void imx318_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 		write_cmos_sensor(0x3123,0x01);
 
 		/*Fixed area mode*/
-		
+
 		write_cmos_sensor(0x3158,(start_x_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x3159,start_x_pos & 0xFF);// X start
 		write_cmos_sensor(0x315a,(start_y_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x315b,start_y_pos & 0xFF);// Y start
 		write_cmos_sensor(0x315c,(end_x_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x315d,end_x_pos & 0xFF);//X end 
+		write_cmos_sensor(0x315d, end_x_pos & 0xFF);
 		write_cmos_sensor(0x315e,(end_y_pos >> 8) & 0xFF);
 		write_cmos_sensor(0x315f,end_y_pos & 0xFF);// Y end
 
-		
+
 	}
 
 
 	LOG_INF("start_x_pos:%d, start_y_pos:%d, focus_width:%d, focus_height:%d, end_x_pos:%d, end_y_pos:%d\n", \
 			start_x_pos, start_y_pos, focus_width, focus_height, end_x_pos, end_y_pos);
-	
+
 	return;
 }
 
@@ -603,19 +603,8 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
     LOG_INF("[IMX318MIPI]enter IMX318MIPIGain2Reg function\n");
     for (iI = 0; iI < IMX318MIPI_MaxGainIndex; iI++)
 	{
-		if(gain < IMX318MIPI_sensorGainMapping[iI][0])
-		{
+		if (gain <= IMX318MIPI_sensorGainMapping[iI][0])
 			return IMX318MIPI_sensorGainMapping[iI][1];
-		}
-
-
-    }
-	if(iI != IMX318MIPI_MaxGainIndex)
-	{
-    	if(gain != IMX318MIPI_sensorGainMapping[iI][0])
-    	{
-        	 LOG_INF("Gain mapping don't correctly:%d %d \n", gain, IMX318MIPI_sensorGainMapping[iI][0]);
-    	}
     }
 	LOG_INF("exit IMX318MIPIGain2Reg function\n");
     return IMX318MIPI_sensorGainMapping[iI-1][1];
@@ -2290,7 +2279,7 @@ static kal_uint32 imx318_awb_gain(SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 {
     UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
 	  LOG_INF("imx318_awb_gain\n");
-    
+
     grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
     rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
     bgain_32 = (pSetSensorAWB->ABS_GAIN_B << 8) >> 9;

@@ -22,7 +22,6 @@
 #include <linux/of_fdt.h>
 #include <asm/atomic.h>
 
-#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
