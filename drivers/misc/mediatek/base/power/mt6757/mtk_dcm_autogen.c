@@ -642,6 +642,69 @@ void dcm_mp1_cpucfg_dcm_mcu_bus(int on)
 	}
 }
 
+#define MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_MASK ((0x1 << 31))
+#define MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_ON ((0x1 << 31))
+#define MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_OFF ((0x0 << 31))
+
+bool dcm_mcu_misccfg_mp0_last_core_dcm_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(MP0_LAST_CORE_DCM) &
+		~MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_MASK &
+		MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_mp0_last_core_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Enable last core idle mp0 armpll divider" */
+		reg_write(MP0_LAST_CORE_DCM,
+			(reg_read(MP0_LAST_CORE_DCM) &
+			~MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_MASK) |
+			MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Disable last core idle mp0 armpll divider" */
+		reg_write(MP0_LAST_CORE_DCM,
+			(reg_read(MP0_LAST_CORE_DCM) &
+			~MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_MASK) |
+			MCU_MISCCFG_MP0_LAST_CORE_DCM_REG0_OFF);
+	}
+}
+
+#define MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_MASK ((0x1 << 31))
+#define MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_ON ((0x1 << 31))
+#define MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_OFF ((0x0 << 31))
+
+bool dcm_mcu_misccfg_mp1_last_core_dcm_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(MP1_LAST_CORE_DCM) &
+		~MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_MASK &
+		MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_mp1_last_core_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Enable last core idle mp1 armpll divider" */
+		reg_write(MP1_LAST_CORE_DCM,
+			(reg_read(MP1_LAST_CORE_DCM) &
+			~MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_MASK) |
+			MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Disable last core idle mp1 armpll divider" */
+		reg_write(MP1_LAST_CORE_DCM,
+			(reg_read(MP1_LAST_CORE_DCM) &
+			~MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_MASK) |
+			MCU_MISCCFG_MP1_LAST_CORE_DCM_REG0_OFF);
+	}
+}
 #define MCU_MISCCFG_CCI_SYNC_DCM_REG0_MASK ((0x1 << 0))
 #define MCU_MISCCFG_CCI_SYNC_DCM_REG0_ON ((0x1 << 0))
 #define MCU_MISCCFG_CCI_SYNC_DCM_REG0_OFF ((0x0 << 0))
@@ -770,6 +833,70 @@ void dcm_mcu_misccfg_mp1_sync_dcm(int on)
 	}
 }
 
+#define MCU_MISCCFG_MP0_RGU_DCM_REG0_MASK ((0x1 << 0))
+#define MCU_MISCCFG_MP0_RGU_DCM_REG0_ON ((0x1 << 0))
+#define MCU_MISCCFG_MP0_RGU_DCM_REG0_OFF ((0x0 << 0))
+
+bool dcm_mcu_misccfg_mp0_rgu_dcm_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(MP0_RGU_DCM_CONFIG) &
+			~MCU_MISCCFG_MP0_RGU_DCM_REG0_MASK &
+			MCU_MISCCFG_MP0_RGU_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_mp0_rgu_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Turn ON MP0 DCM RGU 'rg_cpusys_rgu_dcm_config'" */
+		reg_write(MP0_RGU_DCM_CONFIG,
+				(reg_read(MP0_RGU_DCM_CONFIG) &
+				~MCU_MISCCFG_MP0_RGU_DCM_REG0_MASK) |
+				MCU_MISCCFG_MP0_RGU_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Turn OFF MP0 DCM RGU 'rg_cpusys_rgu_dcm_config'" */
+		reg_write(MP0_RGU_DCM_CONFIG,
+				(reg_read(MP0_RGU_DCM_CONFIG) &
+				~MCU_MISCCFG_MP0_RGU_DCM_REG0_MASK) |
+				MCU_MISCCFG_MP0_RGU_DCM_REG0_OFF);
+	}
+}
+
+#define MCU_MISCCFG_MP1_RGU_DCM_REG0_MASK ((0x1 << 0))
+#define MCU_MISCCFG_MP1_RGU_DCM_REG0_ON ((0x1 << 0))
+#define MCU_MISCCFG_MP1_RGU_DCM_REG0_OFF ((0x0 << 0))
+
+bool dcm_mcu_misccfg_mp1_rgu_dcm_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(MP1_RGU_DCM_CONFIG) &
+			~MCU_MISCCFG_MP1_RGU_DCM_REG0_MASK &
+			MCU_MISCCFG_MP1_RGU_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_mp1_rgu_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Turn ON MP1 DCM RGU 'rg_cpusys_rgu_dcm_config'" */
+		reg_write(MP1_RGU_DCM_CONFIG,
+				(reg_read(MP1_RGU_DCM_CONFIG) &
+				~MCU_MISCCFG_MP1_RGU_DCM_REG0_MASK) |
+				MCU_MISCCFG_MP1_RGU_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Turn OFF MP1 DCM RGU 'rg_cpusys_rgu_dcm_config'" */
+		reg_write(MP1_RGU_DCM_CONFIG,
+				(reg_read(MP1_RGU_DCM_CONFIG) &
+				~MCU_MISCCFG_MP1_RGU_DCM_REG0_MASK) |
+				MCU_MISCCFG_MP1_RGU_DCM_REG0_OFF);
+	}
+}
+
 #define MCU_MISCCFG_MP1_STALL_DCM_REG0_MASK ((0x1 << 15))
 #define MCU_MISCCFG_MP1_STALL_DCM_REG0_ON ((0x1 << 15))
 #define MCU_MISCCFG_MP1_STALL_DCM_REG0_OFF ((0x0 << 15))
@@ -799,6 +926,63 @@ void dcm_mcu_misccfg_mp1_stall_dcm(int on)
 			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
 			~MCU_MISCCFG_MP1_STALL_DCM_REG0_MASK) |
 			MCU_MISCCFG_MP1_STALL_DCM_REG0_OFF);
+	}
+}
+
+#define MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK ((0x79F << 17))
+#define MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_ON ((0x31F << 17))
+
+bool dcm_mcu_misccfg_stall_dcm_enhance_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+		~MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK &
+		MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_stall_dcm_enhance(int on)
+{
+	if (on) {
+		/* TINFO = "Turn ON STALL DCM ENHANCE" */
+		reg_write(SYNC_DCM_CLUSTER_CONFIG,
+			(reg_read(SYNC_DCM_CLUSTER_CONFIG) &
+			~MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_MASK) |
+			MCU_MISCCFG_STALL_DCM_ENHANCE_REG0_ON);
+	}
+}
+
+#define MCU_MISCCFG_GIC_SYNC_DCM_REG0_MASK ((0x3 << 0))
+#define MCU_MISCCFG_GIC_SYNC_DCM_REG0_ON ((0x3 << 0))
+#define MCU_MISCCFG_GIC_SYNC_DCM_REG0_OFF ((0x0 << 0))
+
+bool dcm_mcu_misccfg_gic_sync_dcm_is_on(int on)
+{
+	bool ret = false;
+
+	ret &= !!(reg_read(GIC_SYNC_DCM_CFG) &
+			~MCU_MISCCFG_GIC_SYNC_DCM_REG0_MASK &
+			MCU_MISCCFG_GIC_SYNC_DCM_REG0_ON);
+
+	return ret;
+}
+
+void dcm_mcu_misccfg_gic_sync_dcm(int on)
+{
+	if (on) {
+		/* TINFO = "Turn ON GIC SYNC DCM" */
+		reg_write(GIC_SYNC_DCM_CFG,
+				(reg_read(GIC_SYNC_DCM_CFG) &
+				~MCU_MISCCFG_GIC_SYNC_DCM_REG0_MASK) |
+				MCU_MISCCFG_GIC_SYNC_DCM_REG0_ON);
+	} else {
+		/* TINFO = "Turn OFF GIC SYNC DCM" */
+		reg_write(GIC_SYNC_DCM_CFG,
+				(reg_read(GIC_SYNC_DCM_CFG) &
+				~MCU_MISCCFG_GIC_SYNC_DCM_REG0_MASK) |
+				MCU_MISCCFG_GIC_SYNC_DCM_REG0_OFF);
 	}
 }
 

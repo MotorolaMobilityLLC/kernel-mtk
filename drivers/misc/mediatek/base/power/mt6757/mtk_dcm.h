@@ -105,6 +105,21 @@ typedef enum {
 	STALL_DCM_ON = DCM_ON,
 } ENUM_STALL_DCM;
 
+typedef enum {
+	GIC_SYNC_DCM_OFF = DCM_OFF,
+	GIC_SYNC_DCM_ON = DCM_ON,
+} ENUM_GIC_SYNC_DCM;
+
+typedef enum {
+	LAST_CORE_DCM_OFF = DCM_OFF,
+	LAST_CORE_DCM_ON = DCM_ON,
+} ENUM_LAST_CORE_DCM;
+
+typedef enum {
+	RGU_DCM_OFF = DCM_OFF,
+	RGU_DCM_ON = DCM_ON,
+} ENUM_RGU_DCM;
+
 /*****************************************************/
 int dcm_armcore(ENUM_ARMCORE_DCM mode);
 int dcm_infra(ENUM_INFRA_DCM on);
@@ -113,7 +128,11 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on);
 int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
 int dcm_emi(ENUM_EMI_DCM on);
 int dcm_ddrphy(ENUM_DDRPHY_DCM on);
+int dcm_stall_preset(void);
 int dcm_stall(ENUM_STALL_DCM on);
+int dcm_gic_sync(ENUM_GIC_SYNC_DCM on);
+int dcm_last_core(ENUM_LAST_CORE_DCM on);
+int dcm_rgu(ENUM_RGU_DCM on);
 
 /*****************************************************/
 enum {
@@ -125,7 +144,10 @@ enum {
 	DRAMC_DCM,
 	DDRPHY_DCM,
 	STALL_DCM,
-	NR_DCM = 8,
+	GIC_SYNC_DCM,
+	LAST_CORE_DCM,
+	RGU_DCM,
+	NR_DCM = 11,
 };
 
 enum {
@@ -137,15 +159,18 @@ enum {
 	DRAMC_DCM_TYPE		= (1U << 5),
 	DDRPHY_DCM_TYPE		= (1U << 6),
 	STALL_DCM_TYPE		= (1U << 7),
-	NR_DCM_TYPE = 8,
+	GIC_SYNC_DCM_TYPE	= (1U << 8),
+	LAST_CORE_DCM_TYPE	= (1U << 9),
+	RGU_DCM_TYPE		= (1U << 10),
+	NR_DCM_TYPE = 11,
 };
 
-#define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \
-		       PERI_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE | DDRPHY_DCM_TYPE | \
-		       STALL_DCM_TYPE)
+/* #define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \ */
+/*		       PERI_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE | DDRPHY_DCM_TYPE | \ */
+/*		       STALL_DCM_TYPE | GIC_SYNC_DCM_TYPE | LAST_CORE_DCM_TYPE | RGU_DCM_TYPE) */
 
-#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \
-		       PERI_DCM_TYPE | STALL_DCM_TYPE)
+/* #define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE | \ */
+/*		       PERI_DCM_TYPE | STALL_DCM_TYPE) */
 
 #ifdef ENABLE_DCM_IN_LK
 #define INIT_DCM_TYPE_BY_K	0

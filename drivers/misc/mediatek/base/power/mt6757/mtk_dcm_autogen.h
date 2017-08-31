@@ -50,7 +50,12 @@
 #define CCI_ADB400_DCM_CONFIG (MCU_MISCCFG_BASE + 0x340)
 #define SYNC_DCM_CONFIG (MCU_MISCCFG_BASE + 0x344)
 #define SYNC_DCM_CLUSTER_CONFIG (MCU_MISCCFG_BASE + 0x34c)
+#define GIC_SYNC_DCM_CFG (MCU_MISCCFG_BASE + 0x358)
 #define BIG_DBG_PWR_CTRL (MCU_MISCCFG_BASE + 0x35c)
+#define MP0_LAST_CORE_DCM (MCU_MISCCFG_BASE + 0x3A0)
+#define MP1_LAST_CORE_DCM (MCU_MISCCFG_BASE + 0x3A4)
+#define MP0_RGU_DCM_CONFIG (MCU_MISCCFG_BASE + 0x1870)
+#define MP1_RGU_DCM_CONFIG (MCU_MISCCFG_BASE + 0x3870)
 #define EMI_CONM (EMI_BASE + 0x60)
 #define EMI_CONN (EMI_BASE + 0x68)
 #define DRAMC_CH0_TOP0_MISC_CG_CTRL0 (DRAMC_CH0_TOP0_BASE + 0x284)
@@ -97,16 +102,28 @@ void dcm_mp1_cpucfg_dcm_mcu_bus(int on);
 /* MCU_MISCCFG */
 bool dcm_mcu_misccfg_cci_sync_dcm_is_on(int on);
 void dcm_mcu_misccfg_cci_sync_dcm(int on);
+bool dcm_mcu_misccfg_mp0_last_core_dcm_is_on(int on);
+void dcm_mcu_misccfg_mp0_last_core_dcm(int on);
 bool dcm_mcu_misccfg_mp0_sync_dcm_is_on(int on);
 void dcm_mcu_misccfg_mp0_sync_dcm(int on);
 bool dcm_mcu_misccfg_mp0_stall_dcm_is_on(int on);
 void dcm_mcu_misccfg_mp0_stall_dcm(int on);
+bool dcm_mcu_misccfg_mp1_last_core_dcm_is_on(int on);
+void dcm_mcu_misccfg_mp1_last_core_dcm(int on);
 bool dcm_mcu_misccfg_mp1_sync_dcm_is_on(int on);
 void dcm_mcu_misccfg_mp1_sync_dcm(int on);
 bool dcm_mcu_misccfg_mp1_stall_dcm_is_on(int on);
 void dcm_mcu_misccfg_mp1_stall_dcm(int on);
+bool dcm_mcu_misccfg_stall_dcm_enhance_is_on(int on);
+void dcm_mcu_misccfg_stall_dcm_enhance(int on);
 bool dcm_mcu_misccfg_dcm_mcu_bus_is_on(int on);
 void dcm_mcu_misccfg_dcm_mcu_bus(int on);
+bool dcm_mcu_misccfg_gic_sync_dcm_is_on(int on);
+void dcm_mcu_misccfg_gic_sync_dcm(int on);
+bool dcm_mcu_misccfg_mp0_rgu_dcm_is_on(int on);
+void dcm_mcu_misccfg_mp0_rgu_dcm(int on);
+bool dcm_mcu_misccfg_mp1_rgu_dcm_is_on(int on);
+void dcm_mcu_misccfg_mp1_rgu_dcm(int on);
 /* EMI */
 bool dcm_emi_dcm_emi_group_is_on(int on);
 void dcm_emi_dcm_emi_group(int on);

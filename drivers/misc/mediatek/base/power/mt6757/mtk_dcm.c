@@ -26,6 +26,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mtk_dramc.h>
+#include <mt-plat/mtk_chip.h>
+#include <mtk_devinfo.h>
 #endif
 
 #include "mtk_dcm.h"
@@ -96,6 +98,7 @@ unsigned long dcm_cci_phys_base;
 #define MCSI_A_SMC_WRITE(addr, val)  reg_write(addr, val)
 #define MCSI_A_SMC_READ(addr)  reg_read(addr)
 #endif
+#define dcm_smc_msg_send(msg) dcm_smc_msg(msg)
 #endif /* defined(__KERNEL__) */
 
 #ifdef USING_PR_LOG
@@ -108,6 +111,12 @@ unsigned long dcm_cci_phys_base;
 static DEFINE_MUTEX(dcm_lock);
 #endif
 static unsigned int dcm_initiated = DCM_NOT_INIT;
+static unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE |
+		       PERI_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE | DDRPHY_DCM_TYPE |
+		       STALL_DCM_TYPE);
+static unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | INFRA_DCM_TYPE |
+		       PERI_DCM_TYPE | STALL_DCM_TYPE);
+static unsigned int enhance_dcm_type;
 
 /*****************************************
  * following is implementation per DCM module.
@@ -268,10 +277,39 @@ int dcm_emi(ENUM_EMI_DCM on)
 	return 0;
 }
 
+int dcm_stall_preset(void)
+{
+	if (enhance_dcm_type & STALL_DCM_TYPE)
+		dcm_mcu_misccfg_stall_dcm_enhance(DCM_ON);
+
+	return 0;
+}
+
 int dcm_stall(ENUM_STALL_DCM on)
 {
 	dcm_mcu_misccfg_mp0_stall_dcm(on);
 	dcm_mcu_misccfg_mp1_stall_dcm(on);
+	return 0;
+}
+
+int dcm_gic_sync(ENUM_GIC_SYNC_DCM on)
+{
+	dcm_mcu_misccfg_gic_sync_dcm(on);
+	return 0;
+}
+
+int dcm_last_core(ENUM_LAST_CORE_DCM on)
+{
+	dcm_mcu_misccfg_mp0_last_core_dcm(on);
+	dcm_mcu_misccfg_mp1_last_core_dcm(on);
+	return 0;
+}
+
+int dcm_rgu(ENUM_RGU_DCM on)
+{
+	dcm_mcu_misccfg_mp0_rgu_dcm(on);
+	dcm_mcu_misccfg_mp1_rgu_dcm(on);
+	dcm_smc_msg_send(init_dcm_type);
 	return 0;
 }
 
@@ -350,8 +388,33 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .typeid = STALL_DCM_TYPE,
 	 .name = "STALL_DCM",
 	 .func = (DCM_FUNC) dcm_stall,
+	 .preset_func = (DCM_PRESET_FUNC) dcm_stall_preset,
 	 .current_state = STALL_DCM_ON,
 	 .default_state = STALL_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = GIC_SYNC_DCM_TYPE,
+	 .name = "GIC_SYNC_DCM",
+	 .func = (DCM_FUNC) dcm_gic_sync,
+	 .current_state = GIC_SYNC_DCM_ON,
+	 .default_state = GIC_SYNC_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = LAST_CORE_DCM_TYPE,
+	 .name = "LAST_CORE_DCM",
+	 .func = (DCM_FUNC) dcm_last_core,
+	 .current_state = LAST_CORE_DCM_ON,
+	 .default_state = LAST_CORE_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = RGU_DCM_TYPE,
+	 .name = "RGU_CORE_DCM",
+	 .func = (DCM_FUNC) dcm_rgu,
+	 .current_state = RGU_DCM_ON,
+	 .default_state = RGU_DCM_ON,
 	 .disable_refcnt = 0,
 	 },
 };
@@ -428,6 +491,11 @@ void dcm_set_state(unsigned int type, int state)
 
 			dcm->saved_state = state;
 			if (dcm->disable_refcnt == 0) {
+				if (state)
+					init_dcm_type |= dcm->typeid;
+				else
+					init_dcm_type &= ~(dcm->typeid);
+
 				dcm->current_state = state;
 				dcm->func(dcm->current_state);
 			}
@@ -461,7 +529,9 @@ void dcm_disable(unsigned int type)
 			type &= ~(dcm->typeid);
 
 			dcm->current_state = DCM_OFF;
-			dcm->disable_refcnt++;
+			if (dcm->disable_refcnt++ == 0)
+				init_dcm_type &= ~(dcm->typeid);
+
 			dcm->func(dcm->current_state);
 
 #ifdef USING_PR_LOG
@@ -495,6 +565,11 @@ void dcm_restore(unsigned int type)
 			if (dcm->disable_refcnt > 0)
 				dcm->disable_refcnt--;
 			if (dcm->disable_refcnt == 0) {
+				if (dcm->saved_state)
+					init_dcm_type |= dcm->typeid;
+				else
+					init_dcm_type &= ~(dcm->typeid);
+
 				dcm->current_state = dcm->saved_state;
 				dcm->func(dcm->current_state);
 			}
@@ -560,6 +635,19 @@ void dcm_dump_regs(void)
 	REG_DUMP(DRAMC_CH1_TOP1_CLKAR);
 	REG_DUMP(CHN1_EMI_CHN_EMI_CONB);
 	SECURE_REG_DUMP(MCSI_A_DCM);
+
+	if (init_dcm_type & LAST_CORE_DCM_TYPE) {
+		REG_DUMP(MP0_LAST_CORE_DCM);
+		REG_DUMP(MP1_LAST_CORE_DCM);
+	}
+
+	if (init_dcm_type & GIC_SYNC_DCM_TYPE)
+		REG_DUMP(GIC_SYNC_DCM_CFG);
+
+	if (init_dcm_type & RGU_DCM_TYPE) {
+		REG_DUMP(MP0_RGU_DCM_CONFIG);
+		REG_DUMP(MP1_RGU_DCM_CONFIG);
+	}
 }
 
 
@@ -576,7 +664,7 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 		return len;
 	}
 
-	/* dcm_dump_state(ALL_DCM_TYPE); */
+	/* dcm_dump_state(all_dcm_type); */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 				"\n******** dcm dump state *********\n");
 	for (i = 0, dcm = &dcm_array[0]; i < NR_DCM_TYPE; i++, dcm++)
@@ -644,7 +732,7 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 	}
 
 	if (sscanf(buf, "%15s %x", cmd, &mask) == 2) {
-		mask &= ALL_DCM_TYPE;
+		mask &= all_dcm_type;
 
 		if (!strcmp(cmd, "restore")) {
 			/* dcm_dump_regs(); */
@@ -662,7 +750,7 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 				dcm_set_stall_wr_del_sel(mp0, mp1);
 		} else if (!strcmp(cmd, "set")) {
 			if (sscanf(buf, "%15s %x %d", cmd, &mask, &mode) == 3) {
-				mask &= ALL_DCM_TYPE;
+				mask &= all_dcm_type;
 
 				dcm_set_state(mask, mode);
 
@@ -861,6 +949,9 @@ static int mtk_dcm_dts_map(void)
 
 int mtk_dcm_init(void)
 {
+	unsigned int hw_ver;
+	u32 efuse;
+
 	/* if dcm_initiated equal DCM_INIT_SUCCESS or DCM_INIT_FAIL, then return */
 	if (dcm_initiated)
 		return dcm_initiated;
@@ -870,11 +961,31 @@ int mtk_dcm_init(void)
 		return dcm_initiated;
 	}
 
+	hw_ver = mt_get_chip_hw_ver();
+
+	if (hw_ver >= 0xCB00) {
+		efuse = get_devinfo_with_index(50); /* 0x10206580 */
+
+		if ((efuse >> 21) & 0x1) {
+			init_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
+			enhance_dcm_type |= (GIC_SYNC_DCM_TYPE | RGU_DCM_TYPE);
+		}
+
+		if ((efuse >> 22) & 0x1)
+			enhance_dcm_type |= STALL_DCM_TYPE;
+
+		if ((efuse >> 23) & 0x1) {
+			init_dcm_type |= LAST_CORE_DCM_TYPE;
+			enhance_dcm_type |= LAST_CORE_DCM_TYPE;
+		}
+
+		all_dcm_type |= enhance_dcm_type;
+	}
 #if !defined(DCM_DEFAULT_ALL_OFF)
 	/** enable all dcm **/
-	dcm_set_default(INIT_DCM_TYPE);
+	dcm_set_default(init_dcm_type);
 #else /* #if !defined (DCM_DEFAULT_ALL_OFF) */
-	dcm_set_state(ALL_DCM_TYPE, DCM_OFF);
+	dcm_set_state(all_dcm_type, DCM_OFF);
 #endif /* #if !defined (DCM_DEFAULT_ALL_OFF) */
 
 	dcm_dump_regs();
@@ -911,7 +1022,7 @@ void mtk_dcm_disable(void)
 	if (mtk_dcm_init() == DCM_INIT_FAIL)
 		dcm_warn_limit("error: due to dcm init fail.");
 	else
-		dcm_disable(ALL_DCM_TYPE);
+		dcm_disable(all_dcm_type);
 }
 
 void mtk_dcm_restore(void)
@@ -919,7 +1030,7 @@ void mtk_dcm_restore(void)
 	if (mtk_dcm_init() == DCM_INIT_FAIL)
 		dcm_warn_limit("error: due to dcm init fail.");
 	else
-		dcm_restore(ALL_DCM_TYPE);
+		dcm_restore(all_dcm_type);
 }
 
 unsigned int sync_dcm_convert_freq2div(unsigned int freq)
