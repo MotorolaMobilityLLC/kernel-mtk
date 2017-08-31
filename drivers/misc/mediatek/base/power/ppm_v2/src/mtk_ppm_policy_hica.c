@@ -90,9 +90,13 @@ static struct ppm_policy_data hica_policy = {
 };
 
 struct ppm_hica_algo_data ppm_hica_algo_data = {
+#ifdef PPM_HICA_2P0
+	.cur_state = PPM_POWER_STATE_ALL,
+	.new_state = PPM_POWER_STATE_ALL,
+#else
 	.cur_state = PPM_POWER_STATE_4LL_L,
 	.new_state = PPM_POWER_STATE_4LL_L,
-
+#endif
 	.ppm_cur_loads = 0,
 	.ppm_cur_tlp = 0,
 	.ppm_cur_nr_heavy_task = 0,
@@ -475,7 +479,11 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 
 	if (!kstrtoint(buf, 10, &state)) {
 #ifdef PPM_DISABLE_CLUSTER_MIGRATION
+#ifdef PPM_HICA_2P0
+		if (state == PPM_POWER_STATE_L_ONLY)
+#else
 		if (state == PPM_POWER_STATE_L_ONLY || state == PPM_POWER_STATE_4L_LL)
+#endif
 			ppm_warn("Invalid state(%d) since cluster migration is disabled!\n", state);
 		else
 			fix_power_state = (state == -1) ? PPM_POWER_STATE_NONE : state;

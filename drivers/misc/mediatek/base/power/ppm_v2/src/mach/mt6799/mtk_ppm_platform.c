@@ -170,38 +170,18 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	int LL_core_max = user_limit.limit[PPM_CLUSTER_LL].max_core_num;
 	int L_core_min = user_limit.limit[PPM_CLUSTER_L].min_core_num;
 	int L_core_max = user_limit.limit[PPM_CLUSTER_L].max_core_num;
-	int LL_freq_min = user_limit.limit[PPM_CLUSTER_LL].min_freq_idx;
-	int L_freq_max = user_limit.limit[PPM_CLUSTER_L].max_freq_idx;
-	int sum = LL_core_min + L_core_min;
 	int B_core_min = user_limit.limit[PPM_CLUSTER_B].min_core_num;
 	int B_core_max = user_limit.limit[PPM_CLUSTER_B].max_core_num;
+	int B_freq_min = user_limit.limit[PPM_CLUSTER_B].min_freq_idx;
+	int B_freq_max = user_limit.limit[PPM_CLUSTER_B].max_freq_idx;
 	int root_cluster = ppm_main_info.fixed_root_cluster;
 
 	ppm_ver("Judge: input --> [%s] (%d)(%d)(%d)(%d)(%d)(%d) [(%d)(%d)]\n",
 		ppm_get_power_state_name(cur_state), LL_core_min, LL_core_max,
-		 L_core_min, L_core_max, B_core_min, B_core_max, LL_freq_min, L_freq_max);
+		 L_core_min, L_core_max, B_core_min, B_core_max, B_freq_min, B_freq_max);
 
 	LL_core_max = (LL_core_max == -1) ? get_cluster_max_cpu_core(PPM_CLUSTER_LL) : LL_core_max;
 	L_core_max = (L_core_max == -1) ? get_cluster_max_cpu_core(PPM_CLUSTER_L) : L_core_max;
-
-	/* need to check freq limit for cluster move/merge */
-	if (cur_state == PPM_POWER_STATE_LL_ONLY || cur_state == PPM_POWER_STATE_L_ONLY) {
-		struct ppm_power_state_data *state_info = ppm_get_power_state_info();
-
-		LL_freq_min = (LL_freq_min == -1)
-			? state_info[cur_state].cluster_limit->state_limit[PPM_CLUSTER_LL].min_cpufreq_idx
-			: LL_freq_min;
-		L_freq_max = (L_freq_max == -1)
-			? state_info[cur_state].cluster_limit->state_limit[PPM_CLUSTER_L].max_cpufreq_idx
-			: L_freq_max;
-		/* idx -> freq */
-		LL_freq_min = (ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl)
-			? ppm_main_info.cluster_info[PPM_CLUSTER_LL].dvfs_tbl[LL_freq_min].frequency
-			: get_cluster_min_cpufreq_idx(PPM_CLUSTER_LL);
-		L_freq_max = (ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl)
-			? ppm_main_info.cluster_info[PPM_CLUSTER_L].dvfs_tbl[L_freq_max].frequency
-			: get_cluster_max_cpufreq_idx(PPM_CLUSTER_L);
-	}
 
 	/* min_core <= 0: don't care */
 	/* min_core > 0: turn on this cluster */
@@ -212,16 +192,11 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		if (B_core_min <= 0) {
 			new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 				: (L_core_min <= 0 || L_core_max == 0) ? cur_state
-				/* should not go to L only due to root cluster is fixed at LL */
-				: (L_core_min > 0 && root_cluster == PPM_CLUSTER_LL) ? PPM_POWER_STATE_4LL_L
-				: (LL_core_min <= 0) ? PPM_POWER_STATE_L_ONLY
-				/* merge to L cluster */
-				: (sum <= L_core_max && L_freq_max >= LL_freq_min) ? PPM_POWER_STATE_L_ONLY
-				: PPM_POWER_STATE_4LL_L;
+				: ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
 		} else {
-			new_state = (LL_core_max == 0 && L_core_max == 0) ? PPM_POWER_STATE_NONE
-				: (LL_core_max == 0 || (LL_core_min <= 0 && L_core_min > 0)) ? PPM_POWER_STATE_4L_LL
-				: PPM_POWER_STATE_4LL_L;
+			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
 		}
 		break;
 	case PPM_POWER_STATE_L_ONLY:
@@ -229,40 +204,33 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		if (B_core_min <= 0) {
 			new_state = (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
 				: (LL_core_min <= 0 || LL_core_max == 0) ? cur_state
-				/* keep current if for only LL min is set */
-				: (LL_core_min > 0 && L_core_min == -1 && L_freq_max >= LL_freq_min) ? cur_state
-				/* merge to L cluster */
-				: (sum <= L_core_max && L_freq_max >= LL_freq_min) ? cur_state
-				: PPM_POWER_STATE_4L_LL;
+				: ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
 		} else {
-			new_state = (LL_core_max == 0 && L_core_max == 0) ? PPM_POWER_STATE_NONE
-				: (L_core_max == 0) ? PPM_POWER_STATE_4LL_L
-				: PPM_POWER_STATE_4L_LL;
+			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
 		}
 		break;
-	case PPM_POWER_STATE_4LL_L:
+	case PPM_POWER_STATE_ALL_B_LIMITED:
 		/* force Big core off */
 		if (B_core_max == 0) {
 			new_state = (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
 				: (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
-				: (LL_core_min <= 0 && L_core_min > 0) ? PPM_POWER_STATE_4L_LL
 				: cur_state;
 		} else {
-			new_state = (LL_core_max == 0 && L_core_max == 0) ? PPM_POWER_STATE_NONE
-				: (LL_core_max == 0 || (LL_core_min <= 0 && L_core_min > 0)) ? PPM_POWER_STATE_4L_LL
-				: cur_state;
+			new_state = ((B_freq_min != -1) && B_freq_min < PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL : PPM_POWER_STATE_ALL_B_LIMITED;
 		}
 		break;
-	case PPM_POWER_STATE_4L_LL:
+	case PPM_POWER_STATE_ALL:
 		/* force Big core off */
 		if (B_core_max == 0) {
 			new_state = (LL_core_max == 0) ? PPM_POWER_STATE_L_ONLY
 				: (L_core_max == 0) ? PPM_POWER_STATE_LL_ONLY
 				: cur_state;
 		} else {
-			new_state = (LL_core_max == 0 && L_core_max == 0) ? PPM_POWER_STATE_NONE
-				: (L_core_max == 0) ? PPM_POWER_STATE_4LL_L
-				: cur_state;
+			new_state = ((B_freq_max) >= PPM_HICA_B_LIMITED_OPP)
+				? PPM_POWER_STATE_ALL_B_LIMITED	: cur_state;
 		}
 		break;
 	default:
@@ -272,22 +240,20 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 	/* check root cluster is fixed or not */
 	switch (root_cluster) {
 	case PPM_CLUSTER_LL:
-		new_state = (new_state == PPM_POWER_STATE_L_ONLY) ? PPM_POWER_STATE_NONE
-			: (new_state == PPM_POWER_STATE_4L_LL) ? PPM_POWER_STATE_4LL_L
-			: new_state;
+		new_state = (new_state == PPM_POWER_STATE_L_ONLY)
+			? PPM_POWER_STATE_ALL_B_LIMITED : new_state;
 		break;
 	case PPM_CLUSTER_L:
-		new_state = (new_state == PPM_POWER_STATE_LL_ONLY) ? PPM_POWER_STATE_NONE
-			: (new_state == PPM_POWER_STATE_4LL_L) ? PPM_POWER_STATE_4L_LL
-			: new_state;
+		new_state = (new_state == PPM_POWER_STATE_LL_ONLY)
+			? PPM_POWER_STATE_ALL_B_LIMITED : new_state;
 		break;
 	default:
 		break;
 	}
 
 #ifdef PPM_DISABLE_CLUSTER_MIGRATION
-	if (new_state == PPM_POWER_STATE_L_ONLY || new_state == PPM_POWER_STATE_4L_LL)
-		new_state = PPM_POWER_STATE_4LL_L;
+	if (new_state == PPM_POWER_STATE_L_ONLY)
+		new_state = PPM_POWER_STATE_ALL_B_LIMITED;
 #endif
 
 	ppm_ver("Judge: output --> [%s]\n", ppm_get_power_state_name(new_state));
@@ -299,6 +265,7 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_policy_req *req,
 			struct ppm_userlimit_data user_limit)
 {
+#if 0
 	if (req && ((cur_state == PPM_POWER_STATE_L_ONLY) || (cur_state == PPM_POWER_STATE_4L_LL))
 		&& (req->limit[PPM_CLUSTER_L].max_cpu_core >= req->limit[PPM_CLUSTER_LL].min_cpu_core)) {
 		unsigned int LL_min_core = req->limit[PPM_CLUSTER_LL].min_cpu_core;
@@ -347,6 +314,7 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 			}
 		}
 	}
+#endif
 }
 
 

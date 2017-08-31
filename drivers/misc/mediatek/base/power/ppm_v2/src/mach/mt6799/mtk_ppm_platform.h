@@ -57,6 +57,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #define PPM_HICA_VARIANT_SUPPORT	(0)
+#define PPM_HICA_B_LIMITED_OPP		(8)
+#define PPM_HICA_2P0			(1)
 
 /* TODO: remove this! */
 /* #include "mt_static_power.h" */
@@ -148,8 +150,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 enum ppm_power_state {
 	PPM_POWER_STATE_LL_ONLY = 0,
 	PPM_POWER_STATE_L_ONLY,
-	PPM_POWER_STATE_4LL_L,
-	PPM_POWER_STATE_4L_LL,	/* Need this? */
+	PPM_POWER_STATE_ALL_B_LIMITED,
+	PPM_POWER_STATE_ALL,
 
 	PPM_POWER_STATE_NONE,	/* HICA disabled */
 	NR_PPM_POWER_STATE = PPM_POWER_STATE_NONE,

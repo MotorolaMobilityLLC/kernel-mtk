@@ -95,7 +95,11 @@ void mt_ppm_ptpod_policy_deactivate(void)
 
 static enum ppm_power_state ppm_ptpod_get_power_state_cb(enum ppm_power_state cur_state)
 {
+#ifdef PPM_HICA_2P0
+	return PPM_POWER_STATE_ALL;
+#else
 	return PPM_POWER_STATE_4LL_L;
+#endif
 }
 
 static void ppm_ptpod_update_limit_cb(enum ppm_power_state new_state)
