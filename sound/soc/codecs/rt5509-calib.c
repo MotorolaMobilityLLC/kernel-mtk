@@ -27,8 +27,6 @@
 
 #include "rt5509.h"
 
-#define rt5509_calib_path "/data/local/tmp/"
-
 struct rt5509_proc_file_t {
 	const char *name;
 	umode_t mode;
@@ -51,6 +49,7 @@ struct rt5509_proc_file_t {
 
 enum {
 	RT5509_CALIB_CTRL_START = 0,
+	RT5509_CALIB_CTRL_DCROFFSET,
 	RT5509_CALIB_CTRL_N20DB,
 	RT5509_CALIB_CTRL_N15DB,
 	RT5509_CALIB_CTRL_N10DB,
@@ -61,72 +60,32 @@ enum {
 	RT5509_CALIB_CTRL_MAX,
 };
 
-static int calib_start;
-static int param_put;
-
-static struct file *file_open(const char *path, int flags, int rights)
-{
-	struct file *filp = NULL;
-	mm_segment_t oldfs;
-	int err = 0;
-
-	oldfs = get_fs();
-	set_fs(get_ds());
-	filp = filp_open(path, flags, rights);
-	set_fs(oldfs);
-	if(IS_ERR(filp)) {
-		err = PTR_ERR(filp);
-		return NULL;
-	}
-	return filp;
-}
-
-static int file_read(struct file *file, unsigned long long offset,
-		     unsigned char *data, unsigned int size)
-{
-	mm_segment_t oldfs;
-	int ret;
-
-	oldfs = get_fs();
-	set_fs(get_ds());
-	ret = vfs_read(file, data, size, &offset);
-	set_fs(oldfs);
-	return ret;
-}
-
-static int file_size(struct file *file)
-{
-	mm_segment_t oldfs;
-	int ret;
-
-	oldfs = get_fs();
-	set_fs(get_ds());
-	ret = (file->f_path.dentry)->d_inode->i_size;
-	set_fs(oldfs);
-	return ret;
-}
-
-static int file_write(struct file *file, unsigned long long offset,
-		     const unsigned char *data, unsigned int size)
-{
-	mm_segment_t oldfs;
-	int ret;
-
-	oldfs = get_fs();
-	set_fs(get_ds());
-	ret = vfs_write(file, data, size, &offset);
-	set_fs(oldfs);
-	return ret;
-}
-
-static void file_close(struct file *file)
-{
-	filp_close(file, NULL);
-}
-
 static struct rt5509_chip *get_chip_data(struct file *filp)
 {
 	return PDE_DATA(file_inode(filp));
+}
+
+static int rt5509_calib_get_dcroffset(struct rt5509_chip *chip)
+{
+	struct snd_soc_codec *codec = chip->codec;
+	uint32_t delta_v = 0, vtemp = 0;
+	int ret = 0;
+
+	dev_info(codec->dev, "%s\n", __func__);
+	if (!chip->calib_start)
+		return -EINVAL;
+	ret = snd_soc_read(codec, RT5509_REG_VTEMP_TRIM);
+	if (ret < 0)
+		return ret;
+	vtemp = ret & 0xffff;
+	ret = snd_soc_read(codec, RT5509_REG_VTHRMDATA);
+	if (ret < 0)
+		return ret;
+	ret &= 0xffff;
+	delta_v = 2720 * (ret - vtemp) / vtemp;
+	chip->param_put = delta_v;
+	dev_info(chip->dev, "param = %d\n", chip->param_put);
+	return 0;
 }
 
 static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
@@ -137,7 +96,7 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 	int ret = 0;
 
 	dev_info(chip->dev, "%s\n", __func__);
-	if (!calib_start)
+	if (!chip->calib_start)
 		return -EINVAL;
 	ret = snd_soc_read(codec, RT5509_REG_BST_MODE);
 	if (ret < 0)
@@ -181,12 +140,12 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 	if (ret < 0)
 		return ret;
 	ret = snd_soc_read(codec, RT5509_REG_CALIB_OUT0);
-	param_put = ret;
+	chip->param_put = ret;
 	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
 		0x03, mode_store);
 	if (ret < 0)
 		return ret;
-	dev_info(chip->dev, "param = %d\n", param_put);
+	dev_info(chip->dev, "param = %d\n", chip->param_put);
 	return 0;
 }
 
@@ -199,8 +158,8 @@ static int rt5509_calib_read_otp(struct rt5509_chip *chip)
 	if (ret < 0)
 		return ret;
 	ret &= 0xffffff;
-        param_put = ret;
-	dev_info(chip->dev, "param = 0x%08x\n", param_put);
+	chip->param_put = ret;
+	dev_info(chip->dev, "param = 0x%08x\n", chip->param_put);
 	return 0;
 }
 
@@ -231,7 +190,7 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 		0x03, 0x02);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, param_put);
+	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, chip->param_put);
 	if (ret < 0)
 		return ret;
 	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x81);
@@ -259,8 +218,9 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 		return ret;
 	ret = snd_soc_read(codec, RT5509_REG_CALIB_DCR);
 	param_store = ret & 0xffffff;
-	dev_info(chip->dev, "store %08x, put %08x\n", param_store, param_put);
-	if (param_store != param_put)
+	dev_info(chip->dev, "store %08x, put %08x\n", param_store,
+		 chip->param_put);
+	if (param_store != chip->param_put)
 		return -EINVAL;
 	ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 				  RT5509_SPKAMP_ENMASK,
@@ -275,7 +235,7 @@ static int rt5509_calib_rwotp(struct rt5509_chip *chip, int choose)
 	int ret = 0;
 
 	dev_info(chip->dev, "%s\n", __func__);
-	if (!calib_start)
+	if (!chip->calib_start)
 		return -EINVAL;
 	switch (choose) {
 	case RT5509_CALIB_CTRL_READOTP:
@@ -296,21 +256,6 @@ static int rt5509_calib_rwotp(struct rt5509_chip *chip, int choose)
 
 static int rt5509_calib_write_file(struct rt5509_chip *chip)
 {
-	struct file *calib_file;
-	char tmp[100] = {0};
-	char file_name[100] = {0};
-
-	sprintf(file_name, rt5509_calib_path "rt5509_calib.%d", chip->pdev->id);
-	calib_file = file_open(file_name, O_WRONLY | O_CREAT,
-			       S_IRUGO | S_IWUSR);
-	if (!calib_file) {
-		dev_err(chip->dev, "open file fail\n");
-		return -EFAULT;
-	}
-	dev_info(chip->dev, "rspk=%d\n", param_put);
-	sprintf(tmp, "rspk=%d\n", param_put);
-	file_write(calib_file, 0, tmp, strlen(tmp));
-	file_close(calib_file);
 	return 0;
 }
 
@@ -343,6 +288,11 @@ static ssize_t calib_file_write(struct file *filp, const char __user *buf,
 	ctrl -= RT5509_CALIB_MAGIC;
 	dev_dbg(chip->dev, "ctrl = %d\n", ctrl);
 	switch (ctrl) {
+	case RT5509_CALIB_CTRL_DCROFFSET:
+		ret = rt5509_calib_get_dcroffset(chip);
+		if (ret < 0)
+			return ret;
+		break;
 	case RT5509_CALIB_CTRL_N20DB:
 	case RT5509_CALIB_CTRL_N15DB:
 	case RT5509_CALIB_CTRL_N10DB:
@@ -362,22 +312,22 @@ static ssize_t calib_file_write(struct file *filp, const char __user *buf,
 			return ret;
 		break;
 	case RT5509_CALIB_CTRL_START:
-		if (param_put == RT5509_CALIB_MAGIC) {
+		if (chip->param_put == RT5509_CALIB_MAGIC) {
 			ret = rt5509_calib_start_process(chip);
 			if (ret < 0)
 				return ret;
-			calib_start = 1;
+			chip->calib_start = 1;
 			dev_info(chip->dev, "calib started\n");
 		} else
 			return -EINVAL;
 		break;
 	case RT5509_CALIB_CTRL_END:
-		if (param_put == RT5509_CALIB_MAGIC) {
+		if (chip->param_put == RT5509_CALIB_MAGIC) {
 			ret = rt5509_calib_end_process(chip);
 			if (ret < 0)
 				return ret;
-			calib_start = 0;
-			param_put = 0;
+			chip->calib_start = 0;
+			chip->param_put = 0;
 			dev_info(chip->dev, "calib end\n");
 		} else
 			return -EINVAL;
@@ -396,7 +346,7 @@ static ssize_t param_file_read(struct file *filp, char __user *buf,
 	int len = 0;
 
 	dev_info(chip->dev, "%s\n", __func__);
-	len = scnprintf(tmp, ARRAY_SIZE(tmp), "%d\n", param_put);
+	len = scnprintf(tmp, ARRAY_SIZE(tmp), "%d\n", chip->param_put);
 	return simple_read_from_buffer(buf, cnt, ppos, tmp, len);
 }
 
@@ -409,28 +359,14 @@ static ssize_t param_file_write(struct file *filp, const char __user *buf,
 	dev_info(chip->dev, "%s\n", __func__);
 	if (sscanf(buf, "%d", &param) < 1)
 		return -EINVAL;
-	param_put = param;
+	chip->param_put = param;
 	return cnt;
 }
 
 static ssize_t calib_data_file_read(struct file *filp, char __user *buf,
 			       size_t cnt, loff_t *ppos)
 {
-	struct rt5509_chip *chip = get_chip_data(filp);
-	struct file *calib_file;
-	char tmp[100] = {0};
-	char file_name[100] = {0};
-
-	sprintf(file_name, rt5509_calib_path "rt5509_calib.%d", chip->pdev->id);
-	calib_file = file_open(file_name,
-			       O_RDONLY, S_IRUGO | S_IWUSR);
-	if (!calib_file) {
-		dev_info(chip->dev, "open file fail\n");
-		return -EIO;
-	}
-	file_read(calib_file, 0, tmp, file_size(calib_file));
-	file_close(calib_file);
-	return simple_read_from_buffer(buf, cnt, ppos, tmp, strlen(tmp));
+	return -EACCES;
 }
 
 #define calib_data_file_write NULL
@@ -441,7 +377,7 @@ static ssize_t chip_rev_file_read(struct file *filp, char __user *buf,
 	struct rt5509_chip *chip = get_chip_data(filp);
 	char tmp[100] = {0};
 
-	sprintf(tmp, "%d\n", chip->chip_rev);
+	snprintf(tmp, 100, "%d\n", chip->chip_rev);
 	return simple_read_from_buffer(buf, cnt, ppos, tmp, strlen(tmp));
 }
 
@@ -462,7 +398,7 @@ void rt5509_calib_destroy(struct rt5509_chip *chip)
 	dev_dbg(chip->dev, "%s\n", __func__);
 	for (i = 0; i < ARRAY_SIZE(rt5509_proc_file); i++)
 		remove_proc_entry(rt5509_proc_file[i].name, chip->root_entry);
-	sprintf(proc_name, "rt5509_calib.%d", chip->pdev->id);
+	snprintf(proc_name, 100, "rt5509_calib.%d", chip->pdev->id);
 	remove_proc_entry(proc_name, NULL);
 	chip->root_entry = NULL;
 }
@@ -475,7 +411,7 @@ int rt5509_calib_create(struct rt5509_chip *chip)
 	int i = 0;
 
 	dev_dbg(chip->dev, "%s\n", __func__);
-	sprintf(proc_name, "rt5509_calib.%d", chip->pdev->id);
+	snprintf(proc_name, 100, "rt5509_calib.%d", chip->pdev->id);
 	entry = proc_mkdir(proc_name, NULL);
 	if (!entry) {
 		dev_err(chip->dev, "%s: create proc folder fail\n", __func__);

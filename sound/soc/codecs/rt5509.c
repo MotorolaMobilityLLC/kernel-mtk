@@ -910,6 +910,10 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			if (ret < 0)
 				goto out_boost_event;
 		}
+		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+			RT5509_TRIWAVE_ENMASK, ~RT5509_TRIWAVE_ENMASK);
+		if (ret < 0)
+			goto out_boost_event;
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_info(chip->dev, "amp turn off\n");
@@ -939,10 +943,6 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 		ret = snd_soc_update_bits(codec, RT5509_REG_DSPKEN1,
 			RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK,
 			~(RT5509_BUF_ENMASK | RT5509_BIAS_ENMASK));
-		if (ret < 0)
-			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
-			RT5509_TRIWAVE_ENMASK, ~RT5509_TRIWAVE_ENMASK);
 		if (ret < 0)
 			goto out_boost_event;
 		break;
