@@ -49,13 +49,11 @@
  **************************************/
 DEFINE_SPINLOCK(__spm_lock);
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #define PCM_TIMER_RAMP_BASE_DPIDLE      80          /*  80/32000 =  2.5 ms */
 #define PCM_TIMER_RAMP_BASE_SUSPEND_50MS	0xA0
 #define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT	0x7D000 /* 16sec */
 #define PCM_TIMER_RAMP_BASE_SUSPEND_LONG	0x927C00 /* 5min */
 static u32 pcm_timer_ramp_max_sec_loop = 1;
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 const char *wakesrc_str[32] = {
 	[0] = " R12_PCMTIMER",
@@ -119,6 +117,43 @@ int __spm_check_opp_level(int ch)
 		level[1] = 2;
 
 	return level[opp];
+}
+
+int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
+{
+	u32 val;
+
+	/* set PCM timer (set to max when disable) */
+	if (pwrctrl->timer_val_ramp_en != 0) {
+		u32 index;
+
+		get_random_bytes(&index, sizeof(index));
+
+		val = PCM_TIMER_RAMP_BASE_DPIDLE + (index & 0x000000FF);
+	} else if (pwrctrl->timer_val_ramp_en_sec != 0) {
+		u32 index;
+
+		get_random_bytes(&index, sizeof(index));
+
+		pcm_timer_ramp_max_sec_loop++;
+		if (pcm_timer_ramp_max_sec_loop >= 50) {
+			pcm_timer_ramp_max_sec_loop = 0;
+			/* range 5min to 10min */
+			val = PCM_TIMER_RAMP_BASE_SUSPEND_LONG +
+				index % PCM_TIMER_RAMP_BASE_SUSPEND_LONG;
+		} else {
+			/* range 50ms to 16sec50ms */
+			val = PCM_TIMER_RAMP_BASE_SUSPEND_50MS +
+				index % PCM_TIMER_RAMP_BASE_SUSPEND_SHORT;
+		}
+	} else {
+		if (pwrctrl->timer_val_cust == 0)
+			val = pwrctrl->timer_val ? : PCM_TIMER_MAX;
+		else
+			val = pwrctrl->timer_val_cust;
+	}
+
+	return val;
 }
 
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
@@ -563,35 +598,7 @@ void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
 {
 	u32 val, mask, isr;
 
-	/* set PCM timer (set to max when disable) */
-	if (pwrctrl->timer_val_ramp_en != 0) {
-		u32 index;
-
-		get_random_bytes(&index, sizeof(index));
-
-		val = PCM_TIMER_RAMP_BASE_DPIDLE + (index & 0x000000FF);
-	} else if (pwrctrl->timer_val_ramp_en_sec != 0) {
-		u32 index;
-
-		get_random_bytes(&index, sizeof(index));
-
-		pcm_timer_ramp_max_sec_loop++;
-		if (pcm_timer_ramp_max_sec_loop >= 50) {
-			pcm_timer_ramp_max_sec_loop = 0;
-			/* range 5min to 10min */
-			val = PCM_TIMER_RAMP_BASE_SUSPEND_LONG +
-				index % PCM_TIMER_RAMP_BASE_SUSPEND_LONG;
-		} else {
-			/* range 50ms to 16sec50ms */
-			val = PCM_TIMER_RAMP_BASE_SUSPEND_50MS +
-				index % PCM_TIMER_RAMP_BASE_SUSPEND_SHORT;
-		}
-	} else {
-		if (pwrctrl->timer_val_cust == 0)
-			val = pwrctrl->timer_val ? : PCM_TIMER_MAX;
-		else
-			val = pwrctrl->timer_val_cust;
-	}
+	val = __spm_get_pcm_timer_val(pwrctrl);
 
 	spm_write(PCM_TIMER_VAL, val);
 	spm_write(PCM_CON1, spm_read(PCM_CON1) | SPM_REGWR_CFG_KEY | RG_PCM_TIMER_EN_LSB);
@@ -758,12 +765,15 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x, resource = 0x%x\n",
-			wakesta->raw_ext_sta,
-			wakesta->wake_misc,
-			spm_read(SPM_SW_FLAG),
-			spm_read(SPM_RSV_CON2),
-			spm_get_resource_usage());
+	spm_print(suspend,
+		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x 0x%x, req = 0x%x, resource = 0x%x\n",
+		wakesta->raw_ext_sta,
+		wakesta->wake_misc,
+		spm_read(SPM_SW_FLAG),
+		spm_read(SPM_RSV_CON2),
+		spm_read(SPM_SW_RSV_4),
+		spm_read(SPM_SRC_REQ),
+		spm_get_resource_usage());
 
 	return wr;
 }
