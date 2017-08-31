@@ -1043,9 +1043,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (request_uart_to_sleep()) {
-		wr = WR_UART_BUSY;
-		goto RESTORE_IRQ;
+	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)) {
+		if (request_uart_to_sleep()) {
+			wr = WR_UART_BUSY;
+			goto RESTORE_IRQ;
+		}
 	}
 #endif
 
@@ -1076,7 +1078,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	request_uart_to_wakeup();
+	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN))
+		request_uart_to_wakeup();
 #endif
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond);
