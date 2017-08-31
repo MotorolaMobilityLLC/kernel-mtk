@@ -88,7 +88,6 @@ struct SCP_sensorHub_data {
 	SCP_sensorHub_handler dispatch_data_cb[ID_SENSOR_MAX_HANDLE + 1];
 	atomic_t traces[ID_SENSOR_MAX_HANDLE];
 };
-
 static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
 static DEFINE_MUTEX(mSensorState_mtx);
 static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
@@ -99,6 +98,57 @@ static struct SCP_sensorHub_data *obj_data;
 #define SCP_FUN(f)               pr_err(SCP_TAG"%s\n", __func__)
 #define SCP_ERR(fmt, args...)    pr_err(SCP_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define SCP_LOG(fmt, args...)    pr_debug(SCP_TAG fmt, ##args)
+
+/* arch counter is 13M, mult is 161319385, shift is 21 */
+static inline uint64_t arch_counter_to_ns(uint64_t cyc)
+{
+#define ARCH_TIMER_MULT 161319385
+#define ARCH_TIMER_SHIFT 21
+	return (cyc * ARCH_TIMER_MULT) >> ARCH_TIMER_SHIFT;
+}
+#define FILTER_DATAPOINTS	16
+#define FILTER_TIMEOUT		10000000000ULL /* 10 seconds, ~100us drift */
+#define FILTER_FREQ			10000000ULL /* 10 ms */
+struct moving_average {
+	uint64_t last_time;
+	uint64_t input[FILTER_DATAPOINTS];
+	uint64_t output;
+	uint8_t cnt;
+	uint8_t tail;
+};
+static struct moving_average moving_average_algo;
+static uint8_t rtc_compensation_suspend;
+static void moving_average_filter(struct moving_average *filter, uint64_t ap_time, uint64_t hub_time)
+{
+	int i = 0;
+	int32_t avg;
+	uint64_t ret_avg = 0;
+
+	if (ap_time > filter->last_time + FILTER_TIMEOUT || filter->last_time == 0) {
+		filter->tail = 0;
+		filter->cnt = 0;
+	} else if (ap_time < filter->last_time + FILTER_FREQ) {
+		return;
+	}
+	filter->last_time = ap_time;
+
+	filter->input[filter->tail++] = ap_time - hub_time;
+	filter->tail &= (FILTER_DATAPOINTS - 1);
+	if (filter->cnt < FILTER_DATAPOINTS)
+		filter->cnt++;
+
+	/* pr_err("hongxu raw_offset=%lld\n", ap_time - hub_time); */
+
+	for (i = 1, avg = 0; i < filter->cnt; i++)
+		avg += (int32_t)(filter->input[i] - filter->input[0]);
+	ret_avg = (avg / filter->cnt) + filter->input[0];
+	WRITE_ONCE(filter->output, ret_avg);
+}
+
+static uint64_t get_filter_output(struct moving_average *filter)
+{
+	return READ_ONCE(filter->output);
+}
 
 struct SCP_sensorHub_Cmd {
 	uint32_t reason;
@@ -355,7 +405,7 @@ static void SCP_sensorHub_write_wp_queue(SCP_SENSOR_HUB_DATA_P rsp)
 	struct curr_wp_queue *wp_queue = &obj->wp_queue;
 
 	spin_lock(&wp_queue->buffer_lock);
-	wp_queue->ringbuffer[wp_queue->head++] = rsp->notify_rsp.data.currWp;
+	wp_queue->ringbuffer[wp_queue->head++] = rsp->notify_rsp.currWp;
 	wp_queue->head &= wp_queue->bufsize - 1;
 	if (unlikely(wp_queue->head == wp_queue->tail))
 		SCP_ERR("dropped currWp due to ringbuffer is full\n");
@@ -550,6 +600,22 @@ static void SCP_sensorHub_set_timestamp_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_le
 		}
 	}
 }
+static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
+{
+	uint64_t ap_now_time = 0, arch_counter = 0, scp_raw_time = 0, scp_now_time = 0;
+	uint64_t ipi_transfer_time = 0;
+
+	if (READ_ONCE(rtc_compensation_suspend)) {
+		SCP_ERR("rtc_compensation_suspend is suspended, so drop run algo\n");
+		return;
+	}
+	ap_now_time = ktime_get_boot_ns();
+	arch_counter = arch_counter_get_cntvct();
+	scp_raw_time = rsp->notify_rsp.scp_timestamp;
+	ipi_transfer_time = arch_counter_to_ns(arch_counter - rsp->notify_rsp.arch_counter);
+	scp_now_time = scp_raw_time + ipi_transfer_time;
+	moving_average_filter(&moving_average_algo, ap_now_time, scp_now_time);
+}
 static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
@@ -561,6 +627,11 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 	case SCP_FIFO_FULL:
 		mark_timestamp(0, GOT_IPI, ktime_get_boot_ns(), 0);
 		mark_ipi_timestamp(arch_counter_get_cntvct() - rsp->notify_rsp.arch_counter);
+#ifdef DEBUG_PERFORMANCE_HW_TICK
+		pr_warn("[Performance Debug] ====> AP_get_ipi, Stanley kernel report tick:%llu\n",
+				arch_counter_get_cntvct());
+#endif
+		SCP_sensorHub_moving_average(rsp);
 		SCP_sensorHub_write_wp_queue(rsp);
 		/* queue_work(obj->direct_push_workqueue, &obj->direct_push_work); */
 		WRITE_ONCE(chre_kthread_wait_condition, true);
@@ -571,7 +642,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		if (ID_SENSOR_MAX_HANDLE < handle) {
 			SCP_ERR("invalid sensor %d\n", handle);
 		} else {
-			event = (struct data_unit_t *)rsp->notify_rsp.data.int8_Data;
+			event = (struct data_unit_t *)rsp->notify_rsp.int8_Data;
 			if (NULL != obj->dispatch_data_cb[handle])
 				obj->dispatch_data_cb[handle](event, NULL);
 			else
@@ -815,14 +886,13 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 	bool raw_enable = 0, alt_enable = 0;
 	bool need_send = false;
 	/* int64_t now_enter_timestamp = 0;
-	struct timespec time;
 
-	time.tv_sec = time.tv_nsec = 0;
-	get_monotonic_boottime(&time);
-	now_enter_timestamp = time.tv_sec * 1000000000LL + time.tv_nsec;
+	now_enter_timestamp = ktime_get_boot_ns();
 	SCP_ERR("type:%d,now time:%lld, scp time: %lld\n",
 		data_t->sensor_type, now_enter_timestamp, (data_t->time_stamp + data_t->time_stamp_gpt)); */
 	sensor_type = data_t->sensor_type;
+	data_t->time_stamp_gpt = get_filter_output(&moving_average_algo);
+	/* pr_err("hongxu compensation_offset=%lld\n", data_t->time_stamp_gpt); */
 	alt = ACCESS_ONCE(mSensorState[sensor_type].alt);
 	if (!alt) {
 		raw_enable = ACCESS_ONCE(mSensorState[sensor_type].enable);
@@ -980,21 +1050,18 @@ static int sensor_send_timestamp_wake_locked(void)
 	SCP_SENSOR_HUB_DATA req;
 	int len;
 	int err = 0;
-	uint64_t ns, arch_counter;
-	struct timespec time;
+	uint64_t now_time, arch_counter;
 
-	time.tv_sec = time.tv_nsec = 0;
 	/* sensor_send_timestamp_to_hub is process context, we only disable irq is safe */
 	local_irq_disable();
-	get_monotonic_boottime(&time);
+	now_time = ktime_get_boot_ns();
 	arch_counter = arch_counter_get_cntvct();
 	local_irq_enable();
-	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
 	req.set_config_req.sensorType = 0;
 	req.set_config_req.action = SENSOR_HUB_SET_TIMESTAMP;
-	req.set_config_req.ap_timestamp = ns;
+	req.set_config_req.ap_timestamp = now_time;
 	req.set_config_req.arch_counter = arch_counter;
-	pr_err("\nhongxu, ns:%lld, arch_counter:%lld!\n", ns, arch_counter);
+	/* pr_err("hongxu, ns=%lld, arch_counter=%lld!\n", now_time, arch_counter); */
 	len = sizeof(req.set_config_req);
 	err = scp_sensorHub_req_send(&req, &len, 1);
 	if (err < 0)
@@ -1007,12 +1074,14 @@ static int sensor_send_timestamp_to_hub(void)
 	int err = 0;
 	struct SCP_sensorHub_data *obj = obj_data;
 
-	if (!READ_ONCE(rtc_compensation_suspend)) {
-		wake_lock(&obj->sync_time_wake_lock);
-		err = sensor_send_timestamp_wake_locked();
-		wake_unlock(&obj->sync_time_wake_lock);
-	} else
-		SCP_ERR("rtc_compensation_suspend is suspended, we drop sync time!\n");
+	if (READ_ONCE(rtc_compensation_suspend)) {
+		SCP_ERR("rtc_compensation_suspend is suspended, so drop time sync\n");
+		return 0;
+	}
+
+	wake_lock(&obj->sync_time_wake_lock);
+	err = sensor_send_timestamp_wake_locked();
+	wake_unlock(&obj->sync_time_wake_lock);
 	return err;
 }
 
@@ -1969,12 +2038,12 @@ static int sensorHub_pm_event(struct notifier_block *notifier, unsigned long pm_
 {
 	switch (pm_event) {
 	case PM_POST_SUSPEND:
-		pr_err("hongxu PM_POST_SUSPEND\n");
+		SCP_ERR("resume\n");
 		WRITE_ONCE(rtc_compensation_suspend, false);
 		sensor_send_timestamp_to_hub();
 		return NOTIFY_DONE;
 	case PM_SUSPEND_PREPARE:
-		pr_err("hongxu PM_SUSPEND_PREPARE\n");
+		SCP_ERR("suspend\n");
 		WRITE_ONCE(rtc_compensation_suspend, true);
 		return NOTIFY_DONE;
 	default:
