@@ -891,6 +891,13 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 					    prStaRec,
 					    (P_SW_RFB_T) NULL,
 					    u2ReasonCode, (PFN_TX_DONE_HANDLER) p2pFsmRunEventDeauthTxDone);
+			if (prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
+				/* Make the deauth frame send to FW ASAP. */
+				DBGLOG(P2P, INFO, "GC: deauth frame send to FW ASAP\n");
+				wlanAcquirePowerControl(prAdapter);
+				wlanProcessCommandQueue(prAdapter, &prAdapter->prGlueInfo->rCmdQueue);
+				wlanReleasePowerControl(prAdapter);
+			}
 		} else {
 			/* Change station state. */
 			cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
