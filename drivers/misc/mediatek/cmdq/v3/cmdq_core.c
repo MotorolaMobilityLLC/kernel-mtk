@@ -1533,13 +1533,14 @@ struct cmdqSecSharedMemoryStruct *cmdq_core_get_secure_shared_memory(void)
 const char *cmdq_core_get_event_name_ENUM(enum CMDQ_EVENT_ENUM event)
 {
 	const char *eventName = "CMDQ_EVENT_UNKNOWN";
+	struct cmdq_event_table *events = cmdq_event_get_table();
+	u32 table_size = cmdq_event_get_table_size();
+	u32 i = 0;
 
-#undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name, val, dts_name)	{ if (val == event) { eventName = #name; break; }  }
-	do {
-#include "cmdq_event_common.h"
-	} while (0);
-#undef DECLARE_CMDQ_EVENT
+	for (i = 0; i < table_size; i++) {
+		if (events[i].event == event)
+			return events[i].event_name;
+	}
 
 	return eventName;
 }
@@ -2433,17 +2434,14 @@ void cmdq_core_reset_hw_events(void)
 	int index;
 	struct ResourceUnitStruct *pResource = NULL;
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
+	struct cmdq_event_table *events = cmdq_event_get_table();
+	u32 table_size = cmdq_event_get_table_size();
 
 	/* set all defined events to 0 */
 	CMDQ_MSG("cmdq_core_reset_hw_events\n");
 
-#undef DECLARE_CMDQ_EVENT
-#define DECLARE_CMDQ_EVENT(name, val, dts_name) \
-{	\
-	cmdq_core_reset_hw_events_impl(name);	\
-}
-#include "cmdq_event_common.h"
-#undef DECLARE_CMDQ_EVENT
+	for (index = 0; index < table_size; index++)
+		cmdq_core_reset_hw_events_impl(events[index].event);
 
 	/* However, GRP_SET are resource flags, */
 	/* by default they should be 1. */

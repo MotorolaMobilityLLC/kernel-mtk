@@ -85,6 +85,7 @@ obj-y += cmdq_mdp_common.o
 obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
 obj-y += cmdq_sec.o
+obj-y += cmdq_event_common.o
 
 ifeq ($(platformdir_exists), y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
