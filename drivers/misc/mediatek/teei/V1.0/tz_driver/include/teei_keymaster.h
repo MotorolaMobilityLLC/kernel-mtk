@@ -1,30 +1,30 @@
 #include "utdriver_macro.h"
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length;
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 struct fdrv_message_head {
-        unsigned int driver_type;
-        unsigned int fdrv_param_length;
+	unsigned int driver_type;
+	unsigned int fdrv_param_length;
 };
 
 struct create_fdrv_struct {
-        unsigned int fdrv_type;
-        unsigned int fdrv_phy_addr;
-        unsigned int fdrv_size;
+	unsigned int fdrv_type;
+	unsigned int fdrv_phy_addr;
+	unsigned int fdrv_size;
 };
 
 struct ack_fast_call_struct {
-        int retVal;
+	int retVal;
 };
 
 struct keymaster_command_struct {
-        unsigned long mem_size;
-        int retVal;
+	unsigned long mem_size;
+	int retVal;
 };
 
 struct keymaster_command_struct keymaster_command_entry;

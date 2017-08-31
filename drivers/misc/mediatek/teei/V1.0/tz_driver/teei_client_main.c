@@ -78,10 +78,10 @@ extern wait_queue_head_t __fp_open_wq;
  ******************************/
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length;
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 
@@ -108,8 +108,6 @@ struct smc_call_struct {
 };
 
 struct smc_call_struct smc_call_entry;
-
-#define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
 
 asmlinkage long sys_setpriority(int which, int who, int niceval);
 asmlinkage long sys_getpriority(int which, int who);
@@ -289,7 +287,6 @@ static void post_teei_invoke_drv(int cpu_id)
 static void teei_invoke_drv(void)
 {
 	int cpu_id = 0;
-
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	post_teei_invoke_drv(cpu_id);
@@ -334,7 +331,7 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
-	printk("current cpu id [%d]\n", cpu_id);
+	pr_debug("current cpu id [%d]\n", cpu_id);
 	smp_call_function_single(cpu_id, secondary_boot_stage1, (void *)(&boot_stage1_entry), 1);
 	put_online_cpus();
 
@@ -342,7 +339,7 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	rmb();
 }
 
-static int teei_cpu_id[]={0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103,0x0200,0x0201,0x0202,0x0203};
+static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
 
 static int tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
@@ -358,30 +355,29 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_PREPARE:
 	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
-				printk("cpu down prepare ************************\n");
+				pr_debug("cpu down prepare ************************\n");
 				retVal = down_trylock(&smc_lock);
 				if (retVal == 1)
 					return NOTIFY_BAD;
 				else {
 					cpu_notify_flag = 1;
-					for_each_online_cpu(i)
-					{
-						/*printk("current on line cpu [%d]\n", i);*/
+					for_each_online_cpu(i) {
+						/*pr_debug("current on line cpu [%d]\n", i);*/
 						if (i == cpu) {
 							continue;
 						}
 						switch_to_cpu_id = i;
 					}
-					/*printk("current cpu id = [%d]\n", current_cpu_id);*/
+					/*pr_debug("current cpu id = [%d]\n", current_cpu_id);*/
 					nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
 
-					/*printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
+					/*pr_debug("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
 #if 1
 					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
 					set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
-					/*printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
+					/*pr_debug("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
 					current_cpu_id = switch_to_cpu_id;
-					printk("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
+					pr_debug("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
 #endif
 
 				}
@@ -390,7 +386,7 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 
 	case CPU_DOWN_FAILED:
 			if (cpu_notify_flag == 1) {
-				printk("cpu down failed *************************\n");
+				pr_debug("cpu down failed *************************\n");
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
@@ -399,7 +395,7 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
 			if (cpu_notify_flag == 1) {
-				printk("cpu down success ***********************\n");
+				pr_debug("cpu down success ***********************\n");
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
@@ -426,7 +422,7 @@ static void secondary_init_cmdbuf(void *info)
 	/* with a rmb() */
 	rmb();
 
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n", __func__, __LINE__,
+	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n", __func__, __LINE__,
 		(unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
 		(unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
@@ -474,7 +470,7 @@ long create_cmd_buff(void)
 	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 	if (message_buff == NULL) {
-		printk("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
+		pr_err("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
 #ifdef UT_DMA_ZONE
@@ -483,7 +479,7 @@ long create_cmd_buff(void)
 	fdrv_message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 	if (fdrv_message_buff == NULL) {
-		printk("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
+		pr_err("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
 	}
@@ -494,7 +490,7 @@ long create_cmd_buff(void)
 	bdrv_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 #endif
 	if (bdrv_message_buff == NULL) {
-		printk("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
+		pr_err("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
@@ -506,16 +502,16 @@ long create_cmd_buff(void)
 	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH * 64, SZ_4K)));
 #endif
 	if (tlog_message_buff == NULL) {
-		printk("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
+		pr_err("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(bdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		return -ENOMEM;
-        }
+	}
 
 	retVal = create_utgate_log_thread(tlog_message_buff, MESSAGE_LENGTH * 64);
 	if (retVal != 0) {
-		printk("[%s][%d] failed to create utgate tlog thread!\n", __func__, __LINE__);
+		pr_err("[%s][%d] failed to create utgate tlog thread!\n", __func__, __LINE__);
 		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(bdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
@@ -526,7 +522,7 @@ long create_cmd_buff(void)
 	/* smc_call to notify SOTER the share memory(message_buff) */
 
 	/* n_init_t_fc_buf((unsigned long)virt_to_phys(message_buff), 0, 0); */
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
+	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
 			(unsigned long)virt_to_phys(message_buff),
 			(unsigned long)virt_to_phys(fdrv_message_buff),
 			(unsigned long)virt_to_phys(bdrv_message_buff),
@@ -547,49 +543,48 @@ long teei_service_init_first(void)
 	/* register_switch_irq_handler(); */
 	long retVal = 0;
 
-	printk("[%s][%d] begin to create nq buffer!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to create nq buffer!\n", __func__, __LINE__);
 
 	retVal = create_nq_buffer();
 	if (retVal < 0) {
-		printk("[%s][%d] create nq buffer failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] create nq buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
 		return -1;
 
 /*
-	printk("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
 	fp_buff_addr = create_fp_fdrv(FP_BUFF_SIZE);
 
 	if (soter_error_flag == 1)
 		return -1;
 */
 
-	printk("[%s][%d] begin to create keymaster buffer!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to create keymaster buffer!\n", __func__, __LINE__);
 	keymaster_buff_addr = create_keymaster_fdrv(KEYMASTER_BUFF_SIZE);
 	if (keymaster_buff_addr == NULL) {
-		printk("[%s][%d] create keymaster buffer failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] create keymaster buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
 		return -1;
 
-	printk("[%s][%d] begin to create gatekeeper buffer!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to create gatekeeper buffer!\n", __func__, __LINE__);
 	gatekeeper_buff_addr = create_gatekeeper_fdrv(GK_BUFF_SIZE);
 	if (gatekeeper_buff_addr == NULL) {
-		printk("[%s][%d] create gatekeeper buffer failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] create gatekeeper buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
 		return -1;
-
 
 	/**
 	 * init service handler
 	 */
 	retVal = init_all_service_handlers();
 	if (retVal < 0) {
-		printk("[%s][%d] init_all_service_handlers failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] init_all_service_handlers failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
@@ -597,7 +592,7 @@ long teei_service_init_first(void)
 	/**
 	 * start service thread
 	 */
-//	start_teei_service();
+	/* start_teei_service(); */
 
 	/**
 	 * Create Work Queue
@@ -609,10 +604,10 @@ long teei_service_init_first(void)
 
 long teei_service_init_second(void)
 {
-	printk("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
 	fp_buff_addr = create_fp_fdrv(FP_BUFF_SIZE);
 	if (fp_buff_addr == NULL) {
-		printk("[%s][%d] create fp buffer failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] create fp buffer failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	if (soter_error_flag == 1)
@@ -649,7 +644,7 @@ static int init_teei_framework(void)
 	register_switch_irq_handler();
 	register_soter_irq_handler();
 	register_fp_ack_handler();
-	//register_keymaster_ack_handler();
+	/* register_keymaster_ack_handler(); */
 	register_bdrv_handler();
 	register_tlog_handler();
 	register_error_irq_handler();
@@ -660,13 +655,13 @@ static int init_teei_framework(void)
 	tlog_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA , get_order(ROUND_UP(TLOG_SIZE, SZ_4K)));
 
 	if (tlog_buff == NULL) {
-		printk("[%s][%d]ERROR: There is no enough memory for TLOG!\n", __func__, __LINE__);
+		pr_err("[%s][%d]ERROR: There is no enough memory for TLOG!\n", __func__, __LINE__);
 		return -1;
 	}
 
 	retVal = create_tlog_thread(tlog_buff, TLOG_SIZE);
 	if (retVal != 0) {
-		printk("[%s][%d]ERROR: Failed to create TLOG thread!\n", __func__, __LINE__);
+		pr_err("[%s][%d]ERROR: Failed to create TLOG thread!\n", __func__, __LINE__);
 		return -1;
 	}
 
@@ -678,7 +673,7 @@ static int init_teei_framework(void)
 	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 #endif
 	if (boot_vfs_addr == NULL) {
-		printk("[%s][%d]ERROR: There is no enough memory for booting Soter!\n", __func__, __LINE__);
+		pr_err("[%s][%d]ERROR: There is no enough memory for booting Soter!\n", __func__, __LINE__);
 		return -1;
 	}
 
@@ -699,19 +694,19 @@ static int init_teei_framework(void)
 	retVal = create_cmd_buff();
 	up(&smc_lock);
 	if (retVal < 0) {
-		printk("[%s][%d] create_cmd_buff failed !\n", __func__, __LINE__);
+		pr_err("[%s][%d] create_cmd_buff failed !\n", __func__, __LINE__);
 		return retVal;
 	}
 
-	printk("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
 	switch_to_t_os_stages2();
-	printk("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);
+	pr_debug("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);
 
 	if (soter_error_flag == 1) {
 		return -1;
 	}
 
-	printk("[%s][%d] begin to init daulOS services.\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to init daulOS services.\n", __func__, __LINE__);
 	retVal = teei_service_init_first();
 	if (retVal == -1)
 		return -1;
@@ -728,12 +723,12 @@ static int init_teei_framework(void)
 	if (retVal == -1)
 		return -1;
 
-	printk("[%s][%d] begin to load TEEs.\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to load TEEs.\n", __func__, __LINE__);
 	t_os_load_image();
 	if (soter_error_flag == 1)
 		return -1;
 
-	printk("[%s][%d] load TEEs successfully.\n", __func__, __LINE__);
+	pr_debug("[%s][%d] load TEEs successfully.\n", __func__, __LINE__);
 
 	teei_config_flag = 1;
 
@@ -781,7 +776,7 @@ static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg
 
 			break;
 	default:
-			printk("[%s][%d] command not found!\n", __func__, __LINE__);
+			pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 			retVal = -EINVAL;
 	}
 
@@ -863,20 +858,20 @@ static int teei_config_init(void)
 
 	retVal = alloc_chrdev_region(&teei_config_device_no, 0, 1, TEEI_CONFIG_DEV);
 	if (retVal < 0) {
-		printk("alloc_chrdev_region failed %x.\n", retVal);
+		pr_err("alloc_chrdev_region failed %x.\n", retVal);
 		return retVal;
 	}
 
 	config_driver_class = class_create(THIS_MODULE, TEEI_CONFIG_DEV);
 	if (IS_ERR(config_driver_class)) {
 		retVal = -ENOMEM;
-		printk("class_create failed %x\n", retVal);
+		pr_err("class_create failed %x\n", retVal);
 		goto unregister_chrdev_region;
 	}
 
 	class_dev = device_create(config_driver_class, NULL, teei_config_device_no, NULL, TEEI_CONFIG_DEV);
 	if (NULL == class_dev) {
-		printk("class_device_create failed %x\n", retVal);
+		pr_err("class_device_create failed %x\n", retVal);
 		retVal = -ENOMEM;
 		goto class_destroy;
 	}
@@ -886,7 +881,7 @@ static int teei_config_init(void)
 
 	retVal = cdev_add(&teei_config_cdev, MKDEV(MAJOR(teei_config_device_no), 0), 1);
 	if (retVal < 0) {
-		printk("cdev_add failed %x\n", retVal);
+		pr_err("cdev_add failed %x\n", retVal);
 		goto class_device_destroy;
 	}
 
@@ -903,7 +898,7 @@ return_fn:
 }
 
 
-//===========================================================================================
+/* =========================================================================================== */
 
 /**
  * @brief
@@ -920,7 +915,7 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	void *argp = (void __user *) arg;
 
 	if (teei_config_flag == 0) {
-		printk("Error: soter is NOT ready, Can not support IOCTL!\n");
+		pr_err("Error: soter is NOT ready, Can not support IOCTL!\n");
 		return -ECANCELED;
 	}
 	down(&api_lock);
@@ -930,52 +925,52 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_context_init(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_CLOSECONTEXT_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_context_close(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed close context: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed close context: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_SES_INIT_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_session_init(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_SES_OPEN_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_session_open(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
 #endif
 			break;
 
@@ -983,172 +978,172 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	case TEEI_CLIENT_IOCTL_SES_CLOSE_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_session_close(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_OPERATION_RELEASE:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_operation_release(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_SEND_CMD_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_send_cmd(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_GET_DECODE_TYPE:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_get_decode_type(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_ENC_UINT32:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_encode_uint32(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_DEC_UINT32:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_decode_uint32(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_ENC_ARRAY:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_encode_array(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_decode_array_space(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_ENC_MEM_REF:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_encode_mem_ref(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_encode_mem_ref(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_shared_mem_alloc(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_CLIENT_IOCTL_SHR_MEM_FREE_REQ:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_client_shared_mem_free(file->private_data, argp);
 			if (retVal != 0)
-				printk("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
+				pr_err("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	case TEEI_GET_TEEI_CONFIG_STAT:
 
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT beginning .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT beginning .....\n", __func__, __LINE__);
 #endif
 			retVal = teei_config_flag;
 #ifdef UT_DEBUG
-			printk("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT end .....\n", __func__, __LINE__);
+			pr_debug("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT end .....\n", __func__, __LINE__);
 #endif
 			break;
 
 	default:
-			printk("[%s][%d] command not found!\n", __func__, __LINE__);
+			pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 			retVal = -EINVAL;
 	}
 	mutex_unlock(&pm_mutex);
@@ -1162,12 +1157,12 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
  */
 static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long arg)
 {
-	//printk("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT chengxin test unioctl11111.....\n", __func__, __LINE__);
+	/* pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT chengxin test unioctl11111.....\n", __func__, __LINE__); */
 	int retVal = 0;
 	void *argp = (void __user *) arg;
 
 	if (teei_config_flag == 0) {
-		printk("Error: soter is NOT ready, Can not support IOCTL!\n");
+		pr_err("Error: soter is NOT ready, Can not support IOCTL!\n");
 		return -ECANCELED;
 	}
 	down(&api_lock);
@@ -1177,52 +1172,52 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_context_init(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed init context %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_INITCONTEXT end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_CLOSECONTEXT_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT beginning.....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT beginning.....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_context_close(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed close context: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed close context: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_CLOSECONTEXT end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_SES_INIT_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_session_init(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed session init: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_INIT end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_SES_OPEN_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_session_open(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed session open: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_OPEN end .....\n", __func__, __LINE__);
 #endif
 		break;
 
@@ -1230,172 +1225,172 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	case TEEI_CLIENT_IOCTL_SES_CLOSE_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_session_close(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed session close: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SES_CLOSE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_OPERATION_RELEASE:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_operation_release(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed operation release: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_OPERATION_RELEASE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_SEND_CMD_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SEND_CMD beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_send_cmd(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed send cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d]TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d]TEEI_CLIENT_IOCTL_SEND_CMD end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_GET_DECODE_TYPE:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_get_decode_type(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed decode cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_GET_DECODE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_ENC_UINT32:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_encode_uint32_64bit(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_UINT32 end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_DEC_UINT32:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_decode_uint32(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_UINT32 end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_ENC_ARRAY:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_encode_array_64bit(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_decode_array_space(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_decode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_ENC_MEM_REF:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_encode_mem_ref_64bit(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end  .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_DEC_MEM_REF end  .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_encode_mem_ref_64bit(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_encode_cmd: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_ENC_ARRAY_SPACE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE beginning  .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE beginning  .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_shared_mem_alloc(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_shared_mem_alloc: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_ALLOCATE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_CLIENT_IOCTL_SHR_MEM_FREE_REQ:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE beginning .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE beginning .....\n", __func__, __LINE__);
 #endif
 		retVal = teei_client_shared_mem_free(file->private_data, argp);
 		if (retVal != 0)
-			printk("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
+			pr_err("[%s][%d] failed teei_client_shared_mem_free: %x.\n", __func__, __LINE__, retVal);
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_CLIENT_IOCTL_SHR_MEM_FREE end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	case TEEI_GET_TEEI_CONFIG_STAT:
 
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT beginning.....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT beginning.....\n", __func__, __LINE__);
 #endif
 		retVal = teei_config_flag;
 #ifdef UT_DEBUG
-		printk("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT end .....\n", __func__, __LINE__);
+		pr_debug("[%s][%d] TEEI_GET_TEEI_CONFIG_STAT end .....\n", __func__, __LINE__);
 #endif
 		break;
 
 	default:
-		printk("[%s][%d] command not found!\n", __func__, __LINE__);
+		pr_err("[%s][%d] command not found!\n", __func__, __LINE__);
 		retVal = -EINVAL;
 	}
 	mutex_unlock(&pm_mutex);
@@ -1423,7 +1418,7 @@ static int teei_client_open(struct inode *inode, struct file *file)
 
 	new_context = (struct teei_context *)tz_malloc(sizeof(struct teei_context), GFP_KERNEL);
 	if (new_context == NULL) {
-		printk("tz_malloc failed for new dev file allocation!\n");
+		pr_err("tz_malloc failed for new dev file allocation!\n");
 		return -ENOMEM;
 	}
 
@@ -1483,7 +1478,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	/* Alloc one teei_share_mem structure */
 	share_mem_entry = tz_malloc(sizeof(struct teei_shared_mem), GFP_KERNEL);
 	if (share_mem_entry == NULL) {
-		printk("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 		up_read(&(teei_contexts_head.teei_contexts_sem));
 		return -ENOMEM;
 	}
@@ -1495,7 +1490,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	alloc_addr =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(length, SZ_4K)));
 #endif
 	if (alloc_addr == 0) {
-		printk("[%s][%d] get free pages failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] get free pages failed!\n", __func__, __LINE__);
 		kfree(share_mem_entry);
 		up_read(&(teei_contexts_head.teei_contexts_sem));
 		return -ENOMEM;
@@ -1508,7 +1503,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 			length, vma->vm_page_prot);
 
 	if (retVal) {
-		printk("[%s][%d] remap_pfn_range failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] remap_pfn_range failed!\n", __func__, __LINE__);
 		kfree(share_mem_entry);
 		free_pages(alloc_addr, get_order(ROUND_UP(length, SZ_4K)));
 		up_read(&(teei_contexts_head.teei_contexts_sem));
@@ -1575,28 +1570,28 @@ static int teei_client_init(void)
 
 	unsigned long tmp_buff = 0;
 
-	/* printk("TEEI Agent Driver Module Init ...\n"); */
+	/* pr_debug("TEEI Agent Driver Module Init ...\n"); */
 
-	printk("=============================================================\n\n");
-	printk("~~~~~~~uTos version [%s]~~~~~~~\n",UTOS_VERSION);
-	printk("=============================================================\n\n");
+	pr_info("=============================================================\n\n");
+	pr_info("~~~~~~~uTos version [%s]~~~~~~~\n", UTOS_VERSION);
+	pr_info("=============================================================\n\n");
 
 	ret_code = alloc_chrdev_region(&teei_client_device_no, 0, 1, TEEI_CLIENT_DEV);
 	if (ret_code < 0) {
-		printk("alloc_chrdev_region failed %x\n", ret_code);
+		pr_err("alloc_chrdev_region failed %x\n", ret_code);
 		return ret_code;
 	}
 
 	driver_class = class_create(THIS_MODULE, TEEI_CLIENT_DEV);
 	if (IS_ERR(driver_class)) {
 		ret_code = -ENOMEM;
-		printk("class_create failed %x\n", ret_code);
+		pr_err("class_create failed %x\n", ret_code);
 		goto unregister_chrdev_region;
 	}
 
 	class_dev = device_create(driver_class, NULL, teei_client_device_no, NULL, TEEI_CLIENT_DEV);
 	if (NULL == class_dev) {
-		printk("class_device_create failed %x\n", ret_code);
+		pr_err("class_device_create failed %x\n", ret_code);
 		ret_code = -ENOMEM;
 		goto class_destroy;
 	}
@@ -1606,7 +1601,7 @@ static int teei_client_init(void)
 
 	ret_code = cdev_add(&teei_client_cdev, MKDEV(MAJOR(teei_client_device_no), 0), 1);
 	if (ret_code < 0) {
-		printk("cdev_add failed %x\n", ret_code);
+		pr_err("cdev_add failed %x\n", ret_code);
 		goto class_device_destroy;
 	}
 
@@ -1621,13 +1616,12 @@ static int teei_client_init(void)
 
 	sema_init(&(smc_lock), 1);
 
-	for_each_online_cpu(i)
-	{
+	for_each_online_cpu(i) {
 		current_cpu_id = i;
-		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
+		pr_debug("init stage : current_cpu_id = %d\n", current_cpu_id);
 	}
 
-	printk("begin to create sub_thread.\n");
+	pr_debug("begin to create sub_thread.\n");
 
 #if 0
 	sub_pid = kernel_thread(global_fn, NULL, CLONE_KERNEL);
@@ -1637,7 +1631,7 @@ static int teei_client_init(void)
 	/* struct sched_param param = {.sched_priority = -20 }; */
 	teei_fastcall_task = kthread_create(global_fn, NULL, "teei_fastcall_thread");
 	if (IS_ERR(teei_fastcall_task)) {
-		printk("create fastcall thread failed: %ld\n", PTR_ERR(teei_fastcall_task));
+		pr_err("create fastcall thread failed: %ld\n", PTR_ERR(teei_fastcall_task));
 		goto fastcall_thread_fail;
 	}
 
@@ -1647,24 +1641,24 @@ static int teei_client_init(void)
 
 	/* create the switch thread */
 	teei_switch_task = kthread_create(kthread_worker_fn, &ut_fastcall_worker, "teei_switch_thread");
-        if (IS_ERR(teei_switch_task)) {
-                printk("create switch thread failed: %ld\n", PTR_ERR(teei_switch_task));
+	if (IS_ERR(teei_switch_task)) {
+		pr_err("create switch thread failed: %ld\n", PTR_ERR(teei_switch_task));
 		teei_switch_task = NULL;
-                goto fastcall_thread_fail;
-        }
+		goto fastcall_thread_fail;
+	}
 
-        /* sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param); */
-        /* get_task_struct(teei_switch_task); */
-        wake_up_process(teei_switch_task);
+	/* sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param); */
+	/* get_task_struct(teei_switch_task); */
+	wake_up_process(teei_switch_task);
 
 	cpumask_set_cpu(get_current_cpuid(), &mask);
 	set_cpus_allowed_ptr(teei_switch_task, &mask);
 
-	printk("create the sub_thread successfully!\n");
+	pr_debug("create the sub_thread successfully!\n");
 
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 
-	printk("after  register cpu notify\n");
+	pr_debug("after  register cpu notify\n");
 
 	teei_config_init();
 
@@ -1686,7 +1680,7 @@ return_fn:
  */
 static void teei_client_exit(void)
 {
-	TINFO("teei_client exit");
+	pr_debug("teei_client exit\n");
 
 	device_destroy(driver_class, teei_client_device_no);
 	class_destroy(driver_class);

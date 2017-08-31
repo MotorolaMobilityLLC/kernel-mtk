@@ -26,14 +26,14 @@ struct create_NQ_struct {
  ******************************/
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length; 
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 struct ack_fast_call_struct {
-        int retVal;
+	int retVal;
 };
 
 static unsigned long nt_t_buffer;

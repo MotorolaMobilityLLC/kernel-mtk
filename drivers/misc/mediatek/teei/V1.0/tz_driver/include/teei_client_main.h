@@ -30,9 +30,9 @@ extern int teei_client_session_close(void *private_data, void *argp);
 extern int teei_client_send_cmd(void *private_data, void *argp);
 extern int teei_client_operation_release(void *private_data, void *argp);
 extern int teei_client_prepare_encode(void *private_data,
-                struct teei_client_encode_cmd *enc,
-                struct teei_encode **penc_context,
-                struct teei_session **psession);
+		struct teei_client_encode_cmd *enc,
+		struct teei_encode **penc_context,
+		struct teei_session **psession);
 extern int teei_client_encode_uint32(void *private_data, void *argp);
 extern int teei_client_encode_array(void *private_data, void *argp);
 extern int teei_client_encode_mem_ref(void *private_data, void *argp);
@@ -40,21 +40,21 @@ extern int teei_client_encode_uint32_64bit(void *private_data, void *argp);
 extern int teei_client_encode_array_64bit(void *private_data, void *argp);
 extern int teei_client_encode_mem_ref_64bit(void *private_data, void *argp);
 extern int teei_client_prepare_decode(void *private_data,
-                struct teei_client_encode_cmd *dec,
-                struct teei_encode **pdec_context);
+		struct teei_client_encode_cmd *dec,
+		struct teei_encode **pdec_context);
 extern int teei_client_decode_uint32(void *private_data, void *argp);
 extern int teei_client_decode_array_space(void *private_data, void *argp);
 extern int teei_client_get_decode_type(void *private_data, void *argp);
 extern int teei_client_shared_mem_alloc(void *private_data, void *argp);
 extern int teei_client_shared_mem_free(void *private_data, void *argp);
 extern int teei_client_close_session_for_service(
-                void *private_data,
-                struct teei_session *temp_ses);
+		void *private_data,
+		struct teei_session *temp_ses);
 extern int teei_client_service_exit(void *private_data);
 extern void init_tlog_entry(void);
 extern int global_fn(void);
 
-extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size); 
+extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
 extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
 
 struct semaphore api_lock;

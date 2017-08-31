@@ -13,12 +13,10 @@
 #define VFS_SYS_NO      0x08
 #define REETIME_SYS_NO  0x07
 
-#define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
-
 struct bdrv_call_struct {
-        int bdrv_call_type;
-        struct service_handler *handler;
-        int retVal;
+	int bdrv_call_type;
+	struct service_handler *handler;
+	int retVal;
 };
 
 extern int add_work_entry(int work_type, unsigned long buff);
@@ -26,48 +24,47 @@ static long register_shared_param_buf(struct service_handler *handler);
 
 void set_ack_vdrv_cmd(unsigned int sys_num)
 {
+	if (boot_soter_flag == START_STATUS) {
 
-        if (boot_soter_flag == START_STATUS) {
+		struct message_head msg_head;
+		struct ack_vdrv_struct ack_body;
 
-                struct message_head msg_head;
-                struct ack_vdrv_struct ack_body;
+		memset(&msg_head, 0, sizeof(struct message_head));
 
-                memset(&msg_head, 0, sizeof(struct message_head));
+		msg_head.invalid_flag = VALID_TYPE;
+		msg_head.message_type = STANDARD_CALL_TYPE;
+		msg_head.child_type = N_ACK_T_INVOKE_DRV;
+		msg_head.param_length = sizeof(struct ack_vdrv_struct);
 
-                msg_head.invalid_flag = VALID_TYPE;
-                msg_head.message_type = STANDARD_CALL_TYPE;
-                msg_head.child_type = N_ACK_T_INVOKE_DRV;
-                msg_head.param_length = sizeof(struct ack_vdrv_struct);
+		ack_body.sysno = sys_num;
 
-                ack_body.sysno = sys_num;
+		memcpy(message_buff, &msg_head, sizeof(struct message_head));
+		memcpy(message_buff + sizeof(struct message_head), &ack_body, sizeof(struct ack_vdrv_struct));
 
-                memcpy(message_buff, &msg_head, sizeof(struct message_head));
-                memcpy(message_buff + sizeof(struct message_head), &ack_body, sizeof(struct ack_vdrv_struct));
+		Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
+	} else {
+		*((int *)bdrv_message_buff) = sys_num;
+		Flush_Dcache_By_Area((unsigned long)bdrv_message_buff, (unsigned long)bdrv_message_buff + MESSAGE_SIZE);
+	}
 
-                Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
-        } else {
-                *((int *)bdrv_message_buff) = sys_num;
-                Flush_Dcache_By_Area((unsigned long)bdrv_message_buff, (unsigned long)bdrv_message_buff + MESSAGE_SIZE);
-        }
-
-        return;
+	return;
 }
 
 
 
 static void secondary_invoke_fastcall(void *info)
 {
-        n_invoke_t_fast_call(0, 0, 0);
+	n_invoke_t_fast_call(0, 0, 0);
 }
 
 
 void invoke_fastcall(void)
 {
-        int cpu_id = 0;
+	int cpu_id = 0;
 
 	get_online_cpus();
-        cpu_id = get_current_cpuid();
-        smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
+	cpu_id = get_current_cpuid();
+	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
 	put_online_cpus();
 }
 
@@ -81,12 +78,12 @@ static long register_shared_param_buf(struct service_handler *handler)
 	struct ack_fast_call_struct msg_ack;
 
 	if (message_buff == NULL) {
-		printk("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
+		pr_err("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	if (handler->size > VDRV_MAX_SIZE) {
-		printk("[%s][%d]: The vDrv buffer is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
+		pr_err("[%s][%d]: The vDrv buffer is too large, DO NOT Allow to create it.\n", __FILE__, __LINE__);
 		return -EINVAL;
 	}
 
@@ -96,7 +93,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 	handler->param_buf = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(handler->size, SZ_4K)));
 #endif
 	if (handler->param_buf == NULL) {
-		printk("[%s][%d]: kmalloc vdrv_buffer failed.\n", __FILE__, __LINE__);
+		pr_err("[%s][%d]: kmalloc vdrv_buffer failed.\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
 
@@ -137,7 +134,7 @@ static long register_shared_param_buf(struct service_handler *handler)
 		retVal = msg_ack.retVal;
 
 		if (retVal == 0) {
-			/* printk("[%s][%d]: %s end.\n", __FILE__, __LINE__, __func__); */
+			/* pr_debug("[%s][%d]: %s end.\n", __FILE__, __LINE__, __func__); */
 			return retVal;
 		}
 	} else {
@@ -214,7 +211,7 @@ static int reetime_handle(struct service_handler *handler)
 #else
 	reetime_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
 	reetime_bdrv_ent->handler = handler;
-        reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
+	reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
 #endif
 	/* with a wmb() */
 	wmb();
@@ -226,10 +223,10 @@ static int reetime_handle(struct service_handler *handler)
 	put_online_cpus();
 #else
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
-        if (retVal != 0) {
-                up(&smc_lock);
-                return retVal;
-        }
+	if (retVal != 0) {
+		up(&smc_lock);
+		return retVal;
+	}
 #endif
 	/* with a rmb() */
 	rmb();
@@ -298,7 +295,7 @@ static void secondary_vfs_handle(void *info)
 	cd->retVal = __vfs_handle(cd->handler);
 
 	/* with a wmb() */
-        wmb();
+	wmb();
 }
 
 static int vfs_handle(struct service_handler *handler)
@@ -328,10 +325,10 @@ static int vfs_handle(struct service_handler *handler)
 #else
 	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);
-        if (retVal != 0) {
+	if (retVal != 0) {
 		up(&smc_lock);
-                return retVal;
-        }
+		return retVal;
+	}
 
 #endif
 
@@ -361,21 +358,21 @@ long init_all_service_handlers(void)
 	vfs_handler.size = 0x80000;
 	vfs_handler.sysno = 8;
 
-	printk("[%s][%d] begin to init reetime service!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to init reetime service!\n", __func__, __LINE__);
 	retVal = reetime.init(&reetime);
 	if (retVal < 0) {
-		printk("[%s][%d] init reetime service failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] init reetime service failed!\n", __func__, __LINE__);
 		return retVal;
 	}
-	printk("[%s][%d] init reetime service successfully!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] init reetime service successfully!\n", __func__, __LINE__);
 
-	printk("[%s][%d] begin to init vfs service!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] begin to init vfs service!\n", __func__, __LINE__);
 	retVal = vfs_handler.init(&vfs_handler);
 	if (retVal < 0) {
-		printk("[%s][%d] init vfs service failed!\n", __func__, __LINE__);
+		pr_err("[%s][%d] init vfs service failed!\n", __func__, __LINE__);
 		return retVal;
 	}
-	printk("[%s][%d] init vfs service successfully!\n", __func__, __LINE__);
+	pr_debug("[%s][%d] init vfs service successfully!\n", __func__, __LINE__);
 
 	return 0;
 }
