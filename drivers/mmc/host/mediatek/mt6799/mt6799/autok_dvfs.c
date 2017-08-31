@@ -338,9 +338,8 @@ int wait_sdio_autok_ready(void *data)
 }
 EXPORT_SYMBOL(wait_sdio_autok_ready);
 
-int msdc_dvfs_get_level(void)
+int msdc_dvfs_get_level(struct msdc_host *host)
 {
-	struct msdc_host *host = mtk_msdc_host[0];
 	void __iomem *base = host->base;
 	int vcore, i;
 
@@ -379,7 +378,12 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
+	#ifdef vcorefs_get_hw_opp
 	vcore = vcorefs_get_hw_opp();
+	#else
+	vcore = msdc_dvfs_get_level(host);
+	#endif
+
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_LEVEL0;
@@ -409,7 +413,11 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
+	#ifdef vcorefs_get_hw_opp
 	vcore = vcorefs_get_hw_opp();
+	#else
+	vcore = msdc_dvfs_get_level(host);
+	#endif
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_LEVEL0;
@@ -471,7 +479,11 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_init(host);
 
 		/* Check which vcore setting to apply */
+		#ifdef vcorefs_get_hw_opp
 		vcore = vcorefs_get_hw_opp();
+		#else
+		vcore = msdc_dvfs_get_level(host);
+		#endif
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 		pr_err("[AUTOK]Apply first tune para\n");
 

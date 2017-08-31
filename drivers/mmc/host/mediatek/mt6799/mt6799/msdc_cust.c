@@ -510,7 +510,8 @@ void msdc_clk_status(int *status)
 #if !defined(FPGA_PLATFORM)
 void msdc_dump_vcore(void)
 {
-	pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp());
+	/* pr_err("%s: Vcore %d\n", __func__, vcorefs_get_hw_opp()); */
+	pr_err("%s: vcorefs_get_hw_opp() is not implemented\n", __func__);
 }
 
 void msdc_dump_padctl_by_id(u32 id)

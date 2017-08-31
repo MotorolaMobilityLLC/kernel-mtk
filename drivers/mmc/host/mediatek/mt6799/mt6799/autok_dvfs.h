@@ -76,11 +76,7 @@ extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
-extern int msdc_dvfs_get_level(void);
-
-#ifndef vcorefs_get_hw_opp
-#define vcorefs_get_hw_opp()    msdc_dvfs_get_level()
-#endif
+extern int msdc_dvfs_get_level(struct msdc_host *host);
 
 #endif /* _AUTOK_DVFS_H_ */
 
