@@ -110,7 +110,6 @@ struct ppm_hica_algo_data ppm_hica_algo_data = {
 void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 					unsigned int cur_nr_heavy_task, unsigned int cur_tlp)
 {
-#ifndef PPM_HICA_2P0 /* HICA 2.0 need to verify */
 	struct ppm_power_state_data *state_info = ppm_get_power_state_info();
 	struct ppm_state_transfer_data *data;
 	enum ppm_power_state cur_state;
@@ -211,7 +210,6 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 end:
 	ppm_unlock(&hica_policy.lock);
 	FUNC_EXIT(FUNC_LV_HICA);
-#endif
 }
 
 void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
