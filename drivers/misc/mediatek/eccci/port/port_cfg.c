@@ -170,8 +170,10 @@ static struct port_t md1_ccci_ports[] = {
 		&smem_port_ops, SMEM_USER_RAW_DBM, "ccci_raw_dbm",},
 	{CCCI_CCB_CTRL, CCCI_CCB_CTRL, 0xFF, 0xFF, 0xFF, 0xFF, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_RAW_CCB_CTRL, "ccci_ccb_ctrl",},
+#if (MD_GENERATION >= 6292)
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, SMEM_Q, SMEM_Q, SMEM_Q, SMEM_Q, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_CCB_DHL, "ccci_ccb_dhl",},
+#endif
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
 		&smem_port_ops, SMEM_USER_RAW_DHL, "ccci_raw_dhl",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, CCIF_HIF_ID, PORT_F_WITH_CHAR_NODE,
