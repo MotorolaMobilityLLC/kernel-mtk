@@ -116,16 +116,19 @@
 			compatible = "arm,cortex-a35";
 			reg = <0x000>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2000000000>;
 		};
-
 
 		cpu1: cpu@001 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a35";
 			reg = <0x001>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1391000000>;
 		};
@@ -135,6 +138,8 @@
 			compatible = "arm,cortex-a35";
 			reg = <0x002>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1391000000>;
 		};
@@ -144,6 +149,8 @@
 			compatible = "arm,cortex-a35";
 			reg = <0x003>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1391000000>;
 		};
@@ -153,6 +160,8 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
@@ -162,6 +171,8 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x101>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
@@ -171,6 +182,8 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x102>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
@@ -180,6 +193,8 @@
 			compatible = "arm,cortex-a53";
 			reg = <0x103>;
 			enable-method = "psci";
+			cpu-idle-states = <&LEGACY_MCDI &LEGACY_SODI &LEGACY_SODI3 &LEGACY_DPIDLE>,
+					  <&LEGACY_SUSPEND &MCDI &SODI &SODI3 &DPIDLE &SUSPEND>;
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
@@ -252,6 +267,91 @@
 				};
 
 			};
+		};
+
+		idle-states {
+			entry-method = "arm,psci";
+
+			LEGACY_MCDI: legacy-mcdi {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0000001>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			LEGACY_SODI: legacy-sodi {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0000002>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			LEGACY_SODI3: legacy-sodi3 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0000003>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			LEGACY_DPIDLE: legacy-dpidle {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0000004>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			LEGACY_SUSPEND: legacy-suspend {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0000005>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			MCDI: mcdi {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x0010001>;
+				entry-latency-us = <600>;
+				exit-latency-us = <600>;
+				min-residency-us = <1200>;
+			};
+
+			SODI: sodi {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010002>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			SODI3: sodi3 {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010003>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			DPIDLE: dpidle {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010004>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
+			SUSPEND: suspend {
+				compatible = "arm,idle-state";
+				arm,psci-suspend-param = <0x1010005>;
+				entry-latency-us = <800>;
+				exit-latency-us = <1000>;
+				min-residency-us = <2000>;
+			};
+
 		};
 	};
 
