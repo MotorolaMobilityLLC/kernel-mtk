@@ -512,12 +512,12 @@ int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
 	pinfo = charger_dev_get_drvdata(chg_dev);
 
 	if (pinfo != NULL) {
-		pinfo->pe2.profile[0].vchr = 8000000;
+		pinfo->pe2.profile[0].vchr = 8500000;
 		pinfo->pe2.profile[1].vchr = 8500000;
 		pinfo->pe2.profile[2].vchr = 8500000;
 		pinfo->pe2.profile[3].vchr = 9000000;
 		pinfo->pe2.profile[4].vchr = 9000000;
-		pinfo->pe2.profile[5].vchr = 9000000;
+		pinfo->pe2.profile[5].vchr = 9500000;
 		pinfo->pe2.profile[6].vchr = 9500000;
 		pinfo->pe2.profile[7].vchr = 9500000;
 		pinfo->pe2.profile[8].vchr = 10000000;
