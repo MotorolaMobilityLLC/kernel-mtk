@@ -532,6 +532,7 @@ struct SensorState {
 	uint8_t sensorType;
 	uint8_t alt;
 	bool enable;
+	bool timestamp_filter;
 	atomic_t flushCnt;
 };
 

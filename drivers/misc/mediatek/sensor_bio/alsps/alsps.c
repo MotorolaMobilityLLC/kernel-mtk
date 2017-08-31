@@ -21,20 +21,6 @@ int last_als_report_data = -1;
 #define AAL_DELAY	200000000
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
-static DEFINE_SPINLOCK(ps_irqsafe_lock);
-static DEFINE_SPINLOCK(als_irqsafe_lock);
-
-static int als_data_report_irqsafe(unsigned char handle,
-			 const struct sensor_event *event)
-{
-	int err = 0;
-	unsigned long flags = 0;
-
-	spin_lock_irqsave(&als_irqsafe_lock, flags);
-	err = sensor_input_event(handle, event);
-	spin_unlock_irqrestore(&als_irqsafe_lock, flags);
-	return err;
-}
 
 int als_data_report(int value, int status)
 {
@@ -48,7 +34,7 @@ int als_data_report(int value, int status)
 	if (cxt->is_get_valid_als_data_after_enable == false) {
 		event.flush_action = DATA_ACTION;
 		event.word[0] = value + 1;
-		err = als_data_report_irqsafe(cxt->als_mdev.minor, &event);
+		err = sensor_input_event(cxt->als_mdev.minor, &event);
 		if (err < 0)
 			ALSPS_ERR("event buffer full, so drop this data\n");
 		cxt->is_get_valid_als_data_after_enable = true;
@@ -57,7 +43,7 @@ int als_data_report(int value, int status)
 		event.flush_action = DATA_ACTION;
 		event.word[0] = value;
 		event.status = status;
-		err = als_data_report_irqsafe(cxt->als_mdev.minor, &event);
+		err = sensor_input_event(cxt->als_mdev.minor, &event);
 		if (err < 0)
 			ALSPS_ERR("event buffer full, so drop this data\n");
 		last_als_report_data = value;
@@ -71,23 +57,11 @@ int als_flush_report(void)
 	int err = 0;
 
 	event.flush_action = FLUSH_ACTION;
-	err = als_data_report_irqsafe(alsps_context_obj->als_mdev.minor, &event);
+	err = sensor_input_event(alsps_context_obj->als_mdev.minor, &event);
 	if (err < 0)
 		ALSPS_ERR("event buffer full, so drop this data\n");
 	else
 		ALSPS_LOG("flush\n");
-	return err;
-}
-
-static int ps_data_report_irqsafe(unsigned char handle,
-			 const struct sensor_event *event)
-{
-	int err = 0;
-	unsigned long flags = 0;
-
-	spin_lock_irqsave(&ps_irqsafe_lock, flags);
-	err = sensor_input_event(handle, event);
-	spin_unlock_irqrestore(&ps_irqsafe_lock, flags);
 	return err;
 }
 
@@ -100,7 +74,7 @@ int ps_data_report(int value, int status)
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value + 1;
 	event.status = status;
-	err = ps_data_report_irqsafe(alsps_context_obj->ps_mdev.minor, &event);
+	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
 		ALSPS_ERR("event buffer full, so drop this data\n");
 	return err;
@@ -111,7 +85,7 @@ int ps_flush_report(void)
 	int err = 0;
 
 	event.flush_action = FLUSH_ACTION;
-	err = ps_data_report_irqsafe(alsps_context_obj->ps_mdev.minor, &event);
+	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
 		ALSPS_ERR("event buffer full, so drop this data\n");
 	else
