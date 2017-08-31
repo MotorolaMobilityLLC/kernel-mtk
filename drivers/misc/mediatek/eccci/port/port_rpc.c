@@ -401,6 +401,33 @@ static void ccci_rpc_get_gpio_adc_v2(struct ccci_rpc_gpio_adc_intput_v2 *input,
 	}
 }
 
+static int ccci_rpc_remap_queue(int md_id, struct ccci_rpc_queue_mapping *remap)
+{
+	struct port_t *port;
+
+	port = port_get_by_minor(md_id, remap->net_if + CCCI_NET_MINOR_BASE);
+
+	if (!port) {
+		CCCI_ERROR_LOG(md_id, RPC, "can't find ccmni for netif: %d\n", remap->net_if);
+		return -1;
+	}
+
+	if (remap->lhif_q == LHIF_HWQ_AP_UL_Q0) {
+		/*normal queue*/
+		port->txq_index = 0;
+		port->txq_exp_index = 0xF0 | 0x1;
+		CCCI_NORMAL_LOG(md_id, RPC, "remap port %s Tx to cldma%d\n", port->name, port->txq_index);
+	} else if (remap->lhif_q == LHIF_HWQ_AP_UL_Q1) {
+		/*IMS queue*/
+		port->txq_index = 3;
+		port->txq_exp_index = 0xF0 | 0x3;
+		CCCI_NORMAL_LOG(md_id, RPC, "remap port %s Tx to cldma%d\n", port->name, port->txq_index);
+	} else
+		CCCI_ERROR_LOG(md_id, RPC, "invalid remap for q%d\n", remap->lhif_q);
+
+	return 0;
+}
+
 static void ccci_rpc_work_helper(struct port_t *port, struct rpc_pkt *pkt,
 				 struct rpc_buffer *p_rpc_buf, unsigned int tmp_data[])
 {
@@ -787,7 +814,36 @@ static void ccci_rpc_work_helper(struct port_t *port, struct rpc_pkt *pkt,
 			break;
 		}
 #endif
+	case IPC_RPC_CCCI_LHIF_MAPPING:
+		{
+			struct ccci_rpc_queue_mapping *remap;
 
+			if (pkt_num != 1) {
+				CCCI_ERROR_LOG(md_id, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+					     p_rpc_buf->op_id, pkt_num);
+				tmp_data[0] = FS_PARAM_ERROR;
+				pkt_num = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				break;
+			}
+
+			CCCI_NORMAL_LOG(md_id, RPC, "op_id[0x%X]: pkt_num=%d, pkt[0] len %u!\n",
+				     p_rpc_buf->op_id, pkt_num, pkt[0].len);
+
+			remap = (struct ccci_rpc_queue_mapping *)(pkt[0].buf);
+			ccci_rpc_remap_queue(md_id, remap);
+			pkt_num = 0;
+			tmp_data[0] = 0;
+			pkt[pkt_num].len = sizeof(unsigned int);
+			pkt[pkt_num++].buf = (void *)&tmp_data[0];
+			pkt[pkt_num].len = sizeof(unsigned int);
+			pkt[pkt_num++].buf = (void *)&tmp_data[0];
+
+			break;
+		}
 	case IPC_RPC_IT_OP:
 		{
 			int i;
@@ -992,7 +1048,7 @@ int port_rpc_recv_match(struct port_t *port, struct sk_buff *skb)
 			CCCI_DEBUG_LOG(md_id, RPC, "kernelspace rpc msg 0x%x on %s\n",
 						rpc_buf->op_id, port->name);
 		} else {
-			CCCI_ERROR_LOG(md_id, RPC, "port_rpc cfg error, need check:msg 0x%x on %s\n",
+			CCCI_DEBUG_LOG(md_id, RPC, "port_rpc cfg error, need check:msg 0x%x on %s\n",
 					rpc_buf->op_id, port->name);
 			return 0;
 		}
