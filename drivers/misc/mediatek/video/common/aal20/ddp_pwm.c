@@ -359,6 +359,8 @@ static void disp_pwm_log(int level_1024, int log_type)
 
 int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* PWM is excluded from FPGA bitfile */
 	unsigned long reg_base;
 	int old_pwm;
 	int index;
@@ -418,7 +420,7 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	} else {
 		g_pwm_duplicate_count = (g_pwm_duplicate_count + 1) & 63;
 	}
-
+#endif
 	return 0;
 }
 
