@@ -271,6 +271,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 #else
 	{0xB3, 3, {0x14, 0x00, 0x00} },	/* Video Mode */
 #endif
+	{0x44, 2, {0x09, 0xF0} },
 	{0xB4, 1, {0x00} },
 	{0xB6, 2, {0x3A, 0xD3} },	/* 740Mbps ~ 1000Mbps */
 	{0xBE, 1, {0x04} },	/* This register controls DSI virtual channel of PortA setting. */
