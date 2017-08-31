@@ -25,83 +25,62 @@
 		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
 	};
 
-	/* Do not put any bus before mtk-msdc, because it should be mtk-msdc.0 for partition device node usage */
-	/* Kernel-3.18 can't transfer this node to mtk-msdc.0. So workaround here */
-	mtk-msdc.0 {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
-		mmc0:msdc0@11240000 {
-			compatible = "mediatek,mt6799-mmc";
-			reg = <0x11240000 0x10000
-			       0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
-			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>;
-			clock-names = "msdc0-clock";
-		};
+	msdc0:msdc@11240000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11240000 0x0 0x10000
+		       0x0 0x10000e84 0x0 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
+		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
+	};
 
-		mmc1:msdc1@11250000 {
-			compatible = "mediatek,mt6799-mmc";
-			reg = <0x11250000 0x10000>;
-			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERICFG_RG_MSDC1>;
-			clock-names = "msdc1-clock";
-		};
+	msdc1:msdc@11250000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11250000 0x0 0x10000>;
+		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
+	};
 
-		mmc3:msdc3@11270000 {
-			compatible = "mediatek,mt6799-mmc";
-			reg = <0x11270000 0x10000>;
-			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERICFG_RG_MSDC3>;
-			clock-names = "msdc3-clock";
-		};
-
+	msdc3:msdc@11270000 {
+		compatible = "mediatek,msdc";
+		reg = <0x0 0x11270000 0x0 0x10000>;
+		interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	msdc1_ins: msdc1_ins@0 {
 		compatible = "mediatek,mt6799-sdcard-ins";
 	};
 
-	mtk-ufs.0 {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
-		ufs0@11290000 {
-			compatible = "mediatek,ufs";
-			reg = <0x11290000 0x10000>;
-			interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&pericfg CLK_PERICFG_RG_UFSCARD>,
-				<&pericfg CLK_PERICFG_RG_UFSCARD_MP_SAP_CFG>;
-			clock-names = "ufs0-clock", "ufs0-mp-clk";
-			freq-table-hz = <0 0>, <0 0>;
+	ufshci0:ufshci@11290000 {
+		compatible = "mediatek,ufshci";
+		reg = <0x0 0x11290000 0x0 0x10000>;
+		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERICFG_RG_UFSCARD>,
+			<&pericfg CLK_PERICFG_RG_UFSCARD_MP_SAP_CFG>;
+		clock-names = "ufs0-clock", "ufs0-mp-clk";
+		freq-table-hz = <0 0>, <0 0>;
 
-			vcc-supply = <&mt_pmic_vemc_ldo_reg>;
-			vcc-fixed-regulator;
-			/* vccq is not used and mt_pmic_vufs18_ldo_reg is not for vccq */
-			/* put here to avoid kernel NULL pointer access in ufshcd_config_vreg_hpm() */
-			vccq-supply = <&mt_pmic_vufs18_ldo_reg>;
-			vccq-fixed-regulator;
-			vccq2-supply = <&mt_pmic_vufs18_ldo_reg>;
-			vccq2-fixed-regulator;
+		/* vccq is not used and mt_pmic_vufs18_ldo_reg is not for vccq */
+		/* put here to avoid kernel NULL pointer access in ufshcd_config_vreg_hpm() */
+		vcc-supply = <&mt_pmic_vemc_ldo_reg>;
+		vcc-fixed-regulator;
+		vccq-supply = <&mt_pmic_vufs18_ldo_reg>;
+		vccq-fixed-regulator;
+		vccq2-supply = <&mt_pmic_vufs18_ldo_reg>;
+		vccq2-fixed-regulator;
 
-			/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
-			auto-hibern8-timer = <3>;
+		/* Auto-Hibern8 Timer. Unit: ms	(0 means disabled) */
+		auto-hibern8-timer = <3>;
 
-			/* System Suspend Level */
-			spm-level = <3>;
+		/* System Suspend Level */
+		spm-level = <3>;
 
-			/* Runtime Suspend Configuration */
-			/* 1. Runtime PM on/off (on: 1, off: 0) */
-			rpm-enable = <0>;
+		/* Runtime Suspend Configuration */
+		/* 1. Runtime PM on/off (on: 1, off: 0) */
+		rpm-enable = <0>;
 
-			/* 2. Auto Suspend Delay. Unit: ms */
-			rpm-autosuspend-delay = <2000>;
+		/* 2. Auto Suspend Delay. Unit: ms */
+		rpm-autosuspend-delay = <2000>;
 
-			/* 3. Runtime Suspend Level */
-			rpm-level = <3>;
-		};
+		/* 3. Runtime Suspend Level */
+		rpm-level = <3>;
 	};
 
 	mobicore {

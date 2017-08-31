@@ -1090,6 +1090,11 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	}
 #endif
 
+	if (host->id == 0)
+		device_rename(mmc->parent, "bootdevice");
+	else if (host->id == 1)
+		device_rename(mmc->parent, "externdevice");
+
 	return host->id;
 }
 

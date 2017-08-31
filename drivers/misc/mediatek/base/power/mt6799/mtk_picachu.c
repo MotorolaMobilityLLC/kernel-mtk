@@ -44,7 +44,7 @@
 #define PICACHU_BASE	0x0012A250
 #define PICACHU_SIZE	0x40
 
-#define PARA_PATH       "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/para"
+#define PARA_PATH       "/dev/block/platform/bootdevice/by-name/para"
 #define CFG_ENV_SIZE    0x1000
 #define CFG_ENV_OFFSET  0x40000
 

@@ -23,7 +23,7 @@
 /* Section 1: Device Tree                                     */
 /**************************************************************/
 /* Names used for device tree lookup */
-#define DT_COMPATIBLE_NAME      "mediatek,mt6799-mmc"
+#define DT_COMPATIBLE_NAME      "mediatek,msdc"
 #define MSDC0_CLK_NAME          "msdc0-clock"
 #define MSDC1_CLK_NAME          "msdc1-clock"
 #define MSDC3_CLK_NAME          "msdc3-clock"
