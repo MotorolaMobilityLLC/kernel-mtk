@@ -520,6 +520,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_CHN_LOADING = 0x88,	/* 0x88 (Query) */
 	CMD_ID_GET_BUG_REPORT = 0x89,	/* 0x89 (Query) */
 	CMD_ID_GET_NIC_CAPABILITY_V2 = 0x8A,/* 0x8A (Query) */
+	CMD_ID_GET_FW_INFO = 0x90, /* 0x90 (Query) */
 
 #if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
 	CMD_ID_CAL_BACKUP_IN_HOST_V2 = 0xAE,	/* 0xAE (Set / Query) */
@@ -1469,6 +1470,10 @@ typedef struct _CMD_FW_LOG_2_HOST_CTRL_T {
 	UINT_8 ucMcuDest;
 	UINT_8 ucReserve[2];
 } CMD_FW_LOG_2_HOST_CTRL_T, *P_CMD_FW_LOG_2_HOST_CTRL_T;
+
+typedef struct _CMD_GET_FW_INFO_T {
+	UINT_8 ucValue;
+} CMD_GET_FW_INFO_T, *P_CMD_GET_FW_INFO_T;
 
 typedef struct _CMD_CHIP_CONFIG_T {
 	UINT_16 u2Id;

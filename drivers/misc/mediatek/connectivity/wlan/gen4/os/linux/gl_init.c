@@ -2481,6 +2481,7 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 #endif
 		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 		wlanCfgSetChip(prGlueInfo->prAdapter);
+		wlanGetFwInfo(prGlueInfo->prAdapter);
 		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
 		kalPerMonInit(prGlueInfo);
 #if CFG_MET_TAG_SUPPORT

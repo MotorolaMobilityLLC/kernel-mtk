@@ -7024,6 +7024,19 @@ VOID wlanCfgSetChip(IN P_ADAPTER_T prAdapter)
 
 }
 
+VOID wlanGetFwInfo(IN P_ADAPTER_T prAdapter)
+{
+	CMD_GET_FW_INFO_T rCmdGetFwInfo;
+
+	rCmdGetFwInfo.ucValue = 0x1;
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_GET_FW_INFO,
+			    TRUE,
+			    FALSE,
+			    FALSE, NULL, NULL, sizeof(CMD_GET_FW_INFO_T),
+			    (PUINT_8)&rCmdGetFwInfo, NULL, 0);
+}
+
 VOID wlanCfgSetDebugLevel(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 i = 0;
