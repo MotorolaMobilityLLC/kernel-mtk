@@ -38,7 +38,7 @@ int pe30_dc_enable(struct charger_manager *info, unsigned char charging_enable)
 	int ret = 0;
 
 	if (info->dc_chg != NULL)
-		charger_dev_enable_direct_charging(info->dc_chg);
+		charger_dev_enable_direct_charging(info->dc_chg, true);
 
 	return ret;
 }
@@ -83,23 +83,15 @@ int pe30_dc_get_temperature(struct charger_manager *info, int *min_temp, int *ma
 
 int pe30_chr_enable_charge(struct charger_manager *info, bool en)
 {
-	if (info->chg1_dev != NULL) {
-		if (en == true)
-			charger_dev_enable(info->chg1_dev);
-		else
-			charger_dev_disable(info->chg1_dev);
-	}
+	if (info->chg1_dev != NULL)
+		charger_dev_enable(info->chg1_dev, en);
 	return 0;
 }
 
 int pe30_chr_enable_power_path(struct charger_manager *info, bool en)
 {
-	if (info->chg1_dev != NULL) {
-		if (en == true)
-			charger_dev_enable_powerpath(info->chg1_dev);
-		else
-			charger_dev_disable_powerpath(info->chg1_dev);
-	}
+	if (info->chg1_dev != NULL)
+		charger_dev_enable_powerpath(info->chg1_dev, en);
 	return 0;
 }
 

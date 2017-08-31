@@ -445,11 +445,11 @@ static inline int rt9465_clr_bit(struct rt9465_info *info, u8 reg, u8 mask)
 /* ================== */
 
 /* The following APIs will be reference in internal functions */
-static int rt9465_set_ichg(struct charger_device *chg_dev, int uA);
-static int rt9465_get_ichg(struct charger_device *chg_dev);
-static int rt9465_set_mivr(struct charger_device *chg_dev, int uV);
-static int rt9465_set_battery_voreg(struct charger_device *chg_dev, int uV);
-static int rt9465_enable_safety_timer(struct charger_device *chg_dev);
+static int rt9465_set_ichg(struct charger_device *chg_dev, u32 uA);
+static int rt9465_get_ichg(struct charger_device *chg_dev, u32 *uA);
+static int rt9465_set_mivr(struct charger_device *chg_dev, u32 uV);
+static int rt9465_set_battery_voreg(struct charger_device *chg_dev, u32 uV);
+static int rt9465_enable_safety_timer(struct charger_device *chg_dev, bool en);
 
 static u8 rt9465_find_closest_reg_value(const u32 min, const u32 max,
 	const u32 step, const u32 num, const u32 target)
@@ -734,7 +734,7 @@ static int rt9465_init_setting(struct rt9465_info *info)
 	if (ret < 0)
 		pr_err("%s: set fast timer failed\n", __func__);
 
-	ret = rt9465_enable_safety_timer(info->chg_dev);
+	ret = rt9465_enable_safety_timer(info->chg_dev, true);
 	if (ret < 0)
 		pr_err("%s: enable charger timer failed\n", __func__);
 
@@ -940,7 +940,7 @@ static int rt9465_dump_register(struct charger_device *chg_dev)
 	enum rt9465_charging_status chg_status = RT9465_CHG_STATUS_READY;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	ichg = rt9465_get_ichg(chg_dev);
+	ret = rt9465_get_ichg(chg_dev, &ichg);
 	ret = rt9465_get_mivr(info, &mivr);
 	ret = rt9465_is_charging_enable(info, &chg_enable);
 	ret = rt9465_get_ieoc(info, &ieoc);
@@ -961,64 +961,45 @@ static int rt9465_dump_register(struct charger_device *chg_dev)
 	return ret;
 }
 
-static int rt9465_enable_charging(struct charger_device *chg_dev)
+static int rt9465_enable_charging(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	ret = rt9465_set_bit(info, RT9465_REG_CHG_CTRL1, RT9465_MASK_CHG_EN);
+	ret = (en ? rt9465_set_bit : rt9465_clr_bit)
+		(info, RT9465_REG_CHG_CTRL1, RT9465_MASK_CHG_EN);
 
 	return ret;
 }
 
-static int rt9465_disable_charging(struct charger_device *chg_dev)
+static int rt9465_enable_safety_timer(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	ret = rt9465_clr_bit(info, RT9465_REG_CHG_CTRL1, RT9465_MASK_CHG_EN);
+	ret = (en ? rt9465_set_bit : rt9465_clr_bit)
+		(info, RT9465_REG_CHG_CTRL9, RT9465_MASK_TMR_EN);
 
 	return ret;
 }
 
-static int rt9465_enable_safety_timer(struct charger_device *chg_dev)
-{
-	int ret = 0;
-	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
-
-	ret = rt9465_set_bit(info, RT9465_REG_CHG_CTRL9, RT9465_MASK_TMR_EN);
-
-	return ret;
-}
-
-static int rt9465_disable_safety_timer(struct charger_device *chg_dev)
-{
-	int ret = 0;
-	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
-
-	ret = rt9465_clr_bit(info, RT9465_REG_CHG_CTRL9, RT9465_MASK_TMR_EN);
-
-	return ret;
-}
-
-static int rt9465_set_ichg(struct charger_device *chg_dev, int uA)
+static int rt9465_set_ichg(struct charger_device *chg_dev, u32 uA)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
-	u32 ichg = uA;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	/* Workaround for E1, Ichg must >= 1000mA */
-	if (ichg < 1000000 && info->device_id == RT9465_VERSION_E1)
-		ichg = 1000000;
+	if (uA < 1000000 && info->device_id == RT9465_VERSION_E1)
+		uA = 1000000;
 
 	/* Find corresponding reg value */
 	reg_ichg = rt9465_find_closest_reg_value(RT9465_ICHG_MIN,
-		RT9465_ICHG_MAX, RT9465_ICHG_STEP, RT9465_ICHG_NUM, ichg);
+		RT9465_ICHG_MAX, RT9465_ICHG_STEP, RT9465_ICHG_NUM, uA);
 
 	reg_ichg += 0x06;
 
-	pr_info("%s: ichg = %d\n", __func__, ichg);
+	pr_info("%s: ichg = %d\n", __func__, uA);
 
 	ret = rt9465_i2c_update_bits(
 		info,
@@ -1030,18 +1011,17 @@ static int rt9465_set_ichg(struct charger_device *chg_dev, int uA)
 	return ret;
 }
 
-static int rt9465_set_mivr(struct charger_device *chg_dev, int uV)
+static int rt9465_set_mivr(struct charger_device *chg_dev, u32 uV)
 {
 	int ret = 0;
 	u8 reg_mivr = 0;
-	u32 mivr = uV;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	/* Find corresponding reg value */
 	reg_mivr = rt9465_find_closest_reg_value(RT9465_MIVR_MIN,
-		RT9465_MIVR_MAX, RT9465_MIVR_STEP, RT9465_MIVR_NUM, mivr);
+		RT9465_MIVR_MAX, RT9465_MIVR_STEP, RT9465_MIVR_NUM, uV);
 
-	pr_info("%s: mivr = %d\n", __func__, mivr);
+	pr_info("%s: mivr = %d\n", __func__, uV);
 
 	ret = rt9465_i2c_update_bits(
 		info,
@@ -1053,7 +1033,7 @@ static int rt9465_set_mivr(struct charger_device *chg_dev, int uV)
 	return ret;
 }
 
-static int rt9465_set_battery_voreg(struct charger_device *chg_dev, int uV)
+static int rt9465_set_battery_voreg(struct charger_device *chg_dev, u32 uV)
 {
 	int ret = 0;
 	u8 reg_voreg = 0;
@@ -1077,11 +1057,10 @@ static int rt9465_set_battery_voreg(struct charger_device *chg_dev, int uV)
 }
 
 
-static int rt9465_get_ichg(struct charger_device *chg_dev)
+static int rt9465_get_ichg(struct charger_device *chg_dev, u32 *uA)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
-	u32 ichg = 0;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	ret = rt9465_i2c_read_byte(info, RT9465_REG_CHG_CTRL6);
@@ -1090,10 +1069,9 @@ static int rt9465_get_ichg(struct charger_device *chg_dev)
 
 	reg_ichg = (ret & RT9465_MASK_ICHG) >> RT9465_SHIFT_ICHG;
 	reg_ichg -= 0x06;
-	ichg = rt9465_find_closest_real_value(RT9465_ICHG_MIN, RT9465_ICHG_MAX,
+	*uA = rt9465_find_closest_real_value(RT9465_ICHG_MIN, RT9465_ICHG_MAX,
 		RT9465_ICHG_STEP, reg_ichg);
 
-	ret = ichg;
 	return ret;
 }
 
@@ -1129,7 +1107,7 @@ out:
 	return ret;
 }
 
-static int rt9465_is_charging_done(struct charger_device *chg_dev)
+static int rt9465_is_charging_done(struct charger_device *chg_dev, bool *done)
 {
 	int ret = 0;
 	enum rt9465_charging_status chg_stat = RT9465_CHG_STATUS_READY;
@@ -1142,13 +1120,13 @@ static int rt9465_is_charging_done(struct charger_device *chg_dev)
 	case RT9465_CHG_STATUS_READY:
 	case RT9465_CHG_STATUS_PROGRESS:
 	case RT9465_CHG_STATUS_FAULT:
-		ret = 0;
+		*done = false;
 		break;
 	case RT9465_CHG_STATUS_DONE:
-		ret = 1;
+		*done = true;
 		break;
 	default:
-		ret = 0;
+		*done = false;
 		break;
 	}
 
@@ -1175,17 +1153,16 @@ static int rt9465_kick_wdt(struct charger_device *chg_dev)
 
 static struct charger_ops rt9465_chg_ops = {
 	.enable = rt9465_enable_charging,
-	.disable = rt9465_disable_charging,
 	.enable_safety_timer = rt9465_enable_safety_timer,
-	.disable_safety_timer = rt9465_disable_safety_timer,
 	.enable_chip = rt9465_enable_chip,
 	.dump_registers = rt9465_dump_register,
-	.get_charging_status = rt9465_is_charging_done,
+	.is_charging_done = rt9465_is_charging_done,
 	.get_charging_current = rt9465_get_ichg,
 	.set_charging_current = rt9465_set_ichg,
 	.set_constant_voltage = rt9465_set_battery_voreg,
 	.kick_wdt = rt9465_kick_wdt,
 	.get_tchg_adc = rt9465_get_tchg,
+	.set_mivr = rt9465_set_mivr,
 };
 
 /* ========================= */
