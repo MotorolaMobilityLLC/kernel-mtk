@@ -196,6 +196,7 @@ static void fill_prstatus(struct elf_prstatus *prstatus, struct pt_regs *regs,
 	elf_core_copy_regs(&prstatus->pr_reg, regs);
 	prstatus->pr_pid = pid;
 	prstatus->pr_ppid = NR_CPUS;
+	prstatus->pr_sigpend = (uintptr_t)p;
 }
 
 static int fill_psinfo(struct elf_prpsinfo *psinfo)
@@ -335,26 +336,17 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 		LOGE("mrdump: MINI_NR_SECTION overflow!\n");
 }
 
-static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
+static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, struct task_struct *tsk, int stack)
 {
-	struct task_struct *tsk = NULL;
 	struct thread_info *ti = NULL;
 	unsigned long *bottom = NULL;
 	unsigned long *top = NULL;
 	unsigned long *p;
 
-	if (mrdump_virt_addr_valid(regs->reg_sp)) {
-		ti = (struct thread_info *)(regs->reg_sp & ~(THREAD_SIZE - 1));
-		tsk = ti->task;
-		bottom = (unsigned long *)regs->reg_sp;
-	}
-	if (!(mrdump_virt_addr_valid(tsk) && ti == (struct thread_info *)tsk->stack)
-	    && mrdump_virt_addr_valid(regs->reg_fp)) {
-		ti = (struct thread_info *)(regs->reg_fp & ~(THREAD_SIZE - 1));
-		tsk = ti->task;
-		bottom = (unsigned long *)regs->reg_fp;
-	}
-	if (!mrdump_virt_addr_valid(tsk) || ti != (struct thread_info *)tsk->stack) {
+	if (mrdump_virt_addr_valid(tsk)) {
+		ti = (struct thread_info *)tsk->stack;
+		bottom = (unsigned long *)((void *)ti + sizeof(struct thread_info));
+	} else {
 		tsk = cpu_curr(cpu);
 		if (mrdump_virt_addr_valid(tsk)) {
 			ti = (struct thread_info *)tsk->stack;
@@ -384,7 +376,7 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	}
 }
 
-static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
+static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, struct task_struct *tsk, int main)
 {
 	char name[NOTE_NAME_SHORT];
 	int id;
@@ -397,15 +389,15 @@ static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, int main)
 	if (strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 		return -1;
 	snprintf(name, NOTE_NAME_SHORT - 1, main ? "ke%d" : "core%d", cpu);
-	fill_prstatus(&mrdump_mini_ehdr->prstatus[id].data, regs, 0, id ? id : (100 + cpu));
+	fill_prstatus(&mrdump_mini_ehdr->prstatus[id].data, regs, tsk, id ? id : (100 + cpu));
 	fill_note_S(&mrdump_mini_ehdr->prstatus[id].note, name, NT_PRSTATUS,
 		    sizeof(struct elf_prstatus));
 	return 0;
 }
 
-void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs)
+void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs, struct task_struct *tsk)
 {
-	mrdump_mini_cpu_regs(cpu, regs, 0);
+	mrdump_mini_cpu_regs(cpu, regs, tsk, 0);
 }
 EXPORT_SYMBOL(mrdump_mini_per_cpu_regs);
 
@@ -549,7 +541,7 @@ void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 		ipanic_save_regs(regs);
 	}
 	cpu = get_HW_cpuid();
-	mrdump_mini_cpu_regs(cpu, regs, 1);
+	mrdump_mini_cpu_regs(cpu, regs, current, 1);
 	mrdump_mini_add_loads();
 	mrdump_mini_build_task_info(regs);
 }
@@ -603,17 +595,18 @@ static void mrdump_mini_add_loads(void)
 		if (!strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 			continue;
 		prstatus = &mrdump_mini_ehdr->prstatus[id].data;
+		tsk = (prstatus->pr_sigpend != 0) ? (struct task_struct *)prstatus->pr_sigpend : current;
 		memcpy(&regs, &prstatus->pr_reg, sizeof(prstatus->pr_reg));
 		if (prstatus->pr_pid >= 100) {
 			for (i = 0; i < ELF_NGREG; i++)
 				mrdump_mini_add_entry(((unsigned long *)&regs)[i],
 						      MRDUMP_MINI_SECTION_SIZE);
 			cpu = prstatus->pr_pid - 100;
-			mrdump_mini_add_tsk_ti(cpu, &regs, 1);
+			mrdump_mini_add_tsk_ti(cpu, &regs, tsk, 1);
 			mrdump_mini_add_entry((unsigned long)cpu_rq(cpu), MRDUMP_MINI_SECTION_SIZE);
 		} else if (prstatus->pr_pid <= NR_CPUS) {
 			cpu = prstatus->pr_pid - 1;
-			mrdump_mini_add_tsk_ti(cpu, &regs, 0);
+			mrdump_mini_add_tsk_ti(cpu, &regs, tsk, 0);
 			for (i = 0; i < ELF_NGREG; i++) {
 				mrdump_mini_add_entry(((unsigned long *)&regs)[i],
 					MRDUMP_MINI_SECTION_SIZE);
@@ -761,7 +754,7 @@ int mrdump_mini_init(void)
 
 	memset_io(&regs, 0, sizeof(struct pt_regs));
 	for (i = 0; i < NR_CPUS + 1; i++) {
-		fill_prstatus(&mrdump_mini_ehdr->prstatus[i].data, &regs, 0, i);
+		fill_prstatus(&mrdump_mini_ehdr->prstatus[i].data, &regs, NULL, i);
 		fill_note_S(&mrdump_mini_ehdr->prstatus[i].note, "NA", NT_PRSTATUS,
 			    sizeof(struct elf_prstatus));
 	}

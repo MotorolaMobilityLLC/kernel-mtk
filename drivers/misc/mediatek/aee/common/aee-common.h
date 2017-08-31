@@ -40,7 +40,7 @@ extern int sysrq_sched_debug_show_at_AEE(void);
 extern int aee_rr_reboot_reason_show(struct seq_file *m, void *v);
 extern int aee_rr_last_fiq_step(void);
 extern void aee_rr_rec_exp_type(unsigned int type);
-extern void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs);
+extern void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs, struct task_struct *tsk);
 extern int debug_locks;
 #ifdef WDT_DEBUG_VERBOSE
 extern int dump_localtimer_info(char *buffer, int size);
