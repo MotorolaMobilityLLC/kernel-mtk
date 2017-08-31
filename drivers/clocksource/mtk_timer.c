@@ -203,7 +203,7 @@ static void __init mtk_timer_init(struct device_node *node)
 	struct mtk_clock_event_device *evt;
 	struct resource res;
 	unsigned long rate = 0;
-	struct clk *clk;
+	struct clk *clk, *clk_bus;
 
 	evt = kzalloc(sizeof(*evt), GFP_KERNEL);
 	if (!evt) {
@@ -232,6 +232,10 @@ static void __init mtk_timer_init(struct device_node *node)
 		pr_warn("Can't parse IRQ");
 		goto err_mem;
 	}
+
+	clk_bus = of_clk_get_by_name(node, "bus");
+	if (!IS_ERR(clk_bus))
+		clk_prepare_enable(clk_bus);
 
 	clk = of_clk_get(node, 0);
 	if (IS_ERR(clk)) {
