@@ -1851,7 +1851,7 @@ static void msdc_dump_sdio_setting(struct msdc_host *host, struct seq_file *m)
 	seq_printf(m, "SDIO : DVFS_LEVEL : %d\n", i);
 
 	for (i = 0; sdio_setting_offsets[i] != 0xFFFF; i++) {
-		seq_printf(m, "R[%x]=0x%.8x\n", OFFSET_MSDC_IOCON,
+		seq_printf(m, "R[%x]=0x%.8x\n", sdio_setting_offsets[i],
 			MSDC_READ32(base + sdio_setting_offsets[i]));
 	}
 }

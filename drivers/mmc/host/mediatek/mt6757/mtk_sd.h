@@ -366,6 +366,8 @@ struct msdc_host {
 	int                     autok_error;
 	int                     reautok_times;
 	bool                    is_autok_done;
+	bool                    use_hw_dvfs;
+
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARAM_COUNT];
 	u32                     device_status;
 	int                     tune_smpl_times;

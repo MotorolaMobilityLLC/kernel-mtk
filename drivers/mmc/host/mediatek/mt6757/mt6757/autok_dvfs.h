@@ -17,6 +17,23 @@
 #ifdef ENABLE_FOR_MSDC_KERNEL44
 #include <mt_vcorefs_manager.h>
 #include <mt_spm_vcore_dvfs.h>
+#else
+#define MSDC0_DVFS 0
+#define MSDC1_DVFS 1
+#define MSDC2_DVFS 2
+#define MSDC3_DVFS 3
+
+#define OPPI_PERF 0
+#define OPPI_LOW_PWR 1
+#define OPPI_ULTRA_LOW_PWR 2
+#define OPPI_UNREQ -1
+
+#define KIR_AUTOK_SDIO 10
+
+#define is_vcorefs_can_work() -1
+#define vcorefs_request_dvfs_opp(a, b)	0
+#define vcorefs_get_hw_opp() OPPI_PERF
+#define spm_msdc_dvfs_setting(a, b)
 #endif
 #include "autok.h"
 

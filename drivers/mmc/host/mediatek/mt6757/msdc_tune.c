@@ -309,17 +309,13 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.inten_sdio_irq);
 
 		autok_init_sdr104(host);
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 		if (vcorefs_get_hw_opp() == OPPI_PERF)
 			autok_tuning_parameter_init(host,
 				host->autok_res[AUTOK_VCORE_HIGH]);
 		else
 			autok_tuning_parameter_init(host,
 				host->autok_res[AUTOK_VCORE_LOW]);
-#else
-		autok_tuning_parameter_init(host,
-			host->autok_res[AUTOK_VCORE_HIGH]);
-#endif
+
 		sdio_dvfs_reg_restore(host);
 
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
@@ -382,19 +378,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 
-	#if 0
-	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
-		MSDC_CLKTXDLY);
-
-	MSDC_WRITE32(MSDC_IOCON, 0x00000000);
-
-	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);
-	MSDC_WRITE32(MSDC_DAT_RDDLY1, 0x00000000);
-
-	MSDC_WRITE32(MSDC_PATCH_BIT0, MSDC_PB0_DEFAULT_VAL);
-	MSDC_WRITE32(MSDC_PATCH_BIT1, MSDC_PB1_DEFAULT_VAL);
-	#endif
-
 	/* Fix HS400 mode */
 	MSDC_CLR_BIT32(EMMC50_CFG0, MSDC_EMMC50_CFG_TXSKEW_SEL);
 	MSDC_SET_BIT32(MSDC_PATCH_BIT1, MSDC_PB1_DDR_CMD_FIX_SEL);
@@ -405,13 +388,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	/* 64T + 48T cmd <-> resp */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT,
 		MSDC_PB2_DEFAULT_RESPWAITCNT);
-
-	#if 0
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
-		MSDC_PB2_DEFAULT_RESPSTENSEL);
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
-		MSDC_PB2_DEFAULT_CRCSTSENSEL);
-	#endif
 
 	autok_path_sel(host);
 }

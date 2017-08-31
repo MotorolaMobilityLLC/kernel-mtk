@@ -117,6 +117,7 @@
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 /* Clock config register offset */
 #define MSDC_CLK_CFG_3_OFFSET   (0x070)
+#define MSDC_CLK_CFG_4_OFFSET   (0x080)
 
 #define MSDC_PERI_PDN_SET0_OFFSET       (0x0008)
 #define MSDC_PERI_PDN_CLR0_OFFSET       (0x0010)

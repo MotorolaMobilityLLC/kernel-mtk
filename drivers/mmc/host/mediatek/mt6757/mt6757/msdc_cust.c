@@ -484,9 +484,16 @@ void msdc_dump_clock_sts(struct msdc_host *host)
 			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
 		pr_err(" bit[9~8]=01b,     bit[15]=0b\n");
 		pr_err(" bit[19~16]=0001b, bit[23]=0b\n");
-		pr_err(" bit[26~24]=0010b, bit[31]=0b\n");
+		pr_err(" bit[26~24]=111b, bit[31]=0b\n");
 		pr_err(" Read value is       0x%x\n",
 			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+
+		/* CLK_CFG_4 control msdc clock source PLL */
+		pr_err(" CLK_CFG_4 register address is 0x%p\n",
+			topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET);
+		pr_err(" bit[2~0]=111b,    bit[7]=0b\n");
+		pr_err(" Read value is		 0x%x\n",
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_4_OFFSET));
 	}
 	if (apmixed_reg_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
@@ -581,12 +588,10 @@ void msdc_clk_status(int *status)
 #if !defined(FPGA_PLATFORM)
 void msdc_dump_vcore(void)
 {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	if (vcorefs_get_hw_opp() == OPPI_PERF)
 		pr_err("%s: Vcore 0.8V\n", __func__);
 	else
 		pr_err("%s: Vcore 0.7V\n", __func__);
-#endif
 }
 
 

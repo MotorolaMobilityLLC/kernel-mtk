@@ -323,7 +323,6 @@ void sdio_autok_wait_dvfs_ready(void)
 {
 	int dvfs;
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	dvfs = is_vcorefs_can_work();
 
 	/* DVFS not ready, just wait */
@@ -332,9 +331,6 @@ void sdio_autok_wait_dvfs_ready(void)
 		msleep(100);
 		dvfs = is_vcorefs_can_work();
 	}
-#else
-	dvfs = -1;
-#endif
 
 	if (dvfs == -1)
 		pr_err("DVFS feature not enable\n");
@@ -413,15 +409,23 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 
 	if (host->is_autok_done) {
 		autok_init_sdr104(host);
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 		/* Check which vcore setting to apply */
 		if (vcorefs_get_hw_opp() == OPPI_PERF)
 			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
 		else
 			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LOW]);
-#else
-		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_HIGH]);
-#endif
+
+		if (host->use_hw_dvfs == 0) {
+			pr_err("[AUTOK] No need change para when dvfs\n");
+		} else {
+			pr_err("[AUTOK] Need change para when dvfs\n");
+
+			/* Use HW DVFS */
+			sdio_dvfs_reg_restore(host);
+			/* Enable DVFS handshake */
+			spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
+		}
+
 		return;
 	}
 	/* HQA need read autok setting from file */
@@ -431,26 +435,27 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Performance mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_PERF) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
 	if (sdio_res_exist)
 		sdio_autok_res_apply(host, AUTOK_VCORE_HIGH);
 	else
 		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_HIGH]);
 	sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Low power mode, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_LOW_PWR fail!\n");
-#endif
 	if (sdio_res_exist)
 		sdio_autok_res_apply(host, AUTOK_VCORE_LOW);
 	else
 		autok_execute_tuning(host, host->autok_res[AUTOK_VCORE_LOW]);
+
+	/* Enable HW DVFS, but setting used now is at register offset <=0x104.
+	 * Setting at register offset >=0x300 will effect after SPM handshakes
+	 * with MSDC.
+	 */
 	sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_HIGH],
@@ -459,19 +464,16 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	} else {
 		pr_err("[AUTOK] Need change para when dvfs\n");
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 		/* Use HW DVFS */
-		sdio_use_dvfs = 1;
+		host->use_hw_dvfs = 1;
 		/* Enable DVFS handshake */
 		spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
-#endif
 	}
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
 	/* Un-request, return 0 pass */
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
+
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
 
@@ -492,36 +494,6 @@ int emmc_autok(void)
 
 	pr_err("emmc autok\n");
 
-#if 0 /* Wait Light confirm */
-	mmc_claim_host(mmc);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Performance mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_PERF) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
-
-	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-		host->autok_res[AUTOK_VCORE_HIGH]);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Low power mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_LOW_PWR) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
-
-	emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-		host->autok_res[AUTOK_VCORE_LOW]);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
-
-	mmc_release_host(mmc);
-#endif
-
 	return 0;
 }
 EXPORT_SYMBOL(emmc_autok);
@@ -540,35 +512,6 @@ int sd_autok(void)
 	}
 
 	pr_err("sd autok\n");
-#if 0 /* Wait Cool confirm */
-	mmc_claim_host(mmc);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Performance mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_PERF) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
-
-	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_HIGH]);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Low power mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_LOW_PWR) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-#endif
-
-	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_LOW]);
-
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-#endif
-
-	mmc_release_host(mmc);
-#endif
 
 	return 0;
 }

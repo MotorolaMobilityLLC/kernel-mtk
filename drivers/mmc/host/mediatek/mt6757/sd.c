@@ -111,10 +111,6 @@ bool emmc_sleep_failed;
 static int emmc_do_sleep_awake;
 static struct workqueue_struct *wq_init;
 
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-static bool sdio_use_dvfs;
-#endif
-
 #define DRV_NAME                "mtk-msdc"
 
 #define MSDC_COOKIE_PIO         (1<<0)
@@ -349,13 +345,6 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 	int retry_cnt = 1;
 	int ret;
 
-	if (host->hw->host_function == MSDC_SDIO) {
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 0);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, 1);
-		MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_SDR104CKS, 1);
-		return 0;
-	}
-
 	do {
 		retry = 3;
 		MSDC_SET_FIELD(MSDC_CFG,
@@ -529,20 +518,16 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 
 		/* Enable DVFS handshake need check restore done */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-			if (sdio_use_dvfs == 1)
+			if (host->use_hw_dvfs == 1)
 				spm_msdc_dvfs_setting(MSDC2_DVFS, 1);
-#endif
 		}
 	} else if ((!on) && (host->core_clkon == 1) &&
 		 (!((host->hw->flags & MSDC_SDIO_IRQ) && src_clk_control))) {
 
 		/* Disable DVFS handshake */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
-#ifdef ENABLE_FOR_MSDC_KERNEL44
-			if (sdio_use_dvfs == 1)
+			if (host->use_hw_dvfs == 1)
 				spm_msdc_dvfs_setting(MSDC2_DVFS, 0);
-#endif
 		}
 
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
