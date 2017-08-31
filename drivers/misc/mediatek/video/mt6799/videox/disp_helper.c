@@ -140,6 +140,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_SMI_BW_MONITOR",
 	"DISP_OPT_RSZ",
 	"DISP_OPT_DUAL_PIPE",
+	"DISP_OPT_TUI_MODE",
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -398,6 +399,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 0);
 	disp_helper_set_option(DISP_OPT_RSZ, 1);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 1);
+	disp_helper_set_option(DISP_OPT_TUI_MODE, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

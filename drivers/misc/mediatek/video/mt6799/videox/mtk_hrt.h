@@ -76,6 +76,7 @@ enum HRT_TB_TYPE {
 	HRT_TB_TYPE_DUAL_DISP,
 	HRT_TB_TYPE_PARTIAL_RESIZE,
 	HRT_TB_TYPE_PARTIAL_RESIZE_PMA,
+	HRT_TB_TYPE_MULTI_WINDOW_TUI,
 	HRT_TB_NUM,
 };
 
@@ -175,6 +176,12 @@ enum HRT_TYPE {
 	HRT_TYPE_UNKNOWN,
 };
 
+enum HRT_SYS_STATE {
+	DISP_HRT_MJC_ON = 0,
+	DISP_HRT_FORCE_DUAL_OFF,
+	DISP_HRT_MULTI_TUI_ON,
+};
+
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
 #define HRT_SET_DVFS_LEVEL(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF)) | (value & 0xF)))
 #define HRT_GET_SCALE_SCENARIO(hrt_num) ((hrt_num & 0xF0) >> 4)
@@ -189,8 +196,8 @@ enum HRT_TYPE {
 #define HRT_GET_PATH_PIPE_TYPE(hrt_path) ((hrt_path >> PATH_FMT_PIPE_SHIFT) & 0x3)
 
 int dispsys_hrt_calc(struct disp_layer_info *disp_info, int debug_mode);
-void hrt_force_dual_pipe_off(int force_off);
 extern int hdmi_get_dev_info(int is_sf, void *info);
 int gen_hrt_pattern(void);
+int set_hrt_state(enum HRT_SYS_STATE sys_state, int en);
 
 #endif

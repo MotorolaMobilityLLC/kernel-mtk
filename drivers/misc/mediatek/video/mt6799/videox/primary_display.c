@@ -838,7 +838,7 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|State=%s\tlcm_fps=%d\tmax_layer=%d\tmode:%d\tvsync_drop=%d\n",
 		      pgc->state == DISP_ALIVE ? "Alive" : "Sleep", pgc->lcm_fps, pgc->max_layer,
-		      pgc->mode, pgc->vsync_drop);
+		      pgc->session_mode, pgc->vsync_drop);
 	len += scnprintf(stringbuf + len, buf_len - len,
 		      "|cmdq_handle_config=%p\tcmdq_handle_trigger=%p\tdpmgr_handle=%p\tovl2mem_path_handle=%p\n",
 		      pgc->cmdq_handle_config, pgc->cmdq_handle_trigger, pgc->dpmgr_handle,
@@ -8699,6 +8699,7 @@ void restart_smart_ovl_nolock(void)
 
 static enum DISP_POWER_STATE tui_power_stat_backup;
 static int tui_session_mode_backup;
+static struct DDP_MODULE_DRIVER *ddp_module_backup;
 
 int display_enter_tui(void)
 {
@@ -8718,7 +8719,7 @@ int display_enter_tui(void)
 
 	primary_display_idlemgr_kick(__func__, 0);
 	primary_display_switch_to_single_pipe(NULL, 1, 0);
-	hrt_force_dual_pipe_off(1);
+	set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 1);
 
 	if (primary_display_is_mirror_mode()) {
 		DISPERR("Can't enter tui: current_mode=%s\n", session_mode_spy(pgc->session_mode));
@@ -8729,8 +8730,16 @@ int display_enter_tui(void)
 
 	tui_session_mode_backup = pgc->session_mode;
 
-	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
-
+	if (disp_helper_get_option(DISP_OPT_TUI_MODE) == 0) {
+		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
+	} else if (disp_helper_get_option(DISP_OPT_TUI_MODE) == 1) {
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
+		set_hrt_state(DISP_HRT_MULTI_TUI_ON, 1);
+		ddp_module_backup = ddp_modules_driver[DISP_MODULE_OVL0_2L];
+		ddp_modules_driver[DISP_MODULE_OVL0_2L] = 0;
+	} else {
+		DISPERR("Unsupport TUI mode: %d\n", disp_helper_get_option(DISP_OPT_TUI_MODE));
+	}
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_PULSE, 0, 1);
 
 	_primary_path_unlock(__func__);
@@ -8762,10 +8771,14 @@ int display_exit_tui(void)
 	/* workaround: wait until this frame triggered to lcm */
 	msleep(32);
 	do_primary_display_switch_mode(tui_session_mode_backup, pgc->session_id, 0, NULL, 0);
+	if (disp_helper_get_option(DISP_OPT_TUI_MODE) == 1) {
+		set_hrt_state(DISP_HRT_MULTI_TUI_ON, 0);
+		ddp_modules_driver[DISP_MODULE_OVL0_2L] = ddp_module_backup;
+	}
 	/* DISP_REG_SET(NULL, rdma_base + DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
-	hrt_force_dual_pipe_off(0);
+	set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
 	_primary_path_unlock(__func__);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->tui, MMPROFILE_FLAG_END, 0, 0);

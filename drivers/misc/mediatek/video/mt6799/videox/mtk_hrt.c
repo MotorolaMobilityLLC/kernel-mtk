@@ -33,8 +33,10 @@
 static int primary_fps = 60;
 static struct disp_layer_info disp_info_hrt;
 static int dal_enable;
-static int force_dual_pipe_off;
 static int debug_resolution_level;
+static int hrt_sys_state;
+
+#define GET_SYS_STATE(sys_state) ((hrt_sys_state >> sys_state) & 0x1)
 
 /* Define the hrt boundary for each DVFS level. */
 static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -93,6 +95,9 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_PARTIAL_RESIZE_PMA */
 	{0x00010001, 0x00030005, 0x0007000D, 0x000F001D, 0x001F003D, 0x003F003D,
 	0x003F003D, 0x003F003D, 0x003F003D, 0x003F003D, 0x003F003D, 0x003F003D},
+	/* HRT_TB_TYPE_MULTI_WINDOW_TUI */
+	{0x00010001, 0x00030003, 0x00070007, 0x000F000F, 0x001F000F, 0x003F000F,
+	0x003F000F, 0x003F000F, 0x003F000F, 0x003F000F, 0x003F000F, 0x003F000F},
 };
 
 /**
@@ -100,7 +105,7 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
  */
 #ifdef HAS_LARB_HRT
 static int larb_mapping_table[HRT_TB_NUM] = {
-	0x00110010, 0x00110010, 0x00110010, 0x00110001,
+	0x00110010, 0x00110010, 0x00110010, 0x00110001, 0x00110001,
 };
 #endif
 
@@ -109,7 +114,7 @@ static int larb_mapping_table[HRT_TB_NUM] = {
  * The bit value 1 means the position of the last layer in OVL engine.
  */
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00280028, 0x00280028, 0x00280028, 0x00280022,
+	0x00280028, 0x00280028, 0x00280028, 0x00280022, 0x00280028,
 };
 
 static bool is_ext_path(struct disp_layer_info *disp_info)
@@ -346,12 +351,6 @@ static int get_phy_layer_limit(int layer_map_tb, int disp_idx)
 	return total_cnt;
 }
 
-void hrt_force_dual_pipe_off(int force_off)
-{
-	DISPINFO("%s: force_off:%d\n", __func__, force_off);
-	force_dual_pipe_off = force_off;
-}
-
 bool is_max_lcm_resolution(void)
 {
 	if (debug_resolution_level == 1)
@@ -372,7 +371,7 @@ static bool can_switch_to_dual_pipe(struct disp_layer_info *disp_info)
 
 		layer_limit = get_phy_layer_limit(layer_mapping_table[HRT_TB_TYPE_GENERAL][TOTAL_OVL_LAYER_NUM-1],
 										HRT_PRIMARY);
-		if (force_dual_pipe_off ||
+		if (GET_SYS_STATE(DISP_HRT_FORCE_DUAL_OFF) ||
 			is_ext_path(disp_info) ||
 			(get_phy_ovl_layer_cnt(disp_info, HRT_PRIMARY) > 6 && layer_limit > 6) ||
 			!is_max_lcm_resolution() ||
@@ -1676,6 +1675,28 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 		/* TODO: 120 condition */
 		primary_fps = 120;
 		bound_tb_idx = HRT_BOUND_TYPE_120HZ;
+	} else if (GET_SYS_STATE(DISP_HRT_MULTI_TUI_ON)) {
+		hrt_path = HRT_PATH_GENERAL;
+		layer_tb_idx = HRT_TB_TYPE_MULTI_WINDOW_TUI;
+		primary_fps = 60;
+#ifdef CONFIG_MTK_DCS
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+#else
+		if (is_max_lcm_resolution())
+			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		else
+			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+#endif
 	} else if (can_switch_to_dual_pipe(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1704,7 +1725,6 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 #else
 		bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
 #endif
-
 	} else if (is_ext_path(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1909,6 +1929,35 @@ int copy_layer_info_to_user(struct disp_layer_info *disp_info_user, int debug_mo
 	}
 
 	return ret;
+}
+
+int set_hrt_state(enum HRT_SYS_STATE sys_state, int en)
+{
+	switch (sys_state) {
+	case DISP_HRT_MJC_ON:
+		if (en)
+			hrt_sys_state |= (1 << sys_state);
+		else
+			hrt_sys_state &= ~(1 << sys_state);
+		break;
+	case DISP_HRT_FORCE_DUAL_OFF:
+		if (en)
+			hrt_sys_state |= (1 << sys_state);
+		else
+			hrt_sys_state &= ~(1 << sys_state);
+		break;
+	case DISP_HRT_MULTI_TUI_ON:
+		if (en)
+			hrt_sys_state |= (1 << sys_state);
+		else
+			hrt_sys_state &= ~(1 << sys_state);
+		break;
+	default:
+		DISPERR("unknown hrt scenario\n");
+	}
+
+	DISPMSG("Set hrt sys_state:%d, en:%d\n", sys_state, en);
+	return 0;
 }
 
 int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
@@ -2167,7 +2216,7 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			unsigned long int force_off = 0;
 
 			tok = parse_hrt_data_value(line_buf, &force_off);
-			hrt_force_dual_pipe_off(force_off);
+			set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, force_off);
 		} else if (strncmp(line_buf, "[resolution_level]", 18) == 0) {
 			unsigned long int resolution_level = 0;
 

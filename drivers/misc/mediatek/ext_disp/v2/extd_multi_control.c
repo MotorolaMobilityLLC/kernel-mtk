@@ -121,7 +121,7 @@ static int create_external_display_path(unsigned int session, int mode)
 			ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 			/* Notify primary display can switch to dual pipe */
-			hrt_force_dual_pipe_off(0);
+			set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
 #endif
 		}
 	} else if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL) {
@@ -200,7 +200,7 @@ static void destroy_external_display_path(unsigned int session, int mode)
 		ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 		/* Notify primary display can switch to dual pipe */
-		hrt_force_dual_pipe_off(0);
+		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
 #endif
 	} else if (path_info.old_session[device_id] == DISP_SESSION_MEMORY && EXTD_OVERLAY_CNT > 0) {
 		ovl2mem_deinit();
@@ -208,7 +208,7 @@ static void destroy_external_display_path(unsigned int session, int mode)
 		ext_disp_path_change(EXTD_OVL_IDLE_REQ, session);
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 		/* Notify primary display can switch to dual pipe */
-		hrt_force_dual_pipe_off(0);
+		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 0);
 #endif
 	}
 }

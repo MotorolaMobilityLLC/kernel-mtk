@@ -70,6 +70,7 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_SMI_BW_MONITOR,
 	DISP_OPT_RSZ,
 	DISP_OPT_DUAL_PIPE,
+	DISP_OPT_TUI_MODE, /* 0:single window; 1:multi window */
 	DISP_OPT_NUM
 };
 

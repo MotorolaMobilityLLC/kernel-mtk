@@ -969,6 +969,12 @@ static void mmsys_config_dump_analysis(void)
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
 
+	if (DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI1_SEL_IN) == 1 ||
+		DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI1_SEL_IN) == 4)
+		DDPDUMP("Disp path:Dual Pipe, DSI1_SEL_IN:0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI1_SEL_IN));
+	else
+		DDPDUMP("Disp path:Single Pipe, DSI1_SEL_IN:0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_DISP_DSI1_SEL_IN));
+
 	DDPDUMP("valid0=0x%x, valid1=0x%x, valid2=0x%x, valid3=0x%x,\n",
 		valid[0], valid[1], valid[2], valid[3]);
 	DDPDUMP("ready0=0x%x, ready1=0x%x, ready2=0x%x, ready3=0x%x, greq=0%x\n",

@@ -287,6 +287,7 @@ int _ioctl_create_session(unsigned long arg)
 
 	if (DISP_SESSION_TYPE(config.session_id) != DISP_SESSION_PRIMARY) {
 		msleep(100);
+		set_hrt_state(DISP_HRT_FORCE_DUAL_OFF, 1);
 		primary_display_switch_to_single_pipe(NULL, 1, 1);
 	}
 
