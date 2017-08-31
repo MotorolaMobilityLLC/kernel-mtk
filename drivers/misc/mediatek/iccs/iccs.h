@@ -65,12 +65,12 @@ enum transition {
 	LAST_TRANSITION
 };
 
-typedef enum {
+enum iccs_state {
 	UNINITIALIZED = 0,
 	POWER_OFF_CACHE_SHARED_DISABLED,
 	POWER_ON_CACHE_SHARED_DISABLED,
 	POWER_ON_CACHE_SHARED_ENABLED,
-} iccs_state;
+};
 
 struct iccs_governor {
 	unsigned int enabled;
@@ -89,7 +89,7 @@ struct iccs_governor {
 
 struct iccs_cluster_info {
 	unsigned int cache_shared_supported;
-	iccs_state state;
+	enum iccs_state state;
 };
 
 /* Governor API */
