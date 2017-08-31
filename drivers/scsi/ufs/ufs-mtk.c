@@ -51,7 +51,9 @@ bool ufs_mtk_tr_cn_used;
 u32  ufs_mtk_qcmd_r_cmd_cnt;
 u32  ufs_mtk_qcmd_w_cmd_cnt;
 struct ufs_hba *ufs_mtk_hba;
-struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd = {0};
+struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd[20];
+u32 ufs_mtk_aborted_cmd_idx;
+u32 ufs_mtk_aborted_cmd_cnt;
 
 static bool ufs_mtk_is_data_write_cmd(char cmd_op);
 
@@ -278,6 +280,8 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_host_deep_stall_enable = 0;
 	ufs_mtk_host_scramble_enable = 0;
 	ufs_mtk_tr_cn_used = 0;
+	ufs_mtk_aborted_cmd_idx = 0;
+	ufs_mtk_aborted_cmd_cnt = 0;
 	ufs_mtk_hba = hba;
 
 	ufs_mtk_pltfrm_init();

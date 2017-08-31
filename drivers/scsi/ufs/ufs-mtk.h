@@ -272,7 +272,9 @@ extern bool							ufs_mtk_host_deep_stall_enable;
 extern bool							ufs_mtk_host_scramble_enable;
 extern bool							ufs_mtk_tr_cn_used;
 extern const struct of_device_id			ufs_of_match[];
-extern struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd;
+extern struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd[];
+extern u32 ufs_mtk_aborted_cmd_idx;
+extern u32 ufs_mtk_aborted_cmd_cnt;
 
 void             ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void             ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
