@@ -95,7 +95,7 @@ enum TUNE_TYPE {
 		while (1) { \
 			if ((cond) || (tmo == 0)) \
 				break; \
-			if (time_after(jiffies, timeout)) \
+			if (time_after(jiffies, timeout) && (!cond)) \
 				tmo = 0; \
 		} \
 	} while (0)
