@@ -413,6 +413,11 @@ kal_bool bat_is_ext_power(void)
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
 /* // PMIC PCHR Related APIs */
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
+bool __attribute__((weak)) mt_usb_is_device(void)
+{
+	return true;
+}
+
 kal_bool upmu_is_chr_det(void)
 {
 #if !defined(CONFIG_POWER_EXT)
@@ -4426,7 +4431,7 @@ static int battery_pm_suspend(struct device *device)
 	int ret = 0;
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL, "pdev is null");
+	WARN(pdev == NULL, "pdev is null");
 	return ret;
 }
 
@@ -4435,7 +4440,7 @@ static int battery_pm_resume(struct device *device)
 	int ret = 0;
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL, "pdev is null");
+	WARN(pdev == NULL, "pdev is null");
 	return ret;
 }
 
@@ -4444,7 +4449,7 @@ static int battery_pm_freeze(struct device *device)
 	int ret = 0;
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL, "pdev is null");
+	WARN(pdev == NULL, "pdev is null");
 	return ret;
 }
 
@@ -4453,7 +4458,7 @@ static int battery_pm_restore(struct device *device)
 	int ret = 0;
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL, "pdev is null");
+	WARN(pdev == NULL, "pdev is null");
 	return ret;
 }
 
@@ -4462,7 +4467,7 @@ static int battery_pm_restore_noirq(struct device *device)
 	int ret = 0;
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL, "pdev is null");
+	WARN(pdev == NULL, "pdev is null");
 	return ret;
 }
 

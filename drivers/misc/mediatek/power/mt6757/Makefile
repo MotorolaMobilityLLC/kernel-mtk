@@ -12,6 +12,7 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 obj-$(CONFIG_MTK_PMIC)		+= pmic.o pmic_irq.o upmu_common.o \
 			pmic_auxadc.o pmic_chr_type_det.o mt6311.o \

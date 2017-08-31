@@ -22,7 +22,7 @@
 #include <mach/mtk_charging.h>
 #include <mach/mtk_pmic.h>
 #include "bq25890.h"
-#include <mach/mtk_sleep.h>
+#include <mtk_sleep.h>
 #include <mt-plat/mtk_gpio.h>
 #include "mtk_bif_intf.h"
 /* ============================================================ // */
@@ -258,8 +258,6 @@ static signed int charging_hw_init(void *data)
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 1);	/* disable DPDM detection */
 
 	bq25890_config_interface(bq25890_CON7, 0x1, 0x3, 4);	/* enable  watch dog 40 secs 0x1 */
-	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */
-	bq25890_config_interface(bq25890_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
 
 	bq25890_config_interface(bq25890_CON2, 0x0, 0x1, 5);	/* boost freq 1.5MHz when OTG_CONFIG=1 */
 	bq25890_config_interface(bq25890_CONA, 0x7, 0xF, 4);	/* boost voltagte 4.998V default */
@@ -306,7 +304,6 @@ static signed int charging_hw_init(void *data)
 /*K.S. way here*/
 #endif
 #endif
-	mt_set_gpio_dir((254 | 0x80000000), 1);
 	return status;
 }
 
@@ -575,11 +572,15 @@ static signed int charging_get_charger_type(void *data)
 	return status;
 }
 
+wake_reason_t __attribute__((weak)) slp_get_wake_reason(void)
+{
+	return WR_NONE;
+}
+
 static signed int charging_get_is_pcm_timer_trigger(void *data)
 {
 	signed int status = STATUS_OK;
-/* fix me */
-#ifdef 0
+
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	*(kal_bool *) (data) = KAL_FALSE;
 #else
@@ -590,8 +591,6 @@ static signed int charging_get_is_pcm_timer_trigger(void *data)
 
 	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
 #endif
-#endif
-	*(kal_bool *) (data) = KAL_FALSE;
 
 	return status;
 }
@@ -1010,6 +1009,9 @@ static signed int charging_sw_init(void *data)
 	signed int status = STATUS_OK;
 	/*put here anything needed to be init upon battery_common driver probe*/
 	mtk_bif_init();
+
+	bq25890_config_interface(bq25890_CON7, 0x1, 0x1, 3);	/* enable charging timer safety timer */
+	bq25890_config_interface(bq25890_CON7, 0x2, 0x3, 1);	/* charging timer 12h */
 
 	bq25890_config_interface(bq25890_CON0, 0x01, 0x01, 6);	/* enable ilimit Pin */
 	 /*DPM*/ bq25890_config_interface(bq25890_CON1, 0x6, 0xF, 0);	/* Vindpm offset  600MV */

@@ -59,8 +59,16 @@
 /* ============================================================ // */
 /* extern function */
 /* ============================================================ // */
-/*bool is_dcp_type = false;*/
+void __attribute__((weak)) Charger_Detect_Init(void)
+{
+}
+
+void __attribute__((weak)) Charger_Detect_Release(void)
+{
+}
+
 bool is_dcp_type;
+
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 
 int hw_charging_get_charger_type(void)
