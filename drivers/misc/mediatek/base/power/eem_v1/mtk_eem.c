@@ -5758,6 +5758,17 @@ static void eem_init_postprocess(void)
 	ptp_data[0] = 0;
 }
 
+/* push reg_dump_addr_off[] into eem log */
+#if DUMP_DATA_TO_DE
+static void mt_eem_push_reg_off_to_eemlog(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++)
+		eem_logs->reg_dump_data_off[i] = reg_dump_addr_off[i];
+}
+#endif
+
 static int eem_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -5787,6 +5798,9 @@ static int eem_probe(struct platform_device *pdev)
 	}
 	#endif
 
+#if DUMP_DATA_TO_DE
+	mt_eem_push_reg_off_to_eemlog();
+#endif
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
 
