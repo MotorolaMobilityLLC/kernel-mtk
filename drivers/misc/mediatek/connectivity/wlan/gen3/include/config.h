@@ -119,6 +119,7 @@
 #define CFG_SUPPORT_RX_HT_GF        1	/* 802.11n RX HT green-field capability */
 #define CFG_SUPPORT_BFEE            1
 #define CFG_SUPPORT_WAPI            1
+#define CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST	0  /* Support FCC/CE Dynamic Tx Power Adjust */
 
 /*------------------------------------------------------------------------------
  * SLT Option
