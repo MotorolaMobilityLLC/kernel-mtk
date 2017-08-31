@@ -212,6 +212,8 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 
 			kalSprintf(aucFwName, "%s%s", apucFwPath[ucPathIdx], apucNameTable[ucNameIdx]);
 #if defined(MT6631)
+			if (u2ChipID == 0x6758)	/* Vinson */
+				u2ChipID = 0x6759;
 			kalSprintf(aucFwName + strlen(aucFwName), "%x", u2ChipID);
 #endif
 

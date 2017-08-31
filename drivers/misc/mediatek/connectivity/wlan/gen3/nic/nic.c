@@ -593,6 +593,8 @@ UINT_16 nicGetChipID(IN P_ADAPTER_T prAdapter)
 			prAdapter->u2ChipID = 0x6797;
 		if (prAdapter->u2ChipID == 0x0507)	/* Alaska */
 			prAdapter->u2ChipID = 0x6759;
+		if (prAdapter->u2ChipID == 0x0688)	/* Vinson */
+			prAdapter->u2ChipID = 0x6758;
 
 		prAdapter->fgIsReadRevID = TRUE;
 	}
