@@ -5172,7 +5172,7 @@ out:
  * Returns 0 if requested power mode is set successfully
  * Returns non-zero if failed to set the requested power mode
  */
-static int ufshcd_set_dev_pwr_mode(struct ufs_hba *hba,
+int ufshcd_set_dev_pwr_mode(struct ufs_hba *hba,
 				     enum ufs_dev_pwr_mode pwr_mode)
 {
 	unsigned char cmd[6] = { START_STOP };
