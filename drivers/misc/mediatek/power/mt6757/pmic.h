@@ -248,6 +248,7 @@ struct mtk_regulator {
 struct pmic_interrupt_bit {
 	const char *name;
 	void (*callback)(void);
+	void (*oc_callback)(const char *);
 	unsigned int times;
 };
 
