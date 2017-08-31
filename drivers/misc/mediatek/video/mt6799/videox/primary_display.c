@@ -2048,6 +2048,13 @@ int _DL_dual_switch_to_DC_fast(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2,
 			 (new_scenario | (old_scenario << 4)));
 
+	/* could switch to lower gear */
+	/* resolution higher than FHD can't switch to lowest gear */
+	if (primary_display_get_width() > 1080 || primary_display_get_height() > 1920)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL1);
+	else
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
+
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,  20, 20); */
 
 	/* 7.reset  cmdq */
@@ -2285,6 +2292,9 @@ int DL_dual_switch_to_DC_dual(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
 			 (new_scenario | (old_scenario << 4)));
 
+	/* could switch to lower gear */
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
+
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,	20, 20); */
 
 	/* 7.reset cmdq */
@@ -2410,6 +2420,10 @@ int DC_dual_switch_to_DL_dual(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
+
+	/* switch back to last request gear */
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, dvfs_last_ovl_req);
+
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
 	/* release output buffer */
@@ -2650,6 +2664,13 @@ static int _DL_switch_to_DC_fast(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
 			 (new_scenario | (old_scenario << 4)));
 
+	/* could switch to lower gear */
+	/* resolution higher than FHD can't switch to lowest gear */
+	if (primary_display_get_width() > 1080 || primary_display_get_height() > 1920)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL1);
+	else
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
+
 	/* ddp_mmp_rdma_layer(&rdma_config, 0,  20, 20); */
 
 	/* 7.reset cmdq */
@@ -2825,6 +2846,9 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	disp_cmdq_reset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
+
+	/* switch back to last request gear */
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, dvfs_last_ovl_req);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0xFF);
 
@@ -4917,6 +4941,10 @@ int primary_display_switch_to_single_pipe(struct cmdqRecStruct *handle, int bloc
 
 	primary_display_idlemgr_kick(__func__, 0);
 	DISPMSG("%s begin, mode:%d\n", __func__, pgc->session_mode);
+
+	/* Due to HRT condition is dual pipe, have to gear up MMDVFS for assurance */
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL3);
+
 	if (pgc->session_mode == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
 		ret = _DL_dual_switch_to_DL_fast(NULL, 1);
 		if (ret)
