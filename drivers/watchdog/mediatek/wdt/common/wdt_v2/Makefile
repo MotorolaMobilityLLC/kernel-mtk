@@ -11,8 +11,5 @@
 # GNU General Public License for more details.
 #
 
-ifeq ($(CONFIG_MTK_WATCHDOG_COMMON),y)
-obj-y += common/
-else
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-endif
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
+obj-y += mtk_wdt.o
