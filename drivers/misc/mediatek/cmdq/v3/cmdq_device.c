@@ -29,7 +29,7 @@ struct CmdqDeviceStruct {
 	struct device *pDev;
 	struct clk *clk_gce;
 	long regBaseVA;		/* considering 64 bit kernel, use long */
-	long regBasePA;
+	phys_addr_t regBasePA;
 	uint32_t irqId;
 	uint32_t irqSecId;
 	int32_t dma_mask_result;
@@ -58,7 +58,7 @@ long cmdq_dev_get_module_base_VA_GCE(void)
 	return gCmdqDev.regBaseVA;
 }
 
-long cmdq_dev_get_module_base_PA_GCE(void)
+phys_addr_t cmdq_dev_get_module_base_PA_GCE(void)
 {
 	return gCmdqDev.regBasePA;
 }
@@ -109,11 +109,11 @@ void cmdq_dev_free_module_base_VA(const long VA)
 	iounmap((void *)VA);
 }
 
-long cmdq_dev_get_gce_node_PA(struct device_node *node, int index)
+phys_addr_t cmdq_dev_get_gce_node_PA(struct device_node *node, int index)
 {
 	struct resource res;
 	int status;
-	long regBasePA = 0L;
+	phys_addr_t regBasePA = 0L;
 
 	do {
 		status = of_address_to_resource(node, index, &res);
@@ -203,12 +203,12 @@ bool cmdq_dev_gce_clock_is_enable(void)
 	return cmdq_dev_device_clock_is_enable(gCmdqDev.clk_gce);
 }
 
-long cmdq_dev_get_reference_PA(const char *ref_name, int index)
+phys_addr_t cmdq_dev_get_reference_PA(const char *ref_name, int index)
 {
 	int status;
 	struct device_node *node = NULL;
 	struct resource res;
-	long start_pa = 0;
+	phys_addr_t start_pa = 0;
 
 	do {
 		node = of_parse_phandle(gCmdqDev.pDev->of_node, ref_name, 0);
@@ -220,7 +220,7 @@ long cmdq_dev_get_reference_PA(const char *ref_name, int index)
 			break;
 
 		start_pa = res.start;
-		CMDQ_LOG("DEV: PA ref(%s): start = 0x%lx\n", ref_name, start_pa);
+		CMDQ_LOG("DEV: PA ref(%s): start = %pa\n", ref_name, &start_pa);
 	} while (0);
 
 	if (node)
@@ -232,7 +232,7 @@ long cmdq_dev_get_reference_PA(const char *ref_name, int index)
 void cmdq_dev_init_MDP_PA(struct device_node *node)
 {
 	uint32_t *pMDPBaseAddress = cmdq_core_get_whole_DTS_Data()->MDPBaseAddress;
-	long module_pa_start = 0;
+	phys_addr_t module_pa_start = 0;
 
 	module_pa_start = cmdq_dev_get_reference_PA("mm_mutex", 0);
 
@@ -449,8 +449,8 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		gCmdqDev.clk_gce = devm_clk_get(&pDevice->dev, "GCE");
 
 		CMDQ_LOG
-		    ("[CMDQ] platform_dev: dev: %p, PA: %lx, VA: %lx, irqId: %d, irqSecId: %d\n",
-		     gCmdqDev.pDev, gCmdqDev.regBasePA, gCmdqDev.regBaseVA, gCmdqDev.irqId,
+		    ("[CMDQ] platform_dev: dev: %p, PA: %pa, VA: %lx, irqId: %d, irqSecId: %d\n",
+		     gCmdqDev.pDev, &gCmdqDev.regBasePA, gCmdqDev.regBaseVA, gCmdqDev.irqId,
 		     gCmdqDev.irqSecId);
 	} while (0);
 
