@@ -262,8 +262,8 @@ void msdc_dvfs_reg_restore(struct msdc_host *host)
 	if (!host->dvfs_reg_backup)
 		return;
 
+	reg_backup_ptr = host->dvfs_reg_backup;
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		reg_backup_ptr = host->dvfs_reg_backup;
 		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
 			MSDC_WRITE32(
 				host->base + MSDC_DVFS_SET_SIZE * i
@@ -293,8 +293,8 @@ static void msdc_dvfs_reg_backup(struct msdc_host *host)
 	if (!host->dvfs_reg_backup)
 		return;
 
+	reg_backup_ptr = host->dvfs_reg_backup;
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		reg_backup_ptr = host->dvfs_reg_backup;
 		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
 			*reg_backup_ptr = MSDC_READ32(
 				host->base + MSDC_DVFS_SET_SIZE * i
@@ -527,6 +527,52 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	complete(&host->autok_done);
 }
 
+static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
+	unsigned addr, u8 in, u8 *out)
+{
+	struct mmc_command cmd = {0};
+	int err;
+
+	BUG_ON(!host);
+	BUG_ON(fn > 7);
+
+	/* sanity check */
+	if (addr & ~0x1FFFF)
+		return -EINVAL;
+
+	cmd.opcode = SD_IO_RW_DIRECT;
+	cmd.arg = write ? 0x80000000 : 0x00000000;
+	cmd.arg |= fn << 28;
+	cmd.arg |= (write && out) ? 0x08000000 : 0x00000000;
+	cmd.arg |= addr << 9;
+	cmd.arg |= in;
+	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
+
+	err = mmc_wait_for_cmd(host, &cmd, 0);
+	if (err)
+		return err;
+
+	if (mmc_host_is_spi(host)) {
+		/* host driver already reported errors */
+	} else {
+		if (cmd.resp[0] & R5_ERROR)
+			return -EIO;
+		if (cmd.resp[0] & R5_FUNCTION_NUMBER)
+			return -EINVAL;
+		if (cmd.resp[0] & R5_OUT_OF_RANGE)
+			return -ERANGE;
+	}
+
+	if (out) {
+		if (mmc_host_is_spi(host))
+			*out = (cmd.resp[0] >> 8) & 0xFF;
+		else
+			*out = cmd.resp[0] & 0xFF;
+	}
+
+	return 0;
+}
+
 #define SDIO_CCCR_MTK_DDR208       0xF2
 #define SDIO_MTK_DDR208            0x3
 #define SDIO_MTK_DDR208_SUPPORT    0x2
@@ -534,7 +580,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 {
 	int ret = 0;
 	unsigned char data;
-	struct mmc_card *card = host->mmc->card;
+	struct mmc_host *mmc = host->mmc;
 
 	/* Find SDR104 timing first, or read CCCR command maybe fail */
 	if (host->hw->flags & MSDC_SDIO_DDR208) {
@@ -550,7 +596,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	 *        1:Enable DDR208.
 	 *        0:Disable DDR208.
 	 */
-	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
 	if (ret) {
 		pr_err("Read SDIO_CCCR_MTK_DDR208 fail\n");
 		goto end;
@@ -564,20 +610,20 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	 * 1. First switch to DDR50 mode;
 	 * 2. Then Host CMD52 Write 0x03/0x01 to CCCR[0x00F2]
 	 */
-	ret = mmc_io_rw_direct(card, 0, 0, SDIO_CCCR_SPEED, 0, &data);
+	ret = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_SPEED, 0, &data);
 	if (ret) {
 		pr_err("Read SDIO_CCCR_SPEED fail\n");
 		goto end;
 	}
 
 	data = (data & (~SDIO_SPEED_BSS_MASK)) | SDIO_SPEED_DDR50;
-	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_SPEED, data, NULL);
+	ret = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_SPEED, data, NULL);
 	if (ret) {
 		pr_err("Set SDIO_CCCR_SPEED to DDR fail\n");
 		goto end;
 	}
 
-	ret = mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_MTK_DDR208,
+	ret = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_MTK_DDR208,
 		SDIO_MTK_DDR208, NULL);
 	if (ret) {
 		pr_err("Set SDIO_MTK_DDR208 fail\n");

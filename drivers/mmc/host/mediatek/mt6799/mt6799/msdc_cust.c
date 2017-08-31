@@ -418,26 +418,26 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 	if (topckgen_base && pericfg_base) {
 		buf_ptr += sprintf(buffer,
 			"MSDC0 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d, %d\n",
-			topckgen_base + 0x240,
+			topckgen_base + 0x140,
 			/* mux at bits16~18 */
-			(MSDC_READ32(topckgen_base + 0x240) >> 16) & 7,
+			(MSDC_READ32(topckgen_base + 0x140) >> 16) & 7,
 			pericfg_base + 0x290,
 			/* cg at bit 0, 24 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 0) & 1,
 			(MSDC_READ32(pericfg_base + 0x290) >> 24) & 1);
 		buf_ptr += sprintf(buffer,
 			"MSDC1 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
-			topckgen_base + 0x240,
+			topckgen_base + 0x140,
 			/* mux at bits24~26 */
-			(MSDC_READ32(topckgen_base + 0x240) >> 24) & 7,
+			(MSDC_READ32(topckgen_base + 0x140) >> 24) & 7,
 			pericfg_base + 0x290,
 			/* mux at bit 1 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 1) & 1);
 		buf_ptr += sprintf(buffer,
 			"MSDC3 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
-			topckgen_base + 0x250,
+			topckgen_base + 0x150,
 			/* mux at bits8~10 */
-			(MSDC_READ32(topckgen_base + 0x250) >> 8) & 7,
+			(MSDC_READ32(topckgen_base + 0x150) >> 8) & 7,
 			pericfg_base + 0x290,
 			/* mux at bit 3 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 3) & 1);
