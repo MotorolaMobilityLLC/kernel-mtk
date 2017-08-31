@@ -171,14 +171,6 @@ int ged_bridge_gpu_timestamp(
 	return 0;
 }
 /* ----------------------------------------------------------------------------- */
-int ged_bridge_target_fps(
-	GED_BRIDGE_IN_TARGET_FPS * in,
-	GED_BRIDGE_OUT_TARGET_FPS *out)
-{
-	ged_set_target_fps(in->fps, 0x1);
-	return 0;
-}
-/* ----------------------------------------------------------------------------- */
 int ged_bridge_wait_hw_vsync(void)
 {
 	ged_frr_wait_hw_vsync();
