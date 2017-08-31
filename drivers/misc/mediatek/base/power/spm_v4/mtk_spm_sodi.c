@@ -271,7 +271,6 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operat
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
-	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 	spm_opt |= (operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) ?
 		SPM_OPT_XO_UFS_OFF : 0;

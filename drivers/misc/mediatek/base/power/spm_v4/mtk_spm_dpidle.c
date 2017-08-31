@@ -694,7 +694,6 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
-	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 	spm_opt |= (operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE) ? SPM_OPT_VCORE_LP_MODE : 0;
 	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
