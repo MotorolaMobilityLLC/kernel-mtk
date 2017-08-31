@@ -483,7 +483,10 @@ VOID wnmRecvBTMRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prRxFrame = (struct ACTION_BTM_REQ_FRAME_T *) prSwRfb->pvHeader;
 	if (!prRxFrame)
 		return;
-
+	if (prSwRfb->u2PacketLen < OFFSET_OF(struct ACTION_BTM_REQ_FRAME_T, aucOptInfo)) {
+		DBGLOG(WNM, WARN, "BTM request frame length is less than a standard BTM frame\n");
+		return;
+	}
 	prMsg = (struct MSG_AIS_BSS_TRANSITION_T *)
 			cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(struct MSG_AIS_BSS_TRANSITION_T));
 	if (!prMsg) {
@@ -496,6 +499,10 @@ VOID wnmRecvBTMRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prBtmParam->u2DisassocTimer = prRxFrame->u2DisassocTimer;
 	prBtmParam->ucDialogToken = prRxFrame->ucDialogToken;
 	pucOptInfo = &prRxFrame->aucOptInfo[0];
+	if (!pucOptInfo) {
+		DBGLOG(WNM, WARN, "pucOptInfo == NULL\n");
+		return;
+	}
 	ucRequestMode = prBtmParam->ucRequestMode;
 	u2TmpLen = OFFSET_OF(struct ACTION_BTM_REQ_FRAME_T, aucOptInfo);
 	if (ucRequestMode & BTM_REQ_MODE_BSS_TERM_INCLUDE) {
@@ -516,9 +523,12 @@ VOID wnmRecvBTMRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		eTransType = BSS_TRANSITION_DISASSOC;
 
 	if (ucRequestMode & BTM_REQ_MODE_CAND_INCLUDED_BIT) {
-		prBtmParam->u2PeerNeighborBssLen = prSwRfb->u2PacketLen - u2TmpLen;
-		prBtmParam->pucPeerNeighborBss =
-			kalMemAlloc(prBtmParam->u2PeerNeighborBssLen, VIR_MEM_TYPE);
+		if (prSwRfb->u2PacketLen > u2TmpLen) {
+			prBtmParam->u2PeerNeighborBssLen = prSwRfb->u2PacketLen - u2TmpLen;
+			prBtmParam->pucPeerNeighborBss =
+				kalMemAlloc(prBtmParam->u2PeerNeighborBssLen, VIR_MEM_TYPE);
+		} else
+			DBGLOG(WNM, WARN, "Candidate Include bit is set, but no candidate list\n");
 	}
 
 	DBGLOG(WNM, INFO, "BTM param: Req %d, VInt %d, DiscTimer %d, Token %d, TransType %d\n",
