@@ -189,7 +189,7 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 			&host->power_io);
 		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
 		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
-		host->hw->driving_applied = &host->hw->driving_sd_sdr50;
+		host->hw->driving_applied = &host->hw->driving_sdr50;
 		msdc_set_driving(host, host->hw->driving_applied);
 	}
 }
@@ -929,11 +929,11 @@ static int msdc_get_pinctl_settings(struct msdc_host *host,
 		if (strcmp(pinctl_names[i], "pinctl") == 0)
 			pin_drv = (unsigned char *)&host->hw->driving;
 		else if (strcmp(pinctl_names[i], "pinctl_sdr104") == 0)
-			pin_drv = (unsigned char *)&host->hw->driving_sd_sdr104;
+			pin_drv = (unsigned char *)&host->hw->driving_sdr104;
 		else if (strcmp(pinctl_names[i], "pinctl_sdr50") == 0)
-			pin_drv = (unsigned char *)&host->hw->driving_sd_sdr50;
+			pin_drv = (unsigned char *)&host->hw->driving_sdr50;
 		else if (strcmp(pinctl_names[i], "pinctl_ddr50") == 0)
-			pin_drv = (unsigned char *)&host->hw->driving_sd_ddr50;
+			pin_drv = (unsigned char *)&host->hw->driving_ddr50;
 		else
 			continue;
 
@@ -988,7 +988,7 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 	int len = 0;
-	u8 id;
+	u8 hw_dvfs_support, id;
 
 	np = mmc->parent->of_node; /* mmcx node in project dts */
 
@@ -1053,6 +1053,12 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
 	}
+
+	ret = of_property_read_u8(np, "hw_dvfs", &hw_dvfs_support);
+	if (ret || (hw_dvfs_support == 0))
+		host->use_hw_dvfs = 0xFF;
+	else
+		host->use_hw_dvfs = 0;
 
 	msdc_get_register_settings(host, np);
 

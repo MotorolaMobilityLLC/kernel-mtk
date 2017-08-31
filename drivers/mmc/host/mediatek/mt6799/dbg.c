@@ -1812,9 +1812,6 @@ static void msdc_dump_autok_setting(struct msdc_host *host, struct seq_file *m)
 		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		if (!host->autok_res_valid[i])
-			continue;
-
 		seq_printf(m, "[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][CMD_SCAN_R0],
 			host->autok_res[i][CMD_SCAN_R1],
@@ -1940,7 +1937,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		}
 		seq_printf(m, "[SD_Debug] msdc host[%d] mode<%d> size<%d>\n",
 			 id, drv_mode[id], dma_size[id]);
-	} else if (cmd == SD_TOOL_REG_ACCESS) {
+	} else if ((cmd == SD_TOOL_REG_ACCESS)
+		|| (cmd == SD_TOOL_TOP_REG_ACCESS)) {
 		id = p2;
 		offset = (unsigned int)p3;
 
@@ -1948,19 +1946,20 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto invalid_host_id;
 
 		host = mtk_msdc_host[id];
-		base = host->base;
-		if ((offset == 0x18 || offset == 0x1C) && p1 != 4) {
-			seq_puts(m, "[SD_Debug] Err: Accessing TXDATA and RXDATA is forbidden\n");
-			goto out;
+		if (cmd == SD_TOOL_REG_ACCESS) {
+			base = host->base;
+			if ((offset == 0x18 || offset == 0x1C) && p1 != 4) {
+				seq_puts(m, "[SD_Debug] Err: Accessing TXDATA and RXDATA is forbidden\n");
+				goto out;
+			}
+		} else {
+			base = host->base_top;
 		}
 
 		(void)msdc_clk_enable(host);
 
 		if (p1 == 0) {
-			/* FIX ME, shall use different offset limitation for
-			 * each host
-			 */
-			if (offset > 0x228) {
+			if (offset > 0x1000) {
 				seq_puts(m, "invalid register offset\n");
 				goto out;
 			}

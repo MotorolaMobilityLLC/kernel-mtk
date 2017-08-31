@@ -194,7 +194,7 @@ static u32 sdio_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_SDIO];
 static u32 emmc_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_EMMC];
 /* static u32 sd_reg_backup[AUTOK_VCORE_NUM][BACKUP_REG_COUNT]; */
 
-u16 dvfs_reg_backup_offsets_src[] = {
+u16 sdio_reg_backup_offsets_src[] = {
 	OFFSET_MSDC_IOCON,
 	OFFSET_MSDC_PATCH_BIT0,
 	OFFSET_MSDC_PATCH_BIT1,
@@ -228,11 +228,20 @@ u16 sdio_dvfs_reg_backup_offsets[] = {
 	OFFSET_EMMC50_CFG1_1
 };
 
+u16 emmc_reg_backup_offsets_src[] = {
+	OFFSET_MSDC_IOCON,
+	OFFSET_MSDC_PATCH_BIT0,
+	OFFSET_MSDC_PATCH_BIT1,
+	OFFSET_MSDC_PATCH_BIT2,
+	OFFSET_EMMC50_CFG0,
+};
+
 u16 emmc_dvfs_reg_backup_offsets[] = {
 	OFFSET_MSDC_IOCON_1,
 	OFFSET_MSDC_PATCH_BIT0_1,
 	OFFSET_MSDC_PATCH_BIT1_1,
-	OFFSET_MSDC_PATCH_BIT2_1
+	OFFSET_MSDC_PATCH_BIT2_1,
+	OFFSET_EMMC50_CFG0_1
 };
 
 u16 emmc_dvfs_reg_backup_offsets_top[] = {
@@ -360,17 +369,25 @@ void sdio_autok_wait_dvfs_ready(void)
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore;
-	u8 *res = NULL;
+	int vcore, vcore_dvfs_work;
+	u8 *res;
 
-	vcore = 0; /* vcorefs_get_hw_opp(); */
-
-	if (!res) {
-		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
-			vcore = AUTOK_VCORE_LEVEL0;
-		res = host->autok_res[vcore];
+	vcore_dvfs_work = is_vcorefs_can_work();
+	if (vcore_dvfs_work == -1) {
+		vcore = 0;
+		pr_err("DVFS feature not enabled\n");
+	} else if (vcore_dvfs_work == 0) {
+		vcore = vcorefs_get_hw_opp();
+		pr_err("DVFS not ready\n");
+	} else if (vcore_dvfs_work == 1) {
+		vcore = vcorefs_get_hw_opp();
+		pr_err("DVFS ready\n");
+	} else {
+		vcore = 0;
+		pr_err("Invalid return value from is_vcorefs_can_work()\n");
 	}
 
+	res = host->autok_res[vcore];
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
 		if (host->is_autok_done == 0) {
@@ -385,6 +402,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 
 	/* Enable this line if SD use HW DVFS */
 	/* msdc_set_hw_dvfs(vcore, host); */
+	/* msdc_dump_register_core(host, */
 
 	return ret;
 }
@@ -394,7 +412,7 @@ void msdc_dvfs_reg_backup_init(struct msdc_host *host)
 	if (host->hw->host_function == MSDC_EMMC) {
 		host->dvfs_reg_backup = emmc_reg_backup;
 		host->dvfs_reg_offsets = emmc_dvfs_reg_backup_offsets;
-		host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
+		host->dvfs_reg_offsets_src = emmc_reg_backup_offsets_src;
 		if (host->base_top)
 			host->dvfs_reg_offsets_top = emmc_dvfs_reg_backup_offsets_top;
 		host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_EMMC_INTERNAL;
@@ -424,6 +442,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	}
 
 	res = host->autok_res[vcore];
+	pr_err("emmc_execute_dvfs_autok %d\n", vcore);
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
@@ -432,6 +451,9 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			pr_err("[AUTOK]eMMC HS200 Tune\n");
 			ret = hs200_execute_tuning(host, res);
 		}
+		if (host->mmc->card &&
+		  !(host->mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400))
+			host->is_autok_done = 1;
 	} else if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400) {
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS400 Tune CMD only\n");
@@ -440,11 +462,12 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			pr_err("[AUTOK]eMMC HS400 Tune\n");
 			ret = hs400_execute_tuning(host, res);
 		}
+		host->is_autok_done = 1;
 	}
 
-	host->autok_res_valid[vcore] = true;
 	/* Enable this line if eMMC use HW DVFS */
 	msdc_set_hw_dvfs(vcore, host);
+	/* msdc_dump_register_core(host, NULL); */
 
 	return ret;
 }
@@ -492,7 +515,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 	host->dvfs_reg_backup = sdio_reg_backup;
 	host->dvfs_reg_offsets = sdio_dvfs_reg_backup_offsets;
-	host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
+	host->dvfs_reg_offsets_src = sdio_reg_backup_offsets_src;
 	host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_SDIO;
 
 	/* Wait DFVS ready for excute autok here */
@@ -507,7 +530,6 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		else
 			autok_execute(host, host->autok_res[i]);
 
-		host->autok_res_valid[i] = true;
 		msdc_set_hw_dvfs(i, host);
 	}
 
@@ -626,7 +648,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x127, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11C, 0x90, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11c, 0x90, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x125, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x126, 0x87, 0);
@@ -732,6 +754,7 @@ int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
 	void __iomem *base;
+	unsigned long timeout;
 	int i;
 
 	if (!host || !host->mmc) {
@@ -741,13 +764,20 @@ int emmc_autok(void)
 
 	pr_err("emmc autok\n");
 
+	/* Wait completion of AUTOK triggered by eMMC initialization */
+	timeout = jiffies + msecs_to_jiffies(10000);
+	while (!host->is_autok_done) {
+		if (time_after(jiffies, timeout)) {
+			pr_err("eMMC 1st autok not done\n");
+			return -1;
+		}
+	}
+
 	base = host->base;
 
 	mmc_claim_host(host->mmc);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		if (host->autok_res_valid[i])
-			continue;
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
 		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
@@ -848,9 +878,6 @@ void msdc_dump_autok(struct msdc_host *host)
 		host->autok_res[0][AUTOK_VER0]);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-		if (!host->autok_res_valid[i])
-			continue;
-
 		pr_err("[AUTOK]CMD Rising Window : 0x%02x%02x%02x%02x%02x%02x%02x%02x\r\n",
 			host->autok_res[i][CMD_SCAN_R0],
 			host->autok_res[i][CMD_SCAN_R1],

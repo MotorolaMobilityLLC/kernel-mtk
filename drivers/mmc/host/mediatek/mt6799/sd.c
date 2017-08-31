@@ -198,7 +198,8 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 	char *buffer_cur_ptr = buffer;
 
 	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
-	pr_err("MSDC%d normal register\n", id);
+	if (!m)
+		pr_err("MSDC%d normal register\n", id);
 	for (i = 0; msdc_offsets[i] != (u16)0xFFFF; i++) {
 		offset = msdc_offsets[i];
 		val = MSDC_READ32(base + offset);
@@ -209,7 +210,11 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 		pr_err("%s\n", buffer);
 
 	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
-	pr_err("MSDC%d DVFS register\n", id);
+
+	if (!m)
+		pr_err("MSDC%d DVFS register\n", id);
+	else
+		seq_printf(m, "MSDC%d DVFS register\n", id);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
@@ -226,7 +231,10 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 		return;
 
 	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
-	pr_err("MSDC%d top register\n", id);
+	if (!m)
+		pr_err("MSDC%d top register\n", id);
+	else
+		seq_printf(m, "MSDC%d top register\n", id);
 	for (i = 0;  msdc_offsets_top[i] != (u16)0xFFFF; i++) {
 		offset = msdc_offsets_top[i];
 		val = MSDC_READ32(host->base_top + offset);
@@ -237,7 +245,10 @@ void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 		pr_err("%s\n", buffer);
 
 	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
-	pr_err("MSDC%d top DVFS register\n", id);
+	if (!m)
+		pr_err("MSDC%d top DVFS register\n", id);
+	else
+		seq_printf(m, "MSDC%d top DVFS register\n", id);
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		for (j = 0; j < host->dvfs_reg_backup_cnt_top; j++) {
 			offset = host->dvfs_reg_offsets_top[j] + MSDC_TOP_SET_SIZE * i;
@@ -870,9 +881,11 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Configure to MMC/SD mode */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
-	/* Disable HW DVFS */
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	if (host->use_hw_dvfs != 0xFF) {
+		/* Disable HW DVFS */
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
+	}
 
 	/* Reset */
 	msdc_reset_hw(host->id);
@@ -2094,11 +2107,11 @@ check_fifo_end:
 
 error:
 	if (ints & MSDC_INT_DATCRCERR) {
-		ERR_MSG("[msdc%d] MSDC_INT_DATCRCERR (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] DAT CRC error (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		data->error = (unsigned int)-EILSEQ;
 	} else if (ints & MSDC_INT_DATTMO) {
-		ERR_MSG("[msdc%d] MSDC_INT_DATTMO (0x%x), Left DAT: %d bytes\n",
+		ERR_MSG("[msdc%d] DAT TMO error (0x%x), Left DAT: %d bytes\n",
 			host->id, ints, left);
 		msdc_dump_info(host->id);
 		data->error = (unsigned int)-ETIMEDOUT;
@@ -3288,6 +3301,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		pr_err("msdc%d: SD UHS_SDR104/UHS_SDR50 re-autok %d times\n",
 			host->id, ++host->reautok_times);
 		ret = autok_execute_tuning(host, NULL);
+		/* ret = sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK); */
 		break;
 	case MMC_TIMING_MMC_HS200:
 	case MMC_TIMING_MMC_HS400:
@@ -3902,13 +3916,13 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		if (host->hw->host_function == MSDC_SD) {
 			if (host->timing == MMC_TIMING_UHS_SDR104) {
 				host->hw->driving_applied =
-					&host->hw->driving_sd_sdr104;
+					&host->hw->driving_sdr104;
 			} else if (host->timing == MMC_TIMING_UHS_SDR50) {
 				host->hw->driving_applied =
-					&host->hw->driving_sd_sdr50;
+					&host->hw->driving_sdr50;
 			} else if (host->timing == MMC_TIMING_UHS_DDR50) {
 				host->hw->driving_applied =
-					&host->hw->driving_sd_ddr50;
+					&host->hw->driving_ddr50;
 			}
 			msdc_set_driving(host, host->hw->driving_applied);
 		}

@@ -180,9 +180,9 @@ struct msdc_hw {
 	unsigned char wdata_edge;       /* write data latch edge */
 	struct msdc_hw_driving *driving_applied;
 	struct msdc_hw_driving driving;
-	struct msdc_hw_driving driving_sd_sdr104;
-	struct msdc_hw_driving driving_sd_sdr50;
-	struct msdc_hw_driving driving_sd_ddr50;
+	struct msdc_hw_driving driving_sdr104;
+	struct msdc_hw_driving driving_sdr50;
+	struct msdc_hw_driving driving_ddr50;
 	unsigned long flags;            /* hardware capability flags */
 
 	unsigned char boot;             /* define boot host */
@@ -363,8 +363,7 @@ struct msdc_host {
 	int                     autok_error;
 	int                     reautok_times;
 	bool                    is_autok_done;
-	bool                    use_hw_dvfs;
-	bool                    autok_res_valid[AUTOK_VCORE_NUM];
+	u8                      use_hw_dvfs;
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];
 	u16                     dvfs_reg_backup_cnt;
 	u16                     dvfs_reg_backup_cnt_top;

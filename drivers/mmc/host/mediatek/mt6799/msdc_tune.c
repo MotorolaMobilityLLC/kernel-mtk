@@ -226,6 +226,7 @@ done:
 	return 0;
 
 }
+
 /* SDcard will change speed mode and power reset
  * UHS_SDR104 --> UHS_DDR50 --> UHS_SDR50 --> UHS_SDR25
  */
