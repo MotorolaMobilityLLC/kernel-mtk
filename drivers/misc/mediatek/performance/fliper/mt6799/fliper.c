@@ -59,8 +59,8 @@ static int cg_intr;
 /* TOTAL BW monitor */
 #if 1
 static int total_enable;
-unsigned long total_threshold[OPP_NUM][OPP_NUM - 1];
-unsigned long total_threshold_2[OPP_NUM][OPP_NUM - 1];
+unsigned int total_threshold[OPP_NUM][OPP_NUM - 1];
+unsigned int total_threshold_2[OPP_NUM][OPP_NUM - 1];
 static int total_period;
 static int total_intr;
 #endif
@@ -89,7 +89,7 @@ int init_total_monitor(void)
 
 	mt_set_emi_total_bw_intr_period(total_period);
 	mt_set_emi_total_bw_intr_status(total_intr);
-	mt_set_emi_total_bw_enable(total_enable);
+	/*mt_set_emi_total_bw_enable(total_enable);*/
 #endif
 	return 0;
 }
@@ -270,7 +270,7 @@ static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
 #endif
 
 #if BWM_SUPPORT
-	cg_threshold[0] = cg_threshold[1] = cg_threshold[2] = cg_threshold[3] = val;
+	cg_thr = val;
 	init_cg_monitor();
 #endif
 
@@ -280,7 +280,7 @@ static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
 static int mt_cg_threshold_show(struct seq_file *m, void *v)
 {
 #if BWM_SUPPORT
-	SEQ_printf(m, "%d\n", cg_threshold[0]);
+	SEQ_printf(m, "%d\n", cg_thr);
 #endif
 	return 0;
 }
