@@ -76,8 +76,8 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 				     read_len, count);
 			ret = -EFAULT;
 		}
+		ccci_free_skb(skb);
 	}
-	ccci_free_skb(skb);
 
  exit:
 	return ret ? ret : read_len;
