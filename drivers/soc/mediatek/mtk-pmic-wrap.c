@@ -1141,6 +1141,7 @@ static const struct regmap_config pwrap_regmap_config = {
 	.reg_read = pwrap_regmap_read,
 	.reg_write = pwrap_regmap_write,
 	.max_register = 0xffff,
+	.fast_io = true,
 };
 
 static const struct pwrap_slv_type pmic_mt6323 = {
