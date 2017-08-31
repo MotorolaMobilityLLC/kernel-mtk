@@ -186,9 +186,9 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 	spm_suspend_post_process(pwrctrl);
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
+static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 {
-	wake_reason_t wr;
+	unsigned int wr;
 	int ddr_status = 0;
 	int vcore_status = 0;
 
@@ -299,7 +299,7 @@ int __attribute__((weak)) get_dlpt_imix_spm(void)
 #endif
 #endif
 
-wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
+unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 {
 	u32 sec = 2;
 	unsigned long flags;
@@ -310,7 +310,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	struct wd_api *wd_api;
 	int wd_ret;
 #endif
-	static wake_reason_t last_wr = WR_NONE;
+	static unsigned int last_wr = WR_NONE;
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
 
