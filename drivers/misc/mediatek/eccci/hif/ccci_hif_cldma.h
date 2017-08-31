@@ -50,7 +50,7 @@
 #define SKB_RX_QUEUE_MAX_LEN 200000
 #define CLDMA_ACTIVE_T 20
 
-#define CLDMA_AP_MTU_SIZE	0xC04	/*sync with md side, 3K + 4B header*/
+#define CLDMA_AP_MTU_SIZE	(NET_RX_BUF)	/*sync with runtime data*/
 
 /*
  * CLDMA feature options:
