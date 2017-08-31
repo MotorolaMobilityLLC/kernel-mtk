@@ -455,6 +455,7 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
 		speed = gadget->speed;
 	else if (gadget_is_dualspeed(gadget)) {
 		int	hs = 0;
+
 		if (gadget->speed == USB_SPEED_HIGH)
 			hs = 1;
 		if (type == USB_DT_OTHER_SPEED_CONFIG)
@@ -1000,6 +1001,7 @@ static int get_string(struct usb_composite_dev *cdev,
 
 	if (cdev->use_os_string && language == 0 && id == OS_STRING_IDX) {
 		struct usb_os_string *b = buf;
+
 		b->bLength = sizeof(*b);
 		b->bDescriptorType = USB_DT_STRING;
 		compiletime_assert(
@@ -1063,8 +1065,9 @@ static int get_string(struct usb_composite_dev *cdev,
 int usb_string_id(struct usb_composite_dev *cdev)
 {
 	if (cdev->next_string_id < 254) {
-		/* string id 0 is reserved by USB spec for list of
-		 * supported languages */
+		/** string id 0 is reserved by USB spec for list of
+		 *  supported languages
+		 */
 		/* 255 reserved as well? -- mina86 */
 		cdev->next_string_id++;
 		return cdev->next_string_id;
@@ -1240,6 +1243,7 @@ EXPORT_SYMBOL_GPL(usb_gstrings_attach);
 int usb_string_ids_n(struct usb_composite_dev *c, unsigned n)
 {
 	unsigned next = c->next_string_id;
+
 	if (unlikely(n > 254 || (unsigned)next + n > 254))
 		return -ENODEV;
 	c->next_string_id += n;
@@ -1249,7 +1253,7 @@ EXPORT_SYMBOL_GPL(usb_string_ids_n);
 
 /*-------------------------------------------------------------------------*/
 
-static void composite_setup_complete(struct usb_ep *ep, struct usb_request *req)
+void composite_setup_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct usb_composite_dev *cdev;
 

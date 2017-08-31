@@ -80,6 +80,13 @@ module_param(rndis_ul_max_pkt_per_xfer, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(rndis_ul_max_pkt_per_xfer,
        "Maximum packets per transfer for UL aggregation");
 
+static unsigned int f_rndis_debug;
+module_param(f_rndis_debug, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(f_rndis_debug,
+		"f_rndis debug flag");
+#define F_RNDIS_DBG(fmt, args...) pr_debug("F_RNDIS,%s, " fmt, __func__, ## args)
+
+
 struct f_rndis {
 	struct gether			port;
 	u8				ctrl_id, data_id;
@@ -87,6 +94,7 @@ struct f_rndis {
 	u32				vendorID;
 	const char			*manufacturer;
 	struct rndis_params		*params;
+	int				config;
 
 	struct usb_ep			*notify;
 	struct usb_request		*notify_req;
@@ -121,7 +129,7 @@ static unsigned int bitrate(struct usb_gadget *g)
 /* interface descriptor: */
 
 static struct usb_interface_descriptor rndis_control_intf = {
-	.bLength =		sizeof rndis_control_intf,
+	.bLength =		sizeof(rndis_control_intf),
 	.bDescriptorType =	USB_DT_INTERFACE,
 
 	/* .bInterfaceNumber = DYNAMIC */
@@ -134,7 +142,7 @@ static struct usb_interface_descriptor rndis_control_intf = {
 };
 
 static struct usb_cdc_header_desc header_desc = {
-	.bLength =		sizeof header_desc,
+	.bLength =		sizeof(header_desc),
 	.bDescriptorType =	USB_DT_CS_INTERFACE,
 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
 
@@ -142,7 +150,7 @@ static struct usb_cdc_header_desc header_desc = {
 };
 
 static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor = {
-	.bLength =		sizeof call_mgmt_descriptor,
+	.bLength =		sizeof(call_mgmt_descriptor),
 	.bDescriptorType =	USB_DT_CS_INTERFACE,
 	.bDescriptorSubType =	USB_CDC_CALL_MANAGEMENT_TYPE,
 
@@ -151,7 +159,7 @@ static struct usb_cdc_call_mgmt_descriptor call_mgmt_descriptor = {
 };
 
 static struct usb_cdc_acm_descriptor rndis_acm_descriptor = {
-	.bLength =		sizeof rndis_acm_descriptor,
+	.bLength =		sizeof(rndis_acm_descriptor),
 	.bDescriptorType =	USB_DT_CS_INTERFACE,
 	.bDescriptorSubType =	USB_CDC_ACM_TYPE,
 
@@ -169,7 +177,7 @@ static struct usb_cdc_union_desc rndis_union_desc = {
 /* the data interface has two bulk endpoints */
 
 static struct usb_interface_descriptor rndis_data_intf = {
-	.bLength =		sizeof rndis_data_intf,
+	.bLength =		sizeof(rndis_data_intf),
 	.bDescriptorType =	USB_DT_INTERFACE,
 
 	/* .bInterfaceNumber = DYNAMIC */
@@ -183,11 +191,11 @@ static struct usb_interface_descriptor rndis_data_intf = {
 
 static struct usb_interface_assoc_descriptor
 rndis_iad_descriptor = {
-	.bLength =		sizeof rndis_iad_descriptor,
+	.bLength =		sizeof(rndis_iad_descriptor),
 	.bDescriptorType =	USB_DT_INTERFACE_ASSOCIATION,
 
 	.bFirstInterface =	0, /* XXX, hardcoded */
-	.bInterfaceCount = 	2,	// control + data
+	.bInterfaceCount =	2, /* control + data */
 	.bFunctionClass =	USB_CLASS_COMM,
 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ETHERNET,
 	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
@@ -301,7 +309,7 @@ static struct usb_endpoint_descriptor ss_notify_desc = {
 };
 
 static struct usb_ss_ep_comp_descriptor ss_intr_comp_desc = {
-	.bLength =		sizeof ss_intr_comp_desc,
+	.bLength =		sizeof(ss_intr_comp_desc),
 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
 
 	/* the following 3 values can be tweaked if necessary */
@@ -329,7 +337,7 @@ static struct usb_endpoint_descriptor ss_out_desc = {
 };
 
 static struct usb_ss_ep_comp_descriptor ss_bulk_comp_desc = {
-	.bLength =		sizeof ss_bulk_comp_desc,
+	.bLength =		sizeof(ss_bulk_comp_desc),
 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
 
 	/* the following 2 values can be tweaked if necessary */
@@ -464,7 +472,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 	rndis_init_msg_type		*buf;
 
 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
-//	spin_lock(&dev->lock);
+	/* spin_lock(&dev->lock); */
 	status = rndis_msg_parser(rndis->params, (u8 *) req->buf);
 	if (status < 0)
 		pr_err("RNDIS command error %d, %d/%d\n",
@@ -484,7 +492,7 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 		if (rndis_dl_max_pkt_per_xfer <= 1)
 			rndis->port.multi_pkt_xfer = 0;
 	}
-//	spin_unlock(&dev->lock);
+	/* spin_unlock(&dev->lock); */
 }
 
 static int
@@ -617,7 +625,7 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 		 */
 		rndis->port.cdc_filter = 0;
 
-		DBG(cdev, "RNDIS RX/TX early activation ... \n");
+		DBG(cdev, "RNDIS RX/TX early activation\n");
 		net = gether_connect(&rndis->port);
 		if (IS_ERR(net))
 			return PTR_ERR(net);
@@ -856,6 +864,78 @@ fail:
 	return status;
 }
 
+static void
+rndis_old_unbind(struct usb_configuration *c, struct usb_function *f)
+{
+	struct f_rndis	*rndis = func_to_rndis(f);
+
+	F_RNDIS_DBG("\n");
+
+	rndis_deregister(rndis->params);  /* FIXME Need to check*/
+
+	usb_free_all_descriptors(f);
+
+	kfree(rndis->notify_req->buf);
+	usb_ep_free_request(rndis->notify, rndis->notify_req);
+
+	kfree(rndis);
+}
+
+int
+rndis_bind_config_vendor(struct usb_configuration *c, u8 ethaddr[ETH_ALEN],
+		u32 vendorID, const char *manufacturer, struct eth_dev *dev)
+{
+	struct f_rndis	*rndis;
+	int status;
+	rndis_params *rndis_status;
+
+	/* allocate and initialize one new instance */
+	status = -ENOMEM;
+	rndis = kzalloc(sizeof(*rndis), GFP_KERNEL);
+	if (!rndis)
+		goto fail;
+
+	ether_addr_copy(rndis->ethaddr, ethaddr);
+	rndis->vendorID = vendorID;
+	rndis->manufacturer = manufacturer;
+
+	rndis->port.ioport = dev;
+	/* RNDIS activates when the host changes this filter */
+	rndis->port.cdc_filter = 0;
+
+	/* RNDIS has special (and complex) framing */
+	rndis->port.header_len = sizeof(struct rndis_packet_msg_type);
+	rndis->port.wrap = rndis_add_header;
+	rndis->port.unwrap = rndis_rm_hdr;
+	rndis->port.ul_max_pkts_per_xfer = rndis_ul_max_pkt_per_xfer;
+	rndis->port.dl_max_pkts_per_xfer = rndis_dl_max_pkt_per_xfer;
+
+	rndis->port.func.name = "rndis";
+	/* descriptors are per-instance copies */
+	rndis->port.func.bind = rndis_bind;
+	/* note here use rndis_old_unbind */
+	rndis->port.func.unbind = rndis_old_unbind;
+	rndis->port.func.set_alt = rndis_set_alt;
+	rndis->port.func.setup = rndis_setup;
+	rndis->port.func.disable = rndis_disable;
+
+	rndis_status = rndis_register(rndis_response_available, rndis);
+	status = 1;
+	if (status < 0) {
+		kfree(rndis);
+		return status;
+	}
+	rndis->config = status;
+
+	status = usb_add_function(c, &rndis->port.func);
+	if (status)
+		kfree(rndis);
+fail:
+
+	F_RNDIS_DBG("done, status %d\n", status);
+	return status;
+}
+
 void rndis_borrow_net(struct usb_function_instance *f, struct net_device *net)
 {
 	struct f_rndis_opts *opts;
@@ -937,6 +1017,7 @@ static struct usb_function_instance *rndis_alloc_inst(void)
 	opts->net = gether_setup_default();
 	if (IS_ERR(opts->net)) {
 		struct net_device *net = opts->net;
+
 		kfree(opts);
 		return ERR_CAST(net);
 	}
