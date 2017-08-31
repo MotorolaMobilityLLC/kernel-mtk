@@ -15,4 +15,7 @@
 #obj-$(CONFIG_MTK_SCP_SENSORHUB) += SCP_sensorHub/
 #obj-$(CONFIG_MTK_SENSOR_HUB_SUPPORT) += SCP_shf/
 #obj-$(CONFIG_MTK_SCP_SENSORHUB_V1) += SCP_sensorHub_v1/
-obj-$(CONFIG_NANOHUB) += SCP_nanoHub/
+ifeq ($(CONFIG_NANOHUB),y)
+obj-y += SCP_nanoHub/
+obj-y += SCP_power_monitor/
+endif

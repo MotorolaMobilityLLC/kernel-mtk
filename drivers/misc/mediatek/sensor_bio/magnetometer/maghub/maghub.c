@@ -21,8 +21,7 @@
 #include "maghub.h"
 #include "mag.h"
 #include <SCP_sensorHub.h>
-#include <linux/notifier.h>
-#include "scp_helper.h"
+#include "SCP_power_monitor.h"
 
 #define MAGHUB_DEV_NAME         "mag_hub"
 #define DRIVER_VERSION          "1.0.1"
@@ -30,9 +29,9 @@
 
 #if MAGHUB_DEBUG
 #define MAGN_TAG                  "[Msensor] "
-#define MAGN_FUN(f)               pr_err(MAGN_TAG"%s\n", __func__)
+#define MAGN_FUN(f)               pr_debug(MAGN_TAG"%s\n", __func__)
 #define MAGN_ERR(fmt, args...)    pr_err(MAGN_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define MAGN_LOG(fmt, args...)    pr_err(MAGN_TAG fmt, ##args)
+#define MAGN_LOG(fmt, args...)    pr_debug(MAGN_TAG fmt, ##args)
 #else
 #define MAGN_TAG
 #define MAGN_FUN(f)               do {} while (0)
@@ -55,31 +54,22 @@ typedef enum {
 } MAG_TRC;
 struct maghub_ipi_data {
 	int		direction;
+	int32_t dynamic_cali[MAGHUB_AXES_NUM];
 	atomic_t	trace;
 	atomic_t	suspend;
 	atomic_t	scp_init_done;
+	atomic_t first_ready_after_boot;
 	struct work_struct init_done_work;
 	struct data_unit_t m_data_t;
 };
 static int maghub_m_setPowerMode(bool enable)
 {
 	int res = 0;
-	struct maghub_ipi_data *obj = mag_ipi_data;
 
 	MAGN_LOG("magnetic enable value = %d\n", enable);
-
-	if (!atomic_read(&obj->scp_init_done)) {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
-	if (atomic_read(&obj->scp_init_done)) {
-		res = sensor_enable_to_hub(ID_MAGNETIC, enable);
-		if (res < 0)
-			MAGN_ERR("maghub_m_setPowerMode is failed!!\n");
-
-	} else {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-	}
+	res = sensor_enable_to_hub(ID_MAGNETIC, enable);
+	if (res < 0)
+		MAGN_ERR("maghub_m_setPowerMode is failed!!\n");
 
 	return res;
 }
@@ -93,11 +83,6 @@ static int maghub_GetMData(char *buf, int size)
 	int mag_m[MAGHUB_AXES_NUM];
 	int err = 0;
 	unsigned int status = 0;
-
-	if (!atomic_read(&obj->scp_init_done)) {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 
 	if (atomic_read(&obj->suspend))
 		return -3;
@@ -178,10 +163,6 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 		MAGN_ERR("maghub_ipi_data is null!!\n");
 		return 0;
 	}
-	if (!atomic_read(&obj->scp_init_done)) {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-		return 0;
-	}
 	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_MAGNETIC, CUST_ACTION_SET_TRACE, &trace);
@@ -216,10 +197,6 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 
 	if (obj == NULL)
 		return 0;
-	if (!atomic_read(&obj->scp_init_done)) {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-		return 0;
-	}
 	err = kstrtoint(buf, 10, &_nDirection);
 	if (err == 0) {
 		obj->direction = _nDirection;
@@ -285,6 +262,24 @@ static int maghub_delete_attr(struct device_driver *driver)
 
 	return err;
 }
+
+static void scp_init_work_done(struct work_struct *work)
+{
+	struct maghub_ipi_data *obj = mag_ipi_data;
+	int err = 0;
+
+	if (atomic_read(&obj->scp_init_done) == 0) {
+		MAGN_ERR("scp is not ready to send cmd\n");
+	} else {
+		if (atomic_read(&obj->first_ready_after_boot) == 0) {
+			atomic_set(&obj->first_ready_after_boot, 1);
+		} else {
+			err = sensor_cfg_to_hub(ID_MAGNETIC, (uint8_t *)obj->dynamic_cali, sizeof(obj->dynamic_cali));
+			if (err < 0)
+				MAGN_ERR("sensor_cfg_to_hub fail\n");
+		}
+	}
+}
 static int mag_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
@@ -294,8 +289,12 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	else if (event->flush_action == DATA_ACTION)
 		err = mag_data_report(event->magnetic_t.x, event->magnetic_t.y, event->magnetic_t.z,
 			event->magnetic_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
-	else if (event->flush_action == BIAS_ACTION)
+	else if (event->flush_action == BIAS_ACTION) {
 		err = mag_bias_report(event->magnetic_t.x_bias, event->magnetic_t.y_bias, event->magnetic_t.z_bias);
+		mag_ipi_data->dynamic_cali[MAGHUB_AXIS_X] = event->magnetic_t.x_bias;
+		mag_ipi_data->dynamic_cali[MAGHUB_AXIS_Y] = event->magnetic_t.y_bias;
+		mag_ipi_data->dynamic_cali[MAGHUB_AXIS_Z] = event->magnetic_t.z_bias;
+	}
 	return err;
 }
 
@@ -505,10 +504,6 @@ static int maghub_set_delay(u64 ns)
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
 	delayms = (int)ns / 1000 / 1000;
-	if (!atomic_read(&obj->scp_init_done)) {
-		MAGN_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_set_delay_to_hub(ID_MAGNETIC, delayms);
 	if (err < 0) {
 		MAGN_ERR("maghub_m_set_delay fail!\n");
@@ -556,21 +551,23 @@ static int maghub_get_data(int *x, int *y, int *z, int *status)
 		MAGN_ERR("maghub_m_get_data sscanf fail!!\n");
 	return 0;
 }
-static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
+static int scp_ready_event(uint8_t event, void *ptr)
 {
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
 	switch (event) {
-	case SCP_EVENT_READY:
+	case SENSOR_POWER_UP:
 	    atomic_set(&obj->scp_init_done, 1);
+		schedule_work(&obj->init_done_work);
 	    break;
-	case SCP_EVENT_STOP:
+	case SENSOR_POWER_DOWN:
 	    atomic_set(&obj->scp_init_done, 0);
 	    break;
 	}
-	return NOTIFY_DONE;
+	return 0;
 }
-static struct notifier_block scp_ready_notifier = {
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "mag",
 	.notifier_call = scp_ready_event,
 };
 static int maghub_probe(struct platform_device *pdev)
@@ -591,7 +588,8 @@ static int maghub_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	scp_A_register_notify(&scp_ready_notifier);
+	INIT_WORK(&data->init_done_work, scp_init_work_done);
+	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_MAGNETIC, mag_recv_data);
 	if (err < 0) {
 		MAGN_ERR("scp_sensorHub_data_registration failed\n");
