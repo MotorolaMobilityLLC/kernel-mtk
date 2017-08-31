@@ -1063,6 +1063,7 @@ static struct MDP_COLOR_CAP mdp_color_cap;
 static int g_tdshp_flag;	/* 0: normal, 1: tuning mode */
 int ncs_tuning_mode;
 int tdshp_index_init;
+static bool g_get_va_flag;
 
 #if defined(DISP_COLOR_ON)
 #define COLOR_MODE			(1)
@@ -1087,10 +1088,12 @@ static unsigned long g_tdshp1_va;
 #define TDSHP_PA_BASE   0x14006000
 #endif
 
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define MDP_COLOR_PA_BASE 0x1400A000
+#elif defined(CONFIG_MACH_MT6763)
+#define MDP_COLOR_PA_BASE 0x1400E000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
 #endif
@@ -2091,7 +2094,7 @@ static unsigned long color_get_TDSHP1_VA(void)
 }
 #endif
 
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 static unsigned long color_get_MDP_COLOR_VA(void)
 {
 	unsigned long VA;
@@ -2157,6 +2160,27 @@ static unsigned long color_get_MDP_RDMA0_VA(void)
 }
 #endif
 
+static void _color_get_VA(void)
+{
+	g_tdshp_va = color_get_TDSHP_VA();
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
+	g_mdp_color_va = color_get_MDP_COLOR_VA();
+#endif
+#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
+	g_tdshp1_va = color_get_TDSHP1_VA();
+#endif
+#if defined(SUPPORT_ULTRA_RESOLUTION)
+	g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
+	g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
+	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
+#endif
+
+#if defined(SUPPORT_HDR)
+	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
+#endif
+	g_get_va_flag = true;
+}
+
 
 static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
@@ -2187,7 +2211,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 #endif
 
 	/*Check if MDP color base address*/
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 	if ((addr >= g_mdp_color_va) && (addr < (g_mdp_color_va + 0x1000))) {			/* MDP COLOR */
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_COLOR");
 		return 2;
@@ -2239,6 +2263,9 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 static unsigned long color_pa2va(unsigned int addr)
 {
 	unsigned int i = 0;
+	/* check va address */
+	if (g_get_va_flag == false)
+		_color_get_VA();
 
 	/* check disp module */
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763) \
@@ -2274,7 +2301,7 @@ static unsigned long color_pa2va(unsigned int addr)
 	}
 #endif
 
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 	/* MDP_COLOR */
 	if ((addr >= MDP_COLOR_PA_BASE) && (addr < (MDP_COLOR_PA_BASE + 0x1000))) {
 		COLOR_DBG("color_pa2va(), MDP_COLOR PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
@@ -2408,7 +2435,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 			ret = TDSHP_PA_BASE;
 			break;
 		}
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 	case SWREG_MDP_COLOR_BASE_ADDRESS:
 		{
 			ret = MDP_COLOR_PA_BASE;
@@ -2647,22 +2674,8 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	_color_clock_on(module, cmq_handle);
 #endif
 
-	g_tdshp_va = color_get_TDSHP_VA();
-#ifdef DISP_MDP_COLOR_ON
-	g_mdp_color_va = color_get_MDP_COLOR_VA();
-#endif
-#if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
-	g_tdshp1_va = color_get_TDSHP1_VA();
-#endif
-#if defined(SUPPORT_ULTRA_RESOLUTION)
-	g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
-	g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
-	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
-#endif
+	_color_get_VA();
 
-#if defined(SUPPORT_HDR)
-	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
-#endif
 #if defined(CONFIG_MACH_MT6757)
 	if (mt_get_chip_hw_ver() >= 0xCB00)
 		g_config_color30 = true;
@@ -2842,13 +2855,21 @@ static int color_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 
 static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
+	/* legacy chip use driver .cmd to call _color_io */
+	/* After mt6763 directly call ioctl_function from ddp_manager */
+	return disp_color_ioctl(module, msg, arg, cmdq);
+}
+
+int disp_color_ioctl(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
+{
+
 	int ret = 0;
 	int value = 0;
 	struct DISP_PQ_PARAM *pq_param;
 	struct DISPLAY_PQ_T *pq_index;
 	struct DISPLAY_TDSHP_T *tdshp_index;
 
-	COLOR_DBG("_color_io: module %d, msg %x", module, msg);
+	COLOR_DBG("ioctl_function: module %d, msg %x", module, msg);
 	/* COLOR_ERR("_color_io: GET_PQPARAM %lx\n", DISP_IOCTL_GET_PQPARAM); */
 	/* COLOR_ERR("_color_io: SET_PQPARAM %lx\n", DISP_IOCTL_SET_PQPARAM); */
 	/* COLOR_ERR("_color_io: READ_REG %lx\n", DISP_IOCTL_READ_REG); */
@@ -3125,7 +3146,7 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 				if (cmdq == NULL) {
 					mt_reg_sync_writel((unsigned int)(INREG32(va) &
 									  ~(wParams.
-									    mask)) | (wParams.val),
+										mask)) | (wParams.val),
 							   (unsigned long *)(va));
 				} else {
 					cmdqRecWrite(cmdq, pa, wParams.val, wParams.mask);
@@ -3152,10 +3173,10 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 				return -EFAULT;
 			}
 			if (rParams.reg > DISP_COLOR_SWREG_END
-			    || rParams.reg < DISP_COLOR_SWREG_START) {
+				|| rParams.reg < DISP_COLOR_SWREG_START) {
 				COLOR_ERR
-				    ("sw reg read, addr invalid, addr min=0x%x, max=0x%x, addr=0x%x\n",
-				     DISP_COLOR_SWREG_START, DISP_COLOR_SWREG_END, rParams.reg);
+					("sw reg read, addr invalid, addr min=0x%x, max=0x%x, addr=0x%x\n",
+					 DISP_COLOR_SWREG_START, DISP_COLOR_SWREG_END, rParams.reg);
 				return -EFAULT;
 			}
 
@@ -3181,10 +3202,10 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 
 
 			if (wParams.reg > DISP_COLOR_SWREG_END
-			    || wParams.reg < DISP_COLOR_SWREG_START) {
+				|| wParams.reg < DISP_COLOR_SWREG_START) {
 				COLOR_ERR
-				    ("sw reg write, addr invalid, addr min=0x%x, max=0x%x, addr=0x%x\n",
-				     DISP_COLOR_SWREG_START, DISP_COLOR_SWREG_END, wParams.reg);
+					("sw reg write, addr invalid, addr min=0x%x, max=0x%x, addr=0x%x\n",
+					 DISP_COLOR_SWREG_START, DISP_COLOR_SWREG_END, wParams.reg);
 				return -EFAULT;
 			}
 
@@ -3273,7 +3294,7 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 
 		break;
 
-#ifdef DISP_MDP_COLOR_ON
+#if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
 			if (copy_to_user((void *)arg, &mdp_color_cap, sizeof(struct MDP_COLOR_CAP))) {
 				COLOR_ERR("DISP_IOCTL_PQ_GET_MDP_COLOR_CAP Copy to user failed\n");
