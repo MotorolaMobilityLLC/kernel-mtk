@@ -34,13 +34,29 @@
 #include <linux/slab.h>
 
 /* ************************************ */
+/* Function prototype*/
+/* ************************************ */
+static void __exit mtktsbattery_exit(void);
+/* ************************************ */
 /* Weak functions */
 /* ************************************ */
 int __attribute__ ((weak))
 read_tbat_value(void)
 {
-	pr_err("E_WF: %s doesn't exist\n", __func__);
+	pr_err("[Thermal] E_WF: %s doesn't exist\n", __func__);
 	return 30;
+}
+
+signed int __attribute__ ((weak))
+battery_get_bat_temperature(void)
+{
+	int i;
+
+	for (i = 0; i < 5; i++)
+		pr_err("[Thermal] E_WF: %s doesn't exist\n", __func__);
+
+	mtktsbattery_exit();
+	return -127000;
 }
 /* ************************************ */
 static kuid_t uid = KUIDT_INIT(0);
@@ -147,7 +163,13 @@ static int get_hw_battery_temp(void)
 	ret = -1270;
 #else
 	/* Phone */
+
+/* TO-DO: Use CONFIG MT6799 or GM3.0 */
+#if defined(CONFIG_MACH_MT6799)
+	ret = battery_get_bat_temperature();
+#else
 	ret = read_tbat_value();
+#endif
 	ret = ret * 10;
 #endif
 
@@ -191,6 +213,7 @@ static int mtktsbattery_get_hw_temp(void)
 
 static int mtktsbattery_get_temp(struct thermal_zone_device *thermal, int *t)
 {
+
 	*t = mtktsbattery_get_hw_temp();
 
 	if ((int)*t >= polling_trip_temp1)
@@ -411,7 +434,6 @@ static struct thermal_cooling_device_ops mtktsbattery_cooling_sysrst_ops = {
 static int mtktsbattery_read(struct seq_file *m, void *v)
 /* static int mtktsbattery_read(char *buf, char **start, off_t off, int count, int *eof, void *data) */
 {
-
 
 	seq_printf(m, "[mtktsbattery_read] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,\n",
 		trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3]);
