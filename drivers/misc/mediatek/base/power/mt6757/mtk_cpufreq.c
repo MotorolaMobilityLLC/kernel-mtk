@@ -122,7 +122,7 @@ static ktime_t max[NR_SET_V_F];
 #define MAX_DIFF_VSRAM_VPROC		30000
 #define MIN_VSRAM_VOLT			85000
 #define MAX_VSRAM_VOLT_FY		105000
-#define MAX_VSRAM_VOLT_FY2		107500
+#define MAX_VSRAM_VOLT_FY2		111875
 #define MAX_VSRAM_VOLT_FY3		111875
 
 static unsigned int max_vsram_volt = MAX_VSRAM_VOLT_FY;
