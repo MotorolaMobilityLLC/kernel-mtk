@@ -88,9 +88,19 @@ __weak struct vm_struct *find_vm_area(const void *addr)
 }
 
 #undef virt_addr_valid
+#ifdef __aarch64__
+#define MIN_MARGIN KIMAGE_VADDR
+#define virt_addr_valid(kaddr) ((((void *)(kaddr) >= (void *)PAGE_OFFSET && \
+				(void *)(kaddr) < (void *)high_memory) || \
+				((void *)(kaddr) >= (void *)KIMAGE_VADDR && \
+				(void *)(kaddr) < (void *)_end)) && \
+				pfn_valid(__pa(kaddr) >> PAGE_SHIFT))
+#else
+#define MIN_MARGIN PAGE_OFFSET
 #define virt_addr_valid(kaddr) ((void *)(kaddr) >= (void *)PAGE_OFFSET && \
 				(void *)(kaddr) < (void *)high_memory && \
 				pfn_valid(__pa(kaddr) >> PAGE_SHIFT))
+#endif
 
 void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *high)
 {
@@ -246,7 +256,7 @@ int kernel_addr_valid(unsigned long addr)
 	pmd_t *pmd;
 	pte_t *pte;
 
-	if (addr < PAGE_OFFSET)
+	if (addr < MIN_MARGIN)
 		return 0;
 
 	pgd = pgd_offset_k(addr);
@@ -281,7 +291,7 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 	unsigned long paddr;
 	int i;
 
-	if (addr < PAGE_OFFSET)
+	if (addr < MIN_MARGIN)
 		return;
 	hnew = ALIGN(addr + size / 2, PAGE_SIZE);
 	lnew = hnew - ALIGN(size, PAGE_SIZE);
@@ -304,7 +314,7 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 		paddr = __pfn_to_phys(vmalloc_to_pfn((void *)lnew));
 	} else {
 		check_addr_valid(addr, &lnew, &hnew);
-		lnew = max(lnew, PAGE_OFFSET);
+		lnew = max(lnew, MIN_MARGIN);
 		hnew = min_t(unsigned long, hnew, (unsigned long)high_memory);
 		paddr = __pa(lnew);
 	}
