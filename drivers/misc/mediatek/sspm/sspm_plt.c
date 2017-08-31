@@ -47,6 +47,7 @@
 #include "sspm_reservedmem_define.h"
 #include "sspm_logger.h"
 #include "sspm_timesync.h"
+#include "sspm_sysfs.h"
 
 #ifdef SSPM_PLT_SERV_SUPPORT
 
@@ -102,6 +103,22 @@ static int sspm_recv_thread(void *userdata)
 	return 0;
 }
 
+static ssize_t sspm_alive_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	struct plt_ipi_data_s ipi_data;
+	int ackdata = 0;
+
+	ipi_data.cmd = 0xDEAD;
+
+	sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_DEFAUT,
+		&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
+
+	return sprintf(buf, "%s\n", ackdata ? "Alive" : "Dead");
+}
+DEVICE_ATTR(sspm_alive, S_IWUSR | S_IRUGO, sspm_alive_show, NULL);
+
+
 int __init sspm_plt_init(void)
 {
 	phys_addr_t phys_addr, virt_addr, mem_sz;
@@ -110,6 +127,12 @@ int __init sspm_plt_init(void)
 	unsigned int last_ofs, last_sz;
 	unsigned int *mark;
 	unsigned char *b;
+
+
+	ret = sspm_sysfs_create_file(&dev_attr_sspm_alive);
+
+	if (unlikely(ret != 0))
+		goto error;
 
 	phys_addr = sspm_reserve_mem_get_phys(SSPM_MEM_ID);
 	if (phys_addr == 0) {
