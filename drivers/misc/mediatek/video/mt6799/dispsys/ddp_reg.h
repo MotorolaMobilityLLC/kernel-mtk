@@ -2337,6 +2337,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OD_INTEN        (DISPSYS_OD_BASE+0x008)
 #define DISP_REG_OD_INTSTA       (DISPSYS_OD_BASE+0x00C)
 #define DISP_REG_OD_STATUS       (DISPSYS_OD_BASE+0x010)
+#define DISP_REG_OD_SHADOW_CTRL  (DISPSYS_OD_BASE+0x014)
 #define DISP_REG_OD_CFG          (DISPSYS_OD_BASE+0x020)
 #define DISP_REG_OD_INPUT_COUNT	 (DISPSYS_OD_BASE+0x024)
 #define DISP_REG_OD_OUTPUT_COUNT (DISPSYS_OD_BASE+0x028)
@@ -2360,6 +2361,9 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #define DISP_REG_OD_DITHER_15	   (DISPSYS_OD_BASE+0x13C)
 #define DISP_REG_OD_DITHER_16	   (DISPSYS_OD_BASE+0x140)
 #define DISP_REG_OD_DITHER_17    (DISPSYS_OD_BASE+0x144)
+#define DISP_REG_OD_DMA_ADDR_0   (DISPSYS_OD_BASE+0x210)
+#define DISP_REG_OD_DMA_ADDR_1   (DISPSYS_OD_BASE+0x214)
+
 
 /* ------------------------------------------------------------- */
 
