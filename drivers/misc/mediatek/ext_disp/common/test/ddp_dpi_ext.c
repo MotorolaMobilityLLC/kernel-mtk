@@ -395,7 +395,7 @@ int enableAndGetChecksum(void)
 }
 
 /*
-*int enableAndGetChecksumCmdq(cmdqRecHandle cmdq_handle)
+*int enableAndGetChecksumCmdq(struct cmdqRecStruct *cmdq_handle)
 {
 	DPI_EXT_LOG_PRINT("enableAndGetChecksumCmdq\n");
 

@@ -118,7 +118,7 @@ int ext_disp_switch_cmdq(CMDQ_SWITCH use_cmdq);
 int ext_disp_diagnose(void);
 void ext_disp_get_curr_addr(unsigned long *input_curr_addr, int module);
 int ext_disp_factory_test(int mode, void *config);
-int ext_disp_get_handle(disp_path_handle *dp_handle, cmdqRecHandle *pHandle);
+int ext_disp_get_handle(disp_path_handle *dp_handle, struct cmdqRecStruct **pHandle);
 int ext_disp_set_ovl1_status(int status);
 int ext_disp_set_lcm_param(LCM_PARAMS *pLCMParam);
 enum EXTD_OVL_REQ_STATUS ext_disp_get_ovl_req_status(unsigned int session);

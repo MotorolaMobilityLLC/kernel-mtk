@@ -79,8 +79,8 @@ struct ext_disp_path_context {
 	unsigned int last_vsync_tick;
 	struct mutex lock;
 	struct mutex vsync_lock;
-	cmdqRecHandle cmdq_handle_config;
-	cmdqRecHandle cmdq_handle_trigger;
+	struct cmdqRecStruct *cmdq_handle_config;
+	struct cmdqRecStruct *cmdq_handle_trigger;
 	disp_path_handle dpmgr_handle;
 	disp_path_handle ovl2mem_path_handle;
 	cmdqBackupSlotHandle ext_cur_config_fence;
@@ -1587,7 +1587,7 @@ int ext_disp_factory_test(int mode, void *config)
 	return 0;
 }
 
-int ext_disp_get_handle(disp_path_handle *dp_handle, cmdqRecHandle *pHandle)
+int ext_disp_get_handle(disp_path_handle *dp_handle, struct cmdqRecStruct **pHandle)
 {
 	*dp_handle = pgc->dpmgr_handle;
 	*pHandle = pgc->cmdq_handle_config;
