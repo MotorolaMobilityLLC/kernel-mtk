@@ -130,7 +130,7 @@ int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 	const int k_max_try_count = 10000;
 	int try_count = 0;
 
-	AUD_LOG_D("%s(+)\n", __func__);
+	AUD_LOG_V("%s(+)\n", __func__);
 
 	/* error handling */
 	if (p_ipi_msg == NULL) {
@@ -160,7 +160,7 @@ int send_message_to_scp(const ipi_msg_t *p_ipi_msg)
 		print_msg_info(__func__, "pass", p_ipi_msg);
 
 
-	AUD_LOG_D("%s(-)\n", __func__);
+	AUD_LOG_V("%s(-)\n", __func__);
 	return (send_status == DONE) ? 0 : -1;
 }
 
