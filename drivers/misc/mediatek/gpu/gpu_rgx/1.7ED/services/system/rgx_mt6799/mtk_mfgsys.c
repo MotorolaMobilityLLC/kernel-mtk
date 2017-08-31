@@ -198,17 +198,16 @@ static IMG_VOID MTKEnableMfgClock(void)
 
     ged_dvfs_gpu_clock_switch_notify(1);
  
-    MTKCLK_prepare_enable(mtcmos_mfg0);
-    MTKCLK_prepare_enable(mtcmos_mfg1);
-    MTKCLK_prepare_enable(mtcmos_mfg2);
-    MTKCLK_prepare_enable(mtcmos_mfg3);
 
-    MTKCLK_prepare_enable(mfg_clk_baxi);
-    MTKCLK_prepare_enable(mfg_clk_bmem);
-    MTKCLK_prepare_enable(mfg_clk_bg3d);
-    MTKCLK_prepare_enable(mfg_clk_b26m);
+/*
+*    MTKCLK_prepare_enable(mtcmos_mfg0);
+*    MTKCLK_prepare_enable(mtcmos_mfg1);
+*    MTKCLK_prepare_enable(mtcmos_mfg2);
+*    MTKCLK_prepare_enable(mtcmos_mfg3);
+*/
 
 	spm_mtcmos_ctrl_mfg0(1);
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	;
 #else
@@ -216,6 +215,12 @@ static IMG_VOID MTKEnableMfgClock(void)
 	spm_mtcmos_ctrl_mfg2(1);
 #endif
 
+/*
+*    MTKCLK_prepare_enable(mfg_clk_baxi);
+*    MTKCLK_prepare_enable(mfg_clk_bmem);
+*    MTKCLK_prepare_enable(mfg_clk_bg3d);
+*    MTKCLK_prepare_enable(mfg_clk_b26m);
+*/
     if (gpu_debug_enable)
     {
         PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
@@ -227,23 +232,26 @@ static IMG_VOID MTKEnableMfgClock(void)
 
 static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 {
-    MTKCLK_disable_unprepare(mfg_clk_b26m);
-    MTKCLK_disable_unprepare(mfg_clk_bg3d);
-    MTKCLK_disable_unprepare(mfg_clk_bmem);
-    MTKCLK_disable_unprepare(mfg_clk_baxi);
 
-    MTKCLK_disable_unprepare(mtcmos_mfg3);
-    MTKCLK_disable_unprepare(mtcmos_mfg2);
-    MTKCLK_disable_unprepare(mtcmos_mfg1);
-    MTKCLK_disable_unprepare(mtcmos_mfg0);
+/*
+*    MTKCLK_disable_unprepare(mfg_clk_b26m);
+*    MTKCLK_disable_unprepare(mfg_clk_bg3d);
+*    MTKCLK_disable_unprepare(mfg_clk_bmem);
+*    MTKCLK_disable_unprepare(mfg_clk_baxi);
 
-	spm_mtcmos_ctrl_mfg2(1);
+*    MTKCLK_disable_unprepare(mtcmos_mfg3);
+*    MTKCLK_disable_unprepare(mtcmos_mfg2);
+*    MTKCLK_disable_unprepare(mtcmos_mfg1);
+*    MTKCLK_disable_unprepare(mtcmos_mfg0);
+*/
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	;
 #else
+	spm_mtcmos_ctrl_mfg2(1);
 	spm_mtcmos_ctrl_mfg1(1);
-	spm_mtcmos_ctrl_mfg0(1);
 #endif
+	spm_mtcmos_ctrl_mfg0(1);
 
 
 

@@ -127,6 +127,8 @@ typedef void (*sampler_func)(unsigned int);
 extern void mt_gpufreq_setfreq_registerCB(sampler_func pCB);
 extern void mt_gpufreq_setvolt_registerCB(sampler_func pCB);
 
+extern void switch_mfg_clk(int src);
+
 #ifdef MTK_GPU_SPM
 void mtk_gpu_spm_fix_by_idx(unsigned int idx);
 void mtk_gpu_spm_reset_fix(void);
