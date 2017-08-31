@@ -39,7 +39,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#include "inc/mt_typedefs.h"
+#include "inc/mtk_typedefs.h"
 #include "inc/camera_fdvt.h"
 /*#include <mach/mt_reg_base.h>*/
 /*#include <mach/mt_clkmgr.h>*/
