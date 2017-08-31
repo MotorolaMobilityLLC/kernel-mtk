@@ -25,7 +25,6 @@
 #include "mtkdcs_drv.h"
 #include <mt_spm_vcorefs.h>
 #include <mt_vcorefs_manager.h>
-#include "sspm_ipi.h"
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_initialized;
@@ -72,6 +71,8 @@ char * const dcs_status_name(enum dcs_status status)
 		return NULL;
 }
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
 static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
@@ -199,6 +200,17 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 
 	return 0;
 }
+#else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
+{
+	*sys_dcs_status = DCS_LOWPOWER;
+	return 0;
+}
+static int dcs_set_dummy_write_ipi(void) { return 0; }
+static int dcs_dump_reg_ipi(void) { return 0; }
+static int dcs_ipi_register(void) { return 0; }
+static int __dcs_dram_channel_switch(enum dcs_status status) { return 0; }
+#endif /* end of CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 /*
  * dcs_dram_channel_switch
