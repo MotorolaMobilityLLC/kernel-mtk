@@ -121,7 +121,11 @@ static int mt_fh_enable_usrdef(struct freqhopping_ioctl *fh_ctl)
 		g_p_fh_hal_drv->mt_fh_lock(&flags);
 		memcpy(&g_fh_drv_usr_def[pll_id], &(fh_ctl->ssc_setting),
 		       sizeof(g_fh_drv_usr_def[pll_id]));
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		g_p_fh_hal_drv->fh_pll_set(pll_id, USER_DEFINED, true);
+#else
 		g_fh_drv_pll[pll_id].user_defined = true;
+#endif
 		g_p_fh_hal_drv->mt_fh_unlock(&flags);
 	}
 	/* FH_MSG("Exit"); */
@@ -141,7 +145,11 @@ static int mt_fh_disable_usrdef(struct freqhopping_ioctl *fh_ctl)
 	if (fh_ctl->pll_id < FH_PLL_COUNT) {
 		g_p_fh_hal_drv->mt_fh_lock(&flags);
 		memset(&g_fh_drv_usr_def[pll_id], 0, sizeof(g_fh_drv_usr_def[pll_id]));
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		g_p_fh_hal_drv->fh_pll_set(pll_id, USER_DEFINED, false);
+#else
 		g_fh_drv_pll[pll_id].user_defined = false;
+#endif
 		g_p_fh_hal_drv->mt_fh_unlock(&flags);
 	}
 	/* FH_MSG("Exit"); */
