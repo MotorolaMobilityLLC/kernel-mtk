@@ -21,6 +21,9 @@
 #include <mt-plat/mtk_reboot.h>
 #include <mt-plat/mtk_rtc.h>
 #include <asm/system_misc.h>
+#ifdef CONFIG_MTK_FREQ_HOPPING
+#include <mt-plat/mtk_freqhopping_drv.h>
+#endif
 
 static int wd_cpu_hot_plug_on_notify(int cpu);
 static int wd_cpu_hot_plug_off_notify(int cpu);
@@ -130,6 +133,13 @@ static int wd_cpu_hot_plug_off_notify(int cpu)
 
 static int wd_sw_reset(int type)
 {
+#ifdef CONFIG_MTK_FREQ_HOPPING
+	/*
+	 * Disable all SSC, because PLLs with SSC on might have unstable status
+	 * in a short moment when system reset.
+	 */
+	mt_freqhopping_all_ssc_off();
+#endif
 	wdt_arch_reset(type);
 	return 0;
 }
@@ -402,6 +412,13 @@ static int wd_sw_reset(int type)
 {
 	pr_debug("dummy wd_sw_reset");
 	#ifndef CONFIG_MEDIATEK_WATCHDOG
+	#ifdef CONFIG_MTK_FREQ_HOPPING
+	/*
+	 * Disable all SSC, because PLLs with SSC on might have unstable status
+	 * in a short moment when system reset.
+	 */
+	mt_freqhopping_all_ssc_off();
+	#endif
 	wdt_arch_reset(type);
 	#endif
 	return 0;
