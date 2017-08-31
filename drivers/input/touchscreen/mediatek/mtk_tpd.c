@@ -26,6 +26,9 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/fb.h>
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+#include <mach/mtk_6306_gpio.h>
+#endif
 
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
@@ -64,6 +67,7 @@ const struct of_device_id touch_of_match[] = {
 	{ .compatible = "mediatek,mt7623-touch", },
 	{ .compatible = "mediatek,elbrus-touch", },
 	{ .compatible = "mediatek,mt6799-touch", },
+	{ .compatible = "mediatek,touch", },
 	{},
 };
 
@@ -106,6 +110,9 @@ void tpd_get_dts_info(void)
 		memcpy(&tpd_filter, &tpd_dts_data.touch_filter, sizeof(tpd_filter));
 		pr_debug("[tpd]tpd-filter-enable = %d, pixel_density = %d\n",
 					tpd_filter.enable, tpd_filter.pixel_density);
+		tpd_dts_data.tpd_use_ext_gpio = of_property_read_bool(node1, "tpd-use-ext-gpio");
+		of_property_read_u32(node1, "tpd-rst-ext-gpio-num", &tpd_dts_data.rst_ext_gpio_num);
+
 	} else {
 		pr_err("[tpd]%s can't find touch compatible custom node\n", __func__);
 	}
@@ -131,10 +138,17 @@ void tpd_gpio_output(int pin, int level)
 		else
 			pinctrl_select_state(pinctrl1, eint_output0);
 	} else {
-		if (level)
-			pinctrl_select_state(pinctrl1, rst_output1);
-		else
-			pinctrl_select_state(pinctrl1, rst_output0);
+		if (tpd_dts_data.tpd_use_ext_gpio) {
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+			mt6306_set_gpio_dir(tpd_dts_data.rst_ext_gpio_num, 1);
+			mt6306_set_gpio_out(tpd_dts_data.rst_ext_gpio_num, level);
+#endif
+		} else {
+			if (level)
+				pinctrl_select_state(pinctrl1, rst_output1);
+			else
+				pinctrl_select_state(pinctrl1, rst_output0);
+		}
 	}
 	mutex_unlock(&tpd_set_gpio_mutex);
 }
@@ -174,17 +188,19 @@ pr_err("Lomen 0.2\n");
 		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_eint_output1!\n");
 		return ret;
 	}
-	rst_output0 = pinctrl_lookup_state(pinctrl1, "state_rst_output0");
-	if (IS_ERR(rst_output0)) {
-		ret = PTR_ERR(rst_output0);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output0!\n");
-		return ret;
-	}
-	rst_output1 = pinctrl_lookup_state(pinctrl1, "state_rst_output1");
-	if (IS_ERR(rst_output1)) {
-		ret = PTR_ERR(rst_output1);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
-		return ret;
+	if (tpd_dts_data.tpd_use_ext_gpio == false) {
+		rst_output0 = pinctrl_lookup_state(pinctrl1, "state_rst_output0");
+		if (IS_ERR(rst_output0)) {
+			ret = PTR_ERR(rst_output0);
+			dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output0!\n");
+			return ret;
+		}
+		rst_output1 = pinctrl_lookup_state(pinctrl1, "state_rst_output1");
+		if (IS_ERR(rst_output1)) {
+			ret = PTR_ERR(rst_output1);
+			dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
+			return ret;
+		}
 	}
 	TPD_DEBUG("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
 	return 0;
