@@ -1,0 +1,117 @@
+# Makefile for ARM cc710ree Linux device driver
+
+MODULE_NAME = cc710ree
+
+ifeq ($(KERNEL_DIR),)
+$(error KERNEL_DIR is undefined. Set KERNEL_DIR environment to kernel source tree path)
+endif
+
+PWD := $(shell pwd)
+export HOST_PROJ_ROOT ?= $(PWD)/../../../..
+include $(HOST_PROJ_ROOT)/Makefile.defs
+# shared/hw/include/dx_env.h only exists in Dx internal development tree
+ifneq ($(wildcard $(SHARED_DIR)/hw/include/dx_env.h),)
+export DX_FPGA_ENV = 1
+endif
+
+# Export to kernel Makefile definitions from proj.cfg
+export DX_ROM_VERSION
+export DX_CC_SRAM_SIZE
+export DX_CONFIG_DISABLE_COHERENT_DMA_OPS
+export DX_CONFIG_TEST_48BIT_DMA_ADDR
+export CONFIG_CRYPTO_DEV_DX_CC710REE = m
+export DX_CONFIG_SUPPORT_FIPS
+
+KERNEL_VER := $(shell cat $(KERNEL_DIR)/include/config/kernel.release)
+RELEASE_MODULES_DIR = $(RELEASE_LIBDIR)/modules/$(KERNEL_VER)
+$(RELEASE_MODULES_DIR) $(RELEASE_INCDIR):
+	mkdir -p $@
+KERNEL_CONFIG_DEV_NAME = "CONFIG_CRYPTO_DEV_$(shell $(ECHO) $(MODULE_NAME) | tr a-z A-Z)"
+KERNEL_TARGET_DIR = $(KERNEL_DIR)/drivers/crypto/
+KERNEL_CRYPTO_KCONFIG = \
+	config CRYPTO_DEV_$(shell $(ECHO) $(MODULE_NAME) | tr a-z A-Z)\n \
+	\tdefault y\n \
+	\ttristate \"Support for ARM CryptoCell crypto $(MODULE_NAME) accelerator\"\n \
+	\thelp\n \
+	\t  This option allows you to have support for ARM CryptoCell $(MODULE_NAME)\n \
+	\t  acceleration. \
+	\nendif
+
+default: $(RELEASE_MODULES_DIR)/$(MODULE_NAME).ko $(RELEASE_INCDIR)/ssi_secure_key_kapi.h
+
+$(RELEASE_INCDIR)/ssi_secure_key_kapi.h: ssi_secure_key_kapi.h $(call DEPENDENCY_ON_EXISTENCE_OF,$(RELEASE_INCDIR))
+	@$(ECHO) [CP] $<
+	@$(CP) $< $@
+
+builtin_install:
+	@$(ECHO) Installing driver statically for kernel version $(KERNEL_VER) for $(ARCH)
+	@$(MKDIR) $(KERNEL_TARGET_DIR)/$(MODULE_NAME)
+	@cp -L *.[ch] $(KERNEL_TARGET_DIR)/$(MODULE_NAME)/
+	@cp -L Makefile $(KERNEL_TARGET_DIR)/$(MODULE_NAME)/
+	@if [ ! -f $(KERNEL_TARGET_DIR)/Makefile.dxbackup ]; then \
+		$(CP) $(KERNEL_TARGET_DIR)/Makefile $(KERNEL_TARGET_DIR)/Makefile.dxbackup; \
+		$(ECHO) "obj-\$$($(KERNEL_CONFIG_DEV_NAME)) += $(MODULE_NAME)/" >> $(KERNEL_TARGET_DIR)/Makefile; \
+	fi
+	@if [ ! -f $(KERNEL_TARGET_DIR)/Kconfig.dxbackup ]; then \
+		sed -i.dxbackup 's/endif # CRYPTO_HW/$(KERNEL_CRYPTO_KCONFIG)/' $(KERNEL_TARGET_DIR)/Kconfig; \
+	fi
+	@$(ECHO) You MUST configure your kernel built-in mode now.
+
+builtin_clean:
+	@$(ECHO) [CLN-BUILTIN]
+	@$(RM) -rf  $(KERNEL_TARGET_DIR)/$(MODULE_NAME)
+	@if [ -f $(KERNEL_TARGET_DIR)/Makefile.dxbackup ]; then \
+		$(ECHO) Restoring Makefile from Makefile.dxbackup at $(KERNEL_TARGET_DIR); \
+		mv $(KERNEL_TARGET_DIR)/Makefile.dxbackup $(KERNEL_TARGET_DIR)/Makefile; \
+	fi
+	@if [ -f $(KERNEL_TARGET_DIR)/Kconfig.dxbackup ]; then \
+		$(ECHO) Restoring Kconfig from Kconfig.dxbackup at $(KERNEL_TARGET_DIR); \
+		mv $(KERNEL_TARGET_DIR)/Kconfig.dxbackup $(KERNEL_TARGET_DIR)/Kconfig; \
+	fi
+	@if [ -f $(KERNEL_DIR)/.config ]; then \
+		sed -i.dxtmp '/$(KERNEL_CONFIG_DEV_NAME)=/ d' $(KERNEL_DIR)/.config; \
+		$(MAKE) -C $(KERNEL_DIR) oldconfig; \
+	fi
+	@$(ECHO) You MUST re-make your kernel in order to clear cc710ree symbol.
+
+$(RELEASE_MODULES_DIR)/$(MODULE_NAME).ko: $(MODULE_NAME).ko $(call DEPENDENCY_ON_EXISTENCE_OF,$(RELEASE_MODULES_DIR))
+	@$(ECHO) [CP] $< --\> $(RELEASE_MODULES_DIR)
+	@$(CP) $< $@
+
+# Use kernel build system to build the module
+MODULE_C_FILES = ssi_driver.c ssi_sysfs.c ssi_buffer_mgr.c ssi_request_mgr.c ssi_cipher.c ssi_hash.c ssi_aead.c ssi_ivgen.c ssi_sram_mgr.c
+MODULE_C_FILES += ssi_fips.c ssi_fips_ll.c
+MODULE_H_FILES = ssi_driver.h ssi_config.h ssi_sysfs.h ssi_buffer_mgr.h ssi_request_mgr.h ssi_cipher.h ssi_hash.h ssi_aead.h ssi_ivgen.h ssi_sram_mgr.h
+MODULE_SYMLINK_H_FILES = dx_reg_base_host.h dx_host.h dx_crys_kernel.h ssi_regs.h ssi_bitops.h dx_reg_common.h
+MODULE_SYMLINK_H_FILES += ssi_pal_log.h ssi_pal_types.h hw_queue_defs.h hash_defs.h ssi_crypto_ctx.h ssi_lli_defs.h
+# Secure key headers exist only of sep/rom directory provides them
+MODULE_SYMLINK_H_FILES += $(if $(wildcard $(SEP_DIR)/rom/include/secure_key_defs.h),secure_key_defs.h secure_key_int_defs.h)
+ifeq ($(DX_FPGA_ENV),1)
+MODULE_SYMLINK_H_FILES += dx_env.h
+endif
+$(MODULE_NAME).ko: $(MODULE_C_FILES) $(MODULE_SYMLINK_H_FILES) $(MODULE_H_FILES) FORCE
+	@$(ECHO) "Building cc710ree module for kernel version: $(KERNEL_VER) ($(ARCH))"
+	@$(MAKE) -C $(KERNEL_DIR) M=$(PWD) $(if $(V),V=$(V)) modules
+
+ssi_regs.h ssi_bitops.h ssi_crypto_ctx.h ssi_lli_defs.h:
+	ln -s $(SHARED_INCDIR)/$@
+
+ssi_pal_log.h ssi_pal_types.h:
+	ln -s $(SHARED_INCDIR)/pal/$@
+
+HW_PATH = $(SHARED_DIR)/hw
+HW_INC_PATH = $(if $(wildcard $(HW_PATH)/include/*),$(HW_PATH)/include,$(HW_PATH)/include_public)
+dx_reg_base_host.h dx_host.h dx_env.h dx_crys_kernel.h dx_reg_common.h:
+	ln -s $(HW_INC_PATH)/$@
+
+hw_queue_defs.h hash_defs.h:
+	ln -s $(CODESAFE_SRCDIR)/crys/sym/driver/$@
+
+secure_key_defs.h secure_key_int_defs.h:
+	ln -s $(SEP_DIR)/rom/include/$@
+
+clean:
+	@$(MAKE) -C $(KERNEL_DIR) M=$(PWD) $(if $(V),V=$(V)) clean
+	@find . -type l -exec rm \{\} \;
+
+.PHONY: FORCE

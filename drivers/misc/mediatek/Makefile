@@ -112,6 +112,7 @@ obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-y += devinfo/
+obj-n += dxcc/
 obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_LCM) += ext_disp/
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
