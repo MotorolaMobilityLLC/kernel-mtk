@@ -1087,7 +1087,10 @@ int dram_turn_on_off_ch(unsigned int OnOff)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	if (OnOff) {
-		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank1_addr, 0);
+		if (dram_rank_num == SINGLE_RANK)
+			mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank0_addr, 0);
+		else
+			mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank1_addr, 0);
 		dram_channel_num = 4;
 	} else {
 		mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, dram_rank0_addr, dram_rank0_addr, 0);
