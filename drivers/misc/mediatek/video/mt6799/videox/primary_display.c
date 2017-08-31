@@ -5955,14 +5955,15 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-			goto aal_cmd_unlock;
-		}
-		disp_cmdq_reset(handle);
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-		cmdqsize = disp_cmdq_get_instruction_count(handle);
+		} else {
+			disp_cmdq_reset(handle);
+			_cmdq_insert_wait_frame_done_token_mira(handle);
+			cmdqsize = disp_cmdq_get_instruction_count(handle);
 
-		if (pgc->state == DISP_SLEPT)
-			goto aal_cmd_unlock;
+			if (pgc->state == DISP_SLEPT)
+				disp_cmdq_destroy(handle, __func__, __LINE__);
+		}
+		_primary_path_unlock(__func__);
 
 		/* only cmd mode & with disable mmsys clk will kick */
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
@@ -5970,18 +5971,21 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
-		if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
-			if (pgc->state == DISP_ALIVE) {
-				/* do not set dirty here, just write register. */
-				/* if set dirty needed, will be implemented by dpmgr_module_notify() */
-				/* _cmdq_set_config_handle_dirty_mira(handle); */
-				/* use non-blocking flush here to avoid primary path is locked for too long */
-				_cmdq_flush_config_handle_mira(handle, 0);
+		if (handle) {
+			if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
+				_primary_path_lock(__func__);
+				if (pgc->state == DISP_ALIVE) {
+					/* do not set dirty here, just write register. */
+					/* if set dirty needed, will be implemented by dpmgr_module_notify() */
+					/* _cmdq_set_config_handle_dirty_mira(handle); */
+					/* use non-blocking flush here to avoid primary path is locked for too long */
+					_cmdq_flush_config_handle_mira(handle, 0);
+				}
+				_primary_path_unlock(__func__);
 			}
+
+			disp_cmdq_destroy(handle, __func__, __LINE__);
 		}
-aal_cmd_unlock:
-		disp_cmdq_destroy(handle, __func__, __LINE__);
-		_primary_path_unlock(__func__);
 	} else {
 		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
@@ -5989,14 +5993,16 @@ aal_cmd_unlock:
 		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
-			goto user_cmd_unlock;
-		}
-		disp_cmdq_reset(handle);
-		_cmdq_insert_wait_frame_done_token_mira(handle);
-		cmdqsize = disp_cmdq_get_instruction_count(handle);
+		} else {
+			disp_cmdq_reset(handle);
+			_cmdq_insert_wait_frame_done_token_mira(handle);
+			cmdqsize = disp_cmdq_get_instruction_count(handle);
 
-		if (pgc->state == DISP_SLEPT)
-			goto user_cmd_unlock;
+			if (pgc->state == DISP_SLEPT) {
+				disp_cmdq_destroy(handle, __func__, __LINE__);
+				goto user_cmd_unlock;
+			}
+		}
 
 		/* only cmd mode & with disable mmsys clk will kick */
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS) && !primary_display_is_video_mode())
@@ -6004,17 +6010,20 @@ aal_cmd_unlock:
 
 		ret = dpmgr_path_user_cmd(pgc->dpmgr_handle, cmd, arg, handle);
 
-		if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
-			if (pgc->state == DISP_ALIVE) {
-				/* do not set dirty here, just write register. */
-				/* if set dirty needed, will be implemented by dpmgr_module_notify() */
-				/* _cmdq_set_config_handle_dirty_mira(handle); */
-				/* use non-blocking flush here to avoid primary path is locked for too long */
-				_cmdq_flush_config_handle_mira(handle, 0);
+		if (handle) {
+			if (disp_cmdq_get_instruction_count(handle) > cmdqsize) {
+				if (pgc->state == DISP_ALIVE) {
+					/* do not set dirty here, just write register. */
+					/* if set dirty needed, will be implemented by dpmgr_module_notify() */
+					/* _cmdq_set_config_handle_dirty_mira(handle); */
+					/* use non-blocking flush here to avoid primary path is locked for too long */
+					_cmdq_flush_config_handle_mira(handle, 0);
+				}
 			}
+
+			disp_cmdq_destroy(handle, __func__, __LINE__);
 		}
 user_cmd_unlock:
-		disp_cmdq_destroy(handle, __func__, __LINE__);
 		_primary_path_unlock(__func__);
 		_primary_path_switch_dst_unlock();
 

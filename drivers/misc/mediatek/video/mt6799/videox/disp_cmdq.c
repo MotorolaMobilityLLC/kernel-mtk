@@ -799,6 +799,8 @@ int disp_cmdq_get_instruction_count(struct cmdqRecStruct *handle)
 		return ret;
 	}
 
+	/* bypass debug operation */
+	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_GET_INSTRUCTION_COUNT]);
 
 	return ret;
@@ -818,6 +820,8 @@ int disp_cmdq_dump_command(struct cmdqRecStruct *handle)
 		return ret;
 	}
 
+	/* bypass debug operation */
+	_disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 	_disp_cmdq_insert_state(handle, disp_cmdq_func_state[DISP_CMDQ_FUNC_DUMP_COMMAND]);
 
 	return ret;
