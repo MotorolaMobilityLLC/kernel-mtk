@@ -28,6 +28,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
 endif
 
+ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
+ccflags-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += -DMTK_SSPM
+
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
