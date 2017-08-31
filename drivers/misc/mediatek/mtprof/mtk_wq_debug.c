@@ -126,7 +126,6 @@ _work_queued(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
 	raw_spin_lock(&works_lock);
 	work_info = find_active_work(work);
 	if (!work_info) {
-		/* work_info = kzalloc(sizeof(struct work_info), GFP_ATOMIC); */
 		work_info = kmem_cache_zalloc(work_info_cache, gfp);
 		if (!work_info)
 			goto out;
@@ -175,7 +174,6 @@ static void _work_exec_end(void *ignore, struct work_struct *work)
 	w.func = work_info->func;
 	w.work = work_info->work;
 	hash_del(&work_info->hash);
-	/* kfree(work_info); */
 	kmem_cache_free(work_info_cache, work_info);
 	raw_spin_unlock_irqrestore(&works_lock, flags);
 
@@ -435,7 +433,6 @@ static int __init init_wq_debug(void)
 		if (!pe)
 			return -ENOMEM;
 	}
-	/* mt_wq_log_config(1, 0, 0); */
 	pe = proc_create("mtprof/wq_enable_logs", 0664, NULL, &mt_wq_log_fops);
 	if (!pe)
 		return -ENOMEM;
