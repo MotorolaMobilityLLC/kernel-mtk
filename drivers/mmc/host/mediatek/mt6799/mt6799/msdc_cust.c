@@ -416,7 +416,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 	char *buf_ptr = buffer;
 
 	if (topckgen_base && pericfg_base) {
-		buf_ptr += sprintf(buffer,
+		buf_ptr += sprintf(buf_ptr,
 			"MSDC0 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d, %d\n",
 			topckgen_base + 0x140,
 			/* mux at bits16~18 */
@@ -425,7 +425,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			/* cg at bit 0, 24 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 0) & 1,
 			(MSDC_READ32(pericfg_base + 0x290) >> 24) & 1);
-		buf_ptr += sprintf(buffer,
+		buf_ptr += sprintf(buf_ptr,
 			"MSDC1 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
 			topckgen_base + 0x140,
 			/* mux at bits24~26 */
@@ -433,7 +433,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			pericfg_base + 0x290,
 			/* mux at bit 1 */
 			(MSDC_READ32(pericfg_base + 0x290) >> 1) & 1);
-		buf_ptr += sprintf(buffer,
+		buf_ptr += sprintf(buf_ptr,
 			"MSDC3 CLK_MUX@0x%p= 0x%x, CLK_CG[0x%p] = %d\n",
 			topckgen_base + 0x150,
 			/* mux at bits8~10 */
@@ -451,19 +451,19 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 	buf_ptr = buffer;
 	if (apmixed_base) {
 		/* bit0 is enables PLL, 0: disable 1: enable */
-		buf_ptr += sprintf(buffer, "MSDCPLL_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
+		buf_ptr += sprintf(buf_ptr, "MSDCPLL_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
 			apmixed_base + MSDCPLL_CON0_OFFSET,
 			MSDC_READ32(apmixed_base + MSDCPLL_CON0_OFFSET));
 
-		buf_ptr += sprintf(buffer, "MSDCPLL_CON1@0x%p = 0x%x\n",
+		buf_ptr += sprintf(buf_ptr, "MSDCPLL_CON1@0x%p = 0x%x\n",
 			apmixed_base + MSDCPLL_CON1_OFFSET,
 			MSDC_READ32(apmixed_base + MSDCPLL_CON1_OFFSET));
 
-		buf_ptr += sprintf(buffer, "MSDCPLL_CON2@0x%p = 0x%x\n",
+		buf_ptr += sprintf(buf_ptr, "MSDCPLL_CON2@0x%p = 0x%x\n",
 			apmixed_base + MSDCPLL_CON2_OFFSET,
 			MSDC_READ32(apmixed_base + MSDCPLL_CON2_OFFSET));
 
-		buf_ptr += sprintf(buffer, "MSDCPLL_PWR_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
+		buf_ptr += sprintf(buf_ptr, "MSDCPLL_PWR_CON0@0x%p = 0x%x, bit[0] shall 1b\n",
 			apmixed_base + MSDCPLL_PWR_CON0_OFFSET,
 			MSDC_READ32(apmixed_base + MSDCPLL_PWR_CON0_OFFSET));
 		*buf_ptr = '\0';
