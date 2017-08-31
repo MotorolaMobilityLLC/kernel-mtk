@@ -18,6 +18,10 @@
 #define AAL_HAS_DRE3            (1)
 #endif
 
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
+#define AAL_CUSTOMER_GET_PANEL_TYPE            (1)
+#endif
+
 #define AAL_HIST_BIN            33	/* [0..32] */
 #define AAL_DRE_POINT_NUM       29
 
@@ -40,6 +44,12 @@ typedef enum {
 	DISP_AAL1,
 	DISP_AAL_TOTAL
 } disp_aal_id_t;
+
+enum AAL_ESS_UD_MODE {
+	CONFIG_BY_CUSTOM_LIB = 0,
+	CONFIG_TO_LCD = 1,
+	CONFIG_TO_AMOLED = 2
+};
 
 typedef struct {
 	/* DRE */
@@ -66,6 +76,7 @@ typedef struct {
 	int dre_blk_area;
 	int dre_blk_area_min;
 	int hist_bin_type;
+	int dre_flat_length_slope;
 #endif
 } DISP_AAL_INITREG;
 
@@ -98,6 +109,9 @@ typedef struct {
 	int requestPartial;
 #ifdef AAL_HAS_DRE3
 	aal_u32_handle_t dre30_hist;
+#endif
+#ifdef AAL_CUSTOMER_GET_PANEL_TYPE
+	unsigned int panel_type;
 #endif
 } DISP_AAL_HIST;
 
@@ -137,5 +151,7 @@ int aal_is_partial_support(void);
 int aal_request_partial_support(int partial);
 
 void disp_aal_notify_backlight_changed(int bl_1024);
+
+void disp_aal_set_lcm_type(unsigned int panel_type);
 
 #endif
