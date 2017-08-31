@@ -48,7 +48,7 @@
 
 /* configurations */
 /*platform dependent*/
-#define USE_AUXADC 0 /*set to 1 if AUXADC is used*/
+#define USE_AUXADC 1 /*set to 1 if AUXADC is used*/
 #define COMPLIANCE 0 /*set to 1 use CC only. No related to USB function*/
 #define SUPPORT_PD 1
 #define VDM_MODE

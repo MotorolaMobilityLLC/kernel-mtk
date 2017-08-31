@@ -2014,7 +2014,7 @@ int pd_task(void *data)
 			typec_drive_vconn(hba, 0);
 #endif
 #endif
-			hba->flags &= ~PD_FLAGS_RESET_ON_DISCONNECT_MASK;
+
 #ifdef CONFIG_CHARGE_MANAGER
 			charge_manager_update_dualrole(hba, CAP_UNKNOWN);
 #endif
@@ -2061,11 +2061,20 @@ int pd_task(void *data)
 
 			if ((hba->charger_det_notify) && (hba->last_state != PD_STATE_DISABLED)) {
 				if (hba->is_kpoc && (hba->kpoc_retry > 0)) {
-					hba->kpoc_retry--;
-					set_state_timeout(hba, 2*1000, PD_STATE_SNK_KPOC_PWR_OFF);
+					if ((hba->flags & PD_FLAGS_SRC_NO_PD) ||
+						(hba->flags & PD_FLAGS_EXPLICIT_CONTRACT) ||
+						((hba->task_state == PD_STATE_SNK_ATTACH) &&
+						 (hba->timeout_state == PD_STATE_SNK_KPOC_PWR_OFF))) {
+						hba->charger_det_notify(0);
+					} else {
+						hba->kpoc_retry--;
+						set_state_timeout(hba, 2*1000, PD_STATE_SNK_KPOC_PWR_OFF);
+					}
 				} else
 					hba->charger_det_notify(0);
 			}
+
+			hba->flags &= ~PD_FLAGS_RESET_ON_DISCONNECT_MASK;
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 			if (need_update(hba))
