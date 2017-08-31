@@ -556,7 +556,9 @@
 				<GIC_SPI 12 IRQ_TYPE_LEVEL_LOW>,
 				<GIC_SPI 13 IRQ_TYPE_LEVEL_LOW>,
 				<GIC_SPI 14 IRQ_TYPE_LEVEL_LOW>,
-				<GIC_SPI 15 IRQ_TYPE_LEVEL_LOW>;
+				<GIC_SPI 15 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 396 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 397 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-affinity = <&cpu0>,
 				     <&cpu1>,
 				     <&cpu2>,
