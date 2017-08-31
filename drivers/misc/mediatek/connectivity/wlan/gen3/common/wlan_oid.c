@@ -2814,7 +2814,7 @@ wlanoidSetRemoveKey(IN P_ADAPTER_T prAdapter,
 	}
 
 	if (prCmdKey->ucAlgorithmId == CIPHER_SUITE_WEP40
-	    || prCmdKey->ucAlgorithmId == CIPHER_SUITE_WEP104 || prCmdKey->ucAlgorithmId == CIPHER_SUITE_WEP104) {
+	    || prCmdKey->ucAlgorithmId == CIPHER_SUITE_WEP104) {
 		/* if (prAdapter->prAisBssInfo->ucTxDefaultKeyID == prCmdKey->ucKeyId) */
 		/* secPrivacyFreeForEntry(prAdapter, prCmdKey->ucWlanIndex); */
 		/* else */
