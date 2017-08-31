@@ -61,6 +61,7 @@ extern void msdc_fpga_power(struct msdc_host *host, u32 on);
 
 #if defined(FPGA_PLATFORM)
 extern  u32 hclks_msdc[];
+#define msdc_dump_dvfs_reg(host)
 #define msdc_dump_clock_sts(host)
 #define dbg_msdc_dump_clock_sts(m, host)
 #define msdc_get_hclk(host, src)        MSDC_SRC_FPGA
@@ -71,6 +72,7 @@ static inline int msdc_clk_enable(struct msdc_host *host) { return 0; }
 
 #if !defined(FPGA_PLATFORM)
 extern u32 *hclks_msdc_all[];
+extern void msdc_dump_dvfs_reg(struct msdc_host *host);
 void msdc_dump_clock_sts(struct msdc_host *host);
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 #define msdc_get_hclk(id, src)		hclks_msdc_all[id][src]

@@ -959,7 +959,7 @@ void msdc_dump_autok(struct msdc_host *host)
 		buf[j] = '\0';
 		pr_err("[AUTOK]DAT Falling \t: %s\r\n", buf);
 
-		start = DAT_SCAN_F0;
+		start = DS_SCAN_0;
 		for (j = 0; j < 64; j++) {
 			bit_pos = j % 8;
 			byte_pos = j / 8 + start;

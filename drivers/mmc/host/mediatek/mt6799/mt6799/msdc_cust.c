@@ -95,6 +95,7 @@ static void __iomem *gpio_base;
 static void __iomem *pericfg_base;
 static void __iomem *apmixed_base;
 static void __iomem *topckgen_base;
+static void __iomem *sleep_base;
 #endif
 
 void __iomem *msdc_io_cfg_bases[HOST_MAX_NUM];
@@ -502,6 +503,16 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 			pr_err("%s", buffer);
 		else
 			seq_printf(m, "%s", buffer);
+	}
+}
+
+void msdc_dump_dvfs_reg(struct msdc_host *host)
+{
+	if (sleep_base) {
+		/* bit24 high is in dvfs request status, which cause sdc busy */
+		pr_err("DVFS_REQUEST@0x%p = 0x%x, bit[24] shall 0b\n",
+			sleep_base + 0x478,
+			MSDC_READ32(sleep_base + 0x478));
 	}
 }
 
@@ -1173,6 +1184,13 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 		topckgen_base = of_iomap(np, 0);
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_base);
+	}
+
+	if (sleep_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+		sleep_base = of_iomap(np, 0);
+		pr_debug("of_iomap for sleep base @ 0x%p\n",
+			sleep_base);
 	}
 
 	if (pericfg_base == NULL) {

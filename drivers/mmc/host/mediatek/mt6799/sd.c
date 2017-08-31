@@ -323,6 +323,7 @@ void msdc_dump_info(u32 id)
 		return;
 
 	msdc_dump_vcore();
+	msdc_dump_dvfs_reg(host);
 
 	msdc_dump_register(host);
 	INIT_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
@@ -1514,7 +1515,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	} else {
 		while (sdc_is_busy()) {
 			if (time_after(jiffies, tmo)) {
-				str = "cmd_busy";
+				str = "sdc_busy";
 				goto err;
 			}
 		}
