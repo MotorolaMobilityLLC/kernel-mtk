@@ -383,6 +383,7 @@
 /* function enter flag */
 #define FEF_DVFS		(1U << 0)
 #define FEF_CLUSTER_OFF		(1U << 1)
+#define FEF_LIMIT		(1U << 2)
 
 struct pcm_desc;
 
@@ -1363,28 +1364,54 @@ static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t call
 static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster,
 			       unsigned int ceiling, unsigned int floor)
 {
-	u32 f_max, f_min, swctrl;
+	int r;
+	u32 f_max = opp_sw_to_fw(ceiling);
+	u32 f_min = opp_sw_to_fw(floor);
+	u32 swctrl;
 
 	if (cluster >= NUM_PHY_CLUSTER)		/* CCI */
 		return;
 
 	spin_lock(&dvfs_lock);
-	if (!dvfsp->hw_gov_en) {	/* no limit */
-		ceiling = 0;
-		floor = NUM_CPU_OPP - 1;
-	}
-
-	f_max = opp_sw_to_fw(ceiling);
-	f_min = opp_sw_to_fw(floor);
+	csram_write(OFFS_FUNC_ENTER, (cluster << 24) | (ceiling << 16) | (floor << 8) | FEF_LIMIT);
 
 	cspm_dbgx(LIMIT, "(%u) [%08x] cluster%u limit, opp = (%u - %u) <%u - %u>\n",
-			 dvfsp->hw_gov_en, cspm_get_timestamp(), cluster,
-			 ceiling, floor, f_max, f_min);
+			 dvfsp->hw_gov_en, cspm_get_timestamp(), cluster, ceiling, floor, f_max, f_min);
 
 	swctrl = cspm_read(swctrl_reg[cluster]);
 	swctrl &= ~(SW_F_MAX_MASK | SW_F_MIN_MASK);
 	cspm_write(swctrl_reg[cluster], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
+
+	if (ceiling != floor)
+		goto out;
+
+	/* treat ceiling=floor as set_target_opp */
+	while (pause_src_map != 0) {
+		csram_write(OFFS_DVFS_WAIT, (cluster << 8) | ceiling);
+		spin_unlock(&dvfs_lock);
+
+		wait_event(dvfs_wait, pause_src_map == 0);	/* wait for PCM to be unpaused */
+
+		spin_lock(&dvfs_lock);
+	}
+
+	swctrl = cspm_read(swctrl_reg[cluster]);
+	csram_write(swctrl_offs[cluster], swctrl);
+
+	if (!(swctrl & SW_PAUSE) /* cluster on */) {
+		r = wait_complete_us(cspm_curr_freq(hwsta_reg[cluster]) == f_max, 10, DVFS_TIMEOUT);
+		csram_write_fw_sta();
+
+		if (r < 0) {
+			cspm_dump_debug_info(dvfsp, "CLUSTER%u LIMIT TIMEOUT, opp = %u <%u>",
+						    cluster, ceiling, f_max);
+			GEN_DB_ON(dvfs_fail_ke, "FW Limit Timeout");
+		}
+	}
+
+out:
+	csram_write(OFFS_FUNC_ENTER, 0);
 	spin_unlock(&dvfs_lock);
 }
 
@@ -2340,4 +2367,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1.5");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.2");
