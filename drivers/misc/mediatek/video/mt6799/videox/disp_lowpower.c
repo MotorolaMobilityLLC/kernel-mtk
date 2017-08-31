@@ -288,7 +288,7 @@ int primary_display_dsi_vfp_change(int state)
 	disp_cmdq_reset(handle);
 
 	/* make sure token rdma_sof is clear */
-	/*disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_SOF);*/
+	disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
 	disp_cmdq_wait_event_no_clear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);

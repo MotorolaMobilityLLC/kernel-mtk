@@ -1193,6 +1193,8 @@ int ddp_dsi_porch_setting(enum DISP_MODULE_ENUM module, void *handle,
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (type == DSI_VFP) {
 			DISPINFO("set dsi%d vfp to %d\n", i, value);
+			/* make sure DSI not in VFP period */
+			DSI_POLLREG32(handle, &DSI_REG[i]->DSI_STATE_DBG7, 0x1000, 0x0);
 			DSI_OUTREG32(handle, &DSI_REG[i]->DSI_VFP_NL, value);
 		}
 		if (type == DSI_VSA) {
@@ -1917,14 +1919,16 @@ void DSI_DPHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 		/* BG_LPF_EN / BG_CORE_EN */
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON4, 0x00FF12E0);
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_LANE_CON, 0x3FFF0080); /* BG_LPF_EN=0 BG_CORE_EN=1 */
-		mdelay(1); /* 1us */
+	}
+	udelay(10); /* 1us */
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_LANE_CON, 0x3FFF00C0); /* BG_LPF_EN=1 */
 
 		/* step 1 */
 		/* SDM_RWR_ON / SDM_ISO_EN */
 		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 				 AD_DSI0_PLL_SDM_PWR_ON, 1);
-		mdelay(1); /* 1us */
 		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 				 AD_DSI0_PLL_SDM_ISO_EN, 0);
 
@@ -2013,12 +2017,22 @@ void DSI_DPHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cm
 		}
 		/* step 4 */
 		/* PLL EN */
-		mdelay(1); /* 30ns */
 		MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON1_REG,
 				 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, RG_DSI0_PLL_EN,
 				 1);
+	}
+	udelay(20); /* 20us */
 
-		mdelay(1); /* 20us */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if ((data_Rate != 0) && (dsi_params->ssc_disable != 1)) {
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+				DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_EN,
+				1);
+		} else {
+			MIPITX_OUTREGBIT(struct MIPITX_DSI_PLL_CON2_REG,
+				DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2, RG_DSI0_PLL_SDM_SSC_EN,
+				0);
+		}
 	}
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -3949,17 +3963,13 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
-				/* full shadow mode */
-			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-				/* force commit */
-				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG,
-							DSI_REG[i]->DSI_SHADOW_DEBUG, FORCE_COMMIT, 1);
-			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-				/* bypass shadow */
-				DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG,
+			/*
+			 * bypass shadow register anyway, due to VFP config with force commit mode in
+			 * dualDSI scenario might cause two DSI engine status unsync.
+			 */
+			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG,
 							DSI_REG[i]->DSI_SHADOW_DEBUG, BYPASS_SHADOW, 1);
-			}
+
 			/* read shadow */
 			DSI_OUTREGBIT(cmdq, struct DSI_SHADOW_DEBUG_REG, DSI_REG[i]->DSI_SHADOW_DEBUG,
 				READ_WORKING, 0);
@@ -4355,6 +4365,13 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 {
 	int ret = 0;
 	enum DDP_IOCTL_NAME ioctl = (enum DDP_IOCTL_NAME)ioctl_cmd;
+
+	if (atomic_read(&dual_pipe_on)) {
+		if (module == DISP_MODULE_DSI0)
+			module = DISP_MODULE_DSIDUAL;
+		else if (module == DISP_MODULE_DSI1)
+			return 0;
+	}
 
 	/* DISPFUNC(); */
 	switch (ioctl) {
