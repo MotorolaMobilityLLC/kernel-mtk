@@ -27,6 +27,7 @@
 #if CFG_SUPPORT_AGPS_ASSIST
 #include <net/netlink.h>
 #endif
+#include <core.h>
 #if CFG_SUPPORT_WAKEUP_REASON_DEBUG
 #include <mt_sleep.h>
 #endif
@@ -1028,6 +1029,7 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 	P_PARAM_AUTH_EVENT_T pAuth = (P_PARAM_AUTH_EVENT_T) pStatus;
 	P_PARAM_PMKID_CANDIDATE_LIST_T pPmkid = (P_PARAM_PMKID_CANDIDATE_LIST_T) (pStatus + 1);
 	PARAM_MAC_ADDRESS arBssid;
+	struct cfg80211_scan_request *prScanRequest = NULL;
 	PARAM_SSID_T ssid;
 	struct ieee80211_channel *prChannel = NULL;
 	struct cfg80211_bss *bss;
@@ -1193,14 +1195,18 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		wext_indicate_wext_event(prGlueInfo, SIOCGIWSCAN, NULL, 0);
 
 		/* 1. reset first for newly incoming request */
-		DBGLOG(SCN, TRACE, "[ais] scan complete %p %d %d\n",
-			   prGlueInfo->prScanRequest, ScanCnt, ScanDoneFailCnt);
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 		if (prGlueInfo->prScanRequest != NULL) {
-			cfg80211_scan_done(prGlueInfo->prScanRequest, FALSE);
+			prScanRequest = prGlueInfo->prScanRequest;
 			prGlueInfo->prScanRequest = NULL;
 		}
 		GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+
+		/* 2. then CFG80211 Indication */
+		DBGLOG(SCN, INFO, "[ais] scan complete %p %d %d\n", prScanRequest, ScanCnt, ScanDoneFailCnt);
+
+		if (prScanRequest != NULL)
+			kalValidateScanReqAndReport(prGlueInfo, prScanRequest);
 		break;
 
 	case WLAN_STATUS_JOIN_FAILURE:
@@ -2982,6 +2988,48 @@ BOOLEAN kalCancelTimer(IN P_GLUE_INFO_T prGlueInfo)
 		return TRUE;
 	else
 		return FALSE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+ * \brief This routine is called to validate the scan request and report
+ *
+ * \param[in] prGlueInfo    Pointer to GLUE Data Structure
+ * \param[in] prScanRequest Pointer to the scan request
+ *
+ * \retval none
+ */
+/*----------------------------------------------------------------------------*/
+VOID kalValidateScanReqAndReport(IN P_GLUE_INFO_T prGlueInfo, IN struct cfg80211_scan_request *prScanRequest)
+{
+	struct wiphy *prWiphy = NULL;
+	struct cfg80211_registered_device *prRdev = NULL;
+
+	if (prGlueInfo == NULL) {
+		DBGLOG(SCN, WARN, "prGlueInfo is NULL.\n");
+		return;
+	}
+
+	prWiphy = priv_to_wiphy(prGlueInfo);
+
+	if (prWiphy == NULL) {
+		DBGLOG(SCN, WARN, "prWiphy is NULL.\n");
+		return;
+	}
+
+	prRdev = container_of(prWiphy, struct cfg80211_registered_device, wiphy);
+
+	if (prRdev == NULL) {
+		DBGLOG(SCN, WARN, "prRdev is NULL.\n");
+		return;
+	}
+
+	if (prRdev->scan_req == NULL)
+		DBGLOG(SCN, WARN, "Scan request %p is freed.\n", prScanRequest);
+	else if (prRdev->scan_req->aborted == TRUE)
+		DBGLOG(SCN, WARN, "Scan request %p is aborted.\n", prScanRequest);
+	else
+		cfg80211_scan_done(prScanRequest, FALSE);
 }
 
 /*----------------------------------------------------------------------------*/

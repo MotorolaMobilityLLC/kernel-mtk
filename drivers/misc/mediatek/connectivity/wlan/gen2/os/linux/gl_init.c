@@ -1627,6 +1627,7 @@ static int wlanOpen(struct net_device *prDev)
 static int wlanStop(struct net_device *prDev)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
+	struct cfg80211_scan_request *prScanRequest = NULL;
 
 	GLUE_SPIN_LOCK_DECLARATION();
 
@@ -1636,11 +1637,17 @@ static int wlanStop(struct net_device *prDev)
 
 	/* CFG80211 down */
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
-	if (prGlueInfo->prScanRequest) {
-		cfg80211_scan_done(prGlueInfo->prScanRequest, TRUE);
+
+	if (prGlueInfo->prScanRequest != NULL) {
+		prScanRequest = prGlueInfo->prScanRequest;
 		prGlueInfo->prScanRequest = NULL;
 	}
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+
+	if (prScanRequest != NULL) {
+		DBGLOG(INIT, INFO, "Report scan request: %p\n", prScanRequest);
+		kalValidateScanReqAndReport(prGlueInfo, prScanRequest);
+	}
 
 	netif_tx_stop_all_queues(prDev);
 
