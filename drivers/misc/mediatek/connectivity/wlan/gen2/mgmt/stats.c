@@ -1082,7 +1082,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			break;
 		case EVENT_TX_DONE:
 			if (u2OpCode == ARP_PRO_REQ)
-				DBGLOG(TX, TRACE, "<TX status:%d> Arp Req to IP: %d.%d.%d.%d\n", status,
+				DBGLOGLIMITED(TX, INFO, "<TX status:%d> Arp Req to IP: %d.%d.%d.%d\n", status,
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			else if (u2OpCode == ARP_PRO_RSP)
 				DBGLOG(TX, TRACE, "<TX status:%d> Arp Rsp to IP: %d.%d.%d.%d\n", status,

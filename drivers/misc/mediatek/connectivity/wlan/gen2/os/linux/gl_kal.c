@@ -4394,7 +4394,7 @@ inline INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo)
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
 
-	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag)) {
 		DBGLOG(SW4, TRACE, "need to stop before disable\n");
 		kalPerMonStop(prGlueInfo);

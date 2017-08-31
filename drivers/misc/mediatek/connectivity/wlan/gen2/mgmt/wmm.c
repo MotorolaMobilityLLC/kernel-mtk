@@ -93,7 +93,7 @@ VOID wmmInit(IN P_ADAPTER_T prAdapter)
 
 	LINK_INITIALIZE(&prWmmInfo->rActiveTsmReq);
 	prWmmInfo->rTriggeredTsmRptTime = 0;
-	DBGLOG(WMM, INFO, "wmm init done\n");
+	DBGLOG(WMM, TRACE, "wmm init done\n");
 }
 
 VOID wmmUnInit(IN P_ADAPTER_T prAdapter)
@@ -105,7 +105,7 @@ VOID wmmUnInit(IN P_ADAPTER_T prAdapter)
 	for (ucTid = 0; ucTid < WMM_TSPEC_ID_NUM; ucTid++, prTspecInfo++)
 		cnmTimerStopTimer(prAdapter, &prTspecInfo->rAddTsTimer);
 	wmmRemoveAllTsmMeasurement(prAdapter, FALSE);
-	DBGLOG(WMM, INFO, "wmm uninit done\n");
+	DBGLOG(WMM, TRACE, "wmm uninit done\n");
 }
 
 VOID
