@@ -347,6 +347,11 @@ void lcm_resume(void)
 #endif
 }
 
+static unsigned int lcm_ata_check(unsigned char *buffer)
+{
+	return 0;
+}
+
 LCM_DRIVER clap070wp03xg_lvds_lcm_drv = {
 	.name = "clap070wp03xg_lvds",
 	.set_util_funcs = lcm_set_util_funcs,
@@ -357,4 +362,5 @@ LCM_DRIVER clap070wp03xg_lvds_lcm_drv = {
 	.init_power = lcm_init_power,
 	.resume_power = lcm_resume_power,
 	.suspend_power = lcm_suspend_power,
+	.ata_check = lcm_ata_check,
 };
