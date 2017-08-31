@@ -1776,6 +1776,9 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 
 	typec_disable_lowq(hba, "typec_wait_vbus_off_attached_snk");
 
+	/*To update the timestamp*/
+	keep_low(hba, PD_VSAFE0V_HIGH+1);
+
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
 		int val = typec_vbus(hba);
 
@@ -2502,7 +2505,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		typec_readw(hba, TYPE_C_CC_VOL_PERIODIC_MEAS_VAL));
 
 	typec_basic_settings(hba);
-	pd_basic_settings(hba);
+
+	if (hba->mode == 2)
+		pd_basic_settings(hba);
 
 	/*initialize TYPEC*/
 	typec_set_default_param(hba);
