@@ -674,18 +674,19 @@ end:
 int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
-	struct mmc_host *mmc = host->mmc;
-	void __iomem *base = host->base;
+	void __iomem *base;
 	int i;
 
-	if (mmc == NULL) {
+	if (!host || !host->mmc) {
 		pr_err("eMMC device not ready\n");
 		return -1;
 	}
 
 	pr_err("emmc autok\n");
 
-	mmc_claim_host(mmc);
+	base = host->base;
+
+	mmc_claim_host(host->mmc);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		if (host->autok_res_valid[i])
@@ -718,7 +719,7 @@ int emmc_autok(void)
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPP_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
-	mmc_release_host(mmc);
+	mmc_release_host(host->mmc);
 
 	return 0;
 }
@@ -730,9 +731,8 @@ EXPORT_SYMBOL(emmc_autok);
 int sd_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[1];
-	struct mmc_host *mmc = host->mmc;
 
-	if (mmc == NULL) {
+	if (!host || !host->mmc) {
 		pr_err("SD card not ready\n");
 		return -1;
 	}
