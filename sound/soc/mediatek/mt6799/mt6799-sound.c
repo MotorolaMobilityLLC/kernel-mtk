@@ -3017,7 +3017,7 @@ static int choose_mtkaif_phase(unsigned int cycles[])
 	  *                       choose the mid phase of the mid number
 	  */
 	if (change_point[1] > 0) /* Scenario 3 */
-		phase = (change_point[0] + change_point[1]) / 2;
+		phase = (change_point[0] + change_point[1] - 1) / 2;
 	else if (change_point[0] == 0) /* Scenario 1 */
 		phase = MTKAIF_SCENARIO1_DEFAULT;
 	else if (change_point[0] > 15) /* Scenario 2 */
