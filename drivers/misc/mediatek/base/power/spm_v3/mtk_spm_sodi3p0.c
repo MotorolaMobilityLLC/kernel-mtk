@@ -279,7 +279,7 @@ static void spm_sodi3_post_process(void)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_sodi3_notify_sspm_before_wfi(void)
+static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -297,7 +297,7 @@ static void spm_sodi3_notify_sspm_before_wfi(void)
 		spm_crit2("ret %d", ret);
 }
 
-static void spm_sodi3_notify_sspm_after_wfi(u32 operation_cond)
+static void spm_sodi3_notify_sspm_after_wfi(void)
 {
 	int ret;
 	struct spm_data spm_d;
