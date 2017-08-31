@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/string.h>
+#include <mt-plat/mtk_chip.h>
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
@@ -53,6 +54,18 @@ static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{4, 12, 12, 12},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
+	/* HRT_BOUND_TYPE_2K_E2 */
+	{-1, 5, 6, 6},
+	/* HRT_BOUND_TYPE_2K_DUAL_E2 */
+	{3, 5, 6, 6},
+	/* HRT_BOUND_TYPE_FHD_E2 */
+	{2, 8, 12, 12},
+	/* HRT_BOUND_TYPE_2K_E2 4 channel*/
+	{-1, 9, 9, 11},
+	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
+	{6, 9, 9, 11},
+	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
+	{5, 11, 11, 12},
 };
 
 static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -70,6 +83,18 @@ static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{4, 7, 9, 9},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
+	/* HRT_BOUND_TYPE_2K_E2 */
+	{-1, 4, 5, 6},
+	/* HRT_BOUND_TYPE_2K_DUAL_E2 */
+	{6, 8, 10, 12},
+	/* HRT_BOUND_TYPE_FHD_E2 */
+	{5, 7, 9, 10},
+	/* HRT_BOUND_TYPE_2K_E2 4 channel*/
+	{-1, 4, 5, 5},
+	/* HRT_BOUND_TYPE_2K_DUAL_E2 4 channel*/
+	{6, 8, 10, 12},
+	/* HRT_BOUND_TYPE_FHD_E2 4 channel*/
+	{5, 7, 9, 10},
 };
 
 static int layer_tb_idx;
@@ -1705,9 +1730,83 @@ int check_disp_info(struct disp_layer_info *disp_info)
 	return 0;
 }
 
+static void get_bound_type(struct disp_layer_info *disp_info, int ch)
+{
+	unsigned int ver = mt_get_chip_sw_ver();
+	unsigned int ver_offset = 0;
+
+	if (ver != CHIP_SW_VER_01)
+		ver_offset = HRT_BOUND_TYPE_2K_2CHANNEL_E2;
+
+	if (primary_display_get_lcm_refresh_rate() == 120) {
+		/* TODO: 120 condition */
+		bound_tb_idx = HRT_BOUND_TYPE_120HZ;
+	} else if (GET_SYS_STATE(DISP_HRT_MULTI_TUI_ON)) {
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+		bound_tb_idx += ver_offset;
+	} else if (can_switch_to_dual_pipe(disp_info)) {
+		if (ch == 4)
+			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_4CHANNEL;
+		else
+			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
+		bound_tb_idx += ver_offset;
+	} else if (is_ext_path(disp_info)) {
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+		bound_tb_idx += ver_offset;
+	} else if (is_decouple_path(disp_info)) {
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+		bound_tb_idx += ver_offset;
+	} else {
+		if (is_max_lcm_resolution()) {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
+		} else {
+			if (ch == 4)
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
+			else
+				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
+		}
+		bound_tb_idx += ver_offset;
+	}
+
+}
+
 static void set_hrt_conditions(struct disp_layer_info *disp_info)
 {
 	int ret = 0, ch = 0;
+
 #ifdef CONFIG_MTK_DCS
 	enum dcs_status status;
 
@@ -1720,34 +1819,16 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 		dcs_get_dcs_status_unlock();
 	}
 #endif
+
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_START, ret, ch);
 
 	if (primary_display_get_lcm_refresh_rate() == 120) {
 		/* TODO: 120 condition */
 		primary_fps = 120;
-		bound_tb_idx = HRT_BOUND_TYPE_120HZ;
 	} else if (GET_SYS_STATE(DISP_HRT_MULTI_TUI_ON)) {
 		hrt_path = HRT_PATH_GENERAL;
 		layer_tb_idx = HRT_TB_TYPE_MULTI_WINDOW_TUI;
 		primary_fps = 60;
-#ifdef CONFIG_MTK_DCS
-		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		} else {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-		}
-#else
-		if (is_max_lcm_resolution())
-			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		else
-			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-#endif
 	} else if (can_switch_to_dual_pipe(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1767,15 +1848,6 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
-
-#ifdef CONFIG_MTK_DCS
-		if (ch == 4)
-			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_4CHANNEL;
-		else
-			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
-#else
-		bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
-#endif
 	} else if (is_ext_path(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1795,25 +1867,6 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
-
-#ifdef CONFIG_MTK_DCS
-		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		} else {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-		}
-#else
-		if (is_max_lcm_resolution())
-			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		else
-			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-#endif
 	} else if (is_decouple_path(disp_info)) {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1833,24 +1886,6 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
-#ifdef CONFIG_MTK_DCS
-		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		} else {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-		}
-#else
-		if (is_max_lcm_resolution())
-			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		else
-			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-#endif
 	} else {
 		switch (hrt_path) {
 		case HRT_PATH_RESIZE_GENERAL:
@@ -1867,27 +1902,9 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			hrt_path = HRT_PATH_GENERAL;
 		}
 		primary_fps = 60;
-
-#ifdef CONFIG_MTK_DCS
-		if (is_max_lcm_resolution()) {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		} else {
-			if (ch == 4)
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
-			else
-				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-		}
-#else
-		if (is_max_lcm_resolution())
-			bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
-		else
-			bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
-#endif
 	}
 
+	get_bound_type(disp_info, ch);
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END, hrt_path, layer_tb_idx | (bound_tb_idx << 16));
 }
 
