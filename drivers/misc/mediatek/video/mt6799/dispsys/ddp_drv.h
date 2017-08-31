@@ -71,6 +71,9 @@ struct DISP_EXEC_COMMAND {
 #define S_GAIN_BY_Y_CONTROL_CNT 5
 #define S_GAIN_BY_Y_HUE_PHASE_CNT 20
 #define LSP_CONTROL_CNT 8
+#define COLOR_3D_CNT 4 /* color 3D feature */
+#define COLOR_3D_WINDOW_CNT 3
+#define COLOR_3D_WINDOW_SIZE 45
 
 struct DISP_PQ_PARAM {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
@@ -80,7 +83,8 @@ struct DISP_PQ_PARAM {
 	unsigned int u4SatAdj[PQ_SAT_ADJ_PHASE_CNT];
 	unsigned int u4Contrast;	/* 0 : min , 9 : max. */
 	unsigned int u4Brightness;	/* 0 : min , 9 : max. */
-	unsigned int u4Ccorr;       /* 0 : min , 3 : max.  ccorr feature */
+	unsigned int u4Ccorr;		/* 0 : min , 3 : max.  ccorr feature */
+	unsigned int u4ColorLUT;	/* 0 : min , 3 : max.  ccorr feature */
 };
 
 struct DISP_PQ_WIN_PARAM {
@@ -132,6 +136,7 @@ struct DISPLAY_PQ_T {
 	unsigned int S_GAIN_BY_Y_EN;
 	unsigned int LSP_EN;
 	unsigned int LSP[LSP_CONTROL_CNT];
+	unsigned int COLOR_3D[COLOR_3D_CNT][COLOR_3D_WINDOW_CNT][COLOR_3D_WINDOW_SIZE];
 };
 
 struct DISPLAY_COLOR_REG {
@@ -147,6 +152,7 @@ struct DISPLAY_COLOR_REG {
 	unsigned int SKIN_TONE_H[SKIN_TONE_SIZE];
 	unsigned int GRASS_TONE_H[GRASS_TONE_SIZE];
 	unsigned int SKY_TONE_H[SKY_TONE_SIZE];
+	unsigned int COLOR_3D[COLOR_3D_WINDOW_CNT][COLOR_3D_WINDOW_SIZE];
 };
 
 
