@@ -11,10 +11,15 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6757) += pbm_v1/
-obj-$(CONFIG_MACH_MT6757) += spm_v2/
-obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/
-obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
-obj-$(CONFIG_MACH_MT6757) += hps_v2/
-obj-$(CONFIG_MACH_MT6757) += ppm_v2/
+ccflags-y +=	\
+	-I$(PPM_ROOT_DIR)/inc \
+	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/
+
+# platform dependent functions
+obj-y += mtk_ppm_platform.o
+# power state settings
+obj-y += mtk_ppm_power_state.o
+# power data related
+obj-y += mtk_ppm_power_data.o
+# limit calculation algorithm
+obj-y += mtk_ppm_cobra_algo.o

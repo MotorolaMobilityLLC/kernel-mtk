@@ -84,8 +84,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1638000000>;
 		};
-
-
 		cpu1: cpu@001 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -96,7 +94,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1638000000>;
 		};
-
 		cpu2: cpu@002 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -107,7 +104,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1638000000>;
 		};
-
 		cpu3: cpu@003 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -118,8 +114,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1638000000>;
 		};
-
-
 		cpu4: cpu@100 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -130,7 +124,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2340000000>;
 		};
-
 		cpu5: cpu@101 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -141,7 +134,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2340000000>;
 		};
-
 		cpu6: cpu@102 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -152,7 +144,6 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <2340000000>;
 		};
-
 		cpu7: cpu@103 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
@@ -170,7 +161,7 @@
 					cpu = <&cpu0>;
 				};
 				core1 {
-				cpu = <&cpu1>;
+					cpu = <&cpu1>;
 				};
 				core2 {
 					cpu = <&cpu2>;
@@ -178,9 +169,7 @@
 				core3 {
 					cpu = <&cpu3>;
 				};
-
 			};
-
 			cluster1 {
 				core0 {
 					cpu = <&cpu4>;
@@ -195,7 +184,6 @@
 					cpu = <&cpu7>;
 				};
 			};
-
 		};
 
 		idle-states {
