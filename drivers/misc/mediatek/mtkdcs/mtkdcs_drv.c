@@ -119,7 +119,7 @@ static int dcs_get_status_ipi(enum dcs_status *dcs_status)
 
 	ipi_buf[0] = IPI_DCS_GET_MODE;
 
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
 
 	if (err) {
@@ -144,7 +144,7 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 	ipi_buf[1] = dir;
 
 	pr_info("dcs migration start\n");
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
 	pr_info("dcs migration end\n");
 
@@ -168,7 +168,7 @@ static int dcs_set_dummy_write_ipi(void)
 	ipi_buf[4] = 0x300000;
 	ipi_buf[5] = 0x000000;
 
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
 
 	if (err) {
@@ -186,7 +186,7 @@ static int dcs_dump_reg_ipi(void)
 
 	ipi_buf[0] = IPI_DCS_DUMP_REG;
 
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
 
 	if (err) {
@@ -231,7 +231,7 @@ static int dcs_force_acc_low_ipi(int enable)
 	ipi_buf[0] = IPI_DCS_FORCE_ACC_LOW;
 	ipi_buf[1] = enable;
 
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_WAIT, (void *)ipi_buf, 6,
+	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
 
 	if (err) {
@@ -641,12 +641,9 @@ int __dcs_get_dcs_status(int *ch, enum dcs_status *dcs_status)
 		pr_err("[%d], incorrect DCS status=%s\n",
 				__LINE__,
 				dcs_status_name(sys_dcs_status));
-		goto BUSY;
+		BUG(); /* fatal error */
 	}
 	return 0;
-BUSY:
-	*ch = -1;
-	return -EBUSY;
 }
 
 /*
@@ -817,7 +814,7 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 		 * we're holding the rw_sem, so it's safe to use
 		 * dcs_sysfs_mode
 		 */
-		n += sprintf(buf, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+		n += sprintf(buf + n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
 				dcs_status_name(dcs_status),
 				ch,
 				dcs_sysfs_mode_name[dcs_sysfs_mode]);
@@ -839,6 +836,44 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 	return n;
 }
 
+/*
+ * mtkdcs_debug_show
+ * debug entry for debug system, do not wait for any lock here
+ */
+static ssize_t mtkdcs_debug_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	enum dcs_status dcs_status;
+	int n = 0, ch;
+	int ret_kicker_lock, ret_status_lock;
+
+	ret_kicker_lock = mutex_trylock(&dcs_kicker_lock);
+	ret_status_lock = dcs_get_dcs_status_trylock(&ch, &dcs_status);
+
+	/*
+	 * We're getting debug information, do not care lock
+	 */
+	n += sprintf(buf + n, "dcs_kicker_lock %s, dcs_rwsem %s\n",
+			ret_kicker_lock ? "ok" : "fail",
+			!ret_status_lock ? "ok" : "fail");
+	n += sprintf(buf + n, "dcs_status=%s, channel=%d, dcs_sysfs_mode=%s\n",
+			dcs_status_name(dcs_status),
+			ch,
+			dcs_sysfs_mode_name[dcs_sysfs_mode]);
+	n += sprintf(buf + n, "dcs lbw_start=%llx, lbw_end=%llx\n",
+			lbw_start, lbw_end);
+	n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
+			mpu_start, mpu_end);
+	n += sprintf(buf + n, "nr_swap=%u\n", nr_swap);
+	n += sprintf(buf + n, "kicker=0x%lx\n", dcs_kicker);
+
+	if (ret_kicker_lock)
+		mutex_unlock(&dcs_kicker_lock);
+	if (!ret_status_lock)
+		dcs_get_dcs_status_unlock();
+
+	return n;
+}
 static ssize_t mtkdcs_mode_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -893,6 +928,7 @@ static DEVICE_ATTR(mode, S_IRUGO | S_IWUSR, mtkdcs_mode_show, mtkdcs_mode_store)
 #ifdef DCS_PROFILE
 static DEVICE_ATTR(perf, S_IRUGO, mtkdcs_perf_show, NULL);
 #endif
+static DEVICE_ATTR(debug, S_IRUGO, mtkdcs_debug_show, NULL);
 
 static struct attribute *mtkdcs_attrs[] = {
 	&dev_attr_status.attr,
@@ -900,6 +936,7 @@ static struct attribute *mtkdcs_attrs[] = {
 #ifdef DCS_PROFILE
 	&dev_attr_perf.attr,
 #endif
+	&dev_attr_debug.attr,
 	NULL,
 };
 
