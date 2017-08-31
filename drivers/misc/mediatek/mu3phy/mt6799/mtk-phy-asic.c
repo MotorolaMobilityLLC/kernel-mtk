@@ -28,6 +28,7 @@
 #endif
 
 #include <mt-plat/upmu_common.h>
+#include "mtk_spm_resource_req.h"
 
 #ifdef CONFIG_OF
 #include <linux/module.h>
@@ -77,6 +78,28 @@ void VA10_operation(int op)
 	os_printk(K_INFO, "%s, VA10, sw_en:%x, volsel:%x\n", __func__, sw_en, volsel);
 }
 
+int usb_hal_spm_mode_req(int mode)
+{
+	int ret = -1;
+
+	switch (mode) {
+	case USB_SPM_MODE_NONE:
+		ret = spm_resource_req(SPM_RESOURCE_USER_SSUSB, 0);
+		break;
+	case USB_SPM_MODE_DRAM:
+		ret = spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_DRAM | SPM_RESOURCE_CK_26M);
+		break;
+	case USB_SPM_MODE_SRAM:
+		ret = spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
+		break;
+	default:
+		os_printk(K_WARNIN, "[ERROR] Are you kidding!?!?\n");
+		break;
+	}
+	return ret;
+
+}
+
 static bool usb_enable_clock(bool enable)
 {
 	static int count;
@@ -88,16 +111,23 @@ static bool usb_enable_clock(bool enable)
 	}
 
 	spin_lock_irqsave(&mu3phy_clock_lock, flags);
+	os_printk(K_INFO, "CG, enable<%d>, count<%d>\n", enable, count);
 
 	if (enable && count == 0) {
+		int ret;
 
+		ret = usb_hal_spm_mode_req(USB_SPM_MODE_DRAM);
+		os_printk(K_INFO, "USB_SPM_MODE_DRAM <%d>\n", ret);
 		if (clk_enable(ssusb_clk) != 0)
 			pr_err("ssusb_ref_clk enable fail\n");
 
 
 	} else if (!enable && count == 1) {
+		int ret;
 
 		clk_disable(ssusb_clk);
+		ret = usb_hal_spm_mode_req(USB_SPM_MODE_NONE);
+		os_printk(K_INFO, "USB_SPM_MODE_NONE <%d>\n", ret);
 	}
 
 	if (enable)
