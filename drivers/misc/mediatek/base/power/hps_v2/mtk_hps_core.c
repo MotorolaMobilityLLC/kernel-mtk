@@ -354,6 +354,25 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
 	int i;
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	unsigned int cpu, first_cpu;
+
+	if (p->online_core) {
+		first_cpu = cpumask_first(p->online_core);
+		if (!cpu_online(first_cpu))
+			cpu_up(first_cpu);
+		for_each_possible_cpu(cpu, p->online_core) {
+			if (cpumask_test_cpu(cpu, p->online_core)) {
+				if (!cpu_online(cpu))
+					cpu_up(cpu);
+			} else {
+				if (cpu_online(cpu))
+					cpu_down(cpu);
+			}
+		}
+	}
+#else
+
 	mutex_lock(&hps_ctxt.para_lock);
 	hps_sys.ppm_root_cluster = p->root_cluster;
 	/*hps_sys.ppm_smart_dect = p->smart_dect;*/	/* TODO */
@@ -378,7 +397,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	mutex_unlock(&hps_ctxt.para_lock);
 	hps_ctxt.is_interrupt = 1;
 	hps_task_wakeup_nolock();
-
+#endif
 }
 
 /*
@@ -405,13 +424,14 @@ int hps_core_init(void)
 		hrtimer_start(&hps_ctxt.hr_timer, ktime, HRTIMER_MODE_REL);
 
 	}
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	/* init and start task */
 	r = hps_task_start();
 	if (r) {
 		hps_error("hps_task_start fail(%d)\n", r);
 		return r;
 	}
-
+#endif
 	mt_ppm_register_client(PPM_CLIENT_HOTPLUG, &ppm_limit_callback);	/* register PPM callback */
 
 	return r;
