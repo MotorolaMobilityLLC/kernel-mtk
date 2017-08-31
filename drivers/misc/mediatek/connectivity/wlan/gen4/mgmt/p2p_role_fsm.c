@@ -805,6 +805,8 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 
 		prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prP2pStartAPMsg->ucRoleIdx);
 
+		prAdapter->prP2pInfo->eConnState = P2P_CNN_NORMAL;
+
 		DBGLOG(P2P, TRACE, "p2pRoleFsmRunEventStartAP with Role(%d)\n", prP2pStartAPMsg->ucRoleIdx);
 
 		if (!prP2pRoleFsmInfo) {
@@ -1068,6 +1070,8 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 		prP2pConnReqMsg = (P_MSG_P2P_CONNECTION_REQUEST_T) prMsgHdr;
 
 		prP2pRoleFsmInfo = P2P_ROLE_INDEX_2_ROLE_FSM_INFO(prAdapter, prP2pConnReqMsg->ucRoleIdx);
+
+		prAdapter->prP2pInfo->eConnState = P2P_CNN_NORMAL;
 
 		if (!prP2pRoleFsmInfo) {
 			DBGLOG(P2P, ERROR,

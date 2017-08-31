@@ -75,7 +75,8 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 VOID
 p2pDevStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 			      IN P_BSS_INFO_T prP2pBssInfo,
-			      IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo);
+			      IN P_P2P_DEV_FSM_INFO_T prP2pDevFsmInfo, IN P_P2P_CHNL_REQ_INFO_T prChnlReqInfo,
+			      IN ENUM_P2P_DEV_STATE_T eNextState);
 
 VOID p2pDevStateInit_SCAN(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex, IN P_P2P_SCAN_REQ_INFO_T prScanReqInfo);
 
