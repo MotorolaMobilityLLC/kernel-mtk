@@ -705,7 +705,7 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
 	if (snd_usb_get_speed(ep->chip->dev) != USB_SPEED_FULL) {
 		packs_per_ms = 8 >> ep->datainterval;
 		max_packs_per_urb = MAX_PACKS_HS;
-		max_queue = MAX_QUEUE;
+		max_queue = MAX_QUEUE_HS;
 	} else {
 		packs_per_ms = 1;
 		max_packs_per_urb = MAX_PACKS;
