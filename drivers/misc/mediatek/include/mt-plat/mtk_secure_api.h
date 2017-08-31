@@ -82,6 +82,11 @@
 /* HW FDE related SMC call */
 #define MTK_SIP_KERNEL_HW_FDE_UFS_INIT      (0x82000230 | MTK_SIP_SMC_AARCH_BIT)
 
+/* LPDMA SMC calls */
+#define MTK_SIP_KERNEL_LPDMA_WRITE		(0x82000231 | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_LPDMA_READ		(0x82000232 | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_LPDMA_GET		(0x82000233 | MTK_SIP_SMC_AARCH_BIT)
+
 #define MTK_SIP_KERNEL_DRAM_DCS_CHB		(0x82000289 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_MSG                  (0x820002ff | MTK_SIP_SMC_AARCH_BIT)
 
@@ -137,6 +142,15 @@ mt_secure_call(MTK_SIP_KERNEL_EMIMPU_READ, offset, 0, 0)
 
 #define emi_mpu_smc_set(start, end, region_permission) \
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission)
+
+#define lpdma_smc_write(offset, val) \
+mt_secure_call(MTK_SIP_KERNEL_LPDMA_WRITE, offset, val, 0)
+
+#define lpdma_smc_read(offset) \
+mt_secure_call(MTK_SIP_KERNEL_LPDMA_READ, offset, 0, 0)
+
+#define lpdma_smc_get_mode() \
+mt_secure_call(MTK_SIP_KERNEL_LPDMA_GET, 0, 0, 0)
 
 #define mcsi_a_smc_read_phy(addr) \
 mt_secure_call(MTK_SIP_KERNEL_MCSI_A_READ, addr, 0, 0)
