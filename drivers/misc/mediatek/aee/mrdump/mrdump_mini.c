@@ -59,6 +59,9 @@
 static struct mrdump_mini_elf_header *mrdump_mini_ehdr;
 
 static bool dump_all_cpus;
+#if defined(CONFIG_PAGE_OWNER_SLIM)
+static bool dump_po_memory_info = true;
+#endif
 
 __weak void get_android_log_buffer(unsigned long *addr, unsigned long *size, unsigned long *start,
 				   int type)
@@ -605,6 +608,10 @@ static void mrdump_mini_add_loads(void)
 	struct elf_prstatus *prstatus;
 	struct task_struct *tsk = NULL;
 	struct thread_info *ti = NULL;
+#if defined(CONFIG_PAGE_OWNER_SLIM)
+	unsigned long po_addr = 0;
+	int size = 0;
+#endif
 
 	if (mrdump_mini_ehdr == NULL)
 		return;
@@ -647,6 +654,17 @@ static void mrdump_mini_add_loads(void)
 			mrdump_mini_add_entry((unsigned long)ti, MRDUMP_MINI_SECTION_SIZE);
 		}
 	}
+
+#if defined(CONFIG_PAGE_OWNER_SLIM)
+	if (dump_po_memory_info) {
+		if (minidump_page_owner_memory_info(&po_addr, &size)) {
+			LOGE("mrdump: get page owner memory info failed\n");
+		} else {
+			LOGD("mrdump: get page owner memory, addr:%lx, size:%d\n", po_addr, size*2);
+			mrdump_mini_add_entry(po_addr, size*2);
+		}
+	}
+#endif
 #if 0
 	if (logbuf_lock.owner_cpu < NR_CPUS) {
 		tsk = cpu_curr(logbuf_lock.owner_cpu);
@@ -816,3 +834,6 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_minirdump, "mediatek,minirdump",
 		       mini_rdump_reserve_memory);
 
 module_param(dump_all_cpus, bool, S_IRUGO | S_IWUSR);
+#if defined(CONFIG_PAGE_OWNER_SLIM)
+module_param(dump_po_memory_info, bool, S_IRUGO | S_IWUSR);
+#endif
