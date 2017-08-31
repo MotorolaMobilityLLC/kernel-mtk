@@ -459,7 +459,6 @@ int hdmi_get_support_info(void)
 	value |= temp;
 	value |= HDMI_FACTORY_MODE_NEW;
 
-	HDMI_LOG("value is 0x%x\n", value);
 	return value;
 }
 
@@ -1030,7 +1029,7 @@ int hdmi_recompute_bg(int src_w, int src_h)
 /* HDMI Driver state callback function */
 void hdmi_state_callback(enum HDMI_STATE state)
 {
-	HDMI_LOG("[hdmi]%s, state = %d\n", __func__, state);
+
 	if ((p->is_force_disable == true) || (IS_HDMI_FAKE_PLUG_IN()))
 		return;
 
@@ -1049,7 +1048,6 @@ void hdmi_state_callback(enum HDMI_STATE state)
 			if (hdmi_params->cabletype == MHL_SMB_CABLE)
 				sb_plug_out();
 #endif
-			HDMI_LOG("[hdmi]%s, state = %d out!\n", __func__, state);
 			break;
 		}
 	case HDMI_STATE_ACTIVE:
@@ -1075,7 +1073,6 @@ void hdmi_state_callback(enum HDMI_STATE state)
 #ifdef MHL_DYNAMIC_VSYNC_OFFSET
 			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, true);
 #endif
-			HDMI_LOG("[hdmi]%s, state = %d out!\n", __func__, state);
 			break;
 		}
 	default:
@@ -1385,7 +1382,6 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 		mmprofile_log_ex(ddp_mmp_get_events()->Extd_DevInfo, MMPROFILE_FLAG_END,
 				 p->is_enabled, hdmi_info.displayType);
-		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
 		struct disp_session_info *dispif_info = (struct disp_session_info *)info;
 
@@ -1459,7 +1455,6 @@ int hdmi_get_capability(void *info)
 		HDMI_LOG(": copy_to_user error! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-	HDMI_LOG("[hdmi][HDMI] query_type  done %x\n", query_type);
 
 	return ret;
 }
