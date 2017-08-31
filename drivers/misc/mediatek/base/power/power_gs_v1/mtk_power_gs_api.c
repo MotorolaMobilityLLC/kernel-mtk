@@ -449,6 +449,8 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 {
 	char *buf = _copy_from_user_for_proc(buffer, count);
 	char cmd[64];
+	struct phys_to_virt_table *table;
+	unsigned int base;
 	unsigned int addr;
 	unsigned int mask;
 	unsigned int golden_val;
@@ -491,11 +493,32 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 	/* set to dump pmic reg value */
 	else if (sscanf(buf, "set_pmic_manual_dump 0x%x", &addr) == 1) {
 		if (_pmic_manual_dump.addr_array) {
-			if (_pmic_manual_dump.array_pos < _pmic_manual_dump.array_size)
+			if (_pmic_manual_dump.array_pos < _pmic_manual_dump.array_size) {
 				_pmic_manual_dump.addr_array[_pmic_manual_dump.array_pos++] = addr;
-			else
-				pr_warn("Power_gs: pmic_manual_dump array is full\n");
-		}
+				base  = (addr & (~(unsigned long)REMAP_SIZE_MASK));
+
+				if (!_is_pmic_addr(addr) &&
+				    !_is_exist_in_phys_to_virt_table(base) &&
+				    _base_remap.table) {
+
+					table = _base_remap.table;
+					table[_base_remap.table_pos].phys_base = base;
+					table[_base_remap.table_pos].virt_base
+						= ioremap_nocache(base, REMAP_SIZE_MASK + 1);
+
+					if (!table[_base_remap.table_pos].virt_base)
+						pr_info("Power_gs: ioremap_nocache(0x%x, 0x%x) return NULL\n"
+							, base, REMAP_SIZE_MASK + 1);
+
+					if (_base_remap.table_pos < _base_remap.table_size)
+						_base_remap.table_pos++;
+					else
+						pr_info("Power_gs: base_remap in maximum size, return for skipped\n");
+				}
+			} else
+				pr_info("Power_gs: pmic_manual_dump array is full\n");
+		} else
+			pr_info("Power_gs: pmic_manual_dump init fail\n");
 	}
 	/* XXX: 63 = sizeof(cmd) - 1 */
 	else if (sscanf(buf, "%63s", cmd) == 1) {
