@@ -27,7 +27,9 @@ static char const * const sdio_autok_res_path[] = {
 };
 
 #define VCORE_DVFS_INDEPENDENT
-#define AUTOK_DIFF_MARGIN  5
+#define AUTOK_CMD_DAT_MARGIN    10
+#define AUTOK_DS_TX_MARGIN      5
+
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -169,13 +171,22 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	int i;
 
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
-		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1) || (i == EMMC50_DS_Z_DLY1)
-			 || ((i >= EMMC50_DATA0_TX_DLY) && (i <= EMMC50_DATA7_TX_DLY))) {
-			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_DIFF_MARGIN)) {
+		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1)) {
+			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_CMD_DAT_MARGIN)) {
 				ret = -1;
 				break;
 			}
-			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_DIFF_MARGIN)) {
+			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_CMD_DAT_MARGIN)) {
+				ret = -1;
+				break;
+			}
+		} else if ((i == EMMC50_DS_Z_DLY1)
+			 || ((i >= EMMC50_DATA0_TX_DLY) && (i <= EMMC50_DATA7_TX_DLY))) {
+			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_DS_TX_MARGIN)) {
+				ret = -1;
+				break;
+			}
+			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_DS_TX_MARGIN)) {
 				ret = -1;
 				break;
 			}
