@@ -5391,6 +5391,7 @@ enum WAIT_POLICY_ENUM {
 	CMDQ_TESTCASE_WAITOP_NOT_SET,
 	CMDQ_TESTCASE_WAITOP_ALWAYS,
 	CMDQ_TESTCASE_WAITOP_RANDOM,
+	CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT,
 	CMDQ_TESTCASE_WAITOP_BEFORE_END,
 };
 
@@ -6096,8 +6097,10 @@ static int _testcase_gen_task_thread(void *data)
 
 	if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_BEFORE_END)
 		stress_context->exec_suspend = _testcase_on_exec_suspend;
+	else if (thread_data->policy.wait_policy == CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT)
+		stress_context->predump_count = 50;
 	else
-		cmdq_core_clean_stress_context();
+		stress_context->predump_count = 2;
 
 	atomic_set(&task_ref_count, 0);
 	for (task_count = 0; !atomic_read(&thread_data->stop) &&
@@ -6160,6 +6163,7 @@ static int _testcase_gen_task_thread(void *data)
 			random_context->may_wait = true;
 			break;
 		case CMDQ_TESTCASE_WAITOP_RANDOM:
+		case CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT:
 			/* give 1/10 chance the task has wait instructions */
 			random_context->may_wait = get_random_int() % 10;
 			break;
@@ -6503,6 +6507,18 @@ void testcase_stress_timeout(void)
 	testcase_gen_random_case(true, policy);
 }
 
+static void testcase_stress_reorder(void)
+{
+	struct stress_policy policy = {0};
+
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_RANDOM_NOTIMEOUT;
+	policy.condition_policy = CMDQ_TESTCASE_CONDITION_NONE;
+	policy.loop_policy = CMDQ_TESTCASE_LOOP_FAST;
+	policy.trigger_policy = CMDQ_TESTCASE_TRIGGER_SLOW;
+	testcase_gen_random_case(true, policy);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -6521,6 +6537,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 304:
+		testcase_stress_reorder();
+		break;
 	case 303:
 		testcase_stress_timeout();
 		break;

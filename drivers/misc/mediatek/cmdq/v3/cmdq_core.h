@@ -737,6 +737,7 @@ typedef void (*cmdqStressCallback)(struct TaskStruct *task, s32 thread);
 
 struct StressContextStruct {
 	cmdqStressCallback exec_suspend;
+	u32 predump_count;
 };
 
 #ifdef __cplusplus
