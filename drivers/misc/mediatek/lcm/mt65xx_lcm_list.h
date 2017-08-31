@@ -256,6 +256,7 @@ extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv;
 extern LCM_DRIVER nt35695_fhd_dsi_cmd_auo_nt50358_laneswap_mt6799_lcm_drv;
 extern LCM_DRIVER nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_mt6799_lcm_drv;
 extern LCM_DRIVER claa101fp01_dsi_vdo_lcm_drv;
+extern LCM_DRIVER r61322_fhd_dsi_vdo_sharp_lfr_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
