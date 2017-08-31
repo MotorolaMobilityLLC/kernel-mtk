@@ -19,7 +19,7 @@
 #include <linux/mutex.h>
 
 
-#define FPC_VENDOR_ID       0x12
+#define FPC_VENDOR_ID       0x1b
 #define GOODIX_VENDOR_ID    0x13
 
 int fp_vendor_active;

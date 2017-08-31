@@ -17,7 +17,8 @@
 
 #define TEEI_CLIENT_FULL_PATH_DEV_NAME "/dev/teei_client"
 #define TEEI_CLIENT_DEV "teei_client"
-#define TEEI_CLIENT_IOC_MAGIC 0x775B777F /* "TEEI Client" */
+#define TEEI_IOC_MAGIC 'T'
+#define TEEI_CLIENT_IOC_MAGIC TEEI_IOC_MAGIC /* "TEEI Client" */
 
 /** IOCTL request */
 

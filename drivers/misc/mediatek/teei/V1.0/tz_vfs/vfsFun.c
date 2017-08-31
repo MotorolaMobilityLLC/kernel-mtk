@@ -22,15 +22,13 @@
 #include<linux/sched.h>
 #include<linux/init.h>
 #include <linux/cdev.h>
-#include <asm/io.h>
-#include <asm/uaccess.h>
+#include <linux/io.h>
+#include <linux/uaccess.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
 #include "TEEI.h"
 #include "teei_id.h"
 #include "fp_vendor.h"
-#include <asm/uaccess.h>
-
 #include "VFS.h"
 #include "../tz_driver/include/backward_driver.h"
 #include "../tz_driver/include/teei_client_main.h"
@@ -39,8 +37,8 @@
 #define VFS_SIZE	0x80000
 #define MEM_CLEAR	0x1
 #define VFS_MAJOR	253
-
-#define TEEI_CONFIG_IOC_MAGIC 0x5B777E
+#define TEEI_IOC_MAGIC 'T'
+#define TEEI_CONFIG_IOC_MAGIC TEEI_IOC_MAGIC
 
 #define TEEI_CONFIG_IOCTL_INIT_TEEI		_IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
 #ifdef CONFIG_MICROTRUST_TUI_DRIVER
@@ -136,13 +134,13 @@ static long tz_vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (ret)
 			IMSG_ERROR("tui_i2c_disable_clock failed!!\n");
 
+		mt_deint_restore();
 
 		ret = display_exit_tui();
 
 		if (ret)
 			IMSG_ERROR("display_exit_tui failed!!\n");
 
-		mt_deint_restore();
 		/* primary_display_trigger(0, NULL, 0); */
 		enter_tui_flag = 0;
 		break;
@@ -220,10 +218,10 @@ static ssize_t tz_vfs_write(struct file *filp, const char __user *buf, size_t si
 	if (daulOS_VFS_share_mem == NULL)
 		return -EINVAL;
 
-/*
-*	if ((size > VFS_SIZE))
-*		return -EINVAL;
-*/
+
+	if (size > VFS_SIZE)
+		return -EINVAL;
+
 
 	/*IMSG_DEBUG("write begin cpu_id[%d]\n",cpu_id);*/
 	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))

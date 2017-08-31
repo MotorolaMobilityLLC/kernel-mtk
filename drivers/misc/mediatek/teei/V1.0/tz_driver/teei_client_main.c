@@ -42,7 +42,7 @@
 #include <linux/cpumask.h>
 #include "tpd.h"
 #include <linux/delay.h>
-
+#include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/of_platform.h>
 #include "teei_client.h"
@@ -76,6 +76,9 @@
 #include "teei_keymaster.h"
 #include "irq_register.h"
 #include "tlog.h"
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+#include "tz_log.h"
+#endif
 #include "notify_queue.h"
 #include "ut_mm.h"
 #include "teei_smc_call.h"
@@ -204,6 +207,99 @@ const char *teei_boot_error_to_string(uint32_t id)
 	return "TEEI_BOOT_ERROR_UNDEFINED";
 }
 
+static uint32_t imsg_log_level = IMSG_LOG_LEVEL;
+
+static ssize_t imsg_log_test_show(struct device *cd, struct device_attribute *attr,
+			 char *buf)
+{
+	IMSG_PROFILE_S("LOG_TEST");
+
+	IMSG_ENTER();
+
+	IMSG_TRACE("Trace message\n");
+	IMSG_DEBUG("Debug message\n");
+	IMSG_INFO("Information message\n");
+	IMSG_WARN("Warning message\n");
+	IMSG_ERROR("Error message\n");
+
+	IMSG_LEAVE();
+
+	IMSG_PROFILE_E("LOG_TEST");
+
+	return 0;
+}
+
+static DEVICE_ATTR_RO(imsg_log_test);
+
+uint32_t get_imsg_log_level(void)
+{
+	return imsg_log_level;
+}
+
+static ssize_t imsg_log_level_show(struct device *cd, struct device_attribute *attr,
+			 char *buf)
+{
+	return sprintf(buf, "%u\n", get_imsg_log_level());
+}
+
+#if defined(CONFIG_MICROTRUST_DEBUG)
+static void set_imsg_log_level(uint32_t lv)
+{
+	imsg_log_level = lv;
+}
+
+static ssize_t imsg_log_level_store(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t len)
+{
+	unsigned long new;
+	int ret;
+
+	ret = kstrtoul(buf, 0, &new);
+	if (ret < 0)
+		return ret;
+
+	set_imsg_log_level(new);
+	return len;
+}
+
+static DEVICE_ATTR_RW(imsg_log_level);
+#else
+static DEVICE_ATTR_RO(imsg_log_level);
+#endif
+
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+static struct tz_driver_state *tz_drv_state;
+
+struct tz_driver_state *get_tz_drv_state(void)
+{
+	return tz_drv_state;
+}
+
+int tz_call_notifier_register(struct notifier_block *n)
+{
+	struct tz_driver_state *s = get_tz_drv_state();
+
+	if (!s) {
+		IMSG_ERROR("tz_driver_state is NULL\n");
+		return -EFAULT;
+	}
+
+	return atomic_notifier_chain_register(&s->notifier, n);
+}
+
+int tz_call_notifier_unregister(struct notifier_block *n)
+{
+	struct tz_driver_state *s = get_tz_drv_state();
+
+	if (!s) {
+		IMSG_ERROR("tz_driver_state is NULL\n");
+		return -EFAULT;
+	}
+
+	return atomic_notifier_chain_unregister(&s->notifier, n);
+}
+#endif
+
 void *tz_malloc(size_t size, int flags)
 {
 	void *ptr = kmalloc(size, flags | GFP_ATOMIC);
@@ -226,13 +322,15 @@ void tz_free_shared_mem(void *addr, size_t size)
 
 void ut_pm_mutex_lock(struct mutex *lock)
 {
-	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock);
+/*	add_work_entry(LOCK_PM_MUTEX, (unsigned char *)lock); */
+	mutex_lock(lock);
 }
 
 
 void ut_pm_mutex_unlock(struct mutex *lock)
 {
-	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock);
+/*	add_work_entry(UNLOCK_PM_MUTEX, (unsigned char *)lock); */
+	mutex_unlock(lock);
 }
 
 int get_current_cpuid(void)
@@ -246,10 +344,8 @@ void secondary_boot_stage2(void *info)
 
 	n_switch_to_t_os_stage2(&smc_type);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 }
 
 static void boot_stage2(void)
@@ -276,11 +372,8 @@ void secondary_load_tee(void *info)
 	uint64_t smc_type = 2;
 
 	n_invoke_t_load_tee(&smc_type, 0, 0);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-
-	}
 }
 
 
@@ -325,10 +418,8 @@ void secondary_boot_stage1(void *info)
 	rmb();
 
 	n_init_t_boot_stage1((uint64_t)(cd->vfs_phy_addr), (uint64_t)(cd->tlog_phy_addr), &smc_type);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	/* with a wmb() */
 	wmb();
@@ -435,15 +526,13 @@ void secondary_init_cmdbuf(void *info)
 	       (unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
 	n_init_t_fc_buf((uint64_t)cd->phy_addr, (uint64_t)cd->fdrv_phy_addr, &smc_type);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
+
 	n_init_t_fc_buf((uint64_t)cd->bdrv_phy_addr, (uint64_t)cd->tlog_phy_addr, &smc_type);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
+
 	/* with a wmb() */
 	wmb();
 }
@@ -469,7 +558,9 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 
 long create_cmd_buff(void)
 {
+#ifndef CONFIG_MICROTRUST_TZ_LOG
 	long retVal = 0;
+#endif
 
 #ifdef UT_DMA_ZONE
 	message_buff =  (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA,
@@ -529,6 +620,7 @@ long create_cmd_buff(void)
 		return -ENOMEM;
 	}
 
+#ifndef CONFIG_MICROTRUST_TZ_LOG
 	retVal = create_utgate_log_thread(tlog_message_buff, MESSAGE_LENGTH * 64);
 
 	if (retVal != 0) {
@@ -539,6 +631,7 @@ long create_cmd_buff(void)
 		free_pages(tlog_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH * 128, SZ_4K)));
 		return retVal;
 	}
+#endif
 
 	IMSG_DEBUG("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n",
 				__func__, __LINE__,
@@ -668,7 +761,12 @@ long teei_service_init_second(void)
 static int init_teei_framework(void)
 {
 	long retVal = 0;
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	struct tz_log_state *s = dev_get_platdata(&tz_drv_state->tz_log_pdev->dev);
+	phys_addr_t tz_log_buf_pa = page_to_phys(s->log_pages);
+#else
 	unsigned long tlog_buff = 0;
+#endif
 
 	boot_soter_flag = START_STATUS;
 
@@ -683,6 +781,7 @@ static int init_teei_framework(void)
 	sema_init(&(tui_notify_sema), 0);
 #endif
 
+#ifndef CONFIG_MICROTRUST_TZ_LOG
 	tlog_buff = (unsigned long) __get_free_pages(GFP_KERNEL  | GFP_DMA, get_order(ROUND_UP(LOG_BUF_LEN, SZ_4K)));
 
 	if ((void *)tlog_buff == NULL) {
@@ -697,6 +796,7 @@ static int init_teei_framework(void)
 		return TEEI_BOOT_ERROR_CREATE_TLOG_THREAD;
 	}
 	TEEI_BOOT_FOOTPRINT("TEEI TLOG THREAD Created");
+#endif
 
 	secure_wq = create_workqueue("Secure Call");
 	bdrv_wq = create_workqueue("Bdrv Call");
@@ -716,8 +816,11 @@ static int init_teei_framework(void)
 	TEEI_BOOT_FOOTPRINT("TEEI VFS Buffer Created");
 
 	down(&(smc_lock));
-
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	boot_stage1((unsigned long)virt_to_phys((void *)boot_vfs_addr), (unsigned long)tz_log_buf_pa);
+#else
 	boot_stage1((unsigned long)virt_to_phys((void *)boot_vfs_addr), (unsigned long)virt_to_phys((void *)tlog_buff));
+#endif
 
 	down(&(boot_sema));
 
@@ -802,14 +905,18 @@ static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	switch (cmd) {
 
 	case TEEI_CONFIG_IOCTL_INIT_TEEI:
-		if (teei_flags == 1) {
+		if (teei_flags == 1)
 			break;
-		} else {
-			retVal = init_teei_framework();
-			TEEI_BOOT_FOOTPRINT((char *)teei_boot_error_to_string(retVal));
-			teei_flags = 1;
-		}
 
+		retVal = init_teei_framework();
+		TEEI_BOOT_FOOTPRINT((char *)teei_boot_error_to_string(retVal));
+		teei_flags = 1;
+
+		break;
+
+	case TEEI_CONFIG_IOCTL_UNLOCK:
+
+		up(&(boot_decryto_lock));
 		break;
 
 	default:
@@ -1261,15 +1368,11 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 	if (cmd == TEEI_CANCEL_COMMAND) {
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND beginning .....\n", __func__, __LINE__);
 
-		ut_pm_mutex_lock(&pm_mutex);
-
-		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE)) {
-			ut_pm_mutex_unlock(&pm_mutex);
+		if (copy_from_user((void *)cancel_message_buff, (void *)argp, MAX_BUFF_SIZE))
 			return -EINVAL;
-		}
+		if ((void *)cancel_message_buff != NULL)
+			return -EINVAL;
 		send_cancel_command(0);
-
-		ut_pm_mutex_unlock(&pm_mutex);
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end .....\n", __func__, __LINE__);
 		return 0;
@@ -1570,18 +1673,23 @@ static long teei_client_unioctl(struct file *file, unsigned cmd, unsigned long a
 static int teei_client_open(struct inode *inode, struct file *file)
 {
 	struct teei_context *new_context = NULL;
+	unsigned long device_no;
 
+	down(&api_lock);
 	device_file_cnt++;
-	file->private_data = (void *)device_file_cnt;
+	device_no = device_file_cnt;
+
+	file->private_data = (void *)device_no;
 
 	new_context = (struct teei_context *)tz_malloc(sizeof(struct teei_context), GFP_KERNEL);
 
 	if (new_context == NULL) {
 		IMSG_ERROR("tz_malloc failed for new dev file allocation!\n");
+		up(&api_lock);
 		return -ENOMEM;
 	}
 
-	new_context->cont_id = device_file_cnt;
+	new_context->cont_id = device_no;
 	INIT_LIST_HEAD(&(new_context->sess_link));
 	INIT_LIST_HEAD(&(new_context->link));
 
@@ -1594,7 +1702,7 @@ static int teei_client_open(struct inode *inode, struct file *file)
 	list_add(&(new_context->link), &(teei_contexts_head.context_list));
 	teei_contexts_head.dev_file_cnt++;
 	up_write(&(teei_contexts_head.teei_contexts_sem));
-
+	up(&api_lock);
 	return 0;
 }
 
@@ -1698,7 +1806,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	/* Reasch the context with ID equal filp->private_data */
 
-	down_read(&(teei_contexts_head.teei_contexts_sem));
+	down_write(&(teei_contexts_head.teei_contexts_sem));
 
 	list_for_each_entry(cont, &(teei_contexts_head.context_list), link) {
 		if (cont->cont_id == (unsigned long)filp->private_data) {
@@ -1709,7 +1817,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	}
 
 	if (context_found == 0) {
-		up_read(&(teei_contexts_head.teei_contexts_sem));
+		up_write(&(teei_contexts_head.teei_contexts_sem));
 		return -EINVAL;
 	}
 
@@ -1718,7 +1826,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 
 	if (share_mem_entry == NULL) {
 		IMSG_ERROR("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
-		up_read(&(teei_contexts_head.teei_contexts_sem));
+		up_write(&(teei_contexts_head.teei_contexts_sem));
 		return -ENOMEM;
 	}
 
@@ -1732,7 +1840,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	if (alloc_addr == 0) {
 		IMSG_ERROR("[%s][%d] get free pages failed!\n", __func__, __LINE__);
 		kfree(share_mem_entry);
-		up_read(&(teei_contexts_head.teei_contexts_sem));
+		up_write(&(teei_contexts_head.teei_contexts_sem));
 		return -ENOMEM;
 	}
 
@@ -1746,7 +1854,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 		IMSG_ERROR("[%s][%d] remap_pfn_range failed!\n", __func__, __LINE__);
 		kfree(share_mem_entry);
 		free_pages(alloc_addr, get_order(ROUND_UP(length, SZ_4K)));
-		up_read(&(teei_contexts_head.teei_contexts_sem));
+		up_write(&(teei_contexts_head.teei_contexts_sem));
 		return retVal;
 	}
 
@@ -1759,7 +1867,7 @@ static int teei_client_mmap(struct file *filp, struct vm_area_struct *vma)
 	cont->shared_mem_cnt++;
 	list_add(&(share_mem_entry->head), &(cont->shared_mem_list));
 
-	up_read(&(teei_contexts_head.teei_contexts_sem));
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	return 0;
 }
@@ -1776,8 +1884,9 @@ static int teei_client_release(struct inode *inode, struct file *file)
 {
 	int retVal = 0;
 
+	down(&api_lock);
 	retVal = teei_client_service_exit(file->private_data);
-
+	up(&api_lock);
 	return retVal;
 }
 
@@ -1794,15 +1903,16 @@ static const struct file_operations teei_client_fops = {
 	.release = teei_client_release
 };
 
-static int teei_probe(struct platform_device *dev)
+static int teei_probe(struct platform_device *pdev)
 {
 	int ut_irq = 0;
 	int soter_irq = 0;
+	int ret;
 
 #ifdef CONFIG_OF
-	ut_irq = platform_get_irq(dev, 0);
+	ut_irq = platform_get_irq(pdev, 0);
 	IMSG_INFO("teei device ut_irq is %d\n", ut_irq);
-	soter_irq = platform_get_irq(dev, 1);
+	soter_irq = platform_get_irq(pdev, 1);
 	IMSG_INFO("teei device soter_irq is %d\n", soter_irq);
 
 	if (ut_irq <= 0 || soter_irq <= 0) {
@@ -1813,6 +1923,19 @@ static int teei_probe(struct platform_device *dev)
 	ut_irq = UT_DRV_IRQ;
 	soter_irq = SOTER_IRQ;
 #endif
+
+	ret = device_create_file(&pdev->dev, &dev_attr_imsg_log_level);
+	if (ret) {
+		IMSG_ERROR("error creating sysfs files: imsg_log_level\n");
+		return -1;
+	}
+
+	ret = device_create_file(&pdev->dev, &dev_attr_imsg_log_test);
+	if (ret) {
+		IMSG_ERROR("error creating sysfs files: imsg_log_test\n");
+		return -1;
+	}
+
 	if (register_ut_irq_handler(ut_irq) < 0) {
 		IMSG_ERROR("teei_device can't register for irq %d\n", ut_irq);
 		return -1;
@@ -1822,13 +1945,15 @@ static int teei_probe(struct platform_device *dev)
 		return -1;
 	}
 
-	IMSG_INFO("teei device irqs are registerd successfully\n");
+	IMSG_INFO("teei device irqs are registered successfully\n");
 
 	return 0;
 }
 
-static int teei_remove(struct platform_device *dev)
+static int teei_remove(struct platform_device *pdev)
 {
+	device_remove_file(&pdev->dev, &dev_attr_imsg_log_level);
+	device_remove_file(&pdev->dev, &dev_attr_imsg_log_test);
 	return 0;
 }
 
@@ -1862,9 +1987,9 @@ static int teei_client_init(void)
 	struct device *class_dev = NULL;
 	int i;
 #ifdef TUI_SUPPORT
-	int pwr_pid = 0;
+	struct task_struct *pwr_listen_thread;
 #endif
-
+	struct sched_param param = {.sched_priority = 50 };
 	/* IMSG_DEBUG("TEEI Agent Driver Module Init ...\n"); */
 
 	IMSG_DEBUG("=============================================================\n\n");
@@ -1883,6 +2008,27 @@ static int teei_client_init(void)
 		IMSG_ERROR("unable to register teei driver(%d)\n", ret_code);
 		return ret_code;
 	}
+
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	tz_drv_state = kzalloc(sizeof(struct tz_driver_state), GFP_KERNEL);
+	if (!tz_drv_state)
+		return -ENOMEM;
+
+	mutex_init(&tz_drv_state->smc_lock);
+	ATOMIC_INIT_NOTIFIER_HEAD(&tz_drv_state->notifier);
+
+	tz_drv_state->tz_log_pdev = platform_device_alloc("tz_log", 0);
+	if (!tz_drv_state->tz_log_pdev)
+		goto failed_alloc_dev;
+
+	platform_device_add(tz_drv_state->tz_log_pdev);
+
+	ret_code = tz_log_probe(tz_drv_state->tz_log_pdev);
+	if (ret_code) {
+		IMSG_ERROR("failed to initial tz_log driver (%d)\n", ret_code);
+		goto del_pdev;
+	}
+#endif
 
 	driver_class = class_create(THIS_MODULE, TEEI_CLIENT_DEV);
 
@@ -1917,7 +2063,9 @@ static int teei_client_init(void)
 
 	INIT_LIST_HEAD(&teei_contexts_head.context_list);
 
+#ifndef CONFIG_MICROTRUST_TZ_LOG
 	init_tlog_entry();
+#endif
 	init_sched_work_ent();
 
 	sema_init(&(smc_lock), 1);
@@ -1937,7 +2085,7 @@ static int teei_client_init(void)
 		teei_switch_task = NULL;
 		goto fastcall_thread_fail;
 	}
-
+	sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param);
 	/* sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param); */
 	/* get_task_struct(teei_switch_task); */
 	wake_up_process(teei_switch_task);
@@ -1952,12 +2100,10 @@ static int teei_client_init(void)
 	IMSG_DEBUG("after  register cpu notify\n");
 
 #ifdef TUI_SUPPORT
-	pwr_pid = kthread_run(wait_for_power_down, 0, POWER_DOWN);
+	pwr_listen_thread = kthread_run(wait_for_power_down, NULL, POWER_DOWN);
 
-	if (IS_ERR(pwr_pid)) {
-		pwr_pid = PTR_ERR(pwr_pid);
-		IMSG_ERROR("failed to create kernel thread: %d\n", pwr_pid);
-	}
+	if (IS_ERR(pwr_listen_thread))
+		IMSG_ERROR("failed to create kernel thread:  %ld\n", PTR_ERR(pwr_listen_thread));
 
 	register_reboot_notifier(&tui_notifier);
 #endif
@@ -1973,6 +2119,15 @@ class_destroy:
 	class_destroy(driver_class);
 unregister_chrdev_region:
 	unregister_chrdev_region(teei_client_device_no, 1);
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	tz_log_remove(tz_drv_state->tz_log_pdev);
+del_pdev:
+	platform_device_del(tz_drv_state->tz_log_pdev);
+failed_alloc_dev:
+	platform_device_put(tz_drv_state->tz_log_pdev);
+	mutex_destroy(&tz_drv_state->smc_lock);
+	kfree(tz_drv_state);
+#endif
 return_fn:
 	return ret_code;
 }
@@ -1990,6 +2145,15 @@ static void teei_client_exit(void)
 	class_destroy(driver_class);
 	unregister_chrdev_region(teei_client_device_no, 1);
 	platform_driver_unregister(&teei_driver);
+#ifdef CONFIG_MICROTRUST_TZ_LOG
+	if (tz_drv_state) {
+		tz_log_remove(tz_drv_state->tz_log_pdev);
+		platform_device_del(tz_drv_state->tz_log_pdev);
+		platform_device_put(tz_drv_state->tz_log_pdev);
+		mutex_destroy(&tz_drv_state->smc_lock);
+		kfree(tz_drv_state);
+	}
+#endif
 }
 
 MODULE_LICENSE("GPL v2");

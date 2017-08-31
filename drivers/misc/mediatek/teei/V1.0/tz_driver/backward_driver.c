@@ -72,10 +72,8 @@ void secondary_invoke_fastcall(void *info)
 
 	n_invoke_t_fast_call(&smc_type, 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 }
 
 void invoke_fastcall(void)
@@ -194,10 +192,8 @@ int __reetime_handle(struct service_handler *handler)
 
 	set_ack_vdrv_cmd(handler->sysno);
 	n_ack_t_invoke_drv(&smc_type, 0, 0);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -209,7 +205,7 @@ static int reetime_handle(struct service_handler *handler)
 
 	down(&smc_lock);
 
-	reetime_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	reetime_bdrv_ent = kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
 	reetime_bdrv_ent->handler = handler;
 	reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
 	/* with a wmb() */
@@ -276,10 +272,8 @@ int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	set_ack_vdrv_cmd(handler->sysno);
 	n_ack_t_invoke_drv(&smc_type, 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -293,7 +287,7 @@ static int vfs_handle(struct service_handler *handler)
 	vfs_thread_function((unsigned long)(handler->param_buf), para_vaddr, buff_vaddr);
 
 	down(&smc_lock);
-	vfs_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	vfs_bdrv_ent = kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
 	vfs_bdrv_ent->handler = handler;
 	vfs_bdrv_ent->bdrv_call_type = VFS_SYS_NO;
 	/* with a wmb() */
