@@ -441,8 +441,6 @@ INT32 wmt_conf_read_file(VOID)
 	if (chip_type == WMT_CHIP_TYPE_SOC) {
 		osal_memset(&gDevWmt.cWmtcfgName[0], 0, osal_sizeof(gDevWmt.cWmtcfgName));
 
-		osal_strncat(&(gDevWmt.cWmtcfgName[0]), CUST_CFG_WMT_PREFIX,
-		 osal_sizeof(CUST_CFG_WMT_PREFIX));
 		osal_strncat(&(gDevWmt.cWmtcfgName[0]), CUST_CFG_WMT_SOC, osal_sizeof(CUST_CFG_WMT_SOC));
 	}
 
