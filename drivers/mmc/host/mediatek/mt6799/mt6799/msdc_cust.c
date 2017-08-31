@@ -89,11 +89,13 @@ const struct of_device_id msdc_of_ids[] = {
 	{ },
 };
 
+#if !defined(FPGA_PLATFORM)
 static void __iomem *gpio_base;
 
 static void __iomem *pericfg_base;
 static void __iomem *apmixed_base;
 static void __iomem *topckgen_base;
+#endif
 
 void __iomem *msdc_io_cfg_bases[HOST_MAX_NUM];
 

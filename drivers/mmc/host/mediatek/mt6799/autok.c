@@ -148,11 +148,6 @@ enum TUNE_TYPE {
 		autok_msdc_retry(MSDC_READ32(MSDC_CFG) & MSDC_CFG_RST, retry, cnt); \
 	} while (0)
 
-#define msdc_rxfifocnt() \
-	((MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_RXCNT) >> 0)
-#define msdc_txfifocnt() \
-	((MSDC_READ32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
-
 #define wait_cond_tmo(cond, tmo) \
 	do { \
 		unsigned long timeout = jiffies + tmo; \
