@@ -806,7 +806,44 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 
 	if (enable == mt_gpufreq_volt_enable_state) {
 		ret = 0;
-		goto SET_EXIT;
+		/* check if really consist */
+		if (enable == 1) {
+			/* check VSRAM first */
+			ret = regulator_is_enabled(mt_gpufreq_pmic->reg_vsram);
+			if (ret == 0)
+				gpufreq_err("GPU VSRAM is OFF!!!\n");
+			else if (ret < 0)
+				gpufreq_err("FATAL: GPU VSRAM regulator error !!!\n");
+			else {
+				ret = regulator_is_enabled(mt_gpufreq_pmic->reg_vgpu);
+				if (ret == 0)
+					gpufreq_err("VGPU is OFF!!!\n");
+				else if (ret < 0)
+					gpufreq_err("FATAL: VGPU regulator error !!!\n");
+				else
+					ret = 0;
+			}
+		} else {
+			/* check VGPU first */
+			ret = regulator_is_enabled(mt_gpufreq_pmic->reg_vgpu);
+			if (ret > 0)
+				gpufreq_err("VGPU is ON!!!\n");
+			else if (ret < 0)
+				gpufreq_err("FATAL: VGPU regulator error !!!\n");
+			else {
+				ret = regulator_is_enabled(mt_gpufreq_pmic->reg_vsram);
+				if (ret > 0) {
+					gpufreq_err("GPU VSRAM is ON!!!\n");
+					ret = 0; /* get a chance to set off */
+				} else if (ret < 0)
+					gpufreq_err("FATAL: VGPU regulator error !!!\n");
+				else
+					ret = 0;
+			}
+		}
+
+		if (ret < 0)
+			goto SET_EXIT;
 	}
 
 	if (mt_gpufreq_ptpod_disable == true) {
@@ -2437,6 +2474,13 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_VGPU_ENABLED));
 #endif
+
+	/* VSRAM */
+	regulator_set_voltage(mt_gpufreq_pmic->reg_vsram,
+				PMIC_MAX_VSRAM_VGPU*10, (PMIC_MAX_VSRAM_VGPU*10) + 125);
+	/* VGPU */
+	regulator_set_voltage(mt_gpufreq_pmic->reg_vgpu,
+				PMIC_MAX_VGPU*10, (PMIC_MAX_VGPU*10) + 125);
 
 	mt_gpufreq_volt_enable_state = 1;
 
