@@ -21,19 +21,17 @@
 #undef TAG
 #define TAG "[VcoreFS_SPM]"
 
-#define spm_vcorefs_crit(fmt, args...)	\
-	pr_err(TAG""fmt, ##args)
-#define spm_vcorefs_err(fmt, args...)	\
-	pr_err(TAG""fmt, ##args)
-#define spm_vcorefs_warn(fmt, args...)	\
-	pr_warn(TAG""fmt, ##args)
+#define spm_vcorefs_crit spm_vcorefs_info
+#define spm_vcorefs_err spm_vcorefs_info
+#define spm_vcorefs_warn spm_vcorefs_info
+#define spm_vcorefs_debug spm_vcorefs_info
+
 #define spm_vcorefs_info(fmt, args...)	\
-	pr_warn(TAG""fmt, ##args)
-#define spm_vcorefs_debug(fmt, args...)	\
-	pr_debug(TAG""fmt, ##args)
+	pr_notice(TAG""fmt, ##args)
+
 
 #define spm_vcorefs_aee_warn(string, args...) do {\
-	pr_err("[ERR]"string, ##args); \
+	pr_notice("[ERR]"string, ##args); \
 	aee_kernel_warning(TAG, "[ERR]"string, ##args);  \
 } while (0)
 

@@ -15,10 +15,13 @@
 #define _MTK_VCOREFS_GOVERNOR_H
 
 #define VCPREFS_TAG "[VcoreFS] "
-#define vcorefs_err(fmt, args...)	pr_err(VCPREFS_TAG fmt, ##args)
-#define vcorefs_crit(fmt, args...)	pr_crit(VCPREFS_TAG fmt, ##args)
-#define vcorefs_warn(fmt, args...)	pr_warn(VCPREFS_TAG fmt, ##args)
-#define vcorefs_debug(fmt, args...)	pr_debug(VCPREFS_TAG fmt, ##args)
+#define vcorefs_err vcorefs_info
+#define vcorefs_crit vcorefs_info
+#define vcorefs_warn vcorefs_info
+#define vcorefs_debug vcorefs_info
+
+#define vcorefs_info(fmt, args...)	\
+	pr_notice(VCPREFS_TAG""fmt, ##args)
 
 /* Uses for DVFS Request */
 #define vcorefs_crit_mask(log_mask, kicker, fmt, args...)	\
