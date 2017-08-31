@@ -2078,7 +2078,8 @@ static inline struct cpumask *tsk_cpus_allowed(struct task_struct *tsk)
 {
 
 	if (enter_isolation &&
-			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed, iso_cpus_ptr))
+			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed, iso_cpus_ptr) &&
+			cpumask_and(&(tsk)->cpus_allowed_isolated, &(tsk)->cpus_allowed_isolated, cpu_active_mask))
 		return (&(tsk)->cpus_allowed_isolated);
 	else
 		return (&(tsk)->cpus_allowed);

@@ -54,6 +54,8 @@ static inline unsigned long boosted_task_util(struct task_struct *task);
 /* global default 0 */
 int stune_task_threshold;
 
+static struct cpumask under_util_isolated_cpus;
+
 #define TINY_TASK_THRESHOLD 0
 
 /*
@@ -71,6 +73,8 @@ int stune_task_threshold;
 unsigned int sysctl_sched_latency = 6000000ULL;
 unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 
+unsigned int sysctl_sched_isolation_hint_enable; /* default off */
+int sys_boosted;
 #ifdef CONFIG_SCHED_WALT
 unsigned int sysctl_sched_use_walt_cpu_util = 1;
 unsigned int sysctl_sched_use_walt_task_util = 1;
@@ -153,8 +157,6 @@ static bool system_overutil;
 
 static inline bool system_overutilized(int cpu)
 {
-	met_tag_oneshot(0, "sched_overutil_sys", system_overutil);
-
 	return system_overutil;
 }
 
@@ -7698,6 +7700,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 	bool overload = false, overutilized = false;
 	bool intra_overutil = false;
 	bool tmp_sys_overutil = false;
+	unsigned long sys_util = 0;
+	unsigned long sys_cap = 0;
 
 	if (child && child->flags & SD_PREFER_SIBLING)
 		prefer_sibling = 1;
@@ -7720,6 +7724,11 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
 						&overload, &overutilized, &intra_overutil);
+
+		if (sysctl_sched_isolation_hint_enable && sg->group_weight > 1) {
+			sys_util += sgs->group_util;
+			sys_cap += sg->sgc->capacity;
+		}
 
 		/* if a overutil occurs in cluster, that means a system-wide hint needed. */
 		if (intra_overutil)
@@ -7775,6 +7784,18 @@ next_group:
 		/* Update system-wide over-utilization indicator */
 		if (system_overutil != tmp_sys_overutil)
 			system_overutil = tmp_sys_overutil;
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+		/* Update system-wide under-utilization indicator */
+		if (sysctl_sched_isolation_hint_enable) {
+			if (!overutilized && !sys_boosted
+					&& sys_util < stune_task_threshold)
+				set_cpu_isolation(ISO_SCHED, &under_util_isolated_cpus);
+			else
+				unset_cpu_isolation(ISO_SCHED);
+		}
+		met_tag_oneshot(0, "sched_sys_util", sys_util);
+#endif
 	} else {
 		if (!env->dst_rq->rd->overutilized && overutilized)
 			env->dst_rq->rd->overutilized = true;
@@ -9780,6 +9801,9 @@ __init void init_sched_fair_class(void)
 
 	if (sched_feat(SCHED_HMP))
 		hmp_cpu_mask_setup();
+
+	cpumask_clear(&under_util_isolated_cpus);
+	cpumask_set_cpu(0, &under_util_isolated_cpus);
 }
 
 /*
