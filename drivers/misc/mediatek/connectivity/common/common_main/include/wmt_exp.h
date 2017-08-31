@@ -84,7 +84,6 @@ extern OSAL_BIT_OP_VAR gBtWifiGpsState;
 extern OSAL_BIT_OP_VAR gGpsFmState;
 extern UINT32 gWifiProbed;
 extern MTK_WCN_BOOL g_pwr_off_flag;
-extern UINT32 g_IsNeedDoChipReset;
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -370,6 +369,8 @@ extern MTK_WCN_BOOL mtk_wcn_wmt_dsns_ctrl(ENUM_WMTDSNS_TYPE_T eType);
 extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 
 extern MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, INT32 timeout);
+
+extern MTK_WCN_BOOL mtk_wcn_wmt_do_reset(ENUM_WMTDRV_TYPE_T type);
 
 extern INT32 mtk_wcn_wmt_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
 

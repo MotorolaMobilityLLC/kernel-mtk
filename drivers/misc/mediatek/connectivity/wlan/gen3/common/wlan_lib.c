@@ -501,6 +501,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				       (u4MailBox0 & 0x0000FFFF));
 				u4Status = WLAN_STATUS_FAILURE;
 				eFailReason = WAIT_FIRMWARE_READY_FAIL;
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 				break;
 			}
 
@@ -683,7 +684,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
 			wlanPollingCpupcr(4, 5);
-			g_IsNeedDoChipReset = 1;
 			break;
 		case RAM_CODE_DOWNLOAD_FAIL:
 			nicRxUninitialize(prAdapter);
@@ -692,7 +692,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
 			wlanPollingCpupcr(4, 5);
-			g_IsNeedDoChipReset = 1;
 			break;
 		case INIT_ADAPTER_FAIL:
 			nicReleaseAdapterMemory(prAdapter);
@@ -1878,9 +1877,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 					DBGLOG(INIT, WARN,
 					       "No response from chip for %u times, set NoAck flag!\n",
 						prAdapter->ucOidTimeoutCount);
-#if CFG_CHIP_RESET_SUPPORT
-					glResetTrigger(prAdapter);
-#endif
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 				}
 
 				prAdapter->fgIsChipNoAck = TRUE;
@@ -2817,6 +2814,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 			nicGetMailbox(prAdapter, 0, &u4MailBox0);
 			nicGetMailbox(prAdapter, 1, &u4MailBox1);
 			DBGLOG(INIT, WARN, "Device to Host Mailbox 0x%08x, 0x%08x\n", u4MailBox0, u4MailBox1);
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
@@ -2840,6 +2838,8 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					u4Status = WLAN_STATUS_SUCCESS;
 				}
 			}
+			if (u4Status == WLAN_STATUS_FAILURE)
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 		}
 	} while (FALSE);
 

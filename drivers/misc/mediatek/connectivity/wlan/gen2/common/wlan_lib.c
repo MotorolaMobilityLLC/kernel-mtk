@@ -545,6 +545,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 						     (u4MailBox0 & 0x0000FFFF));
 				u4Status = WLAN_STATUS_FAILURE;
 				eFailReason = WAIT_FIRMWARE_READY_FAIL;
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 				break;
 			}
 			i++;
@@ -766,7 +767,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		case WAIT_FIRMWARE_READY_FAIL:
 			DBGLOG(INIT, ERROR, "Wait firmware ready fail, FailReason: %d\n",
 					eFailReason);
-			g_IsNeedDoChipReset = 1;
 			kalSendAeeWarning("[Wait firmware ready fail!]", __func__);
 			KAL_WAKE_LOCK_DESTROY(prAdapter, &prAdapter->rTxThreadWakeLock);
 			nicRxUninitialize(prAdapter);
@@ -778,7 +778,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		case RAM_CODE_DOWNLOAD_FAIL:
 			DBGLOG(INIT, ERROR, "Ram code download fail, FailReason: %d\n",
 					eFailReason);
-			g_IsNeedDoChipReset = 1;
 			kalSendAeeWarning("[Ram code download fail!]", __func__);
 			KAL_WAKE_LOCK_DESTROY(prAdapter, &prAdapter->rTxThreadWakeLock);
 			nicRxUninitialize(prAdapter);
@@ -856,7 +855,6 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
 					 || fgIsBusAccessFailed == TRUE ||
 					CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick, WLAN_WAIT_READY_BIT_TIMEOUT)) {
-					g_IsNeedDoChipReset = 1;
 					wlanDumpCommandFwStatus();
 					wlanDumpTcResAndTxedCmd(NULL, 0);
 					cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
@@ -2222,7 +2220,7 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 			/*Dump  TX_DESC and RX_DESC*/
 			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC0_INDEX);
 			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_RX_DESC, DEBUG_TC0_INDEX);
-
+			GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
@@ -2230,12 +2228,10 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT\n");
 				u4Status = WLAN_STATUS_FAILURE;
-				g_IsNeedDoChipReset = 1;
 				kalSendAeeWarning("[Check EID error!]", __func__);
 			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
 				DBGLOG(INIT, ERROR, "rInitWifiEvent.ucSeqNum != ucCmdSeqNum\n");
 				u4Status = WLAN_STATUS_FAILURE;
-				g_IsNeedDoChipReset = 1;
 				kalSendAeeWarning("[Check SeqNum error!]", __func__);
 			} else {
 				prEventCmdResult =
@@ -2255,6 +2251,8 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					u4Status = WLAN_STATUS_SUCCESS;
 				}
 			}
+			if (u4Status == WLAN_STATUS_FAILURE)
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP | RST_FLAG_PREVENT_POWER_OFF);
 		}
 	} while (FALSE);
 

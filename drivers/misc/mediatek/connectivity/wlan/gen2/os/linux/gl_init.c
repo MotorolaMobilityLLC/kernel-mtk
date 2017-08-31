@@ -3055,8 +3055,7 @@ bailout:
 		 * because even this function returns
 		 * error, we can also call core dump but only core dump failed.
 		 */
-		if (g_IsNeedDoChipReset)
-			mtk_wcn_set_connsys_power_off_flag(0);
+		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 		/* probe failed */
 		DBGLOG(INIT, ERROR, "wlanProbe failed\n");
 	}

@@ -1746,10 +1746,8 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		nicRxReturnRFB(prAdapter, prSwRfb);
 		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
 #if 0
-#if CFG_CHIP_RESET_SUPPORT
 		glGetRstReason(RST_GROUP3_NULL);
-		glResetTrigger(prAdapter);
-#endif
+		GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 #endif
 		return;
 	}

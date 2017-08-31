@@ -112,15 +112,6 @@ VOID register_set_p2p_mode_handler(set_p2p_mode handler)
 }
 EXPORT_SYMBOL(register_set_p2p_mode_handler);
 
-#define WMT_CHECK_DO_CHIP_RESET() \
-do { \
-	if (g_IsNeedDoChipReset) { \
-		g_IsNeedDoChipReset = 0; \
-		WIFI_ERR_FUNC("Do core dump and chip reset in %s line %d\n", __func__, __LINE__); \
-		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
-	} \
-} while (0)
-
 /*******************************************************************
  *  WHOLE CHIP RESET PROCEDURE:
  *
@@ -307,7 +298,6 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
 
 			if (mtk_wcn_wmt_func_off(WMTDRV_TYPE_WIFI) == MTK_WCN_BOOL_FALSE) {
 				WIFI_ERR_FUNC("WMT turn off WIFI fail!\n");
-				WMT_CHECK_DO_CHIP_RESET();
 			} else {
 				WIFI_INFO_FUNC("WMT turn off WIFI OK!\n");
 				powered = 0;
@@ -327,7 +317,6 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
 
 			if (mtk_wcn_wmt_func_on(WMTDRV_TYPE_WIFI) == MTK_WCN_BOOL_FALSE) {
 				WIFI_ERR_FUNC("WMT turn on WIFI fail!\n");
-				WMT_CHECK_DO_CHIP_RESET();
 			} else {
 				powered = 1;
 				retval = count;
@@ -339,7 +328,6 @@ ssize_t WIFI_write(struct file *filp, const char __user *buf, size_t count, loff
 				/* If WIFI is off, turn on WIFI first */
 				if (mtk_wcn_wmt_func_on(WMTDRV_TYPE_WIFI) == MTK_WCN_BOOL_FALSE) {
 					WIFI_ERR_FUNC("WMT turn on WIFI fail!\n");
-					WMT_CHECK_DO_CHIP_RESET();
 					goto done;
 				} else {
 					powered = 1;

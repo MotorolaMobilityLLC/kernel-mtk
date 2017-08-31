@@ -208,7 +208,7 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 			fgWmtCoreDump = glIsWmtCodeDump();
 			if (fgWmtCoreDump == FALSE) {
 				kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
-				glDoChipReset();
+				GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 			} else
 				DBGLOG(TX, WARN,
 					"[TC4 no resource delay 5s!] WMT is code dumping! STOP AEE & chip reset\n");

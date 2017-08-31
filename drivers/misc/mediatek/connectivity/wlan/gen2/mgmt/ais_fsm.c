@@ -3892,7 +3892,7 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	ucScanTimeoutTimes++;
 	if (ucScanTimeoutTimes > SCAN_DONE_TIMEOUT_TIMES_LIMIT) {
 		kalSendAeeWarning("[Scan done timeout more than 20 times!]", __func__);
-		glDoChipReset();
+		GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 	}
 #if 0 /* ALPS02018734: remove trigger assert */
 	if (prAdapter->fgTestMode == FALSE) {

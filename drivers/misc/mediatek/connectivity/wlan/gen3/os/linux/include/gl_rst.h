@@ -41,7 +41,9 @@
 *                              C O N S T A N T S
 ********************************************************************************
 */
-
+#define RST_FLAG_CHIP_RESET          0
+#define RST_FLAG_DO_CORE_DUMP        BIT(0)
+#define RST_FLAG_PREVENT_POWER_OFF   BIT(1)
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -56,6 +58,7 @@ typedef struct _RESET_STRUCT_T {
 	ENUM_RESET_STATUS_T rst_data;
 	struct work_struct rst_work;
 	struct work_struct rst_trigger_work;
+	UINT_32 rst_trigger_flag;
 } RESET_STRUCT_T;
 
 /*******************************************************************************
@@ -72,8 +75,6 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
-extern UINT_32 g_IsNeedDoChipReset;
-
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -83,7 +84,12 @@ extern UINT_32 g_IsNeedDoChipReset;
 *                                 M A C R O S
 ********************************************************************************
 */
-
+#if CFG_CHIP_RESET_SUPPORT
+#define GL_RESET_TRIGGER(_prAdapter, _u4Flags) \
+	glResetTrigger(_prAdapter, (_u4Flags), (const PUINT_8)__FILE__, __LINE__)
+#else
+	DBGLOG(INIT, INFO, "DO NOT support chip reset\n")
+#endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -96,7 +102,7 @@ VOID glSendResetRequest(VOID);
 
 BOOLEAN kalIsResetting(VOID);
 
-BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter);
+BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 pucFile, UINT_32 u4Line);
 
 UINT32 wlanPollingCpupcr(UINT32 u4Times, UINT32 u4Sleep);
 
