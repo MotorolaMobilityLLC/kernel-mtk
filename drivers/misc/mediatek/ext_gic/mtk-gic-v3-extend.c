@@ -31,7 +31,7 @@
 #include <linux/irqchip/arm-gic-v3.h>
 #include <linux/irqchip/mtk-gic-extend.h>
 #include <linux/io.h>
-#include <mach/mt_secure_api.h>
+#include <mach/mtk_secure_api.h>
 
 #define IOMEM(x)        ((void __force __iomem *)(x))
 /* for cirq use */
