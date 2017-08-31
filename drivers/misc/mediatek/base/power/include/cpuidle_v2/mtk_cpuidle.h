@@ -144,4 +144,6 @@ unsigned long * __weak mt_save_dbg_regs(unsigned long *p, unsigned int cpuid) { 
 void __weak mt_restore_dbg_regs(unsigned long *p, unsigned int cpuid) { }
 void __weak mt_copy_dbg_regs(int to, int from) { }
 
+void __weak dpm_mcsi_mtcmos_on_flow(int on) { }
+
 #endif
