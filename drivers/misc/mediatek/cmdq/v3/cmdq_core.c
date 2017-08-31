@@ -4174,6 +4174,8 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 			    CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT : CMDQ_MAX_THREAD_COUNT;
 
 			for (index = startIndex; index < endIndex; ++index) {
+				if (index == CMDQ_DELAY_THREAD_ID)
+					continue;
 
 				spin_lock_irqsave(&gCmdqExecLock, flagsExecLock);
 
