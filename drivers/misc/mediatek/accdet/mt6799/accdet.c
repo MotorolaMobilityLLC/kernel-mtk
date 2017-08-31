@@ -47,7 +47,7 @@
  *		plug_in---High level
  *		plug_out--Low level
  */
-#define HW_MODE_SUPPORT			(0)/* 1,support HW mode;0,not support */
+#define HW_MODE_SUPPORT			(1)/* 1,support HW mode;0,not support */
 #define HW_JACK_TYPE_0			(0)
 #define HW_JACK_TYPE_1			(1)
 
@@ -1590,6 +1590,13 @@ static inline void accdet_init(void)
 	ACCDET_INFO("[accdet_init]init start..\n");
 
 #if 0
+if (s_accdet_first == 1) {/* just for first */
+	dump_register();
+	ACCDET_INFO("[accdet_init]init dumpstart---------\n");
+}
+#endif
+
+#if 0
 	 /* add by set 32K CLK */
 	reg_val = pmic_pwrap_read(0x040C);
 	ACCDET_INFO("[Accdet]1.32K-CLK addr[0x040C]=0x%x\n", reg_val);
@@ -1739,7 +1746,7 @@ static inline void accdet_init(void)
 	/* pmic_pwrap_write(ACCDET_HW_SET, ACCDET_DISABLE_CMPC); */
 #endif
 
-#ifdef	HW_MODE_SUPPORT/* open HW-mode */
+#if	HW_MODE_SUPPORT/* open HW-mode */
 #ifdef CONFIG_ACCDET_EINT_IRQ
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	pwrap_write(ACCDET_HW_SET, pmic_pwrap_read(ACCDET_HW_SET)|ACCDET_HWMODE_EN|ACCDET_HWEN_SEL_0);
@@ -2221,7 +2228,7 @@ static ssize_t store_accdet_set_register(struct device_driver *ddri, const char 
 		return -EINVAL;
 	}
 
-	ret = sscanf(buf, "%x,%x", &addr_temp, &value_temp);
+	ret = sscanf(buf, "0x%x,0x%x", &addr_temp, &value_temp);
 	if (ret < 0)
 		return ret;
 
