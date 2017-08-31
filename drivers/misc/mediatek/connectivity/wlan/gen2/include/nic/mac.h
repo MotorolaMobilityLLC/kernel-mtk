@@ -1,119 +1,13 @@
 /*
-** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/mac.h#1
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
-/*
- * file   "mac.h"
- * brief  Brief description.
- *
- * Detail description.
- */
-
-/*
- * Log: mac.h
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 01 05 2012 tsaiyuan.hsu
- * [WCXRP00001157] [MT6620 Wi-Fi][FW][DRV] add timing measurement support for 802.11v
- * add timing measurement support for 802.11v.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 06 22 2011 wh.su
- * [WCXRP00000806] [MT6620 Wi-Fi][Driver] Move the WPA/RSN IE and WAPI IE structure to mac.h
- * and let the sw structure not align at byte
- * Move the WAPI/RSN IE to mac.h and SW structure not align to byte,
- * Notice needed update P2P.ko.
- *
- * 05 06 2011 wh.su
- * [WCXRP00000699] [MT6620 Wi-Fi][Driver] Add the ie pointer check for avoid TP-LINK AP send
- * the wrong beacon make driver got incorrect support rate set
- * Add the length check before access the ie length filed.
- *
- * 05 06 2011 wh.su
- * [WCXRP00000699] [MT6620 Wi-Fi][Driver] Add the ie pointer check for avoid TP-LINK AP send
- * the wrong beacon make driver got incorrect support rate set
- * adding the length check before processing next ie..
- *
- * 04 18 2011 terry.wu
- * [WCXRP00000660] [MT6620 Wi-Fi][Driver] Remove flag CFG_WIFI_DIRECT_MOVED
- * Remove flag CFG_WIFI_DIRECT_MOVED.
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 04 08 2011 yuche.tsai
- * [WCXRP00000624] [Volunteer Patch][MT6620][Driver] Add device discoverability support for GO.
- * Add device discover ability support.
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Some action frame define is not belong to P2P.
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Add some service discovery MAC define, phase I.
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000260] [MT6620 Wi-Fi][Driver][Firmware] Create V1.1 branch for both firmware and driver
- * create branch for Wi-Fi driver v1.1
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000256] [MT6620 Wi-Fi][Driver] Eliminate potential issues which is identified by Klockwork
- * suppress warning reported by Klockwork.
- *
- * 11 01 2010 cp.wu
- * [WCXRP00000122] [MT6620 Wi-Fi][Driver] Preparation for YuSu source tree integration
- * revert to previous revision. (this file is not necessary to be changed)
- *
- * 08 20 2010 cm.chang
- * NULL
- * Migrate RLM code to host from FW
- *
- * 08 02 2010 yuche.tsai
- * NULL
- * 1. Add P2P MAC define.
- * 2. Add scan device found event
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add WFA specific OUI.
- *
- * 06 17 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add P2P IE ID & Vendor OUI TYPE for P2P.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge MAC.h.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 01 13 2010 tehuang.liu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * Added OFFSET_BAR_SSC_SN
- *  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-12-09 14:00:24 GMT MTK02468
- *  Added offsets and masks for the BA Parameter Set filed
- *  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:16:26 GMT mtk01426
- *  Init for develop
- *
- */
 
 #ifndef _MAC_H
 #define _MAC_H
