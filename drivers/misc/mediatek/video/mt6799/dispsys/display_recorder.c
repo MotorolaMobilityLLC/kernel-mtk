@@ -865,7 +865,7 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 		       "|Event                   | count   | fps        |average(ms) | max(ms)    | min(ms)    |\n");
 	n += scnprintf(stringbuf + n, strlen - n,
 		       "|------------------------+---------+------------+------------+------------+------------|\n");
-	for (i = 0; i < ARRAY_SIZE(logger) / sizeof(logger[0]); i++)
+	for (i = 0; i < ARRAY_SIZE(logger); i++)
 		n += dprec_logger_get_result_string(i, stringbuf + n, strlen - n);
 
 	n += scnprintf(stringbuf + n, strlen - n,
