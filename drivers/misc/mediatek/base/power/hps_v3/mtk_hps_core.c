@@ -432,6 +432,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
+	hps_sys.ppm_root_cluster = p->root_cluster;
 	for (i = 0; i < p->cluster_num; i++) {
 		/*
 		 * hps_warn("ppm_limit_callback -> cluster%d: has_advise_core = %d, [%d, %d]\n",
