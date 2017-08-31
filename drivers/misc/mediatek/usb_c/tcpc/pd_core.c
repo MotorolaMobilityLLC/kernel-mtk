@@ -634,25 +634,14 @@ int pd_send_soft_reset(struct pd_port *pd_port, uint8_t state_machine)
 
 int pd_send_hard_reset(struct pd_port *pd_port)
 {
-	int ret;
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
 	PE_DBG("Send HARD Reset\r\n");
 
 	pd_port->hard_reset_counter++;
 	pd_notify_pe_send_hard_reset(pd_port);
-	ret = tcpci_transmit(tcpc_dev, TCPC_TX_HARD_RESET, 0, NULL);
-	if (ret)
-		return ret;
 
-#ifdef CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER
-	if (!(tcpc_dev->tcpc_flags & TCPC_FLAGS_WAIT_HRESET_COMPLETE)) {
-		pd_put_sent_hard_reset_event(tcpc_dev);
-		return 0;
-	}
-#endif	/* CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER */
-
-	return 0;
+	return tcpci_transmit(tcpc_dev, TCPC_TX_HARD_RESET, 0, NULL);
 }
 
 int pd_send_bist_mode2(struct pd_port *pd_port)

@@ -210,6 +210,7 @@ static int tcpci_alert_recv_msg(struct tcpc_device *tcpc_dev)
 
 	pd_msg->frame_type = (uint8_t) type;
 	pd_put_pd_msg_event(tcpc_dev, pd_msg);
+
 	return 0;
 }
 
@@ -313,19 +314,30 @@ const struct tcpci_alert_handler tcpci_alert_handlers[] = {
 	DECL_TCPCI_ALERT_HANDLER(1, tcpci_alert_power_status_changed),
 };
 
+#ifdef CONFIG_USB_POWER_DELIVERY
+static inline bool tcpci_check_hard_reset_complete(
+	struct tcpc_device *tcpc_dev, uint32_t alert_status)
+{
+	if ((alert_status & TCPC_REG_ALERT_HRESET_SUCCESS)
+			== TCPC_REG_ALERT_HRESET_SUCCESS) {
+		pd_put_sent_hard_reset_event(tcpc_dev);
+		return true;
+	}
+
+	if (alert_status & TCPC_REG_ALERT_TX_DISCARDED) {
+		TCPC_INFO("HResetFailed\r\n");
+		tcpci_transmit(tcpc_dev, TCPC_TX_HARD_RESET, 0, NULL);
+		return false;
+	}
+
+	return false;
+}
+#endif	/* CONFIG_USB_POWER_DELIVERY */
+
 static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 {
 	int rv, i;
 	uint32_t alert_status;
-	const uint32_t alert_rx =
-		TCPC_REG_ALERT_RX_STATUS | TCPC_REG_ALERT_RX_BUF_OVF;
-
-#ifdef CONFIG_USB_POWER_DELIVERY
-#ifdef CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER
-	const uint32_t alert_sent_hreset =
-		TCPC_REG_ALERT_TX_SUCCESS | TCPC_REG_ALERT_TX_FAILED;
-#endif	/* CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER */
-#endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	rv = tcpci_get_alert_status(tcpc_dev, &alert_status);
 	if (rv)
@@ -336,7 +348,8 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 		TCPC_INFO("Alert:0x%04x\r\n", alert_status);
 #endif /* CONFIG_USB_PD_DBG_ALERT_STATUS */
 
-	tcpci_alert_status_clear(tcpc_dev, alert_status & (~alert_rx));
+	tcpci_alert_status_clear(tcpc_dev,
+		alert_status & (~TCPC_REG_ALERT_RX_MASK));
 
 	if (tcpc_dev->typec_role == TYPEC_ROLE_UNKNOWN)
 		return 0;
@@ -345,14 +358,10 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 		alert_status |= TCPC_REG_ALERT_POWER_STATUS;
 
 #ifdef CONFIG_USB_POWER_DELIVERY
-#ifdef CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER
-	if ((alert_status & alert_sent_hreset) == alert_sent_hreset) {
-		if (tcpc_dev->tcpc_flags & TCPC_FLAGS_WAIT_HRESET_COMPLETE) {
-			alert_status &= ~alert_sent_hreset;
-			pd_put_sent_hard_reset_event(tcpc_dev);
-		}
+	if (tcpc_dev->pd_transmit_state == PD_TX_STATE_WAIT_HARD_RESET) {
+		tcpci_check_hard_reset_complete(tcpc_dev, alert_status);
+		alert_status &= ~TCPC_REG_ALERT_TX_MASK;
 	}
-#endif	/* CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER */
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
 #ifndef CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER
