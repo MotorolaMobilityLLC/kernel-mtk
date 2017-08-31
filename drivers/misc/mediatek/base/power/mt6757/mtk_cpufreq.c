@@ -42,35 +42,9 @@
 #include <mt-plat/upmu_common.h>
 #include <mt6311.h>
 #include <mach/mtk_freqhopping.h>
-/*#include <mach/mt_ppm_api.h>*/	/* FIXME */
-#define PPM_CLIENT_DVFS		0
-struct ppm_client_req {
-	unsigned int cluster_num;
-	unsigned int root_cluster;
-	bool is_ptp_policy_activate;
-	struct ppm_client_limit {
-		unsigned int cluster_id;
-		unsigned int cpu_id;
-
-		int min_cpufreq_idx;
-		int max_cpufreq_idx;
-		unsigned int min_cpu_core;
-		unsigned int max_cpu_core;
-
-		bool has_advise_freq;
-		bool has_advise_core;
-		int advise_cpufreq_idx;
-		int advise_cpu_core;
-	} *cpu_limit;
-};
-static inline void mt_ppm_set_dvfs_table(unsigned int cpu, struct cpufreq_frequency_table *tbl,
-					 unsigned int num, unsigned int type)	{}
-static inline void mt_ppm_register_client(unsigned int client, void (*limit)(struct ppm_client_req req))	{}
+#include <mach/mtk_ppm_api.h>
 #include <mach/mtk_pbm.h>
-/*#include <mach/mt_thermal.h>*/	/* FIXME */
-#define THERMAL_BANK0		0
-#define THERMAL_BANK1		1
-static inline int tscpu_get_temp_by_bank(unsigned int ts_bank)		{ return 0; }
+#include <mach/mtk_thermal.h>
 /*#include "mt_static_power.h"*/	/* FIXME */
 #define MT_SPOWER_CPUL		0
 #define MT_SPOWER_CPULL		1
@@ -80,9 +54,9 @@ static inline int mt_spower_get_leakage(int dev, int voltage, int degree)	{ retu
 #include "mtk_cpufreq.h"
 #include "mtk_cpufreq_hybrid.h"
 
-/*#define DCM_ENABLE	1*/	/* FIXME */
+#define DCM_ENABLE	1
 #ifdef DCM_ENABLE
-#include "mt_dcm.h"
+#include "mtk_dcm.h"
 #endif
 
 /*=============================================================*/
@@ -1350,7 +1324,8 @@ unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id)
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 	unsigned int freq;
 
-	WARN_ON(!p);	/* BUG! */
+	if (!p)
+		return 0;
 
 	cpufreq_lock();
 	freq = p->ops->get_cur_phy_freq(p);
@@ -1364,7 +1339,8 @@ unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id)
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 	unsigned int freq;
 
-	WARN_ON(!p);	/* BUG! */
+	if (!p)
+		return 0;
 
 	freq = cpu_dvfs_get_cur_freq(p);
 
@@ -2732,11 +2708,11 @@ unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu, unsigned int mode)
 static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
 {
 	struct mt_cpu_dvfs *p;
-	int ret = 0;		/* cpufreq_frequency_table_verify() always return 0 */
+	int ret;		/* cpufreq_frequency_table_verify() always return 0 */
 
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
-
-	WARN_ON(!p);	/* BUG! */
+	if (!p)
+		return -EINVAL;
 
 	ret = cpufreq_frequency_table_verify(policy, p->freq_tbl_for_cpufreq);
 
@@ -2791,7 +2767,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		id_cci = MT_CPU_DVFS_CCI;
 		p_cci = id_to_cpu_dvfs(id_cci);
 
-		WARN_ON(!p);	/* BUG! */
+		if (WARN_ON(!p))
+			return -EINVAL;
 
 		cpufreq_ver("DVFS: _mt_cpufreq_init: %s(cpu_id = %d)\n", cpu_dvfs_get_name(p), p->cpu_id);
 
@@ -2869,8 +2846,8 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 	struct mt_cpu_dvfs *p;
 
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(cpu));
-
-	WARN_ON(!p);	/* BUG! */
+	if (!p)
+		return 0;
 
 	return cpu_dvfs_get_cur_freq(p);
 }
@@ -3122,8 +3099,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	int i, j;
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
-
-	WARN_ON(!(lv == CPU_LEVEL_0 || lv == CPU_LEVEL_1 || lv == CPU_LEVEL_2 || lv == CPU_LEVEL_3));	/* BUG! */
 
 	_mt_cpufreq_aee_init();
 
@@ -3561,7 +3536,7 @@ static ssize_t enable_hw_gov_proc_write(struct file *file, const char __user *ub
 /* cpufreq_oppidx */
 static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
+	struct mt_cpu_dvfs *p = m->private;
 	int j;
 
 	seq_printf(m, "[%s/%u]\n", p->name, p->cpu_id);
@@ -3588,7 +3563,6 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 	if (!buf)
 		return -EINVAL;
 
-	WARN_ON(!p);	/* BUG! */
 	rc = kstrtoint(buf, 10, &oppidx);
 	if (rc < 0) {
 		p->dvfs_disable_by_procfs = false;
@@ -3599,8 +3573,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 			/*_mt_cpufreq_set(cpu_dvfs_is(p, MT_CPU_DVFS_LL) ? MT_CPU_DVFS_LL : MT_CPU_DVFS_L, oppidx);*/
 
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(__TRIAL_RUN__)
-			rc = cpuhvfs_set_target_opp(cpu_dvfs_to_cluster(p), oppidx, NULL);
-			WARN_ON(rc);	/* BUG! */
+			cpuhvfs_set_target_opp(cpu_dvfs_to_cluster(p), oppidx, NULL);
 #endif
 		} else {
 			p->dvfs_disable_by_procfs = false;
@@ -3616,7 +3589,7 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *b
 /* cpufreq_freq */
 static int cpufreq_freq_proc_show(struct seq_file *m, void *v)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
+	struct mt_cpu_dvfs *p = m->private;
 
 	seq_printf(m, "%d KHz\n", p->ops->get_cur_phy_freq(p));
 
@@ -3635,7 +3608,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 	if (!buf)
 		return -EINVAL;
 
-	WARN_ON(!p);	/* BUG! */
 	rc = kstrtoint(buf, 10, &freq);
 	if (rc < 0) {
 		p->dvfs_disable_by_procfs = false;
@@ -3688,7 +3660,7 @@ end:
 /* cpufreq_volt */
 static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 {
-	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)m->private;
+	struct mt_cpu_dvfs *p = m->private;
 
 	cpufreq_lock();
 
@@ -3866,7 +3838,7 @@ static int _create_procfs(void)
 			    (cpu_entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, cpu_dir,
 			     cpu_entries[i].fops, p))
 				cpufreq_err("%s(), create /proc/cpufreq/%s/%s failed\n", __func__,
-					    p->name, entries[i].name);
+					    p->name, cpu_entries[i].name);
 		}
 	}
 
