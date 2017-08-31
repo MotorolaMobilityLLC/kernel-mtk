@@ -2786,7 +2786,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int fg_vbat_h_thr;
 
 		memcpy(&fg_vbat_h_thr, &msg->fgd_data[0], sizeof(fg_vbat_h_thr));
-		gauge_dev_enable_vbat_low_threshold(gauge_dev, fg_vbat_h_thr);
+		gauge_dev_enable_vbat_high_threshold(gauge_dev, fg_vbat_h_thr);
 		bm_debug("[fg_res] FG_DAEMON_CMD_SET_FG_VBAT_H_TH = %d\n", fg_vbat_h_thr);
 	}
 	break;
