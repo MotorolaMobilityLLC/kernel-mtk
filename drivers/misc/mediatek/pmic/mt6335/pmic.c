@@ -396,6 +396,20 @@ unsigned int enable_vsram_vcore_hw_tracking(unsigned int en)
 	return 1;
 }
 
+/* switch VIMVO to LP mode or normal mode, return 0 if success */
+unsigned int enable_vimvo_lp_mode(unsigned lp)
+{
+	if (lp != 1 && lp != 0)
+		return lp;
+
+	pmic_set_register_value(PMIC_RG_BUCK_VIMVO_LP, lp);
+	if (pmic_get_register_value(PMIC_RG_BUCK_VIMVO_LP) == lp) {
+		pr_err("[PMIC][%s] VIMVO enter %s mode success\n", __func__, (lp == 1)?"sleep":"normal");
+		return 0;
+	}
+	pr_err("[PMIC][%s] VIMVO enter %s mode fail\n", __func__, (lp == 1)?"sleep":"normal");
+	return 1;
+}
 
 /**********************************************************
   *
