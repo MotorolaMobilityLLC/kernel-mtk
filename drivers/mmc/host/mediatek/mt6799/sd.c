@@ -161,7 +161,6 @@ int msdc_rsp[] = {
 #else
 #define msdc_dma_on()           MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
-#define MSDC_CHECK_FDE_ERR(mmc, mrq)	(0)
 #endif
 
 /***************************************************************
@@ -358,7 +357,7 @@ void msdc_dump_info(u32 id)
 	msdc_dump_dvfs_reg(host);
 
 	msdc_dump_register(host);
-	INIT_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
+	INFO_MSG("latest_INT_status<0x%.8x>", latest_int_status[id]);
 
 	mdelay(10);
 
@@ -402,6 +401,49 @@ int msdc_get_dma_status(int host_id)
 	return -1;
 }
 EXPORT_SYMBOL(msdc_get_dma_status);
+
+void msdc_hang_detect_dump(u32 id)
+{
+	struct msdc_host *host = mtk_msdc_host[id];
+	void __iomem *base;
+
+	if (host == NULL) {
+		pr_info("====== Null msdc%d, dump skipped ======\n", id);
+		return;
+	}
+
+	pr_info("====== msdc%d dump start ======\n", id);
+
+	pr_info("Accumulated dma cnt: %u\n", host->dma_cnt);
+	if (host->start_dma_time < host->stop_dma_time)
+		pr_info("No pending dma: last start %llu, last stop %llu\n",
+			host->start_dma_time, host->stop_dma_time);
+
+	if (host->tuning_in_progress)
+		pr_info("tuning_in_progress %d\n",
+			host->tuning_in_progress);
+
+	if ((host->core_clkon == 0)
+	 && host->stop_dma_time
+	 && (host->start_dma_time > host->stop_dma_time)) {
+		pr_info("DMA pending with clock gated: start %llu, stop %llu\n",
+			host->start_dma_time, host->stop_dma_time);
+		msdc_dump_clock_sts(host);
+		return;
+	}
+
+	base = host->base;
+
+	if ((host->core_clkon == 1)
+	 && (host->start_dma_time > host->stop_dma_time)) {
+		pr_info("DMA pending DMA_CFG_SATUS(%d): start %llu, stop %llu\n",
+			MSDC_READ32(MSDC_DMA_CFG) & MSDC_DMA_CFG_STS,
+			host->start_dma_time, host->stop_dma_time);
+	}
+
+	pr_info("======= msdc%d dump end =======\n", id);
+}
+EXPORT_SYMBOL(msdc_hang_detect_dump);
 
 void msdc_clr_fifo(unsigned int id)
 {
@@ -793,7 +835,7 @@ int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 
 	/* tune until CMD13 pass. */
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (host->mmc->card->ext_csd.cmdq_mode_en)
+	if (host->mmc->card && host->mmc->card->ext_csd.cmdq_mode_en)
 		err = msdc_do_cmdq_command(host, &cmd,  CMD_TIMEOUT);
 	else
 #endif
@@ -2339,6 +2381,11 @@ static void msdc_dma_start(struct msdc_host *host)
 		N_MSG(DMA, "DMA Data Busy Timeout:%u ms, schedule_delayed_work",
 			host->write_timeout_ms);
 	}
+
+	host->dma_cnt++;
+	host->start_dma_time = sched_clock();
+	host->stop_dma_time = 0;
+	mb();
 }
 
 static void msdc_dma_stop(struct msdc_host *host)
@@ -2370,6 +2417,9 @@ static void msdc_dma_stop(struct msdc_host *host)
 		ERR_MSG("DMA stop retry timeout");
 
 	MSDC_CLR_BIT32(MSDC_INTEN, wints); /* Not just xfer_comp */
+
+	host->stop_dma_time = sched_clock();
+	mb();
 
 	N_MSG(DMA, "DMA stop, latest_INT_status<0x%.8x>", latest_int_status[host->id]);
 }
@@ -2604,158 +2654,7 @@ int msdc_if_send_stop(struct msdc_host *host,
 }
 
 #ifdef CONFIG_MTK_HW_FDE_AES
-struct mmc_queue_req *msdc_mrq_get_mqrq(struct mmc_host *mmc, struct mmc_request *mrq)
-{
-	struct mmc_command *cmd;
-	struct mmc_blk_request *brq;
-	struct mmc_queue_req *mq_rq = NULL;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	struct mmc_async_req *areq;
-#endif
-
-	if (mrq->host != mmc)
-		return NULL;
-
-	cmd = mrq->cmd;
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	/* Hardware Command Queue of eMMC */
-	if (mmc->card && mmc->card->ext_csd.cmdq_mode_en) {
-		if (check_mmc_cmd4647(cmd->opcode)) {
-			areq = mmc->areq_que[(cmd->arg >> 16) & 0x1f];
-			mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
-		}
-	} else
-#endif
-
-	/* Read Write Command of eMMC */
-	if (check_mmc_cmd1718(cmd->opcode) || check_mmc_cmd2425(cmd->opcode)) {
-		brq = container_of(mrq, struct mmc_blk_request, mrq);
-		mq_rq = container_of(brq, struct mmc_queue_req, brq);
-	}
-
-	return mq_rq;
-}
-
-static int msdc_check_fde_err(struct mmc_host *mmc, struct mmc_request *mrq)
-{
-	struct msdc_host *host = mmc_priv(mmc);
-	struct mmc_command *cmd;
-	struct mmc_queue_req *mq_rq;
-	void __iomem *base = host->base;
-
-	if (!mrq || !mmc->card)
-		return 0;
-
-	cmd = mrq->cmd;
-
-	mq_rq = msdc_mrq_get_mqrq(mmc, mrq);
-	if (mq_rq && mq_rq->req && mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
-		pr_err("MSDC%d HW FDE error handling\n", host->id);
-		msdc_reset(host->id);
-		msdc_dma_clear(host);
-		msdc_clr_fifo(host->id);
-		msdc_clr_int();
-
-		if (host->dma.mode == MSDC_MODE_DMA_DESC)
-			host->dma.gpd->bdp = 0;
-		MSDC_SET_FIELD(MSDC_DMA_CTRL, MSDC_DMA_CTRL_START, 1);
-		msdc_dma_stop(host);
-		MSDC_WRITE32(MSDC_AES_SEL, 0);
-		if (host->dma.mode == MSDC_MODE_DMA_DESC)
-			host->dma.gpd->bdp = 1;
-		msdc_reset(host->id);
-		msdc_clr_fifo(host->id);
-		return 1;
-	}
-
-	return 0;
-}
-
-static int msdc_check_fde_enable(struct mmc_queue_req *mq_rq, int id, u32 opcode)
-{
-	if (fde_aes_check_cmd(FDE_AES_EN_FDE, 1, id)) {
-		FDEERR("%s manual control FDE %d\n", __func__, fde_aes_get_fde());
-		return fde_aes_get_fde();
-	}
-
-	if (fde_aes_check_cmd(FDE_AES_EN_RAW, fde_aes_get_raw(), id)) {
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (check_mmc_cmd46(opcode))
-			return 0;
-#endif
-		if (check_mmc_cmd1718(opcode))
-			return 0;
-	}
-
-	if (!mq_rq || !mq_rq->req || !mq_rq->req->bio)
-		return 0;
-
-	return mq_rq->req->bio->bi_hw_fde;
-}
-
-static void msdc_check_fde(struct mmc_host *mmc, struct mmc_request *mrq)
-{
-	struct msdc_host *host = mmc_priv(mmc);
-	struct mmc_command *cmd;
-	struct mmc_blk_request *brq;
-	struct mmc_queue_req *mq_rq;
-	void __iomem *base = host->base;
-	u32 blk_addr, blk_addr_e;
-
-	cmd = mrq->cmd;
-	WARN_ON(MSDC_READ32(MSDC_AES_SEL));
-
-	if (host->hw == NULL ||
-	    host->hw->host_function == MSDC_SDIO)
-		return;
-
-	mq_rq = msdc_mrq_get_mqrq(mmc, mrq);
-
-	if (mq_rq) {
-		#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (check_mmc_cmd4647(cmd->opcode)) {
-			if (!mmc_card_blockaddr(mmc->card))
-				blk_addr = mq_rq->brq.que.arg >> 9;
-			else
-				blk_addr = mq_rq->brq.que.arg;
-		} else
-		#endif
-		{
-			if (!mmc_card_blockaddr(mmc->card))
-				blk_addr = cmd->arg >> 9;
-			else
-				blk_addr = cmd->arg;
-		}
-
-		if (fde_aes_check_cmd(FDE_AES_CK_RANGE, fde_aes_get_range(), host->id)) {
-			blk_addr_e = blk_addr + (host->dma.xfersz >> 9) - 1;
-			if (blk_addr < fde_aes_get_range_start())
-				FDEERR("%s MSDC%d err S range 0x%x 0x%x\n",
-					__func__, host->id, blk_addr, blk_addr_e);
-			if (blk_addr_e > fde_aes_get_range_end())
-				FDEERR("%s MSDC%d err E range 0x%x 0x%x\n",
-					__func__, host->id, blk_addr, blk_addr_e);
-		}
-
-		if (fde_aes_check_cmd(FDE_AES_EN_MSG, fde_aes_get_log(), host->id))
-			FDEERR("%s MSDC%d CMD%d block 0x%x+0x%x FDE %d\n",
-				__func__, host->id, cmd->opcode,
-				blk_addr, host->dma.xfersz >> 9,
-				msdc_check_fde_enable(mq_rq, host->id, cmd->opcode));
-
-		if (msdc_check_fde_enable(mq_rq, host->id, cmd->opcode)) { /* Encrypted */
-			/* Check data size with 16bytes */
-			WARN_ON(host->dma.xfersz & 0xf);
-			/* Check data addressw with 16bytes alignment */
-			WARN_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
-			brq = &mq_rq->brq;
-			fde_aes_exec(host->id, blk_addr, cmd->opcode);
-			MSDC_WRITE32(MSDC_AES_SEL, 0x120 | host->id);
-			return;
-		}
-	}
-}
+#include "mtk_sd_hw_fde.c"
 #endif
 
 int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
@@ -2937,20 +2836,10 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 		}
 	}
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
-		return 1;
-#endif
-
 	return l_card_no_cmd23;
 #else
 	if ((host->dma_xfer) && (host->hw->host_function != MSDC_SDIO))
 		host->autocmd |= MSDC_AUTOCMD12;
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-	if (msdc_check_otp_ops(mrq->cmd->opcode, mrq->cmd->arg, data->blocks))
-		return 1;
-#endif
 
 	return 0;
 #endif
@@ -3406,9 +3295,9 @@ static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
 				if (time_after(jiffies, polling_status_tmo))
 					ERR_MSG("wait transfer state timeout\n");
 				else {
-					if (host->cq_error_need_stop) {
+					if (atomic_read(&host->cq_error_need_stop)) {
 						(void)msdc_stop_and_wait_busy(host);
-						host->cq_error_need_stop = 0;
+						atomic_set(&host->cq_error_need_stop, 0);
 					}
 					err = 1;
 					continue;
@@ -3686,18 +3575,19 @@ static void msdc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
 	data = mrq->data;
 	if (data && (msdc_use_async_dma(data->host_cookie))) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (!mmc->card->ext_csd.cmdq_mode_en)
+		if (!mmc->card || !mmc->card->ext_csd.cmdq_mode_en)
 #endif
 			host->xfer_size = data->blocks * data->blksz;
 		dir = data->flags & MMC_DATA_READ ?
 			DMA_FROM_DEVICE : DMA_TO_DEVICE;
 		dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
-		data->host_cookie = 0;
 		N_MSG(OPS, "CMD<%d> ARG<0x%x> blksz<%d> block<%d> error<%d>",
 			mrq->cmd->opcode, mrq->cmd->arg, data->blksz,
 			data->blocks, data->error);
 	}
-	data->host_cookie = 0;
+
+	if (data)
+		data->host_cookie = 0;
 
 }
 
@@ -4104,7 +3994,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	host->cq_error_need_stop = 0;
+	atomic_set(&host->cq_error_need_stop, 0);
 #endif
 
 	/* Async only support DMA and asyc CMD flow */
@@ -4151,11 +4041,6 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	if (host->bus_width != ios->bus_width) {
 		msdc_set_buswidth(host, ios->bus_width);
 		host->bus_width = ios->bus_width;
-	}
-
-	if (msdc_clock_src[host->id] != host->hw->clk_src) {
-		host->hw->clk_src = msdc_clock_src[host->id];
-		msdc_select_clksrc(host, host->hw->clk_src);
 	}
 
 	if (host->timing != ios->timing) {
@@ -4265,7 +4150,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
  end:
 	/* enable msdc register dump */
 	sd_register_zone[host->id] = 1;
-	INIT_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d> pwrcnt<%d>",
+	INFO_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d> pwrcnt<%d>",
 		host->card_inserted,
 		host->block_bad_card,
 		host->mrq, mmc->claimed,
@@ -4394,7 +4279,8 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	msdc_gate_clock(host, 1);
 
 	if (((status >> 16) & 0x1) != 0x1) {
-		pr_err("msdc%d: card is busy!\n", host->id);
+		if (host->hw->host_function != MSDC_EMMC)
+			pr_info("msdc%d: card is busy!\n", host->id);
 		return 1;
 	}
 
@@ -4532,7 +4418,7 @@ skip_non_FDE_ERROR_HANDLING:
 			/* CQ mode: just set data->error and let mmc layer tune */
 			if (host->mmc->card->ext_csd.cmdq_mode_en) {
 				if (mrq->data->flags & MMC_DATA_WRITE)
-					host->cq_error_need_stop = 1;
+					atomic_set(&host->cq_error_need_stop, 1);
 				goto skip;
 			}
 #endif
@@ -4568,7 +4454,7 @@ skip:
 			msdc_dma_clear(host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			host->cq_error_need_stop = 0;
+			atomic_set(&host->cq_error_need_stop, 0);
 			host->mmc->is_data_dma = 0;
 #endif
 
@@ -4852,6 +4738,8 @@ static void msdc_add_host(struct work_struct *work)
 	}
 }
 
+/* FIX ME */
+/* Check How MT6739 start DVFS */
 static void msdc_dvfs_kickoff(struct work_struct *work)
 {
 	struct msdc_host *host = NULL;
@@ -4973,7 +4861,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	WARN_ON(!host->pio_kaddr);
 	WARN_ON((!host->dma.gpd) || (!host->dma.bd));
 	msdc_init_gpd_bd(host, &host->dma);
-	msdc_clock_src[host->id] = hw->clk_src;
 	mtk_msdc_host[host->id] = host;
 
 	/* for re-autok */
@@ -4999,6 +4886,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* host->timer.expires = jiffies + HZ; */
 	host->timer.function = msdc_timer_pm;
 	host->timer.data = (unsigned long)host;
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	atomic_set(&host->cq_error_need_stop, 0);
+#endif
 
 	msdc_dvfs_reg_backup_init(host);
 

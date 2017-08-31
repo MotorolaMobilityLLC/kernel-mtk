@@ -146,51 +146,6 @@ static int __init init_get_cache_work(void)
 }
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-unsigned long long otp_part_start;
-unsigned long long otp_part_end;
-
-void msdc_get_otp_region(struct work_struct *work)
-{
-	struct hd_struct *lp_hd_struct = NULL;
-
-	lp_hd_struct = get_part("otp");
-	if (likely(lp_hd_struct)) {
-		otp_part_start = lp_hd_struct->start_sect;
-		otp_part_end = otp_part_start + lp_hd_struct->nr_sects;
-		put_part(lp_hd_struct);
-	} else {
-		pr_err("There is no otp partition\n");
-	}
-}
-
-int msdc_check_otp_ops(unsigned int opcode, unsigned long long start_addr,
-	unsigned int size)
-{
-	if ((otp_part_start == 0) || (otp_part_end == 0))
-		return 0;
-	if ((opcode == MMC_SET_WRITE_PROT) ||
-		(opcode == MMC_CLR_WRITE_PROT) ||
-		(opcode == MMC_SEND_WRITE_PROT) ||
-		(opcode == 31)) {
-		if ((start_addr > otp_part_end) ||
-				(start_addr < otp_part_start) ||
-				((start_addr + size) > otp_part_end)) {
-			pr_err("OTP operation invalid address %llx\n", start_addr);
-			return 1;
-		}
-	}
-	return 0;
-}
-static struct delayed_work get_otp_info;
-static int __init init_get_otp_work(void)
-{
-	INIT_DELAYED_WORK(&get_otp_info, msdc_get_otp_region);
-	schedule_delayed_work(&get_otp_info, 100);
-	return 0;
-}
-#endif
-
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 {
 	u32 device_other_capacity = 0;
@@ -303,8 +258,4 @@ void msdc_proc_emmc_create(void)
 
 #ifdef MTK_MSDC_USE_CACHE
 late_initcall_sync(init_get_cache_work);
-#endif
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
-late_initcall_sync(init_get_otp_work);
 #endif

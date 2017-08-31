@@ -77,12 +77,6 @@ u32 drv_mode[HOST_MAX_NUM] = {
 	MODE_SIZE_DEP
 };
 
-u8 msdc_clock_src[HOST_MAX_NUM] = {
-	0,
-	0,
-	0
-};
-
 int dma_force[HOST_MAX_NUM]; /* used for sd ioctrol */
 
 /**************************************************************/

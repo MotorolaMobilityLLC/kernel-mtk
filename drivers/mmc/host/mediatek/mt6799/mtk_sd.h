@@ -75,8 +75,8 @@
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
 /*--------------------------------------------------------------------------*/
-#define REG_ADDR(x)             ((volatile u32 *)(base + OFFSET_##x))
-#define REG_ADDR_TOP(x)         ((volatile u32 *)(base_top + OFFSET_##x))
+#define REG_ADDR(x)             (base + OFFSET_##x)
+#define REG_ADDR_TOP(x)         (base_top + OFFSET_##x)
 
 /*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
@@ -210,9 +210,6 @@ struct gpd_t {
 	u32  ptr;
 	u32  buflen:24;
 	u32  extlen:8;
-	u32  arg;
-	u32  blknum;
-	u32  cmd;
 };
 
 struct bd_t {
@@ -389,12 +386,16 @@ struct msdc_host {
 	int                     prev_cmd_cause_dump;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	volatile int		cq_error_need_stop;
+	atomic_t		cq_error_need_stop;
 #endif
 
 	/* BEGIN temporarily debug  ALPS03052531*/
 	int                     resume_write_times;
 	/* END temporarily debug  ALPS03052531*/
+
+	u32                     dma_cnt;
+	u64                     start_dma_time;
+	u64                     stop_dma_time;
 };
 
 enum {
@@ -439,9 +440,9 @@ static inline unsigned int uffs(unsigned int x)
 	return r;
 }
 
-#define MSDC_READ8(reg)           __raw_readb((const volatile void *)reg)
-#define MSDC_READ16(reg)          __raw_readw((const volatile void *)reg)
-#define MSDC_READ32(reg)          __raw_readl((const volatile void *)reg)
+#define MSDC_READ8(reg)           __raw_readb(reg)
+#define MSDC_READ16(reg)          __raw_readw(reg)
+#define MSDC_READ32(reg)          __raw_readl(reg)
 #define MSDC_WRITE8(reg, val)     mt_reg_sync_writeb(val, reg)
 #define MSDC_WRITE16(reg, val)    mt_reg_sync_writew(val, reg)
 #define MSDC_WRITE32(reg, val)    mt_reg_sync_writel(val, reg)
@@ -461,21 +462,21 @@ static inline unsigned int uffs(unsigned int x)
 
 #define MSDC_SET_BIT32(reg, bs) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg);\
+		unsigned int tv = MSDC_READ32(reg);\
 		tv |= (u32)(bs); \
 		MSDC_WRITE32(reg, tv); \
 	} while (0)
 
 #define MSDC_CLR_BIT32(reg, bs) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg);\
+		unsigned int tv = MSDC_READ32(reg);\
 		tv &= ~((u32)(bs)); \
 		MSDC_WRITE32(reg, tv); \
 	} while (0)
 
 #define MSDC_SET_FIELD(reg, field, val) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg); \
+		unsigned int tv = MSDC_READ32(reg); \
 		tv &= ~(field); \
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
 		MSDC_WRITE32(reg, tv); \
@@ -483,7 +484,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define MSDC_GET_FIELD(reg, field, val) \
 	do { \
-		volatile unsigned int tv = MSDC_READ32(reg); \
+		unsigned int tv = MSDC_READ32(reg); \
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 
@@ -536,7 +537,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define msdc_clr_int() \
 	do { \
-		volatile u32 val = MSDC_READ32(MSDC_INT); \
+		u32 val = MSDC_READ32(MSDC_INT); \
 		MSDC_WRITE32(MSDC_INT, val); \
 	} while (0)
 
@@ -592,7 +593,6 @@ enum {
 extern unsigned int sd_debug_zone[];
 extern u32 drv_mode[];
 extern u32 dma_size[];
-extern unsigned char msdc_clock_src[];
 extern int dma_force[];
 
 extern u32 sdio_pro_enable;

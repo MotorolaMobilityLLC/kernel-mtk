@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -37,7 +37,7 @@ static void __iomem *fpga_pwr_gpio_eo;
 void msdc_set_pwr_gpio_dir(void __iomem *fpga_pwr_gpio,
 	void __iomem *fpga_pwr_gpio_eo)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO_EO);
 	MSDC_WRITE16(PWR_GPIO_EO,
@@ -66,7 +66,7 @@ void msdc_fpga_pwr_init(void)
 
 bool hwPowerOn_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -84,7 +84,7 @@ EXPORT_SYMBOL(hwPowerOn_fpga);
 
 bool hwPowerSwitch_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 	MSDC_WRITE16(PWR_GPIO, (l_val & ~(PWR_MASK_VOL_33)));
@@ -99,7 +99,7 @@ EXPORT_SYMBOL(hwPowerSwitch_fpga);
 
 bool hwPowerDown_fpga(void)
 {
-	volatile u16 l_val;
+	u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -127,15 +127,6 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
 	if (on)
 		hwPowerSwitch_fpga();
-}
-
-void msdc_select_clksrc(struct msdc_host *host, int clksrc)
-{
-	host->hclk = msdc_get_hclk(host->id, clksrc);
-	host->hw->clk_src = clksrc;
-
-	pr_err("[%s]: msdc%d select clk_src as %d(%dKHz)\n", __func__,
-		host->id, clksrc, host->hclk/1000);
 }
 
 /* do we need sync object or not */

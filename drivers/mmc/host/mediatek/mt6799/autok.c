@@ -364,9 +364,8 @@ unsigned int *reg_value, unsigned int r_w_dirc, unsigned int opcode)
 		/* clear status */
 		MSDC_WRITE32(MSDC_INT, (sts & wints));
 		if (sts & MSDC_INT_XFER_COMPL) {
-			if ((r_w_dirc == EXT_READ) && (opcode == SD_IO_RW_EXTENDED)) {
+			if ((r_w_dirc == EXT_READ) && (opcode == SD_IO_RW_EXTENDED))
 				*reg_value = MSDC_READ32(MSDC_RXDATA);
-			}
 			ret |= E_RESULT_PASS;
 		}
 		if (MSDC_INT_DATCRCERR & sts) {

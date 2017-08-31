@@ -71,7 +71,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.hz = host->mclk;
 		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
 		host->saved_para.timing = host->timing;
-		/* No save dvfs bit */
 		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG) & 0x0FFFFFFF;
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
@@ -151,7 +150,7 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 #else
 		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
 		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
-			/* do nothing */
+			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else
 #endif
 		{
@@ -270,7 +269,10 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	}
 
 	mmc->ios.timing = MMC_TIMING_LEGACY;
-	mmc->ios.clock = 260000;
+	/* do not set same as HOST_MIN_MCLK
+	 * or else it will be set as block_bad_card when power off
+	 */
+	mmc->ios.clock = 300000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
@@ -279,6 +281,7 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 			host->block_bad_card = 1;
 		pr_err("msdc%d power reset (%d) failed, block_bad_card = %d\n",
 			host->id, host->power_cycle_cnt, host->block_bad_card);
+		mmc_detect_change(mmc, msecs_to_jiffies(200));
 	} else {
 		host->power_cycle_cnt = 0;
 		pr_err("msdc%d power reset success\n", host->id);
@@ -518,8 +521,10 @@ void msdc_init_tune_setting(struct msdc_host *host)
 		MSDC_PB2_DEFAULT_CRCSTSENSEL);
 
 	/* FIX ME: check if can be moved to msdc_cust.c */
+#ifdef CONFIG_MACH_MT6799
 	if (CHIP_IS_VER2())
 		SET_EMMC50_CFG_END_BIT_CHK_CNT(EMMC50_CFG_END_BIT_CHK_CNT);
+#endif
 
 	autok_path_sel(host);
 }
