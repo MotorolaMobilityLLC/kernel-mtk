@@ -90,6 +90,10 @@ enum {
 #define MIRAVISION_HW_VERSION       (8)
 #elif defined(CONFIG_ARCH_MT6797)
 #define MIRAVISION_HW_VERSION       (9)
+#elif defined(CONFIG_ARCH_MT6750)
+#define MIRAVISION_HW_VERSION       (10)
+#elif defined(CONFIG_ARCH_MT6757)
+#define MIRAVISION_HW_VERSION       (11)
 #else
 #define MIRAVISION_HW_VERSION       (0)
 #endif
