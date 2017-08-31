@@ -234,7 +234,7 @@ int mt6355_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+	pr_debug("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 
 	/*--Monitor MTS Thread--*/
@@ -254,7 +254,7 @@ void mt6355_auxadc_monitor_mts_regs(void)
 	int mts_adc_tmp = 0;
 
 	mts_adc_tmp = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
-	pr_err("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
+	pr_debug("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
 
 	if (mts_adc ==  mts_adc_tmp)
 		mts_count++;
