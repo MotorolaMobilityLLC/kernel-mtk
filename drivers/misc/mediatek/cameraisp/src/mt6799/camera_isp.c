@@ -3928,6 +3928,38 @@ static MINT32 ISP_DumpDIPReg(void)
 	if (g_bDumpPhyISPBuf == MFALSE) {
 		ctrl_start = ISP_RD32(ISP_DIP_A_BASE + 0x0000);
 		if (g_pPhyISPBuffer != NULL) {
+			LOG_DBG("g_pPhyISPBuffer is not NULL:(0x%pK)\n", g_pPhyISPBuffer);
+			vfree(g_pPhyISPBuffer);
+			g_pPhyISPBuffer = NULL;
+		}
+		g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+		if (g_pPhyISPBuffer == NULL)
+			LOG_DBG("ERROR: g_pPhyISPBuffer kmalloc failed\n");
+		if (g_pKWTpipeBuffer != NULL) {
+			LOG_DBG("g_pKWTpipeBuffer is not NULL:(0x%pK)\n", g_pKWTpipeBuffer);
+			vfree(g_pKWTpipeBuffer);
+			g_pKWTpipeBuffer = NULL;
+		}
+		g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
+		if (g_pKWTpipeBuffer == NULL)
+			LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
+		if (g_KWCmdqBuffer != NULL) {
+			LOG_DBG("g_KWCmdqBuffer is not NULL:(0x%pK)\n", g_KWCmdqBuffer);
+			vfree(g_KWCmdqBuffer);
+			g_KWCmdqBuffer = NULL;
+		}
+		g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
+		if (g_KWCmdqBuffer == NULL)
+			LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
+		if (g_KWVirISPBuffer != NULL) {
+			LOG_DBG("g_KWVirISPBuffer is not NULL:(0x%pK)\n", g_KWVirISPBuffer);
+			vfree(g_KWVirISPBuffer);
+			g_KWVirISPBuffer = NULL;
+		}
+		g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+		if (g_KWVirISPBuffer == NULL)
+			LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
+		if (g_pPhyISPBuffer != NULL) {
 			for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
 				g_pPhyISPBuffer[i] = ISP_RD32(ISP_DIP_A_BASE + (i*4));
 				g_pPhyISPBuffer[i+1] = ISP_RD32(ISP_DIP_A_BASE + ((i+1)*4));
@@ -5180,6 +5212,7 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 		Ret = -EFAULT;
 		goto EXIT;
 	}
+	/* Native Exception */
 	switch (pDumpBufStruct->DumpCmd) {
 	case ISP_DUMP_TPIPEBUF_CMD:
 		if (pDumpBufStruct->BytesofBufferSize > MAX_ISP_TILE_TDR_HEX_NO) {
@@ -5187,26 +5220,31 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
+		if (g_pTpipeBuffer == NULL) {
+			g_pTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
+			if (g_pTpipeBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (g_pTpipeBuffer != NULL) {
-			if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-				pDumpBufStruct->BytesofBufferSize) != 0) {
-				LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
-				Ret = -EFAULT;
-				goto EXIT;
+				if (copy_from_user(g_pTpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_pTpipeBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#else
+				if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_TpipeBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#endif
+			} else {
+				LOG_ERR("ERROR: g_pTpipeBuffer kmalloc failed\n");
 			}
 		} else {
-				LOG_ERR("g_pTpipeBuffer is NULL!!\n");
+			LOG_ERR("g_pTpipeBuffer:0x%pK is not NULL!!", g_pTpipeBuffer);
 		}
-#else
-		if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_TpipeBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-#endif
-		LOG_INF("copy tpipe buffer is done!!\n");
+		LOG_INF("copy dumpbuf::0x%pK tpipebuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pTpipeBuffer);
 		DumpBufferField = DumpBufferField | 0x1;
 		break;
 	case ISP_DUMP_TUNINGBUF_CMD:
@@ -5215,26 +5253,31 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
+		if (g_pTuningBuffer == NULL) {
+			g_pTuningBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			if (g_pTuningBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (g_pTuningBuffer != NULL) {
-			if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-				pDumpBufStruct->BytesofBufferSize) != 0) {
-				LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
-				Ret = -EFAULT;
-				goto EXIT;
+				if (copy_from_user(g_pTuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_pTuningBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#else
+				if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_TuningBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#endif
+			} else {
+				LOG_ERR("ERROR: g_TuningBuffer kmalloc failed\n");
 			}
 		} else {
-				LOG_ERR("g_pTuningBuffer is NULL!!\n");
+			LOG_ERR("g_TuningBuffer:0x%pK is not NULL!!", g_pTuningBuffer);
 		}
-#else
-		if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_TuningBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-#endif
-		LOG_INF("copy tunning buffer is done!!\n");
+		LOG_INF("copy dumpbuf::0x%pK tuningbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pTuningBuffer);
 		DumpBufferField = DumpBufferField | 0x2;
 		break;
 	case ISP_DUMP_ISPVIRBUF_CMD:
@@ -5243,26 +5286,31 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
+		if (g_pVirISPBuffer == NULL) {
+			g_pVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			if (g_pVirISPBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (g_pVirISPBuffer != NULL) {
-			if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-				pDumpBufStruct->BytesofBufferSize) != 0) {
-				LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
-				Ret = -EFAULT;
-				goto EXIT;
+				if (copy_from_user(g_pVirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_pVirISPBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#else
+				if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#endif
+			} else {
+				LOG_ERR("ERROR: g_pVirISPBuffer kmalloc failed\n");
 			}
 		} else {
-				LOG_ERR("g_pVirISPBuffer is NULL!!\n");
+			LOG_ERR("g_pVirISPBuffer:0x%pK is not NULL!!", g_pVirISPBuffer);
 		}
-#else
-		if (copy_from_user(g_VirISPBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_VirISPBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-#endif
-		LOG_INF("copy isp vir buffer is done!!\n");
+		LOG_INF("copy dumpbuf::0x%pK virispbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pVirISPBuffer);
 		DumpBufferField = DumpBufferField | 0x4;
 		break;
 	case ISP_DUMP_CMDQVIRBUF_CMD:
@@ -5271,26 +5319,33 @@ static MINT32 ISP_DumpBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 			Ret = -EFAULT;
 			goto EXIT;
 		}
+
+
+		if (g_pCmdqBuffer == NULL) {
+			g_pCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
+			if (g_pCmdqBuffer != NULL) {
 #ifdef AEE_DUMP_REDUCE_MEMORY
-		if (g_pCmdqBuffer != NULL) {
-			if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-				pDumpBufStruct->BytesofBufferSize) != 0) {
-				LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
-				Ret = -EFAULT;
-				goto EXIT;
+				if (copy_from_user(g_pCmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_pCmdqBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#else
+				if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
+					pDumpBufStruct->BytesofBufferSize) != 0) {
+					LOG_ERR("copy_from_user g_CmdqBuffer failed\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+#endif
+			} else {
+				LOG_ERR("ERROR: g_pCmdqBuffer kmalloc failed\n");
 			}
 		} else {
-				LOG_ERR("g_pCmdqBuffer is NULL!!\n");
+			LOG_ERR("g_pCmdqBuffer:0x%pK is not NULL!!", g_pCmdqBuffer);
 		}
-#else
-		if (copy_from_user(g_CmdqBuffer, (void __user *)(pDumpBufStruct->pBuffer),
-			pDumpBufStruct->BytesofBufferSize) != 0) {
-			LOG_ERR("copy_from_user g_CmdqBuffer failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-#endif
-		LOG_INF("copy cmdq vir buffer is done!!\n");
+		LOG_INF("copy dumpbuf::0x%pK cmdqbuf:0x%pK is done!!\n", pDumpBufStruct->pBuffer, g_pCmdqBuffer);
 		DumpBufferField = DumpBufferField | 0x8;
 		break;
 	default:
@@ -9006,39 +9061,15 @@ static MINT32 ISP_open(
 	}
 
 	/* Navtive Exception */
-	g_pPhyISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-	if (g_pPhyISPBuffer == NULL) {
-		LOG_DBG("ERROR: g_pPhyISPBuffer kmalloc failed\n");
-	}
-	g_pTuningBuffer = vmalloc(ISP_DIP_REG_SIZE);
-	if (g_pTuningBuffer == NULL) {
-		LOG_DBG("ERROR: g_pTuningBuffer kmalloc failed\n");
-	}
-	g_pTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
-	if (g_pTpipeBuffer == NULL) {
-		LOG_DBG("ERROR: g_pTpipeBuffer kmalloc failed\n");
-	}
-	g_pVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-	if (g_pVirISPBuffer == NULL) {
-		LOG_DBG("ERROR: g_pVirISPBuffer kmalloc failed\n");
-	}
-	g_pCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
-	if (g_pCmdqBuffer == NULL) {
-		LOG_DBG("ERROR: g_pCmdqBuffer kmalloc failed\n");
-	}
+	g_pPhyISPBuffer = NULL;
+	g_pTuningBuffer = NULL;
+	g_pTpipeBuffer = NULL;
+	g_pVirISPBuffer = NULL;
+	g_pCmdqBuffer = NULL;
 	/* Kernel Exception */
-	g_pKWTpipeBuffer = vmalloc(MAX_ISP_TILE_TDR_HEX_NO);
-	if (g_pKWTpipeBuffer == NULL) {
-		LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
-	}
-	g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
-	if (g_KWCmdqBuffer == NULL) {
-		LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
-	}
-	g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-	if (g_KWVirISPBuffer == NULL) {
-		LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
-	}
+	g_pKWTpipeBuffer = NULL;
+	g_KWCmdqBuffer = NULL;
+	g_KWVirISPBuffer = NULL;
 	g_bUserBufIsReady = MFALSE;
 	g_bDumpPhyISPBuf = MFALSE;
 	g_dumpInfo.tdri_baseaddr = 0xFFFFFFFF;/* 0x15022204 */
@@ -9094,40 +9125,6 @@ EXIT:
 			kfree(IspInfo.BufInfo.Read.pData);
 			IspInfo.BufInfo.Read.pData = NULL;
 		}
-		if (g_pPhyISPBuffer != NULL) {
-			vfree(g_pPhyISPBuffer);
-			g_pPhyISPBuffer = NULL;
-		}
-		if (g_pTuningBuffer != NULL) {
-			vfree(g_pTuningBuffer);
-			g_pTuningBuffer = NULL;
-		}
-		if (g_pTpipeBuffer != NULL) {
-			vfree(g_pTpipeBuffer);
-			g_pTpipeBuffer = NULL;
-		}
-		if (g_pVirISPBuffer != NULL) {
-			vfree(g_pVirISPBuffer);
-			g_pVirISPBuffer = NULL;
-		}
-		if (g_pCmdqBuffer != NULL) {
-			vfree(g_pCmdqBuffer);
-			g_pCmdqBuffer = NULL;
-		}
-		/* Kernel Exception */
-		if (g_pKWTpipeBuffer != NULL) {
-			vfree(g_pKWTpipeBuffer);
-			g_pKWTpipeBuffer = NULL;
-		}
-		if (g_KWCmdqBuffer != NULL) {
-			vfree(g_KWCmdqBuffer);
-			g_KWCmdqBuffer = NULL;
-		}
-		if (g_KWVirISPBuffer != NULL) {
-			vfree(g_KWVirISPBuffer);
-			g_KWVirISPBuffer = NULL;
-		}
-
 	} else {
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
