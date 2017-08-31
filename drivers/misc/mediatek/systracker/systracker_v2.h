@@ -31,7 +31,6 @@
 #define BUS_DBG_AW_TRACK_H(__n)		(BUS_DBG_BASE + 0x0204 + 8 * (__n))
 #define BUS_DBG_AW_TRANS_TID(__n)	(BUS_DBG_BASE + 0x0280 + 4 * (__n))
 
-
 #define BUS_DBG_BUS_MHZ             (266)
 #define BUS_DBG_NUM_TRACKER         (8)
 
@@ -60,6 +59,8 @@
 				BUS_DBG_CON_IRQ_AR_STA1|BUS_DBG_CON_IRQ_AW_STA1)
 
 #define BUS_DBG_CON_IRQ_EN	(BUS_DBG_CON_IRQ_AR_EN | BUS_DBG_CON_IRQ_AW_EN | BUS_DBG_CON_IRQ_WP_EN)
+
+#define BUS_DBG_MAX_TIMEOUT_VAL	    (0xffffffff)
 
 static inline unsigned int extract_n2mbits(unsigned int input, int n, int m)
 {
