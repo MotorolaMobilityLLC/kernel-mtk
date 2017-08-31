@@ -218,6 +218,18 @@ static ssize_t dbg_lvl_store(struct device *pdev, struct device_attribute *attr,
 	return size;
 }
 
+static ssize_t vbus_det_store(struct device *pdev, struct device_attribute *attr,
+			    const char *buff, size_t size)
+{
+	struct typec_hba *hba = dev_get_drvdata(pdev);
+	int en = 0;
+
+	if (kstrtoint(buff, 0, &en) == 0)
+		typec_vbus_det_enable(hba, en);
+
+	return size;
+}
+
 static const char * const string_typec_state[] = {
 	"DISABLED",
 	"UNATTACHED_SRC",
@@ -481,8 +493,13 @@ static ssize_t vbus_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
+#ifdef NEVER
 	return snprintf(buf, PAGE_SIZE, "Vbus is %dmV %dmV, vbus_en=%d\n",
 				vbus_val(hba), vbus_val_self(hba), hba->vbus_en);
+#endif /* NEVER */
+	return snprintf(buf, PAGE_SIZE, "Vbus is %dmV, vbus_en=%d\n",
+			vbus_val(hba), hba->vbus_en);
+
 }
 
 static ssize_t vbus_store(struct device *pdev, struct device_attribute *attr,
@@ -678,6 +695,7 @@ static DEVICE_ATTR(dump, S_IRUGO, dump_show, NULL);
 static DEVICE_ATTR(read, S_IRUGO | S_IWUSR, read_show, read_store);
 static DEVICE_ATTR(write, S_IWUSR, NULL, write_store);
 static DEVICE_ATTR(dbg_lvl, S_IRUGO | S_IWUSR, dbg_lvl_show, dbg_lvl_store);
+static DEVICE_ATTR(vbus_det, S_IWUSR, NULL, vbus_det_store);
 static DEVICE_ATTR(stat, S_IRUGO, stat_show, NULL);
 static DEVICE_ATTR(vbus, S_IRUGO | S_IWUSR, vbus_show, vbus_store);
 
@@ -697,6 +715,7 @@ static struct device_attribute *mt_typec_attributes[] = {
 	&dev_attr_read,
 	&dev_attr_write,
 	&dev_attr_dbg_lvl,
+	&dev_attr_vbus_det,
 	&dev_attr_stat,
 #if SUPPORT_PD
 	&dev_attr_pd,

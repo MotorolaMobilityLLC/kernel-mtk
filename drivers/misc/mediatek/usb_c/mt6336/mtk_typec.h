@@ -329,6 +329,7 @@ struct typec_hba {
 	unsigned int pd_irq;
 	int id;
 	bool is_kpoc;
+	bool is_boost;
 
 #if !COMPLIANCE
 	atomic_t lowq_cnt;
