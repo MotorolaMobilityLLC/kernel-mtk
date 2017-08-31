@@ -46,10 +46,6 @@
 #ifdef CONFIG_MTK_HIBERNATION
 #define IPOH_VOLUME_NANE "ipoh"
 #endif
-#if 0
-#define MTK_TMP_DEBUG_LOG
-#endif
-
 /* Maximum number of supported UBI devices */
 #define UBI_MAX_DEVICES 32
 
@@ -86,7 +82,7 @@
  * number of (global) erase cycles PEBs are protected from the wear-leveling
  * worker.
  */
-#define UBI_PROT_QUEUE_LEN 10
+#define UBI_PROT_QUEUE_LEN 2
 
 /* The volume ID/LEB number/erase counter is unknown */
 #define UBI_UNKNOWN -1
@@ -484,7 +480,6 @@ struct ubi_debug_info {
  * @fm_eba_sem: allows ubi_update_fastmap() to block EBA table changes
  * @fm_work: fastmap work queue
  * @fm_work_scheduled: non-zero if fastmap work was scheduled
- * @fast_attach: non-zero if UBI was attached by fastmap
  *
  * @used: RB-tree of used physical eraseblocks
  * @erroneous: RB-tree of erroneous used physical eraseblocks
@@ -599,15 +594,12 @@ struct ubi_device {
 	struct ubi_fastmap_layout *fm;
 	struct ubi_fm_pool fm_pool;
 	struct ubi_fm_pool fm_wl_pool;
-	struct rw_semaphore fm_sem;
-	struct mutex fm_mutex;
 	struct rw_semaphore fm_eba_sem;
 	struct rw_semaphore fm_protect;
 	void *fm_buf;
 	size_t fm_size;
 	struct work_struct fm_work;
 	int fm_work_scheduled;
-	int fast_attach;
 
 	/* Wear-leveling sub-system's stuff */
 	struct rb_root used;

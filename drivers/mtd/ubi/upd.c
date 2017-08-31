@@ -424,7 +424,7 @@ int ubi_more_leb_change_data(struct ubi_device *ubi, struct ubi_volume *vol,
 		       len - vol->upd_bytes);
 		len = ubi_calc_data_len(ubi, vol->upd_buf, len);
 #ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
-		if (vol->ch_lnum >= 10)
+		if (vol->ch_lnum >= 16)
 			err = ubi_eba_write_tlc_leb(ubi, vol, vol->ch_lnum, vol->upd_buf, 0, len);
 		else
 #endif

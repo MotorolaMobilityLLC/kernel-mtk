@@ -511,6 +511,7 @@ static int scan_pool(struct ubi_device *ubi, struct ubi_attach_info *ai,
 		err = ubi_io_read_vid_hdr(ubi, pnum, vh, 0);
 		if (err == UBI_IO_FF || err == UBI_IO_FF_BITFLIPS) {
 			unsigned long long ec = be64_to_cpu(ech->ec);
+
 			unmap_peb(ai, pnum);
 			dbg_bld("Adding PEB to free: %i", pnum);
 			if (err == UBI_IO_FF_BITFLIPS)
@@ -1058,7 +1059,6 @@ int ubi_scan_fastmap(struct ubi_device *ubi, struct ubi_attach_info *ai,
 	ubi_msg(ubi, "fastmap WL pool size: %d",
 		ubi->fm_wl_pool.max_size);
 	ubi->fm_disabled = 0;
-	ubi->fast_attach = 1;
 
 	ubi_free_vid_hdr(ubi, vh);
 	kfree(ech);

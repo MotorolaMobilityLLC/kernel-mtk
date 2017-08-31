@@ -438,7 +438,7 @@ static int torture_peb(struct ubi_device *ubi, int pnum)
 
 		/* Make sure the PEB contains only 0xFF bytes */
 		err = ubi_io_read(ubi, ubi->peb_buf, pnum, 0, ubi->peb_size);
-		if (err)
+		if (err && err != UBI_IO_BITFLIPS)
 			goto out;
 
 		err = ubi_check_pattern(ubi->peb_buf, 0xFF, ubi->peb_size);
@@ -457,7 +457,7 @@ static int torture_peb(struct ubi_device *ubi, int pnum)
 
 		memset(ubi->peb_buf, ~patterns[i], ubi->peb_size);
 		err = ubi_io_read(ubi, ubi->peb_buf, pnum, 0, ubi->peb_size);
-		if (err)
+		if (err && err != UBI_IO_BITFLIPS)
 			goto out;
 
 		err = ubi_check_pattern(ubi->peb_buf, patterns[i],
@@ -541,7 +541,7 @@ static int nor_erase_prepare(struct ubi_device *ubi, int pnum)
 	if (err != UBI_IO_BAD_HDR_EBADMSG && err != UBI_IO_BAD_HDR &&
 	    err != UBI_IO_FF){
 		err = mtd_write(ubi->mtd, addr, 4, &written, (void *)&data);
-		if(err)
+		if (err)
 			goto error;
 	}
 
@@ -878,6 +878,7 @@ int ubi_io_write_ec_hdr(struct ubi_device *ubi, int pnum,
 
 	if (ubi_dbg_power_cut(ubi, POWER_CUT_EC_WRITE))
 		return -EROFS;
+
 #ifdef CONFIG_PWR_LOSS_MTK_SPOH
 	PL_RESET_ON_CASE("NAND", "WRITE_EC_Header");
 #endif
@@ -949,6 +950,11 @@ static int validate_vid_hdr(const struct ubi_device *ubi,
 #endif
 
 #endif
+	}
+
+	if (vol_type != UBI_VID_DYNAMIC && vol_type != UBI_VID_STATIC) {
+		ubi_err(ubi, "bad vol_type");
+		goto bad;
 	}
 
 	if (data_pad >= ubi->leb_size / 2) {
@@ -1100,7 +1106,7 @@ int ubi_io_read_vid_hdr(struct ubi_device *ubi, int pnum,
 	err = validate_vid_hdr(ubi, vid_hdr);
 	if (err) {
 		ubi_err(ubi, "validation failed for PEB %d", pnum);
-		return -EINVAL;
+		return UBI_IO_FF_BITFLIPS;
 	}
 
 	return read_err ? UBI_IO_BITFLIPS : 0;
@@ -1155,12 +1161,14 @@ int ubi_io_write_vid_hdr(struct ubi_device *ubi, int pnum,
 		}
 	}
 #endif
+	if (ubi_dbg_power_cut(ubi, POWER_CUT_VID_WRITE))
+		return -EROFS;
+
 	p = (char *)vid_hdr - ubi->vid_hdr_shift;
 	err = ubi_io_write(ubi, p, pnum, ubi->vid_hdr_aloffset,
 			   ubi->vid_hdr_alsize);
 	return err;
 }
-
 #ifdef CONFIG_MTD_UBI_LOWPAGE_BACKUP
 int ubi_io_write_vid_hdr_blb(struct ubi_device *ubi, int pnum,
 			 struct ubi_vid_hdr *vid_hdr)
