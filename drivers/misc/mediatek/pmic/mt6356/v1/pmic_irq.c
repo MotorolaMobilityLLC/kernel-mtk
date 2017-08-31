@@ -499,6 +499,8 @@ static unsigned int get_spNo(PMIC_IRQ_ENUM intNo)
 		return 6; /* SP_LDO_TOP */
 	else if (intNo >= SP_AUD_TOP_START && intNo < SP_MISC_TOP_START)
 		return 7; /* SP_AUD_TOP */
+	else if (intNo >= SP_MISC_TOP_START && intNo < INT_ENUM_MAX)
+		return 8; /* SP_MISC_TOP */
 	return 99;
 }
 
@@ -520,22 +522,10 @@ void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 	unsigned int spNo, sp_conNo, sp_irqNo;
 	unsigned int enable_reg;
 
-#if 0
-	if (intNo >= INT_ENUM_MAX) {
-		pr_err(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
-		return;
-	}
-
-	spNo = get_spNo(intNo);
-	sp_conNo = (intNo - sp_interrupts[spNo].int_offset) / PMIC_INT_WIDTH;
-	sp_irqNo = intNo % PMIC_INT_WIDTH;
-#else
 	if (pmic_check_intNo(intNo, &spNo, &sp_conNo, &sp_irqNo)) {
 		pr_err(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
 		return;
 	}
-#endif
-
 	enable_reg = sp_interrupts[spNo].enable + 0x6 * sp_conNo;
 	PMICLOG("[%s] intNo=%d en=%d str=%s spNo=%d sp_conNo=%d sp_irqNo=%d, Reg[0x%x]=0x%x\n", __func__,
 		intNo, en, str, spNo, sp_conNo, sp_irqNo, enable_reg, upmu_get_reg_value(enable_reg));
@@ -831,6 +821,195 @@ void PMIC_EINT_SETTING(void)
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
+}
+
+/*****************************************************************************
+ * PMIC Interrupt debugfs
+ ******************************************************************************/
+struct pmic_irq_dbg_st dbg_data[4];
+
+enum {
+	PMIC_IRQ_DBG_LIST,
+	PMIC_IRQ_DBG_LIST_ENABLED,
+	PMIC_IRQ_DBG_ENABLE,
+	PMIC_IRQ_DBG_MASK,
+	PMIC_IRQ_DBG_MAX,
+};
+
+static int list_pmic_irq(struct seq_file *s)
+{
+	unsigned int i;
+	unsigned int spNo, sp_conNo, sp_irqNo;
+	unsigned int en;
+	unsigned int mask;
+	void *callback;
+	struct pmic_sp_irq *sp_irq;
+
+	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
+	for (i = 0; i < INT_ENUM_MAX; i++) {
+		pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo);
+		en = upmu_get_reg_value(sp_interrupts[spNo].enable + 0x6 * sp_conNo);
+		mask = upmu_get_reg_value(sp_interrupts[spNo].mask + 0x6 * sp_conNo);
+		sp_irq = &(sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo]);
+		if (sp_irq->used == 0) {
+			seq_printf(s, "%3d: NO_USE\n", i);
+			continue;
+		}
+		if (sp_irq->callback)
+			callback = sp_irq->callback;
+		else
+			callback = sp_irq->oc_callback;
+		seq_printf(s, "%3d: %20s, %8s%s, %d times, callback=%pf\n",
+			i,
+			sp_irq->name,
+			en & (1 << sp_irqNo)?"enabled":"disabled",
+			mask & (1 << sp_irqNo)?"(m)":"",
+			sp_irq->times,
+			callback);
+	}
+	return 0;
+}
+
+static int list_enabled_pmic_irq(struct seq_file *s)
+{
+	unsigned int i;
+	unsigned int spNo, sp_conNo, sp_irqNo;
+	unsigned int en;
+	unsigned int mask;
+	void *callback;
+	struct pmic_sp_irq *sp_irq;
+
+	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
+	for (i = 0; i < INT_ENUM_MAX; i++) {
+		pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo);
+		en = upmu_get_reg_value(sp_interrupts[spNo].enable + 0x6 * sp_conNo);
+		mask = upmu_get_reg_value(sp_interrupts[spNo].mask + 0x6 * sp_conNo);
+		if (!(en & (1 << sp_irqNo)))
+			continue;
+		sp_irq = &(sp_interrupts[spNo].sp_irqs[sp_conNo][sp_irqNo]);
+		if (sp_irq->callback)
+			callback = sp_irq->callback;
+		else
+			callback = sp_irq->oc_callback;
+		seq_printf(s, "%3d: %20s, %8s%s, %d times, callback=%pf\n",
+			i,
+			sp_irq->name,
+			"enabled",
+			mask & (1 << sp_irqNo)?"(m)":"",
+			sp_irq->times,
+			callback);
+	}
+	return 0;
+}
+
+static int pmic_irq_dbg_show(struct seq_file *s, void *unused)
+{
+	struct pmic_irq_dbg_st *dbg_st = s->private;
+
+	switch (dbg_st->dbg_id) {
+	case PMIC_IRQ_DBG_LIST:
+		list_pmic_irq(s);
+		break;
+	case PMIC_IRQ_DBG_LIST_ENABLED:
+		list_enabled_pmic_irq(s);
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+static int pmic_irq_dbg_open(struct inode *inode, struct file *file)
+{
+	if (file->f_mode & FMODE_READ)
+		return single_open(file, pmic_irq_dbg_show, inode->i_private);
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t pmic_irq_dbg_write(struct file *file,
+	const char __user *user_buffer, size_t count, loff_t *position)
+{
+	struct pmic_irq_dbg_st *dbg_st = file->private_data;
+	char buf[10] = {0};
+	char *buf_ptr = NULL;
+	char *s_intNo;
+	char *s_state;
+	unsigned int intNo = 999, state = 2; /* initialize as invalid value */
+	int ret = 0;
+
+	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
+	buf_ptr = (char *)buf;
+	s_intNo = strsep(&buf_ptr, " ");
+	s_state = strsep(&buf_ptr, " ");
+	if (s_intNo)
+		ret = kstrtou32(s_intNo, 10, (unsigned int *)&intNo);
+	if (s_state)
+		ret = kstrtou32(s_state, 10, (unsigned int *)&state);
+
+	switch (dbg_st->dbg_id) {
+	case PMIC_IRQ_DBG_ENABLE:
+		pmic_enable_interrupt(intNo, state, "pmic_irq_dbg");
+		break;
+	case PMIC_IRQ_DBG_MASK:
+		if (state == 1)
+			pmic_mask_interrupt(intNo, "pmic_irq_dbg");
+		else if (state == 0)
+			pmic_unmask_interrupt(intNo, "pmic_irq_dbg");
+		break;
+	default:
+		break;
+	}
+
+	return count;
+}
+
+static int pmic_irq_release(struct inode *inode, struct file *file)
+{
+	if (file->f_mode & FMODE_READ)
+		return single_release(inode, file);
+	return 0;
+}
+
+static const struct file_operations pmic_irq_dbg_fops = {
+	.open = pmic_irq_dbg_open,
+	.read = seq_read,
+	.write = pmic_irq_dbg_write,
+	.llseek  = seq_lseek,
+	.release = pmic_irq_release,
+};
+
+int pmic_irq_debug_init(struct dentry *debug_dir)
+{
+	struct dentry *pmic_irq_dir;
+
+	if (IS_ERR(debug_dir) || !debug_dir) {
+		pr_err(PMICTAG "dir mtk_pmic does not exist\n");
+		return -1;
+	}
+	pmic_irq_dir = debugfs_create_dir("pmic_irq", debug_dir);
+	if (IS_ERR(pmic_irq_dir) || !pmic_irq_dir) {
+		pr_err(PMICTAG "fail to mkdir /sys/kernel/debug/mtk_pmic/pmic_irq\n");
+		return -1;
+	}
+	/* PMIC irq debug init */
+	dbg_data[0].dbg_id = PMIC_IRQ_DBG_LIST;
+	debugfs_create_file("list_pmic_irq", (S_IFREG | S_IRUGO),
+		pmic_irq_dir, (void *)&dbg_data[0], &pmic_irq_dbg_fops);
+
+	dbg_data[1].dbg_id = PMIC_IRQ_DBG_LIST_ENABLED;
+	debugfs_create_file("list_enabled_pmic_irq", (S_IFREG | S_IRUGO),
+		pmic_irq_dir, (void *)&dbg_data[1], &pmic_irq_dbg_fops);
+
+	dbg_data[2].dbg_id = PMIC_IRQ_DBG_ENABLE;
+	debugfs_create_file("enable_pmic_irq", (S_IFREG | S_IRUGO),
+		pmic_irq_dir, (void *)&dbg_data[2], &pmic_irq_dbg_fops);
+
+	dbg_data[3].dbg_id = PMIC_IRQ_DBG_MASK;
+	debugfs_create_file("mask_pmic_irq", (S_IFREG | S_IRUGO),
+		pmic_irq_dir, (void *)&dbg_data[3], &pmic_irq_dbg_fops);
+
+	return 0;
 }
 
 MODULE_AUTHOR("Jeter Chen");

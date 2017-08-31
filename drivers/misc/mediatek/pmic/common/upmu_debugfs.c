@@ -23,6 +23,7 @@
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_debugfs.h"
+#include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
 /*#ifdef CONFIG_MTK_AUXADC_INTF*/
 #include <mt-plat/mtk_auxadc_intf.h>
@@ -35,13 +36,15 @@ unsigned int gPMICDbgLvl;
 int pmic_pre_wdt_reset(void)
 {
 	int ret = 0;
-
+/* remove dump exception status before wdt, since we will recore it at next boot preloader */
+#if 0
 	preempt_disable();
 	local_irq_disable();
 	pr_err(PMICTAG "[%s][pmic_boot_status]\n", __func__);
 	pmic_dump_exception_reg();
 #if DUMP_ALL_REG
 	pmic_dump_register();
+#endif
 #endif
 	return ret;
 
@@ -290,6 +293,11 @@ static const struct file_operations pmic_dump_register_proc_fops = {
 	.read = seq_read,
 };
 
+int __attribute__ ((weak)) pmic_irq_debug_init(struct dentry *debug_dir)
+{
+	return 0;
+}
+
 int pmic_debug_init(struct platform_device *dev)
 {
 	struct dentry *mtk_pmic_dir;
@@ -312,6 +320,8 @@ int pmic_debug_init(struct platform_device *dev)
 	pmic_regulator_debug_init(dev, mtk_pmic_dir);
 
 	pmic_throttling_dlpt_debug_init(dev, mtk_pmic_dir);
+
+	pmic_irq_debug_init(mtk_pmic_dir);
 	PMICLOG("pmic_debug_init debugfs done\n");
 
 	/*--/sys/devices/platform/mt-pmic/ --*/
