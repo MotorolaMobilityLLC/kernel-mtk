@@ -265,7 +265,7 @@ int msdc_io_check(struct msdc_host *host)
 	int result = 1, i;
 	void __iomem *base = host->base;
 	unsigned long polling_tmo = 0;
-	u32 pupd_patterns[3] = {0x2226, 0x2262, 0x2622};
+	u32 pupd_patterns[3] = {0x2622, 0x2262, 0x2226};
 	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
 
 	if (host->id != 1)
