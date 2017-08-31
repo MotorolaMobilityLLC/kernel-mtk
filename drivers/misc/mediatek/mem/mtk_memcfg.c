@@ -50,10 +50,10 @@ static struct mtk_memcfg_info_buf mtk_memcfg_layout_buf = {
 	.curr_pos = 0,
 };
 
-static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
-		unsigned long long end, unsigned long long size, int is_end);
+static void mtk_memcfg_show_layout_region(struct seq_file *m, const char *name,
+		unsigned long long end, unsigned long long size, int nomap, int is_end);
 
-static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
+static void mtk_memcfg_show_layout_region_kernel(struct seq_file *m,
 		unsigned long long end, unsigned long long size);
 
 static int mtk_memcfg_layout_phy_count;
@@ -66,12 +66,86 @@ struct mtk_memcfg_layout_info {
 	unsigned long long size;
 };
 
+#define RESERVED_NO_MAP 1
+#define RESERVED_MAP 0
+
+struct reserved_mem_ext {
+	const char	*name;
+	unsigned long	base;
+	unsigned long	size;
+	int		nomap;
+};
+
 #define MAX_LAYOUT_INFO 30
 static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[MAX_LAYOUT_INFO];
+
+static void mtk_memcfg_pares_reserved_memory(struct seq_file *m, struct reserved_mem_ext
+		*reserved_mem, int *reserved_mem_count)
+{
+	int reserved_mem_num, page_num, reserved_count = *reserved_mem_count;
+	unsigned long start_pfn, end_pfn, start, end, page_count;
+	struct page *page;
+	struct reserved_mem_ext *rmem;
+
+	for (reserved_mem_num = 0; reserved_mem_num < reserved_count;
+			reserved_mem_num++) {
+		rmem = &reserved_mem[reserved_mem_num];
+		start_pfn = virt_to_pfn(__va(rmem->base));
+		end_pfn = virt_to_pfn(__va(rmem->base + rmem->size));
+
+		if (start_pfn > end_pfn)
+			BUG();
+
+		page_count = end_pfn - start_pfn;
+		start = 0;
+		end = 0;
+
+		for (page_num = 0; page_num < page_count; page_num++) {
+			/* Ignore no-map region */
+			if (!pfn_valid(start_pfn + page_num)) {
+				reserved_mem[reserved_mem_num].nomap =
+					RESERVED_NO_MAP;
+				continue;
+			}
+
+			page = pfn_to_page(start_pfn + page_num);
+			if (PageReserved(page)) {
+				if (start == 0)
+					start = start_pfn + page_num;
+			} else {
+				if (start != 0) {
+					struct reserved_mem_ext *tmp =
+						&reserved_mem[*reserved_mem_count];
+
+					end = start_pfn + page_num;
+					tmp->base =
+						page_to_phys(pfn_to_page(start));
+					tmp->size = page_to_phys(pfn_to_page(end)) -
+						page_to_phys(pfn_to_page(start));
+					tmp->name = rmem->name;
+					tmp->nomap = RESERVED_MAP;
+					(*reserved_mem_count) += 1;
+					end = 0;
+					start = 0;
+				}
+			}
+		}
+		if (start != 0) {
+			end = start_pfn + page_count;
+		}
+	}
+}
 
 int mtk_memcfg_memory_layout_info_compare(const void *p1, const void *p2)
 {
 	if (((struct mtk_memcfg_layout_info *)p1)->start > ((struct mtk_memcfg_layout_info *)p2)->start)
+		return 1;
+	return -1;
+}
+
+int reserved_mem_ext_compare(const void *p1, const void *p2)
+{
+	if (((struct reserved_mem_ext *)p1)->base > ((struct reserved_mem_ext *)p2)->base)
 		return 1;
 	return -1;
 }
@@ -135,42 +209,82 @@ void mtk_memcfg_late_warning(unsigned long flag)
 
 /* kenerl memory information */
 
+#define MAX_RESERVED_REGIONS	40
 static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 {
-	int i = 0;
-	struct mtk_memcfg_layout_info *info, *prev;
+	int i = 0, md_reserved = -1;
+	int reserved_mem_count, length;
+	struct reserved_mem tmp;
+	struct reserved_mem_ext *reserved_mem = NULL;
+	struct reserved_mem_ext *rmem, *prmem;
 
-	mtk_memcfg_sort_memory_layout();
+	reserved_mem_count = get_reserved_mem_count();
+	pr_info("reserved_mem_count: %d\n", reserved_mem_count);
+	reserved_mem = kmalloc_array(reserved_mem_count,
+				sizeof(struct reserved_mem_ext),
+				GFP_KERNEL);
 
-	seq_puts(m, "Physical layout:\n");
-	for (i = mtk_memcfg_layout_phy_count - 1; i > 0; i--) {
-		info = &mtk_memcfg_layout_info_phy[i];
-		prev = &mtk_memcfg_layout_info_phy[i - 1];
+	for (i = 0; i < reserved_mem_count; i++) {
+		tmp = get_reserved_mem(i);
+		reserved_mem[i].name = tmp.name;
+		reserved_mem[i].base = tmp.base;
+		reserved_mem[i].size = tmp.size;
+		reserved_mem[i].nomap = RESERVED_MAP;
 
-		mtk_memcfg_show_layout_region(m, info->name,
-				info->start + info->size,
-				info->size, 0);
+		length = strlen(reserved_mem[i].name);
+		/* compare last 4 characters are "ccci"*/
+		if (strncmp("ccci", (const char *)&reserved_mem[i].name[length-4], 4) == 0)
+			md_reserved = i;
+	}
 
-		if (info->start > prev->start + prev->size) {
-			mtk_memcfg_show_layout_region_gap(m, info->start,
-					info->start - (prev->start + prev->size));
+	mtk_memcfg_pares_reserved_memory(m, reserved_mem, &reserved_mem_count);
+
+	for (i = 0; i < reserved_mem_count; i++) {
+		if (strcmp("zone-movable-cma-memory", (const char *)reserved_mem[i].name) == 0) {
+			reserved_mem[i].size = 0;
+			reserved_mem[i].base = 0;
 		}
 	}
-	info = &mtk_memcfg_layout_info_phy[0];
-	mtk_memcfg_show_layout_region(m, info->name,
-			info->start + info->size,
-			info->size, 1);
+
+	reserved_mem[md_reserved].size = 0;
+	reserved_mem[md_reserved].base = 0;
+
+	sort(reserved_mem, reserved_mem_count,
+			sizeof(struct reserved_mem_ext),
+			reserved_mem_ext_compare, NULL);
+
+	seq_puts(m, "Reserve Memory Layout (prefix with \"*\" is no-map)\n");
+	for (i = reserved_mem_count - 1; i > 0; i--) {
+		rmem = &reserved_mem[i];
+		prmem = &reserved_mem[i - 1];
+
+		if (rmem->size == 0 && rmem->base == 0)
+			continue;
+
+		mtk_memcfg_show_layout_region(m, rmem->name,
+				rmem->base + rmem->size,
+				rmem->size, rmem->nomap, 0);
+
+		if (prmem->base != 0 && rmem->base > prmem->base + prmem->size) {
+			mtk_memcfg_show_layout_region_kernel(m, rmem->base,
+					rmem->base - (prmem->base + prmem->size));
+		}
+	}
+
+	rmem = &reserved_mem[0];
+	while (rmem->base == 0)
+		rmem++;
+
+	if (rmem->base != memblock_start_of_DRAM()) {
+		unsigned long size = (rmem->base) - memblock_start_of_DRAM();
+
+		mtk_memcfg_show_layout_region(m, "kernel",
+				memblock_start_of_DRAM() + size,
+				size, RESERVED_MAP, 1);
+	}
 
 	seq_puts(m, "\n");
 	seq_puts(m, "Debug Info:\n");
-	seq_printf(m, "%s", mtk_memcfg_layout_buf.buf);
-	seq_printf(m, "buffer usage: %lu/%lu\n",
-		   (mtk_memcfg_layout_buf.curr_pos <=
-		    mtk_memcfg_layout_buf.max_len ?
-		    mtk_memcfg_layout_buf.curr_pos :
-		    mtk_memcfg_layout_buf.max_len),
-		   mtk_memcfg_layout_buf.max_len);
-
 	seq_printf(m, "Memory: %luK/%luK available, %luK kernel code, %luK rwdata, %luK rodata, %luK init, %luK bss, %luK reserved"
 #ifdef CONFIG_HIGHMEM
 		", %luK highmem"
@@ -201,42 +315,43 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 #endif
 #endif
 
+	kfree(reserved_mem);
 	return 0;
 }
 
-static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
-		unsigned long long end, unsigned long long size, int is_end)
+static void mtk_memcfg_show_layout_region(struct seq_file *m, const char *name,
+		unsigned long long end, unsigned long long size, int nomap, int is_end)
 {
 	int i = 0;
 	int name_length = strlen(name);
-	int padding = (30 - name_length - 2) / 2;
-	int odd = (30 - name_length - 2) % 2;
+	int padding = (40 - name_length - 2) / 2;
+	int odd = (40 - name_length - 2) % 2;
 
-	seq_printf(m, "------------------------------  0x%08llx\n", end);
-	seq_puts(m, "-                            -\n");
+	seq_printf(m, "----------------------------------------  0x%08llx\n", end);
 	seq_puts(m, "-");
 	for (i = 0; i < padding; i++)
 		seq_puts(m, " ");
+	if (nomap) {
+		seq_puts(m, "*");
+		padding -= 1;
+	}
 	seq_printf(m, "%s", name);
 	for (i = 0; i < padding + odd; i++)
 		seq_puts(m, " ");
 	seq_printf(m, "-  size : (0x%0llx)\n", size);
-	seq_puts(m, "-                            -\n");
 
 	if (is_end)
-		seq_printf(m, "------------------------------  0x%0llx\n"
+		seq_printf(m, "----------------------------------------  0x%0llx\n"
 				, end - size);
 }
 
-
-static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
+static void mtk_memcfg_show_layout_region_kernel(struct seq_file *m,
 		unsigned long long end, unsigned long long size)
 {
-	seq_printf(m, "------------------------------  0x%08llx\n", end);
-	seq_puts(m, "-                            -\n");
-	seq_printf(m, "-~~~~~~~~~~~~~~~~~~~~~~~~~~~~-  size : (0x%0llx)\n", size);
-	seq_puts(m, "-                            -\n");
+	seq_printf(m, "----------------------------------------  0x%08llx\n", end);
+	seq_printf(m, "-               kernel                 -  size : (0x%0llx)\n", size);
 }
+
 static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mtk_memcfg_memory_layout_show, NULL);

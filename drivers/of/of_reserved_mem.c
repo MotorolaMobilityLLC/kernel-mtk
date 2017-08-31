@@ -27,6 +27,18 @@
 static struct reserved_mem reserved_mem[MAX_RESERVED_REGIONS];
 static int reserved_mem_count;
 
+int get_reserved_mem_count(void)
+{
+	return reserved_mem_count;
+}
+
+struct reserved_mem get_reserved_mem(int num)
+{
+	if (num >= MAX_RESERVED_REGIONS)
+		BUG();
+	return reserved_mem[num];
+}
+
 #if defined(CONFIG_HAVE_MEMBLOCK)
 #include <linux/memblock.h>
 int __init __weak early_init_dt_alloc_reserved_memory_arch(phys_addr_t size,
