@@ -37,9 +37,6 @@
 	};
 	#endif
 #else
-	#ifdef __MTK_SLT_
-	typedef unsigned char	   bool;
-	#endif
 	#define EEM_BASEADDR		(0x102A0000)
 	#define eem_base EEM_BASEADDR
 #endif
