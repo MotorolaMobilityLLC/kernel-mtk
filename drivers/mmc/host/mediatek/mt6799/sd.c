@@ -894,7 +894,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
 
 	/* Disable HW DVFS */
-	if (host->hw->host_function == MSDC_SDIO) {
+	if ((host->hw->host_function == MSDC_SDIO) && (host->use_hw_dvfs == 1)) {
 		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) & ~(MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
@@ -4074,6 +4074,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	    !(host->trans_lock.active))
 		__pm_stay_awake(&host->trans_lock);
 
+	/* SDIO need lock dvfs */
+	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
+		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
 
@@ -4115,6 +4119,10 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		msdc_do_request_async(mmc, mrq);
 	else
 		msdc_ops_request_legacy(mmc, mrq);
+
+	/* SDIO need lock dvfs */
+	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
+		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 
 	if ((host->hw->host_function == MSDC_SDIO) &&
 	    (host->trans_lock.active))
@@ -4390,8 +4398,10 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	status = MSDC_READ32(MSDC_PS);
 	msdc_gate_clock(host, 1);
 
-	if (((status >> 16) & 0x1) != 0x1)
+	if (((status >> 16) & 0x1) != 0x1) {
+		pr_err("%s: card is busy!\n", __func__);
 		return 1;
+	}
 
 	return 0;
 }

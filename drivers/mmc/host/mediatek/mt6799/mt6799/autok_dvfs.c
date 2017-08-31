@@ -26,7 +26,8 @@ static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_2", "/data/sdio_autok_3",
 };
 
-#define SDIO_AUTOK_DIFF_MARGIN  3
+#define VCORE_DVFS_INDEPENDENT
+#define AUTOK_DIFF_MARGIN  5
 
 static struct file *msdc_file_open(const char *path, int flags, int rights)
 {
@@ -161,32 +162,40 @@ int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res)
 	return ret;
 }
 
+/* Return 0 means can use the same para, -1 means not */
 int autok_res_check(u8 *res_h, u8 *res_l)
 {
 	int ret = 0;
 	int i;
 
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
-		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1)) {
-			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > SDIO_AUTOK_DIFF_MARGIN))
+		if ((i == CMD_RD_D_DLY1) || (i == DAT_RD_D_DLY1) || (i == EMMC50_DS_Z_DLY1)
+			 || ((i >= EMMC50_DATA0_TX_DLY) && (i <= EMMC50_DATA7_TX_DLY))) {
+			if ((res_h[i] > res_l[i]) && (res_h[i] - res_l[i] > AUTOK_DIFF_MARGIN)) {
 				ret = -1;
-			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > SDIO_AUTOK_DIFF_MARGIN))
+				break;
+			}
+			if ((res_l[i] > res_h[i]) && (res_l[i] - res_h[i] > AUTOK_DIFF_MARGIN)) {
 				ret = -1;
+				break;
+			}
 		} else if ((i == CMD_RD_D_DLY1_SEL) || (i == DAT_RD_D_DLY1_SEL)) {
 			/* this is cover by previous check,
 			 * just by pass if 0 and 1 in cmd/dat delay
 			 */
 		} else {
-			if (res_h[i] != res_l[i])
+			if (res_h[i] != res_l[i]) {
 				ret = -1;
+				break;
+			}
 		}
 	}
 
-#ifndef SDIO_HW_DVFS_CONDITIONAL
-	if (CHIP_IS_VER2())
-		ret = 0;
-	else
+	if (CHIP_IS_VER1())
 		ret = -1;
+
+#ifndef VCORE_DVFS_INDEPENDENT
+	ret = -1;
 #endif
 	pr_err("autok_res_check %d!\n", ret);
 
@@ -480,7 +489,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 
 void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 {
-	void __iomem *base = host->base;
+	/* void __iomem *base = host->base; */
 	int sdio_res_exist = 0;
 	int vcore;
 	int i;
@@ -506,9 +515,10 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		if (host->use_hw_dvfs == 0) {
+			autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
 			pr_err("[AUTOK]No need change para when dvfs\n");
 		} else {
-			pr_err("[AUTOK]Need change para when dvfs\n");
+			pr_err("[AUTOK]Need change para when dvfs or lock vcore\n");
 
 			/* Use HW DVFS */
 			msdc_dvfs_reg_restore(host);
@@ -544,19 +554,23 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
 			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
+		autok_tuning_parameter_init(host, host->autok_res[AUTOK_VCORE_LEVEL1]);
 		pr_err("[AUTOK]No need change para when dvfs\n");
 	} else {
-		pr_err("[AUTOK]Need change para when dvfs\n");
+		pr_err("[AUTOK]Need change para when dvfs or lock vcore\n");
+		host->lock_vcore = 1;
 
 		/* Use HW DVFS */
-		host->use_hw_dvfs = 1;
+		/* host->use_hw_dvfs = 1; */
+		/* HW DVFS may casue sdc_bsuy, so use lock vcore */
 
 		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
 		 * Setting at register offset >=0x300 will effect after SPM handshakes
 		 * with MSDC.
 		 */
-		MSDC_WRITE32(MSDC_CFG,
-			MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
+		/* MSDC_WRITE32(MSDC_CFG,
+		 *	MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
+		 */
 	}
 
 	/* Un-request, return 0 pass */
@@ -823,7 +837,7 @@ int emmc_autok(void)
 			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
 		pr_err("[AUTOK] No need change para when dvfs\n");
 	} else {
-		pr_err("[AUTOK] Need change para when dvfs\n");
+		pr_err("[AUTOK] Need change para when dvfs or lock vcore\n");
 
 		/* Backup the register, restore when resume */
 		msdc_dvfs_reg_backup(host);
