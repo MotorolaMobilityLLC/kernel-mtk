@@ -693,22 +693,20 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 #define SDIO_CCCR_MTK_DDR208       0xF2
 #define SDIO_MTK_DDR208            0x3
 #define SDIO_MTK_DDR208_SUPPORT    0x2
-void sdio_execute_dvfs_autok(struct msdc_host *host)
+int sdio_plus_set_device_ddr208(struct msdc_host *host)
 {
-	int ret = 0;
-	unsigned char data;
 	struct mmc_host *mmc = host->mmc;
+	void __iomem *base = host->base;
+	u32 msdc_cfg;
+	int retry = 3, cnt = 1000;
+	unsigned char data;
+	int err = 0;
 
-	/* Set device timming for latch data */
-	sdio_plus_set_device_rx(host);
-
-	/* Find SDR104 timing first, or read CCCR command maybe fail */
-	if (host->hw->flags & MSDC_SDIO_DDR208) {
-		autok_execute_tuning(host, NULL);
-	} else {
-		sdio_execute_dvfs_autok_mode(host, 0);
-		return;
-	}
+	msdc_cfg = MSDC_READ32(MSDC_CFG);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 5);
+	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 
 	/* Read SDIO Device CCCR[0x00F2]
 	 * Bit[1] Always 1, Support DDR208 Mode.
@@ -716,13 +714,14 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	 *        1:Enable DDR208.
 	 *        0:Disable DDR208.
 	 */
-	ret = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
-	if (ret) {
+	err = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_MTK_DDR208, 0, &data);
+	if (err) {
 		pr_err("Read SDIO_CCCR_MTK_DDR208 fail\n");
 		goto end;
 	}
 	if ((data & SDIO_MTK_DDR208_SUPPORT) == 0) {
 		pr_err("Device not support SDIO_MTK_DDR208\n");
+		err = -1;
 		goto end;
 	}
 
@@ -730,37 +729,52 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	 * 1. First switch to DDR50 mode;
 	 * 2. Then Host CMD52 Write 0x03/0x01 to CCCR[0x00F2]
 	 */
-	ret = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_SPEED, 0, &data);
-	if (ret) {
+	err = msdc_io_rw_direct_host(mmc, 0, 0, SDIO_CCCR_SPEED, 0, &data);
+	if (err) {
 		pr_err("Read SDIO_CCCR_SPEED fail\n");
 		goto end;
 	}
 
 	data = (data & (~SDIO_SPEED_BSS_MASK)) | SDIO_SPEED_DDR50;
-	ret = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_SPEED, data, NULL);
-	if (ret) {
+	err = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_SPEED, data, NULL);
+	if (err) {
 		pr_err("Set SDIO_CCCR_SPEED to DDR fail\n");
 		goto end;
 	}
 
-	ret = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_MTK_DDR208,
+	err = msdc_io_rw_direct_host(mmc, 1, 0, SDIO_CCCR_MTK_DDR208,
 		SDIO_MTK_DDR208, NULL);
-	if (ret) {
+	if (err) {
 		pr_err("Set SDIO_MTK_DDR208 fail\n");
 		goto end;
 	}
+
+end:
+	MSDC_WRITE32(MSDC_CFG, msdc_cfg);
+	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
+
+	return err;
+}
+
+void sdio_execute_dvfs_autok(struct msdc_host *host)
+{
+	/* Set device timming for latch data */
+	sdio_plus_set_device_rx(host);
+
+	/* Not support DDR208 and only Autok SDR104 */
+	if (!(host->hw->flags & MSDC_SDIO_DDR208)) {
+		sdio_execute_dvfs_autok_mode(host, 0);
+		return;
+	}
+
+	if (sdio_plus_set_device_ddr208(host))
+		return;
 
 	/* Set HS400 clock mode and DIV = 0 */
 	msdc_clk_stable(host, 3, 0, 1);
 
 	/* Find DDR208 timing */
 	sdio_execute_dvfs_autok_mode(host, 1);
-
-	return;
-
-end:
-	pr_err("Switch to SDIO_MTK_DDR208 fail\n");
-
 }
 
 /* invoked by SPM */
