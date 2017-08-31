@@ -109,7 +109,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_BIG] = {
 		.name		= __stringify(EEM_DET_BIG),
 		.ops		= &big_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_BIG,
@@ -140,7 +140,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_CCI] = {
 		.name		= __stringify(EEM_DET_CCI),
 		.ops		= &cci_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset = 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_CCI,
@@ -167,7 +167,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_GPU] = {
 		.name		= __stringify(EEM_DET_GPU),
 		.ops		= &gpu_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_GPU,
@@ -196,7 +196,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_2L] = {
 		.name		= __stringify(EEM_DET_2L),
 		.ops		= &dual_little_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_2L,
@@ -223,7 +223,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_L] = {
 		.name		= __stringify(EEM_DET_L),
 		.ops		= &little_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_L,
@@ -250,7 +250,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_BANK5] = {
 		.name		= __stringify(EEM_DET_BANK5),
 		.ops		= &dmy_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_BANK5,
@@ -278,7 +278,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_SOC] = {
 		.name		= __stringify(EEM_DET_SOC),
 		.ops		= &soc_det_ops,
-		#if !(EEM_ENABLE_TINYSYS_SSPM)
+		#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
 		.volt_offset	= 0,
 		#endif
 		.ctrl_id	= EEM_CTRL_SOC,
