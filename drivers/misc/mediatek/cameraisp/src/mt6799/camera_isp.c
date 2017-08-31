@@ -115,18 +115,6 @@
 #define CAMSV2_TAG ""
 #define CAM_TAG ""
 #endif
-typedef unsigned char           MUINT8;
-typedef unsigned int            MUINT32;
-typedef unsigned int            UINT32;
-/*  */
-typedef signed char             MINT8;
-typedef signed int              MINT32;
-/*  */
-typedef bool                    MBOOL;
-#ifndef BOOL
-typedef unsigned char           BOOL;
-#endif
-
 
 #include "inc/camera_isp.h"
 
@@ -187,8 +175,8 @@ typedef unsigned char           BOOL;
 /* #define ISP_WR32(addr, data)    iowrite32(data, addr) // For other projects. */
 #define ISP_WR32(addr, data)    mt_reg_sync_writel(data, addr)  /* For 89     Only.*/   /* NEED_TUNING_BY_PROJECT */
 #define ISP_RD32(addr)                  ioread32((void *)addr)
-#define ISP_SET_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) |= (MUINT32)(1 << (bit)))
-#define ISP_CLR_BIT(reg, bit)   ((*(volatile MUINT32*)(reg)) &= ~((MUINT32)(1 << (bit))))
+#define ISP_SET_BIT(reg, bit)   ((*(unsigned int *)(reg)) |= (unsigned int)(1 << (bit)))
+#define ISP_CLR_BIT(reg, bit)   ((*(unsigned int *)(reg)) &= ~((unsigned int)(1 << (bit))))
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -348,27 +336,27 @@ typedef unsigned char           BOOL;
 				 SV_IMGO_ERR |\
 				 SV_IMGO_OVERRUN)
 
-static irqreturn_t ISP_Irq_CAM_A(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId);
-static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAM_A(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAM_B(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_0(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_2(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_3(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_4(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_CAMSV_5(signed int  Irq, void *DeviceId);
+static irqreturn_t ISP_Irq_DIP_A(signed int  Irq, void *DeviceId);
 
 
-typedef irqreturn_t (*IRQ_CB)(MINT32, void *);
+typedef irqreturn_t (*IRQ_CB)(signed int, void *);
 
-typedef struct {
+struct ISR_TABLE {
 	IRQ_CB          isr_fp;
 	unsigned int    int_number;
 	char            device_name[16];
-} ISR_TABLE;
+};
 
 #ifndef CONFIG_OF
-const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_Irq_CAM_A,     CAM0_IRQ_BIT_ID,    "CAM_A"},
 	{NULL,                            0,    "CAM_B"},
 	{NULL,                            0,    "DIP_A"},
@@ -380,7 +368,7 @@ const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 #else
 /* int number is got from kernel api */
 
-const ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
+const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 #if DUMMY_INT
 	{ISP_Irq_CAM_A,     0,  "cam2-dummy"}, /* Must be the same name with that in device node. */
 	{ISP_Irq_CAM_B,     0,  "cam3-dummy"},
@@ -430,10 +418,10 @@ static const struct of_device_id isp_of_ids[] = {
 /* //////////////////////////////////////////////////////////////////////////////////////////// */
 /*  */
 typedef void (*tasklet_cb)(unsigned long);
-typedef struct {
+struct Tasklet_table {
 	tasklet_cb tkt_cb;
 	struct tasklet_struct  *pIsp_tkt;
-} Tasklet_table;
+};
 
 struct tasklet_struct tkt[ISP_IRQ_TYPE_AMOUNT];
 
@@ -446,7 +434,7 @@ static void ISP_TaskletFunc_SV_3(unsigned long data);
 static void ISP_TaskletFunc_SV_4(unsigned long data);
 static void ISP_TaskletFunc_SV_5(unsigned long data);
 
-static Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
+static struct Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_CAM_A, &tkt[ISP_IRQ_TYPE_INT_CAM_A_ST]},
 	{ISP_TaskletFunc_CAM_B, &tkt[ISP_IRQ_TYPE_INT_CAM_B_ST]},
 	{NULL,                  &tkt[ISP_IRQ_TYPE_INT_DIP_A_ST]},
@@ -460,14 +448,14 @@ static Tasklet_table isp_tasklet[ISP_IRQ_TYPE_AMOUNT] = {
 };
 
 #if (ISP_BOTTOMHALF_WORKQ == 1)
-typedef struct {
+struct IspWorkqueTable {
 	enum ISP_IRQ_TYPE_ENUM	module;
 	struct work_struct  isp_bh_work;
-} IspWorkqueTable;
+};
 
 static void ISP_BH_Workqueue(struct work_struct *pWork);
 
-static IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
+static struct IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
 	{ISP_IRQ_TYPE_INT_CAM_A_ST},
 	{ISP_IRQ_TYPE_INT_CAM_B_ST},
 	{ISP_IRQ_TYPE_INT_DIP_A_ST},
@@ -485,18 +473,18 @@ static IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
 #ifdef CONFIG_OF
 
 /* TODO: Remove, Jessy */
-typedef enum {
+enum ISP_CAM_BASEADDR_ENUM {
 	ISP_BASE_ADDR = 0,
 	ISP_INNER_BASE_ADDR,
 	ISP_IMGSYS_CONFIG_BASE_ADDR,
 	ISP_MIPI_ANA_BASE_ADDR,
 	ISP_GPIO_BASE_ADDR,
 	ISP_CAM_BASEADDR_NUM
-} ISP_CAM_BASEADDR_ENUM;
+};
 
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
 #include <linux/clk.h>
-typedef struct {
+struct ISP_CLK_STRUCT {
 	struct clk *ISP_SCP_SYS_DIS;
 	struct clk *ISP_SCP_SYS_ISP;
 	struct clk *ISP_SCP_SYS_CAM;
@@ -522,8 +510,8 @@ typedef struct {
 	struct clk *ISP_CAM_CAMSV0;
 	struct clk *ISP_CAM_CAMSV1;
 	struct clk *ISP_CAM_CAMSV2;
-} ISP_CLK_STRUCT;
-ISP_CLK_STRUCT isp_clk;
+};
+struct ISP_CLK_STRUCT isp_clk;
 #endif
 
 /* TODO: Remove, Jessy */
@@ -586,22 +574,22 @@ static unsigned int g_TpipeBuffer[(MAX_ISP_TILE_TDR_HEX_NO >> 2)];
 static unsigned int g_VirISPBuffer[(ISP_DIP_REG_SIZE >> 2)];
 static unsigned int g_CmdqBuffer[(MAX_ISP_CMDQ_BUFFER_SIZE >> 2)];
 #endif
-static volatile bool g_bUserBufIsReady = MFALSE;
-static MUINT32 DumpBufferField;
-static volatile bool g_bDumpPhyISPBuf = MFALSE;
-static MUINT32 g_tdriaddr = 0xffffffff;
-static MUINT32 g_cmdqaddr = 0xffffffff;
+static bool g_bUserBufIsReady = MFALSE;
+static unsigned int DumpBufferField;
+static bool g_bDumpPhyISPBuf = MFALSE;
+static unsigned int g_tdriaddr = 0xffffffff;
+static unsigned int g_cmdqaddr = 0xffffffff;
 static struct ISP_GET_DUMP_INFO_STRUCT g_dumpInfo = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static struct ISP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
 static struct ISP_MEM_INFO_STRUCT g_CmdqBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
-static volatile MUINT32 m_CurrentPPB;
+static unsigned int m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source isp_wake_lock;
 #else
 struct wake_lock isp_wake_lock;
 #endif
-static volatile int g_bWaitLock;
+static int g_bWaitLock;
 /*
 * static void __iomem *g_isp_base_dase;
 * static void __iomem *g_isp_inner_base_dase;
@@ -665,7 +653,7 @@ void __iomem *ISP_MMSYS_CONFIG_BASE;
  *  note:
  *  this module support only CAM , CAMSV, and DIP only
  */
-typedef enum {
+enum ISP_HW_MODULE {
 	CAM_A   = 0,
 	CAM_B,
 	/* CAM_C,        //not supported in everest */
@@ -684,17 +672,17 @@ typedef enum {
 	/* DIP_B,            //not supported in everest */
 	DIP_MAX,
 	MAX_ISP_HW_MODULE = DIP_MAX
-} ISP_HW_MODULE;
+};
 
-typedef struct {
-	MUINT32 sec;
-	MUINT32 usec;
-} S_START_T;
+struct S_START_T {
+	unsigned int sec;
+	unsigned int usec;
+};
 
 /* QQ, remove later */
 /* record remain node count(success/fail) excludes head when enque/deque control */
-static volatile MINT32 EDBufQueRemainNodeCnt;
-static volatile MUINT32 g_regScen = 0xa5a5a5a5; /* remove later */
+
+static unsigned int g_regScen = 0xa5a5a5a5; /* remove later */
 
 
 static /*volatile*/ wait_queue_head_t P2WaitQueueHead_WaitDeque;
@@ -704,32 +692,33 @@ static spinlock_t      SpinLock_P2FrameList;
 #define _MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_ 8
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_ (_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
-typedef struct {
-	volatile MINT32 start; /* starting index for frames in the ring list */
-	volatile MINT32 curr; /* current index for running frame in the ring list */
-	volatile MINT32 end; /* ending index for frames in the ring list */
-} ISP_P2_BUFQUE_IDX_STRUCT;
+struct ISP_P2_BUFQUE_IDX_STRUCT {
+	volatile signed int start; /* starting index for frames in the ring list */
+	volatile signed int curr; /* current index for running frame in the ring list */
+	volatile signed int end; /* ending index for frames in the ring list */
+};
 
-typedef struct {
-	volatile MUINT32               processID;  /* caller process ID */
-	volatile MUINT32               callerID;   /* caller thread ID */
-	volatile MUINT32               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
+struct ISP_P2_FRAME_UNIT_STRUCT {
+	volatile unsigned int               processID;  /* caller process ID */
+	volatile unsigned int               callerID;   /* caller thread ID */
+	volatile unsigned int               cqMask; /* QQ. optional -> to judge cq combination(for judging frame) */
 
 	volatile enum ISP_P2_BUF_STATE_ENUM  bufSts;     /* buffer status */
-} ISP_P2_FRAME_UNIT_STRUCT;
+};
 
-static volatile ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile ISP_P2_FRAME_UNIT_STRUCT P2_FrameUnit_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
+static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FrameUnit_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static volatile struct ISP_P2_FRAME_UNIT_STRUCT
+	P2_FrameUnit_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_FRAME_NUM_];
 
-typedef struct {
-	volatile MUINT32                processID;  /* caller process ID */
-	volatile MUINT32                callerID;   /* caller thread ID */
-	volatile MUINT32                dupCQIdx;       /* to judge it belongs to which frame package */
-	volatile MINT32                   frameNum;
-	volatile MINT32                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
-} ISP_P2_FRAME_PACKAGE_STRUCT;
-static volatile ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
-static volatile ISP_P2_FRAME_PACKAGE_STRUCT
+struct ISP_P2_FRAME_PACKAGE_STRUCT {
+	volatile unsigned int                processID;  /* caller process ID */
+	volatile unsigned int                callerID;   /* caller thread ID */
+	volatile unsigned int                dupCQIdx;       /* to judge it belongs to which frame package */
+	volatile signed int                   frameNum;
+	volatile signed int                   dequedNum;  /* number of dequed buffer no matter deque success or fail */
+};
+static volatile struct ISP_P2_BUFQUE_IDX_STRUCT P2_FramePack_List_Idx[ISP_P2_BUFQUE_PROPERTY_NUM];
+static volatile struct ISP_P2_FRAME_PACKAGE_STRUCT
 	P2_FramePackage_List[ISP_P2_BUFQUE_PROPERTY_NUM][_MAX_SUPPORT_P2_PACKAGE_NUM_];
 
 
@@ -744,14 +733,15 @@ static  spinlock_t      SpinLock_UserKey;
 
 
 
-static MINT32 ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, MUINT32 resume);
+static signed int ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, unsigned int resume);
 #if (TIMESTAMP_QUEUE_EN == 1)
-static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats);
+static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats);
 static enum CAM_FrameST Irq_CAM_SttFrameStatus(enum ISP_DEV_NODE_ENUM module, enum ISP_IRQ_TYPE_ENUM irq_mod,
-					MUINT32 dma_id, MUINT32 delayCheck);
-static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod);
-static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pTstp);
-static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id);
+					unsigned int dma_id, unsigned int delayCheck);
+static int32_t ISP_PushBufTimestamp(unsigned int module, unsigned int dma_id,
+	unsigned int sec, unsigned int usec, unsigned int frmPeriod);
+static int32_t ISP_PopBufTimestamp(unsigned int module, unsigned int dma_id, struct S_START_T *pTstp);
+static int32_t ISP_WaitTimestampReady(unsigned int module, unsigned int dma_id);
 #endif
 
 /*******************************************************************************
@@ -765,14 +755,14 @@ static int Tbl_RTBuf_MMPSize[ISP_IRQ_TYPE_AMOUNT];
 /* original pointer for kmalloc'd area as returned by kmalloc */
 static void *pBuf_kmalloc[ISP_IRQ_TYPE_AMOUNT];
 /*  */
-static volatile struct ISP_RT_BUF_STRUCT *pstRTBuf[ISP_IRQ_TYPE_AMOUNT] = {NULL};
+static struct ISP_RT_BUF_STRUCT *pstRTBuf[ISP_IRQ_TYPE_AMOUNT] = {NULL};
 
-/* static ISP_DEQUE_BUF_INFO_STRUCT g_deque_buf = {0,{}};    // Marked to remove build warning. */
+/* static struct ISP_DEQUE_BUF_INFO_STRUCT g_deque_buf = {0,{}};    // Marked to remove build warning. */
 
 unsigned long g_Flash_SpinLock;
 
 
-static volatile unsigned int G_u4EnableClockCount;
+static unsigned int G_u4EnableClockCount;
 
 int pr_detect_count;
 
@@ -783,18 +773,18 @@ int pr_detect_count;
 #define _ion_keep_max_   (64)/*32*/
 #include "ion_drv.h" /*g_ion_device*/
 static struct ion_client *pIon_client;
-static MINT32 G_WRDMA_IonCt[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
-static MINT32 G_WRDMA_IonFd[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
+static signed int G_WRDMA_IonCt[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
+static signed int G_WRDMA_IonFd[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {0} } };
 static struct ion_handle *G_WRDMA_IonHnd[CAM_MAX][_dma_max_wr_][_ion_keep_max_] = { { {NULL} } };
 static spinlock_t SpinLock_IonHnd[CAM_MAX][_dma_max_wr_]; /* protect G_WRDMA_IonHnd & G_WRDMA_IonFd */
 #endif
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
+struct ISP_USER_INFO_STRUCT {
 	pid_t   Pid;
 	pid_t   Tid;
-} ISP_USER_INFO_STRUCT;
+};
 
 /*******************************************************************************
 *
@@ -803,22 +793,22 @@ typedef struct {
 #define ISP_BUF_SIZE_WRITE      1024
 #define ISP_BUF_WRITE_AMOUNT    6
 
-typedef enum {
+enum ISP_BUF_STATUS_ENUM {
 	ISP_BUF_STATUS_EMPTY,
 	ISP_BUF_STATUS_HOLD,
 	ISP_BUF_STATUS_READY
-} ISP_BUF_STATUS_ENUM;
+};
 
-typedef struct {
-	volatile ISP_BUF_STATUS_ENUM Status;
-	volatile MUINT32                Size;
-	MUINT8 *pData;
-} ISP_BUF_STRUCT;
+struct ISP_BUF_STRUCT {
+	enum ISP_BUF_STATUS_ENUM Status;
+	unsigned int                Size;
+	unsigned char *pData;
+};
 
-typedef struct {
-	ISP_BUF_STRUCT      Read;
-	ISP_BUF_STRUCT      Write[ISP_BUF_WRITE_AMOUNT];
-} ISP_BUF_INFO_STRUCT;
+struct ISP_BUF_INFO_STRUCT {
+	struct ISP_BUF_STRUCT      Read;
+	struct ISP_BUF_STRUCT      Write[ISP_BUF_WRITE_AMOUNT];
+};
 
 
 /*******************************************************************************
@@ -828,78 +818,78 @@ typedef struct {
 #define INT_ERR_WARN_TIMER_THREAS 1000
 #define INT_ERR_WARN_MAX_TIME 1
 
-typedef struct {
-	MUINT32 m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
-	MUINT32 m_warn_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each warning int # */
-	MUINT32 m_err_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
-	MUINT32 m_warn_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
+struct ISP_IRQ_ERR_WAN_CNT_STRUCT {
+	unsigned int m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
+	unsigned int m_warn_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each warning int # */
+	unsigned int m_err_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
+	unsigned int m_warn_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
 	unsigned long m_int_usec[ISP_IRQ_TYPE_AMOUNT];
-} ISP_IRQ_ERR_WAN_CNT_STRUCT;
+};
 
-static volatile MINT32 FirstUnusedIrqUserKey = 1;
+static signed int FirstUnusedIrqUserKey = 1;
 #define USERKEY_STR_LEN 128
 
-typedef struct {
+struct UserKeyInfo {
 	char userName[USERKEY_STR_LEN]; /* name for the user that register a userKey */
 	int userKey;    /* the user key for that user */
-} UserKeyInfo;
+};
 /* array for recording the user name for a specific user key */
-static volatile UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
+static struct UserKeyInfo IrqUserKey_UserInfo[IRQ_USER_NUM_MAX];
 
-typedef struct {
+struct ISP_IRQ_INFO_STRUCT {
 	/* Add an extra index for status type in Everest -> signal or dma */
-	volatile MUINT32    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
-	MUINT32             Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
-	MUINT32             ErrMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
-	UINT32              WarnMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	unsigned int    Status[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int             Mask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	unsigned int             ErrMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
+	unsigned int              WarnMask[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT];
 	/* flag for indicating that user do mark for a interrupt or not */
-	volatile MUINT32    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedFlag[ISP_IRQ_TYPE_AMOUNT][ISP_IRQ_ST_AMOUNT][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile MUINT32    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedTime_sec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* time for marking a specific interrupt */
-	volatile MUINT32    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	unsigned int    MarkedTime_usec[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* number of a specific signal that passed by */
-	volatile MINT32     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
+	signed int     PassedBySigCnt[ISP_IRQ_TYPE_AMOUNT][32][IRQ_USER_NUM_MAX];
 	/* */
-	volatile MUINT32    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
+	unsigned int    LastestSigTime_sec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
-	volatile MUINT32    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
+	unsigned int    LastestSigTime_usec[ISP_IRQ_TYPE_AMOUNT][32];
 	/* latest time for each interrupt */
-} ISP_IRQ_INFO_STRUCT;
+};
 
-typedef struct {
-	MUINT32     Vd;
-	MUINT32     Expdone;
-	MUINT32     WorkQueueVd;
-	MUINT32     WorkQueueExpdone;
-	MUINT32     TaskletVd;
-	MUINT32     TaskletExpdone;
-} ISP_TIME_LOG_STRUCT;
+struct ISP_TIME_LOG_STRUCT {
+	unsigned int     Vd;
+	unsigned int     Expdone;
+	unsigned int     WorkQueueVd;
+	unsigned int     WorkQueueExpdone;
+	unsigned int     TaskletVd;
+	unsigned int     TaskletExpdone;
+};
 
 #if (TIMESTAMP_QUEUE_EN == 1)
 #define ISP_TIMESTPQ_DEPTH      (256)
-typedef struct {
+struct ISP_TIMESTPQ_INFO_STRUCT {
 	struct {
-		S_START_T   TimeQue[ISP_TIMESTPQ_DEPTH];
-		MUINT32     WrIndex; /* increase when p1done or dmao done */
-		MUINT32     RdIndex; /* increase when user deque */
-		volatile unsigned long long  TotalWrCnt;
-		volatile unsigned long long  TotalRdCnt;
-		/* TSTP_V3 MUINT32	    PrevFbcDropCnt; */
-		MUINT32     PrevFbcWCnt;
+		struct S_START_T   TimeQue[ISP_TIMESTPQ_DEPTH];
+		unsigned int     WrIndex; /* increase when p1done or dmao done */
+		unsigned int     RdIndex; /* increase when user deque */
+		unsigned long long  TotalWrCnt;
+		unsigned long long  TotalRdCnt;
+		/* TSTP_V3 unsigned int	    PrevFbcDropCnt; */
+		unsigned int     PrevFbcWCnt;
 	} Dmao[_cam_max_];
-	MUINT32  DmaEnStatus[_cam_max_];
-} ISP_TIMESTPQ_INFO_STRUCT;
+	unsigned int  DmaEnStatus[_cam_max_];
+};
 #endif
 
-typedef enum _eChannel {
+enum eChannel {
 	_PASS1      = 0,
 	_PASS1_D    = 1,
 	_CAMSV      = 2,
 	_CAMSV_D    = 3,
 	_PASS2      = 4,
 	_ChannelMax = 5,
-} eChannel;
+};
 
 
 
@@ -922,13 +912,13 @@ typedef enum _eChannel {
 #define nDMA_ERR    (nDMA_ERR_CAM + nDMA_ERR_UNI)
 
 
-static volatile UINT32 g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile MUINT32 g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
+static unsigned int g_ISPIntErr[ISP_IRQ_TYPE_AMOUNT] = {0};
+static unsigned int g_DmaErr_CAM[ISP_IRQ_TYPE_AMOUNT][_cam_max_] = {{0} };
 
 
 
 #define SUPPORT_MAX_IRQ 32
-typedef struct {
+struct ISP_INFO_STRUCT {
 	spinlock_t                      SpinLockIspRef;
 	spinlock_t                      SpinLockIsp;
 	spinlock_t                      SpinLockIrq[ISP_IRQ_TYPE_AMOUNT];
@@ -937,39 +927,39 @@ typedef struct {
 	spinlock_t                      SpinLockClock;
 	wait_queue_head_t               WaitQueueHead[ISP_IRQ_TYPE_AMOUNT];
 	/* wait_queue_head_t*              WaitQHeadList; */
-	volatile wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
-	MUINT32                         UserCount;
-	MUINT32                         DebugMask;
-	MINT32							IrqNum;
-	ISP_IRQ_INFO_STRUCT			IrqInfo;
-	ISP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
-	ISP_BUF_INFO_STRUCT			BufInfo;
-	ISP_TIME_LOG_STRUCT             TimeLog;
+	wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
+	unsigned int                         UserCount;
+	unsigned int                         DebugMask;
+	signed int							IrqNum;
+	struct ISP_IRQ_INFO_STRUCT			IrqInfo;
+	struct ISP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
+	struct ISP_BUF_INFO_STRUCT			BufInfo;
+	struct ISP_TIME_LOG_STRUCT             TimeLog;
 	#if (TIMESTAMP_QUEUE_EN == 1)
-	ISP_TIMESTPQ_INFO_STRUCT        TstpQInfo[ISP_IRQ_TYPE_AMOUNT];
+	struct ISP_TIMESTPQ_INFO_STRUCT        TstpQInfo[ISP_IRQ_TYPE_AMOUNT];
 	#endif
-} ISP_INFO_STRUCT;
+};
 
 
 
-static ISP_INFO_STRUCT IspInfo;
-static MBOOL    SuspnedRecord[ISP_DEV_NODE_NUM] = {0};
+static struct ISP_INFO_STRUCT IspInfo;
+static bool    SuspnedRecord[ISP_DEV_NODE_NUM] = {0};
 
-typedef enum _eLOG_TYPE {
+enum eLOG_TYPE {
 	_LOG_DBG = 0,   /* currently, only used at ipl_buf_ctrl. to protect critical section */
 	_LOG_INF = 1,
 	_LOG_ERR = 2,
 	_LOG_MAX = 3,
-} eLOG_TYPE;
+};
 
-typedef enum _eLOG_OP {
+enum eLOG_OP {
 	_LOG_INIT = 0,
 	_LOG_RST = 1,
 	_LOG_ADD = 2,
 	_LOG_PRT = 3,
 	_LOG_GETCNT = 4,
 	_LOG_OP_MAX = 5
-} eLOG_OP;
+};
 
 #define NORMAL_STR_LEN (512)
 #define ERR_PAGE 2
@@ -978,15 +968,15 @@ typedef enum _eLOG_OP {
 /* #define SV_LOG_STR_LEN NORMAL_STR_LEN */
 
 #define LOG_PPNUM 2
-typedef struct _SV_LOG_STR {
-	MUINT32 _cnt[LOG_PPNUM][_LOG_MAX];
+struct SV_LOG_STR {
+	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
-	S_START_T   _lastIrqTime;
-} SV_LOG_STR, *PSV_LOG_STR;
+	struct S_START_T   _lastIrqTime;
+};
 
 static void *pLog_kmalloc;
-static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
+static struct SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 
 /**
  *   for irq used,keep log until IRQ_LOG_PRINTER being involked,
@@ -1005,11 +995,11 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
-	MINT32 avaLen;\
-	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	signed int avaLen;\
+	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
-	MUINT32 i;\
-	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	unsigned int i;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
@@ -1089,11 +1079,11 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 
 #if 1
 #define IRQ_LOG_PRINTER(irq, ppb_in, logT_in) do {\
-		SV_LOG_STR *pSrc = &gSvLog[irq];\
+		struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 		char *ptr;\
-		MUINT32 i;\
-		MINT32 ppb = 0;\
-		MINT32 logT = 0;\
+		unsigned int i;\
+		signed int ppb = 0;\
+		signed int logT = 0;\
 		if (ppb_in > 1) {\
 			ppb = 1;\
 		} else{\
@@ -1153,8 +1143,8 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 #endif
 
 /* //////////////////////////////////////////////////// */
-typedef volatile union _FBC_CTRL_1_ {
-	volatile struct { /* 0x1A004110 */
+union FBC_CTRL_1 {
+	struct { /* 0x1A004110 */
 		unsigned int  FBC_NUM                               :  6;      /*  0.. 5, 0x0000003F */
 		unsigned int  rsv_6                                 :  9;      /*  6..14, 0x00007FC0 */
 		unsigned int  FBC_EN                                :  1;      /* 15..15, 0x00008000 */
@@ -1165,11 +1155,11 @@ typedef volatile union _FBC_CTRL_1_ {
 		unsigned int  rsv_21                                :  3;      /* 21..23, 0x00E00000 */
 		unsigned int  SUB_RATIO                             :  8;      /* 24..31, 0xFF000000 */
 	} Bits;
-	UINT32 Raw;
-} FBC_CTRL_1;  /* CAM_A_FBC_IMGO_CTL1 */
+	unsigned int Raw;
+};  /* CAM_A_FBC_IMGO_CTL1 */
 
-typedef volatile union _FBC_CTRL_2_ {
-	volatile struct { /* 0x1A004114 */
+union FBC_CTRL_2 {
+	struct { /* 0x1A004114 */
 		unsigned int  FBC_CNT                               :  7;      /*  0.. 6, 0x0000007F */
 		unsigned int  rsv_7                                 :  1;      /*  7.. 7, 0x00000080 */
 		unsigned int  RCNT                                  :  6;      /*  8..13, 0x00003F00 */
@@ -1178,8 +1168,8 @@ typedef volatile union _FBC_CTRL_2_ {
 		unsigned int  rsv_22                                :  2;      /* 22..23, 0x00C00000 */
 		unsigned int  DROP_CNT                              :  8;      /* 24..31, 0xFF000000 */
 	} Bits;
-	UINT32 Raw;
-} FBC_CTRL_2;  /* CAM_A_FBC_IMGO_CTL2 */
+	unsigned int Raw;
+};  /* CAM_A_FBC_IMGO_CTL2 */
 
 
 #ifdef ISP_Recovery
@@ -1190,1169 +1180,1169 @@ typedef volatile union _FBC_CTRL_2_ {
 
 
 /* extern void mt_irq_dump_status(int irq); */
-static volatile MINT32 bResumeSignal;
+static signed int bResumeSignal;
 
-typedef struct _isp_backup_reg {
-	UINT32               CAM_CTL_START;                  /* 4000 */
-	UINT32               CAM_CTL_EN_P1;                  /* 4004 */
-	UINT32           CAM_CTL_EN_P1_DMA;                  /* 4008 */
-	UINT32                    rsv_400C;                  /* 400C */
-	UINT32             CAM_CTL_EN_P1_D;                  /* 4010 */
-	UINT32         CAM_CTL_EN_P1_DMA_D;                  /* 4014 */
-	UINT32               CAM_CTL_EN_P2;                  /* 4018 */
-	UINT32           CAM_CTL_EN_P2_DMA;                  /* 401C */
-	UINT32               CAM_CTL_CQ_EN;                  /* 4020 */
-	UINT32            CAM_CTL_SCENARIO;                  /* 4024 */
-	UINT32          CAM_CTL_FMT_SEL_P1;                  /* 4028 */
-	UINT32        CAM_CTL_FMT_SEL_P1_D;                  /* 402C */
-	UINT32          CAM_CTL_FMT_SEL_P2;                  /* 4030 */
-	UINT32              CAM_CTL_SEL_P1;                  /* 4034 */
-	UINT32            CAM_CTL_SEL_P1_D;                  /* 4038 */
-	UINT32              CAM_CTL_SEL_P2;                  /* 403C */
-	UINT32          CAM_CTL_SEL_GLOBAL;                  /* 4040 */
-	UINT32                    rsv_4044;                  /* 4044 */
-	UINT32           CAM_CTL_INT_P1_EN;                  /* 4048 */
-	UINT32       CAM_CTL_INT_P1_STATUS;                  /* 404C */
-	UINT32          CAM_CTL_INT_P1_EN2;                  /* 4050 */
-	UINT32      CAM_CTL_INT_P1_STATUS2;                  /* 4054 */
-	UINT32         CAM_CTL_INT_P1_EN_D;                  /* 4058 */
-	UINT32     CAM_CTL_INT_P1_STATUS_D;                  /* 405C */
-	UINT32        CAM_CTL_INT_P1_EN2_D;                  /* 4060 */
-	UINT32    CAM_CTL_INT_P1_STATUS2_D;                  /* 4064 */
-	UINT32           CAM_CTL_INT_P2_EN;                  /* 4068 */
-	UINT32       CAM_CTL_INT_P2_STATUS;                  /* 406C */
-	UINT32         CAM_CTL_INT_STATUSX;                  /* 4070 */
-	UINT32        CAM_CTL_INT_STATUS2X;                  /* 4074 */
-	UINT32        CAM_CTL_INT_STATUS3X;                  /* 4078 */
-	UINT32                CAM_CTL_TILE;                  /* 407C */
-	UINT32       CAM_CTL_TDR_EN_STATUS;                  /* 4080 */
-	UINT32              CAM_CTL_TCM_EN;                  /* 4084 */
-	UINT32      CAM_CTL_TDR_DBG_STATUS;                  /* 4088 */
-	UINT32              CAM_CTL_SW_CTL;                  /* 408C */
-	UINT32              CAM_CTL_SPARE0;                  /* 4090 */
-	UINT32               CAM_RRZ_OUT_W;                 /* 4094 */
-	UINT32                    rsv_4098;                 /* 4098 */
-	UINT32              CAM_RRZ_OUT_W_D;                /* 409C */
-	UINT32        CAM_CTL_CQ1_BASEADDR;                 /* 40A0 */
-	UINT32        CAM_CTL_CQ2_BASEADDR;                 /* 40A4 */
-	UINT32        CAM_CTL_CQ3_BASEADDR;                 /* 40A8 */
-	UINT32        CAM_CTL_CQ0_BASEADDR;                 /* 40AC */
-	UINT32       CAM_CTL_CQ0B_BASEADDR;                 /* 40B0 */
-	UINT32       CAM_CTL_CQ0C_BASEADDR;                 /* 40B4 */
-	UINT32    CAM_CTL_CUR_CQ0_BASEADDR;                 /* 40B8 */
-	UINT32   CAM_CTL_CUR_CQ0B_BASEADDR;                 /* 40BC */
-	UINT32   CAM_CTL_CUR_CQ0C_BASEADDR;                 /* 40C0 */
-	UINT32      CAM_CTL_CQ0_D_BASEADDR;                 /* 40C4 */
-	UINT32     CAM_CTL_CQ0B_D_BASEADDR;                 /* 40C8 */
-	UINT32     CAM_CTL_CQ0C_D_BASEADDR;                 /* 40CC */
-	UINT32  CAM_CTL_CUR_CQ0_D_BASEADDR;                 /* 40D0 */
-	UINT32 CAM_CTL_CUR_CQ0B_D_BASEADDR;                 /* 40D4 */
-	UINT32 CAM_CTL_CUR_CQ0C_D_BASEADDR;                 /* 40D8 */
-	UINT32           CAM_CTL_DB_LOAD_D;                 /* 40DC */
-	UINT32             CAM_CTL_DB_LOAD;                 /* 40E0 */
-	UINT32         CAM_CTL_P1_DONE_BYP;                 /* 40E4 */
-	UINT32       CAM_CTL_P1_DONE_BYP_D;                 /* 40E8 */
-	UINT32         CAM_CTL_P2_DONE_BYP;                 /* 40EC */
-	UINT32            CAM_CTL_IMGO_FBC;                 /* 40F0 */
-	UINT32            CAM_CTL_RRZO_FBC;                 /* 40F4 */
-	UINT32          CAM_CTL_IMGO_D_FBC;                 /* 40F8 */
-	UINT32          CAM_CTL_RRZO_D_FBC;                 /* 40FC */
-
-
-
-	UINT32                CAM_CTL_IHDR;                 /* 4104 */
-	UINT32              CAM_CTL_IHDR_D;                 /* 4108 */
-	UINT32            CAM_CTL_CQ_EN_P2;                 /* 410C */
-
-	UINT32              CAM_CTL_CLK_EN;                 /* 4170 */
-	UINT32             CAM_TG_SEN_MODE;                 /* 4410 */
-	UINT32               CAM_TG_VF_CON;                 /* 4414 */
-	UINT32         CAM_TG_SEN_GRAB_PXL;                 /* 4418 */
-	UINT32         CAM_TG_SEN_GRAB_LIN;                 /* 441C */
-	UINT32             CAM_TG_PATH_CFG;                 /* 4420 */
-	UINT32            CAM_TG_MEMIN_CTL;                 /* 4424 */
-
-
-	UINT32              CAM_OBC_OFFST0;                 /* 4500 */
-	UINT32              CAM_OBC_OFFST1;                 /* 4504 */
-	UINT32              CAM_OBC_OFFST2;                 /* 4508 */
-	UINT32              CAM_OBC_OFFST3;                 /* 450C */
-	UINT32               CAM_OBC_GAIN0;                 /* 4510 */
-	UINT32               CAM_OBC_GAIN1;                 /* 4514 */
-	UINT32               CAM_OBC_GAIN2;                 /* 4518 */
-	UINT32               CAM_OBC_GAIN3;                 /* 451C */
-	UINT32                 rsv_4520[4];                 /* 4520...452C */
-	UINT32                CAM_LSC_CTL1;                 /* 4530 */
-	UINT32                CAM_LSC_CTL2;                 /* 4534 */
-	UINT32                CAM_LSC_CTL3;                 /* 4538 */
-	UINT32              CAM_LSC_LBLOCK;                 /* 453C */
-	UINT32               CAM_LSC_RATIO;                 /* 4540 */
-	UINT32          CAM_LSC_TPIPE_OFST;                 /* 4544 */
-	UINT32          CAM_LSC_TPIPE_SIZE;                 /* 4548 */
-	UINT32             CAM_LSC_GAIN_TH;                 /* 454C */
-	UINT32              CAM_RPG_SATU_1;                 /* 4550 */
-	UINT32              CAM_RPG_SATU_2;                 /* 4554 */
-	UINT32              CAM_RPG_GAIN_1;                 /* 4558 */
-	UINT32              CAM_RPG_GAIN_2;                 /* 455C */
-	UINT32              CAM_RPG_OFST_1;                 /* 4560 */
-	UINT32              CAM_RPG_OFST_2;                 /* 4564 */
-	UINT32                rsv_4568[6];                  /* 4568...457C */
-	UINT32                CAM_SGG2_PGN;                 /* 4580 */
-	UINT32             CAM_SGG2_GMRC_1;                 /* 4584 */
-	UINT32             CAM_SGG2_GMRC_2;                 /* 4588 */
-	UINT32                 rsv_458C[9];                 /* 458C...45AC */
-	UINT32             CAM_AWB_WIN_ORG;                 /* 45B0 */
-	UINT32            CAM_AWB_WIN_SIZE;                 /* 45B4 */
-	UINT32             CAM_AWB_WIN_PIT;                 /* 45B8 */
-	UINT32             CAM_AWB_WIN_NUM;                 /* 45BC */
-	UINT32             CAM_AWB_GAIN1_0;                 /* 45C0 */
-	UINT32             CAM_AWB_GAIN1_1;                 /* 45C4 */
-	UINT32              CAM_AWB_LMT1_0;                 /* 45C8 */
-	UINT32              CAM_AWB_LMT1_1;                 /* 45CC */
-	UINT32             CAM_AWB_LOW_THR;                 /* 45D0 */
-	UINT32              CAM_AWB_HI_THR;                 /* 45D4 */
-	UINT32          CAM_AWB_PIXEL_CNT0;                 /* 45D8 */
-	UINT32          CAM_AWB_PIXEL_CNT1;                 /* 45DC */
-	UINT32          CAM_AWB_PIXEL_CNT2;                 /* 45E0 */
-	UINT32             CAM_AWB_ERR_THR;                 /* 45E4 */
-	UINT32                 CAM_AWB_ROT;                 /* 45E8 */
-	UINT32                CAM_AWB_L0_X;                 /* 45EC */
-	UINT32                CAM_AWB_L0_Y;                 /* 45F0 */
-	UINT32                CAM_AWB_L1_X;                 /* 45F4 */
-	UINT32                CAM_AWB_L1_Y;                 /* 45F8 */
-	UINT32                CAM_AWB_L2_X;                 /* 45FC */
-	UINT32                CAM_AWB_L2_Y;                 /* 4600 */
-	UINT32                CAM_AWB_L3_X;                 /* 4604 */
-	UINT32                CAM_AWB_L3_Y;                 /* 4608 */
-	UINT32                CAM_AWB_L4_X;                 /* 460C */
-	UINT32                CAM_AWB_L4_Y;                 /* 4610 */
-	UINT32                CAM_AWB_L5_X;                 /* 4614 */
-	UINT32                CAM_AWB_L5_Y;                 /* 4618 */
-	UINT32                CAM_AWB_L6_X;                 /* 461C */
-	UINT32                CAM_AWB_L6_Y;                 /* 4620 */
-	UINT32                CAM_AWB_L7_X;                 /* 4624 */
-	UINT32                CAM_AWB_L7_Y;                 /* 4628 */
-	UINT32                CAM_AWB_L8_X;                 /* 462C */
-	UINT32                CAM_AWB_L8_Y;                 /* 4630 */
-	UINT32                CAM_AWB_L9_X;                 /* 4634 */
-	UINT32                CAM_AWB_L9_Y;                 /* 4638 */
-	UINT32               CAM_AWB_SPARE;                 /* 463C */
-	UINT32                 rsv_4640[4];                 /* 4640...464C */
-	UINT32              CAM_AE_HST_CTL;                 /* 4650 */
-	UINT32              CAM_AE_GAIN2_0;                 /* 4654 */
-	UINT32              CAM_AE_GAIN2_1;                 /* 4658 */
-	UINT32               CAM_AE_LMT2_0;                 /* 465C */
-	UINT32               CAM_AE_LMT2_1;                 /* 4660 */
-	UINT32             CAM_AE_RC_CNV_0;                 /* 4664 */
-	UINT32             CAM_AE_RC_CNV_1;                 /* 4668 */
-	UINT32             CAM_AE_RC_CNV_2;                 /* 466C */
-	UINT32             CAM_AE_RC_CNV_3;                 /* 4670 */
-	UINT32             CAM_AE_RC_CNV_4;                 /* 4674 */
-	UINT32             CAM_AE_YGAMMA_0;                 /* 4678 */
-	UINT32             CAM_AE_YGAMMA_1;                 /* 467C */
-	UINT32              CAM_AE_HST_SET;                 /* 4680 */
-	UINT32             CAM_AE_HST0_RNG;                 /* 4684 */
-	UINT32             CAM_AE_HST1_RNG;                 /* 4688 */
-	UINT32             CAM_AE_HST2_RNG;                 /* 468C */
-	UINT32             CAM_AE_HST3_RNG;                 /* 4690 */
-	UINT32                CAM_AE_SPARE;                 /* 4694 */
-	UINT32                 rsv_4698[2];                 /* 4698...469C */
-	UINT32                CAM_SGG1_PGN;                 /* 46A0 */
-	UINT32             CAM_SGG1_GMRC_1;                 /* 46A4 */
-	UINT32             CAM_SGG1_GMRC_2;                 /* 46A8 */
-	UINT32                    rsv_46AC;                 /* 46AC */
-	UINT32                  CAM_AF_CON;                 /* 46B0 */
-	UINT32               CAM_AF_WINX_1;                 /* 46B4 */
-	UINT32               CAM_AF_WINX_2;                 /* 46B8 */
-	UINT32               CAM_AF_WINX_3;                 /* 46BC */
-	UINT32               CAM_AF_WINY_1;                 /* 46C0 */
-	UINT32               CAM_AF_WINY_2;                 /* 46C4 */
-	UINT32               CAM_AF_WINY_3;                 /* 46C8 */
-	UINT32                 CAM_AF_SIZE;                 /* 46CC */
-	UINT32                    rsv_46D0;                 /* 46D0 */
-	UINT32                CAM_AF_FLT_1;                 /* 46D4 */
-	UINT32                CAM_AF_FLT_2;                 /* 46D8 */
-	UINT32                CAM_AF_FLT_3;                 /* 46DC */
-	UINT32                   CAM_AF_TH;                 /* 46E0 */
-	UINT32            CAM_AF_FLO_WIN_1;                 /* 46E4 */
-	UINT32           CAM_AF_FLO_SIZE_1;                 /* 46E8 */
-	UINT32            CAM_AF_FLO_WIN_2;                 /* 46EC */
-	UINT32           CAM_AF_FLO_SIZE_2;                 /* 46F0 */
-	UINT32            CAM_AF_FLO_WIN_3;                 /* 46F4 */
-	UINT32           CAM_AF_FLO_SIZE_3;                 /* 46F8 */
-	UINT32               CAM_AF_FLO_TH;                 /* 46FC */
-	UINT32           CAM_AF_IMAGE_SIZE;                 /* 4700 */
-	UINT32                CAM_AF_FLT_4;                 /* 4704 */
-	UINT32                CAM_AF_FLT_5;                 /* 4708 */
-	UINT32               CAM_AF_STAT_L;                 /* 470C */
-	UINT32               CAM_AF_STAT_M;                 /* 4710 */
-	UINT32          CAM_AF_FLO_STAT_1L;                 /* 4714 */
-	UINT32          CAM_AF_FLO_STAT_1M;                 /* 4718 */
-	UINT32          CAM_AF_FLO_STAT_1V;                 /* 471C */
-	UINT32          CAM_AF_FLO_STAT_2L;                 /* 4720 */
-	UINT32          CAM_AF_FLO_STAT_2M;                 /* 4724 */
-	UINT32          CAM_AF_FLO_STAT_2V;                 /* 4728 */
-	UINT32          CAM_AF_FLO_STAT_3L;                 /* 472C */
-	UINT32          CAM_AF_FLO_STAT_3M;                 /* 4730 */
-	UINT32          CAM_AF_FLO_STAT_3V;                 /* 4734 */
-	UINT32                rsv_4738[10];                 /* 4738...475C */
-	UINT32                CAM_WBN_SIZE;                 /* 4760 */
-	UINT32                CAM_WBN_MODE;                 /* 4764 */
-	UINT32                 rsv_4768[2];                 /* 4768...476C */
-	UINT32                 CAM_FLK_CON;                 /* 4770 */
-	UINT32                CAM_FLK_OFST;                 /* 4774 */
-	UINT32                CAM_FLK_SIZE;                 /* 4778 */
-	UINT32                 CAM_FLK_NUM;                 /* 477C */
-	UINT32                 CAM_LCS_CON;                 /* 4780 */
-	UINT32                  CAM_LCS_ST;                 /* 4784 */
-	UINT32                 CAM_LCS_AWS;                 /* 4788 */
-	UINT32                 CAM_LCS_FLR;                 /* 478C */
-	UINT32              CAM_LCS_LRZR_1;                 /* 4790 */
-	UINT32              CAM_LCS_LRZR_2;                 /* 4794 */
-	UINT32                 rsv_4798[2];                 /* 4798...479C */
-	UINT32                 CAM_RRZ_CTL;                 /* 47A0 */
-	UINT32              CAM_RRZ_IN_IMG;                 /* 47A4 */
-	UINT32             CAM_RRZ_OUT_IMG;                 /* 47A8 */
-	UINT32           CAM_RRZ_HORI_STEP;                 /* 47AC */
-	UINT32           CAM_RRZ_VERT_STEP;                 /* 47B0 */
-	UINT32       CAM_RRZ_HORI_INT_OFST;                 /* 47B4 */
-	UINT32       CAM_RRZ_HORI_SUB_OFST;                 /* 47B8 */
-	UINT32       CAM_RRZ_VERT_INT_OFST;                 /* 47BC */
-	UINT32       CAM_RRZ_VERT_SUB_OFST;                 /* 47C0 */
-	UINT32             CAM_RRZ_MODE_TH;                 /* 47C4 */
-	UINT32            CAM_RRZ_MODE_CTL;                 /* 47C8 */
-	UINT32                rsv_47CC[13];                 /* 47CC...47FC */
-	UINT32                 CAM_BPC_CON;                 /* 4800 */
-	UINT32                 CAM_BPC_TH1;                 /* 4804 */
-	UINT32                 CAM_BPC_TH2;                 /* 4808 */
-	UINT32                 CAM_BPC_TH3;                 /* 480C */
-	UINT32                 CAM_BPC_TH4;                 /* 4810 */
-	UINT32                 CAM_BPC_DTC;                 /* 4814 */
-	UINT32                 CAM_BPC_COR;                 /* 4818 */
-	UINT32               CAM_BPC_TBLI1;                 /* 481C */
-	UINT32               CAM_BPC_TBLI2;                 /* 4820 */
-	UINT32               CAM_BPC_TH1_C;                 /* 4824 */
-	UINT32               CAM_BPC_TH2_C;                 /* 4828 */
-	UINT32               CAM_BPC_TH3_C;                 /* 482C */
-	UINT32                CAM_BPC_RMM1;                 /* 4830 */
-	UINT32                CAM_BPC_RMM2;                 /* 4834 */
-	UINT32          CAM_BPC_RMM_REVG_1;                 /* 4838 */
-	UINT32          CAM_BPC_RMM_REVG_2;                 /* 483C */
-	UINT32            CAM_BPC_RMM_LEOS;                 /* 4840 */
-	UINT32            CAM_BPC_RMM_GCNT;                 /* 4844 */
-	UINT32                 rsv_4848[2];                 /* 4848...484C */
-	UINT32                 CAM_NR1_CON;                 /* 4850 */
-	UINT32              CAM_NR1_CT_CON;                 /* 4854 */
-	UINT32                CAM_BNR_RSV1;                 /* 4858 */
-	UINT32                CAM_BNR_RSV2;                 /* 485C */
-	UINT32                 rsv_4860[8];                 /* 4860...487C */
-	UINT32              CAM_PGN_SATU_1;                 /* 4880 */
-	UINT32              CAM_PGN_SATU_2;                 /* 4884 */
-	UINT32              CAM_PGN_GAIN_1;                 /* 4888 */
-	UINT32              CAM_PGN_GAIN_2;                 /* 488C */
-	UINT32              CAM_PGN_OFST_1;                 /* 4890 */
-	UINT32              CAM_PGN_OFST_2;                 /* 4894 */
-	UINT32                 rsv_4898[2];                 /* 4898...489C */
-	UINT32                CAM_DM_O_BYP;                 /* 48A0 */
-	UINT32            CAM_DM_O_ED_FLAT;                 /* 48A4 */
-	UINT32             CAM_DM_O_ED_NYQ;                 /* 48A8 */
-	UINT32            CAM_DM_O_ED_STEP;                 /* 48AC */
-	UINT32             CAM_DM_O_RGB_HF;                 /* 48B0 */
-	UINT32                CAM_DM_O_DOT;                 /* 48B4 */
-	UINT32             CAM_DM_O_F1_ACT;                 /* 48B8 */
-	UINT32             CAM_DM_O_F2_ACT;                 /* 48BC */
-	UINT32             CAM_DM_O_F3_ACT;                 /* 48C0 */
-	UINT32             CAM_DM_O_F4_ACT;                 /* 48C4 */
-	UINT32               CAM_DM_O_F1_L;                 /* 48C8 */
-	UINT32               CAM_DM_O_F2_L;                 /* 48CC */
-	UINT32               CAM_DM_O_F3_L;                 /* 48D0 */
-	UINT32               CAM_DM_O_F4_L;                 /* 48D4 */
-	UINT32              CAM_DM_O_HF_RB;                 /* 48D8 */
-	UINT32            CAM_DM_O_HF_GAIN;                 /* 48DC */
-	UINT32            CAM_DM_O_HF_COMP;                 /* 48E0 */
-	UINT32        CAM_DM_O_HF_CORIN_TH;                 /* 48E4 */
-	UINT32            CAM_DM_O_ACT_LUT;                 /* 48E8 */
-	UINT32                    rsv_48EC;                 /* 48EC */
-	UINT32              CAM_DM_O_SPARE;                 /* 48F0 */
-	UINT32                 CAM_DM_O_BB;                 /* 48F4 */
-	UINT32                 rsv_48F8[6];                 /* 48F8...490C */
-	UINT32                 CAM_CCL_GTC;                 /* 4910 */
-	UINT32                 CAM_CCL_ADC;                 /* 4914 */
-	UINT32                 CAM_CCL_BAC;                 /* 4918 */
-	UINT32                    rsv_491C;                 /* 491C */
-	UINT32               CAM_G2G_CNV_1;                 /* 4920 */
-	UINT32               CAM_G2G_CNV_2;                 /* 4924 */
-	UINT32               CAM_G2G_CNV_3;                 /* 4928 */
-	UINT32               CAM_G2G_CNV_4;                 /* 492C */
-	UINT32               CAM_G2G_CNV_5;                 /* 4930 */
-	UINT32               CAM_G2G_CNV_6;                 /* 4934 */
-	UINT32                CAM_G2G_CTRL;                 /* 4938 */
-	UINT32                 rsv_493C[3];                 /* 493C...4944 */
-	UINT32                CAM_UNP_OFST;                 /* 4948 */
-	UINT32                    rsv_494C;                 /* 494C */
-	UINT32                 CAM_C02_CON;                 /* 4950 */
-	UINT32           CAM_C02_CROP_CON1;                 /* 4954 */
-	UINT32           CAM_C02_CROP_CON2;                 /* 4958 */
-	UINT32                   rsv_495C;                  /* 495C */
-	UINT32                 CAM_MFB_CON;                 /* 4960 */
-	UINT32             CAM_MFB_LL_CON1;                 /* 4964 */
-	UINT32             CAM_MFB_LL_CON2;                 /* 4968 */
-	UINT32             CAM_MFB_LL_CON3;                 /* 496C */
-	UINT32             CAM_MFB_LL_CON4;                 /* 4970 */
-	UINT32             CAM_MFB_LL_CON5;                 /* 4974 */
-	UINT32             CAM_MFB_LL_CON6;                 /* 4978 */
-	UINT32                rsv_497C[17];                 /* 497C...49BC */
-	UINT32                 CAM_LCE_CON;                 /* 49C0 */
-	UINT32                  CAM_LCE_ZR;                 /* 49C4 */
-	UINT32                 CAM_LCE_QUA;                 /* 49C8 */
-	UINT32               CAM_LCE_DGC_1;                 /* 49CC */
-	UINT32               CAM_LCE_DGC_2;                 /* 49D0 */
-	UINT32                  CAM_LCE_GM;                 /* 49D4 */
-	UINT32                 rsv_49D8[2];                 /* 49D8...49DC */
-	UINT32              CAM_LCE_SLM_LB;                 /* 49E0 */
-	UINT32            CAM_LCE_SLM_SIZE;                 /* 49E4 */
-	UINT32                CAM_LCE_OFST;                 /* 49E8 */
-	UINT32                CAM_LCE_BIAS;                 /* 49EC */
-	UINT32          CAM_LCE_IMAGE_SIZE;                 /* 49F0 */
-	UINT32                 rsv_49F4[3];                 /* 49F4...4A18 */
-	UINT32              CAM_CPG_SATU_1;                 /* 4A00 */
-	UINT32              CAM_CPG_SATU_2;                 /* 4A04 */
-	UINT32              CAM_CPG_GAIN_1;                 /* 4A08 */
-	UINT32              CAM_CPG_GAIN_2;                 /* 4A0C */
-	UINT32              CAM_CPG_OFST_1;                 /* 4A10 */
-	UINT32                rsv_4A18[1];                  /* 4A18 */
-	UINT32                 CAM_C42_CON;                 /* 4A1C */
-	UINT32                CAM_ANR_CON1;                 /* 4A20 */
-	UINT32                CAM_ANR_CON2;                 /* 4A24 */
-	UINT32                CAM_ANR_CON3;                 /* 4A28 */
-	UINT32                CAM_ANR_YAD1;                 /* 4A2C */
-	UINT32                CAM_ANR_YAD2;                 /* 4A30 */
-	UINT32               CAM_ANR_4LUT1;                 /* 4A34 */
-	UINT32               CAM_ANR_4LUT2;                 /* 4A38 */
-	UINT32               CAM_ANR_4LUT3;                 /* 4A3C */
-	UINT32                 CAM_ANR_PTY;                 /* 4A40 */
-	UINT32                 CAM_ANR_CAD;                 /* 4A44 */
-	UINT32                 CAM_ANR_PTC;                 /* 4A48 */
-	UINT32                CAM_ANR_LCE1;                 /* 4A4C */
-	UINT32                CAM_ANR_LCE2;                 /* 4A50 */
-	UINT32                 CAM_ANR_HP1;                 /* 4A54 */
-	UINT32                 CAM_ANR_HP2;                 /* 4A58 */
-	UINT32                 CAM_ANR_HP3;                 /* 4A5C */
-	UINT32                CAM_ANR_ACTY;                 /* 4A60 */
-	UINT32                CAM_ANR_ACTC;                 /* 4A64 */
-	UINT32                CAM_ANR_RSV1;                 /* 4A68 */
-	UINT32                CAM_ANR_RSV2;                 /* 4A6C */
-	UINT32                 rsv_4A70[4];                 /* 4A70...4A7C */
-	UINT32                 CAM_CCR_CON;                 /* 4A80 */
-	UINT32                CAM_CCR_YLUT;                 /* 4A84 */
-	UINT32               CAM_CCR_UVLUT;                 /* 4A88 */
-	UINT32               CAM_CCR_YLUT2;                 /* 4A8C */
-	UINT32            CAM_CCR_SAT_CTRL;                 /* 4A90 */
-	UINT32            CAM_CCR_UVLUT_SP;                 /* 4A94 */
-	UINT32                 rsv_4A98[2];                 /* 4A98...4A9C */
-	UINT32           CAM_SEEE_SRK_CTRL;                 /* 4AA0 */
-	UINT32          CAM_SEEE_CLIP_CTRL;                 /* 4AA4 */
-	UINT32         CAM_SEEE_FLT_CTRL_1;                 /* 4AA8 */
-	UINT32         CAM_SEEE_FLT_CTRL_2;                 /* 4AAC */
-	UINT32       CAM_SEEE_GLUT_CTRL_01;                 /* 4AB0 */
-	UINT32       CAM_SEEE_GLUT_CTRL_02;                 /* 4AB4 */
-	UINT32       CAM_SEEE_GLUT_CTRL_03;                 /* 4AB8 */
-	UINT32       CAM_SEEE_GLUT_CTRL_04;                 /* 4ABC */
-	UINT32       CAM_SEEE_GLUT_CTRL_05;                 /* 4AC0 */
-	UINT32       CAM_SEEE_GLUT_CTRL_06;                 /* 4AC4 */
-	UINT32          CAM_SEEE_EDTR_CTRL;                 /* 4AC8 */
-	UINT32      CAM_SEEE_OUT_EDGE_CTRL;                 /* 4ACC */
-	UINT32          CAM_SEEE_SE_Y_CTRL;                 /* 4AD0 */
-	UINT32     CAM_SEEE_SE_EDGE_CTRL_1;                 /* 4AD4 */
-	UINT32     CAM_SEEE_SE_EDGE_CTRL_2;                 /* 4AD8 */
-	UINT32     CAM_SEEE_SE_EDGE_CTRL_3;                 /* 4ADC */
-	UINT32      CAM_SEEE_SE_SPECL_CTRL;                 /* 4AE0 */
-	UINT32     CAM_SEEE_SE_CORE_CTRL_1;                 /* 4AE4 */
-	UINT32     CAM_SEEE_SE_CORE_CTRL_2;                 /* 4AE8 */
-	UINT32       CAM_SEEE_GLUT_CTRL_07;                 /* 4AEC */
-	UINT32       CAM_SEEE_GLUT_CTRL_08;                 /* 4AF0 */
-	UINT32       CAM_SEEE_GLUT_CTRL_09;                 /* 4AF4 */
-	UINT32       CAM_SEEE_GLUT_CTRL_10;                 /* 4AF8 */
-	UINT32       CAM_SEEE_GLUT_CTRL_11;                 /* 4AFC */
-	UINT32             CAM_CRZ_CONTROL;                 /* 4B00 */
-	UINT32              CAM_CRZ_IN_IMG;                 /* 4B04 */
-	UINT32             CAM_CRZ_OUT_IMG;                 /* 4B08 */
-	UINT32           CAM_CRZ_HORI_STEP;                 /* 4B0C */
-	UINT32           CAM_CRZ_VERT_STEP;                 /* 4B10 */
-	UINT32  CAM_CRZ_LUMA_HORI_INT_OFST;                 /* 4B14 */
-	UINT32  CAM_CRZ_LUMA_HORI_SUB_OFST;                 /* 4B18 */
-	UINT32  CAM_CRZ_LUMA_VERT_INT_OFST;                 /* 4B1C */
-	UINT32  CAM_CRZ_LUMA_VERT_SUB_OFST;                 /* 4B20 */
-	UINT32  CAM_CRZ_CHRO_HORI_INT_OFST;                 /* 4B24 */
-	UINT32  CAM_CRZ_CHRO_HORI_SUB_OFST;                 /* 4B28 */
-	UINT32  CAM_CRZ_CHRO_VERT_INT_OFST;                 /* 4B2C */
-	UINT32  CAM_CRZ_CHRO_VERT_SUB_OFST;                 /* 4B30 */
-	UINT32               CAM_CRZ_DER_1;                 /* 4B34 */
-	UINT32               CAM_CRZ_DER_2;                 /* 4B38 */
-	UINT32                rsv_4B3C[25];                 /* 4B3C...4B9C */
-	UINT32             CAM_G2C_CONV_0A;                 /* 4BA0 */
-	UINT32             CAM_G2C_CONV_0B;                 /* 4BA4 */
-	UINT32             CAM_G2C_CONV_1A;                 /* 4BA8 */
-	UINT32             CAM_G2C_CONV_1B;                 /* 4BAC */
-	UINT32             CAM_G2C_CONV_2A;                 /* 4BB0 */
-	UINT32             CAM_G2C_CONV_2B;                 /* 4BB4 */
-	UINT32         CAM_G2C_SHADE_CON_1;                 /* 4BB8 */
-	UINT32         CAM_G2C_SHADE_CON_2;                 /* 4BBC */
-	UINT32         CAM_G2C_SHADE_CON_3;                 /* 4BC0 */
-	UINT32           CAM_G2C_SHADE_TAR;                 /* 4BC4 */
-	UINT32            CAM_G2C_SHADE_SP;                 /* 4BC8 */
-	UINT32                rsv_4BCC[25];                 /* 4BCC...4C2C */
-	UINT32            CAM_SRZ1_CONTROL;                 /* 4C30 */
-	UINT32             CAM_SRZ1_IN_IMG;                 /* 4C34 */
-	UINT32            CAM_SRZ1_OUT_IMG;                 /* 4C38 */
-	UINT32          CAM_SRZ1_HORI_STEP;                 /* 4C3C */
-	UINT32          CAM_SRZ1_VERT_STEP;                 /* 4C40 */
-	UINT32      CAM_SRZ1_HORI_INT_OFST;                 /* 4C44 */
-	UINT32      CAM_SRZ1_HORI_SUB_OFST;                 /* 4C48 */
-	UINT32      CAM_SRZ1_VERT_INT_OFST;                 /* 4C4C */
-	UINT32      CAM_SRZ1_VERT_SUB_OFST;                 /* 4C50 */
-	UINT32                 rsv_4C54[3];                 /* 4C54...4C5C */
-	UINT32            CAM_SRZ2_CONTROL;                 /* 4C60 */
-	UINT32             CAM_SRZ2_IN_IMG;                 /* 4C64 */
-	UINT32            CAM_SRZ2_OUT_IMG;                 /* 4C68 */
-	UINT32          CAM_SRZ2_HORI_STEP;                 /* 4C6C */
-	UINT32          CAM_SRZ2_VERT_STEP;                 /* 4C70 */
-	UINT32      CAM_SRZ2_HORI_INT_OFST;                 /* 4C74 */
-	UINT32      CAM_SRZ2_HORI_SUB_OFST;                 /* 4C78 */
-	UINT32      CAM_SRZ2_VERT_INT_OFST;                 /* 4C7C */
-	UINT32      CAM_SRZ2_VERT_SUB_OFST;                 /* 4C80 */
-	UINT32                 rsv_4C84[3];                 /* 4C84...4C8C */
-	UINT32             CAM_MIX1_CTRL_0;                 /* 4C90 */
-	UINT32             CAM_MIX1_CTRL_1;                 /* 4C94 */
-	UINT32              CAM_MIX1_SPARE;                 /* 4C98 */
-	UINT32                    rsv_4C9C;                 /* 4C9C */
-	UINT32             CAM_MIX2_CTRL_0;                 /* 4CA0 */
-	UINT32             CAM_MIX2_CTRL_1;                 /* 4CA4 */
-	UINT32              CAM_MIX2_SPARE;                 /* 4CA8 */
-	UINT32                    rsv_4CAC;                 /* 4CAC */
-	UINT32             CAM_MIX3_CTRL_0;                 /* 4CB0 */
-	UINT32             CAM_MIX3_CTRL_1;                 /* 4CB4 */
-	UINT32              CAM_MIX3_SPARE;                 /* 4CB8 */
-	UINT32                    rsv_4CBC;                 /* 4CBC */
-	UINT32              CAM_NR3D_BLEND;                 /* 4CC0 */
-	UINT32          CAM_NR3D_FBCNT_OFF;                 /* 4CC4 */
-	UINT32          CAM_NR3D_FBCNT_SIZ;                 /* 4CC8 */
-	UINT32           CAM_NR3D_FB_COUNT;                 /* 4CCC */
-	UINT32            CAM_NR3D_LMT_CPX;                 /* 4CD0 */
-	UINT32         CAM_NR3D_LMT_Y_CON1;                 /* 4CD4 */
-	UINT32         CAM_NR3D_LMT_Y_CON2;                 /* 4CD8 */
-	UINT32         CAM_NR3D_LMT_Y_CON3;                 /* 4CDC */
-	UINT32         CAM_NR3D_LMT_U_CON1;                 /* 4CE0 */
-	UINT32         CAM_NR3D_LMT_U_CON2;                 /* 4CE4 */
-	UINT32         CAM_NR3D_LMT_U_CON3;                 /* 4CE8 */
-	UINT32         CAM_NR3D_LMT_V_CON1;                 /* 4CEC */
-	UINT32         CAM_NR3D_LMT_V_CON2;                 /* 4CF0 */
-	UINT32         CAM_NR3D_LMT_V_CON3;                 /* 4CF4 */
-	UINT32               CAM_NR3D_CTRL;                 /* 4CF8 */
-	UINT32             CAM_NR3D_ON_OFF;                 /* 4CFC */
-	UINT32             CAM_NR3D_ON_SIZ;                 /* 4D00 */
-	UINT32             CAM_NR3D_SPARE0;                 /* 4D04 */
+struct _isp_backup_reg_t {
+	unsigned int               CAM_CTL_START;                  /* 4000 */
+	unsigned int               CAM_CTL_EN_P1;                  /* 4004 */
+	unsigned int           CAM_CTL_EN_P1_DMA;                  /* 4008 */
+	unsigned int                    rsv_400C;                  /* 400C */
+	unsigned int             CAM_CTL_EN_P1_D;                  /* 4010 */
+	unsigned int         CAM_CTL_EN_P1_DMA_D;                  /* 4014 */
+	unsigned int               CAM_CTL_EN_P2;                  /* 4018 */
+	unsigned int           CAM_CTL_EN_P2_DMA;                  /* 401C */
+	unsigned int               CAM_CTL_CQ_EN;                  /* 4020 */
+	unsigned int            CAM_CTL_SCENARIO;                  /* 4024 */
+	unsigned int          CAM_CTL_FMT_SEL_P1;                  /* 4028 */
+	unsigned int        CAM_CTL_FMT_SEL_P1_D;                  /* 402C */
+	unsigned int          CAM_CTL_FMT_SEL_P2;                  /* 4030 */
+	unsigned int              CAM_CTL_SEL_P1;                  /* 4034 */
+	unsigned int            CAM_CTL_SEL_P1_D;                  /* 4038 */
+	unsigned int              CAM_CTL_SEL_P2;                  /* 403C */
+	unsigned int          CAM_CTL_SEL_GLOBAL;                  /* 4040 */
+	unsigned int                    rsv_4044;                  /* 4044 */
+	unsigned int           CAM_CTL_INT_P1_EN;                  /* 4048 */
+	unsigned int       CAM_CTL_INT_P1_STATUS;                  /* 404C */
+	unsigned int          CAM_CTL_INT_P1_EN2;                  /* 4050 */
+	unsigned int      CAM_CTL_INT_P1_STATUS2;                  /* 4054 */
+	unsigned int         CAM_CTL_INT_P1_EN_D;                  /* 4058 */
+	unsigned int     CAM_CTL_INT_P1_STATUS_D;                  /* 405C */
+	unsigned int        CAM_CTL_INT_P1_EN2_D;                  /* 4060 */
+	unsigned int    CAM_CTL_INT_P1_STATUS2_D;                  /* 4064 */
+	unsigned int           CAM_CTL_INT_P2_EN;                  /* 4068 */
+	unsigned int       CAM_CTL_INT_P2_STATUS;                  /* 406C */
+	unsigned int         CAM_CTL_INT_STATUSX;                  /* 4070 */
+	unsigned int        CAM_CTL_INT_STATUS2X;                  /* 4074 */
+	unsigned int        CAM_CTL_INT_STATUS3X;                  /* 4078 */
+	unsigned int                CAM_CTL_TILE;                  /* 407C */
+	unsigned int       CAM_CTL_TDR_EN_STATUS;                  /* 4080 */
+	unsigned int              CAM_CTL_TCM_EN;                  /* 4084 */
+	unsigned int      CAM_CTL_TDR_DBG_STATUS;                  /* 4088 */
+	unsigned int              CAM_CTL_SW_CTL;                  /* 408C */
+	unsigned int              CAM_CTL_SPARE0;                  /* 4090 */
+	unsigned int               CAM_RRZ_OUT_W;                 /* 4094 */
+	unsigned int                    rsv_4098;                 /* 4098 */
+	unsigned int              CAM_RRZ_OUT_W_D;                /* 409C */
+	unsigned int        CAM_CTL_CQ1_BASEADDR;                 /* 40A0 */
+	unsigned int        CAM_CTL_CQ2_BASEADDR;                 /* 40A4 */
+	unsigned int        CAM_CTL_CQ3_BASEADDR;                 /* 40A8 */
+	unsigned int        CAM_CTL_CQ0_BASEADDR;                 /* 40AC */
+	unsigned int       CAM_CTL_CQ0B_BASEADDR;                 /* 40B0 */
+	unsigned int       CAM_CTL_CQ0C_BASEADDR;                 /* 40B4 */
+	unsigned int    CAM_CTL_CUR_CQ0_BASEADDR;                 /* 40B8 */
+	unsigned int   CAM_CTL_CUR_CQ0B_BASEADDR;                 /* 40BC */
+	unsigned int   CAM_CTL_CUR_CQ0C_BASEADDR;                 /* 40C0 */
+	unsigned int      CAM_CTL_CQ0_D_BASEADDR;                 /* 40C4 */
+	unsigned int     CAM_CTL_CQ0B_D_BASEADDR;                 /* 40C8 */
+	unsigned int     CAM_CTL_CQ0C_D_BASEADDR;                 /* 40CC */
+	unsigned int  CAM_CTL_CUR_CQ0_D_BASEADDR;                 /* 40D0 */
+	unsigned int CAM_CTL_CUR_CQ0B_D_BASEADDR;                 /* 40D4 */
+	unsigned int CAM_CTL_CUR_CQ0C_D_BASEADDR;                 /* 40D8 */
+	unsigned int           CAM_CTL_DB_LOAD_D;                 /* 40DC */
+	unsigned int             CAM_CTL_DB_LOAD;                 /* 40E0 */
+	unsigned int         CAM_CTL_P1_DONE_BYP;                 /* 40E4 */
+	unsigned int       CAM_CTL_P1_DONE_BYP_D;                 /* 40E8 */
+	unsigned int         CAM_CTL_P2_DONE_BYP;                 /* 40EC */
+	unsigned int            CAM_CTL_IMGO_FBC;                 /* 40F0 */
+	unsigned int            CAM_CTL_RRZO_FBC;                 /* 40F4 */
+	unsigned int          CAM_CTL_IMGO_D_FBC;                 /* 40F8 */
+	unsigned int          CAM_CTL_RRZO_D_FBC;                 /* 40FC */
 
 
 
-	UINT32       CAM_EIS_PREP_ME_CTRL1;                 /* 4DC0 */
-	UINT32       CAM_EIS_PREP_ME_CTRL2;                 /* 4DC4 */
-	UINT32              CAM_EIS_LMV_TH;                 /* 4DC8 */
-	UINT32           CAM_EIS_FL_OFFSET;                 /* 4DCC */
-	UINT32           CAM_EIS_MB_OFFSET;                 /* 4DD0 */
-	UINT32         CAM_EIS_MB_INTERVAL;                 /* 4DD4 */
-	UINT32                 CAM_EIS_GMV;                 /* 4DD8 */
-	UINT32            CAM_EIS_ERR_CTRL;                 /* 4DDC */
-	UINT32          CAM_EIS_IMAGE_CTRL;                 /* 4DE0 */
-	UINT32                 rsv_4DE4[7];                 /* 4DE4...4DFC */
-	UINT32                 CAM_DMX_CTL;                 /* 4E00 */
-	UINT32                CAM_DMX_CROP;                 /* 4E04 */
-	UINT32               CAM_DMX_VSIZE;                 /* 4E08 */
-	UINT32                    rsv_4E0C;                 /* 4E0C */
-	UINT32                 CAM_BMX_CTL;                 /* 4E10 */
-	UINT32                CAM_BMX_CROP;                 /* 4E14 */
-	UINT32               CAM_BMX_VSIZE;                 /* 4E18 */
-	UINT32                    rsv_4E1C;                 /* 4E1C */
-	UINT32                 CAM_RMX_CTL;                 /* 4E20 */
-	UINT32                CAM_RMX_CROP;                 /* 4E24 */
-	UINT32               CAM_RMX_VSIZE;                 /* 4E28 */
-	UINT32                 rsv_4E2C[9];                 /* 4E2C...4E4C */
-	UINT32                 CAM_UFE_CON;                 /* 4E50 */
+	unsigned int                CAM_CTL_IHDR;                 /* 4104 */
+	unsigned int              CAM_CTL_IHDR_D;                 /* 4108 */
+	unsigned int            CAM_CTL_CQ_EN_P2;                 /* 410C */
+
+	unsigned int              CAM_CTL_CLK_EN;                 /* 4170 */
+	unsigned int             CAM_TG_SEN_MODE;                 /* 4410 */
+	unsigned int               CAM_TG_VF_CON;                 /* 4414 */
+	unsigned int         CAM_TG_SEN_GRAB_PXL;                 /* 4418 */
+	unsigned int         CAM_TG_SEN_GRAB_LIN;                 /* 441C */
+	unsigned int             CAM_TG_PATH_CFG;                 /* 4420 */
+	unsigned int            CAM_TG_MEMIN_CTL;                 /* 4424 */
 
 
-	UINT32                 CAM_SL2_CEN;                 /* 4F40 */
-	UINT32             CAM_SL2_MAX0_RR;                 /* 4F44 */
-	UINT32             CAM_SL2_MAX1_RR;                 /* 4F48 */
-	UINT32             CAM_SL2_MAX2_RR;                 /* 4F4C */
-	UINT32                 CAM_SL2_HRZ;                 /* 4F50 */
-	UINT32                CAM_SL2_XOFF;                 /* 4F54 */
-	UINT32                CAM_SL2_YOFF;                 /* 4F58 */
-	UINT32                    rsv_4F5C;                 /* 4F5C */
-	UINT32                CAM_SL2B_CEN;                 /* 4F60 */
-	UINT32            CAM_SL2B_MAX0_RR;                 /* 4F64 */
-	UINT32            CAM_SL2B_MAX1_RR;                 /* 4F68 */
-	UINT32            CAM_SL2B_MAX2_RR;                 /* 4F6C */
-	UINT32                CAM_SL2B_HRZ;                 /* 4F70 */
-	UINT32               CAM_SL2B_XOFF;                 /* 4F74 */
-	UINT32               CAM_SL2B_YOFF;                 /* 4F78 */
-	UINT32                 rsv_4F7C[9];                 /* 4F7C...4F9C */
-	UINT32               CAM_CRSP_CTRL;                 /* 4FA0 */
-	UINT32                   rsv_4FA4;                  /* 4FA4 */
-	UINT32            CAM_CRSP_OUT_IMG;                 /* 4FA8 */
-	UINT32          CAM_CRSP_STEP_OFST;                 /* 4FAC */
-	UINT32             CAM_CRSP_CROP_X;                 /* 4FB0 */
-	UINT32             CAM_CRSP_CROP_Y;                 /* 4FB4 */
-	UINT32                 rsv_4FB8[2];                 /* 4FB8...4FBC */
-	UINT32                CAM_SL2C_CEN;                 /* 4FC0 */
-	UINT32            CAM_SL2C_MAX0_RR;                 /* 4FC4 */
-	UINT32            CAM_SL2C_MAX1_RR;                 /* 4FC8 */
-	UINT32            CAM_SL2C_MAX2_RR;                 /* 4FCC */
-	UINT32                CAM_SL2C_HRZ;                 /* 4FD0 */
-	UINT32               CAM_SL2C_XOFF;                 /* 4FD4 */
-	UINT32               CAM_SL2C_YOFF;                 /* 4FD8 */
-
-	UINT32                CAM_GGM_CTRL;                 /* 5480 */
-
-	UINT32                CAM_PCA_CON1;                 /* 5E00 */
-	UINT32                CAM_PCA_CON2;                 /* 5E04 */
-
-	UINT32           CAM_TILE_RING_CON1;                /* 5FF0 */
-	UINT32           CAM_CTL_IMGI_SIZE;                 /* 5FF4 */
-
-
-
-	UINT32            CAM_TG2_SEN_MODE;                 /* 6410 */
-	UINT32              CAM_TG2_VF_CON;                 /* 6414 */
-	UINT32        CAM_TG2_SEN_GRAB_PXL;                 /* 6418 */
-	UINT32        CAM_TG2_SEN_GRAB_LIN;                 /* 641C */
-	UINT32            CAM_TG2_PATH_CFG;                 /* 6420 */
-	UINT32           CAM_TG2_MEMIN_CTL;                 /* 6424 */
-
-
-	UINT32            CAM_OBC_D_OFFST0;                 /* 6500 */
-	UINT32            CAM_OBC_D_OFFST1;                 /* 6504 */
-	UINT32            CAM_OBC_D_OFFST2;                 /* 6508 */
-	UINT32            CAM_OBC_D_OFFST3;                 /* 650C */
-	UINT32             CAM_OBC_D_GAIN0;                 /* 6510 */
-	UINT32             CAM_OBC_D_GAIN1;                 /* 6514 */
-	UINT32             CAM_OBC_D_GAIN2;                 /* 6518 */
-	UINT32             CAM_OBC_D_GAIN3;                 /* 651C */
-	UINT32                 rsv_6520[4];                 /* 6520...652C */
-	UINT32              CAM_LSC_D_CTL1;                 /* 6530 */
-	UINT32              CAM_LSC_D_CTL2;                 /* 6534 */
-	UINT32              CAM_LSC_D_CTL3;                 /* 6538 */
-	UINT32            CAM_LSC_D_LBLOCK;                 /* 653C */
-	UINT32             CAM_LSC_D_RATIO;                 /* 6540 */
-	UINT32        CAM_LSC_D_TPIPE_OFST;                 /* 6544 */
-	UINT32        CAM_LSC_D_TPIPE_SIZE;                 /* 6548 */
-	UINT32           CAM_LSC_D_GAIN_TH;                 /* 654C */
-	UINT32            CAM_RPG_D_SATU_1;                 /* 6550 */
-	UINT32            CAM_RPG_D_SATU_2;                 /* 6554 */
-	UINT32            CAM_RPG_D_GAIN_1;                 /* 6558 */
-	UINT32            CAM_RPG_D_GAIN_2;                 /* 655C */
-	UINT32            CAM_RPG_D_OFST_1;                 /* 6560 */
-	UINT32            CAM_RPG_D_OFST_2;                 /* 6564 */
-	UINT32                rsv_6568[18];                 /* 6568...65AC */
-	UINT32           CAM_AWB_D_WIN_ORG;                 /* 65B0 */
-	UINT32          CAM_AWB_D_WIN_SIZE;                 /* 65B4 */
-	UINT32           CAM_AWB_D_WIN_PIT;                 /* 65B8 */
-	UINT32           CAM_AWB_D_WIN_NUM;                 /* 65BC */
-	UINT32           CAM_AWB_D_GAIN1_0;                 /* 65C0 */
-	UINT32           CAM_AWB_D_GAIN1_1;                 /* 65C4 */
-	UINT32            CAM_AWB_D_LMT1_0;                 /* 65C8 */
-	UINT32            CAM_AWB_D_LMT1_1;                 /* 65CC */
-	UINT32           CAM_AWB_D_LOW_THR;                 /* 65D0 */
-	UINT32            CAM_AWB_D_HI_THR;                 /* 65D4 */
-	UINT32        CAM_AWB_D_PIXEL_CNT0;                 /* 65D8 */
-	UINT32        CAM_AWB_D_PIXEL_CNT1;                 /* 65DC */
-	UINT32        CAM_AWB_D_PIXEL_CNT2;                 /* 65E0 */
-	UINT32           CAM_AWB_D_ERR_THR;                 /* 65E4 */
-	UINT32               CAM_AWB_D_ROT;                 /* 65E8 */
-	UINT32              CAM_AWB_D_L0_X;                 /* 65EC */
-	UINT32              CAM_AWB_D_L0_Y;                 /* 65F0 */
-	UINT32              CAM_AWB_D_L1_X;                 /* 65F4 */
-	UINT32              CAM_AWB_D_L1_Y;                 /* 65F8 */
-	UINT32              CAM_AWB_D_L2_X;                 /* 65FC */
-	UINT32              CAM_AWB_D_L2_Y;                 /* 6600 */
-	UINT32              CAM_AWB_D_L3_X;                 /* 6604 */
-	UINT32              CAM_AWB_D_L3_Y;                 /* 6608 */
-	UINT32              CAM_AWB_D_L4_X;                 /* 660C */
-	UINT32              CAM_AWB_D_L4_Y;                 /* 6610 */
-	UINT32              CAM_AWB_D_L5_X;                 /* 6614 */
-	UINT32              CAM_AWB_D_L5_Y;                 /* 6618 */
-	UINT32              CAM_AWB_D_L6_X;                 /* 661C */
-	UINT32              CAM_AWB_D_L6_Y;                 /* 6620 */
-	UINT32              CAM_AWB_D_L7_X;                 /* 6624 */
-	UINT32              CAM_AWB_D_L7_Y;                 /* 6628 */
-	UINT32              CAM_AWB_D_L8_X;                 /* 662C */
-	UINT32              CAM_AWB_D_L8_Y;                 /* 6630 */
-	UINT32              CAM_AWB_D_L9_X;                 /* 6634 */
-	UINT32              CAM_AWB_D_L9_Y;                 /* 6638 */
-	UINT32             CAM_AWB_D_SPARE;                 /* 663C */
-	UINT32                 rsv_6640[4];                 /* 6640...664C */
-	UINT32            CAM_AE_D_HST_CTL;                 /* 6650 */
-	UINT32            CAM_AE_D_GAIN2_0;                 /* 6654 */
-	UINT32            CAM_AE_D_GAIN2_1;                 /* 6658 */
-	UINT32             CAM_AE_D_LMT2_0;                 /* 665C */
-	UINT32             CAM_AE_D_LMT2_1;                 /* 6660 */
-	UINT32           CAM_AE_D_RC_CNV_0;                 /* 6664 */
-	UINT32           CAM_AE_D_RC_CNV_1;                 /* 6668 */
-	UINT32           CAM_AE_D_RC_CNV_2;                 /* 666C */
-	UINT32           CAM_AE_D_RC_CNV_3;                 /* 6670 */
-	UINT32           CAM_AE_D_RC_CNV_4;                 /* 6674 */
-	UINT32           CAM_AE_D_YGAMMA_0;                 /* 6678 */
-	UINT32           CAM_AE_D_YGAMMA_1;                 /* 667C */
-	UINT32            CAM_AE_D_HST_SET;                 /* 6680 */
-	UINT32           CAM_AE_D_HST0_RNG;                 /* 6684 */
-	UINT32           CAM_AE_D_HST1_RNG;                 /* 6688 */
-	UINT32           CAM_AE_D_HST2_RNG;                 /* 668C */
-	UINT32           CAM_AE_D_HST3_RNG;                 /* 6690 */
-	UINT32              CAM_AE_D_SPARE;                 /* 6694 */
-	UINT32                 rsv_6698[2];                 /* 6698...669C */
-	UINT32              CAM_SGG1_D_PGN;                 /* 66A0 */
-	UINT32           CAM_SGG1_D_GMRC_1;                 /* 66A4 */
-	UINT32           CAM_SGG1_D_GMRC_2;                 /* 66A8 */
-	UINT32                    rsv_66AC;                 /* 66AC */
-	UINT32                CAM_AF_D_CON;                 /* 66B0 */
-	UINT32             CAM_AF_D_WINX_1;                 /* 66B4 */
-	UINT32             CAM_AF_D_WINX_2;                 /* 66B8 */
-	UINT32             CAM_AF_D_WINX_3;                 /* 66BC */
-	UINT32             CAM_AF_D_WINY_1;                 /* 66C0 */
-	UINT32             CAM_AF_D_WINY_2;                 /* 66C4 */
-	UINT32             CAM_AF_D_WINY_3;                 /* 66C8 */
-	UINT32               CAM_AF_D_SIZE;                 /* 66CC */
-	UINT32                    rsv_66D0;                 /* 66D0 */
-	UINT32              CAM_AF_D_FLT_1;                 /* 66D4 */
-	UINT32              CAM_AF_D_FLT_2;                 /* 66D8 */
-	UINT32              CAM_AF_D_FLT_3;                 /* 66DC */
-	UINT32                 CAM_AF_D_TH;                 /* 66E0 */
-	UINT32          CAM_AF_D_FLO_WIN_1;                 /* 66E4 */
-	UINT32         CAM_AF_D_FLO_SIZE_1;                 /* 66E8 */
-	UINT32          CAM_AF_D_FLO_WIN_2;                 /* 66EC */
-	UINT32         CAM_AF_D_FLO_SIZE_2;                 /* 66F0 */
-	UINT32          CAM_AF_D_FLO_WIN_3;                 /* 66F4 */
-	UINT32         CAM_AF_D_FLO_SIZE_3;                 /* 66F8 */
-	UINT32             CAM_AF_D_FLO_TH;                 /* 66FC */
-	UINT32         CAM_AF_D_IMAGE_SIZE;                 /* 6700 */
-	UINT32              CAM_AF_D_FLT_4;                 /* 6704 */
-	UINT32              CAM_AF_D_FLT_5;                 /* 6708 */
-	UINT32             CAM_AF_D_STAT_L;                 /* 670C */
-	UINT32             CAM_AF_D_STAT_M;                 /* 6710 */
-	UINT32        CAM_AF_D_FLO_STAT_1L;                 /* 6714 */
-	UINT32        CAM_AF_D_FLO_STAT_1M;                 /* 6718 */
-	UINT32        CAM_AF_D_FLO_STAT_1V;                 /* 671C */
-	UINT32        CAM_AF_D_FLO_STAT_2L;                 /* 6720 */
-	UINT32        CAM_AF_D_FLO_STAT_2M;                 /* 6724 */
-	UINT32        CAM_AF_D_FLO_STAT_2V;                 /* 6728 */
-	UINT32        CAM_AF_D_FLO_STAT_3L;                 /* 672C */
-	UINT32        CAM_AF_D_FLO_STAT_3M;                 /* 6730 */
-	UINT32        CAM_AF_D_FLO_STAT_3V;                 /* 6734 */
-	UINT32                 rsv_6738[2];                 /* 6738...673C */
-	UINT32               CAM_W2G_D_BLD;                 /* 6740 */
-	UINT32              CAM_W2G_D_TH_1;                 /* 6744 */
-	UINT32              CAM_W2G_D_TH_2;                 /* 6748 */
-	UINT32           CAM_W2G_D_CTL_OFT;                 /* 674C */
-	UINT32                 rsv_6750[4];                 /* 6750...675C */
-	UINT32              CAM_WBN_D_SIZE;                 /* 6760 */
-	UINT32              CAM_WBN_D_MODE;                 /* 6764 */
-	UINT32                 rsv_6768[6];                 /* 6768...677C */
-	UINT32               CAM_LCS_D_CON;                 /* 6780 */
-	UINT32                CAM_LCS_D_ST;                 /* 6784 */
-	UINT32               CAM_LCS_D_AWS;                 /* 6788 */
-	UINT32               CAM_LCS_D_FLR;                 /* 678C */
-	UINT32            CAM_LCS_D_LRZR_1;                 /* 6790 */
-	UINT32            CAM_LCS_D_LRZR_2;                 /* 6794 */
-	UINT32                 rsv_6798[2];                 /* 6798...679C */
-	UINT32               CAM_RRZ_D_CTL;                 /* 67A0 */
-	UINT32            CAM_RRZ_D_IN_IMG;                 /* 67A4 */
-	UINT32           CAM_RRZ_D_OUT_IMG;                 /* 67A8 */
-	UINT32         CAM_RRZ_D_HORI_STEP;                 /* 67AC */
-	UINT32         CAM_RRZ_D_VERT_STEP;                 /* 67B0 */
-	UINT32     CAM_RRZ_D_HORI_INT_OFST;                 /* 67B4 */
-	UINT32     CAM_RRZ_D_HORI_SUB_OFST;                 /* 67B8 */
-	UINT32     CAM_RRZ_D_VERT_INT_OFST;                 /* 67BC */
-	UINT32     CAM_RRZ_D_VERT_SUB_OFST;                 /* 67C0 */
-	UINT32           CAM_RRZ_D_MODE_TH;                 /* 67C4 */
-	UINT32          CAM_RRZ_D_MODE_CTL;                 /* 67C8 */
-	UINT32                rsv_67CC[13];                 /* 67CC...67FC */
-	UINT32               CAM_BPC_D_CON;                 /* 6800 */
-	UINT32               CAM_BPC_D_TH1;                 /* 6804 */
-	UINT32               CAM_BPC_D_TH2;                 /* 6808 */
-	UINT32               CAM_BPC_D_TH3;                 /* 680C */
-	UINT32               CAM_BPC_D_TH4;                 /* 6810 */
-	UINT32               CAM_BPC_D_DTC;                 /* 6814 */
-	UINT32               CAM_BPC_D_COR;                 /* 6818 */
-	UINT32             CAM_BPC_D_TBLI1;                 /* 681C */
-	UINT32             CAM_BPC_D_TBLI2;                 /* 6820 */
-	UINT32             CAM_BPC_D_TH1_C;                 /* 6824 */
-	UINT32             CAM_BPC_D_TH2_C;                 /* 6828 */
-	UINT32             CAM_BPC_D_TH3_C;                 /* 682C */
-	UINT32              CAM_BPC_D_RMM1;                 /* 6830 */
-	UINT32              CAM_BPC_D_RMM2;                 /* 6834 */
-	UINT32        CAM_BPC_D_RMM_REVG_1;                 /* 6838 */
-	UINT32        CAM_BPC_D_RMM_REVG_2;                 /* 683C */
-	UINT32          CAM_BPC_D_RMM_LEOS;                 /* 6840 */
-	UINT32          CAM_BPC_D_RMM_GCNT;                 /* 6844 */
-	UINT32                 rsv_6848[2];                 /* 6848...684C */
-	UINT32               CAM_NR1_D_CON;                 /* 6850 */
-	UINT32            CAM_NR1_D_CT_CON;                 /* 6854 */
-
-	UINT32               CAM_DMX_D_CTL;                  /* 6E00 */
-	UINT32              CAM_DMX_D_CROP;                  /* 6E04 */
-	UINT32             CAM_DMX_D_VSIZE;                  /* 6E08 */
-	UINT32                    rsv_6E0C;                  /* 6E0C */
-	UINT32               CAM_BMX_D_CTL;                  /* 6E10 */
-	UINT32              CAM_BMX_D_CROP;                  /* 6E14 */
-	UINT32             CAM_BMX_D_VSIZE;                  /* 6E18 */
-	UINT32                    rsv_6E1C;                  /* 6E1C */
-	UINT32               CAM_RMX_D_CTL;                  /* 6E20 */
-	UINT32              CAM_RMX_D_CROP;                  /* 6E24 */
-	UINT32             CAM_RMX_D_VSIZE;                  /* 6E28 */
-
-	UINT32          CAM_TDRI_BASE_ADDR;                 /* 7204 */
-	UINT32          CAM_TDRI_OFST_ADDR;                 /* 7208 */
-	UINT32              CAM_TDRI_XSIZE;                 /* 720C */
-	UINT32          CAM_CQ0I_BASE_ADDR;                 /* 7210 */
-	UINT32              CAM_CQ0I_XSIZE;                 /* 7214 */
-	UINT32        CAM_CQ0I_D_BASE_ADDR;                 /* 7218 */
-	UINT32            CAM_CQ0I_D_XSIZE;                 /* 721C */
-	UINT32        CAM_VERTICAL_FLIP_EN;                 /* 7220 */
-	UINT32          CAM_DMA_SOFT_RESET;                 /* 7224 */
-	UINT32           CAM_LAST_ULTRA_EN;                 /* 7228 */
-	UINT32          CAM_IMGI_SLOW_DOWN;                 /* 722C */
-	UINT32          CAM_IMGI_BASE_ADDR;                 /* 7230 */
-	UINT32          CAM_IMGI_OFST_ADDR;                 /* 7234 */
-	UINT32              CAM_IMGI_XSIZE;                 /* 7238 */
-	UINT32              CAM_IMGI_YSIZE;                 /* 723C */
-	UINT32             CAM_IMGI_STRIDE;                 /* 7240 */
-	UINT32                    rsv_7244;                 /* 7244 */
-	UINT32                CAM_IMGI_CON;                 /* 7248 */
-	UINT32               CAM_IMGI_CON2;                 /* 724C */
-
-	UINT32          CAM_BPCI_BASE_ADDR;                  /* 7250 */
-	UINT32          CAM_BPCI_OFST_ADDR;                  /* 7254 */
-	UINT32              CAM_BPCI_XSIZE;                  /* 7258 */
-	UINT32              CAM_BPCI_YSIZE;                  /* 725C */
-	UINT32             CAM_BPCI_STRIDE;                  /* 7260 */
-	UINT32                CAM_BPCI_CON;                  /* 7264 */
-	UINT32               CAM_BPCI_CON2;                  /* 7268 */
-
-	UINT32          CAM_LSCI_BASE_ADDR;                  /* 726C */
-	UINT32          CAM_LSCI_OFST_ADDR;                  /* 7270 */
-	UINT32              CAM_LSCI_XSIZE;                  /* 7274 */
-	UINT32              CAM_LSCI_YSIZE;                  /* 7278 */
-	UINT32             CAM_LSCI_STRIDE;                  /* 727C */
-	UINT32                CAM_LSCI_CON;                  /* 7280 */
-	UINT32               CAM_LSCI_CON2;                  /* 7284 */
-	UINT32          CAM_UFDI_BASE_ADDR;                  /* 7288 */
-	UINT32          CAM_UFDI_OFST_ADDR;                  /* 728C */
-	UINT32              CAM_UFDI_XSIZE;                  /* 7290 */
-	UINT32              CAM_UFDI_YSIZE;                  /* 7294 */
-	UINT32             CAM_UFDI_STRIDE;                  /* 7298 */
-	UINT32                CAM_UFDI_CON;                  /* 729C */
-	UINT32               CAM_UFDI_CON2;                  /* 72A0 */
-	UINT32          CAM_LCEI_BASE_ADDR;                  /* 72A4 */
-	UINT32          CAM_LCEI_OFST_ADDR;                  /* 72A8 */
-	UINT32              CAM_LCEI_XSIZE;                  /* 72AC */
-	UINT32              CAM_LCEI_YSIZE;                  /* 72B0 */
-	UINT32             CAM_LCEI_STRIDE;                  /* 72B4 */
-	UINT32                CAM_LCEI_CON;                  /* 72B8 */
-	UINT32               CAM_LCEI_CON2;                  /* 72BC */
-	UINT32          CAM_VIPI_BASE_ADDR;                  /* 72C0 */
-	UINT32          CAM_VIPI_OFST_ADDR;                  /* 72C4 */
-	UINT32              CAM_VIPI_XSIZE;                  /* 72C8 */
-	UINT32              CAM_VIPI_YSIZE;                  /* 72CC */
-	UINT32             CAM_VIPI_STRIDE;                  /* 72D0 */
-	UINT32                    rsv_72D4;                  /* 72D4 */
-	UINT32                CAM_VIPI_CON;                  /* 72D8 */
-	UINT32               CAM_VIPI_CON2;                  /* 72DC */
-	UINT32         CAM_VIP2I_BASE_ADDR;                  /* 72E0 */
-	UINT32         CAM_VIP2I_OFST_ADDR;                  /* 72E4 */
-	UINT32             CAM_VIP2I_XSIZE;                  /* 72E8 */
-	UINT32             CAM_VIP2I_YSIZE;                  /* 72EC */
-	UINT32            CAM_VIP2I_STRIDE;                  /* 72F0 */
-	UINT32                    rsv_72F4;                  /* 72F4 */
-	UINT32               CAM_VIP2I_CON;                  /* 72F8 */
-	UINT32              CAM_VIP2I_CON2;                  /* 72FC */
-	UINT32          CAM_IMGO_BASE_ADDR;                  /* 7300 */
-	UINT32          CAM_IMGO_OFST_ADDR;                  /* 7304 */
-	UINT32              CAM_IMGO_XSIZE;                  /* 7308 */
-	UINT32              CAM_IMGO_YSIZE;                  /* 730C */
-	UINT32             CAM_IMGO_STRIDE;                  /* 7310 */
-	UINT32                CAM_IMGO_CON;                  /* 7314 */
-	UINT32               CAM_IMGO_CON2;                  /* 7318 */
-	UINT32               CAM_IMGO_CROP;                  /* 731C */
-
-	UINT32          CAM_RRZO_BASE_ADDR;                  /* 7320 */
-	UINT32          CAM_RRZO_OFST_ADDR;                  /* 7324 */
-	UINT32              CAM_RRZO_XSIZE;                  /* 7328 */
-	UINT32              CAM_RRZO_YSIZE;                  /* 732C */
-	UINT32             CAM_RRZO_STRIDE;                  /* 7330 */
-	UINT32                CAM_RRZO_CON;                  /* 7334 */
-	UINT32               CAM_RRZO_CON2;                  /* 7338 */
-	UINT32               CAM_RRZO_CROP;                  /* 733C */
-	UINT32          CAM_LCSO_BASE_ADDR;                  /* 7340 */
-	UINT32          CAM_LCSO_OFST_ADDR;                  /* 7344 */
-	UINT32              CAM_LCSO_XSIZE;                  /* 7348 */
-	UINT32              CAM_LCSO_YSIZE;                  /* 734C */
-	UINT32             CAM_LCSO_STRIDE;                  /* 7350 */
-	UINT32                CAM_LCSO_CON;                  /* 7354 */
-	UINT32               CAM_LCSO_CON2;                  /* 7358 */
-	UINT32          CAM_EISO_BASE_ADDR;                  /* 735C */
-	UINT32              CAM_EISO_XSIZE;                  /* 7360 */
-	UINT32           CAM_AFO_BASE_ADDR;                  /* 7364 */
-	UINT32               CAM_AFO_XSIZE;                  /* 7368 */
-	UINT32         CAM_ESFKO_BASE_ADDR;                  /* 736C */
-	UINT32             CAM_ESFKO_XSIZE;                  /* 7370 */
-
-
-	UINT32             CAM_ESFKO_YSIZE;                  /* 7378 */
-	UINT32            CAM_ESFKO_STRIDE;                  /* 737C */
-	UINT32               CAM_ESFKO_CON;                  /* 7380 */
-	UINT32              CAM_ESFKO_CON2;                  /* 7384 */
-
-	UINT32           CAM_AAO_BASE_ADDR;                  /* 7388 */
-	UINT32           CAM_AAO_OFST_ADDR;                  /* 738C */
-	UINT32               CAM_AAO_XSIZE;                  /* 7390 */
-	UINT32               CAM_AAO_YSIZE;                  /* 7394 */
-	UINT32              CAM_AAO_STRIDE;                  /* 7398 */
-	UINT32                 CAM_AAO_CON;                  /* 739C */
-	UINT32                CAM_AAO_CON2;                  /* 73A0 */
-
-	UINT32         CAM_VIP3I_BASE_ADDR;                  /* 73A4 */
-	UINT32         CAM_VIP3I_OFST_ADDR;                  /* 73A8 */
-	UINT32             CAM_VIP3I_XSIZE;                  /* 73AC */
-	UINT32             CAM_VIP3I_YSIZE;                  /* 73B0 */
-	UINT32            CAM_VIP3I_STRIDE;                  /* 73B4 */
-	UINT32                    rsv_73B8;                  /* 73B8 */
-	UINT32               CAM_VIP3I_CON;                  /* 73BC */
-	UINT32              CAM_VIP3I_CON2;                  /* 73C0 */
-	UINT32          CAM_UFEO_BASE_ADDR;                  /* 73C4 */
-	UINT32          CAM_UFEO_OFST_ADDR;                  /* 73C8 */
-	UINT32              CAM_UFEO_XSIZE;                  /* 73CC */
-	UINT32              CAM_UFEO_YSIZE;                  /* 73D0 */
-	UINT32             CAM_UFEO_STRIDE;                  /* 73D4 */
-	UINT32                CAM_UFEO_CON;                  /* 73D8 */
-	UINT32               CAM_UFEO_CON2;                  /* 73DC */
-	UINT32          CAM_MFBO_BASE_ADDR;                  /* 73E0 */
-	UINT32          CAM_MFBO_OFST_ADDR;                  /* 73E4 */
-	UINT32              CAM_MFBO_XSIZE;                  /* 73E8 */
-	UINT32              CAM_MFBO_YSIZE;                  /* 73EC */
-	UINT32             CAM_MFBO_STRIDE;                  /* 73F0 */
-	UINT32                CAM_MFBO_CON;                  /* 73F4 */
-	UINT32               CAM_MFBO_CON2;                  /* 73F8 */
-	UINT32               CAM_MFBO_CROP;                  /* 73FC */
-	UINT32        CAM_IMG3BO_BASE_ADDR;                  /* 7400 */
-	UINT32        CAM_IMG3BO_OFST_ADDR;                  /* 7404 */
-	UINT32            CAM_IMG3BO_XSIZE;                  /* 7408 */
-	UINT32            CAM_IMG3BO_YSIZE;                  /* 740C */
-	UINT32           CAM_IMG3BO_STRIDE;                  /* 7410 */
-	UINT32              CAM_IMG3BO_CON;                  /* 7414 */
-	UINT32             CAM_IMG3BO_CON2;                  /* 7418 */
-	UINT32             CAM_IMG3BO_CROP;                  /* 741C */
-	UINT32        CAM_IMG3CO_BASE_ADDR;                  /* 7420 */
-	UINT32        CAM_IMG3CO_OFST_ADDR;                  /* 7424 */
-	UINT32            CAM_IMG3CO_XSIZE;                  /* 7428 */
-	UINT32            CAM_IMG3CO_YSIZE;                  /* 742C */
-	UINT32           CAM_IMG3CO_STRIDE;                  /* 7430 */
-	UINT32              CAM_IMG3CO_CON;                  /* 7434 */
-	UINT32             CAM_IMG3CO_CON2;                  /* 7438 */
-	UINT32             CAM_IMG3CO_CROP;                  /* 743C */
-	UINT32         CAM_IMG2O_BASE_ADDR;                  /* 7440 */
-	UINT32         CAM_IMG2O_OFST_ADDR;                  /* 7444 */
-	UINT32             CAM_IMG2O_XSIZE;                  /* 7448 */
-	UINT32             CAM_IMG2O_YSIZE;                  /* 744C */
-	UINT32            CAM_IMG2O_STRIDE;                  /* 7450 */
-	UINT32               CAM_IMG2O_CON;                  /* 7454 */
-	UINT32              CAM_IMG2O_CON2;                  /* 7458 */
-	UINT32              CAM_IMG2O_CROP;                  /* 745C */
-	UINT32         CAM_IMG3O_BASE_ADDR;                  /* 7460 */
-	UINT32         CAM_IMG3O_OFST_ADDR;                  /* 7464 */
-	UINT32             CAM_IMG3O_XSIZE;                  /* 7468 */
-	UINT32             CAM_IMG3O_YSIZE;                  /* 746C */
-	UINT32            CAM_IMG3O_STRIDE;                  /* 7470 */
-	UINT32               CAM_IMG3O_CON;                  /* 7474 */
-	UINT32              CAM_IMG3O_CON2;                  /* 7478 */
-	UINT32              CAM_IMG3O_CROP;                  /* 747C */
-	UINT32           CAM_FEO_BASE_ADDR;                  /* 7480 */
-	UINT32           CAM_FEO_OFST_ADDR;                  /* 7484 */
-	UINT32               CAM_FEO_XSIZE;                  /* 7488 */
-	UINT32               CAM_FEO_YSIZE;                  /* 748C */
-	UINT32              CAM_FEO_STRIDE;                  /* 7490 */
-	UINT32                 CAM_FEO_CON;                  /* 7494 */
-	UINT32                CAM_FEO_CON2;                  /* 7498 */
+	unsigned int              CAM_OBC_OFFST0;                 /* 4500 */
+	unsigned int              CAM_OBC_OFFST1;                 /* 4504 */
+	unsigned int              CAM_OBC_OFFST2;                 /* 4508 */
+	unsigned int              CAM_OBC_OFFST3;                 /* 450C */
+	unsigned int               CAM_OBC_GAIN0;                 /* 4510 */
+	unsigned int               CAM_OBC_GAIN1;                 /* 4514 */
+	unsigned int               CAM_OBC_GAIN2;                 /* 4518 */
+	unsigned int               CAM_OBC_GAIN3;                 /* 451C */
+	unsigned int                 rsv_4520[4];                 /* 4520...452C */
+	unsigned int                CAM_LSC_CTL1;                 /* 4530 */
+	unsigned int                CAM_LSC_CTL2;                 /* 4534 */
+	unsigned int                CAM_LSC_CTL3;                 /* 4538 */
+	unsigned int              CAM_LSC_LBLOCK;                 /* 453C */
+	unsigned int               CAM_LSC_RATIO;                 /* 4540 */
+	unsigned int          CAM_LSC_TPIPE_OFST;                 /* 4544 */
+	unsigned int          CAM_LSC_TPIPE_SIZE;                 /* 4548 */
+	unsigned int             CAM_LSC_GAIN_TH;                 /* 454C */
+	unsigned int              CAM_RPG_SATU_1;                 /* 4550 */
+	unsigned int              CAM_RPG_SATU_2;                 /* 4554 */
+	unsigned int              CAM_RPG_GAIN_1;                 /* 4558 */
+	unsigned int              CAM_RPG_GAIN_2;                 /* 455C */
+	unsigned int              CAM_RPG_OFST_1;                 /* 4560 */
+	unsigned int              CAM_RPG_OFST_2;                 /* 4564 */
+	unsigned int                rsv_4568[6];                  /* 4568...457C */
+	unsigned int                CAM_SGG2_PGN;                 /* 4580 */
+	unsigned int             CAM_SGG2_GMRC_1;                 /* 4584 */
+	unsigned int             CAM_SGG2_GMRC_2;                 /* 4588 */
+	unsigned int                 rsv_458C[9];                 /* 458C...45AC */
+	unsigned int             CAM_AWB_WIN_ORG;                 /* 45B0 */
+	unsigned int            CAM_AWB_WIN_SIZE;                 /* 45B4 */
+	unsigned int             CAM_AWB_WIN_PIT;                 /* 45B8 */
+	unsigned int             CAM_AWB_WIN_NUM;                 /* 45BC */
+	unsigned int             CAM_AWB_GAIN1_0;                 /* 45C0 */
+	unsigned int             CAM_AWB_GAIN1_1;                 /* 45C4 */
+	unsigned int              CAM_AWB_LMT1_0;                 /* 45C8 */
+	unsigned int              CAM_AWB_LMT1_1;                 /* 45CC */
+	unsigned int             CAM_AWB_LOW_THR;                 /* 45D0 */
+	unsigned int              CAM_AWB_HI_THR;                 /* 45D4 */
+	unsigned int          CAM_AWB_PIXEL_CNT0;                 /* 45D8 */
+	unsigned int          CAM_AWB_PIXEL_CNT1;                 /* 45DC */
+	unsigned int          CAM_AWB_PIXEL_CNT2;                 /* 45E0 */
+	unsigned int             CAM_AWB_ERR_THR;                 /* 45E4 */
+	unsigned int                 CAM_AWB_ROT;                 /* 45E8 */
+	unsigned int                CAM_AWB_L0_X;                 /* 45EC */
+	unsigned int                CAM_AWB_L0_Y;                 /* 45F0 */
+	unsigned int                CAM_AWB_L1_X;                 /* 45F4 */
+	unsigned int                CAM_AWB_L1_Y;                 /* 45F8 */
+	unsigned int                CAM_AWB_L2_X;                 /* 45FC */
+	unsigned int                CAM_AWB_L2_Y;                 /* 4600 */
+	unsigned int                CAM_AWB_L3_X;                 /* 4604 */
+	unsigned int                CAM_AWB_L3_Y;                 /* 4608 */
+	unsigned int                CAM_AWB_L4_X;                 /* 460C */
+	unsigned int                CAM_AWB_L4_Y;                 /* 4610 */
+	unsigned int                CAM_AWB_L5_X;                 /* 4614 */
+	unsigned int                CAM_AWB_L5_Y;                 /* 4618 */
+	unsigned int                CAM_AWB_L6_X;                 /* 461C */
+	unsigned int                CAM_AWB_L6_Y;                 /* 4620 */
+	unsigned int                CAM_AWB_L7_X;                 /* 4624 */
+	unsigned int                CAM_AWB_L7_Y;                 /* 4628 */
+	unsigned int                CAM_AWB_L8_X;                 /* 462C */
+	unsigned int                CAM_AWB_L8_Y;                 /* 4630 */
+	unsigned int                CAM_AWB_L9_X;                 /* 4634 */
+	unsigned int                CAM_AWB_L9_Y;                 /* 4638 */
+	unsigned int               CAM_AWB_SPARE;                 /* 463C */
+	unsigned int                 rsv_4640[4];                 /* 4640...464C */
+	unsigned int              CAM_AE_HST_CTL;                 /* 4650 */
+	unsigned int              CAM_AE_GAIN2_0;                 /* 4654 */
+	unsigned int              CAM_AE_GAIN2_1;                 /* 4658 */
+	unsigned int               CAM_AE_LMT2_0;                 /* 465C */
+	unsigned int               CAM_AE_LMT2_1;                 /* 4660 */
+	unsigned int             CAM_AE_RC_CNV_0;                 /* 4664 */
+	unsigned int             CAM_AE_RC_CNV_1;                 /* 4668 */
+	unsigned int             CAM_AE_RC_CNV_2;                 /* 466C */
+	unsigned int             CAM_AE_RC_CNV_3;                 /* 4670 */
+	unsigned int             CAM_AE_RC_CNV_4;                 /* 4674 */
+	unsigned int             CAM_AE_YGAMMA_0;                 /* 4678 */
+	unsigned int             CAM_AE_YGAMMA_1;                 /* 467C */
+	unsigned int              CAM_AE_HST_SET;                 /* 4680 */
+	unsigned int             CAM_AE_HST0_RNG;                 /* 4684 */
+	unsigned int             CAM_AE_HST1_RNG;                 /* 4688 */
+	unsigned int             CAM_AE_HST2_RNG;                 /* 468C */
+	unsigned int             CAM_AE_HST3_RNG;                 /* 4690 */
+	unsigned int                CAM_AE_SPARE;                 /* 4694 */
+	unsigned int                 rsv_4698[2];                 /* 4698...469C */
+	unsigned int                CAM_SGG1_PGN;                 /* 46A0 */
+	unsigned int             CAM_SGG1_GMRC_1;                 /* 46A4 */
+	unsigned int             CAM_SGG1_GMRC_2;                 /* 46A8 */
+	unsigned int                    rsv_46AC;                 /* 46AC */
+	unsigned int                  CAM_AF_CON;                 /* 46B0 */
+	unsigned int               CAM_AF_WINX_1;                 /* 46B4 */
+	unsigned int               CAM_AF_WINX_2;                 /* 46B8 */
+	unsigned int               CAM_AF_WINX_3;                 /* 46BC */
+	unsigned int               CAM_AF_WINY_1;                 /* 46C0 */
+	unsigned int               CAM_AF_WINY_2;                 /* 46C4 */
+	unsigned int               CAM_AF_WINY_3;                 /* 46C8 */
+	unsigned int                 CAM_AF_SIZE;                 /* 46CC */
+	unsigned int                    rsv_46D0;                 /* 46D0 */
+	unsigned int                CAM_AF_FLT_1;                 /* 46D4 */
+	unsigned int                CAM_AF_FLT_2;                 /* 46D8 */
+	unsigned int                CAM_AF_FLT_3;                 /* 46DC */
+	unsigned int                   CAM_AF_TH;                 /* 46E0 */
+	unsigned int            CAM_AF_FLO_WIN_1;                 /* 46E4 */
+	unsigned int           CAM_AF_FLO_SIZE_1;                 /* 46E8 */
+	unsigned int            CAM_AF_FLO_WIN_2;                 /* 46EC */
+	unsigned int           CAM_AF_FLO_SIZE_2;                 /* 46F0 */
+	unsigned int            CAM_AF_FLO_WIN_3;                 /* 46F4 */
+	unsigned int           CAM_AF_FLO_SIZE_3;                 /* 46F8 */
+	unsigned int               CAM_AF_FLO_TH;                 /* 46FC */
+	unsigned int           CAM_AF_IMAGE_SIZE;                 /* 4700 */
+	unsigned int                CAM_AF_FLT_4;                 /* 4704 */
+	unsigned int                CAM_AF_FLT_5;                 /* 4708 */
+	unsigned int               CAM_AF_STAT_L;                 /* 470C */
+	unsigned int               CAM_AF_STAT_M;                 /* 4710 */
+	unsigned int          CAM_AF_FLO_STAT_1L;                 /* 4714 */
+	unsigned int          CAM_AF_FLO_STAT_1M;                 /* 4718 */
+	unsigned int          CAM_AF_FLO_STAT_1V;                 /* 471C */
+	unsigned int          CAM_AF_FLO_STAT_2L;                 /* 4720 */
+	unsigned int          CAM_AF_FLO_STAT_2M;                 /* 4724 */
+	unsigned int          CAM_AF_FLO_STAT_2V;                 /* 4728 */
+	unsigned int          CAM_AF_FLO_STAT_3L;                 /* 472C */
+	unsigned int          CAM_AF_FLO_STAT_3M;                 /* 4730 */
+	unsigned int          CAM_AF_FLO_STAT_3V;                 /* 4734 */
+	unsigned int                rsv_4738[10];                 /* 4738...475C */
+	unsigned int                CAM_WBN_SIZE;                 /* 4760 */
+	unsigned int                CAM_WBN_MODE;                 /* 4764 */
+	unsigned int                 rsv_4768[2];                 /* 4768...476C */
+	unsigned int                 CAM_FLK_CON;                 /* 4770 */
+	unsigned int                CAM_FLK_OFST;                 /* 4774 */
+	unsigned int                CAM_FLK_SIZE;                 /* 4778 */
+	unsigned int                 CAM_FLK_NUM;                 /* 477C */
+	unsigned int                 CAM_LCS_CON;                 /* 4780 */
+	unsigned int                  CAM_LCS_ST;                 /* 4784 */
+	unsigned int                 CAM_LCS_AWS;                 /* 4788 */
+	unsigned int                 CAM_LCS_FLR;                 /* 478C */
+	unsigned int              CAM_LCS_LRZR_1;                 /* 4790 */
+	unsigned int              CAM_LCS_LRZR_2;                 /* 4794 */
+	unsigned int                 rsv_4798[2];                 /* 4798...479C */
+	unsigned int                 CAM_RRZ_CTL;                 /* 47A0 */
+	unsigned int              CAM_RRZ_IN_IMG;                 /* 47A4 */
+	unsigned int             CAM_RRZ_OUT_IMG;                 /* 47A8 */
+	unsigned int           CAM_RRZ_HORI_STEP;                 /* 47AC */
+	unsigned int           CAM_RRZ_VERT_STEP;                 /* 47B0 */
+	unsigned int       CAM_RRZ_HORI_INT_OFST;                 /* 47B4 */
+	unsigned int       CAM_RRZ_HORI_SUB_OFST;                 /* 47B8 */
+	unsigned int       CAM_RRZ_VERT_INT_OFST;                 /* 47BC */
+	unsigned int       CAM_RRZ_VERT_SUB_OFST;                 /* 47C0 */
+	unsigned int             CAM_RRZ_MODE_TH;                 /* 47C4 */
+	unsigned int            CAM_RRZ_MODE_CTL;                 /* 47C8 */
+	unsigned int                rsv_47CC[13];                 /* 47CC...47FC */
+	unsigned int                 CAM_BPC_CON;                 /* 4800 */
+	unsigned int                 CAM_BPC_TH1;                 /* 4804 */
+	unsigned int                 CAM_BPC_TH2;                 /* 4808 */
+	unsigned int                 CAM_BPC_TH3;                 /* 480C */
+	unsigned int                 CAM_BPC_TH4;                 /* 4810 */
+	unsigned int                 CAM_BPC_DTC;                 /* 4814 */
+	unsigned int                 CAM_BPC_COR;                 /* 4818 */
+	unsigned int               CAM_BPC_TBLI1;                 /* 481C */
+	unsigned int               CAM_BPC_TBLI2;                 /* 4820 */
+	unsigned int               CAM_BPC_TH1_C;                 /* 4824 */
+	unsigned int               CAM_BPC_TH2_C;                 /* 4828 */
+	unsigned int               CAM_BPC_TH3_C;                 /* 482C */
+	unsigned int                CAM_BPC_RMM1;                 /* 4830 */
+	unsigned int                CAM_BPC_RMM2;                 /* 4834 */
+	unsigned int          CAM_BPC_RMM_REVG_1;                 /* 4838 */
+	unsigned int          CAM_BPC_RMM_REVG_2;                 /* 483C */
+	unsigned int            CAM_BPC_RMM_LEOS;                 /* 4840 */
+	unsigned int            CAM_BPC_RMM_GCNT;                 /* 4844 */
+	unsigned int                 rsv_4848[2];                 /* 4848...484C */
+	unsigned int                 CAM_NR1_CON;                 /* 4850 */
+	unsigned int              CAM_NR1_CT_CON;                 /* 4854 */
+	unsigned int                CAM_BNR_RSV1;                 /* 4858 */
+	unsigned int                CAM_BNR_RSV2;                 /* 485C */
+	unsigned int                 rsv_4860[8];                 /* 4860...487C */
+	unsigned int              CAM_PGN_SATU_1;                 /* 4880 */
+	unsigned int              CAM_PGN_SATU_2;                 /* 4884 */
+	unsigned int              CAM_PGN_GAIN_1;                 /* 4888 */
+	unsigned int              CAM_PGN_GAIN_2;                 /* 488C */
+	unsigned int              CAM_PGN_OFST_1;                 /* 4890 */
+	unsigned int              CAM_PGN_OFST_2;                 /* 4894 */
+	unsigned int                 rsv_4898[2];                 /* 4898...489C */
+	unsigned int                CAM_DM_O_BYP;                 /* 48A0 */
+	unsigned int            CAM_DM_O_ED_FLAT;                 /* 48A4 */
+	unsigned int             CAM_DM_O_ED_NYQ;                 /* 48A8 */
+	unsigned int            CAM_DM_O_ED_STEP;                 /* 48AC */
+	unsigned int             CAM_DM_O_RGB_HF;                 /* 48B0 */
+	unsigned int                CAM_DM_O_DOT;                 /* 48B4 */
+	unsigned int             CAM_DM_O_F1_ACT;                 /* 48B8 */
+	unsigned int             CAM_DM_O_F2_ACT;                 /* 48BC */
+	unsigned int             CAM_DM_O_F3_ACT;                 /* 48C0 */
+	unsigned int             CAM_DM_O_F4_ACT;                 /* 48C4 */
+	unsigned int               CAM_DM_O_F1_L;                 /* 48C8 */
+	unsigned int               CAM_DM_O_F2_L;                 /* 48CC */
+	unsigned int               CAM_DM_O_F3_L;                 /* 48D0 */
+	unsigned int               CAM_DM_O_F4_L;                 /* 48D4 */
+	unsigned int              CAM_DM_O_HF_RB;                 /* 48D8 */
+	unsigned int            CAM_DM_O_HF_GAIN;                 /* 48DC */
+	unsigned int            CAM_DM_O_HF_COMP;                 /* 48E0 */
+	unsigned int        CAM_DM_O_HF_CORIN_TH;                 /* 48E4 */
+	unsigned int            CAM_DM_O_ACT_LUT;                 /* 48E8 */
+	unsigned int                    rsv_48EC;                 /* 48EC */
+	unsigned int              CAM_DM_O_SPARE;                 /* 48F0 */
+	unsigned int                 CAM_DM_O_BB;                 /* 48F4 */
+	unsigned int                 rsv_48F8[6];                 /* 48F8...490C */
+	unsigned int                 CAM_CCL_GTC;                 /* 4910 */
+	unsigned int                 CAM_CCL_ADC;                 /* 4914 */
+	unsigned int                 CAM_CCL_BAC;                 /* 4918 */
+	unsigned int                    rsv_491C;                 /* 491C */
+	unsigned int               CAM_G2G_CNV_1;                 /* 4920 */
+	unsigned int               CAM_G2G_CNV_2;                 /* 4924 */
+	unsigned int               CAM_G2G_CNV_3;                 /* 4928 */
+	unsigned int               CAM_G2G_CNV_4;                 /* 492C */
+	unsigned int               CAM_G2G_CNV_5;                 /* 4930 */
+	unsigned int               CAM_G2G_CNV_6;                 /* 4934 */
+	unsigned int                CAM_G2G_CTRL;                 /* 4938 */
+	unsigned int                 rsv_493C[3];                 /* 493C...4944 */
+	unsigned int                CAM_UNP_OFST;                 /* 4948 */
+	unsigned int                    rsv_494C;                 /* 494C */
+	unsigned int                 CAM_C02_CON;                 /* 4950 */
+	unsigned int           CAM_C02_CROP_CON1;                 /* 4954 */
+	unsigned int           CAM_C02_CROP_CON2;                 /* 4958 */
+	unsigned int                   rsv_495C;                  /* 495C */
+	unsigned int                 CAM_MFB_CON;                 /* 4960 */
+	unsigned int             CAM_MFB_LL_CON1;                 /* 4964 */
+	unsigned int             CAM_MFB_LL_CON2;                 /* 4968 */
+	unsigned int             CAM_MFB_LL_CON3;                 /* 496C */
+	unsigned int             CAM_MFB_LL_CON4;                 /* 4970 */
+	unsigned int             CAM_MFB_LL_CON5;                 /* 4974 */
+	unsigned int             CAM_MFB_LL_CON6;                 /* 4978 */
+	unsigned int                rsv_497C[17];                 /* 497C...49BC */
+	unsigned int                 CAM_LCE_CON;                 /* 49C0 */
+	unsigned int                  CAM_LCE_ZR;                 /* 49C4 */
+	unsigned int                 CAM_LCE_QUA;                 /* 49C8 */
+	unsigned int               CAM_LCE_DGC_1;                 /* 49CC */
+	unsigned int               CAM_LCE_DGC_2;                 /* 49D0 */
+	unsigned int                  CAM_LCE_GM;                 /* 49D4 */
+	unsigned int                 rsv_49D8[2];                 /* 49D8...49DC */
+	unsigned int              CAM_LCE_SLM_LB;                 /* 49E0 */
+	unsigned int            CAM_LCE_SLM_SIZE;                 /* 49E4 */
+	unsigned int                CAM_LCE_OFST;                 /* 49E8 */
+	unsigned int                CAM_LCE_BIAS;                 /* 49EC */
+	unsigned int          CAM_LCE_IMAGE_SIZE;                 /* 49F0 */
+	unsigned int                 rsv_49F4[3];                 /* 49F4...4A18 */
+	unsigned int              CAM_CPG_SATU_1;                 /* 4A00 */
+	unsigned int              CAM_CPG_SATU_2;                 /* 4A04 */
+	unsigned int              CAM_CPG_GAIN_1;                 /* 4A08 */
+	unsigned int              CAM_CPG_GAIN_2;                 /* 4A0C */
+	unsigned int              CAM_CPG_OFST_1;                 /* 4A10 */
+	unsigned int                rsv_4A18[1];                  /* 4A18 */
+	unsigned int                 CAM_C42_CON;                 /* 4A1C */
+	unsigned int                CAM_ANR_CON1;                 /* 4A20 */
+	unsigned int                CAM_ANR_CON2;                 /* 4A24 */
+	unsigned int                CAM_ANR_CON3;                 /* 4A28 */
+	unsigned int                CAM_ANR_YAD1;                 /* 4A2C */
+	unsigned int                CAM_ANR_YAD2;                 /* 4A30 */
+	unsigned int               CAM_ANR_4LUT1;                 /* 4A34 */
+	unsigned int               CAM_ANR_4LUT2;                 /* 4A38 */
+	unsigned int               CAM_ANR_4LUT3;                 /* 4A3C */
+	unsigned int                 CAM_ANR_PTY;                 /* 4A40 */
+	unsigned int                 CAM_ANR_CAD;                 /* 4A44 */
+	unsigned int                 CAM_ANR_PTC;                 /* 4A48 */
+	unsigned int                CAM_ANR_LCE1;                 /* 4A4C */
+	unsigned int                CAM_ANR_LCE2;                 /* 4A50 */
+	unsigned int                 CAM_ANR_HP1;                 /* 4A54 */
+	unsigned int                 CAM_ANR_HP2;                 /* 4A58 */
+	unsigned int                 CAM_ANR_HP3;                 /* 4A5C */
+	unsigned int                CAM_ANR_ACTY;                 /* 4A60 */
+	unsigned int                CAM_ANR_ACTC;                 /* 4A64 */
+	unsigned int                CAM_ANR_RSV1;                 /* 4A68 */
+	unsigned int                CAM_ANR_RSV2;                 /* 4A6C */
+	unsigned int                 rsv_4A70[4];                 /* 4A70...4A7C */
+	unsigned int                 CAM_CCR_CON;                 /* 4A80 */
+	unsigned int                CAM_CCR_YLUT;                 /* 4A84 */
+	unsigned int               CAM_CCR_UVLUT;                 /* 4A88 */
+	unsigned int               CAM_CCR_YLUT2;                 /* 4A8C */
+	unsigned int            CAM_CCR_SAT_CTRL;                 /* 4A90 */
+	unsigned int            CAM_CCR_UVLUT_SP;                 /* 4A94 */
+	unsigned int                 rsv_4A98[2];                 /* 4A98...4A9C */
+	unsigned int           CAM_SEEE_SRK_CTRL;                 /* 4AA0 */
+	unsigned int          CAM_SEEE_CLIP_CTRL;                 /* 4AA4 */
+	unsigned int         CAM_SEEE_FLT_CTRL_1;                 /* 4AA8 */
+	unsigned int         CAM_SEEE_FLT_CTRL_2;                 /* 4AAC */
+	unsigned int       CAM_SEEE_GLUT_CTRL_01;                 /* 4AB0 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_02;                 /* 4AB4 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_03;                 /* 4AB8 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_04;                 /* 4ABC */
+	unsigned int       CAM_SEEE_GLUT_CTRL_05;                 /* 4AC0 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_06;                 /* 4AC4 */
+	unsigned int          CAM_SEEE_EDTR_CTRL;                 /* 4AC8 */
+	unsigned int      CAM_SEEE_OUT_EDGE_CTRL;                 /* 4ACC */
+	unsigned int          CAM_SEEE_SE_Y_CTRL;                 /* 4AD0 */
+	unsigned int     CAM_SEEE_SE_EDGE_CTRL_1;                 /* 4AD4 */
+	unsigned int     CAM_SEEE_SE_EDGE_CTRL_2;                 /* 4AD8 */
+	unsigned int     CAM_SEEE_SE_EDGE_CTRL_3;                 /* 4ADC */
+	unsigned int      CAM_SEEE_SE_SPECL_CTRL;                 /* 4AE0 */
+	unsigned int     CAM_SEEE_SE_CORE_CTRL_1;                 /* 4AE4 */
+	unsigned int     CAM_SEEE_SE_CORE_CTRL_2;                 /* 4AE8 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_07;                 /* 4AEC */
+	unsigned int       CAM_SEEE_GLUT_CTRL_08;                 /* 4AF0 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_09;                 /* 4AF4 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_10;                 /* 4AF8 */
+	unsigned int       CAM_SEEE_GLUT_CTRL_11;                 /* 4AFC */
+	unsigned int             CAM_CRZ_CONTROL;                 /* 4B00 */
+	unsigned int              CAM_CRZ_IN_IMG;                 /* 4B04 */
+	unsigned int             CAM_CRZ_OUT_IMG;                 /* 4B08 */
+	unsigned int           CAM_CRZ_HORI_STEP;                 /* 4B0C */
+	unsigned int           CAM_CRZ_VERT_STEP;                 /* 4B10 */
+	unsigned int  CAM_CRZ_LUMA_HORI_INT_OFST;                 /* 4B14 */
+	unsigned int  CAM_CRZ_LUMA_HORI_SUB_OFST;                 /* 4B18 */
+	unsigned int  CAM_CRZ_LUMA_VERT_INT_OFST;                 /* 4B1C */
+	unsigned int  CAM_CRZ_LUMA_VERT_SUB_OFST;                 /* 4B20 */
+	unsigned int  CAM_CRZ_CHRO_HORI_INT_OFST;                 /* 4B24 */
+	unsigned int  CAM_CRZ_CHRO_HORI_SUB_OFST;                 /* 4B28 */
+	unsigned int  CAM_CRZ_CHRO_VERT_INT_OFST;                 /* 4B2C */
+	unsigned int  CAM_CRZ_CHRO_VERT_SUB_OFST;                 /* 4B30 */
+	unsigned int               CAM_CRZ_DER_1;                 /* 4B34 */
+	unsigned int               CAM_CRZ_DER_2;                 /* 4B38 */
+	unsigned int                rsv_4B3C[25];                 /* 4B3C...4B9C */
+	unsigned int             CAM_G2C_CONV_0A;                 /* 4BA0 */
+	unsigned int             CAM_G2C_CONV_0B;                 /* 4BA4 */
+	unsigned int             CAM_G2C_CONV_1A;                 /* 4BA8 */
+	unsigned int             CAM_G2C_CONV_1B;                 /* 4BAC */
+	unsigned int             CAM_G2C_CONV_2A;                 /* 4BB0 */
+	unsigned int             CAM_G2C_CONV_2B;                 /* 4BB4 */
+	unsigned int         CAM_G2C_SHADE_CON_1;                 /* 4BB8 */
+	unsigned int         CAM_G2C_SHADE_CON_2;                 /* 4BBC */
+	unsigned int         CAM_G2C_SHADE_CON_3;                 /* 4BC0 */
+	unsigned int           CAM_G2C_SHADE_TAR;                 /* 4BC4 */
+	unsigned int            CAM_G2C_SHADE_SP;                 /* 4BC8 */
+	unsigned int                rsv_4BCC[25];                 /* 4BCC...4C2C */
+	unsigned int            CAM_SRZ1_CONTROL;                 /* 4C30 */
+	unsigned int             CAM_SRZ1_IN_IMG;                 /* 4C34 */
+	unsigned int            CAM_SRZ1_OUT_IMG;                 /* 4C38 */
+	unsigned int          CAM_SRZ1_HORI_STEP;                 /* 4C3C */
+	unsigned int          CAM_SRZ1_VERT_STEP;                 /* 4C40 */
+	unsigned int      CAM_SRZ1_HORI_INT_OFST;                 /* 4C44 */
+	unsigned int      CAM_SRZ1_HORI_SUB_OFST;                 /* 4C48 */
+	unsigned int      CAM_SRZ1_VERT_INT_OFST;                 /* 4C4C */
+	unsigned int      CAM_SRZ1_VERT_SUB_OFST;                 /* 4C50 */
+	unsigned int                 rsv_4C54[3];                 /* 4C54...4C5C */
+	unsigned int            CAM_SRZ2_CONTROL;                 /* 4C60 */
+	unsigned int             CAM_SRZ2_IN_IMG;                 /* 4C64 */
+	unsigned int            CAM_SRZ2_OUT_IMG;                 /* 4C68 */
+	unsigned int          CAM_SRZ2_HORI_STEP;                 /* 4C6C */
+	unsigned int          CAM_SRZ2_VERT_STEP;                 /* 4C70 */
+	unsigned int      CAM_SRZ2_HORI_INT_OFST;                 /* 4C74 */
+	unsigned int      CAM_SRZ2_HORI_SUB_OFST;                 /* 4C78 */
+	unsigned int      CAM_SRZ2_VERT_INT_OFST;                 /* 4C7C */
+	unsigned int      CAM_SRZ2_VERT_SUB_OFST;                 /* 4C80 */
+	unsigned int                 rsv_4C84[3];                 /* 4C84...4C8C */
+	unsigned int             CAM_MIX1_CTRL_0;                 /* 4C90 */
+	unsigned int             CAM_MIX1_CTRL_1;                 /* 4C94 */
+	unsigned int              CAM_MIX1_SPARE;                 /* 4C98 */
+	unsigned int                    rsv_4C9C;                 /* 4C9C */
+	unsigned int             CAM_MIX2_CTRL_0;                 /* 4CA0 */
+	unsigned int             CAM_MIX2_CTRL_1;                 /* 4CA4 */
+	unsigned int              CAM_MIX2_SPARE;                 /* 4CA8 */
+	unsigned int                    rsv_4CAC;                 /* 4CAC */
+	unsigned int             CAM_MIX3_CTRL_0;                 /* 4CB0 */
+	unsigned int             CAM_MIX3_CTRL_1;                 /* 4CB4 */
+	unsigned int              CAM_MIX3_SPARE;                 /* 4CB8 */
+	unsigned int                    rsv_4CBC;                 /* 4CBC */
+	unsigned int              CAM_NR3D_BLEND;                 /* 4CC0 */
+	unsigned int          CAM_NR3D_FBCNT_OFF;                 /* 4CC4 */
+	unsigned int          CAM_NR3D_FBCNT_SIZ;                 /* 4CC8 */
+	unsigned int           CAM_NR3D_FB_COUNT;                 /* 4CCC */
+	unsigned int            CAM_NR3D_LMT_CPX;                 /* 4CD0 */
+	unsigned int         CAM_NR3D_LMT_Y_CON1;                 /* 4CD4 */
+	unsigned int         CAM_NR3D_LMT_Y_CON2;                 /* 4CD8 */
+	unsigned int         CAM_NR3D_LMT_Y_CON3;                 /* 4CDC */
+	unsigned int         CAM_NR3D_LMT_U_CON1;                 /* 4CE0 */
+	unsigned int         CAM_NR3D_LMT_U_CON2;                 /* 4CE4 */
+	unsigned int         CAM_NR3D_LMT_U_CON3;                 /* 4CE8 */
+	unsigned int         CAM_NR3D_LMT_V_CON1;                 /* 4CEC */
+	unsigned int         CAM_NR3D_LMT_V_CON2;                 /* 4CF0 */
+	unsigned int         CAM_NR3D_LMT_V_CON3;                 /* 4CF4 */
+	unsigned int               CAM_NR3D_CTRL;                 /* 4CF8 */
+	unsigned int             CAM_NR3D_ON_OFF;                 /* 4CFC */
+	unsigned int             CAM_NR3D_ON_SIZ;                 /* 4D00 */
+	unsigned int             CAM_NR3D_SPARE0;                 /* 4D04 */
 
 
 
-	UINT32        CAM_BPCI_D_BASE_ADDR;                  /* 749C */
-	UINT32        CAM_BPCI_D_OFST_ADDR;                  /* 74A0 */
-	UINT32            CAM_BPCI_D_XSIZE;                  /* 74A4 */
-	UINT32            CAM_BPCI_D_YSIZE;                  /* 74A8 */
-	UINT32           CAM_BPCI_D_STRIDE;                  /* 74AC */
-	UINT32              CAM_BPCI_D_CON;                  /* 74B0 */
-	UINT32             CAM_BPCI_D_CON2;                  /* 74B4 */
-
-	UINT32        CAM_LSCI_D_BASE_ADDR;                  /* 74B8 */
-	UINT32        CAM_LSCI_D_OFST_ADDR;                  /* 74BC */
-	UINT32            CAM_LSCI_D_XSIZE;                  /* 74C0 */
-	UINT32            CAM_LSCI_D_YSIZE;                  /* 74C4 */
-	UINT32           CAM_LSCI_D_STRIDE;                  /* 74C8 */
-	UINT32              CAM_LSCI_D_CON;                  /* 74CC */
-	UINT32             CAM_LSCI_D_CON2;                  /* 74D0 */
-
-	UINT32        CAM_IMGO_D_BASE_ADDR;                  /* 74D4 */
-	UINT32        CAM_IMGO_D_OFST_ADDR;                  /* 74D8 */
-	UINT32            CAM_IMGO_D_XSIZE;                  /* 74DC */
-	UINT32            CAM_IMGO_D_YSIZE;                  /* 74E0 */
-	UINT32           CAM_IMGO_D_STRIDE;                  /* 74E4 */
-	UINT32              CAM_IMGO_D_CON;                  /* 74E8 */
-	UINT32             CAM_IMGO_D_CON2;                  /* 74EC */
-	UINT32             CAM_IMGO_D_CROP;                  /* 74F0 */
-
-	UINT32        CAM_RRZO_D_BASE_ADDR;                  /* 74F4 */
-	UINT32        CAM_RRZO_D_OFST_ADDR;                  /* 74F8 */
-	UINT32            CAM_RRZO_D_XSIZE;                  /* 74FC */
-	UINT32            CAM_RRZO_D_YSIZE;                  /* 7500 */
-	UINT32           CAM_RRZO_D_STRIDE;                  /* 7504 */
-	UINT32              CAM_RRZO_D_CON;                  /* 7508 */
-	UINT32             CAM_RRZO_D_CON2;                  /* 750C */
-	UINT32             CAM_RRZO_D_CROP;                  /* 7510 */
-
-	UINT32        CAM_LCSO_D_BASE_ADDR;                  /* 7514 */
-	UINT32        CAM_LCSO_D_OFST_ADDR;                  /* 7518 */
-	UINT32            CAM_LCSO_D_XSIZE;                  /* 751C */
-	UINT32            CAM_LCSO_D_YSIZE;                  /* 7520 */
-	UINT32           CAM_LCSO_D_STRIDE;                  /* 7524 */
-	UINT32              CAM_LCSO_D_CON;                  /* 7528 */
-	UINT32             CAM_LCSO_D_CON2;                  /* 752C */
-
-	UINT32         CAM_AFO_D_BASE_ADDR;                  /* 7530 */
-	UINT32             CAM_AFO_D_XSIZE;                  /* 7534 */
-
-	UINT32             CAM_AFO_D_YSIZE;                  /* 753C */
-	UINT32            CAM_AFO_D_STRIDE;                  /* 7540 */
-	UINT32               CAM_AFO_D_CON;                  /* 7544 */
-	UINT32              CAM_AFO_D_CON2;                  /* 7548 */
-
-	UINT32         CAM_AAO_D_BASE_ADDR;                  /* 754C */
-	UINT32         CAM_AAO_D_OFST_ADDR;                  /* 7550 */
-	UINT32             CAM_AAO_D_XSIZE;                  /* 7554 */
-	UINT32             CAM_AAO_D_YSIZE;                  /* 7558 */
-	UINT32            CAM_AAO_D_STRIDE;                  /* 755C */
-	UINT32               CAM_AAO_D_CON;                  /* 7560 */
-	UINT32              CAM_AAO_D_CON2;                  /* 7564 */
-
-} _isp_backup_reg_t;
+	unsigned int       CAM_EIS_PREP_ME_CTRL1;                 /* 4DC0 */
+	unsigned int       CAM_EIS_PREP_ME_CTRL2;                 /* 4DC4 */
+	unsigned int              CAM_EIS_LMV_TH;                 /* 4DC8 */
+	unsigned int           CAM_EIS_FL_OFFSET;                 /* 4DCC */
+	unsigned int           CAM_EIS_MB_OFFSET;                 /* 4DD0 */
+	unsigned int         CAM_EIS_MB_INTERVAL;                 /* 4DD4 */
+	unsigned int                 CAM_EIS_GMV;                 /* 4DD8 */
+	unsigned int            CAM_EIS_ERR_CTRL;                 /* 4DDC */
+	unsigned int          CAM_EIS_IMAGE_CTRL;                 /* 4DE0 */
+	unsigned int                 rsv_4DE4[7];                 /* 4DE4...4DFC */
+	unsigned int                 CAM_DMX_CTL;                 /* 4E00 */
+	unsigned int                CAM_DMX_CROP;                 /* 4E04 */
+	unsigned int               CAM_DMX_VSIZE;                 /* 4E08 */
+	unsigned int                    rsv_4E0C;                 /* 4E0C */
+	unsigned int                 CAM_BMX_CTL;                 /* 4E10 */
+	unsigned int                CAM_BMX_CROP;                 /* 4E14 */
+	unsigned int               CAM_BMX_VSIZE;                 /* 4E18 */
+	unsigned int                    rsv_4E1C;                 /* 4E1C */
+	unsigned int                 CAM_RMX_CTL;                 /* 4E20 */
+	unsigned int                CAM_RMX_CROP;                 /* 4E24 */
+	unsigned int               CAM_RMX_VSIZE;                 /* 4E28 */
+	unsigned int                 rsv_4E2C[9];                 /* 4E2C...4E4C */
+	unsigned int                 CAM_UFE_CON;                 /* 4E50 */
 
 
+	unsigned int                 CAM_SL2_CEN;                 /* 4F40 */
+	unsigned int             CAM_SL2_MAX0_RR;                 /* 4F44 */
+	unsigned int             CAM_SL2_MAX1_RR;                 /* 4F48 */
+	unsigned int             CAM_SL2_MAX2_RR;                 /* 4F4C */
+	unsigned int                 CAM_SL2_HRZ;                 /* 4F50 */
+	unsigned int                CAM_SL2_XOFF;                 /* 4F54 */
+	unsigned int                CAM_SL2_YOFF;                 /* 4F58 */
+	unsigned int                    rsv_4F5C;                 /* 4F5C */
+	unsigned int                CAM_SL2B_CEN;                 /* 4F60 */
+	unsigned int            CAM_SL2B_MAX0_RR;                 /* 4F64 */
+	unsigned int            CAM_SL2B_MAX1_RR;                 /* 4F68 */
+	unsigned int            CAM_SL2B_MAX2_RR;                 /* 4F6C */
+	unsigned int                CAM_SL2B_HRZ;                 /* 4F70 */
+	unsigned int               CAM_SL2B_XOFF;                 /* 4F74 */
+	unsigned int               CAM_SL2B_YOFF;                 /* 4F78 */
+	unsigned int                 rsv_4F7C[9];                 /* 4F7C...4F9C */
+	unsigned int               CAM_CRSP_CTRL;                 /* 4FA0 */
+	unsigned int                   rsv_4FA4;                  /* 4FA4 */
+	unsigned int            CAM_CRSP_OUT_IMG;                 /* 4FA8 */
+	unsigned int          CAM_CRSP_STEP_OFST;                 /* 4FAC */
+	unsigned int             CAM_CRSP_CROP_X;                 /* 4FB0 */
+	unsigned int             CAM_CRSP_CROP_Y;                 /* 4FB4 */
+	unsigned int                 rsv_4FB8[2];                 /* 4FB8...4FBC */
+	unsigned int                CAM_SL2C_CEN;                 /* 4FC0 */
+	unsigned int            CAM_SL2C_MAX0_RR;                 /* 4FC4 */
+	unsigned int            CAM_SL2C_MAX1_RR;                 /* 4FC8 */
+	unsigned int            CAM_SL2C_MAX2_RR;                 /* 4FCC */
+	unsigned int                CAM_SL2C_HRZ;                 /* 4FD0 */
+	unsigned int               CAM_SL2C_XOFF;                 /* 4FD4 */
+	unsigned int               CAM_SL2C_YOFF;                 /* 4FD8 */
 
-typedef struct _seninf_backup_reg {
-	UINT32             SENINF_TOP_CTRL;                /* 8000 */
-	UINT32       SENINF_TOP_CMODEL_PAR;                /* 8004 */
-	UINT32         SENINF_TOP_MUX_CTRL;                /* 8008 */
-	UINT32                rsv_800C[45];                /* 800C...80BC */
-	UINT32                     N3D_CTL;                /* 80C0 */
-	UINT32                     N3D_POS;                /* 80C4 */
-	UINT32                    N3D_TRIG;                /* 80C8 */
-	UINT32                     N3D_INT;                        /* 80CC */
-	UINT32                    N3D_CNT0;                       /* 80D0 */
-	UINT32                    N3D_CNT1;                       /* 80D4 */
-	UINT32                     N3D_DBG;                        /* 80D8 */
-	UINT32                N3D_DIFF_THR;                   /* 80DC */
-	UINT32                N3D_DIFF_CNT;                   /* 80E0 */
-	UINT32                          rsv_80E4[7];                    /* 80E4...80FC */
-	UINT32                SENINF1_CTRL;                   /* 8100 */
-	UINT32                          rsv_8104[7];                    /* 8104...811C */
-	UINT32            SENINF1_MUX_CTRL;               /* 8120 */
-	UINT32           SENINF1_MUX_INTEN;              /* 8124 */
-	UINT32          SENINF1_MUX_INTSTA;             /* 8128 */
-	UINT32            SENINF1_MUX_SIZE;               /* 812C */
-	UINT32         SENINF1_MUX_DEBUG_1;            /* 8130 */
-	UINT32         SENINF1_MUX_DEBUG_2;            /* 8134 */
-	UINT32         SENINF1_MUX_DEBUG_3;            /* 8138 */
-	UINT32         SENINF1_MUX_DEBUG_4;            /* 813C */
-	UINT32         SENINF1_MUX_DEBUG_5;            /* 8140 */
-	UINT32         SENINF1_MUX_DEBUG_6;            /* 8144 */
-	UINT32         SENINF1_MUX_DEBUG_7;            /* 8148 */
-	UINT32           SENINF1_MUX_SPARE;              /* 814C */
-	UINT32            SENINF1_MUX_DATA;               /* 8150 */
-	UINT32        SENINF1_MUX_DATA_CNT;           /* 8154 */
-	UINT32            SENINF1_MUX_CROP;               /* 8158 */
-	UINT32                          rsv_815C[41];                   /* 815C...81FC */
-	UINT32           SENINF_TG1_PH_CNT;              /* 8200 */
-	UINT32           SENINF_TG1_SEN_CK;              /* 8204 */
-	UINT32           SENINF_TG1_TM_CTL;              /* 8208 */
-	UINT32          SENINF_TG1_TM_SIZE;             /* 820C */
-	UINT32           SENINF_TG1_TM_CLK;              /* 8210 */
-	UINT32                          rsv_8214[59];                   /* 8214...82FC */
-	UINT32          MIPI_RX_CON00_CSI0;             /* 8300 */
-	UINT32          MIPI_RX_CON04_CSI0;             /* 8304 */
-	UINT32          MIPI_RX_CON08_CSI0;             /* 8308 */
-	UINT32          MIPI_RX_CON0C_CSI0;             /* 830C */
-	UINT32          MIPI_RX_CON10_CSI0;             /* 8310 */
-	UINT32                          rsv_8314[4];                    /* 8314...8320 */
-	UINT32          MIPI_RX_CON24_CSI0;             /* 8324 */
-	UINT32          MIPI_RX_CON28_CSI0;             /* 8328 */
-	UINT32                          rsv_832C[2];                    /* 832C...8330 */
-	UINT32          MIPI_RX_CON34_CSI0;             /* 8334 */
-	UINT32          MIPI_RX_CON38_CSI0;             /* 8338 */
-	UINT32          MIPI_RX_CON3C_CSI0;             /* 833C */
-	UINT32          MIPI_RX_CON40_CSI0;             /* 8340 */
-	UINT32          MIPI_RX_CON44_CSI0;             /* 8344 */
-	UINT32          MIPI_RX_CON48_CSI0;             /* 8348 */
-	UINT32                          rsv_834C;                       /* 834C */
-	UINT32          MIPI_RX_CON50_CSI0;             /* 8350 */
-	UINT32                          rsv_8354[3];                    /* 8354...835C */
-	UINT32           SENINF1_CSI2_CTRL;              /* 8360 */
-	UINT32          SENINF1_CSI2_DELAY;             /* 8364 */
-	UINT32          SENINF1_CSI2_INTEN;             /* 8368 */
-	UINT32         SENINF1_CSI2_INTSTA;            /* 836C */
-	UINT32         SENINF1_CSI2_ECCDBG;            /* 8370 */
-	UINT32         SENINF1_CSI2_CRCDBG;            /* 8374 */
-	UINT32            SENINF1_CSI2_DBG;               /* 8378 */
-	UINT32            SENINF1_CSI2_VER;               /* 837C */
-	UINT32     SENINF1_CSI2_SHORT_INFO;        /* 8380 */
-	UINT32          SENINF1_CSI2_LNFSM;             /* 8384 */
-	UINT32          SENINF1_CSI2_LNMUX;             /* 8388 */
-	UINT32      SENINF1_CSI2_HSYNC_CNT;         /* 838C */
-	UINT32            SENINF1_CSI2_CAL;               /* 8390 */
-	UINT32             SENINF1_CSI2_DS;                /* 8394 */
-	UINT32             SENINF1_CSI2_VS;                /* 8398 */
-	UINT32           SENINF1_CSI2_BIST;              /* 839C */
-	UINT32           SENINF1_NCSI2_CTL;              /* 83A0 */
-	UINT32   SENINF1_NCSI2_LNRC_TIMING;      /* 83A4 */
-	UINT32   SENINF1_NCSI2_LNRD_TIMING;      /* 83A8 */
-	UINT32          SENINF1_NCSI2_DPCM;             /* 83AC */
-	UINT32        SENINF1_NCSI2_INT_EN;           /* 83B0 */
-	UINT32    SENINF1_NCSI2_INT_STATUS;       /* 83B4 */
-	UINT32       SENINF1_NCSI2_DGB_SEL;          /* 83B8 */
-	UINT32      SENINF1_NCSI2_DBG_PORT;         /* 83BC */
-	UINT32        SENINF1_NCSI2_SPARE0;           /* 83C0 */
-	UINT32        SENINF1_NCSI2_SPARE1;           /* 83C4 */
-	UINT32      SENINF1_NCSI2_LNRC_FSM;         /* 83C8 */
-	UINT32      SENINF1_NCSI2_LNRD_FSM;         /* 83CC */
-	UINT32 SENINF1_NCSI2_FRAME_LINE_NUM;   /* 83D0 */
-	UINT32 SENINF1_NCSI2_GENERIC_SHORT;    /* 83D4 */
-	UINT32      SENINF1_NCSI2_HSRX_DBG;         /* 83D8 */
-	UINT32            SENINF1_NCSI2_DI;               /* 83DC */
-	UINT32      SENINF1_NCSI2_HS_TRAIL;         /* 83E0 */
-	UINT32       SENINF1_NCSI2_DI_CTRL;          /* 83E4 */
-	UINT32                          rsv_83E8[70];                   /* 83E8...84FC */
-	UINT32                SENINF2_CTRL;                   /* 8500 */
-	UINT32                          rsv_8504[7];                    /* 8504...851C */
-	UINT32            SENINF2_MUX_CTRL;               /* 8520 */
-	UINT32           SENINF2_MUX_INTEN;              /* 8524 */
-	UINT32          SENINF2_MUX_INTSTA;             /* 8528 */
-	UINT32            SENINF2_MUX_SIZE;               /* 852C */
-	UINT32         SENINF2_MUX_DEBUG_1;            /* 8530 */
-	UINT32         SENINF2_MUX_DEBUG_2;            /* 8534 */
-	UINT32         SENINF2_MUX_DEBUG_3;            /* 8538 */
-	UINT32         SENINF2_MUX_DEBUG_4;            /* 853C */
-	UINT32         SENINF2_MUX_DEBUG_5;            /* 8540 */
-	UINT32         SENINF2_MUX_DEBUG_6;            /* 8544 */
-	UINT32         SENINF2_MUX_DEBUG_7;            /* 8548 */
-	UINT32           SENINF2_MUX_SPARE;              /* 854C */
-	UINT32            SENINF2_MUX_DATA;               /* 8550 */
-	UINT32        SENINF2_MUX_DATA_CNT;           /* 8554 */
-	UINT32            SENINF2_MUX_CROP;               /* 8558 */
-	UINT32                          rsv_855C[41];                   /* 855C...85FC */
-	UINT32           SENINF_TG2_PH_CNT;              /* 8600 */
-	UINT32           SENINF_TG2_SEN_CK;              /* 8604 */
-	UINT32           SENINF_TG2_TM_CTL;              /* 8608 */
-	UINT32          SENINF_TG2_TM_SIZE;             /* 860C */
-	UINT32           SENINF_TG2_TM_CLK;              /* 8610 */
-	UINT32                          rsv_8614[59];                   /* 8614...86FC */
-	UINT32          MIPI_RX_CON00_CSI1;             /* 8700 */
-	UINT32          MIPI_RX_CON04_CSI1;             /* 8704 */
-	UINT32          MIPI_RX_CON08_CSI1;             /* 8708 */
-	UINT32          MIPI_RX_CON0C_CSI1;             /* 870C */
-	UINT32          MIPI_RX_CON10_CSI1;             /* 8710 */
-	UINT32                          rsv_8714[4];                    /* 8714...8720 */
-	UINT32          MIPI_RX_CON24_CSI1;             /* 8724 */
-	UINT32          MIPI_RX_CON28_CSI1;             /* 8728 */
-	UINT32                          rsv_872C[2];                    /* 872C...8730 */
-	UINT32          MIPI_RX_CON34_CSI1;             /* 8734 */
-	UINT32          MIPI_RX_CON38_CSI1;             /* 8738 */
-	UINT32          MIPI_RX_CON3C_CSI1;             /* 873C */
-	UINT32          MIPI_RX_CON40_CSI1;             /* 8740 */
-	UINT32          MIPI_RX_CON44_CSI1;             /* 8744 */
-	UINT32          MIPI_RX_CON48_CSI1;             /* 8748 */
-	UINT32                          rsv_874C;                       /* 874C */
-	UINT32          MIPI_RX_CON50_CSI1;             /* 8750 */
-	UINT32                          rsv_8754[3];                    /* 8754...875C */
-	UINT32           SENINF2_CSI2_CTRL;              /* 8760 */
-	UINT32          SENINF2_CSI2_DELAY;             /* 8764 */
-	UINT32          SENINF2_CSI2_INTEN;             /* 8768 */
-	UINT32         SENINF2_CSI2_INTSTA;            /* 876C */
-	UINT32         SENINF2_CSI2_ECCDBG;            /* 8770 */
-	UINT32         SENINF2_CSI2_CRCDBG;            /* 8774 */
-	UINT32            SENINF2_CSI2_DBG;               /* 8778 */
-	UINT32            SENINF2_CSI2_VER;               /* 877C */
-	UINT32     SENINF2_CSI2_SHORT_INFO;        /* 8780 */
-	UINT32          SENINF2_CSI2_LNFSM;             /* 8784 */
-	UINT32          SENINF2_CSI2_LNMUX;             /* 8788 */
-	UINT32      SENINF2_CSI2_HSYNC_CNT;         /* 878C */
-	UINT32            SENINF2_CSI2_CAL;               /* 8790 */
-	UINT32             SENINF2_CSI2_DS;                /* 8794 */
-	UINT32             SENINF2_CSI2_VS;                /* 8798 */
-	UINT32           SENINF2_CSI2_BIST;              /* 879C */
-	UINT32           SENINF2_NCSI2_CTL;              /* 87A0 */
-	UINT32   SENINF2_NCSI2_LNRC_TIMING;      /* 87A4 */
-	UINT32   SENINF2_NCSI2_LNRD_TIMING;      /* 87A8 */
-	UINT32          SENINF2_NCSI2_DPCM;             /* 87AC */
-	UINT32        SENINF2_NCSI2_INT_EN;           /* 87B0 */
-	UINT32    SENINF2_NCSI2_INT_STATUS;       /* 87B4 */
-	UINT32       SENINF2_NCSI2_DGB_SEL;          /* 87B8 */
-	UINT32      SENINF2_NCSI2_DBG_PORT;         /* 87BC */
-	UINT32        SENINF2_NCSI2_SPARE0;           /* 87C0 */
-	UINT32        SENINF2_NCSI2_SPARE1;           /* 87C4 */
-	UINT32      SENINF2_NCSI2_LNRC_FSM;         /* 87C8 */
-	UINT32      SENINF2_NCSI2_LNRD_FSM;         /* 87CC */
-	UINT32 SENINF2_NCSI2_FRAME_LINE_NUM;   /* 87D0 */
-	UINT32 SENINF2_NCSI2_GENERIC_SHORT;    /* 87D4 */
-	UINT32      SENINF2_NCSI2_HSRX_DBG;         /* 87D8 */
-	UINT32            SENINF2_NCSI2_DI;               /* 87DC */
-	UINT32      SENINF2_NCSI2_HS_TRAIL;         /* 87E0 */
-	UINT32       SENINF2_NCSI2_DI_CTRL;          /* 87E4 */
+	unsigned int                CAM_GGM_CTRL;                 /* 5480 */
 
-	UINT32      MIPIRX_ANALOG_BASE_000;
-	UINT32      MIPIRX_ANALOG_BASE_004;
-	UINT32      MIPIRX_ANALOG_BASE_008;
-	UINT32      MIPIRX_ANALOG_BASE_00C;
-	UINT32      MIPIRX_ANALOG_BASE_010;
-	UINT32      MIPIRX_ANALOG_BASE_014;
-	UINT32      MIPIRX_ANALOG_BASE_018;
-	UINT32      MIPIRX_ANALOG_BASE_01C;
-	UINT32      MIPIRX_ANALOG_BASE_020;
-	UINT32      MIPIRX_ANALOG_BASE_024;
-	UINT32      MIPIRX_ANALOG_BASE_028;
-	UINT32      MIPIRX_ANALOG_BASE_02C;
-	UINT32      MIPIRX_ANALOG_BASE_030;
-	UINT32      MIPIRX_ANALOG_BASE_034;
-	UINT32      MIPIRX_ANALOG_BASE_038;
-	UINT32      MIPIRX_ANALOG_BASE_03C;
-	UINT32      MIPIRX_ANALOG_BASE_040;
-	UINT32      MIPIRX_ANALOG_BASE_044;
-	UINT32      MIPIRX_ANALOG_BASE_048;
-	UINT32      MIPIRX_ANALOG_BASE_04C;
-	UINT32      MIPIRX_ANALOG_BASE_050;
-	UINT32      MIPIRX_ANALOG_BASE_054;
-	UINT32      MIPIRX_ANALOG_BASE_058;
-	UINT32      MIPIRX_ANALOG_BASE_05C;
+	unsigned int                CAM_PCA_CON1;                 /* 5E00 */
+	unsigned int                CAM_PCA_CON2;                 /* 5E04 */
+
+	unsigned int           CAM_TILE_RING_CON1;                /* 5FF0 */
+	unsigned int           CAM_CTL_IMGI_SIZE;                 /* 5FF4 */
 
 
-} _seninf_backup_reg_t;
 
-static volatile _isp_backup_reg_t g_backupReg;
+	unsigned int            CAM_TG2_SEN_MODE;                 /* 6410 */
+	unsigned int              CAM_TG2_VF_CON;                 /* 6414 */
+	unsigned int        CAM_TG2_SEN_GRAB_PXL;                 /* 6418 */
+	unsigned int        CAM_TG2_SEN_GRAB_LIN;                 /* 641C */
+	unsigned int            CAM_TG2_PATH_CFG;                 /* 6420 */
+	unsigned int           CAM_TG2_MEMIN_CTL;                 /* 6424 */
 
-static volatile _seninf_backup_reg_t g_SeninfBackupReg;
+
+	unsigned int            CAM_OBC_D_OFFST0;                 /* 6500 */
+	unsigned int            CAM_OBC_D_OFFST1;                 /* 6504 */
+	unsigned int            CAM_OBC_D_OFFST2;                 /* 6508 */
+	unsigned int            CAM_OBC_D_OFFST3;                 /* 650C */
+	unsigned int             CAM_OBC_D_GAIN0;                 /* 6510 */
+	unsigned int             CAM_OBC_D_GAIN1;                 /* 6514 */
+	unsigned int             CAM_OBC_D_GAIN2;                 /* 6518 */
+	unsigned int             CAM_OBC_D_GAIN3;                 /* 651C */
+	unsigned int                 rsv_6520[4];                 /* 6520...652C */
+	unsigned int              CAM_LSC_D_CTL1;                 /* 6530 */
+	unsigned int              CAM_LSC_D_CTL2;                 /* 6534 */
+	unsigned int              CAM_LSC_D_CTL3;                 /* 6538 */
+	unsigned int            CAM_LSC_D_LBLOCK;                 /* 653C */
+	unsigned int             CAM_LSC_D_RATIO;                 /* 6540 */
+	unsigned int        CAM_LSC_D_TPIPE_OFST;                 /* 6544 */
+	unsigned int        CAM_LSC_D_TPIPE_SIZE;                 /* 6548 */
+	unsigned int           CAM_LSC_D_GAIN_TH;                 /* 654C */
+	unsigned int            CAM_RPG_D_SATU_1;                 /* 6550 */
+	unsigned int            CAM_RPG_D_SATU_2;                 /* 6554 */
+	unsigned int            CAM_RPG_D_GAIN_1;                 /* 6558 */
+	unsigned int            CAM_RPG_D_GAIN_2;                 /* 655C */
+	unsigned int            CAM_RPG_D_OFST_1;                 /* 6560 */
+	unsigned int            CAM_RPG_D_OFST_2;                 /* 6564 */
+	unsigned int                rsv_6568[18];                 /* 6568...65AC */
+	unsigned int           CAM_AWB_D_WIN_ORG;                 /* 65B0 */
+	unsigned int          CAM_AWB_D_WIN_SIZE;                 /* 65B4 */
+	unsigned int           CAM_AWB_D_WIN_PIT;                 /* 65B8 */
+	unsigned int           CAM_AWB_D_WIN_NUM;                 /* 65BC */
+	unsigned int           CAM_AWB_D_GAIN1_0;                 /* 65C0 */
+	unsigned int           CAM_AWB_D_GAIN1_1;                 /* 65C4 */
+	unsigned int            CAM_AWB_D_LMT1_0;                 /* 65C8 */
+	unsigned int            CAM_AWB_D_LMT1_1;                 /* 65CC */
+	unsigned int           CAM_AWB_D_LOW_THR;                 /* 65D0 */
+	unsigned int            CAM_AWB_D_HI_THR;                 /* 65D4 */
+	unsigned int        CAM_AWB_D_PIXEL_CNT0;                 /* 65D8 */
+	unsigned int        CAM_AWB_D_PIXEL_CNT1;                 /* 65DC */
+	unsigned int        CAM_AWB_D_PIXEL_CNT2;                 /* 65E0 */
+	unsigned int           CAM_AWB_D_ERR_THR;                 /* 65E4 */
+	unsigned int               CAM_AWB_D_ROT;                 /* 65E8 */
+	unsigned int              CAM_AWB_D_L0_X;                 /* 65EC */
+	unsigned int              CAM_AWB_D_L0_Y;                 /* 65F0 */
+	unsigned int              CAM_AWB_D_L1_X;                 /* 65F4 */
+	unsigned int              CAM_AWB_D_L1_Y;                 /* 65F8 */
+	unsigned int              CAM_AWB_D_L2_X;                 /* 65FC */
+	unsigned int              CAM_AWB_D_L2_Y;                 /* 6600 */
+	unsigned int              CAM_AWB_D_L3_X;                 /* 6604 */
+	unsigned int              CAM_AWB_D_L3_Y;                 /* 6608 */
+	unsigned int              CAM_AWB_D_L4_X;                 /* 660C */
+	unsigned int              CAM_AWB_D_L4_Y;                 /* 6610 */
+	unsigned int              CAM_AWB_D_L5_X;                 /* 6614 */
+	unsigned int              CAM_AWB_D_L5_Y;                 /* 6618 */
+	unsigned int              CAM_AWB_D_L6_X;                 /* 661C */
+	unsigned int              CAM_AWB_D_L6_Y;                 /* 6620 */
+	unsigned int              CAM_AWB_D_L7_X;                 /* 6624 */
+	unsigned int              CAM_AWB_D_L7_Y;                 /* 6628 */
+	unsigned int              CAM_AWB_D_L8_X;                 /* 662C */
+	unsigned int              CAM_AWB_D_L8_Y;                 /* 6630 */
+	unsigned int              CAM_AWB_D_L9_X;                 /* 6634 */
+	unsigned int              CAM_AWB_D_L9_Y;                 /* 6638 */
+	unsigned int             CAM_AWB_D_SPARE;                 /* 663C */
+	unsigned int                 rsv_6640[4];                 /* 6640...664C */
+	unsigned int            CAM_AE_D_HST_CTL;                 /* 6650 */
+	unsigned int            CAM_AE_D_GAIN2_0;                 /* 6654 */
+	unsigned int            CAM_AE_D_GAIN2_1;                 /* 6658 */
+	unsigned int             CAM_AE_D_LMT2_0;                 /* 665C */
+	unsigned int             CAM_AE_D_LMT2_1;                 /* 6660 */
+	unsigned int           CAM_AE_D_RC_CNV_0;                 /* 6664 */
+	unsigned int           CAM_AE_D_RC_CNV_1;                 /* 6668 */
+	unsigned int           CAM_AE_D_RC_CNV_2;                 /* 666C */
+	unsigned int           CAM_AE_D_RC_CNV_3;                 /* 6670 */
+	unsigned int           CAM_AE_D_RC_CNV_4;                 /* 6674 */
+	unsigned int           CAM_AE_D_YGAMMA_0;                 /* 6678 */
+	unsigned int           CAM_AE_D_YGAMMA_1;                 /* 667C */
+	unsigned int            CAM_AE_D_HST_SET;                 /* 6680 */
+	unsigned int           CAM_AE_D_HST0_RNG;                 /* 6684 */
+	unsigned int           CAM_AE_D_HST1_RNG;                 /* 6688 */
+	unsigned int           CAM_AE_D_HST2_RNG;                 /* 668C */
+	unsigned int           CAM_AE_D_HST3_RNG;                 /* 6690 */
+	unsigned int              CAM_AE_D_SPARE;                 /* 6694 */
+	unsigned int                 rsv_6698[2];                 /* 6698...669C */
+	unsigned int              CAM_SGG1_D_PGN;                 /* 66A0 */
+	unsigned int           CAM_SGG1_D_GMRC_1;                 /* 66A4 */
+	unsigned int           CAM_SGG1_D_GMRC_2;                 /* 66A8 */
+	unsigned int                    rsv_66AC;                 /* 66AC */
+	unsigned int                CAM_AF_D_CON;                 /* 66B0 */
+	unsigned int             CAM_AF_D_WINX_1;                 /* 66B4 */
+	unsigned int             CAM_AF_D_WINX_2;                 /* 66B8 */
+	unsigned int             CAM_AF_D_WINX_3;                 /* 66BC */
+	unsigned int             CAM_AF_D_WINY_1;                 /* 66C0 */
+	unsigned int             CAM_AF_D_WINY_2;                 /* 66C4 */
+	unsigned int             CAM_AF_D_WINY_3;                 /* 66C8 */
+	unsigned int               CAM_AF_D_SIZE;                 /* 66CC */
+	unsigned int                    rsv_66D0;                 /* 66D0 */
+	unsigned int              CAM_AF_D_FLT_1;                 /* 66D4 */
+	unsigned int              CAM_AF_D_FLT_2;                 /* 66D8 */
+	unsigned int              CAM_AF_D_FLT_3;                 /* 66DC */
+	unsigned int                 CAM_AF_D_TH;                 /* 66E0 */
+	unsigned int          CAM_AF_D_FLO_WIN_1;                 /* 66E4 */
+	unsigned int         CAM_AF_D_FLO_SIZE_1;                 /* 66E8 */
+	unsigned int          CAM_AF_D_FLO_WIN_2;                 /* 66EC */
+	unsigned int         CAM_AF_D_FLO_SIZE_2;                 /* 66F0 */
+	unsigned int          CAM_AF_D_FLO_WIN_3;                 /* 66F4 */
+	unsigned int         CAM_AF_D_FLO_SIZE_3;                 /* 66F8 */
+	unsigned int             CAM_AF_D_FLO_TH;                 /* 66FC */
+	unsigned int         CAM_AF_D_IMAGE_SIZE;                 /* 6700 */
+	unsigned int              CAM_AF_D_FLT_4;                 /* 6704 */
+	unsigned int              CAM_AF_D_FLT_5;                 /* 6708 */
+	unsigned int             CAM_AF_D_STAT_L;                 /* 670C */
+	unsigned int             CAM_AF_D_STAT_M;                 /* 6710 */
+	unsigned int        CAM_AF_D_FLO_STAT_1L;                 /* 6714 */
+	unsigned int        CAM_AF_D_FLO_STAT_1M;                 /* 6718 */
+	unsigned int        CAM_AF_D_FLO_STAT_1V;                 /* 671C */
+	unsigned int        CAM_AF_D_FLO_STAT_2L;                 /* 6720 */
+	unsigned int        CAM_AF_D_FLO_STAT_2M;                 /* 6724 */
+	unsigned int        CAM_AF_D_FLO_STAT_2V;                 /* 6728 */
+	unsigned int        CAM_AF_D_FLO_STAT_3L;                 /* 672C */
+	unsigned int        CAM_AF_D_FLO_STAT_3M;                 /* 6730 */
+	unsigned int        CAM_AF_D_FLO_STAT_3V;                 /* 6734 */
+	unsigned int                 rsv_6738[2];                 /* 6738...673C */
+	unsigned int               CAM_W2G_D_BLD;                 /* 6740 */
+	unsigned int              CAM_W2G_D_TH_1;                 /* 6744 */
+	unsigned int              CAM_W2G_D_TH_2;                 /* 6748 */
+	unsigned int           CAM_W2G_D_CTL_OFT;                 /* 674C */
+	unsigned int                 rsv_6750[4];                 /* 6750...675C */
+	unsigned int              CAM_WBN_D_SIZE;                 /* 6760 */
+	unsigned int              CAM_WBN_D_MODE;                 /* 6764 */
+	unsigned int                 rsv_6768[6];                 /* 6768...677C */
+	unsigned int               CAM_LCS_D_CON;                 /* 6780 */
+	unsigned int                CAM_LCS_D_ST;                 /* 6784 */
+	unsigned int               CAM_LCS_D_AWS;                 /* 6788 */
+	unsigned int               CAM_LCS_D_FLR;                 /* 678C */
+	unsigned int            CAM_LCS_D_LRZR_1;                 /* 6790 */
+	unsigned int            CAM_LCS_D_LRZR_2;                 /* 6794 */
+	unsigned int                 rsv_6798[2];                 /* 6798...679C */
+	unsigned int               CAM_RRZ_D_CTL;                 /* 67A0 */
+	unsigned int            CAM_RRZ_D_IN_IMG;                 /* 67A4 */
+	unsigned int           CAM_RRZ_D_OUT_IMG;                 /* 67A8 */
+	unsigned int         CAM_RRZ_D_HORI_STEP;                 /* 67AC */
+	unsigned int         CAM_RRZ_D_VERT_STEP;                 /* 67B0 */
+	unsigned int     CAM_RRZ_D_HORI_INT_OFST;                 /* 67B4 */
+	unsigned int     CAM_RRZ_D_HORI_SUB_OFST;                 /* 67B8 */
+	unsigned int     CAM_RRZ_D_VERT_INT_OFST;                 /* 67BC */
+	unsigned int     CAM_RRZ_D_VERT_SUB_OFST;                 /* 67C0 */
+	unsigned int           CAM_RRZ_D_MODE_TH;                 /* 67C4 */
+	unsigned int          CAM_RRZ_D_MODE_CTL;                 /* 67C8 */
+	unsigned int                rsv_67CC[13];                 /* 67CC...67FC */
+	unsigned int               CAM_BPC_D_CON;                 /* 6800 */
+	unsigned int               CAM_BPC_D_TH1;                 /* 6804 */
+	unsigned int               CAM_BPC_D_TH2;                 /* 6808 */
+	unsigned int               CAM_BPC_D_TH3;                 /* 680C */
+	unsigned int               CAM_BPC_D_TH4;                 /* 6810 */
+	unsigned int               CAM_BPC_D_DTC;                 /* 6814 */
+	unsigned int               CAM_BPC_D_COR;                 /* 6818 */
+	unsigned int             CAM_BPC_D_TBLI1;                 /* 681C */
+	unsigned int             CAM_BPC_D_TBLI2;                 /* 6820 */
+	unsigned int             CAM_BPC_D_TH1_C;                 /* 6824 */
+	unsigned int             CAM_BPC_D_TH2_C;                 /* 6828 */
+	unsigned int             CAM_BPC_D_TH3_C;                 /* 682C */
+	unsigned int              CAM_BPC_D_RMM1;                 /* 6830 */
+	unsigned int              CAM_BPC_D_RMM2;                 /* 6834 */
+	unsigned int        CAM_BPC_D_RMM_REVG_1;                 /* 6838 */
+	unsigned int        CAM_BPC_D_RMM_REVG_2;                 /* 683C */
+	unsigned int          CAM_BPC_D_RMM_LEOS;                 /* 6840 */
+	unsigned int          CAM_BPC_D_RMM_GCNT;                 /* 6844 */
+	unsigned int                 rsv_6848[2];                 /* 6848...684C */
+	unsigned int               CAM_NR1_D_CON;                 /* 6850 */
+	unsigned int            CAM_NR1_D_CT_CON;                 /* 6854 */
+
+	unsigned int               CAM_DMX_D_CTL;                  /* 6E00 */
+	unsigned int              CAM_DMX_D_CROP;                  /* 6E04 */
+	unsigned int             CAM_DMX_D_VSIZE;                  /* 6E08 */
+	unsigned int                    rsv_6E0C;                  /* 6E0C */
+	unsigned int               CAM_BMX_D_CTL;                  /* 6E10 */
+	unsigned int              CAM_BMX_D_CROP;                  /* 6E14 */
+	unsigned int             CAM_BMX_D_VSIZE;                  /* 6E18 */
+	unsigned int                    rsv_6E1C;                  /* 6E1C */
+	unsigned int               CAM_RMX_D_CTL;                  /* 6E20 */
+	unsigned int              CAM_RMX_D_CROP;                  /* 6E24 */
+	unsigned int             CAM_RMX_D_VSIZE;                  /* 6E28 */
+
+	unsigned int          CAM_TDRI_BASE_ADDR;                 /* 7204 */
+	unsigned int          CAM_TDRI_OFST_ADDR;                 /* 7208 */
+	unsigned int              CAM_TDRI_XSIZE;                 /* 720C */
+	unsigned int          CAM_CQ0I_BASE_ADDR;                 /* 7210 */
+	unsigned int              CAM_CQ0I_XSIZE;                 /* 7214 */
+	unsigned int        CAM_CQ0I_D_BASE_ADDR;                 /* 7218 */
+	unsigned int            CAM_CQ0I_D_XSIZE;                 /* 721C */
+	unsigned int        CAM_VERTICAL_FLIP_EN;                 /* 7220 */
+	unsigned int          CAM_DMA_SOFT_RESET;                 /* 7224 */
+	unsigned int           CAM_LAST_ULTRA_EN;                 /* 7228 */
+	unsigned int          CAM_IMGI_SLOW_DOWN;                 /* 722C */
+	unsigned int          CAM_IMGI_BASE_ADDR;                 /* 7230 */
+	unsigned int          CAM_IMGI_OFST_ADDR;                 /* 7234 */
+	unsigned int              CAM_IMGI_XSIZE;                 /* 7238 */
+	unsigned int              CAM_IMGI_YSIZE;                 /* 723C */
+	unsigned int             CAM_IMGI_STRIDE;                 /* 7240 */
+	unsigned int                    rsv_7244;                 /* 7244 */
+	unsigned int                CAM_IMGI_CON;                 /* 7248 */
+	unsigned int               CAM_IMGI_CON2;                 /* 724C */
+
+	unsigned int          CAM_BPCI_BASE_ADDR;                  /* 7250 */
+	unsigned int          CAM_BPCI_OFST_ADDR;                  /* 7254 */
+	unsigned int              CAM_BPCI_XSIZE;                  /* 7258 */
+	unsigned int              CAM_BPCI_YSIZE;                  /* 725C */
+	unsigned int             CAM_BPCI_STRIDE;                  /* 7260 */
+	unsigned int                CAM_BPCI_CON;                  /* 7264 */
+	unsigned int               CAM_BPCI_CON2;                  /* 7268 */
+
+	unsigned int          CAM_LSCI_BASE_ADDR;                  /* 726C */
+	unsigned int          CAM_LSCI_OFST_ADDR;                  /* 7270 */
+	unsigned int              CAM_LSCI_XSIZE;                  /* 7274 */
+	unsigned int              CAM_LSCI_YSIZE;                  /* 7278 */
+	unsigned int             CAM_LSCI_STRIDE;                  /* 727C */
+	unsigned int                CAM_LSCI_CON;                  /* 7280 */
+	unsigned int               CAM_LSCI_CON2;                  /* 7284 */
+	unsigned int          CAM_UFDI_BASE_ADDR;                  /* 7288 */
+	unsigned int          CAM_UFDI_OFST_ADDR;                  /* 728C */
+	unsigned int              CAM_UFDI_XSIZE;                  /* 7290 */
+	unsigned int              CAM_UFDI_YSIZE;                  /* 7294 */
+	unsigned int             CAM_UFDI_STRIDE;                  /* 7298 */
+	unsigned int                CAM_UFDI_CON;                  /* 729C */
+	unsigned int               CAM_UFDI_CON2;                  /* 72A0 */
+	unsigned int          CAM_LCEI_BASE_ADDR;                  /* 72A4 */
+	unsigned int          CAM_LCEI_OFST_ADDR;                  /* 72A8 */
+	unsigned int              CAM_LCEI_XSIZE;                  /* 72AC */
+	unsigned int              CAM_LCEI_YSIZE;                  /* 72B0 */
+	unsigned int             CAM_LCEI_STRIDE;                  /* 72B4 */
+	unsigned int                CAM_LCEI_CON;                  /* 72B8 */
+	unsigned int               CAM_LCEI_CON2;                  /* 72BC */
+	unsigned int          CAM_VIPI_BASE_ADDR;                  /* 72C0 */
+	unsigned int          CAM_VIPI_OFST_ADDR;                  /* 72C4 */
+	unsigned int              CAM_VIPI_XSIZE;                  /* 72C8 */
+	unsigned int              CAM_VIPI_YSIZE;                  /* 72CC */
+	unsigned int             CAM_VIPI_STRIDE;                  /* 72D0 */
+	unsigned int                    rsv_72D4;                  /* 72D4 */
+	unsigned int                CAM_VIPI_CON;                  /* 72D8 */
+	unsigned int               CAM_VIPI_CON2;                  /* 72DC */
+	unsigned int         CAM_VIP2I_BASE_ADDR;                  /* 72E0 */
+	unsigned int         CAM_VIP2I_OFST_ADDR;                  /* 72E4 */
+	unsigned int             CAM_VIP2I_XSIZE;                  /* 72E8 */
+	unsigned int             CAM_VIP2I_YSIZE;                  /* 72EC */
+	unsigned int            CAM_VIP2I_STRIDE;                  /* 72F0 */
+	unsigned int                    rsv_72F4;                  /* 72F4 */
+	unsigned int               CAM_VIP2I_CON;                  /* 72F8 */
+	unsigned int              CAM_VIP2I_CON2;                  /* 72FC */
+	unsigned int          CAM_IMGO_BASE_ADDR;                  /* 7300 */
+	unsigned int          CAM_IMGO_OFST_ADDR;                  /* 7304 */
+	unsigned int              CAM_IMGO_XSIZE;                  /* 7308 */
+	unsigned int              CAM_IMGO_YSIZE;                  /* 730C */
+	unsigned int             CAM_IMGO_STRIDE;                  /* 7310 */
+	unsigned int                CAM_IMGO_CON;                  /* 7314 */
+	unsigned int               CAM_IMGO_CON2;                  /* 7318 */
+	unsigned int               CAM_IMGO_CROP;                  /* 731C */
+
+	unsigned int          CAM_RRZO_BASE_ADDR;                  /* 7320 */
+	unsigned int          CAM_RRZO_OFST_ADDR;                  /* 7324 */
+	unsigned int              CAM_RRZO_XSIZE;                  /* 7328 */
+	unsigned int              CAM_RRZO_YSIZE;                  /* 732C */
+	unsigned int             CAM_RRZO_STRIDE;                  /* 7330 */
+	unsigned int                CAM_RRZO_CON;                  /* 7334 */
+	unsigned int               CAM_RRZO_CON2;                  /* 7338 */
+	unsigned int               CAM_RRZO_CROP;                  /* 733C */
+	unsigned int          CAM_LCSO_BASE_ADDR;                  /* 7340 */
+	unsigned int          CAM_LCSO_OFST_ADDR;                  /* 7344 */
+	unsigned int              CAM_LCSO_XSIZE;                  /* 7348 */
+	unsigned int              CAM_LCSO_YSIZE;                  /* 734C */
+	unsigned int             CAM_LCSO_STRIDE;                  /* 7350 */
+	unsigned int                CAM_LCSO_CON;                  /* 7354 */
+	unsigned int               CAM_LCSO_CON2;                  /* 7358 */
+	unsigned int          CAM_EISO_BASE_ADDR;                  /* 735C */
+	unsigned int              CAM_EISO_XSIZE;                  /* 7360 */
+	unsigned int           CAM_AFO_BASE_ADDR;                  /* 7364 */
+	unsigned int               CAM_AFO_XSIZE;                  /* 7368 */
+	unsigned int         CAM_ESFKO_BASE_ADDR;                  /* 736C */
+	unsigned int             CAM_ESFKO_XSIZE;                  /* 7370 */
+
+
+	unsigned int             CAM_ESFKO_YSIZE;                  /* 7378 */
+	unsigned int            CAM_ESFKO_STRIDE;                  /* 737C */
+	unsigned int               CAM_ESFKO_CON;                  /* 7380 */
+	unsigned int              CAM_ESFKO_CON2;                  /* 7384 */
+
+	unsigned int           CAM_AAO_BASE_ADDR;                  /* 7388 */
+	unsigned int           CAM_AAO_OFST_ADDR;                  /* 738C */
+	unsigned int               CAM_AAO_XSIZE;                  /* 7390 */
+	unsigned int               CAM_AAO_YSIZE;                  /* 7394 */
+	unsigned int              CAM_AAO_STRIDE;                  /* 7398 */
+	unsigned int                 CAM_AAO_CON;                  /* 739C */
+	unsigned int                CAM_AAO_CON2;                  /* 73A0 */
+
+	unsigned int         CAM_VIP3I_BASE_ADDR;                  /* 73A4 */
+	unsigned int         CAM_VIP3I_OFST_ADDR;                  /* 73A8 */
+	unsigned int             CAM_VIP3I_XSIZE;                  /* 73AC */
+	unsigned int             CAM_VIP3I_YSIZE;                  /* 73B0 */
+	unsigned int            CAM_VIP3I_STRIDE;                  /* 73B4 */
+	unsigned int                    rsv_73B8;                  /* 73B8 */
+	unsigned int               CAM_VIP3I_CON;                  /* 73BC */
+	unsigned int              CAM_VIP3I_CON2;                  /* 73C0 */
+	unsigned int          CAM_UFEO_BASE_ADDR;                  /* 73C4 */
+	unsigned int          CAM_UFEO_OFST_ADDR;                  /* 73C8 */
+	unsigned int              CAM_UFEO_XSIZE;                  /* 73CC */
+	unsigned int              CAM_UFEO_YSIZE;                  /* 73D0 */
+	unsigned int             CAM_UFEO_STRIDE;                  /* 73D4 */
+	unsigned int                CAM_UFEO_CON;                  /* 73D8 */
+	unsigned int               CAM_UFEO_CON2;                  /* 73DC */
+	unsigned int          CAM_MFBO_BASE_ADDR;                  /* 73E0 */
+	unsigned int          CAM_MFBO_OFST_ADDR;                  /* 73E4 */
+	unsigned int              CAM_MFBO_XSIZE;                  /* 73E8 */
+	unsigned int              CAM_MFBO_YSIZE;                  /* 73EC */
+	unsigned int             CAM_MFBO_STRIDE;                  /* 73F0 */
+	unsigned int                CAM_MFBO_CON;                  /* 73F4 */
+	unsigned int               CAM_MFBO_CON2;                  /* 73F8 */
+	unsigned int               CAM_MFBO_CROP;                  /* 73FC */
+	unsigned int        CAM_IMG3BO_BASE_ADDR;                  /* 7400 */
+	unsigned int        CAM_IMG3BO_OFST_ADDR;                  /* 7404 */
+	unsigned int            CAM_IMG3BO_XSIZE;                  /* 7408 */
+	unsigned int            CAM_IMG3BO_YSIZE;                  /* 740C */
+	unsigned int           CAM_IMG3BO_STRIDE;                  /* 7410 */
+	unsigned int              CAM_IMG3BO_CON;                  /* 7414 */
+	unsigned int             CAM_IMG3BO_CON2;                  /* 7418 */
+	unsigned int             CAM_IMG3BO_CROP;                  /* 741C */
+	unsigned int        CAM_IMG3CO_BASE_ADDR;                  /* 7420 */
+	unsigned int        CAM_IMG3CO_OFST_ADDR;                  /* 7424 */
+	unsigned int            CAM_IMG3CO_XSIZE;                  /* 7428 */
+	unsigned int            CAM_IMG3CO_YSIZE;                  /* 742C */
+	unsigned int           CAM_IMG3CO_STRIDE;                  /* 7430 */
+	unsigned int              CAM_IMG3CO_CON;                  /* 7434 */
+	unsigned int             CAM_IMG3CO_CON2;                  /* 7438 */
+	unsigned int             CAM_IMG3CO_CROP;                  /* 743C */
+	unsigned int         CAM_IMG2O_BASE_ADDR;                  /* 7440 */
+	unsigned int         CAM_IMG2O_OFST_ADDR;                  /* 7444 */
+	unsigned int             CAM_IMG2O_XSIZE;                  /* 7448 */
+	unsigned int             CAM_IMG2O_YSIZE;                  /* 744C */
+	unsigned int            CAM_IMG2O_STRIDE;                  /* 7450 */
+	unsigned int               CAM_IMG2O_CON;                  /* 7454 */
+	unsigned int              CAM_IMG2O_CON2;                  /* 7458 */
+	unsigned int              CAM_IMG2O_CROP;                  /* 745C */
+	unsigned int         CAM_IMG3O_BASE_ADDR;                  /* 7460 */
+	unsigned int         CAM_IMG3O_OFST_ADDR;                  /* 7464 */
+	unsigned int             CAM_IMG3O_XSIZE;                  /* 7468 */
+	unsigned int             CAM_IMG3O_YSIZE;                  /* 746C */
+	unsigned int            CAM_IMG3O_STRIDE;                  /* 7470 */
+	unsigned int               CAM_IMG3O_CON;                  /* 7474 */
+	unsigned int              CAM_IMG3O_CON2;                  /* 7478 */
+	unsigned int              CAM_IMG3O_CROP;                  /* 747C */
+	unsigned int           CAM_FEO_BASE_ADDR;                  /* 7480 */
+	unsigned int           CAM_FEO_OFST_ADDR;                  /* 7484 */
+	unsigned int               CAM_FEO_XSIZE;                  /* 7488 */
+	unsigned int               CAM_FEO_YSIZE;                  /* 748C */
+	unsigned int              CAM_FEO_STRIDE;                  /* 7490 */
+	unsigned int                 CAM_FEO_CON;                  /* 7494 */
+	unsigned int                CAM_FEO_CON2;                  /* 7498 */
+
+
+
+	unsigned int        CAM_BPCI_D_BASE_ADDR;                  /* 749C */
+	unsigned int        CAM_BPCI_D_OFST_ADDR;                  /* 74A0 */
+	unsigned int            CAM_BPCI_D_XSIZE;                  /* 74A4 */
+	unsigned int            CAM_BPCI_D_YSIZE;                  /* 74A8 */
+	unsigned int           CAM_BPCI_D_STRIDE;                  /* 74AC */
+	unsigned int              CAM_BPCI_D_CON;                  /* 74B0 */
+	unsigned int             CAM_BPCI_D_CON2;                  /* 74B4 */
+
+	unsigned int        CAM_LSCI_D_BASE_ADDR;                  /* 74B8 */
+	unsigned int        CAM_LSCI_D_OFST_ADDR;                  /* 74BC */
+	unsigned int            CAM_LSCI_D_XSIZE;                  /* 74C0 */
+	unsigned int            CAM_LSCI_D_YSIZE;                  /* 74C4 */
+	unsigned int           CAM_LSCI_D_STRIDE;                  /* 74C8 */
+	unsigned int              CAM_LSCI_D_CON;                  /* 74CC */
+	unsigned int             CAM_LSCI_D_CON2;                  /* 74D0 */
+
+	unsigned int        CAM_IMGO_D_BASE_ADDR;                  /* 74D4 */
+	unsigned int        CAM_IMGO_D_OFST_ADDR;                  /* 74D8 */
+	unsigned int            CAM_IMGO_D_XSIZE;                  /* 74DC */
+	unsigned int            CAM_IMGO_D_YSIZE;                  /* 74E0 */
+	unsigned int           CAM_IMGO_D_STRIDE;                  /* 74E4 */
+	unsigned int              CAM_IMGO_D_CON;                  /* 74E8 */
+	unsigned int             CAM_IMGO_D_CON2;                  /* 74EC */
+	unsigned int             CAM_IMGO_D_CROP;                  /* 74F0 */
+
+	unsigned int        CAM_RRZO_D_BASE_ADDR;                  /* 74F4 */
+	unsigned int        CAM_RRZO_D_OFST_ADDR;                  /* 74F8 */
+	unsigned int            CAM_RRZO_D_XSIZE;                  /* 74FC */
+	unsigned int            CAM_RRZO_D_YSIZE;                  /* 7500 */
+	unsigned int           CAM_RRZO_D_STRIDE;                  /* 7504 */
+	unsigned int              CAM_RRZO_D_CON;                  /* 7508 */
+	unsigned int             CAM_RRZO_D_CON2;                  /* 750C */
+	unsigned int             CAM_RRZO_D_CROP;                  /* 7510 */
+
+	unsigned int        CAM_LCSO_D_BASE_ADDR;                  /* 7514 */
+	unsigned int        CAM_LCSO_D_OFST_ADDR;                  /* 7518 */
+	unsigned int            CAM_LCSO_D_XSIZE;                  /* 751C */
+	unsigned int            CAM_LCSO_D_YSIZE;                  /* 7520 */
+	unsigned int           CAM_LCSO_D_STRIDE;                  /* 7524 */
+	unsigned int              CAM_LCSO_D_CON;                  /* 7528 */
+	unsigned int             CAM_LCSO_D_CON2;                  /* 752C */
+
+	unsigned int         CAM_AFO_D_BASE_ADDR;                  /* 7530 */
+	unsigned int             CAM_AFO_D_XSIZE;                  /* 7534 */
+
+	unsigned int             CAM_AFO_D_YSIZE;                  /* 753C */
+	unsigned int            CAM_AFO_D_STRIDE;                  /* 7540 */
+	unsigned int               CAM_AFO_D_CON;                  /* 7544 */
+	unsigned int              CAM_AFO_D_CON2;                  /* 7548 */
+
+	unsigned int         CAM_AAO_D_BASE_ADDR;                  /* 754C */
+	unsigned int         CAM_AAO_D_OFST_ADDR;                  /* 7550 */
+	unsigned int             CAM_AAO_D_XSIZE;                  /* 7554 */
+	unsigned int             CAM_AAO_D_YSIZE;                  /* 7558 */
+	unsigned int            CAM_AAO_D_STRIDE;                  /* 755C */
+	unsigned int               CAM_AAO_D_CON;                  /* 7560 */
+	unsigned int              CAM_AAO_D_CON2;                  /* 7564 */
+
+};
+
+
+
+struct _seninf_backup_reg_t {
+	unsigned int             SENINF_TOP_CTRL;                /* 8000 */
+	unsigned int       SENINF_TOP_CMODEL_PAR;                /* 8004 */
+	unsigned int         SENINF_TOP_MUX_CTRL;                /* 8008 */
+	unsigned int                rsv_800C[45];                /* 800C...80BC */
+	unsigned int                     N3D_CTL;                /* 80C0 */
+	unsigned int                     N3D_POS;                /* 80C4 */
+	unsigned int                    N3D_TRIG;                /* 80C8 */
+	unsigned int                     N3D_INT;                        /* 80CC */
+	unsigned int                    N3D_CNT0;                       /* 80D0 */
+	unsigned int                    N3D_CNT1;                       /* 80D4 */
+	unsigned int                     N3D_DBG;                        /* 80D8 */
+	unsigned int                N3D_DIFF_THR;                   /* 80DC */
+	unsigned int                N3D_DIFF_CNT;                   /* 80E0 */
+	unsigned int                          rsv_80E4[7];                    /* 80E4...80FC */
+	unsigned int                SENINF1_CTRL;                   /* 8100 */
+	unsigned int                          rsv_8104[7];                    /* 8104...811C */
+	unsigned int            SENINF1_MUX_CTRL;               /* 8120 */
+	unsigned int           SENINF1_MUX_INTEN;              /* 8124 */
+	unsigned int          SENINF1_MUX_INTSTA;             /* 8128 */
+	unsigned int            SENINF1_MUX_SIZE;               /* 812C */
+	unsigned int         SENINF1_MUX_DEBUG_1;            /* 8130 */
+	unsigned int         SENINF1_MUX_DEBUG_2;            /* 8134 */
+	unsigned int         SENINF1_MUX_DEBUG_3;            /* 8138 */
+	unsigned int         SENINF1_MUX_DEBUG_4;            /* 813C */
+	unsigned int         SENINF1_MUX_DEBUG_5;            /* 8140 */
+	unsigned int         SENINF1_MUX_DEBUG_6;            /* 8144 */
+	unsigned int         SENINF1_MUX_DEBUG_7;            /* 8148 */
+	unsigned int           SENINF1_MUX_SPARE;              /* 814C */
+	unsigned int            SENINF1_MUX_DATA;               /* 8150 */
+	unsigned int        SENINF1_MUX_DATA_CNT;           /* 8154 */
+	unsigned int            SENINF1_MUX_CROP;               /* 8158 */
+	unsigned int                          rsv_815C[41];                   /* 815C...81FC */
+	unsigned int           SENINF_TG1_PH_CNT;              /* 8200 */
+	unsigned int           SENINF_TG1_SEN_CK;              /* 8204 */
+	unsigned int           SENINF_TG1_TM_CTL;              /* 8208 */
+	unsigned int          SENINF_TG1_TM_SIZE;             /* 820C */
+	unsigned int           SENINF_TG1_TM_CLK;              /* 8210 */
+	unsigned int                          rsv_8214[59];                   /* 8214...82FC */
+	unsigned int          MIPI_RX_CON00_CSI0;             /* 8300 */
+	unsigned int          MIPI_RX_CON04_CSI0;             /* 8304 */
+	unsigned int          MIPI_RX_CON08_CSI0;             /* 8308 */
+	unsigned int          MIPI_RX_CON0C_CSI0;             /* 830C */
+	unsigned int          MIPI_RX_CON10_CSI0;             /* 8310 */
+	unsigned int                          rsv_8314[4];                    /* 8314...8320 */
+	unsigned int          MIPI_RX_CON24_CSI0;             /* 8324 */
+	unsigned int          MIPI_RX_CON28_CSI0;             /* 8328 */
+	unsigned int                          rsv_832C[2];                    /* 832C...8330 */
+	unsigned int          MIPI_RX_CON34_CSI0;             /* 8334 */
+	unsigned int          MIPI_RX_CON38_CSI0;             /* 8338 */
+	unsigned int          MIPI_RX_CON3C_CSI0;             /* 833C */
+	unsigned int          MIPI_RX_CON40_CSI0;             /* 8340 */
+	unsigned int          MIPI_RX_CON44_CSI0;             /* 8344 */
+	unsigned int          MIPI_RX_CON48_CSI0;             /* 8348 */
+	unsigned int                          rsv_834C;                       /* 834C */
+	unsigned int          MIPI_RX_CON50_CSI0;             /* 8350 */
+	unsigned int                          rsv_8354[3];                    /* 8354...835C */
+	unsigned int           SENINF1_CSI2_CTRL;              /* 8360 */
+	unsigned int          SENINF1_CSI2_DELAY;             /* 8364 */
+	unsigned int          SENINF1_CSI2_INTEN;             /* 8368 */
+	unsigned int         SENINF1_CSI2_INTSTA;            /* 836C */
+	unsigned int         SENINF1_CSI2_ECCDBG;            /* 8370 */
+	unsigned int         SENINF1_CSI2_CRCDBG;            /* 8374 */
+	unsigned int            SENINF1_CSI2_DBG;               /* 8378 */
+	unsigned int            SENINF1_CSI2_VER;               /* 837C */
+	unsigned int     SENINF1_CSI2_SHORT_INFO;        /* 8380 */
+	unsigned int          SENINF1_CSI2_LNFSM;             /* 8384 */
+	unsigned int          SENINF1_CSI2_LNMUX;             /* 8388 */
+	unsigned int      SENINF1_CSI2_HSYNC_CNT;         /* 838C */
+	unsigned int            SENINF1_CSI2_CAL;               /* 8390 */
+	unsigned int             SENINF1_CSI2_DS;                /* 8394 */
+	unsigned int             SENINF1_CSI2_VS;                /* 8398 */
+	unsigned int           SENINF1_CSI2_BIST;              /* 839C */
+	unsigned int           SENINF1_NCSI2_CTL;              /* 83A0 */
+	unsigned int   SENINF1_NCSI2_LNRC_TIMING;      /* 83A4 */
+	unsigned int   SENINF1_NCSI2_LNRD_TIMING;      /* 83A8 */
+	unsigned int          SENINF1_NCSI2_DPCM;             /* 83AC */
+	unsigned int        SENINF1_NCSI2_INT_EN;           /* 83B0 */
+	unsigned int    SENINF1_NCSI2_INT_STATUS;       /* 83B4 */
+	unsigned int       SENINF1_NCSI2_DGB_SEL;          /* 83B8 */
+	unsigned int      SENINF1_NCSI2_DBG_PORT;         /* 83BC */
+	unsigned int        SENINF1_NCSI2_SPARE0;           /* 83C0 */
+	unsigned int        SENINF1_NCSI2_SPARE1;           /* 83C4 */
+	unsigned int      SENINF1_NCSI2_LNRC_FSM;         /* 83C8 */
+	unsigned int      SENINF1_NCSI2_LNRD_FSM;         /* 83CC */
+	unsigned int SENINF1_NCSI2_FRAME_LINE_NUM;   /* 83D0 */
+	unsigned int SENINF1_NCSI2_GENERIC_SHORT;    /* 83D4 */
+	unsigned int      SENINF1_NCSI2_HSRX_DBG;         /* 83D8 */
+	unsigned int            SENINF1_NCSI2_DI;               /* 83DC */
+	unsigned int      SENINF1_NCSI2_HS_TRAIL;         /* 83E0 */
+	unsigned int       SENINF1_NCSI2_DI_CTRL;          /* 83E4 */
+	unsigned int                          rsv_83E8[70];                   /* 83E8...84FC */
+	unsigned int                SENINF2_CTRL;                   /* 8500 */
+	unsigned int                          rsv_8504[7];                    /* 8504...851C */
+	unsigned int            SENINF2_MUX_CTRL;               /* 8520 */
+	unsigned int           SENINF2_MUX_INTEN;              /* 8524 */
+	unsigned int          SENINF2_MUX_INTSTA;             /* 8528 */
+	unsigned int            SENINF2_MUX_SIZE;               /* 852C */
+	unsigned int         SENINF2_MUX_DEBUG_1;            /* 8530 */
+	unsigned int         SENINF2_MUX_DEBUG_2;            /* 8534 */
+	unsigned int         SENINF2_MUX_DEBUG_3;            /* 8538 */
+	unsigned int         SENINF2_MUX_DEBUG_4;            /* 853C */
+	unsigned int         SENINF2_MUX_DEBUG_5;            /* 8540 */
+	unsigned int         SENINF2_MUX_DEBUG_6;            /* 8544 */
+	unsigned int         SENINF2_MUX_DEBUG_7;            /* 8548 */
+	unsigned int           SENINF2_MUX_SPARE;              /* 854C */
+	unsigned int            SENINF2_MUX_DATA;               /* 8550 */
+	unsigned int        SENINF2_MUX_DATA_CNT;           /* 8554 */
+	unsigned int            SENINF2_MUX_CROP;               /* 8558 */
+	unsigned int                          rsv_855C[41];                   /* 855C...85FC */
+	unsigned int           SENINF_TG2_PH_CNT;              /* 8600 */
+	unsigned int           SENINF_TG2_SEN_CK;              /* 8604 */
+	unsigned int           SENINF_TG2_TM_CTL;              /* 8608 */
+	unsigned int          SENINF_TG2_TM_SIZE;             /* 860C */
+	unsigned int           SENINF_TG2_TM_CLK;              /* 8610 */
+	unsigned int                          rsv_8614[59];                   /* 8614...86FC */
+	unsigned int          MIPI_RX_CON00_CSI1;             /* 8700 */
+	unsigned int          MIPI_RX_CON04_CSI1;             /* 8704 */
+	unsigned int          MIPI_RX_CON08_CSI1;             /* 8708 */
+	unsigned int          MIPI_RX_CON0C_CSI1;             /* 870C */
+	unsigned int          MIPI_RX_CON10_CSI1;             /* 8710 */
+	unsigned int                          rsv_8714[4];                    /* 8714...8720 */
+	unsigned int          MIPI_RX_CON24_CSI1;             /* 8724 */
+	unsigned int          MIPI_RX_CON28_CSI1;             /* 8728 */
+	unsigned int                          rsv_872C[2];                    /* 872C...8730 */
+	unsigned int          MIPI_RX_CON34_CSI1;             /* 8734 */
+	unsigned int          MIPI_RX_CON38_CSI1;             /* 8738 */
+	unsigned int          MIPI_RX_CON3C_CSI1;             /* 873C */
+	unsigned int          MIPI_RX_CON40_CSI1;             /* 8740 */
+	unsigned int          MIPI_RX_CON44_CSI1;             /* 8744 */
+	unsigned int          MIPI_RX_CON48_CSI1;             /* 8748 */
+	unsigned int                          rsv_874C;                       /* 874C */
+	unsigned int          MIPI_RX_CON50_CSI1;             /* 8750 */
+	unsigned int                          rsv_8754[3];                    /* 8754...875C */
+	unsigned int           SENINF2_CSI2_CTRL;              /* 8760 */
+	unsigned int          SENINF2_CSI2_DELAY;             /* 8764 */
+	unsigned int          SENINF2_CSI2_INTEN;             /* 8768 */
+	unsigned int         SENINF2_CSI2_INTSTA;            /* 876C */
+	unsigned int         SENINF2_CSI2_ECCDBG;            /* 8770 */
+	unsigned int         SENINF2_CSI2_CRCDBG;            /* 8774 */
+	unsigned int            SENINF2_CSI2_DBG;               /* 8778 */
+	unsigned int            SENINF2_CSI2_VER;               /* 877C */
+	unsigned int     SENINF2_CSI2_SHORT_INFO;        /* 8780 */
+	unsigned int          SENINF2_CSI2_LNFSM;             /* 8784 */
+	unsigned int          SENINF2_CSI2_LNMUX;             /* 8788 */
+	unsigned int      SENINF2_CSI2_HSYNC_CNT;         /* 878C */
+	unsigned int            SENINF2_CSI2_CAL;               /* 8790 */
+	unsigned int             SENINF2_CSI2_DS;                /* 8794 */
+	unsigned int             SENINF2_CSI2_VS;                /* 8798 */
+	unsigned int           SENINF2_CSI2_BIST;              /* 879C */
+	unsigned int           SENINF2_NCSI2_CTL;              /* 87A0 */
+	unsigned int   SENINF2_NCSI2_LNRC_TIMING;      /* 87A4 */
+	unsigned int   SENINF2_NCSI2_LNRD_TIMING;      /* 87A8 */
+	unsigned int          SENINF2_NCSI2_DPCM;             /* 87AC */
+	unsigned int        SENINF2_NCSI2_INT_EN;           /* 87B0 */
+	unsigned int    SENINF2_NCSI2_INT_STATUS;       /* 87B4 */
+	unsigned int       SENINF2_NCSI2_DGB_SEL;          /* 87B8 */
+	unsigned int      SENINF2_NCSI2_DBG_PORT;         /* 87BC */
+	unsigned int        SENINF2_NCSI2_SPARE0;           /* 87C0 */
+	unsigned int        SENINF2_NCSI2_SPARE1;           /* 87C4 */
+	unsigned int      SENINF2_NCSI2_LNRC_FSM;         /* 87C8 */
+	unsigned int      SENINF2_NCSI2_LNRD_FSM;         /* 87CC */
+	unsigned int SENINF2_NCSI2_FRAME_LINE_NUM;   /* 87D0 */
+	unsigned int SENINF2_NCSI2_GENERIC_SHORT;    /* 87D4 */
+	unsigned int      SENINF2_NCSI2_HSRX_DBG;         /* 87D8 */
+	unsigned int            SENINF2_NCSI2_DI;               /* 87DC */
+	unsigned int      SENINF2_NCSI2_HS_TRAIL;         /* 87E0 */
+	unsigned int       SENINF2_NCSI2_DI_CTRL;          /* 87E4 */
+
+	unsigned int      MIPIRX_ANALOG_BASE_000;
+	unsigned int      MIPIRX_ANALOG_BASE_004;
+	unsigned int      MIPIRX_ANALOG_BASE_008;
+	unsigned int      MIPIRX_ANALOG_BASE_00C;
+	unsigned int      MIPIRX_ANALOG_BASE_010;
+	unsigned int      MIPIRX_ANALOG_BASE_014;
+	unsigned int      MIPIRX_ANALOG_BASE_018;
+	unsigned int      MIPIRX_ANALOG_BASE_01C;
+	unsigned int      MIPIRX_ANALOG_BASE_020;
+	unsigned int      MIPIRX_ANALOG_BASE_024;
+	unsigned int      MIPIRX_ANALOG_BASE_028;
+	unsigned int      MIPIRX_ANALOG_BASE_02C;
+	unsigned int      MIPIRX_ANALOG_BASE_030;
+	unsigned int      MIPIRX_ANALOG_BASE_034;
+	unsigned int      MIPIRX_ANALOG_BASE_038;
+	unsigned int      MIPIRX_ANALOG_BASE_03C;
+	unsigned int      MIPIRX_ANALOG_BASE_040;
+	unsigned int      MIPIRX_ANALOG_BASE_044;
+	unsigned int      MIPIRX_ANALOG_BASE_048;
+	unsigned int      MIPIRX_ANALOG_BASE_04C;
+	unsigned int      MIPIRX_ANALOG_BASE_050;
+	unsigned int      MIPIRX_ANALOG_BASE_054;
+	unsigned int      MIPIRX_ANALOG_BASE_058;
+	unsigned int      MIPIRX_ANALOG_BASE_05C;
+
+
+};
+
+static struct _isp_backup_reg_t g_backupReg;
+
+static struct _seninf_backup_reg_t g_SeninfBackupReg;
 #endif
 
-typedef struct _isp_bk_reg {
-	UINT32  CAM_TG_INTER_ST;                                 /* 453C*/
-} _isp_bk_reg_t;
+struct _isp_bk_reg_t {
+	unsigned int  CAM_TG_INTER_ST;                                 /* 453C*/
+};
 
-static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
+static struct _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 
 /* Everest top registers */
 #define CAMSYS_REG_CG_CON               (ISP_CAMSYS_CONFIG_BASE + 0x0)
@@ -3382,15 +3372,15 @@ static _isp_bk_reg_t g_BkReg[ISP_IRQ_TYPE_AMOUNT];
 
 
 /*MCLK counter*/
-static MINT32 mMclk1User;
-static MINT32 mMclk2User;
-static MINT32 mMclk3User;
-static MINT32 mMclk4User;
+static signed int mMclk1User;
+static signed int mMclk2User;
+static signed int mMclk3User;
+static signed int mMclk4User;
 
 
 /* if isp has been suspend, frame cnt needs to add previous value*/
 #define ISP_RD32_TG_CAM_FRM_CNT(IrqType, reg_module) ({\
-	UINT32 _regVal;\
+	unsigned int _regVal;\
 	_regVal = ISP_RD32(CAM_REG_TG_INTER_ST(reg_module));\
 	_regVal = ((_regVal & 0x00FF0000) >> 16) + g_BkReg[IrqType].CAM_TG_INTER_ST;\
 	if (_regVal > 255) { \
@@ -3410,7 +3400,7 @@ static MINT32 mMclk4User;
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_MsToJiffies(MUINT32 Ms)
+static inline unsigned int ISP_MsToJiffies(unsigned int Ms)
 {
 	return ((Ms * HZ + 512) >> 10);
 }
@@ -3418,7 +3408,7 @@ static inline MUINT32 ISP_MsToJiffies(MUINT32 Ms)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_UsToJiffies(MUINT32 Us)
+static inline unsigned int ISP_UsToJiffies(unsigned int Us)
 {
 	return (((Us / 1000) * HZ + 512) >> 10);
 }
@@ -3426,10 +3416,11 @@ static inline MUINT32 ISP_UsToJiffies(MUINT32 Us)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_GetIRQState(MUINT32 type, MUINT32 stType, MUINT32 userNumber, MUINT32 stus)
+static inline unsigned int ISP_GetIRQState(unsigned int type, unsigned int stType,
+unsigned int userNumber, unsigned int stus)
 {
-	MUINT32 ret;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned int ret;
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
 	/*  */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[type]), flags);
@@ -3444,7 +3435,7 @@ static inline MUINT32 ISP_GetIRQState(MUINT32 type, MUINT32 stType, MUINT32 user
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_JiffiesToMs(MUINT32 Jiffies)
+static inline unsigned int ISP_JiffiesToMs(unsigned int Jiffies)
 {
 	return ((Jiffies * 1000) / HZ);
 }
@@ -3455,10 +3446,10 @@ static inline MUINT32 ISP_JiffiesToMs(MUINT32 Jiffies)
 
 static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 {
-	MUINT32 uni_path;
-	MUINT32 flk2_sel;
-	MUINT32 hds2_sel;
-	MUINT32 dmaerr[_cam_max_];
+	unsigned int uni_path;
+	unsigned int flk2_sel;
+	unsigned int hds2_sel;
+	unsigned int dmaerr[_cam_max_];
 	enum ISP_DEV_NODE_ENUM regModule; /* for read/write register */
 
 	switch (module) {
@@ -3474,22 +3465,22 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	}
 
 
-	dmaerr[_imgo_] = (MUINT32)ISP_RD32(CAM_REG_IMGO_ERR_STAT(regModule));
-	dmaerr[_rrzo_] = (MUINT32)ISP_RD32(CAM_REG_RRZO_ERR_STAT(regModule));
-	dmaerr[_aao_] = (MUINT32)ISP_RD32(CAM_REG_AAO_ERR_STAT(regModule));
-	dmaerr[_afo_] = (MUINT32)ISP_RD32(CAM_REG_AFO_ERR_STAT(regModule));
-	dmaerr[_lcso_] = (MUINT32)ISP_RD32(CAM_REG_LCSO_ERR_STAT(regModule));
-	dmaerr[_ufeo_] = (MUINT32)ISP_RD32(CAM_REG_UFEO_ERR_STAT(regModule));
-	dmaerr[_bpci_] = (MUINT32)ISP_RD32(CAM_REG_BPCI_ERR_STAT(regModule));
-	dmaerr[_lsci_] = (MUINT32)ISP_RD32(CAM_REG_LSCI_ERR_STAT(regModule));
-	dmaerr[_pdo_] = (MUINT32)ISP_RD32(CAM_REG_PDO_ERR_STAT(regModule));
-	dmaerr[_pso_] = (MUINT32)ISP_RD32(CAM_REG_PSO_ERR_STAT(regModule));
+	dmaerr[_imgo_] = (unsigned int)ISP_RD32(CAM_REG_IMGO_ERR_STAT(regModule));
+	dmaerr[_rrzo_] = (unsigned int)ISP_RD32(CAM_REG_RRZO_ERR_STAT(regModule));
+	dmaerr[_aao_] = (unsigned int)ISP_RD32(CAM_REG_AAO_ERR_STAT(regModule));
+	dmaerr[_afo_] = (unsigned int)ISP_RD32(CAM_REG_AFO_ERR_STAT(regModule));
+	dmaerr[_lcso_] = (unsigned int)ISP_RD32(CAM_REG_LCSO_ERR_STAT(regModule));
+	dmaerr[_ufeo_] = (unsigned int)ISP_RD32(CAM_REG_UFEO_ERR_STAT(regModule));
+	dmaerr[_bpci_] = (unsigned int)ISP_RD32(CAM_REG_BPCI_ERR_STAT(regModule));
+	dmaerr[_lsci_] = (unsigned int)ISP_RD32(CAM_REG_LSCI_ERR_STAT(regModule));
+	dmaerr[_pdo_] = (unsigned int)ISP_RD32(CAM_REG_PDO_ERR_STAT(regModule));
+	dmaerr[_pso_] = (unsigned int)ISP_RD32(CAM_REG_PSO_ERR_STAT(regModule));
 
 
-	dmaerr[_eiso_] = (MUINT32)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_flko_] = (MUINT32)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_rsso_] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[_rawi_] = (MUINT32)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_eiso_] = (unsigned int)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_flko_] = (unsigned int)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_rsso_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[_rawi_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
 
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"mmsys:0x%x, imgsys:0x%x, camsys:0x%x", ISP_RD32(ISP_MMSYS_CONFIG_BASE + 0x100),
@@ -3581,7 +3572,7 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 
 
 #define RegDump(start, end) {\
-	MUINT32 i;\
+	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
 		LOG_INF("QQ [0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",\
 			(unsigned int)(ISP_TPIPE_ADDR + i), (unsigned int)ISP_RD32(ISP_ADDR + i),\
@@ -3592,9 +3583,9 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 }
 
 
-static MINT32 ISP_DumpSeninfReg(void)
+static signed int ISP_DumpSeninfReg(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
 	LOG_INF("- E.");
 	/*Sensor interface Top mux and Package counter*/
@@ -3633,9 +3624,9 @@ static MINT32 ISP_DumpSeninfReg(void)
 	return Ret;
 
 }
-static MINT32 ISP_DumpReg(void)
+static signed int ISP_DumpReg(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 
 #if 0
 	/*  */
@@ -3970,18 +3961,18 @@ static MINT32 ISP_DumpReg(void)
 	return Ret;
 }
 
-static MINT32 ISP_DumpDIPReg(void)
+static signed int ISP_DumpDIPReg(void)
 {
-	MINT32 Ret = 0;
-	MUINT32 i, cmdqidx = 0;
+	signed int Ret = 0;
+	unsigned int i, cmdqidx = 0;
 #ifdef AEE_DUMP_REDUCE_MEMORY
-	MUINT32 offset = 0;
+	unsigned int offset = 0;
 	long long OffsetAddr = 0;
-	MUINT32 ctrl_start;
+	unsigned int ctrl_start;
 #else
-	MUINT32 offset = 0;
+	unsigned int offset = 0;
 	long long OffsetAddr = 0;
-	MUINT32 ctrl_start;
+	unsigned int ctrl_start;
 #endif
 	/*  */
 	LOG_INF("- E.");
@@ -4839,11 +4830,11 @@ static inline void Disable_Unprepare_cg_clock(void)
 *
 ********************************************************************************/
 
-void ISP_Halt_Mask(MUINT32 isphaltMask)
+void ISP_Halt_Mask(unsigned int isphaltMask)
 {
-	MUINT32 setReg;
+	unsigned int setReg;
 
-	setReg = ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120) & ~((MUINT32)(1 << (isphaltMask)));
+	setReg = ISP_RD32(ISP_CAMSYS_CONFIG_BASE + 0x120) & ~((unsigned int)(1 << (isphaltMask)));
 
 	ISP_WR32(ISP_CAMSYS_CONFIG_BASE + 0x120, setReg);
 
@@ -4854,10 +4845,10 @@ EXPORT_SYMBOL(ISP_Halt_Mask);
 /*******************************************************************************
 *
 ********************************************************************************/
-static void ISP_EnableClock(MBOOL En)
+static void ISP_EnableClock(bool En)
 {
 #if defined(EVEREST_EP_NO_CLKMGR) || !defined(CONFIG_MTK_CLKMGR)
-	MUINT32 setReg;
+	unsigned int setReg;
 #endif
 
 	if (En) {
@@ -4957,10 +4948,10 @@ static void ISP_EnableClock(MBOOL En)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline void ISP_Reset(MINT32 module)
+static inline void ISP_Reset(signed int module)
 {
-	/*    MUINT32 Reg;*/
-	/*    MUINT32 setReg;*/
+	/*    unsigned int Reg;*/
+	/*    unsigned int setReg;*/
 
 	LOG_DBG("- E.\n");
 
@@ -5031,21 +5022,21 @@ static inline void ISP_Reset(MINT32 module)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
+static signed int ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
 {
-	MUINT32 i;
-	MINT32 Ret = 0;
+	unsigned int i;
+	signed int Ret = 0;
 
-	MUINT32 module;
+	unsigned int module;
 	void __iomem *regBase;
 
 
 	/*  */
 	struct ISP_REG_STRUCT reg;
-	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
+	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	struct ISP_REG_STRUCT *pData = (struct ISP_REG_STRUCT *)pRegIo->pData;
 
-	if (get_user(module, (MUINT32 *)&pData->module) != 0) {
+	if (get_user(module, (unsigned int *)&pData->module) != 0) {
 		LOG_ERR("get_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -5093,7 +5084,7 @@ static MINT32 ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
 
 
 	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (MUINT32 *)&pData->Addr) != 0) {
+		if (get_user(reg.Addr, (unsigned int *)&pData->Addr) != 0) {
 			LOG_ERR("get_user failed\n");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -5109,7 +5100,7 @@ static MINT32 ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
 		/*  */
 		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",ISP_ADDR_CAMINF + reg.Addr,reg.Val); */
 
-		if (put_user(reg.Val, (MUINT32 *) &(pData->Val)) != 0) {
+		if (put_user(reg.Val, (unsigned int *) &(pData->Val)) != 0) {
 			LOG_ERR("put_user failed\n");
 			Ret = -EFAULT;
 			goto EXIT;
@@ -5127,14 +5118,14 @@ EXIT:
 *
 ********************************************************************************/
 /* Note: Can write sensor's test model only, if need write to other modules, need modify current code flow */
-static MINT32 ISP_WriteRegToHw(
+static signed int ISP_WriteRegToHw(
 	struct ISP_REG_STRUCT *pReg,
-	MUINT32         Count)
+	unsigned int         Count)
 {
-	MINT32 Ret = 0;
-	MUINT32 i;
-	MBOOL dbgWriteReg;
-	MUINT32 module;
+	signed int Ret = 0;
+	unsigned int i;
+	bool dbgWriteReg;
+	unsigned int module;
 	void __iomem *regBase;
 
 	/* Use local variable to store IspInfo.DebugMask & ISP_DBG_WRITE_REG for saving lock time*/
@@ -5192,7 +5183,7 @@ static MINT32 ISP_WriteRegToHw(
 	for (i = 0; i < Count; i++) {
 		if (dbgWriteReg)
 			LOG_DBG("module(%d), base(0x%lx),Addr(0x%lx), Val(0x%x)\n", module, (unsigned long)regBase,
-			(unsigned long)(pReg[i].Addr), (MUINT32)(pReg[i].Val));
+			(unsigned long)(pReg[i].Addr), (unsigned int)(pReg[i].Val));
 
 		if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE)))
 			ISP_WR32(regBase + pReg[i].Addr, pReg[i].Val);
@@ -5210,13 +5201,13 @@ static MINT32 ISP_WriteRegToHw(
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
+static signed int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 {
-	MINT32 Ret = 0;
-	/*    MINT32 TimeVd = 0;*/
-	/*    MINT32 TimeExpdone = 0;*/
-	/*    MINT32 TimeTasklet = 0;*/
-	/* MUINT8* pData = NULL; */
+	signed int Ret = 0;
+	/*    signed int TimeVd = 0;*/
+	/*    signed int TimeExpdone = 0;*/
+	/*    signed int TimeTasklet = 0;*/
+	/* unsigned char* pData = NULL; */
 	struct ISP_REG_STRUCT *pData = NULL;
 
 	if (pRegIo->Count > 0xFFFFFFFF) {
@@ -5228,7 +5219,7 @@ static MINT32 ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 	if (IspInfo.DebugMask & ISP_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
-	/* pData = (MUINT8*)kmalloc((pRegIo->Count)*sizeof(ISP_REG_STRUCT), GFP_ATOMIC); */
+	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(struct ISP_REG_STRUCT), GFP_ATOMIC); */
 	pData = kmalloc((pRegIo->Count) * sizeof(struct ISP_REG_STRUCT), GFP_ATOMIC);
 	if (pData == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
@@ -5268,7 +5259,7 @@ EXIT:
 *
 ********************************************************************************/
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
-static MINT32 isp_allocbuf(struct isp_imem_memory *pMemInfo)
+static signed int isp_allocbuf(struct isp_imem_memory *pMemInfo)
 {
 	int ret = 0;
 	struct ion_mm_data mm_data;
@@ -5353,9 +5344,9 @@ static void isp_freebuf(struct isp_imem_memory *pMemInfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_DumpBuffer(struct ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
+static signed int ISP_DumpBuffer(struct ISP_DUMP_BUFFER_STRUCT *pDumpBufStruct)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 
 	if (pDumpBufStruct->BytesofBufferSize > 0xFFFFFFFF) {
 		LOG_ERR("pDumpTuningBufStruct->BytesofBufferSize error");
@@ -5527,9 +5518,9 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_SetMemInfo(struct ISP_MEM_INFO_STRUCT *pMemInfoStruct)
+static signed int ISP_SetMemInfo(struct ISP_MEM_INFO_STRUCT *pMemInfoStruct)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
 	if ((void __user *)(pMemInfoStruct->MemVa) == NULL) {
 		LOG_ERR("NULL pMemInfoStruct->MemVa");
@@ -5561,12 +5552,12 @@ EXIT:
 ********************************************************************************/
 static atomic_t g_imem_ref_cnt[ISP_REF_CNT_ID_MAX];
 /*  */
-/* static long ISP_REF_CNT_CTRL_FUNC(MUINT32 Param) */
+/* static long ISP_REF_CNT_CTRL_FUNC(unsigned int Param) */
 static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	struct ISP_REF_CNT_CTRL_STRUCT ref_cnt_ctrl;
-	MINT32 imem_ref_cnt = 0;
+	signed int imem_ref_cnt = 0;
 
 	/* LOG_INF("[rc]+ QQ"); */ /* for memory corruption check */
 
@@ -5619,7 +5610,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 				break;
 			}
 			/*  */
-			imem_ref_cnt = (MINT32)atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
+			imem_ref_cnt = (signed int)atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
 
 			if (imem_ref_cnt == 0) {
 				/* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
@@ -5647,7 +5638,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 				LOG_ERR("NULL data_ptr");
 				return -EFAULT;
 			}
-			if (put_user(imem_ref_cnt, (MINT32 *)ref_cnt_ctrl.data_ptr) != 0) {
+			if (put_user(imem_ref_cnt, (signed int *)ref_cnt_ctrl.data_ptr) != 0) {
 				LOG_ERR("[rc][GET]:copy_to_user failed");
 				Ret = -EFAULT;
 			}
@@ -5679,20 +5670,20 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 
 /*  */
 /* isr dbg log , sw isr response counter , +1 when sw receive 1 sof isr. */
-static volatile MUINT32 sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
-volatile int Vsync_cnt[2] = {0, 0};
+static unsigned int sof_count[ISP_IRQ_TYPE_AMOUNT] = {0};
+static int Vsync_cnt[2] = {0, 0};
 
 /* keep current frame status */
-static volatile enum CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
+static enum CAM_FrameST FrameStatus[ISP_IRQ_TYPE_AMOUNT] = {0};
 
 /* current invoked time is at 1st sof or not during each streaming, reset when streaming off */
-static volatile MBOOL g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
+static bool g1stSof[ISP_IRQ_TYPE_AMOUNT] = {0};
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
-static volatile MBOOL g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
-static volatile unsigned long long gPrevSofTimestp[ISP_IRQ_TYPE_AMOUNT];
+static bool g1stSwP1Done[ISP_IRQ_TYPE_AMOUNT] = {0};
+static unsigned long long gPrevSofTimestp[ISP_IRQ_TYPE_AMOUNT];
 #endif
 
-static S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
+static struct S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 #define _INVALID_FRM_CNT_ 0xFFFF
@@ -5700,26 +5691,26 @@ static S_START_T gSTime[ISP_IRQ_TYPE_AMOUNT] = {{0} };
 
 #define _UNCERTAIN_MAGIC_NUM_FLAG_ 0x40000000
 #define _DUMMY_MAGIC_              0x20000000
-static MUINT32 m_LastMNum[_cam_max_] = {0}; /* imgo/rrzo */
+static unsigned int m_LastMNum[_cam_max_] = {0}; /* imgo/rrzo */
 
 #endif
-/* static long ISP_Buf_CTRL_FUNC(MUINT32 Param) */
+/* static long ISP_Buf_CTRL_FUNC(unsigned int Param) */
 static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	enum _isp_dma_enum_ rt_dma;
-	MUINT32 i = 0;
-	/*    MUINT32 x = 0;*/
-	/*    MUINT32 iBuf = 0;*/
-	/*    MUINT32 size = 0;*/
-	/*    MUINT32 bWaitBufRdy = 0;*/
+	unsigned int i = 0;
+	/*    unsigned int x = 0;*/
+	/*    unsigned int iBuf = 0;*/
+	/*    unsigned int size = 0;*/
+	/*    unsigned int bWaitBufRdy = 0;*/
 	struct ISP_BUFFER_CTRL_STRUCT         rt_buf_ctrl;
-	/*    MUINT32 flags;*/
-	/*    ISP_RT_BUF_INFO_STRUCT       rt_buf_info;*/
-	/*    ISP_DEQUE_BUF_INFO_STRUCT    deque_buf;*/
-	/*    ISP_IRQ_TYPE_ENUM irqT = ISP_IRQ_TYPE_AMOUNT;*/
-	/*    ISP_IRQ_TYPE_ENUM irqT_Lock = ISP_IRQ_TYPE_AMOUNT;*/
-	/*    MBOOL CurVF_En = MFALSE;*/
+	/*    unsigned int flags;*/
+	/*    struct ISP_RT_BUF_INFO_STRUCT       rt_buf_info;*/
+	/*    struct ISP_DEQUE_BUF_INFO_STRUCT    deque_buf;*/
+	/*    enum ISP_IRQ_TYPE_ENUM irqT = ISP_IRQ_TYPE_AMOUNT;*/
+	/*    enum ISP_IRQ_TYPE_ENUM irqT_Lock = ISP_IRQ_TYPE_AMOUNT;*/
+	/*    bool CurVF_En = MFALSE;*/
 	/*  */
 	if ((void __user *)Param == NULL)  {
 		LOG_ERR("[rtbc]NULL Param");
@@ -5753,9 +5744,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			/*  */
 
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_usec[rt_buf_ctrl.module],
-				0, sizeof(MUINT32) * 32);
+				0, sizeof(unsigned int) * 32);
 			memset((void *)IspInfo.IrqInfo.LastestSigTime_sec[rt_buf_ctrl.module],
-				0, sizeof(MUINT32) * 32);
+				0, sizeof(unsigned int) * 32);
 			/* remove, cause clear will be involked only when current module r totally stopped */
 			/* spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqT_Lock]), flags); */
 
@@ -5784,7 +5775,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					pstRTBuf[rt_buf_ctrl.module]->state = 0;
 				}
 
-				memset((void *)g_DmaErr_CAM[rt_buf_ctrl.module], 0, sizeof(MUINT32)*_cam_max_);
+				memset((void *)g_DmaErr_CAM[rt_buf_ctrl.module], 0, sizeof(unsigned int)*_cam_max_);
 				break;
 			case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
@@ -5821,9 +5812,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
-			MUINT8 array[_cam_max_];
-			MUINT32 z;
-			MUINT8 *pExt;
+			unsigned char array[_cam_max_];
+			unsigned int z;
+			unsigned char *pExt;
 
 			if (rt_buf_ctrl.pExtend == NULL) {
 				LOG_ERR("NULL pExtend");
@@ -5831,9 +5822,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				break;
 			}
 
-			pExt = (MUINT8 *)(rt_buf_ctrl.pExtend);
+			pExt = (unsigned char *)(rt_buf_ctrl.pExtend);
 			for (z = 0; z < _cam_max_; z++) {
-				if (get_user(array[z], (MUINT8 *)pExt) == 0) {
+				if (get_user(array[z], (unsigned char *)pExt) == 0) {
 					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
 					if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
 						LOG_INF("[rtbc][DMA_EN]:dma_%d:%d", z, array[z]);
@@ -5863,11 +5854,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 /*******************************************************************************
 * update current idnex to working frame
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_Update_ListCIdx(enum ISP_P2_BUFQUE_PROPERTY property, enum ISP_P2_BUFQUE_LIST_TAG listTag)
+static signed int ISP_P2_BufQue_Update_ListCIdx(enum ISP_P2_BUFQUE_PROPERTY property,
+enum ISP_P2_BUFQUE_LIST_TAG listTag)
 {
-	MINT32 ret = 0;
-	MINT32 tmpIdx = 0;
-	MINT32 cnt = 0;
+	signed int ret = 0;
+	signed int tmpIdx = 0;
+	signed int cnt = 0;
 	bool stop = false;
 	int i = 0;
 	enum ISP_P2_BUF_STATE_ENUM cIdxSts = ISP_P2_BUF_STATE_NONE;
@@ -5957,12 +5949,13 @@ static MINT32 ISP_P2_BufQue_Update_ListCIdx(enum ISP_P2_BUFQUE_PROPERTY property
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_Erase(enum ISP_P2_BUFQUE_PROPERTY property, enum ISP_P2_BUFQUE_LIST_TAG listTag, MINT32 idx)
+static signed int ISP_P2_BufQue_Erase(enum ISP_P2_BUFQUE_PROPERTY property,
+enum ISP_P2_BUFQUE_LIST_TAG listTag, signed int idx)
 {
-	MINT32 ret =  -1;
+	signed int ret =  -1;
 	bool stop = false;
 	int i = 0;
-	MINT32 cnt = 0;
+	signed int cnt = 0;
 	int tmpIdx = 0;
 
 	switch (listTag) {
@@ -6057,7 +6050,7 @@ static MINT32 ISP_P2_BufQue_Erase(enum ISP_P2_BUFQUE_PROPERTY property, enum ISP
 /*******************************************************************************
 * get first matched element idnex
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_GetMatchIdx(struct ISP_P2_BUFQUE_STRUCT param,
+static signed int ISP_P2_BufQue_GetMatchIdx(struct ISP_P2_BUFQUE_STRUCT param,
 		enum ISP_P2_BUFQUE_MATCH_TYPE matchType, enum ISP_P2_BUFQUE_LIST_TAG listTag)
 {
 	int idx = -1;
@@ -6220,11 +6213,11 @@ static MINT32 ISP_P2_BufQue_GetMatchIdx(struct ISP_P2_BUFQUE_STRUCT param,
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MUINT32 ISP_P2_BufQue_WaitEventState(struct ISP_P2_BUFQUE_STRUCT param,
-		enum ISP_P2_BUFQUE_MATCH_TYPE type, MINT32 *idx)
+static inline unsigned int ISP_P2_BufQue_WaitEventState(struct ISP_P2_BUFQUE_STRUCT param,
+		enum ISP_P2_BUFQUE_MATCH_TYPE type, signed int *idx)
 {
-	MUINT32 ret = MFALSE;
-	MINT32 index = -1;
+	unsigned int ret = MFALSE;
+	signed int index = -1;
 	enum ISP_P2_BUFQUE_PROPERTY property;
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
@@ -6283,12 +6276,12 @@ static inline MUINT32 ISP_P2_BufQue_WaitEventState(struct ISP_P2_BUFQUE_STRUCT p
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
+static signed int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 {
-	MINT32 ret = 0;
+	signed int ret = 0;
 	int i = 0, q = 0;
 	int idx =  -1, idx2 =  -1;
-	MINT32 restTime = 0;
+	signed int restTime = 0;
 	int property;
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
@@ -6321,7 +6314,7 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 		}
 		{
 			/*(2) add new to the last of the frame unit list */
-			MUINT32 cqmask = (param.dupCQIdx << 2) | (param.cQIdx << 1) | (param.burstQIdx);
+			unsigned int cqmask = (param.dupCQIdx << 2) | (param.cQIdx << 1) | (param.burstQIdx);
 
 			if (P2_FramePack_List_Idx[property].end < 0 || P2_FrameUnit_List_Idx[property].end < 0) {
 #ifdef P2_DBG_LOG
@@ -6604,7 +6597,7 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
+static signed int ISP_REGISTER_IRQ_USERKEY(char *userName)
 {
 	int key =  -1;
 	int i = 0;
@@ -6643,9 +6636,9 @@ static MINT32 ISP_REGISTER_IRQ_USERKEY(char *userName)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
+static signed int ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 	int idx = my_get_pow_idx(irqinfo->EventInfo.Status);
 
 	unsigned long long  sec = 0;
@@ -6698,10 +6691,10 @@ static MINT32 ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_GET_MARKtoQEURY_TIME(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
+static signed int ISP_GET_MARKtoQEURY_TIME(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	MINT32 Ret = 0;
-	/*    MUINT32 flags;*/
+	signed int Ret = 0;
+	/*    unsigned int flags;*/
 	/*    struct timeval time_getrequest;*/
 	/*    struct timeval time_ready2return;*/
 
@@ -6791,9 +6784,9 @@ static MINT32 ISP_GET_MARKtoQEURY_TIME(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_FLUSH_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
+static signed int ISP_FLUSH_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 {
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
 	LOG_INF("type(%d)userKey(%d)St_type(%d)St(0x%x)",
 		irqinfo->Type, irqinfo->EventInfo.UserKey, irqinfo->EventInfo.St_type, irqinfo->EventInfo.Status);
@@ -6829,15 +6822,15 @@ static MINT32 ISP_FLUSH_IRQ(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_WaitIrq(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
+static signed int ISP_WaitIrq(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 {
 
-	MINT32 Ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
+	signed int Ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
 
-	/*    MUINT32 i;*/
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	/*    unsigned int i;*/
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 
-	MUINT32 irqStatus;
+	unsigned int irqStatus;
 	/*    int cnt = 0;*/
 	int idx = my_get_pow_idx(WaitIrq->EventInfo.Status);
 	struct timeval time_getrequest;
@@ -7129,7 +7122,7 @@ NON_CLEAR_WAIT:
 	/* check CQ status, when pass2, pass2b, pass2c done */
 	if (WaitIrq->Type == ISP_IRQ_TYPE_INT_DIP_A_ST) {
 #if 0
-		MUINT32 CQ_status;
+		unsigned int CQ_status;
 
 		ISP_WR32(ISP_IMGSYS_BASE + 0x4160, 0x6000);
 		CQ_status = ISP_RD32(ISP_IMGSYS_BASE + 0x4164);
@@ -7182,7 +7175,7 @@ EXIT:
 
 /* ///////////////////////////////////////////////////////////////////////////// */
 #ifdef ISP_Recovery
-void ISP_ResumeHWFBC(MUINT32 *irqstat, MUINT32 irqlen, CQ_RTBC_FBC *pFbc, MUINT32 fbclen)
+void ISP_ResumeHWFBC(unsigned int *irqstat, unsigned int irqlen, CQ_RTBC_FBC *pFbc, unsigned int fbclen)
 {
 	int regWCNT;
 	int regRCNT;
@@ -7458,10 +7451,10 @@ static void ISP_ion_free_handle(struct ion_client *client, struct ion_handle *ha
 /*******************************************************************************
 *
 ********************************************************************************/
-static void ISP_ion_free_handle_by_module(MUINT32 module)
+static void ISP_ion_free_handle_by_module(unsigned int module)
 {
 	int i, j;
-	MINT32 nFd;
+	signed int nFd;
 	struct ion_handle *p_IonHnd;
 
 	if (IspInfo.DebugMask & ISP_DBG_ION_CTRL)
@@ -7494,7 +7487,7 @@ static void ISP_ion_free_handle_by_module(MUINT32 module)
 
 #endif
 
-static MINT32 ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
+static signed int ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, unsigned int flag)
 {
 #if 1
 	/* Adjust S/W start time when using H/W timestamp */
@@ -7504,11 +7497,11 @@ static MINT32 ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 
 	return 0;
 #else
-	MUINT32    *dma_stat = NULL, *fbc_ctrl2 = NULL;
-	MINT32     Ret = 0, i = 0;
-	MUINT32    reg_vf_con = 0, with_uni = 0;
+	unsigned int    *dma_stat = NULL, *fbc_ctrl2 = NULL;
+	signed int     Ret = 0, i = 0;
+	unsigned int    reg_vf_con = 0, with_uni = 0;
 	ISP_DEV_NODE_ENUM reg_module;
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	unsigned int hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
 
 	if (IspInfo.UserCount == 0) {
 		LOG_INF("ISP is idle, abort reset");
@@ -7535,22 +7528,22 @@ static MINT32 ISP_ResetResume_Cam(enum ISP_IRQ_TYPE_ENUM module, MUINT32 flag)
 	reg_vf_con = ISP_RD32(CAM_REG_TG_VF_CON(reg_module));
 
 	if (flag & 0x02) {
-		MUINT32 __sz = _cam_max_*sizeof(FBC_CTRL_2);
+		unsigned int __sz = _cam_max_*sizeof(union FBC_CTRL_2);
 
 		fbc_ctrl2 = kmalloc(__sz, GFP_KERNEL);
 		if (fbc_ctrl2 == NULL) {
 			LOG_ERR("kmalloc failed.\n");
 			return -ENOMEM;
 		}
-		memset(fbc_ctrl2, 0, _cam_max_*sizeof(FBC_CTRL_2));
+		memset(fbc_ctrl2, 0, _cam_max_*sizeof(union FBC_CTRL_2));
 
-		__sz = _cam_max_*sizeof(MUINT32);
+		__sz = _cam_max_*sizeof(unsigned int);
 		dma_stat = kmalloc(__sz, GFP_KERNEL);
 		if (dma_stat == NULL) {
 			LOG_ERR("kmalloc failed.\n");
 			return -ENOMEM;
 		}
-		memset(dma_stat, 0, _cam_max_*sizeof(MUINT32));
+		memset(dma_stat, 0, _cam_max_*sizeof(unsigned int));
 
 		ISP_GetDmaPortsStatus(reg_module, dma_stat);
 
@@ -7689,23 +7682,23 @@ _RST_EXIT:
 ********************************************************************************/
 static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
-	/*    MBOOL   HoldEnable = MFALSE;*/
-	MUINT32 DebugFlag[3] = {0};
-	/*    MUINT32 pid = 0;*/
+	/*    bool   HoldEnable = MFALSE;*/
+	unsigned int DebugFlag[3] = {0};
+	/*    unsigned int pid = 0;*/
 	struct ISP_REG_IO_STRUCT       RegIo;
 	struct ISP_DUMP_BUFFER_STRUCT DumpBufStruct;
 	struct ISP_MEM_INFO_STRUCT MemInfoStruct;
 	struct ISP_WAIT_IRQ_STRUCT     IrqInfo;
 	struct ISP_CLEAR_IRQ_STRUCT    ClearIrq;
-	ISP_USER_INFO_STRUCT *pUserInfo;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
 	struct ISP_P2_BUFQUE_STRUCT    p2QueBuf;
-	MUINT32                 regScenInfo_value = 0xa5a5a5a5;
-	/*    MINT32                  burstQNum;*/
-	MUINT32                 wakelock_ctrl;
-	MUINT32                 module;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+	unsigned int                 regScenInfo_value = 0xa5a5a5a5;
+	/*    signed int                  burstQNum;*/
+	unsigned int                 wakelock_ctrl;
+	unsigned int                 module;
+	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
 	int userKey =  -1;
 	struct ISP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
@@ -7720,11 +7713,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		return -EFAULT;
 	}
 	/*  */
-	pUserInfo = (ISP_USER_INFO_STRUCT *)(pFile->private_data);
+	pUserInfo = (struct ISP_USER_INFO_STRUCT *)(pFile->private_data);
 	/*  */
 	switch (Cmd) {
 	case ISP_RESET_CAM_P1:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)*2) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)*2) != 0) {
 			LOG_ERR("get reset cam p1 from user fail\n");
 			Ret = -EFAULT;
 			break;
@@ -7733,7 +7726,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		Ret = ISP_ResetResume_Cam(DebugFlag[0], DebugFlag[1]);
 		break;
 	case ISP_WAKELOCK_CTRL:
-		if (copy_from_user(&wakelock_ctrl, (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&wakelock_ctrl, (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get ISP_WAKELOCK_CTRL from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -7761,7 +7754,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_DROP_FRAME:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get irq from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -7791,21 +7784,21 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+			if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 				LOG_ERR("copy to user fail\n");
 				Ret = -EFAULT;
 			}
 		}
 		break;
 	case ISP_GET_INT_ERR:
-		if (copy_to_user((void *)Param, (void *)g_ISPIntErr, sizeof(MUINT32)*ISP_IRQ_TYPE_AMOUNT) != 0)
+		if (copy_to_user((void *)Param, (void *)g_ISPIntErr, sizeof(unsigned int)*ISP_IRQ_TYPE_AMOUNT) != 0)
 			LOG_ERR("get int err fail\n");
 		else
 			memset((void *)g_ISPIntErr, 0, sizeof(g_ISPIntErr));
 
 		break;
 	case ISP_GET_DMA_ERR:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get module fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -7814,13 +7807,14 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				break;
 			}
-			if (copy_to_user((void *)Param, &g_DmaErr_CAM[DebugFlag[0]], sizeof(MUINT32)*_cam_max_) != 0)
+			if (copy_to_user((void *)Param, &g_DmaErr_CAM[DebugFlag[0]],
+				sizeof(unsigned int)*_cam_max_) != 0)
 				LOG_ERR("get dma_err fail\n");
 
 		}
 		break;
 	case ISP_GET_CUR_SOF:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get cur sof from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -7856,13 +7850,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			DebugFlag[1] = sof_count[DebugFlag[0]];
 #endif
 		}
-		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy to user fail\n");
 			Ret = -EFAULT;
 		}
 		break;
 	case ISP_RESET_BY_HWMODULE: {
-		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get hwmodule from user fail\n");
 			Ret = -EFAULT;
 		} else {
@@ -8064,7 +8058,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	/*  */
 	case ISP_UPDATE_REGSCEN:
-		if (copy_from_user(&regScenInfo_value, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(&regScenInfo_value, (void *)Param, sizeof(unsigned int)) == 0) {
 			spin_lock((spinlock_t *)(&SpinLockRegScen));
 			g_regScen = regScenInfo_value;
 			spin_unlock((spinlock_t *)(&SpinLockRegScen));
@@ -8078,7 +8072,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		regScenInfo_value = g_regScen;
 		spin_unlock((spinlock_t *)(&SpinLockRegScen));
 		/*      */
-		if (copy_to_user((void *)Param, &regScenInfo_value, sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &regScenInfo_value, sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy_to_user failed\n");
 			Ret = -EFAULT;
 		}
@@ -8086,7 +8080,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	/*  */
 	case ISP_UPDATE_BURSTQNUM:
 #if 0 /* QQ, remove later*/
-		if (copy_from_user(&burstQNum, (void *)Param, sizeof(MINT32)) == 0) {
+		if (copy_from_user(&burstQNum, (void *)Param, sizeof(signed int)) == 0) {
 			spin_lock(&SpinLockRegScen);
 			P2_Support_BurstQNum = burstQNum;
 			spin_unlock(&SpinLockRegScen);
@@ -8103,7 +8097,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		burstQNum = P2_Support_BurstQNum;
 		spin_unlock(&SpinLockRegScen);
 		/*  */
-		if (copy_to_user((void *)Param, &burstQNum, sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &burstQNum, sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy_to_user failed");
 			Ret = -EFAULT;
 		}
@@ -8115,7 +8109,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		Ret = ISP_DumpReg();
 		break;
 	case ISP_DEBUG_FLAG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)) == 0) {
 
 			IspInfo.DebugMask = DebugFlag[0];
 
@@ -8132,9 +8126,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		Ret = ISP_REF_CNT_CTRL_FUNC(Param);
 		break;
 	case ISP_DUMP_ISR_LOG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)) == 0) {
-			MUINT32 currentPPB = m_CurrentPPB;
-			MUINT32 lock_key = ISP_IRQ_TYPE_AMOUNT;
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)) == 0) {
+			unsigned int currentPPB = m_CurrentPPB;
+			unsigned int lock_key = ISP_IRQ_TYPE_AMOUNT;
 
 			if (DebugFlag[0] >= ISP_IRQ_TYPE_AMOUNT) {
 				LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
@@ -8160,13 +8154,14 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_VF_LOG:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 2) == 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 2) == 0) {
 			switch (DebugFlag[0]) {
 			case 1: {
-				MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
-				MUINT32 cam_dmao = 0;
-				MUINT32 uni_dmao = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
-				MUINT32 hds2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+				unsigned int module = ISP_IRQ_TYPE_INT_CAM_A_ST;
+				unsigned int cam_dmao = 0;
+				unsigned int uni_dmao = ISP_RD32(CAM_UNI_REG_TOP_DMA_EN(ISP_UNI_A_IDX));
+				unsigned int hds2_sel =
+					((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
 
 				switch (DebugFlag[1]) {
 				case 0:
@@ -8187,7 +8182,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
 					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_A_ST]), 0,
-							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+							sizeof(struct ISP_TIMESTPQ_INFO_STRUCT));
 					#endif
 
 					break;
@@ -8210,7 +8205,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 					#if (TIMESTAMP_QUEUE_EN == 1)
 					memset((void *)&(IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST]), 0,
-							sizeof(ISP_TIMESTPQ_INFO_STRUCT));
+							sizeof(struct ISP_TIMESTPQ_INFO_STRUCT));
 					#endif
 
 					break;
@@ -8238,8 +8233,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				break;
 			/* CAMSV */
 			case 11: {
-				MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
-				MUINT32 cam_dmao = 0;
+				unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
+				unsigned int cam_dmao = 0;
 
 				switch (DebugFlag[1]) {
 				case CAMSV_0:
@@ -8319,11 +8314,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_START_TIME:
-		if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32) * 3) == 0) {
+		if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int) * 3) == 0) {
 			#if (TIMESTAMP_QUEUE_EN == 1)
-			S_START_T tstp;
-			S_START_T *pTstp = NULL;
-			MUINT32 dma_id = DebugFlag[1];
+			struct S_START_T tstp;
+			struct S_START_T *pTstp = NULL;
+			unsigned int dma_id = DebugFlag[1];
 
 			if (_cam_max_ == DebugFlag[1]) {
 				/* only for wait timestamp to ready */
@@ -8356,7 +8351,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			if (Ret != 0)
 				break;
 			#else
-			S_START_T *pTstp = &gSTime[DebugFlag[0]];
+			struct S_START_T *pTstp = &gSTime[DebugFlag[0]];
 			#endif
 
 			switch (DebugFlag[0]) {
@@ -8368,7 +8363,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			case ISP_IRQ_TYPE_INT_CAMSV_3_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_4_ST:
 			case ISP_IRQ_TYPE_INT_CAMSV_5_ST:
-				if (copy_to_user((void *)Param, pTstp, sizeof(S_START_T)) != 0) {
+				if (copy_to_user((void *)Param, pTstp, sizeof(struct S_START_T)) != 0) {
 					LOG_ERR("copy_to_user failed");
 					Ret = -EFAULT;
 				}
@@ -8381,7 +8376,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_GET_VSYNC_CNT:
-		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(MUINT32)) != 0) {
+		if (copy_from_user(&DebugFlag[0], (void *)Param, sizeof(unsigned int)) != 0) {
 			LOG_ERR("get cur sof from user fail");
 			Ret = -EFAULT;
 		} else {
@@ -8398,7 +8393,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				break;
 			}
 		}
-		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(MUINT32)) != 0) {
+		if (copy_to_user((void *)Param, &DebugFlag[1], sizeof(unsigned int)) != 0) {
 			LOG_ERR("copy to user fail");
 			Ret = -EFAULT;
 		}
@@ -8572,7 +8567,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_ION_FREE_BY_HWMODULE:
-		if (copy_from_user(&module, (void *)Param, sizeof(MUINT32)) == 0) {
+		if (copy_from_user(&module, (void *)Param, sizeof(unsigned int)) == 0) {
 			if (module < 0 || module >= CAM_MAX) {
 				LOG_ERR("module error(%d)\n", module);
 				Ret = -EFAULT;
@@ -8586,9 +8581,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_CQ_SW_PATCH: {
-			static MUINT32 Addr[2] = {0, 0};
+			static unsigned int Addr[2] = {0, 0};
 
-			if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)*2) == 0) {
+			if (copy_from_user(DebugFlag, (void *)Param, sizeof(unsigned int)*2) == 0) {
 				switch (DebugFlag[0]) {
 				case ISP_IRQ_TYPE_INT_CAM_A_ST:
 					Addr[0] = DebugFlag[1];
@@ -8832,7 +8827,7 @@ static int compat_get_isp_mem_info(
 #if 0
 static int compat_get_isp_register_userkey_struct_data(
 	compat_ISP_REGISTER_USERKEY_STRUCT __user *data32,
-	ISP_REGISTER_USERKEY_STRUCT __user *data)
+	struct ISP_REGISTER_USERKEY_STRUCT __user *data)
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
@@ -8848,7 +8843,7 @@ static int compat_get_isp_register_userkey_struct_data(
 
 static int compat_put_isp_register_userkey_struct_data(
 	compat_ISP_REGISTER_USERKEY_STRUCT __user *data32,
-	ISP_REGISTER_USERKEY_STRUCT __user *data)
+	struct ISP_REGISTER_USERKEY_STRUCT __user *data)
 {
 	compat_uint_t tmp;
 	/*      compat_uptr_t uptr;*/
@@ -8971,7 +8966,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 #if 0
 	case COMPAT_ISP_REGISTER_IRQ_USER_KEY: {
 		compat_ISP_REGISTER_USERKEY_STRUCT __user *data32;
-		ISP_REGISTER_USERKEY_STRUCT __user *data;
+		struct ISP_REGISTER_USERKEY_STRUCT __user *data;
 
 		int err = 0;
 
@@ -9125,14 +9120,14 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_open(
+static signed int ISP_open(
 	struct inode *pInode,
 	struct file *pFile)
 {
-	MINT32 Ret = 0;
-	MUINT32 i, j;
+	signed int Ret = 0;
+	unsigned int i, j;
 	int q = 0, p = 0;
-	ISP_USER_INFO_STRUCT *pUserInfo;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -9141,13 +9136,13 @@ static MINT32 ISP_open(
 	spin_lock(&(IspInfo.SpinLockIspRef));
 
 	pFile->private_data = NULL;
-	pFile->private_data = kmalloc(sizeof(ISP_USER_INFO_STRUCT), GFP_ATOMIC);
+	pFile->private_data = kmalloc(sizeof(struct ISP_USER_INFO_STRUCT), GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
 			current->comm, current->pid, current->tgid);
 		Ret = -ENOMEM;
 	} else {
-		pUserInfo = (ISP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct ISP_USER_INFO_STRUCT *)pFile->private_data;
 		pUserInfo->Pid = current->pid;
 		pUserInfo->Tid = current->tgid;
 	}
@@ -9306,7 +9301,7 @@ static MINT32 ISP_open(
 		}
 	}
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 	/* create ion client*/
@@ -9343,10 +9338,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline void ISP_StopHW(MINT32 module)
+static inline void ISP_StopHW(signed int module)
 {
-	MUINT32 regTGSt, loopCnt;
-	MINT32 ret = 0;
+	unsigned int regTGSt, loopCnt;
+	signed int ret = 0;
 	struct ISP_WAIT_IRQ_STRUCT waitirq;
 	ktime_t             time;
 	unsigned long long  sec = 0, m_sec = 0;
@@ -9436,13 +9431,13 @@ static inline void ISP_StopHW(MINT32 module)
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_release(
+static signed int ISP_release(
 	struct inode *pInode,
 	struct file *pFile)
 {
-	ISP_USER_INFO_STRUCT *pUserInfo;
-	MUINT32 Reg;
-	MUINT32 i = 0;
+	struct ISP_USER_INFO_STRUCT *pUserInfo;
+	unsigned int Reg;
+	unsigned int i = 0;
 
 	LOG_DBG("- E. UserCount: %d.\n", IspInfo.UserCount);
 
@@ -9452,7 +9447,7 @@ static MINT32 ISP_release(
 	/* LOG_DBG("UserCount(%d)",IspInfo.UserCount); */
 	/*  */
 	if (pFile->private_data != NULL) {
-		pUserInfo = (ISP_USER_INFO_STRUCT *)pFile->private_data;
+		pUserInfo = (struct ISP_USER_INFO_STRUCT *)pFile->private_data;
 		kfree(pFile->private_data);
 		pFile->private_data = NULL;
 	}
@@ -9610,7 +9605,7 @@ static MINT32 ISP_release(
 #endif
 
 	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(_isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
 
 	/*  */
 #ifdef ENABLE_KEEP_ION_HANDLE
@@ -9662,10 +9657,10 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
+static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 {
 	unsigned long length = 0;
-	MUINT32 pfn = 0x0;
+	unsigned int pfn = 0x0;
 
 	/*LOG_DBG("- E.");*/
 	length = (pVma->vm_end - pVma->vm_start);
@@ -9771,9 +9766,9 @@ static inline void ISP_UnregCharDev(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static inline MINT32 ISP_RegCharDev(void)
+static inline signed int ISP_RegCharDev(void)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*  */
 	LOG_DBG("- E.\n");
 	/*  */
@@ -9814,13 +9809,13 @@ EXIT:
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_probe(struct platform_device *pDev)
+static signed int ISP_probe(struct platform_device *pDev)
 {
-	MINT32 Ret = 0;
+	signed int Ret = 0;
 	/*    struct resource *pRes = NULL;*/
-	MINT32 i = 0, j = 0;
-	MUINT8 n;
-	MUINT32 irq_info[3]; /* Record interrupts info from device tree */
+	signed int i = 0, j = 0;
+	unsigned char n;
+	unsigned int irq_info[3]; /* Record interrupts info from device tree */
 	struct isp_device *_ispdev = NULL;
 
 #ifdef CONFIG_OF
@@ -10187,10 +10182,10 @@ EXIT:
 /*******************************************************************************
 * Called when the device is being detached from the driver
 ********************************************************************************/
-static MINT32 ISP_remove(struct platform_device *pDev)
+static signed int ISP_remove(struct platform_device *pDev)
 {
 	/*    struct resource *pRes;*/
-	MINT32 IrqNum;
+	signed int IrqNum;
 	int i;
 	/*  */
 	LOG_DBG("- E.");
@@ -10248,8 +10243,8 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 /*******************************************************************************
 *
 ********************************************************************************/
-/*static MINT32 bPass1_On_In_Resume_TG1;
-* static MINT32 bPass1_On_In_Resume_TG2;
+/*static signed int bPass1_On_In_Resume_TG1;
+* static signed int bPass1_On_In_Resume_TG2;
 */
 
 #ifdef ISP_Recovery
@@ -10259,12 +10254,12 @@ static MINT32 ISP_remove(struct platform_device *pDev)
 static void backRegister(void)
 {
 	/* ISP Register */
-	MUINT32 i;
-	MUINT32 *pReg;
+	unsigned int i;
+	unsigned int *pReg;
 
 	pReg = &g_backupReg.CAM_CTL_START;
 	for (i = 0; i <= 0x3c; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + i))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + i))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_CTL_SEL_GLOBAL = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x4040));
 
@@ -10278,25 +10273,25 @@ static void backRegister(void)
 
 	pReg = &g_backupReg.CAM_CTL_SW_CTL;
 	for (i = 0x8C; i <= 0xFC; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x8C)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x8C)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_CTL_CLK_EN = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x4170));
 
 	pReg = &g_backupReg.CAM_TG_SEN_MODE;
 	for (i = 0x410; i <= 0x424; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x410)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x410)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_OBC_OFFST0;
 	for (i = 0x500; i <= 0xD04; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x500)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x500)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_EIS_PREP_ME_CTRL1;
 	for (i = 0xDC0; i <= 0xE50; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0xDC0)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0xDC0)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_SL2_CEN;
 	for (i = 0xF40; i <= 0xFD8; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0xF40)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0xF40)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 	g_backupReg.CAM_GGM_CTRL = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x5480));
 	g_backupReg.CAM_PCA_CON1 = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x5E00));
 	g_backupReg.CAM_PCA_CON2 = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x5E04));
@@ -10306,20 +10301,20 @@ static void backRegister(void)
 
 	pReg = &g_backupReg.CAM_TG2_SEN_MODE;
 	for (i = 0x2410; i <= 0x2424; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x2410)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x2410)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_OBC_D_OFFST0;
 	for (i = 0x2500; i <= 0x2854; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x2500)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x2500)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_DMX_D_CTL;
 	for (i = 0x2E00; i <= 0x2E28; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x2E00)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x2E00)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_TDRI_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7204));
 	pReg = &g_backupReg.CAM_TDRI_XSIZE;
 	for (i = 0x720C; i <= 0x7220; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x720C)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x720C)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_LAST_ULTRA_EN = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7228));
 	g_backupReg.CAM_IMGI_SLOW_DOWN = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x722C));
@@ -10327,138 +10322,138 @@ static void backRegister(void)
 
 	pReg = &g_backupReg.CAM_IMGI_XSIZE;
 	for (i = 0x3238; i <= 0x324C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3238)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3238)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_BPCI_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7250));
 	pReg = &g_backupReg.CAM_BPCI_XSIZE;
 	for (i = 0x3258; i <= 0x3268; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3258)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3258)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_LSCI_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x726C));
 	pReg = &g_backupReg.CAM_LSCI_XSIZE;
 	for (i = 0x3274; i <= 0x3284; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3274)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3274)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_UFDI_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7288));
 	pReg = &g_backupReg.CAM_UFDI_XSIZE;
 	for (i = 0x3290; i <= 0x32A4; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3290)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3290)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_LCEI_XSIZE;
 	for (i = 0x32AC; i <= 0x32C0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x32AC)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x32AC)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_VIPI_XSIZE;
 	for (i = 0x32C8; i <= 0x32E0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x32C8)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x32C8)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_VIP2I_XSIZE;
 	for (i = 0x32E8; i <= 0x32FC; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x32E8)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x32E8)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMGO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7300));
 	pReg = &g_backupReg.CAM_IMGO_XSIZE;
 	for (i = 0x3308; i <= 0x331C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3308)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3308)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_RRZO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7320));
 	pReg = &g_backupReg.CAM_RRZO_XSIZE;
 	for (i = 0x3328; i <= 0x333C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3328)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3328)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_LCSO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7340));
 	pReg = &g_backupReg.CAM_LCSO_XSIZE;
 	for (i = 0x3348; i <= 0x3358; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3348)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3348)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_EISO_BASE_ADDR;
 	for (i = 0x335C; i <= 0x3370; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x335C)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x335C)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	pReg = &g_backupReg.CAM_ESFKO_YSIZE;
 	for (i = 0x3378; i <= 0x3384; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3378)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3378)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_AAO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7388));
 	pReg = &g_backupReg.CAM_AAO_XSIZE;
 	for (i = 0x3390; i <= 0x33A0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3390)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3390)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_VIP3I_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x73A4));
 	pReg = &g_backupReg.CAM_VIP3I_XSIZE;
 	for (i = 0x33AC; i <= 0x33C0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x33AC)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x33AC)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_UFEO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x73C4));
 	pReg = &g_backupReg.CAM_UFEO_XSIZE;
 	for (i = 0x33CC; i <= 0x33DC; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x33CC)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x33CC)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_MFBO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x73E0));
 	pReg = &g_backupReg.CAM_MFBO_XSIZE;
 	for (i = 0x33E8; i <= 0x33FC; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x33E8)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x33E8)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMG3BO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7400));
 	pReg = &g_backupReg.CAM_IMG3BO_XSIZE;
 	for (i = 0x3408; i <= 0x341C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3408)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3408)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMG3CO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7420));
 	pReg = &g_backupReg.CAM_IMG3CO_XSIZE;
 	for (i = 0x3428; i <= 0x343C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3428)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3428)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMG2O_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7440));
 	pReg = &g_backupReg.CAM_IMG2O_XSIZE;
 	for (i = 0x3448; i <= 0x345C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3448)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3448)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMG3O_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7460));
 	pReg = &g_backupReg.CAM_IMG3O_XSIZE;
 	for (i = 0x3468; i <= 0x347C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3468)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3468)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_FEO_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7480));
 	pReg = &g_backupReg.CAM_FEO_XSIZE;
 	for (i = 0x3488; i <= 0x3498; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3488)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3488)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_BPCI_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x749C));
 	pReg = &g_backupReg.CAM_BPCI_D_XSIZE;
 	for (i = 0x34A4; i <= 0x34B4; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x34A4)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x34A4)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_LSCI_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x74B8));
 	pReg = &g_backupReg.CAM_LSCI_D_XSIZE;
 	for (i = 0x34C0; i <= 0x34D0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x34C0)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x34C0)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_IMGO_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x74D4));
 	pReg = &g_backupReg.CAM_IMGO_D_XSIZE;
 	for (i = 0x34DC; i <= 0x34F0; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x34DC)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x34DC)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_RRZO_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x74F4));
 	pReg = &g_backupReg.CAM_RRZO_D_XSIZE;
 	for (i = 0x34FC; i <= 0x3510; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x34FC)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x34FC)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_LCSO_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7514));
 	pReg = &g_backupReg.CAM_LCSO_D_XSIZE;
 	for (i = 0x351C; i <= 0x352C; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x351C)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x351C)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_AFO_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7530));
 	g_backupReg.CAM_AFO_D_XSIZE = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x7534));
 	pReg = &g_backupReg.CAM_AFO_D_YSIZE;
 	for (i = 0x353C; i <= 0x3548; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x353C)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x353C)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 	g_backupReg.CAM_AAO_D_BASE_ADDR = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x754C));
 	pReg = &g_backupReg.CAM_AAO_D_XSIZE;
 	for (i = 0x3554; i <= 0x3564; i += 4)
-		(*((MUINT32 *)((unsigned long)pReg + (i - 0x3554)))) = (MUINT32)ISP_RD32(ISP_ADDR + i);
+		(*((unsigned int *)((unsigned long)pReg + (i - 0x3554)))) = (unsigned int)ISP_RD32(ISP_ADDR + i);
 
 
 	g_SeninfBackupReg.SENINF_TOP_CTRL = ISP_RD32((void *)(ISP_IMGSYS_BASE + 0x8000));
@@ -10618,10 +10613,10 @@ void ConfigM4uPort(void)
 
 
 }
-static void restoreRegister(MUINT32 openSensorIdx)
+static void restoreRegister(unsigned int openSensorIdx)
 {
-	MUINT32 i;
-	MUINT32 *pReg;
+	unsigned int i;
+	unsigned int *pReg;
 	unsigned int temp = 0;
 
 	ConfigM4uPort();
@@ -10630,12 +10625,12 @@ static void restoreRegister(MUINT32 openSensorIdx)
 	for (i = 0x0; i <= 0x3c; i += 4) {
 		if (i == 0x20) {
 			/* Disable the CQ0, CQ0C, CQ0C_D, CQ0C_D */
-			temp = ((MUINT32)(*(pReg))) & 0xEBFF7BFF;
+			temp = ((unsigned int)(*(pReg))) & 0xEBFF7BFF;
 			ISP_WR32((ISP_ADDR + i), temp);
-			pReg = (MUINT32 *)((unsigned long)pReg + 4);
+			pReg = (unsigned int *)((unsigned long)pReg + 4);
 		} else {
-			ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-			pReg = (MUINT32 *)((unsigned long)pReg + 4);
+			ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+			pReg = (unsigned int *)((unsigned long)pReg + 4);
 		}
 	}
 
@@ -10652,8 +10647,8 @@ static void restoreRegister(MUINT32 openSensorIdx)
 
 	pReg = &g_backupReg.CAM_CTL_SW_CTL;
 	for (i = 0x8C; i <= 0xFC; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	/* ISP */
@@ -10694,45 +10689,45 @@ static void restoreRegister(MUINT32 openSensorIdx)
 
 	pReg = &g_backupReg.CAM_TG_SEN_MODE;
 	for (i = 0x410; i <= 0x424; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_OBC_OFFST0;
 	for (i = 0x500; i <= 0xD04; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_EIS_PREP_ME_CTRL1;
 	for (i = 0xDC0; i <= 0xE50; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_TG2_SEN_MODE;
 	for (i = 0x2410; i <= 0x2424; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_OBC_D_OFFST0;
 	for (i = 0x2500; i <= 0x2854; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_DMX_D_CTL;
 	for (i = 0x2E00; i <= 0x2E28; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7204), g_backupReg.CAM_TDRI_BASE_ADDR);
 	pReg = &g_backupReg.CAM_TDRI_XSIZE;
 	for (i = 0x720C; i <= 0x7220; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7228), g_backupReg.CAM_LAST_ULTRA_EN);
@@ -10741,196 +10736,196 @@ static void restoreRegister(MUINT32 openSensorIdx)
 
 	pReg = &g_backupReg.CAM_IMGI_XSIZE;
 	for (i = 0x3238; i <= 0x324C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7250), g_backupReg.CAM_BPCI_BASE_ADDR);
 	pReg = &g_backupReg.CAM_BPCI_XSIZE;
 	for (i = 0x3258; i <= 0x3268; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x726C), g_backupReg.CAM_LSCI_BASE_ADDR);
 	pReg = &g_backupReg.CAM_LSCI_XSIZE;
 	for (i = 0x3274; i <= 0x3284; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7288), g_backupReg.CAM_UFDI_BASE_ADDR);
 	pReg = &g_backupReg.CAM_UFDI_XSIZE;
 	for (i = 0x3290; i <= 0x32A4; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_LCEI_XSIZE;
 	for (i = 0x32AC; i <= 0x32C0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_VIPI_XSIZE;
 	for (i = 0x32C8; i <= 0x32E0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_VIP2I_XSIZE;
 	for (i = 0x32E8; i <= 0x32FC; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7300), g_backupReg.CAM_IMGO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMGO_XSIZE;
 	for (i = 0x3308; i <= 0x331C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7320), g_backupReg.CAM_RRZO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_RRZO_XSIZE;
 	for (i = 0x3328; i <= 0x333C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7340), g_backupReg.CAM_LCSO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_LCSO_XSIZE;
 	for (i = 0x3348; i <= 0x3358; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_EISO_BASE_ADDR;
 	for (i = 0x335C; i <= 0x3370; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	pReg = &g_backupReg.CAM_ESFKO_YSIZE;
 	for (i = 0x3378; i <= 0x3384; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7388), g_backupReg.CAM_AAO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_AAO_XSIZE;
 	for (i = 0x3390; i <= 0x33A0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x73A4), g_backupReg.CAM_VIP3I_BASE_ADDR);
 	pReg = &g_backupReg.CAM_VIP3I_XSIZE;
 	for (i = 0x33AC; i <= 0x33C0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x73C4), g_backupReg.CAM_UFEO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_UFEO_XSIZE;
 	for (i = 0x33CC; i <= 0x33DC; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x73E0), g_backupReg.CAM_MFBO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_MFBO_XSIZE;
 	for (i = 0x33E8; i <= 0x33FC; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7400), g_backupReg.CAM_IMG3BO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMG3BO_XSIZE;
 	for (i = 0x3408; i <= 0x341C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7420), g_backupReg.CAM_IMG3CO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMG3CO_XSIZE;
 	for (i = 0x3428; i <= 0x343C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7440), g_backupReg.CAM_IMG2O_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMG2O_XSIZE;
 	for (i = 0x3448; i <= 0x345C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7460), g_backupReg.CAM_IMG3O_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMG3O_XSIZE;
 	for (i = 0x3468; i <= 0x347C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7480), g_backupReg.CAM_FEO_BASE_ADDR);
 	pReg = &g_backupReg.CAM_FEO_XSIZE;
 	for (i = 0x3488; i <= 0x3498; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x749C), g_backupReg.CAM_BPCI_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_BPCI_D_XSIZE;
 	for (i = 0x34A4; i <= 0x34B4; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74B8), g_backupReg.CAM_LSCI_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_LSCI_D_XSIZE;
 	for (i = 0x34C0; i <= 0x34D0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74D4), g_backupReg.CAM_IMGO_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_IMGO_D_XSIZE;
 	for (i = 0x34DC; i <= 0x34F0; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x74F4), g_backupReg.CAM_RRZO_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_RRZO_D_XSIZE;
 	for (i = 0x34FC; i <= 0x3510; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7514), g_backupReg.CAM_LCSO_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_LCSO_D_XSIZE;
 	for (i = 0x351C; i <= 0x352C; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7530), g_backupReg.CAM_AFO_D_BASE_ADDR);
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x7534), g_backupReg.CAM_AFO_D_XSIZE);
 	pReg = &g_backupReg.CAM_AFO_D_YSIZE;
 	for (i = 0x353C; i <= 0x3548; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x754C), g_backupReg.CAM_AAO_D_BASE_ADDR);
 	pReg = &g_backupReg.CAM_AAO_D_XSIZE;
 	for (i = 0x3554; i <= 0x3564; i += 4) {
-		ISP_WR32((ISP_ADDR + i), (MUINT32)(*(pReg)));
-		pReg = (MUINT32 *)((unsigned long)pReg + 4);
+		ISP_WR32((ISP_ADDR + i), (unsigned int)(*(pReg)));
+		pReg = (unsigned int *)((unsigned long)pReg + 4);
 	}
 
 	ISP_WR32((void *)(ISP_IMGSYS_BASE + 0x8000), g_SeninfBackupReg.SENINF_TOP_CTRL);
@@ -11035,17 +11030,17 @@ static void restoreRegister(MUINT32 openSensorIdx)
 
 
 #endif
-static MINT32 ISP_suspend(
+static signed int ISP_suspend(
 	struct platform_device *pDev,
 	pm_message_t            Mesg
 )
 {
 #if 1
-	MUINT32 regVal;
-	MINT32 IrqType, ret, module;
+	unsigned int regVal;
+	signed int IrqType, ret, module;
 	char moduleName[128];
 
-	MUINT32 regTGSt, loopCnt;
+	unsigned int regTGSt, loopCnt;
 	struct ISP_WAIT_IRQ_STRUCT waitirq;
 	ktime_t             time;
 	unsigned long long  sec = 0, m_sec = 0;
@@ -11170,10 +11165,10 @@ static MINT32 ISP_suspend(
 	} else
 		SuspnedRecord[module] = 0;
 #else
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
-	ISP_WAIT_IRQ_STRUCT waitirq;
-	MINT32 ret = 0;
+	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
+	struct ISP_WAIT_IRQ_STRUCT waitirq;
+	signed int ret = 0;
 
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
 		bPass1_On_In_Resume_TG1, bPass1_On_In_Resume_TG2, regTG1Val, regTG2Val);
@@ -11204,10 +11199,10 @@ static MINT32 ISP_suspend(
 
 
 #ifdef ISP_Recovery
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
-	ISP_WAIT_IRQ_STRUCT waitirq;
-	MINT32 ret = 0;
+	unsigned int regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	unsigned int regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
+	struct ISP_WAIT_IRQ_STRUCT waitirq;
+	signed int ret = 0;
 
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
 		bPass1_On_In_Resume_TG1, bPass1_On_In_Resume_TG2, regTG1Val, regTG2Val);
@@ -11251,11 +11246,11 @@ static MINT32 ISP_suspend(
 /*******************************************************************************
 *
 ********************************************************************************/
-static MINT32 ISP_resume(struct platform_device *pDev)
+static signed int ISP_resume(struct platform_device *pDev)
 {
 #if 1
-	MUINT32 regVal;
-	MINT32 IrqType, ret, module;
+	unsigned int regVal;
+	signed int IrqType, ret, module;
 	char moduleName[128];
 
 	ret = 0;
@@ -11418,12 +11413,12 @@ static struct platform_driver IspDriver = {
 */
 #define USE_OLD_STYPE_11897 0
 #if USE_OLD_STYPE_11897
-static MINT32 ISP_DumpRegToProc(
+static signed int ISP_DumpRegToProc(
 	char *pPage,
 	char **ppStart,
 	off_t off,
-	MINT32 Count,
-	MINT32 *pEof,
+	signed int Count,
+	signed int *pEof,
 	void *pData)
 #else /* new file_operations style */
 static ssize_t ISP_DumpRegToProc(
@@ -11435,9 +11430,9 @@ static ssize_t ISP_DumpRegToProc(
 {
 #if USE_OLD_STYPE_11897
 	char *p = pPage;
-	MINT32 Length = 0;
-	MUINT32 i = 0;
-	MINT32 ret = 0;
+	signed int Length = 0;
+	unsigned int i = 0;
+	signed int ret = 0;
 	/*  */
 	LOG_DBG("- E. pPage: %p. off: %d. Count: %d.", pPage, (unsigned int)off, Count);
 	/*  */
@@ -11521,7 +11516,7 @@ static ssize_t ISP_DumpRegToProc(
 */
 #define USE_OLD_STYPE_12011 0
 #if USE_OLD_STYPE_12011
-static MINT32  ISP_RegDebug(
+static signed int  ISP_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	unsigned long   Count,
@@ -11543,13 +11538,13 @@ static ssize_t ISP_RegDebug(
 */
 #define USE_OLD_STYPE_12061 0
 #if USE_OLD_STYPE_12061
-static MUINT32 proc_regOfst;
-static MINT32 CAMIO_DumpRegToProc(
+static unsigned int proc_regOfst;
+static signed int CAMIO_DumpRegToProc(
 	char *pPage,
 	char **ppStart,
 	off_t   off,
-	MINT32  Count,
-	MINT32 *pEof,
+	signed int  Count,
+	signed int *pEof,
 	void *pData)
 #else /* new file_operations style */
 static ssize_t CAMIO_DumpRegToProc(
@@ -11572,7 +11567,7 @@ static ssize_t CAMIO_DumpRegToProc(
 */
 #define USE_OLD_STYPE_12112 0
 #if USE_OLD_STYPE_12112
-static MINT32  CAMIO_RegDebug(
+static signed int  CAMIO_RegDebug(
 	struct file *pFile,
 	const char *pBuffer,
 	unsigned long   Count,
@@ -11886,11 +11881,11 @@ static const struct file_operations fcameraio_proc_fops = {
 ********************************************************************************/
 
 #if (OLYMPUS_EP == 1)
-MUINT8  m_DummyRegBuf[0x1000];
+unsigned char  m_DummyRegBuf[0x1000];
 #endif
-static MINT32 __init ISP_Init(void)
+static signed int __init ISP_Init(void)
 {
-	MINT32 Ret = 0, j;
+	signed int Ret = 0, j;
 	void *tmp;
 	struct device_node *node = NULL;
 	struct proc_dir_entry *proc_entry;
@@ -12215,9 +12210,9 @@ static void __exit ISP_Exit(void)
 	/*  */
 }
 
-void ISP_MCLK1_EN(BOOL En)
+void ISP_MCLK1_EN(unsigned char En)
 {
-	MUINT32 temp = 0;
+	unsigned int temp = 0;
 
 	if (En == 1)
 		mMclk1User++;
@@ -12246,9 +12241,9 @@ void ISP_MCLK1_EN(BOOL En)
 }
 EXPORT_SYMBOL(ISP_MCLK1_EN);
 
-void ISP_MCLK2_EN(BOOL En)
+void ISP_MCLK2_EN(unsigned char En)
 {
-	MUINT32 temp = 0;
+	unsigned int temp = 0;
 
 	if (En == 1)
 		mMclk2User++;
@@ -12275,9 +12270,9 @@ void ISP_MCLK2_EN(BOOL En)
 }
 EXPORT_SYMBOL(ISP_MCLK2_EN);
 
-void ISP_MCLK3_EN(BOOL En)
+void ISP_MCLK3_EN(unsigned char En)
 {
-	MUINT32 temp = 0;
+	unsigned int temp = 0;
 
 	if (En == 1)
 		mMclk3User++;
@@ -12304,9 +12299,9 @@ void ISP_MCLK3_EN(BOOL En)
 }
 EXPORT_SYMBOL(ISP_MCLK3_EN);
 
-void ISP_MCLK4_EN(BOOL En)
+void ISP_MCLK4_EN(unsigned char En)
 {
-	MUINT32 temp = 0;
+	unsigned int temp = 0;
 
 	if (En == 1)
 		mMclk4User++;
@@ -12470,7 +12465,7 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 
 m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva, void *data)
 {
-	MUINT32 module = 0;
+	unsigned int module = 0;
 
 	LOG_DBG("[ISP_M4U]fault call port=%d, mva=0x%x", port, mva);
 
@@ -13013,7 +13008,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #if defined(_debug_dma_err_)
 #define bit(x) (0x1<<(x))
 
-MUINT32 DMA_ERR[3 * 12] = {
+unsigned int DMA_ERR[3 * 12] = {
 	bit(1), 0xF50043A8, 0x00000011, /* IMGI */
 	bit(2), 0xF50043AC, 0x00000021, /* IMGCI */
 	bit(4), 0xF50043B0, 0x00000031, /* LSCI */
@@ -13028,18 +13023,18 @@ MUINT32 DMA_ERR[3 * 12] = {
 	bit(13), 0xF50043D4, 0x000001d4, /* AAO */
 };
 
-static MINT32 DMAErrHandler(void)
+static signed int DMAErrHandler(void)
 {
-	MUINT32 err_ctrl = ISP_RD32(0xF50043A4);
+	unsigned int err_ctrl = ISP_RD32(0xF50043A4);
 
 	LOG_DBG("err_ctrl(0x%08x)", err_ctrl);
 
-	MUINT32 i = 0;
+	unsigned int i = 0;
 
-	MUINT32 *pErr = DMA_ERR;
+	unsigned int *pErr = DMA_ERR;
 
 	for (i = 0; i < 12; i++) {
-		MUINT32 addr = 0;
+		unsigned int addr = 0;
 
 #if 1
 		if (err_ctrl & (*pErr)) {
@@ -13052,7 +13047,7 @@ static MINT32 DMAErrHandler(void)
 		}
 #else
 		addr = pErr[1];
-		MUINT32 status = ISP_RD32(addr);
+		unsigned int status = ISP_RD32(addr);
 
 		if (status & 0x0000FFFF) {
 			ISP_WR32(0xF5004160, pErr[2]);
@@ -13070,10 +13065,10 @@ static MINT32 DMAErrHandler(void)
 #endif
 
 
-void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, enum ISP_IRQ_TYPE_ENUM module)
+void IRQ_INT_ERR_CHECK_CAM(unsigned int WarnStatus, unsigned int ErrStatus, enum ISP_IRQ_TYPE_ENUM module)
 {
 	/* ERR print */
-	/* MUINT32 i = 0; */
+	/* unsigned int i = 0; */
 	if (ErrStatus) {
 		switch (module) {
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
@@ -13144,9 +13139,10 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, enum ISP_IRQ_T
 }
 
 
-enum CAM_FrameST Irq_CAM_FrameStatus(enum ISP_DEV_NODE_ENUM module, enum ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 delayCheck)
+enum CAM_FrameST Irq_CAM_FrameStatus(enum ISP_DEV_NODE_ENUM module,
+	enum ISP_IRQ_TYPE_ENUM irq_mod, unsigned int delayCheck)
 {
-	MINT32 dma_arry_map[_cam_max_] = {
+	signed int dma_arry_map[_cam_max_] = {
 		/*      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,*/
 		 0, /* _imgo_*/
 		 1, /* _rrzo_ */
@@ -13161,15 +13157,15 @@ enum CAM_FrameST Irq_CAM_FrameStatus(enum ISP_DEV_NODE_ENUM module, enum ISP_IRQ
 		-1, /* _pso_ */
 	};
 
-	MUINT32 dma_en;
-	MUINT32 uni_dma_en;
-	FBC_CTRL_1 fbc_ctrl1[6];
-	FBC_CTRL_2 fbc_ctrl2[6];
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
-	MBOOL bQueMode = MFALSE;
-	MUINT32 product = 1;
-	/* TSTP_V3 MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1; */
-	UINT32 i;
+	unsigned int dma_en;
+	unsigned int uni_dma_en;
+	union FBC_CTRL_1 fbc_ctrl1[6];
+	union FBC_CTRL_2 fbc_ctrl2[6];
+	unsigned int hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	bool bQueMode = MFALSE;
+	unsigned int product = 1;
+	/* TSTP_V3 unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1; */
+	unsigned int i;
 
 	if ((module != ISP_CAM_A_IDX) && (module != ISP_CAM_B_IDX)) {
 		LOG_ERR("unsupported module:0x%x\n", module);
@@ -13335,12 +13331,12 @@ enum CAM_FrameST Irq_CAM_FrameStatus(enum ISP_DEV_NODE_ENUM module, enum ISP_IRQ
 }
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, MUINT32 *DmaPortsStats)
+static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats)
 {
-	MUINT32 dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
-	MUINT32 hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
-	MUINT32 flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
-	MUINT32 uni_dma_en = 0;
+	unsigned int dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+	unsigned int hds2_sel = (ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) & 0x3);
+	unsigned int flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+	unsigned int uni_dma_en = 0;
 
 	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
 	DmaPortsStats[_ufeo_] = ((dma_en & 0x02) ? 1 : 0);
@@ -13368,9 +13364,9 @@ static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, MUINT32 *Dm
 }
 
 static enum CAM_FrameST Irq_CAM_SttFrameStatus(enum ISP_DEV_NODE_ENUM module, enum ISP_IRQ_TYPE_ENUM irq_mod,
-					MUINT32 dma_id, MUINT32 delayCheck)
+					unsigned int dma_id, unsigned int delayCheck)
 {
-	static const MINT32 dma_arry_map[_cam_max_] = {
+	static const signed int dma_arry_map[_cam_max_] = {
 		-1, /* _imgo_*/
 		-1, /* _rrzo_ */
 		-1, /* _ufeo_ */
@@ -13384,14 +13380,14 @@ static enum CAM_FrameST Irq_CAM_SttFrameStatus(enum ISP_DEV_NODE_ENUM module, en
 		 4  /* _pso_ */
 	};
 
-	MUINT32     dma_en;
-	MUINT32     uni_dma_en;
-	FBC_CTRL_1  fbc_ctrl1;
-	FBC_CTRL_2  fbc_ctrl2;
-	MUINT32     flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
-	MBOOL       bQueMode = MFALSE;
-	MUINT32     product = 1;
-	/* TSTP_V3 MUINT32     frmPeriod = 1; */
+	unsigned int     dma_en;
+	unsigned int     uni_dma_en;
+	union FBC_CTRL_1  fbc_ctrl1;
+	union FBC_CTRL_2  fbc_ctrl2;
+	unsigned int     flk2_sel = ((ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX)) >> 8) & 0x3);
+	bool       bQueMode = MFALSE;
+	unsigned int     product = 1;
+	/* TSTP_V3 unsigned int     frmPeriod = 1; */
 
 	switch (module) {
 	case ISP_CAM_A_IDX:
@@ -13533,10 +13529,11 @@ static enum CAM_FrameST Irq_CAM_SttFrameStatus(enum ISP_DEV_NODE_ENUM module, en
 
 }
 
-static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod)
+static int32_t ISP_PushBufTimestamp(unsigned int module, unsigned int dma_id,
+	unsigned int sec, unsigned int usec, unsigned int frmPeriod)
 {
-	MUINT32 wridx = 0;
-	FBC_CTRL_2 fbc_ctrl2;
+	unsigned int wridx = 0;
+	union FBC_CTRL_2 fbc_ctrl2;
 	enum ISP_DEV_NODE_ENUM reg_module;
 
 	fbc_ctrl2.Raw = 0x0;
@@ -13631,7 +13628,7 @@ static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec,
 	return 0;
 }
 
-static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pTstp)
+static int32_t ISP_PopBufTimestamp(unsigned int module, unsigned int dma_id, struct S_START_T *pTstp)
 {
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
@@ -13689,17 +13686,17 @@ static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pT
 }
 
 
-static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
+static int32_t ISP_WaitTimestampReady(unsigned int module, unsigned int dma_id)
 {
-	MUINT32 _timeout = 0;
-	MUINT32 wait_cnt = 0;
+	unsigned int _timeout = 0;
+	unsigned int wait_cnt = 0;
 
 	if (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt > IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt)
 		return 0;
 
 	LOG_INF("Wait module:%d dma:%d timestamp ready W/R:%d/%d\n", module, dma_id,
-		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+		(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 
 	#if 1
 	for (wait_cnt = 3; wait_cnt > 0; wait_cnt--) {
@@ -13733,14 +13730,14 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 		if ((wait_cnt & 0x7) == 0x7)
 			LOG_INF("WARNING: module:%d dma:%d wait long %d W/R:%d/%d\n",
 				module, dma_id, wait_cnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 
 		if (wait_cnt > 3000) {
 			LOG_INF("ERROR: module:%d dma:%d wait timeout %d W/R:%d/%d\n",
 				module, dma_id, wait_cnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
-				(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
+				(unsigned int)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 			break;
 		}
 
@@ -13752,13 +13749,14 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 }
 
 static int32_t ISP_CompensateMissingSofTime(enum ISP_DEV_NODE_ENUM reg_module,
-			MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec, MUINT32 frmPeriod)
+			unsigned int module, unsigned int dma_id, unsigned int sec,
+			unsigned int usec, unsigned int frmPeriod)
 {
-	FBC_CTRL_2  fbc_ctrl2;
-	MUINT32     delta_wcnt = 0, wridx = 0, wridx_prev1 = 0, wridx_prev2 = 0, i = 0;
-	MUINT32     delta_time = 0, max_delta_time = 0;
-	S_START_T   time_prev1, time_prev2;
-	MBOOL dmao_mask = MFALSE;/*To shrink error log, only rrzo print error log*/
+	union FBC_CTRL_2  fbc_ctrl2;
+	unsigned int     delta_wcnt = 0, wridx = 0, wridx_prev1 = 0, wridx_prev2 = 0, i = 0;
+	unsigned int     delta_time = 0, max_delta_time = 0;
+	struct S_START_T   time_prev1, time_prev2;
+	bool dmao_mask = MFALSE;/*To shrink error log, only rrzo print error log*/
 	/*
 	 * Patch timestamp and WCNT base on current HW WCNT and
 	 * previous SW WCNT value, and calculate difference
@@ -13921,11 +13919,11 @@ static int32_t ISP_CompensateMissingSofTime(enum ISP_DEV_NODE_ENUM reg_module,
 }
 
 #if (TSTMP_SUBSAMPLE_INTPL == 1)
-static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPeriod,
+static int32_t ISP_PatchTimestamp(unsigned int module, unsigned int dma_id, unsigned int frmPeriod,
 		unsigned long long refTimestp, unsigned long long prevTimestp)
 {
 	unsigned long long prev_tstp = prevTimestp, cur_tstp = refTimestp;
-	MUINT32 target_wridx = 0, curr_wridx = 0, frm_dt = 0, last_frm_dt = 0, i = 1;
+	unsigned int target_wridx = 0, curr_wridx = 0, frm_dt = 0, last_frm_dt = 0, i = 1;
 
 	/* Only sub-sample case needs patch */
 	if (frmPeriod <= 1)
@@ -13938,7 +13936,7 @@ static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPer
 	else
 		target_wridx = curr_wridx - frmPeriod;
 
-	frm_dt = (((MUINT32)(cur_tstp - prev_tstp)) / frmPeriod);
+	frm_dt = (((unsigned int)(cur_tstp - prev_tstp)) / frmPeriod);
 	last_frm_dt = ((cur_tstp - prev_tstp) - frm_dt*(frmPeriod-1));
 
 	if (frm_dt == 0)
@@ -13972,12 +13970,12 @@ static int32_t ISP_PatchTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 frmPer
 
 #endif
 
-irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_DIP_A(signed int  Irq, void *DeviceId)
 {
 	int i = 0;
-	MUINT32 IrqINTStatus = 0x0;
-	MUINT32 IrqCQStatus = 0x0;
-	MUINT32 IrqCQLDStatus = 0x0;
+	unsigned int IrqINTStatus = 0x0;
+	unsigned int IrqCQStatus = 0x0;
+	unsigned int IrqCQLDStatus = 0x0;
 
 	/*LOG_DBG("ISP_Irq_DIP_A:%d\n", Irq);*/
 
@@ -14006,20 +14004,20 @@ irqreturn_t ISP_Irq_DIP_A(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_0(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
-	MUINT32 reg_module = ISP_CAMSV0_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_0_ST;
+	unsigned int reg_module = ISP_CAMSV0_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/*  */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/*  */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/*  */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -14108,9 +14106,9 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -14130,7 +14128,7 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 
 			/* keep current time */
@@ -14162,7 +14160,7 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -14196,20 +14194,20 @@ irqreturn_t ISP_Irq_CAMSV_0(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_1(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_1_ST;
-	MUINT32 reg_module = ISP_CAMSV1_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_1_ST;
+	unsigned int reg_module = ISP_CAMSV1_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -14297,9 +14295,9 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -14319,7 +14317,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -14350,7 +14348,7 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -14384,20 +14382,20 @@ irqreturn_t ISP_Irq_CAMSV_1(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_2(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_2_ST;
-	MUINT32 reg_module = ISP_CAMSV2_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_2_ST;
+	unsigned int reg_module = ISP_CAMSV2_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -14486,9 +14484,9 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -14508,7 +14506,7 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -14539,7 +14537,7 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -14572,20 +14570,20 @@ irqreturn_t ISP_Irq_CAMSV_2(MINT32  Irq, void *DeviceId)
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_3(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_3_ST;
-	MUINT32 reg_module = ISP_CAMSV3_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_3_ST;
+	unsigned int reg_module = ISP_CAMSV3_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -14673,9 +14671,9 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -14695,7 +14693,7 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -14726,7 +14724,7 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -14759,20 +14757,20 @@ irqreturn_t ISP_Irq_CAMSV_3(MINT32  Irq, void *DeviceId)
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_4(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_4_ST;
-	MUINT32 reg_module = ISP_CAMSV4_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_4_ST;
+	unsigned int reg_module = ISP_CAMSV4_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -14860,9 +14858,9 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -14882,7 +14880,7 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -14913,7 +14911,7 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -14947,20 +14945,20 @@ irqreturn_t ISP_Irq_CAMSV_4(MINT32  Irq, void *DeviceId)
 
 }
 
-irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAMSV_5(signed int  Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_SV:0x%x\n",Irq); */
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAMSV_5_ST;
-	MUINT32 reg_module = ISP_CAMSV5_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
+	unsigned int module = ISP_IRQ_TYPE_INT_CAMSV_5_ST;
+	unsigned int reg_module = ISP_CAMSV5_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
 	/* */
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
 	/* */
-	volatile MUINT32 time_stamp;
+	unsigned int time_stamp;
 	/* */
-	MUINT32 cur_v_cnt = 0;
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
@@ -15048,9 +15046,9 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 #endif
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
+			static unsigned int m_sec = 0, m_usec;
 #if 0
-			MUINT32 magic_num;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_camsv_imgo_].active)
 				magic_num = ISP_RD32(CAMSV_REG_IMGO_FH_SPARE_3(reg_module));
@@ -15070,7 +15068,7 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL1(reg_module))),
 				       (unsigned int)(ISP_RD32(CAMSV_REG_FBC_IMGO_CTL2(reg_module))),
 				       ISP_RD32(CAMSV_REG_IMGO_BASE_ADDR(reg_module)),
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       time_stamp);
 			/* keep current time */
 			m_sec = sec;
@@ -15101,7 +15099,7 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -15137,21 +15135,21 @@ irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 #define ERR_WRN_INT_CNT_THRE    3
 
-irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAM_A(signed int Irq, void *DeviceId)
 {
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_A_ST;
-	MUINT32 reg_module = ISP_CAM_A_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	MUINT32 DmaStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
-	MUINT32 cur_v_cnt = 0;
+	unsigned int module = ISP_IRQ_TYPE_INT_CAM_A_ST;
+	unsigned int reg_module = ISP_CAM_A_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	unsigned int DmaStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
-	MUINT32 IrqEnableOrig, IrqEnableNew;
+	unsigned int IrqEnableOrig, IrqEnableNew;
 
 	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
 	if (G_u4EnableClockCount == 0)
@@ -15287,7 +15285,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
 		if (g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+			unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
 			if (frmPeriod > 1) {
 				ISP_PatchTimestamp(module, _imgo_, frmPeriod,
@@ -15319,8 +15317,8 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
-		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
-		MUINT32 irqDelay = 0;
+		unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+		unsigned int irqDelay = 0;
 
 		time = ktime_get(); /* ns */
 		sec = time.tv64;
@@ -15359,8 +15357,8 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		}
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
-			MUINT32 magic_num;
+			static unsigned int m_sec = 0, m_usec;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_imgo_].active)
 				magic_num = ISP_RD32(CAM_REG_IMGO_FH_SPARE_2(reg_module));
@@ -15377,7 +15375,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			#if (TIMESTAMP_QUEUE_EN == 1)
 			{
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 subFrm = 0;
+			unsigned int subFrm = 0;
 			enum CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo, FrmStat_pso;
 
 			ISP_GetDmaPortsStatus(reg_module, IspInfo.TstpQInfo[module].DmaEnStatus);
@@ -15545,7 +15543,7 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
@@ -15608,7 +15606,7 @@ LB_CAMA_SOF_IGNORE:
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -15641,21 +15639,21 @@ LB_CAMA_SOF_IGNORE:
 	return IRQ_HANDLED;
 }
 
-irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
+irqreturn_t ISP_Irq_CAM_B(signed int  Irq, void *DeviceId)
 {
-	MUINT32 module = ISP_IRQ_TYPE_INT_CAM_B_ST;
-	MUINT32 reg_module = ISP_CAM_B_IDX;
-	MUINT32 i;
-	MUINT32 IrqStatus, ErrStatus, WarnStatus;
-	MUINT32 DmaStatus;
-	volatile FBC_CTRL_1 fbc_ctrl1[2];
-	volatile FBC_CTRL_2 fbc_ctrl2[2];
-	MUINT32 cur_v_cnt = 0;
+	unsigned int module = ISP_IRQ_TYPE_INT_CAM_B_ST;
+	unsigned int reg_module = ISP_CAM_B_IDX;
+	unsigned int i;
+	unsigned int IrqStatus, ErrStatus, WarnStatus;
+	unsigned int DmaStatus;
+	union FBC_CTRL_1 fbc_ctrl1[2];
+	union FBC_CTRL_2 fbc_ctrl2[2];
+	unsigned int cur_v_cnt = 0;
 	struct timeval time_frmb;
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
-	MUINT32 IrqEnableOrig, IrqEnableNew;
+	unsigned int IrqEnableOrig, IrqEnableNew;
 
 	/* Avoid touch hwmodule when clock is disable. DEVAPC will moniter this kind of err */
 	if (G_u4EnableClockCount == 0)
@@ -15791,7 +15789,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		#if (TSTMP_SUBSAMPLE_INTPL == 1)
 		if (g1stSwP1Done[module] == MTRUE) {
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+			unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
 
 			if (frmPeriod > 1) {
 				ISP_PatchTimestamp(module, _imgo_, frmPeriod,
@@ -15822,8 +15820,8 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
-		MUINT32 frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
-		MUINT32 irqDelay = 0;
+		unsigned int frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(reg_module)) >> 8) & 0x1F) + 1;
+		unsigned int irqDelay = 0;
 
 		time = ktime_get(); /* ns */
 		sec = time.tv64;
@@ -15861,8 +15859,8 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		}
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
-			static MUINT32 m_sec = 0, m_usec;
-			MUINT32 magic_num;
+			static unsigned int m_sec = 0, m_usec;
+			unsigned int magic_num;
 
 			if (pstRTBuf[module]->ring_buf[_imgo_].active)
 				magic_num = ISP_RD32(CAM_REG_IMGO_FH_SPARE_2(reg_module));
@@ -15879,7 +15877,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			#if (TIMESTAMP_QUEUE_EN == 1)
 			{
 			unsigned long long cur_timestp = (unsigned long long)sec*1000000 + usec;
-			MUINT32 subFrm = 0;
+			unsigned int subFrm = 0;
 			enum CAM_FrameST FrmStat_aao, FrmStat_afo, FrmStat_flko, FrmStat_pdo, FrmStat_pso;
 
 			ISP_GetDmaPortsStatus(reg_module, IspInfo.TstpQInfo[module].DmaEnStatus);
@@ -16047,7 +16045,7 @@ irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 				       ISP_RD32(CAM_REG_IMGO_BASE_ADDR(reg_module)),
 				       ISP_RD32(CAM_REG_RRZO_BASE_ADDR(reg_module)),
 				       magic_num,
-				       (MUINT32)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
+				       (unsigned int)((sec * 1000000 + usec) - (1000000 * m_sec + m_usec)),
 				       ISP_RD32(CAM_REG_CQ_THR0_BASEADDR(reg_module)));
 
 #ifdef ENABLE_STT_IRQ_LOG /*STT addr*/
@@ -16110,7 +16108,7 @@ LB_CAMB_SOF_IGNORE:
 
 		/* 2. update signal time and passed by signal count */
 		if (IspInfo.IrqInfo.MarkedFlag[module][SIGNAL_INT][i] & IspInfo.IrqInfo.Mask[module][SIGNAL_INT]) {
-			MUINT32 cnt = 0, tmp = IrqStatus;
+			unsigned int cnt = 0, tmp = IrqStatus;
 
 			while (tmp) {
 				if (tmp & 0x1) {
@@ -16154,7 +16152,7 @@ static void ISP_TaskletFunc_CAM_A(unsigned long data)
 #if 1
 	IRQ_LOG_PRINTER(ISP_IRQ_TYPE_INT_CAM_A_ST, m_CurrentPPB, _LOG_INF);
 #else
-	MUINT32 reg, flags;
+	unsigned int reg, flags;
 
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]), flags);
 	reg = IspInfo.IrqInfo.Status[ISP_IRQ_TYPE_INT_CAM_A_ST][0];
@@ -16202,7 +16200,7 @@ static void ISP_TaskletFunc_SV_5(unsigned long data)
 #if (ISP_BOTTOMHALF_WORKQ == 1)
 static void ISP_BH_Workqueue(struct work_struct *pWork)
 {
-	IspWorkqueTable *pWorkTable = container_of(pWork, IspWorkqueTable, isp_bh_work);
+	struct IspWorkqueTable *pWorkTable = container_of(pWork, struct IspWorkqueTable, isp_bh_work);
 
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_ERR);
 	IRQ_LOG_PRINTER(pWorkTable->module, m_CurrentPPB, _LOG_INF);
