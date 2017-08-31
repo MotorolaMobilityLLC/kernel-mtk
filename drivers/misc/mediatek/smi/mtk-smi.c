@@ -1072,6 +1072,10 @@ static char *smi_get_scenario_name(MTK_SMI_BWC_SCEN scen)
 		return "SMI_BWC_SCEN_VPMJC";
 	case SMI_BWC_SCEN_N3D:
 		return "SMI_BWC_SCEN_N3D";
+	case SMI_BWC_SCEN_CAM_PV:
+		return "SMI_BWC_SCEN_CAM_PV";
+	case SMI_BWC_SCEN_CAM_CP:
+		return "SMI_BWC_SCEN_CAM_CP";
 	default:
 		return "unknown scenario";
 	}
@@ -1174,6 +1178,10 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		eFinalScen = SMI_BWC_SCEN_VR_SLOW;
 	else if ((1 << SMI_BWC_SCEN_VR) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VR;
+	else if ((1 << SMI_BWC_SCEN_CAM_PV) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_CAM_PV;
+	else if ((1 << SMI_BWC_SCEN_CAM_CP) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_CAM_CP;
 	else if ((1 << SMI_BWC_SCEN_VP_HIGH_RESOLUTION) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VP_HIGH_RESOLUTION;
 	else if ((1 << SMI_BWC_SCEN_VP_HIGH_FPS) & u4Concurrency)
