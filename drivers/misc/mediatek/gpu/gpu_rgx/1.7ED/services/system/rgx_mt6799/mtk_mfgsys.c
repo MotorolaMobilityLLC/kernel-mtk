@@ -202,12 +202,10 @@ static IMG_VOID MTKEnableMfgClock(void)
     ged_dvfs_gpu_clock_switch_notify(1);
  
 /*
-*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
-*	MTKCLK_prepare_enable(mtcmos_mfg0);
-*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg1"));
-*	MTKCLK_prepare_enable(mtcmos_mfg1);
-*	PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
-*	MTKCLK_prepare_enable(mtcmos_mfg2);
+	MTKCLK_prepare_enable(mtcmos_mfg0);
+	MTKCLK_prepare_enable(mtcmos_mfg1);
+	MTKCLK_prepare_enable(mtcmos_mfg2);
+
 */
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
@@ -252,21 +250,20 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 	MTKCLK_disable_unprepare(mfg_clk_bmem);
 	MTKCLK_disable_unprepare(mfg_clk_baxi);
 /*
-	MTKCLK_disable_unprepare(mtcmos_mfg2);
-	MTKCLK_disable_unprepare(mtcmos_mfg1);
-	MTKCLK_disable_unprepare(mtcmos_mfg0);
-
-	mfg_cg_switch(0);
+*	MTKCLK_disable_unprepare(mtcmos_mfg2);
+*	MTKCLK_disable_unprepare(mtcmos_mfg1);
+*	MTKCLK_disable_unprepare(mtcmos_mfg0);
+*
+*
+*	mfg_cg_switch(0);
 */
+
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg2"));
-	spm_mtcmos_ctrl_mfg2(0);
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg1"));
-	spm_mtcmos_ctrl_mfg1(0);
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg0"));
-	spm_mtcmos_ctrl_mfg0(0);
 
 
 
