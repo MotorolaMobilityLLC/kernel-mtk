@@ -1361,6 +1361,42 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 },
 #endif
 	{
+		.name = MT_SOC_CODEC_VOICE_USBDAI_NAME,
+		.ops = &mt6323_aif1_dai_ops,
+		.playback = {
+			   .stream_name = MT_SOC_VOICE_USB_STREAM_NAME,
+			   .channels_min = 1,
+			   .channels_max = 2,
+			   .rates = SNDRV_PCM_RATE_8000_192000,
+			   .formats = SND_SOC_ADV_MT_FMTS,
+			   },
+		.capture = {
+			  .stream_name = MT_SOC_VOICE_USB_STREAM_NAME,
+			  .channels_min = 1,
+			  .channels_max = 2,
+			  .rates = SNDRV_PCM_RATE_8000_192000,
+			  .formats = SND_SOC_ADV_MT_FMTS,
+			  },
+	},
+	{
+		.name = MT_SOC_CODEC_VOICE_USB_ECHOREF_DAI_NAME,
+		.ops = &mt6323_aif1_dai_ops,
+		.playback = {
+			   .stream_name = MT_SOC_VOICE_USB_ECHOREF_STREAM_NAME,
+			   .channels_min = 1,
+			   .channels_max = 2,
+			   .rates = SNDRV_PCM_RATE_8000_192000,
+			   .formats = SND_SOC_ADV_MT_FMTS,
+			   },
+		.capture = {
+			  .stream_name = MT_SOC_VOICE_USB_ECHOREF_STREAM_NAME,
+			  .channels_min = 1,
+			  .channels_max = 2,
+			  .rates = SNDRV_PCM_RATE_8000_192000,
+			  .formats = SND_SOC_ADV_MT_FMTS,
+			  },
+	},
+	{
 	 .name = MT_SOC_CODEC_FMI2S2RXDAI_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
 	 .playback = {
