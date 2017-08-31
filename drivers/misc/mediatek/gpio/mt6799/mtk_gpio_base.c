@@ -12,25 +12,33 @@
  */
 
 
-#include <6757_gpio.h>
+#include <6799_gpio.h>
 #include <linux/types.h>
 #include "mt-plat/sync_write.h"
 #include <mt-plat/mtk_gpio.h>
 #include <mt-plat/mtk_gpio_core.h>
 #include <mtk_gpio_base.h>
-/* autogen */
 #include <gpio_cfg.h>
 #ifdef CONFIG_OF
 #include <linux/of_address.h>
 #endif
+
+#define SUPPORT_MODE_MWR
+
+#define REGSET (4)
+#define REGCLR (8)
+#define REGMWR (0xC)
+
+#define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, addr)
+#define GPIO_RD32(addr)         __raw_readl(addr)
+#define GPIO_SET_BITS(REG, BIT) GPIO_WR32(REG + REGSET, BIT)
+#define GPIO_CLR_BITS(REG, BIT) GPIO_WR32(REG + REGCLR, BIT)
 
 long gpio_pull_select_unsupport[MAX_GPIO_PIN] = { 0 };
 long gpio_pullen_unsupport[MAX_GPIO_PIN] = { 0 };
 long gpio_smt_unsupport[MAX_GPIO_PIN] = { 0 };
 
 struct mt_gpio_vbase gpio_vbase;
-#define REGSET (4)
-#define REGCLR (8)
 
 static GPIO_REGS *gpio_reg;
 /*---------------------------------------------------------------------------*/
@@ -53,9 +61,9 @@ int mt_set_gpio_dir_base(unsigned long pin, unsigned long dir)
 	bit = pin % MAX_GPIO_REG_BITS;
 
 	if (dir == GPIO_DIR_IN)
-		GPIO_SET_BITS((1L << bit), &reg->dir[pos].rst);
+		GPIO_WR32(&reg->dir[pos].rst, 1L << bit);
 	else
-		GPIO_SET_BITS((1L << bit), &reg->dir[pos].set);
+		GPIO_WR32(&reg->dir[pos].set, 1L << bit);
 	return RSUCCESS;
 }
 
@@ -83,7 +91,6 @@ int mt_get_gpio_dir_base(unsigned long pin)
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_out_base(unsigned long pin, unsigned long output)
 {
-
 	unsigned long pos;
 	unsigned long bit;
 	GPIO_REGS *reg = gpio_reg;
@@ -97,16 +104,14 @@ int mt_set_gpio_out_base(unsigned long pin, unsigned long output)
 	if (output >= GPIO_OUT_MAX)
 		return -ERINVAL;
 
-
 	pos = pin / MAX_GPIO_REG_BITS;
 	bit = pin % MAX_GPIO_REG_BITS;
 
 	if (output == GPIO_OUT_ZERO)
-		GPIO_SET_BITS((1L << bit), &reg->dout[pos].rst);
+		GPIO_WR32(&reg->dout[pos].rst, 1L << bit);
 	else
-		GPIO_SET_BITS((1L << bit), &reg->dout[pos].set);
+		GPIO_WR32(&reg->dout[pos].set, 1L << bit);
 	return RSUCCESS;
-
 }
 
 /*---------------------------------------------------------------------------*/
@@ -154,11 +159,11 @@ int mt_get_gpio_in_base(unsigned long pin)
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 {
+	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
-	u32 mask;
-	unsigned long base;
 	GPIO_REGS *reg = gpio_reg;
+	u32 mask;
 
 	if (!reg)
 		return -ERACCESS;
@@ -169,58 +174,33 @@ int mt_set_gpio_mode_base(unsigned long pin, unsigned long mode)
 	if (mode >= GPIO_MODE_MAX)
 		return -ERINVAL;
 
+#ifdef SUPPORT_MODE_MWR
+	mask = (1L << (GPIO_MODE_BITS - 1)) - 1;
+#else
+	mask = (1L << GPIO_MODE_BITS) - 1;
+#endif
+
+	mode = mode & mask;
+	pos = pin / MAX_GPIO_REG_BITS;
+	bit = pin % MAX_GPIO_REG_BITS;
 
 #ifdef SUPPORT_MODE_MWR
-	/*  This is most wanted version after CD1CD2 unification.
-	 *  if MWR is supported, no need to read before write.
-	 *  MWR[3:0] has 4 bits not 3 bits ; additional 1 bit,MWR[3], is for update enable
-	 *  data[3:0] = MWR[3] | MWR[2:0].
-	 */
-	unsigned long pos;
-
-	pos = pin / MAX_GPIO_MODE_PER_REG;
-	bit = pin % MAX_GPIO_MODE_PER_REG;
-
-	data = ((1L << (GPIO_MODE_BITS * bit)) << 3) | (mode << (GPIO_MODE_BITS * bit));
+	data = (1L << (bit + GPIO_MODE_BITS - 1)) | (mode << bit);
 	GPIO_WR32(&reg->mode[pos]._align1, data);
-
 #else
-	/* For DNL/JD, there is no mwr register for simple register setting.
-	 * Need 1R+1W to set MODE registers
-	 */
-	mask = (1L << GPIO_MODE_BITS) - 1;
-	mode = mode & mask;
-
-#ifdef REGULAR_MODE_OFFSET
-	unsigned long pos;
-
-	pos = pin / MAX_GPIO_MODE_PER_REG;
-	/*for bit to be valid, difference series offset must be provided by HW */
-	bit = pin % MAX_GPIO_MODE_PER_REG;
-
 	data = GPIO_RD32(&reg->mode[pos].val);
 	data &= (~(mask << bit));
 	data |= (mode << bit);
 	GPIO_WR32(&reg->mode[pos].val, data);
-#else
-	bit = MODE_offset[pin].offset;
-
-	data = GPIO_RD32((GPIO_BASE + MODE_addr[pin].addr));
-	data &= (~(mask << bit));
-	data |= (mode << bit);
-
-	base = (unsigned long) GPIO_BASE + MODE_addr[pin].addr;
-	GPIO_WR32(base, data);
 #endif
 
-
-#endif
 	return RSUCCESS;
 }
 
 /*---------------------------------------------------------------------------*/
 int mt_get_gpio_mode_base(unsigned long pin)
 {
+	unsigned long pos;
 	unsigned long bit;
 	unsigned long data;
 	u32 mask;
@@ -232,51 +212,39 @@ int mt_get_gpio_mode_base(unsigned long pin)
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	mask = (1L << GPIO_MODE_BITS) - 1;
-
 #ifdef SUPPORT_MODE_MWR
-	unsigned long pos;
-
-	pos = pin / MAX_GPIO_MODE_PER_REG;
-	bit = pin % MAX_GPIO_MODE_PER_REG;
-
-	data = GPIO_RD32(&reg->mode[pos].val);
-	return (data >> (GPIO_MODE_BITS * bit)) & mask;
+	mask = (1L << (GPIO_MODE_BITS - 1)) - 1;
 #else
-
-	bit = MODE_offset[pin].offset;
-	data = GPIO_RD32(GPIO_BASE + MODE_addr[pin].addr);
-	return (data >> bit) & mask;
+	mask = (1L << GPIO_MODE_BITS) - 1;
 #endif
 
+	pos = pin / MAX_GPIO_REG_BITS;
+	bit = pin % MAX_GPIO_REG_BITS;
 
+	data = GPIO_RD32(&reg->mode[pos].val);
+	return (data >> bit) & mask;
 }
 
 
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_smt_base(unsigned long pin, unsigned long enable)
 {
-	unsigned long reg = 0;
-	unsigned long bit = 0;
+	void __iomem *base;
+	u8 bit;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (SMT_offset[pin].offset == -1) {
+	if (SMT_offset[pin].offset == -1)
 		return GPIO_SMT_UNSUPPORTED;
 
-	} else {
-		bit = SMT_offset[pin].offset;
-		reg = IOCFG_RD32(SMT_addr[pin].addr);
-		if (enable == GPIO_SMT_DISABLE)
-			reg &= (~(1 << bit));
-		/* IOCFG_SET_BITS((1L << bit), SMT_addr[pin].addr + REGCLR); */
-		else
-			reg |= (1 << bit);
-		/* IOCFG_SET_BITS((1L << bit), SMT_addr[pin].addr + REGSET); */
-	}
+	bit = SMT_offset[pin].offset;
+	base = gpio_vbase.iocfg_regs_array[SMT_base_index[pin].index];
 
-	IOCFG_WR32(SMT_addr[pin].addr, reg);
+	if (enable == GPIO_SMT_DISABLE)
+		GPIO_CLR_BITS(base + SMT_addr[pin].addr, 1 << bit);
+	else
+		GPIO_SET_BITS(base + SMT_addr[pin].addr, 1 << bit);
 
 	return RSUCCESS;
 }
@@ -285,41 +253,40 @@ int mt_set_gpio_smt_base(unsigned long pin, unsigned long enable)
 int mt_get_gpio_smt_base(unsigned long pin)
 {
 	unsigned long data;
-	unsigned long bit = 0;
-	int smt;
-
-	bit = SMT_offset[pin].offset;
+	void __iomem *base;
+	u8 bit;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (SMT_offset[pin].offset != -1) {
-		data = IOCFG_RD32(SMT_addr[pin].addr);
-		smt = ((data & (1L << bit)) != 0) ? 1 : 0;
-	} else {
+	if (SMT_offset[pin].offset == -1)
 		return GPIO_SMT_UNSUPPORTED;
-	}
 
-	return smt;
+	bit = SMT_offset[pin].offset;
+	base = gpio_vbase.iocfg_regs_array[SMT_base_index[pin].index];
+	data = GPIO_RD32(base + SMT_addr[pin].addr);
+	return ((data & (1L << bit)) != 0) ? 1 : 0;
 }
 
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_ies_base(unsigned long pin, unsigned long enable)
 {
+	void __iomem *base;
+	u8 bit;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (IES_offset[pin].offset != -1) {
-		if (enable == GPIO_IES_DISABLE)
-			IOCFG_SET_BITS((1L << (IES_offset[pin].offset)),
-				       IES_addr[pin].addr + REGCLR);
-		else
-			IOCFG_SET_BITS((1L << (IES_offset[pin].offset)),
-				       IES_addr[pin].addr + REGSET);
-
-	} else
+	if (IES_offset[pin].offset == -1)
 		return GPIO_IES_UNSUPPORTED;
+
+	bit = IES_offset[pin].offset;
+	base = gpio_vbase.iocfg_regs_array[IES_base_index[pin].index];
+
+	if (enable == GPIO_IES_DISABLE)
+		GPIO_CLR_BITS(base + IES_addr[pin].addr, 1 << bit);
+	else
+		GPIO_SET_BITS(base + IES_addr[pin].addr, 1 << bit);
 
 	return RSUCCESS;
 }
@@ -328,26 +295,25 @@ int mt_set_gpio_ies_base(unsigned long pin, unsigned long enable)
 int mt_get_gpio_ies_base(unsigned long pin)
 {
 	unsigned long data;
-	int ies;
+	void __iomem *base;
+	u8 bit;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if (IES_offset[pin].offset != -1) {
-		data = IOCFG_RD32(IES_addr[pin].addr);
-		ies = ((data & (1L << (IES_offset[pin].offset))) != 0) ? 1 : 0;
-	} else {
+	if (IES_offset[pin].offset == -1)
 		return GPIO_IES_UNSUPPORTED;
-	}
 
-	return ies;
+	bit = IES_offset[pin].offset;
+	base = gpio_vbase.iocfg_regs_array[IES_base_index[pin].index];
+	data = GPIO_RD32(base + IES_addr[pin].addr);
+	return ((data & (1L << bit)) != 0) ? 1 : 0;
 }
 
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 {
-	unsigned long reg;
-	u32 bit;
+	void __iomem *base;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
@@ -356,23 +322,37 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 		gpio_pullen_unsupport[pin] = -1;
 		return GPIO_PULL_EN_UNSUPPORTED;
 	}
+
 	if (PULLEN_offset[pin].offset != -1) {
+		base = gpio_vbase.iocfg_regs_array[PULLEN_base_index[pin].index];
 		if (enable == GPIO_PULL_DISABLE)
-			IOCFG_SET_BITS((1L << (PULLEN_offset[pin].offset)),
-				       PULLEN_addr[pin].addr + REGCLR);
+			GPIO_CLR_BITS(base + PULLEN_addr[pin].addr,
+				1L << PULLEN_offset[pin].offset);
 		else
-			IOCFG_SET_BITS((1L << (PULLEN_offset[pin].offset)),
-				       PULLEN_addr[pin].addr + REGSET);
+			GPIO_SET_BITS(base + PULLEN_addr[pin].addr,
+				1L << PULLEN_offset[pin].offset);
 	} else {
-		bit = PUPD_offset[pin].offset;
-		reg = IOCFG_RD32(PUPD_addr[pin].addr);
-		if (enable == GPIO_PULL_DISABLE)
-			reg &= (~(0x7 << bit));
-		else
-			reg |= (1 << bit);
-		IOCFG_WR32(PUPD_addr[pin].addr, reg);
+		base = gpio_vbase.iocfg_regs_array[PUPD_base_index[pin].index];
+		if (enable == GPIO_PULL_DISABLE) {
+			GPIO_CLR_BITS(base + PUPD_addr[pin].addr,
+				3L << PUPD_offset[pin].offset);
+		} else if (enable == GPIO_PULL_ENABLE_R0) {
+			GPIO_SET_BITS(base + PUPD_addr[pin].addr,
+				1L << PUPD_offset[pin].offset);
+			GPIO_CLR_BITS(base + PUPD_addr[pin].addr,
+				1L << (PUPD_offset[pin].offset + 1));
+		} else if (enable == GPIO_PULL_ENABLE_R1) {
+			GPIO_CLR_BITS(base + PUPD_addr[pin].addr,
+				1L << PUPD_offset[pin].offset);
+			GPIO_SET_BITS(base + PUPD_addr[pin].addr,
+				1L << (PUPD_offset[pin].offset + 1));
+		} else if (enable == GPIO_PULL_ENABLE_R0R1) {
+			GPIO_SET_BITS(base + PUPD_addr[pin].addr,
+				3L << PUPD_offset[pin].offset);
+		} else {
+			return -ERINVAL;
+		}
 	}
-/* GPIOERR("%s:pin:%ld, enable:%ld, value:0x%x\n",__FUNCTION__, pin, enable, GPIO_RD32(PULLEN_addr[pin].addr)); */
 
 	return RSUCCESS;
 }
@@ -381,7 +361,8 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 int mt_get_gpio_pull_enable_base(unsigned long pin)
 {
 	unsigned long data;
-	u32 bit = 0;
+	void __iomem *base;
+	u8 bit;
 	int en;
 
 	if (pin >= MAX_GPIO_PIN)
@@ -390,14 +371,15 @@ int mt_get_gpio_pull_enable_base(unsigned long pin)
 	if (PULLEN_offset[pin].offset == -1 && PUPD_offset[pin].offset == -1)
 		return GPIO_PULL_EN_UNSUPPORTED;
 
-
 	if (PULLEN_offset[pin].offset != -1) {
+		base = gpio_vbase.iocfg_regs_array[PULLEN_base_index[pin].index];
 		bit = PULLEN_offset[pin].offset;
-		data = IOCFG_RD32(PULLEN_addr[pin].addr);
+		data = GPIO_RD32(base + PULLEN_addr[pin].addr);
 		en = ((data & (1L << bit)) != 0) ? 1 : 0;
 	} else {
+		base = gpio_vbase.iocfg_regs_array[PUPD_base_index[pin].index];
 		bit = PUPD_offset[pin].offset;
-		data = IOCFG_RD32(PUPD_addr[pin].addr);
+		data = GPIO_RD32(base + PUPD_addr[pin].addr);
 		en = ((data & (0x3 << bit)) != 0) ? 1 : 0;
 	}
 
@@ -407,35 +389,32 @@ int mt_get_gpio_pull_enable_base(unsigned long pin)
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 {
-	/* unsigned long flags; */
+	void __iomem *base;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-
 	if ((PULLSEL_offset[pin].offset == -1) && (PUPD_offset[pin].offset == -1)) {
 		gpio_pull_select_unsupport[pin] = -1;
 		return GPIO_PULL_UNSUPPORTED;
-	} else if (PULLSEL_offset[pin].offset == -1) {
-		/* spin_lock_irqsave(&mtk_gpio_lock, flags); */
-		/*
-		 *  SIM1, SIM2 may need special care for resistance selection
-		 */
-		if (select == GPIO_PULL_DOWN) {
-			IOCFG_SET_BITS((1L << (PUPD_offset[pin].offset + 2)),
-				       PUPD_addr[pin].addr + REGSET);
-		} else {
-			IOCFG_SET_BITS((1L << (PUPD_offset[pin].offset + 2)),
-				       PUPD_addr[pin].addr + REGCLR);
-		}
-		/* spin_unlock_irqrestore(&mtk_gpio_lock, flags); */
-	} else {
+	}
+
+	if (PULLSEL_offset[pin].offset != -1) {
+		base = gpio_vbase.iocfg_regs_array[PULLSEL_base_index[pin].index];
 		if (select == GPIO_PULL_DOWN)
-			IOCFG_SET_BITS((1L << (PULLSEL_offset[pin].offset)),
-				       PULLSEL_addr[pin].addr + REGCLR);
+			GPIO_CLR_BITS(base + PULLSEL_addr[pin].addr,
+				1L << PULLSEL_offset[pin].offset);
 		else
-			IOCFG_SET_BITS((1L << (PULLSEL_offset[pin].offset)),
-				       PULLSEL_addr[pin].addr + REGSET);
+			GPIO_SET_BITS(base + PULLSEL_addr[pin].addr,
+				1L << PULLSEL_offset[pin].offset);
+	} else {
+		base = gpio_vbase.iocfg_regs_array[PUPD_base_index[pin].index];
+		if (select == GPIO_PULL_DOWN)
+			GPIO_SET_BITS(base + PUPD_addr[pin].addr,
+				1L << (PUPD_offset[pin].offset + 2));
+		else
+			GPIO_CLR_BITS(base + PUPD_addr[pin].addr,
+				1L << (PUPD_offset[pin].offset + 2));
 	}
 
 	return RSUCCESS;
@@ -445,19 +424,23 @@ int mt_set_gpio_pull_select_base(unsigned long pin, unsigned long select)
 int mt_get_gpio_pull_select_base(unsigned long pin)
 {
 	unsigned long data;
+	void __iomem *base;
 	int pupd;
 
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
-	if ((PULLSEL_offset[pin].offset == -1) && (PUPD_offset[pin].offset == -1)) {
+	if ((PULLSEL_offset[pin].offset == -1) && (PUPD_offset[pin].offset == -1))
 		return GPIO_PULL_UNSUPPORTED;
-	} else if (PULLSEL_offset[pin].offset == -1) {
-		data = IOCFG_RD32(PUPD_addr[pin].addr);
-		pupd = ((data & (1L << (PUPD_offset[pin].offset + 2))) != 0) ? 0 : 1;
-	} else {
-		data = IOCFG_RD32(PULLSEL_addr[pin].addr);
+
+	if (PULLSEL_offset[pin].offset != -1) {
+		base = gpio_vbase.iocfg_regs_array[PULLSEL_base_index[pin].index];
+		data = GPIO_RD32(base + PULLSEL_addr[pin].addr);
 		pupd = ((data & (1L << (PULLSEL_offset[pin].offset))) != 0) ? 1 : 0;
+	} else {
+		base = gpio_vbase.iocfg_regs_array[PUPD_base_index[pin].index];
+		data = GPIO_RD32(base + PUPD_addr[pin].addr);
+		pupd = ((data & (1L << (PUPD_offset[pin].offset + 2))) != 0) ? 0 : 1;
 	}
 
 	return pupd;
@@ -560,15 +543,89 @@ postcore_initcall(get_gpio_vbase_early);
 /*---------------------------------------------------------------------------*/
 void get_io_cfg_vbase(void)
 {
-	struct device_node *np_iocfg = NULL;
+	int i;
+	struct device_node *np_iocfg;
+	/* Attention: sequence of compat_names elements shall be the same
+	 *            as sequence of IOCFG_XX_BASE_IDs
+	 */
+	static char const * const compat_names[] = {
+		"mediatek,iocfg_rb", "mediatek,iocfg_br", "mediatek,iocfg_bl",
+		"mediatek,iocfg_bm", "mediatek,iocfg_lt", "mediatek,iocfg_lb",
+		"mediatek,iocfg_tr"
+	};
 
-	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,IOCFG_0");
-	if (np_iocfg) {
-		/* Setup IOCFG addresses */
-		gpio_vbase.iocfg_regs = of_iomap(np_iocfg, 0);
-		GPIOLOG("IOCFG_BASE is gpio_vbase.iocfg_regs=0x%lx\n",
-			(unsigned long)gpio_vbase.iocfg_regs);
+	for (i = 0; i < 7; i++) {
+		np_iocfg = NULL;
+		np_iocfg = of_find_compatible_node(NULL, NULL, compat_names[i]);
+		if (np_iocfg) {
+			gpio_vbase.iocfg_regs_array[i] = of_iomap(np_iocfg, 0);
+			GPIOLOG("%s reg base = 0x%lx\n", compat_names[i],
+				(unsigned long)gpio_vbase.iocfg_regs_array[i]);
+		}
 	}
+#if 0
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_rb");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_RB_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_RB_BASE is gpio_vbase.IOCFG_RB_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_RB_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_br");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_BR_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_BR_BASE is gpio_vbase.IOCFG_BR_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BR_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_bl");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_BL_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_BL_BASE is gpio_vbase.IOCFG_BL_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BL_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_bm");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_BM_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_BM_BASE is gpio_vbase.IOCFG_BM_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_BM_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_lt");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_LT_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_LT_BASE is gpio_vbase.IOCFG_LT_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_LT_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_lb");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_LB_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_LB_BASE is gpio_vbase.IOCFG_LB_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_LB_BASE_ID]);
+	}
+
+	np_iocfg = NULL;
+	np_iocfg = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_tr");
+	if (np_iocfg) {
+		gpio_vbase.iocfg_regs_array[IOCFG_TR_BASE_ID] =
+			= of_iomap(np_iocfg, 0);
+		GPIOLOG("IOCFG_TR_BASE is gpio_vbase.IOCFG_TR_regs=0x%lx\n",
+			(unsigned long)gpio_vbase.iocfg_regs_array[IOCFG_TR_BASE_ID]);
+	}
+#endif
 }
 
 /*---------------------------------------------------------------------------*/
