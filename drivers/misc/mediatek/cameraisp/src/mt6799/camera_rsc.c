@@ -2504,7 +2504,11 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       flags);
 
 				mutex_unlock(&gRscDequeMutex);
-
+				if (rsc_RscReq.m_pRscConfig == NULL) {
+					LOG_ERR("NULL pointer:rsc_RscReq.m_pRscConfig");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
 				if (copy_to_user
 				    ((void *)rsc_RscReq.m_pRscConfig,
 				     &g_RscDequeReq_Struct.RscFrameConfig[0],
