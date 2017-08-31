@@ -16,7 +16,7 @@
 #
 #
 ################################################################################
-ifneq ($(filter y,$(CONFIG_ARCH_MT8127) $(CONFIG_ARCH_MT7623) $(CONFIG_ARCH_MT8590)),)
+ifneq ($(filter y,$(CONFIG_MACH_MT8127) $(CONFIG_MACH_MT7623) $(CONFIG_MACH_MT8590)),)
 CONFIG_MTK_PLATFORM := mt8127
 endif
 
@@ -25,11 +25,11 @@ ifneq ($(CONFIG_MTK_LCM), y)
 else
 	######################################
 	obj-$(CONFIG_MTK_FB) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-	obj-$(CONFIG_ARCH_MT6755) += common/
-	obj-$(CONFIG_ARCH_MT6797) += common/
+	obj-$(CONFIG_MACH_MT6755) += common/
+	obj-$(CONFIG_MACH_MT6797) += common/
 	obj-$(CONFIG_MACH_MT6757) += common/
 	obj-$(CONFIG_MACH_KIBOPLUS) += common/
-	obj-$(CONFIG_ARCH_ELBRUS) += common/
+	obj-$(CONFIG_MACH_ELBRUS) += common/
 	obj-$(CONFIG_MACH_MT8167) += common/
 	obj-$(CONFIG_MACH_MT6799) += common/
 endif
