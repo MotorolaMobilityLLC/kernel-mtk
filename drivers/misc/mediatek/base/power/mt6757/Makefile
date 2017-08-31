@@ -39,8 +39,8 @@ ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 
 obj-y += mtk_clkbuf_ctl.o
-#obj-y += mt_dcm_autogen.o
-#obj-y += mt_dcm.o
+obj-y += mtk_dcm_autogen.o
+obj-y += mtk_dcm.o
 #obj-y += mt_clkmgr_common.o
 
 #obj-$(CONFIG_ARCH_MT6757) += mt_spm_dpidle.o
