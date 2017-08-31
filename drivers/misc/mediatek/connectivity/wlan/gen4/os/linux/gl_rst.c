@@ -92,7 +92,7 @@ UINT_32 g_IsNeedDoChipReset;
 */
 static BOOLEAN fgResetTriggered = FALSE;
 BOOLEAN fgIsResetting = FALSE;
-
+static BOOLEAN fgDoCoreDump = FALSE;
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -261,11 +261,14 @@ static void mtk_wifi_trigger_reset(struct work_struct *work)
 	BOOLEAN fgResult = FALSE;
 
 	fgResetTriggered = TRUE;
-	fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
-	DBGLOG(INIT, INFO, "reset result %d\n", fgResult);
+	if (fgDoCoreDump && !fgIsBusAccessFailed)
+		fgResult = mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40);
+	else
+		fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
+	DBGLOG(INIT, INFO, "reset result %d, is core dump %d\n", fgResult, fgDoCoreDump);
 }
 
-BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
+BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, BOOLEAN fgCoreDump)
 {
 	BOOLEAN fgResult = TRUE;
 
@@ -293,7 +296,7 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
 		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8), (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
-
+		fgDoCoreDump = fgCoreDump;
 		schedule_work(&(wifi_rst.rst_trigger_work));
 	}
 #endif

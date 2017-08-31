@@ -685,7 +685,7 @@ WLAN_STATUS wlanAdapterStart(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo
 			break;
 		}
 #if CFG_CHIP_RESET_SUPPORT
-		glDoCoreDump();
+		glResetTrigger(prAdapter, TRUE);
 #endif
 	}
 
@@ -922,7 +922,7 @@ WLAN_STATUS wlanPowerOffWifi(IN P_ADAPTER_T prAdapter)
 
 #if CFG_CHIP_RESET_SUPPORT
 	if (rStatus != WLAN_STATUS_SUCCESS)
-		glDoCoreDump();
+		glResetTrigger(prAdapter, TRUE);
 #endif
 	return rStatus;
 }
@@ -1744,7 +1744,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 #if 0
 #if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_OID_TIMEOUT);
-					glResetTrigger(prAdapter);
+					glResetTrigger(prAdapter, TRUE);
 #endif
 #endif
 				}
