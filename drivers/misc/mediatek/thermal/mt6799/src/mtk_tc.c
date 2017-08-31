@@ -588,8 +588,8 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 		format[4] = (g_o_vtsmcu5 + 3350 - g_oe);
 		format[5] = (g_o_vtsmcu6 + 3350 - g_oe);
 		format[6] = (g_o_vtsmcu7 + 3350 - g_oe);
-		format[7] = (g_o_vtsmcu6 + 3350 - g_oe);
-		format[8] = (g_o_vtsmcu7 + 3350 - g_oe);
+		format[7] = (g_o_vtsmcu8 + 3350 - g_oe);
+		format[8] = (g_o_vtsmcu9 + 3350 - g_oe);
 		format[9] = (g_o_vtsabb + 3350 - g_oe);
 	} else {
 		format[0] = (g_o_vtsmcu1 + 3150 - g_oe);
@@ -599,8 +599,8 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 		format[4] = (g_o_vtsmcu5 + 3150 - g_oe);
 		format[5] = (g_o_vtsmcu6 + 3150 - g_oe);
 		format[6] = (g_o_vtsmcu7 + 3150 - g_oe);
-		format[7] = (g_o_vtsmcu6 + 3150 - g_oe);
-		format[8] = (g_o_vtsmcu7 + 3150 - g_oe);
+		format[7] = (g_o_vtsmcu8 + 3150 - g_oe);
+		format[8] = (g_o_vtsmcu9 + 3150 - g_oe);
 		format[9] = (g_o_vtsabb + 3150 - g_oe);
 	}
 
