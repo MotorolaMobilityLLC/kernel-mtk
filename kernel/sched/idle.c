@@ -231,6 +231,9 @@ static void cpu_idle_loop(void)
 					       (void *)(long)smp_processor_id());
 				smp_mb(); /* all activity before dead. */
 				this_cpu_write(cpu_dead_idle, true);
+#ifdef CONFIG_MEDIATEK_SOLUTION
+				tick_set_cpu_plugoff_flag(1);
+#endif
 				arch_cpu_idle_dead();
 			}
 
