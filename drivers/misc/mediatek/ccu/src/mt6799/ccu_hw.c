@@ -767,7 +767,10 @@ int ccu_get_i2c_dma_buf_addr(uint32_t *mva)
 	int ret = 0;
 	void *va;
 
-	i2c_get_dma_buffer_addr(&va);
+	ret = i2c_get_dma_buffer_addr(&va);
+
+	if (ret != 0)
+		return ret;
 
 	/*i2c dma buffer is PAGE_SIZE(4096B)*/
 	/*--todo: need to dealloc i2c dma buf mva*/
