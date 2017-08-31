@@ -103,6 +103,9 @@ typedef struct {
 #define MMDVFS_CAMERA_MODE_FLAG_EIS_2_0 (1 << 3)
 #define MMDVFS_CAMERA_MODE_FLAG_IVHDR (1 << 4)
 #define MMDVFS_CAMERA_MODE_FLAG_STEREO  (1 << 5)
+#define MMDVFS_CAMERA_MODE_FLAG_MVHDR  (1 << 6)
+#define MMDVFS_CAMERA_MODE_FLAG_ZVHDR  (1 << 7)
+
 
 typedef struct {
 	unsigned int type;
