@@ -129,10 +129,10 @@
 			reg = <0 0x44400000 0 0x10000>;
 		};
 
-		spm-reserve-memory@44610000 {
+		spm-reserve-memory@44600000 {
 			compatible = "mediatek,spm-reserve-memory";
 			no-map;
-			reg = <0 0x44610000 0 0x10000>;
+			reg = <0 0x44600000 0 0x10000>;
 		};
 
 		reserve-memory-scp_share {
