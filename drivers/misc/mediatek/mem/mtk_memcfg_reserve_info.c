@@ -20,9 +20,27 @@
 #include <linux/slab.h>
 #include <asm/setup.h>
 #include <linux/mm.h>
+#include <mt-plat/mtk_memcfg.h>
 #include "mtk_memcfg_reserve_info.h"
 
 #define DRAM_ALIGN_SIZE 0x20000000
+
+struct freed_reserved_memory freed_reserved_memory[MAX_FREE_RESERVED];
+int freed_reserved_memory_count;
+
+void mtk_memcfg_record_freed_reserved(phys_addr_t start, phys_addr_t end)
+{
+
+	pr_info("free_reserved_memory: 0x%lx ~ 0x%lx\n", (unsigned long)start, (unsigned long)end);
+
+	if (freed_reserved_memory_count < MAX_FREE_RESERVED) {
+		freed_reserved_memory[freed_reserved_memory_count].start = start;
+		freed_reserved_memory[freed_reserved_memory_count].end = end;
+		freed_reserved_memory_count++;
+	} else {
+		pr_info("freed_reserved_memory_count over limit %d\n", MAX_FREE_RESERVED);
+	}
+}
 
 static void merge_same_reserved_memory(struct reserved_mem_ext *reserved_mem, int reserved_mem_count)
 {
@@ -41,72 +59,72 @@ static void merge_same_reserved_memory(struct reserved_mem_ext *reserved_mem, in
 	}
 }
 
-int mtk_memcfg_pares_reserved_memory(struct reserved_mem_ext *reserved_mem, int reserved_mem_count)
+static int mtk_memcfg_add_reserved_memory(struct reserved_mem_ext *reserved_mem, int count,
+		unsigned long start, unsigned long end, const char *name, int nomap)
 {
-	int page_num, reserved_count = reserved_mem_count;
-	int index;
-	unsigned long start_pfn, end_pfn, start, end, page_count;
-	struct page *page;
+	struct reserved_mem_ext *tmp = &reserved_mem[count];
+
+	count += 1;
+
+	if (count > MAX_RESERVED_REGIONS)
+		return -1;
+
+	tmp->base = start;
+	tmp->size = end - start;
+	tmp->name = name;
+	tmp->nomap = nomap;
+
+	return count;
+}
+
+int mtk_memcfg_parse_reserved_memory(struct reserved_mem_ext *reserved_mem, int reserved_mem_count)
+{
+	int reserved_count = reserved_mem_count;
+	int index, freed_index;
+	unsigned long start, end, fstart, fend;
 	struct reserved_mem_ext *rmem;
+	struct freed_reserved_memory *fmem;
 
-	for (index = 0; index < reserved_count; index++) {
+	sort(freed_reserved_memory, freed_reserved_memory_count,
+			sizeof(struct freed_reserved_memory),
+			freed_reserved_memory_compare, NULL);
+
+	for (index = 0; index < reserved_mem_count; index++) {
 		rmem = &reserved_mem[index];
-		start_pfn = __phys_to_pfn(rmem->base);
-		end_pfn = __phys_to_pfn(rmem->base + rmem->size);
+		start = rmem->base;
+		end = rmem->base + rmem->size;
 
-		if (start_pfn > end_pfn) {
-			pr_info("start_pfn %lu > end_pfn %lu\n", start_pfn, end_pfn);
+		if (start > end) {
+			pr_info("start %lx > end %lx\n", start, end);
 			pr_info("reserved_mem: %s, base: %llu, size: %llu, nomap: %d\n",
 					rmem->name,
 					rmem->base,
 					rmem->size,
 					rmem->nomap);
-			WARN_ON(start_pfn > end_pfn);
+			WARN_ON(start > end);
 		}
 
-		page_count = end_pfn - start_pfn;
-		start = 0;
-		end = 0;
-
-		if (!pfn_valid(start_pfn)) {
-			reserved_mem[index].nomap =
-				RESERVED_NO_MAP;
-			continue;
-		}
-
-		for (page_num = 0; page_num < page_count; page_num++) {
-			page = pfn_to_page(start_pfn + page_num);
-			if (PageReserved(page)) {
-				if (start == 0)
-					start = start_pfn + page_num;
-			} else {
-				if (start != 0) {
-					struct reserved_mem_ext *tmp =
-						&reserved_mem[reserved_count];
-
-					reserved_count += 1;
-
-					if (reserved_count > MAX_RESERVED_REGIONS)
-						return -1;
-
-					end = start_pfn + page_num;
-					tmp->base =
-						page_to_phys(pfn_to_page(start));
-					tmp->size = page_to_phys(pfn_to_page(end)) -
-						page_to_phys(pfn_to_page(start));
-					tmp->name = rmem->name;
-					tmp->nomap = RESERVED_MAP;
-					end = 0;
-					start = 0;
-
-					tmp = &reserved_mem[index];
-					tmp->base = 0;
-					tmp->size = 0;
-				}
+		for (freed_index = 0; freed_index < freed_reserved_memory_count; freed_index++) {
+			fmem = &freed_reserved_memory[freed_index];
+			fstart = (unsigned long)fmem->start;
+			fend = (unsigned long)fmem->end;
+			if (fstart >= start && fstart < end) {
+				reserved_count = mtk_memcfg_add_reserved_memory(reserved_mem, reserved_count,
+							start, fstart, rmem->name, RESERVED_MAP);
+				if (reserved_count == -1)
+					return -1;
+				start = fend;
 			}
 		}
-		if (start != 0)
-			end = start_pfn + page_count;
+		if (start != rmem->base) {
+			if (start != (rmem->base + rmem->size))
+				reserved_count = mtk_memcfg_add_reserved_memory(reserved_mem, reserved_count,
+							start, rmem->base + rmem->size, rmem->name, RESERVED_MAP);
+			if (reserved_count == -1)
+				return -1;
+			rmem->base = 0;
+			rmem->size = 0;
+		}
 	}
 	return reserved_count;
 }
@@ -133,6 +151,13 @@ int mtk_memcfg_get_reserved_memory(struct reserved_mem_ext *reserved_mem)
 		reserved_mem[i].nomap = RESERVED_MAP;
 	}
 	return reserved_count;
+}
+
+int freed_reserved_memory_compare(const void *p1, const void *p2)
+{
+	if (((struct freed_reserved_memory *)p1)->start > ((struct freed_reserved_memory *)p2)->start)
+		return 1;
+	return -1;
 }
 
 int reserved_mem_ext_compare(const void *p1, const void *p2)
@@ -228,7 +253,7 @@ static int mtk_memcfg_reserve_memory_show(struct seq_file *m, void *v)
 		return 0;
 	}
 
-	reserved_count = mtk_memcfg_pares_reserved_memory(reserved_mem, reserved_count);
+	reserved_count = mtk_memcfg_parse_reserved_memory(reserved_mem, reserved_count);
 	if (reserved_count <= 0 || reserved_count > MAX_RESERVED_REGIONS) {
 		seq_printf(m, "reserved_count(%d) over limit after parsing!\n",
 				reserved_count);
