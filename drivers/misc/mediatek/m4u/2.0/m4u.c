@@ -1634,7 +1634,7 @@ int m4u_sec_init(void)
 
 	if (m4u_tee_en) {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
-		return 0;
+		goto m4u_sec_reinit;
 	}
 
 	M4UMSG("call m4u_sec_init in nornal m4u driver\n");
@@ -1677,6 +1677,8 @@ int m4u_sec_init(void)
 			j++;
 	}
 
+m4u_sec_reinit:
+
 	m4u_open_trustlet(deviceId);
 	__m4u_sec_init();
 #ifdef __M4U_SECURE_SYSTRACE_ENABLE__
@@ -1692,6 +1694,7 @@ int m4u_sec_init(void)
 	m4u_close_trustlet(deviceId);
 
 	m4u_tee_en = 1;
+	M4UMSG("m4u_sec_init in nornal m4u driver is done\n");
 
 	return 0;
 }
