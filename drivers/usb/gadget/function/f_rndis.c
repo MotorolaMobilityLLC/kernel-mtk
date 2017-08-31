@@ -407,7 +407,6 @@ static void rndis_resume_data_control(struct f_rndis *rndis)
 {
 	usb_ep_resume_control(rndis->port.in_ep);
 	usb_ep_resume_control(rndis->port.out_ep);
-	rx_fill(rndis->port.ioport, GFP_KERNEL);
 }
 
 int rndis_get_direct_tethering_state(struct usb_function *f)
@@ -667,7 +666,11 @@ void rndis_set_direct_tethering(struct usb_function *f, bool direct)
 					/* Don't need to wait MD and resume ep directly */
 					pr_info("%s, rndis_resume_data_control\n", __func__);
 					rndis_resume_data_control(rndis);
+					pr_info("%s, rndis_resume_data_control done\n", __func__);
 					rndis->direct_state = DIRECT_STATE_DEACTIVATED;
+					pr_info("%s, DIRECT_STATE_DEACTIVATED before rx_fill\n", __func__);
+					rx_fill(rndis->port.ioport, GFP_KERNEL);
+					pr_info("%s, rx_fill done!!\n", __func__);
 				}
 			}
 		}
@@ -1010,7 +1013,11 @@ static void rndis_disable(struct usb_function *f)
 		rndis_deactivate_direct_tethering(f);
 		pr_info("%s, rndis_resume_data_control\n", __func__);
 		rndis_resume_data_control(rndis);
+		pr_info("%s, rndis_resume_data_control done\n", __func__);
 		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
+		pr_info("%s, DIRECT_STATE_DEACTIVATED before rx_fill\n", __func__);
+		rx_fill(rndis->port.ioport, GFP_KERNEL);
+		pr_info("%s, rx_fill done!!\n", __func__);
 	}
 #endif
 
