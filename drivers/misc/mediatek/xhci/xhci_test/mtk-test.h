@@ -80,4 +80,5 @@ extern void phy_probe_out_x(void);
 extern void phy_dump_regs(void);
 extern void phy_probe_reg(void);
 extern void phy_reset(void);
+extern void usb_phy_swpllmode_lpm(void);
 
