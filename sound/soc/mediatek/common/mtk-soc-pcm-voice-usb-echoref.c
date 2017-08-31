@@ -72,11 +72,14 @@
 
 #if 0
 /* debug */
+#define NUM_DBG_LOG 60
+#define DBG_LOG_LENGTH 256
+
 struct usb_dbg_log {
 	unsigned int idx;
-	char log[256];
+	char log[DBG_LOG_LENGTH];
 };
-#define NUM_DBG_LOG 60
+
 static struct usb_dbg_log dbg_log[NUM_DBG_LOG];
 static unsigned int dbg_log_idx;
 

@@ -71,11 +71,14 @@
 #endif
 
 /* debug */
+#define NUM_DBG_LOG 60
+#define DBG_LOG_LENGTH 256
+
 struct usb_dbg_log {
 	unsigned int idx;
-	char log[256];
+	char log[DBG_LOG_LENGTH];
 };
-#define NUM_DBG_LOG 60
+
 static struct usb_dbg_log dbg_log[NUM_DBG_LOG];
 static unsigned int dbg_log_idx;
 
@@ -884,13 +887,14 @@ static snd_pcm_uframes_t mtk_voice_usb_pointer_cap
 
 			getrawmonotonic(&time);
 			dbg_log[dbg_log_idx % NUM_DBG_LOG].idx = dbg_log_idx;
-			sprintf(dbg_log[dbg_log_idx % NUM_DBG_LOG].log,
-				"%ld.%09ld, %s(), ReadIdx 0x%x, WriteIdx 0x%x, Remained 0x%x, BufferSize 0x%x, Get_bytes 0x%x, HW_Cur_ReadIdx 0x%x, HW_memory_index 0x%x",
-				time.tv_sec, time.tv_nsec, __func__,
-				Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx,
-				Awb_Block->u4DataRemained,
-				Awb_Block->u4BufferSize, Hw_Get_bytes,
-				HW_Cur_ReadIdx, HW_memory_index);
+			snprintf(dbg_log[dbg_log_idx % NUM_DBG_LOG].log,
+				 DBG_LOG_LENGTH,
+				 "%ld.%09ld, %s(), ReadIdx 0x%x, WriteIdx 0x%x, Remained 0x%x, BufferSize 0x%x, Get_bytes 0x%x, HW_Cur_ReadIdx 0x%x, HW_memory_index 0x%x",
+				 time.tv_sec, time.tv_nsec, __func__,
+				 Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx,
+				 Awb_Block->u4DataRemained,
+				 Awb_Block->u4BufferSize, Hw_Get_bytes,
+				 HW_Cur_ReadIdx, HW_memory_index);
 
 			dbg_log_idx++;
 		}
