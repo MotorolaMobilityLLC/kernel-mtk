@@ -1,0 +1,10 @@
+config MTK_DYNAMIC_FPS_SUPPORT
+	bool "support dynamic fps"
+	default n
+	help
+	  Decide whether to support dynamic fps.
+	  If enable this config, other modules can adjust refresh rate of
+	  system through GPU or display driver.
+	  When enable this config, it also need to enable the feature option
+	  "MTK_DYNAMIC_FPS_SUPPORT", otherwise this feature does not have any
+	  benefit.
