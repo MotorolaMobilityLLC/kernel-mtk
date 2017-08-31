@@ -218,9 +218,9 @@ void SetHDMIDumpReg(void)
 	u4tmpValue2 = Afe_Get_Reg(AFE_TDM_CON2);
 	u4tmpValue2 &= 0xffffffff;
 
-	u4tmpClkdiv0 = Afe_Get_Reg(CLK_AUDDIV_0);
-	u4tmpClkdiv1 = Afe_Get_Reg(CLK_AUDDIV_1);
-	u4tmpClkdiv2 = Afe_Get_Reg(CLK_AUDDIV_2);
+	u4tmpClkdiv0 = clksys_get_reg(CLK_AUDDIV_0);
+	u4tmpClkdiv1 = clksys_get_reg(CLK_AUDDIV_1);
+	u4tmpClkdiv2 = clksys_get_reg(CLK_AUDDIV_2);
 
 	u4tmpHDMode = Afe_Get_Reg(AFE_MEMIF_HD_MODE);
 	u4tmpHDAlign = Afe_Get_Reg(AFE_MEMIF_HDALIGN);
