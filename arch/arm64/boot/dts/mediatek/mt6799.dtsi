@@ -6,7 +6,7 @@
  *
  */
 
-
+#include <dt-bindings/clock/mt6799-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6799-msdc.h>
@@ -141,9 +141,10 @@
 	};
 
 
-	infracfg_ao@10000000 {
-		compatible = "mediatek,infracfg_ao";
+	infracfg_ao: infracfg_ao@10000000 {
+		compatible = "mediatek,mt6799-infracfg_ao";
 		reg = <0 0x10000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	pwrap@10010000 {
@@ -170,9 +171,10 @@
 		reg = <0 0x10a48000 0 0x1000>;
 	};
 
-	pericfg@11010000 {
-		compatible = "mediatek,pericfg";
+	pericfg: pericfg@11010000 {
+		compatible = "mediatek,mt6799-pericfg";
 		reg = <0 0x11010000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 
@@ -430,9 +432,10 @@
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	topckgen@10210000 {
-		compatible = "mediatek,topckgen";
+	topckgen: topckgen@10210000 {
+		compatible = "mediatek,mt6799-topckgen";
 		reg = <0 0x10210000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	toprgu@10211000 {
@@ -441,9 +444,10 @@
 		interrupts = <GIC_SPI 387 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	apmixed@10212000 {
-		compatible = "mediatek,apmixed";
+	apmixed: apmixed@10212000 {
+		compatible = "mediatek,mt6799-apmixedsys";
 		reg = <0 0x10212000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	fhctl@10212e00 {
@@ -1858,9 +1862,10 @@
 		reg = <0 0x13ffdc00 0 0x1000>;
 	};
 
-	mfg_cfg@13ffe000 {
-		compatible = "mediatek,mfg_cfg";
+	mfg_cfg: mfg_cfg@13ffe000 {
+		compatible = "mediatek,mt6799-mfg_cfg";
 		reg = <0 0x13ffe000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	mfg_dfp_59@13fff000 {
@@ -1868,10 +1873,11 @@
 		reg = <0 0x13fff000 0 0x1000>;
 	};
 
-	mmsys_config@14000000 {
-		compatible = "mediatek,mmsys_config";
+	mmsys_config: mmsys_config@14000000 {
+		compatible = "mediatek,mt6799-mmsys_config";
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 275 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells = <1>;
 	};
 
 	mdp_rdma0@14001000 {
@@ -2300,9 +2306,10 @@
 		interrupts = <GIC_SPI 313 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	vdec_gcon@16000000 {
-		compatible = "mediatek,vdec_gcon";
+	vdec_gcon: vdec_gcon@16000000 {
+		compatible = "mediatek,mt6799-vdec_gcon";
 		reg = <0 0x16000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	vdec_top_dfp@16040000 {
@@ -2310,9 +2317,10 @@
 		reg = <0 0x16040000 0 0x1000>;
 	};
 
-	venc_global_con@17000000 {
-		compatible = "mediatek,venc_global_con";
+	venc_global_con: venc_global_con@17000000 {
+		compatible = "mediatek,mt6799-venc_global_con";
 		reg = <0 0x17000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	smi_larb7@17010000 {
@@ -2382,9 +2390,10 @@
 		reg = <0 0x1502e000 0 0x1000>;
 	};
 
-	imgsys@15020000 {
-		compatible = "mediatek,imgsys";
+	imgsys: imgsys@15020000 {
+		compatible = "mediatek,mt6799-imgsys";
 		reg = <0 0x15020000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	imgsyscq@15020000 {
@@ -2492,14 +2501,16 @@
 		interrupts = <GIC_SPI 329 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	camsys@18000000 {
-		compatible = "mediatek,camsys";
+	camsys: camsys@18000000 {
+		compatible = "mediatek,mt6799-camsys";
 		reg = <0 0x18000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
-	ipusys@18800000 {
-		compatible = "mediatek,ipusys";
+	ipusys: ipusys@18800000 {
+		compatible = "mediatek,mt6799-ipusys";
 		reg = <0 0x18800000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	ipu@18841000 {
@@ -3286,6 +3297,12 @@
 		compatible = "mediatek,mt6336_chr";
 	};
 
+	scpsys: scpsys@10000000 {
+		compatible = "mediatek,mt6799-scpsys";
+		reg = <0 0x10000000 0 0x1000>,
+		<0 0x10b00000 0 0x1000>;
+		#clock-cells = <1>;
+	};
 };
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
