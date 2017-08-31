@@ -46,7 +46,9 @@
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mt-plat/charger_type.h>
 #else
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mt-plat/charging.h>
+#endif
 #endif
 #include <linux/clk.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
