@@ -388,6 +388,37 @@ end:
 	return count;
 }
 
+static int ppm_min_freq_1LL_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ppm_main_info.min_freq_1LL);
+
+	return 0;
+}
+
+static ssize_t ppm_min_freq_1LL_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	unsigned int freq;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtouint(buf, 10, &freq)) {
+		ppm_lock(&ppm_main_info.lock);
+		ppm_main_info.min_freq_1LL = freq;
+		ppm_info("Set PPM 1LL min freq to %dKHz\n", ppm_main_info.min_freq_1LL);
+		ppm_unlock(&ppm_main_info.lock);
+
+		mt_ppm_main();
+	} else
+		ppm_err("echo (freq_KHz or 0 to cancel) > /proc/ppm/min_freq_1LL\n");
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
 static int ppm_dump_dvfs_table_proc_show(struct seq_file *m, void *v)
 {
 	struct ppm_cluster_info *info = (struct ppm_cluster_info *)m->private;
@@ -545,6 +576,7 @@ PROC_FOPS_RO(dump_policy_list);
 PROC_FOPS_RW(policy_status);
 PROC_FOPS_RW(mode);
 PROC_FOPS_RW(root_cluster);
+PROC_FOPS_RW(min_freq_1LL);
 PROC_FOPS_RO(dump_dvfs_table);
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 PROC_FOPS_RW(5A_limit_enable);
@@ -573,6 +605,7 @@ int ppm_procfs_init(void)
 		PROC_ENTRY(policy_status),
 		PROC_ENTRY(mode),
 		PROC_ENTRY(root_cluster),
+		PROC_ENTRY(min_freq_1LL),
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 		PROC_ENTRY(5A_limit_enable),
 		PROC_ENTRY(5A_limit_onoff),

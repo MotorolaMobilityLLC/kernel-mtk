@@ -248,6 +248,7 @@ struct ppm_data {
 	bool is_in_suspend;
 	int fixed_root_cluster;
 	unsigned int min_power_budget;
+	unsigned int min_freq_1LL;
 
 #ifdef PPM_VPROC_5A_LIMIT_CHECK
 	/* enable = 0: skip 5A limit check */
