@@ -1243,6 +1243,17 @@ bool EnableSideToneFilter(bool stf_on)
 	return true;
 }
 
+void set_stf_gain(int gain)
+{
+	AudDrv_Clk_On();
+	Afe_Set_Reg(AFE_SIDETONE_GAIN, gain, 0xffff);
+	AudDrv_Clk_Off();
+}
+
+void set_stf_positive_gain_db(int gain_db)
+{
+}
+
 bool CleanPreDistortion(void)
 {
 	/* printk("%s\n", __FUNCTION__); */
