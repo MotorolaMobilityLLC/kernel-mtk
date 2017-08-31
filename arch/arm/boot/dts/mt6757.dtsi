@@ -3468,34 +3468,18 @@
 		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	jpgenc@17003000 {
-		compatible = "mediatek,jpgenc";
-		reg = <0 0x17003000 0 0x1000>;
-		interrupts = <GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>;
+	venc_jpg@17003000 {
+		compatible = "mediatek,venc_jpg";
+		reg =	<0 0x17003000 0 0x1000>,
+			<0 0x17004000 0 0x1000>;
+		interrupts =	<GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>;
 			clocks =
 				<&mmsys MMSYS_SMI_COMMON>,
 				<&scpsys SCP_SYS_DIS>,
 				<&scpsys SCP_SYS_VEN>,
 				<&vencsys VENC_GCON_SET0_LARB>,
-				<&vencsys VENC_GCON_SET2_JPGENC>;
-
-			clock-names =
-				"MT_CG_SMI_COMMON",
-				"MT_CG_SCP_SYS_MM0",
-				"MT_CG_SCP_SYS_VEN",
-				"MT_CG_VENC_LARB",
-				"MT_CG_VENC_JPGENC";
-	};
-
-	jpgdec@17004000 {
-		compatible = "mediatek,jpgdec";
-		reg = <0 0x17004000 0 0x1000>;
-		interrupts = <GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>;
-			clocks =
-				<&mmsys MMSYS_SMI_COMMON>,
-				<&scpsys SCP_SYS_DIS>,
-				<&scpsys SCP_SYS_VEN>,
-				<&vencsys VENC_GCON_SET0_LARB>,
+				<&vencsys VENC_GCON_SET2_JPGENC>,
 				<&vencsys VENC_GCON_SET3_JPGDEC>;
 
 			clock-names =
@@ -3503,6 +3487,7 @@
 				"MT_CG_SCP_SYS_MM0",
 				"MT_CG_SCP_SYS_VEN",
 				"MT_CG_VENC_LARB",
+				"MT_CG_VENC_JPGENC",
 				"MT_CG_VENC_JPGDEC";
 	};
 
