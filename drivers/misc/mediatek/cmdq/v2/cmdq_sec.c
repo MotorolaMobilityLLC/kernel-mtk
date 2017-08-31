@@ -569,12 +569,12 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 }
 
 void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const struct iwcCmdqMessage_t *pIwc,
-	int32_t sec_status_code)
+	int32_t sec_status_code, char **dispatch_mod_ptr)
 {
 	int index = 0;
 	const struct iwcCmdqSecStatus_t *secStatus = NULL;
 
-	if (!pIwc)
+	if (!pIwc || !dispatch_mod_ptr)
 		return;
 
 	/* assign status ptr to print without task */
@@ -596,15 +596,34 @@ void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const struct iwcCmd
 
 	if (secStatus->status != 0 || sec_status_code != 0) {
 		/* secure status may contains debug information */
-		CMDQ_ERR("Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+		CMDQ_ERR(
+			"Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x dispatch: %s task: 0x%p\n",
 			secStatus->status, sec_status_code, secStatus->step,
 			secStatus->args[0], secStatus->args[1],
 			secStatus->args[2], secStatus->args[3],
-			pTask);
+			secStatus->dispatch, pTask);
 		for (index = 0; index < secStatus->inst_index; index += 2) {
 			CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
 				secStatus->sec_inst[index],
 				secStatus->sec_inst[index+1]);
+		}
+
+		switch (secStatus->status) {
+		case -CMDQ_ERR_ADDR_CONVERT_HANDLE_2_PA:
+			*dispatch_mod_ptr = "TEE";
+			break;
+		case -CMDQ_ERR_ADDR_CONVERT_ALLOC_MVA:
+		case -CMDQ_ERR_ADDR_CONVERT_ALLOC_MVA_N2S:
+			switch (pIwc->command.thread) {
+			case CMDQ_THREAD_SEC_PRIMARY_DISP:
+			case CMDQ_THREAD_SEC_SUB_DISP:
+				*dispatch_mod_ptr = "DISP";
+				break;
+			case CMDQ_THREAD_SEC_MDP:
+				*dispatch_mod_ptr = "MDP";
+				break;
+			}
+			break;
 		}
 	}
 }
@@ -620,8 +639,6 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pI
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
 	status = iwcRsp;
-
-	cmdq_sec_handle_attach_status(pTask, pIwc, status);
 
 	if (iwcCommand == CMD_CMDQ_TL_CANCEL_TASK) {
 		pCancelResult = (struct cmdqSecCancelTaskResultStruct *) data;
@@ -786,6 +803,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	char longMsg[CMDQ_LONGSTRING_MAX];
 	uint32_t msgOffset;
 	int32_t msgMAXSize;
+	char *dispatch_mod = "CMDQ";
 
 	CMDQ_TIME tEntrySec;
 	CMDQ_TIME tExitSec;
@@ -825,6 +843,16 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		CMDQ_GET_TIME_IN_US_PART(tEntrySec, tExitSec, duration);
 		cmdq_sec_track_task_record(iwcCommand, pTask, &tEntrySec, &tExitSec);
 
+		/* check status and attach secure error before session teardown */
+		if (handle) {
+			/* try to print out secure status if handle exist. */
+			cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status, &dispatch_mod);
+		} else if (status < 0) {
+			/* handle does not exist, output message */
+			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
+				pTask, status);
+		}
+
 		/* release resource */
 #if !(CMDQ_OPEN_SESSION_ONCE)
 		cmdq_sec_teardown_context_session(handle)
@@ -832,7 +860,6 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		    /* Note we entry secure for config only and wait result in normal world. */
 		    /* No need reset module HW for config failed case */
 	} while (0);
-
 
 	if (status == -ETIMEDOUT) {
 		/* t-base strange issue, mc_wait_notification false timeout when secure world has done */
@@ -845,13 +872,11 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   " tgid[%d:%d], config_duration_ms[%d], cmdId[%d]\n",
 				   tgid, pid, duration, iwcCommand);
 
-		cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
-
 		if (msgOffset > 0) {
 			/* print message */
 			if (throwAEE) {
-				/* print message */
-				CMDQ_AEE("CMDQ", "%s", longMsg);
+				/* In timeout case, error come from TEE API, dispatch to AEE directly. */
+				CMDQ_AEE("TEE", "%s", longMsg);
 			}
 			cmdq_core_turnon_first_dump(pTask);
 			cmdq_core_dump_secure_task_status();
@@ -865,20 +890,11 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
 
-		if (handle) {
-			/* try to print out secure status if handle exist. */
-			cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
-		} else {
-			/* handle does not exist, output message */
-			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
-				pTask, status);
-		}
-
 		if (msgOffset > 0) {
 			/* print message */
 			if (throwAEE) {
 				/* print message */
-				CMDQ_AEE("CMDQ", "%s", longMsg);
+				CMDQ_AEE(dispatch_mod, "%s", longMsg);
 			}
 			cmdq_core_turnon_first_dump(pTask);
 			CMDQ_ERR("%s", longMsg);
