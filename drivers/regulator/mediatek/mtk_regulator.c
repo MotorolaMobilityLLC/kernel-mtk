@@ -224,8 +224,10 @@ int mtk_regulator_set_property(struct mtk_regulator *mreg,
 		return -EINVAL;
 	}
 
-	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->set_property)
+	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->set_property) {
 		pr_info("%s: no adv ops\n", __func__);
+		return -EINVAL;
+	}
 
 	ret = mreg_desc->mreg_adv_ops->set_property(mreg_desc, prop, val);
 	return ret;
@@ -249,8 +251,10 @@ int mtk_regulator_get_property(struct mtk_regulator *mreg,
 		return -EINVAL;
 	}
 
-	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->get_property)
+	if (!mreg_desc->mreg_adv_ops || !mreg_desc->mreg_adv_ops->get_property) {
 		pr_info("%s: no adv ops\n", __func__);
+		return -EINVAL;
+	}
 
 	ret = mreg_desc->mreg_adv_ops->get_property(mreg_desc, prop, val);
 	return ret;
