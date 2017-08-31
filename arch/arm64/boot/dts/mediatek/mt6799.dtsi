@@ -2703,7 +2703,11 @@
 			<&topckgen CLK_TOP_TVDPLL>,			/*DPI_CK*/
 			<&pericfg CLK_PERICFG_RG_DISP_PWM0>,	/*DISP_CLK_PWM0*/
 			<&pericfg CLK_PERICFG_RG_DISP_PWM1>,	/*DISP_CLK_PWM1*/
-			<&topckgen CLK_TOP_DISPPWM_SEL>;	/*MUX_PWM*/
+			<&topckgen CLK_TOP_DISPPWM_SEL>,	/*MUX_PWM*/
+			<&clk26m>,	/*CLK26M*/
+			<&topckgen CLK_TOP_ULPOSCPLL_D2>,	/*ULPOSC_D2*/
+			<&topckgen CLK_TOP_ULPOSCPLL_D8>,	/*ULPOSC_D8*/
+			<&topckgen CLK_TOP_UNIVPLL1_D2>;	/*UNIVPLL2_D4*/
 
 		clock-names = "DISP_MTCMOS_CLK",
 			"DISP_SMI_COMMON",
@@ -2759,7 +2763,11 @@
 			"DPI_CK",
 			"DISP_CLK_PWM0",
 			"DISP_CLK_PWM1",
-			"MUX_PWM";
+			"MUX_PWM",
+			"CLK26M",
+			"ULPOSC_D2",
+			"ULPOSC_D8",
+			"UNIVPLL2_D4";
 	};
 
 	mhl:mhl@0 {

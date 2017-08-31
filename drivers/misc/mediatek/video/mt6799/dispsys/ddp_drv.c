@@ -201,6 +201,10 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP_CLK_PWM0",
 	"DISP_CLK_PWM1",
 	"MUX_PWM",
+	"CLK26M",
+	"ULPOSC_D2",
+	"ULPOSC_D8",
+	"UNIVPLL2_D4",
 };
 
 #endif
