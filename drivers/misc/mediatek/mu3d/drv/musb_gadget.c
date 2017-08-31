@@ -1531,7 +1531,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 }
 
 static int musb_gadget_start(struct usb_gadget *g, struct usb_gadget_driver *driver);
-/* static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driver);	FIXME */
+static int musb_gadget_stop(struct usb_gadget *g);
 
 static const struct usb_gadget_ops musb_gadget_operations = {
 	.get_frame = musb_gadget_get_frame,
@@ -1541,7 +1541,7 @@ static const struct usb_gadget_ops musb_gadget_operations = {
 	.vbus_draw = musb_gadget_vbus_draw,
 	.pullup = musb_gadget_pullup,
 	.udc_start = musb_gadget_start,
-	/* .udc_stop = musb_gadget_stop,		FIXME */
+	.udc_stop		= musb_gadget_stop,
 	/*REVISIT-J: Do we need implement "get_config_params" to config U1/U2 */
 };
 
@@ -1582,6 +1582,16 @@ static void init_peripheral_ep(struct musb *musb, struct musb_ep *ep, u8 epnum, 
 	os_printk(K_INFO, "%s, name=%s\n", __func__, ep->name);
 
 	ep->end_point.name = ep->name;
+
+	/* additional add for describing HW IP ep capability*/
+	ep->end_point.caps.dir_in = true;
+	ep->end_point.caps.dir_out = true;
+	ep->end_point.caps.type_control = true;
+	ep->end_point.caps.type_bulk = true;
+	ep->end_point.caps.type_int = true;
+	ep->end_point.caps.type_iso = true;
+	ep->end_point.maxpacket_limit = 1024;
+
 	INIT_LIST_HEAD(&ep->end_point.ep_list);
 	if (!epnum) {
 		ep->end_point.maxpacket = hw_ep->max_packet_sz_tx;
@@ -1673,7 +1683,6 @@ int musb_gadget_setup(struct musb *musb)
 	/* } */
 
 	status = usb_add_gadget_udc(musb->controller, &musb->g);
-	status = 0;
 	if (status)
 		goto err;
 
@@ -1771,8 +1780,6 @@ err:
 	return retval;
 }
 
-/* FIXME */
-#if 0
 static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
 {
 	int i;
@@ -1807,7 +1814,6 @@ static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
 		}
 	}
 }
-#endif
 
 /*
  * Unregister the gadget driver. Used by gadget drivers when
@@ -1815,11 +1821,11 @@ static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
  *
  * @param driver the gadget driver to unregister
  */
-#if 0	/* FIXME */
-static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driver)
+static int musb_gadget_stop(struct usb_gadget *g)
 {
 	struct musb *musb = gadget_to_musb(g);
 	unsigned long flags;
+	struct usb_gadget_driver *driver = musb->gadget_driver;
 
 	if (musb->xceiv->last_event == USB_EVENT_NONE)
 		pm_runtime_get_sync(musb->controller);
@@ -1859,7 +1865,6 @@ static int musb_gadget_stop(struct usb_gadget *g, struct usb_gadget_driver *driv
 
 	return 0;
 }
-#endif
 
 /* ----------------------------------------------------------------------- */
 
