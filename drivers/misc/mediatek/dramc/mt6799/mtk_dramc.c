@@ -422,8 +422,7 @@ late_initcall(last_dramc_test_agent_init);
 
 #ifdef CONFIG_MTK_DRAMC_PASR
 #define __ETT__ 0
-int enter_pasr_dpd_config(unsigned char segment_rank0,
-			   unsigned char segment_rank1)
+int enter_pasr_dpd_config_base(unsigned char segment_rank0, unsigned char segment_rank1, int dcs_on)
 {
 	unsigned int rank_pasr_segment[2];
 	unsigned int iRankIdx = 0, iChannelIdx = 0, cnt = 1000;
@@ -435,45 +434,60 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	void __iomem *u4rg_60; /* MRWEN */
 	void __iomem *u4rg_88; /* MRW_RESPONSE */
 
-	return 0; /* temp disable */
 #if !__ETT__
+	unsigned long save_flags;
+
+	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x dcs_on=%x\n", (segment_rank0 & 0xFF),
+		(segment_rank1 & 0xFF), dcs_on);
+	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
 		return -1;
 	}
 	/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
 #endif
+
 	rank_pasr_segment[0] = segment_rank0 & 0xFF; /* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF; /* for rank1 */
-	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]);
+	/* pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]); */
 
-/* #if PASR_TEST_SCENARIO == PASR_SUPPORT_2_CHANNEL*/
-	for (iChannelIdx = 0; iChannelIdx < 2; iChannelIdx++) {
-		if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+	for (iChannelIdx = 0; iChannelIdx < 4; iChannelIdx++) {
+		if (dcs_on == 0) {
 			if (iChannelIdx == 0) { /*Channel-A*/
 				u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
 				u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
-			} else { /*Channel-B*/
+			} else if (iChannelIdx == 1)  { /*Channel-B*/
 				u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
 				u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
 				u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
 				u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
 				u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
+			} else if (iChannelIdx == 2)  { /*Channel-C*/
+				u4rg_64 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x64);
+				u4rg_38 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x38);
+				u4rg_5C = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x5C);
+				u4rg_60 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x60);
+				u4rg_88 = IOMEM(DRAMC_NAO_CHC_BASE_ADDR + 0x88);
+			} else { /*Channel-D*/
+				u4rg_64 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x64);
+				u4rg_38 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x38);
+				u4rg_5C = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x5C);
+				u4rg_60 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x60);
+				u4rg_88 = IOMEM(DRAMC_NAO_CHD_BASE_ADDR + 0x88);
 			}
-		} else if (DRAM_TYPE == TYPE_LPDDR3) {/* #else PASR_TEST_SCENARIO == PASR_SUPPORT_1_CHANNEL LPDDR3 */
-			if (iChannelIdx == 1)
-				break;
-
-			u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
-			u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
-			u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
-			u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
-			u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
 		} else {
-		break; }
+			if (iChannelIdx == 0)
+				return -1; /* continue; */
+			u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
+			u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
+			u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
+			u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
+			u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
+		}
 
 		u4value_64 = readl(u4rg_64);
 		u4value_38 = readl(u4rg_38);
@@ -485,8 +499,11 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 #if !__ETT__
 		mb(); /* flush memory */
 #endif
+
 		udelay(2);
 		writel(readl(u4rg_38) | 0x04000000, u4rg_38); /* MIOCKCTRLOFF = 1 */
+		writel(readl(u4rg_38) & 0xFFFFFFFD, u4rg_38); /* DCMEN2 = 0 */
+		writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* PHYCLKDYNGEN = 0 */
 
 		for (iRankIdx = 0; iRankIdx < 2; iRankIdx++) {
 			writel(((iRankIdx << 24) | rank_pasr_segment[iRankIdx] | (0x00000011 << 8)), u4rg_5C);
@@ -495,13 +512,14 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 			do {
 				if (cnt-- == 0) {
 					if (iRankIdx == 0)
-						pr_warn("[DRAMC0] CHA PASR MRW fail!\n");
+						pr_warn("[DRAMC0] R0 PASR MRW fail!\n");
 					else
-						pr_warn("[DRAMC0] CHB PASR MRW fail!\n");
+						pr_warn("[DRAMC0] R1 PASR MRW fail!\n");
 #if !__ETT__
 					if (release_dram_ctrl() != 0)
 						pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 					/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+					local_irq_restore(save_flags);
 #endif
 					return -1;
 				}
@@ -509,24 +527,55 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 			} while ((readl(u4rg_88) & 0x00000001) == 0x0);
 			writel(readl(u4rg_60) & 0xfffffffe, u4rg_60);
 		}
+
 		writel(u4value_64, u4rg_64);
 		writel(u4value_38, u4rg_38);
 		writel(0, u4rg_5C);
-}
+	}
+
 #if !__ETT__
 	if (release_dram_ctrl() != 0)
 		pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 	/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+	local_irq_restore(save_flags);
 #endif
 	return 0;
+}
+
+int enter_pasr_dpd_config(unsigned char segment_rank0,
+			   unsigned char segment_rank1)
+{
+	int ret;
+
+	ret = enter_pasr_dpd_config_base(segment_rank0, segment_rank1, 0);
+
+	return ret;
 }
 
 int exit_pasr_dpd_config(void)
 {
 	int ret;
 
-	return 0; /* temp disable */
 	ret = enter_pasr_dpd_config(0, 0);
+
+	return ret;
+}
+
+int enter_dcs_pasr_dpd_config(unsigned char segment_rank0,
+			   unsigned char segment_rank1)
+{
+	int ret;
+
+	ret = enter_pasr_dpd_config_base(segment_rank0, segment_rank1, 1);
+
+	return ret;
+}
+
+int exit_dcs_pasr_dpd_config(void)
+{
+	int ret;
+
+	ret = enter_dcs_pasr_dpd_config(0, 0);
 
 	return ret;
 }
@@ -537,6 +586,16 @@ int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_ran
 }
 
 int exit_pasr_dpd_config(void)
+{
+	return 0;
+}
+
+int enter_dcs_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1)
+{
+	return 0;
+}
+
+int exit_dcs_pasr_dpd_config(void)
 {
 	return 0;
 }
@@ -1045,16 +1104,6 @@ int dram_can_support_fh(void)
 		return 1;
 }
 
-int dram_kernel_memory_test(void)
-{
-	if (dram_info_dummy_read.rank_num == 2) {
-		pr_err("[DRAMC Driver] rank1 dummy read addr=0x%llx,\n",
-		dram_info_dummy_read.rank_info[1].start);
-		return 1;
-	} else
-		return 0;
-}
-
 #ifdef CONFIG_OF_RESERVED_MEM
 int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 {
@@ -1348,11 +1397,6 @@ static int __init dram_test_init(void)
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
-
-	if (dram_kernel_memory_test())
-		pr_err("[DRAMC Driver] Rank1 memory test pass\n");
-	else
-		pr_err("[DRAMC Driver] Rank1 memory test fail\n");
 
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");
