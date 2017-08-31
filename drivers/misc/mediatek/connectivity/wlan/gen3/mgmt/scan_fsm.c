@@ -1789,7 +1789,11 @@ VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 		       " meet SCAN_DONE_TIMEOUT_THRESHOLD %d, trigger whole chip reset !! \r\n",
 		       SCAN_DONE_TIMEOUT_THRESHOLD);
 #if CFG_CHIP_RESET_SUPPORT
+#if CFG_SUPPORT_QA_TOOL
+		prScanInfo->ucScanDoneTimeoutCnt = 0;
+#else
 		glResetTrigger(prAdapter);
+#endif
 #endif
 	}
 }

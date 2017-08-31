@@ -94,7 +94,12 @@
 #define WLAN_CFG_SET_DEBUG_LEVEL_LEN_MAX 10
 #define WLAN_CFG_SET_SW_CTRL_LEN_MAX 10
 
+#if CFG_SUPPORT_QA_TOOL
+#define WLAN_OID_TIMEOUT_THRESHOLD                  10000	/* OID timeout (in ms) */
+#else
 #define WLAN_OID_TIMEOUT_THRESHOLD                  2000	/* OID timeout (in ms) */
+#endif
+
 #define WLAN_OID_TIMEOUT_THRESHOLD_IN_RESETTING      300	/* OID timeout during chip-resetting  (in ms) */
 
 #define WLAN_OID_NO_ACK_THRESHOLD                   3

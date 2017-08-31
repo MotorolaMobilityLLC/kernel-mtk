@@ -55,6 +55,12 @@ BOOLEAN g_bCaptureDone = FALSE;
 BOOLEAN g_bIcapEnable = FALSE;
 UINT_16 g_u2DumpIndex;
 BOOLEAN g_fgHasChannelSwitchIE = FALSE;
+#if CFG_SUPPORT_QA_TOOL
+UINT_32 g_au4Offset[2][2];
+UINT_32 g_au4IQData[20][1024];
+UINT_32 g_au4I0Data[1][408000];
+UINT_32 g_au4Q0Data[1][408000];
+#endif
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
