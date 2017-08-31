@@ -1468,7 +1468,6 @@ int force_get_tbat(bool update)
 		bm_debug("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
 		bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
 		fg_r_value, bat_temperature_val);
-		pre_bat_temperature_val2 = bat_temperature_val;
 
 		if (pre_bat_temperature_val2 == 0) {
 			pre_bat_temperature_volt_temp = bat_temperature_volt_temp;
@@ -1482,8 +1481,10 @@ int force_get_tbat(bool update)
 			get_monotonic_boottime(&ctime);
 			dtime = timespec_sub(ctime, pre_time);
 
-			if (dtime.tv_sec <= 20 && abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5) {
-				bm_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
+			if ((dtime.tv_sec <= 20) &&
+				(abs(pre_bat_temperature_val2 - bat_temperature_val) >= 5) &&
+				(bat_temperature_val >= 58)) {
+				pr_err("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 					fg_current_temp, fg_r_value, bat_temperature_val,
 					pre_bat_temperature_volt_temp, pre_bat_temperature_volt, pre_fg_current_state,
