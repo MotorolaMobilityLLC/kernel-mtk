@@ -574,24 +574,22 @@ static inline void typec_sink_attached_entry(struct tcpc_device *tcpc_dev)
 }
 
 static inline void typec_custom_src_attached_entry(
-	struct tcpc_device *tcpc_dev)
+		struct tcpc_device *tcpc_dev)
 {
-#ifdef CONFIG_TYPEC_CAP_CUSTOM_SRC
-	int cc1 = typec_get_cc1();
-	int cc2 = typec_get_cc2();
-
-	if (cc1 == TYPEC_CC_VOLT_SNK_DFT && cc2 == TYPEC_CC_VOLT_SNK_DFT) {
-		TYPEC_NEW_STATE(typec_attached_custom_src);
-		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_CUSTOM_SRC;
-		return;
-	}
-#endif	/* CONFIG_TYPEC_CAP_CUSTOM_SRC */
-
 #ifdef CONFIG_TYPEC_CAP_DBGACC_SNK
 	TYPEC_DBG("[Warning] Same Rp (%d)\r\n", typec_get_cc1());
 #else
 	TYPEC_DBG("[Warning] CC Both Rp\r\n");
 #endif
+
+#ifdef CONFIG_TYPEC_CAP_CUSTOM_SRC
+	TYPEC_NEW_STATE(typec_attached_custom_src);
+	tcpc_dev->typec_attach_new = TYPEC_ATTACHED_CUSTOM_SRC;
+
+	tcpci_report_power_control(tcpc_dev, true);
+	tcpci_sink_vbus(tcpc_dev, TCP_VBUS_CTRL_TYPEC,
+		TCPC_VBUS_SINK_5V, tcpc_dev->typec_usb_sink_curr);
+#endif     /* CONFIG_TYPEC_CAP_CUSTOM_SRC */
 }
 
 #ifdef CONFIG_TYPEC_CAP_DBGACC_SNK
