@@ -249,7 +249,7 @@ static int clk_disable_unused(void)
 		pr_warn("clk: Not disabling unused clocks\n");
 		return 0;
 	}
-	#if defined(CONFIG_MACH_MT6799)
+	#if (defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763))
 	return 0;
 	#endif
 

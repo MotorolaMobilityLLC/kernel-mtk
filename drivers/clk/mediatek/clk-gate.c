@@ -93,6 +93,9 @@ static void mtk_cg_clr_bit(struct clk_hw *hw)
 
 static int mtk_cg_enable(struct clk_hw *hw)
 {
+	#if defined(CONFIG_MACH_MT6763)
+	return 0;
+	#endif
 	mtk_cg_clr_bit(hw);
 
 	return 0;
@@ -105,6 +108,9 @@ static void mtk_cg_disable(struct clk_hw *hw)
 
 static int mtk_cg_enable_inv(struct clk_hw *hw)
 {
+	#if defined(CONFIG_MACH_MT6763)
+	return 0;
+	#endif
 	mtk_cg_set_bit(hw);
 
 	return 0;
