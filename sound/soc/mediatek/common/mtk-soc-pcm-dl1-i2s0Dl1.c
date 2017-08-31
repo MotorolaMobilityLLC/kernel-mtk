@@ -191,14 +191,6 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-	/* here start digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
-		      Soc_Aud_AFE_IO_Block_I2S3);
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
-		      Soc_Aud_AFE_IO_Block_I2S1_DAC);
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
-		      Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
-
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 
 	return 0;
@@ -305,6 +297,12 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 	}
 
 	if (mPrepareDone == true) {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 		/* stop DAC output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		if (GetI2SDacEnable() == false)
@@ -379,6 +377,12 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 		}
+		SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
+				Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 		/* TODO: KC: use Set2ndI2SOut() to set i2s3 */
 		/* I2S out Setting */
@@ -435,14 +439,6 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	pr_warn("%s\n", __func__);
-	/* here start digital part */
-
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
-				Soc_Aud_AFE_IO_Block_I2S3);
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
-				Soc_Aud_AFE_IO_Block_I2S1_DAC);
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_MEM_DL1,
-		      Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 	/* here to set interrupt */
 	irq_add_user(substream,
