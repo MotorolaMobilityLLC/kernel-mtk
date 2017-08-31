@@ -4355,7 +4355,7 @@ static const struct file_operations adc_cali_fops = {
 
 /*************************************/
 struct wake_lock battery_lock;
-static int battery_probe(struct platform_device *dev)
+static int __init battery_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 	int ret;
@@ -4604,7 +4604,7 @@ static int battery_resume(struct platform_device *dev)
 	return 0;
 }
 
-static struct platform_driver battery_dts_driver = {
+static struct platform_driver battery_dts_driver_probe = {
 	.probe = battery_dts_probe,
 	.remove = NULL,
 	.shutdown = NULL,
@@ -4618,7 +4618,7 @@ static struct platform_driver battery_dts_driver = {
 	},
 };
 
-static struct platform_driver battery_driver = {
+static struct platform_driver battery_driver_probe = {
 	.probe = battery_probe,
 	.remove = NULL,
 	.shutdown = NULL,
@@ -4652,8 +4652,8 @@ static int __init battery_init(void)
 	ret = platform_device_register(&battery_device);
 #endif
 
-	ret = platform_driver_register(&battery_driver);
-	ret = platform_driver_register(&battery_dts_driver);
+	ret = platform_driver_register(&battery_driver_probe);
+	ret = platform_driver_register(&battery_dts_driver_probe);
 
 	is_init_done = true;
 	bm_err("[battery_init] Initialization : DONE\n");
