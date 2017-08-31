@@ -20,7 +20,6 @@
 #include <linux/cma.h>
 #include <linux/printk.h>
 #include <linux/memblock.h>
-#include <linux/mm.h>
 
 #include "mt-plat/mtk_meminfo.h"
 #include "single_cma.h"
@@ -89,11 +88,23 @@ phys_addr_t zmc_shrink_cma_range(void)
 	/* ensure minimal alignment requied by mm core */
 	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
 
-	max = ALIGN(max, alignment);
+	alignment = max(alignment, max_align);
 
-	shrunk_size = cma_get_size(cma) - max;
+	if (cma_get_size(cma) > max) {
+		phys_addr_t new_base;
 
-	if (shrunk_size > 0) {
+		/* Check new_base */
+		new_base = ALIGN(cma_get_base(cma) + cma_get_size(cma) - max, alignment);
+		if (new_base < cma_get_base(cma)) {
+			pr_warn("%s: mismatched base(0x%lx) new_base(%p)\n",
+					__func__, (unsigned long)(cma_get_base(cma)), &new_base);
+			goto orig;
+		}
+
+		/* Compute reasonable shrunk_size & new size */
+		shrunk_size = new_base - cma_get_base(cma);
+		max = cma_get_size(cma) - shrunk_size;
+
 		pr_info("[Resize-START] ZONE_MOVABLE to size: %pa\n", &max);
 		cma_resize_front(cma, shrunk_size >> PAGE_SHIFT);
 		pr_info("[Resize-DONE]  ZONE_MOVABLE [0x%lx:0x%lx]\n",
@@ -101,6 +112,7 @@ phys_addr_t zmc_shrink_cma_range(void)
 				(unsigned long)(cma_get_base(cma) + cma_get_size(cma)));
 	}
 
+orig:
 	return cma_get_base(cma);
 }
 
@@ -142,13 +154,16 @@ static int zmc_memory_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(zone_movable_cma_init, "mediatek,zone_movable_cma",
 			zmc_memory_init);
 
-struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align)
+struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align, struct single_cma_registration *p)
 {
+#ifdef CONFIG_ARCH_MT6757
+	struct page *candidate, *abandon = NULL;
+#endif
+
 	zmc_notifier_call_chain(ZMC_EVENT_ALLOC_MOVABLE, NULL);
 
 	if (!zmc_reserved_mem_inited)
 		return cma_alloc(cma, count, align);
-
 
 	/*
 	 * Pre-check with cma bitmap. If there is no enough
@@ -160,7 +175,25 @@ struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align)
 		return NULL;
 	}
 
+#ifdef CONFIG_ARCH_MT6757
+#define ABANDON_PFN	(0xc0000)
+retry:
+	candidate = cma_alloc(cma, count, align);
+
+	if (abandon != NULL)
+		cma_release(cma, abandon, count);
+
+	if (p->prio == ZMC_SSVP &&
+			candidate != NULL && page_to_pfn(candidate) == ABANDON_PFN) {
+		abandon = candidate;
+		pr_info("%s %p is abandoned\n", __func__, candidate);
+		goto retry;
+	}
+
+	return candidate;
+#else
 	return cma_alloc(cma, count, align);
+#endif
 }
 
 bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
