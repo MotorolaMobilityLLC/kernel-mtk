@@ -128,7 +128,7 @@ static int lm3642_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	mutex_unlock(&chip->lock);
 
 	if (ret < 0)
-		fl_err("failed writing at 0x%02x\n", reg);
+		fl_pr_err("failed writing at 0x%02x\n", reg);
 
 	return ret;
 }
@@ -193,7 +193,7 @@ static int lm3642_enable(int channel)
 	if (channel == LM3642_CHANNEL_CH1)
 		lm3642_enable_ch1();
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -215,7 +215,7 @@ static int lm3642_disable(int channel)
 	if (channel == LM3642_CHANNEL_CH1)
 		lm3642_disable_ch1();
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -237,7 +237,7 @@ static int lm3642_set_level(int channel, int level)
 	if (channel == LM3642_CHANNEL_CH1)
 		lm3642_set_level_ch1(level);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -260,7 +260,7 @@ int lm3642_init(void)
 	else
 		g_bLtVersion = 0;
 
-	fl_info("regVal0=%d isLtVer=%d\n", regVal0, g_bLtVersion);
+	fl_pr_info("regVal0=%d isLtVer=%d\n", regVal0, g_bLtVersion);
 
 	return ret;
 }
@@ -282,7 +282,7 @@ static unsigned int lm3642_timeout_ms[LM3642_CHANNEL_NUM];
 
 static void lm3642_work_disable_ch1(struct work_struct *data)
 {
-	fl_dbg("ht work queue callback\n");
+	fl_pr_debug("ht work queue callback\n");
 	lm3642_disable_ch1();
 }
 
@@ -297,7 +297,7 @@ int lm3642_timer_start(int channel, ktime_t ktime)
 	if (channel == LM3642_CHANNEL_CH1)
 		hrtimer_start(&lm3642_timer_ch1, ktime, HRTIMER_MODE_REL);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -309,7 +309,7 @@ int lm3642_timer_cancel(int channel)
 	if (channel == LM3642_CHANNEL_CH1)
 		hrtimer_cancel(&lm3642_timer_ch1);
 	else {
-		fl_err("Error channel\n");
+		fl_pr_err("Error channel\n");
 		return -1;
 	}
 
@@ -331,25 +331,25 @@ static int lm3642_ioctl(unsigned int cmd, unsigned long arg)
 
 	/* verify channel */
 	if (channel < 0 || channel >= LM3642_CHANNEL_NUM) {
-		fl_err("Failed with error channel\n");
+		fl_pr_err("Failed with error channel\n");
 		return -EINVAL;
 	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		lm3642_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		lm3642_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (lm3642_timeout_ms[channel]) {
@@ -365,7 +365,7 @@ static int lm3642_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	default:
-		fl_info("No such command and arg(%d): (%d, %d)\n",
+		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -390,7 +390,7 @@ static int lm3642_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&lm3642_mutex);
 
-	fl_dbg("Release: %d\n", use_count);
+	fl_pr_debug("Release: %d\n", use_count);
 
 	return 0;
 }
@@ -404,7 +404,7 @@ static int lm3642_set_driver(void)
 	use_count++;
 	mutex_unlock(&lm3642_mutex);
 
-	fl_dbg("Set driver: %d\n", use_count);
+	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return 0;
 }
@@ -448,11 +448,11 @@ static int lm3642_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	struct lm3642_platform_data *pdata = client->dev.platform_data;
 	int err;
 
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		fl_err("Failed to check i2c functionality.\n");
+		fl_pr_err("Failed to check i2c functionality.\n");
 		err = -ENODEV;
 		goto err_out;
 	}
@@ -467,10 +467,9 @@ static int lm3642_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	/* init platform data */
 	if (!pdata) {
-		fl_dbg("Platform data does not exist\n");
+		fl_pr_debug("Platform data does not exist\n");
 		pdata = kzalloc(sizeof(struct lm3642_platform_data), GFP_KERNEL);
 		if (!pdata) {
-			fl_err("Failed to allocate memory.\n");
 			err = -ENOMEM;
 			goto err_init_pdata;
 		}
@@ -496,7 +495,7 @@ static int lm3642_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	/* register flashlight operations */
 	if (flashlight_dev_register(LM3642_NAME, &lm3642_ops)) {
-		fl_err("Failed to register flashlight device.\n");
+		fl_pr_err("Failed to register flashlight device.\n");
 		err = -EFAULT;
 		goto err_free;
 	}
@@ -504,7 +503,7 @@ static int lm3642_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	/* clear usage count */
 	use_count = 0;
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 
@@ -521,7 +520,7 @@ static int lm3642_i2c_remove(struct i2c_client *client)
 {
 	struct lm3642_chip_data *chip = i2c_get_clientdata(client);
 
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	/* flush work queue */
 	flush_work(&lm3642_work_ch1);
@@ -534,7 +533,7 @@ static int lm3642_i2c_remove(struct i2c_client *client)
 		kfree(chip->pdata);
 	kfree(chip);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -569,25 +568,25 @@ static struct i2c_driver lm3642_i2c_driver = {
  *****************************************************************************/
 static int lm3642_probe(struct platform_device *dev)
 {
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	if (i2c_add_driver(&lm3642_i2c_driver)) {
-		fl_dbg("Failed to add i2c driver.\n");
+		fl_pr_debug("Failed to add i2c driver.\n");
 		return -1;
 	}
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 }
 
 static int lm3642_remove(struct platform_device *dev)
 {
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	i2c_del_driver(&lm3642_i2c_driver);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -626,34 +625,34 @@ static int __init flashlight_lm3642_init(void)
 {
 	int ret;
 
-	fl_dbg("Init start.\n");
+	fl_pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&lm3642_platform_device);
 	if (ret) {
-		fl_err("Failed to register platform device\n");
+		fl_pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&lm3642_platform_driver);
 	if (ret) {
-		fl_err("Failed to register platform driver\n");
+		fl_pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_dbg("Init done.\n");
+	fl_pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_lm3642_exit(void)
 {
-	fl_dbg("Exit start.\n");
+	fl_pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&lm3642_platform_driver);
 
-	fl_dbg("Exit done.\n");
+	fl_pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_lm3642_init);

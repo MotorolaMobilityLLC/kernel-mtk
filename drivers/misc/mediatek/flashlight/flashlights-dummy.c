@@ -96,7 +96,7 @@ static int dummy_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	mutex_unlock(&chip->lock);
 
 	if (ret < 0)
-		fl_err("failed writing at 0x%02x\n", reg);
+		fl_pr_err("failed writing at 0x%02x\n", reg);
 
 	return ret;
 }
@@ -159,7 +159,7 @@ static unsigned int dummy_timeout_ms;
 
 static void dummy_work_disable(struct work_struct *data)
 {
-	fl_dbg("work queue callback\n");
+	fl_pr_debug("work queue callback\n");
 	dummy_disable();
 }
 
@@ -184,19 +184,19 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		dummy_set_level(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (dummy_timeout_ms) {
@@ -211,7 +211,7 @@ static int dummy_ioctl(unsigned int cmd, unsigned long arg)
 		}
 		break;
 	default:
-		fl_info("No such command and arg(%d): (%d, %d)\n",
+		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -236,7 +236,7 @@ static int dummy_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&dummy_mutex);
 
-	fl_dbg("Release: %d\n", use_count);
+	fl_pr_debug("Release: %d\n", use_count);
 
 	return 0;
 }
@@ -250,7 +250,7 @@ static int dummy_set_driver(void)
 	use_count++;
 	mutex_unlock(&dummy_mutex);
 
-	fl_dbg("Set driver: %d\n", use_count);
+	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return 0;
 }
@@ -294,11 +294,11 @@ static int dummy_i2c_probe(struct i2c_client *client, const struct i2c_device_id
 	struct dummy_platform_data *pdata = client->dev.platform_data;
 	int err;
 
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* check i2c */
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		fl_err("Failed to check i2c functionality.\n");
+		fl_pr_err("Failed to check i2c functionality.\n");
 		err = -ENODEV;
 		goto err_out;
 	}
@@ -313,10 +313,9 @@ static int dummy_i2c_probe(struct i2c_client *client, const struct i2c_device_id
 
 	/* init platform data */
 	if (!pdata) {
-		fl_dbg("Platform data does not exist\n");
+		fl_pr_debug("Platform data does not exist\n");
 		pdata = kzalloc(sizeof(struct dummy_platform_data), GFP_KERNEL);
 		if (!pdata) {
-			fl_err("Failed to allocate memory.\n");
 			err = -ENOMEM;
 			goto err_init_pdata;
 		}
@@ -349,7 +348,7 @@ static int dummy_i2c_probe(struct i2c_client *client, const struct i2c_device_id
 	/* clear usage count */
 	use_count = 0;
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 
@@ -366,7 +365,7 @@ static int dummy_i2c_remove(struct i2c_client *client)
 {
 	struct dummy_chip_data *chip = i2c_get_clientdata(client);
 
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	/* flush work queue */
 	flush_work(&dummy_work);
@@ -379,7 +378,7 @@ static int dummy_i2c_remove(struct i2c_client *client)
 		kfree(chip->pdata);
 	kfree(chip);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }

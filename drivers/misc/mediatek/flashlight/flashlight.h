@@ -19,14 +19,13 @@
 
 /* debug macro */
 #define FLASHLIGHT_PREFIX "[FLASHLIGHT]"
-#define fl_err(fmt, arg...)      pr_err(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
+#define fl_pr_err(fmt, arg...)      pr_err(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
+#define fl_pr_info(fmt, arg...)     pr_info(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
 
 #ifdef DEBUG
-#define fl_info                  fl_err
-#define fl_dbg                   fl_err
+#define fl_pr_debug                 fl_pr_info
 #else
-#define fl_info(fmt, arg...)     pr_info(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
-#define fl_dbg(fmt, arg...)      pr_debug(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
+#define fl_pr_debug(fmt, arg...)    pr_debug(FLASHLIGHT_PREFIX " %s: " fmt, __func__, ##arg)
 #endif
 
 /* names */

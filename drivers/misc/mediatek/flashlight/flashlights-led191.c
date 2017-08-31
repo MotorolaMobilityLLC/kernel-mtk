@@ -88,19 +88,19 @@ static int led191_pinctrl_init(struct platform_device *pdev)
 	/* get pinctrl */
 	led191_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(led191_pinctrl)) {
-		fl_err("Failed to get flashlight pinctrl.\n");
+		fl_pr_err("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(led191_pinctrl);
 	}
 
 	/* TODO: Flashlight XXX pin initialization */
 	led191_hwen_high = pinctrl_lookup_state(led191_pinctrl, LED191_PINCTRL_STATE_HWEN_HIGH);
 	if (IS_ERR(led191_hwen_high)) {
-		fl_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_HIGH);
+		fl_pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_HIGH);
 		ret = PTR_ERR(led191_hwen_high);
 	}
 	led191_hwen_low = pinctrl_lookup_state(led191_pinctrl, LED191_PINCTRL_STATE_HWEN_LOW);
 	if (IS_ERR(led191_hwen_low)) {
-		fl_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_LOW);
+		fl_pr_err("Failed to init (%s)\n", LED191_PINCTRL_STATE_HWEN_LOW);
 		ret = PTR_ERR(led191_hwen_low);
 	}
 
@@ -112,7 +112,7 @@ static int led191_pinctrl_set(int pin, int state)
 	int ret = 0;
 
 	if (IS_ERR(led191_pinctrl)) {
-		fl_err("pinctrl is not available\n");
+		fl_pr_err("pinctrl is not available\n");
 		return -1;
 	}
 
@@ -123,13 +123,13 @@ static int led191_pinctrl_set(int pin, int state)
 		else if (state == LED191_PINCTRL_PINSTATE_HIGH && !IS_ERR(led191_hwen_high))
 			ret = pinctrl_select_state(led191_pinctrl, led191_hwen_high);
 		else
-			fl_err("set err, pin(%d) state(%d)\n", pin, state);
+			fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	default:
-		fl_err("set err, pin(%d) state(%d)\n", pin, state);
+		fl_pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
 	}
-	fl_dbg("pin(%d) state(%d), ret:%d\n", pin, state, ret);
+	fl_pr_debug("pin(%d) state(%d), ret:%d\n", pin, state, ret);
 
 	return ret;
 }
@@ -203,7 +203,7 @@ static unsigned int led191_timeout_ms;
 
 static void led191_work_disable(struct work_struct *data)
 {
-	fl_dbg("work queue callback\n");
+	fl_pr_debug("work queue callback\n");
 	led191_disable();
 }
 
@@ -228,19 +228,19 @@ static int led191_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		led191_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		led191_set_level(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+		fl_pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
 			if (led191_timeout_ms) {
@@ -255,7 +255,7 @@ static int led191_ioctl(unsigned int cmd, unsigned long arg)
 		}
 		break;
 	default:
-		fl_info("No such command and arg(%d): (%d, %d)\n",
+		fl_pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
@@ -280,7 +280,7 @@ static int led191_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&led191_mutex);
 
-	fl_dbg("Release: %d\n", use_count);
+	fl_pr_debug("Release: %d\n", use_count);
 
 	return 0;
 }
@@ -294,7 +294,7 @@ static int led191_set_driver(void)
 	use_count++;
 	mutex_unlock(&led191_mutex);
 
-	fl_dbg("Set driver: %d\n", use_count);
+	fl_pr_debug("Set driver: %d\n", use_count);
 
 	return 0;
 }
@@ -336,7 +336,7 @@ static int led191_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 {
 	int err;
 
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 	/* init work queue */
 	INIT_WORK(&led191_work, led191_work_disable);
@@ -356,7 +356,7 @@ static int led191_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	}
 #if 0
 	if (i2c_add_driver(&led191_i2c_driver)) {
-		fl_dbg("Failed to add i2c driver.\n");
+		fl_pr_debug("Failed to add i2c driver.\n");
 		return -1;
 	}
 #endif
@@ -364,7 +364,7 @@ static int led191_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	/* clear usage count */
 	use_count = 0;
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 
 	return 0;
 err:
@@ -373,7 +373,7 @@ err:
 
 static int led191_i2c_remove(struct i2c_client *client)
 {
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	/* flush work queue */
 	flush_work(&led191_work);
@@ -381,7 +381,7 @@ static int led191_i2c_remove(struct i2c_client *client)
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(LED191_NAME);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -414,21 +414,21 @@ static int led191_probe(struct platform_device *dev)
 {
 	int err;
 
-	fl_dbg("Probe start.\n");
+	fl_pr_debug("Probe start.\n");
 
 		/* init pinctrl */
 	if (led191_pinctrl_init(dev)) {
-		fl_dbg("Failed to init pinctrl.\n");
+		fl_pr_debug("Failed to init pinctrl.\n");
 		err = -EFAULT;
 		goto error;
 	}
 
 	if (i2c_add_driver(&led191_i2c_driver)) {
-		fl_dbg("Failed to add i2c driver.\n");
+		fl_pr_debug("Failed to add i2c driver.\n");
 		return -1;
 	}
 
-	fl_dbg("Probe done.\n");
+	fl_pr_debug("Probe done.\n");
 	return 0;
 
 error:
@@ -437,11 +437,11 @@ error:
 
 static int led191_remove(struct platform_device *dev)
 {
-	fl_dbg("Remove start.\n");
+	fl_pr_debug("Remove start.\n");
 
 	i2c_del_driver(&led191_i2c_driver);
 
-	fl_dbg("Remove done.\n");
+	fl_pr_debug("Remove done.\n");
 
 	return 0;
 }
@@ -481,34 +481,34 @@ static int __init flashlight_led191_init(void)
 {
 	int ret;
 
-	fl_dbg("Init start.\n");
+	fl_pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&led191_gpio_platform_device);
 	if (ret) {
-		fl_err("Failed to register platform device\n");
+		fl_pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
 	ret = platform_driver_register(&led191_platform_driver);
 	if (ret) {
-		fl_err("Failed to register platform driver\n");
+		fl_pr_err("Failed to register platform driver\n");
 		return ret;
 	}
 
-	fl_dbg("Init done.\n");
+	fl_pr_debug("Init done.\n");
 
 	return 0;
 }
 
 static void __exit flashlight_led191_exit(void)
 {
-	fl_dbg("Exit start.\n");
+	fl_pr_debug("Exit start.\n");
 
 	platform_driver_unregister(&led191_platform_driver);
 
-	fl_dbg("Exit done.\n");
+	fl_pr_debug("Exit done.\n");
 }
 
 module_init(flashlight_led191_init);
