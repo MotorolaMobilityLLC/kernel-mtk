@@ -45,6 +45,7 @@ static unsigned int max_channel_num;
 static struct pasrvec *mtkpasr_vec;
 static int dcs_acquired;
 static enum dcs_status dcs_status = DCS_BUSY;
+static unsigned int ddrphy_on, ddrphy_off;
 #endif
 
 /* Internal control parameters */
@@ -187,6 +188,7 @@ bypass_dcs:
 				query_channel_segment_bits()) {
 			dcs_mpu_protection(1);
 			dram_turn_on_off_ch(0);
+			ddrphy_off++;
 		}
 	} else {
 		pr_warn("%s: should not be here\n", __func__);
@@ -209,6 +211,7 @@ static void disable_dcs_pasr(void)
 	if (dcs_status == DCS_LOWPOWER) {
 		dram_turn_on_off_ch(1);
 		dcs_mpu_protection(0);
+		ddrphy_on++;
 	}
 
 	/* Restore PASR */
@@ -390,6 +393,12 @@ static int show_pasr_status(char *buf)
 			buf += tmp;
 			len += tmp;
 		}
+#ifdef CONFIG_MTK_DCS
+		tmp = sprintf(buf, "ddrphy on=%u, ddrphy off=%u\n",
+				ddrphy_on, ddrphy_off);
+		buf += tmp;
+		len += tmp;
+#endif
 	}
 #endif
 	return len;
