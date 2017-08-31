@@ -112,7 +112,11 @@ u32 slp_spm_data;
 #if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
+#if defined(CONFIG_MACH_MT6758)
+	return 0;
+#else
 	return state == PM_SUSPEND_MEM;
+#endif
 }
 
 static int slp_suspend_ops_begin(suspend_state_t state)
@@ -194,7 +198,6 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 #endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-
 	/* legacy log */
 	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n");
 
