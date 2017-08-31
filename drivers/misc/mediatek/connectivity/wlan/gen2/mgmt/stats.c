@@ -1078,12 +1078,12 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 							ucIcmpType, u2IcmpId, u2IcmpSeq);
 				break;
 			case EVENT_TX:
-				DBGLOG(TX, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x\n",
+				DBGLOG(TX, TRACE, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x\n",
 								ucIcmpType, u2IcmpId, u2IcmpSeq);
 				prMsduInfo->fgNeedTxDoneStatus = TRUE;
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(TX, INFO, "<TX status:%d> Type %d, Id 0x%04x, Seq 0x%04x\n",
+				DBGLOG(TX, INFO, "<TX status:%d> ICMP: Type %d, Id 0x%04x, Seq 0x%04x\n",
 						status, ucIcmpType, u2IcmpId, u2IcmpSeq);
 				break;
 			}
