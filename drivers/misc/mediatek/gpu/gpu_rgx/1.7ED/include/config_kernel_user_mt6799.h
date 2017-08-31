@@ -17,7 +17,6 @@
 #define PVRSRV_GPUVIRT_NUM_OSID 2
 #define PVRSRV_GPUVIRT_OSID_STR 
 #define SUPPORT_VDM_CONTEXT_STORE_BUFFER_AB 
-#define FIX_DUSTS_POW_ON_INIT 
 #define SUPPORT_LINUX_X86_WRITECOMBINE 
 #define SUPPORT_LINUX_X86_PAT 
 #define PVR_LINUX_USING_WORKQUEUES 
@@ -85,5 +84,6 @@
 #define PVR_ANDROID_ION_PRIV_HEADER "../drivers/staging/android/ion/ion_priv.h"
 #define PVR_ANDROID_ION_USE_SG_LENGTH 
 #define PVR_ANDROID_SYNC_HEADER "../drivers/staging/android/sync.h"
+#define MTK_USE_HW_APM
 #define MTK_CONFIG_OF 
 #define ENABLE_COMMON_DVFS 

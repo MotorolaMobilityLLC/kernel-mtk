@@ -192,6 +192,10 @@ static IMG_VOID MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE* psDevNode, IMG_UINT32 
 #define MTKCLK_disable_unprepare(clk) \
         if (clk) {  clk_disable_unprepare(clk); }
 
+static IMG_VOID MTKCheckAndEnableMfgBuck(void)
+{
+	mt_gpufreq_voltage_enable_set(1);
+}
 
 static IMG_VOID MTKEnableMfgClock(void)
 {
@@ -200,12 +204,11 @@ static IMG_VOID MTKEnableMfgClock(void)
 
     ged_dvfs_gpu_clock_switch_notify(1);
  
-/*
+
+#ifdef MTCMOS_CONTROL
 	MTKCLK_prepare_enable(mtcmos_mfg0);
 	MTKCLK_prepare_enable(mtcmos_mfg1);
-	MTKCLK_prepare_enable(mtcmos_mfg2);
-
-*/
+#else
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg0"));
 	spm_mtcmos_ctrl_mfg0(1);
@@ -213,18 +216,7 @@ static IMG_VOID MTKEnableMfgClock(void)
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg1"));
 	spm_mtcmos_ctrl_mfg1(1);
-
-	if (gpu_debug_enable)
-		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock mfg2"));
-	spm_mtcmos_ctrl_mfg2(1);
-/*
-*	mfg_cg_switch(1);
-*/
-
-	/* need to force switching between 26M and GPUPLL */
-
-	switch_mfg_clk(0);
-	switch_mfg_clk(1);
+#endif
 
 
 	MTKCLK_prepare_enable(mfg_clk_baxi);
@@ -232,6 +224,9 @@ static IMG_VOID MTKEnableMfgClock(void)
 	MTKCLK_prepare_enable(mfg_clk_bg3d);
 	MTKCLK_prepare_enable(mfg_clk_b26m);
 
+	/* need to force switching between 26M and GPUPLL */
+	switch_mfg_clk(0);
+	switch_mfg_clk(1);
 
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKEnableMfgClock"));
@@ -248,28 +243,23 @@ static IMG_VOID MTKDisableMfgClock(IMG_BOOL bForce)
 	MTKCLK_disable_unprepare(mfg_clk_bg3d);
 	MTKCLK_disable_unprepare(mfg_clk_bmem);
 	MTKCLK_disable_unprepare(mfg_clk_baxi);
-/*
-*	MTKCLK_disable_unprepare(mtcmos_mfg2);
-*	MTKCLK_disable_unprepare(mtcmos_mfg1);
-*	MTKCLK_disable_unprepare(mtcmos_mfg0);
-*
-*
-*	mfg_cg_switch(0);
-*/
 
-	if (gpu_debug_enable)
-		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg2"));
+#if MTCMOS_CONTROL
+	MTKCLK_disable_unprepare(mtcmos_mfg1);
+	MTKCLK_disable_unprepare(mtcmos_mfg0);
+#else
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg1"));
+	spm_mtcmos_ctrl_mfg1(0);
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock mfg0"));
+	spm_mtcmos_ctrl_mfg0(0);
+#endif
 
+	ged_dvfs_gpu_clock_switch_notify(0);
 
+	mt_gpufreq_voltage_enable_set(0);
 
-    ged_dvfs_gpu_clock_switch_notify(0);
-/*
-*   mt_gpufreq_voltage_enable_set(1);
-*/
 
 	if (gpu_debug_enable)
 		PVR_DPF((PVR_DBG_ERROR, "MTKDisableMfgClock"));
@@ -1453,11 +1443,8 @@ IMG_VOID MTKMFGSystemDeInit(void)
 
 void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 {
-
-#ifndef MTK_PM_SUPPORT
-	MTKEnableMfgClock();
-#endif
 	struct device *pdev;
+	MTKCheckAndEnableMfgBuck();
 
 	if(psDevConfig) {
 		pdev = psDevConfig->pvOSDevice;
@@ -1495,6 +1482,7 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 		*/
 	}
 
+	MTKEnableMfgClock();
 
 	if (psDevConfig && (!g_pvRegsKM)) {
 		gsRegsPBase = psDevConfig->sRegsCpuPBase;
@@ -1507,6 +1495,9 @@ void MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 	else 
 		PVR_DPF((PVR_DBG_ERROR, "psDevConfig = 0x%p, g_pvRegsKM = 0x%p", psDevConfig, g_pvRegsKM));
 
+#ifdef MTK_PM_SUPPORT
+	MTKDisableMfgClock(IMG_TRUE);
+#endif
 }
 
 
