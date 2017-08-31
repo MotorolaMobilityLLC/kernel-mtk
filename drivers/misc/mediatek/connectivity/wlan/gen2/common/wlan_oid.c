@@ -9839,18 +9839,15 @@ wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
 	}
 
 	prCmdGscnParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	if (prCmdGscnParam) {
-		DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
-			prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
-			prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
 
-		if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
-			return WLAN_STATUS_SUCCESS;
-		else
-			return WLAN_STATUS_FAILURE;
-	}
+	DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
+	prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
+	prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
 
-	return WLAN_STATUS_INVALID_DATA;
+	if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
 }
 
 /*----------------------------------------------------------------------------*/
