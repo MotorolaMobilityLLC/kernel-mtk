@@ -191,12 +191,12 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	{
 	 DISP_MODULE_OVL1, DISP_MODULE_OVL1_2L_VIRTUAL, DISP_MODULE_OVL1_2L, DISP_MODULE_WDMA1,
 	 -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-	/*PRIMARY_RDMA0_COLOR0_DISP_LEFT*/
+	/*PRIMARY_RDMA_COLOR_DISP_LEFT*/
 	{
 	 DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
 	 DISP_MODULE_GAMMA0, DISP_MODULE_OD, DISP_MODULE_DITHER0, DISP_PATH0, DISP_MODULE_UFOE,
 	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-	/*PRIMARY_RDMA0_COLOR0_DISP_RIGHT*/
+	/*PRIMARY_RDMA_COLOR_DISP_RIGHT*/
 	{
 	 DISP_MODULE_RDMA1, DISP_MODULE_COLOR1, DISP_MODULE_CCORR1, DISP_MODULE_AAL1,
 	 DISP_MODULE_GAMMA1, DISP_MODULE_DITHER1, DISP_PATH1, DISP_MODULE_DSI1,
@@ -971,6 +971,8 @@ int ddp_is_scenario_on_primary(enum DDP_SCENARIO_ENUM scenario)
 	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_MEMOUT:
 	case DDP_SCENARIO_PRIMARY_OVL02L_RSZ0_MEMOUT:
 
+	case DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT:
+	case DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_RIGHT:
 	case DDP_SCENARIO_PRIMARY_OVL0_RSZ0_DISP_LEFT:
 	case DDP_SCENARIO_PRIMARY_OVL1_RSZ1_DISP_RIGHT:
 	case DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP_LEFT:
@@ -2691,6 +2693,8 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OV
 	rdma_cfg->pitch = ovl_cfg->src_pitch;
 	rdma_cfg->src_x = ovl_cfg->src_x;
 	rdma_cfg->src_y = ovl_cfg->src_y;
+	rdma_cfg->src_w = ovl_cfg->src_w;
+	rdma_cfg->src_h = ovl_cfg->src_h;
 	rdma_cfg->dst_x = ovl_cfg->dst_x;
 	rdma_cfg->dst_y = ovl_cfg->dst_y;
 	rdma_cfg->width = ovl_cfg->dst_w;
@@ -2699,6 +2703,7 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OV
 	rdma_cfg->dst_h = dst_h;
 	rdma_cfg->security = ovl_cfg->security;
 	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
+	rdma_cfg->is_bypass = true;
 
 	return 0;
 }

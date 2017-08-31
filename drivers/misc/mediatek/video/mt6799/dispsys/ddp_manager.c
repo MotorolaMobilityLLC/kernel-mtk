@@ -1704,8 +1704,8 @@ int dpmgr_path_update_offset_before_rsz(struct disp_ddp_path_config *src_config,
 	if (src_config->rdma_dirty) {
 		src_rdma_config = &src_config->rdma_config;
 		dst_rdma_config = &dst_config->rdma_config;
-		if (src_rdma_config->src_w < src_rdma_config->dst_w &&
-		    src_rdma_config->src_h < src_rdma_config->dst_h) {
+		if (src_rdma_config->src_w < src_rdma_config->width &&
+		    src_rdma_config->src_h < src_rdma_config->height) {
 			dst_rdma_config->dst_x = src_rdma_config->dst_x * 10000 / src_config->rsz_config.ratio;
 			dst_rdma_config->dst_y = src_rdma_config->dst_y * 10000 / src_config->rsz_config.ratio;
 		}

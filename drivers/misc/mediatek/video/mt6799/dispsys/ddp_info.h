@@ -253,6 +253,7 @@ struct RDMA_CONFIG_STRUCT {
 	enum DISP_BUFFER_TYPE security;
 	unsigned int yuv_range;
 	struct rdma_bg_ctrl_t bg_ctrl;
+	bool is_bypass;
 };
 
 struct WDMA_CONFIG_STRUCT {
@@ -351,6 +352,7 @@ enum DDP_IOCTL_NAME {
 	DDP_DPI_FACTORY_RESET,
 	DDP_SWITCH_SINGLE_DUAL_PIPE,
 	DDP_DSI_REFRESH_RATE_CHANGE,
+	DDP_UFOE_FORCE_CONFIG,
 };
 
 struct ddp_io_golden_setting_arg {

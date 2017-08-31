@@ -1044,8 +1044,9 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	struct RDMA_CONFIG_STRUCT *r_config = &pConfig->rdma_config;
 	enum RDMA_MODE mode = rdma_config_mode(r_config->address);
 	LCM_PARAMS *lcm_param = &(pConfig->dispif_config);
-	unsigned int width = pConfig->dst_dirty ? pConfig->dst_w : r_config->width;
-	unsigned int height = pConfig->dst_dirty ? pConfig->dst_h : r_config->height;
+	unsigned int width = r_config->is_bypass ? r_config->width : pConfig->dst_w;
+	unsigned int height = r_config->is_bypass ? r_config->height : pConfig->dst_h;
+	unsigned long temp_addr;
 
 	struct golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
 	enum UNIFIED_COLOR_FMT inFormat = r_config->inputFormat;
@@ -1077,12 +1078,12 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	/* PARGB,etc need convert ARGB,etc */
 	ufmt_disable_P(r_config->inputFormat, &inFormat);
 
-	r_config->address += r_config->src_x * ufmt_get_Bpp(inFormat) +
+	temp_addr = r_config->address + r_config->src_x * ufmt_get_Bpp(inFormat) +
 				r_config->src_y * r_config->pitch;
 
 	rdma_config(module,
 		    mode,
-		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->address,
+		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : temp_addr,
 		    (mode == RDMA_MODE_DIRECT_LINK) ? UFMT_RGB888 : inFormat,
 		    (mode == RDMA_MODE_DIRECT_LINK) ? 0 : r_config->pitch,
 		    width,

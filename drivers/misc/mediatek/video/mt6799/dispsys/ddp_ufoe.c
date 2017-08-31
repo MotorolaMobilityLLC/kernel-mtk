@@ -30,6 +30,7 @@
 static bool ufoe_enable;
 static bool lr_mode_en;
 static int compress_ratio;
+static bool force_config;
 
 void ufoe_dump_reg(void)
 {
@@ -127,8 +128,9 @@ static int ufoe_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config
 	LCM_PARAMS *disp_if_config = &(pConfig->dispif_config);
 	LCM_DSI_PARAMS *lcm_config = &(disp_if_config->dsi);
 
-	if (lcm_config->ufoe_enable == 1 && pConfig->dst_dirty) {
+	if (lcm_config->ufoe_enable == 1 && (pConfig->dst_dirty || force_config)) {
 		ufoe_enable = 1;
+		force_config = false;
 		/* disable BYPASS ufoe */
 		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);
 		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_OUT_SEL, DISP_REG_UFO_START, 0);
@@ -245,6 +247,10 @@ int ufoe_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle,
 	switch (ioctl) {
 	case DDP_PARTIAL_UPDATE:
 		_ufoe_partial_update(module, params, cmdq_handle);
+		ret = 0;
+		break;
+	case DDP_UFOE_FORCE_CONFIG:
+		force_config = true;
 		ret = 0;
 		break;
 	default:
