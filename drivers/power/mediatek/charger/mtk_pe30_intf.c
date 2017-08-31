@@ -182,8 +182,8 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 	struct mtk_pe30 *pe3 = &info->pe3;
 
 	if (en == true) {
-		pe30_dc_set_vbus_ov(info, 6500000);
-		pe30_dc_set_ibus_oc(info, CC_MAX);
+		charger_dev_set_direct_charging_vbusov(info->dc_chg, 6500000);
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, CC_MAX);
 		ret = mtk_enable_direct_charge(pe3->tcpc, en);
 		if (ret != 0)
 			ret2 = ret;
@@ -201,10 +201,10 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 		ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);
 		if (ret != 0)
 			ret2 = ret;
-		pe30_dc_set_vbus_ov(info, 5500000);
-		pe30_dc_set_ibus_oc(info, CC_NORMAL);
+		charger_dev_set_direct_charging_vbusov(info->dc_chg, 5500000);
+		charger_dev_set_direct_charging_ibusoc(info->dc_chg, CC_NORMAL);
 	}
-	pe30_dc_enable(info, en);
+	charger_dev_enable_direct_charging(info->dc_chg, en);
 
 	return ret2;
 }
@@ -353,7 +353,7 @@ static void mtk_pe30_start(struct charger_manager *info)
 	pe3->pe30_charging_state = DC_INIT;
 	get_monotonic_boottime(&pe3->startTime);
 	wake_up_pe30_thread(info);
-	pe30_dc_enable_chip(info, true);
+	charger_dev_enable_chip(info->dc_chg, true);
 	mutex_unlock(&pe3->pe30_mutex);
 }
 
@@ -433,7 +433,7 @@ void mtk_pe30_end(struct charger_manager *info)
 		mtk_pe30_enable_direct_charge(info, false);
 		pe3->pe30_charging_state = DC_STOP;
 		_wake_up_charger(info);
-		pe30_dc_enable_chip(info, false);
+		charger_dev_enable_chip(info->dc_chg, false);
 		if (wake_lock_active(&pe3->pe30_wakelock) != 0)
 			wake_unlock(&pe3->pe30_wakelock);
 	}
@@ -461,7 +461,7 @@ void mtk_pe30_set_is_enable(struct charger_manager *pinfo, bool enable)
 bool mtk_pe30_check_charger(struct charger_manager *info)
 {
 	if (is_mtk_pe30_rdy(info)) {
-		pe30_chr_enable_charge(info, false);
+		charger_dev_enable(info->chg1_dev, false);
 		mtk_pe30_start(info);
 		return true;
 	}
@@ -483,7 +483,7 @@ static void _mtk_pe30_end(struct charger_manager *info, bool reset)
 		if (reset == true)
 			mtk_pe30_ta_hard_reset(info);
 		_wake_up_charger(info);
-		pe30_dc_enable_chip(info, false);
+		charger_dev_enable_chip(info->dc_chg, false);
 		if (wake_lock_active(&pe3->pe30_wakelock) != 0)
 			wake_unlock(&pe3->pe30_wakelock);
 	}
@@ -518,10 +518,10 @@ static void mtk_pe30_DC_init(struct charger_manager *info)
 
 	pr_err("[mtk_pe30_DC_init]state = %d ,vbat = %d\n", pe3->pe30_charging_state, vbat);
 
-	pe30_chr_enable_power_path(info, false);
+	charger_dev_enable_powerpath(info->chg1_dev, false);
 	msleep(500);
 
-	pe30_chr_get_input_current(info, &inputcur);
+	charger_dev_get_ibus(info->dc_chg, &inputcur);
 	fgcur = battery_get_bat_current();
 	sign = battery_get_bat_current_sign();
 
@@ -888,7 +888,7 @@ static void mtk_pe30_DC_cc(struct charger_manager *info)
 	current_setting = setting.cur;
 	tmp = battery_meter_get_battery_temperature();
 
-	ret = pe30_dc_get_temperature(info, &tmp_min, &tmp_max);
+	ret = charger_dev_get_temperature(info->dc_chg, &tmp_min, &tmp_max);
 	if (ret < 0) {
 		pr_err("[mtk_pe30_DC_CC]err3 = %d\n", ret);
 		goto _fail;
@@ -1014,7 +1014,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 	}
 
 	/* ibus oc: RT9468 current */
-	ret = pe30_chr_get_input_current(info, &chrCur);
+	ret = charger_dev_get_ibus(info->dc_chg, &chrCur);
 	if (ret < 0) {
 		pr_err("[%s]get current from chr fail ret:%d\n",
 		__func__, ret);
@@ -1097,7 +1097,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		goto _fail;
 	}
 
-	pe30_dc_kick_wdt(info);
+	charger_dev_kick_direct_charging_wdt(info->dc_chg);
 	tcpm_get_cable_capability(pe3->tcpc, &emark);
 
 	pmic_get_bif_battery_temperature(&biftmp);
@@ -1191,7 +1191,6 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 
 		if (pe3->pe30_charging_state != DC_STOP) {
 			mtk_pe30_safety_check(info);
-			pe30_dc_kick_wdt(info);
 			hrtimer_start(&pe3->mtk_charger_pe30_timer, pe3->ktime, HRTIMER_MODE_REL);
 		}
 		mutex_unlock(&pe3->pe30_mutex);
