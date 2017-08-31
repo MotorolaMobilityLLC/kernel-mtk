@@ -13,6 +13,7 @@
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_chip.h>
+#include <mt-plat/mtk_rtc.h>
 
 #include <linux/io.h>
 #include <linux/io.h>
@@ -209,9 +210,11 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vsram_core_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vtcxo24_lp(SRCLKEN1, 1, HW_OFF);
-	if (crystal_exist_status() == true)
+#if defined(CONFIG_MTK_RTC)
+	if ((crystal_exist_status()) == true)
 		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_OFF);
 	else
+#endif
 		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vxo18_lp(SRCLKEN0, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);

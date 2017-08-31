@@ -97,7 +97,7 @@ extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
-extern bool crystal_exist_status(void);
+/*extern bool crystal_exist_status(void);*//*have defined in mtk_rtc.h */
 #if !defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif
