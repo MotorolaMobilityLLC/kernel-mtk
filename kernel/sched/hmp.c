@@ -312,7 +312,7 @@ static inline unsigned int hmp_cpu_is_fastest(int cpu)
 }
 
 /* Check if cpu is in slowest hmp_domain */
-static inline unsigned int hmp_cpu_is_slowest(int cpu)
+inline unsigned int hmp_cpu_is_slowest(int cpu)
 {
 	struct list_head *pos;
 
