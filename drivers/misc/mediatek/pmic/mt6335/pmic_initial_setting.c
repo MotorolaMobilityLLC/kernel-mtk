@@ -172,8 +172,8 @@ void PMIC_LP_INIT_SETTING(void)
 	/*--suspend--*/
 	ret = pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_buck_vdram_lp(SRCLKEN0, 1, HW_LP);
-	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
-	ret = pmic_buck_vmd1_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, SW_OFF);
+	ret = pmic_buck_vmd1_lp(SRCLKEN0, 1, SW_OFF);
 	ret = pmic_buck_vs1_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_buck_vs2_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_buck_vpa1_lp(SW, 1, SW_OFF);
@@ -182,7 +182,7 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
 	ret = pmic_ldo_vsram_dvfs2_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vsram_vgpu_lp(SW, 1, SW_OFF);
-	ret = pmic_ldo_vsram_vmd_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsram_vmd_lp(SRCLKEN0, 1, SW_OFF);
 	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_2_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vrf12_lp(SRCLKEN1, 1, HW_OFF);
@@ -313,11 +313,8 @@ void PMIC_INIT_SETTING_V1(void)
 	ret = pmic_set_register_value(PMIC_TOP_RST_MISC_SET, 0x1);
 
 	/* for MT6335 LP setting*/
-#if defined(IPIMB)
-	pr_err("[LP INIT SETTING][IPIMB]\n");
-#else
+	pr_err("[LP INIT SETTING]\n");
 	PMIC_LP_INIT_SETTING();
-#endif
 
 /*****************************************************
  * below programming is used for MD setting

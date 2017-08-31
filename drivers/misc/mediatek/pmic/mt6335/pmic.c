@@ -25,7 +25,8 @@
 #include <mach/mtk_pmic.h>
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
-#include "include/pmic_regulator.h"
+/*#include "include/pmic_regulator.h"*/
+#include "include/pmic_api_buck.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_debugfs.h"
 #include "include/pmic_bif.h"
@@ -81,6 +82,7 @@ void vmd1_pmic_setting_on(void)
 	unsigned int vmd1_en = 0;
 	unsigned int vmodem_en = 0;
 	unsigned int vsram_vmd_en = 0;
+	int ret = 0;
 
 	/* VMD1, VMODEM, VSRAM_VMD Voltage Select, the vosel are updated by pmic_mt_probe() */
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, vmd1_vosel);
@@ -110,6 +112,11 @@ void vmd1_pmic_setting_on(void)
 	if (!vmd1_en || !vmodem_en || !vsram_vmd_en)
 		pr_err("[vmd1_pmic_setting_on] VMD1 = %d, VMODEM = %d, VSRAM_VMD = %d\n",
 			vmd1_en, vmodem_en, vsram_vmd_en);
+
+
+	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vmd1_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsram_vmd_lp(SRCLKEN0, 1, HW_LP);
 }
 
 void vmd1_pmic_setting_off(void)
