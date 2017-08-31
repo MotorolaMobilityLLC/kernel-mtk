@@ -1020,6 +1020,8 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
 	UINT_8 *temp = &aucCfgOutputBuf[0];
 	UINT_32 u4CopySize = 0;
+	UINT_32 u4Offset = 0;
+	PCHAR pHeadOutputString = "\nprocCfgRead() ";
 	struct _CMD_HEADER_T cmdV1Header;
 	struct _CMD_FORMAT_V1_T *pr_cmd_v1 = (struct _CMD_FORMAT_V1_T *) cmdV1Header.buffer;
 
@@ -1028,7 +1030,11 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 		return 0;
 
 	kalMemSet(aucCfgOutputBuf, '\0', MAX_CFG_OUTPUT_BUF_LENGTH);
-	temp += kalSnprintf(temp, sizeof(aucCfgQueryKey), "\nprocCfgRead() %s:\n",
+
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s",
+		  pHeadOutputString);
+
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s:\n",
 			  aucCfgQueryKey);
 
 	/* send to FW */
@@ -1053,9 +1059,11 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	if (rStatus == WLAN_STATUS_FAILURE)
 		DBGLOG(INIT, ERROR, "prCmdV1Header kalIoctl wlanoidQueryCfgRead fail 0x%x\n", rStatus);
 
-	temp += kalSnprintf(temp, sizeof(cmdV1Header.buffer), "%s\n", cmdV1Header.buffer);
+	u4Offset += kalSnprintf(temp + u4Offset, MAX_CFG_OUTPUT_BUF_LENGTH - u4Offset, "%s\n",
+		  cmdV1Header.buffer);
 
 	u4CopySize = kalStrLen(aucCfgOutputBuf);
+	DBGLOG(INIT, INFO, "cfgRead: count:%zu  u4CopySize:%d,[%s]\n", count, u4CopySize, aucCfgOutputBuf);
 	if (u4CopySize > count)
 		u4CopySize = count;
 
