@@ -5323,7 +5323,7 @@ void cmdq_core_dump_GIC(void)
 static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t *hwPC)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
-	uint32_t cmd_size = 0;
+	u32 cmd_size = 0, dump_size = 0;
 	bool dump = false;
 
 	if (list_empty(&pTask->cmd_buffer_list))
@@ -5335,16 +5335,21 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 				cmd_size = CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 			else
 				cmd_size = CMDQ_CMD_BUFFER_SIZE;
-			if (hwPC >= cmd_buffer->pVABase && hwPC < (u32 *)(((u8 *)cmd_buffer->pVABase) + cmd_size)) {
-				/* because hwPC points to "start" of the instruction */
-				/* add offset 1 */
-				print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
-					cmd_buffer->pVABase, (2 + hwPC - cmd_buffer->pVABase) * sizeof(uint32_t), true);
-				cmdq_core_save_hex_first_dump("", 16, 4,
-					cmd_buffer->pVABase, (2 + hwPC - cmd_buffer->pVABase) * sizeof(uint32_t));
+			if (hwPC >= cmd_buffer->pVABase &&
+				hwPC < (u32 *)(((u8 *)cmd_buffer->pVABase) + cmd_size)) {
+				/* because hwPC points to "start" of the instruction, add offset 1 */
+				dump_size = (u32)(2 + hwPC - cmd_buffer->pVABase) * sizeof(u32);
 				dump = true;
-				break;
+			} else {
+				dump_size = cmd_size;
 			}
+
+			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
+				cmd_buffer->pVABase, dump_size, true);
+			cmdq_core_save_hex_first_dump("", 16, 4, cmd_buffer->pVABase, dump_size);
+
+			if (dump)
+				break;
 		}
 	}
 
