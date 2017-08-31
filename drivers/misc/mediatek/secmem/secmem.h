@@ -21,10 +21,19 @@
 #define MAX_NAME_SIZE   32
 
 struct secmem_param {
+
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+	u64 alignment;  /* IN */
+	u64 size;       /* IN */
+	u32 refcount;   /* INOUT */
+	u64 sec_handle; /* OUT */
+#else
 	u32 alignment;  /* IN */
 	u32 size;       /* IN */
 	u32 refcount;   /* INOUT */
 	u32 sec_handle; /* OUT */
+#endif
+
 #ifdef SECMEM_DEBUG_DUMP
 	uint32_t id;
 	uint8_t owner[MAX_NAME_SIZE];
@@ -54,9 +63,15 @@ extern int svp_region_online(void);
 
 #ifdef SECMEM_KERNEL_API
 /* APIs for ION */
+#if 0
+int secmem_api_alloc(u64 alignment, u64 size, u32 *refcount, u64 *sec_handle, uint8_t *owner, uint32_t id);
+int secmem_api_alloc_zero(u64 alignment, u64 size, u32 *refcount, u64 *sec_handle, uint8_t *owner, uint32_t id);
+int secmem_api_unref(u64 sec_handle, uint8_t *owner, uint32_t id);
+#else
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner, uint32_t id);
 int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
+#endif
 #endif /* SECMEM_KERNEL_API */
 
 #endif				/* end of SECMEM_H */

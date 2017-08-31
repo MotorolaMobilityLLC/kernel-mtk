@@ -65,7 +65,11 @@ do { \
 #define MSG_FUNC() MSG(FUNC, "%s\n", __func__)
 
 struct secmem_handle {
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+	u64 id;
+#else
 	u32 id;
+#endif
 	u32 type;
 };
 
@@ -91,7 +95,11 @@ static u32 secmem_region_online;
 
 static DEFINE_MUTEX(secmem_region_lock);
 
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+static int secmem_enable(u64 addr, u64 size);
+#else
 static int secmem_enable(u32 addr, u32 size);
+#endif
 static int secmem_disable(void);
 static int secmem_region_release(void);
 static int secmem_session_close(void);
@@ -183,7 +191,11 @@ exit:
 	return 0;
 }
 
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+static int secmem_handle_register(struct secmem_context *ctx, u32 type, u64 id)
+#else
 static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
+#endif
 {
 	struct secmem_handle *handle;
 	u32 i, num, nspace;
@@ -232,7 +244,11 @@ static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
 	return 0;
 }
 
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type, u64 id)
+#else
 static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type, u32 id)
+#endif
 {
 	struct secmem_handle *handle;
 	u32 i, num;
@@ -246,9 +262,15 @@ static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type,
 	for (i = 0; i < num; i++, handle++) {
 		if (handle->id == id) {
 			if (handle->type != type) {
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+				MSG(WRN,
+					"unref check result: type mismatched (%d!=%d), handle=0x%llx\n",
+					_IOC_NR(handle->type), _IOC_NR(type), handle->id);
+#else
 				MSG(WRN,
 					"unref check result: type mismatched (%d!=%d), handle=0x%x\n",
 					_IOC_NR(handle->type), _IOC_NR(type), handle->id);
+#endif
 			}
 			break;
 		}
@@ -257,7 +279,11 @@ static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type,
 	spin_unlock(&ctx->lock);
 }
 
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+static int secmem_handle_unregister(struct secmem_context *ctx, u64 id)
+#else
 static int secmem_handle_unregister(struct secmem_context *ctx, u32 id)
+#endif
 {
 	struct secmem_handle *handle;
 	u32 i, num;
@@ -321,8 +347,13 @@ static int secmem_handle_cleanup(struct secmem_context *ctx)
 			}
 			spin_unlock(&ctx->lock);
 			ret = secmem_execute(cmd, &param);
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+			MSG(INFO, "secmem_handle_cleanup: id=0x%llx type=%d (ioctl:%d)\n",
+				handle->id, handle->type, _IOC_NR(handle->type));
+#else
 			MSG(INFO, "secmem_handle_cleanup: id=0x%x type=%d (ioctl:%d)\n",
 				handle->id, handle->type, _IOC_NR(handle->type));
+#endif
 			spin_lock(&ctx->lock);
 		}
 	}
@@ -578,7 +609,11 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	int err = 0;
 	struct secmem_context *ctx = (struct secmem_context *)file->private_data;
 	struct secmem_param param;
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+	u64 handle;
+#else
 	u32 handle;
+#endif
 
 	if (_IOC_TYPE(cmd) != SECMEM_IOC_MAGIC)
 		return -ENOTTY;
@@ -687,7 +722,11 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 }
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+static int secmem_enable(u64 addr, u64 size)
+#else
 static int secmem_enable(u32 addr, u32 size)
+#endif
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
@@ -729,7 +768,11 @@ end:
 	return err;
 }
 
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+int secmem_api_query(u64 *allocate_size)
+#else
 int secmem_api_query(u32 *allocate_size)
+#endif
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
@@ -818,6 +861,7 @@ end:
 
 	return ret;
 }
+
 int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 	uint8_t *owner, uint32_t id)
 {
@@ -831,7 +875,6 @@ int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handl
 	return secmem_api_alloc_internal(alignment, size, refcount, sec_handle, owner, id, 1);
 }
 EXPORT_SYMBOL(secmem_api_alloc_zero);
-
 
 int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 {
@@ -912,26 +955,44 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 #endif
 		} else if (!strcmp(cmd, "2")) {
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+			u64 size = 0;
+#else
 			u32 size = 0;
+#endif
 
 			MSG(ERR, "[SECMEM] - test for secmem_api_query()\n");
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - allocated : 0x%x\n", size);
+			MSG(ERR, "[SECMEM] - allocated : 0x%llx\n", (u64)size);
 #endif
 		} else if (!strcmp(cmd, "3")) {
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+			u64 size = 0;
+			u64 sec_handle = 0;
+#else
 			u32 size = 0;
-			u32 refcount = 0;
 			u32 sec_handle = 0;
+#endif
+
+			u32 refcount = 0;
 			char owner[] = "secme_ut";
 
 			MSG(ERR, "[SECMEM] - test for alloc-free\n");
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+			secmem_api_alloc(0x1000, 0x1000, (u32 *)&refcount, (u32 *)&sec_handle, owner, 0);
+#else
 			secmem_api_alloc(0x1000, 0x1000, &refcount, &sec_handle, owner, 0);
+#endif
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - after alloc : 0x%x\n", size);
+			MSG(ERR, "[SECMEM] - after alloc : 0x%llx\n", (u64)size);
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+			secmem_api_unref((u32)sec_handle, owner, 0);
+#else
 			secmem_api_unref(sec_handle, owner, 0);
+#endif
 			secmem_api_query(&size);
-			MSG(ERR, "[SECMEM] - after free : 0x%x\n", size);
+			MSG(ERR, "[SECMEM] - after free : 0x%llx\n", (u64)size);
 #endif
 		} else if (!strcmp(cmd, "4")) {
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
