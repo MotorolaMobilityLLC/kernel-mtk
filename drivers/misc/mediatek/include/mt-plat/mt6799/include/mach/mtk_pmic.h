@@ -18,7 +18,7 @@
 
 #define LOW_POWER_LIMIT_LEVEL_1 15
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(CONFIG_BQ27532_BATTERY_SUPPORT)
 /*Define for disable low battery protect feature, default no define for enable low battery protect.*/
 #define DISABLE_LOW_BATTERY_PROTECT
 
