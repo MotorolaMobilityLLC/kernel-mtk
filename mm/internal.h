@@ -482,4 +482,7 @@ extern void ion_mm_heap_memory_detail(void);
 #ifdef CONFIG_MTK_GPU_SUPPORT
 extern bool mtk_dump_gpu_memory_usage(void);
 #endif
+
+#define IS_ZONE_MOVABLE_CMA_ZONE(z)	IS_ZONE_MOVABLE_CMA_ZONE_IDX(zone_idx(z))
+
 #endif	/* __MM_INTERNAL_H */

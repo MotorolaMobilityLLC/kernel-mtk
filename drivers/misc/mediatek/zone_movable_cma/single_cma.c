@@ -10,7 +10,7 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-#define pr_fmt(fmt) "zone_movable_cma: " fmt
+#define pr_fmt(fmt) "ZMC: " fmt
 #define CONFIG_MTK_ZONE_MOVABLE_CMA_DEBUG
 
 #include <linux/types.h>
@@ -24,135 +24,152 @@
 #include "mt-plat/mtk_meminfo.h"
 #include "single_cma.h"
 
-struct cma *cma;
-static unsigned long shrunk_size;
+static struct cma *cma[MAX_CMA_AREAS];
+static phys_addr_t movable_min = ULONG_MAX;
+static phys_addr_t movable_max;
+
 bool zmc_reserved_mem_inited;
 
-static struct single_cma_registration *single_cma_list[] = {
+#define END_OF_REGISTER ((void *)(0x7a6d63))
+enum ZMC_ZONE_ORDER {
+	ZMC_LOCATE_MOVABLE,
+	ZMC_LOCATE_NORMAL,
+	NR_ZMC_LOCATIONS,
+};
+static struct single_cma_registration *single_cma_list[NR_ZMC_LOCATIONS][4] = {
+	/* CMA region need to locate at NORMAL zone */
+	[ZMC_LOCATE_NORMAL] = {
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
-	&memory_lowpower_registration,
+		&memory_lowpower_registration,
 #endif
+		END_OF_REGISTER
+	},
+	/* MOVABLE, instead */
+	[ZMC_LOCATE_MOVABLE] = {
 #ifdef CONFIG_MTK_SVP
-	&memory_ssvp_registration,
+		&memory_ssvp_registration,
 #endif
+		END_OF_REGISTER
+	},
 };
 
-void zmc_check_registions(void)
-{
-	const int entries = ARRAY_SIZE(single_cma_list);
-	int i;
-	struct single_cma_registration *regist;
-
-	for (i = 0; i < entries; i++) {
-		regist = single_cma_list[i];
-
-		if (regist->size > cma_get_size(cma)) {
-			if (regist->flag & ZMC_ALLOC_ALL) {
-				pr_info("[ZMC_ALLOC_ALL]: shrink size to cma_get_size: 0x%lx\n", cma_get_size(cma));
-				regist->size = cma_get_size(cma);
-			} else {
-				pr_info("[%s] reserve fail due to large size without ZMC_ALLOC_ALL\n", regist->name);
-				regist->reserve_fail = true;
-			}
-		}
-	}
-}
-
-phys_addr_t zmc_shrink_cma_range(void)
-{
-	int i;
-	const int entries = ARRAY_SIZE(single_cma_list);
-	struct single_cma_registration *regist;
-	phys_addr_t alignment;
-	phys_addr_t max = 0;
-	phys_addr_t max_align = 0;
-
-	for (i = 0; i < entries; i++) {
-		regist = single_cma_list[i];
-
-		pr_info("[%s]: size:%lx, align:%lx, flag:0x%lx\n", regist->name,
-				(unsigned long)regist->size,
-				(unsigned long)regist->align,
-				regist->flag);
-
-		if (regist->reserve_fail)
-			continue;
-
-		if (regist->size > max)
-			max = regist->size;
-
-		if (regist->align > max_align)
-			max_align = regist->align;
-	}
-
-	/* ensure minimal alignment requied by mm core */
-	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-
-	alignment = max(alignment, max_align);
-
-	if (cma_get_size(cma) > max) {
-		phys_addr_t new_base;
-
-		/* Check new_base */
-		new_base = ALIGN(cma_get_base(cma) + cma_get_size(cma) - max, alignment);
-		if (new_base < cma_get_base(cma)) {
-			pr_warn("%s: mismatched base(0x%lx) new_base(%p)\n",
-					__func__, (unsigned long)(cma_get_base(cma)), &new_base);
-			goto orig;
-		}
-
-		/* Compute reasonable shrunk_size & new size */
-		shrunk_size = new_base - cma_get_base(cma);
-		max = cma_get_size(cma) - shrunk_size;
-
-		pr_info("[Resize-START] ZONE_MOVABLE to size: %pa\n", &max);
-		cma_resize_front(cma, shrunk_size >> PAGE_SHIFT);
-		pr_info("[Resize-DONE]  ZONE_MOVABLE [0x%lx:0x%lx]\n",
-				(unsigned long)(cma_get_base(cma)),
-				(unsigned long)(cma_get_base(cma) + cma_get_size(cma)));
-	}
-
-orig:
-	return cma_get_base(cma);
-}
-
-static int __init zmc_memory_init(struct reserved_mem *rmem)
+static int zmc_memory_init(struct reserved_mem *rmem)
 {
 	int ret;
-	int nr_registed = ARRAY_SIZE(single_cma_list);
-	int i;
+	int order, i;
+	int cma_area_count = 0;
+	phys_addr_t zmc_size = rmem->size;
 
-	pr_alert("%s, name: %s, base: %pa, size: %pa\n",
-		 __func__, rmem->name,
-		 &rmem->base, &rmem->size);
+	pr_alert("%s, name: %s, base: %pa, size: %pa\n", __func__,
+			rmem->name, &rmem->base, &rmem->size);
 
-	if (nr_registed == 0) {
-		pr_alert("[FREE ALL CMA MEMORY]: No registed zmc nodes.");
+	if (rmem->base < (phys_addr_t)ZMC_MAX_ZONE_DMA_PHYS) {
+		pr_warn("[Fail] Unsupported memory range under 0x%lx (DMA max range).\n",
+				(unsigned long)ZMC_MAX_ZONE_DMA_PHYS);
+		pr_warn("Abort reserve memory.\n");
 		memblock_free(rmem->base, rmem->size);
-		return 0;
+		memblock_add(rmem->base, rmem->size);
+		return -1;
 	}
-	/* init cma area */
-	ret = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
 
-	if (ret) {
-		pr_err("%s cma failed, ret: %d\n", __func__, ret);
-		return 1;
+	/*
+	 * Init CMAs -
+	 * dts range: |...............................|
+	 *             r->base
+	 *                            r->base + r->size
+	 *
+	 * init order:                <---accu_size---|
+	 */
+	for (order = 0; order < NR_ZMC_LOCATIONS; order++) {
+		struct single_cma_registration *p;
+
+		pr_info("Start to zone: %d\n", order);
+		for (i = 0; i < ARRAY_SIZE(single_cma_list[order]); i++) {
+			phys_addr_t start, end;
+
+			p = single_cma_list[order][i];
+			if (p == END_OF_REGISTER)
+				break;
+
+			end = rmem->base + rmem->size;
+			pr_info("::[%s]: size: %pa, align: %pa\n", p->name, &p->size, &p->align);
+			pr_info("::[%pa-%pa] remain of rmem\n", &rmem->base, &end);
+
+			if (p->flag & ZMC_ALLOC_ALL)
+				start = rmem->base;
+			else {
+				phys_addr_t alignment;
+
+				/* cma alignment */
+				alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
+				alignment = max(p->align, alignment);
+
+				start = round_down(rmem->base + rmem->size - p->size, alignment);
+
+				if (start < rmem->base) {
+					pr_warn("::[Reserve fail]: insufficient memory.\n");
+					pr_warn("::[%pa - %pa] remain of rmem\n", &rmem->base, &end);
+					pr_warn("::[%pa - %pa] to cma init\n", &start, &end);
+					continue;
+				}
+			}
+
+			pr_info("::cma_init_reserved_mem - [%pa - %pa]\n", &start, &end);
+			ret = cma_init_reserved_mem(start, end - start, 0, &cma[cma_area_count]);
+			if (ret) {
+				pr_warn(":: %s cma failed at %d, ret: %d\n", __func__, cma_area_count, ret);
+				continue;
+			}
+
+			if (p->flag & ZMC_ALLOC_ALL)
+				p->size = zmc_size;
+			else
+				p->size = end - start;
+
+			rmem->size -= end - start;
+
+			if (order == ZMC_LOCATE_MOVABLE) {
+				movable_min = min(movable_min, start);
+				movable_max = max(movable_max, end);
+				pr_info("===> MOVABLE ZONE: Update range[%pa,%pa)\n", &movable_min, &movable_max);
+			}
+
+			if (p->init)
+				p->init(cma[cma_area_count]);
+
+			cma_area_count++;
+			zmc_reserved_mem_inited = true;
+			pr_info("::[PASS]: %s[%pa-%pa] (rmem->size=%pa)\n",
+					p->name, &start, &end, &rmem->size);
+		}
 	}
-	zmc_check_registions();
 
-	zmc_reserved_mem_inited = true;
-
-	zmc_shrink_cma_range();
-
-	for (i = 0; i < nr_registed; i++) {
-		if (single_cma_list[i]->init &&
-				!single_cma_list[i]->reserve_fail)
-			single_cma_list[i]->init(cma);
+	/* Putback remaining rmem to memblock.memory */
+	if (rmem->size > 0) {
+		memblock_free(rmem->base, rmem->size);
+		memblock_add(rmem->base, rmem->size);
 	}
+
 	return 0;
 }
 RESERVEDMEM_OF_DECLARE(zone_movable_cma_init, "mediatek,zone_movable_cma",
 			zmc_memory_init);
+
+bool is_zmc_inited(void)
+{
+	return zmc_reserved_mem_inited;
+}
+
+void zmc_get_range(phys_addr_t *base, phys_addr_t *size)
+{
+	if (movable_max > movable_min) {
+		pr_info("Query return: [%pa,%pa)\n", &movable_min, &movable_max);
+		*base = movable_min;
+		*size = movable_max - movable_min;
+	} else {
+		*base = *size = 0;
+	}
+}
 
 static bool system_mem_status_ok(unsigned long minus)
 {
@@ -270,57 +287,3 @@ bool zmc_cma_release(struct cma *cma, struct page *pages, int count)
 
 	return cma_release(cma, pages, count);
 }
-
-static int zmc_free_pageblock(phys_addr_t base, phys_addr_t size)
-{
-	unsigned long base_pfn = __phys_to_pfn(base);
-	unsigned long pfn = base_pfn;
-	unsigned nr_to_free_pageblock = size >> pageblock_order;
-	struct zone *zone;
-	int i;
-
-	zone = page_zone(pfn_to_page(pfn));
-	for (i = 0; i < nr_to_free_pageblock; i++) {
-		unsigned j;
-
-		base_pfn = pfn;
-		for (j = pageblock_nr_pages; j; --j, pfn++) {
-			WARN_ON_ONCE(!pfn_valid(pfn));
-			/*
-			 * alloc_contig_range requires the pfn range
-			 * specified to be in the same zone. Make this
-			 * simple by forcing the entire CMA resv range
-			 * to be in the same zone.
-			 */
-			if (page_zone(pfn_to_page(pfn)) != zone)
-				goto err;
-		}
-		free_cma_reserved_pageblock(pfn_to_page(base_pfn));
-	}
-	if (i > 0)
-		pr_info("resize ZONE_MOVABLE done!\n");
-
-	return 0;
-
-err:
-	return -EINVAL;
-}
-
-static int zmc_free_areas(void)
-{
-	phys_addr_t base = cma_get_base(cma) - shrunk_size;
-
-	pr_info("Raw input: base:0x%pa, shrunk_size:0x%pa\n", &base, &shrunk_size);
-	return zmc_free_pageblock(base, shrunk_size);
-}
-
-static int __init zmc_resize(void)
-{
-	if (!zmc_reserved_mem_inited) {
-		pr_alert("uninited cma, start zone_movable_cma fail!\n");
-		return -1;
-	}
-
-	return zmc_free_areas();
-}
-core_initcall(zmc_resize);
