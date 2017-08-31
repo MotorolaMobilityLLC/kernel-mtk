@@ -227,12 +227,103 @@ wlanoidSetAddP2PKey(IN P_ADAPTER_T prAdapter,
 	rCmdKey.ucKeyId = (UINT_8) (prNewKey->u4KeyIndex & 0xff);
 	rCmdKey.ucKeyLen = (UINT_8) prNewKey->u4KeyLength;
 	kalMemCopy(rCmdKey.aucKeyMaterial, (PUINT_8) prNewKey->aucKeyMaterial, rCmdKey.ucKeyLen);
+#if (CFG_SUPPORT_TDLS == 1)
+	/*
+	 * supplicant will set key before updating station & enabling the link so we need to
+	 * backup the key information and set key when link is enabled
+	 */
+	if (TdlsexKeyHandle(prAdapter, prNewKey, NETWORK_TYPE_P2P_INDEX) == TDLS_STATUS_SUCCESS)
+		return WLAN_STATUS_SUCCESS;
+#endif /* CFG_SUPPORT_TDLS */
 
 	return wlanoidSendSetQueryP2PCmd(prAdapter,
 					 CMD_ID_ADD_REMOVE_KEY,
 					 TRUE,
 					 FALSE,
 					 TRUE,
+					 nicCmdEventSetCommon,
+					 NULL,
+					 sizeof(CMD_802_11_KEY), (PUINT_8)&rCmdKey,
+					 pvSetBuffer, u4SetBufferLen);
+}
+
+
+WLAN_STATUS
+_wlanoidSetAddP2PTDLSKey(IN P_ADAPTER_T prAdapter,
+			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	CMD_802_11_KEY rCmdKey;
+	P_PARAM_KEY_T prNewKey;
+
+	DEBUGFUNC("wlanoidSetAddP2PKey");
+	DBGLOG(REQ, INFO, "\n");
+
+	ASSERT(prAdapter);
+	ASSERT(pvSetBuffer);
+	ASSERT(pu4SetInfoLen);
+
+	prNewKey = (P_PARAM_KEY_T) pvSetBuffer;
+
+	/* Verify the key structure length. */
+	if (prNewKey->u4Length > u4SetBufferLen) {
+		DBGLOG(REQ, WARN, "Invalid key structure length (%d) greater than total buffer length (%d)\n",
+		       (UINT_8) prNewKey->u4Length, (UINT_8) u4SetBufferLen);
+
+		*pu4SetInfoLen = u4SetBufferLen;
+		return WLAN_STATUS_INVALID_LENGTH;
+	}
+	/* Verify the key material length for key material buffer */
+	else if (prNewKey->u4KeyLength > prNewKey->u4Length - OFFSET_OF(PARAM_KEY_T, aucKeyMaterial)) {
+		DBGLOG(REQ, WARN, "Invalid key material length (%d)\n", (UINT_8) prNewKey->u4KeyLength);
+		*pu4SetInfoLen = u4SetBufferLen;
+		return WLAN_STATUS_INVALID_DATA;
+	}
+	/* Exception check */
+	else if (prNewKey->u4KeyIndex & 0x0fffff00)
+		return WLAN_STATUS_INVALID_DATA;
+	/* Exception check, pairwise key must with transmit bit enabled */
+	else if ((prNewKey->u4KeyIndex & BITS(30, 31)) == IS_UNICAST_KEY) {
+		return WLAN_STATUS_INVALID_DATA;
+	} else if (!(prNewKey->u4KeyLength == CCMP_KEY_LEN) && !(prNewKey->u4KeyLength == TKIP_KEY_LEN)) {
+		return WLAN_STATUS_INVALID_DATA;
+	}
+	/* Exception check, pairwise key must with transmit bit enabled */
+	else if ((prNewKey->u4KeyIndex & BITS(30, 31)) == BITS(30, 31)) {
+		if (((prNewKey->u4KeyIndex & 0xff) != 0) ||
+		    ((prNewKey->arBSSID[0] == 0xff) && (prNewKey->arBSSID[1] == 0xff) && (prNewKey->arBSSID[2] == 0xff)
+		     && (prNewKey->arBSSID[3] == 0xff) && (prNewKey->arBSSID[4] == 0xff)
+		     && (prNewKey->arBSSID[5] == 0xff))) {
+			return WLAN_STATUS_INVALID_DATA;
+		}
+	}
+
+	*pu4SetInfoLen = u4SetBufferLen;
+
+	/* fill CMD_802_11_KEY */
+	kalMemZero(&rCmdKey, sizeof(CMD_802_11_KEY));
+	rCmdKey.ucAddRemove = 1;	/* add */
+	rCmdKey.ucTxKey = ((prNewKey->u4KeyIndex & IS_TRANSMIT_KEY) == IS_TRANSMIT_KEY) ? 1 : 0;
+	rCmdKey.ucKeyType = ((prNewKey->u4KeyIndex & IS_UNICAST_KEY) == IS_UNICAST_KEY) ? 1 : 0;
+	if (kalP2PGetRole(prAdapter->prGlueInfo) == 1) {	/* group client */
+		rCmdKey.ucIsAuthenticator = 0;
+	} else {		/* group owner */
+		rCmdKey.ucIsAuthenticator = 1;
+	}
+	COPY_MAC_ADDR(rCmdKey.aucPeerAddr, prNewKey->arBSSID);
+	rCmdKey.ucNetType = NETWORK_TYPE_P2P_INDEX;
+	if (prNewKey->u4KeyLength == CCMP_KEY_LEN)
+		rCmdKey.ucAlgorithmId = CIPHER_SUITE_CCMP;	/* AES */
+	else if (prNewKey->u4KeyLength == TKIP_KEY_LEN)
+		rCmdKey.ucAlgorithmId = CIPHER_SUITE_TKIP;	/* TKIP */
+	rCmdKey.ucKeyId = (UINT_8) (prNewKey->u4KeyIndex & 0xff);
+	rCmdKey.ucKeyLen = (UINT_8) prNewKey->u4KeyLength;
+	kalMemCopy(rCmdKey.aucKeyMaterial, (PUINT_8) prNewKey->aucKeyMaterial, rCmdKey.ucKeyLen);
+
+	return wlanoidSendSetQueryP2PCmd(prAdapter,
+					 CMD_ID_ADD_REMOVE_KEY,
+					 TRUE,
+					 FALSE,
+					 FALSE,
 					 nicCmdEventSetCommon,
 					 NULL,
 					 sizeof(CMD_802_11_KEY), (PUINT_8) &rCmdKey, pvSetBuffer, u4SetBufferLen);
@@ -1176,7 +1267,7 @@ wlanoidSetOppPsParam(IN P_ADAPTER_T prAdapter,
 				   (PUINT_8) &rCmdOppPsParam, pvSetBuffer, u4SetBufferLen);
 #else
 	return wlanoidSendSetQueryP2PCmd(prAdapter,
-					 CMD_ID_SET_NOA_PARAM,
+					 CMD_ID_SET_OPPPS_PARAM,
 					 TRUE,
 					 FALSE,
 					 TRUE,

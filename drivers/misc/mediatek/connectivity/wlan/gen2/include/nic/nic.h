@@ -189,7 +189,7 @@ WLAN_STATUS nicSetUApsdParam(IN P_ADAPTER_T prAdapter,
 /* Calibration Control                                                        */
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS nicUpdateTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwrParam);
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 WLAN_STATUS nicUpdateTxPowerOffset(IN P_ADAPTER_T prAdapter,
 		IN P_CMD_MITIGATED_PWR_OFFSET_T prTxPwrOffsetParam);
 WLAN_STATUS nicTxPowerBackOff(IN P_ADAPTER_T prAdapter, IN UINT32 TxPowerBackOffParam);

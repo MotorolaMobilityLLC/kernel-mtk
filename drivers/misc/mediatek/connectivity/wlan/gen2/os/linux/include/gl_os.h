@@ -195,6 +195,7 @@
 
 #if (CFG_SUPPORT_TDLS == 1)
 #include "tdls_extr.h"
+#include "tdls.h"
 #endif
 #include "debug.h"
 
@@ -233,6 +234,9 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define GLUE_FLAG_FRAME_FILTER_BIT  (8)
 #define GLUE_FLAG_FRAME_FILTER_AIS_BIT  (9)
 #define GLUE_FLAG_HIF_LOOPBK_AUTO_BIT   (10)
+#define GLUE_FLAG_RX_BIT            (11)
+#define GLUE_FLAG_RX             BIT(GLUE_FLAG_RX_BIT)
+#define GLUE_FLAG_RX_PROCESS (GLUE_FLAG_HALT | GLUE_FLAG_RX)
 
 #define GLUE_BOW_KFIFO_DEPTH        (1024)
 /* #define GLUE_BOW_DEVICE_NAME        "MT6620 802.11 AMP" */
@@ -242,6 +246,9 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT     60 /* s */
 
 #define FULL_SCAN_MAX_CHANNEL_NUM               40
+
+#define WAKE_LOCK_RX_TIMEOUT         300 /* ms */
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -452,10 +459,14 @@ struct _GLUE_INFO_T {
 
 	struct completion rScanComp;	/* indicate scan complete */
 	struct completion rHaltComp;	/* indicate main thread halt complete */
+	struct completion rRxHaltComp;	/* indicate hif_thread halt complete */
 	struct completion rPendComp;	/* indicate main thread halt complete */
 	struct completion rP2pReq;	/* indicate p2p request(request channel/frame tx)
 					 * complete
 					 */
+#if CFG_SUPPORT_NCHO
+	struct completion rAisChGrntComp;	/* indicate Ais channel grant complete */
+#endif
 #if CFG_ENABLE_WIFI_DIRECT
 	struct completion rSubModComp;	/*indicate sub module init or exit complete */
 #endif
@@ -474,6 +485,9 @@ struct _GLUE_INFO_T {
 
 	wait_queue_head_t waitq;
 	struct task_struct *main_thread;
+	wait_queue_head_t waitq_rx;
+	struct task_struct *rx_thread;
+	KAL_WAKE_LOCK_T rTimeoutWakeLock;
 
 	struct timer_list tickfn;
 
@@ -560,6 +574,15 @@ struct _GLUE_INFO_T {
 	UINT_32 u4LinkSpeedCache;
 
 #if (CFG_SUPPORT_TDLS == 1)
+	/* record TX rate used to be a reference for TDLS setup */
+	ULONG ulLastUpdate;
+	/* The last one of STA_HASH_SIZE is used as target sta */
+	struct ksta_info *prStaHash[STA_HASH_SIZE + 1];
+	INT_32 i4TdlsLastRx;
+	INT_32 i4TdlsLastTx;
+	enum MTK_TDLS_STATUS eTdlsStatus;
+	ENUM_NETWORK_TYPE_INDEX_T eTdlsNetworkType;
+
 	TDLS_INFO_T rTdlsLink;
 
 	UINT8 aucTdlsHtPeerMac[6];
@@ -607,6 +630,8 @@ struct _GLUE_INFO_T {
 
 	struct FT_IES rFtIeForTx;
 	struct cfg80211_ft_event_params rFtEventParam;
+	UINT_32 i4Priority;
+
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

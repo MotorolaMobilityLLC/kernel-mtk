@@ -204,6 +204,10 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_MNY_P2P_START_AP, p2pFsmRunEventStartAP},
 	{MID_MNY_P2P_MGMT_FRAME_UPDATE, p2pFsmRunEventUpdateMgmtFrame},
 	{MID_MNY_P2P_EXTEND_LISTEN_INTERVAL, p2pFsmRunEventExtendListen},
+#if CFG_SUPPORT_P2P_ECSA
+	{MID_MNY_P2P_CSA, p2pFsmRunEventSendCSA},
+	{MID_MNY_P2P_ECSA, p2pFsmRunEventSendECSA},
+#endif
 #if CFG_SUPPORT_WFD
 	{MID_MNY_P2P_WFD_CFG_UPDATE, p2pFsmRunEventWfdSettingUpdate},
 #endif
@@ -224,6 +228,9 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_WNM_AIS_BSS_TRANSITION, aisFsmRunEventBssTransition},
 	{MID_OID_WMM_TSPEC_OPERATE, wmmRunEventTSOperate},
 	{MID_RLM_RM_SCHEDULE, rlmRunEventProcessNextRm},
+#if CFG_SUPPORT_NCHO
+	{MID_MNY_AIS_NCHO_ACTION_FRAME, aisFsmRunEventNchoActionFrameTx},
+#endif
 };
 
 /*******************************************************************************
@@ -352,13 +359,19 @@ mboxSendMsg(IN P_ADAPTER_T prAdapter,
 	    IN ENUM_MBOX_ID_T eMboxId, IN P_MSG_HDR_T prMsg, IN EUNM_MSG_SEND_METHOD_T eMethod)
 {
 	P_MBOX_T prMbox;
-
+#if CFG_DBG_MGT_BUF
+	P_BUF_INFO_T prBufInfo;
+#endif
 	KAL_SPIN_LOCK_DECLARATION();
 
 	ASSERT(eMboxId < MBOX_ID_TOTAL_NUM);
 	ASSERT(prMsg);
 	ASSERT(prAdapter);
-
+#if CFG_DBG_MGT_BUF
+	prBufInfo = &prAdapter->rMgtBufInfo;
+	DBGLOG(CNM, TRACE, "MSG [%d],freeCnt:%d,AllocCnt:%d\n", prMsg->eMsgId
+		, prBufInfo->u4FreeCount, prBufInfo->u4AllocCount);
+#endif
 	prMbox = &(prAdapter->arMbox[eMboxId]);
 
 	switch (eMethod) {

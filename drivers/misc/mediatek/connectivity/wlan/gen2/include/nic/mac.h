@@ -734,6 +734,7 @@
 #define ELEM_ID_TIMEOUT_INTERVAL                    56	/* 802.11w SA Timeout interval */
 #define ELEM_ID_RESOURCE_INFO_CONTAINER             57  /* Resource Information Container for 802.11 R */
 #define ELEM_ID_SUP_OPERATING_CLASS					59	/* Supported Operating Classes */
+#define ELEM_ID_CH_ESW_ANNOUNCEMENT                 60	/* Channel switch announcement */
 #define ELEM_ID_HT_OP                               61	/* HT Operation */
 #define ELEM_ID_SCO                                 62	/* Secondary Channel Offset */
 #define ELEM_ID_RRM_ENABLED_CAP                     70	/* Radio Resource Management Enabled Capabilities */
@@ -845,6 +846,7 @@
 
 /* 7.3.2.27 Extended Capabilities information element */
 #define ELEM_EXT_CAP_20_40_COEXIST_SUPPORT          BIT(0)
+#define ELEM_EXT_CAP_ECS_SUPPORT                    BIT(2)
 #define ELEM_EXT_CAP_PSMP_CAP                       BIT(4)
 #define ELEM_EXT_CAP_SERVICE_INTERVAL_GRANULARITY   BIT(5)
 #define ELEM_EXT_CAP_SCHEDULE_PSMP                  BIT(6)
@@ -1604,12 +1606,20 @@ typedef struct _IE_SUPPORTED_CHANNELS_T {
 /* 7.3.2.20 Channel Switch Announcement element */
 typedef struct _IE_CHANNEL_SWITCH_T {
 	UINT_8 ucId;
-	UINT_8 ucLength;
+	UINT_8 ucLength;	/* 3 bytes */
 	UINT_8 ucChannelSwitchMode;
 	UINT_8 ucNewChannelNum;
 	UINT_8 ucChannelSwitchCount;
 } __KAL_ATTRIB_PACKED__ IE_CHANNEL_SWITCH_T, *P_IE_CHANNEL_SWITCH_T;
 #endif
+typedef struct _IE_EXT_CHANNEL_SWITCH_T {
+	UINT_8 ucId;
+	UINT_8 ucLength;	/* 4 bytes */
+	UINT_8 ucChannelSwitchMode;
+	UINT_8 ucOpClass;
+	UINT_8 ucNewChannelNum;
+	UINT_8 ucChannelSwitchCount;
+} __KAL_ATTRIB_PACKED__ IE_EXT_CHANNEL_SWITCH_T, *P_IE_EXT_CHANNEL_SWITCH_T;
 
 /* 7.3.2.21 Measurement Request element */
 typedef struct _IE_MEASUREMENT_REQ_T {
@@ -2121,6 +2131,20 @@ typedef struct _ACTION_DELBA_FRAME_T {
 	UINT_16 u2ReasonCode;	/* 7.3.1.7 */
 } __KAL_ATTRIB_PACKED__ ACTION_DELBA_FRAME_T, *P_ACTION_DELBA_FRAME_T;
 
+#if CFG_SUPPORT_NCHO
+/* 7.4.5.1 vendor-specific frame format */
+typedef struct _ACTION_VENDOR_SPEC_FRAME_T {
+	/* Action MAC header */
+	UINT_16 u2FrameCtrl;	/* Frame Control */
+	UINT_16 u2Duration;	/* Duration */
+	UINT_8 aucDestAddr[MAC_ADDR_LEN];	/* DA */
+	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* SA */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* BSSID */
+	UINT_16 u2SeqCtrl;	/* Sequence Control */
+	UINT_8 aucElemInfo[0];	/* Pointer to frame data */
+} __KAL_ATTRIB_PACKED__ ACTION_VENDOR_SPEC_FRAME_T, *P_ACTION_VENDOR_SPEC_FRAME_T;
+#endif
+
 /* 7.4.6.1 Radio Measurement Request frame format */
 typedef struct _ACTION_RM_REQ_FRAME {
 	/* MAC header */
@@ -2311,6 +2335,49 @@ typedef struct _IE_MTK_OUI_T {
 	UINT_8 aucCapability[4];
 	UINT_8 aucInfoElem[1];
 } __KAL_ATTRIB_PACKED__ IE_MTK_OUI_T, *P_IE_MTK_OUI_T;
+
+typedef struct _ACTION_ECSA_T {
+	UINT_16 frame_control;
+	UINT_16 duration;
+	UINT_8 da[MAC_ADDR_LEN];
+	UINT_8 sa[MAC_ADDR_LEN];
+	UINT_8 bssid[MAC_ADDR_LEN];
+	UINT_16 seq_ctrl;
+
+	UINT_8 caegory;
+	UINT_8 action_code;
+
+	UINT_8 mode;
+	UINT_8 new_operating_class;
+	UINT_8 new_ch_num;
+	UINT_8 count;
+
+	UINT_8 variable[0];
+} __KAL_ATTRIB_PACKED__ ACTIOIN_ECSA_T, *P_ACTION_ECSA_T;
+
+typedef struct _ACTION_CSA_T {
+	UINT_16 frame_control;
+	UINT_16 duration;
+	UINT_8 da[MAC_ADDR_LEN];
+	UINT_8 sa[MAC_ADDR_LEN];
+	UINT_8 bssid[MAC_ADDR_LEN];
+	UINT_16 seq_ctrl;
+
+	UINT_8 caegory;
+	UINT_8 action_code;
+
+	UINT_8 csa_id;
+	UINT_8 clen;
+	UINT_8 mode;
+	UINT_8 new_ch_num;
+	UINT_8 count;
+
+	UINT_8 sco_id;
+	UINT_8 slen;
+	UINT_8 sco;
+
+	UINT_8 variable[0];
+}  __KAL_ATTRIB_PACKED__ ACTIOIN_CSA_T, *P_ACTION_CSA_T;
 
 #if defined(WINDOWS_DDK) || defined(WINDOWS_CE)
 #pragma pack()

@@ -293,6 +293,13 @@ struct _BSS_INFO_T {
 	/*------------------------------------------------------------------------*/
 	ENUM_BAND_T eBand;
 	UINT_8 ucPrimaryChannel;
+#if CFG_SUPPORT_P2P_ECSA
+	UINT_8 ucEcsaChannel;
+	UINT_8 ucOpClass;
+	UINT_8 ucSwitchCount;
+	UINT_8 ucSwitchMode;
+	BOOLEAN fgChanSwitching;
+#endif
 	UINT_8 ucHtOpInfo1;
 	UINT_16 u2HtOpInfo2;
 	UINT_16 u2HtOpInfo3;
@@ -573,7 +580,6 @@ typedef struct {
 	UINT_16 u2FwOwnVersion;
 	UINT_16 u2FwPeerVersion;
 	UINT_16 u2FwOwnVersionExtend; /*support version extended*/
-
 } WIFI_VER_INFO_T, *P_WIFI_VER_INFO_T;
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -597,6 +603,75 @@ typedef struct _P2P_FUNCTION_LINKER {
 	P2P_GENERATE_P2P_IE prP2pGenerateP2p_IEForAssocReq;	/* All IEs generated from supplicant. */
 } P2P_FUNCTION_LINKER, *P_P2P_FUNCTION_LINKER;
 
+#endif
+
+
+#if CFG_SUPPORT_NCHO
+typedef enum _ENUM_NCHO_ITEM_SET_TYPE_T {
+	ITEM_SET_TYPE_NUM,
+	ITEM_SET_TYPE_STR
+} ENUM_NCHO_ITEM_SET_TYPE, *P_ENUM_NCHO_ITEM_SET_TYPE;
+
+typedef enum _ENUM_NCHO_BAND_T {
+	NCHO_BAND_AUTO = 0,
+	NCHO_BAND_5G,
+	NCHO_BAND_2G4,
+	NCHO_BAND_NUM
+} ENUM_NCHO_BAND, *P_ENUM_NCHO_BAND;
+
+typedef enum _ENUM_NCHO_DFS_SCN_MODE_T {
+	NCHO_DFS_SCN_DISABLE = 0,
+	NCHO_DFS_SCN_ENABLE1,
+	NCHO_DFS_SCN_ENABLE2,
+	NCHO_DFS_SCN_NUM
+} ENUM_NCHO_DFS_SCN_MODE, *P_ENUM_NCHO_DFS_SCN_MODE;
+
+typedef struct _CFG_NCHO_RE_ASSOC_T {
+	UINT_32 u4SsidLen;	/*!< SSID length in bytes. Zero length is broadcast(any) SSID */
+	UINT_8 aucSsid[ELEM_MAX_LEN_SSID];
+	UINT_8 aucBssid[MAC_ADDR_LEN];
+	UINT_32 u4CenterFreq;
+} CFG_NCHO_RE_ASSOC_T, *PCFG_NCHO_RE_ASSOC_T;
+
+typedef struct _CFG_NCHO_SCAN_CHNL_T {
+	UINT_8 ucChannelListNum;
+	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
+} CFG_NCHO_SCAN_CHNL_T, *PCFG_NCHO_SCAN_CHNL_T;
+
+typedef struct _NCHO_ACTION_FRAME_PARAMS_T {
+	UCHAR aucBssid[MAC_ADDR_LEN];
+	INT32 i4channel;
+	INT32 i4DwellTime;
+	INT32 i4len;
+	UCHAR aucData[520];
+} NCHO_ACTION_FRAME_PARAMS, *P_NCHO_ACTION_FRAME_PARAMS;
+
+typedef struct _NCHO_AF_INFO_T {
+	PUCHAR aucBssid;
+	INT32 i4channel;
+	INT32 i4DwellTime;
+	INT32 i4len;
+	PUCHAR pucData;
+} NCHO_AF_INFO, *P_NCHO_AF_INFO;
+
+typedef struct _NCHO_INFO_T {
+	BOOLEAN fgECHOEnabled;
+	BOOLEAN fgChGranted;
+	BOOLEAN fgIsSendingAF;
+	INT32 i4RoamTrigger;		/* db */
+	INT32 i4RoamDelta;		/* db */
+	UINT32 u4RoamScanPeriod;	/* ms */
+	UINT32 u4ScanChannelTime;	/* ms */
+	UINT32 u4ScanHomeTime;		/* ms */
+	UINT32 u4ScanHomeawayTime;	/* ms */
+	UINT32 u4ScanNProbes;
+	UINT32 u4WesMode;
+	ENUM_NCHO_BAND eBand;
+	ENUM_NCHO_DFS_SCN_MODE eDFSScnMode;
+	UINT32 u4RoamScanControl;
+	CFG_NCHO_SCAN_CHNL_T rRoamScnChnl;
+	NCHO_ACTION_FRAME_PARAMS rParamActionFrame;
+} NCHO_INFO, *P_NCHO_INFO;
 #endif
 
 /*
@@ -738,6 +813,8 @@ struct _ADAPTER_T {
 	TIMER_T rP2pFsmTimeoutTimer;
 #endif
 
+	TIMER_T rTdlsStateTimer;
+
 	/* Online Scan Option */
 	BOOLEAN fgEnOnlineScan;
 
@@ -852,7 +929,9 @@ struct _ADAPTER_T {
 #if CFG_SUPPORT_DBG_POWERMODE
 	BOOLEAN fgEnDbgPowerMode;	/*  dbg privilege power mode, always keep in active */
 #endif
-
+#if CFG_SUPPORT_NCHO			/*  NCHO information */
+	NCHO_INFO rNchoInfo;
+#endif
 	UINT_32 u4AirDelayTotal;	/*  dbg privilege power mode, always keep in active */
 	ULONG	ulSuspendFlag;
 	UINT_8 ucFlushCount;	/*FW flush packet count*/
@@ -864,6 +943,7 @@ struct _ADAPTER_T {
 
 	/* NLO Timer */
 	TIMER_T rScanNloTimeoutTimer;
+
 	struct WLAN_DEBUG_INFO rDebugInfo;
 };				/* end of _ADAPTER_T */
 

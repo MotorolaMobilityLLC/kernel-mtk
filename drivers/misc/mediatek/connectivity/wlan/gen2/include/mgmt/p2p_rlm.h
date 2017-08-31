@@ -73,5 +73,5 @@ rlmFuncFindAvailableChannel(IN P_ADAPTER_T prAdapter,
 			    IN PUINT_8 pucSuggestChannel, IN BOOLEAN fgIsSocialChannel, IN BOOLEAN fgIsDefaultChannel);
 
 ENUM_CHNL_EXT_T rlmDecideScoForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo);
-
+ENUM_CHNL_EXT_T rlmDecideSco(P_ADAPTER_T prAdapter, UINT_8 ucPrimaryChannel, ENUM_BAND_T eBand);
 #endif

@@ -379,7 +379,8 @@ wmmRunEventTSOperate(
 
 	wmmTspecSteps(prAdapter, prMsgTsOperate->ucTid,
 				  prMsgTsOperate->eOpCode, (VOID *)&prMsgTsOperate->rTspecParam);
-	cnmMemFree(prAdapter, prMsgHdr);
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
 }
 
 VOID
@@ -403,7 +404,7 @@ wmmTspecSteps(P_ADAPTER_T prAdapter, UINT_8 ucTid, enum TSPEC_OP_CODE eOpCode,
 	}
 
 	prCurTs = &prWmmInfo->arTsInfo[ucTid];
-	DBGLOG(WMM, INFO, "TID %d, State %d, Oper %d\n", ucTid, prCurTs->eState, eOpCode);
+	DBGLOG(WMM, TRACE, "TID %d, State %d, Oper %d\n", ucTid, prCurTs->eState, eOpCode);
 
 	switch (prCurTs->eState) {
 	case QOS_TS_INACTIVE:
@@ -1016,6 +1017,7 @@ void wmmComposeTsmRpt(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmdInfo, PUINT_8 puc
 	prTsmRptField->u4AvgDelay = prTsmStatistic->u4AvgPktTxDelay;
 	prTsmRptField->ucBin0Range = prCurrentTsmReq->prTsmReq->ucB0Range;
 	kalMemCopy(&prTsmRptField->u4Bin[0], &prTsmStatistic->au4PktCntBin[0], sizeof(prTsmStatistic->au4PktCntBin));
+
 	prRmRep->u2ReportFrameLen += ucIeSize;
 	/* For normal TSM, only once measurement */
 	if (prCurrentTsmReq->prTsmReq->u2Duration) {

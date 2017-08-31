@@ -158,6 +158,10 @@ typedef struct _RX_CTRL_T {
 	UINT_32 u4RxPktsDumpTypeMask;
 #endif
 
+#if CFG_SUPPORT_MULTITHREAD
+	QUE_T rRxDataRfbList;
+#endif
+
 } RX_CTRL_T, *P_RX_CTRL_T;
 
 typedef struct _RX_MAILBOX_T {

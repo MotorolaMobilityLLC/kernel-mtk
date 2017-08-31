@@ -884,6 +884,13 @@ WLAN_STATUS bssUpdateBeaconContent(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYP
 			txBcnIETable[i].pfnAppendIE(prAdapter, prBcnMsduInfo);
 	}
 
+#if CFG_SUPPORT_P2P_ECSA
+	if (eNetTypeIndex == NETWORK_TYPE_P2P_INDEX && prBssInfo->fgChanSwitching) {
+		/* append CSA/ECSA IE */
+		rlmGenerateCSAIE(prAdapter, prBcnMsduInfo);
+		rlmGenerateECSAIE(prAdapter, prBcnMsduInfo);
+	}
+#endif
 	prBcnFrame = (P_WLAN_BEACON_FRAME_T) prBcnMsduInfo->prPacket;
 
 	return nicUpdateBeaconIETemplate(prAdapter,

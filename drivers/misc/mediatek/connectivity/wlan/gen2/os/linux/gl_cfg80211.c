@@ -455,10 +455,8 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 					prGlueInfo->u8TotalFailCnt += u8diffTxBad;
 				}
 				/* report counters */
-				prGlueInfo->rNetDevStats.tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart;
 				prGlueInfo->rNetDevStats.tx_errors = prGlueInfo->u8TotalFailCnt;
-
-				sinfo->tx_packets = prGlueInfo->rNetDevStats.tx_packets;
+				sinfo->tx_packets = rStatistics.rTransmittedFragmentCount.QuadPart;
 				sinfo->tx_failed = prGlueInfo->rNetDevStats.tx_errors;
 				/* Good Fail Bad Difference retry difference Linkspeed Rate Weighted */
 				DBGLOG(REQ, TRACE,
@@ -523,7 +521,7 @@ int mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 	if (!(params->sta_flags_set & BIT(NL80211_STA_FLAG_TDLS_PEER)))
 		return -EOPNOTSUPP;
 
-	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(ndev));
 	if (prGlueInfo == NULL)
 		return -EINVAL;
 
@@ -532,6 +530,14 @@ int mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 	/* init */
 	kalMemZero(&rCmdUpdate, sizeof(rCmdUpdate));
 	kalMemCopy(rCmdUpdate.aucPeerMac, mac, 6);
+
+	if (ndev == prGlueInfo->prDevHandler) {
+		DBGLOG(TDLS, INFO, "AIS network\n");
+		rCmdUpdate.eNetworkType = NETWORK_TYPE_AIS_INDEX;
+	} else {
+		DBGLOG(TDLS, INFO, "P2P network\n");
+		rCmdUpdate.eNetworkType = NETWORK_TYPE_P2P_INDEX;
+	}
 
 	if (params->supported_rates != NULL) {
 		u4Temp = params->supported_rates_len;
@@ -577,7 +583,8 @@ int mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 			   params->ht_capa->mcs.rx_mask, sizeof(rCmdUpdate.rHtCap.rMCS.arRxMask));
 		rCmdUpdate.rHtCap.rMCS.u2RxHighest = params->ht_capa->mcs.rx_highest;
 		rCmdUpdate.rHtCap.rMCS.ucTxParams = params->ht_capa->mcs.tx_params;
-		rCmdUpdate.fgIsSupHt = TRUE;
+		/* use ht info in TDLS setup frames */
+		rCmdUpdate.fgIsSupHt = FALSE;
 	}
 
 	/* update a TDLS peer record */
@@ -637,7 +644,8 @@ int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev,
 	if (!(params->sta_flags_set & BIT(NL80211_STA_FLAG_TDLS_PEER)))
 		return -EOPNOTSUPP;
 
-	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(ndev));
+
 	if (prGlueInfo == NULL)
 		return -EINVAL;
 
@@ -647,6 +655,13 @@ int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev,
 	kalMemZero(&rCmdCreate, sizeof(rCmdCreate));
 	kalMemCopy(rCmdCreate.aucPeerMac, mac, 6);
 
+	if (ndev == prGlueInfo->prDevHandler) {
+		DBGLOG(TDLS, INFO, "AIS network\n");
+		rCmdCreate.eNetworkType = NETWORK_TYPE_AIS_INDEX;
+	} else {
+		DBGLOG(TDLS, INFO, "P2P network\n");
+		rCmdCreate.eNetworkType = NETWORK_TYPE_P2P_INDEX;
+	}
 #if 0
 	rCmdCreate.eNetTypeIndex = NETWORK_TYPE_AIS_INDEX;
 
@@ -1392,6 +1407,12 @@ int mtk_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev, bo
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
+#if CFG_SUPPORT_DBG_POWERMODE
+	if (prGlueInfo->prAdapter->fgEnDbgPowerMode) {
+		DBGLOG(REQ, WARN, "Force power mode enabled, ignore this enable command: %d\n", enabled);
+		return 0;
+	}
+#endif
 	if (enabled) {
 		if (timeout == -1)
 			ePowerMode = Param_PowerModeFast_PSP;

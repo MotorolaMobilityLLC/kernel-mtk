@@ -71,6 +71,10 @@ static struct cfg80211_ops mtk_p2p_ops = {
 	.change_beacon = mtk_p2p_cfg80211_change_beacon,
 	.stop_ap = mtk_p2p_cfg80211_stop_ap,
 	.set_wiphy_params = mtk_p2p_cfg80211_set_wiphy_params,
+#if (CFG_SUPPORT_TDLS == 1)
+	.change_station = mtk_cfg80211_change_station,
+	.add_station = mtk_cfg80211_add_station,
+#endif
 	.del_station = mtk_p2p_cfg80211_del_station,
 	.set_monitor_channel = mtk_p2p_cfg80211_set_channel,
 	.set_bitrate_mask = mtk_p2p_cfg80211_set_bitrate_mask,
@@ -88,6 +92,11 @@ static struct cfg80211_ops mtk_p2p_ops = {
 #ifdef CONFIG_NL80211_TESTMODE
 	.testmode_cmd = mtk_p2p_cfg80211_testmode_cmd,
 #endif
+#if (CFG_SUPPORT_TDLS == 1)
+	.tdls_mgmt = TdlsexCfg80211TdlsMgmt,
+	.tdls_oper = TdlsexCfg80211TdlsOper,
+#endif /* CFG_SUPPORT_TDLS */
+
 };
 
 static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
@@ -316,8 +325,6 @@ static int p2pStop(IN struct net_device *prDev);
 static struct net_device_stats *p2pGetStats(IN struct net_device *prDev);
 
 static void p2pSetMulticastList(IN struct net_device *prDev);
-
-static int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev);
 
 static int p2pDoIOCTL(struct net_device *prDev, struct ifreq *prIfReq, int i4Cmd);
 
@@ -666,10 +673,13 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	prWiphy->bands[IEEE80211_BAND_5GHZ] = &mtk_band_5ghz;
 
 	prWiphy->mgmt_stypes = mtk_cfg80211_default_mgmt_stypes;
-	prWiphy->max_remain_on_channel_duration = 5000;
+	prWiphy->max_remain_on_channel_duration = 500;
 	prWiphy->cipher_suites = mtk_cipher_suites;
 	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
 	prWiphy->flags = WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
+#if (CFG_SUPPORT_TDLS == 1)
+	TDLSEX_WIPHY_FLAGS_INIT(prWiphy->flags);
+#endif /* CFG_SUPPORT_TDLS */
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
 	prWiphy->ap_sme_capa = 1;
 

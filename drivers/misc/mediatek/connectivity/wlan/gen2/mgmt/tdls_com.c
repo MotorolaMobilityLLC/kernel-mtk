@@ -229,9 +229,7 @@ UINT_32 TdlsFrameGeneralIeAppend(ADAPTER_T *prAdapter, STA_RECORD_T *prStaRec, U
 TDLS_STATUS
 TdlsDataFrameSend(ADAPTER_T *prAdapter,
 		  STA_RECORD_T *prStaRec,
-		  UINT_8 *pPeerMac,
-		  UINT_8 ucActionCode,
-		  UINT_8 ucDialogToken, UINT_16 u2StatusCode, UINT_8 *pAppendIe, UINT_32 AppendIeLen)
+		  TDLS_MGMT_TX_INFO *prMgmtTxInfo)
 {
 #define LR_TDLS_FME_FIELD_FILL(__Len) \
 do { \
@@ -240,6 +238,7 @@ do { \
 } while (0)
 
 	GLUE_INFO_T *prGlueInfo;
+	ENUM_NETWORK_TYPE_INDEX_T eNetworkType;
 	BSS_INFO_T *prBssInfo;
 	PM_PROFILE_SETUP_INFO_T *prPmProfSetupInfo;
 	struct sk_buff *prMsduInfo;
@@ -249,10 +248,27 @@ do { \
 	UINT16 u2CapInfo;
 	/* UINT8 *pPktTemp; */
 
+	UINT_8 *pPeerMac;
+	UINT_8 ucActionCode;
+	UINT_8 ucDialogToken;
+	UINT_16 u2StatusCode;
+	UINT_8 *pAppendIe;
+	UINT_32 AppendIeLen;
+
 	prGlueInfo = (GLUE_INFO_T *) prAdapter->prGlueInfo;
 
-	DBGLOG(TDLS, INFO, "<tdls_fme> %s: 2040=%d\n", __func__, prGlueInfo->rTdlsLink.fgIs2040Sup);
+	DBGLOG(TDLS, TRACE, "<tdls_fme> %s: network type: %d 2040=%d\n", __func__,
+			prMgmtTxInfo->eNetworkType,
+			prGlueInfo->rTdlsLink.fgIs2040Sup);
 
+	pPeerMac = prMgmtTxInfo->aucPeer;
+	ucActionCode = prMgmtTxInfo->ucActionCode;
+	ucDialogToken = prMgmtTxInfo->ucDialogToken;
+	u2StatusCode = prMgmtTxInfo->u2StatusCode;
+	pAppendIe = (UINT_8 *) prMgmtTxInfo->aucSecBuf;
+	AppendIeLen = prMgmtTxInfo->u4SecBufLen;
+
+	eNetworkType = prMgmtTxInfo->eNetworkType;
 	/* sanity check */
 	if (prStaRec != NULL) {
 		if (prStaRec->ucNetTypeIndex >= NETWORK_TYPE_INDEX_NUM) {
@@ -261,11 +277,9 @@ do { \
 			return TDLS_STATUS_FAILURE;
 		}
 
-		prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex]);
-	} else {
-		/* prStaRec maybe NULL in setup request */
-		prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+		eNetworkType = prStaRec->ucNetTypeIndex;
 	}
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[eNetworkType]);
 
 	/* allocate/init packet */
 	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
@@ -287,7 +301,11 @@ do { \
 			return TDLS_STATUS_RESOURCES;
 		}
 
-		prMsduInfo->dev = prGlueInfo->prDevHandler;
+		if (eNetworkType == NETWORK_TYPE_AIS_INDEX)
+			prMsduInfo->dev = prGlueInfo->prDevHandler;
+		else
+			prMsduInfo->dev = prGlueInfo->prP2PInfo->prDevHandler;
+
 		if (prMsduInfo->dev == NULL) {
 			DBGLOG(TDLS, ERROR, "<tdls_cmd> %s: MsduInfo->dev == NULL\n", __func__);
 			kalPacketFree(prGlueInfo, prMsduInfo);
@@ -701,9 +719,16 @@ do { \
 
 		/* 9. Update packet length */
 		prMsduInfo->len = u4PktLen;
-		dumpMemory8(prMsduInfo->data, u4PktLen);
-
-		wlanHardStartXmit(prMsduInfo, prMsduInfo->dev);
+		/* dumpMemory8(prMsduInfo->data, u4PktLen); */
+		DBGLOG_MEM8(TDLS, TRACE, prMsduInfo->data, u4PktLen);
+		DBGLOG(TDLS, INFO, "Send TDLS action %d len %u by network %d\n",
+			ucActionCode, u4PktLen, eNetworkType);
+		prGlueInfo->i4TdlsLastTx = ucActionCode;
+		prGlueInfo->eTdlsNetworkType = eNetworkType;
+		if (eNetworkType == NETWORK_TYPE_AIS_INDEX)
+			wlanHardStartXmit(prMsduInfo, prMsduInfo->dev);
+		else
+			p2pHardStartXmit(prMsduInfo, prMsduInfo->dev);
 	} else {
 		/*
 		 * A TDLS capable STA that receives a TDLS Discovery Request frame is required to
@@ -713,6 +738,7 @@ do { \
 		 * STA shall send the TDLS Discovery Response frame using a rate from the
 		 * BSSBasicRateSet of the BSS to which the STA is currently associated.
 		 */
+		DBGLOG(TDLS, INFO, "Send TDLS Discovery Response by network %d\n", eNetworkType);
 		prMsduInfoMgmt->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
 		prMsduInfoMgmt->ucStaRecIndex = prBssInfo->prStaRecOfAP->ucIndex;
 		prMsduInfoMgmt->ucNetworkType = prBssInfo->ucNetTypeIndex;

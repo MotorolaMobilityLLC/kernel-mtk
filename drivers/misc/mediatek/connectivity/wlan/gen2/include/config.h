@@ -707,6 +707,7 @@
  * Flags of Features
  *------------------------------------------------------------------------------
  */
+#define CFG_SUPPORT_MULTITHREAD     0
 
 #define CFG_SUPPORT_QOS             1	/* Enable/disable QoS TX, AMPDU */
 #define CFG_SUPPORT_AMPDU_TX        1
@@ -716,6 +717,7 @@
 #define CFG_SUPPORT_UL_PSMP         0
 
 #define CFG_SUPPORT_ROAMING         1	/* Roaming System */
+#define CFG_SUPPORT_DYNAMOC_ROAM    0
 #define CFG_SUPPORT_SWCR            1
 
 #define CFG_SUPPORT_ANTI_PIRACY     1
@@ -769,7 +771,12 @@
 
 #define CFG_SUPPORT_CPU_BOOST			0
 
-#define CFG_SUPPORT_TX_BACKOFF              0
+
+#define CFG_SUPPORT_TX_POWER_BACK_OFF       1
+
+#define CFG_SUPPORT_FCC_POWER_BACK_OFF             0
+
+#define CFG_SUPPORT_P2P_ECSA                       0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
@@ -841,6 +848,13 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_DROP_MC_PACKET		0
+
+/*------------------------------------------------------------------------------
+ * Flags of NCHO SUPPORT
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_NCHO		0
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -858,7 +872,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20170120_1"
+#define WIFI_DRIVER_VERSION		"11_70_00_20170217_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
