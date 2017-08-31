@@ -18,14 +18,16 @@
 #include <linux/platform_device.h>
 #include <linux/wakelock.h>
 #include <linux/suspend.h>
-#include <linux/regulator/consumer.h>
+
 #include "mtk_hps_internal.h"
 #include "mtk_hps.h"
+
 /*
  * static
  */
 #define STATIC
 /* #define STATIC static */
+
 static int hps_probe(struct platform_device *pdev);
 static int hps_suspend(struct device *dev);
 static int hps_resume(struct device *dev);
@@ -373,13 +375,14 @@ void hps_ctxt_print_algo_stats_tlp(int toUart)
 		hps_debug("hps_ctxt.rush_count: %u\n", hps_ctxt.rush_count);
 	}
 }
+
 /*
  * probe callback
  */
 static int hps_probe(struct platform_device *pdev)
 {
-
 	hps_warn("hps_probe\n");
+
 	return 0;
 }
 

@@ -31,11 +31,9 @@
 #define STATIC
 /* #define STATIC static */
 #define MS_TO_NS(x)     (x * 1E6L)
+
 static unsigned long long hps_cancel_time;
 static ktime_t ktime;
-static unsigned int hps_cpu_load_info[10];
-static int hps_load_cnt[10];
-static DEFINE_SPINLOCK(load_info_lock);
 
 /*
  * hps timer callback
@@ -70,22 +68,6 @@ unsigned int hps_get_hvytsk(unsigned int cluster_id)
 		return hps_sys.cluster_info[cluster_id].hvyTsk_value;
 }
 
-unsigned int hps_get_per_cpu_load(int cpu, int isReset)
-{
-	unsigned int ret;
-
-	spin_lock(&load_info_lock);
-	if (hps_load_cnt[cpu])
-		ret = hps_cpu_load_info[cpu] / hps_load_cnt[cpu];
-	else
-		ret = hps_cpu_load_info[cpu];
-	if (isReset) {
-		hps_cpu_load_info[cpu] = 0;
-		hps_load_cnt[cpu] = 0;
-	}
-	spin_unlock(&load_info_lock);
-	return ret;
-}
 
 static void hps_get_sysinfo(void)
 {
@@ -119,11 +101,6 @@ static void hps_get_sysinfo(void)
 	for_each_possible_cpu(cpu) {
 		per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu);
 		hps_ctxt.cur_loads += per_cpu(hps_percpu_ctxt, cpu).load;
-
-		spin_lock(&load_info_lock);
-		hps_cpu_load_info[cpu] +=  per_cpu(hps_percpu_ctxt, cpu).load;
-		hps_load_cnt[cpu]++;
-		spin_unlock(&load_info_lock);
 
 		if (hps_ctxt.cur_dump_enabled) {
 			if (cpu_online(cpu))
@@ -254,7 +231,6 @@ static int _hps_task_main(void *data)
 #endif
 
 		/* if (!hps_ctxt.is_interrupt) { */
-
 		/*Get sys status */
 		hps_get_sysinfo();
 
@@ -379,16 +355,16 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
+	hps_sys.ppm_root_cluster = p->root_cluster;
+
 	for (i = 0; i < p->cluster_num; i++) {
 		/*
 		 * hps_warn("ppm_limit_callback -> cluster%d: has_advise_core = %d, [%d, %d]\n",
 		 *	i, p->cpu_limit[i].has_advise_core,
 		 *	p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
 		 */
-#ifdef _TRACE_
 		trace_ppm_limit_callback_update(i, p->cpu_limit[i].has_advise_core,
 			p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
-#endif
 		if (!p->cpu_limit[i].has_advise_core) {
 			hps_sys.cluster_info[i].ref_base_value = p->cpu_limit[i].min_cpu_core;
 			hps_sys.cluster_info[i].ref_limit_value = p->cpu_limit[i].max_cpu_core;
