@@ -1040,7 +1040,9 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 	case CPU_ONLINE:
 		if (cpumask_weight(cpu_online_mask) == 8) {
 			do_gettimeofday(&up_time);
+#if 0
 			pr_debug(TAG"all core on, TS:%lu\n", up_time.tv_usec);
+#endif
 
 			if (smart_context_obj) {
 				ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
@@ -1056,7 +1058,9 @@ static int cpu_hotplug_lowpower_notifier(struct notifier_block *self,
 	case CPU_DEAD:
 		if (cpumask_weight(cpu_online_mask) == 7) {
 			do_gettimeofday(&down_time);
+#if 0
 			pr_debug(TAG"all core on disable, TS:%lu\n", down_time.tv_usec);
+#endif
 			elapsed_time =
 				(down_time.tv_sec - up_time.tv_sec) * 1000 +
 				(down_time.tv_usec - up_time.tv_usec) / 1000;

@@ -26,15 +26,27 @@ static int debug;
 #ifdef CONFIG_SCHED_TUNE
 static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 {
-	int final_boost_value = -1;
+	int final_boost_value = -1, final_boost_value_1 = -1, final_boost_value_2 = -1;
+	int boost_1[MAX_KIR], boost_2[MAX_KIR];
 	int i;
 
 	mutex_lock(&boost_eas);
 
 	for (i = 0; i < MAX_KIR; i++) {
-		if (cgroup_idx == CGROUP_FG)
-			final_boost_value = MAX(boost_value[i], final_boost_value);
+		if (cgroup_idx == CGROUP_FG) {
+			boost_1[i] = boost_value[i] / 1000;
+			boost_2[i] = boost_value[i] % 1000;
+		}
 	}
+
+	for (i = 0; i < MAX_KIR; i++) {
+		if (cgroup_idx == CGROUP_FG) {
+			final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
+			final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
+		}
+	}
+
+	final_boost_value = final_boost_value_1 * 1000 + final_boost_value_2;
 
 	if (final_boost_value > 3000)
 		current_fg_boost_value = 3000;
