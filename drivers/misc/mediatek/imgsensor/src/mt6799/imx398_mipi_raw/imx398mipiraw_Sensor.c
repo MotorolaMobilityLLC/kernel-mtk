@@ -323,7 +323,7 @@ static SENSOR_ATR_INFO sensorATR_Info[4]=
 };
 #endif
 
-#define IMX398MIPI_MaxGainIndex (115)
+#define IMX398MIPI_MaxGainIndex (223)
 kal_uint16 IMX398MIPI_sensorGainMapping[IMX398MIPI_MaxGainIndex][2] ={
 	{64, 0},
 	{65, 6},
