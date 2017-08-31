@@ -1596,13 +1596,13 @@ int soidle3_enter(int cpu)
 	else
 		slp_spm_SODI3_flags |= SPM_FLAG_DIS_SRCCLKEN_LOW;
 #ifdef DEFAULT_MMP_ENABLE
-	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
+	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags);
 
 #ifdef DEFAULT_MMP_ENABLE
-	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagEnd, 0, spm_read(SPM_PASR_DPD_3));
+	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
@@ -1640,13 +1640,13 @@ int soidle_enter(int cpu)
 	soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
-	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
+	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
 	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
 
 #ifdef DEFAULT_MMP_ENABLE
-	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagEnd, 0, spm_read(SPM_PASR_DPD_3));
+	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
