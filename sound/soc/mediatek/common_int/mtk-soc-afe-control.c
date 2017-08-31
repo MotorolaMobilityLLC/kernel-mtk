@@ -467,20 +467,6 @@ int AudDrv_DSP_IRQ_handler(void *PrivateData)
 {
 	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
 		Auddrv_DSP_DL1_Interrupt_Handler(PrivateData);
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
-		Auddrv_DL2_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL]->mState == true)
-		Auddrv_UL1_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_AWB]->mState == true)
-		Auddrv_AWB_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DAI]->mState == true)
-		Auddrv_DAI_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
-		Auddrv_UL2_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mState == true)
-		Auddrv_MOD_DAI_Interrupt_Handler();
-	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_HDMI]->mState == true)
-		Auddrv_HDMI_Interrupt_Handler();
 	return 0;
 }
 /*****************************************************************************
@@ -3255,6 +3241,17 @@ int init_irq_manager(void)
 	return 0;
 }
 
+int irq_add_substream_user(struct snd_pcm_substream *substream,
+			   enum Soc_Aud_IRQ_MCU_MODE _irq,
+			   unsigned int _rate,
+			   unsigned int _count)
+{
+	if (substream->runtime->no_period_wakeup == true)
+		return 0;
+	else
+		return irq_add_user(substream, _irq, _rate, _count);
+}
+
 int irq_add_user(const void *_user,
 		 enum Soc_Aud_IRQ_MCU_MODE _irq,
 		 unsigned int _rate,
@@ -3340,6 +3337,17 @@ int irq_remove_user(const void *_user,
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 	return 0;
 }
+
+int irq_remove_substream_user(struct snd_pcm_substream *substream,
+			      enum Soc_Aud_IRQ_MCU_MODE _irq)
+{
+	/* for no period wake up , do not set irq*/
+	if (substream->runtime->no_period_wakeup == true)
+		return 0;
+	else
+		return irq_remove_user(substream, _irq);
+}
+
 
 int irq_update_user(const void *_user,
 		    enum Soc_Aud_IRQ_MCU_MODE _irq,
@@ -3906,7 +3914,18 @@ static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substre
 
 		Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 
-		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+		/* if using mmap , do not calculate data remain*/
+		switch (substream->runtime->access) {
+		case SNDRV_PCM_ACCESS_MMAP_INTERLEAVED:
+		case SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED:
+			break;
+		case SNDRV_PCM_ACCESS_RW_INTERLEAVED:
+		case SNDRV_PCM_ACCESS_RW_NONINTERLEAVED:
+		default:
+			Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+			break;
+		}
+
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		if (Afe_Block->u4DataRemained < 0) {
@@ -3970,20 +3989,25 @@ static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substre
 
 		UL1_Block->u4WriteIdx   += Hw_Get_bytes;
 		UL1_Block->u4WriteIdx   %= UL1_Block->u4BufferSize;
-		UL1_Block->u4DataRemained += Hw_Get_bytes;
 
-		 PRINTK_AUD_UL1("%s ReadIdx=0x%x WriteIdx = 0x%x Remained = 0x%x BufferSize= 0x%x, Get_bytes= 0x%x\n",
-			__func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx, UL1_Block->u4DataRemained,
-			UL1_Block->u4BufferSize, Hw_Get_bytes);
-
-		/* buffer overflow */
-		if (UL1_Block->u4DataRemained > UL1_Block->u4BufferSize) {
-			bIsOverflow = true;
-			pr_warn("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, DataRemained:%x, BufferSize:%x\n",
-			       __func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx,
-			       UL1_Block->u4DataRemained, UL1_Block->u4BufferSize);
+		/* if using mmap , do not calculate dataremind*/
+		switch (substream->runtime->access) {
+		case SNDRV_PCM_ACCESS_MMAP_INTERLEAVED:
+		case SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED:
+			break;
+		case SNDRV_PCM_ACCESS_RW_INTERLEAVED:
+		case SNDRV_PCM_ACCESS_RW_NONINTERLEAVED:
+		default:
+			UL1_Block->u4DataRemained += Hw_Get_bytes;
+			/* buffer overflow */
+			if (UL1_Block->u4DataRemained > UL1_Block->u4BufferSize) {
+				bIsOverflow = true;
+				pr_info("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, DataRemained:%x, BufferSize:%x\n",
+					__func__, UL1_Block->u4DMAReadIdx, UL1_Block->u4WriteIdx,
+					UL1_Block->u4DataRemained, UL1_Block->u4BufferSize);
+			}
+			break;
 		}
-
 		PRINTK_AUD_UL1("[Auddrv] mtk_capture_pcm_pointer =0x%x HW_memory_index = 0x%x\n",
 			HW_Cur_ReadIdx, HW_memory_index);
 
@@ -4534,4 +4558,17 @@ void set_LowLatencyDebug(uint32 bFlag)
 	LowLatencyDebug = bFlag;
 	pr_warn("%s LowLatencyDebug = %d\n", __func__, LowLatencyDebug);
 }
+
+int mtk_pcm_mmap(struct snd_pcm_substream *substream, struct vm_area_struct *vma)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+
+	pr_debug("+%s dma_mmap_coherent\n", __func__);
+	/* set mmap meory with no cache*/
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+	return dma_mmap_coherent(substream->pcm->card->dev, vma,
+		runtime->dma_area, runtime->dma_addr, runtime->dma_bytes);
+}
+
+
 

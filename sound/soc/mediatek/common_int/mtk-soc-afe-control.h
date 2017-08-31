@@ -255,6 +255,14 @@ int irq_update_user(const void *_user,
 		    unsigned int _count);
 int irq_get_total_user(enum Soc_Aud_IRQ_MCU_MODE _irq);
 
+int irq_add_substream_user(struct snd_pcm_substream *substream,
+			   enum Soc_Aud_IRQ_MCU_MODE _irq,
+			   unsigned int _rate,
+			   unsigned int _count);
+int irq_remove_substream_user(struct snd_pcm_substream *substream,
+			      enum Soc_Aud_IRQ_MCU_MODE _irq);
+
+
 enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block);
 /* IRQ Register Control Table and Handler Function Table*/
 void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
@@ -352,5 +360,7 @@ bool handle_suspend(bool suspend);
 
 int get_usage_digital_block(enum audio_usage_id id);
 int get_usage_digital_block_io(enum audio_usage_id id);
+int mtk_pcm_mmap(struct snd_pcm_substream *substream, struct vm_area_struct *vma);
+
 
 #endif
