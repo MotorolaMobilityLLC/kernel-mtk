@@ -15,7 +15,7 @@
 #define __DISP_RSZ_H__
 
 #include "ddp_info.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 
 struct rsz_lookuptable {
 	unsigned int scaling_ratio;

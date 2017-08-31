@@ -66,7 +66,9 @@ obj-y += wdma20/
 endif
 endif
 
-# Todo: newer chip
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+obj-y += layering_rule_base/v1/
+endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6757) $(CONFIG_MACH_KIBOPLUS) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6755) $(CONFIG_MACH_MT6795) $(CONFIG_MACH_MT8167)))
 obj-y += color20/

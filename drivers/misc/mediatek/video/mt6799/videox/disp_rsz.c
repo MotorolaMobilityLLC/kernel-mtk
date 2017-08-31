@@ -12,7 +12,6 @@
  */
 
 #include "disp_drv_log.h"
-#include "mtk_hrt.h"
 #include "disp_rsz.h"
 
 char *HRT_path_name(enum HRT_PATH_SCENARIO path)

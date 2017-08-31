@@ -24,7 +24,7 @@
 #include "mtkfb_fence.h"
 #include "disp_drv_log.h"
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #endif
 
 

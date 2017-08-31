@@ -33,7 +33,7 @@
 /* #pragma GCC optimize("O0") */
 
 #include "disp_rsz.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "ddp_rsz.h"
 
 static int ddp_manager_init;

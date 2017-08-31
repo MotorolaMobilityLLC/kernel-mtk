@@ -82,7 +82,7 @@
 #include "disp_recovery.h"
 #include "mtk_spm_sodi_cmdq.h"
 #include "ddp_od.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "disp_rect.h"
 #include "disp_partial.h"
 #include "disp_cmdq.h"
@@ -5338,6 +5338,7 @@ done:
 		primary_display_diagnose();
 
 	dst_module = _get_dst_module_by_lcm(pgc->plcm);
+	layering_rule_init();
 	_primary_path_unlock(__func__);
 	return ret;
 }

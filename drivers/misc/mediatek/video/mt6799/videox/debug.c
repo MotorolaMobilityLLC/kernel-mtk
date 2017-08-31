@@ -53,7 +53,7 @@
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;

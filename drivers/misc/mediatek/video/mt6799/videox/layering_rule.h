@@ -11,65 +11,25 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_HRT_H__
-#define __MTK_HRT_H__
+#ifndef __LAYERING_RULE__
+#define __LAYERING_RULE__
 
-#include "disp_session.h"
-#include "disp_lcm.h"
-#include "disp_drv_log.h"
-#include "primary_display.h"
-#include "disp_drv_platform.h"
-#include "display_recorder.h"
-
-#define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
-#define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT
+#include "layering_rule_base.h"
 
 #define MAX_PHY_OVL_CNT 12
 #define HAS_LARB_HRT
-
-/* #define HRT_DEBUG_LEVEL1 */
-/* #define HRT_DEBUG_LEVEL2 */
-/* #define HRT_UT_DEBUG */
 #define PARTIAL_L0_YUV_ONLY
 #define PARTIAL_PMA_L0_YUV_ONLY
 #define RSZ_SCALE_RATIO_ROLLBACK
 
-#define PATH_FMT_RSZ_SHIFT 9
-#define PATH_FMT_PIPE_SHIFT 7
-#define PATH_FMT_DISP_SHIFT 5
-#define PATH_FMT_ID_SHIFT 0
-
-#define MAKE_UNIFIED_HRT_PATH_FMT(rsz_type, pipe_type, disp_type, id) \
-	( \
-	((rsz_type)		<< PATH_FMT_RSZ_SHIFT)	| \
-	((pipe_type)		<< PATH_FMT_PIPE_SHIFT)	| \
-	((disp_type)		<< PATH_FMT_DISP_SHIFT)	| \
-	((id)			<< PATH_FMT_ID_SHIFT))
-
-struct hrt_sort_entry {
-	struct hrt_sort_entry *head, *tail;
-	struct layer_config *layer_info;
-	int key;
-	int overlap_w;
+enum HRT_LEVEL {
+	HRT_LEVEL_LEVEL0 = 0,
+	HRT_LEVEL_LEVEL1,
+	HRT_LEVEL_LEVEL2,
+	HRT_LEVEL_LEVEL3,
+	HRT_LEVEL_NUM,
 };
 
-enum HRT_PATH_RSZ_TYPE {
-	HRT_PATH_RSZ_NONE = 0,
-	HRT_PATH_RSZ_GENERAL,
-	HRT_PATH_RSZ_PARTIAL,
-	HRT_PATH_RSZ_PARTIAL_PMA,
-};
-
-enum HRT_PATH_PIPE_TYPE {
-	HRT_PATH_PIPE_SINGLE = 0,
-	HRT_PATH_PIPE_DUAL,
-};
-
-enum HRT_PATH_DISP_TYPE {
-	HRT_PATH_DISP_SINGLE = 0,
-	HRT_PATH_DISP_DUAL_MIRROR,
-	HRT_PATH_DISP_DUAL_EXT,
-};
 
 enum HRT_TB_TYPE {
 	HRT_TB_TYPE_GENERAL = 0,
@@ -78,14 +38,6 @@ enum HRT_TB_TYPE {
 	HRT_TB_TYPE_PARTIAL_RESIZE_PMA,
 	HRT_TB_TYPE_MULTI_WINDOW_TUI,
 	HRT_TB_NUM,
-};
-
-enum HRT_LEVEL {
-	HRT_LEVEL_LEVEL0 = 0,
-	HRT_LEVEL_LEVEL1,
-	HRT_LEVEL_LEVEL2,
-	HRT_LEVEL_LEVEL3,
-	HRT_LEVEL_NUM,
 };
 
 enum {
@@ -107,11 +59,6 @@ enum HRT_BOUND_TYPE {
 	HRT_BOUND_TYPE_2K_DUAL_4CHANNEL_E2,
 	HRT_BOUND_TYPE_FHD_4CHANNEL_E2,
 	HRT_BOUND_NUM,
-};
-
-enum HRT_DISP_TYPE {
-	HRT_PRIMARY = 0,
-	HRT_SECONDARY,
 };
 
 enum HRT_PATH_SCENARIO {
@@ -152,59 +99,6 @@ enum HRT_PATH_SCENARIO {
 	HRT_PATH_NUM = MAKE_UNIFIED_HRT_PATH_FMT(0, 0, 0, 18),
 };
 
-enum HRT_DEBUG_LAYER_DATA {
-	HRT_LAYER_DATA_ID = 0,
-	HRT_LAYER_DATA_SRC_FMT,
-	HRT_LAYER_DATA_DST_OFFSET_X,
-	HRT_LAYER_DATA_DST_OFFSET_Y,
-	HRT_LAYER_DATA_DST_WIDTH,
-/*5*/
-	HRT_LAYER_DATA_DST_HEIGHT,
-	HRT_LAYER_DATA_SRC_WIDTH,
-	HRT_LAYER_DATA_SRC_HEIGHT,
-	HRT_LAYER_DATA_NUM,
-};
-
-enum HRT_SCALE_SCENARIO {
-	HRT_SCALE_NONE = 0,
-	HRT_SCALE_133,
-	HRT_SCALE_150,
-	HRT_SCALE_200,
-	HRT_SCALE_266,
-	HRT_SCALE_UNKNOWN,
-	HRT_SCALE_NUM = HRT_SCALE_UNKNOWN,
-};
-
-enum HRT_TYPE {
-	HRT_TYPE_LARB0 = 0,
-	HRT_TYPE_LARB1,
-	HRT_TYPE_EMI,
-	HRT_TYPE_UNKNOWN,
-};
-
-enum HRT_SYS_STATE {
-	DISP_HRT_MJC_ON = 0,
-	DISP_HRT_FORCE_DUAL_OFF,
-	DISP_HRT_MULTI_TUI_ON,
-};
-
-#define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
-#define HRT_SET_DVFS_LEVEL(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF)) | (value & 0xF)))
-#define HRT_GET_SCALE_SCENARIO(hrt_num) ((hrt_num & 0xF0) >> 4)
-#define HRT_SET_SCALE_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xF0)) | ((value & 0xF) << 4)))
-#define HRT_GET_AEE_FLAG(hrt_num) ((hrt_num & 0x100) >> 8)
-#define HRT_SET_AEE_FLAG(hrt_num, value) (hrt_num = ((hrt_num & ~(0x100)) | ((value & 0x1) << 8)))
-#define HRT_GET_PATH_SCENARIO(hrt_num) ((hrt_num & 0xFFFF0000) >> 16)
-#define HRT_SET_PATH_SCENARIO(hrt_num, value) (hrt_num = ((hrt_num & ~(0xFFFF0000)) | ((value & 0xFFFF) << 16)))
-#define HRT_AEE_LAYER_MASK 0xFFFFFFDF
-#define HRT_GET_PATH_RSZ_TYPE(hrt_path) ((hrt_path >> PATH_FMT_RSZ_SHIFT) & 0x3)
-#define HRT_GET_PATH_DISP_TYPE(hrt_path) ((hrt_path >> PATH_FMT_DISP_SHIFT) & 0x3)
-#define HRT_GET_PATH_PIPE_TYPE(hrt_path) ((hrt_path >> PATH_FMT_PIPE_SHIFT) & 0x3)
-#define HRT_GET_PATH_ID(hrt_path) (hrt_path & 0x1F)
-
-int dispsys_hrt_calc(struct disp_layer_info *disp_info, int debug_mode);
-extern int hdmi_get_dev_info(int is_sf, void *info);
-int gen_hrt_pattern(void);
-int set_hrt_state(enum HRT_SYS_STATE sys_state, int en);
+void layering_rule_init(void);
 
 #endif

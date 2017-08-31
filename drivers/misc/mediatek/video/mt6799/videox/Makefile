@@ -34,9 +34,9 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_rect.o		\
 			disp_partial.o		\
 			disp_cmdq.o		\
-			mtk_hrt.o		\
 			frame_queue.o		\
-			disp_rsz.o
+			disp_rsz.o		\
+			layering_rule.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/
 #obj-y += mtkfb_dummy.o
@@ -46,6 +46,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/video/common/   \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma20/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/wdma20/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/layering_rule_base/v1/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/   \
              -I$(srctree)/drivers/misc/mediatek/sync/      \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \

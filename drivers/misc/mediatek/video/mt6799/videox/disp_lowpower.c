@@ -53,7 +53,7 @@
 #include "disp_lowpower.h"
 #include "disp_rect.h"
 #include "disp_cmdq.h"
-#include "mtk_hrt.h"
+#include "layering_rule.h"
 #include "ddp_reg.h"
 #include "ddp_rdma.h"
 #include "disp_partial.h"
