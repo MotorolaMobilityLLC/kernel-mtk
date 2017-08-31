@@ -49,39 +49,39 @@ unsigned int usb2jtag_mode(void)
 	return usb2jtag_mode_flag;
 }
 
-static struct mt_usb2jtag_driver mt_usb2jtag_drv = {
+static struct mtk_usb2jtag_driver mtk_usb2jtag_drv = {
 	.usb2jtag_init = NULL,
 	.usb2jtag_resume = NULL,
 	.usb2jtag_suspend = NULL,
 };
 
-struct mt_usb2jtag_driver *get_mt_usb2jtag_drv(void)
+struct mtk_usb2jtag_driver *get_mtk_usb2jtag_drv(void)
 {
-	return &mt_usb2jtag_drv;
+	return &mtk_usb2jtag_drv;
 }
 
-static int mt_usb2jtag_resume_default(void)
+static int mtk_usb2jtag_resume_default(void)
 {
 	return (usb2jtag_mode()) ?
-		mt_usb2jtag_drv.usb2jtag_init() : 0;
+		mtk_usb2jtag_drv.usb2jtag_init() : 0;
 }
 
-int mt_usb2jtag_resume(void)
+int mtk_usb2jtag_resume(void)
 {
-	return (mt_usb2jtag_drv.usb2jtag_resume) ?
-		mt_usb2jtag_drv.usb2jtag_resume() :
-		mt_usb2jtag_resume_default();
+	return (mtk_usb2jtag_drv.usb2jtag_resume) ?
+		mtk_usb2jtag_drv.usb2jtag_resume() :
+		mtk_usb2jtag_resume_default();
 }
 
-static int __init mt_usb2jtag_init(void)
+static int __init mtk_usb2jtag_init(void)
 {
-	return (usb2jtag_mode() && mt_usb2jtag_drv.usb2jtag_init) ?
-		mt_usb2jtag_drv.usb2jtag_init() : -1;
+	return (usb2jtag_mode() && mtk_usb2jtag_drv.usb2jtag_init) ?
+		mtk_usb2jtag_drv.usb2jtag_init() : -1;
 }
 
-static void __exit mt_usb2jtag_exit(void)
+static void __exit mtk_usb2jtag_exit(void)
 {
 }
 
-module_init(mt_usb2jtag_init);
-module_exit(mt_usb2jtag_exit);
+module_init(mtk_usb2jtag_init);
+module_exit(mtk_usb2jtag_exit);

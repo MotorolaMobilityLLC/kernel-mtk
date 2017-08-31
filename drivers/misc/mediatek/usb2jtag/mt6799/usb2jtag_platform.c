@@ -21,7 +21,7 @@
 
 void __iomem *PERICFG_BASE;
 
-static int mt_usb2jtag_hw_init(void)
+static int mtk_usb2jtag_hw_init(void)
 {
 	struct device_node *node = NULL;
 	unsigned int temp;
@@ -46,24 +46,20 @@ static int mt_usb2jtag_hw_init(void)
 	temp = readl(PERICFG_BASE + 0x6c);
 	writel(temp | 0x00010000, PERICFG_BASE + 0x6c);
 
-#if 0
-	pr_err("[USB2JTAG] 0x1101006c = 0x%x\n", readl(PERICFG_BASE + 0x6c));
-	pr_err("[USB2JTAG] setting done\n");
-#endif
 
 	return 0;
 }
 
-static int __init mt_usb2jtag_platform_init(void)
+static int __init mtk_usb2jtag_platform_init(void)
 {
-	struct mt_usb2jtag_driver *mt_usb2jtag_drv;
+	struct mtk_usb2jtag_driver *mtk_usb2jtag_drv;
 
-	mt_usb2jtag_drv = get_mt_usb2jtag_drv();
-	mt_usb2jtag_drv->usb2jtag_init = mt_usb2jtag_hw_init;
-	mt_usb2jtag_drv->usb2jtag_suspend = NULL;
-	mt_usb2jtag_drv->usb2jtag_resume = NULL;
+	mtk_usb2jtag_drv = get_mtk_usb2jtag_drv();
+	mtk_usb2jtag_drv->usb2jtag_init = mtk_usb2jtag_hw_init;
+	mtk_usb2jtag_drv->usb2jtag_suspend = NULL;
+	mtk_usb2jtag_drv->usb2jtag_resume = NULL;
 
 	return 0;
 }
 
-arch_initcall(mt_usb2jtag_platform_init);
+arch_initcall(mtk_usb2jtag_platform_init);

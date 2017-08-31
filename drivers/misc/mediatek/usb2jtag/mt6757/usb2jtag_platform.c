@@ -18,10 +18,10 @@
 #include <mach/upmu_hw.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/sync_write.h>
-void __iomem *INFRA_AO_BASE;
-void __iomem *USB0_PSIF2_BASE;
-void __iomem *USB1_PSIF_BASE;
-static int mt_usb2jtag_hw_init(void)
+static void __iomem *INFRA_AO_BASE;
+static void __iomem *USB0_PSIF2_BASE;
+static void __iomem *USB1_PSIF_BASE;
+static int mtk_usb2jtag_hw_init(void)
 {
 	struct device_node *node = NULL;
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -85,25 +85,21 @@ static int mt_usb2jtag_hw_init(void)
 	/* delay for enabling usb clock */
 	udelay(100);
 	writel(0x0000ff1a, USB0_PSIF2_BASE + 0x0820);
-#if 0
-	pr_err("[USB2JTAG] 0x11210820 = 0x%x\n", readl(USB_SIF_BASE + 0x0820));
-	pr_err("[USB2JTAG] 0x11210818 = 0x%x\n", readl(USB_SIF_BASE + 0x0818));
-	pr_err("[USB2JTAG] setting done\n");
-#endif
+
 	return 0;
 }
 
 
-static int __init mt_usb2jtag_platform_init(void)
+static int __init mtk_usb2jtag_platform_init(void)
 {
-	struct mt_usb2jtag_driver *mt_usb2jtag_drv;
+	struct mtk_usb2jtag_driver *mtk_usb2jtag_drv;
 
-	mt_usb2jtag_drv = get_mt_usb2jtag_drv();
-	mt_usb2jtag_drv->usb2jtag_init = mt_usb2jtag_hw_init;
-	mt_usb2jtag_drv->usb2jtag_suspend = NULL;
-	mt_usb2jtag_drv->usb2jtag_resume = NULL;
+	mtk_usb2jtag_drv = get_mtk_usb2jtag_drv();
+	mtk_usb2jtag_drv->usb2jtag_init = mtk_usb2jtag_hw_init;
+	mtk_usb2jtag_drv->usb2jtag_suspend = NULL;
+	mtk_usb2jtag_drv->usb2jtag_resume = NULL;
 
 	return 0;
 }
 
-arch_initcall(mt_usb2jtag_platform_init);
+arch_initcall(mtk_usb2jtag_platform_init);
