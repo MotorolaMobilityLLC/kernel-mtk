@@ -123,11 +123,7 @@ struct picachu_proc {
 static struct picachu_sram_info *picachu_data;
 static unsigned int picachu_debug;
 
-#if defined(CONFIG_MTK_DISABLE_PICACHU)
-static int picachu_enable;
-#else
 static int picachu_enable = 1;
-#endif
 
 static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info)
 {
@@ -376,10 +372,11 @@ static void picachu_update_ptp1_efuse(int *eem_ctrl_id_ptr,
 		if (eem_ctrl_id_ptr[i] == -1)
 			break;
 
-		/* FIXME: The API should be exported by EEM driver. */
-		/* eem_set_pi_efuse(eem_ctrl_id_ptr[i], ptp1_efuse[i]); */
-	}
+		if (!ptp1_efuse[i])
+			continue;
 
+		eem_set_pi_efuse(eem_ctrl_id_ptr[i], ptp1_efuse[i]);
+	}
 }
 
 static int __init picachu_init(void)
