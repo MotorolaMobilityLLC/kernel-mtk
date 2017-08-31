@@ -112,6 +112,7 @@ bool set_chip_dai_bt_enable(bool enable, AudioDigitalDAIBT *dai_bt, AudioMrgIf *
 bool SetI2SAdcEnable(bool bEnable);
 bool Set2ndI2SAdcEnable(bool bEnable);
 bool SetI2SDacOut(uint32 SampleRate, bool Lowgitter, bool I2SWLen);
+bool Set2ndI2SEnable(bool bEnable);
 bool set_i2s_dac_out_source(uint32 aud_block);
 
 bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep);
