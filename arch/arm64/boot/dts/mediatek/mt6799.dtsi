@@ -940,6 +940,8 @@
 		compatible = "mediatek,dxcc_pub";
 		reg = <0 0x11b10000 0 0x1000>;
 		interrupts = <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&pericfg CLK_PERICFG_RG_DXCC_AO>,<&pericfg CLK_PERICFG_RG_DXCC_PUB>;
+		clock-names = "dxcc-ao-clock","dxcc-pubcore-clock";
 	};
 
 	dxcc_sec@11b20000 {
