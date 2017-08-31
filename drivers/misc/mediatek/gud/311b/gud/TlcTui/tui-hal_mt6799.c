@@ -144,7 +144,7 @@ uint32_t hal_tui_alloc(
 {
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	phys_addr_t pa = 0;
-	unsigned long size = allocsize;
+	unsigned long size = allocsize * number;
 
 	if (!allocbuffer) {
 		pr_err("%s(%d): allocbuffer is null\n", __func__, __LINE__);
@@ -159,11 +159,13 @@ uint32_t hal_tui_alloc(
 		return TUI_DCI_OK;
 	}
 
+#if 0
 	if (number != 2) {
 		pr_err("%s(%d): Unexpected number of buffers requested\n",
 			 __func__, __LINE__);
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
+#endif
 
 	ret = tui_region_offline(&pa, &size);
 
@@ -171,10 +173,9 @@ uint32_t hal_tui_alloc(
 		g_tbuff_alloc = 1;
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
-		pr_debug("request_size=%lu, alloc_size=%lu, extra=%d\n",
-			allocsize, size, TUI_EXTRA_MEM_SIZE);
-		pr_debug("%s(%d): buf_s %llx, buf_e %llx\n", __func__, __LINE__,
-			allocbuffer[0].pa, allocbuffer[1].pa);
+		allocbuffer[2].pa = (uint64_t) (pa + allocsize*2);
+		pr_debug("%s(%d): buf_1 %llx, buf_2 %llx, buf_3 %llx, extra=%d\n", __func__, __LINE__,
+			allocbuffer[0].pa, allocbuffer[1].pa, allocbuffer[2].pa, TUI_EXTRA_MEM_SIZE);
 	} else {
 		pr_err("%s(%d): tui_region_offline failed!\n",
 			 __func__, __LINE__);
@@ -211,7 +212,8 @@ void hal_tui_free(void)
  */
 uint32_t hal_tui_deactivate(void)
 {
-	int ret = TUI_DCI_OK, tmp;
+	int ret = TUI_DCI_OK;
+	int __maybe_unused tmp = 0;
 	pr_debug("hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
@@ -223,29 +225,24 @@ uint32_t hal_tui_deactivate(void)
 	 * on the appropriate framebuffer device
 	 */
 
+#ifdef TUI_ENABLE_TOUCH
 	tpd_enter_tui();
-#if 0
-	enable_clock(MT_CG_PERI_I2C0, "i2c");
-	enable_clock(MT_CG_PERI_I2C1, "i2c");
-	enable_clock(MT_CG_PERI_I2C2, "i2c");
-	enable_clock(MT_CG_PERI_I2C3, "i2c");
-	enable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
+#ifdef TUI_LOCK_I2C
 	i2c_tui_enable_clock();
+#endif
 
-	/*gt1x_power_reset();*/
-
+#ifdef TUI_ENABLE_DISPLAY
 	tmp = display_enter_tui();
 	if (tmp) {
 		pr_err("[TUI-HAL] %s() failed because display\n", __func__);
 		ret = TUI_DCI_ERR_OUT_OF_DISPLAY;
 	}
-
-
+#endif
 	trustedui_set_mask(TRUSTEDUI_MODE_VIDEO_SECURED|
 			   TRUSTEDUI_MODE_INPUT_SECURED);
 
-	pr_info("[TUI-HAL] %s()\n", __func__);
+	pr_debug("[TUI-HAL] %s()\n", __func__);
 
 	return ret;
 }
@@ -273,18 +270,17 @@ uint32_t hal_tui_activate(void)
 	 * on the appropriate framebuffer device
 	 */
 	/* Clear linux TUI flag */
-
+#ifdef TUI_ENABLE_TOUCH
 	tpd_exit_tui();
-#if 0
-	disable_clock(MT_CG_PERI_I2C0, "i2c");
-	disable_clock(MT_CG_PERI_I2C1, "i2c");
-	disable_clock(MT_CG_PERI_I2C2, "i2c");
-	disable_clock(MT_CG_PERI_I2C3, "i2c");
-	disable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
-	i2c_tui_disable_clock();
-	display_exit_tui();
 
+#ifdef TUI_LOCK_I2C
+	i2c_tui_disable_clock();
+#endif
+
+#ifdef TUI_ENABLE_DISPLAY
+	display_exit_tui();
+#endif
 	trustedui_set_mode(TRUSTEDUI_MODE_OFF);
 	return TUI_DCI_OK;
 }
