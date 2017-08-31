@@ -960,7 +960,8 @@
 	emi@10230000 {
 		compatible = "mediatek,emi";
 		reg = <0 0x10230000 0 0x1000>;
-		interrupts = <GIC_SPI 161 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 161 IRQ_TYPE_LEVEL_LOW>,
+		<GIC_SPI 170 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	lpdma@10231000 {

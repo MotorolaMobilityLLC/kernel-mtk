@@ -18,6 +18,7 @@
 #include <linux/platform_device.h>
 #include <linux/sched.h>
 #include "mtk_emi_bm.h"
+#include "mtk_emi_elm.h"
 #include "mtk_mem_bw.h"
 #include <asm/div64.h>
 
@@ -181,6 +182,7 @@ static int __init mon_kernel_init(void)
 	int emi_dcm_disable;
 
 	BM_Init();
+	/*emi_md_elm_Init();*/
 
 	/* disable_infra_dcm(); */
 	emi_dcm_disable = BM_GetEmiDcm();

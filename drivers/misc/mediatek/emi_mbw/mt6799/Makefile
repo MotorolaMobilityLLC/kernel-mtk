@@ -13,3 +13,4 @@
 
 obj-y := mtk_emi_bm.o
 obj-y += mtk_mem_bw.o
+obj-y += mtk_emi_elm.o
