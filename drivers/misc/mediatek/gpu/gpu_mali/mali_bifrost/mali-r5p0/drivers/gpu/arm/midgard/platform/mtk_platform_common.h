@@ -80,4 +80,6 @@ int mtk_set_mt_gpufreq_target(int freq_id);
 void mtk_trigger_aee_report(const char *msg);
 void mtk_trigger_emi_report(u64 pa);
 
+int mtk_kbase_is_gpu_always_on(void);
+
 #endif /* __MTK_PLATFORM_COMMON_H__ */
