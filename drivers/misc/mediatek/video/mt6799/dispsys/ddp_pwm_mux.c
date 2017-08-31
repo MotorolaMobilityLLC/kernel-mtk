@@ -131,8 +131,6 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	ret = disp_pwm_get_muxbase();
 	reg_before = disp_pwm_get_pwmmux();
 
-	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
-
 	if (clkid != -1) {
 		ddp_clk_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
@@ -141,7 +139,7 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 
 	reg_after = disp_pwm_get_pwmmux();
 	g_pwm_mux_clock_source = (reg_after>>16) & 0x3;
-	PWM_MSG("PWM_MUX %x->%x", reg_before, reg_after);
+	PWM_MSG("clk_req=%d clkid=%d, PWM_MUX %x->%x", clk_req, clkid, reg_before, reg_after);
 
 	return 0;
 }
@@ -158,10 +156,8 @@ static int get_ulposc_base(void)
 	int ret = 0;
 	struct device_node *node;
 
-	if (disp_pmw_osc_base != NULL) {
-		PWM_MSG("SLEEP node exist");
+	if (disp_pmw_osc_base != NULL)
 		return 0;
-	}
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node) {
