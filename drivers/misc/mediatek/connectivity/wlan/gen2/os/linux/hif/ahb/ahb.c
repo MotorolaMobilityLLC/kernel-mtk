@@ -352,6 +352,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 			break;
 		case 0x0326:
 		case 0x0551:
+		case 0x0690:
 			HifInfo->ChipID = 0x6755;
 			break;
 		case 0x0633:
