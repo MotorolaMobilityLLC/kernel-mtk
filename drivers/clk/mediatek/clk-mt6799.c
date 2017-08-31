@@ -327,7 +327,7 @@ void __iomem *venc_gcon_base;
 #define VENC_DISABLE_CG 0x111111 /* inverse */
 
 #define INFRA_CG0 0x00080000/*aes_top1[19], fhctl[30] cannot gate, suspend fail*/
-#define INFRA_CG1 0x00400A00/*trng[9], cpum[11], smi_l2c[22]*/
+#define INFRA_CG1 0x40400e00/*trng[9], cpum[11], smi_l2c[22], auxadc[10], anc_md32[30]*/
 
 #define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
 /*uart0-7[7:0], spi0-10[26:16]*/
@@ -345,6 +345,10 @@ void __iomem *venc_gcon_base;
 #define VEN_CG 0x111111/*[20][16][12][8][4][0]*/
 #define MJC_CG 0x7f/*[6:0]*/
 #define IPU_CG 0x3ff/*[9:0]*/
+
+#define MM_CG0	0x000007fe/*mdp series[10][8:5][3:2]*/
+#define MM_CG1	0x00040040/*ipu[6], mdp2[18]*/
+#define MM_CG2	0x0000c180/*pmeter[8:7], 32k,img2[15:14]*/
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
@@ -2433,6 +2437,11 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	mmsys_config_base = base;
+#if MT_CCF_BRINGUP
+	clk_writel(MM_CG_SET0, MM_CG0);
+	clk_writel(MM_CG_SET1, MM_CG1);
+	clk_writel(MM_CG_SET2, MM_CG2);
+#endif
 }
 CLK_OF_DECLARE(mtk_mmsys_config, "mediatek,mt6799-mmsys_config",
 		mtk_mmsys_config_init);
