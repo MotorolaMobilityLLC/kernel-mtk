@@ -21,8 +21,11 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mach/mtk_thermal.h"
 #include "mt-plat/mtk_thermal_platform.h"
+#if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mtk_clkmgr.h>
-
+#else
+#include <linux/clk.h>
+#endif
 #include <mach/wd_api.h>
 #include <linux/slab.h>
 #include <linux/seq_file.h>
