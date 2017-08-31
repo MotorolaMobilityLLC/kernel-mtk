@@ -5528,6 +5528,68 @@
 		spi_cs_invert = <1>;
 	};
 
+	met_dpm {
+		compatible = "mediatek,met_dpm";
+		clocks =
+			<&clk26m>, /*26M*/
+			<&topckgen CLK_TOP_DFP_SEL>, /*TOPCKGEN_CLK_CFG_14 CLK_TOP_DFP_SEL*/
+			<&mmsys_config CLK_MM_CG2_B0 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B1 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B2 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B3 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B4 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B5 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B6 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B7 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B8 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B9 >, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B10>, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B11>, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B12>, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B13>, /*MMSYS_CG_CON2*/
+			<&mmsys_config CLK_MM_CG2_B14>, /*MMSYS_CG_CON2*/
+			<&camsys CLK_CAM_LARB6>, /*CAMSYS_CG*/
+			<&camsys CLK_CAM_DFP_VAD>,
+			<&imgsys CLK_IMG_LARB5>, /*IMG_CG*/
+			<&imgsys CLK_IMG_DFP>,
+			<&mjc_config CLK_MJC_TOP0>, /*MJC_SW_CG*/
+			<&mjc_config CLK_MJC_METER>,
+			<&venc_global_con CLK_VENC_GLOBAL_CON_CKE5>; /* VENCSYS_CG */
+
+
+
+		clock-names =
+			"CLK_26M",	/*26M*/
+			"CLK_TOP_DFP_SEL",/*TOPCKGEN_CLK_CFG_14 CLK_TOP_DFP_SEL*/
+			"CLK_MM_CG2_B0",/*MMSYS_CG_CON2*/
+			"CLK_MM_CG2_B1",
+			"CLK_MM_CG2_B2",
+			"CLK_MM_CG2_B3",
+			"CLK_MM_CG2_B4",
+			"CLK_MM_CG2_B5",
+			"CLK_MM_CG2_B6",
+			"CLK_MM_CG2_B7",
+			"CLK_MM_CG2_B8",
+			"CLK_MM_CG2_B9",
+			"CLK_MM_CG2_B10",
+			"CLK_MM_CG2_B11",
+			"CLK_MM_CG2_B12",
+			"CLK_MM_CG2_B13",
+			"CLK_MM_CG2_B14",
+			"CLK_CAM_LARB6", /*CAMSYS_CG*/
+			"CLK_CAM_DFP_VAD",
+			"CLK_IMG_LARB5", /*IMG_CG*/
+			"CLK_IMG_DFP",
+			"CLK_MJC_TOP0", /*MJC_SW_CG*/
+			"CLK_MJC_METER",
+			"CLK_VENC_GLOBAL_CON_CKE5"; /* VENCSYS_CG */
+
+
+
+
+	};
+
+
 
 };
 
