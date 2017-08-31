@@ -1490,7 +1490,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 
-			if (larb_port > 32 || larb == -1)
+			if (larb_port >= 32 || larb == -1)
 				continue;
 
 			config_larb[larb] |= (1 << larb_port);
