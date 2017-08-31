@@ -321,12 +321,8 @@ static int pmic_buck_vs1_disable(struct regulator_dev *rdev)
 		RGLTRLOG("buck vs1 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			RGLTRLOG("buck vs1 don't have enable callback\n");
-			ret = -1;
-		}
+		RGLTRLOG("buck vs1 don't be disabled\n");
+		ret = 0;
 	}
 
 	return ret;
@@ -2323,12 +2319,8 @@ static int pmic_ldo_vio28_disable(struct regulator_dev *rdev)
 		RGLTRLOG("ldo vio28 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			RGLTRLOG("ldo vio28 don't have enable callback\n");
-			ret = -1;
-		}
+		RGLTRLOG("ldo vio28 don't be disabled\n");
+		ret = 0;
 	}
 
 	return ret;
@@ -2385,12 +2377,8 @@ static int pmic_ldo_vio18_disable(struct regulator_dev *rdev)
 		RGLTRLOG("ldo vio18 should not be disable (use_count=%d)\n", rdev->use_count);
 		ret = -1;
 	} else {
-		if (mreg->en_cb != NULL)
-			ret = (mreg->en_cb)(0);
-		else {
-			RGLTRLOG("ldo vio18 don't have enable callback\n");
-			ret = -1;
-		}
+		RGLTRLOG("ldo vio18 don't be disabled\n");
+		ret = 0;
 	}
 
 	return ret;
@@ -3812,10 +3800,10 @@ static ssize_t store_regulator_voltage(struct device *dev, struct device_attribu
 #define BUCK_VOL REGULATOR_CHANGE_VOLTAGE
 #define BUCK_VOL_EN (REGULATOR_CHANGE_STATUS | REGULATOR_CHANGE_VOLTAGE)
 struct mtk_regulator mt_bucks[] = {
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vs1, buck, 1200000, 2100000, 12500, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vmodem, buck, 500000, 1150000, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vcore, buck, 518750, 1094000, 6250, 0, BUCK_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vproc, buck, 518750, 1310000, 6250, 0, BUCK_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vs1, buck, 1200000, 2200000, 12500, 0, BUCK_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vmodem, buck, 500000, 1193750, 6250, 0, BUCK_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vcore, buck, 518750, 1193750, 6250, 0, BUCK_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vproc, buck, 518750, 1312500, 6250, 0, BUCK_VOL_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(vpa, buck, 500000, 3650000, 50000, 0, BUCK_VOL_EN, 1),
 
 };
@@ -3839,8 +3827,8 @@ struct mtk_regulator mt_ldos[] = {
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcamd, ldo, vcamd_voltages, vcamd_idx, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vcamio, ldo, 1800000, LDO_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vldo28, ldo, vldo28_voltages, vldo28_idx, LDO_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_others, ldo, 500000, 1250000, 6250, 0, LDO_VOL_EN, 1),
-	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_proc, ldo, 500000, 1250000, 6250, 0, LDO_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_others, ldo, 500000, 1293750, 6250, 0, LDO_VOL_EN, 1),
+	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_proc, ldo, 500000, 1293750, 6250, 0, LDO_VOL_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaux18, ldo, 1800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaud28, ldo, 2800000, LDO_EN, 1),
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vio28, ldo, 2800000, LDO_EN, 1),
