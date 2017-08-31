@@ -768,7 +768,7 @@ static int rt9468_enable_all_irq(struct rt9468_info *info, bool enable)
 	/*
 	 * Since this function will be used during shutdown,
 	 * call original i2c api
-	 * mask all irq
+	 * enable/disable all irq
 	 */
 	ret = rt9468_device_write(info->i2c, RT9468_REG_CHG_STATC_CTRL,
 		ARRAY_SIZE(irq_data), irq_data);
@@ -897,7 +897,6 @@ static int rt9468_enable_hidden_mode(struct rt9468_info *info,
 	);
 	if (ret < 0)
 		goto _err;
-
 	return ret;
 
 _err:
@@ -946,12 +945,12 @@ static int rt9468_sw_workaround(struct rt9468_info *info)
 		ret = rt9468_set_iprec(info, 850);
 		if (ret < 0)
 			goto _out;
-	}
 
-	/* Increase Isys drop threshold to 2.5A */
-	ret = rt9468_i2c_write_byte(info, 0x26, 0x1C);
-	if (ret < 0)
-		goto _out;
+		/* Increase Isys drop threshold to 2.5A */
+		ret = rt9468_i2c_write_byte(info, 0x26, 0x1C);
+		if (ret < 0)
+			goto _out;
+	}
 
 	/* Disable TS auto sensing */
 	ret = rt9468_clr_bit(info, 0x2E, 0x01);
@@ -1041,7 +1040,6 @@ static int rt9468_get_adc(struct rt9468_info *info, enum rt9468_adc_sel adc_sel,
 		+ rt9468_adc_offset[adc_sel];
 
 	ret = 0;
-
 _out:
 	info->i2c_log_level = BAT_LOG_FULL;
 	mutex_unlock(&info->adc_access_lock);
@@ -1220,7 +1218,18 @@ static int rt9468_set_dc_watchdog_timer(struct rt9468_info *info, u32 ms)
 	return ret;
 }
 
-static int rt9468_sw_init(struct rt9468_info *info)
+static int rt9468_enable_usb_chrdet(struct rt9468_info *info, bool enable)
+{
+	int ret = 0;
+
+	battery_log(BAT_LOG_CRTI, "%s: enable = %d\n", __func__, enable);
+	ret = (enable ? rt9468_set_bit : rt9468_clr_bit)
+		(info, RT9468_REG_CHG_DPDM1, RT9468_MASK_USBCHGEN);
+
+	return ret;
+}
+
+static int rt9468_init_setting(struct rt9468_info *info)
 {
 	int ret = 0;
 	struct rt9468_desc *desc = info->desc;
@@ -1298,6 +1307,12 @@ static int rt9468_sw_init(struct rt9468_info *info)
 		battery_log(BAT_LOG_CRTI, "%s: enable watchdog timer failed\n",
 			__func__);
 
+	/* Disable USB charger type detection */
+	ret = rt9468_enable_usb_chrdet(info, false);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: disable usb chrdet failed\n",
+			__func__);
+
 	/* Set ircomp according to BIF */
 #ifdef CONFIG_MTK_BIF_SUPPORT
 	ret = rt_charger_set_ircmp_resistor(&info->mchr_info, &ircmp_resistor);
@@ -1329,7 +1344,7 @@ static int rt9468_sw_init(struct rt9468_info *info)
 }
 
 /* Set register's value to default */
-static int rt9468_hw_init(struct rt9468_info *info)
+static int rt9468_reset_chip(struct rt9468_info *info)
 {
 	int ret = 0;
 
@@ -2640,15 +2655,15 @@ static int rt9468_probe(struct i2c_client *i2c,
 		goto err_register_regmap;
 #endif
 
-	ret = rt9468_hw_init(info);
+	ret = rt9468_reset_chip(info);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI,
 			"%s: set register to default value failed\n", __func__);
 
-	ret = rt9468_sw_init(info);
+	ret = rt9468_init_setting(info);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: set failed\n", __func__);
-		goto err_sw_init;
+		goto err_init_setting;
 	}
 
 	ret = rt9468_sw_workaround(info);
@@ -2681,7 +2696,7 @@ static int rt9468_probe(struct i2c_client *i2c,
 
 	return ret;
 
-err_sw_init:
+err_init_setting:
 err_sw_workaround:
 err_create_wq:
 #ifdef CONFIG_RT_REGMAP
@@ -2704,11 +2719,15 @@ static int rt9468_remove(struct i2c_client *i2c)
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
+	if (info) {
+		if (info->otg_ctrl_workqueue)
+			destroy_workqueue(info->otg_ctrl_workqueue);
 #ifdef CONFIG_RT_REGMAP
-	rt_regmap_device_unregister(info->regmap_dev);
+		rt_regmap_device_unregister(info->regmap_dev);
 #endif
-	mutex_destroy(&info->i2c_access_lock);
-	mutex_destroy(&info->adc_access_lock);
+		mutex_destroy(&info->i2c_access_lock);
+		mutex_destroy(&info->adc_access_lock);
+	}
 
 	return ret;
 }
@@ -2720,11 +2739,13 @@ static void rt9468_shutdown(struct i2c_client *i2c)
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
-	/* Set log level to CRITICAL */
-	info->i2c_log_level = BAT_LOG_CRTI;
-	ret = rt9468_sw_reset(info);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: sw reset failed\n", __func__);
+	if (info) {
+		/* Set log level to CRITICAL */
+		info->i2c_log_level = BAT_LOG_CRTI;
+		ret = rt9468_sw_reset(info);
+		if (ret < 0)
+			battery_log(BAT_LOG_CRTI, "%s: sw reset failed\n", __func__);
+	}
 }
 
 static const struct i2c_device_id rt9468_i2c_id[] = {
@@ -2794,3 +2815,21 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9468 Charger Driver");
 MODULE_VERSION("1.0.2_MTK");
+
+
+/*
+ * Version Note
+ * 1.0.2
+ * (1) Destroy OTG workqueue when driver is removed
+ * (2) Change function name of rt9468_hw_init & rt9468_sw_init to
+ *     rt9468_reset_chip & rt9468_init_setting
+ * (3) Only set Isys drop threshold for normal boot
+ * (4) Disable BC1.2 detection in init_setting
+ *
+ * 1.0.1
+ * (1) Add irq_register function to register IRQ
+ * (2) Add irq_init function to set IRQ's initial setting
+ *
+ * 1.0.0
+ * (1) Initial Release
+ */

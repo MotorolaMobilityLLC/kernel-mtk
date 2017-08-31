@@ -289,6 +289,11 @@ enum rt9468_reg_addr {
 #define RT9468_MASK_ADC_IN_SEL	0xF0
 #define RT9468_MASK_ADC_START	(1 << RT9468_SHIFT_ADC_START)
 
+/* ========== CHG_DPDM1 0x12 ============ */
+#define RT9468_SHIFT_USBCHGEN	7
+
+#define RT9468_MASK_USBCHGEN	(1 << RT9468_SHIFT_USBCHGEN)
+
 /* ========== CHG_PUMP 0x18 ============ */
 #define RT9468_SHIFT_VG_LVL_SEL	1
 #define RT9468_SHIFT_VG_EN	0

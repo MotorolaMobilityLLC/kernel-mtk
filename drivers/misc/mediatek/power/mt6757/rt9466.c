@@ -270,11 +270,11 @@ struct rt9466_desc {
 
 /* These default values will be used if there's no property in dts */
 static struct rt9466_desc rt9466_default_desc = {
-	.ichg = 200000,
-	.aicr = 50000,
-	.mivr = 4400,
-	.cv = 4350000,
-	.ieoc = 250,
+	.ichg = 200000,	/* 10uA */
+	.aicr = 50000,	/* 10uA */
+	.mivr = 4400,	/* mV */
+	.cv = 4350000,	/* uA */
+	.ieoc = 250,	/* mA */
 	.safety_timer = 12,
 	.ircmp_resistor = 80,
 	.ircmp_vclamp = 224,
@@ -750,12 +750,12 @@ static bool rt9466_is_hw_exist(struct rt9466_info *info)
 		return false;
 
 	revision = ret & 0xFF;
-	if (revision == RT9466_DEVICE_ID_E2)
-		battery_log(BAT_LOG_CRTI, "%s: E2 revision\n", __func__);
+	if (revision == RT9466_DEVICE_ID_E1)
+		battery_log(BAT_LOG_CRTI, "%s: E1(0x%02X)\n", __func__, revision);
+	else if (revision == RT9466_DEVICE_ID_E2)
+		battery_log(BAT_LOG_CRTI, "%s: E2(0x%02X)\n", __func__, revision);
 	else if (revision == RT9466_DEVICE_ID_E3)
-		battery_log(BAT_LOG_CRTI, "%s: E3 revision\n", __func__);
-	else if (revision == RT9466_DEVICE_ID_E4)
-		battery_log(BAT_LOG_CRTI, "%s: E4 revision\n", __func__);
+		battery_log(BAT_LOG_CRTI, "%s: E3(0x%02X)\n", __func__, revision);
 	else
 		return false;
 
@@ -892,17 +892,20 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 		goto _out;
 
 	/* Set precharge current to 850mA, only do this in normal boot */
-	mtk_charger_get_platform_boot_mode(&info->mchr_info, &boot_mode);
-	if (boot_mode == NORMAL_BOOT) {
-		ret = rt9466_set_iprec(info, 850);
-		if (ret < 0)
-			goto _out;
-	}
+	if (info->mchr_info.device_id <= RT9466_DEVICE_ID_E3) {
+		mtk_charger_get_platform_boot_mode(&info->mchr_info,
+			&boot_mode);
+		if (boot_mode == NORMAL_BOOT) {
+			ret = rt9466_set_iprec(info, 850);
+			if (ret < 0)
+				goto _out;
 
-	/* Increase Isys drop threshold to 2.5A */
-	ret = rt9466_i2c_write_byte(info, 0x26, 0x1C);
-	if (ret < 0)
-		goto _out;
+			/* Increase Isys drop threshold to 2.5A */
+			ret = rt9466_i2c_write_byte(info, 0x26, 0x1C);
+			if (ret < 0)
+				goto _out;
+		}
+	}
 
 	/* Disable TS auto sensing */
 	ret = rt9466_clr_bit(info, 0x2E, 0x01);
@@ -912,8 +915,8 @@ static int rt9466_sw_workaround(struct rt9466_info *info)
 	/* Worst case delay: wait auto sensing */
 	mdelay(200);
 
-	/* Only revision <= E2 needs the following workaround */
-	if (info->mchr_info.device_id > RT9466_DEVICE_ID_E2)
+	/* Only revision <= E1 needs the following workaround */
+	if (info->mchr_info.device_id > RT9466_DEVICE_ID_E1)
 		goto _out;
 
 	/* ICC: modify sensing node, make it more accurate */
@@ -1014,7 +1017,8 @@ _out:
 	return ret;
 }
 
-static int rt9466_hw_init(struct rt9466_info *info)
+/* Reset all registers' value to default */
+static int rt9466_reset_chip(struct rt9466_info *info)
 {
 	int ret = 0;
 
@@ -1103,7 +1107,7 @@ static int rt9466_enable_jeita(struct rt9466_info *info, bool enable)
 }
 
 
-static int rt9466_sw_init(struct rt9466_info *info)
+static int rt9466_init_setting(struct rt9466_info *info)
 {
 	int ret = 0;
 	struct rt9466_desc *desc = info->desc;
@@ -1213,6 +1217,7 @@ static int rt9466_sw_init(struct rt9466_info *info)
 static int rt9466_sw_reset(struct rt9466_info *info)
 {
 	int ret = 0;
+	u8 irq_data[5] = {0};
 
 	/* Register 0x01 ~ 0x11 */
 	const u8 reg_data[] = {
@@ -1226,6 +1231,13 @@ static int rt9466_sw_reset(struct rt9466_info *info)
 	ret = rt9466_enable_all_irq(info, false);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: mask all irq failed\n",
+			__func__);
+
+	/* Read all irq */
+	ret = rt9466_device_read(info->i2c, RT9466_REG_CHG_STATC,
+		ARRAY_SIZE(irq_data), irq_data);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: read all irq failed\n",
 			__func__);
 
 	/* Reset necessary registers */
@@ -1847,7 +1859,7 @@ static int rt_charger_set_pep20_reset(struct mtk_charger_info *mchr_info,
 	if (ret < 0)
 		return ret;
 
-	msleep(200);
+	msleep(250);
 
 	aicr = 70000;
 	ret = rt_charger_set_aicr(mchr_info, &aicr);
@@ -2295,15 +2307,15 @@ static int rt9466_probe(struct i2c_client *i2c,
 #endif
 
 	/* Reset chip */
-	ret = rt9466_hw_init(info);
+	ret = rt9466_reset_chip(info);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI,
 			"%s: set register to default value failed\n", __func__);
 
-	ret = rt9466_sw_init(info);
+	ret = rt9466_init_setting(info);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: set failed\n", __func__);
-		goto err_sw_init;
+		goto err_init_setting;
 	}
 
 	ret = rt9466_sw_workaround(info);
@@ -2336,7 +2348,7 @@ static int rt9466_probe(struct i2c_client *i2c,
 
 	return ret;
 
-err_sw_init:
+err_init_setting:
 err_sw_workaround:
 err_create_wq:
 #ifdef CONFIG_RT_REGMAP
@@ -2359,11 +2371,15 @@ static int rt9466_remove(struct i2c_client *i2c)
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
+	if (info) {
+		if (info->discharging_workqueue)
+			destroy_workqueue(info->discharging_workqueue);
 #ifdef CONFIG_RT_REGMAP
-	rt_regmap_device_unregister(info->regmap_dev);
+		rt_regmap_device_unregister(info->regmap_dev);
 #endif
-	mutex_destroy(&info->i2c_access_lock);
-	mutex_destroy(&info->adc_access_lock);
+		mutex_destroy(&info->i2c_access_lock);
+		mutex_destroy(&info->adc_access_lock);
+	}
 
 	return ret;
 }
@@ -2374,11 +2390,13 @@ static void rt9466_shutdown(struct i2c_client *i2c)
 	struct rt9466_info *info = i2c_get_clientdata(i2c);
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
-	ret = rt9466_sw_reset(info);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: sw reset failed\n", __func__);
-
-	info->i2c_log_level = BAT_LOG_CRTI;
+	if (info) {
+		ret = rt9466_sw_reset(info);
+		if (ret < 0)
+			battery_log(BAT_LOG_CRTI,
+				"%s: sw reset failed\n", __func__);
+		info->i2c_log_level = BAT_LOG_CRTI;
+	}
 }
 
 static const struct i2c_device_id rt9466_i2c_id[] = {
@@ -2446,4 +2464,4 @@ module_exit(rt9466_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9466 Charger Driver");
-MODULE_VERSION("1.0.1_MTK");
+MODULE_VERSION("1.0.2_MTK");
