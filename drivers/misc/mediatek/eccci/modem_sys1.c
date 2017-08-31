@@ -662,6 +662,7 @@ static void config_ap_runtime_data_v2_1(struct ccci_modem *md, struct ap_query_m
 	ap_feature->tail_pattern = AP_FEATURE_QUERY_PATTERN;
 }
 
+#if (MD_GENERATION <= 6292)
 static struct sk_buff *md_cd_init_rt_header(struct ccci_modem *md, int packet_size, unsigned int tx_ch,
 	int skb_from_pool)
 {
@@ -683,12 +684,15 @@ static struct sk_buff *md_cd_init_rt_header(struct ccci_modem *md, int packet_si
 
 	return skb;
 }
+#endif
 
 static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 	unsigned int txqno, int skb_from_pool)
 {
 	int packet_size;
+#if (MD_GENERATION <= 6292)
 	struct sk_buff *skb = NULL;
+#endif
 	struct ap_query_md_feature *ap_rt_data;
 	struct ap_query_md_feature_v2_1 *ap_rt_data_v2_1;
 	int ret;
@@ -711,9 +715,15 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int tx_ch,
 		config_ap_runtime_data_v2_1(md, ap_rt_data_v2_1);
 		dump_runtime_data_v2_1(md, ap_rt_data_v2_1);
 	} else {
+		/* infactly, 6292 should not be this else condition */
 		packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
+#if (MD_GENERATION <= 6292)
 		skb = md_cd_init_rt_header(md, packet_size, tx_ch, skb_from_pool);
 		ap_rt_data = (struct ap_query_md_feature *)(skb->data + sizeof(struct ccci_header));
+#else
+		ap_rt_data = (struct ap_query_md_feature *)ccif_hif_fill_rt_header(CCIF_HIF_ID, packet_size,
+			tx_ch, txqno);
+#endif
 		memset(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
 		config_ap_runtime_data_v2(md, ap_rt_data);
 		dump_runtime_data_v2(md, ap_rt_data);
