@@ -58,6 +58,14 @@ enum dvfs_opp {
 
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
 
+#define BACKUP_REG_COUNT_SDIO           14
+#define BACKUP_REG_COUNT_EMMC_INTERNAL  4
+#define BACKUP_REG_COUNT_EMMC_TOP       12
+#define BACKUP_REG_COUNT_EMMC           16
+
+#define MSDC_DVFS_SET_SIZE      0x48
+#define MSDC_TOP_SET_SIZE       0x30
+
 /* Enable later@Peter */
 /* #define SDIO_HW_DVFS_CONDITIONAL */
 
@@ -68,11 +76,12 @@ extern int sdio_autok_res_exist(struct msdc_host *host);
 extern int sdio_autok_res_apply(struct msdc_host *host, int vcore);
 extern int sdio_autok_res_save(struct msdc_host *host, int vcore, u8 *res);
 extern void sdio_autok_wait_dvfs_ready(void);
-extern int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
-extern int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res);
+extern int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode);
+extern int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode);
 extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
+extern void msdc_dvfs_reg_backup_init(struct msdc_host *host);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
 extern void msdc_dump_autok(struct msdc_host *host);
 

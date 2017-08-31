@@ -280,6 +280,8 @@ struct msdc_saved_para {
 	u32 emmc50_dat23;
 	u32 emmc50_dat45;
 	u32 emmc50_dat67;
+	u32 emmc50_cfg0;
+	u32 pb0;
 	u32 pb1;
 	u32 pb2;
 	u32 sdc_fifo_cfg;

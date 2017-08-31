@@ -673,7 +673,7 @@ static void msdc_set_field(struct seq_file *m, void __iomem *address,
 	unsigned long field;
 
 	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
-	 || (start_bit + len > 31)) {
+	 || (start_bit + len > 32)) {
 		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -692,7 +692,7 @@ static void msdc_get_field(struct seq_file *m, void __iomem *address,
 	unsigned long field;
 
 	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
-	 || (start_bit + len > 31)) {
+	 || (start_bit + len > 32)) {
 		seq_puts(m, "[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;

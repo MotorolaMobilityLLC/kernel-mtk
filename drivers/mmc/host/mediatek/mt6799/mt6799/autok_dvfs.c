@@ -190,15 +190,9 @@ int autok_res_check(u8 *res_h, u8 *res_l)
 	return ret;
 }
 
-#define BACKUP_REG_COUNT_SDIO           14
-#define BACKUP_REG_COUNT_EMMC_INTERNAL  4
-#define BACKUP_REG_COUNT_EMMC_TOP       12
-#define BACKUP_REG_COUNT_EMMC           16
 static u32 sdio_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_SDIO];
 static u32 emmc_reg_backup[AUTOK_VCORE_NUM * BACKUP_REG_COUNT_EMMC];
 /* static u32 sd_reg_backup[AUTOK_VCORE_NUM][BACKUP_REG_COUNT]; */
-
-#define MSDC_DVFS_SET_SIZE      0x48
 
 u16 dvfs_reg_backup_offsets_src[] = {
 	OFFSET_MSDC_IOCON,
@@ -240,8 +234,6 @@ u16 emmc_dvfs_reg_backup_offsets[] = {
 	OFFSET_MSDC_PATCH_BIT1_1,
 	OFFSET_MSDC_PATCH_BIT2_1
 };
-
-#define MSDC_TOP_SET_SIZE       0x30
 
 u16 emmc_dvfs_reg_backup_offsets_top[] = {
 	OFFSET_EMMC_TOP_CONTROL + MSDC_TOP_SET_SIZE,
@@ -365,10 +357,11 @@ void sdio_autok_wait_dvfs_ready(void)
 		pr_err("DVFS ready\n");
 }
 
-int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
+int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
 	int vcore;
+	u8 *res = NULL;
 
 	vcore = 0; /* vcorefs_get_hw_opp(); */
 
@@ -396,26 +389,41 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	return ret;
 }
 
-int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
+void msdc_dvfs_reg_backup_init(struct msdc_host *host)
+{
+	if (host->hw->host_function == MSDC_EMMC) {
+		host->dvfs_reg_backup = emmc_reg_backup;
+		host->dvfs_reg_offsets = emmc_dvfs_reg_backup_offsets;
+		host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
+		if (host->base_top)
+			host->dvfs_reg_offsets_top = emmc_dvfs_reg_backup_offsets_top;
+		host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_EMMC_INTERNAL;
+		host->dvfs_reg_backup_cnt_top = BACKUP_REG_COUNT_EMMC_TOP;
+	}
+}
+
+int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore;
+	int vcore, vcore_dvfs_work;
+	u8 *res;
 
-	vcore = 0; /* vcorefs_get_hw_opp(); */
-
-	if (!res) {
-		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
-			vcore = AUTOK_VCORE_LEVEL0;
-		res = host->autok_res[vcore];
+	vcore_dvfs_work = is_vcorefs_can_work();
+	if (vcore_dvfs_work == -1) {
+		vcore = 0;
+		pr_err("DVFS feature not enabled\n");
+	} else if (vcore_dvfs_work == 0) {
+		vcore = vcorefs_get_hw_opp();
+		pr_err("DVFS not ready\n");
+	} else if (vcore_dvfs_work == 1) {
+		vcore = vcorefs_get_hw_opp();
+		pr_err("DVFS ready\n");
+	} else {
+		vcore = 0;
+		pr_err("Invalid return value from is_vcorefs_can_work()\n");
 	}
 
-	host->dvfs_reg_backup = emmc_reg_backup;
-	host->dvfs_reg_offsets = emmc_dvfs_reg_backup_offsets;
-	host->dvfs_reg_offsets_src = dvfs_reg_backup_offsets_src;
-	if (host->base_top)
-		host->dvfs_reg_offsets_top = emmc_dvfs_reg_backup_offsets_top;
-	host->dvfs_reg_backup_cnt = BACKUP_REG_COUNT_EMMC_INTERNAL;
-	host->dvfs_reg_backup_cnt_top = BACKUP_REG_COUNT_EMMC_TOP;
+	res = host->autok_res[vcore];
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 		if (opcode == MMC_SEND_STATUS) {
 			pr_err("[AUTOK]eMMC HS200 Tune CMD only\n");
@@ -719,6 +727,7 @@ end:
 
 }
 
+/* invoked by SPM */
 int emmc_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[0];
@@ -741,8 +750,7 @@ int emmc_autok(void)
 			continue;
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
-		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-			host->autok_res[i]);
+		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
 	}
 
 	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],

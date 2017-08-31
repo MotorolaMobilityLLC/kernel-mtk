@@ -29,7 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16092617)
+#define AUTOK_VERSION                   (0x16092816)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -92,19 +92,19 @@
 
 #define AUTOK_MSDC0_CLKTXDLY                  0
 #define AUTOK_MSDC0_CMDTXDLY                  0
-#define AUTOK_MSDC0_DAT0TXDLY                 12
+#define AUTOK_MSDC0_DAT0TXDLY                 0
 #define AUTOK_MSDC0_DAT1TXDLY                 0
 #define AUTOK_MSDC0_DAT2TXDLY                 0
 #define AUTOK_MSDC0_DAT3TXDLY                 0
-#define AUTOK_MSDC0_DAT4TXDLY                 3
-#define AUTOK_MSDC0_DAT5TXDLY                 6
+#define AUTOK_MSDC0_DAT4TXDLY                 0
+#define AUTOK_MSDC0_DAT5TXDLY                 0
 #define AUTOK_MSDC0_DAT6TXDLY                 0
 #define AUTOK_MSDC0_DAT7TXDLY                 0
 
 #define AUTOK_MSDC0_TXSKEW                    0
 
-#define AUTOK_MSDC1_CLK_TX_VALUE              18
-#define AUTOK_MSDC1_CLK_SDR104_TX_VALUE       18
+#define AUTOK_MSDC1_CLK_TX_VALUE              0
+#define AUTOK_MSDC1_CLK_SDR104_TX_VALUE       8
 
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
@@ -2383,6 +2383,10 @@ int autok_init_hs400(struct msdc_host *host)
 	autok_write_param(host, EMMC50_WDATA_MUX_EN, 1);
 	/* Specifical for HS400 Path Sel */
 	autok_write_param(host, MSDC_WCRC_ASYNC_FIFO_SEL, 0);
+
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
+	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_READ_DAT_CNT, 1);
 
 	return 0;
 }

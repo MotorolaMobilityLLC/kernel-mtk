@@ -70,6 +70,9 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 	}
 
+	if (save_mode == 1)
+		host->saved_para.emmc50_cfg0 = MSDC_READ32(EMMC50_CFG0);
+
 	if (save_mode == 2) {
 		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1,
 			host->saved_para.ds_dly1);
@@ -96,6 +99,7 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 			host->saved_para.inten_sdio_irq);
 	}
 
+	host->saved_para.pb0 = MSDC_READ32(MSDC_PATCH_BIT0);
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
 	host->saved_para.sdc_fifo_cfg = MSDC_READ32(SDC_FIFO_CFG);
@@ -302,6 +306,8 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		MSDC_WRITE32(MSDC_PAD_TUNE1, host->saved_para.pad_tune1);
 	}
 
+	if (emmc)
+		MSDC_WRITE32(MSDC_PATCH_BIT0, host->saved_para.pb0);
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
 	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
@@ -343,6 +349,9 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		MSDC_WRITE32(EMMC50_PAD_DAT67_TUNE,
 			host->saved_para.emmc50_dat67);
 	}
+
+	if (emmc)
+		MSDC_WRITE32(EMMC50_CFG0, host->saved_para.emmc50_cfg0);
 
 	if (host->base_top) {
 		MSDC_WRITE32(EMMC_TOP_CONTROL,

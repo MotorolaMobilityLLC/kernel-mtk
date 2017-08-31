@@ -163,71 +163,89 @@ int msdc_rsp[] = {
 #define PRINTF_REGISTER_BUFFER_SIZE 512
 #define ONE_REGISTER_STRING_SIZE    14
 
+#define MSDC_REG_PRINT(OFFSET, VAL, MSG_SZ, MSG_ACCU_SZ, BUF_SZ, BUF, BUF_CUR, SEQ) \
+{ \
+	if (SEQ) { \
+		seq_printf(SEQ, "R[%x]=0x%.8x\n", OFFSET, VAL); \
+		continue; \
+	} \
+	MSG_ACCU_SZ += MSG_SZ; \
+	if (MSG_ACCU_SZ >= BUF_SZ) { \
+		pr_err("%s", BUF); \
+		memset(BUF, 0, BUF_SZ); \
+		MSG_ACCU_SZ = MSG_SZ; \
+		BUF_CUR = BUF; \
+	} \
+	snprintf(BUF_CUR, MSG_SZ+1, "[%.3hx:%.8x]", OFFSET, VAL); \
+	BUF_CUR += MSG_SZ; \
+}
+
+#define MSDC_RST_REG_PRINT_BUF(MSG_ACCU_SZ, BUF_SZ, BUF, BUF_CUR) \
+{ \
+	MSG_ACCU_SZ = 0; \
+	memset(BUF, 0, BUF_SZ); \
+	BUF_CUR = BUF; \
+}
+
 void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m)
 {
 	void __iomem *base = host->base;
 	u32 id = host->id;
 	u32 msg_size = 0;
-	u16 i;
+	u32 val;
+	u16 offset, i, j;
 	char buffer[PRINTF_REGISTER_BUFFER_SIZE + 1];
 	char *buffer_cur_ptr = buffer;
 
 	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
 	pr_err("MSDC%d normal register\n", id);
-
 	for (i = 0; msdc_offsets[i] != (u16)0xFFFF; i++) {
-		if (m) {
-			seq_printf(m, "R[%x]=0x%.8x\n", msdc_offsets[i],
-				MSDC_READ32(base + msdc_offsets[i]));
-			continue;
-		}
-
-		msg_size += ONE_REGISTER_STRING_SIZE;
-		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
-			pr_err("%s", buffer);
-			memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
-			msg_size = ONE_REGISTER_STRING_SIZE;
-			buffer_cur_ptr = buffer;
-		}
-		/* the size of one register string is 15 */
-		snprintf(buffer_cur_ptr, ONE_REGISTER_STRING_SIZE+1,
-			"[%.3hx:%.8x]", msdc_offsets[i],
-			MSDC_READ32(base + msdc_offsets[i]));
-		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
+		offset = msdc_offsets[i];
+		val = MSDC_READ32(base + offset);
+		MSDC_REG_PRINT(offset, val, ONE_REGISTER_STRING_SIZE, msg_size,
+			PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr, m);
 	}
+	if (!m)
+		pr_err("%s\n", buffer);
 
+	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
+	pr_err("MSDC%d DVFS register\n", id);
+
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		for (j = 0; j < host->dvfs_reg_backup_cnt; j++) {
+			offset = host->dvfs_reg_offsets[j] + MSDC_DVFS_SET_SIZE * i;
+			val = MSDC_READ32(host->base + offset);
+			MSDC_REG_PRINT(offset, val, ONE_REGISTER_STRING_SIZE, msg_size,
+				PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr, m);
+		}
+	}
 	if (!m)
 		pr_err("%s\n", buffer);
 
 	if (!host->base_top)
 		return;
 
-	msg_size = 0;
-	memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
-	buffer_cur_ptr = buffer;
+	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
 	pr_err("MSDC%d top register\n", id);
-
 	for (i = 0;  msdc_offsets_top[i] != (u16)0xFFFF; i++) {
-		if (m) {
-			seq_printf(m, "TOP_R[%x]=0x%.8x\n", msdc_offsets_top[i],
-				MSDC_READ32(host->base_top + msdc_offsets_top[i]));
-			continue;
-		}
-
-		msg_size += ONE_REGISTER_STRING_SIZE;
-		if (msg_size >= PRINTF_REGISTER_BUFFER_SIZE) {
-			pr_err("%s", buffer);
-			memset(buffer, 0, PRINTF_REGISTER_BUFFER_SIZE);
-			msg_size = ONE_REGISTER_STRING_SIZE;
-			buffer_cur_ptr = buffer;
-		}
-		/* the size of one register string is 15 */
-		snprintf(buffer_cur_ptr, ONE_REGISTER_STRING_SIZE+1,
-			"[%.3hx:%.8x]", msdc_offsets_top[i],
-			MSDC_READ32(host->base_top + msdc_offsets_top[i]));
-		buffer_cur_ptr += ONE_REGISTER_STRING_SIZE;
+		offset = msdc_offsets_top[i];
+		val = MSDC_READ32(host->base_top + offset);
+		MSDC_REG_PRINT(offset, val, ONE_REGISTER_STRING_SIZE, msg_size,
+			PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr, m);
 	}
+	if (!m)
+		pr_err("%s\n", buffer);
 
+	MSDC_RST_REG_PRINT_BUF(msg_size, PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr);
+	pr_err("MSDC%d top DVFS register\n", id);
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		for (j = 0; j < host->dvfs_reg_backup_cnt_top; j++) {
+			offset = host->dvfs_reg_offsets_top[j] + MSDC_TOP_SET_SIZE * i;
+			val = MSDC_READ32(host->base_top + offset);
+			MSDC_REG_PRINT(offset, val, ONE_REGISTER_STRING_SIZE, msg_size,
+				PRINTF_REGISTER_BUFFER_SIZE, buffer, buffer_cur_ptr, m);
+		}
+	}
 	if (!m)
 		pr_err("%s\n", buffer);
 }
@@ -536,11 +554,9 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
 
-		/* Set PWM mode for MT6351 else SDIO CMDTO/CMDCRC */
 		if (host->hw->host_function == MSDC_SDIO)
 			msdc_pmic_force_vcore_pwm(true);
 	} else if ((!on) && (host->core_clkon == 1)) {
-		/* Clear PWM mode for MT6351 */
 		if (host->hw->host_function == MSDC_SDIO)
 			msdc_pmic_force_vcore_pwm(false);
 
@@ -1629,7 +1645,6 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		if ((cmd->opcode != 19) && (cmd->opcode != 21))
 			pr_err("[%s]: msdc%d CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
-
 		if ((cmd->opcode == 52) && (cmd->arg != 0x00000c00) && (cmd->arg != 0x80000c08))
 			msdc_dump_info(host->id);
 
@@ -2542,6 +2557,9 @@ int msdc_if_send_stop(struct msdc_host *host,
 	if (!check_mmc_cmd1825(mrq->cmd->opcode))
 		return 0;
 
+	if (!mrq->cmd->data || !mrq->cmd->data->stop)
+		return 0;
+
 #ifdef MTK_MSDC_USE_CMD23
 	if ((host->hw->host_function == MSDC_EMMC) && (req_type != ASYNC_REQ)) {
 		/* multi r/w without cmd23 and autocmd12, need manual cmd12 */
@@ -2559,8 +2577,6 @@ int msdc_if_send_stop(struct msdc_host *host,
 	} else
 #endif
 	{
-		if (!mrq->cmd->data || !mrq->cmd->data->stop)
-			return 0;
 		if ((mrq->cmd->error != 0)
 		 || (mrq->cmd->data->error != 0)
 		 || !(host->autocmd & MSDC_AUTOCMD12)) {
@@ -3275,30 +3291,17 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		ret = autok_execute_tuning(host, NULL);
 		break;
 	case MMC_TIMING_MMC_HS200:
-		if (mmc->ios.clock > 52000000) {
-			pr_err("msdc%d: eMMC HS200 re-autok %d times\n",
-				host->id, ++host->reautok_times);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			/* CQ DAT tune in MMC layer, here tune CMD13 CRC */
-			if (host->mmc->card->ext_csd.cmdq_mode_en)
-				ret = hs200_execute_tuning_cmd(host, NULL);
-			else
-#endif
-				ret = hs200_execute_tuning(host, NULL);
-			break;
-		}
-		/* fall through */
 	case MMC_TIMING_MMC_HS400:
 		if (mmc->ios.clock > 52000000) {
-			pr_err("msdc%d: eMMC HS400 re-autok %d times\n",
+			pr_err("msdc%d: eMMC re-autok %d times\n",
 				host->id, ++host->reautok_times);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 			/* CQ DAT tune in MMC layer, here tune CMD13 CRC */
 			if (host->mmc->card->ext_csd.cmdq_mode_en)
-				ret = hs400_execute_tuning_cmd(host, NULL);
+				emmc_execute_dvfs_autok(host, MMC_SEND_STATUS);
 			else
 #endif
-				ret = hs400_execute_tuning(host, NULL);
+				emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200);
 			break;
 		}
 		/* fall through */
@@ -3774,14 +3777,15 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 	msdc_ungate_clock(host);
 	msdc_init_tune_path(host, mmc->ios.timing);
+	autok_msdc_tx_setting(host, &mmc->ios);
 	host->tuning_in_progress = true;
 
 	msdc_pmic_force_vcore_pwm(true);
 
 	if (host->hw->host_function == MSDC_SD)
-		ret = sd_execute_dvfs_autok(host, opcode, NULL);
+		ret = sd_execute_dvfs_autok(host, opcode);
 	else if (host->hw->host_function == MSDC_EMMC)
-		ret = emmc_execute_dvfs_autok(host, opcode, NULL);
+		ret = emmc_execute_dvfs_autok(host, opcode);
 	else if (host->hw->host_function == MSDC_SDIO)
 		sdio_execute_dvfs_autok(host);
 
@@ -4772,6 +4776,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* host->timer.expires = jiffies + HZ; */
 	host->timer.function = msdc_timer_pm;
 	host->timer.data = (unsigned long)host;
+
+	msdc_dvfs_reg_backup_init(host);
 
 	ret = request_irq((unsigned int)host->irq, msdc_irq, IRQF_TRIGGER_NONE,
 		DRV_NAME, host);
