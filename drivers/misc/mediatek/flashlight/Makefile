@@ -15,6 +15,7 @@ flashlight-y	:= flashlight-core.o
 flashlight-y	+= flashlight-device.o
 
 obj-$(CONFIG_MTK_FLASHLIGHT)		     += flashlight.o
+obj-$(CONFIG_MTK_FLASHLIGHT_LM3642)      += flashlights-lm3642.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3643)      += flashlights-lm3643.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT4505)      += flashlights-rt4505.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT5081)      += flashlights-rt5081.o
