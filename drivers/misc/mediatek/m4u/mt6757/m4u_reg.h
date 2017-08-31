@@ -81,6 +81,8 @@
 #define F_MMU_SEC_ABORT_ID    F_MSK_SHIFT(regval, 13, 0)
 
 #define REG_MMU_DUMMY	       (0X44)
+#define F_REG_MMU_IDLE_ENABLE	     F_BIT_SET(0)
+
 #define REG_MMU_STANDARD_AXI_MODE   (0x48)
 
 #define REG_MMU_PRIORITY	(0x4c)

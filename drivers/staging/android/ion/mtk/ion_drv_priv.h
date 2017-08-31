@@ -20,9 +20,13 @@
 
 /* Import from multimedia heap */
 long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
-		  unsigned long arg, int from_kernel);
+			 unsigned long arg, int from_kernel);
 
 void smp_inner_dcache_flush_all(void);
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+int mt_smp_cache_flush(struct sg_table *table, unsigned int sync_type, int npages);
+extern int (*ion_sync_kernel_func)(unsigned long start, size_t size, unsigned int sync_type);
+#endif
 
 #ifdef ION_HISTORY_RECORD
 int ion_history_init(void);
@@ -36,5 +40,9 @@ static inline int ion_history_init(void)
 int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache, size_t size));
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock);
 int ion_drv_create_heap(struct ion_platform_heap *heap_data);
+
+#ifdef CONFIG_PM
+void shrink_ion_by_scenario(void);
+#endif
 
 #endif
