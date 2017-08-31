@@ -542,8 +542,9 @@ void AudDrv_ADC_Clk_On(void)
 {
 	/* PRINTK_AUDDRV("+AudDrv_ADC_Clk_On, Aud_ADC_Clk_cntr:%d\n", Aud_ADC_Clk_cntr); */
 	int ret = 0;
+	unsigned long flags = 0;
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_ADC_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s enable_clock ADC clk(%x)\n", __func__,
@@ -568,13 +569,15 @@ void AudDrv_ADC_Clk_On(void)
 	}
 	Aud_ADC_Clk_cntr++;
 EXIT:
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_ADC_Clk_Off(void)
 {
+	unsigned long flags = 0;
+
 	/* PRINTK_AUDDRV("+AudDrv_ADC_Clk_Off, Aud_ADC_Clk_cntr:%d\n", Aud_ADC_Clk_cntr); */
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_ADC_Clk_cntr--;
 	if (Aud_ADC_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s disable_clock ADC clk(%x)\n", __func__,
@@ -591,7 +594,7 @@ void AudDrv_ADC_Clk_Off(void)
 			      Aud_ADC_Clk_cntr);
 		Aud_ADC_Clk_cntr = 0;
 	}
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 	/* PRINTK_AUDDRV("-AudDrv_ADC_Clk_Off, Aud_ADC_Clk_cntr:%d\n", Aud_ADC_Clk_cntr); */
 }
 
@@ -607,9 +610,10 @@ void AudDrv_ADC_Clk_Off(void)
 void AudDrv_ADC2_Clk_On(void)
 {
 	int ret = 0;
+	unsigned long flags = 0;
 
 	PRINTK_AUD_CLK("+%s %d\n", __func__, Aud_ADC2_Clk_cntr);
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_ADC2_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s  enable_clock ADC2 clk(%x)\n", __func__, Aud_ADC2_Clk_cntr);
@@ -632,13 +636,15 @@ void AudDrv_ADC2_Clk_On(void)
 	}
 	Aud_ADC2_Clk_cntr++;
 EXIT:
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_ADC2_Clk_Off(void)
 {
+	unsigned long flags = 0;
+
 	/* PRINTK_AUDDRV("+%s %d\n", __func__,Aud_ADC2_Clk_cntr); */
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_ADC2_Clk_cntr--;
 	if (Aud_ADC2_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+%s disable_clock ADC2 clk(%x)\n", __func__,
@@ -655,7 +661,7 @@ void AudDrv_ADC2_Clk_Off(void)
 			      Aud_ADC2_Clk_cntr);
 		Aud_ADC2_Clk_cntr = 0;
 	}
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 	/* PRINTK_AUDDRV("-AudDrv_ADC_Clk_Off, Aud_ADC_Clk_cntr:%d\n", Aud_ADC_Clk_cntr); */
 }
 
