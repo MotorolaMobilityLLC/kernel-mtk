@@ -5761,6 +5761,29 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 				prAdapter->rWifiVar.ucRxGf = FEATURE_ENABLED;
 		} else if (u2SubId == 0x0101)
 			prAdapter->rWifiVar.ucRxShortGI = (UINT_8) u4Data;
+		else if (u2SubId == 0x0103) { /* AP Mode WMMPS */
+			PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
+
+			DBGLOG(OID, INFO, "ApUapsd 0x10010103 cmd received: %d\n", u4Data);
+			if ((BOOLEAN) u4Data) {
+				prAdapter->rWifiVar.ucApUapsd = TRUE;
+				rUapsdParams.fgEnAPSD = 1;
+				rUapsdParams.fgEnAPSD_AcBe = 1;
+				rUapsdParams.fgEnAPSD_AcBk = 1;
+				rUapsdParams.fgEnAPSD_AcVi = 1;
+				rUapsdParams.fgEnAPSD_AcVo = 1;
+				rUapsdParams.ucMaxSpLen = 0; /* default: 0, do not limit delivery pkt number */
+			} else {
+				prAdapter->rWifiVar.ucApUapsd = FALSE;
+				rUapsdParams.fgEnAPSD = 0;
+				rUapsdParams.fgEnAPSD_AcBe = 0;
+				rUapsdParams.fgEnAPSD_AcBk = 0;
+				rUapsdParams.fgEnAPSD_AcVi = 0;
+				rUapsdParams.fgEnAPSD_AcVo = 0;
+				rUapsdParams.ucMaxSpLen = 0; /* default: 0, do not limit delivery pkt number */
+			}
+			nicSetUapsdParam(prAdapter, &rUapsdParams, NETWORK_TYPE_P2P);
+		}
 
 		break;
 
@@ -9801,140 +9824,6 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 }
 
-#if 0
-WLAN_STATUS
-wlanoidSetNoaParam(IN P_ADAPTER_T prAdapter,
-		   IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_CUSTOM_NOA_PARAM_STRUCT_T prNoaParam;
-	CMD_CUSTOM_NOA_PARAM_STRUCT_T rCmdNoaParam;
-
-	DEBUGFUNC("wlanoidSetNoaParam");
-	DBGLOG(OID, LOUD, "\n");
-
-	ASSERT(prAdapter);
-	ASSERT(pu4SetInfoLen);
-
-	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_NOA_PARAM_STRUCT_T);
-
-	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_NOA_PARAM_STRUCT_T))
-		return WLAN_STATUS_INVALID_LENGTH;
-
-	ASSERT(pvSetBuffer);
-
-	prNoaParam = (P_PARAM_CUSTOM_NOA_PARAM_STRUCT_T) pvSetBuffer;
-
-	kalMemZero(&rCmdNoaParam, sizeof(CMD_CUSTOM_NOA_PARAM_STRUCT_T));
-	rCmdNoaParam.u4NoaDurationMs = prNoaParam->u4NoaDurationMs;
-	rCmdNoaParam.u4NoaIntervalMs = prNoaParam->u4NoaIntervalMs;
-	rCmdNoaParam.u4NoaCount = prNoaParam->u4NoaCount;
-
-	return wlanSendSetQueryCmd(prAdapter,
-				   CMD_ID_SET_NOA_PARAM,
-				   TRUE,
-				   FALSE,
-				   TRUE,
-				   nicCmdEventSetCommon,
-				   nicOidCmdTimeoutCommon,
-				   sizeof(CMD_CUSTOM_NOA_PARAM_STRUCT_T),
-				   (PUINT_8) &rCmdNoaParam, pvSetBuffer, u4SetBufferLen);
-}
-
-WLAN_STATUS
-wlanoidSetOppPsParam(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T prOppPsParam;
-	CMD_CUSTOM_OPPPS_PARAM_STRUCT_T rCmdOppPsParam;
-
-	DEBUGFUNC("wlanoidSetOppPsParam");
-	DBGLOG(OID, LOUD, "\n");
-
-	ASSERT(prAdapter);
-	ASSERT(pu4SetInfoLen);
-
-	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T);
-
-	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T))
-		return WLAN_STATUS_INVALID_LENGTH;
-
-	ASSERT(pvSetBuffer);
-
-	prOppPsParam = (P_PARAM_CUSTOM_OPPPS_PARAM_STRUCT_T) pvSetBuffer;
-
-	kalMemZero(&rCmdOppPsParam, sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T));
-	rCmdOppPsParam.u4CTwindowMs = prOppPsParam->u4CTwindowMs;
-
-	return wlanSendSetQueryCmd(prAdapter,
-				   CMD_ID_SET_OPPPS_PARAM,
-				   TRUE,
-				   FALSE,
-				   TRUE,
-				   nicCmdEventSetCommon,
-				   nicOidCmdTimeoutCommon,
-				   sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
-				   (PUINT_8) &rCmdOppPsParam, pvSetBuffer, u4SetBufferLen);
-}
-
-WLAN_STATUS
-wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T prUapsdParam;
-	CMD_CUSTOM_UAPSD_PARAM_STRUCT_T rCmdUapsdParam;
-	P_PM_PROFILE_SETUP_INFO_T prPmProfSetupInfo;
-	P_BSS_INFO_T prBssInfo;
-
-	DEBUGFUNC("wlanoidSetUApsdParam");
-	DBGLOG(OID, LOUD, "\n");
-
-	ASSERT(prAdapter);
-	ASSERT(pu4SetInfoLen);
-
-	*pu4SetInfoLen = sizeof(PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T);
-
-	if (u4SetBufferLen < sizeof(PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T))
-		return WLAN_STATUS_INVALID_LENGTH;
-
-	ASSERT(pvSetBuffer);
-
-	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
-	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
-
-	prUapsdParam = (P_PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T) pvSetBuffer;
-
-	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T));
-	rCmdUapsdParam.fgEnAPSD = prUapsdParam->fgEnAPSD;
-	prAdapter->rWifiVar.fgSupportUAPSD = prUapsdParam->fgEnAPSD;
-
-	rCmdUapsdParam.fgEnAPSD_AcBe = prUapsdParam->fgEnAPSD_AcBe;
-	rCmdUapsdParam.fgEnAPSD_AcBk = prUapsdParam->fgEnAPSD_AcBk;
-	rCmdUapsdParam.fgEnAPSD_AcVo = prUapsdParam->fgEnAPSD_AcVo;
-	rCmdUapsdParam.fgEnAPSD_AcVi = prUapsdParam->fgEnAPSD_AcVi;
-	prPmProfSetupInfo->ucBmpDeliveryAC =
-	    ((prUapsdParam->fgEnAPSD_AcBe << 0) |
-	     (prUapsdParam->fgEnAPSD_AcBk << 1) |
-	     (prUapsdParam->fgEnAPSD_AcVi << 2) | (prUapsdParam->fgEnAPSD_AcVo << 3));
-	prPmProfSetupInfo->ucBmpTriggerAC =
-	    ((prUapsdParam->fgEnAPSD_AcBe << 0) |
-	     (prUapsdParam->fgEnAPSD_AcBk << 1) |
-	     (prUapsdParam->fgEnAPSD_AcVi << 2) | (prUapsdParam->fgEnAPSD_AcVo << 3));
-
-	rCmdUapsdParam.ucMaxSpLen = prUapsdParam->ucMaxSpLen;
-	prPmProfSetupInfo->ucUapsdSp = prUapsdParam->ucMaxSpLen;
-
-	return wlanSendSetQueryCmd(prAdapter,
-				   CMD_ID_SET_UAPSD_PARAM,
-				   TRUE,
-				   FALSE,
-				   TRUE,
-				   nicCmdEventSetCommon,
-				   nicOidCmdTimeoutCommon,
-				   sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
-				   (PUINT_8) &rCmdUapsdParam, pvSetBuffer, u4SetBufferLen);
-}
-#endif
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set BT profile or BT information and the
@@ -10434,8 +10323,18 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 		p2pSetMode((prSetP2P->u4Mode == 1) ? TRUE : FALSE);
 		if (p2pLaunch(prAdapter->prGlueInfo))
 			ASSERT(prAdapter->fgIsP2PRegistered);
-		else
-			status = WLAN_STATUS_FAILURE;
+			if (prAdapter->rWifiVar.ucApUapsd && prSetP2P->u4Mode == 1) {
+				PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams;
+
+				DBGLOG(OID, INFO, "wlanoidSetP2pMode Default enable ApUapsd\n");
+				rUapsdParams.fgEnAPSD = 1;
+				rUapsdParams.fgEnAPSD_AcBe = 1;
+				rUapsdParams.fgEnAPSD_AcBk = 1;
+				rUapsdParams.fgEnAPSD_AcVi = 1;
+				rUapsdParams.fgEnAPSD_AcVo = 1;
+				rUapsdParams.ucMaxSpLen = 0; /* default:0, Do not limit delivery pkt num */
+				nicSetUapsdParam(prAdapter, &rUapsdParams, NETWORK_TYPE_P2P);
+			}
 	} else {
 		if (prAdapter->fgIsP2PRegistered)
 			p2pRemove(prAdapter->prGlueInfo);
