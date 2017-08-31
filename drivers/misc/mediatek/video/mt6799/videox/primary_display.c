@@ -4382,6 +4382,7 @@ static int _decouple_update_rdma_config_nolock(void)
 	int interface_fence = 0;
 	int layer = 0;
 	int ret = 0;
+	int rdma_scenario_change = 0;
 	struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
 
 	if (primary_display_is_decouple_mode()) {
@@ -4408,48 +4409,6 @@ static int _decouple_update_rdma_config_nolock(void)
 		disp_cmdq_reset(cmdq_handle);
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 
-		if (disp_helper_get_option(DISP_OPT_RSZ)) {
-			struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-			enum HRT_PATH_SCENARIO hrt_path = HRT_PATH_UNKNOWN;
-			enum HRT_SCALE_SCENARIO hrt_scale = HRT_SCALE_UNKNOWN;
-
-			cmdqBackupReadSlot(pgc->hrt_info, 0, &hrt_path);
-			cmdqBackupReadSlot(pgc->hrt_info, 1, &hrt_scale);
-
-			if (pconfig->hrt_path != hrt_path || pconfig->hrt_scale != hrt_scale) {
-				DISPDBG("%s:path:%s->%s,scale:%s->%s\n",
-				       __func__, HRT_path_name(pconfig->hrt_path),
-				       HRT_path_name(hrt_path),
-				       HRT_scale_name(pconfig->hrt_scale),
-				       HRT_scale_name(hrt_scale));
-
-				pconfig->hrt_path = hrt_path;
-				pconfig->hrt_scale = hrt_scale;
-
-				pconfig->dst_dirty = 1;
-			}
-
-			if (pconfig->dst_dirty) {
-				enum DDP_SCENARIO_ENUM old_scn = dpmgr_get_scenario(pgc->dpmgr_handle);
-				enum DDP_SCENARIO_ENUM new_scn = DDP_SCENARIO_MAX;
-
-				new_scn = primary_get_RDMA_scenario(pconfig);
-				pconfig->is_dual = ddp_path_is_dual(new_scn);
-				pconfig->rsz_enable = HRT_is_resize_enabled(pconfig->hrt_scale) &
-							ddp_is_module_in_scenario(new_scn, DISP_MODULE_RSZ0);
-
-				dpmgr_path_update_rsz(pconfig);
-				disp_rsz_print_hrt_info(pconfig, __func__);
-
-				if (new_scn != old_scn)
-					primary_do_path_switch(new_scn, old_scn, pgc->dpmgr_handle, cmdq_handle, 0);
-
-				disp_rsz_print_hrt_info(pconfig, __func__);
-
-				dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
-			}
-		}
-
 		cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
 		/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
 		cmdqBackupReadSlot(pgc->rdma_buff_info, 1, &(rdma_pitch_sec));
@@ -4471,7 +4430,54 @@ static int _decouple_update_rdma_config_nolock(void)
 						    0, disp_addr_convert(DISP_REG_DITHER_OUT_CNT));
 		}
 #endif
-		_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
+
+		if (disp_helper_get_option(DISP_OPT_RSZ)) {
+			struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+			enum HRT_PATH_SCENARIO hrt_path = HRT_PATH_UNKNOWN;
+			enum HRT_SCALE_SCENARIO hrt_scale = HRT_SCALE_UNKNOWN;
+
+			cmdqBackupReadSlot(pgc->hrt_info, 0, &hrt_path);
+			cmdqBackupReadSlot(pgc->hrt_info, 1, &hrt_scale);
+
+			if (pconfig->hrt_path != hrt_path || pconfig->hrt_scale != hrt_scale) {
+				DISPDBG("%s:path:%s->%s,scale:%s->%s\n",
+				       __func__, HRT_path_name(pconfig->hrt_path),
+				       HRT_path_name(hrt_path),
+				       HRT_scale_name(pconfig->hrt_scale),
+				       HRT_scale_name(hrt_scale));
+
+				pconfig->hrt_path = hrt_path;
+				pconfig->hrt_scale = hrt_scale;
+
+				pconfig->dst_dirty = 1;
+				rdma_scenario_change = 1;
+			}
+
+			if (pconfig->dst_dirty) {
+				enum DDP_SCENARIO_ENUM old_scn = dpmgr_get_scenario(pgc->dpmgr_handle);
+				enum DDP_SCENARIO_ENUM new_scn = DDP_SCENARIO_MAX;
+
+				new_scn = primary_get_RDMA_scenario(pconfig);
+				pconfig->is_dual = ddp_path_is_dual(new_scn);
+				pconfig->rsz_enable = HRT_is_resize_enabled(pconfig->hrt_scale) &
+							ddp_is_module_in_scenario(new_scn, DISP_MODULE_RSZ0);
+
+				dpmgr_path_update_rsz(pconfig);
+				disp_rsz_print_hrt_info(pconfig, __func__);
+
+				if (new_scn != old_scn)
+					primary_do_path_switch(new_scn, old_scn, pgc->dpmgr_handle, cmdq_handle, 0);
+
+				disp_rsz_print_hrt_info(pconfig, __func__);
+
+				pconfig->rdma_config = tmpConfig;
+
+				dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
+			}
+		}
+
+		if (rdma_scenario_change == 0)
+			_config_rdma_input_data(&tmpConfig, pgc->dpmgr_handle, cmdq_handle);
 
 		_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 		disp_cmdq_flush_async_callback(cmdq_handle, (CmdqAsyncFlushCB)_Interface_fence_release_callback,
