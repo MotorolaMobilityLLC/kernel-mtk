@@ -458,7 +458,7 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 			return;
 	}
 	ccmni_ops.md_state_callback(port->md_id, GET_CCMNI_IDX(port), state,
-		(dir == OUT && qno == NET_ACK_TXQ_INDEX(port)));
+		(dir == OUT && qno == NET_ACK_TXQ_INDEX(port) && port->txq_index != qno));
 
 	switch (state) {
 	case TX_IRQ:
