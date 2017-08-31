@@ -958,7 +958,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_DPIDLE_ENTER:
 	case SPM_DPIDLE_LEAVE:
 	case SPM_ENTER_SODI:
+	case SPM_ENTER_SODI3:
 	case SPM_LEAVE_SODI:
+	case SPM_LEAVE_SODI3:
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {

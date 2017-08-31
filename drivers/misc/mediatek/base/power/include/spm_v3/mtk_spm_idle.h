@@ -74,7 +74,7 @@ bool spm_get_sodi3_en(void);
  * for Screen On Deep Idle
  */
 void spm_sodi_init(void);
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags);
+wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond);
 void spm_enable_sodi(bool);
 bool spm_get_sodi_en(void);
 
