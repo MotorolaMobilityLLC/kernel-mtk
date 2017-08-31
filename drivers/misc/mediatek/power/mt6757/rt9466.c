@@ -756,6 +756,8 @@ static bool rt9466_is_hw_exist(struct rt9466_info *info)
 		battery_log(BAT_LOG_CRTI, "%s: E2(0x%02X)\n", __func__, revision);
 	else if (revision == RT9466_DEVICE_ID_E3)
 		battery_log(BAT_LOG_CRTI, "%s: E3(0x%02X)\n", __func__, revision);
+	else if (revision == RT9466_DEVICE_ID_E4)
+		battery_log(BAT_LOG_CRTI, "%s: E4(0x%02X)\n", __func__, revision);
 	else
 		return false;
 
@@ -1210,46 +1212,6 @@ static int rt9466_init_setting(struct rt9466_info *info)
 	return ret;
 }
 
-/*
- * This function is used in shutdown function
- * Use i2c smbus directly
- */
-static int rt9466_sw_reset(struct rt9466_info *info)
-{
-	int ret = 0;
-	u8 irq_data[5] = {0};
-
-	/* Register 0x01 ~ 0x11 */
-	const u8 reg_data[] = {
-		0x10, 0x03, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA1,
-		0x3C, 0x58, 0x2C, 0x02, 0x52, 0x05, 0x00, 0x10
-	};
-
-	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
-
-	/* Mask all irq */
-	ret = rt9466_enable_all_irq(info, false);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: mask all irq failed\n",
-			__func__);
-
-	/* Read all irq */
-	ret = rt9466_device_read(info->i2c, RT9466_REG_CHG_STATC,
-		ARRAY_SIZE(irq_data), irq_data);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: read all irq failed\n",
-			__func__);
-
-	/* Reset necessary registers */
-	ret = rt9466_device_write(info->i2c, RT9466_REG_CHG_CTRL1,
-		ARRAY_SIZE(reg_data), reg_data);
-	if (ret < 0)
-		battery_log(BAT_LOG_CRTI, "%s: reset registers failed\n",
-			__func__);
-
-	return ret;
-}
-
 
 static int rt9466_get_charging_status(struct rt9466_info *info,
 	enum rt9466_charging_status *chg_stat)
@@ -1417,6 +1379,7 @@ static int rt9466_parse_dt(struct rt9466_info *info, struct device *dev)
 		battery_log(BAT_LOG_CRTI, "%s: no enough memory\n", __func__);
 		return -ENOMEM;
 	}
+	memcpy(desc, &rt9466_default_desc, sizeof(struct rt9466_desc));
 
 	if (of_property_read_string(np, "charger_name",
 		&(info->mchr_info.name)) < 0) {
@@ -1425,59 +1388,38 @@ static int rt9466_parse_dt(struct rt9466_info *info, struct device *dev)
 	}
 
 	if (of_property_read_u32(np, "regmap_represent_slave_addr",
-		&desc->regmap_represent_slave_addr) < 0) {
+		&desc->regmap_represent_slave_addr) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no regmap slave addr\n",
 			__func__);
-		desc->regmap_represent_slave_addr =
-			rt9466_default_desc.regmap_represent_slave_addr;
-	}
 
 	if (of_property_read_string(np, "regmap_name",
-		&(desc->regmap_name)) < 0) {
+		&(desc->regmap_name)) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no regmap name\n", __func__);
-		desc->regmap_name = rt9466_default_desc.regmap_name;
-	}
 
-	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0) {
+	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no ichg\n", __func__);
-		desc->ichg = rt9466_default_desc.ichg;
-	}
 
-	if (of_property_read_u32(np, "aicr", &desc->aicr) < 0) {
+	if (of_property_read_u32(np, "aicr", &desc->aicr) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no aicr\n", __func__);
-		desc->aicr = rt9466_default_desc.aicr;
-	}
 
-	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0) {
+	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no mivr\n", __func__);
-		desc->mivr = rt9466_default_desc.mivr;
-	}
 
-	if (of_property_read_u32(np, "cv", &desc->cv) < 0) {
+	if (of_property_read_u32(np, "cv", &desc->cv) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no cv\n", __func__);
-		desc->cv = rt9466_default_desc.cv;
-	}
 
-	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0) {
+	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no ieoc\n", __func__);
-		desc->ieoc = rt9466_default_desc.ieoc;
-	}
 
-	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0) {
+	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no safety timer\n", __func__);
-		desc->safety_timer = rt9466_default_desc.safety_timer;
-	}
 
 	if (of_property_read_u32(np, "ircmp_resistor",
-		&desc->ircmp_resistor) < 0) {
+		&desc->ircmp_resistor) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no ircmp resistor\n", __func__);
-		desc->ircmp_resistor = rt9466_default_desc.ircmp_resistor;
-	}
 
-	if (of_property_read_u32(np, "ircmp_vclamp", &desc->ircmp_vclamp) < 0) {
+	if (of_property_read_u32(np, "ircmp_vclamp", &desc->ircmp_vclamp) < 0)
 		battery_log(BAT_LOG_CRTI, "%s: no ircmp vclamp\n", __func__);
-		desc->ircmp_vclamp = rt9466_default_desc.ircmp_vclamp;
-	}
 
 	desc->enable_te = of_property_read_bool(np, "enable_te");
 	desc->enable_wdt = of_property_read_bool(np, "enable_wdt");
@@ -2201,6 +2143,49 @@ static int rt_charger_set_error_state(struct mtk_charger_info *mchr_info,
 
 	return ret;
 }
+/*
+ * This function is used in shutdown function
+ * Use i2c smbus directly
+ */
+static int rt_charger_sw_reset(struct mtk_charger_info *mchr_info, void *data)
+{
+	int ret = 0;
+	u8 irq_data[5] = {0};
+	struct rt9466_info *info = (struct rt9466_info *)mchr_info;
+
+	/* Register 0x01 ~ 0x11 */
+	const u8 reg_data[] = {
+		0x10, 0x03, 0x23, 0x3C, 0x67, 0x0B, 0x4C, 0xA1,
+		0x3C, 0x58, 0x2C, 0x02, 0x52, 0x05, 0x00, 0x10
+	};
+
+	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
+	info->i2c_log_level = BAT_LOG_CRTI;
+
+	/* Mask all irq */
+	ret = rt9466_enable_all_irq(info, false);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: mask all irq failed\n",
+			__func__);
+
+	/* Read all irq */
+	ret = rt9466_device_read(info->i2c, RT9466_REG_CHG_STATC,
+		ARRAY_SIZE(irq_data), irq_data);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: read all irq failed\n",
+			__func__);
+
+	/* Reset necessary registers */
+	ret = rt9466_device_write(info->i2c, RT9466_REG_CHG_CTRL1,
+		ARRAY_SIZE(reg_data), reg_data);
+	if (ret < 0)
+		battery_log(BAT_LOG_CRTI, "%s: reset registers failed\n",
+			__func__);
+
+	info->i2c_log_level = BAT_LOG_FULL;
+	return ret;
+}
+
 
 static const mtk_charger_intf rt9466_mchr_intf[CHARGING_CMD_NUMBER] = {
 	[CHARGING_CMD_INIT] = rt_charger_hw_init,
@@ -2391,7 +2376,7 @@ static void rt9466_shutdown(struct i2c_client *i2c)
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 	if (info) {
-		ret = rt9466_sw_reset(info);
+		ret = rt_charger_sw_reset(&info->mchr_info, NULL);
 		if (ret < 0)
 			battery_log(BAT_LOG_CRTI,
 				"%s: sw reset failed\n", __func__);
@@ -2464,4 +2449,4 @@ module_exit(rt9466_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9466 Charger Driver");
-MODULE_VERSION("1.0.2_MTK");
+MODULE_VERSION("1.0.3_MTK");
