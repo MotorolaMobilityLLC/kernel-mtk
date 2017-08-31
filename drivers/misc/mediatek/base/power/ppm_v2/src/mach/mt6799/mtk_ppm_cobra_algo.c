@@ -525,7 +525,8 @@ void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req)
 				goto end;
 
 			for_each_ppm_clusters(i) {
-				int max_core = state_info[new_state].cluster_limit->state_limit[i].max_cpu_core;
+				int max_core = (new_state >= NR_PPM_POWER_STATE) ? get_cluster_max_cpu_core(i)
+					: state_info[new_state].cluster_limit->state_limit[i].max_cpu_core;
 
 				/* cannot turned on this cluster due to max_core limit of new_state is 0 */
 				if (!max_core)
