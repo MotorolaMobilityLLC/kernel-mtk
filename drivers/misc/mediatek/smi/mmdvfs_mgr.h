@@ -207,13 +207,18 @@ extern void mmdvfs_default_step_set(int default_step);
 extern void mmdvfs_default_start_delayed_setting(void);
 extern void mmdvfs_default_stop_delayed_setting(void);
 extern void mmdvfs_debug_set_mmdvfs_clks_enabled(int clk_enable_request);
+extern int mmdvfs_get_current_fine_step(void);
 
 
 extern void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req,
-int mmdvfs_pm_qos_class, int new_value);
+u32 mmdvfs_pm_qos_class, u32 new_value);
 extern void mmdvfs_pm_qos_remove_request(struct mmdvfs_pm_qos_request *req);
 extern void mmdvfs_pm_qos_add_request(struct mmdvfs_pm_qos_request *req,
-int mmdvfs_pm_qos_class, int value);
+u32 mmdvfs_pm_qos_class, u32 value);
+extern u32 mmdvfs_qos_get_thres_count(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class);
+extern u32 mmdvfs_qos_get_thres_value(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class, u32 thres_idx);
+extern u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class);
+
 #include "mmdvfs_config_util.h"
 
 #endif /* __MMDVFS_MGR_H__ */
