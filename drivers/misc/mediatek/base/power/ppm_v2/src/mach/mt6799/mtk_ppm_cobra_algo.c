@@ -751,7 +751,7 @@ void ppm_cobra_init(void)
 	{
 		struct upower_tbl_info *ptr_tbl_info = *(upower_get_tbl());
 		struct upower_tbl *ptr_tbl, *ptr_cls_tbl;
-		unsigned char temp_idx, core;
+		unsigned char temp_idx, core, opp;
 
 		if (!ptr_tbl_info) {
 			WARN_ON(1);
@@ -772,11 +772,12 @@ void ppm_cobra_init(void)
 				}
 
 				temp_idx = ptr_tbl->lkg_idx;
+				opp = DVFS_OPP_NUM - j - 1;
 				cobra_tbl.basic_pwr_tbl[i][j].power_idx =
-					((ptr_tbl->row[j].dyn_pwr + ptr_tbl->row[j].lkg_pwr[temp_idx]) * core
-					+ (ptr_cls_tbl->row[j].dyn_pwr
-					+ ptr_cls_tbl->row[j].lkg_pwr[temp_idx])) / 1000;
-				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = ptr_tbl->row[j].cap * core;
+					((ptr_tbl->row[opp].dyn_pwr + ptr_tbl->row[opp].lkg_pwr[temp_idx]) * core
+					+ (ptr_cls_tbl->row[opp].dyn_pwr
+					+ ptr_cls_tbl->row[opp].lkg_pwr[temp_idx])) / 1000;
+				cobra_tbl.basic_pwr_tbl[i][j].perf_idx = ptr_tbl->row[opp].cap * core;
 
 				ppm_info("[%d][%d] = (%d, %d)\n", i, j,
 					cobra_tbl.basic_pwr_tbl[i][j].power_idx,
