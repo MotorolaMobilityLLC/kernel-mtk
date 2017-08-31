@@ -544,13 +544,6 @@ static bool soidle3_can_enter(int cpu, int reason)
 	} else if (reason < NR_REASONS)
 		goto out;
 
-	reason = NR_REASONS;
-
-	#ifdef CONFIG_MTK_SPM_IN_ATF
-	/* FIXME: Not ready for SODI3 in ATF */
-	reason = BY_OTH;
-	#endif
-
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (soidle3_by_pass_en == 0) {
 		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0)) {
@@ -699,17 +692,8 @@ static bool soidle_can_enter(int cpu, int reason)
 	} else if (reason < NR_REASONS)
 		goto out;
 
-	reason = NR_REASONS;
-
-	#ifdef CONFIG_MTK_SPM_IN_ATF
-	/* FIXME: Not ready for SODI in ATF */
-	reason = BY_OTH;
-	#endif
-
 	if (!next_timer_criteria_check(soidle_time_criteria))
 		reason = BY_TMR;
-	/* FIXME: Bypass following checks due to main core on/off only */
-	goto out;
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (soidle_by_pass_en == 0) {
@@ -897,8 +881,6 @@ static bool dpidle_can_enter(int cpu, int reason)
 		}
 	} else if (reason < NR_REASONS)
 		goto out;
-
-	reason = NR_REASONS;
 
 	if (!next_timer_criteria_check(dpidle_time_criteria)) {
 		reason = BY_TMR;
