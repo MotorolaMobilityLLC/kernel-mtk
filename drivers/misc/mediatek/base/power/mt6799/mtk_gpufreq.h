@@ -95,6 +95,7 @@ extern unsigned int mt_gpufreq_get_thermal_limit_freq(void);
 extern void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power);
 extern unsigned int mt_gpufreq_get_leakage_mw(void);
 extern int mt_gpufreq_query_volt_enable_state(void);
+extern void mt_gpufreq_set_loading(unsigned int gpu_loading);
 
 extern unsigned int mt_get_mfgclk_freq(void);	/* Freq Meter API */
 extern u32 get_devinfo_with_index(u32 index);

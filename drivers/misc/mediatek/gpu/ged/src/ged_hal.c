@@ -31,6 +31,8 @@
 
 #include "ged_notify_sw_vsync.h"
 #include "ged_kpi.h"
+#include "ged_fdvfs.h"
+
 
 static struct dentry* gpsHALDir = NULL;
 static struct dentry* gpsTotalGPUFreqLevelCountEntry = NULL;
@@ -44,6 +46,11 @@ static struct dentry* gpsDvfsPreFreqEntry = NULL;
 static struct dentry* gpsDvfsGpuUtilizationEntry = NULL;
 static struct dentry* gpsFpsUpperBoundEntry = NULL;
 static struct dentry* gpsIntegrationReportReadEntry = NULL;
+#ifdef GED_FDVFS_ENABLE
+static struct dentry *gpsGpuFreqHintEntry;
+#endif
+
+
 
 int tokenizer(char* pcSrc, int i32len, int* pi32IndexArray, int i32NumToken)
 {
@@ -261,15 +268,80 @@ static int ged_custom_upbound_gpu_freq_seq_show(struct seq_file *psSeqFile, void
 
 	return 0;
 }
-//-----------------------------------------------------------------------------
-static struct seq_operations gsCustomUpboundGpuFreqReadOps = 
-{
+/* ----------------------------------------------------------------------------- */
+const struct seq_operations gsCustomUpboundGpuFreqReadOps = {
 	.start = ged_custom_upbound_gpu_freq_seq_start,
 	.stop = ged_custom_upbound_gpu_freq_seq_stop,
 	.next = ged_custom_upbound_gpu_freq_seq_next,
 	.show = ged_custom_upbound_gpu_freq_seq_show,
 };
-//-----------------------------------------------------------------------------
+/* ----------------------------------------------------------------------------- */
+#ifdef GED_FDVFS_ENABLE
+static ssize_t ged_gpu_freq_hint_write_entry(const char __user *pszBuffer,
+				size_t uiCount, loff_t uiPosition,
+				void *pvData)
+{
+#define GED_HAL_DEBUGFS_SIZE 64
+	char acBuffer[GED_HAL_DEBUGFS_SIZE];
+
+	int i32Value;
+
+	if ((uiCount > 0) && (uiCount < GED_HAL_DEBUGFS_SIZE)) {
+		if (ged_copy_from_user(acBuffer, pszBuffer, uiCount) == 0) {
+			acBuffer[uiCount] = '\0';
+			/* if (sscanf(acBuffer, "%d", &i32Value) == 1)	{ */
+			if (kstrtoint(acBuffer, 0, &i32Value) == 0) {
+				if (i32Value < 0)
+					i32Value = 0;
+				mtk_gpu_freq_hint(i32Value);
+			}
+		}
+	}
+
+	return uiCount;
+}
+
+/* ----------------------------------------------------------------------------- */
+static void *ged_gpu_freq_hint_seq_start(struct seq_file *psSeqFile, loff_t *puiPosition)
+{
+	if (*puiPosition == 0)
+		return SEQ_START_TOKEN;
+
+	return NULL;
+}
+/* ----------------------------------------------------------------------------- */
+static void ged_gpu_freq_hint_seq_stop(struct seq_file *psSeqFile, void *pvData)
+{
+
+}
+/* ----------------------------------------------------------------------------- */
+static void *ged_gpu_freq_hint_seq_next(struct seq_file *psSeqFile, void *pvData, loff_t *puiPosition)
+{
+	return NULL;
+}
+/* ----------------------------------------------------------------------------- */
+static int ged_gpu_freq_hint_seq_show(struct seq_file *psSeqFile, void *pvData)
+{
+	if (pvData != NULL)	{
+		unsigned int ui32BoostGpuFreqLevel;
+
+		if (false == mtk_gpu_get_freq_hint(&ui32BoostGpuFreqLevel))
+			ui32BoostGpuFreqLevel = 0;
+
+		seq_printf(psSeqFile, "%u\n", ui32BoostGpuFreqLevel);
+	}
+
+	return 0;
+}
+/* ----------------------------------------------------------------------------- */
+const struct seq_operations gsGpuFreqHintReadOps = {
+	.start = ged_gpu_freq_hint_seq_start,
+	.stop = ged_gpu_freq_hint_seq_stop,
+	.next = ged_gpu_freq_hint_seq_next,
+	.show = ged_gpu_freq_hint_seq_show,
+};
+
+#endif
 
 static bool bForce=GED_FALSE;
 static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer, size_t uiCount, loff_t uiPosition, void *pvData)
@@ -305,13 +377,22 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
  
 				if(strcmp(pcCMD,"touch_down")==0)
 				{
-					if ( (*pcValue)=='1'|| (*pcValue) =='0')
-					{
-						if( (*pcValue) -'0'==0) // touch up
-							ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT , false);
-						else // touch down
-							ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT , true);
+					/*if ( (*pcValue)=='1'|| (*pcValue) =='0')*/
+					/*{*/
+					if ((*pcValue) - '0' == 0) {
+						ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT,
+						false);
+#ifdef GED_FDVFS_ENABLE
+						mtk_gpu_touch_hint(0);
+#endif
+					} else if ((*pcValue) - '0' == 1) {
+						ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT,
+						true);
+#ifdef GED_FDVFS_ENABLE
+						mtk_gpu_touch_hint(1);
+#endif
 					}  
+					/*}*/
 				}
 				else if(strcmp(pcCMD,"enable_WFD")==0)
 				{
@@ -353,8 +434,14 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 
 						if ((*pcValue) == '1') {
 							ged_kpi_set_game_hint(1);
+#ifdef GED_FDVFS_ENABLE
+							mtk_gpu_gas_hint(1);
+#endif
 						} else {
 							ged_kpi_set_game_hint(0);
+#ifdef GED_FDVFS_ENABLE
+							mtk_gpu_gas_hint(0);
+#endif
 						}
 					}
 					else if(strcmp(pcCMD, "enable_VR") == 0)
@@ -1072,6 +1159,21 @@ GED_ERROR ged_hal_init(void)
 			NULL,
 			NULL,
 			&gpsGedInfoKPIEntry);
+#endif
+#ifdef GED_FDVFS_ENABLE
+    /* Control the gpu freq hint*/
+	err = ged_debugFS_create_entry(
+			"gpu_freq_hint",
+			gpsHALDir,
+			&gsGpuFreqHintReadOps,
+			ged_gpu_freq_hint_write_entry,
+			NULL,
+			&gpsGpuFreqHintEntry);
+
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to create freq_hint entry!\n");
+		goto ERROR;
+	}
 #endif
 
 	/* Report Integration Status */
