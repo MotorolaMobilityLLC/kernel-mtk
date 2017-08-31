@@ -101,6 +101,16 @@ typedef struct _PWR_PARAM_T {
 	UINT_32 u4RefValue2;
 } PWR_PARAM_T, *P_PWR_PARAM_T;
 
+#if CFG_SUPPORT_TX_BACKOFF
+typedef struct _MITIGATED_PWR_BY_CH_BY_MODE {
+	UINT_8 channel;
+	INT_8 mitigatedCckDsss;
+	INT_8 mitigatedOfdm;
+	INT_8 mitigatedHt20;
+	INT_8 mitigatedHt40;
+} MITIGATED_PWR_BY_CH_BY_MODE, *P_MITIGATED_PWR_BY_CH_BY_MODE;
+#endif
+
 typedef struct _MT6620_CFG_PARAM_STRUCT {
 	/* 256 bytes of MP data */
 	UINT_16 u2Part1OwnVersion;
@@ -115,12 +125,22 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	INT_8 cBandEdgeMaxPwrCCK;
 	INT_8 cBandEdgeMaxPwrOFDM20;
 	INT_8 cBandEdgeMaxPwrOFDM40;
+#if CFG_SUPPORT_TX_BACKOFF
+	INT_8 bTxPowerLimitEnable2G;
+	INT_8 cTxBackOffMaxPower2G;
+	INT_8 bTxPowerLimitEnable5G;
+	INT_8 cTxBackOffMaxPower5G;
+#endif
 
 	UINT_8 ucRegChannelListMap;
 	UINT_8 ucRegChannelListIndex;
 	UINT_8 aucRegSubbandInfo[36];
-
+#if CFG_SUPPORT_TX_BACKOFF
+	UINT_8 ucDefaultTestMode;
+	UINT_8 aucReserved2[256-245];
+#else
 	UINT_8 aucReserved2[256 - 240];
+#endif
 
 	/* 256 bytes of function data */
 	UINT_16 u2Part2OwnVersion;
@@ -133,7 +153,14 @@ typedef struct _MT6620_CFG_PARAM_STRUCT {
 	UINT_8 uc5GRssiCompensation;
 	UINT_8 fgRssiCompensationValidbit;
 	UINT_8 ucRxAntennanumber;
+#if CFG_SUPPORT_TX_BACKOFF
+	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
+	UINT_8 fgRlmMitigatedPwrByChByMode;
+	UINT_8 aucReserved3[3];
+	UINT_8 aucTailReserved[256-12-204];
+#else
 	UINT_8 aucTailReserved[256 - 12];
+#endif
 } MT6620_CFG_PARAM_STRUCT, *P_MT6620_CFG_PARAM_STRUCT, WIFI_CFG_PARAM_STRUCT, *P_WIFI_CFG_PARAM_STRUCT;
 
 /*******************************************************************************

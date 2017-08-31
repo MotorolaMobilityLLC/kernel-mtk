@@ -67,6 +67,10 @@ APPEND_VAR_IE_ENTRY_T txAssocReqIETable[] = {
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WPA), NULL, rsnGenerateWPAIE}
 	,			/* 221 */
 #endif
+#if CFG_SUPPORT_MTK_SYNERGY
+	{(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}	/* 221 */
+#endif
+
 };
 
 #if CFG_SUPPORT_AAA
@@ -95,6 +99,10 @@ APPEND_VAR_IE_ENTRY_T txAssocRespIETable[] = {
 	,			/* 127 */
 	{(ELEM_HDR_LEN + ELEM_MAX_LEN_WMM_PARAM), NULL, mqmGenerateWmmParamIE}
 	,			/* 221 */
+#if CFG_SUPPORT_MTK_SYNERGY
+	{(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}
+	,			/* 221 */
+#endif
 
 	{(0), p2pFuncCalculateWSC_IELenForAssocRsp, p2pFuncGenerateWSC_IEForAssocRsp}	/* 221 */
 

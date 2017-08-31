@@ -64,6 +64,8 @@ extern void upmu_set_vcn33_on_ctrl_wifi(UINT_32 val);
 #define CONSYS_REG_READ(addr)       (*((volatile unsigned int *)(addr)))
 
 #define CONN_MCU_DRV_BASE                0x18070000
+#define CONN_MCU_CHIPID                  0x0008
+
 #define CONN_MCU_REG_LENGTH              0x0200
 #define CONN_MCU_CPUPCR                  0x0160
 

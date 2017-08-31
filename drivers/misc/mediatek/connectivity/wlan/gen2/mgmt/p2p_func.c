@@ -30,6 +30,9 @@ APPEND_VAR_IE_ENTRY_T txProbeRspIETable[] = {
 	, {(ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP), NULL, rlmRspGenerateExtCapIE}	/* 127 */
 	, {(ELEM_HDR_LEN + ELEM_MAX_LEN_WPA), NULL, rsnGenerateWpaNoneIE}	/* 221 */
 	, {(ELEM_HDR_LEN + ELEM_MAX_LEN_WMM_PARAM), NULL, mqmGenerateWmmParamIE}	/* 221 */
+#if CFG_SUPPORT_MTK_SYNERGY
+	, {(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}	/* 221 */
+#endif
 };
 
 /*----------------------------------------------------------------------------*/
@@ -894,7 +897,8 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		wlanProcessCommandQueue(prAdapter, &prAdapter->prGlueInfo->rCmdQueue);
 		wlanReleasePowerControl(prAdapter);
 
-		kalMdelay(100);
+		DBGLOG(P2P, INFO, "Wait 500ms for deauth TX in case of GC in PS\n");
+		kalMdelay(500);
 
 		/* Change Connection Status. */
 		p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
@@ -1202,11 +1206,12 @@ VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
  */
 
 VOID
-p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
+p2pFuncTagMgmtFrame(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
 {
 	/* P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T)NULL; */
 	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
 	P_WLAN_PROBE_RSP_FRAME_T prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T)NULL;
+	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = NULL;
 	UINT_16 u2TxFrameCtrl;
 	P_WLAN_ACTION_FRAME prActFrame;
 	UINT_8 ucCategory;
@@ -1217,13 +1222,15 @@ p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
 	 * use MASK_FRAME_TYPE is oK for frame type/subtype judge
 	 */
 	u2TxFrameCtrl = prWlanHdr->u2FrameCtrl & MASK_FRAME_TYPE;
+	prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
 
 	switch (u2TxFrameCtrl) {
 	case MAC_FRAME_PROBE_RSP:
 
 		prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T) prWlanHdr;
-		DBGLOG(P2P, INFO, "TX Probe Response Frame, SA: %pM - DA: %pM, cookie: 0x%llx, seqNo: %d\n",
+		DBGLOG(P2P, INFO, "TX Probe Response Frame, SA: %pM - DA: %pM, NoA[%d], cookie: 0x%llx, seqNo: %d\n",
 			prProbRspHdr->aucSrcAddr, prProbRspHdr->aucDestAddr,
+			(prP2pSpecificBssInfo == NULL ? -1 : prP2pSpecificBssInfo->ucNoATimingCount),
 			u8Cookie,
 			prMgmtTxMsdu->ucTxSeqNum);
 
@@ -1318,7 +1325,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		prMgmtTxMsdu->pfTxDoneHandler = p2pFsmRunEventMgmtFrameTxDone;
 		prMgmtTxMsdu->fgIsBasicRate = TRUE;
 
-		p2pFuncTagMgmtFrame(prMgmtTxMsdu, u8Cookie);
+		p2pFuncTagMgmtFrame(prAdapter, prMgmtTxMsdu, u8Cookie);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 
