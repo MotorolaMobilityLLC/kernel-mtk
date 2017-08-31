@@ -267,6 +267,8 @@ static unsigned int *littleFreq_FY;
 static unsigned int *cciFreq_FY;
 static unsigned int max_vproc_pmic;
 static unsigned int max_vsram_pmic;
+static unsigned int cpu_dvtfixed;
+
 
 #if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 
@@ -293,11 +295,7 @@ unsigned int cciFreq_SB[16] = {
 	1092000, 1027000, 962000, 897000, 832000, 767000, 741000, 702000,
 	650000, 572000, 494000, 416000, 351000, 286000, 234000, 195000};
 #endif
-#if 0
-unsigned int gpuFreq[16] = {
-	850000, 850000, 785000, 785000, 720000, 720000, 600000, 600000,
-	485000, 485000, 390000, 390000, 310000, 310000, 230000, 230000};
-#endif
+
 
 /*
  * [26:22] dcmdiv
@@ -508,9 +506,9 @@ static unsigned int cciFreq_FY_KB[16] = {
 
 static unsigned int fyKBTbl[][NUM_ELM_SRAM] = {
 	/* dcmdiv, DDS, clk_div, post_div, CF_index, iDVFS, Vsram, Vproc */
-	{0x19, 0x0FC, 0x8, 0x0, 0xE, 0x0, 0x4C, 0x44},/* 1638 (LL)	*/
-	{0x19, 0x0FC, 0x8, 0x0, 0xE, 0x0, 0x4C, 0x44},/* 1638  */
-	{0x18, 0x0F0, 0x8, 0x0, 0xD, 0x0, 0x4C, 0x3F},/* 1560  */
+	{0x19, 0x0FC, 0x8, 0x0, 0xE, 0x0, 0x53, 0x44},/* 1638 (LL)	*/
+	{0x19, 0x0FC, 0x8, 0x0, 0xE, 0x0, 0x53, 0x44},/* 1638  */
+	{0x18, 0x0F0, 0x8, 0x0, 0xD, 0x0, 0x4F, 0x3F},/* 1560  */
 	{0x17, 0x0E8, 0x8, 0x0, 0xC, 0x0, 0x4B, 0x3B},/* 1508  */
 	{0x16, 0x1BC, 0x8, 0x1, 0xB, 0x0, 0x47, 0x37},/* 1443  */
 	{0x15, 0x1A8, 0x8, 0x1, 0xA, 0x0, 0x43, 0x33},/* 1378  */
@@ -525,9 +523,9 @@ static unsigned int fyKBTbl[][NUM_ELM_SRAM] = {
 	{0x06, 0x0F0, 0xA, 0x1, 0x1, 0x0, 0x28, 0x04},/* 390  */
 	{0x03, 0x130, 0xB, 0x1, 0x0, 0x0, 0x28, 0x00},/* 247  */
 
-	{0x1F, 0x168, 0x8, 0x0, 0xF, 0x0, 0x4C, 0x4C},/* 2340 (L)  */
-	{0x1F, 0x160, 0x8, 0x0, 0xF, 0x0, 0x4C, 0x44},/* 2288  */
-	{0x1F, 0x158, 0x8, 0x0, 0xE, 0x0, 0x4C, 0x3F},/* 2236  */
+	{0x1F, 0x168, 0x8, 0x0, 0xF, 0x0, 0x53, 0x4C},/* 2340 (L)  */
+	{0x1F, 0x160, 0x8, 0x0, 0xF, 0x0, 0x53, 0x44},/* 2288  */
+	{0x1F, 0x158, 0x8, 0x0, 0xE, 0x0, 0x4F, 0x3F},/* 2236  */
 	{0x1F, 0x150, 0x8, 0x0, 0xD, 0x0, 0x4B, 0x3B},/* 2184  */
 	{0x1F, 0x148, 0x8, 0x0, 0xC, 0x0, 0x47, 0x37},/* 2132  */
 	{0x1F, 0x140, 0x8, 0x0, 0xB, 0x0, 0x43, 0x33},/* 2080  */
@@ -542,9 +540,9 @@ static unsigned int fyKBTbl[][NUM_ELM_SRAM] = {
 	{0x08, 0x160, 0xA, 0x1, 0x2, 0x0, 0x28, 0x04},/* 572  */
 	{0x07, 0x130, 0xA, 0x1, 0x1, 0x0, 0x28, 0x00},/* 494  */
 
-	{0x0F, 0x138, 0x8, 0x1, 0x0, 0x0, 0x4C, 0x4C},/* 1014 (CCI)  */
-	{0x0F, 0x130, 0x8, 0x1, 0x0, 0x0, 0x4C, 0x44},/* 988  */
-	{0x0E, 0x124, 0x8, 0x1, 0x0, 0x0, 0x4C, 0x3F},/* 949  */
+	{0x0F, 0x138, 0x8, 0x1, 0x0, 0x0, 0x53, 0x4C},/* 1014 (CCI)  */
+	{0x0F, 0x130, 0x8, 0x1, 0x0, 0x0, 0x53, 0x44},/* 988  */
+	{0x0E, 0x124, 0x8, 0x1, 0x0, 0x0, 0x4F, 0x3F},/* 949  */
 	{0x0E, 0x118, 0x8, 0x1, 0x0, 0x0, 0x4B, 0x3B},/* 910  */
 	{0x0D, 0x108, 0x8, 0x1, 0x0, 0x0, 0x47, 0x37},/* 858  */
 	{0x0C, 0x0FC, 0x8, 0x1, 0x0, 0x0, 0x43, 0x33},/* 819  */
@@ -620,9 +618,14 @@ static unsigned int gpuOutput[8];
 
 
 #if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
-static unsigned int gpuFreq[16] = {
-	900000, 900000, 785000, 785000, 720000, 720000, 600000, 600000,
-	485000, 485000, 390000, 390000, 310000, 310000, 230000, 230000};
+static unsigned int *gpuFreq;
+
+static unsigned int gpuFreq_OE1[16] = {
+	900000, 900000, 785000, 785000, 720000, 720000, 602500, 602500,
+	485000, 485000, 390000, 390000, 310000, 310000, 270000, 270000};
+static unsigned int gpuFreq_KB[16] = {
+	1000000, 1000000, 915000, 915000, 830000, 830000, 657500, 657500,
+	485000, 485000, 390000, 390000, 310000, 310000, 270000, 270000};
 static unsigned int eemMonSts;
 #endif
 
@@ -761,12 +764,11 @@ static void eem_init01_finish(struct eem_det *det);
 
 #define VMAX_VAL				VOLT_TO_EEM_PMIC_VAL(102500)
 #define VMAX_VAL_KB				VOLT_TO_EEM_PMIC_VAL(107500)
-#define VMAX_VAL_KBP			VOLT_TO_EEM_PMIC_VAL(118750)
-/* #define VMAX_TURBO_VAL		VOLT_TO_EEM_PMIC_VAL(105000) */ /* This is also turbo voltage */
+#define VMAX_VAL_KBP			VOLT_TO_EEM_PMIC_VAL(111875)
 #define VMIN_VAL				VOLT_TO_EEM_PMIC_VAL(60000)
 #define VMAX_SRAM				SRAMVOLT_TO_PMIC_VAL(105000)
-#define VMAX_SRAM_KB			SRAMVOLT_TO_PMIC_VAL(110000)
-#define VMAX_SRAM_KBP			SRAMVOLT_TO_PMIC_VAL(112500)
+#define VMAX_SRAM_KB			SRAMVOLT_TO_PMIC_VAL(111875)
+#define VMAX_SRAM_KBP			SRAMVOLT_TO_PMIC_VAL(111875)
 #define VMIN_SRAM				SRAMVOLT_TO_PMIC_VAL(85000)
 #define VMAX_VAL_GPU			VOLT_TO_EEM_PMIC_VAL(100000)
 #define VMIN_VAL_GPU			VOLT_TO_EEM_PMIC_VAL(60000)
@@ -776,11 +778,11 @@ static void eem_init01_finish(struct eem_det *det);
 #define DTLO_VAL		0xfe		/* negative (2's compliment) */
 #define DETMAX_VAL		0xffff		/* This timeout value is in cycles of bclk_ck. */
 #define AGECONFIG_VAL		0x555555
-#define AGEM_VAL		0x0
+#define AGEM_VAL			0x0
 #define DVTFIXED_VAL		0x7
+#define DVTFIXED_VAL_KBP	0x8
 #define DVTFIXED_VAL_GPU	0x3
-#define DVTFIXED_VAL_SOC	0x4
-#define DVTFIXED_VAL_LTE	0x4
+
 #define VCO_VAL			0x0
 #define VCO_VAL_GPU		0x0
 #define DCCONFIG_VAL	0x555555
@@ -1240,10 +1242,10 @@ unsigned int gpuFy[16] = {
 	VOLT_TO_EXTBUCK_VAL(70000),
 	VOLT_TO_EXTBUCK_VAL(65000),
 	VOLT_TO_EXTBUCK_VAL(65000),
-	VOLT_TO_EXTBUCK_VAL(65000),
-	VOLT_TO_EXTBUCK_VAL(65000),
-	VOLT_TO_EXTBUCK_VAL(60000),
-	VOLT_TO_EXTBUCK_VAL(60000)
+	VOLT_TO_EXTBUCK_VAL(62500),
+	VOLT_TO_EXTBUCK_VAL(62500),
+	VOLT_TO_EXTBUCK_VAL(61250),
+	VOLT_TO_EXTBUCK_VAL(61250)
 };
 
 /*
@@ -2451,7 +2453,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	det->AGECONFIG = AGECONFIG_VAL;
 	det->AGEM = AGEM_VAL;
-	det->DVTFIXED = DVTFIXED_VAL;
+	det->DVTFIXED = cpu_dvtfixed;
 	det->VCO = VCO_VAL;
 	det->DCCONFIG = DCCONFIG_VAL;
 
@@ -3935,6 +3937,11 @@ static void eem_get_freq_data(void)
 #endif
 
 	ctrl_VTurbo = 0;
+	cpu_dvtfixed = DVTFIXED_VAL;
+
+#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
+	gpuFreq = gpuFreq_KB;
+#endif
 
 	switch (segCode) {
 	case 0:
@@ -3954,6 +3961,10 @@ static void eem_get_freq_data(void)
 		littleFreq_FY = littleFreq_FY_OE1;
 		cciFreq_FY = cciFreq_FY_OE1;
 #endif
+#if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
+		gpuFreq = gpuFreq_OE1;
+#endif
+
 		break;
 	case 1:
 		/* Kibo */
@@ -3968,6 +3979,7 @@ static void eem_get_freq_data(void)
 	case 7:
 #if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 		/* Kibo+ */
+		cpu_dvtfixed = DVTFIXED_VAL_KBP;
 		max_vproc_pmic = VMAX_VAL_KBP;
 		max_vsram_pmic = VMAX_SRAM_KBP;
 		recordTbl = &fyKBP_6355Tbl[0][0];
@@ -4007,6 +4019,17 @@ void get_devinfo(struct eem_devinfo *p)
 		val[6] = get_devinfo_with_index(56);
 		val[7] = get_devinfo_with_index(57);
 		val[8] = get_devinfo_with_index(58);
+#if defined(CONFIG_EEM_AEE_RR_REC)
+		aee_rr_rec_ptp_e0((unsigned int)val[0]);
+		aee_rr_rec_ptp_e1((unsigned int)val[1]);
+		aee_rr_rec_ptp_e2((unsigned int)val[2]);
+		aee_rr_rec_ptp_e3((unsigned int)val[3]);
+		aee_rr_rec_ptp_e4((unsigned int)val[4]);
+		aee_rr_rec_ptp_e5((unsigned int)val[5]);
+		aee_rr_rec_ptp_e6((unsigned int)val[6]);
+		aee_rr_rec_ptp_e7((unsigned int)val[7]);
+		aee_rr_rec_ptp_e8((unsigned int)val[8]);
+#endif
 
 	#else
 		val[0] = eem_read(0x10206580); /* EEM0 */
