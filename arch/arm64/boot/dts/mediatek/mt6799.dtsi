@@ -183,6 +183,25 @@
 			cpu-release-addr = <0x0 0x40000200>;
 			clock-frequency = <1950000000>;
 		};
+
+		cpu8: cpu@200 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a73";
+			reg = <0x200>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2288000000>;
+		};
+
+		cpu9: cpu@201 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a73";
+			reg = <0x201>;
+			enable-method = "psci";
+			cpu-release-addr = <0x0 0x40000200>;
+			clock-frequency = <2288000000>;
+		};
+
 		cpu-map {
 			cluster0 {
 				core0 {
@@ -219,6 +238,17 @@
 
 				core3 {
 					cpu = <&cpu7>;
+				};
+
+			};
+
+			cluster2 {
+				core0 {
+					cpu = <&cpu8>;
+				};
+
+				core1 {
+					cpu = <&cpu9>;
 				};
 
 			};
