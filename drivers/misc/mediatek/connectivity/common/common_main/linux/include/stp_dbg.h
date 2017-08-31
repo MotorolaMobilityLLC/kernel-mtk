@@ -178,6 +178,8 @@ typedef struct stp_dbg_pkt_hdr {
 	UINT32 seq;
 	UINT32 chs;
 	UINT32 crc;
+	UINT64 l_sec;
+	ULONG l_nsec;
 } STP_DBG_HDR_T;
 
 typedef struct stp_dbg_pkt {

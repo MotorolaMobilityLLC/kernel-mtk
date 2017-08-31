@@ -1201,6 +1201,15 @@ INT32 osal_printtimeofday(const PUINT8 prefix)
 	return ret;
 }
 
+VOID osal_get_local_time(PUINT64 sec, PULONG nsec)
+{
+	if (sec != NULL && nsec != NULL) {
+		*sec = local_clock();
+		*nsec = do_div(*sec, 1000000000)/1000;
+	} else
+		pr_err("The input parameters error when get local time\n");
+}
+
 VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, const UINT32 len, const UINT32 limit)
 {
 	INT32 k;
