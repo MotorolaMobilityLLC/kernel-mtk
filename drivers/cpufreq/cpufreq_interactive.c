@@ -483,14 +483,14 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 		if (max_t_freq != pcpu->policy->cur)
 			goto pass_t;
-pass_t:
+
 		trace_cpufreq_interactive_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		spin_unlock_irqrestore(&pcpu->target_freq_lock, flags);
 		goto rearm;
 	}
-
+pass_t:
 	trace_cpufreq_interactive_target(data, cpu_load, pcpu->target_freq,
 					 pcpu->policy->cur, new_freq);
 
