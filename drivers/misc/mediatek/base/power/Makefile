@@ -19,6 +19,7 @@ obj-$(CONFIG_MACH_MT6759) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6763) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
+obj-$(CONFIG_MACH_MT6758) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += udi_v1/
 obj-$(CONFIG_MACH_MT6763) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += ocp_v1/
