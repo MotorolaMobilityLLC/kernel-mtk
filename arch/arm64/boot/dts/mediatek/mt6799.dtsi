@@ -2283,8 +2283,7 @@
 
 	mt_soc_codec_name {
 		compatible = "mediatek,mt_soc_codec_63xx";
-		use_hp_depop_flow = <0>; /* select 1: use, 0: not use */
-		use_ul_260k = <1>; /* select 1: use, 0: not use */
+		use_low_power_mode = <0>; /* select 1: low power, 0: hifi */
 	};
 
 	mt_soc_dummy_pcm {
