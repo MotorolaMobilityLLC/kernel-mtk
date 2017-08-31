@@ -9161,7 +9161,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	 int ret = 0;
 #endif
-	u32 efuse_index;
+	u32 efuse_index = 0;
 #endif
 	u32 EFUSE_RANDOM_ENABLE = 0x00000004;
 
@@ -9527,9 +9527,9 @@ static int mtk_nand_probe(struct platform_device *pdev)
 			efuse_index = 26;
 			EFUSE_RANDOM_ENABLE = 0x00000004;
 		} else if (mtk_nfi_dev_comp->chip_ver == 3) {
-			efuse_index = 26;
+			efuse_index = 0;
 			EFUSE_RANDOM_ENABLE = 0x00001000;
-			pr_err("attentation !!!! remember to check 8167 nand efuse index\n");
+			pr_err("8167 nand randomizer efuse index %d\n", efuse_index);
 		}
 		/* the index of reg:0x102061C0 is 26 */
 		if ((get_devinfo_with_index(efuse_index)) & EFUSE_RANDOM_ENABLE) {
