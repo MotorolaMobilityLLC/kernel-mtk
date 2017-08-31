@@ -55,64 +55,6 @@ else							\
 #define CMDQ_LONGSTRING_MAX (180)
 #define CMDQ_DELAY_RELEASE_RESOURCE_MS (1000)
 
-#define CMDQ_ENG_WPE_GROUP_BITS	((1LL << CMDQ_ENG_WPEI) |	\
-				 (1LL << CMDQ_ENG_WPEO))
-
-#define CMDQ_ENG_ISP_GROUP_BITS	((1LL << CMDQ_ENG_ISP_IMGI) |	\
-				 (1LL << CMDQ_ENG_ISP_IMGO) |	\
-				 (1LL << CMDQ_ENG_ISP_IMG2O))
-
-#define CMDQ_ENG_MDP_GROUP_BITS	((1LL << CMDQ_ENG_MDP_CAMIN) |	\
-				 (1LL << CMDQ_ENG_MDP_RDMA0) |	\
-				 (1LL << CMDQ_ENG_MDP_RDMA1) |	\
-				 (1LL << CMDQ_ENG_MDP_RSZ0) |	\
-				 (1LL << CMDQ_ENG_MDP_RSZ1) |	\
-				 (1LL << CMDQ_ENG_MDP_RSZ2) |	\
-				 (1LL << CMDQ_ENG_MDP_TDSHP0) |	\
-				 (1LL << CMDQ_ENG_MDP_TDSHP1) |	\
-				 (1LL << CMDQ_ENG_MDP_COLOR0) |	\
-				 (1LL << CMDQ_ENG_MDP_WROT0) |	\
-				 (1LL << CMDQ_ENG_MDP_WROT1) |	\
-				 (1LL << CMDQ_ENG_MDP_WDMA))
-
-#define CMDQ_ENG_DISP_GROUP_BITS	((1LL << CMDQ_ENG_DISP_UFOE) |		\
-					 (1LL << CMDQ_ENG_DISP_AAL) |		\
-					 (1LL << CMDQ_ENG_DISP_COLOR0) |	\
-					 (1LL << CMDQ_ENG_DISP_COLOR1) |	\
-					 (1LL << CMDQ_ENG_DISP_RDMA0) |		\
-					 (1LL << CMDQ_ENG_DISP_RDMA1) |		\
-					 (1LL << CMDQ_ENG_DISP_RDMA2) |		\
-					 (1LL << CMDQ_ENG_DISP_WDMA0) |		\
-					 (1LL << CMDQ_ENG_DISP_WDMA1) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL0) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL1) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL2) |		\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL0) |	\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL1) |	\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL2) |	\
-					 (1LL << CMDQ_ENG_DISP_GAMMA) |		\
-					 (1LL << CMDQ_ENG_DISP_MERGE) |		\
-					 (1LL << CMDQ_ENG_DISP_SPLIT0) |	\
-					 (1LL << CMDQ_ENG_DISP_SPLIT1) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI0_VDO) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI1_VDO) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI0_CMD) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI1_CMD) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI0) |		\
-					 (1LL << CMDQ_ENG_DISP_DSI1) |		\
-					 (1LL << CMDQ_ENG_DISP_DPI))
-
-#define CMDQ_ENG_VENC_GROUP_BITS	((1LL << CMDQ_ENG_VIDEO_ENC))
-
-#define CMDQ_ENG_JPEG_GROUP_BITS	((1LL << CMDQ_ENG_JPEG_ENC) |	\
-					 (1LL << CMDQ_ENG_JPEG_REMDC) |	\
-					 (1LL << CMDQ_ENG_JPEG_DEC))
-
-
-#define CMDQ_ENG_DPE_GROUP_BITS		(1LL << CMDQ_ENG_DPE)
-#define CMDQ_ENG_RSC_GROUP_BITS		(1LL << CMDQ_ENG_RSC)
-#define CMDQ_ENG_GEPF_GROUP_BITS	(1LL << CMDQ_ENG_GEPF)
-#define CMDQ_ENG_EAF_GROUP_BITS		(1LL << CMDQ_ENG_EAF)
 #define CMDQ_THREAD_SEC_PRIMARY_DISP	12
 #define CMDQ_THREAD_SEC_SUB_DISP	13
 #define CMDQ_THREAD_SEC_MDP		14
@@ -270,39 +212,11 @@ do_div(_duration, 1000);				\
 target += (int32_t)_duration;			\
 }
 
-#define CMDQ_ENG_ISP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_ISP_GROUP_BITS))
-#define CMDQ_ENG_MDP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_MDP_GROUP_BITS))
-#define CMDQ_ENG_DISP_GROUP_FLAG(flag)  ((flag) & (CMDQ_ENG_DISP_GROUP_BITS))
-#define CMDQ_ENG_JPEG_GROUP_FLAG(flag)  ((flag) & (CMDQ_ENG_JPEG_GROUP_BITS))
-#define CMDQ_ENG_VENC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_VENC_GROUP_BITS))
-#define CMDQ_ENG_DPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_DPE_GROUP_BITS))
-#define CMDQ_ENG_RSC_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_RSC_GROUP_BITS))
-#define CMDQ_ENG_GEPF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_GEPF_GROUP_BITS))
-#define CMDQ_ENG_WPE_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_WPE_GROUP_BITS))
-#define CMDQ_ENG_EAF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_EAF_GROUP_BITS))
-
 #define GENERATE_ENUM(_enum, _string) _enum,
 #define GENERATE_STRING(_enum, _string) (#_string),
 
-#define CMDQ_FOREACH_GROUP(ACTION_struct)\
-ACTION_struct(CMDQ_GROUP_ISP, ISP)	\
-ACTION_struct(CMDQ_GROUP_MDP, MDP)	\
-ACTION_struct(CMDQ_GROUP_DISP, DISP)	\
-ACTION_struct(CMDQ_GROUP_JPEG, JPEG)	\
-ACTION_struct(CMDQ_GROUP_VENC, VENC)	\
-ACTION_struct(CMDQ_GROUP_DPE, DPE)	\
-ACTION_struct(CMDQ_GROUP_RSC, RSC)	\
-ACTION_struct(CMDQ_GROUP_GEPF, GEPF)	\
-ACTION_struct(CMDQ_GROUP_WPE, WPE)	\
-ACTION_struct(CMDQ_GROUP_EAF, EAF)
-
 #define CMDQ_TASK_PRIVATE(task) ((struct TaskPrivateStruct *)task->privateData)
 #define CMDQ_TASK_IS_INTERNAL(task) (task->privateData && (CMDQ_TASK_PRIVATE(task)->internal))
-
-enum CMDQ_GROUP_ENUM {
-	CMDQ_FOREACH_GROUP(GENERATE_ENUM)
-	    CMDQ_MAX_GROUP_COUNT,	/* ALWAYS keep at the end */
-};
 
 /* engineFlag are bit fields defined in CMDQ_ENG_ENUM */
 typedef int32_t(*CmdqClockOnCB) (uint64_t engineFlag);

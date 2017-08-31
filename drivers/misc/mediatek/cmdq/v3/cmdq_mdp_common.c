@@ -18,9 +18,25 @@
 #ifdef CMDQ_PROFILE_MMP
 #include "cmdq_mmp.h"
 #endif
+#ifdef CMDQ_COMMON_ENG_SUPPORT
+#include "cmdq_engine_common.h"
+#else
+#include "cmdq_engine.h"
+#endif
 
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
+
+static const u64 gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
+	CMDQ_ENG_ISP_GROUP_BITS,
+	CMDQ_ENG_MDP_GROUP_BITS,
+	CMDQ_ENG_DISP_GROUP_BITS,
+	CMDQ_ENG_JPEG_GROUP_BITS,
+	CMDQ_ENG_VENC_GROUP_BITS,
+	CMDQ_ENG_DPE_GROUP_BITS,
+	CMDQ_ENG_RSC_GROUP_BITS,
+	CMDQ_ENG_GEPF_GROUP_BITS
+};
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
@@ -210,6 +226,57 @@ void cmdq_mdp_trackTask_virtual(const struct TaskStruct *pTask)
 	gCmdqMDPTaskIndex = (gCmdqMDPTaskIndex + 1) % MDP_MAX_TASK_NUM;
 }
 
+const char *cmdq_mdp_parse_error_module_by_hwflag_virtual(const struct TaskStruct *task)
+{
+	const char *module = NULL;
+	const uint32_t ISP_ONLY[2] = {
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O)),
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O) |
+		 (1LL << CMDQ_ENG_ISP_IMGO))
+	};
+
+	/* common part for both normal and secure path */
+	/* for JPEG scenario, use HW flag is sufficient */
+	if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_ENC))
+		module = "JPGENC";
+	else if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
+		module = "JPGDEC";
+	else if ((ISP_ONLY[0] == task->engineFlag) || (ISP_ONLY[1] == task->engineFlag))
+		module = "ISP_ONLY";
+
+	/* for secure path, use HW flag is sufficient */
+	do {
+		if (module != NULL)
+			break;
+
+		if (!task->secData.is_secure) {
+			/* normal path, need parse current running instruciton for more detail */
+			break;
+		} else if (CMDQ_ENG_MDP_GROUP_FLAG(task->engineFlag)) {
+			module = "MDP";
+			break;
+		} else if (CMDQ_ENG_DPE_GROUP_FLAG(task->engineFlag)) {
+			module = "DPE";
+			break;
+		} else if (CMDQ_ENG_RSC_GROUP_FLAG(task->engineFlag)) {
+			module = "RSC";
+			break;
+		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(task->engineFlag)) {
+			module = "GEPF";
+			break;
+		}
+
+		module = "CMDQ";
+	} while (0);
+
+	return module;
+}
+
+u64 cmdq_mdp_get_engine_group_bits_virtual(u32 engine_group)
+{
+	return gCmdqEngineGroupBits[engine_group];
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -250,6 +317,8 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->dispatchModule = cmdq_mdp_dispatch_virtual;
 
 	pFunc->trackTask = cmdq_mdp_trackTask_virtual;
+	pFunc->parseErrModByEngFlag = cmdq_mdp_parse_error_module_by_hwflag_virtual;
+	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
@@ -833,3 +902,9 @@ void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
 		}
 	}
 }
+
+const char *cmdq_mdp_parse_error_module_by_hwflag(const struct TaskStruct *task)
+{
+	return cmdq_mdp_get_func()->parseErrModByEngFlag(task);
+}
+

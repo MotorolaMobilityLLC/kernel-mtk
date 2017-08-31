@@ -91,6 +91,20 @@ IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_TDSHP0, MDP_TDSHP);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_COLOR);
 #undef IMP_ENABLE_MDP_HW_CLOCK
 #undef IMP_MDP_HW_CLOCK_IS_ENABLE
+
+static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
+	CMDQ_ENG_ISP_GROUP_BITS,
+	CMDQ_ENG_MDP_GROUP_BITS,
+	CMDQ_ENG_DISP_GROUP_BITS,
+	CMDQ_ENG_JPEG_GROUP_BITS,
+	CMDQ_ENG_VENC_GROUP_BITS,
+	CMDQ_ENG_DPE_GROUP_BITS,
+	CMDQ_ENG_RSC_GROUP_BITS,
+	CMDQ_ENG_GEPF_GROUP_BITS,
+	CMDQ_ENG_WPE_GROUP_BITS,
+	CMDQ_ENG_EAF_GROUP_BITS
+};
+
 long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 {
 	return gCmdqMdpModuleBaseVA.MMSYS_CONFIG;
@@ -888,6 +902,64 @@ uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 {
 	return 0xF00;
 }
+
+const char *cmdq_mdp_parse_error_module(const struct TaskStruct *task)
+{
+	const char *module = NULL;
+	const u32 ISP_ONLY[2] = {
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O)),
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O) |
+		 (1LL << CMDQ_ENG_ISP_IMGO))
+	};
+	const u32 WPE_ONLY = ((1LL << CMDQ_ENG_WPEI) | (1LL << CMDQ_ENG_WPEO));
+
+	/* common part for both normal and secure path */
+	/* for JPEG scenario, use HW flag is sufficient */
+	if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_ENC))
+		module = "JPGENC";
+	else if (task->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
+		module = "JPGDEC";
+	else if ((ISP_ONLY[0] == task->engineFlag) || (ISP_ONLY[1] == task->engineFlag))
+		module = "ISP_ONLY";
+	else if (task->engineFlag == WPE_ONLY)
+		module = "WPE_ONLY";
+
+	/* for secure path, use HW flag is sufficient */
+	do {
+		if (module != NULL)
+			break;
+
+		if (!task->secData.is_secure) {
+			/* normal path, need parse current running instruciton for more detail */
+			break;
+		} else if (CMDQ_ENG_MDP_GROUP_FLAG(task->engineFlag)) {
+			module = "MDP";
+			break;
+		} else if (CMDQ_ENG_DPE_GROUP_FLAG(task->engineFlag)) {
+			module = "DPE";
+			break;
+		} else if (CMDQ_ENG_RSC_GROUP_FLAG(task->engineFlag)) {
+			module = "RSC";
+			break;
+		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(task->engineFlag)) {
+			module = "GEPF";
+			break;
+		} else if (CMDQ_ENG_EAF_GROUP_FLAG(task->engineFlag)) {
+			module = "EAF";
+			break;
+		}
+
+		module = "CMDQ";
+	} while (0);
+
+	return module;
+}
+
+u64 cmdq_mdp_get_engine_group_bits(u32 engine_group)
+{
+	return gCmdqEngineGroupBits[engine_group];
+}
+
 void testcase_clkmgr_mdp(void)
 {
 #if defined(CMDQ_PWR_AWARE)
@@ -960,5 +1032,7 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr;
 	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr;
+	pFunc->parseErrModByEngFlag = cmdq_mdp_parse_error_module;
+	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
 }

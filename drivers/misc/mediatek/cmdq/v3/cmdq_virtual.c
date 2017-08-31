@@ -809,11 +809,15 @@ void cmdq_virtual_enable_common_clock_locked(bool enable)
 	if (enable) {
 		CMDQ_VERBOSE("[CLOCK] Enable SMI & LARB0 Clock\n");
 		/* Use SMI clock API */
+#ifdef CMDQ_CONFIG_SMI
 		smi_bus_enable(SMI_LARB_MMSYS0, "CMDQ");
+#endif
 	} else {
 		CMDQ_VERBOSE("[CLOCK] Disable SMI & LARB0 Clock\n");
 		/* disable, reverse the sequence */
+#ifdef CMDQ_CONFIG_SMI
 		smi_bus_disable(SMI_LARB_MMSYS0, "CMDQ");
+#endif
 	}
 #endif				/* CMDQ_PWR_AWARE */
 }
@@ -831,56 +835,14 @@ void cmdq_virtual_enable_gce_clock_locked(bool enable)
 #endif
 }
 
-const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStruct *pTask)
+const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStruct *task)
 {
 	const char *module = NULL;
-	const uint32_t ISP_ONLY[2] = {
-		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O)),
-		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O) |
-		 (1LL << CMDQ_ENG_ISP_IMGO))
-	};
-	const uint32_t WPE_ONLY = ((1LL << CMDQ_ENG_WPEI) | (1LL << CMDQ_ENG_WPEO));
 
-	/* common part for both normal and secure path */
-	/* for JPEG scenario, use HW flag is sufficient */
-	if (pTask->engineFlag & (1LL << CMDQ_ENG_JPEG_ENC))
-		module = "JPGENC";
-	else if (pTask->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
-		module = "JPGDEC";
-	else if ((ISP_ONLY[0] == pTask->engineFlag) || (ISP_ONLY[1] == pTask->engineFlag))
-		module = "ISP_ONLY";
-	else if (pTask->engineFlag == WPE_ONLY)
-		module = "WPE_ONLY";
-	else if (cmdq_get_func()->isDispScenario(pTask->scenario))
+	if (cmdq_get_func()->isDispScenario(task->scenario))
 		module = "DISP";
-
-	/* for secure path, use HW flag is sufficient */
-	do {
-		if (module != NULL)
-			break;
-
-		if (false == pTask->secData.is_secure) {
-			/* normal path, need parse current running instruciton for more detail */
-			break;
-		} else if (CMDQ_ENG_MDP_GROUP_FLAG(pTask->engineFlag)) {
-			module = "MDP";
-			break;
-		} else if (CMDQ_ENG_DPE_GROUP_FLAG(pTask->engineFlag)) {
-			module = "DPE";
-			break;
-		} else if (CMDQ_ENG_RSC_GROUP_FLAG(pTask->engineFlag)) {
-			module = "RSC";
-			break;
-		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(pTask->engineFlag)) {
-			module = "GEPF";
-			break;
-		} else if (CMDQ_ENG_EAF_GROUP_FLAG(pTask->engineFlag)) {
-			module = "EAF";
-			break;
-		}
-
-		module = "CMDQ";
-	} while (0);
+	else
+		module = cmdq_mdp_parse_error_module_by_hwflag(task);
 
 	/* other case, we need to analysis instruction for more detail */
 	return module;
