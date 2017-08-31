@@ -173,19 +173,34 @@ static s32 fde_aes_set_context(void)
 	return FDE_OK;
 }
 
-/* Check if enable by eMMC and SD module */
-s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
+s32 fde_aes_check_info(void)
 {
-	#define MSDC_MAX_ID 2 /* 0:eMMC; 1:SD; 2:SDIO */
-	static int iCnt[MSDC_MAX_ID] = {0};
 	unsigned long flags;
-
-	if (dev_num >= 2) /* SDIO etc */
-		return 0;
 
 	spin_lock_irqsave(&fde_aes_context.lock, flags);
 
-	FDELOG("Before check MSDC%d dev-%s use-%s status-%s\n",
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0, 0xa, 0);
+
+	spin_unlock_irqrestore(&fde_aes_context.lock, flags);
+
+	return 0;
+}
+
+/* Check if enable by eMMC and SD module */
+s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
+{
+	static int iCnt[FDE_MSDC_MAX] = {0};
+	unsigned long flags;
+
+	if (dev_num >= FDE_MSDC_MAX)
+		return -FDE_EINVAL;
+
+	if (bEnable & 0xfe)
+		return -FDE_EINVAL;
+
+	spin_lock_irqsave(&fde_aes_context.lock, flags);
+
+	FDELOG("Before check MSDC%d dev-%s set-%s status-%s\n",
 		dev_num, iCnt[dev_num]?"enable":"disable",
 		bEnable?"enable":"disable",
 		fde_aes_context.status?"enable":"disable");
@@ -210,7 +225,7 @@ s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
 		iCnt[dev_num] += 1;
 	}
 
-	FDELOG("After check MSDC%d dev-%s use-%s status-%s\n",
+	FDELOG("After check MSDC%d dev-%s set-%s status-%s\n",
 		dev_num, iCnt[dev_num]?"enable":"disable",
 		bEnable?"enable":"disable",
 		fde_aes_context.status?"enable":"disable");
@@ -223,10 +238,29 @@ s32 fde_aes_check_enable(s32 dev_num, u8 bEnable)
 	return 0;
 }
 
+s32 fde_aes_set_slot(s32 dev_num)
+{
+	unsigned long flags;
+
+	if (dev_num >= FDE_MSDC_MAX)
+		return -FDE_EINVAL;
+
+	spin_lock_irqsave(&fde_aes_context.lock, flags);
+
+	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0xc, dev_num, 0);
+
+	spin_unlock_irqrestore(&fde_aes_context.lock, flags);
+
+	return 0;
+}
+
 s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 {
 	s32 status;
 	unsigned long flags;
+
+	if (dev_num >= FDE_MSDC_MAX)
+		return -FDE_EINVAL;
 
 	if (!fde_aes_context.status) { /* Need to enable FDE when MSDC send command */
 		FDEERR("MSDC%d block 0x%x CMD%d exec\n", dev_num, blkcnt, opcode);
@@ -253,6 +287,9 @@ s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode)
 
 s32 fde_aes_done(s32 dev_num, u32 blkcnt, u32 opcode)
 {
+	if (dev_num >= FDE_MSDC_MAX)
+		return -FDE_EINVAL;
+
 	FDELOG("MSDC%d block 0x%x CMD%d done\n", dev_num, blkcnt, opcode);
 	return 0;
 }
@@ -289,7 +326,8 @@ static int fde_aes_probe(struct platform_device *pdev)
 
 static int fde_aes_remove(struct platform_device *dev)
 {
-	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0xb, 0, 0);
+	fde_aes_check_enable(FDE_MSDC0, 0);
+	fde_aes_check_enable(FDE_MSDC1, 0);
 	FDELOG("exit\n");
 	return 0;
 }

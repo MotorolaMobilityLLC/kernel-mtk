@@ -15,7 +15,6 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
-#include <mt-plat/mtk_secure_api.h>
 #include "fde_aes.h"
 #include "fde_aes_dbg.h"
 
@@ -27,7 +26,7 @@ static s32 fde_aes_dump_reg(void)
 	if (!FDE_AES_CORE_BASE)
 		return -FDE_ENODEV;
 
-	FDEERR(" ################################ FDE_AES DUMP START (Kernel) ################################\n");
+	FDEERR(" ############# FDE_AES DUMP START (Kernel) #############n");
 
 	FDEERR("CONTEXT_SEL   %p = %x\n", CONTEXT_SEL, FDE_READ32(CONTEXT_SEL));
 	FDEERR("CONTEXT_WORD0 %p = %x\n", CONTEXT_WORD0, FDE_READ32(CONTEXT_WORD0));
@@ -59,7 +58,7 @@ static s32 fde_aes_dump_reg(void)
 	FDEERR("REG_COM_T %p = %x\n", REG_COM_T, FDE_READ32(REG_COM_T));
 	FDEERR("REG_COM_U %p = %x\n", REG_COM_U, FDE_READ32(REG_COM_U));
 
-	FDEERR(" ################################ FDE_AES DUMP END ################################\n");
+	FDEERR(" ############# FDE_AES DUMP END #############n");
 
 	return FDE_OK;
 }
@@ -207,7 +206,7 @@ static void fde_aes_test_case(char *buf)
 		break;
 
 	case FDE_AES_DUMP_ALL:
-		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_AES_INIT, 0, 0xa, 0);
+		fde_aes_check_info();
 		break;
 
 	case FDE_AES_EN_MSG:

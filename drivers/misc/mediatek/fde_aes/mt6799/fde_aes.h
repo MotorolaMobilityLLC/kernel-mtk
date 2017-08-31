@@ -34,9 +34,9 @@
 #define FDE_EINVAL                          (EINVAL) /* Invalid argument : 22 */
 
 
-#define FDE_MSDC0		0	/* eMMC */
-#define FDE_MSDC1		1	/* SD */
-#define FDE_MSDC_MAX	15	/* Others */
+#define FDE_MSDC0		0				/* eMMC */
+#define FDE_MSDC1		1				/* SD */
+#define FDE_MSDC_MAX	(FDE_MSDC1 + 1)	/* Others */
 
 /******************************************register operation***********************************/
 /* REGISTER */
@@ -129,7 +129,9 @@ u32 fde_aes_get_range_end(void);
 void fde_aes_set_sw(u8 enable);
 u8 fde_aes_get_sw(void);
 
+s32 fde_aes_check_info(void);
 s32 fde_aes_check_enable(s32 dev_num, u8 bEnable);
+s32 fde_aes_set_slot(s32 dev_num);
 s32 fde_aes_exec(s32 dev_num, u32 blkcnt, u32 opcode);
 s32 fde_aes_done(s32 dev_num, u32 blkcnt, u32 opcode);
 
