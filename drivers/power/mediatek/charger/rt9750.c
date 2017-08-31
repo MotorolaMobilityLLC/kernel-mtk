@@ -62,8 +62,6 @@ struct rt9750_info {
 	struct rt9750_desc *desc;
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
-	struct power_supply_desc psd;
-	struct power_supply *psy;
 	struct mutex i2c_access_lock;
 	struct mutex adc_access_lock;
 	struct mutex gpio_access_lock;
@@ -85,43 +83,6 @@ struct rt9750_info {
 static u32 rt9750_wdt[] = {
 	0, 500000, 1000000, 2000000,
 }; /* us */
-
-static enum power_supply_property rt9750_chg_props[] = {
-	POWER_SUPPLY_PROP_ONLINE,
-};
-
-
-static int rt9750_chg_get_property(struct power_supply *psy,
-	enum power_supply_property psp, union power_supply_propval *val)
-{
-	int ret = 0;
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = 1;
-		break;
-	default:
-		ret = -EINVAL;
-		break;
-	}
-
-	return ret;
-}
-
-static int rt9750_chg_set_property(struct power_supply *psy,
-	enum power_supply_property psp, const union power_supply_propval *val)
-{
-	int ret = 0;
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		break;
-	default:
-		break;
-	}
-	return ret;
-}
-
 
 /* ========= */
 /* RT Regmap */
@@ -1202,8 +1163,6 @@ static int rt9750_dbg_thread(void *data)
 		ret = rt9750_get_tdie_adc(info->chg_dev, &tdie_min, &tdie_max);
 		ret = rt9750_set_ibusoc(info->chg_dev, 6000000);
 		ret = rt9750_set_vbusov(info->chg_dev, 6000000);
-		ret = rt9750_set_vout(info, 5000000);
-		ret = rt9750_set_vbat(info, 4400000);
 		ret = rt9750_is_switch_enable(info, &en);
 		msleep(2000);
 	};
@@ -1233,19 +1192,6 @@ static int rt9750_probe(struct i2c_client *i2c,
 	if (ret < 0) {
 		pr_err("%s: parse dt failed\n", __func__);
 		goto err_parse_dt;
-	}
-
-	/* Register power supply class */
-	info->psd.name = info->desc->chg_dev_name;
-	info->psd.type = POWER_SUPPLY_TYPE_UNKNOWN;
-	info->psd.properties = rt9750_chg_props;
-	info->psd.num_properties = ARRAY_SIZE(rt9750_chg_props);
-	info->psd.get_property = rt9750_chg_get_property;
-	info->psd.set_property = rt9750_chg_set_property;
-	info->psy = power_supply_register(&i2c->dev, &info->psd, NULL);
-	if (!info->psy) {
-		pr_err("rt9750 power supply regiseter fail\n");
-		goto err_register_psy;
 	}
 
 	/* Register charger device */
@@ -1311,7 +1257,6 @@ err_register_regmap:
 err_enable_chip:
 err_no_dev:
 err_parse_dt:
-err_register_psy:
 err_register_chg_dev:
 	mutex_destroy(&info->i2c_access_lock);
 	mutex_destroy(&info->adc_access_lock);
@@ -1408,13 +1353,17 @@ module_exit(rt9750_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9750 Load Switch Driver");
-MODULE_VERSION("1.0.2_MTK");
+MODULE_VERSION("1.0.3_MTK");
 
 /*
  * Version Note
+ * 1.0.3
+ * (1) Remove registering power supply class
+ *
  * 1.0.2
  * (1) Add interface for setting ibusoc/vbusov
  * (2) Write initial setting every time after enabling chip
+ * (3) Init vout_reg/vbat_reg in init_setting
  *
  * 1.0.1
  * (1) Add gpio lock for rt9750_enable_chip

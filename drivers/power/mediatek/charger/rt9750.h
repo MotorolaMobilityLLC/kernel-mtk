@@ -76,7 +76,7 @@ enum rt9466_reg_addr {
 #define RT9750_VBUSOV_MAX	6500000
 #define RT9750_VBUSOV_MIN	4200000
 #define RT9750_VBUSOV_STEP	25000
-#define RT9750_VBUSOV_NUM	92
+#define RT9750_VBUSOV_NUM	93
 
 
 /* ========== RT9750_REG_CONTROL 0x06 ============ */
