@@ -215,7 +215,12 @@ const UINT_32 mtk_cipher_suites[] = {
 #if defined(CFG_USE_AOSP_TETHERING_NAME)
 #define NIC_INF_NAME_IN_AP_MODE  "legacy%d"
 #endif
-
+#if CFG_TC10_FEATURE
+#define WIFI_VERION_INFO_FILE   "/data/misc/conn/.wifiver.info"
+#define WIFI_SOFTAP_INFO_FILE   "/data/misc/conn/.softap.info"
+#define WIFI_POWER_SAVE_INFO_FILE   "/data/misc/conn/.psm.info"
+#define WIFI_MAC_ADDRESS_FILE   "/efs/wifi/.mac.info"
+#endif
 /* support to change debug module info dynamically */
 UINT_8 aucDebugModule[DBG_MODULE_NUM];
 
@@ -2421,6 +2426,96 @@ int khwaddr_aton(const char *txt, u8 *addr)
 	return 0;
 }
 #endif
+#if CFG_TC10_FEATURE
+#define MTK_INFO_MAX_SIZE 128
+VOID wlanProcessInfoFile(IN P_ADAPTER_T prAdapter)
+{
+	INT_8 ucPsmFlag = 0xff;
+	CHAR acVerInfo[MTK_INFO_MAX_SIZE];
+	INT_32 u4Ret = 0;
+	UINT_16 u2NvramVer = 0;
+	P_GLUE_INFO_T prGlueInfo;
+	CHAR acSoftAPInfo[MTK_INFO_MAX_SIZE];
+	UINT_8 ucOffset = 0;
+
+	ASSERT(prAdapter);
+	prGlueInfo = prAdapter->prGlueInfo;
+	/*<1> Read info file*/
+	/* If content in .psm.info is 0, we shall disable power save */
+	if (kalReadToFile(WIFI_POWER_SAVE_INFO_FILE, &ucPsmFlag, 1, NULL) == 0) {
+		if (ucPsmFlag == '0') {
+			prAdapter->fgEnDbgPowerMode = TRUE;
+			nicEnterCtiaMode(prAdapter, TRUE, FALSE);
+			nicConfigPowerSaveProfile(prAdapter, NETWORK_TYPE_AIS_INDEX, Param_PowerModeCAM, FALSE);
+		}
+		DBGLOG(INIT, INFO, "%s = %c\n", WIFI_POWER_SAVE_INFO_FILE, ucPsmFlag);
+	}
+
+	/*<2> Write info file*/
+	/* Log driver version, firmware version and nvram version into .wifiver.info
+	 * driver version:	   DRIVER_VERSION_STRING
+	 * firmware version: prAdapter->rVerInfo.u2FwOwnVersion & prAdapter->rVerInfo.u2FwOwnVersionExtend
+	 * nvram version:	 1st 2 bytes in NVRAM
+	*/
+
+	kalMemZero(acVerInfo, sizeof(acVerInfo));
+
+	kalCfgDataRead16(prGlueInfo,
+			 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, u2Part1OwnVersion), &u2NvramVer);
+	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "%s\n", "Mediatek");
+	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "DRIVER_VER: %s\n", NIC_DRIVER_VERSION_STRING);
+	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "FW_VER: %x.%x.%x\n", prAdapter->rVerInfo.u2FwOwnVersion >> 8,
+		prAdapter->rVerInfo.u2FwOwnVersion & 0xff,
+		prAdapter->rVerInfo.u2FwOwnVersionExtend);
+	ucOffset += kalSnprintf(acVerInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "NVRAM: 0x%x\n", u2NvramVer);
+
+	u4Ret = kalWriteToFile(WIFI_VERION_INFO_FILE, FALSE, acVerInfo, sizeof(acVerInfo));
+	if (u4Ret < 0)
+		DBGLOG(INIT, WARN, "%s: version info write failured, ret:%d\n", WIFI_VERION_INFO_FILE, u4Ret);
+	else
+		DBGLOG(INIT, INFO, "%s:version info write succeed, ret:%d\n", WIFI_VERION_INFO_FILE, u4Ret);
+
+	/* Log SoftAP/hotspot information into .softap.info
+	 * #Support wifi and hotspot at the same time?
+	 * DualBandConcurrency=no
+	 * # Supporting 5Ghz
+	 * 5G=check NVRAM ucEnable5GBand
+	 * # Max support client count
+	 * maxClient=P2P_MAXIMUM_CLIENT_COUNT
+	 * #Supporting android_net_wifi_set_Country_Code_Hal
+	 * HalFn_setCountryCodeHal=yes ,call mtk_cfg80211_vendor_set_country_code
+	 * #Supporting android_net_wifi_getValidChannels
+	 * HalFn_getValidChannels=yes, call mtk_cfg80211_vendor_get_channel_list
+	*/
+	kalMemZero(acSoftAPInfo, sizeof(acSoftAPInfo));
+	ucOffset = 0;
+
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "DualBandConcurrency=%s\n", "no");
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "5G=%s\n", (prAdapter->prGlueInfo->rRegInfo.ucEnable5GBand)?"yes":"no");
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "maxClient=%d\n", P2P_MAXIMUM_CLIENT_COUNT);
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "HalFn_setCountryCodeHal=%s\n", "yes");
+	ucOffset += kalSnprintf(acSoftAPInfo + ucOffset, MTK_INFO_MAX_SIZE - ucOffset
+		, "HalFn_getValidChannels=%s\n", "yes");
+
+	DBGLOG(INIT, TRACE, "%s:%s\n", WIFI_SOFTAP_INFO_FILE, acSoftAPInfo);
+
+	u4Ret = kalWriteToFile(WIFI_SOFTAP_INFO_FILE, FALSE, acSoftAPInfo, sizeof(acSoftAPInfo));
+	if (u4Ret < 0)
+		DBGLOG(INIT, WARN, "%s: softap info write failured, ret:%d\n", WIFI_SOFTAP_INFO_FILE, u4Ret);
+	else
+		DBGLOG(INIT, INFO, "%s: soft info write succeed, ret:%d\n", WIFI_SOFTAP_INFO_FILE, u4Ret);
+
+
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Wlan probe function. This function probes and initializes the device.
@@ -2461,7 +2556,7 @@ static INT_32 wlanProbe(PVOID pvData)
 		 * _HIF_SDIO: bus driver handle
 		 */
 #if CFG_TC10_FEATURE
-		if (!hasFile("/efs/wifi/.mac.info")) {
+		if (!hasFile(WIFI_MAC_ADDRESS_FILE)) {
 			DBGLOG(INIT, ERROR, "efs mac file not exist\n");
 #ifndef CFG_SKIP_MAC_INFO_CHECK
 			return WLAN_STATUS_FAILURE;
@@ -2570,7 +2665,7 @@ static INT_32 wlanProbe(PVOID pvData)
 			prRegInfo->u4StartAddress = CFG_FW_START_ADDRESS;
 			prRegInfo->u4LoadAddress = CFG_FW_LOAD_ADDRESS;
 #if CFG_TC10_FEATURE
-			if (readMac("/efs/wifi/.mac.info", aucMacAddr, 19) ||
+			if (readMac(WIFI_MAC_ADDRESS_FILE, aucMacAddr, 19) ||
 				khwaddr_aton(aucMacAddr, prGlueInfo->rRegInfo.aucMacAddr)) {
 				DBGLOG(INIT, ERROR, "Read MAC addr failed from /efs/\n");
 #ifndef CFG_SKIP_MAC_INFO_CHECK
@@ -2924,44 +3019,7 @@ bailout:
 		/* probe ok */
 		DBGLOG(INIT, TRACE, "wlanProbe ok\n");
 #if CFG_TC10_FEATURE
-	{
-		INT_8 ucPsmFlag = 0xff;
-		INT_8 uaVerInfo[128];
-		UINT_32 u4Ret = 0;
-		PINT_8 pucPtr = &uaVerInfo[0];
-		UINT_16 u2NvramVer = 0;
-
-		memset(pucPtr, 0, sizeof(uaVerInfo));
-		/* If content in /data/misc/conn/.psm.info is 0, we shall disable power save */
-		if (kalReadToFile("/data/misc/conn/.psm.info", &ucPsmFlag, 1, NULL) == 0) {
-			if (ucPsmFlag == '0') {
-				prAdapter->fgEnDbgPowerMode = TRUE;
-				nicEnterCtiaMode(prAdapter, TRUE, FALSE);
-				nicConfigPowerSaveProfile(prAdapter, NETWORK_TYPE_AIS_INDEX, Param_PowerModeCAM, FALSE);
-			}
-			DBGLOG(INIT, INFO, "/data/misc/conn/.psm.info = %c\n", ucPsmFlag);
-		}
-		/* Log driver version, firmware version and nvram version into /data/misc/conn/.wifiver.info
-		 * driver version:     DRIVER_VERSION_STRING
-		 * firmware version: prAdapter->rVerInfo.u2FwOwnVersion & prAdapter->rVerInfo.u2FwOwnVersionExtend
-		 * nvram version:    1st 2 bytes in NVRAM
-		*/
-		kalCfgDataRead16(prGlueInfo,
-				 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, u2Part1OwnVersion), &u2NvramVer);
-		SPRINTF(pucPtr, ("%s\nDRIVER_VER: %s\nFW_VER: %x.%x.%x\nNVRAM: 0x%x\n",
-			"Mediatek",
-			NIC_DRIVER_VERSION_STRING,
-			prAdapter->rVerInfo.u2FwOwnVersion >> 8,
-			prAdapter->rVerInfo.u2FwOwnVersion & 0xff,
-			prAdapter->rVerInfo.u2FwOwnVersionExtend,
-			u2NvramVer));
-		u4Ret = kalWriteToFile("/data/misc/conn/.wifiver.info", FALSE, uaVerInfo, sizeof(uaVerInfo));
-		if (u4Ret < 0)
-			DBGLOG(INIT, WARN, "version info write failured, ret:%d\n", u4Ret);
-		else
-			DBGLOG(INIT, INFO, "version info write succeed, ret:%d\n", u4Ret);
-
-	}
+		wlanProcessInfoFile(prAdapter);
 #endif
 	} else {
 		/*
