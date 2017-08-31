@@ -58,14 +58,14 @@ static unsigned long mcumixed_base;
 #define ARMPLL2_CON2	(MCUMIXED_BASE + 0x328)
 
 /* B */
-#define ARMPLL3_CON0	(MCUMIXED_BASE + 0x350)
-#define ARMPLL3_CON1	(MCUMIXED_BASE + 0x354)
-#define ARMPLL3_CON2	(MCUMIXED_BASE + 0x358)
+#define ARMPLL3_CON0	(MCUMIXED_BASE + 0x330)
+#define ARMPLL3_CON1	(MCUMIXED_BASE + 0x334)
+#define ARMPLL3_CON2	(MCUMIXED_BASE + 0x338)
 
 /* CCI */
-#define CCIPLL_CON0		(MCUMIXED_BASE + 0x348)
-#define CCIPLL_CON1		(MCUMIXED_BASE + 0x34C)
-#define CCIPLL_CON2		(MCUMIXED_BASE + 0x350)
+#define CCIPLL_CON0		(MCUMIXED_BASE + 0x354)
+#define CCIPLL_CON1		(MCUMIXED_BASE + 0x358)
+#define CCIPLL_CON2		(MCUMIXED_BASE + 0x35C)
 
 /* ARMPLL DIV */
 /* [10:9] MUXSEL */
@@ -517,7 +517,8 @@ void adjust_armpll_dds(struct pll_ctrl_t *pll_p, unsigned int vco, unsigned int 
 #endif
 	shift = (pos_div == 1) ? 0 :
 		(pos_div == 2) ? 1 :
-		(pos_div == 4) ? 2 : 0;
+		(pos_div == 4) ? 2 :
+		(pos_div == 8) ? 3 : 0;
 
 	dds = _cpu_dds_calc(vco);
 	/* dds = _GET_BITS_VAL_(20:0, _cpu_dds_calc(vco)); */
