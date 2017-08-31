@@ -28,6 +28,10 @@
 #include	"Ois.h"
 #include	"OisDef.h"
 
+struct stAdjPar StAdjPar;	/* Execute Command Parameter */
+unsigned char UcOscAdjFlg;	/* For Measure trigger */
+unsigned long UlH1Coefval;	/* H1 coefficient value */
+unsigned char UcH1LvlMod;	/* H1 level coef mode */
 
 /* ************************** */
 /* define */
