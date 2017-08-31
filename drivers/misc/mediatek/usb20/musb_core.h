@@ -44,9 +44,15 @@
 #include <linux/wakelock.h>
 #include <linux/version.h>
 #include <mt-plat/charging.h>
+#include <linux/clk.h>
 #if defined(CONFIG_MTK_SMART_BATTERY)
 extern CHARGER_TYPE mt_get_charger_type(void);
 #endif
+
+extern struct clk *usbpll_clk;
+extern struct clk *usbmcu_clk;
+extern struct clk *usb_clk;
+extern struct clk *icusb_clk;
 
 typedef unsigned int kal_uint32;
 typedef uint8_t kal_uint8;

@@ -2590,7 +2590,10 @@ static int musb_suspend_noirq(struct device *dev)
 	/*Turn off USB clock, after finishing reading regs */
 	usb_enable_clock(false);
 	mtk_usb_power = false;
-
+	clk_unprepare(icusb_clk);
+	clk_unprepare(usbmcu_clk);
+	clk_unprepare(usb_clk);
+	clk_unprepare(usbpll_clk);
 	/*spin_unlock_irqrestore(&musb->lock, flags); */
 	return 0;
 }
@@ -2600,6 +2603,10 @@ static int musb_resume_noirq(struct device *dev)
 {
 	struct musb *musb = dev_to_musb(dev);
 
+	clk_prepare(usbpll_clk);
+	clk_prepare(usb_clk);
+	clk_prepare(usbmcu_clk);
+	clk_prepare(icusb_clk);
 	/*Turn on USB clock, before writing a batch of regs */
 	mtk_usb_power = true;
 	usb_enable_clock(true);
