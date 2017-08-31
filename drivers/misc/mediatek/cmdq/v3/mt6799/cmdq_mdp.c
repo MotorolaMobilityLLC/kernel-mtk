@@ -228,7 +228,9 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0x8d8, "MDP_DL_VALID_1"},
 		{0x8dc, "MDP_DL_READY_0"},
 		{0x8e0, "MDP_DL_READY_1"},
-		{0x8f0, "MDP_MOUT_MASK"}
+		{0x8f0, "MDP_MOUT_MASK"},
+		{0x934, "MDP_ASYNC_CFG_WD"},
+		{0x938, "MDP_ASYNC_CFG_RD"}
 	};
 	for (i = 0; i < ARRAY_SIZE(configRegisters); ++i) {
 		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE + configRegisters[i].offset);
