@@ -72,7 +72,7 @@ u32 dma_size[HOST_MAX_NUM] = {
 u32 drv_mode[HOST_MAX_NUM] = {
 	MODE_SIZE_DEP, /* using DMA or not depend on the size */
 	MODE_SIZE_DEP,
-	MODE_SIZE_DEP
+	MODE_DMA
 };
 
 u8 msdc_clock_src[HOST_MAX_NUM] = {

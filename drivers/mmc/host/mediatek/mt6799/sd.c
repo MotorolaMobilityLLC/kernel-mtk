@@ -2720,7 +2720,8 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 	 * if find abnormal, try to reset msdc first
 	 */
 	if (msdc_txfifocnt() || msdc_rxfifocnt()) {
-		pr_err("[SD%d] register abnormal,please check!\n", host->id);
+		pr_err("[SD%d] register abnormal, please check! fifo = 0x%x, content = 0x%x\n",
+			host->id, MSDC_READ32(MSDC_FIFOCS), msdc_fifo_read32());
 		msdc_reset_hw(host->id);
 	}
 #endif
