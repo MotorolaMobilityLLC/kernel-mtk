@@ -67,6 +67,16 @@ int sspm_mbox_read(unsigned int mbox, unsigned int slot, void *data, unsigned in
 	return 0;
 }
 
+int sspm_mbox_write(unsigned int mbox, unsigned int slot, void *data, unsigned int len)
+{
+	struct sspm_mbox *desc = &sspmmbox[mbox];
+
+	if (data)
+		memcpy_to_sspm(desc->base + (MBOX_SLOT_SIZE * slot), data, len * MBOX_SLOT_SIZE);
+
+	return 0;
+}
+
 int sspm_mbox_polling(unsigned int mbox, unsigned int irq, unsigned int slot,
 		unsigned int *retdata, unsigned int retlen, unsigned int retries)
 {
