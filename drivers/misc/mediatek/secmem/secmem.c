@@ -744,7 +744,7 @@ int secmem_api_query(u32 *allocate_size)
 		*allocate_size = -1;
 	} else {
 		*allocate_size = param.size;
-#ifdef CONFIG_MTK_ENG_BUILD
+#if defined(CONFIG_MTK_ENG_BUILD) || defined(CONFIG_MT_ENG_BUILD)
 		if (*allocate_size)
 			secmem_execute(CMD_SEC_MEM_DUMP_INFO, &param);
 #endif
@@ -878,7 +878,7 @@ end:
 EXPORT_SYMBOL(secmem_api_unref);
 #endif /* END OF SECMEM_KERNEL_API */
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#if defined(CONFIG_MTK_ENG_BUILD) || defined(CONFIG_MT_ENG_BUILD)
 #include <mach/emi_mpu.h>
 #include <mach/mtk_secure_api.h>
 static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
@@ -953,7 +953,7 @@ static const struct file_operations secmem_fops = {
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = secmem_ioctl,
 #endif
-#ifdef CONFIG_MTK_ENG_BUILD
+#if defined(CONFIG_MTK_ENG_BUILD) || defined(CONFIG_MT_ENG_BUILD)
 	.write = secmem_write,
 #else
 	.write = NULL,
