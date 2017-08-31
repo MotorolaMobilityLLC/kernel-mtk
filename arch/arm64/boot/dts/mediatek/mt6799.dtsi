@@ -4556,7 +4556,7 @@
 
 	mt6336_charger {
 		compatible = "mediatek,mt6336_charger";
-		charger_name = "PrimarySWCHG";
+		charger_name = "primary_chg";
 		alias_name = "MT6336";
 	};
 

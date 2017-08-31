@@ -1201,7 +1201,7 @@
 
 &i2c0 {
 	rt9750:slave_charger@67 {
-		charger_name = "load_switch";
+		charger_name = "primary_load_switch";
 		alias_name = "rt9750";
 		vout_reg = <5000000>; /* uV */
 		vbat_reg = <4500000>; /* uV */
