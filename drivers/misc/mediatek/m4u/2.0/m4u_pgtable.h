@@ -26,21 +26,29 @@
 #define F_PTE_TYPE_SMALL        (0x2)
 #define F_PTE_B_BIT             F_BIT_SET(2)
 #define F_PTE_C_BIT             F_BIT_SET(3)
-#define F_PTE_AP_MSK            F_MSK(5, 4)
-#define F_PTE_AP_SET(val)       F_VAL(val, 5, 4)
-#define F_PTE_AP_GET(regval)    F_MSK_SHIFT(regval, 5, 4)
+#define F_PTE_BIT33_BIT		F_BIT_SET(4)
 #define F_PTE_TEX_MSK            F_MSK(8, 6)
 #define F_PTE_TEX_SET(val)       F_VAL(val, 8, 6)
 #define F_PTE_TEX_GET(regval)    F_MSK_SHIFT(regval, 8, 6)
 #define F_PTE_BIT32_BIT         F_BIT_SET(9)
 #define F_PTE_S_BIT             F_BIT_SET(10)
 #define F_PTE_NG_BIT            F_BIT_SET(11)
+
+#ifdef CONFIG_MACH_MT6763
+#define F_PTE_PA_LARGE_MSK            F_MSK_L(33, 16)
+#define F_PTE_PA_LARGE_SET(val)       F_VAL(val, 33, 16)
+#define F_PTE_PA_LARGE_GET(regval)    F_MSK_SHIFT(regval, 33, 16)
+#define F_PTE_PA_SMALL_MSK            F_MSK_L(33, 12)
+#define F_PTE_PA_SMALL_SET(val)       F_VAL(val, 33, 12)
+#define F_PTE_PA_SMALL_GET(regval)    F_MSK_SHIFT(regval, 33, 12)
+#else
 #define F_PTE_PA_LARGE_MSK            F_MSK(31, 16)
 #define F_PTE_PA_LARGE_SET(val)       F_VAL(val, 31, 16)
 #define F_PTE_PA_LARGE_GET(regval)    F_MSK_SHIFT(regval, 31, 16)
 #define F_PTE_PA_SMALL_MSK            F_MSK(31, 12)
 #define F_PTE_PA_SMALL_SET(val)       F_VAL(val, 31, 12)
 #define F_PTE_PA_SMALL_GET(regval)    F_MSK_SHIFT(regval, 31, 12)
+#endif
 #define F_PTE_TYPE_IS_LARGE_PAGE(pte) ((imu_pte_val(pte)&0x3) == F_PTE_TYPE_LARGE)
 #define F_PTE_TYPE_IS_SMALL_PAGE(pte)   ((imu_pte_val(pte)&0x3) == F_PTE_TYPE_SMALL)
 
@@ -58,6 +66,7 @@
 
 #define F_PGD_B_BIT             F_BIT_SET(2)
 #define F_PGD_C_BIT             F_BIT_SET(3)
+#define F_PGD_BIT33_BIT		F_BIT_SET(4)
 #define F_PGD_AP_MSK            F_MSK(11, 10)
 #define F_PGD_AP_SET(val)       F_VAL(val, 11, 10)
 #define F_PGD_AP_GET(regval)    F_MSK_SHIFT(regval, 11, 10)
@@ -71,13 +80,21 @@
 #define F_PGD_NS_BIT_SECTION(ns)    F_BIT_VAL(ns, 19)
 #define F_PGD_NS_BIT_SUPERSECTION(ns)    F_BIT_VAL(ns, 19)
 
+#ifdef CONFIG_MACH_MT6763
+#define F_PGD_PA_PAGETABLE_MSK            F_MSK_L(33, 10)
+#define F_PGD_PA_PAGETABLE_SET(val)       F_VAL(val, 33, 10)
+#define F_PGD_PA_SECTION_MSK            F_MSK_L(33, 20)
+#define F_PGD_PA_SECTION_SET(val)       F_VAL(val, 33, 20)
+#define F_PGD_PA_SUPERSECTION_MSK            F_MSK_L(33, 24)
+#define F_PGD_PA_SUPERSECTION_SET(val)       F_VAL(val, 33, 24)
+#else
 #define F_PGD_PA_PAGETABLE_MSK            F_MSK(31, 10)
 #define F_PGD_PA_PAGETABLE_SET(val)       F_VAL(val, 31, 10)
 #define F_PGD_PA_SECTION_MSK            F_MSK(31, 20)
 #define F_PGD_PA_SECTION_SET(val)       F_VAL(val, 31, 20)
 #define F_PGD_PA_SUPERSECTION_MSK            F_MSK(31, 24)
 #define F_PGD_PA_SUPERSECTION_SET(val)       F_VAL(val, 31, 24)
-
+#endif
 /* pagetable walk */
 #define IMU_PGDIR_SHIFT   20
 #define IMU_PAGE_SHIFT   12
