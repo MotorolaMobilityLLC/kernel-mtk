@@ -35,25 +35,17 @@
 #include <linux/atomic.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
-#ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#endif
+#include <linux/clk.h>
 
 #include <mt-plat/mtk_pwm.h>
 #include <mach/mtk_pwm_prv.h>
 #include <mt-plat/mtk_pwm_hal_pub.h>
 #include <mach/mtk_pwm_hal.h>
 
-#if !defined(CONFIG_MTK_CLKMGR)
-#include <linux/clk.h>
-#endif
-
-
-#ifdef CONFIG_OF
 void __iomem *pwm_base;
-#endif
 
 struct pwm_device {
 	const char	  *name;
@@ -1748,32 +1740,25 @@ static int mt_pwm_probe(struct platform_device *pdev)
 {
 	int ret, pwm_irqnr;
 
-#ifdef CONFIG_OF
-		mt_pwm_platform_init();
+	mt_pwm_platform_init();
 
-		pwm_base = of_iomap(pdev->dev.of_node, 0);
-		if (!pwm_base) {
-			PWMDBG("PWM iomap failed\n");
-			return -ENODEV;
-		};
+	pwm_base = of_iomap(pdev->dev.of_node, 0);
+	if (!pwm_base) {
+		PWMDBG("PWM iomap failed\n");
+		return -ENODEV;
+	};
 
-#if 1
-		pwm_irqnr = irq_of_parse_and_map(pdev->dev.of_node, 0);
-		if (!pwm_irqnr) {
-			PWMDBG("PWM get irqnr failed\n");
-			return -ENODEV;
-		}
-		PWMDBG("pwm base: 0x%p	pwm irq: %d\n", pwm_base, pwm_irqnr);
-#endif
-PWMDBG("pwm base: 0x%p\n", pwm_base);
+	pwm_irqnr = irq_of_parse_and_map(pdev->dev.of_node, 0);
+	if (!pwm_irqnr) {
+		PWMDBG("PWM get irqnr failed\n");
+		return -ENODEV;
+	}
+	PWMDBG("pwm base: 0x%p	pwm irq: %d\n", pwm_base, pwm_irqnr);
 
-#endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
 	ret = mt_get_pwm_clk_src(pdev);
 	if (ret != 0)
 		PWMDBG("[%s]: Fail :%d\n", __func__, ret);
-#endif	/* !defined(CONFIG_MTK_CLKMGR) */
 
 	platform_set_drvdata(pdev, pwm_dev);
 
@@ -1781,7 +1766,6 @@ PWMDBG("pwm base: 0x%p\n", pwm_base);
 	if (ret)
 		PWMDBG("error creating sysfs files: pwm_debug\n");
 
-#ifdef CONFIG_OF
 	/* ret = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL); */
 	pwm_irqnr = platform_get_irq(pdev, 0);
 	if (pwm_irqnr <= 0)
@@ -1794,20 +1778,6 @@ PWMDBG("pwm base: 0x%p\n", pwm_base);
 			"[PWM]Request IRQ %d failed-------\n", pwm_irqnr);
 		return ret;
 	}
-#else
-/* request_irq(69, mt_pwm_irq, IRQF_TRIGGER_LOW, "mt6589_pwm", NULL); */
-#endif
-
-#if 0 /* for support gpio pinctrl standardization */
-	struct pinctrl *pinctrl;
-
-	pinctrl = devm_pinctrl_get_select(&pdev->dev, "state_pwm2");
-	if (IS_ERR(pinctrl)) {
-		ret = PTR_ERR(pinctrl);
-		dev_err(&pdev->dev, "Cannot find pwm pinctrl!\n");
-		return -1;
-	}
-#endif
 
 	return RSUCCESS;
 }
@@ -1829,12 +1799,10 @@ static void mt_pwm_shutdown(struct platform_device *pdev)
 	PWMDBG("mt_pwm_shutdown\n");
 }
 
-#ifdef CONFIG_OF
 static const struct of_device_id pwm_of_match[] = {
 	{.compatible = "mediatek,pwm",},
 	{},
 };
-#endif
 
 struct platform_driver pwm_plat_driver = {
 	.probe = mt_pwm_probe,
@@ -1842,22 +1810,14 @@ struct platform_driver pwm_plat_driver = {
 	.shutdown = mt_pwm_shutdown,
 	.driver = {
 		.name = "mt-pwm",
-#ifdef CONFIG_OF
 		.of_match_table = pwm_of_match,
-#endif
 	},
 };
 
 static int __init mt_pwm_init(void)
 {
 	int ret;
-#ifndef CONFIG_OF
-	ret = platform_device_register(&pwm_plat_dev);
-	if (ret < 0) {
-		PWMDBG("platform_device_register error\n");
-		goto out;
-	}
-#endif
+
 	ret = platform_driver_register(&pwm_plat_driver);
 	if (ret < 0) {
 		PWMDBG("platform_driver_register error\n");
@@ -1871,9 +1831,6 @@ out:
 
 static void __exit mt_pwm_exit(void)
 {
-#ifndef CONFIG_OF
-	platform_device_unregister(&pwm_plat_dev);
-#endif
 	platform_driver_unregister(&pwm_plat_driver);
 }
 
