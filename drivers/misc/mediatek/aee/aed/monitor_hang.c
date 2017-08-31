@@ -397,7 +397,7 @@ static void ShowStatus(void)
 		show_bt_by_pid(mmcqd1);
 
 	LOGE("[Hang_Detect] dump debug_show_all_locks\n");
-	debug_locks = 1;
+	/* debug_locks = 1; */
 	debug_show_all_locks();
 
 	LOGE("[Hang_Detect] show_free_areas\n");
