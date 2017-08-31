@@ -1328,7 +1328,9 @@ static void gadget_stop(struct musb *musb)
 			musb->gadget_driver->disconnect(&musb->g);
 
 			/* align musb_g_disconnect */
+			#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 			spin_lock(&musb->lock);
+			#endif
 		}
 		musb->g.speed = USB_SPEED_UNKNOWN;
 	}
