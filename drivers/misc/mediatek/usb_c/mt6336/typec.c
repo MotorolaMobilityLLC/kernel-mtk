@@ -751,7 +751,7 @@ unsigned int vbus_val(struct typec_hba *hba)
 		 */
 		typec_write8(hba, 0x00, MAIN_CON5);
 		typec_write8(hba, 0x1, CLK_CKPDN_CON3_CLR);
-		typec_write8(hba, 0x01, MAIN_CON8);
+		/*typec_write8(hba, 0x01, MAIN_CON8);*/
 
 		/*AUXADC_TRIM_CH11~8_SEL*/
 		typec_write8(hba, 0x54, AUXADC_CON7);
@@ -1308,9 +1308,11 @@ static void typec_basic_settings(struct typec_hba *hba)
  */
 	const int is_print = 0;
 
+#ifdef NEVER
 	typec_write8(hba, 0x01, MAIN_CON8);
 	if (is_print)
 		dev_err(hba->dev, "MAIN_CON8(0x409)=0x%x [0x1]\n", typec_read8(hba, MAIN_CON8));
+#endif /* NEVER */
 
 	typec_write8(hba, (1<<ENABLE_AVDD33_TYPEC_OFST), CORE_ANA_CON109);
 	if (is_print)
@@ -1815,9 +1817,19 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 		typec_vbus_present(hba, 0);
 		typec_drive_vbus(hba, 0);
+
+		if (!hba->is_lowq) {
+			mt6336_ctrl_disable(hba->core_ctrl);
+			hba->is_lowq = true;
+		}
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
+		if (hba->is_lowq) {
+			mt6336_ctrl_enable(hba->core_ctrl);
+			hba->is_lowq = false;
+		}
+
 		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
@@ -1831,6 +1843,10 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 #else
 	if (cc_is0 & (TYPE_C_CC_ENT_ATTACH_SNK_INTR | TYPE_C_CC_ENT_ATTACH_SRC_INTR)) {
 #endif
+		if (hba->is_lowq) {
+			mt6336_ctrl_enable(hba->core_ctrl);
+			hba->is_lowq = false;
+		}
 
 #if ENABLE_ACC
 		/*SNK<->ACC toggle happens ONLY for sink*/
@@ -2189,6 +2205,10 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		dev_err(hba->dev, "char dev failed\n");
 		goto out_error;
 	}
+
+	hba->core_ctrl = mt6336_ctrl_get("mt6336_pd");
+	hba->is_lowq = false;
+	mt6336_ctrl_enable(hba->core_ctrl);
 
 	/*For bring-up, check the i2c communucation*/
 	/* PD*/
