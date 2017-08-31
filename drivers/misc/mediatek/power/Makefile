@@ -14,3 +14,10 @@
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
+ifeq ($(CONFIG_BQ24196_SUPPORT),y)
+     obj-$(CONFIG_MTK_SMART_BATTERY) += bq24196.o
+else
+ifeq ($(CONFIG_BQ24296_SUPPORT),y)
+     obj-$(CONFIG_MTK_SMART_BATTERY) += bq24296.o
+endif
+endif
