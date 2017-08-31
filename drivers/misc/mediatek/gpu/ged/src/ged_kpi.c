@@ -303,7 +303,7 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 	int fps_grp[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
 	int i;
 
-	if (enable_game_self_frc_detect && fps > 15 && fps <= 61) {
+	if (enable_game_self_frc_detect && fps > 18 && fps <= 61) {
 		fps_records[cur_fps_idx] = fps;
 		if (reset == 0) {
 			if (fps > target_fps_4_main_head + 1 || afrc_rst_cnt_down == 120) {
@@ -320,6 +320,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 						fps_grp[i] = 30;
 					else if (fps_records[i] <= 45)
 						fps_grp[i] = 45;
+					else if (fps_records[i] <= 49)
+						fps_grp[i] = 48;
 					else
 						fps_grp[i] = 60;
 				}
@@ -333,8 +335,9 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 
 				if (is_fps_grp_aligned) {
 					target_fps_4_main_head = fps_grp[0];
+					is_game_control_frame_rate = 1;
 					afrc_rst_over_target_cnt = 0;
-					GED_LOGE("[AFRC] retarget to %d FPS due to voer target detection\n",
+					GED_LOGE("[AFRC] retarget to %d FPS due to over target detection\n",
 						fps_grp[0]);
 				}
 
@@ -345,6 +348,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					fps = 30;
 				else if (fps <= 45)
 					fps = 45;
+				else if (fps <= 49)
+					fps = 48;
 				else
 					fps = 60;
 
@@ -363,6 +368,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 						fps_grp[i] = 30;
 					else if (fps_records[i] <= 45)
 						fps_grp[i] = 45;
+					else if (fps_records[i] <= 49)
+						fps_grp[i] = 48;
 					else
 						fps_grp[i] = 60;
 				}
@@ -390,7 +397,8 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		cur_fps_idx++;
 		cur_fps_idx %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 	} else {
-		is_game_control_frame_rate = 0;
+		if (target_fps_4_main_head == 60 || enable_game_self_frc_detect == 0)
+			is_game_control_frame_rate = 0;
 	}
 	/* debug AFRC detection */
 	GED_LOGE("[AFRC]: cur_fps: %d, fps_records: %d, %d, %d, target_fps: %d\n",
