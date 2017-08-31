@@ -978,7 +978,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t 
 	temp = &aucProcBuf[0];
 	while (temp) {
 		/* pick up a string and teminated after meet : */
-		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
+		if (sscanf(temp, "%5s %d", aucModule, &u4Enabled) != 2)  {
 			pr_info("read param fail, aucModule=%s\n", aucModule);
 			break;
 		}
