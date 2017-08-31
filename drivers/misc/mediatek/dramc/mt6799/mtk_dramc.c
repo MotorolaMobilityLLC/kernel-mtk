@@ -420,7 +420,7 @@ static int __init last_dramc_test_agent_init(void)
 late_initcall(last_dramc_test_agent_init);
 #endif
 
-#ifdef CONFIG_MTK_DRAMC_PASR
+#if 0 /* def CONFIG_MTK_DRAMC_PASR */
 #define __ETT__ 0
 int enter_pasr_dpd_config_base(unsigned char segment_rank0, unsigned char segment_rank1, int dcs_on)
 {
