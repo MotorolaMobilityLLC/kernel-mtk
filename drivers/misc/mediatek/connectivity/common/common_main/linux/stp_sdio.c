@@ -800,9 +800,9 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 					    ("Abnormal accumulated comp count(%d) chisr(0x%x)\n",
 					     tx_comp, chisr);
 				if (chisr & TX_RETRY)
-					pInfo->tx_retry_flag = 1;
+					pInfo->tx_retry_flag = STP_SDIO_RETRY_INT;
 			}
-			if (pInfo->awake_flag == 1)
+			if (pInfo->awake_flag == 1 && pInfo->tx_retry_flag != STP_SDIO_RETRY_CRC_ERROR)
 				stp_sdio_tx_wkr(&pInfo->tx_work);
 
 			if (chisr & RX_DONE) {
@@ -838,7 +838,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 
 		/* We schedule Tx job here without condition */
 		/*Tx job */
-		if (pInfo->awake_flag == 1)
+		if (pInfo->awake_flag == 1 && pInfo->tx_retry_flag != STP_SDIO_RETRY_CRC_ERROR)
 			stp_sdio_tx_wkr(&pInfo->tx_work);
 
 		/*Enable IRQ */
@@ -1590,7 +1590,7 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 		--comp_count;
 	}
 	if (p_info->retry_enable_flag) {
-		if (p_info->tx_retry_flag) {
+		if (p_info->tx_retry_flag == STP_SDIO_RETRY_INT) {
 			for (i = 0; i < 100; i++) {
 				ret = stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, p_info->sdio_cltctx,
 						CTMDPCR0, &value, 0);
@@ -1648,7 +1648,7 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 				idx++;
 				idx = idx & STP_SDIO_TX_PKT_LIST_SIZE_MASK;
 			}
-			p_info->tx_retry_flag = 0;
+			p_info->tx_retry_flag = STP_SDIO_RETRY_NONE;
 		}
 	}
 }
@@ -1816,8 +1816,11 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 				}
 			} while (0);
 #endif
-			if (ret)
+			if (ret) {
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
+				if (ret == -EIO)
+					p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+			}
 
 			/* clear rd index entry of Tx ring buffer */
 			/*memset(buf_tx, 0, STP_SDIO_TX_ENTRY_SIZE); */
@@ -1986,8 +1989,11 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			} while (0);
 #endif
 
-			if (ret)
+			if (ret) {
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
+				if (ret == -EIO)
+					p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
+			}
 
 			/* clear rd index entry of Tx ring buffer */
 			/*memset(buf_tx, 0, STP_SDIO_TX_ENTRY_SIZE); */
