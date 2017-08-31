@@ -333,6 +333,8 @@ static inline void mt_i2c_init_hw(struct mt_i2c *i2c)
 	if (i2c->have_dcm)
 		i2c_writew(I2C_DCM_DISABLE, i2c, OFFSET_DCM_EN);
 	i2c_writew(i2c->timing_reg, i2c, OFFSET_TIMING);
+	if (i2c->dev_comp->set_ltiming)
+		i2c_writew(i2c->ltiming_reg, i2c, OFFSET_LTIMING);
 	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
 	/* DMA warm reset, and waits for EN to become 0 */
 	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
@@ -416,12 +418,24 @@ static int i2c_set_speed(struct mt_i2c *i2c, unsigned int clk_src_in_hz)
 		i2c->high_speed_reg = I2C_TIME_DEFAULT_VALUE |
 			(sample_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 12 |
 			(step_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 8;
+
+		if (i2c->dev_comp->set_ltiming) {
+			i2c->ltiming_reg = (0x3 << 6) | (0x3 << 0) |
+				(sample_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 12 |
+				(step_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 9;
+		}
 	} else {
 		i2c->timing_reg =
 			(sample_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 8 |
 			(step_cnt & I2C_TIMING_STEP_DIV_MASK) << 0;
 		/* Disable the high speed transaction */
 		i2c->high_speed_reg = I2C_TIME_CLR_VALUE;
+
+		if (i2c->dev_comp->set_ltiming) {
+			i2c->ltiming_reg =
+				(sample_cnt & I2C_TIMING_SAMPLE_COUNT_MASK) << 6 |
+				(step_cnt & I2C_TIMING_STEP_DIV_MASK) << 0;
+		}
 	}
 
 	return 0;
@@ -623,6 +637,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c_writew(I2C_IO_CONFIG_OPEN_DRAIN, i2c, OFFSET_IO_CONFIG);
 
 	i2c_writew(i2c->timing_reg, i2c, OFFSET_TIMING);
+	if (i2c->dev_comp->set_ltiming)
+		i2c_writew(i2c->ltiming_reg, i2c, OFFSET_LTIMING);
 	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
 
 	addr_reg = i2c->addr << 1;
@@ -1163,6 +1179,7 @@ static const struct mtk_i2c_compatible mt6735_compat = {
 	.dma_support = 0,
 	.idvfs_i2c = 0,
 	.set_dt_div = 0,
+	.set_ltiming = 0,
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
@@ -1171,6 +1188,7 @@ static const struct mtk_i2c_compatible mt6797_compat = {
 	.dma_support = 1,
 	.idvfs_i2c = 1,
 	.set_dt_div = 0,
+	.set_ltiming = 0,
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
@@ -1179,6 +1197,7 @@ static const struct mtk_i2c_compatible mt6757_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 0,
 	.set_dt_div = 0,
+	.set_ltiming = 0,
 	.check_max_freq = 1,
 	.ext_time_config = 0x201,
 };
@@ -1187,6 +1206,7 @@ static const struct mtk_i2c_compatible mt6759_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 1,
 	.set_dt_div = 1,
+	.set_ltiming = 0,
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 	.clk_compatible = "mediatek,pericfg",
@@ -1207,6 +1227,7 @@ static const struct mtk_i2c_compatible mt6799_compat = {
 	.dma_support = 3,
 	.idvfs_i2c = 1,
 	.set_dt_div = 1,
+	.set_ltiming = 0,
 	.check_max_freq = 0,
 	.ext_time_config = 0,
 	.clk_compatible = "mediatek,mt6799-pericfg",
@@ -1223,10 +1244,20 @@ static const struct mtk_i2c_compatible mt6799_compat = {
 	.cg_bit[9] = 19,
 };
 
+static const struct mtk_i2c_compatible mt6763_compat = {
+	.dma_support = 2,
+	.idvfs_i2c = 1,
+	.set_dt_div = 0,
+	.set_ltiming = 1,
+	.check_max_freq = 1,
+	.ext_time_config = 0,
+};
+
 static const struct mtk_i2c_compatible elbrus_compat = {
 	.dma_support = 2,
 	.idvfs_i2c = 1,
 	.set_dt_div = 0,
+	.set_ltiming = 0,
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 };
@@ -1237,6 +1268,7 @@ static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6757-i2c", .data = &mt6757_compat },
 	{ .compatible = "mediatek,mt6759-i2c", .data = &mt6759_compat },
 	{ .compatible = "mediatek,mt6799-i2c", .data = &mt6799_compat },
+	{ .compatible = "mediatek,mt6763-i2c", .data = &mt6763_compat },
 	{ .compatible = "mediatek,elbrus-i2c", .data = &elbrus_compat },
 	{},
 };
