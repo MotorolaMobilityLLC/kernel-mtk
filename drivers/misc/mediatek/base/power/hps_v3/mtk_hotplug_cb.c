@@ -33,7 +33,7 @@
 #endif
 
 #ifdef CONFIG_MACH_MT6799
-#define CPU_BUCK_CTRL	(1)
+#define CPU_BUCK_CTRL	(0)
 #else
 #define CPU_BUCK_CTRL	(0)
 #endif
