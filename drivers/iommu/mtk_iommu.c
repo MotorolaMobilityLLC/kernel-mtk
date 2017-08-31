@@ -33,7 +33,7 @@
 #include <asm/barrier.h>
 #include <dt-bindings/memory/mt8173-larb-port.h>
 #include <soc/mediatek/smi.h>
-
+#include <mt-plat/mtk_memcfg.h>
 #include "io-pgtable.h"
 
 #define REG_MMU_PT_BASE_ADDR			0x000
@@ -497,6 +497,55 @@ err_free_mem:
 	return -ENOMEM;
 }
 
+#ifdef CONFIG_MTK_MEMCFG
+/* this function would only be called once, we do not need to handle re-entry issue. */
+static void mtk_iommu_get_dm_regions(struct device *dev, struct list_head *list)
+{
+	struct iommu_dm_region *region;
+
+	/* for framebuffer region */
+	region = kzalloc(sizeof(*region), GFP_KERNEL);
+	if (!region)
+		return;
+
+	INIT_LIST_HEAD(&region->list);
+	region->start = mtkfb_get_fb_base();
+	region->length = mtkfb_get_fb_size();
+	region->prot = IOMMU_READ | IOMMU_WRITE;
+	list_add_tail(&region->list, list);
+}
+
+static void mtk_iommu_put_dm_regions(struct device *dev, struct list_head *list)
+{
+	struct  iommu_dm_region *region, *tmp;
+
+	list_for_each_entry_safe(region, tmp, list, list)
+		kfree(region);
+}
+#else
+static void mtk_iommu_get_dm_regions(struct device *dev, struct list_head *list)
+{
+	struct iommu_dm_region *region;
+
+	/* for framebuffer region */
+	region = kzalloc(sizeof(*region), GFP_KERNEL);
+	if (!region)
+		return;
+
+	INIT_LIST_HEAD(&region->list);
+	list_add_tail(&region->list, list);
+}
+
+static void mtk_iommu_put_dm_regions(struct device *dev, struct list_head *list)
+{
+	struct  iommu_dm_region *region, *tmp;
+
+	list_for_each_entry_safe(region, tmp, list, list)
+		kfree(region);
+}
+
+#endif
+
 static struct iommu_ops mtk_iommu_ops = {
 	.domain_alloc	= mtk_iommu_domain_alloc,
 	.domain_free	= mtk_iommu_domain_free,
@@ -511,6 +560,8 @@ static struct iommu_ops mtk_iommu_ops = {
 	.device_group	= mtk_iommu_device_group,
 	.of_xlate	= mtk_iommu_of_xlate,
 	.pgsize_bitmap	= SZ_4K | SZ_64K | SZ_1M | SZ_16M,
+	.get_dm_regions	= mtk_iommu_get_dm_regions,
+	.put_dm_regions	= mtk_iommu_put_dm_regions,
 };
 
 static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
