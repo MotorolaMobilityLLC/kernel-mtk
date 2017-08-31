@@ -19,6 +19,8 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/pmic/include/
 
 obj-$(CONFIG_THERMAL) += mtk_tc.o
 obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o

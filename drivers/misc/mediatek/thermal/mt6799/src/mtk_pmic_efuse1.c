@@ -29,10 +29,17 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <tspmic_settings1.h>
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+#include "mt6336.h"
+#endif
 /*=============================================================
  *Local variable definition
  *=============================================================
  */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+static struct mt6336_ctrl *tz_mt6336;
+#endif
+
 int mtktspmic_debug_log1;
 /* Cali */
 static __s32 g_o_vts;
@@ -88,9 +95,12 @@ static void mtktspmic_read_efuse(void)
 	*   0x1  528     543
 	*  Thermal data from 512 to 539
 	*/
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+	tz_mt6336 = mt6336_ctrl_get("tz_mt6336");
+	mt6336_ctrl_enable(tz_mt6336);
 	efusevalue[0] = mt6336_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = mt6336_Read_Efuse_HPOffset(0x1);
+	mt6336_ctrl_disable(tz_mt6336);
 #endif
 	mtktspmic_info("[pmic_debug] 6336_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
@@ -181,8 +191,10 @@ int mtktspmic_get_hw_temp_1(void)
 	int temp = 0, temp1 = 0;
 
 	mutex_lock(&TSPMIC_lock);
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
+	mt6336_ctrl_enable(tz_mt6336);
 	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6336_CHIP_TEMP);
+	mt6336_ctrl_disable(tz_mt6336);
 #endif
 
 	temp1 = pmic_raw_to_temp(temp);
