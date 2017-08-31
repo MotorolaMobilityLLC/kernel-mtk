@@ -5553,7 +5553,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
 	INIT_DELAYED_WORK(&host->work_init, msdc_add_host);
-	/* INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card); */
+	INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);
 
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);

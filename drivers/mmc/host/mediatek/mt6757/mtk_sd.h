@@ -399,6 +399,7 @@ struct msdc_host {
 	struct msdc_saved_para  saved_para;
 	struct wakeup_source    trans_lock;
 	bool                    block_bad_card;
+	struct delayed_work     remove_card;    /* remove bad card */
 	struct delayed_work     write_timeout;  /* check if write busy timeout*/
 #ifdef SDIO_ERROR_BYPASS
 	int                     sdio_error;     /* sdio error can't recovery */
@@ -673,6 +674,7 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable);
 int msdc_switch_part(struct msdc_host *host, char part_id);
 
 /* Function provided by msdc_tune.c */
+void msdc_remove_card(struct work_struct *work);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
 

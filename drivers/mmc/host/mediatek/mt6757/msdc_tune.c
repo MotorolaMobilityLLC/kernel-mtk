@@ -145,22 +145,43 @@ void msdc_set_bad_card_and_remove(struct msdc_host *host)
 #ifndef CONFIG_GPIOLIB
 		ERR_MSG("Cannot get gpio %d level", cd_gpio);
 #else
-		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
-		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
+		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
 			ERR_MSG("Schedule remove card");
 			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else
 #endif
 		{
-			mmc_remove_card(host->mmc->card);
-			host->mmc->card = NULL;
-			mmc_detach_bus(host->mmc);
-			mmc_power_off(host->mmc);
+			/*
+			 * prevent from calling device_del with mmcqd/X,
+			 * it will cause dead lock
+			 */
+			ERR_MSG("Schedule msdc_remove_card");
+			schedule_delayed_work(&host->remove_card,
+				msecs_to_jiffies(200));
 		}
 
 		ERR_MSG("Remove the bad card, block_bad_card=%d, card_inserted=%d",
 			host->block_bad_card, host->card_inserted);
 	}
+}
+
+void msdc_remove_card(struct work_struct *work)
+{
+	struct msdc_host *host =
+		container_of(work, struct msdc_host, remove_card.work);
+
+	if (!host->mmc || !host->mmc->card) {
+		ERR_MSG("WARN: mmc or card is NULL");
+		return;
+	}
+
+	ERR_MSG("Remove card");
+	mmc_claim_host(host->mmc);
+	mmc_remove_card(host->mmc->card);
+	host->mmc->card = NULL;
+	mmc_detach_bus(host->mmc);
+	mmc_power_off(host->mmc);
+	mmc_release_host(host->mmc);
 }
 
 /*  HS400 can not lower frequence
