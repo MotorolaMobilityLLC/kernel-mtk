@@ -21,8 +21,9 @@
 
 #include "mtk_ppm_internal.h"
 #include "mtk_ppm_platform.h"
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include "mach/mtk_pbm.h"
-
+#endif
 
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx);

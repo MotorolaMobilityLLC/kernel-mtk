@@ -17,6 +17,7 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/include	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)	\
+	-I$(srctree)/drivers/misc/mediatek/base/power/cpufreq_v2/src/mach/$(CONFIG_MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += \
@@ -24,6 +25,10 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
+# only build-in dummy driver for MT6758
+ifeq ($(CONFIG_MACH_MT6739),y)
+obj-y := mtk_ppm_dummy.o
+else
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 # main
 obj-y := mtk_ppm_main.o
@@ -55,5 +60,6 @@ obj-y += mach/
 else
 # dummy driver to avoid build error
 obj-y := mtk_ppm_dummy.o
+endif
 endif
 
