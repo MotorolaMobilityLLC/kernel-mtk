@@ -45,6 +45,17 @@ static struct wake_lock  mt6355_auxadc_wake_lock;
 static struct mutex mt6355_adc_mutex;
 static DEFINE_MUTEX(auxadc_ch3_mutex);
 
+unsigned int wk_auxadc_ch3_bif_on(unsigned char en)
+{
+	pmic_set_register_value(PMIC_RG_LDO_VBIF28_EN, en);
+	pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 1);
+
+	if (!en)
+		pmic_set_register_value(PMIC_RG_LDO_VBIF28_SW_OP_EN, 0);
+
+	return pmic_get_register_value(PMIC_DA_QI_VBIF28_EN);
+}
+
 unsigned int wk_auxadc_vsen_tdet_ctrl(unsigned char en_check)
 {
 	if (en_check) {
@@ -168,8 +179,12 @@ int mt6355_get_auxadc_value(u8 channel)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 1);
 	if (channel == AUXADC_LIST_MT6355_CHIP_TEMP)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
-	if (channel == AUXADC_LIST_BATTEMP)
-		mutex_lock(&auxadc_ch3_mutex);
+	if (channel == AUXADC_LIST_BATTEMP || channel == AUXADC_LIST_BATID || channel == AUXADC_LIST_VBIF) {
+		if (!wk_auxadc_ch3_bif_on(1))
+			pr_err("ch3 bif off\n");
+		if (channel == AUXADC_LIST_BATTEMP)
+			mutex_lock(&auxadc_ch3_mutex);
+	}
 
 	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
 	udelay(10);
@@ -183,8 +198,11 @@ int mt6355_get_auxadc_value(u8 channel)
 	}
 	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
 
-	if (channel == AUXADC_LIST_BATTEMP)
-		mutex_unlock(&auxadc_ch3_mutex);
+	if (channel == AUXADC_LIST_BATTEMP || channel == AUXADC_LIST_BATID || channel == AUXADC_LIST_VBIF) {
+		if (channel == AUXADC_LIST_BATTEMP)
+			mutex_unlock(&auxadc_ch3_mutex);
+		wk_auxadc_ch3_bif_on(0);
+	}
 
 	mt6355_auxadc_unlock();
 
