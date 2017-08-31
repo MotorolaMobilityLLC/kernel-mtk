@@ -1089,7 +1089,9 @@ void ged_log_trace_begin(char *name)
 	if (ged_log_trace_enable) {
 			__mt_update_tracing_mark_write_addr();
 #ifdef ENABLE_GED_SYSTRACE_UTIL
+			preempt_disable();
 			event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+			preempt_enable();
 #endif
 	}
 }
@@ -1100,7 +1102,9 @@ void ged_log_trace_end(void)
 	{
 			__mt_update_tracing_mark_write_addr();
 #ifdef ENABLE_GED_SYSTRACE_UTIL
+			preempt_disable();
 			event_trace_printk(tracing_mark_write_addr, "E\n");
+			preempt_enable();
 #endif
 	}
 }
@@ -1111,7 +1115,9 @@ void ged_log_trace_counter(char *name, int count)
 	{
 			__mt_update_tracing_mark_write_addr();
 #ifdef ENABLE_GED_SYSTRACE_UTIL
+			preempt_disable();
 			event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+			preempt_enable();
 #endif
 	}
 }
