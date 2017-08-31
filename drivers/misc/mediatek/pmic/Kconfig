@@ -1,0 +1,1 @@
+source "drivers/misc/mediatek/pmic/rt5081/Kconfig"
