@@ -381,7 +381,9 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	if (cur_hica_variant == 1) {
 		sched_get_nr_overutil_avg(0, &overutil_l, &overutil_h);
 		ppm_dbg(HICA, "LL overutil_l = %d, overutil_h = %d\n", overutil_l, overutil_h);
+#ifdef _TRACE_
 		trace_ppm_overutil_update(overutil_l, overutil_h);
+#endif
 
 		if (overutil_h > hica_overutil) {
 			settings->overutil_h_hold_cnt++;
@@ -442,7 +444,9 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	if (cur_hica_variant == 1) {
 		sched_get_nr_overutil_avg(1, &overutil_l, &overutil_h);
 		ppm_dbg(HICA, "L overutil_l = %d, overutil_h = %d\n", overutil_l, overutil_h);
+#ifdef _TRACE_
 		trace_ppm_overutil_update(overutil_l, overutil_h);
+#endif
 
 		if (overutil_l <= hica_overutil) {
 			settings->overutil_l_hold_cnt++;
