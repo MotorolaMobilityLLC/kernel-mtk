@@ -44,6 +44,7 @@
 #define THRESHOLD_SCALE 64
 #define BW_THRESHOLD_MAX    12800
 #define BW_THRESHOLD_MIN    100
+#define BW_MARGIN           300
 
 #define BIT_BW1_INT_EN       0  /*1*/
 #define BIT_BW1_INT_MASK     1  /*no use*/
@@ -191,7 +192,7 @@ int cg_set_bw(int threshold)
 	} else if (threshold > 0) {
 		fliper_debug = 1;
 		vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
-		cg_set_threshold(threshold, threshold, threshold);
+		cg_set_threshold(threshold, threshold, threshold - BW_MARGIN);
 	}
 
 	return 0;
@@ -656,7 +657,7 @@ static ssize_t mt_cg_threshold_write(struct file *filp, const char *ubuf,
 	if (val < 400)
 		return -1;
 
-	cg_set_threshold(val, val, val);
+	cg_set_threshold(val, val, val - BW_MARGIN);
 
 	return cnt;
 }
@@ -687,8 +688,6 @@ static ssize_t mt_cg_threshold_ddr3_write(struct file *filp, const char *ubuf,
 	unsigned long val;
 	int ret;
 
-	if (get_ddr_type() != TYPE_LPDDR3)
-		return -1;
 
 	if (fliper_debug)
 		return -1;
@@ -706,7 +705,8 @@ static ssize_t mt_cg_threshold_ddr3_write(struct file *filp, const char *ubuf,
 	if (val < 400)
 		return -1;
 
-	cg_set_threshold(val, val, val);
+	if (get_ddr_type() == TYPE_LPDDR3)
+		cg_set_threshold(val, val, val - BW_MARGIN);
 
 	return cnt;
 }
