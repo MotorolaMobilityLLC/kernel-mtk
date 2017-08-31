@@ -427,6 +427,7 @@ struct typec_hba {
 	int prev_request_mv;
 #endif
 
+	unsigned int discover_vmd;
 	/* PD state for Vendor Defined Messages */
 	enum vdm_states vdm_state;
 	/* Timeout for the current vdm state.  Set to 0 for no timeout. */
