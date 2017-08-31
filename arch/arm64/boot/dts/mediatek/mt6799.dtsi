@@ -3700,7 +3700,7 @@
 			<&mmsys_config CLK_MM_CG2_B11>,
 			<&mmsys_config CLK_MM_CG2_B12>,
 			<&scpsys SCP_SYS_MM0>,
-			<&scpsys SCP_SYS_IPU_SLEEP>;
+			<&scpsys SCP_SYS_IPU_SHUTDOWN>;
 		clock-names = "clk_top_dsp_sel",
 			"clk_top_ipu_if_sel",
 			"clk_ipu",

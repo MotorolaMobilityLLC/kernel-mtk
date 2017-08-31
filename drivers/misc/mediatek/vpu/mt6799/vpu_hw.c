@@ -31,6 +31,7 @@
 #include <mach/gpio_const.h>
 
 #ifndef MTK_VPU_FPGA_PORTING
+#include <mmdvfs_mgr.h>
 #include <mtk_pmic_info.h>
 #endif
 
@@ -53,6 +54,8 @@ static struct ion_handle *wrk_buf_handle;
 /* ion & m4u */
 static m4u_client_t *m4u_client;
 static struct ion_client *ion_client;
+static struct sg_table sg_reset_vector;
+static struct sg_table sg_main_program;
 
 static uint64_t vpu_base;
 static uint64_t bin_base;
@@ -66,9 +69,7 @@ static vpu_id_t algo_loaded;
 
 #ifndef MTK_VPU_FPGA_PORTING
 /* regulator */
-#ifdef CONFIG_REGULATOR
 static struct regulator *reg_vimvo;
-#endif
 
 /* clock */
 static struct clk *clk_top_dsp_sel;
@@ -109,10 +110,6 @@ static uint32_t map_clk_dsp[] = {364000, 480000};
 static uint32_t map_clk_ipu_if[] = {364000, 480000};
 static uint32_t map_reg_vimvo[] = {800000, 900000};
 
-/* mapping of vpu binary */
-struct sg_table sg_reset_vector;
-struct sg_table sg_main_program;
-
 /* jtag */
 static bool is_jtag_enabled;
 
@@ -140,22 +137,33 @@ static inline void unlock_command(void)
 }
 
 #ifdef MTK_VPU_FPGA_PORTING
-#define vpu_prepare_regulator_and_clock(...) 0
-#define vpu_enable_regulator_and_clock(...) 0
-#define vpu_disable_regulator_and_clock(...) 0
+#define vpu_prepare_regulator_and_clock(...)   0
+#define vpu_enable_regulator_and_clock(...)    0
+#define vpu_disable_regulator_and_clock(...)   0
 #define vpu_unprepare_regulator_and_clock(...)
 #else
 static int vpu_prepare_regulator_and_clock(struct device *pdev)
 {
 	int ret = 0;
 
-#ifdef CONFIG_REGULATOR
 	reg_vimvo = regulator_get(pdev, "vimvo");
 	if (IS_ERR(reg_vimvo)) {
 		LOG_ERR("can not find regulator: vimvo\n");
 		return PTR_ERR(reg_vimvo);
 	}
-#endif
+
+#define PREPARE_VPU_MTCMOS(clk) \
+	{ \
+		clk = devm_clk_get(pdev, #clk); \
+		if (IS_ERR(clk)) { \
+			ret = -1; \
+			LOG_ERR("can not find mtcmos: %s\n", #clk); \
+		} \
+	}
+
+	PREPARE_VPU_MTCMOS(mtcmos_mm0);
+	PREPARE_VPU_MTCMOS(mtcmos_ipu);
+#undef PREPARE_VPU_MTCMOS
 
 #define PREPARE_VPU_CLK(clk) \
 	{ \
@@ -169,8 +177,6 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 		} \
 	}
 
-	PREPARE_VPU_CLK(mtcmos_mm0);
-	PREPARE_VPU_CLK(mtcmos_ipu);
 	PREPARE_VPU_CLK(clk_mm_ipu);
 	PREPARE_VPU_CLK(clk_mm_gals_m0_2x);
 	PREPARE_VPU_CLK(clk_mm_gals_m1_2x);
@@ -192,7 +198,6 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	PREPARE_VPU_CLK(clk_top_ipu_if_sel);
 	PREPARE_VPU_CLK(clk_top_syspll_d3);
 	PREPARE_VPU_CLK(clk_top_mmpll_d5);
-
 #undef PREPARE_VPU_CLK
 
 	return ret;
@@ -212,7 +217,6 @@ static int vpu_enable_regulator_and_clock(void)
 		return -1;
 	}
 
-#ifdef CONFIG_REGULATOR
 	if (reg_vimvo != NULL) {
 		if (regulator_enable(reg_vimvo))
 			LOG_WRN("fail to enable regulator: vimvo\n");
@@ -228,7 +232,20 @@ static int vpu_enable_regulator_and_clock(void)
 	regulator_set_voltage(reg_vimvo,
 		map_reg_vimvo[step_reg_vimvo], map_reg_vimvo[step_reg_vimvo]);
 	ndelay(70);
-#endif
+
+#define ENABLE_VPU_MTCMOS(clk) \
+	{ \
+		if (clk != NULL) { \
+			if (clk_prepare_enable(clk)) \
+				LOG_ERR("fail to prepare and enable mtcmos: %s\n", #clk); \
+		} else { \
+			LOG_WRN("mtcmos not existed: %s\n", #clk); \
+		} \
+	}
+
+	ENABLE_VPU_MTCMOS(mtcmos_mm0);
+	ENABLE_VPU_MTCMOS(mtcmos_ipu);
+#undef ENABLE_VPU_MTCMOS
 
 #define ENABLE_VPU_CLK(clk) \
 	{ \
@@ -240,8 +257,6 @@ static int vpu_enable_regulator_and_clock(void)
 		} \
 	}
 
-	ENABLE_VPU_CLK(mtcmos_mm0);
-	ENABLE_VPU_CLK(mtcmos_ipu);
 	ENABLE_VPU_CLK(clk_mm_ipu);
 	ENABLE_VPU_CLK(clk_mm_gals_m0_2x);
 	ENABLE_VPU_CLK(clk_mm_gals_m1_2x);
@@ -261,7 +276,6 @@ static int vpu_enable_regulator_and_clock(void)
 	ENABLE_VPU_CLK(clk_ipu_img_axi);
 	ENABLE_VPU_CLK(clk_top_dsp_sel);
 	ENABLE_VPU_CLK(clk_top_ipu_if_sel);
-
 #undef ENABLE_VPU_CLK
 
 	/* set dsp frequency - 0:364MHz, 1:480MHz */
@@ -293,7 +307,7 @@ static int vpu_disable_regulator_and_clock(void)
 #define DISABLE_VPU_CLK(clk) \
 	{ \
 		if (clk != NULL) { \
-			clk_disable((clk)); \
+			clk_disable(clk); \
 		} else { \
 			LOG_WRN("clk not existed: %s\n", #clk); \
 		} \
@@ -318,10 +332,20 @@ static int vpu_disable_regulator_and_clock(void)
 	DISABLE_VPU_CLK(clk_mm_fifo1);
 	DISABLE_VPU_CLK(clk_mm_smi_common);
 	DISABLE_VPU_CLK(clk_mm_smi_common_2x);
-	DISABLE_VPU_CLK(mtcmos_mm0);
-	DISABLE_VPU_CLK(mtcmos_ipu);
-
 #undef DISABLE_VPU_CLK
+
+#define DISABLE_VPU_MTCMOS(clk) \
+	{ \
+		if (clk != NULL) { \
+			clk_disable_unprepare(clk); \
+		} else { \
+			LOG_WRN("mtcmos not existed: %s\n", #clk); \
+		} \
+	}
+
+	DISABLE_VPU_MTCMOS(mtcmos_ipu);
+	DISABLE_VPU_MTCMOS(mtcmos_mm0);
+#undef DISABLE_VPU_MTCMOS
 
 	if (enable_vimvo_lp_mode(1)) {
 		LOG_ERR("fail to switch vimvo to sleep mode!\n");
@@ -368,19 +392,13 @@ static void vpu_unprepare_regulator_and_clock(void)
 	UNPREPARE_VPU_CLK(clk_mm_fifo1);
 	UNPREPARE_VPU_CLK(clk_mm_smi_common);
 	UNPREPARE_VPU_CLK(clk_mm_smi_common_2x);
-	UNPREPARE_VPU_CLK(mtcmos_mm0);
-	UNPREPARE_VPU_CLK(mtcmos_ipu);
-
 #undef UNPREPARE_VPU_CLK
 
-#ifdef CONFIG_REGULATOR
 	if (reg_vimvo != NULL)
 		regulator_put(reg_vimvo);
-#endif
 
 	if (enable_vimvo_lp_mode(1))
 		LOG_ERR("fail to switch vimvo to sleep mode!\n");
-
 }
 #endif
 
@@ -733,6 +751,35 @@ int vpu_create_hw_debugfs(void)
 	return 0;
 }
 
+#ifndef MTK_VPU_FPGA_PORTING
+static int vpu_mmdvfs_receive_event(struct mmdvfs_state_change_event *e)
+{
+	int ret;
+
+	LOG_INF("vpu receives event, vore:%d, vimvo:%d, vpu:%d, vpu_if:%d",
+			e->vcore_vol_step,
+			e->vimvo_vol_step,
+			e->vpu_clk_step,
+			e->vpu_if_clk_step);
+
+	ret = e->vimvo_vol_step >= ARRAY_SIZE(map_reg_vimvo);
+	CHECK_RET("vpu: vimvo step is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
+
+	ret = e->vpu_clk_step >= ARRAY_SIZE(map_clk_dsp);
+	CHECK_RET("vpu: dsp step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
+
+	ret = e->vpu_if_clk_step >= ARRAY_SIZE(map_clk_ipu_if);
+	CHECK_RET("vpu: ipu if step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+
+	step_reg_vimvo = e->vimvo_vol_step;
+	step_clk_dsp = e->vpu_clk_step;
+	step_clk_ipu_if = e->vpu_if_clk_step;
+
+out:
+	return ret;
+}
+#endif
+
 int vpu_init_hw(struct vpu_device *device)
 {
 	int ret;
@@ -777,6 +824,15 @@ int vpu_init_hw(struct vpu_device *device)
 
 	ret = vpu_alloc_working_buffer();
 	CHECK_RET("fail to allocate working buffer!\n");
+
+#ifndef MTK_VPU_FPGA_PORTING
+	ret = register_mmdvfs_state_change_cb(MMDVFS_SCEN_VPU, vpu_mmdvfs_receive_event);
+	CHECK_RET("fail to register mmdvfs callback!\n");
+
+	/* [WE1] force to low power mode, while boot up */
+	ret = enable_vimvo_lp_mode(1);
+	CHECK_RET("fail to switch vimvo to low power mode!\n");
+#endif
 
 out:
 	return ret;
