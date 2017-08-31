@@ -307,11 +307,7 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 Addr, PHY_UINT8 *Data)
 #define REG_I2C_START_BIT	    0x1
 #define I2C_READ_BIT         0x1
 
-#ifdef USB_ELBRUS
 #define PHY_I2C_BASE      (i2c_base)
-#else
-#define PHY_I2C_BASE      (i2c1_base)
-#endif
 
 /* "volatile" type class should not be used, see volatile-considered-harmful.txt */
 #define REG_I2C_DATA_PORT    (*((volatile unsigned short int *) (PHY_I2C_BASE + 0x00)))

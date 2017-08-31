@@ -175,11 +175,7 @@ void __iomem *u3_sif2_base;
 void __iomem *ap_uart0_base;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-#ifdef USB_ELBRUS
 void __iomem *i2c_base;
-#else
-void __iomem *i2c1_base;
-#endif
 #endif
 
 /*-------------------------------------------------------------------------*/
@@ -2073,10 +2069,8 @@ allocate_instance(struct device *dev, struct musb_hdrc_config *config, void __io
 	/* musb->xceiv->otg->state = OTG_STATE_B_IDLE; //initial its value */
 
 #ifdef CONFIG_DEBUG_FS
-#ifndef USB_ELBRUS
 	if (usb20_phy_init_debugfs())
 		os_printk(K_ERR, "usb20_phy_init_debugfs fail!\n");
-#endif
 #endif
 
 	return musb;
@@ -2442,23 +2436,12 @@ static int __init musb_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-#ifdef USB_ELBRUS
-	/*Elbrus FPGA use I2C channel2*/
-	i2c_base = ioremap(0x110A0000, 0x1000);
+	i2c_base = ioremap(BASE_I2C, 0x1000);
 	if (!(i2c_base)) {
 		pr_err("Can't remap I2C BASE\n");
 		status = -ENOMEM;
 	}
-	os_printk(K_INFO, "I2C BASE=0x%lx\n", (uintptr_t) (i2c_base));
-#else
-	/*i2c1_base = ioremap(0x11008000, 0x1000); */
-	i2c1_base = ioremap(0x11009000, 0x1000);
-	if (!(i2c1_base)) {
-		pr_err("Can't remap I2C1 BASE\n");
-		status = -ENOMEM;
-	}
-	os_printk(K_INFO, "I2C1 BASE=0x%lx\n", (uintptr_t) (i2c1_base));
-#endif
+	os_printk(K_INFO, "I2C BASE=0x%lx, %x\n", (uintptr_t) (i2c_base), BASE_I2C);
 #endif
 
 	status = musb_init_controller(dev, irq, u3_base);
