@@ -792,6 +792,7 @@ int spm_mtcmos_ctrl_mfg0(int state)
 int spm_mtcmos_ctrl_mfg1(int state)
 {
 	int err = 0;
+	int retry = 0;
 
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
@@ -856,6 +857,10 @@ int spm_mtcmos_ctrl_mfg1(int state)
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & MFG1_PWR_STA_MASK)
 		       || (spm_read(PWR_STATUS_2ND) & MFG1_PWR_STA_MASK)) {
+			retry++;
+			if (retry > 100)
+				pr_err("[CCFx] %s: buck vol=%d, sts=%d, %08x\r\n", __func__, mt_gpufreq_get_cur_volt(),
+					mt_gpufreq_query_volt_enable_state(), spm_read(MFG1_PWR_CON));
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 			/*pr_debug("");*/
 		}
@@ -871,10 +876,11 @@ int spm_mtcmos_ctrl_mfg1(int state)
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
 		while (((spm_read(PWR_STATUS) & MFG1_PWR_STA_MASK) != MFG1_PWR_STA_MASK)
 		       || ((spm_read(PWR_STATUS_2ND) & MFG1_PWR_STA_MASK) != MFG1_PWR_STA_MASK)) {
+			retry++;
+			if (retry > 100)
+				pr_err("[CCFo] %s: buck vol=%d, sts=%d, %08x\r\n", __func__, mt_gpufreq_get_cur_volt(),
+					mt_gpufreq_query_volt_enable_state(), spm_read(MFG1_PWR_CON));
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-			pr_err("[CCF] %s: buck vol=%d, sts=%d\r\n", __func__, mt_gpufreq_get_cur_volt(),
-				mt_gpufreq_query_volt_enable_state());
-			mfgsys_mtcmos_check();
 			/*pr_debug("");*/
 		}
 #endif
