@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #ifndef _ACCDET_H_
 #define _ACCDET_H_
 #include <linux/kernel.h>
@@ -27,14 +26,12 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/ctype.h>
-
 #include <linux/semaphore.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <linux/workqueue.h>
 #include <linux/switch.h>
 #include <linux/delay.h>
-
 #include <linux/device.h>
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
@@ -44,25 +41,20 @@
 #include <linux/input.h>
 #include <linux/wakelock.h>
 #include <linux/time.h>
-
 #include <linux/string.h>
 #include <reg_accdet.h>
-
 /* IOCTL */
 #define ACCDET_DEVNAME "accdet"
 #define ACCDET_IOC_MAGIC 'A'
 #define ACCDET_INIT _IO(ACCDET_IOC_MAGIC, 0)
 #define SET_CALL_STATE _IO(ACCDET_IOC_MAGIC, 1)
 #define GET_BUTTON_STATUS _IO(ACCDET_IOC_MAGIC, 2)
-
 /* define for phone call state */
-
 #define CALL_IDLE 0
 #define CALL_RINGING 1
 #define CALL_ACTIVE 2
 #define KEY_CALL	KEY_SEND
 #define KEY_ENDCALL	KEY_HANGEUL
-
 #define ACCDET_TIME_OUT 0x61A80	/* 400us */
 extern s32 pwrap_read(u32 adr, u32 *rdata);
 extern s32 pwrap_write(u32 adr, u32 wdata);
@@ -81,7 +73,6 @@ int mt_accdet_probe(struct platform_device *dev);
 int accdet_get_cable_type(void);
 /* just be called by audio module */
 int accdet_read_audio_res(unsigned int res_value);
-
 /* globle ACCDET variables */
 enum accdet_report_state {
 	NO_DEVICE = 0,
@@ -92,7 +83,6 @@ enum accdet_report_state {
 	/* HEADSET_ILEGAL = 3, */
 	/* DOUBLE_CHECK_TV = 4 */
 };
-
 enum accdet_status {
 	PLUG_OUT = 0,
 	MIC_BIAS = 1,
@@ -103,8 +93,6 @@ enum accdet_status {
 	/* TV_OUT = 5, */
 	STAND_BY = 4
 };
-
-
 enum hook_switch_result {
 	DO_NOTHING = 0,
 	ANSWER_CALL = 1,
@@ -143,3 +131,4 @@ struct head_dts_data {
 extern struct platform_device accdet_device;
 #endif
 #endif
+
