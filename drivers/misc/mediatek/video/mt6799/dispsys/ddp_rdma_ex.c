@@ -278,7 +278,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 {
 	unsigned long base_addr = rdma_base_addr(module);
 	/* rdma golden setting variables */
-	unsigned int mmsysclk = 450;
+	unsigned int mmsysclk = 273;
 	unsigned int is_wrot_sram = 0;
 	unsigned int fifo_mode = 1;
 
@@ -290,7 +290,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	unsigned long long fill_rate = 0;
 	unsigned long long consume_rate = 0;
 
-	unsigned int fifo_valid_size = 512;
+	unsigned int fifo_valid_size = 640;
 
 	/* working variables */
 	unsigned int ultra_low;
@@ -333,13 +333,13 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	/* get fifo parameters */
 	switch (rdma_golden_setting->mmsys_clk) {
 	case MMSYS_CLK_LOW:
-		mmsysclk = 320;
+		mmsysclk = 273;
 		break;
 	case MMSYS_CLK_HIGH:
-		mmsysclk = 450;
+		mmsysclk = 364;
 		break;
 	default:
-		mmsysclk = 320; /* worse case */
+		mmsysclk = 273; /* worse case */
 		break;
 	}
 
@@ -407,7 +407,7 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
 
 	/* SODI threshold */
-	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate;
+	sodi_threshold_low = ((ultra_low_us + 5)*10) * consume_rate;
 	sodi_threshold_low = DIV_ROUND_UP(sodi_threshold_low, 1000 * 10);
 
 	temp_for_div = 1200 * (fill_rate - consume_rate);
@@ -421,11 +421,13 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	dvfs_threshold_low = preultra_low;
 	dvfs_threshold_high = preultra_low+1;
 
+	/* keep MEM_GMC_SETTING_0_FLD_RG_VALID_THRESHOLD_FORCE_PREULTRA[30] enable  */
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_0,
-		preultra_low | (preultra_high << 16));
+		preultra_low | (preultra_high << 16) | 1 << 30);
 
+	/* keep MEM_GMC_SETTING_1_FLD_RG_VALID_THRESHOLD_BLOCK_ULTRA[30] enable */
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_1,
-		ultra_low | (ultra_high << 16));
+		ultra_low | (ultra_high << 16) | 1 << 30);
 
 	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_2,
 		issue_req_threshold);
@@ -444,6 +446,36 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 	/* only config RDMA0 SRAM_SEL */
 	if (module == DISP_MODULE_RDMA0)
 		DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_SRAM_SEL, is_wrot_sram);
+
+	/* DVFS_SETTING ULTRA, extend 2us for DVFS blocking time */
+	preultra_low = (preultra_low_us + 2) * consume_rate;
+	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+
+	preultra_high = (preultra_high_us + 2) * consume_rate;
+	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+
+
+	ultra_low = (ultra_low_us + 2) * consume_rate;
+	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+
+
+	ultra_high = preultra_low;
+
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_DVFS_SETTING_PREULTRA,
+		preultra_low | (preultra_high << 16));
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_DVFS_SETTING_ULTRA,
+		ultra_low | (ultra_high << 16));
+
+	/* LEAVE DRS SETTING, extend 2us for blocking time */
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_LEAVE_DRS_SETTING,
+		ultra_low | (ultra_low << 16));
+
+	/* ENTER DRS SETTING, extend 4us for blocking time */
+	ultra_low = (ultra_low_us + 4) * consume_rate;
+	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+
+	DISP_REG_SET(handle, base_addr + DISP_REG_RDMA_ENTER_DRS_SETTING,
+		ultra_low | (ultra_low << 16));
 
 /*if (idx == 0)*/
 		/*rdma_dump_golden_setting_context(DISP_MODULE_RDMA0);*/
@@ -475,7 +507,6 @@ void rdma_set_ultra_l(enum DISP_MODULE_ENUM module, unsigned int bpp, void *hand
 		DDPDUMP("dvfs_threshold_low	= %d\n", dvfs_threshold_low);
 		DDPDUMP("dvfs_threshold_high	= %d\n", dvfs_threshold_high);
 	}
-
 }
 
 #else
@@ -759,6 +790,77 @@ void rdma_dump_golden_setting_context(enum DISP_MODULE_ENUM module)
 	}
 }
 
+void rdma_dump_golden_setting_reg(enum DISP_MODULE_ENUM module)
+{
+	unsigned int idx = rdma_index(module);
+	unsigned long base_addr = rdma_base_addr(module);
+	unsigned int read_wrk_state;
+
+	read_wrk_state = DISP_REG_GET_FIELD(RDMA_READ_WORK_REG,
+			base_addr + DISP_REG_RDMA_SHADOW_UPDATE);
+	DISP_REG_SET_FIELD(NULL, RDMA_READ_WORK_REG, base_addr + DISP_REG_RDMA_SHADOW_UPDATE, 1);
+
+
+	DDPDUMP("dump RDMA%d golden setting\n", idx);
+
+	DDPDUMP("GMC_SETTING_0 [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_0),
+			DISP_REG_GET_FIELD(MEM_GMC_SETTING_0_FLD_PRE_ULTRA_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_0));
+	DDPDUMP("GMC_SETTING_1 [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_1),
+			DISP_REG_GET_FIELD(MEM_GMC_SETTING_1_FLD_ULTRA_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_1));
+	DDPDUMP("GMC_SETTING_2 [11:0]:%u\n",
+			DISP_REG_GET_FIELD(MEM_GMC_SETTING_2_FLD_ISSUE_REQ_THRESHOLD,
+				base_addr + DISP_REG_RDMA_MEM_GMC_SETTING_2));
+	DDPDUMP("FIFO_CON [11:0]:%u [27:16]:%d [31]:%u\n",
+			DISP_REG_GET_FIELD(FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
+				base_addr + DISP_REG_RDMA_FIFO_CON),
+			DISP_REG_GET_FIELD(FIFO_CON_FLD_FIFO_PSEUDO_SIZE,
+				base_addr + DISP_REG_RDMA_FIFO_CON),
+			DISP_REG_GET_FIELD(FIFO_CON_FLD_FIFO_UNDERFLOW_EN,
+				base_addr + DISP_REG_RDMA_FIFO_CON));
+	DDPDUMP("THRSHOLD_SODI [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_THRESHOLD_FOR_SODI),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_THRESHOLD_FOR_SODI));
+	DDPDUMP("THRSHOLD_DVFS [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_THRESHOLD_FOR_DVFS),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_THRESHOLD_FOR_DVFS));
+	DDPDUMP("SRAM_SEL [0]:%u\n",
+			DISP_REG_GET(base_addr + DISP_REG_RDMA_SRAM_SEL));
+	DDPDUMP("DVFS_SETTING_PREULTRA [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_DVFS_SETTING_PREULTRA),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_DVFS_SETTING_PREULTRA));
+	DDPDUMP("DVFS_SETTING_ULTRA [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_DVFS_SETTING_ULTRA),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_DVFS_SETTING_ULTRA));
+	DDPDUMP("LEAVE_DRS_SETTING [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_LEAVE_DRS_SETTING),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_LEAVE_DRS_SETTING));
+	DDPDUMP("ENTER_DRS_SETTING [11:0]:%u [27:16]:%u\n",
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_LOW,
+				base_addr + DISP_REG_RDMA_ENTER_DRS_SETTING),
+			DISP_REG_GET_FIELD(RDMA_FLD_THRESHOLD_HIGH,
+				base_addr + DISP_REG_RDMA_ENTER_DRS_SETTING));
+
+
+	DISP_REG_SET_FIELD(NULL, RDMA_READ_WORK_REG, base_addr + DISP_REG_RDMA_SHADOW_UPDATE, read_wrk_state);
+}
+
+
 void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
@@ -878,7 +980,7 @@ void rdma_dump_analysis(enum DISP_MODULE_ENUM module)
 		rdma_start_irq_cnt[idx], rdma_done_irq_cnt[idx], rdma_underflow_irq_cnt[idx],
 		rdma_targetline_irq_cnt[idx]);
 
-	rdma_dump_golden_setting_context(module);
+	rdma_dump_golden_setting_reg(module);
 }
 
 static int rdma_dump(enum DISP_MODULE_ENUM module, int level)

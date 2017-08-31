@@ -1016,7 +1016,7 @@ void primary_display_sodi_rule_init(void)
 
 int primary_display_lowpower_init(void)
 {
-	set_fps(primary_display_get_fps_nolock()/100);
+	set_fps(60);
 	backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	/* init idlemgr */
 #if 0 /* remove when get_boot_mode() ready */

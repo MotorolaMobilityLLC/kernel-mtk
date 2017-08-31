@@ -320,6 +320,94 @@ static int wdma_clock_off(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
+
+void wdma_dump_golden_setting(enum DISP_MODULE_ENUM module)
+{
+	unsigned long base_addr = wdma_base_addr(module);
+	unsigned int read_wrk_state;
+
+	read_wrk_state = DISP_REG_GET_FIELD(WDMA_READ_WORK_REG,
+			base_addr + DISP_REG_WDMA_EN);
+	DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, base_addr + DISP_REG_OVL_EN, 1);
+
+
+	DDPDUMP("dump WDMA golden setting\n");
+
+	DDPDUMP("WDMA_SMI_CON:\n[3:0]:%x [4:4]:%x [7:5]:%x [15:8]:%x [19:16]:%u [23:20]:%u [27:24]:%u\n",
+			DISP_REG_GET_FIELD(SMI_CON_FLD_THRESHOLD, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SLOW_ENABLE, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SLOW_LEVEL, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SLOW_COUNT, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SMI_Y_REPEAT_NUM, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SMI_U_REPEAT_NUM, base_addr + DISP_REG_WDMA_SMI_CON),
+			DISP_REG_GET_FIELD(SMI_CON_FLD_SMI_V_REPEAT_NUM, base_addr + DISP_REG_WDMA_SMI_CON));
+	DDPDUMP("WDMA_BUF_CON1:\n[31]:%x [30]:%x [28]:%x [8:0]%d\n",
+			DISP_REG_GET_FIELD(BUF_CON1_FLD_ULTRA_ENABLE, base_addr + DISP_REG_WDMA_BUF_CON1),
+			DISP_REG_GET_FIELD(BUF_CON1_FLD_PRE_ULTRA_ENABLE, base_addr + DISP_REG_WDMA_BUF_CON1),
+			DISP_REG_GET_FIELD(BUF_CON1_FLD_FRAME_END_ULTRA, base_addr + DISP_REG_WDMA_BUF_CON1),
+			DISP_REG_GET_FIELD(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, base_addr + DISP_REG_WDMA_BUF_CON1));
+	DDPDUMP("WDMA_BUF_CON5:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON5),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON5));
+	DDPDUMP("WDMA_BUF_CON6:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON6),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON6));
+	DDPDUMP("WDMA_BUF_CON7:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON7),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON7));
+	DDPDUMP("WDMA_BUF_CON8:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON8),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON8));
+	DDPDUMP("WDMA_BUF_CON9:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON9),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON9));
+	DDPDUMP("WDMA_BUF_CON10:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON10),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON10));
+	DDPDUMP("WDMA_BUF_CON11:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON11),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON11));
+	DDPDUMP("WDMA_BUF_CON12:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON12),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON12));
+	DDPDUMP("WDMA_BUF_CON13:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON13),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON13));
+	DDPDUMP("WDMA_BUF_CON14:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON14),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON14));
+	DDPDUMP("WDMA_BUF_CON15:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON15),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_LOW, base_addr + DISP_REG_WDMA_BUF_CON15));
+	DDPDUMP("WDMA_BUF_CON16:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON_FLD_PRE_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON16),
+			DISP_REG_GET_FIELD(BUF_CON_FLD_ULTRA_HIGH, base_addr + DISP_REG_WDMA_BUF_CON16));
+	DDPDUMP("WDMA_BUF_CON17:\n[0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON17_FLD_DVFS_EN, base_addr + DISP_REG_WDMA_BUF_CON17),
+			DISP_REG_GET_FIELD(BUF_CON17_FLD_DVFS_TH_Y, base_addr + DISP_REG_WDMA_BUF_CON17));
+	DDPDUMP("WDMA_BUF_CON18:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON18_FLD_DVFS_TH_U, base_addr + DISP_REG_WDMA_BUF_CON18),
+			DISP_REG_GET_FIELD(BUF_CON18_FLD_DVFS_TH_V, base_addr + DISP_REG_WDMA_BUF_CON18));
+	DDPDUMP("WDMA_DRS_CON0:\n[0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_DRS_EN, base_addr + DISP_REG_DRS_CON0),
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_ENTER_DRS_TH_Y, base_addr + DISP_REG_DRS_CON0));
+	DDPDUMP("WDMA_DRS_CON1:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_ENTER_DRS_TH_U, base_addr + DISP_REG_DRS_CON1),
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_ENTER_DRS_TH_V, base_addr + DISP_REG_DRS_CON1));
+	DDPDUMP("WDMA_DRS_CON2:\n[25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_LEAVE_DRS_TH_Y, base_addr + DISP_REG_DRS_CON2));
+	DDPDUMP("WDMA_DRS_CON3:\n[9:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_LEAVE_DRS_TH_U, base_addr + DISP_REG_DRS_CON3),
+			DISP_REG_GET_FIELD(BUF_DRS_FLD_LEAVE_DRS_TH_V, base_addr + DISP_REG_DRS_CON3));
+	DDPDUMP("WDMA_BUF_CON3:\n[8:0]:%d [25:16]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON3_FLD_ISSUE_REQ_TH_Y, base_addr + DISP_REG_WDMA_BUF_CON3),
+			DISP_REG_GET_FIELD(BUF_CON3_FLD_ISSUE_REQ_TH_U, base_addr + DISP_REG_WDMA_BUF_CON3));
+	DDPDUMP("WDMA_BUF_CON4:\n[8:0]:%d\n",
+			DISP_REG_GET_FIELD(BUF_CON4_FLD_ISSUE_REQ_TH_V, base_addr + DISP_REG_WDMA_BUF_CON4));
+
+	DISP_REG_SET_FIELD(NULL, WDMA_READ_WORK_REG, base_addr + DISP_REG_OVL_EN, read_wrk_state);
+}
+
 void wdma_dump_analysis(enum DISP_MODULE_ENUM module)
 {
 	unsigned int index = wdma_index(module);
@@ -382,8 +470,7 @@ void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_ALPHA + base_addr),
 		DISP_REG_GET(DISP_REG_WDMA_BUF_CON1 + base_addr));
 
-	DDPDUMP("0x03c=0x%08x,0x058=0x%08x,0x05c=0x%08x,0x060=0x%08x\n",
-		DISP_REG_GET(DISP_REG_WDMA_BUF_CON2 + base_addr),
+	DDPDUMP("0x058=0x%08x,0x05c=0x%08x,0x060=0x%08x\n",
 		DISP_REG_GET(DISP_REG_WDMA_PRE_ADD0 + base_addr),
 		DISP_REG_GET(DISP_REG_WDMA_PRE_ADD2 + base_addr),
 		DISP_REG_GET(DISP_REG_WDMA_POST_ADD0 + base_addr));
@@ -410,6 +497,7 @@ void wdma_dump_reg(enum DISP_MODULE_ENUM module)
 static int wdma_dump(enum DISP_MODULE_ENUM module, int level)
 {
 	wdma_dump_analysis(module);
+	wdma_dump_golden_setting(module);
 	wdma_dump_reg(module);
 
 	return 0;
@@ -421,7 +509,23 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	unsigned int regval;
 	unsigned long base_addr = wdma_base_addr(module);
 	unsigned long res = width * height;
-	unsigned long res_FHD = 1080 * 1920;
+	unsigned int ultra_low_us = 4;
+	unsigned int ultra_high_us = 6;
+	unsigned int preultra_low_us = ultra_high_us;
+	unsigned int preultra_high_us = 7;
+	unsigned int mmsysclk = 273;
+	unsigned long long fill_rate = 0;
+	unsigned long long consume_rate = 0;
+	unsigned int fifo_pseudo_size = 500;
+	unsigned int frame_rate = 60; /* FIXME */
+	unsigned int bytes_per_sec = 3;
+	long long temp;
+
+	unsigned int ultra_low;
+	unsigned int preultra_low;
+	unsigned int preultra_high;
+	unsigned int ultra_high;
+
 	/* DISP_REG_WDMA_SMI_CON */
 	regval = 0;
 	regval |= REG_FLD_VAL(SMI_CON_FLD_THRESHOLD, 7);
@@ -447,31 +551,243 @@ static int wdma_golden_setting(enum DISP_MODULE_ENUM module, enum dst_module_typ
 	else
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 0);
 
-	regval |= REG_FLD_VAL(BUF_CON1_FLD_ISSUE_REQ_TH, 64);
-	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, 256);
+	regval |= REG_FLD_VAL(BUF_CON1_FLD_FIFO_PSEUDO_SIZE, fifo_pseudo_size);
 
 	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON1, regval);
 
-	/* DISP_REG_WDMA_BUF_CON2 */
+	/* DISP_REG_WDMA_BUF_CON3 */
 	regval = 0;
-	if (res > res_FHD)
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 45);
+	regval |= REG_FLD_VAL(BUF_CON3_FLD_ISSUE_REQ_TH_Y, 16);
+	regval |= REG_FLD_VAL(BUF_CON3_FLD_ISSUE_REQ_TH_U, 16);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON3, regval);
+
+	/* DISP_REG_WDMA_BUF_CON4 */
+	regval = 0;
+	regval |= REG_FLD_VAL(BUF_CON4_FLD_ISSUE_REQ_TH_V, 16);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON4, regval);
+
+
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		fill_rate = 960 * mmsysclk * 3 / 16;
 	else
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_HIGH_OFS, 20);
+		fill_rate = 960 * mmsysclk;
 
-	regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_HIGH_OFS, 1);
+	consume_rate = res * frame_rate * frame_rate * bytes_per_sec;
+	do_div(consume_rate, 1000);
+	consume_rate *= 1250;
+	do_div(consume_rate, 1000);
 
-	if (res > res_FHD)
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 24);
-	else
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_ULTRA_TH_LOW_OFS, 10);
+	preultra_low = preultra_low_us * consume_rate;
+	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
 
-	if (res > res_FHD)
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 93);
-	else
-		regval |= REG_FLD_VAL(BUF_CON2_FLD_PRE_ULTRA_TH_LOW, 184);
+	preultra_high = preultra_high_us * consume_rate;
+	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
 
-	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON2, regval);
+	ultra_low = ultra_low_us * consume_rate;
+	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+
+	ultra_high = preultra_low;
+
+	/* DISP_REG_WDMA_BUF_CON5 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_high;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON5, regval);
+
+	/* DISP_REG_WDMA_BUF_CON6 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON6, regval);
+
+	/* DISP_REG_WDMA_BUF_CON7 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_high;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON7, regval);
+
+	/* DISP_REG_WDMA_BUF_CON8 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON8, regval);
+
+	/* DISP_REG_WDMA_BUF_CON9 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_high;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON9, regval);
+
+	/* DISP_REG_WDMA_BUF_CON10 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON10, regval);
+
+	preultra_low = (preultra_low_us + 2) * consume_rate;
+	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+
+	preultra_high = (preultra_high_us + 2) * consume_rate;
+	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+
+	ultra_low = (ultra_low_us + 2) * consume_rate;
+	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+
+	ultra_high = preultra_low;
+
+	/* DISP_REG_WDMA_BUF_CON11 */
+	temp = fifo_pseudo_size - preultra_high;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON11, regval);
+
+	/* DISP_REG_WDMA_BUF_CON12 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON12, regval);
+
+	/* DISP_REG_WDMA_BUF_CON13 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_high;
+	temp = DIV_ROUND_UP(temp, 2);
+	temp = (temp > 0) ? temp : 0;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	temp = DIV_ROUND_UP(temp, 2);
+	temp = (temp > 0) ? temp : 0;
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON13, regval);
+
+	/* DISP_REG_WDMA_BUF_CON14 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	temp = DIV_ROUND_UP(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON14, regval);
+
+	/* DISP_REG_WDMA_BUF_CON15 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_high;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
+	temp = fifo_pseudo_size - ultra_high;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
+
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON15, regval);
+
+	/* DISP_REG_WDMA_BUF_CON16 */
+	regval = 0;
+	temp = fifo_pseudo_size - preultra_low;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	temp = DIV_ROUND_UP(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
+
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON16, regval);
+
+	/* DISP_REG_WDMA_BUF_CON17 */
+	regval = 0;
+	/* TODO: SET DVFS_EN */
+	temp = fifo_pseudo_size - ultra_low;
+	regval |= REG_FLD_VAL(BUF_CON17_FLD_DVFS_TH_Y, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON17, regval);
+
+	/* DISP_REG_WDMA_BUF_CON18 */
+	regval = 0;
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 2);
+	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_U, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 4);
+	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_V, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_WDMA_BUF_CON18, regval);
+
+	/* DISP_REG_WDMA_DRS_CON0 */
+	regval = 0;
+	/* TODO: SET DRS_EN */
+	temp = fifo_pseudo_size - ultra_low;
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_Y, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_DRS_CON0, regval);
+
+	/* DISP_REG_WDMA_DRS_CON1 */
+	regval = 0;
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 2);
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_U, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 4);
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_V, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_DRS_CON1, regval);
+
+	ultra_low = (ultra_low_us + 4) * consume_rate;
+	ultra_low = DIV_ROUND_UP(ultra_low, 1000);
+
+	regval = 0;
+	temp = fifo_pseudo_size - ultra_low;
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_Y, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_DRS_CON2, regval);
+
+	regval = 0;
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 2);
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_U, temp);
+	temp = fifo_pseudo_size - ultra_low;
+	do_div(temp, 4);
+	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_V, temp);
+
+	DISP_REG_SET(cmdq, base_addr + DISP_REG_DRS_CON3, regval);
+
 
 	return 0;
 }
