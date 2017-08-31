@@ -3101,19 +3101,19 @@ struct mtk_power_gate {
 /* FIXME: all values needed to be verified */
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
-	PGATE(SCP_SYS_MM0, pg_mm0, NULL, mm_sel, SYS_MM0),
-	PGATE(SCP_SYS_MM1, pg_mm1, NULL, mm_sel, SYS_MM1),
+	PGATE(SCP_SYS_MM0, pg_mm0, NULL, NULL, SYS_MM0),
+	PGATE(SCP_SYS_MM1, pg_mm1, NULL, NULL, SYS_MM1),
 	PGATE(SCP_SYS_IPU_SHUTDOWN, pg_ipu_shutdown, NULL, NULL, SYS_IPU_SHUTDOWN),
 	PGATE(SCP_SYS_IPU_SLEEP, pg_ipu_sleep, NULL, NULL, SYS_IPU_SLEEP),
-	PGATE(SCP_SYS_MFG0, pg_mfg0, pg_mfg0, NULL, SYS_MFG0),
-	PGATE(SCP_SYS_MFG1, pg_mfg1, pg_mfg1, NULL, SYS_MFG1),
-	PGATE(SCP_SYS_MFG2, pg_mfg2, pg_mfg2, NULL, SYS_MFG2),
-	PGATE(SCP_SYS_MFG3, pg_mfg3, pg_mfg3, NULL, SYS_MFG3),
-	PGATE(SCP_SYS_ISP, pg_isp, NULL, mm_sel, SYS_ISP),
-	PGATE(SCP_SYS_VDE, pg_vde, NULL, mm_sel, SYS_VDE),
-	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
-	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infracfg_ao_audio_26m_bclk_ck, SYS_AUDIO),
-	PGATE(SCP_SYS_CAM, pg_cam, NULL, mm_sel, SYS_CAM),
+	PGATE(SCP_SYS_MFG0, pg_mfg0, NULL, NULL, SYS_MFG0),
+	PGATE(SCP_SYS_MFG1, pg_mfg1, NULL, NULL, SYS_MFG1),
+	PGATE(SCP_SYS_MFG2, pg_mfg2, NULL, NULL, SYS_MFG2),
+	PGATE(SCP_SYS_MFG3, pg_mfg3, NULL, NULL, SYS_MFG3),
+	PGATE(SCP_SYS_ISP, pg_isp, NULL, NULL, SYS_ISP),
+	PGATE(SCP_SYS_VDE, pg_vde, NULL, NULL, SYS_VDE),
+	PGATE(SCP_SYS_VEN, pg_ven, NULL, NULL, SYS_VEN),
+	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, NULL, SYS_AUDIO),
+	PGATE(SCP_SYS_CAM, pg_cam, NULL, NULL, SYS_CAM),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
 	PGATE(SCP_SYS_MJC, pg_mjc, NULL, NULL, SYS_MJC),
 };
@@ -3235,8 +3235,8 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 #if !MT_CCF_BRINGUP
 	/* subsys init: per modem owner request, disable modem power first */
-	disable_subsys(SYS_MD1);
-	disable_subsys(SYS_C2K);
+	/*disable_subsys(SYS_MD1);*/
+	/*disable_subsys(SYS_C2K);*/
 #else				/*power on all subsys for bring up */
 #if 0
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
