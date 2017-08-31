@@ -33,6 +33,7 @@ typedef enum {
 	RTC_PWRON_LOGO,
 	RTC_32K_LESS,
 	RTC_LP_DET,
+	RTC_FG_INIT,
 	RTC_SPAR_NUM
 } rtc_spare_enum;
 
