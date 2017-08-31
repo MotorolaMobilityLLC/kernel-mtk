@@ -181,7 +181,6 @@ static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { retur
 #endif
 
 #define PLAT_DBG_INFO_MANAGE
-#define INFO_TYPE_MAX 3
 
 /* DRAMC API config */
 extern unsigned int DMA_TIMES_RECORDER;
