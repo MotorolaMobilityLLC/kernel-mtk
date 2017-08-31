@@ -192,7 +192,9 @@ static void ipv6_ifa_notify(int event, struct inet6_ifaddr *ifa);
 static void inet6_no_ra_notify(int event, struct inet6_dev *idev);
 static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 			   u32 portid, u32 seq, int event, unsigned int flags);
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp);
+#endif
 static void inet6_prefix_notify(int event, struct inet6_dev *idev,
 				struct prefix_info *pinfo);
 static bool ipv6_chk_same_addr(struct net *net, const struct in6_addr *addr,
@@ -3547,9 +3549,11 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->rs_interval);
 	} else {
 		inet6_no_ra_notify(RTM_NORA, idev);
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 		/*add for VzW feature : remove IF_RS_VZW_SENT flag*/
 		if (idev->if_flags & IF_RS_VZW_SENT)
 			idev->if_flags &= ~IF_RS_VZW_SENT;
+#endif
 		/*
 		 * Note: we do not support deprecated "all on-link"
 		 * assumption any longer.
@@ -3808,6 +3812,7 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
 	}
 }
 
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 /*VzW : RA refresh*/
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
 {
@@ -3843,6 +3848,8 @@ static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
 		local_bh_enable();
 	}
 }
+#endif
+
 static void addrconf_dad_run(struct inet6_dev *idev)
 {
 	struct inet6_ifaddr *ifp;
@@ -4055,6 +4062,7 @@ static void addrconf_verify_rtnl(void)
 restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 			u32 route_lft, minimum_lft;
 			struct rt6_info *rt;
 
@@ -4068,7 +4076,7 @@ restart:
 			} else {
 				minimum_lft = ifp->prefered_lft;
 			}
-
+#endif
 			/* When setting preferred_lft to a value not zero or
 			 * infinity, while valid_lft is infinity
 			 * IFA_F_PERMANENT has a non-infinity life time.
@@ -4088,6 +4096,7 @@ restart:
 				ipv6_del_addr(ifp);
 				goto restart;
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 				/*mtk10127 change for VzW
 				 *prefered_lft is INFINITY scenario
 				 *ccmni interface will send RS when time flow
@@ -4106,6 +4115,7 @@ restart:
 							next = ifp->tstamp + ((minimum_lft * 3 / 4) * HZ);
 					}
 				}
+#endif
 				spin_unlock(&ifp->lock);
 				continue;
 			} else if (age >= ifp->prefered_lft) {
@@ -4161,7 +4171,7 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
-
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 				/*mtk10127 change for VzW
 				 *prefered_lft is NOT INFINITY scenario
 				 *ccmni interface will send RS when time flow
@@ -4178,6 +4188,7 @@ restart:
 					    time_before(ifp->tstamp + ((minimum_lft * 3 / 4) * HZ), next))
 						next = ifp->tstamp + ((minimum_lft * 3 / 4) * HZ);
 				}
+#endif
 				spin_unlock(&ifp->lock);
 			}
 		}
@@ -5394,6 +5405,7 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 	hdr->__ifi_pad = 0;
 	hdr->ifi_type = dev->type;
 	hdr->ifi_index = dev->ifindex;
+#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
 	/*This ifi_flags refers to the dev flag in kernel, but here, I use it as a valid flag
 	*When ifi_flags is zero , it means RA refesh Fail, And When ifi_flags is  1, it means
 	*RA init Fail!@MTK07384
@@ -5405,7 +5417,8 @@ static int inet6_fill_nora(struct sk_buff *skb, struct inet6_dev *idev,
 	} else {
 		hdr->ifi_flags = 1;
 		pr_info("[mtk_net][vzw]RA init Fail\n");
-		}
+	}
+#endif
 	hdr->ifi_change = 0;
 
 	nlmsg_end(skb, nlh);
