@@ -57,7 +57,7 @@
 
 /* battery meter parameter */
 #define CHANGE_TRACKING_POINT
-#ifdef CONFIG_MTK_HAFG_20
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 #define CUST_TRACKING_POINT	0
 #else
 #define CUST_TRACKING_POINT	1

@@ -80,7 +80,7 @@ typedef struct {
 	signed int TemperatureR;
 } BATT_TEMPERATURE;
 
-#if !defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 10)
 struct battery_meter_custom_data {
 
 	/* mt_battery_meter.h */
@@ -150,8 +150,8 @@ struct battery_meter_custom_data {
 	int rbat_pull_up_volt;
 
 };
-#else
-
+#endif
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 struct battery_meter_custom_data {
 
 	/* cust_battery_meter.h */
@@ -338,16 +338,18 @@ typedef enum {
 extern struct battery_meter_custom_data batt_meter_cust_data;
 
 
-#if !defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 10)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 extern unsigned int suspend_time;
 #endif
 #endif
 extern unsigned int _g_bat_sleep_total_time;
 
-#if !defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 10)
 extern BOOL bat_spm_timeout;
-#else
+#endif
+
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 extern bool bat_spm_timeout;
 extern unsigned int sleep_total_time;
 #endif
@@ -414,7 +416,7 @@ extern void battery_meter_reset_sleep_time(void);
 extern int battery_meter_get_low_battery_interrupt_status(void);
 extern void mt_battery_set_init_vol(int);
 
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 unsigned int get_cv_voltage(void);
 #endif
 

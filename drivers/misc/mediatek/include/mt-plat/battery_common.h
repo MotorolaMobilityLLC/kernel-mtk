@@ -347,7 +347,7 @@ extern void set_usb_current_unlimited(bool enable);
 extern bool get_usb_current_unlimited(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
 
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 extern struct timespec mt_battery_get_duration_time_act(BATTERY_TIME_ENUM duration_type);
 #endif
 

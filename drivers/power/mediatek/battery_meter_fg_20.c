@@ -1713,7 +1713,7 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 
 #elif defined(SOC_BY_AUXADC) ||  defined(SOC_BY_SW_FG)
 
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 
 	signed int vbat_val = 0;
 

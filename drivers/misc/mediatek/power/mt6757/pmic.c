@@ -98,9 +98,14 @@
 #endif
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+#include <mt-plat/mtk_battery.h>
+#include <mach/mtk_battery_property.h>
+#else
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mach/mtk_battery_meter.h>
+#endif
 #endif
 #include <mt6311.h>
 #include <mach/mtk_pmic.h>
