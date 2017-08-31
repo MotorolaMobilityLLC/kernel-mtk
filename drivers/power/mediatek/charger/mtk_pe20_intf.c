@@ -128,12 +128,26 @@ static int pe20_leave(struct charger_manager *pinfo)
 static int pe20_check_leave_status(struct charger_manager *pinfo)
 {
 	int ret = 0;
+	int vchr = 0;
 	bool bif_exist = false;
 	u32 vbat = 0, cv = 0, ichg = 0;
 	bool current_sign;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
 	pr_err("%s: starts\n", __func__);
+
+	/* PE+ leaves unexpectedly */
+	vchr = pmic_get_vbus();
+	if (abs(vchr - pe20->ta_vchr_org) < 1000) {
+		pr_err("%s: PE+20 leave unexpectedly, recheck TA\n", __func__);
+		pe20->to_check_chr_type = true;
+		ret = pe20_leave(pinfo);
+		if (ret < 0 || pe20->is_connect)
+			goto _err;
+
+		return ret;
+	}
+
 	ichg = battery_meter_get_battery_current(); /* 0.1 mA */
 	ichg /= 10; /* mA */
 	current_sign = battery_meter_get_battery_current_sign();
@@ -158,13 +172,13 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 	}
 
 	/* BIF does not exist, check SOC */
-	if (get_soc() > pinfo->data.ta_stop_battery_soc &&
+	if ((get_soc() / 100) > pinfo->data.ta_stop_battery_soc &&
 	    current_sign && ichg < pinfo->data.pe20_ichg_level_threshold) {
 		ret = pe20_leave(pinfo);
 		if (ret < 0 || pe20->is_connect)
 			goto _err;
 		pr_err("%s: OK, SOC = (%d,%d), stop PE+20\n", __func__,
-			get_soc(), pinfo->data.ta_stop_battery_soc);
+			get_soc() / 100, pinfo->data.ta_stop_battery_soc);
 	}
 
 	return ret;
@@ -244,7 +258,7 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 
 	return ret;
 }
-
+#if 0
 static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 {
 	int aicr_value;
@@ -301,7 +315,6 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		goto end;
 	}
 
-	/* vchr1 = battery_meter_get_charger_voltage(); */
 	vchr1 = pmic_get_vbus();
 
 	aicr_value = 500000;
@@ -309,7 +322,6 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(20);
 
-	/* vchr2 = battery_meter_get_charger_voltage(); */
 	vchr2 = pmic_get_vbus();
 
 	/*
@@ -343,7 +355,7 @@ end:
 	pr_err("%s not started: set aicr:%dmA, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000, mivr_state);
 }
-
+#endif
 static int pe20_detect_ta(struct charger_manager *pinfo)
 {
 	int ret;
@@ -412,8 +424,8 @@ int mtk_pe20_set_charging_current(struct charger_manager *pinfo,
 		return -ENOTSUPP;
 
 	pr_err("%s: starts\n", __func__);
-	/* *aicr = 3200000; */
-	*aicr = pe20->aicr_cable_imp;
+	*aicr = 3200000;
+	/* *aicr = pe20->aicr_cable_imp; */
 	*ichg = pinfo->data.ta_ac_charger_current;
 	pr_err("%s: OK, ichg = %dmA, AICR = %dmA\n",
 		__func__, *ichg / 1000, *aicr / 1000);
@@ -479,8 +491,8 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	 */
 	if (!pe20->to_check_chr_type ||
 	    mt_get_charger_type() != STANDARD_CHARGER ||
-	    get_soc() < pinfo->data.ta_start_battery_soc ||
-	    get_soc() >= pinfo->data.ta_stop_battery_soc)
+	    (get_soc() / 100) < pinfo->data.ta_start_battery_soc ||
+	    (get_soc() / 100) >= pinfo->data.ta_stop_battery_soc)
 		goto _err;
 
 	ret = pe20_init_ta(pinfo);
@@ -498,7 +510,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	pe20->to_check_chr_type = false;
 
 	/* TODO: check its functionality */
-	mtk_pe20_check_cable_impedance(pinfo);
+	/* mtk_pe20_check_cable_impedance(pinfo); */
 
 	pr_err("%s: OK, to_check_chr_type = %d\n",
 		__func__, pe20->to_check_chr_type);
@@ -509,7 +521,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 _err:
 
 	pr_err("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
-		__func__, get_soc(), pinfo->data.ta_start_battery_soc,
+		__func__, get_soc() / 100, pinfo->data.ta_start_battery_soc,
 		pinfo->data.ta_stop_battery_soc, pe20->to_check_chr_type,
 		mt_get_charger_type(), ret);
 
@@ -607,8 +619,8 @@ _out:
 		(int)current_sign, (int)ichg / 10);
 
 	pr_err(
-		"%s: SOC = ??, is_connect = %d, tune = %d, pes = %d, vbat = %d, ret = %d\n",
-		__func__, pe20->is_connect, tune, pes, vbat, ret);
+		"%s: SOC = %d, is_connect = %d, tune = %d, pes = %d, vbat = %d, ret = %d\n",
+		__func__, get_soc() / 100, pe20->is_connect, tune, pes, vbat, ret);
 	wake_unlock(&pe20->suspend_lock);
 	mutex_unlock(&pe20->access_lock);
 

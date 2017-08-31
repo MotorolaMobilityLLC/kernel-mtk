@@ -348,10 +348,6 @@ int mt6336_plug_in_setting(struct charger_device *chg_dev)
 	mt6336_config_interface(0x455, 0x01, 0xFF, 0);
 	mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
 	mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
-	/* Set the software mode BATON switch control signal to be high */
-	mt6336_config_interface(0x5AF, 0x02, 0xFF, 0);
-	/* Enable the software mode of BATON switch control signal  */
-	mt6336_config_interface(0x64E, 0x02, 0xFF, 0);
 	mt6336_config_interface(0x402, 0x03, 0xFF, 0);
 	/* ICC/ICL status bias current setting */
 	mt6336_config_interface(0x529, 0x88, 0xFF, 0);
@@ -424,6 +420,7 @@ static int mt6336_set_ichg(struct charger_device *chg_dev, int ichg)
 	array_size = ARRAY_SIZE(CS_VTH);
 	set_ichg = bmt_find_closest_level(CS_VTH, array_size, ichg);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_ichg);
+	mt6336_set_flag_register_value(MT6336_RG_ICC, 0x1);
 	mt6336_set_flag_register_value(MT6336_RG_ICC, register_value);
 
 	pr_debug("%s: 0x%x %d %d\n", __func__, register_value, ichg, set_ichg);
@@ -556,10 +553,10 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, int 
 
 	mt6336_set_flag_register_value(MT6336_RG_PEP_DATA, pep_value);
 	mt6336_set_flag_register_value(MT6336_RG_PE_SEL, 1);
-	mt6336_set_flag_register_value(MT6336_RG_PE_TC_SEL, 1);
+	mt6336_set_flag_register_value(MT6336_RG_PE_TC_SEL, 2);
 	mt6336_set_flag_register_value(MT6336_RG_PE_ENABLE, 1);
 
-	msleep(2500);
+	msleep(1600);
 
 	return 0;
 }
@@ -726,7 +723,7 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 
 	/*ret = power_supply_register(&pdev->dev, &info->psy);*/
 	info->psy = power_supply_register(&pdev->dev, &info->psd, NULL);
-	if (ret < 0) {
+	if (IS_ERR(info->psy)) {
 		pr_err("mt6336 power supply regiseter fail\n");
 		ret = -EINVAL;
 		goto err_register_psy;
@@ -743,6 +740,8 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	/* Enable RG_EN_TERM */
 	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 	mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
+
+	mt6336_set_mivr(info->charger_dev, 4500000);
 
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_OVP, mt6336_vbat_ovp_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_OVP, mt6336_vbus_ovp_callback);
