@@ -86,7 +86,7 @@
 #define LOG_AST(format, args...)	pr_err("FDVT [%s, line%04d] ASSERT: " format, __func__, __LINE__, ##args)
 
 #define LDVT_EARLY_PORTING_NO_CCF 0
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 void __iomem *IMGSYS_CONFIG_BASE;
 void __iomem *CAMSYS_CONFIG_BASE;
 #endif
@@ -103,7 +103,6 @@ static struct cdev *FDVT_cdev;
 static struct class *FDVT_class;
 static wait_queue_head_t g_FDVTWQ;
 static u32 g_FDVTIRQ = 0, g_FDVTIRQMSK = 0x00000001;
-/*LukeHu++160420==For SMP*/
 static DEFINE_SPINLOCK(g_spinLock);
 static unsigned int g_drvOpened;
 
@@ -134,7 +133,7 @@ typedef enum {
 	FDVT_BASEADDR_NUM
 } FDVT_BASEADDR_ENUM;
 
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 #else
 typedef struct{
 	struct clk *CG_SCP_SYS_MM0;
@@ -423,7 +422,7 @@ static unsigned long us_to_jiffies(unsigned long us)
 /*=======================================================================*/
 /* FDVT Clock control Registers */
 /*=======================================================================*/
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 #else
 static inline void FD_Prepare_ccf_clock(void)
 {
@@ -654,7 +653,7 @@ static inline void FD_Disable_Unprepare_ccf_clock(void)
 
 static int mt_fdvt_clk_ctrl(int en)
 {
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 	if (en) {
 		unsigned int setReg = 0xFFFFFFFF;
 
@@ -1187,7 +1186,7 @@ static const struct file_operations FDVT_fops = {
 
 static int FDVT_probe(struct platform_device *dev)
 {
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 	struct device_node *node = NULL;
 #endif
 	struct class_device;
@@ -1200,7 +1199,7 @@ static int FDVT_probe(struct platform_device *dev)
 	struct fdvt_device *fdvt_dev;
 #endif
 
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 	node = of_find_compatible_node(NULL, NULL, "mediatek,imgsys_config");
 	if (!node) {
 		LOG_ERR("find IMGSYS_CONFIG node failed!!!\n");
@@ -1245,7 +1244,7 @@ static int FDVT_probe(struct platform_device *dev)
 		dev_err(&dev->dev, "Unable to realloc fdvt_devs\n");
 		return -ENOMEM;
 	}
-	fdvt_devs = tempFdvt;/*LukeHu++160320=For Build Warning*/
+	fdvt_devs = tempFdvt;
 	fdvt_dev = &(fdvt_devs[nr_fdvt_devs]);
 	fdvt_dev->dev = &dev->dev;
 
@@ -1359,22 +1358,22 @@ static int FDVT_probe(struct platform_device *dev)
 	/* enable_irq(MT_SMI_LARB1_VAMAU_IRQ_ID); */
 #endif
 
-#ifdef LDVT_EARLY_PORTING_NO_CCF
+#if LDVT_EARLY_PORTING_NO_CCF
 #else
     /*CCF: Grab clock pointer (struct clk*) */
-	fd_clk.CG_SCP_SYS_MM0 = devm_clk_get(&pDev->dev, "FD_SCP_SYS_MM0");
-	fd_clk.CG_MM_SMI_COMMON = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG2_B11");
-	fd_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG2_B12");
-	fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B12");
-	fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B13");
-	fd_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B14");
-	fd_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B15");
-	fd_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B16");
-	fd_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B17");
-	fd_clk.CG_MM_LARB5 = devm_clk_get(&pDev->dev, "FD_CLK_MM_CG1_B10");
-	fd_clk.CG_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "FD_SCP_SYS_ISP");
-	fd_clk.CG_IMGSYS_LARB5 = devm_clk_get(&pDev->dev, "FD_CLK_IMG_LARB5");
-	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&pDev->dev, "FD_CLK_IMG_FDVT");
+	fd_clk.CG_SCP_SYS_MM0 = devm_clk_get(&dev->dev, "FD_SCP_SYS_MM0");
+	fd_clk.CG_MM_SMI_COMMON = devm_clk_get(&dev->dev, "FD_CLK_MM_CG2_B11");
+	fd_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG2_B12");
+	fd_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B12");
+	fd_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B13");
+	fd_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B14");
+	fd_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B15");
+	fd_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B16");
+	fd_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B17");
+	fd_clk.CG_MM_LARB5 = devm_clk_get(&dev->dev, "FD_CLK_MM_CG1_B10");
+	fd_clk.CG_SCP_SYS_ISP = devm_clk_get(&dev->dev, "FD_SCP_SYS_ISP");
+	fd_clk.CG_IMGSYS_LARB5 = devm_clk_get(&dev->dev, "FD_CLK_IMG_LARB5");
+	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "FD_CLK_IMG_FDVT");
 
 	if (IS_ERR(fd_clk.CG_SCP_SYS_MM0)) {
 		LOG_ERR("cannot get CG_SCP_SYS_MM0 clock\n");
