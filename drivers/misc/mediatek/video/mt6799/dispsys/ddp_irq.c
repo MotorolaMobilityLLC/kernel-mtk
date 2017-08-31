@@ -365,13 +365,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 						/* step 3: dump SMI BW monitor start information */
 						ovl_start_time[index] = sched_clock();
-						DDPDUMP("TIME[S]:%d\n", (unsigned int)ovl_start_time[index]);
+						DDPDUMP("TIME[S]:%llu\n", ovl_start_time[index]);
 						i = 0x1c0;
 						smi_com[0] = DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i);
 						DDPDUMP("SMI_COM+%04x[S]:0x%08x\n", i, smi_com[0]);
 						i = 0x410;
 						smi_larb[0] = DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i);
 						DDPDUMP("SMI_LARB0+%04x[S]:0x%08x\n", i, smi_larb[0]);
+						ddp_dump_analysis(DISP_MODULE_CLOCK_MUX);
 					}
 				}
 			}
@@ -388,7 +389,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				if (dump) {
 					/* step 4: dump SMI BW monitor end information */
 					ovl_end_time[index] = sched_clock();
-					DDPDUMP("TIME[E]:%d\n", (unsigned int)ovl_end_time[index]);
+					DDPDUMP("TIME[E]:%llu\n", ovl_end_time[index]);
 					time_interval = ovl_end_time[index] - ovl_start_time[index];
 					time_interval = time_interval / 1000;
 					i = 0x1c0;
@@ -401,6 +402,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 					smi_larb_interval = smi_larb[1] - smi_larb[0];
 					DDPDUMP("SMI_LARB0+%04x[E]:0x%08x\n", i, smi_larb[1]);
 					DDPDUMP("SMI_LARB freq:%d(MHz)\n", (int)(smi_larb_interval / time_interval));
+					ddp_dump_analysis(DISP_MODULE_CLOCK_MUX);
 
 					/* step 5: SMI_COM/SMI_LARB disable */
 					DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a0, 0x0);

@@ -308,6 +308,60 @@ char *ddp_get_fmt_name(enum DISP_MODULE_ENUM module, unsigned int fmt)
 	return "unknown";
 }
 
+static char *ddp_get_mm_sel_name(unsigned int value)
+{
+	switch (value) {
+	case 0:
+		return "clk26m";
+	case 1:
+		return "mmpll_d8";
+	case 2:
+		return "mmpll_d5";
+	case 3:
+		return "vcodecpll_d7";
+	case 4:
+		return "mmpll_d6";
+	case 5:
+		return "syspll_d3";
+	case 6:
+		return "univpll1_d2";
+	case 7:
+		return "syspll1_d2";
+	case 8:
+		return "syspll_d5";
+	case 9:
+		return "syspll1_d4";
+	default:
+		DDPDUMP("%s:%d, unknown value=%d\n", __func__, __LINE__, value);
+		return "unknown";
+	}
+}
+
+static char *ddp_get_smi0_2x_sel_name(unsigned int value)
+{
+	switch (value) {
+	case 0:
+		return "clk26m";
+	case 1:
+		return "fsmipll_d3";
+	case 2:
+		return "fsmipll_d4";
+	case 3:
+		return "fsmipll_d5";
+	case 4:
+		return "vcodecpll_d4";
+	case 5:
+		return "mmpll_d3";
+	case 6:
+		return "emipll_ck";
+	case 7:
+		return "syspll_d2";
+	default:
+		DDPDUMP("%s:%d, unknown value=%d\n", __func__, __LINE__, value);
+		return "unknown";
+	}
+}
+
 static char *ddp_clock_0(int bit)
 {
 	switch (bit) {
@@ -1481,7 +1535,7 @@ static int split_dump_analysis(void)
 	return 0;
 }
 
-static int smi_common_dump(enum DISP_MODULE_ENUM module)
+static int smi_common_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	int i;
 
@@ -1513,7 +1567,7 @@ static int smi_common_dump(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static int smi_larb_dump(enum DISP_MODULE_ENUM module)
+static int smi_larb_dump_reg(enum DISP_MODULE_ENUM module)
 {
 	int i;
 	unsigned int offset = 0, index = 0;
@@ -1535,7 +1589,7 @@ static int smi_larb_dump(enum DISP_MODULE_ENUM module)
 	return 0;
 }
 
-static int clock_mux_dump(void)
+static int clock_mux_dump_reg(void)
 {
 	int i;
 
@@ -1548,6 +1602,16 @@ static int clock_mux_dump(void)
 			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0x8 + i),
 			DISP_REG_GET(DISP_REG_CLOCK_MUX_START + 0xc + i));
 	}
+	return 0;
+}
+
+static int clock_mux_dump_analysis(void)
+{
+	unsigned int mm_sel = DISP_REG_GET_FIELD(CLK_CFG_0_MM_SEL, DISP_REG_CLOCK_MUX_CLK_CFG(0));
+	unsigned int smi0_2x_sel = DISP_REG_GET_FIELD(CLK_CFG_5_SMI0_2X_SEL, DISP_REG_CLOCK_MUX_CLK_CFG(5));
+
+	DDPDUMP("== DISP CLOCK MUX ANALYSIS ==\n");
+	DDPDUMP("mm_sel:%s, smi0_2x_sel:%s\n", ddp_get_mm_sel_name(mm_sel), ddp_get_smi0_2x_sel_name(smi0_2x_sel));
 	return 0;
 }
 
@@ -1630,11 +1694,11 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		mutex_dump_reg();
 		break;
 	case DISP_MODULE_SMI_COMMON:
-		smi_common_dump(module);
+		smi_common_dump_reg(module);
 		break;
 	case DISP_MODULE_SMI_LARB0:
 	case DISP_MODULE_SMI_LARB1:
-		smi_larb_dump(module);
+		smi_larb_dump_reg(module);
 		break;
 	case DISP_MODULE_MIPI0:
 	case DISP_MODULE_MIPI1:
@@ -1655,7 +1719,7 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 		/* no need */
 		break;
 	case DISP_MODULE_CLOCK_MUX:
-		clock_mux_dump();
+		clock_mux_dump_reg();
 		break;
 	case DISP_MODULE_UNKNOWN:
 		/* no need */
@@ -1770,7 +1834,7 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 		/* no need */
 		break;
 	case DISP_MODULE_CLOCK_MUX:
-		/* no need */
+		clock_mux_dump_analysis();
 		break;
 	case DISP_MODULE_UNKNOWN:
 		/* no need */

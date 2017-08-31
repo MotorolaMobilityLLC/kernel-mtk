@@ -2530,6 +2530,10 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 /* ------------------------------------------------------------- */
 /* CLOCK_MUX */
 #define DISP_REG_CLOCK_MUX_START		(DISPSYS_CLOCK_MUX_BASE+0x000)
+#define DISP_REG_CLOCK_MUX_CLK_CFG(n)		(DISPSYS_CLOCK_MUX_BASE + 0x100 + (0x10 * (n)))
+
+#define CLK_CFG_0_MM_SEL				REG_FLD(4, 24)
+#define CLK_CFG_5_SMI0_2X_SEL				REG_FLD(3, 24)
 
 /* ------------------------------------------------------------- */
 /* UFO */
