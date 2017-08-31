@@ -100,7 +100,6 @@ obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
 obj-$(CONFIG_MTK_MEM) += mem/
 obj-$(CONFIG_MTK_MEMORY_LOWPOWER) += memory-lowpower/
-obj-$(CONFIG_MTK_DCS) += mtkdcs/
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
 obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
@@ -191,6 +190,7 @@ obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 #obj-$(CONFIG_MD32_SUPPORT)     += md32/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
+obj-$(CONFIG_MTK_DCS) += mtkdcs/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/tc1_interface/),)
 #obj-$(CONFIG_MTK_TC1_FEATURE)   += tc1_interface/
 endif
