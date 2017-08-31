@@ -146,6 +146,62 @@ enum AUTOK_PARAM {
 	EMMC50_DS_ZDLY_DLY,
 	TUNING_PARAM_COUNT,
 
+	/* CMD scan result */
+	CMD_SCAN_R0,
+	CMD_SCAN_R1,
+	CMD_SCAN_R2,
+	CMD_SCAN_R3,
+	CMD_SCAN_R4,
+	CMD_SCAN_R5,
+	CMD_SCAN_R6,
+	CMD_SCAN_R7,
+
+	CMD_SCAN_F0,
+	CMD_SCAN_F1,
+	CMD_SCAN_F2,
+	CMD_SCAN_F3,
+	CMD_SCAN_F4,
+	CMD_SCAN_F5,
+	CMD_SCAN_F6,
+	CMD_SCAN_F7,
+
+	/* DATA scan result */
+	DAT_SCAN_R0,
+	DAT_SCAN_R1,
+	DAT_SCAN_R2,
+	DAT_SCAN_R3,
+	DAT_SCAN_R4,
+	DAT_SCAN_R5,
+	DAT_SCAN_R6,
+	DAT_SCAN_R7,
+
+	DAT_SCAN_F0,
+	DAT_SCAN_F1,
+	DAT_SCAN_F2,
+	DAT_SCAN_F3,
+	DAT_SCAN_F4,
+	DAT_SCAN_F5,
+	DAT_SCAN_F6,
+	DAT_SCAN_F7,
+
+	/* DS scan result */
+	DS_SCAN_0,
+	DS_SCAN_1,
+	DS_SCAN_2,
+	DS_SCAN_3,
+	DS_SCAN_4,
+	DS_SCAN_5,
+	DS_SCAN_6,
+	DS_SCAN_7,
+
+	/* AUTOK version */
+	AUTOK_VER0,
+	AUTOK_VER1,
+	AUTOK_VER2,
+	AUTOK_VER3,
+
+	TUNING_PARA_SCAN_COUNT,
+
 	/* Data line rising/falling latch  fine tune selection in read transaction.
 	 * 1'b0: All data line share one value indicated by MSDC_IOCON.R_D_SMPL.
 	 * 1'b1: Each data line has its own  selection value indicated by Data line (x): MSDC_IOCON.R_D(x)_SMPL

@@ -29,6 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
+#define AUTOK_VERSION                   (0x16081714)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -116,7 +117,6 @@
 
 #define PORT0_PB0_RD_DAT_SEL_VALID
 #define PORT1_PB0_RD_DAT_SEL_VALID
-#define PORT2_PB0_RD_DAT_SEL_VALID
 #define PORT3_PB0_RD_DAT_SEL_VALID
 
 enum TUNE_TYPE {
@@ -215,6 +215,13 @@ struct AUTOK_REF_INFO {
 	unsigned int cycle_cnt;
 };
 
+enum AUTOK_SCAN_WIN {
+	CMD_RISE,
+	CMD_FALL,
+	DAT_RISE,
+	DAT_FALL,
+	DS_WIN,
+};
 unsigned int autok_debug_level = AUTOK_DBG_RES;
 
 const struct AUTOK_PARAM_INFO autok_param_info[] = {
@@ -355,7 +362,7 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 	/* clear fifo */
 	if ((tune_type_value == TUNE_CMD) || (tune_type_value == TUNE_DATA)
 		|| (tune_type_value == TUNE_SDIO_PLUS)) {
-		if ((tune_type_value == TUNE_CMD) && (host->id == 0))
+		if ((tune_type_value == TUNE_CMD) && (host->hw->host_function == MSDC_EMMC))
 			MSDC_WRITE32(MSDC_INT, MSDC_INT_CMDTMO | MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR);
 		else {
 			autok_msdc_reset();
@@ -410,17 +417,10 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		if (tune_type_value == TUNE_LATCH_CK) {
 			fifo_have = msdc_rxfifocnt();
 			if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) || (opcode == MMC_READ_SINGLE_BLOCK)
-				|| (opcode == MMC_SEND_EXT_CSD)) {
+				|| (opcode == MMC_SEND_EXT_CSD) || (opcode == MMC_SEND_TUNING_BLOCK)) {
 				MSDC_SET_FIELD(MSDC_DBG_SEL, 0xffff << 0, 0x0b);
 				MSDC_GET_FIELD(MSDC_DBG_OUT, 0x7ff << 0, fifo_1k_cnt);
 				if ((fifo_1k_cnt >= MSDC_FIFO_THD_1K) && (fifo_have >= MSDC_FIFO_SZ)) {
-					value = MSDC_READ32(MSDC_RXDATA);
-					value = MSDC_READ32(MSDC_RXDATA);
-					value = MSDC_READ32(MSDC_RXDATA);
-					value = MSDC_READ32(MSDC_RXDATA);
-				}
-			} else if (opcode == MMC_SEND_TUNING_BLOCK) {
-				if (fifo_have >= MSDC_FIFO_SZ) {
 					value = MSDC_READ32(MSDC_RXDATA);
 					value = MSDC_READ32(MSDC_RXDATA);
 					value = MSDC_READ32(MSDC_RXDATA);
@@ -1275,7 +1275,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (DATA_K_VALUE_SEL);
@@ -1294,7 +1294,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_RXDLY_SEL);
@@ -1383,7 +1383,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY);
@@ -1402,7 +1402,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY_SEL);
@@ -1421,7 +1421,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RXDLY2);
@@ -1440,7 +1440,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CMD;
 			field = (u32) (PAD_CMD_RD_RXDLY2_SEL);
@@ -1459,7 +1459,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY);
@@ -1478,7 +1478,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY_SEL);
@@ -1497,7 +1497,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2);
@@ -1516,7 +1516,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) EMMC_TOP_CONTROL;
 			field = (u32) (PAD_DAT_RD_RXDLY2_SEL);
@@ -1575,7 +1575,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_CTL0;
 			field = (u32) (PAD_CLK_TXDLY);
@@ -1634,7 +1634,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY1);
@@ -1653,7 +1653,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY_SEL);
@@ -1672,7 +1672,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2);
@@ -1691,7 +1691,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY2_SEL);
@@ -1710,7 +1710,7 @@ static int msdc_autok_adjust_param(struct msdc_host *host, enum AUTOK_PARAM para
 			     __func__, *value);
 			return -1;
 		}
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
 #if !defined(FPGA_PLATFORM)
 			reg = (u32 *) TOP_EMMC50_PAD_DS_TUNE;
 			field = (u32) (PAD_DS_DLY3);
@@ -1906,6 +1906,70 @@ static void autok_paddly_update(unsigned int pad_sel, unsigned int dly_cnt, u8 *
 	}
 }
 
+static void msdc_autok_window_apply(enum AUTOK_SCAN_WIN scan_win, u64 sacn_window, unsigned char *autok_tune_res)
+{
+	switch (scan_win) {
+	case CMD_RISE:
+		autok_tune_res[CMD_SCAN_R0] = (sacn_window >> 0) & 0xff;
+		autok_tune_res[CMD_SCAN_R1] = (sacn_window >> 8) & 0xff;
+		autok_tune_res[CMD_SCAN_R2] = (sacn_window >> 16) & 0xff;
+		autok_tune_res[CMD_SCAN_R3] = (sacn_window >> 24) & 0xff;
+		autok_tune_res[CMD_SCAN_R4] = (sacn_window >> 32) & 0xff;
+		autok_tune_res[CMD_SCAN_R5] = (sacn_window >> 40) & 0xff;
+		autok_tune_res[CMD_SCAN_R6] = (sacn_window >> 48) & 0xff;
+		autok_tune_res[CMD_SCAN_R7] = (sacn_window >> 56) & 0xff;
+		break;
+	case CMD_FALL:
+		autok_tune_res[CMD_SCAN_F0] = (sacn_window >> 0) & 0xff;
+		autok_tune_res[CMD_SCAN_F1] = (sacn_window >> 8) & 0xff;
+		autok_tune_res[CMD_SCAN_F2] = (sacn_window >> 16) & 0xff;
+		autok_tune_res[CMD_SCAN_F3] = (sacn_window >> 24) & 0xff;
+		autok_tune_res[CMD_SCAN_F4] = (sacn_window >> 32) & 0xff;
+		autok_tune_res[CMD_SCAN_F5] = (sacn_window >> 40) & 0xff;
+		autok_tune_res[CMD_SCAN_F6] = (sacn_window >> 48) & 0xff;
+		autok_tune_res[CMD_SCAN_F7] = (sacn_window >> 56) & 0xff;
+		break;
+	case DAT_RISE:
+		autok_tune_res[DAT_SCAN_R0] = (sacn_window >> 0) & 0xff;
+		autok_tune_res[DAT_SCAN_R1] = (sacn_window >> 8) & 0xff;
+		autok_tune_res[DAT_SCAN_R2] = (sacn_window >> 16) & 0xff;
+		autok_tune_res[DAT_SCAN_R3] = (sacn_window >> 24) & 0xff;
+		autok_tune_res[DAT_SCAN_R4] = (sacn_window >> 32) & 0xff;
+		autok_tune_res[DAT_SCAN_R5] = (sacn_window >> 40) & 0xff;
+		autok_tune_res[DAT_SCAN_R6] = (sacn_window >> 48) & 0xff;
+		autok_tune_res[DAT_SCAN_R7] = (sacn_window >> 56) & 0xff;
+		break;
+	case DAT_FALL:
+		autok_tune_res[DAT_SCAN_F0] = (sacn_window >> 0) & 0xff;
+		autok_tune_res[DAT_SCAN_F1] = (sacn_window >> 8) & 0xff;
+		autok_tune_res[DAT_SCAN_F2] = (sacn_window >> 16) & 0xff;
+		autok_tune_res[DAT_SCAN_F3] = (sacn_window >> 24) & 0xff;
+		autok_tune_res[DAT_SCAN_F4] = (sacn_window >> 32) & 0xff;
+		autok_tune_res[DAT_SCAN_F5] = (sacn_window >> 40) & 0xff;
+		autok_tune_res[DAT_SCAN_F6] = (sacn_window >> 48) & 0xff;
+		autok_tune_res[DAT_SCAN_F7] = (sacn_window >> 56) & 0xff;
+		break;
+	case DS_WIN:
+		autok_tune_res[DS_SCAN_0] = (sacn_window >> 0) & 0xff;
+		autok_tune_res[DS_SCAN_1] = (sacn_window >> 8) & 0xff;
+		autok_tune_res[DS_SCAN_2] = (sacn_window >> 16) & 0xff;
+		autok_tune_res[DS_SCAN_3] = (sacn_window >> 24) & 0xff;
+		autok_tune_res[DS_SCAN_4] = (sacn_window >> 32) & 0xff;
+		autok_tune_res[DS_SCAN_5] = (sacn_window >> 40) & 0xff;
+		autok_tune_res[DS_SCAN_6] = (sacn_window >> 48) & 0xff;
+		autok_tune_res[DS_SCAN_7] = (sacn_window >> 56) & 0xff;
+		break;
+	}
+}
+
+static void msdc_autok_version_apply(unsigned char *autok_tune_res)
+{
+	autok_tune_res[AUTOK_VER0] = (AUTOK_VERSION >> 0) & 0xff;
+	autok_tune_res[AUTOK_VER1] = (AUTOK_VERSION >> 8) & 0xff;
+	autok_tune_res[AUTOK_VER2] = (AUTOK_VERSION >> 16) & 0xff;
+	autok_tune_res[AUTOK_VER3] = (AUTOK_VERSION >> 24) & 0xff;
+}
+
 /*******************************************************
 * Exectue tuning IF Implenment                         *
 *******************************************************/
@@ -2068,7 +2132,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
-	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
+	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
 	unsigned int uDatDly = 0;
 
@@ -2098,6 +2162,10 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
+		if (uCmdEdge)
+			msdc_autok_window_apply(CMD_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(CMD_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0)
 			return -1;
 
@@ -2181,6 +2249,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	score = autok_simple_score64(tune_result_str64, RawData64);
 	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
+	msdc_autok_window_apply(DS_WIN, RawData64, p_autok_tune_res);
 	if (autok_check_scan_res64(RawData64, pBdInfo, 0) != 0)
 		return -1;
 
@@ -2197,6 +2266,7 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 #if AUTOK_PARAM_DUMP_ENABLE
 	autok_register_dump(host);
 #endif
+	msdc_autok_version_apply(p_autok_tune_res);
 	if (res != NULL) {
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2207,7 +2277,10 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 
 int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 {
-	void __iomem *base = host->base, *base_top = host->base_top;
+	void __iomem *base = host->base;
+#if !defined(FPGA_PLATFORM)
+	void __iomem *base_top = host->base_top;
+#endif
 	unsigned int ret = 0;
 	unsigned int uCmdEdge = 0;
 	u64 RawData64 = 0LL;
@@ -2253,11 +2326,15 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 		msdc_autok_adjust_param(host, CMD_EDGE, &uCmdDatInfo.opt_edge_sel, AUTOK_WRITE);
 		msdc_autok_adjust_paddly(host, &uCmdDatInfo.opt_dly_cnt, CMD_PAD_RDLY);
 		MSDC_GET_FIELD(MSDC_IOCON, MSDC_IOCON_RSPL, p_autok_tune_res[0]);
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
+#if !defined(FPGA_PLATFORM)
 			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RXDLY, p_autok_tune_res[1]);
 			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY_SEL, p_autok_tune_res[2]);
 			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RXDLY2, p_autok_tune_res[3]);
 			MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_RD_RXDLY2_SEL, p_autok_tune_res[4]);
+#else
+			return 0;
+#endif
 		} else {
 			MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, p_autok_tune_res[1]);
 			MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRRDLYSEL, p_autok_tune_res[2]);
@@ -2367,7 +2444,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
-	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
+	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int opcode = MMC_SEND_STATUS;
 
 	autok_init_hs200(host);
@@ -2396,6 +2473,10 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
+		if (uCmdEdge)
+			msdc_autok_window_apply(CMD_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(CMD_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0) {
 			host->autok_error = -1;
 			return -1;
@@ -2446,6 +2527,10 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", uDatEdge, score,
 			       tune_result_str64);
+		if (uDatEdge)
+			msdc_autok_window_apply(DAT_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(DAT_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0) {
 			host->autok_error = -1;
 			return -1;
@@ -2477,6 +2562,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 #if AUTOK_PARAM_DUMP_ENABLE
 	autok_register_dump(host);
 #endif
+	msdc_autok_version_apply(p_autok_tune_res);
 	if (res != NULL) {
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2498,7 +2584,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
-	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
+	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 	unsigned int uDatDly = 0;
 
 	autok_init_ddr208(host);
@@ -2536,6 +2622,10 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
+		if (uCmdEdge)
+			msdc_autok_window_apply(CMD_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(CMD_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0)
 			return -1;
 		uCmdEdge ^= 0x1;
@@ -2593,6 +2683,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	score = autok_simple_score64(tune_result_str64, RawData64);
 	AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] DLY1/2 %d \t %d \t %s\r\n", uCmdEdge, score,
 		       tune_result_str64);
+	msdc_autok_window_apply(DS_WIN, RawData64, p_autok_tune_res);
 	if (autok_check_scan_res64(RawData64, pBdInfo, 0) != 0)
 		return -1;
 
@@ -2608,6 +2699,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 #if AUTOK_PARAM_DUMP_ENABLE
 	autok_register_dump(host);
 #endif
+	msdc_autok_version_apply(p_autok_tune_res);
 	if (res != NULL) {
 		memcpy((void *)res, (void *)p_autok_tune_res,
 			   sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2631,7 +2723,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	struct AUTOK_REF_INFO uCmdDatInfo;
 	struct AUTOK_SCAN_RES *pBdInfo;
 	char tune_result_str64[65];
-	u8 p_autok_tune_res[TUNING_PARAM_COUNT];
+	u8 p_autok_tune_res[TUNING_PARA_SCAN_COUNT];
 
 	autok_init_sdr104(host);
 	memset((void *)p_autok_tune_res, 0, sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2665,6 +2757,10 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]CMD %d \t %d \t %s\r\n", uCmdEdge, score,
 			       tune_result_str64);
+		if (uCmdEdge)
+			msdc_autok_window_apply(CMD_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(CMD_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0) {
 			host->autok_error = -1;
 			return -1;
@@ -2709,6 +2805,10 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 		score = autok_simple_score64(tune_result_str64, RawData64);
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK]DAT %d \t %d \t %s\r\n", uDatEdge, score,
 			       tune_result_str64);
+		if (uDatEdge)
+			msdc_autok_window_apply(DAT_FALL, RawData64, p_autok_tune_res);
+		else
+			msdc_autok_window_apply(DAT_RISE, RawData64, p_autok_tune_res);
 		if (autok_check_scan_res64(RawData64, pBdInfo, AUTOK_TUNING_INACCURACY) != 0) {
 			host->autok_error = -1;
 			return -1;
@@ -2739,6 +2839,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 #if AUTOK_PARAM_DUMP_ENABLE
 	autok_register_dump(host);
 #endif
+	msdc_autok_version_apply(p_autok_tune_res);
 	if (res != NULL) {
 		memcpy((void *)res, (void *)p_autok_tune_res,
 		       sizeof(p_autok_tune_res) / sizeof(u8));
@@ -2755,7 +2856,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 	void __iomem *base_top = host->base_top;
 #endif
 
-	if (host->id == 0) {
+	if (host->hw->host_function == MSDC_EMMC) {
 		if (ios->timing == MMC_TIMING_MMC_HS400) {
 			MSDC_SET_FIELD(EMMC50_CFG0,
 				MSDC_EMMC50_CFG_TXSKEW_SEL,
@@ -2838,7 +2939,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 				AUTOK_MSDC0_DAT7TXDLY);
 #endif
 		}
-	} else if (host->id == 1) {
+	} else if (host->hw->host_function == MSDC_SD) {
 		MSDC_SET_FIELD(MSDC_IOCON,
 			MSDC_IOCON_DDR50CKD, AUTOK_MSDC_DDRCKD);
 		if (ios->timing == MMC_TIMING_UHS_SDR104) {
@@ -2850,13 +2951,7 @@ void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios)
 				MSDC_PAD_TUNE0_CLKTXDLY,
 				AUTOK_MSDC1_CLK_TX_VALUE);
 		}
-	} else if (host->id == 2) {
-		MSDC_SET_FIELD(MSDC_IOCON,
-			MSDC_IOCON_DDR50CKD, AUTOK_MSDC_DDRCKD);
-		MSDC_SET_FIELD(MSDC_PAD_TUNE0,
-			MSDC_PAD_TUNE0_CLKTXDLY,
-			AUTOK_MSDC2_CLK_TX_VALUE);
-	} else if (host->id == 3) {
+	} else if (host->hw->host_function == MSDC_SDIO) {
 		MSDC_SET_FIELD(MSDC_PAD_TUNE0,
 			MSDC_PAD_TUNE0_CLKTXDLY,
 			AUTOK_MSDC3_SDIO_PLUS_CLKTXDLY);
@@ -2886,7 +2981,7 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 	unsigned int cur_resp_edge, cur_crc_fifo_edge, cur_read_edge, cur_read_fifo_edge;
 
 	AUTOK_RAWPRINT("[AUTOK][low speed switch edge]=========start========\r\n");
-	if (host->id == 0) {
+	if (host->hw->host_function == MSDC_EMMC) {
 		switch (error_type) {
 		case CMD_ERROR:
 			MSDC_GET_FIELD(MSDC_IOCON,
@@ -2961,7 +3056,7 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 				, orig_crc_fifo_edge, cur_crc_fifo_edge);
 			break;
 		}
-	} else if (host->id == 1) {
+	} else if (host->hw->host_function == MSDC_SD) {
 		switch (error_type) {
 		case CMD_ERROR:
 			MSDC_GET_FIELD(MSDC_IOCON,
@@ -3036,82 +3131,7 @@ void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, en
 				, orig_crc_fifo_edge, cur_crc_fifo_edge);
 			break;
 		}
-	} else if (host->id == 2) {
-		switch (error_type) {
-		case CMD_ERROR:
-			MSDC_GET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_RSPL, orig_resp_edge);
-			MSDC_SET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_RSPL, orig_resp_edge ^ 0x1);
-			MSDC_GET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_RSPL, cur_resp_edge);
-			AUTOK_RAWPRINT("[AUTOK][CMD err]pre_edge = %d cur_edge = %d\r\n"
-				, orig_resp_edge, cur_resp_edge);
-			break;
-		case DATA_ERROR:
-#ifdef PORT2_PB0_RD_DAT_SEL_VALID
-			if (ios->timing == MMC_TIMING_UHS_DDR50) {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL_SEL, 0);
-				MSDC_GET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, orig_read_edge);
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, 0);
-				MSDC_GET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, cur_read_edge);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
-				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID DDR pre_edge = %d",
-					orig_read_edge);
-				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
-					cur_read_edge, cur_read_fifo_edge);
-			} else {
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL_SEL, 0);
-				MSDC_SET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, 0);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge);
-				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, orig_read_fifo_edge ^ 0x1);
-				MSDC_GET_FIELD(MSDC_IOCON,
-					MSDC_IOCON_R_D_SMPL, cur_read_edge);
-				MSDC_GET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, cur_read_fifo_edge);
-				AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_VALID orig_fifo_edge = %d",
-					orig_read_fifo_edge);
-				AUTOK_RAWPRINT(" cur_edge = %d cur_fifo_edge = %d\r\n",
-					cur_read_edge, cur_read_fifo_edge);
-			}
-#else
-			MSDC_SET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_R_D_SMPL_SEL, 0);
-			MSDC_GET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_R_D_SMPL, orig_read_edge);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT0,
-					MSDC_PB0_RD_DAT_SEL, 0);
-			MSDC_SET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_R_D_SMPL, orig_read_edge ^ 0x1);
-			MSDC_GET_FIELD(MSDC_IOCON,
-				MSDC_IOCON_R_D_SMPL, cur_read_edge);
-			AUTOK_RAWPRINT("[AUTOK][read err]PB0[3]_INVALID pre_edge = %d cur_edge = %d\r\n"
-				, orig_read_edge, cur_read_edge);
-#endif
-			break;
-		case CRC_STATUS_ERROR:
-			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTSEDGE, orig_crc_fifo_edge ^ 0x1);
-			MSDC_GET_FIELD(MSDC_PATCH_BIT2,
-				MSDC_PB2_CFGCRCSTSEDGE, cur_crc_fifo_edge);
-			AUTOK_RAWPRINT("[AUTOK][write err]orig_fifo_edge = %d cur_fifo_edge = %d\r\n"
-				, orig_crc_fifo_edge, cur_crc_fifo_edge);
-			break;
-		}
-	} else if (host->id == 3) {
+	} else if (host->hw->host_function == MSDC_SDIO) {
 		switch (error_type) {
 		case CMD_ERROR:
 			MSDC_GET_FIELD(MSDC_IOCON,
@@ -3194,7 +3214,10 @@ EXPORT_SYMBOL(autok_low_speed_switch_edge);
 int autok_offline_tuning_TX(struct msdc_host *host)
 {
 	int ret = 0;
-	void __iomem *base = host->base, *base_top = host->base_top;
+	void __iomem *base = host->base;
+#if !defined(FPGA_PLATFORM)
+	void __iomem *base_top = host->base_top;
+#endif
 	unsigned int response;
 	unsigned int tune_tx_value;
 	unsigned char tune_cnt;
@@ -3208,7 +3231,8 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 
 	AUTOK_RAWPRINT("[AUTOK][tune cmd TX]=========start========\r\n");
 	/* store tx setting */
-	if (host->id == 0) {
+	if (host->hw->host_function == MSDC_EMMC) {
+#if !defined(FPGA_PLATFORM)
 		MSDC_GET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, cmd_tx);
 		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY, dat_tx[0]);
 		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY, dat_tx[1]);
@@ -3218,6 +3242,9 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE, PAD_DAT5_TX_DLY, dat_tx[5]);
 		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE, PAD_DAT6_TX_DLY, dat_tx[6]);
 		MSDC_GET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY, dat_tx[7]);
+#else
+		return 0;
+#endif
 	} else {
 		MSDC_GET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, cmd_tx);
 		MSDC_GET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY, dat_tx[0]);
@@ -3231,12 +3258,16 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		tune_tmo_cnt[tune_tx_value] = 0;
 		tune_crc_cnt[tune_tx_value] = 0;
 		tune_pass_cnt[tune_tx_value] = 0;
-		if (host->id == 0)
+		if (host->hw->host_function == MSDC_EMMC)
+#if !defined(FPGA_PLATFORM)
 			MSDC_SET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, tune_tx_value);
+#else
+			return 0;
+#endif
 		else
 			MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, tune_tx_value);
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
-			if (host->id == 0)
+			if (host->hw->host_function == MSDC_EMMC)
 				ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
 			else
 				ret = autok_send_tune_cmd(host, MMC_SEND_TUNING_BLOCK, TUNE_SDIO_PLUS);
@@ -3266,8 +3297,12 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	AUTOK_RAWPRINT("[AUTOK][tune cmd TX]=========end========\r\n");
 
 	/* restore cmd tx setting */
-	if (host->id == 0)
+	if (host->hw->host_function == MSDC_EMMC)
+#if !defined(FPGA_PLATFORM)
 		MSDC_SET_FIELD(EMMC_TOP_CMD, PAD_CMD_TX_DLY, cmd_tx);
+#else
+		return 0;
+#endif
 	else
 		MSDC_SET_FIELD(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY, cmd_tx);
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========start========\r\n");
@@ -3277,7 +3312,8 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		tune_tmo_cnt[tune_tx_value] = 0;
 		tune_crc_cnt[tune_tx_value] = 0;
 		tune_pass_cnt[tune_tx_value] = 0;
-		if (host->id == 0) {
+		if (host->hw->host_function == MSDC_EMMC) {
+#if !defined(FPGA_PLATFORM)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY, tune_tx_value);
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY, tune_tx_value);
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT2_TUNE, PAD_DAT2_TX_DLY, tune_tx_value);
@@ -3286,6 +3322,9 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT5_TUNE, PAD_DAT5_TX_DLY, tune_tx_value);
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT6_TUNE, PAD_DAT6_TX_DLY, tune_tx_value);
 			MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY, tune_tx_value);
+#else
+			return 0;
+#endif
 		} else {
 			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY, tune_tx_value);
 			MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT1_TXDLY, tune_tx_value);
@@ -3294,7 +3333,7 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 		}
 
 		for (tune_cnt = 0; tune_cnt < TUNE_TX_CNT; tune_cnt++) {
-			if (host->id == 0) {
+			if (host->hw->host_function == MSDC_EMMC) {
 				/* check device status */
 				response = 0;
 				while (((response >> 9) & 0xF) != 4) {
@@ -3353,7 +3392,8 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	AUTOK_RAWPRINT("[AUTOK]tune_data_TX 0 - 31      %s\r\n", tune_result);
 
 	/* restore data tx setting */
-	if (host->id == 0) {
+	if (host->hw->host_function == MSDC_EMMC) {
+#if !defined(FPGA_PLATFORM)
 		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT0_TUNE, PAD_DAT0_TX_DLY,
 			dat_tx[0]);
 		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT1_TUNE, PAD_DAT1_TX_DLY,
@@ -3370,6 +3410,9 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 			dat_tx[6]);
 		MSDC_SET_FIELD(TOP_EMMC50_PAD_DAT7_TUNE, PAD_DAT7_TX_DLY,
 			dat_tx[7]);
+#else
+		return 0;
+#endif
 	} else {
 		MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY,
 			dat_tx[0]);

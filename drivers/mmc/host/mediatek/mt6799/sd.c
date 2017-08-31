@@ -256,6 +256,78 @@ static void msdc_dump_dbg_register(struct msdc_host *host)
 	msdc_dump_dbg_register_core(host->id, host->base);
 }
 
+static void msdc_dump_autok(struct msdc_host *host)
+{
+	int i;
+
+	pr_err("[AUTOK]VER : 0x%x%x%x%x\r\n",
+		host->autok_res[0][AUTOK_VER0],
+		host->autok_res[0][AUTOK_VER1],
+		host->autok_res[0][AUTOK_VER2],
+		host->autok_res[0][AUTOK_VER3]);
+
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		pr_err("[AUTOK]CMD Rising Window : 0x%x%x%x%x%x%x%x%x\r\n",
+			host->autok_res[i][CMD_SCAN_R0],
+			host->autok_res[i][CMD_SCAN_R1],
+			host->autok_res[i][CMD_SCAN_R2],
+			host->autok_res[i][CMD_SCAN_R3],
+			host->autok_res[i][CMD_SCAN_R4],
+			host->autok_res[i][CMD_SCAN_R5],
+			host->autok_res[i][CMD_SCAN_R6],
+			host->autok_res[i][CMD_SCAN_R7]);
+
+		pr_err("[AUTOK]CMD Falling Window : 0x%x%x%x%x%x%x%x%x\r\n",
+			host->autok_res[i][CMD_SCAN_F0],
+			host->autok_res[i][CMD_SCAN_F1],
+			host->autok_res[i][CMD_SCAN_F2],
+			host->autok_res[i][CMD_SCAN_F3],
+			host->autok_res[i][CMD_SCAN_F4],
+			host->autok_res[i][CMD_SCAN_F5],
+			host->autok_res[i][CMD_SCAN_F6],
+			host->autok_res[i][CMD_SCAN_F7]);
+
+		pr_err("[AUTOK]DAT Rising Window : 0x%x%x%x%x%x%x%x%x\r\n",
+			host->autok_res[i][DAT_SCAN_R0],
+			host->autok_res[i][DAT_SCAN_R1],
+			host->autok_res[i][DAT_SCAN_R2],
+			host->autok_res[i][DAT_SCAN_R3],
+			host->autok_res[i][DAT_SCAN_R4],
+			host->autok_res[i][DAT_SCAN_R5],
+			host->autok_res[i][DAT_SCAN_R6],
+			host->autok_res[i][DAT_SCAN_R7]);
+
+		pr_err("[AUTOK]DAT Falling Window : 0x%x%x%x%x%x%x%x%x\r\n",
+			host->autok_res[i][DAT_SCAN_F0],
+			host->autok_res[i][DAT_SCAN_F1],
+			host->autok_res[i][DAT_SCAN_F2],
+			host->autok_res[i][DAT_SCAN_F3],
+			host->autok_res[i][DAT_SCAN_F4],
+			host->autok_res[i][DAT_SCAN_F5],
+			host->autok_res[i][DAT_SCAN_F6],
+			host->autok_res[i][DAT_SCAN_F7]);
+
+		pr_err("[AUTOK]DS Window : 0x%x%x%x%x%x%x%x%x\r\n",
+			host->autok_res[i][DS_SCAN_0],
+			host->autok_res[i][DS_SCAN_1],
+			host->autok_res[i][DS_SCAN_2],
+			host->autok_res[i][DS_SCAN_3],
+			host->autok_res[i][DS_SCAN_4],
+			host->autok_res[i][DS_SCAN_5],
+			host->autok_res[i][DS_SCAN_6],
+			host->autok_res[i][DS_SCAN_7]);
+
+		pr_err("[AUTOK]CMD [EDGE:%d CMD_FIFO_EDGE:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][0], host->autok_res[i][1], host->autok_res[i][5], host->autok_res[i][7]);
+		pr_err("[AUTOK]DAT [RDAT_EDGE:%d RD_FIFO_EDGE:%d WD_FIFO_EDGE:%d]\r\n",
+			host->autok_res[i][2], host->autok_res[i][3], host->autok_res[i][4]);
+		pr_err("[AUTOK]DAT [LATCH_CK:%d DLY1:%d DLY2:%d]\r\n",
+			host->autok_res[i][13], host->autok_res[i][9], host->autok_res[i][11]);
+		pr_err("[AUTOK]DS  [DLY1:%d DLY2:%d DLY3:%d]\r\n",
+			host->autok_res[i][14], host->autok_res[i][16], host->autok_res[i][18]);
+	}
+}
+
 void msdc_dump_info(u32 id)
 {
 	struct msdc_host *host = mtk_msdc_host[id];
@@ -290,6 +362,8 @@ void msdc_dump_info(u32 id)
 	msdc_dump_ldo_sts(host);
 
 	msdc_dump_padctl(host);
+
+	msdc_dump_autok(host);
 
 	mdelay(10);
 	msdc_dump_dbg_register(host);
