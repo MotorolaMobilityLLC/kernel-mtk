@@ -80,7 +80,7 @@ int *ppm_get_perf_idx_ref_tbl(enum ppm_cluster cluster)
 #endif
 }
 
-void ppm_power_data_init(void)
+static int __init ppm_power_data_init(void)
 {
 	int i, j;
 	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
@@ -131,6 +131,8 @@ void ppm_power_data_init(void)
 	ppm_cobra_init();
 
 	ppm_info("power data init done!\n");
-}
 
+	return 0;
+}
+late_initcall(ppm_power_data_init);
 

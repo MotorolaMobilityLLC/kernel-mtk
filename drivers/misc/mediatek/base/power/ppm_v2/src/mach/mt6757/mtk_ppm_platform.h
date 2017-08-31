@@ -191,7 +191,6 @@ extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(unsigned int cluster);
 
 extern struct ppm_pwr_idx_ref_tbl_data ppm_get_pwr_idx_ref_tbl(void);
 extern int *ppm_get_perf_idx_ref_tbl(enum ppm_cluster cluster);
-extern void ppm_power_data_init(void);
 
 /* COBRA algo */
 extern void ppm_cobra_update_core_limit(unsigned int cluster, int limit);
