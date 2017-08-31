@@ -61,6 +61,8 @@ void __iomem *sleepsys_base;
 void __iomem  *apmixed_base_in_idle;
 
 /* Idle handler on/off */
+
+/* Disable dpidle/sodi/sodi3 temporarily */
 int idle_switch[NR_TYPES] = {
 	0,	/* dpidle switch */
 	0,	/* soidle3 switch */
