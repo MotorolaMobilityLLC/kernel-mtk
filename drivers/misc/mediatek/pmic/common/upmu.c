@@ -355,7 +355,11 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_IS_EXT_BUCK_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+#ifdef CONFIG_MTK_EXTBUCK
 		adc_out_data[0] = is_ext_buck_exist();
+#else
+		adc_out_data[0] = 0;
+#endif
 		/*adc_out_data[0] = is_ext_buck_gpio_exist();*/
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK_EXIST:%d\n", adc_out_data[0]);
@@ -384,7 +388,11 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_IS_EXT_BUCK2_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+#ifdef CONFIG_MTK_EXTBUCK
 		adc_out_data[0] = is_ext_buck2_exist();
+#else
+		adc_out_data[0] = 0;
+#endif
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK2_EXIST:%d\n", adc_out_data[0]);
 		break;
