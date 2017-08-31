@@ -356,8 +356,12 @@ int AudDrv_BTCVSD_IRQ_handler(void)
 		goto AudDrv_BTCVSD_IRQ_handler_exit;
 	}
 
-	/* ASSERT(uPacketType < BT_SCO_CVSD_MAX); */
-	AUDIO_ASSERT(uPacketType >= BT_SCO_CVSD_MAX);
+	if (uPacketType >= BT_SCO_CVSD_MAX) {
+		pr_warn("%s(), invalid uPacketType %u, exit\n", __func__, uPacketType);
+		*bt_hw_REG_CONTROL &= ~BT_CVSD_CLEAR;
+		goto AudDrv_BTCVSD_IRQ_handler_exit;
+	}
+
 	uPacketLength = (kal_uint32)btsco_PacketInfo[uPacketType][0];
 	uPacketNumber = (kal_uint32)btsco_PacketInfo[uPacketType][1];
 	uBufferCount_TX = (kal_uint32)btsco_PacketInfo[uPacketType][2];
@@ -507,6 +511,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 	unsigned long flags;
 	kal_uint64 read_timeout_limit;
 	int max_timeout_trial = 2;
+	unsigned int packet_size = SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE;
 
 	if ((btsco.pRX == NULL) || (btsco.pRX->u4BufferSize == 0)) {
 		pr_debug("AudDrv_btcvsd_read btsco.pRX == NULL || btsco.pRX->u4BufferSize == 0!!!\n");
@@ -525,17 +530,24 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 		u4DataRemained = (btsco.pRX->iPacket_w - btsco.pRX->iPacket_r)
 			* (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
 
-		if (count > u4DataRemained)
-			read_size = u4DataRemained;
-		else
-			read_size = count;
-
 		BTSCORX_ReadIdx_tmp = (btsco.pRX->iPacket_r & SCO_RX_PACKET_MASK)
 			* (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
 		spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
-		/* ASSERT(read_size % (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) == 0); */
-		AUDIO_ASSERT(!(read_size % (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) == 0));
+		/* count must be multiple of SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE */
+		if (count % packet_size != 0 ||
+		    u4DataRemained % packet_size != 0) {
+			pr_err("%s(), count %zu or u4DataRemained %lu is not multiple of (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE)\n",
+			       __func__, count, u4DataRemained);
+
+			count -= count % packet_size;
+			u4DataRemained -= u4DataRemained % packet_size;
+		}
+
+		if (count > u4DataRemained)
+			read_size = u4DataRemained;
+		else
+			read_size = count;
 
 		LOGBT("AudDrv_btcvsd_read read_size=%zd, BTSCORX_ReadIdx_tmp=%zd\n", read_size, BTSCORX_ReadIdx_tmp);
 		LOGBT("%s finish0, read_count:%zd,read_size:%zd,DataRemained:0x%lx,iPacket_r:0x%x,iPacket_w:0x%x\r\n",
@@ -710,13 +722,20 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 		* SCO_TX_ENCODE_SIZE;
 		spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
+		/* count must be multiple of SCO_TX_ENCODE_SIZE */
+		if (count % SCO_TX_ENCODE_SIZE != 0 ||
+		    copy_size % SCO_TX_ENCODE_SIZE != 0) {
+			pr_err("%s(), count %zu or copy_size %d is not multiple of SCO_TX_ENCODE_SIZE\n",
+			       __func__, count, copy_size);
+
+			count -= count % SCO_TX_ENCODE_SIZE;
+			copy_size -= copy_size % SCO_TX_ENCODE_SIZE;
+		}
+
 		if (count <= (kal_uint32) copy_size)
 			copy_size = count;
 
 		LOGBT("AudDrv_btcvsd_write count=%zd, copy_size=%d\n", count, copy_size);
-
-		/* ASSERT(copy_size % SCO_TX_ENCODE_SIZE == 0); */
-		AUDIO_ASSERT(!(copy_size % SCO_TX_ENCODE_SIZE == 0));/*copysize must be multiple of SCO_TX_ENCODE_SIZE*/
 
 		if (copy_size != 0) {
 			spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
@@ -756,10 +775,6 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				size_1 = btsco.pTX->u4BufferSize - BTSCOTX_WriteIdx;
 				size_2 = copy_size - size_1;
 				LOGBT("%s size_1=%d, size_2=%d\n", __func__, size_1, size_2);
-				/* ASSERT(size_1 % SCO_TX_ENCODE_SIZE == 0); */
-				/* ASSERT(size_2 % SCO_TX_ENCODE_SIZE == 0); */
-				AUDIO_ASSERT(!(size_1 % SCO_TX_ENCODE_SIZE == 0));
-				AUDIO_ASSERT(!(size_2 % SCO_TX_ENCODE_SIZE == 0));
 				if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 					pr_debug("%s 1ptr invalid data_w_ptr=%lx, size_1=%d\n",
 							__func__, (unsigned long)data_w_ptr, size_1);
