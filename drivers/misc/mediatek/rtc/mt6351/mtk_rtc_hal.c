@@ -185,10 +185,6 @@ void rtc_enable_k_eosc(void)
 {
 	u16 osc32;
 
-	rtc_write(0x700E, 0x4FFE);/* only MD owner modify these, no AP owner, so hard code, */
-	rtc_write(0x7012, 0x40CF);/* before starting cali eosc, need to cali 26M first in MT6351, */
-	rtc_write(0x7004, 0x3AEA);/* the values are configured when MD starts up in MT6353. */
-
 	pmic_config_interface_nospinlock(PMIC_RG_SRCLKEN_IN0_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN0_HW_MODE_MASK,
 		PMIC_RG_SRCLKEN_IN0_HW_MODE_SHIFT);
 	pmic_config_interface_nospinlock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
@@ -217,8 +213,6 @@ void rtc_enable_k_eosc(void)
 			PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);
 		break;
 	}
-	pmic_config_interface_nospinlock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
-		PMIC_EOSC_CALI_START_SHIFT);
 
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 	rtc_write_trigger();
@@ -250,7 +244,7 @@ void rtc_bbpu_pwrdown(bool auto_boot)
 
 void hal_rtc_bbpu_pwdn(bool charger_status)
 {
-	u16 ret_val, con;
+	u16 con;
 
 	rtc_disable_2sec_reboot();
 	rtc_enable_k_eosc();
@@ -261,24 +255,7 @@ void hal_rtc_bbpu_pwdn(bool charger_status)
 		rtc_write(RTC_CON, con);
 		rtc_write_trigger();
 	}
-	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
-#if !defined(CONFIG_MTK_FPGA)
-#ifdef CONFIG_MTK_SMART_BATTERY
-	if (!ret_val && charger_status == false) {
-		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
-		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
-		mt_set_gpio_out(GPIO_SRCLKEN_PIN, GPIO_OUT_ZERO);
-		/* 2. pull PWRBB low */
-		rtc_bbpu_pwrdown(true);
-
-		/* 3.   Switch SRCLKENAs GPIO MUX function to GPIO Mode */
-		mt_set_gpio_mode(GPIO_SRCLKEN_PIN, GPIO_MODE_GPIO);
-	} else
-#endif
-#endif
-	{
-		rtc_bbpu_pwrdown(true);
-	}
+	rtc_bbpu_pwrdown(true);
 }
 
 void hal_rtc_get_pwron_alarm(struct rtc_time *tm, struct rtc_wkalrm *alm)
