@@ -393,12 +393,10 @@ static int show_pasr_status(char *buf)
 			buf += tmp;
 			len += tmp;
 		}
-#ifdef CONFIG_MTK_DCS
 		tmp = sprintf(buf, "ddrphy on=%u, ddrphy off=%u\n",
 				ddrphy_on, ddrphy_off);
 		buf += tmp;
 		len += tmp;
-#endif
 	}
 #endif
 	return len;
