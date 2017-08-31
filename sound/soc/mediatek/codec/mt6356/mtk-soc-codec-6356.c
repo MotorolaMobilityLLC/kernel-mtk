@@ -1291,10 +1291,10 @@ static int SetDcCompenSation(bool enable)
 		for (i = times; i >= 0; i--) {
 			tmp_ramp = i * ramp_step;
 			if (tmp_ramp < abs_lch)
-				set_lch_dc_compensation(tmp_ramp << 8);
+				set_lch_dc_compensation(sign_lch * tmp_ramp << 8);
 
 			if (tmp_ramp < abs_rch)
-				set_rch_dc_compensation(tmp_ramp << 8);
+				set_rch_dc_compensation(sign_rch * tmp_ramp << 8);
 			udelay(100);
 		}
 		set_lch_dc_compensation(0);
