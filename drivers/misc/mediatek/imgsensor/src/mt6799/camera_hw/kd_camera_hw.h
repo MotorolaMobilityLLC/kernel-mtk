@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 #include "kd_camera_typedef.h"
+#include "kd_camera_feature.h"
 
 #ifndef _KD_CAMERA_HW_H_
 #define _KD_CAMERA_HW_H_
@@ -53,6 +54,26 @@ typedef enum {
 	Vol_1800 = VOL1800,
 	Vol_2800 = VOL2800,
 } Voltage;
+
+/*
+struct regulator *regVCAMA = NULL;
+struct regulator *regVCAMD = NULL;
+struct regulator *regVCAMIO = NULL;
+struct regulator *regVCAMAF = NULL;
+struct regulator *regSubVCAMA = NULL;
+struct regulator *regSubVCAMD = NULL;
+struct regulator *regSubVCAMIO = NULL;
+struct regulator *regMain2VCAMA = NULL;
+struct regulator *regMain2VCAMD = NULL;
+struct regulator *regMain2VCAMIO = NULL;
+
+typedef struct
+{
+	regulator *pRegulator;
+	char      *pRegulatorType;
+} IMGSensorPowerRegulator;
+*/
+
 #define CAMERA_CMRST_PIN            0
 #define CAMERA_CMRST_PIN_M_GPIO     0
 
@@ -80,8 +101,7 @@ typedef enum {
 #define GPIO_SUPPORTED 0
 #define GPIO_MODE_GPIO 0
 
-#endif
-
+#define CAMERA_HW_POWER_INFO_MAX	12
 
 typedef struct {
 	PowerType PowerType;
@@ -89,15 +109,10 @@ typedef struct {
 	u32 Delay;
 } PowerInformation;
 
-
 typedef struct {
 	char *SensorName;
-	PowerInformation PowerInfo[12];
+	PowerInformation PowerInfo[CAMERA_HW_POWER_INFO_MAX];
 } PowerSequence;
-
-typedef struct {
-	PowerSequence PowerSeq[16];
-} PowerUp;
 
 typedef struct {
 	u32 Gpio_Pin;
@@ -105,12 +120,11 @@ typedef struct {
 	Voltage Voltage;
 } PowerCustInfo;
 
-typedef struct {
-	PowerCustInfo PowerCustInfo[10];
-} PowerCust;
+#endif
 
-extern bool _hwPowerDown(PowerType type);
-extern bool _hwPowerOn(PowerType type, int powerVolt);
+bool Get_Cam_Regulator(void);
+bool _hwPower(PowerType type, Voltage voltage, bool on);
+
 extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
 extern void ISP_MCLK3_EN(BOOL En);
@@ -121,4 +135,6 @@ extern unsigned int mt_get_ckgen_freq(int ID);
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val);
 int mtkcam_gpio_init(struct platform_device *pdev);
 
+#define _hwPowerOn(type, voltage) _hwPower(type, voltage, true)
+#define _hwPowerDown(type)        _hwPower(type, 0, false)
 

@@ -70,11 +70,7 @@ struct clk *g_camclk_univpll2_d2;
 struct clk *g_camclk_cg_camtg;
 struct clk *g_camclk_cg_cam_seninf;
 #endif
-/* kernel standard for PMIC*/
-#if !defined(CONFIG_MTK_LEGACY)
-/* PMIC */
-#include <linux/regulator/consumer.h>
-#endif
+
 
 #define PROC_CAMERA_INFO "driver/camera_info"
 #define camera_info_size 4096
@@ -125,27 +121,13 @@ static struct i2c_board_info i2c_devs1 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DR
 static struct i2c_board_info i2c_devs2 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DRVNAME2, 0xfe>>1)};
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
-    /*PMIC*/
-	struct regulator *regVCAMA = NULL;
-	struct regulator *regVCAMD = NULL;
-	struct regulator *regVCAMIO = NULL;
-	struct regulator *regVCAMAF = NULL;
-	struct regulator *regSubVCAMA = NULL;
-	struct regulator *regSubVCAMD = NULL;
-	struct regulator *regSubVCAMIO = NULL;
-	struct regulator *regMain2VCAMA = NULL;
-	struct regulator *regMain2VCAMD = NULL;
-	struct regulator *regMain2VCAMIO = NULL;
-#endif
-
 struct device *sensor_device = NULL;
 #define SENSOR_WR32(addr, data)    mt65xx_reg_sync_writel(data, addr)    /* For 89 Only.   // NEED_TUNING_BY_PROJECT */
 /* #define SENSOR_WR32(addr, data)    iowrite32(data, addr)    // For 89 Only.   // NEED_TUNING_BY_PROJECT */
 #define SENSOR_RD32(addr)          ioread32(addr)
 
 
-/* Test Only!! Open this define for temperature meter UT */ 
+/* Test Only!! Open this define for temperature meter UT */
 /* Temperature workqueue */
 //#define CONFIG_CAM_TEMPERATURE_WORKQUEUE
 #ifdef CONFIG_CAM_TEMPERATURE_WORKQUEUE
@@ -1152,7 +1134,7 @@ static void cam_temperature_report_wq_routine(struct work_struct *data)
     MUINT32 ret = 0;
 
 	PK_DBG("Temperature Meter Report.\n");
-	
+
 	/* Main cam */
 	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_SENSOR, &valid[0], &temp[0]);
 	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
@@ -1164,16 +1146,16 @@ static void cam_temperature_report_wq_routine(struct work_struct *data)
 	/* Sub cam */
 	ret = Get_Camera_Temperature(DUAL_CAMERA_SUB_SENSOR, &valid[1], &temp[1]);
 	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
-		DUAL_CAMERA_SUB_SENSOR, valid[1], temp[1]);    
+		DUAL_CAMERA_SUB_SENSOR, valid[1], temp[1]);
 	if(ERROR_NONE != ret)
 		PK_ERR("Get Sub cam temperature error(%d)!\n", ret);
-	
+
 	/* Main2 cam */
 	ret = Get_Camera_Temperature(DUAL_CAMERA_MAIN_2_SENSOR, &valid[2], &temp[2]);
 	PK_INF("senDevId(%d), valid(%d), temperature(%d)\n", \
-		DUAL_CAMERA_MAIN_2_SENSOR, valid[2], temp[2]);     
+		DUAL_CAMERA_MAIN_2_SENSOR, valid[2], temp[2]);
 	if(ERROR_NONE != ret)
-		PK_ERR("Get Main2 cam temperature error(%d)!\n", ret);	
+		PK_ERR("Get Main2 cam temperature error(%d)!\n", ret);
 
 	schedule_delayed_work(&cam_temperature_wq, HZ);
 
@@ -2246,7 +2228,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->IHDR_LE_FirstLine                        = pInfo[IDNum]->IHDR_LE_FirstLine;
     pSensorInfo->IHDR_Support                             = pInfo[IDNum]->IHDR_Support;
 	pSensorInfo->ZHDR_Mode                                = pInfo[IDNum]->ZHDR_Mode;
-	pSensorInfo->TEMPERATURE_SUPPORT                      = pInfo[IDNum]->TEMPERATURE_SUPPORT;    
+	pSensorInfo->TEMPERATURE_SUPPORT                      = pInfo[IDNum]->TEMPERATURE_SUPPORT;
     pSensorInfo->SensorModeNum                            = pInfo[IDNum]->SensorModeNum;
     pSensorInfo->SettleDelayMode                          = pInfo[IDNum]->SettleDelayMode;
     pSensorInfo->PDAF_Support                             = pInfo[IDNum]->PDAF_Support;
@@ -2301,7 +2283,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->SensorGrabStartY_CST4                    = pInfo3[IDNum]->SensorGrabStartY;
     pSensorInfo->SensorGrabStartX_CST5                    = pInfo4[IDNum]->SensorGrabStartX;
     pSensorInfo->SensorGrabStartY_CST5                    = pInfo4[IDNum]->SensorGrabStartY;
-    
+
     if (copy_to_user((void __user *)(pSensorGetInfo->pInfo), (void *)(pSensorInfo), sizeof(ACDK_SENSOR_INFO2_STRUCT))) {
 	    PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
 		for (i = 0; i < 2; i++) {
@@ -2346,7 +2328,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 			snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",mtk_ccm_name, pSensorInfo->SensroInterfaceType, pSensorInfo->SensorOutputDataFormat);
 			snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",mtk_ccm_name, pSensorInfo->SensorDrivingCurrent, pSensorInfo->SensorClockFreq, pSensorInfo->SensorMIPILaneNumber + 1);
 			snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",mtk_ccm_name, pSensorInfo->PDAF_Support);
-			snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",mtk_ccm_name, pSensorInfo->HDR_Support);    
+			snprintf(mtk_ccm_name,sizeof(mtk_ccm_name),"%s \nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",mtk_ccm_name, pSensorInfo->HDR_Support);
 		}
 	}
 	}
@@ -3495,178 +3477,6 @@ inline static int kdSetSensorGpio(int *pBuf)
 #endif
     return ret;
 }
-
-/* PMIC */
-#if !defined(CONFIG_MTK_LEGACY)
-bool Get_Cam_Regulator(void)
-{
-	struct device_node *node = NULL, *kd_node;
-	if (1) {
-		/* check if customer camera node defined */
-		node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
-
-		if (node) {
-			kd_node = sensor_device->of_node;
-			sensor_device->of_node = node;
-			/* name = of_get_property(node, "MAIN_CAMERA_POWER_A", NULL); */
-			 regSubVCAMD = regulator_get(sensor_device, "vcamd_sub"); /*check customer definition*/
-			if (regSubVCAMD == NULL) {
-			    if (regVCAMA == NULL) {
-				    regVCAMA = regulator_get(sensor_device, "vcama");
-			    }
-			    if (regVCAMD == NULL) {
-				    regVCAMD = regulator_get(sensor_device, "vcamd");
-			    }
-			    if (regVCAMIO == NULL) {
-				    regVCAMIO = regulator_get(sensor_device, "vcamio");
-				}
-			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
-			    }
-			} else{
-				PK_DBG("Camera customer regulator!\n");
-			    if (regVCAMA == NULL) {
-				    regVCAMA = regulator_get(sensor_device, "vcama1");
-			    }
-				if (regSubVCAMA == NULL) {
-				    regSubVCAMA = regulator_get(sensor_device, "vcama2");
-			    }
-				if (regMain2VCAMA == NULL) {
-				    regMain2VCAMA = regulator_get(sensor_device, "vcama2");
-			    }
-			    if (regVCAMD == NULL) {
-				    regVCAMD = regulator_get(sensor_device, "vcamd1");
-			    }
-				if (regSubVCAMD == NULL) {
-				    regSubVCAMD = regulator_get(sensor_device, "vcamd2");
-			    }
-				if (regMain2VCAMD == NULL) {
-				    regMain2VCAMD = regulator_get(sensor_device, "vcamd2");
-			    }
-			    if (regVCAMIO == NULL) {
-				    regVCAMIO = regulator_get(sensor_device, "vcamio");
-			    }
-			    if (regSubVCAMIO == NULL) {
-				    regSubVCAMIO = regulator_get(sensor_device, "vcamio");
-			    }
-				if (regMain2VCAMIO == NULL) {
-				    regMain2VCAMIO = regulator_get(sensor_device, "vcamio");
-			    }
-			    if (regVCAMAF == NULL) {
-				    regVCAMAF = regulator_get(sensor_device, "vcamaf");
-			    }
-
-			    /* restore original dev.of_node */
-			}
-			 sensor_device->of_node = kd_node;
-		} else{
-			PK_ERR("regulator get cust camera node failed!\n");
-			return FALSE;
-		}
-
-		return TRUE;
-	}
-	return FALSE;
-}
-
-
-bool _hwPowerOn(PowerType type, int powerVolt)
-{
-    bool ret = FALSE;
-    struct regulator *reg = NULL;
-
-    PK_DBG("[_hwPowerOn]powertype:%d powerId:%d\n", type, powerVolt);
-    if (type == AVDD) {
-	reg = regVCAMA;
-    } else if (type == DVDD) {
-	reg = regVCAMD;
-    } else if (type == DOVDD) {
-	reg = regVCAMIO;
-    } else if (type == AFVDD) {
-	reg = regVCAMAF;
-    }else if (type == SUB_AVDD) {
-	reg = regSubVCAMA;
-    } else if (type == SUB_DVDD) {
-	reg = regSubVCAMD;
-    } else if (type == SUB_DOVDD) {
-	reg = regSubVCAMIO;
-    } else if (type == MAIN2_AVDD) {
-	reg = regMain2VCAMA;
-    } else if (type == MAIN2_DVDD) {
-	reg = regMain2VCAMD;
-    } else if (type == MAIN2_DOVDD) {
-	reg = regMain2VCAMIO;
-    }else
-    	return ret;
-
-	if (!IS_ERR(reg)) {
-		//if (type == SUB_DVDD) {
-			//PK_DBG("pmic_get_register_value(PMIC_RG_VCAMD2_CAL) %d;\n", pmic_get_register_value(PMIC_RG_VCAMD2_CAL));
-		//}
-		if (regulator_set_voltage(reg , powerVolt, powerVolt) != 0) {
-			PK_ERR("[_hwPowerOn]fail to regulator_set_voltage, powertype:%d powerId:%d\n", type, powerVolt);
-			//return ret;
-		}
-		if (regulator_enable(reg) != 0) {
-			PK_DBG("[_hwPowerOn]fail to regulator_enable, powertype:%d powerId:%d\n", type, powerVolt);
-	    return ret;
-	}
-	ret = true;
-    } else {
-		PK_ERR("[_hwPowerOn]IS_ERR_OR_NULL powertype:%d reg %p\n", type,reg);
-		return ret;
-    }
-
-	return ret;
-}
-
-bool _hwPowerDown(PowerType type)
-{
-    bool ret = FALSE;
-	struct regulator *reg = NULL;
-	PK_DBG("[_hwPowerDown]powertype:%d\n", type);
-
-    if (type == AVDD) {
-	reg = regVCAMA;
-    } else if (type == DVDD) {
-	reg = regVCAMD;
-    } else if (type == DOVDD) {
-	reg = regVCAMIO;
-    } else if (type == AFVDD) {
-	reg = regVCAMAF;
-    }else if (type == SUB_AVDD) {
-	reg = regSubVCAMA;
-    } else if (type == SUB_DVDD) {
-	reg = regSubVCAMD;
-    } else if (type == SUB_DOVDD) {
-	reg = regSubVCAMIO;
-    } else if (type == MAIN2_AVDD) {
-	reg = regMain2VCAMA;
-    } else if (type == MAIN2_DVDD) {
-	reg = regMain2VCAMD;
-    } else if (type == MAIN2_DOVDD) {
-	reg = regMain2VCAMIO;
-    }else
-    	return ret;
-
-    if (!IS_ERR(reg)) {
-	if (regulator_is_enabled(reg) != 0) {
-			PK_DBG("[_hwPowerDown]%d is enabled\n", type);
-	}
-		if (regulator_disable(reg) != 0) {
-			PK_DBG("[_hwPowerDown]fail to regulator_disable, powertype: %d\n\n", type);
-			return ret;
-		}
-	ret = true;
-    } else {
-		PK_DBG("[_hwPowerDown]%d fail to power down  due to regVCAM == NULL\n", type);
-		return ret;
-    }
-    return ret;
-}
-
-
-#endif
 
 #ifdef CONFIG_COMPAT
 
@@ -5025,7 +4835,7 @@ static ssize_t  proc_SensorType_write(struct file *file, const char *buffer, siz
 {
     char regBuf[64] = {'\0'};
     u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
-                                  	         	
+
 
     if( copy_from_user(regBuf, buffer, u4CopyBufSize))
     return -EFAULT;
@@ -5264,8 +5074,4 @@ module_exit(CAMERA_HW_i2C_exit);
 MODULE_DESCRIPTION("CAMERA_HW driver");
 MODULE_AUTHOR("MM");
 MODULE_LICENSE("GPL");
-
-
-
-
 

@@ -194,7 +194,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_MONO, //SENSOR_OUTPUT_FORMAT_RAW_Gr,//SENSOR_OUTPUT_FORMAT_RAW_R,//sensor output first pixel color
 	.mclk = 24,//mclk value, suggest 24 or 26 for 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
-	.i2c_addr_table = {0x20, 0xff},//record sensor support all write id addr, only supprt 4must end with 0xff
+	.i2c_addr_table = {0x34, 0x20, 0xff}, //record sensor support all write id addr, only supprt 4must end with 0xff
 };
 
 
@@ -210,7 +210,7 @@ static imgsensor_struct imgsensor = {
 	.test_pattern = KAL_FALSE,		//test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
 	.hdr_mode = 0, //sensor need support LE, SE with HDR feature
-	.i2c_write_id = 0x20,//record current sensor's i2c write id
+	.i2c_write_id = 0x34,//0x20,//record current sensor's i2c write id
 };
 
 #define IMX258_HDR_TYPE (0x00)
