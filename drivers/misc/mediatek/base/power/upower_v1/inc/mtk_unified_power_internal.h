@@ -36,20 +36,20 @@ extern "C" {
 #define UPOWER_ENABLE (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
+	#define UPOWER_ENABLE_TINYSYS_SSPM (1)
 #else
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
 #endif
 
+/* #define EARLY_PORTING_SPOWER */ /* will not get leakage from leakage driver */
+
 #if UPOWER_ENABLE_TINYSYS_SSPM
 	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
-	#define EARLY_PORTING_SPOWER /* will not get leakage from leakage driver */
 	/* #define UPOWER_UT*/
 	/* #define UPOWER_PROFILE_API_TIME */
 	#define UPOWER_RCU_LOCK
 #else
 	#define EARLY_PORTING_EEM /* will restore volt after ptp apply volt */
-	/* #define EARLY_PORTING_SPOWER*/ /* will not get leakage from leakage driver */
 	/* #define UPOWER_UT */
 	/* #define UPOWER_PROFILE_API_TIME */
 	#define UPOWER_RCU_LOCK
