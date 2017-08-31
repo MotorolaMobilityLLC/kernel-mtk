@@ -254,7 +254,7 @@ static unsigned int hw_bc12_step_2b1(void)
 	/* Latch output OUT1 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 #if defined(__CHRDET_RG_DUMP__)
-	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+	pr_err("%s(%d): %d\n", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
 #endif
 
 	/* Delay 10ms */
@@ -286,7 +286,7 @@ static unsigned int hw_bc12_step_2b2(void)
 	/* Latch output OUT2 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 #if defined(__CHRDET_RG_DUMP__)
-	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+	pr_err("%s(%d): %d\n", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
 #endif
 
 	/* Delay 10ms */
@@ -335,7 +335,7 @@ static unsigned int hw_bc12_step_3a(void)
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 #if defined(__CHRDET_RG_DUMP__)
-	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+	pr_err("%s(%d): %d\n", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
 #endif
 
 	/* Delay 20ms */
@@ -370,7 +370,7 @@ static unsigned int hw_bc12_step_3b(void)
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 #if defined(__CHRDET_RG_DUMP__)
-	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+	pr_err("%s(%d): %d\n", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
 #endif
 
 	/* Delay 10ms */
@@ -397,11 +397,14 @@ static unsigned int hw_bc12_step_4(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
+	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
-	wChargerAvail = bc12_set_register_value(MT6336_AD_QI_BC12_CMP_OUT, 0);
+	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 #if defined(__CHRDET_RG_DUMP__)
-	pr_err("%s(%d): %d", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
+	pr_err("%s(%d): %d\n", __func__, bc12_get_register_value(MT6336_PMIC_HWCID), wChargerAvail);
 #endif
 
 	/* Delay 10ms */
