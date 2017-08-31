@@ -44,10 +44,9 @@
 #define ENABLE_SCP_EMI_PROTECTION       (0)
 #define MPU_REGION_ID_SCP_SMEM       6
 
-/* scp power frequence definition*/
-#define FREQ_354MHZ (354)
-#define FREQ_224MHZ (224)
-#define FREQ_112MHZ (112)
+/* scp dvfs return status flag */
+#define SET_PLL_FAIL		(1)
+#define SET_PMIC_VOLT_FAIL		(2)
 
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR       (0)

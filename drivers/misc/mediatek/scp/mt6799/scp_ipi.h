@@ -124,6 +124,7 @@ typedef enum ipi_id {
 	IPI_DVFS_SET_FREQ,
 	IPI_CHRE,
 	IPI_CHREX,
+	IPI_SCP_PLL_CTRL,
 	SCP_NR_IPI,
 } ipi_id;
 

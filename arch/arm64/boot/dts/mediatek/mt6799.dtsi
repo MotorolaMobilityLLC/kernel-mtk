@@ -3543,6 +3543,32 @@
 		<0 0x10b00000 0 0x1000>;
 		#clock-cells = <1>;
 	};
+
+	scpdvfs: scpdvfs@10001000 {
+		compatible = "mediatek,mt6799-scpdvfs";
+		clocks =
+			<&topckgen CLK_TOP_SCP_SEL>,
+			<&topckgen CLK_TOP_CLK26M>,
+			<&topckgen CLK_TOP_SYSPLL1_D2>,
+			<&topckgen CLK_TOP_UNIVPLL1_D2>,
+			<&topckgen CLK_TOP_SYSPLL_D3>,
+			<&topckgen CLK_TOP_UNIVPLL_D3>,
+			<&topckgen CLK_TOP_VCODECPLL_D7>,
+			<&topckgen CLK_TOP_UNIVPLL2_D2>,
+			<&topckgen CLK_TOP_UNIVPLL2_D4>;
+
+
+		clock-names =
+			"clk_mux",
+			"clk_pll_0",
+			"clk_pll_1",
+			"clk_pll_2",
+			"clk_pll_3",
+			"clk_pll_4",
+			"clk_pll_5",
+			"clk_pll_6",
+			"clk_pll_7";
+	};
 };
 
 #include "mt6335.dtsi"
