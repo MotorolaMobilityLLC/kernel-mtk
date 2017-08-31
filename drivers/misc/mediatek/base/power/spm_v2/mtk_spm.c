@@ -846,9 +846,7 @@ int spm_module_init(void)
 	}
 #endif
 
-#if !defined(CONFIG_MACH_MT6757) && !defined(CONFIG_MACH_KIBOPLUS)
 	spm_set_dummy_read_addr();
-#endif
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* debug code */

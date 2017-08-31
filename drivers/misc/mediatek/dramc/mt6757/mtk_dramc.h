@@ -133,6 +133,12 @@ extern void *mt_emi_base_get(void);
 
 #endif /*end #ifdef DRAM_HQA*/
 
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER
+extern int __init acquire_buffer_from_memory_lowpower(phys_addr_t *addr);
+#else
+static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { return -3; }
+#endif
+
 /* DRAMC API config */
 extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
