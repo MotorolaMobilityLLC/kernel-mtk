@@ -33,12 +33,6 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mt-plat/battery_meter.h>
-#include <mt-plat/battery_common.h>
-#include <mach/mtk_battery_meter.h>
-#endif
-
 static unsigned int vmodem_vosel = 0x2C;        /* VMODEM 0.775V: 0x2C */
 
 void vmd1_pmic_setting_on(void)
@@ -118,6 +112,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 	return val;
 }
 
+#if 0
 int pmic_rdy;
 int usb_rdy;
 void pmic_enable_charger_detection_int(int x)
@@ -148,6 +143,7 @@ bool is_charger_detection_rdy(void)
 	else
 		return false;
 }
+#endif
 
 int is_ext_vbat_boost_exist(void)
 {

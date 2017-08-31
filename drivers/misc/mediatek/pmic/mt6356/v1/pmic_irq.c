@@ -707,7 +707,7 @@ int pmic_thread_kthread(void *x)
 
 	PMICLOG("[PMIC_INT] enter\n");
 
-	pmic_enable_charger_detection_int(0);
+	/*pmic_enable_charger_detection_int(0);*/
 
 	/* Run on a process content */
 	while (1) {
