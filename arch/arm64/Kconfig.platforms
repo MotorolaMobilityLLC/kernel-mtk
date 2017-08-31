@@ -237,6 +237,30 @@ config MACH_MT6763
 	  Support for fpga6763_64_emmc related projects
 	  Support for fpga6763_64_ufs related projects
 
+
+config MACH_MT3886
+	bool "MediaTek MT3886"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select MFD_SYSCON
+	select MTK_GIC_V3_EXT
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	help
+	  This enables support for MediaTek MT3886
+	  Support for aarch64 Architecture
+	  Support for fpga_64_mt3886 related projects
+	  Support for mt3886 related projects
+
 config MACH_MT6799
 	bool "MediaTek MT6799"
 	select GENERIC_TIME
