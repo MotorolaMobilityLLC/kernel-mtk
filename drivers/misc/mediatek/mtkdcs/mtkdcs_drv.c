@@ -143,10 +143,8 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 	ipi_buf[0] = IPI_DCS_MIGRATION;
 	ipi_buf[1] = dir;
 
-	pr_info("dcs migration start\n");
 	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
 			&ipi_data_ret, 1);
-	pr_info("dcs migration end\n");
 
 	if (err) {
 		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
@@ -269,6 +267,7 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 #ifdef DCS_PROFILE
 		start = sched_clock();
 #endif
+		pr_info("dcs migration start\n");
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		if (err) {
 			pr_err("[%d]ipi_write error: %d\n",
@@ -306,6 +305,7 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 			pr_warn("status not changed. (%s should be %s\n",
 					dcs_status_name(sys_dcs_status),
 					dcs_status_name(status));
+		pr_info("dcs migration end\n");
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 		nr_swap++;
 
