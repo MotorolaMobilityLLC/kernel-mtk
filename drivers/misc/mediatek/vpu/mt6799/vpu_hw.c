@@ -158,7 +158,7 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	{ \
 		clk = devm_clk_get(pdev, #clk); \
 		if (IS_ERR(clk)) { \
-			ret = -1; \
+			ret = -ENOENT; \
 			LOG_ERR("can not find mtcmos: %s\n", #clk); \
 		} \
 	}
@@ -171,10 +171,10 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	{ \
 		clk = devm_clk_get(pdev, #clk); \
 		if (IS_ERR(clk)) { \
-			ret = -1; \
+			ret = -ENOENT; \
 			LOG_ERR("can not find clock: %s\n", #clk); \
 		} else if (clk_prepare(clk)) { \
-			ret = -1; \
+			ret = -EBADE; \
 			LOG_ERR("fail to prepare clock: %s\n", #clk); \
 		} \
 	}
@@ -233,13 +233,13 @@ static int vpu_enable_regulator_and_clock(void)
 	CHECK_RET("fail to enable regulator: vimvo\n");
 
 	ret = (step_reg_vimvo >= ARRAY_SIZE(map_reg_vimvo)) ? -EINVAL : 0;
-	CHECK_RET("vimvo has wrong voltage step: %d\n", step_reg_vimvo);
+	CHECK_RET("vimvo has wrong voltage, step=%d\n", step_reg_vimvo);
 
 	vpu_trace_begin("vimvo:set_voltage");
 	ret = regulator_set_voltage(reg_vimvo,
 		map_reg_vimvo[step_reg_vimvo], map_reg_vimvo[step_reg_vimvo]);
 	vpu_trace_end();
-	CHECK_RET("fail to set vimvo step(%d), ret=%d\n", step_reg_vimvo, ret);
+	CHECK_RET("fail to set vimvo, step=%d, ret=%d\n", step_reg_vimvo, ret);
 	ndelay(70);
 
 #define ENABLE_VPU_MTCMOS(clk) \
@@ -298,7 +298,7 @@ static int vpu_enable_regulator_and_clock(void)
 		ret = clk_set_parent(clk_top_dsp_sel, clk_top_mmpll_d5);
 	else
 		ret = -EINVAL;
-	CHECK_RET("fail to set dsp frequency(%d), ret=%d\n", step_clk_dsp, ret);
+	CHECK_RET("fail to set dsp freq, step=%d, ret=%d\n", step_clk_dsp, ret);
 
 	/* set ipu_if frequency - 0:364MHz, 1:504MHz */
 	if (step_clk_ipu_if == 0)
@@ -307,7 +307,7 @@ static int vpu_enable_regulator_and_clock(void)
 		ret = clk_set_parent(clk_top_ipu_if_sel, clk_top_mmpll_d5);
 	else
 		ret = -EINVAL;
-	CHECK_RET("fail to set ipu_if frequency(%d), ret=%d\n", step_clk_ipu_if, ret);
+	CHECK_RET("fail to set ipu_if freq, step=%d, ret=%d\n", step_clk_ipu_if, ret);
 
 out:
 	vpu_trace_end();
@@ -316,6 +316,7 @@ out:
 
 static int vpu_disable_regulator_and_clock(void)
 {
+	int ret;
 
 #define DISABLE_VPU_CLK(clk) \
 	{ \
@@ -360,17 +361,14 @@ static int vpu_disable_regulator_and_clock(void)
 	DISABLE_VPU_MTCMOS(mtcmos_mm0);
 #undef DISABLE_VPU_MTCMOS
 
-	if (enable_vimvo_lp_mode(1)) {
-		LOG_ERR("fail to switch vimvo to sleep mode!\n");
-		return -1;
-	}
+	ret = enable_vimvo_lp_mode(1);
+	CHECK_RET("fail to switch vimvo to sleep mode!\n");
 
-	if (enable_vsram_vcore_hw_tracking(1)) {
-		LOG_ERR("fail to enable vsram_core tracking!\n");
-		return -1;
-	}
+	ret = enable_vsram_vcore_hw_tracking(1);
+	CHECK_RET("fail to enable vsram_core tracking!\n");
 
-	return 0;
+out:
+	return ret;
 }
 
 static void vpu_unprepare_regulator_and_clock(void)
@@ -417,7 +415,7 @@ static void vpu_unprepare_regulator_and_clock(void)
 
 irqreturn_t vpu_isr_handler(int irq, void *dev_id)
 {
-	LOG_DBG("received interrupt from vpu\n");
+	LOG_DBG("received interrupt\n");
 	is_cmd_done = true;
 	wake_up_interruptible(&cmd_wait);
 	vpu_write_field(FLD_INT_XTENSA, 1);                   /* clear int */
@@ -501,7 +499,7 @@ static int vpu_enque_routine_loop(void *arg)
 					goto out;
 				}
 				if (vpu_hw_load_algo(algo)) {
-					LOG_ERR("load kernel failed, while enque\n");
+					LOG_ERR("load algo failed, while enque\n");
 					req->status = VPU_REQ_STATUS_FAILURE;
 					goto out;
 				}
@@ -619,7 +617,7 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 		return -ENOMEM;
 
 	ret = copy_from_user(tmp, buffer, count);
-	CHECK_RET("vpu: copy_from_user failed, ret=%d\n", ret);
+	CHECK_RET("copy_from_user failed, ret=%d\n", ret);
 
 	cursor = tmp;
 
@@ -636,18 +634,18 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 		argc = 1;
 	} else {
 		ret = -EINVAL;
-		LOG_ERR("vpu: error command!");
+		LOG_ERR("no power command[%s]!\n", token);
 		goto out;
 	}
 
 	/* parse arguments */
 	for (i = 0; i < argc && (token = strsep(&cursor, " ")); i++) {
 		ret = kstrtouint(token, 10, &args[i]);
-		CHECK_RET("vpu: fail to parse args[%d]\n", i);
+		CHECK_RET("fail to parse args[%d]\n", i);
 	}
 
 	ret = (i != argc) ? -EINVAL : 0;
-	CHECK_RET("vpu: wrong num of args");
+	CHECK_RET("wrong num of args");
 
 	switch (cmd) {
 	case cmd_dynamic:
@@ -663,15 +661,15 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	case cmd_dvfs_debug:
 		/* step of vimvo regulator */
 		ret = args[0] >= ARRAY_SIZE(map_reg_vimvo);
-		CHECK_RET("vpu: vimvo step is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
+		CHECK_RET("the step of vimvo is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
 
 		/* step of dsp clock */
 		ret = args[1] >= ARRAY_SIZE(map_clk_dsp);
-		CHECK_RET("vpu: dsp step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
+		CHECK_RET("the step of dsp is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
 
 		/* step of ipu if */
 		ret = args[2] >= ARRAY_SIZE(map_clk_ipu_if);
-		CHECK_RET("vpu: ipu if step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+		CHECK_RET("the step of ipu_if is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
 
 		step_reg_vimvo = args[0];
 		step_clk_dsp = args[1];
@@ -714,13 +712,13 @@ int vpu_create_hw_debugfs(void)
 	struct dentry *debug_file;
 
 	if (IS_ERR_OR_NULL(vpu_dev->debug_root)) {
-		LOG_ERR("vpu: have no root of debug dir.\n");
-		return -1;
+		LOG_ERR("have no root of debug dir.\n");
+		return -ENOENT;
 	}
 
 	debug_file = debugfs_create_file("power", 0644, vpu_dev->debug_root, NULL, &vpu_set_power_fops);
 	if (IS_ERR_OR_NULL(debug_file))
-		LOG_INF("vpu: fail to create debug file[set_power].\n");
+		LOG_ERR("fail to create debug file[set_power].\n");
 
 	return 0;
 }
@@ -730,20 +728,20 @@ static int vpu_mmdvfs_receive_event(struct mmdvfs_state_change_event *e)
 {
 	int ret;
 
-	LOG_INF("vpu receives event, vore:%d, vimvo:%d, vpu:%d, vpu_if:%d",
+	LOG_INF("receive mmdvfs event, vore=%d, vimvo=%d, vpu=%d, vpu_if=%d",
 			e->vcore_vol_step,
 			e->vimvo_vol_step,
 			e->vpu_clk_step,
 			e->vpu_if_clk_step);
 
 	ret = e->vimvo_vol_step >= ARRAY_SIZE(map_reg_vimvo);
-	CHECK_RET("vpu: vimvo step is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
+	CHECK_RET("the step of vimvo is out-of-bound, max:%lu", ARRAY_SIZE(map_reg_vimvo));
 
 	ret = e->vpu_clk_step >= ARRAY_SIZE(map_clk_dsp);
-	CHECK_RET("vpu: dsp step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
+	CHECK_RET("the step of dsp is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_dsp));
 
 	ret = e->vpu_if_clk_step >= ARRAY_SIZE(map_clk_ipu_if);
-	CHECK_RET("vpu: ipu if step is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
+	CHECK_RET("the step of ipu_if is out-of-bound, max:%lu", ARRAY_SIZE(map_clk_ipu_if));
 
 	step_reg_vimvo = e->vimvo_vol_step;
 	step_clk_dsp = e->vpu_clk_step;
@@ -788,7 +786,7 @@ int vpu_init_hw(struct vpu_device *device)
 	ret = vpu_create_hw_debugfs();
 	CHECK_RET("fail to create hw debugfs!\n");
 
-	enque_task = kthread_create(vpu_enque_routine_loop, NULL, "vpu-enque");
+	enque_task = kthread_create(vpu_enque_routine_loop, NULL, "vpu");
 	if (IS_ERR(enque_task)) {
 		ret = PTR_ERR(enque_task);
 		enque_task = NULL;
@@ -847,33 +845,33 @@ int vpu_uninit_hw(void)
 	return 0;
 }
 
-static int vpu_check_status(void)
+
+static int vpu_check_precond(void)
 {
 	uint32_t status;
 	size_t i;
 
-	/* wait 5 seconds, if not ready or busy */
-	for (i = 0; i < 500; i++) {
+	/* wait 1 seconds, if not ready or busy */
+	for (i = 0; i < 50; i++) {
 		status = vpu_read_field(FLD_XTENSA_INFO0);
 		switch (status) {
 		case VPU_STATE_READY:
 		case VPU_STATE_IDLE:
+		case VPU_STATE_ERROR:
 			return 0;
 		case VPU_STATE_NOT_READY:
 		case VPU_STATE_BUSY:
-			/* timeout = schedule_timeout(msecs_to_jiffies(10)); */
-			mdelay(10);
+			msleep(20);
 			break;
-		case VPU_STATE_ERROR:
 		case VPU_STATE_TERMINATED:
-			return -EIO;
+			return -EBADFD;
 		}
 	}
-	LOG_ERR("It is still busy after wait 5 seconds.\n");
+	LOG_ERR("still busy after wait 1 second.\n");
 	return -EBUSY;
 }
 
-static int vpu_check_result(void)
+static int vpu_check_postcond(void)
 {
 	uint32_t status = vpu_read_field(FLD_XTENSA_INFO0);
 
@@ -963,10 +961,13 @@ int vpu_hw_boot_sequence(void)
 	/* 3. wait until done */
 	ret = wait_command();
 	vpu_trace_end();
-	CHECK_RET("timeout of external boot\n");
+	if (ret) {
+		vpu_aee("VPU Timeout", "timeout to external boot\n");
+		goto out;
+	}
 
 	/* 4. check the result of boot sequence */
-	ret = vpu_check_result();
+	ret = vpu_check_postcond();
 	CHECK_RET("fail to boot vpu!\n");
 
 out:
@@ -997,7 +998,7 @@ int vpu_hw_set_debug(void)
 	CHECK_RET("timeout of set debug\n");
 
 	/* 4. check the result */
-	ret = vpu_check_result();
+	ret = vpu_check_postcond();
 	CHECK_RET("fail to set debug!\n");
 
 out:
@@ -1025,7 +1026,7 @@ int vpu_get_name_of_algo(int id, char **name)
 
 	*name = NULL;
 	LOG_ERR("algo is not existed, id=%d\n", id);
-	return -ENODATA;
+	return -ENOENT;
 }
 
 int vpu_get_entry_of_algo(char *name, int *id, int *mva, int *length)
@@ -1051,7 +1052,7 @@ int vpu_get_entry_of_algo(char *name, int *id, int *mva, int *length)
 
 	*id = 0;
 	LOG_ERR("algo is not existed, name=%s\n", name);
-	return -ENODATA;
+	return -ENOENT;
 };
 
 
@@ -1060,7 +1061,6 @@ int vpu_ext_be_busy(void)
 	int ret;
 
 	lock_command();
-	LOG_DBG("call vpu to be busy\n");
 
 	/* 1. write register */
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_EXT_BUSY);            /* command: be busy */
@@ -1133,9 +1133,10 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id);
 
 	lock_command();
-	LOG_DBG("call vpu to do loader\n");
-	ret = vpu_check_status();
-	CHECK_RET("have wrong status before do load kenrel!\n");
+	LOG_DBG("start to load algo\n");
+
+	ret = vpu_check_precond();
+	CHECK_RET("have wrong status before do loader!\n");
 
 	/* 1. write register */
 	vpu_write_field(FLD_XTENSA_INFO1, VPU_CMD_DO_LOADER);           /* command: d2d */
@@ -1151,7 +1152,11 @@ int vpu_hw_load_algo(struct vpu_algo *algo)
 	/* 3. wait until done */
 	ret = wait_command();
 	vpu_trace_end();
-	CHECK_RET("timeout to command\n");
+	if (ret) {
+		vpu_aee("VPU Timeout", "timeout to do loader, algo_id=%d\n", algo_loaded);
+		vpu_dump_mesg(NULL);
+		goto out;
+	}
 
 	/* 4. update the id of loaded algo */
 	algo_loaded = algo->id;
@@ -1170,11 +1175,12 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id);
 
 	lock_command();
-	LOG_DBG("call vpu to do enque buffers\n");
+	LOG_DBG("start to enque request\n");
 
-	ret = vpu_check_status();
+	ret = vpu_check_precond();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_BUSY;
+		LOG_ERR("error state before enque request!\n");
 		goto out;
 	}
 
@@ -1183,20 +1189,21 @@ int vpu_hw_enque_request(struct vpu_request *request)
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
 	if (g_vpu_log_level > 4) {
+		struct vpu_buffer *buf;
+		struct vpu_plane *plane;
+
 		LOG_DBG("dump request - setting: 0x%x, length: %d\n",
 				(uint32_t) request->sett_ptr, request->sett_length);
 
 		for (i = 0; i < request->buffer_count; i++) {
-			struct vpu_buffer *buf = &request->buffers[i];
-
-			LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n", i,
-					buf->port_id, buf->width, buf->height, buf->format);
+			buf = &request->buffers[i];
+			LOG_DBG("  buffer[%d] - port: %d, size: %dx%d, format: %d\n",
+					i, buf->port_id, buf->width, buf->height, buf->format);
 
 			for (j = 0; j < buf->plane_count; j++) {
-				struct vpu_plane *plane = &buf->planes[j];
-
-				LOG_DBG("  plane[%d] - ptr: 0x%x, length: %d, stride: %d\n", j,
-						(uint32_t) plane->ptr, plane->length, plane->stride);
+				plane = &buf->planes[j];
+				LOG_DBG("    plane[%d] - ptr: 0x%x, length: %d, stride: %d\n",
+						j, (uint32_t) plane->ptr, plane->length, plane->stride);
 			}
 		}
 	}
@@ -1217,10 +1224,12 @@ int vpu_hw_enque_request(struct vpu_request *request)
 	vpu_trace_end();
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
-		LOG_ERR("timeout to command\n");
+		vpu_aee("VPU Timeout", "timeout to do d2d, algo_id=%d\n", algo_loaded);
+		vpu_dump_mesg(NULL);
 		goto out;
 	}
-	request->status = VPU_REQ_STATUS_SUCCESS;
+
+	request->status = (vpu_check_postcond()) ? VPU_REQ_STATUS_FAILURE : VPU_REQ_STATUS_SUCCESS;
 
 out:
 	unlock_command();
@@ -1240,10 +1249,10 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	vpu_trace_begin("vpu_hw_get_algo_info(%d)", algo->id);
 
 	lock_command();
-	LOG_DBG("call vpu to get algo\n");
+	LOG_DBG("start to get algo, algo_id=%d\n", algo->id);
 
-	ret = vpu_check_status();
-	CHECK_RET("have wrong status before get algo info!\n");
+	ret = vpu_check_precond();
+	CHECK_RET("have wrong status before get algo!\n");
 
 	ofs_ports = 0;
 	ofs_info = sizeof(((struct vpu_algo *)0)->ports);
@@ -1266,7 +1275,11 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	/* 3. wait until done */
 	ret = wait_command();
 	vpu_trace_end();
-	CHECK_RET("timeout to command\n");
+	if (ret) {
+		vpu_aee("VPU Timeout", "timeout to get algo, algo_id=%d\n", algo_loaded);
+		vpu_dump_mesg(NULL);
+		goto out;
+	}
 
 	/* 4. get the return value */
 	port_count = vpu_read_field(FLD_XTENSA_INFO5);
@@ -1276,7 +1289,7 @@ int vpu_hw_get_algo_info(struct vpu_algo *algo)
 	algo->info_desc_count = info_desc_count;
 	algo->sett_desc_count = sett_desc_count;
 
-	LOG_DBG("end of get algo, port count = %d\n", port_count);
+	LOG_DBG("end of get algo, port_count=%d\n", port_count);
 
 	/* 5. write back data from working buffer */
 	memcpy((void *) algo->ports, (void *) (work_buf_va + ofs_ports),
@@ -1322,7 +1335,7 @@ out:
 void vpu_hw_lock(struct vpu_user *user)
 {
 	if (user->locked)
-		LOG_ERR("error: double lock, pid:%d, tid:%d\n",
+		LOG_ERR("double locking bug, pid=%d, tid=%d\n",
 				user->open_pid, user->open_tgid);
 	else {
 		mutex_lock(&lock_mutex);
@@ -1339,7 +1352,7 @@ void vpu_hw_unlock(struct vpu_user *user)
 		wake_up_interruptible(&lock_wait);
 		mutex_unlock(&lock_mutex);
 	} else
-		LOG_ERR("error: not locked, pid:%d, tid:%d\n",
+		LOG_ERR("should not unlock while unlocked, pid=%d, tid=%d\n",
 				user->open_pid, user->open_tgid);
 }
 
@@ -1559,8 +1572,7 @@ int vpu_dump_mesg(struct seq_file *s)
 	ptr += VPU_SIZE_LOG_HEADER;
 	log_head = strchr(ptr, '\0') + 1;
 
-	vpu_print_seq(s, "%s", log_head);
-	vpu_print_seq(s, "%s", ptr);
+	vpu_print_seq(s, "vpu: print dsp log\n%s%s", log_head, ptr);
 
 	return 0;
 }

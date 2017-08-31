@@ -327,14 +327,14 @@ int vpu_init_reg(struct vpu_device *vpu_dev);
 #define LOG_DBG(format, args...)    pr_debug(VPU_TAG " " format, ##args)
 #define LOG_INF(format, args...)    pr_info(VPU_TAG " " format, ##args)
 #define LOG_WRN(format, args...)    pr_warn(VPU_TAG " " format, ##args)
-#define LOG_ERR(format, args...)    pr_err(VPU_TAG "[%s] " format, __func__, ##args)
+#define LOG_ERR(format, args...)    pr_err(VPU_TAG "[error] " format, ##args)
 
 #define PRINT_LINE() pr_info(VPU_TAG " %s (%s:%d)\n", __func__,  __FILE__, __LINE__)
 
 #define CHECK_RET(format, args...) \
 	{ \
 		if (ret) { \
-			pr_err(VPU_TAG "[%s] " format, __func__, ##args); \
+			LOG_ERR(format, ##args); \
 			goto out; \
 		} \
 	}
@@ -344,22 +344,13 @@ int vpu_init_reg(struct vpu_device *vpu_dev);
 		if (seq_file) \
 			seq_printf(seq_file, format, ##args); \
 		else \
-			pr_err(format, ##args); \
+			LOG_DBG(format, ##args); \
 	}
 
-#define vpu_error(format, args...) \
+#define vpu_aee(key, format, args...) \
 	do { \
-		pr_err(VPU_TAG " error:"format, ##args); \
-		aee_kernel_exception("VPU", "[VPU] error:"format, ##args); \
-	} while (0)
-
-#define vpu_aee(format, args...) \
-	do { \
-		char vpu_name[100]; \
-		snprintf(vpu_name, 100, VPU_TAG format, ##args); \
-		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER | DB_OPT_DUMP_DISPLAY, \
-			vpu_name, VPU_TAG "error" format, ##args); \
-		pr_err(VPU_TAG " error:" format, ##args); \
+		LOG_ERR(format, ##args); \
+		aee_kernel_exception("VPU", "\nCRDISPATCH_KEY:" key "\n" format, ##args); \
 	} while (0)
 
 
