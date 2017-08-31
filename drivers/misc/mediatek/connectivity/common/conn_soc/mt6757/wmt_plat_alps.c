@@ -992,15 +992,9 @@ UINT32 wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type)
 		WMT_PLAT_INFO_FUNC("[Force Assert] stp_trigger_firmware_assert_via_emi <--\n");
 		break;
 	case STP_FORCE_TRG_ASSERT_DEBUG_PIN:
-		/*Set connsys bus clock on according to DE's comments.*/
 		CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET,
-				 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET)
-				| CONSYS_AP2CONN_OSC_EN_BIT);
-		WMT_PLAT_INFO_FUNC("+CONSYS_AP2CONN_OSC_EN_REG(0x%x)\n",
-				   CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET));
-		CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET,
-				 CONSYS_REG_READ(conn_reg.topckgen_base +
-						 CONSYS_AP2CONN_OSC_EN_OFFSET) & ~CONSYS_AP2CONN_WAKEUP_BIT);
+			CONSYS_REG_READ(conn_reg.topckgen_base +
+			CONSYS_AP2CONN_OSC_EN_OFFSET) & ~CONSYS_AP2CONN_WAKEUP_BIT);
 		WMT_PLAT_INFO_FUNC("enable:dump CONSYS_AP2CONN_OSC_EN_REG(0x%x)\n",
 				   CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_AP2CONN_OSC_EN_OFFSET));
 		usleep_range(64, 96);

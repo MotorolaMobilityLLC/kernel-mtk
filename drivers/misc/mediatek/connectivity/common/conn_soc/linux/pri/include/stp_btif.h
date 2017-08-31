@@ -27,5 +27,5 @@ extern INT32 mtk_wcn_consys_stp_btif_dpidle_ctrl(ENUM_BTIF_DPIDLE_CTRL en_flag);
 extern INT32 mtk_wcn_consys_stp_btif_lpbk_ctrl(ENUM_BTIF_LPBK_MODE mode);
 extern INT32 mtk_wcn_consys_stp_btif_logger_ctrl(ENUM_BTIF_DBG_ID flag);
 extern MTK_WCN_BOOL mtk_wcn_consys_stp_btif_parser_wmt_evt(const UINT8 *str, UINT32 len);
-
+extern VOID mtk_wcn_consys_stp_btif_wakeup_debug(VOID);
 #endif

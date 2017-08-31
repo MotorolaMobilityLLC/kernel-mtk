@@ -622,6 +622,7 @@ extern VOID mtk_wcn_stp_ctx_restore(VOID);
 extern INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID);
 extern VOID mtk_wcn_stp_set_wmt_evt_err_trg_assert(UINT32 value);
 extern UINT32 mtk_wcn_stp_get_wmt_evt_err_trg_assert(VOID);
+extern VOID mtk_wcn_stp_wakeup_consys_debug(VOID);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

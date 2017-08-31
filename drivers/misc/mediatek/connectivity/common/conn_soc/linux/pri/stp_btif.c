@@ -277,3 +277,9 @@ INT32 mtk_wcn_consys_stp_btif_parser_wmt_evt(const UINT8 *str, UINT32 len)
 		return (INT32) mtk_wcn_btif_parser_wmt_evt(stpBtifId, str, len);
 	}
 }
+
+VOID mtk_wcn_consys_stp_btif_wakeup_debug(VOID)
+{
+	mtk_btif_read_cpu_sw_rst_debug_exp();
+}
+

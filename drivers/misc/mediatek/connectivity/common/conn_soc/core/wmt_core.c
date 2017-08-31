@@ -1270,6 +1270,8 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			unsigned long ctrlpa = 2;
 
 			WMT_ERR_FUNC("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
+			/*wakeup consys debug message*/
+			mtk_wcn_stp_wakeup_consys_debug();
 			mtk_wcn_stp_dbg_dump_package();
 			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
 			if (!ret) {	/* parser ok */

@@ -232,4 +232,6 @@ bool hal_btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif);
 
 int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif, MTK_BTIF_PM_OPID opid);
 
+void mtk_btif_read_cpu_sw_rst_debug_plat(void);
+
 #endif /*__HAL_BTIF_PUB_H_*/

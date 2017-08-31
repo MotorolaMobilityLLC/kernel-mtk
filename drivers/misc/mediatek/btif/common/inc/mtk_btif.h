@@ -365,4 +365,6 @@ int btif_clock_ctrl(p_mtk_btif p_btif, int en);
 bool btif_parser_wmt_evt(p_mtk_btif p_btif,
 				const char *sub_str,
 				unsigned int sub_len);
+void mtk_btif_read_cpu_sw_rst_debug(void);
+
 #endif /*__MTK_BTIF_H_*/

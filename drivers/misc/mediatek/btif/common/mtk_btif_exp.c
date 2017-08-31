@@ -778,4 +778,9 @@ int mtk_btif_exp_log_debug_test(int flag)
 	return i_ret;
 }
 
+void mtk_btif_read_cpu_sw_rst_debug_exp(void)
+{
+	mtk_btif_read_cpu_sw_rst_debug();
+}
+
 /************End of Function**********/
