@@ -1508,7 +1508,7 @@ static const struct mtk_gate ipu_clks[] __initconst = {
 	GATE_IPU(CLK_IPU_JTAG, "ipusys_jtag", "clk_null", 4),
 	GATE_IPU(CLK_IPU_AXI, "ipusys_axi", "ipu_if_ck", 5),
 	GATE_IPU(CLK_IPU_AHB, "ipusys_ahb", "ipu_if_ck", 6),
-	GATE_IPU(CLK_IPU_AXI, "ipusys_axi", "ipu_if_ck", 7),
+	GATE_IPU(CLK_IPU_MM_AXI, "ipusys_mm_axi", "ipu_if_ck", 7),
 	GATE_IPU(CLK_IPU_CAM_AXI, "ipusys_cam_axi", "ipu_if_ck", 8),
 	GATE_IPU(CLK_IPU_IMG_AXI, "ipusys_img_axi", "ipu_if_ck", 9),
 };
@@ -1797,8 +1797,6 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 
 	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks), clk_data);
 
-	mtk_clk_register_gates(node, infra_clks, ARRAY_SIZE(infra_clks),
-		clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)

@@ -142,7 +142,7 @@
 
 
 	infracfg_ao: infracfg_ao@10000000 {
-		compatible = "mediatek,mt6799-infracfg_ao";
+		compatible = "mediatek,mt6799-infracfg_ao", "syscon";
 		reg = <0 0x10000000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -172,7 +172,7 @@
 	};
 
 	pericfg: pericfg@11010000 {
-		compatible = "mediatek,mt6799-pericfg";
+		compatible = "mediatek,mt6799-pericfg", "syscon";
 		reg = <0 0x11010000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -1869,7 +1869,7 @@
 	};
 
 	mfg_cfg: mfg_cfg@13ffe000 {
-		compatible = "mediatek,mt6799-mfg_cfg";
+		compatible = "mediatek,mt6799-mfg_cfg", "syscon";
 		reg = <0 0x13ffe000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -1880,7 +1880,7 @@
 	};
 
 	mmsys_config: mmsys_config@14000000 {
-		compatible = "mediatek,mt6799-mmsys_config";
+		compatible = "mediatek,mt6799-mmsys_config", "syscon";
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 275 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
@@ -2313,7 +2313,7 @@
 	};
 
 	vdec_gcon: vdec_gcon@16000000 {
-		compatible = "mediatek,mt6799-vdec_gcon";
+		compatible = "mediatek,mt6799-vdec_gcon", "syscon";
 		reg = <0 0x16000000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -2324,7 +2324,7 @@
 	};
 
 	venc_global_con: venc_global_con@17000000 {
-		compatible = "mediatek,mt6799-venc_global_con";
+		compatible = "mediatek,mt6799-venc_global_con", "syscon";
 		reg = <0 0x17000000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -2397,7 +2397,7 @@
 	};
 
 	imgsys: imgsys@15020000 {
-		compatible = "mediatek,mt6799-imgsys";
+		compatible = "mediatek,mt6799-imgsys", "syscon";
 		reg = <0 0x15020000 0 0x1000>;
 		#clock-cells = <1>;
 	};
@@ -2534,13 +2534,13 @@
 	};
 
 	camsys: camsys@18000000 {
-		compatible = "mediatek,mt6799-camsys";
+		compatible = "mediatek,mt6799-camsys", "syscon";
 		reg = <0 0x18000000 0 0x1000>;
 		#clock-cells = <1>;
 	};
 
 	ipusys: ipusys@18800000 {
-		compatible = "mediatek,mt6799-ipusys";
+		compatible = "mediatek,mt6799-ipusys", "syscon";
 		reg = <0 0x18800000 0 0x1000>;
 		#clock-cells = <1>;
 	};
