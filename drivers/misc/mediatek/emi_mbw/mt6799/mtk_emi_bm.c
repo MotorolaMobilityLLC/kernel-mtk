@@ -775,8 +775,9 @@ unsigned int emi_freq_threshold(unsigned int thres_val, unsigned int src, unsign
 	thres = (unsigned long)thres_val;
 	val = ((thres << (MBuint-threshold_uint))*((period)*(1<<interval)))/NS;
 
-	pr_debug("\nthres_val val=%d ,bw_type=%d interval=%d",
-		(int)val, bw_type, interval);
+	/*pr_debug("\nthres_val val=%d ,bw_type=%d interval=%d",
+	*	(int)val, bw_type, interval);
+	*/
 	return val;
 
 }
@@ -789,24 +790,26 @@ unsigned int mt_set_emi_total_bw_threshold(unsigned int threshold[][3])
 	for (src = 0; src < 4; src++)
 		for (dst = 0; dst < 3; dst++) {
 			freq_threshold = emi_freq_threshold(threshold[src][dst], src, TYPE_TOTAL);
-			if ((freq_threshold > 0xff) || (freq_threshold < 0))
+			if ((freq_threshold > 0xff) || (freq_threshold < 0)) {
+				pr_err("err freq_threshold=%x", freq_threshold);
 				return BM_ERR;
+			}
 			val = readl(IOMEM(EMI_BWCT1+(src*4)));
 			val  &= ~(0xff<<(8*dst));
 			val |= ((freq_threshold & 0xff) << (8*dst));
 			mt_reg_sync_writel(val, (EMI_BWCT1+(src*4)));
 			}
 
-	pr_debug("\nTotal EMI_BWCT1~4=(0x%x, 0x%x, 0x%x, 0x%x)\n",
-			readl(IOMEM(EMI_BWCT1)),
-			readl(IOMEM(EMI_BWCT2)),
-			readl(IOMEM(EMI_BWCT3)),
-			readl(IOMEM(EMI_BWCT4)));
-	pr_debug("threshold:(src,dst,threshold)\n");
-	for (src = 0; src < 4; src++)
-		for (dst = 0; dst < 3; dst++)
-			pr_debug("(%d,%d,%d)\n", src, dst, threshold[src][dst]);
-
+	/*pr_debug("\nTotal EMI_BWCT1~4=(0x%x, 0x%x, 0x%x, 0x%x)\n",
+	*		readl(IOMEM(EMI_BWCT1)),
+	*		readl(IOMEM(EMI_BWCT2)),
+	*		readl(IOMEM(EMI_BWCT3)),
+	*		readl(IOMEM(EMI_BWCT4)));
+	*pr_debug("threshold:(src,dst,threshold)\n");
+	*for (src = 0; src < 4; src++)
+	*	for (dst = 0; dst < 3; dst++)
+	*		pr_debug("(%d,%d,%d)\n", src, dst, threshold[src][dst]);
+	*/
 	return BM_REQ_OK;
 }
 
@@ -816,15 +819,16 @@ unsigned int mt_set_emi_bw1_threshold(unsigned int *threshold)
 
 	for (dst = 0; dst < 4; dst++) {
 		freq_threshold = emi_freq_threshold(threshold[dst], dst, TYPE_CG);
-		if ((freq_threshold > 0xff) || (freq_threshold < 0))
+		if ((freq_threshold > 0xff) || (freq_threshold < 0)) {
+			pr_err("err freq_threshold=%x", freq_threshold);
 			return -1;
-
+		}
 		val = readl(IOMEM(EMI_BWCT1_2ND));
 		val  &= ~(0xff<<(8*dst));
 		val |= (freq_threshold << (8*dst));
 		mt_reg_sync_writel(val, (EMI_BWCT1_2ND));
 	}
-	pr_debug("\nC+G EMI_BWCT1_2ND=(0x%x)\n", readl(IOMEM(EMI_BWCT1_2ND)));
+	/*pr_debug("\nC+G EMI_BWCT1_2ND=(0x%x)\n", readl(IOMEM(EMI_BWCT1_2ND)));*/
 	return BM_REQ_OK;
 }
 unsigned int mt_set_emi_bw1_axi_port(int port)
@@ -835,8 +839,9 @@ unsigned int mt_set_emi_bw1_axi_port(int port)
 	val = (val & ~(0xff << BIT_BW1_INT_BW_SEL))
 		| (port << BIT_BW1_INT_BW_SEL);
 	mt_reg_sync_writel(val, (EMI_BWCT0_2ND));
-	pr_debug("\n (port,EMI_BWCT0_2ND)=(0x%x,0x%x)\n",
-		port, readl(IOMEM(EMI_BWCT0_2ND)));
+	/*pr_debug("\n (port,EMI_BWCT0_2ND)=(0x%x,0x%x)\n",
+	*	port, readl(IOMEM(EMI_BWCT0_2ND)));
+	*/
 	return val;
 }
 unsigned int mt_set_emi_total_bw_intr_period(int period)
@@ -851,8 +856,9 @@ unsigned int mt_set_emi_total_bw_intr_period(int period)
 	val &= ~(0x3 << 4);
 	val |= (period << 4);
 	mt_reg_sync_writel(val, EMI_BWCT0);
-	pr_debug("\n (period,EMI_BWCT0,EMI_BWCT0_val)=(0x%x,0x%x)\n",
-		period, readl(IOMEM(EMI_BWCT0)));
+	/*pr_debug("\n (period,EMI_BWCT0,EMI_BWCT0_val)=(0x%x,0x%x)\n",
+	*	period, readl(IOMEM(EMI_BWCT0)));
+	*/
 	return BM_REQ_OK;
 }
 unsigned int mt_get_emi_total_bw_intr_period(void)
@@ -862,7 +868,7 @@ unsigned int mt_get_emi_total_bw_intr_period(void)
 	val = readl(IOMEM(EMI_BWCT0));
 	val = (val >> 4) & 0x3;
 	val += 17;
-	pr_debug("\n mt_get_emi_total_bw_intr_period=%d\n", val);
+	/*pr_debug("\n mt_get_emi_total_bw_intr_period=%d\n", val);*/
 	return val;
 }
 #define ENABLE 1
@@ -879,8 +885,9 @@ unsigned int mt_set_emi_bw1_intr_period(int period)
 	val &= ~(0x3 << 4);
 	val |= (period << 4);
 	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
-	pr_debug("\n (period,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
-		period, readl(IOMEM(EMI_BWCT0_2ND)));
+	/*pr_debug("\n (period,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+	*	period, readl(IOMEM(EMI_BWCT0_2ND)));
+	*/
 	return BM_REQ_OK;
 }
 unsigned int mt_get_emi_bw1_intr_period(void)
@@ -890,7 +897,7 @@ unsigned int mt_get_emi_bw1_intr_period(void)
 	val = readl(IOMEM(EMI_BWCT0_2ND));
 	val = (val >> 4) & 0x3;
 	val += 17;
-	pr_debug("\n mt_get_emi_bw1_intr_period=%d\n", val);
+	/*pr_debug("\n mt_get_emi_bw1_intr_period=%d\n", val);*/
 	return val;
 }
 
@@ -905,8 +912,9 @@ unsigned int mt_set_emi_total_bw_intr_status(bool en)
 		val &= ~(ENABLE<<1);
 
 	mt_reg_sync_writel(val, EMI_BWCT0);
-	pr_debug("\n (en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
-		en, readl(IOMEM(EMI_BWCT0)));
+	/*pr_debug("\n (en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+	*	en, readl(IOMEM(EMI_BWCT0)));
+	*/
 	return val;
 }
 unsigned int mt_set_emi_bw1_intr_status(bool en)
@@ -920,8 +928,9 @@ unsigned int mt_set_emi_bw1_intr_status(bool en)
 		val &= ~(ENABLE<<1);
 
 	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
-	pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
-		en, readl(IOMEM(EMI_BWCT0_2ND)));
+	/*pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+	*	en, readl(IOMEM(EMI_BWCT0_2ND)));
+	*/
 	return val;
 }
 unsigned int mt_set_emi_bw1_enable(bool en)
@@ -935,8 +944,9 @@ unsigned int mt_set_emi_bw1_enable(bool en)
 		val &= ~(ENABLE<<0);
 
 	mt_reg_sync_writel(val, EMI_BWCT0_2ND);
-	pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
-		en, readl(IOMEM(EMI_BWCT0_2ND)));
+	/*pr_debug("\n(en,EMI_BWCT0_2ND_val)=(0x%x,0x%x)\n",
+	*	en, readl(IOMEM(EMI_BWCT0_2ND)));
+	*/
 	return val;
 }
 unsigned int mt_set_emi_total_bw_enable(bool en)
@@ -950,7 +960,7 @@ unsigned int mt_set_emi_total_bw_enable(bool en)
 		val &= ~(ENABLE<<0);
 
 	mt_reg_sync_writel(val, EMI_BWCT0);
-	pr_debug("\n(en,EMI_BWCT0)=(0x%x,0x%x)\n", en, readl(IOMEM(EMI_BWCT0)));
+	/*pr_debug("\n(en,EMI_BWCT0)=(0x%x,0x%x)\n", en, readl(IOMEM(EMI_BWCT0)));*/
 	return val;
 }
 unsigned int mt_get_emi_total_bw(void)
