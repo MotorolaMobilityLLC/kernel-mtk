@@ -380,7 +380,12 @@ int ccci_md_check_ee_done(struct ccci_modem *md, int timeout)
 	int loop_max = timeout * 1000 / time_step;
 
 	CCCI_BOOTUP_LOG(md->index, KERN, "checking EE status\n");
-	while (md->md_state == EXCEPTION) {
+	/*
+	  * due to this API is called after pre-stop, which will set md_state to WAITING_TO_STOP,
+	  * so we use while (1) instead of while (md_state ==  EXCEPTION). this means we can only
+	  * call this API when we are sure MD is in exception state!
+	  */
+	while (1) {
 		if (port_proxy_get_critical_user(md->port_proxy_obj, CRIT_USR_MDLOG)) {
 			CCCI_DEBUG_LOG(md->index, TAG, "mdlog running, waiting for EE dump done\n");
 			is_ee_done = !mdee_flow_is_start(md->mdee_obj)
