@@ -36,6 +36,8 @@
 #include <mt-plat/mtk_secure_api.h>
 
 /*#define ATF_LOGGER_DEBUG*/
+/* #define ATF_LOG_USE_OFFSET */
+
 #define ATF_LOG_CTRL_BUF_SIZE 256
 #define ATF_CRASH_MAGIC_NO	0xdead1abf
 #define ATF_LAST_MAGIC_NO	0x41544641
@@ -99,6 +101,7 @@ static unsigned int atf_buf_len;
 static unsigned char *atf_log_vir_addr;
 static unsigned int atf_log_len;
 
+#if !defined(ATF_LOG_USE_OFFSET)
 static unsigned int pos_to_index(unsigned int pos)
 {
 	return pos - (atf_buf_phy_ctl + ATF_LOG_CTRL_BUF_SIZE);
@@ -108,7 +111,7 @@ static unsigned int index_to_pos(unsigned int index)
 {
 	return (atf_buf_phy_ctl + ATF_LOG_CTRL_BUF_SIZE) + index;
 }
-
+#endif
 static size_t atf_log_dump_nolock(unsigned char *buffer, struct ipanic_atf_log_rec *rec, size_t size)
 {
 	unsigned int len;
@@ -116,7 +119,11 @@ static size_t atf_log_dump_nolock(unsigned char *buffer, struct ipanic_atf_log_r
 
 	unsigned int local_write_index = 0;
 
+#ifdef ATF_LOG_USE_OFFSET
+	local_write_index = atf_buf_vir_ctl->info.atf_write_pos;
+#else
 	local_write_index = pos_to_index(atf_buf_vir_ctl->info.atf_write_pos);
+#endif
 	/* find the first letter to read */
 	while ((local_write_index + atf_log_len - rec->start_idx) % atf_log_len > 0) {
 		if (*(atf_log_vir_addr + rec->start_idx) != 0)
@@ -175,7 +182,11 @@ size_t ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buffer)
 			rec->start_idx = 0;
 		else {
 			/* atf_log_lock(); */
+#ifdef ATF_LOG_USE_OFFSET
+			local_write_index = atf_buf_vir_ctl->info.atf_write_pos;
+#else
 			local_write_index = pos_to_index(atf_buf_vir_ctl->info.atf_write_pos);
+#endif
 			/* atf_log_unlock(); */
 			rec->start_idx = (local_write_index + atf_log_len - rec->total_size) % atf_log_len;
 		}
@@ -203,10 +214,13 @@ static ssize_t do_read_log_to_usr(char __user *buf, size_t count)
 
 	unsigned int local_write_index = 0;
 	unsigned int local_read_index = 0;
-
+#ifdef ATF_LOG_USE_OFFSET
+	local_write_index = atf_buf_vir_ctl->info.atf_write_pos;
+	local_read_index = atf_buf_vir_ctl->info.atf_read_pos;
+#else
 	local_write_index = pos_to_index(atf_buf_vir_ctl->info.atf_write_pos);
 	local_read_index = pos_to_index(atf_buf_vir_ctl->info.atf_read_pos);
-
+#endif
 	/* check copy length */
 	copy_len = (local_write_index + atf_log_len - local_read_index) % atf_log_len;
 
@@ -240,15 +254,22 @@ static ssize_t do_read_log_to_usr(char __user *buf, size_t count)
 
 	/* update the read pos */
 	local_read_index = (local_read_index + count) % atf_log_len;
+#ifdef ATF_LOG_USE_OFFSET
+	atf_buf_vir_ctl->info.atf_read_pos = local_read_index;
+#else
 	atf_buf_vir_ctl->info.atf_read_pos = index_to_pos(local_read_index);
-
+#endif
 	return count;
 }
 
 static int atf_log_fix_reader(void)
 {
 	if (atf_buf_vir_ctl->info.atf_write_seq < atf_log_len) {
+#ifdef ATF_LOG_USE_OFFSET
+		atf_buf_vir_ctl->info.atf_read_pos = 0;
+#else
 		atf_buf_vir_ctl->info.atf_read_pos = index_to_pos(0);
+#endif
 	} else {
 		atf_buf_vir_ctl->info.atf_read_pos = atf_buf_vir_ctl->info.atf_write_pos;
 	}
