@@ -685,7 +685,7 @@ int reset_scp(int reset)
 		reg = (unsigned int *)SCP_BASE;
 		if (reset & 0x0f) { /* do reset */
 			/* make sure scp is in idle state */
-			int timeout = 10000; /* max wait 10ms */
+			int timeout = 50; /* max wait 1s */
 
 			while (--timeout) {
 				if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
@@ -695,7 +695,7 @@ int reset_scp(int reset)
 					dsb(SY);
 					break;
 				}
-				udelay(1);
+				msleep(20);
 				if (timeout == 0)
 					pr_debug("[SCP] wait scp A reset timeout, skip\n");
 			}
@@ -717,7 +717,7 @@ int reset_scp(int reset)
 		reg = (unsigned int *)SCP_BASE_DUAL;
 		if (reset & 0x0f) { /* do reset */
 			/* make sure scp is in idle state */
-			int timeout = 10000; /* max wait 10ms */
+			int timeout = 50; /* max wait 1s */
 
 			while (--timeout) {
 				if (SCP_SLEEP_STATUS_REG & SCP_B_IS_SLEEP) {
@@ -727,7 +727,7 @@ int reset_scp(int reset)
 					dsb(SY);
 					break;
 				}
-				udelay(1);
+				msleep(20);
 				if (timeout == 0)
 					pr_debug("[SCP] wait scp B reset timeout, skip\n");
 			}
