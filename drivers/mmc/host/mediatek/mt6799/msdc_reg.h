@@ -38,7 +38,7 @@
 #define	OFFSET_SDC_CSTS			(0x58)
 #define	OFFSET_SDC_CSTS_EN		(0x5c)
 #define	OFFSET_SDC_DCRC_STS		(0x60)
-#define	OFFSET_SDC_CMD_STS		(0x64)
+#define	OFFSET_SDC_ADV_CFG0		(0x64)
 #define	OFFSET_EMMC_CFG0		(0x70)
 #define	OFFSET_EMMC_CFG1		(0x74)
 #define	OFFSET_EMMC_STS			(0x78)
@@ -216,7 +216,7 @@
 #define	SDC_CSTS			REG_ADDR(SDC_CSTS)
 #define	SDC_CSTS_EN			REG_ADDR(SDC_CSTS_EN)
 #define	SDC_DCRC_STS			REG_ADDR(SDC_DCRC_STS)
-#define	SDC_CMD_STS			REG_ADDR(SDC_CMD_STS)
+#define	SDC_ADV_CFG0			REG_ADDR(SDC_ADV_CFG0)
 
 /* emmc	register*/
 #define	EMMC_CFG0			REG_ADDR(EMMC_CFG0)
@@ -401,6 +401,7 @@
 #define	MSDC_CFG_CKMOD_HS400		(0x1  << 22)	/* RW */
 #define	MSDC_CFG_START_BIT		(0x3  << 23)	/* RW */
 #define	MSDC_CFG_SCLK_STOP_DDR		(0x1  << 25)	/* RW */
+#define	MSDC_CFG_DVFS_IDLE		(0x1  << 27)	/* RW */
 #define MSDC_CFG_DVFS_HW                (0x1  << 28)    /* RW */
 #define MSDC_CFG_BW_SEL			(0x1  << 29)    /* RW */
 #define MSDC_CFG_DVFS_EN                (0x1  << 30)    /* RW */
@@ -537,12 +538,15 @@
 #define	SDC_DCRC_STS_POS		(0xff << 0)	/* RO */
 #define	SDC_DCRC_STS_NEG		(0xff << 8)	/* RO */
 
-/* SDC_CMD_STS mask */
-#define SDC_CMD_STS_RESP_CRC		(0x7f  << 0) /* R */
-#define SDC_CMD_STS_RESP_INDEX		(0x3f  << 7) /* R */
-#define SDC_CMD_STS_RESP_ENDBIT		(0x1  << 13) /* R */
-#define SDC_CMD_STS_ENDBIT_CHECK	(0x1  << 14) /* W1C */
-#define SDC_CMD_STS_INDEX_CHECK		(0x1  << 15) /* W1C */
+/* SDC_ADV_CFG0 mask */
+#define SDC_ADV_CFG0_RESP_CRC		(0x7f  << 0) /* R */
+#define SDC_ADV_CFG0_RESP_INDEX		(0x3f  << 7) /* R */
+#define SDC_ADV_CFG0_RESP_ENDBIT	(0x1  << 13) /* R */
+#define SDC_ADV_CFG0_ENDBIT_CHECK	(0x1  << 14) /* W1C */
+#define SDC_ADV_CFG0_INDEX_CHECK	(0x1  << 15) /* W1C */
+#define SDC_ADV_CFG0_DAT_BUF_CLK_DIV	(0x3  << 16) /* RW */
+#define SDC_ADV_CFG0_DAT_BUF_FREQ_CTL_EN (0x1  << 18) /* RW */
+#define SDC_ADV_CFG0_SDC_RX_ENH_EN	(0x1  << 20) /* RW */
 
 /* EMMC_CFG0 mask */
 #define	EMMC_CFG0_BOOTSTART		(0x1  << 0)	/* W  */

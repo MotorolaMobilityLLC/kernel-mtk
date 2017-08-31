@@ -570,11 +570,11 @@ void msdc_set_check_endbit(struct msdc_host *host, bool enable)
 	void __iomem *base = host->base;
 
 	if (enable) {
-		MSDC_SET_BIT32(SDC_CMD_STS, SDC_CMD_STS_INDEX_CHECK);
-		MSDC_SET_BIT32(SDC_CMD_STS, SDC_CMD_STS_ENDBIT_CHECK);
+		MSDC_SET_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_INDEX_CHECK);
+		MSDC_SET_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_ENDBIT_CHECK);
 	} else {
-		MSDC_CLR_BIT32(SDC_CMD_STS, SDC_CMD_STS_INDEX_CHECK);
-		MSDC_CLR_BIT32(SDC_CMD_STS, SDC_CMD_STS_ENDBIT_CHECK);
+		MSDC_CLR_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_INDEX_CHECK);
+		MSDC_CLR_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_ENDBIT_CHECK);
 	}
 }
 
@@ -4955,7 +4955,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->max_blk_count = MAX_REQ_SZ / 512; /* mmc->max_req_size; */
 
 	host->hclk              = msdc_get_hclk(pdev->id, hw->clk_src);
-					/* clocksource to msdc */
+
 	host->pm_state          = PMSG_RESUME;
 	host->power_mode        = MMC_POWER_OFF;
 	host->power_control     = NULL;

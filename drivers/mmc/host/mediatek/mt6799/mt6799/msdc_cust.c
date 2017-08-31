@@ -372,7 +372,6 @@ void msdc_set_host_power_control(struct msdc_host *host)
 u32 hclks_msdc0[] = { MSDC0_SRC_0, MSDC0_SRC_1, MSDC0_SRC_2, MSDC0_SRC_3,
 		      MSDC0_SRC_4, MSDC0_SRC_5, MSDC0_SRC_6, MSDC0_SRC_7};
 
-/* msdc1/2 clock source reference value is 200M */
 u32 hclks_msdc1[] = { MSDC1_SRC_0, MSDC1_SRC_1, MSDC1_SRC_2, MSDC1_SRC_3,
 		      MSDC1_SRC_4, MSDC1_SRC_5, MSDC1_SRC_6, MSDC1_SRC_7};
 
@@ -398,33 +397,45 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
 	static char const * const clk_names[] = {
-		MSDC0_CLK_NAME, MSDC1_CLK_NAME, MSDC3_CLK_NAME
+		MSDC0_CLK_NAME, MSDC1_CLK_NAME, MSDC3_CLK_NAME,
+		MSDC0_CLK_NAME_E1, MSDC1_CLK_NAME_E1, MSDC3_CLK_NAME_E1
 	};
 	static char const * const hclk_names[] = {
-		MSDC0_HCLK_NAME, MSDC1_HCLK_NAME, MSDC3_HCLK_NAME
+		MSDC0_HCLK_NAME, MSDC1_HCLK_NAME, MSDC3_HCLK_NAME,
+		MSDC0_HCLK_NAME_E1, MSDC1_HCLK_NAME_E1, MSDC3_HCLK_NAME_E1
 	};
+	int idx;
 
-	host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
-	if  (hclk_names[pdev->id])
-		host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[pdev->id]);
+	if (IF_CHIP_VER1())
+		idx = 3;
+	else
+		idx = 0;
 
-	if (IS_ERR(host->clk_ctl)) {
-		pr_err("[msdc%d] can not get clock control\n", pdev->id);
-		return 1;
-	}
-	if (clk_prepare(host->clk_ctl)) {
-		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
-		return 1;
+	if  (clk_names[idx + pdev->id]) {
+		host->clk_ctl = devm_clk_get(&pdev->dev, clk_names[idx + pdev->id]);
+		if (IS_ERR(host->clk_ctl)) {
+			pr_err("[msdc%d] cannot get clk ctrl\n", pdev->id);
+			return 1;
+		}
+		if (clk_prepare(host->clk_ctl)) {
+			pr_err("[msdc%d] cannot prepare clk ctrl\n", pdev->id);
+			return 1;
+		}
 	}
 
-	if (hclk_names[pdev->id] && IS_ERR(host->hclk_ctl)) {
-		pr_err("[msdc%d] can not get clock control\n", pdev->id);
-		return 1;
+	if  (hclk_names[idx + pdev->id]) {
+		host->hclk_ctl = devm_clk_get(&pdev->dev, hclk_names[idx + pdev->id]);
+		if (IS_ERR(host->hclk_ctl)) {
+			pr_err("[msdc%d] cannot get hclk ctrl\n", pdev->id);
+			return 1;
+		}
+		if (clk_prepare(host->hclk_ctl)) {
+			pr_err("[msdc%d] cannot prepare hclk ctrl\n", pdev->id);
+			return 1;
+		}
 	}
-	if (hclk_names[pdev->id] && clk_prepare(host->hclk_ctl)) {
-		pr_err("[msdc%d] can not prepare hclock control\n", pdev->id);
-		return 1;
-	}
+
+	host->hclk = clk_get_rate(host->clk_ctl);
 
 	return 0;
 }
@@ -1247,7 +1258,7 @@ u16 msdc_offsets[] = {
 	OFFSET_SDC_CSTS,
 	OFFSET_SDC_CSTS_EN,
 	OFFSET_SDC_DCRC_STS,
-	OFFSET_SDC_CMD_STS,
+	OFFSET_SDC_ADV_CFG0,
 	OFFSET_EMMC_CFG0,
 	OFFSET_EMMC_CFG1,
 	OFFSET_EMMC_STS,
@@ -1303,3 +1314,4 @@ u16 msdc_offsets_top[] = {
 
 	0xFFFF /*as mark of end */
 };
+

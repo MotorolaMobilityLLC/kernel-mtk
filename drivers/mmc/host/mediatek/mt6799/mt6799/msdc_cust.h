@@ -129,10 +129,7 @@
 #define MSDCPLL_PWR_CON0_OFFSET (0x25c)
 #endif
 
-#define MSDCPLL_FREQ            728000000
-#ifdef MT6799_E2_CLK
 #define MSDCPLL_FREQ            800000000
-#endif
 
 #define MSDC0_SRC_0             260000
 #define MSDC0_SRC_1             (MSDCPLL_FREQ/2)
@@ -409,11 +406,41 @@
 
 #define VOL_CHG_CNT_DEFAULT_VAL         0x1F4 /* =500 */
 
-#define MSDC_PB0_DEFAULT_VAL            0x403C0006
+#define MSDC_PB0_DEFAULT_VAL            0x403C0007
 #define MSDC_PB1_DEFAULT_VAL            0xFFE20349
 
 #define MSDC_PB2_DEFAULT_RESPWAITCNT    0x3
 #define MSDC_PB2_DEFAULT_RESPSTENSEL    0x1
 #define MSDC_PB2_DEFAULT_CRCSTSENSEL    0x1
+
+#define EMMC50_CFG_END_BIT_CHK_CNT      0x3
+
+/**************************************************************/
+/* Section 7: E1/E2 Variation                                 */
+/**************************************************************/
+#include <mt-plat/mtk_chip.h>
+
+#define MSDC0_CLK_NAME_E1               "msdc0-clock_E1"
+#define MSDC0_HCLK_NAME_E1              "msdc0-hclock_E1"
+#define MSDC1_CLK_NAME_E1               "msdc1-clock_E1"
+#define MSDC1_HCLK_NAME_E1              NULL
+#define MSDC3_CLK_NAME_E1               "msdc3-clock_E1"
+#define MSDC3_HCLK_NAME_E1              "msdc3-hclock_E1"
+
+#define IF_CHIP_VER1()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_01)
+#define IF_CHIP_VER2()                  (mt_get_chip_sw_ver() == CHIP_SW_VER_02)
+
+#define ENABLE_HW_DVFS_WITH_CLK_OFF() \
+	MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_DVFS_IDLE)
+#define DISABLE_HW_DVFS_WITH_CLK_OFF() \
+	MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_DVFS_IDLE)
+
+#define ENABLE_SDC_RX_ENH() \
+	MSDC_SET_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_SDC_RX_ENH_EN)
+#define DISABLE_SDC_RX_ENH() \
+	MSDC_CLR_BIT32(SDC_ADV_CFG0, SDC_ADV_CFG0_SDC_RX_ENH_EN)
+
+#define SET_EMMC50_CFG_END_BIT_CHK_CNT(CNT) \
+	MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_END_BIT_CHK_CNT, CNT)
 
 #endif /* _MSDC_CUST_MT6799_H_ */
