@@ -75,11 +75,21 @@ enum dcs_status {
 	DCS_BUSY,
 	DCS_NR_STATUS,
 };
-extern int dcs_dram_channel_switch(enum dcs_status status);
+enum dcs_kicker {
+	DCS_KICKER_MHL,
+	DCS_KICKER_PERF,
+	DCS_KICKER_DEBUG,
+	DCS_NR_KICKER,
+};
+extern int dcs_enter_perf(enum dcs_kicker kicker);
+extern int dcs_exit_perf(enum dcs_kicker kicker);
 extern int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status);
 extern int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status);
 extern void dcs_get_dcs_status_unlock(void);
 extern bool dcs_initialied(void);
 extern char * const dcs_status_name(enum dcs_status status);
+/* DO _NOT_ USE APIS below UNLESS YOU KNOW HOW TO USE THEM */
+extern int __dcs_get_dcs_status(int *ch, enum dcs_status *dcs_status);
+extern int dcs_switch_to_lowpower(void);
 #endif /* end CONFIG_MTK_DCS */
 #endif /* end __MTK_MEMINFO_H__ */
