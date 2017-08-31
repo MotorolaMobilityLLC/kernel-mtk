@@ -261,6 +261,11 @@
 
 #define RT5081_MASK_EN_DCP	(1 << RT5081_SHIFT_EN_DCP)
 
+/* ========== USBSTATUS1 0x27 ============ */
+#define RT5081_SHIFT_USB_STATUS	4
+
+#define RT5081_MASK_USB_STATUS	0x70
+
 /* ========== CHG_PUMP 0x2A ============ */
 #define RT5081_SHIFT_VG_LVL_SEL	1
 #define RT5081_SHIFT_VG_EN	0
