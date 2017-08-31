@@ -93,6 +93,10 @@ enum spi_fifo {
 #define SPI_1G_SIZE         (0x40000000)
 #define ADDRSHIFT_W_OFFSET  (6)
 #define DMA_ADDR_BITS       (36)
+#define ADDRSHIFT_W_MASK    (0xFFFFF03F)
+#define ADDRSHIFT_R_MASK    (0xFFFFFFC0)
+#define SPI_ADDR_SHIFT_CTRL_OFFSET (0x468)
+#define SPI_ADDR_SHIFT_CTRL_INC    (0x4)
 
 struct mt_spi_t {
 	struct platform_device *pdev;
@@ -616,6 +620,10 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 {
 	u32 cmd;
 
+	/* Reset >4G extension bits */
+	spi_peri_writel(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
+		ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC), 0x0);
+
 	cmd = spi_readl(ms, SPI_CMD_REG);
 	cmd &= ~SPI_CMD_TX_DMA_MASK;
 	cmd &= ~SPI_CMD_RX_DMA_MASK;
@@ -646,9 +654,6 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 /* } */
 /* return; */
 /* } */
-#define SPI_ADDR_SHIFT_CTRL_OFFSET (0x468)
-#define SPI_ADDR_SHIFT_CTRL_INC    (0x4)
-
 
 static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 {
@@ -673,12 +678,11 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 					ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
 #endif
 			}
-
 			if (ver >= CHIP_SW_VER_02) {
 				/* SW E2 */
 				addr_ext = spi_peri_readl(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
 					ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC));
-				addr_ext = addr_ext |
+				addr_ext = (addr_ext & (ADDRSHIFT_W_MASK)) |
 					(u32)((cpu_to_le64(ms->cur_transfer->tx_dma)/SPI_1G_SIZE)
 						<< ADDRSHIFT_W_OFFSET);
 				spi_peri_writel(ms, (SPI_ADDR_SHIFT_CTRL_OFFSET +
@@ -711,7 +715,7 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 				/* SW E2 */
 				addr_ext = spi_peri_readl(ms,
 					(SPI_ADDR_SHIFT_CTRL_OFFSET + ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC));
-				addr_ext = addr_ext |
+				addr_ext = (addr_ext & (ADDRSHIFT_R_MASK)) |
 					(u32)(cpu_to_le64(ms->cur_transfer->rx_dma)/SPI_1G_SIZE);
 				spi_peri_writel(ms,
 					(SPI_ADDR_SHIFT_CTRL_OFFSET + ms->pdev->id * SPI_ADDR_SHIFT_CTRL_INC),
