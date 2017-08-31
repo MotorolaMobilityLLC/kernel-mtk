@@ -1753,7 +1753,7 @@ static void ocp_cpu_volt_callback(enum mt_cpu_dvfs_id id, unsigned int mv, int u
 
 	if ((up == VOLT_UP && event == VOLT_PRECHANGE)
 		|| (up == VOLT_DOWN && event == VOLT_POSTCHANGE)) {
-		if ((enum ocp_cluster)id == OCP_L)
+		if (id == MT_CPU_DVFS_L)
 			mt_ocp_set_volt(OCP_L, mv);
 		else {
 			/* update LL/B volt when we get LL/B/CCI volt change notification */
