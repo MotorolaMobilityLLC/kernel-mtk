@@ -482,7 +482,7 @@ static tx_result dramc_tx_tracking(int channel)
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL);
 	mr4_on_off = (temp >> 29) & 0x1;
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (1<<29));
-	for (rank = 0; rank < 2; rank++) {
+	for (rank = 0; rank < dram_rank_num; rank++) {
 		res = auto_dram_dqs_osc(rank, dramc_ao_chx_base, dramc_nao_chx_base);
 		if (res != TX_DONE)
 			return res;
@@ -543,12 +543,14 @@ pi_new[shu_index][rank][byte]);
 		temp = Reg_Readl(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
 		Reg_Sync_Writel(DDRPHY_SHU1_R0_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][0][1] << 16)
 										| (pi_new[shu_index][0][1] << 8));
-		temp = Reg_Readl(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][0] << 16)
-										| (pi_new[shu_index][1][0] << 8));
-		temp = Reg_Readl(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
-		Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy, temp | (pi_new[shu_index][1][1] << 16)
-										| (pi_new[shu_index][1][1] << 8));
+		if (dram_rank_num > 1) {
+			temp = Reg_Readl(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
+			Reg_Sync_Writel(DDRPHY_SHU1_R1_B0_DQ7 + shu_offset_ddrphy,
+				temp | (pi_new[shu_index][1][0] << 16) | (pi_new[shu_index][1][0] << 8));
+			temp = Reg_Readl(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy) & ~((0x3F << 8) | (0x3F << 16));
+			Reg_Sync_Writel(DDRPHY_SHU1_R1_B1_DQ7 + shu_offset_ddrphy,
+				temp | (pi_new[shu_index][1][1] << 16) | (pi_new[shu_index][1][1] << 8));
+		}
 	}
 
 	time_cnt = 100;
@@ -1882,7 +1884,7 @@ static void zqcs(void)
 	void __iomem *u4rg_88;
 
 	/* CH0_Rank0 --> CH1_Rank0 */
-	for (RankCounter = 0; RankCounter < 4; RankCounter++) {
+	for (RankCounter = 0; RankCounter < dram_rank_num; RankCounter++) {
 		for (CHCounter = 0; CHCounter < 4; CHCounter++) {
 			TimeCnt = 100;
 
