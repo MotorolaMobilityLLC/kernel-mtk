@@ -403,21 +403,33 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct charger_manager *info = container_of(nb, struct charger_manager, chg1_nb);
-	/*struct charger_device *charger_dev = v;*/
+	struct chgdev_notify *data = v;
 
-	pr_err("charger_dev_event %ld", event);
+	pr_err("%s %ld", __func__, event);
 
-	if (event == CHARGER_DEV_NOTIFY_EOC) {
+	switch (event) {
+	case CHARGER_DEV_NOTIFY_EOC:
 		charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
-		if (info->chg1_dev->is_polling_mode == false)
-			_wake_up_charger(info);
+		pr_info("%s: end of charge\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_RECHG:
+		charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
+		pr_info("%s: recharge\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT:
+		info->safety_timeout = true;
+		pr_err("%s: safety timer timeout\n", __func__);
+		break;
+	case CHARGER_DEV_NOTIFY_VBUS_OVP:
+		info->vbusov_stat = data->vbusov_stat;
+		pr_err("%s: vbus ovp = %d\n", __func__, info->vbusov_stat);
+		break;
+	default:
+		return NOTIFY_DONE;
 	}
 
-	if (event == CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT) {
-		info->safety_timeout = true;
-		if (info->chg1_dev->is_polling_mode == false)
-			_wake_up_charger(info);
-	}
+	if (info->chg1_dev->is_polling_mode == false)
+		_wake_up_charger(info);
 
 	return NOTIFY_DONE;
 }
