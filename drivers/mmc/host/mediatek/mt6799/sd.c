@@ -4065,6 +4065,22 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return 0;
 }
 
+static void msdc_unreq_vcore(struct work_struct *work)
+{
+	vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+}
+
+static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
+{
+	if (enable) {
+		/* true if dwork was pending, false otherwise */
+		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0)
+			vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+	} else {
+		schedule_delayed_work(&(host->set_vcore_workq), MSDC_DVFS_TIMEOUT);
+	}
+}
+
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	int host_cookie = 0;
@@ -4076,7 +4092,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	/* SDIO need lock dvfs */
 	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
-		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+		msdc_set_vcore_performance(host, 1);
 
 	if (mrq->data)
 		host_cookie = mrq->data->host_cookie;
@@ -4122,7 +4138,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	/* SDIO need lock dvfs */
 	if ((host->hw->host_function == MSDC_SDIO) && (host->lock_vcore == 1))
-		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+		msdc_set_vcore_performance(host, 0);
 
 	if ((host->hw->host_function == MSDC_SDIO) &&
 	    (host->trans_lock.active))
@@ -4976,6 +4992,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	/* for re-autok */
 	host->tuning_in_progress = false;
+
+	INIT_DELAYED_WORK(&(host->set_vcore_workq), msdc_unreq_vcore);
 	init_completion(&host->autok_done);
 	host->need_tune	= TUNE_NONE;
 	host->err_cmd = -1;

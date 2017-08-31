@@ -335,6 +335,7 @@ struct msdc_host {
 
 	int                     irq;            /* host interrupt */
 
+	struct delayed_work     set_vcore_workq;
 	struct completion       autok_done;
 
 	struct completion       cmd_done;	/* FIX ME, try to removed it */

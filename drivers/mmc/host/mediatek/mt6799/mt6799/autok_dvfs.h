@@ -56,7 +56,7 @@ enum dvfs_opp {
 #define AUTOK_VCORE_NUM		1
 #endif
 
-#define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
+#define MSDC_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
 
 #define BACKUP_REG_COUNT_SDIO           14
 #define BACKUP_REG_COUNT_EMMC_INTERNAL  5
