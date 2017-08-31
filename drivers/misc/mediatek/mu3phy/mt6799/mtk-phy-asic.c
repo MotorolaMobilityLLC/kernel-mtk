@@ -138,7 +138,12 @@ void usb_hal_dpidle_request(int mode)
 	case USB_DPIDLE_FORBIDDEN:
 		disable_dpidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
 		disable_soidle_by_bit(MTK_CG_PERI3_RG_USB_P0_CK_PDN_STA);
-		os_printk(K_INFO, "USB_DPIDLE_FORBIDDEN\n");
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+
+			if (__ratelimit(&ratelimit))
+				os_printk(K_INFO, "USB_DPIDLE_FORBIDDEN\n");
+		}
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
