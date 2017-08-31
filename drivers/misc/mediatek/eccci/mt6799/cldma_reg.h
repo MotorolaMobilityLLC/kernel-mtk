@@ -311,7 +311,7 @@
 #define CLDMA_BM_INT_ALLEN			0x000000FF
 	/* asserted when the RGPD/RBD allow data buffer length is not enough */
 
-#define CLDMA_BM_ALL_QUEUE 0x7F	/* all 7 queues */
+#define CLDMA_BM_ALL_QUEUE 0xFF	/* all 8 queues */
 
 static inline void cldma_reg_set_4msb_val(void *base, unsigned int reg_4msb_offset, int idx, dma_addr_t addr)
 {
