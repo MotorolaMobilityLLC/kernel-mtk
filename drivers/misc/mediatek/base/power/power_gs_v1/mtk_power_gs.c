@@ -34,28 +34,22 @@ bool slp_chk_golden_sodi3;
 
 void mt_power_gs_dump_suspend(void)
 {
-	if (slp_chk_golden_suspend) {
+	if (slp_chk_golden_suspend)
 		mt_power_gs_suspend_compare();
-		slp_chk_golden_suspend = 0;
-	}
 }
 EXPORT_SYMBOL(mt_power_gs_dump_suspend);
 
 void mt_power_gs_dump_dpidle(void)
 {
-	if (slp_chk_golden_dpidle) {
+	if (slp_chk_golden_dpidle)
 		mt_power_gs_dpidle_compare();
-		slp_chk_golden_dpidle = 0;
-	}
 }
 EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
 
 void mt_power_gs_dump_sodi3(void)
 {
-	if (slp_chk_golden_sodi3) {
+	if (slp_chk_golden_sodi3)
 		mt_power_gs_dump_suspend();
-		slp_chk_golden_sodi3 = 0;
-	}
 }
 EXPORT_SYMBOL(mt_power_gs_dump_sodi3);
 
