@@ -5,7 +5,7 @@ OPTIM = -Os
 ifeq ($(MTK_PLATFORM),mt6799)
 	version := m1.7ED4276001/
 else
-	version := 1.7ED
+	version := m1.7ED4276001/
 endif
 
 RGX_TOP := $(srctree)/drivers/misc/mediatek/gpu/gpu_rgx/$(version)
@@ -154,15 +154,15 @@ pvrsrvkm-y += \
  generated/cacherangebased_bridge/server_cacherangebased_bridge.o \
  generated/dmabuf_bridge/server_dmabuf_bridge.o \
  generated/rgxcmp_bridge/server_rgxcmp_bridge.o \
- generated/rgxinit_bridge/client_rgxinit_direct_bridge.o
+ generated/rgxinit_bridge/client_rgxinit_direct_bridge.o \
+ generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
+ generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
+ services/server/common/devicemem_history_server.o
 
 ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/server/devices/rgx/rgxsignals.o \
- generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
- generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
- generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
- services/server/common/devicemem_history_server.o
+ generated/rgxsignals_bridge/server_rgxsignals_bridge.o
 endif
 
 ifeq ($(MTK_PLATFORM),mt8167)
@@ -237,15 +237,15 @@ ccflags-y += \
  -I$(RGX_TOP)/services/srvinit/devices/rgx \
  -I$(RGX_TOP)/services/srvinit/include \
  -I$(RGX_TOP)/services/system/include \
- -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM)
+ -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM) \
+ -I$(RGX_TOP)/generated/devicememhistory_bridge
 
 ifeq ($(MTK_PLATFORM),mt6799)
 pvrsrvkm-y += \
  services/system/rgx_$(MTK_PLATFORM)/mtk_mfg_counter.o
 
 ccflags-y += \
- -I$(RGX_TOP)/generated/rgxsignals_bridge \
- -I$(RGX_TOP)/generated/devicememhistory_bridge
+ -I$(RGX_TOP)/generated/rgxsignals_bridge
 endif
 
 
