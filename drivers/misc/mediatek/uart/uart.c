@@ -2395,7 +2395,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	err = mtk_uart_vfifo_create(uart);
 	if (err) {
 		mtk_uart_vfifo_delete(uart);
-		DEV_ERR("create vff buffer fail:%d\n", err);
+		pr_err("create vff buffer fail:%d\n", err);
 	}
 #endif
 	return err;
