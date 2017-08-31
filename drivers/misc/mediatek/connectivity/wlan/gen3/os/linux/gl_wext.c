@@ -3552,7 +3552,7 @@ wext_indicate_wext_event(IN P_GLUE_INFO_T prGlueInfo,
 			ether_addr_copy(wrqu.ap_addr.sa_data, pucData);
 		else
 			/* memset(&wrqu.ap_addr.sa_data, 0, ETH_ALEN); */
-			ether_zero_addr(&wrqu.ap_addr.sa_data);
+			eth_zero_addr((u8 *)&wrqu.ap_addr.sa_data);
 		break;
 
 	case IWEVASSOCREQIE:

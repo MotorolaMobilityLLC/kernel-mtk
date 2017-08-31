@@ -75,7 +75,7 @@ static struct wireless_dev *gprP2pWdev;
 
 #if CFG_ENABLE_WIFI_DIRECT_CFG_80211
 static struct cfg80211_ops mtk_p2p_ops = {
-	.add_virtual_intf = mtk_p2p_cfg80211_add_iface,
+	/*.add_virtual_intf = mtk_p2p_cfg80211_add_iface,*/
 	.change_virtual_intf = mtk_p2p_cfg80211_change_iface,	/* 1 st */
 	.del_virtual_intf = mtk_p2p_cfg80211_del_iface,
 	.change_bss = mtk_p2p_cfg80211_change_bss,
