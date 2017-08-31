@@ -56,7 +56,7 @@ extern UINT32 gStpDbgLvl;
 
 #define STP_DBG_FUNC(fmt, arg...)    do {\
 	if (gStpDbgLvl >= STP_LOG_DBG)\
-		osal_dbg_print(PFX "%s: " fmt, __func__, ##arg);\
+		osal_warn_print(PFX "%s: " fmt, __func__, ##arg);\
 } while (0)
 #define STP_INFO_FUNC(fmt, arg...)   do {\
 	if (gStpDbgLvl >= STP_LOG_INFO)\
@@ -72,7 +72,7 @@ extern UINT32 gStpDbgLvl;
 } while (0)
 #define STP_TRC_FUNC(f)              do {\
 	if (gStpDbgLvl >= STP_LOG_DBG)\
-		osal_dbg_print(PFX "<%s> <%d>\n", __func__, __LINE__);\
+		osal_warn_print(PFX "<%s> <%d>\n", __func__, __LINE__);\
 } while (0)
 
 #define STP_DUMP_PACKET_HEAD(a, b, c)     do {\
@@ -81,7 +81,7 @@ extern UINT32 gStpDbgLvl;
 } while (0)
 #define STP_TRACE_FUNC(fmt, arg...)       do {\
 	if (gStpDbgLvl >= STP_LOG_DBG)\
-		osal_dbg_print(PFX "%s: " fmt, __func__, ##arg);\
+		osal_warn_print(PFX "%s: " fmt, __func__, ##arg);\
 } while (0)
 
 #define STP_MODE_BIT(x) (0x1UL << x)

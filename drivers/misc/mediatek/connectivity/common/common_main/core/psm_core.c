@@ -58,7 +58,7 @@ do { \
 #define STP_PSM_TRC_FUNC(f) \
 do { \
 	if (gPsmDbgLevel >= STP_PSM_LOG_DBG) \
-		pr_debug(PFX_PSM "<%s> <%d>\n", __func__, __LINE__); \
+		pr_warn(PFX_PSM "<%s> <%d>\n", __func__, __LINE__); \
 } while (0)
 
 
