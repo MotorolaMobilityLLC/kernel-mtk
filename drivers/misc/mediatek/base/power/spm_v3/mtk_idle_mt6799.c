@@ -17,6 +17,7 @@
 #include <mtk_idle_internal.h>
 #include <ddp_pwm.h>
 #include <mt-plat/mtk_secure_api.h>
+#include <mt-plat/mtk_chip.h>
 
 #define IDLE_TAG     "Power/swap"
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -507,6 +508,11 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][4] = {
 			0x00},
 };
 
+/* Update clkmux_condition_mask for sw_ver_02 */
+static unsigned int clkmux_condition_mask_updated[][5] = {
+	{ 0x80, 0x80, 0x83, 0x0300, CLKMUX_USB30_P0 },
+};
+
 static const char *idle_name[NR_TYPES] = {
 	"dpidle",
 	"soidle3",
@@ -909,6 +915,17 @@ bool mtk_idle_check_clkmux(int idle_type,
 	bool result[2] = {false, false};
 	bool final_result = true;
 
+	/* Update clkmux setting for sw_ver_02 */
+	if (mt_get_chip_sw_ver() == (unsigned int) CHIP_SW_VER_02) {
+		for (i = 0; i < sizeof(clkmux_condition_mask_updated)/(5 * sizeof(unsigned int)); i++) {
+			idx = clkmux_condition_mask_updated[i][4];
+			clkmux_condition_mask[idx][0] = clkmux_condition_mask_updated[i][0];
+			clkmux_condition_mask[idx][1] = clkmux_condition_mask_updated[i][1];
+			clkmux_condition_mask[idx][2] = clkmux_condition_mask_updated[i][2];
+			clkmux_condition_mask[idx][3] = clkmux_condition_mask_updated[i][3];
+		}
+	}
+
 	for (i = 0; i < NF_CLK_CFG; i++)
 		clkcfgs[i] = 0;
 
@@ -925,6 +942,15 @@ bool mtk_idle_check_clkmux(int idle_type,
 
 		/* clkmux power up: check mux switch */
 		result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) == clkmux_condition_mask[i][PUP_VALUE]);
+
+		/* clkmux power up: check mux switch for multiple values */
+		if (result[1] == false && (clkmux_condition_mask[i][PUP_VALUE] & 0xff00))
+			result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) ==
+				(clkmux_condition_mask[i][PUP_VALUE] >> 8));
+
+		if (result[1] == false && (clkmux_condition_mask[i][PUP_VALUE] & 0xff0000))
+			result[1] = ((clkmux_val & clkmux_condition_mask[i][PUP_MASK]) ==
+				(clkmux_condition_mask[i][PUP_VALUE] >> 16));
 
 		if (result[0] == false && result[1] == false) {
 			final_result = false;

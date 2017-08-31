@@ -818,7 +818,7 @@ RESTORE_IRQ:
 #endif
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
-	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi3_flags|SODI_FLAG_3P0);
+	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi3_flags|SODI_FLAG_3P0, operation_cond);
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
