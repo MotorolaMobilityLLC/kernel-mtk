@@ -786,6 +786,9 @@
 #define CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP       0
 
 #define CFG_SUPPORT_RLM_ACT_NETWORK                1
+
+#define CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND        1
+
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
