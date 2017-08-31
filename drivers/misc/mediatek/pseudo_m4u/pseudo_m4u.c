@@ -949,13 +949,13 @@ static phys_addr_t m4u_user_v2p(unsigned long va)
 
 	pgd = pgd_offset(current->mm, va);	/* what is tsk->mm */
 	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
-		M4UMSG("m4u_user_v2p(), va=0x%lx, pgd invalid!\n", va);
+		M4UDBG("m4u_user_v2p(), va=0x%lx, pgd invalid!\n", va);
 		return 0;
 	}
 
 	pud = pud_offset(pgd, va);
 	if (pud_none(*pud) || pud_bad(*pud)) {
-		M4UMSG("m4u_user_v2p(), va=0x%lx, pud invalid!\n", va);
+		M4UDBG("m4u_user_v2p(), va=0x%lx, pud invalid!\n", va);
 		return 0;
 	}
 
@@ -982,7 +982,7 @@ static phys_addr_t m4u_user_v2p(unsigned long va)
 
 	pte_unmap(pte);
 
-	M4UMSG("m4u_user_v2p(), va=0x%lx, pte invalid!\n", va);
+	M4UDBG("m4u_user_v2p(), va=0x%lx, pte invalid!\n", va);
 	return 0;
 }
 
@@ -1241,7 +1241,26 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
 
 			for (i = 0; i < page_num; i++) {
 				unsigned int va_align = BufAddr & (~M4U_PAGE_MASK);
-				*(pPhys + i) = m4u_user_v2p(va_align + 0x1000 * i);
+				int fault_cnt;
+
+				for (fault_cnt = 0; fault_cnt < 300; fault_cnt++) {
+					*(pPhys + i) = m4u_user_v2p(va_align + 0x1000 * i);
+					if (!*(pPhys + i)) {
+						handle_mm_fault(current->mm, vma, va_align + 0x1000 * i,
+								(vma->vm_flags & VM_WRITE) ? FAULT_FLAG_WRITE : 0);
+						cond_resched();
+					} else
+						break;
+				}
+
+				if (fault_cnt > 200) {
+					M4UMSG("%s, %d, fault_cnt %d, Bufaddr 0x%lx, i %d, page_num 0x%x\n",
+					__func__, __LINE__, fault_cnt, BufAddr, i, page_num);
+					M4UMSG("alloc_mva VM_PFNMAP module=%s, va=0x%lx, size=0x%lx, vm_flag=0x%x\n",
+						m4u_get_module_name(eModuleID), BufAddr, BufSize,
+						(unsigned int)vma->vm_flags);
+					return -1;
+				}
 			}
 
 			M4UMSG
@@ -1391,8 +1410,13 @@ struct sg_table *pseudo_get_sg(unsigned long va, int size)
 			 * last page.
 			 * DMA would like to ovmit the very last sg if the pa is 0
 			 */
-			if ((i == page_num - 1) && (pPhys[i] == 0))
-				pPhys[i] = pPhys[i - 1] + M4U_PAGE_SIZE;
+			if ((i == page_num - 1) && (pPhys[i] == 0)) {
+				/* i == 0 should be take care of specially. */
+				if (i)
+					pPhys[i] = pPhys[i - 1] + M4U_PAGE_SIZE;
+				else
+					pPhys[i] = M4U_PAGE_SIZE;
+			}
 
 			sg_dma_address(sg) = pPhys[i];
 			sg_dma_len(sg) = M4U_PAGE_SIZE;
