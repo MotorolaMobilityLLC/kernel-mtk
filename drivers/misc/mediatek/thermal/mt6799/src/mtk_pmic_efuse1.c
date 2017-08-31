@@ -64,7 +64,6 @@ PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount, int tr
 	return 0;
 }
 
-#if 0
 static __s32 pmic_raw_to_temp(__u32 ret)
 {
 
@@ -77,25 +76,23 @@ static __s32 pmic_raw_to_temp(__u32 ret)
 	mtktspmic_dprintk("[pmic_raw_to_temp] t_current=%d\n", t_current);
 	return t_current;
 }
-#endif
 
 static void mtktspmic_read_efuse(void)
 {
 	__u32 efusevalue[3] = {0};
 
 	mtktspmic_info("[pmic_debug]  start\n");
+
 	/*
 	*   0x0  512     527
 	*   0x1  528     543
 	*   0x2  544     559
 	*  Thermal data from 519 to 546
 	*/
-#if 0
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
 	efusevalue[0] = mt6336_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = mt6336_Read_Efuse_HPOffset(0x1);
 	efusevalue[2] = mt6336_Read_Efuse_HPOffset(0x2);
-#endif
 #endif
 	mtktspmic_info("[pmic_debug] 6336_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
@@ -134,7 +131,7 @@ void mtktspmic_cali_prepare_1(void)
 
 	if (g_adc_cali_en == 0) {	/* no calibration */
 		mtktspmic_info("[pmic_debug]  It isn't calibration values\n");
-		g_o_vts = 1600;
+		g_o_vts = 1336;
 		g_degc_cali = 50;
 		g_o_slope = 0;
 		g_o_slope_sign = 0;
@@ -158,19 +155,23 @@ void mtktspmic_cali_prepare2_1(void)
 
 	__s32 vbe_t;
 
+	/* Be careful
+	 * Only MT6336 uses a positive coefficient
+	 */
+
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
 	if (g_o_slope_sign == 0)
-		g_slope2 = -(1698 + g_o_slope);
+		g_slope2 = (1984 + g_o_slope * 10);
 	else
-		g_slope2 = -(1698 - g_o_slope);
+		g_slope2 = (1984 - g_o_slope * 10);
 
 	vbe_t = (-1) * ((((g_o_vts) * 1800)) / 4096) * 1000;
 
 	if (g_o_slope_sign == 0)
-		g_intercept = (vbe_t * 1000) / (-(1698 + g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (1984 + g_o_slope * 10);	/*0.001 degree */
 	else
-		g_intercept = (vbe_t * 1000) / (-(1698 - g_o_slope * 10));	/*0.001 degree */
+		g_intercept = (vbe_t * 1000) / (1984 - g_o_slope * 10);	/*0.001 degree */
 
 	g_intercept = g_intercept + (g_degc_cali * (1000 / 2));	/* 1000 is for 0.1 degree */
 
@@ -183,18 +184,11 @@ int mtktspmic_get_hw_temp_1(void)
 	int temp = 0, temp1 = 0;
 
 	mutex_lock(&TSPMIC_lock);
-#if 0
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	pr_err("[T_debug] Dead here\n");
 	temp = pmic_get_auxadc_value(AUXADC_LIST_MT6336_CHIP_TEMP);
-	pr_err("[T_debug] Dead here1\n");
 #endif
 
 	temp1 = pmic_raw_to_temp(temp);
-#else
-	temp1 = 25000;
-#endif
-	mtktspmic_dprintk("[pmic_debug] Raw=%d, T=%d\n", temp, temp1);
 
 	if ((temp1 > 100000) || (temp1 < -30000))
 		mtktspmic_info("[mtktspmic_get_hw_temp] raw=%d, PMIC T=%d", temp, temp1);

@@ -145,9 +145,9 @@ void mtktspmic_cali_prepare2(void)
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
 	if (g_o_slope_sign == 0)
-		g_slope2 = -(1598 + g_o_slope);
+		g_slope2 = -(1598 + g_o_slope * 10);
 	else
-		g_slope2 = -(1598 - g_o_slope);
+		g_slope2 = -(1598 - g_o_slope * 10);
 
 	vbe_t = (-1) * ((((g_o_vts) * 1800)) / 4096) * 1000;
 
