@@ -61,6 +61,8 @@ struct pg_callbacks {
 extern struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb);
 extern int spm_topaxi_protect(unsigned int mask_value, int en);
 extern void switch_mfg_clk(int src);
+extern void subsys_if_on(void);
+extern void mtcmos_force_off(void);
 /*ram console api*/
 /*
 *[0] bus protect reg

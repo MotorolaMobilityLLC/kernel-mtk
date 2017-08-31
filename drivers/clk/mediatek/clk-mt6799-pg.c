@@ -3264,26 +3264,58 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6799-scpsys", mt_scpsys_init);
 
-#if 0 /*only use for suspend test*/
+void subsys_if_on(void)
+{
+	unsigned int sta = spm_read(PWR_STATUS);
+	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
+
+	if ((sta & (1U << 1)) && (sta_s & (1U << 1)))
+		pr_err("suspend warning: SYS_MFG0 is on!!!\n");
+	if ((sta & (1U << 2)) && (sta_s & (1U << 2)))
+		pr_err("suspend warning: SYS_MFG1 is on!!!\n");
+	if ((sta & (1U << 3)) && (sta_s & (1U << 3)))
+		pr_err("suspend warning: SYS_MFG2 is on!!!\n");
+	if ((sta & (1U << 5)) && (sta_s & (1U << 5)))
+		pr_err("suspend warning: SYS_C2K is on!!!\n");
+	if ((sta & (1U << 6)) && (sta_s & (1U << 6)))
+		pr_err("suspend warning: SYS_MD1 is on!!!\n");
+	if ((sta & (1U << 13)) && (sta_s & (1U << 13)))
+		pr_err("suspend warning: SYS_AUD is on!!!\n");
+	if ((sta & (1U << 14)) && (sta_s & (1U << 14)))
+		pr_err("suspend warning: SYS_MJC is on!!!\n");
+	if ((sta & (1U << 15)) && (sta_s & (1U << 15)))
+		pr_err("suspend warning: SYS_MM0 is on!!!\n");
+	if ((sta & (1U << 17)) && (sta_s & (1U << 17)))
+		pr_err("suspend warning: SYS_CAM is on!!!\n");
+	if ((sta & (1U << 18)) && (sta_s & (1U << 18)))
+		pr_err("suspend warning: SYS_IPU is on!!!\n");
+	if ((sta & (1U << 19)) && (sta_s & (1U << 19)))
+		pr_err("suspend warning: SYS_ISP is on!!!\n");
+	if ((sta & (1U << 20)) && (sta_s & (1U << 20)))
+		pr_err("suspend warning: SYS_VEN is on!!!\n");
+	if ((sta & (1U << 21)) && (sta_s & (1U << 21)))
+		pr_err("suspend warning: SYS_VDE is on!!!\n");
+}
+
+#if 1 /*only use for suspend test*/
 void mtcmos_force_off(void)
 {
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg0(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_cam(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_ipu_sleep(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mjc(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mm0(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mdsys_intf_infra(STA_POWER_DOWN);
 
-	spm_mtcmos_ctrl_audio(STA_POWER_DOWN);
-
+	spm_mtcmos_ctrl_aud(STA_POWER_DOWN);
 }
 #endif
 

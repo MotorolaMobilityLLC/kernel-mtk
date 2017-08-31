@@ -207,10 +207,31 @@ void __iomem *venc_gcon_base;
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
 #define INFRA_PDN_SET1		(infracfg_base + 0x0088)
+#define INFRA_PDN_SET2		(infracfg_base + 0x00A4)
 #define INFRA_PDN_SET3		(infracfg_base + 0x00B0)
+#define INFRA_PDN_SET4		(infracfg_base + 0x00BC)
 
 #define AP_PLL_CON3		(apmixed_base + 0x000C)
 #define AP_PLL_CON4		(apmixed_base + 0x0010)
+#define FSMIPLL_CON0		(apmixed_base + 0x0200)
+#define FSMIPLL_PWR_CON0	(apmixed_base + 0x020C)
+#define GPUPLL_CON0		(apmixed_base + 0x0210)
+#define GPUPLL_PWR_CON0		(apmixed_base + 0x021C)
+#define UNIVPLL_CON0		(apmixed_base + 0x0240)
+#define UNIVPLL_PWR_CON0	(apmixed_base + 0x024C)
+#define MSDCPLL_CON0		(apmixed_base + 0x0250)
+#define MSDCPLL_PWR_CON0	(apmixed_base + 0x025C)
+#define MMPLL_CON0		(apmixed_base + 0x0260)
+#define MMPLL_PWR_CON0		(apmixed_base + 0x026C)
+#define VCODECPLL_CON0		(apmixed_base + 0x0270)
+#define VCODECPLL_PWR_CON0	(apmixed_base + 0x027C)
+#define TVDPLL_CON0		(apmixed_base + 0x0280)
+#define TVDPLL_PWR_CON0		(apmixed_base + 0x028C)
+#define EMIPLL_CON0		(apmixed_base + 0x0290)
+#define APLL1_CON0		(apmixed_base + 0x02A0)
+#define APLL1_PWR_CON0		(apmixed_base + 0x02B8)
+#define APLL2_CON0		(apmixed_base + 0x02C0)
+#define APLL2_PWR_CON0		(apmixed_base + 0x02D8)
 
 #define AUDIO_TOP_CON0		(audio_base + 0x0000)
 #define AUDIO_TOP_CON1		(audio_base + 0x0004)
@@ -2200,6 +2221,8 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	apmixed_base = base;
+	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xee2b8ae2);/* ARMPLL4, MPLL, CCIPLL, EMIPLL, MAINPLL */
+	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xee2ffee2);
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6799-apmixedsys",
 		mtk_apmixedsys_init);
@@ -2674,6 +2697,161 @@ void switch_mfg_clk(int src)
 		clk_writel(TOP_CLK2, clk_readl(TOP_CLK2)&0xfffffcff);
 	else
 		clk_writel(TOP_CLK2, (clk_readl(TOP_CLK2)&0xfffffcff)|(0x01<<8));
+}
+
+void mp_enter_suspend(int id, int suspend)
+{
+	/* mp0*/
+	if (id == 0) {
+		if (suspend) {
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfdff7fdf);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfdffffdf);
+		} else {
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x02008020);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x02000020);
+		}
+	} else if (id == 1) { /* mp1 */
+		if (suspend) {
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xfbfeffbf);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0xfbffffbf);
+		} else {
+			clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) | 0x04010040);
+			clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) | 0x04000040);
+		}
+	}
+}
+
+void pll_if_on(void)
+{
+	if (clk_readl(UNIVPLL_CON0) & 0x1)
+		pr_err("suspend warning: UNIVPLL is on!!!\n");
+	if (clk_readl(GPUPLL_CON0) & 0x1)
+		pr_err("suspend warning: GPUPLL is on!!!\n");
+	if (clk_readl(MMPLL_CON0) & 0x1)
+		pr_err("suspend warning: MMPLL is on!!!\n");
+	if (clk_readl(MSDCPLL_CON0) & 0x1)
+		pr_err("suspend warning: MSDCPLL is on!!!\n");
+	if (clk_readl(FSMIPLL_CON0) & 0x1)
+		pr_err("suspend warning: FSMIPLL is on!!!\n");
+	if (clk_readl(VCODECPLL_CON0) & 0x1)
+		pr_err("suspend warning: VCODECPLL is on!!!\n");
+	if (clk_readl(TVDPLL_CON0) & 0x1)
+		pr_err("suspend warning: TVDPLL is on!!!\n");
+	if (clk_readl(APLL1_CON0) & 0x1)
+		pr_err("suspend warning: APLL1 is on!!!\n");
+	if (clk_readl(APLL2_CON0) & 0x1)
+		pr_err("suspend warning: APLL2 is on!!!\n");
+}
+
+#define AUDIO_ENABLE_CG0 0x0F0C0304 /* [14]APB3_SEL = 1 */
+#define AUDIO_ENABLE_CG1 0x0F330000 /* default: all power on */
+
+#define INFRA_ENABLE_CG0 0xFFFFFFFF
+#define INFRA_ENABLE_CG1 0xFFFFFFFF
+#define INFRA_ENABLE_CG2 0xFFFFFFFF
+#define INFRA_ENABLE_CG3 0xFFFFFFFF
+#define INFRA_ENABLE_CG4 0xFFFFFFFF
+
+#define CAMSYS_ENABLE_CG	0x1FFF
+#define IMG_ENABLE_CG	0xFFF
+#define IPU_ENABLE_CG	0x3FF
+#define MFG_ENABLE_CG	0xF
+#define MM_ENABLE_CG0	0xFFFFFFFF /* un-gating in preloader */
+#define MM_ENABLE_CG1  0xFFFFFFFF /* un-gating in preloader */
+#define MM_ENABLE_CG2  0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG0 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG1 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG2 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG3 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG4 0xFFFFFFFF /* un-gating in preloader */
+#define PERI_ENABLE_CG5 0xFFFFFFFF /* un-gating in preloader */
+#define MJC_ENABLE_CG 0x7F
+#define VDEC_ENABLE_CG	0x111      /* inverse */
+#define LARB_ENABLE_CG	0x1	  /* inverse */
+#define VENC_ENABLE_CG 0x111111 /* inverse */
+
+void clock_force_off(void)
+{
+	#if 0
+	/*INFRA_AO CG*/
+	clk_writel(INFRA_PDN_SET0, INFRA_ENABLE_CG0);
+	clk_writel(INFRA_PDN_SET1, INFRA_ENABLE_CG1);
+	clk_writel(INFRA_PDN_SET2, INFRA_ENABLE_CG2);
+	clk_writel(INFRA_PDN_SET3, INFRA_ENABLE_CG3);
+	clk_writel(INFRA_PDN_SET4, INFRA_ENABLE_CG4);
+	/*PERI CG*/
+	clk_writel(PERI_CG_SET0, PERI_ENABLE_CG0);
+	clk_writel(PERI_CG_SET1, PERI_ENABLE_CG1);
+	clk_writel(PERI_CG_SET2, PERI_ENABLE_CG2);
+	clk_writel(PERI_CG_SET3, PERI_ENABLE_CG3);
+	clk_writel(PERI_CG_SET4, PERI_ENABLE_CG4);
+	clk_writel(PERI_CG_SET5, PERI_ENABLE_CG5);
+	#endif
+	/*DISP CG*/
+	clk_writel(MM_CG_SET0, MM_ENABLE_CG0);
+	clk_writel(MM_CG_SET1, MM_ENABLE_CG1);
+	clk_writel(MM_CG_SET2, MM_ENABLE_CG2);
+	/*AUDIO*/
+	clk_writel(AUDIO_TOP_CON0, AUDIO_ENABLE_CG0);
+	clk_writel(AUDIO_TOP_CON1, AUDIO_ENABLE_CG1);
+	/*MFG*/
+	clk_writel(MFG_CG_SET, MFG_ENABLE_CG);
+	/*ISP*/
+	clk_writel(IMG_CG_SET, IMG_ENABLE_CG);
+	/*VDE not inverse*/
+	clk_writel(VDEC_CKEN_CLR, VDEC_ENABLE_CG);
+	clk_writel(LARB1_CKEN_CLR, LARB_ENABLE_CG);
+	/*VENC not inverse*/
+	clk_writel(VENC_CG_CLR, VENC_ENABLE_CG);
+	/*MJC*/
+	clk_writel(MJC_CG_SET, MJC_ENABLE_CG);
+	/*CAM*/
+	clk_writel(CAMSYS_CG_SET, CAMSYS_ENABLE_CG);
+	/*IPU*/
+	clk_writel(IPU_CG_SET, IPU_ENABLE_CG);
+}
+
+#define PLL_EN  (0x1 << 0)
+#define PLL_PWR_ON  (0x1 << 0)
+#define PLL_ISO_EN  (0x1 << 1)
+void pll_force_off(void)
+{
+/*GPUPLL*/
+	clk_clrl(GPUPLL_CON0, PLL_EN);
+	clk_setl(GPUPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(GPUPLL_PWR_CON0, PLL_PWR_ON);
+/*FSMIPLL*/
+	clk_clrl(FSMIPLL_CON0, PLL_EN);
+	clk_setl(FSMIPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(FSMIPLL_PWR_CON0, PLL_PWR_ON);
+/*UNIVPLL*/
+	clk_clrl(UNIVPLL_CON0, PLL_EN);
+	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
+/*MSDCPLL*/
+	clk_clrl(MSDCPLL_CON0, PLL_EN);
+	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
+/*MMPLL*/
+	clk_clrl(MMPLL_CON0, PLL_EN);
+	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
+/*VCODECPLL*/
+	clk_clrl(VCODECPLL_CON0, PLL_EN);
+	clk_setl(VCODECPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(VCODECPLL_PWR_CON0, PLL_PWR_ON);
+/*TVDPLL*/
+	clk_clrl(TVDPLL_CON0, PLL_EN);
+	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
+/*APLL1*/
+	clk_clrl(APLL1_CON0, PLL_EN);
+	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL1_PWR_CON0, PLL_PWR_ON);
+/*APLL2*/
+	clk_clrl(APLL2_CON0, PLL_EN);
+	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
 }
 
 static int __init clk_mt6799_init(void)
