@@ -237,10 +237,10 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 
 	if (config_instantly == true) {
 		/* Set PWM clock division instantly to avoid frequency change dramaticly */
-		DISP_REG_MASK(NULL, reg_base + 0x20, 0x3, ~0);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_DEBUG, 0x3, 0x3);
 		DISP_REG_MASK(NULL, reg_base + DISP_PWM_CON_0_OFF, pwm_div << 16, (0x3ff << 16));
 		udelay(40);
-		DISP_REG_MASK(NULL, reg_base + 0x20, 0x0, ~0);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_DEBUG, 0x0, 0x3);
 
 		PWM_MSG("disp_pwm_init : PWM config data instantly (%d,%d)", pwm_src, pwm_div);
 	}
@@ -695,9 +695,9 @@ static void disp_pwm_enable_debug(const char *cmd)
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 
 	if (cmd[0] == '1')
-		DISP_REG_SET(NULL, reg_base + 0x20, 3);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_DEBUG, 3, 0x3);
 	else
-		DISP_REG_SET(NULL, reg_base + 0x20, 0);
+		DISP_REG_MASK(NULL, reg_base + DISP_PWM_DEBUG, 0, 0x3);
 }
 
 static void disp_pwm_test_pin_mux(void)
@@ -728,7 +728,7 @@ static void disp_pwm_test_pin_mux(void)
 #endif
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_CON_1_OFF, 512 << 16, 0x1fff << 16);
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
-	DISP_REG_SET(NULL, reg_base + 0x20, 3);
+	DISP_REG_MASK(NULL, reg_base + DISP_PWM_DEBUG, 3, 0x3);
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_COMMIT_OFF, 1, ~0);
 	DISP_REG_MASK(NULL, reg_base + DISP_PWM_COMMIT_OFF, 0, ~0);
 }
@@ -793,14 +793,20 @@ static int pwm_parse_triple(const char *cmd, unsigned long *offset, unsigned lon
 static void disp_pwm_dump(void)
 {
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	unsigned int val;
 	int offset;
 
 	PWM_NOTICE("[DUMP] Base = 0x%lx", reg_base);
-	for (offset = 0; offset <= 0x28; offset += 4) {
-		unsigned int val = DISP_REG_GET(reg_base + offset);
+	for (offset = 0; offset <= 0x30; offset += 4) {
+		val = DISP_REG_GET(reg_base + offset);
 
 		PWM_NOTICE("[DUMP] [+0x%02x] = 0x%08x", offset, val);
 	}
+#if defined(CONFIG_MACH_MT6799)
+	val = DISP_REG_GET(reg_base + DISP_PWM_DEBUG);
+
+	PWM_NOTICE("[DUMP] [+0x%02x] = 0x%08x", DISP_PWM_DEBUG, val);
+#endif
 }
 
 void disp_pwm_test(const char *cmd, char *debug_output)

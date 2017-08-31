@@ -85,7 +85,7 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
  * get disp pwm source mux node
  *
 *****************************************************************************/
-#define DTSI_TOPCKGEN "mediatek,topckgen"
+#define DTSI_TOPCKGEN "mediatek,mt6799-topckgen"
 static int disp_pwm_get_muxbase(void)
 {
 	int ret = 0;
@@ -132,6 +132,7 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
+
 	ret = disp_pwm_get_muxbase();
 	reg_before = disp_pwm_get_pwmmux();
 
@@ -296,10 +297,11 @@ int ulposc_disable(enum DDP_CLK_ID clkid)
 int disp_pwm_clksource_enable(int clk_req)
 {
 	int ret = 0;
+#if 0
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
-#if 0
+
 	switch (clkid) {
 	case ULPOSC_D4:
 	case ULPOSC_D8:
@@ -316,10 +318,11 @@ int disp_pwm_clksource_enable(int clk_req)
 int disp_pwm_clksource_disable(int clk_req)
 {
 	int ret = 0;
+#if 0
 	enum DDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
-#if 0
+
 	switch (clkid) {
 	case ULPOSC_D4:
 	case ULPOSC_D8:
