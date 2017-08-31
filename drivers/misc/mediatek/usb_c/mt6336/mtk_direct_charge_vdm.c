@@ -618,6 +618,8 @@ int handle_dc_auth(struct pd_direct_chrg *dc, int cnt, uint32_t *payload, uint32
 			dc->auth_pass = 0;
 		} else {
 			pr_err("%s auth fail @ step1 0x%04x 0x%04x\n", __func__, dc->auth_code, data[0]);
+
+			set_state(dc->hba, PD_STATE_HARD_RESET_SEND);
 		}
 	} else if (dc->auth_pass == 0) {
 		if (data[0] == 0x1) {
@@ -626,6 +628,8 @@ int handle_dc_auth(struct pd_direct_chrg *dc, int cnt, uint32_t *payload, uint32
 		} else {
 			dc->auth_pass = -1;
 			pr_err("%s auth fail @ step2 0x%04x 0x%04x\n", __func__, dc->auth_code, data[0]);
+
+			set_state(dc->hba, PD_STATE_HARD_RESET_SEND);
 		}
 	}
 end:

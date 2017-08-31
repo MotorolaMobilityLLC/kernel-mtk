@@ -21,10 +21,6 @@
 #include <mt6336/mt6336.h>
 #include <mtk_clkbuf_ctl.h>
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-#include <mt-plat/mtk_boot_common.h>
-#endif
-
 #ifdef CONFIG_USB_PD_DUAL_ROLE
 #define DUAL_ROLE_IF_ELSE(hba, sink_clause, src_clause) \
 	(hba->power_role == PD_ROLE_SINK ? (sink_clause) : (src_clause))
@@ -116,7 +112,6 @@ static struct state_mapping {
 	{PD_STATE_DISCOVERY_SOP_P, "DISCOVERY_SOP_P"},
 	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
 	{PD_STATE_SNK_HARD_RESET_NOVSAFE5V, "SNK_HARD_RESET_NOVSAFE5V"},
-	{PD_STATE_SNK_KPOC_DELAY_RX_ON, "SNK_KPOC_DELAY_RX_ON"},
 	{PD_STATE_SNK_KPOC_PWR_OFF, "SNK_KPOC_PWR_OFF"},
 	{PD_STATE_NO_TIMEOUT, "NO_TIMEOUT"},
 };
@@ -329,7 +324,10 @@ void pd_init(struct typec_hba *hba)
 	hba->timeout_timer.function = timeout_hrtimer_callback;
 
 	/*start PD task*/
-	kthread_run(pd_task, (void *)hba, "pd_task");
+	if (hba->is_kpoc == true)
+		kthread_run(pd_kpoc_task, (void *)hba, "pd_kpoc_task");
+	else
+		kthread_run(pd_task, (void *)hba, "pd_task");
 }
 
 void pd_set_event(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t cc_is0)
@@ -386,8 +384,13 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 
 	/* CC & RX & timer events */
 	if (cc_event || rx_event || timer_event) {
-		if (pd_is1 & PD_HR_RCV_DONE_INTR)
+		if (pd_is1 & PD_HR_RCV_DONE_INTR) {
+			dev_err(hba->dev, "%s Receive HardReset\n", __func__);
 			hba->tx_event = true;
+			wake_up(&hba->wq);
+			if (hba->is_kpoc)
+				typec_vbus_det_enable(hba, 0);
+		}
 
 		hba->rx_event = true;
 		wake_up(&hba->wq);
@@ -569,7 +572,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 			hba->pd_is0 & PD_TX_EVENTS0, hba->pd_is1 & PD_TX_EVENTS1);
 
 	/*give VDM more time to timeout*/
-	if (PD_HEADER_TYPE(header) == PD_DATA_VENDOR_DEF)
+	if (hba->is_kpoc || (PD_HEADER_TYPE(header) == PD_DATA_VENDOR_DEF))
 		timeout = PD_VDM_TX_TIMEOUT;
 
 	if (wait_event_timeout(hba->wq, hba->tx_event, msecs_to_jiffies(timeout))) {
@@ -1799,6 +1802,613 @@ end:
 }
 #endif
 
+int pd_kpoc_task(void *data)
+{
+#if PD_SW_WORKAROUND1_2
+	uint16_t header;
+	uint32_t payload[7];
+#endif
+	unsigned long pre_timeout = ULONG_MAX;
+	unsigned long timeout = 10;
+
+	int ret = 0;
+	int incoming_packet = 0;
+	int hard_reset_count = 0;
+#ifdef CONFIG_USB_PD_DUAL_ROLE
+	/*uint64_t next_role_swap = PD_T_DRP_SNK;*/
+#ifndef CONFIG_USB_PD_NO_VBUS_DETECT
+	int snk_hard_reset_vbus_off = 0;
+#endif
+#endif /* CONFIG_USB_PD_DUAL_ROLE */
+	enum pd_states curr_state;
+	int hard_reset_sent = 0;
+	struct typec_hba *hba = (struct typec_hba *)data;
+	uint16_t pd_is0, pd_is1, cc_is0;
+	uint8_t missing_event;
+
+	static const struct sched_param param = {
+			.sched_priority = 98,
+	};
+	sched_setscheduler(current, SCHED_FIFO, &param);
+
+	/* Initialize PD protocol state variables for each port. */
+	hba->power_role = PD_NO_ROLE;
+	hba->data_role = PD_NO_ROLE;
+	hba->flags = 0;
+	hba->vdm_state = VDM_STATE_DONE;
+	hba->alt_mode_svid = 0;
+	hba->timeout_user = 0;
+	set_state(hba, PD_STATE_DISABLED);
+
+	msleep(hba->kpoc_delay);
+
+	typec_enable(hba, 1);
+
+	while (1) {
+		/* process VDM messages last */
+		pd_vdm_send_state_machine(hba);
+		if ((hba->vdm_state == VDM_STATE_WAIT_RSP_BUSY) || (hba->vdm_state == VDM_STATE_BUSY)) {
+			/*VDM timer is running. So kick the FSM quicklier to check timeout*/
+			pre_timeout = timeout;
+			timeout = 5;
+		} else {
+			if (pre_timeout != ULONG_MAX) {
+				timeout = pre_timeout;
+				pre_timeout = ULONG_MAX;
+			}
+		}
+
+		/*
+		 * RX & CC events may happen
+		 *  1) in the middle of init_completion
+		 *  2) after their event handlers finished last time
+		 * if this is case, jump directly into event handlers; otherwise,
+		 * wait for timeout, or CC/RX/timer events
+		 */
+		mutex_lock(&hba->typec_lock);
+		missing_event = (hba->pd_is0 & PD_RX_SUCCESS0) || (hba->pd_is1 & PD_RX_HR_SUCCESS) || (hba->cc_is0);
+		mutex_unlock(&hba->typec_lock);
+
+		if (!missing_event && timeout) {
+			hba->rx_event = false;
+			ret = wait_event_timeout(hba->wq, hba->rx_event, msecs_to_jiffies(timeout));
+		}
+
+		/* latch events */
+		mutex_lock(&hba->typec_lock);
+		pd_is0 = hba->pd_is0;
+		pd_is1 = hba->pd_is1;
+		cc_is0 = hba->cc_is0;
+
+		pd_clear_event(hba, (pd_is0 & PD_EVENTS0), (pd_is1 & PD_EVENTS1), cc_is0);
+		mutex_unlock(&hba->typec_lock);
+
+		if ((hba->dbg_lvl >= TYPEC_DBG_LVL_3) && !ret)
+			dev_err(hba->dev, "[TIMEOUT %lums]\n", timeout);
+
+		/* Directly go to timeout_state when time is up set by set_state_timeout() */
+		if (hba->flags & PD_FLAGS_TIMEOUT) {
+			if (hba->timeout_state != PD_STATE_NO_TIMEOUT)
+				set_state(hba, hba->timeout_state);
+			hba->flags = hba->flags & (~PD_FLAGS_TIMEOUT);
+			dev_err(hba->dev, "timeout go to %s\n", pd_state_mapping[hba->task_state].name);
+		}
+
+		/* process RX events */
+		if (pd_is0 & PD_RX_SUCCESS0) {
+		#ifdef PROFILING
+			ktime_t start, end;
+		#endif
+
+			incoming_packet = 1;
+
+		#if PD_SW_WORKAROUND1_1
+
+			if (hba->header && (hba->bist_mode != BDO_MODE_TEST_DATA))
+				handle_request(hba, hba->header, hba->payload);
+
+		#else
+
+		#ifdef PROFILING
+			start = ktime_get();
+		#endif
+
+			pd_get_message(hba, &header, payload);
+
+		#ifdef PROFILING
+			end = ktime_get();
+			dev_err(hba->dev, "RX took %lld us", ktime_to_ns(ktime_sub(end, start))/1000);
+		#endif
+
+			if (header && (hba->bist_mode != BDO_MODE_TEST_DATA))
+				handle_request(hba, header, payload);
+		#endif
+		} else {
+			incoming_packet = 0;
+		}
+
+		/* process hard reset */
+		if (pd_is1 & PD_RX_HR_SUCCESS) {
+			dev_err(hba->dev, "PD_RX_HR_SUCCESS\n");
+
+			pd_complete_hr(hba);
+
+			if (hba->task_state != PD_STATE_SRC_HARD_RESET_RECOVER) {
+				hba->last_state = hba->task_state;
+				set_state(hba, PD_STATE_HARD_RESET_RECEIVED);
+			}
+		}
+
+		/* process CC events */
+		/* change state according to Type-C controller status */
+		if ((cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) && !pd_is_power_swapping(hba))
+			set_state(hba, PD_STATE_SNK_ATTACH);
+
+		if (cc_is0 & TYPE_C_CC_ENT_DISABLE_INTR)  {
+			dev_err(hba->dev, "TYPE_C_CC_ENT_DISABLE_INTR\n");
+			set_state(hba, PD_STATE_DISABLED);
+		}
+
+		if (cc_is0 & TYPE_C_CC_ENT_UNATTACH_SNK_INTR)
+			set_state(hba, PD_STATE_SNK_UNATTACH);
+
+		/*There is a VDM have to be sent.*/
+		if (hba->vdm_state == VDM_STATE_READY)
+			continue;
+
+		curr_state = hba->task_state;
+
+		/* if nothing to do, verify the state of the world in 500ms
+		 *  also reset the timeout value set by the last state.
+		 */
+		timeout = (hba->timeout_user ? hba->timeout_user : PD_T_NO_ACTIVITY);
+
+		/* skip DRP toggle cases*/
+		if ((hba->dbg_lvl >= TYPEC_DBG_LVL_1)
+			&& state_changed(hba)
+			&& !(hba->last_state == PD_STATE_SRC_UNATTACH && hba->task_state == PD_STATE_SNK_UNATTACH)
+			&& !(hba->last_state == PD_STATE_SNK_UNATTACH && hba->task_state == PD_STATE_SRC_UNATTACH)) {
+			dev_err(hba->dev, "%s->%s\n",
+				pd_state_mapping[hba->last_state].name, pd_state_mapping[hba->task_state].name);
+		}
+
+		switch (curr_state) {
+		case PD_STATE_DISABLED:
+#ifdef CONFIG_USB_PD_DUAL_ROLE
+		case PD_STATE_SNK_UNATTACH:
+			/* Clear the input current limit */
+			/* pd_set_input_current_limit(hba, 0, 0);*/
+#ifdef CONFIG_USBC_VCONN
+			typec_drive_vconn(hba, 0);
+#endif
+#endif
+
+#ifdef CONFIG_USB_PD_ALT_MODE_DFP
+			pd_dfp_exit_mode(hba, 0, 0);
+#endif
+			/* be aware of Vbus */
+			typec_vbus_det_enable(hba, 1);
+
+			/* disable RX */
+			pd_rx_enable(hba, 0);
+
+			/* disable BIST */
+			pd_bist_enable(hba, 0, 0);
+
+			/*TX header PD spec revision should be 01b=2.0*/
+			typec_writew_msk(hba, 0x3<<6, PD_REV20<<6, PD_TX_HEADER);
+
+			/*Restore back to real Rp*/
+			typec_select_rp(hba, hba->rp_val);
+
+			typec_set(hba, REG_PD_RX_DUPLICATE_INTR_EN, PD_INTR_EN_0);
+
+			/*Improve RX signal quality from analog to digital part.*/
+			if (state_changed(hba))
+				pd_rx_phya_setting(hba);
+
+			if (wake_lock_active(&hba->typec_wakelock))
+				wake_unlock(&hba->typec_wakelock);
+
+			typec_enable_lowq(hba, "PD-UNATTACHED");
+
+			/*Disable 26MHz clock XO_PD*/
+			clk_buf_ctrl(CLK_BUF_CHG, false);
+
+			hba->power_role = PD_NO_ROLE;
+			hba->data_role = PD_NO_ROLE;
+			hba->vdm_state = VDM_STATE_DONE;
+			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
+			hba->vsafe_5v = PD_VSAFE5V_LOW;
+
+			cancel_delayed_work_sync(&hba->usb_work);
+			schedule_delayed_work(&hba->usb_work, 0);
+
+			if ((hba->charger_det_notify) && (hba->last_state != PD_STATE_DISABLED)) {
+				if ((hba->flags & PD_FLAGS_SRC_NO_PD) ||
+					(hba->flags & PD_FLAGS_EXPLICIT_CONTRACT) ||
+					((hba->task_state == PD_STATE_SNK_ATTACH) &&
+					 (hba->timeout_state == PD_STATE_SNK_KPOC_PWR_OFF))) {
+					hba->charger_det_notify(0);
+				} else {
+					set_state_timeout(hba, 2*1000, PD_STATE_SNK_KPOC_PWR_OFF);
+				}
+			}
+
+			hba->flags &= ~PD_FLAGS_RESET_ON_DISCONNECT_MASK;
+
+			/* When enter DISABLE/UNATTACHED.SRC/UNATTACHED.SNK, do _NOT_ check regularly of
+			 * PD status. If there is any status change. CC interrupt will kick PD FSM and
+			 * set a new timeout value to start polling check.
+			 */
+			timeout = ULONG_MAX;
+			break;
+
+		case PD_STATE_SNK_HARD_RESET_RECOVER:
+			if (state_changed(hba))
+				hba->flags |= PD_FLAGS_DATA_SWAPPED;
+
+			/* Wait for VBUS to go low and then high*/
+			if (state_changed(hba)) {
+				snk_hard_reset_vbus_off = 0;
+				set_state_timeout(hba, PD_T_SAFE_0V,
+					(hard_reset_count < PD_HARD_RESET_COUNT) ?
+					PD_STATE_HARD_RESET_SEND : PD_STATE_SNK_DISCOVERY);
+			}
+
+			timeout = 20;
+			if (!snk_hard_reset_vbus_off && (typec_vbus(hba) < PD_VSAFE0V_HIGH)) {
+				/* VBUS has gone low, reset timeout */
+				snk_hard_reset_vbus_off = 1;
+				set_state_timeout(hba, (PD_T_SRC_RECOVER_MAX + PD_T_SRC_TURN_ON),
+						  PD_STATE_SNK_HARD_RESET_NOVSAFE5V);
+			}
+
+			if (snk_hard_reset_vbus_off && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
+				/* VBUS went high again */
+				set_state(hba, PD_STATE_SNK_DISCOVERY);
+				timeout = 10;
+
+				pd_complete_hr(hba);
+				typec_vbus_det_enable(hba, 1);
+
+				pd_bist_enable(hba, 0, 0);
+			}
+			break;
+
+		case PD_STATE_SNK_HARD_RESET_NOVSAFE5V:
+			/*
+			 * Currently as SNK and sent the hard reset
+			 * The partner as SRC turn off VBUS, but does not turn on VBUS.
+			 * After tSrcRecover + tSrcTurnOn (1275ms), should just jump to unattached state
+			 */
+			if (state_changed(hba)) {
+				if ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST)
+									== TYPEC_STATE_ATTACHED_SNK) {
+					/* disable RX */
+					pd_rx_enable(hba, 0);
+
+					/* notify IP VBUS is gone.*/
+					typec_vbus_present(hba, 0);
+				}
+			}
+			break;
+
+		case PD_STATE_SNK_ATTACH:
+			if (!state_changed(hba))
+				break;
+
+			/*Enable 26MHz clock XO_PD*/
+			clk_buf_ctrl(CLK_BUF_CHG, true);
+
+			if (hba->charger_det_notify)
+				hba->charger_det_notify(1);
+
+			if (!wake_lock_active(&hba->typec_wakelock))
+				wake_lock(&hba->typec_wakelock);
+
+			/* reset message ID  on connection */
+			pd_set_msg_id(hba, 0);
+			/* initial data role for sink is UFP */
+			pd_set_power_role(hba, PD_ROLE_SINK, 1);
+			if (!(hba->flags & PD_FLAGS_POWER_SWAPPED)) /*don't update DR after SRC->SNK power role swap*/
+				pd_set_data_role(hba, PD_ROLE_UFP);
+			else
+				hba->flags &= ~PD_FLAGS_POWER_SWAPPED; /*PR SWAP path 1*/
+
+			pd_rx_enable(hba, 1);
+
+			/*Improve RX signal quality from analog to digital part.*/
+			pd_rx_phya_setting(hba);
+
+			/*
+			 * fake set data role swapped flag so we send
+			 * discover identity when we enter SRC_READY
+			 */
+			hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_DATA_SWAPPED);
+			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
+			hard_reset_count = 0;
+
+			timeout = 0;
+			set_state(hba, PD_STATE_SNK_DISCOVERY);
+
+			break;
+
+		case PD_STATE_SNK_DISCOVERY:
+			/* Wait for source cap expired only if we are enabled */
+			if (state_changed(hba)) {
+				hba->flags &= ~PD_FLAGS_POWER_SWAPPED; /*PR SWAP path 2*/
+
+				/*
+				 * If we haven't passed hard reset counter,
+				 * start SinkWaitCapTimer, otherwise start
+				 * NoResponseTimer.
+				 */
+				if (hard_reset_count < PD_HARD_RESET_COUNT)
+					set_state_timeout(hba, 2*1000, PD_STATE_HARD_RESET_SEND);
+				else if (hba->flags & PD_FLAGS_PREVIOUS_PD_CONN)
+					/* ErrorRecovery */
+					set_state_timeout(hba, PD_T_NO_RESPONSE, PD_STATE_SNK_UNATTACH);
+				else if (hba->last_state == PD_STATE_SNK_HARD_RESET_RECOVER &&
+						hard_reset_count == PD_HARD_RESET_COUNT) {
+
+					hba->flags |= PD_FLAGS_SRC_NO_PD;
+					/*
+					 * Once the Hard Reset has been retried nHardResetCount times
+					 * then it shall be assumed that the remote device is
+					 * non-responsive.
+					 */
+					dev_err(hba->dev, "SRC NO SUPPORT PD");
+					typec_vbus_det_enable(hba, 1);
+					timeout = PD_T_NO_ACTIVITY;
+
+					if (wake_lock_active(&hba->typec_wakelock))
+						wake_unlock(&hba->typec_wakelock);
+				}
+			}
+
+			if (hba->flags & PD_FLAGS_SRC_NO_PD) {
+				int val = typec_vbus(hba);
+
+				if (val < hba->vsafe_5v) {
+					/* notify IP VBUS is gone.*/
+					typec_vbus_present(hba, 0);
+					dev_err(hba->dev, "Vbus OFF in Attached.SNK\n");
+				}
+
+			}
+			break;
+
+		case PD_STATE_SNK_REQUESTED:
+			/* Wait for ACCEPT or REJECT */
+			if (state_changed(hba)) {
+				hard_reset_count = 0;
+				/*set_state_timeout(hba, PD_T_SENDER_RESPONSE-3, PD_STATE_HARD_RESET_SEND);*/
+				set_state_timeout(hba, 1*1000, PD_STATE_HARD_RESET_SEND);
+			}
+			break;
+
+		case PD_STATE_SNK_TRANSITION:
+			/* Wait for PS_RDY */
+			if (state_changed(hba))
+				/*set_state_timeout(hba, PD_T_PS_TRANSITION, PD_STATE_HARD_RESET_SEND);*/
+				set_state_timeout(hba, 1*1000, PD_STATE_HARD_RESET_SEND);
+			break;
+
+		case PD_STATE_SNK_READY:
+			timeout = 20;
+
+			/*
+			 * Don't send any PD traffic if we woke up due to
+			 * incoming packet or if VDO response pending to avoid
+			 * collisions.
+			 */
+			if (incoming_packet || (hba->vdm_state == VDM_STATE_BUSY))
+				break;
+
+			/* Check for new power to request */
+			if (hba->new_power_request) {
+				pd_send_request_msg(hba, 0);
+				break;
+			}
+
+#ifdef SUPPORT_SOP_P
+			if (hba->data_role == PD_ROLE_DFP &&
+				hba->cable_flags == PD_FLAGS_CBL_NO_INFO) {
+				set_state(hba, PD_STATE_DISCOVERY_SOP_P);
+
+				/*Kick FSM to enter the next stat earlier.*/
+				timeout = 10;
+				break;
+			}
+#endif
+
+			/* If DFP, send discovery SVDMs */
+			if ((hba->discover_vmd == 1) &&
+			     (hba->data_role == PD_ROLE_DFP) &&
+			     (hba->flags & PD_FLAGS_DATA_SWAPPED)) {
+
+				pd_send_vdm(hba, USB_SID_PD,
+					    CMD_DISCOVER_IDENT, NULL, 0);
+
+				hba->flags &= ~PD_FLAGS_DATA_SWAPPED;
+				break;
+			}
+
+			/* Sent all messages, don't need to wake very often */
+			timeout = PD_T_NO_ACTIVITY;
+			break;
+
+#ifdef CONFIG_USBC_VCONN_SWAP
+		case PD_STATE_VCONN_SWAP_SEND:
+			if (state_changed(hba)) {
+				if (send_control(hba, PD_CTRL_VCONN_SWAP)) {
+					timeout = 10;
+					set_state(hba, PD_STATE_SOFT_RESET);
+					break;
+				}
+
+				/* Wait for accept or reject */
+				set_state_timeout(hba, PD_T_SENDER_RESPONSE, READY_RETURN_STATE(hba));
+			}
+			break;
+
+		case PD_STATE_VCONN_SWAP_INIT:
+			if (state_changed(hba)) {
+				if (!(hba->flags & PD_FLAGS_VCONN_ON)) {
+					/* Turn VCONN on and wait for it */
+					typec_drive_vconn(hba, 1);
+					set_state_timeout(hba, PD_VCONN_SWAP_DELAY, PD_STATE_VCONN_SWAP_READY);
+				} else {
+					set_state_timeout(hba,
+						PD_T_VCONN_SOURCE_ON, READY_RETURN_STATE(hba));
+				}
+			}
+			break;
+
+		case PD_STATE_VCONN_SWAP_READY:
+			if (state_changed(hba)) {
+				if (!(hba->flags & PD_FLAGS_VCONN_ON)) {
+					/* VCONN is now on, send PS_RDY */
+					hba->flags |= PD_FLAGS_VCONN_ON;
+
+					if (send_control(hba, PD_CTRL_PS_RDY)) {
+						timeout = 10;
+
+						/*
+						 * If failed to get goodCRC,
+						 * send soft reset
+						 */
+						set_state(hba, PD_STATE_SOFT_RESET);
+
+						break;
+					}
+
+					set_state(hba, READY_RETURN_STATE(hba));
+				} else {
+					/* Turn VCONN off and wait for it */
+					typec_drive_vconn(hba, 0);
+					hba->flags &= ~PD_FLAGS_VCONN_ON;
+
+					set_state_timeout(hba, PD_VCONN_SWAP_DELAY, READY_RETURN_STATE(hba));
+				}
+			}
+			break;
+#endif /* CONFIG_USBC_VCONN_SWAP */
+
+		case PD_STATE_SOFT_RESET:
+			if (state_changed(hba)) {
+				dev_err(hba->dev, "No SOFT RESET @ KPOC");
+				set_state(hba, PD_STATE_SNK_READY);
+			}
+			break;
+
+		case PD_STATE_HARD_RESET_SEND:
+			if (state_changed(hba))
+				hard_reset_sent = 0;
+
+			/*
+			 * If Hard Reset happened in the middle of doing PR_SWAP
+			 * from SRC to SNK. The driver should check VBUS. If there
+			 * is no VBUS, jump to UNATTACHED mode.
+			 */
+			if (hba->last_state == PD_STATE_SRC_SWAP_STANDBY)
+				typec_vbus_det_enable(hba, 1);
+
+			/* try sending hard reset until it succeeds */
+			if (!hard_reset_sent) {
+				hard_reset_count++;
+
+				if (pd_transmit(hba, PD_TX_HARD_RESET, 0, NULL)) {
+					timeout = 10;
+
+					break;
+				}
+
+				/* successfully sent hard reset */
+				hard_reset_sent = 1;
+
+				/*
+				 * If we are source, delay before cutting power
+				 * to allow sink time to get hard reset.
+				 */
+				if (hba->power_role == PD_ROLE_SOURCE) {
+					/*
+					 * TD.PD.SRC.E6 PSHardResetTimer Timeout - Testing Downstream Port
+					 * PSHardResetTimer is too long (actual 35.1 ms)
+					 * Our original tPSHardReset is 25ms. But the exact time is over 35ms.
+					 * So just cut the value a little bit.
+					 */
+					set_state_timeout(hba,
+						PD_T_PS_HARD_RESET-2, PD_STATE_HARD_RESET_EXECUTE);
+				} else {
+					timeout = 10;
+					set_state(hba,
+						PD_STATE_HARD_RESET_EXECUTE);
+				}
+			}
+			break;
+		case PD_STATE_HARD_RESET_RECEIVED:
+			if (state_changed(hba)) {
+				if (hba->power_role == PD_ROLE_SOURCE) {
+					set_state_timeout(hba,
+						PD_T_PS_HARD_RESET-2, PD_STATE_HARD_RESET_EXECUTE);
+				} else {
+					timeout = 0;
+					/*Do not detect VBUS when receiving HARD RESET ASAP*/
+					typec_vbus_det_enable(hba, 0);
+					set_state(hba,
+						PD_STATE_HARD_RESET_EXECUTE);
+				}
+			}
+			break;
+		case PD_STATE_HARD_RESET_EXECUTE:
+			/* reset our own state machine */
+			pd_execute_hard_reset(hba);
+			timeout = 10;
+			break;
+
+#ifdef SUPPORT_SOP_P
+		case PD_STATE_DISCOVERY_SOP_P:
+			if (state_changed(hba)) {
+				hba->cable_flags &= ~PD_FLAGS_CBL_NO_INFO;
+
+				if (!send_cable_discovery_identity(hba, PD_TX_SOP_PRIME)) {
+					hba->cable_flags |= PD_FLAGS_CBL_DISCOVERYING_SOP_P;
+
+					dev_err(hba->dev, "%s Send SOP_P discovery identity success", __func__);
+
+					timeout = PD_T_VDM_SNDR_RSP;
+
+				} else {
+					hba->cable_flags &= ~PD_FLAGS_CBL_DISCOVERYING_SOP_P;
+					hba->cable_flags |= PD_FLAGS_CBL_NO_RESP_SOP_P;
+					dev_err(hba->dev, "%s Send SOP_P discovery identity fail", __func__);
+					timeout = 10;
+				}
+
+				if (hba->flags & PD_FLAGS_EXPLICIT_CONTRACT)
+					set_state(hba, DUAL_ROLE_IF_ELSE(hba, PD_STATE_SNK_READY, PD_STATE_SRC_READY));
+				else
+					set_state(hba, PD_STATE_SRC_DISCOVERY);
+			}
+			break;
+#endif
+
+		case PD_STATE_SNK_KPOC_PWR_OFF:
+			if (state_changed(hba)) {
+				if (hba->charger_det_notify)
+					hba->charger_det_notify(0);
+			}
+			break;
+		default:
+			break;
+		}
+
+		hba->last_state = curr_state;
+	}
+}
+
 int pd_task(void *data)
 {
 #if PD_SW_WORKAROUND1_2
@@ -2059,20 +2669,8 @@ int pd_task(void *data)
 			cancel_delayed_work_sync(&hba->usb_work);
 			schedule_delayed_work(&hba->usb_work, 0);
 
-			if ((hba->charger_det_notify) && (hba->last_state != PD_STATE_DISABLED)) {
-				if (hba->is_kpoc && (hba->kpoc_retry > 0)) {
-					if ((hba->flags & PD_FLAGS_SRC_NO_PD) ||
-						(hba->flags & PD_FLAGS_EXPLICIT_CONTRACT) ||
-						((hba->task_state == PD_STATE_SNK_ATTACH) &&
-						 (hba->timeout_state == PD_STATE_SNK_KPOC_PWR_OFF))) {
-						hba->charger_det_notify(0);
-					} else {
-						hba->kpoc_retry--;
-						set_state_timeout(hba, 2*1000, PD_STATE_SNK_KPOC_PWR_OFF);
-					}
-				} else
-					hba->charger_det_notify(0);
-			}
+			if ((hba->charger_det_notify) && (hba->last_state != PD_STATE_DISABLED))
+				hba->charger_det_notify(0);
 
 			hba->flags &= ~PD_FLAGS_RESET_ON_DISCONNECT_MASK;
 
@@ -2575,10 +3173,8 @@ int pd_task(void *data)
 				port, typec_curr, TYPE_C_VOLTAGE);
 #endif
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			if (!hba->is_kpoc || (hba->is_kpoc && (hba->kpoc_retry < 3)))
-				pd_rx_enable(hba, 1);
-#endif
+			pd_rx_enable(hba, 1);
+
 			/*Improve RX signal quality from analog to digital part.*/
 			pd_rx_phya_setting(hba);
 
@@ -2590,20 +3186,8 @@ int pd_task(void *data)
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
 			hard_reset_count = 0;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			if (hba->is_kpoc && (hba->kpoc_retry == 3)) {
-				timeout = 1000;
-				set_state_timeout(hba, hba->kpoc_delay, PD_STATE_SNK_KPOC_DELAY_RX_ON);
-				hba->kpoc_retry--;
-			} else {
-				timeout = 10;
-				set_state(hba, PD_STATE_SNK_DISCOVERY);
-			}
-#else
 			timeout = 10;
 			set_state(hba, PD_STATE_SNK_DISCOVERY);
-#endif
-
 			break;
 
 		case PD_STATE_SNK_DISCOVERY:
@@ -2727,9 +3311,6 @@ int pd_task(void *data)
 			if (need_update(hba))
 				update_dual_role_usb(hba, 1);
 #endif
-			if (hba->is_kpoc)
-				hba->kpoc_retry = 3;
-
 			/* Check for new power to request */
 			if (hba->new_power_request) {
 				pd_send_request_msg(hba, 0);
@@ -3163,13 +3744,6 @@ int pd_task(void *data)
 			break;
 #endif
 
-		case PD_STATE_SNK_KPOC_DELAY_RX_ON:
-			if (state_changed(hba)) {
-				pd_rx_enable(hba, 1);
-				timeout = 0;
-				set_state(hba, PD_STATE_SNK_DISCOVERY);
-			}
-			break;
 		case PD_STATE_SNK_KPOC_PWR_OFF:
 			if (state_changed(hba)) {
 				if (hba->charger_det_notify)
