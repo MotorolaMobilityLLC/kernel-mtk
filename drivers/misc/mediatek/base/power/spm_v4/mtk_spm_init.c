@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,26 +11,27 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_SPM_REG_H___
-#define __MT_SPM_REG_H___
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <mtk_spm.h>
+#include <mtk_sleep.h>
+#include <mtk_cpuidle.h>
+#include <mtk_spm_resource_req_internal.h>
 
-#include "spm_v2/mtk_spm_reg.h"
+static int __init mt_spm_init(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* mtk_cpuidle_init(); */
 
-#elif defined(CONFIG_MACH_MT6799)
-
-#include "spm_v3/mtk_spm_reg.h"
-
-#elif defined(CONFIG_MACH_MT6759)
-
-#include "spm_v3/mtk_spm_reg_mt6759.h"
-
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_spm_reg_mt6763.h"
-
+	spm_module_init();
+	slp_module_init();
 #endif
 
-#endif /* __MT_SPM_REG_H___ */
+	/* spm_resource_req_init(); */
 
+	return 0;
+}
+
+late_initcall(mt_spm_init);

@@ -11,22 +11,15 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_IDLE_COMMON_H__
-#define __MTK_IDLE_COMMON_H__
+#ifndef __MTK_SPM_SODI_CMDQ_H__
+#define __MTK_SPM_SODI_CMDQ_H__
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <cmdq_def.h>
+#include <cmdq_record.h>
+#include <cmdq_reg.h>
+#include <cmdq_core.h>
 
-#include "spm_v2/mtk_idle.h"
+void exit_pd_by_cmdq(struct cmdqRecStruct *handler);
+void enter_pd_by_cmdq(struct cmdqRecStruct *handler);
 
-#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
-
-#include "spm_v3/mtk_idle.h"
-
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_idle.h"
-
-#endif
-
-#endif /* __MTK_IDLE_COMMON_H__ */
-
+#endif /* __MTK_SPM_SODI_CMDQ_H__ */

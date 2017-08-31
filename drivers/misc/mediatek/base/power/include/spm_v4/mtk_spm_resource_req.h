@@ -11,25 +11,27 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_SPM_RESOURCE_REQ_H__
-#define __MTK_SPM_RESOURCE_REQ_H__
+#ifndef __SPM_V3__MTK_SPM_RESOURCE_REQ_H__
+#define __SPM_V3__MTK_SPM_RESOURCE_REQ_H__
 
 /* SPM resource request APIs: public */
 
-#if defined(CONFIG_MACH_MT6757)
+enum {
+	SPM_RESOURCE_MAINPLL = 1 << 0,
+	SPM_RESOURCE_DRAM    = 1 << 1,
+	SPM_RESOURCE_CK_26M  = 1 << 2,
+	SPM_RESOURCE_AXI_BUS = 1 << 3,
+	NF_SPM_RESOURCE = 4
+};
 
-#elif defined(CONFIG_MACH_KIBOPLUS)
+enum {
+	SPM_RESOURCE_USER_SPM = 0,
+	SPM_RESOURCE_USER_UFS,
+	SPM_RESOURCE_USER_SSUSB,
+	SPM_RESOURCE_USER_AUDIO,
+	NF_SPM_RESOURCE_USER
+};
 
-#include "spm_v2/mtk_spm_resource_req.h"
+bool spm_resource_req(unsigned int user, unsigned int req_mask);
 
-#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
-
-#include "spm_v3/mtk_spm_resource_req.h"
-
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_spm_resource_req.h"
-
-#endif
-
-#endif /* __MTK_SPM_RESOURCE_REQ_H__ */
+#endif /* __SPM_V3__MTK_SPM_RESOURCE_REQ_H__ */
