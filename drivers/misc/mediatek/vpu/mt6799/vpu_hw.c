@@ -17,7 +17,7 @@
 #include <linux/kthread.h>
 #include <linux/ctype.h>
 #include <linux/clk.h>
-#include <linux/timer.h>
+#include <linux/workqueue.h>
 #include <linux/regulator/consumer.h>
 
 #include <m4u.h>
@@ -107,10 +107,14 @@ static struct clk *clk_mm_smi_common;
 static struct clk *clk_mm_smi_common_2x;
 #endif
 
+/* workqueue */
+static struct workqueue_struct *wq;
+static void vpu_power_counter_routine(struct work_struct *);
+static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);
+
 /* power */
 static struct mutex power_mutex;
 static bool is_power_dynamic = true;
-static struct timer_list power_timer;
 static struct mutex power_counter_mutex;
 static int power_counter;
 
@@ -643,11 +647,11 @@ static void vpu_put_power(void)
 {
 	mutex_lock(&power_counter_mutex);
 	if (--power_counter == 0)
-		mod_timer(&power_timer, jiffies + msecs_to_jiffies(PWR_KEEP_TIME_MS));
+		mod_delayed_work(wq, &power_counter_work, msecs_to_jiffies(PWR_KEEP_TIME_MS));
 	mutex_unlock(&power_counter_mutex);
 }
 
-static void vpu_power_timer_callback(unsigned long data)
+static void vpu_power_counter_routine(struct work_struct *work)
 {
 	mutex_lock(&power_counter_mutex);
 	if (power_counter == 0)
@@ -711,10 +715,7 @@ int vpu_init_hw(struct vpu_device *device)
 	ret = vpu_alloc_shared_memory(&work_buf, &mem_param);
 	CHECK_RET("fail to allocate working buffer!\n");
 
-	init_timer(&power_timer);
-	power_timer.function = &vpu_power_timer_callback;
-	power_timer.data = 0;
-	add_timer(&power_timer);
+	wq = create_workqueue("vpu_wq");
 
 	/* get sw version */
 	sw_version = mt_get_chip_sw_ver();
@@ -738,13 +739,13 @@ int vpu_init_hw(struct vpu_device *device)
 		opps.ipu_if.opp_map[i] = v3; \
 	}
 
-	if (sw_version == CHIP_SW_VER_01) {
 #ifndef MTK_VPU_FPGA_PORTING
-		/* force to low power mode, while kernel init */
-		ret = enable_vimvo_lp_mode(1);
-		CHECK_RET("fail to switch vimvo to low power mode!\n");
+	/* force to low power mode, while kernel init */
+	ret = enable_vimvo_lp_mode(1);
+	CHECK_RET("fail to switch vimvo to low power mode!\n");
 #endif
 
+	if (sw_version == CHIP_SW_VER_01) {
 		sw_version = 0x1;
 		DEFINE_VPU_STEP(vcore,  4, 900000, 900000, 800000, 800000);
 		DEFINE_VPU_STEP(vimvo,  2, 900000, 800000, 0, 0);
@@ -817,17 +818,20 @@ int vpu_uninit_hw(void)
 		work_buf = NULL;
 	}
 
-	if (m4u_client != NULL) {
+	if (m4u_client) {
 		m4u_destroy_client(m4u_client);
 		m4u_client = NULL;
 	}
 
-	if (ion_client != NULL) {
+	if (ion_client) {
 		ion_client_destroy(ion_client);
 		ion_client = NULL;
 	}
 
-	del_timer(&power_timer);
+	if (wq) {
+		destroy_workqueue(wq);
+		wq = NULL;
+	}
 
 	return 0;
 }
