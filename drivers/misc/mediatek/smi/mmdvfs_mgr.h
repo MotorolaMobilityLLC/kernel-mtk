@@ -88,9 +88,18 @@ struct mmdvfs_state_change_event {
 	int vpu_if_clk_step;
 	int vimvo_vol_step;
 };
+
+#define MMDVFS_EVENT_PREPARE_CALIBRATION_START 0
+#define MMDVFS_EVENT_PREPARE_CALIBRATION_END 1
+
+struct mmdvfs_prepare_action_event {
+	int event_type;
+};
+
 typedef int (*clk_switch_cb)(int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
 typedef int (*vdec_ctrl_cb)(void);
 typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
+typedef int (*mmdvfs_prepare_action_cb)(struct mmdvfs_prepare_action_event *event);
 
 /* MMDVFS V2 only APIs */
 extern int mmdvfs_notify_mmclk_switch_request(int event);
@@ -187,6 +196,8 @@ extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
+extern void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event);
+extern int register_mmdvfs_prepare_cb(int mmdvfs_client_id, mmdvfs_prepare_action_cb func);
 
 /* The following interface can only used by mmdvfs itself for */
 /* default step configuration */
