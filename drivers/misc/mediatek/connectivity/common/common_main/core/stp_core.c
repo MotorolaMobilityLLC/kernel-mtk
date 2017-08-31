@@ -134,7 +134,7 @@ static VOID stp_process_header_only_packet(VOID);
 static VOID stp_sdio_process_packet(VOID);
 static VOID stp_trace32_dump(VOID);
 static VOID stp_sdio_trace32_dump(VOID);
-static UINT32 stp_parser_dmp_num(PUINT8 str);
+static LONG stp_parser_dmp_num(PUINT8 str);
 static INT32 wmt_parser_data(PUINT8 buffer, UINT32 length, UINT8 type);
 
 static INT32 stp_ctx_lock_init(mtkstp_context_struct *pctx)
@@ -308,7 +308,7 @@ static VOID stp_sdio_process_packet(VOID)
 
 static VOID stp_trace32_dump(VOID)
 {
-	UINT32 dmp_num = 0;
+	INT32 dmp_num = 0;
 
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX)) {
 		if (stp_core_ctx.rx_counter != 0) {
@@ -355,7 +355,7 @@ static VOID stp_trace32_dump(VOID)
 	}
 }
 
-static UINT32 stp_parser_dmp_num(PUINT8 str)
+static LONG stp_parser_dmp_num(PUINT8 str)
 {
 	PUINT8 pParserDmpStr = "Dump=";
 	PUINT8 pStr = NULL;
@@ -364,7 +364,7 @@ static UINT32 stp_parser_dmp_num(PUINT8 str)
 	INT32 ret = -1;
 	UINT32 len = 0;
 	UINT8 tempBuf[64] = {0};
-	ULONG res;
+	LONG res;
 
 
 	if (!str) {
@@ -376,14 +376,12 @@ static UINT32 stp_parser_dmp_num(PUINT8 str)
 	pDtr = osal_strstr(pStr, pParserDmpStr);
 	if (pDtr != NULL) {
 		pDtr += osal_strlen(pParserDmpStr);
-		pTemp = osal_strchr(pDtr, ' ');
+		pTemp = pDtr;
+		while (*pTemp >= '0' && *pTemp <= '9')
+			pTemp++;
 	} else {
 		STP_DBG_WARN_FUNC("parser string 'Dump=' is not found\n");
 		return -2;
-	}
-	if (pTemp == NULL) {
-		STP_DBG_ERR_FUNC("space is not found\n");
-		return -3;
 	}
 	len = pTemp - pDtr;
 	osal_memcpy(&tempBuf[0], pDtr, len);
@@ -394,12 +392,12 @@ static UINT32 stp_parser_dmp_num(PUINT8 str)
 		return -4;
 	}
 
-	return (UINT32)res;
+	return res;
 }
 
 static VOID stp_sdio_trace32_dump(VOID)
 {
-	UINT32 dmp_num = 0;
+	INT32 dmp_num = 0;
 
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX) &&
 			(mtk_wcn_stp_coredump_flag_get() != 0)) {
