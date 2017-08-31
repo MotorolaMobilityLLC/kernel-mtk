@@ -63,6 +63,7 @@ static struct task_struct *Sipi_ppm_task;
 
 
 static const int pin_size[] = { 6, 4, 3, 4, 4, 3, 0, 0, 4, 3, 4, 8, 8, 8, 8, 9, 5, 7, 1 };
+static const int pin_mode[] = { 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
 
 #define SEND_NUM    (sizeof(pin_size)/sizeof(int))
 static atomic_t pass_cnt[SEND_NUM];
@@ -123,15 +124,15 @@ int ipi_single_test(int cnt)
 		pr_debug("IPI send: ID=%d (cnt=%d)\n", i, cnt);
 		retdata = 0;
 		retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-		if (i >= 9)
-			opts = IPI_OPT_NOLOCK;
+		if (pin_mode[i])
+			opts = IPI_OPT_POLLING;
 		else
-			opts = IPI_OPT_DEFAUT;
+			opts = IPI_OPT_WAIT;
 
 		if (pin_size[i])
-			ret = sspm_ipi_send_sync(i, opts, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, opts, (void *)ipi_buf, pin_size[i], &retdata, 1);
 		else
-			ret = sspm_ipi_send_sync(i, opts, (void *)ipi_buf, 0, NULL);
+			ret = sspm_ipi_send_sync(i, opts, (void *)ipi_buf, 0, NULL, 0);
 
 
 		if (ret != IPI_DONE) {
@@ -161,9 +162,9 @@ int ipi_single_test(int cnt)
 	i = IPI_ID_PMIC;
 	for (j = 0; j < pin_size[i]; j++)
 		ipi_buf[j] = i + 1 + j;
-	ret = sspm_ipi_send_sync_ex(i, IPI_OPT_DEFAUT, (void *)ipi_buf, 5, retdata2, 2);
+	ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, 5, retdata2, 2);
 	if (ret != IPI_DONE) {
-		pr_debug("Error: sspm_ipi_send_sync_ex id=%d failed ret=%d (cnt=%d)\n", i, ret,
+		pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n", i, ret,
 				 cnt);
 		fail++;
 	} else {
@@ -205,7 +206,7 @@ int Sipi_dcs_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_WAIT, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 				       i, ret, atomic_read(&pass_cnt[i]));
@@ -245,7 +246,7 @@ int Sipi_met_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_WAIT, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 				       i, ret, atomic_read(&pass_cnt[i]));
@@ -285,7 +286,7 @@ int Sipi_plf_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -325,7 +326,7 @@ int Sipi_ptpod_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -365,7 +366,7 @@ int Sipi_cpu_dvfs_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -405,7 +406,7 @@ int Sipi_gpu_dvfs_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_WAIT, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -446,7 +447,7 @@ int Sipi_pmicwp_thread(void *data)
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 			retdata = 0;
 			retchk = (((i + 1) << 24) | ((i + 1) << 16) | ((i + 1) << 8) | (i + 1));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], &retdata);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], &retdata, 1);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 				       i, ret, atomic_read(&pass_cnt[i]));
@@ -484,7 +485,7 @@ int Sipi_clk_thread(void *data)
 				ipi_buf[j] = i + 1 + j;
 
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_WAIT, (void *)ipi_buf, pin_size[i], NULL, 0);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -514,7 +515,7 @@ int Sipi_thml_thread(void *data)
 				ipi_buf[j] = i + 1 + j;
 
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_WAIT, (void *)ipi_buf, pin_size[i], NULL, 0);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 				       i, ret, atomic_read(&pass_cnt[i]));
@@ -547,7 +548,7 @@ int Sipi_polling_thread(void *data)
 
 				pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
 				local_irq_save(flags);
-				ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+				ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], NULL, 0);
 				local_irq_restore(flags);
 
 				if (ret != IPI_DONE) {
@@ -582,7 +583,7 @@ int Sipi_fhctl_thread(void *data)
 				ipi_buf[j] = i + 1 + j;
 
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], NULL, 0);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -612,7 +613,7 @@ int Sipi_pmic_thread(void *data)
 				ipi_buf[j] = i + 1 + j;
 
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], NULL, 0);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
@@ -642,7 +643,7 @@ int Sipi_ppm_thread(void *data)
 				ipi_buf[j] = i + 1 + j;
 
 			pr_debug("IPI send: ID=%d (cnt=%d)\n", i, atomic_read(&pass_cnt[i]));
-			ret = sspm_ipi_send_sync(i, IPI_OPT_DEFAUT, (void *)ipi_buf, pin_size[i], NULL);
+			ret = sspm_ipi_send_sync(i, IPI_OPT_POLLING, (void *)ipi_buf, pin_size[i], NULL, 0);
 			if (ret != IPI_DONE) {
 				pr_debug("Error: sspm_ipi_send_sync id=%d failed ret=%d (cnt=%d)\n",
 						 i, ret, atomic_read(&pass_cnt[i]));
