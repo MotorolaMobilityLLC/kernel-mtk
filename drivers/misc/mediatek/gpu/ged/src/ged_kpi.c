@@ -41,6 +41,7 @@
 
 #ifdef GED_KPI_DFRC
 #include <dfrc.h>
+#include <dfrc_drv.h>
 #include <ged_frr.h>
 #endif
 
@@ -50,10 +51,16 @@
 #include <../drivers/staging/android/sync.h>
 #endif
 
+#ifdef MTK_GED_KPI
+
 #ifdef GED_KPI_DEBUG
 #undef GED_LOGE
 #define GED_LOGE printk
 #endif
+
+#define GED_KPI_MSEC_DIVIDER 1000000
+#define GED_KPI_SEC_DIVIDER 1000000000
+#define GED_KPI_MAX_FPS 60
 
 typedef enum {
 	GED_TIMESTAMP_TYPE_1		= 0x1,
@@ -63,9 +70,9 @@ typedef enum {
 } GED_TIMESTAMP_TYPE;
 
 typedef enum {
-	GED_KPI_FRC_DEFAULT_MODE		= 0x1,	/* No frame control is applied */
-	GED_KPI_FRC_FRR_MODE			= 0x2,
-	GED_KPI_FRC_ARR_MODE			= 0x4,
+	GED_KPI_FRC_DEFAULT_MODE		= DFRC_DRV_MODE_DEFAULT,	/* No frame control is applied */
+	GED_KPI_FRC_FRR_MODE			= DFRC_DRV_MODE_FRR,
+	GED_KPI_FRC_ARR_MODE			= DFRC_DRV_MODE_ARR,
 } GED_KPI_FRC_MODE_TYPE;
 
 typedef struct GED_KPI_HEAD_TAG {
@@ -78,8 +85,8 @@ typedef struct GED_KPI_HEAD_TAG {
 	unsigned long long last_TimeStampH;
 	long long t_cpu_remained;
 	long long t_gpu_remained;
-	unsigned long long t_cpu_latest;
-	unsigned long long t_gpu_latest;
+	long long t_cpu_latest;
+	long long t_gpu_latest;
 	struct list_head sList;
 	int i32QedBuffer_length;
 	int i32Gpu_uncompleted;
@@ -101,6 +108,7 @@ typedef struct GED_KPI_TAG {
 	unsigned long i32QueueID;
 	unsigned long  i32AcquireID;
 	unsigned long ulMask;
+	unsigned long frame_attr;
 	unsigned long long ullTimeStamp1;
 	unsigned long long ullTimeStamp2;
 	unsigned long long ullTimeStampS;
@@ -158,9 +166,8 @@ typedef struct GED_KPI_GPU_TS_TAG {
 #define GED_KPI_UID(pid, wnd) (pid | ((unsigned long)wnd))
 #define SCREEN_IDLE_PERIOD 500000000
 
-#ifdef MTK_GED_KPI
-/* static int display_fps = 60; */
-static long long vsync_period = 1000000000 / 60;
+/* static int display_fps = GED_KPI_MAX_FPS; */
+static long long vsync_period = GED_KPI_SEC_DIVIDER / GED_KPI_MAX_FPS;
 static GED_LOG_BUF_HANDLE ghLogBuf;
 static struct workqueue_struct *g_psWorkQueue;
 static GED_HASHTABLE_HANDLE gs_hashtable;
@@ -200,6 +207,7 @@ static unsigned int g_frame_count;
 
 static int gx_game_mode;
 static int is_game_control_frame_rate;
+static int enable_game_self_frc_detect = 1;
 static unsigned int gx_fps;
 static unsigned int gx_cpu_time_avg;
 static unsigned int gx_gpu_time_avg;
@@ -210,9 +218,9 @@ static unsigned int gx_gpu_freq_avg;
 
 static int boost_accum_cpu;
 static int boost_accum_gpu = 100;
-static long target_t_cpu_remained = 16000000; /* for non-60-FPS cases */
+static long target_t_cpu_remained = 16000000; /* for non-GED_KPI_MAX_FPS-FPS cases */
 /* static long target_t_cpu_remained_min = 8300000; */ /* default 0.5 vsync period */
-static int cpu_boost_policy = 1;
+static int cpu_boost_policy;
 static int boost_extra;
 static int boost_amp = 100;
 static int boost_upper_bound = 100;
@@ -224,42 +232,49 @@ module_param(boost_extra, int, S_IRUGO|S_IWUSR);
 module_param(boost_amp, int, S_IRUGO|S_IWUSR);
 module_param(boost_upper_bound, int, S_IRUGO|S_IWUSR);
 module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
+module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 
 /* ----------------------------------------------------------------------------- */
+#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 30
 static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
-	static GED_KPI psKPI_list[30];
+	static GED_KPI psKPI_list[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
 	static int continuous_frame_cnt;
 	static int detected_frame_cnt;
 	static int cur_frame;
 	GED_KPI *psKPI_head = NULL;
 	GED_BOOL ret = GED_FALSE;
 
-	if (main_head == psHead) {
-		if (continuous_frame_cnt < 30)
-			continuous_frame_cnt++;
+	if (enable_game_self_frc_detect) {
+		if (main_head == psHead) {
+			if (continuous_frame_cnt < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
+				continuous_frame_cnt++;
+			else
+				psKPI_head = &psKPI_list[cur_frame];
+
+			if ((psKPI_head != NULL) &&
+				(psKPI_head->t_acquire_period > 29000000) &&
+				(psKPI_head->t_acquire_period < 37000000))
+				detected_frame_cnt--;
+			if ((psKPI->t_acquire_period > 29000000) && (psKPI->t_acquire_period < 37000000))
+				detected_frame_cnt++;
+
+			psKPI_list[cur_frame] = *psKPI;
+			cur_frame++;
+			cur_frame %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
+
+			if ((continuous_frame_cnt == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
+				&& (detected_frame_cnt * 100 / GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) >= 50)
+				ret = GED_TRUE;
+		}
+
+		if (ret == GED_TRUE)
+			is_game_control_frame_rate = 1;
 		else
-			psKPI_head = &psKPI_list[cur_frame];
-
-		if ((psKPI_head != NULL) &&
-			(psKPI_head->t_acquire_period > 29000000) &&
-			(psKPI_head->t_acquire_period < 37000000))
-			detected_frame_cnt--;
-		if ((psKPI->t_acquire_period > 29000000) && (psKPI->t_acquire_period < 37000000))
-			detected_frame_cnt++;
-
-		psKPI_list[cur_frame] = *psKPI;
-		cur_frame++;
-		cur_frame %= 30;
-
-		if ((continuous_frame_cnt == 30) && (detected_frame_cnt * 100 / 30) >= 50)
-			ret = GED_TRUE;
-	}
-
-	if (ret == GED_TRUE)
-		is_game_control_frame_rate = 1;
-	else
+			is_game_control_frame_rate = 0;
+	} else {
 		is_game_control_frame_rate = 0;
+	}
 
 	return ret;
 }
@@ -334,14 +349,13 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 		g_pre_TimeStamp2 = psKPI->ullTimeStamp2;
 		g_pre_TimeStampH = psKPI->ullTimeStampH;
 
-		if (g_elapsed_time_per_sec >= 1000000000) {
-			unsigned long long g_fps;
+		if (g_elapsed_time_per_sec >= GED_KPI_SEC_DIVIDER) {
+			unsigned int g_fps;
 
-			g_fps = (unsigned long long)g_frame_count;
-			g_fps *= 1000000000;
+			g_fps = g_frame_count;
+			g_fps *= GED_KPI_SEC_DIVIDER;
 			do_div(g_fps, g_elapsed_time_per_sec);
-
-			gx_fps = (unsigned int)g_fps;
+			gx_fps = g_fps;
 
 			do_div(g_cpu_time_accum, g_frame_count);
 			gx_cpu_time_avg = (unsigned int)g_cpu_time_accum;
@@ -366,36 +380,53 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 	}
 }
 /* ----------------------------------------------------------------------------- */
+#define GED_KPI_IS_SF_SHIFT 0
+#define GED_KPI_IS_SF_MASK_BIT 0x1
+#define GED_KPI_QBUFFER_LEN_SHIFT 1
+#define GED_KPI_QBUFFER_LEN_MASK_BIT 0x7
+#define GED_KPI_DEBUG_QBUFFER_LEN_SHIFT 4
+#define GED_KPI_DEBUG_QBUFFER_LEN_MASK_BIT 0x7
+#define GED_KPI_GPU_UNCOMPLETED_LEN_SHIFT 7
+#define GED_KPI_GPU_UNCOMPLETED_LEN_MASK_BIT 0x7
+#define GED_KPI_FRC_MODE_SHIFT 10
+#define GED_KPI_FRC_MODE_MASK_BIT 0x7
+#define GED_KPI_FRC_CLIENT_SHIFT 13
+#define GED_KPI_FRC_CLIENT_MASK_BIT 0xF
 static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	unsigned long ulID = (unsigned long) psKPI->ullWnd;
+	unsigned long frame_attr = 0;
 
 	ged_kpi_calc_kpi_info(ulID, psKPI, psHead);
 	ged_kpi_frame_rate_control_detect(psHead, psKPI);
+	frame_attr |= ((psHead->isSF & GED_KPI_IS_SF_MASK_BIT) << GED_KPI_IS_SF_SHIFT);
+	frame_attr |= ((psKPI->i32QedBuffer_length & GED_KPI_QBUFFER_LEN_MASK_BIT) << GED_KPI_QBUFFER_LEN_SHIFT);
+	frame_attr |= ((psKPI->i32DebugQedBuffer_length & GED_KPI_DEBUG_QBUFFER_LEN_MASK_BIT)
+					<< GED_KPI_DEBUG_QBUFFER_LEN_SHIFT);
+	frame_attr |= ((psKPI->i32Gpu_uncompleted & GED_KPI_GPU_UNCOMPLETED_LEN_MASK_BIT)
+					<< GED_KPI_GPU_UNCOMPLETED_LEN_SHIFT);
+	frame_attr |= ((psHead->frc_mode & GED_KPI_FRC_MODE_MASK_BIT) << GED_KPI_FRC_MODE_SHIFT);
+	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK_BIT) << GED_KPI_FRC_CLIENT_SHIFT);
+	psKPI->frame_attr = frame_attr;
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-"%d,%d,%llu,%lu,%lu,%llu,%llu,%llu,%llu,%d,%d,%d,%u,%d,%d,%lld,%d,%lld,%u,%d,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%u,%d,%d,%lld,%d,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
 		psHead->pid,
-		psHead->isSF,
 		psHead->ullWnd,
 		psKPI->i32QueueID,
 		psKPI->i32AcquireID,
+		psKPI->frame_attr,
 		psKPI->ullTimeStamp1,
 		psKPI->ullTimeStamp2,
 		psKPI->ullTimeStampS,
 		psKPI->ullTimeStampH,
-		psKPI->i32QedBuffer_length,
-		psKPI->i32DebugQedBuffer_length,
-		psKPI->i32Gpu_uncompleted,
 		psKPI->gpu_freq,
 		psKPI->boost_accum_cpu,
 		psKPI->boost_accum_gpu,
 		psKPI->t_cpu_remained_pred,
 		psHead->t_cpu_target,
 		vsync_period,
-		(unsigned int)psHead->frc_mode,
-		psHead->frc_client,
 		psKPI->QedBufferDelay,
 		psKPI->cpu_max_freq_LL,
 		psKPI->cpu_max_freq_L,
@@ -406,85 +437,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		);
 }
 /* ----------------------------------------------------------------------------- */
-static void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
-{
-	if (psHead == main_head) {
-		long long cpu_target_loss;
-		int boost_linear_cpu, boost_real_cpu;
-		long long t_cpu_cur, t_gpu_cur;
-
-		boost_linear_cpu = 0;
-		boost_real_cpu = 0;
-
-		/* Game t_cpu_cur*/
-		t_cpu_cur = (long long)psHead->t_cpu_latest;
-		t_gpu_cur = (long long)psHead->t_gpu_latest;
-		cpu_target_loss = (long long)psHead->t_cpu_latest - (long long)psHead->t_cpu_target;
-
-		if (cpu_target_loss > (t_cpu_cur - t_gpu_cur))
-			cpu_target_loss = t_cpu_cur - t_gpu_cur;
-
-		if ((t_cpu_cur - cpu_target_loss) < 1000000)
-			boost_linear_cpu = (int)(cpu_target_loss * 100 / 1000000);
-		else
-			boost_linear_cpu = (int)(cpu_target_loss * 100 / (t_cpu_cur - cpu_target_loss));
-
-		if (boost_linear_cpu < 0)
-			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
-		else
-			boost_real_cpu = linear_real_boost(boost_linear_cpu);
-
-		if (boost_real_cpu != 0) {
-			if (boost_accum_cpu <= 0) {
-				boost_accum_cpu += boost_linear_cpu;
-				if (boost_real_cpu > 0 && boost_accum_cpu > boost_real_cpu)
-					boost_accum_cpu = boost_real_cpu;
-			} else {
-				boost_accum_cpu = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
-			}
-		}
-
-		if (boost_accum_cpu > 100)
-			boost_accum_cpu = 100;
-		else if (boost_accum_cpu < 0)
-			boost_accum_cpu = 0;
-
-		boost_value_for_GED_idx(1, boost_accum_cpu);
-		psKPI->boost_linear_cpu = boost_linear_cpu;
-		psKPI->boost_real_cpu = boost_real_cpu;
-		psKPI->boost_accum_cpu = boost_accum_cpu;
-
-
-#ifdef GED_KPI_MET_DEBUG
-		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
-		met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", boost_real_cpu);
-		met_tag_oneshot(0, "ged_pframeb_boost_linear_cpu", boost_linear_cpu);
-
-		if (psHead->t_cpu_latest < 100*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_cpu", (long long)(psHead->t_cpu_latest + 999999)/1000000);
-		else
-			met_tag_oneshot(0, "ged_pframe_t_cpu", 100);
-		if (psHead->t_gpu_latest < 100*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_gpu", (long long)(psHead->t_gpu_latest + 999999)/1000000);
-		else
-			met_tag_oneshot(0, "ged_pframe_t_gpu", 100);
-		if (psHead->t_cpu_remained < 200*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_cpu_remained",
-				(long long)(psHead->t_cpu_remained + 999999)/1000000);
-		else
-			met_tag_oneshot(0, "ged_pframe_t_cpu_remianed", 100);
-		if (psHead->t_gpu_remained < 200*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_gpu_remained",
-				(long long)(psHead->t_gpu_remained + 999999)/1000000);
-		else
-			met_tag_oneshot(0, "ged_pframe_t_gpu_remained", 100);
-
-		met_tag_oneshot(0, "ged_pframe_t_cpu_target", (long long)(psHead->t_cpu_target + 999999)/1000000);
-#endif
-	}
-}
-/* ----------------------------------------------------------------------------- */
-static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
+static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	if (psHead == main_head) {
 		long long cpu_target_loss, cpu_target_loss_4_rt;
@@ -497,23 +450,23 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		boost_linear_cpu = 0;
 		boost_real_cpu = 0;
 
-		t_cpu_cur = (long long)psHead->t_cpu_latest;
-		t_gpu_cur = (long long)psHead->t_gpu_latest;
+		t_cpu_cur = psHead->t_cpu_latest;
+		t_gpu_cur = psHead->t_gpu_latest;
 
 		if ((long long)psHead->t_cpu_target > t_gpu_cur) {
 			t_cpu_target = (long long)psHead->t_cpu_target;
 			is_gpu_bound = 0;
 		} else {
 			/* when GPU bound, chase GPU frame time as target */
-			t_cpu_target = t_gpu_cur + 2000000;
+			t_cpu_target = t_gpu_cur + 2000000; /* 2 ms buffer*/
 			is_gpu_bound = 1;
 		}
 
 		cpu_target_loss = t_cpu_cur - t_cpu_target;
 
 		cpu_target_loss_4_rt = cpu_target_loss;
-			/* ARR mode and default mode with 60 FPS */
-		if (psHead->target_fps == 60) {
+			/* ARR mode and default mode with GED_KPI_MAX_FPS FPS */
+		if (psHead->target_fps == GED_KPI_MAX_FPS) {
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 
@@ -524,7 +477,7 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 				if (cpu_target_loss_4_rt > 0)
 					cpu_target_loss_4_rt = 0;
 			}
-		} else {  /* FRR mode or (default mode && FPS != 60) */
+		} else {  /* FRR mode or (default mode && FPS != GED_KPI_MAX_FPS) */
 			t_cpu_rem_cur = psHead->t_cpu_target;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
 		}
@@ -591,28 +544,30 @@ static inline void ged_kpi_cpu_boost_policy_1(GED_KPI_HEAD *psHead, GED_KPI *psK
 		met_tag_oneshot(0, "ged_pframebg_boost_accum_gpu", boost_accum_gpu);
 
 		if (psHead->t_cpu_latest < 100*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_cpu", (long long)(psHead->t_cpu_latest + 999999)/1000000);
+			met_tag_oneshot(0, "ged_pframe_t_cpu",
+				(long long)(psHead->t_cpu_latest + 999999)/GED_KPI_MSEC_DIVIDER);
 		else
 			met_tag_oneshot(0, "ged_pframe_t_cpu", 100);
 
 		if (psHead->t_gpu_latest < 100*1000*1000)
-			met_tag_oneshot(0, "ged_pframe_t_gpu", (long long)(psHead->t_gpu_latest + 999999)/1000000);
+			met_tag_oneshot(0, "ged_pframe_t_gpu",
+				(long long)(psHead->t_gpu_latest + 999999)/GED_KPI_MSEC_DIVIDER);
 		else
 			met_tag_oneshot(0, "ged_pframe_t_gpu", 100);
 
 		if (psKPI->QedBufferDelay < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_QedBufferDelay"
-				, (long long)(psKPI->QedBufferDelay + 999999)/1000000);
+				, (psKPI->QedBufferDelay + 999999)/GED_KPI_MSEC_DIVIDER);
 		else
 			met_tag_oneshot(0, "ged_pframe_QedBufferDelay", 100);
 
 		if (t_cpu_rem_cur < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_cpu_remained_pred",
-				(long long)(t_cpu_rem_cur + 999999)/1000000);
+				(t_cpu_rem_cur + 999999)/GED_KPI_MSEC_DIVIDER);
 		else
 			met_tag_oneshot(0, "ged_pframe_t_cpu_remianed_pred", 100);
 
-		met_tag_oneshot(0, "ged_pframe_t_cpu_target", (t_cpu_target + 999999)/1000000);
+		met_tag_oneshot(0, "ged_pframe_t_cpu_target", (t_cpu_target + 999999)/GED_KPI_MSEC_DIVIDER);
 #endif
 	}
 }
@@ -626,9 +581,6 @@ static inline void ged_kpi_cpu_boost(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	switch (cpu_boost_policy) {
 	case 0:
 		cpu_boost_policy_fp = ged_kpi_cpu_boost_policy_0;
-		break;
-	case 1:
-		cpu_boost_policy_fp = ged_kpi_cpu_boost_policy_1;
 		break;
 	default:
 		break;
@@ -666,7 +618,7 @@ static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED
 						psTimeStamp->ullTimeStamp - psKPI_prev->ullTimeStamp1;
 					psKPI_prev->t_cpu_remained = vsync_period;
 					psKPI_prev->t_cpu_remained -=
-						(long long)(psKPI_prev->ullTimeStamp1 - psHead->last_TimeStampS);
+						(psKPI_prev->ullTimeStamp1 - psHead->last_TimeStampS);
 					psKPI_prev->t_acquire_period =
 						psTimeStamp->ullTimeStamp - psHead->last_TimeStampS;
 					psHead->last_TimeStampS =
@@ -690,7 +642,7 @@ static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED
 			psKPI->ullTimeStampS = psTimeStamp->ullTimeStamp;
 			psHead->t_cpu_remained = psTimeStamp->ullTimeStamp - psKPI->ullTimeStamp1;
 			psKPI->t_cpu_remained = vsync_period; /* fixed value since vsync period unchange */
-			psKPI->t_cpu_remained -= (long long)(psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
+			psKPI->t_cpu_remained -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
 			psKPI->t_acquire_period = psTimeStamp->ullTimeStamp - psHead->last_TimeStampS;
 			psHead->last_TimeStampS = psTimeStamp->ullTimeStamp;
 #ifdef GED_KPI_DEBUG
@@ -731,7 +683,7 @@ static GED_BOOL ged_kpi_h_iterator_func(unsigned long ulID, void *pvoid, void *p
 						psKPI_prev->t_gpu_remained =
 							vsync_period; /* fixed value since vsync period unchange */
 						psKPI_prev->t_gpu_remained -=
-						(long long)(psKPI_prev->ullTimeStamp2 - psHead->last_TimeStampH);
+							(psKPI_prev->ullTimeStamp2 - psHead->last_TimeStampH);
 
 						psHead->last_TimeStampH = psTimeStamp->ullTimeStamp;
 						ged_kpi_statistics_and_remove(psHead, psKPI_prev);
@@ -752,7 +704,7 @@ static GED_BOOL ged_kpi_h_iterator_func(unsigned long ulID, void *pvoid, void *p
 				psHead->t_gpu_remained = psTimeStamp->ullTimeStamp - psKPI->ullTimeStamp2;
 				psKPI->t_gpu_remained = vsync_period; /* fixed value since vsync period unchange */
 				psKPI->t_gpu_remained -=
-					(long long)(psKPI->ullTimeStamp2 - psHead->last_TimeStampH);
+					(psKPI->ullTimeStamp2 - psHead->last_TimeStampH);
 
 				psHead->last_TimeStampH = psTimeStamp->ullTimeStamp;
 				ged_kpi_statistics_and_remove(psHead, psKPI);
@@ -784,28 +736,28 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 		switch (mode) {
 		case GED_KPI_FRC_DEFAULT_MODE:
 			psHead->frc_mode = GED_KPI_FRC_DEFAULT_MODE;
-			vsync_period = 1000000000 / 60;
+			vsync_period = GED_KPI_SEC_DIVIDER / GED_KPI_MAX_FPS;
 			break;
 		case GED_KPI_FRC_FRR_MODE:
 			psHead->frc_mode = GED_KPI_FRC_FRR_MODE;
-			vsync_period = 1000000000 / 60;
+			vsync_period = GED_KPI_SEC_DIVIDER / GED_KPI_MAX_FPS;
 			break;
 		case GED_KPI_FRC_ARR_MODE:
 			psHead->frc_mode = GED_KPI_FRC_ARR_MODE;
-			vsync_period = 1000000000 / target_fps;
+			vsync_period = GED_KPI_SEC_DIVIDER / target_fps;
 			break;
 		default:
 			psHead->frc_mode = GED_KPI_FRC_DEFAULT_MODE;
-			vsync_period = 1000000000 / 60;
+			vsync_period = GED_KPI_SEC_DIVIDER / GED_KPI_MAX_FPS;
 			GED_LOGE("[GED_KPI][Exception]: no invalid FRC mode is specified, use default mode\n");
 		}
 
 		if (is_game_control_frame_rate && (psHead == main_head)
-			&& (psHead->frc_mode & GED_KPI_FRC_DEFAULT_MODE))
+			&& (psHead->frc_mode == GED_KPI_FRC_DEFAULT_MODE))
 			target_fps = (target_fps > 30) ? 30 : target_fps;
 
 		psHead->target_fps = target_fps;
-		psHead->t_cpu_target = 1000000000/target_fps;
+		psHead->t_cpu_target = GED_KPI_SEC_DIVIDER/target_fps;
 		psHead->t_gpu_target = psHead->t_cpu_target;
 		psHead->frc_client = client;
 		ret = GED_TRUE;
@@ -930,7 +882,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psHead->i32DebugQedBuffer_length = 0;
 				psHead->isSF = psTimeStamp->isSF;
 				psHead->i32Gpu_uncompleted = 0;
-				ged_kpi_update_target_time_and_target_fps(psHead, 60, GED_KPI_FRC_DEFAULT_MODE, -1);
+				ged_kpi_update_target_time_and_target_fps(psHead,
+					GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 				INIT_LIST_HEAD(&psHead->sList);
 				ged_hashtable_set(gs_hashtable, ulID, (void *)psHead);
 			} else {
@@ -960,27 +913,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				if (dfrc_get_frr_config(psKPI->pid, ctx_id,
 					&d_target_fps, &mode, &client) == 0) {
 
-					GED_KPI_FRC_MODE_TYPE frc_type;
-
 					if (d_target_fps == 0)
-						d_target_fps = 60;
+						d_target_fps = GED_KPI_MAX_FPS;
 
-					switch (mode) {
-					case 0:
-						frc_type = GED_KPI_FRC_DEFAULT_MODE;
-						break;
-					case 1:
-						frc_type = GED_KPI_FRC_FRR_MODE;
-						break;
-					case 2:
-						frc_type = GED_KPI_FRC_ARR_MODE;
-						break;
-					default:
-						frc_type = GED_KPI_FRC_DEFAULT_MODE;
-						break;
-					}
 					ged_kpi_update_target_time_and_target_fps(psHead,
-							d_target_fps, frc_type, client);
+							d_target_fps, mode, client);
 #ifdef GED_KPI_DEBUG
 					GED_LOGE("[GED_KPI] psHead: %p, fps: %d, mode: %d, client: %d\n",
 							psHead, d_target_fps, mode, client);
@@ -992,7 +929,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 						psTimeStamp->fence_addr);
 #endif
 				ged_kpi_update_target_time_and_target_fps(main_head,
-									60, GED_KPI_FRC_DEFAULT_MODE, -1);
+									GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 			}
 #endif
 			/**********************************/
@@ -1157,9 +1094,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		ged_hashtable_iterator(gs_hashtable, ged_kpi_h_iterator_func, (void *)psTimeStamp);
 
 #ifndef GED_KPI_DFRC
-		ged_kpi_update_target_time_and_target_fps(main_head, 60, GED_KPI_FRC_DEFAULT_MODE, -1);
+		ged_kpi_update_target_time_and_target_fps(main_head, GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 #endif
-		if (gx_dfps <= 60 && gx_dfps >= 10)
+		if (gx_dfps <= GED_KPI_MAX_FPS && gx_dfps >= 10)
 			ged_kpi_update_target_time_and_target_fps(main_head
 									, gx_dfps
 									, gx_frc_mode
@@ -1479,7 +1416,8 @@ GED_ERROR ged_kpi_system_init(void)
 #ifdef MTK_GED_KPI
 	GED_ERROR ret;
 
-	ghLogBuf = ged_log_buf_alloc(60 * 5, 220 * 60 * 5, GED_LOG_BUF_TYPE_RINGBUFFER, NULL, "KPI");
+	ghLogBuf = ged_log_buf_alloc(GED_KPI_MAX_FPS * 5,
+		220 * GED_KPI_MAX_FPS * 5, GED_LOG_BUF_TYPE_RINGBUFFER, NULL, "KPI");
 
 	ret = ged_thread_create(&ghThread, "kpi_wait_4_hw_vsync", ged_kpi_wait_for_hw_vsync_cb, (void *)&ghLogBuf);
 	if (ret != GED_OK)
