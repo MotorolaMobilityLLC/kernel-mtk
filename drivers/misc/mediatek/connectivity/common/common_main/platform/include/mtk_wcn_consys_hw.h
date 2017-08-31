@@ -71,6 +71,13 @@
 ********************************************************************************
 */
 
+struct CONSYS_BASE_ADDRESS {
+	SIZE_T mcu_base;
+	SIZE_T ap_rgu_base;
+	SIZE_T topckgen_base;
+	SIZE_T spm_base;
+};
+
 typedef enum _ENUM_EMI_CTRL_STATE_OFFSET_ {
 	EXP_APMEM_CTRL_STATE = 0x0,
 	EXP_APMEM_CTRL_HOST_SYNC_STATE = 0x4,

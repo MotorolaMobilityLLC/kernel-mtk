@@ -45,12 +45,6 @@
 
 /*device tree mode*/
 #if CONFIG_OF
-struct CONSYS_BASE_ADDRESS {
-	SIZE_T mcu_base;
-	SIZE_T ap_rgu_base;
-	SIZE_T topckgen_base;
-	SIZE_T spm_base;
-};
 /*TOPCKGEN_BASE*/
 #define CONSYS_TOP_CLKCG_CLR_OFFSET	0x00000084
 #define CONSYS_TOP_CLKCG_SET_OFFSET	0x00000054

@@ -15,6 +15,7 @@
 #include "stp_dbg_soc.h"
 #include "btm_core.h"
 #include "stp_core.h"
+#include "mtk_wcn_consys_hw.h"
 
 #define STP_DBG_PAGED_DUMP_BUFFER_SIZE (32*1024*sizeof(char))
 #define STP_DBG_PAGED_TRACE_SIZE (2048*sizeof(char))
@@ -445,19 +446,21 @@ PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
 {
 #define CONSYS_REG_READ(addr) (*((volatile UINT32 *)(addr)))
-	UINT8 *consys_dbg_cr_base = NULL;
-
-	consys_dbg_cr_base = ioremap_nocache(CONSYS_DBG_CR_BASE, 0x500);
-	switch (cr) {
-	case CONNSYS_CPU_CLK:
-		return CONSYS_REG_READ(consys_dbg_cr_base + CONSYS_CPU_CLK_STATUS_OFFSET);
-	case CONNSYS_BUS_CLK:
-		return CONSYS_REG_READ(consys_dbg_cr_base + CONSYS_BUS_CLK_STATUS_OFFSET);
-	case CONNSYS_DEBUG_CR1:
-		return CONSYS_REG_READ(consys_dbg_cr_base + CONSYS_DBG_CR1_OFFSET);
-	case CONNSYS_DEBUG_CR2:
-		return CONSYS_REG_READ(consys_dbg_cr_base + CONSYS_DBG_CR2_OFFSET);
-	default:
-		return 0;
+#ifdef CONFIG_OF		/*use DT */
+	if (conn_reg.mcu_base) {
+		switch (cr) {
+		case CONNSYS_CPU_CLK:
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_CPU_CLK_STATUS_OFFSET);
+		case CONNSYS_BUS_CLK:
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_BUS_CLK_STATUS_OFFSET);
+		case CONNSYS_DEBUG_CR1:
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR1_OFFSET);
+		case CONNSYS_DEBUG_CR2:
+			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR2_OFFSET);
+		default:
+			return 0;
+		}
 	}
+#endif
+	return -1;
 }
