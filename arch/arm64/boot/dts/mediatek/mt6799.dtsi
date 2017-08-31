@@ -5471,6 +5471,10 @@
 		spi_cs_invert = <1>;
 	};
 
+	vproc2_plat {
+		compatible = "mediatek,vproc2_sspm_plat";
+	};
+
 	met_dpm {
 		compatible = "mediatek,met_dpm";
 		clocks =
