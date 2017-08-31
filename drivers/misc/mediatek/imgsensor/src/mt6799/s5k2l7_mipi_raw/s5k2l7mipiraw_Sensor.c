@@ -651,8 +651,13 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
 	kal_uint16 reg_gain = 0x0;
-	
+
+#ifdef S5K2L7_DIGITAL_GAIN
+	reg_gain = gain <<2;
+#else	
 	reg_gain = gain >> 1;
+#endif
+
 	return (kal_uint16)reg_gain;
 }
 
@@ -690,9 +695,24 @@ static kal_uint16 set_gain(kal_uint16 leGain, kal_uint16 seGain)
 		seGain = (seGain < S5K2L7_GAIN_MIN) ? S5K2L7_GAIN_MIN :
 			 (seGain > S5K2L7_GAIN_MAX) ? S5K2L7_GAIN_MAX : seGain;
 	}
+#ifdef S5K2L7_DIGITAL_GAIN
+	write_cmos_sensor_twobyte(0x6028, 0x4000);
+	write_cmos_sensor_twobyte(0x602A, 0x020E);
+	write_cmos_sensor_twobyte(0x6F12, gain2reg(seGain));	// Short exposure gain
 
+	write_cmos_sensor_twobyte(0x602A, 0x3072);
+	write_cmos_sensor_twobyte(0x6F12, gain2reg(leGain));	// Long exposure gain
+	write_cmos_sensor(0x0208, 0x01);	// 0x0208 = 0x0100 to enable long exposure gain
+
+	write_cmos_sensor_twobyte(0x602C, 0x4000);
+	write_cmos_sensor_twobyte(0x602E, 0x020E);
+	seGain = read_cmos_sensor_twobyte(0x6F12);
+
+	write_cmos_sensor_twobyte(0x602C, 0x4000);
+	write_cmos_sensor_twobyte(0x602E, 0x3072);
+	leGain = read_cmos_sensor_twobyte(0x6F12);
+#else
 	/* Analog gain HW reg : 4000 C204 */
-
 	write_cmos_sensor_twobyte(0x6028, 0x4000);
 	write_cmos_sensor_twobyte(0x602A, 0x0204);
 	write_cmos_sensor_twobyte(0x6F12, gain2reg(seGain));	/* Short exposure gain */
@@ -706,7 +726,7 @@ static kal_uint16 set_gain(kal_uint16 leGain, kal_uint16 seGain)
 	write_cmos_sensor_twobyte(0x602C, 0x4000);
 	write_cmos_sensor_twobyte(0x602E, 0x0206);
 	leGain = read_cmos_sensor_twobyte(0x6F12);
-
+#endif
 	LOG_INF("LE(0x%x), SE(0x%x)\n", leGain, seGain);
 
 	return leGain;
