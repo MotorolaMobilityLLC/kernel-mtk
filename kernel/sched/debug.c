@@ -49,7 +49,7 @@ DECLARE_PER_CPU(u64, rt_period_time);
 	if (m)					\
 		seq_printf(m, x);		\
 	else					\
-		pr_debug(x);			\
+		printk(x);			\
  } while (0)
 
 #define SEQ_printf_at_AEE(m, x...)		\
