@@ -22,11 +22,11 @@ extern "C" {
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #define CONFIG_HYBRID_CPU_DVFS	1
+#define ENABLE_TURBO_MODE_AP   1
 #endif
 
 /* 0x11F1_07C0 */
 #define FUNC_CODE_EFUSE_INDEX	(120)
-#define ENABLE_TURBO_MODE_AP 1
 /* buck ctrl configs */
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
 #define NORMAL_DIFF_VRSAM_VPROC    10000
@@ -80,6 +80,13 @@ unsigned int _cpu_dds_calc(unsigned int khz);
 void adjust_armpll_dds(struct pll_ctrl_t *pll_p, unsigned int vco, unsigned int pos_div);
 void _cpu_clock_switch(struct pll_ctrl_t *pll_p, enum top_ckmuxsel sel);
 enum top_ckmuxsel _get_cpu_clock_switch(struct pll_ctrl_t *pll_p);
+
+#ifdef ENABLE_TURBO_MODE_AP
+extern void mt_cpufreq_turbo_action(unsigned long action,
+	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id);
+extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
+	unsigned int turbo_f, unsigned int turbo_v);
+#endif
 
 int mt_cpufreq_dts_map(void);
 int mt_cpufreq_regulator_map(struct platform_device *pdev);

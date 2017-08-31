@@ -919,6 +919,10 @@ static int cpuhvfs_pre_module_init(void)
 {
 	int r;
 
+#ifdef CPU_DVFS_NOT_READY
+	return 0;
+#endif
+
 	r = dvfsp_module_init();
 	if (r) {
 		cpufreq_err("FAILED TO INIT DVFS SSPM (%d)\n", r);

@@ -730,6 +730,70 @@ struct hp_action_tbl cpu_dvfs_hp_action[] = {
 
 unsigned int nr_hp_action = ARRAY_SIZE(cpu_dvfs_hp_action);
 
+#ifdef ENABLE_TURBO_MODE_AP
+static int can_turbo;
+static int turbo_core_match(unsigned int *cpus)
+{
+	if (cpus[0] == 1 && cpus[2] == 1)
+		return 1;
+	else if (cpus[0] == 0 && cpus[2] == 1)
+		return 1;
+	else
+		return 0;
+}
+
+void mt_cpufreq_turbo_action(unsigned long action,
+	unsigned int *cpus, enum mt_cpu_dvfs_id cluster_id)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	if (turbo_core_match(cpus) && cluster_id != MT_CPU_DVFS_L) {
+		switch (action & ~CPU_TASKS_FROZEN) {
+		case CPU_UP_PREPARE:
+			if (cluster_id == MT_CPU_DVFS_LL && cpus[MT_CPU_DVFS_LL] == 0)
+				break;
+			can_turbo = 0;
+			cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
+			break;
+		case CPU_DOWN_PREPARE:
+			if (cluster_id == MT_CPU_DVFS_B) {
+				can_turbo = 0;
+				cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
+			}
+			break;
+		case CPU_ONLINE:
+		case CPU_DEAD:
+			if (can_turbo == 0) {
+				can_turbo = 1;
+				cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+#else
+	can_turbo = 0;
+#endif
+}
+#endif
+
+int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
+	unsigned int turbo_f, unsigned int turbo_v)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	unsigned int freq;
+
+	if (id == MT_CPU_DVFS_B) {
+		freq = ((turbo_f * 105 / 100) / 13) * 13 / 1000;
+		cpuhvfs_set_turbo_scale(freq * 1000, turbo_v);
+		return 1;
+	} else
+		return 0;
+#else
+	return 1;
+#endif
+}
+
 int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {
 	int ret = 0;
