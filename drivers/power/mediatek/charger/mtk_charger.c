@@ -182,8 +182,6 @@ void charger_log_flash(const char *fmt, ...)
 void _wake_up_charger(struct charger_manager *info)
 {
 	unsigned long flags;
-	static struct timespec pre_time;
-	struct timespec time, dtime;
 
 	if (info == NULL)
 		return;
@@ -194,13 +192,6 @@ void _wake_up_charger(struct charger_manager *info)
 	spin_unlock_irqrestore(&info->slock, flags);
 	info->charger_thread_timeout = true;
 	wake_up(&info->wait_que);
-	get_monotonic_boottime(&time);
-	dtime = timespec_sub(time, pre_time);
-
-	if (dtime.tv_sec < 2)
-		WARN_ON(1);
-	pre_time = time;
-
 }
 
 /* charger_manager ops  */
