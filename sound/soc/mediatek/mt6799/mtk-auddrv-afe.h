@@ -430,6 +430,8 @@ typedef struct {
 #define TOP_AUD_TOP_CFG               (0x0340)
 #define TOP_AUD_TOP_MON               (0x0344)
 
+#define CLK_MISC_CFG4             (0x0420)
+
 /*Afe register*/
 #define AUDIO_TOP_CON0                        (AFE_BASE + 0x0000)
 #define AUDIO_TOP_CON1                        (AFE_BASE + 0x0004)

@@ -401,6 +401,8 @@ void AudDrv_Clk_On(void)
 			goto EXIT;
 		}
 
+		clksys_set_reg(CLK_MISC_CFG4, 0x1 << 0, 0x1 << 0);
+
 		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 		/* CLOCK_SCP_SYS_AUD is MTCMOS */
 
@@ -440,6 +442,8 @@ void AudDrv_Clk_Off(void)
 #ifdef PM_MANAGER_API
 		/* Make sure all IRQ status is cleared */
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 0xffff, 0xffff);
+
+		clksys_set_reg(CLK_MISC_CFG4, 0 << 0, 0x1 << 0);
 
 		if (aud_clks[CLOCK_AFE].clk_prepare)
 			clk_disable(aud_clks[CLOCK_AFE].clock);
