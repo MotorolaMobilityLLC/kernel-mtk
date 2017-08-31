@@ -15,7 +15,7 @@
 #define _DISP_LOWPOWER_H_
 
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module);
-void primary_display_idlemgr_enter_idle_nolock(void);
+int primary_display_idlemgr_enter_idle_nolock(void);
 
 
 struct golden_setting_context *get_golden_setting_pgc(void);

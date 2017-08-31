@@ -64,6 +64,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
+#ifdef CONFIG_MTK_DCS
+#include <mt-plat/mtk_meminfo.h>
+#endif
 
 #include "mmdvfs_mgr.h"
 
@@ -776,7 +779,7 @@ void _primary_display_enable_mmsys_clk(void)
 }
 
 /* Share wrot sram end */
-void _vdo_mode_enter_idle(void)
+int _vdo_mode_enter_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
@@ -795,9 +798,23 @@ void _vdo_mode_enter_idle(void)
 		if (primary_get_sess_mode() == DISP_SESSION_DIRECT_LINK_MODE)
 			do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
 					primary_get_sess_id(), 0, NULL, 0);
-		else if (primary_get_sess_mode() == DISP_SESSION_DUAL_DIRECT_LINK_MODE)
+		else if (primary_get_sess_mode() == DISP_SESSION_DUAL_DIRECT_LINK_MODE) {
+#ifdef CONFIG_MTK_DCS
+			enum dcs_status status;
+			int ret = 0, ch = 0;
+
+			ret = dcs_get_dcs_status_trylock(&ch, &status);
+			if (ret < 0 || ch < 0) {
+				DISPMSG("DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
+				return -1;
+			}
+#endif
 			do_primary_display_switch_mode(DISP_SESSION_DUAL_DECOUPLE_MODE,
 					primary_get_sess_id(), 0, NULL, 0);
+#ifdef CONFIG_MTK_DCS
+			dcs_get_dcs_status_unlock();
+#endif
+		}
 
 		set_is_dc(1);
 
@@ -853,6 +870,7 @@ void _vdo_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
 
+	return 0;
 	/* Enable sodi - need wait golden setting done ??? */
 #if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -961,12 +979,15 @@ void _cmd_mode_leave_idle(void)
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 }
 
-void primary_display_idlemgr_enter_idle_nolock(void)
+int primary_display_idlemgr_enter_idle_nolock(void)
 {
+	int ret = 0;
+
 	if (primary_display_is_video_mode())
-		_vdo_mode_enter_idle();
+		ret = _vdo_mode_enter_idle();
 	else
 		_cmd_mode_enter_idle();
+	return ret;
 }
 
 void primary_display_idlemgr_leave_idle_nolock(void)
@@ -1049,7 +1070,10 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		DISPINFO("[disp_lowpower]primary enter idle state\n");
 
 		/* enter idle state */
-		primary_display_idlemgr_enter_idle_nolock();
+		if (primary_display_idlemgr_enter_idle_nolock() < 0) {
+			primary_display_manual_unlock();
+			continue;
+		}
 		primary_display_set_idle_stat(1);
 
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */

@@ -453,6 +453,10 @@ static int __init disp_probe_1(void)
 	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_CG_CLR1, 0xFFFFFFFF);
 	/* sel ovl0_2l to larb0 */
 	/* DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_SMI_LARB_SEL, 0x1);*/
+#ifdef CONFIG_MTK_DCS
+	/* sel wdma0 to larb0 */
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_SMI_LARB_SEL, 0x2);
+#endif
 #endif
 
 	/* init arrays */
