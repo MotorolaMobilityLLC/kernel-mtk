@@ -61,6 +61,7 @@ static bool g_inited[MAX_CLUSTER_NR] = {false};
 #include <mt-plat/met_drv.h>
 #endif
 
+unsigned int capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 int dbg_id = DEBUG_FREQ_DISABLED;
 
 /**
@@ -337,7 +338,7 @@ void update_cpu_capacity_request(int cpu, bool request, int type)
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
 	new_capacity = scr->cfs + scr->rt;
-	new_capacity = new_capacity * capacity_margin
+	new_capacity = new_capacity * capacity_margin_dvfs
 		/ SCHED_CAPACITY_SCALE;
 	new_capacity += scr->dl;
 

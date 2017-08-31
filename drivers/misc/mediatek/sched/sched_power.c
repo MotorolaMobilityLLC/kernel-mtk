@@ -84,11 +84,11 @@ void game_hint_notifier(int is_game_mode)
 {
 	if (is_game_mode) {
 		STUNE_TASK_THRESHOLD = 80;
-		capacity_margin = 1024;
+		capacity_margin_dvfs = 1024;
 		sodi_limit = 120;
 	} else {
 		STUNE_TASK_THRESHOLD = 0;
-		capacity_margin = 1280;
+		capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 		sodi_limit = DEFAULT_SODI_LIMIT;
 	}
 
@@ -182,7 +182,7 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	/* OPP idx to refer capacity margin */
-	new_capacity = util * capacity_margin >> SCHED_CAPACITY_SHIFT;
+	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
 
 	for (idx = 0; idx < sge->nr_cap_states; idx++) {
@@ -666,7 +666,7 @@ static ssize_t store_cap_margin_knob(struct kobject *kobj,
 	int val = 0;
 
 	if (sscanf(buf, "%iu", &val) != 0)
-		capacity_margin = val;
+		capacity_margin_dvfs = val;
 
 	return count;
 }
@@ -677,13 +677,13 @@ static ssize_t show_cap_margin_knob(struct kobject *kobj,
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
 
-	len += snprintf(buf, max_len, "capacity_margin=%d\n", capacity_margin);
+	len += snprintf(buf, max_len, "capacity_margin_dvfs=%d\n", capacity_margin_dvfs);
 
 	return len;
 }
 
-static struct kobj_attribute eas_cap_margin_attr =
-__ATTR(cap_margin, S_IWUSR | S_IRUSR, show_cap_margin_knob,
+static struct kobj_attribute eas_cap_margin_dvfs_attr =
+__ATTR(cap_margin_dvfs, S_IWUSR | S_IRUSR, show_cap_margin_knob,
 		store_cap_margin_knob);
 
 /* To set limit of SODI */
@@ -748,7 +748,7 @@ static struct attribute *eas_attrs[] = {
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
 	&eas_stune_task_thresh_attr.attr,
-	&eas_cap_margin_attr.attr,
+	&eas_cap_margin_dvfs_attr.attr,
 	&eas_sodi_limit_attr.attr,
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	&eas_dvfs_debug_attr.attr,
