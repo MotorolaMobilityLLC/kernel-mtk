@@ -19,6 +19,7 @@
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <mach/mtk_pmic_ipi.h>
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#include <linux/delay.h>
 
 #define ISL91302A_BUCK_DRV_VERSION	"1.0.0_MTK"
 
@@ -273,6 +274,9 @@ static int isl91302a_enable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	ret = extbuck_ipi_enable(buck_id, 1);
 	pr_info_ratelimited("%s [%s] buck_id = %d, ret = %d\n", __func__,
 				mreg_desc->rdesc.name, buck_id, ret);
+	dsb(sy);
+	mdelay(1);
+	dsb(sy);
 	if (ret != 0)
 		return -EINVAL;
 	return 0;
