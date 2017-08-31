@@ -47,9 +47,9 @@ enum dvfs_kicker {
 	KIR_GPU,
 	KIR_APCCCI,
 	KIR_SYSFS,
-	KIR_SYSFSX,
 	KIR_MM_NON_FORCE,
 	KIR_SYSFS_N,
+	KIR_SYSFSX,
 	NUM_KICKER,
 
 	/* internal kicker */
