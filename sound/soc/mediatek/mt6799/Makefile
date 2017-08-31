@@ -18,3 +18,4 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 obj-y += mtk-auddrv-clk.o
 obj-y += mtk-soc-afe-connection.o
 obj-y += mt6799-sound.o
+obj-$(CONFIG_MTK_HDMI_TDM) += mt6799-hdmi.o

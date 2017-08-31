@@ -1,20 +1,20 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ *
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
 /*******************************************************************************
  *
  * Filename:
@@ -49,7 +49,6 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
-#include "mtk-auddrv-common.h"
 #include "mtk-soc-pcm-common.h"
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-afe.h"
@@ -57,7 +56,10 @@
 #include "mtk-auddrv-clk.h"
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
+#include "mtk-soc-pcm-common.h"
 #include "mtk-soc-pcm-platform.h"
+#include "mtk-soc-hdmi-type.h"
+#include "mt6799-hdmi.h"
 
 /* information about */
 
@@ -65,7 +67,7 @@ static AFE_MEM_CONTROL_T *pMemControl;
 static bool mHDMIPrepareDone;
 static AudioHDMIFormat mAudioHDMIFormat;
 
-struct snd_dma_buffer *HDMI_dma_buf;
+static struct snd_dma_buffer *HDMI_dma_buf;
 
 static DEFINE_SPINLOCK(auddrv_hdmi_lock);
 
@@ -241,11 +243,17 @@ static uint32 table_sgen_8ch_golden_values[] = {
 
 static void copysinewavetohdmi(unsigned int channels)
 {
-	unsigned char *Bufferaddr = HDMI_dma_buf->area;
-	int Hhdmi_Buffer_length = HDMI_dma_buf->bytes;
-	uint32 arraybytes = 0;
-	uint32 *SinewaveArr = NULL;
-	int i = 0;
+	uint8_t *Bufferaddr;
+	int Hdmi_Buffer_length;
+	uint32 arraybytes;
+	uint32 *SinewaveArr;
+	int i;
+
+	Bufferaddr = HDMI_dma_buf->area;
+	Hdmi_Buffer_length = HDMI_dma_buf->bytes;
+	SinewaveArr = NULL;
+	arraybytes = 0;
+	i = 0;
 
 	if (channels == 2) {
 		arraybytes =
@@ -265,9 +273,9 @@ static void copysinewavetohdmi(unsigned int channels)
 		SinewaveArr = table_sgen_8ch_golden_values;
 	}
 	if (channels == 0) {
-		memset_io((void *)(Bufferaddr), 0x7f7f7f7f, Hhdmi_Buffer_length);	/* using for observe data */
+		memset_io((void *)(Bufferaddr), 0x7f7f7f7f, Hdmi_Buffer_length);	/* using for observe data */
 		pr_warn("use fix pattern Bufferaddr = %p Hhdmi_Buffer_length = %d\n", Bufferaddr,
-			Hhdmi_Buffer_length);
+			Hdmi_Buffer_length);
 		return;
 	}
 
@@ -279,14 +287,14 @@ static void copysinewavetohdmi(unsigned int channels)
 	}
 
 	for (i = 0; i < 512; i++)
-		pr_warn("Bufferaddr[%d] = %x\n", i, *(Bufferaddr + i));
+		pr_debug("Bufferaddr[%d] = %x\n", i, *(Bufferaddr + i));
 
 
 }
 
 static void SetHDMIAddress(void)
 {
-	pr_debug("%s buffer length = %zu\n", __func__, HDMI_dma_buf->bytes);
+	pr_warn("%s buffer length = %zu\n", __func__, HDMI_dma_buf->bytes);
 	Afe_Set_Reg(AFE_HDMI_BASE, HDMI_dma_buf->addr, 0xffffffff);
 	Afe_Set_Reg(AFE_HDMI_END, HDMI_dma_buf->addr + (HDMI_dma_buf->bytes - 1), 0xffffffff);
 }
@@ -294,8 +302,8 @@ static void SetHDMIAddress(void)
 
 static int mHdmi_sidegen_control;
 static int mHdmi_display_control;
-static const char * const HDMI_SIDEGEN[] = { "Off", "On" };
-static const char * const HDMI_DISPLAY[] = { "MHL", "SLIMPORT" };
+static const char *const HDMI_SIDEGEN[] = { "Off", "On" };
+static const char *const HDMI_DISPLAY[] = { "MHL", "SLIMPORT" };
 
 static const struct soc_enum Audio_Hdmi_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(HDMI_SIDEGEN), HDMI_SIDEGEN),
@@ -314,9 +322,13 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	AudioHDMIFormat *ptrAudioHDMIFormat;
-	struct snd_pcm_substream *hdmi_stream;
+	uint32 runsamplerate = 44100;
+	uint32 outchannel = 2;
+	uint32 HDMIchannel = 8;
+	snd_pcm_format_t format  = SNDRV_PCM_FORMAT_S16_LE;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
+
 
 	pr_warn("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(HDMI_SIDEGEN)) {
@@ -327,24 +339,17 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 	if (mHdmi_sidegen_control) {
 		uint32 MclkDiv = 0;
-
-		hdmi_stream =
-			kmalloc(sizeof(struct snd_pcm_substream), GFP_KERNEL);
-
-		memset(hdmi_stream, 0, sizeof(struct snd_pcm_substream));
-		hdmi_stream->rate = 44100;
-		hdmi_stream->channels = 8;
-		hdmi_stream->->format = SNDRV_PCM_FORMAT_S16_LE;
+		pr_warn("%s(),mHdmi_sidegen_control\n", __func__);
 
 		mtk_Hdmi_Configuration_Init((void *)ptrAudioHDMIFormat);
 
 		mtk_Hdmi_Clock_Set((void *)ptrAudioHDMIFormat);
 
-		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, hdmi_stream, mHdmi_display_control);
-
+		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, runsamplerate, HDMIchannel,
+						format, mHdmi_display_control);
 		AudDrv_Clk_On();
 		SetHDMIAddress();
-		copysinewavetohdmi(hdmi_stream->channels);
+		copysinewavetohdmi(HDMIchannel);
 
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI,
 					     ptrAudioHDMIFormat->mMemIfFetchFormatPerSample);
@@ -358,18 +363,20 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_MCKDIV, true);
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_BCKDIV, true);
 
-		MclkDiv = SetCLkMclk(ptrAudioHDMIFormat->mI2Snum, hdmi_stream->rate);
+		MclkDiv = SetCLkMclk(ptrAudioHDMIFormat->mI2Snum, runsamplerate);
 
-		SetCLkBclk(MclkDiv, hdmi_stream->rate, ptrAudioHDMIFormat->mHDMI_Channels,
-				   ptrAudioHDMIFormat->mClock_Data_Lens)
+		SetCLkBclk(MclkDiv, runsamplerate, outchannel,
+				   ptrAudioHDMIFormat->mClock_Data_Lens);
 
-		SetHDMIsamplerate(hdmi_stream->rate);
-		SetHDMIChannels(hdmi_stream->channels);
+		/*SetHDMIsamplerate(hdmi_stream->rate);*/
+		SetHDMIChannels(HDMIchannel);
 
 		SetTDMLrckWidth(ptrAudioHDMIFormat->mTDM_LRCK);
 		SetTDMbckcycle(ptrAudioHDMIFormat->mClock_Data_Lens);
 
-		SetTDMChannelsSdata(ptrAudioHDMIFormat->msDATA_Channels);
+		/*SetTDMChannelsSdata(ptrAudioHDMIFormat->msDATA_Channels);*/
+		SetTDMChannelsSdata(outchannel);
+
 		SetTDMDatalength(ptrAudioHDMIFormat->mTDM_Data_Lens);
 
 		SetTDMI2Smode(Soc_Aud_I2S_FORMAT_I2S);
@@ -388,10 +395,15 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 		SetHDMIEnable(true);
 
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, true);
+
 		EnableAfe(true);
+
+		SetHDMIDumpReg();
 
 
 	} else {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 		SetHDMIEnable(false);
 		SetTDMEnable(false);
 		EnableApll1(false);
@@ -403,9 +415,6 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 		EnableAfe(false);
 		AudDrv_TDM_Clk_Off();	/* disable HDMI CK */
 		AudDrv_Clk_Off();
-
-		if (hdmi_stream != NULL)
-			free(hdmi_stream);
 	}
 	return 0;
 }
@@ -574,7 +583,7 @@ static int mtk_pcm_hdmi_hw_params(struct snd_pcm_substream *substream,
 	    params_buffer_bytes(hw_params);
 	runtime->dma_area = HDMI_dma_buf->area;
 	runtime->dma_addr = HDMI_dma_buf->addr;
-	SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, true);
+	SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, true, runtime->dma_addr);
 	AudDrv_Emi_Clk_On();
 
 	PRINTK_AUD_HDMI("2 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
@@ -609,11 +618,13 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 {
 	AudioHDMIFormat *ptrAudioHDMIFormat;
+	struct snd_pcm_runtime *runtime;
+	int ret;
+
+	runtime = substream->runtime;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
 
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	int ret = 0;
 
 	pr_warn("mtk_pcm_hdmi_open\n");
 
@@ -686,12 +697,12 @@ static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 {
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime;
 	AudioHDMIFormat *ptrAudioHDMIFormat;
+	uint32 MclkDiv;
 
+	runtime = substream->runtime;
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
-	uint32 Tdm_Lrck = 0;
-	uint32 MclkDiv = 0;
 
 	pr_warn
 	    ("%s format =%d, rate = %d  channels = %d period_size = %lu, mHdmi_display_control=%d\n",
@@ -699,7 +710,8 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 
 	if (mHDMIPrepareDone == false) {
 
-		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, substream, mHdmi_display_control);
+		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, runtime->rate, runtime->channels,
+		runtime->format, mHdmi_display_control);
 
 		MclkDiv = SetCLkMclk(ptrAudioHDMIFormat->mI2Snum, runtime->rate);
 
@@ -727,7 +739,7 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 		else
 			SetTDMLrckInverse(true);
 
-		SetHDMIsamplerate(runtime->rate);
+		/*SetHDMIsamplerate(runtime->rate);*/
 
 #ifdef __2CH_TO_8CH
 		SetHDMIChannels(8);
