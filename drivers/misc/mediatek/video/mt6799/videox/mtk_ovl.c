@@ -337,6 +337,7 @@ int ovl2mem_init(unsigned int session)
 						((1LL << CMDQ_ENG_DISP_OVL1) | (1LL << CMDQ_ENG_DISP_WDMA1)));
 
 	cmdqRecReset(pgc->cmdq_handle_config);
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
 
