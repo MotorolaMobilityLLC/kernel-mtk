@@ -1534,12 +1534,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 	}
 
-#ifndef CONFIG_HYBRID_CPU_DVFS
-#ifdef CLUSTER_BUCK_OFF
-	regulator_disable(regulator_proc2);
-#endif
-#endif
-
 #ifdef CONFIG_CPU_FREQ
 	cpufreq_register_driver(&_mt_cpufreq_driver);
 #endif

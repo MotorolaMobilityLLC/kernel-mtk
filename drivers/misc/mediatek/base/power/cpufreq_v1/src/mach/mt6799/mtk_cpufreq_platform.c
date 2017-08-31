@@ -781,9 +781,11 @@ int mt_cpufreq_regulator_map(struct platform_device *pdev)
 	if (ret < 0)
 		pr_err("regulator_proc1 enable fail\n");
 
+#if 0
 	ret = regulator_enable(regulator_proc2);
 	if (ret < 0)
 		pr_err("regulator_proc2 enable fail\n");
+#endif
 
 	ret = regulator_enable(regulator_sram1);
 	if (ret < 0)
