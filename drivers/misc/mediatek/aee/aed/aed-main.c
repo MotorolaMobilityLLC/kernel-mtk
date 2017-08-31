@@ -1310,6 +1310,8 @@ DEFINE_SEMAPHORE(aed_dal_sem);
 static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	int aee_mode_tmp = 0;
+	int aee_force_exp_tmp = 0;
 
 	if (down_interruptible(&aed_dal_sem) < 0)
 		return -ERESTARTSYS;
@@ -1317,19 +1319,39 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case AEEIOCTL_SET_AEE_MODE:
 		{
-			if (copy_from_user(&aee_mode, (void __user *)arg, sizeof(aee_mode))) {
+			if (copy_from_user(&aee_mode_tmp, (void __user *)arg,
+					sizeof(aee_mode_tmp))) {
 				ret = -EFAULT;
 				goto EXIT;
 			}
+
+			if ((aee_mode_tmp >= AEE_MODE_MTK_ENG) &&
+				(aee_mode_tmp <= AEE_MODE_CUSTOMER_USER)) {
+				aee_mode = aee_mode_tmp;
+			} else {
+				ret = -EFAULT;
+				goto EXIT;
+			}
+
 			LOGD("set aee mode = %d\n", aee_mode);
 			break;
 		}
 	case AEEIOCTL_SET_AEE_FORCE_EXP:
 		{
-			if (copy_from_user(&aee_force_exp, (void __user *)arg, sizeof(aee_force_exp))) {
+			if (copy_from_user(&aee_force_exp_tmp, (void __user *)arg,
+					sizeof(aee_force_exp_tmp))) {
 				ret = -EFAULT;
 				goto EXIT;
 			}
+
+			if ((aee_force_exp_tmp == AEE_FORCE_EXP_DISABLE) ||
+				(aee_force_exp_tmp == AEE_FORCE_EXP_ENABLE)) {
+				aee_force_exp = aee_force_exp_tmp;
+			} else {
+				ret = -EFAULT;
+				goto EXIT;
+			}
+
 			LOGD("set aee force_exp = %d\n", aee_force_exp);
 			break;
 		}
