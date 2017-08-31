@@ -107,7 +107,8 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	met_cpu_dvfs(cid, freq, 0);
 
 	/* SSPM should support??? */
-	mt_cpufreq_set_by_schedule_load(target_cpu, type, freq);
+	/*mt_cpufreq_set_by_schedule_load(target_cpu, type, freq);*/
+	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
 #else

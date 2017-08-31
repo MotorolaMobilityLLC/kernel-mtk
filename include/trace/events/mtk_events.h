@@ -250,6 +250,62 @@ TRACE_EVENT(hps_update,
 		__get_str(target))
 );
 
+#if 0
+TRACE_EVENT(sched_update,
+
+	TP_PROTO(
+		unsigned int cpu_id,
+		unsigned int sched_info_cpu0,
+		unsigned int sched_info_cpu1,
+		unsigned int sched_info_cpu2,
+		unsigned int sched_info_cpu3
+	),
+
+	TP_ARGS(cpu_id, sched_info_cpu0, sched_info_cpu1,
+		sched_info_cpu2, sched_info_cpu3),
+
+	TP_STRUCT__entry(
+		__field(unsigned int, root_cpu)
+		__field(unsigned int, sched_info_0)
+		__field(unsigned int, sched_info_1)
+		__field(unsigned int, sched_info_2)
+		__field(unsigned int, sched_info_3)
+	),
+
+	TP_fast_assign(
+		__entry->root_cpu = cpu_id;
+		__entry->sched_info_0 = sched_info_cpu0;
+		__entry->sched_info_1 = sched_info_cpu1;
+		__entry->sched_info_2 = sched_info_cpu2;
+		__entry->sched_info_3 = sched_info_cpu3;
+	),
+
+	TP_printk("(%d)(0x%x)(0x%x)(0x%x)(0x%x)", __entry->root_cpu, __entry->sched_info_0,
+		__entry->sched_info_1, __entry->sched_info_2, __entry->sched_info_3)
+);
+#else
+TRACE_EVENT(sched_update,
+
+	TP_PROTO(
+		unsigned int cluster,
+		unsigned int sched_info_cluster
+	),
+
+	TP_ARGS(cluster, sched_info_cluster),
+
+	TP_STRUCT__entry(
+		__field(unsigned int, cluster_id)
+		__field(unsigned int, sched_info)
+	),
+
+	TP_fast_assign(
+		__entry->cluster_id = cluster;
+		__entry->sched_info = sched_info_cluster;
+	),
+
+	TP_printk("(%d)(0x%x)", __entry->cluster_id, __entry->sched_info)
+);
+#endif
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */

@@ -13,7 +13,8 @@
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
+#if 0
+/* #ifdef CONFIG_HYBRID_CPU_DVFS */
 enum mt_cpu_dvfs_id group(unsigned int cpu)
 {
 	enum mt_cpu_dvfs_id id;
@@ -25,6 +26,7 @@ enum mt_cpu_dvfs_id group(unsigned int cpu)
 }
 #endif
 
+#if 0
 int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -43,6 +45,25 @@ int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type s
 	return 0;
 }
 EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load);
+#else
+int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	enum mt_cpu_dvfs_id id = (enum mt_cpu_dvfs_id) cluster_id;
+
+	if (freq < mt_cpufreq_get_freq_by_idx(id, 15))
+		freq = mt_cpufreq_get_freq_by_idx(id, 15);
+
+	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
+		freq = mt_cpufreq_get_freq_by_idx(id, 0);
+
+	cpuhvfs_set_cluster_load_freq(id, freq);
+#endif
+
+	return 0;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load_cluster);
+#endif
 
 int is_in_suspend(void)
 {

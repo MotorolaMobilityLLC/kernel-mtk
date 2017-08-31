@@ -29,7 +29,11 @@ enum cpu_dvfs_sched_type {
 };
 
 /* Schedule Assist Input */
+#if 0
 extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu, enum cpu_dvfs_sched_type state, unsigned int freq);
+#else
+extern int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq);
+#endif
 
 /* PTP-OD */
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
