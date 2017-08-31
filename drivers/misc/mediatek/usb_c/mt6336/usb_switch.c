@@ -254,11 +254,11 @@ static int usb_gpio_debugfs_show(struct seq_file *s, void *unused)
 
 	seq_puts(s, "---------\n");
 	seq_puts(s, "sw [en|sel] [0|1]\n");
-	seq_puts(s, "sw en 0 --> Disable\n");
-	seq_puts(s, "sw en 1 --> Enable\n");
-	seq_puts(s, "sw sel 1 --> sel CC1\n");
-	seq_puts(s, "sw sel 2 --> sel CC2\n");
-	seq_puts(s, "rd [c1|c2] [H|Z|L]\n");
+	seq_puts(s, "sw e 0 --> Disable\n");
+	seq_puts(s, "sw e 1 --> Enable\n");
+	seq_puts(s, "sw s 1 --> sel CC1\n");
+	seq_puts(s, "sw s 2 --> sel CC2\n");
+	seq_puts(s, "rd [1|2] [H|Z|L]\n");
 	seq_puts(s, "---------\n");
 
 	return 0;
@@ -277,7 +277,7 @@ static ssize_t usb_gpio_debugfs_write(struct file *file,
 
 	char buf[18] = { 0 };
 	char type = '\0';
-	char gpio[20] = { 0 };
+	char gpio = '\0';
 	int val = 0;
 
 	memset(buf, 0x00, sizeof(buf));
@@ -287,16 +287,16 @@ static ssize_t usb_gpio_debugfs_write(struct file *file,
 
 	usbc_pinctrl_printk(K_INFO, "%s %s\n", __func__, buf);
 
-	if (sscanf(buf, "sw %s %d", gpio, &val) == 2) {
-		usbc_pinctrl_printk(K_INFO, "%s %d\n", gpio, val);
-		if (strncmp(gpio, "en", 2) == 0)
+	if (sscanf(buf, "sw %c %d", &gpio, &val) == 2) {
+		usbc_pinctrl_printk(K_INFO, "%c %d\n", gpio, val);
+		if (gpio == 'e')
 			usb3_switch_en(typec, ((val == 0) ? DISABLE : ENABLE));
-		else if (strncmp(gpio, "sel", 3) == 0)
+		else if (gpio == 's')
 			usb3_switch_sel(typec, ((val == 1) ? CC1_SIDE : CC2_SIDE));
-	} else if (sscanf(buf, "rd %s %c", gpio, &type) == 2) {
+	} else if (sscanf(buf, "rd %c %c", &gpio, &type) == 2) {
 		int stat = 0;
 
-		usbc_pinctrl_printk(K_INFO, "%s %c\n", gpio, val);
+		usbc_pinctrl_printk(K_INFO, "%c %c\n", gpio, type);
 
 		if (type == 'H')
 			stat = U3_EQ_HIGH;
@@ -305,10 +305,10 @@ static ssize_t usb_gpio_debugfs_write(struct file *file,
 		else if (type == 'Z')
 			stat = U3_EQ_HZ;
 
-		if (strncmp(gpio, "c1", 2) == 0) {
+		if (gpio == '1') {
 			usb_redriver_config(typec, U3_EQ_C1, stat);
 			typec->u_rd->eq_c1 = stat;
-		} else if (strncmp(gpio, "c2", 2) == 0) {
+		} else if (gpio == '2') {
 			usb_redriver_config(typec, U3_EQ_C2, stat);
 			typec->u_rd->eq_c2 = stat;
 		}
