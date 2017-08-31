@@ -135,8 +135,8 @@ int mt6336_get_auxadc_value_bysw(u8 channel)
 	else if (resolution == 15)
 		adc_result = (reg_val*VOLTAGE_FULL_RANGE)*r_val/32768; /*15*/
 
-	pr_info("[%s] reg_val = 0x%x, adc_result = %d\n",
-				__func__, reg_val, adc_result);
+	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
 
@@ -153,7 +153,7 @@ int mt6336_get_auxadc_value(u8 channel)
 	}
 
 	auxadc_channel =
-		&mt6336_auxadc_channel[channel-AUXADC_LIST_MT6337_START];
+		&mt6336_auxadc_channel[channel-AUXADC_LIST_MT6336_START];
 
 	mt6336_auxadc_lock();
 
@@ -182,8 +182,8 @@ int mt6336_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] reg_val = 0x%x, adc_result = %d\n",
-				__func__, reg_val, adc_result);
+	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
 EXPORT_SYMBOL(mt6336_get_auxadc_value);
