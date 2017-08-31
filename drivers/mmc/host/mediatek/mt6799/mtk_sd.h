@@ -564,7 +564,7 @@ static inline unsigned int uffs(unsigned int x)
 
 #define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
-#define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
+#define CLK_TIMEOUT             (HZ    * 1)     /* 1s    */
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
@@ -632,6 +632,8 @@ void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode);
 void msdc_set_check_endbit(struct msdc_host *host, bool enable);
 int msdc_switch_part(struct msdc_host *host, char part_id);
+void msdc_gate_clock(struct msdc_host *host, int delay);
+void msdc_ungate_clock(struct msdc_host *host);
 
 /* Function provided by msdc_tune.c */
 int sdcard_reset_tuning(struct mmc_host *mmc);

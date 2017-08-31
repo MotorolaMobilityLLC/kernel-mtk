@@ -92,7 +92,7 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host);
 	do { \
 		clk_disable(host->clk_ctl); \
 		if (host->hclk_ctl) \
-			disable(host->hclk_ctl); \
+			clk_disable(host->hclk_ctl); \
 		if (host->hw->host_function != MSDC_SDIO) \
 			fde_aes_check_enable(host->id, 0); \
 	} while (0)

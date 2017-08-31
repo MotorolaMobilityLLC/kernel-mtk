@@ -787,6 +787,8 @@ int emmc_autok(void)
 
 	mmc_claim_host(host->mmc);
 
+	msdc_ungate_clock(host);
+
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
@@ -814,6 +816,8 @@ int emmc_autok(void)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
+
+	msdc_gate_clock(host, 0);
 
 	mmc_release_host(host->mmc);
 
