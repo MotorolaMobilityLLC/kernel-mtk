@@ -248,6 +248,7 @@ struct md_hw_info {
 	unsigned long ap_ccif_base;
 	unsigned long md_ccif_base;
 	unsigned int sram_size;
+	unsigned int chip_ver;
 
 	/* HW info - Interrutpt ID */
 	unsigned int cldma_irq_id;

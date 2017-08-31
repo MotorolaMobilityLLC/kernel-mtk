@@ -100,7 +100,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 {
 	struct device_node *node = NULL;
 	int idx = 0;
-	unsigned int ver = 0;
 
 	memset(dev_cfg, 0, sizeof(struct ccci_dev_cfg));
 	memset(hw_info, 0, sizeof(struct md_hw_info));
@@ -151,11 +150,11 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 #else
 		CCCI_ERROR_LOG(dev_cfg->index, TAG, "gpio pinctrl is not ready yet, use workaround.\n");
 #endif
-		ver = mt_get_chip_sw_ver();
+		hw_info->chip_ver = mt_get_chip_sw_ver();
 		for (idx = 0; idx < ARRAY_SIZE(clk_table); idx++) {
-			if (ver == CHIP_SW_VER_01 && clk_table[idx].version != CHIP_SW_VER_01) {
+			if (hw_info->chip_ver == CHIP_SW_VER_01 && clk_table[idx].version != CHIP_SW_VER_01) {
 				CCCI_INIT_LOG(dev_cfg->index, TAG, "md%d get %s bypass on ver%x\n",
-								dev_cfg->index + 1, clk_table[idx].clk_name, ver);
+					dev_cfg->index + 1, clk_table[idx].clk_name, hw_info->chip_ver);
 				continue;
 			}
 			clk_table[idx].clk_ref = devm_clk_get(&dev_ptr->dev, clk_table[idx].clk_name);
@@ -686,7 +685,7 @@ void md1_pll_init(struct ccci_modem *md)
 	cldma_write32(map_addr, 0x3a0, 0xff000000);
 
 	/* PLL init */
-	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D);
+	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D); /* 0x20140000 */
 	cldma_write32(md_pll->md_top_Pll, 0x88, 0x8014313B);
 	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00630410);
 	cldma_write32(md_pll->md_top_Pll, 0x98, 0x80266C4E);
@@ -724,7 +723,7 @@ void md1_pll_init(struct ccci_modem *md)
 	while ((cldma_read32(md_pll->md_top_clkSW, 0x80) & 0x8000) != 0x8000)
 		;
 
-	ROr2W(md_pll->md_top_clkSW, 0x24, 0x3);
+	ROr2W(md_pll->md_top_clkSW, 0x24, 0x3); /* 0x20150000 */
 	ROr2W(md_pll->md_top_clkSW, 0x24, 0x150177FC);
 	cldma_write32(md_pll->md_top_clkSW, 0x20, 0x0);
 
@@ -737,6 +736,70 @@ void md1_pll_init(struct ccci_modem *md)
 	iounmap(efuse_addr);
 }
 
+void md1_pll_init_1(struct ccci_modem *md)
+{
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
+	void __iomem *map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
+
+	/* Enables clock square1 low-pass filter for 26M quality */
+	ROr2W(map_addr, 0x04, 0x10);
+	udelay(100);
+
+	/* PLL init */
+	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D);  /* 0x20140000 */
+	cldma_write32(md_pll->md_top_Pll, 0x88, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00000812);
+	cldma_write32(md_pll->md_top_Pll, 0x98, 0x801EEC4F);
+	cldma_write32(md_pll->md_top_Pll, 0x9C, 0x00000812);
+
+
+	cldma_write32(md_pll->md_top_Pll, 0x48, 0x8020B13B);
+	cldma_write32(md_pll->md_top_Pll, 0x4C, 0x01D20012);
+	cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
+	cldma_write32(md_pll->md_top_Pll, 0x78, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000812);
+
+	cldma_write32(md_pll->md_top_Pll, 0x90, 0x80252762);
+	cldma_write32(md_pll->md_top_Pll, 0x94, 0x00620010);
+	cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init clock done\n");
+
+	while (((cldma_read32(md_pll->md_top_Pll, 0xC00) >> 16) & 0x7FFF) !=
+		(cldma_read32(md_pll->md_top_Pll, 0x40) >> 7))
+		;
+
+	cldma_write32(md_pll->md_top_Pll, 0x10, 0x0);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0xD0\n");
+	while ((cldma_read32(md_pll->md_top_clkSW, 0xD0) & 0x402) != 0x402)
+		;
+	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
+	ROr2W(md_pll->md_top_Pll, 0x94, 0x10000);
+
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x80\n");
+	while ((cldma_read32(md_pll->md_top_clkSW, 0x80) & 0x8000) != 0x8000)
+		;
+
+	ROr2W(md_pll->md_top_clkSW, 0x24, 0x3);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x240\n");
+	while ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0x40000) != 0x40000)
+		;
+	cldma_write32(md_pll->md_sys_clk, 0x240, ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0xFFFFFF00) | 0x00000002));
+	ROr2W(md_pll->md_sys_clk, 0x240, 0x100);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x240\n");
+	while ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0x40000) != 0x40000)
+		;
+
+	ROr2W(md_pll->md_top_clkSW, 0x24, 0x150177FC);
+	cldma_write32(md_pll->md_top_clkSW, 0x20, 0x0);
+
+	cldma_write32(md_pll->md_top_Pll, 0x314, 0xFFFF);
+	cldma_write32(md_pll->md_top_Pll, 0x318, 0xFFFF);
+
+	/*make a record that means MD pll has been initialized.*/
+	cldma_write32(md_pll->md_top_clkSW, 0xF00, 0x62920000);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: end\n");
+}
 
 void __attribute__((weak)) kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 {
@@ -794,8 +857,10 @@ int md_cd_power_on(struct ccci_modem *md)
 	inform_nfc_vsim_change(md->index, 1, 0);
 #endif
 	/* step 4: pll init */
-	md1_pll_init(md);
-
+	if (md_ctrl->hw_info->chip_ver == CHIP_SW_VER_01)
+		md1_pll_init(md);
+	else
+		md1_pll_init_1(md);
 	/* step 5: disable MD WDT */
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
 
