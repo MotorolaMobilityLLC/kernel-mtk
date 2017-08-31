@@ -20,6 +20,8 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#include <mt-plat/mtk_ccci_common.h>
+#include "ccci_fsm.h"
 #include "port_smem.h"
 
 #define TAG SMEM
@@ -105,7 +107,7 @@ int port_smem_tx_nofity(struct port_t *port, unsigned int user_data)
 int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 {
 	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
-	int ret;
+	int md_state, ret;
 	unsigned long flags;
 	int md_id = port->md_id;
 
@@ -120,6 +122,13 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 
 	if (ret == -ERESTARTSYS)
 		ret = -EINTR;
+	else {
+		md_state = ccci_fsm_get_md_state(md_id);
+		if (md_state == WAITING_TO_STOP) {
+			CCCI_REPEAT_LOG(md_id, TAG, "smem poll return, md_state = %d\n", md_state);
+			ret = -ENODEV;
+		}
+	}
 	return ret;
 }
 
@@ -446,6 +455,20 @@ int port_smem_init(struct port_t *port)
 
 	return 0;
 }
+
+static void port_smem_md_state_notify(struct port_t *port, unsigned int state)
+{
+	switch (state) {
+	case EXCEPTION:
+	case RESET:
+	case WAITING_TO_STOP:
+		port_smem_rx_wakeup(port);
+		break;
+	default:
+		break;
+	};
+}
+
 static void port_smem_queue_state_notify(struct port_t *port, int dir, int qno, unsigned int qstate)
 {
 	if (port->rx_ch == CCCI_SMEM_CH && qstate == RX_IRQ)
@@ -453,6 +476,7 @@ static void port_smem_queue_state_notify(struct port_t *port, int dir, int qno, 
 }
 struct port_ops smem_port_ops = {
 	.init = &port_smem_init,
+	.md_state_notify = &port_smem_md_state_notify,
 	.queue_state_notify = &port_smem_queue_state_notify,
 };
 
