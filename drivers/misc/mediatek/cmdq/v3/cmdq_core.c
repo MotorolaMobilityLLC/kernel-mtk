@@ -242,7 +242,7 @@ static inline void cmdq_core_resume_HW_thread(int32_t thread)
 	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x00);
 }
 
-static inline int32_t cmdq_core_reset_HW_thread(int32_t thread)
+inline int32_t cmdq_core_reset_HW_thread(int32_t thread)
 {
 	int32_t loop = 0;
 
@@ -7396,6 +7396,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			/* Reset GCE thread when task state is ERROR or KILL */
 			uint32_t backupCurrPC, backupEnd, backupCookieCnt;
 			int threadPrio;
+			u32 spr0, spr1, spr2, spr3;
 
 			if (pTask->taskState == TASK_STATE_DONE)
 				break;
@@ -7405,14 +7406,26 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			    CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 			backupEnd = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
 			backupCookieCnt = CMDQ_GET_COOKIE_CNT(thread);
-			CMDQ_LOG
-			    ("Reset Backup Thread PC: 0x%08x, End: 0x%08x, CookieCnt: 0x%08x\n",
-			     backupCurrPC, backupEnd, backupCookieCnt);
+
+			spr0 = CMDQ_REG_GET32(CMDQ_THR_SPR0(thread));
+			spr1 = CMDQ_REG_GET32(CMDQ_THR_SPR1(thread));
+			spr2 = CMDQ_REG_GET32(CMDQ_THR_SPR2(thread));
+			spr3 = CMDQ_REG_GET32(CMDQ_THR_SPR3(thread));
+
+			CMDQ_LOG(
+				"Reset Backup Thread PC: 0x%08x End: 0x%08x CookieCnt: 0x%08x SPR: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			     backupCurrPC, backupEnd, backupCookieCnt,
+			     spr0, spr1, spr2, spr3);
 			/* Reset GCE thread */
 			if (cmdq_core_reset_HW_thread(thread) < 0) {
 				status = -EFAULT;
 				break;
 			}
+
+			CMDQ_REG_SET32(CMDQ_THR_SPR0(thread), spr0);
+			CMDQ_REG_SET32(CMDQ_THR_SPR1(thread), spr1);
+			CMDQ_REG_SET32(CMDQ_THR_SPR2(thread), spr2);
+			CMDQ_REG_SET32(CMDQ_THR_SPR3(thread), spr3);
 
 			CMDQ_REG_SET32(CMDQ_THR_INST_CYCLES(thread),
 				       cmdq_core_get_task_timeout_cycle(pThread));
