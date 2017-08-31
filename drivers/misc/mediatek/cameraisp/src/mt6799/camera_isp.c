@@ -564,8 +564,8 @@ static volatile bool g_bIonBufferAllocated;
 static unsigned int *g_pPhyISPBuffer;
 /* Kernel Warning */
 static unsigned int *g_pKWTpipeBuffer;
-static unsigned int *g_KWCmdqBuffer;
-static unsigned int *g_KWVirISPBuffer;
+static unsigned int *g_pKWCmdqBuffer;
+static unsigned int *g_pKWVirISPBuffer;
 /* Navtive Exception */
 static unsigned int *g_pTuningBuffer;
 static unsigned int *g_pTpipeBuffer;
@@ -3967,22 +3967,22 @@ static MINT32 ISP_DumpDIPReg(void)
 			if (g_pKWTpipeBuffer == NULL)
 				LOG_DBG("ERROR: g_pKWTpipeBuffer kmalloc failed\n");
 
-			if (g_KWCmdqBuffer != NULL) {
-				LOG_DBG("g_KWCmdqBuffer is not NULL:(0x%pK)\n", g_KWCmdqBuffer);
-				vfree(g_KWCmdqBuffer);
-				g_KWCmdqBuffer = NULL;
+			if (g_pKWCmdqBuffer != NULL) {
+				LOG_DBG("g_KWCmdqBuffer is not NULL:(0x%pK)\n", g_pKWCmdqBuffer);
+				vfree(g_pKWCmdqBuffer);
+				g_pKWCmdqBuffer = NULL;
 			}
-			g_KWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
-			if (g_KWCmdqBuffer == NULL)
+			g_pKWCmdqBuffer = vmalloc(MAX_ISP_CMDQ_BUFFER_SIZE);
+			if (g_pKWCmdqBuffer == NULL)
 				LOG_DBG("ERROR: g_KWCmdqBuffer kmalloc failed\n");
 
-			if (g_KWVirISPBuffer != NULL) {
-				LOG_DBG("g_KWVirISPBuffer is not NULL:(0x%pK)\n", g_KWVirISPBuffer);
-				vfree(g_KWVirISPBuffer);
-				g_KWVirISPBuffer = NULL;
+			if (g_pKWVirISPBuffer != NULL) {
+				LOG_DBG("g_KWVirISPBuffer is not NULL:(0x%pK)\n", g_pKWVirISPBuffer);
+				vfree(g_pKWVirISPBuffer);
+				g_pKWVirISPBuffer = NULL;
 			}
-			g_KWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
-			if (g_KWVirISPBuffer == NULL)
+			g_pKWVirISPBuffer = vmalloc(ISP_DIP_REG_SIZE);
+			if (g_pKWVirISPBuffer == NULL)
 				LOG_DBG("ERROR: g_KWVirISPBuffer kmalloc failed\n");
 		}
 
@@ -4021,10 +4021,10 @@ static MINT32 ISP_DumpDIPReg(void)
 		g_tdriaddr, (long long)g_TpipeBaseAddrInfo.MemVa, g_TpipeBaseAddrInfo.MemPa,
 		g_TpipeBaseAddrInfo.MemSizeDiff, offset, g_pKWTpipeBuffer);
 		if ((g_CmdqBaseAddrInfo.MemPa != 0) && (g_CmdqBaseAddrInfo.MemVa != NULL)
-				&& (g_KWCmdqBuffer != NULL) && (g_KWVirISPBuffer != NULL)) {
+				&& (g_pKWCmdqBuffer != NULL) && (g_pKWVirISPBuffer != NULL)) {
 			offset = (g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
 			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+(g_cmdqaddr-g_CmdqBaseAddrInfo.MemPa);
-			if (copy_from_user(g_KWCmdqBuffer, (void __user *)(OffsetAddr),
+			if (copy_from_user(g_pKWCmdqBuffer, (void __user *)(OffsetAddr),
 				MAX_ISP_CMDQ_BUFFER_SIZE) != 0) {
 				LOG_ERR("cpy cmdq fail. cmdqaddr:0x%x, MemVa:0x%llx, MemPa:0x%x, offset:0x%x\n",
 					g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa,
@@ -4034,7 +4034,7 @@ static MINT32 ISP_DumpDIPReg(void)
 			cmdqidx, g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa, offset);
 			offset = offset+g_CmdqBaseAddrInfo.MemSizeDiff;
 			OffsetAddr = ((long long)g_CmdqBaseAddrInfo.MemVa)+offset;
-			if (copy_from_user(g_KWVirISPBuffer, (void __user *)(OffsetAddr),
+			if (copy_from_user(g_pKWVirISPBuffer, (void __user *)(OffsetAddr),
 				ISP_DIP_REG_SIZE) != 0) {
 				LOG_ERR("cpy vir isp fail.cmdqaddr:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x,offset:0x%x\n",
 				g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
@@ -4044,11 +4044,11 @@ static MINT32 ISP_DumpDIPReg(void)
 			g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
 			g_CmdqBaseAddrInfo.MemSizeDiff);
 			LOG_INF("ofset:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
-			offset, g_KWCmdqBuffer, g_pKWTpipeBuffer);
+			offset, g_pKWCmdqBuffer, g_pKWTpipeBuffer);
 		} else {
 			LOG_INF("cmdqadd:0x%x,MVa:0x%llx,MPa:0x%x,MSzDiff:0x%x,KWCmdBuf:0x%pK,KWTdrBuf:0x%pK\n",
 			g_cmdqaddr, (long long)g_CmdqBaseAddrInfo.MemVa, g_CmdqBaseAddrInfo.MemPa,
-			g_CmdqBaseAddrInfo.MemSizeDiff, g_KWCmdqBuffer, g_pKWTpipeBuffer);
+			g_CmdqBaseAddrInfo.MemSizeDiff, g_pKWCmdqBuffer, g_pKWTpipeBuffer);
 		}
 		g_bDumpPhyISPBuf = MTRUE;
 	}
@@ -9201,8 +9201,8 @@ static MINT32 ISP_open(
 		g_pCmdqBuffer = (unsigned int *)(((uint64_t)g_pVirISPBuffer) + ISP_DIP_REG_SIZE);
 		/* Kernel Exception */
 		g_pKWTpipeBuffer = (unsigned int *)(((uint64_t)g_pCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
-		g_KWCmdqBuffer = (unsigned int *)(((uint64_t)g_pKWTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
-		g_KWVirISPBuffer = (unsigned int *)(((uint64_t)g_KWCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
+		g_pKWCmdqBuffer = (unsigned int *)(((uint64_t)g_pKWTpipeBuffer) + MAX_ISP_TILE_TDR_HEX_NO);
+		g_pKWVirISPBuffer = (unsigned int *)(((uint64_t)g_pKWCmdqBuffer) + MAX_ISP_CMDQ_BUFFER_SIZE);
 	} else {
 		/* Navtive Exception */
 		g_pPhyISPBuffer = NULL;
@@ -9212,8 +9212,8 @@ static MINT32 ISP_open(
 		g_pCmdqBuffer = NULL;
 		/* Kernel Exception */
 		g_pKWTpipeBuffer = NULL;
-		g_KWCmdqBuffer = NULL;
-		g_KWVirISPBuffer = NULL;
+		g_pKWCmdqBuffer = NULL;
+		g_pKWVirISPBuffer = NULL;
 	}
 	g_bUserBufIsReady = MFALSE;
 	g_bDumpPhyISPBuf = MFALSE;
@@ -9511,13 +9511,13 @@ static MINT32 ISP_release(
 			vfree(g_pKWTpipeBuffer);
 			g_pKWTpipeBuffer = NULL;
 		}
-		if (g_KWCmdqBuffer != NULL) {
-			vfree(g_KWCmdqBuffer);
-			g_KWCmdqBuffer = NULL;
+		if (g_pKWCmdqBuffer != NULL) {
+			vfree(g_pKWCmdqBuffer);
+			g_pKWCmdqBuffer = NULL;
 		}
-		if (g_KWVirISPBuffer != NULL) {
-			vfree(g_KWVirISPBuffer);
-			g_KWVirISPBuffer = NULL;
+		if (g_pKWVirISPBuffer != NULL) {
+			vfree(g_pKWVirISPBuffer);
+			g_pKWVirISPBuffer = NULL;
 		}
 	} else {
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
@@ -9527,6 +9527,16 @@ static MINT32 ISP_release(
 		g_isp_p2_imem_buf.va = 0;
 		g_isp_p2_imem_buf.pa = 0;
 		g_bIonBufferAllocated = MFALSE;
+		/* Navtive Exception */
+		g_pPhyISPBuffer = NULL;
+		g_pTuningBuffer = NULL;
+		g_pTpipeBuffer = NULL;
+		g_pVirISPBuffer = NULL;
+		g_pCmdqBuffer = NULL;
+		/* Kernel Exception */
+		g_pKWTpipeBuffer = NULL;
+		g_pKWCmdqBuffer = NULL;
+		g_pKWVirISPBuffer = NULL;
 #endif
 	}
 
@@ -11559,23 +11569,23 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 		}
 	}
 	seq_puts(m, "===isp p2 cmdq buffer Info===\n");
-	if (g_KWCmdqBuffer != NULL) {
+	if (g_pKWCmdqBuffer != NULL) {
 		for (i = 0; i < (MAX_ISP_CMDQ_BUFFER_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
-					(unsigned int)g_KWCmdqBuffer[i],
-					(unsigned int)g_KWCmdqBuffer[i+1],
-					(unsigned int)g_KWCmdqBuffer[i+2],
-					(unsigned int)g_KWCmdqBuffer[i+3]);
+					(unsigned int)g_pKWCmdqBuffer[i],
+					(unsigned int)g_pKWCmdqBuffer[i+1],
+					(unsigned int)g_pKWCmdqBuffer[i+2],
+					(unsigned int)g_pKWCmdqBuffer[i+3]);
 		}
 	}
 	seq_puts(m, "===isp p2 vir isp buffer Info===\n");
-	if (g_KWVirISPBuffer != NULL) {
+	if (g_pKWVirISPBuffer != NULL) {
 		for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
-					DIP_A_BASE_HW+4*i, (unsigned int)g_KWVirISPBuffer[i],
-					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_KWVirISPBuffer[i+1],
-					DIP_A_BASE_HW+4*(i+2), (unsigned int)g_KWVirISPBuffer[i+2],
-					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_KWVirISPBuffer[i+3]);
+					DIP_A_BASE_HW+4*i, (unsigned int)g_pKWVirISPBuffer[i],
+					DIP_A_BASE_HW+4*(i+1), (unsigned int)g_pKWVirISPBuffer[i+1],
+					DIP_A_BASE_HW+4*(i+2), (unsigned int)g_pKWVirISPBuffer[i+2],
+					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_pKWVirISPBuffer[i+3]);
 		}
 	}
 	seq_puts(m, "============ isp p2 ke dump debug ============\n");
