@@ -21,6 +21,7 @@
 #include <mt-plat/mtk_reboot.h>
 #include <mt-plat/mtk_rtc.h>
 #include <asm/system_misc.h>
+#include <linux/console.h>
 #ifdef CONFIG_MTK_FREQ_HOPPING
 #include <mt-plat/mtk_freqhopping_drv.h>
 #endif
@@ -652,6 +653,11 @@ void arch_reset(char mode, const char *cmd)
 	res = get_wd_api(&wd_api);
 	pr_alert("arch_reset: cmd = %s\n", cmd ? : "NULL");
 	dump_stack();
+	if (console_trylock())
+		pr_err("we can get console_sem\n");
+	else
+		pr_err("we cannot get console_sem\n");
+	console_unlock();
 	if (cmd && !strcmp(cmd, "charger")) {
 		/* do nothing */
 	} else if (cmd && !strcmp(cmd, "recovery")) {
