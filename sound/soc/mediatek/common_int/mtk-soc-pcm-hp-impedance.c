@@ -590,6 +590,7 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
 	AudDrv_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
+	set_hp_impedance(mhp_impedance);
 	pr_debug("- %s(), mhp_impedance = %d, efuse = %d\n",
 		 __func__, mhp_impedance, EfuseCurrentCalibration);
 	return 0;

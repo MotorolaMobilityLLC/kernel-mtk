@@ -304,6 +304,11 @@ typedef	int64 kal_int64;
 #define OTP_DOUT_1152_1167	((UINT32)(PMIC_REG_BASE + 0x1EAE))
 #define OTP_DOUT_1440_1455	((UINT32)(PMIC_REG_BASE + 0x1ED2))
 
+/* Buck DIG register - Voltage vote */
+#define RG_BUCK_VS1_VOTER_EN     ((UINT32)(PMIC_REG_BASE + 0x1134))
+#define RG_BUCK_VS1_VOTER_EN_SET ((UINT32)(PMIC_REG_BASE + 0x1136))
+#define RG_BUCK_VS1_VOTER_EN_CLR ((UINT32)(PMIC_REG_BASE + 0x1138))
+
 /* AUXADC HP Impedance debug */
 #define AUXADC_IMPEDANCE       ((UINT32)(PMIC_REG_BASE + 0x3300))
 
