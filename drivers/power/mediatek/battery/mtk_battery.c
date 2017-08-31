@@ -503,6 +503,8 @@ static void disable_fg(void)
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
 	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
 	gDisableGM30 = 1;
+
+	FG_status.ui_soc = 50;
 }
 
 bool fg_interrupt_check(void)
