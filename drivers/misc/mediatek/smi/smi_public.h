@@ -28,7 +28,7 @@
 #define smi_clk_disable(master_id, user_name, enable_mtcmos) ((void)0)
 #else
 /* SMI extern API */
-extern MTK_SMI_BWC_SCEN smi_get_current_profile(void);
+extern enum MTK_SMI_BWC_SCEN smi_get_current_profile(void);
 extern int smi_bus_enable(enum SMI_MASTER_ID master_id, char *user_name);
 extern int smi_bus_disable(enum SMI_MASTER_ID master_id, char *user_name);
 extern int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);

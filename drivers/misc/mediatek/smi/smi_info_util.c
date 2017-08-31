@@ -21,9 +21,9 @@
 int smi_set_mm_info_ioctl_wrapper(struct file *pFile, unsigned int cmd, unsigned long param)
 {
 	int ret = 0;
-	MTK_SMI_BWC_INFO_SET cfg;
+	struct MTK_SMI_BWC_INFO_SET cfg;
 
-	ret = copy_from_user(&cfg, (void *)param, sizeof(MTK_SMI_BWC_INFO_SET));
+	ret = copy_from_user(&cfg, (void *)param, sizeof(struct MTK_SMI_BWC_INFO_SET));
 	if (ret) {
 		SMIMSG(" MTK_IOC_SMI_BWC_INFO_SET, copy_to_user failed: %d\n", ret);
 		return -EFAULT;
@@ -39,7 +39,7 @@ int smi_get_mm_info_ioctl_wrapper(struct file *pFile, unsigned int cmd, unsigned
 {
 	int ret = 0;
 
-	ret = copy_to_user((void *)param, (void *)&g_smi_bwc_mm_info, sizeof(MTK_SMI_BWC_MM_INFO));
+	ret = copy_to_user((void *)param, (void *)&g_smi_bwc_mm_info, sizeof(struct MTK_SMI_BWC_MM_INFO));
 
 	if (ret) {
 		SMIMSG(" MTK_IOC_SMI_BWC_INFO_GET, copy_to_user failed: %d\n", ret);

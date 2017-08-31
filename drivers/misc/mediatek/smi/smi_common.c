@@ -347,7 +347,7 @@ static unsigned int *pLarbRegBackUp[SMI_LARB_NUM];
 static int g_bInited;
 #endif
 
-MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
+struct MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
 	0, 0, {0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0,
 	SF_HWC_PIXEL_MAX_NORMAL
 };
@@ -380,7 +380,7 @@ enum smi_clk_operation {
 
 static unsigned long get_register_base(int i);
 static void smi_driver_setting(void);
-static char *smi_get_scenario_name(MTK_SMI_BWC_SCEN scen);
+static char *smi_get_scenario_name(enum MTK_SMI_BWC_SCEN scen);
 static void smi_bus_optimization_clock_control(int optimization_larbs, enum smi_clk_operation oper);
 #if defined(SMI_OLY)
 static void smi_apply_common_basic_setting(void);
@@ -1201,7 +1201,7 @@ void on_larb_power_off_with_ccf(int larb_idx)
 
 
 /* Fake mode check, e.g. WFD */
-static int fake_mode_handling(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
+static int fake_mode_handling(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 {
 	if (p_conf->scenario == SMI_BWC_SCEN_WFD) {
 		if (p_conf->b_on_off) {
@@ -1446,7 +1446,7 @@ static void smi_bus_optimization(int optimization_larbs, int smi_profile)
 
 	}
 }
-static char *smi_get_scenario_name(MTK_SMI_BWC_SCEN scen)
+static char *smi_get_scenario_name(enum MTK_SMI_BWC_SCEN scen)
 {
 	switch (scen) {
 	case SMI_BWC_SCEN_NORMAL:
@@ -1490,14 +1490,14 @@ static char *smi_get_scenario_name(MTK_SMI_BWC_SCEN scen)
 	}
 	return "";
 }
-static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
+static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 {
 	int i;
 	int result = 0;
 	unsigned int u4Concurrency = 0;
 	int bus_optimization_sync = bus_optimization;
-	MTK_SMI_BWC_SCEN eFinalScen;
-	static MTK_SMI_BWC_SCEN ePreviousFinalScen = SMI_BWC_SCEN_CNT;
+	enum MTK_SMI_BWC_SCEN eFinalScen;
+	static enum MTK_SMI_BWC_SCEN ePreviousFinalScen = SMI_BWC_SCEN_CNT;
 
 	if ((p_conf->scenario >= SMI_BWC_SCEN_CNT) || (p_conf->scenario < 0)) {
 		SMIERR("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
@@ -1753,7 +1753,7 @@ static int smi_release(struct inode *inode, struct file *file)
 	unsigned long u4Index = 0;
 	unsigned long u4AssignCnt = 0;
 	unsigned long *pu4Cnt = (unsigned long *)file->private_data;
-	MTK_SMI_BWC_CONFIG config;
+	struct MTK_SMI_BWC_CONFIG config;
 
 	for (; u4Index < SMI_BWC_SCEN_CNT; u4Index += 1) {
 		if (pu4Cnt[u4Index]) {
@@ -1761,7 +1761,7 @@ static int smi_release(struct inode *inode, struct file *file)
 			       current->comm, u4Index);
 			u4AssignCnt = pu4Cnt[u4Index];
 			config.b_on_off = 0;
-			config.scenario = (MTK_SMI_BWC_SCEN) u4Index;
+			config.scenario = (enum MTK_SMI_BWC_SCEN) u4Index;
 			do {
 				smi_bwc_config(&config, pu4Cnt);
 			} while (u4AssignCnt > 0);
@@ -1791,9 +1791,9 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 		/* disable reg access ioctl by default for possible security holes */
 		/* TBD: check valid SMI register range */
 	case MTK_IOC_SMI_BWC_CONFIG:{
-			MTK_SMI_BWC_CONFIG cfg;
+			struct MTK_SMI_BWC_CONFIG cfg;
 
-			ret = copy_from_user(&cfg, (void *)param, sizeof(MTK_SMI_BWC_CONFIG));
+			ret = copy_from_user(&cfg, (void *)param, sizeof(struct MTK_SMI_BWC_CONFIG));
 			if (ret) {
 				SMIMSG(" SMI_BWC_CONFIG, copy_from_user failed: %d\n", ret);
 				return -EFAULT;
@@ -1851,19 +1851,19 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 	case MTK_IOC_MMDVFS_CMD:
 		{
 
-			MTK_MMDVFS_CMD mmdvfs_cmd;
+			struct MTK_MMDVFS_CMD mmdvfs_cmd;
 
 			if (disable_mmdvfs)
 				return -EFAULT;
 
-			if (copy_from_user(&mmdvfs_cmd, (void *)param, sizeof(MTK_MMDVFS_CMD)))
+			if (copy_from_user(&mmdvfs_cmd, (void *)param, sizeof(struct MTK_MMDVFS_CMD)))
 				return -EFAULT;
 
 
 			mmdvfs_handle_cmd(&mmdvfs_cmd);
 
 			if (copy_to_user
-			    ((void *)param, (void *)&mmdvfs_cmd, sizeof(MTK_MMDVFS_CMD))) {
+			    ((void *)param, (void *)&mmdvfs_cmd, sizeof(struct MTK_MMDVFS_CMD))) {
 				return -EFAULT;
 			}
 		}
@@ -2216,9 +2216,9 @@ void smi_client_status_change_notify(int module, int mode)
 
 }
 
-MTK_SMI_BWC_SCEN smi_get_current_profile(void)
+enum MTK_SMI_BWC_SCEN smi_get_current_profile(void)
 {
-	return (MTK_SMI_BWC_SCEN) smi_profile;
+	return (enum MTK_SMI_BWC_SCEN) smi_profile;
 }
 EXPORT_SYMBOL(smi_get_current_profile);
 #if IS_ENABLED(CONFIG_COMPAT)
@@ -2255,7 +2255,7 @@ struct MTK_SMI_COMPAT_BWC_MM_INFO {
 #define COMPAT_MTK_IOC_SMI_BWC_INFO_GET    MTK_IOWR(29, struct MTK_SMI_COMPAT_BWC_MM_INFO)
 
 static int compat_get_smi_bwc_config_struct(struct MTK_SMI_COMPAT_BWC_CONFIG __user *data32,
-					    MTK_SMI_BWC_CONFIG __user *data)
+					    struct MTK_SMI_BWC_CONFIG __user *data)
 {
 
 	compat_int_t i;
@@ -2271,7 +2271,7 @@ static int compat_get_smi_bwc_config_struct(struct MTK_SMI_COMPAT_BWC_CONFIG __u
 }
 
 static int compat_get_smi_bwc_mm_info_set_struct(struct MTK_SMI_COMPAT_BWC_INFO_SET __user *data32,
-						 MTK_SMI_BWC_INFO_SET __user *data)
+						 struct MTK_SMI_BWC_INFO_SET __user *data)
 {
 
 	compat_int_t i;
@@ -2289,7 +2289,7 @@ static int compat_get_smi_bwc_mm_info_set_struct(struct MTK_SMI_COMPAT_BWC_INFO_
 }
 
 static int compat_get_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
-					     MTK_SMI_BWC_MM_INFO __user *data)
+					     struct MTK_SMI_BWC_MM_INFO __user *data)
 {
 	compat_uint_t u;
 	compat_int_t i;
@@ -2322,7 +2322,7 @@ static int compat_get_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO _
 }
 
 static int compat_put_smi_bwc_mm_info_struct(struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32,
-					     MTK_SMI_BWC_MM_INFO __user *data)
+					     struct MTK_SMI_BWC_MM_INFO __user *data)
 {
 
 	compat_uint_t u;
@@ -2370,11 +2370,11 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 			} else {
 
 				struct MTK_SMI_COMPAT_BWC_CONFIG __user *data32;
-				MTK_SMI_BWC_CONFIG __user *data;
+				struct MTK_SMI_BWC_CONFIG __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
-				data = compat_alloc_user_space(sizeof(MTK_SMI_BWC_CONFIG));
+				data = compat_alloc_user_space(sizeof(struct MTK_SMI_BWC_CONFIG));
 
 				if (!data)
 					return -EFAULT;
@@ -2398,11 +2398,11 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 			} else {
 
 				struct MTK_SMI_COMPAT_BWC_INFO_SET __user *data32;
-				MTK_SMI_BWC_INFO_SET __user *data;
+				struct MTK_SMI_BWC_INFO_SET __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
-				data = compat_alloc_user_space(sizeof(MTK_SMI_BWC_INFO_SET));
+				data = compat_alloc_user_space(sizeof(struct MTK_SMI_BWC_INFO_SET));
 				if (!data)
 					return -EFAULT;
 
@@ -2423,11 +2423,11 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 								  (unsigned long)compat_ptr(arg));
 			} else {
 				struct MTK_SMI_COMPAT_BWC_MM_INFO __user *data32;
-				MTK_SMI_BWC_MM_INFO __user *data;
+				struct MTK_SMI_BWC_MM_INFO __user *data;
 				int err;
 
 				data32 = compat_ptr(arg);
-				data = compat_alloc_user_space(sizeof(MTK_SMI_BWC_MM_INFO));
+				data = compat_alloc_user_space(sizeof(struct MTK_SMI_BWC_MM_INFO));
 
 				if (!data)
 					return -EFAULT;

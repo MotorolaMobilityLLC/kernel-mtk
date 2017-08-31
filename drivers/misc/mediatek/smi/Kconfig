@@ -2,10 +2,10 @@ config MTK_SMI_EXT
 	bool "SMI Driver"
 	default n
 	help
-	  SMI Driver is used to arbitrate memory bandwidth of multimedia,
-	  it can optimize multimedia memory usage in different scenarios.
-	  This driver should always enable, if you have any question about this driver,
-	  please contact driver owner for further help.
+	  This config enable/disable SMI Driver.
+	  SMI Driver is used to arbitrate memory bandwidth of multimedia.
+	  and it can optimize multimedia memory usage in different scenarios.
+	  If you are not sure about this, set y
 
 config MTK_SMI_VARIANT
 	bool "MTK SMI Tablet Code"

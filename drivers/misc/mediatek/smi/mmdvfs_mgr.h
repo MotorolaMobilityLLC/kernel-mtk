@@ -25,10 +25,10 @@
 #define _GET_BITS_VAL_(_bits_, _val_) (((_val_) & (_BITMASK_(_bits_))) >> ((0) ? _bits_))
 
 /* MMDVFS extern APIs */
-extern void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info);
-extern void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd);
-extern void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen);
-extern void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen);
+extern void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info);
+extern void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd);
+extern void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen);
+extern void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen);
 extern void mmdvfs_notify_scenario_concurrency(unsigned int u4Concurrency);
 extern void mmdvfs_mhl_enable(int enable);
 extern void mmdvfs_mjc_enable(int enable);
@@ -117,7 +117,7 @@ extern void dump_mmdvfs_info(void);
 
 
 /* Extern from other module */
-extern MTK_SMI_BWC_SCEN smi_get_current_profile(void);
+extern enum MTK_SMI_BWC_SCEN smi_get_current_profile(void);
 extern int is_mmdvfs_freq_hopping_disabled(void);
 extern int is_mmdvfs_freq_mux_disabled(void);
 extern int is_force_max_mmsys_clk(void);
@@ -197,13 +197,13 @@ typedef enum {
 #define mmdvfs_set_step(scenario, step)
 #define mmdvfs_set_fine_step(scenario, step)
 #else
-int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
-int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_fine_step);
+int mmdvfs_set_step(enum MTK_SMI_BWC_SCEN scenario, enum mmdvfs_voltage_enum step);
+int mmdvfs_set_fine_step(enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_fine_step);
 #endif /* CONFIG_MTK_SMI_EXT */
 
 extern int mmdvfs_get_mmdvfs_profile(void);
 extern int is_mmdvfs_supported(void);
-extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
+extern int mmdvfs_set_mmsys_clk(enum MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
 extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
 extern void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event);

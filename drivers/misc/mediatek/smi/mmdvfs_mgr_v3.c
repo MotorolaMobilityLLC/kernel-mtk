@@ -50,8 +50,8 @@ int update_mmsys_clk_mode, char *msg);
 
 /* Keep to adapt the new MMDVFS profile management method */
 /* to the legacy IOCTL command quickly */
-static int mmdvfs_query(MTK_SMI_BWC_SCEN scenario,
-MTK_MMDVFS_CMD *cmd);
+static int mmdvfs_query(enum MTK_SMI_BWC_SCEN scenario,
+struct MTK_MMDVFS_CMD *cmd);
 
 /* For legacy mmclk change notification and will be phase out */
 static clk_switch_cb quick_mmclk_cbs[MMDVFS_CLK_SWITCH_CB_MAX];
@@ -66,8 +66,8 @@ static int g_mmdvfs_current_vpu_step;
 
 /* Record the enabled client */
 static unsigned int g_mmdvfs_concurrency;
-static MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
-static MTK_MMDVFS_CMD g_mmdvfs_cmd;
+static struct MTK_SMI_BWC_MM_INFO *g_mmdvfs_info;
+static struct MTK_MMDVFS_CMD g_mmdvfs_cmd;
 
 
 typedef struct {
@@ -140,8 +140,8 @@ static int mmdvfs_determine_fine_step_default(int scenario, int sensor_size,
 		codec_width, codec_height);
 }
 
-static int mmdvfs_query(MTK_SMI_BWC_SCEN scenario,
-MTK_MMDVFS_CMD *cmd)
+static int mmdvfs_query(enum MTK_SMI_BWC_SCEN scenario,
+struct MTK_MMDVFS_CMD *cmd)
 {
 	int sensor_size = 0;
 	int camera_mode = 0;
@@ -181,7 +181,7 @@ int mmdvfs_get_stable_isp_clk(void)
 	return legacy_mm_step;
 }
 
-static void mmdvfs_update_cmd(MTK_MMDVFS_CMD *cmd)
+static void mmdvfs_update_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
 	if (cmd == NULL)
 		return;
@@ -226,7 +226,7 @@ static void mmdvfs_start_cam_monitor(int scen, int delay_hz)
 }
 
 
-int mmdvfs_set_corse_step(int scenario, mmdvfs_voltage_enum step)
+int mmdvfs_set_corse_step(int scenario, enum mmdvfs_voltage_enum step)
 {
 	int fine_step_opp = MMDVFS_FINE_STEP_UNREQUEST;
 
@@ -240,14 +240,14 @@ int mmdvfs_set_corse_step(int scenario, mmdvfs_voltage_enum step)
 }
 
 /* The legacy set step function can only support set corse step (HPM/ NON-HPM)*/
-int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
+int mmdvfs_set_step(enum MTK_SMI_BWC_SCEN scenario, enum mmdvfs_voltage_enum step)
 {
 	return mmdvfs_set_corse_step(scenario, step);
 }
 
 int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	struct mmdvfs_adaptor *adaptor, struct mmdvfs_step_util *step_util,
-	MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step, int notify_clk_change)
+	enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step, int notify_clk_change)
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
@@ -258,7 +258,7 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 		return -1;
 	}
 
-	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) ||
+	if ((smi_scenario >= (enum MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) ||
 		(smi_scenario < SMI_BWC_SCEN_NORMAL)) {
 		MMDVFSERR("invalid scenario\n");
 		return -1;
@@ -304,7 +304,7 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 }
 
 
-int mmdvfs_internal_set_fine_step_default(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+int mmdvfs_internal_set_fine_step_default(enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 {
 	return mmdvfs_internal_set_fine_step("Fixed", g_mmdvfs_adaptor, g_mmdvfs_step_util,
 	smi_scenario, mmdvfs_step, 1);
@@ -330,7 +330,7 @@ void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event
 	}
 }
 
-int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
+int mmdvfs_set_fine_step_force(enum MTK_SMI_BWC_SCEN smi_scenario,
 	int mmdvfs_step)
 {
 	int ret = 0;
@@ -352,7 +352,7 @@ int mmdvfs_set_fine_step_force(MTK_SMI_BWC_SCEN smi_scenario,
 	return ret;
 }
 
-int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+int mmdvfs_set_fine_step(enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 {
 	if (is_mmdvfs_disabled() || g_mmdvfs_mgr->is_mmdvfs_start == 0) {
 		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
@@ -375,7 +375,7 @@ int mmdvfs_set_fine_step(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 }
 
 
-int mmdvfs_set_fine_step_non_force(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
+int mmdvfs_set_fine_step_non_force(enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step)
 {
 	if (is_mmdvfs_disabled() || g_mmdvfs_mgr->is_mmdvfs_start == 0) {
 		MMDVFSMSG("MMDVFS is disable, request denalied; scen:%d, step:%d\n",
@@ -398,7 +398,7 @@ int mmdvfs_set_fine_step_non_force(MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_ste
 
 }
 
-static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
+static int handle_step_mmmclk_set(struct MTK_MMDVFS_CMD *cmd)
 {
 	int mmdvfs_step_request = 0;
 	int mmclk_request = 0;
@@ -428,7 +428,7 @@ static int handle_step_mmmclk_set(MTK_MMDVFS_CMD *cmd)
 	return 0;
 }
 
-static void mmdvfs_handle_vpu_dvfs_set_cmd(MTK_MMDVFS_CMD *cmd)
+static void mmdvfs_handle_vpu_dvfs_set_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
 	/* Check if the scenrio is normal for VPU here */
 	if (cmd->scen != SMI_BWC_SCEN_NORMAL) {
@@ -462,12 +462,12 @@ static void mmdvfs_handle_vpu_dvfs_set_cmd(MTK_MMDVFS_CMD *cmd)
 	}
 }
 
-static void mmdvfs_handle_vpu_dvfs_get_cmd(MTK_MMDVFS_CMD *cmd)
+static void mmdvfs_handle_vpu_dvfs_get_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
 	cmd->ret = g_mmdvfs_current_vpu_step;
 }
 
-void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
+void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
 	if (is_mmdvfs_disabled()) {
 		MMDVFSMSG("MMDVFS is disabled\n");
@@ -563,7 +563,7 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 					(1<<SMI_BWC_SCEN_CAM_PV) | \
 					(1<<SMI_BWC_SCEN_CAM_CP))
 
-void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
+void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen)
 {
 	if (is_mmdvfs_disabled()) {
 		MMDVFSMSG("MMDVFS is disabled\n");
@@ -603,7 +603,7 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 }
 
 
-void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
+void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 {
 	int mmdvfs_fine_step = MMDVFS_FINE_STEP_UNREQUEST;
 	int mmdvfs_fine_step_non_force = MMDVFS_FINE_STEP_UNREQUEST;
@@ -654,7 +654,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 
 
-void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
+void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 {
 
 	spin_lock_init(&g_mmdvfs_mgr->scen_lock);

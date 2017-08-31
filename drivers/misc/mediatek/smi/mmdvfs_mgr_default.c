@@ -18,19 +18,19 @@
 
 #define MMDVFS_BRINGUP_MSG(func_name) MMDVFSMSG("This is %s bringup version, do nothing\n", func_name)
 
-void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
+void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 }
-void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
+void mmdvfs_handle_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 }
-void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
+void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 }
-void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
+void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 }
@@ -75,7 +75,7 @@ void dump_mmdvfs_info(void)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 }
-int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
+int mmdvfs_set_step(enum MTK_SMI_BWC_SCEN scenario, enum mmdvfs_voltage_enum step)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 	return 0;
@@ -90,7 +90,7 @@ int is_mmdvfs_supported(void)
 	MMDVFS_BRINGUP_MSG(__func__);
 	return 0;
 }
-int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode)
+int mmdvfs_set_mmsys_clk(enum MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode)
 {
 	MMDVFS_BRINGUP_MSG(__func__);
 	return 0;
