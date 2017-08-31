@@ -22,6 +22,7 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <mach/emi_mpu.h>
+#include <mach/fliper.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "mtkdcs_drv.h"
 #include <mtk_spm_vcore_dvfs.h>
@@ -260,6 +261,9 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		/* update DVFSRC setting */
 		spm_dvfsrc_set_channel_bw(status == DCS_NORMAL ?
 				DVFSRC_CHANNEL_4 : DVFSRC_CHANNEL_2);
+		/* notify bwm */
+		notify_bwm_dcs(status == DCS_NORMAL ?
+				normal_channel_num : lowpower_channel_num);
 	} else {
 		pr_info("sys_dcs_status not changed\n");
 	}
