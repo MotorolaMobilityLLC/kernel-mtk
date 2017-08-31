@@ -2297,6 +2297,7 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 			goto success;
 		}
 	}
+	qh->is_use_qmu = 0;
 #endif
 
 	for (epnum = 1, hw_ep = musb->endpoints + 1; epnum < musb->nr_endpoints; epnum++, hw_ep++) {
@@ -2380,9 +2381,6 @@ success:
 		}
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 		/* downgrade to non-qmu if no specific ep grabbed when isoc_ep_gpd_count is set*/
-		if (isoc_ep_gpd_count && qh->type == USB_ENDPOINT_XFER_ISOC  && hw_end < isoc_ep_start_idx)
-			qh->is_use_qmu = 0;
-
 		if (qh->is_use_qmu) {
 			musb_ep_set_qh(hw_ep, is_in, qh);
 			mtk_kick_CmdQ(musb, is_in ? 1:0, qh, next_urb(qh));
