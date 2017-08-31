@@ -17,9 +17,9 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
+#if defined(CONFIG_MTK_SPM_IN_ATF)
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
+#endif
 
 /* #include <mach/irqs.h> */
 #include <mach/mtk_gpt.h>
@@ -28,7 +28,7 @@
 #endif
 
 #include <mt-plat/mtk_boot.h>
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -37,7 +37,6 @@
 #include <mtk_spm_sodi3.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
-
 
 /**************************************
  * only for internal debug
@@ -48,7 +47,8 @@
 #define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
-#define SPM_BYPASS_SYSPWREQ         1
+#define SPM_PCMWDT_EN               1
+#define SPM_BYPASS_SYSPWREQ         0
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
@@ -59,7 +59,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI3,
 
 #if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 0,
+	.syspwreq_mask = 1,
 #endif
 
 	/* Auto-gen Start */
@@ -96,16 +96,16 @@ static struct pwr_ctrl sodi3_ctrl = {
 
 	/* SPM_SRC_MASK */
 	.reg_csyspwreq_mask = 0,
-	.reg_md_srcclkena_0_infra_mask_b = 0,
+	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
-	.reg_md_apsrc_req_0_infra_mask_b = 1,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
 	.reg_conn_infra_req_mask_b = 1,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
-	.reg_scp_infra_req_mask_b = 0,
+	.reg_scp_infra_req_mask_b = 1,
 	.reg_srcclkeni0_infra_mask_b = 0,
 	.reg_srcclkeni1_infra_mask_b = 0,
 	.reg_srcclkeni2_infra_mask_b = 0,
@@ -123,19 +123,19 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_c2k_l1_rccif_wake_mask_b = 0,
 	.reg_ps_c2k_rccif_wake_mask_b = 1,
 	.reg_l1_c2k_rccif_wake_mask_b = 0,
-	.reg_disp2_req_mask_b = 0,
+	.reg_disp2_req_mask_b = 1,
 	.reg_md_ddr_en_0_mask_b = 1,
 	.reg_md_ddr_en_1_mask_b = 0,
 	.reg_conn_ddr_en_mask_b = 0,
 
 	/* SPM_SRC2_MASK */
-	.reg_disp0_req_mask_b = 0,
-	.reg_disp1_req_mask_b = 0,
-	.reg_disp_od_req_mask_b = 0,
+	.reg_disp0_req_mask_b = 1,
+	.reg_disp1_req_mask_b = 1,
+	.reg_disp_od_req_mask_b = 1,
 	.reg_mfg_req_mask_b = 0,
 	.reg_vdec0_req_mask_b = 0,
-	.reg_gce_req_mask_b = 0,
-	.reg_gce_vrf18_req_mask_b = 0,
+	.reg_gce_req_mask_b = 1,
+	.reg_gce_vrf18_req_mask_b = 1,
 	.reg_lpdma_req_mask_b = 0,
 	.reg_conn_srcclkena_cksel2_mask_b = 0,
 	.reg_sspm_apsrc_req_ddren_mask_b = 1,
@@ -192,7 +192,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0F92218,
+	.reg_wakeup_event_mask = 0xF0A92208,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -255,7 +255,6 @@ static struct pwr_ctrl sodi3_ctrl = {
 };
 
 struct spm_lp_scen __spm_sodi3 = {
-	/*.pcmdesc = &sodi3_pcm,*/
 	.pwrctrl = &sodi3_ctrl,
 };
 
@@ -343,7 +342,7 @@ static void spm_sodi3_notify_sspm_after_wfi(void)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#ifdef CONFIG_MTK_SPM_IN_ATF
+#if defined(CONFIG_MTK_SPM_IN_ATF)
 
 static void spm_sodi3_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
@@ -374,27 +373,25 @@ static void spm_sodi3_pcm_setup_after_wfi(void)
 static void spm_sodi3_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	unsigned int resource_usage;
-
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
 	__spm_kick_im_to_fetch(pcmdesc);
 	__spm_init_pcm_register();
 	__spm_init_event_vector(pcmdesc);
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	resource_usage = spm_get_resource_usage();
-	pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
-	pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-	pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-	pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
-
 	__spm_set_power_control(pwrctrl);
+
+	/*
+	 * Get SPM resource request and update SPM_SRC_REQ
+	 * after __spm_set_power_control
+	 */
+	__spm_src_req_update(pwrctrl);
+
 	__spm_set_wakeup_event(pwrctrl);
 
-	/* enable pcm wdt */
+#if SPM_PCMWDT_EN
 	__spm_set_pcm_wdt(1);
+#endif
 
 	spm_sodi3_notify_sspm_before_wfi(operation_cond);
 
@@ -409,8 +406,9 @@ static void spm_sodi3_pcm_setup_after_wfi(void)
 
 	spm_sodi3_post_process();
 
-	/* disable pcm wdt */
+#if SPM_PCMWDT_EN
 	__spm_set_pcm_wdt(0);
+#endif
 
 	__spm_clean_after_wakeup();
 
@@ -550,7 +548,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 #endif
 	struct wake_status wakesta;
 	unsigned long flags;
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
 	wake_reason_t wr = WR_NONE;
@@ -559,11 +557,13 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	u32 cpu = spm_data;
 	int ch;
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	else
 		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d",
 			dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
+#endif
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
@@ -600,13 +600,13 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -658,12 +658,12 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 RESTORE_IRQ:
 #endif
 
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
 
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
 #endif
 

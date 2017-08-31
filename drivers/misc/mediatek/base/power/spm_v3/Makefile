@@ -17,8 +17,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/$(
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
@@ -51,7 +51,7 @@ obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
 obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
-#obj-y += mtk_spm_sodi_cmdq.o
+obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs.o
 endif
 
