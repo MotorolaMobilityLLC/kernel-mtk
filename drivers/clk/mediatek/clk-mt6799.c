@@ -326,6 +326,21 @@ void __iomem *venc_gcon_base;
 #define LARB_DISABLE_CG	0x1	  /* inverse */
 #define VENC_DISABLE_CG 0x111111 /* inverse */
 
+#define INFRA_CG0 0x40080000/*aes_top1[19], fhctl[30]*/
+#define INFRA_CG1 0x00400A00/*trng[9], cpum[11], smi_l2c[22]*/
+
+#define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
+#define PERI_CG1 0x07ff00ff/*uart0-7[7:0], spi0-10[26:16]*/
+#define PERI_CG2 0x00010000/*flashif[16]*/
+#define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
+#define PERI_CG4 0x1117015b/**/
+
+#define CAM_CG 0x00001fc7/*[12:6][2:0]*/
+#define IMG_CG	0xFFF/**/
+#define MFG_CG	0xF/*[3:0]*/
+#define VDE_CG	0x1
+#define LARB1_CG 0x1
+#define VEN_CG 0x111111/*[20][16][12][8][4][0]*/
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
@@ -2112,6 +2127,10 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 			__func__, r);
 	infracfg_base = base;
 	/*mtk_clk_enable_critical();*/
+#if MT_CCF_BRINGUP
+	clk_writel(INFRA_PDN_SET0, INFRA_CG0);
+	clk_writel(INFRA_PDN_SET1, INFRA_CG1);
+#endif
 }
 CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,mt6799-infracfg_ao",
 		mtk_infracfg_ao_init);
@@ -2321,7 +2340,8 @@ static void __init mtk_imgsys_init(struct device_node *node)
 	img_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);
+	/*clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);*/
+	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_imgsys, "mediatek,mt6799-imgsys", mtk_imgsys_init);
@@ -2450,6 +2470,13 @@ static void __init mtk_pericfg_init(struct device_node *node)
 		pr_err("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	pericfg_base = base;
+#if MT_CCF_BRINGUP
+	clk_writel(PERI_CG_SET0, PERI_CG0);
+	/*clk_writel(PERI_CG_SET1, PERI_CG1);*/
+	clk_writel(PERI_CG_SET2, PERI_CG2);
+	clk_writel(PERI_CG_SET3, PERI_CG3);
+	clk_writel(PERI_CG_SET4, PERI_CG4);
+#endif
 }
 CLK_OF_DECLARE(mtk_pericfg, "mediatek,mt6799-pericfg", mtk_pericfg_init);
 #if 0
