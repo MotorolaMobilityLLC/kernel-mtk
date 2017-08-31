@@ -1300,37 +1300,6 @@ static ssize_t aed_ke_write(struct file *filp, const char __user *buf, size_t co
 	return count;
 }
 
-static long aed_ioctl_bt(unsigned long arg)
-{
-	int ret = 0;
-	struct aee_ioctl ioctl;
-	struct aee_process_bt bt;
-
-	if (copy_from_user(&ioctl, (struct aee_ioctl __user *)arg, sizeof(struct aee_ioctl))) {
-		ret = -EFAULT;
-		return ret;
-	}
-	bt.pid = ioctl.pid;
-	ret = aed_get_process_bt(&bt);
-	if (ret == 0) {
-		ioctl.detail = 0xAEE00001;
-		ioctl.size = bt.nr_entries;
-		if (copy_to_user((struct aee_ioctl __user *)arg, &ioctl, sizeof(struct aee_ioctl))) {
-			ret = -EFAULT;
-			return ret;
-		}
-		if (!ioctl.out) {
-			ret = -EFAULT;
-		} else
-		    if (copy_to_user
-			((struct aee_bt_frame __user *)(unsigned long)ioctl.out,
-			 (const void *)bt.entries, sizeof(struct aee_bt_frame) * AEE_NR_FRAME)) {
-			ret = -EFAULT;
-		}
-	}
-	return ret;
-}
-
 /*
  * aed process daemon and other command line may access me
  * concurrently
@@ -1339,10 +1308,6 @@ DEFINE_SEMAPHORE(aed_dal_sem);
 static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-
-	if (cmd == AEEIOCTL_GET_PROCESS_BT)
-		return aed_ioctl_bt(arg);
-
 
 	if (down_interruptible(&aed_dal_sem) < 0)
 		return -ERESTARTSYS;
