@@ -29,7 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16090916)
+#define AUTOK_VERSION                   (0x16091916)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -2295,10 +2295,6 @@ int autok_init_ddr208(struct msdc_host *host)
 	/* Specifical for HS400 Path Sel */
 	autok_write_param(host, MSDC_WCRC_ASYNC_FIFO_SEL, 0);
 
-	MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT0_TXDLY, 10);
-	MSDC_SET_FIELD(EMMC50_PAD_DAT01_TUNE, MSDC_EMMC50_PAD_DAT1_TXDLY, 10);
-	MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE, MSDC_EMMC50_PAD_DAT2_TXDLY, 10);
-	MSDC_SET_FIELD(EMMC50_PAD_DAT23_TUNE, MSDC_EMMC50_PAD_DAT3_TXDLY, 10);
 	return 0;
 }
 EXPORT_SYMBOL(autok_init_ddr208);

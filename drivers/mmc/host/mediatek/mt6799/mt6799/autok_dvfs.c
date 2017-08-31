@@ -581,6 +581,59 @@ static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
 	return 0;
 }
 
+void sdio_plus_set_device_rx(struct msdc_host *host)
+{
+	struct mmc_host *mmc = host->mmc;
+	unsigned char data;
+	int ret = 0;
+
+	pr_err("sdio_plus_set_device_rx +++++++++++++++++++++++++=\n");
+	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
+	pr_err("0x2 data: %x , ret: %x\n", data, ret);
+	ret = msdc_io_rw_direct_host(mmc, 1, 0, 0x2, 0x2, 0);
+	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
+	pr_err("0x2 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x11C, 0, &data);
+	pr_err("0x11C data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x124 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x125 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x126 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x127 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11c, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x125, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x126, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x127, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x128, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x129, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12A, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x12B, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x11C, 0, &data);
+	pr_err("0x11C data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x124 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x125 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x126 data: %x , ret: %x\n", data, ret);
+
+	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
+	pr_err("0x127 data: %x , ret: %x\n", data, ret);
+}
+
 #define SDIO_CCCR_MTK_DDR208       0xF2
 #define SDIO_MTK_DDR208            0x3
 #define SDIO_MTK_DDR208_SUPPORT    0x2
@@ -640,6 +693,9 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 
 	/* Set HS400 clock mode and DIV = 0 */
 	msdc_clk_stable(host, 3, 0, 1);
+
+	/* Set device timming for latch data */
+	sdio_plus_set_device_rx(host);
 
 	/* Find DDR208 timing */
 	sdio_execute_dvfs_autok_mode(host, 1);
