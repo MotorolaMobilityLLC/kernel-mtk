@@ -562,7 +562,7 @@ int spm_golden_setting_cmp(bool en)
 
 		value = lpDram_Register_Read(ddrphy_setting[i].base, ddrphy_setting[i].offset);
 		if ((value & ddrphy_setting[i].mask) != ddrphy_setting[i].value) {
-			spm_err("dramc setting mismatch addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
+			spm_crit2("dramc mismatch addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
 				ddrphy_setting[i].base, ddrphy_setting[i].offset,
 				ddrphy_setting[i].mask, ddrphy_setting[i].value, value);
 			r = -EPERM;

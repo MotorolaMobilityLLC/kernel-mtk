@@ -114,6 +114,7 @@ extern void mt_power_gs_dump_suspend(void);
 extern void mt_power_gs_dump_dpidle(void);
 extern void mt_power_gs_dump_sodi3(void);
 extern bool slp_dump_golden_setting;
+extern int slp_dump_golden_setting_type;
 
 /* gpio */
 extern void gpio_dump_regs(void);
