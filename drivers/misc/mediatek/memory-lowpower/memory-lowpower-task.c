@@ -37,12 +37,13 @@
 #endif
 #include <linux/uaccess.h>
 
+#include "mt-plat/mtk_meminfo.h"
 /* Memory lowpower private header file */
 #include "internal.h"
 
 /* Print wrapper */
-#define MLPT_PRINT(args...)	do {} while (0) /* pr_alert(args) */
-#define MLPT_PRERR(args...)	do {} while (0) /* pr_alert(args) */
+#define MLPT_PRINT(args...)	do {} while (0) /* pr_info(args) */
+#define MLPT_PRERR(args...)	do {} while (0) /* pr_notice(args) */
 
 /* Profile Timing */
 #ifdef CONFIG_MLPT_PROFILE
@@ -67,23 +68,38 @@ static struct wakeup_source mlp_wakeup;
 #endif
 
 /* Control parameters for memory lowpower task */
-#define MLPT_CLEAR_ACTION       (0x0)
-#define MLPT_SET_ACTION         (0x1)
+#define MLPT_SET_ACTION         (0x0)
+#define MLPT_CLEAR_ACTION       (0x1)
+
 static struct task_struct *memory_lowpower_task;
+/* memory_lowpower_state are protected by mlp_take_action */
+static unsigned long memory_lowpower_state;
+static atomic_t mlp_take_action;
+/* mlp_action can be set anywhere, anytime w/o protection */
+static volatile enum power_state mlp_action;
+
+static int get_cma_aligned;			/* in PAGE_SIZE order */
+static int get_cma_num;				/* number of allocations */
+static unsigned long get_cma_size;		/* in PAGES */
+static struct page **cma_aligned_pages;		/* NULL means full allocation */
+static struct memory_lowpower_statistics memory_lowpower_statistics;
+
 #ifdef CONFIG_MTK_PERIODIC_DATA_COLLECTION
 static struct task_struct *periodic_dc_task;
 unsigned long nr_dc;
 unsigned long nr_skip_dc;
 #define DATA_COLLECTION_PERIOD 300000
 #endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
-static enum power_state memory_lowpower_action;
-static atomic_t action_changed;
-static unsigned long memory_lowpower_state;
-static int get_cma_aligned;			/* in PAGE_SIZE order */
-static int get_cma_num;				/* number of allocations */
-static unsigned long get_cma_size;		/* in PAGES */
-static struct page **cma_aligned_pages;		/* NULL means full allocation */
-static struct memory_lowpower_statistics memory_lowpower_statistics;
+
+/* Name for memory lowpower state & action */
+static char * const mlp_status_name[MLP_NR_STATUS] = {
+	"INIT",
+	"ENTER_AGAIN",
+	"ENTER",
+	"LEAVE",
+	"ENABLE",
+	"DISABLE",
+};
 
 /*
  * Set aligned allocation -
@@ -179,20 +195,31 @@ static int acquire_memory(void)
 
 	/* Aligned allocation */
 	while (i < get_cma_num) {
-		ret = get_memory_lowpower_cma_aligned(get_cma_size, get_cma_aligned, &page);
+		ret = get_memory_lowpower_cma_aligned(get_cma_size, get_cma_aligned, &page, i == (get_cma_num - 1));
 		if (ret)
 			break;
 
-		MLPT_PRINT("%s: PFN[%lu] allocated for [%d]\n", __func__, page_to_pfn(page), i);
+		MLPT_PRINT("%s: PFN[%lx] allocated for [%d]\n", __func__, page_to_pfn(page), i);
 		insert_buffer(page, i);
 		++i;
 
 		/* Early termination for "action is changed" */
-		if (!IS_ACTION_SCREENOFF(memory_lowpower_action)) {
-			pr_warn("%s: got a screen-on event\n", __func__);
+		if (IS_ACTION_LEAVE(mlp_action)) {
+			pr_notice("%s: got a leave event\n", __func__);
 			ret = -EBUSY;
 			break;
 		}
+	}
+
+	/* TEST */
+	i = 0;
+	while (i < get_cma_num) {
+		if (cma_aligned_pages[i])
+			MLPT_PRINT("%s:@@@ PFN[%lx] allocated for [%d] @@@\n",
+					__func__, page_to_pfn(cma_aligned_pages[i]), i);
+		else
+			MLPT_PRINT("%s:@@@ NULL allocated for [%d] @@@\n", __func__, i);
+		++i;
 	}
 
 out:
@@ -235,9 +262,9 @@ static int release_memory(void)
 	do {
 		if (pages[i] == NULL)
 			break;
-		ret = put_memory_lowpower_cma_aligned(get_cma_size, pages[i]);
+		ret = put_memory_lowpower_cma_aligned(get_cma_size, pages[i], i == (get_cma_num - 1));
 		if (!ret) {
-			MLPT_PRINT("%s: PFN[%lu] released for [%d]\n", __func__, page_to_pfn(pages[i]), i);
+			MLPT_PRINT("%s: PFN[%lx] released for [%d]\n", __func__, page_to_pfn(pages[i]), i);
 			pages[i] = NULL;
 		} else
 			BUG();
@@ -277,7 +304,7 @@ static void memory_range(int which, unsigned long *spfn, unsigned long *epfn)
 	}
 
 out:
-	MLPT_PRINT("%s: [%d] spfn[%lu] epfn[%lu]\n", __func__, which, *spfn, *epfn);
+	MLPT_PRINT("%s: [%d] spfn[%lx] epfn[%lx]\n", __func__, which, *spfn, *epfn);
 }
 
 /* Check whether memory_lowpower_task is initialized */
@@ -311,16 +338,12 @@ void unregister_memory_lowpower_operation(struct memory_lowpower_operation *hand
 	mutex_unlock(&memory_lowpower_lock);
 }
 
-/* Screen-on cb operations */
-static void __go_to_screenon(void)
+/* MLP_DISABLE HW operations */
+static void __go_to_mlp_disable(void)
 {
 	struct memory_lowpower_operation *pos;
 	int ret = 0;
 	int disabled[NR_MLP_LEVEL] = { 0, };
-
-	/* Apply HW actions if needed */
-	if (!MlpsEnable(&memory_lowpower_state))
-		return;
 
 	/* Disable actions */
 	list_for_each_entry(pos, &memory_lowpower_handlers, link) {
@@ -345,59 +368,39 @@ static void __go_to_screenon(void)
 			}
 		}
 	}
-
-	/* Clear ENABLE state */
-	ClearMlpsEnable(&memory_lowpower_state);
-
-	if (IS_ENABLED(CONFIG_MTK_DCS) && !disabled[MLP_LEVEL_DCS])
-		ClearMlpsEnableDCS(&memory_lowpower_state);
-
-	if (IS_ENABLED(CONFIG_MTK_PASR) && !disabled[MLP_LEVEL_PASR])
-		ClearMlpsEnablePASR(&memory_lowpower_state);
 }
 
-/* Screen-on operations */
-static void go_to_screenon(void)
+/* MLP_DISABLE operations */
+static void go_to_mlp_disable(void)
 {
+	if (MlpsDisable(&memory_lowpower_state))
+		return;
+
 	MLPT_PRINT("%s:+\n", __func__);
 	MLPT_START_PROFILE();
 
-	/* Should be SCREENOFF|SCREENIDLE -> SCREENON */
-	if (MlpsScreenOn(&memory_lowpower_state) &&
-			!MlpsScreenIdle(&memory_lowpower_state)) {
-		MLPT_PRERR("Incomplete state[%lu]\n", memory_lowpower_state);
-		goto out;
-	}
+	/* Clear MLP_ENABLE state */
+	ClearMlpsEnable(&memory_lowpower_state);
 
-	/* HW-related flow for screenon */
-	__go_to_screenon();
+	/* HW flow */
+	__go_to_mlp_disable();
 
-	/* Currently in SCREENOFF */
-	if (!MlpsScreenOn(&memory_lowpower_state))
-		SetMlpsScreenOn(&memory_lowpower_state);
-
-	/* Currently in SCREENIDLE */
-	if (MlpsScreenIdle(&memory_lowpower_state))
-		ClearMlpsScreenIdle(&memory_lowpower_state);
-
-out:
 	/* Release pages */
 	release_memory();
+
+	/* Set MLP_DISABLE state */
+	SetMlpsDisable(&memory_lowpower_state);
 
 	MLPT_END_PROFILE();
 	MLPT_PRINT("%s:-\n", __func__);
 }
 
-/* Screen-off cb operations */
-static void __go_to_screenoff(void)
+/* MLP_ENABLE HW operations */
+static void __go_to_mlp_enable(void)
 {
 	struct memory_lowpower_operation *pos;
 	int ret = 0;
 	int enabled[NR_MLP_LEVEL] = { 0, };
-
-	/* Apply HW actions if needed */
-	if (MlpsEnable(&memory_lowpower_state))
-		return;
 
 	/* Config actions */
 	list_for_each_entry(pos, &memory_lowpower_handlers, link) {
@@ -422,58 +425,33 @@ static void __go_to_screenoff(void)
 			}
 		}
 	}
-
-	/* Set ENABLE state */
-	SetMlpsEnable(&memory_lowpower_state);
-
-	if (IS_ENABLED(CONFIG_MTK_DCS) && !enabled[MLP_LEVEL_DCS])
-		SetMlpsEnableDCS(&memory_lowpower_state);
-
-	if (IS_ENABLED(CONFIG_MTK_PASR) && !enabled[MLP_LEVEL_PASR])
-		SetMlpsEnablePASR(&memory_lowpower_state);
 }
 
-/* Screen-off operations */
-static void go_to_screenoff(void)
+/* MLP_ENABLE operations */
+static void go_to_mlp_enable(void)
 {
+	if (MlpsEnable(&memory_lowpower_state))
+		return;
+
 	MLPT_PRINT("%s:+\n", __func__);
 	MLPT_START_PROFILE();
 
-	/* Should be SCREENON -> SCREENOFF */
-	if (!MlpsScreenOn(&memory_lowpower_state)) {
-		MLPT_PRERR("Incomplete state[%lu]\n", memory_lowpower_state);
-		goto acquired;
-	}
+	/* Clear MLP_DISABLE state */
+	ClearMlpsDisable(&memory_lowpower_state);
 
 	/*
 	 * Try to collect free pages.
 	 * If done or can't proceed, just go ahead.
 	 */
 	if (acquire_memory())
-		pr_warn("%s: some exception occurs!\n", __func__);
+		pr_notice("%s: some exception occurs!\n", __func__);
 
-	/* Action is changed, just leave here. */
-	if (!IS_ACTION_SCREENOFF(memory_lowpower_action))
-		goto out;
+	/* HW flow */
+	__go_to_mlp_enable();
 
-	/* Clear SCREENON state */
-	ClearMlpsScreenOn(&memory_lowpower_state);
+	/* Set MLP_ENABLE state */
+	SetMlpsEnable(&memory_lowpower_state);
 
-acquired:
-	/* HW-related flow for screenoff */
-	__go_to_screenoff();
-
-out:
-	MLPT_END_PROFILE();
-	MLPT_PRINT("%s:-\n", __func__);
-}
-
-/* Screen-idle operations */
-static void go_to_screenidle(void)
-{
-	MLPT_PRINT("%s:+\n", __func__);
-	MLPT_START_PROFILE();
-	/* Actions for screenidle - TBD */
 	MLPT_END_PROFILE();
 	MLPT_PRINT("%s:-\n", __func__);
 }
@@ -495,7 +473,7 @@ static void release_wakelock(void)
 }
 
 /*
- * Main entry for memory lowpower operations -
+ * Main entry for memory lowpower operations (go to MLP_ENABLE)
  * No set_freezable(), no try_to_freeze().
  */
 static int memory_lowpower_entry(void *p)
@@ -507,38 +485,33 @@ static int memory_lowpower_entry(void *p)
 
 	/* Start actions */
 	do {
+		/* Schedule me */
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+
 		/* Start running */
 		set_current_state(TASK_RUNNING);
 
-		/* Is any action? */
-		while (atomic_xchg(&action_changed, MLPT_CLEAR_ACTION) == MLPT_SET_ACTION) {
+		/* Acquire wakelock */
+		acquire_wakelock();
 
-			/* Acquire wakelock */
-			acquire_wakelock();
-
-			/* Take proper actions */
-			current_action = memory_lowpower_action;
+		/* Check whether there is any action */
+		while (atomic_xchg(&mlp_take_action, MLPT_CLEAR_ACTION) == MLPT_SET_ACTION) {
+			current_action = mlp_action;
 			switch (current_action) {
-			case MLP_SCREENON:
-				go_to_screenon();
+			case MLP_ENTER:
+				go_to_mlp_enable();
 				break;
-			case MLP_SCREENOFF:
-				go_to_screenoff();
-				break;
-			case MLP_SCREENIDLE:
-				go_to_screenidle();
+			case MLP_LEAVE:
+				go_to_mlp_disable();
 				break;
 			default:
 				MLPT_PRINT("%s: Invalid action[%d]\n", __func__, current_action);
 			}
-
-			/* Release wakelock */
-			release_wakelock();
 		}
 
-		/* Schedule me */
-		set_current_state(TASK_INTERRUPTIBLE);
-		schedule();
+		/* Release wakelock */
+		release_wakelock();
 	} while (1);
 
 	return 0;
@@ -571,7 +544,7 @@ static int periodic_dc_entry(void *p)
 				break;
 			}
 		}
-		if (trigger && MlpsScreenOn(&memory_lowpower_state)) {
+		if (trigger && MlpsDisable(&memory_lowpower_state)) {
 			get_memory_lowpower_cma();
 			put_memory_lowpower_cma();
 			nr_dc++;
@@ -585,7 +558,10 @@ static int periodic_dc_entry(void *p)
 #endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
 
 #ifdef CONFIG_PM
-/* FB event notifier */
+/*
+ * FB event notifier -
+ * Taking action for SCREENOFF/SCREENON.
+ */
 int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
 {
 	struct fb_event *fb_event = data;
@@ -600,34 +576,32 @@ int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long even
 	/* Which action */
 	if (new_status == 0) {
 		MLPT_PRINT("%s: SCREENON!\n", __func__);
-		memory_lowpower_action = MLP_SCREENON;
+		mlp_action = MLP_LEAVE;
 		debounce_time = jiffies + HZ;
 	} else {
 		MLPT_PRINT("%s: SCREENOFF!\n", __func__);
-		/* Check whether we are still in debounce_time before applying SCREENOFF action */
+
+		/* Still in debounce_time, leave it */
 		if (time_before_eq(jiffies, debounce_time)) {
 			MLPT_PRINT("%s: Bye SCREENOFF!\n", __func__);
 			goto out;
 		}
-		memory_lowpower_action = MLP_SCREENOFF;
+
+		mlp_action = MLP_ENTER;
 	}
 
-	/* Action is changed */
-	atomic_set(&action_changed, MLPT_SET_ACTION);
+	atomic_set(&mlp_take_action, MLPT_SET_ACTION);
+
 retry:
-	/*
-	 * Try to wake it up.
-	 * If it is running, to make sure action is cleared for MLP_SCREENON
-	 */
+	/* Try to wake it up. */
 	if (!wake_up_process(memory_lowpower_task)) {
-		pr_warn_ratelimited("It was already running.\n");
-		if (IS_ACTION_SCREENON(memory_lowpower_action) &&
-				atomic_read(&action_changed) == MLPT_SET_ACTION) {
-			/* SCREENOFF is not finished, just leave. */
-			if (MlpsScreenOn(&memory_lowpower_state))
+		pr_notice_ratelimited("It was already running.\n");
+		if (IS_ACTION_LEAVE(mlp_action) &&
+				atomic_read(&mlp_take_action) == MLPT_SET_ACTION) {
+			/* It was disable already, no retry to wake it up */
+			if (MlpsDisable(&memory_lowpower_state))
 				goto out;
-			/* It might be at the time before going to schedule. */
-			pr_warn_ratelimited("No action executed for screen-on, retry it.\n");
+			pr_notice_ratelimited("No action taken for screen-on, retry it.\n");
 			goto retry;
 		}
 	}
@@ -640,30 +614,10 @@ static struct notifier_block fb_notifier_block = {
 	.priority = 0,
 };
 
-/* Check whether screenoff action is finished before suspend */
-static int memory_lowpower_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
-{
-	switch (pm_event) {
-	case PM_SUSPEND_PREPARE:
-		if (!MlpsEnable(&memory_lowpower_state))
-			pr_warn("\n\n\n++++++ %s: screenoff is not finished ++++++\n\n\n", __func__);
-		return NOTIFY_DONE;
-	}
-	return NOTIFY_OK;
-}
-
-static struct notifier_block pm_notifier_block = {
-	.notifier_call = memory_lowpower_pm_event,
-	.priority = 0,
-};
-
 static int __init memory_lowpower_init_pm_ops(void)
 {
 	if (fb_register_client(&fb_notifier_block) != 0)
 		return -1;
-
-	if (!register_pm_notifier(&pm_notifier_block))
-		pr_warn("%s: failed to register PM notifier!\n", __func__);
 
 #ifdef CONFIG_PM_WAKELOCKS
 	wakeup_source_init(&mlp_wakeup, "mlp_wakeup_source");
@@ -679,6 +633,15 @@ int __init memory_lowpower_task_init(void)
 	/* Is memory lowpower initialized */
 	if (!memory_lowpower_inited())
 		goto out;
+
+#ifdef CONFIG_PM
+	/* Initialize PM ops */
+	ret = memory_lowpower_init_pm_ops();
+	if (ret != 0) {
+		MLPT_PRERR("Failed to init pm ops!\n");
+		goto out;
+	}
+#endif
 
 	/* Start a kernel thread */
 	memory_lowpower_task = kthread_run(memory_lowpower_entry, NULL, "memory_lowpower_task");
@@ -697,25 +660,14 @@ int __init memory_lowpower_task_init(void)
 	}
 #endif /* CONFIG_MTK_PERIODIC_DATA_COLLECTION */
 
-#ifdef CONFIG_PM
-	/* Initialize PM ops */
-	ret = memory_lowpower_init_pm_ops();
-	if (ret != 0) {
-		MLPT_PRERR("Failed to init pm ops!\n");
-		kthread_stop(memory_lowpower_task);
-		memory_lowpower_task = NULL;
-		goto out;
-	}
-#endif
-
 	/* Set expected current state */
 	SetMlpsInit(&memory_lowpower_state);
-	SetMlpsScreenOn(&memory_lowpower_state);
+	SetMlpsDisable(&memory_lowpower_state);
 
-	/* Reset action_changed */
-	atomic_set(&action_changed, MLPT_CLEAR_ACTION);
+	/* Reset mlp_take_action */
+	atomic_set(&mlp_take_action, MLPT_CLEAR_ACTION);
 out:
-	MLPT_PRINT("%s: memory_power_state[%lu]\n", __func__, memory_lowpower_state);
+	MLPT_PRINT("%s: memory_power_state[0x%lx]\n", __func__, memory_lowpower_state);
 	return ret;
 }
 
@@ -788,7 +740,7 @@ static int __init memory_lowpower_task_debug_init(void)
 	dentry = debugfs_create_file("memory-lowpower-task", S_IRUGO, NULL, NULL,
 					&memory_lowpower_task_fops);
 	if (!dentry)
-		pr_warn("Failed to create debugfs memory_lowpower_debug_init file\n");
+		pr_notice("Failed to create debugfs memory_lowpower_debug_init file\n");
 
 	return 0;
 }
