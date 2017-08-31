@@ -232,6 +232,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_MD2AP_PEER_EVENT_B)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+	if (wakesta->r12 & WAKE_SRC_R12_CCIF0_EVENT_B)
+		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 	if (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)
 		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
