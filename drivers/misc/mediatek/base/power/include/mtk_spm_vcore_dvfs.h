@@ -26,6 +26,10 @@
 
 #include "spm_v3/mtk_spm_vcore_dvfs.h"
 
+#elif defined(CONFIG_MACH_MT6763)
+
+#include "spm_v3/mtk_spm_vcore_dvfs_mt6763.h"
+
 #elif defined(CONFIG_MACH_MT6759)
 
 #include "spm_v3/mtk_spm_vcore_dvfs_mt6759.h"

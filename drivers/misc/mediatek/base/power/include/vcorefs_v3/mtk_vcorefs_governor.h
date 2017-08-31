@@ -84,14 +84,17 @@ struct opp_profile {
 
 /*
  * VOUT selection in normal mode (SW mode)
- * VOUT = 0.4V + 6.25mV * VOSEL for PMIC MT6335
+ * VOUT = 0.40000V + 6.25mV * VOSEL for PMIC MT6335
+ * VOUT = 0.50000V + 6.25mV * VOSEL for PMIC MT6356
  * VOUT = 0.40625V + 6.25mV * VOSEL for PMIC MT6355
  */
 #define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6335) /* CONFIG_MACH_MT6799 */
+#if defined(CONFIG_MACH_MT6799)          /* PMIC MT6335 */
 #define VCORE_BASE_UV           400000
-#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355) /* CONFIG_MACH_MT6759 */
+#elif defined(CONFIG_MACH_MT6763)        /* PMIC MT6356 */
+#define VCORE_BASE_UV           500000
+#elif defined(CONFIG_MACH_MT6759)        /* PMIC MT6355 */
 #define VCORE_BASE_UV           406250
 #else
 #error "Not set pmic config properly!"
