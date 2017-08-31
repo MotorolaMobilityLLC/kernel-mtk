@@ -70,7 +70,7 @@ struct opp_profile {
 };
 
 /* boot up opp for SPM init */
-#define BOOT_UP_OPP             (NUM_OPP - 1)
+#define BOOT_UP_OPP             OPP_2
 
 /* target OPP when feature enable */
 #define LATE_INIT_OPP           (NUM_OPP - 1)
