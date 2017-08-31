@@ -839,7 +839,7 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 
 			ret =
 			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-				&(nonsec_switch_handle));
+				&(nonsec_switch_handle), __func__);
 			if (ret) {
 				DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 				return -1;
@@ -923,7 +923,7 @@ int _ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle, int is_dua
 
 		ret =
 			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-				&(nonsec_switch_handle));
+				&(nonsec_switch_handle), __func__);
 		if (ret) {
 			DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;

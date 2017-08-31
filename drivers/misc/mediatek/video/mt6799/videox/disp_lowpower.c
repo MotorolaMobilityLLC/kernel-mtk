@@ -257,7 +257,7 @@ int _blocking_flush(void)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
@@ -277,7 +277,7 @@ int primary_display_dsi_vfp_change(int state)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
@@ -315,7 +315,7 @@ void _idle_set_golden_setting(void)
 
 	/* no need lock */
 	/* 1.create and reset cmdq */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return;
@@ -360,7 +360,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		wrot_value = 0x1 << 1;
 		break;
 	default:
-		DISPERR("wrong CMDQ_EVENT %d in %s:%d!\n", resourceEvent, __func__, __LINE__);
+		DISPERR("wrong CMDQ_EVENT %s in %s:%d!\n", disp_cmdq_get_event_name(resourceEvent), __func__, __LINE__);
 		return;
 	}
 
@@ -371,7 +371,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return;
@@ -395,12 +395,12 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
-		DISPERR("acquire resource %d fail\n", resourceEvent);
+		DISPERR("acquire resource %s fail\n", disp_cmdq_get_event_name(resourceEvent));
 		goto done;
 
 	} else {
 		/* acquire resource success */
-		DISPMSG("share SRAM %d success\n", resourceEvent);
+		DISPMSG("share SRAM %s success\n", disp_cmdq_get_event_name(resourceEvent));
 		/* disp_cmdq_clear_event(handle, resourceEvent); //???cmdq do it */
 
 		/* set rdma golden setting parameters*/
@@ -450,7 +450,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		wrot_value = 0x1 << 1;
 		break;
 	default:
-		DISPERR("wrong CMDQ_EVENT %d in %s:%d!\n", resourceEvent, __func__, __LINE__);
+		DISPERR("wrong CMDQ_EVENT %s in %s:%d!\n", disp_cmdq_get_event_name(resourceEvent), __func__, __LINE__);
 		return;
 	}
 
@@ -459,7 +459,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return;
@@ -548,7 +548,7 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		return ret;
 	}
 	/* 1.create and reset cmdq */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;

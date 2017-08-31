@@ -81,11 +81,13 @@ enum DISP_CMDQ_INSTRUCTION {
 };
 
 #define DISP_CMDQ_THREAD_NUM      (20)
+#define DISP_CMDQ_THREAD_NAME_LENGTH      (64)
 #define DISP_CMDQ_STATE_STACK_NUM      (DISP_CMDQ_STATE_NUM * 2)
 
 
+char *disp_cmdq_get_event_name(enum CMDQ_EVENT_ENUM event);
 int disp_cmdq_init(void);
-int disp_cmdq_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pHandle);
+int disp_cmdq_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pHandle, const char *func);
 int disp_cmdq_destroy(struct cmdqRecStruct *handle, const char *func, int line);
 int disp_cmdq_reset(struct cmdqRecStruct *handle);
 int disp_cmdq_set_check_state(struct cmdqRecStruct *handle, enum DISP_CMDQ_CHECK state);

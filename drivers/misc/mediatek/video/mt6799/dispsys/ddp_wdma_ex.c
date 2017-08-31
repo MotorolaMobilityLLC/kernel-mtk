@@ -934,7 +934,7 @@ int wdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		int ret;
 
 		ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-			&(nonsec_switch_handle));
+			&(nonsec_switch_handle), __func__);
 		if (ret) {
 			DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -1046,7 +1046,7 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 			int ret;
 
 			ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-					    &(nonsec_switch_handle));
+					    &(nonsec_switch_handle), __func__);
 			if (ret) {
 				DDPERR("[SVP]%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 				return -1;

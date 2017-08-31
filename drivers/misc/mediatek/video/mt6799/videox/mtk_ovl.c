@@ -325,7 +325,7 @@ int ovl2mem_init(unsigned int session)
 	}
 
 	if (pgc->cmdq_handle_config == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
+		ret = disp_cmdq_create(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config), __func__);
 		if (ret) {
 			DISPERR("disp_cmdq_create FAIL, ret=%d\n", ret);
 			goto Exit;

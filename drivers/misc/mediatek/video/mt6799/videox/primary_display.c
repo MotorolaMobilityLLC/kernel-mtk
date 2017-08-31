@@ -1282,7 +1282,7 @@ static void _cmdq_build_trigger_loop(void)
 	int ret = 0;
 
 	if (pgc->cmdq_handle_trigger == NULL) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger));
+		ret = disp_cmdq_create(CMDQ_SCENARIO_TRIGGER_LOOP, &(pgc->cmdq_handle_trigger), __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			ASSERT(0);
@@ -1402,7 +1402,7 @@ static void _cmdq_build_monitor_loop(void)
 	int ret = 0;
 	struct cmdqRecStruct *g_cmdq_handle_monitor;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor));
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor), __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return;
@@ -1693,14 +1693,14 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	struct disp_ddp_path_config *pconfig = NULL;
 
 	/* create config thread */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
 	/* create wait thread */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -1824,7 +1824,7 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 	int cmdq_create = 0;
 
 	if (!handle) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -1918,7 +1918,7 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 	int cmdq_create = 0;
 
 	if (!handle) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -3188,7 +3188,7 @@ static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 	int cmdq_create = 0;
 
 	if (!handle) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -3248,7 +3248,7 @@ static int rdma_mode_switch_to_DL(struct cmdqRecStruct *handle, int block)
 	int cmdq_create = 0;
 
 	if (!handle) {
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -3782,7 +3782,7 @@ static int __primary_check_trigger(void)
 		static struct cmdqRecStruct *handle;
 		struct disp_ddp_path_config *data_config = NULL;
 
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			goto out;
@@ -4061,7 +4061,7 @@ static int _decouple_update_rdma_config_nolock(void)
 			return -1;
 		}
 
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 			return -1;
@@ -4311,7 +4311,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 	static struct cmdqRecStruct *cmdq_wait_handle;
 
 	/* create config thread */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -4319,7 +4319,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 	}
 
 	/* capture thread wait wdma sof */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -4611,7 +4611,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		}
 
 		if (pgc->cmdq_handle_config == NULL) {
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config));
+			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &(pgc->cmdq_handle_config), __func__);
 			if (ret) {
 				DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 				ret = DISP_STATUS_ERROR;
@@ -4623,7 +4623,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 		/* create ovl2mem path cmdq handle */
 		if (pgc->cmdq_handle_ovl1to2_config == NULL) {
-			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
+			ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_MEMOUT,
+					     &(pgc->cmdq_handle_ovl1to2_config), __func__);
 			if (ret) {
 				DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 				ret = DISP_STATUS_ERROR;
@@ -5030,7 +5031,7 @@ int _display_set_lcm_refresh_rate(int fps)
 		/*Switch path.*/
 	/*} */
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		goto done;
@@ -5280,7 +5281,7 @@ int suspend_to_full_roi(void)
 	if (!primary_display_is_directlink_mode())
 		return -1;
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
@@ -6921,7 +6922,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
 		_primary_path_lock(__func__);
 
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		} else {
@@ -6963,7 +6964,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		_primary_path_switch_dst_lock();
 		_primary_path_lock(__func__);
 
-		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 		if (ret) {
 			DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		} else {
@@ -7539,6 +7540,11 @@ int primary_display_manual_unlock(void)
 	return 0;
 }
 
+char *primary_display_get_lock_id(void)
+{
+	return pgc->mutex_locker;
+}
+
 void primary_display_reset(void)
 {
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -7626,7 +7632,7 @@ int _set_backlight_by_cmdq(unsigned int level)
 	struct cmdqRecStruct *cmdq_handle_backlight = NULL;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 1, 1);
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_backlight, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -7776,7 +7782,7 @@ int _set_lcm_cmd_by_cmdq(unsigned int *lcm_cmd, unsigned int *lcm_count, unsigne
 	struct cmdqRecStruct *cmdq_handle_lcm_cmd = NULL;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_cmd, MMPROFILE_FLAG_PULSE, 1, 1);
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_lcm_cmd);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle_lcm_cmd, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -7869,7 +7875,7 @@ int primary_display_mipi_clk_change(unsigned int clk_value)
 		goto done;
 	}
 
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -8012,14 +8018,14 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, en
 	unsigned int h_yres = primary_display_get_height();
 
 	/* create config thread */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
 		goto out;
 	}
 	/* create wait thread */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;
@@ -9178,7 +9184,7 @@ int primary_display_arr20_set_refresh_rate(unsigned int refresh_rate)
 		pgc->plcm->params->max_refresh_rate);
 		refresh_rate = pgc->plcm->params->max_refresh_rate;
 	}
-	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		ret = -1;

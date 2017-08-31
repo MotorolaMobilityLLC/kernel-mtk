@@ -1426,7 +1426,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 /* Helper macros for local command queue */
 #define DISP_CMDQ_BEGIN(__cmdq, scenario) \
 	do { \
-		disp_cmdq_create(scenario, &__cmdq);\
+		disp_cmdq_create(scenario, &__cmdq, __func__);\
 		disp_cmdq_reset(__cmdq);\
 		ddp_insert_config_allow_rec(__cmdq);\
 	} while (0)

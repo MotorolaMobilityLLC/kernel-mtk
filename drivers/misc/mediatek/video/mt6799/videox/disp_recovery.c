@@ -116,12 +116,9 @@ static unsigned int _need_do_esd_check(void)
 
 /* For Cmd Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
+static int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 {
 	int ret = 0;		/* 0:success */
-
-	/* 1.reset */
-	disp_cmdq_reset(handle);
 
 	primary_display_manual_lock();
 
@@ -146,9 +143,7 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 	ret = disp_cmdq_flush(handle, __func__, __LINE__);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
-
 	DISPINFO("[ESD]_esd_check_config_handle_cmd ret=%d\n", ret);
-
 
 	if (ret)
 		ret = 1;
@@ -157,18 +152,16 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 
 /* For Vdo Mode Read LCM Check */
 /* Config cmdq_handle_config_esd */
-int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
+static int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 {
 	int ret = 0;		/* 0:success , 1:fail */
 
-	/* 1.reset */
-	disp_cmdq_reset(handle);
+	primary_display_manual_lock();
 
 	/* wait stream eof first */
 	/*disp_cmdq_wait_event(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
 	disp_cmdq_wait_event(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
-	primary_display_manual_lock();
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_STOP_VDO_MODE,
 			      0);
@@ -197,7 +190,6 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
 	DISPINFO("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
-
 
 	if (ret)
 		ret = 1;
@@ -360,12 +352,15 @@ int do_esd_check_read(void)
 	struct cmdqRecStruct *handle;
 
 	/* 0.create esd check cmdq */
-	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle, __func__);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
 	}
 	disp_cmdq_reset(handle);
+
+	/* apply check bypass */
+	disp_cmdq_set_check_state(handle, DISP_CMDQ_CHECK_BYPASS);
 
 	primary_display_manual_lock();
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
