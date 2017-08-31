@@ -3422,6 +3422,9 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 {
+	int i;
+	unsigned int tmp;
+
 	/* use cmdq to stop dsi vdo mode */
 	/* set dsi cmd mode */
 	DSI_SetMode(module, cmdq_handle, CMD_MODE);
@@ -3430,7 +3433,23 @@ static int dsi_stop_vdo_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 	DSI_Stop(module, cmdq_handle);
 
 	/* polling dsi not busy */
-	DSI_WaitForNotBusy(module, cmdq_handle);
+	if (cmdq_handle) {
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+			DSI_POLLREG32(cmdq_handle, &DSI_REG[i]->DSI_INTSTA, 0x80000000, 0x0);
+	} else { /* use CPU polling */
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			tmp = 0;
+			while (DSI_REG[i]->DSI_INTSTA.BUSY) {
+				tmp++;
+				udelay(200);
+				if (tmp > 5000) { /* polling exceed 1s */
+					DISPERR("Polling DSI%d idle fail!!\n", i);
+					break;
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
