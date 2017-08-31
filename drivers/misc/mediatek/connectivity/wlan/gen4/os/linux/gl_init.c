@@ -803,15 +803,14 @@ MODULE_SUPPORTED_DEVICE(NIC_NAME);
 /* MODULE_LICENSE("MTK Propietary"); */
 MODULE_LICENSE("GPL");
 
-#define NIC_INF_NAME    "wlan%d"	/* interface name */
+/* NIC interface name */
+#define NIC_INF_NAME    "wlan%d"
 
 #if CFG_SUPPORT_SNIFFER
 #define NIC_MONITOR_INF_NAME	"radiotap%d"
 #endif
 
-
 UINT_8 aucDebugModule[DBG_MODULE_NUM];
-UINT_32 u4DebugModule;
 
 /* 4 2007/06/26, mikewu, now we don't use this, we just fix the number of wlan device to 1 */
 static WLANDEV_INFO_T arWlanDevInfo[CFG_MAX_WLAN_DEVICES] = { {0} };
@@ -1692,7 +1691,7 @@ VOID wlanDebugInit(VOID)
 {
 	UINT_8 i;
 
-	/* Set the initial DEBUG CLASS of each module */
+	/* Set the initial debug level of each module */
 #if DBG
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = DBG_CLASS_MASK;	/* enable all */
@@ -1701,20 +1700,18 @@ VOID wlanDebugInit(VOID)
 	for (i = 0; i < DBG_MODULE_NUM; i++)
 		aucDebugModule[i] = CFG_DEFAULT_DBG_LEVEL;
 #else
-	/* Initial debug level is D1 */
 	for (i = 0; i < DBG_MODULE_NUM; i++) {
 		aucDebugModule[i] = DBG_CLASS_ERROR |
-		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_EVENT | DBG_CLASS_INFO;
+				    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_EVENT | DBG_CLASS_INFO;
 	}
-	aucDebugModule[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
-	aucDebugModule[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
-	aucDebugModule[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_TRACE | DBG_CLASS_INFO);
+	aucDebugModule[DBG_TX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
+	aucDebugModule[DBG_RX_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
+	aucDebugModule[DBG_REQ_IDX] &= ~(DBG_CLASS_EVENT | DBG_CLASS_INFO);
 	aucDebugModule[DBG_INTR_IDX] = 0;
 	aucDebugModule[DBG_MEM_IDX] = DBG_CLASS_ERROR | DBG_CLASS_WARN;
-	aucDebugModule[DBG_REQ_IDX] = DBG_CLASS_ALL;
+	aucDebugModule[DBG_REQ_IDX] = DBG_CLASS_MASK;
 #endif
 #endif /* DBG */
-	/* aucDebugModule[DBG_P2P_IDX] = DBG_CLASS_ALL; */
 	LOG_FUNC("Reset ALL DBG module log level to DEFAULT!");
 
 }
@@ -1995,12 +1992,12 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 		prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(prWdev->wiphy);
 		i4DevIdx = wlanGetDevIdx(prWdev->netdev);
 		if (i4DevIdx < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device number exceeds.\n");
+			DBGLOG(INIT, ERROR, "net_device number exceeds!\n");
 			break;
 		}
 
 		if (register_netdev(prWdev->netdev) < 0) {
-			DBGLOG(INIT, ERROR, "wlanNetRegister: net_device context is not registered.\n");
+			DBGLOG(INIT, ERROR, "Register net_device failed\n");
 			wlanClearDevIdx(prWdev->netdev);
 			i4DevIdx = -1;
 		}
@@ -2036,7 +2033,7 @@ static VOID wlanNetUnregister(struct wireless_dev *prWdev)
 	P_GLUE_INFO_T prGlueInfo;
 
 	if (!prWdev) {
-		DBGLOG(INIT, ERROR, "wlanNetUnregister: The device context is NULL\n");
+		DBGLOG(INIT, ERROR, "The device context is NULL\n");
 		return;
 	}
 
@@ -2130,7 +2127,7 @@ static void wlanCreateWirelessDevice(void)
 	}
 	prWdev->wiphy = prWiphy;
 	gprWdev = prWdev;
-	DBGLOG(INIT, INFO, "create wireless device success\n");
+	DBGLOG(INIT, INFO, "Create wireless device success\n");
 	return;
 
 free_wiphy:
@@ -2217,17 +2214,17 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	prAdapter->chip_info = ((struct mt66xx_hif_driver_data *) pvDriverData)->chip_info;
 	prGlueInfo->prAdapter = prAdapter;
 
-	/* 4 <3> Initial Glue structure */
-	/* 4 <3.1> create net device */
-	prGlueInfo->prDevHandler =
-		alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
-					NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
-	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
+	/* 4 <3> Initialize Glue structure */
+	/* 4 <3.1> Create net device */
+	prGlueInfo->prDevHandler = alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
+						   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
 		goto netcreate_err;
 	}
-	/* 4 <3.1.1> initialize net device varaiables */
+	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
+
+	/* 4 <3.1.1> Initialize net device varaiables */
 #if 1
 	prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prGlueInfo->prDevHandler);
 	prNetDevPrivate->prGlueInfo = prGlueInfo;
@@ -2260,7 +2257,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	/* 4 <3.1.4> set device to glue */
 	prGlueInfo->prDev = prDev;
 
-	/* 4 <3.2> initiali glue variables */
+	/* 4 <3.2> Initialize glue variables */
 	prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 	prGlueInfo->ePowerState = ParamDeviceStateD0;
 	prGlueInfo->fgIsRegistered = FALSE;
@@ -2358,7 +2355,7 @@ static VOID wlanNetDestroy(struct wireless_dev *prWdev)
 	ASSERT(prWdev);
 
 	if (!prWdev) {
-		DBGLOG(INIT, ERROR, "wlanNetDestroy: The device context is NULL\n");
+		DBGLOG(INIT, ERROR, "The device context is NULL\n");
 		return;
 	}
 
@@ -2498,17 +2495,6 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 	return 0;
 }
 
-void set_dbg_level_handler(unsigned char dbg_lvl[DBG_MODULE_NUM])
-{
-	UINT_8 ucIdx;
-
-	DBGLOG(INIT, INFO, "Set DBG log level from set_dbg_level_handler!\n");
-
-	for (ucIdx = 0; ucIdx < DBG_MODULE_NUM; ucIdx++)
-		wlanSetDebugLevel(ucIdx, (UINT_32) dbg_lvl[ucIdx]);
-
-	/* kalMemCopy(aucDebugModule, dbg_lvl, sizeof(aucDebugModule)); */
-}
 #endif
 
 #if CFG_SUPPORT_EASY_DEBUG
@@ -3182,23 +3168,20 @@ static int initWlan(void)
 {
 	int ret = 0;
 
-	wlanDebugInit();
-
 	DBGLOG(INIT, INFO, "initWlan\n");
+
+	wlanDebugInit();
 
 	/* memory pre-allocation */
 	kalInitIOBuffer();
 #if WLAN_INCLUDE_PROC
 	procInitFs();
 #endif
+
 	wlanCreateWirelessDevice();
 	if (gprWdev)
 		glP2pCreateWirelessDevice((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 	gprP2pWdev = gprP2pRoleWdev[0];/* P2PDev and P2PRole[0] share the same Wdev */
-
-#if (MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
-	register_set_dbg_level_handler(set_dbg_level_handler);
-#endif
 
 	ret = ((glRegisterBus(wlanProbe, wlanRemove) == WLAN_STATUS_SUCCESS) ? 0 : -EIO);
 

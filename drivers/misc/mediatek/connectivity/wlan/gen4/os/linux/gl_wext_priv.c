@@ -2483,103 +2483,6 @@ typedef struct priv_driver_cmd_s {
 	int total_len;
 } priv_driver_cmd_t;
 
-int priv_driver_set_dbg_level(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
-{
-	P_GLUE_INFO_T prGlueInfo = NULL;
-	INT_32 i4BytesWritten = 0;
-	INT_32 i4Argc = 0;
-	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
-	UINT_32 u4DbgIdx, u4DbgMask;
-	BOOLEAN fgIsCmdAccept = FALSE;
-	INT_32 u4Ret = 0;
-
-	ASSERT(prNetDev);
-	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
-		return -1;
-	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
-
-	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
-	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
-	DBGLOG(REQ, LOUD, "argc is %i\n", i4Argc);
-
-	if (i4Argc >= 3) {
-		/* u4DbgIdx = kalStrtoul(apcArgv[1], NULL, 0);
-		 *  u4DbgMask = kalStrtoul(apcArgv[2], NULL, 0);
-		 */
-		u4Ret = kalkStrtou32(apcArgv[1], 0, &u4DbgIdx);
-		if (u4Ret)
-			DBGLOG(REQ, LOUD, "parse apcArgv error u4Ret=%d\n", u4Ret);
-		u4Ret = kalkStrtou32(apcArgv[2], 0, &u4DbgMask);
-		if (u4Ret)
-			DBGLOG(REQ, LOUD, "parse apcArgv error u4Ret=%d\n", u4Ret);
-
-		/* DBG level special control */
-		if (u4DbgIdx == 0xFFFFFFFF) {
-			fgIsCmdAccept = TRUE;
-			wlanSetDebugLevel(DBG_ALL_MODULE_IDX, u4DbgMask);
-			i4BytesWritten =
-			    snprintf(pcCommand, i4TotalLen,
-				     "Set ALL DBG module log level to [0x%02x]!", (UINT_8) u4DbgMask);
-		} else if (u4DbgIdx == 0xFFFFFFFE) {
-			fgIsCmdAccept = TRUE;
-			wlanDebugInit();
-			i4BytesWritten = snprintf(pcCommand, i4TotalLen, "Reset ALL DBG module log level to DEFAULT!");
-		} else if (u4DbgIdx < DBG_MODULE_NUM) {
-			fgIsCmdAccept = TRUE;
-			wlanSetDebugLevel(u4DbgIdx, u4DbgMask);
-			i4BytesWritten =
-			    snprintf(pcCommand, i4TotalLen,
-				     "Set DBG module[%lu] log level to [0x%02x]!", u4DbgIdx, (UINT_8) u4DbgMask);
-		}
-	}
-
-	if (!fgIsCmdAccept)
-		i4BytesWritten = snprintf(pcCommand, i4TotalLen, "Set DBG module log level failed!");
-
-	return i4BytesWritten;
-
-}				/* priv_driver_set_sw_ctrl */
-
-int priv_driver_get_dbg_level(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
-{
-	P_GLUE_INFO_T prGlueInfo = NULL;
-	INT_32 i4BytesWritten = 0;
-	INT_32 i4Argc = 0;
-	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
-	UINT_32 u4DbgIdx, u4DbgMask;
-	BOOLEAN fgIsCmdAccept = FALSE;
-	INT_32 u4Ret = 0;
-
-	ASSERT(prNetDev);
-	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
-		return -1;
-	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
-
-	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
-	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
-	DBGLOG(REQ, LOUD, "argc is %i\n", i4Argc);
-
-	if (i4Argc >= 2) {
-		/* u4DbgIdx = kalStrtoul(apcArgv[1], NULL, 0); */
-		u4Ret = kalkStrtou32(apcArgv[1], 0, &u4DbgIdx);
-		if (u4Ret)
-			DBGLOG(REQ, LOUD, "parse apcArgv error u4Ret=%d\n", u4Ret);
-
-		if (wlanGetDebugLevel(u4DbgIdx, &u4DbgMask) == WLAN_STATUS_SUCCESS) {
-			fgIsCmdAccept = TRUE;
-			i4BytesWritten =
-			    snprintf(pcCommand, i4TotalLen,
-				     "Get DBG module[%lu] log level => [0x%02x]!", u4DbgIdx, (UINT_8) u4DbgMask);
-		}
-	}
-
-	if (!fgIsCmdAccept)
-		i4BytesWritten = snprintf(pcCommand, i4TotalLen, "Get DBG module log level failed!");
-
-	return i4BytesWritten;
-
-}				/* priv_driver_get_sw_ctrl */
-
 
 #if CFG_SUPPORT_QA_TOOL
 #if CFG_SUPPORT_BUFFER_MODE
@@ -6097,7 +6000,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		} else if (strnicmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0) {
 			i4BytesWritten = priv_driver_set_miracast(prNetDev, pcCommand, i4TotalLen);
 		}
-		/* Mediatek private command  */
+		/* Mediatek private command */
 		else if (strnicmp(pcCommand, CMD_SET_SW_CTRL, strlen(CMD_SET_SW_CTRL)) == 0) {
 			i4BytesWritten = priv_driver_set_sw_ctrl(prNetDev, pcCommand, i4TotalLen);
 		} else if (strnicmp(pcCommand, CMD_SET_FIXED_RATE, strlen(CMD_SET_FIXED_RATE)) == 0) {
@@ -6161,10 +6064,6 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			i4BytesWritten = priv_driver_set_chip_config(prNetDev, pcCommand, i4TotalLen);
 		} else if (strnicmp(pcCommand, CMD_GET_CHIP, strlen(CMD_GET_CHIP)) == 0) {
 			i4BytesWritten = priv_driver_get_chip_config(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_SET_DBG_LEVEL, strlen(CMD_SET_DBG_LEVEL)) == 0) {
-			i4BytesWritten = priv_driver_set_dbg_level(prNetDev, pcCommand, i4TotalLen);
-		} else if (strnicmp(pcCommand, CMD_GET_DBG_LEVEL, strlen(CMD_GET_DBG_LEVEL)) == 0) {
-			i4BytesWritten = priv_driver_get_dbg_level(prNetDev, pcCommand, i4TotalLen);
 		} else if (strnicmp(pcCommand, CMD_GET_VERSION, strlen(CMD_GET_VERSION)) == 0) {
 			i4BytesWritten = priv_driver_get_version(prNetDev, pcCommand, i4TotalLen);
 #if CFG_SUPPORT_DBDC

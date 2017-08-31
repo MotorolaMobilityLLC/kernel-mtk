@@ -1178,38 +1178,8 @@ typedef struct _MONITOR_RADIOTAP_T {
 
 #define kalGetTimeTick()                            jiffies_to_msecs(jiffies)
 
-#define kalPrint                                    printk
 #define WLAN_TAG                                    "[wlan]"
-
-#if 1
-#define kalPrintTag(_Fmt...)        kalPrint(WLAN_TAG _Fmt)
-#define kalDbgLog(_DbgClass, _Fmt)  (kalPrintTag _Fmt)
-#else
-
-#define kalPrintErr(_Fmt...)                    kalPrint(KERN_ERR WLAN_TAG _Fmt)
-#define kalPrintWarn(_Fmt...)                   kalPrint(KERN_WARNING WLAN_TAG _Fmt)
-#define kalPrintInfo(_Fmt...)                   kalPrint(KERN_INFO WLAN_TAG _Fmt)
-#define kalPrintDebug(_Fmt...)                  kalPrint(KERN_INFO WLAN_TAG _Fmt)
-
-#define kalDbgLog(_DbgClass, _Fmt) \
-{ \
-	if (_DbgClass & DBG_CLASS_ERROR) { \
-		kalPrintErr _Fmt; \
-	} \
-	else if (_DbgClass & DBG_CLASS_WARN) { \
-		kalPrintWarn _Fmt; \
-	} \
-	else if (_DbgClass & (DBG_CLASS_EVENT | DBG_CLASS_INFO)) { \
-		kalPrintInfo _Fmt; \
-	} \
-	else if (_DbgClass & (DBG_CLASS_STATE | DBG_CLASS_TRACE | DBG_CLASS_LOUD)) { \
-		kalPrintDebug _Fmt; \
-	} \
-	else if (_DbgClass & DBG_CLASS_TEMP) { \
-		kalPrintErr _Fmt; \
-	} \
-}
-#endif
+#define kalPrint(_Fmt...)                           pr_debug(WLAN_TAG _Fmt)
 
 #define kalBreakPoint() \
 do { \
