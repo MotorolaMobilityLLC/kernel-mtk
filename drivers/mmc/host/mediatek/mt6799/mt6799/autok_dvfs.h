@@ -14,22 +14,24 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-/* #define VOREFS_READY */
+#define VOREFS_READY
 
 #include "autok.h"
 
 #ifdef VOREFS_READY
-#include <mt_vcorefs_manager.h>
-#include <mt_spm_vcore_dvfs.h>
+#include <mtk_vcorefs_manager.h>
+#include <mtk_spm_vcore_dvfs.h>
+
 #else
 #define MSDC0_DVFS 0
 #define MSDC1_DVFS 1
 #define MSDC2_DVFS 2
 #define MSDC3_DVFS 3
 
-#define OPPI_PERF 0
-#define OPPI_LOW_PWR 1
-#define OPPI_ULTRA_LOW_PWR 2
+#define OPPI_0 0
+#define OPPI_1 1
+#define OPPI_2 2
+#define OPPI_3 3
 #define OPPI_UNREQ -1
 
 #define KIR_AUTOK_SDIO 10
@@ -38,6 +40,7 @@
 #define vcorefs_request_dvfs_opp(a, b)	0
 #define vcorefs_get_hw_opp() OPPI_PERF
 #define spm_msdc_dvfs_setting(a, b)
+
 #endif
 
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
@@ -66,6 +69,11 @@ extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
+extern int msdc_dvfs_get_level(void);
+
+#ifndef vcorefs_get_hw_opp
+#define vcorefs_get_hw_opp()    msdc_dvfs_get_level()
+#endif
 
 #endif /* _AUTOK_DVFS_H_ */
 

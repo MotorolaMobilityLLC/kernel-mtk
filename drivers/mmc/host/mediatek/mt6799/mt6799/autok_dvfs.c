@@ -338,6 +338,21 @@ int wait_sdio_autok_ready(void *data)
 }
 EXPORT_SYMBOL(wait_sdio_autok_ready);
 
+int msdc_dvfs_get_level(void)
+{
+	struct msdc_host *host = mtk_msdc_host[0];
+	void __iomem *base = host->base;
+	int vcore, i;
+
+	MSDC_GET_FIELD(SDC_STS, SDC_STS_DVFS_LEVEL, vcore);
+
+	for (i = 0; i < NUM_OPP; i++) {
+		if (vcore & (1 << i))
+			return i;
+	}
+
+	return -1;
+}
 
 void sdio_autok_wait_dvfs_ready(void)
 {
@@ -364,8 +379,8 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
+	vcore = vcorefs_get_hw_opp();
 	if (!res) {
-		vcore = vcorefs_get_hw_opp();
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_LEVEL0;
 		res = host->autok_res[vcore];
@@ -394,8 +409,8 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
+	vcore = vcorefs_get_hw_opp();
 	if (!res) {
-		vcore = vcorefs_get_hw_opp();
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_LEVEL0;
 		res = host->autok_res[vcore];
@@ -520,11 +535,57 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	}
 
 	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPP_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
+}
+
+static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
+	unsigned addr, u8 in, u8 *out)
+{
+	struct mmc_command cmd = {0};
+	int err;
+
+	if (!host || fn > 7)
+		return -EINVAL;
+
+	/* sanity check */
+	if (addr & ~0x1FFFF)
+		return -EINVAL;
+
+	cmd.opcode = SD_IO_RW_DIRECT;
+	cmd.arg = write ? 0x80000000 : 0x00000000;
+	cmd.arg |= fn << 28;
+	cmd.arg |= (write && out) ? 0x08000000 : 0x00000000;
+	cmd.arg |= addr << 9;
+	cmd.arg |= in;
+	cmd.flags = MMC_RSP_SPI_R5 | MMC_RSP_R5 | MMC_CMD_AC;
+
+	err = mmc_wait_for_cmd(host, &cmd, 0);
+	if (err)
+		return err;
+
+	if (mmc_host_is_spi(host)) {
+		/* host driver already reported errors */
+	} else {
+		if (cmd.resp[0] & R5_ERROR)
+			return -EIO;
+		if (cmd.resp[0] & R5_FUNCTION_NUMBER)
+			return -EINVAL;
+		if (cmd.resp[0] & R5_OUT_OF_RANGE)
+			return -ERANGE;
+	}
+
+	if (out) {
+		if (mmc_host_is_spi(host))
+			*out = (cmd.resp[0] >> 8) & 0xFF;
+		else
+			*out = cmd.resp[0] & 0xFF;
+	}
+
+	return 0;
 }
 
 static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
@@ -645,7 +706,6 @@ end:
 
 int emmc_autok(void)
 {
-#if 1 /* Wait Light confirm */
 	struct msdc_host *host = mtk_msdc_host[0];
 	struct mmc_host *mmc = host->mmc;
 	void __iomem *base = host->base;
@@ -663,10 +723,8 @@ int emmc_autok(void)
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		if (host->autok_res_valid[i])
 			continue;
-		#if 0
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
-		#endif
 		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
 			host->autok_res[i]);
 	}
@@ -690,11 +748,10 @@ int emmc_autok(void)
 	}
 
 	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPP_UNREQ) != 0)
+		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
 	mmc_release_host(mmc);
-#endif
 
 	return 0;
 }
