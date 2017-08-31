@@ -859,33 +859,6 @@ static dma_addr_t local_buf_dma;
 static const struct firmware *spm_fw[DYNA_LOAD_PCM_MAX];
 
 int spm_fw_count = DYNA_LOAD_PCM_MAX;
-void *get_spm_firmware_version(uint32_t index)
-{
-	void *ptr = NULL;
-#if 0
-	int loop = 30;
-
-	while (dyna_load_pcm_done == 0 && loop > 0) {
-		loop--;
-		msleep(100);
-	}
-#endif
-
-	if (dyna_load_pcm_done) {
-		if (index == 0) {
-			ptr = (void *)&spm_fw_count;
-			spm_crit("SPM firmware version count = %d\n", spm_fw_count);
-		} else if (index <= DYNA_LOAD_PCM_MAX) {
-			ptr = dyna_load_pcm[index - 1].version;
-			spm_crit("SPM firmware version(0x%x) = %s\n", index - 1, (char *)ptr);
-		}
-	} else {
-		spm_crit("SPM firmware is not ready, dyna_load_pcm_done = %d\n", dyna_load_pcm_done);
-	}
-
-	return ptr;
-}
-EXPORT_SYMBOL(get_spm_firmware_version);
 
 /*Reserved memory by device tree!*/
 int reserve_memory_spm_fn(struct reserved_mem *rmem)
@@ -981,7 +954,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		spm_fw_count++;
 	}
 
-#if defined(CONFIG_ARCH_MT6755) /*|| defined(CONFIG_MACH_MT6757)*/
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
 	/* check addr_2nd */
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
 		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
@@ -1009,6 +982,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		vcorefs_late_init_dvfs();
 #endif
 		dyna_load_pcm_done = 1;
+		spm_crit("SPM firmware is ready, dyna_load_pcm_done = %d\n", dyna_load_pcm_done);
 	}
 
 	return err;
@@ -1024,6 +998,37 @@ int spm_load_firmware_status(void)
 {
 	return dyna_load_pcm_done;
 }
+
+void *get_spm_firmware_version(uint32_t index)
+{
+	void *ptr = NULL;
+#if 0
+	int loop = 30;
+
+	while (dyna_load_pcm_done == 0 && loop > 0) {
+		loop--;
+		msleep(100);
+	}
+#endif
+
+	if (!dyna_load_pcm_done)
+		spm_load_pcm_firmware_nodev();
+
+	if (dyna_load_pcm_done) {
+		if (index == 0) {
+			ptr = (void *)&spm_fw_count;
+			spm_crit("SPM firmware version count = %d\n", spm_fw_count);
+		} else if (index <= DYNA_LOAD_PCM_MAX) {
+			ptr = dyna_load_pcm[index - 1].version;
+			spm_crit("SPM firmware version(0x%x) = %s\n", index - 1, (char *)ptr);
+		}
+	} else {
+		spm_crit("SPM firmware is not ready, dyna_load_pcm_done = %d\n", dyna_load_pcm_done);
+	}
+
+	return ptr;
+}
+EXPORT_SYMBOL(get_spm_firmware_version);
 
 static int spm_dbg_show_firmware(struct seq_file *s, void *unused)
 {
