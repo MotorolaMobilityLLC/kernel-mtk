@@ -1326,7 +1326,7 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 	spin_unlock_irqrestore(&musb->lock, flags);
 }
 
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 static void musb_gadget_suspend_control(struct usb_ep *ep)
 {
 	struct musb_ep	*musb_ep = to_musb_ep(ep);
@@ -1398,37 +1398,6 @@ static void musb_gadget_resume_control(struct usb_ep *ep)
 #endif
 	spin_unlock_irqrestore(&musb->lock, flags);
 }
-
-static int musb_gadget_fifo_empty(struct usb_ep *ep)
-{
-	struct musb_ep *musb_ep = to_musb_ep(ep);
-	struct musb *musb = musb_ep->musb;
-	u8		epnum = musb_ep->current_epnum;
-	unsigned long	flags;
-	u32 txcsr0 = 0;
-	int ret = -EAGAIN;
-
-	spin_lock_irqsave(&musb->lock, flags);
-
-	if (musb_ep->is_in) { /* TX */
-		txcsr0 = os_readl(musb->endpoints[epnum].addr_txcsr0);
-
-		if (txcsr0 & TX_FIFOEMPTY) {
-#ifdef USE_SSUSB_QMU
-			if (_ex_mu3d_hal_qmu_status_done(epnum, USB_TX))
-				ret = 1;
-#else
-			ret = 1;
-#endif
-		}
-	} else {
-		ret = -ENOTSUPP;
-	}
-
-	spin_unlock_irqrestore(&musb->lock, flags);
-
-	return ret;
-}
 #endif
 
 static const struct usb_ep_ops musb_ep_ops = {
@@ -1442,10 +1411,9 @@ static const struct usb_ep_ops musb_ep_ops = {
 	.set_wedge = musb_gadget_set_wedge,
 	.fifo_status = musb_gadget_fifo_status,
 	.fifo_flush = musb_gadget_fifo_flush,
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 	.suspend_control	= musb_gadget_suspend_control,
 	.resume_control	= musb_gadget_resume_control,
-	.fifo_empty = musb_gadget_fifo_empty
 #endif
 };
 
