@@ -87,7 +87,7 @@
 #define STP_PSM_WMT_EVENT_DISABLE_MONITOR_TX_HIGH_DENSITY   (7)
 #define STP_PSM_WMT_EVENT_DISABLE_MONITOR_RX_HIGH_DENSITY   (8)
 
-#define STP_PSM_DBG_SIZE (16)
+#define STP_PSM_DBG_SIZE (48)
 
 /* OP command ring buffer : must be power of 2 */
 #define STP_OP_BUF_SIZE (16)
@@ -190,6 +190,8 @@ typedef struct {
 	UINT32 sec;
 	UINT32 usec;
 	UINT32 pid;
+	UINT64 l_sec;
+	ULONG l_nsec;
 } STP_PSM_ENTRY_T;
 
 typedef struct stp_psm_record {
