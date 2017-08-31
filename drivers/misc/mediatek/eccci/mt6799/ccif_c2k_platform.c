@@ -348,7 +348,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(apmixed_base, MDPLL_CON3, ccif_read32(apmixed_base, MDPLL_CON3) & 0xEFFFFFFF);
 		CCCI_BOOTUP_LOG(md->index, TAG, "MDPLL1_CON3 = 0x%x\n", ccif_read32(apmixed_base, MDPLL_CON3));
 		/* step 5.2: release c2ksys_rstb */
-#if 1
+#if 0
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 		TOP_RGU_WDT_SWSYSRST,
 		(ccif_read32(md_ctrl->hw_info->toprgu_base, TOP_RGU_WDT_SWSYSRST) | 0x88000000) & (~(0x1 << 15)));
