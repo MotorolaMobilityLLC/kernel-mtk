@@ -3906,6 +3906,74 @@ static void testcase_run_command_on_SRAM(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+/**
+ * Make sure driver support linux wait_event_timeout via GCE command
+ * Coverage:
+ *     Can execute before timeout (return remaining time)
+ *     Can execute after timeout (return 0)
+ *     Make sure multiple wait_event_timeout can also work
+ */
+static void testcase_wait_event_timeout(u32 max_round)
+{
+	struct cmdqRecStruct *handle;
+	struct TaskStruct *pTask;
+	cmdqBackupSlotHandle slot_handle;
+	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
+	const CMDQ_VARIABLE loop_debug_cpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_SPR_FOR_LOOP_DEBUG;
+	CMDQ_VARIABLE wait_result_var = CMDQ_TASK_CPR_INITIAL_VALUE;
+	u32 begin_time, end_time, wait_result, begin_tpr, end_tpr, loop_count;
+	s32 duration_time;
+	u32 round;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_alloc_mem(&slot_handle, 6);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	/* round wait: 3ms, 5ms, 7ms, 9ms, 11ms*/
+	for (round = 0; round < max_round; round++) {
+		wait_result_var = CMDQ_TASK_CPR_INITIAL_VALUE;
+		cmdq_task_reset(handle);
+		cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+		cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
+		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 1);
+		cmdq_op_wait_event_timeout(handle, &wait_result_var, CMDQ_SYNC_TOKEN_USER_0, 10000);
+		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 2);
+		cmdq_op_read_reg_to_mem(handle, slot_handle, 3, CMDQ_APXGPT2_COUNT);
+		cmdq_op_backup_CPR(handle, wait_result_var, slot_handle, 4);
+		cmdq_op_backup_CPR(handle, loop_debug_cpr, slot_handle, 5);
+
+		cmdq_op_finalize_command(handle, false);
+		_test_submit_async(handle, &pTask);
+
+		/* sleep 5ms and trigger event */
+		mdelay(3 + 2 * round);
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+		cmdqCoreDebugDumpCommand(pTask);
+
+		cmdqCoreWaitAndReleaseTask(pTask, 500);
+
+		cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
+		cmdq_cpu_read_mem(slot_handle, 3, &end_time);
+		duration_time = (end_time - begin_time) * 76;
+		cmdq_cpu_read_mem(slot_handle, 1, &begin_tpr);
+		cmdq_cpu_read_mem(slot_handle, 2, &end_tpr);
+		cmdq_cpu_read_mem(slot_handle, 4, &wait_result);
+		cmdq_cpu_read_mem(slot_handle, 5, &loop_count);
+		CMDQ_LOG("Round#%d wait API duration time, %u, ns\n", round, duration_time);
+		CMDQ_LOG("Round#%d wait result: 0x%08x = %u ns\n", round, wait_result, wait_result * 38);
+		CMDQ_LOG("Round#%d wait loop count: %u\n", round, loop_count);
+		CMDQ_LOG("Round#%d TPR before: 0x%08x, after: 0x%08x, %u ns\n",
+			round, begin_tpr, end_tpr, (end_tpr - begin_tpr)*38);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
 static void testcase_mmsys_performance(int32_t test_id)
 {
 	switch (test_id) {
@@ -4434,6 +4502,12 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 145:
+		testcase_wait_event_timeout(5);
+		break;
+	case 144:
+		testcase_wait_event_timeout(1);
+		break;
 	case 143:
 		testcase_run_command_on_SRAM();
 		break;
