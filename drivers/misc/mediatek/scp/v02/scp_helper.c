@@ -1613,24 +1613,26 @@ int scp_request_freq(void)
 	if (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
 		/*  pll CCF ctrl */
 		scp_pll_ctrl_set(1, EXPECTED_FREQ_REG);
-	}
 
-	while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
-		ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
-		if (ret != DONE)
-			pr_err("[SCP] set freq wait ipi=%d\n", ret);
+		while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
+			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
+			if (ret != DONE)
+				pr_err("[SCP] set freq wait ipi=%d\n", ret);
 
-		mdelay(2);
-		timeout -= 1; /*try 50 times, total about 100ms*/
-		if (timeout <= 0) {
-			scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
-			flag = SET_PLL_FAIL;
-			goto fail_to_set_freq;
+			mdelay(2);
+			timeout -= 1; /*try 50 times, total about 100ms*/
+			if (timeout <= 0) {
+				scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
+				flag = SET_PLL_FAIL;
+				goto fail_to_set_freq;
+			}
 		}
+
+		scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
 	}
-	scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
-	/*  set pmic sshub_sleep_vcore_ctrl */
-	ret = scp_set_pmic_vcore(EXPECTED_FREQ_REG);
+
+	/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */
+	ret = scp_set_pmic_vcore(CURRENT_FREQ_REG);
 	if (ret != 0) {
 		flag = SET_PMIC_VOLT_FAIL;
 		goto fatal_error;
@@ -1643,13 +1645,12 @@ fail_to_set_freq:
 	scp_A_dump_regs();
 	wake_unlock(&scp_suspend_lock);
 	pr_err("[SCP] set freq fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	WARN_ON(1);
 	return -1;
 fatal_error:
 	scp_A_dump_regs();
-	if (flag == SET_PLL_FAIL)
-		pr_err("[SCP] set pll fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
-	if (flag == SET_PMIC_VOLT_FAIL)
-		pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	wake_unlock(&scp_suspend_lock);
+	pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
 	WARN_ON(1);
 	return -1;
 }
