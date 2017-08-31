@@ -2988,6 +2988,7 @@ void mjc_mtcmos_patch(int on)
 		clk_writel(MJC_CG_CLR, 0x1 << 4);
 		/* do something */
 	} else {
+		clk_writel(MJC_CG_CLR, 0x1 << 4);
 		clk_writel(MM_CG_CLR2, 0x0800);
 	}
 }
