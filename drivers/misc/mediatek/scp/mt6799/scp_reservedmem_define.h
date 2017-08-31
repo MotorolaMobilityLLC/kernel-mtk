@@ -27,18 +27,14 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x800000,/*8MB*/
 	},
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	{
 		.num = MP3_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x400000,/*4MB*/
 	},
-	{
-		.num = OPENDSP_MEM_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x200000,/*2MB*/
-	},
+#endif
 	{
 		.num = SCP_A_LOGGER_MEM_ID,
 		.start_phys = 0x0,
@@ -51,6 +47,20 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x200000,/*2MB*/
 	},
+	{
+		.num = AUDIO_IPI_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x200000,/*2MB*/
+	},
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	{
+		.num = SPK_PROTECT_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x30000,/*192KB*/
+	},
+#endif
 };
 
 

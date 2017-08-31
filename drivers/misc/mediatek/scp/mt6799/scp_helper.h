@@ -99,12 +99,17 @@ struct scp_work_struct {
 
 /* scp reserve memory ID definition*/
 typedef enum {
-	VOW_MEM_ID = 0,
+	VOW_MEM_ID,
 	SENS_MEM_ID,
+#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	MP3_MEM_ID,
-	OPENDSP_MEM_ID,
+#endif
 	SCP_A_LOGGER_MEM_ID,
 	SCP_B_LOGGER_MEM_ID,
+	AUDIO_IPI_MEM_ID,
+#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	SPK_PROTECT_MEM_ID,
+#endif
 	NUMS_MEM_ID,
 } scp_reserve_mem_id_t;
 

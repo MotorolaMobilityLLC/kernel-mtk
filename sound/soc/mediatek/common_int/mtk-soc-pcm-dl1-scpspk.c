@@ -377,7 +377,7 @@ static unsigned int packIpi_payload(uint16_t msg_id, uint32_t param1, uint32_t p
 static int dl1spk_get_scpdram_buffer(void)
 {
 	memset(&ScpReserveBuffer, 0, sizeof(ScpReserveBuffer));
-	ScpReserveBuffer.num = MP3_MEM_ID;
+	ScpReserveBuffer.num = SPK_PROTECT_MEM_ID;
 	p_resv_dram_normal = get_reserved_dram();
 	ScpReserveBuffer.start_phys = scp_get_reserve_mem_phys(ScpReserveBuffer.num);
 	ScpReserveBuffer.start_virt = scp_get_reserve_mem_virt(ScpReserveBuffer.num);
