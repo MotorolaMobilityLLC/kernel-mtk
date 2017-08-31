@@ -178,7 +178,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
 	.ihdr_support = 1,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	.sensor_mode_num = 5,	  //support sensor mode num
+	.sensor_mode_num = 7,	  //support sensor mode num
 
 	.cap_delay_frame = 2,		//enter capture delay frame num
 	.pre_delay_frame = 2,		//enter preview delay frame num
@@ -3048,6 +3048,16 @@ static kal_uint32 get_sensor_temperature(void)
     return temperature;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable)
+		write_cmos_sensor(0x0100, 0X01);
+	else
+		write_cmos_sensor(0x0100, 0x00);
+	return ERROR_NONE;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 							 UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -3262,6 +3272,16 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
 			*feature_return_para_32 = get_sensor_temperature();
 			*feature_para_len=4;
+			break;
+		case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+			streaming_control(KAL_FALSE);
+			break;
+		case SENSOR_FEATURE_SET_STREAMING_RESUME:
+			LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n", *feature_data);
+			if (*feature_data != 0)
+				set_shutter(*feature_data);
+			streaming_control(KAL_TRUE);
 			break;
 		default:
 			break;
