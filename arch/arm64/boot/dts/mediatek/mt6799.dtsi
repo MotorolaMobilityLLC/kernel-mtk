@@ -95,6 +95,13 @@
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x44400000 0 0x10000>;
 		};
+
+		spm-reserve-memory@44610000 {
+			compatible = "mediatek,spm-reserve-memory";
+			no-map;
+			reg = <0 0x44610000 0 0x10000>;
+		};
+
 	};
 
 	gic: interrupt-controller@40001000 {
