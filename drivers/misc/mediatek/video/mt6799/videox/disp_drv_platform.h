@@ -47,6 +47,7 @@
 /* #define MTK_NO_DISP_IN_LK */
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
+/* #define MTK_CAPTURE_SUPPORT */
 
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12)
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(6)
