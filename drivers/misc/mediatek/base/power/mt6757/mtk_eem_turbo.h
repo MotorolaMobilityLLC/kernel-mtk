@@ -13,7 +13,7 @@
 
 #ifndef _MT_EEM_TURBO_
 #define _MT_EEM_TURBO_
-/* #define EEM_ENABLE_VTURBO */
+#define EEM_ENABLE_VTURBO
 /* #define EEM_ENABLE_TTURBO */
 /* #define EEM_ENABLE_ITURBO */
 
