@@ -85,7 +85,7 @@ int is_vcorefs_can_work(void)
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	int r = 0;
 
-	mutex_lock(&vcorefs_mutex);
+	/* mutex_lock(&vcorefs_mutex); */
 
 	if (pwrctrl->init_done && feature_en)
 		r = 1;		/* ready to use vcorefs */
@@ -94,7 +94,7 @@ int is_vcorefs_can_work(void)
 	else
 		r = 0;		/* init not finish, please wait */
 
-	mutex_unlock(&vcorefs_mutex);
+	/* mutex_unlock(&vcorefs_mutex); */
 
 	return r;
 }
