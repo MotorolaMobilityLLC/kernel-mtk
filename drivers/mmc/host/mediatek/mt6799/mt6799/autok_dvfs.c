@@ -802,7 +802,7 @@ int emmc_autok(void)
 	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPP_UNREQ) != 0)
 		pr_err("vcorefs_request_dvfs_opp@OPP_UNREQ fail!\n");
 
-	spm_msdc_dvfs_setting(host->dvfs_id, 1);
+	/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
 
 	mmc_release_host(host->mmc);
 
