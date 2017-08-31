@@ -769,7 +769,7 @@ typedef struct {
 ********************************************************************************/
 #define ISP_ISR_MAX_NUM 32
 #define INT_ERR_WARN_TIMER_THREAS 1000
-#define INT_ERR_WARN_MAX_TIME 3
+#define INT_ERR_WARN_MAX_TIME 1
 
 typedef struct {
 	MUINT32 m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
@@ -12482,7 +12482,7 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 	MUINT32     delta_wcnt = 0, wridx = 0, wridx_prev1 = 0, wridx_prev2 = 0, i = 0;
 	MUINT32     delta_time = 0, max_delta_time = 0;
 	S_START_T   time_prev1, time_prev2;
-
+	MBOOL dmao_mask = MFALSE;/*To shrink error log, only rrzo print error log*/
 	/*
 	 * Patch timestamp and WCNT base on current HW WCNT and
 	 * previous SW WCNT value, and calculate difference
@@ -12499,6 +12499,7 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 			break;
 		case _rrzo_:
 			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_RRZO_CTL2(reg_module));
+			dmao_mask = MTRUE;
 			break;
 		case _ufeo_:
 			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_UFEO_CTL2(reg_module));
@@ -12545,10 +12546,11 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 
 	if (((fbc_ctrl2.Bits.WCNT + frmPeriod) & 63) ==
 		IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt) {
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"Cam:%d dma:%d ignore compensate wcnt_%d_%d\n",
-			module, dma_id, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt,
-			fbc_ctrl2.Bits.WCNT);
+		if (dmao_mask)
+			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
+				"Cam:%d dma:%d ignore compensate wcnt_%d_%d\n",
+				module, dma_id, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt,
+				fbc_ctrl2.Bits.WCNT);
 		return 0;
 	}
 
@@ -12558,14 +12560,17 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 		delta_wcnt = fbc_ctrl2.Bits.WCNT - IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt;
 
 	if (delta_wcnt > 255) {
-		LOG_ERR("ERROR: Cam:%d dma:%d WRONG WCNT:%d_%d_%d\n",
-			module, dma_id, delta_wcnt,
-			IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT);
+		if (dmao_mask)
+			LOG_ERR("ERROR: Cam:%d dma:%d WRONG WCNT:%d_%d_%d\n",
+				module, dma_id, delta_wcnt,
+				IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT);
 		return -EFAULT;
-	} else if (delta_wcnt > 6)
-		LOG_ERR("WARNING: Cam:%d dma:%d SUSPICIOUS WCNT:%d_%d_%d\n",
-			module, dma_id, delta_wcnt,
-			IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT);
+	} else if (delta_wcnt > 6) {
+		if (dmao_mask)
+			LOG_ERR("WARNING: Cam:%d dma:%d SUSPICIOUS WCNT:%d_%d_%d\n",
+				module, dma_id, delta_wcnt,
+				IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT);
+	}
 	else if (delta_wcnt == 0)
 		return 0;
 
@@ -12586,8 +12591,9 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 		((sec == time_prev1.sec) && (usec > time_prev1.usec))) {
 		max_delta_time = ((sec - time_prev1.sec)*1000000 + usec) - time_prev1.usec;
 	} else {
-		LOG_ERR("ERROR: Cam:%d dma:%d current timestamp: cur: %d.%06d prev1: %d.%06d\n",
-			module, dma_id, sec, usec, time_prev1.sec, time_prev1.usec);
+		if (dmao_mask)
+			LOG_ERR("ERROR: Cam:%d dma:%d current timestamp: cur: %d.%06d prev1: %d.%06d\n",
+				module, dma_id, sec, usec, time_prev1.sec, time_prev1.usec);
 		max_delta_time = 0;
 	}
 
@@ -12595,15 +12601,17 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 		((time_prev1.sec == time_prev2.sec) && (time_prev1.usec > time_prev2.usec)))
 		delta_time = ((time_prev1.sec - time_prev2.sec)*1000000 + time_prev1.usec) - time_prev2.usec;
 	else {
-		LOG_ERR("ERROR: Cam:%d dma:%d previous timestamp: prev1: %d.%06d prev2: %d.%06d\n",
-			module, dma_id, time_prev1.sec, time_prev1.usec, time_prev2.sec, time_prev2.usec);
+		if (dmao_mask)
+			LOG_ERR("ERROR: Cam:%d dma:%d previous timestamp: prev1: %d.%06d prev2: %d.%06d\n",
+				module, dma_id, time_prev1.sec, time_prev1.usec, time_prev2.sec, time_prev2.usec);
 		delta_time = 0;
 	}
 
 	if (delta_time > (max_delta_time / delta_wcnt)) {
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"WARNING: Cam:%d dma:%d delta time too large: cur %dus max %dus patch wcnt: %d\n",
-			module, dma_id, delta_time, max_delta_time, delta_wcnt);
+		if (dmao_mask)
+			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
+				"WARNING: Cam:%d dma:%d delta time too large: cur %dus max %dus patch wcnt: %d\n",
+				module, dma_id, delta_time, max_delta_time, delta_wcnt);
 		delta_time = max_delta_time / delta_wcnt;
 	}
 
@@ -12617,14 +12625,17 @@ static int32_t ISP_CompensateMissingSofTime(ISP_DEV_NODE_ENUM reg_module,
 		ISP_PushBufTimestamp(module, dma_id, time_prev1.sec, time_prev1.usec, frmPeriod);
 	}
 
-	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-		"Cam:%d dma:%d wcnt:%d_%d_%d T:%d.%06d_.%06d_%d.%06d\n",
-		module, dma_id, delta_wcnt, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT,
-		sec, usec, delta_time, time_prev1.sec, time_prev1.usec);
+	if (dmao_mask)
+		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
+			"Cam:%d dma:%d wcnt:%d_%d_%d T:%d.%06d_.%06d_%d.%06d\n",
+			module, dma_id, delta_wcnt, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt,
+			fbc_ctrl2.Bits.WCNT, sec, usec, delta_time, time_prev1.sec, time_prev1.usec);
 
 	if (IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt != fbc_ctrl2.Bits.WCNT) {
-		LOG_ERR("ERROR: Cam:%d dma:%d strange WCNT SW_HW: %d_%d\n",
-			module, dma_id, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt, fbc_ctrl2.Bits.WCNT);
+		if (dmao_mask)
+			LOG_ERR("ERROR: Cam:%d dma:%d strange WCNT SW_HW: %d_%d\n",
+				module, dma_id, IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt,
+				fbc_ctrl2.Bits.WCNT);
 		IspInfo.TstpQInfo[module].Dmao[dma_id].PrevFbcWCnt = fbc_ctrl2.Bits.WCNT;
 	}
 
@@ -14117,12 +14128,12 @@ irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			else
 				FrmStat_pdo = CAM_FST_DROP_FRAME;
 
-			if (IspInfo.TstpQInfo[module].DmaEnStatus[_imgo_])
-				ISP_CompensateMissingSofTime(reg_module, module, _imgo_,
-					sec, usec, frmPeriod);
-
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_rrzo_])
 				ISP_CompensateMissingSofTime(reg_module, module, _rrzo_,
+					sec, usec, frmPeriod);
+
+			if (IspInfo.TstpQInfo[module].DmaEnStatus[_imgo_])
+				ISP_CompensateMissingSofTime(reg_module, module, _imgo_,
 					sec, usec, frmPeriod);
 
 			if (IspInfo.TstpQInfo[module].DmaEnStatus[_ufeo_])
