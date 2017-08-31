@@ -1,5 +1,33 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #ifndef WMM_HDR_H
 #define WMM_HDR_H
+
+/*******************************************************************************
+*                         C O M P I L E R   F L A G S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                    E X T E R N A L   R E F E R E N C E S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                              C O N S T A N T S
+********************************************************************************
+*/
 
 #define VENDOR_OUI_TYPE_TSRS 8
 #define VENDOR_OUI_TYPE_TSM	7
@@ -28,6 +56,11 @@
 
 /*WMM-2.2.11 WMM TSPEC IE*/
 #define ELEM_MAX_LEN_WMM_TSPEC 61
+
+/*******************************************************************************
+*                             D A T A   T Y P E S
+********************************************************************************
+*/
 
 enum WMM_ADDTS_STATUS {
 	ADDTS_ACCEPTED = 0,
@@ -122,6 +155,23 @@ struct MSG_TS_OPERATE {
 	PARAM_QOS_TSPEC rTspecParam;
 };
 
+/*******************************************************************************
+*                            P U B L I C   D A T A
+********************************************************************************
+*/
+
+extern UINT_8 const aucUp2ACIMap[8];
+
+/*******************************************************************************
+*                           P R I V A T E   D A T A
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                                 M A C R O S
+********************************************************************************
+*/
+
 #define WMM_TSINFO_TRAFFIC_TYPE(tsinfo) (tsinfo & BIT(0))
 #define WMM_TSINFO_TSID(tsinfo) ((tsinfo & BITS(1, 4)) >> 1)
 #define WMM_TSINFO_DIR(tsinfo) ((tsinfo & BITS(5, 6)) >> 5)
@@ -134,7 +184,11 @@ struct MSG_TS_OPERATE {
 #define TSM_TRIGGER_CONSECUTIVE	  BIT(1)
 #define TSM_TIRGGER_DELAY			  BIT(2)
 
-extern UINT_8 const aucUp2ACIMap[8];
+/*******************************************************************************
+*                   F U N C T I O N   D E C L A R A T I O N S
+********************************************************************************
+*/
+
 VOID wmmFillTsinfo(P_PARAM_QOS_TSINFO prTsInfo, P_UINT_8 pucTsInfo);
 VOID wmmSetupTspecTimeOut(P_ADAPTER_T prAdapter, ULONG ulParam);
 void wmmStartTsmMeasurement(P_ADAPTER_T prAdapter, ULONG ulParam);
