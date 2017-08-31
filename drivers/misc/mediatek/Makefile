@@ -173,7 +173,7 @@ obj-y += performance/
 
 # gator driver is platform-independent
 ifneq ($(wildcard $(srctree)/$(src)/gator-driver/),)
-#obj-$(CONFIG_GATOR_DRIVER) += gator-driver/
+obj-$(CONFIG_GATOR_DRIVER) += gator-driver/
 endif # gator-driver folder exist
 
 #obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += trustzone/
