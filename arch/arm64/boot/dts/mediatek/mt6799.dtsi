@@ -1727,50 +1727,6 @@
 		clock-names = "uart1-main";
 	};
 
-	apuart2: apuart2@11040000 {
-		cell-index = <2>;
-		compatible = "mediatek,mt6735-uart";
-		reg = <0 0x11040000 0 0x1000>, /* UART base */
-			  <0 0x11000780 0 0x80>, /* DMA Tx base */
-			  <0 0x11000800 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				 <GIC_SPI 138 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
-				 <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-	};
-
-	apuart3: apuart3@11050000 {
-		cell-index = <3>;
-		compatible = "mediatek,mt6735-uart";
-		reg = <0 0x11050000 0 0x1000>, /* UART base */
-			  <0 0x11000880 0 0x80>, /* DMA Tx base */
-			  <0 0x11000900 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				 <GIC_SPI 140 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
-				 <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-	};
-	/* 11/24 */
-	apuart4: apuart4@11060000 {
-		cell-index = <3>;
-		compatible = "mediatek,mt6735-uart";
-		reg = <0 0x11060000 0 0x1000>, /* UART base */
-			  <0 0x11000980 0 0x80>, /* DMA Tx base */
-			  <0 0x11000a00 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				 <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
-				 <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-	};
-
-	apuart5: apuart5@11080000 {
-		cell-index = <3>;
-		compatible = "mediatek,mt6735-uart";
-		reg = <0 0x11080000 0 0x1000>, /* UART base */
-			  <0 0x11000a80 0 0x80>, /* DMA Tx base */
-			  <0 0x11000b00 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				 <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
-				 <GIC_SPI 145 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-	};
-
 	pwm@11070000 {
 		compatible = "mediatek,pwm";
 		reg = <0 0x11070000 0 0x1000>;
