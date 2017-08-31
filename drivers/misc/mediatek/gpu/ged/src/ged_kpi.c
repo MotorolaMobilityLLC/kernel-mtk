@@ -489,12 +489,7 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 	if (psHead == main_head) {
 		g_elapsed_time_per_sec += psKPI->ullTimeStampH - g_pre_TimeStampH;
 		g_response_time_accum += psKPI->ullTimeStampH - g_pre_TimeStamp1;
-
-		if (psKPI->ullTimeStamp1 > g_pre_TimeStamp2)
-			g_gpu_time_accum += psKPI->t_gpu;
-		else
-			g_gpu_time_accum += psKPI->t_gpu;
-
+		g_gpu_time_accum += psKPI->t_gpu;
 		g_gpu_remained_time_accum += psKPI->ullTimeStampH - psKPI->ullTimeStamp2;
 		g_cpu_remained_time_accum += psKPI->ullTimeStampS - psKPI->ullTimeStamp1;
 		g_gpu_freq_accum += psKPI->gpu_freq;
