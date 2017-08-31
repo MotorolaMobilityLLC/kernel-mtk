@@ -321,8 +321,10 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	BOOLEAN fgTimeout;
 	BOOLEAN fgResult;
 	BOOLEAN fgReady = FALSE;
-	UINT_32 u4DriverOwnTime = 0, u4Cr4ReadyTime = 0;
+	UINT_32 u4SdioWkupTime = 0, u4DriverOwnTime = 0, u4Cr4ReadyTime = 0;
 	P_GL_HIF_INFO_T prHifInfo;
+
+	KAL_TIME_INTERVAL_DECLARATION();
 
 	ASSERT(prAdapter);
 
@@ -340,7 +342,12 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	i = 0;
 	j = 0;
 
+	KAL_REC_TIME_START();
 	glWakeupSdio(prAdapter->prGlueInfo);
+	KAL_REC_TIME_END();
+	u4SdioWkupTime = KAL_GET_TIME_INTERVAL();
+
+	KAL_REC_TIME_START();
 
 	while (1) {
 		HAL_LP_OWN_RD(prAdapter, &fgResult);
@@ -414,14 +421,16 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		kalUsleep_range(LP_OWN_BACK_LOOP_DELAY_MIN_US, LP_OWN_BACK_LOOP_DELAY_MAX_US);
 		i++;
 	}
-	u4DriverOwnTime = ((kalGetTimeTick() >= u4CurrTick) ?
-			(kalGetTimeTick() - u4CurrTick) : (kalGetTimeTick() + (~u4CurrTick)));
+	KAL_REC_TIME_END();
+	u4DriverOwnTime = KAL_GET_TIME_INTERVAL();
 
 	/* 1. Driver need to polling until CR4 ready, then could do normal Tx/Rx */
 	/* 2. Send a dummy command to change data path to store-forward mode */
 #if 1
 	if (prAdapter->fgIsFwDownloaded) {
 		u4CurrTick = kalGetTimeTick();
+		KAL_REC_TIME_START();
+
 		while (1) {
 			HAL_WIFI_FUNC_READY_CHECK(prAdapter, WIFI_FUNC_READY_BITS, &fgReady);
 
@@ -486,12 +495,13 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 			halTagIntLog(prAdapter, SDIO_INT_WAKEUP_DSLP);
 		}
-		u4Cr4ReadyTime = ((kalGetTimeTick() >= u4CurrTick) ?
-				(kalGetTimeTick() - u4CurrTick) : (kalGetTimeTick() + (~u4CurrTick)));
+		KAL_REC_TIME_END();
+		u4Cr4ReadyTime = KAL_GET_TIME_INTERVAL();
+
 	}
 #endif
-	DBGLOG(NIC, INFO, "DRIVER OWN %d, %d, DSLP %s, count %d\n",
-		u4DriverOwnTime, u4Cr4ReadyTime, ((j == 0x77889901)?"1":"0"), i);
+	DBGLOG(NIC, INFO, "DRIVER OWN %d, %d, %d, DSLP %s, count %d\n",
+		u4SdioWkupTime, u4DriverOwnTime, u4Cr4ReadyTime, ((j == 0x77889901)?"1":"0"), i);
 
 	return fgStatus;
 }

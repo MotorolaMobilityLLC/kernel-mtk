@@ -184,8 +184,8 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 #if CFG_CHIP_RESET_SUPPORT
 #define glDoCoreDump() \
 		do { \
-			DBGLOG(JOIN, INFO, "do core dump in %s\n", __func__); \
-			mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40); \
+			DBGLOG(INIT, INFO, "do core dump in %s\n", __func__); \
+			mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
 		} while (0)
 #endif
 
