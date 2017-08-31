@@ -126,55 +126,55 @@ typedef enum {
 } AUDIO_APLL_DIVIDER_GROUP;
 
 static const uint32 mMemIfSampleRate[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_DAC_CON1, 0, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_DAC_CON1, 4, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_DAC_CON0, 24, 0x3}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON0, 12, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 12, 0xf}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_DAC_CON1, 30, 0x3}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_DAC_CON0, 16, 0xf}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 20, 0xf}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_DAC_CON1, 8, 0xf}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 0, 0xf},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 4, 0xf},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 16, 0xf},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_DAC_CON0, 24, 0x3},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_DAC_CON0, 12, 0xf},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 12, 0xf},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_DAC_CON1, 30, 0x3},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_DAC_CON0, 16, 0xf},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 20, 0xf},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_DAC_CON1, 8, 0xf},
 };
 
 static const uint32 mMemIfChannels[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_DAC_CON1, 21, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_DAC_CON1, 22, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 27, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_DAC_CON1, 23, 0x1}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 24, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 10, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_DAC_CON1, 21, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_DAC_CON1, 22, 0x1},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 27, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_DAC_CON1, 23, 0x1},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 24, 0x1},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 10, 0x1},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemIfMonoChSelect[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_DAC_CON1, 28, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_DAC_CON1, 25, 0x1}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_DAC_CON0, 11, 0x1}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_DAC_CON1, 28, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_DAC_CON1, 25, 0x1},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_DAC_CON0, 11, 0x1},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /* reg, bit position, bit mask */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL */
-	{AFE_DAC_CON1, 29, 0x1}, /* Soc_Aud_Digital_Block_MEM_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL3 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_AWB */
-	{AFE_DAC_CON0, 26, 0x1}, /* Soc_Aud_Digital_Block_MEM_MOD_DAI */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_DL1_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
+	[Soc_Aud_Digital_Block_MEM_DL1] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DL2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_DAI] = {AFE_DAC_CON1, 29, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL3] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_AWB] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_MOD_DAI] = {AFE_DAC_CON0, 26, 0x1},
+	[Soc_Aud_Digital_Block_MEM_DL1_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_VUL_DATA2] = {AFE_REG_UNDEFINED, 0, 0x0},
+	[Soc_Aud_Digital_Block_MEM_I2S] = {AFE_REG_UNDEFINED, 0, 0x0},
 };
 
 static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = { /* audio block, reg, bit position */
