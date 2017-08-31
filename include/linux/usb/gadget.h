@@ -138,6 +138,12 @@ struct usb_ep_ops {
 
 	int (*fifo_status) (struct usb_ep *ep);
 	void (*fifo_flush) (struct usb_ep *ep);
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	void (*suspend_control)(struct usb_ep *ep);
+	void (*resume_control)(struct usb_ep *ep);
+	int (*fifo_empty)(struct usb_ep *ep);
+#endif
 };
 
 /**
@@ -525,6 +531,28 @@ static inline void usb_ep_fifo_flush(struct usb_ep *ep)
 	if (ep->ops->fifo_flush)
 		ep->ops->fifo_flush(ep);
 }
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+static inline void usb_ep_suspend_control(struct usb_ep *ep)
+{
+	if (ep->ops->suspend_control)
+		ep->ops->suspend_control(ep);
+}
+
+static inline void usb_ep_resume_control(struct usb_ep *ep)
+{
+	if (ep->ops->resume_control)
+		ep->ops->resume_control(ep);
+}
+
+static inline int usb_ep_fifo_empty(struct usb_ep *ep)
+{
+	if (ep->ops->fifo_empty)
+		return ep->ops->fifo_empty(ep);
+
+	return -ENOTSUPP;
+}
+#endif
 
 
 /*-------------------------------------------------------------------------*/
@@ -1069,6 +1097,10 @@ struct usb_gadget_driver {
 	void			(*suspend)(struct usb_gadget *);
 	void			(*resume)(struct usb_gadget *);
 	void			(*reset)(struct usb_gadget *);
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	int			(*md_msg_hdlr)(struct usb_gadget *, int, void *);
+	bool			(*md_status_qry)(struct usb_gadget *);
+#endif
 
 	/* FIXME support safe rmmod */
 	struct device_driver	driver;

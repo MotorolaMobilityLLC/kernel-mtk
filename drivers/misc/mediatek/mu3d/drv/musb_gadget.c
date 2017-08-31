@@ -1326,6 +1326,111 @@ static void musb_gadget_fifo_flush(struct usb_ep *ep)
 	spin_unlock_irqrestore(&musb->lock, flags);
 }
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+static void musb_gadget_suspend_control(struct usb_ep *ep)
+{
+	struct musb_ep	*musb_ep = to_musb_ep(ep);
+	struct musb	*musb = musb_ep->musb;
+	u8		epnum = musb_ep->current_epnum;
+	unsigned long	flags;
+
+	os_printk(K_INFO, "musb_gadget_suspend_control : %s...", ep->name);
+
+	spin_lock_irqsave(&musb->lock, flags);
+
+	nuke(musb_ep, -ECONNRESET);
+
+	if (musb_ep->is_in) { /* TX */
+#ifdef USE_SSUSB_QMU
+		os_setmsk(U3D_QIECR0, QMU_TX_CS_EN(epnum));
+#endif
+	} else {
+#ifdef USE_SSUSB_QMU
+		os_setmsk(U3D_QIECR0, QMU_RX_CS_EN(epnum));
+	}
+#endif
+
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+
+static void musb_gadget_resume_control(struct usb_ep *ep)
+{
+	struct musb_ep	*musb_ep = to_musb_ep(ep);
+	struct musb	*musb = musb_ep->musb;
+	u8		epnum = musb_ep->current_epnum;
+	unsigned long	flags;
+
+	int timeout_count = 100; /* 50ms*100 */
+	u32 int_md = os_readl(U3D_LV1IER_MD);
+
+	os_printk(K_INFO, "%s : %s...", __func__, ep->name);
+
+	/* check if MD finish deactivate follow */
+
+	while (int_md && (timeout_count != 0)) {
+		mdelay(50);
+		int_md = os_readl(U3D_LV1IER_MD);
+		os_printk(K_INFO, "%s : int_md: %d\n", __func__, int_md);
+		timeout_count--;
+	}
+
+	os_printk(K_INFO, "musb_gadget_resume_control : timeout_count: %d\n", timeout_count);
+
+	if (int_md)
+		os_printk(K_ERR, "ep resume timeout, U3D_LV1IER_MD:%x\n", int_md);
+
+	spin_lock_irqsave(&musb->lock, flags);
+
+	nuke(musb_ep, -ECONNRESET);
+
+	if (musb_ep->is_in) { /* TX */
+#ifdef USE_SSUSB_QMU
+		os_setmsk(U3D_QGCSR, QMU_TX_EN(epnum));
+		os_setmsk(U3D_QIESR0, QMU_TX_EN(epnum));
+		mu3d_hal_restart_qmu(epnum, USB_TX);
+#endif
+	} else {
+#ifdef USE_SSUSB_QMU
+		os_setmsk(U3D_QGCSR, QMU_RX_EN(epnum));
+		os_setmsk(U3D_QIESR0, QMU_RX_EN(epnum));
+		mu3d_hal_restart_qmu(epnum, USB_RX);
+	}
+#endif
+	spin_unlock_irqrestore(&musb->lock, flags);
+}
+
+static int musb_gadget_fifo_empty(struct usb_ep *ep)
+{
+	struct musb_ep *musb_ep = to_musb_ep(ep);
+	struct musb *musb = musb_ep->musb;
+	u8		epnum = musb_ep->current_epnum;
+	unsigned long	flags;
+	u32 txcsr0 = 0;
+	int ret = -EAGAIN;
+
+	spin_lock_irqsave(&musb->lock, flags);
+
+	if (musb_ep->is_in) { /* TX */
+		txcsr0 = os_readl(musb->endpoints[epnum].addr_txcsr0);
+
+		if (txcsr0 & TX_FIFOEMPTY) {
+#ifdef USE_SSUSB_QMU
+			if (_ex_mu3d_hal_qmu_status_done(epnum, USB_TX))
+				ret = 1;
+#else
+			ret = 1;
+#endif
+		}
+	} else {
+		ret = -ENOTSUPP;
+	}
+
+	spin_unlock_irqrestore(&musb->lock, flags);
+
+	return ret;
+}
+#endif
+
 static const struct usb_ep_ops musb_ep_ops = {
 	.enable = musb_gadget_enable,
 	.disable = musb_gadget_disable,
@@ -1336,7 +1441,12 @@ static const struct usb_ep_ops musb_ep_ops = {
 	.set_halt = musb_gadget_set_halt,
 	.set_wedge = musb_gadget_set_wedge,
 	.fifo_status = musb_gadget_fifo_status,
-	.fifo_flush = musb_gadget_fifo_flush
+	.fifo_flush = musb_gadget_fifo_flush,
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	.suspend_control	= musb_gadget_suspend_control,
+	.resume_control	= musb_gadget_resume_control,
+	.fifo_empty = musb_gadget_fifo_empty
+#endif
 };
 
 /* ----------------------------------------------------------------------- */
@@ -1510,6 +1620,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	 * not pullup unless the B-session is active.
 	 */
 	spin_lock_irqsave(&musb->lock, flags);
+
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;
 		musb_pullup(musb, is_on);
@@ -1517,6 +1628,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	pm_runtime_put(musb->controller);
+
 	if (is_usb_rdy() == false && is_on) {
 		set_usb_rdy();
 		if (!is_otg_enabled(musb)) {
@@ -1894,7 +2006,7 @@ void musb_g_resume(struct musb *musb)
 		}
 		break;
 	default:
-		WARNING("unhandled RESUME transition (%s)\n",
+		dev_warn(musb->controller, "unhandled RESUME transition (%s)\n",
 			usb_otg_state_string(musb->xceiv->otg->state));
 	}
 }
@@ -1925,7 +2037,7 @@ void musb_g_suspend(struct musb *musb)
 		/* REVISIT if B_HOST, clear DEVCTL.HOSTREQ;
 		 * A_PERIPHERAL may need care too
 		 */
-		WARNING("unhandled SUSPEND transition (%s)\n",
+		dev_warn(musb->controller, "unhandled SUSPEND transition (%s)\n",
 			usb_otg_state_string(musb->xceiv->otg->state));
 	}
 }

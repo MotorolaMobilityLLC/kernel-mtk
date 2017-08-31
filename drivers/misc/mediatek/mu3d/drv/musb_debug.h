@@ -30,10 +30,6 @@
 #ifndef __MUSB_LINUX_DEBUG_H__
 #define __MUSB_LINUX_DEBUG_H__
 
-#define WARNING(fmt, args...) pr_debug("%s %d: " fmt, __func__, __LINE__, ## args)
-#define INFO(fmt, args...) pr_debug("%s %d: " fmt, __func__, __LINE__, ## args)
-#define ERR(fmt, args...) pr_err("%s %d: " fmt, __func__, __LINE__, ## args)
-
 #ifdef CONFIG_DEBUG_FS
 int musb_init_debugfs(struct musb *musb);
 void musb_exit_debugfs(struct musb *musb);

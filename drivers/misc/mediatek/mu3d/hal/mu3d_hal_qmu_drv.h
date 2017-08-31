@@ -385,6 +385,9 @@ EXTERN PGPD get_gpd(USB_DIR dir, DEV_UINT32 num);
 EXTERN void *gpd_phys_to_virt(void *paddr, USB_DIR dir, DEV_UINT32 num);
 EXTERN void gpd_ptr_align(USB_DIR dir, DEV_UINT32 num, PGPD ptr);
 
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+EXTERN bool _ex_mu3d_hal_qmu_status_done(DEV_INT32 Q_num, USB_DIR dir);
+#endif
 EXTERN void mu3d_reset_gpd_resource(void);
 
 #undef EXTERN
