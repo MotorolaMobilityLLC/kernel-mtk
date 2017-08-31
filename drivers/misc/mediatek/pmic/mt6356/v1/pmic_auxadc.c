@@ -34,6 +34,7 @@
 #include <linux/writeback.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <mach/mtk_pmic_wrap.h>
 #include <linux/ratelimit.h>
 #include <linux/timekeeping.h>
 
@@ -315,6 +316,7 @@ void mt6356_auxadc_monitor_mts_regs(void)
 
 	if (mts_count > 10) {
 		aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
+		pwrap_dump_all_register();
 		pr_err("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
 		/*--AUXADC CH7--*/
 		pr_err("AUXADC_LIST_TSX = %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
