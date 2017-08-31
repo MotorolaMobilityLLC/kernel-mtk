@@ -642,7 +642,7 @@ typedef struct {
 EXT const _FACT_ADJ FADJ_DEF
 #ifdef	OIS_MAIN_C
 = {
-	0x0200,		/* gl_CURDAT; */
+	0x0200,			/* gl_CURDAT; */
 	0x0200,			/* gl_HALOFS_X; */
 	0x0200,			/* gl_HALOFS_Y; */
 	0x0000,			/* gl_HX_OFS; */
@@ -652,7 +652,7 @@ EXT const _FACT_ADJ FADJ_DEF
 	0x0000,			/* gl_GX_OFS; */
 	0x0000,			/* gl_GY_OFS; */
 
-	0x2000,		/* gl_KgxHG ;           RHM_HT 2013/11/25       Modified */
+	0x2000,			/* gl_KgxHG ;           RHM_HT 2013/11/25       Modified */
 	0x2000,			/* gl_KgyHG ;           RHM_HT 2013/11/25       Modified */
 	0x2000,			/* gl_KGXG  ;           RHM_HT 2013/11/25       Modified */
 	0x2000,			/* gl_KGYG  ;           RHM_HT 2013/11/25       Modified */
@@ -676,26 +676,26 @@ EXT const _FACT_ADJ FADJ_DEF
 EXT _FACT_ADJ FADJ_MEM
 #ifdef	OIS_MAIN_C
 = {
-	0x0201,		/* gl_CURDAT; */
-	0x0200,		/* gl_HALOFS_X; */
-	0x0200,		/* gl_HALOFS_Y; */
-	0x0000,		/* gl_HX_OFS; */
-	0x0000,		/* gl_HY_OFS; */
-	0x0080,		/* gl_PSTXOF;           RHM_HT 2013.03.21       Change order to adjust EEP ROM map */
-	0x0080,		/* gl_PSTYOF;           RHM_HT 2013.03.21       Change order to adjust EEP ROM map */
-	0x0000,		/* gl_GX_OFS; */
-	0x0000,		/* gl_GY_OFS; */
+	0x0201,			/* gl_CURDAT; */
+	0x0200,			/* gl_HALOFS_X; */
+	0x0200,			/* gl_HALOFS_Y; */
+	0x0000,			/* gl_HX_OFS; */
+	0x0000,			/* gl_HY_OFS; */
+	0x0080,			/* gl_PSTXOF;           RHM_HT 2013.03.21       Change order to adjust EEP ROM map */
+	0x0080,			/* gl_PSTYOF;           RHM_HT 2013.03.21       Change order to adjust EEP ROM map */
+	0x0000,			/* gl_GX_OFS; */
+	0x0000,			/* gl_GY_OFS; */
 
-	0x2000,		/* gl_KgxHG ;           RHM_HT 2013/11/25       Modified */
-	0x2000,		/* gl_KgyHG ;           RHM_HT 2013/11/25       Modified */
-	0x2000,		/* gl_KGXG  ;           RHM_HT 2013/11/25       Modified */
-	0x2000,		/* gl_KGYG  ;           RHM_HT 2013/11/25       Modified */
-	0x0200,		/* gl_SFTHAL_X;         RHM_HT 2013/11/25       Added */
-	0x0200,		/* gl_SFTHAL_Y;         RHM_HT 2013/11/25       Added */
-	0x0000,		/* gl_TMP_X_;           RHM_HT 2013/11/25       Added */
-	0x0000,		/* gl_TMP_Y_;           RHM_HT 2013/11/25       Added */
-	0x0000,		/* gl_KgxH0;            RHM_HT 2013/11/25       Added */
-	0x0000,		/* gl_KgyH0;            RHM_HT 2013/11/25       Added */
+	0x2000,			/* gl_KgxHG ;           RHM_HT 2013/11/25       Modified */
+	0x2000,			/* gl_KgyHG ;           RHM_HT 2013/11/25       Modified */
+	0x2000,			/* gl_KGXG  ;           RHM_HT 2013/11/25       Modified */
+	0x2000,			/* gl_KGYG  ;           RHM_HT 2013/11/25       Modified */
+	0x0200,			/* gl_SFTHAL_X;         RHM_HT 2013/11/25       Added */
+	0x0200,			/* gl_SFTHAL_Y;         RHM_HT 2013/11/25       Added */
+	0x0000,			/* gl_TMP_X_;           RHM_HT 2013/11/25       Added */
+	0x0000,			/* gl_TMP_Y_;           RHM_HT 2013/11/25       Added */
+	0x0000,			/* gl_KgxH0;            RHM_HT 2013/11/25       Added */
+	0x0000,			/* gl_KgyH0;            RHM_HT 2013/11/25       Added */
 }
 #endif
 ;

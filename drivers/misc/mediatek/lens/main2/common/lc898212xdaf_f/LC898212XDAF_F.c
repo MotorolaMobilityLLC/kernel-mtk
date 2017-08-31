@@ -53,7 +53,7 @@ static signed short Hall_Max = 0x5800;	/* Please read INF position from EEPROM o
 static signed short Hall_Min = 0xA800;	/* Please read MACRO position from EEPROM or OTP */
 
 int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
-			  u16 a_sizeRecvData, u16 i2cId)
+				u16 a_sizeRecvData, u16 i2cId)
 {
 	int i4RetValue = 0;
 
@@ -85,7 +85,8 @@ int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId)
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
 	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
+		LOG_INF("I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0],
+			a_pSendData[1]);
 		return -1;
 	}
 
@@ -98,7 +99,9 @@ static int s4EEPROM_ReadReg_LC898212XDAF_F(u16 addr, u8 *data)
 
 	u8 puSendCmd[2] = { (u8) (addr >> 8), (u8) (addr & 0xFF) };
 
-	i4RetValue = s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), data, 1, EEPROM_I2C_SLAVE_ADDR);
+	i4RetValue =
+	    s4AF_ReadReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), data, 1,
+					EEPROM_I2C_SLAVE_ADDR);
 	if (i4RetValue < 0)
 		LOG_INF("I2C read e2prom failed!!\n");
 
@@ -107,7 +110,7 @@ static int s4EEPROM_ReadReg_LC898212XDAF_F(u16 addr, u8 *data)
 
 static void s4AF_WriteReg(unsigned short addr, unsigned char data)
 {
-	u8 puSendCmd[2] = {(u8)(addr & 0xFF), (u8)(data & 0xFF)};
+	u8 puSendCmd[2] = { (u8) (addr & 0xFF), (u8) (data & 0xFF) };
 
 	s4AF_WriteReg_LC898212XDAF_F(puSendCmd, sizeof(puSendCmd), AF_I2C_SLAVE_ADDR);
 }
@@ -115,7 +118,7 @@ static void s4AF_WriteReg(unsigned short addr, unsigned char data)
 static int convertAF_DAC(short ReadData)
 {
 	int DacVal = ((ReadData - Hall_Min) * (Max_Pos - Min_Pos)) /
-		((unsigned short)(Hall_Max - Hall_Min)) + Min_Pos;
+	    ((unsigned short)(Hall_Max - Hall_Min)) + Min_Pos;
 
 	return DacVal;
 }
@@ -138,9 +141,9 @@ static void LC898212XD_init(void)
 	s4EEPROM_ReadReg_LC898212XDAF_F(0x0004, &val2);
 	LOG_INF("Addr = 0x0004 , Data = %x\n", val2);
 
-	if (val1 == 0xb && val2 == 0x2) { /* EEPROM Version */
+	if (val1 == 0xb && val2 == 0x2) {	/* EEPROM Version */
 
-		/* Mt define format - Ev stereo format , PDAF:2000 , Addr = 0x0F33*/
+		/* Mt define format - Ev stereo format , PDAF:2000 , Addr = 0x0F33 */
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F33, &val2);
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F34, &val1);
 		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -154,7 +157,7 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F38, &val2);
 		Hall_Bias = val2;
 
-	} else { /* Undefined Version */
+	} else {		/* Undefined Version */
 
 		/* Li define format - Ev IMX258 PDAF - remove Koli */
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1);
@@ -169,7 +172,7 @@ static void LC898212XD_init(void)
 		HallCheck = val1;
 
 		if ((HallCheck == 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+		    (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F64, &val2);
@@ -197,8 +200,9 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2);
 
-			if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+			if ((val1 != 0) && (val2 != 0)
+			    && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF)
+			    && (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				Hall_Min = HallMinCheck;
 				Hall_Max = HallMaxCheck;
@@ -207,7 +211,7 @@ static void LC898212XD_init(void)
 				Hall_Off = val1;
 				/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
 				Hall_Bias = val2;
-				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End */
 
 			} else {
 
@@ -223,8 +227,9 @@ static void LC898212XD_init(void)
 				s4EEPROM_ReadReg_LC898212XDAF_F(0x0F37, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_F(0x0F38, &val2);
 
-				if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-					(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+				if ((val1 != 0) && (val2 != 0)
+				    && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF)
+				    && (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 					Hall_Min = HallMinCheck;
 					Hall_Max = HallMaxCheck;
@@ -233,7 +238,7 @@ static void LC898212XD_init(void)
 					Hall_Off = val1;
 					/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F38, &val2); */
 					Hall_Bias = val2;
-					/* Mt define format - Ev Bayer+Mono , Error Version - End*/
+					/* Mt define format - Ev Bayer+Mono , Error Version - End */
 				} else {
 					/* Ja Stereo IMX258 - Error Version */
 					s4EEPROM_ReadReg_LC898212XDAF_F(0x0016, &val1);
@@ -244,8 +249,8 @@ static void LC898212XD_init(void)
 					s4EEPROM_ReadReg_LC898212XDAF_F(0x0017, &val2);
 					HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-					if ((0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
-						(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+					if ((HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+					    (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 						Hall_Min = HallMinCheck;
 						Hall_Max = HallMaxCheck;
@@ -273,8 +278,8 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2);
 
-		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
-			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF)
+		    && (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 			Hall_Min = HallMinCheck;
 			Hall_Max = HallMaxCheck;
@@ -283,7 +288,7 @@ static void LC898212XD_init(void)
 			Hall_Off = val1;
 			/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
 			Hall_Bias = val2;
-			/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+			/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End */
 
 		} else {
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC1, &val2);
@@ -297,8 +302,9 @@ static void LC898212XD_init(void)
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC5, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC6, &val2);
 
-			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
-				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+			if ((val1 != 0) && (val2 != 0)
+			    && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF)
+			    && (HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
 
 				Hall_Min = HallMinCheck;
 				Hall_Max = HallMaxCheck;
@@ -307,7 +313,7 @@ static void LC898212XD_init(void)
 				Hall_Off = val1;
 				/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
 				Hall_Bias = val2;
-				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End */
 
 			}
 		}
@@ -321,7 +327,8 @@ static void LC898212XD_init(void)
 		Hall_Max = Temp;
 	}
 
-	LOG_INF("=====LC898212XD:=init=hall_max:0x%x==hall_min:0x%x====halloff:0x%x, hallbias:0x%x===\n",
+	LOG_INF
+	    ("=====LC898212XD:=init=hall_max:0x%x==hall_min:0x%x====halloff:0x%x, hallbias:0x%x===\n",
 	     Hall_Max, Hall_Min, Hall_Off, Hall_Bias);
 
 	LC898212XDAF_F_MONO_init(Hall_Off, Hall_Bias);
@@ -329,11 +336,11 @@ static void LC898212XD_init(void)
 
 static unsigned short AF_convert(int position)
 {
-#if 0	/* 1: INF -> Macro =  0x8001 -> 0x7FFF */ /* OV23850 */
+#if 0	/* 1: INF -> Macro =  0x8001 -> 0x7FFF */	/* OV23850 */
 	return (((position - Min_Pos) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
 										 Min_Pos)) +
 		Hall_Min) & 0xFFFF;
-#else	/* 0: INF -> Macro =  0x7FFF -> 0x8001 */ /* IMX258 */
+#else	/* 0: INF -> Macro =  0x7FFF -> 0x8001 */					  /* IMX258 */
 	return (((Max_Pos - position) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
 										 Min_Pos)) +
 		Hall_Min) & 0xFFFF;
@@ -385,7 +392,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (g_u4CurrPosition == a_u4Position)
 		return 0;
 
-	if ((LC898212XDAF_F_MONO_moveAF(AF_convert((int)a_u4Position))&0x1) == 0) {
+	if ((LC898212XDAF_F_MONO_moveAF(AF_convert((int)a_u4Position)) & 0x1) == 0) {
 		spin_lock(g_pAF_SpinLock);
 		g_u4CurrPosition = (unsigned long)a_u4Position;
 		spin_unlock(g_pAF_SpinLock);
@@ -430,7 +437,7 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 		unsigned int AF_Infi = 0x00;
 		unsigned int AF_Marco = 0x00;
 
-		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2);	/* low byte */
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0012, &val1);
 		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 		LOG_INF("AF_Infi : %x\n", AF_Infi);
@@ -450,14 +457,14 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 			LOG_INF("u4AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
 
 			if (u4AF_CalibData_MACRO > 0 && u4AF_CalibData_INF < 1024 &&
-				u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
+			    u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
 				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
 				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
 			}
 		}
 	} else {
 
-		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2);	/* low byte */
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0012, &val1);
 		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
@@ -486,7 +493,8 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 
 	}
 
-	if (u4AF_CalibData_INF > 0 && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
+	if (u4AF_CalibData_INF > 0 && u4AF_CalibData_MACRO < 1024
+	    && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
 		stMotorCalPos.u4MacroPos = u4AF_CalibData_MACRO;
 		stMotorCalPos.u4InfPos = u4AF_CalibData_INF;
 	} else {
@@ -507,7 +515,7 @@ long LC898212XDAF_F_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsi
 
 	switch (a_u4Command) {
 	case AFIOC_G_MOTORINFO:
-		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *) (a_u4Param));
+		i4RetValue = getAFInfo((__user struct stAF_MotorInfo *)(a_u4Param));
 		break;
 
 	case AFIOC_T_MOVETO:
@@ -523,7 +531,7 @@ long LC898212XDAF_F_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsi
 		break;
 
 	case AFIOC_G_MOTORCALPOS:
-		i4RetValue = getAFCalPos((__user struct stAF_MotorCalPos *) (a_u4Param));
+		i4RetValue = getAFCalPos((__user struct stAF_MotorCalPos *)(a_u4Param));
 		break;
 	default:
 		LOG_INF("No CMD\n");
@@ -567,7 +575,8 @@ int LC898212XDAF_F_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
-int LC898212XDAF_F_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+int LC898212XDAF_F_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock,
+				int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
