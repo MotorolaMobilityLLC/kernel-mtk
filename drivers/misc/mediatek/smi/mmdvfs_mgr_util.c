@@ -34,8 +34,12 @@ mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 #endif	/* CONFIG_LCM_WIDTH, CONFIG_LCM_HEIGHT */
 
 	if (convert_err) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		lcd_w = DISP_GetScreenWidth();
 		lcd_h = DISP_GetScreenHeight();
+#else
+		MMDVFSMSG("unable to get resolution, query API is unavailable\n");
+#endif
 	}
 
 	lcd_resolution = lcd_w * lcd_h;
