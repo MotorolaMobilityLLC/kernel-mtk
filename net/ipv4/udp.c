@@ -132,6 +132,28 @@ EXPORT_SYMBOL(udp_memory_allocated);
 #define MAX_UDP_PORTS 65536
 #define PORTS_PER_CHAIN (MAX_UDP_PORTS / UDP_HTABLE_SIZE_MIN)
 
+#ifdef UDP_SKT_WIFI
+#include <linux/kallsyms.h>
+#include <linux/trace_events.h>
+int sysctl_udp_met_port __read_mostly = -1;
+EXPORT_SYMBOL(sysctl_udp_met_port);
+int sysctl_met_is_enable __read_mostly = -1;
+EXPORT_SYMBOL(sysctl_met_is_enable);
+#ifdef CONFIG_TRACING
+unsigned long __read_mostly udp_tracing_mark_write_addr;
+#endif
+
+void udp_event_trace_printk(const char *fmt, int pid, __u16 port)
+{
+#ifdef CONFIG_TRACING
+	if (unlikely(udp_tracing_mark_write_addr == 0))
+		udp_tracing_mark_write_addr = kallsyms_lookup_name("tracing_mark_write");
+	event_trace_printk(udp_tracing_mark_write_addr, fmt, pid, MET_SOCKET_LATENCY_NAME, ntohs(port));
+#endif
+}
+EXPORT_SYMBOL(udp_event_trace_printk);
+#endif
+
 static int udp_lib_lport_inuse(struct net *net, __u16 num,
 			       const struct udp_hslot *hslot,
 			       unsigned long *bitmap,
@@ -960,6 +982,16 @@ int udp_sendmsg(struct sock *sk, struct msghdr *msg, size_t len)
 	ipc.addr = inet->inet_saddr;
 
 	ipc.oif = sk->sk_bound_dev_if;
+
+#ifdef UDP_SKT_WIFI
+	if (unlikely((sysctl_met_is_enable == 1) && (sysctl_udp_met_port > 0))) {
+		if ((ntohs(inet->inet_sport) == sysctl_udp_met_port) && (len >= 4)) {
+			__u16 *seq_id = (__u16 *)((char *)msg->msg_iter.iov->iov_base + 2);
+
+			udp_event_trace_printk("S|%d|%s|%d\n", current->pid, *seq_id);
+		}
+	}
+#endif
 
 	sock_tx_timestamp(sk, &ipc.tx_flags);
 
