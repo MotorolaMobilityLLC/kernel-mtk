@@ -121,8 +121,7 @@ endif
 obj-$(CONFIG_THERMAL) += mtk_tsAll.o
 endif
 
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "kiboplus"))
 ifneq ($(CONFIG_MTK_PMIC_CHIP_MT6353),y)
 #obj-$(CONFIG_THERMAL) += mtk_ts_6311buck.o
 endif

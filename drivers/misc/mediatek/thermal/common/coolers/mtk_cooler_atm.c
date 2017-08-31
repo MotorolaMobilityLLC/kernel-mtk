@@ -22,9 +22,7 @@
 #include "mach/mtk_thermal.h"
 #include "mt-plat/mtk_thermal_platform.h"
 #include <mach/mtk_clkmgr.h>
-#if !defined(CONFIG_MACH_MT6757)
-#include <mt_ptp.h>
-#endif
+
 #include <mach/wd_api.h>
 #include <linux/slab.h>
 #include <linux/seq_file.h>

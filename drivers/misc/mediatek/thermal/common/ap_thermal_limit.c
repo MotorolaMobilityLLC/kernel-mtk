@@ -25,9 +25,7 @@
 #include <tscpu_settings.h> /* needed by tscpu_warn */
 #include <ap_thermal_limit.h>
 #include <mt-plat/aee.h>
-#if !defined(CONFIG_MACH_MT6757)
-#include <mt_ptp.h>
-#endif
+
 
 #if defined(ATM_USES_PPM)
 #include "mach/mtk_ppm_api.h"
