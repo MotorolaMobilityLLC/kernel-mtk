@@ -232,8 +232,8 @@ void cmdq_mdp_dump_mmsys_config(void)
 		{0x934, "MDP_ASYNC_CFG_WD"},
 		{0x938, "MDP_ASYNC_CFG_RD"}
 	};
-	for (i = 0; i < ARRAY_SIZE(configRegisters); ++i) {
-		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE + configRegisters[i].offset);
+	for (i = 0; i < ARRAY_SIZE(configRegisters); i++) {
+		value = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + configRegisters[i].offset);
 		CMDQ_ERR("%s: 0x%08x\n", configRegisters[i].name, value);
 	}
 }
