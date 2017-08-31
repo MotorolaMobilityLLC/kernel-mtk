@@ -154,6 +154,8 @@ void dram_HQA_adjust_voltage(void);
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 unsigned char segment_rank1);
 int exit_pasr_dpd_config(void);
+void del_zqcs_timer(void);
+void add_zqcs_timer(void);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,

@@ -377,15 +377,20 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	void __iomem *u4rg_60; /* MRWEN */
 	void __iomem *u4rg_88; /* MRW_RESPONSE */
 #if !__ETT__
+	unsigned long save_flags;
+
+	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", (segment_rank0 & 0xFF), (segment_rank1 & 0xFF));
+	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
 		return -1;
 	}
 	/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
 #endif
 	rank_pasr_segment[0] = segment_rank0 & 0xFF; /* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF; /* for rank1 */
-	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]);
+	/* pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]); */
 
 /* #if PASR_TEST_SCENARIO == PASR_SUPPORT_2_CHANNEL*/
 	for (iChannelIdx = 0; iChannelIdx < 2; iChannelIdx++) {
@@ -442,6 +447,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 					if (release_dram_ctrl() != 0)
 						pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 					/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+					local_irq_restore(save_flags);
 #endif
 					return -1;
 				}
@@ -457,6 +463,7 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	if (release_dram_ctrl() != 0)
 		pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
 	/* pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n"); */
+	local_irq_restore(save_flags);
 #endif
 	return 0;
 }
@@ -1181,6 +1188,122 @@ static int dram_dt_init(void)
 	return ret;
 }
 
+static struct timer_list zqcs_timer;
+
+void zqcs_timer_callback(unsigned long data)
+{
+	unsigned int Response, TimeCnt, CHCounter, RankCounter;
+	void __iomem *u4rg_24;
+	void __iomem *u4rg_38;
+	void __iomem *u4rg_5C;
+	void __iomem *u4rg_60;
+	void __iomem *u4rg_88;
+	unsigned long save_flags;
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
+		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+		local_irq_restore(save_flags);
+		return;
+	}
+
+  /* CH0_Rank0 --> CH1Rank0 */
+	for (RankCounter = 0; RankCounter < 2; RankCounter++) {
+		for (CHCounter = 0; CHCounter < 2; CHCounter++) {
+			TimeCnt = 100;
+
+			if (CHCounter == 0) {
+				u4rg_24 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x24);
+				u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
+				u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
+				u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
+				u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
+			} else if (CHCounter == 1) {
+				u4rg_24 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x24);
+				u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
+				u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
+				u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
+				u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
+			}
+			writel(readl(u4rg_38) & 0xBFFFFFFF, u4rg_38); /* DMPHYCLKDYNGEN */
+			writel(readl(u4rg_38) | 0x4000000, u4rg_38); /* DMMIOCKCTRLOFF */
+			writel(readl(u4rg_24) | 0x40, u4rg_24); /* DMCKEFIXON */
+			writel(readl(u4rg_24) | 0x10, u4rg_24); /* DMCKE1FIXON */
+
+			if (RankCounter == 0)
+				writel(readl(u4rg_5C) & 0xCFFFFFFF, u4rg_5C); /* Rank 0 */
+			else if (RankCounter == 1) {
+				writel((readl(u4rg_5C) & 0xCFFFFFFF) | 0x10000000,
+				u4rg_5C); /* Rank 1 */
+			}
+			writel(readl(u4rg_60) | 0x10, u4rg_60); /* for ZQCal Start */
+
+			do {
+				Response = readl(u4rg_88) & 0x10;
+				TimeCnt--;
+				udelay(1);  /* Wait tZQCAL(min) 1us for next polling */
+			} while ((Response == 0) && (TimeCnt > 0));
+
+			writel(readl(u4rg_60) & 0xFFFFFFEF, u4rg_60); /* ZQCal Stop */
+
+			if (TimeCnt == 0) { /* time out */
+				writel(readl(u4rg_38) | 0x40000000, u4rg_38); /* DMPHYCLKDYNGEN */
+				writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
+				writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
+				writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
+				if (release_dram_ctrl() != 0)
+					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+				mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+				local_irq_restore(save_flags);
+				pr_err("CA%x Rank%x ZQCal Start time out\n", CHCounter, RankCounter);
+				return;
+			}
+
+			udelay(1);
+
+			TimeCnt = 100;
+			writel(readl(u4rg_60) | 0x40, u4rg_60); /* for ZQCal latch */
+
+			do {
+				Response = readl(u4rg_88) & 0x40;
+				TimeCnt--;
+				udelay(1);  /* Wait tZQCAL(min) 1us for next polling */
+			} while ((Response == 0) && (TimeCnt > 0));
+
+			writel(readl(u4rg_60) & 0xFFFFFFBF, u4rg_60); /* ZQ latch Stop*/
+
+			writel(readl(u4rg_38) | 0x40000000, u4rg_38); /* DMPHYCLKDYNGEN */
+			writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
+			writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
+			writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
+			if (TimeCnt == 0) { /* time out */
+				if (release_dram_ctrl() != 0)
+					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+			mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+			local_irq_restore(save_flags);
+			pr_err("CA%x Rank%x ZQCal latch time out\n", CHCounter, RankCounter);
+			return;
+			}
+			udelay(1);
+		}
+	}
+
+	if (release_dram_ctrl() != 0)
+		pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
+	local_irq_restore(save_flags);
+}
+
+void del_zqcs_timer(void)
+{
+	del_timer_sync(&zqcs_timer);
+}
+
+void add_zqcs_timer(void)
+{
+	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)); /* add_timer(&zqcs_timer); */
+}
 /* int __init dram_test_init(void) */
 static int __init dram_test_init(void)
 {
@@ -1220,6 +1343,11 @@ static int __init dram_test_init(void)
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
 
+	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
+		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
+		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
+			pr_err("[DRAMC Driver] Error in ZQCS mod_timer\n");
+	}
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");
 	else
