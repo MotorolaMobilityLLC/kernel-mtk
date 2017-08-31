@@ -349,7 +349,7 @@ static char *vcorefs_get_kicker_info(char *p)
 	int i;
 
 	for (i = 0; i < NUM_KICKER; i++)
-		p += sprintf(p, "[%s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
+		p += sprintf(p, "[%.32s] opp: %d\n", governor_get_kicker_name(i), kicker_table[i]);
 
 	return p;
 }

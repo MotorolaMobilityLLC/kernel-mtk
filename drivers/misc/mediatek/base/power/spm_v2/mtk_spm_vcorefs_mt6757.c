@@ -250,7 +250,7 @@ static void dump_pmic_info(void)
 #endif
 }
 
-static int _check_dvfs_result(int vcore, int ddr)
+static int _check_dvfs_result(int vcore, int ddr, int log_en)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	int vcore_val = 0;
@@ -278,7 +278,8 @@ static int _check_dvfs_result(int vcore, int ddr)
 			WARN_ON(1);
 		}
 	}
-	spm_vcorefs_info("_check_dvfs_result(dvs_en=%d dfs_en=%d)(vcore=%d ddr=%d)\n",
+	if (log_en)
+		spm_vcorefs_info("_check_dvfs_result(dvs_en=%d dfs_en=%d)(vcore=%d ddr=%d)\n",
 			  dvs_en, dfs_en, vcore_val, ddr_val);
 	return 0;
 }
@@ -649,7 +650,7 @@ int spm_vcorefs_set_opp(int opp, int vcore, int ddr, bool non_force)
 
 	/* check vcore and ddr for HPM */
 	if (opp == OPPI_PERF) {
-		r = _check_dvfs_result(vcore, ddr);
+		r = _check_dvfs_result(vcore, ddr, 0);
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
@@ -788,7 +789,7 @@ int spm_vcorefs_set_opp_fix(int opp, int vcore, int ddr)
 
 	/* check vcore and ddr for LPM */
 	if (opp != OPPI_UNREQ) {
-		r = _check_dvfs_result(vcore, ddr);
+		r = _check_dvfs_result(vcore, ddr, 1);
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);

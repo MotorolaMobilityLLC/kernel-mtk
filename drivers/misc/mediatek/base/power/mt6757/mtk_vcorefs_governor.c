@@ -167,6 +167,7 @@ static char *kicker_name[] = {
 	"KIR_SYSFS",
 	"KIR_SYSFS_N",
 	"KIR_GPU",
+	"KIR_CPU",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -289,16 +290,13 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	switch (steps) {
 	case OPP_0:
-		return VCORE_0_P_80_UV;
-		/* return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_0)); */
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_0));
 	break;
 	case OPP_1:
-		return VCORE_0_P_70_UV;
-		/* return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_1)); */
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_1));
 	break;
 	case OPP_2:
-		return VCORE_0_P_70_UV;
-		/* return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_2)); */
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_2));
 	break;
 	default:
 		break;
@@ -375,6 +373,7 @@ int vcorefs_get_dvfs_kicker_group(int kicker)
 	case KIR_SYSFS:
 	case KIR_LATE_INIT:
 	case KIR_GPU:
+	case KIR_CPU:
 	default:
 		group = KIR_GROUP_HPM;
 	break;
@@ -595,13 +594,13 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
 	p += sprintf(p, "\n");
 
-	p += sprintf(p, "[perform_bw]: %s ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
-			(gvrctrl->perform_bw_enable) ? "[O]" : "[X]",
+	p += sprintf(p, "[perform_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+			gvrctrl->perform_bw_enable,
 			gvrctrl->perform_bw_ulpm_threshold,
 			gvrctrl->perform_bw_lpm_threshold,
 			gvrctrl->perform_bw_hpm_threshold);
-	p += sprintf(p, "[total_bw]: %s ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
-			(gvrctrl->total_bw_enable) ? "[O]" : "[X]",
+	p += sprintf(p, "[total_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+			gvrctrl->total_bw_enable,
 			gvrctrl->total_bw_ulpm_threshold,
 			gvrctrl->total_bw_lpm_threshold,
 			gvrctrl->total_bw_hpm_threshold);
@@ -774,11 +773,11 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
 		vcorefs_crit("SCREEN ON\n");
-		vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req);
+		spm_vcorefs_set_cpu_dvfs_req(0xFFFF, gvrctrl->cpu_dvfs_req);
 		break;
 	case FB_BLANK_POWERDOWN:
 		vcorefs_crit("SCREEN OFF\n");
-		vcorefs_set_cpu_dvfs_req(0);
+		spm_vcorefs_set_cpu_dvfs_req(0, gvrctrl->cpu_dvfs_req);
 		break;
 	default:
 		break;
@@ -874,6 +873,7 @@ int vcorefs_late_init_dvfs(void)
 	gvrctrl->ddr_type = get_ddr_type();
 	if (gvrctrl->ddr_type == TYPE_LPDDR3)
 		gvrctrl->cpu_dvfs_req = (1 << MD_CA_DATALINK | 1 << MD_POSITION);
+	spm_vcorefs_set_cpu_dvfs_req(0xffff, gvrctrl->cpu_dvfs_req);
 
 	if (1) {
 		flag = vcorefs_check_feature_enable();
@@ -957,9 +957,9 @@ static int __init vcorefs_module_init(void)
 	int r;
 	struct device_node *node;
 
-/* #if defined(CONFIG_FPGA_EARLY_PORTING) */
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
-/* #endif */;
+#endif
 
 	r = init_vcorefs_cmd_table();
 	if (r) {
