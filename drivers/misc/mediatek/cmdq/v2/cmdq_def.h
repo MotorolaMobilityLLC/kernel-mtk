@@ -313,11 +313,27 @@ struct cmdqSecAddrMetadataStruct {
 	/* [IN]_d, index of instruction. Update its arg_b value to real PA/MVA in secure world */
 	uint32_t instrIndex;
 
+	/*
+	 * Note: Buffer and offset
+	 *
+	 *   -------------
+	 *   |     |     |
+	 *   -------------
+	 *   ^     ^  ^  ^
+	 *   A     B  C  D
+	 *
+	 *	A: baseHandle
+	 *	B: baseHandle + blockOffset
+	 *  C: baseHandle + blockOffset + offset
+	 *	A~B or B~D: size
+	 */
+
 	enum CMDQ_SEC_ADDR_METADATA_TYPE type;	/* [IN] addr handle type */
 	uint32_t baseHandle;	/* [IN]_h, secure address handle */
-	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
-	uint32_t size;		/* buffer size */
-	uint32_t port;		/* hw port id (i.e. M4U port id) */
+	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to current block(plane) */
+	uint32_t offset;		/* [IN]_b, buffser offset to secure handle */
+	uint32_t size;			/* buffer size */
+	uint32_t port;			/* hw port id (i.e. M4U port id) */
 };
 
 struct cmdqSecDataStruct {
