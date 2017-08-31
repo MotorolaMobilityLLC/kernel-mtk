@@ -44,9 +44,7 @@
 #endif
 #include <linux/seq_file.h>
 #include <linux/kthread.h>
-#ifdef CMDQ_OF_SUPPORT
-#define MMSYS_CONFIG_BASE cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
-#else
+#ifndef CMDQ_OF_SUPPORT
 #include <mach/mt_reg_base.h>
 #include <mach/mt_irq.h>
 #include "ddp_reg.h"
@@ -2225,34 +2223,6 @@ void cmdq_core_reset_hw_events(void)
 	for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++)
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(index));
 }
-
-#if 0
-uint32_t *addressToDump[3] = { IO_VIRT_TO_PHYS(MMSYS_CONFIG_BASE + 0x0890),
-	IO_VIRT_TO_PHYS(MMSYS_CONFIG_BASE + 0x0890),
-	IO_VIRT_TO_PHYS(MMSYS_CONFIG_BASE + 0x0890)
-};
-
-static int32_t testcase_regdump_begin(uint32_t taskID, uint32_t *regCount, uint32_t **regAddress)
-{
-	CMDQ_MSG("@@@@@@@@@@@@@@@@@@ testcase_regdump_begin, tid = %d\n", taskID);
-	*regCount = 3;
-	*regAddress = addressToDump;
-	return 0;
-}
-
-static int32_t testcase_regdump_end(uint32_t taskID, uint32_t regCount, uint32_t *regValues)
-{
-	int i;
-
-	CMDQ_MSG("@@@@@@@@@@@@@@@@@@ testcase_regdump_end, tid = %d\n", taskID);
-	CMDQ_MSG("@@@@@@@@@@@@@@@@@@ regCount = %d\n", regCount);
-
-	for (i = 0; i < regCount; ++i)
-		CMDQ_MSG("@@@@@@@@@@@@@@@@@@ regValue[%d] = 0x%08x\n", i, regValues[i]);
-
-	return 0;
-}
-#endif
 
 void cmdq_core_config_prefetch_gsize(void)
 {
@@ -6031,7 +6001,6 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 
 	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
 	CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
-	cmdq_get_func()->dumpClockGating();
 
 	/*      */
 	/* Dump MMSYS configuration */

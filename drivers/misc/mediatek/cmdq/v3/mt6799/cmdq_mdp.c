@@ -22,6 +22,7 @@
 
 #include "cmdq_device.h"
 struct CmdqMdpModuleBaseVA {
+	long MMSYS_CONFIG;
 	long MDP_RDMA0;
 	long MDP_RDMA1;
 	long MDP_RSZ0;
@@ -88,6 +89,11 @@ IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_TDSHP0, MDP_TDSHP);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_COLOR);
 #undef IMP_ENABLE_MDP_HW_CLOCK
 #undef IMP_MDP_HW_CLOCK_IS_ENABLE
+long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
+{
+	return gCmdqMdpModuleBaseVA.MMSYS_CONFIG;
+}
+
 long cmdq_mdp_get_module_base_VA_MDP_RDMA0(void)
 {
 	return gCmdqMdpModuleBaseVA.MDP_RDMA0;
@@ -133,6 +139,7 @@ long cmdq_mdp_get_module_base_VA_VENC(void)
 	return gCmdqMdpModuleBaseVA.VENC;
 }
 #ifdef CMDQ_OF_SUPPORT
+#define MMSYS_CONFIG_BASE	cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
 #define MDP_RDMA0_BASE		cmdq_mdp_get_module_base_VA_MDP_RDMA0()
 #define MDP_RDMA1_BASE		cmdq_mdp_get_module_base_VA_MDP_RDMA1()
 #define MDP_RSZ0_BASE		cmdq_mdp_get_module_base_VA_MDP_RSZ0()
@@ -288,6 +295,7 @@ void cmdq_mdp_init_module_base_VA(void)
 {
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(struct CmdqMdpModuleBaseVA));
 #ifdef CMDQ_OF_SUPPORT
+	gCmdqMdpModuleBaseVA.MMSYS_CONFIG = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mt6799-mmsys_config");
 	gCmdqMdpModuleBaseVA.MDP_RDMA0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rdma0");
 	gCmdqMdpModuleBaseVA.MDP_RDMA1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rdma1");
 	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mdp_rsz0");

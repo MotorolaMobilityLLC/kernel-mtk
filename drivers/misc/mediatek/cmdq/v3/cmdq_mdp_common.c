@@ -33,46 +33,7 @@ struct RegDef {
 
 void cmdq_mdp_dump_mmsys_config_virtual(void)
 {
-	int i = 0;
-	uint32_t value = 0;
-
-	static const struct RegDef configRegisters[] = {
-		{0x01c, "ISP_MOUT_EN"},
-		{0x020, "MDP_RDMA_MOUT_EN"},
-		{0x024, "MDP_PRZ0_MOUT_EN"},
-		{0x028, "MDP_PRZ1_MOUT_EN"},
-		{0x02C, "MDP_TDSHP_MOUT_EN"},
-		{0x030, "DISP_OVL0_MOUT_EN"},
-		{0x034, "DISP_OVL1_MOUT_EN"},
-		{0x038, "DISP_DITHER_MOUT_EN"},
-		{0x03C, "DISP_UFOE_MOUT_EN"},
-		/* {0x040, "MMSYS_MOUT_RST"}, */
-		{0x044, "MDP_PRZ0_SEL_IN"},
-		{0x048, "MDP_PRZ1_SEL_IN"},
-		{0x04C, "MDP_TDSHP_SEL_IN"},
-		{0x050, "MDP_WDMA_SEL_IN"},
-		{0x054, "MDP_WROT_SEL_IN"},
-		{0x058, "DISP_COLOR_SEL_IN"},
-		{0x05C, "DISP_WDMA_SEL_IN"},
-		{0x060, "DISP_UFOE_SEL_IN"},
-		{0x064, "DSI0_SEL_IN"},
-		{0x068, "DPI0_SEL_IN"},
-		{0x06C, "DISP_RDMA0_SOUT_SEL_IN"},
-		{0x070, "DISP_RDMA1_SOUT_SEL_IN"},
-		{0x0F0, "MMSYS_MISC"},
-		/* ACK and REQ related */
-		{0x8a0, "DISP_DL_VALID_0"},
-		{0x8a4, "DISP_DL_VALID_1"},
-		{0x8a8, "DISP_DL_READY_0"},
-		{0x8ac, "DISP_DL_READY_1"},
-		{0x8b0, "MDP_DL_VALID_0"},
-		{0x8b4, "MDP_DL_READY_0"}
-	};
-
-	for (i = 0; i < ARRAY_SIZE(configRegisters); ++i) {
-		value = CMDQ_REG_GET16(MMSYS_CONFIG_BASE + configRegisters[i].offset);
-		CMDQ_ERR("%s: 0x%08x\n", configRegisters[i].name, value);
-	}
+	/* Do Nothing */
 }
 
 /* VENC callback function */

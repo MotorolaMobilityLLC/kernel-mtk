@@ -38,7 +38,6 @@ struct CmdqDeviceStruct {
 	int32_t dma_mask_result;
 };
 static struct CmdqDeviceStruct gCmdqDev;
-static long gMMSYS_CONFIG_Base_VA;
 static long gAPXGPT2Count;
 static uint32_t gMMSYSDummyRegOffset;
 
@@ -72,11 +71,6 @@ int32_t cmdq_dev_get_dma_mask_result(void)
 	return gCmdqDev.dma_mask_result;
 }
 
-long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
-{
-	return gMMSYS_CONFIG_Base_VA;
-}
-
 long cmdq_dev_get_APXGPT2_count(void)
 {
 	return gAPXGPT2Count;
@@ -89,15 +83,6 @@ uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void)
 
 void cmdq_dev_init_module_base_VA(void)
 {
-	gMMSYS_CONFIG_Base_VA = 0;
-
-#ifdef CMDQ_OF_SUPPORT
-	gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,mmsys_config");
-
-	if (gMMSYS_CONFIG_Base_VA == 0)
-		gMMSYS_CONFIG_Base_VA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MMSYS_CONFIG");
-#endif
-
 	cmdq_mdp_get_func()->initModuleBaseVA();
 }
 
