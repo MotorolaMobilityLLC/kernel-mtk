@@ -361,8 +361,9 @@ void wdt_arch_reset(char mode)
 #endif
 #endif
 	udelay(100);
-	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 	pr_debug("wdt_arch_reset: SW_reset happen\n");
+	__inner_flush_dcache_all();
+	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 	spin_unlock(&rgu_reg_operation_spinlock);
 
 	while (1) {
@@ -625,6 +626,87 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 	}
 }
 
+int mtk_wdt_dfd_count_en(int value)
+{
+	volatile unsigned int tmp;
+
+	if (value == 1) {
+		/* enable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp |= (MTK_WDT_DFD_COUNT_EN|MTK_WDT_LATCH_CTL_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	} else if (value == 0) {
+		/* disable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp &= (~MTK_WDT_DFD_COUNT_EN);
+		tmp |= MTK_WDT_LATCH_CTL_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	}
+	pr_debug("mtk_wdt_dfd_count_en:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+
+	return 0;
+}
+
+int mtk_wdt_dfd_thermal1_dis(int value)
+{
+	volatile unsigned int tmp;
+
+	if (value == 1) {
+		/* enable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp |= (MTK_WDT_DFD_THERMAL1_DIS|MTK_WDT_LATCH_CTL_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	} else if (value == 0) {
+		/* disable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp &= (~MTK_WDT_DFD_THERMAL1_DIS);
+		tmp |= MTK_WDT_LATCH_CTL_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	}
+	pr_debug("mtk_wdt_dfd_thermal1_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+
+	return 0;
+}
+
+int mtk_wdt_dfd_thermal2_dis(int value)
+{
+	volatile unsigned int tmp;
+
+	if (value == 1) {
+		/* enable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp |= (MTK_WDT_DFD_THERMAL2_DIS|MTK_WDT_LATCH_CTL_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	} else if (value == 0) {
+		/* disable dfd count */
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+		tmp &= (~MTK_WDT_DFD_THERMAL2_DIS);
+		tmp |= MTK_WDT_LATCH_CTL_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	}
+	pr_debug("mtk_wdt_dfd_thermal2_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+
+	return 0;
+}
+
+int mtk_wdt_dfd_timeout(int value)
+{
+	volatile unsigned int tmp;
+
+	value = value << MTK_WDT_DFD_TIMEOUT_SHIFT;
+	value = value & MTK_WDT_DFD_TIMEOUT_MASK;
+
+	/* enable dfd count */
+	tmp = __raw_readl(MTK_WDT_LATCH_CTL);
+	tmp &= (~MTK_WDT_DFD_TIMEOUT_MASK);
+	tmp |= (value|MTK_WDT_LATCH_CTL_KEY);
+	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+
+	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+
+	return 0;
+}
+
 #else
 /* ------------------------------------------------------------------------------------------------- */
 /* Dummy functions */
@@ -647,6 +729,10 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
 void mtk_wdt_set_c2k_sysrst(unsigned int flag) {}
 int mtk_rgu_dram_reserved(int enable) {return 0; }
 int mtk_rgu_mcu_cache_preserve(int enable) {return 0; }
+int mtk_wdt_dfd_count_en(int value) {return 0; }
+int mtk_wdt_dfd_thermal1_dis(int value) {return 0; }
+int mtk_wdt_dfd_thermal2_dis(int value) {return 0; }
+int mtk_wdt_dfd_timeout(int value) {return 0; }
 
 #endif /* #ifndef __USING_DUMMY_WDT_DRV__ */
 

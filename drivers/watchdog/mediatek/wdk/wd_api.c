@@ -42,6 +42,10 @@ static int wd_mcu_cache_preserve(bool enabled);
 static int thermal_direct_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 static int debug_key_eint_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode);
+static int dfd_count_en(int value);
+static int dfd_thermal1_dis(int value);
+static int dfd_thermal2_dis(int value);
+static int dfd_timeout(int value);
 
 static struct wd_api g_wd_api_obj = {
 	.ready = 1,
@@ -66,6 +70,10 @@ static struct wd_api g_wd_api_obj = {
 	.wd_thermal_direct_mode_config = thermal_direct_mode_config,
 	.wd_debug_key_eint_config = debug_key_eint_config,
 	.wd_debug_key_sysrst_config = debug_key_sysrst_config,
+	.wd_dfd_count_en = dfd_count_en,
+	.wd_dfd_thermal1_dis = dfd_thermal1_dis,
+	.wd_dfd_thermal2_dis = dfd_thermal2_dis,
+	.wd_dfd_timeout = dfd_timeout,
 };
 
 /* struct wd_private_api  *g_wd_private_api_obj; */
@@ -550,6 +558,26 @@ static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode)
 }
 
 #endif
+
+static int dfd_count_en(int value)
+{
+	return mtk_wdt_dfd_count_en(value);
+}
+
+static int dfd_thermal1_dis(int value)
+{
+	return mtk_wdt_dfd_thermal1_dis(value);
+}
+
+static int dfd_thermal2_dis(int value)
+{
+	return mtk_wdt_dfd_thermal2_dis(value);
+}
+
+static int dfd_timeout(int value)
+{
+	return mtk_wdt_dfd_timeout(value);
+}
 
 /* public interface implimentation end */
 

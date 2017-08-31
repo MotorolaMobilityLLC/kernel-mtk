@@ -79,6 +79,10 @@ struct wd_api {
 	int (*wd_thermal_direct_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
 	int (*wd_debug_key_eint_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
 	int (*wd_debug_key_sysrst_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
+	int (*wd_dfd_count_en)(int value);
+	int (*wd_dfd_thermal1_dis)(int value);
+	int (*wd_dfd_thermal2_dis)(int value);
+	int (*wd_dfd_timeout)(int value);
 };
 
 int wd_api_init(void);

@@ -130,6 +130,14 @@
 #define MTK_DEBUG_CTL_KEY           (0x59000000)
 #define MTK_RG_MCU_CACHE_PRESERVE   (0x00008)
 
+/*MTK_WDT_LATCH_CTL*/
+#define MTK_WDT_LATCH_CTL_KEY		(0x95000000)
+#define MTK_WDT_DFD_COUNT_EN		(1 << 7)
+#define MTK_WDT_DFD_THERMAL1_DIS	(1 << 13)
+#define MTK_WDT_DFD_THERMAL2_DIS	(1 << 14)
+#define MTK_WDT_DFD_TIMEOUT_SHIFT	(15)
+#define MTK_WDT_DFD_TIMEOUT_MASK	(0x1FF << MTK_WDT_DFD_TIMEOUT_SHIFT)
+
 /*MTK_WDT_RSTDEG_EN*/
 #define MTK_WDT_RSTDEG_EN1_KEY			(0xa357)
 #define MTK_WDT_RSTDEG_EN2_KEY			(0x67d2)
@@ -138,5 +146,6 @@
 #define MTK_WDT_SYSDBG_DEG_EN1_KEY		(0x1b2a)
 #define MTK_WDT_SYSDBG_DEG_EN2_KEY		(0x4f59)
 
+extern void __inner_flush_dcache_all(void);
 
 #endif   /*__WDT_HW_H__*/
