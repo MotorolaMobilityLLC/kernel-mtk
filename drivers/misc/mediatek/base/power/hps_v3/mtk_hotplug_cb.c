@@ -81,7 +81,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -109,7 +109,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+#ifndef CONFIG_MACH_MT6763
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 #if BUCK_CTRL_DBLOG
@@ -139,6 +140,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 #endif
 				}
+#endif
 					/*4. Turn on ARM PLL*/
 					armpll_control(2, 1);
 #if BUCK_CTRL_DBLOG
@@ -221,7 +223,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			/* pr_crit("Start to power off etc and cluster %d\n", cpu/4); */
 #endif
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
@@ -259,6 +261,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if BUCK_CTRL_DBLOG
 				pr_info("3],[4,");
 #endif
+#ifndef CONFIG_MACH_MT6763
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 					/*4. Power off Vproc2*/
@@ -276,6 +279,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 #endif
 				}
+#endif
 				break;
 			case 2:
 				 /*1. Switch to SW mode*/
