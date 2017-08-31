@@ -110,7 +110,7 @@ typedef u64 CMDQ_VARIABLE;
 * CPR#                            0    1    2    3    4    5    6
 */
 
-#define CMDQ_SPR_FOR_BACKUP			(0)
+#define CMDQ_SPR_FOR_TEMP			(0)
 #define CMDQ_SPR_FOR_LOOP_DEBUG		(1)
 #define CMDQ_THR_SPR_START			(2)
 #define CMDQ_THR_SPR_MAX			(4)

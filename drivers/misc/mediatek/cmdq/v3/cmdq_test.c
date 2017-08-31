@@ -4058,6 +4058,93 @@ static void testcase_disp_simulate(void)
 		CMDQ_TEST_FAIL("%s wait valid event failed: %dms (200)\n", __func__, duration_time_ms);
 
 	cmdq_task_destroy(handle);
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+static void testcase_read_with_mask(void)
+{
+	struct cmdqRecStruct *handle;
+	cmdqBackupSlotHandle slot_handle;
+	CMDQ_VARIABLE arg_read = CMDQ_TASK_CPR_INITIAL_VALUE;
+	u32 read_value = 0x00FADE00;
+	u32 read_mask[2] = {0x00FF0000, 0x0000FF00};
+	u32 backup_read_value = 0;
+	u32 loop = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_alloc_mem(&slot_handle, 1);
+	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, read_value);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+
+	for (loop = 0; loop < ARRAY_SIZE(read_mask); loop++) {
+		cmdq_task_reset(handle);
+		cmdq_op_read_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, &arg_read, read_mask[loop]);
+		cmdq_op_backup_CPR(handle, arg_read, slot_handle, 0);
+		cmdq_task_flush(handle);
+
+		cmdq_cpu_read_mem(slot_handle, 0, &backup_read_value);
+
+		if (backup_read_value != (read_value & read_mask[loop])) {
+			CMDQ_TEST_FAIL("read value with mask error: (0x%08x) expect: (0x%08x)\n",
+				backup_read_value, read_value & read_mask[loop]);
+		}
+	}
+
+	cmdq_free_mem(slot_handle);
+	cmdq_task_destroy(handle);
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+/*
+ * Test Efficient Polling
+ * 1. Polling basic function should work
+ * 2. Polling should not block low priority thread
+ */
+static void testcase_efficient_polling(void)
+{
+	struct cmdqRecStruct *h_poll, *h_low;
+	struct TaskStruct *pTask_poll, *pTask_low;
+	u32 poll_value = 0x00FADE00, poll_mask = 0x00FF0000;
+	s32 result = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+	/* create low priority thread to simulate block case*/
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &h_low);
+	cmdq_task_reset(h_low);
+	cmdq_op_wait(h_low, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(h_low, false);
+
+	/* create polling thread with trigger loop priority */
+	cmdq_task_create(CMDQ_SCENARIO_TRIGGER_LOOP, &h_poll);
+	cmdq_task_reset(h_poll);
+	cmdq_op_poll(h_poll, CMDQ_TEST_GCE_DUMMY_PA, poll_value, poll_mask);
+	cmdq_op_finalize_command(h_poll, false);
+
+	_test_submit_async(h_low, &pTask_low);
+	msleep_interruptible(500);
+	_test_submit_async(h_poll, &pTask_poll);
+
+	cmdqCoreDebugDumpCommand(pTask_poll);
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+	result = cmdqCoreWaitAndReleaseTask(pTask_low, 500);
+	if (result < 0)
+		CMDQ_TEST_FAIL("Low priority thread is blocked by polling. (%d)\n", result);
+
+	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, poll_value);
+	result = cmdqCoreWaitAndReleaseTask(pTask_poll, 500);
+
+	if (result < 0)
+		CMDQ_TEST_FAIL("Poll ability does not execute successfully. (%d)\n", result);
+
+	cmdq_task_destroy(h_low);
+	cmdq_task_destroy(h_poll);
+	CMDQ_MSG("%s END\n", __func__);
 }
 
 static void testcase_mmsys_performance(int32_t test_id)
@@ -4591,6 +4678,12 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 148:
+		testcase_read_with_mask();
+		break;
+	case 147:
+		testcase_efficient_polling();
+		break;
 	case 146:
 		testcase_disp_simulate();
 		break;
