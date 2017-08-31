@@ -458,7 +458,7 @@ int spm_vcorefs_get_opp(void)
 
 static void dvfsrc_hw_policy_mask(bool force)
 {
-	if (force) {
+	if (force || vcorefs_i_hwpath_en()) {
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 4));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 8));
