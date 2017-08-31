@@ -2216,8 +2216,9 @@ static MINT32 DPE_ReadReg(DPE_REG_IO_STRUCT *pRegIo)
 	/*  */
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
 	DPE_REG_STRUCT *pData = NULL;
+	DPE_REG_STRUCT *pTmpData = NULL;
 
-	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (DPE_REG_RANGE>>2))) {
 		LOG_ERR("DPE_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
@@ -2228,6 +2229,7 @@ static MINT32 DPE_ReadReg(DPE_REG_IO_STRUCT *pRegIo)
 		Ret = -ENOMEM;
 		goto EXIT;
 	}
+	pTmpData = pData;
 	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(DPE_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_DPE_BASE + pData->Addr >= ISP_DPE_BASE)
@@ -2239,6 +2241,7 @@ static MINT32 DPE_ReadReg(DPE_REG_IO_STRUCT *pRegIo)
 			}
 			pData++;
 		}
+		pData = pTmpData;
 		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(DPE_REG_STRUCT)) != 0) {
 			LOG_ERR("copy_to_user failed\n");
 			Ret = -EFAULT;

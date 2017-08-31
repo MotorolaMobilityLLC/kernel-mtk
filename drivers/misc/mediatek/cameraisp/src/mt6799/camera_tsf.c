@@ -833,9 +833,9 @@ static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
 	MINT32 Ret = 0;
 	/*  */
 	/* MUINT32* pData = (MUINT32*)pRegIo->Data; */
-	TSF_REG_STRUCT *pData = NULL;
+	TSF_REG_STRUCT *pData = NULL, *pTmpData = NULL;
 
-	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (TSF_REG_RANGE>>2))) {
 		LOG_ERR("TSF_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
@@ -846,6 +846,7 @@ static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
 		Ret = -ENOMEM;
 		goto EXIT;
 	}
+	pTmpData = pData;
 	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_TSF_BASE + pData->Addr >= ISP_TSF_BASE)
@@ -857,6 +858,7 @@ static MINT32 TSF_ReadReg(TSF_REG_IO_STRUCT *pRegIo)
 			}
 			pData++;
 		}
+		pData = pTmpData;
 		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(TSF_REG_STRUCT)) != 0) {
 			LOG_ERR("copy_to_user failed\n");
 			Ret = -EFAULT;
