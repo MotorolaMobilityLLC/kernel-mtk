@@ -13,6 +13,9 @@
 
 #ifndef __PMIC_WRAP_REGS_H__
 #define __PMIC_WRAP_REGS_H__
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+#include "pwrap_hal_v1.h"
+#else
 #ifndef CONFIG_OF
 #include <mach/mtk_reg_base.h>
 #include <mach/mtk_irq.h>
@@ -39,6 +42,8 @@
 #define PMIC_WRAP_REG_RANGE                     207
 #define MT6351_DEFAULT_VALUE_READ_TEST          0x5aa5
 #define MT6351_WRITE_TEST_VALUE                 0x1234
+#define PMIC_DEFAULT_VALUE_READ_TEST          0x5aa5
+#define PMIC_WRITE_TEST_VALUE                 0x1234
 
 #ifdef CONFIG_OF
 extern void __iomem *pwrap_base;
@@ -479,4 +484,5 @@ s32 pwrap_init_lk(void);
 #define GET_PWRAP_GPS_WDATA(x)       ((x>>17) & 0x00007fff)
 #define GET_PWRAP_MD_ADC_TEMP_DATA(x)  ((x>>16) & 0x0000ffff)
 
+#endif /* end of #ifdef CONFIG_MTK_PMIC_NEW_ARCH */
 #endif
