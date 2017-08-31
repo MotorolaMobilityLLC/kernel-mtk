@@ -45,18 +45,9 @@ Revision History:
 #include "anx7625_driver.h"
 #include "MI2_REG.h"
 
-#ifdef ANX7625_MTK_PLATFORM
+
 #include "display_edid.h"
 #include "display_edid_3d_api.h"
-#else
-#include "../mdss/mhl3/si_fw_macros.h"
-#include "../mdss/mhl3/si_infoframe.h"
-#include "../mdss/mhl3/si_edid.h"
-#include "../mdss/mhl3/si_mhl_defs.h"
-#include "../mdss/mhl3/si_mhl2_edid_3d_api.h"
-extern void si_mhl_tx_handle_atomic_hw_edid_read_complete(
-	struct edid_3d_data_t *mhl_edid_3d_data);
-#endif
 
 #ifdef DYNAMIC_CONFIG_MIPI
 #include "anx7625_driver.h"
@@ -98,6 +89,8 @@ end:
 
 
 static void sp_tx_rst_aux(void);
+static char  cal_ODFC_PLL_settings_DSI(unsigned long pixel_frequency,
+	unsigned long *M, unsigned long *N, unsigned char *post_divider);
 
 
 int sp_read_reg(uint8_t slave_addr, uint8_t offset, uint8_t *buf)
@@ -248,6 +241,9 @@ void DP_Process_Start(void)
 			TRACE("context already existed.\n");
 		}
 
+		/*reset edid timing information*/
+		memset(&v_edid_timing, 0, sizeof(v_edid_timing));
+
 		blocks_num = sp_tx_edid_read(edid_blocks);
 
 		if (cable_connected == 0) {
@@ -261,15 +257,53 @@ void DP_Process_Start(void)
 
 		/*Parse EDID*/
 		if (slimport_edid_p != NULL) {
-#ifdef ANX7625_MTK_PLATFORM
+
 			edid_3d_data_t *p_edid =
 				(edid_3d_data_t *)slimport_edid_p;
-#else
-			struct edid_3d_data_t *p_edid =
-				(struct edid_3d_data_t *)slimport_edid_p;
-#endif
+
 			memcpy((uint8_t *)(p_edid->EDID_block_data),
 				edid_blocks, (blocks_num + 1) * 128);
+
+/* For VR TEST*/
+/*
+*
+{
+unsigned char  buf_test_edid[128] = {
+for pico
+0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x52,0x62,0x88,0x88,0x00,0x88,0x88,0x88,
+0x01,0x19,0x01,0x03,0x80,0x00,0x00,0x78,0x0A,0x0D,0xC9,0xA0,0x57,0x47,0x98,0x27,
+0x12,0x48,0x4C,0x00,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,0x01,
+0x01,0x01,0x01,0x01,0x01,0x01,0x54,0x6F,0xA0,0x8C,0x50,0x00,0x10,0xA0,0x50,0x14,
+0x68,0x00,0xA0,0x00,0x5A,0x00,0x00,0x1E,0x54,0x6F,0xA0,0x8C,0x50,0x00,0x10,0xA0,
+0x50,0x14,0x68,0x00,0xA0,0x00,0x5A,0x00,0x00,0x1E,0x00,0x00,0x00,0xFC,0x00,0x54,
+0x38,0x36,0x30,0x2D,0x31,0x34,0x78,0x32,0x35,0x2D,0x37,0x0A,0x00,0x00,0x00,0xFD,
+0x00,0x14,0x64,0x05,0xFF,0x35,0x00,0x0A,0x20,0x20,0x20,0x20,0x20,0x20,0x00,0x16
+
+sharp 1440
+0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x05,0xD8,0x30,0x75,0x01,0x00,0x00,0x00
+,0x01,0x1B,0x01,0x03,0xA5,0x06,0x05,0x78,0x0E,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00
+,0x01,0x00,0x01,0x00,0x01,0x00,0xC7,0x32,0xA0,0x30,0x50,0xA0,0x10,0x50,0x18,0x04
+,0x81,0x00,0x3C,0x32,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x10,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x10
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0xC0
+
+sharp 2880
+0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x05,0xD8,0x30,0x75,0x01,0x00,0x00,0x00
+,0x01,0x1B,0x01,0x03,0xA5,0x06,0x05,0x78,0x0E,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00
+,0x01,0x00,0x01,0x00,0x01,0x00,0x8E,0x65,0x40,0x60,0xB0,0xA0,0x10,0x50,0x30,0x08
+,0x81,0x00,0x3C,0x32,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x10,0x00,0x00,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x10,0x00,0x00
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x10
+,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x7A
+
+};
+memset((uint8_t *)(p_edid->EDID_block_data),	0, 256);
+memcpy((uint8_t *)(p_edid->EDID_block_data), buf_test_edid, 128);
+}
+*/
 
 #ifdef DEBUG_LOG_OUTPUT
 	{
@@ -342,15 +376,86 @@ void DP_Process_Start(void)
 				return;
 			}
 
-#ifdef ANX7625_MTK_PLATFORM
+
 			si_mhl_tx_handle_atomic_hw_edid_read_complete(
 				(edid_3d_data_p)slimport_edid_p);
-#endif
-			if (p_edid->parse_data.HDMI_sink == true)
-				Notify_AP_MHL_TX_Event(
-					SLIMPORT_TX_EVENT_EDID_DONE, 0, NULL);
-			else
-				TRACE("HDMI_sink is false\n");
+
+if (v_edid_timing.timing_id != 0) {
+	unsigned long temp_m, temp_n;
+	unsigned char temp_div = 0, i;
+
+	cal_ODFC_PLL_settings_DSI(v_edid_timing.MIPI_pixel_frequency,
+		&temp_m, &temp_n, &temp_div);
+	mipi_video_timing_table[v_edid_timing.timing_id].MIPI_pixel_frequency = v_edid_timing.MIPI_pixel_frequency;
+	mipi_video_timing_table[v_edid_timing.timing_id].M = temp_m;
+	mipi_video_timing_table[v_edid_timing.timing_id].N = temp_n;
+	mipi_video_timing_table[v_edid_timing.timing_id].post_divider = temp_div;
+	memcpy(&(mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0]),
+		&(v_edid_timing.timing_info), sizeof(v_edid_timing.timing_info));
+	memcpy(&(mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[1]),
+		&(v_edid_timing.timing_info), sizeof(v_edid_timing.timing_info));
+	if (v_edid_timing.MIPI_pixel_frequency > 150000000) {
+		TRACE("DSC will be enabled.\n");
+		mipi_video_timing_table[v_edid_timing.timing_id].compress_ratio = 3;
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0].MIPI_HTOTAL /= 3;
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0].MIPI_HActive /= 3;
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0].MIPI_H_Front_Porch /= 3;
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0].MIPI_H_Sync_Width /= 3;
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[0].MIPI_H_Back_Porch /= 3;
+
+	} else
+		mipi_video_timing_table[v_edid_timing.timing_id].compress_ratio = 0;
+
+	if ((v_edid_timing.MIPI_pixel_frequency == 285000000) &&
+		(v_edid_timing.timing_info.MIPI_HTOTAL == 1580) &&
+		(v_edid_timing.timing_info.MIPI_HActive == 1440) &&
+		(v_edid_timing.timing_info.MIPI_VTOTAL == 2576) &&
+		(v_edid_timing.timing_info.MIPI_VActive == 2560))
+		Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_UPDATE, HDMI_2k70_DSC, NULL);
+	else
+		Notify_AP_MHL_TX_Event(SLIMPORT_TX_EVENT_EDID_UPDATE, HDMI_SPECAIL_RES, NULL);
+
+
+	TRACE("v_edid_timing.timing_id=%d\n", v_edid_timing.timing_id);
+	TRACE("v_edid_timing.MIPI_pixel_frequency=%ld\n", v_edid_timing.MIPI_pixel_frequency);
+	TRACE("v_edid_timing.timing_info.MIPI_HTOTAL=%d\n", v_edid_timing.timing_info.MIPI_HTOTAL);
+	TRACE("v_edid_timing.timing_info.MIPI_HActive=%d\n", v_edid_timing.timing_info.MIPI_HActive);
+	TRACE("v_edid_timing.timing_info.MIPI_VTOTAL=%d\n", v_edid_timing.timing_info.MIPI_VTOTAL);
+	TRACE("v_edid_timing.timing_info.MIPI_VActive=%d\n", v_edid_timing.timing_info.MIPI_VActive);
+	TRACE("v_edid_timing.timing_info.MIPI_H_Front_Porch=%d\n", v_edid_timing.timing_info.MIPI_H_Front_Porch);
+	TRACE("v_edid_timing.timing_info.MIPI_H_Sync_Width=%d\n", v_edid_timing.timing_info.MIPI_H_Sync_Width);
+	TRACE("v_edid_timing.timing_info.MIPI_H_Back_Porch=%d\n", v_edid_timing.timing_info.MIPI_H_Back_Porch);
+	TRACE("v_edid_timing.timing_info.MIPI_V_Front_Porch=%d\n", v_edid_timing.timing_info.MIPI_V_Front_Porch);
+	TRACE("v_edid_timing.timing_info.MIPI_V_Sync_Width=%d\n", v_edid_timing.timing_info.MIPI_V_Sync_Width);
+	TRACE("v_edid_timing.timing_info.MIPI_V_Back_Porch=%d\n", v_edid_timing.timing_info.MIPI_V_Back_Porch);
+
+	TRACE("v_edid_timing M=0x%lx\n", temp_m);
+	TRACE("v_edid_timing N=0x%lx\n", temp_n);
+	TRACE("v_edid_timing post_divider=%d\n", temp_div);
+for (i = 0; i < 2; i++) {
+	TRACE("INDEX=%d\n", i);
+	TRACE("[].MIPI_HTOTAL=%d\n", mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_HTOTAL);
+	TRACE("[].MIPI_HActive=%d\n", mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_HActive);
+	TRACE("[].MIPI_VTOTAL=%d\n", mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_VTOTAL);
+	TRACE("[].MIPI_VActive=%d\n", mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_VActive);
+	TRACE("[].MIPI_H_Front_Porch=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_H_Front_Porch);
+	TRACE("[].MIPI_H_Sync_Width=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_H_Sync_Width);
+	TRACE("[].MIPI_H_Back_Porch=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_H_Back_Porch);
+	TRACE("[].MIPI_V_Front_Porch=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_V_Front_Porch);
+	TRACE("[].MIPI_V_Sync_Width=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_V_Sync_Width);
+	TRACE("[].MIPI_V_Back_Porch=%d\n",
+		mipi_video_timing_table[v_edid_timing.timing_id].MIPI_inputl[i].MIPI_V_Back_Porch);
+}
+
+}
+
+			Notify_AP_MHL_TX_Event(
+				SLIMPORT_TX_EVENT_EDID_DONE, 0, NULL);
 
 			TRACE("SLIMPORT_TX_EVENT_EDID_DONE\n");
 
@@ -726,6 +831,179 @@ void sp_tx_set_3d_format(u8 format3d)
 	sp_write_reg_or(RX_P0, AP_AV_STATUS, format3d & (_BIT1 | _BIT0));
 
 }
+
+
+
+#define XTAL_FRQ  27000000UL  /* MI-2 clock frequency in Hz: 27 MHz*/
+#define XTAL_FRQ_MHz  27      /* MI-2 clock frequency in MHz: 27 MHz*/
+
+
+/* calculate the Greatest Common Divisor of a and b */
+static unsigned long GCD(unsigned long a, unsigned long b)
+{
+	unsigned long  iterations = 0L;
+
+	if (a == 0) {
+		/*printf("ite=%lu\n", iterations);  how many iterations are needed*/
+		return  b;
+	}
+
+	while (b != 0) {
+		if (a > b)
+			a = a - b;
+		else
+			b = b - a;
+
+		iterations++;
+	}
+
+	/*printf("ite=%lu\n", iterations);  how many iterations are needed*/
+	return a;
+}
+
+
+#define  MAX_UNSIGNED_24BIT   16777215UL
+/* reduction of fraction a/b */
+void reduction_of_a_fraction(unsigned long *a, unsigned long *b)
+{
+	unsigned long  gcd;
+	unsigned long  tmp_a, tmp_b;
+	unsigned int   i = 1;
+
+	gcd = GCD(*a, *b);
+	*a /= gcd;
+	*b /= gcd;
+
+	tmp_a = *a;
+	tmp_b = *b;
+
+	while ((*a > MAX_UNSIGNED_24BIT) || (*b > MAX_UNSIGNED_24BIT)) {
+		i++;
+		*a = tmp_a / i;
+		*b = tmp_b / i;
+	}
+
+	/* in the end, make a, b larger to have higher ODFC PLL output frequency accuracy */
+	while ((*a < MAX_UNSIGNED_24BIT) && (*b < MAX_UNSIGNED_24BIT)) {
+		*a <<= 1;
+		*b <<= 1;
+	}
+
+	*a >>= 1;
+	*b >>= 1;
+}
+
+
+/* calculate ODFC PLL settings for DSI */
+/*
+*
+   given a pixel_frequency which belongs to [18750000, 297000000],
+   decide integer values M, N, and post_divider to satisfy
+     pixel_frequency = XTAL_FRQ * M / N / post_divider (if not exactly equal, try to minimize the error)
+     post_divider belongs to [1, 16]
+     M belongs to [1, 2^24-1]
+     N belongs to [1, 2^24-1]
+     XTAL_FRQ * M / N belongs to [300000000, 800000000]
+ */
+/*
+*
+   f_vco frequency:
+   band 0:    1 ~ 1.15 GHz
+   band 1: 1.15 ~ 1.3  GHz
+   band 2:  1.3 ~ 1.5  GHz
+   band 3:  1.5 ~ 2.0  GHz
+
+   band 3 is usable but not recommended, as using band 3:
+     a) The power consumption is higher.
+     b) For SS corner chips, VCO may not work at 2GHz.
+
+   let f_vco = 1~1.5GHz ==> f2 = f_vco = 1~1.5GHz
+   ==> f1 = 0.5~0.75GHz ==> add some margin, let f1 = 0.52~0.73GHz
+ */
+#define  POST_DIVIDER_MIN    1
+#define  POST_DIVIDER_MAX   16
+#define  PLL_OUT_FREQ_MIN    520000000UL
+#define  PLL_OUT_FREQ_MAX    730000000UL
+#define  PLL_OUT_FREQ_ABS_MIN    300000000UL
+#define  PLL_OUT_FREQ_ABS_MAX    800000000UL
+static char  cal_ODFC_PLL_settings_DSI(unsigned long pixel_frequency,
+	unsigned long *M, unsigned long *N, unsigned char *post_divider)
+{
+	if (pixel_frequency > PLL_OUT_FREQ_ABS_MAX / POST_DIVIDER_MIN) {
+		TRACE("ERROR! cal_ODFC_PLL_settings_DSI: pixel clock frequency = %lu > %lu Hz\n",
+		      pixel_frequency, PLL_OUT_FREQ_ABS_MAX / POST_DIVIDER_MIN);
+		return  -AUX_ERR;  /* pixel clock frequency is too high*/
+	}
+
+	if (pixel_frequency < PLL_OUT_FREQ_ABS_MIN / POST_DIVIDER_MAX) {
+		TRACE("ERROR! cal_ODFC_PLL_settings_DSI: pixel clock frequency = %lu < %lu Hz\n",
+		      pixel_frequency, PLL_OUT_FREQ_ABS_MIN / POST_DIVIDER_MAX);
+		return  -AUX_ERR;  /* pixel clock frequency is too low*/
+	}
+
+	*post_divider = 1;
+
+	while (1) {
+		if (pixel_frequency >= (PLL_OUT_FREQ_MIN / (*post_divider)))
+			break;
+
+
+		*post_divider += 1;
+	}
+
+	if (*post_divider > POST_DIVIDER_MAX) {
+		*post_divider = 1;
+
+		while (1) {
+			if (pixel_frequency >= (PLL_OUT_FREQ_ABS_MIN / (*post_divider)))
+				break;
+
+			*post_divider += 1;
+		}
+
+		if (*post_divider > POST_DIVIDER_MAX)
+			return  -AUX_ERR;  /* internal error A (theoretically speaking, should not happen)*/
+
+	}
+
+	/* patch to improve the accuracy */
+	if (*post_divider == 7) {      /* 27,000,000 is not divisible by 7*/
+		*post_divider = 8;
+	} else if (*post_divider == 11) { /* 27,000,000 is not divisible by 11*/
+		*post_divider = 12;
+	} else if ((*post_divider == 13) || (*post_divider == 14)) { /*27,000,000 is not divisible by 13 or 14*/
+		*post_divider = 15;
+	}
+
+	if (pixel_frequency * (*post_divider) > PLL_OUT_FREQ_ABS_MAX)
+		return  -AUX_ERR;  /* internal error B*/
+
+
+/*  Theoretical analysis of why "internal error B" should not happen:
+*
+	    730MHz/520MHz = 1.404
+	  The impact of "patch to improve the accuracy":
+	  In the worst case, e.g.
+	    pixel_frequency == PLL_OUT_FREQ_MIN / (6+x) or
+	    pixel_frequency == PLL_OUT_FREQ_ABS_MIN / (6+x)
+	  0<x<<1, "x<<1" means x is much less than 1, say 1/1000.
+	  After such "patch to improve the accuracy", (6+x)
+	  will be corrected to 8.
+	    8/(7-1) = 1.333
+	    12/(11-1) = 1.2
+	    15/(13-1) = 1.25
+	  All of these ratios are lower than 1.404, not to mention 800MHz/520MHz = 1.538
+*/
+
+	*M = pixel_frequency;
+	*N = XTAL_FRQ / (*post_divider);
+	reduction_of_a_fraction(M, N);
+
+	return  AUX_OK;
+}
+
+
+
 
 #undef _SP_TX_DRV_C_
 

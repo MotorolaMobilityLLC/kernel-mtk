@@ -694,7 +694,8 @@ u8 interface_send_msg_timeout(u8 type, u8 *pbuf, u8 len, int timeout_ms)
 
 	if (c == 0) {
 		WriteBlockReg(OCM_SLAVE_I2C_ADDR,
-			InterfaceSendBuf_Addr, sending_len, &WriteDataBuf[0]);
+			InterfaceSendBuf_Addr + 1, sending_len - 1, &WriteDataBuf[1]);
+		WriteReg(OCM_SLAVE_I2C_ADDR, InterfaceSendBuf_Addr, WriteDataBuf[0]);
 	} else {
 		TRACE("Tx Buf Full\n");
 	}
