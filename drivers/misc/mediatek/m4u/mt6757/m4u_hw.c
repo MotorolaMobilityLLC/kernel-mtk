@@ -21,7 +21,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include <mt-plat/mt_lpae.h>
+#include <mt-plat/mtk_lpae.h>
 
 static m4u_domain_t gM4uDomain;
 
