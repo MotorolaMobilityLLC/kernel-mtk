@@ -165,6 +165,7 @@ static int _disp_cmdq_remove_all_state(struct cmdqRecStruct *handle)
 
 	memset(disp_cmdq_state_stack[index], -1, sizeof(int) * DISP_CMDQ_STATE_STACK_NUM);
 	disp_cmdq_state_current[index] = 0;
+	disp_cmdq_thread_check[index] = DISP_CMDQ_CHECK_NORMAL;
 
 	return 0;
 }
@@ -367,6 +368,7 @@ int disp_cmdq_destroy(struct cmdqRecStruct *handle, const char *func, int line)
 	}
 
 	disp_cmdq_thread_map[index] = NULL;
+	disp_cmdq_thread_check[index] = DISP_CMDQ_CHECK_NORMAL;
 
 	return 0;
 }
