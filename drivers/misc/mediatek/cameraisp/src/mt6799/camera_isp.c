@@ -538,6 +538,8 @@ static struct isp_device *isp_devs;
 static int nr_isp_devs;
 #endif
 
+static unsigned int g_TuningBuffer[(ISP_DIP_REG_SIZE >> 2)];
+static unsigned int g_TpipeBuffer[(MAX_ISP_TILE_TDR_HEX_NO >> 2)];
 static volatile MUINT32 m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -3956,8 +3958,8 @@ static MINT32 ISP_DumpDIPReg(void)
 		LOG_INF("0x001A13 : isp: 0x15022084(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		ISP_WR32(ISP_DIP_A_BASE + 0x6BC, 0x001B13);
 		LOG_INF("0x001B13 : isp: 0x15022084(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x084));
-		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003018);
-		LOG_INF("0x003018 : isp: 0x15022084(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x084));
+		ISP_WR32(ISP_DIP_A_BASE + 0x080, 0x003017);
+		LOG_INF("0x003017 : isp: 0x15022084(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x084));
 		/* DMA Error */
 		LOG_INF("img2o  0x15022644(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x644));
 		LOG_INF("img2bo 0x15022648(0x%x)", ISP_RD32(ISP_DIP_A_BASE + 0x648));
@@ -4908,7 +4910,78 @@ EXIT:
 }
 
 
+/*******************************************************************************
+*
+********************************************************************************/
+static MINT32 ISP_DumpTuningBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpTuningBufStruct)
+{
+	MINT32 Ret = 0;
 
+	if ((pDumpTuningBufStruct->BytesofBufferSize > 0xFFFFFFFF) ||
+		(pDumpTuningBufStruct->BytesofBufferSize > ISP_DIP_REG_SIZE)) {
+		LOG_ERR("pDumpTuningBufStruct->BytesofBufferSize error");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	/*  */
+
+	if ((void __user *)(pDumpTuningBufStruct->pBuffer) == NULL) {
+		LOG_ERR("NULL pDumpTuningBufStruct->pBuffer");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
+	/*  */
+	if (copy_from_user(g_TuningBuffer, (void __user *)(pDumpTuningBufStruct->pBuffer),
+		pDumpTuningBufStruct->BytesofBufferSize) != 0) {
+		LOG_ERR("copy_from_user g_TuningBuffer failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	LOG_INF("copy tunning buffer is done!!\n");
+
+	/*  */
+EXIT:
+
+	return Ret;
+}
+
+
+/*******************************************************************************
+*
+********************************************************************************/
+static MINT32 ISP_DumpTpipeBuffer(ISP_DUMP_BUFFER_STRUCT *pDumpTpipeBufStruct)
+{
+	MINT32 Ret = 0;
+
+	if ((pDumpTpipeBufStruct->BytesofBufferSize > 0xFFFFFFFF) ||
+		(pDumpTpipeBufStruct->BytesofBufferSize > MAX_ISP_TILE_TDR_HEX_NO)) {
+		LOG_ERR("pDumpTpipeBufStruct->BytesofBufferSize error");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	/*  */
+
+	if ((void __user *)(pDumpTpipeBufStruct->pBuffer) == NULL) {
+		LOG_ERR("NULL pDumpTpipeBufStruct->pBuffer");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
+	/*  */
+	if (copy_from_user(g_TpipeBuffer, (void __user *)(pDumpTpipeBufStruct->pBuffer),
+		pDumpTpipeBufStruct->BytesofBufferSize) != 0) {
+		LOG_ERR("copy_from_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+	LOG_INF("copy tpipe buffer is done!!\n");
+
+	/*  */
+EXIT:
+
+	return Ret;
+}
 
 /*******************************************************************************
 *
@@ -7045,6 +7118,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	MUINT32 DebugFlag[3] = {0};
 	/*    MUINT32 pid = 0;*/
 	ISP_REG_IO_STRUCT       RegIo;
+	ISP_DUMP_BUFFER_STRUCT DumpBufStruct;
 	ISP_WAIT_IRQ_STRUCT     IrqInfo;
 	ISP_CLEAR_IRQ_STRUCT    ClearIrq;
 	ISP_USER_INFO_STRUCT *pUserInfo;
@@ -7969,6 +8043,26 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		IspInfo.TstpQInfo[ISP_IRQ_TYPE_INT_CAM_B_ST].Dmao[_rsso_].PrevFbcWCnt = 0;
 		LOG_INF("Clear eiso/rsso PrevFbcWCnt");
 		break;
+	case ISP_DUMP_TUNING_BUFFER: {
+		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(ISP_DUMP_BUFFER_STRUCT)) == 0) {
+			/* 2nd layer behavoir of copy from user is implemented in ISP_DumpTuningBuffer(...) */
+			Ret = ISP_DumpTuningBuffer(&DumpBufStruct);
+		} else {
+			LOG_ERR("ISP_DUMP_TUNING_BUFFER copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
+	}
+	case ISP_DUMP_TPIPE_BUFFER: {
+		if (copy_from_user(&DumpBufStruct, (void *)Param, sizeof(ISP_DUMP_BUFFER_STRUCT)) == 0) {
+			/* 2nd layer behavoir of copy from user is implemented in ISP_DumpTpipeBuffer(...) */
+			Ret = ISP_DumpTpipeBuffer(&DumpBufStruct);
+		} else {
+			LOG_ERR("ISP_DUMP_TPIPE_BUFFER copy_from_user failed\n");
+			Ret = -EFAULT;
+		}
+		break;
+	}
 	default:
 	{
 		LOG_ERR("Unknown Cmd(%d)\n", Cmd);
@@ -8110,6 +8204,20 @@ static int compat_put_isp_ref_cnt_ctrl_struct_data(
 	return err;
 }
 
+static int compat_get_isp_dump_buffer(
+	compat_ISP_DUMP_BUFFER_STRUCT __user *data32,
+	ISP_DUMP_BUFFER_STRUCT __user *data)
+{
+	compat_uint_t count;
+	compat_uptr_t uptr;
+	int err = 0;
+
+	err = get_user(uptr, &data32->pBuffer);
+	err |= put_user(compat_ptr(uptr), &data->pBuffer);
+	err |= get_user(count, &data32->BytesofBufferSize);
+	err |= put_user(count, &data->BytesofBufferSize);
+	return err;
+}
 
 #if 0
 static int compat_get_isp_register_userkey_struct_data(
@@ -8335,6 +8443,44 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 		ret =
 			filp->f_op->unlocked_ioctl(filp, ISP_GET_START_TIME,
 						   (unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_DUMP_TUNING_BUFFER: {
+		compat_ISP_DUMP_BUFFER_STRUCT __user *data32;
+		ISP_DUMP_BUFFER_STRUCT __user *data;
+
+		int err = 0;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_isp_dump_buffer(data32, data);
+		if (err) {
+			LOG_INF("COMPAT_ISP_DUMP_TUNING_BUFFER error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_TUNING_BUFFER, (unsigned long)data);
+		return ret;
+	}
+	case COMPAT_ISP_DUMP_TPIPE_BUFFER: {
+		compat_ISP_DUMP_BUFFER_STRUCT __user *data32;
+		ISP_DUMP_BUFFER_STRUCT __user *data;
+
+		int err = 0;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_isp_dump_buffer(data32, data);
+		if (err) {
+			LOG_INF("COMPAT_ISP_DUMP_TPIPE_BUFFER error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_DUMP_TPIPE_BUFFER, (unsigned long)data);
 		return ret;
 	}
 	case ISP_RESET_CAM_P1:
@@ -10697,6 +10843,48 @@ static ssize_t CAMIO_RegDebug(
 	LOG_ERR("CAMIO_RegDebug: Not implement");
 	return 0;
 }
+
+/*******************************************************************************
+*
+********************************************************************************/
+static int isp_p2_dump_read(struct seq_file *m, void *v)
+{
+	int i;
+
+	seq_puts(m, "\n============ isp p2 dump register============\n");
+	seq_puts(m, "isp p2 tuning buffer Info\n");
+
+	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
+		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+			   (unsigned int)g_TuningBuffer[i],
+			   (unsigned int)g_TuningBuffer[i+1],
+			   (unsigned int)g_TuningBuffer[i+2],
+			   (unsigned int)g_TuningBuffer[i+3]);
+	}
+	seq_puts(m, "\n");
+	seq_puts(m, "isp p2 tpipe buffer Info\n");
+	for (i = 0; i < (MAX_ISP_TILE_TDR_HEX_NO >> 4); i = i + 4) {
+		seq_printf(m, "[0x%08X 0x%08X 0x%08X 0x%08X]\n",
+			   (unsigned int)g_TpipeBuffer[i],
+			   (unsigned int)g_TpipeBuffer[i+1],
+			   (unsigned int)g_TpipeBuffer[i+2],
+			   (unsigned int)g_TpipeBuffer[i+3]);
+	}
+	seq_puts(m, "\n");
+	seq_puts(m, "\n============ isp p2 dump debug ============\n");
+	return 0;
+}
+
+static int proc_isp_p2_dump_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, isp_p2_dump_read, NULL);
+}
+
+static const struct file_operations isp_p2_dump_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_isp_p2_dump_open,
+	.read = seq_read,
+};
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -10720,6 +10908,8 @@ static MINT32 __init ISP_Init(void)
 	MINT32 Ret = 0, j;
 	void *tmp;
 	struct device_node *node = NULL;
+	struct proc_dir_entry *proc_entry;
+	struct proc_dir_entry *isp_p2_dir;
 
 	int i;
 	/*  */
@@ -10844,6 +11034,12 @@ static MINT32 __init ISP_Init(void)
 	proc_create("driver/isp_reg", 0, NULL, &fcameraisp_proc_fops);
 	proc_create("driver/camio_reg", 0, NULL, &fcameraio_proc_fops);
 
+	isp_p2_dir = proc_mkdir("isp_p2", NULL);
+	if (!isp_p2_dir) {
+		LOG_ERR("[%s]: fail to mkdir /proc/isp_p2\n", __func__);
+		return 0;
+	}
+	proc_entry = proc_create("isp_p2_dump", S_IRUGO, isp_p2_dir, &isp_p2_dump_proc_fops);
 	for (j = 0; j < ISP_IRQ_TYPE_AMOUNT; j++) {
 		switch (j) {
 		case ISP_IRQ_TYPE_INT_CAM_A_ST:
