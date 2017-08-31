@@ -4,6 +4,7 @@ ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 
 ifeq ($(CONFIG_MACH_MT6757), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
 endif
 ifeq ($(CONFIG_MACH_MT6759), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
