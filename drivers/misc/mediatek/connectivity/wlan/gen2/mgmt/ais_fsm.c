@@ -3532,6 +3532,9 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 	prAisBssInfo->u2ATIMWindow = 0;
 
 	prAisBssInfo->ucBeaconTimeoutCount = AIS_BEACON_TIMEOUT_COUNT_INFRA;
+	prAisBssInfo->ucRoamSkipTimes = CFG_GOOG_RCPI_SCAN_SKIP_TIMES;
+	prAisBssInfo->fgGoodRcpiArea = FALSE;
+	prAisBssInfo->fgPoorRcpiArea = FALSE;
 
 	/* 4 <4.2> Update HT information and set channel */
 	/* Record HT related parameters in rStaRec and rBssInfo

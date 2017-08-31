@@ -942,6 +942,10 @@ struct _BSS_INFO_T {
 	BOOLEAN fgTdlsIsProhibited;	/* TRUE: AP prohibits TDLS links */
 	BOOLEAN fgTdlsIsChSwProhibited;	/* TRUE: AP prohibits TDLS chan switch */
 #endif				/* CFG_SUPPORT_TDLS */
+
+	UINT_8 ucRoamSkipTimes;
+	BOOLEAN fgGoodRcpiArea;
+	BOOLEAN fgPoorRcpiArea;
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {
