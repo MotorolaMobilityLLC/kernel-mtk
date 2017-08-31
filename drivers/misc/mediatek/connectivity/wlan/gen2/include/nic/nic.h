@@ -182,6 +182,9 @@ WLAN_STATUS nicQmSetRxBASize(IN P_ADAPTER_T prAdapter, BOOLEAN enable, UINT32 si
 
 WLAN_STATUS nicSetAutoTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_AUTO_POWER_PARAM_T prAutoPwrParam);
 
+WLAN_STATUS nicSetUApsdParam(IN P_ADAPTER_T prAdapter,
+	IN PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams, IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx);
+
 /*----------------------------------------------------------------------------*/
 /* Calibration Control                                                        */
 /*----------------------------------------------------------------------------*/
