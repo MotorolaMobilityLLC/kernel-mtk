@@ -101,7 +101,7 @@ static int file_size(struct file *file)
 
 	oldfs = get_fs();
 	set_fs(get_ds());
-	ret = file->f_path.dentry->d_inode->i_size;
+	ret = file->f_dentry->d_inode->i_size;
 	set_fs(oldfs);
 	return ret;
 }
