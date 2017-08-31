@@ -113,13 +113,11 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if ((data == NULL) || !data_len)
 		return -EINVAL;
 
-	DBGLOG(REQ, INFO, "vendor command: data_len=%d, iftype=%d\n", data_len, wdev->iftype);
-
 	attr = (struct nlattr *)data;
 	if (attr->nla_type == WIFI_ATTRIBUTE_BAND)
 		band = nla_get_u32(attr);
 
-	DBGLOG(REQ, INFO, "Get channel list for band: %d\n", band);
+	DBGLOG(REQ, INFO, "Get channel list for band: %d, iftype=%d\n", band, wdev->iftype);
 
 	if (wdev->iftype == NL80211_IFTYPE_AP)
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
@@ -128,7 +126,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 	if (!prGlueInfo)
 		return -EFAULT;
 
-	if (band == 0) { /* 2.4G band */
+	if (band == 1) { /* 2.4G band */
 		rlmDomainGetChnlList(prGlueInfo->prAdapter, BAND_2G4, TRUE,
 			     64, &ucNumOfChannel, aucChannelList);
 	} else { /* 5G band */
@@ -155,6 +153,7 @@ int mtk_cfg80211_vendor_get_channel_list(struct wiphy *wiphy, struct wireless_de
 		}
 	}
 	num_channels = j;
+	DBGLOG(REQ, INFO, "num_channels = %d\n", num_channels);
 
 	skb = cfg80211_vendor_cmd_alloc_reply_skb(wiphy, sizeof(channels));
 	if (!skb) {
@@ -182,13 +181,11 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	struct nlattr *attr;
-	UINT_8 country[2];
+	UINT_8 country[2] = {0, 0};
 
 	ASSERT(wiphy && wdev);
 	if ((data == NULL) || (data_len == 0))
 		return -EINVAL;
-
-	DBGLOG(REQ, INFO, "vendor command: data_len=%d, iftype=%d\n", data_len, wdev->iftype);
 
 	attr = (struct nlattr *)data;
 	if (attr->nla_type == WIFI_ATTRIBUTE_COUNTRY_CODE) {
@@ -196,7 +193,7 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 		country[1] = *((PUINT_8)nla_data(attr) + 1);
 	}
 
-	DBGLOG(REQ, INFO, "Set country code: %c%c\n", country[0], country[1]);
+	DBGLOG(REQ, INFO, "Set country code: %c%c, iftype=%d\n", country[0], country[1], wdev->iftype);
 
 	if (wdev->iftype == NL80211_IFTYPE_AP)
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
