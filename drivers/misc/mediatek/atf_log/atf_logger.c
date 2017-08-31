@@ -50,7 +50,7 @@ static const struct of_device_id atf_logger_of_ids[] = {
 	{}
 };
 
-#ifdef __aarch64__
+#ifdef CONFIG_ARM64
 static void *_memcpy(void *dest, const void *src, size_t count)
 {
 	char *tmp = dest;
@@ -93,18 +93,13 @@ struct ipanic_atf_log_rec {
 	unsigned long start_idx;
 };
 
-union atf_log_ctl_t *atf_buf_vir_ctl;
-unsigned long atf_buf_phy_ctl;
-unsigned int atf_buf_len;
-unsigned char *atf_log_vir_addr;
-unsigned int atf_log_len;
-unsigned int write_index;
-unsigned int read_index;
-
-#ifdef CONFIG_ARCH_MT6797
-phys_addr_t atf_dump_buff_add = 0x44610000;
-unsigned int atf_dump_buff_size = 0x30000;
-#endif
+static union atf_log_ctl_t *atf_buf_vir_ctl;
+static unsigned long atf_buf_phy_ctl;
+static unsigned int atf_buf_len;
+static unsigned char *atf_log_vir_addr;
+static unsigned int atf_log_len;
+static unsigned int write_index;
+static unsigned int read_index;
 
 static unsigned int pos_to_index(unsigned int pos)
 {
@@ -316,7 +311,7 @@ static unsigned int atf_log_poll(struct file *file, poll_table *wait)
 	return ret;
 }
 
-long atf_log_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
+static long atf_log_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	return 0;
 }
@@ -380,7 +375,7 @@ static int dt_scan_memory(unsigned long node, const char *uname, int depth, void
 	return node;
 }
 
-unsigned long long atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
+static unsigned long long atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
 {
 	unsigned long node = 0;
 	struct mem_desc *mem_desc = NULL;
@@ -400,6 +395,8 @@ unsigned long long atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
 	return 0;
 }
 
+
+#ifdef ATF_LOGGER_DEBUG
 void show_atf_log_ctl(void)
 {
 	pr_notice("atf_buf_addr(%p) = 0x%x\n", &(atf_buf_vir_ctl->info.atf_buf_addr),
@@ -424,7 +421,6 @@ void show_atf_log_ctl(void)
 			atf_buf_vir_ctl->info.atf_read_seq);
 }
 
-#ifdef ATF_LOGGER_DEBUG
 static void show_data(unsigned long addr, int nbytes, const char *name)
 {
 	int	i, j;
@@ -468,6 +464,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	}
 }
 #endif
+
 static irqreturn_t ATF_log_irq_handler(int irq, void *dev_id)
 {
 	if (!atf_buf_vir_ctl->info.atf_reader_alive)
@@ -502,30 +499,6 @@ static struct syscore_ops atf_time_sync_syscore_ops = {
 	.resume = atf_time_sync_resume,
 };
 
-#ifdef CONFIG_ARCH_MT6797
-
-static int atf_dump_show(struct seq_file *m, void *v)
-{
-	void *buff;
-
-	buff = ioremap_wc(atf_dump_buff_add, atf_dump_buff_size);
-	seq_write(m, buff, atf_dump_buff_size);
-	return 0;
-}
-
-static int atf_dump_file_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, atf_dump_show, inode->i_private);
-}
-
-static const struct file_operations proc_atf_dump_log_file_operations = {
-	.owner = THIS_MODULE,
-	.open = atf_dump_file_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-#endif
 static int atf_logger_probe(struct platform_device *pdev)
 {
 	/* register module driver */
@@ -533,9 +506,6 @@ static int atf_logger_probe(struct platform_device *pdev)
 	struct proc_dir_entry *atf_log_proc_dir;
 	struct proc_dir_entry *atf_log_proc_file;
 	int irq_num;
-#ifdef CONFIG_ARCH_MT6797
-	struct proc_dir_entry *atf_log_dump_proc_file;
-#endif
 	/* register module driver */
 	u64 time_to_sync;
 
@@ -592,15 +562,6 @@ static int atf_logger_probe(struct platform_device *pdev)
 		pr_err("atf_log proc_create failed at atf_log\n");
 		return -ENOMEM;
 	}
-#ifdef CONFIG_ARCH_MT6797
-/* create /proc/atf_log/atf_dump_log */
-	atf_log_dump_proc_file = proc_create("atf_dump_log", 0444, atf_log_proc_dir,
-	&proc_atf_dump_log_file_operations);
-	if (atf_log_dump_proc_file == NULL) {
-		pr_err("atf_log proc_create failed at atf_dump_log\n");
-		return -ENOMEM;
-	}
-#endif
 	register_syscore_ops(&atf_time_sync_syscore_ops);
 
 	/* Get local_clock and sync to ATF */
