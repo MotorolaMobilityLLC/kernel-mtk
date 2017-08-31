@@ -74,6 +74,20 @@ void vmd1_pmic_setting_on(void)
 	unsigned int vmodem_en = 0;
 	unsigned int vsram_vmd_en = 0;
 
+	/*---VMD1, VMODEM, VSRAM_VMD Voltage Select---*/
+	/*--VMD1 0.8V: 0x40 (0x40*0.00625+0.4 =0.8V)--*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, 0x40);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL_SLEEP, 0x10);
+	/*--VMODEM 0.85V: 0x48 (0x48*0.00625+0.4 =0.85V)--*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x48);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
+	/*--VSRAM_VMD 0.95V: 0x58 (0x58*0.00625+0.4 =0.95V)--*/
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, 0x58);
+	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
+	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
+
 	/*---VMD1, VMODEM, VSRAM_VMD ENABLE---*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_EN, 1);
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 1);
@@ -87,20 +101,6 @@ void vmd1_pmic_setting_on(void)
 	if (!vmd1_en || !vmodem_en || !vsram_vmd_en)
 		pr_err("[vmd1_pmic_setting_on] VMD1 = %d, VMODEM = %d, VSRAM_VMD = %d\n",
 			vmd1_en, vmodem_en, vsram_vmd_en);
-
-	/*---VMD1, VMODEM, VSRAM_VMD Voltage Select---*/
-	/*--0x40 (0x40*0.00625+0.4 =0.8V)--*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, 0x40);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL_SLEEP, 0x10);
-	/*--0x40 (0x40*0.00625+0.4 =0.8V)--*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x40);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
-	/*--0x50 (0x50*0.00625+0.4 =0.9V)--*/
-	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, 0x50);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
 }
 
 void vmd1_pmic_setting_off(void)
