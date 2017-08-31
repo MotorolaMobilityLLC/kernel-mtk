@@ -104,6 +104,14 @@ static struct cmdqMonitorPollStruct gPollMonitor;
 #ifdef _CMDQ_TEST_PROC_
 static struct proc_dir_entry *gCmdqTestProcEntry;
 #endif
+
+#define CMDQ_TEST_FAIL(string, args...) \
+{			\
+if (1) {	\
+	pr_err("[CMDQ][ERR]TEST FAIL: "string, ##args); \
+}			\
+}
+
 static int32_t _test_submit_async(struct cmdqRecStruct *handle, struct TaskStruct **ppTask)
 {
 	struct cmdqCommandStruct desc = {
@@ -246,8 +254,8 @@ static void testcase_async_suspend_resume(void)
 		cmdq_task_reset(hReqA);
 		cmdq_task_set_secure(hReqA, gCmdqTestSecure);
 		cmdq_op_wait(hReqA, CMDQ_SYNC_TOKEN_USER_0);
-		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		ret = _test_submit_async(hReqA, &pTaskA);
 
@@ -307,7 +315,7 @@ static void testcase_errors(void)
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
 		cmdq_op_wait(hReq, CMDQ_EVENT_MDP_RSZ0_EOF);
-		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8);	/* JUMP to connect tasks */
+		cmdq_append_command(hReq, CMDQ_CODE_JUMP, 0, 8, 0, 0);	/* JUMP to connect tasks */
 		ret = _test_submit_async(hReq, &pTask);
 		msleep_interruptible(500);
 		ret = cmdqCoreWaitAndReleaseTask(pTask, 8000);
@@ -328,7 +336,7 @@ static void testcase_errors(void)
 		CMDQ_MSG("%s line:%d\n", __func__, __LINE__);
 		cmdq_task_reset(hReq);
 		cmdq_task_set_secure(hReq, gCmdqTestSecure);
-		cmdq_append_command(hReq, CMDQ_CODE_JUMP, -1, 0);
+		cmdq_append_command(hReq, CMDQ_CODE_JUMP, -1, 0, 0, 0);
 		cmdq_task_flush(hReq);
 
 		CMDQ_MSG("================= INVALID INSTR: UNKNOWN OP(0x%x) =================\n",
@@ -411,15 +419,15 @@ static void testcase_async_request(void)
 		cmdq_task_reset(hReqA);
 		cmdq_task_set_secure(hReqA, gCmdqTestSecure);
 		cmdq_op_wait(hReqA, CMDQ_SYNC_TOKEN_USER_0);
-		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqA, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqA, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		cmdq_task_create(CMDQ_SCENARIO_SUB_DISP, &hReqB);
 		cmdq_task_reset(hReqB);
 		cmdq_task_set_secure(hReqB, gCmdqTestSecure);
 		cmdq_op_wait(hReqB, CMDQ_SYNC_TOKEN_USER_1);
-		cmdq_append_command(hReqB, CMDQ_CODE_EOC, 0, 1);
-		cmdq_append_command(hReqB, CMDQ_CODE_JUMP, 0, 8);
+		cmdq_append_command(hReqB, CMDQ_CODE_EOC, 0, 1, 0, 0);
+		cmdq_append_command(hReqB, CMDQ_CODE_JUMP, 0, 8, 0, 0);
 
 		ret = _test_submit_async(hReqA, &pTaskA);
 		ret = _test_submit_async(hReqB, &pTaskB);
@@ -776,7 +784,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 0\n");
@@ -785,7 +793,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 10; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 1\n");
@@ -793,7 +801,7 @@ static void testcase_trigger_thread(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < 500; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 		CMDQ_MSG("flush 2\n");
@@ -832,7 +840,7 @@ static void testcase_prefetch_scenarios(void)
 		cmdq_task_reset(hConfig);
 		/* insert tons of instructions */
 		for (index = 0; index < INSTRUCTION_COUNT; ++index)
-			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1);
+			cmdq_append_command(hConfig, CMDQ_CODE_MOVE, 0, 0x1, 0, 0);
 
 		ret = cmdq_task_flush(hConfig);
 	}
@@ -2711,7 +2719,7 @@ static void testcase_error_irq(void)
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 	handle->engineFlag = (1LL << CMDQ_ENG_MDP_RDMA0);
-	cmdq_append_command(handle, CMDQ_CODE_JUMP, -1, 0);
+	cmdq_append_command(handle, CMDQ_CODE_JUMP, -1, 0, 0, 0);
 	cmdq_task_dump_command(handle);
 	cmdq_task_flush_async(handle);
 
@@ -3431,7 +3439,6 @@ static void testcase_stop_busy_mmsys_config_loop(void)
 
 static void testcase_basic_logic(void)
 {
-#ifdef CMDQ_RECORD_V3
 	struct cmdqRecStruct *handle;
 	const unsigned long test_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_PQ_COLOR);
 	const unsigned long result_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_2D_SHARPNESS_0);
@@ -3640,12 +3647,10 @@ static void testcase_basic_logic(void)
 	cmdq_task_destroy(handle);
 
 	CMDQ_MSG("%s END\n", __func__);
-#endif				/* CMDQ_RECORD_V3 */
 }
 
 static void testcase_basic_jump_c(void)
 {
-#ifdef CMDQ_RECORD_V3
 	struct cmdqRecStruct *handle;
 	const unsigned long row_in_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_PQ_COLOR);
 	const unsigned long result_reg = CMDQ_GPR_R32(CMDQ_DATA_REG_2D_SHARPNESS_0);
@@ -3731,40 +3736,174 @@ static void testcase_basic_jump_c(void)
 	cmdq_task_destroy(handle);
 
 	CMDQ_MSG("%s END\n", __func__);
-#endif				/* CMDQ_RECORD_V3 */
 }
 
 static void testcase_basic_delay(void)
 {
-#ifdef CMDQ_RECORD_V3
 	struct cmdqRecStruct *handle;
+	struct TaskStruct *pTask;
 	cmdqBackupSlotHandle slot_handle;
-	uint32_t begin_time, end_time;
+	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
+	uint32_t begin_time, end_time, backup_time, begin_tpr, end_tpr;
 	int32_t duration_time;
 
 	CMDQ_MSG("%s\n", __func__);
 
-	cmdq_alloc_mem(&slot_handle, 2);
+	cmdq_delay_dump_thread();
+
+	cmdq_alloc_mem(&slot_handle, 5);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 
 	cmdq_task_reset(handle);
 
 	cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
-	cmdq_op_delay_us(handle, 30);
+	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 2);
+	cmdq_op_delay_us(handle, 1000);
 	cmdq_op_read_reg_to_mem(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
+	cmdq_op_backup_delay_result(handle, slot_handle, 3, 2);
 
-	cmdq_task_flush(handle);
+	cmdq_op_finalize_command(handle, false);
+	_test_submit_async(handle, &pTask);
+	cmdqCoreDebugDumpCommand(pTask);
+	cmdqCoreWaitAndReleaseTask(pTask, 500);
 
 	cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
 	cmdq_cpu_read_mem(slot_handle, 1, &end_time);
 	duration_time = (end_time - begin_time) * 76;
+	cmdq_cpu_read_mem(slot_handle, 2, &begin_tpr);
+	cmdq_cpu_read_mem(slot_handle, 3, &end_tpr);
+	cmdq_cpu_read_mem(slot_handle, 4, &backup_time);
 	CMDQ_LOG("TEST delay API duration time, %u, ns\n", duration_time);
+	CMDQ_LOG("TEST delay result: %u = %d ns\n", backup_time, backup_time * 38);
+	CMDQ_LOG("TEST TPR before: 0x%08x, after: 0x%08x\n", begin_tpr, end_tpr);
 
 	cmdq_task_destroy(handle);
 	cmdq_free_mem(slot_handle);
 
 	CMDQ_MSG("%s END\n", __func__);
-#endif				/* CMDQ_RECORD_V3 */
+}
+
+static void testcase_move_data_between_SRAM(void)
+{
+	void *p_va_src = NULL;
+	dma_addr_t pa_src = 0;
+	void *p_va_dest = NULL;
+	dma_addr_t pa_dest = 0;
+	u32 buffer_size = 32;
+	size_t free_sram_size = 0;
+	u32 cpr_offset = 0;
+	s32 status = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* Allocate DRAM memory */
+	p_va_src = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa_src, GFP_KERNEL);
+	p_va_dest = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa_dest, GFP_KERNEL);
+	memset(p_va_src, 0xda, buffer_size);
+	memset(p_va_dest, 0xcc, buffer_size);
+
+	CMDQ_LOG("copy data source:\n");
+	print_hex_dump(KERN_ERR, "[CMDQ][LOG]", DUMP_PREFIX_ADDRESS, 16, 4,
+			   p_va_src, buffer_size, true);
+
+	/* Allocate SRAM memory */
+	free_sram_size = cmdq_core_get_free_sram_size();
+	status = cmdq_core_alloc_sram_buffer(buffer_size, "UT_SRAM", &cpr_offset);
+	if (status < 0 || (free_sram_size - cmdq_core_get_free_sram_size()) != buffer_size) {
+		CMDQ_ERR("%s allocate SRAM failed: before(%zu), after(%zu)\n",
+			__func__, free_sram_size, cmdq_core_get_free_sram_size());
+	}
+	cmdq_core_dump_sram();
+
+	status = cmdq_task_copy_to_sram(pa_src, cpr_offset, buffer_size);
+	if (status < 0)
+		CMDQ_TEST_FAIL("copy to sram API failed: %d", status);
+
+	status = cmdq_task_copy_from_sram(pa_dest, cpr_offset, buffer_size);
+	if (status < 0)
+		CMDQ_TEST_FAIL("copy from sram API failed: %d", status);
+
+	if (memcmp(p_va_src, p_va_dest, buffer_size) != 0) {
+		CMDQ_ERR("move data between SRAM failed!\n");
+		print_hex_dump(KERN_ERR, "[CMDQ][ERR]", DUMP_PREFIX_ADDRESS, 16, 4,
+			       p_va_dest, buffer_size, true);
+	}
+
+	cmdq_core_free_hw_buffer(cmdq_dev_get(), buffer_size, p_va_src, pa_src);
+	cmdq_core_free_hw_buffer(cmdq_dev_get(), buffer_size, p_va_dest, pa_dest);
+	free_sram_size = cmdq_core_get_free_sram_size();
+	cmdq_core_free_sram_buffer(cpr_offset, buffer_size);
+	if ((cmdq_core_get_free_sram_size() - free_sram_size) != buffer_size) {
+		CMDQ_ERR("%s free SRAM failed: before(%zu), after(%zu)\n",
+			__func__, free_sram_size, cmdq_core_get_free_sram_size());
+	}
+	cmdq_core_dump_sram();
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+/**
+ * Make sure driver can execute command on SRAM successfully
+ * Coverage:
+ *     Cannot start_in_sram with secure task
+ *     Cannot flush twice SRAM task
+ *     SRAM size should be normal after flush task and destroy task
+ *     SRAM execution result should be correct
+ */
+static void testcase_run_command_on_SRAM(void)
+{
+	size_t free_sram_size = 0;
+	s32 status = 0;
+	u32 value = 0;
+	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
+	struct cmdqRecStruct *handle;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* set to 0xFFFFFFFF */
+	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+	/* use CMDQ to set to PATTERN */
+	cmdq_task_create(CMDQ_SCENARIO_SRAM_LOOP, &handle);
+	cmdq_task_reset(handle);
+	status = cmdq_task_set_secure(handle, true);
+	if (status >= 0) {
+		cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_USER_0);
+		status = cmdq_task_start_loop_sram(handle, "UT_EXE_SRAM");
+		if (status >= 0)
+			CMDQ_TEST_FAIL("SRAM loop command cannot be secure!!!\n");
+	}
+
+	cmdq_task_reset(handle);
+	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, PATTERN, ~0);
+
+	free_sram_size = cmdq_core_get_free_sram_size();
+	cmdq_task_start_loop_sram(handle, "UT_EXE_SRAM");
+	cmdq_task_dump_command(handle);
+	cmdq_core_dump_sram();
+
+	status = cmdq_task_start_loop_sram(handle, "UT_EXE_SRAM");
+	if (status >= 0)
+		CMDQ_TEST_FAIL("SRAM loop command cannot start twice!!!\n");
+
+	cmdq_task_destroy(handle);
+	if ((cmdq_core_get_free_sram_size() - free_sram_size) != 0) {
+		CMDQ_TEST_FAIL("%s free SRAM failed: before(%zu), after(%zu)\n",
+			__func__, free_sram_size, cmdq_core_get_free_sram_size());
+	}
+
+	/* value check */
+	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
+	if (value != PATTERN) {
+		/* test fail */
+		CMDQ_TEST_FAIL("wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
+	} else {
+		CMDQ_LOG("wrote value is 0x%08x\n", value);
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
 }
 
 static void testcase_mmsys_performance(int32_t test_id)
@@ -4295,6 +4434,12 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 143:
+		testcase_run_command_on_SRAM();
+		break;
+	case 142:
+		testcase_move_data_between_SRAM();
+		break;
 	case 141:
 		testcase_track_task_cb();
 		break;
