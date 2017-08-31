@@ -247,11 +247,17 @@ static int hps_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		hps_ctxt.enabled_backup = hps_ctxt.enabled;
 		hps_ctxt.enabled = 0;
 		mutex_unlock(&hps_ctxt.lock);
-		return NOTIFY_DONE;
+		pr_info("[HPS]PM_SUSPEND_PREPARE hps_enabled %d, hps_enabled_backup %d\n",
+			hps_ctxt.enabled, hps_ctxt.enabled_backup);
+		break;
 	case PM_POST_SUSPEND:
 		mutex_lock(&hps_ctxt.lock);
 		hps_ctxt.enabled = hps_ctxt.enabled_backup;
 		mutex_unlock(&hps_ctxt.lock);
+		pr_info("[HPS]PM_POST_SUSPEND hps_enabled %d, hps_enabled_backup %d\n",
+			hps_ctxt.enabled, hps_ctxt.enabled_backup);
+		break;
+	default:
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
