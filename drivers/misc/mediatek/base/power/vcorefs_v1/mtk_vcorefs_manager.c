@@ -66,7 +66,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.init_opp_perf	= 0,
 	.autok_lock	= 0,
 	.kr_req_mask	= 0,
-	.kr_log_mask	= 0x40,/* mask-off KIR_GPU */
+	.kr_log_mask	= (1U << LAST_KICKER) | (1U << KIR_GPU),/* mask-off KIR_GPU, LAST_KICKER */
 	.fix_hpm_req	= 0,
 };
 
@@ -191,7 +191,7 @@ static int kicker_request_compare(enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	/* compare kicker table opp with request opp (except SYSFS) */
 	if (opp == kicker_table[kicker] && kicker != KIR_SYSFSX) {
-		vcorefs_crit_mask(log_mask(), kicker, "opp no change, kr_tb: %d, kr: %d, opp: %d\n",
+		vcorefs_crit_mask(log_mask(), LAST_KICKER, "opp no change, kr_tb: %d, kr: %d, opp: %d\n",
 			    kicker_table[kicker], kicker, opp);
 		return -1;
 	}
