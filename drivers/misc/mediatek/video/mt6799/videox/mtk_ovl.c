@@ -454,6 +454,9 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	disp_cmdq_set_event(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
+	/* apply check bypass */
+	disp_cmdq_set_check_state(pgc->cmdq_handle_config, DISP_CMDQ_CHECK_BYPASS);
+
 	/* disp_cmdq_dump_command(pgc->cmdq_handle_config); */
 #ifdef MTK_FB_ION_SUPPORT
 	disp_cmdq_flush_async_callback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,

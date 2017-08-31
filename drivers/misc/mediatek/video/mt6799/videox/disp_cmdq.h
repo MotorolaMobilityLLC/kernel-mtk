@@ -77,6 +77,7 @@ int disp_cmdq_init(void);
 int disp_cmdq_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct **pHandle);
 int disp_cmdq_destroy(struct cmdqRecStruct *handle, const char *func, int line);
 int disp_cmdq_reset(struct cmdqRecStruct *handle);
+int disp_cmdq_set_check_state(struct cmdqRecStruct *handle, enum DISP_CMDQ_CHECK state);
 int disp_cmdq_set_secure(struct cmdqRecStruct *handle, const bool is_secure);
 int disp_cmdq_enable_port_security(struct cmdqRecStruct *handle, const uint64_t engineFlag);
 int disp_cmdq_enable_dapc(struct cmdqRecStruct *handle, const uint64_t engineFlag);
