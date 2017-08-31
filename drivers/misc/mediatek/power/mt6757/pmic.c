@@ -215,36 +215,38 @@ int pmic_dump_exception_reg(void)
 
 	pr_err("[PMIC_dump_exception_reg][pmic_status]\n");
 	/*1.UVLO off*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_TOP_RST_STATUS, upmu_get_reg_value(MT6351_TOP_RST_STATUS));
+	kernel_output_reg(MT6351_TOP_RST_STATUS);
 	/*2.thermal shutdown 150*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_THERMALSTATUS, upmu_get_reg_value(MT6351_THERMALSTATUS));
+	kernel_output_reg(MT6351_THERMALSTATUS);
 	/*3.power not good*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_PGSTATUS0, upmu_get_reg_value(MT6351_PGSTATUS0));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_PGSTATUS1, upmu_get_reg_value(MT6351_PGSTATUS1));
+	kernel_output_reg(MT6351_PGSTATUS0);
+	kernel_output_reg(MT6351_PGSTATUS1);
 	/*4.LDO oc*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_OCSTATUS1, upmu_get_reg_value(MT6351_OCSTATUS1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_OCSTATUS2, upmu_get_reg_value(MT6351_OCSTATUS2));
+	kernel_output_reg(MT6351_OCSTATUS1);
+	kernel_output_reg(MT6351_OCSTATUS2);
 	/*5.long press shutdown*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON12, upmu_get_reg_value(MT6351_STRUP_CON12));
+	kernel_output_reg(MT6351_STRUP_CON12);
 	/* 6.WDTRST */
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_TOP_RST_MISC, upmu_get_reg_value(MT6351_TOP_RST_MISC));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_TOP_CLK_TRIM, upmu_get_reg_value(MT6351_TOP_CLK_TRIM));
+	kernel_output_reg(MT6351_TOP_RST_MISC);
+	kernel_output_reg(MT6351_TOP_CLK_TRIM);
 	/* 7. BUCK oc */
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_BUCK_OC_CON0, upmu_get_reg_value(MT6351_BUCK_OC_CON0));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_BUCK_OC_CON1, upmu_get_reg_value(MT6351_BUCK_OC_CON1));
-	/* 8.Additional OC Shutdown Information*/
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_BUCK_OC_CON2, upmu_get_reg_value(MT6351_BUCK_OC_CON2));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON9, upmu_get_reg_value(MT6351_STRUP_CON9));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON6, upmu_get_reg_value(MT6351_STRUP_CON6));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON7, upmu_get_reg_value(MT6351_STRUP_CON7));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_PGDEBSTATUS0, upmu_get_reg_value(MT6351_PGDEBSTATUS0));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_PGDEBSTATU1, upmu_get_reg_value(MT6351_PGDEBSTATU1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_LDO_VCAMD_CON1, upmu_get_reg_value(MT6351_LDO_VCAMD_CON1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_LDO_VSRAM_PROC_CON1, upmu_get_reg_value(MT6351_LDO_VSRAM_PROC_CON1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_LDO_VRF12_CON1, upmu_get_reg_value(MT6351_LDO_VRF12_CON1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_LDO_VA10_CON1, upmu_get_reg_value(MT6351_LDO_VA10_CON1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_LDO_VDRAM_CON1, upmu_get_reg_value(MT6351_LDO_VDRAM_CON1));
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON4, upmu_get_reg_value(MT6351_STRUP_CON4));
+	kernel_output_reg(MT6351_BUCK_OC_CON0);
+	kernel_output_reg(MT6351_BUCK_OC_CON1);
+	/* 8.Additional OC Shutdown Information */
+	kernel_output_reg(MT6351_BUCK_OC_CON2);
+	kernel_output_reg(MT6351_STRUP_CON9);
+	kernel_output_reg(MT6351_STRUP_CON6);
+	kernel_output_reg(MT6351_STRUP_CON7);
+	kernel_output_reg(MT6351_PGDEBSTATUS0);
+	kernel_output_reg(MT6351_PGDEBSTATU1);
+	kernel_output_reg(MT6351_LDO_VCAMD_CON1);
+	kernel_output_reg(MT6351_LDO_VSRAM_PROC_CON1);
+	kernel_output_reg(MT6351_LDO_VRF12_CON1);
+	kernel_output_reg(MT6351_LDO_VA10_CON1);
+	kernel_output_reg(MT6351_LDO_VDRAM_CON1);
+	kernel_output_reg(MT6351_STRUP_CON4);
+	/* Thermal IRQ status */
+	kernel_output_reg(MT6351_STRUP_CON21);
 
 	/* clear UVLO off */
 	ret_val = pmic_config_interface(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
@@ -258,16 +260,13 @@ int pmic_dump_exception_reg(void)
 	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x1);
 	udelay(200);
 	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x0);
-	/* TBD, may be used to check something */
-	udelay(200);
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON21, upmu_get_reg_value(MT6351_STRUP_CON21));
 
 	/* clear Long press shutdown */
 	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x1);
 	udelay(200);
 	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x0);
 	udelay(200);
-	pr_err("Reg[0x%x]=0x%x\n", MT6351_STRUP_CON12, upmu_get_reg_value(MT6351_STRUP_CON12));
+	kernel_output_reg(MT6351_STRUP_CON12);
 
 	/* clear WDTRST */
 	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_SET, 0x8, 0xFFFF, 0);

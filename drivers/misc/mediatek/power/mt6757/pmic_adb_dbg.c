@@ -20,70 +20,32 @@
 #include <mt-plat/upmu_common.h>
 #include "pmic_adb_dbg.h"
 
-#define output(reg) \
-	do { \
-		seq_printf(s, "[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", \
-			reg, upmu_get_reg_value(reg)); \
-		pr_err("[PMIC Exception] " #reg " Reg[0x%x]=0x%x\n", \
-			reg, upmu_get_reg_value(reg)); \
-	} while (0)
-
-/* pmic_dump_exception */
-#if 0
-static void output_register(struct seq_file *s, unsigned int reg)
-{
-	seq_printf(s, "[PMIC Exception] Reg[0x%x]=0x%x\n", reg, upmu_get_reg_value(reg));
-	pr_err("[PMIC Exception] Reg[0x%x]=0x%x\n", reg, upmu_get_reg_value(reg));
-}
-#endif
 static int pmic_dump_exception_show(struct seq_file *s, void *unused)
 {
-	output(MT6351_TOP_RST_STATUS);
-	output(MT6351_THERMALSTATUS);
-	output(MT6351_PGSTATUS0);
-	output(MT6351_PGSTATUS1);
-	output(MT6351_OCSTATUS1);
-	output(MT6351_OCSTATUS2);
-	output(MT6351_STRUP_CON12);
-	output(MT6351_TOP_RST_MISC);
-	output(MT6351_TOP_CLK_TRIM);
-	output(MT6351_BUCK_OC_CON0);
-	output(MT6351_BUCK_OC_CON1);
-	output(MT6351_BUCK_OC_CON2);
-	output(MT6351_STRUP_CON9);
-	output(MT6351_STRUP_CON6);
-	output(MT6351_STRUP_CON7);
-	output(MT6351_PGDEBSTATU1);
-	output(MT6351_LDO_VCAMD_CON1);
-	output(MT6351_LDO_VSRAM_PROC_CON1);
-	output(MT6351_LDO_VRF12_CON1);
-	output(MT6351_LDO_VA10_CON1);
-	output(MT6351_LDO_VDRAM_CON1);
-	output(MT6351_STRUP_CON4);
-#if 0
-	output_register(s, MT6351_TOP_RST_STATUS);
-	output_register(s, MT6351_THERMALSTATUS);
-	output_register(s, MT6351_PGSTATUS0);
-	output_register(s, MT6351_PGSTATUS1);
-	output_register(s, MT6351_OCSTATUS1);
-	output_register(s, MT6351_OCSTATUS2);
-	output_register(s, MT6351_STRUP_CON12);
-	output_register(s, MT6351_TOP_RST_MISC);
-	output_register(s, MT6351_TOP_CLK_TRIM);
-	output_register(s, MT6351_BUCK_OC_CON0);
-	output_register(s, MT6351_BUCK_OC_CON1);
-	output_register(s, MT6351_BUCK_OC_CON2);
-	output_register(s, MT6351_STRUP_CON9);
-	output_register(s, MT6351_STRUP_CON6);
-	output_register(s, MT6351_STRUP_CON7);
-	output_register(s, MT6351_PGDEBSTATU1);
-	output_register(s, MT6351_LDO_VCAMD_CON1);
-	output_register(s, MT6351_LDO_VSRAM_PROC_CON1);
-	output_register(s, MT6351_LDO_VRF12_CON1);
-	output_register(s, MT6351_LDO_VA10_CON1);
-	output_register(s, MT6351_LDO_VDRAM_CON1);
-	output_register(s, MT6351_STRUP_CON4);
-#endif
+	both_output_reg(MT6351_TOP_RST_STATUS);
+	both_output_reg(MT6351_THERMALSTATUS);
+	both_output_reg(MT6351_PGSTATUS0);
+	both_output_reg(MT6351_PGSTATUS1);
+	both_output_reg(MT6351_OCSTATUS1);
+	both_output_reg(MT6351_OCSTATUS2);
+	both_output_reg(MT6351_STRUP_CON12);
+	both_output_reg(MT6351_TOP_RST_MISC);
+	both_output_reg(MT6351_TOP_CLK_TRIM);
+	both_output_reg(MT6351_BUCK_OC_CON0);
+	both_output_reg(MT6351_BUCK_OC_CON1);
+	both_output_reg(MT6351_BUCK_OC_CON2);
+	both_output_reg(MT6351_STRUP_CON9);
+	both_output_reg(MT6351_STRUP_CON6);
+	both_output_reg(MT6351_STRUP_CON7);
+	both_output_reg(MT6351_PGDEBSTATU1);
+	both_output_reg(MT6351_LDO_VCAMD_CON1);
+	both_output_reg(MT6351_LDO_VSRAM_PROC_CON1);
+	both_output_reg(MT6351_LDO_VRF12_CON1);
+	both_output_reg(MT6351_LDO_VA10_CON1);
+	both_output_reg(MT6351_LDO_VDRAM_CON1);
+	both_output_reg(MT6351_STRUP_CON4);
+	both_output_reg(MT6351_STRUP_CON21);
+
 	return 0;
 }
 
