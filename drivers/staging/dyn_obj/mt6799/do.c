@@ -140,7 +140,7 @@ static ssize_t show_current_do(struct device *dev, struct device_attribute *attr
 	return len;
 }
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static ssize_t set_load_do(struct device *dev, struct device_attribute *attr, const char *buf, size_t n)
 {
 	char tmp[50];
