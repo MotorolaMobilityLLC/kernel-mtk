@@ -149,7 +149,7 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 
 #ifdef CONFIG_MTK_COMBO_COMM
 #include <mt-plat/mtk_wcn_cmb_stub.h>
-#define CFG_DEV_MSDC2
+#define CFG_DEV_MSDC3
 #endif
 
 #define MSDC_CD_PIN_EN      (1 << 0)  /* card detection pin is wired   */
