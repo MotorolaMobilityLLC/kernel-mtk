@@ -1178,6 +1178,7 @@ static inline void accdet_init(void)
 {
 	unsigned int reg_val = 0;
 
+	reg_val = 0;
 	ACCDET_DEBUG("[Accdet]accdet hardware init\n");
 	/* clock */
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);
@@ -1214,6 +1215,7 @@ static inline void accdet_init(void)
 		if (accdet_dts_data.eint_level_pol == IRQ_TYPE_LEVEL_HIGH) {
 			accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
 			pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS)|EINT_IRQ_POL_HIGH);
+			reg_val = pmic_pwrap_read(ACCDET_IRQ_STS);
 			ACCDET_INFO("[accdet]high:[0x%x]=0x%x\n", ACCDET_IRQ_STS, reg_val);
 
 			if (g_accdet_first == 1) {/* set pmic eint default value */
