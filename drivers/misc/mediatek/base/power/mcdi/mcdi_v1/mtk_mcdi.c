@@ -24,6 +24,7 @@
 
 #include <mtk_cpuidle.h>
 #include <mtk_idle.h>
+#include <mtk_idle_profile.h>
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
@@ -40,17 +41,44 @@
 #define MCDI_CLUSTER_OFF    1
 
 #define NF_CMD_BUF          128
+#define LOG_BUF_LEN         512
 
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
 void __iomem *sspm_base;
 
+static unsigned long mcdi_cnt_cpu_last[NF_CPU];
+static unsigned long mcdi_cnt_cluster_last[NF_CLUSTER];
+
+static unsigned long long mcdi_heart_beat_log_prev;
+static DEFINE_SPINLOCK(mcdi_heart_beat_spin_lock);
+
+static unsigned int mcdi_heart_beat_log_dump_thd = 5000;          /* 5 sec */
+
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
 #undef mcdi_log
 #define mcdi_log(fmt, args...)	log2buf(p, dbg_buf, fmt, ##args)
+
+struct mtk_mcdi_buf {
+	char buf[LOG_BUF_LEN];
+	char *p_idx;
+};
+
+#define reset_mcdi_buf(mcdi) ((mcdi).p_idx = (mcdi).buf)
+#define get_mcdi_buf(mcdi)   ((mcdi).buf)
+#define mcdi_buf_append(mcdi, fmt, args...) \
+	((mcdi).p_idx += snprintf((mcdi).p_idx, LOG_BUF_LEN - strlen((mcdi).buf), fmt, ##args))
+
+static inline long int get_current_time_ms(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
+}
 
 static int cluster_idx_map[NF_CPU] = {
 	0,
@@ -108,8 +136,10 @@ static ssize_t mcdi_state_read(struct file *filp,
 	mcdi_log("\n");
 
 	mcdi_log("mcdi_cnt_cluster: ");
-	for (i = 0; i < NF_CLUSTER; i++)
-		mcdi_log("%u ", mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i));
+	for (i = 0; i < NF_CLUSTER; i++) {
+		mcdi_cnt_cluster[i] = mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i);
+		mcdi_log("%lu ", mcdi_cnt_cluster[i]);
+	}
 	mcdi_log("\n");
 
 	len = p - dbg_buf;
@@ -272,10 +302,62 @@ void mcdi_cluster_off(int cpu)
 #endif
 }
 
+void mcdi_heart_beat_log_dump(void)
+{
+	static struct mtk_mcdi_buf buf;
+	int i;
+	unsigned long long mcdi_heart_beat_log_curr = 0;
+	unsigned long flags;
+	bool dump_log = false;
+	unsigned long mcdi_cnt;
+
+	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
+
+	mcdi_heart_beat_log_curr = get_current_time_ms();
+
+	if (mcdi_heart_beat_log_prev == 0)
+		mcdi_heart_beat_log_prev = mcdi_heart_beat_log_curr;
+
+	if ((mcdi_heart_beat_log_curr - mcdi_heart_beat_log_prev) > mcdi_heart_beat_log_dump_thd) {
+		dump_log = true;
+		mcdi_heart_beat_log_prev = mcdi_heart_beat_log_curr;
+	}
+
+	spin_unlock_irqrestore(&mcdi_heart_beat_spin_lock, flags);
+
+	if (!dump_log)
+		return;
+
+	reset_mcdi_buf(buf);
+
+	mcdi_buf_append(buf, "mcdi cpu: ");
+
+	for (i = 0; i < NF_CPU; i++) {
+		mcdi_cnt = mcdi_cnt_cpu[i] - mcdi_cnt_cpu_last[i];
+		mcdi_buf_append(buf, "%lu, ", mcdi_cnt);
+		mcdi_cnt_cpu_last[i] = mcdi_cnt_cpu[i];
+	}
+
+	mcdi_buf_append(buf, "cluster : ");
+
+	for (i = 0; i < NF_CLUSTER; i++) {
+		mcdi_cnt_cluster[i] = mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i);
+
+		mcdi_cnt = mcdi_cnt_cluster[i] - mcdi_cnt_cluster_last[i];
+		mcdi_buf_append(buf, "%lu, ", mcdi_cnt);
+		mcdi_cnt_cluster_last[i] = mcdi_cnt_cluster[i];
+	}
+
+	pr_warn("%s\n", get_mcdi_buf(buf));
+}
+
 int mcdi_enter(int cpu)
 {
 	int cluster_idx = cluster_idx_get(cpu);
 	int state = -1;
+
+	mtk_idle_dump_cnt_in_interval();
+	mcdi_heart_beat_log_dump();
 
 	state = mcdi_governor_select(cpu, cluster_idx);
 
@@ -303,7 +385,6 @@ int mcdi_enter(int cpu)
 
 		trace_mcdi(cpu, 0);
 
-		mcdi_cnt_cluster[cluster_idx]++;
 		mcdi_cnt_cpu[cpu]++;
 
 		break;

@@ -1146,8 +1146,6 @@ int mtk_idle_select(int cpu)
 	bool dcs_lock_get = false;
 #endif
 
-	mtk_idle_dump_cnt_in_interval();
-
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
@@ -1266,6 +1264,8 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 
 	if (menu_select_state < 0)
 		return menu_select_state;
+
+	mtk_idle_dump_cnt_in_interval();
 
 	i = mtk_idle_select(cpu);
 
