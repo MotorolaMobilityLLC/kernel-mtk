@@ -33,11 +33,11 @@ struct teei_contexts_head_t teei_contexts_head;
 struct teei_context *teei_create_context(int dev_count)
 {
 	struct teei_context *cont = NULL;
+
 	cont = kmalloc(sizeof(struct teei_context), GFP_KERNEL);
 
-	if (cont == NULL) {
+	if (cont == NULL)
 		return NULL;
-	}
 
 	cont->cont_id = dev_count;
 	cont->sess_cnt = 0;
@@ -55,11 +55,11 @@ struct teei_context *teei_create_context(int dev_count)
 struct teei_session *teei_create_session(struct teei_context *cont)
 {
 	struct teei_session *sess = NULL;
+
 	sess = kmalloc(sizeof(struct teei_session), GFP_KERNEL);
 
-	if (sess == NULL) {
+	if (sess == NULL)
 		return NULL;
-	}
 
 	sess->sess_id = (unsigned long)sess;
 	sess->parent_cont = cont;
@@ -72,7 +72,6 @@ struct teei_session *teei_create_session(struct teei_context *cont)
 
 	return sess;
 }
-
 
 int teei_client_context_init(void *private_data, void *argp)
 {
@@ -372,9 +371,9 @@ int teei_client_session_open(void *private_data, void *argp)
 		goto clean_hdr_buf;
 	}
 
-	if (ses_open->session_id == -1) {
+	if (ses_open->session_id == -1)
 		IMSG_ERROR("[%s][%d] invalid session id!\n", __func__, __LINE__);
-	}
+
 
 	/* Copy the result back to the user space */
 	ses_new->sess_id = ses_open->session_id;
@@ -482,9 +481,9 @@ int teei_client_prepare_encode(void *private_data,
 			}
 		}
 
-		if (session_found == 1) {
+		if (session_found == 1)
 			break;
-		}
+
 	}
 
 	if (!session_found) {
@@ -515,8 +514,8 @@ int teei_client_prepare_encode(void *private_data,
 		}
 
 		enc_context->meta = tz_malloc_shared_mem(sizeof(struct teei_encode_meta) *
-												(TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS),
-												GFP_KERNEL);
+								(TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS),
+								GFP_KERNEL);
 
 		if (enc_context->meta == NULL) {
 			IMSG_ERROR("[%s][%d] enc_context->meta is NULL!\n", __func__, __LINE__);
@@ -628,9 +627,9 @@ int teei_client_send_cmd(void *private_data, void *argp)
 
 	return_Origin = (unsigned int *)tz_malloc_shared_mem(4, GFP_KERNEL);
 
-	if (return_Origin == NULL) {
+	if (return_Origin == NULL)
 		return -ENOMEM;
-	}
+
 
 	retVal = teei_smc_call(TEEI_CMD_TYPE_INVOKE_COMMAND,
 							dev_file_id,
@@ -650,9 +649,10 @@ int teei_client_send_cmd(void *private_data, void *argp)
 							&(temp_cont->cont_lock));
 	enc.return_origin = *return_Origin;
 
-	if (retVal != SMC_SUCCESS) {
+	if (retVal != SMC_SUCCESS)
 		IMSG_ERROR("[%s][%d] send cmd secure call failed!\n", __func__, __LINE__);
-	}
+
+
 
 	tz_free_shared_mem(return_Origin, 4);
 
@@ -726,13 +726,12 @@ int teei_client_operation_release(void *private_data, void *argp)
 		IMSG_ERROR("[%s][%d] enc_found failed!\n", __func__, __LINE__);
 		return -EINVAL;
 	} else {
-		if (enc_context->ker_req_data_addr) {
+		if (enc_context->ker_req_data_addr)
 			tz_free_shared_mem(enc_context->ker_req_data_addr, TEEI_1K_SIZE);
-		}
 
-		if (enc_context->ker_res_data_addr) {
+		if (enc_context->ker_res_data_addr)
 			tz_free_shared_mem(enc_context->ker_res_data_addr, TEEI_1K_SIZE);
-		}
+
 
 		list_del(&enc_context->head);
 		/* kfree(enc_context->meta); */
@@ -821,12 +820,11 @@ int teei_client_encode_uint32(void *private_data, void *argp)
 		    (enc_context->enc_res_pos < (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS))) {
 			if ((unsigned char *)((unsigned long)enc.data) != NULL) {
 				/*
-				u64 addr = enc.data;
-				void __user *pt = compat_ptr((unsigned int *)addr);
-
-				u32 value = 0;
-				copy_from_user(&value, pt, 4);
-				IMSG_DEBUG("value %x", value);
+				*u64 addr = enc.data;
+				*void __user *pt = compat_ptr((unsigned int *)addr);
+				*u32 value = 0;
+				*copy_from_user(&value, pt, 4);
+				*IMSG_DEBUG("value %x", value);
 				*/
 				enc_context->meta[enc_context->enc_res_pos].usr_addr = (unsigned int)enc.data;
 			} else {
@@ -903,11 +901,13 @@ int teei_client_encode_uint32_64bit(void *private_data, void *argp)
 		    (enc_context->enc_req_pos < TEEI_MAX_REQ_PARAMS)) {
 			u64 addr = enc.data;
 			void __user *pt = (void __user *)((unsigned long)addr);
+
 			u32 value = 0;
+
 			result = copy_from_user(&value, pt, 4);
 
-
-			*(u32 *)((char *)enc_context->ker_req_data_addr + enc_context->enc_req_offset) = *((u32 *)((unsigned long)enc.data));
+			*(u32 *)((char *)enc_context->ker_req_data_addr + enc_context->enc_req_offset)
+					= *((u32 *)((unsigned long)enc.data));
 			enc_context->enc_req_offset += sizeof(u32);
 			enc_context->meta[enc_context->enc_req_pos].type = TEEI_ENC_UINT32;
 			enc_context->meta[enc_context->enc_req_pos].len = sizeof(u32);
@@ -935,10 +935,11 @@ int teei_client_encode_uint32_64bit(void *private_data, void *argp)
 		    (enc_context->enc_res_pos < (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS))) {
 			if ((unsigned char *)((unsigned long)enc.data) != NULL) {
 				/*
-				u32 value = 0;
-				copy_from_user(&value, pt, 4);
-				IMSG_DEBUG("value %x", value);
+				*u32 value = 0;
+				*copy_from_user(&value, pt, 4);
+				*IMSG_DEBUG("value %x", value);
 				*/
+
 				enc_context->meta[enc_context->enc_res_pos].usr_addr = enc.data;
 			} else {
 				enc_context->meta[enc_context->enc_res_pos].usr_addr = 0;
@@ -992,12 +993,12 @@ int teei_client_encode_array(void *private_data, void *argp)
 
 	retVal = teei_client_prepare_encode(private_data, &enc, &enc_context, &session);
 
-	if (retVal) {
+	if (retVal)
 		goto return_func;
-	}
+
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
-		if (NULL == enc_context->ker_req_data_addr) {
+		if (enc_context->ker_req_data_addr == NULL) {
 			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
 			if (!enc_context->ker_req_data_addr) {
@@ -1031,10 +1032,10 @@ int teei_client_encode_array(void *private_data, void *argp)
 			goto ret_encode_array;
 		}
 	} else if (enc.param_type == TEEIC_PARAM_OUT) {
-		if (NULL == enc_context->ker_res_data_addr) {
+		if (enc_context->ker_res_data_addr == NULL) {
 			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
-			if (NULL == enc_context->ker_res_data_addr) {
+			if (enc_context->ker_res_data_addr == NULL) {
 				IMSG_ERROR("[%s][%d] enc_context->ker_res_data_addr is NULL!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
 				goto ret_encode_array;
@@ -1100,12 +1101,12 @@ int teei_client_encode_array_64bit(void *private_data, void *argp)
 
 	retVal = teei_client_prepare_encode(private_data, &enc, &enc_context, &session);
 
-	if (retVal) {
+	if (retVal)
 		goto return_func;
-	}
+
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
-		if (NULL == enc_context->ker_req_data_addr) {
+		if (enc_context->ker_req_data_addr == NULL) {
 			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
 			if (!enc_context->ker_req_data_addr) {
@@ -1139,10 +1140,10 @@ int teei_client_encode_array_64bit(void *private_data, void *argp)
 			goto ret_encode_array;
 		}
 	} else if (enc.param_type == TEEIC_PARAM_OUT) {
-		if (NULL == enc_context->ker_res_data_addr) {
+		if (enc_context->ker_res_data_addr == NULL) {
 			enc_context->ker_res_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
-			if (NULL == enc_context->ker_res_data_addr) {
+			if (enc_context->ker_res_data_addr == NULL) {
 				IMSG_ERROR("[%s][%d] tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
 				goto ret_encode_array;
@@ -1225,6 +1226,7 @@ int teei_client_encode_mem_ref(void *private_data, void *argp)
 
 	if (shared_mem_found == 0) {
 		struct teei_context *temp_cont = NULL;
+
 		list_for_each_entry(temp_cont,
 							&teei_contexts_head.context_list,
 							link) {
@@ -1252,10 +1254,10 @@ int teei_client_encode_mem_ref(void *private_data, void *argp)
 	}
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
-		if (NULL == enc_context->ker_req_data_addr) {
+		if (enc_context->ker_req_data_addr == NULL) {
 			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
-			if (NULL == enc_context->ker_req_data_addr) {
+			if (enc_context->ker_req_data_addr == NULL) {
 				IMSG_ERROR("[%s][%d] enc_context->ker_req_data_addr is NULL!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
 				goto ret_encode_array;
@@ -1268,7 +1270,7 @@ int teei_client_encode_mem_ref(void *private_data, void *argp)
 			    = virt_to_phys((char *)temp_shared_mem->k_addr+enc.offset);
 
 			Flush_Dcache_By_Area((unsigned long)(temp_shared_mem->k_addr+enc.offset),
-									(unsigned long)temp_shared_mem->k_addr+enc.offset+enc.len);
+				(unsigned long)temp_shared_mem->k_addr+enc.offset+enc.len);
 			enc_context->enc_req_offset += sizeof(u32);
 			enc_context->meta[enc_context->enc_req_pos].usr_addr
 			    = (unsigned long)((char *)temp_shared_mem->u_addr + enc.offset);
@@ -1368,6 +1370,7 @@ int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)
 
 	if (shared_mem_found == 0) {
 		struct teei_context *temp_cont = NULL;
+
 		list_for_each_entry(temp_cont,
 							&teei_contexts_head.context_list,
 							link) {
@@ -1375,7 +1378,7 @@ int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)
 				list_for_each_entry(temp_shared_mem,
 									&temp_cont->shared_mem_list,
 									head) {
-				if (((temp_shared_mem->index)) == (void *)((unsigned long)(enc.data))) {
+					if (((temp_shared_mem->index)) == (void *)((unsigned long)(enc.data))) {
 						shared_mem_found = 1;
 						break;
 					}
@@ -1396,10 +1399,10 @@ int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)
 	}
 
 	if (enc.param_type == TEEIC_PARAM_IN) {
-		if (NULL == enc_context->ker_req_data_addr) {
+		if (enc_context->ker_req_data_addr == NULL) {
 			enc_context->ker_req_data_addr = tz_malloc_shared_mem(TEEI_1K_SIZE, GFP_KERNEL);
 
-			if (NULL == enc_context->ker_req_data_addr) {
+			if (enc_context->ker_req_data_addr == NULL) {
 				IMSG_ERROR("[%s][%d]tz_malloc failed!\n", __func__, __LINE__);
 				retVal = -ENOMEM;
 				goto ret_encode_array;
@@ -1412,7 +1415,7 @@ int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)
 			    = virt_to_phys((char *)temp_shared_mem->k_addr+enc.offset);
 
 			Flush_Dcache_By_Area((unsigned long)(temp_shared_mem->k_addr+enc.offset),
-									(unsigned long)temp_shared_mem->k_addr+enc.offset+enc.len);
+				(unsigned long)temp_shared_mem->k_addr+enc.offset+enc.len);
 			enc_context->enc_req_offset += sizeof(u32);
 			enc_context->meta[enc_context->enc_req_pos].usr_addr
 			    = (unsigned long)((char *)temp_shared_mem->u_addr + enc.offset);
@@ -1501,7 +1504,7 @@ int teei_client_prepare_decode(void *private_data,
 		}
 	}
 
-	if (0 == session_found) {
+	if (session_found == 0) {
 		IMSG_ERROR("[%s][%d] session not found!\n", __func__, __LINE__);
 		return -EINVAL;
 	}
@@ -1516,7 +1519,7 @@ int teei_client_prepare_decode(void *private_data,
 	}
 
 	/* print_context(); */
-	if (0 == enc_found) {
+	if (enc_found == 0) {
 		IMSG_ERROR("[%s][%d] encode[%x] not found!\n", __func__, __LINE__, dec->encode_id);
 		return -EINVAL;
 	}
@@ -1556,21 +1559,22 @@ int teei_client_decode_uint32(void *private_data, void *argp)
 	    (dec_context->meta[dec_context->dec_res_pos].type == TEEI_ENC_UINT32)) {
 		unsigned int value1 = 0;
 
-		if (dec_context->meta[dec_context->dec_res_pos].usr_addr) {
+		if (dec_context->meta[dec_context->dec_res_pos].usr_addr)
 			dec.data = (unsigned long long)(dec_context->meta[dec_context->dec_res_pos].usr_addr);
-		}
+
 
 		/* *(u32 *)dec.data = *((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset)); */
-		/*chengxin modify
-		u32 value = 0;
-		u64 addr = dec.data;
-		void __user *pt = compat_ptr((unsigned int *)addr);
-		value =  *((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset));
-		copy_to_user(pt, &value, 4);*/
+		/*
+		*chengxin modify
+		*u32 value = 0;
+		*u64 addr = dec.data;
+		*void __user *pt = compat_ptr((unsigned int *)addr);
+		*value =  *((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset));
+		*copy_to_user(pt, &value, 4);
+		*/
 
-		if (((u32 *)((unsigned long)dec.data)) == NULL) {
+		if (((u32 *)((unsigned long)dec.data)) == NULL)
 			IMSG_DEBUG("[%s][%d] error decode dec.data addr11111 is NULL!\n", __func__, __LINE__);
-		}
 
 		if (((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset) == NULL)) {
 			IMSG_DEBUG("[%s][%d] decode data decode addr11111 is NULL!\n", __func__, __LINE__);
@@ -1613,9 +1617,8 @@ int teei_client_decode_array_space(void *private_data, void *argp)
 
 	retVal = teei_client_prepare_decode(private_data, &dec, &dec_context);
 
-	if (retVal != 0) {
+	if (retVal != 0)
 		goto return_func;
-	}
 
 	if ((dec_context->dec_res_pos <= dec_context->enc_res_pos) &&
 	    (dec_context->meta[dec_context->dec_res_pos].type
@@ -1625,7 +1628,8 @@ int teei_client_decode_array_space(void *private_data, void *argp)
 			if (dec_context->meta[dec_context->dec_res_pos].usr_addr)
 				dec.data = dec_context->meta[dec_context->dec_res_pos].usr_addr;
 
-			if (copy_to_user((void __user *)((unsigned long)dec.data), (char *)dec_context->ker_res_data_addr + dec_context->dec_offset,
+			if (copy_to_user((void __user *)((unsigned long)dec.data),
+				(char *)dec_context->ker_res_data_addr + dec_context->dec_offset,
 				dec_context->meta[dec_context->dec_res_pos].ret_len)) {
 				IMSG_ERROR("[%s][%d] copy from user failed while copying array!\n", __func__, __LINE__);
 				retVal = -EFAULT;
@@ -1659,7 +1663,7 @@ int teei_client_decode_array_space(void *private_data, void *argp)
 			dec.data = dec_context->meta[dec_context->dec_res_pos].usr_addr;
 			mem = (char *)addr;
 			Invalidate_Dcache_By_Area((unsigned long)mem,
-										(unsigned long)mem + dec_context->meta[dec_context->dec_res_pos].ret_len);
+			(unsigned long)mem + dec_context->meta[dec_context->dec_res_pos].ret_len);
 		} else {
 
 			IMSG_WARN("[%s][%d] buffer length is small. Length required %x and supplied length %x",
@@ -1668,7 +1672,8 @@ int teei_client_decode_array_space(void *private_data, void *argp)
 					dec_context->meta[dec_context->dec_res_pos].len);
 
 			/*retVal = -EFAULT;
-			goto return_func;*/
+			*goto return_func;
+			*/
 		}
 
 		dec.len = dec_context->meta[dec_context->dec_res_pos].ret_len;
@@ -1714,9 +1719,8 @@ int teei_client_get_decode_type(void *private_data, void *argp)
 
 	retVal = teei_client_prepare_decode(private_data, &dec, &dec_context);
 
-	if (retVal != 0) {
+	if (retVal != 0)
 		return retVal;
-	}
 
 	if (dec_context->dec_res_pos <= dec_context->enc_res_pos)
 		dec.data = (unsigned long)dec_context->meta[dec_context->dec_res_pos].type;
@@ -1814,12 +1818,13 @@ int teei_client_shared_mem_free(void *private_data, void *argp)
 										temp_pos,
 										&temp_cont->shared_mem_list,
 										head) {
-				if (temp_shared_mem && (temp_shared_mem->u_addr == (void *)((unsigned long)mem_info.user_mem_addr))) {
+				if (temp_shared_mem && (temp_shared_mem->u_addr ==
+					(void *)((unsigned long)mem_info.user_mem_addr))) {
 					list_del(&temp_shared_mem->head);
 
 					if (temp_shared_mem->k_addr) {
 						free_pages((unsigned long)temp_shared_mem->k_addr,
-									get_order(ROUND_UP(temp_shared_mem->len, SZ_4K)));
+						get_order(ROUND_UP(temp_shared_mem->len, SZ_4K)));
 					}
 
 					kfree(temp_shared_mem);
@@ -1832,8 +1837,8 @@ int teei_client_shared_mem_free(void *private_data, void *argp)
 }
 
 static int teei_client_close_session_for_service_plus(
-    void *private_data,
-    struct teei_session *temp_ses)
+	void *private_data,
+	struct teei_session *temp_ses)
 {
 	struct ser_ses_id *ses_close = NULL;
 	struct teei_context *curr_cont = NULL;
@@ -1843,15 +1848,13 @@ static int teei_client_close_session_for_service_plus(
 	struct teei_shared_mem *temp_shared = NULL;
 	int *res = NULL;
 
-	if (temp_ses == NULL) {
+	if (temp_ses == NULL)
 		return -EINVAL;
-	}
 
 	ses_close = (struct ser_ses_id *)tz_malloc_shared_mem(sizeof(struct ser_ses_id), GFP_KERNEL);
 
-	if (ses_close == NULL) {
+	if (ses_close == NULL)
 		return -ENOMEM;
-	}
 
 	res = (int *)tz_malloc_shared_mem(4, GFP_KERNEL);
 
@@ -1881,9 +1884,8 @@ static int teei_client_close_session_for_service_plus(
 									temp_shared,
 									&temp_ses->shared_mem_list,
 									s_head) {
-			if (shared_mem == NULL) {
+			if (shared_mem == NULL)
 				continue;
-			}
 
 			list_del(&shared_mem->s_head);
 
@@ -1909,8 +1911,8 @@ static int teei_client_close_session_for_service_plus(
 
 
 int teei_client_close_session_for_service(
-    void *private_data,
-    struct teei_session *temp_ses)
+	void *private_data,
+	struct teei_session *temp_ses)
 {
 	struct ser_ses_id *ses_close = NULL;
 	struct teei_context *curr_cont = NULL;
@@ -1983,9 +1985,8 @@ int teei_client_close_session_for_service(
 									temp_shared,
 									&temp_ses->shared_mem_list,
 									s_head) {
-			if (shared_mem == NULL) {
+			if (shared_mem == NULL)
 				continue;
-			}
 
 			list_del(&shared_mem->s_head);
 
@@ -2043,7 +2044,7 @@ int teei_client_service_exit(void *private_data)
 
 					if (temp_shared_mem->k_addr) {
 						free_pages((unsigned long)temp_shared_mem->k_addr,
-									get_order(ROUND_UP(temp_shared_mem->len, SZ_4K)));
+						get_order(ROUND_UP(temp_shared_mem->len, SZ_4K)));
 					}
 
 					kfree(temp_shared_mem);

@@ -40,11 +40,11 @@
 unsigned long tui_display_message_buff;
 unsigned long tui_notice_message_buff;
 
-typedef enum {
-    DISP_PWM0 = 0x1,
-    DISP_PWM1 = 0x2,
-    DISP_PWM_ALL = (DISP_PWM0 | DISP_PWM1)
-} disp_pwm_id_t;
+enum disp_pwm_id_t {
+	DISP_PWM0 = 0x1,
+	DISP_PWM1 = 0x2,
+	DISP_PWM_ALL = (DISP_PWM0 | DISP_PWM1)
+};
 
 unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 {
@@ -86,7 +86,8 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)&msg_head, sizeof(struct message_head));
-	memcpy((void *)message_buff + sizeof(struct message_head), (void *)&msg_body, sizeof(struct create_fdrv_struct));
+	memcpy((void *)message_buff + sizeof(struct message_head), (void *)&msg_body,
+			sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -98,7 +99,8 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy((void *)&msg_head, (void *)message_buff, sizeof(struct message_head));
-	memcpy((void *)&msg_ack, (void *)message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)&msg_ack, (void *)message_buff + sizeof(struct message_head),
+			sizeof(struct ack_fast_call_struct));
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
@@ -123,14 +125,14 @@ int try_send_tui_command(void)
 {
 	int result = down_trylock(&api_lock);
 
-	if (0 == result) {
+	if (result == 0) {
 		up(&api_lock);
 		return 1;
 	}
 
 	result = down_trylock(&fdrv_lock);
 
-	if (0 == result) {
+	if (result == 0) {
 		up(&fdrv_lock);
 		return 2;
 	}
@@ -141,13 +143,13 @@ int try_send_tui_command(void)
 void set_tui_display_command(unsigned long type)
 {
 	struct fdrv_message_head fdrv_msg_head;
+
 	memset(&fdrv_msg_head, 0, sizeof(struct fdrv_message_head));
 
-	if (type == TUI_NOTICE_SYS_NO) {
+	if (type == TUI_NOTICE_SYS_NO)
 		fdrv_msg_head.driver_type = TUI_NOTICE_SYS_NO;
-	} else {
+	else
 		fdrv_msg_head.driver_type = TUI_DISPLAY_SYS_NO;
-	}
 
 	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
 	memcpy((void *)fdrv_message_buff, (void *)&fdrv_msg_head, sizeof(struct fdrv_message_head));
@@ -163,10 +165,12 @@ int __send_tui_display_command(unsigned long type)
 
 	if (type == TUI_NOTICE_SYS_NO) {
 		memcpy((void *)&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
-		Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff, tui_notice_message_buff +  sizeof(uint32_t) + datalen);
+		Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff,
+							tui_notice_message_buff +  sizeof(uint32_t) + datalen);
 	} else {
 		memcpy((void *)&datalen, (void *) tui_display_message_buff, sizeof(uint32_t));
-		Flush_Dcache_By_Area((unsigned long)tui_display_message_buff, tui_display_message_buff + sizeof(uint32_t)+datalen);
+		Flush_Dcache_By_Area((unsigned long)tui_display_message_buff,
+							tui_display_message_buff + sizeof(uint32_t)+datalen);
 	}
 
 	fp_call_flag = GLSCH_HIGH;
@@ -183,6 +187,7 @@ int __send_tui_display_command(unsigned long type)
 void set_tui_notice_command(unsigned long memory_size)
 {
 	struct message_head msg_head;
+
 	memset(&msg_head, 0, sizeof(struct message_head));
 
 	msg_head.invalid_flag = VALID_TYPE;
@@ -200,7 +205,8 @@ int __send_tui_notice_command(unsigned long share_memory_size)
 
 	set_tui_notice_command(share_memory_size);
 	memcpy((void *)&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
-	Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff, tui_notice_message_buff +  sizeof(uint32_t) + datalen);
+	Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff,
+						tui_notice_message_buff +  sizeof(uint32_t) + datalen);
 
 	forward_call_flag = GLSCH_LOW;
 	n_invoke_t_nq(&smc_type, 0, 0);
@@ -224,9 +230,8 @@ int send_tui_display_command(unsigned long type)
 
 	down(&smc_lock);
 
-	if (teei_config_flag == 1) {
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
-	}
 
 	fdrv_ent.fdrv_call_type = TUI_DISPLAY_SYS_NO;
 	fdrv_ent.fdrv_call_buff_size = type;
@@ -249,9 +254,11 @@ int send_tui_display_command(unsigned long type)
 	rmb();
 
 	if (type == TUI_NOTICE_SYS_NO) {
-		Invalidate_Dcache_By_Area((unsigned long)tui_notice_message_buff, tui_notice_message_buff + TUI_NOTICE_BUFFER);
+		Invalidate_Dcache_By_Area((unsigned long)tui_notice_message_buff,
+									tui_notice_message_buff + TUI_NOTICE_BUFFER);
 	} else {
-		Invalidate_Dcache_By_Area((unsigned long)tui_display_message_buff, tui_display_message_buff + TUI_DISPLAY_BUFFER);
+		Invalidate_Dcache_By_Area((unsigned long)tui_display_message_buff,
+									tui_display_message_buff + TUI_DISPLAY_BUFFER);
 	}
 
 	ut_pm_mutex_unlock(&pm_mutex);
@@ -271,9 +278,8 @@ int send_tui_notice_command(unsigned long share_memory_size)
 
 	down(&smc_lock);
 
-	if (teei_config_flag == 1) {
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
-	}
 
 	fdrv_ent.fdrv_call_type = TUI_NOTICE_SYS_NO;
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;
@@ -317,10 +323,6 @@ int send_power_down_cmd(void)
 	return retVal;
 }
 
-extern int power_down_flag;
-extern int enter_tui_flag ;
-
-extern void disp_aal_notify_backlight_changed(int bl_1024);
 
 #define I2C_REE_CALL  0x1E
 #define I2C_TEE_CALL  0x1F
@@ -331,9 +333,10 @@ int wait_for_power_down(void)
 	int ret = 0;
 
 	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
+
 	sched_setscheduler(current, SCHED_RR, &param);
 
-    do {
+	do {
 	set_current_state(TASK_INTERRUPTIBLE);
 	if ((power_down_flag == 1) && (enter_tui_flag)) {
 		add_work_entry(I2C_REE_CALL, NULL);

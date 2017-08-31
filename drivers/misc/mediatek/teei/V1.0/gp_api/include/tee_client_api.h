@@ -8,7 +8,7 @@
 #define MAX_MEMBLOCKS_PER_SESSION 16
 #define MAX_MEMBLOCKS_PER_OPERATION 4
 
-//#define DEBUG
+/*#define DEBUG*/
 
 #define TEEC_CONFIG_SHAREDMEM_MAX_SIZE 0x80000
 
@@ -85,14 +85,14 @@ enum TEEIC_Result {
 
 #ifndef TEE_RESULT
 #define TEE_RESULT
-typedef uint32_t TEE_Result;
+/*typedef uint32_t TEE_Result;*/
 #endif
-typedef TEE_Result TEEC_Result;
+/*typedef TEE_Result TEEC_Result;*/
 
-typedef unsigned int size_type;
+/*typedef unsigned int size_type;*/
 
-#define TEEC_PARAM_TYPES( param0Type, param1Type, param2Type, param3Type) \
-    (param3Type << 12 | param2Type << 8 | param1Type << 4 | param0Type)
+#define TEEC_PARAM_TYPES(param0Type, param1Type, param2Type, param3Type) \
+	(param3Type << 12 | param2Type << 8 | param1Type << 4 | param0Type)
 
 #define TEEC_VALUE_UNDEF 0xffffffff
 
@@ -130,12 +130,12 @@ enum TEEC_login_flags {
 	TEEIC_LOGIN_USER = 0x1,
 	TEEC_LOGIN_GROUP = 0x2,
 	TEEIC_LOGIN_GROUP = 0x2,
-	TEEC_LOGIN_APPLICATION = 0x4 ,
-	TEEIC_LOGIN_APPLICATION = 0x4 ,
-	TEEC_LOGIN_USER_APPLICATION = 0x5 ,
-	TEEIC_LOGIN_USER_APPLICATION = 0x5 ,
-	TEEC_LOGIN_GROUP_APPLICATION = 0x6 ,
-	TEEIC_LOGIN_GROUP_APPLICATION = 0x6 ,
+	TEEC_LOGIN_APPLICATION = 0x4,
+	TEEIC_LOGIN_APPLICATION = 0x4,
+	TEEC_LOGIN_USER_APPLICATION = 0x5,
+	TEEIC_LOGIN_USER_APPLICATION = 0x5,
+	TEEC_LOGIN_GROUP_APPLICATION = 0x6,
+	TEEIC_LOGIN_GROUP_APPLICATION = 0x6,
 };
 
 enum TEEC_shared_mem_flags {
@@ -172,29 +172,30 @@ enum TEEC_param_type {
 	TEEC_MEMREF_PARTIAL_INOUT = 0xf,
 	TEEIC_MEMREF_PARTIAL_INOUT = 0xf,
 };
+/*
+*typedef struct TEEC_Operation TEEC_Operation;
+*typedef struct TEEC_Session TEEC_Session;
+*typedef struct TEEC_Context TEEC_Context;
+*typedef struct TEEC_SharedMemory TEEC_SharedMemory;
+*typedef struct TEEC_TempMemoryReference TEEC_TempMemoryReference;
+*typedef struct TEEC_RegisteredMemoryReference TEEC_RegisteredMemoryReference;
+*typedef struct TEEC_Value TEEC_Value;
+*/
 
-typedef struct TEEC_Operation TEEC_Operation;
-typedef struct TEEC_Session TEEC_Session;
-typedef struct TEEC_Context TEEC_Context;
-typedef struct TEEC_SharedMemory TEEC_SharedMemory;
-typedef struct TEEC_TempMemoryReference TEEC_TempMemoryReference;
-typedef struct TEEC_RegisteredMemoryReference TEEC_RegisteredMemoryReference;
-typedef struct TEEC_Value TEEC_Value;
-
-typedef struct UT_TEEC_Context
-{
+struct UT_TEEC_Context {
 	uint32_t fd;				/* Device identifier */
 	struct list_head session_list;		/* Sessions list of the device */
 	struct list_head shared_mem_list;	/* Shared memory list */
 	int s_errno;				/* Error number from the client driver */
 	char tee_name[255];			/* host name */
 
-} UT_TEEC_Context;
+};
 
-struct TEEC_Context
-{
+struct TEEC_Context {
 	UT_TEEC_Context *imp;
 };
+
+
 
 /*
  * @brief Universally Unique IDentifier (UUID) type as defined in
@@ -202,34 +203,33 @@ struct TEEC_Context
  *
  * UUID is the mechanism by which a service is identified.
  */
-typedef struct
-{
+struct TEEC_UUID {
 	uint32_t timeLow;
 	uint16_t timeMid;
 	uint16_t timeHiAndVersion;
 	uint8_t clockSeqAndNode[8];
-} TEEC_UUID;
+};
+
 
 /**
 * @brief The TEEC_Session structure is used to contain control information
 * related to a session between a client and a service.
 *
 */
-typedef struct UT_TEEC_Session
-{
+struct UT_TEEC_Session {
 	int session_id;
-	UT_TEEC_Context* device;
+	UT_TEEC_Context *device;
 	int s_errno;
 	struct list_head head;
-} UT_TEEC_Session;
+};
 
-struct TEEC_Session
-{
+
+struct TEEC_Session {
 	UT_TEEC_Session *imp;
 };
 
-typedef struct UT_TEEC_SharedMemory
-{
+
+struct UT_TEEC_SharedMemory {
 	UT_TEEC_Context *context;
 	uint32_t allocated;
 	struct list_head head_ref;
@@ -237,45 +237,45 @@ typedef struct UT_TEEC_SharedMemory
 	void *buffer;
 	void *saved_buffer;
 	size_type size;
-} UT_TEEC_SharedMemory;
+};
 
-typedef struct TEEC_SharedMemory
-{
+
+struct TEEC_SharedMemory {
 	void *buffer;
 	size_type size;
 	uint32_t flags;
 	UT_TEEC_SharedMemory *imp;
-} TEEC_SharedMemory;
+};
 
-struct TEEC_Value
-{
+
+struct TEEC_Value {
 	uint32_t a;
 	uint32_t b;
 };
 
 
-struct TEEC_TempMemoryReference
-{
+
+struct TEEC_TempMemoryReference {
 	void *buffer;
 	size_type size;
 };
 
-struct TEEC_RegisteredMemoryReference
-{
+
+struct TEEC_RegisteredMemoryReference {
 	TEEC_SharedMemory *parent;
 	size_type size;
 	size_type offset;
 };
 
-typedef union
-{
+
+union TEEC_Parameter {
 	TEEC_TempMemoryReference tmpref;
 	TEEC_RegisteredMemoryReference memref;
 	TEEC_Value value;
-} TEEC_Parameter;
+};
 
-struct TEEC_Operation
-{
+
+struct TEEC_Operation {
 	uint32_t started;
 	uint32_t paramTypes;
 	TEEC_Parameter params[4];
@@ -295,11 +295,13 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
 void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMem);
 
 TEEC_Result TEEC_OpenSession(TEEC_Context *context, TEEC_Session *session, const TEEC_UUID *destination,
-		uint32_t connectionMethod, const void *connectionData, TEEC_Operation *operation, uint32_t *returnOrigin);
+		uint32_t connectionMethod, const void *connectionData,
+		TEEC_Operation *operation, uint32_t *returnOrigin);
 
 void TEEC_CloseSession(TEEC_Session *session);
 
-TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t commandID, TEEC_Operation *operation, uint32_t *returnOrigin);
+TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t commandID,
+		TEEC_Operation *operation, uint32_t *returnOrigin);
 
 void TEEC_RequestCancellation(TEEC_Operation *operation);
 

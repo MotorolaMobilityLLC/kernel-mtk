@@ -14,24 +14,24 @@ static DEFINE_MUTEX(fp_vendor_lock);
 
 int get_fp_vendor(void)
 {
-    uint64_t fp_vendor_id_64 = 0;
-    uint32_t *p_temp = NULL;
-    uint32_t fp_vendor_id_32 = 0;
+	uint64_t fp_vendor_id_64 = 0;
+	uint32_t *p_temp = NULL;
+	uint32_t fp_vendor_id_32 = 0;
 
-    mutex_lock(&fp_vendor_lock);
+	mutex_lock(&fp_vendor_lock);
 
-    if (fp_vendor_active) {
-	mutex_unlock(&fp_vendor_lock);
-	return fp_vendor;
-    }
+	if (fp_vendor_active) {
+		mutex_unlock(&fp_vendor_lock);
+		return fp_vendor;
+	}
 
-    get_t_device_id(&fp_vendor_id_64);
+	get_t_device_id(&fp_vendor_id_64);
 
-    p_temp = (uint32_t *)&fp_vendor_id_64;
-    fp_vendor_id_32 = *p_temp;
-    fp_vendor_id_32 = (fp_vendor_id_32 >> 8) & 0xff;
+	p_temp = (uint32_t *)&fp_vendor_id_64;
+	fp_vendor_id_32 = *p_temp;
+	fp_vendor_id_32 = (fp_vendor_id_32 >> 8) & 0xff;
 
-    pr_err("%s:%d->0x%x\n", __func__, __LINE__, fp_vendor_id_32);
+	pr_err("%s:%d->0x%x\n", __func__, __LINE__, fp_vendor_id_32);
 
 	switch (fp_vendor_id_32) {
 	case FPC_VENDOR_ID:
@@ -45,10 +45,10 @@ int get_fp_vendor(void)
 	default:
 		fp_vendor = FP_VENDOR_INVALID;
 		break;
-    }
+	}
 
-    fp_vendor_active = 1;
-    mutex_unlock(&fp_vendor_lock);
+	fp_vendor_active = 1;
+	mutex_unlock(&fp_vendor_lock);
 
-    return fp_vendor;
+	return fp_vendor;
 }

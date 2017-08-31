@@ -29,9 +29,10 @@
 void nt_sched_t_call(void)
 {
 	int retVal = 0;
+
 	retVal = add_work_entry(SCHED_CALL, NULL);
 
-	if (retVal != 0) {
+	if (retVal != 0)
 		IMSG_ERROR("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
-	}
+
 }

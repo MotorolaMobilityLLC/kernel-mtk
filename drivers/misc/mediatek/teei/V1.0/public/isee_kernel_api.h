@@ -18,4 +18,4 @@ unsigned long tz_get_share_buffer(unsigned int driver_id);
 int tz_wait_for_notification(unsigned int driver_id);
 int tz_notify_driver(unsigned int driver_id);
 
-#endif //_ISEE_KERNEL_API_H_
+#endif /*_ISEE_KERNEL_API_H_*/
