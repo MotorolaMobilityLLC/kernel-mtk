@@ -1816,6 +1816,19 @@
 		reg = <0 0x1011a000 0 0x100>;/* MD debug register */
 	};
 
+	cpu_dbgapb: cpu_dbgapb {
+		compatible = "mediatek,hw_dbg";
+		num = <8>;
+		reg =  <0 0x0d410000 0 0x1000
+			0 0x0d510000 0 0x1000
+			0 0x0d610000 0 0x1000
+			0 0x0d710000 0 0x1000
+			0 0x0d810000 0 0x1000
+			0 0x0d910000 0 0x1000
+			0 0x0da10000 0 0x1000
+			0 0x0db10000 0 0x1000>;
+	};
+
 	mcucfg@10200000 {
 		compatible = "mediatek,mcucfg";
 		reg = <0 0x10200000 0 0x4000>;
