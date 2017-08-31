@@ -821,43 +821,38 @@ int enter_pasr_dpd_config_base(unsigned char segment_rank0, unsigned char segmen
 	rank_pasr_segment[1] = segment_rank1 & 0xFF; /* for rank1 */
 	/* pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]); */
 
-	for (iChannelIdx = 0; iChannelIdx < 4; iChannelIdx++) {
-		if (dcs_on == 0) {
-			if (iChannelIdx == 0) { /*Channel-A*/
-				u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
-				u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
-				u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
-				u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
-				u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
-			} else if (iChannelIdx == 1)  { /*Channel-B*/
-				u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
-				u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
-				u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
-				u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
-				u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
-			} else if (iChannelIdx == 2)  { /*Channel-C*/
-				u4rg_64 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x64);
-				u4rg_38 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x38);
-				u4rg_5C = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x5C);
-				u4rg_60 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x60);
-				u4rg_88 = IOMEM(DRAMC_NAO_CHC_BASE_ADDR + 0x88);
-			} else { /*Channel-D*/
-				u4rg_64 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x64);
-				u4rg_38 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x38);
-				u4rg_5C = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x5C);
-				u4rg_60 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x60);
-				u4rg_88 = IOMEM(DRAMC_NAO_CHD_BASE_ADDR + 0x88);
-			}
-		} else {
-			if (iChannelIdx == 0)
-				return -1; /* continue; */
+	for (iChannelIdx = 0; iChannelIdx < CHANNEL_NUMBER; iChannelIdx++) {
+		if (iChannelIdx == 0) { /*Channel-A*/
+			if (dcs_on)
+				continue;
+
+			u4rg_64 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x64);
+			u4rg_38 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x38);
+			u4rg_5C = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x5C);
+			u4rg_60 = IOMEM(DRAMC_AO_CHA_BASE_ADDR + 0x60);
+			u4rg_88 = IOMEM(DRAMC_NAO_CHA_BASE_ADDR + 0x88);
+		} else if (iChannelIdx == 1) { /*Channel-B*/
+			if (dcs_on)
+				continue;
+
 			u4rg_64 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x64);
 			u4rg_38 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x38);
 			u4rg_5C = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x5C);
 			u4rg_60 = IOMEM(DRAMC_AO_CHB_BASE_ADDR + 0x60);
 			u4rg_88 = IOMEM(DRAMC_NAO_CHB_BASE_ADDR + 0x88);
+		} else if (iChannelIdx == 2) { /*Channel-C*/
+			u4rg_64 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x64);
+			u4rg_38 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x38);
+			u4rg_5C = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x5C);
+			u4rg_60 = IOMEM(DRAMC_AO_CHC_BASE_ADDR + 0x60);
+			u4rg_88 = IOMEM(DRAMC_NAO_CHC_BASE_ADDR + 0x88);
+		} else { /*Channel-D*/
+			u4rg_64 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x64);
+			u4rg_38 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x38);
+			u4rg_5C = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x5C);
+			u4rg_60 = IOMEM(DRAMC_AO_CHD_BASE_ADDR + 0x60);
+			u4rg_88 = IOMEM(DRAMC_NAO_CHD_BASE_ADDR + 0x88);
 		}
-
 		u4value_64 = readl(u4rg_64);
 		u4value_38 = readl(u4rg_38);
 

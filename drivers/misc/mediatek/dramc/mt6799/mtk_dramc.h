@@ -39,6 +39,7 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
+#define CHANNEL_NUMBER 4
 #define SW_TX_TRACKING
 #ifdef SW_TX_TRACKING
 #define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
