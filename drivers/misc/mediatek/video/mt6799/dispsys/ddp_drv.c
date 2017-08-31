@@ -194,6 +194,8 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP_DPI_MM_CLOCK",
 	"DISP_FAKE_ENG2",
 	"DISP_FAKE_ENG",
+	"MDP_WROT0",
+	"MDP_WROT1",
 	"MUX_DPI0",
 	"TVDPLL_D2",
 	"TVDPLL_D4",
