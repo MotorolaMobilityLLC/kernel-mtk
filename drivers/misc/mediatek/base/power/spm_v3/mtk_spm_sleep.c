@@ -419,7 +419,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	/* spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0); */
+	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
 	pmic_config_interface_nolock(
 		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
@@ -716,7 +716,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -758,7 +758,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
-#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
