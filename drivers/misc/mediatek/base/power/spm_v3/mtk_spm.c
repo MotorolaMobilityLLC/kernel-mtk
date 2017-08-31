@@ -31,7 +31,7 @@
 #include <linux/irqchip/mtk-eic.h>
 #include <linux/suspend.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mach/mt_secure_api.h>
+#include <mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 /* #include <mach/eint.h> */
 /* #include <mach/mt_boot.h> */
@@ -472,13 +472,17 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 	case PM_SUSPEND_PREPARE:
 		spm_d.u.notify.root_id = hps_get_root_id();
 		ret = spm_to_sspm_command(SPM_SUSPEND_PREPARE, &spm_d);
-		if (ret < 0)
+		if (ret < 0) {
 			pr_err("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n", __func__, __LINE__, ret);
+			return NOTIFY_BAD;
+		}
 		return NOTIFY_DONE;
 	case PM_POST_SUSPEND:
 		ret = spm_to_sspm_command(SPM_POST_SUSPEND, &spm_d);
-		if (ret < 0)
+		if (ret < 0) {
 			pr_err("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n", __func__, __LINE__, ret);
+			return NOTIFY_BAD;
+		}
 		return NOTIFY_DONE;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	}
