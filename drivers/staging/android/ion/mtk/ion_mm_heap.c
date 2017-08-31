@@ -396,6 +396,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 	port_mva_info_t port_info;
 	int ret = 0;
+	bool non_vmalloc_request = false;
 
 	if (!buffer_info) {
 		IONMSG("[ion_mm_heap_phys] Error. Invalid buffer.\n");
@@ -424,10 +425,6 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 
 		port_info.pRetMVABuf = &buffer_info->FIXED_MVA;
 	}
-	if (port_info.flags > 0)
-		IONMSG("[ion_mm_heap_phys] 0x%x 0x%x, flag %d, 0x%x--0x%x\n",
-		       *(unsigned int *)addr, *(unsigned int *)len, port_info.flags,
-		       buffer_info->iova_start, buffer_info->iova_end);
 
 	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
 	    ((buffer_info->FIXED_MVA == 0) && (port_info.flags > 0))) {
@@ -435,15 +432,21 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
 			port_info.va = (unsigned long)buffer_info->VA;
 			port_info.flags |= M4U_FLAGS_SG_READY;
+			if ((port_info.va < PAGE_OFFSET) &&
+			    (port_info.va < VMALLOC_START || port_info.va > VMALLOC_END)) {
+				/*userspace va without vmalloc, has no page struct*/
+				non_vmalloc_request = true;
+			}
 		}
 #endif
 		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
 		*(unsigned int *)addr = *(unsigned int *)(port_info.pRetMVABuf);
 
 		if (ret < 0) {
-			IONMSG("[ion_mm_heap_phys] Error. port %d MVA(fixed 0x%x) failed(region 0x%x--0x%x).\n",
+			IONMSG("[ion_mm_heap_phys]Error: port %d MVA(0x%x) fail(region 0x%x-0x%x) (VA 0x%lx-%zu-%d)\n",
 			       port_info.eModuleID, *(unsigned int *)addr,
-			       port_info.iova_start, port_info.iova_end);
+			       port_info.iova_start, port_info.iova_end,
+			       (unsigned long)buffer_info->VA, buffer->size, non_vmalloc_request);
 			*(unsigned int *)addr = 0;
 			if (port_info.flags > 0)
 				buffer_info->FIXED_MVA = 0;
@@ -454,11 +457,13 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 					 == M4U_FLAGS_FIX_MVA) ? buffer_info->FIXED_MVA : buffer_info->MVA;
 	}
 
-	*len = port_info.BufSize;
 	if (port_info.flags > 0)
-		IONMSG("[ion_mm_heap_phys] port %d Alloc MVA(0x%x-0x%x) (region: 0x%x--0x%x).VA(0x%lx)\n",
-		       port_info.eModuleID, *(unsigned int *)addr, port_info.BufSize,
-		       port_info.iova_start, port_info.iova_end, (unsigned long)buffer_info->VA);
+		IONMSG("[ion_mm_heap_phys]Port %d, in_len 0x%x, MVA(0x%x-%zu) (region 0x%x--0x%x) (VA 0x%lx-%d)\n",
+		       port_info.eModuleID, *(unsigned int *)len, *(unsigned int *)addr, buffer->size,
+		       buffer_info->iova_start, buffer_info->iova_end, (unsigned long)buffer_info->VA,
+		       non_vmalloc_request);
+
+	*len = port_info.BufSize;
 
 	return 0;
 }
