@@ -213,8 +213,6 @@ static int mtk_bt_dai_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	AudDrv_Emi_Clk_On();
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
 	return ret;
 }
 
@@ -241,7 +239,7 @@ static int mtk_bt_dai_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_warn("mtk_bt_dai_pcm_open\n");
+	pr_warn("mtk_bt_dai_pcm_open, stream %d\n", substream->stream);
 
 	Bt_Dai_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DAI);
 	runtime->hw = mtk_btdai_hardware;
@@ -256,14 +254,8 @@ static int mtk_bt_dai_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 
 	/* print for hw pcm information */
-	pr_warn("mtk_bt_dai_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
-
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
-	else
-		return -1;
 
 	if (ret < 0) {
 		pr_err("mtk_bt_dai_pcm_close\n");
@@ -290,8 +282,6 @@ static int mtk_bt_dai_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_bt_dai_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_bt_dai_pcm_trigger cmd = %d\n", cmd);
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -322,7 +312,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	ssize_t DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	unsigned long flags;
 
-	pr_warn("%s  pos = %lu count = %lu\n ", __func__, pos, count);
+	PRINTK_AUD_DAI("%s  pos = %lu count = %lu\n", __func__, pos, count);
 
 	/* get total bytes to copy */
 	count = word_size_align(audio_frame_to_bytes(substream, count));
@@ -348,8 +338,9 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	}
 
 	spin_lock_irqsave(&auddrv_BTDaiInCtl_lock, flags);
-	if (Dai_Block->u4DataRemained >  Dai_Block->u4BufferSize) {
-		PRINTK_AUD_DAI("!!!!!!!!!!!!mtk_bt_dai_pcm_copy u4DataRemained=%x > u4BufferSize=%x",
+	if (Dai_Block->u4DataRemained > Dai_Block->u4BufferSize) {
+		pr_warn("%s(), u4DataRemained 0x%x > u4BufferSize 0x%x",
+			__func__,
 			Dai_Block->u4DataRemained, Dai_Block->u4BufferSize);
 		Dai_Block->u4DataRemained = 0;
 		Dai_Block->u4DMAReadIdx   = Dai_Block->u4WriteIdx;
