@@ -529,6 +529,7 @@ static struct pcm_desc dpidle_pcm = {
 };
 #endif
 
+#if defined(CONFIG_MACH_MT6799)
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_DPIDLE,
 
@@ -574,11 +575,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_md_srcclkena_1_infra_mask_b = 0,
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
-#if defined(CONFIG_MACH_MT6799)
 	.reg_conn_srcclkena_infra_mask_b = 0,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_conn_srcclkena_infra_mask_b = 1,
-#endif
 	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
@@ -604,11 +601,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_disp2_req_mask_b = 0,
 	.reg_md_ddr_en_0_mask_b = 1,
 	.reg_md_ddr_en_1_mask_b = 0,
-#if defined(CONFIG_MACH_MT6799)
 	.reg_conn_ddr_en_mask_b = 0,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_conn_ddr_en_mask_b = 1,
-#endif
 
 	/* SPM_SRC2_MASK */
 	.reg_disp0_req_mask_b = 0,
@@ -638,9 +631,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-#if defined(CONFIG_MACH_MT6759)
-	/*.reg_gce_vrf18_req2_mask_b = 0,*/ /* TODO */
-#endif
 
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
@@ -662,47 +652,22 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.reg_srcclkeni0_cksel2_mask_b = 0,
 	.reg_md_ddr_en_0_dbc_en = 1,
 	.reg_md_ddr_en_1_dbc_en = 0,
-#if defined(CONFIG_MACH_MT6799)
 	.reg_conn_ddr_en_dbc_en = 0,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_conn_ddr_en_dbc_en = 1,
-#endif
 	.reg_sspm_mask_b = 1,
 	.reg_md_0_mask_b = 1,
 	.reg_md_1_mask_b = 0,
 	.reg_scp_mask_b = 1,
 	.reg_srcclkeni0_mask_b = 1,
-#if defined(CONFIG_MACH_MT6799)
 	.reg_srcclkeni1_mask_b = 0,
 	.reg_srcclkeni2_mask_b = 0,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_srcclkeni1_mask_b = 1, /* TODO */
-	.reg_srcclkeni2_mask_b = 1,
-#endif
 	.reg_md_apsrc_1_sel = 0,
 	.reg_md_apsrc_0_sel = 0,
-#if defined(CONFIG_MACH_MT6799)
 	.reg_conn_mask_b = 0,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_conn_mask_b = 1,
-#endif
 	.reg_conn_apsrc_sel = 0,
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
-#if defined(CONFIG_MACH_MT6759)
-	/* SPM_SRC4_MASK */
-	/*.reg_ccif4_ap_event_mask_b = 0,*/
-	/*.reg_ccif4_md_event_mask_b = 0,*/
-	/*.reg_ccif5_ap_event_mask_b = 0,*/
-	/*.reg_ccif5_md_event_mask_b = 0,*/ /* TODO */
-#endif
-
 	/* SPM_WAKEUP_EVENT_MASK */
-#if defined(CONFIG_MACH_MT6799)
 	.reg_wakeup_event_mask = 0xF1F92218,
-#elif defined(CONFIG_MACH_MT6759)
-	.reg_wakeup_event_mask = 0xF0682208,
-#endif
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -761,13 +726,218 @@ static struct pwr_ctrl dpidle_ctrl = {
 	/* SLEEP_MCU17_WFI_EN */
 	.mcu17_wfi_en = 0,
 
-#if defined(CONFIG_MACH_MT6759)
+	/* Auto-gen End */
+};
+#elif defined(CONFIG_MACH_MT6759)
+static struct pwr_ctrl dpidle_ctrl = {
+	.wake_src = WAKE_SRC_FOR_DPIDLE,
+
+#if SPM_BYPASS_SYSPWREQ
+	.syspwreq_mask = 1,
+#endif
+	/* Auto-gen Start */
+
+	/* SPM_CLK_CON */
+	.reg_srcclken0_ctl = 0,
+	.reg_srcclken1_ctl = 0x3,
+	.reg_spm_lock_infra_dcm = 1,
+	.reg_srcclken_mask = 1,
+	.reg_md1_c32rm_en = 0,
+	.reg_md2_c32rm_en = 0,
+	.reg_clksq0_sel_ctrl = 0,
+	.reg_clksq1_sel_ctrl = 1,
+	.reg_srcclken0_en = 1,
+	.reg_srcclken1_en = 0,
+	.reg_sysclk0_src_mask_b = 0,
+	.reg_sysclk1_src_mask_b = 0x20,
+
+	/* SPM_SRC_REQ */
+	.reg_spm_apsrc_req = 1,
+	.reg_spm_f26m_req = 1,
+	.reg_spm_infra_req = 1,
+	.reg_spm_ddren_req = 1,
+	.reg_spm_vrf18_req = 1,
+	.reg_spm_dvfs_level0_req = 0,
+	.reg_spm_dvfs_level1_req = 0,
+	.reg_spm_dvfs_level2_req = 0,
+	.reg_spm_dvfs_level3_req = 0,
+	.reg_spm_dvfs_level4_req = 0,
+	.reg_spm_sspm_mailbox_req = 0,
+	.reg_spm_sw_mailbox_req = 0,
+	.reg_spm_cksel2_req = 0,
+	.reg_spm_cksel3_req = 0,
+
+	/* SPM_SRC_MASK */
+	.reg_csyspwreq_mask = 1,
+	.reg_md_srcclkena_0_infra_mask_b = 1,
+	.reg_md_srcclkena_1_infra_mask_b = 0,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
+	.reg_md_apsrc_req_1_infra_mask_b = 0,
+	.reg_conn_srcclkena_infra_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
+	.reg_sspm_srcclkena_infra_mask_b = 0,
+	.reg_sspm_infra_req_mask_b = 1,
+	.reg_scp_srcclkena_infra_mask_b = 0,
+	.reg_scp_infra_req_mask_b = 1,
+	.reg_srcclkeni0_infra_mask_b = 0,
+	.reg_srcclkeni1_infra_mask_b = 0,
+	.reg_srcclkeni2_infra_mask_b = 1,
+	.reg_ccif0_md_event_mask_b = 1,
+	.reg_ccif0_ap_event_mask_b = 1,
+	.reg_ccif1_md_event_mask_b = 1,
+	.reg_ccif1_ap_event_mask_b = 1,
+	.reg_ccif2_md_event_mask_b = 1,
+	.reg_ccif2_ap_event_mask_b = 1,
+	.reg_ccif3_md_event_mask_b = 1,
+	.reg_ccif3_ap_event_mask_b = 1,
+	.reg_ccifmd_md1_event_mask_b = 0,
+	.reg_ccifmd_md2_event_mask_b = 0,
+	.reg_c2k_ps_rccif_wake_mask_b = 1,
+	.reg_c2k_l1_rccif_wake_mask_b = 0,
+	.reg_ps_c2k_rccif_wake_mask_b = 1,
+	.reg_l1_c2k_rccif_wake_mask_b = 0,
+	.reg_disp2_req_mask_b = 0,
+	.reg_md_ddr_en_0_mask_b = 1,
+	.reg_md_ddr_en_1_mask_b = 0,
+	.reg_conn_ddr_en_mask_b = 1,
+
+	/* SPM_SRC2_MASK */
+	.reg_disp0_req_mask_b = 0,
+	.reg_disp1_req_mask_b = 0,
+	.reg_disp_od_req_mask_b = 0,
+	.reg_mfg_req_mask_b = 0,
+	.reg_vdec0_req_mask_b = 0,
+	.reg_gce_req_mask_b = 0,
+	.reg_gce_vrf18_req_mask_b = 0,
+	.reg_lpdma_req_mask_b = 0,
+	.reg_conn_srcclkena_cksel2_mask_b = 0,
+	.reg_sspm_apsrc_req_ddren_mask_b = 1,
+	.reg_scp_apsrc_req_ddren_mask_b = 1,
+	.reg_md_vrf18_req_0_mask_b = 1,
+	.reg_md_vrf18_req_1_mask_b = 0,
+	.reg_next_dvfs_level0_mask_b = 1,
+	.reg_next_dvfs_level1_mask_b = 1,
+	.reg_next_dvfs_level2_mask_b = 1,
+	.reg_next_dvfs_level3_mask_b = 1,
+	.reg_next_dvfs_level4_mask_b = 1,
+	.reg_sw2spm_int0_mask_b = 1,
+	.reg_sw2spm_int1_mask_b = 1,
+	.reg_sw2spm_int2_mask_b = 1,
+	.reg_sw2spm_int3_mask_b = 1,
+	.reg_sspm2spm_int0_mask_b = 1,
+	.reg_sspm2spm_int1_mask_b = 1,
+	.reg_sspm2spm_int2_mask_b = 1,
+	.reg_sspm2spm_int3_mask_b = 1,
+	.reg_dqssoc_req_mask_b = 0,
+	/* .reg_gce_vrf18_req2_mask_b = 0, */ /* TODO */
+
+	/* SPM_SRC3_MASK */
+	.reg_mpwfi_op = 0,
+	.reg_spm_resource_req_rsv1_4_mask_b = 0,
+	.reg_spm_resource_req_rsv1_3_mask_b = 0,
+	.reg_spm_resource_req_rsv1_2_mask_b = 0,
+	.reg_spm_resource_req_rsv1_1_mask_b = 0,
+	.reg_spm_resource_req_rsv1_0_mask_b = 0,
+	.reg_spm_resource_req_rsv0_4_mask_b = 0,
+	.reg_spm_resource_req_rsv0_3_mask_b = 0,
+	.reg_spm_resource_req_rsv0_2_mask_b = 0,
+	.reg_spm_resource_req_rsv0_1_mask_b = 0,
+	.reg_spm_resource_req_rsv0_0_mask_b = 0,
+	.reg_srcclkeni2_cksel3_mask_b = 0,
+	.reg_srcclkeni2_cksel2_mask_b = 0,
+	.reg_srcclkeni1_cksel3_mask_b = 0,
+	.reg_srcclkeni1_cksel2_mask_b = 0,
+	.reg_srcclkeni0_cksel3_mask_b = 0,
+	.reg_srcclkeni0_cksel2_mask_b = 0,
+	.reg_md_ddr_en_0_dbc_en = 1,
+	.reg_md_ddr_en_1_dbc_en = 0,
+	.reg_conn_ddr_en_dbc_en = 1,
+	.reg_sspm_mask_b = 1,
+	.reg_md_0_mask_b = 1,
+	.reg_md_1_mask_b = 0,
+	.reg_scp_mask_b = 1,
+	.reg_srcclkeni0_mask_b = 1,
+	.reg_srcclkeni1_mask_b = 1,
+	.reg_srcclkeni2_mask_b = 1,
+	.reg_md_apsrc_1_sel = 0,
+	.reg_md_apsrc_0_sel = 0,
+	.reg_conn_mask_b = 1,
+	.reg_conn_apsrc_sel = 0,
+	.reg_md_srcclkena_0_vrf18_mask_b = 1,
+
+	/* SPM_SRC4_MASK */
+	/* .reg_ccif4_ap_event_mask_b = 1, */
+	/* .reg_ccif4_md_event_mask_b = 1, */
+	/* .reg_ccif5_ap_event_mask_b = 1, */
+	/* .reg_ccif5_md_event_mask_b = 1, */ /* TODO */
+
+	/* SPM_WAKEUP_EVENT_MASK */
+	.reg_wakeup_event_mask = 0xF1682208,
+
+	/* SPM_EXT_WAKEUP_EVENT_MASK */
+	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
+
+	/* MCU0_WFI_EN */
+	.mcu0_wfi_en = 1,
+
+	/* MCU1_WFI_EN */
+	.mcu1_wfi_en = 1,
+
+	/* MCU2_WFI_EN */
+	.mcu2_wfi_en = 1,
+
+	/* MCU3_WFI_EN */
+	.mcu3_wfi_en = 1,
+
+	/* MCU4_WFI_EN */
+	.mcu4_wfi_en = 1,
+
+	/* MCU5_WFI_EN */
+	.mcu5_wfi_en = 1,
+
+	/* MCU6_WFI_EN */
+	.mcu6_wfi_en = 1,
+
+	/* MCU7_WFI_EN */
+	.mcu7_wfi_en = 1,
+
+	/* MCU8_WFI_EN */
+	.mcu8_wfi_en = 1,
+
+	/* MCU9_WFI_EN */
+	.mcu9_wfi_en = 1,
+
+	/* MCU10_WFI_EN */
+	.mcu10_wfi_en = 1,
+
+	/* MCU11_WFI_EN */
+	.mcu11_wfi_en = 1,
+
+	/* MCU12_WFI_EN */
+	.mcu12_wfi_en = 1,
+
+	/* MCU13_WFI_EN */
+	.mcu13_wfi_en = 1,
+
+	/* MCU14_WFI_EN */
+	.mcu14_wfi_en = 1,
+
+	/* MCU15_WFI_EN */
+	.mcu15_wfi_en = 0,
+
+	/* MCU16_WFI_EN */
+	.mcu16_wfi_en = 0,
+
+	/* MCU17_WFI_EN */
+	.mcu17_wfi_en = 0,
+
 	/* SPM_RSV_CON2 */
 	/*.spm_rsv_con2 = 0,*/ /* TODO */
-#endif
 
 	/* Auto-gen End */
 };
+#endif
+
 
 struct spm_lp_scen __spm_dpidle = {
 #ifdef CONFIG_FPGA_EARLY_PORTING
