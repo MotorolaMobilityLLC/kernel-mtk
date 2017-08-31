@@ -205,6 +205,8 @@ static int mtk_i2s0_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 	set_mem_block(substream, hw_params,
 		I2S0_AWB_Control_context, Soc_Aud_Digital_Block_MEM_AWB);
 
+	AudDrv_Emi_Clk_On();
+
 	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
@@ -214,6 +216,9 @@ static int mtk_i2s0_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 static int mtk_i2s0_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_i2s0_capture_pcm_hw_free\n");
+
+	AudDrv_Emi_Clk_Off();
+
 	if (Awb_Capture_dma_buf->area)
 		return 0;
 	else

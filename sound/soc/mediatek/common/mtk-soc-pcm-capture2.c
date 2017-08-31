@@ -212,12 +212,17 @@ static int mtk_capture2_pcm_hw_params(struct snd_pcm_substream *substream,
 	set_mem_block(substream, hw_params,
 		VUL2_Control_context, Soc_Aud_Digital_Block_MEM_VUL_DATA2);
 
+	AudDrv_Emi_Clk_On();
+
 	return ret;
 }
 
 static int mtk_capture2_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_capture2_pcm_hw_free\n");
+
+	AudDrv_Emi_Clk_Off();
+
 	if (Capture2_dma_buf->area)
 		return 0;
 	else
