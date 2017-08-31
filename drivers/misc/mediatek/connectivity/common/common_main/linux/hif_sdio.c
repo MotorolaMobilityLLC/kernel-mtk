@@ -45,10 +45,6 @@
 
 /* #include "hif_sdio_chrdev.h" */
 
-#if MTK_HIF_SDIO_AUTOK_ENABLED
-#include <mt_boot.h>
-#endif
-
 #define mmc_power_up_ext(x)
 #define mmc_power_off_ext(x)
 MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_FALSE;
@@ -116,12 +112,6 @@ static _osal_inline_ INT32 hif_sdio_stp_off(VOID);
 static _osal_inline_ INT32 hif_sdio_wifi_on(VOID);
 
 static _osal_inline_ INT32 hif_sdio_wifi_off(VOID);
-
-static _osal_inline_ INT32 hif_sdio_do_autok(struct sdio_func *func);
-
-#if 0
-static _osal_inline_ INT32 hif_sdio_is_autok_support(struct sdio_func *func);
-#endif
 
 static _osal_inline_ INT32 hif_sdio_deep_sleep_info_init(VOID);
 
@@ -1872,10 +1862,6 @@ static INT32 hif_sdio_probe(struct sdio_func *func, const struct sdio_device_id 
 		HIF_SDIO_ERR_FUNC("sdio_enable_func failed!\n");
 		goto out;
 	}
-#if 0
-	if (hif_sdio_is_autok_support(func) == 0)
-		/* hif_sdio_do_autok(func); */
-#endif
 
 	/* 4 <3.2> set block size according to the table storing function characteristics */
 	if (hif_sdio_probed_funcp == 0) {
@@ -2406,7 +2392,6 @@ static _osal_inline_ INT32 hif_sdio_wifi_on(VOID)
 	INT32 probe_index = -1;
 	INT32 ret = 0;
 	INT32 ret2 = 0;
-	INT32 sdio_autok_flag = 0;
 	struct sdio_func *func;
 	UINT32 chip_id = 0;
 	UINT16 func_num = 0;
@@ -2429,7 +2414,6 @@ static _osal_inline_ INT32 hif_sdio_wifi_on(VOID)
 	/* MT6630 */
 	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6630, 1);
 	 if (probe_index >= 0) {
-		sdio_autok_flag = 1;
 		chip_id = 0x6630;
 		func_num = 1;
 		goto wifi_on_exist;
@@ -2437,7 +2421,6 @@ static _osal_inline_ INT32 hif_sdio_wifi_on(VOID)
 	/* MT6632 */
 	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6602, 1);
 	 if (probe_index >= 0) {
-		sdio_autok_flag = 1;
 		chip_id = 0x6632;
 		func_num = 1;
 		goto wifi_on_exist;
@@ -2464,10 +2447,6 @@ wifi_on_exist:
 	}
 	clt_index = g_hif_sdio_probed_func_list[probe_index].clt_idx;
 	if (clt_index >= 0) {	/* the function has been registered */
-		if (sdio_autok_flag)
-			hif_sdio_do_autok(g_hif_sdio_probed_func_list[probe_index].func);
-		else
-			HIF_SDIO_INFO_FUNC("sdio_autok_flag is not set\n", ret);
 		g_hif_sdio_probed_func_list[probe_index].sdio_irq_enabled = MTK_WCN_BOOL_FALSE;
 		/* 4 <4> claim irq for this function */
 		func = g_hif_sdio_probed_func_list[probe_index].func;
@@ -2738,56 +2717,6 @@ static _osal_inline_ INT32 hif_sdio_is_autok_support(struct sdio_func *func)
 	return iRet;
 }
 #endif
-
-
-static _osal_inline_ INT32 hif_sdio_do_autok(struct sdio_func *func)
-{
-	INT32 i_ret = 0;
-
-#if MTK_HIF_SDIO_AUTOK_ENABLED
-#if 0
-	BOOTMODE boot_mode;
-
-	boot_mode = get_boot_mode();
-	if (boot_mode == META_BOOT) {
-		HIF_SDIO_INFO_FUNC("omit autok in meta mode\n");
-		i_ret = 0;
-		return i_ret;
-	}
-#endif
-	HIF_SDIO_INFO_FUNC("wait_sdio_autok_ready++\n");
-	wait_sdio_autok_ready(func->card->host);
-	HIF_SDIO_INFO_FUNC("wait_sdio_autok_ready--\n");
-	i_ret = 0;
-
-#else
-	HIF_SDIO_ERR_FUNC("autok feature is not enabled.\n");
-#endif
-	return i_ret;
-}
-
-
-INT32 mtk_wcn_hif_sdio_do_autok(MTK_WCN_HIF_SDIO_CLTCTX ctx)
-{
-	INT32 i_ret = 0;
-
-	UINT8 probe_index = 0;
-	struct sdio_func *func = NULL;
-
-	probe_index = CLTCTX_IDX(ctx);
-	if (probe_index < CFG_CLIENT_COUNT)
-		func = g_hif_sdio_probed_func_list[probe_index].func;
-	else {
-		HIF_SDIO_WARN_FUNC("probe_index is %d, out of range!\n", probe_index);
-		return -1;
-	}
-
-	i_ret = hif_sdio_do_autok(func);
-
-	return i_ret;
-}
-EXPORT_SYMBOL(mtk_wcn_hif_sdio_do_autok);
-
 
 /*!
  * \brief
