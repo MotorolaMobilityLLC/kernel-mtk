@@ -4922,11 +4922,18 @@ enum ROUND_LOOP_TIME_POLICY_ENUM {
 	CMDQ_TESTCASE_LOOP_SLOW = 60,
 };
 
+enum POLL_POLICY_ENUM {
+	CMDQ_TESTCASE_POLL_NONE,
+	CMDQ_TESTCASE_POLL_PASS,
+	CMDQ_TESTCASE_POLL_ALL,
+};
+
 struct stress_policy {
 	enum ENGINE_POLICY_ENUM engines_policy;
 	enum WAIT_POLICY_ENUM wait_policy;
 	enum CONDITION_TEST_POLICY_ENUM condition_policy;
 	enum ROUND_LOOP_TIME_POLICY_ENUM loop_policy;
+	enum POLL_POLICY_ENUM poll_policy;
 };
 
 struct thread_param {
@@ -4958,7 +4965,11 @@ struct random_data {
 	CMDQ_VARIABLE var_result;
 	bool may_wait;
 	u32 condition_count;
+	u32 poll_count;
 };
+
+/* trigger thread only set these bits */
+#define CMDQ_TEST_POLL_BIT 0xFFFFFFF
 
 static bool _append_op_read_mem_to_reg(struct cmdqRecStruct *handle,
 	struct random_data *data, u32 limit_size)
@@ -5021,6 +5032,36 @@ static bool _append_op_wait(struct cmdqRecStruct *handle, struct random_data *da
 		cmdq_op_wait_no_clear(handle, token);
 	else
 		cmdq_op_wait(handle, token);
+	return true;
+}
+
+static bool _append_op_poll(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size)
+{
+	const u64 dummy_poll_pa = CMDQ_GPR_R32_PA(CMDQ_GET_GPR_PX2RX_LOW(
+		CMDQ_DATA_REG_2D_SHARPNESS_0_DST));
+	const u32 max_poll_count = 2;
+	const u32 min_poll_instruction = 18;
+	u32 poll_bit = 0;
+
+	if (data->thread->policy.poll_policy == CMDQ_TESTCASE_POLL_NONE ||
+		limit_size < CMDQ_INST_SIZE * min_poll_instruction ||
+		data->poll_count >= max_poll_count)
+		return true;
+
+	CMDQ_MSG("%s limit: %u block size: %u\n", __func__, limit_size, handle->blockSize);
+
+	data->poll_count++;
+	if (data->thread->policy.poll_policy == CMDQ_TESTCASE_POLL_PASS)
+		poll_bit = 1 << (get_random_int() % 28);
+	else
+		poll_bit = 1 << (get_random_int() % 32);
+	cmdq_op_write_reg(handle, dummy_poll_pa, 0, poll_bit);
+	cmdq_op_poll(handle, dummy_poll_pa, poll_bit, poll_bit);
+
+	CMDQ_MSG("%s round: %u poll: 0x%08x count: %u block size: %u\n",
+		__func__, data->round, poll_bit, data->poll_count, handle->blockSize);
+
 	return true;
 }
 
@@ -5296,6 +5337,7 @@ static bool _append_random_instructions(struct cmdqRecStruct *handle,
 		_append_op_read_reg_to_mem,
 		_append_op_write_reg,
 		_append_op_wait,
+		_append_op_poll,
 
 		/* v3 instructions */
 		_append_op_add,
@@ -5348,6 +5390,9 @@ static void _testcase_release_work(struct work_struct *work_item)
 			} else if (random_context->thread->policy.engines_policy == CMDQ_TESTCASE_ENGINE_RANDOM) {
 				/* random engine flag may cause task never able to run, thus timedout */
 				error_happen = false;
+			} else if (random_context->thread->policy.poll_policy == CMDQ_TESTCASE_POLL_ALL) {
+				/* timeout due to poll fail */
+				error_happen = false;
 			}
 
 			if (error_happen) {
@@ -5394,9 +5439,12 @@ static void _testcase_release_work(struct work_struct *work_item)
 	} while (0);
 
 	if (error_happen) {
+		s32 poll_value = CMDQ_REG_GET32(CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
+			CMDQ_DATA_REG_2D_SHARPNESS_0_DST)));
+
 		atomic_set(&random_context->thread->stop, 1);
 		CMDQ_TEST_FAIL(
-			"round: %u wait: %d:%d multi: %d task: 0x%p size: %u engine use: %d condition: %d conditions: %u status: %d\n",
+			"round: %u wait: %d:%d multi: %d task: 0x%p size: %u engine use: %d condition: %d conditions: %u status: %d poll: 0x%08x poll count: %u\n",
 				random_context->round,
 				random_context->may_wait,
 				random_context->wait_count,
@@ -5406,7 +5454,9 @@ static void _testcase_release_work(struct work_struct *work_item)
 				random_context->thread->policy.engines_policy,
 				random_context->thread->policy.condition_policy,
 				random_context->condition_count,
-				status);
+				status,
+				poll_value,
+				random_context->poll_count);
 
 		/* wait other threads stop print messages */
 		msleep_interruptible(10);
@@ -5642,6 +5692,10 @@ static int _testcase_trigger_event_thread(void *data)
 		CMDQ_SYNC_TOKEN_USER_0,
 		CMDQ_SYNC_TOKEN_USER_1
 	};
+	const u64 dummy_poll_va = CMDQ_GPR_R32(CMDQ_GET_GPR_PX2RX_LOW(
+		CMDQ_DATA_REG_2D_SHARPNESS_0_DST));
+	u32 poll_bit_counter = 0xf;
+	u32 dummy_value = 0;
 
 	CMDQ_LOG("%s\n", __func__);
 
@@ -5652,7 +5706,14 @@ static int _testcase_trigger_event_thread(void *data)
 			cmdqCoreSetEvent(tokens[event_idx]);
 		else
 			cmdqCoreClearEvent(tokens[event_idx]);
-		msleep_interruptible(get_random_int() % 4);
+
+		dummy_value = CMDQ_REG_GET32(dummy_poll_va);
+		CMDQ_REG_SET32(dummy_poll_va, dummy_value | poll_bit_counter);
+		poll_bit_counter = poll_bit_counter << 4;
+		if (poll_bit_counter > CMDQ_TEST_POLL_BIT)
+			poll_bit_counter = 0xf;
+
+		msleep_interruptible(get_random_int() % 4 + 1);
 	}
 
 	/* clear token */
@@ -5758,6 +5819,22 @@ void testcase_stress_condition(void)
 	testcase_gen_random_case(true, policy);
 }
 
+void testcase_stress_poll(void)
+{
+	struct stress_policy policy = {0};
+
+	policy.engines_policy = CMDQ_TESTCASE_ENGINE_NOT_SET;
+	policy.wait_policy = CMDQ_TESTCASE_WAITOP_NOT_SET;
+	policy.condition_policy = CMDQ_TESTCASE_CONDITION_RANDOM;
+	policy.loop_policy = CMDQ_TESTCASE_LOOP_MEDIUM;
+	policy.poll_policy = CMDQ_TESTCASE_POLL_PASS;
+	testcase_gen_random_case(true, policy);
+
+	msleep_interruptible(10);
+	policy.poll_policy = CMDQ_TESTCASE_POLL_ALL;
+	testcase_gen_random_case(true, policy);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -5775,6 +5852,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 302:
+		testcase_stress_poll();
+		break;
 	case 301:
 		testcase_stress_condition();
 		break;
