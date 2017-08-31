@@ -59,11 +59,17 @@ static void preview_setting_v1(void);
 static void capture_setting_v1(kal_uint16 currefps);
 static void hs_video_setting_v1(void);
 static void slim_video_setting_v1(void);
+static void custom1_setting_v1(void);
+static void custom2_setting_v1(void);
+
 
 static void sensor_init_v2(void);
 static void preview_setting_v2(void);
 static void capture_setting_v2(kal_uint16 currefps);
 static void hs_video_setting_v2(void);
 static void slim_video_setting_v2(void);
+static void custom1_setting_v2(void);
+static void custom2_setting_v2(void);
+
 
 #endif

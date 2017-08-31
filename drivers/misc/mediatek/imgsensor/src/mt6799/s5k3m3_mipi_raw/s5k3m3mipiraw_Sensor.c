@@ -65,9 +65,9 @@ static imgsensor_info_struct imgsensor_info = {
 		.pclk = 480000000,				//record different mode's pclk
 		.linelength  = 9408,				//record different mode's linelength
 		.framelength = 1689,			//record different mode's framelength
-        .startx= 8,                 //record different mode's startx of grabwindow
-        .starty = 0,                    //record different mode's starty of grabwindow
-        .grabwindow_width  = 2088,      //2104,     //record different mode's width of grabwindow
+		.startx= 8, 				//record different mode's startx of grabwindow
+		.starty = 0,					//record different mode's starty of grabwindow
+		.grabwindow_width  = 2088,		//2104, 	//record different mode's width of grabwindow
 		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,
@@ -148,7 +148,7 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 	.slim_video = {
 		.pclk = 480000000,				//record different mode's pclk
-		.linelength  = 4456,				//record different mode's linelength
+		.linelength  = 9408,				//record different mode's linelength
 		.framelength = 3584,			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
@@ -160,76 +160,70 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
   .custom1 = {
-		.pclk = 440000000,				//record different mode's pclk
-		.linelength = 4592,				//record different mode's linelength
-		.framelength =3188, //3168,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
+		.pclk = 480000000,				//record different mode's pclk
+		.linelength = 5910,				//record different mode's linelength
+		.framelength =3375, //3168,			//record different mode's framelength
+		.startx = 16,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
-
+		.grabwindow_width = 4176,		//record different mode's width of grabwindow
+		.grabwindow_height = 3120,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,
+		.max_framerate = 240,
 	},
   .custom2 = {
-		.pclk = 440000000,				//record different mode's pclk
-		.linelength = 4592,				//record different mode's linelength
-		.framelength =3188, //3168,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
-		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
-
+		.pclk = 480000000,				//record different mode's pclk
+		.linelength  = 9408,				//record different mode's linelength
+		.framelength = 2112,			//record different mode's framelength
+        .startx= 8,                 //record different mode's startx of grabwindow
+        .starty = 0,                    //record different mode's starty of grabwindow
+        .grabwindow_width  = 2088,      //2104,     //record different mode's width of grabwindow
+		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,
+		.max_framerate = 240,
 	},
   .custom3 = {
-		.pclk = 440000000,				//record different mode's pclk
-		.linelength = 4592,				//record different mode's linelength
-		.framelength =3188, //3168,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
+		.pclk = 480000000,				//record different mode's pclk
+		.linelength  = 9408,				//record different mode's linelength
+		.framelength = 1689,			//record different mode's framelength
+		.startx= 8, 				//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
-
+		.grabwindow_width  = 2088,		//2104, 	//record different mode's width of grabwindow
+		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
   .custom4 = {
-		.pclk = 440000000,				//record different mode's pclk
-		.linelength = 4592,				//record different mode's linelength
-		.framelength =3188, //3168,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
+		.pclk = 480000000,				//record different mode's pclk
+		.linelength  = 9408,				//record different mode's linelength
+		.framelength = 1689,			//record different mode's framelength
+		.startx= 8, 				//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
-
+		.grabwindow_width  = 2088,		//2104, 	//record different mode's width of grabwindow
+		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
   .custom5 = {
-		.pclk = 440000000,				//record different mode's pclk
-		.linelength = 4592,				//record different mode's linelength
-		.framelength =3188, //3168,			//record different mode's framelength
-		.startx = 0,					//record different mode's startx of grabwindow
+		.pclk = 480000000,				//record different mode's pclk
+		.linelength  = 9408,				//record different mode's linelength
+		.framelength = 1689,			//record different mode's framelength
+		.startx= 8, 				//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
-		.grabwindow_width = 2096,		//record different mode's width of grabwindow
-		.grabwindow_height = 1552,		//record different mode's height of grabwindow
-
+		.grabwindow_width  = 2088,		//2104, 	//record different mode's width of grabwindow
+		.grabwindow_height = 1560,		//record different mode's height of grabwindow
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-		.mipi_data_lp2hs_settle_dc = 85,//unit , ns
+		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
-
 	.margin = 5,			//sensor framelength & shutter margin
 	.min_shutter = 4,		//min shutter
 	.max_frame_length = 0xFFFF,//REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation
@@ -239,18 +233,17 @@ static imgsensor_info_struct imgsensor_info = {
 	.frame_time_delay_frame = 1,
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
-
+	.sensor_mode_num = 10,	  //support sensor mode num ,don't support Slow motion
 	.cap_delay_frame = 3,		//enter capture delay frame num
 	.pre_delay_frame = 3, 		//enter preview delay frame num
 	.video_delay_frame = 3,		//enter video delay frame num
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num
-    .custom1_delay_frame = 2,
-    .custom2_delay_frame = 2,
-    .custom3_delay_frame = 2,
-    .custom4_delay_frame = 2,
-    .custom5_delay_frame = 2,
+	.custom1_delay_frame = 3,
+	.custom2_delay_frame = 3,
+	.custom3_delay_frame = 3,
+	.custom4_delay_frame = 3,
+	.custom5_delay_frame = 3,
 
 	.isp_driving_current = ISP_DRIVING_8MA, //mclk driving current
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
@@ -304,16 +297,16 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
  //{ 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   0, 0, 2104, 1560,   0, 0, 2104, 1560}, // Preview
  //{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   0, 0, 4208, 3120,   0, 0, 4208, 3120}, // capture
  //{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   0, 0, 4208, 3120,   0, 0, 4208, 3120}, // video
- { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8, 0, 2088, 1560,   0, 0, 2088, 1560}, // Preview
- { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   16, 0, 4176, 3120,   0, 0, 4176, 3120}, // capture
- { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   16, 0, 4176, 3120,   0, 0, 4176, 3120}, // video
- { 4208, 3120,	184,  480, 3840, 2160, 1280,  720,   0,	0, 1280,  720, 	 0, 0, 1280,  720}, //hight speed video
- { 4208, 3120,	184,  480, 3840, 2160, 1280,  720,   0,	0, 1280,  720, 	 0, 0, 1280,  720},// slim video
- { 4208, 3120,	  0,  	0, 4208, 3120, 2104, 1560,   0,	0, 2104, 1560, 	 0, 0, 2104, 1560},// Custom1 (defaultuse preview)
- { 4208, 3120,	  0,  	0, 4208, 3120, 2104, 1560,   0,	0, 2104, 1560, 	 0, 0, 2104, 1560},// Custom2
- { 4208, 3120,	  0,  	0, 4208, 3120, 2104, 1560,   0,	0, 2104, 1560, 	 0, 0, 2104, 1560},// Custom3
- { 4208, 3120,	  0,  	0, 4208, 3120, 2104, 1560,   0,	0, 2104, 1560, 	 0, 0, 2104, 1560},// Custom4
- { 4208, 3120,	  0,  	0, 4208, 3120, 2104, 1560,   0,	0, 2104, 1560, 	 0, 0, 2104, 1560},// Custom5
+ { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8,  0, 2088, 1560,   0,  0, 2088, 1560}, // Preview
+ { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   16, 0, 4176, 3120,   0,  0, 4176, 3120}, // capture
+ { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   16, 0, 4176, 3120,   0,  0, 4176, 3120}, // video
+ { 4208, 3120,  184,  480, 3840, 2160, 1280,  720,   0,  0, 1280,  720,   0,  0, 1280,  720}, //hight speed video
+ { 4208, 3120,  184,  480, 3840, 2160, 1280,  720,   0,  0, 1280,  720,   0,  0, 1280,  720},// slim video
+ { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,   16, 0, 4176, 3120,   0,  0, 4176, 3120},// Custom1 (defaultuse preview)
+ { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8,  0, 2088, 1560,   0,  0, 2088, 1560}, // Custom2
+ { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8,  0, 2088, 1560,   0,  0, 2088, 1560}, // Custom3
+ { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8,  0, 2088, 1560,   0,  0, 2088, 1560}, // Custom4
+ { 4208, 3120,    0,    0, 4208, 3120, 2104, 1560,   8,  0, 2088, 1560,   0,  0, 2088, 1560}, // Custom5
 };
 
  static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
@@ -808,6 +801,35 @@ static void slim_video_setting(void)
 }
 
 
+static void custom1_setting(void)
+{
+	LOG_INF("E, version_id:%d (0:orig, 1:rom update)\n", version_id);
+
+	KD_SENSOR_PROFILE_INIT();
+
+	if(module_id == S5K3M3_MODULE_ID_V1)
+	  custom1_setting_v1();
+	else if(module_id == S5K3M3_MODULE_ID_V2)
+	  custom1_setting_v2();
+
+	KD_SENSOR_PROFILE("custom1_setting");
+}
+
+
+static void custom2_setting(void)
+{
+	LOG_INF("E, version_id:%d (0:orig, 1:rom update)\n", version_id);
+
+	KD_SENSOR_PROFILE_INIT();
+
+	if(module_id == S5K3M3_MODULE_ID_V1)
+	  custom2_setting_v1();
+	else if(module_id == S5K3M3_MODULE_ID_V2)
+	  custom2_setting_v2();
+
+	KD_SENSOR_PROFILE("custom2_setting");
+}
+
 static kal_uint32 return_sensor_id(void)
 {
 
@@ -1176,7 +1198,7 @@ static kal_uint32 Custom1(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.min_frame_length = imgsensor_info.custom1.framelength;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
-    preview_setting();
+    custom1_setting();
     return ERROR_NONE;
 }   /*  Custom1   */
 
@@ -1194,7 +1216,7 @@ static kal_uint32 Custom2(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.min_frame_length = imgsensor_info.custom2.framelength;
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
-    preview_setting();
+    custom2_setting();
     return ERROR_NONE;
 }   /*  Custom2   */
 
@@ -1327,6 +1349,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->AEShutDelayFrame = imgsensor_info.ae_shut_delay_frame; 		 /* The frame of setting shutter default 0 for TG int */
 	sensor_info->AESensorGainDelayFrame = imgsensor_info.ae_sensor_gain_delay_frame;	/* The frame of setting sensor gain */
 	sensor_info->AEISPGainDelayFrame = imgsensor_info.ae_ispGain_delay_frame;
+	sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame; /* The delay frame of setting frame length  */    
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
@@ -1818,6 +1841,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                 case MSDK_SCENARIO_ID_SLIM_VIDEO:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[4],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
+				case MSDK_SCENARIO_ID_CUSTOM1:
+					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[5],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+					break;
+				case MSDK_SCENARIO_ID_CUSTOM2:
+					memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[6],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
+					break;                    
                 case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
                 default:
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[0],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
@@ -1836,6 +1865,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%llu\n", *feature_data);
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				case MSDK_SCENARIO_ID_CUSTOM1:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
@@ -1848,6 +1878,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+				case MSDK_SCENARIO_ID_CUSTOM2:                    
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 					break;
 				default:
@@ -1861,7 +1892,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+				case MSDK_SCENARIO_ID_CUSTOM1:                    
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+				case MSDK_SCENARIO_ID_CUSTOM2:                    
 					memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T));
 					break;
 				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -1880,12 +1913,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			pvcinfo = (SENSOR_VC_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
 			switch (*feature_data_32) {
 			case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			case MSDK_SCENARIO_ID_CUSTOM1:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[1],sizeof(SENSOR_VC_INFO_STRUCT));
 				break;
 			case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[2],sizeof(SENSOR_VC_INFO_STRUCT));
 				break;
 			case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+			case MSDK_SCENARIO_ID_CUSTOM2:
 			default:
 				memcpy((void *)pvcinfo,(void *)&SENSOR_VC_INFO[0],sizeof(SENSOR_VC_INFO_STRUCT));
 				break;
