@@ -100,6 +100,21 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		break;
 
 	case SUB_PMIC_CTRL:
+		if (lock) {
+			ret_val = sspm_ipi_send_sync_ex(
+					IPI_ID_PMIC, IPI_OPT_DEFAUT, buffer,
+					PMIC_IPI_SEND_SLOT_SIZE, retbuf,
+					PMIC_IPI_ACK_SLOT_SIZE);
+		} else {
+			ret_val = sspm_ipi_send_sync_ex(
+					IPI_ID_PMIC, IPI_OPT_LOCK_POLLING, buffer,
+					PMIC_IPI_SEND_SLOT_SIZE, retbuf,
+					PMIC_IPI_ACK_SLOT_SIZE);
+		}
+
+		if (ret_val >= 0)
+			ret_val =
+				((struct pmic_ipi_ret_datas *)retbuf)->data[0];
 		break;
 
 	default:
@@ -111,6 +126,20 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 	return ret_val;
 
 }
+
+#ifdef CONFIG_MTK_EXTBUCK
+int extbuck_ipi_enable(unsigned char buck_id, unsigned char en)
+{
+	struct pmic_ipi_cmds send = { {0} };
+	struct pmic_ipi_ret_datas recv = { {0} };
+
+	send.cmd[0] = SUB_PMIC_CTRL;
+	send.cmd[1] = buck_id;
+	send.cmd[2] = en;
+
+	return pmic_ipi_to_sspm(&send, &recv, 1);
+}
+#endif /* CONFIG_MTK_EXTBUCK */
 
 unsigned int pmic_ipi_read_interface(unsigned int RegNum, unsigned int *val, unsigned int MASK,
 					unsigned int SHIFT, unsigned char lock)
