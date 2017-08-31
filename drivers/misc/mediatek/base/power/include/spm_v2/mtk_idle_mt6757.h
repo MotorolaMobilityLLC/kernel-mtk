@@ -50,6 +50,7 @@ extern void __iomem *vdecsys_base;
 extern void __iomem *vencsys_base;
 extern void __iomem *audiosys_base_in_idle;
 extern void __iomem  *apmixed_base_in_idle;
+extern void __iomem  *timer_base_in_idle;
 
 #define INFRA_REG(ofs)      (infrasys_base + ofs)
 #define MM_REG(ofs)         (mmsys_base + ofs)
@@ -61,6 +62,7 @@ extern void __iomem  *apmixed_base_in_idle;
 #define VENCSYS_REG(ofs)    (vencsys_base + ofs)
 #define AUDIOSYS_REG(ofs)   (audiosys_base_in_idle + ofs)
 #define APMIXEDSYS(ofs)	    (apmixed_base_in_idle + ofs)
+#define TIMER_REG(ofs)      (timer_base_in_idle + ofs)
 
 #ifdef SPM_PWR_STATUS
 #undef SPM_PWR_STATUS
@@ -115,6 +117,8 @@ extern void __iomem  *apmixed_base_in_idle;
 #define VDEC_CG_CON_0       VDECSYS_REG(0x0)
 #define VDEC_CG_CON_1       VDECSYS_REG(0x8)
 #define VENCSYS_CG_CON      VENCSYS_REG(0x0)
+
+#define FREE_RUN_TIMER      TIMER_REG(0x28)
 
 #define DIS_PWR_STA_MASK        BIT(3)
 #define MFG_PWR_STA_MASK        BIT(4)

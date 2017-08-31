@@ -66,7 +66,11 @@
 #else
 #define SPM_PWAKE_EN            1
 #define SPM_PCMWDT_EN           1
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#define SPM_BYPASS_SYSPWREQ     1
+#else
 #define SPM_BYPASS_SYSPWREQ     0
+#endif
 #endif
 
 #ifdef CONFIG_OF
@@ -448,8 +452,26 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_read_interface_nolock(PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_PWR_ON,
+			0x1);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VSRAM_SHUTDOWN,
+			0x3);
+
+	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_EN_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VPROC_PWR_ON,
+			PMIC_RG_BUCK_VPROC11_EN_ADDR,
+			0x1);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VPROC_SHUTDOWN,
+			PMIC_RG_BUCK_VPROC11_EN_ADDR,
+			0x3);
+#else
 	/* set PMIC WRAP table for suspend power control */
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
