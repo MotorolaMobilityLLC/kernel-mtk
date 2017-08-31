@@ -40,6 +40,7 @@ struct wp_trace_context_t {
 struct dbgreg_set {
 	unsigned long regs[28];
 };
+#define DBGEDSCR	regs[23]
 #define SDSR            regs[22]
 #define DBGVCR          regs[21]
 #define DBGWCR3         regs[20]
@@ -86,7 +87,8 @@ struct dbgreg_set {
 #define MDBGEN (1 << 15)
 #define KDE (0x1 << 13)
 #define DBGWCR_VAL 0x000001E7
- /**/
+#define TDCC (1 << 12)
+
 #define WP_EN (1 << 0)
 #define LSC_LDR (1 << 3)
 #define LSC_STR (2 << 3)
