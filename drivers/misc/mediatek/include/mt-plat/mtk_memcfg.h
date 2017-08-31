@@ -25,6 +25,8 @@
 
 #ifdef CONFIG_MTK_MEMCFG
 
+extern int kptr_restrict;
+
 #include <linux/memblock.h>
 extern int memblock_reserve_count;
 extern struct memblock_record memblock_record[MAX_MEMBLOCK_RECORD];
