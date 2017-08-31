@@ -10697,6 +10697,18 @@ static int mtk_nand_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void mtk_nand_shutdown(struct platform_device *pdev)
+{
+	struct mtk_nand_host *host = platform_get_drvdata(pdev);
+	struct mtd_info *mtd = &host->mtd;
+
+#ifdef CONFIG_MNTL_SUPPORT
+	nand_get_device(mtd, FL_WRITING);
+	mtk_nand_interface_async();
+	nand_release_device(mtd);
+#endif
+}
+
 /******************************************************************************
  * NAND OTP operations
  * ***************************************************************************/
@@ -11075,6 +11087,7 @@ static struct miscdevice nand_otp_dev = {
 static struct platform_driver mtk_nand_driver = {
 	.probe = mtk_nand_probe,
 	.remove = mtk_nand_remove,
+	.shutdown = mtk_nand_shutdown,
 	.suspend = mtk_nand_suspend,
 	.resume = mtk_nand_resume,
 	.driver = {
