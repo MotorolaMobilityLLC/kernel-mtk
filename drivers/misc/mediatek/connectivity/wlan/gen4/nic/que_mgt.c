@@ -2447,6 +2447,10 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 
 					/* record StaRec related info */
 					prCurrSwRfb->prStaRec = prAdapter->prAisBssInfo->prStaRecOfAP;
+					prCurrSwRfb->ucStaRecIdx = prCurrSwRfb->prStaRec->ucIndex;
+					prCurrSwRfb->ucWlanIdx = prCurrSwRfb->prStaRec->ucWlanIndex;
+					GLUE_SET_PKT_BSS_IDX(prCurrSwRfb->pvPacket,
+						     secGetBssIdxByWlanIdx(prAdapter, prCurrSwRfb->ucWlanIdx));
 					DBGLOG_MEM8(QM, WARN, (PUINT_8) prCurrSwRfb->pvHeader,
 						(prCurrSwRfb->u2PacketLen > 64) ? 64 : prCurrSwRfb->u2PacketLen);
 				}
