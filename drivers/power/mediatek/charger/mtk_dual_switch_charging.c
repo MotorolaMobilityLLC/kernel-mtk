@@ -289,12 +289,14 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	/* FIXME: It should consider whether slave charger is enabled */
-#if 0
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
+#ifdef MTK_CHARGER_USE_POLLING
+		mt6336_eoc_callback();
+		charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_EOC);
+#endif
 		pr_err("battery full!\n");
 	}
-#endif
 
 	/* If it is not disabled by throttling,
 	 * enable PE+/PE+20, if it is disabled
@@ -310,7 +312,7 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 
 	return 0;
 }
-
+#if 0
 static int mtk_dual_switch_chr_tuning(struct charger_manager *info)
 {
 	bool chg_done = false;
@@ -351,7 +353,7 @@ static int mtk_dual_switch_chr_tuning(struct charger_manager *info)
 
 	return 0;
 }
-
+#endif
 int mtk_dual_switch_chr_err(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
@@ -394,7 +396,10 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
-
+#ifdef MTK_CHARGER_USE_POLLING
+		mt6336_rechg_callback();
+		charger_dev_notify(info->chg1_dev, CHARGER_DEV_NOTIFY_RECHG);
+#endif
 		mtk_pe20_set_to_check_chr_type(info, true);
 		pr_err("battery recharging!\n");
 	}
@@ -421,13 +426,16 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 
 	switch (swchgalg->state) {
 	case CHR_CC:
+	case CHR_TUNING:
+	case CHR_POSTCC:
 		ret = mtk_dual_switch_chr_cc(info);
 		break;
-
+#if 0
 	case CHR_TUNING:
+	case CHR_POSTCC:
 		ret = mtk_dual_switch_chr_tuning(info);
 		break;
-
+#endif
 	case CHR_BATFULL:
 		ret = mtk_dual_switch_chr_full(info);
 		break;

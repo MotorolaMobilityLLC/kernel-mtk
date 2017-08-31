@@ -596,6 +596,11 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 	u32 retry_cnt = 0;
 
 	if (pmic_is_bif_exist()) {
+		if (!info->enable_dynamic_cv) {
+			_cv = bif_cv;
+			goto _out;
+		}
+
 		do {
 			vbat_auxadc = battery_get_bat_voltage() * 1000;
 			ret = pmic_get_bif_battery_voltage(&vbat_bif);
@@ -625,11 +630,14 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 			_cv = 4608000;
 		else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
 			_cv = _cv_temp;
-		else
+		else {
 			_cv = bif_cv;
-
+			info->enable_dynamic_cv = false;
+		}
+_out:
 		*cv = _cv;
-		pr_err("%s: CV = %duV\n", __func__, _cv);
+		pr_err("%s: CV = %duV, enable_dynamic_cv = %d\n",
+			__func__, _cv, info->enable_dynamic_cv);
 	} else
 		ret = -ENOTSUPP;
 
@@ -1379,6 +1387,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	/* init thread */
 	init_waitqueue_head(&info->wait_que);
 	info->polling_interval = 10;
+	info->enable_dynamic_cv = true;
 
 	mtk_charger_init_timer(info);
 

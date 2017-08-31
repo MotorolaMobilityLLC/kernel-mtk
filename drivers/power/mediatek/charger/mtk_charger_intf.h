@@ -31,6 +31,17 @@ struct charger_manager;
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
 
+/*
+ * Define this to poll status for eoc/recharge as workaround
+ * if not defined, interrupt is used for eoc/recharge
+ */
+#define MTK_CHARGER_USE_POLLING
+#ifdef MTK_CHARGER_USE_POLLING
+extern void mt6336_eoc_callback(void);
+extern void mt6336_rechg_callback(void);
+#endif
+
+
 /* charger_dev notify charger_manager */
 enum {
 	CHARGER_DEV_NOTIFY_VBUS_OVP,
@@ -147,6 +158,9 @@ struct charger_manager {
 	/* sw jeita */
 	bool enable_sw_jeita;
 	struct sw_jeita_data sw_jeita;
+
+	/* dynamic_cv */
+	bool enable_dynamic_cv;
 
 	/* battery warning */
 	unsigned int notify_code;
