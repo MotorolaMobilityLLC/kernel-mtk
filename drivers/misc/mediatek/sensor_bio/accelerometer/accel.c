@@ -14,21 +14,9 @@
 #include <linux/vmalloc.h>
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
+#include "performance.h"
 
 struct acc_context *acc_context_obj/* = NULL*/;
-
-/*#define DEBUG_PERFORMANCE */
-#ifdef DEBUG_PERFORMANCE
-int64_t temp_latency;
-int debug_latency;
-module_param(debug_latency, int, 0644);
-int latency;
-module_param(latency, int, 0644);
-int latency_check_number;
-module_param(latency_check_number, int, 0644);
-int clear_result;
-module_param(clear_result, int, 0644);
-#endif
 
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
@@ -660,9 +648,6 @@ int acc_data_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
-#ifdef DEBUG_PERFORMANCE
-	int64_t t;
-#endif
 
 	event.time_stamp = data->timestamp;
 	event.flush_action = DATA_ACTION;
@@ -672,23 +657,8 @@ int acc_data_report(struct acc_data *data)
 	event.word[2] = data->z;
 	event.reserved = data->reserved[0];
 	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
-#ifdef DEBUG_PERFORMANCE
-		if (debug_latency == 1 && latency_check_number < 2000) {
-			if (event.reserved == 1) {
-				t = ktime_get_raw_ns();
-				temp_latency = temp_latency + (t-event.time_stamp);
-				latency_check_number++;
-				latency = temp_latency / latency_check_number;
-			}
-		}
-		if (clear_result == 1) {
-			latency = 0;
-			latency_check_number = 0;
-			debug_latency = 0;
-			temp_latency = 0;
-		}
-#endif
-
+	if (event.reserved == 1)
+		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");
