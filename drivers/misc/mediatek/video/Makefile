@@ -25,6 +25,7 @@ ifneq ($(CONFIG_MTK_LCM), y)
 else
 	######################################
 	obj-$(CONFIG_MTK_FB) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+	obj-$(CONFIG_MACH_MT6763) += common/
 	obj-$(CONFIG_MACH_MT6755) += common/
 	obj-$(CONFIG_MACH_MT6797) += common/
 	obj-$(CONFIG_MACH_MT6757) += common/
