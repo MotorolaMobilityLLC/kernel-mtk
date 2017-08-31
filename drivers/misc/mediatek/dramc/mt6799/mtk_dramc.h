@@ -192,6 +192,11 @@ enum DDRTYPE {
 	TYPE_LPDDR4X
 };
 
+enum DRAM_MODE {
+	NORMAL_MODE = 0,
+	BYTE_MODE
+};
+
 enum {
 	DRAM_OK = 0,
 	DRAM_FAIL

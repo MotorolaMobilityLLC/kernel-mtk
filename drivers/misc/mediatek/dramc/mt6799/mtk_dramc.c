@@ -82,6 +82,7 @@ static void *(*get_emi_base)(void);
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
+unsigned int CBT_MODE;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
@@ -487,8 +488,10 @@ static tx_result dramc_tx_tracking(int channel)
 		if (res != TX_DONE)
 			return res;
 		mr1819_cur[0] = (mr18_cur & 0xFF) | ((mr19_cur & 0xFF) << 8);
-		/* mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00); */
-		mr1819_cur[1] = mr1819_cur[0];
+		if (CBT_MODE == BYTE_MODE)
+			mr1819_cur[1] = (mr18_cur >> 8) | (mr19_cur & 0xFF00);
+		else /* normal mode */
+			mr1819_cur[1] = mr1819_cur[0];
 
 		/* inc: mr1819_cur > mr1819_base, PI- */
 		/* dec: mr1819_cur < mr1819_base, PI+ */
@@ -2105,8 +2108,11 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0xC00) >> 10;
+	DRAM_TYPE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x1C00) >> 10;
 	pr_err("[DRAMC Driver] dram type =%d\n", get_ddr_type());
+
+	CBT_MODE = (readl(PDEF_DRAMC0_CHA_REG_010) & 0x2000) >> 13;
+	pr_err("[DRAMC Driver] cbt mode =%d\n", CBT_MODE);
 
 	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_err("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
