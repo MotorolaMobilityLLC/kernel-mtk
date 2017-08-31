@@ -74,10 +74,10 @@ static bool _read_imx338_eeprom(kal_uint16 addr, BYTE* data, int size )
 
 void read_imx338_SPC(BYTE* data){
 
-	int addr = 0x764;
+	int addr = 0x763;
 	int size = 352;
 
-	LOG_INF("read imx338 SPC, size = %d", size);
+	LOG_INF("read imx338 SPC, size = %d-", size);
 	if(!get_done || last_size != size || last_offset != addr) {
 		if(!_read_imx338_eeprom(addr, IMX338_SPC_data, size)){
 			get_done = 0;
@@ -94,10 +94,10 @@ void read_imx338_SPC(BYTE* data){
 
 void read_imx338_DCC( kal_uint16 addr, BYTE* data, kal_uint32 size){
 	//int i;
-	addr = 0x8c4;
+	addr = 0x8c3;
 	size = 384;
 
-	LOG_INF("read imx338 DCC, size = %d", size);
+	LOG_INF("read imx338 DCC, size = %d-", size);
 
 	if(!get_done || last_size != size || last_offset != addr) {
 		if(!_read_imx338_eeprom(addr, IMX338_DCC_data, size)){
