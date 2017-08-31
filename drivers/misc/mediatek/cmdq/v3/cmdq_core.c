@@ -3600,7 +3600,7 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 	/* calculate required buffer size */
 	/* we need to consider {READ, MOVE, WRITE} for each register */
 	/* and the SYNC in the begin and end */
-	if (pTask->regCount) {
+	if (pTask->regCount && pTask->regCount <= CMDQ_MAX_DUMP_REG_COUNT) {
 		extraBufferSize = (3 * CMDQ_INST_SIZE * pTask->regCount) + (2 * CMDQ_INST_SIZE);
 		/* Add move instruction count for handle Extra APB address (add move instructions) */
 		for (i = 0; i < pTask->regCount; ++i) {
@@ -3746,8 +3746,6 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 	struct CmdqRecExtend *ext, CmdqInterruptCB loopCB, unsigned long loopData)
 {
 	struct TaskStruct *pTask = NULL;
-	void *p_metadatas = NULL;
-	uint32_t metadata_length;
 	int32_t status;
 	CMDQ_TIME time_cost;
 
@@ -3806,11 +3804,15 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 
 		/* secure exec data */
 		pTask->secData.is_secure = pCommandDesc->secData.is_secure;
+#ifdef CMDQ_SECURE_PATH_SUPPORT
 		pTask->secData.enginesNeedDAPC = pCommandDesc->secData.enginesNeedDAPC;
 		pTask->secData.enginesNeedPortSecurity =
 		    pCommandDesc->secData.enginesNeedPortSecurity;
 		pTask->secData.addrMetadataCount = pCommandDesc->secData.addrMetadataCount;
 		if (pTask->secData.is_secure == true && pTask->secData.addrMetadataCount > 0) {
+			u32 metadata_length = 0;
+			void *p_metadatas = NULL;
+
 			metadata_length = (pTask->secData.addrMetadataCount) * sizeof(struct cmdqSecAddrMetadataStruct);
 			/* create sec data task buffer for working */
 			p_metadatas = kzalloc(metadata_length, GFP_KERNEL);
@@ -3826,8 +3828,11 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 			}
 			memcpy(p_metadatas, CMDQ_U32_PTR(pCommandDesc->secData.addrMetadatas),
 			       metadata_length);
+			pTask->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)p_metadatas;
+		} else {
+			pTask->secData.addrMetadatas = (cmdqU32Ptr_t)(unsigned long)NULL;
 		}
-		pTask->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)p_metadatas;
+#endif
 
 		/* profile timers */
 		memset(&(pTask->trigger), 0x0, sizeof(pTask->trigger));
@@ -8862,7 +8867,7 @@ s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
 
 	/*  */
 	/* retrieve result */
-	if (pResult && pResult->count) {
+	if (pResult && pResult->count && pResult->count <= CMDQ_MAX_DUMP_REG_COUNT) {
 		/* clear results */
 		memset(CMDQ_U32_PTR(pResult->regValues), 0,
 		       pResult->count * sizeof(CMDQ_U32_PTR(pResult->regValues)[0]));
