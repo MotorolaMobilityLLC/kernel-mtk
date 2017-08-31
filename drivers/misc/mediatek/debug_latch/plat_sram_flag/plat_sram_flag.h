@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+#ifndef __PLAT_SRAM_FLAG_H__
+#define __PLAT_SRAM_FLAG_H__
+
+/* each flag is a word */
+#define PLAT_FLAG0	0
+#define PLAT_FLAG1	1
+#define PLAT_FLAG2	2
+#define PLAT_FLAG3	3
+
+/*
+ * PLAT_FLAG0:
+ * bit[0:0] = lastpc_valid,
+ * bit[1:1] = lastpc_valid_before_reboot,
+ * bit[2:4] = user_id_of_multi_user_etb_0,
+ * bit[5:7] = user_id_of_multi_user_etb_1,
+ * bit[8:10] = user_id_of_multi_user_etb_2,
+ * bit[11:13] = user_id_of_multi_user_etb_3,
+ * bit[14:16] = user_id_of_multi_user_etb_4,
+ * bit[17:19] = user_id_of_multi_user_etb_5,
+ * bit[20:22] = user_id_of_multi_user_etb_6,
+ * bit[23:25] = user_id_of_multi_user_etb_7,
+ * bit[26:28] = user_id_of_multi_user_etb_8,
+ * bit[29:31] = user_id_of_multi_user_etb_9,
+ */
+#define OFFSET_LASTPC_VALID			0
+#define OFFSET_LASTPC_VALID_BEFORE_REBOOT	1
+#define OFFSET_ETB_0				2
+
+/* available multi-user ETB number (only count for ETB that supports multi-user) */
+#define MAX_ETB_NUM		10
+/* available user type is 0x0~0x7 */
+#define MAX_ETB_USER_NUM	8
+
+
+/*
+ * PLAT_FLAG1:
+ * bit[0:0] = dfd_valid,
+ * bit[1:1] = dfd_before_reboot,
+ */
+#define OFFSET_DFD_VALID                     0
+#define OFFSET_DFD_VALID_BEFORE_REBOOT       1
+
+/*
+ * PLAT_FLAG2:
+ * bit[0:0] = base_address_for_dfd[32:32],
+ * bit[1:31] = base_address_for_dfd[1:31],
+ *
+ * XXX: due to alignment, base_address_for_dfd[0:0] is always 0
+ */
+
+
+int set_sram_flag_lastpc_valid(void);
+int set_sram_flag_dfd_valid(void);
+int set_sram_flag_etb_user(unsigned int utb_id, unsigned int user_id);
+#endif
