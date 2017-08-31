@@ -26,13 +26,15 @@ unsigned short mt6336_read_efuse(unsigned int addr)
 	unsigned short efuse_data_byte;
 
 	/* 3. set row to read */
-	mt6336_set_flag_register_value(MT6336_RG_OTP_PA, addr*2);
+	mt6336_set_flag_register_value(MT6336_RG_OTP_PA, addr);
+	pr_err("[%s] RG_OTP_PA[0x469] = 0x%x\n", __func__, mt6336_get_flag_register_value(MT6336_RG_OTP_PA));
 	/* 4. Toggle */
 	udelay(100);
 	if (mt6336_get_flag_register_value(MT6336_RG_OTP_RD_TRIG) == 0)
 		mt6336_set_flag_register_value(MT6336_RG_OTP_RD_TRIG, 1);
 	else
 		mt6336_set_flag_register_value(MT6336_RG_OTP_RD_TRIG, 0);
+
 	/* 5. polling RG_OTP_RD_BUSY */
 	udelay(300);
 	while (mt6336_get_flag_register_value(MT6336_RG_OTP_RD_BUSY) == 1)
@@ -43,6 +45,9 @@ unsigned short mt6336_read_efuse(unsigned int addr)
 	udelay(1000);
 	/* 6. read data */
 	efuse_data_byte = mt6336_get_flag_register_value(MT6336_RG_OTP_DOUT_SW);
+	pr_err("[%s] RG_OTP_PA_SW[0x477]=0x%x, RG_OTP_DOUT_SW[0x475]=0x%x\n",
+		__func__, mt6336_get_flag_register_value(MT6336_RG_OTP_PA_SW),
+		mt6336_get_flag_register_value(MT6336_RG_OTP_DOUT_SW));
 
 	return efuse_data_byte;
 }
@@ -51,26 +56,26 @@ unsigned int mt6336_Read_Efuse_HPOffset(int i)
 {
 	unsigned int efuse_data;
 
-	pr_debug("mt6336_Read_Efuse_HPOffset(+)\n");
+	pr_err("mt6336_Read_Efuse_HPOffset(i=0x%x)\n", i);
 	mutex_lock(&mt6336_efuse_lock_mutex);
 	/* 1. enable efuse ctrl engine clock */
-	mt6336_set_flag_register_value(MT6336_PMIC_CLK_CKPDN_HWEN_CON0_CLR,
+	mt6336_set_flag_register_value(MT6336_CLK_CKPDN_HWEN_CON0_CLR,
 		MT6336_CON_BIT(MT6336_CLK_EFUSE_CK_PDN_HWEN));
-	mt6336_set_flag_register_value(MT6336_PMIC_CLK_CKPDN_CON1_CLR,
+	mt6336_set_flag_register_value(MT6336_CLK_CKPDN_CON1_CLR,
 		MT6336_CON_BIT(MT6336_CLK_EFUSE_CK_PDN));
 	/* 2. */
 	mt6336_set_flag_register_value(MT6336_RG_OTP_RD_SW, 1);
 	/* read high byte of efuse */
-	efuse_data = mt6336_read_efuse(i + 1);
+	efuse_data = mt6336_read_efuse(i*2 + 1);
 	efuse_data <<= 8;
 	/* read low byte of efuse */
-	efuse_data |= mt6336_read_efuse(i);
-	pr_debug("HPoffset : efuse=0x%x\n", efuse_data);
+	efuse_data |= mt6336_read_efuse(i*2);
+	pr_err("HPoffset(0x%x) : efuse=0x%x\n", i, efuse_data);
 
 	/*7. Disable efuse ctrl engine clock */
-	mt6336_set_flag_register_value(MT6336_PMIC_CLK_CKPDN_HWEN_CON0_SET,
+	mt6336_set_flag_register_value(MT6336_CLK_CKPDN_HWEN_CON0_SET,
 		MT6336_CON_BIT(MT6336_CLK_EFUSE_CK_PDN_HWEN));
-	mt6336_set_flag_register_value(MT6336_PMIC_CLK_CKPDN_CON1_SET,
+	mt6336_set_flag_register_value(MT6336_CLK_CKPDN_CON1_SET,
 		MT6336_CON_BIT(MT6336_CLK_EFUSE_CK_PDN));
 	mutex_unlock(&mt6336_efuse_lock_mutex);
 

@@ -15,6 +15,7 @@
 #define _MT_PMIC_6336_H_
 
 #include "mtk_pmic_common.h"
+#include "pmic_debugfs.h"
 #include "mt6336_irq.h"
 #ifndef MT6336_E1
 #include "mt6336_upmu_hw.h"
@@ -22,24 +23,15 @@
 #include "mt6336_upmu_hw_e1.h"
 #endif
 
-#define MT6336_DEBUG_PR_DBG
-
+/*
+ * Debugfs
+ */
 #define MT6336TAG                "[MT6336] "
 
-#ifdef MT6336_DEBUG
-#define PMICDEB(fmt, arg...) pr_debug(MT6336TAG "cpuid=%d, " fmt, raw_smp_processor_id(), ##arg)
-#define PMICFUC(fmt, arg...) pr_debug(MT6336TAG "cpuid=%d, %s\n", raw_smp_processor_id(), __func__)
-#endif  /*-- defined MT6336_DEBUG --*/
-
-#if defined MT6336_DEBUG_PR_DBG
-#define PMICLOG(fmt, arg...)   pr_err(MT6336TAG fmt, ##arg)
-#else
-#define PMICLOG(fmt, arg...)
-#endif  /*-- defined MT6336_DEBUG_PR_DBG --*/
-
-#define PMICERR(fmt, arg...)   pr_debug(MT6336TAG "ERROR,line=%d " fmt, __LINE__, ##arg)
-#define PMICREG(fmt, arg...)   pr_debug(MT6336TAG fmt, ##arg)
-
+#define MT6336LOG(fmt, arg...) do { \
+	if (gPMICDbgLvl >= PMIC_LOG_DBG) \
+		pr_err(MT6336TAG "%s: " fmt, __func__, ##arg); \
+} while (0)
 
 /* multi-read register */
 extern unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len);

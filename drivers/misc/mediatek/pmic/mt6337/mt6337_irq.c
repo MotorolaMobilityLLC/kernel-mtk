@@ -73,14 +73,14 @@ struct mt6337_interrupts sub_interrupts[] = {
  ******************************************************************************/
 static void oc_int_handler(MT6337_IRQ_ENUM intNo, const char *int_name)
 {
-	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
+	MT6337LOG("[general_oc_int_handler] int name=%s\n", int_name);
 	switch (intNo) {
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		/* TBD: dump_exception_reg*/
 		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		mt6337_enable_interrupt(intNo, 0, "PMIC");
-		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
+		pr_err(MT6337TAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 		break;
 	}
 }
@@ -99,12 +99,12 @@ struct wake_lock pmicThread_lock_mt6337;
 
 void wake_up_pmic_mt6337(void)
 {
-	PMICLOG("[%s]\n", __func__);
+	MT6337LOG("[%s]\n", __func__);
 	if (mt6337_thread_handle != NULL) {
 		pmic_wake_lock(&pmicThread_lock_mt6337);
 		wake_up_process(mt6337_thread_handle);
 	} else {
-		pr_err(PMICTAG "[%s] mt6337_thread_handle not ready\n", __func__);
+		pr_err(MT6337TAG "[%s] mt6337_thread_handle not ready\n", __func__);
 		return;
 	}
 }
@@ -112,7 +112,7 @@ void wake_up_pmic_mt6337(void)
 irqreturn_t mt6337_eint_irq(int irq, void *desc)
 {
 	disable_irq_nosync(irq);
-	PMICLOG("[%s] disable PMIC irq\n", __func__);
+	MT6337LOG("[%s] disable PMIC irq\n", __func__);
 	wake_up_pmic_mt6337();
 	return IRQ_HANDLED;
 }
@@ -125,11 +125,11 @@ void mt6337_enable_interrupt(MT6337_IRQ_ENUM intNo, unsigned int en, char *str)
 	no = intNo % MT6337_INT_WIDTH;
 
 	if (shift >= ARRAY_SIZE(sub_interrupts)) {
-		pr_err(PMICTAG "[mt6337_enable_interrupt] fail intno=%d \r\n", intNo);
+		pr_err(MT6337TAG "[mt6337_enable_interrupt] fail intno=%d \r\n", intNo);
 		return;
 	}
 
-	PMICLOG("[mt6337_enable_interrupt] intno=%d en=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_enable_interrupt] intno=%d en=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, en, str, shift, no, sub_interrupts[shift].en,
 		mt6337_upmu_get_reg_value(sub_interrupts[shift].en));
 
@@ -138,7 +138,7 @@ void mt6337_enable_interrupt(MT6337_IRQ_ENUM intNo, unsigned int en, char *str)
 	else if (en == 0)
 		mt6337_config_interface(sub_interrupts[shift].clear, 0x1, 0x1, no);
 
-	PMICLOG("[mt6337_enable_interrupt] after [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_enable_interrupt] after [0x%x]=0x%x\r\n",
 		sub_interrupts[shift].en, mt6337_upmu_get_reg_value(sub_interrupts[shift].en));
 
 }
@@ -151,12 +151,12 @@ void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 	no = intNo % MT6337_INT_WIDTH;
 
 	if (shift >= ARRAY_SIZE(sub_interrupts)) {
-		pr_err(PMICTAG "[mt6337_mask_interrupt] fail intno=%d \r\n", intNo);
+		pr_err(MT6337TAG "[mt6337_mask_interrupt] fail intno=%d \r\n", intNo);
 		return;
 	}
 
 	/*---the mask in MT6337 needs 'logical not'---*/
-	PMICLOG("[mt6337_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, sub_interrupts[shift].mask,
 		~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 
@@ -164,7 +164,7 @@ void mt6337_mask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 	mt6337_config_interface(sub_interrupts[shift].mask_clear, 0x1, 0x1, no);
 
 	/*---the mask in MT6337 needs 'logical not'---*/
-	PMICLOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
 		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
@@ -176,12 +176,12 @@ void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 	no = intNo % MT6337_INT_WIDTH;
 
 	if (shift >= ARRAY_SIZE(sub_interrupts)) {
-		pr_err(PMICTAG "[mt6337_unmask_interrupt] fail intno=%d\r\n", intNo);
+		pr_err(MT6337TAG "[mt6337_unmask_interrupt] fail intno=%d\r\n", intNo);
 		return;
 	}
 
 	/*---the mask in MT6337 needs 'logical not'---*/
-	PMICLOG("[mt6337_unmask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_unmask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, sub_interrupts[shift].mask,
 		~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 
@@ -189,7 +189,7 @@ void mt6337_unmask_interrupt(MT6337_IRQ_ENUM intNo, char *str)
 	mt6337_config_interface(sub_interrupts[shift].mask_set, 0x1, 0x1, no);
 
 	/*---the mask in MT6337 needs 'logical not'---*/
-	PMICLOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
+	MT6337LOG("[mt6337_mask_interrupt] after [0x%x]=0x%x\r\n",
 		sub_interrupts[shift].mask_set, ~(mt6337_upmu_get_reg_value(sub_interrupts[shift].mask)));
 }
 
@@ -201,11 +201,11 @@ void mt6337_register_interrupt_callback(MT6337_IRQ_ENUM intNo, void (EINT_FUNC_P
 	no = intNo % MT6337_INT_WIDTH;
 
 	if (shift >= ARRAY_SIZE(sub_interrupts)) {
-		pr_err(PMICTAG "[mt6337_register_interrupt_callback] fail intno=%d\n", intNo);
+		pr_err(MT6337TAG "[mt6337_register_interrupt_callback] fail intno=%d\n", intNo);
 		return;
 	}
 
-	PMICLOG("[mt6337_register_interrupt_callback] intno=%d\n", intNo);
+	MT6337LOG("[mt6337_register_interrupt_callback] intno=%d\n", intNo);
 
 	sub_interrupts[shift].interrupts[no].callback = EINT_FUNC_PTR;
 
@@ -221,10 +221,10 @@ void mt6337_register_oc_interrupt_callback(MT6337_IRQ_ENUM intNo)
 	no = intNo % MT6337_INT_WIDTH;
 
 	if (shift >= ARRAY_SIZE(sub_interrupts)) {
-		pr_err(PMICTAG "[mt6337_register_oc_interrupt_callback] fail intno=%d\n", intNo);
+		pr_err(MT6337TAG "[mt6337_register_oc_interrupt_callback] fail intno=%d\n", intNo);
 		return;
 	}
-	PMICLOG("[pmic_register_oc_interrupt_callback] intno=%d\r\n", intNo);
+	MT6337LOG("[pmic_register_oc_interrupt_callback] intno=%d\r\n", intNo);
 	sub_interrupts[shift].interrupts[no].oc_callback = oc_int_handler;
 }
 #if ENABLE_MT6337_ALL_OC_IRQ
@@ -250,11 +250,11 @@ static void mt6337_int_handler(void)
 
 		/*if (sub_interrupts[i].address != 0) {*/
 		int_status_val = mt6337_upmu_get_reg_value(sub_interrupts[i].address);
-		pr_err(PMICTAG "[MT6337_INT] addr[0x%x]=0x%x\n",
+		pr_err(MT6337TAG "[MT6337_INT] addr[0x%x]=0x%x\n",
 			sub_interrupts[i].address, int_status_val);
 		for (j = 0; j < MT6337_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
-				PMICLOG("[MT6337_INT][%s]\n", sub_interrupts[i].interrupts[j].name);
+				MT6337LOG("[MT6337_INT][%s]\n", sub_interrupts[i].interrupts[j].name);
 				sub_interrupts[i].interrupts[j].times++;
 
 				if (sub_interrupts[i].interrupts[j].callback != NULL)
@@ -283,7 +283,7 @@ int mt6337_thread_kthread(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	PMICLOG("[MT6337_INT] enter\n");
+	MT6337LOG("[MT6337_INT] enter\n");
 
 	/* Run on a process content */
 	while (1) {
@@ -291,7 +291,7 @@ int mt6337_thread_kthread(void *x)
 #ifdef IPIMB
 #else
 		pwrap_eint_status = pmic_wrap_eint_status();
-		PMICLOG("[MT6337_INT] pwrap_eint_status=0x%x\n", pwrap_eint_status);
+		MT6337LOG("[MT6337_INT] pwrap_eint_status=0x%x\n", pwrap_eint_status);
 #endif
 
 		mt6337_int_handler();
@@ -304,7 +304,7 @@ int mt6337_thread_kthread(void *x)
 		for (i = 0; i < ARRAY_SIZE(sub_interrupts); i++) {
 			/*if (sub_interrupts[i].address != 0) {*/
 			int_status_val = mt6337_upmu_get_reg_value(sub_interrupts[i].address);
-			PMICLOG("[MT6337_INT] after ,int_status_val[0x%x]=0x%x\n",
+			MT6337LOG("[MT6337_INT] after ,int_status_val[0x%x]=0x%x\n",
 				sub_interrupts[i].address, int_status_val);
 			/*}*/
 		}
@@ -332,9 +332,9 @@ void MT6337_EINT_SETTING(void)
 	mt6337_thread_handle = kthread_create(mt6337_thread_kthread, (void *)NULL, "mt6337_thread");
 	if (IS_ERR(mt6337_thread_handle)) {
 		mt6337_thread_handle = NULL;
-		pr_err(PMICTAG "[mt6337_thread_kthread] creation fails\n");
+		pr_err(MT6337TAG "[mt6337_thread_kthread] creation fails\n");
 	} else
-		PMICLOG("[mt6337_thread_kthread] kthread_create Done\n");
+		MT6337LOG("[mt6337_thread_kthread] kthread_create Done\n");
 
 #if ENABLE_MT6337_ALL_OC_IRQ
 	register_all_oc_interrupts();
@@ -347,14 +347,14 @@ void MT6337_EINT_SETTING(void)
 		ret = request_irq(g_mt6337_irq, (irq_handler_t) mt6337_eint_irq,
 			IRQF_TRIGGER_NONE, "mt6337-eint", NULL);
 		if (ret > 0)
-			pr_err(PMICTAG "EINT IRQ LINENNOT AVAILABLE\n");
+			pr_err(MT6337TAG "EINT IRQ LINENNOT AVAILABLE\n");
 	} else
-		pr_err(PMICTAG "can't find compatible node\n");
+		pr_err(MT6337TAG "can't find compatible node\n");
 
-	PMICLOG("[CUST_EINT_MT6337] CUST_EINT_MT_PMIC_MT6337_NUM=%d\n", g_eint_mt6337_num);
-	PMICLOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt6337_debounce_cn);
-	PMICLOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt6337_type);
-	PMICLOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt6337_debounce_en);
+	MT6337LOG("[CUST_EINT_MT6337] CUST_EINT_MT_PMIC_MT6337_NUM=%d\n", g_eint_mt6337_num);
+	MT6337LOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt6337_debounce_cn);
+	MT6337LOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt6337_type);
+	MT6337LOG("[CUST_EINT_MT6337] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt6337_debounce_en);
 
 }
 

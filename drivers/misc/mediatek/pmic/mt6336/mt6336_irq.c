@@ -210,7 +210,7 @@ struct wake_lock mt6336Thread_lock;
 
 void wake_up_mt6336(void)
 {
-	PMICLOG("[%s]\n", __func__);
+	MT6336LOG("[%s]\n", __func__);
 	if (mt6336_thread_handle != NULL) {
 		pmic_wake_lock(&mt6336Thread_lock);
 		wake_up_process(mt6336_thread_handle);
@@ -223,7 +223,7 @@ void wake_up_mt6336(void)
 irqreturn_t mt6336_eint_irq(int irq, void *desc)
 {
 	disable_irq_nosync(irq);
-	PMICLOG("[%s] disable PMIC irq\n", __func__);
+	MT6336LOG("[%s] disable PMIC irq\n", __func__);
 	wake_up_mt6336();
 	return IRQ_HANDLED;
 }
@@ -240,13 +240,13 @@ void mt6336_enable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		return;
 	}
 
-	PMICLOG("[mt6336_enable_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_enable_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, mt6336_interrupts[shift].en,
 		mt6336_get_register_value(mt6336_interrupts[shift].en));
 
 	mt6336_config_interface(mt6336_interrupts[shift].set, 0x1, 0x1, no);
 
-	PMICLOG("[mt6336_enable_interrupt] after [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_enable_interrupt] after [0x%x]=0x%x\r\n",
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
@@ -262,13 +262,13 @@ void mt6336_disable_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		return;
 	}
 
-	PMICLOG("[mt6336_disable_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_disable_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, mt6336_interrupts[shift].en,
 		mt6336_get_register_value(mt6336_interrupts[shift].en));
 
 	mt6336_config_interface(mt6336_interrupts[shift].clear, 0x1, 0x1, no);
 
-	PMICLOG("[mt6336_disable_interrupt] after [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_disable_interrupt] after [0x%x]=0x%x\r\n",
 		mt6336_interrupts[shift].en, mt6336_get_register_value(mt6336_interrupts[shift].en));
 }
 
@@ -284,13 +284,13 @@ void mt6336_mask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		return;
 	}
 
-	PMICLOG("[mt6336_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, mt6336_interrupts[shift].mask,
 		mt6336_get_register_value(mt6336_interrupts[shift].mask));
 
 	mt6336_config_interface(mt6336_interrupts[shift].mask_set, 0x1, 0x1, no);
 
-	PMICLOG("[mt6336_mask_interrupt] after [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_mask_interrupt] after [0x%x]=0x%x\r\n",
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
@@ -306,13 +306,13 @@ void mt6336_unmask_interrupt(MT6336_IRQ_ENUM intNo, char *str)
 		return;
 	}
 
-	PMICLOG("[mt6336_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_mask_interrupt] intno=%d str=%s shf=%d no=%d [0x%x]=0x%x\r\n",
 		intNo, str, shift, no, mt6336_interrupts[shift].mask,
 		mt6336_get_register_value(mt6336_interrupts[shift].mask));
 
 	mt6336_config_interface(mt6336_interrupts[shift].mask_clear, 0x1, 0x1, no);
 
-	PMICLOG("[mt6336_mask_interrupt] after [0x%x]=0x%x\r\n",
+	MT6336LOG("[mt6336_mask_interrupt] after [0x%x]=0x%x\r\n",
 		mt6336_interrupts[shift].mask, mt6336_get_register_value(mt6336_interrupts[shift].mask));
 }
 
@@ -328,7 +328,7 @@ void mt6336_register_interrupt_callback(MT6336_IRQ_ENUM intNo, void (EINT_FUNC_P
 		return;
 	}
 
-	PMICLOG("[mt6336_register_interrupt_callback] intno=%d\r\n", intNo);
+	MT6336LOG("[mt6336_register_interrupt_callback] intno=%d\r\n", intNo);
 
 	mt6336_interrupts[shift].interrupts[no].callback = EINT_FUNC_PTR;
 }
@@ -342,14 +342,17 @@ static void mt6336_int_handler(void)
 
 	ret = mt6336_read_bytes(mt6336_interrupts[0].address, int_status_vals, mt6336_interrupts_size);
 	for (i = 0; i < ARRAY_SIZE(mt6336_interrupts); i++) {
-		pr_err(MT6336TAG "[CHR_INT] %d status[0x%x]=0x%x [0x%x]=0x%x en[0x%x]=0x%x mask[0x%x]=0x%x\n",
+		if (int_status_vals[i]) {
+			pr_err(MT6336TAG "[CHR_INT] %d status[0x%x]=0x%x\n",
+				i, mt6336_interrupts[i].address, int_status_vals[i]);
+		}
+#if 0 /* for debug */
+		pr_err(MT6336TAG "[CHR_INT] %d raw_status[0x%x]=0x%x, en[0x%x]=0x%x, mask[0x%x]=0x%x\n",
 			i,
-			mt6336_interrupts[i].address, int_status_vals[i],
 			mt6336_interrupts[i].raw_address, mt6336_get_register_value(mt6336_interrupts[i].raw_address),
 			mt6336_interrupts[i].en, mt6336_get_register_value(mt6336_interrupts[i].en),
-			mt6336_interrupts[i].mask, mt6336_get_register_value(mt6336_interrupts[i].mask)
-			);
-
+			mt6336_interrupts[i].mask, mt6336_get_register_value(mt6336_interrupts[i].mask));
+#endif
 		for (j = 0; j < CHR_INT_WIDTH; j++) {
 			/* handle CC & PD irq first, CC & PD are at the same status register */
 			cc_pd_status = mt6336_get_register_value(mt6336_interrupts[cc_pd_i].address);
@@ -371,7 +374,7 @@ static void mt6336_int_handler(void)
 				continue;
 			/* handle other irqs */
 			if ((int_status_vals[i]) & (1 << j)) {
-				PMICLOG("[CHR_INT][%s]\n", mt6336_interrupts[i].interrupts[j].name);
+				MT6336LOG("[CHR_INT][%s]\n", mt6336_interrupts[i].interrupts[j].name);
 				if (mt6336_interrupts[i].interrupts[j].callback != NULL) {
 					mt6336_interrupts[i].interrupts[j].callback();
 					mt6336_interrupts[i].interrupts[j].times++;
@@ -392,7 +395,7 @@ int mt6336_thread_kthread(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	PMICLOG("[CHR_INT] enter\n");
+	MT6336LOG("[CHR_INT] enter\n");
 
 	/* Run on a process content */
 	while (1) {
@@ -401,7 +404,7 @@ int mt6336_thread_kthread(void *x)
 		mt6336_int_handler();
 		for (i = 0; i < ARRAY_SIZE(mt6336_interrupts); i++) {
 			int_status_val = mt6336_get_register_value(mt6336_interrupts[i].address);
-			PMICLOG("[CHR_INT] %d after, status[0x%x]=0x%x\n", i,
+			MT6336LOG("[CHR_INT] %d after, status[0x%x]=0x%x\n", i,
 				mt6336_interrupts[i].address, int_status_val);
 		}
 		mdelay(1);
@@ -429,7 +432,7 @@ void MT6336_EINT_SETTING(void)
 		mt6336_thread_handle = NULL;
 		pr_err(MT6336TAG "[mt6336_thread_handle] creation fails\n");
 	} else {
-		PMICLOG("[mt6336_thread_handle] kthread_create Done\n");
+		MT6336LOG("[mt6336_thread_handle] kthread_create Done\n");
 	}
 
 	/* disable all interrupts */
