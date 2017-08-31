@@ -1761,6 +1761,11 @@ static signed int RSC_WriteReg(RSC_REG_IO_STRUCT *pRegIo)
 		Ret = -ENOMEM;
 	}
 	/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (copy_from_user
 	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(RSC_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
