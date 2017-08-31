@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 #include "mach/mtk_ppm_api.h"
-/* #include "mach/mtk_cpufreq_api.h" */
+#include "mach/mtk_cpufreq_api.h"
 /* TODO: uncomment this */
 /* #include "mtk_ocp.h" */
 
@@ -262,15 +262,6 @@ extern void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_re
 extern void ppm_cobra_init(void);
 extern void ppm_cobra_dump_tbl(struct seq_file *m);
 extern void ppm_cobra_lookup_get_result(struct seq_file *m, enum ppm_cobra_lookup_type type);
-
-int __attribute__((weak)) mt_cpufreq_get_cur_phy_freq_no_lock(int id)
-{
-	return 0;
-}
-int __attribute__((weak)) mt_cpufreq_get_cur_volt(int id)
-{
-	return 0;
-}
 
 #ifdef __cplusplus
 }

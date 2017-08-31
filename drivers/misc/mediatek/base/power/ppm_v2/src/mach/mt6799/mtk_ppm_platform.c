@@ -410,8 +410,7 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 		if (core != 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
 			now = ktime_get();
 			dynamic = ref_tbl.pwr_idx_ref_tbl[i].core_dynamic_power[opp];
-			/* TODO: remove this! */
-			lkg = 100; /*mt_cpufreq_get_leakage_mw(i + 1) / get_cluster_max_cpu_core(i);*/
+			lkg = mt_cpufreq_get_leakage_mw(i + 1) / get_cluster_max_cpu_core(i);
 			total = ((((dynamic * 100 + (percentage - 1)) / percentage) + lkg) * core)
 				+ ref_tbl.pwr_idx_ref_tbl[i].l2_power[opp];
 			budget += total;
