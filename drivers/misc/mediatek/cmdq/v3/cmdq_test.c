@@ -4776,6 +4776,7 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 143:
 		testcase_run_command_on_SRAM();
+		break;
 	case 142:
 		testcase_move_data_between_SRAM();
 		break;
