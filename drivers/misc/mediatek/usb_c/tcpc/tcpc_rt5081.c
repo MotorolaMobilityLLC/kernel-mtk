@@ -43,7 +43,7 @@
 #include <linux/sched/rt.h>
 #endif /* #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)) */
 
-#define RT5081_DRV_VERSION	"1.1.3_MTK"
+#define RT5081_DRV_VERSION	"1.1.4_MTK"
 
 struct rt5081_chip {
 	struct i2c_client *client;
@@ -1600,7 +1600,6 @@ static struct i2c_driver rt5081_driver = {
 static int __init rt5081_init(void)
 {
 	struct device_node *np;
-
 	pr_info("rt5081_init() : initializing...\n");
 	np = of_find_node_by_name(NULL, "usb_type_c");
 	if (np != NULL)
@@ -1629,4 +1628,6 @@ MODULE_VERSION(RT5081_DRV_VERSION);
  *	-- sync to rt1711h pd driver v014
  * 1.1.3_MTK
  *	-- sync to rt1711h pd driver v015
+ * 1.1.4_MTK
+ *	-- modify dws name rt5081_pd->usb_type_c
  */
