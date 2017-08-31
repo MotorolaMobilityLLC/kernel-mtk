@@ -347,6 +347,7 @@ struct typec_hba {
 	struct work_struct wait_vbus_off_attached_snk;
 	struct work_struct wait_vbus_off_then_drive_attached_src;
 	struct work_struct wait_vsafe0v;
+	struct work_struct init_vbus_off;
 	unsigned int wq_running;
 	unsigned int wq_cnt;
 #if USE_AUXADC
