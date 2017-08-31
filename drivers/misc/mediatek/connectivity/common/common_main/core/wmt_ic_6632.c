@@ -604,7 +604,7 @@ static struct init_script sdio_driving_table[] = {
 static MTK_WCN_BOOL mt6632_trigger_stp_assert(VOID);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value);
-static INT32 wmt_stp_get_chip_deep_sleep(VOID);
+static INT32 wmt_stp_get_deep_sleep_flag_from_cfg(VOID);
 #endif
 
 #if CFG_WMT_FILTER_MODE_SETTING
@@ -652,7 +652,9 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	UINT32 patch_num = 0;
 	UINT32 patch_index = 0;
 	WMT_CTRL_DATA ctrlData;
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	INT32 deep_sleep_flag_from_cfg;
+#endif
 	WMT_DBG_FUNC(" start\n");
 
 	osal_assert(gp_mt6632_info != NULL);
@@ -812,22 +814,34 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-	wmt_stp_get_chip_deep_sleep();
 	if (g_deep_sleep_flag) {
-		WMT_DEEP_SLEEP_CMD[5] = 1;
-		iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
-		if (iRet) {
-			WMT_ERR_FUNC("enalbe deep sleep feature fail\n");
-			return -20;
+		/*get flag form mt6632_ant_m1.cfg*/
+		deep_sleep_flag_from_cfg = wmt_stp_get_deep_sleep_flag_from_cfg();
+		if (deep_sleep_flag_from_cfg == 1) {
+			WMT_DEEP_SLEEP_CMD[5] = 1;
+			iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
+			if (iRet) {
+				WMT_ERR_FUNC("enalbe deep sleep feature fail\n");
+				return -20;
+			}
+			WMT_INFO_FUNC("chip deep sleep feature is enable\n");
+			wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_TRUE);
+		} else {
+			WMT_DEEP_SLEEP_CMD[5] = 0;
+			iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
+			if (iRet) {
+				WMT_ERR_FUNC("disable deep sleep feature fail\n");
+				return -21;
+			}
+			WMT_INFO_FUNC("chip deep sleep feature is disable\n");
+			wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
 		}
-		WMT_INFO_FUNC("chip deep sleep feature is enable\n");
-		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_TRUE);
 	} else {
 		WMT_DEEP_SLEEP_CMD[5] = 0;
 		iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
 		if (iRet) {
 			WMT_ERR_FUNC("disable deep sleep feature fail\n");
-			return -21;
+			return -22;
 		}
 		WMT_INFO_FUNC("chip deep sleep feature is disable\n");
 		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
@@ -1165,7 +1179,7 @@ static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value)
 		return MTK_WCN_BOOL_FALSE;
 }
 
-static INT32 wmt_stp_get_chip_deep_sleep(VOID)
+static INT32 wmt_stp_get_deep_sleep_flag_from_cfg(VOID)
 {
 	WMT_GEN_CONF *pWmtGenConf;
 	ULONG addr;
@@ -1187,16 +1201,16 @@ static INT32 wmt_stp_get_chip_deep_sleep(VOID)
 	if (pWmtGenConf->cfgExist == 0) {
 		WMT_INFO_FUNC("cfgExist == 0, skip config chip\n");
 		/*if WMT.cfg not existed, still return success and adopt the default value */
-		return 0;
+		return -1;
 	}
 	if (pWmtGenConf->disable_deep_sleep_cfg == 0) {
 		WMT_DBG_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, enable deep sleep feature\n",
 			pWmtGenConf->disable_deep_sleep_cfg);
-		g_deep_sleep_flag = 1;
+		ret = 1;
 	} else {
 		WMT_DBG_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, disable deep sleep feature\n",
 			pWmtGenConf->disable_deep_sleep_cfg);
-		g_deep_sleep_flag = 0;
+		ret = 0;
 	}
 	return ret;
 }
@@ -1219,10 +1233,7 @@ static INT32 mt6632_ver_check(VOID)
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
 
-#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-	WMT_INFO_FUNC("close deep sleep featrue before the first command to firmware");
-	wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
-#endif
+
 	/* 1. identify chip versions: HVR(HW_VER) and FVR(FW_VER) */
 	WMT_LOUD_FUNC("MT6632: before read hw_ver (hw version)\n");
 	iret = wmt_core_reg_rw_raw(0, GEN_HVR, &hw_ver, GEN_VER_MASK);

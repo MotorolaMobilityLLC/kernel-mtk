@@ -2677,6 +2677,10 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 
 	STPSDIO_DBG_FUNC("enable interrupt done\n");
 
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	stp_sdio_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
+#endif
+
 #if STP_SDIO_OWN_THREAD
 	ret = osal_thread_run(&g_stp_sdio_host_info.tx_rx_thread);
 	if (ret < 0) {

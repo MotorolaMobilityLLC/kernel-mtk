@@ -462,7 +462,7 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 		osal_gettimeofday(&sec, &usec);
 		if ((usec - usec_old) >= 30000) {
 			HIF_SDIO_ERR_FUNC
-				("wake up fail!, polling [GPIO_CHIP_DEEP_SLEEP_PIN] high over 30ms, timing:%dus\n",
+				("wake up fail!, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms, timing:%dus\n",
 				usec - usec_old);
 			ret = -11;
 			break;
