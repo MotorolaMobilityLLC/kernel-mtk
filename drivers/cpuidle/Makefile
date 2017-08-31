@@ -20,6 +20,7 @@ obj-$(CONFIG_ARM_EXYNOS_CPUIDLE)	+= cpuidle-exynos.o
 obj-$(CONFIG_ARM_CPUIDLE)		+= cpuidle-arm.o
 #obj-$(CONFIG_ARCH_MT6755)		+= cpuidle-mt67xx_v2.o
 obj-$(CONFIG_MACH_MT6757)		+= cpuidle-mt67xx_v2.o
+obj-$(CONFIG_MACH_KIBOPLUS)		+= cpuidle-mt67xx_v2.o
 #obj-$(CONFIG_ARCH_MT6797)		+= cpuidle-mt67xx_v2.o
 #obj-$(CONFIG_ARCH_ELBRUS)		+= cpuidle-mt67xx_v2.o
 ###############################################################################

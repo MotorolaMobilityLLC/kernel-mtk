@@ -20,7 +20,7 @@
 #define SPM_MET_TAGGING  0
 #define IDLE_LOG_BUF_LEN 512
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define IDLE_PROF_USING_STD_TIMER
 #endif
 

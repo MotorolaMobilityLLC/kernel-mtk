@@ -19,7 +19,7 @@
 #include "mtk_spm_misc.h"
 #include "mtk_spm_internal.h"
 #include "mtk_spm_pmic_wrap.h"
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include <mtk_dramc.h>
 #endif
 #include "mtk_vcorefs_governor.h"
@@ -124,7 +124,7 @@
 
 #define WAKE_SRC_FOR_MD32  0
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #define SODI_VSRAM_VPROC_SHUTDOWN
 
@@ -250,7 +250,7 @@ u32 __attribute__((weak)) aee_rr_curr_sodi_val(void)
 
 static __always_inline u32 spm_sodi_get_pcm_idx(u32 cpu)
 {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (get_ddr_type() == TYPE_LPDDR3)
 		return DYNA_LOAD_PCM_SODI + cpu / 4;
 	else

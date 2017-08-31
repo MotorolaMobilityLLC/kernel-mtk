@@ -111,7 +111,7 @@ static struct pmic_wrap_setting pw = {
 		.nr_idx = NR_IDX_DI,
 	},
 };
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 static struct pmic_wrap_setting pw = {
 	.phase = NR_PMIC_WRAP_PHASE,	/* invalid setting for init */

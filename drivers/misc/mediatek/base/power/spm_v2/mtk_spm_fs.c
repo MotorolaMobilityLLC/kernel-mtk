@@ -120,7 +120,7 @@ static ssize_t ddrdfs_pcm_show(struct kobject *kobj, struct kobj_attribute *attr
 /**************************************
  * xxx_ctrl_show Function
  **************************************/
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_KIBOPLUS)
 static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
@@ -446,7 +446,7 @@ static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute 
 /**************************************
  * xxx_ctrl_store Function
  **************************************/
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_KIBOPLUS)
 static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t count)
 {
 	u32 val;
