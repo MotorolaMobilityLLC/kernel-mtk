@@ -2753,7 +2753,7 @@ int DC_dual_switch_to_DL_dual(void)
 	/* if blocking flush won't cause UX issue, we should simplify this code: remove callback
 	 * else we should move disable_sodi to callback, and change to nonblocking flush
 	 */
-	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_config, 0);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3,
 			 (new_scenario | (old_scenario << 16)));
 
