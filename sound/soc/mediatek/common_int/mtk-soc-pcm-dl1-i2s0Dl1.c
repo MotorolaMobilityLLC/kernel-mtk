@@ -85,7 +85,7 @@ static int mI2S0dl1_hdoutput_control;
 static bool mPrepareDone;
 
 static const void *irq_user_id;
-static uint32 irq1_cnt;
+static unsigned int irq1_cnt;
 
 static struct device *mDev;
 
@@ -355,7 +355,7 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	uint32 u32AudioI2S = 0;
+	unsigned int u32AudioI2S = 0;
 	bool mI2SWLen;
 
 	pr_warn("%s: mPrepareDone = %d, format = %d, SNDRV_PCM_FORMAT_S32_LE = %d, SNDRV_PCM_FORMAT_U32_LE = %d, sample rate = %d\n",

@@ -72,7 +72,7 @@ static int mtk_mrgrx_probe(struct platform_device *pdev);
 static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream);
 static int mtk_afe_mrgrx_probe(struct snd_soc_platform *platform);
 
-static uint32 mmrgrx_Volume = 0x10000;
+static unsigned int mmrgrx_Volume = 0x10000;
 static bool mPrepareDone;
 
 static int Audio_mrgrx_Volume_Get(struct snd_kcontrol *kcontrol,

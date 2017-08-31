@@ -73,29 +73,29 @@ bool SetHDMIMCLK(void);
 
 bool SetHDMIBCLK(void);
 
-uint32 GetHDMIApLLSource(void);
+unsigned int GetHDMIApLLSource(void);
 
-bool SetHDMIApLL(uint32 ApllSource);
+bool SetHDMIApLL(unsigned int ApllSource);
 
-bool SetHDMIdatalength(uint32 length);
+bool SetHDMIdatalength(unsigned int length);
 
-bool SetHDMIsamplerate(uint32 samplerate);
+bool SetHDMIsamplerate(unsigned int samplerate);
 
-bool SetHDMIChannels(uint32 Channels);
+bool SetHDMIChannels(unsigned int Channels);
 
 bool SetHDMIEnable(bool bEnable);
 
-bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
+bool SetHDMIConnection(unsigned int ConnectionState, unsigned int Input, unsigned int Output);
 
-bool SetTDMLrckWidth(uint32 cycles);
+bool SetTDMLrckWidth(unsigned int cycles);
 
-bool SetTDMbckcycle(uint32 cycles);
+bool SetTDMbckcycle(unsigned int cycles);
 
-bool SetTDMChannelsSdata(uint32 channels);
+bool SetTDMChannelsSdata(unsigned int channels);
 
-bool SetTDMDatalength(uint32 length);
+bool SetTDMDatalength(unsigned int length);
 
-bool SetTDMI2Smode(uint32 mode);
+bool SetTDMI2Smode(unsigned int mode);
 
 bool SetTDMLrckInverse(bool enable);
 

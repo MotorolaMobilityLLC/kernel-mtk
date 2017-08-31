@@ -288,10 +288,10 @@ enum dpd_channel {
 };
 
 struct codec_data_private {
-	int32 mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_TYPE_MAX];
-	int32 mAudio_Ana_Mux[AUDIO_ANALOG_MAX_MUX_TYPE];
-	int32 mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
-	int32 mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
+	int mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_TYPE_MAX];
+	int mAudio_Ana_Mux[AUDIO_ANALOG_MAX_MUX_TYPE];
+	int mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
+	int mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
 	int audio_interface_power[AUDIO_DAI_INTERFACE_MAX];
 };
 

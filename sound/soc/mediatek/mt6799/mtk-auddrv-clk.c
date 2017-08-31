@@ -113,7 +113,7 @@ enum audio_apll_divider_group {
 };
 
 /* mI2SAPLLDivSelect may vary by chip!!! */
-static const uint32 mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {
+static const unsigned int mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {
 	AUDIO_APLL1_DIV0,
 	AUDIO_APLL2_DIV0,
 	AUDIO_APLL12_DIV0,
@@ -1386,7 +1386,7 @@ EXIT:
 	mutex_unlock(&auddrv_pmic_mutex);
 }
 
-uint32 GetApllbySampleRate(uint32 SampleRate)
+unsigned int GetApllbySampleRate(unsigned int SampleRate)
 {
 	if (SampleRate == 176400 || SampleRate == 88200 || SampleRate == 44100 ||
 	    SampleRate == 22050 || SampleRate == 11025)
@@ -1395,10 +1395,10 @@ uint32 GetApllbySampleRate(uint32 SampleRate)
 		return Soc_Aud_APLL2;
 }
 
-void SetckSel(uint32 I2snum, uint32 SampleRate)
+void SetckSel(unsigned int I2snum, unsigned int SampleRate)
 {
 	/* always from APLL1 */
-	uint32 ApllSource;
+	unsigned int ApllSource;
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
 		ApllSource = 0;
@@ -1425,7 +1425,7 @@ void SetckSel(uint32 I2snum, uint32 SampleRate)
 	pr_debug("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
 }
 
-void EnableALLbySampleRate(uint32 SampleRate)
+void EnableALLbySampleRate(unsigned int SampleRate)
 {
 	pr_aud("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
 	       APLL1Counter, APLL2Counter, SampleRate);
@@ -1452,7 +1452,7 @@ void EnableALLbySampleRate(uint32 SampleRate)
 	}
 }
 
-void DisableALLbySampleRate(uint32 SampleRate)
+void DisableALLbySampleRate(unsigned int SampleRate)
 {
 	pr_aud("%s, APLL1Counter = %d, APLL2Counter = %d, SampleRate = %d\n", __func__,
 	       APLL1Counter, APLL2Counter, SampleRate);
@@ -1485,7 +1485,7 @@ void DisableALLbySampleRate(uint32 SampleRate)
 	}
 }
 
-void EnableI2SDivPower(uint32 Diveder_name, bool bEnable)
+void EnableI2SDivPower(unsigned int Diveder_name, bool bEnable)
 {
 	pr_warn("%s bEnable = %d\n", __func__, bEnable);
 	if (bEnable)
@@ -1494,7 +1494,7 @@ void EnableI2SDivPower(uint32 Diveder_name, bool bEnable)
 		clksys_set_reg(CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
 }
 
-void EnableI2SCLKDiv(uint32 I2snum, bool bEnable)
+void EnableI2SCLKDiv(unsigned int I2snum, bool bEnable)
 {
 	pr_warn("%s mI2SAPLLDivSelect = %d, i2snum = %d\n", __func__, mI2SAPLLDivSelect[I2snum], I2snum);
 	EnableI2SDivPower(mI2SAPLLDivSelect[I2snum], bEnable);
@@ -1531,10 +1531,10 @@ void EnableApll2(bool enable)
 	}
 }
 
-uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
+unsigned int SetCLkMclk(unsigned int I2snum, unsigned int SampleRate)
 {
-	uint32 I2S_APll = 0;
-	uint32 I2s_ck_div = 0;
+	unsigned int I2S_APll = 0;
+	unsigned int I2s_ck_div = 0;
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
 		I2S_APll = APLL_44K_BASE;
@@ -1576,12 +1576,12 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 	return I2s_ck_div;
 }
 
-void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlength)
+void SetCLkBclk(unsigned int MckDiv, unsigned int SampleRate, unsigned int Channels, unsigned int Wlength)
 {
 	/* BCK set only required in 6595 TDM function div4/div5 */
-	uint32 I2S_APll = 0;
-	uint32 I2S_Bclk = 0;
-	uint32 I2s_Bck_div = 0;
+	unsigned int I2S_APll = 0;
+	unsigned int I2S_Bclk = 0;
+	unsigned int I2s_Bck_div = 0;
 
 	pr_debug("%s MckDiv = %dv SampleRate = %d  Channels = %d Wlength = %d\n", __func__, MckDiv,
 		SampleRate, Channels, Wlength);

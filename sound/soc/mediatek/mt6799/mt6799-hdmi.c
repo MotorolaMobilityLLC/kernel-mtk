@@ -239,9 +239,9 @@ void SetHDMIDumpReg(void)
 
 bool SetHDMIMCLK(void)
 {
-	uint32 mclksamplerate = mHDMIOutput->mSampleRate * 256;
-	uint32 hdmi_APll = GetHDMIApLLSource();
-	uint32 hdmi_mclk_div = 0;
+	unsigned int mclksamplerate = mHDMIOutput->mSampleRate * 256;
+	unsigned int hdmi_APll = GetHDMIApLLSource();
+	unsigned int hdmi_mclk_div = 0;
 
 	pr_debug("%s\n", __func__);
 
@@ -275,13 +275,13 @@ bool SetHDMIBCLK(void)
 	return true;
 }
 
-uint32 GetHDMIApLLSource(void)
+unsigned int GetHDMIApLLSource(void)
 {
 	pr_debug("%s, ApllSource = %d\n", __func__, mHDMIOutput->mApllSource);
 	return mHDMIOutput->mApllSource;
 }
 
-bool SetHDMIApLL(uint32 ApllSource)
+bool SetHDMIApLL(unsigned int ApllSource)
 {
 	pr_debug("%s, ApllSource = %d", __func__, ApllSource);
 
@@ -296,9 +296,9 @@ bool SetHDMIApLL(uint32 ApllSource)
 	return true;
 }
 
-bool SetHDMIsamplerate(uint32 samplerate)
+bool SetHDMIsamplerate(unsigned int samplerate)
 {
-	uint32 SampleRateinedx = SampleRateTransform(samplerate, Soc_Aud_Digital_Block_MEM_HDMI);
+	unsigned int SampleRateinedx = SampleRateTransform(samplerate, Soc_Aud_Digital_Block_MEM_HDMI);
 
 	mHDMIOutput->mSampleRate = samplerate;
 	pr_debug("%s, samplerate = %d\n", __func__, samplerate);
@@ -344,7 +344,7 @@ bool SetHDMIsamplerate(uint32 samplerate)
 }
 #endif
 
-bool SetHDMIdatalength(uint32 length)
+bool SetHDMIdatalength(unsigned int length)
 {
 
 	pr_debug("%s, length = %d\n ", __func__, length);
@@ -353,16 +353,16 @@ bool SetHDMIdatalength(uint32 length)
 	return true;
 }
 
-bool SetTDMLrckWidth(uint32 cycles)
+bool SetTDMLrckWidth(unsigned int cycles)
 {
 	pr_debug("%s, cycles = %d", __func__, cycles);
 	Afe_Set_Reg(AFE_TDM_CON1, cycles << 24, 0xff000000);
 	return true;
 }
 
-bool SetTDMbckcycle(uint32 cycles)
+bool SetTDMbckcycle(unsigned int cycles)
 {
-	uint32 index = 0;
+	unsigned int index = 0;
 
 	pr_debug("%s, cycles = %d\n", __func__, cycles);
 	switch (cycles) {
@@ -382,9 +382,9 @@ bool SetTDMbckcycle(uint32 cycles)
 	return true;
 }
 
-bool SetTDMChannelsSdata(uint32 channels)
+bool SetTDMChannelsSdata(unsigned int channels)
 {
-	uint32 index = 0;
+	unsigned int index = 0;
 
 	pr_debug("%s, channels = %d", __func__, channels);
 	switch (channels) {
@@ -402,7 +402,7 @@ bool SetTDMChannelsSdata(uint32 channels)
 	return true;
 }
 
-bool SetTDMDatalength(uint32 length)
+bool SetTDMDatalength(unsigned int length)
 {
 	pr_debug("%s, length = %d\n", __func__, length);
 	if (length == Soc_Aud_I2S_WLEN_WLEN_16BITS)
@@ -412,7 +412,7 @@ bool SetTDMDatalength(uint32 length)
 	return true;
 }
 
-bool SetTDMI2Smode(uint32 mode)
+bool SetTDMI2Smode(unsigned int mode)
 {
 	pr_debug("%s, mode = %d", __func__, mode);
 	if (mode == Soc_Aud_I2S_FORMAT_EIAJ)
@@ -457,7 +457,7 @@ bool SetTDMEnable(bool enable)
 	return true;
 }
 
-bool SetTDMDataChannels(uint32 SData, uint32 SDataChannels)
+bool SetTDMDataChannels(unsigned int SData, unsigned int SDataChannels)
 {
 	int index = 0;
 
@@ -493,7 +493,7 @@ bool SetTDMtoI2SEnable(bool enable)
 	return true;
 }
 
-bool SetHDMIChannels(uint32 Channels)
+bool SetHDMIChannels(unsigned int Channels)
 {
 	pr_warn("+%s(), Channels = %d\n", __func__, Channels);
 	Afe_Set_Reg(AFE_HDMI_OUT_CON0, (Channels << 4), 0x00f0);
@@ -510,7 +510,7 @@ bool SetHDMIEnable(bool bEnable)
 }
 
 
-bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
+bool SetHDMIConnection(unsigned int ConnectionState, unsigned int Input, unsigned int Output)
 {
 	pr_warn("+%s(), Input = %d, Output = %d\n", __func__, Input, Output);
 	switch (Output) {

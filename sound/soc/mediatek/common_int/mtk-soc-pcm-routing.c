@@ -673,7 +673,7 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 	void *addr =  (void *)ucontrol->value.integer.value[0];
 #endif
 
-	uint32 size =  ucontrol->value.integer.value[1];
+	unsigned int size =  ucontrol->value.integer.value[1];
 
 	/* pr_warn("%s(), addr %p, size %d\n", __func__, addr, size); */
 

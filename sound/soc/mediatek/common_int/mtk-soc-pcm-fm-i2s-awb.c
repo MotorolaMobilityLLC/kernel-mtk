@@ -210,7 +210,7 @@ static int mtk_mgrrx_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
 	pr_warn("mtk_mgrrx_awb_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%x\n",
-	       runtime->dma_bytes, runtime->dma_area, (uint32)runtime->dma_addr);
+	       runtime->dma_bytes, runtime->dma_area, (unsigned int)runtime->dma_addr);
 
 	pr_warn("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 	set_mem_block(substream, hw_params,

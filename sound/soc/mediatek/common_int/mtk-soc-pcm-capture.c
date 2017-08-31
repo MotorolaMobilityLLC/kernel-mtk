@@ -75,7 +75,7 @@ static bool mCaptureUseSram;
 static bool vcore_dvfs_enable;
 static int capture_hdinput_control;
 static const void *irq_user_id;
-static uint32 irq2_cnt;
+static unsigned int irq2_cnt;
 static bool mPrepareDone;
 static int use_adc2_for_ch1_ch2;
 static bool is_adc1_closed_before;
@@ -180,7 +180,7 @@ static int capture_use_adc2_for_ch1_ch2_set(struct snd_kcontrol *kcontrol,
 	AudDrv_Clk_On();
 
 	if (use_adc2_for_ch1_ch2) {
-		uint32 eSamplingRate = get_dai_rate(Soc_Aud_Digital_Block_ADDA_UL);
+		unsigned int eSamplingRate = get_dai_rate(Soc_Aud_Digital_Block_ADDA_UL);
 
 		/* turn off adc1 */
 		is_adc1_closed_before = true;

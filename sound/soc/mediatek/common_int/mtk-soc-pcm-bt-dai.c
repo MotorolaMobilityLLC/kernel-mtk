@@ -391,8 +391,8 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	}
 
 	else {
-		uint32 size_1 = Dai_Block->u4BufferSize - DMA_Read_Ptr;
-		uint32 size_2 = read_size - size_1;
+		unsigned int size_1 = Dai_Block->u4BufferSize - DMA_Read_Ptr;
+		unsigned int size_2 = read_size - size_1;
 
 		if (DMA_Read_Ptr != Dai_Block->u4DMAReadIdx) {
 

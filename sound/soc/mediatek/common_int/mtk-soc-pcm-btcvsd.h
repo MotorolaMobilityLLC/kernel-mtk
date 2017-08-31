@@ -204,8 +204,8 @@ struct btcvsd_tx_buffer_info {
 };
 
 struct time_buffer_info {
-	uint64 data_count_equi_time;
-	uint64 timestamp_us;
+	unsigned long long data_count_equi_time;
+	unsigned long long timestamp_us;
 };
 
 struct cvsd_memblock {

@@ -105,10 +105,10 @@ enum memif_dup_write {
 };
 
 struct memif_buf_t {
-	uint32 u4AFE_MEMIF_BUF_BASE;
-	uint32 u4AFE_MEMIF_BUF_END;
-	uint32 u4AFE_MEMIF_BUF_WP;
-	uint32 u4AFE_MEMIF_BUF_RP;
+	unsigned int u4AFE_MEMIF_BUF_BASE;
+	unsigned int u4AFE_MEMIF_BUF_END;
+	unsigned int u4AFE_MEMIF_BUF_WP;
+	unsigned int u4AFE_MEMIF_BUF_RP;
 };
 
 struct memif_config_t {
@@ -335,10 +335,10 @@ enum sine_tone_loopback {
 };
 
 struct afe_sinegen_info_t {
-	uint32 u4ch1_freq_div;	/* 64/n sample/period */
+	unsigned int u4ch1_freq_div;	/* 64/n sample/period */
 	enum sine_tone_amp rch1_amp_div;
 	enum sine_tone_mode rch1_sine_mode;
-	uint32 u4ch2_freq_div;	/* 64/n sample/period */
+	unsigned int u4ch2_freq_div;	/* 64/n sample/period */
 	enum sine_tone_amp rch2_amp_div;
 	enum sine_tone_mode rch2_sine_mode;
 	enum sine_tone_loopback rloopback_mode;
@@ -629,12 +629,12 @@ struct afe_sinegen_info_t {
 /* do afe register ioremap */
 int Auddrv_Reg_map(struct device *pdev);
 
-void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask);
-uint32 Afe_Get_Reg(uint32 offset);
+void Afe_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask);
+unsigned int Afe_Get_Reg(unsigned int offset);
 
 /* function to apmixed */
-uint32 GetApmixedCfg(uint32 offset);
-void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
+unsigned int GetApmixedCfg(unsigned int offset);
+void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask);
 
 /* for debug usage */
 void Afe_Log_Print(void);
@@ -656,13 +656,13 @@ bool SetI2SASRCConfig(bool bIsUseASRC, unsigned int dToSampleRate);
 bool SetI2SASRCEnable(bool bEnable);
 bool EnableSideToneFilter(bool stf_on);
 bool CleanPreDistortion(void);
-bool SetDLSrc2(uint32 SampleRate);
+bool SetDLSrc2(unsigned int SampleRate);
 
-bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);
-bool SetChannels(uint32 Memory_Interface, uint32 channel);
-int SetMemifMonoSel(uint32 Memory_Interface, bool mono_use_r_ch);
+bool SetSampleRate(unsigned int Aud_block, unsigned int SampleRate);
+bool SetChannels(unsigned int Memory_Interface, unsigned int channel);
+int SetMemifMonoSel(unsigned int Memory_Interface, bool mono_use_r_ch);
 
-bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite);
+bool SetMemDuplicateWrite(unsigned int InterfaceType, int dupwrite);
 
 ssize_t AudDrv_Reg_Dump(char *buffer, int size);
 

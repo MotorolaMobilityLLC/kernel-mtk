@@ -62,7 +62,7 @@
 static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer *Dl2_Playback_dma_buf;
 
-static uint32 UnderflowTime;
+static unsigned int UnderflowTime;
 
 static bool StartCheckTime;
 static unsigned long PrevTime;
@@ -337,7 +337,7 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 {
 	bool mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	uint32 u32AudioI2S = 0;
+	unsigned int u32AudioI2S = 0;
 
 	pr_debug("%s\n", __func__);
 
