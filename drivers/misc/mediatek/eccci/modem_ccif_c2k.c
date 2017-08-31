@@ -262,7 +262,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 
 #ifdef AP_MD_HS_V2
 	u32 i = 0;
-	u8 *md_feature = (u8 *) (((u8 *) dl_pkg) + sizeof(struct ccci_header));
+	u8 *md_feature = (u8 *)(&md_ctrl->ccif_sram_layout->md_rt_data);
 
 	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_sram_rx_work:dk_pkg=%p, md_featrue=%p\n", dl_pkg, md_feature);
 	pkg_size = sizeof(struct ccci_header) + sizeof(struct md_query_ap_feature);
@@ -289,7 +289,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 #ifdef AP_MD_HS_V2
 	/*warning: make sure struct md_query_ap_feature is 4 bypes align */
 	while (i < sizeof(struct md_query_ap_feature)) {
-		*((u32 *) (skb->data + sizeof(struct ccci_header) + i)) = ccif_read32((u32 *) (md_feature + i), 0);
+		*((u32 *) (skb->data + sizeof(struct ccci_header) + i)) = ccif_read32(md_feature, i);
 		i += 4;
 	}
 #endif
