@@ -657,6 +657,8 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
+int msdc_check_otp_ops(unsigned int opcode, unsigned long long start_addr,
+	unsigned int size);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	u32 *status);
 int msdc_get_dma_status(int host_id);

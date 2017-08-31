@@ -1616,13 +1616,14 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 		break;
 	case SD_APP_SEND_SCR:
 	case SD_APP_SEND_NUM_WR_BLKS:
-	case MMC_SEND_WRITE_PROT:
 	/*case MMC_SEND_WRITE_PROT_TYPE:*/
 		rawcmd |= (1 << 11);
 		break;
 	case SD_SWITCH:
 	case SD_APP_SD_STATUS:
 	case MMC_SEND_EXT_CSD:
+	case MMC_SEND_WRITE_PROT:
+	case 31:
 		if (mmc_cmd_type(cmd) == MMC_CMD_ADTC)
 			rawcmd |= (1 << 11);
 		break;
@@ -3276,11 +3277,19 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 		}
 	}
 
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+		return 1;
+#endif
 	return l_card_no_cmd23;
 #else
 	if ((host->dma_xfer) && (host->hw->host_function != MSDC_SDIO))
 		host->autocmd |= MSDC_AUTOCMD12;
 
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+	if (msdc_check_otp_ops(cmd->opcode, cmd->arg, data->blocks))
+		return 1;
+#endif
 	return 0;
 #endif
 
