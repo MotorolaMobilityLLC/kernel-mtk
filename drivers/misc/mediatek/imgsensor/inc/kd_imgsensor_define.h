@@ -488,6 +488,7 @@ typedef struct {
 	MUINT32 SensorMIPIDeskew;
 	MUINT16 SensorHorFOV;
 	MUINT16 SensorVerFOV;
+	MUINT16 SensorOrientation;
 } ACDK_SENSOR_INFO_STRUCT, *PACDK_SENSOR_INFO_STRUCT;
 
 typedef struct {
@@ -593,6 +594,7 @@ typedef struct {
 	MUINT32 SensorMIPIDeskew;
 	MUINT16 SensorHorFOV;
 	MUINT16 SensorVerFOV;
+	MUINT16 SensorOrientation;
 
 } ACDK_SENSOR_INFO2_STRUCT, *PACDK_SENSOR_INFO2_STRUCT;
 
