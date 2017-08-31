@@ -1880,7 +1880,7 @@
 		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERICFG_RG_I2C7_BCLK>, <&pericfg CLK_PERICFG_RG_AP_DM>;
 		clock-names = "main", "dma";
-		clock-div = <5>;
+		clock-div = <3>;
 	};
 
 	i2c8: i2c@11b80000 {
