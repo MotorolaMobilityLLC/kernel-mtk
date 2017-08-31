@@ -2678,7 +2678,7 @@ skip:
 				rem_nsec = do_div(period, 1000000000);
 				scnprintf(aee_str + add_len, 63 - add_len, "S: %llu.%06lu\n", period, rem_nsec / 1000);
 			}
-			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PRINTK_TOO_MUCH,
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PRINTK_TOO_MUCH | DB_OPT_DUMMY_DUMP,
 							aee_str, "Need to shrink kernel log");
 		} else
 			call_console_drivers(level, ext_text, ext_len, text, len);
