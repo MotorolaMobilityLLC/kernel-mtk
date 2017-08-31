@@ -2926,14 +2926,18 @@ static void sched_freq_tick(int cpu)
 {
 	struct sched_capacity_reqs *scr;
 	unsigned long capacity_orig, capacity_curr;
+	unsigned long capacity_req;
 
 	if (!sched_freq())
 		return;
 
 	capacity_orig = capacity_orig_of(cpu);
 	capacity_curr = capacity_curr_of(cpu);
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (capacity_curr == capacity_orig)
 		return;
+#endif
 
 	/*
 	 * To make free room for a task that is building up its "real"
@@ -2942,8 +2946,18 @@ static void sched_freq_tick(int cpu)
 	 * impacted (specified by capacity_margin).
 	 */
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
-	if (capacity_curr < sum_capacity_reqs(cpu_util(cpu), scr))
-		set_cfs_cpu_capacity(cpu, true, capacity_max, SCHE_ONESHOT);
+
+	/* which includes capacity_margin */
+	capacity_req = sum_capacity_reqs(boosted_cpu_util(cpu), scr);
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (capacity_curr < capacity_req)
+		set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
+#else
+	/* To tell SSPM as possible as we can */
+	set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
+#endif
+
 }
 #else
 static inline void sched_freq_tick(int cpu) { }

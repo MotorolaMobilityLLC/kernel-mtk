@@ -1526,6 +1526,9 @@ static inline unsigned long cpu_util(int cpu)
 	return __cpu_util(cpu, 0);
 }
 
+extern
+unsigned long boosted_cpu_util(int cpu);
+
 /*
  * Returns the current capacity of cpu after applying both
  * cpu and freq scaling.
@@ -1565,7 +1568,11 @@ void update_cpu_capacity_request(int cpu, bool request, int type);
 static inline void set_cfs_cpu_capacity(int cpu, bool request,
 					unsigned long capacity, int type)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).cfs != capacity) {
+#endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).cfs = capacity;
 		update_cpu_capacity_request(cpu, request, type);
 	}
@@ -1575,7 +1582,11 @@ static inline void set_rt_cpu_capacity(int cpu, bool request,
 				       unsigned long capacity,
 					int type)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).rt != capacity) {
+#endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).rt = capacity;
 		update_cpu_capacity_request(cpu, request, type);
 	}
@@ -1585,7 +1596,11 @@ static inline void set_dl_cpu_capacity(int cpu, bool request,
 				       unsigned long capacity,
 					int type)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).dl != capacity) {
+#endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).dl = capacity;
 		update_cpu_capacity_request(cpu, request, type);
 	}

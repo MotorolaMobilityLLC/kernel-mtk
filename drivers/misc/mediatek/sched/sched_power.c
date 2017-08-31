@@ -64,21 +64,21 @@ bool is_hybrid_enabled(void)
 	return (sched_type == SCHED_HYBRID_LB) ? true : false;
 }
 
-/* cluster 0 & 1 is buck shared. */
+/* MT6799: cluster 0 & 2 is buck shared. */
 bool is_share_buck(int cid, int *co_buck_cid)
 {
 	bool ret = false;
 
 	switch (cid) {
 	case 0:
-		*co_buck_cid = 1;
-		ret = true;
-		break;
-	case 1:
-		*co_buck_cid = 0;
+		*co_buck_cid = 2;
 		ret = true;
 		break;
 	case 2:
+		*co_buck_cid = 0;
+		ret = true;
+		break;
+	case 1:
 		ret = false;
 		break;
 	default:
@@ -127,6 +127,7 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 	struct sched_group *sg;
 	struct sched_domain *sd;
 	int sel_idx = -1; /* final selected index */
+	unsigned long new_capacity = util;
 
 	if (cpu == -1) /* maybe no online CPU */
 		return -1;
@@ -138,8 +139,13 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 	} else
 		return -1;
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+	/* OPP idx to refer capacity margin */
+	new_capacity = util * capacity_margin >> SCHED_CAPACITY_SHIFT;
+#endif
+
 	for (idx = 0; idx < sge->nr_cap_states; idx++) {
-		if (sge->cap_states[idx].cap >= util) {
+		if (sge->cap_states[idx].cap >= new_capacity) {
 			sel_idx = idx;
 			break;
 		}
@@ -147,8 +153,8 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 
 #if 1
 	mt_sched_printf(sched_eas_energy_calc,
-			"%s: cid=%d max_cpu=%d (util=%ld) max_idx=%d (cap=%lld)",
-			__func__, cid, cpu, util, sel_idx, sge->cap_states[sel_idx].cap);
+			"cid=%d max_cpu=%d (util=%ld new=%ld) opp_idx=%d (cap=%lld)",
+				cid, cpu, util, new_capacity, sel_idx, sge->cap_states[sel_idx].cap);
 #endif
 
 	return sel_idx;
@@ -184,7 +190,7 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 		cap_idx = max(eenv->opp_idx[cid], eenv->opp_idx[co_buck_cid]);
 
 		mt_sched_printf(sched_eas_energy_calc,
-				"[share buck] %s cap_idx=%d is max(cid[%d]=%d,cid[%d]=%d)",
+				"[share buck] %s cap_idx=%d is via max_opp(cid%d=%d,cid%d=%d)",
 				__func__,
 				cap_idx, cid, eenv->opp_idx[cid],
 				co_buck_cid, eenv->opp_idx[co_buck_cid]);
@@ -206,6 +212,9 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 		else
 			_sge = cpu_cluster_energy(cpu); /* for cluster */
 	}
+
+	/* [DEBUG ] wfi always??? */
+	idle_state = 0;
 
 	switch (idle_state) {
 	case 0: /* active idle: WFI */
@@ -336,7 +345,7 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 			energy_cost += (cpu_leak_pwr + clu_leak_pwr);
 
 			mt_sched_printf(sched_eas_energy_calc,
-					"%s: %s lv=%d tlb[%d].dyn_pwr=(cpu:%d,clu:%d) tlb[%d].leak=(cpu:%d,clu:%d) vlt_f=%ld total=%d",
+					"%s: %s lv=%d tlb[%d].dyn_pwr=(cpu:%d,clu:%d) tlb[%d].leak=(cpu:%d,clu:%d) vlt_f=%ld",
 					__func__, "share_buck/only1CPU", sd_level,
 					cap_idx,
 					sge_core->cap_states[cap_idx].dyn_pwr,
@@ -344,7 +353,9 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 					co_cap_idx,
 					sge_core->cap_states[co_cap_idx].lkg_pwr[sge_core->lkg_idx],
 					sge_clus->cap_states[co_cap_idx].lkg_pwr[sge_clus->lkg_idx],
-					volt_factor, energy_cost);
+					volt_factor);
+			mt_sched_printf(sched_eas_energy_calc, "%s: %s total=%d",
+						__func__, "share_buck/only1CPU", energy_cost);
 		} else {
 			energy_cost = sge_core->cap_states[cap_idx].dyn_pwr+
 				sge_core->cap_states[cap_idx].lkg_pwr[sge_core->lkg_idx];
