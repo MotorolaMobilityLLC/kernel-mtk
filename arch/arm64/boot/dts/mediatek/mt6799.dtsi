@@ -2622,7 +2622,10 @@
 			<&topckgen CLK_TOP_TVDPLL_D4>,	/*TVDPLL_D4*/
 			<&topckgen CLK_TOP_TVDPLL_D8>,	/*TVDPLL_D8*/
 			<&topckgen CLK_TOP_TVDPLL_D16>,	/*TVDPLL_D16*/
-			<&topckgen CLK_TOP_TVDPLL>;			/*DPI_CK*/
+			<&topckgen CLK_TOP_TVDPLL>,			/*DPI_CK*/
+			<&pericfg CLK_PERICFG_RG_DISP_PWM0>,	/*DISP_CLK_PWM0*/
+			<&pericfg CLK_PERICFG_RG_DISP_PWM1>,	/*DISP_CLK_PWM1*/
+			<&topckgen CLK_TOP_DISPPWM_SEL>;	/*MUX_PWM*/
 
 		clock-names = "DISP_MTCMOS_CLK",
 			"DISP_SMI_COMMON",
@@ -2675,7 +2678,10 @@
 			"TVDPLL_D4",
 			"TVDPLL_D8",
 			"TVDPLL_D16",
-			"DPI_CK";
+			"DPI_CK",
+			"DISP_CLK_PWM0",
+			"DISP_CLK_PWM1",
+			"MUX_PWM";
 	};
 
 	mhl:mhl@0 {
