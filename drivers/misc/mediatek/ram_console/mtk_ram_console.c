@@ -171,6 +171,7 @@ struct last_reboot_reason {
 	uint8_t ocp_enable;
 	uint32_t scp_pc;
 	uint32_t scp_lr;
+	unsigned long last_init_func;
 
 	void *kparams;
 };
@@ -1867,6 +1868,13 @@ void aee_rr_rec_scp(void)
 	aee_rr_rec_scp_lr(lr);
 }
 
+void aee_rr_rec_last_init_func(unsigned long val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(last_init_func, val);
+}
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2034,7 +2042,7 @@ void aee_rr_show_clk(struct seq_file *m)
 
 void aee_rr_show_fiq_cache_step(struct seq_file *m)
 {
-	seq_printf(m, "  fiq_cache_step: %d\n", LAST_RRR_VAL(fiq_cache_step));
+	seq_printf(m, "fiq_cache_step: %d\n", LAST_RRR_VAL(fiq_cache_step));
 }
 
 void aee_rr_show_vcore_dvfs_opp(struct seq_file *m)
@@ -2541,6 +2549,11 @@ void aee_rr_show_scp_lr(struct seq_file *m)
 	seq_printf(m, "scp_lr: 0x%x\n", LAST_RRR_VAL(scp_lr));
 }
 
+void aee_rr_show_last_init_func(struct seq_file *m)
+{
+	seq_printf(m, "last init function: 0x%lx\n", LAST_RRR_VAL(last_init_func));
+}
+
 void aee_rr_show_isr_el1(struct seq_file *m)
 {
 	seq_printf(m, "isr_el1: %d\n", LAST_RRR_VAL(isr_el1));
@@ -2729,6 +2742,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ocp_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
+	aee_rr_show_last_init_func,
 	aee_rr_show_hotplug_status,
 	aee_rr_show_hotplug_caller_callee_status,
 	aee_rr_show_hotplug_up_prepare_ktime,
