@@ -175,7 +175,7 @@ static int32_t cmdq_var_data_type(CMDQ_VARIABLE arg_in, uint32_t *arg_out, uint3
 		*arg_out = (uint32_t)(arg_in & 0xFFFFFFFF);
 		break;
 	default:
-		CMDQ_ERR("Incorrect CMDQ data type, can not append new command");
+		CMDQ_ERR("Incorrect CMDQ data type (0x%llx), can not append new command\n", arg_in);
 		status = -EFAULT;
 		break;
 	}
@@ -2430,7 +2430,8 @@ enum CMDQ_CONDITION_ENUM cmdq_reverse_op_condition(enum CMDQ_CONDITION_ENUM arg_
 		instr_condition = CMDQ_GREATER_THAN_AND_EQUAL;
 		break;
 	default:
-		CMDQ_ERR("Incorrect CMDQ condition statement, can not append new command");
+		CMDQ_ERR("Incorrect CMDQ condition statement (%d), can not append new command\n",
+			arg_condition);
 		break;
 	}
 

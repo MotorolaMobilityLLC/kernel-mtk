@@ -13,7 +13,7 @@
 /* unmark after met ready */
 #define CMDQ_MDP_MET_STATUS
 #define CMDQ_MET_READY
-
+#define CMDQ_APPEND_WITHOUT_SUSPEND
 
 #include "cmdq_core.h"
 #include "cmdq_virtual.h"
@@ -48,7 +48,6 @@
 #include "cmdq_record_private.h"
 
 /* #define CMDQ_PROFILE_COMMAND_TRIGGER_LOOP */
-/* #define CMDQ_APPEND_WITHOUT_SUSPEND */
 /* #define CMDQ_ENABLE_BUS_ULTRA */
 
 #define CMDQ_GET_COOKIE_CNT(thread) (CMDQ_REG_GET32(CMDQ_THR_EXEC_CNT(thread)) & CMDQ_MAX_COOKIE_VALUE)
@@ -1569,8 +1568,8 @@ static void cmdq_core_dump_task(const struct TaskStruct *pTask)
 
 	CMDQ_ERR("Result buffer va: 0x%p pa: 0x%pa count: %u\n",
 		pTask->regResults, &pTask->regResultsMVA, pTask->regCount);
-
-	CMDQ_ERR("** This is SRAM task, sram base:%u\n", pTask->sram_base);
+	if (pTask->sram_base)
+		CMDQ_ERR("** This is SRAM task, sram base:%u\n", pTask->sram_base);
 	CMDQ_ERR("Reorder: %d, Trigger: %lld, Got IRQ: 0x%llx, Wait: %lld, Finish: %lld\n",
 		 pTask->reorder, pTask->trigger, pTask->gotIRQ, pTask->beginWait, pTask->wakedUp);
 	CMDQ_ERR("Caller pid: %d name: %s\n", pTask->callerPid, pTask->callerName);
@@ -1661,6 +1660,39 @@ static dma_addr_t cmdq_core_task_get_eoc_pa(struct TaskStruct *pTask)
 	/* Last buffer contains at least 2 instruction, offset directly. */
 	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
 	return entry->MVABase + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size - 2 * CMDQ_INST_SIZE;
+}
+
+static u32 *cmdq_core_task_get_append_va(struct TaskStruct *pTask)
+{
+	struct CmdBufferStruct *entry = NULL;
+	u32 *append_va;
+
+	if (unlikely(list_empty(&pTask->cmd_buffer_list)))
+		return NULL;
+
+	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+	if (CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size >= 3 * CMDQ_INST_SIZE) {
+		/* Last buffer contains at least 3 instruction, offset directly. */
+		append_va = (u32 *)((u8 *)entry->pVABase +
+			CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size - 3 * CMDQ_INST_SIZE);
+	} else {
+		/* Last buffer only has 2 instructions, use prev buffer and skip last jump. */
+		entry = list_prev_entry(entry, listEntry);
+		append_va = (u32 *)((u8 *)entry->pVABase + CMDQ_CMD_BUFFER_SIZE - 2*CMDQ_INST_SIZE);
+	}
+	return append_va;
+}
+
+static dma_addr_t cmdq_core_task_get_final_instr(struct TaskStruct *pTask)
+{
+	struct CmdBufferStruct *entry = NULL;
+
+	if (unlikely(list_empty(&pTask->cmd_buffer_list)))
+		return 0;
+
+	/* Last buffer contains at least 2 instruction, offset directly. */
+	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+	return entry->MVABase + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 }
 
 void cmdq_core_get_task_first_buffer(struct TaskStruct *pTask,
@@ -3103,8 +3135,7 @@ static void cmdq_core_reorder_task_array(struct ThreadStruct *pThread, int32_t t
 		}
 
 		if (pThread->pCurTask[nextID] &&
-			((pThread->pCurTask[nextID]->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
-			CMDQ_IS_END_ADDR(pThread->pCurTask[nextID]->pCMDEnd[-1])) {
+			CMDQ_IS_END_INSTR(pThread->pCurTask[nextID]->pCMDEnd)) {
 			/* We reached the last task */
 			CMDQ_LOG("Break in last task loop: %d nextID: %d searchLoop: %d searchID: %d\n",
 			loop, nextID, searchLoop, searchID);
@@ -3422,6 +3453,11 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 	postInstruction = (pTask->regCount != 0 && extraBufferSize != 0) ||
 		pTask->secData.is_secure;
 
+#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
+	if (likely(!pTask->loopCallback))
+		postInstruction = true;
+#endif
+
 	/* Copy the commands to our DMA buffer, except last 2 instruction EOC+JUMP. */
 	copyCmdSrc = CMDQ_U32_PTR(pCommandDesc->pVABase);
 	/* end cmd will copy after post read */
@@ -3454,7 +3490,6 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 	/**
 	 * Backup end and append cmd
 	 */
-
 	if (pTask->regCount) {
 		CMDQ_VERBOSE("COMMAND: allocate register output section\n");
 		/* allocate register output section */
@@ -3507,6 +3542,14 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 		if (status < 0)
 			return status;
 	}
+
+#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
+	if (likely(!pTask->loopCallback)) {
+		cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_APPEND_THR(-1),
+				 (0 << 31) | (1 << 15) | 1);
+	}
+#endif
 
 	/* copy END instructsions EOC+JUMP */
 	status = cmdq_core_copy_cmd_to_task_impl(pTask,
@@ -6447,8 +6490,7 @@ static int32_t cmdq_core_force_remove_task_from_thread(struct TaskStruct *pTask,
 			if (pExecTask == NULL)
 				continue;
 
-			is_last_end = (((pExecTask->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP) &&
-				(CMDQ_IS_END_ADDR(pExecTask->pCMDEnd[-1]));
+			is_last_end = CMDQ_IS_END_INSTR(pExecTask->pCMDEnd);
 
 			if (is_last_end) {
 				/* We reached the last task */
@@ -6568,7 +6610,7 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 
 	cookie = cmdq_core_thread_exec_counter(thread);
 
-	CMDQ_ERR("IRQ: err thread=%d,flag=0x%x,cookie:%d,PC:0x%08x,END:0x%08x\n",
+	CMDQ_AEE("CMDQ", "IRQ: err thread=%d,flag=0x%x,cookie:%d,PC:0x%08x,END:0x%08x\n",
 		thread, value, cookie,
 		CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
 		CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
@@ -7110,7 +7152,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 
 		pNextTask = NULL;
 		/* find pTask's jump destination */
-		if (pTask->pCMDEnd[0] == 0x10000001 && !CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
+		if (!CMDQ_IS_END_INSTR(pTask->pCMDEnd)) {
 			pNextTask = cmdq_core_search_task_by_pc(pTask->pCMDEnd[-1], pThread, thread);
 		} else {
 			CMDQ_MSG("No next task: LAST instruction : (0x%08x, 0x%08x)\n",
@@ -7165,15 +7207,24 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 					/* Copy Jump instruction */
 					pPrevTask->pCMDEnd[-1] = pTask->pCMDEnd[-1];
 					pPrevTask->pCMDEnd[0] = pTask->pCMDEnd[0];
+#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
+					if (CMDQ_IS_END_INSTR(pTask->pCMDEnd)) {
+						/* reset end if pTask is last one */
+						uint32_t EndAddr = CMDQ_PHYS_TO_AREG(
+							cmdq_core_task_get_final_instr(pPrevTask) - CMDQ_INST_SIZE);
 
+						CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+						CMDQ_LOG("Reset End Addr to: 0x%08x\n", EndAddr);
+					}
+#endif
 					if (pNextTask)
 						cmdq_core_reorder_task_array(pThread, thread, index);
 					else
 						pThread->nextCookie--;
 
-					CMDQ_VERBOSE
-					    ("WAIT: modify jump to 0x%08x (pPrev:0x%p, pTask:0x%p)\n",
-					     pTask->pCMDEnd[-1], pPrevTask, pTask);
+					CMDQ_LOG
+					    ("WAIT: modify jump to [0x%08x 0x%08x] (pPrev:0x%p, pTask:0x%p)\n",
+					     pTask->pCMDEnd[-1], pTask->pCMDEnd[0], pPrevTask, pTask);
 
 					/* Give up fetched command, invoke CMDQ HW to re-fetch command buffer again. */
 					cmdq_core_invalidate_hw_fetched_buffer(thread);
@@ -7581,20 +7632,22 @@ static inline int32_t cmdq_core_exec_find_task_slot(struct TaskStruct **pLast, s
 
 static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t thread)
 {
-	int32_t status;
+	s32 status;
 	struct ThreadStruct *pThread;
 	struct TaskStruct *pLast;
 	unsigned long flags;
-	int32_t loop;
-	uint32_t minimum;
-	uint32_t cookie;
-	int threadPrio = 0;
-	uint32_t EndAddr;
+	s32 loop;
+	u32 minimum;
+	u32 cookie;
+	s32 threadPrio = 0;
+	u32 EndAddr;
 	char long_msg[CMDQ_LONGSTRING_MAX];
 	u32 msg_offset;
 	s32 msg_max_size;
-	uint32_t *pVABase = NULL;
+	u32 *pVABase = NULL;
 	dma_addr_t MVABase = 0;
+	/* for no suspend thread, we shift END before JUMP */
+	bool shift_end = false;
 
 	cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
 	cmdq_core_get_task_first_buffer(pTask, &pVABase, &MVABase);
@@ -7625,11 +7678,17 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	pTask->irqFlag = 0;
 	pTask->taskState = TASK_STATE_BUSY;
 
+#ifdef CMDQ_APPEND_WITHOUT_SUSPEND
+	/* for loop command, we do not shift END before JUMP */
+	if (likely(!pThread->loopCallback))
+		shift_end = true;
+#else
 	/* update task end address by with thread */
 	if (CMDQ_IS_END_ADDR(pTask->pCMDEnd[-1])) {
 		pTask->pCMDEnd[-1] = CMDQ_THR_FIX_END_ADDR(thread);
 		smp_mb();
 	}
+#endif
 
 	if (pThread->taskCount <= 0) {
 		bool enablePrefetch;
@@ -7660,7 +7719,10 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(pTask->sram_base));
 		} else {
 			MVABase = cmdq_core_task_get_first_pa(pTask);
-			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
+			if (shift_end)
+				EndAddr = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_final_instr(pTask) - CMDQ_INST_SIZE);
+			else
+				EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
 			CMDQ_MSG("EXEC: set HW thread(%d) pc: 0x%pa, qos: %d set end addr: 0x%08x\n",
 				 thread, &MVABase, threadPrio, EndAddr);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
@@ -7682,8 +7744,10 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		cmdq_core_insert_task_from_thread_array_by_cookie(pTask, pThread, (minimum + 1),
 								  true);
 
+#ifndef CMDQ_APPEND_WITHOUT_SUSPEND
 		/* verify that we don't corrupt EOC + JUMP pattern */
 		cmdq_core_verfiy_command_end(pTask);
+#endif
 
 		/* enable HW thread */
 		CMDQ_MSG("enable HW thread(%d)\n", thread);
@@ -7706,7 +7770,8 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		uint32_t thread_pc = 0;
 		uint32_t end_addr = 0;
 
-		CMDQ_MSG("EXEC: reuse HW thread(%d), taskCount:%d\n", thread, pThread->taskCount);
+		CMDQ_MSG("EXEC: reuse HW thread(%d), taskCount:%d, cmd_size:%d\n",
+			thread, pThread->taskCount, pTask->commandSize);
 
 		if (unlikely(pTask->use_sram_buffer)) {
 			CMDQ_AEE("CMDQ", "SRAM task should not execute append\n");
@@ -7764,10 +7829,14 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			CMDQ_MSG("%s", long_msg);
 
 			/* set to pTask directly */
-			EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
+			if (shift_end)
+				EndAddr = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_final_instr(pTask) - CMDQ_INST_SIZE);
+			else
+				EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_THR_FIX_END_ADDR(thread));
+			CMDQ_MSG("EXEC: thread PC: 0x%08x\n", thread_pc);
 			CMDQ_MSG("EXEC: set end addr: 0x%08x for task: 0x%p\n", EndAddr, pTask);
-			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
+			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
 			pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = pTask;
 			pThread->taskCount++;
@@ -7844,6 +7913,10 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			/* We must set memory barrier here to make sure we modify jump before enable thread */
 			smp_mb();
 
+			if (shift_end) {
+				EndAddr = CMDQ_PHYS_TO_AREG(cmdq_core_task_get_final_instr(pLast) - CMDQ_INST_SIZE);
+				CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+			}
 			pThread->taskCount++;
 			pThread->allowDispatching = 1;
 
@@ -7855,8 +7928,10 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 			pThread->nextCookie = 0;
 		}
 
+#ifndef CMDQ_APPEND_WITHOUT_SUSPEND
 		/* verify that we don't corrupt EOC + JUMP pattern */
 		cmdq_core_verfiy_command_end(pTask);
+#endif
 
 		/* resume HW thread */
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_en,
@@ -8026,39 +8101,38 @@ static int32_t cmdq_core_exec_task_async_with_retry(struct TaskStruct *pTask, in
 	/* Replace instruction by thread ID */
 	cmdq_core_replace_v3_instr(pTask, thread);
 
+	if (!cmdq_core_verfiy_command_end(pTask))
+		return -EFAULT;
+
 	if (pThread->loopCallback) {
 		/* Do not insert Wait for loop due to loop no need append */
 		CMDQ_MSG("Ignore insert wait for loop task\n");
 	} else {
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
-		/* Shift JUMP and EOC */
-		pTask->pCMDEnd += 2;
-		pTask->pCMDEnd[0] = pTask->pCMDEnd[-2];
-		pTask->pCMDEnd[-1] = pTask->pCMDEnd[-3];
-		pTask->pCMDEnd[-2] = pTask->pCMDEnd[-4];
-		pTask->pCMDEnd[-3] = pTask->pCMDEnd[-5];
-		/* Update original JUMP to wait event */
-		/* Sync: Op and sync event */
-		pTask->pCMDEnd[-4] = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_APPEND_THR(thread);
-		/* Sync: Wait and no clear */
-		pTask->pCMDEnd[-5] = ((0 << 31) | (1 << 15) | 1);
-		pTask->commandSize += CMDQ_INST_SIZE;
-		/* make sure instructions are synced in DRAM */
-		smp_mb();
-		CMDQ_MSG
-		    ("After insert wait: pTask 0x%p last 3 instr (%08x:%08x, %08x:%08x, %08x:%08x)\n",
-		     pTask,
-		     pTask->pCMDEnd[-5], pTask->pCMDEnd[-4], pTask->pCMDEnd[-3],
-		     pTask->pCMDEnd[-2], pTask->pCMDEnd[-1], pTask->pCMDEnd[0]);
+		u32 *append_instr = cmdq_core_task_get_append_va(pTask);
+
+		if (append_instr) {
+			/* Update original JUMP to wait event */
+			append_instr[1] = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_APPEND_THR(thread);
+			if (!pTask->secData.is_secure) {
+				/* Make jump become invalid instruction */
+				pTask->pCMDEnd[0] = 0x0;
+				pTask->pCMDEnd[-1] = 0x0;
+			}
+			/* make sure instructions are synced in DRAM */
+			smp_mb();
+			CMDQ_MSG
+			    ("After insert wait: pTask 0x%p last 3 instr (%08x:%08x, %08x:%08x, %08x:%08x)\n",
+			     pTask,
+			     append_instr[0], append_instr[1], pTask->pCMDEnd[-3],
+			     pTask->pCMDEnd[-2], pTask->pCMDEnd[-1], pTask->pCMDEnd[0]);
+		} else {
+			CMDQ_AEE("CMDQ", "Task set append instruction failed, size: %d", pTask->commandSize);
+		}
 #endif
 	}
 
 	do {
-		if (cmdq_core_verfiy_command_end(pTask) == false) {
-			status = -EFAULT;
-			break;
-		}
-
 		/* Save command buffer dump */
 		if (retry == 0)
 			cmdq_core_save_command_buffer_dump(pTask);
