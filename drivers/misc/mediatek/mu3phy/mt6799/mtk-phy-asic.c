@@ -1323,7 +1323,8 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 #endif
 
 	/* FIXME, check usb20_phy_rev6 value */
-	usb20_phy_rev6 = 0;
+	usb20_phy_rev6 = 1;
+	pr_warn("%s, usb20_phy_rev6 to %d\n", __func__, usb20_phy_rev6);
 
 	return retval;
 }

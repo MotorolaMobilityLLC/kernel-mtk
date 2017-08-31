@@ -94,25 +94,24 @@ void connection_work(struct work_struct *data)
 #ifndef CONFIG_USBIF_COMPLIANCE
 	static enum status connection_work_dev_status = INIT;
 #endif
+	bool is_usb_cable;
 
+	/* delay 100ms if user space is not ready to set usb function */
+	if (!is_usb_rdy()) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+
+		if (__ratelimit(&ratelimit))
+			os_printk(K_INFO, "%s, !is_usb_rdy, delay 100ms\n", __func__);
+		schedule_delayed_work(&musb->connection_work,
+				msecs_to_jiffies(100));
+		return;
+	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
-		bool is_usb_cable;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-		/* delay 100ms if user space is not ready to set usb function */
-		if (!is_usb_rdy()) {
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
-
-			if (__ratelimit(&ratelimit))
-				os_printk(K_INFO, "%s, !is_usb_rdy, delay 100ms\n", __func__);
-			schedule_delayed_work(&musb->connection_work,
-					msecs_to_jiffies(100));
-			return;
-		}
-
 		if (!mt_usb_is_device()) {
 			connection_work_dev_status = OFF;
 			usb_fake_powerdown(musb->is_clk_on);
