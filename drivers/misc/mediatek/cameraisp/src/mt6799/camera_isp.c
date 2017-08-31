@@ -10929,8 +10929,8 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 {
 	int i;
 
-	seq_puts(m, "\n============ isp p2 dump register============\n");
-	seq_puts(m, "isp p2 phy isp buffer Info\n");
+	seq_puts(m, "============ isp p2 dump register============\n");
+	seq_puts(m, "isp p2 hw physical register\n");
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 4); i = i + 4) {
 		seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
 			   DIP_A_BASE_HW+4*i, (unsigned int)g_PhyISPBuffer[i],
