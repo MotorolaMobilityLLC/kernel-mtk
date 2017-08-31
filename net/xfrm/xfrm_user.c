@@ -2449,8 +2449,8 @@ static int xfrm_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	int type, err;
 
 #ifdef CONFIG_COMPAT
-	if (is_compat_task())
-		return -ENOTSUPP;
+	/*if (is_compat_task())*/
+		/*return -ENOTSUPP;*/
 #endif
 
 	type = nlh->nlmsg_type;
