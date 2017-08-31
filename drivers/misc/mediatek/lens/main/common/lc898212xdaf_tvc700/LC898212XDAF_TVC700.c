@@ -699,11 +699,9 @@ static inline int setAFMacro(unsigned long a_u4Position)
 static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 {
 	stAF_MotorCalPos stMotorCalPos;
-	u32 u4AF_CalibData_INF;
-	u32 u4AF_CalibData_MACRO;
 
-	u4AF_CalibData_INF = 0;
-	u4AF_CalibData_MACRO = 0;
+	stMotorCalPos.u4MacroPos = 0;
+	stMotorCalPos.u4InfPos = 0;
 
 	if (copy_to_user(pstMotorCalPos, &stMotorCalPos, sizeof(stMotorCalPos)))
 		LOG_INF("copy to user failed when getting motor information\n");
