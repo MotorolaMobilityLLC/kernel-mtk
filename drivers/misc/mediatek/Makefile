@@ -46,6 +46,8 @@ obj-$(CONFIG_MTK_PSEUDO_M4U)   += pseudo_m4u/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
 obj-$(CONFIG_MTK_PWM)	    += pwm/
+obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
+obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
 ifneq ($(CONFIG_MTK_SENSOR_BIO),y)
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 #obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
@@ -220,8 +222,6 @@ obj-n += crypto/
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
 #obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
-obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
-obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += audio_ipi/
 obj-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += sspm/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
