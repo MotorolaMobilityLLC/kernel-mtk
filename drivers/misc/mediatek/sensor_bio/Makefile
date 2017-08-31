@@ -14,4 +14,5 @@ obj-$(CONFIG_CUSTOM_KERNEL_SITUATION) += situation/
 #obj-$(CONFIG_CUSTOM_KERNEL_PEDOMETER)	+= pedometer/
 obj-$(CONFIG_CUSTOM_KERNEL_SENSOR_FUSION)	+= sensorfusion/
 obj-$(CONFIG_MTK_KERNEL_GEOFENCE) += geofence/
+obj-$(CONFIG_CUSTOM_KERNEL_BIOMETRIC_SENSOR) += biometric/
 endif

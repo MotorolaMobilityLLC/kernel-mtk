@@ -16,6 +16,7 @@
 #include <linux/poll.h>
 
 #define CONTINUE_SENSOR_BUF_SIZE	2048
+#define BIO_SENSOR_BUF_SIZE	0x20000 /* ((512 + 1024 + 1024) * 60) */
 #define OTHER_SENSOR_BUF_SIZE	16
 enum flushAction {
 	DATA_ACTION,
