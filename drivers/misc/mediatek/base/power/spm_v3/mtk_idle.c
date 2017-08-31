@@ -280,6 +280,7 @@ static unsigned int     dpidle_gs_dump_delay_ms = 10000; /* 10 sec */
 static unsigned int     dpidle_gs_dump_req_ts;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 static unsigned int     dpidle_run_once;
+static bool             dpidle_force_vcore_lp_mode;
 
 /* SODI3 */
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
@@ -1598,7 +1599,8 @@ int dpidle_enter(int cpu)
 		}
 	}
 
-	operation_cond |= clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0;
+	operation_cond |= dpidle_force_vcore_lp_mode ? DEEPIDLE_OPT_VCORE_LP_MODE :
+						(clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
 
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
 
@@ -1983,6 +1985,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
 	mt_idle_log("dpidle_dump_log = %u\n", dpidle_dump_log);
+	mt_idle_log("force VCORE lp mode = %u\n", dpidle_force_vcore_lp_mode);
 	mt_idle_log("([0]: Reduced, [1]: Full, [2]: resource_usage\n");
 
 	mt_idle_log("\n*********** dpidle command help  ************\n");
@@ -2039,6 +2042,8 @@ static ssize_t dpidle_state_write(struct file *filp,
 			dpidle_gs_dump_delay_ms = (param >= 0) ? param : 0;
 		} else if (!strcmp(cmd, "log"))
 			dpidle_dump_log = param;
+		else if (!strcmp(cmd, "force_vcore"))
+			dpidle_force_vcore_lp_mode = param;
 
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
