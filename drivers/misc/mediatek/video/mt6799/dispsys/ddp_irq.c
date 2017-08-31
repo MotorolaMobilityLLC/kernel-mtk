@@ -329,7 +329,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			disp_irq_log_module |= 1 << module;
 		}
 
-		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_EVENT)) {
 			cmdq_event_base = CMDQ_EVENT_DISP_WDMA0_EOF;
 			if (reg_val & (1 << 0)) {
 				if (cmdqCoreGetEvent(cmdq_event_base + index))
@@ -419,7 +419,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			rdma_targetline_irq_cnt[index]++;
 		}
 
-		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_EVENT)) {
 			cmdq_event_base = CMDQ_EVENT_DISP_RDMA0_EOF;
 			if (reg_val & (1 << 2)) {
 				if (cmdqCoreGetEvent(cmdq_event_base + index))
@@ -471,7 +471,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 		}
 
-		if (disp_helper_get_option(DISP_OPT_CHECK_EVENT)) {
+		if (disp_helper_get_option(DISP_OPT_CHECK_CMDQ_EVENT)) {
 			cmdq_event_base = CMDQ_EVENT_MUTEX0_STREAM_EOF;
 			for (mutexID = 0; mutexID < 5; mutexID++) {
 				if (reg_val & (0x1 << (mutexID + DISP_MUTEX_TOTAL))) {

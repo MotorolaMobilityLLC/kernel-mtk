@@ -18,6 +18,7 @@
 #include "cmdq_record.h"
 #include "cmdq_core.h"
 #include "ddp_hal.h"
+#include "disp_cmdq.h"
 
 #define UINT32 unsigned int
 
@@ -1362,7 +1363,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			mt_reg_sync_writel((unsigned int)(INREG32(reg32)&~(mask))|(val), (reg32));\
 		 } else { \
 			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, mask);\
-			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
+			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 		 }	\
 	} while (0)
 
@@ -1372,7 +1373,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			mt_reg_sync_writel(val, (volatile unsigned long*)(reg32));\
 		} else { \
 			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
-			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
+			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, ~0); \
 		}  \
 	} while (0)
 
@@ -1387,7 +1388,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		} else { \
 			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)),\
 				       val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
-			cmdqRecWrite(handle, disp_addr_convert((unsigned long)(reg32)),\
+			disp_cmdq_write_reg(handle, disp_addr_convert((unsigned long)(reg32)),\
 				       val<<REG_FLD_SHIFT(field), REG_FLD_MASK(field));\
 		} \
 	} while (0)
@@ -1399,7 +1400,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 				; \
 		} else { \
 			dprec_reg_op(handle, disp_addr_convert((unsigned long)(reg32)), val, 0x00000000);\
-			cmdqRecPoll(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
+			disp_cmdq_poll_reg(handle, disp_addr_convert((unsigned long)(reg32)), val, mask); \
 		}  \
 	} while (0)
 
@@ -1407,7 +1408,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 	do { \
 		if (handle != NULL) { \
 			if (hSlot) \
-				cmdqRecBackupRegisterToSlot(handle, hSlot, idx,\
+				disp_cmdq_read_reg_to_slot(handle, hSlot, idx,\
 							    disp_addr_convert((unsigned long)(reg32)));\
 		}  \
 	} while (0)
@@ -1415,8 +1416,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 /* Helper macros for local command queue */
 #define DISP_CMDQ_BEGIN(__cmdq, scenario) \
 	do { \
-		cmdqRecCreate(scenario, &__cmdq);\
-		cmdqRecReset(__cmdq);\
+		disp_cmdq_create(scenario, &__cmdq);\
+		disp_cmdq_reset(__cmdq);\
 		ddp_insert_config_allow_rec(__cmdq);\
 	} while (0)
 
@@ -1426,8 +1427,8 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 
 #define DISP_CMDQ_END(__cmdq)		\
 	do {				\
-		cmdqRecFlush(__cmdq);	\
-		cmdqRecDestroy(__cmdq); \
+		disp_cmdq_flush(__cmdq, __func__, __LINE__);	\
+		disp_cmdq_destroy(__cmdq, __func__, __LINE__); \
 	} while (0)
 
 /********************************/

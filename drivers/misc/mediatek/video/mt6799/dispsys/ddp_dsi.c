@@ -33,6 +33,7 @@
 #include "ddp_log.h"
 #include "ddp_mmp.h"
 #include "disp_helper.h"
+#include "disp_cmdq.h"
 #include "ddp_reg.h"
 
 #ifdef CONFIG_MTK_LEGACY
@@ -3501,8 +3502,8 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 		DSI_OUTREGBIT(cmdq_handle, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 1);
 		/* 9. blocking flush */
-		cmdqRecFlush(cmdq_handle);
-		cmdqRecReset(cmdq_handle);
+		disp_cmdq_flush(cmdq_handle, __func__, __LINE__);
+		disp_cmdq_reset(cmdq_handle);
 
 		dsi_analysis(module);
 		DSI_DumpRegisters(module, 2);
@@ -3551,14 +3552,14 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		/* 6.update one frame */
 		DSI_OUTREG32(cmdq_handle, &DSI_CMDQ_REG[i]->data[0], 0x002c3909);
 		DSI_OUTREG32(cmdq_handle, &DSI_REG[i]->DSI_CMDQ_SIZE, 1);
-		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
 		DISP_REG_SET(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 1);
 		DSI_Start(module, cmdq_handle);
-		cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		disp_cmdq_wait_event_no_clear(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
 
 		/* 7. blocking flush */
-		cmdqRecFlush(cmdq_handle);
-		cmdqRecReset(cmdq_handle);
+		disp_cmdq_flush(cmdq_handle, __func__, __LINE__);
+		disp_cmdq_reset(cmdq_handle);
 #endif
 		dsi_analysis(module);
 		DSI_DumpRegisters(module, 2);
@@ -3567,15 +3568,15 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 	} else {		/* C2V */
 		DISPMSG("[C2V]c2v switch begin\n");
 		/* 1. Adjust PLL clk */
-		cmdqRecWaitNoClear(cmdq_handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+		disp_cmdq_wait_event_no_clear(cmdq_handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 		DSI_DisableClk(module, cmdq_handle);
 		DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
 		DSI_EnableClk(module, cmdq_handle);
 		DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
 
 		/* 2. wait TE */
-		cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DSI_TE);
-		cmdqRecWait(cmdq_handle, CMDQ_EVENT_DSI_TE);
+		disp_cmdq_clear_event(cmdq_handle, CMDQ_EVENT_DSI_TE);
+		disp_cmdq_wait_event(cmdq_handle, CMDQ_EVENT_DSI_TE);
 
 		/* 3. disable DSI EXT TE, only BTA te could work, reason unknown */
 		DSI_OUTREGBIT(cmdq_handle, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 0);
@@ -3616,8 +3617,8 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle, void *p
 		DSI_Start(module, cmdq_handle);
 
 		/* 8. blocking flush */
-		cmdqRecFlush(cmdq_handle);
-		cmdqRecReset(cmdq_handle);
+		disp_cmdq_flush(cmdq_handle, __func__, __LINE__);
+		disp_cmdq_reset(cmdq_handle);
 
 		DISPMSG("[C2V]after c2v switch, cmdq flushed\n");
 
@@ -3841,7 +3842,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	if (module == DISP_MODULE_DSIDUAL && _dsi_context[0].dsi_params.mode == CMD_MODE) {
 		/* Reading one reg is only used for delay in order to pull down DSI_DUAL_EN. */
 		if (cmdq)
-			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0,
+			disp_cmdq_read_reg_to_slot(cmdq, _h_intstat, 0,
 				disp_addr_convert((unsigned long)(&DSI_REG[0]->DSI_INTSTA)));
 		else
 			INREG32(&DSI_REG[0]->DSI_INTSTA);
@@ -4148,8 +4149,8 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 
 			if (disp_helper_get_option(DISP_OPT_USE_CMDQ)) {
 				ret =
-				    cmdqRecClearEventToken(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
-				ret = cmdqRecWait(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
+				    disp_cmdq_clear_event(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
+				ret = disp_cmdq_wait_event(cmdq_trigger_handle, CMDQ_EVENT_DSI_TE);
 			}
 		} else {
 			DISPERR("wrong module: %s\n", ddp_get_module_name(module));

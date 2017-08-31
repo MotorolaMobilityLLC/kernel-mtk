@@ -50,6 +50,7 @@
 #include "disp_drv_log.h"
 #include "ddp_log.h"
 #include "disp_lowpower.h"
+#include "disp_cmdq.h"
 /* device tree */
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -118,29 +119,29 @@ int _esd_check_config_handle_cmd(struct cmdqRecStruct *handle)
 	int ret = 0;		/* 0:success */
 
 	/* 1.reset */
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	primary_display_manual_lock();
 
 	/* 2.write first instruction */
 	/* cmd mode: wait CMDQ_SYNC_TOKEN_STREAM_EOF(wait trigger thread done) */
-	cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+	disp_cmdq_wait_event_no_clear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 
 	/* 3.clear CMDQ_SYNC_TOKEN_ESD_EOF(trigger thread need wait this sync token) */
-	cmdqRecClearEventToken(handle, CMDQ_SYNC_TOKEN_ESD_EOF);
+	disp_cmdq_clear_event(handle, CMDQ_SYNC_TOKEN_ESD_EOF);
 
 	/* 4.write instruction(read from lcm) */
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle,
 				CMDQ_ESD_CHECK_READ, 0);
 
 	/* 5.set CMDQ_SYNC_TOKE_ESD_EOF(trigger thread can work now) */
-	cmdqRecSetEventToken(handle, CMDQ_SYNC_TOKEN_ESD_EOF);
+	disp_cmdq_set_event(handle, CMDQ_SYNC_TOKEN_ESD_EOF);
 
 	primary_display_manual_unlock();
 
 	/* 6.flush instruction */
 	dprec_logger_start(DPREC_LOGGER_ESD_CMDQ, 0, 0);
-	ret = cmdqRecFlush(handle);
+	ret = disp_cmdq_flush(handle, __func__, __LINE__);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
 
@@ -159,11 +160,11 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	int ret = 0;		/* 0:success , 1:fail */
 
 	/* 1.reset */
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	/* wait stream eof first */
-	/*cmdqRecWait(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
-	cmdqRecWait(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	/*disp_cmdq_wait_event(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
+	disp_cmdq_wait_event(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();
 	/* 2.stop dsi vdo mode */
@@ -177,8 +178,8 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	/* 4.start dsi vdo mode */
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_START_VDO_MODE,
 			      0);
-	cmdqRecClearEventToken(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	/*cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
+	disp_cmdq_clear_event(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	/*disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_EOF);*/
 	/* 5. trigger path */
 	dpmgr_path_trigger(primary_get_dpmgr_handle(), handle, CMDQ_ENABLE);
 
@@ -190,7 +191,7 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 
 	/* 6.flush instruction */
 	dprec_logger_start(DPREC_LOGGER_ESD_CMDQ, 0, 0);
-	ret = cmdqRecFlush(handle);
+	ret = disp_cmdq_flush(handle, __func__, __LINE__);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 
 	DISPCHECK("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
@@ -357,7 +358,7 @@ int do_esd_check_read(void)
 	struct cmdqRecStruct *handle;
 
 	/* 0.create esd check cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
+	disp_cmdq_create(CMDQ_SCENARIO_DISP_ESD_CHECK, &handle);
 
 	primary_display_manual_lock();
 	dpmgr_path_build_cmdq(primary_get_dpmgr_handle(), handle, CMDQ_ESD_ALLC_SLOT, 0);
@@ -399,7 +400,7 @@ destroy_cmdq:
 	primary_display_manual_unlock();
 
 	/* 3.destroy esd config thread */
-	cmdqRecDestroy(handle);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 
 	return ret;
 }

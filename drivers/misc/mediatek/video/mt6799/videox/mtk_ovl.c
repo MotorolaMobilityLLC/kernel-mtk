@@ -43,6 +43,7 @@
 #include "display_recorder.h"
 #include "ddp_mmp.h"
 #include "mtk_ovl.h"
+#include "disp_cmdq.h"
 
 #include "mtkfb_fence.h"
 
@@ -320,12 +321,12 @@ int ovl2mem_init(unsigned int session)
 		goto Exit;
 	}
 
-	ret = cmdqRecCreate(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
+	ret = disp_cmdq_create(CMDQ_SCENARIO_SUB_DISP, &(pgc->cmdq_handle_config));
 	if (ret) {
-		DISPERR("cmdqRecCreate FAIL, ret=%d\n", ret);
+		DISPERR("disp_cmdq_create FAIL, ret=%d\n", ret);
 		goto Exit;
 	} else {
-		DISPDBG("cmdqRecCreate SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
+		DISPDBG("disp_cmdq_create SUCCESS, cmdq_handle=%p\n", pgc->cmdq_handle_config);
 	}
 
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_SUB_OVL_MEMOUT, pgc->cmdq_handle_config);
@@ -441,21 +442,21 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 		return ret;
 	}
 
-	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
+	disp_cmdq_clear_event(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_start(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config, ovl2mem_cmdq_enabled());
 
-	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
-	cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
+	disp_cmdq_wait_event(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
+	disp_cmdq_set_event(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
-	/* /cmdqRecDumpCommand(pgc->cmdq_handle_config); */
+	/* disp_cmdq_dump_command(pgc->cmdq_handle_config); */
 #ifdef MTK_FB_ION_SUPPORT
-	cmdqRecFlushAsyncCallback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
-				  atomic_read(&g_trigger_ticket));
+	disp_cmdq_flush_async_callback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
+				  atomic_read(&g_trigger_ticket), __func__, __LINE__);
 #endif
-	cmdqRecReset(pgc->cmdq_handle_config);
+	disp_cmdq_reset(pgc->cmdq_handle_config);
 
 #ifdef EXTD_SHADOW_REGISTER_SUPPORT
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
@@ -693,7 +694,7 @@ int ovl2mem_deinit(void)
 
 	dpmgr_destroy_path_handle(pgc->dpmgr_handle);
 
-	cmdqRecDestroy(pgc->cmdq_handle_config);
+	disp_cmdq_destroy(pgc->cmdq_handle_config, __func__, __LINE__);
 
 	pgc->dpmgr_handle = NULL;
 	pgc->cmdq_handle_config = NULL;

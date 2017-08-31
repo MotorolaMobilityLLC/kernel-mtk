@@ -33,6 +33,7 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_dts_gpio.o		\
 			disp_rect.o		\
 			disp_partial.o		\
+			disp_cmdq.o		\
 			mtk_hrt.o \
 			frame_queue.o
 

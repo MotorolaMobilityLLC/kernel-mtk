@@ -51,6 +51,7 @@
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
 #include "disp_rect.h"
+#include "disp_cmdq.h"
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
 #include "ddp_rdma.h"
@@ -242,16 +243,16 @@ int _blocking_flush(void)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	ret = disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	if (ret) {
 		DISPERR("%s:%d, create cmdq handle fail!ret=%d\n", __func__, __LINE__, ret);
 		return -1;
 	}
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
-	cmdqRecFlush(handle);
-	cmdqRecDestroy(handle);
+	disp_cmdq_flush(handle, __func__, __LINE__);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 	return ret;
 }
 
@@ -260,14 +261,14 @@ int primary_display_dsi_vfp_change(int state)
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
-	cmdqRecReset(handle);
+	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	disp_cmdq_reset(handle);
 
 	/* make sure token rdma_sof is clear */
-	cmdqRecClearEventToken(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	disp_cmdq_clear_event(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 	/* wait rdma0_sof: only used for video mode & trigger loop need wait and clear rdma0 sof */
-	cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	disp_cmdq_wait_event_no_clear(handle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 	if (state == 1) {
 		/* need calculate fps by vdo mode params */
@@ -280,8 +281,8 @@ int primary_display_dsi_vfp_change(int state)
 			DDP_DSI_PORCH_CHANGE,
 			&primary_get_lcm()->params->dsi.vertical_frontporch);
 	}
-	cmdqRecFlushAsync(handle);
-	cmdqRecDestroy(handle);
+	disp_cmdq_flush_async(handle, __func__, __LINE__);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 	return ret;
 }
 
@@ -292,20 +293,20 @@ void _idle_set_golden_setting(void)
 
 	/* no need lock */
 	/* 1.create and reset cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	/* 2.wait mutex0_stream_eof: only used for video mode */
-	cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+	disp_cmdq_wait_event_no_clear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 
 	/* 3.golden setting */
 	dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
 
 	/* 4.flush */
-	cmdqRecFlushAsync(handle);
-	cmdqRecDestroy(handle);
+	disp_cmdq_flush_async(handle, __func__, __LINE__);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 }
 
 /* Share wrot sram for vdo mode increase enter sodi ratio */
@@ -325,28 +326,28 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	/* 2. wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
 	/* 3.try to share wrot sram */
-	acquireResult = cmdqRecWriteForResource(handle, resourceEvent,
+	acquireResult = disp_cmdq_write_for_resource(handle, resourceEvent,
 		disp_addr_convert(rdma_base + DISP_REG_RDMA_SRAM_SEL), 1, ~0);
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
 		DISPMSG("acquire resource fail\n");
 
-		cmdqRecDestroy(handle);
+		disp_cmdq_destroy(handle, __func__, __LINE__);
 		return;
 
 	} else {
 		/* acquire resource success */
 		DISPMSG("share SRAM success\n");
-		/* cmdqRecClearEventToken(handle, resourceEvent); //???cmdq do it */
+		/* disp_cmdq_clear_event(handle, resourceEvent); //???cmdq do it */
 
 		/* set rdma golden setting parameters*/
 		set_share_sram(1);
@@ -358,8 +359,8 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	}
 
-	cmdqRecFlushAsync(handle);
-	cmdqRecDestroy(handle);
+	disp_cmdq_flush_async(handle, __func__, __LINE__);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 }
 
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -384,9 +385,9 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		return;
 
 	/* 1.create and reset cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	/* 2.wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
@@ -406,7 +407,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	DISP_REG_SET(handle, rdma_base + DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
 
 	/* 4.release share sram resourceEvent*/
-	cmdqRecReleaseResource(handle, resourceEvent);
+	disp_cmdq_release_resource(handle, resourceEvent);
 
 	/* set rdma golden setting parameters*/
 	set_share_sram(0);
@@ -416,8 +417,8 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
 
-	cmdqRecFlushAsync(handle);
-	cmdqRecDestroy(handle);
+	disp_cmdq_flush_async(handle, __func__, __LINE__);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 }
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -464,9 +465,9 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		return ret;
 	}
 	/* 1.create and reset cmdq */
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	disp_cmdq_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
-	cmdqRecReset(handle);
+	disp_cmdq_reset(handle);
 
 	if (mmsys_clk_old == MMSYS_CLK_HIGH && mmsys_clk_new == MMSYS_CLK_LOW) {
 		/* 2.wait sof */
@@ -474,9 +475,9 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 #if 0
 		ddp_clk_prepare_enable(MUX_MM);
 		ddp_clk_prepare_enable(SYSPLL2_D2);
-		cmdqRecWrite(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
-		cmdqRecWrite(handle, 0x10000044, 0x04000000, 0x04000000); /* set syspll2_d2 */
-		cmdqRecWrite(handle, 0x10000004, 8, 8); /* update */
+		disp_cmdq_write_reg(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
+		disp_cmdq_write_reg(handle, 0x10000044, 0x04000000, 0x04000000); /* set syspll2_d2 */
+		disp_cmdq_write_reg(handle, 0x10000004, 8, 8); /* update */
 #endif
 		/* set rdma golden setting parameters */
 		set_mmsys_clk(MMSYS_CLK_LOW);
@@ -489,9 +490,9 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		/* enable vencpll */
 		ddp_clk_prepare_enable(MUX_MM);
 		ddp_clk_prepare_enable(MM_VENCPLL);
-		cmdqRecWrite(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
-		cmdqRecWrite(handle, 0x10000044, 0x02000000, 0x02000000); /* set vencpll */
-		cmdqRecWrite(handle, 0x10000004, 8, 8); /* update */
+		disp_cmdq_write_reg(handle, 0x10000048, 0x07000000, 0x07000000); /* clear */
+		disp_cmdq_write_reg(handle, 0x10000044, 0x02000000, 0x02000000); /* set vencpll */
+		disp_cmdq_write_reg(handle, 0x10000004, 8, 8); /* update */
 #endif
 		/* set rdma golden setting parameters */
 		set_mmsys_clk(MMSYS_CLK_HIGH);
@@ -507,10 +508,10 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
 
 
-	cmdqRecFlush(handle);
+	disp_cmdq_flush(handle, __func__, __LINE__);
 
 cmdq_d:
-	cmdqRecDestroy(handle);
+	disp_cmdq_destroy(handle, __func__, __LINE__);
 
 	/*_switch_mmsys_clk_callback(need_disable_pll);*/
 	return get_mmsys_clk();
@@ -1095,14 +1096,14 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 void exit_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
 	/* Enable SPM CG Mode(Force 30+ times to ensure write success, need find root cause and fix later) */
-	cmdqRecWrite(handler, 0x100062B0, 0x2, ~0);
+	disp_cmdq_write_reg(handler, 0x100062B0, 0x2, ~0);
 	/* Polling EMI Status to ensure EMI is enabled */
-	cmdqRecPoll(handler, 0x1000611C, 0x10000, 0x10000);
+	disp_cmdq_poll_reg(handler, 0x1000611C, 0x10000, 0x10000);
 }
 
 void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
-	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
+	disp_cmdq_write_reg(handler, 0x100062B0, 0x0, 0x2);
 }
 #endif
 

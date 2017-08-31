@@ -29,6 +29,7 @@
 #include "primary_display.h"
 #include "ddp_hal.h"
 #include "disp_helper.h"
+#include "disp_cmdq.h"
 #include "ddp_path.h"
 
 #include "m4u.h"
@@ -2282,9 +2283,9 @@ int ddp_insert_config_allow_rec(void *handle)
 		ASSERT(0);
 
 	if (primary_display_is_video_mode())
-		ret = cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		ret = disp_cmdq_wait_event_no_clear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 	else
-		ret = cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+		ret = disp_cmdq_wait_event_no_clear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 
 	return ret;
 }
@@ -2299,7 +2300,7 @@ int ddp_insert_config_dirty_rec(void *handle)
 	if (primary_display_is_video_mode()) /* TODO: modify this */
 		;/* do nothing */
 	else
-		ret = cmdqRecSetEventToken(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		ret = disp_cmdq_set_event(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 
 	return ret;
 }

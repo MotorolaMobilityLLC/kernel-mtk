@@ -32,6 +32,7 @@
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
 /* #include "mmdvfs_mgr.h" */
 #include "disp_lowpower.h"
+#include "disp_cmdq.h"
 #include "ddp_mmp.h"
 
 
@@ -648,7 +649,7 @@ static int rdma_config(enum DISP_MODULE_ENUM module,
 		/* for sec layer, addr variable stores sec handle */
 		/* we need to pass this handle and offset to cmdq driver */
 		/* cmdq sec driver will help to convert handle to correct address */
-		cmdqRecWriteSecure(handle,
+		disp_cmdq_write_reg_secure(handle,
 				   disp_addr_convert(base_addr +
 						     DISP_REG_RDMA_MEM_START_ADDR),
 				   CMDQ_SAM_H_2_MVA, address, 0, size, m4u_port);
@@ -1045,10 +1046,10 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 	/* sec setting make sence only in memory mode ! */
 	if (mode == RDMA_MODE_MEMORY) {
 		if (security == DISP_SECURE_BUFFER) {
-			cmdqRecSetSecure(handle, 1);
+			disp_cmdq_set_secure(handle, 1);
 			/* set engine as sec */
-			cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
-			/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
+			disp_cmdq_enable_port_security(handle, (1LL << cmdq_engine));
+			/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
 
 			if (rdma_is_sec[rdma_idx] == 0)
 				DDPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
@@ -1059,15 +1060,15 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 				struct cmdqRecStruct *nonsec_switch_handle;
 				int ret;
 
-				ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+				ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 						    &(nonsec_switch_handle));
 				if (ret)
 					DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 					       __func__, ret);
 
-				cmdqRecReset(nonsec_switch_handle);
+				disp_cmdq_reset(nonsec_switch_handle);
 				_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
-				cmdqRecSetSecure(nonsec_switch_handle, 1);
+				disp_cmdq_set_secure(nonsec_switch_handle, 1);
 
 				/*ugly work around by kzhang !!. will remove when cmdq delete disable scenario.*/
 				 /* To avoid translation fault like ovl (see notes in ovl.c)*/
@@ -1075,14 +1076,14 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 					do_rdma_config_l(module, pConfig, nonsec_switch_handle);
 
 				/*in fact, dapc/port_sec will be disabled by cmdq */
-				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle,
+				disp_cmdq_enable_port_security(nonsec_switch_handle,
 								(1LL << cmdq_engine));
-				/* cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine)); */
-				cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-				cmdqRecFlushAsync(nonsec_switch_handle);
-				/*cmdqRecFlush(nonsec_switch_handle);*/
-				cmdqRecDestroy(nonsec_switch_handle);
-				cmdqRecWait(handle, cmdq_event_nonsec_end);
+				/* disp_cmdq_enable_dapc(nonsec_switch_handle, (1LL << cmdq_engine)); */
+				disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);
+				disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);
+				/*disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);*/
+				disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+				disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);
 				DDPMSG("[SVP] switch rdma%d to nonsec done\n", rdma_idx);
 			}
 			rdma_is_sec[rdma_idx] = 0;
@@ -1098,10 +1099,10 @@ static inline int rdma_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	enum CMDQ_ENG_ENUM cmdq_engine;
 
 	cmdq_engine = rdma_to_cmdq_engine(module);
-	cmdqRecSetSecure(handle, 1);
+	disp_cmdq_set_secure(handle, 1);
 	/* set engine as sec port */
-	cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
-	/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
+	disp_cmdq_enable_port_security(handle, (1LL << cmdq_engine));
+	/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
 	if (rdma_is_sec[rdma_idx] == 0) {
 		DDPSVPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
@@ -1127,13 +1128,13 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 		struct cmdqRecStruct *nonsec_switch_handle;
 		int ret;
 
-		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+		ret = disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
 		if (ret)
 			DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 				__func__, ret);
 
-		cmdqRecReset(nonsec_switch_handle);
+		disp_cmdq_reset(nonsec_switch_handle);
 
 		if (rdma_idx == 0) {
 			/*Primary Decouple Mode*/
@@ -1144,7 +1145,7 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 			_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
 		}
 
-		cmdqRecSetSecure(nonsec_switch_handle, 1);
+		disp_cmdq_set_secure(nonsec_switch_handle, 1);
 		/*ugly work around by kzhang !!. will remove when cmdq delete disable scenario.
 		 * To avoid translation fault like ovl (see notes in ovl.c)
 		 *check the mode now, bypass the frame during DL->DC(), avoid hang when vdo mode.
@@ -1153,23 +1154,23 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 			do_rdma_config_l(module, pConfig, nonsec_switch_handle);
 
 		/*in fact, dapc/port_sec will be disabled by cmdq */
-		cmdqRecSecureEnablePortSecurity(nonsec_switch_handle,
+		disp_cmdq_enable_port_security(nonsec_switch_handle,
 			(1LL << cmdq_engine));
-		/* cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine)); */
+		/* disp_cmdq_enable_dapc(nonsec_switch_handle, (1LL << cmdq_engine)); */
 		if (handle != NULL) {
 			/*Async Flush method*/
 			enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
 			/*cmdq_event_nonsec_end = module_to_cmdq_event_nonsec_end(module);*/
 			cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);
-			cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-			cmdqRecFlushAsync(nonsec_switch_handle);
-			cmdqRecWait(handle, cmdq_event_nonsec_end);
+			disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);
+			disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);
+			disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);
 		} else {
 			/*Sync Flush method*/
-			cmdqRecFlush(nonsec_switch_handle);
+			disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
 		}
 
-		cmdqRecDestroy(nonsec_switch_handle);
+		disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
 		DDPSVPMSG("[SVP] switch rdma%d to nonsec\n", rdma_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
 			MMPROFILE_FLAG_END, 0, 0);

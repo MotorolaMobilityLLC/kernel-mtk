@@ -28,6 +28,7 @@
 #include "primary_display.h"
 #include "disp_rect.h"
 #include "disp_assert_layer.h"
+#include "disp_cmdq.h"
 #include "ddp_mmp.h"
 
 #define OVL_REG_BACK_MAX          (40)
@@ -485,7 +486,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/* ovl is sec but this layer is non-sec */
 			/* we need to tell cmdq to help map non-sec mva to sec mva */
-			cmdqRecWriteSecure(handle,
+			disp_cmdq_write_reg_secure(handle,
 					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_NMVA_2_MVA, cfg->addr + offset, 0, size, m4u_port);
 
@@ -493,7 +494,7 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module,
 			/* for sec layer, addr variable stores sec handle */
 			/* we need to pass this handle and offset to cmdq driver */
 			/* cmdq sec driver will help to convert handle to correct address */
-			cmdqRecWriteSecure(handle,
+			disp_cmdq_write_reg_secure(handle,
 					   disp_addr_convert(DISP_REG_OVL_L0_ADDR + layer_offset_addr),
 					   CMDQ_SAM_H_2_MVA, cfg->addr, offset, size, m4u_port);
 		}
@@ -797,10 +798,10 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 
 	if (is_engine_sec) {
 
-		cmdqRecSetSecure(handle, 1);
+		disp_cmdq_set_secure(handle, 1);
 		/* set engine as sec */
-		cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
-		/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
+		disp_cmdq_enable_port_security(handle, (1LL << cmdq_engine));
+		/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
 		if (ovl_is_sec[ovl_idx] == 0)
 			DDPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
 			ovl_is_sec[ovl_idx] = 1;
@@ -811,27 +812,27 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			int ret;
 
 			ret =
-			cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
 			if (ret)
 				DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 				__func__, ret);
 
-			cmdqRecReset(nonsec_switch_handle);
+			disp_cmdq_reset(nonsec_switch_handle);
 			/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
 
 			if (module != DISP_MODULE_OVL1) {
 				/*Primary Mode*/
 				if (primary_display_is_decouple_mode())
-					cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+					disp_cmdq_wait_event_no_clear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 				else
 					_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
 			} else {
 				/*External Mode*/
 				/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
-				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
+				disp_cmdq_wait_event_no_clear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 			}
-			cmdqRecSetSecure(nonsec_switch_handle, 1);
+			disp_cmdq_set_secure(nonsec_switch_handle, 1);
 
 			/* we should disable ovl before new (nonsec) setting take effect
 			* or translation fault may happen,
@@ -839,13 +840,13 @@ static int setup_ovl_sec(enum DISP_MODULE_ENUM module, void *handle, int is_engi
 			*/
 			disable_ovl_layers(module, nonsec_switch_handle);
 				/*in fact, dapc/port_sec will be disabled by cmdq */
-				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
-				/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
-				/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
-				/*cmdqRecFlushAsync(nonsec_switch_handle);*/
-				cmdqRecFlush(nonsec_switch_handle);
-				cmdqRecDestroy(nonsec_switch_handle);
-				/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
+				disp_cmdq_enable_port_security(nonsec_switch_handle, (1LL << cmdq_engine));
+				/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
+				/*disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+				/*disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);*/
+				disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
+				disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
+				/*disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);*/
 				DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 			}
 		ovl_is_sec[ovl_idx] = 0;
@@ -861,11 +862,11 @@ static inline int ovl_switch_to_sec(enum DISP_MODULE_ENUM module, void *handle)
 	enum CMDQ_ENG_ENUM cmdq_engine;
 
 	cmdq_engine = ovl_to_cmdq_engine(module);
-	cmdqRecSetSecure(handle, 1);
+	disp_cmdq_set_secure(handle, 1);
 	/* set engine as sec port, it will to access the sec memory EMI_MPU protected */
-	cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
+	disp_cmdq_enable_port_security(handle, (1LL << cmdq_engine));
 	/* Enable DAPC to protect the engine register */
-	/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
+	/* disp_cmdq_enable_dapc(handle, (1LL << cmdq_engine)); */
 	if (ovl_is_sec[ovl_idx] == 0) {
 		DDPSVPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
@@ -893,27 +894,27 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		int ret;
 
 		ret =
-			cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+			disp_cmdq_create(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
 				&(nonsec_switch_handle));
 		if (ret)
 			DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 				__func__, ret);
 
-		cmdqRecReset(nonsec_switch_handle);
+		disp_cmdq_reset(nonsec_switch_handle);
 		/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
 
 		if (module != DISP_MODULE_OVL1) {
 			/*Primary Mode*/
 			if (primary_display_is_decouple_mode())
-				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
+				disp_cmdq_wait_event_no_clear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
 			else
 				_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
 		} else {
 			/*External Mode*/
 			/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
-			cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
+			disp_cmdq_wait_event_no_clear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 		}
-		cmdqRecSetSecure(nonsec_switch_handle, 1);
+		disp_cmdq_set_secure(nonsec_switch_handle, 1);
 
 		/* we should disable ovl before new (nonsec) setting take effect
 		 * or translation fault may happen,
@@ -921,22 +922,22 @@ int ovl_switch_to_nonsec(enum DISP_MODULE_ENUM module, void *handle)
 		 */
 		disable_ovl_layers(module, nonsec_switch_handle);
 		/*in fact, dapc/port_sec will be disabled by cmdq */
-		cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
-		/* cmdqRecSecureEnableDAPC(nonsec_switch_handle, (1LL << cmdq_engine)); */
+		disp_cmdq_enable_port_security(nonsec_switch_handle, (1LL << cmdq_engine));
+		/* disp_cmdq_enable_dapc(nonsec_switch_handle, (1LL << cmdq_engine)); */
 
 		if (handle != NULL) {
 			/*Async Flush method*/
 			/*cmdq_event_nonsec_end = module_to_cmdq_event_nonsec_end(module);*/
 			cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);
-			cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-			cmdqRecFlushAsync(nonsec_switch_handle);
-			cmdqRecWait(handle, cmdq_event_nonsec_end);
+			disp_cmdq_set_event(nonsec_switch_handle, cmdq_event_nonsec_end);
+			disp_cmdq_flush_async(nonsec_switch_handle, __func__, __LINE__);
+			disp_cmdq_wait_event(handle, cmdq_event_nonsec_end);
 		} else {
 			/*Sync Flush method*/
-			cmdqRecFlush(nonsec_switch_handle);
+			disp_cmdq_flush(nonsec_switch_handle, __func__, __LINE__);
 		}
 
-		cmdqRecDestroy(nonsec_switch_handle);
+		disp_cmdq_destroy(nonsec_switch_handle, __func__, __LINE__);
 		DDPSVPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
 		mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
 			MMPROFILE_FLAG_PULSE, 0, 0);
@@ -1172,7 +1173,7 @@ int ovl_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, enum
 
 	if (state == CMDQ_CHECK_IDLE_AFTER_STREAM_EOF) {
 		if (module == DISP_MODULE_OVL0) {
-			ret = cmdqRecPoll(cmdq_trigger_handle, 0x14007240, 2, 0x3f);
+			ret = disp_cmdq_poll_reg(cmdq_trigger_handle, 0x14007240, 2, 0x3f);
 		} else {
 			DDPERR("wrong module: %s\n", ddp_get_module_name(module));
 			return -1;
