@@ -3417,7 +3417,8 @@ struct lb_env {
 #define LB_SMP_SHIFT    16
 #define LB_SPARE		0x100000
 #define LB_EAS			0x300000
-#define LB_SMP                  0x500000
+#define LB_SMP			0x500000
+#define LB_IDLEST		0x700000
 #define LB_HMP_SHIFT    24
 #define LB_HMP                  0x60000000
 

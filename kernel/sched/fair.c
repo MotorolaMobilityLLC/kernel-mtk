@@ -2851,8 +2851,10 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 		update_tg_load_avg(cfs_rq, 0);
 
 	/* sched: add trace_sched */
-	if (entity_is_task(se))
+	if (entity_is_task(se)) {
 		trace_sched_task_entity_avg(1, task_of(se), &se->avg);
+		trace_sched_load_avg_task(task_of(se), &se->avg);
+	}
 
 	if (on_rq_task) {
 		runnable_delta = prev_load - se_load(se);
@@ -5743,6 +5745,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 	unsigned long new_util;
 	int i;
 	bool is_tiny = false;
+	int nrg_diff = 0;
 
 	sd = rcu_dereference(per_cpu(sd_ea, task_cpu(p)));
 
@@ -5822,13 +5825,21 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		};
 
 		/* Not enough spare capacity on previous cpu */
-		if (cpu_overutilized(task_cpu(p)))
+		if (cpu_overutilized(task_cpu(p))) {
+			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
+					(int)task_util(p), nrg_diff, true, is_tiny);
 			return target_cpu;
+		}
 
-		if (energy_diff(&eenv) >= 0)
+		nrg_diff = energy_diff(&eenv);
+		if (nrg_diff >= 0) {
+			trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu,
+					(int)task_util(p), nrg_diff, false, is_tiny);
 			return task_cpu(p);
+		}
 	}
 
+	trace_energy_aware_wake_cpu(p, task_cpu(p), target_cpu, (int)task_util(p), nrg_diff, false, is_tiny);
 	return target_cpu;
 }
 
@@ -5923,12 +5934,13 @@ CONSIDER_EAS:
 				int idle_cpu;
 
 				idle_cpu = find_best_idle_cpu(p, prev_cpu);
-				if (idle_cpu < nr_cpu_ids)
+				if (idle_cpu < nr_cpu_ids) {
 					new_cpu = idle_cpu;
-				else
+					policy |= LB_IDLEST;
+				} else {
 					new_cpu = select_max_spare_capacity_cpu(p, prev_cpu);
-
-				policy |= LB_SPARE;
+					policy |= LB_SPARE;
+				}
 			} else {
 				new_cpu = select_idle_sibling(p, new_cpu);
 			}

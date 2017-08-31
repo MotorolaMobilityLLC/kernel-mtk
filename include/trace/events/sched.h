@@ -916,6 +916,44 @@ TRACE_EVENT(sched_select_task_rq,
 );
 #endif
 
+TRACE_EVENT(energy_aware_wake_cpu,
+
+		TP_PROTO(struct task_struct *tsk, int prev_cpu, int target_cpu, int tsk_util,
+			int nrg_diff, bool overutil, bool is_tiny),
+
+		TP_ARGS(tsk, prev_cpu, target_cpu, tsk_util, nrg_diff, overutil, is_tiny),
+
+		TP_STRUCT__entry(
+			__field(pid_t, pid)
+			__field(int, prev_cpu)
+			__field(int, target_cpu)
+			__field(int, task_util)
+			__field(int, nrg_diff)
+			__field(bool, overutil)
+			__field(bool, is_tiny)
+			),
+
+		TP_fast_assign(
+			__entry->pid              = tsk->pid;
+			__entry->prev_cpu         = prev_cpu;
+			__entry->target_cpu       = target_cpu;
+			__entry->task_util        = tsk_util;
+			__entry->nrg_diff         = nrg_diff;
+			__entry->overutil         = overutil;
+			__entry->is_tiny          = is_tiny;
+			),
+
+		TP_printk("pid=%4d prev=%d target=%d nrg_diff=%d tsk_util=%d over=%d tiny=%d",
+			__entry->pid,
+			__entry->prev_cpu,
+			__entry->target_cpu,
+			__entry->nrg_diff,
+			__entry->task_util,
+			__entry->overutil,
+			__entry->is_tiny
+			)
+);
+
 TRACE_EVENT(sched_heavy_task,
 		TP_PROTO(const char *s),
 		TP_ARGS(s),
