@@ -96,6 +96,10 @@
 
 #include "platform/mtk_platform_common.h"
 
+/* MTK GPU DVFS */
+#include <mali_kbase_pm_internal.h>
+#include <ged_dvfs.h>
+
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
 #define MMU_IRQ_TAG	1
@@ -111,7 +115,36 @@ static int kbase_dev_nr;
 static DEFINE_MUTEX(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
 
+/* MTK GPU DVFS */
+static struct kbase_device *gpsMaliData;
+
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"
+
+/* MTK GPU DVFS */
+struct kbase_device *MaliGetMaliData(void)
+{
+	return gpsMaliData;
+}
+
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int *pbCommited)
+{
+	int ret;
+#ifdef MTK_MT6797_DEBUG
+	if (ui32NewFreqID > 6)
+		ui32NewFreqID = 6
+#endif
+	ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
+
+	if (pbCommited) {
+		if (ret == 0) {
+			*pbCommited = true;
+		} else {
+			*pbCommited = false;
+		}
+	}
+
+}
+
 static inline void __compile_time_asserts(void)
 {
 	CSTD_COMPILE_TIME_ASSERT(sizeof(KERNEL_SIDE_DDK_VERSION_STRING) <= KBASE_GET_VERSION_BUFFER_SIZE);
@@ -3936,6 +3969,10 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_job_fault;
 
+#ifdef CONFIG_PROC_FS
+	proc_mali_register();
+#endif /* CONFIG_PROC_FS */
+
 	err = kbase_device_debugfs_init(kbdev);
 	if (err) {
 		dev_err(kbdev->dev, "DebugFS initialization failed");
@@ -3988,6 +4025,12 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		dev_warn(kbdev->dev, "Bus log client registration failed\n");
 		err = 0;
 	}
+#endif
+
+	gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+	ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
 #endif
 
 	dev_info(kbdev->dev,

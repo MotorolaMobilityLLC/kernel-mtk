@@ -29,6 +29,8 @@
 #include "mali_kbase_pm_ca.h"
 #include "mali_kbase_pm_policy.h"
 
+#include <ged_dvfs.h>
+
 
 /**
  * kbase_pm_dev_idle - The GPU is idle.
@@ -546,5 +548,17 @@ void kbase_pm_cache_snoop_enable(struct kbase_device *kbdev);
  * This function should be called before L2 power off.
  */
 void kbase_pm_cache_snoop_disable(struct kbase_device *kbdev);
+
+struct kbase_device *MaliGetMaliData(void);
+
+void MTKCalGpuUtilization(unsigned int *pui32Loading, unsigned int *pui32Block, unsigned int *pui32Idle);
+
+extern u32 kbasep_get_gl_utilization(void);
+extern u32 kbasep_get_cl_js0_utilization(void);
+extern u32 kbasep_get_cl_js1_utilization(void);
+extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int *pui32Loading,
+						unsigned int *pui32Block, unsigned int *pui32Idle);
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID,
+						GED_DVFS_COMMIT_TYPE eCommitType, int *pbCommited);
 
 #endif /* _KBASE_BACKEND_PM_INTERNAL_H_ */
