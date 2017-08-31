@@ -295,6 +295,9 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_EXT_REQ_CON:0x%x\n", __raw_readl(MTK_WDT_EXT_REQ_CON));
 	pr_alert("MTK_WDT_DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DEBUG_2_REG));
 	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_alert("MTK_WDT_LATCH2_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL2));
+	pr_alert("MTK_WDT_RESET_PROTECT:0x%x\n", __raw_readl(MTK_WDT_RESET_PROTECT));
+	pr_alert("MTK_WDT_DRAMC_CTL2:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL2));
 	pr_alert("****************dump wdt reg end*************\n");
 
 }
@@ -432,23 +435,11 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 		if (set_value == 0)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MD_RST;
 		break;
-	case MTK_WDT_SWSYS_RST_MD_LITE_RST:
-		if (set_value == 1)
-			wdt_sys_val |= MTK_WDT_SWSYS_RST_MD_LITE_RST;
-		if (set_value == 0)
-			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MD_LITE_RST;
-		break;
 	case MTK_WDT_SWSYS_RST_MFG_RST: /* MFG reset */
 		if (set_value == 1)
 			wdt_sys_val |= MTK_WDT_SWSYS_RST_MFG_RST;
 		if (set_value == 0)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_MFG_RST;
-		break;
-	case MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST: /* hotplug reset */
-		if (set_value == 1)
-			wdt_sys_val |= MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST;
-		if (set_value == 0)
-			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST;
 		break;
 	case MTK_WDT_SWSYS_RST_C2K_SW_RST: /* c2k reset */
 		if (set_value == 1)
@@ -461,12 +452,6 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 			wdt_sys_val |= MTK_WDT_SWSYS_RST_C2K_RST;
 		if (set_value == 0)
 			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_C2K_RST;
-		break;
-	case MTK_WDT_SWSYS_RST_CONMCU_RST:
-		if (set_value == 1)
-			wdt_sys_val |= MTK_WDT_SWSYS_RST_CONMCU_RST;
-		if (set_value == 0)
-			wdt_sys_val &= ~MTK_WDT_SWSYS_RST_CONMCU_RST;
 		break;
 	}
 	mt_reg_sync_writel(wdt_sys_val, MTK_WDT_SWSYSRST);
@@ -521,15 +506,13 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 		if (en == WD_REQ_DIS)
 			tmp &= ~(MTK_WDT_REQ_MODE_EINT);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_SYSRST) {
-		/*
-		 *if (WD_REQ_EN == en) {
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN1, MTK_WDT_SYSDBG_DEG_EN1_KEY);
-		 *	DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN2, MTK_WDT_SYSDBG_DEG_EN2_KEY);
-		 *	tmp |= (MTK_WDT_REQ_MODE_SYSRST);
-		 *}
-		 *if (WD_REQ_DIS == en)
-		 *	tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
-		 */
+		if (en == WD_REQ_EN) {
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN1_KEY, MTK_WDT_SYSDBG_DEG_EN1);
+			mt_reg_sync_writel(MTK_WDT_SYSDBG_DEG_EN2_KEY, MTK_WDT_SYSDBG_DEG_EN2);
+			tmp |= (MTK_WDT_REQ_MODE_SYSRST);
+		}
+		if (en == WD_REQ_DIS)
+			tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (en == WD_REQ_EN)
 			tmp |= (MTK_WDT_REQ_MODE_THERMAL);
@@ -632,23 +615,24 @@ int mtk_wdt_dfd_count_en(int value)
 
 	if (value == 1) {
 		/* enable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp |= (MTK_WDT_DFD_COUNT_EN|MTK_WDT_LATCH_CTL_KEY);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp |= (MTK_WDT_LATCH_CTL2_MCU_DFD_EN_MASK|MTK_WDT_LATCH_CTL2_KEY);
 		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
 	} else if (value == 0) {
 		/* disable dfd count */
-		tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-		tmp &= (~MTK_WDT_DFD_COUNT_EN);
-		tmp |= MTK_WDT_LATCH_CTL_KEY;
-		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+		tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+		tmp &= (~MTK_WDT_LATCH_CTL2_MCU_DFD_EN_MASK);
+		tmp |= MTK_WDT_LATCH_CTL2_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_count_en:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_count_en:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
 
 int mtk_wdt_dfd_thermal1_dis(int value)
 {
+#if 0
 	volatile unsigned int tmp;
 
 	if (value == 1) {
@@ -664,12 +648,13 @@ int mtk_wdt_dfd_thermal1_dis(int value)
 		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
 	}
 	pr_debug("mtk_wdt_dfd_thermal1_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
-
+#endif
 	return 0;
 }
 
 int mtk_wdt_dfd_thermal2_dis(int value)
 {
+#if 0
 	volatile unsigned int tmp;
 
 	if (value == 1) {
@@ -685,7 +670,7 @@ int mtk_wdt_dfd_thermal2_dis(int value)
 		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
 	}
 	pr_debug("mtk_wdt_dfd_thermal2_dis:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
-
+#endif
 	return 0;
 }
 
@@ -693,16 +678,16 @@ int mtk_wdt_dfd_timeout(int value)
 {
 	volatile unsigned int tmp;
 
-	value = value << MTK_WDT_DFD_TIMEOUT_SHIFT;
-	value = value & MTK_WDT_DFD_TIMEOUT_MASK;
+	value = value << MTK_WDT_LATCH_CTL2_MCU_DFD_TIMEOUT_SHIFT;
+	value = value & MTK_WDT_LATCH_CTL2_MCU_DFD_TIMEOUT_MASK;
 
 	/* enable dfd count */
-	tmp = __raw_readl(MTK_WDT_LATCH_CTL);
-	tmp &= (~MTK_WDT_DFD_TIMEOUT_MASK);
-	tmp |= (value|MTK_WDT_LATCH_CTL_KEY);
-	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL);
+	tmp = __raw_readl(MTK_WDT_LATCH_CTL2);
+	tmp &= (~MTK_WDT_LATCH_CTL2_MCU_DFD_TIMEOUT_MASK);
+	tmp |= (value|MTK_WDT_LATCH_CTL2_KEY);
+	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 
-	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL));
+	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL2(0x%x)\n", __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -850,7 +835,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
     #ifdef CONFIG_KICK_SPM_WDT
 	ret = spm_wdt_register_fiq(wdt_fiq);
     #else
-	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq, IRQF_TRIGGER_FALLING, NULL);
+	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq, IRQF_TRIGGER_NONE, NULL);
     #endif		/* CONFIG_KICK_SPM_WDT */
 #endif
 

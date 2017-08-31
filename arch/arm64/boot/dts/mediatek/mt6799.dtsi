@@ -464,7 +464,7 @@
 	};
 
 	toprgu@10211000 {
-		compatible = "mediatek,toprgu";
+		compatible = "mediatek,mt6799-toprgu";
 		reg = <0 0x10211000 0 0x1000>;
 		interrupts = <GIC_SPI 387 IRQ_TYPE_LEVEL_LOW>;
 	};
