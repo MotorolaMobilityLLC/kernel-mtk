@@ -2026,6 +2026,8 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user, int debug_mode)
 	DISPMSG("[Input data]\n");
 	dump_disp_info(&disp_info_hrt, DISP_DEBUG_LEVEL_INFO);
 #endif
+	hrt_scale = HRT_SCALE_NONE;
+	hrt_path = HRT_PATH_UNKNOWN;
 
 /**
  * 1.Pre-distribution
