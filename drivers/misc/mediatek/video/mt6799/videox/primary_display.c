@@ -1734,6 +1734,8 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 	data_config_dl->p_golden_setting_context->is_dual_pipe = 0;
 
 	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, handle);
+	dpmgr_modify_path_start_new_module(pgc->dpmgr_handle, CMDQ_ENABLE,
+		DDP_SCENARIO_PRIMARY_DISP_LEFT, DDP_SCENARIO_PRIMARY_DISP, handle);
 	/* clear dirty set by this func */
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 

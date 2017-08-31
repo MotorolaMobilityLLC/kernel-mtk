@@ -207,8 +207,19 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq);
 */
 int dpmgr_path_start(disp_path_handle dp_handle, int encmdq);
 
+/* start new module , it will start the new scenario modules those are not on the old scenario.
+ * return 0.
+ * dp_handle: disp path handle.
+ * encmdq: 1 use command queue, 0 not.
+ * old_scenario: old scenario path.
+ * new_scenario: new scenario path.
+ * input_cmdq_handle: GCE handle.
+*/
+int dpmgr_modify_path_start_new_module(disp_path_handle dp_handle, int encmdq,
+	enum DDP_SCENARIO_ENUM old_scenario,  enum DDP_SCENARIO_ENUM new_scenario,
+	struct cmdqRecStruct *input_cmdq_handle);
 
-/* start path , it will stop this path by calling each drviers stop function.
+/* stop path , it will stop this path by calling each drviers stop function.
  * return 0.
  * dp_handle: disp path handle.
  * encmdq: 1 use command queue, 0 not.

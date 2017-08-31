@@ -1165,6 +1165,58 @@ int dpmgr_path_start_by_scenario(disp_path_handle dp_handle, int encmdq, enum DD
 	return 0;
 }
 
+int dpmgr_modify_path_start_new_module(disp_path_handle dp_handle, int encmdq, enum DDP_SCENARIO_ENUM old_scenario,
+			enum DDP_SCENARIO_ENUM new_scenario, struct cmdqRecStruct *input_cmdq_handle)
+{
+	struct ddp_path_handle *handle;
+	struct cmdqRecStruct *cmdqHandle;
+	int *new_modules = ddp_get_scenario_list(new_scenario);
+	int new_module_num = ddp_get_module_num(new_scenario);
+	int i = 0, module_name = 0;
+
+	ASSERT(dp_handle != NULL);
+	handle = (struct ddp_path_handle *)dp_handle;
+	if (input_cmdq_handle)
+		cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
+	else
+		cmdqHandle = input_cmdq_handle;
+
+	for (i = 0; i < new_module_num; i++) {
+		module_name = new_modules[i];
+		if (module_name == DISP_MODULE_DSI0 ||
+		module_name == DISP_MODULE_DSI1 ||
+		module_name == DISP_MODULE_DSIDUAL)
+			continue;
+		if (!ddp_is_module_in_scenario(old_scenario, module_name)) {
+			if (ddp_modules_driver[module_name] != 0)
+				if (ddp_modules_driver[module_name]->start != 0)
+					ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
+		}
+	}
+
+	if (ddp_path_is_dual(new_scenario)) {
+		enum DDP_SCENARIO_ENUM dual_scenario;
+
+		dual_scenario = ddp_get_dual_module(new_scenario);
+		new_modules = ddp_get_scenario_list(dual_scenario);
+		new_module_num = ddp_get_module_num(dual_scenario);
+		for (i = 0; i < new_module_num; i++) {
+			module_name = new_modules[i];
+			if (module_name == DISP_MODULE_DSI0 ||
+				module_name == DISP_MODULE_DSI1 ||
+				module_name == DISP_MODULE_DSIDUAL)
+				continue;
+			if (!ddp_is_module_in_scenario(old_scenario, module_name)) {
+				if (ddp_modules_driver[module_name] != 0)
+					if (ddp_modules_driver[module_name]->start != 0)
+						ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
+			}
+		}
+	}
+
+	return 0;
+}
+
 int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 {
 	int i = 0, k = 0;
