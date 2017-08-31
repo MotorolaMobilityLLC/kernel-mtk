@@ -1,8 +1,15 @@
-/******************************************************************************
-* camera_TSF.c - MT6797 Linux TSF Device Driver * * Copyright 2008-2016 MediaTek
-Co.,Ltd. * * DESCRIPTION: *     This file provid the other drivers TSF relative
-functions *
-******************************************************************************/
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #include <linux/types.h>
 #include <linux/device.h>
