@@ -690,6 +690,39 @@ bool usb_phy_sib_enable_switch_status(void)
 	return ret;
 }
 #endif
+u32 get_ssusb_efuse(void)
+{
+	struct device_node *node = NULL;
+	void __iomem *base;
+	static u32 val;
+	static int first_shot = 1;
+
+	if (!first_shot) {
+		os_printk(K_DEBUG, "[SSUSB_EFUSE], val<%x>\n", val);
+		return val;
+	}
+
+	first_shot = 0;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
+	if (!node) {
+		pr_err("[SSUSB_EFUSE] map node @ mediatek,efusec failed\n");
+		return val;
+	}
+
+	base = of_iomap(node, 0);
+	if (!base) {
+		pr_err("[SSUSB_EFUSE] iomap base failed\n");
+		return val;
+	}
+
+	val = readl(base + 0x19C);
+	pr_warn("[SSUSB_EFUSE] base<%p>, val<%x>\n", base, val);
+
+	iounmap(base);
+
+	return val;
+}
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 int usb2jtag_usb_init(void)
@@ -1179,9 +1212,35 @@ void usb_phy_recover(unsigned int clk_on)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 1);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
 
-#if 1 /* FIXME */
-	/* add EFUSE related sequence here */
-#endif
+	/* EFUSE related sequence */
+	{
+		u32 evalue;
+
+		/* [21:16] (BGR_code) => RG_SSUSB_IEXT_INTR_CTRL[5:0] */
+		evalue = (get_ssusb_efuse() & (0x3f << 16)) >> 16;
+		if (evalue) {
+			os_printk(K_INFO, "apply efuse setting, RG_SSUSB_IEXT_INTR_CTRL=0x%x\n", evalue);
+			U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, 10,
+					(0x3f<<10), evalue);
+		}
+
+		/* [12:8] (RX_50_code) => RG_SSUSB_IEXT_RX_IMPSEL[4:0] */
+		evalue = (get_ssusb_efuse() & (0x1f << 8)) >> 8;
+		if (evalue) {
+			os_printk(K_INFO, "apply efuse setting, rg_ssusb_rx_impsel=0x%x\n", evalue);
+			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL1, RG_SSUSB_RX_IMPSEL_OFST,
+					RG_SSUSB_RX_IMPSEL, evalue);
+		}
+
+		/* [4:0] (TX_50_code) => RG_SSUSB_IEXT_TX_IMPSEL[4:0], don't care : 0-bit */
+		evalue = (get_ssusb_efuse() & (0x1f << 0)) >> 0;
+		if (evalue) {
+			os_printk(K_INFO, "apply efuse setting, rg_ssusb_tx_impsel=0x%x\n", evalue);
+			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL0, RG_SSUSB_TX_IMPSEL_OFST,
+					RG_SSUSB_TX_IMPSEL, evalue);
+
+		}
+	}
 
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_DISCTH_OFST, RG_USB20_DISCTH, 0xF);
 
