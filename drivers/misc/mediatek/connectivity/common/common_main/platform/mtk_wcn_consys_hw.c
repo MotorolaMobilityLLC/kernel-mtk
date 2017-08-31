@@ -178,7 +178,8 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 #endif
 		/* pEmibaseaddr = ioremap_nocache(0x80090400,270*KBYTE); */
 		if (pEmibaseaddr) {
-			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
+			WMT_PLAT_INFO_FUNC("EMI mapping OK virtual(0x%p) physical(0x%llx)\n",
+					pEmibaseaddr, gConEmiPhyBase);
 			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
 			iRet = 0;
 		} else {
