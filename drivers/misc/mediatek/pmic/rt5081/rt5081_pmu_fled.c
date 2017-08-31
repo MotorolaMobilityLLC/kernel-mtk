@@ -17,26 +17,33 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
-#include "../../rt-flashlight/rtfled.h"
+#include "../../flashlight/richtek/rtfled.h"
 
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_fled.h"
 
 #define RT5081_PMU_FLED_DRV_VERSION	"1.0.0_MTK"
 
+static u8 rt5081_fled_inited;
+
 enum {
-	RT5081_FLED_CTRL_LED1,
-	RT5081_FLED_CTRL_LED2,
-	RT5081_FLED_CTRL_BOTH,
+	RT5081_FLED1 = 0,
+	RT5081_FLED2 = 1,
 };
 
 struct rt5081_pmu_fled_data {
 	rt_fled_dev_t base;
 	struct rt5081_pmu_chip *chip;
 	struct device *dev;
+	struct platform_device *rt_flash_dev;
+	int id;
 	unsigned char suspend:1;
-	unsigned char ext_ctrl:1;
 	unsigned char fled_ctrl:2; /* fled1, fled2, both */
+	unsigned char fled_ctrl_reg;
+	unsigned char fled_tor_cur_reg;
+	unsigned char fled_strb_cur_reg;
+	unsigned char fled_strb_to_reg;
+	unsigned char fled_cs_mask;
 };
 
 static irqreturn_t rt5081_pmu_fled_strbpin_irq_handler(int irq, void *data)
@@ -90,11 +97,17 @@ static irqreturn_t rt5081_pmu_fled1_strb_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_fled2_strb_to_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)data;
+
+	dev_info(fi->dev, "%s occurred\n", __func__);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_fled1_strb_to_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)data;
+
+	dev_info(fi->dev, "%s occurred\n", __func__);
 	return IRQ_HANDLED;
 }
 
@@ -148,7 +161,7 @@ static void rt5081_pmu_fled_irq_register(struct platform_device *pdev)
 	}
 }
 
-static inline int rt_parse_dt(struct device *dev,
+static inline int rt5081_fled_parse_dt(struct device *dev,
 				struct rt5081_pmu_fled_data *fi)
 {
 	struct device_node *np = dev->of_node;
@@ -156,64 +169,57 @@ static inline int rt_parse_dt(struct device *dev,
 	u32 val = 0;
 	unsigned char regval;
 
-	ret = of_property_read_u32(np, "rt5081,fled-ctrl-sel", &val);
+	pr_info("%s start\n", __func__);
+	if (!np) {
+		pr_err("%s cannot rt5081 fled dts node\n", __func__);
+		return -ENODEV;
+	}
+
+	ret = of_property_read_u32(np, "fled_enable", &val);
 	if (ret < 0) {
-		pr_err("%s use default RT5081_FLED_CTRL_BOTH\n", __func__);
-		fi->fled_ctrl = RT5081_FLED_CTRL_BOTH;
-	} else
-		fi->fled_ctrl = val;
+		pr_err("%s default enable fled%d\n", __func__, fi->id+1);
+	} else {
+		if (val) {
+			pr_err("%s enable fled%d\n", __func__, fi->id+1);
+			rt5081_pmu_reg_set_bit(fi->chip,
+				RT5081_PMU_REG_FLEDEN, fi->fled_cs_mask);
+		} else {
+			pr_err("%s disable fled%d\n", __func__, fi->id+1);
+			rt5081_pmu_reg_clr_bit(fi->chip,
+				RT5081_PMU_REG_FLEDEN, fi->fled_cs_mask);
+		}
+	}
 
-	fi->fled_ctrl = (fi->fled_ctrl > RT5081_FLED_CTRL_BOTH) ?
-		RT5081_FLED_CTRL_BOTH : fi->fled_ctrl;
-
-	pr_info("RT5081 control Fled (%d)\n", fi->fled_ctrl);
-
-	ret = of_property_read_u32(np, "rt5081,fled-ext_ctrl", &val);
-	if (ret < 0) {
-		pr_err("%s use default i2c control\n", __func__);
-		fi->ext_ctrl = 0;
-	} else
-		fi->ext_ctrl = val ? 1 : 0;
-	pr_info("RT5081 Fled use %s control\n", fi->ext_ctrl ? "gpio" : "i2c");
-
-	ret = of_property_read_u32(np, "rt5081,fled-default-torch-cur", &val);
+	ret = of_property_read_u32(np, "torch_cur", &val);
 	if (ret < 0)
 		pr_err("%s use default torch cur\n", __func__);
 	else {
-		pr_err("%s use torch cur %d\n", __func__, val);
+		pr_info("%s use torch cur %d\n", __func__, val);
 		regval = (val > 400000) ? 30 : (val - 25000)/12500;
 		rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLED1TORCTRL,
-				RT5081_FLED_TORCHCUR_MASK,
-				regval << RT5081_FLED_TORCHCUR_SHIFT);
-		rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLED2TORCTRL,
+				fi->fled_tor_cur_reg,
 				RT5081_FLED_TORCHCUR_MASK,
 				regval << RT5081_FLED_TORCHCUR_SHIFT);
 	}
 
-	ret = of_property_read_u32(np, "rt5091,fled-default-strobe-cur", &val);
+	ret = of_property_read_u32(np, "strobe_cur", &val);
 	if (ret < 0)
 		pr_err("%s use default strobe cur\n", __func__);
 	else {
-		pr_err("%s use strobe cur %d\n", __func__, val);
+		pr_info("%s use strobe cur %d\n", __func__, val);
 		regval = (val > 1500000) ? 112 : (val - 100000)/12500;
 		rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLED1STRBCTRL,
-				RT5081_FLED_STROBECUR_MASK,
-				regval << RT5081_FLED_STROBECUR_SHIFT);
-		rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLED2STRBCTRL2,
+				fi->fled_strb_cur_reg,
 				RT5081_FLED_STROBECUR_MASK,
 				regval << RT5081_FLED_STROBECUR_SHIFT);
 	}
 
-	ret = of_property_read_u32(np,
-		"rt5081,fled-default-strb-timeout", &val);
+	ret = of_property_read_u32(np, "strobe_timeout", &val);
 	if (ret < 0)
 		pr_err("%s use default strobe timeout\n", __func__);
 	else {
-		regval = (val > 2423) ? 74 : (val - 64)/32;
+		pr_info("%s use strobe timeout %d\n", __func__, val);
+		regval = (val > 2432) ? 74 : (val - 64)/32;
 		rt5081_pmu_reg_update_bits(fi->chip,
 				RT5081_PMU_REG_FLEDSTRBCTRL,
 				RT5081_FLED_STROBE_TIMEOUT_MASK,
@@ -222,30 +228,16 @@ static inline int rt_parse_dt(struct device *dev,
 	return 0;
 }
 
-static struct platform_device rt_fled_pdev = {
-	.name = "rt-flash-led",
-	.id = -1,
-};
-
 static struct flashlight_properties rt5081_fled_props = {
 	.type = FLASHLIGHT_TYPE_LED,
 	.torch_brightness = 0,
 	.torch_max_brightness = 31, /* 0000 ~ 1110 */
 	.strobe_brightness = 0,
-	.strobe_max_brightness = 113, /* 0000000 ~ 1110000 */
+	.strobe_max_brightness = 256, /* 0000000 ~ 1110000 */
 	.strobe_delay = 0,
 	.strobe_timeout = 0,
 	.alias_name = "rt5081-fled",
 };
-
-static int rt5081_fled_reset(struct rt5081_pmu_fled_data *info)
-{
-#if 0
-	return rt5081_pmu_reg_update_bits(info->chip, info->,
-			u8 mask, u8 data);
-#endif
-	return 0;
-}
 
 static int rt5081_fled_reg_init(struct rt5081_pmu_fled_data *info)
 {
@@ -258,15 +250,9 @@ static int rt5081_fled_init(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_fled_reset(fi);
-	if (ret < 0) {
-		dev_err(fi->dev, "reset rt5081 fled fail\n");
-		goto err_init;
-	}
 	ret = rt5081_fled_reg_init(fi);
 	if (ret < 0)
 		dev_err(fi->dev, "init rt5081 fled register fail\n");
-err_init:
 	return ret;
 }
 
@@ -290,13 +276,15 @@ static int rt5081_fled_set_mode(struct rt_fled_dev *info,
 					flashlight_mode_t mode)
 {
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
-	unsigned char strobe_mask;
 	int ret = 0;
+
+	if (fi->id == RT5081_FLED2) {
+		pr_err("%s FLED2 not support set mode\n", __func__);
+		return 0;
+	}
 
 	switch (mode) {
 	case FLASHLIGHT_MODE_TORCH:
-		ret = rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_FLEDCS_EN_MASK);
 		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
@@ -304,36 +292,16 @@ static int rt5081_fled_set_mode(struct rt_fled_dev *info,
 		dev_info(fi->dev, "set to torch mode\n");
 		break;
 	case FLASHLIGHT_MODE_FLASH:
-		if (fi->fled_ctrl == RT5081_FLED_CTRL_LED1)
-			strobe_mask = RT5081_FLEDCS1_MASK;
-		else if (fi->fled_ctrl == RT5081_FLED_CTRL_LED2)
-			strobe_mask = RT5081_FLEDCS2_MASK;
-		else
-			strobe_mask = RT5081_FLEDCS1_MASK|RT5081_FLEDCS2_MASK;
-
 		ret = rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
+			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
 		ret |= rt5081_pmu_reg_set_bit(fi->chip,
 			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
-
-		ret |= rt5081_pmu_reg_update_bits(fi->chip,
-			RT5081_PMU_REG_FLEDEN,
-			RT5081_FLEDCS_EN_MASK, strobe_mask);
 
 		dev_info(fi->dev, "set to flash mode\n");
 		break;
 	case FLASHLIGHT_MODE_OFF:
-
 		ret = rt5081_pmu_reg_update_bits(fi->chip,
-				RT5081_PMU_REG_FLEDEN, 0x0f, 0);
-#if 0
-		ret = rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_FLEDCS_EN_MASK);
-		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_TORCH_EN_MASK);
-		ret |= rt5081_pmu_reg_clr_bit(fi->chip,
-			RT5081_PMU_REG_FLEDEN, RT5081_STROBE_EN_MASK);
-#endif
+				RT5081_PMU_REG_FLEDEN, 0x0c, 0);
 		dev_info(fi->dev, "set to off mode\n");
 		break;
 	default:
@@ -347,6 +315,10 @@ static int rt5081_fled_get_mode(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret;
 
+	if (fi->id == RT5081_FLED2) {
+		pr_err("%s FLED2 not support get mode\n", __func__);
+		return 0;
+	}
 
 	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLEDEN);
 	if (ret < 0)
@@ -362,7 +334,7 @@ static int rt5081_fled_get_mode(struct rt_fled_dev *info)
 
 static int rt5081_fled_strobe(struct rt_fled_dev *info)
 {
-	return 0;
+	return rt5081_fled_set_mode(info, FLASHLIGHT_MODE_FLASH);
 }
 
 static int rt5081_fled_torch_current_list(
@@ -399,7 +371,7 @@ static int rt5081_fled_strobe_timeout_list(struct rt_fled_dev *info,
 							int selector)
 {
 	if (selector > 74)
-		return 2432;
+		return -EINVAL;
 	return 64 + selector * 32;
 }
 
@@ -409,10 +381,7 @@ static int rt5081_fled_set_torch_current_sel(struct rt_fled_dev *info,
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret;
 
-	ret = rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLED1TORCTRL,
-			RT5081_FLED_TORCHCUR_MASK,
-			selector << RT5081_FLED_TORCHCUR_SHIFT);
-	ret |= rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLED2TORCTRL,
+	ret = rt5081_pmu_reg_update_bits(fi->chip, fi->fled_tor_cur_reg,
 			RT5081_FLED_TORCHCUR_MASK,
 			selector << RT5081_FLED_TORCHCUR_SHIFT);
 
@@ -425,14 +394,18 @@ static int rt5081_fled_set_strobe_current_sel(struct rt_fled_dev *info,
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret;
 
-	ret = rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLED1STRBCTRL,
-			RT5081_FLED_STROBECUR_MASK,
-			selector << RT5081_FLED_STROBECUR_SHIFT);
-	ret |= rt5081_pmu_reg_update_bits(fi->chip,
-			RT5081_PMU_REG_FLED2STRBCTRL2,
-			RT5081_FLED_STROBECUR_MASK,
-			selector << RT5081_FLED_STROBECUR_SHIFT);
+	if (selector >= 256)
+		return -EINVAL;
+	if (selector >= 128)
+		rt5081_pmu_reg_set_bit(fi->chip, fi->fled_strb_cur_reg, 0x80);
+	else
+		rt5081_pmu_reg_clr_bit(fi->chip, fi->fled_strb_cur_reg, 0x80);
 
+	if (selector >= 128)
+		selector -= 128;
+	ret = rt5081_pmu_reg_update_bits(fi->chip, fi->fled_strb_cur_reg,
+		RT5081_FLED_STROBECUR_MASK,
+		selector << RT5081_FLED_STROBECUR_SHIFT);
 	return ret;
 }
 
@@ -442,13 +415,17 @@ static int rt5081_fled_set_timeout_level_sel(struct rt_fled_dev *info,
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret;
 
-	ret = rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLED1CTRL,
-		RT5081_FLED_TIMEOUT_LEVEL_MASK,
-		selector << RT5081_TIMEOUT_LEVEL_SHIFT);
-
-	ret |= rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLED2CTRL,
-		RT5081_FLED_TIMEOUT_LEVEL_MASK,
-		selector << RT5081_TIMEOUT_LEVEL_SHIFT);
+	if (fi->id == RT5081_FLED1) {
+		ret = rt5081_pmu_reg_update_bits(fi->chip,
+			RT5081_PMU_REG_FLED1CTRL,
+			RT5081_FLED_TIMEOUT_LEVEL_MASK,
+			selector << RT5081_TIMEOUT_LEVEL_SHIFT);
+	} else {
+		ret = rt5081_pmu_reg_update_bits(fi->chip,
+			RT5081_PMU_REG_FLED2CTRL,
+			RT5081_FLED_TIMEOUT_LEVEL_MASK,
+			selector << RT5081_TIMEOUT_LEVEL_SHIFT);
+	}
 
 	return ret;
 }
@@ -459,7 +436,11 @@ static int rt5081_fled_set_strobe_timeout_sel(struct rt_fled_dev *info,
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_pmu_reg_update_bits(fi->chip, RT5081_PMU_REG_FLEDSTRBCTRL,
+	if (fi->id == RT5081_FLED2) {
+		pr_err("%s not support set strobe timeout\n", __func__);
+		return -EINVAL;
+	}
+	ret = rt5081_pmu_reg_update_bits(fi->chip, fi->fled_strb_to_reg,
 			RT5081_FLED_STROBE_TIMEOUT_MASK,
 			selector << RT5081_FLED_STROBE_TIMEOUT_SHIFT);
 	return ret;
@@ -470,7 +451,7 @@ static int rt5081_fled_get_torch_current_sel(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLED1TORCTRL);
+	ret = rt5081_pmu_reg_read(fi->chip, fi->fled_tor_cur_reg);
 	if (ret < 0) {
 		pr_err("%s get fled tor current sel fail\n", __func__);
 		return ret;
@@ -486,7 +467,7 @@ static int rt5081_fled_get_strobe_current_sel(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLED1STRBCTRL);
+	ret = rt5081_pmu_reg_read(fi->chip, fi->fled_strb_cur_reg);
 	if (ret < 0) {
 		pr_err("%s get fled strobe curr sel fail\n", __func__);
 		return ret;
@@ -502,7 +483,10 @@ static int rt5081_fled_get_timeout_level_sel(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLED1CTRL);
+	if (fi->id == RT5081_FLED1)
+		ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLED1CTRL);
+	else
+		ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLED2CTRL);
 	if (ret < 0) {
 		pr_err("%s get fled timeout level fail\n", __func__);
 		return ret;
@@ -518,7 +502,7 @@ static int rt5081_fled_get_strobe_timeout_sel(struct rt_fled_dev *info)
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
 
-	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_FLEDSTRBCTRL);
+	ret = rt5081_pmu_reg_read(fi->chip, fi->fled_strb_to_reg);
 	if (ret < 0) {
 		pr_err("%s get fled timeout level fail\n", __func__);
 		return ret;
@@ -534,6 +518,23 @@ static void rt5081_fled_shutdown(struct rt_fled_dev *info)
 	rt5081_fled_set_mode(info, FLASHLIGHT_MODE_OFF);
 }
 
+static int rt5081_fled_is_ready(struct rt_fled_dev *info)
+{
+	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
+	int ret;
+
+	ret = rt5081_pmu_reg_read(fi->chip, RT5081_PMU_REG_CHGSTAT2);
+	if (ret < 0) {
+		pr_err("%s read flash ready bit fail\n", __func__);
+		return 0;
+	}
+
+	/* CHG_STAT2 bit[3] CHG_VINOVP,
+	 * if OVP = 0 --> V < 5.3, if OVP = 1, V > 5.6
+	 */
+	return  ret & 0x08 ? 0 : 1;
+}
+
 static struct rt_fled_hal rt5081_fled_hal = {
 	.fled_init = rt5081_fled_init,
 	.fled_suspend = rt5081_fled_suspend,
@@ -541,6 +542,7 @@ static struct rt_fled_hal rt5081_fled_hal = {
 	.fled_set_mode = rt5081_fled_set_mode,
 	.fled_get_mode = rt5081_fled_get_mode,
 	.fled_strobe = rt5081_fled_strobe,
+	.fled_get_is_ready = rt5081_fled_is_ready,
 	.fled_troch_current_list = rt5081_fled_torch_current_list,
 	.fled_strobe_current_list = rt5081_fled_strobe_current_list,
 	.fled_timeout_level_list = rt5081_fled_timeout_level_list,
@@ -562,56 +564,115 @@ static struct rt_fled_hal rt5081_fled_hal = {
 	.fled_shutdown = rt5081_fled_shutdown,
 };
 
+#define RT5081_FLED_TOR_CUR0	RT5081_PMU_REG_FLED1TORCTRL
+#define RT5081_FLED_TOR_CUR1	RT5081_PMU_REG_FLED2TORCTRL
+#define RT5081_FLED_STRB_CUR0	RT5081_PMU_REG_FLED1STRBCTRL
+#define RT5081_FLED_STRB_CUR1	RT5081_PMU_REG_FLED2STRBCTRL2
+#define RT5081_FLED_CS_MASK0	0x02
+#define RT5081_FLED_CS_MASK1	0x01
+
+
+#define RT5081_FLED_DEVICE(_id)			\
+{						\
+	.id = _id,				\
+	.fled_ctrl_reg = RT5081_PMU_REG_FLEDEN,	\
+	.fled_tor_cur_reg = RT5081_FLED_TOR_CUR##_id,	\
+	.fled_strb_cur_reg = RT5081_FLED_STRB_CUR##_id,	\
+	.fled_strb_to_reg = RT5081_PMU_REG_FLEDSTRBCTRL,	\
+	.fled_cs_mask = RT5081_FLED_CS_MASK##_id,		\
+}
+
+static struct rt5081_pmu_fled_data rt5081_pmu_fleds[] = {
+	RT5081_FLED_DEVICE(0),
+	RT5081_FLED_DEVICE(1),
+};
+
+static struct rt5081_pmu_fled_data *rt5081_find_info(int id)
+{
+	struct rt5081_pmu_fled_data *fi;
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(rt5081_pmu_fleds); i++) {
+		fi = &rt5081_pmu_fleds[i];
+		if (fi->id == id)
+			return fi;
+	}
+	return NULL;
+}
+
 static int rt5081_pmu_fled_probe(struct platform_device *pdev)
 {
 	struct rt5081_pmu_fled_data *fled_data;
 	bool use_dt = pdev->dev.of_node;
 	int ret;
 
-	pr_info("%s (%s)\n", __func__, RT5081_PMU_FLED_DRV_VERSION);
-	fled_data = devm_kzalloc(&pdev->dev, sizeof(*fled_data), GFP_KERNEL);
-	if (!fled_data)
-		return -ENOMEM;
-	if (use_dt)
-		rt_parse_dt(&pdev->dev, fled_data);
+	pr_info("%s (%s) id = %d\n", __func__, RT5081_PMU_FLED_DRV_VERSION, pdev->id);
+	fled_data = rt5081_find_info(pdev->id);
+	if (fled_data == NULL) {
+		dev_err(&pdev->dev, "invalid fled ID Specified\n");
+		return -EINVAL;
+	}
+
 	fled_data->chip = dev_get_drvdata(pdev->dev.parent);
 	fled_data->dev = &pdev->dev;
+
+	if (use_dt)
+		rt5081_fled_parse_dt(&pdev->dev, fled_data);
 	platform_set_drvdata(pdev, fled_data);
-	rt_fled_pdev.dev.parent = &(pdev->dev);
 
 	fled_data->base.init_props = &rt5081_fled_props;
 	fled_data->base.hal = &rt5081_fled_hal;
+	if (pdev->id == 0)
+		fled_data->base.name = "rt-flash-led1";
+	else
+		fled_data->base.name = "rt-flash-led2";
+	fled_data->base.chip_name = "rt5081_pmu_fled";
+	pr_info("%s flash name = %s\n", __func__, fled_data->base.name);
+	fled_data->rt_flash_dev = platform_device_register_resndata(
+			fled_data->dev, "rt-flash-led",
+			fled_data->id, NULL, 0, NULL, 0);
 
-	ret = platform_device_register(&rt_fled_pdev);
-	if (ret < 0)
-		goto err_register_pdev;
+	if (!rt5081_fled_inited) {
+		ret = rt5081_pmu_reg_clr_bit(fled_data->chip,
+			RT5081_PMU_REG_FLEDVMIDTRKCTRL1,
+			RT5081_FLED_FIXED_MODE_MASK);
+		if (ret < 0) {
+			pr_err("%s set fled fixed mode fail\n", __func__);
+			return -EINVAL;
+		}
 
-	rt5081_pmu_fled_irq_register(pdev);
+		rt5081_pmu_fled_irq_register(pdev);
+		rt5081_fled_inited = 1;
+		dev_info(&pdev->dev, "rt5081 fled inited\n");
+	}
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 	return 0;
-err_register_pdev:
-	return ret;
 }
 
 static int rt5081_pmu_fled_remove(struct platform_device *pdev)
 {
 	struct rt5081_pmu_fled_data *fled_data = platform_get_drvdata(pdev);
 
+	platform_device_unregister(fled_data->rt_flash_dev);
 	dev_info(fled_data->dev, "%s successfully\n", __func__);
 	return 0;
 }
 
 static const struct of_device_id rt_ofid_table[] = {
-	{ .compatible = "richtek,rt5081_pmu_fled", },
+	{ .compatible = "richtek,rt5081_pmu_fled1", },
+	{ .compatible = "richtek,rt5081_pmu_fled2", },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, rt_ofid_table);
 
+#if 0
 static const struct platform_device_id rt_id_table[] = {
-	{ "rt5081_pmu_fled", 0},
+	{ "rt5081_pmu_fled1", 0},
+	{ "rt5081_pmu_fled2", 0},
 	{ },
 };
 MODULE_DEVICE_TABLE(platform, rt_id_table);
+#endif
 
 static struct platform_driver rt5081_pmu_fled = {
 	.driver = {
@@ -621,7 +682,7 @@ static struct platform_driver rt5081_pmu_fled = {
 	},
 	.probe = rt5081_pmu_fled_probe,
 	.remove = rt5081_pmu_fled_remove,
-	.id_table = rt_id_table,
+	/*.id_table = rt_id_table, */
 };
 module_platform_driver(rt5081_pmu_fled);
 

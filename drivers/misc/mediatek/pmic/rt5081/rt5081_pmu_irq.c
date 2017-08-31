@@ -27,26 +27,9 @@
 
 #define RT5081_PMU_IRQ_EVT_MAX (128)
 
-struct irq_indicator_bit {
-	uint8_t start;
-	uint8_t size;
-};
-
 struct irq_mapping_tbl {
 	const char *name;
 	const int id;
-};
-
-/* indicator 8 bits */
-static const struct irq_indicator_bit irq_ind_bits[8] = {
-	{ 0, 0},
-	{ 15, 1},
-	{ 14, 1},
-	{ 13, 1},
-	{ 12, 1},
-	{ 11, 1},
-	{ 9, 2},
-	{ 0, 9},
 };
 
 #define RT5081_PMU_IRQ_MAPPING(_name, _id) { .name = #_name, .id = _id}
@@ -226,6 +209,11 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 
 	dev_dbg(chip->dev, "%s\n", __func__);
 	pm_runtime_get_sync(chip->dev);
+	ret = rt5081_pmu_reg_write(chip, RT5081_PMU_REG_IRQMASK, 0xfe);
+	if (ret < 0) {
+		dev_err(chip->dev, "mask irq indicators fail\n");
+		goto out_irq_handler;
+	}
 	ret = rt5081_pmu_reg_read(chip, RT5081_PMU_REG_IRQIND);
 	if (ret < 0) {
 		dev_err(chip->dev, "read irq indicator fail\n");
@@ -244,12 +232,10 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 		dev_err(chip->dev, "read irq mask fail\n");
 		goto out_irq_handler;
 	}
-	for (i = 0; i < 8; i++) {
-		if (irq_ind_bits[i].size <= 0)
-			continue;
-		if (!(irq_ind & (1 << i)))
-			memset(data + irq_ind_bits[i].start,
-			       0, irq_ind_bits[i].size);
+	ret = rt5081_pmu_reg_write(chip, RT5081_PMU_REG_IRQMASK, 0x00);
+	if (ret < 0) {
+		dev_err(chip->dev, "unmask irq indicators fail\n");
+		goto out_irq_handler;
 	}
 	for (i = 0; i < 16; i++) {
 		data[i] &= ~mask[i];
@@ -258,7 +244,7 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 		for (j = 0; j < 8; j++) {
 			if (!(data[i] & (1 << j)))
 				continue;
-			ret = irq_find_mapping(chip->irq_domain, j);
+			ret = irq_find_mapping(chip->irq_domain, i * 8 + j);
 			if (ret)
 				handle_nested_irq(ret);
 			else
@@ -361,6 +347,7 @@ int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip)
 	if (ret < 0)
 		goto out_pmu_irq;
 	device_init_wakeup(chip->dev, true);
+	pr_info("%s successfully\n", __func__);
 	return 0;
 out_pmu_irq:
 	gpio_free(pdata->intr_gpio);
@@ -374,7 +361,7 @@ void rt5081_pmu_irq_unregister(struct rt5081_pmu_chip *chip)
 
 	device_init_wakeup(chip->dev, false);
 	devm_free_irq(chip->dev, chip->irq, chip);
-#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)) */
+#if 1 /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)) */
 	irq_domain_remove(chip->irq_domain);
 #endif
 	gpio_free(pdata->intr_gpio);

@@ -33,8 +33,15 @@ static struct mfd_cell rt5081_pmu_subdev_cells[RT5081_PMU_DEV_MAX] = {
 	},
 	{
 		.name = "rt5081_pmu_fled",
-		.of_compatible = "richtek,rt5081_pmu_fled",
+		.of_compatible = "richtek,rt5081_pmu_fled1",
 		.pm_runtime_no_callbacks = true,
+		.id = 1,
+	},
+	{
+		.name = "rt5081_pmu_fled",
+		.of_compatible = "richtek,rt5081_pmu_fled2",
+		.pm_runtime_no_callbacks = true,
+		.id = 2,
 	},
 	{
 		.name = "rt5081_pmu_ldo",

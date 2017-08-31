@@ -150,10 +150,16 @@ static int rt_parse_dt(struct device *dev,
 	struct device_node *np = dev->of_node;
 	int ret = 0;
 
+#if (!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND))
 	ret = of_get_named_gpio(np, "rt,intr_gpio", 0);
 	if (ret < 0)
 		goto out_parse_dt;
 	pdata->intr_gpio = ret;
+#else
+	ret =  of_property_read_u32(np, "rt,intr_gpio_num", &pdata->intr_gpio);
+	if (ret < 0)
+		goto out_parse_dt;
+#endif
 	return 0;
 out_parse_dt:
 	return ret;
@@ -310,4 +316,4 @@ module_i2c_driver(rt5081_pmu);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("cy_huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION("1.0.1_G");
