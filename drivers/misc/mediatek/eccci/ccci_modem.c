@@ -832,10 +832,10 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				c2k_flags |= (1 << 0);
 #endif
 
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_SUPPORT */
 					c2k_flags |= (1 << 1);
 
-				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* CONFIG_MTK_SRLTE_SUPPORT */
+				if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_SUPPORT */
 					c2k_flags |= (1 << 2);
 
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
