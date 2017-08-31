@@ -137,7 +137,7 @@ struct DumpFirstErrorStruct {
 #define CMDQ_LOG(string, args...) \
 {			\
 if (1) {	\
-	pr_warn("[CMDQ]"string, ##args); \
+	pr_notice("[CMDQ]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ]"string, ##args); \
 }			\
 }
@@ -145,7 +145,7 @@ if (1) {	\
 #define CMDQ_MSG(string, args...) \
 {			\
 if (cmdq_core_should_print_msg()) { \
-	pr_warn("[CMDQ]"string, ##args); \
+	pr_notice("[CMDQ]"string, ##args); \
 }			\
 }
 
