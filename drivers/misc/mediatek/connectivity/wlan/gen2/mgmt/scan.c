@@ -523,8 +523,10 @@ VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 			u4RemoveTime = u4RemoveTime / 2;
 		} while (u4RemoveTime > 0);
 
-		COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
+		if (prRoamBssDesc != NULL) {
+			COPY_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
 				prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+		}
 	}
 
 	GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);
@@ -591,26 +593,24 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 
-	switch (eBSSType) {
-	case BSS_TYPE_P2P_DEVICE:
-		fgCheckSsid = FALSE;
-	case BSS_TYPE_INFRASTRUCTURE:
-		scanSearchBssDescOfRoamSsid(prAdapter);
-	case BSS_TYPE_BOW_DEVICE:
-		{
-			prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
+	if ((eBSSType == BSS_TYPE_P2P_DEVICE) || (eBSSType == BSS_TYPE_INFRASTRUCTURE) ||
+			(eBSSType == BSS_TYPE_BOW_DEVICE)) {
 
-			/* if (eBSSType == prBssDesc->eBSSType) */
+		if (eBSSType == BSS_TYPE_P2P_DEVICE)
+			fgCheckSsid = FALSE;
 
-			return prBssDesc;
-		}
+		if (eBSSType != BSS_TYPE_BOW_DEVICE)
+			scanSearchBssDescOfRoamSsid(prAdapter);
 
-	case BSS_TYPE_IBSS:
-		{
-			prIBSSBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
-			prBssDesc = scanSearchBssDescByTAAndSsid(prAdapter, aucSrcAddr, fgCheckSsid, prSsid);
+		prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
 
-			/* NOTE(Kevin):
+		return prBssDesc;
+
+	} else if (eBSSType == BSS_TYPE_IBSS) {
+		prIBSSBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, aucBSSID, fgCheckSsid, prSsid);
+		prBssDesc = scanSearchBssDescByTAAndSsid(prAdapter, aucSrcAddr, fgCheckSsid, prSsid);
+
+		/* NOTE(Kevin):
 			 * Rules to maintain the SCAN Result:
 			 * For AdHoc -
 			 *    CASE I    We have TA1(BSSID1), but it change its BSSID to BSSID2
@@ -626,39 +626,32 @@ scanSearchExistingBssDescWithSsid(IN P_ADAPTER_T prAdapter,
 			 *    CASE V    New IBSS
 			 *              -> Add this one to SCAN result.
 			 */
-			if (prBssDesc) {
-				if ((!prIBSSBssDesc) ||	/* CASE I */
-				    (prBssDesc == prIBSSBssDesc)) {	/* CASE II */
+		if (prBssDesc) {
+			if ((!prIBSSBssDesc) ||	/* CASE I */
+				(prBssDesc == prIBSSBssDesc)) {	/* CASE II */
 
-					return prBssDesc;
-				}	/* CASE III */
+				return prBssDesc;
+			}	/* CASE III */
 
-				prBSSDescList = &prScanInfo->rBSSDescList;
-				prFreeBSSDescList = &prScanInfo->rFreeBSSDescList;
+			prBSSDescList = &prScanInfo->rBSSDescList;
+			prFreeBSSDescList = &prScanInfo->rFreeBSSDescList;
 
-				/* Remove this BSS Desc from the BSS Desc list */
-				LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
+			/* Remove this BSS Desc from the BSS Desc list */
+			LINK_REMOVE_KNOWN_ENTRY(prBSSDescList, prBssDesc);
 
-				/* Return this BSS Desc to the free BSS Desc list. */
-				LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
+			/* Return this BSS Desc to the free BSS Desc list. */
+			LINK_INSERT_TAIL(prFreeBSSDescList, &prBssDesc->rLinkEntry);
 
-				return prIBSSBssDesc;
-			}
-
-			if (prIBSSBssDesc) {	/* CASE IV */
-
-				return prIBSSBssDesc;
-			}
-			/* CASE V */
-			break;	/* Return NULL; */
+			return prIBSSBssDesc;
 		}
 
-	default:
-		break;
+		if (prIBSSBssDesc) {	/* CASE IV */
+			return prIBSSBssDesc;
+		}
+			/* reture NULL CASE V */
 	}
 
 	return (P_BSS_DESC_T) NULL;
-
 }				/* end of scanSearchExistingBssDesc() */
 
 /*----------------------------------------------------------------------------*/
@@ -2843,7 +2836,7 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 		LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
 	}
 	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-		if (prBssDesc->ucChannelNum > 215)
+		if (prBssDesc->ucChannelNum > 214)
 			continue;
 		/* Statistic AP num for each channel */
 		if (aucChnlApNum[prBssDesc->ucChannelNum] < 255)

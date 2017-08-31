@@ -24,6 +24,12 @@ static char *strtok_r(char *s, const char *delim, char **last);
 ********************************************************************************
 */
 struct _FW_CFG __weak fwCfgArray[] = {
+	{(PUINT8)"DropPacketsIPV4Low", (PUINT8)"0" },
+	{(PUINT8)"DropPacketsIPV4High", (PUINT8)"0" },
+	{(PUINT8)"DropPacketsIPV6Low", (PUINT8)"0" },
+	{(PUINT8)"DropPacketsIPV6High", (PUINT8)"0" },
+	{(PUINT8)"DropPacketsSNAPLow", (PUINT8)"0" },
+	{(PUINT8)"DropPacketsSNAPHigh", (PUINT8)"0" }
 };
 /* ******************************************************************************
 *                              F U N C T I O N S

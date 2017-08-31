@@ -732,7 +732,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, INFO, "mtk_cfg80211_scan\n");
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan(),n_ssids=%d\n"
+		, request->n_ssids);
 	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_EXT_T));
 
 	/* check if there is any pending scan not yet finished */
@@ -744,10 +745,22 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	if (request->n_ssids == 0) {
 		rScanRequest.rSsid.u4SsidLen = 0;
 	} else if (request->n_ssids == 1) {
+		/*wildcard ssid*/
+		COPY_SSID(rScanRequest.rSsid.aucSsid, rScanRequest.rSsid.u4SsidLen, request->ssids[0].ssid,
+			  request->ssids[0].ssid_len);
+	} else if (request->n_ssids == 2) {
+
+		DBGLOG(REQ, INFO, "mtk_cfg80211_scan,[0]ssid:%s, [0]ssid_len:%d [1]ssid:%s, [1]ssid_len:%d"
+		, request->ssids[0].ssid, request->ssids[0].ssid_len
+		, request->ssids[1].ssid, request->ssids[1].ssid_len);
+		/*ssids[0]: specific ssid*/
+		/*ssids[1]: wildcard ssid*/
+
 		COPY_SSID(rScanRequest.rSsid.aucSsid, rScanRequest.rSsid.u4SsidLen, request->ssids[0].ssid,
 			  request->ssids[0].ssid_len);
 	} else {
-		DBGLOG(REQ, ERROR, "request->n_ssids:%d\n", request->n_ssids);
+		DBGLOG(REQ, ERROR, "request to find %d SSIDs, but only support %d\n"
+			, request->n_ssids, GL_CFG80211_SCAN_SSID_MAX_NUM);
 		return -EINVAL;
 	}
 
@@ -2429,6 +2442,104 @@ nla_put_failure:
 }
 
 int
+mtk_cfg80211_testmode_set_packet_filter(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	INT_32 i4Status = rStatus;
+	UINT_32 u4BufLen = 0;
+	P_NL80211_DRIVER_RXFILTER_PARAMS prParams = NULL;
+
+	PACKET_DROP_T cmdBuf;
+	P_PACKET_DROP_T pCmdHeader = NULL;
+	P_PACKET_DROP_SETTING_V1_T pCmdData = NULL;
+	UINT_64 u64Filter = 0;
+
+	ASSERT(wiphy);
+	ASSERT(prGlueInfo);
+
+	if (data && len)
+		prParams = (P_NL80211_DRIVER_RXFILTER_PARAMS)data;
+
+	kalMemZero(&cmdBuf, sizeof(cmdBuf));
+
+	pCmdHeader = &cmdBuf;
+	pCmdHeader->cmdVersion = 0;
+	pCmdHeader->cmdType = 0;
+	pCmdHeader->magicCode = 0x72;
+	pCmdHeader->cmdBufferLen = MAX_PACKET_DROP_LENGTH;
+
+	pCmdData = (P_PACKET_DROP_SETTING_V1_T)&(pCmdHeader->buffer[0]);
+
+	u64Filter = prParams->Ipv4FilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_IPv4.bytes = u64Filter|prParams->Ipv4FilterLow;
+
+	/*bit0~bit8
+	*
+	*pCmdData->Drop_IPv4.bytes |= 0xFE;
+	*struct {
+	*			UINT_64    all:1;
+	*			UINT_64    MDNS:1;
+	*			UINT_64    LLMNR:1;
+	*			UINT_64    BROWSER:1;
+	*			UINT_64    CAPWAP:1;
+	*			UINT_64    DNS:1;
+	*			UINT_64    NBNS:1;
+	*			UINT_64    SSDP:1;
+	*			UINT_64    others:1;
+	*		} UDPbits;
+	*/
+
+	u64Filter = prParams->Ipv6FilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_IPv6.bytes = u64Filter|prParams->Ipv6FilterLow;
+
+	/* bit0 only
+	*pCmdData->Drop_IPv6.bytes |= 0x01;
+	*struct {
+	*		UINT_64    all:1;
+	*		} bits;
+	*/
+
+	u64Filter = prParams->SnapFilterHigh;
+	u64Filter = u64Filter<<32;
+	u64Filter &= 0xffffffff00000000;
+	pCmdData->Drop_SNAP.bytes = u64Filter|prParams->SnapFilterLow;
+
+	/*bit0~bit4
+	*pCmdData->Drop_SNAP.bytes |= 0x0E;
+	* struct {
+	*			UINT_64    all:1;
+	*			UINT_64    CDP:1;
+	*			UINT_64    STP:1;
+	*			UINT_64    XID:1;
+	*			UINT_64    others:1;
+	*		} bits;
+	*/
+	pr_info("wlan_gen2: mtk_cfg80211_testmode_set_packet_filter\n Drop_IPv4(%02llx)\nDrop_IPv6(%02llx)\nDrop_SNAP(%02llx)\n",
+		pCmdData->Drop_IPv4.bytes, pCmdData->Drop_IPv6.bytes, pCmdData->Drop_SNAP.bytes);
+
+	rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetRxPacketFilterPriv,
+					&cmdBuf,
+					sizeof(PACKET_DROP_T),
+					FALSE,
+					FALSE,
+					TRUE,
+					FALSE,
+					&u4BufLen);
+
+	/*printk("rStatus = %08x\n",rStatus);*/
+
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		i4Status = -EFAULT;
+
+	return i4Status;
+}
+
+int
 mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
 {
 
@@ -2684,6 +2795,9 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 			}
 			break;
 		}
+	case TESTMODE_CMD_ID_RXFILTER:
+		i4Status = mtk_cfg80211_testmode_set_packet_filter(wiphy, data, len, prGlueInfo);
+		break;
 	case TESTMODE_CMD_ID_STATISTICS:
 		i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
 		break;
