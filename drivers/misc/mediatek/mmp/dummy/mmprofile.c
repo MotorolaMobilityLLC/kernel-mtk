@@ -29,11 +29,11 @@
 /* #pragma GCC optimize ("O0") */
 #define MMP_DEVNAME "mmp"
 
-void MMProfileStart(int start)
+void mmprofile_start(int start)
 {
 }
 
-void MMProfileEnable(int enable)
+void mmprofile_enable(int enable)
 {
 }
 

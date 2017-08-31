@@ -25,7 +25,7 @@ static struct DDP_MMP_Events DDP_MMP_Events;
 void init_ddp_mmp_events(void)
 {
 	if (DDP_MMP_Events.DDP == 0) {
-		DDP_MMP_Events.DDP = mmprofile_register_event(MMP_RootEvent, "Display");
+		DDP_MMP_Events.DDP = mmprofile_register_event(MMP_ROOT_EVENT, "Display");
 		DDP_MMP_Events.primary_Parent =
 		    mmprofile_register_event(DDP_MMP_Events.DDP, "primary_disp");
 		DDP_MMP_Events.primary_trigger =
@@ -386,7 +386,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			Bitmap.down_sample_x = down_sample_x;
 			Bitmap.down_sample_y = down_sample_y;
 			if (m4u_mva_map_kernel
-			    (pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.pData,
+			    (pLayer->addr, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
 			     &Bitmap.data_size) == 0) {
 				if (session == 1)
 					mmprofile_log_meta_bitmap(DDP_MMP_Events.
@@ -397,7 +397,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 							       ovl1layer_dump[pLayer->layer],
 							       MMPROFILE_FLAG_PULSE, &Bitmap);
 				m4u_mva_unmap_kernel(pLayer->addr, Bitmap.data_size,
-						     (unsigned long)Bitmap.pData);
+						     (unsigned long)Bitmap.p_data);
 			} else {
 				DDPERR("ddp_mmp_ovl_layer(),fail to dump rgb(0x%x)\n", pLayer->fmt);
 			}
@@ -405,7 +405,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 			meta.data_type = MMPROFILE_META_RAW;
 			meta.size = pLayer->src_pitch * pLayer->src_h;
 			if (m4u_mva_map_kernel
-			    (pLayer->addr, meta.size, (unsigned long *)&meta.pData,
+			    (pLayer->addr, meta.size, (unsigned long *)&meta.p_data,
 			     &meta.size) == 0) {
 				if (session == 1)
 					mmprofile_log_meta(DDP_MMP_Events.layer_dump[pLayer->layer],
@@ -415,7 +415,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer, unsigned int down_sampl
 							 ovl1layer_dump[pLayer->layer],
 							 MMPROFILE_FLAG_PULSE, &meta);
 				m4u_mva_unmap_kernel(pLayer->addr, meta.size,
-						     (unsigned long)meta.pData);
+						     (unsigned long)meta.p_data);
 			} else {
 				DDPERR("ddp_mmp_ovl_layer(),fail to dump raw(0x%x)\n", pLayer->fmt);
 			}
@@ -495,12 +495,12 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 		Bitmap.down_sample_x = down_sample_x;
 		Bitmap.down_sample_y = down_sample_y;
 		if (m4u_mva_map_kernel
-		    (wdma_layer->dstAddress, Bitmap.data_size, (unsigned long *)&Bitmap.pData,
+		    (wdma_layer->dstAddress, Bitmap.data_size, (unsigned long *)&Bitmap.p_data,
 		     &Bitmap.data_size) == 0) {
 			mmprofile_log_meta_bitmap(DDP_MMP_Events.wdma_dump[wdma_num],
 					       MMPROFILE_FLAG_PULSE, &Bitmap);
 			m4u_mva_unmap_kernel(wdma_layer->dstAddress, Bitmap.data_size,
-					     (unsigned long)Bitmap.pData);
+					     (unsigned long)Bitmap.p_data);
 		} else {
 			DDPERR("dprec_mmp_dump_wdma_layer(),fail to dump rgb(0x%x)\n",
 			       wdma_layer->outputFormat);
@@ -509,7 +509,7 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer, unsigned int wdma
 		meta.data_type = MMPROFILE_META_RAW;
 		meta.size = wdma_layer->dstPitch * wdma_layer->srcHeight;
 		if (m4u_mva_map_kernel
-		    (wdma_layer->dstAddress, meta.size, (unsigned long *)&meta.pData,
+		    (wdma_layer->dstAddress, meta.size, (unsigned long *)&meta.p_data,
 		     &meta.size) == 0) {
 			mmprofile_log_meta(DDP_MMP_Events.wdma_dump[wdma_num], MMPROFILE_FLAG_PULSE,
 					 &meta);
@@ -584,11 +584,11 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 		Bitmap.down_sample_x = down_sample_x;
 		Bitmap.down_sample_y = down_sample_y;
 		if (m4u_mva_map_kernel(rdma_layer->address, Bitmap.data_size,
-				       (unsigned long *)&Bitmap.pData, &Bitmap.data_size) == 0) {
+				       (unsigned long *)&Bitmap.p_data, &Bitmap.data_size) == 0) {
 			mmprofile_log_meta_bitmap(DDP_MMP_Events.rdma_dump[rdma_num],
 					       MMPROFILE_FLAG_PULSE, &Bitmap);
 			m4u_mva_unmap_kernel(rdma_layer->address, Bitmap.data_size,
-					     (unsigned long)Bitmap.pData);
+					     (unsigned long)Bitmap.p_data);
 		} else {
 			DDPERR("dump_rdma_layer(),fail to dump rgb(0x%x)\n",
 			       rdma_layer->inputFormat);
@@ -597,11 +597,11 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer, unsigned int rdma
 		meta.data_type = MMPROFILE_META_RAW;
 		meta.size = rdma_layer->pitch * rdma_layer->height;
 		if (m4u_mva_map_kernel(rdma_layer->address, meta.size,
-				       (unsigned long *)(&meta.pData), &meta.size) == 0) {
+				       (unsigned long *)(&meta.p_data), &meta.size) == 0) {
 			mmprofile_log_meta(DDP_MMP_Events.rdma_dump[rdma_num], MMPROFILE_FLAG_PULSE,
 					 &meta);
 			m4u_mva_unmap_kernel(rdma_layer->address, meta.size,
-					     (unsigned long)meta.pData);
+					     (unsigned long)meta.p_data);
 		} else {
 			DDPERR("dprec_mmp_dump_rdma_layer(),fail to dump raw(0x%x)\n",
 			       rdma_layer->inputFormat);
