@@ -78,18 +78,6 @@
 			pr_debug(TAG""fmt, ##args);	\
 	} while (0)
 
-#define PLL_ENABLE				(1)
-#define PLL_DISABLE			(0)
-#define DVFS_STATUS_OK			(0)
-#define DVFS_STATUS_BUSY			(-1)
-#define DVFS_REQUEST_SAME_CLOCK		(-2)
-#define DVFS_STATUS_ERR			(-3)
-#define DVFS_STATUS_TIMEOUT		(-4)
-#define DVFS_CLK_ERROR			(-5)
-#define DVFS_STATUS_CMD_FIX		(-6)
-#define DVFS_STATUS_CMD_LIMITED		(-7)
-#define DVFS_STATUS_CMD_DISABLE		(-8)
-
 #define TOPCK_BASE      0x10210000
 /* PLL MUX CONTROL */
 #define CLK_CFG_6               (TOPCK_BASE + 0x160)
@@ -321,7 +309,7 @@ int scp_request_freq(void)
 
 	if (scp_current_freq != scp_expected_freq) {
 		/*  pll CCF ctrl */
-		scp_pll_ctrl_set(1, scp_expected_freq);
+		scp_pll_ctrl_set(PLL_ENABLE, scp_expected_freq);
 
 		while (scp_current_freq != scp_expected_freq) {
 			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
@@ -331,7 +319,7 @@ int scp_request_freq(void)
 			mdelay(2);
 			timeout -= 1; /*try 50 times, total about 100ms*/
 			if (timeout <= 0) {
-				scp_pll_ctrl_set(0, scp_expected_freq);
+				scp_pll_ctrl_set(PLL_DISABLE, scp_expected_freq);
 				flag = SET_PLL_FAIL;
 				goto fail_to_set_freq;
 			}
@@ -341,7 +329,7 @@ int scp_request_freq(void)
 			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 		}
 
-		scp_pll_ctrl_set(0, scp_expected_freq);
+		scp_pll_ctrl_set(PLL_DISABLE, scp_expected_freq);
 	}
 
 	/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */

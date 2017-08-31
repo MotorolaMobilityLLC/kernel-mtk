@@ -14,6 +14,18 @@
 #ifndef __SCP_DVFS_H__
 #define __SCP_DVFS_H__
 
+#define PLL_ENABLE				(1)
+#define PLL_DISABLE				(0)
+
+#define DVFS_STATUS_OK			(0)
+#define DVFS_STATUS_BUSY		(-1)
+#define DVFS_REQUEST_SAME_CLOCK	(-2)
+#define DVFS_STATUS_ERR			(-3)
+#define DVFS_STATUS_TIMEOUT		(-4)
+#define DVFS_CLK_ERROR			(-5)
+#define DVFS_STATUS_CMD_FIX		(-6)
+#define DVFS_STATUS_CMD_LIMITED	(-7)
+#define DVFS_STATUS_CMD_DISABLE	(-8)
 
 struct mt_scp_dvfs_table_info {
 	unsigned int cur_clk;
