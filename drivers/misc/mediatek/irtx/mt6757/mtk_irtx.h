@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#include <linux/regulator/mediatek/mtk_regulator.h>
+#include <linux/regulator/consumer.h>
 
 struct mt_irtx {
 	unsigned int pwm_ch;
@@ -25,9 +25,9 @@ struct mt_irtx {
 	struct clk *clk_irtx_main;
 	/* GPIO pin control */
 	struct pinctrl *ppinctrl_irtx;
-
 #ifdef CONFIG_RT5081_PMU_LDO
-	struct mtk_regulator buck;
+	/* for RT5081 control */
+	struct regulator *buck;
 #endif
 };
 

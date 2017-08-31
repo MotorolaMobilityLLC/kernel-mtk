@@ -167,13 +167,13 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			/* gpio: bit 0-11 */
 			gpio_id = (unsigned long)((para & 0x0FFF0000) > 16);
 			en = (para & 0xF);
-			pr_warn("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
+			pr_info("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
 
 			if (en) {
 				#ifdef CONFIG_RT5081_PMU_LDO
-				ret = mtk_regulator_enable(&mt_irtx_dev.buck, true);
+				ret = regulator_enable(mt_irtx_dev.buck);
 				if (ret < 0) {
-					pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
+					pr_err("[IRTX] regulator_enable fail!!\n");
 					return -1;
 				}
 				#else
@@ -183,9 +183,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			} else {
 				switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
 				#ifdef CONFIG_RT5081_PMU_LDO
-				ret = mtk_regulator_enable(&mt_irtx_dev.buck, false);
+				ret = regulator_disable(mt_irtx_dev.buck);
 				if (ret < 0) {
-					pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
+					pr_err("[IRTX] regulator_disable fail!!\n");
 					ret = -1;
 				} else {
 					/* requlator return 0(no change) or 1(change) is correct */
@@ -241,9 +241,9 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
 #ifdef CONFIG_RT5081_PMU_LDO
-	ret = mtk_regulator_enable(&mt_irtx_dev.buck, true);
+	ret = regulator_enable(mt_irtx_dev.buck);
 	if (ret < 0) {
-		pr_err("[IRTX] mtk_regulator_enable enable fail!!\n");
+		pr_err("[IRTX] regulator_enable fail!!\n");
 		return -1;
 	}
 #else
@@ -266,9 +266,9 @@ exit:
 
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_DEFAULT);
 #ifdef CONFIG_RT5081_PMU_LDO
-	ret = mtk_regulator_enable(&mt_irtx_dev.buck, false);
+	ret = regulator_disable(mt_irtx_dev.buck);
 	if (ret < 0) {
-		pr_err("[IRTX] mtk_regulator_enable disable fail!!\n");
+		pr_err("[IRTX] regulator_disable fail!!\n");
 		return -1;
 	}
 #else
@@ -322,15 +322,15 @@ static int irtx_probe(struct platform_device *plat_dev)
 	pr_notice("[IRTX][PinC]devm_pinctrl_get ppinctrl:%p\n", mt_irtx_dev.ppinctrl_irtx);
 
 #ifdef CONFIG_RT5081_PMU_LDO
-	ret = mtk_regulator_get(NULL, "rt5081_ldo", &mt_irtx_dev.buck);
-	if (ret < 0) {
-		pr_err("[IRTX] mtk_regulator_get fail!!\n");
+	mt_irtx_dev.buck = regulator_get(NULL, "rt5081_ldo");
+	if (mt_irtx_dev.buck == NULL) {
+		pr_err("[IRTX] regulator_get fail!!\n");
 		return -1;
 	}
 
-	ret = mtk_regulator_set_voltage(&mt_irtx_dev.buck, 2800000, 2800000);
+	ret = regulator_set_voltage(mt_irtx_dev.buck, 2800000, 2800000);
 	if (ret < 0) {
-		pr_err("[IRTX] mtk_regulator_set_voltage fail!!\n");
+		pr_err("[IRTX] regulator_set_voltage fail!!\n");
 		return -1;
 	}
 #else
@@ -405,11 +405,11 @@ static int __init irtx_init(void)
 {
 	int ret = 0;
 
-	pr_debug("[IRTX] irtx init\n");
+	pr_info("[IRTX] irtx init\n");
 #ifdef CONFIG_OF
 	irtx_driver.driver.of_match_table = irtx_of_ids;
 #else
-	pr_err("[IRTX] irtx needs device tree!\n");
+	pr_info("[IRTX] irtx needs device tree!\n");
 #endif
 
 	ret = platform_driver_register(&irtx_driver);
