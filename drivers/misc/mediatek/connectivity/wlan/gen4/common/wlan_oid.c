@@ -8648,12 +8648,20 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4QueryInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
+#if 0 /* PeiHsuan Temp Remove this check for workaround Gen2/Gen3 EM Mode Modification */
 	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
 		DBGLOG(REQ, ERROR, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
 		return WLAN_STATUS_INVALID_LENGTH;
 	}
+#endif
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
+
+	DBGLOG(RFTEST, INFO, "Get AT_CMD BufferLen = %d, AT Index = %d, Data = %d\n",
+		u4QueryBufferLen,
+		prRfATInfo->u4FuncIndex,
+		prRfATInfo->u4FuncData);
+
 	rStatus = rftestQueryATInfo(prAdapter,
 				    prRfATInfo->u4FuncIndex, prRfATInfo->u4FuncData, pvQueryBuffer, u4QueryBufferLen);
 
@@ -8692,12 +8700,20 @@ wlanoidRftestSetAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
+#if 0 /* PeiHsuan Temp Remove this check for workaround Gen2/Gen3 EM Mode Modification */
 	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
 		DBGLOG(REQ, ERROR, "Invalid data. SetBufferLen: %ld.\n", u4SetBufferLen);
 		return WLAN_STATUS_INVALID_LENGTH;
 	}
+#endif
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvSetBuffer;
+
+	DBGLOG(RFTEST, INFO, "Set AT_CMD BufferLen = %d, AT Index = %d, Data = %d\n",
+		u4SetBufferLen,
+		prRfATInfo->u4FuncIndex,
+		prRfATInfo->u4FuncData);
+
 	rStatus = rftestSetATInfo(prAdapter, prRfATInfo->u4FuncIndex, prRfATInfo->u4FuncData);
 
 	return rStatus;
