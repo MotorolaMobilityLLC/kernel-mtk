@@ -48,9 +48,9 @@
 
 #include "ubi/ubi-media.h"
 #include "ubi/ubi.h"
-#include "mt_ftl.h"
+#include "mtk_ftl.h"
 
-#include <trace/events/mt_ftl.h>
+#include <trace/events/mtk_ftl.h>
 
 /* Maximum number of supported devices */
 #define MT_FTL_BLK_MAX_DEVICES 32
