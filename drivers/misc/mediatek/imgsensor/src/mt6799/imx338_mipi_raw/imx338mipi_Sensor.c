@@ -477,7 +477,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
-    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+	iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 #if 0
 static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
@@ -597,20 +597,24 @@ static void imx338_set_pdaf_reg_setting( MUINT32 regNum, kal_uint16 *regDa)
 static void imx338_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
-	int i;
+	char puSendCmd[355];
+	kal_uint32 tosend;
 
-    LOG_INF("E");
 
-    read_imx338_SPC( imx338_SPC_data);
+	LOG_INF("E");
 
-	for(i=0;i<352;i++)
+	read_imx338_SPC( imx338_SPC_data);
+
+	tosend = 0;
+	puSendCmd[tosend++] = (char)(start_reg >> 8);
+	puSendCmd[tosend++] = (char)(start_reg & 0xFF);
+	/*while(IDX < 352)
 	{
-		write_cmos_sensor(start_reg, imx338_SPC_data[i]);
-	//	LOG_INF("SPC[%d]= %x \n", i , imx338_SPC_data[i]);
-
-		start_reg++;
-	}
-
+		puSendCmd[tosend++] = (char)(imx338_SPC_data[IDX++] & 0xFF);
+	}*/
+	memcpy((void *)&puSendCmd[tosend], imx338_SPC_data , 352);
+	tosend+=352;
+	iBurstWriteReg_multi(puSendCmd, tosend, imgsensor.i2c_write_id, tosend, imgsensor_info.i2c_speed);
 }
 
 static void set_dummy(void)
@@ -1112,39 +1116,50 @@ static kal_uint16 imx338_table_write_cmos_sensor(kal_uint16* para, kal_uint32 le
    return 0;
 }
 
+
+kal_uint16 addr_data_pair_imx338_zvhdr_on[] =
+{
+	0x30b1, 0x00,
+	0x30c6, 0x00,
+	0x30b2, 0x00,
+	0x30b3, 0x00,
+	0x30c7, 0x00,
+	0x30b4, 0x01,
+	0x30b5, 0x01,
+	0x30b6, 0x01,
+	0x30b7, 0x01,
+	0x30b8, 0x01,
+	0x30b9, 0x01,
+	0x30ba, 0x01,
+	0x30bb, 0x01,
+	0x30bc, 0x01,
+};
+
+kal_uint16 addr_data_pair_imx338_zvhdr_off[] =
+{
+	0x30b4, 0x00,
+	0x30b5, 0x00,
+	0x30b6, 0x00,
+	0x30b7, 0x00,
+	0x30b8, 0x00,
+	0x30b9, 0x00,
+	0x30ba, 0x00,
+	0x30bb, 0x00,
+	0x30bc, 0x00,
+};
+
+
 static kal_uint16 zvhdr_setting(void){
 
 	LOG_INF("zhdr(mode:%d)\n",imgsensor.hdr_mode);
 
 	if(imgsensor.hdr_mode == 9)
 	{
-		write_cmos_sensor(0x30b1,0x00);
-	    write_cmos_sensor(0x30c6,0x00);
-	    write_cmos_sensor(0x30b2,0x00);
-	    write_cmos_sensor(0x30b3,0x00);
-	    write_cmos_sensor(0x30c7,0x00);
-
-		write_cmos_sensor(0x30b4,0x01);
-	    write_cmos_sensor(0x30b5,0x01);
-	    write_cmos_sensor(0x30b6,0x01);
-	    write_cmos_sensor(0x30b7,0x01);
-	    write_cmos_sensor(0x30b8,0x01);
-	    write_cmos_sensor(0x30b9,0x01);
-	    write_cmos_sensor(0x30ba,0x01);
-	    write_cmos_sensor(0x30bb,0x01);
-		write_cmos_sensor(0x30bc,0x01);
+		imx338_table_write_cmos_sensor(addr_data_pair_imx338_zvhdr_on, sizeof(addr_data_pair_imx338_zvhdr_on)/sizeof(kal_uint16));
 	}
 	else
 	{
-		write_cmos_sensor(0x30b4,0x00);
-	    write_cmos_sensor(0x30b5,0x00);
-	    write_cmos_sensor(0x30b6,0x00);
-	    write_cmos_sensor(0x30b7,0x00);
-	    write_cmos_sensor(0x30b8,0x00);
-	    write_cmos_sensor(0x30b9,0x00);
-	    write_cmos_sensor(0x30ba,0x00);
-	    write_cmos_sensor(0x30bb,0x00);
-		write_cmos_sensor(0x30bc,0x00);
+		imx338_table_write_cmos_sensor(addr_data_pair_imx338_zvhdr_off, sizeof(addr_data_pair_imx338_zvhdr_off)/sizeof(kal_uint16));
 	}
 	return 0;
 
@@ -2553,6 +2568,28 @@ kal_uint16 addr_data_pair_capture_imx338_hdr[] =
 	 //,0x0100 ,0x01
 };
 
+
+kal_uint16 addr_data_pair_capture_imx338_pdaf_on[] =
+{
+	0x3001, 0x01,/*bit[0]PDAF enable during HDR on*/
+	/*PDAF*/
+	/*PD_CAL_ENALBE*/
+	0x3121, 0x01,
+	/*AREA MODE*/
+	0x31B0, 0x01,
+	/*PD_OUT_EN=1*/
+	0x3123, 0x01,
+	/*Fixed area mode*/
+	0x3150, 0x00,
+	0x3151, 0x70,
+	0x3152, 0x00,
+	0x3153, 0x58,
+	0x3154, 0x02,
+	0x3155, 0x80,
+	0x3156, 0x02,
+	0x3157, 0x80,
+};
+
 static void capture_setting(kal_uint16 currefps)
 {
     LOG_INF("E! currefps:%d hdr:%d pdaf:%d\n",currefps, imgsensor.hdr_mode, imgsensor.pdaf_mode);
@@ -2566,29 +2603,9 @@ static void capture_setting(kal_uint16 currefps)
 	}
 	if(imgsensor.pdaf_mode == 1)
 	{
-		write_cmos_sensor(0x3001,0x01);/*bit[0]PDAF enable during HDR on*/
-		/*PDAF*/
-		/*PD_CAL_ENALBE*/
-		write_cmos_sensor(0x3121,0x01);
-		/*AREA MODE*/
-		write_cmos_sensor(0x31B0,0x01);
-		/*PD_OUT_EN=1*/
-		write_cmos_sensor(0x3123,0x01);
-
-		//write_cmos_sensor(0x0100,0x01);
-		/*Fixed area mode*/
-		write_cmos_sensor(0x3150,0x00);
-		write_cmos_sensor(0x3151,0x70);
-		write_cmos_sensor(0x3152,0x00);
-		write_cmos_sensor(0x3153,0x58);
-		write_cmos_sensor(0x3154,0x02);
-		write_cmos_sensor(0x3155,0x80);
-		write_cmos_sensor(0x3156,0x02);
-		write_cmos_sensor(0x3157,0x80);
-
-        imx338_apply_SPC();
+		imx338_table_write_cmos_sensor(addr_data_pair_capture_imx338_pdaf_on, sizeof(addr_data_pair_capture_imx338_pdaf_on)/sizeof(kal_uint16));
+		imx338_apply_SPC();
 	}
-
 	write_cmos_sensor(0x0100,0x01);
 
 }
@@ -3070,6 +3087,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_lot_id_from_otp();//return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
+				read_imx338_SPC( imx338_SPC_data);
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }
