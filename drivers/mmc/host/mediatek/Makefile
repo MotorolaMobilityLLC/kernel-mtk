@@ -54,4 +54,9 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/kiboplus
 obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
 endif
 
+ifeq ($(CONFIG_MTK_PLATFORM), "mt8167")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt8167
+obj-y += mt8167/
+endif
+
 obj-$(CONFIG_MMC_MTK_PRO) += emmc_rpmb.o
