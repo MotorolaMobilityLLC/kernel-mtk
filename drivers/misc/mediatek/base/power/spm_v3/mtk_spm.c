@@ -23,7 +23,7 @@
 #include "include/pmic_api_buck.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
-#include <mtk_dramc.h> /* for ucDram_Register_Read () */
+#include <mtk_dramc.h> /* for lpDram_Register_Read() */
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
@@ -48,7 +48,7 @@ static struct dentry *spm_file;
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
 static int dyna_load_pcm_done __nosavedata;
 static char *dyna_load_pcm_path[] = {
-	[DYNA_LOAD_PCM_SUSPEND] = "pcm_allinone.bin",
+	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
 };
 #endif /* CONFIG_MTK_SPM_IN_ATF */
@@ -799,26 +799,28 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
  **************************************/
 #ifdef CONFIG_MTK_DRAMC
 struct ddrphy_golden_cfg {
-	u32 addr;
+	u32 base;
+	u32 offset;
+	u32 mask;
 	u32 value;
-	u32 value1;
 };
 
-/* FIXME: golden setting */
-#define DDRPHY_SETTING_UNUSED 0xffffffff
 static struct ddrphy_golden_cfg ddrphy_setting[] = {
-	{0x5c0, 0x21271b1b, DDRPHY_SETTING_UNUSED},
-	{0x5c4, 0x5096001e, DDRPHY_SETTING_UNUSED},
-	{0x5c8, 0x9010f010, DDRPHY_SETTING_UNUSED},
-	{0x5cc, 0x50101010, DDRPHY_SETTING_UNUSED},
-	{0x640, 0x000220b1, 0x00022091},
-	{0x650, 0x00000018, DDRPHY_SETTING_UNUSED},
-	{0x698, 0x00011e00, 0x00018030},
+	{DRAMC_AO_CHA, 0x038, 0xc0000027, 0xc0000007},
+	{PHY_CHA, 0x284, 0x000bff00, 0x00000100},
+	{PHY_CHA, 0x28c, 0xffffffff, 0x83e003be},
+	{PHY_CHA, 0x088, 0xffffffff, 0x00000000},
+	{PHY_CHA, 0x08c, 0xffffffff, 0x0002e800},
+	{PHY_CHA, 0x108, 0xffffffff, 0x00000000},
+	{PHY_CHA, 0x10c, 0xffffffff, 0x0002e800},
+	{PHY_CHA, 0x188, 0xffffffff, 0x00000800},
+	{PHY_CHA, 0x18c, 0xffffffff, 0x000ba000},
+	{PHY_CHA, 0x274, 0xffffffff, 0xfffffe7f},
+	{PHY_CHA, 0x27c, 0xffffffff, 0xffffffff},
 };
 
 int spm_golden_setting_cmp(bool en)
 {
-
 	int i, ddrphy_num, r = 0;
 
 	if (!en)
@@ -827,13 +829,18 @@ int spm_golden_setting_cmp(bool en)
 	/*Compare Dramc Goldeing Setting */
 	ddrphy_num = ARRAY_SIZE(ddrphy_setting);
 	for (i = 0; i < ddrphy_num; i++) {
-		if ((ucDram_Register_Read(ddrphy_setting[i].addr) != ddrphy_setting[i].value)
-		    && ((ddrphy_setting[i].value1 == DDRPHY_SETTING_UNUSED)
-			|| (ucDram_Register_Read(ddrphy_setting[i].addr) !=
-			    ddrphy_setting[i].value1))) {
-			spm_err("dramc setting mismatch addr: 0x%x, val: 0x%x\n",
-				ddrphy_setting[i].addr,
-				ucDram_Register_Read(ddrphy_setting[i].addr));
+		u32 value;
+
+		value = lpDram_Register_Read(ddrphy_setting[i].base, ddrphy_setting[i].offset);
+		/*
+		 * spm_err("addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
+		 *                 ddrphy_setting[i].base, ddrphy_setting[i].offset,
+		 *                 ddrphy_setting[i].mask, ddrphy_setting[i].value, value);
+		 */
+		if ((value & ddrphy_setting[i].mask) != ddrphy_setting[i].value) {
+			spm_err("dramc setting mismatch addr: 0x%.2x, offset: 0x%.3x, mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
+				ddrphy_setting[i].base, ddrphy_setting[i].offset,
+				ddrphy_setting[i].mask, ddrphy_setting[i].value, value);
 			r = -EPERM;
 		}
 	}
@@ -856,7 +863,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	if (force == 0 && mode == prev_mode)
 		return;
 
-	/* FIXME: */
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
 		/* nothing */
