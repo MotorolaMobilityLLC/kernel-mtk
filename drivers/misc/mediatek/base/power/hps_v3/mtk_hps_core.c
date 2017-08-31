@@ -30,7 +30,6 @@
 #include <mt-plat/met_drv.h>
 
 #define TLP_THRESHOLD 250
-
 /*
  * static
  */
@@ -265,7 +264,6 @@ static void hps_get_sysinfo(void)
 
 	/* consider TLP in 2 windows */
 	win_tlp = (hps_ctxt.cur_tlp + prev_tlp)/2;
-
 	/* LL: relative threshold */
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	if ((int)sched_util < sodi_limit && win_tlp < TLP_THRESHOLD) {
@@ -325,10 +323,9 @@ static int _hps_task_main(void *data)
 	unsigned int total_hvy_task = 0;
 #endif
 	void (*algo_func_ptr)(void);
+
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 	unsigned int cpu, first_cpu, i;
-	int is_acao_enable;
-
 	ktime_t enter_ktime;
 
 	enter_ktime = ktime_get();
@@ -366,7 +363,7 @@ static int _hps_task_main(void *data)
 ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(1);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
-	is_acao_enable = 0;
+
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core, &hps_ctxt.online_core_req, sizeof(cpumask_var_t));
 	mutex_unlock(&hps_ctxt.para_lock);
@@ -375,10 +372,9 @@ ACAO_HPS_START:
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	/*Debgu message dump*/
 	for (i = 0 ; i < 8 ; i++) {
-		if (cpumask_test_cpu(i, hps_ctxt.online_core)) {
+		if (cpumask_test_cpu(i, hps_ctxt.online_core))
 			pr_info("CPU %d ==>1\n", i);
-			is_acao_enable++;
-		} else
+		else
 			pr_info("CPU %d ==>0\n", i);
 	}
 
@@ -386,10 +382,11 @@ ACAO_HPS_START:
 		aee_rr_rec_hps_cb_footprint(3);
 		aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 		first_cpu = cpumask_first(hps_ctxt.online_core);
-		if (!is_acao_enable) {
+		if (first_cpu >= setup_max_cpus) {
 			pr_err("PPM request without first cpu online!\n");
 			goto ACAO_HPS_END;
 		}
+
 		if (!cpu_online(first_cpu))
 			cpu_up(first_cpu);
 		aee_rr_rec_hps_cb_footprint(4);
@@ -420,6 +417,7 @@ ACAO_HPS_START:
 	}
 	aee_rr_rec_hps_cb_footprint(9);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
+
 ACAO_HPS_END:
 	aee_rr_rec_hps_cb_footprint(10);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
@@ -558,11 +556,42 @@ static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-
+#if 1
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core_req, p->online_core, sizeof(cpumask_var_t));
 	mutex_unlock(&hps_ctxt.para_lock);
 	hps_task_wakeup_nolock();
+#else
+	unsigned int cpu, first_cpu;
+	int i = 0;
+
+	pr_err("[ACAO] PPM request....\n");
+	for (i = 0 ; i < 8 ; i++) {
+	if (cpumask_test_cpu(i, p->online_core))
+		pr_err("CPU %d ==>1\n", i);
+	else
+		pr_err("CPU %d ==>0\n", i);
+	}
+
+	if (p->online_core) {
+		first_cpu = cpumask_first(p->online_core);
+	if (first_cpu >= setup_max_cpus) {
+		pr_err("PPM request without first cpu online!\n");
+		return;
+	}
+	if (!cpu_online(first_cpu))
+		cpu_up(first_cpu);
+		for_each_possible_cpu(cpu) {
+			if (cpumask_test_cpu(cpu, p->online_core)) {
+				if (!cpu_online(cpu))
+					cpu_up(cpu);
+			} else {
+				if (cpu_online(cpu))
+					cpu_down(cpu);
+			}
+		}
+	}
+#endif
 #else
 	int i;
 
