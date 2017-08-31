@@ -2671,32 +2671,32 @@ s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 	return 0;
 }
 
-bool cmdqIsValidTaskPtr(void *pTask)
+struct TaskStruct *cmdq_core_get_task_ptr(void *task_handle)
 {
 	struct TaskStruct *ptr = NULL;
-	struct list_head *p = NULL;
-	bool ret = false;
+	struct TaskStruct *task = NULL;
 
 	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, valid_task_ptr);
 
-	list_for_each(p, &gCmdqContext.taskActiveList) {
-		ptr = list_entry(p, struct TaskStruct, listEntry);
-		if (ptr == pTask && TASK_STATE_IDLE != ptr->taskState) {
-			ret = true;
+	list_for_each_entry(task, &gCmdqContext.taskActiveList, listEntry) {
+		if (task == task_handle && TASK_STATE_IDLE != task->taskState) {
+			ptr = task;
 			break;
 		}
 	}
 
-	list_for_each(p, &gCmdqContext.taskWaitList) {
-		ptr = list_entry(p, struct TaskStruct, listEntry);
-		if (ptr == pTask && TASK_STATE_WAITING == ptr->taskState) {
-			ret = true;
-			break;
+	if (!ptr) {
+		list_for_each_entry(task, &gCmdqContext.taskWaitList, listEntry) {
+			if (task == task_handle && TASK_STATE_WAITING == task->taskState) {
+				ptr = task;
+				break;
+			}
 		}
 	}
 
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, valid_task_ptr);
-	return ret;
+
+	return ptr;
 }
 
 static void cmdq_core_release_buffer(struct TaskStruct *pTask)

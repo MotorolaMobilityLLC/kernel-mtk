@@ -855,13 +855,12 @@ extern "C" {
 
 
 /**
- * Helper function checking validity of a task pointer
+ * Helper function get valid task pointer
  *
  * Return:
- *     false if NOT a valid pointer
- *     true if valid
+ *     task pointer if available
  */
-	bool cmdqIsValidTaskPtr(void *pTask);
+	struct TaskStruct *cmdq_core_get_task_ptr(void *task_handle);
 
 /**
  * Immediately clear CMDQ event to 0 with CPU
