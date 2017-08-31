@@ -205,7 +205,7 @@ extern void otp_fake_temp_test(void);
 
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */
-extern void ptp_init01_ptp(int id);
+extern unsigned int ptp_init01_ptp(int id);
 extern int ptp_isr(void);
 #endif
 
