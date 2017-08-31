@@ -16,7 +16,7 @@
 #include "mach/mtk_freqhopping.h"
 
 static struct regulator *regulator_proc1;
-static struct regulator *regulator_proc2;
+struct regulator *regulator_proc2;
 static struct regulator *regulator_sram1;
 static struct regulator *regulator_sram2;
 
