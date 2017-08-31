@@ -39,6 +39,29 @@
 /* UFOZIP private header file */
 #include "ufozip_private.h"
 
+
+#ifndef CONFIG_MTK_CLKMGR
+#define MTK_UFOZIP_USING_CCF
+#endif
+
+#ifndef CONFIG_MTK_CLKMGR
+#include <linux/clk.h>
+#else
+#include <mach/mt_clkmgr.h>  /* For clock mgr APIS. enable_clock() & disable_clock(). */
+#endif
+
+
+#ifdef MTK_UFOZIP_USING_CCF
+
+struct clk *g_ufoclk_enc_sel;
+struct clk *g_ufoclk_high_624;
+struct clk *g_ufoclk_low_312;
+struct clk *g_ufoclk_clk;
+
+
+#endif
+
+
 /* static unsigned int ufozip_default_fifo_size = 64; */
 static unsigned int ufozip_default_fifo_size = 256;
 
@@ -369,6 +392,7 @@ static int ufozip_of_probe(struct platform_device *pdev)
 	struct hwzram_impl *hwz;
 	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	int irq = platform_get_irq(pdev, 0);
+	int ret = 0;
 
 	pr_devel("%s starting: got irq %d\n", __func__, irq);
 
@@ -383,6 +407,29 @@ static int ufozip_of_probe(struct platform_device *pdev)
 		pr_warn("%s: no dma_mask\n", __func__);
 		return -EINVAL;
 	}
+
+	pr_info("ufozip_of_probe clock init ...\n");
+
+#ifdef MTK_UFOZIP_USING_CCF
+
+	g_ufoclk_enc_sel = devm_clk_get(&pdev->dev, "ufo_sel");
+	WARN_ON(IS_ERR(g_ufoclk_enc_sel));
+
+	g_ufoclk_high_624 = devm_clk_get(&pdev->dev, "clock_high_624");
+	WARN_ON(IS_ERR(g_ufoclk_high_624));
+
+	g_ufoclk_low_312 = devm_clk_get(&pdev->dev, "clock_low_312");
+	WARN_ON(IS_ERR(g_ufoclk_low_312));
+
+	g_ufoclk_clk = devm_clk_get(&pdev->dev, "ufo_clk");
+	WARN_ON(IS_ERR(g_ufoclk_clk));
+
+	ret |= clk_prepare_enable(g_ufoclk_clk); /*return 0 is success, negative is error*/
+	ret |= clk_prepare_enable(g_ufoclk_enc_sel);
+	ret |= clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+	pr_info("clock ret = %d\n", ret);
+
+#endif
 
 	/* Initialization of hwzram_impl */
 	hwz = hwzram_impl_init(&pdev->dev, ufozip_default_fifo_size,
@@ -413,12 +460,53 @@ static const struct of_device_id ufozip_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, ufozip_of_match);
 
+static int mt_ufozip_suspend(struct device *dev)
+{
+
+	pr_info("%mt_ufozip_suspend\n");
+
+	/*CG on*/
+#ifdef MTK_UFOZIP_USING_CCF
+
+	clk_disable_unprepare(g_ufoclk_enc_sel);
+	clk_disable_unprepare(g_ufoclk_clk);
+
+#endif
+
+	return 0;
+}
+
+static int mt_ufozip_resume(struct device *dev)
+{
+	struct hwzram_impl *hwz = dev_get_drvdata(dev);
+
+	pr_info("%mt_ufozip_resume\n");
+	/*CG off*/
+#ifdef MTK_UFOZIP_USING_CCF
+	clk_prepare_enable(g_ufoclk_clk); /*return 0 is success, negative is error*/
+	clk_prepare_enable(g_ufoclk_enc_sel);
+	clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
+#endif
+
+	UFOZIP_HwInit(hwz); /* SPM ON @ INIT*/
+
+	return 0;
+}
+
+static const struct dev_pm_ops mt_ufozip_pm_ops = {
+	.suspend = mt_ufozip_suspend,
+	.resume = mt_ufozip_resume,
+	.freeze = mt_ufozip_suspend,
+	.thaw = mt_ufozip_resume,
+	.restore = mt_ufozip_resume,
+};
 
 static struct platform_driver ufozip_of_driver = {
 	.probe		= ufozip_of_probe,
 	.remove		= ufozip_of_remove,
 	.driver		= {
 		.name	= "ufozip",
+		.pm = &mt_ufozip_pm_ops,
 		.of_match_table = of_match_ptr(ufozip_of_match),
 	},
 };
