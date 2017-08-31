@@ -22,6 +22,7 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/delay.h>
+#include <linux/fb.h>
 #include <mach/emi_mpu.h>
 #include <mach/fliper.h>
 #include <mt-plat/mtk_meminfo.h>
@@ -441,6 +442,43 @@ int dcs_exit_perf(enum dcs_kicker kicker)
 	return 0;
 }
 
+/*
+ * exit_PASR:
+ *
+ * Create a fake fb event to make PASR exit current state.
+ * PASR will exit and release DCS lock
+ */
+static int exit_PASR(void)
+{
+	struct fb_event fb_event;
+	int blank = 0;
+
+	fb_event.data = &blank;
+	memory_lowpower_fb_event(NULL, FB_EVENT_BLANK, &fb_event);
+
+	return 0;
+}
+
+/*
+ * must_be_done
+ *
+ * should these modes must be done even PASR locked DCS?
+ * @mode: dcs_sysfs_mode
+ *
+ * return true if the mode must be done
+ */
+static bool must_be_done(enum dcs_sysfs_mode mode)
+{
+	if ((mode == DCS_SYSFS_CAMERA_KICKER) ||
+			(mode == DCS_SYSFS_WFD_KICKER) ||
+			(mode == DCS_SYSFS_VENC_KICKER) ||
+			(mode == DCS_SYSFS_EXIT_CAMERA_KICKER) ||
+			(mode == DCS_SYSFS_EXIT_WFD_KICKER) ||
+			(mode == DCS_SYSFS_EXIT_VENC_KICKER))
+		return true;
+
+	return false;
+}
 
 /*
  * dcs_dram_channel_switch_by_sysfs_mode
@@ -460,12 +498,21 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
+	if (must_be_done(mode))
+		exit_PASR();
+
 	mutex_lock(&dcs_kicker_lock);
 	wake_lock(&dcs_wake_lock);
-	ret = down_write_trylock(&dcs_rwsem);
-	if (!ret) {
-		ret = -EBUSY;
-		goto out_busy;
+
+	if (must_be_done(mode))
+		/* must get the lock */
+		down_write(&dcs_rwsem);
+	else {
+		ret = down_write_trylock(&dcs_rwsem);
+		if (!ret) {
+			ret = -EBUSY;
+			goto out_busy;
+		}
 	}
 
 	/* only 'always' commands can overwrite 'always' commands */
