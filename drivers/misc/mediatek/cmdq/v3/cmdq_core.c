@@ -177,7 +177,7 @@ int32_t cmdq_core_suspend_HW_thread(int32_t thread, uint32_t lineNum)
 		return -EFAULT;
 	}
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_suspend, MMProfileFlagPulse, thread, lineNum);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_suspend, MMPROFILE_FLAG_PULSE, thread, lineNum);
 	/* write suspend bit */
 	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x01);
 
@@ -212,7 +212,7 @@ static inline void cmdq_core_resume_HW_thread(int32_t thread)
 #endif
 	/* make sure instructions are really in DRAM */
 	smp_mb();
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_resume, MMProfileFlagPulse, thread, __LINE__);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_resume, MMPROFILE_FLAG_PULSE, thread, __LINE__);
 	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x00);
 }
 
@@ -3810,7 +3810,7 @@ static void cmdq_core_disable_clock(uint64_t engineFlag,
 void cmdq_core_add_consume_task(void)
 {
 	if (!work_pending(&gCmdqContext.taskConsumeWaitQueueItem)) {
-		CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_add, MMProfileFlagPulse, 0, 0);
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_add, MMPROFILE_FLAG_PULSE, 0, 0);
 		queue_work(gCmdqContext.taskConsumeWQ, &gCmdqContext.taskConsumeWaitQueueItem);
 	}
 }
@@ -5594,7 +5594,7 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *pTask, int32_t 
 	pThread = &(gCmdqContext.thread[thread]);
 	pEngine = gCmdqContext.engine;
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMProfileFlagPulse, ((unsigned long)pTask),
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMPROFILE_FLAG_PULSE, ((unsigned long)pTask),
 		      thread);
 
 	/*  */
@@ -5898,7 +5898,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 		}
 	}
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->CMDQ_IRQ, MMProfileFlagPulse, thread, cookie);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->CMDQ_IRQ, MMPROFILE_FLAG_PULSE, thread, cookie);
 
 	pThread->waitCookie = cookie + 1;
 	if (pThread->waitCookie > CMDQ_MAX_COOKIE_VALUE)
@@ -6105,7 +6105,7 @@ static void cmdqCoreHandleDone(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ
 		loopResult = pThread->loopCallback(pThread->loopData);
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
-			      MMProfileFlagPulse, thread, loopResult);
+			      MMPROFILE_FLAG_PULSE, thread, loopResult);
 
 		/* HACK: there are some seucre task execue done */
 		cmdq_core_handle_secure_paths_exec_done_notify(thread, value, pGotIRQ);
@@ -6678,7 +6678,7 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 	thread = pTask->thread;
 	if (thread == CMDQ_INVALID_THREAD) {
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_thread,
-			      MMProfileFlagPulse, ((unsigned long)pTask), -1);
+			      MMPROFILE_FLAG_PULSE, ((unsigned long)pTask), -1);
 
 		CMDQ_PROF_START(current->pid, "wait_for_thread");
 
@@ -6722,7 +6722,7 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 	pThread = &(gCmdqContext.thread[thread]);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
-		      MMProfileFlagPulse, ((unsigned long)pTask), thread);
+		      MMPROFILE_FLAG_PULSE, ((unsigned long)pTask), thread);
 
 	CMDQ_PROF_START(current->pid, "wait_for_task_done");
 
@@ -7030,7 +7030,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		CMDQ_MSG("enable HW thread(%d)\n", thread);
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_en,
-			      MMProfileFlagPulse, thread, pThread->nextCookie - 1);
+			      MMPROFILE_FLAG_PULSE, thread, pThread->nextCookie - 1);
 
 		CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
 #ifdef CMDQ_MDP_MET_STATUS
@@ -7178,7 +7178,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 		/* resume HW thread */
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_en,
-			      MMProfileFlagPulse, thread, pThread->nextCookie - 1);
+			      MMPROFILE_FLAG_PULSE, thread, pThread->nextCookie - 1);
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #else
@@ -7318,7 +7318,7 @@ int32_t cmdq_core_reume_impl(const char *tag)
 	if (!work_pending(&gCmdqContext.taskConsumeWaitQueueItem)) {
 		CMDQ_MSG("[%s] there are undone task, process them\n", tag);
 		/* we use system global work queue (kernel thread kworker/n) */
-		CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_add, MMProfileFlagPulse, 0, 0);
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_add, MMPROFILE_FLAG_PULSE, 0, 0);
 		queue_work(gCmdqContext.taskConsumeWQ, &gCmdqContext.taskConsumeWaitQueueItem);
 	}
 
@@ -7443,7 +7443,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		return status;
 
 	CMDQ_PROF_START(current->pid, __func__);
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMProfileFlagStart, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMPROFILE_FLAG_START, current->pid, 0);
 	consumeTime = sched_clock();
 
 	mutex_lock(&gCmdqTaskMutex);
@@ -7553,7 +7553,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 
 	CMDQ_PROF_END(current->pid, __func__);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMProfileFlagEnd, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_done, MMPROFILE_FLAG_END, current->pid, 0);
 
 	return status;
 }
@@ -7578,13 +7578,13 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	CMDQ_MSG("-->SUBMIT_ASYNC: cmd 0x%p begin\n", CMDQ_U32_PTR(pCommandDesc->pVABase));
 	CMDQ_PROF_START(current->pid, __func__);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMProfileFlagStart, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_START, current->pid, 0);
 
 	/* Allocate Task. This creates a new task */
 	/* and put into tail of waiting list */
 	pTask = cmdq_core_acquire_task(pCommandDesc, loopCB, loopData);
 
-	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMProfileFlagEnd, current->pid, 0);
+	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END, current->pid, 0);
 
 	if (pTask == NULL) {
 		CMDQ_PROF_END(current->pid, __func__);
@@ -7766,7 +7766,7 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 
 		CMDQ_VERBOSE("[Auto Release] released pTask=%p, status=%d\n", pTask, status);
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_done,
-			      MMProfileFlagPulse, ((unsigned long)pTask), current->pid);
+			      MMPROFILE_FLAG_PULSE, ((unsigned long)pTask), current->pid);
 
 		/* Notify user */
 		if (finishCallback) {
@@ -7818,7 +7818,7 @@ int32_t cmdqCoreAutoReleaseTask(struct TaskStruct *pTask)
 	INIT_WORK(&pTask->autoReleaseWork, cmdq_core_auto_release_work);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->autoRelease_add,
-		      MMProfileFlagPulse, ((unsigned long)pTask), pTask->thread);
+		      MMPROFILE_FLAG_PULSE, ((unsigned long)pTask), pTask->thread);
 
 	/* Put auto release task to corresponded thread */
 	if (pTask->thread != CMDQ_INVALID_THREAD) {

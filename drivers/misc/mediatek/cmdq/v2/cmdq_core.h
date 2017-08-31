@@ -227,7 +227,7 @@ do {if (cmdq_core_profile_enabled() > 0) met_tag_oneshot(args); } while (0);	\
 #ifdef CMDQ_PROFILE_MMP
 #define CMDQ_PROF_MMP(args...)\
 {\
-do {if (1) MMProfileLogEx(args); } while (0);	\
+do {if (1) mmprofile_log_ex(args); } while (0);	\
 }
 #else
 #define CMDQ_PROF_MMP(args...)
