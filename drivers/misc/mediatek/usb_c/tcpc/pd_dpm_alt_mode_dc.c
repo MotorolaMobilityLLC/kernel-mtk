@@ -75,7 +75,7 @@ static uint32_t dc_get_authorization_code(uint32_t data)
 	return dwCrc;
 }
 
-static inline bool dc_dfp_send_en_unlock(pd_port_t *pd_port,
+static inline bool dc_dfp_send_en_unlock(struct __pd_port *pd_port,
 		uint32_t cmd, uint32_t data0, uint32_t data1)
 {
 	pd_port->uvdm_cnt = 3;
@@ -154,7 +154,7 @@ static const char * const dc_dfp_state_name[] = {
 };
 #endif /* DPM_DBG_ENABLE */
 
-void dc_dfp_set_state(pd_port_t *pd_port, uint8_t state)
+void dc_dfp_set_state(struct __pd_port *pd_port, uint8_t state)
 {
 	pd_port->dc_dfp_state = state;
 
@@ -167,7 +167,7 @@ void dc_dfp_set_state(pd_port_t *pd_port, uint8_t state)
 }
 
 bool dc_dfp_notify_pe_startup(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data)
 {
 	if (pd_port->dpm_flags & DPM_FLAGS_CHECK_DC_MODE) {
 		dc_dfp_set_state(pd_port, DC_DFP_DISCOVER_ID);
@@ -181,8 +181,8 @@ bool dc_dfp_notify_pe_startup(
 	return true;
 }
 
-int dc_dfp_notify_pe_ready(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, pd_event_t *pd_event)
+int dc_dfp_notify_pe_ready(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, struct __pd_event *pd_event)
 {
 #ifdef RTDC_TA_EMULATE
 	if (pd_port->data_role == PD_ROLE_DFP && svid_data->exist) {
@@ -213,8 +213,8 @@ int dc_dfp_notify_pe_ready(pd_port_t *pd_port,
 	return 1;
 }
 
-bool dc_dfp_notify_discover_id(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, pd_event_t *pd_event, bool ack)
+bool dc_dfp_notify_discover_id(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, struct __pd_event *pd_event, bool ack)
 {
 	if (pd_port->dc_dfp_state != DC_DFP_DISCOVER_ID)
 		return true;
@@ -231,7 +231,7 @@ bool dc_dfp_notify_discover_id(pd_port_t *pd_port,
 }
 
 bool dc_dfp_notify_discover_svid(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data, bool ack)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data, bool ack)
 {
 	if (pd_port->dc_dfp_state != DC_DFP_DISCOVER_SVIDS)
 		return false;
@@ -261,7 +261,7 @@ bool dc_dfp_notify_discover_svid(
 }
 
 bool dc_dfp_notify_discover_modes(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data, bool ack)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data, bool ack)
 {
 	if (pd_port->dc_dfp_state != DC_DFP_DISCOVER_MODES)
 		return false;
@@ -288,8 +288,8 @@ bool dc_dfp_notify_discover_modes(
 	return true;
 }
 
-bool dc_dfp_notify_enter_mode(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, uint8_t ops, bool ack)
+bool dc_dfp_notify_enter_mode(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, uint8_t ops, bool ack)
 {
 	uint32_t rn_code[2];
 
@@ -321,7 +321,7 @@ bool dc_dfp_notify_enter_mode(pd_port_t *pd_port,
 }
 
 bool dc_dfp_notify_exit_mode(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data, uint8_t ops)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data, uint8_t ops)
 {
 	if (pd_port->dc_dfp_state <= DC_DFP_ENTER_MODE)
 		return false;
@@ -333,8 +333,8 @@ bool dc_dfp_notify_exit_mode(
 	return true;
 }
 
-static inline bool dc_dfp_notify_en_unlock1(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, bool ack)
+static inline bool dc_dfp_notify_en_unlock1(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, bool ack)
 {
 	uint32_t resp_cmd, rn_code;
 
@@ -375,8 +375,8 @@ static inline bool dc_dfp_notify_en_unlock1(pd_port_t *pd_port,
 
 }
 
-static inline bool dc_dfp_notify_en_unlock2(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, bool ack)
+static inline bool dc_dfp_notify_en_unlock2(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, bool ack)
 {
 	uint32_t resp_cmd;
 
@@ -408,8 +408,8 @@ static inline bool dc_dfp_notify_en_unlock2(pd_port_t *pd_port,
 	return true;
 }
 
-bool dc_dfp_notify_uvdm(pd_port_t *pd_port,
-		svdm_svid_data_t *svid_data, bool ack)
+bool dc_dfp_notify_uvdm(struct __pd_port *pd_port,
+		struct __svdm_svid_data *svid_data, bool ack)
 {
 	switch (pd_port->dc_dfp_state) {
 	case DC_DFP_EN_UNLOCK1:
@@ -424,7 +424,7 @@ bool dc_dfp_notify_uvdm(pd_port_t *pd_port,
 	return true;
 }
 
-bool dc_ufp_notify_uvdm(pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+bool dc_ufp_notify_uvdm(struct __pd_port *pd_port, struct __svdm_svid_data *svid_data)
 {
 #ifdef RTDC_TA_EMULATE
 	uint32_t reply_cmd[3];
@@ -491,14 +491,14 @@ bool dc_ufp_notify_uvdm(pd_port_t *pd_port, svdm_svid_data_t *svid_data)
 	return true;
 }
 
-bool dc_reset_state(pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+bool dc_reset_state(struct __pd_port *pd_port, struct __svdm_svid_data *svid_data)
 {
 	dc_dfp_set_state(pd_port, DC_DFP_NONE);
 	return true;
 }
 
 bool dc_parse_svid_data(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data)
 {
 	svid_data->local_mode.mode_cnt = 1;
 	svid_data->local_mode.mode_vdo[0] = 0x00;

@@ -23,7 +23,7 @@
  * [PD2.0] Figure 8-39 Sink Port state diagram
  */
 
-void pe_snk_startup_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_startup_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	uint8_t rx_cap = PD_RX_CAP_PE_STARTUP;
 
@@ -66,7 +66,7 @@ void pe_snk_startup_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_set_rx_enable(pd_port, rx_cap);
 }
 
-void pe_snk_discovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_discovery_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 #ifdef CONFIG_USB_PD_SNK_HRESET_KEEP_DRAW
 	/* iSafe0mA: Maximum current a Sink
@@ -80,7 +80,7 @@ void pe_snk_discovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 }
 
 void pe_snk_wait_for_capabilities_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 #ifdef CONFIG_USB_PD_SNK_HRESET_KEEP_DRAW
 	/* Default current draw after HardReset */
@@ -95,7 +95,7 @@ void pe_snk_wait_for_capabilities_entry(
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_snk_wait_for_capabilities_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_wait_for_capabilities_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 #ifdef CONFIG_USB_PD_IGNORE_PS_RDY_AFTER_PR_SWAP
 	pd_port->msg_id_pr_swap_last = 0xff;
@@ -104,7 +104,7 @@ void pe_snk_wait_for_capabilities_exit(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_disable_timer(pd_port, PD_TIMER_SINK_WAIT_CAP);
 }
 
-void pe_snk_evaluate_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_evaluate_capability_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	/* Stop NoResponseTimer and reset HardResetCounter to zero */
 	pd_disable_timer(pd_port, PD_TIMER_NO_RESPONSE);
@@ -122,7 +122,7 @@ void pe_snk_evaluate_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_snk_select_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_select_capability_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_event->msg == PD_DPM_NOTIFIED) {
 		PE_DBG("SelectCap%d, rdo:0x%08x\r\n",
@@ -139,7 +139,7 @@ void pe_snk_select_capability_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_snk_select_capability_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_select_capability_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 
@@ -153,7 +153,7 @@ void pe_snk_select_capability_exit(pd_port_t *pd_port, pd_event_t *pd_event)
 		pd_unlock_msg_output(pd_port);
 }
 
-void pe_snk_transition_sink_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_transition_sink_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_enable_timer(pd_port, PD_TIMER_PS_TRANSITION);
 
@@ -168,7 +168,7 @@ void pe_snk_transition_sink_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_snk_transition_sink_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_transition_sink_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_event_msg_match(pd_event, PD_EVT_CTRL_MSG, PD_CTRL_PS_RDY))
 		pd_dpm_snk_transition_power(pd_port, pd_event);
@@ -176,7 +176,7 @@ void pe_snk_transition_sink_exit(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_disable_timer(pd_port, PD_TIMER_PS_TRANSITION);
 }
 
-void pe_snk_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_event_msg_match(pd_event, PD_EVT_CTRL_MSG, PD_CTRL_WAIT))
 		pd_enable_timer(pd_port, PD_TIMER_SINK_REQUEST);
@@ -185,45 +185,45 @@ void pe_snk_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pe_power_ready_entry(pd_port, pd_event);
 }
 
-void pe_snk_hard_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_hard_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_hard_reset(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
 void pe_snk_transition_to_default_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_reset_local_hw(pd_port);
 	pd_dpm_snk_hard_reset(pd_port, pd_event);
 }
 
 void pe_snk_transition_to_default_exit(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_enable_timer(pd_port, PD_TIMER_NO_RESPONSE);
 }
 
 void pe_snk_give_sink_cap_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_send_sink_caps(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
 void pe_snk_get_source_cap_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_GET_SOURCE_CAP);
 }
 
-void pe_snk_send_soft_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_send_soft_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_soft_reset(pd_port, PE_STATE_MACHINE_SINK);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_snk_soft_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_snk_soft_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_handle_soft_reset(pd_port, PE_STATE_MACHINE_SINK);
 	pd_free_pd_event(pd_port, pd_event);

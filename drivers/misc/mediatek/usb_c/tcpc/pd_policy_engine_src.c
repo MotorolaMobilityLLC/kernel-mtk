@@ -24,7 +24,7 @@
  * [PD2.0] Figure 8-38 Source Port Policy Engine state diagram
  */
 
-void pe_src_startup_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_startup_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->state_machine = PE_STATE_MACHINE_SOURCE;
 
@@ -50,7 +50,7 @@ void pe_src_startup_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	}
 }
 
-void pe_src_discovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_discovery_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	/* MessageID Should be 0 for First SourceCap (Ellisys)... */
 
@@ -72,7 +72,7 @@ void pe_src_discovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 #endif
 }
 
-void pe_src_send_capabilities_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_send_capabilities_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_SEND_WAIT_CAP);
 
@@ -82,13 +82,13 @@ void pe_src_send_capabilities_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);	/* soft-reset */
 }
 
-void pe_src_send_capabilities_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_send_capabilities_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 }
 
 void pe_src_negotiate_capabilities_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->pd_connected = true;
 	pd_port->pd_prev_connected = true;
@@ -97,7 +97,7 @@ void pe_src_negotiate_capabilities_entry(
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_transition_supply_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_transition_supply_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	if (pd_event->event_type == PD_EVT_TCP_MSG)	/* goto-min */ {
 		pd_port->request_i_new = pd_port->request_i_op;
@@ -108,30 +108,30 @@ void pe_src_transition_supply_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_enable_timer(pd_port, PD_TIMER_SOURCE_TRANSITION);
 }
 
-void pe_src_transition_supply_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_transition_supply_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SOURCE_TRANSITION);
 }
 
-void pe_src_transition_supply2_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_transition_supply2_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
 }
 
-void pe_src_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->state_machine = PE_STATE_MACHINE_SOURCE;
 	pd_notify_pe_src_explicit_contract(pd_port);
 	pe_power_ready_entry(pd_port, pd_event);
 }
 
-void pe_src_disabled_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_disabled_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_DISABLE);
 	pd_update_connect_state(pd_port, PD_CONNECT_TYPEC_ONLY);
 }
 
-void pe_src_capability_response_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_capability_response_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	switch (pd_event->msg_sec) {
 	case PD_DPM_NAK_REJECT_INVALID:
@@ -146,7 +146,7 @@ void pe_src_capability_response_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	}
 }
 
-void pe_src_hard_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_hard_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_hard_reset(pd_port);
 
@@ -154,60 +154,60 @@ void pe_src_hard_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_enable_timer(pd_port, PD_TIMER_PS_HARD_RESET);
 }
 
-void pe_src_hard_reset_received_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_hard_reset_received_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_enable_timer(pd_port, PD_TIMER_PS_HARD_RESET);
 }
 
 void pe_src_transition_to_default_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_reset_local_hw(pd_port);
 	pd_dpm_src_hard_reset(pd_port);
 }
 
-void pe_src_transition_to_default_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_transition_to_default_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_enable_vconn(pd_port, true);
 	pd_enable_timer(pd_port, PD_TIMER_NO_RESPONSE);
 }
 
-void pe_src_give_source_cap_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_give_source_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_send_source_caps(pd_port);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_get_sink_cap_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_get_sink_cap_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_GET_SINK_CAP);
 }
 
-void pe_src_get_sink_cap_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_get_sink_cap_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 	pd_dpm_dr_inform_sink_cap(pd_port, pd_event);
 }
 
 void pe_src_wait_new_capabilities_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	/* Wait for new Source Capabilities */
 }
 
-void pe_src_send_soft_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_send_soft_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_soft_reset(pd_port, PE_STATE_MACHINE_SOURCE);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_soft_reset_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_soft_reset_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_handle_soft_reset(pd_port, PE_STATE_MACHINE_SOURCE);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_ping_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_ping_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	/* TODO: Send Ping Message */
 }
@@ -219,7 +219,7 @@ void pe_src_ping_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 
 #ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
 
-void pe_src_vdm_identity_request_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_vdm_identity_request_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_DISCOVER_CABLE);
 
@@ -231,7 +231,7 @@ void pe_src_vdm_identity_request_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_vdm_identity_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_vdm_identity_acked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_CABLE_ID;
 
@@ -242,7 +242,7 @@ void pe_src_vdm_identity_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_src_vdm_identity_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_src_vdm_identity_naked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 

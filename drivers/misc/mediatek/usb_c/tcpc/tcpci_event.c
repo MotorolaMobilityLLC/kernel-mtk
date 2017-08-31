@@ -38,7 +38,7 @@ static void postpone_vdm_event(struct tcpc_device *tcpc_dev)
 	 * maybe interrupt by some PD event ....
 	 */
 
-	pd_event_t *vdm_event = &tcpc_dev->pd_vdm_event;
+	struct __pd_event *vdm_event = &tcpc_dev->pd_vdm_event;
 
 	if (tcpc_dev->pd_pending_vdm_event && vdm_event->pd_msg) {
 		tcpc_dev->pd_postpone_vdm_timeout = false;
@@ -47,7 +47,7 @@ static void postpone_vdm_event(struct tcpc_device *tcpc_dev)
 }
 #endif	/* CONFIG_USB_PD_POSTPONE_VDM */
 
-pd_msg_t *__pd_alloc_msg(struct tcpc_device *tcpc_dev)
+struct __pd_msg *__pd_alloc_msg(struct tcpc_device *tcpc_dev)
 {
 	int i;
 	uint8_t mask;
@@ -62,12 +62,12 @@ pd_msg_t *__pd_alloc_msg(struct tcpc_device *tcpc_dev)
 	PD_ERR("pd_alloc_msg failed\r\n");
 	PD_BUG_ON(true);
 
-	return (pd_msg_t *)NULL;
+	return (struct __pd_msg *)NULL;
 }
 
-pd_msg_t *pd_alloc_msg(struct tcpc_device *tcpc_dev)
+struct __pd_msg *pd_alloc_msg(struct tcpc_device *tcpc_dev)
 {
-	pd_msg_t *pd_msg = NULL;
+	struct __pd_msg *pd_msg = NULL;
 
 	mutex_lock(&tcpc_dev->access_lock);
 	pd_msg = __pd_alloc_msg(tcpc_dev);
@@ -76,7 +76,7 @@ pd_msg_t *pd_alloc_msg(struct tcpc_device *tcpc_dev)
 	return pd_msg;
 }
 
-static void __pd_free_msg(struct tcpc_device *tcpc_dev, pd_msg_t *pd_msg)
+static void __pd_free_msg(struct tcpc_device *tcpc_dev, struct __pd_msg *pd_msg)
 {
 	int index = pd_msg - tcpc_dev->pd_msg_buffer;
 	uint8_t mask = 1 << index;
@@ -85,7 +85,7 @@ static void __pd_free_msg(struct tcpc_device *tcpc_dev, pd_msg_t *pd_msg)
 	tcpc_dev->pd_msg_buffer_allocated &= (~mask);
 }
 
-static void __pd_free_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+static void __pd_free_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
 	if (pd_event->pd_msg) {
 		__pd_free_msg(tcpc_dev, pd_event->pd_msg);
@@ -93,14 +93,14 @@ static void __pd_free_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
 	}
 }
 
-void pd_free_msg(struct tcpc_device *tcpc_dev, pd_msg_t *pd_msg)
+void pd_free_msg(struct tcpc_device *tcpc_dev, struct __pd_msg *pd_msg)
 {
 	mutex_lock(&tcpc_dev->access_lock);
 	__pd_free_msg(tcpc_dev, pd_msg);
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_free_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+void pd_free_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
 	mutex_lock(&tcpc_dev->access_lock);
 	__pd_free_event(tcpc_dev, pd_event);
@@ -109,7 +109,7 @@ void pd_free_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
 
 /*----------------------------------------------------------------------------*/
 
-static bool __pd_get_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+static bool __pd_get_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
 	int index = 0;
 
@@ -129,7 +129,7 @@ static bool __pd_get_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
 	return true;
 }
 
-bool pd_get_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+bool pd_get_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
 	bool ret;
 
@@ -140,7 +140,7 @@ bool pd_get_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
 }
 
 static bool __pd_put_event(struct tcpc_device *tcpc_dev,
-	const pd_event_t *pd_event, bool from_port_partner)
+	const struct __pd_event *pd_event, bool from_port_partner)
 {
 	int index;
 
@@ -165,7 +165,7 @@ static bool __pd_put_event(struct tcpc_device *tcpc_dev,
 	return true;
 }
 
-bool pd_put_event(struct tcpc_device *tcpc_dev, const pd_event_t *pd_event,
+bool pd_put_event(struct tcpc_device *tcpc_dev, const struct __pd_event *pd_event,
 	bool from_port_partner)
 {
 	bool ret;
@@ -179,15 +179,15 @@ bool pd_put_event(struct tcpc_device *tcpc_dev, const pd_event_t *pd_event,
 
 /*----------------------------------------------------------------------------*/
 
-bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
-	pd_event_t delay_evt = {
+	struct __pd_event delay_evt = {
 		.event_type = PD_EVT_CTRL_MSG,
 		.msg = PD_CTRL_GOOD_CRC,
 		.pd_msg = NULL,
 	};
 
-	pd_event_t *vdm_event = &tcpc_dev->pd_vdm_event;
+	struct __pd_event *vdm_event = &tcpc_dev->pd_vdm_event;
 
 	if (tcpc_dev->pd_pending_vdm_event) {
 		if (vdm_event->pd_msg && !tcpc_dev->pd_postpone_vdm_timeout)
@@ -208,7 +208,7 @@ bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
 	return false;
 }
 
-static inline void reset_pe_vdm_state(pd_port_t *pd_port, uint32_t vdm_hdr)
+static inline void reset_pe_vdm_state(struct __pd_port *pd_port, uint32_t vdm_hdr)
 {
 	if (PD_VDO_SVDM(vdm_hdr) && PD_VDO_CMDT(vdm_hdr) == CMDT_INIT) {
 		pd_port->reset_vdm_state = true;
@@ -217,9 +217,9 @@ static inline void reset_pe_vdm_state(pd_port_t *pd_port, uint32_t vdm_hdr)
 }
 
 bool pd_put_vdm_event(struct tcpc_device *tcpc_dev,
-		pd_event_t *pd_event, bool from_port_partner)
+		struct __pd_event *pd_event, bool from_port_partner)
 {
-	pd_msg_t *pd_msg = pd_event->pd_msg;
+	struct __pd_msg *pd_msg = pd_event->pd_msg;
 
 	mutex_lock(&tcpc_dev->access_lock);
 
@@ -267,8 +267,8 @@ bool pd_put_vdm_event(struct tcpc_device *tcpc_dev,
 
 bool pd_put_last_vdm_event(struct tcpc_device *tcpc_dev)
 {
-	pd_msg_t *pd_msg = &tcpc_dev->pd_last_vdm_msg;
-	pd_event_t *vdm_event = &tcpc_dev->pd_vdm_event;
+	struct __pd_msg *pd_msg = &tcpc_dev->pd_last_vdm_msg;
+	struct __pd_event *vdm_event = &tcpc_dev->pd_vdm_event;
 
 	mutex_lock(&tcpc_dev->access_lock);
 
@@ -304,7 +304,7 @@ bool pd_put_last_vdm_event(struct tcpc_device *tcpc_dev)
 /*----------------------------------------------------------------------------*/
 
 static bool __pd_get_deferred_tcp_event(
-	struct tcpc_device *tcpc_dev, tcp_dpm_event_t *tcp_event)
+	struct tcpc_device *tcpc_dev, struct tcp_dpm_event *tcp_event)
 {
 	int index = 0;
 
@@ -325,7 +325,7 @@ static bool __pd_get_deferred_tcp_event(
 }
 
 bool pd_get_deferred_tcp_event(
-	struct tcpc_device *tcpc_dev, tcp_dpm_event_t *tcp_event)
+	struct tcpc_device *tcpc_dev, struct tcp_dpm_event *tcp_event)
 {
 	bool ret;
 
@@ -337,7 +337,7 @@ bool pd_get_deferred_tcp_event(
 }
 
 static bool __pd_put_deferred_tcp_event(
-	struct tcpc_device *tcpc_dev, const tcp_dpm_event_t *tcp_event)
+	struct tcpc_device *tcpc_dev, const struct tcp_dpm_event *tcp_event)
 {
 	int index;
 
@@ -363,7 +363,7 @@ static bool __pd_put_deferred_tcp_event(
 }
 
 bool pd_put_deferred_tcp_event(
-	struct tcpc_device *tcpc_dev, const tcp_dpm_event_t *tcp_event)
+	struct tcpc_device *tcpc_dev, const struct tcp_dpm_event *tcp_event)
 {
 	bool ret;
 
@@ -374,9 +374,9 @@ bool pd_put_deferred_tcp_event(
 	return ret;
 }
 
-void pd_notify_current_tcp_event_result(pd_port_t *pd_port, int ret)
+void pd_notify_current_tcp_event_result(struct __pd_port *pd_port, int ret)
 {
-	tcp_dpm_event_t *tcp_event = &pd_port->tcp_event;
+	struct tcp_dpm_event *tcp_event = &pd_port->tcp_event;
 
 	if (tcp_event->event_id == TCP_DPM_EVT_UNKONW)
 		return;
@@ -392,7 +392,7 @@ void pd_notify_current_tcp_event_result(pd_port_t *pd_port, int ret)
 static void __tcp_event_buf_reset(
 	struct tcpc_device *tcpc_dev, uint8_t reason)
 {
-	tcp_dpm_event_t tcp_event;
+	struct tcp_dpm_event tcp_event;
 
 	while (__pd_get_deferred_tcp_event(tcpc_dev, &tcp_event)) {
 		if (tcp_event.event_cb != NULL)
@@ -400,7 +400,7 @@ static void __tcp_event_buf_reset(
 	}
 }
 
-void pd_notify_tcp_event_buf_reset(pd_port_t *pd_port, uint8_t reason)
+void pd_notify_tcp_event_buf_reset(struct __pd_port *pd_port, uint8_t reason)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -415,7 +415,7 @@ void pd_notify_tcp_event_buf_reset(pd_port_t *pd_port, uint8_t reason)
 
 static void __pd_event_buf_reset(struct tcpc_device *tcpc_dev, uint8_t reason)
 {
-	pd_event_t pd_event;
+	struct __pd_event pd_event;
 
 	tcpc_dev->pd_hard_reset_event_pending = false;
 	while (__pd_get_event(tcpc_dev, &pd_event))
@@ -444,7 +444,7 @@ void pd_event_buf_reset(struct tcpc_device *tcpc_dev)
 static inline bool __pd_put_hw_event(
 	struct tcpc_device *tcpc_dev, uint8_t hw_event)
 {
-	pd_event_t evt = {
+	struct __pd_event evt = {
 		.event_type = PD_EVT_HW_MSG,
 		.msg = hw_event,
 		.pd_msg = NULL,
@@ -456,7 +456,7 @@ static inline bool __pd_put_hw_event(
 static inline bool __pd_put_pe_event(
 	struct tcpc_device *tcpc_dev, uint8_t pe_event)
 {
-	pd_event_t evt = {
+	struct __pd_event evt = {
 		.event_type = PD_EVT_PE_MSG,
 		.msg = pe_event,
 		.pd_msg = NULL,
@@ -530,7 +530,7 @@ void pd_put_sent_hard_reset_event(struct tcpc_device *tcpc_dev)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-bool pd_put_pd_msg_event(struct tcpc_device *tcpc_dev, pd_msg_t *pd_msg)
+bool pd_put_pd_msg_event(struct tcpc_device *tcpc_dev, struct __pd_msg *pd_msg)
 {
 	uint32_t cnt, cmd;
 
@@ -538,7 +538,7 @@ bool pd_put_pd_msg_event(struct tcpc_device *tcpc_dev, pd_msg_t *pd_msg)
 	bool discard_pending = false;
 #endif
 
-	pd_event_t evt = {
+	struct __pd_event evt = {
 		.event_type = PD_EVT_PD_MSG,
 		.pd_msg = pd_msg,
 	};
@@ -687,7 +687,7 @@ void pd_put_vbus_present_event(struct tcpc_device *tcpc_dev)
 
 /* ---- PD Notify TCPC ---- */
 
-void pd_try_put_pe_idle_event(pd_port_t *pd_port)
+void pd_try_put_pe_idle_event(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -697,7 +697,7 @@ void pd_try_put_pe_idle_event(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_running(pd_port_t *pd_port)
+void pd_notify_pe_running(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -706,7 +706,7 @@ void pd_notify_pe_running(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_idle(pd_port_t *pd_port)
+void pd_notify_pe_idle(struct __pd_port *pd_port)
 {
 	bool notify_pe_idle = false;
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
@@ -727,7 +727,7 @@ void pd_notify_pe_idle(pd_port_t *pd_port)
 		tcpc_enable_timer(tcpc_dev, TYPEC_RT_TIMER_PE_IDLE);
 }
 
-void pd_notify_pe_wait_vbus_once(pd_port_t *pd_port, int wait_evt)
+void pd_notify_pe_wait_vbus_once(struct __pd_port *pd_port, int wait_evt)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -760,7 +760,7 @@ void pd_notify_pe_wait_vbus_once(pd_port_t *pd_port, int wait_evt)
 	}
 }
 
-void pd_notify_pe_error_recovery(pd_port_t *pd_port)
+void pd_notify_pe_error_recovery(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -776,7 +776,7 @@ void pd_notify_pe_error_recovery(pd_port_t *pd_port)
 }
 
 #ifdef CONFIG_USB_PD_RECV_HRESET_COUNTER
-void pd_notify_pe_over_recv_hreset(pd_port_t *pd_port)
+void pd_notify_pe_over_recv_hreset(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -795,7 +795,7 @@ void pd_notify_pe_over_recv_hreset(pd_port_t *pd_port)
 }
 #endif	/* CONFIG_USB_PD_RECV_HRESET_COUNTER */
 
-void pd_notify_pe_transit_to_default(pd_port_t *pd_port)
+void pd_notify_pe_transit_to_default(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -811,7 +811,7 @@ void pd_notify_pe_transit_to_default(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_hard_reset_completed(pd_port_t *pd_port)
+void pd_notify_pe_hard_reset_completed(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -823,7 +823,7 @@ void pd_notify_pe_hard_reset_completed(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_send_hard_reset(pd_port_t *pd_port)
+void pd_notify_pe_send_hard_reset(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -833,7 +833,7 @@ void pd_notify_pe_send_hard_reset(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_execute_pr_swap(pd_port_t *pd_port, bool start_swap)
+void pd_notify_pe_execute_pr_swap(struct __pd_port *pd_port, bool start_swap)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -843,7 +843,7 @@ void pd_notify_pe_execute_pr_swap(pd_port_t *pd_port, bool start_swap)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_cancel_pr_swap(pd_port_t *pd_port)
+void pd_notify_pe_cancel_pr_swap(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -863,7 +863,7 @@ void pd_notify_pe_cancel_pr_swap(pd_port_t *pd_port)
 	}
 }
 
-void pd_notify_pe_reset_protocol(pd_port_t *pd_port)
+void pd_notify_pe_reset_protocol(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -872,7 +872,7 @@ void pd_notify_pe_reset_protocol(pd_port_t *pd_port)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_noitfy_pe_bist_mode(pd_port_t *pd_port, uint8_t mode)
+void pd_noitfy_pe_bist_mode(struct __pd_port *pd_port, uint8_t mode)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -881,7 +881,7 @@ void pd_noitfy_pe_bist_mode(pd_port_t *pd_port, uint8_t mode)
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_recv_ping_event(pd_port_t *pd_port)
+void pd_notify_pe_recv_ping_event(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -891,7 +891,7 @@ void pd_notify_pe_recv_ping_event(pd_port_t *pd_port)
 }
 
 void pd_notify_pe_transmit_msg(
-	pd_port_t *pd_port, uint8_t type)
+	struct __pd_port *pd_port, uint8_t type)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -900,7 +900,7 @@ void pd_notify_pe_transmit_msg(
 	mutex_unlock(&tcpc_dev->access_lock);
 }
 
-void pd_notify_pe_pr_changed(pd_port_t *pd_port)
+void pd_notify_pe_pr_changed(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -913,7 +913,7 @@ void pd_notify_pe_pr_changed(pd_port_t *pd_port)
 	/* mutex_unlock(&tcpc_dev->access_lock); */
 }
 
-void pd_notify_pe_src_explicit_contract(pd_port_t *pd_port)
+void pd_notify_pe_src_explicit_contract(struct __pd_port *pd_port)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
@@ -926,7 +926,7 @@ void pd_notify_pe_src_explicit_contract(pd_port_t *pd_port)
 }
 
 #ifdef CONFIG_USB_PD_ALT_MODE_RTDC
-void pd_notify_pe_direct_charge(pd_port_t *pd_port, bool en)
+void pd_notify_pe_direct_charge(struct __pd_port *pd_port, bool en)
 {
 	struct tcpc_device *tcpc_dev = pd_port->tcpc_dev;
 
