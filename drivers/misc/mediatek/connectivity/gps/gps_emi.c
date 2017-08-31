@@ -64,13 +64,13 @@ struct gps_emi_dev {
 	dev_t devno;
 	struct cdev chdev;
 };
-typedef unsigned char   UINT8, *PUINT8, **PPUINT8;
+/* typedef unsigned char   UINT8, *PUINT8, **PPUINT8; */
 
 /******************************************************************************
  * local variables
 ******************************************************************************/
 phys_addr_t gGpsEmiPhyBase;
-UINT8 __iomem *pGpsEmibaseaddr;
+void __iomem *pGpsEmibaseaddr;
 struct gps_emi_dev *devobj;
 #define CONSYS_EMI_MPU_SETTING      0
 #define EMI_MPU_PROTECTION_IS_READY 1
@@ -139,7 +139,7 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 
 		pGpsEmibaseaddr = ioremap_nocache(gGpsEmiPhyBase, SZ_1M);
 		if (pGpsEmibaseaddr != NULL) {
-			UINT8 *pFullPatchName = "MNL.bin";
+			unsigned char *pFullPatchName = "MNL.bin";
 			osal_firmware *pPatch = NULL;
 
 			GPS_DBG("EMI mapping OK(0x%p)\n", pGpsEmibaseaddr);
