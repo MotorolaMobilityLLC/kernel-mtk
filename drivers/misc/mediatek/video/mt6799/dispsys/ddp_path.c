@@ -54,7 +54,7 @@ struct m_to_b {
 
 struct mout_s {
 	int id;
-	struct m_to_b out_id_bit_map[6];
+	struct m_to_b out_id_bit_map[BIT_NUM];
 
 	unsigned long *reg;
 	unsigned int reg_val;
