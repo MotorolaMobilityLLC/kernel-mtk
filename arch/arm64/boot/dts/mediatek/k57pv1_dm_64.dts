@@ -692,7 +692,7 @@
 			pins = <PINMUX_GPIO42__FUNC_IDDIG>;
 			input-enable;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			bias-pull-up;
 		};
 	};
 	iddig_enable: iddig_enable {
@@ -700,7 +700,7 @@
 			pins = <PINMUX_GPIO42__FUNC_IDDIG>;
 			input-enable;
 			slew-rate = <0>;
-			bias-pull-up = <00>;
+			bias-pull-up;
 		};
 	};
 	iddig_disable: iddig_disable {
