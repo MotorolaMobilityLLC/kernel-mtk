@@ -500,8 +500,14 @@ static ssize_t als_show_devnum(struct device *dev,
 	unsigned int devnum;
 	const char *devname = NULL;
 	int ret;
+	struct input_handle *handle;
 
-	devname = dev_name(&alsps_context_obj->idev->dev);
+	list_for_each_entry(handle, &alsps_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
@@ -646,8 +652,14 @@ static ssize_t ps_show_devnum(struct device *dev,
 	unsigned int devnum;
 	const char *devname = NULL;
 	int ret;
+	struct input_handle *handle;
 
-	devname = dev_name(&alsps_context_obj->idev->dev);
+	list_for_each_entry(handle, &alsps_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
