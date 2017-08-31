@@ -487,6 +487,7 @@ void audckbufEnable(bool enable)
 static int ClsqCount;
 static void ClsqEnable(bool enable)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	pr_aud("ClsqEnable ClsqCount = %d enable = %d\n", ClsqCount, enable);
 	mutex_lock(&AudAna_lock);
 	if (enable) {
@@ -510,6 +511,7 @@ static void ClsqEnable(bool enable)
 		}
 	}
 	mutex_unlock(&AudAna_lock);
+#endif
 }
 
 static int TopCkCount;
@@ -8088,10 +8090,12 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	pr_warn("%s\n", __func__);
 
 	audckbufEnable(true);
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (is_clk_buf_from_pmic())
 		Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
 	else
 		Ana_Set_Reg(TOP_CLKSQ, 0x0800, 0x0801);
+#endif
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0010, 0x0010);
 	/* disable AUDGLB */
