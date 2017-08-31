@@ -96,10 +96,10 @@ FH_PLL14 = 14,      /* FSMIPLL */
 FH_PLL_NUM,
 };
 
-#define FH_MEM_PLLID FH_PLL6
-#define FH_MM_PLLID  FH_PLL9
-#define FH_MAIN_PLLID FH_PLL7
-#define FH_VENC_PLLID FH_PLL10
+#define FH_MEM_PLLID FH_PLL8
+#define FH_MM_PLLID  FH_PLL11
+#define FH_MAIN_PLLID FH_PLL9
+#define FH_VENC_PLLID FH_PLL12
 #define isFHCTL(id) ((id >= FH_PLL0)?true:false)
 
 
