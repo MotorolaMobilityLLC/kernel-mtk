@@ -66,7 +66,7 @@ void aee_dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		unsigned long where = frame.pc;
 		int ret;
 
-		ret = unwind_frame(&frame);
+		ret = unwind_frame(tsk, &frame);
 		if (ret < 0)
 			break;
 		dump_backtrace_entry(where, frame.sp);

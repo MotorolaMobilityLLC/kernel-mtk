@@ -267,14 +267,18 @@ inline void aee_print_bt(struct pt_regs *regs)
 				aee_nested_printf("fp(%lx)", fp);
 			break;
 		}
+#ifdef __aarch64__
+		unwind_frame(current, &cur_frame);
+#else
 		unwind_frame(&cur_frame);
+#endif
 		if (!mrdump_virt_addr_valid(cur_frame.pc))
 			break;
 		if (in_exception_text(cur_frame.pc)) {
 #ifdef __aarch64__
 			/* work around for unknown reason do_mem_abort stack abnormal */
 			excp_regs = (void *)(cur_frame.fp + 0x10 + 0xa0);
-			unwind_frame(&cur_frame);	/* skip do_mem_abort & el1_da */
+			unwind_frame(current, &cur_frame);	/* skip do_mem_abort & el1_da */
 #else
 			excp_regs = (void *)(cur_frame.fp + 4);
 #endif
