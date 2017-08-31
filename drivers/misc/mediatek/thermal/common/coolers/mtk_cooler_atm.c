@@ -608,6 +608,12 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
 	prv_adp_cpu_pwr_lim = adaptive_cpu_power_limit;
 	adaptive_cpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (atm_sspm_enabled)
+		adaptive_cpu_power_limit = 0x7FFFFFFF;
+#endif
+#endif
 
 	if (prv_adp_cpu_pwr_lim != adaptive_cpu_power_limit) {
 #ifdef ATM_CFG_PROFILING
@@ -661,6 +667,13 @@ static void set_adaptive_gpu_power_limit(unsigned int limit)
 {
 	prv_adp_gpu_pwr_lim = adaptive_gpu_power_limit;
 	adaptive_gpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (atm_sspm_enabled)
+		adaptive_gpu_power_limit = 0x7FFFFFFF;
+#endif
+#endif
+
 	if (prv_adp_gpu_pwr_lim != adaptive_gpu_power_limit) {
 #ifdef ATM_CFG_PROFILING
 		ktime_t now, delta;
