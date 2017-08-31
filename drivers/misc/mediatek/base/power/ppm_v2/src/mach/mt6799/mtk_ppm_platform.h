@@ -30,10 +30,13 @@ extern "C" {
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 
-/* TBD: waiting for hps API */
 #define PPM_HEAVY_TASK_INDICATE_SUPPORT	(1)
+#define PPM_BIG_TASK_INDICATE_SUPPORT	(1)
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
+#endif
+#if PPM_BIG_TASK_INDICATE_SUPPORT
+extern unsigned int hps_get_bigtsk(unsigned int cluster_id);
 #endif
 
 #if OCP_FEATURE_ENABLED
@@ -117,7 +120,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define DVFS_OPP_NUM		(16)
 
 #define PPM_DEFAULT_HOLD_TIME		(4)
-#define PPM_DEFAULT_HVYTSK_TIME		(1)
+#define PPM_DEFAULT_BIGTSK_TIME		(1)
 #define PPM_DEFAULT_FREQ_HOLD_TIME	(4)
 #define PPM_DEFAULT_DELTA		(20)
 #define PPM_LOADING_UPPER		(400)

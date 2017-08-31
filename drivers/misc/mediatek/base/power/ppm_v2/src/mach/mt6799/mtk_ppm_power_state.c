@@ -51,10 +51,10 @@ const struct ppm_state_cluster_limit_data cluster_limit_##name = {	\
 	.capacity_hold_time = c_hold,	\
 	.capacity_hold_cnt = 0,		\
 	.capacity_bond = c_bond,	\
-	.hvytsk_hold_time = h_hold,	\
-	.hvytsk_hold_cnt = 0,	\
-	.hvytsk_l_bond = h_l_bond,	\
-	.hvytsk_h_bond = h_h_bond,	\
+	.bigtsk_hold_time = h_hold,	\
+	.bigtsk_hold_cnt = 0,	\
+	.bigtsk_l_bond = h_l_bond,	\
+	.bigtsk_h_bond = h_h_bond,	\
 	.freq_hold_time = f_hold,	\
 	.freq_hold_cnt = 0,		\
 }
@@ -126,7 +126,7 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		ppm_trans_rule_LL_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_UP,
-		PPM_DEFAULT_HVYTSK_TIME,
+		PPM_DEFAULT_BIGTSK_TIME,
 		2,
 		4,
 		0
@@ -141,7 +141,7 @@ static struct ppm_state_transfer state_perf_transfer_LL_ONLY[] = {
 		ppm_trans_rule_LL_ONLY_to_L_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_UP,
-		PPM_DEFAULT_HVYTSK_TIME,
+		PPM_DEFAULT_BIGTSK_TIME,
 		2,
 		4,
 		0
@@ -156,7 +156,7 @@ static struct ppm_state_transfer state_pwr_transfer_L_ONLY[] = {
 		ppm_trans_rule_L_ONLY_to_LL_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_DOWN,
-		PPM_DEFAULT_HVYTSK_TIME,
+		PPM_DEFAULT_BIGTSK_TIME,
 		0,
 		0,
 		PPM_DEFAULT_FREQ_HOLD_TIME
@@ -171,9 +171,9 @@ static struct ppm_state_transfer state_perf_transfer_L_ONLY[] = {
 		ppm_trans_rule_L_ONLY_to_ALL,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_UP,
-		PPM_DEFAULT_HVYTSK_TIME,
-		1,
+		PPM_DEFAULT_BIGTSK_TIME,
 		2,
+		4,
 		0
 		),
 };
@@ -186,7 +186,7 @@ static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 		ppm_trans_rule_ALL_to_LL_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_DOWN,
-		PPM_DEFAULT_HVYTSK_TIME,
+		PPM_DEFAULT_BIGTSK_TIME,
 		0,
 		0,
 		0
@@ -197,7 +197,7 @@ static struct ppm_state_transfer state_pwr_transfer_ALL[] = {
 		ppm_trans_rule_ALL_to_L_ONLY,
 		PPM_DEFAULT_HOLD_TIME,
 		PPM_CAPACITY_DOWN,
-		PPM_DEFAULT_HVYTSK_TIME,
+		PPM_DEFAULT_BIGTSK_TIME,
 		2,
 		4,
 		0
@@ -274,24 +274,23 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	if (ppm_lcmoff_is_policy_activated())
 		return false;
 
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+#if PPM_BIG_TASK_INDICATE_SUPPORT
 	{
-		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
 
-		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_LL, heavy_task);
-
-		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
-			settings->hvytsk_hold_cnt++;
-			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-				ppm_dbg(HICA, "Go to L_ONLY due to LL heavy task = %d\n", heavy_task);
+		if (big_task_L > settings->bigtsk_l_bond && big_task_L <= settings->bigtsk_h_bond) {
+			settings->bigtsk_hold_cnt++;
+			if (settings->bigtsk_hold_cnt >= settings->bigtsk_hold_time) {
+				ppm_dbg(HICA, "Go to L_ONLY due to L big task = %d\n", big_task_L);
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-					-1, -1, heavy_task, -1, true);
+					-1, -1, big_task_L, big_task_B, -1, -1, true);
 				return true;
 			}
 		} else
-			settings->hvytsk_hold_cnt = 0;
+			settings->bigtsk_hold_cnt = 0;
 	}
 #endif
 
@@ -313,7 +312,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-					usage, capacity, -1, -1, true);
+					usage, capacity, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -322,7 +321,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-			usage, capacity, -1, -1, false);
+			usage, capacity, -1, -1, -1, -1, false);
 	}
 
 	return false;
@@ -335,21 +334,37 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
-		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_LL, heavy_task);
+		if (heavy_task) {
+			ppm_dbg(HICA, "Go to ALL due to LL heavy task = %d\n", heavy_task);
+			trace_ppm_hica(
+				ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
+				ppm_get_power_state_name(PPM_POWER_STATE_ALL),
+				-1, -1, -1, -1, heavy_task, -1, true);
+			return true;
+		}
+	}
+#endif
 
-		if ((heavy_task && heavy_task <= settings->hvytsk_l_bond)
-			|| heavy_task > settings->hvytsk_h_bond) {
-			settings->hvytsk_hold_cnt++;
-			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-				ppm_dbg(HICA, "Go to ALL due to LL heavy task = %d\n", heavy_task);
+#if PPM_BIG_TASK_INDICATE_SUPPORT
+	{
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
+
+		if ((big_task_L && big_task_L <= settings->bigtsk_l_bond)
+			|| big_task_L > settings->bigtsk_h_bond
+			|| big_task_B) {
+			settings->bigtsk_hold_cnt++;
+			if (settings->bigtsk_hold_cnt >= settings->bigtsk_hold_time) {
+				ppm_dbg(HICA, "Go to ALL due to L/B big task = %d/%d\n",
+					big_task_L, big_task_B);
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-					-1, -1, heavy_task, -1, true);
+					-1, -1, big_task_L, big_task_B, -1, -1, true);
 				return true;
 			}
 		} else
-			settings->hvytsk_hold_cnt = 0;
+			settings->bigtsk_hold_cnt = 0;
 	}
 #endif
 
@@ -371,7 +386,7 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-					usage, capacity, -1, -1, true);
+					usage, capacity, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -380,7 +395,7 @@ static bool ppm_trans_rule_LL_ONLY_to_ALL(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
 			ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-			usage, capacity, -1, -1, false);
+			usage, capacity, -1, -1, -1, -1, false);
 	}
 
 	return false;
@@ -393,22 +408,24 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_L)
 		return false;
 
-#if PPM_HEAVY_TASK_INDICATE_SUPPORT
+#if PPM_BIG_TASK_INDICATE_SUPPORT
 	{
-		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
 
-		if (heavy_task) {
-			ppm_dbg(HICA, "Stay in L_ONLY due to L hvytsk = %d\n", heavy_task);
+		if (big_task_L) {
+			ppm_dbg(HICA, "Stay in L_ONLY due to L big task = %d\n", big_task_L);
 			trace_ppm_hica(
 				ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 				ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-				-1, -1, heavy_task, -1, false);
+				-1, -1, big_task_L, big_task_B, -1, -1, false);
 			settings->capacity_hold_cnt = 0;
 			settings->freq_hold_cnt = 0;
 			return false;
 		}
 	}
 #endif
+
 	{
 		/* check freq */
 		unsigned int cur_freq_L = mt_cpufreq_get_cur_phy_freq_no_lock(MT_CPU_DVFS_L);
@@ -421,12 +438,13 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-					-1, -1, -1, cur_freq_L, true);
+					-1, -1, -1, -1, -1, cur_freq_L, true);
 				return true;
 			}
 		} else
 			settings->freq_hold_cnt = 0;
 	}
+
 	{
 		/* check capacity */
 		unsigned long usage_LL, usage_L, capacity_LL, capacity_L;
@@ -449,7 +467,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-					usage_L, capacity_LL, -1, -1, true);
+					usage_L, capacity_LL, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -458,7 +476,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 			ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-			usage_L, capacity_LL, -1, -1, false);
+			usage_L, capacity_LL, -1, -1, -1, -1, false);
 	}
 
 	return false;
@@ -471,26 +489,40 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 	{
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
-		ppm_dbg(HICA, "Cluster %d hvytsk = %d\n", PPM_CLUSTER_L, heavy_task);
-
-#ifdef PPM_DISABLE_LL_ONLY
 		if (heavy_task) {
-#else
-		if (heavy_task > settings->hvytsk_l_bond && heavy_task <= settings->hvytsk_h_bond) {
+			ppm_dbg(HICA, "Go to ALL due to L heavy task = %d\n", heavy_task);
+			trace_ppm_hica(
+				ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
+				ppm_get_power_state_name(PPM_POWER_STATE_ALL),
+				-1, -1, -1, -1, heavy_task, -1, true);
+			return true;
+		}
+	}
 #endif
-			settings->hvytsk_hold_cnt++;
-			if (settings->hvytsk_hold_cnt >= settings->hvytsk_hold_time) {
-				ppm_dbg(HICA, "Go to ALL due to L heavy task = %d\n", heavy_task);
+
+#if PPM_BIG_TASK_INDICATE_SUPPORT
+	{
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
+
+		if ((big_task_L && big_task_L <= settings->bigtsk_l_bond)
+			|| big_task_L > settings->bigtsk_h_bond
+			|| big_task_B) {
+			settings->bigtsk_hold_cnt++;
+			if (settings->bigtsk_hold_cnt >= settings->bigtsk_hold_time) {
+				ppm_dbg(HICA, "Go to ALL due to L/B big task = %d/%d\n",
+					big_task_L, big_task_B);
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-					-1, -1, heavy_task, -1, true);
+					-1, -1, big_task_L, big_task_B, -1, -1, true);
 				return true;
 			}
 		} else
-			settings->hvytsk_hold_cnt = 0;
+			settings->bigtsk_hold_cnt = 0;
 	}
 #endif
+
 	{
 		/* check capacity */
 		unsigned long usage, capacity;
@@ -509,7 +541,7 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-					usage, capacity, -1, -1, true);
+					usage, capacity, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -518,7 +550,7 @@ static bool ppm_trans_rule_L_ONLY_to_ALL(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
 			ppm_get_power_state_name(PPM_POWER_STATE_ALL),
-			usage, capacity, -1, -1, false);
+			usage, capacity, -1, -1, -1, -1, false);
 	}
 
 	return false;
@@ -544,13 +576,32 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-					-1, -1, heavy_task, -1, false);
+					-1, -1, -1, -1, heavy_task, -1, false);
 				settings->capacity_hold_cnt = 0;
 				return false;
 			}
 		}
 	}
 #endif
+
+#if PPM_BIG_TASK_INDICATE_SUPPORT
+	{
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
+
+		if (big_task_L || big_task_B) {
+			ppm_dbg(HICA, "Stay in ALL due to L/B big task = %d/%d\n",
+				big_task_L, big_task_B);
+			trace_ppm_hica(
+				ppm_get_power_state_name(PPM_POWER_STATE_ALL),
+				ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
+				-1, -1, big_task_L, big_task_B, -1, -1, false);
+			settings->capacity_hold_cnt = 0;
+			return false;
+		}
+	}
+#endif
+
 	{
 		/* check capacity */
 		unsigned long usage, usage_total = 0, capacity = 0, dummy;
@@ -573,7 +624,7 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 					ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-					usage_total, capacity, -1, -1, true);
+					usage_total, capacity, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -582,7 +633,7 @@ static bool ppm_trans_rule_ALL_to_LL_ONLY(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 			ppm_get_power_state_name(PPM_POWER_STATE_LL_ONLY),
-			usage_total, capacity, -1, -1, false);
+			usage_total, capacity, -1, -1, -1, -1, false);
 	}
 
 	return false;
@@ -598,7 +649,6 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{
-#ifdef PPM_DISABLE_LL_ONLY
 		unsigned int heavy_task, i;
 
 		for_each_ppm_clusters(i) {
@@ -609,29 +659,33 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-					-1, -1, heavy_task, -1, false);
+					-1, -1, -1, -1, heavy_task, -1, false);
 				settings->capacity_hold_cnt = 0;
 				return false;
 			}
 		}
-#else
-		unsigned int L_heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
-		unsigned int B_heavy_task = hps_get_hvytsk(PPM_CLUSTER_B);
+	}
+#endif
 
-		if (!(B_heavy_task == 0 && L_heavy_task > settings->hvytsk_l_bond
-			&& L_heavy_task <= settings->hvytsk_h_bond)) {
-			ppm_dbg(HICA, "Stay in ALL due to L/B heavy task = %d/%d\n",
-					L_heavy_task, B_heavy_task);
+#if PPM_BIG_TASK_INDICATE_SUPPORT
+	{
+		unsigned int big_task_L = hps_get_bigtsk(PPM_CLUSTER_L);
+		unsigned int big_task_B = hps_get_bigtsk(PPM_CLUSTER_B);
+
+		if (!(big_task_B == 0 && big_task_L > settings->bigtsk_l_bond
+			&& big_task_L <= settings->bigtsk_h_bond)) {
+			ppm_dbg(HICA, "Stay in ALL due to L/B big task = %d/%d\n",
+					big_task_L, big_task_B);
 			trace_ppm_hica(
 				ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 				ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-				-1, -1, L_heavy_task + B_heavy_task, -1, false);
+				-1, -1, big_task_L, big_task_B, -1, -1, false);
 			settings->capacity_hold_cnt = 0;
 			return false;
 		}
-#endif
 	}
 #endif
+
 	{
 		/* check capacity */
 		unsigned long usage, usage_total = 0, capacity = 0, dummy;
@@ -655,7 +709,7 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 				trace_ppm_hica(
 					ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 					ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-					usage_total, capacity, -1, -1, true);
+					usage_total, capacity, -1, -1, -1, -1, true);
 				return true;
 			}
 		} else
@@ -664,7 +718,7 @@ static bool ppm_trans_rule_ALL_to_L_ONLY(
 		trace_ppm_hica(
 			ppm_get_power_state_name(PPM_POWER_STATE_ALL),
 			ppm_get_power_state_name(PPM_POWER_STATE_L_ONLY),
-			usage_total, capacity, -1, -1, false);
+			usage_total, capacity, -1, -1, -1, -1, false);
 	}
 
 	return false;

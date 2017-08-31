@@ -313,10 +313,10 @@ struct ppm_state_transfer_data {
 		unsigned int capacity_hold_time;
 		unsigned int capacity_hold_cnt;
 		unsigned int capacity_bond;
-		unsigned int hvytsk_hold_time;
-		unsigned int hvytsk_hold_cnt;
-		unsigned int hvytsk_l_bond;
-		unsigned int hvytsk_h_bond;
+		unsigned int bigtsk_hold_time;
+		unsigned int bigtsk_hold_cnt;
+		unsigned int bigtsk_l_bond;
+		unsigned int bigtsk_h_bond;
 		unsigned int freq_hold_time;
 		unsigned int freq_hold_cnt;
 #else /* 1p0, 1p5, 1p75 */
