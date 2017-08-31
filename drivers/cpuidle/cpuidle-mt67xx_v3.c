@@ -19,10 +19,6 @@
 
 #include "dt_idle_states.h"
 
-#if defined(CONFIG_MACH_MT6799)
-#define USING_TICK_BROADCAST
-#endif
-
 void __attribute__((weak)) mt_cpuidle_framework_init(void) { }
 
 int __attribute__((weak)) rgidle_enter(int cpu)

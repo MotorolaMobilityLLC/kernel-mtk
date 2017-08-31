@@ -34,8 +34,7 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
-/* #include <mach/mt_gpt.h> */
-/* #include <mach/mt_cpuxgpt.h> */
+#include <mach/mtk_gpt.h>
 #include <mtk_spm.h>
 #include <mtk_spm_idle.h>
 #ifdef CONFIG_THERMAL
@@ -61,7 +60,7 @@
 		pr_warn(IDLE_TAG fmt, ##args); \
 	}
 
-/* #define IDLE_GPT GPT4 */
+#define IDLE_GPT GPT4
 
 #define log2buf(p, s, fmt, args...) \
 	(p += snprintf(p, sizeof(s) - strlen(s), fmt, ##args))
@@ -110,112 +109,12 @@ tscpu_start_thermal_timer(void)
 	/* FIXME: early porting */
 }
 
-void __attribute__((weak)) mtkts_bts_cancel_thermal_timer(void)
+void __attribute__((weak)) mtkTTimer_start_timer(void)
 {
 
 }
 
-void __attribute__((weak)) mtkts_btsmdpa_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pmic_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_battery_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pa_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_wmt_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_bts_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_btsmdpa_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pmic_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_battery_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pa_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts1_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts2_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts3_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts4_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts5_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts1_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts2_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts3_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts4_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts5_timer(void)
+void __attribute__((weak)) mtkTTimer_cancel_timer(void)
 {
 
 }
@@ -302,13 +201,22 @@ int __attribute__((weak)) is_teei_ready(void)
 	return 1;
 }
 
+unsigned long __attribute__((weak)) localtimer_get_counter(void)
+{
+	return 0;
+}
+
+int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
+{
+	return 0;
+}
 #endif
 
 static char log_buf[500];
 static char log_buf_2[500];
 
 static unsigned long long idle_block_log_prev_time;
-static unsigned int idle_block_log_time_criteria = 5000;	/* 5 sec */
+static unsigned int idle_block_log_time_criteria = 65000;	/* 5 sec */
 static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
 
@@ -322,8 +230,8 @@ static unsigned long long idle_ratio_value[NR_TYPES];
 static unsigned int idle_block_mask[NR_TYPES][NR_GRPS + 1];
 
 /* DeepIdle */
-static unsigned int     dpidle_time_critera = 2000; /* 2ms */
-static unsigned int     dpidle_block_time_critera = 30000; /* 30sec */
+static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
+static unsigned int     dpidle_block_time_criteria = 30000; /* 30sec */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
@@ -332,14 +240,11 @@ static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-unsigned int			dpidle_profile[4];
-#endif
 
 /* SODI3 */
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
-static unsigned int     soidle3_time_critera = 5000; /* 5ms */
-static unsigned int     soidle3_block_time_critera = 30000; /* 30sec */
+static unsigned int     soidle3_time_criteria = 65000; /* 5ms */
+static unsigned int     soidle3_block_time_criteria = 30000; /* 30sec */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
@@ -353,8 +258,8 @@ unsigned int			soidle3_profile[4];
 #endif
 
 /* SODI */
-static unsigned int     soidle_time_critera = 2000; /* 2ms */
-static unsigned int     soidle_block_time_critera = 30000; /* 30sec */
+static unsigned int     soidle_time_criteria = 26000; /* 2ms */
+static unsigned int     soidle_block_time_criteria = 30000; /* 30sec */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
@@ -368,7 +273,7 @@ unsigned int			soidle_profile[4];
 #endif
 
 /* MCDI */
-static unsigned int     mcidle_time_critera = 3000; /* 3ms */
+static unsigned int     mcidle_time_criteria = 3000; /* 3ms */
 static unsigned long    mcidle_cnt[NR_CPUS] = {0};
 static unsigned long    mcidle_block_cnt[NR_CPUS][NR_REASONS] = { {0}, {0} };
 
@@ -430,12 +335,108 @@ static long int idle_get_current_time_ms(void)
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
 
-static unsigned int get_next_event_time_us(void)
+#ifndef USING_STD_TIMER_OPS
+/* Workaround of static analysis defect*/
+int idle_gpt_get_cnt(unsigned int id, unsigned int *ptr)
 {
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cnt(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+
+int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
+{
+	unsigned int val[2] = {0};
+	int ret = 0;
+
+	ret = gpt_get_cmp(id, val);
+	*ptr = val[0];
+
+	return ret;
+}
+#endif
+
+static bool next_timer_criteria_check(unsigned int timer_criteria)
+{
+	unsigned int timer_left = 0;
+	bool ret = true;
+
+#ifdef USING_STD_TIMER_OPS
 	struct timespec t;
 
 	t = ktime_to_timespec(tick_nohz_get_sleep_length());
-	return t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
+	timer_left = t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
+
+	if (timer_left < timer_criteria)
+		ret = false;
+#else
+#ifdef CONFIG_SMP
+	timer_left = localtimer_get_counter();
+
+	if ((int)timer_left < timer_criteria ||
+			((int)timer_left) < 0)
+		ret = false;
+#else
+	unsigned int timer_cmp = 0;
+
+	gpt_get_cnt(GPT1, &timer_left);
+	gpt_get_cmp(GPT1, &timer_cmp);
+
+	if ((timer_cmp - timer_left) < timer_criteria)
+		ret = false;
+#endif
+#endif
+
+	return ret;
+}
+
+static void timer_setting_before_wfi(void)
+{
+#ifndef USING_STD_TIMER_OPS
+#ifdef CONFIG_SMP
+	unsigned int timer_left = 0;
+
+	timer_left = localtimer_get_counter();
+
+	if ((int)timer_left <= 0)
+		gpt_set_cmp(IDLE_GPT, 1); /* Trigger idle_gpt Timeout imediately */
+	else
+		gpt_set_cmp(IDLE_GPT, timer_left);
+
+	start_gpt(IDLE_GPT);
+#else
+	gpt_get_cnt(GPT1, &timer_left);
+#endif
+#endif
+}
+
+static void timer_setting_after_wfi(void)
+{
+#ifndef USING_STD_TIMER_OPS
+#ifdef CONFIG_SMP
+	if (gpt_check_and_ack_irq(IDLE_GPT)) {
+		localtimer_set_next_event(1);
+	} else {
+		/* waked up by other wakeup source */
+		unsigned int cnt, cmp;
+
+		idle_gpt_get_cnt(IDLE_GPT, &cnt);
+		idle_gpt_get_cmp(IDLE_GPT, &cmp);
+		if (unlikely(cmp < cnt)) {
+			idle_err("[%s]GPT%d: counter = %10u, compare = %10u\n",
+					__func__, IDLE_GPT + 1, cnt, cmp);
+			/* BUG(); */
+		}
+
+		localtimer_set_next_event(cmp - cnt);
+		stop_gpt(IDLE_GPT);
+	}
+#endif
+#endif
 }
 
 static unsigned int idle_spm_lock;
@@ -459,9 +460,9 @@ void idle_unlock_spm(enum idle_lock_spm_id id)
 	spin_unlock_irqrestore(&idle_spm_spin_lock, flags);
 }
 
-/************************************************
+/*
  * SODI3 part
- ************************************************/
+ */
 static DEFINE_MUTEX(soidle3_locked);
 
 static void enable_soidle3_by_mask(int grp, unsigned int mask)
@@ -565,7 +566,7 @@ static bool soidle3_can_enter(int cpu, int reason)
 	}
 	#endif
 
-	if (get_next_event_time_us() < soidle3_time_critera) {
+	if (!next_timer_criteria_check(soidle3_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
 	}
@@ -576,7 +577,7 @@ out:
 			soidle3_block_prev_time = idle_get_current_time_ms();
 
 		soidle3_block_curr_time = idle_get_current_time_ms();
-		if (((soidle3_block_curr_time - soidle3_block_prev_time) > soidle3_block_time_critera)
+		if (((soidle3_block_curr_time - soidle3_block_prev_time) > soidle3_block_time_criteria)
 			&& ((soidle3_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
 
 			if ((cpu % 4) == 0) {
@@ -628,9 +629,9 @@ void soidle3_after_wfi(int cpu)
 	soidle3_cnt[cpu]++;
 }
 
-/************************************************
+/*
  * SODI part
- ************************************************/
+ */
 static DEFINE_MUTEX(soidle_locked);
 
 static void enable_soidle_by_mask(int grp, unsigned int mask)
@@ -698,7 +699,7 @@ static bool soidle_can_enter(int cpu, int reason)
 	reason = BY_OTH;
 	#endif
 
-	if (get_next_event_time_us() < soidle_time_critera)
+	if (!next_timer_criteria_check(soidle_time_criteria))
 		reason = BY_TMR;
 	/* FIXME: Bypass following checks due to main core on/off only */
 	goto out;
@@ -712,7 +713,7 @@ static bool soidle_can_enter(int cpu, int reason)
 	}
 	#endif
 
-	if (get_next_event_time_us() < soidle_time_critera) {
+	if (!next_timer_criteria_check(soidle_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
 	}
@@ -723,7 +724,7 @@ out:
 			soidle_block_prev_time = idle_get_current_time_ms();
 
 		soidle_block_curr_time = idle_get_current_time_ms();
-		if (((soidle_block_curr_time - soidle_block_prev_time) > soidle_block_time_critera)
+		if (((soidle_block_curr_time - soidle_block_prev_time) > soidle_block_time_criteria)
 			&& ((soidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
 
 			if ((cpu % 4) == 0) {
@@ -771,10 +772,14 @@ void soidle_before_wfi(int cpu)
 #ifdef FEATURE_ENABLE_SODI2P5
 	faudintbus_pll2sq();
 #endif
+
+	timer_setting_before_wfi();
 }
 
 void soidle_after_wfi(int cpu)
 {
+	timer_setting_after_wfi();
+
 #ifdef FEATURE_ENABLE_SODI2P5
 	faudintbus_sq2pll();
 #endif
@@ -782,9 +787,9 @@ void soidle_after_wfi(int cpu)
 	soidle_cnt[cpu]++;
 }
 
-/************************************************
+/*
  * multi-core idle part
- ************************************************/
+ */
 static DEFINE_MUTEX(mcidle_locked);
 static bool mcidle_can_enter(int cpu, int reason)
 {
@@ -808,7 +813,7 @@ static bool mcidle_can_enter(int cpu, int reason)
 		goto mcidle_out;
 	}
 
-	if (get_next_event_time_us() < mcidle_time_critera) {
+	if (!next_timer_criteria_check(mcidle_time_criteria)) {
 		reason = BY_TMR;
 		goto mcidle_out;
 	}
@@ -831,9 +836,9 @@ void mcidle_after_wfi(int cpu)
 {
 }
 
-/************************************************
+/*
  * deep idle part
- ************************************************/
+ */
 static DEFINE_MUTEX(dpidle_locked);
 
 static void enable_dpidle_by_mask(int grp, unsigned int mask)
@@ -877,10 +882,6 @@ static bool dpidle_can_enter(int cpu, int reason)
 	char *p;
 	bool ret = false;
 
-	#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[0]);
-	#endif
-
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (dpidle_by_pass_cg == 0) {
@@ -892,7 +893,7 @@ static bool dpidle_can_enter(int cpu, int reason)
 
 	reason = NR_REASONS;
 
-	if (get_next_event_time_us() < dpidle_time_critera) {
+	if (!next_timer_criteria_check(dpidle_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
 	}
@@ -903,7 +904,7 @@ out:
 			dpidle_block_prev_time = idle_get_current_time_ms();
 
 		dpidle_block_curr_time = idle_get_current_time_ms();
-		if (((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_critera)
+		if (((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_criteria)
 			&& ((dpidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
 
 			if ((cpu % 4) == 0) {
@@ -945,9 +946,9 @@ out:
 	return ret;
 }
 
-/************************************************
+/*
  * slow idle part
- ************************************************/
+ */
 static DEFINE_MUTEX(slidle_locked);
 
 static void enable_slidle_by_mask(int grp, unsigned int mask)
@@ -1034,10 +1035,9 @@ static void go_to_slidle(int cpu)
 }
 
 
-/************************************************
+/*
  * regular idle part
- ************************************************/
-
+ */
 static bool rgidle_can_enter(int cpu, int reason)
 {
 	return true;
@@ -1062,9 +1062,9 @@ static noinline void go_to_rgidle(int cpu)
 	rgidle_after_wfi(cpu);
 }
 
-/************************************************
+/*
  * idle task flow part
- ************************************************/
+ */
 static inline void soidle_pre_handler(void)
 {
 	mtk_idle_notifier_call_chain(SOIDLE_START);
@@ -1078,21 +1078,7 @@ static inline void soidle_pre_handler(void)
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
-	tscpu_cancel_thermal_timer();
-
-	/* cancel thermal timer/workqueues for power saving */
-	mtkts_bts_cancel_thermal_timer();
-	mtkts_btsmdpa_cancel_thermal_timer();
-	mtkts_pmic_cancel_thermal_timer();
-	mtkts_battery_cancel_thermal_timer();
-	mtkts_pa_cancel_thermal_timer();
-	mtkts_wmt_cancel_thermal_timer();
-
-	mtkts_allts_cancel_ts1_timer();
-	mtkts_allts_cancel_ts2_timer();
-	mtkts_allts_cancel_ts3_timer();
-	mtkts_allts_cancel_ts4_timer();
-	mtkts_allts_cancel_ts5_timer();
+	mtkTTimer_cancel_timer();
 #endif
 }
 
@@ -1109,21 +1095,7 @@ static inline void soidle_post_handler(void)
 
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
-	tscpu_start_thermal_timer();
-
-	/* restart thermal timer/workqueues */
-	mtkts_bts_start_thermal_timer();
-	mtkts_btsmdpa_start_thermal_timer();
-	mtkts_pmic_start_thermal_timer();
-	mtkts_battery_start_thermal_timer();
-	mtkts_pa_start_thermal_timer();
-	mtkts_wmt_start_thermal_timer();
-
-	mtkts_allts_start_ts1_timer();
-	mtkts_allts_start_ts2_timer();
-	mtkts_allts_start_ts3_timer();
-	mtkts_allts_start_ts4_timer();
-	mtkts_allts_start_ts5_timer();
+	mtkTTimer_start_timer();
 #endif
 }
 
@@ -1164,82 +1136,42 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
-static inline void dpidle_pre_handler(void)
+static void dpidle_pre_process(int cpu)
 {
+	mtk_idle_notifier_call_chain(DPIDLE_START);
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	hps_del_timer();
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
-	tscpu_cancel_thermal_timer();
-
-	/* cancel thermal timer/workqueues for power saving */
-	mtkts_bts_cancel_thermal_timer();
-	mtkts_btsmdpa_cancel_thermal_timer();
-	mtkts_pmic_cancel_thermal_timer();
-	mtkts_battery_cancel_thermal_timer();
-	mtkts_pa_cancel_thermal_timer();
-	mtkts_wmt_cancel_thermal_timer();
-
-	mtkts_allts_cancel_ts1_timer();
-	mtkts_allts_cancel_ts2_timer();
-	mtkts_allts_cancel_ts3_timer();
-	mtkts_allts_cancel_ts4_timer();
-	mtkts_allts_cancel_ts5_timer();
+	mtkTTimer_cancel_timer();
 #endif
+
+	faudintbus_pll2sq();
 #endif
-}
 
-static inline void dpidle_post_handler(void)
-{
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	hps_restart_timer();
-
-#ifdef CONFIG_THERMAL
-	/* restart thermal hrtimer for update temp info */
-	tscpu_start_thermal_timer();
-
-	/* restart thermal timer/workqueues */
-	mtkts_bts_start_thermal_timer();
-	mtkts_btsmdpa_start_thermal_timer();
-	mtkts_pmic_start_thermal_timer();
-	mtkts_battery_start_thermal_timer();
-	mtkts_pa_start_thermal_timer();
-	mtkts_wmt_start_thermal_timer();
-
-	mtkts_allts_start_ts1_timer();
-	mtkts_allts_start_ts2_timer();
-	mtkts_allts_start_ts3_timer();
-	mtkts_allts_start_ts4_timer();
-	mtkts_allts_start_ts5_timer();
-#endif
-#endif
-}
-
-static void update_dpidle_cnt(int cpu)
-{
-	dpidle_cnt[cpu]++;
-/*
- *	if ((spm_debug_flag & (SPM_DBG_DEBUG_IDX_26M_WAKE | SPM_DBG_DEBUG_IDX_26M_SLEEP))
- *			== (SPM_DBG_DEBUG_IDX_26M_WAKE | SPM_DBG_DEBUG_IDX_26M_SLEEP))
- *		dpidle_f26m_cnt[cpu]++;
- */
-}
-
-static void dpidle_pre_process(int cpu)
-{
-	mtk_idle_notifier_call_chain(DPIDLE_START);
-
-	dpidle_pre_handler();
+	timer_setting_before_wfi();
 }
 
 static void dpidle_post_process(int cpu)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	timer_setting_after_wfi();
+
+	faudintbus_sq2pll();
+
+	hps_restart_timer();
+
+#ifdef CONFIG_THERMAL
+	/* restart thermal hrtimer for update temp info */
+	mtkTTimer_start_timer();
+#endif
+#endif
+
 	mtk_idle_notifier_call_chain(DPIDLE_END);
 
-	dpidle_post_handler();
-
-	update_dpidle_cnt(cpu);
+	dpidle_cnt[cpu]++;
 }
 
 static bool (*idle_can_enter[NR_TYPES])(int cpu, int reason) = {
@@ -1536,12 +1468,6 @@ int dpidle_enter(int cpu)
 
 	idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[3]);
-	idle_warn_log("1:%u, 2:%u, 3:%u, 4:%u\n",
-				dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
-#endif
-
 	return ret;
 }
 EXPORT_SYMBOL(dpidle_enter);
@@ -1675,9 +1601,9 @@ int rgidle_enter(int cpu)
 }
 EXPORT_SYMBOL(rgidle_enter);
 
-/***************************/
-/* debugfs                 */
-/***************************/
+/*
+ * debugfs
+ */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
 
@@ -1793,7 +1719,7 @@ static ssize_t mcidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** deep idle state ************\n");
-	mt_idle_log("mcidle_time_critera=%u\n", mcidle_time_critera);
+	mt_idle_log("mcidle_time_criteria=%u\n", mcidle_time_criteria);
 
 	for (cpus = 0; cpus < nr_cpu_ids; cpus++) {
 		mt_idle_log("cpu:%d\n", cpus);
@@ -1833,7 +1759,7 @@ static ssize_t mcidle_state_write(struct file *filp,
 		if (!strcmp(cmd, "mcidle"))
 			idle_switch[IDLE_TYPE_MC] = param;
 		else if (!strcmp(cmd, "time"))
-			mcidle_time_critera = param;
+			mcidle_time_criteria = param;
 
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -1870,7 +1796,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** deep idle state ************\n");
-	mt_idle_log("dpidle_time_critera=%u\n", dpidle_time_critera);
+	mt_idle_log("dpidle_time_criteria=%u\n", dpidle_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
 		mt_idle_log("[%d]dpidle_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), dpidle_block_cnt[i]);
@@ -1936,7 +1862,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "disable"))
 			disable_dpidle_by_bit(param);
 		else if (!strcmp(cmd, "time"))
-			dpidle_time_critera = param;
+			dpidle_time_criteria = param;
 		else if (!strcmp(cmd, "bypass"))
 			dpidle_by_pass_cg = param;
 		else if (!strcmp(cmd, "bypass_pg")) {
@@ -1980,7 +1906,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** soidle3 state ************\n");
-	mt_idle_log("soidle3_time_critera=%u\n", soidle3_time_critera);
+	mt_idle_log("soidle3_time_criteria=%u\n", soidle3_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
 		mt_idle_log("[%d]soidle3_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), soidle3_block_cnt[i]);
@@ -2044,7 +1970,7 @@ static ssize_t soidle3_state_write(struct file *filp,
 		else if (!strcmp(cmd, "disable"))
 			disable_soidle3_by_bit(param);
 		else if (!strcmp(cmd, "time"))
-			soidle3_time_critera = param;
+			soidle3_time_criteria = param;
 		else if (!strcmp(cmd, "bypass_pll")) {
 			soidle3_by_pass_pll = param;
 			idle_dbg("bypass_pll = %d\n", soidle3_by_pass_pll);
@@ -2092,7 +2018,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** soidle state ************\n");
-	mt_idle_log("soidle_time_critera=%u\n", soidle_time_critera);
+	mt_idle_log("soidle_time_criteria=%u\n", soidle_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
 		mt_idle_log("[%d]soidle_block_cnt[%s]=%lu\n", i, mt_get_reason_name(i), soidle_block_cnt[i]);
@@ -2148,7 +2074,7 @@ static ssize_t soidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "disable"))
 			disable_soidle_by_bit(param);
 		else if (!strcmp(cmd, "time"))
-			soidle_time_critera = param;
+			soidle_time_criteria = param;
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
@@ -2407,7 +2333,6 @@ static int mtk_idle_hotplug_cb_init(void)
 
 void mtk_idle_gpt_init(void)
 {
-#if 0
 #ifndef USING_STD_TIMER_OPS
 	int err = 0;
 
@@ -2415,7 +2340,6 @@ void mtk_idle_gpt_init(void)
 			  0, NULL, GPT_NOAUTOEN);
 	if (err)
 		idle_warn("[%s] fail to request GPT %d\n", __func__, IDLE_GPT + 1);
-#endif
 #endif
 }
 
