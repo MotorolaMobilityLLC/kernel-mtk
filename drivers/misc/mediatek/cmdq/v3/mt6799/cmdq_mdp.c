@@ -260,7 +260,7 @@ int32_t cmdq_mdp_reset_with_mmsys(const uint64_t engineToResetAgain)
 		/* This takes effect immediately, no need to poll state */
 
 		/* Reset MDP_DL_ASYNC_RX if reset MDP_DL_ASYNC_TX */
-		if (engineToResetAgain & (1LL << engineResetBit[CMDQ_ENG_MDP_CAMIN])) {
+		if (engineToResetAgain & (1LL << CMDQ_ENG_MDP_CAMIN)) {
 			CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, ~(1 << 31)); /*Bit  31: MDP_DL_ASYNC_RX / IMG_RELAY */
 			CMDQ_REG_SET32(MMSYS_SW1_RST_B_REG, ~0);
 			/* This takes effect immediately, no need to poll state */
