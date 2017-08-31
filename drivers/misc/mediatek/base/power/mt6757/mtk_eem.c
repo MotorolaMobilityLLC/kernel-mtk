@@ -33,9 +33,10 @@
 #endif
 #if defined(__MTK_SLT_) /* || defined(KERNEL44) */
 #define PTP_SLT_EARLY_PORTING_GPU
+/* #define CTP_EEM_DUMP */
 #endif
 /* #define EARLY_PORTING_FAKE_FUNC */
-
+/* #define EEM_FAKE_EFUSE */
 
 /*=============================================================
  * Include files
@@ -268,6 +269,7 @@ static unsigned int *cciFreq_FY;
 static unsigned int max_vproc_pmic;
 static unsigned int max_vsram_pmic;
 static unsigned int cpu_dvtfixed;
+static unsigned int det_window;
 
 
 #if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
@@ -718,6 +720,7 @@ static void eem_init01_finish(struct eem_det *det);
  * cycles of bclk_ck during INIT. 52 MHz
  */
 #define DETWINDOW_VAL		0x514
+#define DETWINDOW_VAL_KB	0xA28
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
@@ -1410,9 +1413,10 @@ static void base_ops_switch_bank(struct eem_det *det, enum eem_phase phase)
 {
 	unsigned int coresel;
 
-	coresel = (eem_read(EEMCORESEL) & ~BITMASK(2:0)) | BITS(2:0, det->ctrl_id);
 	FUNC_ENTER(FUNC_LV_HELP);
 	/* Enable/disable system clk SW CG, only enable clk in INIT01 */
+	coresel = (eem_read(EEMCORESEL) & ~BITMASK(2:0)) |
+		BITS(2:0, det->ctrl_id) | 0x000f0000;
 	if (phase == EEM_PHASE_INIT01)
 		coresel |= 0x800f0000;
 	else
@@ -2443,7 +2447,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	det->EEMMONEN   = devinfo->EEMMONEN;
 
 	/* init with constant */
-	det->DETWINDOW = DETWINDOW_VAL;
+	det->DETWINDOW = det_window;
 	det->VMAX = max_vproc_pmic;
 	det->VMIN = VMIN_VAL;
 	/* det->VBOOT = VOLT_TO_EEM_PMIC_VAL(VBOOT_CPU); */
@@ -2547,6 +2551,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
+#ifdef __KERNEL__
+int __attribute__((weak)) tscpu_is_temp_valid(void)
+{
+	return 1;
+}
+#endif
 
 static void eem_set_eem_volt(struct eem_det *det)
 {
@@ -2555,8 +2565,12 @@ static void eem_set_eem_volt(struct eem_det *det)
 	int cur_temp, low_temp_offset;
 	unsigned int eemintsts;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
-#ifdef EEM_ENABLE_VTURBO
-	/* int turboVolt; */ /* remove this */
+	int tscpu_temp_is_valid;
+
+#ifdef __KERNEL__
+	tscpu_temp_is_valid = tscpu_is_temp_valid();
+#else
+	tscpu_temp_is_valid = 1;
 #endif
 
 	cur_temp = det->ops->get_temp(det);
@@ -2564,37 +2578,13 @@ static void eem_set_eem_volt(struct eem_det *det)
 	eem_debug("eem_set_eem_volt cur_temp = %d\n", cur_temp);
 #endif
 
-#if 0
-#ifdef __KERNEL__
-#ifdef EEM_ENABLE_TTURBO
-	/* move this part to eem_volt_thread_handler */
-	if (ctrl_TTurbo == 2) {
-		if ((VTurboRun && (cur_temp >= (LESS_H_TEM - 5000))) ||
-			((TTurboRun == 0) && (cur_temp <= (OVER_H_TEM + 500)))) {
-			if (thermalTimerStart == 0) {
-				thermalTimerStart = 1;
-				hrtimer_start(&eem_thermal_turbo_timer, ns_to_ktime(TML_INTERVAL), HRTIMER_MODE_REL);
-				eem_error("hrtimer_start\n");
-			}
-		} else {
-			if (thermalTimerStart == 1) {
-				thermalTimerStart = 0;
-				eem_error("Try to hrtimer_cancel\n");
-				hrtimer_cancel(&eem_thermal_turbo_timer);
-				eem_error("hrtimer_cancel\n");
-			}
-		}
-	}
-#endif
-#endif
-#endif
 	eemintsts = eem_read(EEMINTSTS);
 	low_temp_offset = 0;
 	if ((eemintsts & 0x00ff0000) != 0x0) {
-		if ((det->isTempInv) && (cur_temp > OVER_INV_TEM))
-			det->isTempInv = 0;
-		else if (cur_temp <= DEF_INV_TEM)
+		if ((!tscpu_temp_is_valid) || (cur_temp <= DEF_INV_TEM))
 			det->isTempInv = 1;
+		else if ((det->isTempInv) && (cur_temp > OVER_INV_TEM))
+			det->isTempInv = 0;
 
 		if (det->isTempInv)
 			memcpy(det->volt_tbl, det->volt_tbl_init2, NR_FREQ * sizeof(unsigned int));
@@ -3937,6 +3927,8 @@ static void eem_get_freq_data(void)
 
 	ctrl_VTurbo = 0;
 	cpu_dvtfixed = DVTFIXED_VAL;
+	det_window = DETWINDOW_VAL_KB;
+
 
 #if defined(__MTK_SLT_) || defined(PTP_SLT_EARLY_PORTING_GPU)
 	gpuFreq = gpuFreq_KB;
@@ -3944,6 +3936,7 @@ static void eem_get_freq_data(void)
 
 	switch (segCode) {
 	case 0:
+		det_window = DETWINDOW_VAL;
 		max_vproc_pmic = VMAX_VAL;
 		max_vsram_pmic = VMAX_SRAM;
 #if defined(__MTK_PMIC_CHIP_MT6355) || defined(CONFIG_MTK_PMIC_CHIP_MT6355)
@@ -3997,6 +3990,9 @@ static void eem_get_freq_data(void)
 		littleFreq_FY = littleFreq_FY_KB;
 		cciFreq_FY = cciFreq_FY_KB;
 #endif
+		break;
+	default:
+		eem_debug("[%s]: Unknown segCode %d\n", __func__, segCode);
 		break;
 	}
 }
@@ -4056,6 +4052,7 @@ void get_devinfo(struct eem_devinfo *p)
 
 #endif
 	/* test pattern */
+#ifdef EEM_FAKE_EFUSE
 #if 0
 	val[0] = 0x00000010; /* EEM0 */
 	val[1] = 0x10BD3C1B; /* EEM1 */
@@ -4066,6 +4063,7 @@ void get_devinfo(struct eem_devinfo *p)
 	val[6] = 0x00550000; /* EEM6 */
 	val[7] = 0x10BD3C1B; /* EEM7 */
 	val[8] = 0x00550000; /* EEM8 */
+#endif
 
 	val[0] = 0x00000010; /* EEM0 */
 	val[1] = 0x10C85BEF; /* EEM1 */
@@ -4143,12 +4141,12 @@ static int eem_probe(struct platform_device *pdev)
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
 #if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR) && !defined(EARLY_PORTING))
-		struct clk *clk_thermal;
-		struct clk *clk_mfg, *clk_mfg_scp; /* for gpu clock use */
+	struct clk *clk_thermal;
+	struct clk *clk_mfg, *clk_mfg_scp; /* for gpu clock use */
 #endif
 	/* unsigned int code = mt_get_chip_hw_code(); */
 #ifdef CONFIG_OF
-		struct device_node *node = NULL;
+	struct device_node *node = NULL;
 #endif
 
 	FUNC_ENTER(FUNC_LV_MODULE);
@@ -4263,15 +4261,15 @@ static int eem_probe(struct platform_device *pdev)
 	pmic_set_register_value(PMIC_RG_VPROC11_FPWM, 0x1); /*--for kibo+(MT6355) PWM mode--*/
 #else
 	/* set PWM mode for MT6351 */
-	pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x1,
-		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
-	/* pmic_force_vgpu_pwm(true); */
+	/* pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x1,
+	*	MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
+	*/
+	pmic_force_vgpu_pwm(true);
 
 	/* set Vprog PWM mode */
 	/* mt6311_config_interface(0x7C, 0x1, 0x1, 6); */ /* set PWM mode for MT6311 */
-	mt6311_set_rg_vdvfs11_modeset(1); /* set PWM mode for MT6311 */
+	mt6311_set_rg_vdvfs11_modeset(true); /* set PWM mode for MT6311 */
 #endif
-
 #endif
 #else
 	dvfs_disable_by_ptpod();
@@ -4330,12 +4328,13 @@ static int eem_probe(struct platform_device *pdev)
 #else
 	/* for Jade/Everest/Olympus(MT6351) */
 	/* mt6311_config_interface(0x7C, 0x0, 0x1, 6); */ /* set non-PWM mode for MT6311 */
-	mt6311_set_rg_vdvfs11_modeset(0);
+	mt6311_set_rg_vdvfs11_modeset(false);
 
 	/* set PWM mode for MT6351 */
-	pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
-		MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
-	/* pmic_force_vgpu_pwm(false); */
+	/* pmic_config_interface(MT6351_PMIC_RG_VGPU_MODESET_ADDR, 0x0,
+	*	MT6351_PMIC_RG_VGPU_MODESET_MASK, MT6351_PMIC_RG_VGPU_MODESET_SHIFT);
+	*/
+	pmic_force_vgpu_pwm(false);
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -4352,7 +4351,7 @@ static int eem_probe(struct platform_device *pdev)
 
 	/* enable frequency hopping (main PLL) */
 	mt_fh_popod_restore();/* I-Chang */
-	#endif
+#endif
 #else
 	gpu_dvfs_enable_by_ptpod();
 	dvfs_enable_by_ptpod();
