@@ -767,6 +767,7 @@ static int kpd_open(struct input_dev *dev)
 void kpd_get_dts_info(struct device_node *node)
 {
 	int ret;
+
 	of_property_read_u32(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
 	of_property_read_u32(node, "mediatek,kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
 	of_property_read_u32(node, "mediatek,kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
@@ -799,6 +800,7 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 	int i, r;
 	int err = 0;
 	struct clk *kpd_clk = NULL;
+
 	call_status = 0;
 
 	kpd_info("Keypad probe start!!!\n");
