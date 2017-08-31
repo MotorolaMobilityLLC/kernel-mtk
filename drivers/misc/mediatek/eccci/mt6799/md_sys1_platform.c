@@ -30,6 +30,7 @@
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
+#include <mt-plat/mtk_chip.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 
@@ -38,25 +39,23 @@
 #include "modem_reg_base.h"
 #include "mtk_clkbuf_ctl.h"
 static struct ccci_clk_node clk_table[] = {
-	{ NULL,	"scp-sys-md1-main"},
-	{ NULL,	"infra-cldma-ap"},
-	{ NULL,	"infra-cldma-ap-hclk"},
-	{ NULL,	"infra-ccif-ap"},
-	{ NULL,	"infra-ccif-md"},
-	{ NULL,	"infra-ap-c2k-ccif-0"},
-	{ NULL,	"infra-ap-c2k-ccif-1"},
-	{ NULL,	"infra-scp-md1-ccif-0"},
-	{ NULL,	"infra-scp-md1-ccif-1"},
-	{ NULL,	"infra-scp-c2k-ccif-0"},
-	{ NULL,	"infra-scp-c2k-ccif-1"},
-	{ NULL,	"infra-md2md-ccif-0"},
-#if 0
-	{ NULL,	"infra-md2md-ccif-1"},
-#endif
-	{ NULL,	"infra-md2md-ccif-2"},
-	{ NULL,	"infra-md2md-ccif-3"},
-	{ NULL,	"infra-md2md-ccif-4"},
-	{ NULL,	"infra-md2md-ccif-5"},
+	{ NULL,	"scp-sys-md1-main", CHIP_SW_VER_01},
+	{ NULL,	"infra-cldma-ap", CHIP_SW_VER_01},
+	{ NULL,	"infra-cldma-ap-hclk", CHIP_SW_VER_01},
+	{ NULL,	"infra-ccif-ap", CHIP_SW_VER_01},
+	{ NULL,	"infra-ccif-md", CHIP_SW_VER_01},
+	{ NULL,	"infra-ap-c2k-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-ap-c2k-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-md1-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-md1-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-c2k-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-scp-c2k-ccif-1", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-0", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-1", CHIP_SW_VER_02},
+	{ NULL,	"infra-md2md-ccif-2", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-3", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-4", CHIP_SW_VER_01},
+	{ NULL,	"infra-md2md-ccif-5", CHIP_SW_VER_01},
 };
 #if defined(CONFIG_PINCTRL_ELBRUS)
 static struct pinctrl *mdcldma_pinctrl;
@@ -163,7 +162,13 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 #else
 		CCCI_ERROR_LOG(dev_cfg->index, TAG, "gpio pinctrl is not ready yet, use workaround.\n");
 #endif
+		hw_info->chip_ver = mt_get_chip_sw_ver();
 		for (idx = 0; idx < ARRAY_SIZE(clk_table); idx++) {
+			if (hw_info->chip_ver == CHIP_SW_VER_01 && clk_table[idx].version != CHIP_SW_VER_01) {
+				CCCI_INIT_LOG(dev_cfg->index, TAG, "md%d get %s bypass on ver%x\n",
+					dev_cfg->index + 1, clk_table[idx].clk_name, hw_info->chip_ver);
+				continue;
+			}
 			clk_table[idx].clk_ref = devm_clk_get(&dev_ptr->dev, clk_table[idx].clk_name);
 			if (IS_ERR(clk_table[idx].clk_ref)) {
 				CCCI_ERROR_LOG(dev_cfg->index, TAG, "md%d get %s failed\n",
@@ -256,6 +261,7 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 	/*needed by bootup flow start*/
 	md_reg->md_top_Pll = ioremap_nocache(MDTOP_PLLMIXED_BASE, MDTOP_PLLMIXED_LENGTH);
 	md_reg->md_top_clkSW = ioremap_nocache(MDTOP_CLKSW_BASE, MDTOP_CLKSW_LENGTH);
+	md_reg->md_usb_int_mux = ioremap_nocache(MD_USB_INTERRUPT_MUX_BASE, MD_USB_INTERRUPT_MUX_LENGTH);
 	/*needed by bootup flow end*/
 
 	/*just for dump begin*/
@@ -264,9 +270,22 @@ int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 
 	md_reg->md_sys_clk = ioremap_nocache(MDSYS_CLKCTL_BASE, MDSYS_CLKCTL_LEN);
 	md_reg->md_dbg_sys = ioremap_nocache(MD1_OPEN_DEBUG_APB_CLK, 4);
-	md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_LEN0);
-	md_info->md_pc_monitor = md_reg->md_pc_mon1;
-	md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_LEN1);
+	if (md->hw_info->chip_ver == CHIP_SW_VER_01) {
+		md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_LEN0);
+		md_info->md_pc_monitor = md_reg->md_pc_mon1;
+		md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE1, MD1_PC_MONITOR_LEN1);
+	} else {
+		md_reg->md_pc_monc0 = ioremap_nocache(MD1_PC_MONITOR_BASEC0, MD1_PC_MONITOR_C_LEN0);
+		md_reg->md_pc_monc1 = ioremap_nocache(MD1_PC_MONITOR_BASEC1, MD1_PC_MONITOR_C_LEN1);
+		md_reg->md_pc_monc2 = ioremap_nocache(MD1_PC_MONITOR_BASEC2, MD1_PC_MONITOR_C_LEN2);
+		md_reg->md_pc_monc3 = ioremap_nocache(MD1_PC_MONITOR_BASEC3, MD1_PC_MONITOR_C_LEN3);
+		md_reg->md_pc_monc4 = ioremap_nocache(MD1_PC_MONITOR_BASEC4, MD1_PC_MONITOR_C_LEN4);
+
+		md_reg->md_pc_mon0 = ioremap_nocache(MD1_PC_MONITOR_BASE0_1, MD1_PC_MONITOR_LEN0_1);
+		md_reg->md_pc_mon1 = ioremap_nocache(MD1_PC_MONITOR_BASE1_1, MD1_PC_MONITOR_LEN1_1);
+		md_reg->md_pc_mon2 = ioremap_nocache(MD1_PC_MONITOR_BASE2_1, MD1_PC_MONITOR_LEN2_1);
+		md_reg->md_pc_mon3 = ioremap_nocache(MD1_PC_MONITOR_BASE3_1, MD1_PC_MONITOR_LEN3_1);
+	}
 	md_reg->md_clkSW = ioremap_nocache(MD_CLKSW_BASE, MD_CLKSW_LENGTH);
 	md_reg->md_clkSw0 = md_reg->md_clkSW;
 	md_reg->md_clkSw1 = ioremap_nocache(MD1_CLKSW_BASE1, MD1_CLKSW_LEN1);
@@ -407,39 +426,62 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	/* 1. PC Monitor */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PCMON)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD PC monitor\n");
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core0: [0]0x%X, [1]0x%X, [2]0x%x\n",
-			MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 4));
-		/* Stop all PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL); /* stop MD PCMon */
-		/* core0 */
+		if (md->hw_info->chip_ver == CHIP_SW_VER_01) {
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core0: [0]0x%X, [1]0x%X, [2]0x%x\n",
+				MD1_PC_MONITOR_BASE0, MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 4));
+			/* Stop MD PCMon */
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CTRL_STOP_ALL);
+			/* core0 */
 
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0xB4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core1 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core1: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE1_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core2 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core2: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE2_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* core3 */
-		CCCI_MEM_LOG_TAG(md->index, TAG, "core3: [0]0x%X, [1]0x%X, [2]0x%X\n",
-			(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE3_SWITCH);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
-		/* Resume PCMon */
-		ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_RESTART_ALL_VAL);
-		ccci_read32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0xB4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core1 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core1: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE1_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core2 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core2: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE2_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* core3 */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core3: [0]0x%X, [1]0x%X, [2]0x%X\n",
+				(MD1_PC_MONITOR_BASE0 + 0x40), MD1_PC_MONITOR_BASE1, (MD1_PC_MONITOR_BASE1 + 0x4));
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_CORE3_SWITCH);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon1 + 0x40), 0x74);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_reg->md_pc_mon2 + 0x4), 0x400);
+			/* Resume PCMon */
+			ccci_write32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET, MD1_PCMON_RESTART_ALL_VAL);
+			ccci_read32(md_reg->md_pc_mon1, MD1_PCMNO_CTRL_OFFSET);
+		} else {
+			/* Stop all PCMon */
+			ccci_write32(md_reg->md_pc_monc0, 0, 0x2222); /* stop MD PCMon */
+			CCCI_MEM_LOG_TAG(md->index, TAG, "common: [0]0x%X, [1]0x%X, [2]0x%x, [3]0x%x, [4]0x%x\n",
+				MD1_PC_MONITOR_BASEC0, MD1_PC_MONITOR_BASEC1, MD1_PC_MONITOR_BASEC2,
+				MD1_PC_MONITOR_BASEC3, MD1_PC_MONITOR_BASEC4);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc0, MD1_PC_MONITOR_C_LEN0);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc1, MD1_PC_MONITOR_C_LEN1);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc2, MD1_PC_MONITOR_C_LEN2);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc3, MD1_PC_MONITOR_C_LEN3);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_monc4, MD1_PC_MONITOR_C_LEN4);
+
+			CCCI_MEM_LOG_TAG(md->index, TAG, "core0/1/2/3: [0]0x%X, [1]0x%X, [2]0x%x, [3]0x%x\n",
+				MD1_PC_MONITOR_BASE0_1, MD1_PC_MONITOR_BASE1_1,
+				MD1_PC_MONITOR_BASE2_1, MD1_PC_MONITOR_BASE3_1);
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon0, 0x400);/* core0 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon1, 0x400);/* core1 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon2, 0x400);/* core2 */
+			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_pc_mon3, 0x400);/* core3 */
+			/* Resume PCMon */
+			ccci_write32(md_reg->md_pc_monc0, 0, 0x1111);
+		}
 	}
 	/* 2. dump PLL */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_PLL)) {
@@ -522,7 +564,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD1_ECT_REG_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD1_ECT_REG_LEN3);
 	}
-#if 0 /* close register dump for HWT */
+#if 1 /* close register dump before HWT resolved by owner */
 	/* 6. TOPSM */
 	if (per_md_data->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD1_TOPSM_REG_BASE0);
@@ -611,37 +653,19 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x164, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 25; i >= 0; i--)
 		RAnd2W(base, 0x168, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x16C, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x170, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x174, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x178, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x17C, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x180, ~(0x1 << i));
-
-	for (i = 31; i >= 0; i--)
+	for (i = 31; i >= 16; i--)
 		RAnd2W(base, 0x184, ~(0x1 << i));
 
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x188, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 25; i >= 0; i--)
 		RAnd2W(base, 0x18C, ~(0x1 << i));
 
-	for (i = 31; i >= 0; i--)
+	for (i = 28; i >= 23; i--)
 		RAnd2W(base, 0x190, ~(0x1 << i));
 
 	CCCI_BOOTUP_LOG(md->index, TAG, "md1_pcore_sram reg: 0x%X, 0x%X, 0x%X, 0x%X 0x%X, 0x%X, 0x%X\n",
@@ -755,6 +779,70 @@ void md1_pll_init(struct ccci_modem *md)
 	iounmap(efuse_addr);
 }
 
+void md1_pll_init_1(struct ccci_modem *md)
+{
+	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
+	struct md_pll_reg *md_pll = md_info->md_pll_base;
+	void __iomem *map_addr = (void __iomem *)(md->hw_info->ap_mixed_base);
+
+	/* Enables clock square1 low-pass filter for 26M quality */
+	ROr2W(map_addr, 0x04, 0x10);
+	udelay(100);
+
+	/* PLL init */
+	cldma_write32(md_pll->md_top_Pll, 0x30, 0x0019000D);  /* 0x20140000 */
+	cldma_write32(md_pll->md_top_Pll, 0x88, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00000812);
+	cldma_write32(md_pll->md_top_Pll, 0x98, 0x801EEC4F);
+	cldma_write32(md_pll->md_top_Pll, 0x9C, 0x00000812);
+
+
+	cldma_write32(md_pll->md_top_Pll, 0x48, 0x8020B13B);
+	cldma_write32(md_pll->md_top_Pll, 0x4C, 0x01D20012);
+	cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
+	cldma_write32(md_pll->md_top_Pll, 0x78, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000812);
+
+	cldma_write32(md_pll->md_top_Pll, 0x90, 0x80252762);
+	cldma_write32(md_pll->md_top_Pll, 0x94, 0x00620010);
+	cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init clock done\n");
+
+	while (((cldma_read32(md_pll->md_top_Pll, 0xC00) >> 16) & 0x7FFF) !=
+		(cldma_read32(md_pll->md_top_Pll, 0x40) >> 7))
+		;
+
+	cldma_write32(md_pll->md_top_Pll, 0x10, 0x0);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0xD0\n");
+	while ((cldma_read32(md_pll->md_top_clkSW, 0xD0) & 0x402) != 0x402)
+		;
+	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
+	ROr2W(md_pll->md_top_Pll, 0x94, 0x10000);
+
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x80\n");
+	while ((cldma_read32(md_pll->md_top_clkSW, 0x80) & 0x8000) != 0x8000)
+		;
+
+	ROr2W(md_pll->md_top_clkSW, 0x24, 0x3);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x240\n");
+	while ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0x40000) != 0x40000)
+		;
+	cldma_write32(md_pll->md_sys_clk, 0x240, ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0xFFFFFF00) | 0x00000002));
+	ROr2W(md_pll->md_sys_clk, 0x240, 0x100);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x240\n");
+	while ((cldma_read32(md_pll->md_sys_clk, 0x240) & 0x40000) != 0x40000)
+		;
+
+	ROr2W(md_pll->md_top_clkSW, 0x24, 0x150177FC);
+	cldma_write32(md_pll->md_top_clkSW, 0x20, 0x0);
+
+	cldma_write32(md_pll->md_top_Pll, 0x314, 0xFFFF);
+	cldma_write32(md_pll->md_top_Pll, 0x318, 0xFFFF);
+
+	/*make a record that means MD pll has been initialized.*/
+	cldma_write32(md_pll->md_top_clkSW, 0xF00, 0x62920000);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: end\n");
+}
 
 void __attribute__((weak)) kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 {
@@ -812,10 +900,16 @@ int md_cd_power_on(struct ccci_modem *md)
 	inform_nfc_vsim_change(md->index, 1, 0);
 #endif
 	/* step 4: pll init */
-	md1_pll_init(md);
-
+	if (md->hw_info->chip_ver == CHIP_SW_VER_01)
+		md1_pll_init(md);
+	else
+		md1_pll_init_1(md);
 	/* step 5: disable MD WDT */
 	cldma_write32(md_info->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
+
+	/* step 6: switch md usb interrupt MUX to partial interrupt */
+	if (md->hw_info->chip_ver != CHIP_SW_VER_01)
+		ROr2W(md_info->md_pll_base->md_usb_int_mux, 0, 1);
 
 	return 0;
 }

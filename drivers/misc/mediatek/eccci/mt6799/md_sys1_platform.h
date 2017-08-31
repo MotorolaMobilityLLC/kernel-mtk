@@ -148,9 +148,11 @@
 struct ccci_clk_node {
 	struct clk *clk_ref;
 	unsigned char *clk_name;
+	unsigned char version;
 };
 
 struct md_pll_reg {
+	void __iomem *md_usb_int_mux;
 	void __iomem *md_top_clkSW;
 	void __iomem *md_dcm;
 	void __iomem *md_peri_misc;
@@ -160,8 +162,15 @@ struct md_pll_reg {
 	/*void __iomem *md_l1_conf;*/
 	/* the follow is used for dump */
 	void __iomem *md_dbg_sys;
+	void __iomem *md_pc_monc0;
+	void __iomem *md_pc_monc1;
+	void __iomem *md_pc_monc2;
+	void __iomem *md_pc_monc3;
+	void __iomem *md_pc_monc4;
+	void __iomem *md_pc_mon0;
 	void __iomem *md_pc_mon1;
 	void __iomem *md_pc_mon2;
+	void __iomem *md_pc_mon3;
 	void __iomem *md_clkSW;
 	void __iomem *md_clkSw0;
 	void __iomem *md_clkSw1;
@@ -219,6 +228,7 @@ struct md_hw_info {
 	unsigned long ap_ccif_base;
 	unsigned long md_ccif_base;
 	unsigned int sram_size;
+	unsigned int chip_ver;
 
 	/* HW info - Interrutpt ID */
 	unsigned int ap_ccif_irq_id;
