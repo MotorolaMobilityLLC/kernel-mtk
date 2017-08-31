@@ -17,6 +17,7 @@
 #include "stp_core.h"
 #include "stp_dbg.h"
 #include "wmt_detect.h"
+#include "wmt_exp.h"
 #include <mtk_wcn_cmb_stub.h>
 #include <linux/timer.h>
 
@@ -973,6 +974,7 @@ static inline INT32 _stp_psm_wait_wmt_event_wq(MTKSTP_PSM_T *stp_psm)
 	} else {
 		STP_PSM_ERR_FUNC("flag = %ld<== Abnormal flag be set!!\n\r", stp_psm->flag.data);
 		STP_PSM_ERR_FUNC("state = %d, flag = %ld\n", stp_psm->work_state, stp_psm->flag.data);
+		mtk_wcn_wmt_dump_wmtd_backtrace();
 		/* wcn_psm_flag_trigger_collect_ftrace(); */	/* trigger collect SYS_FTRACE */
 		pbuf = "Abnormal PSM flag be set, just collect SYS_FTRACE to DB";
 		len = osal_strlen(pbuf);
@@ -1324,6 +1326,7 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 	}
 	if (i == limit) {
 		STP_PSM_WARN_FUNC("-Wait for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
+		mtk_wcn_wmt_dump_wmtd_backtrace();
 		_stp_psm_opid_dbg_out_printk(g_stp_psm_opid_dbg);
 		return STP_PSM_OPERATION_FAIL;
 	}

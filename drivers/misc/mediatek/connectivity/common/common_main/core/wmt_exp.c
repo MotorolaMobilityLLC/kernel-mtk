@@ -688,3 +688,9 @@ INT32 mtk_wcn_wmt_wifi_fem_cfg_report(PVOID pvInfoBuf)
 	return iRet;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_wifi_fem_cfg_report);
+
+VOID mtk_wcn_wmt_dump_wmtd_backtrace(VOID)
+{
+	wmt_lib_dump_wmtd_backtrace();
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_dump_wmtd_backtrace);
