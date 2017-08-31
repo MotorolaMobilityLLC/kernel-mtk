@@ -337,6 +337,19 @@
 #define SMI_LARB4_PORT_NUM  11
 #define SMI_LARB5_PORT_NUM  14
 
+#elif defined(SMI_WHI)
+#define SMI_LARB_NUM     9
+
+#define SMI_LARB0_PORT_NUM  8
+#define SMI_LARB1_PORT_NUM  11
+#define SMI_LARB2_PORT_NUM  5
+#define SMI_LARB3_PORT_NUM  5
+#define SMI_LARB4_PORT_NUM  10
+#define SMI_LARB5_PORT_NUM  21
+#define SMI_LARB6_PORT_NUM  19
+#define SMI_LARB7_PORT_NUM  17
+#define SMI_LARB8_PORT_NUM  4
+
 #elif defined(SMI_DUMMY)
 #define SMI_LARB_NUM     1
 #endif
@@ -410,14 +423,7 @@
  *					  SMI COMMON
  * ===============================================================
  */
-#if defined(SMI_R)
-#define REG_OFFSET_SMI_L1LEN	                (0x200)
-#define REG_OFFSET_SMI_L1ARB0	                (0x204)
-#define REG_OFFSET_SMI_L1ARB1	                (0x208)
-#define REG_OFFSET_SMI_L1ARB2	                (0x20C)
-#define REG_OFFSET_SMI_L1ARB3	                (0x210)
-#define REG_OFFSET_SMI_L1ARB4	                (0x214)
-#else
+
 #define REG_OFFSET_SMI_L1LEN	                (0x100)
 #define REG_OFFSET_SMI_L1ARB0	                (0x104)
 #define REG_OFFSET_SMI_L1ARB1	                (0x108)
@@ -426,7 +432,7 @@
 #define REG_OFFSET_SMI_L1ARB4	                (0x114)
 #define REG_OFFSET_SMI_L1ARB5	                (0x118)
 #define REG_OFFSET_SMI_L1ARB6	                (0x11C)
-#endif
+#define REG_OFFSET_SMI_L1ARB7	                (0x120)
 
 /* ========================================================================= */
 /* peripheral system */
