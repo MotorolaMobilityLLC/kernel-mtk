@@ -105,10 +105,7 @@ struct upower_tbl_info **upower_get_tbl(void)
 
 	return ptr;
 #endif
-	if (upower_enable)
-		return &p_upower_tbl_infos;
-	else
-		return NULL;
+	return &p_upower_tbl_infos;
 
 }
 EXPORT_SYMBOL(upower_get_tbl);
@@ -122,9 +119,6 @@ upower_dtype type)
 	unsigned int volt_idx = UPOWER_OPP_NUM - opp - 1;
 	struct upower_tbl *ptr_tbl;
 	struct upower_tbl_info *ptr_tbl_info;
-
-	if (upower_enable == 0)
-		return 0;
 
 	#ifdef UPOWER_PROFILE_API_TIME
 	upower_get_start_time_us(GET_PWR);
