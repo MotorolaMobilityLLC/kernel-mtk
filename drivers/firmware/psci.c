@@ -148,7 +148,13 @@ static int psci_cpu_off(u32 state)
 	u32 fn;
 
 	fn = psci_function_id[PSCI_FN_CPU_OFF];
+#ifdef CONFIG_MTK_FIQ_CACHE
+	do {
+		err = invoke_psci_fn(fn, state, 0, 0);
+	} while (err);
+#else
 	err = invoke_psci_fn(fn, state, 0, 0);
+#endif
 	return psci_to_linux_errno(err);
 }
 
@@ -158,7 +164,13 @@ static int psci_cpu_on(unsigned long cpuid, unsigned long entry_point)
 	u32 fn;
 
 	fn = psci_function_id[PSCI_FN_CPU_ON];
+#ifdef CONFIG_MTK_FIQ_CACHE
+	do {
+		err = invoke_psci_fn(fn, cpuid, entry_point, 0);
+	} while (err);
+#else
 	err = invoke_psci_fn(fn, cpuid, entry_point, 0);
+#endif
 	return psci_to_linux_errno(err);
 }
 
