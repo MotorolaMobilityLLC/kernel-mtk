@@ -23,8 +23,13 @@ extern int mtk_wcn_wmt_wifi_init(void);
 #ifdef MTK_WCN_WLAN_GEN2
 extern int mtk_wcn_wlan_gen2_init(void);
 #endif
+
 #ifdef MTK_WCN_WLAN_GEN3
 extern int mtk_wcn_wlan_gen3_init(void);
+#endif
+
+#ifdef MTK_WCN_WLAN_GEN4
+extern int mtk_wcn_wlan_gen4_init(void);
 #endif
 
 #endif
