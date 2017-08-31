@@ -1078,6 +1078,27 @@ int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count)
 	return ret;
 }
 
+int sensor_calibration_to_hub(uint8_t sensorType)
+{
+	struct ConfigCmd cmd;
+	int ret = 0;
+
+	if (mSensorState[sensorType].sensorType || (sensorType == ID_ACCELEROMETER &&
+				mSensorState[sensorType].sensorType == ID_ACCELEROMETER)) {
+		init_sensor_config_cmd(&cmd, sensorType);
+		cmd.cmd = CONFIG_CMD_CALIBRATE;
+		ret = nanohub_external_write((const uint8_t *)&cmd, sizeof(struct ConfigCmd));
+		if (ret < 0) {
+			SCP_ERR("failed calibration handle:%d\n", sensorType);
+			return -1;
+		}
+	} else {
+		SCP_ERR("unhandle handle=%d, is inited?\n", sensorType);
+		return -1;
+	}
+	return 0;
+}
+
 int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 {
 	SCP_SENSOR_HUB_DATA req;

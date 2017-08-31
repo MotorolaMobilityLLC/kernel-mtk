@@ -12,14 +12,17 @@
 */
 
 #include "inc/accel_factory.h"
+
+struct accel_factory_private {
+	uint32_t gain;
+	uint32_t sensitivity;
+	struct accel_factory_fops *fops;
+};
+
+static struct accel_factory_private accel_factory;
+
 static int acc_factory_open(struct inode *inode, struct file *file)
 {
-	file->private_data = acc_context_obj;
-
-	if (file->private_data == NULL) {
-		ACC_ERR("null pointer!!\n");
-		return -EINVAL;
-	}
 	return nonseekable_open(inode, file);
 }
 
@@ -28,42 +31,14 @@ static int acc_factory_release(struct inode *inode, struct file *file)
 	file->private_data = NULL;
 	return 0;
 }
-static int acc_set_cali(int data[ACC_AXES_NUM])
-{
-	struct acc_context *cxt = acc_context_obj;
-
-	ACC_LOG("factory cali %d,%d,%d\n", data[ACC_AXIS_X], data[ACC_AXIS_Y], data[ACC_AXIS_Z]);
-	ACC_LOG("original cali %d,%d,%d\n", cxt->cali_sw[ACC_AXIS_X], cxt->cali_sw[ACC_AXIS_Y],
-		cxt->cali_sw[ACC_AXIS_Z]);
-	cxt->cali_sw[ACC_AXIS_X] += data[ACC_AXIS_X];
-	cxt->cali_sw[ACC_AXIS_Y] += data[ACC_AXIS_Y];
-	cxt->cali_sw[ACC_AXIS_Z] += data[ACC_AXIS_Z];
-	ACC_LOG("new cali %d,%d,%d\n", cxt->cali_sw[ACC_AXIS_X], cxt->cali_sw[ACC_AXIS_Y],
-		cxt->cali_sw[ACC_AXIS_Z]);
-
-	return 0;
-}
-
-static int acc_clear_cali(void)
-{
-	struct acc_context *cxt = acc_context_obj;
-
-	cxt->cali_sw[ACC_AXIS_X] = 0;
-	cxt->cali_sw[ACC_AXIS_Y] = 0;
-	cxt->cali_sw[ACC_AXIS_Z] = 0;
-	ACC_LOG("after clear cali %d,%d,%d\n", cxt->cali_sw[ACC_AXIS_X], cxt->cali_sw[ACC_AXIS_Y],
-		cxt->cali_sw[ACC_AXIS_Z]);
-	return 0;
-}
 
 static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	void __user *data;
-	int err = 0;
-	struct acc_context *cxt = acc_context_obj;
-	int x, y, z;
-	char strbuf[256];
-	int cali[3] = {0};
+	void __user *ptr = (void __user *)arg;
+	int err = 0, status = 0;
+	uint32_t flag = 0;
+	char strbuf[64];
+	int32_t data_buf[3] = {0};
 	struct SENSOR_DATA sensor_data = {0};
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
@@ -78,120 +53,120 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 
 	switch (cmd) {
 	case GSENSOR_IOCTL_INIT:
-		break;
+		if (copy_from_user(&flag, ptr, sizeof(flag)))
+			return -EFAULT;
+		if (accel_factory.fops != NULL && accel_factory.fops->enable_sensor != NULL) {
+			err = accel_factory.fops->enable_sensor(flag, 5);
+			if (err < 0) {
+				ACC_LOG("GSENSOR_IOCTL_INIT fail!\n");
+				return -EINVAL;
+			}
+			ACC_ERR("GSENSOR_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 5);
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_INIT NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	case GSENSOR_IOCTL_READ_CHIPINFO:
-		break;
+		return 0;
 	case GSENSOR_IOCTL_READ_SENSORDATA:
-		data = (void __user *) arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		if (cxt->acc_ctl.enable_nodata != NULL) {
-			err = cxt->acc_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->acc_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->acc_ctl.enable_nodata(1);
-					if (err)
-						ACC_ERR("acc ioctl enable err 3 timers = %d\n", err);
-				}
-			}
-			ACC_LOG("acc ioctl real enable\n");
-		}
-
-		if (cxt->acc_data.get_data != NULL) {
-			err = cxt->acc_data.get_raw_data(&x, &y, &z);
+		if (accel_factory.fops != NULL && accel_factory.fops->get_data != NULL) {
+			err = accel_factory.fops->get_data(data_buf, &status);
 			if (err < 0) {
-				ACC_ERR("GSENSOR_IOCTL_READ_SENSORDATA read data fail!\n");
-				break;
+				ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA read data fail!\n");
+				return -EINVAL;
 			}
-			x += cxt->cali_sw[0];
-			y += cxt->cali_sw[1];
-			z += cxt->cali_sw[2];
-			sprintf(strbuf, "%x %x %x", x, y, z);
-			ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA read data : (%d, %d, %d)!\n", x, y, z);
+			sprintf(strbuf, "%x %x %x", data_buf[0], data_buf[1], data_buf[2]);
 			ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA read strbuf : (%s)!\n", strbuf);
-
-			if (copy_to_user(data, strbuf, strlen(strbuf)+1)) {
-				err = -EFAULT;
-				break;
-			}
-		} else
-			ACC_ERR("GSENSOR_IOCTL_READ_SENSORDATA ");
-		break;
-
+			if (copy_to_user(ptr, strbuf, strlen(strbuf)+1))
+				return -EFAULT;
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	case GSENSOR_IOCTL_READ_RAW_DATA:
-		data = (void __user *) arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		if (cxt->acc_data.get_raw_data != NULL) {
-			err = cxt->acc_data.get_raw_data(&x, &y, &z);
+		if (accel_factory.fops != NULL && accel_factory.fops->get_raw_data != NULL) {
+			err = accel_factory.fops->get_raw_data(data_buf);
 			if (err < 0) {
-				ACC_ERR("GSENSOR_IOCTL_READ_RAW_DATA read data fail!\n");
-				break;
+				ACC_LOG("GSENSOR_IOCTL_READ_RAW_DATA read data fail!\n");
+				return -EINVAL;
 			}
-			x += cxt->cali_sw[0];
-			y += cxt->cali_sw[1];
-			z += cxt->cali_sw[2];
-			sprintf(strbuf, "%x %x %x", x, y, z);
-			ACC_LOG("GSENSOR_IOCTL_READ_RAW_DATA read data : (%d, %d, %d)!\n", x, y, z);
-			if (copy_to_user(data, strbuf, strlen(strbuf)+1)) {
-				err = -EFAULT;
-				break;
-			}
-		} else
-			ACC_ERR("GSENSOR_IOCTL_READ_SENSORDATA ");
-
-		break;
-
+			sprintf(strbuf, "%x %x %x", data_buf[0], data_buf[1], data_buf[2]);
+			ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA_RAW read strbuf : (%s)!\n", strbuf);
+			if (copy_to_user(ptr, strbuf, strlen(strbuf)+1))
+				return -EFAULT;
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_READ_SENSORDATA_RAW NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	case GSENSOR_IOCTL_SET_CALI:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
+		if (copy_from_user(&sensor_data, ptr, sizeof(sensor_data)))
+			return -EFAULT;
+		data_buf[0] = sensor_data.x;
+		data_buf[1] = sensor_data.y;
+		data_buf[2] = sensor_data.z;
+		ACC_LOG("GSENSOR_IOCTL_SET_CALI: (%d, %d, %d)!\n", data_buf[0], data_buf[1], data_buf[2]);
+		if (accel_factory.fops != NULL && accel_factory.fops->set_cali != NULL) {
+			err = accel_factory.fops->set_cali(data_buf);
+			if (err < 0) {
+				ACC_LOG("GSENSOR_IOCTL_SET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_SET_CALI NULL\n");
+			return -EINVAL;
 		}
-		if (copy_from_user(&sensor_data, data, sizeof(sensor_data))) {
-			err = -EFAULT;
-			break;
-		}
-		cali[0] = sensor_data.x;
-		cali[1] = sensor_data.y;
-		cali[2] = sensor_data.z;
-		ACC_LOG("GSENSOR_IOCTL_SET_CALI data : (%d, %d, %d)!\n", cali[0], cali[1], cali[2]);
-
-		acc_set_cali(cali);
-		break;
-
+		return 0;
 	case GSENSOR_IOCTL_CLR_CALI:
-		acc_clear_cali();
-		break;
-
+		if (accel_factory.fops != NULL && accel_factory.fops->clear_cali != NULL) {
+			err = accel_factory.fops->clear_cali();
+			if (err < 0) {
+				ACC_LOG("GSENSOR_IOCTL_CLR_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_CLR_CALI NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	case GSENSOR_IOCTL_GET_CALI:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
+		if (accel_factory.fops != NULL && accel_factory.fops->get_cali != NULL) {
+			err = accel_factory.fops->get_cali(data_buf);
+			if (err < 0) {
+				ACC_LOG("GSENSOR_IOCTL_GET_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_GET_CALI NULL\n");
+			return -EINVAL;
 		}
-		ACC_LOG("GSENSOR_IOCTL_GET_CALI data : (%d, %d, %d)!\n", cxt->cali_sw[0], cxt->cali_sw[1],
-			cxt->cali_sw[2]);
-		sensor_data.x = cxt->cali_sw[0];
-		sensor_data.y = cxt->cali_sw[1];
-		sensor_data.z = cxt->cali_sw[2];
-		if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
-			err = -EFAULT;
-			break;
+		ACC_LOG("GSENSOR_IOCTL_GET_CALI: (%d, %d, %d)!\n", data_buf[0], data_buf[1], data_buf[2]);
+		sensor_data.x = data_buf[0];
+		sensor_data.y = data_buf[1];
+		sensor_data.z = data_buf[2];
+		if (copy_to_user(ptr, &sensor_data, sizeof(sensor_data)))
+			return -EFAULT;
+		return 0;
+	case GSENSOR_IOCTL_ENABLE_CALI:
+		if (accel_factory.fops != NULL && accel_factory.fops->enable_calibration != NULL) {
+			err = accel_factory.fops->enable_calibration();
+			if (err < 0) {
+				ACC_LOG("GSENSOR_IOCTL_ENABLE_CALI FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			ACC_LOG("GSENSOR_IOCTL_ENABLE_CALI NULL\n");
+			return -EINVAL;
 		}
-		break;
-
+		return 0;
 	default:
 		ACC_ERR("unknown IOCTL: 0x%08x\n", cmd);
-		err = -ENOIOCTLCMD;
+		return -ENOIOCTLCMD;
 	}
 
-	return err;
+	return 0;
 }
 
 #if IS_ENABLED(CONFIG_COMPAT)
@@ -211,15 +186,15 @@ static long compat_acc_factory_unlocked_ioctl(struct file *filp, unsigned int cm
 		/* NVRAM will use below ioctl */
 	case COMPAT_GSENSOR_IOCTL_SET_CALI:
 	case COMPAT_GSENSOR_IOCTL_CLR_CALI:
-	case COMPAT_GSENSOR_IOCTL_GET_CALI:{
-			ACC_LOG("compat_ion_ioctl : GSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
-			return filp->f_op->unlocked_ioctl(filp, cmd,
-							  (unsigned long)compat_ptr(arg));
-		}
-	default:{
-			ACC_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
-			return -ENOIOCTLCMD;
-		}
+	case COMPAT_GSENSOR_IOCTL_GET_CALI:
+	case COMPAT_GSENSOR_IOCTL_ENABLE_CALI:
+		ACC_LOG("compat_ion_ioctl : GSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
+		return filp->f_op->unlocked_ioctl(filp, cmd,
+						  (unsigned long)compat_ptr(arg));
+
+	default:
+		ACC_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		return -ENOIOCTLCMD;
 	}
 }
 #endif
@@ -233,26 +208,33 @@ static const struct file_operations acc_factory_fops = {
 #endif
 };
 
-static struct miscdevice acc_factory_device = {
+static struct miscdevice accel_factory_device = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = "gsensor",
 	.fops = &acc_factory_fops,
 };
 
-int acc_factory_device_init(void)
+int accel_factory_device_register(struct accel_factory_public *dev)
 {
-	int error = 0;
-	struct acc_context *cxt = acc_context_obj;
+	int err = 0;
 
-	if (!cxt->acc_ctl.is_use_common_factory) {
-		ACC_LOG("Node of '/dev/gsensor' has already existed!\n");
+	if (!dev || !dev->fops)
 		return -1;
+	accel_factory.gain = dev->gain;
+	accel_factory.sensitivity = dev->sensitivity;
+	accel_factory.fops = dev->fops;
+	err = misc_register(&accel_factory_device);
+	if (err) {
+		ACC_LOG("accel_factory_device register failed\n");
+		err = -1;
 	}
-
-	error = misc_register(&acc_factory_device);
-	if (error) {
-		ACC_LOG("acc_factory_device register failed\n");
-		error = -1;
-	}
-	return error;
+	return err;
 }
+
+int accel_factory_device_deregister(struct accel_factory_public *dev)
+{
+	accel_factory.fops = NULL;
+	misc_deregister(&accel_factory_device);
+	return 0;
+}
+
