@@ -116,6 +116,9 @@ config MACH_MT6758
 	select MTK_WATCHPOINT
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_EIC_HISTORY_DUMP
+	select MTK_EIC
+
 	help
 	  This enables support for MediaTek MT6758
 	  Support for aarch64 Architecture
