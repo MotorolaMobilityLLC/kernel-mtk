@@ -927,12 +927,6 @@
 		interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	peri_iommu@102c0000 {
-		compatible = "mediatek,peri_iommu";
-		reg = <0 0x102c0000 0 0x1000>;
-		interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	peri_m1_dfp@11ae0000 {
 		compatible = "mediatek,peri_m1_dfp";
 		reg = <0 0x11ae0000 0 0x1000>;
