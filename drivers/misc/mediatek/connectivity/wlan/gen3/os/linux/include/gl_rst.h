@@ -72,6 +72,7 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+extern UINT_32 g_IsNeedDoChipReset;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

@@ -3675,10 +3675,13 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 			/* timeout exceeding check */
 			u4Current = (UINT_32) kalGetTimeTick();
 
-			if ((u4Current > u4Time) && ((u4Current - u4Time) > RX_RESPONSE_TIMEOUT))
+			if ((u4Current > u4Time) && ((u4Current - u4Time) > RX_RESPONSE_TIMEOUT)) {
+				DBGLOG(RX, ERROR, "Wait Response packet timeout!\n");
 				return WLAN_STATUS_FAILURE;
-			else if (u4Current < u4Time && ((u4Current + (0xFFFFFFFF - u4Time)) > RX_RESPONSE_TIMEOUT))
+			} else if (u4Current < u4Time && ((u4Current + (0xFFFFFFFF - u4Time)) > RX_RESPONSE_TIMEOUT)) {
+				DBGLOG(RX, ERROR, "Wait Response packet timeout!\n");
 				return WLAN_STATUS_FAILURE;
+			}
 
 			/* Response packet is not ready */
 			kalUdelay(50);
@@ -3686,15 +3689,8 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 		} else {
 
 			if (u4PktLen > u4MaxRespBufferLen) {
-				UINT_32 u4MailBox0;
-				UINT_32 u4MailBox1;
-
-				nicGetMailbox(prAdapter, 0, &u4MailBox0);
-				nicGetMailbox(prAdapter, 1, &u4MailBox1);
-				DBGLOG(RX, WARN, "Not enough buffer length: required %u, available %u\n",
+				DBGLOG(RX, ERROR, "Not enough buffer length: required %u, available %u\n",
 				       u4PktLen, u4MaxRespBufferLen);
-				DBGLOG(RX, WARN, "Device to Host Mailbox 0x%lx, 0x%lx\n", u4MailBox0, u4MailBox1);
-
 				return WLAN_STATUS_FAILURE;
 			}
 
