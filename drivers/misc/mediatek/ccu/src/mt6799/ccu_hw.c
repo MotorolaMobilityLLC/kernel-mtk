@@ -737,6 +737,7 @@ int32_t ccu_get_current_fps(void)
 int ccu_power(ccu_power_t *power)
 {
 	int ret = 0;
+	unsigned long flags;
 /*  unsigned int mva_buffers = 0;*/
 
 	LOG_DBG("+:%s,(0x%llx)(0x%llx)\n", __func__, ccu_base, camsys_base);
@@ -789,10 +790,10 @@ int ccu_power(ccu_power_t *power)
 		/*CCF*/
 		ccu_clock_disable();
 
-		spin_lock(&ccuInfo.SpinLockI2cPower);
+		spin_lock_irqsave(&ccuInfo.SpinLockI2cPower, flags);
 		ccu_i2c_buf_mode_en(0);
 		ccuInfo.IsI2cPoweredOn = 0;
-		spin_unlock(&ccuInfo.SpinLockI2cPower);
+		spin_unlock_irqrestore(&ccuInfo.SpinLockI2cPower, flags);
 
 		m4u_dealloc_mva(m4u_client, CCUG_OF_M4U_PORT, i2c_buffer_mva);
 	}
