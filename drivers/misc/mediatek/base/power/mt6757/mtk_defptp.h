@@ -38,10 +38,6 @@
 		u32 have_550;
 	};
 	#endif
-#else
-	typedef unsigned char       bool;
-	#define EEM_BASEADDR        (0x1100B000)
-	#define eem_base EEM_BASEADDR
 #endif
 
 #define TEMPMONCTL0         (EEM_BASEADDR + 0x000)

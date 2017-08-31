@@ -677,7 +677,7 @@ static struct hrtimer eem_log_timer;
 #endif
 
 /* Global variable for slow idle*/
-volatile unsigned int ptp_data[3] = {0, 0, 0};
+/* volatile unsigned int ptp_data[3] = {0, 0, 0}; */
 
 struct eem_det;
 struct eem_ctrl;
@@ -2723,29 +2723,6 @@ static void eem_restore_eem_volt(struct eem_det *det)
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
-#if 0
-static void mt_eem_reg_dump_locked(void)
-{
-#ifndef CONFIG_ARM64
-	unsigned int addr;
-
-	for (addr = (unsigned int)DESCHAR; addr <= (unsigned int)SMSTATE1; addr += 4)
-		eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
-
-	addr = (unsigned int)EEMCORESEL;
-	eem_isr_info("0x%08X = 0x%08X\n", addr, *(volatile unsigned int *)addr);
-#else
-	unsigned long addr;
-
-	for (addr = (unsigned long)DESCHAR; addr <= (unsigned long)SMSTATE1; addr += 4)
-		eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
-
-	addr = (unsigned long)EEMCORESEL;
-	eem_isr_info("0x %lu = 0x %lu\n", addr, *(volatile unsigned long *)addr);
-#endif
-}
-#endif
-
 static unsigned int interpolate(unsigned int y1, unsigned int y0,
 	unsigned int x1, unsigned int x0, unsigned int ym)
 {
@@ -4300,7 +4277,7 @@ static int eem_probe(struct platform_device *pdev)
 #endif
 
 	/* for slow idle */
-	ptp_data[0] = 0xffffffff;
+	/* ptp_data[0] = 0xffffffff; */
 
 	for_each_det(det)
 		eem_init_det(det, &eem_devinfo);
@@ -4312,7 +4289,7 @@ static int eem_probe(struct platform_device *pdev)
 #endif
 	eem_init01();
 #endif
-	ptp_data[0] = 0;
+	/* ptp_data[0] = 0; */
 
 #if (defined(__KERNEL__) && !defined(EARLY_PORTING))
 	/*
@@ -4886,7 +4863,7 @@ static ssize_t eem_cur_volt_proc_write(struct file *file,
 				det->VMIN + EEM_PMIC_OFFSET,
 				det->VMAX + EEM_PMIC_OFFSET);
 
-			tmpSramPmic = record_tbl_locked[i] + VSRAM_GAP + AP_PMIC_TO_SRAM_OFFSET;
+			tmpSramPmic = voltProc + VSRAM_GAP + AP_PMIC_TO_SRAM_OFFSET;
 			if (tmpSramPmic < 0)
 				tmpSramPmic = 0;
 
