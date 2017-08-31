@@ -500,4 +500,11 @@ config DM_LOG_WRITES
 
 	  If unsure, say N.
 
+config MTK_HW_FDE
+	tristate "Mediatek HW FDE support"
+	---help---
+	  This selects the MediaTek(R) crypto engine for Full Disk Encryption.
+
+	  If you have a machine with a MTK crypto engine for FDE, say Y here.
+	  If unsure, say N.
 endif # MD
