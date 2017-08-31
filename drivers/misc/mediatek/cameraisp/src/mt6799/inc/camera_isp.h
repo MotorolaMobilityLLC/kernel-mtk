@@ -285,9 +285,13 @@ typedef enum {
 	_eiso_,
 	_flko_,
 	_rsso_,
+	_pso_,  /* 10*/
+	_bpci_,
+	_lsci_,
+	_rawi_,
 	_cam_max_,
 
-	_camsv_imgo_ = 0,
+	_camsv_imgo_ = _imgo_,
 	_camsv_max_,
 } _isp_dma_enum_;
 
@@ -306,6 +310,7 @@ typedef enum {
 	_dma_cq9i_,    /* 01e0 *//*10*/
 	_dma_cq10i_,   /* 01ec */
 	_dma_cq11i_,   /* 01f8 */
+	_dma_cq12i_,
 	_dma_bpci_,    /* 0370 */
 	_dma_caci_,    /* 03a0 */
 	_dma_lsci_,    /* 03d0 *//*15*/
@@ -319,6 +324,7 @@ typedef enum {
 	_dma_eiso_,    /* 0220 */
 	_dma_flko_,    /* 0250 */
 	_dma_rsso_,    /* 0280 *//*25*/
+	_dma_pso_,     /* 0D80 */
 	_dma_imgo_fh_, /* 0c04 */
 	_dma_rrzo_fh_, /* 0c08 */
 	_dma_aao_fh_,  /* 0c0c */
@@ -328,7 +334,8 @@ typedef enum {
 	_dma_pdo_fh_,  /* 0c1c */
 	_dma_eiso_fh_,  /* 03C4 */
 	_dma_flko_fh_, /* 03C8 */
-	_dma_rsso_fh_, /* 03CC *//*35*/
+	_dma_rsso_fh_, /* 03CC */
+	_dma_pso_fh_,  /* 0E20 */
 	_dma_max_wr_
 } ISP_WRDMA_ENUM;
 
