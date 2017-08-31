@@ -204,8 +204,8 @@ typedef enum {
 	FG_INTR_VBAT2_H = 0x80000,
 	FG_INTR_CHR_FULL = 0x100000,
 	FG_INTR_DLPT_SD = 0x200000,
-	FG_INTR_BAT_SW_TMP_HT = 0x400000,
-	FG_INTR_BAT_SW_TMP_LT = 0x800000,
+	FG_INTR_BAT_TMP_C_HT = 0x400000,
+	FG_INTR_BAT_TMP_C_LT = 0x800000,
 
 
 } FG_INTERRUPT_FLAG;
@@ -288,6 +288,7 @@ typedef enum {
 	FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID,
 	FG_DAEMON_CMD_GET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_RTC_UI_SOC,
+	FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -451,9 +452,10 @@ struct fuel_gauge_table_custom_data {
 	FUELGAUGE_PROFILE_STRUCT fg_profile_t3[100];
 	int fg_profile_t4_size;
 	FUELGAUGE_PROFILE_STRUCT fg_profile_t4[100];
-	int fg_profile_temperature_size;
-	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature[100];
-
+	int fg_profile_temperature_0_size;
+	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_0[100];
+	int fg_profile_temperature_1_size;
+	FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
 };
 
 struct fuel_gauge_custom_data {
@@ -482,7 +484,8 @@ struct fuel_gauge_custom_data {
 	int temperature_t2;
 	int temperature_t3;
 	int temperature_t4;
-	int temperature_t;
+	int temperature_tb0;
+	int temperature_tb1;
 
 	int pseudo1_t0;
 	int pseudo1_t1;
@@ -531,6 +534,7 @@ struct fuel_gauge_custom_data {
 	int keep_100_percent;
 	int difference_full_cv;
 	int diff_bat_temp_setting;
+	int diff_bat_temp_setting_c;
 	int discharge_tracking_time;
 	int charge_tracking_time;
 	int difference_fullocv_vth;
