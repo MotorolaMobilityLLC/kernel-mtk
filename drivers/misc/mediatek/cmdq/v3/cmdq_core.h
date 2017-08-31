@@ -427,7 +427,6 @@ enum CMDQ_EVENT_STAT_ENUM {
 
 struct CmdqModulePAStatStruct {
 	long start[CMDQ_MODULE_STAT_MAX];
-	long end[CMDQ_MODULE_STAT_MAX];
 };
 #endif
 
@@ -893,6 +892,7 @@ extern "C" {
 	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a);
 	const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr);
 	int32_t cmdq_core_subsys_from_phys_addr(uint32_t physAddr);
+	void cmdq_core_set_addon_subsys(u32 msb, s32 subsys_id, u32 mask);
 	int32_t cmdq_core_suspend_HW_thread(int32_t thread, uint32_t lineNum);
 
 /**

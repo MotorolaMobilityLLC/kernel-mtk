@@ -1150,7 +1150,6 @@
 		reg = <0 0x10280000 0 0x1000>;
 		interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>,
 					<GIC_SPI 177 IRQ_TYPE_LEVEL_LOW>;
-		disp_mutex_reg = <0x14025000 0x1000>;
 		g3d_config_base = <0x13000000 0 0xffff0000>;
 		mmsys_config_base = <0x14000000 1 0xffff0000>;
 		disp_dither_base = <0x14010000 2 0xffff0000>;
@@ -1412,6 +1411,21 @@
 		sram_share_cnt = <2>;
 		sram_share_engine = <13 14>;
 		sram_share_event = <460 461>;
+		mmsys_config = <&mmsys_config>;
+		mdp_rdma0 = <&mdp_rdma0>;
+		mdp_rdma1 = <&mdp_rdma1>;
+		mdp_rsz0 = <&mdp_rsz0>;
+		mdp_rsz1 = <&mdp_rsz1>;
+		mdp_rsz2 = <&mdp_rsz2>;
+		mdp_wdma0 = <&mdp_wdma>;
+		mdp_wrot0 = <&mdp_wrot0>;
+		mdp_wrot1 = <&mdp_wrot1>;
+		mdp_tdshp0 = <&mdp_tdshp0>;
+		mdp_color0 = <&mdp_color0>;
+		mm_mutex = <&disp_mutex>;
+		venc = <&venc>;
+		msdc0 = <&msdc0>;
+		audio = <&audio>;
 		clocks = <&infracfg_ao CLK_INFRA_GCE>;
 		clock-names = "GCE";
 	};
@@ -2476,7 +2490,7 @@
 		clock-names = "CAM_MDP", "CAM_MDP2";
 	};
 
-	mdp_rdma0@14001000 {
+	mdp_rdma0: mdp_rdma0@14001000 {
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14001000 0 0x1000>;
 		interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_LOW>;
@@ -2484,7 +2498,7 @@
 		clock-names = "MDP_RDMA0";
 	};
 
-	mdp_rdma1@14002000 {
+	mdp_rdma1: mdp_rdma1@14002000 {
 		compatible = "mediatek,mdp_rdma1";
 		reg = <0 0x14002000 0 0x1000>;
 		interrupts = <GIC_SPI 238 IRQ_TYPE_LEVEL_LOW>;
@@ -2492,7 +2506,7 @@
 		clock-names = "MDP_RDMA1";
 	};
 
-	mdp_rsz0@14003000 {
+	mdp_rsz0: mdp_rsz0@14003000 {
 		compatible = "mediatek,mdp_rsz0";
 		reg = <0 0x14003000 0 0x1000>;
 		interrupts = <GIC_SPI 239 IRQ_TYPE_LEVEL_LOW>;
@@ -2500,7 +2514,7 @@
 		clock-names = "MDP_RSZ0";
 	};
 
-	mdp_rsz1@14004000 {
+	mdp_rsz1: mdp_rsz1@14004000 {
 		compatible = "mediatek,mdp_rsz1";
 		reg = <0 0x14004000 0 0x1000>;
 		interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_LOW>;
@@ -2508,7 +2522,7 @@
 		clock-names = "MDP_RSZ1";
 	};
 
-	mdp_rsz2@14005000 {
+	mdp_rsz2: mdp_rsz2@14005000 {
 		compatible = "mediatek,mdp_rsz2";
 		reg = <0 0x14005000 0 0x1000>;
 		interrupts = <GIC_SPI 241 IRQ_TYPE_LEVEL_LOW>;
@@ -2516,7 +2530,7 @@
 		clock-names = "MDP_RSZ2";
 	};
 
-	mdp_wdma@14006000 {
+	mdp_wdma: mdp_wdma@14006000 {
 		compatible = "mediatek,mdp_wdma";
 		reg = <0 0x14006000 0 0x1000>;
 		interrupts = <GIC_SPI 244 IRQ_TYPE_LEVEL_LOW>;
@@ -2524,7 +2538,7 @@
 		clock-names = "MDP_WDMA";
 	};
 
-	mdp_wrot0@14007000 {
+	mdp_wrot0: mdp_wrot0@14007000 {
 		compatible = "mediatek,mdp_wrot0";
 		reg = <0 0x14007000 0 0x1000>;
 		interrupts = <GIC_SPI 245 IRQ_TYPE_LEVEL_LOW>;
@@ -2532,7 +2546,7 @@
 		clock-names = "MDP_WROT0";
 	};
 
-	mdp_wrot1@14008000 {
+	mdp_wrot1: mdp_wrot1@14008000 {
 		compatible = "mediatek,mdp_wrot1";
 		reg = <0 0x14008000 0 0x1000>;
 		interrupts = <GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>;
@@ -2540,7 +2554,7 @@
 		clock-names = "MDP_WROT1";
 	};
 
-	mdp_tdshp@14009000 {
+	mdp_tdshp0: mdp_tdshp@14009000 {
 		compatible = "mediatek,mdp_tdshp";
 		reg = <0 0x14009000 0 0x1000>;
 		interrupts = <GIC_SPI 242 IRQ_TYPE_LEVEL_LOW>;
@@ -2548,7 +2562,7 @@
 		clock-names = "MDP_TDSHP";
 	};
 
-	mdp_color@1400a000 {
+	mdp_color0: mdp_color@1400a000 {
 		compatible = "mediatek,mdp_color";
 		reg = <0 0x1400a000 0 0x1000>;
 		interrupts = <GIC_SPI 243 IRQ_TYPE_LEVEL_LOW>;
@@ -2936,7 +2950,7 @@
 		interrupts = <GIC_SPI 272 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	disp_mutex@14025000 {
+	disp_mutex: disp_mutex@14025000 {
 		compatible = "mediatek,disp_mutex";
 		reg = <0 0x14025000 0 0x1000>;
 		interrupts = <GIC_SPI 236 IRQ_TYPE_LEVEL_LOW>;
@@ -3239,7 +3253,7 @@
 		interrupts = <GIC_SPI 307 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	venc@17020000 {
+	venc: venc@17020000 {
 		compatible = "mediatek,venc";
 		reg = <0 0x17020000 0 0x1000>;
 		interrupts = <GIC_SPI 306 IRQ_TYPE_LEVEL_LOW>;
