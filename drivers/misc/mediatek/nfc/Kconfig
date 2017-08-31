@@ -8,8 +8,11 @@ config MTK_NFC_SUPPORT
 	  Card emulation or P2P function. If you are not sure about this, set n.
 
 config NFC_CHIP_SUPPORT
-	string "STMicroelectronics ST21NFC NFC Controller Driver"
-	default "ST21NFCD"
+	tristate "NFC driver solution - STMicroelectronics ST21NFC NFC Controller Driver"
+	default n
 	depends on I2C
 	help
 	  STMicroelectronics ST21NFC Near Field Communication controller support.
+	  ST21NFCD can support 2UICC mode, and ST54F can support 1UICC + eSE.
+	  If configures to be y, means devices supports NFC functionality.
+	  If configures to be n, means devices doesn't support NFC functionality.
