@@ -2519,7 +2519,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 				} else {	/* STA WPA/RSN, should not have tx but no sta record */
 					prBssInfo->ucBMCWlanIndexS[prCmdKey->ucKeyId] = prCmdKey->ucWlanIndex;
 					prBssInfo->ucBMCWlanIndexSUsed[prCmdKey->ucKeyId] = TRUE;
-					DBGLOG(RSN, INFO, "BMCWlanIndex kid = %d, index = %d\n", prCmdKey->ucKeyId,
+					DBGLOG(RSN, TRACE, "BMCWlanIndex keyId = %d, index = %d\n", prCmdKey->ucKeyId,
 					       prCmdKey->ucWlanIndex);
 				}
 				if (prCmdKey->ucTxKey) {	/* */
@@ -3007,30 +3007,30 @@ wlanoidSetEncryptionStatus(IN P_ADAPTER_T prAdapter,
 
 	switch (eEewEncrypt) {
 	case ENUM_ENCRYPTION_DISABLED:	/* Disable WEP, TKIP, AES */
-		DBGLOG(RSN, INFO, "Disable Encryption\n");
+		DBGLOG(RSN, TRACE, "Disable Encryption\n");
 		secSetCipherSuite(prAdapter, CIPHER_FLAG_WEP40 | CIPHER_FLAG_WEP104 | CIPHER_FLAG_WEP128);
 		break;
 
 	case ENUM_ENCRYPTION1_ENABLED:	/* Enable WEP. Disable TKIP, AES */
-		DBGLOG(RSN, INFO, "Enable Encryption1\n");
+		DBGLOG(RSN, TRACE, "Enable Encryption1\n");
 		secSetCipherSuite(prAdapter, CIPHER_FLAG_WEP40 | CIPHER_FLAG_WEP104 | CIPHER_FLAG_WEP128);
 		break;
 
 	case ENUM_ENCRYPTION2_ENABLED:	/* Enable WEP, TKIP. Disable AES */
 		secSetCipherSuite(prAdapter,
 				  CIPHER_FLAG_WEP40 | CIPHER_FLAG_WEP104 | CIPHER_FLAG_WEP128 | CIPHER_FLAG_TKIP);
-		DBGLOG(RSN, INFO, "Enable Encryption2\n");
+		DBGLOG(RSN, TRACE, "Enable Encryption2\n");
 		break;
 
 	case ENUM_ENCRYPTION3_ENABLED:	/* Enable WEP, TKIP, AES */
 		secSetCipherSuite(prAdapter,
 				  CIPHER_FLAG_WEP40 |
 				  CIPHER_FLAG_WEP104 | CIPHER_FLAG_WEP128 | CIPHER_FLAG_TKIP | CIPHER_FLAG_CCMP);
-		DBGLOG(RSN, INFO, "Enable Encryption3\n");
+		DBGLOG(RSN, TRACE, "Enable Encryption3\n");
 		break;
 
 	default:
-		DBGLOG(RSN, INFO, "Unacceptible encryption status: %d\n",
+		DBGLOG(RSN, WARN, "Unacceptible encryption status: %d\n",
 		       *(P_ENUM_PARAM_ENCRYPTION_STATUS_T) pvSetBuffer);
 
 		rStatus = WLAN_STATUS_NOT_SUPPORTED;
@@ -8378,7 +8378,6 @@ wlanoidSetNetworkAddress(IN P_ADAPTER_T prAdapter,
 #endif
 
 	DEBUGFUNC("wlanoidSetNetworkAddress");
-	DBGLOG(INIT, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
@@ -9157,7 +9156,6 @@ wlanoidSetWapiAssocInfo(IN P_ADAPTER_T prAdapter,
 	ASSERT(pu4SetInfoLen);
 
 	DEBUGFUNC("wlanoidSetWapiAssocInfo");
-	DBGLOG(REQ, LOUD, "\r\n");
 
 	prAdapter->rWifiVar.rConnSettings.fgWapiMode = FALSE;
 
@@ -9183,7 +9181,7 @@ wlanoidSetWapiAssocInfo(IN P_ADAPTER_T prAdapter,
 	cp += 2;
 	WLAN_GET_FIELD_32(cp, &u4AuthKeyMgtSuite);
 
-	DBGLOG(SEC, TRACE, "WAPI: Assoc Info auth mgt suite [%d]: %02x-%02x-%02x-%02x\n",
+	DBGLOG(SEC, INFO, "WAPI: Assoc Info auth mgt suite [%d]: %02x-%02x-%02x-%02x\n",
 	       u2AuthSuiteCount,
 	       (UCHAR) (u4AuthKeyMgtSuite & 0x000000FF),
 	       (UCHAR) ((u4AuthKeyMgtSuite >> 8) & 0x000000FF),
@@ -11065,7 +11063,7 @@ wlanoidSetGtkRekeyData(IN P_ADAPTER_T prAdapter,
 	}
 	/* increase command sequence number */
 	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
-	DBGLOG(REQ, INFO, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
+	DBGLOG(REQ, TRACE, "ucCmdSeqNum = %d\n", ucCmdSeqNum);
 
 	/* compose PARAM_GTK_REKEY_DATA cmd pkt */
 	prCmdInfo->eCmdType = COMMAND_TYPE_NETWORK_IOCTL;

@@ -1144,7 +1144,7 @@ VOID cnmDumpStaRec(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx)
 	/* [31]InPS                    [32]TxAllowed       [33]KeyRdy               [34]AMPDU         [35]TxQLEN TC */
 	/* [36]BMP AC Delivery/Trigger [37]FreeQuota:Total [38]Delivery/NonDelivery [39]aucRxMcsBitmask */
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	"[1][%u],[2][%u],[3][" MACSTR "],[4][%s %s],[5][%u],[6][%u],[7][%u],[8][%u],[9][%u/%u],[10][%u]\n",
 		prStaRec->ucIndex, prStaRec->ucBssIndex, MAC2STR(prStaRec->aucMacAddr),
 		cnmStaRecGetTypeString(prStaRec->eStaType), cnmStaRecGetRoleString(prStaRec->eStaType),
@@ -1152,20 +1152,20 @@ VOID cnmDumpStaRec(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx)
 		(prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11N) ? TRUE : FALSE,
 		(prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11AC) ? TRUE : FALSE, prStaRec->u2AssocId);
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	"[11][%u],[12][%u],[13][%u],[14][0x%x],[15][0x%x],[16][0x%x],[17][0x%x],[18][0x%x],[19][0x%x],[20][0x%x]\n",
 		prStaRec->fgIsWmmSupported, prStaRec->fgIsUapsdSupported, secIsProtectedBss(prAdapter, prBssInfo),
 		prBssInfo->ucPhyTypeSet, prStaRec->ucDesiredPhyTypeSet, prStaRec->ucNonHTBasicPhyType,
 		prBssInfo->u2BSSBasicRateSet, prStaRec->u2OperationalRateSet,
 		prStaRec->u2DesiredNonHTRateSet, prStaRec->u2HwDefaultFixedRateCode);
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	"[21][0x%x],[22][0x%x],[23][0x%x],[24][0x%x],[25][%u],[26][0x%x],[27][0x%x],[28][0x%x],[29][0x%x],[30][%u]\n",
 		prStaRec->u2HtCapInfo, prStaRec->u2HtExtendedCap, prStaRec->u4TxBeamformingCap,
 		prStaRec->ucMcsSet, prStaRec->fgSupMcs32, prStaRec->u4VhtCapInfo, prStaRec->u2VhtTxMcsMap,
 		prStaRec->u2VhtRxMcsMap, prStaRec->ucVhtOpMode, prStaRec->ucRCPI);
 
-	DBGLOG(SW4, INFO,
+	DBGLOG(SW4, TRACE,
 	"[31][%u],[32][%u],[33][%u],[34][%u/%u],[35][%u:%u:%u:%u],[36][%x/%x],[37][%u],[38][%u/%u],[39][0x%x][0x%x]\n",
 		prStaRec->fgIsInPS, prStaRec->fgIsTxAllowed, prStaRec->fgIsTxKeyReady,
 		prStaRec->fgTxAmpduEn, prStaRec->fgRxAmpduEn,

@@ -3398,14 +3398,14 @@ WLAN_STATUS wlanConfigWifiFunc(IN P_ADAPTER_T prAdapter,
 		break;
 	};
 
-	DBGLOG(INIT, INFO, "FW_START CMD send, waiting for RSP\n");
+	DBGLOG(INIT, TRACE, "FW_START CMD send, waiting for RSP\n");
 
 	u4Status = wlanConfigWifiFuncStatus(prAdapter, ucCmdSeqNum);
 
 	if (u4Status != WLAN_STATUS_SUCCESS)
-		DBGLOG(INIT, INFO, "FW_START EVT failed\n");
+		DBGLOG(INIT, ERROR, "FW_START EVT failed\n");
 	else
-		DBGLOG(INIT, INFO, "FW_START EVT success!!\n");
+		DBGLOG(INIT, TRACE, "FW_START EVT success!!\n");
 
 
 	/* 6. Free CMD Info Packet. */
@@ -3633,7 +3633,7 @@ WLAN_STATUS wlanDownloadFW(IN P_ADAPTER_T prAdapter)
 	wlanDownloadPatch(prAdapter);
 #endif
 
-	DBGLOG(INIT, INFO, "FW download start\n");
+	DBGLOG(INIT, TRACE, "FW download start\n");
 
 	do {
 		/* N9 ILM+DLM */
@@ -3685,7 +3685,7 @@ WLAN_STATUS wlanDownloadFW(IN P_ADAPTER_T prAdapter)
 			break;
 
 	} while (0);
-	DBGLOG(INIT, INFO, "FW download end\n");
+	DBGLOG(INIT, TRACE, "FW download end\n");
 
 	HAL_ENABLE_FWDL(prAdapter, FALSE);
 
@@ -3800,7 +3800,7 @@ VOID wlanSetChipEcoInfo(IN P_ADAPTER_T prAdapter)
 		prAdapter->chip_info->eco_ver = nicGetChipEcoVer(prAdapter);
 	}
 
-	DBGLOG(INIT, INFO, "Chip ID[%04X] Version[E%u] HW[0x%08x] SW[0x%08x]\n",
+	DBGLOG(INIT, TRACE, "Chip ID[%04X] Version[E%u] HW[0x%08x] SW[0x%08x]\n",
 		chip_id, prAdapter->chip_info->eco_ver, hw_version, sw_version);
 }
 
@@ -4153,12 +4153,12 @@ WLAN_STATUS wlanUpdateNetworkAddress(IN P_ADAPTER_T prAdapter)
 		/* eFUSE has a valid address, don't do anything */
 		if (prAdapter->fgIsEmbbededMacAddrValid == TRUE) {
 #if CFG_SHOW_MACADDR_SOURCE
-			DBGLOG(INIT, INFO, "Using embedded MAC address");
+			DBGLOG(INIT, TRACE, "Using embedded MAC address");
 #endif
 			return WLAN_STATUS_SUCCESS;
 		}
 #if CFG_SHOW_MACADDR_SOURCE
-			DBGLOG(INIT, INFO, "Using dynamically generated MAC address");
+			DBGLOG(INIT, TRACE, "Using dynamically generated MAC address");
 #endif
 			/* dynamic generate */
 			u4SysTime = (UINT_32) kalGetTimeTick();
@@ -4171,7 +4171,7 @@ WLAN_STATUS wlanUpdateNetworkAddress(IN P_ADAPTER_T prAdapter)
 
 	} else {
 #if CFG_SHOW_MACADDR_SOURCE
-		DBGLOG(INIT, INFO, "Using host-supplied MAC address");
+		DBGLOG(INIT, TRACE, "Using host-supplied MAC address");
 #endif
 	}
 
@@ -4323,7 +4323,7 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_1X)) {
 				P_STA_RECORD_T prStaRec;
 
-				DBGLOG(RSN, INFO, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
+				DBGLOG(RSN, TRACE, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
 
 				prStaRec = cnmGetStaRecByAddress(prAdapter,
 								 GLUE_GET_PKT_BSS_IDX(prPacket),

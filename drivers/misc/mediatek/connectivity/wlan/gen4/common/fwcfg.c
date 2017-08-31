@@ -180,15 +180,15 @@ WLAN_STATUS wlanFwFileCfg(IN P_ADAPTER_T prAdapter)
 	PUINT_8 pucFwCfgBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
 
 	if (!pucFwCfgBuf) {
-		DBGLOG(INIT, INFO, "omega, pucFwCfgBuf alloc fail!");
+		DBGFWLOG(INIT, INFO, "omega, pucFwCfgBuf alloc fail!\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	kalMemZero(pucFwCfgBuf, WLAN_CFG_FILE_BUF_SIZE);
 
-	DBGLOG(INIT, TRACE, "file: %s\n", FW_CFG_FILE);
+	DBGFWLOG(INIT, TRACE, "file: %s\n", FW_CFG_FILE);
 	if (kalReadToFile(FW_CFG_FILE, pucFwCfgBuf,
 		WLAN_CFG_FILE_BUF_SIZE, &u4FwCfgReadLen)) {
-		DBGLOG(INIT, INFO, "%s, kalreadtofile fail!", FW_CFG_FILE);
+		DBGFWLOG(INIT, TRACE, "%s, kalreadtofile fail!\n", FW_CFG_FILE);
 		kalMemFree(pucFwCfgBuf, VIR_MEM_TYPE, WLAN_CFG_FILE_BUF_SIZE);
 		return WLAN_STATUS_FAILURE;
 	}
@@ -217,7 +217,7 @@ WLAN_STATUS wlanFwCfgParse(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf)
 	PUINT_8 cmdBuffer = kalMemAlloc(MAX_CMD_BUFFER_LENGTH, VIR_MEM_TYPE);
 
 	if (cmdBuffer == 0) {
-		DBGLOG(INIT, INFO, "omega, cmd buffer return fail!");
+		DBGFWLOG(INIT, INFO, "omega, cmd buffer return fail!");
 		return WLAN_STATUS_FAILURE;
 	}
 	kalMemSet(cmdBuffer, 0, MAX_CMD_BUFFER_LENGTH);

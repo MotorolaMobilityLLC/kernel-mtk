@@ -1635,7 +1635,7 @@ int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, INFO, "vendor command: data_len=%d, data=0x%x 0x%x, roaming policy=%d\r\n",
+	DBGLOG(REQ, TRACE, "vendor command: data_len=%d, data=0x%x 0x%x, roaming policy=%d\r\n",
 		data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1), setRoaming);
 
 	rStatus = kalIoctl(prGlueInfo,
