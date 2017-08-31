@@ -83,6 +83,7 @@ extern bool is_switch_charger(void);
 
 /* host and otg */
 extern void mt_usb_otg_init(struct musb *musb);
+extern void mt_usb_otg_exit(struct musb *musb);
 extern void mt_usb_init_drvvbus(void);
 extern void mt_usb_set_vbus(struct musb *musb, int is_on);
 extern int mt_usb_get_vbus_status(struct musb *musb);
