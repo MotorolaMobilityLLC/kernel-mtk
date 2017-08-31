@@ -83,6 +83,8 @@ int g_SHUTDOWN_HL_ZCV_T4[TOTAL_BATTERY_NUMBER] = {3600, 3610, 3620, 3630};
 
 #define RBAT_PULL_UP_VOLT          2800
 
+#define BIF_NTC_R 16000
+
 #if (BAT_NTC_10 == 1)
 FUELGAUGE_TEMPERATURE Fg_Temperature_Table[17] = {
 		{-20, 68237},

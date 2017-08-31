@@ -293,7 +293,7 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol;
 		break;
 	case POWER_SUPPLY_PROP_batt_temp:
-		val->intval = data->BAT_batt_temp;
+		val->intval = data->BAT_batt_temp * 10;
 		break;
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
@@ -937,7 +937,7 @@ unsigned int TempToBattVolt(int temp, int update)
 	/*int vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);*/
 	int vbif28 = RBAT_PULL_UP_VOLT;
 	static int fg_current_temp;
-	static int fg_current_state;
+	static bool fg_current_state;
 	int ret;
 	int fg_r_value = R_FG_VALUE;
 	int	fg_meter_res_value = FG_METER_RESISTANCE;
@@ -1006,7 +1006,10 @@ int BattVoltToTemp(int dwVolt)
 #endif
 
 	/* convert register to temperature */
-	sBaTTMP = BattThermistorConverTemp((int)TRes);
+	if (!pmic_is_bif_exist())
+		sBaTTMP = BattThermistorConverTemp((int)TRes);
+	else
+		sBaTTMP = BattThermistorConverTemp((int)TRes - BIF_NTC_R);
 
 	bm_debug("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
 	return sBaTTMP;
@@ -1024,7 +1027,7 @@ int force_get_tbat(bool update)
 	int fg_r_value = 0;
 	int fg_meter_res_value = 0;
 	int fg_current_temp = 0;
-	int fg_current_state = false;
+	bool fg_current_state = false;
 	int bat_temperature_volt_temp = 0;
 	int ret = 0;
 
@@ -2272,8 +2275,10 @@ void fg_bat_temp_int_sw_check(void)
 
 void fg_drv_update_hw_status(void)
 {
-	static int fg_current, fg_current_state, fg_coulomb, bat_vol, hwocv, plugout_status;
-	int fg_current_new, fg_current_state_new, fg_coulomb_new, bat_vol_new, hwocv_new, plugout_status_new, tmp_new;
+	static bool fg_current_state;
+	static int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status;
+	bool fg_current_state_new;
+	int fg_current_new, fg_coulomb_new, bat_vol_new, hwocv_new, plugout_status_new, tmp_new;
 	static signed int chr_vol;
 	static signed int tmp;
 	signed int chr_vol_new;

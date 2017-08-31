@@ -594,45 +594,40 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 	u32 retry_cnt = 0;
 
 	if (pmic_is_bif_exist()) {
-
 		do {
 			vbat_auxadc = battery_get_bat_voltage() * 1000;
 			ret = pmic_get_bif_battery_voltage(&vbat_bif);
 			vbat_bif = vbat_bif * 1000;
 			if (ret >= 0 && vbat_bif != 0 && vbat_bif < vbat_auxadc) {
 				vbat = vbat_bif;
-				pr_err("%s: use BIF vbat = %dmV, dV to auxadc = %dmV\n",
+				pr_err("%s: use BIF vbat = %duV, dV to auxadc = %duV\n",
 					__func__, vbat, vbat_auxadc - vbat_bif);
 				break;
 			}
-
 			retry_cnt++;
-
 		} while (retry_cnt < 5);
 
 		if (retry_cnt == 5) {
 			ret = 0;
 			vbat = vbat_auxadc;
-			pr_err("%s: use AUXADC vbat = %dmV, since BIF vbat = %d\n",
+			pr_err("%s: use AUXADC vbat = %duV, since BIF vbat = %duV\n",
 				__func__, vbat_auxadc, vbat_bif);
 		}
 
 		/* Adjust CV according to the obtained vbat */
+		vbat_threshold[1] = bif_threshold1;
+		vbat_threshold[2] = bif_threshold2;
+		_cv_temp = bif_cv_under_threshold2;
 
-	vbat_threshold[1] = bif_threshold1;
-	vbat_threshold[2] = bif_threshold2;
-	_cv_temp = bif_cv_under_threshold2;
+		if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
+			_cv = 4608000;
+		else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
+			_cv = _cv_temp;
+		else
+			_cv = bif_cv;
 
-	if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
-		_cv = 4608000;
-	else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
-		_cv = _cv_temp;
-	else
-		_cv = bif_cv;
-
-	*cv = _cv;
-	pr_err("%s: CV = %dmV\n", __func__, _cv);
-
+		*cv = _cv;
+		pr_err("%s: CV = %duV\n", __func__, _cv);
 	} else
 		ret = -ENOTSUPP;
 
@@ -656,13 +651,13 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 	if (strcmp(psy->desc->name, "battery") == 0) {
 		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
 		if (!ret) {
-			tmp = val.intval;
+			tmp = val.intval / 10;
 			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN)
 				_wake_up_charger(info);
 		}
 	}
 
-	pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d", event, psy->desc->name, tmp,
+	pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d\n", event, psy->desc->name, tmp,
 		info->battery_temperature, mt_get_charger_type());
 
 	return NOTIFY_DONE;
@@ -1005,6 +1000,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	/* battery thermal */
 	info->thermal.enable_min_charge_temperature = of_property_read_bool(np,
 		"enable_min_charge_temperature");
+	info->thermal.sm = BAT_TEMP_NORMAL;
 
 	if (of_property_read_u32(np, "min_charge_temperature", &val) >= 0) {
 		info->thermal.min_charge_temperature = val;

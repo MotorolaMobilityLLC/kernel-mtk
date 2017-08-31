@@ -346,7 +346,7 @@ int mtk_power_misc_psy_event(struct notifier_block *nb, unsigned long event, voi
 	if (strcmp(psy->desc->name, "battery") == 0) {
 		ret = psy->desc->get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
 		if (!ret) {
-			tmp = val.intval;
+			tmp = val.intval / 10;
 			if (tmp >= BATTERY_SHUTDOWN_TEMPERATURE) {
 				pr_err("battery temperature >= %d , shutdown", tmp);
 				kernel_power_off();
