@@ -365,6 +365,7 @@ struct msdc_host {
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
+	int                     power_cycle_cnt;
 	bool                    is_autok_done;
 	u8                      use_hw_dvfs;
 	u8                      autok_res[AUTOK_VCORE_NUM][TUNING_PARA_SCAN_COUNT];

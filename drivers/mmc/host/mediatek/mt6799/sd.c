@@ -4308,8 +4308,11 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
  end:
 	/* enable msdc register dump */
 	sd_register_zone[host->id] = 1;
-	INIT_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d>",
-		host->card_inserted, host->block_bad_card, host->mrq, mmc->claimed);
+	INIT_MSG("Card insert<%d> Block bad card<%d>, mrq<%p> claimed<%d> pwrcnt<%d>",
+		host->card_inserted,
+		host->block_bad_card,
+		host->mrq, mmc->claimed,
+		host->power_cycle_cnt);
 
 	/* spin_unlock_irqrestore(&host->lock, flags); */
 
@@ -4320,6 +4323,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 
+	host->power_cycle_cnt = 0;
 	host->block_bad_card = 0;
 	host->is_autok_done = 0;
 	msdc_ops_get_cd(mmc);

@@ -273,8 +273,15 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	msdc_ops_set_ios(mmc, &mmc->ios);
 	/* power reset sdcard */
 	ret = mmc_hw_reset(mmc);
-	if (ret)
-		pr_err("msdc%d power reset failed\n", host->id);
+	if (ret) {
+		if (++host->power_cycle_cnt > 3)
+			host->block_bad_card = 1;
+		pr_err("msdc%d power reset (%d) failed, block_bad_card = %d\n",
+			host->id, host->power_cycle_cnt, host->block_bad_card);
+	} else {
+		host->power_cycle_cnt = 0;
+		pr_err("msdc%d power reset success\n", host->id);
+	}
 	return ret;
 }
 /*
