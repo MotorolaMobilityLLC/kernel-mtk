@@ -1838,10 +1838,10 @@ static int DSI_Stop(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	int i;
 
 	if (module == DISP_MODULE_DSIDUAL) {
-		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
+		/* DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0); */
+		/* DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0); */
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 		/* DSI_OUTREG32(NULL, 0xF401A000, 4); */
 	} else {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
@@ -3314,20 +3314,19 @@ int ddp_dsi_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
-		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		if (_dsi_context[0].dsi_params.mode == CMD_MODE) {
+			/* DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0); */
+			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 
-
-		/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
-		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
-
-		if (_dsi_context[i].dsi_params.mode != CMD_MODE) {
-			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
+			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
+			/* DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0); */
+		} else {
+			/* DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1); */
 			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 		}
 
-		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);
+		DSI_SetMode(module, cmdq, _dsi_context[0].dsi_params.mode);
 		DSI_Send_ROI(DISP_MODULE_DSI0, cmdq, g_lcm_x, g_lcm_y, _dsi_context[0].lcm_width,
 			     _dsi_context[0].lcm_height);
 		DSI_clk_HS_mode(module, cmdq, TRUE);
@@ -3672,14 +3671,14 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 			if (DSI_WaitVMDone(module) != 0)
 				ret = -1;
 			if (module == DISP_MODULE_DSIDUAL) {
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
-					      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
-					      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
 					      DSI_START, 0);
-				DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
-					      DSI_START, 0);
+				/* DSI_OUTREGBIT(cmdq_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START, */
+				/*	      DSI_START, 0); */
+				/* DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG, */
+				/*		  DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0); */
+				DSI_OUTREGBIT(cmdq_handle, struct DSI_COM_CTRL_REG,
+						  DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 			}
 			break;
 		}
@@ -3777,7 +3776,6 @@ int ddp_dsi_ioctl(enum DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int 
 
 int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	int i = 0;
 	unsigned int data_array[16];
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -3785,7 +3783,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 	DSI_OUTREG32(cmdq, &DSI_REG[0]->DSI_PHY_PCPAT, 0x55);
 #endif
 
-	if (_dsi_context[i].dsi_params.mode == CMD_MODE) {
+	if (_dsi_context[0].dsi_params.mode == CMD_MODE) {
 		data_array[0] = 0x002c3909;
 		DSI_set_cmdq(module, cmdq, data_array, 1, 0);
 
@@ -3795,15 +3793,15 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 			 * and pull down DSI_DUAL_EN after triggering video data is done.
 			 */
 			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, DSI_START, 0);
-			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0);
-			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			/* DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[1]->DSI_START, DSI_START, 0); */
+			/* DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1); */
 			DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
 		}
 	}
 
 	DSI_Start(module, cmdq);
 
-	if (module == DISP_MODULE_DSIDUAL && _dsi_context[i].dsi_params.mode == CMD_MODE) {
+	if (module == DISP_MODULE_DSIDUAL && _dsi_context[0].dsi_params.mode == CMD_MODE) {
 		/* Reading one reg is only used for delay in order to pull down DSI_DUAL_EN. */
 		if (cmdq)
 			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0,
@@ -3811,7 +3809,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 		else
 			INREG32(&DSI_REG[0]->DSI_INTSTA);
 
-		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
+		/* DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0); */
 		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 	}
 
@@ -4232,14 +4230,12 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 			/* must set DSI_START to 0 before set dsi_dual_en, don't know why.2014.02.15 */
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[0]->DSI_START,
 				      DSI_START, 0);
-			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START,
-				      DSI_START, 0);
-
-			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
-				      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
+			/* DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_START_REG, DSI_REG[1]->DSI_START, */
+			/*	      DSI_START, 0); */
+			/* DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG, */
+			/*	      DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 1); */
 			DSI_OUTREGBIT(cmdq_trigger_handle, struct DSI_COM_CTRL_REG,
 				      DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 1);
-
 		}
 		/* 1. set dsi vdo mode */
 		DSI_SetMode(module, cmdq_trigger_handle, dsi_params->mode);
