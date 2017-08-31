@@ -31,12 +31,12 @@
 #ifdef CONFIG_MTK_AEE_IPANIC
 #include <mt-plat/mtk_ram_console.h>
 #endif
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+#include <mt-plat/mtk_gpt.h>
+#endif
 #include <ext_wd_drv.h>
-
 #include <mach/wd_api.h>
 #include <linux/seq_file.h>
-
-/*#include <mach/mtk_rtc.h>*/
 
 /*************************************************************************
  * Feature configure region
@@ -341,6 +341,10 @@ void dump_wdk_bind_info(void)
 	}
 #ifdef CONFIG_MTK_AEE_IPANIC
 	aee_sram_fiq_log("\n");
+#endif
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mt_gpt_clkevt_aee_dump();
 #endif
 }
 

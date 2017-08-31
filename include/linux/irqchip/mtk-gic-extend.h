@@ -63,6 +63,8 @@ extern unsigned int mt_irq_get_pending(unsigned int irq);
 extern unsigned int mt_irq_get_pending_hw(unsigned int hwirq);
 extern u32 mt_irq_get_pol(u32 irq);
 extern u32 mt_irq_get_pol_hw(u32 hwirq);
+extern int mt_irq_dump_cpu(int irq);
+extern void mt_irq_dump_status(int irq);
 void mt_gic_set_priority(unsigned int irq);
 void mt_set_irq_priority(unsigned int irq, unsigned int priority);
 unsigned int mt_get_irq_priority(unsigned int irq);

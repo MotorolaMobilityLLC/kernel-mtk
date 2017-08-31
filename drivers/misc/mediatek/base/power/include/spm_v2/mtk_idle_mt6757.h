@@ -134,7 +134,6 @@ extern void __iomem  *apmixed_base_in_idle;
 #define DISP_PWM_LPOSC_MASK      (BIT(1))
 #define AUXADC_CG_STA            BIT(10)
 
-extern void mt_irq_dump_status(unsigned int irq);
 extern bool univpll_is_off(void);
 
 #endif /* __MTK_IDLE_MT6757__H__ */
