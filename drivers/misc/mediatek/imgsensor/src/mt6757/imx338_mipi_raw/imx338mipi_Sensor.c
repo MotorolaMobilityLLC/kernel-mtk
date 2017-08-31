@@ -788,19 +788,10 @@ static kal_uint16 gain2reg(const kal_uint16 gain)
     LOG_INF("[IMX338MIPI]enter IMX338MIPIGain2Reg function\n");
     for (iI = 0; iI < IMX338MIPI_MaxGainIndex; iI++)
 	{
-		if(gain < IMX338MIPI_sensorGainMapping[iI][0])
-		{
+		if (gain <= IMX338MIPI_sensorGainMapping[iI][0])
 			return IMX338MIPI_sensorGainMapping[iI][1];
-		}
 
 
-    }
-	if(iI != IMX338MIPI_MaxGainIndex)
-	{
-    	if(gain != IMX338MIPI_sensorGainMapping[iI][0])
-    	{
-        	 LOG_INF("Gain mapping don't correctly:%d %d \n", gain, IMX338MIPI_sensorGainMapping[iI][0]);
-    	}
     }
 	LOG_INF("exit IMX338MIPIGain2Reg function\n");
     return IMX338MIPI_sensorGainMapping[iI-1][1];
@@ -1097,7 +1088,7 @@ static kal_uint16 zvhdr_setting(void){
 kal_uint16 addr_data_pair_init_imx338[] =
 {
 /* External Clock Setting */
-	 0x0136	,0x1B
+	 0x0136, 0x18
 	,0x0137 ,0x00
 /* Global Setting */
 	,0x0101 ,0x03 /*mirror-flip*/
