@@ -306,7 +306,7 @@ static int _mt_etc_cpu_CB(struct notifier_block *nfb,
 
 		switch (action) {
 		case CPU_DOWN_PREPARE:
-			if (cluster_id == MT_ETC_CPU_B) {
+			if ((cluster_id == MT_ETC_CPU_B) && (big_cpus == 1)) {
 				if (etc_log_en)
 					etc_debug("DEAD (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
 				mtk_etc_lock(&flags);
@@ -320,7 +320,7 @@ static int _mt_etc_cpu_CB(struct notifier_block *nfb,
 		break;
 
 		case CPU_ONLINE:
-			if (cluster_id == MT_ETC_CPU_B) {
+			if ((cluster_id == MT_ETC_CPU_B) && (big_cpus == 1)) {
 				if (etc_log_en)
 					etc_error("OL (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
 				mtk_etc_lock(&flags);
@@ -381,11 +381,11 @@ static ssize_t etc_enable_proc_write(struct file *file,
 	}
 
 	if (enable == 0) {
-		etc_debug("Disable ETC !!\n");
+		etc_error("Disable ETC !!\n");
 		mtk_etc_power_off();
 		ctrl_etc_enable = 0;
 	} else {
-		etc_debug("Enable ETC !!\n");
+		etc_error("Enable ETC !!\n");
 		ctrl_etc_enable = enable;
 		mtk_etc_init();
 	}
