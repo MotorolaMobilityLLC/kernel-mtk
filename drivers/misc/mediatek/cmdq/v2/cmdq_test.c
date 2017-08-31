@@ -4718,10 +4718,12 @@ static int _testcase_trigger_event_thread(void *data)
 	u32 dummy_value = 0;
 	u32 trigger_interval = (u32)thread_data->policy.trigger_policy;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (!trigger_interval)
 		trigger_interval = get_random_int() % (u32)CMDQ_TESTCASE_TRIGGER_SLOW;
+	if (trigger_interval <= 1)
+		trigger_interval = 2;
 
 	/* randomly clear/set event */
 	while (!atomic_read(&thread_data->stop)) {
