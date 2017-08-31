@@ -288,9 +288,11 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 		*mr_value = Reg_Readl(DRAMC_NAO_MRR_STATUS) & 0xFFFF;
 		time_cnt--;
 	} while ((*mr_value == 0) && (time_cnt > 0));
+#if 0
 	if (time_cnt == 0) {
 		pr_warn("[DRAMC] read mode reg time out 2\n");
 	}
+#endif
 
 	/* set MRR fire bit MRREN to 0 for next MRR */
 	temp = Reg_Readl(DRAMC_AO_SPCMD);
@@ -357,15 +359,17 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	/* switch DQS OSC control to SW mode */
 	temp = Reg_Readl(DRAMC_AO_DQSOSCR);
 	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp | (0x1<<28));
-	temp = Reg_Readl(DRAMC_AO_SLP4_TESTMODE);
-	Reg_Sync_Writel(DRAMC_AO_SLP4_TESTMODE,  temp | (0x1<<28));
 
 	/* set DRAMC clock free run and CKE always on */
 	temp = Reg_Readl(DRAMC_AO_PD_CTRL);
 	Reg_Sync_Writel(DRAMC_AO_PD_CTRL, temp | (0x1<<26));
-	temp = Reg_Readl(DRAMC_AO_CKECTRL) & ~(0x1<<7);
-	Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp);
-	Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<6));
+	if (rank == 0) {
+		temp = Reg_Readl(DRAMC_AO_CKECTRL) & ~(0x1<<7);
+		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<6));
+	} else {
+		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp & ~(0x1<<5));
+		Reg_Sync_Writel(DRAMC_AO_CKECTRL, temp | (0x1<<4));
+	}
 
 	if (start_dram_dqs_osc(dramc_ao_chx_base, dramc_nao_chx_base) != 0)
 		return -1;
@@ -536,6 +540,7 @@ pi_new[shu_index][rank][byte]);
 	}
 
 	temp = Reg_Readl(DRAMC_AO_DQSOSCR);
+	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp | (0x1<<5));
 	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp | (0x3<<5));
 
 	for (shu_index = 0; shu_index < 4; shu_index++) {
@@ -565,8 +570,9 @@ pi_new[shu_index][rank][byte]);
 		return;
 	}
 
-	temp = Reg_Readl(DRAMC_AO_DQSOSCR) & ~(0x3<<5);
-	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp);
+	temp = Reg_Readl(DRAMC_AO_DQSOSCR);
+	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp & ~(0x1<<5));
+	Reg_Sync_Writel(DRAMC_AO_DQSOSCR, temp & ~(0x3<<5));
 
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL) & ~(1<<29);
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (mr4_on_off<<29));
@@ -1689,7 +1695,7 @@ static int dram_dt_init(void)
 static struct timer_list zqcs_timer;
 static unsigned char low_freq_counter;
 
-void zqcs_timer_callback(unsigned long data)
+static void zqcs(void)
 {
 	unsigned int Response, TimeCnt, CHCounter, RankCounter;
 	void __iomem *u4rg_24;
@@ -1697,17 +1703,8 @@ void zqcs_timer_callback(unsigned long data)
 	void __iomem *u4rg_5C;
 	void __iomem *u4rg_60;
 	void __iomem *u4rg_88;
-	unsigned long save_flags;
 
-	local_irq_save(save_flags);
-	if (acquire_dram_ctrl() != 0) {
-		pr_warn("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
-		mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-		local_irq_restore(save_flags);
-		return;
-	}
-
-  /* CH0_Rank0 --> CH1Rank0 */
+	/* CH0_Rank0 --> CH1_Rank0 */
 	for (RankCounter = 0; RankCounter < 4; RankCounter++) {
 		for (CHCounter = 0; CHCounter < 4; CHCounter++) {
 			TimeCnt = 100;
@@ -1763,10 +1760,6 @@ void zqcs_timer_callback(unsigned long data)
 				writel(readl(u4rg_24) & 0xFFFFFFBF, u4rg_24); /* DMCKEFIXON */
 				writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
 				writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
-				if (release_dram_ctrl() != 0)
-					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
-				mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-				local_irq_restore(save_flags);
 				pr_err("[DRAMC] CA%x Rank%x ZQCal Start time out\n", CHCounter, RankCounter);
 				return;
 			}
@@ -1789,33 +1782,65 @@ void zqcs_timer_callback(unsigned long data)
 			writel(readl(u4rg_24) & 0xFFFFFFEF, u4rg_24); /* DMCKE1FIXON */
 			writel(readl(u4rg_38) & 0xFBFFFFFF, u4rg_38); /* DMMIOCKCTRLOFF */
 			if (TimeCnt == 0) { /* time out */
-				if (release_dram_ctrl() != 0)
-					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
-				mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-				local_irq_restore(save_flags);
 				pr_err("[DRAMC] CA%x Rank%x ZQCal latch time out\n", CHCounter, RankCounter);
 				return;
 			}
 			udelay(1);
 		}
 	}
+}
+
+void zqcs_timer_callback(unsigned long data)
+{
+	unsigned long save_flags;
+
+	local_irq_save(save_flags);
+	if (acquire_dram_ctrl() != 0) {
+		local_irq_restore(save_flags);
+		pr_warn("[DRAMC] ZQCS can NOT get SPM HW SEMAPHORE!\n");
+	} else {
+		zqcs();
+		if (release_dram_ctrl() != 0)
+			pr_warn("[DRAMC] ZQCS release SPM HW SEMAPHORE fail!\n");
+		local_irq_restore(save_flags);
+	}
 
 #ifdef SW_TX_TRACKING
+	udelay(3);
+
 	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10)) {
-		dramc_tx_tracking(0);
-		dramc_tx_tracking(1);
-		dramc_tx_tracking(2);
-		dramc_tx_tracking(3);
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 0/1 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			dramc_tx_tracking(0);
+			dramc_tx_tracking(1);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 0/1 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
+
+		udelay(3);
+
+		local_irq_save(save_flags);
+		if (acquire_dram_ctrl() != 0) {
+			local_irq_restore(save_flags);
+			pr_warn("[DRAMC] TX 2/3 can NOT get SPM HW SEMAPHORE!\n");
+		} else {
+			dramc_tx_tracking(2);
+			dramc_tx_tracking(3);
+			if (release_dram_ctrl() != 0)
+				pr_warn("[DRAMC] TX 0/1 release SPM HW SEMAPHORE fail!\n");
+			local_irq_restore(save_flags);
+		}
 		low_freq_counter = 0;
 	} else {
 		low_freq_counter++;
-		}
+	}
 #endif
 
-	if (release_dram_ctrl() != 0)
-		pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
-	local_irq_restore(save_flags);
 }
 
 void del_zqcs_timer(void)
