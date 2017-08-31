@@ -39,12 +39,14 @@
 #include <mach/mtk_battery_meter.h>
 #endif
 
+static unsigned int vmodem_vosel = 0x2C;        /* VMODEM 0.775V: 0x2C */
+
 #define VMD1_WK	0 /* TBD */
 
 void vmd1_pmic_setting_on(void)
 {
-	/* 1.Call PMIC driver API configure VMODEM voltage as 0.8V */
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, 0x30); /* set to 0.8V */
+	/* 1.Call PMIC driver API configure VMODEM voltage */
+	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
 #if VMD1_WK
 	/* Enable FPFM before enable BUCK, SW workaround to avoid VMODEM overshoot */
 	pmic_config_interface(0xD2E, 0x1, 0x1, 5);	/* RG_VMODEM_TRAN_BST[5] = 1 */
@@ -59,7 +61,7 @@ void vmd1_pmic_setting_on(void)
 	PMICLOG("vmd1_pmic_setting_on vmodem fpfm %d\n",
 		((pmic_get_register_value(PMIC_RG_VMODEM_TRAN_BST) & 0x20) >> 5));
 #endif
-	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != 0x30)
+	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != vmodem_vosel)
 		pr_err("vmd1_pmic_setting_on vmodem vosel = 0x%x, da_vosel = 0x%x",
 			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
 			pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
@@ -69,10 +71,30 @@ void vmd1_pmic_setting_off(void)
 {
 	/* 1.Call PMIC driver API configure VMODEM off */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
-	PMICLOG("vmd1_pmic_setting_off vmodem en %d\n",
-		(pmic_get_register_value(PMIC_DA_VMODEM_EN) & 0x1));
+	PMICLOG("vmd1_pmic_setting_off vmodem en %d\n",	pmic_get_register_value(PMIC_DA_VMODEM_EN));
 }
 
+int vcore_pmic_set_mode(unsigned char mode)
+{
+	unsigned char ret = 0;
+
+	pmic_set_register_value(PMIC_RG_VCORE_FPWM, mode);
+
+	ret = pmic_get_register_value(PMIC_RG_VCORE_FPWM);
+
+	return (ret == mode) ? (0) : (-1);
+}
+
+int vproc_pmic_set_mode(unsigned char mode)
+{
+	unsigned char ret = 0;
+
+	pmic_set_register_value(PMIC_RG_VPROC_FPWM, mode);
+
+	ret = pmic_get_register_value(PMIC_RG_VPROC_FPWM);
+
+	return (ret == mode) ? (0) : (-1);
+}
 /* [Export API] */
 
 int pmic_tracking_init(void)
