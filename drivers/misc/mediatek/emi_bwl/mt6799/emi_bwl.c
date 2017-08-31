@@ -313,6 +313,8 @@ unsigned int bw_mon_in_ms(TRANS_TYPE trans_type, unsigned int ms)
 	unsigned int cycle_cnt;
 	unsigned int dram_data_rate;
 
+	pr_err("[EMI BW] period %d\n", ms);
+
 	/* Clear bus monitor */
 	temp = readl(IOMEM(EMI_BMEN)) & 0xfffffffc;
 	writel(temp, EMI_BMEN);
@@ -466,20 +468,20 @@ static void run_fake_engine(
 
 static ssize_t fake_engine_bw_store(struct device_driver *driver, const char *buf, size_t count)
 {
-	unsigned int latency, toggle, dis_r0, dis_w0, dis_r1, dis_w1;
+	unsigned int latency, toggle, dis_r0, dis_w0, dis_r1, dis_w1, period;
 	int ret;
 
-	ret = sscanf(buf, "%u %u %u %u %u %u", &latency, &toggle, &dis_r0, &dis_w0, &dis_r1, &dis_w1);
+	ret = sscanf(buf, "%u %u %u %u %u %u %u", &latency, &toggle, &dis_r0, &dis_w0, &dis_r1, &dis_w1, &period);
 
-	pr_err("[Fake] latency %d, toggle %d, dis_r0 %d, dis_w0 %d, dis_r1 %d, dis_w1 %d\n",
-		latency, toggle, dis_r0, dis_w0, dis_r1, dis_w1);
+	pr_err("[Fake] latency %d, toggle %d, dis_r0 %d, dis_w0 %d, dis_r1 %d, dis_w1 %d, period %d\n",
+		latency, toggle, dis_r0, dis_w0, dis_r1, dis_w1, period);
 	set_fake_engine();
 	run_fake_engine(latency, toggle, 1, 0, 1, 0, 0);
 	run_fake_engine(latency, toggle, dis_r0, dis_w0, dis_r1, dis_w1, 1);
 
-	bw_r  = bw_mon_in_ms(R, 5);
-	bw_w  = bw_mon_in_ms(W, 5);
-	bw_rw = bw_mon_in_ms(RW, 5);
+	bw_r  = bw_mon_in_ms(R, period);
+	bw_w  = bw_mon_in_ms(W, period);
+	bw_rw = bw_mon_in_ms(RW, period);
 
 	pr_err("[Fake] R %d, W %d, RW %d\n", bw_r, bw_w, bw_rw);
 
@@ -488,7 +490,7 @@ static ssize_t fake_engine_bw_store(struct device_driver *driver, const char *bu
 
 static ssize_t fake_engine_bw_show(struct device_driver *driver, char *buf)
 {
-	/* echo lat tog dr0 dw0 dr1 dw1 > fake_engine_bw */
+	/* echo lat tog dr0 dw0 dr1 dw1 period > fake_engine_bw */
 	return sprintf(buf, "BW: R %d MB/s, W %d MB/s, RW %d MB/s\n", bw_r, bw_w, bw_rw);
 }
 
