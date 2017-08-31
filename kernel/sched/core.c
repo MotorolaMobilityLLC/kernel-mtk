@@ -2912,7 +2912,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 }
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 				       struct sched_capacity_reqs *scr)
 {
@@ -2923,7 +2922,6 @@ static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 	total += scr->dl;
 	return total;
 }
-#endif
 
 static void sched_freq_tick(int cpu)
 {
@@ -2937,33 +2935,31 @@ static void sched_freq_tick(int cpu)
 	capacity_orig = capacity_orig_of(cpu);
 	capacity_curr = capacity_curr_of(cpu);
 
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (capacity_curr == capacity_orig)
 		return;
-#endif
 
 	/*
 	 * To make free room for a task that is building up its "real"
 	 * utilization and to harm its performance the least, request
-	 * a jump to max OPP as soon as the margin of free capacity is
+	 * a jump to bigger OPP as soon as the margin of free capacity is
 	 * impacted (specified by capacity_margin).
 	 */
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
-	/* which includes capacity_margin */
+	/* capacity_req which includes RT loading & capacity_margin */
 	capacity_req = sum_capacity_reqs(boosted_cpu_util(cpu), scr);
 
 	if (capacity_curr < capacity_req) {
-		capacity_req = boosted_cpu_util(cpu) + scr->rt + scr->dl;
+		/* convert scale-invariant capacity */
+		capacity_req = capacity_req * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
+
+		/* [FIXME]
+		 * capacity_req includes CFS + RT + DL loading and capacity margin.
+		 * but in here should we only refer CFS and remove additional capacitiy
+		 * margin? Whatever it should be better than capacity_max.
+		 */
 		set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
 	}
-#else
-	/* To tell SSPM as possible as we can */
-	capacity_req = boosted_cpu_util(cpu) + scr->rt + scr->dl;
-	set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
-#endif
-
 }
 #else
 static inline void sched_freq_tick(int cpu) { }
