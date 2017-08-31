@@ -17,6 +17,7 @@
 
 typedef struct GED_HASHTABLE_TAG
 {
+	unsigned int		version;
 	unsigned int		ui32Bits;
 	unsigned int		ui32Tmp;
 	unsigned long		ulLength;
@@ -24,6 +25,8 @@ typedef struct GED_HASHTABLE_TAG
 	unsigned long		ulCurrentID;
 	struct list_head	*psHashTable;
 } GED_HASHTABLE;
+
+#define HT_VERSION sizeof(GED_HASHTABLE)
 
 typedef struct GED_HASHNODE_TAG
 {
@@ -34,7 +37,16 @@ typedef struct GED_HASHNODE_TAG
 
 #define GED_HASHTABLE_INIT_ID 1234 // 0 = invalid
 
-void *__ged_hashtable_find(struct list_head *psList, unsigned long ulID)
+static GED_HASHTABLE *__ged_hashtable_verify(GED_HASHTABLE_HANDLE hHashTable)
+{
+	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+
+	if (psHT && psHT->version == HT_VERSION)
+		return psHT;
+	return NULL;
+}
+
+static void *__ged_hashtable_find(struct list_head *psList, unsigned long ulID)
 {
 	GED_HASHNODE *psHN;
 	struct list_head *psListEntry, *psListEntryTemp;
@@ -47,10 +59,8 @@ void *__ged_hashtable_find(struct list_head *psList, unsigned long ulID)
 	return NULL;
 }
 
-static unsigned long ged_hash(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
+static unsigned long ged_hash(GED_HASHTABLE *psHT, unsigned long ulID)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
-
 	return hash_long(ulID, psHT->ui32Bits);
 }
 
@@ -67,6 +77,7 @@ GED_HASHTABLE_HANDLE ged_hashtable_create(unsigned int ui32Bits)
 
 	psHT = (GED_HASHTABLE *)ged_alloc_atomic(sizeof(GED_HASHTABLE));
 	if (psHT) {
+		psHT->version = HT_VERSION;
 		psHT->ui32Bits = ui32Bits;
 		psHT->ulLength = (unsigned long)(1 << ui32Bits);
 		psHT->ulCount = 0;
@@ -85,7 +96,7 @@ GED_HASHTABLE_HANDLE ged_hashtable_create(unsigned int ui32Bits)
 
 void ged_hashtable_destroy(GED_HASHTABLE_HANDLE hHashTable)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		unsigned long i = 0;
@@ -104,6 +115,8 @@ void ged_hashtable_destroy(GED_HASHTABLE_HANDLE hHashTable)
 			}
 		}
 
+		psHT->version = 0xf2eef2ee;
+
 		/* free the hash table */
 		ged_free(psHT->psHashTable, psHT->ulLength * sizeof(struct list_head));
 		ged_free(psHT, sizeof(GED_HASHTABLE));
@@ -112,7 +125,7 @@ void ged_hashtable_destroy(GED_HASHTABLE_HANDLE hHashTable)
 
 GED_ERROR ged_hashtable_insert(GED_HASHTABLE_HANDLE hHashTable, void *pvoid, unsigned long *pulID)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 	GED_HASHNODE *psHN = NULL;
 	unsigned long ulHash, ulID;
 	GED_BOOL bFindSlot = GED_FALSE;
@@ -159,7 +172,7 @@ GED_ERROR ged_hashtable_insert(GED_HASHTABLE_HANDLE hHashTable, void *pvoid, uns
 
 void ged_hashtable_remove(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		unsigned long ulHash = ged_hash(psHT, ulID);
@@ -176,7 +189,7 @@ void ged_hashtable_remove(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 
 void *ged_hashtable_find(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		unsigned long ulHash = ged_hash(psHT, ulID);
@@ -194,7 +207,7 @@ void *ged_hashtable_find(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID)
 
 GED_ERROR ged_hashtable_set(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID, void *pvoid)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		unsigned long ulHash = ged_hash(psHT, ulID);
@@ -219,7 +232,7 @@ GED_ERROR ged_hashtable_set(GED_HASHTABLE_HANDLE hHashTable, unsigned long ulID,
 
 void ged_hashtable_iterator(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_iterator_func_type iterator, void *pvParam)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		GED_HASHNODE *psHN;
@@ -242,7 +255,7 @@ void ged_hashtable_iterator(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_itera
 
 void *ged_hashtable_search(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_search_func_type pFunc, void *pvParam)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 	void *pResult = NULL;
 
 	if (psHT) {
@@ -268,7 +281,7 @@ void *ged_hashtable_search(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_search
 
 void ged_hashtable_iterator_delete(GED_HASHTABLE_HANDLE hHashTable, ged_hashtable_iterator_delete_func_type pFunc, void *pvParam)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT) {
 		GED_HASHNODE *psHN;
@@ -301,7 +314,7 @@ void ged_hashtable_iterator_delete(GED_HASHTABLE_HANDLE hHashTable, ged_hashtabl
 
 unsigned long ged_hashtable_get_count(GED_HASHTABLE_HANDLE hHashTable)
 {
-	GED_HASHTABLE *psHT = (GED_HASHTABLE *)hHashTable;
+	GED_HASHTABLE *psHT = __ged_hashtable_verify(hHashTable);
 
 	if (psHT)
 		return psHT->ulCount;
