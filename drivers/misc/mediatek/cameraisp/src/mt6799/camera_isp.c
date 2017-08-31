@@ -51,6 +51,8 @@
 /*#include <mach/mt_clkmgr.h>*/     /* For clock mgr APIS. enable_clock()/disable_clock(). */
 #include <mt-plat/sync_write.h> /* For mt65xx_reg_sync_writel(). */
 /* #include <mach/mt_spm_idle.h> */   /* For spm_enable_sodi()/spm_disable_sodi(). */
+#include <mt-plat/mtk_meminfo.h>
+
 
 #include <linux/of_platform.h>
 #include <linux/of_irq.h>
@@ -9130,6 +9132,8 @@ static MINT32 ISP_open(
 	#endif
 	}
 
+	dcs_enter_perf(DCS_KICKER_CAMERA);
+
 	/* do wait queue head init when re-enter in camera */
 	/*  */
 	for (i = 0; i < IRQ_USER_NUM_MAX; i++) {
@@ -9417,6 +9421,8 @@ static MINT32 ISP_release(
 	} else {
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
+
+	dcs_exit_perf(DCS_KICKER_CAMERA);
 
 	/* kernel log limit back to default */
 #if (_K_LOG_ADJUST == 1)
