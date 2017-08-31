@@ -1021,14 +1021,15 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 				ret = wait_event_interruptible_timeout(_dsi_wait_sleep_out_done_queue[i],
 								       wait_sleep_out_done, 2 * HZ);
 			} while (ret <= 0 && cnt <= 2);
-		}
-		if (ret == 0) {
-			DISPERR("dsi%d wait_sleepout timeout\n", i);
-			DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
-			DSI_Reset(module, NULL);
-		} else if (ret < 0) {
-			DISPERR("dsi%d wait_sleepout is woken up by signal ret %d\n", i, ret);
-			mdelay(5);
+
+			if (ret == 0) {
+				DISPERR("dsi%d wait_sleepout timeout\n", i);
+				DSI_DumpRegistersWithAee(module, 2, __func__, __LINE__);
+				DSI_Reset(module, NULL);
+			} else if (ret < 0) {
+				DISPERR("dsi%d wait_sleepout is woken up by signal ret %d\n", i, ret);
+				mdelay(5);
+			}
 		}
 	}
 
