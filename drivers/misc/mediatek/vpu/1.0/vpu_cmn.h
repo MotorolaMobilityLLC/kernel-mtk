@@ -185,10 +185,10 @@ int vpu_ext_be_busy(void);
 int vpu_dump_register(struct seq_file *s);
 
 /**
- * vpu_dump_emmc - dump the binary information stored in emmc.
+ * vpu_dump_image_file - dump the binary information stored in flash storage.
  * @s:          the pointer to seq_file.
  */
-int vpu_dump_emmc(struct seq_file *s);
+int vpu_dump_image_file(struct seq_file *s);
 
 
 /* =============================== define in vpu_drv.c  =============================== */

@@ -27,6 +27,8 @@
 #include <ion.h>
 #include <mtk/ion_drv.h>
 #include <mtk/mtk_ion.h>
+#include <mtk_gpio.h>
+#include <mach/gpio_const.h>
 
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mtk_pmic_info.h>
@@ -105,6 +107,9 @@ static uint32_t map_reg_vimvo[] = {800000, 900000};
 /* mapping of vpu binary */
 struct sg_table sg_reset_vector;
 struct sg_table sg_main_program;
+
+/* jtag */
+static bool is_jtag_enabled;
 
 static inline void lock_command(void)
 {
@@ -217,7 +222,8 @@ static int vpu_enable_regulator_and_clock(void)
 #define ENABLE_VPU_CLK(clk) \
 	{ \
 		if (clk != NULL) { \
-			clk_enable(clk); \
+			if (clk_enable(clk)) \
+				LOG_ERR("fail to enable clock: %s\n", #clk); \
 		} else { \
 			LOG_WRN("clk not existed: %s\n", #clk); \
 		} \
@@ -562,7 +568,7 @@ out:
 
 static int vpu_dump_power(struct seq_file *s, void *unused)
 {
-	vpu_print_seq(s, "power_dynamic: %d\n",
+	vpu_print_seq(s, "dynamic: %d\n",
 			is_power_dynamic);
 
 	vpu_print_seq(s, "dvfs_debug: %d %d %d\n",
@@ -570,6 +576,8 @@ static int vpu_dump_power(struct seq_file *s, void *unused)
 			step_clk_dsp,
 			step_clk_ipu_if);
 
+	vpu_print_seq(s, "jtag: %d\n",
+			is_jtag_enabled);
 	return 0;
 }
 
@@ -586,8 +594,9 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	int args[3];
 
 	enum {
-		cmd_power_dynamic,
-		cmd_dvfs_debug
+		cmd_dynamic,
+		cmd_dvfs_debug,
+		cmd_jtag_enabled,
 	};
 
 	tmp = kzalloc(count + 1, GFP_KERNEL);
@@ -601,15 +610,19 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 
 	/* parse a command */
 	token = strsep(&cursor, " ");
-	if (strcmp(token, "power_dynamic") == 0) {
-		cmd = cmd_power_dynamic;
+	if (strcmp(token, "dynamic") == 0) {
+		cmd = cmd_dynamic;
 		argc = 1;
 	} else if (strcmp(token, "dvfs_debug") == 0) {
 		cmd = cmd_dvfs_debug;
 		argc = 3;
+	} else if (strcmp(token, "jtag") == 0) {
+		cmd = cmd_jtag_enabled;
+		argc = 1;
 	} else {
 		ret = -EINVAL;
-		CHECK_RET("vpu: error command!");
+		LOG_ERR("vpu: error command!");
+		goto out;
 	}
 
 	/* parse arguments */
@@ -622,11 +635,13 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 	CHECK_RET("vpu: wrong num of args");
 
 	switch (cmd) {
-	case cmd_power_dynamic:
+	case cmd_dynamic:
 		is_power_dynamic = args[0];
 		/* power on immediately, if not dynamic */
 		if (!is_power_dynamic)
 			vpu_boot_up();
+		else
+			wake_up(&vpu_dev->req_wait);
 
 		break;
 
@@ -653,6 +668,12 @@ static ssize_t vpu_set_power_write(struct file *flip, const char __user *buffer,
 		vpu_shut_down();
 		vpu_boot_up();
 		mutex_unlock(&vpu_dev->user_mutex);
+
+		break;
+
+	case cmd_jtag_enabled:
+		is_jtag_enabled = args[0];
+		ret = vpu_hw_enable_jtag(is_jtag_enabled);
 
 		break;
 
@@ -808,6 +829,27 @@ static int vpu_check_result(void)
 	}
 }
 
+int vpu_hw_enable_jtag(bool enabled)
+{
+	int ret;
+
+	ret = mt_set_gpio_mode(GPIO161 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
+	ret |= mt_set_gpio_mode(GPIO162 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
+	ret |= mt_set_gpio_mode(GPIO163 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
+	ret |= mt_set_gpio_mode(GPIO164 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
+	ret |= mt_set_gpio_mode(GPIO165 | 0x80000000, enabled ? GPIO_MODE_03 : GPIO_MODE_01);
+
+	CHECK_RET("fail to config gpio-jtag2!\n");
+
+	vpu_write_field(FLD_SPNIDEN, enabled);
+	vpu_write_field(FLD_SPIDEN, enabled);
+	vpu_write_field(FLD_NIDEN, enabled);
+	vpu_write_field(FLD_DBG_EN, enabled);
+
+out:
+	return ret;
+}
+
 int vpu_hw_boot_sequence(void)
 {
 	int ret;
@@ -823,11 +865,7 @@ int vpu_hw_boot_sequence(void)
 
 	/* 1. write register */
 	VPU_SET_BIT(ptr_ctrl, 31);      /* csr_p_debug_enable */
-	VPU_SET_BIT(ptr_ctrl, 24);
-	VPU_SET_BIT(ptr_ctrl, 25);
-	VPU_SET_BIT(ptr_ctrl, 26);
-	VPU_SET_BIT(ptr_ctrl, 28);
-	VPU_SET_BIT(ptr_ctrl, 29);      /* debug interface cock gated enable */
+	VPU_SET_BIT(ptr_ctrl, 26);      /* debug interface cock gated enable */
 
 #ifdef VPU_INTERNAL_BOOT
 	VPU_SET_BIT(ptr_ctrl, 19);      /* internal_boot_enable */
@@ -1257,7 +1295,7 @@ int vpu_dump_register(struct seq_file *s)
 	return 0;
 }
 
-int vpu_dump_emmc(struct seq_file *s)
+int vpu_dump_image_file(struct seq_file *s)
 {
 	int i, j, id = 1;
 	struct vpu_algo_info *algo_info;

@@ -160,8 +160,6 @@ int vpu_free_algo(struct vpu_algo *algo)
 	if (algo == NULL)
 		return 0;
 
-	if (algo->info_ptr != 0)
-		kfree((void *) algo->info_ptr);
 	kfree(algo);
 	return 0;
 }

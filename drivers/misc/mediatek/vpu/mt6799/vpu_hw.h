@@ -168,7 +168,12 @@ int vpu_hw_boot_sequence(void);
 /**
  * vpu_set_debug - set log buffer and size to VPU
  */
-int vpu_set_debug(void);
+int vpu_hw_set_debug(void);
+
+/**
+ * vpu_hw_enable_jtag - start dsp debug via jtag
+ */
+int vpu_hw_enable_jtag(bool enabled);
 
 /**
  * vpu_hw_enque_request - do DRAM-to-DRAM processing, and it will block until done.
