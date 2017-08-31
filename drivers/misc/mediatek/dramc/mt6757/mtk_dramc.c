@@ -67,6 +67,7 @@ static void *(*get_emi_base)(void);
 #endif
 
 static DEFINE_MUTEX(dram_dfs_mutex);
+unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
@@ -127,9 +128,10 @@ const char *uname, int depth, void *data)
 			g_dram_info_dummy_read->rank_info[0].start);
 			pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
 			g_dram_info_dummy_read->rank_info[1].start);
+		} else {
+			No_DummyRead = 1;
+			pr_err("[DRAMC] dram info dram rank number incorrect !!!\n");
 		}
-	  else
-		pr_err("[DRAMC] dram info dram rank number incorrect !!!\n");
 	}
 
 	return node;
@@ -890,8 +892,8 @@ unsigned int get_dram_data_rate(void)
 
 	u4DataRate = u4VCOFreq>>u4CKDIV4;
 
-	pr_err("[DRAMC Driver] PCW=0x%X, u4PREDIV=%d, u4POSDIV=%d, CKDIV4=%d, DataRate=%d\n",
-	u4SDM_PCW, u4PREDIV, u4POSDIV, u4CKDIV4, u4DataRate);
+	/* pr_err("[DRAMC Driver] PCW=0x%X, u4PREDIV=%d, u4POSDIV=%d, CKDIV4=%d, DataRate=%d\n", */
+	/* u4SDM_PCW, u4PREDIV, u4POSDIV, u4CKDIV4, u4DataRate); */
 
 	if (DRAM_TYPE == TYPE_LPDDR3) {
 		if (u4DataRate == 1859)
@@ -963,7 +965,8 @@ int dram_steps_freq(unsigned int step)
 		break;
 	case 2:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = 933;
+			/* freq = 933; */
+			freq = 1333;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 1600;
 		break;
@@ -975,6 +978,9 @@ int dram_steps_freq(unsigned int step)
 
 int dram_can_support_fh(void)
 {
+	if (No_DummyRead)
+		return 0;
+	else
 		return 1;
 }
 
@@ -990,6 +996,7 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
 			pr_err("[DRAMC] Can NOT reserve memory for Rank0\n");
+			No_DummyRead = 1;
 			return 0;
 		}
 		dram_rank0_addr = rptr;
@@ -1001,6 +1008,7 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
 			pr_err("[DRAMC] Can NOT reserve memory for Rank1\n");
+			No_DummyRead = 1;
 			return 0;
 		}
 		dram_rank1_addr = rptr;
