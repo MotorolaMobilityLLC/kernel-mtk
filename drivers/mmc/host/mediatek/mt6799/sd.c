@@ -2014,9 +2014,12 @@ check_fifo_end:
 	data->bytes_xfered += size;
 	N_MSG(FIO, "        PIO Read<%d>bytes", size);
 
-	if (data->error)
+	if (data->error) {
 		ERR_MSG("read pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+		if (host->hw->host_function == MSDC_SDIO)
+			msdc_dump_info(host->id);
+	}
 
 	if (!data->error)
 		host->prev_cmd_cause_dump = 0;
@@ -2199,9 +2202,12 @@ check_fifo_end:
 	data->bytes_xfered += size;
 	N_MSG(FIO, "        PIO Write<%d>bytes", size);
 
-	if (data->error)
+	if (data->error) {
 		ERR_MSG("write pio data->error<%d> left<%d> size<%d>",
 			data->error, left, size);
+		if (host->hw->host_function == MSDC_SDIO)
+			msdc_dump_info(host->id);
+	}
 
 	if (!data->error)
 		host->prev_cmd_cause_dump = 0;

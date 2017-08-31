@@ -349,15 +349,27 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	return ret;
 }
 
-void sdio_execute_dvfs_autok_sdr104(struct msdc_host *host)
+void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 {
 	void __iomem *base = host->base;
 	int sdio_res_exist = 0;
 	int vcore;
 	int i;
+	int (*autok_init)(struct msdc_host *host);
+	int (*autok_execute)(struct msdc_host *host, u8 *res);
+
+	if (ddr208) {
+		autok_init = autok_init_ddr208;
+		autok_execute = autok_sdio30_plus_tuning;
+		pr_err("[AUTOK]SDIO DDR208 Tune\n");
+	} else {
+		autok_init = autok_init_sdr104;
+		autok_execute = autok_execute_tuning;
+		pr_err("[AUTOK]SDIO SDR104 Tune\n");
+	}
 
 	if (host->is_autok_done) {
-		autok_init_sdr104(host);
+		autok_init(host);
 
 		/* Check which vcore setting to apply */
 		vcore = vcorefs_get_hw_opp();
@@ -381,30 +393,20 @@ void sdio_execute_dvfs_autok_sdr104(struct msdc_host *host)
 
 	host->dvfs_reg_backup = sdio_reg_backup;
 
-	pr_err("[AUTOK]SDIO SDR104 Tune\n");
 	/* Wait DFVS ready for excute autok here */
 	sdio_autok_wait_dvfs_ready();
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, i) != 0)
 			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
 
 		if (sdio_res_exist)
 			sdio_autok_res_apply(host, i);
 		else
-			autok_execute_tuning(host, host->autok_res[i]);
+			autok_execute(host, host->autok_res[i]);
 
 		msdc_set_hw_dvfs(i, host);
-
 	}
-
-	/* Enable HW DVFS, but setting used now is at register offset <=0x104.
-	 * Setting at register offset >=0x300 will effect after SPM handshakes
-	 * with MSDC.
-	 */
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
-	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
 
 	/* Backup the register, restore when resume */
 	msdc_dvfs_reg_backup(host);
@@ -418,6 +420,14 @@ void sdio_execute_dvfs_autok_sdr104(struct msdc_host *host)
 		/* Use HW DVFS */
 		host->use_hw_dvfs = 1;
 		host->dvfs_id = MSDC3_DVFS;
+
+		/* Enable HW DVFS, but setting used now is at register offset <=0x104.
+		 * Setting at register offset >=0x300 will effect after SPM handshakes
+		 * with MSDC.
+		 */
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
+		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
+
 		/* Enable DVFS handshake */
 		spm_msdc_dvfs_setting(host->dvfs_id, 1);
 	}
@@ -428,12 +438,6 @@ void sdio_execute_dvfs_autok_sdr104(struct msdc_host *host)
 
 	host->is_autok_done = 1;
 	complete(&host->autok_done);
-}
-
-static void sdio_execute_dvfs_autok_ddr208(struct msdc_host *host)
-{
-	/* char res[256]; */
-	/* execute_online_tuning_sdio30_plus(host,res); */
 }
 
 #define SDIO_CCCR_MTK_DDR208       0xF2
@@ -449,7 +453,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	if (host->hw->flags & MSDC_SDIO_DDR208) {
 		autok_execute_tuning(host, NULL);
 	} else {
-		sdio_execute_dvfs_autok_sdr104(host);
+		sdio_execute_dvfs_autok_mode(host, 0);
 		return;
 	}
 
@@ -497,7 +501,7 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	msdc_clk_stable(host, 3, 0, 1);
 
 	/* Find DDR208 timing */
-	sdio_execute_dvfs_autok_ddr208(host);
+	sdio_execute_dvfs_autok_mode(host, 1);
 
 	return;
 
@@ -518,51 +522,6 @@ int emmc_autok(void)
 
 	pr_err("emmc autok\n");
 
-#if 0 /* Wait Light confirm */
-	mmc_claim_host(mmc);
-
-	void __iomem *base = host->base;
-	int vcore;
-	int i;
-
-	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
-
-		if (host->autok_res_valid[i])
-			continue;
-		#if 0
-		if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, i) != 0)
-			pr_err("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
-		#endif
-		emmc_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK_HS200,
-			host->autok_res[i]);
-
-	}
-
-	if (autok_res_check(host->autok_res[AUTOK_VCORE_LEVEL3],
-			host->autok_res[AUTOK_VCORE_LEVEL0]) == 0) {
-		pr_err("[AUTOK] No need change para when dvfs\n");
-	} else {
-		pr_err("[AUTOK] Need change para when dvfs\n");
-
-		/* Backup the register, restore when resume */
-		msdc_dvfs_reg_backup(host);
-
-		/* Use HW DVFS */
-		host->use_hw_dvfs = 1;
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
-		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
-		host->dvfs_id = MSDC0_DVFS;
-		/* Enable DVFS handshake */
-		spm_msdc_dvfs_setting(host->dvfs_id, 1);
-	}
-
-	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_EMMC, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-
-	mmc_release_host(mmc);
-#endif
-
 	return 0;
 }
 EXPORT_SYMBOL(emmc_autok);
@@ -581,29 +540,6 @@ int sd_autok(void)
 	}
 
 	pr_err("sd autok\n");
-#if 0 /* Wait Cool confirm */
-	mmc_claim_host(mmc);
-
-	/* Performance mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_PERF) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-
-	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_LEVEL1]);
-
-	/* Low power mode, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_LOW_PWR) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
-
-	sd_execute_dvfs_autok(host, MMC_SEND_TUNING_BLOCK,
-		host->autok_res[AUTOK_VCORE_LEVEL0]);
-
-	/* Un-request, return 0 pass */
-	if (vcorefs_request_dvfs_opp(KIR_AUTOK_SD, OPPI_UNREQ) != 0)
-		pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
-
-	mmc_release_host(mmc);
-#endif
 
 	return 0;
 }

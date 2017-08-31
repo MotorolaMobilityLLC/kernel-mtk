@@ -182,10 +182,6 @@ struct msdc_hw {
 	unsigned char host_function;    /* define host function */
 	unsigned char cd_level;         /* card detection level */
 
-	/* external power control for card */
-	void (*ext_power_on)(void);
-	void (*ext_power_off)(void);
-
 	/* external sdio irq operations */
 	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
 	void (*enable_sdio_eirq)(void);
