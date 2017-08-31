@@ -60,6 +60,7 @@
 #define ID_OMR 2
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define HPS_LATENCY 20000000
 
 #define EAS 1
 #define LEGACY 2
@@ -76,5 +77,5 @@
 #define TAG "[SOC FBC]"
 
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
-
+extern int sched_scheduler_switch(SCHED_LB_TYPE new_sched);
 

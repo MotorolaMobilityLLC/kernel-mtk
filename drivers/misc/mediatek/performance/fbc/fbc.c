@@ -23,9 +23,10 @@ static unsigned long __read_mostly mark_addr;
 
 static int fbc_debug, fbc_touch, fbc_touch_pre, fbc_game, fbc_trace;
 static long long frame_budget, twanted, twanted_ms, avg_frame_time;
-static int touch_boost_value, ema, boost_method, super_boost, boost_flag;
+static int touch_boost_value, ema, boost_method, super_boost, boost_flag, big_enable;
 static int first_frame, frame_done, chase, last_frame_done_in_budget, act_switched;
 static long long capacity, touch_capacity, current_max_capacity, avg_capacity, chase_capacity;
+static long long his_cap[2];
 static int power_ll[16][2], power_l[16][2], power_b[16][2];
 
 struct fbc_operation_locked {
@@ -129,7 +130,6 @@ static void boost_freq_and_eas(int capacity)
 
 	update_userlimit_cpu_freq(KIR_FBC, NR_PPM_CLUSTERS, freq_limit);
 
-	perfmgr_kick_fg_boost(KIR_FBC, 100);
 #if 0
 	pr_crit(TAG"[boost_freq] capacity=%d (i,j)=(%d,%d), ll_freq=%d, b_freq=%d\n",
 			capacity, i, j, freq_limit[0].max, freq_limit[2].max);
@@ -138,21 +138,31 @@ static void boost_freq_and_eas(int capacity)
 	fbc_tracer(-2, "fbc_freq_l", freq_limit[1].max);
 	fbc_tracer(-2, "fbc_freq_b", freq_limit[2].max);
 	fbc_tracer(-2, "capacity", capacity);
-	fbc_tracer(-2, "boost_value", 100);
 }
 
-void boost_touch_core(void)
+void boost_touch_core(int b_enable)
 {
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	core_limit[0].min = 3;
-	core_limit[0].max = -1;
-	core_limit[1].min = -1;
-	core_limit[1].max = -1;
-	core_limit[2].min = 1;
-	core_limit[2].max = -1;
+	if (b_enable) {
+		core_limit[0].min = 3;
+		core_limit[0].max = -1;
+		core_limit[1].min = -1;
+		core_limit[1].max = -1;
+		core_limit[2].min = 1;
+		core_limit[2].max = -1;
+	} else {
+		core_limit[0].min = 3;
+		core_limit[0].max = -1;
+		core_limit[1].min = -1;
+		core_limit[1].max = -1;
+		core_limit[2].min = -1;
+		core_limit[2].max = -1;
+	}
 	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
+
+	fbc_tracer(-4, "b_enable", b_enable);
 }
 
 void release_core(void)
@@ -167,6 +177,8 @@ void release_core(void)
 	core_limit[2].min = -1;
 	core_limit[2].max = -1;
 	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
+
+	fbc_tracer(-4, "b_enable", 0);
 }
 
 void release_freq_and_eas(void)
@@ -174,7 +186,6 @@ void release_freq_and_eas(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	perfmgr_kick_fg_boost(KIR_FBC, -1);
 	freq_limit[0].min = -1;
 	freq_limit[0].max = -1;
 	freq_limit[1].min = -1;
@@ -182,7 +193,7 @@ void release_freq_and_eas(void)
 	freq_limit[2].min = -1;
 	freq_limit[2].max = -1;
 	update_userlimit_cpu_freq(KIR_FBC, NR_PPM_CLUSTERS, freq_limit);
-	fbc_tracer(-2, "boost_value", 0);
+
 	fbc_tracer(-2, "fbc_freq_ll", 0);
 	fbc_tracer(-2, "fbc_freq_l", 0);
 	fbc_tracer(-2, "fbc_freq_b", 0);
@@ -210,7 +221,6 @@ static void disable_frame_twanted_timer(void)
 	spin_unlock_irqrestore(&tlock, flags);
 }
 
-/*static void mt_power_pef_transfer(void)*/
 static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 {
 	if (boost_method == LEGACY)
@@ -274,6 +284,7 @@ void notify_touch_legacy(int touch)
 		chase = 0;
 		first_frame = 1;
 		last_frame_done_in_budget = 0;
+		his_cap[0] = his_cap[1] = -1;
 
 		if (act_switched) {
 			capacity = touch_capacity = 347;
@@ -281,13 +292,19 @@ void notify_touch_legacy(int touch)
 		} else
 			capacity = touch_capacity = current_max_capacity;
 
-		boost_touch_core();
+		if (capacity > power_ll[0][1]) {
+			big_enable = 1;
+			boost_touch_core(big_enable);
+		} else {
+			big_enable = 0;
+			boost_touch_core(big_enable);
+		}
+
+		sched_scheduler_switch(SCHED_HMP_LB);
 		boost_flag = 0;
-		/*boost_freq_and_eas(capacity);*/
-		/*perfmgr_kick_fg_boost(KIR_FBC, touch_boost_value);*/
-		/*fbc_tracer(-2, "boost_value", touch_boost_value);*/
 	} else if (fbc_touch == 0 && fbc_touch_pre) {
 		release_core();
+		sched_scheduler_switch(SCHED_HYBRID_LB);
 		if (boost_flag) {
 			release_freq_and_eas();
 			boost_flag = 0;
@@ -307,7 +324,7 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 		fbc_tracer(-3, "chase", chase);
 		avg_capacity = (twanted * capacity
 				+ ((long long)frame_time - twanted) * (chase_capacity))
-			/ (long long)frame_time;
+				/ (long long)frame_time;
 	} else
 		avg_capacity = capacity;
 
@@ -321,6 +338,8 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 	}
 	boost_linear = (long long)((avg_frame_time - twanted) * 100 / twanted);
 
+	his_cap[1] = his_cap[0];
+	his_cap[0] = capacity;
 	capacity = avg_capacity * (100 + boost_linear) / 100;
 
 	if (capacity > 1024)
@@ -347,10 +366,30 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 		boost_flag = 1;
 	}
 
+	if (big_enable) {
+		if (capacity < power_ll[0][1]
+				&& his_cap[0] != -1 && his_cap[1] != -1
+				&& his_cap[0] > capacity && his_cap[1] > his_cap[0]) {
+			big_enable = 0;
+			boost_touch_core(big_enable);
+		}
+	} else {
+		if (capacity > power_ll[0][1] ||
+				(his_cap[0] != -1 &&
+				 capacity + (capacity - his_cap[0]) * (HPS_LATENCY / frame_budget + 1)
+				 > power_ll[0][1])) {
+			big_enable = 1;
+			boost_touch_core(big_enable);
+		}
+	}
+
 	fbc_tracer(-3, "avg_frame_time", avg_frame_time);
 	fbc_tracer(-3, "frame_time", frame_time);
 	fbc_tracer(-3, "avg_capacity", avg_capacity);
 	fbc_tracer(-3, "current_max_capacity", current_max_capacity);
+	fbc_tracer(-4, "capacity", capacity);
+	fbc_tracer(-4, "his_cap[0]", his_cap[0]);
+	fbc_tracer(-4, "his_cap[1]", his_cap[1]);
 
 #if 0
 	pr_crit(TAG" frame complete FT=%lu, avg_frame_time=%lld, boost_linear=%lld, capacity=%d",
@@ -479,6 +518,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 	} else if (strncmp(cmd, "dump_tbl", 8) == 0) {
 		for (i = 0; i < 16; i++) {
 			pr_crit(TAG"ll freq:%d, cap:%d", power_ll[i][0], power_ll[i][1]);
+			pr_crit(TAG"l freq:%d, cap:%d", power_l[i][0], power_l[i][1]);
 			pr_crit(TAG"b freq:%d, cap:%d", power_b[i][0], power_b[i][1]);
 		}
 	} else if (strncmp(cmd, "trace", 5) == 0) {
@@ -521,7 +561,7 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 		break;
 
 	default:
-			return 0;
+		return 0;
 	}
 
 	return 0;
@@ -600,7 +640,7 @@ static int __init init_fbc(void)
 
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
-	frame_budget = 15000000;
+	frame_budget = 16000000;
 	twanted = 12000000;
 	twanted_ms = twanted / 1000000;
 	boost_method = 2;
