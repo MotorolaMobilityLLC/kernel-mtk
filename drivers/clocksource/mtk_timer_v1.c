@@ -735,11 +735,9 @@ static void __init mt_gpt_init(struct device_node *node)
 	int i;
 	u32 freq[2] = {0};
 	unsigned long save_flags;
-	struct clk *clk;
+	struct clk *clk_src;
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	int clk_src_cnt = 2;
-#else
-	int clk_src_cnt = 1;
+	struct clk *clk_evt;
 #endif
 
 	gpt_update_lock(save_flags);
@@ -750,22 +748,41 @@ static void __init mt_gpt_init(struct device_node *node)
 	/* Setup IO addresses */
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
-	/*
-	 * idx = 0: freq is SYS_CLK_RATE
-	 * idx = 1: freq is RTC_CLK_RATE (32KHz)
-	 */
-	for (i = 0; i < clk_src_cnt; i++) {
+	/* inquiry clk_src, idx = 0, freq is SYS_CLK_RATE */
 
-		clk = of_clk_get(node, i);
-		if (IS_ERR(clk))
-			pr_info("[mtk_gpt] Can't get timer clock, idx: %d", i);
-
-		if (clk_prepare_enable(clk))
-			pr_info("[mtk_gpt] Can't prepare clock, idx: %d", i);
-
-		freq[i] = (u32)clk_get_rate(clk);
-		WARN(!freq[i], "[mtk_gpt] Can't get frequency, idx: %d", i);
+	clk_src = of_clk_get(node, 0);
+	if (IS_ERR(clk_src)) {
+		pr_info("[mtk_gpt] can't get timer clk_src\n");
+		goto err_unmap_irq;
 	}
+
+	if (clk_prepare_enable(clk_src)) {
+		pr_info("[mtk_gpt] can't prepare clk_src\n");
+		goto err_clk_put_src;
+	}
+
+	freq[0] = (u32)clk_get_rate(clk_src);
+	WARN(!freq[0], "[mtk_gpt] can't get freq of clk_src\n");
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+
+	/* inquiry clk_evt, idx = 1, freq is RTC_CLK_RATE (32KHz) */
+
+	clk_evt = of_clk_get(node, 1);
+	if (IS_ERR(clk_evt)) {
+		pr_info("[mtk_gpt] can't get timer clk_evt\n");
+		goto err_unmap_irq;
+	}
+
+	if (clk_prepare_enable(clk_evt)) {
+		pr_info("[mtk_gpt] can't prepare clk_evt\n");
+		goto err_clk_put_evt;
+	}
+
+	freq[1] = (u32)clk_get_rate(clk_evt);
+	WARN(!freq[1], "[mtk_gpt] can't get freq of clk_evt\n");
+
+#endif
 
 	boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
 
@@ -792,6 +809,17 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	pr_info("[mtk_gpt] GPT2: CNT=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
 	gpt_update_unlock(save_flags);
+
+	return;
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+err_clk_put_evt:
+	clk_put(clk_evt);
+#endif
+err_clk_put_src:
+	clk_put(clk_src);
+err_unmap_irq:
+	irq_dispose_mapping(xgpt_timers.tmr_irq);
 }
 
 static void release_gpt_dev_locked(struct gpt_device *dev)
@@ -1072,3 +1100,4 @@ EXPORT_SYMBOL(gpt_set_clk);
 /************************************************************************************************/
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6739, "mediatek,apxgpt", mt_gpt_init);
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6763, "mediatek,mt6763-timer", mt_gpt_init);
+
