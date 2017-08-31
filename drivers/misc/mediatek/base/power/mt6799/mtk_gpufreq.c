@@ -3263,8 +3263,7 @@ static ssize_t mt_gpufreq_limited_pbm_ignore_proc_write(struct file *file,
 				mt_gpufreq_ap2sspm(IPI_GPU_DVFS_AP_LIMITED_FACTOR, LIMIED_FACTOR_PBM, 0);
 			mt_gpufreq_pbm_limited_gpu_power = 0;
 			g_limited_pbm_ignore_state = true;
-		}
-		else if (ignore == 0)
+		} else if (ignore == 0)
 			g_limited_pbm_ignore_state = false;
 		else
 			gpufreq_warn
