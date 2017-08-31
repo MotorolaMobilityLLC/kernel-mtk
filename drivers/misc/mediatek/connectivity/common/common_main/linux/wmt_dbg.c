@@ -543,6 +543,10 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	if (offset == 1) {
 		do {
 			pAddr = (PUINT32) wmt_plat_get_emi_virt_add(0x24);
+			if (pAddr == NULL) {
+				WMT_ERR_FUNC("get virtual emi address 0x24 fail!\n");
+				return -1;
+			}
 			cur_idx_pagedtrace = *pAddr;
 
 			if (cur_idx_pagedtrace > prev_idx_pagedtrace) {
