@@ -9254,8 +9254,7 @@ int32_t cmdqCoreInitialize(void)
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 	/* Reset overall first error dump */
-	memset(&gCmdqFirstError, 0x0, sizeof(struct DumpFirstErrorStruct));
-	gCmdqFirstError.cmdqMaxSize = CMDQ_MAX_FIRSTERROR;
+	cmdq_core_reset_first_dump();
 #endif
 
 	/* pre-allocate free tasks */
@@ -9716,6 +9715,14 @@ void cmdq_core_turnoff_first_dump(void)
 {
 #ifdef CMDQ_DUMP_FIRSTERROR
 	gCmdqFirstError.flag = false;
+#endif
+}
+
+void cmdq_core_reset_first_dump(void)
+{
+#ifdef CMDQ_DUMP_FIRSTERROR
+	memset(&gCmdqFirstError, 0, sizeof(gCmdqFirstError));
+	gCmdqFirstError.cmdqMaxSize = CMDQ_MAX_FIRSTERROR;
 #endif
 }
 
