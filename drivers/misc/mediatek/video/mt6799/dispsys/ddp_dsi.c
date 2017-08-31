@@ -1006,6 +1006,9 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 	u32 tmp = 0;
 
 	DISPINFO("DSI_Wakeup+\n");
+	/* set wait_sleep_out_done to false first to avoid race condition */
+	wait_sleep_out_done = false;
+
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 1);
@@ -1013,13 +1016,12 @@ enum DSI_STATUS DSI_Wakeup(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		cnt = 0;
-		wait_sleep_out_done = false;
-
 		if (i == 0) {
 			do {
 				cnt++;
 				ret = wait_event_interruptible_timeout(_dsi_wait_sleep_out_done_queue[i],
 								       wait_sleep_out_done, 2 * HZ);
+				wait_sleep_out_done = false;
 			} while (ret <= 0 && cnt <= 2);
 
 			if (ret == 0) {
