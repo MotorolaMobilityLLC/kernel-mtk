@@ -54,6 +54,7 @@ enum {
 	RT5509_CALIB_CTRL_N15DB,
 	RT5509_CALIB_CTRL_N10DB,
 	RT5509_CALIB_CTRL_READOTP,
+	RT5509_CALIB_CTRL_READRAPP,
 	RT5509_CALIB_CTRL_WRITEOTP,
 	RT5509_CALIB_CTRL_WRITEFILE,
 	RT5509_CALIB_CTRL_END,
@@ -93,7 +94,7 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 	struct snd_soc_codec *codec = chip->codec;
 	u32 data = 0;
 	uint8_t mode_store;
-	int ret = 0;
+	int i = 0, ret = 0;
 
 	dev_info(chip->dev, "%s\n", __func__);
 	if (!chip->calib_start)
@@ -135,16 +136,28 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 	if (ret < 0)
 		return ret;
 	mdelay(120);
+	while (i++ < 3) {
+		ret = snd_soc_read(codec, RT5509_REG_CALIB_CTRL);
+		if (ret < 0)
+			return ret;
+		if (ret & 0x01)
+			break;
+		mdelay(20);
+	}
 	data &= ~(0x80);
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_CTRL, data);
 	if (ret < 0)
 		return ret;
-	ret = snd_soc_read(codec, RT5509_REG_CALIB_OUT0);
-	chip->param_put = ret;
 	ret = snd_soc_update_bits(codec, RT5509_REG_BST_MODE,
 		0x03, mode_store);
 	if (ret < 0)
 		return ret;
+	if (i > 3) {
+		dev_err(chip->dev, "over ready count\n");
+		return -EINVAL;
+	}
+	ret = snd_soc_read(codec, RT5509_REG_CALIB_OUT0);
+	chip->param_put = ret;
 	dev_info(chip->dev, "param = %d\n", chip->param_put);
 	return 0;
 }
@@ -257,6 +270,19 @@ static int rt5509_calib_rwotp(struct rt5509_chip *chip, int choose)
 	return 0;
 }
 
+static int rt5509_calib_read_rapp(struct rt5509_chip *chip)
+{
+	struct snd_soc_codec *codec = chip->codec;
+	int ret = 0;
+
+	ret = snd_soc_read(codec, RT5509_REG_RAPP);
+	if (ret < 0)
+		return ret;
+	ret &= 0xffffff;
+	chip->param_put = ret;
+	return 0;
+}
+
 static int rt5509_calib_write_file(struct rt5509_chip *chip)
 {
 	return 0;
@@ -264,7 +290,23 @@ static int rt5509_calib_write_file(struct rt5509_chip *chip)
 
 static int rt5509_calib_start_process(struct rt5509_chip *chip)
 {
+	int ret = 0;
+
 	dev_info(chip->dev, "%s\n", __func__);
+	ret = snd_soc_read(chip->codec, RT5509_REG_CHIPEN);
+	if (ret < 0)
+		return ret;
+	if (!(ret & RT5509_SPKAMP_ENMASK)) {
+		dev_err(chip->dev, "class D not turn on\n");
+		return -EINVAL;
+	}
+	ret = snd_soc_read(chip->codec, RT5509_REG_I2CBCKLRCKCONF);
+	if (ret < 0)
+		return ret;
+	if (ret & 0x08) {
+		dev_err(chip->dev, "BCK loss\n");
+		return -EINVAL;
+	}
 	return 0;
 }
 
@@ -300,6 +342,11 @@ static ssize_t calib_file_write(struct file *filp, const char __user *buf,
 	case RT5509_CALIB_CTRL_N15DB:
 	case RT5509_CALIB_CTRL_N10DB:
 		ret = rt5509_calib_choosen_db(chip, ctrl);
+		if (ret < 0)
+			return ret;
+		break;
+	case RT5509_CALIB_CTRL_READRAPP:
+		ret = rt5509_calib_read_rapp(chip);
 		if (ret < 0)
 			return ret;
 		break;
