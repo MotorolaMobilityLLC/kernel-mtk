@@ -41,4 +41,6 @@ extern u32 spm_get_last_wakeup_src(void);
 extern u32 spm_get_last_wakeup_misc(void);
 extern u32 spm_get_register(void __force __iomem *offset);
 extern void spm_set_register(void __force __iomem *offset, u32 value);
+
+extern void slp_check_pm_mtcmos_pll(void);
 #endif
