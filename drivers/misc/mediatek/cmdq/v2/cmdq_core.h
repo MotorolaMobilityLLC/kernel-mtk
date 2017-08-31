@@ -190,8 +190,8 @@ do {			\
 do {			\
 	char dispatchedTag[50]; \
 	snprintf(dispatchedTag, 50, "CRDISPATCH_KEY:%s", tag); \
-	pr_err("[CMDQ][AEE] AEE not READY!!!"); \
-	pr_err("[CMDQ][AEE]"string, ##args); \
+	pr_debug("[CMDQ][AEE] AEE not READY!!!"); \
+	pr_debug("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_save_first_dump("[CMDQ][AEE]"string, ##args); \
 	cmdq_core_turnoff_first_dump(); \
 } while (0);	\

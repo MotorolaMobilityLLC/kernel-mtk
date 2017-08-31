@@ -17,7 +17,7 @@
 #define BMI160_DEV_NAME        	"bmi160_acc"
 #define GSE_TAG                  "[Gsensor] "
 #define GSE_FUN(f)               pr_debug(KERN_INFO GSE_TAG"%s\n", __FUNCTION__)
-#define GSE_ERR(fmt, args...)    pr_err(KERN_ERR GSE_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+#define GSE_ERR(fmt, args...)    pr_debug(GSE_TAG fmt, ##args)
 #define GSE_LOG(fmt, args...)    pr_debug(KERN_INFO GSE_TAG fmt, ##args)
 
 #define BMI160_GET_BITSLICE(regvar, bitname)\
