@@ -851,6 +851,13 @@ static struct ctl_table ipv4_table[] = {
 		.proc_handler	= proc_dointvec
 	},
 #endif
+	{
+		.procname	= "tcp_ack_number",
+		.data		= &sysctl_tcp_ack_number,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec
+		},
 	{ }
 };
 
