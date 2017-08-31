@@ -641,6 +641,10 @@ typedef struct {
 	uint32_t step_detect;
 } step_detector_event_t;
 
+typedef struct {
+	uint32_t accumulated_floor_count;
+} floor_counter_event_t;
+
 typedef enum {
 	GESTURE_NONE,
 	SHAKE,
@@ -758,6 +762,7 @@ struct data_unit_t {
 		significant_motion_event_t smd_t;
 		step_detector_event_t step_detector_t;
 		step_counter_event_t step_counter_t;
+		floor_counter_event_t floor_counter_t;
 		activity_t activity_data_t;
 		gesture_t gesture_data_t;
 		fall_t fall_data_t;

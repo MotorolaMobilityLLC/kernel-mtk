@@ -74,24 +74,30 @@ struct step_c_control_path {
 	int (*enable_nodata)(int en);/* only enable not report event to HAL */
 	int (*enable_step_detect)(int en);
 	int (*enable_significant)(int en);
+	int (*enable_floor_c)(int en);
 	int (*step_c_set_delay)(u64 delay);
 	int (*step_d_set_delay)(u64 delay);
+	int (*floor_c_set_delay)(u64 delay);
 	int (*step_c_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 	int (*step_c_flush)(void);/* open data rerport to HAL */
 	int (*step_d_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 	int (*step_d_flush)(void);/* open data rerport to HAL */
 	int (*smd_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 	int (*smd_flush)(void);/* open data rerport to HAL */
+	int (*floor_c_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
+	int (*floor_c_flush)(void);/* open data rerport to HAL */
 	bool is_report_input_direct;
 	bool is_counter_support_batch;/* version2.used for batch mode support flag */
 	bool is_detector_support_batch;/* version2.used for batch mode support flag */
 	bool is_smd_support_batch;/* version2.used for batch mode support flag */
+	bool is_floor_c_support_batch;/* version2.used for batch mode support flag */
 };
 
 struct step_c_data_path {
 	int (*get_data)(uint32_t *value, int *status);
 	int (*get_data_step_d)(uint32_t *value, int *status);
 	int (*get_data_significant)(uint32_t *value, int *status);
+	int (*get_data_floor_c)(uint32_t *value, int *status);
 	int vender_div;
 };
 
@@ -106,6 +112,9 @@ struct step_c_data {
 	uint32_t counter;
 	int status;
 	int data_updata;
+	uint32_t floor_counter;
+	int floor_c_status;
+	int floor_c_data_updata;
 };
 
 struct step_c_drv_obj {
@@ -132,10 +141,13 @@ struct step_c_context {
 	struct step_c_data_path   step_c_data;
 	bool			is_active_nodata;
 	bool			is_active_data;		/* Active and HAL need data . */
+	bool			is_floor_c_active_data;		/* Active and HAL need data . */
 	bool		is_first_data_after_enable;
+	bool		is_first_floor_c_data_after_enable;
 	bool		is_polling_run;
 	bool		is_step_c_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
 	bool		is_step_d_batch_enable;	/* version2.this is used for judging whether sensor is in batch mode */
+	bool		is_floor_c_batch_enable;	/* version2.used for judging whether sensor is in batch mode */
 };
 
 /* for auto detect */
@@ -153,6 +165,8 @@ extern int step_c_data_report(uint32_t new_counter, int status);
 extern int step_c_flush_report(void);
 extern int step_d_flush_report(void);
 extern int smd_flush_report(void);
+int floor_c_data_report(uint32_t new_counter, int status);
+int floor_c_flush_report(void);
 extern int step_c_register_control_path(struct step_c_control_path *ctl);
 extern int step_c_register_data_path(struct step_c_data_path *data);
 

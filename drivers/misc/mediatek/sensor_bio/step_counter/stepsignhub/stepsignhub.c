@@ -139,6 +139,14 @@ static int step_s_enable_nodata(int en)
 	return ret;
 }
 
+static int floor_c_enable_nodata(int en)
+{
+	int ret = 0;
+
+	ret = sensor_enable_to_hub(ID_FLOOR_COUNTER, en);
+	return ret;
+}
+
 static int step_c_set_delay(u64 delay)
 {
 	unsigned int ret = 0;
@@ -190,6 +198,33 @@ static int step_d_flush(void)
 {
 	return sensor_flush_to_hub(ID_STEP_DETECTOR);
 }
+
+static int floor_c_set_delay(u64 delay)
+{
+	unsigned int ret = 0;
+
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	unsigned int delayms = 0;
+
+	delayms = delay / 1000 / 1000;
+	ret = sensor_set_delay_to_hub(ID_FLOOR_COUNTER, delayms);
+#elif defined CONFIG_NANOHUB
+
+#else
+
+#endif
+	return ret;
+}
+static int floor_c_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return sensor_batch_to_hub(ID_FLOOR_COUNTER, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+}
+
+static int floor_c_flush(void)
+{
+	return sensor_flush_to_hub(ID_FLOOR_COUNTER);
+}
+
 static int step_counter_get_data(uint32_t *counter, int *status)
 {
 	int err = 0;
@@ -227,6 +262,26 @@ static int significant_get_data(uint32_t *counter, int *status)
 	return 0;
 }
 
+static int floor_counter_get_data(uint32_t *counter, int *status)
+{
+	int err = 0;
+	struct data_unit_t data;
+	uint64_t time_stamp = 0;
+	uint64_t time_stamp_gpt = 0;
+
+	err = sensor_get_data_from_hub(ID_FLOOR_COUNTER, &data);
+	if (err < 0) {
+		STEP_CDS_ERR("floor_counter_get_data fail!!\n");
+		return -1;
+	}
+	time_stamp = data.time_stamp;
+	time_stamp_gpt = data.time_stamp_gpt;
+	*counter = data.floor_counter_t.accumulated_floor_count;
+	STEP_CDS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, counter: %d!\n", time_stamp,
+		     time_stamp_gpt, *counter);
+	return 0;
+}
+
 static int step_cds_open_report_data(int open)
 {
 	return 0;
@@ -259,6 +314,15 @@ static int sign_recv_data(struct data_unit_t *event, void *reserved)
 	return 0;
 }
 
+static int floor_count_recv_data(struct data_unit_t *event, void *reserved)
+{
+	if (event->flush_action == FLUSH_ACTION)
+		floor_c_flush_report();
+	else if (event->flush_action == DATA_ACTION)
+		floor_c_data_report(event->floor_counter_t.accumulated_floor_count, 2);
+	return 0;
+}
+
 static int step_chub_local_init(void)
 {
 	struct step_c_control_path ctl = { 0 };
@@ -274,12 +338,16 @@ static int step_chub_local_init(void)
 	ctl.enable_nodata = step_c_enable_nodata;
 	ctl.enable_step_detect = step_d_enable_nodata;
 	ctl.enable_significant = step_s_enable_nodata;
+	ctl.enable_floor_c = floor_c_enable_nodata;
 	ctl.step_c_set_delay = step_c_set_delay;
 	ctl.step_d_set_delay = step_d_set_delay;
+	ctl.floor_c_set_delay = floor_c_set_delay;
 	ctl.step_c_batch = step_c_batch;
 	ctl.step_c_flush = step_c_flush;
 	ctl.step_d_batch = step_d_batch;
 	ctl.step_d_flush = step_d_flush;
+	ctl.floor_c_batch = floor_c_batch;
+	ctl.floor_c_flush = floor_c_flush;
 	ctl.smd_batch = smd_batch;
 	ctl.smd_flush = smd_flush;
 	ctl.is_report_input_direct = false;
@@ -295,6 +363,7 @@ static int step_chub_local_init(void)
 	data.get_data = step_counter_get_data;
 	data.get_data_step_d = step_detector_get_data;
 	data.get_data_significant = significant_get_data;
+	data.get_data_floor_c = floor_counter_get_data;
 	err = step_c_register_data_path(&data);
 	if (err) {
 		STEP_CDS_ERR("register step_cds data path err\n");
@@ -313,6 +382,11 @@ static int step_chub_local_init(void)
 		goto exit_create_attr_failed;
 	}
 	err = scp_sensorHub_data_registration(ID_STEP_COUNTER, step_count_recv_data);
+	if (err) {
+		STEP_CDS_ERR("SCP_sensorHub_data_registration fail!!\n");
+		goto exit_create_attr_failed;
+	}
+	err = scp_sensorHub_data_registration(ID_FLOOR_COUNTER, floor_count_recv_data);
 	if (err) {
 		STEP_CDS_ERR("SCP_sensorHub_data_registration fail!!\n");
 		goto exit_create_attr_failed;

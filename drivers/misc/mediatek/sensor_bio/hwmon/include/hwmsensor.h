@@ -73,6 +73,7 @@
 #define SENSOR_TYPE_BRINGTOSEE						43
 #define SENSOR_TYPE_ANSWER_CALL						44
 #define SENSOR_TYPE_GEOFENCE						45
+#define SENSOR_TYPE_FLOOR_COUNTER					46
 /* end sensor type */
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -123,8 +124,9 @@
 #define ID_BRINGTOSEE                   (ID_BASE + SENSOR_TYPE_BRINGTOSEE - 1)
 #define ID_ANSWER_CALL                  (ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
 #define ID_GEOFENCE                     (ID_BASE + SENSOR_TYPE_GEOFENCE - 1)
+#define ID_FLOOR_COUNTER                     (ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_GEOFENCE - 1)
+#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
 #define ID_NONE							(ID_SENSOR_MAX_HANDLE + 1)
 #define ID_OFFSET                       (1)
 #define ID_SCP_MAX_SENSOR_TYPE			(57)
@@ -176,6 +178,7 @@
 #define SENSOR_BRINGTOSEE                   (1 << ID_BRINGTOSEE)
 #define SENSOR_ANSWER_CALL                   (1 << ID_ANSWER_CALL)
 #define SENSOR_GEOFENCE                      (1 << ID_GEOFENCE)
+#define SENSOR_FLOOR_COUNTER                 (1 << ID_FLOOR_COUNTER)
 
 /*----------------------------------------------------------------------------*/
 #define HWM_INPUTDEV_NAME               "hwmdata"
