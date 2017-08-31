@@ -151,8 +151,5 @@ extern int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u
 extern void read_imx230_eeprom( void);
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
 
-void KD_SENSOR_PROFILE_INIT(void);
-void KD_SENSOR_PROFILE(char *tag);
-
 
 #endif

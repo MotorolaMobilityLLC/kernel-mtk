@@ -62,11 +62,58 @@
 #define LOG_1 LOG_INF("s5k2l7,MIPI 4LANE\n")
 /****************************	Modify end	  *******************************************/
 #define LOG_INF(fmt, args...)	pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+
+#define MULTI_WRITE 1
+
+#if MULTI_WRITE
+#define I2C_BUFFER_LEN 1020 /* trans# max is 255, each 4 bytes */
+#else
+#define I2C_BUFFER_LEN 4
+
+#endif
+
+/*******************************************************************************
+* Proifling
+********************************************************************************/
+#define PROFILE 1
+#if PROFILE
+static struct timeval tv1, tv2;
+static DEFINE_SPINLOCK(kdsensor_drv_lock);
+/*******************************************************************************
+*
+********************************************************************************/
+static void KD_SENSOR_PROFILE_INIT(void)
+{
+    do_gettimeofday(&tv1);
+}
+
+/*******************************************************************************
+*
+********************************************************************************/
+static void KD_SENSOR_PROFILE(char *tag)
+{
+    unsigned long TimeIntervalUS;
+
+    spin_lock(&kdsensor_drv_lock);
+
+    do_gettimeofday(&tv2);
+    TimeIntervalUS = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
+    tv1 = tv2;
+
+    spin_unlock(&kdsensor_drv_lock);
+    LOG_INF("[%s]Profile = %lu us\n", tag, TimeIntervalUS);
+}
+#else
+static void KD_SENSOR_PROFILE_INIT(void) {}
+static void KD_SENSOR_PROFILE(char *tag) {}
+#endif
+
 static kal_uint32 chip_id = 0;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 #define ORIGINAL_VERSION 1
 //#define SLOW_MOTION_120FPS
+
 
 /* sensor information is defined in each mode. */
 static imgsensor_info_struct imgsensor_info =
@@ -172,7 +219,7 @@ static imgsensor_info_struct imgsensor_info =
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = { 0x20, 0x5A, 0xFF},
-    .i2c_speed = 300,
+    .i2c_speed = 1000,
 };
 
 _S5K2L7_MODE1_SENSOR_INFO_
@@ -379,6 +426,51 @@ static void write_cmos_sensor_twobyte(kal_uint32 addr, kal_uint32 para)
     //iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
     iWriteRegI2CTiming(pu_send_cmd, 4, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
 }
+
+static kal_uint16 table_write_cmos_sensor(kal_uint16* para, kal_uint32 len)
+{
+
+
+
+   char puSendCmd[I2C_BUFFER_LEN];
+   kal_uint32 tosend, IDX;
+   kal_uint16 addr = 0, addr_last = 0, data;
+
+   tosend = 0;
+   IDX = 0;
+//   kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+
+   while(IDX < len)
+   {
+      addr = para[IDX];
+
+       {
+           puSendCmd[tosend++] = (char)(addr >> 8);
+           puSendCmd[tosend++] = (char)(addr & 0xFF);
+           data = para[IDX+1];
+           puSendCmd[tosend++] = (char)(data >> 8);
+           puSendCmd[tosend++] = (char)(data & 0xFF);
+           IDX += 2;
+           addr_last = addr;
+
+       }
+#if MULTI_WRITE
+
+	   if (tosend >= I2C_BUFFER_LEN || IDX == len || addr != addr_last)
+       {
+           iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 4, imgsensor_info.i2c_speed);
+           tosend = 0;
+       }
+#else
+	   iWriteRegI2CTiming(puSendCmd, 4, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+
+	   tosend = 0;
+
+#endif
+   }
+   return 0;
+}
+
 static void set_dummy(void)
 {
 #if 1
@@ -718,6 +810,18 @@ static void sensor_WDR_zhdr(void)
 static void sensor_init_11_new(void)
 {
     LOG_INF("E S5k2L7 sensor init (%d)\n", pdaf_sensor_mode);
+    
+	write_cmos_sensor_twobyte(0X6028, 0X2000);
+	write_cmos_sensor_twobyte(0X602A, 0XBBF8);
+	write_cmos_sensor_twobyte(0X6F12, 0X0000);
+	write_cmos_sensor_twobyte(0X6028, 0X4000);
+	write_cmos_sensor_twobyte(0X6018, 0X0001);
+	write_cmos_sensor_twobyte(0X7002, 0X000C);
+	write_cmos_sensor_twobyte(0X6014, 0X0001);
+	mdelay(8);  
+
+    KD_SENSOR_PROFILE_INIT(); 
+    
     if( pdaf_sensor_mode == 1)
     {
         _S5K2L7_MODE1_INIT_;
@@ -730,11 +834,22 @@ static void sensor_init_11_new(void)
     {
         _S5K2L7_MODE3_INIT_;
     }
+
+    KD_SENSOR_PROFILE("sensor_init_11_new");
 }
 
 static void preview_setting_11_new(void)
 {
     LOG_INF("E S5k2L7 preview setting (%d)\n", pdaf_sensor_mode);
+
+    write_cmos_sensor(0x0100,0x00);
+    while(1)
+    {                                              
+        if( read_cmos_sensor(0x0005)==0xFF) break;
+    }     
+
+    KD_SENSOR_PROFILE_INIT(); 
+    
     if( pdaf_sensor_mode == 1)
     {
         _S5K2L7_MODE1_PREVIEW_;
@@ -747,6 +862,14 @@ static void preview_setting_11_new(void)
     {
         _S5K2L7_MODE3_PREVIEW_;
     }
+
+    KD_SENSOR_PROFILE("preview_setting_11_new");
+
+    sensor_WDR_zhdr();
+    /* Stream On */
+    write_cmos_sensor(0x0100, 0x01);
+    mDELAY(10);
+    
 }
 
 #ifdef CAPTURE_WDR
@@ -771,6 +894,15 @@ static void capture_setting_WDR(kal_uint16 currefps)
 static void capture_setting(void)
 {
     LOG_INF("E S5k2L7 capture setting (%d)\n", pdaf_sensor_mode);
+    
+    write_cmos_sensor(0x0100,0x00);
+    while(1)
+    {                                              
+        if( read_cmos_sensor(0x0005)==0xFF) break;
+    }      
+
+    KD_SENSOR_PROFILE_INIT(); 
+    
     if( pdaf_sensor_mode == 1)
     {
         _S5K2L7_MODE1_CAPTURE_;
@@ -783,6 +915,13 @@ static void capture_setting(void)
     {
         _S5K2L7_MODE3_CAPTURE_;
     }
+
+    KD_SENSOR_PROFILE("capture_setting");
+
+    sensor_WDR_zhdr();
+    /* Stream On */
+    write_cmos_sensor(0x0100, 0x01);
+    mDELAY(10);    
 }
 
 #if 0
@@ -793,6 +932,14 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 static void hs_video_setting_11(void)
 {
     LOG_INF("E S5k2L7 HS video setting (%d)\n", pdaf_sensor_mode);
+
+    write_cmos_sensor(0x0100,0x00);
+    while(1)
+    {                                              
+        if( read_cmos_sensor(0x0005)==0xFF) break;
+    }      
+
+    KD_SENSOR_PROFILE_INIT(); 
 
     if( pdaf_sensor_mode == 1)
     {
@@ -806,12 +953,26 @@ static void hs_video_setting_11(void)
     {
         _S5K2L7_MODE3_HS_VIDEO_;
     }
+
+    KD_SENSOR_PROFILE("hs_video_setting_11");
+
+    /* Stream On */
+    write_cmos_sensor(0x0100, 0x01);
+    mDELAY(10);      
 }
 
 
 static void slim_video_setting(void)
 {
     LOG_INF("E S5k2L7 slim video setting (%d)\n", pdaf_sensor_mode);
+
+    write_cmos_sensor(0x0100,0x00);
+    while(1)
+    {                                              
+        if( read_cmos_sensor(0x0005)==0xFF) break;
+    }      
+
+    KD_SENSOR_PROFILE_INIT(); 
 
     if( pdaf_sensor_mode == 1)
     {
@@ -825,6 +986,12 @@ static void slim_video_setting(void)
     {
         _S5K2L7_MODE3_SLIM_VIDEO_;
     }
+
+    KD_SENSOR_PROFILE("slim_video_setting");
+
+    /* Stream On */
+    write_cmos_sensor(0x0100, 0x01);
+    mDELAY(10); 
 
 }
 
@@ -955,6 +1122,7 @@ static kal_uint32 open(void)
     //kal_uint32 chip_id = 0;
 
     LOG_1;
+   
     //LOG_2;
 #if 1
     while (imgsensor_info.i2c_addr_table[i] != 0xff)
@@ -998,6 +1166,7 @@ static kal_uint32 open(void)
     chip_id = read_cmos_sensor_twobyte(0x6F12);
     //chip_id = read_cmos_sensor_twobyte(0x001A);
     LOG_INF("JEFF get_imgsensor_id-read chip_id (0x%x)\n", chip_id );
+
     /* initail sequence write in  */
     //chip_id == 0x022C
     sensor_init_11_new();
@@ -1127,6 +1296,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 {
     LOG_INF("E\n");
 
+
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
 
@@ -1170,6 +1340,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     OIS_write_cmos_sensor(0x0002,0x00);
     OIS_write_cmos_sensor(0x0000,0x01);
 #endif
+
     return ERROR_NONE;
 }	 /* capture() */
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
@@ -1211,7 +1382,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     spin_unlock(&imgsensor_drv_lock);
 
     hs_video_setting_11();
-
+    
     return ERROR_NONE;
 }	 /*    hs_video   */
 
@@ -1231,7 +1402,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     slim_video_setting();
-
+    
     return ERROR_NONE;
 }	 /*    slim_video	  */
 

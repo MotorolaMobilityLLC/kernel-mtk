@@ -66,7 +66,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 /*******************************************************************************
 *
 ********************************************************************************/
-inline void KD_SENSOR_PROFILE_INIT(void)
+static void KD_SENSOR_PROFILE_INIT(void)
 {
     do_gettimeofday(&tv1);
 }
@@ -74,7 +74,7 @@ inline void KD_SENSOR_PROFILE_INIT(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-inline void KD_SENSOR_PROFILE(char *tag)
+static void KD_SENSOR_PROFILE(char *tag)
 {
     unsigned long TimeIntervalUS;
 
@@ -88,8 +88,8 @@ inline void KD_SENSOR_PROFILE(char *tag)
     LOG_INF("[%s]Profile = %lu us\n", tag, TimeIntervalUS);
 }
 #else
-inline void KD_SENSOR_PROFILE_INIT(void) {}
-inline void KD_SENSOR_PROFILE(char *tag) {}
+static void KD_SENSOR_PROFILE_INIT(void) {}
+static void KD_SENSOR_PROFILE(char *tag) {}
 #endif
 
 

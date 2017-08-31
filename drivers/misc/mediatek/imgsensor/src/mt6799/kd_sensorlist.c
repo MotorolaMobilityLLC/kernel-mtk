@@ -565,7 +565,7 @@ int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16
 	else
 		pClient = g_pstI2Cclient2;
 
-	if((timing > 0) && (timing <= 400))
+	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
 	else
 		speed_timing = 400000;
@@ -762,7 +762,7 @@ int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timi
 	else
 		pClient = g_pstI2Cclient2;
 
-	if((timing > 0) && (timing <= 400))
+	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
 	else
 		speed_timing = 400000;
@@ -863,7 +863,7 @@ int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 
 		return -1;
 	}
 
-	if((timing > 0) && (timing <= 400))
+	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
 	else
 		speed_timing = 400000;
@@ -919,7 +919,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
 	struct i2c_client *pClient = NULL;
 	int trans_num = 0;
 
-    KD_IMGSENSOR_PROFILE_INIT_I2C();
+    /* KD_IMGSENSOR_PROFILE_INIT_I2C();*/
 
     trans_num =	bytes/transfer_length;
 	memset(msg, 0, MAX_I2C_CMD_LEN*sizeof(struct i2c_msg));
@@ -929,7 +929,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
 	else
 		pClient = g_pstI2Cclient2;
 
-	if((timing > 0) && (timing <= 400))
+	if((timing > 0) && (timing <= 1000))
 		speed_timing = timing*1000; /*unit:hz*/
 	else
 		speed_timing = 400000;
@@ -944,7 +944,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
 
 
 	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, 0, speed_timing);
-    KD_IMGSENSOR_PROFILE_I2C("i2c multi write", trans_num);
+    /* KD_IMGSENSOR_PROFILE_I2C("i2c multi write", trans_num); */
 
 	if (ret != trans_num) {
 		PK_ERR("[iBurstWriteReg_multi] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
@@ -1260,6 +1260,7 @@ MINT32 i = 0;
         PK_ERR("SensorOpen");
         return ret;
 		}
+        KD_IMGSENSOR_PROFILE("SensorOpen");
 
 		g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_OPEN; /* State: sensor init but not streaming*/
         /* set i2c slave ID */
@@ -1412,6 +1413,7 @@ MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData)
     for (i = KDIMGSENSOR_INVOKE_DRIVER_0; i < KDIMGSENSOR_MAX_INVOKE_DRIVERS; i++) {
     if (g_bEnableDriver[i] && g_pInvokeSensorFunc[i]) {
         if (InvokeCamera == g_invokeSocketIdx[i]) {
+        KD_IMGSENSOR_PROFILE_INIT();
 
 #if 0
         if (DUAL_CAMERA_MAIN_SENSOR == g_invokeSocketIdx[i] || DUAL_CAMERA_SUB_SENSOR == g_invokeSocketIdx[i] || DUAL_CAMERA_MAIN_2_SENSOR == g_invokeSocketIdx[i]) {
@@ -1451,6 +1453,7 @@ MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData)
         PK_ERR("ERR:SensorControl(), i =%d\n", i);
         return ret;
 		}
+        KD_IMGSENSOR_PROFILE("SensorControl");
 		g_pInvokeSensorFunc[i]->sensorState = SENSOR_STATE_STREAMING;
     }
     }
@@ -1830,7 +1833,7 @@ inline static int adopt_CAMERA_HW_Open(void)
 {
     UINT32 err = 0;
 
-    KD_IMGSENSOR_PROFILE_INIT();
+    /* KD_IMGSENSOR_PROFILE_INIT();*/
     /* power on sensor */
     /* if (atomic_read(&g_CamHWOpend) == 0  ) { */
     /* move into SensorOpen() for 2on1 driver */
@@ -1852,7 +1855,7 @@ inline static int adopt_CAMERA_HW_Open(void)
         PK_DBG(" ERROR:NULL g_pSensorFunc\n");
     }
 
-    KD_IMGSENSOR_PROFILE("SensorOpen");
+    /* KD_IMGSENSOR_PROFILE("SensorOpen"); */
     /* } */
     /* else { */
     /* PK_ERR("adopt_CAMERA_HW_Open Fail, g_CamHWOpend = %d\n ",atomic_read(&g_CamHWOpend) ); */
