@@ -17,6 +17,7 @@
 #include <linux/kernel.h>
 
 #include "cmdq_event_common.h"
+#include "cmdq_subsys_common.h"
 
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
 
@@ -258,17 +259,6 @@ enum CMDQ_MDP_PA_BASE_ENUM {
 	CMDQ_MDP_PA_BASE_MM_MUTEX,
 	CMDQ_MAX_MDP_PA_BASE_COUNT,		/* ALWAYS keep at the end */
 };
-
-/* CMDQ subsys */
-#undef DECLARE_CMDQ_SUBSYS
-#define DECLARE_CMDQ_SUBSYS(name_struct, val, grp, dts_name) name_struct = val,
-enum CMDQ_SUBSYS_ENUM {
-#include "cmdq_subsys_common.h"
-
-	/* ALWAYS keep at the end */
-	CMDQ_SUBSYS_MAX_COUNT
-};
-#undef DECLARE_CMDQ_SUBSYS
 
 #define CMDQ_SUBSYS_GRPNAME_MAX		(30)
 /* GCE subsys information */

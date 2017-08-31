@@ -746,8 +746,13 @@ struct StressContextStruct {
 
 struct cmdq_event_table {
 	u16 event;	/* cmdq event enum value */
-	char event_name[45];
-	char dts_name[40];
+	const char *event_name;
+	const char *dts_name;
+};
+
+struct cmdq_subsys_dts_name {
+	const char *name;
+	const char *group;
 };
 
 #ifdef __cplusplus
@@ -1094,10 +1099,13 @@ extern "C" {
 	struct StressContextStruct *cmdq_core_get_stress_context(void);
 	void cmdq_core_clean_stress_context(void);
 	bool cmdq_core_is_clock_enabled(void);
+	struct cmdq_dts_setting *cmdq_core_get_dts_setting(void);
 
 	struct cmdq_event_table *cmdq_event_get_table(void);
 	u32 cmdq_event_get_table_size(void);
-	struct cmdq_dts_setting *cmdq_core_get_dts_setting(void);
+	struct cmdq_subsys_dts_name *cmdq_subsys_get_dts(void);
+	u32 cmdq_subsys_get_size(void);
+
 #ifdef __cplusplus
 }
 #endif

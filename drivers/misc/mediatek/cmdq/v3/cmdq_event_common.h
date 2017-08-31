@@ -14,6 +14,13 @@
 #ifndef CMDQ_EVENT_COMMON
 #define CMDQ_EVENT_COMMON
 
+/* Define CMDQ events
+ *
+ * For hardware event must define in device tree.
+ * For SW event assign event ID here directly.
+ *
+ * Note: event name must sync to cmdq_events table in cmdq_event_common.c
+ */
 enum CMDQ_EVENT_ENUM {
 	/* MDP start frame */
 	CMDQ_EVENT_MDP_RDMA0_SOF,
