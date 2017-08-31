@@ -265,7 +265,7 @@ struct mtk_regulator {
 struct pmic_interrupt_bit {
 	const char *name;
 	void (*callback)(void);
-	void (*oc_callback)(const char *);
+	void (*oc_callback)(PMIC_IRQ_ENUM intNo, const char *);
 	unsigned int times;
 };
 

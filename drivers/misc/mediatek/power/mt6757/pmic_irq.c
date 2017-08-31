@@ -56,8 +56,9 @@
 #include <linux/uaccess.h>
 
 #include <mt-plat/upmu_common.h>
-#include <pmic.h>
-/*#include <mach/eint.h> TBD*/
+#include "pmic.h"
+#include "pmic_adb_dbg.h"
+
 #include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
 
@@ -76,6 +77,7 @@
 #include <mt6311.h>
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_reboot.h>
+#include <mt-plat/aee.h>
 
 /*****************************************************************************
  * Global variable
@@ -329,11 +331,26 @@ void ldo_oc_int_handler(void)
 /*****************************************************************************
  * General OC Int Handler
  ******************************************************************************/
-void oc_int_handler(const char *int_name)
+void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 {
-	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
-}
+	static unsigned int vcore_pre_oc_times;
+	static unsigned int vgpu_pre_oc_times;
 
+	PMICLOG("[general_oc_int_handler] int name=%s\n", int_name);
+	if (intNo == INT_VCORE_PREOC) {
+		/* keep OC interrupt and keep tracking */
+		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s (%d times)\n", int_name, ++vcore_pre_oc_times);
+	} else if (intNo == INT_VGPU_PREOC) {
+		/* keep OC interrupt and keep tracking */
+		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s (%d times)\n", int_name, ++vgpu_pre_oc_times);
+	} else {
+		/* issue AEE exception and disable OC interrupt */
+		kernel_dump_exception_reg();
+		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
+		pmic_enable_interrupt(intNo, 0, "PMIC");
+		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
+	}
+}
 /*****************************************************************************
  * Low battery call back function
  ******************************************************************************/
@@ -581,8 +598,17 @@ void register_all_oc_interrupts(void)
 	PMIC_IRQ_ENUM oc_interrupt = INT_VCORE_OC;
 
 	for (; oc_interrupt <= INT_VS2_PREOC; oc_interrupt++) {
-		pmic_register_oc_interrupt_callback(oc_interrupt);
-		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+		if (oc_interrupt == INT_VPA_OC) {
+			/* Skip VPA OC.
+			 * ALPS02729620: 3G
+			 * ALPS02728523: 4G
+			 * ALPS02728059: SRLTE
+			 */
+			PMICLOG("[%s] skip VPA OC\r\n", __func__);
+		} else {
+			pmic_register_oc_interrupt_callback(oc_interrupt);
+			pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+		}
 	}
 }
 
@@ -683,10 +709,8 @@ static void pmic_int_handler(void)
 				if (interrupts[i].interrupts[j].callback != NULL)
 					interrupts[i].interrupts[j].callback();
 				if (interrupts[i].interrupts[j].oc_callback != NULL) {
-					interrupts[i].interrupts[j].oc_callback(interrupts[i].interrupts[j].name);
-					pmic_enable_interrupt((i * PMIC_INT_WIDTH + j), 0, "PMIC");
-					pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n",
-						interrupts[i].interrupts[j].name);
+					interrupts[i].interrupts[j].oc_callback((i * PMIC_INT_WIDTH + j),
+										interrupts[i].interrupts[j].name);
 				}
 				ret = pmic_config_interface(interrupts[i].address, 0x1, 0x1, j);
 			}

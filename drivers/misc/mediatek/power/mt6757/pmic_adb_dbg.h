@@ -31,4 +31,5 @@
 
 extern const struct file_operations pmic_dump_exception_operations;
 
+extern void kernel_dump_exception_reg(void);
 #endif /*--PMIC_ADB_DBG_H--*/

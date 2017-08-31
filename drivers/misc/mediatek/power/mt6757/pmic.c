@@ -209,44 +209,13 @@ int pmic_force_vcore_pwm(bool enable)
 	return 0;
 }
 
+/* dump exception reg in kernel and clean status */
 int pmic_dump_exception_reg(void)
 {
 	int ret_val = 0;
 
 	pr_err("[PMIC_dump_exception_reg][pmic_status]\n");
-	/*1.UVLO off*/
-	kernel_output_reg(MT6351_TOP_RST_STATUS);
-	/*2.thermal shutdown 150*/
-	kernel_output_reg(MT6351_THERMALSTATUS);
-	/*3.power not good*/
-	kernel_output_reg(MT6351_PGSTATUS0);
-	kernel_output_reg(MT6351_PGSTATUS1);
-	/*4.LDO oc*/
-	kernel_output_reg(MT6351_OCSTATUS1);
-	kernel_output_reg(MT6351_OCSTATUS2);
-	/*5.long press shutdown*/
-	kernel_output_reg(MT6351_STRUP_CON12);
-	/* 6.WDTRST */
-	kernel_output_reg(MT6351_TOP_RST_MISC);
-	kernel_output_reg(MT6351_TOP_CLK_TRIM);
-	/* 7. BUCK oc */
-	kernel_output_reg(MT6351_BUCK_OC_CON0);
-	kernel_output_reg(MT6351_BUCK_OC_CON1);
-	/* 8.Additional OC Shutdown Information */
-	kernel_output_reg(MT6351_BUCK_OC_CON2);
-	kernel_output_reg(MT6351_STRUP_CON9);
-	kernel_output_reg(MT6351_STRUP_CON6);
-	kernel_output_reg(MT6351_STRUP_CON7);
-	kernel_output_reg(MT6351_PGDEBSTATUS0);
-	kernel_output_reg(MT6351_PGDEBSTATU1);
-	kernel_output_reg(MT6351_LDO_VCAMD_CON1);
-	kernel_output_reg(MT6351_LDO_VSRAM_PROC_CON1);
-	kernel_output_reg(MT6351_LDO_VRF12_CON1);
-	kernel_output_reg(MT6351_LDO_VA10_CON1);
-	kernel_output_reg(MT6351_LDO_VDRAM_CON1);
-	kernel_output_reg(MT6351_STRUP_CON4);
-	/* Thermal IRQ status */
-	kernel_output_reg(MT6351_STRUP_CON21);
+	kernel_dump_exception_reg();
 
 	/* clear UVLO off */
 	ret_val = pmic_config_interface(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
@@ -923,7 +892,7 @@ unsigned int get_mt6325_pmic_chip_version(void)
   *********************************************************/
 void mt6351_dump_register(void)
 {
-	unsigned char i = 0;
+	unsigned int i = 0;
 
 	PMICLOG("dump PMIC 6351 register\n");
 

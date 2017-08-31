@@ -87,12 +87,9 @@ int PMIC_MD_INIT_SETTING_V1(void)
 
 	if (modem_temp_node == NULL) {
 		pr_err("PMIC get modem_temp_node failed\n");
-		if (modem_temp_base)
-			iounmap(modem_temp_base);
 		modem_temp_base = 0;
-	} else {
+	} else
 		modem_temp_base = of_iomap(modem_temp_node, 0);
-	}
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base, 0x011f);
 	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
