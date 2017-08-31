@@ -90,8 +90,6 @@ int BAT_EC_cmd;
 int BAT_EC_param;
 int g_platform_boot_mode;
 
-static unsigned char gDisableFG;
-
 int fg_bat_int1_gap;
 int fg_bat_int1_ht = 0xffff;
 int fg_bat_int1_lt = 0xffff;
@@ -118,8 +116,9 @@ bool fg_time_en;
 
 struct fgtimer tracking_timer;
 
+static bool gDisableGM30;
 
-int Enable_BATDRV_LOG = 5;	/* Todo: charging.h use it, should removed */
+int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
 
 static int fixed_bat_tmp = 0xffff;
@@ -425,6 +424,9 @@ static void battery_update(struct battery_data *bat_data)
 	bat_data->BAT_CAPACITY = 50;
 #endif
 
+	if (gDisableGM30 == true)
+		bat_data->BAT_CAPACITY = 50;
+
 	power_supply_changed(bat_psy);
 }
 
@@ -575,12 +577,12 @@ void fgauge_get_profile_id(void)
 
 	ret = IMM_GetOneChannelValue_Cali(BATTERY_ID_CHANNEL_NUM, &id_volt);
 	if (ret != 0)
-		bm_info("[fgauge_get_profile_id]id_volt read fail\n");
+		bm_debug("[fgauge_get_profile_id]id_volt read fail\n");
 	else
-		bm_info("[fgauge_get_profile_id]id_volt = %d\n", id_volt);
+		bm_debug("[fgauge_get_profile_id]id_volt = %d\n", id_volt);
 
 	if ((sizeof(g_battery_id_voltage) / sizeof(int)) != TOTAL_BATTERY_NUMBER) {
-		bm_info("[fgauge_get_profile_id]error! voltage range incorrect!\n");
+		bm_debug("[fgauge_get_profile_id]error! voltage range incorrect!\n");
 		return;
 	}
 
@@ -593,7 +595,7 @@ void fgauge_get_profile_id(void)
 		}
 	}
 
-	bm_info("[fgauge_get_profile_id]Battery id (%d)\n", g_fg_battery_id);
+	bm_debug("[fgauge_get_profile_id]Battery id (%d)\n", g_fg_battery_id);
 }
 #elif defined(MTK_GET_BATTERY_ID_BY_GPIO)
 void fgauge_get_profile_id(void)
@@ -875,7 +877,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 
 	saddles = fg_table_cust_data.fg_profile_t0_size;
 	idx = 0;
-	bm_info("fg_custom_parse_table: %s, %d\n", node_srting, saddles);
+	bm_debug("fg_custom_parse_table: %s, %d\n", node_srting, saddles);
 
 	while (!of_property_read_u32_index(np, node_srting, idx, &mah)) {
 		idx++;
@@ -885,7 +887,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 		}
 		idx++;
 		if (!of_property_read_u32_index(np, node_srting, idx, &resistance)) {
-			bm_info("fg_custom_parse_table: mah: %d, voltage: %d, resistance: %d\n",
+			bm_debug("fg_custom_parse_table: mah: %d, voltage: %d, resistance: %d\n",
 				    mah, voltage, resistance);
 		}
 
@@ -941,7 +943,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T0", &val)) {
 		fg_cust_data.pseudo100_t0 = (int)val * UNIT_TRANS_100;
-		bm_info("Get g_FG_PSEUDO100_T0: %d\n",
+		bm_debug("Get g_FG_PSEUDO100_T0: %d\n",
 			 fg_cust_data.pseudo100_t0);
 	} else {
 		bm_err("Get g_FG_PSEUDO100_T0 failed\n");
@@ -949,7 +951,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T1", &val)) {
 		fg_cust_data.pseudo100_t1 = (int)val * UNIT_TRANS_100;
-		bm_info("Get g_FG_PSEUDO100_T1: %d\n",
+		bm_debug("Get g_FG_PSEUDO100_T1: %d\n",
 			 fg_cust_data.pseudo100_t1);
 	} else {
 		bm_err("Get g_FG_PSEUDO100_T1 failed\n");
@@ -957,7 +959,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T2", &val)) {
 		fg_cust_data.pseudo100_t2 = (int)val * UNIT_TRANS_100;
-		bm_info("Get g_FG_PSEUDO100_T2: %d\n",
+		bm_debug("Get g_FG_PSEUDO100_T2: %d\n",
 			 fg_cust_data.pseudo100_t2);
 	} else {
 		bm_err("Get g_FG_PSEUDO100_T2 failed\n");
@@ -965,7 +967,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T3", &val)) {
 		fg_cust_data.pseudo100_t3 = (int)val * UNIT_TRANS_100;
-		bm_info("Get g_FG_PSEUDO100_T3: %d\n",
+		bm_debug("Get g_FG_PSEUDO100_T3: %d\n",
 			 fg_cust_data.pseudo100_t3);
 	} else {
 		bm_err("Get g_FG_PSEUDO100_T3 failed\n");
@@ -973,7 +975,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T4", &val)) {
 		fg_cust_data.pseudo100_t4 = (int)val * UNIT_TRANS_100;
-		bm_info("Get g_FG_PSEUDO100_T4: %d\n",
+		bm_debug("Get g_FG_PSEUDO100_T4: %d\n",
 			 fg_cust_data.pseudo100_t4);
 	} else {
 		bm_err("Get g_FG_PSEUDO100_T4 failed\n");
@@ -981,7 +983,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "DIFFERENCE_FULLOCV_ITH", &val)) {
 		fg_cust_data.difference_fullocv_ith = (int)val * UNIT_TRANS_10;
-		bm_info("Get DIFFERENCE_FULLOCV_ITH: %d\n",
+		bm_debug("Get DIFFERENCE_FULLOCV_ITH: %d\n",
 			 fg_cust_data.difference_fullocv_ith);
 	} else {
 		bm_err("Get DIFFERENCE_FULLOCV_ITH failed\n");
@@ -989,7 +991,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "MTK_CHR_EXIST", &val)) {
 		fg_cust_data.mtk_chr_exist = (int)val;
-		bm_info("Get MTK_CHR_EXIST: %d\n",
+		bm_debug("Get MTK_CHR_EXIST: %d\n",
 			 fg_cust_data.mtk_chr_exist);
 	} else {
 		bm_err("Get MTK_CHR_EXIST failed\n");
@@ -1014,7 +1016,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		}
 	if (ret) {
 		fg_cust_data.q_max_sys_voltage = (int)val * UNIT_TRANS_10;
-		bm_info("Get Q_MAX_SYS_VOLTAGE BAT%d: %d\n",
+		bm_debug("Get Q_MAX_SYS_VOLTAGE BAT%d: %d\n",
 				 bat_id, fg_cust_data.q_max_sys_voltage);
 	} else {
 		bm_err("Get Q_MAX_SYS_VOLTAGE BAT%d failed\n", bat_id);
@@ -1022,7 +1024,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "SHUTDOWN_1_TIME", &val)) {
 		fg_cust_data.shutdown_1_time = (int)val;
-		bm_info("Get SHUTDOWN_1_TIME: %d\n",
+		bm_debug("Get SHUTDOWN_1_TIME: %d\n",
 			 fg_cust_data.shutdown_1_time);
 	} else {
 		bm_err("Get SHUTDOWN_1_TIME failed\n");
@@ -1030,7 +1032,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "KEEP_100_PERCENT", &val)) {
 		fg_cust_data.keep_100_percent = (int)val * UNIT_TRANS_100;
-		bm_info("Get KEEP_100_PERCENT: %d\n",
+		bm_debug("Get KEEP_100_PERCENT: %d\n",
 			 fg_cust_data.keep_100_percent);
 	} else {
 		bm_err("Get KEEP_100_PERCENT failed\n");
@@ -1038,7 +1040,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "R_FG_VALUE", &val)) {
 		fg_cust_data.r_fg_value = (int)val * UNIT_TRANS_10;
-		bm_info("Get R_FG_VALUE: %d\n",
+		bm_debug("Get R_FG_VALUE: %d\n",
 			 fg_cust_data.r_fg_value);
 	} else {
 		bm_err("Get R_FG_VALUE failed\n");
@@ -1046,7 +1048,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "TEMPERATURE_T0", &val)) {
 		fg_cust_data.temperature_t0 = (int)val;
-		bm_info("Get TEMPERATURE_T0: %d\n",
+		bm_debug("Get TEMPERATURE_T0: %d\n",
 			 fg_cust_data.temperature_t0);
 	} else {
 		bm_err("Get TEMPERATURE_T0 failed\n");
@@ -1054,7 +1056,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "TEMPERATURE_T1", &val)) {
 		fg_cust_data.temperature_t1 = (int)val;
-		bm_info("Get TEMPERATURE_T1: %d\n",
+		bm_debug("Get TEMPERATURE_T1: %d\n",
 			 fg_cust_data.temperature_t1);
 	} else {
 		bm_err("Get TEMPERATURE_T1 failed\n");
@@ -1062,7 +1064,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "TEMPERATURE_T2", &val)) {
 		fg_cust_data.temperature_t2 = (int)val;
-		bm_info("Get TEMPERATURE_T2: %d\n",
+		bm_debug("Get TEMPERATURE_T2: %d\n",
 			 fg_cust_data.temperature_t2);
 	} else {
 		bm_err("Get TEMPERATURE_T2 failed\n");
@@ -1070,7 +1072,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "TEMPERATURE_T3", &val)) {
 		fg_cust_data.temperature_t3 = (int)val;
-		bm_info("Get TEMPERATURE_T3: %d\n",
+		bm_debug("Get TEMPERATURE_T3: %d\n",
 			 fg_cust_data.temperature_t3);
 	} else {
 		bm_err("Get TEMPERATURE_T3 failed\n");
@@ -1078,7 +1080,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "TEMPERATURE_T4", &val)) {
 		fg_cust_data.temperature_t4 = (int)val;
-		bm_info("Get TEMPERATURE_T4: %d\n",
+		bm_debug("Get TEMPERATURE_T4: %d\n",
 			 fg_cust_data.temperature_t4);
 	} else {
 		bm_err("Get TEMPERATURE_T4 failed\n");
@@ -1086,7 +1088,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "EMBEDDED_SEL", &val)) {
 		fg_cust_data.embedded_sel = (int)val;
-		bm_info("Get EMBEDDED_SEL: %d\n",
+		bm_debug("Get EMBEDDED_SEL: %d\n",
 			 fg_cust_data.embedded_sel);
 	} else {
 		bm_err("Get EMBEDDED_SEL failed\n");
@@ -1094,7 +1096,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "PMIC_SHUTDOWN_CURRENT", &val)) {
 		fg_cust_data.pmic_shutdown_current = (int)val;
-		bm_info("Get PMIC_SHUTDOWN_CURRENT: %d\n",
+		bm_debug("Get PMIC_SHUTDOWN_CURRENT: %d\n",
 			 fg_cust_data.pmic_shutdown_current);
 	} else {
 		bm_err("Get PMIC_SHUTDOWN_CURRENT failed\n");
@@ -1102,7 +1104,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 
 	if (!of_property_read_u32(np, "CAR_TUNE_VALUE", &val)) {
 		fg_cust_data.car_tune_value = (int)val * UNIT_TRANS_10;
-		bm_info("Get CAR_TUNE_VALUE: %d\n",
+		bm_debug("Get CAR_TUNE_VALUE: %d\n",
 			 fg_cust_data.car_tune_value);
 	} else {
 		bm_err("Get CAR_TUNE_VALUE failed\n");
@@ -1141,25 +1143,25 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 			break;
 		}
 	if (ret0) {
-		bm_info("Get battery%d_profile_t0_num: %d\n", bat_id, val_0);
+		bm_debug("Get battery%d_profile_t0_num: %d\n", bat_id, val_0);
 		fg_table_cust_data.fg_profile_t0_size = val_0;
 	} else
 		bm_err("Get battery%d_profile_t0_num failed\n", bat_id);
 
 	if (ret1) {
-		bm_info("Get battery%d_profile_t1_num: %d\n", bat_id, val_0);
+		bm_debug("Get battery%d_profile_t1_num: %d\n", bat_id, val_0);
 		fg_table_cust_data.fg_profile_t1_size = val_0;
 	} else
 		bm_err("Get battery%d_profile_t1_num failed\n", bat_id);
 
 	if (ret2) {
-		bm_info("Get battery%d_profile_t2_num: %d\n", bat_id, val_0);
+		bm_debug("Get battery%d_profile_t2_num: %d\n", bat_id, val_0);
 		fg_table_cust_data.fg_profile_t2_size = val_0;
 	} else
 		bm_err("Get battery%d_profile_t2_num failed\n", bat_id);
 
 	if (ret3) {
-		bm_info("Get battery%d_profile_t3_num: %d\n", bat_id, val_0);
+		bm_debug("Get battery%d_profile_t3_num: %d\n", bat_id, val_0);
 		fg_table_cust_data.fg_profile_t3_size = val_0;
 	} else
 		bm_err("Get battery%d_profile_t3_num failed\n", bat_id);
@@ -2518,7 +2520,7 @@ int wakeup_fg_algo(unsigned int flow_state)
 {
 	update_fg_dbg_tool_value();
 
-	if (gDisableFG) {
+	if (gDisableGM30) {
 		pr_err("FG daemon is disabled\n");
 		return -1;
 	}
@@ -2919,15 +2921,6 @@ void fg_bat_plugout_int_handler(void)
 		kernel_power_off();
 }
 
-#if 0
-void fg_charger_in_handler(void)
-{
-	bm_err("[fg_charger_in_handler]\n");
-	wakeup_fg_algo(FG_INTR_CHARGER_IN);
-
-	fg_bat_temp_int_sw_check();
-}
-#endif
 
 void fg_vbat2_l_int_handler(void)
 {
@@ -3368,6 +3361,47 @@ void exec_BAT_EC(int cmd, int param)
 	}
 
 }
+
+static ssize_t show_FG_daemon_disable(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show FG_daemon_log_level : %d\n", gDisableGM30);
+	return sprintf(buf, "%d\n", gDisableGM30);
+}
+
+static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+
+	bm_err("[disable FG daemon]\n");
+
+	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
+
+	pmic_enable_interrupt(FG_BAT0_INT_L_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_BAT0_INT_H_NO, 0, "GM30");
+
+	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
+
+	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+
+	pmic_enable_interrupt(FG_ZCV_NO, 0, "GM30");
+
+	pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
+	pmic_enable_interrupt(FG_RG_INT_EN_NAG_C_DLTV, 0, "GM30");
+
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_H, 0, "GM30");
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT_TEMP_L, 0, "GM30");
+
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_H, 0, "GM30");
+	pmic_enable_interrupt(FG_RG_INT_EN_BAT2_L, 0, "GM30");
+
+	gDisableGM30 = 1;
+
+	battery_update(&battery_main);
+	return size;
+}
+static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
 
 static ssize_t show_FG_daemon_log_level(struct device *dev, struct device_attribute *attr,
 					char *buf)
@@ -3872,6 +3906,7 @@ static int battery_probe(struct platform_device *dev)
 
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
 	fgtimer_service_init();
