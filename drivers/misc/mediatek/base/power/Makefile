@@ -67,8 +67,10 @@ obj-$(CONFIG_MACH_MT6757) += ppm_v2/
 obj-$(CONFIG_MACH_KIBOPLUS) += ppm_v2/
 obj-$(CONFIG_MACH_MT6759) += ppm_v2/
 ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
+obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6763) += ppm_v3/
 else
+obj-$(CONFIG_MACH_MT6758) += ppm_v2/
 obj-$(CONFIG_MACH_MT6763) += ppm_v2/
 endif
 obj-$(CONFIG_MACH_MT6799) += ppm_v2/
