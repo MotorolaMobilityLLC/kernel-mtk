@@ -108,7 +108,7 @@ static DEFINE_MUTEX(auddrv_pmic_mutex);
 static DEFINE_MUTEX(audEMI_Clk_mutex);
 
 /* AUDIO_APLL_DIVIDER_GROUP may vary by chip!!! */
-typedef enum {
+enum audio_apll_divider_group {
 	AUDIO_APLL1_DIV0,
 	AUDIO_APLL2_DIV0,
 	AUDIO_APLL12_DIV1,
@@ -117,7 +117,7 @@ typedef enum {
 	AUDIO_APLL12_DIV4,
 	AUDIO_APLL12_DIVB,
 	AUDIO_APLL_DIV_NUM
-} AUDIO_APLL_DIVIDER_GROUP;
+};
 
 /* mI2SAPLLDivSelect may vary by chip!!! */
 static const uint32 mI2SAPLLDivSelect[Soc_Aud_I2S_CLKDIV_NUMBER] = {
@@ -279,7 +279,7 @@ void AudDrv_Bus_Init(void)
 void AudDrv_Clk_Power_On(void)
 {
 	/*volatile uint32 *AFE_Register = (volatile uint32 *)Get_Afe_Powertop_Pointer();*/
-	volatile uint32 val_tmp;
+	uint32 val_tmp;
 
 	pr_warn("%s\n", __func__);
 #ifdef MT6757_READY
@@ -620,9 +620,9 @@ void AudDrv_Clk_Off(void)
 		if (aud_clks[CLOCK_AFE].clk_prepare)
 			clk_disable(aud_clks[CLOCK_AFE].clock);
 
-		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
+		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
-		}
+
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 

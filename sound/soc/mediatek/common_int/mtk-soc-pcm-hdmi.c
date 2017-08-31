@@ -65,7 +65,7 @@
 
 static AFE_MEM_CONTROL_T *pMemControl;
 static bool mHDMIPrepareDone;
-static AudioHDMIFormat mAudioHDMIFormat;
+static struct audio_hdmi_format mAudioHDMIFormat;
 
 static struct snd_dma_buffer *HDMI_dma_buf;
 
@@ -330,7 +330,7 @@ bool set_tdm_lrck_inverse_by_channel(int out_channel)
 static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	AudioHDMIFormat *ptrAudioHDMIFormat;
+	struct audio_hdmi_format *ptrAudioHDMIFormat;
 	uint32 runsamplerate = 44100;
 	uint32 outchannel = 2;
 	/* uint32 HDMIchannel = 8; */
@@ -563,7 +563,7 @@ static snd_pcm_uframes_t mtk_pcm_hdmi_pointer(struct snd_pcm_substream *substrea
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
 		PRINTK_AUD_HDMI
-		    ("[Auddrv] HW_Cur_ReadIdx =0x%x HW_memory_index = 0x%x Afe_consumed_bytes  = 0x%x\n",
+		    ("[Auddrv] HW_Cur_ReadIdx = 0x%x, HW_memory_index = 0x%x, Afe_consumed_bytes = 0x%x\n",
 		     HW_Cur_ReadIdx, HW_memory_index, Afe_consumed_bytes);
 
 		return audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
@@ -577,8 +577,7 @@ static snd_pcm_uframes_t mtk_pcm_hdmi_pointer(struct snd_pcm_substream *substrea
 
 static void SetHDMIBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
-
-	kal_uint32 volatile u4tmpMrg1;
+	kal_uint32 u4tmpMrg1;
 
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &(pMemControl->rBlock);
@@ -592,7 +591,7 @@ static void SetHDMIBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw
 	pblock->u4DataRemained = 0;
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
-	PRINTK_AUD_HDMI("%s dma_bytes = %d dma_area = %p dma_addr = 0x%x\n", __func__,
+	PRINTK_AUD_HDMI("%s, dma_bytes = %d, dma_area = %p, dma_addr = 0x%x\n", __func__,
 			pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	Afe_Set_Reg(AFE_HDMI_BASE, pblock->pucPhysBufAddr, 0xffffffff);
@@ -601,8 +600,7 @@ static void SetHDMIBuffer(struct snd_pcm_substream *substream, struct snd_pcm_hw
 	u4tmpMrg1 = Afe_Get_Reg(AFE_HDMI_BASE);
 	u4tmpMrg1 &= 0x00ffffff;
 
-	PRINTK_AUD_HDMI("SetHDMIBuffer AFE_HDMI_BASE =0x%x\n", u4tmpMrg1);
-
+	PRINTK_AUD_HDMI("SetHDMIBuffer, AFE_HDMI_BASE = 0x%x\n", u4tmpMrg1);
 }
 
 
@@ -659,14 +657,13 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 
 static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 {
-	AudioHDMIFormat *ptrAudioHDMIFormat;
+	struct audio_hdmi_format *ptrAudioHDMIFormat;
 	struct snd_pcm_runtime *runtime;
 	int ret;
 
 	runtime = substream->runtime;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
-
 
 	pr_warn("mtk_pcm_hdmi_open\n");
 
@@ -716,7 +713,7 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 {
-	AudioHDMIFormat *ptrAudioHDMIFormat;
+	struct audio_hdmi_format *ptrAudioHDMIFormat;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
 
@@ -740,7 +737,7 @@ static int mtk_pcm_hdmi_close(struct snd_pcm_substream *substream)
 static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime;
-	AudioHDMIFormat *ptrAudioHDMIFormat;
+	struct audio_hdmi_format *ptrAudioHDMIFormat;
 	uint32 MclkDiv;
 
 	runtime = substream->runtime;

@@ -101,7 +101,7 @@ static void SetDcCompenSation(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static bool TurnOnVOWADcPower(int MicType, bool enable);
-static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in);
+static void audio_dmic_input_enable(bool power, enum audio_analog_device_type device_in);
 static void hp_main_output_ramp(bool up);
 static void hp_aux_feedback_loop_gain_ramp(bool up);
 static void hp_gain_ramp(bool up);
@@ -120,7 +120,7 @@ static void VOW12MCK_Enable(bool enable);
 static void VOW32KCK_Enable(bool enable);
 #endif
 
-static Codec_Data_Priv *mCodec_data;
+static struct codec_data_private *mCodec_data;
 static uint32 mBlockSampleRate[AUDIO_DAI_INTERFACE_MAX] = { 48000, 48000, 48000, 48000};
 
 #define MAX_DL_SAMPLE_RATE (192000)
@@ -267,7 +267,7 @@ static int reg_AFE_VOW_PERIODIC;		/* Periodic On/Off setting (On percent)*/
 static bool mIsVOWOn;
 
 /* VOW using */
-typedef enum {
+enum audio_vow_mic_type {
 	AUDIO_VOW_MIC_TYPE_Handset_AMIC = 0,
 	AUDIO_VOW_MIC_TYPE_Headset_MIC,
 	AUDIO_VOW_MIC_TYPE_Handset_DMIC,		/* 1P6 */
@@ -278,7 +278,7 @@ typedef enum {
 	AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM,		/* DCC ECM, signal differential */
 	AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01,	/* DMIC Vendor01 */
 	AUDIO_VOW_MIC_TYPE_NUM
-} AUDIO_VOW_MIC_TYPE;
+};
 
 /* Jogi: Need? @{ */
 
@@ -4036,13 +4036,13 @@ static bool GetDacStatus(void)
 	return false;
 }
 
-static bool is_amic(AUDIO_ANALOG_DEVICE_TYPE device_in)
+static bool is_amic(enum audio_analog_device_type device_in)
 {
 	return (device_in >= AUDIO_ANALOG_DEVICE_IN_ADC1
 		&& device_in <= AUDIO_ANALOG_DEVICE_IN_ADC4);
 }
 
-static bool is_dmic(AUDIO_ANALOG_DEVICE_TYPE device_in)
+static bool is_dmic(enum audio_analog_device_type device_in)
 {
 	return (device_in >= AUDIO_ANALOG_DEVICE_IN_DMIC0
 		&& device_in <= AUDIO_ANALOG_DEVICE_IN_DMIC2);
@@ -4741,7 +4741,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 	return true;
 }
 
-static bool audio_dmic_enable(bool enable, AUDIO_ANALOG_DEVICE_TYPE device_in)
+static bool audio_dmic_enable(bool enable, enum audio_analog_device_type device_in)
 {
 	pr_warn("%s DeviceType = %d enable = %d\n", __func__, device_in, enable);
 	if (enable) {
@@ -5381,7 +5381,7 @@ static const struct soc_enum Audio_UL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(preamp_mux), preamp_mux),
 };
 
-static int channel_map_to_device(enum AUDIO_ANALOG_UL_ARRAY_TYPE channel)
+static int channel_map_to_device(enum audio_analog_uplink_array_type channel)
 {
 	switch (channel) {
 	case AUDIO_UL_ARRAY_ADC1:
@@ -5484,7 +5484,7 @@ static int audio_preamp2_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	return 0;
 }
 
-static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in)
+static void audio_dmic_input_enable(bool power, enum audio_analog_device_type device_in)
 {
 	switch (device_in) {
 	case AUDIO_ANALOG_DEVICE_IN_DMIC0:
@@ -5537,7 +5537,7 @@ static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_
 	pr_aud("%s power = %d, device_type = %d,", __func__, power, device_in);
 }
 
-static void audio_adc_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE adc)
+static void audio_adc_enable(bool power, enum audio_analog_device_type adc)
 {
 	int mic_mode = 0;
 
@@ -8236,14 +8236,14 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 				   ARRAY_SIZE(Audio_snd_hybridNLE_controls));
 
 	/* here to set  private data */
-	mCodec_data = kzalloc(sizeof(Codec_Data_Priv), GFP_KERNEL);
+	mCodec_data = kzalloc(sizeof(struct codec_data_private), GFP_KERNEL);
 	if (!mCodec_data) {
 		/*pr_warn("Failed to allocate private data\n");*/
 		return -ENOMEM;
 	}
 	snd_soc_codec_set_drvdata(codec, mCodec_data);
 
-	memset((void *)mCodec_data, 0, sizeof(Codec_Data_Priv));
+	memset((void *)mCodec_data, 0, sizeof(struct codec_data_private));
 	mt6331_codec_init_reg(codec);
 	InitCodecDefault();
 	read_efuse_dpd();

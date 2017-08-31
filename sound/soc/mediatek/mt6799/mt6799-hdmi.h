@@ -52,7 +52,6 @@
 #define HDMI_USE_CHANNELS_MIN     1
 #define HDMI_USE_CHANNELS_MAX     8
 
-
 void mtk_Hdmi_Configuration_Init(void *hdmi_stream_format);
 
 void mtk_Hdmi_Clock_Set(void *hdmi_stream_format);

@@ -47,7 +47,7 @@
  *****************************************************************************/
 
 
-typedef enum {
+enum audio_analog_volume_type {
 	AUDIO_ANALOG_VOLUME_HSOUTL = 0,
 	AUDIO_ANALOG_VOLUME_HSOUTR,
 	AUDIO_ANALOG_VOLUME_HPOUTL,
@@ -68,10 +68,10 @@ typedef enum {
 	AUDIO_ANALOG_VOLUME_LEVELSHIFTL,
 	AUDIO_ANALOG_VOLUME_LEVELSHIFTR,
 	AUDIO_ANALOG_VOLUME_TYPE_MAX
-} AUDIO_ANALOG_VOLUME_TYPE;
+};
 
 /* mux seleciotn */
-typedef enum {
+enum audio_analog_mux_type {
 	AUDIO_ANALOG_MUX_VOICE = 0,
 	AUDIO_ANALOG_MUX_AUDIO,
 	AUDIO_ANALOG_MUX_IV_BUFFER,
@@ -94,10 +94,10 @@ typedef enum {
 	AUDIO_UL2_LCH_MUX,
 	AUDIO_UL2_RCH_MUX,
 	AUDIO_ANALOG_MAX_MUX_TYPE
-} AUDIO_ANALOG_MUX_TYPE;
+};
 
 /* device power */
-typedef enum {
+enum audio_analog_device_type {
 	AUDIO_ANALOG_DEVICE_OUT_EARPIECER = 0,
 	AUDIO_ANALOG_DEVICE_OUT_EARPIECEL = 1,
 	AUDIO_ANALOG_DEVICE_OUT_HEADSETR = 2,
@@ -121,7 +121,7 @@ typedef enum {
 	AUDIO_ANALOG_DEVICE_IN_DMIC2 = 19,
 	AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH = 20,
 	AUDIO_ANALOG_DEVICE_MAX
-} AUDIO_ANALOG_DEVICE_TYPE;
+};
 
 /* Codec tx/rx interface */
 enum AUDIO_DAI_INTERFACE {
@@ -133,7 +133,7 @@ enum AUDIO_DAI_INTERFACE {
 };
 
 /* Audio Analog Mic Source */
-enum AUDIO_ANALOG_MIC_SOURCE {
+enum audio_analog_mic_source {
 	AUDIO_AMIC_AIN0, /* Main mic */
 	AUDIO_AMIC_AIN1, /* Headset mic */
 	AUDIO_AMIC_AIN2, /* Ref mic */
@@ -145,7 +145,7 @@ enum AUDIO_ANALOG_MIC_SOURCE {
 };
 
 /* Audio Digital UL array type*/
-enum AUDIO_ANALOG_UL_ARRAY_TYPE {
+enum audio_analog_uplink_array_type {
 	AUDIO_UL_ARRAY_ADC1,
 	AUDIO_UL_ARRAY_ADC2,
 	AUDIO_UL_ARRAY_ADC3,
@@ -158,49 +158,46 @@ enum AUDIO_ANALOG_UL_ARRAY_TYPE {
 	AUDIO_UL_ARRAY_MAX_TYPE
 };
 
-typedef enum {
+enum audio_analog_device_type_setting {
 	AUDIO_ANALOG_DEVICE_PLATFORM_MACHINE,
 	AUDIO_ANALOG_DEVICE_PLATFORM,
 	AUDIO_ANALOG_DEVICE_MACHINE,
 	AUDIO_ANALOG_DEVICE_TYPE_SETTING_MAX
-} AUDIO_ANALOG_DEVICE_TYPE_SETTING;
+};
 
-typedef enum {
-	AUDIO_ANALOG_AUDIOANALOGZCD_HEADPHONE = 1,
-	AUDIO_ANALOG_AUDIOANALOGZCD_HANDSET = 2,
-	AUDIO_ANALOG_AUDIOANALOGZCD_IVBUFFER = 3,
-} AUDIO_ANALOG_AUDIOANALOGZCD_TYPE;
+enum audio_analog_zcd {
+	AUDIO_ANALOG_ZCD_HEADPHONE = 1,
+	AUDIO_ANALOG_ZCD_HANDSET = 2,
+	AUDIO_ANALOG_ZCD_IVBUFFER = 3,
+};
 
-typedef enum {
+enum audio_analog_speaker_class {
 	AUDIO_ANALOG_CLASS_AB = 0,
 	AUDIO_ANALOG_CLASS_D,
-} AUDIO_ANALOG_SPEAKER_CLASS;
+};
 
-
-typedef enum {
+enum audio_analog_channels {
 	AUDIO_ANALOG_CHANNELS_LEFT1 = 0,
 	AUDIO_ANALOG_CHANNELS_RIGHT1,
-} AUDIO_ANALOG_CHANNELS;
+};
 
-
-typedef enum {
+enum audio_analog_command {
 	AUDIO_ANALOG_SET_SPEAKER_CLASS = 0,
 	AUDIO_ANALOG_GET_SPEAKER_CLASS = 1,
 	AUDIO_ANALOG_SET_CURRENT_SENSING = 2,
 	AUDIO_ANALOG_SET_CURRENT_SENSING_PEAK_DETECTOR = 3,
-} AUDIOANALOG_COMMAND;
+};
 
-
-typedef enum {
+enum audio_analog_loopback {
 	AUDIO_ANALOG_DAC_LOOP_DAC_HS_ON = 0,
 	AUDIO_ANALOG_DAC_LOOP_DAC_HS_OFF,
 	AUDIO_ANALOG_DAC_LOOP_DAC_HP_ON,
 	AUDIO_ANALOG_DAC_LOOP_DAC_HP_OFF,
 	AUDIO_ANALOG_DAC_LOOP_DAC_SPEAKER_ON,
 	AUDIO_ANALOG_DAC_LOOP_DAC_SPEAKER_OFF,
-} AUDIO_ANALOG_LOOPBACK;
+};
 
-enum AUDIO_ANALOG_ADC_MODE {
+enum audio_analog_adc_mode {
 	AUDIO_ANALOGUL_MODE_ACC = 0,
 	AUDIO_ANALOGUL_MODE_DCC,
 #ifdef MT6355_PORTING
@@ -210,29 +207,29 @@ enum AUDIO_ANALOG_ADC_MODE {
 	AUDIO_ANALOGUL_MODE_DCCECMSINGLE,
 };
 
-typedef enum {
+enum audio_analog_uplink_power_mode {
 	AUDIO_ANALOGUL_MODE_NORMAL = 0,
 	AUDIO_ANALOGUL_MODE_LOWPOWER,
-} AUDIO_ANALOGUL_POWER_MODE;
+};
 
-typedef enum {
+enum audio_speaker_mode {
 	AUDIO_SPEAKER_MODE_D = 0,
 	AUDIO_SPEAKER_MODE_AB = 1,
 	AUDIO_SPEAKER_MODE_RECEIVER,
-} AUDIO_SPEAKER_MODE;
+};
 
-typedef enum {
+enum audio_mic_bias {
 	AUDIO_MIC_BIAS0 = 0,
 	AUDIO_MIC_BIAS1,
 	AUDIO_MIC_BIAS2,
-} AUDIO_MIC_BIAS;
+};
 
-typedef enum {
+enum audio_sdm_level {
 	AUDIO_SDM_LEVEL_MUTE = 0,
 	AUDIO_SDM_LEVEL_NORMAL = 0x1D,
-} AUDIO_SDM_LEVEL;
+};
 
-typedef enum {
+enum audio_offset_trim_mux {
 	AUDIO_OFFSET_TRIM_MUX_OPEN = 0,
 	AUDIO_OFFSET_TRIM_MUX_HPL,
 	AUDIO_OFFSET_TRIM_MUX_HPR,
@@ -243,9 +240,9 @@ typedef enum {
 	AUDIO_OFFSET_TRIM_MUX_LORP,
 	AUDIO_OFFSET_TRIM_MUX_LORN,
 	AUDIO_OFFSET_TRIM_MUX_GROUND,
-} AUDIO_OFFSET_TRIM_MUX;
+};
 
-typedef enum {
+enum audio_offset_trim_voltage {
 	AUDIO_OFFSET_TRIM_0V = 0,
 	AUDIO_OFFSET_TRIM_MINUSP5,
 	AUDIO_OFFSET_TRIM_MINUS1P5,
@@ -261,13 +258,13 @@ typedef enum {
 	AUDIO_OFFSET_TRIM_4P5,
 	AUDIO_OFFSET_TRIM_5P5,
 	AUDIO_OFFSET_TRIM_6P5,
-} AUDIO_OFFSET_TRIM_VOLTAGE;
+};
 
-typedef enum {
+enum audio_offset_finetrim_voltage {
 	AUDIO_OFFSET_FINETUNE_ZREO = 0,
 	AUDIO_OFFSET_FINETUNE_MINUSP5 = 1,
 	AUDIO_OFFSET_FINETUNE_P5 = 2,
-} AUDIO_OFFSET_FINETRIM_VOLTAGE;
+};
 
 /* DPD */
 enum dpd_impedance {
@@ -290,13 +287,12 @@ enum dpd_channel {
 	DPD_CHANNEL_NUM,
 };
 
-typedef struct {
+struct codec_data_private {
 	int32 mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_TYPE_MAX];
 	int32 mAudio_Ana_Mux[AUDIO_ANALOG_MAX_MUX_TYPE];
 	int32 mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
 	int32 mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
 	int audio_interface_power[AUDIO_DAI_INTERFACE_MAX];
-} Codec_Data_Priv;
-
+};
 
 #endif

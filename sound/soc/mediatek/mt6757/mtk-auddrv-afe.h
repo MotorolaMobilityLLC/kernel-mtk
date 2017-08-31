@@ -60,7 +60,7 @@
  *                         D A T A   T Y P E S
  *****************************************************************************/
 
-typedef enum {
+enum mem_interface {
 	AFE_MEM_NONE = 0,
 	AFE_MEM_DL1,
 	AFE_MEM_DL1_DATA2,
@@ -70,9 +70,9 @@ typedef enum {
 	AFE_MEM_I2S,
 	AFE_MEM_AWB,
 	AFE_MEM_MOD_PCM,
-} MEM_INTERFACE_T;
+};
 
-typedef enum {
+enum sample_rate {
 	AFE_8000HZ = 0,
 	AFE_11025HZ = 1,
 	AFE_12000HZ = 2,
@@ -82,182 +82,172 @@ typedef enum {
 	AFE_32000HZ = 6,
 	AFE_44100HZ = 7,
 	AFE_48000HZ = 8
-} SAMPLINGRATE_T;
+};
 
-typedef enum {
+enum daimod_sample_rate {
 	AFE_DAIMOD_8000HZ = 0x0,
 	AFE_DAIMOD_16000HZ = 0x1,
-} DAIMOD_SAMPLINGRATE_T;
+};
 
-typedef enum {
+enum memif_ch_cfg {
 	AFE_STEREO = 0x0,
 	AFE_MONO = 0x1
-} MEMIF_CH_CFG_T;
+};
 
-typedef enum {
+enum memif_mono_sel {
 	AFE_MONO_USE_L = 0x0,
 	AFE_MONO_USE_R = 0x1
-} MEMIF_MONO_SEL_T;
+};
 
-typedef enum {
+enum memif_dup_write {
 	AFE_DUP_WR_DISABLE = 0x0,
 	AFE_DUP_WR_ENABLE = 0x1
-} MEMIF_DUP_WRITE_T;
+};
 
-typedef struct {
+struct memif_buf_t {
 	uint32 u4AFE_MEMIF_BUF_BASE;
 	uint32 u4AFE_MEMIF_BUF_END;
 	uint32 u4AFE_MEMIF_BUF_WP;
 	uint32 u4AFE_MEMIF_BUF_RP;
-} MEMIF_BUF_T;
+};
 
-typedef struct {
-	MEM_INTERFACE_T eMemInterface;
-	SAMPLINGRATE_T eSamplingRate;
-	DAIMOD_SAMPLINGRATE_T eDaiModSamplingRate;
-	MEMIF_CH_CFG_T eChannelConfig;
-	MEMIF_MONO_SEL_T eMonoSelect;	/* Used when AWB and VUL and data is mono */
-	MEMIF_DUP_WRITE_T eDupWrite;	/* Used when MODPCM and DAI */
-	MEMIF_BUF_T rBufferSetting;
-} MEMIF_CONFIG_T;
+struct memif_config_t {
+	enum mem_interface eMemInterface;
+	enum sample_rate eSamplingRate;
+	enum daimod_sample_rate eDaiModSamplingRate;
+	enum memif_ch_cfg eChannelConfig;
+	enum memif_mono_sel eMonoSelect;	/* Used when AWB and VUL and data is mono */
+	enum memif_dup_write eDupWrite;	/* Used when MODPCM and DAI */
+	struct memif_buf_t rBufferSetting;
+};
 
 /* I2S related */
-typedef enum {
+enum i2s_fmt {
 	I2S_EIAJ = 0x0,
 	I2S_I2S = 0x1
-} I2SFMT_T;
+};
 
-typedef enum {
+enum i2s_wlen {
 	I2S_16BIT = 0x0,
 	I2S_32BIT = 0x1
-} I2SWLEN_T;
+};
 
-typedef enum {
+enum i2s_swap {
 	I2S_NOSWAP = 0x0,
 	I2S_LRSWAP = 0x1
-} I2SSWAP_T;
+};
 
-typedef enum {
+enum i2s_en {
 	I2S_DISABLE = 0x0,
 	I2S_ENABLE = 0x1
-} I2SEN_T;
+};
 
-typedef enum {
+enum i2s_src {
 	I2S_MASTER = 0x0,
 	I2S_SLAVE = 0x1
-} I2SSRC_T;
+};
 
-typedef enum {
+enum i2s_dir {
 	I2S_OUT = 0x0,
 	I2S_IN = 0x1
-} I2SDIR_T;
-
+};
 
 /* PCM related */
-typedef enum {
+enum pcm_module {
 	PCM_1 = 0x0,		/* (O7, O8, I9) */
 	PCM_2 = 0x1		/* (O17, O18, I14) */
-} PCM_MODULE;
+};
 
-typedef enum {
+enum pcm_en {
 	PCM_DISABLE = 0x0,
 	PCM_ENABLE = 0x1
-} PCMEN_T;
+};
 
-typedef enum {
+enum pcm_fmt {
 	PCM_I2S = 0x0,
 	PCM_EIAJ = 0x1,
 	PCM_MODEA = 0x2,
 	PCM_MODEB = 0x3
-} PCMFMT_T;
+};
 
-typedef enum {
+enum pcm_mode {
 	PCM_8K = 0x0,
 	PCM_16K = 0x1
-} PCMMODE_T;
+};
 
-typedef enum {
+enum pcm_wlen {
 	PCM_16BIT = 0x0,
 	PCM_32BIT = 0x1
-} PCMWLEN_T;
+};
 
-
-typedef enum {
+enum pcm_clk_src {
 	PCM_MASTER = 0x0,
 	PCM_SLAVE = 0x1
-} PCMCLKSRC_T;
+};
 
-
-typedef enum {
+enum pcm_bypass_src {
 	PCM_GO_ASRC = 0x0,	/* (ASRC)       Set to 0 when source & destination uses different crystal */
 	PCM_GO_ASYNC_FIFO = 0x1	/* (Async FIFO) Set to 1 when source & destination uses same crystal */
-} PCMBYPASRC_T;
+};
 
-
-typedef enum {
+enum pcm_bt_mode {
 	PCM_DMTX = 0x0,		/* dual mic on TX */
 	PCM_SMTX = 0x1		/* single mic on TX (In BT mode, only L channel data is sent on PCM TX.) */
-} PCMBTMODE_T;
+};
 
-
-typedef enum {
+enum pcm_sync_type {
 	PCM_SYNC_LEN_1_BCK = 0x0,
 	PCM_SYNC_LEN_N_BCK = 0x1
-} PCMSYNCTYPE_T;
+};
 
-typedef enum {
+enum pcm_ext_modem {
 	PCM_INT_MD = 0x0,
 	PCM_EXT_MD = 0x1
-} PCMEXTMODEM_T;
+};
 
-
-typedef enum {
+enum pcm_vbt_16k_mode {
 	PCM_VBT_16K_MODE_DISABLE = 0x0,
 	PCM_VBT_16K_MODE_ENABLE = 0x1
-} PCMVBT16KMODE_T;
+};
 
-
-typedef enum {
+enum pcm_clk_inv {
 	PCM_NOINV = 0x0,
 	PCM_INV = 0x1
-} PCMCLKINV_T;
+};
 
-typedef enum {
+enum pcm_loop_ena {
 	PCM_LB_DISABLE = 0x0,
 	PCM_LB_ENABLE = 0x1
-} PCMLOOPENA_T;
+};
 
-typedef enum {
+enum pcm_txfix_en {
 	PCM_TXFIX_OFF = 0x0,
 	PCM_TXFIX_ON = 0x1
-} PCMTXFIXEN_T;
+};
 
-typedef struct {
-	PCMFMT_T ePcmFmt;
-	PCMMODE_T ePcm8k16kmode;
-	PCMWLEN_T ePcmWlen;
-	PCMCLKSRC_T ePcmClkSrc;
-	PCMBYPASRC_T ePcmBypassASRC;
-	PCMEXTMODEM_T ePcmModemSel;
-	PCMVBT16KMODE_T ePcmVbt16kSel;
-} PCM_INFO_T;
-
+struct pcm_info_t {
+	enum pcm_fmt ePcmFmt;
+	enum pcm_mode ePcm8k16kmode;
+	enum pcm_wlen ePcmWlen;
+	enum pcm_clk_src ePcmClkSrc;
+	enum pcm_bypass_src ePcmBypassASRC;
+	enum pcm_ext_modem ePcmModemSel;
+	enum pcm_vbt_16k_mode ePcmVbt16kSel;
+};
 
 /* BT PCM */
-typedef enum {
+enum bt_pcm_en {
 	BTPCM_DISABLE = 0x0,
 	BTPCM_ENABLE = 0x1
-} BTPCMEN_T;
+};
 
-typedef enum {
+enum bt_pcm_mode {
 	BTPCM_8K = 0x0,
 	BTPCM_16K = 0x1
-} BTPCMMODE_T;
-
-
+};
 
 /* Interconnection related */
-typedef enum {
+enum interconnection_in {
 	I00 = 0,
 	I01 = 1,
 	I02 = 2,
@@ -269,9 +259,9 @@ typedef enum {
 	I08 = 8,
 	I09 = 9,
 	IN_MAX
-} ITRCON_IN_T;
+};
 
-typedef enum {
+enum interconnection_out {
 	O00 = 0,
 	O01 = 1,
 	O02 = 2,
@@ -286,23 +276,23 @@ typedef enum {
 	O011 = 11,
 	O012 = 12,
 	OUT_MAX
-} ITRCON_OUT_T;
+};
 
 /* Side tone filter related */
-typedef enum {
+enum stf_src {
 	I3I4 = 0,
 	HW_SINE = 1,
 	I5I6 = 2,
-} STF_SRC_T;
+};
 
 /* Sine wave generator related */
-typedef enum {
+enum sine_tone_ch {
 	SINE_TONE_CH1 = 0,
 	SINE_TONE_CH2 = 1,
 	SINE_TONE_STEREO = 2
-} SINE_TONE_CH_T;
+};
 
-typedef enum {
+enum sine_tone_amp {
 	SINE_TONE_128 = 0,
 	SINE_TONE_64 = 1,
 	SINE_TONE_32 = 2,
@@ -311,9 +301,9 @@ typedef enum {
 	SINE_TONE_4 = 5,
 	SINE_TONE_2 = 6,
 	SINE_TONE_1 = 7
-} SINE_TONE_AMP_T;
+};
 
-typedef enum {
+enum sine_tone_mode {
 	SINE_TONE_8K = 0,
 	SINE_TONE_11K = 1,
 	SINE_TONE_12K = 2,
@@ -324,9 +314,9 @@ typedef enum {
 	SINE_TONE_44K = 7,
 	SINE_TONE_48K = 8,
 	SINE_TONE_LOOPBACK = 9
-} SINE_TONE_SINEMODE_T;
+};
 
-typedef enum {
+enum sine_tone_loopback {
 	SINE_TONE_LOOPBACK_I0_I1 = 0,
 	SINE_TONE_LOOPBACK_I2 = 1,
 	SINE_TONE_LOOPBACK_I3_I4 = 2,
@@ -342,18 +332,17 @@ typedef enum {
 	SINE_TONE_LOOPBACK_O9_O10 = 12,
 	SINE_TONE_LOOPBACK_O11 = 13,
 	SINE_TONE_LOOPBACK_O12 = 14
-} SINE_TONE_LOOPBACK_T;
+};
 
-typedef struct {
+struct afe_sinegen_info_t {
 	uint32 u4ch1_freq_div;	/* 64/n sample/period */
-	SINE_TONE_AMP_T rch1_amp_div;
-	SINE_TONE_SINEMODE_T rch1_sine_mode;
+	enum sine_tone_amp rch1_amp_div;
+	enum sine_tone_mode rch1_sine_mode;
 	uint32 u4ch2_freq_div;	/* 64/n sample/period */
-	SINE_TONE_AMP_T rch2_amp_div;
-	SINE_TONE_SINEMODE_T rch2_sine_mode;
-	SINE_TONE_LOOPBACK_T rloopback_mode;
-} AFE_SINEGEN_INFO_T;
-
+	enum sine_tone_amp rch2_amp_div;
+	enum sine_tone_mode rch2_sine_mode;
+	enum sine_tone_loopback rloopback_mode;
+};
 
 /*****************************************************************************
  *                          C O N S T A N T S
