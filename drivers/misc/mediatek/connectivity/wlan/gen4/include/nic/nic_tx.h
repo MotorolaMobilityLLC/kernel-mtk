@@ -720,6 +720,7 @@ struct _MSDU_INFO_T {
 	BOOLEAN fgIs802_11;	/* TRUE: 802.11 header is present */
 	BOOLEAN fgIs802_3;	/* TRUE: 802.3 frame */
 	BOOLEAN fgIsVlanExists;	/* TRUE: VLAN tag is exists */
+	UINT_8 ucEapolKeyType; /* 1: 1/4; 2: 2/4; 3: 3/4; 4: 4/4 */
 
 	/* BOOLEAN                     fgIsBIP;                *//* Management Frame Protection */
 	/* BOOLEAN                     fgIsBasicRate;      *//* Force Basic Rate Transmission */

@@ -352,6 +352,10 @@ saaFsmSendEventJoinComplete(IN P_ADAPTER_T prAdapter,
 			prBssInfo->fg40mBwAllowed = prBssInfo->fgAssoc40mBwAllowed;
 			/* Initialize OpMode Channel Width change indicator */
 			prBssInfo->fgIsOpChangeChannelWidth = FALSE;
+			/* When STA join complete is success, then clear flag, it means 1st 4-way
+			** handshake will be happened.
+			**/
+			prBssInfo->fgUnencryptedEapol = FALSE;
 		}
 		prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	}
