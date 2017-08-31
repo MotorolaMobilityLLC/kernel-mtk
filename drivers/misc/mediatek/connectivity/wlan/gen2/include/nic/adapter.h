@@ -164,6 +164,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 	UINT_8 aucOkcPmkId[16];
 #endif
 
+	struct LINK_MGMT rBlackList;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
 struct _BSS_INFO_T {
@@ -363,6 +364,12 @@ struct _BSS_INFO_T {
 	BOOLEAN fgPoorRcpiArea;
 };
 
+struct ESS_CHNL_INFO {
+	UINT_8 ucChannel;
+	UINT_8 ucUtilization;
+	UINT_8 ucApNum;
+};
+
 struct _AIS_SPECIFIC_BSS_INFO_T {
 	UINT_8 ucRoamingAuthTypes;	/* This value indicate the roaming type used in AIS_JOIN */
 
@@ -413,6 +420,9 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	TIMER_T rSaQueryTimer;
 	BOOLEAN fgBipKeyInstalled;
 #endif
+	struct ESS_CHNL_INFO arCurEssChnlInfo[CFG_MAX_NUM_OF_CHNL_INFO];
+	UINT_8 ucCurEssChnlInfoNum;
+	LINK_T rCurEssLink;
 };
 
 struct _BOW_SPECIFIC_BSS_INFO_T {
@@ -549,6 +559,7 @@ typedef struct {
 	UINT_16 u2FwProductID;
 	UINT_16 u2FwOwnVersion;
 	UINT_16 u2FwPeerVersion;
+	UINT_16 u2FwOwnVersionExtend; /*support version extended*/
 
 } WIFI_VER_INFO_T, *P_WIFI_VER_INFO_T;
 
@@ -616,6 +627,8 @@ struct _ADAPTER_T {
 #endif				/* CFG_TCP_IP_CHKSUM_OFFLOAD */
 
 	ENUM_BAND_T aePreferBand[NETWORK_TYPE_INDEX_NUM];
+
+	ENUM_BAND_T aeSetBand[NETWORK_TYPE_INDEX_NUM];
 
 	/* ADAPTER flags */
 	UINT_32 u4Flags;

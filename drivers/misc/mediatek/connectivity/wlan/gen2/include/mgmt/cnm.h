@@ -79,8 +79,26 @@ typedef struct _MSG_CH_REOCVER_T {
 	ENUM_CH_REQ_TYPE_T eReqType;
 } MSG_CH_RECOVER_T, *P_MSG_CH_RECOVER_T;
 
+struct MSG_REQ_CH_UTIL {
+	MSG_HDR_T rMsgHdr;	/* Must be the first member */
+	UINT_16 u2Duration;
+	UINT_16 u2ReturnMID;
+	UINT_8 ucChnlNum;
+	UINT_8 aucChnlList[100];
+};
+
+struct MSG_CH_UTIL_RSP {
+	MSG_HDR_T rMsgHdr;
+	UINT_8 ucChnlNum;
+	UINT_8 aucChnlList[100];
+	UINT_8 aucChUtil[100];
+};
+
 typedef struct _CNM_INFO_T {
 	UINT_32 u4Reserved;
+
+	UINT_16 u2ReturnMID;
+	TIMER_T rReqChnlUtilTimer;
 } CNM_INFO_T, *P_CNM_INFO_T;
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -138,6 +156,12 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eN
 #if CFG_P2P_LEGACY_COEX_REVISE
 BOOLEAN cnmAisDetectP2PChannel(P_ADAPTER_T prAdapter, P_ENUM_BAND_T prBand, PUINT_8 pucPrimaryChannel);
 #endif
+VOID cnmRunEventReqChnlUtilTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+VOID cnmHandleChannelUtilization(P_ADAPTER_T prAdapter,
+	struct EVENT_RSP_CHNL_UTILIZATION *prChnlUtil);
+VOID cnmRequestChannelUtilization(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
+BOOLEAN cnmChUtilIsRunning(P_ADAPTER_T prAdapter);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

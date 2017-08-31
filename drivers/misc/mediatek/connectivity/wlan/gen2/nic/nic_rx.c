@@ -1375,6 +1375,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 						STATS_ENV_REPORT_DETECT(prAdapter, prStaRec->ucIndex);
 				}
 				aisBssBeaconTimeout(prAdapter);
+				aisRecordBeaconTimeout(prAdapter, prBssInfo);
 			}
 #if CFG_ENABLE_WIFI_DIRECT
 			else if ((prAdapter->fgIsP2PRegistered) &&
@@ -1626,11 +1627,14 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		break;
 
 	case EVENT_ID_NLO_DONE:
-		prAdapter->rWifiVar.rScanInfo.fgPscnOnnning = FALSE;
+		prAdapter->rWifiVar.rScanInfo.fgPscnOngoing = FALSE;
 
 		DBGLOG(INIT, INFO, "EVENT_ID_NLO_DONE\n");
 		scnEventNloDone(prAdapter, (P_EVENT_NLO_DONE_T) (prEvent->aucBuffer));
 
+		break;
+	case EVENT_ID_RSP_CHNL_UTILIZATION:
+		cnmHandleChannelUtilization(prAdapter, (struct EVENT_RSP_CHNL_UTILIZATION *)prEvent->aucBuffer);
 		break;
 
 #if CFG_SUPPORT_BATCH_SCAN
@@ -3022,6 +3026,15 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		 */
 		break;
 #endif /* CFG_SUPPORT_TDLS */
+#if CFG_SUPPORT_802_11K
+	case CATEGORY_RM_ACTION:
+		switch (prActFrame->ucAction) {
+		case RM_ACTION_REIGHBOR_RESPONSE:
+			rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+			break;
+		}
+		break;
+#endif
 
 	default:
 		break;

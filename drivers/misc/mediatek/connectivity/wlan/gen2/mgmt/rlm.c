@@ -1119,6 +1119,7 @@ VOID rlmProcessAssocRsp(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, PUINT_8 pucIE
 	P_BSS_INFO_T prBssInfo;
 	P_STA_RECORD_T prStaRec;
 	UINT_8 ucPriChannel;
+	UINT_16 u2Offset;
 
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
@@ -1158,6 +1159,20 @@ VOID rlmProcessAssocRsp(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb, PUINT_8 pucIE
 		prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	}
 #endif
+	IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
+		switch (IE_ID(pucIE)) {
+		case ELEM_ID_BSS_MAX_IDLE_PERIOD:
+		{
+			struct IE_BSS_MAX_IDLE_PERIOD *prBssMaxIdle = (struct IE_BSS_MAX_IDLE_PERIOD *)pucIE;
+
+			prStaRec->u2MaxIdlePeriod = prBssMaxIdle->u2MaxIdlePeriod;
+			prStaRec->ucIdleOption = prBssMaxIdle->ucIdleOption;
+			break;
+		}
+		default:
+			break;
+		}		/* end of switch */
+	}			/* end of IE_FOR_EACH */
 
 }
 
@@ -1557,4 +1572,76 @@ rlmCmd(P_GLUE_INFO_T prGlueInfo, UINT_8	*prInBuf, UINT_32 u4InBufLen)
 	}
 }
 #endif /* CFG_SUPPORT_TXR_ENC */
+
+#if CFG_SUPPORT_802_11K
+VOID rlmProcessNeighborReportResonse(
+	P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen)
+{
+	struct ACTION_NEIGHBOR_REPORT_FRAME *prNeighborResponse =
+			(struct ACTION_NEIGHBOR_REPORT_FRAME *)prAction;
+
+	ASSERT(prAdapter);
+	ASSERT(prNeighborResponse);
+	DBGLOG(RLM, INFO, "Neighbor Resp From %pM, DialogToken %d\n",
+			prNeighborResponse->aucSrcAddr, prNeighborResponse->ucDialogToken);
+	aisCollectNeighborAPChannel(prAdapter,
+		(struct IE_NEIGHBOR_REPORT_T *)&prNeighborResponse->aucInfoElem[0],
+		u2PacketLen - OFFSET_OF(struct ACTION_NEIGHBOR_REPORT_FRAME, aucInfoElem));
+}
+
+VOID rlmTxNeighborReportRequest(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec,
+		struct SUB_ELEMENT_LIST *prSubIEs)
+{
+	static UINT_8 ucDialogToken = 1;
+	P_MSDU_INFO_T prMsduInfo = NULL;
+	P_BSS_INFO_T prBssInfo = NULL;
+	PUINT_8 pucPayload = NULL;
+	struct ACTION_NEIGHBOR_REPORT_FRAME *prTxFrame = NULL;
+	UINT_16 u2TxFrameLen = 500;
+	UINT_16 u2FrameLen = 0;
+
+	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex];
+	ASSERT(prBssInfo);
+	/* 1 Allocate MSDU Info */
+	prMsduInfo = (P_MSDU_INFO_T) cnmMgtPktAlloc(prAdapter, MAC_TX_RESERVED_FIELD + u2TxFrameLen);
+	if (!prMsduInfo)
+		return;
+	prTxFrame = (struct ACTION_NEIGHBOR_REPORT_FRAME *)
+	    ((ULONG) (prMsduInfo->prPacket) + MAC_TX_RESERVED_FIELD);
+
+	/* 2 Compose The Mac Header. */
+	prTxFrame->u2FrameCtrl = MAC_FRAME_ACTION;
+	COPY_MAC_ADDR(prTxFrame->aucDestAddr, prStaRec->aucMacAddr);
+	COPY_MAC_ADDR(prTxFrame->aucSrcAddr, prBssInfo->aucOwnMacAddr);
+	COPY_MAC_ADDR(prTxFrame->aucBSSID, prBssInfo->aucBSSID);
+	prTxFrame->ucCategory = CATEGORY_RM_ACTION;
+	prTxFrame->ucAction = RM_ACTION_NEIGHBOR_REQUEST;
+	u2FrameLen = OFFSET_OF(struct ACTION_NEIGHBOR_REPORT_FRAME, aucInfoElem);
+	/* 3 Compose the frame body's frame. */
+	prTxFrame->ucDialogToken = ucDialogToken++;
+	u2TxFrameLen -= sizeof(*prTxFrame) - 1;
+	pucPayload = &prTxFrame->aucInfoElem[0];
+	while (prSubIEs && u2TxFrameLen >= (prSubIEs->rSubIE.ucLength + 2)) {
+		kalMemCopy(pucPayload, &prSubIEs->rSubIE, prSubIEs->rSubIE.ucLength + 2);
+		pucPayload += prSubIEs->rSubIE.ucLength + 2;
+		u2FrameLen += prSubIEs->rSubIE.ucLength + 2;
+		prSubIEs = prSubIEs->prNext;
+	}
+
+	/* 4 Update information of MSDU_INFO_T */
+	prMsduInfo->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;	/* Management frame */
+	prMsduInfo->ucStaRecIndex = prStaRec->ucIndex;
+	prMsduInfo->ucNetworkType = prStaRec->ucNetTypeIndex;
+	prMsduInfo->ucMacHeaderLength = WLAN_MAC_MGMT_HEADER_LEN;
+	prMsduInfo->fgIs802_1x = FALSE;
+	prMsduInfo->fgIs802_11 = TRUE;
+	prMsduInfo->u2FrameLength = u2FrameLen;
+	prMsduInfo->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
+	prMsduInfo->pfTxDoneHandler = NULL;
+	prMsduInfo->fgIsBasicRate = FALSE;
+
+	/* 5 Enqueue the frame to send this action frame. */
+	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
+}
+#endif
 

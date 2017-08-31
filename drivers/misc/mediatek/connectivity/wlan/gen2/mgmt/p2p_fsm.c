@@ -1486,18 +1486,6 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	prAssocRspSwRfb = prJoinCompMsg->prSwRfb;
 	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 
-    /* Error Handle for eCurrentOPMode is not OP_MODE_INFRASTRUCTURE in GC_JOIN */
-	if (prP2pFsmInfo->eCurrentState == P2P_STATE_GC_JOIN) {
-		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE) {
-			DBGLOG(P2P, WARN, "P2pBssInfo->eCurrentOPMode: %d\n", prP2pBssInfo->eCurrentOPMode);
-			prP2pBssInfo->eCurrentOPMode = OP_MODE_INFRASTRUCTURE;
-		}
-		if (prJoinCompMsg->ucSeqNum != prJoinInfo->ucSeqNumOfReqMsg)
-			DBGLOG(P2P, WARN, "SeqNum: %d, SeqNumOfReqMsg: %d\n", prJoinCompMsg->ucSeqNum,
-				prJoinInfo->ucSeqNumOfReqMsg);
-	}
-
-
 	if (prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
 		P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 

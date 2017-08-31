@@ -2528,13 +2528,11 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 	int fgIsValid = 0;
 	UINT_32 u4SetInfoLen = 0;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
-
 	ASSERT(wiphy);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_SW_CMD_PARAMS) data;
@@ -2645,7 +2643,6 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 	P_NL80211_DRIVER_TEST_MODE_PARAMS prParams = NULL;
 	INT_32 i4Status = -EINVAL;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	ASSERT(wiphy);
 
@@ -2712,7 +2709,8 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		break;
 	}
 
-	DBGLOG(REQ, TRACE, "prParams->index=%d, status=%d\n", prParams->index, i4Status);
+	DBGLOG(REQ, INFO, "--> %s() prParams->index=%d, status=%d\n"
+		, __func__, prParams->index, i4Status);
 
 	return i4Status;
 }
