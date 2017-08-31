@@ -602,7 +602,7 @@ static void imx338_apply_SPC(void)
     LOG_INF("E");
 
     read_imx338_SPC( imx338_SPC_data);
-    
+
 	for(i=0;i<352;i++)
 	{
 		write_cmos_sensor(start_reg, imx338_SPC_data[i]);
@@ -702,12 +702,12 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 *
 *************************************************************************/
 #define MAX_CIT_LSHIFT 7
-static void set_shutter(unsigned long long shutter)
+static void set_shutter(kal_uint32 shutter)
 {
     unsigned long flags;
     kal_uint16 realtime_fps = 0;
     kal_uint16 l_shift = 1;
-    /* LOG_INF("Enter! shutter =%llu, framelength =%d\n", shutter,imgsensor.frame_length); */
+	/* LOG_INF("Enter! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length); */
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -734,17 +734,17 @@ static void set_shutter(unsigned long long shutter)
 				}
 		}
 		if( l_shift > MAX_CIT_LSHIFT ){
-			  LOG_INF("Unable to set such a long exposure %llu, set to max\n", shutter);
+			LOG_INF("Unable to set such a long exposure %d, set to max\n", shutter);
 			  l_shift = MAX_CIT_LSHIFT;
 		}
 		shutter = shutter >> l_shift;
 		imgsensor.frame_length = shutter + imgsensor_info.margin;//imgsensor_info.max_frame_length;
 		//LOG_INF("0x3028 0x%x l_shift %d l_shift&0x3 %d\n", read_cmos_sensor(0x3028),l_shift,l_shift&0x7);
-		write_cmos_sensor(0x3028,read_cmos_sensor(0x3028)|(l_shift&0x7));
+		write_cmos_sensor(0x3028, read_cmos_sensor(0x3028)|(l_shift&0x7));
 		//LOG_INF("0x3028 0x%x\n", read_cmos_sensor(0x3028));
 
 	} else {
-		write_cmos_sensor(0x3028,read_cmos_sensor(0x3028)&0xc);
+		write_cmos_sensor(0x3028, read_cmos_sensor(0x3028)&0xf8);
 	}
 
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
@@ -777,7 +777,7 @@ static void set_shutter(unsigned long long shutter)
     write_cmos_sensor(0x0202, (shutter >> 8) & 0xFF);
     write_cmos_sensor(0x0203, shutter  & 0xFF);
     write_cmos_sensor(0x0104, 0x00);
-    LOG_INF("Exit! shutter =%llu, framelength =%d\n", shutter,imgsensor.frame_length);
+	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }    /*    set_shutter */
 
@@ -2585,7 +2585,7 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor(0x3155,0x80);
 		write_cmos_sensor(0x3156,0x02);
 		write_cmos_sensor(0x3157,0x80);
-        
+
         imx338_apply_SPC();
 	}
 
