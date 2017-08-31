@@ -46,7 +46,7 @@ static struct device_attribute *gpio_attr_list[] = {
 int mt_gpio_create_attr(struct device *dev)
 {
 	int idx, err = 0;
-	int num = (int)(ARRAY_SIZE(gpio_attr_list)/sizeof(gpio_attr_list[0]));
+	int num = (int)(ARRAY_SIZE(gpio_attr_list));
 
 	if (!dev)
 		return -EINVAL;
@@ -60,7 +60,7 @@ int mt_gpio_create_attr(struct device *dev)
 int mt_gpio_delete_attr(struct device *dev)
 {
 	int idx, err = 0;
-	int num = (int)(ARRAY_SIZE(gpio_attr_list)/sizeof(gpio_attr_list[0]));
+	int num = (int)(ARRAY_SIZE(gpio_attr_list));
 
 	if (!dev)
 		return -EINVAL;
