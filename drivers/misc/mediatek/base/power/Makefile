@@ -47,6 +47,7 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6799) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6759) += power_gs_v1/
+obj-$(CONFIG_MACH_MT6763) += power_gs_v1/
 endif
 obj-$(CONFIG_MACH_MT6757) += hps_v2/
 obj-$(CONFIG_MACH_MT6799) += hps_v3/
