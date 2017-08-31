@@ -543,7 +543,7 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_EMI_MD2SPM0, 0xFFFFFFFF);
 	spm_write(DVFSRC_EMI_MD2SPM1, 0xFFFFFFFF);
 
-	spm_write(DVFSRC_EMI_REQUEST, 0x00099299);
+	spm_write(DVFSRC_EMI_REQUEST, 0x00299299);
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00105000);
 	spm_write(DVFSRC_FORCE, 0x00080000);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x00008033);
