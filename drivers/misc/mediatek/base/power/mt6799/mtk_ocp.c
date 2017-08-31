@@ -115,6 +115,13 @@ static int ocp_resume(struct device *dev);
 static int mt_ocp_pdrv_remove(struct platform_device *pdev);
 static int mt_ocp_pdrv_probe(struct platform_device *pdev);
 
+#ifdef CONFIG_OF
+static const struct of_device_id ocp_of_ids[] = {
+	{ .compatible = "mediatek,ocp_cfg", },
+	{}
+};
+#endif
+
 static struct ocp_data ocp_info = {
 	.debug = 0,
 	.is_in_suspend = false,
@@ -151,10 +158,6 @@ static struct ocp_data ocp_info = {
 		.thaw = ocp_resume,
 		.restore = ocp_resume,
 	},
-	.pdev = {
-		.name   = "mt_ocp",
-		.id     = -1,
-	},
 	.pdrv = {
 		.probe = mt_ocp_pdrv_probe,
 		.remove = mt_ocp_pdrv_remove,
@@ -162,6 +165,9 @@ static struct ocp_data ocp_info = {
 			.name = "mt_ocp",
 			.pm = &ocp_info.pm_ops,
 			.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+			.of_match_table = ocp_of_ids,
+#endif
 		},
 	},
 	.auto_capture_cluster = NR_OCP_CLUSTER,
@@ -1011,6 +1017,48 @@ static int mt_ocp_pdrv_probe(struct platform_device *pdev)
 
 	int err = 0, i, j;
 	char str[BUF_SIZE];
+#ifdef CONFIG_OF
+	struct device_node *node = NULL;
+
+	node = pdev->dev.of_node;
+	if (!node) {
+		ocp_err("error: cannot find ocp node in device tree!\n");
+		WARN_ON(1);
+	}
+
+#if 0
+	/* 0x10200000 0x4000, OCP */
+	/* TODO: remove this? */
+	ocp_info.ocp_base = of_iomap(node, 0);
+	if (!ocp_info.ocp_base) {
+		ocp_err("OCP get some base NULL.\n");
+		WARN_ON(1);
+	}
+#endif
+
+	/*get ocp irq num*/
+	ocp_info.cl_setting[OCP_B].irq_num[0] = irq_of_parse_and_map(node, 0);
+	ocp_info.cl_setting[OCP_B].irq_num[1] = irq_of_parse_and_map(node, 1);
+	ocp_info.cl_setting[OCP_B].irq_num[2] = irq_of_parse_and_map(node, 2);
+	ocp_info.cl_setting[OCP_LL].irq_num[0] = irq_of_parse_and_map(node, 3);
+	ocp_info.cl_setting[OCP_LL].irq_num[1] = irq_of_parse_and_map(node, 4);
+	ocp_info.cl_setting[OCP_LL].irq_num[2] = irq_of_parse_and_map(node, 5);
+	ocp_info.cl_setting[OCP_L].irq_num[0] = irq_of_parse_and_map(node, 6);
+	ocp_info.cl_setting[OCP_L].irq_num[1] = irq_of_parse_and_map(node, 7);
+	ocp_info.cl_setting[OCP_L].irq_num[2] = irq_of_parse_and_map(node, 8);
+#else
+#define OCP_INT_NUM_BASE	429
+
+	ocp_info.cl_setting[OCP_B].irq_num[0] = OCP_INT_NUM_BASE;
+	ocp_info.cl_setting[OCP_B].irq_num[1] = OCP_INT_NUM_BASE + 1;
+	ocp_info.cl_setting[OCP_B].irq_num[2] = OCP_INT_NUM_BASE + 2;
+	ocp_info.cl_setting[OCP_LL].irq_num[0] = OCP_INT_NUM_BASE + 3;
+	ocp_info.cl_setting[OCP_LL].irq_num[1] = OCP_INT_NUM_BASE + 4;
+	ocp_info.cl_setting[OCP_LL].irq_num[2] = OCP_INT_NUM_BASE + 5;
+	ocp_info.cl_setting[OCP_L].irq_num[0] = OCP_INT_NUM_BASE + 6;
+	ocp_info.cl_setting[OCP_L].irq_num[1] = OCP_INT_NUM_BASE + 7;
+	ocp_info.cl_setting[OCP_L].irq_num[2] = OCP_INT_NUM_BASE + 8;
+#endif
 
 	/* set OCP IRQ */
 	for_each_ocp_cluster(i) {
@@ -1024,7 +1072,9 @@ static int mt_ocp_pdrv_probe(struct platform_device *pdev)
 			if (err) {
 				ocp_err("OCP IRQ register failed: ocp%d_irq%d (ret=%d)\n", i, j, err);
 				WARN_ON(1);
-			}
+			} else
+				ocp_info("register ocp cluster %d isr%d(%d) done\n",
+					i, j, ocp_info.cl_setting[i].irq_num[j]);
 		}
 	}
 #endif
@@ -1818,49 +1868,8 @@ static int __init ocp_init(void)
 	unsigned int cpus, i;
 	int err = 0;
 
-#ifdef CONFIG_OF
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ocp_cfg");
-	if (!node) {
-		ocp_err("error: cannot find node OCP_NODE!\n");
-		WARN_ON(1);
-	}
-
-	/* 0x10200000 0x4000, OCP */
-	/* TODO: remove this? */
-	ocp_info.ocp_base = of_iomap(node, 0);
-	if (!ocp_info.ocp_base) {
-		ocp_err("OCP get some base NULL.\n");
-		WARN_ON(1);
-	}
-
 	/* check HW version */
 	ocp_get_hw_chip_version();
-
-	/*get ocp irq num*/
-	ocp_info.cl_setting[OCP_B].irq_num[0] = irq_of_parse_and_map(node, 0);
-	ocp_info.cl_setting[OCP_B].irq_num[1] = irq_of_parse_and_map(node, 1);
-	ocp_info.cl_setting[OCP_B].irq_num[2] = irq_of_parse_and_map(node, 2);
-	ocp_info.cl_setting[OCP_LL].irq_num[0] = irq_of_parse_and_map(node, 3);
-	ocp_info.cl_setting[OCP_LL].irq_num[1] = irq_of_parse_and_map(node, 4);
-	ocp_info.cl_setting[OCP_LL].irq_num[2] = irq_of_parse_and_map(node, 5);
-	ocp_info.cl_setting[OCP_L].irq_num[0] = irq_of_parse_and_map(node, 6);
-	ocp_info.cl_setting[OCP_L].irq_num[1] = irq_of_parse_and_map(node, 7);
-	ocp_info.cl_setting[OCP_L].irq_num[2] = irq_of_parse_and_map(node, 8);
-#else
-#define OCP_INT_NUM_BASE	429
-
-	ocp_info.cl_setting[OCP_B].irq_num[0] = OCP_INT_NUM_BASE;
-	ocp_info.cl_setting[OCP_B].irq_num[1] = OCP_INT_NUM_BASE + 1;
-	ocp_info.cl_setting[OCP_B].irq_num[2] = OCP_INT_NUM_BASE + 2;
-	ocp_info.cl_setting[OCP_LL].irq_num[0] = OCP_INT_NUM_BASE + 3;
-	ocp_info.cl_setting[OCP_LL].irq_num[1] = OCP_INT_NUM_BASE + 4;
-	ocp_info.cl_setting[OCP_LL].irq_num[2] = OCP_INT_NUM_BASE + 5;
-	ocp_info.cl_setting[OCP_L].irq_num[0] = OCP_INT_NUM_BASE + 6;
-	ocp_info.cl_setting[OCP_L].irq_num[1] = OCP_INT_NUM_BASE + 7;
-	ocp_info.cl_setting[OCP_L].irq_num[2] = OCP_INT_NUM_BASE + 8;
-#endif
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
@@ -1869,13 +1878,6 @@ static int __init ocp_init(void)
 		goto end;
 	}
 #endif
-
-	/* register platform device/driver */
-	err = platform_device_register(&ocp_info.pdev);
-	if (err) {
-		ocp_err("fail to register OCP device @ %s()\n", __func__);
-		goto end;
-	}
 
 	err = platform_driver_register(&ocp_info.pdrv);
 	if (err) {
@@ -1923,7 +1925,6 @@ static void __exit ocp_exit(void)
 #endif
 	unregister_hotcpu_notifier(&ocp_cpu_hotplug_notifier);
 	platform_driver_unregister(&ocp_info.pdrv);
-	platform_device_unregister(&ocp_info.pdev);
 }
 
 #else /* OCP_FEATURE_ENABLED */
