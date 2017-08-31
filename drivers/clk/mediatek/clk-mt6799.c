@@ -330,7 +330,9 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG1 0x00400A00/*trng[9], cpum[11], smi_l2c[22]*/
 
 #define PERI_CG0 0x03ff00ff/*pwm0-7[7:0], i2c0-9[25:16]*/
-#define PERI_CG1 0x07ff00ff/*uart0-7[7:0], spi0-10[26:16]*/
+/*uart0-7[7:0], spi0-10[26:16]*/
+/*#define PERI_CG1 0x07ff00ff*/
+#define PERI_CG1 0x07ff0000
 #define PERI_CG2 0x00010000/*flashif[16]*/
 #define PERI_CG3 0x00000172/*usb_p1[1], mpcie[8][6:4]*/
 #define PERI_CG4 0x1117015b/**/
@@ -341,6 +343,8 @@ void __iomem *venc_gcon_base;
 #define VDE_CG	0x1
 #define LARB1_CG 0x1
 #define VEN_CG 0x111111/*[20][16][12][8][4][0]*/
+#define MJC_CG 0x7f/*[6:0]*/
+#define IPU_CG 0x3ff/*[9:0]*/
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
@@ -2312,7 +2316,8 @@ static void __init mtk_camsys_init(struct device_node *node)
 	cam_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);
+	/*clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);*/
+	clk_writel(CAMSYS_CG_SET, CAM_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_camsys, "mediatek,mt6799-camsys", mtk_camsys_init);
@@ -2369,7 +2374,8 @@ static void __init mtk_ipusys_init(struct device_node *node)
 	ipu_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(IPU_CG_CLR, IPU_DISABLE_CG);
+	/*clk_writel(IPU_CG_CLR, IPU_DISABLE_CG);*/
+	clk_writel(IPU_CG_SET, IPU_CG);
 #endif
 
 }
@@ -2399,7 +2405,8 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 	mfgcfg_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
+	/*clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);*/
+	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
 
 }
@@ -2472,7 +2479,7 @@ static void __init mtk_pericfg_init(struct device_node *node)
 	pericfg_base = base;
 #if MT_CCF_BRINGUP
 	clk_writel(PERI_CG_SET0, PERI_CG0);
-	/*clk_writel(PERI_CG_SET1, PERI_CG1);*/
+	clk_writel(PERI_CG_SET1, PERI_CG1);
 	clk_writel(PERI_CG_SET2, PERI_CG2);
 	clk_writel(PERI_CG_SET3, PERI_CG3);
 	clk_writel(PERI_CG_SET4, PERI_CG4);
@@ -2542,7 +2549,8 @@ static void __init mtk_mjc_config_init(struct device_node *node)
 	mjc_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(MJC_CG_CLR, MJC_DISABLE_CG);
+	/*clk_writel(MJC_CG_CLR, MJC_DISABLE_CG);*/
+	clk_writel(MJC_CG_SET, MJC_CG);
 #endif
 
 }
@@ -2591,8 +2599,10 @@ static void __init mtk_vdec_gcon_init(struct device_node *node)
 	vdec_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(VDEC_CKEN_SET, VDEC_DISABLE_CG);
-	clk_writel(LARB1_CKEN_SET, LARB_DISABLE_CG);
+	/*clk_writel(VDEC_CKEN_SET, VDEC_DISABLE_CG);*/
+	/*clk_writel(LARB1_CKEN_SET, LARB_DISABLE_CG);*/
+	clk_writel(VDEC_CKEN_CLR, VDE_CG);
+	clk_writel(LARB1_CKEN_CLR, LARB1_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_vdec_gcon, "mediatek,mt6799-vdec_gcon", mtk_vdec_gcon_init);
@@ -2638,7 +2648,8 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	venc_gcon_base = base;
 
 #if MT_CCF_BRINGUP
-	clk_writel(VENC_CG_SET, VENC_DISABLE_CG);
+	/*clk_writel(VENC_CG_SET, VENC_DISABLE_CG);*/
+	clk_writel(VENC_CG_CLR, VEN_CG);
 #endif
 }
 CLK_OF_DECLARE(mtk_venc_global_con, "mediatek,mt6799-venc_global_con",
