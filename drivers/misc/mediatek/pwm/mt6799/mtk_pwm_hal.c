@@ -27,9 +27,6 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-#define PWM_PERI_ADDR_SHIFT_CTRL0 0x10003430
-#define PWM_OFFSET 0x3
-
 /**********************************
 * Global  data
 ***********************************/
@@ -73,6 +70,9 @@ unsigned long PWM_register[PWM_NUM] = {
 	(PWM_BASE+0x0050),	   /* PWM2 register base    15 registers */
 	(PWM_BASE+0x0090),	   /* PWM3 register base    15 registers */
 	(PWM_BASE+0x00d0),	   /* PWM4 register base    13 registers */
+	(PWM_BASE+0x0110),
+	(PWM_BASE+0x0150),
+	(PWM_BASE+0x0190),
 };
 #endif
 /**************************************************************/
@@ -83,6 +83,9 @@ enum {
 	PWM2_CLK,
 	PWM3_CLK,
 	PWM4_CLK,
+	PWM5_CLK,
+	PWM6_CLK,
+	PWM7_CLK,
 	/* HCLK cg is merge to BCLK */
 	/*PWM_HCLK,*/
 	PWM_CLK,
@@ -90,7 +93,8 @@ enum {
 };
 
 const char *pwm_clk_name[] = {
-	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", /*"PWM-HCLK-main",*/ "PWM-main"
+	"PWM1-main", "PWM2-main", "PWM3-main", "PWM4-main", "PWM5-main", "PWM6-main", "PWM7-main",
+	/*"PWM-HCLK-main",*/ "PWM-main"
 };
 
 struct clk *pwm_clk[PWM_CLK_NUM];
@@ -111,13 +115,13 @@ void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 			set_bit(PWM_CLK, power_flag);
 		/* HCLK cg is merge to BCLK */
 		/*
-		clk_en_ret = clk_prepare_enable(pwm_clk[PWM_HCLK]);
-		if (clk_en_ret) {
-			pr_err("[PWM][CCF]enable clk PWM_HCLK failed. ret:%d, clk_pwm_hclk_main:%p\n",
-			clk_en_ret, pwm_clk[PWM_HCLK]);
-		} else
-			set_bit(PWM_HCLK, power_flag);
-		*/
+		 * clk_en_ret = clk_prepare_enable(pwm_clk[PWM_HCLK]);
+		 * if (clk_en_ret) {
+		 *	pr_err("[PWM][CCF]enable clk PWM_HCLK failed. ret:%d, clk_pwm_hclk_main:%p\n",
+		 *	clk_en_ret, pwm_clk[PWM_HCLK]);
+		 * } else
+		 *	set_bit(PWM_HCLK, power_flag);
+		 */
 	}
 	/* Set pwm_no clk */
 	if (!test_bit(pwm_no, power_flag)) {
@@ -146,10 +150,10 @@ void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 	pr_debug("[PWM][CCF]disable clk_pwm :%p\n", pwm_clk[PWM_CLK]);
 	/* HCLK cg is merge to BCLK */
 	/*
-	if (test_bit(PWM_HCLK, power_flag)) {
-		clk_disable_unprepare(pwm_clk[PWM_HCLK]);
-		clear_bit(PWM_HCLK, power_flag);
-	}
+	 * if (test_bit(PWM_HCLK, power_flag)) {
+	 *	clk_disable_unprepare(pwm_clk[PWM_HCLK]);
+	 *	clear_bit(PWM_HCLK, power_flag);
+	 * }
 	*/
 	if (test_bit(PWM_CLK, power_flag)) {
 		clk_disable_unprepare(pwm_clk[PWM_CLK]);
@@ -197,6 +201,9 @@ void mt_pwm_init_power_flag(unsigned long *power_flag)
 	PWM_register[PWM2] = (unsigned long)pwm_base + 0x0050;
 	PWM_register[PWM3] = (unsigned long)pwm_base + 0x0090;
 	PWM_register[PWM4] = (unsigned long)pwm_base + 0x00d0;
+	PWM_register[PWM5] = (unsigned long)pwm_base + 0x0110;
+	PWM_register[PWM6] = (unsigned long)pwm_base + 0x0150;
+	PWM_register[PWM7] = (unsigned long)pwm_base + 0x0190;
 #endif
 }
 
@@ -477,19 +484,19 @@ void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 	 */
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
-	/* PERI_8GB_DDR_EN should always be enable so that PERI_SHIFT can work */
-	SETREG32(PERI_8GB_DDR_EN, 1);
-
 	if (addr > 0xFFFFFFFF) {
+		/* PERI_8GB_DDR_EN should always be enable so that PERI_SHIFT can work */
+		SETREG32(PERI_8GB_DDR_EN, 1);
 		/*
 		 * addr[33:30] : addr_shift_ctrl
 		 * addr[29:0] : reg_buff0_addr
 		 */
 		addr_shift_ctrl = addr >> 30;
-		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl >> PWM_PERI_SHIFT_OFFSET);
+		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
+		SETREG32(PWM_PERI_SHIFT, addr_shift_ctrl << PWM_PERI_SHIFT_OFFSET);
 		OUTREG32_DMA(reg_buff0_addr, (addr & 0x3FFFFFFF));
 	} else {
-		OUTREG32(PWM_PERI_SHIFT, addr_shift_ctrl);
+		CLRREG32(PWM_PERI_SHIFT, 0x3F << PWM_PERI_SHIFT_OFFSET);
 		OUTREG32_DMA(reg_buff0_addr, addr);
 	}
 

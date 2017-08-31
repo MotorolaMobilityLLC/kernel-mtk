@@ -1742,11 +1742,17 @@
 			<&pericfg CLK_PERICFG_RG_PWM_FBCLK2>,
 			<&pericfg CLK_PERICFG_RG_PWM_FBCLK3>,
 			<&pericfg CLK_PERICFG_RG_PWM_FBCLK4>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK5>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK6>,
+			<&pericfg CLK_PERICFG_RG_PWM_FBCLK7>,
 			<&pericfg CLK_PERICFG_RG_PWM_BCLK>;
 		clock-names = "PWM1-main",
 			"PWM2-main",
 			"PWM3-main",
 			"PWM4-main",
+			"PWM5-main",
+			"PWM6-main",
+			"PWM7-main",
 			"PWM-main";
 	};
 

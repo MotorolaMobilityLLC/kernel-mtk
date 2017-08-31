@@ -37,6 +37,9 @@ enum PWN_NO {
 	PWM2,
 	PWM3,
 	PWM4,
+	PWM5,
+	PWM6,
+	PWM7,
 	PWM_NUM,
 	PWM_MAX = PWM_NUM
 };
