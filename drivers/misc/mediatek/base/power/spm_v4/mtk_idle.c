@@ -2211,7 +2211,7 @@ void mtk_cpuidle_framework_init(void)
 
 	mtk_idle_gpt_init();
 
-	dpidle_by_pass_pg = true;
+	dpidle_by_pass_pg = false;
 	mtk_idle_profile_init();
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
