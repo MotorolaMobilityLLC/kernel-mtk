@@ -47,13 +47,20 @@
  * only for internal debug
  **************************************/
 
-#define SODI_TAG     "[SODI] "
-#define sodi_err(fmt, args...)		pr_err(SODI_TAG fmt, ##args)
-#define sodi_warn(fmt, args...)		pr_warn(SODI_TAG fmt, ##args)
-#define sodi_debug(fmt, args...)	pr_debug(SODI_TAG fmt, ##args)
+enum spm_sodi_logout_reason {
+	SODI_LOGOUT_NONE = 0,
+	SODI_LOGOUT_ASSERT = 1,
+	SODI_LOGOUT_NOT_GPT_EVENT = 2,
+	SODI_LOGOUT_RESIDENCY_ABNORMAL = 3,
+	SODI_LOGOUT_EMI_STATE_CHANGE = 4,
+	SODI_LOGOUT_LONG_INTERVAL = 5,
+	SODI_LOGOUT_CG_PD_STATE_CHANGE = 6,
+	SODI_LOGOUT_UNKNOWN = -1,
+};
 
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
+#define SODI_LOGOUT_MAXTIME_CRITERIA	(2500)
 #define SODI_LOGOUT_INTERVAL_CRITERIA	(5000U)	/* unit:ms */
 
 static struct pwr_ctrl sodi_ctrl;
@@ -66,7 +73,6 @@ struct spm_lp_scen __spm_sodi = {
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
-static int by_md2ap_count;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
@@ -204,12 +210,80 @@ static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 	spm_sodi_post_process();
 }
 
-static wake_reason_t spm_sodi_output_log(
-	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 sodi_flags)
+static inline bool spm_sodi_assert(struct wake_status *wakesta)
+{
+	return (wakesta->assert_pc != 0) || (wakesta->r12 == 0);
+}
+
+static bool spm_sodi_is_not_gpt_event(
+	struct wake_status *wakesta, long int curr_time, long int prev_time)
+{
+	static int by_md2ap_count;
+	bool logout = false;
+
+	if ((wakesta->r12 & R12_APXGPT1_EVENT_B) == 0) {
+		if (wakesta->r12 & R12_MD2AP_PEER_EVENT_B) {
+			/* wake up by R12_MD2AP_PEER_EVENT_B */
+			if ((by_md2ap_count >= 5) ||
+			    ((curr_time - prev_time) > 20U)) {
+				logout = true;
+				by_md2ap_count = 0;
+			} else if (by_md2ap_count == 0) {
+				logout = true;
+			}
+			by_md2ap_count++;
+		} else {
+			logout = true;
+		}
+	}
+	return logout;
+}
+
+static inline bool spm_sodi_abnormal_residency(struct wake_status *wakesta)
+{
+	return (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) ||
+			(wakesta->timer_out >= SODI_LOGOUT_MAXTIME_CRITERIA);
+}
+
+static inline bool spm_sodi_change_emi_state(struct wake_status *wakesta, int pre_emi_cnt)
+{
+	return (spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_cnt > 0) ||
+				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_cnt == 0);
+}
+
+static inline bool spm_sodi_last_logout(long int curr_time, long int prev_time)
+{
+	return (curr_time - prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA;
+}
+
+static inline bool spm_sodi_memPllCG(void)
+{
+	return ((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
+			((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0);
+}
+
+static bool spm_sodi_mem_mode_change(void)
+{
+	static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
+	bool logout = false;
+	int mem_status = 0;
+
+	if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
+		((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
+		mem_status = 1;
+
+	if (memPllCG_prev_status != mem_status) {
+		memPllCG_prev_status = mem_status;
+		logout = true;
+	}
+	return logout;
+}
+
+wake_reason_t spm_sodi_output_log(struct wake_status *wakesta,
+	struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
 	static unsigned long int sodi_logout_prev_time;
 	static int pre_emi_refresh_cnt;
-	static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 	static unsigned int logout_sodi_cnt;
 	static unsigned int logout_selfrefresh_cnt;
 
@@ -217,83 +291,56 @@ static wake_reason_t spm_sodi_output_log(
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
-	if (!(sodi_flags & SODI_FLAG_REDUCE_LOG) ||
-			(sodi_flags & SODI_FLAG_RESIDENCY)) {
-		sodi_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
+	if (!(flags & SODI_FLAG_REDUCE_LOG) || (flags & SODI_FLAG_RESIDENCY)) {
+
+		so_warn(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, oper_cond = 0x%x\n",
 				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-				spm_read(DUMMY1_PWR_CON));
+				spm_read(DUMMY1_PWR_CON), operation_cond);
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "sodi");
+
+		if (flags & SODI_FLAG_RESOURCE_USAGE)
+			spm_resource_req_dump();
 	} else {
-		/*
-		 * Log reduction mechanism, print debug information criteria :
-		 * 1. SPM assert
-		 * 2. Not wakeup by GPT
-		 * 3. Residency is less than 20ms
-		 * 4. Enter/no emi self-refresh change
-		 * 5. Time from the last output log is larger than 5 sec
-		 * 6. No wakeup event
-		 * 7. CG/PD mode change
-		*/
+
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
-		if (wakesta->assert_pc != 0) {
-			need_log_out = 1;
-		} else if ((wakesta->r12 & R12_APXGPT1_EVENT_B) == 0) {
-			if (wakesta->r12 & R12_MD2AP_PEER_EVENT_B) {
-				/* wake up by R12_MD2AP_PEER_EVENT_B */
-				if ((by_md2ap_count >= 5) ||
-				    ((sodi_logout_curr_time - sodi_logout_prev_time) > 20U)) {
-					need_log_out = 1;
-					by_md2ap_count = 0;
-				} else if (by_md2ap_count == 0) {
-					need_log_out = 1;
-				}
-				by_md2ap_count++;
-			} else {
-				need_log_out = 1;
-			}
-		} else if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
-			need_log_out = 1;
-		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
-				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
-			need_log_out = 1;
-		} else if ((sodi_logout_curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA) {
-			need_log_out = 1;
-		} else if (wakesta->r12 == 0) {
-			need_log_out = 1;
-		} else {
-			int mem_status = 0;
-
-			if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
-				((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
-				mem_status = 1;
-
-			if (memPllCG_prev_status != mem_status) {
-				memPllCG_prev_status = mem_status;
-				need_log_out = 1;
-			}
-		}
+		if (spm_sodi_assert(wakesta))
+			need_log_out = SODI_LOGOUT_ASSERT;
+		else if (spm_sodi_is_not_gpt_event(wakesta, sodi_logout_curr_time, sodi_logout_prev_time))
+			need_log_out = SODI_LOGOUT_NOT_GPT_EVENT;
+		else if (spm_sodi_abnormal_residency(wakesta))
+			need_log_out = SODI_LOGOUT_RESIDENCY_ABNORMAL;
+		else if (spm_sodi_change_emi_state(wakesta, pre_emi_refresh_cnt))
+			need_log_out = SODI_LOGOUT_EMI_STATE_CHANGE;
+		else if (spm_sodi_last_logout(sodi_logout_curr_time, sodi_logout_prev_time))
+			need_log_out = SODI_LOGOUT_LONG_INTERVAL;
+		else if (spm_sodi_mem_mode_change())
+			need_log_out = SODI_LOGOUT_CG_PD_STATE_CHANGE;
 
 		logout_sodi_cnt++;
 		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
 		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
 
-		if (need_log_out == 1) {
+		if (need_log_out != SODI_LOGOUT_NONE) {
 			sodi_logout_prev_time = sodi_logout_curr_time;
 
-			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-				sodi_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x\n",
+			if (need_log_out == SODI_LOGOUT_ASSERT) {
+
+				if (wakesta->assert_pc != 0) {
+					so_err(flags, "Warning: wakeup reason is WR_PCM_ASSERT!\n");
+					wr = WR_PCM_ASSERT;
+				} else if (wakesta->r12 == 0) {
+					so_err(flags, "Warning: wakeup reason is WR_UNKNOWN!\n");
+					wr = WR_UNKNOWN;
+				}
+				so_err(flags, "SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, ASSERT_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x, R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
 						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON));
-
-				sodi_err("SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, SPM_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
-						logout_sodi_cnt, logout_selfrefresh_cnt,
-						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag);
-
-				sodi_err("R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
-						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
-						wakesta->event_reg, wakesta->isr);
+						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt,
+						logout_selfrefresh_cnt, wakesta->assert_pc, wakesta->r13,
+						wakesta->debug_flag, wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+						wakesta->idle_sta, wakesta->event_reg, wakesta->isr);
 				wr = WR_PCM_ASSERT;
+
 			} else {
 				char buf[LOG_BUF_SIZE] = { 0 };
 				int i;
@@ -308,7 +355,8 @@ static wake_reason_t spm_sodi_output_log(
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
 						strcat(buf, " CPU");
 				}
-				for (i = 1; i < 32; i++) {
+
+				for (i = 1; i < 32 ; i++) {
 					if (wakesta->r12 & (1U << i)) {
 						strcat(buf, wakesrc_str[i]);
 						wr = WR_WAKE_SRC;
@@ -316,17 +364,13 @@ static wake_reason_t spm_sodi_output_log(
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				sodi_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
+				so_warn(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d\n",
 						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON));
-
-				sodi_warn("sodi_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-						logout_sodi_cnt, logout_selfrefresh_cnt,
-						wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
-
-				sodi_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
-						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
-						wakesta->event_reg, wakesta->isr);
+						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
+						wakesta->idle_sta, wakesta->event_reg, wakesta->isr,
+						spm_get_resource_usage(), need_log_out);
 			}
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;
@@ -432,7 +476,7 @@ RESTORE_IRQ:
 
 	spm_sodi_pcm_setup_after_wfi(operation_cond);
 
-	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags);
+	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags, operation_cond);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_SPM_FLOW);
 

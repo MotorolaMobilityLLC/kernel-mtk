@@ -94,6 +94,7 @@ enum mt_sodi_flag {
 	SODI_FLAG_RESIDENCY         = (1 << 1),
 	SODI_FLAG_RESOURCE_USAGE    = (1 << 2),
 	SODI_FLAG_DUMP_LP_GS        = (1 << 3),
+	SODI_FLAG_3P0               = (1 << 8),
 };
 
 /*
