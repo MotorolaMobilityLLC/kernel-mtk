@@ -192,14 +192,14 @@ static void mdee_info_dump_v3(struct md_ee *mdee)
 			break;
 		}
 		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, mdee_more_inf_str[dumper->more_info], ex_info);
-		strcpy(ex_info, i_bit_ex_info);
+		strncpy(ex_info, i_bit_ex_info, EE_BUF_LEN_UMOLY);
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
-		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
+		/* use strncpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
 		db_opt |= DB_OPT_FTRACE;
 		/* fall through */
 	case MD_EE_CASE_WDT:
-		strcpy(ex_info, mdee_more_inf_str[dumper->more_info]);
+		strncpy(ex_info, mdee_more_inf_str[dumper->more_info], EE_BUF_LEN_UMOLY);
 		break;
 	default:
 		mdee_output_debug_info_to_buf(mdee, debug_info, ex_info);
