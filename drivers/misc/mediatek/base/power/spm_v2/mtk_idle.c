@@ -34,10 +34,8 @@
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
 #include <mach/mtk_gpt.h>
-/* #include <mach/mt_cpuxgpt.h> */
 #include <mtk_spm.h>
 #include <mtk_spm_idle.h>
-/*#include "hotplug.h"*/
 #include <mtk_cpufreq.h>
 #ifdef CONFIG_THERMAL
 #include <mach/mtk_thermal.h>
@@ -45,7 +43,6 @@
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_idle_profile.h>
-/*#include <mach/mt_spm_mtcmos_internal.h> */
 #include <mtk_spm_reg.h>
 #include <mtk_spm_internal.h>
 #include <mtk_cpufreq_hybrid.h>
@@ -61,7 +58,6 @@
 #ifdef CONFIG_CPU_ISOLATION
 #include <linux/cpumask.h>
 #include <mt-plat/aee.h>
-/*#include <mach/mt_hotplug_strategy_internal.h>*/
 #endif
 
 #define FEATURE_ENABLE_SODI2P5
@@ -136,140 +132,26 @@ static bool mtk_dvfsp_paused_by_idle;
 #define DBG_BUF_LEN		4096
 
 /* FIXME: early porting */
-void __attribute__((weak))
-bus_dcm_enable(void)
+void __attribute__((weak)) bus_dcm_enable(void)
 {
-	/* FIXME: early porting */
+
 }
-void __attribute__((weak))
-bus_dcm_disable(void)
+void __attribute__((weak)) bus_dcm_disable(void)
 {
-	/* FIXME: early porting */
+
 }
 
-unsigned int __attribute__((weak))
-mt_get_clk_mem_sel(void)
+unsigned int __attribute__((weak)) mt_get_clk_mem_sel(void)
 {
 	return 1;
 }
 
-void __attribute__((weak))
-tscpu_cancel_thermal_timer(void)
-{
-
-}
-void __attribute__((weak))
-tscpu_start_thermal_timer(void)
-{
-	/* FIXME: early porting */
-}
-
-void __attribute__((weak)) mtkts_bts_cancel_thermal_timer(void)
+void __attribute__((weak)) mtkTTimer_start_timer(void)
 {
 
 }
 
-void __attribute__((weak)) mtkts_btsmdpa_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pmic_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_battery_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pa_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_wmt_cancel_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_bts_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_btsmdpa_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pmic_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_battery_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_pa_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_wmt_start_thermal_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts1_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts2_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts3_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts4_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_cancel_ts5_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts1_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts2_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts3_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts4_timer(void)
-{
-
-}
-
-void __attribute__((weak)) mtkts_allts_start_ts5_timer(void)
+void __attribute__((weak)) mtkTTimer_cancel_timer(void)
 {
 
 }
