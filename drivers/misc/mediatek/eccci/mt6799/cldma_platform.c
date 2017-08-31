@@ -39,13 +39,18 @@
 static struct ccci_clk_node clk_table[] = {
 	{ NULL,	"scp-sys-md1-main"},
 	{ NULL,	"infra-cldma-ap"},
+	{ NULL,	"infra-cldma-ap-hclk"},
 	{ NULL,	"infra-ccif-ap"},
 	{ NULL,	"infra-ccif-md"},
 	{ NULL,	"infra-ap-c2k-ccif-0"},
 	{ NULL,	"infra-ap-c2k-ccif-1"},
+	{ NULL,	"infra-scp-md1-ccif-0"},
+	{ NULL,	"infra-scp-md1-ccif-1"},
+	{ NULL,	"infra-scp-c2k-ccif-0"},
+	{ NULL,	"infra-scp-c2k-ccif-1"},
 	{ NULL,	"infra-md2md-ccif-0"},
 	{ NULL,	"infra-md2md-ccif-1"},
-	{ NULL,	"infra-md2md-ccif-2"},
+	/* { NULL,	"infra-md2md-ccif-2"}, just for E2 */
 	{ NULL,	"infra-md2md-ccif-3"},
 	{ NULL,	"infra-md2md-ccif-4"},
 	{ NULL,	"infra-md2md-ccif-5"},
@@ -567,31 +572,49 @@ static void md1_pcore_sram_turn_on(struct ccci_modem *md)
 	int i;
 	void __iomem *base = md_sram_pd_psmcusys_base;
 
-	for (i = 28; i >= 23; i--)
-		RAnd2W(base, 0x188, ~(0x1 << i));
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x160, ~(0x1 << i));
 
-	for (i = 1; i >= 0; i--)
-		RAnd2W(base, 0x184, ~(0x1 << i));
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x164, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x168, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x16C, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x170, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x174, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x178, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x17C, ~(0x1 << i));
 
 	for (i = 31; i >= 0; i--)
 		RAnd2W(base, 0x180, ~(0x1 << i));
 
 	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x17C, ~(0x1 << i));
-
-	for (i = 31; i >= 24; i--)
-		RAnd2W(base, 0x178, ~(0x1 << i));
-
-	for (i = 29; i >= 0; i--)
-		RAnd2W(base, 0x164, ~(0x1 << i));
+		RAnd2W(base, 0x184, ~(0x1 << i));
 
 	for (i = 31; i >= 0; i--)
-		RAnd2W(base, 0x160, ~(0x1 << i));
+		RAnd2W(base, 0x188, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x18C, ~(0x1 << i));
+
+	for (i = 31; i >= 0; i--)
+		RAnd2W(base, 0x190, ~(0x1 << i));
 
 	CCCI_BOOTUP_LOG(md->index, TAG, "md1_pcore_sram reg: 0x%X, 0x%X, 0x%X, 0x%X 0x%X, 0x%X, 0x%X\n",
-		ccci_read32(base, 0x188), ccci_read32(base, 0x184), ccci_read32(base, 0x180),
-		ccci_read32(base, 0x17C),
-		ccci_read32(base, 0x178), ccci_read32(base, 0x164), ccci_read32(base, 0x160));
+		ccci_read32(base, 0x160), ccci_read32(base, 0x164), ccci_read32(base, 0x168),
+		ccci_read32(base, 0x184), ccci_read32(base, 0x188), ccci_read32(base, 0x18C),
+		ccci_read32(base, 0x190));
 }
 
 static void md1_enable_mcu_clock(struct ccci_modem *md)
@@ -639,16 +662,32 @@ void md1_pll_init(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct md_pll_reg *md_pll = md_ctrl->md_pll_base;
+	void __iomem *map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
 
-	cldma_write32(md_pll->md_top_Pll, 0x48, 0x801A2762);
+	/* 208M setting */
+	cldma_write32(map_addr, 0x04, 0x000001d7);
+	udelay(100);
+	cldma_write32(map_addr, 0x3a0, 0xff000000);
+
+	/* PLL init */
+	cldma_write32(md_pll->md_top_Pll, 0x48, 0x8020B13B);
 	ROr2W(md_pll->md_top_Pll, 0x4C, 0x10000);
 	cldma_write32(md_pll->md_top_Pll, 0x58, 0x801BB13B);
-	cldma_write32(md_pll->md_top_Pll, 0x90, 0x8019F627);
+	cldma_write32(md_pll->md_top_Pll, 0x78, 0x80229D8A);
+	cldma_write32(md_pll->md_top_Pll, 0x7C, 0x00000C12);
+	cldma_write32(md_pll->md_top_Pll, 0x88, 0x8014313B);
+	cldma_write32(md_pll->md_top_Pll, 0x8C, 0x00630410);
+	cldma_write32(md_pll->md_top_Pll, 0x90, 0x801E49D8);
+	cldma_write32(md_pll->md_top_Pll, 0x94, 0x00630410);
+	cldma_write32(md_pll->md_top_Pll, 0x98, 0x80266C4E);
+	cldma_write32(md_pll->md_top_Pll, 0x9C, 0x00000C12);
 	cldma_write32(md_pll->md_top_Pll, 0x40, 0x80229D8A);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0xC00\n");
 	while ((cldma_read32(md_pll->md_top_Pll, 0xC00) >> 14) & 0x1)
 		;
 
 	cldma_write32(md_pll->md_top_Pll, 0x10, 0x0);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: before 0x80\n");
 	while ((cldma_read32(md_pll->md_top_clkSW, 0x80) & 0x8000) != 0x8000)
 		;
 
@@ -661,6 +700,7 @@ void md1_pll_init(struct ccci_modem *md)
 
 	/*make a record that means MD pll has been initialized.*/
 	cldma_write32(md_pll->md_top_clkSW, 0xF00, 0x62920000);
+	CCCI_BOOTUP_LOG(md->index, TAG, "pll init: end\n");
 }
 
 
@@ -704,7 +744,7 @@ int md_cd_power_on(struct ccci_modem *md)
 
 	/* step 3: MD srcclkena setting */
 	reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#if defined(CONFIG_MTK_MD3_SUPPORT) &&  (CONFIG_MTK_MD3_SUPPORT > 0)
 	reg_value &= ~(0x92);	/* md1 set 0x29: bit 0/3/4/7, bit1/5: VRF18 control for Jade */
 	reg_value |= 0x29;	/* C2K set |0x44: bit 2/6 */
 #else
@@ -876,7 +916,7 @@ int ccci_modem_pm_restore_noirq(struct device *device)
 	/* restore IRQ */
 #ifdef FEATURE_PM_IPO_H
 	irq_set_irq_type(md_ctrl->cldma_irq_id, IRQF_TRIGGER_HIGH);
-	irq_set_irq_type(md_ctrl->md_wdt_irq_id, IRQF_TRIGGER_FALLING);
+	irq_set_irq_type(md_ctrl->md_wdt_irq_id, IRQF_TRIGGER_RISING);
 #endif
 	return 0;
 }
