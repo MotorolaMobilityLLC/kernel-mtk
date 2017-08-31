@@ -75,6 +75,8 @@ static bool usb_enable_clock(bool enable)
 			(void __iomem *)AP_PLL_CON0);
 			enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
+			writel(readl(ap_pll_con0) | (0x00000010),
+			(void __iomem *)ap_pll_con0);
 			clk_enable(musb_clk);
 #endif
 		} else if (!enable && clk_count == 1) {
@@ -84,6 +86,9 @@ static bool usb_enable_clock(bool enable)
 			(void __iomem *)AP_PLL_CON0);
 #else
 			clk_disable(musb_clk);
+			writel(readl((void __iomem *)ap_pll_con0) & ~(0x00000010),
+			(void __iomem *)ap_pll_con0);
+
 #endif
 		}
 
@@ -873,7 +878,6 @@ void usb_phy_savecurrent(unsigned int clk_on)
 void usb_phy_recover(unsigned int clk_on)
 {
 	PHY_INT32 ret;
-	PHY_INT32 ret_read;
 	PHY_INT32 evalue;
 
 	os_printk(K_DEBUG, "%s clk_on=%d+\n", __func__, clk_on);
@@ -922,8 +926,6 @@ void usb_phy_recover(unsigned int clk_on)
 	/* RG_USB20_ISO_EN       1'b0 */
 	/* U3D_USBPHYACR6 RG_USB20_ISO_EN */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_ISO_EN_OFST, RG_USB20_ISO_EN, 0);
-	ret_read = U3PhyReadField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_ISO_EN_OFST, RG_USB20_ISO_EN);
-	os_printk(K_INFO, "usb phy register %d\n", ret_read);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -1036,6 +1038,7 @@ void usb_phy_recover(unsigned int clk_on)
 	 */
 #endif
 
+#if 0
 	/*
 	 * 1 RG_SSUSB_TX_EIDLE_CM<3:0> / 1100-->1110 / low-power
 	 *   E-idle common mode(650mV to 600mV) - 0x11290b18 bit [31:28]
@@ -1057,7 +1060,16 @@ void usb_phy_recover(unsigned int clk_on)
 			  RG_SSUSB_XTAL_EXT_EN_U3, 2);
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_SPLLC_XTALCTL3, RG_SSUSB_XTAL_RX_PWD_OFST,
 			  RG_SSUSB_XTAL_RX_PWD, 1);
-
+#else
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_SPLLC_XTALCTL3, RG_SSUSB_XTAL_RX_PWD_OFST,
+			RG_SSUSB_XTAL_RX_PWD, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_SPLLC_XTALCTL3, RG_SSUSB_FRC_XTAL_RX_PWD_OFST,
+			RG_SSUSB_FRC_XTAL_RX_PWD, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U3PHYA_DA_REG36, RG_SSUSB_DA_SSUSB_PLL_BAND_OFST,
+			RG_SSUSB_DA_SSUSB_PLL_BAND, 0x2D);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYD_RXDET2, RG_SSUSB_RXDET_STB2_SET_P3_OFST,
+			RG_SSUSB_RXDET_STB2_SET_P3, 0x10);
+#endif
 	/* Wait 800 usec */
 	udelay(800);
 

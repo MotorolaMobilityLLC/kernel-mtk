@@ -242,6 +242,7 @@ extern void phy_hsrx_set(void);
 
 /***********************************/
 extern void __iomem *ap_uart0_base;
+extern void __iomem *ap_pll_con0;
 #ifdef CONFIG_FPGA_EARLY_PORTING
 extern void __iomem *i2c1_base;
 #endif

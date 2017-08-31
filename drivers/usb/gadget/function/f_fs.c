@@ -857,14 +857,25 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 
 			spin_unlock_irq(&epfile->ffs->eps_lock);
 		} else {
-			DECLARE_COMPLETION_ONSTACK(done);
+			struct completion *done;
 
 			req = ep->req;
 			req->buf      = data;
 			req->length   = data_len;
 
-			req->context  = &done;
 			req->complete = ffs_epfile_io_complete;
+
+			if (io_data->read) {
+				reinit_completion(
+						&epfile->ffs->epout_completion);
+				done = &epfile->ffs->epout_completion;
+				req->context  = done;
+			} else {
+				reinit_completion(
+						&epfile->ffs->epin_completion);
+				done = &epfile->ffs->epin_completion;
+				req->context  = done;
+			}
 
 			ret = usb_ep_queue(ep->ep, req, GFP_ATOMIC);
 
@@ -873,7 +884,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			if (unlikely(ret < 0)) {
 				ret = -EIO;
 			} else if (unlikely(
-				   wait_for_completion_interruptible(&done))) {
+				   wait_for_completion_interruptible(done))) {
 				spin_lock_irq(&epfile->ffs->eps_lock);
 				/*
 				 * While we were acquiring lock endpoint got
@@ -1528,6 +1539,8 @@ static struct ffs_data *ffs_data_new(void)
 	spin_lock_init(&ffs->eps_lock);
 	init_waitqueue_head(&ffs->ev.waitq);
 	init_completion(&ffs->ep0req_completion);
+	init_completion(&ffs->epout_completion);
+	init_completion(&ffs->epin_completion);
 
 	/* XXX REVISIT need to update it in some places, or do we? */
 	ffs->ev.can_stall = 1;

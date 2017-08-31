@@ -48,9 +48,11 @@
 #define U3D_PHYD_CDR1 (SSUSB_SIFSLV_U3PHYD_BASE+0x5c)
 
 #define U3D_U3PHYA_DA_REG0 (SSUSB_SIFSLV_U3PHYA_DA_BASE+0x0)
+#define U3D_U3PHYA_DA_REG36 (SSUSB_SIFSLV_U3PHYA_DA_BASE+0x0070)
 
 #define U3D_SPLLC_XTALCTL3 (SSUSB_SIFSLV_SPLLC_BASE+0x18)
 #define U3D_PHYA_REG6 (SSUSB_USB30_PHYA_SIV_B_BASE+0x18)
+#define U3D_PHYD_RXDET2 (SSUSB_USB30_PHYA_SIV_B2_BASE+0x2c)
 
 #define U3D_PHYD_IMPCAL0 (SSUSB_SIFSLV_U3PHYD_BASE+0x10)
 #define U3D_PHYD_IMPCAL1 (SSUSB_SIFSLV_U3PHYD_BASE+0x14)
@@ -356,6 +358,9 @@ struct u2phy_reg_e {
 #define RG_PAGE                            (0xff<<24)	/* 31:24 */
 #define I2C_MODE                           (0x1<<16)	/* 16:16 */
 
+/* U3 PLL BAND*/
+#define RG_SSUSB_DA_SSUSB_PLL_BAND              (0x3F<<11)     /* 17:11 */
+
 /* OFFSET */
 
 /* U3D_USBPHYACR0 */
@@ -611,6 +616,9 @@ struct u2phy_reg_e {
 /* U3D_REGFCOM */
 #define RG_PAGE_OFST                       (24)
 #define I2C_MODE_OFST                      (16)
+
+/* U3 PLL BAND*/
+#define RG_SSUSB_DA_SSUSB_PLL_BAND_OFST           (11)
 
 /* ///////////////////////////////////////////////////////////////////////////// */
 
@@ -3201,6 +3209,7 @@ extern bool usb_phy_check_in_uart_mode(void);
 extern void usb_phy_switch_to_usb(void);
 extern void usb_phy_switch_to_uart(void);
 extern void __iomem *ap_uart0_base;
+extern void __iomem *ap_pll_con0;
 #endif
 
 #endif
