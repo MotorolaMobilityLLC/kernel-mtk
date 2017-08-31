@@ -5393,6 +5393,46 @@ static void testcase_end_addr_conflict(void)
 	cmdq_task_destroy(submit_handle);
 }
 
+void testcase_verify_timer(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	cmdqBackupSlotHandle slot_handle;
+	u32 start_time = 0, end_time = 0;
+	const u32 tpr_mask = ~0;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, tpr_mask);
+
+	cmdq_alloc_mem(&slot_handle, 1);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+
+	cmdq_op_backup_TPR(handle, slot_handle, 0);
+
+	cmdq_task_flush(handle);
+	cmdq_cpu_read_mem(slot_handle, 0, &start_time);
+
+	msleep_interruptible(10);
+
+	cmdq_task_flush(handle);
+	cmdq_cpu_read_mem(slot_handle, 0, &end_time);
+
+	if (start_time != end_time) {
+		CMDQ_LOG("TEST SUCCESS: start:%u end:%u dur:%u mask:0x%08x\n",
+			start_time, end_time, end_time - start_time, tpr_mask);
+	} else {
+		CMDQ_TEST_FAIL("start:%u end:%u dur:%u mask:0x%08x\n",
+			start_time, end_time, end_time - start_time, tpr_mask);
+	}
+
+	cmdq_task_destroy(handle);
+	cmdq_free_mem(slot_handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 enum ENGINE_POLICY_ENUM {
 	CMDQ_TESTCASE_ENGINE_NOT_SET,
 	CMDQ_TESTCASE_ENGINE_SAME,
@@ -6566,6 +6606,9 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 156:
+		testcase_verify_timer();
 		break;
 	case 155:
 		cmdq_delay_dump_thread(true);

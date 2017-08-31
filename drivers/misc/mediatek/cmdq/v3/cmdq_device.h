@@ -70,6 +70,7 @@ struct cmdq_dts_setting {
 	u32 prefetch_thread_count;
 	u32 *prefetch_size;
 	u32 ctl_int0;
+	u32 cpr_size;
 };
 
 /* callback when read resource from device tree */
