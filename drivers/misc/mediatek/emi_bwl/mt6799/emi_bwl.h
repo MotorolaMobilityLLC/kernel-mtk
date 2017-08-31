@@ -133,7 +133,7 @@ extern unsigned int get_dram_data_rate(void);
 /* define supported DRAM types */
 enum {
 	LPDDR2_1066 = 0,
-	LPDDR4_3200,
+	LPDDR4_2400,
 	mDDR,
 };
 
@@ -141,7 +141,7 @@ enum {
 enum {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, \
 arbf, arbg, arbh) con_sce,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 		NR_CON_SCE
 };

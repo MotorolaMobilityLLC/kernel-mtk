@@ -79,57 +79,57 @@ static int cur_con_sce = 0x0FFFFFFF;
 static const char * const con_sce_str[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, \
 arbd, arbe, arbf, arbg, arbh) (#con_sce),
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
 
 /****************** For LPDDR3-1866******************/
 
-static const unsigned int emi_arba_lpddr4_3200_val[] = {
+static const unsigned int emi_arba_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arba,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbb_lpddr4_3200_val[] = {
+static const unsigned int emi_arbb_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbb,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbc_lpddr4_3200_val[] = {
+static const unsigned int emi_arbc_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbc,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbd_lpddr4_3200_val[] = {
+static const unsigned int emi_arbd_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbd,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbe_lpddr4_3200_val[] = {
+static const unsigned int emi_arbe_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbe,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbf_lpddr4_3200_val[] = {
+static const unsigned int emi_arbf_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbf,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbg_lpddr4_3200_val[] = {
+static const unsigned int emi_arbg_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbg,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
-static const unsigned int emi_arbh_lpddr4_3200_val[] = {
+static const unsigned int emi_arbh_lpddr4_2400_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg, arbh) arbh,
-#include "con_sce_lpddr4_3200.h"
+#include "con_sce_lpddr4_2400.h"
 #undef X_CON_SCE
 };
 
 
 int get_dram_type(void)
 {
-		return LPDDR4_3200;
+		return LPDDR4_2400;
 }
 
 
@@ -173,15 +173,15 @@ int mtk_mem_bw_ctrl(int sce, int op)
 
     /* set new EMI bandwidth limiter value */
 	if (highest != cur_con_sce) {
-		if (get_dram_type() == LPDDR4_3200) {
-			writel(emi_arba_lpddr4_3200_val[highest], EMI_ARBA);
-			writel(emi_arbb_lpddr4_3200_val[highest], EMI_ARBB);
-			writel(emi_arbc_lpddr4_3200_val[highest], EMI_ARBC);
-			writel(emi_arbd_lpddr4_3200_val[highest], EMI_ARBD);
-			writel(emi_arbe_lpddr4_3200_val[highest], EMI_ARBE);
-			writel(emi_arbf_lpddr4_3200_val[highest], EMI_ARBF);
-			writel(emi_arbg_lpddr4_3200_val[highest], EMI_ARBG);
-			mt_reg_sync_writel(emi_arbh_lpddr4_3200_val[highest],
+		if (get_dram_type() == LPDDR4_2400) {
+			writel(emi_arba_lpddr4_2400_val[highest], EMI_ARBA);
+			writel(emi_arbb_lpddr4_2400_val[highest], EMI_ARBB);
+			writel(emi_arbc_lpddr4_2400_val[highest], EMI_ARBC);
+			writel(emi_arbd_lpddr4_2400_val[highest], EMI_ARBD);
+			writel(emi_arbe_lpddr4_2400_val[highest], EMI_ARBE);
+			writel(emi_arbf_lpddr4_2400_val[highest], EMI_ARBF);
+			writel(emi_arbg_lpddr4_2400_val[highest], EMI_ARBG);
+			mt_reg_sync_writel(emi_arbh_lpddr4_2400_val[highest],
 			EMI_ARBH);
 			}
 			cur_con_sce = highest;
@@ -198,8 +198,8 @@ int mtk_mem_bw_ctrl(int sce, int op)
  */
 static ssize_t ddr_type_show(struct device_driver *driver, char *buf)
 {
-	if (get_dram_type() == LPDDR4_3200)
-		sprintf(buf, "LPDDR4_3200\n");
+	if (get_dram_type() == LPDDR4_2400)
+		sprintf(buf, "LPDDR4_2400\n");
 	else if (get_dram_type() == LPDDR2_1066)
 		sprintf(buf, "LPDDR2_1066\n");
 
