@@ -597,6 +597,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 	}
 
  OUT:
+	atomic_set(&queue->rx_on_going, 0);
 	*result = count;
 	CCCI_DEBUG_LOG(md->index, TAG, "Q%d rx %d pkg,ret=%d\n", queue->index, count, ret);
 	spin_lock_irqsave(&queue->rx_lock, flags);
@@ -606,8 +607,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 			ret = -EAGAIN;
 	}
 	spin_unlock_irqrestore(&queue->rx_lock, flags);
-
-	atomic_set(&queue->rx_on_going, 0);
 	return ret;
 }
 
@@ -831,23 +830,23 @@ static void md_ccif_irq_tasklet(unsigned long data)
 	}
 }
 
-unsigned int ccif_irq_cnt;
 static irqreturn_t md_ccif_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-	unsigned int ch_id;
+	unsigned int ch_id, i;
 	/*disable_irq_nosync(md_ctrl->ccif_irq_id); */
 	/*must ack first, otherwise IRQ will rush in */
 	ch_id = ccif_read32(md_ctrl->ccif_ap_base, APCCIF_RCHNUM);
-	md_ctrl->channel_id |= ch_id;
+	for (i = 0; i < CCIF_CH_NUM; i++)
+		if (ch_id & 0x1 << i)
+			set_bit(i, &md_ctrl->channel_id);
 	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ch_id);
 	/*igore exception queue*/
 	if (ch_id >> RINGQ_BASE)
 		md->latest_isr_time = local_clock();
 	/*enable_irq(md_ctrl->ccif_irq_id); */
-	if (md_ctrl->channel_id == 0x800)
-		CCCI_DEBUG_LOG(md->index, TAG, "MD CCIF IRQ %ld, %d\n", md_ctrl->channel_id, ccif_irq_cnt++);
+
 	tasklet_hi_schedule(&md_ctrl->ccif_irq_task);
 
 	return IRQ_HANDLED;
