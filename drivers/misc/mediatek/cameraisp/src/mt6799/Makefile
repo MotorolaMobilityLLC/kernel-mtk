@@ -31,7 +31,7 @@ ifneq ($(CONFIG_ARM64), y)
   #obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
   #obj-y += camera_dpe.o
-  #obj-y += camera_rsc.o
+  obj-y += camera_rsc.o
 else
 # For arm64
   #obj-y += camera_isp.o
@@ -40,7 +40,7 @@ else
   #obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
   #obj-y += camera_dpe.o
-  #obj-y += camera_rsc.o
+  obj-y += camera_rsc.o
 endif
 
 $(info cameraisp drv by platform $(platform_drv))
