@@ -1441,13 +1441,23 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	    ("m4u_dealloc_mva, module = %s, addr = 0x%lx, size = 0x%x, MVA = 0x%x, mva_end = 0x%x\n",
 	     m4u_get_module_name(kernelport), BufAddr, BufSize, MVA, MVA + BufSize - 1);
 
-	offset = m4u_va_align(&addr_align, &size_align);
+	/* for ion sg alloc, we did not align the mva in allocation. */
+	if (!sg_table)
+		offset = m4u_va_align(&addr_align, &size_align);
 
 	if (sg_table) {
+		m4u_buf_info_t *m4u_buf_info;
+
+		m4u_buf_info = m4u_client_find_buf(ion_m4u_client, addr_align, 1);
+		if (m4u_buf_info && m4u_buf_info->mva != addr_align)
+			M4UMSG("warning: %s, %d, mva address are not same\n", __func__, __LINE__);
 		table = m4u_del_sgtable(addr_align);
 		if (!table) {
 			M4UERR("%s, %d, could not found the table from mva 0x%x\n",
 				__func__, __LINE__, MVA);
+			M4UERR("m4u_dealloc_mva, module = %s, addr = 0x%lx, size = 0x%x, MVA = 0x%x, mva_end = 0x%x\n",
+				m4u_get_module_name(kernelport), BufAddr, BufSize, MVA, MVA + BufSize - 1);
+			dump_stack();
 			return -EINVAL;
 		}
 
