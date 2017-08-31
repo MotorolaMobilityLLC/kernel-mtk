@@ -2056,7 +2056,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			if ((unsigned char)p3 > 7 || (unsigned char)p4 > 7 ||
 			    (unsigned char)p5 > 7 || (unsigned char)p6 > 7 ||
 			    (unsigned char)p7 > 7) {
-				seq_puts(m, "[SD_Debug]Some drving value was invalid(invalid:0~7)\n");
+				seq_puts(m, "[SD_Debug]Some drving value was invalid (valid:0~7)\n");
 				goto out;
 			}
 

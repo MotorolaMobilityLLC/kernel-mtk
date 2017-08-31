@@ -363,7 +363,9 @@ void msdc_dump_info(u32 id)
 
 	msdc_dump_padctl(host);
 
-	msdc_dump_autok(host);
+	/* prevent bad sdcard, print too much log */
+	if (host->id != 1)
+		msdc_dump_autok(host);
 
 	mdelay(10);
 
@@ -536,8 +538,12 @@ void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 		}
 		if (mode == MSDC_SMPL_RISING || mode == MSDC_SMPL_FALLING) {
 			MSDC_SET_FIELD(MSDC_IOCON, MSDC_IOCON_R_D_SMPL_SEL, 0);
-			MSDC_SET_FIELD(MSDC_PATCH_BIT0,
-				MSDC_PB0_RD_DAT_SEL, mode);
+			if ((clock_mode == 2) || (clock_mode == 3))
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, 0);
+			else
+				MSDC_SET_FIELD(MSDC_PATCH_BIT0,
+					MSDC_PB0_RD_DAT_SEL, mode);
 		} else {
 			ERR_MSG("invalid read parameter: type=%d, mode=%d\n",
 				type, mode);
@@ -895,10 +901,10 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Disable HW DVFS */
 	if ((host->hw->host_function == MSDC_SDIO) && (host->use_hw_dvfs == 1)) {
-		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
+		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_0);
 		MSDC_WRITE32(MSDC_CFG,
 			MSDC_READ32(MSDC_CFG) & ~(MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
-		vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
+		(void)vcorefs_request_dvfs_opp(KIR_SDIO, OPP_UNREQ);
 	}
 
 	/* Reset */
@@ -1540,7 +1546,6 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 
 err:
 	ERR_MSG("XXX %s timeout: before CMD<%d>", str, opcode);
-
 	cmd->error = (unsigned int)-ETIMEDOUT;
 	msdc_dump_info(host->id);
 	msdc_reset_hw(host->id);
@@ -2335,7 +2340,7 @@ static void msdc_dma_start(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR;
+		| MSDC_INTEN_DATCRCERR | MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->mmc->is_data_dma = 1;
@@ -4377,8 +4382,7 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 		/* Clock is gated by HW after CMD11,
 		 * Must keep clock gate 5ms before switch voltage
 		 */
-		usleep_range(5000, 5500);
-
+		usleep_range(10000, 15000);
 		/* set as 500T -> 1.25ms for 400KHz or 1.9ms for 260KHz */
 		msdc_set_vol_change_wait_count(VOL_CHG_CNT_DEFAULT_VAL);
 		/* start to provide clock to device */
@@ -4415,7 +4419,7 @@ static int msdc_card_busy(struct mmc_host *mmc)
 	msdc_gate_clock(host, 1);
 
 	if (((status >> 16) & 0x1) != 0x1) {
-		pr_err("%s: card is busy!\n", __func__);
+		pr_err("msdc%d: card is busy!\n", mmc->index);
 		return 1;
 	}
 
@@ -4622,6 +4626,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	u32 acmdsts = MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY |
 		     MSDC_INT_ACMD19_DONE;
 	u32 datsts = MSDC_INT_DATCRCERR | MSDC_INT_DATTMO;
+	u32 gpdsts = MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
 	u32 intsts, inten;
 	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY;
 
@@ -4656,6 +4661,15 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 
 		if (intsts & MSDC_INT_SDIOIRQ)
 			mmc_signal_sdio_irq(host->mmc);
+	}
+
+	if (intsts & gpdsts) {
+		/* GPD or BD checksum verification error occurs.
+		 * There shall be HW issue, so BUG_ON here
+		 */
+		msdc_dump_gpd_bd(host->id);
+		msdc_dump_dbg_register(host);
+		BUG_ON(1);
 	}
 
 	if (data == NULL)
@@ -4992,7 +5006,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	/* for re-autok */
 	host->tuning_in_progress = false;
-
 	INIT_DELAYED_WORK(&(host->set_vcore_workq), msdc_unreq_vcore);
 	init_completion(&host->autok_done);
 	host->need_tune	= TUNE_NONE;

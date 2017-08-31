@@ -416,7 +416,15 @@
 #define EMMC50_CFG_END_BIT_CHK_CNT      0x3
 
 /**************************************************************/
-/* Section 7: E1/E2 Variation                                 */
+/* Section 7: SDIO host                                       */
+/**************************************************************/
+#ifdef CONFIG_MTK_COMBO_COMM
+#include <mt-plat/mtk_wcn_cmb_stub.h>
+#define CFG_DEV_MSDC3
+#endif
+
+/**************************************************************/
+/* Section 8: E1/E2 Variation                                 */
 /**************************************************************/
 #include <mt-plat/mtk_chip.h>
 

@@ -375,7 +375,7 @@ void sdio_autok_wait_dvfs_ready(void)
 		pr_err("DVFS feature not enable\n");
 
 	if (dvfs == 1)
-		pr_err("DVFS ready\n");
+		pr_debug("DVFS ready\n");
 }
 
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)

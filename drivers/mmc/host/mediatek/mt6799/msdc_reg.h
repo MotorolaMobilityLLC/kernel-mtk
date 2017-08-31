@@ -539,11 +539,11 @@
 #define	SDC_DCRC_STS_NEG		(0xff << 8)	/* RO */
 
 /* SDC_ADV_CFG0 mask */
-#define SDC_ADV_CFG0_RESP_CRC		(0x7f  << 0) /* R */
-#define SDC_ADV_CFG0_RESP_INDEX		(0x3f  << 7) /* R */
-#define SDC_ADV_CFG0_RESP_ENDBIT	(0x1  << 13) /* R */
-#define SDC_ADV_CFG0_ENDBIT_CHECK	(0x1  << 14) /* W1C */
-#define SDC_ADV_CFG0_INDEX_CHECK	(0x1  << 15) /* W1C */
+#define SDC_ADV_CFG0_RESP_CRC		(0x7f  << 0) /* RU */
+#define SDC_ADV_CFG0_RESP_INDEX		(0x3f  << 7) /* RU */
+#define SDC_ADV_CFG0_RESP_ENDBIT	(0x1  << 13) /* RU */
+#define SDC_ADV_CFG0_ENDBIT_CHECK	(0x1  << 14) /* RW */
+#define SDC_ADV_CFG0_INDEX_CHECK	(0x1  << 15) /* RW */
 #define SDC_ADV_CFG0_DAT_BUF_CLK_DIV	(0x3  << 16) /* RW */
 #define SDC_ADV_CFG0_DAT_BUF_FREQ_CTL_EN (0x1  << 18) /* RW */
 #define SDC_ADV_CFG0_SDIO_IRQ_ENHANCE_EN (0x1  << 19) /* RW */

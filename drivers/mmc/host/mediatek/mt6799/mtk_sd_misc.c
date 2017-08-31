@@ -137,8 +137,8 @@ static int sd_ioctl_cd_pin_en(struct msdc_ioctl	*msdc_ctl)
 int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 {
 	struct scatterlist msdc_sg;
-	struct mmc_data msdc_data;
-	struct mmc_command msdc_cmd;
+	struct mmc_data msdc_data = { 0 };
+	struct mmc_command msdc_cmd = { 0 };
 	struct mmc_command msdc_stop;
 	int ret = 0;
 	char part_id;
@@ -152,7 +152,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	struct mmc_command msdc_sbc;
 #endif
 
-	struct mmc_request  msdc_mrq;
+	struct mmc_request msdc_mrq = { 0 };
 	struct msdc_host *host_ctl;
 	struct mmc_host *mmc;
 
@@ -232,10 +232,6 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 		if (msdc_switch_part(host_ctl, part_id))
 			goto rw_end;
 	}
-
-	memset(&msdc_data, 0, sizeof(struct mmc_data));
-	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
-	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
 
 	if (no_single_rw) {
 		memset(&msdc_stop, 0, sizeof(struct mmc_command));

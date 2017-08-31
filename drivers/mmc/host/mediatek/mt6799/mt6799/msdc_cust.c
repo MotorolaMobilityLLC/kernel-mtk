@@ -25,6 +25,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/clk.h>
 #include <linux/slab.h>
+#include <linux/of_gpio.h>
 
 #include "mtk_sd.h"
 #include "dbg.h"
@@ -127,8 +128,6 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 		} else if (*status == voltage_uv) {
 			pr_err("msdc power on <%d> again!\n", voltage_uv);
 		} else {
-			pr_warn("msdc change<%d> to <%d>\n",
-				*status, voltage_uv);
 			regulator_disable(reg);
 			(void)msdc_regulator_set_and_enable(reg, voltage_uv);
 			*status = voltage_uv;
@@ -873,14 +872,6 @@ void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds)
 
 void msdc_set_driving_by_id(u32 id, struct msdc_hw_driving *driving)
 {
-	pr_err("msdc%d set driving: clk_drv=%d, cmd_drv=%d, dat_drv=%d, rst_drv=%d, ds_drv=%d\n",
-		id,
-		driving->clk_drv,
-		driving->cmd_drv,
-		driving->dat_drv,
-		driving->rst_drv,
-		driving->ds_drv);
-
 	if (id == 0) {
 		MSDC_SET_FIELD(MSDC0_GPIO_DRV_ADDR, MSDC0_DRV_DSL_MASK,
 			driving->ds_drv);
@@ -1160,7 +1151,9 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id);
 
 	/* get cd_gpio and cd_level */
-	if (of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio) == 0) {
+	ret = of_get_named_gpio(np, "cd-gpios", 0);
+	if (ret >= 0) {
+		cd_gpio = ret;
 		if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 			pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
