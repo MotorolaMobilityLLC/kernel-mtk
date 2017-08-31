@@ -1261,26 +1261,22 @@ static int mtk_nand_process_list(
 			unlock_list(list_ctrl);
 		}
 	}
-	if ((sync_num == -1) ||
-			((sync_num > 0) &&
-		(sync_num > process_cnt))) {
+	if (sync_num == -1) {
 		lock_list(list_ctrl);
 		head = &list_ctrl->head;
 		item = head->next;
 		unlock_list(list_ctrl);
 
-		while ((item != NULL) &&
-			(sync_num != process_cnt)) {
-			if (info->types == MTK_NAND_FLASH_TLC) {
-				work = get_list_work(item);
-				if (work->ops.types == MTK_NAND_OP_WRITE &&
-					work->ops.block < info->data_block_num)
-					nand_err("Error!!!TLC write page not ready before sync!!");
-					nand_err("block:%d, page:%d\n",
+		while (item != NULL && sync_num != process_cnt) {
+			work = get_list_work(item);
+			if (info->types == MTK_NAND_FLASH_TLC &&
+					work->ops.types == MTK_NAND_OP_WRITE &&
+					work->ops.block < info->data_block_num) {
+				nand_err("Error!TLC write page not ready!block:%d, page:%d\n",
 						work->ops.block, work->ops.page);
+				break;
 			}
-			next = list_ctrl->process_data_func(info,
-					list_ctrl, item, 1);
+			next = list_ctrl->process_data_func(info, list_ctrl, item, 1);
 			item = next;
 			process_cnt += 1;
 		}
