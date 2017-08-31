@@ -57,7 +57,6 @@ char *HRT_path_name(enum HRT_PATH_SCENARIO path)
 	default:
 		break;
 	}
-
 	return "HRT_PATH_UNKNOWN";
 }
 
@@ -75,8 +74,9 @@ char *HRT_scale_name(enum HRT_SCALE_SCENARIO scale)
 	case HRT_SCALE_NONE:
 		return "100";
 	case HRT_SCALE_UNKNOWN:
-	default:
 		return "HRT_SCALE_UNKNOWN";
+	default:
+		break;
 	}
 	return "HRT_SCALE_UNKNOWN";
 }
@@ -91,8 +91,9 @@ char *rsz_cfmt_name(enum RSZ_COLOR_FORMAT cfmt)
 	case RGB888:
 		return "RSZ_CFMT_RGB888";
 	case UNKNOWN_RSZ_CFMT:
-	default:
 		return "RSZ_CFMT_UNKNOWN";
+	default:
+		break;
 	}
 	return "RSZ_CFMT_UNKNOWN";
 }
@@ -106,9 +107,8 @@ bool HRT_is_dual_path(int hrt_info)
 	case HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA:
 		return true;
 	default:
-		return false;
+		break;
 	}
-
 	return false;
 }
 
@@ -121,9 +121,8 @@ bool HRT_is_pma_enabled(int hrt_info)
 	case HRT_PATH_DUAL_DISP_EXT_RESIZE_PARTIAL_PMA:
 		return true;
 	default:
-		return false;
+		break;
 	}
-
 	return false;
 }
 
@@ -136,7 +135,7 @@ bool HRT_is_resize_enabled(enum HRT_SCALE_SCENARIO scale)
 	case HRT_SCALE_133:
 		return true;
 	default:
-		return false;
+		break;
 	}
 	return false;
 }
@@ -225,9 +224,8 @@ enum DDP_SCENARIO_ENUM primary_get_DL_scenario(struct disp_ddp_path_config *pcon
 		return DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_DISP;
 
 	default:
-		return DDP_SCENARIO_MAX;
+		break;
 	}
-
 	return DDP_SCENARIO_MAX;
 }
 
@@ -260,9 +258,8 @@ enum DDP_SCENARIO_ENUM primary_get_OVL1to2_scenario(struct disp_ddp_path_config 
 		return DDP_SCENARIO_PRIMARY_CCORR0_RSZ0_1TO2;
 
 	default:
-		return DDP_SCENARIO_MAX;
+		break;
 	}
-
 	return DDP_SCENARIO_MAX;
 }
 
@@ -292,9 +289,8 @@ enum DDP_SCENARIO_ENUM primary_get_RDMA_scenario(struct disp_ddp_path_config *pc
 		return DDP_SCENARIO_PRIMARY_RDMA0_CCORR0_RSZ0_DISP;
 
 	default:
-		return DDP_SCENARIO_MAX;
+		break;
 	}
-
 	return DDP_SCENARIO_MAX;
 }
 
@@ -330,9 +326,8 @@ enum DDP_SCENARIO_ENUM primary_get_OVLmemout_scenario(struct disp_ddp_path_confi
 		return DDP_SCENARIO_PRIMARY_OVL_MEMOUT;
 
 	default:
-		return DDP_SCENARIO_MAX;
+		break;
 	}
-
 	return DDP_SCENARIO_MAX;
 }
 
@@ -348,7 +343,7 @@ enum HRT_PATH_SCENARIO disp_rsz_map_dual_to_single(enum HRT_PATH_SCENARIO hrt_pa
 	case HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA:
 		return HRT_PATH_RESIZE_PARTIAL_PMA;
 	default:
-		return hrt_path;
+		break;
 	}
 	return hrt_path;
 }
@@ -365,7 +360,7 @@ enum HRT_PATH_SCENARIO disp_rsz_map_single_to_dual(enum HRT_PATH_SCENARIO hrt_pa
 	case HRT_PATH_RESIZE_PARTIAL_PMA:
 		return HRT_PATH_DUAL_PIPE_RESIZE_PARTIAL_PMA;
 	default:
-		return hrt_path;
+		break;
 	}
 	return hrt_path;
 }
@@ -388,7 +383,7 @@ enum HRT_PATH_SCENARIO disp_rsz_map_to_decouple_mirror(enum HRT_PATH_SCENARIO hr
 	default:
 		DISPMSG("%s:%s no map to decouple mirror path\n",
 			__func__, HRT_path_name(hrt_path));
-		return hrt_path;
+		break;
 	}
 	return hrt_path;
 }

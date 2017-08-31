@@ -1742,6 +1742,7 @@ int _DL_switch_to_DL_dual_fast(struct cmdqRecStruct *handle, int block)
 		new_scenario = primary_get_DL_scenario(data_config_dl);
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	} else {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_DISP_LEFT;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -1839,6 +1840,7 @@ int _DL_dual_switch_to_DL_fast(struct cmdqRecStruct *handle, int block)
 		new_scenario = primary_get_DL_scenario(data_config_dl);
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	} else {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_DISP;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -1945,6 +1947,7 @@ int _DL_dual_switch_to_DC_fast(void)
 		new_scenario = primary_get_RDMA_scenario(data_config_dl);
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	} else {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -2210,6 +2213,7 @@ int DL_dual_switch_to_DC_dual(void)
 		data_config_dl->rsz_enable = HRT_is_resize_enabled(data_config_dl->hrt_scale) &
 						ddp_is_module_in_scenario(new_scenario, DISP_MODULE_RSZ0);
 	} else {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_RDMA_COLOR_DISP_LEFT;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
@@ -2564,6 +2568,7 @@ static int _DL_switch_to_DC_fast(void)
 
 		data_config_dl->rsz_enable &= ddp_is_module_in_scenario(new_scenario, DISP_MODULE_RSZ0);
 	} else {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 		new_scenario = DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP;
 		data_config_dl->is_dual = ddp_path_is_dual(new_scenario);
 	}
