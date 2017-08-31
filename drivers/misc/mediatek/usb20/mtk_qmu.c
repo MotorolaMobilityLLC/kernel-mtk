@@ -605,6 +605,7 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 
 		MGC_WriteQIRQ32(base, MGC_O_QIRQ_REPEIMCR, DQMU_M_RX_EP_ERR(ep_num));
 
+		/* make sure HW setting done before start QMU */
 		mb();
 		/* qmu start */
 		MGC_WriteQMU32(base, MGC_O_QMU_RQCSR(ep_num), DQMU_QUE_START);
@@ -671,6 +672,7 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 
 		MGC_WriteQIRQ32(base, MGC_O_QIRQ_TEPEIMCR, DQMU_M_TX_EP_ERR(ep_num));
 
+		/* make sure HW setting done before start QMU */
 		mb();
 		/* qmu start */
 		MGC_WriteQMU32(base, MGC_O_QMU_TQCSR(ep_num), DQMU_QUE_START);
