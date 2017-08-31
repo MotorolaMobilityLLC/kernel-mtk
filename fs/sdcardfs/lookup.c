@@ -18,6 +18,8 @@
  * General Public License.
  */
 
+#include <linux/fs.h>
+#include <linux/limits.h>
 #include "sdcardfs.h"
 #include "linux/delay.h"
 #include <linux/lockdep.h>
@@ -207,6 +209,85 @@ out:
 	return err;
 }
 
+/* The dir context used by  sdcardfs_lower_filldir() */
+struct sdcardfs_lower_getent_cb {
+	struct dir_context ctx;
+	loff_t pos;
+	const char *target; /* search target */
+	int target_len;
+	char alias[NAME_MAX+1]; /* alias name found in lower dir */
+	int alias_len;
+	int result; /* 0: found, -ENOENT: not found. */
+};
+
+/* The filldir used by case insensitive file search in sdcardfs_ci_path_lookup() */
+static int
+sdcardfs_lower_filldir(struct dir_context *ctx, const char *name, int namelen,
+	loff_t offset, u64 ino, unsigned int d_type)
+{
+	struct sdcardfs_lower_getent_cb *buf;
+
+	buf = container_of(ctx, struct sdcardfs_lower_getent_cb, ctx);
+
+	if (!buf->result)  /* entry already found, skip search */
+		return 0;
+
+	buf->pos = buf->ctx.pos;
+	if (!strncasecmp(name, buf->target, namelen) && namelen == buf->target_len) {
+		strncpy(buf->alias, name, namelen);
+		buf->alias_len = namelen;
+		buf->result = 0; /* 0: found matching entry */
+	}
+	return 0;
+}
+
+/*
+ * Case insentively lookup lower directory.
+ *
+ * @folder: path to the lower folder.
+ * @name: lookup name.
+ * @entry: path to the found entry.
+ *
+ * Returns: 0 (ok), -ENOENT (entry not found)
+ */
+static int sdcardfs_ci_path_lookup(struct path *folder, const char *name, struct path *entry)
+{
+	int ret = 0;
+	struct file *filp;
+	loff_t last_pos;
+	struct sdcardfs_lower_getent_cb buf = {
+			.ctx.actor = sdcardfs_lower_filldir,
+			.ctx.pos = 0,
+			.pos = 0,
+			.target = name,
+			.alias_len = 0,
+			.result = -ENOENT
+		};
+
+
+	buf.target_len = strlen(name);
+
+	filp = dentry_open(folder, O_RDONLY | O_DIRECTORY, current_cred());
+
+	if (IS_ERR_OR_NULL(filp))
+		return -ENOENT;
+
+	while (ret >= 0) {
+		last_pos = filp->f_pos;
+		ret = iterate_dir(filp, &buf.ctx);
+		if (last_pos == filp->f_pos || !buf.result)  /* reaches end or found matching entry */
+			break;
+	}
+
+	filp_close(filp, NULL);
+
+	if (!buf.result)
+		return vfs_path_lookup(folder->dentry, folder->mnt, buf.alias, 0, entry);
+	else
+		return buf.result;
+
+}
+
 /*
  * Main driver function for sdcardfs's lookup.
  *
@@ -241,6 +322,12 @@ static struct dentry *__sdcardfs_lookup(struct dentry *dentry,
 	/* Use vfs_path_lookup to check if the dentry exists or not */
 	err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, name, 0,
 				&lower_path);
+
+	/* If the dentry was not found, and the intent is not create or rename file,
+	 * try case insensitive search in lower parent directory.
+	 */
+	if ((err == -ENOENT) && !(flags & (LOOKUP_CREATE|LOOKUP_RENAME_TARGET)))
+		err = sdcardfs_ci_path_lookup(lower_parent_path, name, &lower_path);
 
 	/* no error: handle positive dentries */
 	if (!err) {
