@@ -1261,10 +1261,21 @@ bool SetI2SASRCEnable(bool bEnable)
 
 bool EnableSideToneFilter(bool stf_on)
 {
-	/* MD max support 16K sampling rate */
-	const uint8_t kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable16k) / sizeof(uint16_t);
+	/* MD support 16K/32K sampling rate */
+	uint8_t kSideToneHalfTapNum;
+	const uint16_t *kSideToneCoefficientTable;
+	uint32 eSamplingRate = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) & 0x60000) >> 17;
+	uint32 eSamplingRate2 = (Afe_Get_Reg(AFE_ADDA_UL_SRC_CON0) >> 17) & 0x3;
 
-	pr_debug("+%s(), stf_on = %d\n", __func__, stf_on);
+	pr_debug("+%s(), eSamplingRate = %d, eSamplingRate2=%d\n", __func__, eSamplingRate, eSamplingRate2);
+	if (eSamplingRate == Soc_Aud_ADDA_UL_SAMPLERATE_32K) {
+		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable32k) / sizeof(uint16_t);
+		kSideToneCoefficientTable = kSideToneCoefficientTable32k;
+	} else {
+		kSideToneHalfTapNum = sizeof(kSideToneCoefficientTable16k) / sizeof(uint16_t);
+		kSideToneCoefficientTable = kSideToneCoefficientTable16k;
+	}
+	pr_debug("+%s(), stf_on = %d, kSTFCoef[0]=0x%x\n", __func__, stf_on, kSideToneCoefficientTable[0]);
 	AudDrv_Clk_On();
 
 	if (stf_on == false) {
@@ -1307,7 +1318,7 @@ bool EnableSideToneFilter(bool stf_on)
 			read_write_sel	<< 24 |
 			sel_ch2		<< 23 |
 			coef_addr	<< 16 |
-			kSideToneCoefficientTable16k[coef_addr];
+			kSideToneCoefficientTable[coef_addr];
 			Afe_Set_Reg(AFE_SIDETONE_CON0, write_reg_value, 0x39FFFFF);
 			pr_warn("%s(), AFE_SIDETONE_CON0[0x%lx] = 0x%x\n", __func__, AFE_SIDETONE_CON0,
 				write_reg_value);
