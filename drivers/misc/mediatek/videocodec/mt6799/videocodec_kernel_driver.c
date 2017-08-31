@@ -633,7 +633,8 @@ void enc_isr(void)
 	}
 
 	if ((grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) ||
-	(grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC)) { /* hardwire */
+		(grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC) ||
+		(grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC)) { /* hardwire */
 		gu4HwVencIrqStatus = VDO_HW_READ(KVA_VENC_IRQ_STATUS_ADDR);
 		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_PAUSE) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
@@ -976,7 +977,8 @@ static long vcodec_lockhw(unsigned long arg)
 		}
 	} else if (rHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC ||
 		   rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_ENC ||
-		   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC) {
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_JPEG_ENC ||
+		   rHWLock.eDriverType == VAL_DRIVER_TYPE_VP9_ENC) {
 		while (bLockedHW == VAL_FALSE) {
 			/* Early break for JPEG VENC */
 			if (rHWLock.u4TimeoutMs == 0) {

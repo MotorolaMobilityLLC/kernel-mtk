@@ -173,6 +173,7 @@ typedef enum _VAL_DRIVER_TYPE_T {
 	VAL_DRIVER_TYPE_HEVC_DEC,                   /* /< HEVC decoder */
 	VAL_DRIVER_TYPE_H264_ENC_LIVEPHOTO,         /* LivePhoto type */
 	VAL_DRIVER_TYPE_MMDVFS,                     /* /< MMDVFS */
+	VAL_DRIVER_TYPE_VP9_ENC,                    /* /< VP9 encoder */
 	VAL_DRIVER_TYPE_MAX = 0xFFFFFFFF            /* /< Max driver type */
 } VAL_DRIVER_TYPE_T;
 
