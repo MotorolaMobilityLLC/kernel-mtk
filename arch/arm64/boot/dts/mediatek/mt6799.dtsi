@@ -5379,7 +5379,11 @@
 	};
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-	#include "battery_prop.dtsi"
+	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
+		#include "bat_setting/mt6799_battery_prop_ext.dtsi"
+	#else
+		#include "bat_setting/mt6799_battery_prop.dtsi"
+	#endif
 #endif
 
 	mt_charger: mt_charger {
