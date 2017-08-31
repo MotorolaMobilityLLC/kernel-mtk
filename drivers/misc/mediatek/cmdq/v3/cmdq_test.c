@@ -220,7 +220,7 @@ static void testcase_scenario(void)
 	int32_t ret;
 	int i = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* make sure each scenario runs properly with empty commands */
 	for (i = 0; i < CMDQ_MAX_SCENARIO_COUNT; ++i) {
@@ -236,14 +236,14 @@ static void testcase_scenario(void)
 
 	cmdq_task_destroy(hRec);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static struct timer_list timer;
 
 static void _testcase_sync_token_timer_func(unsigned long data)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* trigger sync event */
 	CMDQ_MSG("trigger event=0x%08lx\n", (1L << 16) | data);
@@ -252,7 +252,7 @@ static void _testcase_sync_token_timer_func(unsigned long data)
 
 static void _testcase_sync_token_timer_loop_func(unsigned long data)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* trigger sync event */
 	CMDQ_MSG("trigger event=0x%08lx\n", (1L << 16) | data);
@@ -267,7 +267,7 @@ static void testcase_sync_token(void)
 	struct cmdqRecStruct *hRec;
 	int32_t ret = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_SUB_DISP, &hRec);
 
@@ -312,7 +312,7 @@ static void testcase_sync_token(void)
 
 	cmdq_task_destroy(hRec);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static struct timer_list timer_reqA;
@@ -323,7 +323,7 @@ static void testcase_async_suspend_resume(void)
 	struct TaskStruct *pTaskA;
 	int32_t ret = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* setup timer to trigger sync token */
 	/* setup_timer(&timer_reqA, &_testcase_sync_token_timer_func, CMDQ_SYNC_TOKEN_USER_0); */
@@ -359,7 +359,7 @@ static void testcase_async_suspend_resume(void)
 	cmdq_task_destroy(hReqA);
 	/* del_timer(&timer_reqA); */
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_errors(void)
@@ -440,7 +440,7 @@ static void testcase_errors(void)
 
 	cmdq_task_destroy(hReq);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static int32_t finishCallback(unsigned long data)
@@ -453,7 +453,7 @@ static void testcase_fire_and_forget(void)
 {
 	struct cmdqRecStruct *hReqA, *hReqB;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	do {
 		cmdq_task_create(CMDQ_SCENARIO_DEBUG, &hReqA);
 		cmdq_task_create(CMDQ_SCENARIO_DEBUG, &hReqB);
@@ -472,7 +472,7 @@ static void testcase_fire_and_forget(void)
 	cmdq_task_destroy(hReqA);
 	cmdq_task_destroy(hReqB);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static struct timer_list timer_reqA;
@@ -483,7 +483,7 @@ static void testcase_async_request(void)
 	struct TaskStruct *pTaskA, *pTaskB;
 	int32_t ret = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* setup timer to trigger sync token */
 	setup_timer(&timer_reqA, &_testcase_sync_token_timer_func, CMDQ_SYNC_TOKEN_USER_0);
@@ -536,7 +536,7 @@ static void testcase_async_request(void)
 	del_timer(&timer_reqA);
 	del_timer(&timer_reqB);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_multiple_async_request(void)
@@ -547,7 +547,7 @@ static void testcase_multiple_async_request(void)
 	int32_t ret = 0;
 	int i;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	setup_timer(&timer, &_testcase_sync_token_timer_loop_func, CMDQ_SYNC_TOKEN_USER_0);
 	mod_timer(&timer, jiffies + msecs_to_jiffies(10));
@@ -600,7 +600,7 @@ static void testcase_multiple_async_request(void)
 
 	del_timer(&timer);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 
@@ -623,7 +623,7 @@ static void testcase_async_request_partial_engine(void)
 	if (timers == NULL)
 		return;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* setup timer to trigger sync token */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i) {
@@ -659,7 +659,7 @@ static void testcase_async_request_partial_engine(void)
 		timers = NULL;
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 }
 
@@ -667,7 +667,7 @@ static void _testcase_unlock_all_event_timer_func(unsigned long data)
 {
 	uint32_t token = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* trigger sync event */
 	CMDQ_MSG("trigger events\n");
@@ -692,7 +692,7 @@ static void testcase_sync_token_threaded(void)
 	struct cmdqRecStruct *hReq[ARRAY_SIZE(scn)] = { 0 };
 	struct TaskStruct *pTasks[ARRAY_SIZE(scn)] = { 0 };
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* setup timer to trigger sync token */
 	for (i = 0; i < ARRAY_SIZE(scn); ++i) {
@@ -725,7 +725,7 @@ static void testcase_sync_token_threaded(void)
 		cmdq_task_destroy(hReq[i]);
 
 	del_timer(&eventTimer);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static struct timer_list g_loopTimer;
@@ -743,7 +743,7 @@ static void testcase_loop(void)
 {
 	int status = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_TRIGGER_LOOP, &hLoopReq);
 	cmdq_task_reset(hLoopReq);
@@ -775,7 +775,7 @@ static void testcase_loop(void)
 	cmdq_task_destroy(hLoopReq);
 	del_timer(&g_loopTimer);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 }
 
 static unsigned long gLoopCount;
@@ -831,7 +831,7 @@ static void testcase_trigger_thread(void)
 	int32_t ret = 0;
 	int index = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* setup timer to trigger sync token for every 1 sec */
 	setup_timer(&timer, &_testcase_trigger_func, 0);
@@ -897,7 +897,7 @@ static void testcase_trigger_thread(void)
 	cmdq_task_destroy(hTrigger);
 	cmdq_task_destroy(hConfig);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_prefetch_scenarios(void)
@@ -909,7 +909,7 @@ static void testcase_prefetch_scenarios(void)
 	int index = 0, scn = 0;
 	const int INSTRUCTION_COUNT = 500;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* make sure each scenario runs properly with 248+ commands */
 	for (scn = 0; scn < CMDQ_MAX_SCENARIO_COUNT; ++scn) {
@@ -928,7 +928,7 @@ static void testcase_prefetch_scenarios(void)
 	}
 
 	cmdq_task_destroy(hConfig);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
@@ -997,7 +997,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 
 static void testcase_clkmgr(void)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 #ifdef CMDQ_PWR_AWARE
 	testcase_clkmgr_impl(CMDQ_ENG_CMDQ,
 				 "CMDQ_TEST",
@@ -1006,7 +1006,7 @@ static void testcase_clkmgr(void)
 	cmdq_mdp_get_func()->testcaseClkmgrMdp();
 #endif				/* defined(CMDQ_PWR_AWARE) */
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_dram_access(void)
@@ -1021,7 +1021,7 @@ static void testcase_dram_access(void)
 	uint32_t *pCmdEnd = NULL;
 	unsigned long long data64;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 					       sizeof(uint32_t) * 2, &regResultsMVA, GFP_KERNEL);
@@ -1117,7 +1117,7 @@ static void testcase_dram_access(void)
 	cmdq_core_free_hw_buffer(cmdq_dev_get(), 2 * sizeof(uint32_t), regResults,
 				 regResultsMVA);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
@@ -1131,7 +1131,7 @@ static void testcase_long_command(void)
 	uint32_t data;
 	uint32_t pattern = 0x0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
 
@@ -1159,7 +1159,7 @@ static void testcase_long_command(void)
 				 pattern);
 		}
 	} while (0);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_perisys_apb(void)
@@ -1269,7 +1269,7 @@ static void testcase_write_address(void)
 	dma_addr_t pa = 0;
 	uint32_t value = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdqCoreAllocWriteAddress(3, &pa);
 	CMDQ_LOG("ALLOC: 0x%pa\n", &pa);
@@ -1295,7 +1295,7 @@ static void testcase_write_address(void)
 	CMDQ_LOG("cmdqCoreFreeWriteAddress, pa:%pa, it's a ok case\n", &pa);
 	cmdqCoreFreeWriteAddress(pa);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_write_from_data_reg(void)
@@ -1308,7 +1308,7 @@ static void testcase_write_from_data_reg(void)
 	uint32_t dstRegPA;
 	unsigned long dummy_va;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (gCmdqTestSecure) {
 		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -1347,7 +1347,7 @@ static void testcase_write_from_data_reg(void)
 			 PATTERN, value);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
 #endif
@@ -1360,7 +1360,7 @@ static void testcase_read_to_data_reg(void)
 	uint32_t data;
 	unsigned long long data64;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* init GPR 64 */
 	CMDQ_REG_SET64_GPR_PX(CMDQ_DATA_REG_PQ_COLOR_DST, 0x1234567890ABCDEFULL);
@@ -1420,7 +1420,7 @@ static void testcase_read_to_data_reg(void)
 			 data64);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 	return;
 
 #else
@@ -1441,7 +1441,7 @@ static void testcase_write_reg_from_slot(void)
 	const enum CMDQ_DATA_REGISTER_ENUM dstRegId = CMDQ_DATA_REG_DEBUG;
 	const enum CMDQ_DATA_REGISTER_ENUM srcRegId = CMDQ_DATA_REG_DEBUG_DST;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* init */
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
@@ -1491,7 +1491,7 @@ static void testcase_write_reg_from_slot(void)
 	/* release result free slot */
 	cmdq_free_mem(hSlot);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return;
 
@@ -1509,7 +1509,7 @@ static void testcase_backup_reg_to_slot(void)
 	int i;
 	uint32_t value = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
 
@@ -1562,7 +1562,7 @@ static void testcase_backup_reg_to_slot(void)
 	/* release result free slot */
 	cmdq_free_mem(hSlot);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return;
 
@@ -1582,7 +1582,7 @@ static void testcase_update_value_to_slot(void)
 		0xDEAD0000, 0xDEAD0001, 0xDEAD0002, 0xDEAD0003, 0xDEAD0004
 	};
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* Create Slot */
 	cmdq_alloc_mem(&hSlot, 5);
@@ -1613,7 +1613,7 @@ static void testcase_update_value_to_slot(void)
 	/* release result free slot */
 	cmdq_free_mem(hSlot);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_poll_run(u32 poll_value, u32 poll_mask, bool use_mmsys_dummy)
@@ -1683,7 +1683,7 @@ static void testcase_write_with_mask(void)
 	uint32_t value = 0;
 	unsigned long dummy_va, dummy_pa;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (gCmdqTestSecure) {
 		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -1711,7 +1711,7 @@ static void testcase_write_with_mask(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, EXPECT_RESULT);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_write(void)
@@ -1721,7 +1721,7 @@ static void testcase_write(void)
 	uint32_t value = 0;
 	unsigned long dummy_va, dummy_pa;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (gCmdqTestSecure) {
 		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -1749,7 +1749,7 @@ static void testcase_write(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_prefetch(void)
@@ -1761,7 +1761,7 @@ static void testcase_prefetch(void)
 	const uint32_t testRegPA = CMDQ_TEST_GCE_DUMMY_PA;
 	const uint32_t REP_COUNT = 500;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* set to 0xFFFFFFFF */
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
@@ -1800,7 +1800,7 @@ static void testcase_prefetch(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_backup_register(void)
@@ -1814,7 +1814,7 @@ static void testcase_backup_register(void)
 	};
 	uint32_t regValue[3] = { 0 };
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xAAAAAAAA);
 	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(5), 0xBBBBBBBB);
@@ -1839,7 +1839,7 @@ static void testcase_backup_register(void)
 		CMDQ_ERR("regValue[2] is 0x%08x, wrong!\n", regValue[2]);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
@@ -1856,7 +1856,7 @@ static void testcase_get_result(void)
 	int registers[1] = { CMDQ_TEST_GCE_DUMMY_PA };
 	int result[1] = { 0 };
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* make sure each scenario runs properly with empty commands */
 	/* use CMDQ_SCENARIO_PRIMARY_ALL to test */
@@ -1896,7 +1896,7 @@ static void testcase_get_result(void)
 
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 	return;
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
@@ -1910,7 +1910,7 @@ static int _testcase_simplest_command_loop_submit(const uint32_t loop, enum CMDQ
 	struct cmdqRecStruct *handle = NULL;
 	int32_t i;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(scenario, &handle);
 	for (i = 0; i < loop; i++) {
@@ -1923,7 +1923,7 @@ static int _testcase_simplest_command_loop_submit(const uint32_t loop, enum CMDQ
 	}
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return 0;
 }
@@ -1947,7 +1947,7 @@ static void testcase_thread_dispatch(void)
 	const long long engineFlag1 = (0x1 << CMDQ_ENG_MDP_RSZ0) | (0x1 << CMDQ_ENG_MDP_CAMIN);
 	const long long engineFlag2 = (0x1 << CMDQ_ENG_MDP_RDMA0) | (0x1 << CMDQ_ENG_MDP_WROT0);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	CMDQ_MSG("=============== 2 THREAD with different engines ===============\n");
 
 	sprintf(threadName, "cmdqKTHR_%llx", engineFlag1);
@@ -1970,7 +1970,7 @@ static void testcase_thread_dispatch(void)
 	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG, engineFlag1, false);
 	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG, engineFlag2, false);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static int _testcase_full_thread_array(void *data)
@@ -2019,7 +2019,7 @@ static void testcase_full_thread_array(void)
 	char threadName[20];
 	struct task_struct *pKThread;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	sprintf(threadName, "cmdqKTHR");
 	pKThread = kthread_run(_testcase_full_thread_array, NULL, threadName);
@@ -2030,7 +2030,7 @@ static void testcase_full_thread_array(void)
 
 	msleep_interruptible(5 * 1000);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_module_full_dump(void)
@@ -2038,7 +2038,7 @@ static void testcase_module_full_dump(void)
 	struct cmdqRecStruct *handle = NULL;
 	const bool alreadyEnableLog = cmdq_core_should_print_msg();
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* enable full dump */
 	if (false == alreadyEnableLog)
@@ -2063,7 +2063,7 @@ static void testcase_module_full_dump(void)
 	if (false == alreadyEnableLog)
 		cmdq_core_set_log_level(0);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_profile_marker(void)
@@ -2072,7 +2072,7 @@ static void testcase_profile_marker(void)
 	/* const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16); */
 	/* uint32_t value = 0; */
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_MSG("%s: delay op with profile marker\n", __func__);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
@@ -2086,7 +2086,7 @@ static void testcase_profile_marker(void)
 
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_estimate_command_exec_time(void)
@@ -2099,7 +2099,7 @@ static void testcase_estimate_command_exec_time(void)
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_LOG("=====write(1), write_w_mask(2), poll(2), wait(2), sync(1), eof(1), jump(1)\n");
 	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, 0xBBBBBBBA, ~0);
@@ -2126,7 +2126,7 @@ static void testcase_estimate_command_exec_time(void)
 	cmdq_task_dump_command(handle);
 	cmdq_task_estimate_command_exec_time(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	cmdq_free_mem(hSlot);
 	cmdq_task_destroy(handle);
@@ -2146,7 +2146,7 @@ void testcase_secure_basic(void)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	do {
 
@@ -2169,7 +2169,7 @@ void testcase_secure_basic(void)
 		}
 	} while (0);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #endif
 }
 
@@ -2184,7 +2184,7 @@ void testcase_secure_disp_scenario(void)
 	struct cmdqRecStruct *hDisableDISP;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	CMDQ_LOG("=========== secure primary path ===========\n");
 	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &hDISP);
 	cmdq_task_reset(hDISP);
@@ -2209,7 +2209,7 @@ void testcase_secure_disp_scenario(void)
 	cmdq_task_flush(hDisableDISP);
 	cmdq_task_destroy(hDisableDISP);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #endif
 }
 
@@ -2222,7 +2222,7 @@ void testcase_secure_meta_data(void)
 	const uint32_t PATTERN_DISP = 0xBCBCBCBC;
 	uint32_t value = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* set to 0xFFFFFFFF */
 	CMDQ_REG_SET32(CMDQ_TEST_MMSYS_DUMMY_VA, ~0);
@@ -2276,7 +2276,7 @@ void testcase_secure_meta_data(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN_DISP);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #else
 	CMDQ_ERR("%s failed since not support secure path\n", __func__);
 #endif
@@ -2288,7 +2288,7 @@ void testcase_submit_after_error_happened(void)
 	struct cmdqRecStruct *handle = NULL;
 	const uint32_t pollingVal = 0x00003001;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	CMDQ_MSG("=========== timeout case ===========\n");
 
 	/* let poll INIFINITE */
@@ -2308,14 +2308,14 @@ void testcase_submit_after_error_happened(void)
 	/* clear up */
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_write_stress_test(void)
 {
 	int32_t loop;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	loop = 1;
 	CMDQ_MSG("=============== loop x %d ===============\n", loop);
@@ -2325,7 +2325,7 @@ void testcase_write_stress_test(void)
 	CMDQ_MSG("=============== loop x %d ===============\n", loop);
 	_testcase_simplest_command_loop_submit(loop, CMDQ_SCENARIO_DEBUG, 0, gCmdqTestSecure);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_prefetch_multiple_command(void)
@@ -2340,7 +2340,7 @@ void testcase_prefetch_multiple_command(void)
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	for (i = 0; i < TEST_PREFETCH_MARKER_LOOP; i++) {
 		CMDQ_MSG("=============== flush:%d/%d ===============\n",
 			i, TEST_PREFETCH_MARKER_LOOP);
@@ -2377,7 +2377,7 @@ void testcase_prefetch_multiple_command(void)
 		cmdq_task_destroy(handle[i]);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -2402,7 +2402,7 @@ static void testcase_concurrency_for_normal_path_and_secure_path(void)
 	struct task_struct *pKThread2;
 	const uint32_t securePath[2] = { 0, 1 };
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	pKThread1 = kthread_run(_testcase_concurrency, (void *)(&securePath[0]), "cmdqNormal");
 	if (IS_ERR(pKThread1)) {
@@ -2421,7 +2421,7 @@ static void testcase_concurrency_for_normal_path_and_secure_path(void)
 	/* ensure both thread execute all command */
 	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG, 0x0, false);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return;
 #endif
@@ -2440,7 +2440,7 @@ void testcase_async_write_stress_test(void)
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	for (i = 0; i < LOOP; i++) {
 		CMDQ_MSG("=============== flush:%d/%d ===============\n", i, LOOP);
 
@@ -2471,7 +2471,7 @@ void testcase_async_write_stress_test(void)
 		cmdq_task_destroy(handle[i]);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #endif
 }
 
@@ -2482,7 +2482,7 @@ static void testcase_nonsuspend_irq(void)
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2528,7 +2528,7 @@ static void testcase_nonsuspend_irq(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_module_full_mdp_engine(void)
@@ -2536,7 +2536,7 @@ static void testcase_module_full_mdp_engine(void)
 	struct cmdqRecStruct *handle = NULL;
 	const bool alreadyEnableLog = cmdq_core_should_print_msg();
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* enable full dump */
 	if (false == alreadyEnableLog)
@@ -2558,7 +2558,7 @@ static void testcase_module_full_mdp_engine(void)
 	if (false == alreadyEnableLog)
 		cmdq_core_set_log_level(0);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_trigger_engine_dispatch_check(void)
@@ -2569,7 +2569,7 @@ static void testcase_trigger_engine_dispatch_check(void)
 	uint32_t value = 0;
 	uint32_t loopIndex = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* Create first task and run without wait */
 	/* set to 0xFFFFFFFF */
@@ -2616,7 +2616,7 @@ static void testcase_trigger_engine_dispatch_check(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_complicated_engine_thread(void)
@@ -2627,7 +2627,7 @@ static void testcase_complicated_engine_thread(void)
 	uint64_t engineFlag[TASK_COUNT] = { 0 };
 	uint32_t taskIndex = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2659,7 +2659,7 @@ static void testcase_complicated_engine_thread(void)
 		msleep_interruptible(1000);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_append_task_verify(void)
@@ -2670,7 +2670,7 @@ static void testcase_append_task_verify(void)
 	uint32_t value = 0;
 	uint32_t loopIndex = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG_PREFETCH, &handle);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG_PREFETCH, &handle2);
@@ -2719,7 +2719,7 @@ static void testcase_append_task_verify(void)
 	cmdq_task_destroy(handle);
 	cmdq_task_destroy(handle2);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_manual_suspend_resume_test(void)
@@ -2727,7 +2727,7 @@ static void testcase_manual_suspend_resume_test(void)
 	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *pTask;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2748,14 +2748,14 @@ static void testcase_manual_suspend_resume_test(void)
 	cmdqCoreWaitAndReleaseTask(pTask, 500);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_delay_for_suspend_resume_test(void)
 {
 	struct cmdqRecStruct *handle = NULL;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2780,7 +2780,7 @@ static void testcase_delay_for_suspend_resume_test(void)
 	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_timeout_wait_early_test(void)
@@ -2788,7 +2788,7 @@ static void testcase_timeout_wait_early_test(void)
 	struct cmdqRecStruct *handle = NULL;
 	struct TaskStruct *pTask;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2807,14 +2807,14 @@ static void testcase_timeout_wait_early_test(void)
 	cmdqCoreWaitAndReleaseTask(pTask, 500);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_timeout_reorder_test(void)
 {
 	struct cmdqRecStruct *handle = NULL;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -2832,7 +2832,7 @@ static void testcase_timeout_reorder_test(void)
 	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_error_irq(void)
@@ -2842,7 +2842,7 @@ static void testcase_error_irq(void)
 	uint32_t value = 0;
 	struct TaskStruct *pTask;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* set to 0xFFFFFFFF */
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
@@ -2907,26 +2907,26 @@ static void testcase_error_irq(void)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_open_buffer_dump(int32_t scenario, int32_t bufferSize)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_MSG("[TESTCASE]CONFIG: bufferSize: %d, scenario: %d\n", bufferSize, scenario);
 	cmdq_core_set_command_buffer_dump(scenario, bufferSize);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_check_dts_correctness(void)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_dev_test_dts_correctness();
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static int32_t testcase_monitor_callback(unsigned long data)
@@ -2983,7 +2983,7 @@ static void testcase_monitor_trigger(uint32_t waitType, uint64_t monitorEvent)
 	int32_t eventID;
 	bool successAddInstruction = false;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (true == gEventMonitor.status) {
 		/* Reset monitor status */
@@ -3054,7 +3054,7 @@ static void testcase_monitor_trigger(uint32_t waitType, uint64_t monitorEvent)
 		gEventMonitor.monitorNUM++;
 	}
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 }
 
 static void testcase_poll_monitor_delay_continue(struct work_struct *workItem)
@@ -3081,7 +3081,7 @@ static int32_t testcase_poll_monitor_callback(unsigned long data)
 
 static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, uint64_t pollMask)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	if (true == gPollMonitor.status) {
 		/* Reset monitor status */
@@ -3132,7 +3132,7 @@ static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, 
 		cmdq_task_destroy(gPollMonitor.cmdqHandle);
 	}
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_acquire_resource(enum CMDQ_EVENT_ENUM resourceEvent, bool acquireExpected)
@@ -3142,7 +3142,7 @@ static void testcase_acquire_resource(enum CMDQ_EVENT_ENUM resourceEvent, bool a
 	uint32_t value = 0;
 	int32_t acquireResult;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* set to 0xFFFFFFFF */
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
@@ -3181,7 +3181,7 @@ static void testcase_acquire_resource(enum CMDQ_EVENT_ENUM resourceEvent, bool a
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static int32_t testcase_res_release_cb(enum CMDQ_EVENT_ENUM resourceEvent)
@@ -3189,7 +3189,7 @@ static int32_t testcase_res_release_cb(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct cmdqRecStruct *handle = NULL;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	/* Flush release command immedately with wait MUTEX event */
 
 	/* set to 0xFFFFFFFF */
@@ -3207,15 +3207,15 @@ static int32_t testcase_res_release_cb(enum CMDQ_EVENT_ENUM resourceEvent)
 	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 	return 0;
 }
 
 static int32_t testcase_res_available_cb(enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	testcase_acquire_resource(resourceEvent, true);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 	return 0;
 }
 
@@ -3228,7 +3228,7 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 	const enum CMDQ_EVENT_ENUM resourceEvent = CMDQ_SYNC_RESOURCE_WROT0;
 	uint32_t contDelay;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -3284,7 +3284,7 @@ static void testcase_notify_and_delay_submit(uint32_t delayTimeMS)
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_prefetch_round(uint32_t loopCount, uint32_t cmdCount, bool withMask, bool withWait)
@@ -3344,7 +3344,7 @@ void testcase_prefetch_round(uint32_t loopCount, uint32_t cmdCount, bool withMas
 		}
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_prefetch_from_DTS(void)
@@ -3352,7 +3352,7 @@ void testcase_prefetch_from_DTS(void)
 	int32_t i, j;
 	uint32_t thread_prefetch_size;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	for (i = 0; i < cmdq_dev_get_thread_count(); i++) {
 		thread_prefetch_size = cmdq_core_get_thread_prefetch_size(i);
@@ -3363,7 +3363,7 @@ void testcase_prefetch_from_DTS(void)
 		}
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_specific_bus_MMSYS(void)
@@ -3376,7 +3376,7 @@ static void testcase_specific_bus_MMSYS(void)
 	cmdqBackupSlotHandle slot_handle;
 	uint32_t start_time, end_time, duration_time;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_alloc_mem(&slot_handle, 2);
 
@@ -3405,7 +3405,7 @@ static void testcase_specific_bus_MMSYS(void)
 	cmdq_task_destroy(handle);
 	cmdq_free_mem(slot_handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void cmdq_track_task(const struct TaskStruct *pTask)
@@ -3417,7 +3417,7 @@ static void testcase_track_task_cb(void)
 {
 	struct cmdqRecStruct *handle = NULL;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, cmdq_track_task);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
@@ -3426,7 +3426,7 @@ static void testcase_track_task_cb(void)
 	cmdq_task_flush(handle);
 
 	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, NULL);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_while_test_mmsys_bus(void)
@@ -3434,14 +3434,14 @@ static void testcase_while_test_mmsys_bus(void)
 	int32_t i;
 	const uint32_t loop = 5000;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	for (i = 0; i < loop; i++) {
 		testcase_specific_bus_MMSYS();
 		msleep_interruptible(100);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 struct thread_set_event_config {
@@ -3454,7 +3454,7 @@ static int testcase_set_gce_event(void *data)
 {
 	struct thread_set_event_config config;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	config = *((struct thread_set_event_config *) data);
 	do {
@@ -3468,14 +3468,14 @@ static int testcase_set_gce_event(void *data)
 		cmdqCoreSetEvent(config.event);
 	} while (config.loop);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return 0;
 }
 
 static int testcase_cpu_config_non_mmsys(void *data)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	while (1) {
 		if (kthread_should_stop())
@@ -3486,7 +3486,7 @@ static int testcase_cpu_config_non_mmsys(void *data)
 		/* udelay(1); */
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return 0;
 }
@@ -3495,7 +3495,7 @@ static int testcase_cpu_config_mmsys(void *data)
 {
 	unsigned long mmsys_register;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_get_func()->enableCommonClockLocked(true);
 
@@ -3509,7 +3509,7 @@ static int testcase_cpu_config_mmsys(void *data)
 		/* udelay(1); */
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return 0;
 }
@@ -3604,7 +3604,7 @@ static void testcase_basic_logic(void)
 	uint32_t test_result;
 	CMDQ_VARIABLE get_value, result;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_REG_SET32(test_reg, test_var_in_reg);
 
@@ -3810,7 +3810,7 @@ static void testcase_basic_logic(void)
 
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_do_while_continue(void)
@@ -3822,7 +3822,7 @@ void testcase_do_while_continue(void)
 	const u32 max_loop_count = 20;
 	u32 test_result = 0, expect_result = 0, op_counter = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_alloc_mem(&slot_handle, 1);
@@ -3883,7 +3883,7 @@ static void testcase_basic_jump_c(void)
 	CMDQ_VARIABLE cmdq_row, cmdq_col, cmdq_temp_sum, cmdq_result;
 	cmdqBackupSlotHandle slot_handle;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_alloc_mem(&slot_handle, 1);
@@ -3970,7 +3970,7 @@ static void testcase_basic_jump_c_do_while(void)
 	CMDQ_VARIABLE cmdq_row, cmdq_col, cmdq_temp_sum, cmdq_result;
 	cmdqBackupSlotHandle slot_handle;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_alloc_mem(&slot_handle, 1);
@@ -4056,7 +4056,7 @@ static void testcase_long_jump_c(void)
 	struct TaskStruct *task = NULL;
 	s32 status = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* Test jump_c if cross page */
 
@@ -4145,7 +4145,7 @@ static void testcase_basic_delay(u32 delay_time_us)
 	uint32_t begin_tpr, end_tpr;
 	int32_t duration_time;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_delay_dump_thread();
 
@@ -4183,7 +4183,7 @@ static void testcase_basic_delay(u32 delay_time_us)
 	cmdq_task_destroy(handle);
 	cmdq_free_mem(slot_handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_move_data_between_SRAM(void)
@@ -4197,7 +4197,7 @@ static void testcase_move_data_between_SRAM(void)
 	u32 cpr_offset = 0;
 	s32 status = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* Allocate DRAM memory */
 	p_va_src = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa_src, GFP_KERNEL);
@@ -4242,7 +4242,7 @@ static void testcase_move_data_between_SRAM(void)
 	}
 	cmdq_core_dump_sram();
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 /**
@@ -4261,7 +4261,7 @@ static void testcase_run_command_on_SRAM(void)
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	struct cmdqRecStruct *handle;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* set to 0xFFFFFFFF */
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
@@ -4306,7 +4306,7 @@ static void testcase_run_command_on_SRAM(void)
 		CMDQ_LOG("wrote value is 0x%08x\n", value);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 /**
@@ -4327,7 +4327,7 @@ static void testcase_wait_event_timeout(u32 max_round)
 	u32 wait_result, begin_tpr, end_tpr, loop_count;
 	u32 round;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_alloc_mem(&slot_handle, 4);
 
@@ -4369,7 +4369,7 @@ static void testcase_wait_event_timeout(u32 max_round)
 	cmdq_task_destroy(handle);
 	cmdq_free_mem(slot_handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 /* Simulate DISP use case */
@@ -4397,7 +4397,7 @@ static void testcase_disp_simulate(void)
 	config = (struct thread_set_event_config){.event = CMDQ_SYNC_TOKEN_USER_0,
 			  .loop = false, .sleep_ms = 100};
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_alloc_mem(&slot_handle, 2);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
@@ -4444,7 +4444,7 @@ static void testcase_disp_simulate(void)
 		CMDQ_TEST_FAIL("%s wait valid event failed: %dms (200)\n", __func__, duration_time_ms);
 
 	cmdq_task_destroy(handle);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_read_with_mask(void)
@@ -4457,7 +4457,7 @@ static void testcase_read_with_mask(void)
 	u32 backup_read_value = 0;
 	u32 loop = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_alloc_mem(&slot_handle, 1);
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, read_value);
@@ -4480,7 +4480,7 @@ static void testcase_read_with_mask(void)
 
 	cmdq_free_mem(slot_handle);
 	cmdq_task_destroy(handle);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 /*
@@ -4498,7 +4498,7 @@ static void testcase_global_variable(void)
 	CMDQ_VARIABLE global_x, global_y;
 	u32 test_x, test_y;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* Allocate SRAM memory */
 	status = cmdq_core_alloc_sram_buffer(gpr_buffer_size, "UT_ASSIGN_REF", &cpr_offset);
@@ -4558,7 +4558,7 @@ static void testcase_global_variable(void)
 	cmdq_free_mem(slot_handle);
 	cmdq_task_destroy(handle);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 /*
@@ -4573,7 +4573,7 @@ static void testcase_efficient_polling(void)
 	u32 poll_value = 0x00FADE00, poll_mask = 0x00FF0000;
 	s32 result = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
 	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
@@ -4608,7 +4608,7 @@ static void testcase_efficient_polling(void)
 
 	cmdq_task_destroy(h_low);
 	cmdq_task_destroy(h_poll);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 static void testcase_mmsys_performance(int32_t test_id)
@@ -4657,17 +4657,17 @@ static void testcase_mmsys_performance(int32_t test_id)
 
 void testcase_monitor_mem_start(void)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	cmdq_core_set_mem_monitor(true);
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_monitor_mem_stop(void)
 {
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 	cmdq_core_set_mem_monitor(false);
 	cmdq_core_dump_mem_monitor();
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void _testcase_boundary_mem_inst(uint32_t inst_num)
@@ -4723,7 +4723,7 @@ void testcase_boundary_mem(void)
 	uint32_t base_inst_num = 0;
 	uint32_t buffer_num = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* test cross page from 1 to 3 cases */
 	for (buffer_num = 1; buffer_num < 4; buffer_num++) {
@@ -4741,7 +4741,7 @@ void testcase_boundary_mem(void)
 			_testcase_boundary_mem_inst(base_inst_num - inst_num);
 	}
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_boundary_mem_param(void)
@@ -4750,12 +4750,12 @@ void testcase_boundary_mem_param(void)
 	uint32_t buffer_num = (uint32_t)gCmdqTestConfig[2];
 	uint32_t inst_num = (uint32_t)gCmdqTestConfig[3];
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	base_inst_num = buffer_num * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE;
 	_testcase_boundary_mem_inst(base_inst_num - inst_num);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void _testcase_longloop_inst(uint32_t inst_num)
@@ -4827,14 +4827,14 @@ void testcase_longloop(void)
 	uint32_t last_inst = 0;
 	uint32_t page_num = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	for (page_num = 1; page_num < 4; page_num++) {
 		for (last_inst = 0; last_inst < 5; last_inst++)
 			_testcase_longloop_inst(CMDQ_CMD_BUFFER_SIZE * page_num / CMDQ_INST_SIZE - last_inst);
 	}
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 }
 
 int32_t _testcase_secure_handle(uint32_t secHandle, enum CMDQ_SCENARIO_ENUM scenario)
@@ -4867,7 +4867,7 @@ int32_t _testcase_secure_handle(uint32_t secHandle, enum CMDQ_SCENARIO_ENUM scen
 	status = cmdq_task_flush(hReqMDP);
 	cmdq_task_destroy(hReqMDP);
 
-	CMDQ_MSG("%s end\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 
 	return status;
 #else
@@ -4880,7 +4880,7 @@ void testcase_invalid_handle(void)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* In this case we use an invalid secure handle to check error handling */
 	status = _testcase_secure_handle(0xdeaddead, CMDQ_SCENARIO_SUB_DISP);
@@ -4892,7 +4892,7 @@ void testcase_invalid_handle(void)
 	if (status >= 0)
 		CMDQ_ERR("TEST FAIL: should not success with handle 0, status: %d\n", status);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 #else
 	CMDQ_ERR("%s failed since not support secure path\n", __func__);
 #endif
@@ -4906,7 +4906,7 @@ void testcase_get_task_by_engine(void)
 	int32_t status;
 	const uint32_t debug_str_len = 1024;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	memset(&task, 0, sizeof(struct TaskStruct));
 
@@ -4942,7 +4942,7 @@ void testcase_get_task_by_engine(void)
 	kfree(task.userDebugStr);
 	task.userDebugStr = NULL;
 
-	CMDQ_MSG("%s end\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_reorder(void)
@@ -4954,7 +4954,7 @@ void testcase_reorder(void)
 	struct TaskStruct *pTaskA1 = NULL, *pTaskA2 = NULL, *pTaskA3 = NULL;
 	struct TaskStruct *pTaskB = NULL;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -5040,7 +5040,7 @@ void testcase_reorder(void)
 	cmdq_task_destroy(handleA);
 	cmdq_task_destroy(handleB);
 
-	CMDQ_MSG("%s END\n", __func__);
+	CMDQ_LOG("%s END\n", __func__);
 }
 
 void testcase_reorder_last(void)
@@ -5051,7 +5051,7 @@ void testcase_reorder_last(void)
 	uint32_t task_idx = 0;
 	uint32_t wait_task_idx = 0;
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	/* clear token */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -6045,7 +6045,7 @@ static int _testcase_gen_task_thread(void *data)
 	u32 i = 0;
 	struct StressContextStruct *stress_context = cmdq_core_get_stress_context();
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s\n", __func__);
 
 	for (i = 0; i < MAX_RELEASE_QUEUE; i++)
 		release_queues[i] = create_singlethread_workqueue("cmdq_random_release");
@@ -6741,6 +6741,7 @@ static void testcase_general_handling(int32_t testID)
 		testcase_write_reg_from_slot();
 		break;
 	case CMDQ_TESTCASE_FPGA:
+		CMDQ_LOG("FPGA Verify Start!\n");
 		testcase_write();
 		testcase_write_with_mask();
 		testcase_poll();
@@ -6762,6 +6763,7 @@ static void testcase_general_handling(int32_t testID)
 		testcase_backup_reg_to_slot();
 		testcase_write_from_data_reg();
 		testcase_update_value_to_slot();
+		CMDQ_LOG("FPGA Verify Done!\n");
 		break;
 	case CMDQ_TESTCASE_ERROR:
 		testcase_errors();
