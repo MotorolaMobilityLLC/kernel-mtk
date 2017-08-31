@@ -26,10 +26,10 @@ extern "C" {
 /* #define MIN_DIFF_VSRAM_PROC        1000  */
 #define NORMAL_DIFF_VRSAM_VPROC    10000
 #define MAX_DIFF_VSRAM_VPROC       25000
-#define MIN_VSRAM_VOLT             85625
-#define MAX_VSRAM_VOLT             97500
-#define MIN_VPROC_VOLT             75014
-#define MAX_VPROC_VOLT             97374
+#define MIN_VSRAM_VOLT             80000  /* 85625 */
+#define MAX_VSRAM_VOLT             103125 /* 97500 */
+#define MIN_VPROC_VOLT             56875  /* 75014 */
+#define MAX_VPROC_VOLT             103000 /* 97374 */
 #define MIN_PMIC_SETTLE_TIME  25
 #define PMIC_CMD_DELAY_TIME     5
 

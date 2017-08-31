@@ -15,6 +15,7 @@
 #include "../../mtk_cpufreq_hybrid.h"
 #include "mach/mtk_freqhopping.h"
 #include "../../../../eem_v1/inc/mtk_eem.h"
+#include <mt-plat/mtk_chip.h>
 
 static struct regulator *regulator_proc1;
 struct regulator *regulator_proc2;
@@ -844,6 +845,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
 	unsigned int func_code_0 = _GET_BITS_VAL_(7:0, get_devinfo_with_index(FUNC_CODE_EFUSE_INDEX));
+	unsigned int ver = mt_get_chip_sw_ver();
 
 	turbo_flag = mt_eem_get_turbo();
 
@@ -882,6 +884,10 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	}
 #endif
+
+	if (ver == (unsigned int)CHIP_SW_VER_02)
+		lv = CPU_LEVEL_1;
+
 	return lv;
 }
 
