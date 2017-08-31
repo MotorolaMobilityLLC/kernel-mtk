@@ -2012,6 +2012,39 @@ int set_emi_mpu_region_intr_mask(unsigned int region, unsigned int domain)
 	}
 	return 0;
 }
+/*
+ * emi_set_dcm_ratio : emi dcm ration should adjust
+ * according to infra fmem dcm ratio
+ */
+int emi_set_dcm_ratio(unsigned int div_val)
+{
+	unsigned int dcm_ratio, conh, conh_2nd;
+	int ret = 0;
+/*
+ * DCM_RATIO[4:0] = {EMI_CONH_2ND[2:0], EMI_CONH[1:0]}
+ * DCM slow down ratio:
+ * 5'b00000: no DCM
+ * 5'b00001: 1/2 slow DCM
+ * 5'd00011: 1/4 slow DCM
+ * 5'd00111: 1/8 slow DCM
+ * 5'd01111: 1/16 slow DCM
+ * 5'd11111: 1/32 slow DCM
+ */
+	if (!((div_val == 1) || (div_val == 2) || (div_val == 4) ||
+	(div_val == 8) || (div_val == 16) || (div_val == 32))) {
+		pr_err("emi_set_dcm_ratio div_val ERROR =[%d]", div_val);
+		return -1;
+	}
+	dcm_ratio = div_val - 1;
+	conh = readl(IOMEM(EMI_CONH));
+	conh_2nd = readl(IOMEM(EMI_CONH_2ND));
+	conh = (conh & ~0x3)|(dcm_ratio & 0x3);
+	conh_2nd = (conh_2nd & ~0x7) | ((dcm_ratio >> 2) & 0x7);
+
+	mt_reg_sync_writel(conh, EMI_CONH);
+	mt_reg_sync_writel(conh_2nd, EMI_CONH_2ND);
+	return ret;
+}
 /* get EMI channel number */
 unsigned int get_emi_channel_number(void)
 {
