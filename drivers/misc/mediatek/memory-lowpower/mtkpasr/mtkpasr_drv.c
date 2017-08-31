@@ -141,6 +141,12 @@ static void enable_dcs_pasr(void)
 	}
 
 	/* Step0 - switch to lowpower mode */
+#ifdef DCS_SCREENOFF_ONLY_MODE
+	ret = dcs_exit_perf(DCS_KICKER_DEBUG);
+	if (ret)
+		pr_err("exit perf failed, kick=%d\n", DCS_KICKER_DEBUG);
+#endif
+
 	ret = dcs_switch_to_lowpower();
 	if (ret != 0) {
 		pr_warn("%s: failed to swtich to lowpower mode, error (%d)\n", __func__, ret);
@@ -204,6 +210,10 @@ err:
 
 static void disable_dcs_pasr(void)
 {
+#ifdef DCS_SCREENOFF_ONLY_MODE
+	int ret;
+#endif
+
 	if (!dcs_acquired)
 		return;
 
@@ -227,6 +237,13 @@ static void disable_dcs_pasr(void)
 	dcs_status = DCS_BUSY;
 	if (dcs_initialied())
 		dcs_get_dcs_status_unlock();
+
+#ifdef DCS_SCREENOFF_ONLY_MODE
+	/* enter performance mode */
+	ret = dcs_enter_perf(DCS_KICKER_DEBUG);
+	if (ret)
+		pr_err("enter perf failed, kick=%d\n", DCS_KICKER_DEBUG);
+#endif
 }
 #endif
 
