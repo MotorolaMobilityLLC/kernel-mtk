@@ -50,7 +50,8 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6739)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -1139,6 +1140,7 @@ static int g_color_bypass[COLOR_TOTAL_MODULE_NUM] = {1, 1};
 static int g_color_bypass[COLOR_TOTAL_MODULE_NUM];
 #endif
 
+static atomic_t g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM] = { ATOMIC_INIT(0), ATOMIC_INIT(0) };
 #else
 #define COLOR_TOTAL_MODULE_NUM (1)
 #define index_of_color(module) (0)
@@ -1149,9 +1151,8 @@ static int g_color_bypass[COLOR_TOTAL_MODULE_NUM] = {1};
 static int g_color_bypass[COLOR_TOTAL_MODULE_NUM];
 #endif
 
+static atomic_t g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM] = { ATOMIC_INIT(0)};
 #endif
-
-static volatile bool g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM];
 
 bool disp_color_reg_get(enum DISP_MODULE_ENUM module, unsigned long addr, unsigned int *value)
 {
@@ -1161,7 +1162,7 @@ bool disp_color_reg_get(enum DISP_MODULE_ENUM module, unsigned long addr, unsign
 		return true;
 	}
 
-	if (g_color_is_clock_on[index_of_color(module)] != true) {
+	if (atomic_read(&g_color_is_clock_on[index_of_color(module)]) != 1) {
 		COLOR_DBG("clock off .. skip reg set");
 		return false;
 	}
@@ -2271,6 +2272,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 static unsigned long color_pa2va(unsigned int addr)
 {
 	unsigned int i = 0;
+
 	_color_get_VA();
 
 	/* check disp module */
@@ -2580,7 +2582,7 @@ static void color_write_sw_reg(unsigned int reg_id, unsigned int value)
 
 static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-	g_color_is_clock_on[index_of_color(module)] = true;
+	atomic_set(&g_color_is_clock_on[index_of_color(module)], 1);
 
 #if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
@@ -2629,7 +2631,7 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-	g_color_is_clock_on[index_of_color(module)] = false;
+	atomic_set(&g_color_is_clock_on[index_of_color(module)], 0);
 
 #if defined(CONFIG_MACH_MT6755)
 	/* color is DCM , do nothing */
@@ -2676,7 +2678,7 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
 	_color_clock_on(module, cmq_handle);
 #endif
 
@@ -2702,7 +2704,7 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int _color_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
 	_color_clock_off(module, cmq_handle);
 #endif
 	return 0;

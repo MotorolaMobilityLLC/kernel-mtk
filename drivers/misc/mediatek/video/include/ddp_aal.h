@@ -39,11 +39,11 @@
 
 #define AAL_U32_PTR(x) ((void *)(unsigned long)x)
 
-typedef enum {
+enum disp_aal_id_t {
 	DISP_AAL0 = 0,
 	DISP_AAL1,
 	DISP_AAL_TOTAL
-} disp_aal_id_t;
+};
 
 enum AAL_ESS_UD_MODE {
 	CONFIG_BY_CUSTOM_LIB = 0,
@@ -51,7 +51,7 @@ enum AAL_ESS_UD_MODE {
 	CONFIG_TO_AMOLED = 2
 };
 
-typedef struct {
+struct DISP_AAL_INITREG {
 	/* DRE */
 	int dre_map_bypass;
 	/* ESS */
@@ -78,19 +78,19 @@ typedef struct {
 	int hist_bin_type;
 	int dre_flat_length_slope;
 #endif
-} DISP_AAL_INITREG;
+};
 
-typedef struct {
+struct DISP_DRE30_INIT {
 	/* DRE 3.0 SW */
 	aal_u32_handle_t dre30_hist_addr;
-} DISP_DRE30_INIT;
+};
 
-typedef struct {
+struct DISP_AAL_DISPLAY_SIZE {
 	int width;
 	int height;
-} DISP_AAL_DISPLAY_SIZE;
+};
 
-typedef struct {
+struct DISP_DRE30_HIST {
 	int dre_max_hist[AAL_DRE_BLK_NUM][AAL_DRE_BLK_NUM][AAL_DRE3_HIST_NUM];
 	int dre_rgb_max_sum[AAL_DRE_BLK_NUM][AAL_DRE_BLK_NUM];
 	int dre_large_diff_count_set[AAL_DRE_BLK_NUM][AAL_DRE_BLK_NUM];
@@ -99,9 +99,9 @@ typedef struct {
 	int dre_flat_line_count_set[AAL_DRE_BLK_NUM][AAL_DRE_BLK_NUM];
 	int dre_blk_x_num;
 	int dre_blk_y_num;
-} DISP_DRE30_HIST;
+};
 
-typedef struct {
+struct DISP_AAL_HIST {
 	unsigned int serviceFlags;
 	int backlight;
 	int colorHist;
@@ -113,24 +113,24 @@ typedef struct {
 #ifdef AAL_CUSTOMER_GET_PANEL_TYPE
 	unsigned int panel_type;
 #endif
-} DISP_AAL_HIST;
+};
 
-typedef struct {
+struct DISP_AAL_HIST_MODULE {
 	int colorHist;
 	unsigned int maxHist[AAL_HIST_BIN];
 	unsigned int count;
-} DISP_AAL_HIST_MODULE;
+};
 
 enum DISP_AAL_REFRESH_LATENCY {
 	AAL_REFRESH_17MS = 17,
 	AAL_REFRESH_33MS = 33
 };
 
-typedef struct {
+struct DISP_DRE30_PARAM {
 	int dre3_gain[AAL_DRE_BLK_NUM][AAL_DRE_BLK_NUM][AAL_DRE3_POINT_NUM];
-} DISP_DRE30_PARAM;
+};
 
-typedef struct {
+struct DISP_AAL_PARAM {
 	int DREGainFltStatus[AAL_DRE_POINT_NUM];
 	int cabc_fltgain_force;	/* 10-bit ; [0,1023] */
 	int cabc_gainlmt[33];
@@ -140,10 +140,10 @@ typedef struct {
 #ifdef AAL_HAS_DRE3
 	aal_u32_handle_t dre30_gain;
 #endif
-} DISP_AAL_PARAM;
+};
 
 void disp_aal_on_end_of_frame(void);
-void disp_aal_on_end_of_frame_by_module(disp_aal_id_t id);
+void disp_aal_on_end_of_frame_by_module(enum disp_aal_id_t id);
 
 extern int aal_dbg_en;
 void aal_test(const char *cmd, char *debug_output);
