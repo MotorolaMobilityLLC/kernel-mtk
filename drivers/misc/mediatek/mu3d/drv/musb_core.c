@@ -177,6 +177,7 @@ void __iomem *ap_uart0_base;
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 void __iomem *i2c_base;
+u32 i2c_physical_base;
 #endif
 
 /*-------------------------------------------------------------------------*/
@@ -2447,12 +2448,18 @@ static int __init musb_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	i2c_base = ioremap(BASE_I2C, 0x1000);
+	if (!i2c_physical_base) {
+		pr_err("no i2c_physical_base\n");
+		WARN_ON(1);
+	}
+
+	i2c_base = ioremap(i2c_physical_base, 0x1000);
+
 	if (!(i2c_base)) {
 		pr_err("Can't remap I2C BASE\n");
 		status = -ENOMEM;
 	}
-	os_printk(K_INFO, "I2C BASE=0x%lx, %x\n", (uintptr_t) (i2c_base), BASE_I2C);
+	os_printk(K_INFO, "I2C BASE=0x%lx, %x\n", (uintptr_t) (i2c_base), i2c_physical_base);
 #endif
 
 	status = musb_init_controller(dev, irq, u3_base);
