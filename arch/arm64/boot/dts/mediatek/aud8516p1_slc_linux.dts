@@ -17,10 +17,6 @@
 #include "aud8516p1_linux_bat_setting.dtsi"
 
 / {
-	memory@00000000 {
-		device_type = "memory";
-		reg = <0 0x40000000 0 0x20000000>;
-	};
 
 	/* chosen */
 	chosen {
