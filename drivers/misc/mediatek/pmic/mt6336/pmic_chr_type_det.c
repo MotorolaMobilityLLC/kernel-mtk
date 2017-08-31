@@ -42,6 +42,9 @@
 #define TURN_ON_RDM_DWM
 
 CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+#if !defined(CONFIG_POWER_EXT) && !defined(CONFIG_MTK_FPGA)
+static struct mt6336_ctrl *core_ctrl;
+#endif
 
 /* ============================================================ // */
 /* extern function */
@@ -420,6 +423,12 @@ int hw_charging_get_charger_type(void)
 {
 	unsigned int out = 0;
 
+	if (core_ctrl == NULL)
+		core_ctrl = mt6336_ctrl_get("mt6336_chrdet");
+
+	/* enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(core_ctrl);
+
 	CHR_Type_num = CHARGER_UNKNOWN;
 
 	hw_bc12_init();
@@ -468,6 +477,9 @@ int hw_charging_get_charger_type(void)
 	dump_charger_name(CHR_Type_num);
 
 	hw_bc12_done();
+
+	/* enter low power mode*/
+	mt6336_ctrl_disable(core_ctrl);
 
 	return CHR_Type_num;
 }
