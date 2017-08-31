@@ -640,11 +640,13 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 #else
 	*cur = 0;
 #endif
-	pr_info("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
 
 #if defined(SWCHR_POWER_PATH)
-	pr_info("do_ptim_internal test: bat %d cur %d\n", *bat, *cur);
+	pr_info("do_ptim_internal SWCHR_POWER_PATH: bat %d cur %d\n", *bat, *cur);
+#else
+	pr_info("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
 #endif
+
 	return ret;
 }
 
