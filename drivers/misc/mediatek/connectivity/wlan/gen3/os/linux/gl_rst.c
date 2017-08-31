@@ -51,7 +51,7 @@
 ********************************************************************************
 */
 static BOOLEAN fgResetTriggered = FALSE;
-BOOLEAN fgIsResetting = FALSE;
+static BOOLEAN fgIsResetting = FALSE;
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -209,9 +209,14 @@ VOID glSendResetRequest(VOID)
  *          FALSE
  */
 /*----------------------------------------------------------------------------*/
-BOOLEAN kalIsResetting(VOID)
+inline BOOLEAN kalIsResetting(VOID)
 {
 	return fgIsResetting;
+}
+
+inline BOOLEAN kalIsResetTriggered(VOID)
+{
+	return fgResetTriggered;
 }
 
 static void mtk_wifi_trigger_reset(struct work_struct *work)
@@ -219,7 +224,6 @@ static void mtk_wifi_trigger_reset(struct work_struct *work)
 	BOOLEAN fgResult = FALSE;
 	RESET_STRUCT_T *rst = container_of(work, RESET_STRUCT_T, rst_work);
 
-	fgResetTriggered = TRUE;
 	/* Set the power off flag to FALSE in WMT to prevent chip power off after
 	** wlanProbe return failure, because we need to do core dump afterward.
 	*/
@@ -234,9 +238,8 @@ static void mtk_wifi_trigger_reset(struct work_struct *work)
 
 BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 pucFile, UINT_32 u4Line)
 {
-	BOOLEAN fgResult = TRUE;
 
-	if (kalIsResetting() || fgResetTriggered) {
+	if (fgIsResetting || fgResetTriggered) {
 		DBGLOG(INIT, ERROR,
 		       "Skip trigger whole-chip reset in %s line %u, during resetting! Chip[%04X E%u]\n",
 		       pucFile, u4Line,
@@ -250,8 +253,6 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 p
 		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
 		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
-
-		fgResult = TRUE;
 	} else {
 		DBGLOG(INIT, ERROR,
 		"Trigger chip reset in %s line %u! Chip[%04X E%u] FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
@@ -265,11 +266,12 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 p
 		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8),
 		       (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
 
+		fgResetTriggered = TRUE;
 		wifi_rst.rst_trigger_flag = u4RstFlag;
 		schedule_work(&(wifi_rst.rst_trigger_work));
 	}
 
-	return fgResult;
+	return TRUE;
 }
 
 #endif /* CFG_CHIP_RESET_SUPPORT */
