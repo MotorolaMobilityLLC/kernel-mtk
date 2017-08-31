@@ -412,7 +412,6 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	port_info.cache_coherent = buffer_info->coherent;
 	port_info.security = buffer_info->security;
 	port_info.BufSize = buffer->size;
-	port_info.pRetMVABuf = &buffer_info->MVA;
 
 	if (((*(unsigned int *)addr & 0xffff) == ION_FLAG_GET_FIXED_PHYS) &&
 	    ((*(unsigned int *)len) == ION_FLAG_GET_FIXED_PHYS)) {
@@ -421,9 +420,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		port_info.iova_start = buffer_info->iova_start;
 		port_info.iova_end = buffer_info->iova_end;
 		if (port_info.iova_start == port_info.iova_end)
-			buffer_info->FIXED_MVA = port_info.iova_start;
-
-		port_info.pRetMVABuf = &buffer_info->FIXED_MVA;
+			port_info.mva = port_info.iova_start;
 	}
 
 	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
@@ -440,7 +437,8 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		}
 #endif
 		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
-		*(unsigned int *)addr = *(unsigned int *)(port_info.pRetMVABuf);
+
+		*(unsigned int *)addr = port_info.mva;
 
 		if (ret < 0) {
 			IONMSG("[ion_mm_heap_phys]Error: port %d MVA(0x%x) fail(region 0x%x-0x%x) (VA 0x%lx-%zu-%d)\n",
@@ -452,6 +450,11 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 				buffer_info->FIXED_MVA = 0;
 			return -EFAULT;
 		}
+		if (port_info.flags == 0)
+			buffer_info->MVA = port_info.mva;
+		else
+			buffer_info->FIXED_MVA = port_info.mva;
+
 	} else {
 		*(unsigned int *)addr = (port_info.flags
 					 == M4U_FLAGS_FIX_MVA) ? buffer_info->FIXED_MVA : buffer_info->MVA;

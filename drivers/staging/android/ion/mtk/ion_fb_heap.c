@@ -92,7 +92,7 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	port_info.security = buffer_info->security;
 	port_info.BufSize = buffer->size;
 	port_info.flags = 0;
-	port_info.pRetMVABuf = &buffer_info->MVA;
+
 	/*Allocate MVA*/
 	mutex_lock(&buffer_info->lock);
 	if (buffer_info->MVA == 0) {
@@ -103,6 +103,8 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			return -EFAULT;
 		}
 	}
+
+	buffer_info->MVA = port_info.mva;
 
 	*addr = (ion_phys_addr_t)buffer_info->MVA;
 	mutex_unlock(&buffer_info->lock);
