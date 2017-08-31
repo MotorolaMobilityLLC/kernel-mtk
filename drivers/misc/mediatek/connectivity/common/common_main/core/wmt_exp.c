@@ -37,6 +37,7 @@
 #include <wmt_lib.h>
 #include <psm_core.h>
 #include <hif_sdio.h>
+#include <stp_dbg.h>
 
 
 /*******************************************************************************
@@ -85,6 +86,8 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	P_OSAL_OP pOp;
 	MTK_WCN_BOOL bRet;
 	P_OSAL_SIGNAL pSignal;
+	PUINT8 pbuf = NULL;
+	INT32 len = 0;
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
@@ -124,9 +127,14 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	ENABLE_PSM_MONITOR();
 	wmt_lib_host_awake_put();
 
-	if (bRet == MTK_WCN_BOOL_FALSE)
+	if (bRet == MTK_WCN_BOOL_FALSE) {
 		WMT_WARN_FUNC("OPID(%d) type(%zu) fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
-	else
+		if (pOp->op.opId == WMT_OPID_FUNC_ON && type == WMTDRV_TYPE_WIFI) {
+			pbuf = "turn on wifi fail, just collect SYS_FTRACE to DB";
+			len = osal_strlen(pbuf);
+			stp_dbg_trigger_collect_ftrace(pbuf, len);
+		}
+	} else
 		WMT_INFO_FUNC("OPID(%d) type(%zu) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	return bRet;
