@@ -320,6 +320,8 @@ static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
 	void __iomem *addr, *addr_src;
 	int i;
 
+	vcore = 3 - vcore;
+
 	addr = host->base + MSDC_DVFS_SET_SIZE * vcore;
 	for (i = 0; i < host->dvfs_reg_backup_cnt; i++) {
 		MSDC_WRITE32(addr + host->dvfs_reg_offsets[i],
@@ -582,8 +584,17 @@ static int msdc_io_rw_direct_host(struct mmc_host *host, int write, unsigned fn,
 void sdio_plus_set_device_rx(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
+	void __iomem *base = host->base;
+	u32 msdc_cfg;
+	int retry = 3, cnt = 1000;
 	unsigned char data;
 	int ret = 0;
+
+	msdc_cfg = MSDC_READ32(MSDC_CFG);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD_HS400, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, 0);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, 5);
+	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 
 	pr_err("sdio_plus_set_device_rx +++++++++++++++++++++++++=\n");
 	ret = msdc_io_rw_direct_host(mmc, 0, 0, 0x2, 0, &data);
@@ -607,7 +618,7 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
 
-	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11c, 0x87, 0);
+	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x11c, 0x8c, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x124, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x125, 0x87, 0);
 	ret = msdc_io_rw_direct_host(mmc, 1, 1, 0x126, 0x87, 0);
@@ -630,6 +641,9 @@ void sdio_plus_set_device_rx(struct msdc_host *host)
 
 	ret = msdc_io_rw_direct_host(mmc, 0, 1, 0x124, 0, &data);
 	pr_err("0x127 data: %x , ret: %x\n", data, ret);
+
+	MSDC_WRITE32(MSDC_CFG, msdc_cfg);
+	msdc_retry(!(MSDC_READ32(MSDC_CFG) & MSDC_CFG_CKSTB), retry, cnt, host->id);
 }
 
 #define SDIO_CCCR_MTK_DDR208       0xF2
@@ -640,6 +654,9 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 	int ret = 0;
 	unsigned char data;
 	struct mmc_host *mmc = host->mmc;
+
+	/* Set device timming for latch data */
+	sdio_plus_set_device_rx(host);
 
 	/* Find SDR104 timing first, or read CCCR command maybe fail */
 	if (host->hw->flags & MSDC_SDIO_DDR208) {
@@ -691,9 +708,6 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 
 	/* Set HS400 clock mode and DIV = 0 */
 	msdc_clk_stable(host, 3, 0, 1);
-
-	/* Set device timming for latch data */
-	sdio_plus_set_device_rx(host);
 
 	/* Find DDR208 timing */
 	sdio_execute_dvfs_autok_mode(host, 1);

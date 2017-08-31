@@ -2351,8 +2351,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		vcore = p2;
 		mode = p3;
 		host = mtk_msdc_host[id];
-		pr_err("[****AutoK test****]msdc host_id<%d> vcore<%d> mode<%d>\n",
-			id, vcore, mode);
+		/* pr_err("[****AutoK test****]msdc host_id<%d> vcore<%d> mode<%d>\n",
+		 *	id, vcore, mode);
+		 */
 
 		if ((vcore < 0) || (vcore >= AUTOK_VCORE_NUM))
 			vcore = AUTOK_VCORE_LEVEL0;

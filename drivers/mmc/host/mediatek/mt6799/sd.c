@@ -535,7 +535,15 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		GET_FIELD(val, CFG_CKMOD_HS400_SHIFT, CFG_CKMOD_HS400_MASK,
 			hs400_div_dis);
 		msdc_clk_stable(host, mode, div, hs400_div_dis);
+
+		/* Set PWM mode for MT6351 else SDIO CMDTO/CMDCRC */
+		if (host->hw->host_function == MSDC_SDIO)
+			msdc_pmic_force_vcore_pwm(true);
 	} else if ((!on) && (host->core_clkon == 1)) {
+		/* Clear PWM mode for MT6351 */
+		if (host->hw->host_function == MSDC_SDIO)
+			msdc_pmic_force_vcore_pwm(false);
+
 		MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_MS);
 
 		msdc_clk_disable(host);
