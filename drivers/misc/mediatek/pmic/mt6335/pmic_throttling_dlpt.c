@@ -226,20 +226,26 @@ void low_battery_protect_init(void)
 #endif
 
 #ifdef BATTERY_OC_PROTECT
+#if defined(CONFIG_MTK_SMART_BATTERY)
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+/*I(0.1mA)=reg *UNIT_FGCURRENT /100000 *100 /fg_cust_data.r_fg_value *fg_cust_data.car_tune_value /1000*/
+/*I(1mA)=reg *UNIT_FGCURRENT /100000 *100 /fg_cust_data.r_fg_value *fg_cust_data.car_tune_value /1000 /10*/
+/*Reg=I /UNIT_FGCURRENT *100000 /100 *fg_cust_data.r_fg_value /fg_cust_data.car_tune_value *10000 *95 /100*/
+/*Ricky:need *0.95*/
+/*65535-reg=*/
+/*(65535-(I *fg_cust_data.r_fg_value *1000 /UNIT_FGCURRENT *95 *100 /fg_cust_data.car_tune_value))*/
+#define BAT_OC_H_THD   \
+(65535-(POWER_BAT_OC_CURRENT_H*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
+#define BAT_OC_L_THD   \
+(65535-(POWER_BAT_OC_CURRENT_L*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
+#define BAT_OC_H_THD_RE   \
+(65535-(POWER_BAT_OC_CURRENT_H_RE*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
+#define BAT_OC_L_THD_RE   \
+(65535-(POWER_BAT_OC_CURRENT_L_RE*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT*95*100/fg_cust_data.car_tune_value))
+#else
 /* ex. Ireg = 65535 - (I * 950000uA / 2 / 158.122 / CAR_TUNE_VALUE * 100)*/
 /* (950000/2/158.122)*100~=300400*/
-
-#if defined(CONFIG_MTK_SMART_BATTERY)
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
-#define BAT_OC_H_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H/1000)/fg_cust_data.car_tune_value))	/*ex: 4670mA*/
-#define BAT_OC_L_THD   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L/1000)/fg_cust_data.car_tune_value))	/*ex: 5500mA*/
-#define BAT_OC_H_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_H_RE/1000)/fg_cust_data.car_tune_value))	/*ex: 3400mA*/
-#define BAT_OC_L_THD_RE   \
-(65535-((300400*POWER_BAT_OC_CURRENT_L_RE/1000)/fg_cust_data.car_tune_value))	/*ex: 4000mA*/
-#else
 #define BAT_OC_H_THD   \
 (65535-((300400*POWER_BAT_OC_CURRENT_H/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
 #define BAT_OC_L_THD   \
@@ -249,6 +255,7 @@ void low_battery_protect_init(void)
 #define BAT_OC_L_THD_RE   \
 (65535-((300400*POWER_BAT_OC_CURRENT_L_RE/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4000mA*/
 #endif
+
 #else
 #define BAT_OC_H_THD   0xc047
 #define BAT_OC_L_THD   0xb4f4
@@ -2049,12 +2056,21 @@ int pmic_throttling_dlpt_init(void)
 	#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
 		fg_cust_data.car_tune_value = (int)val;
-		PMICLOG("Get car_tune_value from DT: %d\n",
+		pr_err("Get car_tune_value from DT: %d\n",
 			 fg_cust_data.car_tune_value);
 	} else {
-		fg_cust_data.car_tune_value = CAR_TUNE_VALUE;
-		PMICLOG("Get car_tune_value from cust header\n");
+		fg_cust_data.car_tune_value = CAR_TUNE_VALUE*10;
+		pr_err("default car_tune_value=%d\n", fg_cust_data.car_tune_value);
 	}
+	if (of_property_read_u32(np, "r_fg_value", &val) == 0) {
+		fg_cust_data.r_fg_value = (int)val;
+		pr_err("Get r_fg_value from DT: %d\n",
+			fg_cust_data.r_fg_value);
+	} else {
+		fg_cust_data.r_fg_value = 100;
+		pr_err("default r_fg_value=%d\n", fg_cust_data.r_fg_value);
+	}
+	pr_err("default UNIT_FGCURRENT=%d\n", UNIT_FGCURRENT);
 	#else
 	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
 		batt_meter_cust_data.car_tune_value = (int)val;
