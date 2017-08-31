@@ -762,6 +762,7 @@ static BOOLEAN saaCheckOverLoadRN(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T pr
 			DBGLOG(SAA, INFO, "<SAA> eFrmType: %d, u4OverLoadRN times: %d\n", eFrmType, u4OverLoadRN);
 			if (u4OverLoadRN < JOIN_MAX_RETRY_OVERLOAD_RN) {
 				P_BSS_DESC_T prBssDesc;
+
 				prBssDesc = prAisFsmInfo->prTargetBssDesc;
 				if (prBssDesc)
 					COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen,

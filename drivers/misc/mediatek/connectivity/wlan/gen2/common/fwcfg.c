@@ -136,6 +136,7 @@ WLAN_STATUS wlanFwFileCfg(IN P_ADAPTER_T prAdapter)
 	UINT_32 u4FwCfgReadLen = 0;
 	PUINT_8 pucFwCfgBuf = (PUINT_8) kalMemAlloc(WLAN_CFG_FILE_BUF_SIZE, VIR_MEM_TYPE);
 	INT32 ret = WLAN_STATUS_FAILURE;
+
 	if (!pucFwCfgBuf) {
 		DBGLOG(INIT, INFO, "omega, pucFwCfgBuf alloc fail!");
 		return WLAN_STATUS_FAILURE;

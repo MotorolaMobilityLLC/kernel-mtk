@@ -208,7 +208,7 @@ const struct iw_handler_def wext_handler_def = {
 /*----------------------------------------------------------------------------*/
 BOOLEAN
 wextSrchDesiredWPAIE(IN PUINT_8 pucIEStart,
-		     IN INT_32 i4TotalIeLen, IN UINT_8 ucDesiredElemId, OUT PUINT_8 *ppucDesiredIE)
+		     IN INT_32 i4TotalIeLen, IN UINT_8 ucDesiredElemId, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -258,7 +258,7 @@ wextSrchDesiredWPAIE(IN PUINT_8 pucIEStart,
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredWAPIIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredWAPIIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -430,7 +430,7 @@ BOOLEAN wextIsDesiredRoamingConsortiumIE(IN PUINT_8 pucCurIE, IN INT_32 i4TotalI
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredHS20IE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredHS20IE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -473,7 +473,7 @@ BOOLEAN wextSrchDesiredHS20IE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -515,7 +515,7 @@ BOOLEAN wextSrchDesiredOsenIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredInterworkingIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredInterworkingIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -554,7 +554,7 @@ BOOLEAN wextSrchDesiredInterworkingIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIe
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredAdvProtocolIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredAdvProtocolIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -593,7 +593,7 @@ BOOLEAN wextSrchDesiredAdvProtocolIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeL
 * \note
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucDesiredIE)
+BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -618,7 +618,7 @@ BOOLEAN wextSrchDesiredRoamingConsortiumIE(IN PUINT_8 pucIEStart, IN INT_32 i4To
 }				/* wextSrchDesiredRoamingConsortiumIE */
 #endif
 
-BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PUINT_8 *ppucPMKID, OUT PUINT_8 okc)
+BOOLEAN wextSrchOkcAndPMKID(IN PUINT_8 pucIEStart, IN INT_32 i4TotalIeLen, OUT PPUINT_8 ppucPMKID, OUT PUINT_8 okc)
 {
 	INT_32 i4InfoElemLen;
 	UINT_8 ucDone = 0;
@@ -696,7 +696,7 @@ check_next:
 /*----------------------------------------------------------------------------*/
 BOOLEAN
 wextSrchDesiredWPSIE(IN PUINT_8 pucIEStart,
-		     IN INT_32 i4TotalIeLen, IN UINT_8 ucDesiredElemId, OUT PUINT_8 *ppucDesiredIE)
+		     IN INT_32 i4TotalIeLen, IN UINT_8 ucDesiredElemId, OUT PPUINT_8 ppucDesiredIE)
 {
 	INT_32 i4InfoElemLen;
 
@@ -3590,6 +3590,7 @@ int wext_support_ioctl(IN struct net_device *prDev, IN struct ifreq *prIfReq, IN
 #endif
 #if CFG_SUPPORT_WPS2
 				PUINT_8 prDesiredIE = NULL;
+
 				if (wextSrchDesiredWPSIE(prExtraBuf,
 							 u4ExtraSize,
 							 0xDD, (PUINT_8 *) &prDesiredIE)) {

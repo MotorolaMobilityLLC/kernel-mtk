@@ -102,7 +102,7 @@ BOOLEAN rsnParseRsnIE(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_ELEM_T prInfoElem,
 		return FALSE;
 	}
 
-	cp = (PUCHAR) & prInfoElem->u4GroupKeyCipherSuite;
+	cp = (PUCHAR)&prInfoElem->u4GroupKeyCipherSuite;
 	u4RemainRsnIeLen = (INT_32) prInfoElem->ucLength - 2;
 
 	do {

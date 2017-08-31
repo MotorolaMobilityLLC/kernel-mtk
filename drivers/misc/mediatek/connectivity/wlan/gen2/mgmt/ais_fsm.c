@@ -577,6 +577,7 @@ BOOLEAN aisFsmStateInit_RetryJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prSta
 	P_AIS_FSM_INFO_T prAisFsmInfo;
 	P_MSG_JOIN_REQ_T prJoinReqMsg;
 	INT_32 rssi = 0;
+
 	DEBUGFUNC("aisFsmStateInit_RetryJOIN()");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
@@ -1235,7 +1236,6 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				}
 				/* 4 <2.b> If we don't have the matched one */
 				else {
-
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;

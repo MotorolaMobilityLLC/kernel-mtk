@@ -866,6 +866,7 @@ VOID statsEnvReportDetect(ADAPTER_T *prAdapter, UINT8 ucStaRecIndex)
 	STA_RECORD_T *prStaRec;
 	OS_SYSTIME rCurTime;
 	STATS_CMD_CORE_T rCmd;
+
 	prStaRec = cnmGetStaRecByIndex(prAdapter, ucStaRecIndex);
 
 	if (prStaRec == NULL) {
