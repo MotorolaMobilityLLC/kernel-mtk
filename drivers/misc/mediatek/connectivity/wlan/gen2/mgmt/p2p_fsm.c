@@ -1322,6 +1322,7 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 	P_MSG_P2P_CONNECTION_ABORT_T prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) NULL;
 	STA_RECORD_T *prStaRec = (P_STA_RECORD_T)NULL;
 	/* P_STA_RECORD_T prTargetStaRec = (P_STA_RECORD_T)NULL; */
+	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
 
 	do {
 
@@ -1374,6 +1375,12 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 
 				/* Stop rejoin timer if it is started. */
 				/* TODO: If it has. */
+
+				prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
+				prGcDisConnReqInfo->prTargetStaRec = prP2pBssInfo->prStaRecOfAP;
+				prGcDisConnReqInfo->u4RetryCount = 0;
+				prGcDisConnReqInfo->u2ReasonCode = prDisconnMsg->u2ReasonCode;
+				prGcDisConnReqInfo->fgSendDeauth = prDisconnMsg->fgSendDeauth;
 
 				p2pFuncDisconnect(prAdapter, prP2pBssInfo->prStaRecOfAP, prDisconnMsg->fgSendDeauth,
 						  prDisconnMsg->u2ReasonCode);
@@ -1473,6 +1480,8 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
+	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
+	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
 
 	do {
 
@@ -1490,6 +1499,32 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		eOriMediaStatus = prP2pBssInfo->eConnectionState;
+
+		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
+		prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
+
+		if (prGcDisConnReqInfo->prTargetStaRec &&
+				EQUAL_MAC_ADDR(prGcDisConnReqInfo->prTargetStaRec->aucMacAddr, prStaRec->aucMacAddr) &&
+				prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
+			if (rTxDoneStatus != TX_RESULT_SUCCESS) {
+				prGcDisConnReqInfo->u4RetryCount++;
+				if (prGcDisConnReqInfo->u4RetryCount <= MAX_GC_DEAUTH_RETRY_COUNT) {
+					DBGLOG(P2P, INFO, "Retry sending deauth frame to %pM, retryCount: %d\n",
+							prGcDisConnReqInfo->prTargetStaRec->aucMacAddr,
+							prGcDisConnReqInfo->u4RetryCount);
+					p2pFuncDisconnect(prAdapter,
+							prGcDisConnReqInfo->prTargetStaRec,
+							prGcDisConnReqInfo->fgSendDeauth,
+							prGcDisConnReqInfo->u2ReasonCode);
+					break;
+				}
+			}
+		}
+		prGcDisConnReqInfo->prTargetStaRec = NULL;
+		prGcDisConnReqInfo->u4RetryCount = 0;
+		prGcDisConnReqInfo->u2ReasonCode = 0;
+		prGcDisConnReqInfo->fgSendDeauth = FALSE;
+
 		/* Change station state. */
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 
