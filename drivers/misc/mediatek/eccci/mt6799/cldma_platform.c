@@ -490,6 +490,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD1_ECT_REG_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD1_ECT_REG_LEN3);
 	}
+#if 0 /* close register dump for HWT */
 	/* 6. TOPSM */
 	if (md->md_dbg_dump_flag & (1 << MD_DBG_DUMP_TOPSM)) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD TOPSM status: 0x%X\n", MD1_TOPSM_REG_BASE0);
@@ -508,7 +509,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD OST status: 0x%X\n", MD_OST_STATUS_BASE);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ost_status, MD_OST_STATUS_LENGTH);
 	}
-
+#endif
 #endif
 	md_cd_lock_modem_clock_src(0);
 #endif
