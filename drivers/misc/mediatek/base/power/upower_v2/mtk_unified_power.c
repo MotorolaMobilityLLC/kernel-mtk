@@ -58,9 +58,9 @@ struct upower_tbl_info *upower_tbl_infos;
 phys_addr_t upower_data_phy_addr, upower_data_virt_addr;
 unsigned long long upower_data_size;
 
-#if (NR_UPOWER_TBL_LIST <= 1)
+/* #if (NR_UPOWER_TBL_LIST <= 1) */
 struct upower_tbl final_upower_tbl[NR_UPOWER_BANK] = {};
-#endif
+/* #endif */
 
 #if 0
 static void print_tbl(void)

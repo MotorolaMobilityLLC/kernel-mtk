@@ -74,9 +74,9 @@ extern struct upower_tbl_info *p_upower_tbl_infos; /* points to upower_tbl_infos
 extern unsigned char upower_enable;
 extern struct upower_tbl_info *upower_tbl_infos_list[NR_UPOWER_TBL_LIST];
 
-#if (NR_UPOWER_TBL_LIST <= 1)
+/* #if (NR_UPOWER_TBL_LIST <= 1) */
 extern struct upower_tbl final_upower_tbl[NR_UPOWER_BANK];
-#endif
+/* #endif */
 
 /***************************
  * APIs                    *
