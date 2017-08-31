@@ -249,6 +249,11 @@ void __attribute__((weak)) msdc_clk_status(int *status)
 	*status = 0;
 }
 
+bool __attribute__((weak)) disp_pwm_is_osc(void)
+{
+	return false;
+}
+
 /*
  * Function Definitions
  */
@@ -531,17 +536,6 @@ void __init iomap_init(void)
 
 bool mtk_idle_disp_is_pwm_rosc(void)
 {
-	u32 sta = idle_readl(CLK_CFG_7) & 0x3;
-
-	return (sta == 2) || (sta == 3);
+	return disp_pwm_is_osc();
 }
 
-bool mtk_idle_auxadc_is_released(void)
-{
-	if ((~idle_readl(INFRA_SW_CG_0_STA) & 0x400) == 0x400) {
-		idle_err("AUXADC CG does not be released\n");
-		return false;
-	}
-
-	return true;
-}

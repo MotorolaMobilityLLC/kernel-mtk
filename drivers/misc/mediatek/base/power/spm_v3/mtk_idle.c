@@ -1489,10 +1489,6 @@ int soidle3_enter(int cpu)
 
 	soidle_pre_handler();
 
-	if (mtk_idle_auxadc_is_released())
-		slp_spm_SODI3_flags &= ~SPM_FLAG_DIS_SRCCLKEN_LOW;
-	else
-		slp_spm_SODI3_flags |= SPM_FLAG_DIS_SRCCLKEN_LOW;
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */

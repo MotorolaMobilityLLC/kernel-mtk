@@ -17,16 +17,25 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#ifdef CONFIG_MTK_SPM_IN_ATF
+#include <mt-plat/mtk_secure_api.h>
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#endif
 
 /* #include <mach/irqs.h> */
-#include <mach/mt_gpt.h>
+#include <mach/mtk_gpt.h>
 
-#include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_boot.h>
 #ifdef CONFIG_MTK_SYS_CIRQ
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/mt_io.h>
+#include <mt-plat/mtk_io.h>
 
 #include <mtk_spm_sodi.h>
 
@@ -48,29 +57,20 @@
 #ifdef CONFIG_OF
 #define MCUCFG_BASE		spm_mcucfg
 #else
-#define MCUCFG_BASE		(0xF0200600)	/* 0x1020_0600 */
+#define MCUCFG_BASE             (0xF0200000)	/* 0x1020_0000 */
 #endif
-
-#define MP0_AXI_CONFIG	(MCUCFG_BASE + 0x2C - 0x600)
-#define MP1_AXI_CONFIG	(MCUCFG_BASE + 0x22C - 0x600)
-#define MP2_AXI_CONFIG	(MCUCFG_BASE + 0x220C - 0x600)
-#define CPUCFG			(MCUCFG_BASE + 0x2008 - 0x600)
+#define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C)
+#define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
+#define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
+#define CPUCFG					(MCUCFG_BASE + 0x2008)
 #define ACINACTM		(1 << 4)
 #define MP2_ACINACTM	(1 << 0)
 
-
-#define WAKESRC_FOR_SODI	\
-	(WAKE_SRC_R12_PCMTIMER | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B)
-
-
 /* FIXME: update sodi_ctrl */
 static struct pwr_ctrl sodi_ctrl = {
-	/*.wake_src = WAKE_SRC_FOR_SODI,*/
-	.wake_src = WAKESRC_FOR_SODI,
+	.wake_src = WAKE_SRC_FOR_SODI,
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 0,
 #endif
@@ -265,6 +265,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 };
 
 struct spm_lp_scen __spm_sodi = {
@@ -276,68 +277,101 @@ struct spm_lp_scen __spm_sodi = {
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 
-static unsigned long int sodi_logout_prev_time;
-static int pre_emi_refresh_cnt;
-static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
-static unsigned int logout_sodi_cnt;
-static unsigned int logout_selfrefresh_cnt;
 
+static void spm_sodi_pre_process(void)
+{
+	/* set PMIC WRAP table for deepidle power control */
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+#endif
+}
+
+static void spm_sodi_post_process(void)
+{
+	/* set PMIC WRAP table for normal power control */
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE); */
+#endif
+}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+static void spm_sodi_notify_sspm_before_wfi(void)
+{
+	int ret;
+	struct spm_data spm_d;
+
+	memset(&spm_d, 0, sizeof(struct spm_data));
+	spm_d.u.sodi.univpll_status = univpll_is_used();
+	spm_d.u.sodi.gps_status = spm_for_gps_flag;
+	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+}
+
+static void spm_sodi_notify_sspm_after_wfi(void)
+{
+	int ret;
+	struct spm_data spm_d;
+
+	memset(&spm_d, 0, sizeof(struct spm_data));
+	ret = spm_to_sspm_command(SPM_LEAVE_SODI, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+}
+#else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+static void spm_sodi_notify_sspm_before_wfi(void)
+{
+}
+
+static void spm_sodi_notify_sspm_after_wfi(void)
+{
+}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
+#ifdef CONFIG_MTK_SPM_IN_ATF
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
-	if (is_cpu_pdn(pcm_flags)) {
-		/* FIXME: */
-		/* if (mt_cpu_dormant(CPU_SODI_MODE) < 0) */
-			/* BUG(); */
-	} else {
-		wfi_with_sync();
-	}
+	int spm_dormant_sta;
+
+	if (is_cpu_pdn(pcm_flags))
+		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
+	else
+		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SODI_MODE);
+
+	if (spm_dormant_sta < 0)
+		sodi_err("spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 }
 
 static void spm_sodi_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
-	int ret;
-	struct spm_data spm_d;
+	spm_sodi_notify_sspm_before_wfi();
 
-	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.sodi.cpu = cpu;
-	spm_d.u.sodi.pcm_flags = pwrctrl->pcm_flags;
-	spm_d.u.sodi.univpll_status = univpll_is_used();
-	spm_d.u.sodi.gps_status = spm_for_gps_flag;
-	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
-	if (ret < 0) {
-		spm_crit2("ret %d", ret);
-		/* BUG(); */
-	}
+	spm_sodi_pre_process();
+
+	/* TODO */
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS, pwrctrl->pcm_flags,
+		pwrctrl->pcm_flags1, pwrctrl->timer_val);
 }
 
-static void spm_sodi_pcm_setup_after_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+static void spm_sodi_pcm_setup_after_wfi(void)
 {
-	int ret;
-	struct spm_data spm_d;
+	spm_sodi_notify_sspm_after_wfi();
 
-	memset(&spm_d, 0, sizeof(struct spm_data));
-	spm_d.u.sodi.cpu = cpu;
-	spm_d.u.sodi.pcm_flags = pwrctrl->pcm_flags;
-	ret = spm_to_sspm_command(SPM_LEAVE_SODI, &spm_d);
-	if (ret < 0) {
-		spm_crit2("ret %d", ret);
-		/* BUG(); */
-	}
+	spm_sodi_post_process();
 }
 
-#else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#else /* CONFIG_MTK_SPM_IN_ATF */
 
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
+	int spm_dormant_sta;
 	if (is_cpu_pdn(pcm_flags)) {
-		/* FIXME: */
-		/* if (mt_cpu_dormant(CPU_SODI_MODE) < 0) */
-			/* BUG(); */
+		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
+		if (spm_dormant_sta < 0)
+			sodi_err("sodi spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 	} else {
+		spm_dormant_sta = -1;
 		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
 		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
 		spm_write(CPUCFG, 0x1);
@@ -360,24 +394,33 @@ static void spm_sodi_pcm_setup_before_wfi(
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
 	__spm_set_power_control(pwrctrl);
 	__spm_set_wakeup_event(pwrctrl);
-	/* spm_sodi_pre_process(); */
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+
+	spm_sodi_notify_sspm_before_wfi();
+
+	spm_sodi_pre_process();
+
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
-static void spm_sodi_pcm_setup_after_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+static void spm_sodi_pcm_setup_after_wfi(void)
 {
-	/* spm_sodi_post_process(); */
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+	spm_sodi_notify_sspm_after_wfi();
+
+	spm_sodi_post_process();
+
 	__spm_clean_after_wakeup();
 }
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
-
-static wake_reason_t
-spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi_flags)
+static wake_reason_t spm_sodi_output_log(
+	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 sodi_flags)
 {
+	static unsigned long int sodi_logout_prev_time;
+	static int pre_emi_refresh_cnt;
+	static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
+	static unsigned int logout_sodi_cnt;
+	static unsigned int logout_selfrefresh_cnt;
+
 	wake_reason_t wr = WR_NONE;
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
@@ -389,8 +432,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			wr = WR_PCM_ASSERT;
 		}
 	} else if (!(sodi_flags&SODI_FLAG_REDUCE_LOG) || (sodi_flags & SODI_FLAG_RESIDENCY)) {
-		sodi_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-				vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+		sodi_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 	} else {
@@ -442,8 +485,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			sodi_logout_prev_time = sodi_logout_curr_time;
 
 			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-				sodi_err("WAKE UP BY ASSERT, VCORE_STATUS = %d, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
-						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+				sodi_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
+						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_err("SODI_CNT = %d, SELF_REFRESH_CNT = 0x%x, SPM_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
@@ -476,8 +519,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				sodi_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+				sodi_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_warn("sodi_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
@@ -487,13 +530,12 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				sodi_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
-
 			}
-
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;
 		}
 	}
+
 	return wr;
 }
 
@@ -505,22 +547,16 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	struct mtk_irq_mask mask;
 #endif
 	wake_reason_t wr = WR_NONE;
-	struct pcm_desc *pcmdesc;
+	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	int vcore_status = vcorefs_get_curr_ddr();
-#else
-	int vcore_status = 0;
-#endif
 	u32 cpu = spm_data;
 	int ch;
 
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
+	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	} else {
-		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d", dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-		/* BUG(); */
-	}
+	else
+		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d",
+			dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
@@ -587,7 +623,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_get_wakeup_status(&wakesta);
 
-	spm_sodi_pcm_setup_after_wfi(cpu, pcmdesc, pwrctrl);
+	spm_sodi_pcm_setup_after_wfi();
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
@@ -595,7 +631,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	request_uart_to_wakeup();
 #endif
 
-	wr = spm_sodi_output_log(&wakesta, pcmdesc, vcore_status, sodi_flags);
+	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_SPM_FLOW);
 
