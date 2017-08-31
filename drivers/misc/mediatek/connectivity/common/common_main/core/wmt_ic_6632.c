@@ -70,6 +70,12 @@
 
 #define CFG_WMT_COREDUMP_ENABLE 0
 
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+INT32 g_deep_sleep_flag = 1;
+#else
+INT32 g_deep_sleep_flag;
+#endif
+
 #if CFG_WMT_LTE_COEX_HANDLING
 #define CFG_WMT_FILTER_MODE_SETTING (1)
 #else
@@ -106,6 +112,12 @@ static UINT8 WMT_SET_WAKEUP_WAKE_CMD_RAW[] = { 0xFF };
 static UINT8 WMT_SET_WAKEUP_WAKE_EVT[] = { 0x02, 0x03, 0x02, 0x00, 0x00, 0x03 };
 static UINT8 WMT_PATCH_CMD[] = { 0x01, 0x01, 0x00, 0x00, 0x00 };
 static UINT8 WMT_PATCH_EVT[] = { 0x02, 0x01, 0x01, 0x00, 0x00 };
+
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+UINT8 WMT_DEEP_SLEEP_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x11, 0x00 };
+UINT8 WMT_DEEP_SLEEP_EVT[] = { 0x02, 0x02, 0x01, 0x00, 0x00 };
+#endif
+
 static UINT8 WMT_RESET_CMD[] = { 0x01, 0x07, 0x01, 0x00, 0x04 };
 static UINT8 WMT_RESET_EVT[] = { 0x02, 0x07, 0x01, 0x00, 0x00 };
 
@@ -370,6 +382,12 @@ static struct init_script init_table_3[] = {
 #endif
 };
 
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+static struct init_script init_deep_sleep_script[] = {
+	INIT_CMD(WMT_DEEP_SLEEP_CMD, WMT_DEEP_SLEEP_EVT, "chip deep sleep"),
+};
+#endif
+
 static struct init_script set_crystal_timing_script[] = {
 	INIT_CMD(WMT_SET_CRYSTAL_TRIMING_CMD, WMT_SET_CRYSTAL_TRIMING_EVT,
 		 "set crystal trim value"),
@@ -559,6 +577,12 @@ static struct init_script sdio_driving_table[] = {
 
 #endif
 static MTK_WCN_BOOL mt6632_trigger_stp_assert(VOID);
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value);
+static MTK_WCN_BOOL mt6632_deep_sleep_flag_get(VOID);
+static INT32 wmt_stp_get_chip_deep_sleep(VOID);
+#endif
+
 #if CFG_WMT_FILTER_MODE_SETTING
 static INT32 wmt_stp_wifi_lte_coex(VOID);
 #endif
@@ -580,6 +604,14 @@ WMT_IC_OPS wmt_ic_ops_mt6632 = {
 	.is_quick_sleep = mt6632_quick_sleep_flag_get,
 	.is_aee_dump_support = mt6632_aee_dump_flag_get,
 	.trigger_stp_assert = mt6632_trigger_stp_assert,
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	.deep_sleep_ctrl = mt6632_deep_sleep_ctrl,
+	.deep_sleep_flag_get = mt6632_deep_sleep_flag_get,
+#else
+	.deep_sleep_ctrl = NULL,
+	.deep_sleep_flag_get = NULL,
+#endif
+
 };
 
 /*******************************************************************************
@@ -726,7 +758,26 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -13;
 		}
 	}
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	wmt_stp_get_chip_deep_sleep();
+	if (g_deep_sleep_flag) {
+		WMT_DEEP_SLEEP_CMD[5] = 1;
+		iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
+		if (iRet) {
+			WMT_ERR_FUNC("enalbe deep sleep feature fail\n");
+			return -20;
+		}
+		WMT_INFO_FUNC("chip deep sleep feature is enable\n");
+	} else {
+		WMT_DEEP_SLEEP_CMD[5] = 0;
+		iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
+		if (iRet) {
+			WMT_ERR_FUNC("disable deep sleep feature fail\n");
+			return -21;
+		}
+		WMT_INFO_FUNC("chip deep sleep feature is disable\n");
+	}
+#endif
 	iRet = wmt_stp_init_coex();
 
 	if (iRet) {
@@ -1039,6 +1090,71 @@ static MTK_WCN_BOOL mt6632_trigger_stp_assert(VOID)
 		bRet = MTK_WCN_BOOL_TRUE;
 	return bRet;
 }
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value)
+{
+	INT32 ret = 0;
+
+	g_deep_sleep_flag = value;
+	if (value) {
+		WMT_DEEP_SLEEP_CMD[5] = 1;
+		WMT_INFO_FUNC("enable chip deep sleep feature from wmt_dbg command\n");
+	} else {
+		WMT_DEEP_SLEEP_CMD[5] = 0;
+		WMT_INFO_FUNC("disable chip deep sleep feature from wmt_dbg command\n");
+	}
+	ret = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
+	if (ret == 0)
+		return MTK_WCN_BOOL_TRUE;
+	else
+		return MTK_WCN_BOOL_FALSE;
+}
+
+static MTK_WCN_BOOL mt6632_deep_sleep_flag_get(VOID)
+{
+	if (g_deep_sleep_flag)
+		return MTK_WCN_BOOL_TRUE;
+	else
+		return MTK_WCN_BOOL_FALSE;
+}
+
+static INT32 wmt_stp_get_chip_deep_sleep(VOID)
+{
+	WMT_GEN_CONF *pWmtGenConf;
+	ULONG addr;
+	INT32 ret;
+
+	/*Get wmt config */
+	ret = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
+
+	if (ret) {
+		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", ret);
+		return -2;
+	}
+
+	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%lx)\n", addr);
+
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	/*Check if WMT.cfg exists */
+	if (pWmtGenConf->cfgExist == 0) {
+		WMT_INFO_FUNC("cfgExist == 0, skip config chip\n");
+		/*if WMT.cfg not existed, still return success and adopt the default value */
+		return 0;
+	}
+	if (pWmtGenConf->disable_deep_sleep_cfg == 0) {
+		WMT_INFO_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, enable deep sleep feature\n",
+			pWmtGenConf->disable_deep_sleep_cfg);
+		g_deep_sleep_flag = 1;
+	} else {
+		WMT_INFO_FUNC("disable_deep_sleep_cfg  (%d) get form mt6632_ant_m1.cfg, disable deep sleep feature\n",
+			pWmtGenConf->disable_deep_sleep_cfg);
+		g_deep_sleep_flag = 0;
+	}
+	return ret;
+}
+
+#endif
 
 WMT_CO_CLOCK mt6632_co_clock_get(VOID)
 {

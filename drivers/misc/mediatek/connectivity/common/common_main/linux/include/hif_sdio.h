@@ -251,6 +251,7 @@ typedef enum {
 
 extern UINT32 gHifSdioDbgLvl;
 
+
 #define HIF_SDIO_LOUD_FUNC(fmt, arg...)	\
 do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_LOUD)	\
 	osal_dbg_print(DFT_TAG"[L]%s:"  fmt, __func__, ##arg);	\
@@ -342,7 +343,9 @@ extern INT32 mtk_wcn_hif_sdio_do_autok(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 extern INT32 mtk_wcn_hif_sdio_f0_writeb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, UINT8 vb);
 
 extern INT32 mtk_wcn_hif_sdio_f0_readb(MTK_WCN_HIF_SDIO_CLTCTX ctx, UINT32 offset, PUINT8 pvb);
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+INT32 mtk_wcn_hif_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag);
+#endif
 
 #define DELETE_HIF_SDIO_CHRDEV 1
 #if !(DELETE_HIF_SDIO_CHRDEV)

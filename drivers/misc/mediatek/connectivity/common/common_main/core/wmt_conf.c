@@ -128,6 +128,8 @@ static const struct parse_data wmtcfg_fields[] = {
 	CHAR(pwr_on_on_slot),
 	CHAR(co_clock_flag),
 
+	CHAR(disable_deep_sleep_cfg),
+
 	INT(sdio_driving_cfg),
 
 	SHORT(coex_wmt_wifi_path),

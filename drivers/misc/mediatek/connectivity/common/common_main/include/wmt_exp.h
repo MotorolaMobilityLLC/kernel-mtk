@@ -184,6 +184,7 @@ typedef enum _SDIO_PS_OP {
 } SDIO_PS_OP;
 
 typedef INT32(*PF_WMT_SDIO_PSOP) (SDIO_PS_OP);
+typedef INT32(*PF_WMT_SDIO_DEEP_SLEEP)(MTK_WCN_BOOL);
 
 typedef enum _ENUM_WMTCHIN_TYPE_T {
 	WMTCHIN_CHIPID = 0x0,
@@ -394,6 +395,9 @@ extern ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_ctrl(ENUM_WMT_FLASH_P
 		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, ENUM_WMT_FLASH_PATCH_TYPE type,
 		PUINT32 version, UINT32 checksum);
 
+#endif
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+extern INT32 mtk_wcn_wmt_sdio_deep_sleep_flag_cb_reg(PF_WMT_SDIO_DEEP_SLEEP flag_cb);
 #endif
 
 #ifdef CONFIG_MTK_COMBO_ANT

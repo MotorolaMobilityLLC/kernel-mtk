@@ -78,6 +78,10 @@ static UINT32 gPsIdleTime = STP_PSM_IDLE_TIME_SLEEP;
 static UINT32 gPsEnable = 1;
 static PF_WMT_SDIO_PSOP sdio_own_ctrl;
 #endif
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+static PF_WMT_SDIO_DEEP_SLEEP sdio_deep_sleep_flag_set;
+#endif
+
 
 #define WMT_STP_CPUPCR_BUF_SIZE 6144
 static UINT8 g_cpupcr_buf[WMT_STP_CPUPCR_BUF_SIZE] = { 0 };
@@ -994,6 +998,12 @@ VOID wmt_lib_ps_set_sdio_psop(PF_WMT_SDIO_PSOP own_cb)
 #endif
 }
 
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+VOID wmt_lib_sdio_deep_sleep_flag_set(PF_WMT_SDIO_DEEP_SLEEP flag_cb)
+{
+	sdio_deep_sleep_flag_set = flag_cb;
+}
+#endif
 UINT32 wmt_lib_wait_event_checker(P_OSAL_THREAD pThread)
 {
 	P_DEV_WMT pDevWmt;
@@ -1953,8 +1963,36 @@ UINT32 wmt_lib_dbg_level_set(UINT32 level)
 	gWmtDbgLvl = level > WMT_LOG_LOUD ? WMT_LOG_LOUD : level;
 	return 0;
 }
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+INT32 wmt_lib_deep_sleep_ctrl(INT32 value)
+{
+	MTK_WCN_BOOL ret = MTK_WCN_BOOL_FALSE;
 
+	WMT_INFO_FUNC("g_deep_sleep_flag value (%d) set form wmt_dbg.\n", value);
+	ret = wmt_core_deep_sleep_ctrl(value);
+	if (sdio_deep_sleep_flag_set) {
+		if (value)
+			(*sdio_deep_sleep_flag_set)(MTK_WCN_BOOL_TRUE);
+		else
+			(*sdio_deep_sleep_flag_set)(MTK_WCN_BOOL_FALSE);
+	} else {
+		WMT_ERR_FUNC("sdio_deep_sleep_flag_set is not register");
+		return -1;
+	}
+	return 0;
+}
 
+MTK_WCN_BOOL wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL flag)
+{
+	if (sdio_deep_sleep_flag_set) {
+		(*sdio_deep_sleep_flag_set)(flag);
+	} else {
+		WMT_ERR_FUNC("sdio_deep_sleep_flag_set is not register");
+		return MTK_WCN_BOOL_FALSE;
+	}
+		return MTK_WCN_BOOL_TRUE;
+}
+#endif
 INT32 wmt_lib_set_stp_wmt_last_close(UINT32 value)
 {
 	return mtk_wcn_stp_set_wmt_last_close(value);
