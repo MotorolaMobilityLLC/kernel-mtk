@@ -47,9 +47,9 @@
 *=============================================================
 */
 static unsigned int apthermolmt_prev_cpu_pwr_lim;
-static unsigned int apthermolmt_curr_cpu_pwr_lim;
+static unsigned int apthermolmt_curr_cpu_pwr_lim = 0x7FFFFFFF;
 static unsigned int apthermolmt_prev_gpu_pwr_lim;
-static unsigned int apthermolmt_curr_gpu_pwr_lim;
+static unsigned int apthermolmt_curr_gpu_pwr_lim = 0x7FFFFFFF;
 
 static struct apthermolmt_user _dummy = {
 	.log = "dummy ",
