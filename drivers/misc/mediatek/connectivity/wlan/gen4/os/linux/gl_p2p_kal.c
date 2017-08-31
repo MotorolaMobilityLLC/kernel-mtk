@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: @(#) gl_p2p_cfg80211.c@@
 */
@@ -918,6 +969,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 
 		DBGLOG(INIT, INFO, "[p2p] scan complete %p\n", prP2pGlueDevInfo->prScanRequest);
 
+		KAL_ACQUIRE_MUTEX(prGlueInfo->prAdapter, MUTEX_DEL_INF);
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
 		if (prP2pGlueDevInfo->prScanRequest != NULL) {
@@ -934,6 +986,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 			DBGLOG(INIT, INFO, "DBG:p2p_cfg_scan_done\n");
 			cfg80211_scan_done(prScanRequest, fgIsAbort);
 		}
+		KAL_RELEASE_MUTEX(prGlueInfo->prAdapter, MUTEX_DEL_INF);
 
 	} while (FALSE);
 
@@ -1012,7 +1065,7 @@ VOID kalP2PIndicateMgmtTxStatus(IN P_GLUE_INFO_T prGlueInfo, IN P_MSDU_INFO_T pr
 			prNetdevice = prGlueP2pInfo->aprRoleHandler;
 		}
 
-		cfg80211_mgmt_tx_status(prGlueP2pInfo->prWdev,	/* struct net_device * dev, */
+		cfg80211_mgmt_tx_status(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
 					*pu8GlCookie,
 					(PUINT_8) ((ULONG) prMsduInfo->prPacket +
 						   MAC_TX_RESERVED_FIELD),
@@ -1077,17 +1130,74 @@ kalP2PIndicateRxMgmtFrame(IN P_GLUE_INFO_T prGlueInfo,
 		else
 			prNetdevice = prGlueP2pInfo->aprRoleHandler;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
 				 i4Freq,
 				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
 				 prSwRfb->pvHeader,
 				 prSwRfb->u2PacketLen,
 				 NL80211_RXMGMT_FLAG_ANSWERED);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 12, 0))
+		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
+				 i4Freq,
+				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
+				 prSwRfb->pvHeader,
+				 prSwRfb->u2PacketLen,
+				 NL80211_RXMGMT_FLAG_ANSWERED,
+				 GFP_ATOMIC);
+#else
+		cfg80211_rx_mgmt(prNetdevice->ieee80211_ptr,	/* struct net_device * dev, */
+				 i4Freq,
+				 RCPI_TO_dBm(nicRxGetRcpiValueFromRxv(RCPI_MODE_WF0, prSwRfb)),
+				 prSwRfb->pvHeader,
+				 prSwRfb->u2PacketLen,
+				 GFP_ATOMIC);
+#endif
+
 
 	} while (FALSE);
 
 }				/* kalP2PIndicateRxMgmtFrame */
+#if CFG_WPS_DISCONNECT
+VOID
+kalP2PGCIndicateConnectionStatus(IN P_GLUE_INFO_T prGlueInfo,
+				 IN UINT_8 ucRoleIndex,
+				 IN P_P2P_CONNECTION_REQ_INFO_T prP2pConnInfo,
+				 IN PUINT_8 pucRxIEBuf, IN UINT_16 u2RxIELen, IN UINT_16 u2StatusReason,
+				 IN WLAN_STATUS eStatus)
+{
+	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 
+	do {
+		if (prGlueInfo == NULL) {
+			ASSERT(FALSE);
+			break;
+		}
+
+		prGlueP2pInfo = prGlueInfo->prP2PInfo[ucRoleIndex];
+
+		if (prP2pConnInfo) {
+			cfg80211_connect_result(prGlueP2pInfo->aprRoleHandler,
+						/* struct net_device * dev, */
+						prP2pConnInfo->aucBssid, prP2pConnInfo->aucIEBuf,
+						prP2pConnInfo->u4BufLength,
+						pucRxIEBuf, u2RxIELen, u2StatusReason,
+						GFP_KERNEL);	/* gfp_t gfp *//* allocation flags */
+
+			prP2pConnInfo->eConnRequest = P2P_CONNECTION_TYPE_IDLE;
+		} else {
+			/* Disconnect, what if u2StatusReason == 0? */
+			cfg80211_disconnected(prGlueP2pInfo->aprRoleHandler,
+					      /* struct net_device * dev, */
+					      u2StatusReason, pucRxIEBuf, u2RxIELen,
+					      eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY, GFP_KERNEL);
+		}
+
+	} while (FALSE);
+
+}				/* kalP2PGCIndicateConnectionStatus */
+
+#else
 VOID
 kalP2PGCIndicateConnectionStatus(IN P_GLUE_INFO_T prGlueInfo,
 				 IN UINT_8 ucRoleIndex,
@@ -1117,12 +1227,14 @@ kalP2PGCIndicateConnectionStatus(IN P_GLUE_INFO_T prGlueInfo,
 			/* Disconnect, what if u2StatusReason == 0? */
 			cfg80211_disconnected(prGlueP2pInfo->aprRoleHandler,
 					      /* struct net_device * dev, */
-					      u2StatusReason, pucRxIEBuf, u2RxIELen, FALSE, GFP_KERNEL);
+					      u2StatusReason, pucRxIEBuf, u2RxIELen, GFP_KERNEL);
 		}
 
 	} while (FALSE);
 
 }				/* kalP2PGCIndicateConnectionStatus */
+
+#endif
 
 VOID
 kalP2PGOStationUpdate(IN P_GLUE_INFO_T prGlueInfo,
@@ -1141,6 +1253,9 @@ kalP2PGOStationUpdate(IN P_GLUE_INFO_T prGlueInfo,
 
 			kalMemZero(&rStationInfo, sizeof(rStationInfo));
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
+			rStationInfo.filled = STATION_INFO_ASSOC_REQ_IES;
+#endif
 			rStationInfo.generation = ++prP2pGlueInfo->i4Generation;
 
 			rStationInfo.assoc_req_ies = prCliStaRec->pucAssocReqIe;

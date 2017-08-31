@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: @(#) gl_p2p.c@@
 */
@@ -9,619 +60,6 @@
 *    Wireless LAN Adapters.
 */
 
-/*
-** Log: gl_p2p.c
-**
-** 04 14 2014 eason.tsai
-** [ALPS01510349] [6595][KK][HotKnot][Reboot][KE][p2pDevFsmRunEventScanDone]Sender
-** reboot automatically with KE about p2pDevFsmRunEventScanDone.
-** fix KE
-**
-** 01 23 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** fix ap mode
-**
-** 07 31 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Change private data of net device.
-**
-** 07 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Temp fix Hot-spot data path issue.
-**
-** 07 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** MT6630 Driver Update for Hot-Spot.
-**
-** 07 29 2013 cp.wu
-** [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
-** Preparation for porting remain_on_channel support
-**
-** 07 26 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Reduce extra Tx frame header parsing
-** 2. Add TX port control
-** 3. Add net interface to BSS binding
-**
-** 07 19 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Code update for P2P.
-**
-** 07 17 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** MT6630 P2P first connection check point 1.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add new code, fix compile warning.
-**
-** 01 23 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Refine net dev implementation
-**
-** 01 21 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update TX path based on new ucBssIndex modifications.
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 yuche.tsai
-** NULL
-** Fix bug of invitation request.
-**
-** 08 17 2012 yuche.tsai
-** NULL
-** Fix compile warning.
-**
-** 08 16 2012 yuche.tsai
-** NULL
-** Fix compile warning.
-**
-** 08 15 2012 yuche.tsai
-** NULL
-** Fix compile warning.
-**
-** 07 31 2012 yuche.tsai
-** NULL
-** Update Active/Deactive network policy for P2P network.
-** Highly related to power saving.
-**
-** 07 24 2012 yuche.tsai
-** NULL
-** Bug fix for JB.
-**
-** 07 20 2012 yuche.tsai
-** [WCXRP00001119] [Volunteer Patch][WiFi Direct][Driver] Connection Policy Set for WFD SIGMA test
-** Support remain on channel.
-**
-** 07 19 2012 yuche.tsai
-** NULL
-** Update code for net device register.
-**
-** 07 19 2012 yuche.tsai
-** NULL
-** Code update for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Fix compile error for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Let netdev bring up.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 01 09 2012 terry.wu
- * [WCXRP00001166] [Wi-Fi] [Driver] cfg80211 integration for p2p newtork
- * cfg80211 integration for p2p network.
- *
- * 12 19 2011 terry.wu
- * [WCXRP00001142] [Wi-Fi] [P2P Driver] XOR local admin bit to generate p2p net device MAC
- * XOR local administrated bit to generate net device MAC of p2p network.
- *
- * 12 02 2011 yuche.tsai
- * NULL
- * Fix possible KE when unload p2p.
- *
- * 11 24 2011 yuche.tsai
- * NULL
- * Fix P2P IOCTL of multicast address bug, add low power driver stop control.
- *
- * 11 22 2011 yuche.tsai
- * NULL
- * Update RSSI link quality of P2P Network query method. (Bug fix)
- *
- * 11 19 2011 yuche.tsai
- * NULL
- * Add RSSI support for P2P network.
- *
- * 11 16 2011 yuche.tsai
- * [WCXRP00001107] [Volunteer Patch][Driver] Large Network Type index assert in FW issue.
- * Avoid using work thread in set p2p multicast address callback.
- *
- * 11 11 2011 yuche.tsai
- * NULL
- * Fix work thread cancel issue.
- *
- * 11 11 2011 yuche.tsai
- * NULL
- * Fix default device name issue.
- *
- * 11 08 2011 yuche.tsai
- * [WCXRP00001094] [Volunteer Patch][Driver] Driver version & supplicant version query & set support for service
- * discovery version check.
- * Add support for driver version query & p2p supplicant verseion set.
- * For new service discovery mechanism sync.
- *
- * 11 07 2011 yuche.tsai
- * NULL
- * [ALPS 00087243] KE in worker thread.
- * The multicast address list is scheduled in worker thread.
- * Before the worker thread is excuted, if P2P is unloaded, a KE may occur.
- *
- * 10 26 2011 terry.wu
- * [WCXRP00001066] [MT6620 Wi-Fi] [P2P Driver] Fix P2P Oid Issue
- * Fix some P2P OID functions didn't raise its flag "fgIsP2pOid" issue.
- *
- * 10 25 2011 cm.chang
- * [WCXRP00001058] [All Wi-Fi][Driver] Fix sta_rec's phyTypeSet and OBSS scan in AP mode
- * .
- *
- * 10 18 2011 yuche.tsai
- * [WCXRP00001045] [WiFi Direct][Driver] Check 2.1 branch.
- * Support Channel Query.
- *
- * 10 18 2011 yuche.tsai
- * [WCXRP00001045] [WiFi Direct][Driver] Check 2.1 branch.
- * New 2.1 branch
-
- *
- * 08 26 2011 yuche.tsai
- * NULL
- * Fix bug of parsing secondary device list type issue.
- *
- * 08 24 2011 yuche.tsai
- * [WCXRP00000919] [Volunteer Patch][WiFi Direct][Driver] Invitation New Feature.
- * Invitation Abort.
- *
- * 08 23 2011 yuche.tsai
- * NULL
- * Fix multicast address list issue of P2P.
- *
- * 08 22 2011 chinglan.wang
- * NULL
- * Fix invitation indication bug..
- *
- * 08 16 2011 cp.wu
- * [WCXRP00000934] [MT6620 Wi-Fi][Driver][P2P] Wi-Fi hot spot with auto sparse channel residence
- * auto channel decision for 2.4GHz hot spot mode
- *
- * 08 16 2011 chinglan.wang
- * NULL
- * Add the group id information in the invitation indication.
- *
- * 08 09 2011 yuche.tsai
- * [WCXRP00000919] [Volunteer Patch][WiFi Direct][Driver] Invitation New Feature.
- * Invitation Feature add on.
- *
- * 08 05 2011 yuche.tsai
- * [WCXRP00000856] [Volunteer Patch][WiFi Direct][Driver] MT6620 WiFi Direct IOT Issue with BCM solution.
- * Add Password ID check for quick connection.
- * Also modify some connection policy.
- *
- * 07 18 2011 chinglan.wang
- * NULL
- * Add IOC_P2P_GO_WSC_IE (p2p capability).
- *
- * 06 14 2011 yuche.tsai
- * NULL
- * Add compile flag to disable persistent group support.
- *
- * 05 04 2011 chinglan.wang
- * [WCXRP00000698] [MT6620 Wi-Fi][P2P][Driver] Add p2p invitation command for the p2p driver
- * .
- *
- * 05 02 2011 yuche.tsai
- * [WCXRP00000693] [Volunteer Patch][MT6620][Driver] Clear Formation Flag after TX lifetime timeout.
- * Clear formation flag after formation timeout.
- *
- * 04 22 2011 george.huang
- * [WCXRP00000621] [MT6620 Wi-Fi][Driver] Support P2P supplicant to set power mode
- * .
- *
- * 04 21 2011 george.huang
- * [WCXRP00000621] [MT6620 Wi-Fi][Driver] Support P2P supplicant to set power mode
- * 1. Revise P2P power mode setting.
- * 2. Revise fast-PS for concurrent
- *
- * 04 19 2011 wh.su
- * NULL
- * Adding length check before doing WPA RSN IE parsing for scan results indicate.
- *
- * 04 14 2011 yuche.tsai
- * [WCXRP00000646] [Volunteer Patch][MT6620][FW/Driver] Sigma Test Modification for some test case.
- * Connection flow refine for Sigma test.
- *
- * 04 08 2011 yuche.tsai
- * [WCXRP00000624] [Volunteer Patch][MT6620][Driver] Add device discoverability support for GO.
- * Add device discoverability support.
- *
- * 04 08 2011 george.huang
- * [WCXRP00000621] [MT6620 Wi-Fi][Driver] Support P2P supplicant to set power mode
- * separate settings of P2P and AIS
- *
- * 04 07 2011 terry.wu
- * [WCXRP00000619] [MT6620 Wi-Fi][Driver] fix kernel panic may occur when removing wlan
- * Fix kernel panic may occur when removing wlan driver.
- *
- * 03 31 2011 wh.su
- * [WCXRP00000614] [MT6620 Wi-Fi][Driver] P2P: Update beacon content while setting WSC IE
- * Update the wsc ie to beacon content.
- *
- * 03 25 2011 wh.su
- * NULL
- * add the sample code for set power mode and get power mode.
- *
- * 03 25 2011 yuche.tsai
- * NULL
- * Improve some error handleing.
- *
- * 03 22 2011 george.huang
- * [WCXRP00000504] [MT6620 Wi-Fi][FW] Support Sigma CAPI for power saving related command
- * link with supplicant commands
- *
- * 03 22 2011 yuche.tsai
- * [WCXRP00000584] [Volunteer Patch][MT6620][Driver] Add beacon timeout support for WiFi Direct.
- * Modify formation policy.
- *
- * 03 22 2011 yuche.tsai
- * NULL
- * Modify formation policy setting.
- *
- * 03 18 2011 yuche.tsai
- * [WCXRP00000574] [Volunteer Patch][MT6620][Driver] Modify P2P FSM Connection Flow
- * Modify connection flow after Group Formation Complete, or device connect to a GO.
- * Instead of request channel & connect directly, we use scan to allocate channel bandwidth & connect after RX BCN.
- *
- * 03 15 2011 wh.su
- * [WCXRP00000563] [MT6620 Wi-Fi] [P2P] Set local config method while set password Id ready
- * set lccal config method method while set password Id ready.
- *
- * 03 15 2011 yuche.tsai
- * [WCXRP00000560] [Volunteer Patch][MT6620][Driver] P2P Connection from UI using KEY/DISPLAY issue
- * Fix some configure method issue.
- *
- * 03 15 2011 jeffrey.chang
- * [WCXRP00000558] [MT6620 Wi-Fi][MT6620 Wi-Fi][Driver] refine the queue selection algorithm for WMM
- * refine queue_select function
- *
- * 03 13 2011 wh.su
- * [WCXRP00000530] [MT6620 Wi-Fi] [Driver] skip doing p2pRunEventAAAComplete after send assoc response Tx Done
- * add code for avoid compiling warning.
- *
- * 03 10 2011 yuche.tsai
- * NULL
- * Add P2P API.
- *
- * 03 10 2011 terry.wu
- * [WCXRP00000505] [MT6620 Wi-Fi][Driver/FW] WiFi Direct Integration
- * Remove unnecessary assert and message.
- *
- * 03 08 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * support the power save related p2p setting.
- *
- * 03 07 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * rename the define to anti_pviracy.
- *
- * 03 05 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * add the code to get the check rsponse and indicate to app.
- *
- * 03 03 2011 jeffrey.chang
- * [WCXRP00000512] [MT6620 Wi-Fi][Driver] modify the net device relative functions to support the H/W multiple queue
- * support concurrent network
- *
- * 03 03 2011 jeffrey.chang
- * [WCXRP00000512] [MT6620 Wi-Fi][Driver] modify the net device relative functions to support the H/W multiple queue
- * modify P2P's netdevice  functions to support multiple H/W queues
- *
- * 03 03 2011 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface for supporting Wi-Fi Direct Service
- * Discovery
- * for get request, the buffer length to be copied is header + payload.
- *
- * 03 02 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * add code to let the beacon and probe response for Auto GO WSC .
- *
- * 03 02 2011 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface for supporting Wi-Fi Direct Service
- * Discovery
- * add a missed break.
- *
- * 03 01 2011 yuche.tsai
- * [WCXRP00000501] [Volunteer Patch][MT6620][Driver] No common channel issue when doing GO formation
- * Update channel issue when doing GO formation..
- *
- * 02 25 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * add the Operation channel setting.
- *
- * 02 23 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * fixed the set int ioctl set index and value map to driver issue.
- *
- * 02 22 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * adding the ioctl set int from supplicant, and can used to set the p2p parameters
- *
- * 02 21 2011 terry.wu
- * [WCXRP00000476] [MT6620 Wi-Fi][Driver] Clean P2P scan list while removing P2P
- * Clean P2P scan list while removing P2P.
- *
- * 02 18 2011 wh.su
- * [WCXRP00000471] [MT6620 Wi-Fi][Driver] Add P2P Provison discovery append Config Method attribute at WSC IE
- * fixed the ioctl setting that index not map to spec defined config method.
- *
- * 02 17 2011 wh.su
- * [WCXRP00000471] [MT6620 Wi-Fi][Driver] Add P2P Provison discovery append Config Method attribute at WSC IE
- * append the WSC IE config method attribute at provision discovery request.
- *
- * 02 17 2011 wh.su
- * [WCXRP00000448] [MT6620 Wi-Fi][Driver] Fixed WSC IE not send out at probe request
- * modify the structure pointer for set WSC IE.
- *
- * 02 16 2011 wh.su
- * [WCXRP00000448] [MT6620 Wi-Fi][Driver] Fixed WSC IE not send out at probe request
- * fixed the probe request send out without WSC IE issue (at P2P).
- *
- * 02 09 2011 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface for supporting Wi-Fi Direct Service
- * Discovery
- * fix typo
- *
- * 02 09 2011 yuche.tsai
- * [WCXRP00000431] [Volunteer Patch][MT6620][Driver] Add MLME support for deauthentication under AP(Hot-Spot) mode.
- * Add Support for MLME deauthentication for Hot-Spot.
- *
- * 01 25 2011 terry.wu
- * [WCXRP00000393] [MT6620 Wi-Fi][Driver] Add new module insert parameter
- * Add a new module parameter to indicate current runnig mode, P2P or AP.
- *
- * 01 12 2011 yuche.tsai
- * [WCXRP00000352] [Volunteer Patch][MT6620][Driver] P2P Statsion Record Client List Issue
- * 1. Modify Channel Acquire Time of AP mode from 5s to 1s.
- * 2. Call cnmP2pIsPermit() before active P2P network.
- * 3. Add channel selection support for AP mode.
- *
- * 01 05 2011 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface for supporting Wi-Fi Direct Service
- * Discovery
- * ioctl implementations for P2P Service Discovery
- *
- * 01 04 2011 cp.wu
- * [WCXRP00000338] [MT6620 Wi-Fi][Driver] Separate kalMemAlloc into kmalloc and vmalloc implementations to ease
- * physically continuous memory demands
- * separate kalMemAlloc() into virtually-continuous and physically-continuous type to ease slab system pressure
- *
- * 12 22 2010 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface for supporting Wi-Fi Direct Service
- * Discovery
- * 1. header file restructure for more clear module isolation
- * 2. add function interface definition for implementing Service Discovery callbacks
- *
- * 12 15 2010 cp.wu
- * NULL
- * invoke nicEnableInterrupt() before leaving from wlanAdapterStart()
- *
- * 12 08 2010 yuche.tsai
- * [WCXRP00000245] [MT6620][Driver] Invitation & Provision Discovery Feature Check-in
- * [WCXRP000000245][MT6620][Driver] Invitation Request Feature Add
- *
- * 11 30 2010 yuche.tsai
- * NULL
- * Invitation & Provision Discovery Indication.
- *
- * 11 17 2010 wh.su
- * [WCXRP00000164] [MT6620 Wi-Fi][Driver] Support the p2p random SSID[WCXRP00000179] [MT6620 Wi-Fi][FW] Set the Tx
- * lowest rate at wlan table for normal operation
- * fixed some ASSERT check.
- *
- * 11 04 2010 wh.su
- * [WCXRP00000164] [MT6620 Wi-Fi][Driver] Support the p2p random SSID
- * adding the p2p random ssid support.
- *
- * 10 20 2010 wh.su
- * [WCXRP00000124] [MT6620 Wi-Fi] [Driver] Support the dissolve P2P Group
- * Add the code to support disconnect p2p group
- *
- * 10 04 2010 wh.su
- * [WCXRP00000081] [MT6620][Driver] Fix the compiling error at WinXP while enable P2P
- * add a kal function for set cipher.
- *
- * 10 04 2010 wh.su
- * [WCXRP00000081] [MT6620][Driver] Fix the compiling error at WinXP while enable P2P
- * fixed compiling error while enable p2p.
- *
- * 09 28 2010 wh.su
- * NULL
- * [WCXRP00000069][MT6620 Wi-Fi][Driver] Fix some code for phase 1 P2P Demo.
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000054] [MT6620 Wi-Fi][Driver] Restructure driver for second Interface
- * Isolate P2P related function for Hardware Software Bundle
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * Eliminate Linux Compile Warning
- *
- * 09 10 2010 george.huang
- * NULL
- * update iwpriv LP related
- *
- * 09 10 2010 wh.su
- * NULL
- * fixed the compiling error at win XP.
- *
- * 09 09 2010 cp.wu
- * NULL
- * add WPS/WPA/RSN IE for Wi-Fi Direct scanning result.
- *
- * 09 07 2010 wh.su
- * NULL
- * adding the code for beacon/probe req/ probe rsp wsc ie at p2p.
- *
- * 09 06 2010 wh.su
- * NULL
- * let the p2p can set the privacy bit at beacon and rsn ie at assoc req at key handshake state.
- *
- * 08 25 2010 cp.wu
- * NULL
- * add netdev_ops(NDO) for linux kernel 2.6.31 or greater
- *
- * 08 23 2010 cp.wu
- * NULL
- * revise constant definitions to be matched with implementation (original cmd-event definition is deprecated)
- *
- * 08 20 2010 cp.wu
- * NULL
- * correct typo.
- *
- * 08 20 2010 yuche.tsai
- * NULL
- * Invert Connection request provision status parameter.
- *
- * 08 19 2010 cp.wu
- * NULL
- * add set mac address interface for further possibilities of wpa_supplicant overriding interface address.
- *
- * 08 18 2010 cp.wu
- * NULL
- * modify pwp ioctls attribution by removing FIXED_SIZE.
- *
- * 08 18 2010 jeffrey.chang
- * NULL
- * support multi-function sdio
- *
- * 08 17 2010 cp.wu
- * NULL
- * correct p2p net device registration with NULL pointer access issue.
- *
- * 08 16 2010 cp.wu
- * NULL
- * P2P packets are now marked when being queued into driver, and identified later without checking MAC address
- *
- * 08 16 2010 cp.wu
- * NULL
- * add subroutines for P2P to set multicast list.
- *
- * 08 16 2010 george.huang
- * NULL
- * add wext handlers to link P2P set PS profile/ network address function (TBD)
- *
- * 08 16 2010 cp.wu
- * NULL
- * revised implementation of Wi-Fi Direct io controls.
- *
- * 08 12 2010 cp.wu
- * NULL
- * follow-up with ioctl interface update for Wi-Fi Direct application
- *
- * 08 06 2010 cp.wu
- * NULL
- * driver hook modifications corresponding to ioctl interface change.
- *
- * 08 03 2010 cp.wu
- * NULL
- * add basic support for ioctl of getting scan result. (only address and SSID are reporterd though)
- *
- * 08 03 2010 cp.wu
- * NULL
- * [Wi-Fi Direct Driver Hook] change event indication API to be consistent with supplicant
- *
- * 08 03 2010 cp.wu
- * NULL
- * surpress compilation warning.
- *
- * 08 03 2010 cp.wu
- * NULL
- * [Wi-Fi Direct] add framework for driver hooks
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 23 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * p2p interface revised to be sync. with HAL
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 06 01 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl to configure scan mode for p2p connection
- *
- * 05 31 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add cfg80211 interface, which is to replace WE, for further extension
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement private io controls for Wi-Fi Direct
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement get scan result.
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add basic handling framework for wireless extension ioctls.
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * 1) add timeout handler mechanism for pending command packets
- * 2) add p2p add/removal key
- *
- * 05 14 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement wireless extension ioctls in iw_handler form.
- *
- * 05 14 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl framework for Wi-Fi Direct by reusing wireless extension ioctls as well
- *
- * 05 11 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * p2p ioctls revised.
- *
- * 05 11 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl for controlling p2p scan phase parameters
- *
- * 05 10 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement basic wi-fi direct framework
- *
- * 05 07 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add basic framework for implementating P2P driver hook.
- *
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -724,6 +162,7 @@ static struct cfg80211_ops mtk_p2p_ops = {
 #endif
 #endif
 };
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 
 static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
 	{
@@ -743,6 +182,8 @@ static const struct wiphy_vendor_command mtk_p2p_vendor_ops[] = {
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
 };
+
+#endif
 
 /* There isn't a lot of sense in it, but you can transmit anything you like */
 static const struct ieee80211_txrx_stypes
@@ -1048,8 +489,6 @@ BOOLEAN p2PAllocInfo(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIdex)
 				kalMemAlloc(sizeof(P2P_ROLE_FSM_INFO_T), VIR_MEM_TYPE);
 			    }
 #endif
-
-
 		} else {
 			ASSERT(prAdapter->prP2pInfo != NULL);
 			ASSERT(prWifiVar->prP2PConnSettings[ucIdex] != NULL);
@@ -1152,6 +591,10 @@ BOOLEAN p2PFreeInfo(P_GLUE_INFO_T prGlueInfo)
 					   sizeof(P2P_CONNECTION_SETTINGS_T));
 
 				prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings[i] = NULL;
+				kalMemFree(prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo[i], VIR_MEM_TYPE,
+					   sizeof(P2P_SPECIFIC_BSS_INFO_T));
+
+				prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo[i] = NULL;
 			}
 
 		kalMemFree(prGlueInfo->prP2PDevInfo, VIR_MEM_TYPE, sizeof(GL_P2P_DEV_INFO_T));
@@ -1165,13 +608,6 @@ BOOLEAN p2PFreeInfo(P_GLUE_INFO_T prGlueInfo)
 		}
 
 /* kalMemFree(prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo, VIR_MEM_TYPE, sizeof(P2P_FSM_INFO_T)); */
-		for (i = 0; i < KAL_P2P_NUM; i++)
-			if (prGlueInfo->prP2PInfo[i] != NULL) {
-				kalMemFree(prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo[i], VIR_MEM_TYPE,
-					   sizeof(P2P_SPECIFIC_BSS_INFO_T));
-
-				prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo[i] = NULL;
-			}
 
 		kalMemFree(prGlueInfo->prAdapter->rWifiVar.prP2pDevFsmInfo, VIR_MEM_TYPE, sizeof(P2P_DEV_FSM_INFO_T));
 
@@ -1428,9 +864,15 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 
 
 		/* 3. allocate netdev */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 		prGlueInfo->prP2PInfo[i]->prDevHandler =
 			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), prSetDevName,
 					NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
+#else
+		prGlueInfo->prP2PInfo[i]->prDevHandler =
+		    alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), prSetDevName,
+				ether_setup, CFG_MAX_TXQ_NUM);
+#endif
 		if (!prGlueInfo->prP2PInfo[i]->prDevHandler) {
 			DBGLOG(INIT, WARN, "unable to allocate netdevice for p2p\n");
 
@@ -1576,18 +1018,26 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	prWiphy->max_remain_on_channel_duration = 5000;
 	prWiphy->n_cipher_suites = 5;
 	prWiphy->cipher_suites = mtk_cipher_suites;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
+	prWiphy->flags = WIPHY_FLAG_CUSTOM_REGULATORY | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
+#else
 	prWiphy->flags = WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL | WIPHY_FLAG_HAVE_AP_SME;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
+#endif
 	prWiphy->ap_sme_capa = 1;
 
 	prWiphy->max_scan_ssids = MAX_SCAN_LIST_NUM;
 	prWiphy->max_scan_ie_len = MAX_SCAN_IE_LEN;
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 	prWiphy->vendor_commands = mtk_p2p_vendor_ops;
 	prWiphy->n_vendor_commands = sizeof(mtk_p2p_vendor_ops) / sizeof(struct wiphy_vendor_command);
+#endif
 
 #ifdef CONFIG_PM
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0)
 	prWiphy->wowlan = &mtk_p2p_wowlan_support;
+#endif
 #endif
 
 	/* 2.1 set priv as pointer to glue structure */

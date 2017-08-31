@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/TRUNK/WiFi_P2P_Driver/os/linux/include/gl_p2p_ioctl.h#9
 */
@@ -6,229 +57,6 @@
 *    \brief  This file is for custom ioctls for Wi-Fi Direct only
 */
 
-/*
-** Log: gl_p2p_ioctl.h
-**
-** 07 17 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** MT6630 P2P first connection check point 1.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add new code, fix compile warning.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 07 25 2012 yuche.tsai
-** NULL
-** Bug fix.
-**
-** 07 25 2012 yuche.tsai
-** NULL
-** Bug fix for TX mgmt frame.
-**
-** 07 19 2012 yuche.tsai
-** NULL
-** Code update for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 06 07 2011 yuche.tsai
- * [WCXRP00000763] [Volunteer Patch][MT6620][Driver] RX Service Discovery Frame under AP mode Issue
- * Fix RX SD request under AP mode issue.
- *
- * 03 25 2011 wh.su
- * NULL
- * Fix P2P IOCTL of multicast address bug, add low power driver stop control.
- *
- * 11 22 2011 yuche.tsai
- * NULL
- * Update RSSI link quality of P2P Network query method. (Bug fix)
- *
- * 11 19 2011 yuche.tsai
- * NULL
- * Add RSSI support for P2P network.
- *
- * 11 11 2011 yuche.tsai
- * NULL
- * Fix work thread cancel issue.
- *
- * 11 08 2011 yuche.tsai
- * [WCXRP00001094] [Volunteer Patch][Driver] Driver version & supplicant version query & set support
- * for service discovery version check.
- * Add support for driver version query & p2p supplicant verseion set.
- * For new service discovery mechanism sync.
- *
- * 10 25 2011 cm.chang
- * [WCXRP00001058] [All Wi-Fi][Driver] Fix sta_rec's phyTypeSet and OBSS scan in AP mode
- * .
- *
- * 10 18 2011 yuche.tsai
- * [WCXRP00001045] [WiFi Direct][Driver] Check 2.1 branch.
- * New 2.1 branch
-
- *
- * 08 16 2011 chinglan.wang
- * NULL
- * Add the group id information in the invitation indication.
- *
- * 08 09 2011 yuche.tsai
- * [WCXRP00000919] [Volunteer Patch][WiFi Direct][Driver] Invitation New Feature.
- * Invitation Feature add on.
- *
- * 05 04 2011 chinglan.wang
- * [WCXRP00000698] [MT6620 Wi-Fi][P2P][Driver] Add p2p invitation command for the p2p driver
- * .
- *
- * 03 29 2011 wh.su
- * [WCXRP00000095] [MT6620 Wi-Fi] [FW] Refine the P2P GO send broadcast protected code
- * add the set power and get power function sample.
- *
- * 03 22 2011 george.huang
- * [WCXRP00000504] [MT6620 Wi-Fi][FW] Support Sigma CAPI for power saving related command
- * link with supplicant commands
- *
- * 03 07 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * rename the define to anti_pviracy.
- *
- * 03 02 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * Add Security check related code.
- *
- * 03 01 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * fixed the ioctl sumcmd to meet the p2p_supplicant setting.
- *
- * 02 23 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * adding the ioctl set int define for p2p parameter.
- *
- * 02 22 2011 wh.su
- * [WCXRP00000488] [MT6620 Wi-Fi][Driver] Support the SIGMA set p2p parameter to driver
- * adding the ioctl set int from supplicant, and can used to set the p2p parameters
- *
- * 02 17 2011 wh.su
- * [WCXRP00000448] [MT6620 Wi-Fi][Driver] Fixed WSC IE not send out at probe request
- * adjust the set wsc ie structure.
- *
- * 01 05 2011 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface
- * for supporting Wi-Fi Direct Service Discovery
- * ioctl implementations for P2P Service Discovery
- *
- * 12 22 2010 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface
- * for supporting Wi-Fi Direct Service Discovery
- * 1. header file restructure for more clear module isolation
- * 2. add function interface definition for implementing Service Discovery callbacks
- *
- * 12 15 2010 cp.wu
- * NULL
- * invoke nicEnableInterrupt() before leaving from wlanAdapterStart()
- *
- * 12 07 2010 cp.wu
- * [WCXRP00000237] [MT6620 Wi-Fi][Wi-Fi Direct][Driver] Add interface for supporting service discovery
- * define a pair of i/o control for multiplexing layer
- *
- * 11 04 2010 wh.su
- * [WCXRP00000164] [MT6620 Wi-Fi][Driver] Support the p2p random SSID
- * adding the p2p random ssid support.
- *
- * 10 20 2010 wh.su
- * [WCXRP00000124] [MT6620 Wi-Fi] [Driver] Support the dissolve P2P Group
- * Add the code to support disconnect p2p group
- *
- * 09 21 2010 kevin.huang
- * [WCXRP00000054] [MT6620 Wi-Fi][Driver] Restructure driver for second Interface
- * Isolate P2P related function for Hardware Software Bundle
- *
- * 09 10 2010 george.huang
- * NULL
- * update iwpriv LP related
- *
- * 09 07 2010 wh.su
- * NULL
- * adding the code for beacon/probe req/ probe rsp wsc ie at p2p.
- *
- * 08 25 2010 cp.wu
- * NULL
- * add netdev_ops(NDO) for linux kernel 2.6.31 or greater
- *
- * 08 20 2010 yuche.tsai
- * NULL
- * Refine a function parameter name.
- *
- * 08 19 2010 cp.wu
- * NULL
- * add set mac address interface for further possibilities of wpa_supplicant overriding interface address.
- *
- * 08 16 2010 george.huang
- * NULL
- * add wext handlers to link P2P set PS profile/ network address function (TBD)
- *
- * 08 16 2010 cp.wu
- * NULL
- * revised implementation of Wi-Fi Direct io controls.
- *
- * 08 12 2010 cp.wu
- * NULL
- * follow-up with ioctl interface update for Wi-Fi Direct application
- *
- * 08 06 2010 cp.wu
- * NULL
- * driver hook modifications corresponding to ioctl interface change.
- *
- * 08 03 2010 cp.wu
- * NULL
- * [Wi-Fi Direct] add framework for driver hooks
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 06 01 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl to configure scan mode for p2p connection
- *
- * 05 31 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add cfg80211 interface, which is to replace WE, for further extension
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement get scan result.
- *
- * 05 14 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * implement wireless extension ioctls in iw_handler form.
- *
- * 05 14 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl framework for Wi-Fi Direct by reusing wireless extension ioctls as well
- *
- * 05 11 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * p2p ioctls revised.
- *
- * 05 11 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * add ioctl for controlling p2p scan phase parameters
- *
-*/
 
 #ifndef _GL_P2P_IOCTL_H
 #define _GL_P2P_IOCTL_H
@@ -298,6 +126,8 @@
 #define P2P_SEND_SD_REQUEST             2
 #define P2P_GET_SD_RESPONSE             3
 #define P2P_TERMINATE_SD_PHASE          4
+
+#define CHN_DIRTY_WEIGHT_UPPERBOUND     4
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -468,6 +298,23 @@ typedef struct iw_p2p_version {
 	UINT_32 u4Version;
 } IW_P2P_VERSION, *P_IW_P2P_VERSION;
 
+/*----------------------------------------------------------------------------*/
+/* NL80211 TEST MODE                                                          */
+/*----------------------------------------------------------------------------*/
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
+	__NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_INVALID,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_2G_BASE_1,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_36,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_52,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_100,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_149,
+	__NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_AFTER_LAST,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_MAX = __NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_AFTER_LAST - 1
+} ENUM_TESTMODE_AVAILABLE_CHAN_ATTR;
+#endif
+
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -522,9 +369,15 @@ extern const UINT_32 mtk_cipher_suites[5];
 
 #if (CFG_ENABLE_WIFI_DIRECT_CFG_80211 != 0)
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0)
 struct wireless_dev *mtk_p2p_cfg80211_add_iface(struct wiphy *wiphy,
 						const char *name, unsigned char name_assign_type,
 						enum nl80211_iftype type, u32 *flags, struct vif_params *params);
+#else
+struct wireless_dev *mtk_p2p_cfg80211_add_iface(struct wiphy *wiphy,
+						const char *name,
+						enum nl80211_iftype type, u32 *flags, struct vif_params *params);
+#endif
 
 int
 mtk_p2p_cfg80211_change_iface(struct wiphy *wiphy,
@@ -552,10 +405,12 @@ mtk_p2p_cfg80211_del_key(struct wiphy *wiphy,
 int
 mtk_p2p_cfg80211_set_default_key(struct wiphy *wiphy,
 				 struct net_device *netdev, u8 key_index, bool unicast, bool multicast);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_p2p_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev,
 				const u8 *mac, struct station_info *sinfo);
-
+#else
+int mtk_p2p_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_info *sinfo);
+#endif
 int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request);
 
 int mtk_p2p_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed);
@@ -590,13 +445,25 @@ int mtk_p2p_cfg80211_disassoc(struct wiphy *wiphy, struct net_device *dev, struc
 int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struct cfg80211_ap_settings *settings);
 
 int mtk_p2p_cfg80211_change_beacon(struct wiphy *wiphy, struct net_device *dev, struct cfg80211_beacon_data *info);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 			     struct wireless_dev *wdev,
 			     struct cfg80211_mgmt_tx_params *params,
 			     u64 *cookie);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
 int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, struct station_del_parameters *params);
+#else
+int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, const u8 *mac);
+#endif
+#else
+int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
+			     struct wireless_dev *wdev,
+			     struct ieee80211_channel *chan, bool offchan,
+			     unsigned int wait, const u8 *buf, size_t len,
+			     bool no_cck, bool dont_wait_for_ack, u64 *cookie);
+
+int mtk_p2p_cfg80211_del_station(struct wiphy *wiphy, struct net_device *dev, u8 *mac);
+#endif
 
 int mtk_p2p_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy, struct wireless_dev *wdev, u64 cookie);
 
@@ -613,8 +480,11 @@ mtk_p2p_cfg80211_set_bitrate_mask(IN struct wiphy *wiphy,
 				  IN const u8 *peer, IN const struct cfg80211_bitrate_mask *mask);
 
 #ifdef CONFIG_NL80211_TESTMODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wdev, IN void *data, IN int len);
-
+#else
+int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
+#endif
 int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
 
 int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
@@ -624,6 +494,11 @@ int mtk_p2p_cfg80211_testmode_wfd_update_cmd(IN struct wiphy *wiphy, IN void *da
 #endif
 
 int mtk_p2p_cfg80211_testmode_hotspot_block_list_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *data, IN int len);
+#endif
+
 #else
 /* IGNORE KERNEL DEPENCY ERRORS*/
 /*#error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE) to support Wi-Fi Direct"*/

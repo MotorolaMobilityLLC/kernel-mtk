@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/TRUNK/MT6620_WiFi_Firmware/mcu/wifi/mgmt/tkip_mic.c#7
 */
@@ -14,79 +65,7 @@
 * Inprocomm, Inc.
 ********************************************************************************
 */
-/*
-** Log: tkip_mic.c
-**
-** 06 14 2013 eddie.chen
-** [BORA00002450] [WIFISYS][MT6630] New design for mt6630
-** 1. Add initial rate seting. 2. Add more information in sta command 3. add VHT info
-**
-** 10 04 2012 yarco.yang
-** [BORA00002189] [MT6630]Synch. Davinc 20120927 FW to Bora
-** .
- *
- * 06 12 2012 wh.su
- * [WCXRP00001253] [MT6628 Wi-Fi][FW] Supporting the TKIP Tx/Rx fragment at Hotspot
- * add the tx/rx fragment support for TKIP at hotspot,
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * Adding the code for 802.11w, default disable.
- *
- * 10 05 2011 eddie.chen
- * [WCXRP00001027] [MT6628 Wi-Fi][Firmware/Driver] Tx fragmentation
- * Tx fragment.
- *
- * 08 30 2011 chinglan.wang
- * NULL
- * Add the initial value in the tikipMicGen function.
- *
- * 08 10 2011 chinglan.wang
- * [WCXRP00000903] [WiFi Direct][Driver] Support invitation request,
- * invitation abort, invitation status, invitation indicate feature API
- * .
- *
- * 11 15 2010 wh.su
- * [WCXRP00000171] [MT6620 Wi-Fi][Driver] Add message check code same behavior as mt5921
- * fixed the compiling error due the macro define change.
- *
- * 07 12 2010 cp.wu
- *
- * commit Wi-Fi firmware part for MT6620
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * move the AIS specific variable for security to AIS specific structure.
- *
- * 01 27 2010 wh.su
- * [BORA00000476][Wi-Fi][firmware] Add the security module initialize code
- * add and fixed some security function.
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Dec 3 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
-**  \main\maintrunk.MT5921\9 2008-10-22 10:59:31 GMT mtk01461
-**  Update for lint diagnosis support
-**  \main\maintrunk.MT5921\8 2008-08-28 20:44:03 GMT mtk01088
-**  remove non-used code
-**
-**  \main\maintrunk.MT5921\7 2008-05-30 14:39:01 GMT mtk01461
-**  Fix compile warnning
-**  \main\maintrunk.MT5921\6 2008-05-28 14:42:59 GMT mtk01088
-**  fixed the caculate TKIP MIC error, also adjust the type of variable
-**  \main\maintrunk.MT5921\5 2007-11-08 20:36:27 GMT mtk01088
-**  add tkip tx gen mic code
-**  \main\maintrunk.MT5921\4 2007-11-06 20:28:12 GMT mtk01088
-**  check in the template tkip mic code
-** Revision 1.2  2007/07/17 12:59:45  MTK01088
-** add the tkip mic function
-**
-**
-*/
+
 /*******************************************************************************
 *                     C O M P I L E R   F L A G S
 ********************************************************************************

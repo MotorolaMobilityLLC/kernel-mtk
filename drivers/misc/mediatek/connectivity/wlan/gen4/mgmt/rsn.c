@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: mgmt/rsn.c#3
 */
@@ -9,225 +60,6 @@
 *    cipher and AKM check to help the AP seleced deciding, tkip mic error handler and rsn PMKID support.
 */
 
-/*
-** Log: rsn.c
-**
-** 08 13 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Remove unused code
-**
-** 07 30 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** update some debug code
-**
-** 07 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Modify some security code for 11w and p2p
-**
-** 07 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Sync the latest jb2.mp 11w code as draft version
-** Not the CM bit for avoid wapi 1x drop at re-key
-**
-** 07 01 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Add some debug code, fixed some compiling warning
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** add rx data and management processing.
-**
-** 03 08 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Remove non-used compiling flag and code
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
-** for correctly indexing of BSS-INFO pointers
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 03 09 2012 chinglan.wang
- * NULL
- * Fix the condition error.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Snc CFG80211 modification for ICS migration from branch 2.2.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 10 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * change the debug module level.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 02 09 2011 wh.su
- * [WCXRP00000432] [MT6620 Wi-Fi][Driver] Add STA privacy check at hotspot mode
- * adding the code for check STA privacy bit at AP mode, .
- *
- * 12 24 2010 chinglan.wang
- * NULL
- * [MT6620][Wi-Fi] Modify the key management in the driver for WPS function.
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000260] [MT6620 Wi-Fi][Driver][Firmware] Create V1.1 branch for both firmware and driver
- * create branch for Wi-Fi driver v1.1
- *
- * 11 05 2010 wh.su
- * [WCXRP00000165] [MT6620 Wi-Fi] [Pre-authentication] Assoc req rsn ie use wrong pmkid value
- * fixed the.pmkid value mismatch issue
- *
- * 11 03 2010 wh.su
- * [WCXRP00000124] [MT6620 Wi-Fi] [Driver] Support the dissolve P2P Group
- * Refine the HT rate disallow TKIP pairwise cipher .
- *
- * 10 04 2010 cp.wu
- * [WCXRP00000077] [MT6620 Wi-Fi][Driver][FW] Eliminate use of ENUM_NETWORK_TYPE_T
- * and replaced by ENUM_NETWORK_TYPE_INDEX_T only
- * remove ENUM_NETWORK_TYPE_T definitions
- *
- * 09 29 2010 yuche.tsai
- * NULL
- * Fix compile error, remove unused pointer in rsnGenerateRSNIE().
- *
- * 09 28 2010 wh.su
- * NULL
- * [WCXRP00000069][MT6620 Wi-Fi][Driver] Fix some code for phase 1 P2P Demo.
- *
- * 09 24 2010 wh.su
- * NULL
- * [WCXRP00005002][MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning.
- *
- * 09 06 2010 wh.su
- * NULL
- * let the p2p can set the privacy bit at beacon and rsn ie at assoc req at key handshake state.
- *
- * 08 30 2010 wh.su
- * NULL
- * remove non-used code.
- *
- * 08 19 2010 wh.su
- * NULL
- * adding the tx pkt call back handle for countermeasure.
- *
- * 07 24 2010 wh.su
- *
- * .support the Wi-Fi RSN
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * modify some code for concurrent network.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * enable RX management frame handling.
- *
- * 06 19 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * consdier the concurrent network setting.
- *
- * 06 18 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * [WPD00003840] [MT6620 5931] Security migration
- * migration from firmware.
- *
- * 05 27 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * not indicate pmkid candidate while no new one scanned.
- *
- * 04 29 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * adjsut the pre-authentication code.
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * move the AIS specific variable for security to AIS specific structure.
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * Fixed the pre-authentication timer not correctly init issue,
- * and modify the security related callback function prototype.
- *
- * 01 27 2010 wh.su
- * [BORA00000476][Wi-Fi][firmware] Add the security module initialize code
- * add and fixed some security function.
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Dec 8 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * change the name
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * using the Rx0 port to indicate event
- *
- * Dec 4 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * refine the code for generate the WPA/RSN IE for assoc req
- *
- * Dec 3 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adjust code for pmkid event
- *
- * Dec 1 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the code for event (mic error and pmkid indicate) and do some function rename
- *
- * Nov 23 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some security function
- *
- * Nov 19 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding some security feature, including pmkid
- *
- * Nov 18 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -380,9 +212,7 @@ BOOLEAN rsnParseRsnIE(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_ELEM_T prInfoElem,
 		cp += 2;
 		u4RemainRsnIeLen -= 2;
 
-		/* Parse the Authentication and Key Management Cipher Suite List
-		 *  field.
-		 */
+		/* Parse the Authentication and Key Management Cipher Suite List field. */
 		i = (UINT_32) u2AuthSuiteCount * 4;
 		if (u4RemainRsnIeLen < (INT_32) i) {
 			DBGLOG(RSN, TRACE,
@@ -441,9 +271,8 @@ BOOLEAN rsnParseRsnIE(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_ELEM_T prInfoElem,
 			       (UCHAR) ((prRsnInfo->au4PairwiseKeyCipherSuite[i] >> 24) & 0x000000FF));
 		}
 	} else {
-		/* The information about the pairwise key cipher suites is not present.
-		 *  Use the default chipher suite for RSN: CCMP.
-		 */
+		/* The information about the pairwise key cipher suites is not present. */
+		/* Use the default chipher suite for RSN: CCMP. */
 		prRsnInfo->u4PairwiseKeyCipherSuiteCount = 1;
 		prRsnInfo->au4PairwiseKeyCipherSuite[0] = RSN_CIPHER_SUITE_CCMP;
 
@@ -456,9 +285,8 @@ BOOLEAN rsnParseRsnIE(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_ELEM_T prInfoElem,
 	}
 
 	if (pucAuthSuite) {
-		/* The information about the authentication and key management suites
-		 *  is present.
-		 */
+		/* The information about the authentication and key management suites */
+		/* is present. */
 		if (u2AuthSuiteCount > MAX_NUM_SUPPORTED_AKM_SUITES)
 			u2AuthSuiteCount = MAX_NUM_SUPPORTED_AKM_SUITES;
 
@@ -476,9 +304,8 @@ BOOLEAN rsnParseRsnIE(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_ELEM_T prInfoElem,
 			       (UCHAR) ((prRsnInfo->au4AuthKeyMgtSuite[i] >> 24) & 0x000000FF));
 		}
 	} else {
-		/* The information about the authentication and key management suites
-		 *  is not present. Use the default AKM suite for RSN.
-		 */
+		/* The information about the authentication and key management suites */
+		/* is not present. Use the default AKM suite for RSN. */
 		prRsnInfo->u4AuthKeyMgtSuiteCount = 1;
 		prRsnInfo->au4AuthKeyMgtSuite[0] = RSN_AKM_SUITE_802_1X;
 
@@ -600,9 +427,7 @@ BOOLEAN rsnParseWpaIE(IN P_ADAPTER_T prAdapter, IN P_WPA_INFO_ELEM_T prInfoElem,
 		if (u4RemainWpaIeLen == 0)
 			break;
 
-		/* Parse the Authentication and Key Management Cipher Suite Count
-		 *  field.
-		 */
+		/* Parse the Authentication and Key Management Cipher Suite Count field. */
 		if (u4RemainWpaIeLen < 2) {
 			DBGLOG(RSN, TRACE,
 			       "Fail to parse WPA IE in auth & key mgt suite count (IE len: %d)\n",
@@ -614,9 +439,7 @@ BOOLEAN rsnParseWpaIE(IN P_ADAPTER_T prAdapter, IN P_WPA_INFO_ELEM_T prInfoElem,
 		cp += 2;
 		u4RemainWpaIeLen -= 2;
 
-		/* Parse the Authentication and Key Management Cipher Suite List
-		 *  field.
-		 */
+		/* Parse the Authentication and Key Management Cipher Suite List field. */
 		i = (UINT_32) u2AuthSuiteCount * 4;
 		if (u4RemainWpaIeLen < (INT_32) i) {
 			DBGLOG(RSN, TRACE,
@@ -678,9 +501,8 @@ BOOLEAN rsnParseWpaIE(IN P_ADAPTER_T prAdapter, IN P_WPA_INFO_ELEM_T prInfoElem,
 			       (UCHAR) ((prWpaInfo->au4PairwiseKeyCipherSuite[i] >> 24) & 0x000000FF));
 		}
 	} else {
-		/* The information about the pairwise key cipher suites is not present.
-		 *  Use the default chipher suite for WPA: TKIP.
-		 */
+		/* The information about the pairwise key cipher suites is not present. */
+		/* Use the default chipher suite for WPA: TKIP. */
 		prWpaInfo->u4PairwiseKeyCipherSuiteCount = 1;
 		prWpaInfo->au4PairwiseKeyCipherSuite[0] = WPA_CIPHER_SUITE_TKIP;
 
@@ -693,9 +515,8 @@ BOOLEAN rsnParseWpaIE(IN P_ADAPTER_T prAdapter, IN P_WPA_INFO_ELEM_T prInfoElem,
 	}
 
 	if (pucAuthSuite) {
-		/* The information about the authentication and key management suites
-		 *  is present.
-		 */
+		/* The information about the authentication and key management suites */
+		/* is present. */
 		if (u2AuthSuiteCount > MAX_NUM_SUPPORTED_AKM_SUITES)
 			u2AuthSuiteCount = MAX_NUM_SUPPORTED_AKM_SUITES;
 
@@ -713,9 +534,8 @@ BOOLEAN rsnParseWpaIE(IN P_ADAPTER_T prAdapter, IN P_WPA_INFO_ELEM_T prInfoElem,
 			       (UCHAR) ((prWpaInfo->au4AuthKeyMgtSuite[i] >> 24) & 0x000000FF));
 		}
 	} else {
-		/* The information about the authentication and key management suites
-		 *  is not present. Use the default AKM suite for WPA.
-		 */
+		/* The information about the authentication and key management suites */
+		/* is not present. Use the default AKM suite for WPA. */
 		prWpaInfo->u4AuthKeyMgtSuiteCount = 1;
 		prWpaInfo->au4AuthKeyMgtSuite[0] = WPA_AKM_SUITE_802_1X;
 
@@ -898,6 +718,8 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	prBss->u4RsnSelectedAKMSuite = 0;
 	prBss->ucEncLevel = 0;
 
+	prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
+
 #if CFG_SUPPORT_WPS
 	fgIsWpsActive = kalWSCGetActiveState(prAdapter->prGlueInfo);
 
@@ -1057,9 +879,8 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	}
 
 	/* Exception handler */
-	/* If we cannot find proper pairwise and group cipher suites to join the
-	 *  BSS, do not check the supported AKM suites.
-	 */
+	/* If we cannot find proper pairwise and group cipher suites to join the */
+	/*   BSS, do not check the supported AKM suites. */
 	if (u4PairwiseCipher == 0 || u4GroupCipher == 0) {
 		DBGLOG(RSN, TRACE, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
 		       u4PairwiseCipher, u4GroupCipher);
@@ -1153,49 +974,14 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		}
 		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
 	} else if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_OPTIONAL) {
-		if (prBssRsnInfo->u2RsnCap && ((prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR) ||
-					       (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC))) {
-			prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
-		} else {
-			prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
-		}
+		DBGLOG(RSN, TRACE, "[MFP] Should not set the MFP option, need to check!\n");
+		ASSERT(FALSE);
 	} else {
-		if (prBssRsnInfo->fgRsnCapPresent && prBssRsnInfo->u2RsnCap) {
-			if (/* (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR) || */
-				   (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC)) {
-
-				UINT_8 i;
-				P_DOT11_RSNA_CONFIG_AUTHENTICATION_SUITES_ENTRY prEntry;
-
-				for (i = 0; i < MAX_NUM_SUPPORTED_AKM_SUITES; i++) {
-					prEntry = &prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[i];
-					if ((prEntry->dot11RSNAConfigAuthenticationSuite == RSN_AKM_SUITE_PSK_SHA256 ||
-					prEntry->dot11RSNAConfigAuthenticationSuite == RSN_AKM_SUITE_802_1X_SHA256)
-						     && prEntry->dot11RSNAConfigAuthenticationSuiteEnabled) {
-
-						prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE;
-						prAdapter->prGlueInfo->rWpaInfo.u4Mfp = RSN_AUTH_MFP_OPTIONAL;
-						DBGLOG(RSN, INFO, "[MFP]With MFP due profile setting\n");
-					} else {
-						prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
-						DBGLOG(RSN, INFO, "[MFP]No MFP due profile setting\n");
-					}
-				}
-			}
-			/* else if ((prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPC) && */
-			/* !(prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) { */
-			/* prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = TRUE; */
-			/* prAdapter->prGlueInfo->rWpaInfo.u4Mfp = RSN_AUTH_MFP_OPTIONAL; */
-			/* } */
-			else
-				prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
-		}
 		if (prBssRsnInfo->fgRsnCapPresent && (prBssRsnInfo->u2RsnCap & ELEM_WPA_CAP_MFPR)) {
-			if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection == FALSE) {
-				DBGLOG(RSN, INFO, "[MFP] Skip RSN IE, No MFP Required Capability\n");
-				return FALSE;
-			}
+			DBGLOG(RSN, INFO, "[MFP] Try to join even MFP Required bit set\n");
+			return FALSE;
 		}
+		prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection = FALSE;
 	}
 	DBGLOG(RSN, TRACE, "[MFP] fgMgmtProtection = %d\n ", prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection);
 
@@ -1511,15 +1297,15 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 		WLAN_SET_FIELD_16(cp, GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->u2RsnSelectedCapInfo);
 		DBGLOG(RSN, TRACE,
 		       "Gen RSN IE = %x\n", GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->u2RsnSelectedCapInfo);
-		if (GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->eNetworkType == NETWORK_TYPE_AIS
-		    && prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection) {
-			if (kalGetMfpSetting(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED
-			    /* prAdapter->rWifiVar.rAisSpecificBssInfo.fgAPApplyPmfReq */) {
+		if (GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex)->eNetworkType == NETWORK_TYPE_AIS) {
+			if (kalGetRsnIeMfpCap(prAdapter->prGlueInfo) == RSN_AUTH_MFP_REQUIRED) {
 				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC | ELEM_WPA_CAP_MFPR);	/* Capabilities */
-				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP_NO - MFPC & MFPR\n");
-			} else {
+				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP - MFPC & MFPR\n");
+			} else if (kalGetRsnIeMfpCap(prAdapter->prGlueInfo) == RSN_AUTH_MFP_OPTIONAL) {
 				WLAN_SET_FIELD_16(cp, ELEM_WPA_CAP_MFPC);	/* Capabilities */
-				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP_NO - MFPC\n");
+				DBGLOG(RSN, TRACE, "RSN_AUTH_MFP - MFPC\n");
+			} else {
+				DBGLOG(RSN, TRACE, "!RSN_AUTH_MFP - No MFPC!\n");
 			}
 		}
 #else

@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/aaa_fsm.c#3 $
 */
@@ -6,215 +57,6 @@
 *    \brief  This file defines the FSM for AAA MODULE.
 *
 *    This file defines the FSM for AAA MODULE.
-*/
-
-/*
-** Log: aaa_fsm.c $
-**
-** 10 08 2013 yuche.tsai
-** [ALPS01065606] [Volunteer Patch][MT6630][Wi-Fi Direct][Driver] MT6630 Wi-Fi Direct Driver Patch
-** Update Wi-Fi Direct Source.
-**
-** 08 27 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** Fix possible ASSERT error under Hot-Spot mode.
-**
-** 08 22 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** Fix Wi-Fi Direct Bug.
-**
-** 07 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Temp fix Hot-spot data path issue.
-**
-** 07 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Driver update for Hot-Spot mode.
-**
-** 03 29 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. remove unused HIF definitions
-** 2. enable NDIS 5.1 build success
-**
-** 03 29 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Do more sta record free mechanism check
-** remove non-used code
-**
-** 03 28 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** remove the sta_record at some condition:
-** 1. No reply auth
-** 2. auth fail
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** remove hif_rx_hdr usage.
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** add rx data and management processing.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add aaa_fsm.c, p2p_ie.c, fix compile warning & error.
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add new code, fix compile warning.
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
-** for correctly indexing of BSS-INFO pointers
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 yuche.tsai
-** [WCXRP00001119] [Volunteer Patch][WiFi Direct][Driver] Connection Policy Set for WFD SIGMA test
-** Bug fix for Assoc Req rx check len.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 02 22 2012 yuche.tsai
- * NULL
- * Solve sigma test 5.1.3 issue, assoc response should have P2P IE.
- *
- * 12 02 2011 yuche.tsai
- * NULL
- * Resolve inorder issue under AP mode.
- *
- * data frame may TX before assoc response frame.
- *
- * 11 18 2011 yuche.tsai
- * NULL
- * CONFIG P2P support RSSI query, default turned off.
- *
- * 06 17 2011 terry.wu
- * NULL
- * Add BoW 11N support.
- *
- * 06 02 2011 eddie.chen
- * [WCXRP00000759] [MT6620 Wi-Fi][DRV] Update RCPI in AAA
- * Update RCPI when receiving Assoc request.
- *
- * 04 21 2011 terry.wu
- * [WCXRP00000674] [MT6620 Wi-Fi][Driver] Refine AAA authSendAuthFrame
- * Add network type parameter to authSendAuthFrame.
- *
- * 04 15 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Add BOW short range mode.
- *
- * 04 09 2011 chinghwa.yu
- * [WCXRP00000065] Update BoW design and settings
- * Change Link connection event procedure and change skb length check to 1512 bytes.
- *
- * 03 09 2011 wh.su
- * [WCXRP00000530] [MT6620 Wi-Fi] [Driver] skip doing p2pRunEventAAAComplete after send assoc response Tx Done
- * Skip to call p2pRunEventAAAComplete to avoid indicate STA connect twice.
- *
- * 03 04 2011 terry.wu
- * [WCXRP00000515] [MT6620 Wi-Fi][Driver] Surpress compiler warning which is identified by GNU compiler collection
- * Remove unused variable.
- *
- * 02 16 2011 yuche.tsai
- * [WCXRP00000429] [Volunteer Patch][MT6620][Driver] Hot Spot Client Limit Issue
- * Add more check after RX assoc frame under Hot-Spot mode.
- *
- * 02 09 2011 yuche.tsai
- * [WCXRP00000429] [Volunteer Patch][MT6620][Driver] Hot Spot Client Limit Issue
- * Fix Client Limit Issue.
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Change Station Type in Station Record, Modify MACRO definition for getting station type & network type index & Role.
- *
- * 01 15 2011 puff.wen
- * NULL
- * [On behalf of Frog] Add CFG_ENABLE_WIFI_DIRECT to p2pRunEventAAAComplete
- *
- * 01 14 2011 yuche.tsai
- * [WCXRP00000352] [Volunteer Patch][MT6620][Driver] P2P Statsion Record Client List Issue
- * Modify AAA flow according to CM's comment.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 29 2010 yuche.tsai
- * NULL
- * Fix Compile warning, type cast from UINT_32 to UINT_16.
- *
- * 08 26 2010 yuche.tsai
- * NULL
- * In P2P AT GO test mode under WinXP, we would not indicate connected event to host.
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 08 23 2010 chinghwa.yu
- * NULL
- * Update for BOW.
- *
- * 08 20 2010 kevin.huang
- * NULL
- * Modify AAA Module for changing STA STATE 3 at p2p/bowRunEventAAAComplete()
- *
- * 08 17 2010 yuche.tsai
- * NULL
- * Fix bug while enabling P2P GO.
- *
- * 08 16 2010 kevin.huang
- * NULL
- * Refine AAA functions
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * refine TX-DONE callback.
- *
- * 06 21 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * modify due to P2P functino call prototype change.
- *
- * 06 17 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * First draft for migration P2P FSM from FW to Driver.
- *
- * 04 02 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Modify CFG flags
- *
- * 02 26 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * add support of Driver STA_RECORD_T activation
- *
- * 02 04 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
 */
 
 /*******************************************************************************

@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 #include "precomp.h"
 #include "p2p_role_state.h"
 #include "gl_p2p_os.h"
@@ -42,6 +93,8 @@ UINT_8 p2pRoleFsmInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucRoleIdx)
 		prP2pRoleFsmInfo->ucRoleIndex = ucRoleIdx;
 
 		prP2pRoleFsmInfo->eCurrentState = P2P_ROLE_STATE_IDLE;
+
+		prP2pRoleFsmInfo->u4P2pPacketFilter = PARAM_PACKET_FILTER_SUPPORTED;
 
 		prP2pChnlReqInfo = &prP2pRoleFsmInfo->rChnlReqInfo;
 		LINK_INITIALIZE(&(prP2pChnlReqInfo->rP2pChnlReqLink));
@@ -399,8 +452,15 @@ VOID p2pRoleFsmDeauthTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			}
 			kalP2PGOStationUpdate(prAdapter->prGlueInfo, prP2pRoleFsmInfo->ucRoleIndex, prStaRec, FALSE);
 		} else {
+#if CFG_WPS_DISCONNECT
+			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+							 prP2pRoleFsmInfo->ucRoleIndex, NULL, NULL, 0, 0,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
+#else
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 							 prP2pRoleFsmInfo->ucRoleIndex, NULL, NULL, 0, 0);
+
+#endif
 
 			scanRemoveConnFlagOfBssDescByBssid(prAdapter, prP2pBssInfo->aucBSSID);
 
@@ -533,10 +593,20 @@ VOID p2pRoleFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_REC
 
 				ASSERT(prP2pBssInfo->prStaRecOfAP == prStaRec);
 
-				/* Indicate disconnect to Host. */
+
+#if CFG_WPS_DISCONNECT
+/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL,
-								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode);
+								(UINT_8) prP2pBssInfo->u4PrivateData, NULL,
+								prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode,
+								WLAN_STATUS_MEDIA_DISCONNECT);
+
+#else
+/* Indicate disconnect to Host. */
+				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+								(UINT_8) prP2pBssInfo->u4PrivateData, NULL,
+								prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode);
+#endif
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
@@ -605,11 +675,21 @@ VOID p2pRoleFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECOR
 
 				u2IELength = prSwRfb->u2PacketLen - (WLAN_MAC_HEADER_LEN + REASON_CODE_FIELD_LEN);
 
+#if CFG_WPS_DISCONNECT
 				/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL,
-								 prDisassocFrame->aucInfoElem,
-								 u2IELength, prStaRec->u2ReasonCode);
+					(UINT_8) prP2pBssInfo->u4PrivateData, NULL,
+					prDisassocFrame->aucInfoElem,
+					u2IELength, prStaRec->u2ReasonCode,
+					WLAN_STATUS_MEDIA_DISCONNECT);
+
+#else
+				/* Indicate disconnect to Host. */
+				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+					(UINT_8) prP2pBssInfo->u4PrivateData, NULL,
+					prDisassocFrame->aucInfoElem,
+					u2IELength, prStaRec->u2ReasonCode);
+#endif
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
@@ -663,10 +743,21 @@ VOID p2pRoleFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T p
 		       "p2pFsmRunEventBeaconTimeout: BSS %d Beacon Timeout\n", prP2pRoleFsmInfo->ucRoleIndex);
 
 		if (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
+
+#if CFG_WPS_DISCONNECT
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-							 prP2pRoleFsmInfo->ucRoleIndex,
-							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY);
+					prP2pRoleFsmInfo->ucRoleIndex,
+					NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY,
+					WLAN_STATUS_MEDIA_DISCONNECT);
+
+
+#else
+			/* Indicate disconnect to Host. */
+			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+					prP2pRoleFsmInfo->ucRoleIndex,
+					NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY);
+#endif
 
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
 				P_STA_RECORD_T prStaRec = prP2pBssInfo->prStaRecOfAP;
@@ -847,16 +938,11 @@ VOID p2pRoleFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 VOID p2pRoleFsmRunEventDelIface(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_MSG_P2P_DEL_IFACE_T prP2pDelIfaceMsg = (P_MSG_P2P_DEL_IFACE_T) NULL;
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
-/*	PARAM_CUSTOM_P2P_SET_STRUCT_T rSetP2P;  */
-/*	WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;  */
 	UINT_8 ucRoleIdx;
 	P_GL_P2P_INFO_T prP2pInfo = (P_GL_P2P_INFO_T) NULL;
-	/* BOOLEAN fgRollbackRtnlLock = FALSE; */
-	P_NETDEV_PRIVATE_GLUE_INFO prNetDevPriv = (P_NETDEV_PRIVATE_GLUE_INFO) NULL;
-
-/*	UINT_32 u4BufLen = 0; */
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
@@ -879,47 +965,33 @@ VOID p2pRoleFsmRunEventDelIface(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 			break;
 		}
 
-		prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[0];
-		/* 1. bind netdev pointer to netdev index */
-		wlanBindBssIdxToNetInterface(prGlueInfo, prP2pRoleFsmInfo->ucBssIndex,
-									(PVOID) prGlueInfo->prP2PInfo[0]->prDevHandler);
+		prP2pBssInfo = prAdapter->aprBssInfo[prP2pRoleFsmInfo->ucBssIndex];
 
-		/* 2. prepare for removal and stop queue */
-		if (netif_carrier_ok(prP2pInfo->aprRoleHandler))
-			netif_carrier_off(prP2pInfo->aprRoleHandler);
+		/* ensure the timer be stopped */
+		cnmTimerStopTimer(prAdapter, &(prP2pRoleFsmInfo->rP2pRoleFsmTimeoutTimer));
 
-		netif_tx_stop_all_queues(prP2pInfo->aprRoleHandler);
-		p2pRoleFsmUninit(prGlueInfo->prAdapter, ucRoleIdx);
+		/*p2pFuncDissolve(prAdapter, prP2pBssInfo, TRUE, REASON_CODE_DEAUTH_LEAVING_BSS);*/
 
-#if 0
-		if (rtnl_is_locked()) {
-			fgRollbackRtnlLock = TRUE;
-			rtnl_unlock();
-		}
-#endif
+		SET_NET_PWR_STATE_IDLE(prAdapter, prP2pBssInfo->ucBssIndex);
 
-		/* Here are functions which need rtnl_lock */
-		/* unregister_netdev(prP2pInfo->aprRoleHandler); */
-		unregister_netdevice(prP2pInfo->aprRoleHandler);
-		/* free_netdev is hooked at destructor callback */
-		/* free_netdev(prP2pInfo->aprRoleHandler); */
+		/* Function Dissolve should already enter IDLE state. */
+		p2pRoleFsmStateTransition(prAdapter, prP2pRoleFsmInfo, P2P_ROLE_STATE_IDLE);
 
-#if 0
-		if (fgRollbackRtnlLock)
-			rtnl_lock();
-#endif
+		p2pRoleFsmRunEventAbort(prAdapter, prP2pRoleFsmInfo);
 
-		prP2pInfo->aprRoleHandler = prP2pInfo->prDevHandler;
-		prNetDevPriv = (P_NETDEV_PRIVATE_GLUE_INFO) netdev_priv(prP2pInfo->prDevHandler);
-		prNetDevPriv->ucBssIdx = p2pRoleFsmInit(prAdapter, 0);
-		/* 11. Currently wpasupplicant can't support create interface. */
-		/* so initial the corresponding data structure here. */
-		wlanBindBssIdxToNetInterface(prGlueInfo, prNetDevPriv->ucBssIdx,
-						 (PVOID) prP2pInfo->aprRoleHandler);
+		/* Clear CmdQue */
+		kalClearMgmtFramesByBssIdx(prAdapter->prGlueInfo, prP2pBssInfo->ucBssIndex);
+		kalClearSecurityFramesByBssIdx(prAdapter->prGlueInfo, prP2pBssInfo->ucBssIndex);
+		/* Clear PendingCmdQue */
+		wlanReleasePendingCMDbyBssIdx(prAdapter, prP2pBssInfo->ucBssIndex);
+		/* Clear PendingTxMsdu */
+		nicFreePendingTxMsduInfoByBssIdx(prAdapter, prP2pBssInfo->ucBssIndex);
 
-		/*kfree(gprP2pRoleWdev[ucRoleIdx]);*/
-		gprP2pRoleWdev[ucRoleIdx] = gprP2pWdev;
+		/* Deactivate BSS. */
+		UNSET_NET_ACTIVE(prAdapter, prP2pRoleFsmInfo->ucBssIndex);
 
+		nicDeactivateNetwork(prAdapter, prP2pRoleFsmInfo->ucBssIndex);
+		nicUpdateBss(prAdapter, prP2pRoleFsmInfo->ucBssIndex);
 	} while (FALSE);
 
 	if (prMsgHdr)
@@ -1319,12 +1391,25 @@ VOID p2pRoleFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prM
 					if (prJoinInfo->prTargetBssDesc)
 						scanReportBss2Cfg80211(prAdapter,
 								       OP_MODE_P2P_DEVICE, prJoinInfo->prTargetBssDesc);
+#if CFG_WPS_DISCONNECT
 					kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-									 prP2pRoleFsmInfo->ucRoleIndex,
-									 &prP2pRoleFsmInfo->rConnReqInfo,
-									 prJoinInfo->aucIEBuf,
-									 prJoinInfo->u4BufLength,
-									 prStaRec->u2StatusCode);
+									prP2pRoleFsmInfo->ucRoleIndex,
+									&prP2pRoleFsmInfo->rConnReqInfo,
+									prJoinInfo->aucIEBuf,
+									prJoinInfo->u4BufLength,
+									prStaRec->u2StatusCode,
+									WLAN_STATUS_MEDIA_DISCONNECT);
+#else
+					kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+									prP2pRoleFsmInfo->ucRoleIndex,
+									&prP2pRoleFsmInfo->rConnReqInfo,
+									prJoinInfo->aucIEBuf,
+									prJoinInfo->u4BufLength,
+									prStaRec->u2StatusCode);
+
+#endif
+
+
 
 				} else {
 					/* Join Fail */
@@ -1342,12 +1427,22 @@ VOID p2pRoleFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prM
 
 						prBssDesc->fgIsConnecting = FALSE;
 
+#if CFG_WPS_DISCONNECT
 						kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-										 prP2pRoleFsmInfo->ucRoleIndex,
-										 &prP2pRoleFsmInfo->rConnReqInfo,
-										 prJoinInfo->aucIEBuf,
-										 prJoinInfo->u4BufLength,
-										 prStaRec->u2StatusCode);
+								prP2pRoleFsmInfo->ucRoleIndex,
+								&prP2pRoleFsmInfo->rConnReqInfo,
+								prJoinInfo->aucIEBuf,
+								prJoinInfo->u4BufLength,
+								prStaRec->u2StatusCode,
+								WLAN_STATUS_MEDIA_DISCONNECT);
+#else
+						kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+								prP2pRoleFsmInfo->ucRoleIndex,
+								&prP2pRoleFsmInfo->rConnReqInfo,
+								prJoinInfo->aucIEBuf,
+								prJoinInfo->u4BufLength,
+								prStaRec->u2StatusCode);
+#endif
 
 					}
 

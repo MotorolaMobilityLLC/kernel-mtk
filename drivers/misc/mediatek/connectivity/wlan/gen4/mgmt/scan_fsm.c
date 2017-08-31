@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/scan_fsm.c#2
 */
@@ -9,277 +60,6 @@
 *    behavior as metioned in IEEE 802.11 2007 11.1.3.1 & 11.1.3.2 .
 */
 
-/*
-** Log: scan_fsm.c
-**
-** 08 15 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** enlarge  match_ssid_num to 16 for PNO support
-**
-** 08 09 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** 1. integrate scheduled scan functionality
-** 2. condition compilation for linux-3.4 & linux-3.8 compatibility
-** 3. correct CMD queue access to reduce lock scope
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
-** for correctly indexing of BSS-INFO pointers
-**
-** 02 05 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. change to use long format (FT=1) for initial command
-** 2. fix a typo
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** .add driver side NLO state machine
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 01 03 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** carry timeout value and channel dwell time value to scan module
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 31 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** do not use fgIsP2PRegistered for checking but use network index
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 11 24 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * Adjust code for DBG and CONFIG_XLOG.
- *
- * 11 14 2011 yuche.tsai
- * [WCXRP00001095] [Volunteer Patch][Driver] Always Scan before enable Hot-Spot.
- * Fix bug when unregister P2P network..
- *
- * 11 11 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * modify the xlog related code.
- *
- * 11 02 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * adding the code for XLOG.
- *
- * 08 11 2011 cp.wu
- * [WCXRP00000830] [MT6620 Wi-Fi][Firmware] Use MDRDY counter to detect empty channel for shortening scan time
- * sparse channel detection:
- * driver: collect sparse channel information with scan-done event
-
- *
- * 07 18 2011 cp.wu
- * [WCXRP00000858] [MT5931][Driver][Firmware] Add support for scan to search
- * for more than one SSID in a single scanning request
- * free mailbox message afte parsing is completed.
- *
- * 07 18 2011 cp.wu
- * [WCXRP00000858] [MT5931][Driver][Firmware] Add support for scan to search
- * for more than one SSID in a single scanning request
- * add framework in driver domain for supporting new SCAN_REQ_V2 for more than 1 SSID support
- * as well as uProbeDelay in NDIS 6.x driver model
- *
- * 04 18 2011 terry.wu
- * [WCXRP00000660] [MT6620 Wi-Fi][Driver] Remove flag CFG_WIFI_DIRECT_MOVED
- * Remove flag CFG_WIFI_DIRECT_MOVED.
- *
- * 03 29 2011 cp.wu
- * [WCXRP00000604] [MT6620 Wi-Fi][Driver] Surpress Klockwork Warning
- * surpress klock warning with code path rewritten
- *
- * 03 18 2011 cm.chang
- * [WCXRP00000576] [MT6620 Wi-Fi][Driver][FW] Remove P2P compile option in scan req/cancel command
- * As CR title
- *
- * 02 18 2011 yuche.tsai
- * [WCXRP00000478] [Volunteer Patch][MT6620][Driver] Probe request frame
- * during search phase do not contain P2P wildcard SSID.
- * Take P2P wildcard SSID into consideration.
- *
- * 01 27 2011 yuche.tsai
- * [WCXRP00000399] [Volunteer Patch][MT6620/MT5931][Driver] Fix scan side effect after P2P module separate.
- * Fix scan channel extension issue when p2p module is not registered.
- *
- * 01 26 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * .
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Fix Compile Error when DBG is disabled.
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * 1. Country code is from NVRAM or supplicant
- * 2. Change band definition in CMD/EVENT.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 16 2010 cp.wu
- * NULL
- * add interface for RLM to trigger OBSS-SCAN.
- *
- * 08 16 2010 yuche.tsai
- * NULL
- * Fix bug for processing queued scan request.
- *
- * 08 11 2010 yuche.tsai
- * NULL
- * Add a function for returning channel.
- *
- * 08 05 2010 yuche.tsai
- * NULL
- * Update SCAN FSM for support P2P Device discovery scan.
- *
- * 08 03 2010 cp.wu
- * NULL
- * surpress compilation warning.
- *
- * 07 26 2010 yuche.tsai
- *
- * Add option of channel extension while cancelling scan request.
- *
- * 07 21 2010 yuche.tsai
- *
- * Add P2P Scan & Scan Result Parsing & Saving.
- *
- * 07 20 2010 cp.wu
- *
- * pass band information for scan in an efficient way by mapping ENUM_BAND_T into UINT_8..
- *
- * 07 19 2010 cp.wu
- *
- * due to FW/DRV won't be sync. precisely, some strict assertions should be eased.
- *
- * 07 19 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * SCN module is now able to handle multiple concurrent scanning requests
- *
- * 07 16 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * bugfix for SCN migration
- * 1) modify QUEUE_CONCATENATE_QUEUES() so it could be used to concatence with an empty queue
- * 2) before AIS issues scan request, network(BSS) needs to be activated first
- * 3) only invoke COPY_SSID when using specified SSID for scan
- *
- * 07 15 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * driver no longer generates probe request frames
- *
- * 07 14 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * pass band with channel number information as scan parameter
- *
- * 07 14 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * remove timer in DRV-SCN.
- *
- * 07 09 2010 cp.wu
- *
- * 1) separate AIS_FSM state for two kinds of scanning. (OID triggered scan, and scan-for-connection)
- * 2) eliminate PRE_BSS_DESC_T, Beacon/PrebResp is now parsed in single pass
- * 3) implment DRV-SCN module, currently only accepts single scan request,
- * other request will be directly dropped by returning BUSY
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * take use of RLM module for parsing/generating HT IEs for 11n capability
- *
- * 07 02 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * when returning to SCAN_IDLE state, send a correct message to source FSM.
- *
- * 07 01 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * implementation of DRV-SCN and related mailbox message handling.
- *
- * 06 22 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * comment out RLM APIs by CFG_RLM_MIGRATION.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add scan_fsm into building.
- *
- * 05 14 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Refine the order of Stop TX Queue and Switch Channel
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Update pause/resume/flush API to new Bitmap API
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 03 18 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Ignore the PROBE_DELAY state if the value of Probe Delay == 0
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 02 23 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add support scan channel 1~14 and update scan result's frequency infou1rwduu`wvpghlqg|n`slk+mpdkb
- *
- * 01 08 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add set RX Filter to receive BCN from different BSSID during SCAN
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Nov 25 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Remove flag of CFG_TEST_MGMT_FSM
- *
- * Nov 20 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Change parameter of scanSendProbeReqFrames()
- *
- * Nov 16 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Update scnFsmSteps()
- *
- * Nov 5 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Fix typo
- *
- * Nov 5 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -306,6 +86,9 @@
 *                            P U B L I C   D A T A
 ********************************************************************************
 */
+UINT_8 g_aucScanChannelNum[SCN_SCAN_DONE_PRINT_BUFFER_LENGTH];
+UINT_8 g_aucScanChannelIdleTime[SCN_SCAN_DONE_PRINT_BUFFER_LENGTH];
+UINT_8 g_aucScanChannelMDRDY[SCN_SCAN_DONE_PRINT_BUFFER_LENGTH];
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
@@ -861,10 +644,15 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 {
 	P_SCAN_INFO_T prScanInfo;
 	P_SCAN_PARAM_T prScanParam;
-	int channel_count;
+	UINT_32	u4ChCnt;
+	UINT_32	u4PrintfIdx = 0;
 
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
+
+	kalMemZero(g_aucScanChannelNum, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
+	kalMemZero(g_aucScanChannelIdleTime, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
+	kalMemZero(g_aucScanChannelMDRDY, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
 
 	if (fgIsNewVersion) {
 		DBGLOG(SCN, INFO,
@@ -894,12 +682,34 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 			prScanInfo->ucSparseChannelArrayValidNum = prScanDone->ucSparseChannelArrayValidNum;
 			DBGLOG(SCN, INFO, "Detected_Channel_Num = %d\n", prScanInfo->ucSparseChannelArrayValidNum);
 
-		for (channel_count = 0; channel_count < prScanInfo->ucSparseChannelArrayValidNum; channel_count++) {
-			prScanInfo->aucChannelNum[channel_count] = prScanDone->aucChannelNum[channel_count];
-			prScanInfo->au2ChannelIdleTime[channel_count] = prScanDone->au2ChannelIdleTime[channel_count];
-			DBGLOG(SCN, INFO, "Channel_Num = %d, IdleTime=%d\n",
-			prScanInfo->aucChannelNum[channel_count], prScanInfo->au2ChannelIdleTime[channel_count]);
+			for (u4ChCnt = 0; u4ChCnt < prScanInfo->ucSparseChannelArrayValidNum; u4ChCnt++) {
+				prScanInfo->aucChannelNum[u4ChCnt] = prScanDone->aucChannelNum[u4ChCnt];
+				prScanInfo->au2ChannelIdleTime[u4ChCnt] = prScanDone->au2ChannelIdleTime[u4ChCnt];
+				prScanInfo->aucChannelMDRDYCnt[u4ChCnt] = prScanDone->aucChannelMDRDYCnt[u4ChCnt];
+
+				if (u4PrintfIdx % 10 == 0 && u4PrintfIdx != 0) {
+					DBGLOG(SCN, INFO, "Channel  : %s\n", g_aucScanChannelNum);
+					DBGLOG(SCN, INFO, "IdleTime : %s\n", g_aucScanChannelIdleTime);
+					DBGLOG(SCN, INFO, "MdrdyCnt : %s\n", g_aucScanChannelMDRDY);
+					DBGLOG(SCN, INFO,
+						"==================================================================================\n");
+					kalMemZero(g_aucScanChannelNum, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
+					kalMemZero(g_aucScanChannelIdleTime, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
+					kalMemZero(g_aucScanChannelMDRDY, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
+					u4PrintfIdx = 0;
+				}
+				kalSprintf(g_aucScanChannelNum + u4PrintfIdx*7, "%7d",
+					prScanInfo->aucChannelNum[u4ChCnt]);
+				kalSprintf(g_aucScanChannelIdleTime + u4PrintfIdx*7, "%7d",
+					prScanInfo->au2ChannelIdleTime[u4ChCnt]);
+				kalSprintf(g_aucScanChannelMDRDY + u4PrintfIdx*7, "%7d",
+					prScanInfo->aucChannelMDRDYCnt[u4ChCnt]);
+				u4PrintfIdx++;
 			}
+
+			DBGLOG(SCN, INFO, "Channel  : %s\n", g_aucScanChannelNum);
+			DBGLOG(SCN, INFO, "IdleTime : %s\n", g_aucScanChannelIdleTime);
+			DBGLOG(SCN, INFO, "MdrdyCnt : %s\n", g_aucScanChannelMDRDY);
 		} else {
 			prScanInfo->fgIsSparseChannelValid = FALSE;
 		}

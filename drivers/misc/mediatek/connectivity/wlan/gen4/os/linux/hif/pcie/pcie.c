@@ -1,4 +1,55 @@
 /******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
+/******************************************************************************
 *[File]             pcie.c
 *[Version]          v1.0
 *[Revision Date]    2010-03-01
@@ -9,39 +60,6 @@
 *    Copyright (C) 2010 MediaTek Incorporation. All Rights Reserved.
 ******************************************************************************/
 
-/*
-**
-** 10 14 2015 zd.hu
-** [BORA00005104] [MT6632 Wi-Fi] Fix coding style.
-**	1) Purpose:
-**	Fix typos.
-**	2) Changed function name:
-**	Files under include/, os/linux/hif and os/linux/include
-**	3) Code change description brief:
-**	Fix typos.
-**	4) Unit Test Result:
-**	build pass, scan OK and connect to a AP OK on kernel 3.11.
-**
-** 09 30 2015 th3.huang
-** [BORA00005104] [MT6632 Wi-Fi] Fix coding style.
-** 1 fixed coding style issue by auto tool.
-**
-** 09 24 2015 litien.chang
-** [BORA00005127] MT6632
-** [WiFi] usb/sdio/pcie 3 interface integration
-**
-** 09 22 2015 zd.hu
-** [BORA00005104] [MT6632 Wi-Fi] Fix coding style.
-**	Use "STRUCT" to avoid reporting typo by checkpatch.pl.
-**
-**	Test: build pass, scan OK and connect to a AP OK on kernel 3.11.
-**
-** 08 06 2015 terry.wu
-** 1. use defined(_HIF_USB) instead of _HIF_USB
-** 2. enable QA tool
-** 3. rename register header file to MT6632
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -75,65 +93,6 @@
 #define NIC6632_PCIe_DEVICE_ID	0x6632
 #define NIC7668_PCIe_DEVICE_ID	0x7668
 
-#if MTK_WCN_HIF_PCI
-
-/*
- * function prototypes
- *
- */
-
-static INT_32 mtk_pci_probe(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *pdev);
-
-static void mtk_pci_remove(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *pdev);
-static irqreturn_t mtk_pci_interrupt(MTK_HIF_PCI_CLTCTX ctx, INT_32 irq, struct pci_dev *dev);
-
-/*
- * sdio function info table
- */
-#if 0
-static MTK_HIF_PCI_FUNCINFO funcInfo[] = {
-	{_MTK_HIF_PCI_FUNCINFO(0x14C3, 0x6632, 0x2)},
-};
-#endif
-
-static MTK_HIF_PCI_FUNCINFO funcInfo[] = {
-	{0x14C3, 0x6632, 0x2},
-};
-#if 0
-static const struct pci_device_id mtk_pci_ids[] = {
-	{	PCI_DEVICE(MTK_PCI_VENDOR_ID, NIC6632_PCIe_DEVICE_ID),
-		.driver_data = (kernel_ulong_t)&mt66xx_driver_data_mt6632},
-};
-#endif
-
-static const struct pci_device_id mtk_pci_ids[] = {
-	{	MTK_PCI_VENDOR_ID, NIC6632_PCIe_DEVICE_ID,
-		0, 0, 0, 0,
-		(unsigned long)&mt66xx_driver_data_mt6632},
-};
-
-#if 0
-static MTK_HIF_PCI_CLTINFO cltInfo = {
-	.func_tbl = funcInfo,
-	.func_tbl_size = sizeof(funcInfo) / sizeof(MTK_HIF_PCI_FUNCINFO),
-	.hif_clt_probe = mtk_pci_probe,
-	.hif_clt_remove = mtk_pci_remove,
-	.hif_clt_irq = mtk_pci_interrupt,
-};
-#endif
-static MTK_HIF_PCI_CLTINFO cltInfo = {
-	funcInfo,
-	sizeof(funcInfo) / sizeof(MTK_HIF_PCI_FUNCINFO),
-	mtk_pci_probe,
-	mtk_pci_remove,
-	NULL,
-	NULL,
-	mtk_pci_interrupt};
-
-
-#else
-
-
 static const struct pci_device_id mtk_pci_ids[] = {
 	{	PCI_DEVICE(MTK_PCI_VENDOR_ID, NIC6632_PCIe_DEVICE_ID),
 		.driver_data = (kernel_ulong_t)&mt66xx_driver_data_mt6632},
@@ -143,7 +102,7 @@ static const struct pci_device_id mtk_pci_ids[] = {
 };
 
 MODULE_DEVICE_TABLE(pci, mtk_pci_ids);
-#endif
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -161,15 +120,13 @@ MODULE_DEVICE_TABLE(pci, mtk_pci_ids);
 static probe_card pfWlanProbe;
 static remove_card pfWlanRemove;
 
-#if !MTK_WCN_HIF_PCI
-
 static struct pci_driver mtk_pci_driver = {
 	.name = "wlan",
 	.id_table = mtk_pci_ids,
 	.probe = NULL,
 	.remove = NULL,
 };
-#endif
+
 static BOOLEAN g_fgDriverProbed = FALSE;
 /*******************************************************************************
 *                                 M A C R O S
@@ -196,52 +153,7 @@ static BOOLEAN g_fgDriverProbed = FALSE;
 */
 /*----------------------------------------------------------------------------*/
 static PUCHAR CSRBaseAddress;
-static MTK_HIF_PCI_CLTCTX DrvCtx;
-#if MTK_WCN_HIF_PCI
-/* FIXME: global variable */
-/*maybe, it is not used hill1*/
-/*used to get prGlueInfo->rHifInfo->prFuncInfo for device_id*/
-/*static const MTK_HIF_PCI_FUNCINFO *prFunc;*/
 
-static irqreturn_t mtk_pci_interrupt(MTK_HIF_PCI_CLTCTX ctx, int irq, struct pci_dev *dev)
-{
-	P_GLUE_INFO_T prGlueInfo = NULL;
-	UINT_32 u4RegValue;
-	/*MTK_HIF_PCI_CLTCTX ctx = DrvCtx;*/
-
-	if (ctx == 0) {
-		DBGLOG(HAL, INFO, "ctx is not valid in mtk_pci_interrupt()\n");
-		return IRQ_NONE;
-	}
-	prGlueInfo = mtk_hif_pci_get_drvdata(ctx);
-	if (!prGlueInfo) {
-		DBGLOG(HAL, INFO, "No glue info in mtk_pci_interrupt()\n");
-		return IRQ_NONE;
-	}
-
-	/*prGlueInfo = mtk_hif_pci_get_drvdata(cltCtx);*/
-	/*
-	*mtk_hif_pci_get_drvdata(MTK_HIF_PCI_CLTCTX ctx)
-	*mtk_hif_pci_set_drvdata(MTK_HIF_PCI_CLTCTX ctx,PVOID private_data_p)
-	*/
-
-	HAL_MCR_RD(prGlueInfo->prAdapter, WPDMA_INT_STA, &u4RegValue);
-	if (!u4RegValue)
-		return IRQ_HANDLED;
-
-	halDisableInterrupt(prGlueInfo->prAdapter);
-
-	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-		DBGLOG(HAL, INFO, "GLUE_FLAG_HALT skip INT\n");
-		return IRQ_NONE;
-	}
-
-	kalSetIntEvent(prGlueInfo);
-	DBGLOG(HAL, TRACE, "%s INT[0x%08x]\n", __func__, u4RegValue);
-
-	return IRQ_HANDLED;
-}
-#else
 static irqreturn_t mtk_pci_interrupt(int irq, void *dev_instance)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -270,7 +182,7 @@ static irqreturn_t mtk_pci_interrupt(int irq, void *dev_instance)
 
 	return IRQ_HANDLED;
 }
-#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function is a PCIE probe function
@@ -281,61 +193,6 @@ static irqreturn_t mtk_pci_interrupt(int irq, void *dev_instance)
 * \return void
 */
 /*----------------------------------------------------------------------------*/
-#if MTK_WCN_HIF_PCI
-static INT_32 mtk_pci_probe(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *pdev)
-{
-	INT_32 ret = 0;
-	UINT32 device_id;
-	INT_32 i = 0;
-	INT_32 dd_table_len = sizeof(mtk_pci_ids) / sizeof(struct pci_device_id);
-	struct mt66xx_hif_driver_data *pci_driver_data = NULL;
-
-	/*maybe, it is not used hill1*/
-#if 0
-	P_GLUE_INFO_T prGlueInfo = NULL;
-	P_GL_HIF_INFO_T prHif = NULL;
-
-	prGlueInfo = mtk_hif_pci_get_drvdata(ctx);
-	if (!prGlueInfo) {
-		DBGLOG(HAL, INFO, "No glue info in mtk_pci_interrupt()\n");
-		return IRQ_NONE;
-	}
-
-	prHif = &prGlueInfo->rHifInfo;
-	/*used prGlueInfo->rHifInfo->prFuncInfo->device_id to get device_id*/
-	prFunc = prHif->prFuncInfo;
-	device_id = prFunc->device_id;
-#endif
-	DrvCtx = ctx;
-	/*used PCICLTCTX_CID to get device_id*/
-	device_id = PCICLTCTX_CID(ctx);
-	for (i = 0; i < dd_table_len; i++) {
-		if (device_id == mtk_pci_ids[i].device) {
-			pci_driver_data = (struct mt66xx_hif_driver_data *)(mtk_pci_ids[i].driver_data);
-			break;
-		}
-	}
-
-	if (pci_driver_data == NULL) {
-		DBGLOG(HAL, ERROR, "pci probe error: %x driver data not found!\n", device_id);
-		return -1;
-	}
-
-	if (pfWlanProbe((PVOID) pdev, (PVOID) pci_driver_data) != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, INFO, "pfWlanProbe fail!call pfWlanRemove()\n");
-		pfWlanRemove();
-		DrvCtx = 0;
-		ret = -1;
-	} else {
-		g_fgDriverProbed = TRUE;
-	}
-
-	DBGLOG(INIT, INFO, "mtk_pci_probe() done(%d)\n", ret);
-
-	return ret;
-
-}
-#else
 static int mtk_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	int ret = 0;
@@ -364,20 +221,7 @@ out:
 
 	return ret;
 }
-#endif
 
-#if MTK_WCN_HIF_PCI
-static void mtk_pci_remove(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *pdev)
-{
-	ASSERT(pdev);
-
-	if (g_fgDriverProbed)
-		pfWlanRemove();
-	DBGLOG(INIT, INFO, "pfWlanRemove done\n");
-
-	DrvCtx = 0;
-}
-#else
 static void mtk_pci_remove(struct pci_dev *pdev)
 {
 	ASSERT(pdev);
@@ -395,9 +239,6 @@ static void mtk_pci_remove(struct pci_dev *pdev)
 	pci_disable_device(pdev);
 	DBGLOG(INIT, INFO, "mtk_pci_remove() done\n");
 }
-#endif
-
-#if !MTK_WCN_HIF_PCI
 
 static int mtk_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 {
@@ -408,7 +249,7 @@ int mtk_pci_resume(struct pci_dev *pdev)
 {
 	return 0;
 }
-#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function will register pci bus to the os
@@ -432,15 +273,6 @@ WLAN_STATUS glRegisterBus(probe_card pfProbe, remove_card pfRemove)
 	pfWlanProbe = pfProbe;
 	pfWlanRemove = pfRemove;
 
-#if MTK_WCN_HIF_PCI
-	/* register MTK pci client */
-	ret =
-	    ((mtk_hif_pci_client_reg(&cltInfo) ==
-			0) ? WLAN_STATUS_SUCCESS : WLAN_STATUS_FAILURE);
-#else
-	pfWlanProbe = pfProbe;
-	pfWlanRemove = pfRemove;
-
 	mtk_pci_driver.probe = mtk_pci_probe;
 	mtk_pci_driver.remove = mtk_pci_remove;
 
@@ -448,7 +280,7 @@ WLAN_STATUS glRegisterBus(probe_card pfProbe, remove_card pfRemove)
 	mtk_pci_driver.resume = mtk_pci_resume;
 
 	ret = (pci_register_driver(&mtk_pci_driver) == 0) ? WLAN_STATUS_SUCCESS : WLAN_STATUS_FAILURE;
-#endif
+
 	return ret;
 }
 
@@ -467,11 +299,7 @@ VOID glUnregisterBus(remove_card pfRemove)
 		pfRemove();
 		g_fgDriverProbed = FALSE;
 	}
-#if MTK_WCN_HIF_PCI
-	mtk_hif_pci_client_unreg(&cltInfo);
-#else
 	pci_unregister_driver(&mtk_pci_driver);
-#endif
 }
 
 /*----------------------------------------------------------------------------*/
@@ -489,23 +317,12 @@ VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 	P_GL_HIF_INFO_T prHif = NULL;
 
 	prHif = &prGlueInfo->rHifInfo;
-#if MTK_WCN_HIF_PCI
-	/*maybe, it is not used hill1*/
-	/*prHif->prFuncInfo = prFunc;*/
-	/*prHif->cltCtx = *((MTK_HIF_PCI_CLTCTX *) ulCookie);*/
-	prHif->pdev = (struct pci_dev *)ulCookie;
 
-	prHif->CSRBaseAddress = CSRBaseAddress;
-
-	/*mtk_hif_pci_set_drvdata(prHif->cltCtx, prGlueInfo);*/
-	mtk_hif_pci_set_drvdata(DrvCtx, prGlueInfo);
-#else
 	prHif->pdev = (struct pci_dev *)ulCookie;
 
 	prHif->CSRBaseAddress = CSRBaseAddress;
 
 	pci_set_drvdata(prHif->pdev, prGlueInfo);
-#endif
 
 	SET_NETDEV_DEV(prGlueInfo->prDevHandler, &prHif->pdev->dev);
 
@@ -637,14 +454,14 @@ INT_32 glBusSetIrq(PVOID pvData, PVOID pfnIsr, PVOID pvCookie)
 
 	prHifInfo = &prGlueInfo->rHifInfo;
 	pdev = prHifInfo->pdev;
-#if !MTK_WCN_HIF_PCI
+
 #if defined(CONFIG_ARCH_MT7623) || defined(CONFIG_ARCH_MT7621)
 	ret = request_irq(pdev->irq, mtk_pci_interrupt, IRQF_SHARED |
 		IRQF_TRIGGER_FALLING, prNetDevice->name, prGlueInfo);
 #else
 	ret = request_irq(pdev->irq, mtk_pci_interrupt, IRQF_SHARED, prNetDevice->name, prGlueInfo);
 #endif
-#endif
+
 	if (ret != 0)
 		DBGLOG(INIT, INFO, "glBusSetIrq: request_irq  ERROR(%d)\n", ret);
 
@@ -683,10 +500,9 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie)
 
 	prHifInfo = &prGlueInfo->rHifInfo;
 	pdev = prHifInfo->pdev;
-#if !MTK_WCN_HIF_PCI
+
 	synchronize_irq(pdev->irq);
 	free_irq(pdev->irq, prGlueInfo);
-#endif
 }
 
 BOOLEAN glIsReadClearReg(UINT_32 u4Address)

@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_cfg80211.h#1
 */
@@ -6,33 +57,6 @@
 *    \brief  This file is for Portable Driver linux cfg80211 support.
 */
 
-/*
-** Log: gl_cfg80211.h
-**
-** 08 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Add GTK re-key driver handle function
-**
-** 08 09 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** 1. integrate scheduled scan functionality
-** 2. condition compilation for linux-3.4 & linux-3.8 compatibility
-** 3. correct CMD queue access to reduce lock scope
-**
-** 07 29 2013 cp.wu
-** [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
-** Preparation for porting remain_on_channel support
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
- *
-*/
 
 #ifndef _GL_CFG80211_H
 #define _GL_CFG80211_H
@@ -117,22 +141,6 @@ typedef enum _ENUM_TESTMODE_STA_STATISTICS_ATTR {
 
 	NL80211_TESTMODE_STA_STATISTICS_NUM
 } ENUM_TESTMODE_STA_STATISTICS_ATTR;
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-typedef struct _NL80211_DRIVER_GET_LTE_PARAMS {
-	NL80211_DRIVER_TEST_MODE_PARAMS hdr;
-	UINT_32 u4Version;
-	UINT_32 u4Flag;
-} NL80211_DRIVER_GET_LTE_PARAMS, *P_NL80211_DRIVER_GET_LTE_PARAMS;
-
-typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
-	NL80211_TESTMODE_AVAILABLE_CHAN_INVALID = 0,
-	NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184,
-	NL80211_TESTMODE_AVAILABLE_CHAN_NUM,
-} ENUM_TESTMODE_AVAILABLE_CHAN_ATTR;
-#endif
 #endif
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -176,7 +184,11 @@ mtk_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_index,
 int
 mtk_cfg80211_set_default_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_index, bool unicast, bool multicast);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const u8 *mac, struct station_info *sinfo);
+#else
+int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_info *sinfo);
+#endif
 
 int
 mtk_cfg80211_get_link_statistics(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_info *sinfo);
@@ -206,11 +218,18 @@ int mtk_cfg80211_remain_on_channel(struct wiphy *wiphy,
 				   struct ieee80211_channel *chan, unsigned int duration, u64 *cookie);
 
 int mtk_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy, struct wireless_dev *wdev, u64 cookie);
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
 			struct wireless_dev *wdev,
 			struct cfg80211_mgmt_tx_params *params,
 			u64 *cookie);
+#else
+int mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
+			 struct wireless_dev *wdev,
+			 struct ieee80211_channel *channel, bool offscan,
+			 unsigned int wait,
+			 const u8 *buf, size_t len, bool no_cck, bool dont_wait_for_ack, u64 *cookie);
+#endif
 
 void mtk_cfg80211_mgmt_frame_register(IN struct wiphy *wiphy,
 				      IN struct wireless_dev *wdev, IN u16 frame_type, IN bool reg);
@@ -218,21 +237,16 @@ void mtk_cfg80211_mgmt_frame_register(IN struct wiphy *wiphy,
 int mtk_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy, struct wireless_dev *wdev, u64 cookie);
 
 #ifdef CONFIG_NL80211_TESTMODE
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-WLAN_STATUS
-wlanoidQueryACSChannelList(IN P_ADAPTER_T prAdapter,
-			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
-
-int
-mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
-#endif
 int
 mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy,
 					 IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
 
 int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wdev, IN void *data, IN int len);
-
+#else
+int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
+#endif
 int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
 
 #if CFG_SUPPORT_PASSPOINT
@@ -258,6 +272,7 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 
 int mtk_cfg80211_assoc(struct wiphy *wiphy, struct net_device *ndev, struct cfg80211_assoc_request *req);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int
 mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 			    const u8 *mac, struct station_parameters *params);
@@ -265,15 +280,41 @@ mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev,
 			     const u8 *mac, struct station_parameters *params);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
 int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev, struct station_del_parameters *params);
-
+#else
+int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev,
+		const u8 *mac);
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 int mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
 			   const u8 *peer, u8 action_code, u8 dialog_token,
 			   u16 status_code, u32 peer_capability,
 			   bool initiator, const u8 *buf, size_t len);
+#else
+int mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
+			const u8 *peer, u8 action_code, u8 dialog_token,
+			u16 status_code, u32 peer_capability,
+			const u8 *buf, size_t len);
+#endif
 
 int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
 			   const u8 *peer, enum nl80211_tdls_operation oper);
+#else
+int
+mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_parameters *params);
+
+int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_parameters *params);
+
+int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac);
+
+int
+mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy,
+		       struct net_device *dev,
+		       u8 *peer, u8 action_code, u8 dialog_token, u16 status_code, const u8 *buf, size_t len);
+
+int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev, u8 *peer, enum nl80211_tdls_operation oper);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

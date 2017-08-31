@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/cnm.h#1
 */
@@ -6,118 +57,6 @@
 *    \brief
 */
 
-/*
-** Log: cnm.h
-**
-** 07 19 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Code update for P2P.
-**
-** 05 07 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Provide macro for TXM to query if BSS is CH_GRANTED
-**
-** 01 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Code first update.
-**
-** 01 21 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** 1. Create rP2pDevInfo structure
-** 2. Support 80/160 MHz channel bandwidth for channel privilege
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 06 23 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * change parameter name from PeerAddr to BSSID
- *
- * 06 20 2011 cp.wu
- * [WCXRP00000798] [MT6620 Wi-Fi][Firmware] Follow-ups for WAPI frequency offset workaround in firmware SCN module
- * 1. specify target's BSSID when requesting channel privilege.
- * 2. pass BSSID information to firmware domain
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 03 10 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Add some functions to let AIS/Tethering or AIS/BOW be the same channel
- *
- * 01 12 2011 cm.chang
- * [WCXRP00000358] [MT6620 Wi-Fi][Driver] Provide concurrent information for each module
- * Provide function to decide if BSS can be activated or not
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000239] MT6620 Wi-Fi][Driver][FW] Merge concurrent branch back to maintrunk
- * 1. BSSINFO include RLM parameter
- * 2. free all sta records when network is disconnected
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 07 19 2010 cm.chang
- *
- * Set RLM parameters and enable CNM channel manager
- *
- * 07 13 2010 cm.chang
- *
- * Rename MSG_CH_RELEASE_T to MSG_CH_ABORT_T
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Rename MID_MNY_CNM_CH_RELEASE to MID_MNY_CNM_CH_ABORT
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Need bandwidth info when requesting channel privilege
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Modify CNM message handler for new flow
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 05 05 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add a new function to send abort message
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 02 08 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support partial part about cmd basic configuration
- *
- * Nov 18 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add prototype of cnmFsmEventInit()
- *
- * Nov 2 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
-**
-*/
 
 #ifndef _CNM_H
 #define _CNM_H

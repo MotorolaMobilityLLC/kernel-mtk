@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/mac.h#1
 */
@@ -8,151 +59,6 @@
 *    Detail description.
 */
 
-/*
-** Log: mac.h
-**
-** 09 16 2014 eason.tsai
-** [ALPS01728937] [Need Patch] [Volunteer Patch] MET support
-** support MET
-**
-** 07 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Sync the latest jb2.mp 11w code as draft version
-** Not the CM bit for avoid wapi 1x drop at re-key
-**
-** 07 16 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Fix VHT CAP IE parsing error
-**
-** 07 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Update VHT IE composing function
-** 2. disable bow
-** 3. Exchange bss/sta rec update sequence for temp solution
-**
-** 06 14 2013 eddie.chen
-** [BORA00002450] [WIFISYS][MT6630] New design for mt6630
-** Add full mcsset. Add more vht info in sta update
-**
-** 03 13 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** .
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** add rx data and management processing.
-**
-** 11 06 2012 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** .
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 01 05 2012 tsaiyuan.hsu
- * [WCXRP00001157] [MT6620 Wi-Fi][FW][DRV] add timing measurement support for 802.11v
- * add timing measurement support for 802.11v.
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 06 22 2011 wh.su
- * [WCXRP00000806] [MT6620 Wi-Fi][Driver] Move the WPA/RSN IE and WAPI IE structure to mac.h
- * and let the sw structure not align at byte
- * Move the WAPI/RSN IE to mac.h and SW structure not align to byte,
- * Notice needed update P2P.ko.
- *
- * 05 06 2011 wh.su
- * [WCXRP00000699] [MT6620 Wi-Fi][Driver] Add the ie pointer check for avoid TP-LINK AP send
- * the wrong beacon make driver got incorrect support rate set
- * Add the length check before access the ie length filed.
- *
- * 05 06 2011 wh.su
- * [WCXRP00000699] [MT6620 Wi-Fi][Driver] Add the ie pointer check for avoid TP-LINK AP send
- * the wrong beacon make driver got incorrect support rate set
- * adding the length check before processing next ie..
- *
- * 04 18 2011 terry.wu
- * [WCXRP00000660] [MT6620 Wi-Fi][Driver] Remove flag CFG_WIFI_DIRECT_MOVED
- * Remove flag CFG_WIFI_DIRECT_MOVED.
- *
- * 04 12 2011 cm.chang
- * [WCXRP00000634] [MT6620 Wi-Fi][Driver][FW] 2nd BSS will not support 40MHz bandwidth for concurrency
- * .
- *
- * 04 08 2011 yuche.tsai
- * [WCXRP00000624] [Volunteer Patch][MT6620][Driver] Add device discoverability support for GO.
- * Add device discover ability support.
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Some action frame define is not belong to P2P.
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Add some service discovery MAC define, phase I.
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000260] [MT6620 Wi-Fi][Driver][Firmware] Create V1.1 branch for both firmware and driver
- * create branch for Wi-Fi driver v1.1
- *
- * 12 13 2010 cp.wu
- * [WCXRP00000256] [MT6620 Wi-Fi][Driver] Eliminate potential issues which is identified by Klockwork
- * suppress warning reported by Klockwork.
- *
- * 11 01 2010 cp.wu
- * [WCXRP00000122] [MT6620 Wi-Fi][Driver] Preparation for YuSu source tree integration
- * revert to previous revision. (this file is not necessary to be changed)
- *
- * 08 20 2010 cm.chang
- * NULL
- * Migrate RLM code to host from FW
- *
- * 08 02 2010 yuche.tsai
- * NULL
- * 1. Add P2P MAC define.
- * 2. Add scan device found event
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add WFA specific OUI.
- *
- * 06 17 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add P2P IE ID & Vendor OUI TYPE for P2P.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge MAC.h.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 01 13 2010 tehuang.liu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * Added OFFSET_BAR_SSC_SN
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-12-09 14:00:24 GMT MTK02468
-**  Added offsets and masks for the BA Parameter Set filed
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:16:26 GMT mtk01426
-**  Init for develop
-**
-*/
 
 #ifndef _MAC_H
 #define _MAC_H
@@ -709,21 +615,16 @@
 #define REASON_CODE_CLASS_3_ERR                     7	/* Class 3 frame rx from nonassoc STA */
 #define REASON_CODE_DISASSOC_LEAVING_BSS            8	/* Disassoc because sending STA is leaving BSS */
 #define REASON_CODE_ASSOC_BEFORE_AUTH               9	/* STA requesting (re)assoc is not auth with responding STA */
-/* Disassoc because the info in Power Capability is
-*  unacceptable
-*/
+/* Disassoc because the info in Power Capability is unacceptable */
 #define REASON_CODE_DISASSOC_PWR_CAP_UNACCEPTABLE   10
-/* Disassoc because the info in Supported Channels is
-*  unacceptable
-*/
+/* Disassoc because the info in Supported Channels is unacceptable */
 #define REASON_CODE_DISASSOC_SUP_CHS_UNACCEPTABLE   11
 #define REASON_CODE_INVALID_INFO_ELEM               13	/* Invalid information element */
 #define REASON_CODE_MIC_FAILURE                     14	/* MIC failure */
 #define REASON_CODE_4_WAY_HANDSHAKE_TIMEOUT         15	/* 4-way handshake timeout */
 #define REASON_CODE_GROUP_KEY_UPDATE_TIMEOUT        16	/* Group key update timeout */
-/* Info element in 4-way handshake different from
-*(Re-)associate request/Probe response/Beacon
-*/
+/* Info element in 4-way handshake different from */
+/* (Re-)associate request/Probe response/Beacon */
 #define REASON_CODE_DIFFERENT_INFO_ELEM             17
 #define REASON_CODE_MULTICAST_CIPHER_NOT_VALID      18	/* Multicast Cipher is not valid */
 #define REASON_CODE_UNICAST_CIPHER_NOT_VALID        19	/* Unicast Cipher is not valid */
@@ -733,17 +634,12 @@
 #define REASON_CODE_IEEE_802_1X_AUTH_FAILED         23	/* IEEE 802.1X Authentication failed */
 #define REASON_CODE_CIPHER_REJECT_SEC_POLICY        24	/* Cipher suite rejected because of the security policy */
 #define REASON_CODE_DISASSOC_UNSPECIFIED_QOS        32	/* Disassoc for unspecified, QoS-related reason */
-/* Disassoc because QAP lacks sufficient bandwidth
-*  for this QSTA
-*/
+/* Disassoc because QAP lacks sufficient bandwidth for this QSTA */
 #define REASON_CODE_DISASSOC_LACK_OF_BANDWIDTH      33
-/* Disassoc because of too many ACKs lost for AP transmissions
-* and/or poor channel conditions
-*/
+/* Disassoc because of too many ACKs lost for AP transmissions */
+/* and/or poor channel conditions */
 #define REASON_CODE_DISASSOC_ACK_LOST_POOR_CHANNEL  34
-/* Disassoc because QSTA is transmitting outside the limits of
-* its TXOPs
-*/
+/* Disassoc because QSTA is transmitting outside the limits of its TXOPs */
 #define REASON_CODE_DISASSOC_TX_OUTSIDE_TXOP_LIMIT  35
 #define REASON_CODE_PEER_WHILE_LEAVING              36	/* QSTA is leaving the QBSS or resetting */
 #define REASON_CODE_PEER_REFUSE_DLP                 37	/* Peer does not want to use this mechanism */
@@ -765,87 +661,51 @@
 #define STATUS_CODE_SUCCESSFUL                      0	/* Successful */
 #define STATUS_CODE_UNSPECIFIED_FAILURE             1	/* Unspecified failure */
 #define STATUS_CODE_CAP_NOT_SUPPORTED               10	/* Cannot support all requested cap in the Cap Info field */
-/* Reassoc denied due to inability to confirm that
-* assoc exists
-*/
+/* Reassoc denied due to inability to confirm that assoc exists */
 #define STATUS_CODE_REASSOC_DENIED_WITHOUT_ASSOC    11
 #define STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD   12	/* Assoc denied due to reason outside the scope of this std. */
-/* Responding STA does not support the specified
-* auth algorithm
-*/
+/* Responding STA does not support the specified auth algorithm */
 #define STATUS_CODE_AUTH_ALGORITHM_NOT_SUPPORTED    13
-/* Rx an auth frame with auth transaction seq num
-* out of expected seq
-*/
+/* Rx an auth frame with auth transaction seq num out of expected seq */
 #define STATUS_CODE_AUTH_OUT_OF_SEQ                 14
 #define STATUS_CODE_AUTH_REJECTED_CHAL_FAIL         15	/* Auth rejected because of challenge failure */
-/* Auth rejected due to timeout waiting for next frame
-* in sequence
-*/
+/* Auth rejected due to timeout waiting for next frame in sequence */
 #define STATUS_CODE_AUTH_REJECTED_TIMEOUT           16
-/* Assoc denied because AP is unable to handle additional
-* assoc STAs
-*/
+/* Assoc denied because AP is unable to handle additional assoc STAs */
 #define STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD        17
-/* Assoc denied due to requesting STA not supporting
- * all of basic rates
- */
+/* Assoc denied due to requesting STA not supporting all of basic rates */
 #define STATUS_CODE_ASSOC_DENIED_RATE_NOT_SUPPORTED 18
-/* Assoc denied due to requesting STA not supporting short
-*	preamble
-*/
+/* Assoc denied due to requesting STA not supporting short preamble */
 #define STATUS_CODE_ASSOC_DENIED_NO_SHORT_PREAMBLE  19
 #define STATUS_CODE_ASSOC_DENIED_NO_PBCC            20	/* Assoc denied due to requesting STA not supporting PBCC */
-/* Assoc denied due to requesting STA not supporting channel
-*  agility
-*/
+/* Assoc denied due to requesting STA not supporting channel agility */
 #define STATUS_CODE_ASSOC_DENIED_NO_CH_AGILITY      21
 #define STATUS_CODE_ASSOC_REJECTED_NO_SPEC_MGT      22	/* Assoc rejected because Spectrum Mgt capability is required */
-/* Assoc rejected because the info in Power Capability
-*  is unacceptable
-*/
+/* Assoc rejected because the info in Power Capability is unacceptable */
 #define STATUS_CODE_ASSOC_REJECTED_PWR_CAP          23
-/* Assoc rejected because the info in Supported Channels
-*	is unacceptable
-*/
+/* Assoc rejected because the info in Supported Channels is unacceptable */
 #define STATUS_CODE_ASSOC_REJECTED_SUP_CHS          24
-/* Assoc denied due to requesting STA not supporting
-*  short slot time
-*/
+/* Assoc denied due to requesting STA not supporting short slot time */
 #define STATUS_CODE_ASSOC_DENIED_NO_SHORT_SLOT_TIME 25
-/* Assoc denied due to requesting STA not supporting
-* DSSS-OFDM
-*/
+/* Assoc denied due to requesting STA not supporting DSSS-OFDM */
 #define STATUS_CODE_ASSOC_DENIED_NO_DSSS_OFDM       26
 #if CFG_SUPPORT_802_11W
 #define STATUS_CODE_ASSOC_REJECTED_TEMPORARILY      30	/*  IEEE 802.11w, Assoc denied due to the SA query */
-/* IEEE 802.11w, Assoc denied due to the MFP select
-*  policy
-*/
+/* IEEE 802.11w, Assoc denied due to the MFP select policy */
 #define STATUS_CODE_ROBUST_MGMT_FRAME_POLICY_VIOLATION 31
 #endif
 #define STATUS_CODE_UNSPECIFIED_QOS_FAILURE         32	/* Unspecified, QoS-related failure */
-/* Assoc denied due to insufficient bandwidth to handle another
-* QSTA
-*/
+/* Assoc denied due to insufficient bandwidth to handle another QSTA */
 #define STATUS_CODE_ASSOC_DENIED_BANDWIDTH          33
-/* Assoc denied due to excessive frame loss rates and/or poor
-* channel conditions
-*/
-
+/* Assoc denied due to excessive frame loss rates and/or poor channel conditions */
 #define STATUS_CODE_ASSOC_DENIED_POOR_CHANNEL       34
-/* Assoc denied due to requesting STA not supporting QoS
-* facility
-*/
+/* Assoc denied due to requesting STA not supporting QoS facility */
 #define STATUS_CODE_ASSOC_DENIED_NO_QOS_FACILITY    35
 #define STATUS_CODE_REQ_DECLINED                    37	/* Request has been declined */
-/* Request has not been successful as one or more parameters
-*	have invalid values
-*/
+/* Request has not been successful as one or more parameters have invalid values */
 #define STATUS_CODE_REQ_INVALID_PARAMETER_VALUE     38
-/* TS not created because request cannot be honored.
-*	Suggested TSPEC provided
-*/
+/* TS not created because request cannot be honored. */
+/* Suggested TSPEC provided. */
 #define STATUS_CODE_REQ_NOT_HONORED_TSPEC           39
 #define STATUS_CODE_INVALID_INFO_ELEMENT            40	/* Invalid information element */
 #define STATUS_CODE_INVALID_GROUP_CIPHER            41	/* Invalid group cipher */
@@ -854,10 +714,8 @@
 #define STATUS_CODE_UNSUPPORTED_RSN_IE_VERSION      44	/* Unsupported RSN information element version */
 #define STATUS_CODE_INVALID_RSN_IE_CAP              45	/* Invalid RSN information element capabilities */
 #define STATUS_CODE_CIPHER_SUITE_REJECTED           46	/* Cipher suite rejected because of security policy */
-/* TS not created because request cannot be honored.
-*  Attempt to create a TS later.
-*/
-
+/* TS not created because request cannot be honored. */
+/* Attempt to create a TS later. */
 #define STATUS_CODE_REQ_NOT_HONORED_TS_DELAY        47
 #define STATUS_CODE_DIRECT_LINK_NOT_ALLOWED         48	/* Direct Link is not allowed in the BSS by policy */
 #define STATUS_CODE_DESTINATION_STA_NOT_PRESENT     49	/* Destination STA is not present within this QBSS */
@@ -1093,6 +951,7 @@
 #define HT_CAP_INFO_LDPC_CAP                        BIT(0)
 #define HT_CAP_INFO_SUP_CHNL_WIDTH                  BIT(1)
 #define HT_CAP_INFO_SM_POWER_SAVE                   BITS(2, 3)
+#define HT_CAP_INFO_SM_POWER_SAVE_OFFSET            2
 #define HT_CAP_INFO_HT_GF                           BIT(4)
 #define HT_CAP_INFO_SHORT_GI_20M                    BIT(5)
 #define HT_CAP_INFO_SHORT_GI_40M                    BIT(6)
@@ -1738,9 +1597,8 @@ typedef struct _WLAN_ASSOC_RSP_FRAME_T {
 	UINT_16 u2CapInfo;	/* Capability information */
 	UINT_16 u2StatusCode;	/* Status code */
 	UINT_16 u2AssocId;	/* Association ID */
-	UINT_8 aucInfoElem[1];	/* Information elements, such as
-				*  supported rates, and etc.
-				*/
+	UINT_8 aucInfoElem[1];	/* Information elements, such as */
+				/* supported rates, and etc. */
 } __KAL_ATTRIB_PACKED__ WLAN_ASSOC_RSP_FRAME_T, *P_WLAN_ASSOC_RSP_FRAME_T;
 
 /* 7.2.3.6 WLAN Management Frame - Reassociation Request frame */
@@ -1759,9 +1617,8 @@ typedef struct _WLAN_REASSOC_REQ_FRAME_T {
 	UINT_8 aucInfoElem[1];	/* Information elements, include WPA IE */
 } __KAL_ATTRIB_PACKED__ WLAN_REASSOC_REQ_FRAME_T, *P_WLAN_REASSOC_REQ_FRAME_T;
 
-/* 7.2.3.7 WLAN Management Frame - Reassociation Response frame
- *  (the same as Association Response frame)
- */
+/* 7.2.3.7 WLAN Management Frame - Reassociation Response frame */
+/*   (the same as Association Response frame) */
 typedef WLAN_ASSOC_RSP_FRAME_T WLAN_REASSOC_RSP_FRAME_T, *P_WLAN_REASSOC_RSP_FRAME_T;
 
 /* 7.2.3.9 WLAN Management Frame - Probe Response Frame */
@@ -1864,9 +1721,8 @@ typedef struct _IE_CHALLENGE_TEXT_T {
 #if CFG_SUPPORT_802_11D
 /*! \brief COUNTRY_INFO_TRIPLET is defined for the COUNTRY_INFO_ELEM structure. */
 typedef struct _COUNTRY_INFO_TRIPLET_T {
-	UINT_8 ucParam1;	/*!< If param1 >= 201, this triplet is referred to as
-				* Regulatory Triplet in 802_11J.
-				*/
+	UINT_8 ucParam1;	/*!< If param1 >= 201, this triplet is referred to as */
+				/* Regulatory Triplet in 802_11J. */
 	UINT_8 ucParam2;
 	UINT_8 ucParam3;
 } __KAL_ATTRIB_PACKED__ COUNTRY_INFO_TRIPLET_T, *P_COUNTRY_INFO_TRIPLET_T;
@@ -1878,13 +1734,11 @@ typedef struct _COUNTRY_INFO_SUBBAND_TRIPLET_T {
 } __KAL_ATTRIB_PACKED__ COUNTRY_INFO_SUBBAND_TRIPLET_T, *P_COUNTRY_INFO_SUBBAND_TRIPLET_T;
 
 typedef struct _COUNTRY_INFO_REGULATORY_TRIPLET_T {
-	UINT_8 ucRegExtId;	/*!< Regulatory Extension Identifier, should
-				* be greater than or equal to 201
-				*/
+	UINT_8 ucRegExtId;	/*!< Regulatory Extension Identifier, should */
+				/* be greater than or equal to 201 */
 	UINT_8 ucRegClass;	/*!< Regulatory Class */
-	UINT_8 ucCoverageClass;	/*!< Coverage Class, unsigned 1-octet value 0~31
-				*, 32~255 reserved
-				*/
+	UINT_8 ucCoverageClass;	/*!< Coverage Class, unsigned 1-octet value 0~31 */
+				/* , 32~255 reserved */
 } __KAL_ATTRIB_PACKED__ COUNTRY_INFO_REGULATORY_TRIPLET_T, *P_COUNTRY_INFO_REGULATORY_TRIPLET_T;
 
 typedef struct _IE_COUNTRY_T {
@@ -2378,9 +2232,8 @@ typedef struct _ACTION_ADDTS_REQ_FRAME {
 	UINT_8 ucCategory;	/* Category */
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 ucDialogToken;	/* Dialog Token */
-	UINT_8 aucInfoElem[1];	/* Information elements, such as
-				* TS Delay, and etc.
-				*/
+	UINT_8 aucInfoElem[1];	/* Information elements, such as */
+				/* TS Delay, and etc. */
 } __KAL_ATTRIB_PACKED__ ACTION_ADDTS_REQ_FRAME, *P_ACTION_ADDTS_REQ_FRAME;
 
 /* 7.4.2.2 ADDTS Response frame format */
@@ -2397,9 +2250,8 @@ typedef struct _ACTION_ADDTS_RSP_FRAME {
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 ucDialogToken;	/* Dialog Token */
 	UINT_8 ucStatusCode;	/* WMM Status Code is of one byte */
-	UINT_8 aucInfoElem[1];	/* Information elements, such as
-				*  TS Delay, and etc.
-				*/
+	UINT_8 aucInfoElem[1];	/* Information elements, such as */
+				/* TS Delay, and etc. */
 } __KAL_ATTRIB_PACKED__ ACTION_ADDTS_RSP_FRAME, *P_ACTION_ADDTS_RSP_FRAME;
 
 /* 7.4.2.3 DELTS frame format */
@@ -2495,9 +2347,8 @@ typedef struct _ACTION_RM_REQ_FRAME {
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 ucDialogToken;	/* Dialog Token */
 	UINT_16 u2Repetitions;	/* Number of repetitions */
-	UINT_8 aucInfoElem[1];	/* Measurement Request elements, such as
-				*  channel load request, and etc.
-				*/
+	UINT_8 aucInfoElem[1];	/* Measurement Request elements, such as */
+				/* channel load request, and etc. */
 } __KAL_ATTRIB_PACKED__ ACTION_RM_REQ_FRAME, *P_ACTION_RM_REQ_FRAME;
 
 /* 7.4.6.2 Radio Measurement Report frame format */
@@ -2513,9 +2364,8 @@ typedef struct _ACTION_RM_REPORT_FRAME {
 	UINT_8 ucCategory;	/* Category */
 	UINT_8 ucAction;	/* Action Value */
 	UINT_8 ucDialogToken;	/* Dialog Token */
-	UINT_8 aucInfoElem[1];	/* Measurement Report elements, such as
-				*  channel load report, and etc.
-				*/
+	UINT_8 aucInfoElem[1];	/* Measurement Report elements, such as */
+				/* channel load report, and etc. */
 } __KAL_ATTRIB_PACKED__ ACTION_RM_REPORT_FRAME, *P_ACTION_RM_REPORT_FRAME;
 
 /* 7.4.7.1a 20/40 BSS Coexistence Management frame format */
@@ -2658,9 +2508,8 @@ typedef struct _IE_WFA_T {
 	UINT_8 aucOui[3];
 	UINT_8 ucOuiType;
 	UINT_8 aucOuiSubTypeVersion[2];
-	/*!< Please be noted. WPA defines a 16 bit field version
-	 *  instead of one subtype field and one version field
-	 */
+	/*!< Please be noted. WPA defines a 16 bit field version */
+	/* instead of one subtype field and one version field */
 } __KAL_ATTRIB_PACKED__ IE_WFA_T, *P_IE_WFA_T;
 
 #if CFG_SUPPORT_PASSPOINT

@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_wext.h#1
 */
@@ -6,75 +57,6 @@
 *    \brief  This file is for Portable Driver linux wireless extension support.
 */
 
-/*
-** Log: gl_wext.h
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 10 12 2011 wh.su
- * [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
- * adding the 802.11w related function and define .
- *
- * 09 20 2011 chinglan.wang
- * [WCXRP00000989] [WiFi Direct] [Driver] Add a new io control API to start the formation for the sigma test.
- * .
- *
- * 09 20 2011 chinglan.wang
- * [WCXRP00000989] [WiFi Direct] [Driver] Add a new io control API to start the formation for the sigma test.
- * .
- *
- * 01 11 2011 chinglan.wang
- * NULL
- * Modify to reslove the CR :[ALPS00028994] Use WEP security to connect Marvell 11N AP.
- * Connection establish successfully.
- * Use the WPS function to connect AP, the privacy bit always is set to 1. .
- *
- * 09 27 2010 wh.su
- * NULL
- * [WCXRP00000067][MT6620 Wi-Fi][Driver] Support the android+ WAPI function.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 03 31 2010 wh.su
- * [WPD00003816][MT6620 Wi-Fi] Adding the security support
- * modify the wapi related code for new driver's design.
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**  \main\maintrunk.MT5921\12 2009-10-20 17:38:33 GMT mtk01090
-**  Refine driver unloading and clean up procedure.
-**  Block requests, stop main thread and clean up queued requests, and then stop hw.
-**  \main\maintrunk.MT5921\11 2009-09-28 20:19:28 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\10 2009-09-03 12:12:35 GMT mtk01088
-**  adding the function declaration
-**  \main\maintrunk.MT5921\9 2009-08-18 22:57:17 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\8 2008-08-29 16:59:07 GMT mtk01088
-**  fixed compiling error
-**  \main\maintrunk.MT5921\7 2008-08-29 14:13:28 GMT mtk01088
-**  adjust the header file for code refine
-**  \main\maintrunk.MT5921\6 2008-03-28 10:40:31 GMT mtk01461
-**  Add set desired rate in Linux STD IOCTL
-**  \main\maintrunk.MT5921\5 2008-03-11 14:51:08 GMT mtk01461
-**  Refine private IOCTL functions
-**  \main\maintrunk.MT5921\4 2008-02-12 23:45:45 GMT mtk01461
-**  Add Set Frequency & Channel oid support for Linux
-**  \main\maintrunk.MT5921\3 2007-11-06 19:36:19 GMT mtk01088
-**  add the WPS related code
-*/
 
 #ifndef _GL_WEXT_H
 #define _GL_WEXT_H

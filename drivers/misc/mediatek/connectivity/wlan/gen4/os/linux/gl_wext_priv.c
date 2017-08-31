@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/gl_wext_priv.c#8
 */
@@ -6,237 +57,6 @@
 *    \brief This file includes private ioctl support.
 */
 
-/*
-** Log: gl_wext_priv.c
-**
-** 08 09 2013 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** update ICAP support code
-**
-** 08 09 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add new TX done result code "TX_RESULT_QUEUE_CLEARANCE"
-** 2. Fix runtime warning for wrong memory mode of kfree mgmt pool
-** 3. Fix memory dump command
-**
-** 07 24 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Update for Hot-Spot code.
-**
-** 07 17 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** MT6630 P2P first connection check point 1.
-**
-** 07 04 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update for 1st Connection.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Let netdev bring up.
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 03 20 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * [WCXRP00001202] [MT6628 Wi-Fi][FW] Adding the New PN init code
- * use return to avoid the ioctl return not supported
- *
- * 03 02 2012 terry.wu
- * NULL
- * Snc CFG80211 modification for ICS migration from branch 2.2.
- *
- * 01 16 2012 wh.su
- * [WCXRP00001170] [MT6620 Wi-Fi][Driver] Adding the related code for set/get band ioctl
- * Adding the template code for set / get band IOCTL (with ICS supplicant_6)..
- *
- * 01 05 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the related ioctl / wlan oid function to set the Tx power cfg.
- *
- * 01 02 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the proto type function for set_int set_tx_power and get int get_ch_list.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 11 02 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings
- * Fixed typo.
- *
- * 09 20 2011 chinglan.wang
- * [WCXRP00000989] [WiFi Direct] [Driver] Add a new io control API to start the formation for the sigma test.
- * .
- *
- * 07 28 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings
- * Add BWCS cmd and event.
- *
- * 07 18 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000612] [MT6620 Wi-Fi] [FW] CSD update SWRDD algorithm
- * Add CMD/Event for RDD and BWCS.
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 01 27 2011 cm.chang
- * [WCXRP00000402] [MT6620 Wi-Fi][Driver] Enable MCR read/write by iwpriv by default
- * .
- *
- * 01 26 2011 wh.su
- * [WCXRP00000396] [MT6620 Wi-Fi][Driver] Support Sw Ctrl ioctl at linux
- * adding the SW cmd ioctl support, use set/get structure ioctl.
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Adjust OID order.
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Add Oid for sw control debug command
- *
- * 01 07 2011 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add a new compiling option to control if MCR read/write is permitted
- *
- * 12 31 2010 cm.chang
- * [WCXRP00000336] [MT6620 Wi-Fi][Driver] Add test mode commands in normal phone operation
- * Add some iwpriv commands to support test mode operation
- *
- * 12 15 2010 george.huang
- * [WCXRP00000152] [MT6620 Wi-Fi] AP mode power saving function
- * Support set PS profile and set WMM-PS related iwpriv.
- *
- * 11 08 2010 wh.su
- * [WCXRP00000171] [MT6620 Wi-Fi][Driver] Add message check code same behavior as mt5921
- * add the message check code from mt5921.
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * [WCXRP00000086] [MT6620 Wi-Fi][Driver] The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 09 24 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * correct typo for NVRAM access.
- *
- * 09 23 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * add skeleton for NVRAM integration
- *
- * 08 04 2010 cp.wu
- * NULL
- * revert changelist #15371, efuse read/write access will be done by RF test approach
- *
- * 08 04 2010 cp.wu
- * NULL
- * add OID definitions for EFUSE read/write access.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 06 01 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * enable OID_CUSTOM_MTK_WIFI_TEST for RFTest & META tool
- *
- * 05 29 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * fix private ioctl for rftest
- *
- * 04 21 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add for private ioctl support
-**  \main\maintrunk.MT5921\32 2009-10-08 10:33:25 GMT mtk01090
-**  Avoid accessing private data of net_device directly. Replace with netdev_priv(). Add more checking for input
-**  parameters and pointers.
-**  \main\maintrunk.MT5921\31 2009-09-29 16:46:21 GMT mtk01090
-**  Remove unused functions
-**  \main\maintrunk.MT5921\30 2009-09-29 14:46:47 GMT mtk01090
-**  Fix compile warning
-**  \main\maintrunk.MT5921\29 2009-09-29 14:28:48 GMT mtk01090
-**  Fix compile warning
-**  \main\maintrunk.MT5921\28 2009-09-28 22:21:38 GMT mtk01090
-**  Refine lines to suppress compile warning
-**  \main\maintrunk.MT5921\27 2009-09-28 20:19:14 GMT mtk01090
-**  Add private ioctl to carry OID structures. Restructure public/private ioctl interfaces to Linux kernel.
-**  \main\maintrunk.MT5921\26 2009-08-18 22:56:53 GMT mtk01090
-**  Add Linux SDIO (with mmc core) support.
-**  Add Linux 2.6.21, 2.6.25, 2.6.26.
-**  Fix compile warning in Linux.
-**  \main\maintrunk.MT5921\25 2009-05-07 22:26:15 GMT mtk01089
-**  Add mandatory and private IO control for Linux BWCS
-**  \main\maintrunk.MT5921\24 2009-04-29 10:07:05 GMT mtk01088
-**  fixed the compiling error at linux
-**  \main\maintrunk.MT5921\23 2009-04-24 09:09:45 GMT mtk01088
-**  mark the code not used at linux supplicant v0.6.7
-**  \main\maintrunk.MT5921\22 2008-11-24 21:03:51 GMT mtk01425
-**  1. Add PTA_ENABLED flag
-**  \main\maintrunk.MT5921\21 2008-08-29 14:55:59 GMT mtk01088
-**  adjust the code for meet the coding style, and add assert check
-**  \main\maintrunk.MT5921\20 2008-07-16 15:23:20 GMT mtk01104
-**  Support GPIO2 mode
-**  \main\maintrunk.MT5921\19 2008-07-15 17:43:11 GMT mtk01084
-**  modify variable name
-**  \main\maintrunk.MT5921\18 2008-07-14 14:37:58 GMT mtk01104
-**  Add exception handle about length in function priv_set_struct()
-**  \main\maintrunk.MT5921\17 2008-07-14 13:55:32 GMT mtk01104
-**  Support PRIV_CMD_BT_COEXIST
-**  \main\maintrunk.MT5921\16 2008-07-09 00:20:15 GMT mtk01461
-**  Add priv oid to support WMM_PS_TEST
-**  \main\maintrunk.MT5921\15 2008-06-02 11:15:22 GMT mtk01461
-**  Update after wlanoidSetPowerMode changed
-**  \main\maintrunk.MT5921\14 2008-05-30 19:31:07 GMT mtk01461
-**  Add IOCTL for Power Mode
-**  \main\maintrunk.MT5921\13 2008-05-30 18:57:15 GMT mtk01461
-**  Not use wlanoidSetCSUMOffloadForLinux()
-**  \main\maintrunk.MT5921\12 2008-05-30 15:13:18 GMT mtk01084
-**  rename wlanoid
-**  \main\maintrunk.MT5921\11 2008-05-29 14:16:31 GMT mtk01084
-**  rename for wlanoidSetBeaconIntervalForLinux
-**  \main\maintrunk.MT5921\10 2008-04-17 23:06:37 GMT mtk01461
-**  Add iwpriv support for AdHocMode setting
-**  \main\maintrunk.MT5921\9 2008-03-31 21:00:55 GMT mtk01461
-**  Add priv IOCTL for VOIP setting
-**  \main\maintrunk.MT5921\8 2008-03-31 13:49:43 GMT mtk01461
-**  Add priv ioctl to turn on / off roaming
-**  \main\maintrunk.MT5921\7 2008-03-26 15:35:14 GMT mtk01461
-**  Add CSUM offload priv ioctl for Linux
-**  \main\maintrunk.MT5921\6 2008-03-11 14:50:59 GMT mtk01461
-**  Unify priv ioctl
-**  \main\maintrunk.MT5921\5 2007-11-06 19:32:30 GMT mtk01088
-**  add WPS code
-**  \main\maintrunk.MT5921\4 2007-10-30 12:01:39 GMT MTK01425
-**  1. Update wlanQueryInformation and wlanSetInformation
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -1887,7 +1707,7 @@ priv_get_ndis(IN struct net_device *prNetDev, IN NDIS_TRANSPORT_STRUCT * prNdisR
 	DBGLOG(INIT, INFO, "priv_get_ndis(): prNdisReq->ndisOidCmd(0x%lX)\n", prNdisReq->ndisOidCmd);
 #endif
 
-	if (reqSearchSupportedOidEntry(prNdisReq->ndisOidCmd, &prWlanReqEntry) != FALSE) {
+	if (reqSearchSupportedOidEntry(prNdisReq->ndisOidCmd, &prWlanReqEntry) == FALSE) {
 		/* WARNLOG(("Query OID: 0x%08lx (unknown)\n", prNdisReq->ndisOidCmd)); */
 		return -EOPNOTSUPP;
 	}
@@ -2484,6 +2304,47 @@ typedef struct priv_driver_cmd_s {
 } priv_driver_cmd_t;
 
 
+int priv_driver_get_dbg_level(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	INT_32 i4BytesWritten = 0;
+	INT_32 i4Argc = 0;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	UINT_32 u4DbgIdx, u4DbgMask;
+	BOOLEAN fgIsCmdAccept = FALSE;
+	INT_32 u4Ret = 0;
+
+	ASSERT(prNetDev);
+	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
+		return -1;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+	DBGLOG(REQ, LOUD, "argc is %i\n", i4Argc);
+
+	if (i4Argc >= 2) {
+		/* u4DbgIdx = kalStrtoul(apcArgv[1], NULL, 0); */
+		u4Ret = kalkStrtou32(apcArgv[1], 0, &u4DbgIdx);
+		if (u4Ret)
+			DBGLOG(REQ, LOUD, "parse apcArgv error u4Ret=%d\n", u4Ret);
+
+		if (wlanGetDebugLevel(u4DbgIdx, &u4DbgMask) == WLAN_STATUS_SUCCESS) {
+			fgIsCmdAccept = TRUE;
+			i4BytesWritten =
+			    snprintf(pcCommand, i4TotalLen,
+				     "Get DBG module[%lu] log level => [0x%02x]!", u4DbgIdx, (UINT_8) u4DbgMask);
+		}
+	}
+
+	if (!fgIsCmdAccept)
+		i4BytesWritten = snprintf(pcCommand, i4TotalLen, "Get DBG module log level failed!");
+
+	return i4BytesWritten;
+
+}				/* priv_driver_get_sw_ctrl */
+
+
 #if CFG_SUPPORT_QA_TOOL
 #if CFG_SUPPORT_BUFFER_MODE
 static int priv_driver_set_efuse_buffer_mode(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
@@ -2495,8 +2356,9 @@ static int priv_driver_set_efuse_buffer_mode(IN struct net_device *prNetDev, IN 
 	INT_32 i4Argc = 0;
 	INT_32 i4BytesWritten = 0;
 	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
-	PARAM_CUSTOM_EFUSE_BUFFER_MODE_T rSetEfuseBufModeInfo;
+	PARAM_CUSTOM_EFUSE_BUFFER_MODE_T *prSetEfuseBufModeInfo;
 #if (CFG_EFUSE_BUFFER_MODE_DELAY_CAL == 0)
+	BIN_CONTENT_T *pBinContent;
 	int i = 0;
 #endif
 	PUINT_8 pucConfigBuf;
@@ -2526,29 +2388,37 @@ static int priv_driver_set_efuse_buffer_mode(IN struct net_device *prNetDev, IN 
 		kalMemFree(pucConfigBuf, VIR_MEM_TYPE, 2048);
 	}
 	/* pucConfigBuf */
-	kalMemZero(&rSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T));
+	prSetEfuseBufModeInfo =
+	(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T *) kalMemAlloc(sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T), VIR_MEM_TYPE);
+	if (prSetEfuseBufModeInfo == NULL)
+		return WLAN_STATUS_FAILURE;
+	kalMemZero(prSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T));
 
-	rSetEfuseBufModeInfo.ucSourceMode = 1;
-	rSetEfuseBufModeInfo.ucCount = (UINT_8)EFUSE_CONTENT_SIZE;
+	prSetEfuseBufModeInfo->ucSourceMode = 1;
+	prSetEfuseBufModeInfo->ucCount = (UINT_8)EFUSE_CONTENT_SIZE;
 
 #if (CFG_EFUSE_BUFFER_MODE_DELAY_CAL == 0)
+	pBinContent = (BIN_CONTENT_T *)prSetEfuseBufModeInfo->aBinContent;
 	for (i = 0; i < EFUSE_CONTENT_SIZE; i++) {
-		rSetEfuseBufModeInfo.aBinContent[i].u2Addr = i;
-		rSetEfuseBufModeInfo.aBinContent[i].ucValue = *(pucConfigBuf + i);
+		pBinContent->u2Addr  = i;
+		pBinContent->ucValue = *(pucConfigBuf + i);
+
+		pBinContent++;
 	}
 
 	for (i = 0; i < 20; i++)
-		DBGLOG(INIT, INFO, "%x\n", rSetEfuseBufModeInfo.aBinContent[i].ucValue);
+		DBGLOG(INIT, INFO, "%x\n", prSetEfuseBufModeInfo->aBinContent[i].ucValue);
 #endif
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetEfusBufferMode,
-			   &rSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T), FALSE, FALSE, TRUE,
+			   prSetEfuseBufModeInfo, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T), FALSE, FALSE, TRUE,
 			   &u4BufLen);
+	kalMemFree(prSetEfuseBufModeInfo, VIR_MEM_TYPE, sizeof(PARAM_CUSTOM_EFUSE_BUFFER_MODE_T));
 
 	i4BytesWritten =
-	    snprintf(pcCommand, i4TotalLen, "set buffer mode %s",
-		     (rStatus == WLAN_STATUS_SUCCESS) ? "success" : "fail");
+		snprintf(pcCommand, i4TotalLen, "set buffer mode %s",
+			 (rStatus == WLAN_STATUS_SUCCESS) ? "success" : "fail");
 
 	return i4BytesWritten;
 }
@@ -2930,11 +2800,12 @@ static char *HW_TX_RATE_OFDM_STR[] = {"6M", "9M", "12M", "18M", "24M", "36M", "4
 static char *HW_TX_RATE_BW[] = {"BW20", "BW40", "BW80", "BW160/BW8080", "N/A"};
 
 static char *RATE_TBLE[] = {"B", "G", "N", "N_2SS", "AC", "AC_2SS", "N/A"};
+#if 0
 static char *AR_STATE[] = {"NULL", "STEADY", "PROBE", "N/A"};
 static char *AR_ACTION[] = {"NULL", "INDEX", "RATE_UP", "RATE_DOWN", "RATE_GRP", "RATE_BACK",
 							"GI", "SGI_EN", "SGI_DIS", "PWR", "PWR_UP", "PWR_DOWN",
 							"PWR_RESET_UP", "BF", "BF_EN", "BF_DIS", "N/A"};
-
+#endif
 #define BW_20		0
 #define BW_40		1
 #define BW_80		2
@@ -3799,6 +3670,7 @@ static int priv_driver_get_test_result(IN struct net_device *prNetDev, IN char *
 	INT_32 i4Argc = 0;
 	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
 	UINT_32 u4Ret;
+	UINT_32 u4Data = 0;
 	INT_32 i4ArgNum = 3;
 	PARAM_MTK_WIFI_TEST_STRUCT_T rRfATInfo;
 
@@ -3831,8 +3703,8 @@ static int priv_driver_get_test_result(IN struct net_device *prNetDev, IN char *
 		DBGLOG(REQ, LOUD, "rStatus %u\n", rStatus);
 		if (rStatus != WLAN_STATUS_SUCCESS)
 			return -1;
-
-		i4BytesWritten = snprintf(pcCommand, i4TotalLen, "%d", (unsigned int)rRfATInfo.u4FuncData);
+		u4Data = (unsigned int)rRfATInfo.u4FuncData;
+		i4BytesWritten = snprintf(pcCommand, i4TotalLen, "%d[0x%08x]", u4Data, u4Data);
 		DBGLOG(REQ, INFO, "%s: command result is %s\n", __func__, pcCommand);
 	}
 
@@ -3890,9 +3762,20 @@ INT_32 priv_driver_tx_rate_info(IN char *pcCommand, IN int i4TotalLen, BOOLEAN f
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"NSS%d_MCS%d, ", nsts, rate);
 
-		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-			"%s, ", prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability < 4 ?
-			HW_TX_RATE_BW[prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability] : HW_TX_RATE_BW[4]);
+		if (prQueryStaStatistics->ucSkipAr) {
+			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+				"%s, ", prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability < 4 ?
+				HW_TX_RATE_BW[prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability] : HW_TX_RATE_BW[4]);
+		} else {
+			if ((txmode == TX_RATE_MODE_CCK) || (txmode == TX_RATE_MODE_OFDM))
+				i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+					"%s, ", HW_TX_RATE_BW[0]);
+			else
+				i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+					"%s, ", prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability < 4 ?
+					HW_TX_RATE_BW[prHwWlanInfo->rWtblPeerCap.ucFrequencyCapability] :
+					HW_TX_RATE_BW[4]);
+		}
 
 		if (txmode == TX_RATE_MODE_CCK)
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
@@ -3912,12 +3795,14 @@ INT_32 priv_driver_tx_rate_info(IN char *pcCommand, IN int i4TotalLen, BOOLEAN f
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%s%s%s   (--)\n", txmode < 5 ? HW_TX_MODE_STR[txmode] : HW_TX_MODE_STR[5],
 				stbc ? ", STBC, " : ", ",
-				priv_driver_get_ldpc_info(&prHwWlanInfo->rWtblTxConfig) == 0 ? "BCC" : "LDPC");
+				((priv_driver_get_ldpc_info(&prHwWlanInfo->rWtblTxConfig) == 0) ||
+				(txmode == TX_RATE_MODE_CCK) || (txmode == TX_RATE_MODE_OFDM)) ? "BCC" : "LDPC");
 		} else {
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%s%s%s   (%d)\n", txmode < 5 ? HW_TX_MODE_STR[txmode] : HW_TX_MODE_STR[5],
 				stbc ? ", STBC, " : ", ",
-				priv_driver_get_ldpc_info(&prHwWlanInfo->rWtblTxConfig) == 0 ? "BCC" : "LDPC",
+				((priv_driver_get_ldpc_info(&prHwWlanInfo->rWtblTxConfig) == 0) ||
+				(txmode == TX_RATE_MODE_CCK) || (txmode == TX_RATE_MODE_OFDM)) ? "BCC" : "LDPC",
 				prQueryStaStatistics->aucArRatePer[prQueryStaStatistics->aucRateEntryIndex[i]]);
 		}
 
@@ -4049,6 +3934,7 @@ INT_32 priv_driver_tx_vector_info(IN char *pcCommand, IN int i4TotalLen,
 
 static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcCommand, IN int i4TotalLen,
 	P_PARAM_HW_WLAN_INFO_T prHwWlanInfo, P_PARAM_GET_STA_STATISTICS prQueryStaStatistics,
+	P_PARAM_HW_MIB_INFO_T prHwMibInfo, P_PARAM_HW_MIB_INFO_T prHwMibInfo1,
 	BOOLEAN fgResetCnt)
 {
 	INT_32 i4BytesWritten = 0;
@@ -4064,8 +3950,10 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 	static UINT_32 au4RxFifoCnt[ENUM_BAND_NUM] = {0};
 	static UINT_32 au4AmpduTxSfCnt[ENUM_BAND_NUM] = {0};
 	static UINT_32 au4AmpduTxAckSfCnt[ENUM_BAND_NUM] = {0};
+	P_RX_CTRL_T prRxCtrl;
 
 	ucSkipAr = prQueryStaStatistics->ucSkipAr;
+	prRxCtrl = &prAdapter->rRxCtrl;
 
 	if (ucSkipAr) {
 		u4TotalTxCnt += prHwWlanInfo->rWtblTxCounter.u2CurBwTxCnt +
@@ -4246,6 +4134,18 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 		}
 	}
 
+    /* RX Reorder */
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%s", "------ RX Info -----\n");
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%-20s%s%d\n", "Rx reorder miss", " = ", RX_GET_CNT(prRxCtrl, RX_DATA_REORDER_MISS_COUNT));
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%-20s%s%d\n", "Rx reorder within", " = ", RX_GET_CNT(prRxCtrl, RX_DATA_REORDER_WITHIN_COUNT));
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%-20s%s%d\n", "Rx reorder ahead", " = ", RX_GET_CNT(prRxCtrl, RX_DATA_REORDER_AHEAD_COUNT));
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%-20s%s%d\n", "Rx reorder behind", " = ", RX_GET_CNT(prRxCtrl, RX_DATA_REORDER_BEHIND_COUNT));
+
 	/* AR info */
 	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 		"%s", "------ AR Info -----\n");
@@ -4267,18 +4167,19 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 			"%-20s%s%d%%\n", "Rate1 instantPer", " = ", u4InstantPer);
 
 		if (prQueryStaStatistics->ucAvePer == 0xFF) {
+#if 0
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "average RSSI", " = ", "N/A");
 
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "Rate1 AvePer", " = ", "N/A");
-
+#endif
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "Train Down", " = ", "N/A");
 
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "Train Up", " = ", "N/A");
-
+#if 0
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "Highest Rate Cnt", " = ", "N/A");
 
@@ -4299,13 +4200,15 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%s\n", "Rate Entry Idx", " = ", "N/A");
+#endif
 		} else {
+#if 0
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%d\n", "average RSSI", " = ", rRssi);
 
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%d%%\n", "Rate1 AvePer", " = ", prQueryStaStatistics->ucAvePer);
-
+#endif
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%d -> %d\n", "Train Down", " = ",
 				(prQueryStaStatistics->u2TrainDown) & BITS(0, 7),
@@ -4315,7 +4218,7 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 				"%-20s%s%d -> %d\n", "Train Up", " = ",
 				(prQueryStaStatistics->u2TrainUp) & BITS(0, 7),
 				((prQueryStaStatistics->u2TrainUp) >> 8) & BITS(0, 7));
-
+#if 0
 			i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 				"%-20s%s%d\n", "Highest Rate Cnt", " = ", prQueryStaStatistics->ucHighestRateCnt);
 
@@ -4345,6 +4248,7 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 				(prQueryStaStatistics->ucRateEntryIdxPrev == AR_RATE_ENTRY_INDEX_NULL) ?
 				(prQueryStaStatistics->ucRateEntryIdx) : (prQueryStaStatistics->ucRateEntryIdxPrev),
 				prQueryStaStatistics->ucRateEntryIdx);
+#endif
 		}
 	}
 
@@ -4352,6 +4256,31 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 	i4BytesWritten += priv_driver_tx_rate_info(pcCommand + i4BytesWritten,
 		i4TotalLen - i4BytesWritten, TRUE, prHwWlanInfo, prQueryStaStatistics);
 
+    /* Tx Agg */
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%s", "------ TX AGG -----\n");
+
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%-12s%s", "Range:", "1     2~5     6~15    16~22    23~33    34~49    50~57    58~64\n");
+
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"DBDC0:");
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%7d%8d%9d%9d%9d%9d%9d%9d\n",
+		prHwMibInfo->rHwTxAmpduMts.u2TxRange1AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange2AmpduCnt,
+		prHwMibInfo->rHwTxAmpduMts.u2TxRange3AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange4AmpduCnt,
+		prHwMibInfo->rHwTxAmpduMts.u2TxRange5AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange6AmpduCnt,
+		prHwMibInfo->rHwTxAmpduMts.u2TxRange7AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange8AmpduCnt);
+#if 0
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"DBDC1:");
+	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+		"%7d%8d%9d%9d%9d%9d%9d%9d\n",
+		prHwMibInfo1->rHwTxAmpduMts.u2TxRange1AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange2AmpduCnt,
+		prHwMibInfo1->rHwTxAmpduMts.u2TxRange3AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange4AmpduCnt,
+		prHwMibInfo1->rHwTxAmpduMts.u2TxRange5AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange6AmpduCnt,
+		prHwMibInfo1->rHwTxAmpduMts.u2TxRange7AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange8AmpduCnt);
+#endif
 	return i4BytesWritten;
 }
 
@@ -4368,6 +4297,8 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 	UINT_8 ucWlanIndex;
 	PUINT_8 pucMacAddr = NULL;
 	P_PARAM_HW_WLAN_INFO_T prHwWlanInfo;
+	P_PARAM_HW_MIB_INFO_T prHwMibInfo;
+	P_PARAM_HW_MIB_INFO_T prHwMibInfo1;
 	P_PARAM_GET_STA_STATISTICS prQueryStaStatistics;
 	BOOLEAN fgResetCnt = FALSE;
 
@@ -4410,6 +4341,9 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 	}
 
 	prHwWlanInfo = (P_PARAM_HW_WLAN_INFO_T)kalMemAlloc(sizeof(PARAM_HW_WLAN_INFO_T), VIR_MEM_TYPE);
+	if (!prHwWlanInfo)
+		return -1;
+
 	prHwWlanInfo->u4Index = ucWlanIndex;
 
 	DBGLOG(REQ, INFO, "MT6632 : index = %d i4TotalLen = %d\n", prHwWlanInfo->u4Index, i4TotalLen);
@@ -4424,13 +4358,43 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 		return -1;
 	}
 
+	prHwMibInfo = (P_PARAM_HW_MIB_INFO_T)kalMemAlloc(sizeof(PARAM_HW_MIB_INFO_T), VIR_MEM_TYPE);
+	if (!prHwMibInfo)
+		return -1;
+
+	prHwMibInfo->u4Index = 0;
+
+	/* Get MIB info */
+	rStatus = kalIoctl(prGlueInfo, wlanoidQueryMibInfo,
+		prHwMibInfo, sizeof(PARAM_HW_MIB_INFO_T), TRUE, TRUE, TRUE, &u4BufLen);
+
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		kalMemFree(prHwMibInfo, VIR_MEM_TYPE, sizeof(PARAM_HW_MIB_INFO_T));
+		return -1;
+	}
+
+	prHwMibInfo1 = (P_PARAM_HW_MIB_INFO_T)kalMemAlloc(sizeof(PARAM_HW_MIB_INFO_T), VIR_MEM_TYPE);
+	if (!prHwMibInfo1)
+		return -1;
+
+	prHwMibInfo1->u4Index = 1;
+
+	/* Get MIB info */
+	rStatus = kalIoctl(prGlueInfo, wlanoidQueryMibInfo,
+		prHwMibInfo1, sizeof(PARAM_HW_MIB_INFO_T), TRUE, TRUE, TRUE, &u4BufLen);
+
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		kalMemFree(prHwMibInfo1, VIR_MEM_TYPE, sizeof(PARAM_HW_MIB_INFO_T));
+		return -1;
+	}
+
 	/* Get Statistics info */
 	prQueryStaStatistics =
 		(P_PARAM_GET_STA_STATISTICS)kalMemAlloc(sizeof(PARAM_GET_STA_STA_STATISTICS), VIR_MEM_TYPE);
 	if (!prQueryStaStatistics)
 		return -1;
 
-	prQueryStaStatistics->ucReadClear = fgResetCnt;
+	prQueryStaStatistics->ucResetCounter = fgResetCnt;
 
 	pucMacAddr = wlanGetStaAddrByWlanIdx(prGlueInfo->prAdapter, ucWlanIndex);
 	COPY_MAC_ADDR(prQueryStaStatistics->aucMacAddr, pucMacAddr);
@@ -4447,12 +4411,15 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 
 	if (pucMacAddr) {
 		i4BytesWritten = priv_driver_dump_stat_info(prAdapter, pcCommand, i4TotalLen,
-			prHwWlanInfo, prQueryStaStatistics, fgResetCnt);
+			prHwWlanInfo, prQueryStaStatistics, prHwMibInfo, prHwMibInfo1, fgResetCnt);
 	}
 	DBGLOG(REQ, INFO, "%s: command result is %s\n", __func__, pcCommand);
 
 	kalMemFree(prHwWlanInfo, VIR_MEM_TYPE, sizeof(PARAM_HW_WLAN_INFO_T));
 	kalMemFree(prQueryStaStatistics, VIR_MEM_TYPE, sizeof(PARAM_GET_STA_STA_STATISTICS));
+
+	if (fgResetCnt)
+		nicRxClearStatistics(prGlueInfo->prAdapter);
 
 	return i4BytesWritten;
 }
@@ -4662,6 +4629,7 @@ int priv_driver_set_fixed_rate(IN struct net_device *prNetDev, IN char *pcComman
 	CHAR *this_char = NULL;
 	UINT_32 u4Id = 0xa0610000;
 	UINT_32 u4Data = 0x80000000;
+	UINT_32 u4Id2 = 0xa0600000;
 	UINT_8 u4Nsts = 1;
 	BOOLEAN fgStatus = TRUE;
 
@@ -4681,16 +4649,28 @@ int priv_driver_set_fixed_rate(IN struct net_device *prNetDev, IN char *pcComman
 
 	DBGLOG(REQ, LOUD, "string = %s\n", this_char);
 
-	i4Recv = sscanf(this_char, "%d-%d-%d-%d-%d-%d-%d-%d-%d-%d", &(u4WCID),
+	if (strnicmp(this_char, "auto", strlen("auto")) == 0) {
+		i4Recv = 1;
+	} else {
+		i4Recv = sscanf(this_char, "%d-%d-%d-%d-%d-%d-%d-%d-%d-%d", &(u4WCID),
 					&(u4Mode), &(u4Bw), &(u4Mcs), &(u4VhtNss),
 					&(u4SGI), &(u4Preamble), &(u4STBC), &(u4LDPC), &(u4SpeEn));
 
-	DBGLOG(REQ, LOUD, "u4WCID=%d\nu4Mode=%d\nu4Bw=%d\n", u4WCID, u4Mode, u4Bw);
-	DBGLOG(REQ, LOUD, "u4Mcs=%d\nu4VhtNss=%d\nu4SGI=%d\n", u4Mcs, u4VhtNss, u4SGI);
-	DBGLOG(REQ, LOUD, "u4Preamble=%d\nu4STBC=%d\n", u4Preamble, u4STBC);
-	DBGLOG(REQ, LOUD, "u4LDPC=%d\nu4SpeEn=%d\n", u4LDPC, u4SpeEn);
+		DBGLOG(REQ, LOUD, "u4WCID=%d\nu4Mode=%d\nu4Bw=%d\n", u4WCID, u4Mode, u4Bw);
+	    DBGLOG(REQ, LOUD, "u4Mcs=%d\nu4VhtNss=%d\nu4SGI=%d\n", u4Mcs, u4VhtNss, u4SGI);
+	    DBGLOG(REQ, LOUD, "u4Preamble=%d\nu4STBC=%d\n", u4Preamble, u4STBC);
+	    DBGLOG(REQ, LOUD, "u4LDPC=%d\nu4SpeEn=%d\n", u4LDPC, u4SpeEn);
+	}
 
-	if (i4Recv == 10) {
+	if (i4Recv == 1) {
+		rSwCtrlInfo.u4Id = u4Id2;
+		rSwCtrlInfo.u4Data = 0;
+
+		rStatus = kalIoctl(prGlueInfo,
+					wlanoidSetSwCtrlWrite,
+					&rSwCtrlInfo, sizeof(rSwCtrlInfo),
+					FALSE, FALSE, TRUE, &u4BufLen);
+	} else if (i4Recv == 10) {
 		rSwCtrlInfo.u4Id = u4Id;
 		rSwCtrlInfo.u4Data = u4Data;
 
@@ -6000,7 +5980,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		} else if (strnicmp(pcCommand, CMD_MIRACAST, strlen(CMD_MIRACAST)) == 0) {
 			i4BytesWritten = priv_driver_set_miracast(prNetDev, pcCommand, i4TotalLen);
 		}
-		/* Mediatek private command */
+		/* Mediatek private command  */
 		else if (strnicmp(pcCommand, CMD_SET_SW_CTRL, strlen(CMD_SET_SW_CTRL)) == 0) {
 			i4BytesWritten = priv_driver_set_sw_ctrl(prNetDev, pcCommand, i4TotalLen);
 		} else if (strnicmp(pcCommand, CMD_SET_FIXED_RATE, strlen(CMD_SET_FIXED_RATE)) == 0) {

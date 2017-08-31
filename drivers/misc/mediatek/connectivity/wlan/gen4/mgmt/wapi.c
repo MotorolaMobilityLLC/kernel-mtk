@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/wapi.c#1
 */
@@ -9,62 +60,6 @@
 *    cipher and AKM check to help the AP seleced deciding.
 */
 
-/*
-** Log: wapi.c
-**
-** 03 06 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** submit some code related with security.
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** enable AIS related management modules building under Android/Linux
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 10 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * change the debug module level.
- *
- * 10 20 2010 wh.su
- * [WCXRP00000067] [MT6620 Wi-Fi][Driver] Support the android+ WAPI function
- * fixed the network type
- *
- * 09 01 2010 wh.su
- * NULL
- * adding the wapi support for integration test.
- *
- * 07 20 2010 wh.su
- *
- * .
- *
- * 04 06 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
- * fixed the firmware return the broadcast frame at wrong tc.
- *
- * 03 03 2010 wh.su
- * [BORA00000637][MT6620 Wi-Fi] [Bug] WPA2 pre-authentication timer not correctly initialize
- * move the AIS specific variable for security to AIS specific structure.
- *
- * 12 18 2009 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * .
- *
- * Dec 8 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the function to check and update the default wapi tx
- *
- * Dec 7 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- * adding the generate wapi ie function, and replace the tabe by space
- *
- * Nov 23 2009 mtk01088
- * [BORA00000476] [Wi-Fi][firmware] Add the security module initialize code
- *
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -208,9 +203,7 @@ BOOLEAN wapiParseWapiIE(IN P_WAPI_INFO_ELEM_T prInfoElem, OUT P_WAPI_INFO_T prWa
 		 *  Cap          : 2
 		 */
 
-		/* Parse the Authentication and Key Management Cipher Suite Count
-		 *  field.
-		 */
+		/* Parse the Authentication and Key Management Cipher Suite Count field. */
 		if (u4RemainWapiIeLen < 2) {
 			DBGLOG(SEC, TRACE,
 			       "Fail to parse WAPI IE in auth & key mgt suite count (IE len: %d)\n",
@@ -222,9 +215,7 @@ BOOLEAN wapiParseWapiIE(IN P_WAPI_INFO_ELEM_T prInfoElem, OUT P_WAPI_INFO_T prWa
 		cp += 2;
 		u4RemainWapiIeLen -= 2;
 
-		/* Parse the Authentication and Key Management Cipher Suite List
-		 *  field.
-		 */
+		/* Parse the Authentication and Key Management Cipher Suite List field. */
 		i = (UINT_32) u2AuthSuiteCount * 4;
 		if (u4RemainWapiIeLen < (INT_32) i) {
 			DBGLOG(SEC, TRACE,

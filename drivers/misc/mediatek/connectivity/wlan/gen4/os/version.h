@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/version.h#1
 */
@@ -7,113 +58,6 @@
 *
 */
 
-/*
-** Log: version.h
-**
-** 02 01 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. eliminate MT5931/MT6620/MT6628 logic
-** 2. add firmware download control sequence
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 01 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.1.1.
- *
- * 08 26 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.9..
- *
- * 08 23 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.8.
- *
- * 08 15 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * correct typo.
- *
- * 08 15 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * for building MT6628 Win32 driver environment
- *
- * 08 03 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.7.
- *
- * 07 24 2011 puff.wen
- * NULL
- * [MT5931][Beta 5]Change the version number to v0.2.2.0
- *
- * 06 01 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.6..
- *
- * 05 09 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.5..
- *
- * 04 19 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.4.
- *
- * 04 18 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.3.
- *
- * 03 25 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.2.
- *
- * 03 21 2011 chinglan.wang
- * NULL
- * Change the version number to 2.0.0.1.
- *
- * 03 18 2011 chinglan.wang
- * NULL
- * Change the version number to v2.0.0.0.
- *
- * 02 11 2011 chinglan.wang
- * NULL
- * Change to the version 1.2.0.2.
- *
- * 02 10 2011 chinglan.wang
- * NULL
- * Change the version to 1.2.0.1.
- *
- * 02 08 2011 cp.wu
- * [WCXRP00000427] [MT6620 Wi-Fi][Driver] Modify veresion information to match with release revision number
- * change version number to v1.2.0.0 for preparing v1.2 software package release.
- *
- * 12 10 2010 kevin.huang
- * [WCXRP00000128] [MT6620 Wi-Fi][Driver] Add proc support to Android Driver for debug and driver status check
- * Add Linux Proc Support
- *
- * 10 07 2010 cp.wu
- * [WCXRP00000083] [MT5931][Driver][FW] Add necessary logic for MT5931 first connection
- * [WINDDK] build system changes for MT5931
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-12-14 14:10:55 GMT mtk01084
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-11-17 22:41:00 GMT mtk01084
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-11-13 16:20:33 GMT mtk01084
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:27:13 GMT mtk01426
-**  Init for develop
-**
-*/
 
 #ifndef _VERSION_H
 #define _VERSION_H

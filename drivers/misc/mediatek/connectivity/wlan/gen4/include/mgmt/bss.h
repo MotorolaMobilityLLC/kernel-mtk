@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: @(#) bss.h
 */
@@ -8,140 +59,6 @@
 *    The file contains the function declarations and defines for used in BSS/IBSS.
 */
 
-/*
-** Log: bss.h
-**
-** 02 19 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Add new definiton of MAX_BSS_INDEX
-**
-** 02 18 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modify bssClearClientList() to bssInitializeClientList()
-**
-** 01 21 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** 1. Create rP2pDevInfo structure
-** 2. Support 80/160 MHz channel bandwidth for channel privilege
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Let netdev bring up.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 09 14 2011 yuche.tsai
- * NULL
- * Add P2P IE in assoc response.
- *
- * 03 19 2011 yuche.tsai
- * [WCXRP00000581] [Volunteer Patch][MT6620][Driver] P2P IE in Assoc Req Issue
- * Make assoc req to append P2P IE if wifi direct is enabled.
- *
- * 03 02 2011 wh.su
- * [WCXRP00000448] [MT6620 Wi-Fi][Driver] Fixed WSC IE not send out at probe request
- * Add code to send beacon and probe response WSC IE at Auto GO.
- *
- * 02 23 2011 eddie.chen
- * [WCXRP00000463] [MT6620 Wi-Fi][FW/Driver][Hotspot] Cannot update WMM PS STA's partital bitmap
- * Fix parsing WMM INFO and bmp delivery bitmap definition.
- *
- * 01 31 2011 george.huang
- * [WCXRP00000333] [MT5931][FW] support SRAM power control drivers
- * Extend TIM PVB, from 2 to 3 octets.
- *
- * 11 29 2010 cp.wu
- * [WCXRP00000210] [MT6620 Wi-Fi][Driver][FW] Set RCPI value in STA_REC for
- * initial TX rate selection of auto-rate algorithm
- * update ucRcpi of STA_RECORD_T for AIS when
- * 1) Beacons for IBSS merge is received
- * 2) Associate Response for a connecting peer is received
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 12 2010 kevin.huang
- * NULL
- * Update bssProcessProbeRequest() and bssSendBeaconProbeResponse() declarations
- *
- * 07 19 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * when IBSS is being merged-in, send command packet to PM for connected indication
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 25 2010 george.huang
- * [WPD00001556]Basic power managemenet function
- * Create beacon update path, with expose bssUpdateBeaconContent()
- *
- * 06 17 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Add CTRL FLAGS for Probe Response.
- *
- * 06 09 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add necessary changes to driver data paths.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add aa_fsm.h, ais_fsm.h, bss.h, mib.h and scan.h.
- *
- * 06 04 2010 george.huang
- * [BORA00000678][MT6620]WiFi LP integration
- * [PM] Support U-APSD for STA mode
- *
- * 05 28 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add ClientList handling API - bssClearClientList, bssAddStaRecToClientList
- *
- * 05 14 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Remove unused typedef.
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Fix file merge error
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 04 19 2010 kevin.huang
- * [BORA00000714][WIFISYS][New Feature]Beacon Timeout Support
- * Add Beacon Timeout Support
- *  *  *  and will send Null frame to diagnose connection
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 02 23 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add DTIM count update while TX Beacon
- *
- * 02 04 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
-*/
 
 #ifndef _BSS_H
 #define _BSS_H

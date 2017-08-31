@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/nic/nic_pwr_mgt.c#1
 */
@@ -10,227 +61,6 @@
 *    description.
 */
 
-/*
-** Log: nic_pwr_mgt.c
-**
-** 06 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** update MAC address handling logic
-**
-** 02 06 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** add reset option for firmware download configuration
-**
-** 02 01 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. eliminate MT5931/MT6620/MT6628 logic
-** 2. add firmware download control sequence
-**
-** 10 25 2012 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** sync with MT6630 HIFSYS update.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 11 28 2011 cp.wu
- * [WCXRP00001125] [MT6620 Wi-Fi][Firmware] Strengthen Wi-Fi power off sequence to have a clearroom environment when
- * returining to ROM code
- * 1. Due to firmware now stops HIF DMA for powering off, do not try to receive any packet from firmware
- * 2. Take use of prAdapter->fgIsEnterD3ReqIssued for tracking whether it is powering off or not
- *
- * 10 03 2011 cp.wu
- * [WCXRP00001022] [MT6628 Driver][Firmware Download] Add multi section independent download functionality
- * add firmware download path in divided scatters.
- *
- * 08 15 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * reuse firmware download logic of MT6620 for MT6628.
- *
- * 05 11 2011 cp.wu
- * [WCXRP00000718] [MT6620 Wi-Fi] modify the behavior of setting tx power
- * ACPI APIs migrate to wlan_lib.c for glue layer to invoke.
- *
- * 04 29 2011 cp.wu
- * [WCXRP00000636] [WHQL][MT5931 Driver] 2c_PMHibernate (hang on 2h)
- * fix for compilation error when applied with FW_DOWNLOAD = 0
- *
- * 04 18 2011 cp.wu
- * [WCXRP00000636] [WHQL][MT5931 Driver] 2c_PMHibernate (hang on 2h)
- * 1) add API for glue layer to query ACPI state
- * 2) Windows glue should not access to hardware after switched into D3 state
- *
- * 04 13 2011 cp.wu
- * [WCXRP00000639] [WHQL][MT5931 Driver] 2c_PMStandby test item can not complete
- * refine for MT5931/MT6620 logic separation.
- *
- * 04 13 2011 cp.wu
- * [WCXRP00000639] [WHQL][MT5931 Driver] 2c_PMStandby test item can not complete
- * bugfix: firmware download procedure for ACPI state transition is not complete.
- *
- * 03 15 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into a single one to reduce physically continuous
- * memory consumption
- * 1. deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK
- * 2. Use common coalescing buffer for both TX/RX directions
- *
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 12 31 2010 cp.wu
- * [WCXRP00000335] [MT6620 Wi-Fi][Driver] change to use milliseconds sleep instead of delay to avoid blocking to system
- * scheduling
- * change to use msleep() and shorten waiting interval to reduce blocking to other task while Wi-Fi driver is being
- * loaded
- *
- * 12 31 2010 cp.wu
- * [WCXRP00000327] [MT6620 Wi-Fi][Driver] Improve HEC WHQA 6972 workaround coverage in driver side
- * check success or failure for setting fw-own
- *
- * 12 30 2010 cp.wu
- * [WCXRP00000327] [MT6620 Wi-Fi][Driver] Improve HEC WHQA 6972 workaround coverage in driver side
- * host driver not to set FW-own when there is still pending interrupts
- *
- * 10 07 2010 cp.wu
- * [WCXRP00000083] [MT5931][Driver][FW] Add necessary logic for MT5931 first connection
- * add firmware download for MT5931.
- *
- * 09 21 2010 cp.wu
- * [WCXRP00000053] [MT6620 Wi-Fi][Driver] Reset incomplete and might leads to BSOD when entering RF test with AIS
- * associated
- * Do a complete reset with STA-REC null checking for RF test re-entry
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 30 2010 cp.wu
- * NULL
- * reset ACPI power state before waking up MT6620 Wi-Fi firmware.
- *
- * 08 12 2010 cp.wu
- * NULL
- * [AIS-FSM] honor registry setting for adhoc running mode. (A/B/G)
- *
- * 08 03 2010 cp.wu
- * NULL
- * Centralize mgmt/system service procedures into independent calls.
- *
- * 07 22 2010 cp.wu
- *
- * 1) refine AIS-FSM indent.
- * 2) when entering RF Test mode, flush 802.1X frames as well
- * 3) when entering D3 state, flush 802.1X frames as well
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * change MAC address updating logic.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 24 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) when acquiring LP-own, write for clr-own with lower frequency compared to read poll
- * 2) correct address list parsing
- *
- * 05 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * sleepy notify is only used for sleepy state,
- * while wake-up state is automatically set when host needs to access device
- *
- * 05 19 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * correct hibernation problem.
- *
- * 04 26 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) surpress compiler warning
- * 2) when acqruing LP-own, keep writing WHLPCR whenever OWN is not acquired yet
- *
- * 04 23 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * surpress compiler warning
- *
- * 04 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * when acquiring driver-own, wait for up to 8 seconds.
- *
- * 04 21 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * add for private ioctl support
- *
- * 04 20 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) remove redundant firmware image unloading
- *  * 2) use compile-time macros to separate logic related to accquiring own
- *
- * 04 16 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * treat BUS access failure as kind of card removal.
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * accessing to firmware load/start address, and access to OID handling information
- *  * are now handled in glue layer
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * ePowerCtrl is not necessary as a glue variable.
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * add KAL API: kalFlushPendingTxPackets(), and take use of the API
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access for prGlueInfo->fgIsCardRemoved in non-glue layer
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
- *
- * 03 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * always send CMD_NIC_POWER_CTRL packet when nic is being halted
- *
- * 03 19 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * correct typo.
- *
- * 03 19 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) add ACPI D0/D3 state switching support
- *  *  *  *  *  *  *  * 2) use more formal way to handle interrupt when the status is retrieved from enhanced RX
- * response
- *
- * 03 08 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) add another spin-lock to protect MsduInfoList due to it might be accessed by different thread.
- *  * 2) change own-back acquiring procedure to wait for up to 16.67 seconds
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-10-13 21:59:15 GMT mtk01084
-**  update for new HW design
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-09-09 17:26:36 GMT mtk01084
-**  remove CMD52 access
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-05-18 14:50:29 GMT mtk01084
-**  modify lines in nicpmSetDriverOwn()
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-03-23 16:55:37 GMT mtk01084
-**  modify nicpmSetDriverOwn()
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-19 18:33:00 GMT mtk01084
-**  update for basic power management functions
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-03-19 15:05:32 GMT mtk01084
-**  Initial version
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -280,19 +110,6 @@
 
 VOID nicpmWakeUpWiFi(IN P_ADAPTER_T prAdapter)
 {
-
-#if CFG_SUPPORT_PMIC_SPI_CLOCK_SWITCH
-#if !defined(_HIF_SDIO)
-	UINT_32 u4Value = 0;
-	/*E1 PMIC clock workaround*/
-	HAL_MCR_RD(prAdapter, TOP_CKGEN2_CR_PMIC_CK_MANUAL, &u4Value);
-	HAL_MCR_WR(prAdapter, TOP_CKGEN2_CR_PMIC_CK_MANUAL, (TOP_CKGEN2_CR_PMIC_CK_MANUAL_MASK|u4Value));
-	HAL_MCR_RD(prAdapter, TOP_CKGEN2_CR_PMIC_CK_MANUAL, &u4Value);
-	DBGLOG(INIT, INFO, "PMIC SPI clock switch = %s\n",
-		(TOP_CKGEN2_CR_PMIC_CK_MANUAL_MASK&u4Value)?"SUCCESS":"FAIL");
-#endif
-#endif
-
 	if (!nicVerifyChipID(prAdapter)) {
 		DBGLOG(INIT, ERROR, "Chip id verify error!\n");
 		return;

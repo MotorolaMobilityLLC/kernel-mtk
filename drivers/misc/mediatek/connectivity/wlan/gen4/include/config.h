@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/config.h#3
 */
@@ -41,15 +92,14 @@
 #define MTK_WCN_HIF_SDIO	0
 #endif
 
-#if defined(_HIF_PCIE)
-#ifndef MTK_WCN_HIF_PCI
-#define MTK_WCN_HIF_PCI         1
-#endif
-#endif
-
 #ifndef CFG_BUILT_IN_DRIVER
 #define CFG_BUILT_IN_DRIVER         0
 #endif
+
+#ifndef CFG_WPS_DISCONNECT
+#define CFG_WPS_DISCONNECT         0
+#endif
+
 
 #if (CFG_SUPPORT_AEE == 1)
 #define CFG_ENABLE_AEE_MSG          1
@@ -63,8 +113,8 @@
 #define CFG_ENABLE_NET_DEV_NOTIFY		1
 
 /* 2 Flags for Driver Features */
-#define CFG_TX_FRAGMENT                 1	/*!< 1: Enable TX fragmentation*/
-						/*0: Disable */
+#define CFG_TX_FRAGMENT                 1	/*!< 1: Enable TX fragmentation */
+						/* 0: Disable */
 #define CFG_SUPPORT_PERFORMANCE_TEST    0	/*Only for performance Test */
 
 #define CFG_COUNTRY_CODE                NULL	/* "US" */
@@ -97,14 +147,14 @@
 #endif
 
 #define CFG_SUPPORT_802_11D             1	/*!< 1(default): Enable 802.11d */
-						/*0: Disable */
+						/* 0: Disable */
 
 #define CFG_SUPPORT_RRM             0	/* Radio Reasource Measurement (802.11k) */
 #define CFG_SUPPORT_DFS             1	/* DFS (802.11h) */
 
 #if (CFG_SUPPORT_DFS == 1)	/* Add by Enlai */
 #define CFG_SUPPORT_QUIET           0	/* Quiet (802.11h) */
-#define CFG_SUPPORT_SPEC_MGMT       1	/* Spectrum Management (802.11h): TPC and DFS */
+#define CFG_SUPPORT_SPEC_MGMT       0	/* Spectrum Management (802.11h): TPC and DFS */
 #else
 #define CFG_SUPPORT_QUIET           0	/* Quiet (802.11h) */
 #define CFG_SUPPORT_SPEC_MGMT       0	/* Spectrum Management (802.11h): TPC and DFS */
@@ -156,7 +206,7 @@
 
 #define CFG_TX_MAX_PKT_SIZE                     2304
 #define CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60       0	/* !< 1: Enable TCP/IP header checksum offload */
-							/*0: Disable */
+							/* 0: Disable */
 #define CFG_TCP_IP_CHKSUM_OFFLOAD               0
 #define CFG_WHQL_DOT11_STATISTICS               1
 #define CFG_WHQL_ADD_REMOVE_KEY                 1
@@ -175,9 +225,9 @@
  * Flags for EHPI Interface in Colibri Platform
  *------------------------------------------------------------------------------
  */
-#define CFG_EHPI_FASTER_BUS_TIMING                  0
 /*!< 1: Do workaround for faster bus timing */
-/*0(default): Disable */
+/* 0(default): Disable */
+#define CFG_EHPI_FASTER_BUS_TIMING                  0
 
 /*------------------------------------------------------------------------------
  * Flags for UMAC
@@ -219,7 +269,7 @@
 
 #ifdef WINDOWS_CE
 #define CFG_SDIO_PATHRU_MODE                    1	/*!< 1: Support pass through (PATHRU) mode */
-							/*0: Disable */
+							/* 0: Disable */
 #else
 #define CFG_SDIO_PATHRU_MODE                    0	/*!< 0: Always disable if WINDOWS_CE is not defined */
 #endif
@@ -229,8 +279,8 @@
 
 #define CFG_USB_TX_AGG                              1
 #define CFG_USB_CONSISTENT_DMA                      0
-#define CFG_USB_TX_HANDLE_IN_HIF_THREAD             1
-#define CFG_USB_RX_HANDLE_IN_HIF_THREAD             1
+#define CFG_USB_TX_HANDLE_IN_HIF_THREAD             0
+#define CFG_USB_RX_HANDLE_IN_HIF_THREAD             0
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Integration
@@ -244,9 +294,11 @@
 
 #define HW_BSSID_NUM                4	/* HW BSSID number by chip */
 
-/*#define CFG_CHIP_RESET_SUPPORT          0*/
-#define CFG_CHIP_RESET_SUPPORT      1
-
+#if (MTK_WCN_HIF_SDIO)
+#define CFG_CHIP_RESET_SUPPORT          1
+#else
+#define CFG_CHIP_RESET_SUPPORT          0
+#endif
 
 /*------------------------------------------------------------------------------
  * Flags for workaround
@@ -375,15 +427,15 @@
  * 802.11i RSN Pre-authentication PMKID cahce maximun number
  *------------------------------------------------------------------------------
  */
-/*!< max number of PMKID cache*/
-/*16(default) : The Max PMKID cache */
-
+/*!< max number of PMKID cache 16(default) : The Max PMKID cache */
 #define CFG_MAX_PMKID_CACHE                     16
+
 /*------------------------------------------------------------------------------
- * Auto Channel Selection Maximun Channel Number
- *------------------------------------------------------------------------------
- */
-#define MAX_AUTO_CHAL_NUM			18
+  * Auto Channel Selection maximun channel number
+  *------------------------------------------------------------------------------
+  */
+#define MAX_CHN_NUM                             39 /* CH1~CH14, CH36~CH48, CH52~CH64, CH100~CH144, CH149~CH165 */
+#define MAX_2G_BAND_CHN_NUM                     14
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Ad-Hoc
@@ -424,9 +476,8 @@
  * Flags of TX Debug Option. NOTE(Kevin): Confirm with SA before modifying following flags.
  *------------------------------------------------------------------------------
  */
-
 /*!< 1: Debug statistics usage of MGMT Buffer */
-/*0: Disable */
+/* 0: Disable */
 #define CFG_DBG_MGT_BUF                         1
 
 #define CFG_HIF_STATISTICS                      0
@@ -606,6 +657,23 @@
 #define CFG_SUPPORT_UL_PSMP         0
 
 #define CFG_SUPPORT_ROAMING         1	/* Roaming System */
+#if (CFG_SUPPORT_ROAMING == 1)
+
+/* Roaming feature: skip roaming when only one ESSID AP
+*  Need Android background scan
+*  if no roaming event occurred
+*  to trigger roaming scan
+*  after skip roaming in one ESSID AP case
+*/
+#define CFG_SUPPORT_ROAMING_SKIP_ONE_AP		0 /* [TODO]Enable after verification */
+#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
+#define CFG_MAX_NUM_ROAM_BSS_LIST		64
+#endif
+#else
+#define CFG_SUPPORT_ROAMING_SKIP_ONE_AP		0
+
+#endif /* CFG_SUPPORT_ROAMING */
+
 #define CFG_SUPPORT_SWCR            1
 
 #define CFG_SUPPORT_ANTI_PIRACY     1
@@ -643,6 +711,9 @@
 #define CFG_SUPPORT_MTK_SYNERGY             1
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
+
+#define CFG_FIX_2_TX_PORT					0
+
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------
@@ -804,6 +875,12 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_FW_NAME_MAX_LEN	(64)
+
+/*------------------------------------------------------------------------------
+ * Chip low power debug function
+ *------------------------------------------------------------------------------
+ */
+#define CFG_SUPPORT_LOW_POWER_DEBUG		1
 
 /*******************************************************************************
 *                             D A T A   T Y P E S

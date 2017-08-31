@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic_cmd_event.h#1
 */
@@ -115,20 +166,12 @@
 
 #if CFG_SUPPORT_BUFFER_MODE
 
-
-typedef struct _CMD_EFUSE_BUFFER_MODE_1_T {
-	UINT_8 ucSourceMode;
-	UINT_8 ucCount;
-	UINT_8 ucCmdType;
-	UINT_8 ucReserved;
-	UINT_8 aBinContent[EFUSE_CONTENT_SIZE_1];
-} CMD_EFUSE_BUFFER_MODE_1_T, *P_CMD_EFUSE_BUFFER_MODE_1_T;
-
 typedef struct _CMD_EFUSE_BUFFER_MODE_T {
 	UINT_8 ucSourceMode;
 	UINT_8 ucCount;
-	UINT_8 ucReserved[2];
-	BIN_CONTENT_T aBinContent[EFUSE_CONTENT_SIZE];
+	UINT_8 ucCmdType;  /* 0:6632, 1: 7668 */
+	UINT_8 ucReserved;
+	UINT_8 aBinContent[MAX_EEPROM_BUFFER_SIZE];
 } CMD_EFUSE_BUFFER_MODE_T, *P_CMD_EFUSE_BUFFER_MODE_T;
 
 
@@ -446,6 +489,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_PF_CAPAILITY = 0x59,	/* 0x59 (Set) */
 #endif
 
+#if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
+	CMD_ID_SET_ROAMING_SKIP = 0x6D,	/* 0x6D (Set) used to setting roaming skip*/
+#endif
 	CMD_ID_GET_SET_CUSTOMER_CFG = 0x70, /* 0x70(Set) */
 
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
@@ -456,6 +502,7 @@ typedef enum _ENUM_CMD_ID_T {
 
 	CMD_ID_GET_LTE_CHN = 0x87,	/* 0x87 (Query) */
 	CMD_ID_GET_CHN_LOADING = 0x88,	/* 0x88 (Query) */
+	CMD_ID_GET_BUG_REPORT = 0x89,	/* 0x89 (Query) */
 	CMD_ID_GET_NIC_CAPABILITY_V2 = 0x8A,/* 0x8A (Query) */
 
 	CMD_ID_ACCESS_REG = 0xc0,	/* 0xc0 (Set / Query) */
@@ -1169,7 +1216,6 @@ typedef struct _CMD_ACCESS_REG {
 } CMD_ACCESS_REG, *P_CMD_ACCESS_REG;
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
 typedef struct _CMD_ACCESS_CHN_LOAD {
 	UINT_32 u4Address;
 	UINT_32 u4Data;
@@ -1177,7 +1223,14 @@ typedef struct _CMD_ACCESS_CHN_LOAD {
 	UINT_8 aucReserved[2];
 } CMD_ACCESS_CHN_LOAD, *P_ACCESS_CHN_LOAD;
 
+typedef struct _CMD_GET_LTE_SAFE_CHN_T {
+	UINT_8 ucIndex;
+	UINT_8 ucFlags;
+	UINT_8 aucReserved0[2];
+	UINT_8 aucReserved2[16];
+} CMD_GET_LTE_SAFE_CHN_T, *P_CMD_GET_LTE_SAFE_CHN_T;
 #endif
+
 /* CMD_DUMP_MEMORY */
 typedef struct _CMD_DUMP_MEM {
 	UINT_32 u4Address;
@@ -1607,6 +1660,7 @@ typedef struct _CMD_SET_BSS_RLM_PARAM_T {
 	UINT_8 ucVhtChannelFrequencyS1;
 	UINT_8 ucVhtChannelFrequencyS2;
 	UINT_16 u2VhtBasicMcsSet;
+	UINT_8 ucNss;
 } CMD_SET_BSS_RLM_PARAM_T, *P_CMD_SET_BSS_RLM_PARAM_T;
 
 typedef struct _CMD_SET_BSS_INFO {
@@ -1691,7 +1745,7 @@ typedef struct _CMD_UPDATE_STA_RECORD_T {
 	UINT_16 u2VhtTxMcsMap;
 	UINT_16 u2VhtTxHighestSupportedDataRate;
 	UINT_8 ucRtsPolicy;	/* 0: auto 1: Static BW 2: Dynamic BW 3: Legacy 7: WoRts */
-	UINT_8 aucReserved2[1];
+	UINT_8 ucVhtOpMode; /* VHT operating mode, bit 7: Rx NSS Type, bit 4-6, Rx NSS, bit 0-1: Channel Width */
 
 	UINT_8 ucTrafficDataType;	/* 0: auto 1: data 2: video 3: voice */
 	UINT_8 ucTxGfMode;
@@ -1834,13 +1888,13 @@ typedef struct _CMD_SCAN_CANCEL_T {
 
 /* 20150107  Daniel Added complete channels number in the scan done event */
 /* before*/
-#if 0
-typedef struct _EVENT_SCAN_DONE_T {
-	UINT_8          ucSeqNum;
-	UINT_8          ucSparseChannelValid;
-	CHANNEL_INFO_T  rSparseChannel;
-} EVENT_SCAN_DONE, *P_EVENT_SCAN_DONE;
-#endif
+/*
+*typedef struct _EVENT_SCAN_DONE_T {
+*	UINT_8          ucSeqNum;
+*	UINT_8          ucSparseChannelValid;
+*	CHANNEL_INFO_T  rSparseChannel;
+*} EVENT_SCAN_DONE, *P_EVENT_SCAN_DONE;
+*/
 /* after */
 
 #define EVENT_SCAN_DONE_CHANNEL_NUM_MAX 64
@@ -1868,7 +1922,7 @@ typedef struct _EVENT_SCAN_DONE_T {
 	UINT_16 au2ChannelIdleTime[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
 	/* B0: Active/Passive B3-B1: Idle format  */
 	UINT_8 aucChannelFlag[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
-	UINT_8 aucReserved2[64];
+	UINT_8 aucChannelMDRDYCnt[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
 
 } EVENT_SCAN_DONE, *P_EVENT_SCAN_DONE;
 
@@ -2382,7 +2436,8 @@ typedef struct _CMD_GET_STA_STATISTICS_T {
 	UINT_8 ucReadClear;
 	UINT_8 ucLlsReadClear;
 	UINT_8 aucMacAddr[MAC_ADDR_LEN];
-	UINT_8 aucReserved1[2];
+	UINT_8 ucResetCounter;
+	UINT_8 aucReserved1[1];
 	UINT_8 aucReserved2[16];
 } CMD_GET_STA_STATISTICS_T, *P_CMD_GET_STA_STATISTICS_T;
 
@@ -2451,46 +2506,14 @@ typedef struct _EVENT_STA_STATISTICS_T {
 	MIB_INFO_STAT_T rMibInfo[ENUM_BAND_NUM];
 	UINT_8 aucReserved[23];
 } EVENT_STA_STATISTICS_T, *P_EVENT_STA_STATISTICS_T;
+
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-/* 4 Auto Channel Selection */
-
-typedef struct _CMD_GET_CHN_LOAD_T {
-	UINT_8 ucIndex;
-	UINT_8 ucFlags;
-	UINT_8 ucReadClear;
-	UINT_8 aucReserved0[1];
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 aucReserved1[1];
-	UINT_8 aucReserved2[16];
-} CMD_GET_CHN_LOAD_T, *P_CMD_GET_CHN_LOAD_T;
-/* 4  Auto Channel Selection */
-
-typedef struct _EVENT_CHN_LOAD_T {
-	/* Event Body */
+typedef struct _EVENT_LTE_SAFE_CHN_T {
 	UINT_8 ucVersion;
-	UINT_8 aucReserved1[3];
+	UINT_8 aucReserved[3];
 	UINT_32 u4Flags;	/* Bit0: valid */
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 aucReserved4[1];
-	UINT_8 aucReserved[64];
-} EVENT_CHN_LOAD_T, *P_EVENT_CHN_LOAD_T;
-typedef struct _CMD_GET_LTE_SAFE_CHN_T {
-	UINT_8 ucIndex;
-	UINT_8 ucFlags;
-	UINT_8 aucReserved0[2];
-	UINT_8 aucReserved2[16];
-} CMD_GET_LTE_SAFE_CHN_T, *P_CMD_GET_LTE_SAFE_CHN_T;
-
-typedef struct _EVENT_LTE_MODE_T {
-	/* Event Body */
-	UINT_8 ucVersion;
-	UINT_8 aucReserved1[3];
-	UINT_32 u4Flags;	/* Bit0: valid */
-	LTE_SAFE_CH_INFO_T rLteSafeChn;
-} EVENT_LTE_MODE_T, *P_EVENT_LTE_MODE_T;
+	LTE_SAFE_CHN_INFO_T rLteSafeChn;
+} EVENT_LTE_SAFE_CHN_T, *P_EVENT_LTE_SAFE_CHN_T;
 #endif
 
 #if CFG_SUPPORT_SNIFFER
@@ -2697,9 +2720,7 @@ VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /* 4 Auto Channel Selection */
-VOID nicCmdEventQueryChannelLoad(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
-
-VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 #endif
 
 #if CFG_SUPPORT_BATCH_SCAN
