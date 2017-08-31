@@ -115,6 +115,57 @@
 		vib_limit = <9>;
 		vib_vol= <5>;
 	};
+
+	/* Connectivity */
+	mediatek,connectivity-combo {
+		compatible = "mediatek,connectivity-combo";
+		gpio_combo_pmu_en_pin = <&pio 48 0>;	/* GPIO_COMBO_PMU_EN_PIN */
+		gpio_combo_rst_pin = <&pio 18 0>;	/* GPIO_COMBO_RST_PIN pin */
+		gpio_wifi_eint_pin = <&pio 20 0>;	/* GPIO_WIFI_EINT_PIN */
+		gpio_pcm_daiclk_pin = <&pio 36 0>;	/* GPIO_PCM_DAICLK_PIN */
+		gpio_pcm_daipcmin_pin = <&pio 38 0>;	/* GPIO_PCM_DAIPCMIN_PIN */
+		gpio_pcm_daipcmout_pin = <&pio 39 0>;	/* GPIO_PCM_DAIPCMOUT_PIN */
+		gpio_pcm_daisync_pin = <&pio 37 0>;	/* GPIO_PCM_DAISYNC_PIN */
+		gpio_gps_sync_pin = <&pio 4 0>;		/* GPIO_GPS_SYNC_PIN */
+		gpio_gps_lna_pin = <&pio 3 0>;		/* GPIO_GPS_LNA_PIN */
+		gpio_combo_urxd_pin = <&pio 64 0>;	/* GPIO_COMBO_URXD_PIN */
+		gpio_combo_utxd_pin = <&pio 65 0>;	/* GPIO_COMBO_UTXD_PIN */
+		pinctrl-names = "gpio_pmu_en_pull_dis",
+			"gpio_pmu_en_in_pulldown",
+			"gpio_rst_pull_dis",
+			"gpio_wifi_eint_in_pull_dis",
+			"gpio_wifi_eint_in_pullup",
+			"gpio_pcm_daiclk_pull_dis",
+			"gpio_pcm_daipcmin_pull_dis",
+			"gpio_pcm_daipcmout_pull_dis",
+			"gpio_pcm_daisync_pull_dis",
+			"gpio_gps_lna_pull_dis",
+			"gpio_gps_sync_pull_dis",
+			"gpio_urxd_uart_pull_dis",
+			"gpio_urxd_gpio_in_pullup",
+			"gpio_urxd_uart_out_low",
+			"gpio_urxd_gpio_in_pull_dis",
+			"gpio_utxd_uart_pull_dis";
+		pinctrl-0 = <&pcfg_combo_pmu_en_pull_dis_cfgs>;
+		pinctrl-1 = <&pcfg_combo_pmu_en_in_pulldown_cfgs>;
+		pinctrl-2 = <&pcfg_combo_rst_pull_dis_cfgs>;
+		pinctrl-3 = <&pcfg_combo_wifi_eint_in_pull_dis_cfgs>;
+		pinctrl-4 = <&pcfg_combo_wifi_eint_in_pullup_cfgs>;
+		pinctrl-5 = <&pcfg_combo_pcm_daiclk_pull_dis_cfgs>;
+		pinctrl-6 = <&pcfg_combo_pcm_daipcmin_pull_dis_cfgs>;
+		pinctrl-7 = <&pcfg_combo_pcm_daipcmout_pull_dis_cfgs>;
+		pinctrl-8 = <&pcfg_combo_pcm_daisync_pull_dis_cfgs>;
+		pinctrl-9 = <&pcfg_combo_gps_lna_pull_dis_cfgs>;
+		pinctrl-10 = <&pcfg_combo_gps_sync_pull_dis_cfgs>;
+		pinctrl-11 = <&pcfg_combo_urxd_uart_pull_dis_cfgs>;
+		pinctrl-12 = <&pcfg_combo_urxd_gpio_in_pullup_cfgs>;
+		pinctrl-13 = <&pcfg_combo_urxd_uart_out_low_cfgs>;
+		pinctrl-14 = <&pcfg_combo_urxd_gpio_in_pull_dis_cfgs>;
+		pinctrl-15 = <&pcfg_combo_utxd_uart_pull_dis_cfgs>;
+		interrupt-parent = <&pio>;
+		interrupts = < 20 IRQ_TYPE_LEVEL_LOW >;	/* WIFI EINT num is 1 active low level-sensitive */
+		status = "okay";
+	};
 };
 
 &accdet {
@@ -659,6 +710,125 @@
 			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
 		};
 	};
+
+/* Connectivity GPIO start */
+	pcfg_combo_pmu_en_pull_dis_cfgs:cfg_pmu_en_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_48_SPI_CS__FUNC_GPIO48>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pmu_en_in_pulldown_cfgs:cfg_pmu_en_in_pulldown {
+		combo_pins {
+			pins = <MT8167_PIN_48_SPI_CS__FUNC_GPIO48>;
+			bias-pull-down;
+		};
+	};
+
+	pcfg_combo_rst_pull_dis_cfgs:cfg_rst_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_18_EINT18__FUNC_GPIO18>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_wifi_eint_in_pull_dis_cfgs:cfg_wifi_eint_in_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_20_EINT20__FUNC_GPIO20>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_wifi_eint_in_pullup_cfgs:cfg_wifi_eint_in_pullup {
+		combo_pins {
+			pins = <MT8167_PIN_20_EINT20__FUNC_GPIO20>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	pcfg_combo_pcm_daiclk_pull_dis_cfgs:cfg_pcm_daiclk_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_36_MRG_CLK__FUNC_MRG_CLK>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daipcmin_pull_dis_cfgs:cfg_pcm_daipcmin_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_38_MRG_DI__FUNC_MRG_DI>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daipcmout_pull_dis_cfgs:cfg_pcm_daipcmout_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_39_MRG_DO__FUNC_MRG_DO>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_pcm_daisync_pull_dis_cfgs:cfg_pcm_daisync_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_37_MRG_SYNC__FUNC_MRG_SYNC>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_gps_lna_pull_dis_cfgs:cfg_gps_lna_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_3_EINT3__FUNC_GPIO3>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_gps_sync_pull_dis_cfgs:cfg_gps_sync_pull_dis {
+		combo_pins {
+			pins = <MT8167_PIN_4_EINT4__FUNC_GPIO4>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_urxd_uart_pull_dis_cfgs:cfg_urxd_pull_dis {
+		combo_pins {
+			pinmux = <MT8167_PIN_64_URXD1__FUNC_URXD1>;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_urxd_uart_out_low_cfgs:cfg_urxd_out_low {
+		combo_pins {
+			pinmux = <MT8167_PIN_64_URXD1__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	pcfg_combo_urxd_gpio_in_pullup_cfgs:cfg_urxd_in_pullup {
+		combo_pins {
+			pinmux = <MT8167_PIN_64_URXD1__FUNC_URXD1>;
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	pcfg_combo_urxd_gpio_in_pull_dis_cfgs:cfg_urxd_in_pull_dis {
+		combo_pins {
+			pinmux = <MT8167_PIN_64_URXD1__FUNC_URXD1>;
+			input-enable;
+			bias-disable;
+		};
+	};
+
+	pcfg_combo_utxd_uart_pull_dis_cfgs:cfg_utxd_pull_dis {
+		combo_pins {
+			pinmux = <MT8167_PIN_65_UTXD1__FUNC_UTXD1>;
+			bias-disable;
+		};
+	};
+/* Connectivity GPIO end */
 
 /* USB GPIO start */
 	usb0_drvvbus: drvvbus_init {
