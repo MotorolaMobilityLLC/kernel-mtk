@@ -1013,9 +1013,8 @@ int _ioctl_get_display_caps(unsigned long arg)
 
 	if (disp_helper_get_option(DISP_OPT_HRT))
 		caps_info.disp_feature |= DISP_FEATURE_HRT;
-		caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
-		DISPDBG("%s mode:%d, pass:%d, max_layer_num:%d\n",
-		__func__, caps_info.output_mode, caps_info.output_pass, caps_info.max_layer_num);
+
+	caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
@@ -1526,6 +1525,7 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 {
 	struct class_device;
 	struct class_device *class_dev = NULL;
+	int ret;
 
 	pr_debug("mtk_disp_mgr_probe called!\n");
 
@@ -1537,7 +1537,12 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 	mtk_disp_mgr_cdev->owner = THIS_MODULE;
 	mtk_disp_mgr_cdev->ops = &mtk_disp_mgr_fops;
 
-	cdev_add(mtk_disp_mgr_cdev, mtk_disp_mgr_devno, 1);
+	ret = cdev_add(mtk_disp_mgr_cdev, mtk_disp_mgr_devno, 1);
+	if (ret) {
+		DISPERR("cdev_add failed!\n");
+		unregister_chrdev_region(mtk_disp_mgr_devno, 1);
+		return ret;
+	}
 
 	mtk_disp_mgr_class = class_create(THIS_MODULE, DISP_SESSION_DEVICE);
 	class_dev =

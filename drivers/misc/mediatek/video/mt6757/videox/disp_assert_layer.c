@@ -308,11 +308,11 @@ enum DAL_STATUS DAL_Printf(const char *fmt, ...)
 	}
 	va_start(args, fmt);
 	i = vsprintf(dal_print_buffer, fmt, args);
+	va_end(args);
 	if (i >= ARRAY_SIZE(dal_print_buffer)) {
 		pr_err("[AEE]dal print buffer no space, i=%d\n", i);
 		return -1;
 	}
-	va_end(args);
 	DAL_CHECK_MFC_RET(MFC_Print(mfc_handle, dal_print_buffer));
 
 	/* flush_cache_all(); */
