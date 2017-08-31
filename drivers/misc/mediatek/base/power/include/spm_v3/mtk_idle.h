@@ -19,8 +19,6 @@
 enum idle_lock_spm_id {
 	IDLE_SPM_LOCK_VCORE_DVFS = 0,
 };
-
-#ifdef CONFIG_CPU_IDLE
 extern void idle_lock_spm(enum idle_lock_spm_id id);
 extern void idle_unlock_spm(enum idle_lock_spm_id id);
 
@@ -32,19 +30,6 @@ extern void disable_soidle3_by_bit(int id);
 
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
-#else
-void idle_lock_spm(enum idle_lock_spm_id id) {}
-void idle_unlock_spm(enum idle_lock_spm_id id) {}
-
-void enable_dpidle_by_bit(int id) {}
-void disable_dpidle_by_bit(int id) {}
-
-void enable_soidle3_by_bit(int id) {}
-void disable_soidle3_by_bit(int id) {}
-
-void enable_soidle_by_bit(int id) {}
-void disable_soidle_by_bit(int id) {}
-#endif
 
 extern void enable_mcsodi_by_bit(int id);
 extern void disable_mcsodi_by_bit(int id);
