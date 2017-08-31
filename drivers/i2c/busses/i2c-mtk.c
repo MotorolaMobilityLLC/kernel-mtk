@@ -96,33 +96,33 @@ void dump_cg_regs(struct mt_i2c *i2c)
 
 s32 check_cg_sta(struct mt_i2c *i2c)
 {
-	int  id, cg_cnt, cg_bit, err = 0;
+	int  id, cg_cnt, cg_bit, err = 1;
 	unsigned int cg_reg;
-
-	cg_cnt = __clk_get_enable_count(i2c->clk_main);
-	if (cg_cnt <= 0) {
-		dev_err(i2c->dev, "addr: %x, err irq w/o clk ccf %d(local %d)\n",
-			i2c->addr, cg_cnt, i2c->cg_cnt);
-		err++;
-	}
 
 	if (!cg_base)
 		return err;
 
+	cg_cnt = __clk_get_enable_count(i2c->clk_main);
+
 	id = i2c->id;
 	cg_bit = i2c->dev_comp->cg_bit[id];
 	cg_reg = readl(cg_base + i2c->dev_comp->clk_sta_offset);
-	/* 1:clk off, 0:clk on */
-	if (cg_reg & (0x1 << cg_bit)) {
+	if ((cg_cnt <= 0) || (i2c->cg_cnt == 0) || (cg_reg & (0x1 << cg_bit))) {
+		dev_err(i2c->dev, "addr: %x, err irq w/o clk ccf %d(local %d)\n",
+			i2c->addr, cg_cnt, i2c->cg_cnt);
 		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d, cg_reg = 0x%x\n", i2c->addr,
 			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0, cg_reg);
-		err++;
+		err = -1;
+
+		dev_err(i2c->dev, "enable clock for dump reg\n");
+		writel((0x1 << cg_bit), cg_base + i2c->dev_comp->clk_sta_offset - 0x4);
+		i2c_dump_info(i2c);
+		WARN_ON(1);
+	} else {
+		err = 0;
 	}
 
-	if (err)
-		return -1;
-
-	return 0;
+	return err;
 }
 
 void __iomem *dma_base;
