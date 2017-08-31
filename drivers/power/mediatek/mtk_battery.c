@@ -3533,8 +3533,8 @@ static ssize_t show_FG_Battery_CurrentConsumption(struct device *dev, struct dev
 {
 	int ret_value = 8888;
 
-	ret_value = battery_get_bat_avg_current();
-	bm_err("[EM] FG_Battery_CurrentConsumption : %d/10 mA\n", ret_value);
+	ret_value = battery_get_bat_avg_current() / 10;
+	bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
 	return sprintf(buf, "%d\n", ret_value);
 }
 
@@ -3548,6 +3548,49 @@ static ssize_t store_FG_Battery_CurrentConsumption(struct device *dev,
 
 static DEVICE_ATTR(FG_Battery_CurrentConsumption, 0664, show_FG_Battery_CurrentConsumption,
 		   store_FG_Battery_CurrentConsumption);
+
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
+/* // Create File For EM : Power_On_Voltage */
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
+static ssize_t show_Power_On_Voltage(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int ret_value = 1;
+
+	ret_value = 3450;
+	bm_err("[EM] Power_On_Voltage : %d\n", ret_value);
+	return sprintf(buf, "%u\n", ret_value);
+}
+
+static ssize_t store_Power_On_Voltage(struct device *dev, struct device_attribute *attr,
+				      const char *buf, size_t size)
+{
+	bm_err("[EM] Not Support Write Function\n");
+	return size;
+}
+
+static DEVICE_ATTR(Power_On_Voltage, 0664, show_Power_On_Voltage, store_Power_On_Voltage);
+
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
+/* // Create File For EM : Power_Off_Voltage */
+/* ///////////////////////////////////////////////////////////////////////////////////////// */
+static ssize_t show_Power_Off_Voltage(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int ret_value = 1;
+
+	ret_value = 3400;
+	bm_err("[EM] Power_Off_Voltage : %d\n", ret_value);
+	return sprintf(buf, "%u\n", ret_value);
+}
+
+static ssize_t store_Power_Off_Voltage(struct device *dev, struct device_attribute *attr,
+				       const char *buf, size_t size)
+{
+	bm_err("[EM] Not Support Write Function\n");
+	return size;
+}
+
+static DEVICE_ATTR(Power_Off_Voltage, 0664, show_Power_Off_Voltage, store_Power_Off_Voltage);
+
 
 static int battery_callback(struct notifier_block *nb, unsigned long event, void *v)
 {
@@ -3969,6 +4012,9 @@ static int battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_Battery_CurrentConsumption);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
+
 	fgtimer_service_init();
 
 	fgtimer_init(&tracking_timer, &dev->dev, "tracking_timer");
