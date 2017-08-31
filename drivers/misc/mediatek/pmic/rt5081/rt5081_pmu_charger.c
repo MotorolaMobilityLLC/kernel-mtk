@@ -28,6 +28,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.0.0_MTK"
 
 /* ======================= */
 /* RT5081 Charger Variable */
@@ -104,16 +105,13 @@ static const char *rt5081_chg_status_name[RT5081_CHG_STATUS_MAX] = {
 	"ready", "progress", "done", "fault",
 };
 
-#if 0 /* TBD, Ask Thor */
-#define rt5081_REG_EN_HIDDEN_MODE_MAX 8
-static const unsigned char rt5081_reg_en_hidden_mode[rt5081_REG_EN_HIDDEN_MODE_MAX] = {
-	0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77,
+static const unsigned char rt5081_reg_en_hidden_mode[] = {
+	0x07, 0x08, 0x09, 0x0A,
 };
 
-static const unsigned char rt5081_val_en_hidden_mode[rt5081_REG_EN_HIDDEN_MODE_MAX] = {
-	0x49, 0x32, 0xB6, 0x27, 0x48, 0x18, 0x03, 0xE2,
+static const unsigned char rt5081_val_en_hidden_mode[] = {
+	0x96, 0x69, 0xC3, 0x3C,
 };
-#endif
 
 enum rt5081_iin_limit_sel {
 	RT5081_IIMLMTSEL_AICR_3250 = 0,
@@ -386,13 +384,12 @@ static int rt5081_enable_hidden_mode(struct rt5081_pmu_charger_data *chg_data,
 {
 	int ret = 0;
 
-#if 0 /* TBD: Ask Thor */
 	battery_log(BAT_LOG_CRTI, "%s: enable hidden mode = %d\n",
 		__func__, enable);
 
 	/* Disable hidden mode */
 	if (!enable) {
-		ret = rt5081_pmu_reg_write_(chg_data->chip, 0x70, 0x00);
+		ret = rt5081_pmu_reg_write(chg_data->chip, 0x07, 0x00);
 		if (ret < 0)
 			goto _err;
 		return ret;
@@ -413,7 +410,6 @@ static int rt5081_enable_hidden_mode(struct rt5081_pmu_charger_data *chg_data,
 _err:
 	battery_log(BAT_LOG_CRTI, "%s: enable hidden mode = %d failed\n",
 		__func__, enable);
-#endif
 	return ret;
 }
 
@@ -421,7 +417,6 @@ _err:
 static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
-#if 0
 
 	battery_log(BAT_LOG_CRTI, "%s: starts\n", __func__);
 
@@ -430,13 +425,18 @@ static int rt5081_chg_sw_workaround(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		goto _out;
 
+	/* Make sure ICC is accurate */
+	ret = rt5081_pmu_reg_write(chg_data->chip, 0x37, 0x22);
+	if (ret < 0)
+		goto _out;
+
 	/* Increase Isys drop threshold to 2.5A */
-	ret = rt5081_pmu_reg_write(chg_data, 0x26, 0x1C);
+	ret = rt5081_pmu_reg_write(chg_data->chip, 0x36, 0x1C);
 	if (ret < 0)
 		goto _out;
 
 	/* Disable TS auto sensing */
-	ret = rt5081_pmu_reg_clr_bit(chg_data, 0x2E, 0x01);
+	ret = rt5081_pmu_reg_clr_bit(chg_data->chip, 0x3E, 0x01);
 
 _out:
 	/* Exit hidden mode */
@@ -445,7 +445,6 @@ _out:
 		battery_log(BAT_LOG_CRTI, "%s: exit hidden mode failed\n",
 			__func__);
 
-#endif
 	return ret;
 }
 
@@ -800,13 +799,11 @@ static int rt5081_chg_hw_init(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 
-#if 0 /* TBD */
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
 
-	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_REG_CORE_CTRL0,
-		RT5081_MASK_RST);
+	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CORECTRL2,
+		RT5081_MASK_CHG_RST);
 
-#endif
 	return ret;
 }
 
@@ -838,7 +835,6 @@ static int rt5081_set_aicl_vth(struct rt5081_pmu_charger_data *chg_data,
 
 static void rt5081_discharging_work_handler(struct work_struct *work)
 {
-#if 0 /* TBD: ask thor */
 	int ret = 0, i = 0;
 	const unsigned int max_retry_cnt = 3;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -851,8 +847,8 @@ static void rt5081_discharging_work_handler(struct work_struct *work)
 
 	battery_log(BAT_LOG_CRTI, "%s: start discharging\n", __func__);
 
-	/* Set bit2 of reg[0x21] to 1 to enable discharging */
-	ret = rt5081_pmu_reg_set_bit(chg_data, 0x21, 0x04);
+	/* Set bit2 of reg[0x31] to 1 to enable discharging */
+	ret = rt5081_pmu_reg_set_bit(chg_data->chip, 0x31, 0x04);
 	if (ret < 0) {
 		battery_log(BAT_LOG_CRTI, "%s: enable discharging failed\n",
 			__func__);
@@ -864,10 +860,10 @@ static void rt5081_discharging_work_handler(struct work_struct *work)
 
 	for (i = 0; i < max_retry_cnt; i++) {
 		/* Disable discharging */
-		ret = rt5081_pmu_reg_clr_bit(chg_data, 0x21, 0x04);
+		ret = rt5081_pmu_reg_clr_bit(chg_data->chip, 0x31, 0x04);
 		if (ret < 0)
 			continue;
-		if (rt5081_i2c_test_bit(chg_data, 0x21, 2) == 0)
+		if (rt5081_pmu_reg_test_bit(chg_data->chip, 0x31, 2) == 0)
 			goto _out;
 	}
 
@@ -876,17 +872,14 @@ static void rt5081_discharging_work_handler(struct work_struct *work)
 _out:
 	rt5081_enable_hidden_mode(chg_data, false);
 	battery_log(BAT_LOG_CRTI, "%s: end discharging\n", __func__);
-#endif
 }
 
 static int rt5081_run_discharging(struct rt5081_pmu_charger_data *chg_data)
 {
-#if 0
 	if (!queue_work(chg_data->discharging_workqueue,
-		&info->discharging_work))
+		&chg_data->discharging_work))
 		return -EINVAL;
 
-#endif
 	return 0;
 }
 
@@ -2338,8 +2331,8 @@ static inline int rt_parse_dt(struct device *dev,
 		return -EINVAL;
 	}
 
-	chg_desc = devm_kzalloc(&i2c->dev, sizeof(struct rt5081_pmu_charger_desc),
-		GFP_KERNEL);
+	chg_desc = devm_kzalloc(&i2c->dev,
+		sizeof(struct rt5081_pmu_charger_desc), GFP_KERNEL);
 	if (!chg_desc) {
 		battery_log(BAT_LOG_CRTI, "%s: no enough memory\n", __func__);
 		return -ENOMEM;
@@ -2394,6 +2387,9 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct rt5081_pmu_charger_data *chg_data;
 	bool use_dt = pdev->dev.of_node;
+
+	battery_log(BAT_LOG_CRTI, "%s: (%s)\n", __func__,
+		RT5081_PMU_CHARGER_DRV_VERSION);
 
 	chg_data = devm_kzalloc(&pdev->dev, sizeof(*chg_data), GFP_KERNEL);
 	if (!chg_data)
@@ -2486,4 +2482,4 @@ module_platform_driver(rt5081_pmu_charger);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("cy_huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("Richtek RT5081 PMU Charger");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);

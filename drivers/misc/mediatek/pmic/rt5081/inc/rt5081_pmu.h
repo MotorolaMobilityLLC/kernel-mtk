@@ -1,6 +1,6 @@
 /*
  *  include/linux/mfd/rt5081_pmu.h
- *  include header file for Richtek RT5081 Charger
+ *  include header file for Richtek RT5081 PMU
  *
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
