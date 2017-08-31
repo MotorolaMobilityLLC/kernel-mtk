@@ -587,6 +587,18 @@ void faudintbus_sq2pll(void)
 	clk_writel(CLK_CFG_SET(6), clk_aud_intbus_sel);
 }
 
+static unsigned int clk_ufs_card_sel;
+static void clk_ufs_card_switch_backup(void)
+{
+	clk_ufs_card_sel = clk_readl(CLK_CFG(13)) & CLK13_UFS_CARD_SEL_MASK;
+	clk_writel(CLK_CFG_CLR(13), CLK13_UFS_CARD_SEL_MASK);
+}
+
+static void clk_ufs_card_switch_restore(void)
+{
+	clk_writel(CLK_CFG_SET(13), clk_ufs_card_sel);
+}
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
 {
@@ -1183,10 +1195,12 @@ unsigned int ufs_cb_before_xxidle(void)
 {
 #if defined(CONFIG_MTK_UFS_BOOTING)
 	unsigned int op_cond = 0;
-	bool ufs_in_hibernate = false;
+	int ufs_in_hibernate = -1;
 
-	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
-	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+	/* Turn OFF/ON XO_UFS only when UFS_H8 */
+	ufs_in_hibernate = ufs_mtk_deepidle_hibern8_check();
+	op_cond = (ufs_in_hibernate == UFS_H8) ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+	op_cond |= (ufs_in_hibernate == UFS_H8) ? DEEPIDLE_OPT_UFSCARD_MUX_SWITCH : 0;
 
 	return op_cond;
 #else
@@ -1252,6 +1266,9 @@ static unsigned int dpidle_pre_process(int cpu)
 	mtkTTimer_cancel_timer();
 #endif
 
+	if (op_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
+		clk_ufs_card_switch_backup();
+
 	faudintbus_pll2sq();
 #endif
 
@@ -1264,12 +1281,15 @@ static unsigned int dpidle_pre_process(int cpu)
 	return op_cond;
 }
 
-static void dpidle_post_process(int cpu)
+static void dpidle_post_process(int cpu, unsigned int op_cond)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi(false);
 
 	faudintbus_sq2pll();
+
+	if (op_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
+		clk_ufs_card_switch_restore();
 
 	hps_restart_timer();
 
@@ -1471,7 +1491,7 @@ int dpidle_enter(int cpu)
 
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
 
-	dpidle_post_process(cpu);
+	dpidle_post_process(cpu, operation_cond);
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
@@ -1500,11 +1520,15 @@ int soidle3_enter(int cpu)
 	faudintbus_pll2sq();
 #endif
 
+	operation_cond |= soidle_pre_handler();
+
+	/* backup and clear ufs_card_sel to 0 */
+	if (operation_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
+		clk_ufs_card_switch_backup();
+
 	/* clkmux for sodi3 */
 	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_SO3] = mtk_idle_check_clkmux(IDLE_TYPE_SO3, clkmux_block_mask);
-
-	operation_cond |= soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
@@ -1523,6 +1547,10 @@ int soidle3_enter(int cpu)
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
+
+	/* restore ufs_card_sel */
+	if (operation_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
+		clk_ufs_card_switch_restore();
 
 	soidle_post_handler();
 
