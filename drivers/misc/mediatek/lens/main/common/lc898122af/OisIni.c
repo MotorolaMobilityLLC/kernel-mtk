@@ -965,7 +965,7 @@ void SelectGySleep(unsigned char UcSelMode)
 		AccWit(0x10);	/* Digital Gyro busy wait                               */
 #endif
 		RegWriteA_LC898122AF(GRADR0, 0x6B);
-		RegWriteA_LC898122AF(GRACC, 0x01);	/* 0x0282       Set Read Trigger ON                             */
+		RegWriteA_LC898122AF(GRACC, 0x01);
 		AccWit(0x01);	/* Digital Gyro busy wait                               */
 		RegReadA_LC898122AF(GRDAT0H, &UcRamIni);	/* 0x0290 */
 

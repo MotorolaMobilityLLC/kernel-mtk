@@ -14,7 +14,7 @@
 #ifndef OIS_PROG_H
 #define OIS_PROG_H
 
-const	OIS_UBYTE	DOWNLOAD_BIN[] = { /* DOWNLOAD2d_SEMCO_Xiaomi_C1.bin */
+const	unsigned char	DOWNLOAD_BIN[] = { /* DOWNLOAD2d_SEMCO_Xiaomi_C1.bin */
 	0x00,
 	0x95,
 	0x6C,
@@ -4632,5 +4632,5 @@ const	OIS_UBYTE	DOWNLOAD_BIN[] = { /* DOWNLOAD2d_SEMCO_Xiaomi_C1.bin */
 	0x00,
 };
 
-const	OIS_UWORD	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
+const	unsigned short int	DOWNLOAD_BIN_LEN = sizeof(DOWNLOAD_BIN);
 #endif /* OIS_PROG_H */

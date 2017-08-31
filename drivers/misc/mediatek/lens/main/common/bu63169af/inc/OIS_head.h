@@ -93,28 +93,14 @@
 #define		OIS_MALLOC13_ERROR				-123
 #define		OIS_MALLOC14_ERROR				-124	/* RHM_HT 2013/11/25    add */
 
-typedef short int ADJ_STS;
-
-typedef char OIS_BYTE;
-
-typedef short int OIS_WORD;
-
-typedef long int OIS_LONG;
-
-typedef unsigned char OIS_UBYTE;
-
-typedef unsigned short int OIS_UWORD;
-
-
-
 
 struct _BMP_GET_POS {
-	OIS_WORD x;		/* x start position for clipping */
-	OIS_WORD y;		/* y start position for clipping */
-	OIS_WORD width;		/* clipping width */
-	OIS_WORD height;	/* clipping height */
-	OIS_UBYTE slice_level;	/* slice level of bitmap binalization */
-	OIS_UBYTE filter;	/* median filter enable */
+	short int x;		/* x start position for clipping */
+	short int y;		/* y start position for clipping */
+	short int width;		/* clipping width */
+	short int height;	/* clipping height */
+	unsigned char slice_level;	/* slice level of bitmap binalization */
+	unsigned char filter;	/* median filter enable */
 	char *direction;	/* direction of detection */
 };
 
@@ -135,34 +121,34 @@ struct _APPROXRESULT {
 #define Wait(a)     Wait_usec(a*1000UL)
 
 
-ADJ_STS func_PROGRAM_DOWNLOAD(void);
-void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type);
-void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type);
+short int func_PROGRAM_DOWNLOAD(void);
+void func_COEF_DOWNLOAD(unsigned short int u16_coef_type);
+void download(unsigned short int u16_type, unsigned short int u16_coef_type);
 
-ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			     OIS_UBYTE filter, OIS_UBYTE range, const struct _FACT_ADJ *param);
+short int func_SET_SCENE_PARAM(unsigned char u16_scene, unsigned char u16_mode,
+			     unsigned char filter, unsigned char range, const struct _FACT_ADJ *param);
 
 void SET_FADJ_PARAM(const struct _FACT_ADJ *param);
 
-ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-					     OIS_UBYTE filter, OIS_UBYTE range,
+short int func_SET_SCENE_PARAM_for_NewGYRO_Fil(unsigned char u16_scene, unsigned char u16_mode,
+					     unsigned char filter, unsigned char range,
 					     const struct _FACT_ADJ *param);
 
 void HalfShutterOn(void);
 
-void I2C_OIS_per_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat);
+void I2C_OIS_per_write(unsigned char u08_adr, unsigned short int u16_dat);
 
-void I2C_OIS_mem_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat);
+void I2C_OIS_mem_write(unsigned char u08_adr, unsigned short int u16_dat);
 
-OIS_UWORD I2C_OIS_per__read(OIS_UBYTE u08_adr);
+unsigned short int I2C_OIS_per__read(unsigned char u08_adr);
 
-OIS_UWORD I2C_OIS_mem__read(OIS_UBYTE u08_adr);
+unsigned short int I2C_OIS_mem__read(unsigned char u08_adr);
 
-void I2C_OIS_spcl_cmnd(OIS_UBYTE u08_on, OIS_UBYTE u08_dat);
+void I2C_OIS_spcl_cmnd(unsigned char u08_on, unsigned char u08_dat);
 
-void I2C_OIS_F0123_wr_(OIS_UBYTE u08_dat0, OIS_UBYTE u08_dat1, OIS_UWORD u16_dat2);
+void I2C_OIS_F0123_wr_(unsigned char u08_dat0, unsigned char u08_dat1, unsigned short int u16_dat2);
 
-OIS_UWORD I2C_OIS_F0123__rd(void);
+unsigned short int I2C_OIS_F0123__rd(void);
 
 void POWER_UP_AND_PS_DISABLE(void);
 
@@ -172,9 +158,9 @@ void VCOSET0(void);
 
 void VCOSET1(void);
 
-void WR_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
+void WR_I2C(unsigned char slvadr, unsigned char size, unsigned char *dat);
 
-OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat);
+unsigned short int RD_I2C(unsigned char slvadr, unsigned char size, unsigned char *dat);
 
 void store_FADJ_MEM_to_non_volatile_memory(struct _FACT_ADJ param);
 
