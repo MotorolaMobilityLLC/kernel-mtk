@@ -81,7 +81,7 @@ int PMIC_MD_INIT_SETTING_V1(void)
 
 #if defined(CONFIG_MACH_MT6757)
 	/* modem temp */
-	PMIC_DRV_WriteReg32(modem_temp_base, 0x011f);
+	PMIC_DRV_WriteReg32(modem_temp_base, 0x033f);
 	pr_err("[PMIC] TEMP_SHARE_CTRL:0x%x\n", PMIC_DRV_Reg32(modem_temp_base));
 	/* modem temp */
 	PMIC_DRV_WriteReg32(modem_temp_base + 0x04, 0x013f);
