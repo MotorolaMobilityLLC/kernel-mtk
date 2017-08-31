@@ -131,8 +131,10 @@ int sspm_reserve_memory_init(void)
 
 	accumlate_memory_size = 0;
 	sspm_mem_base_virt = (phys_addr_t)(uintptr_t)ioremap_nocache(sspm_mem_base_phys, sspm_mem_size);
-	pr_debug("[SSPM]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n", (unsigned long long)sspm_mem_base_virt,
-			(unsigned long long)sspm_mem_base_virt + (unsigned long long)sspm_mem_size, sspm_mem_size);
+	pr_debug("[SSPM]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n",
+			(unsigned long long)sspm_mem_base_virt,
+			(unsigned long long)sspm_mem_base_virt + (unsigned long long)sspm_mem_size,
+			(unsigned long long)sspm_mem_size);
 	for (id = 0; id < NUMS_MEM_ID; id++) {
 		if (sspm_reserve_mblock[id].start_phys == 0)
 			break;
@@ -148,8 +150,9 @@ int sspm_reserve_memory_init(void)
 #ifdef DEBUG
 	for (id = 0; id < NUMS_MEM_ID; id++) {
 		pr_debug("[SSPM][mem_reserve-%d] phys:0x%llx,virt:0x%llx,size:0x%llx\n",
-				id, sspm_reserve_mem_get_phys(id),
-				sspm_reserve_mem_get_virt(id), sspm_reserve_mem_get_size(id));
+				id, (unsigned long long)sspm_reserve_mem_get_phys(id),
+				(unsigned long long)sspm_reserve_mem_get_virt(id),
+				(unsigned long long)sspm_reserve_mem_get_size(id));
 	}
 #endif
 
