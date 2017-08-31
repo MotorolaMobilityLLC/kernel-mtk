@@ -3322,7 +3322,10 @@ force_config:
 	}
 	/* DSI_Reset(module, cmdq_handle); */
 	DSI_TXRX_Control(module, cmdq, dsi_config);
-	DSI_PS_Control(module, cmdq, dsi_config, config->dst_w, config->dst_h);
+	if (atomic_read(&dual_pipe_on))
+		DSI_PS_Control(module, cmdq, dsi_config, (config->dst_w) * 2, config->dst_h);
+	else
+		DSI_PS_Control(module, cmdq, dsi_config, config->dst_w, config->dst_h);
 	DSI_PHY_TIMCONFIG(module, cmdq, dsi_config);
 
 	if (dsi_config->mode != CMD_MODE
