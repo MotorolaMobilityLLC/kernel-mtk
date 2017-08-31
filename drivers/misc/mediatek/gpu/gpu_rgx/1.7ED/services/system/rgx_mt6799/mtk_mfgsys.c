@@ -294,12 +294,6 @@ static int MTKInitHWAPM(void)
 		PVR_DPF((PVR_DBG_ERROR, "LV0 *g_pvRegsKM = 0x%x", mfg_readl(g_pvRegsKM+0x01c)));
 	}
 
-	regval = mfg_readl(g_pvRegsKM+0x01c);
-	/* regval = regval + 0x8; */
-	mfg_writel(regval, (g_pvRegsKM+0x01c));
-
-
-
 	mfg_writel(0x01a80000, (g_pvRegsKM + 0x504));
 	mfg_writel(0x00080010, (g_pvRegsKM + 0x508));
 	mfg_writel(0x00080010, (g_pvRegsKM + 0x50c));
@@ -978,7 +972,7 @@ PVRSRV_ERROR MTKDevPostPowerState(IMG_HANDLE hSysData, PVRSRV_DEV_POWER_STATE eN
         PVRSRV_DEV_POWER_STATE_ON == eNewPowerState)
     {
         MTKEnableMfgClock();
-
+	SetAsyncFIFO();
 #if defined(MTK_USE_HW_APM)
         MTKInitHWAPM();
 #endif
