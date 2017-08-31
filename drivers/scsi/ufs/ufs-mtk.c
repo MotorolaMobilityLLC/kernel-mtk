@@ -20,9 +20,8 @@
 #include "unipro.h"
 #include "ufs-mtk.h"
 #include "ufs-mtk-block.h"
+#include "ufs-mtk-platform.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
-#include "mtk_spm_resource_req.h"
-#include <mtk_clkbuf_ctl.h>
 
 #ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
@@ -74,9 +73,6 @@ bool ufs_mtk_auto_hibern8_enabled;
 bool ufs_mtk_host_deep_stall_enable;
 bool ufs_mtk_host_scramble_enable;
 bool ufs_mtk_tr_cn_used;
-void __iomem *ufs_mtk_mmio_base_infracfg_ao;
-void __iomem *ufs_mtk_mmio_base_pericfg;
-void __iomem *ufs_mtk_mmio_base_ufs_mphy;
 struct ufs_hba *ufs_mtk_hba;
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
@@ -240,11 +236,6 @@ static bool ufs_mtk_is_valid_pm_lvl(int lvl)
  */
 static int ufs_mtk_init(struct ufs_hba *hba)
 {
-	struct device_node *node_infracfg_ao;
-	struct device_node *node_pericfg;
-	struct device_node *node_ufs_mphy;
-	int err;
-
 	/* initialize globals */
 	ufs_mtk_rpm_autosuspend_delay = -1;
 	ufs_mtk_rpm_enabled = false;
@@ -253,57 +244,13 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_host_deep_stall_enable = 0;
 	ufs_mtk_host_scramble_enable = 0;
 	ufs_mtk_tr_cn_used = 0;
-	ufs_mtk_mmio_base_infracfg_ao = NULL;
-	ufs_mtk_mmio_base_pericfg = NULL;
-	ufs_mtk_mmio_base_ufs_mphy = NULL;
 	ufs_mtk_hba = hba;
 
+	ufs_mtk_pltfrm_init();
+
+	ufs_mtk_pltfrm_parse_dt(hba);
+
 	ufs_mtk_advertise_hci_quirks(hba);
-
-	/* get ufs_mtk_mmio_base_infracfg_ao */
-
-	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
-
-	if (node_infracfg_ao) {
-		ufs_mtk_mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
-
-		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao)) {
-			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao);
-			dev_err(hba->dev, "error: ufs_mtk_mmio_base_infracfg_ao init fail\n");
-			ufs_mtk_mmio_base_infracfg_ao = NULL;
-		}
-	} else
-		dev_err(hba->dev, "error: node_infracfg_ao init fail\n");
-
-	/* get ufs_mtk_mmio_base_pericfg */
-
-	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
-
-	if (node_pericfg) {
-		ufs_mtk_mmio_base_pericfg = of_iomap(node_pericfg, 0);
-
-		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_pericfg)) {
-			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_pericfg);
-			dev_err(hba->dev, "error: mmio_base_pericfg init fail\n");
-			ufs_mtk_mmio_base_pericfg = NULL;
-		}
-	} else
-		dev_err(hba->dev, "error: node_pericfg init fail\n");
-
-	/* get ufs_mtk_mmio_base_ufs_mphy */
-
-	node_ufs_mphy = of_find_compatible_node(NULL, NULL, "mediatek,ufs_mphy");
-
-	if (node_ufs_mphy) {
-		ufs_mtk_mmio_base_ufs_mphy = of_iomap(node_ufs_mphy, 0);
-
-		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_ufs_mphy)) {
-			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_ufs_mphy);
-			dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
-			ufs_mtk_mmio_base_ufs_mphy = NULL;
-		}
-	} else
-		dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
 
 	/* Get PM level from device tree */
 	ufs_mtk_parse_pm_levels(hba);
@@ -394,117 +341,9 @@ static int ufs_mtk_pwr_change_notify(struct ufs_hba *hba,
 	return ret;
 }
 
-int ufs_mtk_host_sw_rst(struct ufs_hba *hba, u32 target)
-{
-	u32 reg;
-
-	if (!ufs_mtk_mmio_base_infracfg_ao) {
-		dev_err(hba->dev, "ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
-		return 1;
-	}
-
-	dev_dbg(hba->dev, "ufs_mtk_host_sw_rst: 0x%x\n", target);
-
-	if (target & SW_RST_TARGET_UFSHCI) {
-		/* reset HCI */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_SET);
-		reg = reg | (1 << REG_UFSHCI_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_SET);
-	}
-
-	if (target & SW_RST_TARGET_UFSCPT) {
-		/* reset AES */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_SET);
-		reg = reg | (1 << REG_UFSCPT_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_SET);
-	}
-
-	if (target & SW_RST_TARGET_UNIPRO) {
-		/* reset UniPro */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_SET);
-		reg = reg | (1 << REG_UNIPRO_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_SET);
-	}
-
-	if (target & SW_RST_TARGET_MPHY) {
-		writel((readl(ufs_mtk_mmio_base_ufs_mphy + 0x001C) &
-		~(0x01 << 2)) |
-		(0x01 << 2),
-		(ufs_mtk_mmio_base_ufs_mphy + 0x001C));
-	}
-
-	udelay(100);
-
-	if (target & SW_RST_TARGET_UFSHCI) {
-		/* clear HCI reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_CLR);
-		reg = reg | (1 << REG_UFSHCI_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_CLR);
-	}
-
-	if (target & SW_RST_TARGET_UFSCPT) {
-		/* clear AES reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_CLR);
-		reg = reg | (1 << REG_UFSCPT_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_CLR);
-	}
-
-	if (target & SW_RST_TARGET_UNIPRO) {
-		/* clear UniPro reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_CLR);
-		reg = reg | (1 << REG_UNIPRO_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_CLR);
-	}
-
-	if (target & SW_RST_TARGET_MPHY) {
-		writel((readl(ufs_mtk_mmio_base_ufs_mphy + 0x001C) &
-		~(0x01 << 2)) |
-		 (0x00 << 2),
-		 (ufs_mtk_mmio_base_ufs_mphy + 0x001C));
-	}
-
-	udelay(100);
-
-	return 0;
-}
-
 static int ufs_mtk_init_mphy(struct ufs_hba *hba)
 {
 	return 0;
-}
-
-/*
- * In early-porting stage, because of no bootrom, something finished by bootrom shall be finished here instead.
- * Returns:
- *  0: Successful.
- *  Non-zero: Failed.
- */
-static int ufs_mtk_bootrom_deputy(struct ufs_hba *hba)
-{
-#ifdef CONFIG_FPGA_EARLY_PORTING
-
-	u32 reg;
-
-	if (!ufs_mtk_mmio_base_pericfg)
-		return 1;
-
-	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-	reg = reg | (1 << REG_UFS_PERICFG_LDO_N_BIT);
-	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-
-	udelay(10);
-
-	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
-	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-
-	return 0;
-
-#else
-
-	return 0;
-
-#endif
 }
 
 static int ufs_mtk_pre_link(struct ufs_hba *hba)
@@ -512,7 +351,7 @@ static int ufs_mtk_pre_link(struct ufs_hba *hba)
 	int ret = 0;
 	u32 tmp;
 
-	ufs_mtk_bootrom_deputy(hba);
+	ufs_mtk_pltfrm_bootrom_deputy(hba);
 
 	ufs_mtk_init_mphy(hba);
 
@@ -589,7 +428,6 @@ static int ufs_mtk_link_startup_notify(struct ufs_hba *hba, enum ufs_notify_chan
 static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
-	u32 reg;
 
 	if (ufshcd_is_link_hibern8(hba)) {
 		/*
@@ -600,64 +438,7 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		if (ret)
 			return ret;
 
-		/* VA09 LDO will be shutdwon by SPM (Step1: SPM set RG_VA09_ON to 1'b0 Step2: SPM turn off VA09 LDO )
-		 * Before VA09 LDO shutdown, some sw flow of mphy needs to be  done here.
-		*/
-		/* step1: force DIFZ hihg */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
-		reg = reg | (0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
-
-		/* step2: force DA_MP_RX0_SQ_EN=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = reg | (0x1);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = reg & ~(0x1 << 1);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-
-		/* step3: force DA_MP_CDR_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg | (0x1 << 19);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg | (0x1 << 20);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-
-		/* step4: force DA_MP_CDR_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg | (0x1 << 17);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg & ~(0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-
-		/* step5: force DA_MP_PLL_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg | (0x1 << 8);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg | (0x1 << 9);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-
-		/* step6: force DA_MP_PLL_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg | (0x1 << 10);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg & ~(0x1 << 11);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-
-		/* delay awhile to satisfy T_HIBERNATE */
-		mdelay(15);
-
-		/* Disable MPHY 26MHz ref clock in H8 mode */
-		clk_buf_ctrl(CLK_BUF_UFS, false);
-
-		#if 0
-		/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
-		ufs_mtk_host_sw_rst(hba, SW_RST_TARGET_UFSHCI);
-		#endif
+		ufs_mtk_pltfrm_suspend(hba);
 	}
 
 	return ret;
@@ -666,59 +447,10 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
-	u32 reg;
 
 	if (ufshcd_is_link_hibern8(hba)) {
-		/* Enable MPHY 26MHz ref clock */
-		clk_buf_ctrl(CLK_BUF_UFS, true);
 
-		/* VA09 LDO will be power on by SPM (Step1: SPM turn on VA09 LDO Step2: SPM set RG_VA09_ON to 1'b1  )
-		 * Before VA09 LDO is enabled, some sw flow of mphy needs to be  done here.
-		*/
-		/* step6: release DA_MP_PLL_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg | (0x1 << 11);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg & ~(0x1 << 10);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-
-		/* step5: release DA_MP_PLL_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg & ~(0x1 << 9);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-		reg = reg & ~(0x1 << 8);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
-
-		/* step4: release DA_MP_CDR_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg | (0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg & ~(0x1 << 17);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-
-		/* step3: release DA_MP_CDR_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg & ~(0x1 << 20);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-		reg = reg & ~(0x1 << 19);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
-
-		/* step2: release DA_MP_RX0_SQ_EN=0 */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = reg | (0x1 << 1);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-		reg = reg & ~(0x1);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
-
-		/* step1: release DIFZ hihg */
-		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
-		reg = reg & ~(0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
+		ufs_mtk_pltfrm_resume(hba);
 
 		/*
 		 * HCI power-on flow with link in hibern8
@@ -1391,17 +1123,7 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	}
 }
 
-/**
- * ufs_mtk_deepidle_resource_req - Deepidle & SODI resource request.
- * @hba: per-adapter instance
- * @resource: DRAM/26M clk/MainPLL resources to be claimed. New claim will substitute old claim.
- */
-static void ufs_mtk_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
-{
-	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
-}
-
-int ufsh_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms)
+int ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms)
 {
 	u32 arg1;
 	u32 ret;
@@ -1434,28 +1156,12 @@ int ufsh_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_ind
 /**
  * ufs_mtk_deepidle_hibern8_check - callback function for Deepidle & SODI.
  * Release all resources: DRAM/26M clk/Main PLL and dsiable 26M ref clk if in H8.
+ *
  * @return: 0 for success, negative/postive error code otherwise
  */
 int ufs_mtk_deepidle_hibern8_check(void)
 {
-	int ret = 0;
-	u32 tmp;
-	/* Release all resources if entering H8 mode */
-	ret = ufsh_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
-	if (ret) {
-		dev_err(ufs_mtk_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
-		return ret;
-	}
-	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
-		/* Disable MPHY 26MHz ref clock in H8 mode */
-		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
-		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-		clk_buf_ctrl(CLK_BUF_UFS, false);
-		#endif
-		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
-		return 0;
-	}
-	return -1;
+	return ufs_mtk_pltfrm_deepidle_check_h8();
 }
 
 /**
@@ -1463,11 +1169,7 @@ int ufs_mtk_deepidle_hibern8_check(void)
  */
 void ufs_mtk_deepidle_leave(void)
 {
-	/* Enable MPHY 26MHz ref clock after leaving deepidle */
-	/* SSPM project will enable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
-	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	clk_buf_ctrl(CLK_BUF_UFS, true);
-	#endif
+	ufs_mtk_pltfrm_deepidle_leave();
 }
 
 static const char *ufs_mtk_uic_link_state_to_string(
@@ -1629,7 +1331,7 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	ufs_mtk_resume,               /* resume */
 	NULL,                         /* dbg_register_dump */
 	ufs_mtk_auto_hibern8,         /* auto_hibern8 */
-	ufs_mtk_deepidle_resource_req,/* deepidle_resource_req */
+	ufs_mtk_pltfrm_deepidle_resource_req, /* deepidle_resource_req */
 	ufs_mtk_scsi_dev_cfg,         /* scsi_dev_cfg */
 };
 

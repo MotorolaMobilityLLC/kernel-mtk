@@ -16,44 +16,8 @@
 /* #define CONFIG_MTK_UFS_DEBUG_QUEUECMD */
 
 #include <linux/of.h>
+
 #include "ufshcd.h"
-
-/*
- * Platform dependent definitions
- */
-#ifdef CONFIG_MACH_MT6799
-enum {
-	REG_UFS_PERICFG             = 0x12c,
-	REG_UFS_PERICFG_RST_N_BIT   = 17,
-	REG_UFS_PERICFG_LDO_N_BIT   = 16,
-	REG_UFS_PERICFG_LP_N_BIT    = 18,
-};
-
-enum {
-	REG_UNIPRO_SW_RST_SET       = 0x140,
-	REG_UNIPRO_SW_RST_SET_BIT   = 4,
-	REG_UNIPRO_SW_RST_CLR       = 0x144,
-	REG_UNIPRO_SW_RST_CLR_BIT   = 4,
-
-	REG_UFSHCI_SW_RST_SET       = 0x120,
-	REG_UFSHCI_SW_RST_SET_BIT   = 14,
-	REG_UFSHCI_SW_RST_CLR       = 0x124,
-	REG_UFSHCI_SW_RST_CLR_BIT   = 14,
-
-	REG_UFSCPT_SW_RST_SET       = 0x130,
-	REG_UFSCPT_SW_RST_SET_BIT   = 15,
-	REG_UFSCPT_SW_RST_CLR       = 0x134,
-	REG_UFSCPT_SW_RST_CLR_BIT   = 15,
-};
-#endif
-
-enum {
-	SW_RST_TARGET_UFSHCI        = 0x1,
-	SW_RST_TARGET_UNIPRO        = 0x2,
-	SW_RST_TARGET_UFSCPT        = 0x4,
-	SW_RST_TARGET_MPHY          = 0x8,
-	SW_RST_TARGET_ALL           = (SW_RST_TARGET_UFSHCI | SW_RST_TARGET_UNIPRO | SW_RST_TARGET_UFSCPT),
-};
 
 #define UPIU_COMMAND_CRYPTO_EN_OFFSET	23
 
@@ -70,6 +34,11 @@ enum {
 	UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC   = 1,
 	UFS_CRYPTO_ALGO_AES_ECB             = 2,
 	UFS_CRYPTO_ALGO_ESSIV_AES_CBC       = 3,
+};
+
+enum {
+	UFS_MTK_RESREQ_DMA_OP,      /* request resource for DMA operations, e.g., DRAM */
+	UFS_MTK_RESREQ_MPHY_NON_H8  /* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
 };
 
 struct ufs_cmd_str_struct {
@@ -253,6 +222,7 @@ struct ufs_crypto {
 extern u32							ufs_mtk_auto_hibern8_timer_ms;
 extern struct ufs_cmd_str_struct	ufs_mtk_cmd_str_tbl[];
 extern enum ufs_dbg_lvl_t			ufs_mtk_dbg_lvl;
+extern struct ufs_hba              *ufs_mtk_hba;
 extern bool							ufs_mtk_host_deep_stall_enable;
 extern bool							ufs_mtk_host_scramble_enable;
 extern bool							ufs_mtk_tr_cn_used;
@@ -261,6 +231,9 @@ extern const struct of_device_id			ufs_of_match[];
 void ufs_mtk_add_sysfs_nodes(struct ufs_hba *hba);
 void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
 void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
+int  ufs_mtk_deepidle_hibern8_check(void);
+void ufs_mtk_deepidle_leave(void);
+int  ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms);
 int  ufs_mtk_get_cmd_str_idx(char cmd);
 bool ufs_mtk_is_data_cmd(char cmd_op);
 void ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
@@ -268,8 +241,5 @@ void ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
 int  ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int  ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
-int  ufs_mtk_deepidle_hibern8_check(void);
-void ufs_mtk_deepidle_leave(void);
-
 
 #endif /* !_UFSHCD_MTK_H */
