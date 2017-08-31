@@ -20,29 +20,9 @@
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/mediatek/mtk_regulator_class.h>
 
-struct mtk_simple_regulator_adv_ops;
 struct mtk_regulator {
 	struct regulator *consumer;
-	struct mtk_simple_regulator_adv_ops *mreg_adv_ops;
-};
-
-enum mtk_simple_regulator_property {
-	MREG_PROP_SET_RAMP_DELAY = 0,
-};
-
-union mtk_simple_regulator_propval {
-	int32_t intval;
-	uint32_t uintval;
-	const char *strval;
-};
-
-struct mtk_simple_regulator_adv_ops {
-	int (*set_property)(struct mtk_regulator *mreg,
-		enum mtk_simple_regulator_property prop,
-		union mtk_simple_regulator_propval *val);
-	int (*get_property)(struct mtk_regulator *mreg,
-		enum mtk_simple_regulator_property prop,
-		union mtk_simple_regulator_propval *val);
+	struct mtk_simple_regulator_device *mreg_dev;
 };
 
 extern int mtk_regulator_get(struct device *dev, const char *id,
@@ -67,5 +47,13 @@ extern int mtk_regulator_get_voltage(struct mtk_regulator *mreg);
 extern int mtk_regulator_set_current_limit(struct mtk_regulator *mreg,
 	int min_uA, int max_uA);
 extern int mtk_regulator_get_current_limit(struct mtk_regulator *mreg);
+
+/* Advanced ops */
+extern int mtk_regulator_set_property(struct mtk_regulator *mreg,
+	enum mtk_simple_regulator_property prop,
+	union mtk_simple_regulator_propval *val);
+extern int mtk_regulator_get_property(struct mtk_regulator *mreg,
+	enum mtk_simple_regulator_property prop,
+	union mtk_simple_regulator_propval *val);
 
 #endif /* __LINUX_REGULATOR_MTK_REGULATOR_H_ */
