@@ -95,7 +95,6 @@
 #define PVR_ANDROID_SYNC_HEADER "../drivers/staging/android/sync.h"
 #define MTK_DEBUG 
 #define MTK_DEBUG_PROC_PRINT 
+#define MTK_USE_HW_APM
 #define MTK_CONFIG_OF 
 #define ENABLE_COMMON_DVFS 
-#define MTK_USE_HW_APM
-
