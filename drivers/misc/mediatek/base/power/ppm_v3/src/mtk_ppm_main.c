@@ -768,7 +768,7 @@ static int ppm_main_suspend(struct device *dev)
 {
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	ppm_info("%s: suspend callback in\n", __func__);
+	ppm_ver("%s: suspend callback in\n", __func__);
 
 	ppm_lock(&ppm_main_info.lock);
 	ppm_main_info.is_in_suspend = true;
@@ -783,7 +783,7 @@ static int ppm_main_resume(struct device *dev)
 {
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	ppm_info("%s: resume callback in\n", __func__);
+	ppm_ver("%s: resume callback in\n", __func__);
 
 	ppm_lock(&ppm_main_info.lock);
 	ppm_main_info.is_in_suspend = false;
