@@ -324,11 +324,7 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 		else
 			autok_init_sdr104(host);
 
-		#ifdef vcorefs_get_hw_opp
 		vcore = vcorefs_get_hw_opp();
-		#else
-		vcore = msdc_dvfs_get_level(host);
-		#endif
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
 
 		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;

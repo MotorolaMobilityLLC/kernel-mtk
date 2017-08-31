@@ -344,21 +344,6 @@ int wait_sdio_autok_ready(void *data)
 }
 EXPORT_SYMBOL(wait_sdio_autok_ready);
 
-int msdc_dvfs_get_level(struct msdc_host *host)
-{
-	void __iomem *base = host->base;
-	int vcore, i;
-
-	MSDC_GET_FIELD(SDC_STS, SDC_STS_DVFS_LEVEL, vcore);
-
-	for (i = 0; i < NUM_OPP; i++) {
-		if (vcore & (1 << i))
-			return i;
-	}
-
-	return -1;
-}
-
 void sdio_autok_wait_dvfs_ready(void)
 {
 	int dvfs;
@@ -384,11 +369,7 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
-	#ifdef vcorefs_get_hw_opp
 	vcore = vcorefs_get_hw_opp();
-	#else
-	vcore = msdc_dvfs_get_level(host);
-	#endif
 
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
@@ -419,11 +400,8 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode, u8 *res)
 	int ret = 0;
 	int vcore;
 
-	#ifdef vcorefs_get_hw_opp
 	vcore = vcorefs_get_hw_opp();
-	#else
-	vcore = msdc_dvfs_get_level(host);
-	#endif
+
 	if (!res) {
 		if (vcore < AUTOK_VCORE_LEVEL0 ||  vcore >= AUTOK_VCORE_NUM)
 			vcore = AUTOK_VCORE_LEVEL0;
@@ -485,13 +463,9 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		autok_init(host);
 
 		/* Check which vcore setting to apply */
-		#ifdef vcorefs_get_hw_opp
 		vcore = vcorefs_get_hw_opp();
-		#else
-		vcore = msdc_dvfs_get_level(host);
-		#endif
+		pr_err("[AUTOK]Apply first tune para vcore = %d\n", vcore);
 		autok_tuning_parameter_init(host, host->autok_res[vcore]);
-		pr_err("[AUTOK]Apply first tune para\n");
 
 		if (host->use_hw_dvfs == 0) {
 			pr_err("[AUTOK]No need change para when dvfs\n");
@@ -526,6 +500,7 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 		else
 			autok_execute(host, host->autok_res[i]);
 
+		host->autok_res_valid[i] = true;
 		msdc_set_hw_dvfs(i, host);
 	}
 
@@ -753,16 +728,20 @@ int sdio_autok(void)
 {
 	struct msdc_host *host = mtk_msdc_host[2];
 
-	if ((host == NULL) || (host->hw == NULL))
+	if (!host || !host->mmc) {
+		pr_err("SDIO device not ready\n");
 		return -1;
+	}
 
-	if (host->hw->host_function != MSDC_SDIO)
+	if (host->hw->host_function != MSDC_SDIO) {
+		pr_err("SDIO device not in this host\n");
 		return -1;
+	}
 
 	pr_err("sdio autok\n");
 
 	/* DVFS need wait device ready and excute autok here */
-	if (!wait_for_completion_timeout(&host->autok_done, 10 * HZ)) {
+	if (!wait_for_completion_timeout(&host->autok_done, 30 * HZ)) {
 		pr_err("SDIO wait device autok ready timeout");
 		return -1;
 	}

@@ -14,7 +14,7 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-#define VOREFS_READY
+/* #define VOREFS_READY */
 /* #define SDIO_HQA */
 
 #include "autok.h"
@@ -77,7 +77,6 @@ extern void sdio_execute_dvfs_autok(struct msdc_host *host);
 
 extern int autok_res_check(u8 *res_h, u8 *res_l);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
-extern int msdc_dvfs_get_level(struct msdc_host *host);
 extern void msdc_dump_autok(struct msdc_host *host);
 
 #endif /* _AUTOK_DVFS_H_ */
