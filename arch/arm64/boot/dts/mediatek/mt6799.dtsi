@@ -4611,7 +4611,7 @@
 	};
 
 	nfc: nfc {
-		compatible = "mediatek,fix_build_error";
+		compatible = "mediatek,mediatek,nfc-gpio-v2";
 	};
 
 	goodix_fp: goodix_fp {
@@ -4619,7 +4619,7 @@
 	};
 
 	irq_nfc: irq_nfc {
-		compatible = "mediatek,fix_build_error";
+		compatible = "mediatek,irq_nfc-eint";
 	};
 
 	als: als {
