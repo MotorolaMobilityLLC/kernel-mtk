@@ -79,7 +79,7 @@ void pd_transition_voltage(int idx)
 
 int pd_set_power_supply_ready(struct typec_hba *hba)
 {
-	typec_drive_vbus(hba, 1);
+	hba->drive_vbus(hba, 1);
 
 	return 1;
 }
@@ -87,9 +87,7 @@ int pd_set_power_supply_ready(struct typec_hba *hba)
 void pd_power_supply_reset(struct typec_hba *hba)
 {
 	/* Disable VBUS */
-	typec_drive_vbus(hba, 0);
-
-	/* TODO: Enable the discharging circuit if have.*/
+	hba->drive_vbus(hba, 0);
 }
 
 void pd_set_input_current_limit(struct typec_hba *hba, uint32_t max_ma,

@@ -328,6 +328,7 @@ struct typec_hba {
 	unsigned int cc_irq;
 	unsigned int pd_irq;
 	int id;
+	int hwid;
 	bool is_kpoc;
 	bool is_boost;
 	bool is_shutdown;
@@ -463,6 +464,7 @@ struct typec_hba {
 #endif
 
 	int vsafe_5v;
+	void (*drive_vbus)(struct typec_hba *hba, uint8_t on);
 	int (*charger_det_notify)(int);
 };
 
@@ -569,6 +571,7 @@ extern void typec_vbus_det_enable(struct typec_hba *hba, uint8_t enable);
 extern unsigned int vbus_val(struct typec_hba *hba);
 extern unsigned int vbus_val_self(struct typec_hba *hba);
 extern void typec_drive_vbus(struct typec_hba *hba, uint8_t on);
+extern void typec_drive_vbus_e3(struct typec_hba *hba, uint8_t on);
 extern void typec_drive_vconn(struct typec_hba *hba, uint8_t enable);
 extern void typec_int_enable(struct typec_hba *hba, uint16_t msk0, uint16_t msk2);
 extern void typec_int_disable(struct typec_hba *hba, uint16_t msk0, uint16_t msk2);

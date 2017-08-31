@@ -1388,6 +1388,124 @@ skip:
 
 	hba->vbus_en = (on ? 1 : 0);
 }
+
+void typec_drive_vbus_e3(struct typec_hba *hba, uint8_t on)
+{
+	if (hba->vbus_en == on)
+		goto skip;
+
+	/*
+	 *  From Script_20161215.xlsx provided by Lynch Lin
+	 */
+	if (on) {
+		uint8_t tmp;
+		/*
+		 * ==Enable OTG==
+		 * 1. Check 0x612[4] (DA_QI_FLASH_MODE) and 0x0613[1] (DA_QI_VBUS_PLUGIN)
+		 *
+		 * 2. If they are both low, apply below settings
+		 * 3. If any of them is high, do nothing (chip does not support OTG mode while under CHR or Flash mode)"
+		 *
+		 * WR	57	519	0A
+		 * WR	57	520	00
+		 * WR	57	55A	01
+		 * WR	56	455	00
+		 * WR	55	3C9	00
+		 *
+		 * WR	57	553	14
+		 * WR	57	55F	E6
+		 * WR	57	53D	47
+		 * WR	57	529	8F
+		 *
+		 * WR	57	560	0C
+		 * WR	56	40F	04
+		 *
+		 * WR	56	400	[3]=1'b1	Enable OTG
+		 *
+		 * WR  57	51F	83
+		 */
+		tmp = typec_read8(hba, 0x612);
+		if (tmp & (0x1<<4)) {
+			dev_err(hba->dev, "At Flash mode, Can not turn on OTG\n");
+			return;
+		}
+
+		tmp = typec_read8(hba, 0x613);
+		if (tmp & (0x1<<1)) {
+			dev_err(hba->dev, "VBUS present, Can not turn on OTG\n");
+			return;
+		}
+
+		typec_write8(hba, 0x0A, 0x519);
+		typec_write8(hba, 0x00, 0x520);
+		typec_write8(hba, 0x01, 0x55A);
+		typec_write8(hba, 0x00, 0x455);
+		typec_write8(hba, 0x00, 0x3C9);
+
+		typec_write8(hba, 0x14, 0x553);
+		typec_write8(hba, 0xE6, 0x55F);
+		typec_write8(hba, 0x47, 0x53D);
+		typec_write8(hba, 0x8F, 0x529);
+
+		typec_write8(hba, 0x0C, 0x560);
+		typec_write8(hba, 0x04, 0x40F);
+
+		tmp = typec_read8(hba, 0x400);
+		typec_write8(hba, (tmp | RG_EN_OTG), 0x400);
+
+		typec_write8(hba, 0x83, 0x51F);
+	} else {
+		uint8_t tmp;
+		/*
+		 * ==Disable OTG==
+		 *
+		 * WR	57	52A	88
+		 * WR	57	553	14
+		 * WR	57	519	3E
+		 * WR	57	51E	02
+		 *
+		 * WR	57	520	04
+		 * WR	57	55A	00
+		 * WR	56	455	01
+		 * WR	55	3C9	10
+		 *
+		 * WR	55	3CF	03
+		 * WR	56	402	03
+		 *
+		 * WR	57	529	88
+		 * WR  57	51F	84
+		 * WR  57	53D	47
+		 *
+		 * WR	56	400	[3]=1'b0	Disable OTG
+		*/
+		typec_write8(hba, 0x88, 0x52A);
+		typec_write8(hba, 0x14, 0x553);
+		typec_write8(hba, 0x3E, 0x519);
+		typec_write8(hba, 0x02, 0x51E);
+
+		typec_write8(hba, 0x04, 0x520);
+		typec_write8(hba, 0x00, 0x55A);
+		typec_write8(hba, 0x01, 0x455);
+		typec_write8(hba, 0x10, 0x3C9);
+
+		typec_write8(hba, 0x03, 0x3CF);
+		typec_write8(hba, 0x03, 0x402);
+
+		typec_write8(hba, 0x88, 0x529);
+		typec_write8(hba, 0x84, 0x51F);
+		typec_write8(hba, 0x47, 0x53D);
+
+		tmp = typec_read8(hba, 0x400);
+		typec_write8(hba, (tmp & (~RG_EN_OTG)), 0x400);
+	}
+
+skip:
+	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vbus_en != on))
+		dev_err(hba->dev, "VBUS %s", (on ? "ON" : "OFF"));
+
+	hba->vbus_en = (on ? 1 : 0);
+}
+
 #endif
 #endif
 
@@ -1732,7 +1850,7 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
 
 			if (hba->vbus_en == 1) {
-				typec_drive_vbus(hba, 0);
+				hba->drive_vbus(hba, 0);
 			} else {
 				typec_vbus_present(hba, 1);
 
@@ -1902,7 +2020,7 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 				typec_drive_vconn(hba, 1);
 #endif
 
-			typec_drive_vbus(hba, 1);
+			hba->drive_vbus(hba, 1);
 
 			break;
 		}
@@ -2084,7 +2202,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		typec_int_disable(hba, toggle, 0);
 
 		typec_vbus_present(hba, 0);
-		typec_drive_vbus(hba, 0);
+		hba->drive_vbus(hba, 0);
 
 		if (hba->mode == 1)
 			typec_enable_lowq(hba, "UNATTACH");
@@ -2164,7 +2282,9 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 	/*transition from Attached.SRC to TryWait.SNK*/
 	if (cc_is0 & TYPE_C_CC_ENT_TRY_WAIT_SNK_INTR) {
-		typec_drive_vbus(hba, 0);
+		hba->drive_vbus(hba, 0);
+
+
 		/* At TryWait.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
@@ -2529,6 +2649,15 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->is_shutdown = false;
 	hba->wq_running = 0;
 	hba->wq_cnt = 0;
+	hba->hwid = typec_read8(hba, 0x02);
+
+	if (hba->hwid == 0x20)
+		hba->drive_vbus = typec_drive_vbus;
+	else
+		hba->drive_vbus = typec_drive_vbus_e3;
+
+	dev_err(hba->dev, "MT6336 HWID=0x%x\n", hba->hwid);
+
 
 #if USE_AUXADC
 	init_completion(&hba->auxadc_event);
