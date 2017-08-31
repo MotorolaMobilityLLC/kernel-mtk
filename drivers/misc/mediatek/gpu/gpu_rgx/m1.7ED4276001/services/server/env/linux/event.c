@@ -257,6 +257,9 @@ PVRSRV_ERROR LinuxEventObjectAdd(IMG_HANDLE hOSEventObjectList, IMG_HANDLE *phOS
 ******************************************************************************/
 PVRSRV_ERROR LinuxEventObjectSignal(IMG_HANDLE hOSEventObjectList)
 {
+	/* For MTK debug */
+	volatile wait_queue_head_t *debugQ;
+
 	PVRSRV_LINUX_EVENT_OBJECT *psLinuxEventObject;
 	PVRSRV_LINUX_EVENT_OBJECT_LIST *psLinuxEventObjectList = (PVRSRV_LINUX_EVENT_OBJECT_LIST*)hOSEventObjectList;
 	struct list_head *psListEntry, *psListEntryTemp, *psList;
@@ -269,6 +272,8 @@ PVRSRV_ERROR LinuxEventObjectSignal(IMG_HANDLE hOSEventObjectList)
 		psLinuxEventObject = (PVRSRV_LINUX_EVENT_OBJECT *)list_entry(psListEntry, PVRSRV_LINUX_EVENT_OBJECT, sList);
 
 		atomic_inc(&psLinuxEventObject->sTimeStamp);
+
+		debugQ = &psLinuxEventObject->sWait;
 		wake_up_interruptible(&psLinuxEventObject->sWait);
 	}
 	read_unlock_bh(&psLinuxEventObjectList->sLock);
