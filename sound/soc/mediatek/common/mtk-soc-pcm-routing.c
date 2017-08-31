@@ -70,6 +70,9 @@
 #include <linux/time.h>
 #include <linux/clk.h>
 
+#include <linux/fb.h>
+#include <linux/notifier.h>
+
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
@@ -1146,6 +1149,35 @@ static struct platform_driver mtk_afe_routing_driver = {
 	.remove = mtk_afe_routing_remove,
 };
 
+static int soc_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		pr_debug("%s SCREEN ON\n", __func__);
+		set_screen_state(true);
+		break;
+	case FB_BLANK_POWERDOWN:
+		pr_debug("%s SCREEN OFF\n", __func__);
+		set_screen_state(false);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block soc_fb_notif = {
+	.notifier_call = soc_fb_notifier_callback,
+};
+
 #ifndef CONFIG_OF
 static struct platform_device *soc_mtkafe_routing_dev;
 #endif
@@ -1168,6 +1200,10 @@ static int __init mtk_soc_routing_platform_init(void)
 #endif
 
 	ret = platform_driver_register(&mtk_afe_routing_driver);
+
+	ret = fb_register_client(&soc_fb_notif);
+	if (ret)
+		pr_err("FAILED TO REGISTER FB CLIENT (%d)\n", ret);
 
 	return ret;
 

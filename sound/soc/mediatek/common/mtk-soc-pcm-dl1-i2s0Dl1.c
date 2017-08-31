@@ -61,15 +61,12 @@
 #include "mtk-soc-pcm-platform.h"
 
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-#include <linux/fb.h>
-#include <linux/notifier.h>
-#include <mt_vcorefs_manager.h>
-#endif
-
 static AFE_MEM_CONTROL_T *pI2S0dl1MemControl;
 static struct snd_dma_buffer Dl1I2S0_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
+
+static bool vcore_dvfs_enable;
+
 
 /*
  *    function implementation
@@ -203,6 +200,7 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 		      Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
+
 	return 0;
 }
 
@@ -334,9 +332,7 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 
 	AudDrv_Clk_Off();
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-	vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
-#endif
+	vcore_dvfs(&vcore_dvfs_enable, true);
 
 	return 0;
 }
@@ -471,6 +467,7 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos,
 				void __user *dst, snd_pcm_uframes_t count)
 {
+	vcore_dvfs(&vcore_dvfs_enable, false);
 	return mtk_memblk_copy(substream, channel, pos, dst, count, pI2S0dl1MemControl, Soc_Aud_Digital_Block_MEM_DL1);
 }
 
@@ -565,45 +562,6 @@ static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-static int soc_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
-{
-	static bool bEnable;
-	struct fb_event *evdata = data;
-	int blank;
-
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false && bEnable == false)
-		return 0;
-	pr_debug("%s, MemoryPathEnable %d, bEnable %d\n", __func__,
-			GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1), bEnable);
-
-	blank = *(int *)evdata->data;
-	switch (blank) {
-	case FB_BLANK_UNBLANK:
-		pr_debug("%s SCREEN ON\n", __func__);
-		bEnable = false;
-		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
-		break;
-	case FB_BLANK_POWERDOWN:
-		pr_debug("%s SCREEN OFF\n", __func__);
-		bEnable = true;
-		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_ULTRA_LOW_PWR);
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
-static struct notifier_block soc_fb_notif = {
-	.notifier_call = soc_fb_notifier_callback,
-};
-#endif
-
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_dl1_i2s0Dl1_of_ids[] = {
 	{ .compatible = "mediatek,mt_soc_pcm_dl1_i2s0dl1", },
@@ -645,12 +603,6 @@ static int __init mtk_I2S0dl1_soc_platform_init(void)
 #endif
 
 	ret = platform_driver_register(&mtk_I2S0dl1_driver);
-
-#ifdef AUDIO_VCOREFS_SUPPORT
-	ret = fb_register_client(&soc_fb_notif);
-	if (ret)
-		pr_err("FAILED TO REGISTER FB CLIENT (%d)\n", ret);
-#endif
 
 	return ret;
 

@@ -295,4 +295,8 @@ void init_afe_ops(void);
 void set_afe_platform_ops(struct mtk_afe_platform_ops *ops);
 
 
+/* for vcore dvfs */
+int vcore_dvfs(bool *enable, bool reset);
+void set_screen_state(bool state);
+
 #endif
