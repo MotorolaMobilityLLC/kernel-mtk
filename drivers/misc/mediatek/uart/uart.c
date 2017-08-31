@@ -2327,7 +2327,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	MSG_FUNC_ENTRY();
 
 /* For clock setting */
-#if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	uart_setting = get_uart_default_settings(pdev->id);
 
 	uart_setting->clk_uart_main = devm_clk_get(&pdev->dev, clk_uart_name[pdev->id]);
@@ -2341,7 +2341,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		pr_err("[UART%d] cannot prepare main clk ctrl\n", pdev->id);
 		return err;
 	}
-	pr_debug("[UART%d][CCF]clk_uart%d_main:%p\n", pdev->id, pdev->id, uart_setting->clk_uart_main);
+	pr_debug("[UART%d][CCF]clk_uart_main:%p\n", pdev->id, uart_setting->clk_uart_main);
 
 	if (pdev->id == 0) {
 		struct clk *clk_uart0_dma = devm_clk_get(&pdev->dev, "uart-apdma");
@@ -2359,9 +2359,9 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		set_uart_dma_clk(pdev->id, clk_uart0_dma);
 		pr_debug("[UART][CCF]clk_uart0_dma:%p\n", clk_uart0_dma);
 	}
-#else /* !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING) */
-	pr_debug("[UART][CCF]mtk_uart_probe CONFIG_MTK_CLKMGR or CONFIG_FPGA_EARLY_PORTING is defined!\n");
-#endif /*!defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_FPGA_EARLY_PORTING) */
+#else
+	pr_debug("[UART][CCF]mtk_uart_probe CONFIG_FPGA_EARLY_PORTING is defined!\n");
+#endif
 
 /* For GPIO setting */
 #if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -2437,7 +2437,7 @@ static int mtk_uart_syscore_suspend(void)
 		/* tx pin:  idle->high   power down->low */
 		mtk_uart_switch_tx_to_gpio(uart);
 		spin_unlock_irqrestore(&mtk_uart_bt_lock, flags);
-		pr_debug("[UART%d] Suspend(%d)!\n", uart->nport, ret);
+		pr_debug("[UART%d] BT Suspend(%d)!\n", uart->nport, ret);
 	}
 	return ret;
 }
@@ -2456,7 +2456,7 @@ static void mtk_uart_syscore_resume(void)
 		ret = uart_resume_port(&mtk_uart_drv, &uart->port);
 		spin_unlock_irqrestore(&mtk_uart_bt_lock, flags);
 		disable_irq(uart->port.irq);
-		pr_debug("[UART%d] Resume(%d)!\n", uart->nport, ret);
+		pr_debug("[UART%d] BT Resume(%d)!\n", uart->nport, ret);
 	}
 }
 
