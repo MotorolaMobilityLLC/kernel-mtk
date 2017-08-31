@@ -667,7 +667,8 @@ static int mtk_voice_usb_hw_params(struct snd_pcm_substream *substream,
 	if (AllocateAudioSram(&runtime->dma_addr,
 			      &runtime->dma_area,
 			      runtime->dma_bytes,
-			      substream) == 0) {
+			      substream,
+			      params_format(hw_params), false) == 0) {
 		usb_use_dram[stream] = false;
 		SetHighAddr(usb_mem_blk[stream], false, substream->runtime->dma_addr);
 	} else {

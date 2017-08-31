@@ -2183,6 +2183,16 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 	return true;
 }
 
+enum audio_sram_mode get_prefer_sram_mode(void)
+{
+	return audio_sram_normal_mode;
+}
+
+int set_sram_mode(enum audio_sram_mode sram_mode)
+{
+	return 0;
+}
+
 /* plaform dependent ops should implement here*/
 static bool platform_set_dpd_module(bool enable)
 {

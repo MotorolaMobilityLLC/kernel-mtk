@@ -233,8 +233,12 @@ void AudDrv_checkDLISRStatus(void);
 bool InitSramManager(struct device *pDev, unsigned int sramblocksize);
 bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsigned int *mSramBlocknum);
 int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
-	unsigned int mSramLength, void *user);
+		      unsigned int mSramLength, void *user,
+		      snd_pcm_format_t format, bool force_normal);
 int freeAudioSram(void *user);
+
+enum audio_sram_mode get_prefer_sram_mode(void);
+int set_sram_mode(enum audio_sram_mode sram_mode);
 
 /* IRQ Manager */
 int init_irq_manager(void);

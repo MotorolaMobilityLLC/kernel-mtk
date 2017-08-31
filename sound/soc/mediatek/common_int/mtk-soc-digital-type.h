@@ -770,6 +770,11 @@ typedef struct {
 	bool mFpga_bit_test;
 } AudioHdmi;
 
+enum audio_sram_mode {
+	audio_sram_normal_mode,
+	audio_sram_compact_mode,
+};
+
 typedef enum {
 	SRAM_STATE_FREE = 0,
 	SRAM_STATE_PLAYBACKFULL = 0x1,
@@ -1067,6 +1072,7 @@ typedef struct {
 	unsigned int mBlockSize;
 	unsigned int mBlocknum;
 	Aud_Sram_Block *mAud_Sram_Block;
+	enum audio_sram_mode sram_mode;
 } Aud_Sram_Manager;
 
 /*

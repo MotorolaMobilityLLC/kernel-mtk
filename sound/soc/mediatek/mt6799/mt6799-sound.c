@@ -1693,12 +1693,8 @@ bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
 	  *   , InterfaceType, eFetchFormat, mAudioMEMIF[InterfaceType]->mFetchFormatPerSample);
 	  */
 
-	/* force all memif use normal mode */	/* TODO: KC: change to better place, handle when 16bit or dram */
-	Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7fff << 16, 0x7fff << 16);
-	/* force cpu use normal mode when access sram data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 1 << 29);	/* TODO: KC: force cpu only use normal mode */
 	/* force cpu use 8_24 format when writing 32bit data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 28, 1 << 28);	/* TODO: KC: force use 8_24 format */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 28, 1 << 28);
 
 	switch (InterfaceType) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
@@ -2899,6 +2895,27 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 		break;
 	}
 	return true;
+}
+
+enum audio_sram_mode get_prefer_sram_mode(void)
+{
+	return audio_sram_normal_mode;
+}
+
+int set_sram_mode(enum audio_sram_mode sram_mode)
+{
+	if (sram_mode == audio_sram_compact_mode) {
+		/* all memif use compact mode */
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x0 << 16, 0x7fff << 16);
+		/* cpu use compact mode when access sram data */
+		Afe_Set_Reg(AFE_MEMIF_MSB, 1 << 29, 1 << 29);
+	} else {
+		/* all memif use normal mode */
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7fff << 16, 0x7fff << 16);
+		/* cpu use normal mode when access sram data */
+		Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 29, 1 << 29);
+	}
+	return 0;
 }
 
 bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)

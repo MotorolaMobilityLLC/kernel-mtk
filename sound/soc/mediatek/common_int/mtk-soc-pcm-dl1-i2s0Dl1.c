@@ -50,6 +50,8 @@
  *****************************************************************************/
 
 #include <linux/dma-mapping.h>
+#include <sound/pcm_params.h>
+
 #include "mtk-auddrv-common.h"
 #include "mtk-soc-pcm-common.h"
 #include "mtk-auddrv-def.h"
@@ -213,7 +215,8 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 	    AllocateAudioSram(&substream->runtime->dma_addr,
 			      &substream->runtime->dma_area,
 			      substream->runtime->dma_bytes,
-			      substream) == 0) {
+			      substream,
+			      params_format(hw_params), false) == 0) {
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, substream->runtime->dma_addr);
 	} else {
 		substream->runtime->dma_area = Dl1I2S0_Playback_dma_buf.area;

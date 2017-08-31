@@ -379,7 +379,9 @@ typedef struct {
 /* Internal sram */
 #define AFE_INTERNAL_SRAM_PHY_BASE  (0x11221000L)
 #define AFE_INTERNAL_SRAM_VIR_BASE  (AUDIO_HW_VIRTUAL_BASE - 0x70000+0x8000)
-#define AFE_INTERNAL_SRAM_SIZE  (0xC000) /* 48k, for normal mode */
+#define AFE_INTERNAL_SRAM_NORMAL_SIZE  (0xC000) /* 48k, for normal mode */
+#define AFE_INTERNAL_SRAM_COMPACT_SIZE (0x8000)
+#define AFE_INTERNAL_SRAM_SIZE  AFE_INTERNAL_SRAM_NORMAL_SIZE
 
 /* Dram */
 #define AFE_EXTERNAL_DRAM_SIZE  (0xC000) /* 48k */
