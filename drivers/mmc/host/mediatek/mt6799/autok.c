@@ -29,7 +29,7 @@
 #include "autok.h"
 #include "mtk_sd.h"
 
-#define AUTOK_VERSION                   (0x16082917)
+#define AUTOK_VERSION                   (0x16090509)
 #define AUTOK_CMD_TIMEOUT               (HZ / 10) /* 100ms */
 #define AUTOK_DAT_TIMEOUT               (HZ * 3) /* 1s x 3 */
 #define MSDC_FIFO_THD_1K                (1024)
@@ -2211,10 +2211,18 @@ int autok_init_sdr104(struct msdc_host *host)
 	/* enable dvfs feature */
 	/* if (host->hw->host_function == MSDC_SDIO) */
 	/*	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1); */
+#if STOP_CLK_NEW_PATH
 	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
+#else
+	/* use default setting */
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 1);
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 1);
+#endif
 
 	return 0;
 }
@@ -2233,10 +2241,18 @@ int autok_init_hs200(struct msdc_host *host)
 	/* LATCH_TA_EN Config for CMD Path non_HS400 */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_HS200_PORT0_VALUE);
 
+#if STOP_CLK_NEW_PATH
 	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 6);
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 0);
 	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 0);
+#else
+	/* use default setting */
+	MSDC_SET_FIELD(MSDC_PATCH_BIT1, MSDC_PB1_STOP_DLY_SEL, 3);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_POPENCNT, 8);
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_WR_VALID_SEL, 1);
+	MSDC_SET_FIELD(SDC_FIFO_CFG, SDC_FIFO_CFG_RD_VALID_SEL, 1);
+#endif
 
 	return 0;
 }
@@ -2692,7 +2708,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 
 	/* Step3 : Tuning LATCH CK  */
-#if 0
+#if !STOP_CLK_NEW_PATH
 	opcode = MMC_SEND_TUNING_BLOCK_HS200;
 	p_autok_tune_res[INT_DAT_LATCH_CK] = autok_execute_tuning_latch_ck(host, opcode,
 		p_autok_tune_res[INT_DAT_LATCH_CK]);
@@ -2781,7 +2797,7 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	}
 #endif
 	/* DLY3 keep default value 20 */
-	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = 31;
+	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = 20;
 	/* Step2 : Tuning DS Clk Path-ZCLK only tune DLY1 */
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 	/* tune data pad delay , find data pad boundary */
@@ -2974,7 +2990,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	autok_tuning_parameter_init(host, p_autok_tune_res);
 
 	/* Step3 : Tuning LATCH CK */
-#if 0
+#if !STOP_CLK_NEW_PATH
 	opcode = MMC_SEND_TUNING_BLOCK;
 	p_autok_tune_res[INT_DAT_LATCH_CK] = autok_execute_tuning_latch_ck(host, opcode,
 		p_autok_tune_res[INT_DAT_LATCH_CK]);

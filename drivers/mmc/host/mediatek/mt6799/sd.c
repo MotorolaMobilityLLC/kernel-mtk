@@ -1440,6 +1440,13 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 			rawcmd |= (2 << 11);
 		else
 			rawcmd |= (1 << 11);
+
+		if (cmd->data->flags & MMC_DATA_READ) {
+			if ((cmd->data->blocks * host->blksz) > 256)
+				MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_ENDBIT_CNT, (host->blksz + 17));
+			else
+				MSDC_SET_FIELD(EMMC50_CFG0, MSDC_EMMC50_CFG_ENDBIT_CNT, 273);
+		}
 		break;
 	case SD_IO_RW_DIRECT:
 		if (cmd->flags == (unsigned int)-1)
@@ -4455,6 +4462,17 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	}
 
 	if (intsts & datsts) {
+		if (intsts & MSDC_INT_DATTMO) {
+			data->error = (unsigned int)-ETIMEDOUT;
+			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATTMO",
+				host->mrq->cmd->opcode, host->mrq->cmd->arg);
+		} else if (intsts & MSDC_INT_DATCRCERR) {
+			data->error = (unsigned int)-EILSEQ;
+			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR, SDC_DCRC_STS<0x%x>",
+				host->mrq->cmd->opcode, host->mrq->cmd->arg,
+				MSDC_READ32(SDC_DCRC_STS));
+		}
+
 		/* do basic reset, or stop command will sdc_busy */
 		if ((intsts & MSDC_INT_DATTMO)
 		 || (host->hw->host_function == MSDC_SDIO))
@@ -4466,17 +4484,6 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 			msdc_reset_hw(host->id);
 
 		atomic_set(&host->abort, 1);    /* For PIO mode exit */
-
-		if (intsts & MSDC_INT_DATTMO) {
-			data->error = (unsigned int)-ETIMEDOUT;
-			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATTMO",
-				host->mrq->cmd->opcode, host->mrq->cmd->arg);
-		} else if (intsts & MSDC_INT_DATCRCERR) {
-			data->error = (unsigned int)-EILSEQ;
-			ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR, SDC_DCRC_STS<0x%x>",
-				host->mrq->cmd->opcode, host->mrq->cmd->arg,
-				MSDC_READ32(SDC_DCRC_STS));
-		}
 
 		goto tune;
 
