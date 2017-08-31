@@ -218,15 +218,15 @@ do {                                    \
  * Structures
  *=============================================================
  */
-typedef struct {
+struct thermal_sensor_t {
 	char ts_name[MAX_TS_NAME];
 	enum thermal_sensor type;
-} thermal_sensor_t;
+};
 
-typedef struct {
-	thermal_sensor_t ts[TS_ENUM_MAX];
+struct bank_t {
+	struct thermal_sensor_t ts[TS_ENUM_MAX];
 	int ts_number;
-} bank_t;
+};
 
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 enum thermal_state {
@@ -263,7 +263,7 @@ extern int tscpu_debug_log;
 extern const struct of_device_id mt_thermal_of_match[2];
 extern int tscpu_bank_ts[THERMAL_BANK_NUM][TS_ENUM_MAX];
 extern int tscpu_bank_ts_r[THERMAL_BANK_NUM][TS_ENUM_MAX]; /* raw data */
-extern bank_t tscpu_g_bank[THERMAL_BANK_NUM];
+extern struct bank_t tscpu_g_bank[THERMAL_BANK_NUM];
 extern int tscpu_polling_trip_temp1;
 extern int tscpu_polling_trip_temp2;
 extern int tscpu_polling_factor1;

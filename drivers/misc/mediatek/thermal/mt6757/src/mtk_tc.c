@@ -80,7 +80,7 @@ int tscpu_bank_ts[THERMAL_BANK_NUM][TS_ENUM_MAX];
 int tscpu_bank_ts_r[THERMAL_BANK_NUM][TS_ENUM_MAX];
 
 /* chip dependent */
-bank_t tscpu_g_bank[THERMAL_BANK_NUM] = {
+struct bank_t tscpu_g_bank[THERMAL_BANK_NUM] = {
 	[0] = {
 	       .ts = {TS_FILL(TS_MCU1)},
 	       .ts_number = 1},
