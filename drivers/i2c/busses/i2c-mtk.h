@@ -224,6 +224,7 @@ struct mt_i2c {
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
 	unsigned int clk_src_div;
+	spinlock_t cg_lock;
 	int cg_cnt;
 	bool trans_stop;		/* i2c transfer stop */
 	enum mt_trans_op op;
