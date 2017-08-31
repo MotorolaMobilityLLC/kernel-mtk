@@ -59,7 +59,7 @@ static int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
 static volatile bool g_pwm_is_power_on;
 static volatile unsigned int g_pwm_value_before_power_off;
-static volatile int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
+static int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
 
 typedef struct {
 	int value;
@@ -80,7 +80,7 @@ enum PWM_LOG_TYPE {
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
-static volatile bool g_pwm_is_config_init;
+static volatile bool g_pwm_is_change_state;
 #if defined(PWM_USE_HIGH_ULPOSC_FQ)
 static bool g_pwm_first_config;
 #endif
@@ -233,7 +233,7 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
-	g_pwm_is_config_init = true;
+	g_pwm_is_change_state = true;
 
 	if (config_instantly == true) {
 		/* Set PWM clock division instantly to avoid frequency change dramaticly */
@@ -409,7 +409,6 @@ int disp_bls_set_max_backlight(unsigned int level_1024)
 	return disp_pwm_set_max_backlight(disp_pwm_get_main(), level_1024);
 }
 
-
 int disp_pwm_set_max_backlight(disp_pwm_id_t id, unsigned int level_1024)
 {
 	int index;
@@ -420,16 +419,15 @@ int disp_pwm_set_max_backlight(disp_pwm_id_t id, unsigned int level_1024)
 	}
 
 	index = index_of_pwm(id);
-	g_pwm_max_backlight[index] = level_1024;
+	g_pwm_max_backlight[index] = (int)level_1024;
 
 	PWM_MSG("disp_pwm_set_max_backlight(id = 0x%x, level = %u)", id, level_1024);
 
-	if ((int)level_1024 < atomic_read(&g_pwm_backlight[index]))
-		disp_pwm_set_backlight(id, level_1024);
+	g_pwm_is_change_state = true;
+	disp_pwm_set_backlight(id, atomic_read(&g_pwm_backlight[index]));
 
 	return 0;
 }
-
 
 int disp_pwm_get_max_backlight(disp_pwm_id_t id)
 {
@@ -479,21 +477,22 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	}
 
 	/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
-	if (g_pwm_force_backlight_update == true && cmdq != NULL)
+	if (g_pwm_force_backlight_update == true && cmdq != NULL) {
+		g_pwm_force_backlight_update = false;
 		force_update = true;
+		PWM_NOTICE("PWM force set backlight to 0 again\n");
+	}
+
+	/* we have to change backlight after config init or max backlight changed */
+	if (g_pwm_is_change_state == true) {
+		g_pwm_is_change_state = false;
+		force_update = true;
+	}
 
 	index = index_of_pwm(id);
 
 	old_pwm = atomic_xchg(&g_pwm_backlight[index], level_1024);
-	if (old_pwm != level_1024 || g_pwm_is_config_init == true || force_update == true) {
-		if (force_update == true) {
-			PWM_NOTICE("PWM force set backlight to 0 again\n");
-			g_pwm_force_backlight_update = false;
-		}
-
-		if (g_pwm_is_config_init == true)
-			g_pwm_is_config_init = false;
-
+	if (old_pwm != level_1024 || force_update) {
 		abs_diff = level_1024 - old_pwm;
 		if (abs_diff < 0)
 			abs_diff = -abs_diff;
