@@ -38,7 +38,7 @@ struct  mblock {
 
 struct mblock_info {
 	u32 mblock_num;
-	struct mblock mblock[4];
+	struct mblock mblock[128];
 };
 
 struct dram_info {
