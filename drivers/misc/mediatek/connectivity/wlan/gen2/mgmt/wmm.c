@@ -828,6 +828,11 @@ wmmParseQosAction(
 		u2IEsBufLen = prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen -
 			(UINT_16)(OFFSET_OF(ACTION_ADDTS_RSP_FRAME, aucInfoElem) - WLAN_MAC_HEADER_LEN);
 
+		if (pucIE == NULL) {
+			DBGLOG(WMM, INFO, "pueIE = NULL when Category=%d\n",  prWlanActionFrame->ucCategory);
+			break;
+		}
+
 		IE_FOR_EACH(pucIE, u2IEsBufLen, u2Offset) {
 			switch (IE_ID(pucIE)) {
 			case ELEM_ID_TSPEC:
