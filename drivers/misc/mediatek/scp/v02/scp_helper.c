@@ -961,6 +961,74 @@ static inline ssize_t scp_B_reg_status_show(struct device *kobj, struct device_a
 
 DEVICE_ATTR(scp_B_reg_status, 0444, scp_B_reg_status_show, NULL);
 
+#if SCP_VCORE_TEST_ENABLE
+static inline ssize_t scp_vcore_request_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	pr_err("[SCP] receive freq show\n");
+	return scnprintf(buf, PAGE_SIZE, "SCP freq. expect=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+}
+
+static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int feature_req = 0;
+	unsigned int tick_cnt = 0, tick_cnt_2 = 0, tick_cnt_3 = 0;
+
+	pr_err("[SCP] receive freq req\n");
+#if 0
+	len = (n < (sizeof(desc) - 1)) ? n : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buf, len))
+		return 0;
+
+	desc[len] = '\0';
+#endif
+	if (kstrtouint(buf, 0, &feature_req) == 0) {
+		if (feature_req >= 5) {
+			scp_deregister_feature(VCORE_TEST_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST2_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST3_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST4_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST5_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST6_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST7_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST8_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST9_FEATURE_ID);
+			scp_deregister_feature(VCORE_TEST10_FEATURE_ID);
+		} else {
+			if (feature_req == 4) {
+				scp_register_feature(VCORE_TEST5_FEATURE_ID);
+				scp_register_feature(VCORE_TEST10_FEATURE_ID);
+			}
+			if (feature_req >= 3) {
+				scp_register_feature(VCORE_TEST4_FEATURE_ID);
+				scp_register_feature(VCORE_TEST9_FEATURE_ID);
+			}
+			if (feature_req >= 2) {
+				scp_register_feature(VCORE_TEST3_FEATURE_ID);
+				scp_register_feature(VCORE_TEST8_FEATURE_ID);
+			}
+			if (feature_req >= 1) {
+				scp_register_feature(VCORE_TEST2_FEATURE_ID);
+				scp_register_feature(VCORE_TEST7_FEATURE_ID);
+			}
+			if (feature_req >= 0) {
+				scp_register_feature(VCORE_TEST_FEATURE_ID);
+				scp_register_feature(VCORE_TEST6_FEATURE_ID);
+				scp_request_freq();
+			}
+		}
+		pr_warn("[SCP] set high freq(vcore to v1.0), expect=%d, cur=%d\n",
+			EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	}
+	tick_cnt = mt_get_ckgen_freq(28);
+	tick_cnt_2 = mt_get_abist_freq(3);
+	tick_cnt_3 = mt_get_abist_freq(63);
+	pr_warn("[SCP] measure tick_cnt=(pll %d scp_1 %d scp_2 %d)\n", tick_cnt, tick_cnt_2, tick_cnt_3);
+	return n;
+}
+
+DEVICE_ATTR(scp_vcore_request, 0644, scp_vcore_request_show, scp_vcore_request_store);
+#endif
+
 #ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -1231,6 +1299,12 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
+#if SCP_VCORE_TEST_ENABLE
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_vcore_request);
+
+	if (unlikely(ret != 0))
+		return ret;
+#endif
 	return 0;
 }
 

@@ -190,6 +190,8 @@ extern uint32_t scp_get_freq(void);
 extern int scp_request_freq(void);
 extern int scp_check_resource(void);
 
-
-
+#if SCP_VCORE_TEST_ENABLE
+extern unsigned int mt_get_ckgen_freq(unsigned int ID);
+extern unsigned int mt_get_abist_freq(unsigned int ID);
+#endif
 #endif

@@ -21,6 +21,7 @@
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR       (0)
 #define SCP_LOGGER_ENABLE               (1)
+#define SCP_VCORE_TEST_ENABLE		(1)
 
 /* scp aed definition*/
 #define SCP_AED_STR_LEN		(512)
@@ -41,7 +42,21 @@ typedef enum {
 	MP3_FEATURE_ID		= 3,
 	FLP_FEATURE_ID		= 4,
 	RTOS_FEATURE_ID		= 5,
+#if SCP_VCORE_TEST_ENABLE
+	VCORE_TEST_FEATURE_ID   = 6,
+	VCORE_TEST2_FEATURE_ID  = 7,
+	VCORE_TEST3_FEATURE_ID  = 8,
+	VCORE_TEST4_FEATURE_ID  = 9,
+	VCORE_TEST5_FEATURE_ID  = 10,
+	VCORE_TEST6_FEATURE_ID   = 11,
+	VCORE_TEST7_FEATURE_ID  = 12,
+	VCORE_TEST8_FEATURE_ID  = 13,
+	VCORE_TEST9_FEATURE_ID  = 14,
+	VCORE_TEST10_FEATURE_ID  = 15,
+	NUM_FEATURE_ID		= 16,
+#else
 	NUM_FEATURE_ID		= 6,
+#endif
 } feature_id_t;
 
 typedef struct scp_feature_tb {
