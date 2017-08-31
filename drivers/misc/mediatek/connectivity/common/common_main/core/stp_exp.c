@@ -202,7 +202,6 @@ INT32 mtk_wcn_stp_register_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
 		event_callback_tbl[type] = func;
 
 		/*clear rx queue */
-		osal_dbg_print("Flush type = %d Rx Queue\n", type);
 		mtk_wcn_stp_flush_rx_queue(type);
 	}
 

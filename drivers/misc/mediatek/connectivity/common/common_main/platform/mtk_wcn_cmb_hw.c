@@ -103,7 +103,7 @@ INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 	}
 	/* 2.1 set ALL_EINT pin to correct state even it is not used currently */
 	iRet += wmt_plat_eirq_ctrl(PIN_ALL_EINT, PIN_STA_DEINIT);
-	WMT_INFO_FUNC("CMB-HW, ALL_EINT IRQ unregistered and disabled\n");
+	WMT_DBG_FUNC("CMB-HW, ALL_EINT IRQ unregistered and disabled\n");
 	iRet += wmt_plat_gpio_ctrl(PIN_ALL_EINT, PIN_STA_DEINIT);
 	/* 2.2 deinit gps sync */
 	iRet += wmt_plat_gpio_ctrl(PIN_GPS_SYNC, PIN_STA_DEINIT);

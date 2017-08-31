@@ -853,7 +853,7 @@ deinit_ic_ops_done:
 			WMT_WARN_FUNC("turn off SDIO_FUNC_STP fail (%d)\n", iRet);
 			/* Anyway, continue turning SDIO HW off */
 		} else {
-			WMT_INFO_FUNC("turn off SDIO_FUNC_STP ok\n");
+			WMT_DBG_FUNC("turn off SDIO_FUNC_STP ok\n");
 		}
 
 		ctrlPa1 = WMT_SDIO_SLOT_SDIO2;
@@ -863,7 +863,7 @@ deinit_ic_ops_done:
 			WMT_WARN_FUNC("turn off SDIO2 HW fail (%d)\n", iRet);
 			/* Anyway, continue turning STP SDIO to POWER OFF state */
 		} else
-			WMT_INFO_FUNC("turn off SDIO2 HW ok\n");
+			WMT_DBG_FUNC("turn off SDIO2 HW ok\n");
 		gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_SDIO2] = DRV_STS_POWER_OFF;
 	}
 
@@ -1124,7 +1124,7 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 	if (iRet)
 		WMT_WARN_FUNC("HW_PWR_OFF fail (%d)\n", iRet);
 	else
-		WMT_WARN_FUNC("HW_PWR_OFF ok\n");
+		WMT_DBG_FUNC("HW_PWR_OFF ok\n");
 
 	/*anyway, set to POWER_OFF state */
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_OFF;
