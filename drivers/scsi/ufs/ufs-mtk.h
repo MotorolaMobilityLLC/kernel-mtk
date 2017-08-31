@@ -14,6 +14,7 @@
 
 #define CONFIG_MTK_UFS_DEBUG
 /* #define CONFIG_MTK_UFS_DEBUG_QUEUECMD */
+/* #define CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER */
 
 #include <linux/of.h>
 #include <linux/rpmb.h>

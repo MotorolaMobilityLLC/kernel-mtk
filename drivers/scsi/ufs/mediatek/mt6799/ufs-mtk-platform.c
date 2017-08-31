@@ -25,10 +25,39 @@
 #include <mtk_reboot.h>
 #include <upmu_common.h>
 #endif
+/*
+ * Temp workaround: Force ufs use low speed PWMG4 in meta mode
+ * to avoid meta calibration in BBLPM mode may disable
+ * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
+*/
+#include <mt-plat/mtk_boot_common.h>
 
+static void __iomem *ufs_mtk_mmio_base_gpio;
 static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
+
+/**
+ * ufs_mtk_pltfrm_pwr_change_final_gear - change pwr mode fianl gear value.
+ */
+void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_layer_attr *final)
+{
+	/*
+	 * Temp workaround: Force ufs use low speed PWMG4 in meta mode
+	 * to avoid meta calibration in BBLPM mode may disable
+	 * XO_EXT(26MHz ref clock) and causing ufs link broke issue.
+	*/
+	if (is_meta_mode()) {
+		dev_err(hba->dev, "UFS enter PWMG4 mode in meta mode!!!\n");
+		final->gear_rx = 4;
+		final->gear_tx = 4;
+		final->lane_rx = 1;
+		final->lane_tx = 1;
+		final->hs_rate = PA_HS_MODE_B;
+		final->pwr_rx = SLOW_MODE;
+		final->pwr_tx = SLOW_MODE;
+	}
+}
 
 #ifdef MTK_UFS_HQA
 /* UFS write is performance  200MB/s, 4KB will take around 20us */
@@ -45,6 +74,62 @@ void wdt_pmic_full_reset(void)
 {
 	/* pmic full reset settng */
 	pmic_set_register_value(PMIC_RG_CRST, 1);
+}
+#endif
+
+#include <mt-plat/upmu_common.h>
+#define PMIC_REG_MASK (0xFFFF)
+#define PMIC_REG_SHIFT (0)
+void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
+{
+	#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+	u32 reg;
+	#endif
+	u32 pmic_cw11 = 0, pmic_cw02 = 0, pmic_cw00 = 0;
+	int vcc_enabled, vcc_value, vccq2_enabled;
+
+	#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+	/* mt_set_gpio_out() will have latency, set GPIO register to high directly */
+	/* Set DOUT to high */
+	reg = readl(ufs_mtk_mmio_base_gpio + 0x150);
+	reg = reg | (0x1 << 17);
+	writel(reg, ufs_mtk_mmio_base_gpio + 0x150);
+	#endif
+
+	/* Get XO_UFS ufs 26MHz ref. clock info. */
+	pmic_read_interface(MT6335_DCXO_CW11, &pmic_cw11, PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(MT6335_DCXO_CW02, &pmic_cw02, PMIC_REG_MASK, PMIC_REG_SHIFT);
+	pmic_read_interface(MT6335_DCXO_CW00, &pmic_cw00, PMIC_REG_MASK, PMIC_REG_SHIFT);
+
+	/* Get vcc(3V) and vccq2(1.8V) info.
+	  * Note:
+	  * 1. regulator_is_enabled/regulator_get_voltage is not able to use in IRQ context because it acquire mutex.
+	  * 2. mt6799 does not have raw pmic API to read vccq2 voltage because it is not able to change on this plat.
+	  */
+	vcc_enabled = pmic_get_register_value(PMIC_DA_QI_VEMC_EN);
+	vcc_value = pmic_get_register_value(PMIC_RG_VEMC_VOSEL);
+	vccq2_enabled = pmic_get_register_value(PMIC_DA_QI_VUFS18_EN);
+
+	/* Print all after information are retrieved */
+	dev_err(hba->dev, "pmic_cw11 0x%x, pmic_cw02 0x%x, pmic_cw00 0x%x!!!\n",
+			pmic_cw11, pmic_cw02, pmic_cw00);
+	dev_err(hba->dev, "vcc_enabled:%d, vcc_value:%d, vccq2_enabled:%d!!!\n",
+			vcc_enabled, vcc_value, vccq2_enabled);
+}
+
+#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+#include <mt-plat/mtk_gpio.h>
+#define gpioPin (177UL)
+void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
+{
+	/* Set gpio mode */
+	mt_set_gpio_mode(gpioPin, 0x0UL);
+	/* Set gpio output */
+	mt_set_gpio_dir(gpioPin, 0x1UL);
+	/* Set gpio default low */
+	mt_set_gpio_out(gpioPin, 0x0UL);
+	dev_err(hba->dev, "%s: trigger_gpio_init!!!\n",
+				__func__);
 }
 #endif
 
@@ -73,6 +158,9 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
 	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 
+#endif
+#ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
+	ufs_mtk_pltfrm_gpio_trigger_init(hba);
 #endif
 
 	return 0;
@@ -254,10 +342,26 @@ int ufs_mtk_pltfrm_init(void)
 
 int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 {
+	struct device_node *node_gpio;
 	struct device_node *node_infracfg_ao;
 	struct device_node *node_pericfg;
 	struct device_node *node_ufs_mphy;
 	int err = 0;
+
+	/* get ufs_mtk_gpio */
+	node_gpio = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
+
+	if (node_gpio) {
+		ufs_mtk_mmio_base_gpio = of_iomap(node_gpio, 0);
+
+		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_gpio)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_gpio);
+			dev_err(hba->dev, "error: ufs_mtk_mmio_base_gpio init fail\n");
+			ufs_mtk_mmio_base_gpio = NULL;
+		}
+	} else
+		dev_err(hba->dev, "error: node_gpio init fail\n");
+
 
 	/* get ufs_mtk_mmio_base_infracfg_ao */
 

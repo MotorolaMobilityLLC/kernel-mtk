@@ -3791,6 +3791,7 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 	reg_l = reg;
 
 	if (reg_l) {
+		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 		dev_err(hba->dev,
 			"Host UIC Error Code Data Link Layer: %08x\n", reg);
 
@@ -3879,8 +3880,10 @@ static void ufshcd_check_errors(struct ufs_hba *hba)
 	if (hba->errors & UIC_ERROR) {
 		hba->uic_error = 0;
 		ufshcd_update_uic_error(hba);
-		if (hba->uic_error)
+		if (hba->uic_error) {
+			ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 			queue_eh_work = true;
+		}
 	}
 
 	if (queue_eh_work) {
