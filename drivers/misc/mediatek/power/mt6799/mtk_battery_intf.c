@@ -85,6 +85,11 @@ signed int battery_get_vbus(void)
 	return pmic_get_vbus();
 }
 
+unsigned int battery_get_is_kpoc(void)
+{
+	return bat_is_kpoc();
+}
+
 bool battery_is_battery_exist(void)
 {
 	int is_bat_exist = 0;

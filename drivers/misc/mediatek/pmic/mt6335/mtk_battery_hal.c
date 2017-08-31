@@ -74,6 +74,11 @@ int tmp_int_ht;
 int fg_bat_int2_ht_en_flag;
 int fg_bat_int2_lt_en_flag;
 
+int rtc_invalid;
+int is_bat_plugout;
+int bat_plug_out_time;
+
+
 #define SWCHR_POWER_PATH
 
 struct daemon_data dm_data;
@@ -97,6 +102,8 @@ static signed int fgauge_get_time(void *data);
 static signed int fgauge_get_soff_time(void *data);
 static void read_fg_hw_info_current_1(void);
 static signed int fg_set_iavg_intr(void *data);
+static void fgauge_read_RTC_boot_status(void);
+
 
 /* ============================================================ */
 /* extern variable */
@@ -202,7 +209,7 @@ static unsigned int fg_get_data_ready_status(void)
 }
 #endif
 
-#if 1
+#if 0
 void preloader_init(void)
 {
 	int fg_reset_status = pmic_get_register_value(PMIC_FG_RSTB_STATUS);
@@ -267,7 +274,8 @@ static signed int fgauge_initialization(void *data)
 	/* */
 #else
 #if 1
-	preloader_init();
+	/*preloader_init();*/
+	fgauge_read_RTC_boot_status();
 #else
 	int fg_reset_status;
 	int fg_curr_time;
@@ -773,10 +781,12 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
  *Read HW Raw Data
  *(1)    Set READ command
 */
-	if (reset == 0)
+	if (reset == 0) {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F0F, 0x0);
-	else
+	} else {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1F05, 0xFF0F, 0x0);
+		pr_err("[fgauge_set_columb_interrupt_internal1] reset fgadc 0x1F05\n");
+	}
 
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
@@ -889,8 +899,10 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 
 	if (reset == 0)
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
-	else
+	else {
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0705, 0x1F05, 0x0); /*weiching0803*/
+		pr_err("[fgauge_read_columb_internal] reset fgadc 0x0705\n");
+	}
 
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
@@ -1262,11 +1274,9 @@ static signed int fgauge_hw_reset(void *data)
 	bm_debug("[fgauge_hw_reset] : Start \r\n");
 
 	while (val_car != 0x0) {
-#if 0	/* mt6335_changes */
-		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1F04, 0xFF0F, 0x0);
-#else
-	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0600, 0x1F00, 0x0);
-#endif
+		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0600, 0x1F00, 0x0);
+		pr_err("[fgauge_hw_reset] reset fgadc 0x0600\n");
+
 		fgauge_read_columb_internal(&val_car_temp, 0, 0);
 		val_car = val_car_temp;
 		bm_debug("#");
@@ -2085,31 +2095,6 @@ static signed int fg_set_nag_c_dltv(void *data)
 	return STATUS_OK;
 }
 
-
-void fg_set_zcv_intr_internal(int fg_zcv_det_time, int fg_zcv_car_th)
-{
-	int fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg;
-	long long fg_zcv_car_th_reg = fg_zcv_car_th;
-
-
-	/*fg_zcv_car_th_reg = (fg_zcv_car_th * 100 * 3600 * 1000) / UNIT_FGCAR_ZCV;*/
-	fg_zcv_car_th_reg = (fg_zcv_car_th_reg * 100 * 3600 * 1000);
-	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
-
-	fg_zcv_car_thr_h_reg = (fg_zcv_car_th_reg & 0xffff0000) >> 16;
-	fg_zcv_car_thr_l_reg = fg_zcv_car_th_reg & 0x0000ffff;
-
-	pmic_set_register_value(PMIC_FG_ZCV_DET_IV, fg_zcv_det_time);
-	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_15_00, fg_zcv_car_thr_l_reg);
-	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_30_16, fg_zcv_car_thr_h_reg);
-
-	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, 1);
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, 1);
-
-	bm_notice("[FG_ZCV_INT][fg_set_zcv_intr_internal] det_time %d mv %d reg %lld 30_16 0x%x 15_00 0x%x\n",
-			fg_zcv_det_time, fg_zcv_car_th, fg_zcv_car_th_reg, fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg);
-}
-
 static signed int fg_set_fg_bat_tmp_en(void *data)
 {
 	int en = *(unsigned int *) (data);
@@ -2250,12 +2235,46 @@ static signed int fg_set_iavg_intr(void *data)
 	return STATUS_OK;
 }
 
+void fg_set_zcv_intr_internal(int fg_zcv_det_time, int fg_zcv_car_th)
+{
+	int fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg;
+	long long fg_zcv_car_th_reg = fg_zcv_car_th;
+
+
+	/*fg_zcv_car_th_reg = (fg_zcv_car_th * 100 * 3600 * 1000) / UNIT_FGCAR_ZCV;*/
+	fg_zcv_car_th_reg = (fg_zcv_car_th_reg * 100 * 3600 * 1000);
+	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
+
+	fg_zcv_car_thr_h_reg = (fg_zcv_car_th_reg & 0xffff0000) >> 16;
+	fg_zcv_car_thr_l_reg = fg_zcv_car_th_reg & 0x0000ffff;
+
+	pmic_set_register_value(PMIC_FG_ZCV_DET_IV, fg_zcv_det_time);
+	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_15_00, fg_zcv_car_thr_l_reg);
+	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_30_16, fg_zcv_car_thr_h_reg);
+
+	bm_notice("[FG_ZCV_INT][fg_set_zcv_intr_internal] det_time %d mv %d reg %lld 30_16 0x%x 15_00 0x%x\n",
+			fg_zcv_det_time, fg_zcv_car_th, fg_zcv_car_th_reg, fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg);
+}
+
+static signed int fg_set_zcv_intr_en(void *data)
+{
+	int en = *(unsigned int *) (data);
+
+	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
+	bm_notice("[FG_ZCV_INT][fg_set_zcv_intr_en] En %d\n", en);
+
+	return STATUS_OK;
+}
+
 static signed int fg_set_zcv_intr(void *data)
 {
 	int fg_zcv_det_time = fg_cust_data.zcv_suspend_time;
 	int fg_zcv_car_th = *(unsigned int *) (data);
+	int fg_zcv_en = 1;
 
 	fg_set_zcv_intr_internal(fg_zcv_det_time, fg_zcv_car_th);
+	fg_set_zcv_intr_en(&fg_zcv_en);
 
 	return STATUS_OK;
 }
@@ -2624,31 +2643,7 @@ static signed int read_ptim_rac_val(void *data)
 	return STATUS_OK;
 }
 
-static signed int fg_set_fg_reset_rtc_status(void *data)
-{
-	int fg_reset_rtc_status = *(signed int *) (data);
-	int before_reset_val;
-	int after_reset_val;
-	int value;
-
-	if (fg_reset_rtc_status == 1) {
-		before_reset_val = hal_rtc_get_spare_register(RTC_FG_INIT);
-		value = before_reset_val | (1<<7);
-
-		hal_rtc_set_spare_register(RTC_FG_INIT, value);
-		mdelay(1);
-
-		value &= 0x7f;
-		hal_rtc_set_spare_register(RTC_FG_INIT, value);
-
-		after_reset_val = hal_rtc_get_spare_register(RTC_FG_INIT);
-		pr_err("[fg_set_fg_reset_rtc_status][RTC_func] 0x%x 0x%x\n", before_reset_val, after_reset_val);
-	}
-
-	return STATUS_OK;
-}
-
-static signed int fg_set_fg_reset_status(void *data)
+static signed int fg_set_is_fg_initialized(void *data)
 {
 	int fg_reset_status = *(signed int *) (data);
 
@@ -2657,7 +2652,7 @@ static signed int fg_set_fg_reset_status(void *data)
 	return STATUS_OK;
 }
 
-static signed int fg_get_fg_reset_status(void *data)
+static signed int fg_get_is_fg_initialized(void *data)
 {
 	int fg_reset_status = pmic_get_register_value(PMIC_FG_RSTB_STATUS);
 
@@ -2666,76 +2661,137 @@ static signed int fg_get_fg_reset_status(void *data)
 	return STATUS_OK;
 }
 
-static signed int read_boot_battery_plug_out_status(void *data)
+static void fgauge_read_RTC_boot_status(void)
 {
-	unsigned int is_bat_plugout = 0;
 	int hw_id = upmu_get_reg_value(0x0200);
-	unsigned int temp_data;
-	unsigned int temp_data2;
-	unsigned int temp_bit_13;
-	unsigned int rtc_invalid;
+	int plugout_reg, plugout_reg_b13;
+	int valid_reg;
 
-	temp_data = hal_rtc_get_spare_register(RTC_FG_INIT);
-	temp_data2 = get_rtc_spare_fg_value();
-	rtc_invalid = temp_data2 >> 7;
+	plugout_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
+	valid_reg = get_rtc_spare_fg_value();
+
+	rtc_invalid = valid_reg >> 7;
 
 	if (rtc_invalid == 0) {
-		temp_bit_13 = (temp_data & 0x20) >> 5;
-
+		plugout_reg_b13 = (plugout_reg & 0x20) >> 5;
 		if ((hw_id & 0xff00) == 0x3500)
-			is_bat_plugout = temp_bit_13;
+			is_bat_plugout = plugout_reg_b13;
 		else
-			is_bat_plugout = ~temp_bit_13;
+			is_bat_plugout = ~plugout_reg_b13;
 
+		bat_plug_out_time = plugout_reg & 0x1f;
 	} else {
-		/* if rtc invalid, battery was plugouted */
 		is_bat_plugout = 1;
-		set_rtc_spare_fg_value(0);	/* Clear RTC */
+		bat_plug_out_time = 31;	/*[12:8], 5 bits*/
 	}
 
+	bm_err("[fgauge_read_RTC_boot_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d valid 0x%x plugout 0x%x\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time,
+			valid_reg, plugout_reg);
+
+
+}
+
+static signed int fg_set_fg_reset_rtc_status(void *data)
+{
+	int temp_value, after_reset_val;
+	int plugout_reg;
+
+	fgauge_read_RTC_boot_status();
+
+	plugout_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
+
+	temp_value = plugout_reg | (1<<7);
+
+	set_rtc_spare_fg_value(0);
+
+	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+	mdelay(1);
+
+	temp_value &= 0x7f;
+	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+
+	after_reset_val = hal_rtc_get_spare_register(RTC_FG_INIT);
+	pr_err("[fgauge_read_RTC_boot_status]reset RTC_FG_INIT 0x%x 0x%x 0x%x\n",
+		plugout_reg, temp_value, after_reset_val);
+
+	return STATUS_OK;
+}
+
+static signed int read_boot_battery_plug_out_status(void *data)
+{
 	*(unsigned int *) (data) = is_bat_plugout;
-	bm_err("[read_boot_battery_plug_out_status][RTC_func] is_bat_plugout %d rtc_invalid %d temp_data 0x%x temp_data2 0x%x\n",
-			is_bat_plugout, rtc_invalid, temp_data, temp_data2);
+	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time);
 
 	return STATUS_OK;
 }
 
 static signed int read_bat_plug_out_time(void *data) /* weiching fix */
 {
-	unsigned int bat_plug_out_time = 32;
-	unsigned int is_bat_plugout;
-	unsigned int temp_data;
-	unsigned int temp_data2;
-	unsigned int rtc_invalid;
-
-	temp_data = hal_rtc_get_spare_register(RTC_FG_INIT);
-	temp_data2 = get_rtc_spare_fg_value();
-	rtc_invalid = temp_data2 >> 7;
-
-
-	if (rtc_invalid == 0) {
-		is_bat_plugout = (temp_data & 0x20) >> 5;
-		bat_plug_out_time = temp_data & 0x1f;
-	} else {
-		is_bat_plugout = 1;
-		bat_plug_out_time = 31;	/*[12:8], 5 bits*/
-		/*set_rtc_spare_fg_value(0);*/	/* Reset in read_boot_battery_plug_out_status() */
-
-	}
-
 	*(unsigned int *) (data) = bat_plug_out_time;
 
-	bm_err("[read_bat_plug_out_time][RTC_func] bat_plug_out_time %d rtc_invalid %d is_bat_plugout %d temp_data 0x%x temp_data2 0x%x\n",
-			bat_plug_out_time, rtc_invalid, is_bat_plugout, temp_data, temp_data2);
+	bm_err("[read_bat_plug_out_time] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time);
 
 	return STATUS_OK;
+}
+
+static signed int fgauge_get_zcv_curr(void *data)
+{
+#if defined(CONFIG_POWER_EXT)
+	return 4001;
+	bm_debug("[fgauge_get_zcv_curr]\n");
+#else
+	unsigned short uvalue16 = 0;
+	signed int dvalue = 0;
+	long long Temp_Value = 0;
+
+	uvalue16 = pmic_get_register_value(PMIC_FG_CURRENT_OUT);
+	dvalue = (unsigned int) uvalue16;
+		if (dvalue == 0) {
+			Temp_Value = (long long) dvalue;
+		} else if (dvalue > 32767) {
+			/* > 0x8000 */
+			Temp_Value = (long long) (dvalue - 65535);
+			Temp_Value = Temp_Value - (Temp_Value * 2);
+		} else {
+			Temp_Value = (long long) dvalue;
+		}
+
+	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+	do_div(Temp_Value, 100000);
+	dvalue = (unsigned int) Temp_Value;
+
+	/* Auto adjust value */
+	if (fg_cust_data.r_fg_value != 100) {
+		bm_debug(
+		"[fgauge_read_current] Auto adjust value due to the Rfg is %d\n Ori current=%d, ",
+		fg_cust_data.r_fg_value, dvalue);
+
+		dvalue = (dvalue * 100) / fg_cust_data.r_fg_value;
+
+		bm_info("[fgauge_read_current] new current=%d\n", dvalue);
+	}
+
+	bm_debug("[fgauge_read_current] ori current=%d\n", dvalue);
+
+	dvalue = ((dvalue * fg_cust_data.car_tune_value) / 1000);
+
+	bm_debug("[fgauge_read_current] final current=%d (ratio=%d)\n",
+		 dvalue, fg_cust_data.car_tune_value);
+
+	*(signed int *) (data) = dvalue;
+
+	return STATUS_OK;
+#endif
 }
 
 static signed int fgauge_get_zcv(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
 		return 4001;
-		bm_debug("[fgauge_get_zcv] TBD\n");
+		bm_debug("[fgauge_get_zcv]\n");
 #else
 		signed int adc_result_reg = 0;
 		signed int adc_result = 0;
@@ -3011,17 +3067,19 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_PTIM_BAT_VOL] = read_ptim_bat_vol;
 		bm_func[BATTERY_METER_CMD_GET_PTIM_R_CURR] = read_ptim_R_curr;
 		bm_func[BATTERY_METER_CMD_GET_PTIM_RAC_VAL] = read_ptim_rac_val;
-		bm_func[BATTERY_METER_CMD_GET_FG_RESET_STATUS] = fg_get_fg_reset_status;
-		bm_func[BATTERY_METER_CMD_SET_FG_RESET_STATUS] = fg_set_fg_reset_status;
+		bm_func[BATTERY_METER_CMD_GET_IS_FG_INITIALIZED] = fg_get_is_fg_initialized;
+		bm_func[BATTERY_METER_CMD_SET_IS_FG_INITIALIZED] = fg_set_is_fg_initialized;
 		bm_func[BATTERY_METER_CMD_GET_SHUTDOWN_DURATION_TIME] = fgauge_get_soff_time;
 		bm_func[BATTERY_METER_CMD_GET_BAT_PLUG_OUT_TIME] = read_bat_plug_out_time;
 		bm_func[BATTERY_METER_CMD_GET_ZCV] = fgauge_get_zcv;
+		bm_func[BATTERY_METER_CMD_GET_ZCV_CURR] = fgauge_get_zcv_curr;
 		bm_func[BATTERY_METER_CMD_SET_CYCLE_INTERRUPT] = fg_set_cycle_interrupt;
 		bm_func[BATTERY_METER_CMD_SOFF_RESET] = fg_reset_soff_time;
 		bm_func[BATTERY_METER_CMD_NCAR_RESET] = fg_reset_ncar;
 		bm_func[BATTERY_METER_CMD_SET_NAG_ZCV] = fg_set_nag_zcv;
 		bm_func[BATTERY_METER_CMD_SET_NAG_C_DLTV] = fg_set_nag_c_dltv;
 		bm_func[BATTERY_METER_CMD_SET_ZCV_INTR] = fg_set_zcv_intr;
+		bm_func[BATTERY_METER_CMD_SET_ZCV_INTR_EN] = fg_set_zcv_intr_en;
 		bm_func[BATTERY_METER_CMD_SET_SW_CAR_NAFG_EN] = fg_set_nafg_en;
 		bm_func[BATTERY_METER_CMD_GET_SW_CAR_NAFG_CNT] = fg_get_nafg_cnt;
 		bm_func[BATTERY_METER_CMD_GET_SW_CAR_NAFG_DLTV] = fg_get_nafg_dltv;
@@ -3051,7 +3109,6 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_SET_META_CALI_CURRENT] = fgauge_set_meta_cali_current;
 		bm_func[BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE] = fgauge_meta_cali_car_tune_value;
 		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID] = fg_get_current_iavg_valid;
-
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {

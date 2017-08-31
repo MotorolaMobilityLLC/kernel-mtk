@@ -77,6 +77,12 @@ int get_shutdown_cond(void)
 
 int set_shutdown_cond(int shutdown_cond)
 {
+	int now_current;
+	int now_is_charging;
+
+	now_current = battery_get_bat_current();
+	now_is_charging = battery_get_bat_current_sign();
+
 	pr_err("set_shutdown_cond %d\n", shutdown_cond);
 	switch (shutdown_cond) {
 	case OVERHEAT:
@@ -88,18 +94,26 @@ int set_shutdown_cond(int shutdown_cond)
 	case SOC_ZERO_PERCENT:
 		if (sdc.shutdown_status.is_soc_zero_percent != true) {
 			mutex_lock(&sdc.lock);
-			sdc.shutdown_status.is_soc_zero_percent = true;
-			get_monotonic_boottime(&sdc.pre_time[SOC_ZERO_PERCENT]);
-			notify_fg_shutdown();
+			if (battery_get_is_kpoc() != 0) {
+				if (now_is_charging != 1) {
+					sdc.shutdown_status.is_soc_zero_percent = true;
+					get_monotonic_boottime(&sdc.pre_time[SOC_ZERO_PERCENT]);
+					notify_fg_shutdown();
+				}
+			}
 			mutex_unlock(&sdc.lock);
 		}
 		break;
 	case UISOC_ONE_PERCENT:
 		if (sdc.shutdown_status.is_uisoc_one_percent != true) {
 			mutex_lock(&sdc.lock);
-			sdc.shutdown_status.is_uisoc_one_percent = true;
-			get_monotonic_boottime(&sdc.pre_time[UISOC_ONE_PERCENT]);
-			notify_fg_shutdown();
+			if (battery_get_is_kpoc() != 0) {
+				if (now_is_charging != 1) {
+					sdc.shutdown_status.is_uisoc_one_percent = true;
+					get_monotonic_boottime(&sdc.pre_time[UISOC_ONE_PERCENT]);
+					notify_fg_shutdown();
+				}
+			}
 			mutex_unlock(&sdc.lock);
 		}
 		break;
@@ -109,10 +123,14 @@ int set_shutdown_cond(int shutdown_cond)
 
 		if (sdc.shutdown_status.is_under_shutdown_voltage != true) {
 			mutex_lock(&sdc.lock);
-			sdc.shutdown_status.is_under_shutdown_voltage = true;
-			for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
-				sdc.batdata[i] = battery_get_bat_avg_voltage();
-			sdc.batidx = 0;
+			if (battery_get_is_kpoc() != 0) {
+				if (now_is_charging != 1) {
+					sdc.shutdown_status.is_under_shutdown_voltage = true;
+					for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
+						sdc.batdata[i] = battery_get_bat_avg_voltage();
+					sdc.batidx = 0;
+				}
+			}
 			mutex_unlock(&sdc.lock);
 		}
 		break;

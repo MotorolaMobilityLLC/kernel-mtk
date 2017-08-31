@@ -47,6 +47,7 @@
 #include <linux/cdev.h>		/* cdev */
 
 #include <linux/err.h>	/* IS_ERR, PTR_ERR */
+#include <linux/reboot.h>	/*kernel_power_off*/
 
 #include <linux/vmalloc.h>
 
@@ -416,7 +417,7 @@ static void battery_update(struct battery_data *bat_data)
 	power_supply_changed(bat_psy);
 }
 
-unsigned char bat_is_kpoc(void)
+unsigned int bat_is_kpoc(void)
 {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	int boot_mode = get_boot_mode();
@@ -695,6 +696,7 @@ void fg_custom_init(void)
 
 	fg_cust_data.pseudo1_en = PSEUDO1_EN;
 	fg_cust_data.pseudo100_en = PSEUDO100_EN;
+	fg_cust_data.pseudo100_en_dis = PSEUDO100_EN_DIS;
 
 	/* iboot related */
 	fg_cust_data.qmax_sel = QMAX_SEL;
@@ -973,6 +975,7 @@ int BattVoltToTemp(int dwVolt)
 	int sBaTTMP = -100;
 	/*int vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);*/
 	int vbif28 = RBAT_PULL_UP_VOLT;	/* 2 side: BattVoltToTemp, TempToBattVolt */
+	int delta_v;
 
 	/* TRes_temp = ((long long)RBAT_PULL_UP_R*(long long)dwVolt) / (RBAT_PULL_UP_VOLT-dwVolt); */
 	/* TRes = (TRes_temp * (long long)RBAT_PULL_DOWN_R)/((long long)RBAT_PULL_DOWN_R - TRes_temp); */
@@ -980,11 +983,19 @@ int BattVoltToTemp(int dwVolt)
 	TRes_temp = (RBAT_PULL_UP_R * (long long) dwVolt);
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
 	vbif28 = pmic_get_vbif28_volt();
-	do_div(TRes_temp, (vbif28 - dwVolt));
+	delta_v = abs(vbif28 - dwVolt);
+	if (delta_v == 0)
+		delta_v = 1;
+
+	do_div(TRes_temp, delta_v);
 	if (vbif28 > 3000 || vbif28 < 2500)
 		bm_err("[RBAT_PULL_UP_VOLT_BY_BIF] vbif28:%d\n", pmic_get_vbif28_volt());
 #else
-	do_div(TRes_temp, (RBAT_PULL_UP_VOLT - dwVolt));
+	delta_v = abs(RBAT_PULL_UP_VOLT - dwVolt);
+	if (delta_v == 0)
+		delta_v = 1;
+
+	do_div(TRes_temp, delta_v);
 #endif
 
 #ifdef RBAT_PULL_DOWN_R
@@ -1545,24 +1556,24 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
-	case FG_DAEMON_CMD_SET_FG_RESET_STATUS:
+	case FG_DAEMON_CMD_SET_IS_FG_INITIALIZED:
 	{
 		int fg_reset;
 
 		memcpy(&fg_reset, &msg->fgd_data[0], sizeof(fg_reset));
 
-		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_RESET_STATUS, &fg_reset);
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_IS_FG_INITIALIZED, &fg_reset);
 
 		bm_debug("[fg_res] BATTERY_METER_CMD_SET_FG_RESET_STATUS = %d\n", fg_reset);
 	}
 	break;
 
 
-	case FG_DAEMON_CMD_GET_FG_RESET_STATUS:
+	case FG_DAEMON_CMD_GET_IS_FG_INITIALIZED:
 	{
 		int fg_reset;
 
-		battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_RESET_STATUS, &fg_reset);
+		battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_FG_INITIALIZED, &fg_reset);
 
 		ret_msg->fgd_data_len += sizeof(fg_reset);
 		memcpy(ret_msg->fgd_data, &fg_reset, sizeof(fg_reset));
@@ -1905,8 +1916,6 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
 
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_HW_INFO, &intr_no);
-		ret_msg->fgd_data_len += sizeof(intr_no);
-		memcpy(ret_msg->fgd_data, &intr_no, sizeof(intr_no));
 		pr_err("[fg_res] FG_DAEMON_CMD_GET_HW_INFO = %d\n", intr_no);
 	}
 	break;
@@ -2484,23 +2493,42 @@ void fg_bat_int2_l_handler(void)
 void fg_zcv_int_handler(void)
 {
 	int fg_coulomb = 0;
+	int zcv_intr_en = 0;
+	int zcv_intr_curr = 0;
 
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_HW_CAR, &fg_coulomb);
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_ZCV_CURR, &zcv_intr_curr);
+	pr_err("[fg_zcv_int_handler] car:%d zcv_curr:%d\n",	fg_coulomb, zcv_intr_curr);
 
-	pr_err("[fg_zcv_int_handler] car:%d\n",	fg_coulomb);
-	wakeup_fg_algo(FG_INTR_FG_ZCV);
+	if (abs(zcv_intr_curr) < SLEEP_CURRENT_AVG) {
+		wakeup_fg_algo(FG_INTR_FG_ZCV);
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_ZCV_INTR_EN, &zcv_intr_en);
+	}
+
+	pr_err("[fg_zcv_int_handler] DET_IV %d 15_00 0x%x 30_16 0x%x\n",
+		pmic_get_register_value(PMIC_FG_ZCV_DET_IV),
+		pmic_get_register_value(PMIC_FG_ZCV_CAR_TH_15_00),
+		pmic_get_register_value(PMIC_FG_ZCV_CAR_TH_30_16));
 
 	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_plugout_int_handler(void)
 {
+	int is_bat_exist;
+
 	pr_err("[fg_bat_plugout_int_handler]\n");
 	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 	wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 	battery_update(&battery_main);
 
 	fg_bat_temp_int_sw_check();
+
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_BAT_EXIST, &is_bat_exist);
+	pr_err("[fg_bat_plugout_int_handler] is_bat_exist %d\n", is_bat_exist);
+
+	if (is_bat_exist == 0)
+		kernel_power_off();
 }
 
 void fg_charger_in_handler(void)
@@ -3413,7 +3441,7 @@ static int battery_probe(struct platform_device *dev)
 	pmic_register_interrupt_callback(FG_RG_INT_EN_BAT2_L, fg_vbat2_l_int_handler);
 
 	/* Charger in */
-	pmic_register_interrupt_callback(FG_RG_INT_STATUS_CHRDET, fg_charger_in_handler);
+	pmic_register_interrupt_callback(FG_RG_INT_EN_CHRDET, fg_charger_in_handler);
 
 
 	/* sysfs node */

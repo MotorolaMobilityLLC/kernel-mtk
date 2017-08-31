@@ -43,6 +43,8 @@
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
 #define PSEUDO1_EN 1
 #define PSEUDO100_EN 1
+#define PSEUDO100_EN_DIS 1
+
 #define DIFF_SOC_SETTING 50	/* 0.01% */
 #define DIFF_BAT_TEMP_SETTING 10
 #define DISCHARGE_TRACKING_TIME 10
@@ -86,7 +88,7 @@
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
 #define PMIC_SHUTDOWN_TIME	30
-#define BAT_PLUG_OUT_TIME	5
+#define BAT_PLUG_OUT_TIME	32
 #define EXT_HWOCV_SWOCV		300
 
 /* fgc & fgv threshold */
