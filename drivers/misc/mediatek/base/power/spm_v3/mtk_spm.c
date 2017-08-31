@@ -45,9 +45,6 @@
 
 #include <trace/events/mtk_events.h>
 
-#ifdef CONFIG_MACH_MT6758
-int __spmfw_idx;
-#endif
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
@@ -368,29 +365,6 @@ static struct platform_driver spm_dev_drv = {
 
 static struct platform_device *pspmdev;
 
-#ifdef CONFIG_MACH_MT6758
-#ifdef CONFIG_MTK_DRAMC
-static void __spm_check_dram_type(void)
-{
-	int ddr_type = get_ddr_type();
-	int emi_ch_num = get_emi_ch_num();
-
-	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
-		__spmfw_idx = SPMFW_LP4X_2CH;
-	else if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 1)
-		__spmfw_idx = SPMFW_LP4X_1CH;
-	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
-		__spmfw_idx = SPMFW_LP3_1CH;
-	pr_info("#@# %s(%d) __spmfw_idx 0x%x\n", __func__, __LINE__, __spmfw_idx);
-};
-#endif /* CONFIG_MTK_DRAMC */
-
-int __spm_get_dram_type(void)
-{
-	return __spmfw_idx;
-}
-#endif /* CONFIG_MACH_MT6758 */
-
 int __init spm_module_init(void)
 {
 	int r = 0;
@@ -445,14 +419,6 @@ int __init spm_module_init(void)
 	}
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-#ifdef CONFIG_MACH_MT6758
-#ifdef CONFIG_MTK_DRAMC
-	/* get __spmfw_idx */
-	__spm_check_dram_type();
-#endif /* CONFIG_MTK_DRAMC */
-
-	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, __spmfw_idx, 0);
-#endif
 	spm_vcorefs_init();
 	return 0;
 }
