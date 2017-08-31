@@ -975,7 +975,6 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 			}
 		}
 	}
-	module_list_scenario[scenario][i] = dst_module;
 
 	WARN_ON(i >= ARRAY_SIZE(module_list_scenario[0]));
 	module_list_scenario[scenario][i] = dst_module;

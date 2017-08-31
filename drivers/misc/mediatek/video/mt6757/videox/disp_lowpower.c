@@ -29,7 +29,7 @@
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
-/* #include "mtk_spm_idle.h" */
+#include "mtk_spm_idle.h"
 #include "mt-plat/mtk_smi.h"
 #include "m4u.h"
 #include "m4u_port.h"
@@ -56,6 +56,7 @@
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
 #include "mtk_dramc.h"
+#include "disp_partial.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -615,7 +616,7 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
-	if (primary_display_partial_support())
+	if (disp_partial_is_support())
 		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
 
 	data_config->dst_dirty = 1;
@@ -701,7 +702,7 @@ void _vdo_mode_enter_idle(void)
 			switch (get_lp_cust_mode()) {
 			case LOW_POWER_MODE: /* 50 */
 			case JUST_MAKE_MODE: /* 55 */
-				set_fps(50);
+				set_fps(45);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 				break;
@@ -716,7 +717,7 @@ void _vdo_mode_enter_idle(void)
 				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = get_backup_vfp();
 
 			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
-				set_fps(50);
+				set_fps(45);
 				primary_display_dsi_vfp_change(1);
 				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}
@@ -821,11 +822,18 @@ void _cmd_mode_enter_idle(void)
 		/* need delay to make sure done??? */
 		_primary_display_disable_mmsys_clk();
 	}
+	/*enter PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		spm_sodi_mempll_pwr_mode(0);
 }
 
 void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
+
+	/*Exit PD mode*/
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		spm_sodi_mempll_pwr_mode(1);
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
@@ -872,7 +880,6 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 		}
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
-
 	return 0;
 }
 
@@ -917,10 +924,10 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		primary_display_set_idle_stat(1);
 
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-		if (get_ddr_type() == TYPE_LPDDR4)
-			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
-		else
+		if (get_ddr_type() == TYPE_LPDDR3)
 			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_LOW);
+		else
+			primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE, HRT_LEVEL_EXTREME_LOW);
 
 		primary_display_manual_unlock();
 

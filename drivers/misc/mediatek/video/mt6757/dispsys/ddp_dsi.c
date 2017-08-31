@@ -583,7 +583,7 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 			wake_up_interruptible(&_dsi_dcs_read_wait_queue[i]);
 		}
 
-		if (status.CMD_DONE)
+		if (status.CMD_DONE || status.VM_DONE)
 			wake_up_interruptible(&_dsi_cmd_done_wait_queue[i]);
 
 
@@ -4641,6 +4641,8 @@ UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx)
 UINT32 PanelMaster_get_CC(UINT32 dsi_idx)
 {
 	struct DSI_TXRX_CTRL_REG tmp_reg;
+
+	memset(&tmp_reg, 0, sizeof(struct DSI_TXRX_CTRL_REG));
 
 	if ((dsi_idx == PM_DSI0) || (dsi_idx == PM_DSI_DUAL))
 		DSI_READREG32(struct DSI_TXRX_CTRL_REG *, &tmp_reg, &DSI_REG[0]->DSI_TXRX_CTRL);

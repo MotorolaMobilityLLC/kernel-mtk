@@ -29,7 +29,11 @@
 #include "ddp_ovl.h"
 
 #include "ddp_log.h"
-/* #pragma GCC optimize("O0") */
+
+/* #define __GED_NOTIFICATION_SUPPORT__ */
+#ifdef __GED_NOTIFICATION_SUPPORT__
+#include "ged.h"
+#endif
 
 static int ddp_manager_init;
 #define DDP_MAX_MANAGER_HANDLE (DISP_MUTEX_DDP_COUNT+DISP_MUTEX_DDP_FIRST)
@@ -1835,6 +1839,15 @@ static void dpmgr_irq_handler(enum DISP_MODULE_ENUM module, unsigned int regvalu
 			for (j = 0; j < DISP_PATH_EVENT_NUM; j++) {
 				if (handle->wq_list[j].init
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
+
+#ifdef __GED_NOTIFICATION_SUPPORT__
+					if (j == DISP_PATH_EVENT_IF_VSYNC) {
+						/* notifi GED of vsync evnet,
+						 * for GPU DVFS KPI debugging and feedback
+						 */
+						ged_notification(GED_NOTIFICATION_TYPE_HW_VSYNC_PRIMARY_DISPLAY);
+					}
+#endif
 					dprec_stub_event(j);
 					handle->wq_list[j].data = ktime_to_ns(ktime_get());
 

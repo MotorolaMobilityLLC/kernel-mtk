@@ -687,8 +687,8 @@ void rdma_dump_golden_setting_context(enum DISP_MODULE_ENUM module)
 		DDPDUMP("mmsys_clk=%d\n", rdma_golden_setting->mmsys_clk);
 		DDPDUMP("fps=%d\n", rdma_golden_setting->fps);
 		DDPDUMP("is_one_layer=%d\n", rdma_golden_setting->is_one_layer);
-		DDPDUMP("rdma_width=%d\n", rdma_golden_setting->rdma_width);
-		DDPDUMP("rdma_height=%d\n", rdma_golden_setting->rdma_height);
+		DDPDUMP("rdma_width=%d\n", rdma_golden_setting->dst_width);
+		DDPDUMP("rdma_height=%d\n", rdma_golden_setting->dst_height);
 	}
 }
 
@@ -997,7 +997,6 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 				_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
 				cmdqRecSetSecure(nonsec_switch_handle, 1);
 
-				/*ugly work around by kzhang !!. will remove when cmdq delete disable scenario.*/
 				 /* To avoid translation fault like ovl (see notes in ovl.c)*/
 				if (get_rdma_mode(module) == RDMA_MODE_MEMORY)
 					do_rdma_config_l(module, pConfig, nonsec_switch_handle);

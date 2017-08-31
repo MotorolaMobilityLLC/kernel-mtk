@@ -24,8 +24,6 @@
 
 #include "disp_partial.h"
 
-static int is_partial_support;
-
 static void _update_layer_dirty(struct OVL_CONFIG_STRUCT *old, struct disp_input_config *src,
 		struct disp_rect *layer_roi)
 {
@@ -56,7 +54,6 @@ static void _update_layer_dirty(struct OVL_CONFIG_STRUCT *old, struct disp_input
 		}
 	}
 #endif
-
 }
 
 
@@ -169,15 +166,13 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 
 int disp_partial_is_support(void)
 {
-	return is_partial_support;
-}
+	struct disp_lcm_handle *plcm = primary_get_lcm();
 
-int disp_partial_check_support(struct disp_lcm_handle *plcm)
-{
-	if (disp_lcm_is_partial_support(plcm) && !disp_lcm_is_video_mode(plcm))
-		is_partial_support = 1;
+	if (disp_lcm_is_partial_support(plcm) &&
+		!disp_lcm_is_video_mode(plcm) &&
+		disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
+		return 1;
 
-	DISPINFO("display partial %s\n", is_partial_support ? "support" : "not support");
 	return 0;
 }
 

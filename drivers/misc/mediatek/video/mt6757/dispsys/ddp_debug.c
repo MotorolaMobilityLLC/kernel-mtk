@@ -146,6 +146,41 @@ static void process_dbg_opt(const char *opt)
 	int ret;
 	int buf_size_left = ARRAY_SIZE(dbg_buf) - strlen(dbg_buf) - 10;
 
+#ifdef CONFIG_MTK_ENG_BUILD
+	if (strncmp(opt, "get_reg", 7) == 0) {
+		unsigned long pa;
+		unsigned int *va;
+
+		ret = sscanf(opt, "get_reg:0x%lx\n", &pa);
+		if (ret != 1) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+		va = ioremap(pa, 4);
+		DDPMSG("get_reg: 0x%lx = 0x%08X\n", pa, DISP_REG_GET(va));
+		snprintf(buf, buf_size_left, "get_reg: 0x%lx = 0x%08X\n", pa, DISP_REG_GET(va));
+		iounmap(va);
+		return;
+	}
+
+	if (strncmp(opt, "set_reg", 7) == 0) {
+		unsigned long pa;
+		unsigned int *va, val;
+
+		ret = sscanf(opt, "set_reg:0x%lx,0x%x\n", &pa, &val);
+		if (ret != 2) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+		va = ioremap(pa, 4);
+		DISP_CPU_REG_SET(va, val);
+		DDPMSG("set_reg: 0x%lx = 0x%08X(0x%x)\n", pa, DISP_REG_GET(va), val);
+		snprintf(buf, buf_size_left, "set_reg: 0x%lx = 0x%08X(0x%x)\n", pa, DISP_REG_GET(va), val);
+		iounmap(va);
+		return;
+	}
+#endif
+
 	if (strncmp(opt, "regr:", 5) == 0) {
 		char *p = (char *)opt + 5;
 		unsigned long addr;
@@ -204,6 +239,18 @@ static void process_dbg_opt(const char *opt)
 			dbg_log_level = 0;
 
 		sprintf(buf, "dbg_log: %d\n", dbg_log_level);
+	} else if (strncmp(opt, "vfp:", 4) == 0) {
+		char *p = (char *)opt + 4;
+		unsigned int vfp = 0;
+
+		ret = kstrtouint(p, 0, &vfp);
+		if (ret) {
+			pr_err("error to parse cmd %s\n", opt);
+			return;
+		}
+
+		if (vfp > 0 && vfp <= 2000)
+			backup_vfp_for_lp_cust(vfp);
 	} else if (strncmp(opt, "irq_log:", 8) == 0) {
 		char *p = (char *)opt + 8;
 		unsigned int enable;
@@ -436,58 +483,9 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < ARRAY_SIZE(para); i++) {
 			/* make fmt like: "set_dsi_cmd:0x%x,0x%hhx,0x%hhx,0x%hhx,0x%hhx\n" */
-			strncat(fmt, ",0x%hhx", sizeof(fmt));
+			strncat(fmt, ",0x%hhx", sizeof(fmt) - strlen(fmt) - 1);
 		}
-		strncat(fmt, ",0x%hhx\n", sizeof(fmt));
-
-		ret = sscanf(opt, fmt,
-			&cmd, &para[0], &para[1], &para[2], &para[3], &para[4],
-			&para[5], &para[6], &para[7], &para[8], &para[9],
-			&para[10], &para[11], &para[12], &para[13], &para[14]);
-
-		if (ret < 1 || ret > ARRAY_SIZE(para) + 1) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		para_cnt = ret - 1;
-
-		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, para_cnt, para, 1);
-
-		DISPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
-		for (i = 0; i < para_cnt; i++)
-			DISPMSG("para[%d] = 0x%x\n", i, para[i]);
-
-	} else if (strncmp(opt, "dsi_read:", 9) == 0) {
-		int cmd;
-		int size, i, tmp = 0;
-		char para[15] = {0};
-
-		ret = sscanf(opt, "dsi_read:0x%x,%d\n",	&cmd, &size);
-
-		if (ret != 2 || size > ARRAY_SIZE(para)) {
-			snprintf(buf, 50, "error to parse cmd %s\n", opt);
-			return;
-		}
-
-		DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd, para, size);
-
-		tmp += snprintf(buf, buf_size_left, "dsi_read cmd=0x%x:", cmd);
-
-		for (i = 0; i < size; i++)
-			tmp += snprintf(buf + tmp, buf_size_left - tmp, "para[%d]=0x%x,", i, para[i]);
-		DISPMSG("%s\n", buf);
-	} else if (strncmp(opt, "set_dsi_cmd:", 12) == 0) {
-		int cmd;
-		int para_cnt, i;
-		char para[15] = {0};
-		char fmt[256] = "set_dsi_cmd:0x%x";
-
-		for (i = 0; i < ARRAY_SIZE(para); i++) {
-			/* make fmt like: "set_dsi_cmd:0x%x,0x%hhx,0x%hhx,0x%hhx,0x%hhx\n" */
-			strncat(fmt, ",0x%hhx", sizeof(fmt));
-		}
-		strncat(fmt, ",0x%hhx\n", sizeof(fmt));
+		strncat(fmt, "\n", sizeof(fmt) - strlen(fmt) - 1);
 
 		ret = sscanf(opt, fmt,
 			&cmd, &para[0], &para[1], &para[2], &para[3], &para[4],

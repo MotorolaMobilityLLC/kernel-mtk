@@ -1243,6 +1243,9 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int time
 
 	layer_info = _get_sync_info(session_id, timeline_id);
 
+	if (layer_info == NULL)
+		return 0;
+
 	mutex_lock(&layer_info->sync_lock);
 	list_for_each_entry(buf, &layer_info->buf_list, list) {
 		if (buf->idx != idx)

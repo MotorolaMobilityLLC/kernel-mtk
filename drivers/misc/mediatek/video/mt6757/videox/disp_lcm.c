@@ -442,6 +442,8 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp", &lcm_params->dsi.vertical_vfp_lp);
 	disp_of_getprop_u32(np, "lcm_params-physical_width", &lcm_params->physical_width);
 	disp_of_getprop_u32(np, "lcm_params-physical_height", &lcm_params->physical_height);
+	disp_of_getprop_u32(np, "lcm_params-physical_width_um", &lcm_params->physical_width_um);
+	disp_of_getprop_u32(np, "lcm_params-physical_height_um", &lcm_params->physical_height_um);
 	disp_of_getprop_u32(np, "lcm_params-od_table_size", &lcm_params->od_table_size);
 	disp_of_getprop_u32(np, "lcm_params-od_table", (u32 *) (&lcm_params->od_table));
 }
@@ -1020,11 +1022,10 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 			_dump_lcm_info(plcm);
 			return plcm;
 		}
-		{
-			DISPERR("the specific LCM Interface [%d] didn't define any lcm driver\n",
-				lcm_id);
-			goto FAIL;
-		}
+
+		DISPERR("the specific LCM Interface [%d] didn't define any lcm driver\n",
+			lcm_id);
+		goto FAIL;
 	}
 
 FAIL:
@@ -1416,7 +1417,6 @@ int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm)
 		if (lcm_drv->validate_roi)
 			return 1;
 	}
-	DISPERR("Not support partial update\n");
 	return 0;
 }
 

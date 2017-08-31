@@ -47,6 +47,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/base/power/include \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2 \
              -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)
 
@@ -85,6 +86,6 @@ ifeq ($(MTK_MIRAVISION_SUPPORT), yes)
     ccflags-y += -DCONFIG_FOR_SOURCE_PQ
 endif
 
-ccflags-y += -DNO_SPM
+#ccflags-y += -DNO_SPM
 
 ccflags-$(CONFIG_MTK_LCM_DEVICE_TREE_SUPPORT) += -DMTK_LCM_DEVICE_TREE_SUPPORT

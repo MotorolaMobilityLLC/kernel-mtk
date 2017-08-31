@@ -26,7 +26,7 @@
 #include <linux/switch.h>
 /* #include "mtk_idle.h" */
 #include "mtk_spm.h"	/* for sodi reg addr define */
-/* #include "mtk_spm_idle.h" */
+#include "mtk_spm_idle.h"
 /* #include "mach/eint.h" */
 /* #include <cust_eint.h> */
 #include "mt-plat/mtk_smi.h"
@@ -334,11 +334,6 @@ void _primary_path_switch_dst_lock(void)
 void _primary_path_switch_dst_unlock(void)
 {
 	mutex_unlock(&(pgc->switch_dst_lock));
-}
-
-int primary_display_partial_support(void)
-{
-	return disp_partial_is_support();
 }
 
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
@@ -1178,11 +1173,7 @@ static void _cmdq_build_trigger_loop(void)
 
 		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 0);
 
-		cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		/*cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-		 * cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		 * cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-		 */
+		cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 		/* wait and clear rdma0_sof for vfp change */
 		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
@@ -1248,8 +1239,10 @@ static void _cmdq_build_trigger_loop(void)
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_RESET_AFTER_STREAM_EOF, 0);
 
+/*
 		if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 			enter_pd_by_cmdq(pgc->cmdq_handle_trigger);
+*/
 
 		/* polling DSI idle */
 		/* ret = cmdqRecPoll(pgc->cmdq_handle_trigger, 0x1401b00c, 0, 0x80000000); */
@@ -2400,7 +2393,6 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 {
 	int ret;
 
-	DISPFUNC();
 	if (_should_wait_path_idle()) {
 		ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		if (ret <= 0)
@@ -2473,7 +2465,6 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	 * If force_commit/bypass mode: enable_mutex before get/release_mutex
 	 * to copy configs from shadow into working
 	 */
-
 	dpmgr_path_trigger(disp_handle, cmdq_handle, CMDQ_ENABLE);
 
 	cmdqRecWaitNoClear(cmdq_handle, CMDQ_EVENT_DISP_WDMA0_EOF);
@@ -2506,16 +2497,6 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 
 	return 0;
 }
-
-int _trigger_overlay_engine(void)
-{
-	/* maybe we need a simple merge mechanism for CPU config. */
-	dpmgr_path_trigger(pgc->ovl2mem_path_handle, NULL,
-			   disp_helper_get_option(DISP_OPT_USE_CMDQ));
-
-	return 0;
-}
-
 
 
 static unsigned int _need_lfr_check(void)
@@ -3478,9 +3459,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	pgc->lcm_refresh_rate = 60;
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
-
-	if (disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
-		disp_partial_check_support(pgc->plcm);
 
 	pgc->state = DISP_ALIVE;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
@@ -4965,8 +4943,26 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (_should_wait_path_idle())
 		dpmgr_wait_event_timeout(disp_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 
-	if (cmdq_handle)
+	if (cmdq_handle) {
+
+		int sess_mode = pgc->session_mode;
 		setup_disp_sec(data_config, cmdq_handle, 1);
+
+		if (sess_mode != pgc->session_mode) {
+			/*the switch mode case: 1)enter svp: DC->DL; 2)leave svp:restore sess_mode, DL->DC */
+			DISPMSG("setup_disp_sec() has switch mode, then update the handle.\n");
+
+			if (primary_display_is_decouple_mode()) {
+				disp_handle = pgc->ovl2mem_path_handle;
+				cmdq_handle = pgc->cmdq_handle_ovl1to2_config;
+			} else {
+				disp_handle = pgc->dpmgr_handle;
+				cmdq_handle = pgc->cmdq_handle_config;
+			}
+			data_config = dpmgr_path_get_last_config(disp_handle);
+			data_config->overlap_layer_num = hrt_level;
+		}
+	}
 
 	/* check bypass ovl */
 	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
@@ -5426,7 +5422,7 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		if (ret)
 			goto done;
 		MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, pgc->session_mode, 0);
-		DL_switch_to_DC_fast(0);
+		ret = DL_switch_to_DC_fast(0);
 	} else {
 		DISPERR("invalid mode switch from %s to %s\n", session_mode_spy(pgc->session_mode),
 			session_mode_spy(sess_mode));
@@ -5756,6 +5752,8 @@ int primary_display_get_info(struct disp_session_info *info)
 
 	dispif_info->physicalWidth = DISP_GetActiveWidth();
 	dispif_info->physicalHeight = DISP_GetActiveHeight();
+	dispif_info->physicalWidthUm = DISP_GetActiveWidthUm();
+	dispif_info->physicalHeightUm = DISP_GetActiveHeightUm();
 
 	dispif_info->vsyncFPS = pgc->lcm_fps;
 
@@ -6201,6 +6199,34 @@ UINT32 DISP_GetActiveWidth(void)
 
 	if (pgc->plcm->params)
 		return pgc->plcm->params->physical_width;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveHeightUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_height_um;
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
+}
+
+uint32_t DISP_GetActiveWidthUm(void)
+{
+	if (pgc->plcm == NULL) {
+		DISPERR("lcm handle is null\n");
+		return 0;
+	}
+
+	if (pgc->plcm->params)
+		return pgc->plcm->params->physical_width_um;
 
 	DISPERR("lcm_params is null!\n");
 	return 0;
@@ -6859,7 +6885,7 @@ int primary_display_switch_dst_mode(int mode)
 #ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
 	/* set power down mode forbidden */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		/*spm_sodi_mempll_pwr_mode(1);// move by Cui*/
+		spm_sodi_mempll_pwr_mode(1);
 #endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 0);
@@ -7228,6 +7254,11 @@ int display_enter_tui(void)
 	stop_smart_ovl_nolock();
 
 	tui_session_mode_backup = pgc->session_mode;
+
+	if (tui_session_mode_backup == DISP_SESSION_RDMA_MODE) {
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
+		tui_session_mode_backup = DISP_SESSION_DIRECT_LINK_MODE;
+	}
 
 	do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0, NULL, 0);
 

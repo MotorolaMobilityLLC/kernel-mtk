@@ -55,7 +55,7 @@
 #include "ddp_mmp.h"
 #include <linux/trace_events.h>
 
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 unsigned int gCapturePriLayerEnable;
 unsigned int gCaptureWdmaLayerEnable;
 unsigned int gCaptureRdmaLayerEnable;
@@ -1045,6 +1045,7 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int m
 		 /* mask?(val|mask):val,_find_module_by_reg_addr(reg)); */
 	}
 
+	return;
 }
 
 void dprec_logger_vdump(const char *fmt, ...)
@@ -1054,8 +1055,10 @@ void dprec_logger_vdump(const char *fmt, ...)
 
 	va_start(vargs, fmt);
 
-	if (analysize_length >= dprec_dump_max_length - 10)
+	if (analysize_length >= dprec_dump_max_length - 10) {
+		va_end(vargs);
 		return;
+	}
 
 	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
 		      dprec_dump_max_length - analysize_length, fmt, vargs);
@@ -1248,12 +1251,6 @@ void init_log_buffer(void)
 	pr_warn("[DISP]%s success\n", __func__);
 	return;
 err:
-	err_buffer = 0;
-	fence_buffer = 0;
-	dbg_buffer = 0;
-	dump_buffer = 0;
-	debug_buffer = 0;
-	status_buffer = 0;
 	pr_err("[DISP]%s: log buffer allocation fail\n", __func__);
 }
 

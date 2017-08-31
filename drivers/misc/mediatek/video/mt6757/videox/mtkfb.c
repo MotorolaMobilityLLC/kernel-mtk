@@ -488,7 +488,7 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, struct 
 
 	/* data transferring is triggerred in MTKFB_TRIG_OVERLAY_OUT */
 	dst->layer_enable = src->layer_enable;
-
+	dst->ext_sel_layer = -1;
 #if 1
 	DISPDBG("%s:id=%u,en=%u,next_idx=%u,vaddr=%p,pa=%p,srcfmt=%u,dstfmt=%u,pitch=%u,x=%u,y=%u,w=%u,h=%u\n",
 	     __func__, dst->layer_id, dst->layer_enable, dst->next_buff_idx, dst->src_base_addr,
@@ -712,6 +712,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	input->next_buff_idx = -1;
 	src_pitch = ALIGN_TO(var->xres, MTK_FB_ALIGNMENT);
 	input->src_pitch = src_pitch;
+	input->ext_sel_layer = -1;
 
 	session_input->config_layer_num++;
 
@@ -1291,6 +1292,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				/* in early suspend mode ,will not update buffer index, info SF by return value */
 				if (primary_display_is_sleepd()) {
 					DISPERR("[FB] error, set overlay in early suspend ,skip!\n");
+					kfree(layerInfo);
 					return MTKFB_ERROR_IS_EARLY_SUSPEND;
 				}
 
@@ -1675,6 +1677,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			/* in early suspend mode ,will not update buffer index, info SF by return value */
 			if (primary_display_is_sleepd()) {
 				pr_debug("[FB Driver] error, set overlay in early suspend ,skip!\n");
+				kfree(compat_layerInfo);
 				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
 			memset((void *)&session_input, 0, sizeof(session_input));

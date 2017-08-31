@@ -19,7 +19,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/include/ \
-             -I$(srctree)/drivers/misc/mediatek/smi/
+             -I$(srctree)/drivers/misc/mediatek/smi/ \
+             -I$(srctree)/drivers/misc/mediatek/gpu/ged/include/
+
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
 		    -I$(srctree)/drivers/misc/mediatek/m4u/2.0

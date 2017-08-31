@@ -290,6 +290,8 @@ UINT32 DISP_GetScreenWidth(void);
 UINT32 DISP_GetScreenHeight(void);
 UINT32 DISP_GetActiveHeight(void);
 UINT32 DISP_GetActiveWidth(void);
+UINT32 DISP_GetActiveHeightUm(void);
+UINT32 DISP_GetActiveWidthUm(void);
 unsigned long get_dim_layer_mva_addr(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
 				  unsigned long *mva);
@@ -310,7 +312,6 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 int display_enter_tui(void);
 int display_exit_tui(void);
 
-int primary_display_partial_support(void);
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle);
 int primary_display_set_scenario(int scenario);

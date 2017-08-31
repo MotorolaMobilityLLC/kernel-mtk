@@ -1291,12 +1291,10 @@ int dispsys_hrt_calc(struct disp_layer_info *disp_info_user)
 	/* check each layer to see if it can be as ext layer */
 	if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
 		max_layers = dispatch_ext_layer(&disp_info_hrt);
-		if (max_layers > 0) {
+		while (max_layers > 0) {
 			DISPMSG("HRT overflow HW capability\n");
 			ret = dispatch_ovl_id(&disp_info_hrt, max_layers);
 			max_layers = dispatch_ext_layer(&disp_info_hrt);
-			if (max_layers > 0)
-				DISPERR("still overflow HW capability\n");
 		}
 	} else {
 		ext_layer_info_init(&disp_info_hrt);

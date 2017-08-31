@@ -646,8 +646,10 @@ typedef struct {
 	LCM_DBI_PARAMS dbi;
 	LCM_DPI_PARAMS dpi;
 	LCM_DSI_PARAMS dsi;
-	unsigned int physical_width;
-	unsigned int physical_height;
+	unsigned int physical_width;	/* length: mm, for legacy use */
+	unsigned int physical_height;	/* length: mm, for legacy use */
+	unsigned int physical_width_um;	/* length: um, for more precise precision */
+	unsigned int physical_height_um;	/* length: um, for more precise precision */
 	unsigned int od_table_size;
 	void *od_table;
 } LCM_PARAMS;

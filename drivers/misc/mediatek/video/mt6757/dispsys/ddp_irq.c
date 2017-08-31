@@ -29,6 +29,8 @@
 #include "ddp_aal.h"
 #include "ddp_drv.h"
 #include "disp_helper.h"
+#include "ddp_dsi.h"
+#include "disp_drv_log.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -325,21 +327,21 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (reg_val & (1 << 2)) {
 			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagEnd,
-				       reg_val, 0);
+				       reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 			rdma_end_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame done!\n", index);
 			rdma_done_irq_cnt[index]++;
 		}
 		if (reg_val & (1 << 1)) {
 			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index],
-				       MMProfileFlagStart, reg_val, 0);
+				       MMProfileFlagStart, reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 			rdma_start_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame start!\n", index);
 			rdma_start_irq_cnt[index]++;
 		}
 		if (reg_val & (1 << 3)) {
 			MMProfileLogEx(ddp_mmp_get_events()->SCREEN_UPDATE[index], MMProfileFlagPulse,
-				       reg_val, 0);
+				       reg_val, DISP_REG_GET(dsi_reg_va[0] + 0x4));
 
 			DDPERR("IRQ: RDMA%d abnormal! cnt=%d\n", index, cnt_rdma_abnormal[index]++);
 			disp_irq_log_module |= 1 << module;

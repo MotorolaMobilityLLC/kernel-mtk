@@ -273,6 +273,7 @@ static void ddp_inout_info_tag(unsigned int index)
 
 static void ddp_err_irq_met_tag(const char *name)
 {
+	met_tag_oneshot(DDP_IRQ_EER_ID, name, 1);
 	met_tag_oneshot(DDP_IRQ_EER_ID, name, 0);
 }
 
