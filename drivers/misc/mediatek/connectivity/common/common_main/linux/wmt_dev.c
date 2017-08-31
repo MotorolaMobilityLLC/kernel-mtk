@@ -559,7 +559,7 @@ static UINT32 wmt_dev_tra_poll(VOID)
 		(*mtk_wcn_wlan_bus_tx_cnt_clr)();
 	else
 		WMT_ERR_FUNC("WMT-DEV:error chip type(%d)\n", chip_type);
-	WMT_INFO_FUNC("**poll_during_time = %lu > %lu, during_count = %lu > %lu, query\n",
+	WMT_DBG_FUNC("**poll_during_time = %lu > %lu, during_count = %lu > %lu, query\n",
 		      jiffies_to_msecs(poll_during_time), TIME_THRESHOLD_TO_TEMP_QUERY,
 		      jiffies_to_msecs(during_count), COUNT_THRESHOLD_TO_TEMP_QUERY);
 
@@ -598,7 +598,7 @@ LONG wmt_dev_tm_temp_query(VOID)
 	if (!query_cond) {
 		if (wmt_dev_tra_poll() == 0) {
 			query_cond = 1;
-			WMT_INFO_FUNC("traffic , we must query temperature..\n");
+			WMT_DBG_FUNC("traffic , we must query temperature..\n");
 		} else if (temp_table[idx_temp_table] >= TEMP_THRESHOLD) {
 			WMT_INFO_FUNC("temperature maybe greater than 60, query temperature\n");
 			query_cond = 1;
@@ -1363,7 +1363,7 @@ static INT32 WMT_init(VOID)
 	if (ret)
 		WMT_ERR_FUNC("wmt register fb_notifier failed! ret(%d)\n", ret);
 	else
-		WMT_INFO_FUNC("wmt register fb_notifier OK!\n");
+		WMT_DBG_FUNC("wmt register fb_notifier OK!\n");
 #endif /* CONFIG_EARLYSUSPEND */
 	WMT_DBG_FUNC("success\n");
 

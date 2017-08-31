@@ -1269,7 +1269,7 @@ PUINT8 wmt_lib_def_patch_name(VOID)
 }
 
 
-MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(VOID)
+MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(ENUM_WMTTHERM_TYPE_T eType)
 {
 	MTK_WCN_BOOL bIsSupportTherm = MTK_WCN_BOOL_TRUE;
 	/* TODO:[FixMe][GeorgeKuo]: move IC-dependent checking to ic-implementation file */
@@ -1281,10 +1281,11 @@ MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(VOID)
 	}
 	if ((!osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state))
 	    || (!osal_test_bit(WMT_STAT_STP_RDY, &gDevWmt.state))) {
-		WMT_INFO_FUNC
-		    ("thermal command can not be send: STP is not enable(%d) or ready(%d)\n",
-		     osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state), osal_test_bit(WMT_STAT_STP_RDY,
-										   &gDevWmt.state));
+		if (eType == WMTTHERM_READ)
+			WMT_INFO_FUNC
+				("thermal command can`t send: STP is not enable(%d) or ready(%d)\n",
+				osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state),
+				osal_test_bit(WMT_STAT_STP_RDY, &gDevWmt.state));
 		bIsSupportTherm = MTK_WCN_BOOL_FALSE;
 	}
 

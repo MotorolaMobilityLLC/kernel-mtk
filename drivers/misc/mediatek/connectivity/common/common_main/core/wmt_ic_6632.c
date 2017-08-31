@@ -1066,7 +1066,7 @@ static INT32 mt6632_aif_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 
 static INT32 mt6632_gps_sync_ctrl(WMT_IC_PIN_STATE state, UINT32 flag)
 {
-	WMT_INFO_FUNC("MT6632 do not need gps sync settings\n");
+	WMT_DBG_FUNC("MT6632 do not need gps sync settings\n");
 
 	/* anyway, we return 0 */
 	return 0;
@@ -1106,7 +1106,7 @@ static INT32 mt6632_pin_ctrl(WMT_IC_PIN_ID id, WMT_IC_PIN_STATE state, UINT32 fl
 		break;
 	}
 
-	WMT_INFO_FUNC("ret = (%d)\n", ret);
+	WMT_DBG_FUNC("ret = (%d)\n", ret);
 
 	return ret;
 }

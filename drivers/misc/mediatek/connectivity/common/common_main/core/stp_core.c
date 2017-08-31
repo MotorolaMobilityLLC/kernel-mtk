@@ -1721,7 +1721,7 @@ INT32 mtk_wcn_stp_dbg_disable(VOID)
 INT32 mtk_wcn_stp_dbg_enable(VOID)
 {
 	if (STP_NOT_ENABLE_DBG(stp_core_ctx)) {
-		STP_INFO_FUNC("STP dbg mode is turned on\n");
+		STP_DBG_FUNC("STP dbg mode is turned on\n");
 		STP_SET_ENABLE_DBG(stp_core_ctx, 1);
 		stp_dbg_enable(g_mtkstp_dbg);
 	} else
