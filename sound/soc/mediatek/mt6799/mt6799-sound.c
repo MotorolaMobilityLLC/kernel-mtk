@@ -1521,26 +1521,38 @@ bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
 
 bool SetChannels(uint32 Memory_Interface, uint32 channel)
 {
-	const bool bMono = (channel == 1) ? true : false;
+	const bool mono = (channel == 1) ? true : false;
+	const bool quad = (channel == 4) ? true : false;
 	/* pr_warn("SetChannels Memory_Interface = %d channels = %d\n", Memory_Interface, channel); */
 	switch (Memory_Interface) {
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, quad << 16, 0x1 << 16);
+		break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+		Afe_Set_Reg(AFE_MEMIF_PBUF_SIZE, quad << 17, 0x1 << 17);
+		break;
+	default:
+		break;
+	}
+
+	switch (Memory_Interface) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
 	case Soc_Aud_Digital_Block_MEM_DL2:
 	case Soc_Aud_Digital_Block_MEM_DL3:
 	case Soc_Aud_Digital_Block_MEM_AWB:
 	case Soc_Aud_Digital_Block_MEM_VUL:
 	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-		Afe_Set_Reg(mMemIfChannels[Memory_Interface][0], bMono << mMemIfChannels[Memory_Interface][1],
-			mMemIfChannels[Memory_Interface][2] << mMemIfChannels[Memory_Interface][1]);
+		Afe_Set_Reg(mMemIfChannels[Memory_Interface][0], mono << mMemIfChannels[Memory_Interface][1],
+			    mMemIfChannels[Memory_Interface][2] << mMemIfChannels[Memory_Interface][1]);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DAI:
 	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
 		SetMemDuplicateWrite(Memory_Interface, channel == 2 ? 1 : 0);
 		break;
 	default:
-		pr_warn
-		    ("[AudioWarn] SetChannels  Memory_Interface = %d, channel = %d, bMono = %d\n",
-		     Memory_Interface, channel, bMono);
+		pr_warn("[AudioWarn] %s(),  Memory_Interface = %d, channel = %d, mono = %d\n",
+			__func__, Memory_Interface, channel, mono);
 		return false;
 	}
 	return true;
