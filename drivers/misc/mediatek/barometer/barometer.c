@@ -71,6 +71,11 @@ static void baro_work_func(struct work_struct *work)
 		return;
 	}
 
+	if (cxt->baro_data.get_raw_data == NULL) {
+		BARO_LOG("baro driver not register raw data path\n");
+		return;
+	}
+
 	time.tv_sec = time.tv_nsec = 0;
 	get_monotonic_boottime(&time);
 	cur_ns = time.tv_sec*1000000000LL+time.tv_nsec;
@@ -87,6 +92,20 @@ static void baro_work_func(struct work_struct *work)
 			cxt->drv_data.baro_data.status = status;
 			pre_ns = cxt->drv_data.baro_data.time;
 			cxt->drv_data.baro_data.time = cur_ns;
+		}
+	}
+
+	err = cxt->baro_data.get_raw_data(0, &value);
+	if (err) {
+		BARO_ERR("get baro data fails!!\n");
+		goto baro_loop;
+	} else {
+		{
+
+			cxt->drv_data.uncali_baro_data.values[0] = value;
+			cxt->drv_data.uncali_baro_data.status = status;
+			pre_ns = cxt->drv_data.uncali_baro_data.time;
+			cxt->drv_data.uncali_baro_data.time = cur_ns;
 		}
 	}
 
@@ -109,11 +128,21 @@ static void baro_work_func(struct work_struct *work)
 		baro_data_report(cxt->idev,
 			cxt->drv_data.baro_data.values[0],
 			cxt->drv_data.baro_data.status, pre_ns);
+
+
+	baro_data_report(cxt->uncali_idev,
+		cxt->drv_data.uncali_baro_data.values[0],
+		cxt->drv_data.uncali_baro_data.status, pre_ns);
+
 	}
 
 	baro_data_report(cxt->idev,
 		cxt->drv_data.baro_data.values[0],
 		cxt->drv_data.baro_data.status, cxt->drv_data.baro_data.time);
+
+	baro_data_report(cxt->uncali_idev,
+		cxt->drv_data.uncali_baro_data.values[0],
+		cxt->drv_data.uncali_baro_data.status, cxt->drv_data.uncali_baro_data.time);
 
 baro_loop:
 	if (true == cxt->is_polling_run) {
@@ -197,7 +226,7 @@ static int baro_real_enable(int enable)
 	return err;
 }
 
-static int baro_enable_data(int enable)
+static int baro_enable_data(int enable, int isUncali)
 {
 	struct baro_context *cxt = NULL;
 
@@ -209,7 +238,10 @@ static int baro_enable_data(int enable)
 
 	if (1 == enable) {
 		BARO_LOG("BARO enable data\n");
-		cxt->is_active_data = true;
+		if (isUncali == 0)
+			cxt->is_active_data = true;
+		else
+			cxt->is_uncali_active_data = true;
 		cxt->is_first_data_after_enable = true;
 		cxt->baro_ctl.open_report_data(1);
 		baro_real_enable(enable);
@@ -222,19 +254,24 @@ static int baro_enable_data(int enable)
 	}
 	if (0 == enable) {
 		BARO_LOG("BARO disable\n");
-		cxt->is_active_data = false;
+		if (isUncali == 0)
+			cxt->is_active_data = false;
+		else
+			cxt->is_uncali_active_data = false;
 		cxt->baro_ctl.open_report_data(0);
-		if (true == cxt->is_polling_run) {
-			if (false == cxt->baro_ctl.is_report_input_direct) {
-				cxt->is_polling_run = false;
-				smp_mb();  /* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();  /* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
+		if (cxt->is_active_data == false && cxt->is_uncali_active_data == false) {
+			if (cxt->is_polling_run == true) {
+				if (cxt->baro_ctl.is_report_input_direct == false) {
+					cxt->is_polling_run = false;
+					smp_mb();  /* for memory barrier */
+					stopTimer(&cxt->hrTimer);
+					smp_mb();  /* for memory barrier */
+					cancel_work_sync(&cxt->report);
+					cxt->drv_data.baro_data.values[0] = BARO_INVALID_VALUE;
+				}
 			}
+			baro_real_enable(enable);
 		}
-		baro_real_enable(enable);
 	}
 	return 0;
 }
@@ -302,6 +339,11 @@ static ssize_t baro_store_active(struct device *dev, struct device_attribute *at
 {
 	struct baro_context *cxt = NULL;
 
+	int isUncali = 0;
+	int en = 0;
+	int res = 0;
+
+
 	BARO_LOG("baro_store_active buf=%s\n", buf);
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 
@@ -311,13 +353,16 @@ static ssize_t baro_store_active(struct device *dev, struct device_attribute *at
 		mutex_unlock(&baro_context_obj->baro_op_mutex);
 		return count;
 	}
-	if (!strncmp(buf, "1", 1))
-		baro_enable_data(1);
-	else if (!strncmp(buf, "0", 1))
-		baro_enable_data(0);
+	res = sscanf(buf, "%d,%d", &en, &isUncali);
+	if (res != 2)
+		BARO_ERR(" baro_store_active param error: res = %d\n", res);
+
+	if (en == 1)
+		baro_enable_data(1, isUncali);
+	else if (en == 0)
+		baro_enable_data(0, isUncali);
 	else
 		BARO_ERR(" baro_store_active error !!\n");
-
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_active done\n");
 	return count;
@@ -454,6 +499,53 @@ static ssize_t baro_show_devnum(struct device *dev, struct device_attribute *att
 	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
 }
 
+static ssize_t baro_show_uncali_devnum(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	const char *devname = NULL;
+	struct input_handle *handle;
+
+	list_for_each_entry(handle, &baro_context_obj->uncali_idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
+	return snprintf(buf, PAGE_SIZE, "%s\n", devname + 5);
+}
+
+
+static void baro_print_devnum(void)
+{
+	const char *devname = NULL;
+	struct input_handle *handle;
+
+	list_for_each_entry(handle, &baro_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
+	BARO_ERR("barometer event : %s!!\n", devname + 5);
+
+}
+
+
+static void uncali_baro_print_devnum(void)
+{
+	const char *devname = NULL;
+	struct input_handle *handle;
+
+	list_for_each_entry(handle, &baro_context_obj->uncali_idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
+
+	BARO_ERR("uncali barometer event : %s!!\n", devname + 5);
+
+}
+
+
 static int barometer_remove(struct platform_device *pdev)
 {
 	BARO_LOG("barometer_remove\n");
@@ -554,6 +646,14 @@ static int baro_misc_init(struct baro_context *cxt)
 	if (err)
 		BARO_ERR("unable to register baro misc device!!\n");
 
+	cxt->uncali_mdev.minor = MISC_DYNAMIC_MINOR;
+	cxt->uncali_mdev.name = UNCALI_BARO_MISC_DEV_NAME;
+
+	err = misc_register(&cxt->uncali_mdev);
+	if (err)
+		BARO_ERR("unable to register uncalli-baro misc device!!\n");
+
+
 	return err;
 }
 /*
@@ -567,7 +667,7 @@ static void baro_input_destroy(struct baro_context *cxt)
 */
 static int baro_input_init(struct baro_context *cxt)
 {
-	struct input_dev *dev;
+	struct input_dev *dev, *uncali_dev;
 	int err = 0;
 
 	dev = input_allocate_device();
@@ -592,6 +692,33 @@ static int baro_input_init(struct baro_context *cxt)
 		return err;
 	}
 	cxt->idev = dev;
+	baro_print_devnum();
+
+
+	uncali_dev = input_allocate_device();
+	if (uncali_dev == NULL)
+		return -ENOMEM;
+
+	uncali_dev->name = UNCALI_BARO_INPUTDEV_NAME;
+
+	set_bit(EV_REL, uncali_dev->evbit);
+	input_set_capability(uncali_dev, EV_REL, EVENT_TYPE_BARO_VALUE);
+	input_set_capability(uncali_dev, EV_ABS, EVENT_TYPE_BARO_STATUS);
+	input_set_capability(uncali_dev, EV_REL, EVENT_TYPE_BARO_TIMESTAMP_HI);
+	input_set_capability(uncali_dev, EV_REL, EVENT_TYPE_BARO_TIMESTAMP_LO);
+
+	/* input_set_abs_params(dev, EVENT_TYPE_BARO_VALUE, BARO_VALUE_MIN, BARO_VALUE_MAX, 0, 0); */
+	input_set_abs_params(uncali_dev, EVENT_TYPE_BARO_STATUS, BARO_STATUS_MIN, BARO_STATUS_MAX, 0, 0);
+	input_set_drvdata(uncali_dev, cxt);
+
+	err = input_register_device(uncali_dev);
+	if (err < 0) {
+		input_free_device(uncali_dev);
+		return err;
+	}
+	cxt->uncali_idev = uncali_dev;
+	uncali_baro_print_devnum();
+
 
 	return 0;
 }
@@ -602,6 +729,9 @@ DEVICE_ATTR(barodelay, S_IWUSR | S_IRUGO, baro_show_delay, baro_store_delay);
 DEVICE_ATTR(barobatch, S_IWUSR | S_IRUGO, baro_show_batch, baro_store_batch);
 DEVICE_ATTR(baroflush, S_IWUSR | S_IRUGO, baro_show_flush, baro_store_flush);
 DEVICE_ATTR(barodevnum, S_IWUSR | S_IRUGO, baro_show_devnum, NULL);
+DEVICE_ATTR(barouncalidevnum, S_IWUSR | S_IRUGO, baro_show_uncali_devnum, NULL);
+
+
 
 
 static struct attribute *baro_attributes[] = {
@@ -611,6 +741,7 @@ static struct attribute *baro_attributes[] = {
 	&dev_attr_barobatch.attr,
 	&dev_attr_baroflush.attr,
 	&dev_attr_barodevnum.attr,
+	&dev_attr_barouncalidevnum.attr,
 	NULL
 };
 
