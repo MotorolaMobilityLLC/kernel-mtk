@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MTK_LASTPC) += lastpc/
-obj-$(CONFIG_MTK_PLAT_SRAM_FLAG) += plat_sram_flag/
-obj-$(CONFIG_MTK_L2C_PARITY_CHECK) += l2c_parity/
+obj-y += lastpc.o
+
+ifeq ($(CONFIG_MT_ENG_BUILD),y)
+CFLAGS_lastpc.o := -DDEBUG
+endif
+
+obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
