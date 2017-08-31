@@ -5721,7 +5721,7 @@ int primary_display_suspend(void)
 
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 2, 2);
 		DISPINFO("[POWER]primary display path is busy now, wait frame done, event_ret=%d\n", event_ret);
-		if (event_ret <= 0) {
+		if (event_ret <= 0 && dpmgr_path_is_busy(pgc->dpmgr_handle)) {
 			DISPERR("wait frame done in suspend timeout\n");
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend, MMPROFILE_FLAG_PULSE, 3,
 				       2);
