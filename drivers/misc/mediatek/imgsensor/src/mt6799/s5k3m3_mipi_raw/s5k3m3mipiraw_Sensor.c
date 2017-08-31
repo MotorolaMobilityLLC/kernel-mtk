@@ -69,7 +69,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K3M3_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 
-	.checksum_value = 0x48b58a2b, //0x49c09f86,		//checksum value for Camera Auto Test
+	.checksum_value = 0x30a07776,
 
 	.pre = {
 		.pclk = 480000000,				//record different mode's pclk
