@@ -224,9 +224,16 @@ void mt_usb_disconnect(void)
 }
 EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
+/* build time force on */
+#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
 #define BYPASS_PMIC_LINKAGE
 #endif
+
+/* to avoid build error due to PMIC module not ready */
+#ifndef CONFIG_MTK_SMART_BATTERY
+#define BYPASS_PMIC_LINKAGE
+#endif
+
 static CHARGER_TYPE mu3d_hal_get_charger_type(void)
 {
 	CHARGER_TYPE chg_type;
