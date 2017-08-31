@@ -64,6 +64,9 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 	if ((save_mode == 1) || (save_mode == 2)) {
 		host->saved_para.hz = host->mclk;
 		host->saved_para.sdc_cfg = MSDC_READ32(SDC_CFG);
+		host->saved_para.timing = host->timing;
+		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
+		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
 	}
 
 	if (((save_mode == 1) || (save_mode == 4))
@@ -84,12 +87,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 			MSDC_READ32(EMMC50_PAD_DAT67_TUNE);
 	}
 
-	if (save_mode == 1) {
-		host->saved_para.timing = host->timing;
-		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
-		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
-	}
-
 	if (save_mode == 2) {
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, host->saved_para.mode);
 		MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKDIV, host->saved_para.div);
@@ -99,11 +96,6 @@ void msdc_save_timing_setting(struct msdc_host *host, int save_mode)
 			host->saved_para.ckgen_msdc_dly_sel);
 		MSDC_GET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
-		host->saved_para.msdc_cfg = MSDC_READ32(MSDC_CFG);
-
-		host->saved_para.iocon = MSDC_READ32(MSDC_IOCON);
-
-		host->saved_para.timing = host->timing;
 	}
 
 	host->saved_para.pad_tune0 = MSDC_READ32(MSDC_PAD_TUNE0);
@@ -225,6 +217,7 @@ done:
 int sdcard_reset_tuning(struct mmc_host *mmc)
 {
 	struct msdc_host *host = mmc_priv(mmc);
+	char *remove_cap;
 	int ret = 0;
 
 	if (!mmc->card) {
@@ -234,19 +227,21 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 
 	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
-		pr_err("msdc%d remove UHS_SDR104 mode\n", host->id);
+		remove_cap = "UHS_SDR104";
 	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_DDR50) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_DDR50;
-		pr_err("msdc%d remove UHS_DDR50 mode\n", host->id);
+		remove_cap = "UHS_DDR50";
 	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR50) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR50;
-		pr_err("msdc%d remove UHS_SDR50 mode\n", host->id);
+		remove_cap = "UHS_SDR50";
 	} else if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR25) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR25;
-		pr_err("msdc%d remove UHS_SDR25 mode\n", host->id);
+		remove_cap = "UHS_SDR25";
+	} else {
+		remove_cap = "none";
 	}
 
-	pr_err("msdc%d reinit card\n", host->id);
+	pr_err("msdc%d: remove %s mode then reinit card\n", host->id, remove_cap);
 	mmc->ios.timing = MMC_TIMING_LEGACY;
 	mmc->ios.clock = 260000;
 	msdc_ops_set_ios(mmc, &mmc->ios);
@@ -382,7 +377,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
 
-	#if 0
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
 		MSDC_CLKTXDLY);
 
@@ -393,7 +387,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 
 	MSDC_WRITE32(MSDC_PATCH_BIT0, MSDC_PB0_DEFAULT_VAL);
 	MSDC_WRITE32(MSDC_PATCH_BIT1, MSDC_PB1_DEFAULT_VAL);
-	#endif
 
 	/* Fix HS400 mode */
 	MSDC_CLR_BIT32(EMMC50_CFG0, MSDC_EMMC50_CFG_TXSKEW_SEL);
@@ -405,13 +398,10 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	/* 64T + 48T cmd <-> resp */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT,
 		MSDC_PB2_DEFAULT_RESPWAITCNT);
-
-	#if 0
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL,
 		MSDC_PB2_DEFAULT_RESPSTENSEL);
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL,
 		MSDC_PB2_DEFAULT_CRCSTSENSEL);
-	#endif
 
 	autok_path_sel(host);
 }

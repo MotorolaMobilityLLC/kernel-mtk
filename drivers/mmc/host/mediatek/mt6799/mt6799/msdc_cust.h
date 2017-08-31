@@ -11,11 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MSDC_CUST_MT6799_H_
-#define _MSDC_CUST_MT6799_H_
+#ifndef _MSDC_CUST_MT6757_H_
+#define _MSDC_CUST_MT6757_H_
 
-#include <dt-bindings/mmc/mt6799-msdc.h>
-#include <dt-bindings/clock/mt6799-clk.h>
+#include <dt-bindings/mmc/mt6757-msdc.h>
+#include <dt-bindings/clock/mt6757-clk.h>
 
 
 
@@ -373,4 +373,4 @@
 #endif
 #define HOST_MIN_MCLK           (260000)
 
-#endif /* _MSDC_CUST_MT6799_H_ */
+#endif /* _MSDC_CUST_MT6757_H_ */

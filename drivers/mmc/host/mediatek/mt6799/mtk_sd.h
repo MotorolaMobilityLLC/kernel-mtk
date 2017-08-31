@@ -14,7 +14,7 @@
 #ifndef MT_SD_H
 #define MT_SD_H
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_PLATFORM
 #define FPGA_PLATFORM
 #else
 /* #define MTK_MSDC_BRINGUP_DEBUG */
@@ -154,8 +154,6 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 /* for some board, need SD power always on!! or cannot recognize the sd card*/
 #define MSDC_SD_NEED_POWER  (1 << 31)
 
-#define MSDC_DATA1_INT      (1)
-
 #define MSDC_BOOT_EN        (1)
 
 struct msdc_hw_driving {
@@ -233,13 +231,6 @@ struct bd_t {
 	u32  rsv3:8;
 };
 
-struct scatterlist_ex {
-	u32 cmd;
-	u32 arg;
-	u32 sglen;
-	struct scatterlist *sg;
-};
-
 #define DMA_FLAG_NONE       (0x00000000)
 #define DMA_FLAG_EN_CHKSUM  (0x00000001)
 #define DMA_FLAG_PAD_BLOCK  (0x00000002)
@@ -251,7 +242,6 @@ struct msdc_dma {
 	u32 sglen;                   /* size of scatter list */
 	u32 blklen;                  /* block size */
 	struct scatterlist *sg;      /* I/O scatter list */
-	struct scatterlist_ex *esg;  /* extended I/O scatter list */
 	u8  mode;                    /* dma mode        */
 	u8  burstsz;                 /* burst size      */
 	u8  intr;                    /* dma done interrupt */
@@ -594,8 +584,7 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 	u32 hs400_src);
 void msdc_clr_fifo(unsigned int id);
 unsigned int msdc_do_command(struct msdc_host *host,
-	struct mmc_command *cmd,
-	unsigned long       timeout);
+	struct mmc_command *cmd, unsigned long       timeout);
 void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
@@ -606,8 +595,6 @@ int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	u32 *status);
 int msdc_get_dma_status(int host_id);
-struct msdc_host *msdc_get_host(int host_function, bool boot,
-	bool secondary);
 void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
 void msdc_select_clksrc(struct msdc_host *host, int clksrc);
 void msdc_send_stop(struct msdc_host *host);
@@ -692,8 +679,10 @@ void mmc_remove_card(struct mmc_card *card);
 #define check_mmc_cmd13_sqs(x) \
 	(((x)->opcode == MMC_SEND_STATUS) && \
 	 ((x)->arg & (1 << 15)))
+#define check_mmc_cmd47(opcode) \
+		 (opcode == MMC_WRITE_REQUESTED_QUEUE)
 #define check_mmc_cmd_r1b(opcode) \
-	((opcode == MMC_SWITCH) || \
-	 (opcode == MMC_CMDQ_TASK_MGMT))
+		((opcode == MMC_SWITCH) || \
+		 (opcode == MMC_CMDQ_TASK_MGMT))
 
 #endif /* end of  MT_SD_H */

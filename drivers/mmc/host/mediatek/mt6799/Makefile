@@ -20,15 +20,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 #workaround for include mmc/card/queue.h and mmc/core/core.h
 ccflags-y += -I$(srctree)/drivers
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/$(MTK_PLATFORM)
-endif
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6798")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6798/$(MTK_PLATFORM)
-endif
-ifeq ($(CONFIG_MTK_PLATFORM), "kiboplus")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/$(MTK_PLATFORM)
-endif
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MMC_MTK_PRO) += msdc.o
 
@@ -37,8 +29,8 @@ msdc-y += dbg.o
 msdc-y += mtk_sd_misc.o
 msdc-y += msdc_tune.o
 msdc-y += msdc_partition.o
-msdc-y += autok.o
 msdc-y += $(MTK_PLATFORM)/msdc_cust.o
+msdc-y += autok.o
 msdc-y += $(MTK_PLATFORM)/autok_dvfs.o
 
 ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)

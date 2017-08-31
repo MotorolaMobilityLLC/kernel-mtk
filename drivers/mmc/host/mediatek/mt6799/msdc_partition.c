@@ -198,24 +198,21 @@ EXPORT_SYMBOL(msdc_get_capacity);
 struct mmc_blk_data {
 	spinlock_t lock;
 	struct gendisk *disk;
-	struct mmc_queue queue;
-
-	unsigned int usage;
-	unsigned int read_only;
 };
 
 struct gendisk *mmc_get_disk(struct mmc_card *card)
 {
 	struct mmc_blk_data *md;
-	/* struct gendisk *disk; */
 
-	WARN_ON(!card);
-	if (!card)
+	if (!card) {
 		pr_err("[%s:%d] card is NULL", __func__, __LINE__);
+		return NULL;
+	}
 	md = dev_get_drvdata(&card->dev);
-	WARN_ON(!md || !md->disk);
-	if (!md || !md->disk)
+	if (!md || !md->disk) {
 		pr_err("[%s:%d] md or disk is NULL", __func__, __LINE__);
+		return NULL;
+	}
 
 	return md->disk;
 }
@@ -241,10 +238,7 @@ static int proc_emmc_show(struct seq_file *m, void *v)
 	struct msdc_host *host;
 	struct gendisk *disk;
 
-	/* emmc always in slot0 */
-	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
-	WARN_ON(!host || !host->mmc || !host->mmc->card);
-
+	host = mtk_msdc_host[0];
 	disk = mmc_get_disk(host->mmc->card);
 
 	seq_puts(m, "partno:    start_sect   nr_sects  partition_name\n");
