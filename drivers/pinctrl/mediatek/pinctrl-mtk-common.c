@@ -1398,7 +1398,7 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	set_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_set;
 	clr_offset = (eint_num / 4) * 4 + pctl->devdata->eint_offsets.dbnc_clr;
 	if (!mtk_eint_can_en_debounce(pctl, eint_num))
-		return -ENOSYS;
+		return -ENOTSUPP;
 
 	dbnc = ARRAY_SIZE(debounce_time);
 	for (i = 0; i < ARRAY_SIZE(debounce_time); i++) {
@@ -1424,7 +1424,8 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	writel(rst | bit, pctl->eint_reg_base + set_offset);
 
 	/* Delay a while (more than 2T) to wait for hw debounce counter reset
-	work correctly */
+	 * work correctly
+	 */
 	udelay(1);
 	if (unmask == 1)
 		mtk_eint_unmask(d);
@@ -2113,7 +2114,8 @@ static void mtk_eint_irq_handler(struct irq_desc *desc)
 			dual_edges = pctl->eint_dual_edges[index];
 			if (dual_edges) {
 				/* Clear soft-irq in case we raised it
-				   last time */
+				 * last time
+				 */
 				writel(BIT(offset), reg - eint_offsets->stat +
 					eint_offsets->soft_clr);
 
@@ -2128,7 +2130,8 @@ static void mtk_eint_irq_handler(struct irq_desc *desc)
 				curr_level = mtk_eint_flip_edge(pctl, index);
 
 				/* If level changed, we might lost one edge
-				   interrupt, raised it through soft-irq */
+				 * interrupt, raised it through soft-irq
+				 */
 				if (start_level != curr_level)
 					writel(BIT(offset), reg -
 						eint_offsets->stat +
@@ -2136,7 +2139,7 @@ static void mtk_eint_irq_handler(struct irq_desc *desc)
 			}
 
 			if (index < pctl->devdata->db_cnt)
-				mtk_eint_debounce_process(pctl , index);
+				mtk_eint_debounce_process(pctl, index);
 		}
 	}
 	chained_irq_exit(chip, desc);
