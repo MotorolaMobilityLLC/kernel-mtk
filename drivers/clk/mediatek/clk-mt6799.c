@@ -3080,10 +3080,12 @@ void check_ven_clk_sts(void)
 	pr_err("[CCF] %s: CLK_CFG_1 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_1));
 	pr_err("[CCF] %s: CLK_CFG_2 = 0x%08x\r\n", __func__, clk_readl(CLK_CFG_2));
 	pr_err("[CCF] %s: VCODECPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(VCODECPLL_CON0));
-	pr_err("[CCF] %s: VCODECPLL_CON1 = 0x%08x\r\n", __func__, clk_readl(VCODECPLL_CON1));
+	pr_err("[CCF] %s: VCODECPLL_CON1 = 0x%08x\r\n", __func__, clk_readl(UNIVPLL_CON0));
+	pr_err("[CCF] %s: VCODECPLL_CON0 = 0x%08x\r\n", __func__, clk_readl(MMPLL_CON0));
 	pr_err("[CCF] %s: VENC_CG_CON = 0x%08x\r\n", __func__, clk_readl(VENC_CG_CON));
 	pr_err("[CCF] %s: axi = %dkhz\r\n", __func__, mt_get_ckgen_freq(1));
 	pr_err("[CCF] %s: vcodecpll_d7 = %dkhz\r\n", __func__, mt_get_abist2_freq(22));
+	pr_err("[CCF] %s: mmpll_d6 = %dkhz\r\n", __func__, mt_get_abist2_freq(19));
 	pr_err("[CCF] %s: ven = %dkhz\r\n", __func__, mt_get_ckgen_freq(9));
 	pr_err("[CCF] %s: vde = %dkhz\r\n", __func__, mt_get_ckgen_freq(8));
 }
