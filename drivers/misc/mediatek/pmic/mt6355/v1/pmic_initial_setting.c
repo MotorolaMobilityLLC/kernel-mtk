@@ -185,6 +185,7 @@ void PMIC_PWROFF_SEQ_SETTING(void)
 	ret = pmic_set_register_value(PMIC_RG_CPS_W_KEY, 0x0000);
 }
 
+#if defined(CONFIG_MACH_MT6757)
 void PMIC_LP_INIT_SETTING(void)
 {
 	int ret = 0;
@@ -294,3 +295,14 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vgp2_lp(SW, 1, SW_OFF);
 
 }
+#elif defined(CONFIG_MACH_MT6759)
+void PMIC_LP_INIT_SETTING(void)
+{
+	/* nothing */
+}
+#else
+void PMIC_LP_INIT_SETTING(void)
+{
+	/* nothing */
+}
+#endif
