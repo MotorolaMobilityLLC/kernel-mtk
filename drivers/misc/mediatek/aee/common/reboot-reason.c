@@ -357,6 +357,13 @@ static const char *get_timestamp_string(char *buf, int bufsize)
 		       (unsigned long)ts, rem_nsec / 1000);
 	return buf;
 }
+
+asmlinkage void aee_save_excp_regs(struct pt_regs *regs)
+{
+	if (!user_mode(regs))
+		aee_excp_regs = regs;
+}
+
 asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 {
 	struct thread_info *thread = current_thread_info();
