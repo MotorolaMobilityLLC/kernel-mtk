@@ -23,7 +23,7 @@
 /*#define SOC_BY_SW_FG*/
 
 /*#define CONFIG_DIS_CHECK_BATTERY*/
-/*#define FIXED_TBAT_25*/
+#define FIXED_TBAT_25
 
 /* ADC resistor  */
 #define R_BAT_SENSE	4
@@ -70,7 +70,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE	1000
 #define R_FG_BOARD_SLOPE	1000 /*slope*/
-#define CAR_TUNE_VALUE	100 /*1.00 */
+#define CAR_TUNE_VALUE	118 /*1.00 */
 
 
 /* HW Fuel gague  */
@@ -91,19 +91,18 @@
 #define DIFFERENCE_VOLTAGE_UPDATE	20
 #define AGING1_LOAD_SOC	70
 #define AGING1_UPDATE_SOC	30
-#define BATTERYPSEUDO100	100
-#define BATTERYPSEUDO1	0
+#define BATTERYPSEUDO100	95
+#define BATTERYPSEUDO1	2
 
 /* #define Q_MAX_BY_SYS	*/	/* 8. Qmax variant by system drop voltage. */
-#define Q_MAX_SYS_VOLTAGE		3350
+#define Q_MAX_SYS_VOLTAGE		3050
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
 #define SHUTDOWN_GAUGE1_MINS	60
 
-#define SHUTDOWN_SYSTEM_VOLTAGE	3400
-#define BAT_TASK_PERIOD_SECOND	20
-#define CHARGE_TRACKING_TIME	(6*BAT_TASK_PERIOD_SECOND)
-#define DISCHARGE_TRACKING_TIME	(BAT_TASK_PERIOD_SECOND)
+#define SHUTDOWN_SYSTEM_VOLTAGE	3100	/*	DLPT will shutdown at 3.1v first	*/
+#define CHARGE_TRACKING_TIME	60
+#define DISCHARGE_TRACKING_TIME	10
 
 #define RECHARGE_TOLERANCE	10
 /* SW Fuel Gauge */

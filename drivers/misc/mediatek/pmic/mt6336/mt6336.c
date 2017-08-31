@@ -25,6 +25,7 @@
 #include <linux/seq_file.h>
 
 #include <mach/mtk_charging.h>
+#include <mt-plat/battery_common.h>
 #include <mt-plat/charging.h>
 
 #include "mt6336.h"
@@ -446,6 +447,10 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 
 	/* mt6336_hw_init(); //move to charging_hw_xxx.c */
 	chargin_hw_init_done = true;
+#ifdef CONFIG_MTK_SMART_BATTERY
+	/* Hook chr_control_interface with battery's interface */
+	battery_charging_control = chr_control_interface;
+#endif
 	PMICLOG("[mt6336_driver_probe] Done\n");
 	return 0;
 }

@@ -21,9 +21,26 @@
 #define RBAT_PULL_UP_VOLT_BY_BIF
 /* #define INIT_BAT_CUR_FROM_PTIM */
 
-#define FG_BAT_INT_H_NO 48
-#define FG_BAT_INT_L_NO 49
+#define FG_RG_INT_EN_BAT_TEMP_H 22
+#define FG_RG_INT_EN_BAT_TEMP_L 23
 
+#define FG_RG_INT_EN_NAG_C_DLTV 25
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+#define FG_BAT0_INT_H_NO 80
+#define FG_BAT0_INT_L_NO 81
+#else
+#define FG_BAT_INT_H_NO 80
+#define FG_BAT_INT_L_NO 81
+#endif
+
+#define FG_CUR_H_NO 82
+#define FG_CUR_L_NO 83
+#define FG_ZCV_NO 84
+#define FG_BAT1_INT_H_NO 85
+#define FG_BAT1_INT_L_NO 86
+#define FG_N_CHARGE_L 87
+#define FG_TIME_NO 90
 
 /* Low battery level define */
 typedef enum LOW_BATTERY_LEVEL_TAG {

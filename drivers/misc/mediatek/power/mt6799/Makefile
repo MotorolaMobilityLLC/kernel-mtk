@@ -25,7 +25,5 @@ ifeq ($(CONFIG_MTK_SMART_BATTERY),y)
 		obj-$(CONFIG_MTK_FAN5405_SUPPORT) += fan5405.o charging_hw_fan5405.o
 		obj-$(CONFIG_MTK_BQ25896_SUPPORT) += bq25890.o charging_hw_bq25890.o
 		obj-$(CONFIG_MTK_RT9466_SUPPORT) += rt9466.o mtk_charger_intf.o
-	else
-		obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_pmic.o
 	endif
 endif

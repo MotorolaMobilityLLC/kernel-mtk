@@ -130,7 +130,7 @@ int PMIC_check_battery(void)
 
 	/* ask shin-shyu programming guide */
 	PMIC_upmu_set_rg_baton_en(1);
-	PMIC_upmu_set_baton_tdet_en(1);
+	/* PMIC_upmu_set_baton_tdet_en(1); */
 	val = PMIC_upmu_get_rgs_baton_undet();
 	if (val == 0) {
 		pr_debug("bat is exist.\n");
