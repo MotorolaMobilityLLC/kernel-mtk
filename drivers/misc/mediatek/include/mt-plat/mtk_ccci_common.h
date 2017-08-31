@@ -285,6 +285,7 @@ enum {
 	MODEM_CAP_CCMNI_IRAT = (1<<19),
 	MODEM_CAP_WORLD_PHONE = (1<<20),
 	MODEM_CAP_CCMNI_MQ = (1<<21), /* it must depend on DATA ACK DEVIDE feature */
+	MODEM_CAP_DIRECT_TETHERING = (1<<22),
 };
 
 typedef enum {
