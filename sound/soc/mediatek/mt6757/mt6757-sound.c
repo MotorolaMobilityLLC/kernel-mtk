@@ -394,7 +394,7 @@ static struct mtk_mem_blk_ops mem_blk_ops = {
 	.set_chip_memif_addr = set_mem_blk_addr,
 };
 
-bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *(AudioMEMIF[]))
+bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
 {
 	pr_debug("+%s(): connection = %d, direction = %d, Enable = %d\n", __func__, connection,
 		 direction, Enable);
@@ -481,17 +481,7 @@ bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, Au
 			Afe_Set_Reg(AFE_SGEN_CON0, 0x6c6c26c2, 0xffffffff);
 			break;
 		case Soc_Aud_InterConnectionOutput_O12:
-			if (Soc_Aud_I2S_SAMPLERATE_I2S_8K ==
-			    AudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mSampleRate)
-				/* MD connect BT Verify (8K SamplingRate) */
-			{
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c0e80e8, 0xffffffff);
-			} else if (Soc_Aud_I2S_SAMPLERATE_I2S_16K ==
-				   AudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mSampleRate) {
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c0f00f0, 0xffffffff);
-			} else {
-				Afe_Set_Reg(AFE_SGEN_CON0, 0x7c6c26c2, 0xffffffff);	/* Default */
-			}
+			Afe_Set_Reg(AFE_SGEN_CON0, 0x7c6c26c2, 0xffffffff);
 			break;
 		case Soc_Aud_InterConnectionOutput_O13:
 		case Soc_Aud_InterConnectionOutput_O14:

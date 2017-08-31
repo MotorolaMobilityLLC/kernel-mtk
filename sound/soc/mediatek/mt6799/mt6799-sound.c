@@ -2779,7 +2779,7 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram, dma_addr_t addr
 	return true;
 }
 
-bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable, AudioMemIFAttribute *AudioMEMIF[])
+bool set_chip_sine_gen_enable(uint32 connection, bool direction, bool Enable)
 {
 	pr_debug("+%s(), connection = %d, direction = %d, Enable= %d\n", __func__, connection,
 		 direction, Enable);
