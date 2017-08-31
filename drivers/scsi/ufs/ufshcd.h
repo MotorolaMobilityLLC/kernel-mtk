@@ -624,8 +624,6 @@ int ufshcd_alloc_host(struct device *, struct ufs_hba **);
 void ufshcd_dealloc_host(struct ufs_hba *);
 int ufshcd_init(struct ufs_hba * , void __iomem * , unsigned int);
 void ufshcd_remove(struct ufs_hba *);
-int ufshcd_set_dev_pwr_mode(struct ufs_hba *hba,
-				     enum ufs_dev_pwr_mode pwr_mode);
 
 /*
  * MTK PATCH

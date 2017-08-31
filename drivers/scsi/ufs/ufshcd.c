@@ -5172,7 +5172,7 @@ out:
  * Returns 0 if requested power mode is set successfully
  * Returns non-zero if failed to set the requested power mode
  */
-int ufshcd_set_dev_pwr_mode(struct ufs_hba *hba,
+static int ufshcd_set_dev_pwr_mode(struct ufs_hba *hba,
 				     enum ufs_dev_pwr_mode pwr_mode)
 {
 	unsigned char cmd[6] = { START_STOP };
@@ -5364,6 +5364,7 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	enum ufs_pm_level pm_lvl;
 	enum ufs_dev_pwr_mode req_dev_pwr_mode;
 	enum uic_link_state req_link_state;
+	u32 reg = 0;
 
 	hba->pm_op_in_progress = 1;
 	if (!ufshcd_is_shutdown_pm(pm_op)) {
@@ -5413,6 +5414,23 @@ static int ufshcd_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 			ufshcd_disable_auto_bkops(hba);
 		}
 	}
+
+	/*
+	 * SK-Hynix Device Issue:
+	 * If "entering manual H8" is issued immediately after
+	 * "leaving AH8", device may stuck and then LineReset happen.
+	 *
+	 * Temporary SW Workaround:
+	 * Disable Auto H8 before SSU command, make "leaving AH8"
+	 * followed by SSU, then issue "entering manual H8" to avoid
+	 * the fail scene described above.
+	*/
+	ufshcd_vops_auto_hibern8(hba, false);
+	do {
+		ret = ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_POWERSTATE), &reg);
+		if (ret != 0)
+			dev_err(hba->dev, "ufshcd_dme_get_ 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
+	} while (reg == VENDOR_POWERSTATE_HIBERNATE);
 
 	if ((req_dev_pwr_mode != hba->curr_dev_pwr_mode) &&
 	     ((ufshcd_is_runtime_pm(pm_op) && !hba->auto_bkops_enabled) ||
