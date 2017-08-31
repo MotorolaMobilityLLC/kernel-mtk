@@ -30,3 +30,4 @@ endif
 #obj-$(USB_MTK_IDDIG) += xhci-mtk-power.o xhci-mtk-driver.o xhci-mtk-attrs.o
 obj-$(CONFIG_USB_MTK_DUALMODE) += xhci-mtk-driver.o
 obj-$(CONFIG_USB_MTK_IDDIG) += usb-iddig.o
+obj-$(CONFIG_MTK_TEST_XHCI)     += xhci_test/

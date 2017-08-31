@@ -468,9 +468,13 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			}
 #ifdef CONFIG_USB_MTK_DUALMODE
 			if (cmode == CABLE_MODE_CHRG_ONLY) {
+#ifdef CONFIG_USB_MTK_IDDIG
 				mtk_disable_host();
+#endif
 			} else {
+#ifdef CONFIG_USB_MTK_IDDIG
 				mtk_enable_host();
+#endif
 			}
 #endif
 			if (_mu3d_musb)
