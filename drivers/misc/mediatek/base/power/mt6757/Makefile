@@ -52,13 +52,13 @@ obj-y += mtk_clkbuf_ctl.o
 #obj-y += mt_spm_mtcmos.o
 #obj-y += mt_pbm.o
 #obj-y += mt_picachu.o
-#obj-y += mt_eem.o
-#obj-y += mt_eem_turbo.o
 obj-y += mtk_cpufreq.o
 obj-y += mtk_cpufreq_hybrid.o
 #obj-y += mt_udi.o
 #obj-y += mt_gpufreq.o
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
+obj-y += mtk_eem.o
+obj-y += mtk_eem_turbo.o
 
 #obj-y += mt_lowpower.o
 
