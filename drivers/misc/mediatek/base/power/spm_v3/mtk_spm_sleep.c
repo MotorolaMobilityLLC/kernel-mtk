@@ -20,7 +20,7 @@
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifndef CONFIG_ARM64

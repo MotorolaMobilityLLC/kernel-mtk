@@ -32,7 +32,7 @@
 
 #include <mach/mtk_cpuxgpt.h>
 /*if ATF enable, MCUSYS register will be write protect*/
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #define CPUXGPT_BASE	cpuxgpt_regs
 #define INDEX_BASE	(CPUXGPT_BASE+0x0674)

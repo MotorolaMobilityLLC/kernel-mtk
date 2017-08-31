@@ -22,7 +22,7 @@
 #include <linux/ratelimit.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mtk_dramc.h>

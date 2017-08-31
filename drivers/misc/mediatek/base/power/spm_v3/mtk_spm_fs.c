@@ -17,7 +17,7 @@
 #include <linux/sysfs.h>
 #include <linux/string.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #include <mtk_spm_internal.h>

@@ -17,7 +17,7 @@
 #else
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif
 
 #include "mtk_dcm_autogen.h"

@@ -28,7 +28,7 @@
 #endif
 
 #if defined(__MTK_OCP_C__) && OCP_FEATURE_ENABLED
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define mt_secure_call_ocp	mt_secure_call
 #else

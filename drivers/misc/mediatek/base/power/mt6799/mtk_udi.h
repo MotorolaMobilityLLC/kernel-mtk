@@ -20,7 +20,7 @@
 
 #ifdef __KERNEL__
 #ifdef __MT_UDI_C__
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif
 #endif
 

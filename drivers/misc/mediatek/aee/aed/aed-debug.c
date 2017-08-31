@@ -23,11 +23,12 @@
 #include <linux/slab.h>
 #include <linux/kdebug.h>
 #include <linux/uaccess.h>
-#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_ARM64)
-#include <mach/mtk_secure_api.h>
-#endif
 #include "aed.h"
 #include <mrdump_private.h>
+
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_ARM64)
+#include <mt-plat/mtk_secure_api.h>
+#endif
 
 #ifndef PARTIAL_BUILD
 
