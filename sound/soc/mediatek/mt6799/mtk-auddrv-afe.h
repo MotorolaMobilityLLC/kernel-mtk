@@ -381,9 +381,6 @@ typedef struct {
 /* Dram */
 #define AFE_EXTERNAL_DRAM_SIZE  (0x8000) /* 32k */
 
-/* IRQ */
-#define AFE_IRQ_MASK  (0x7fff)
-
 /* APLL clock base */
 #define APLL_44K_BASE (180633600)
 #define APLL_48K_BASE (196608000)

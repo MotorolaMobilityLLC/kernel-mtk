@@ -295,10 +295,10 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 		{AFE_IRQ_MCU_CON0, 10, 0x1}, /* irq on */
 		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq mode */
 		{AFE_REG_UNDEFINED, 0, 0x0}, /* irq count */
-		{AFE_IRQ_MCU_CLR, 9, 0x1}, /* irq clear */
+		{AFE_IRQ_MCU_CLR, 10, 0x1}, /* irq clear */
 		{AFE_IRQ_MCU_CLR, 26, 0x1}, /* irq miss clear */
-		{AFE_IRQ_MCU_STATUS, 9, 0x1}, /* irq status */
-		{AFE_IRQ_MCU_EN, 9, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_STATUS, 10, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 10, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 	{	/*IRQ11*/
@@ -337,8 +337,8 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 		{AFE_IRQ_ACC2_CNT, 0, 0x0}, /* irq count */
 		{AFE_IRQ_MCU_CLR, 14, 0x1}, /* irq clear */
 		{AFE_IRQ_MCU_CLR, 30, 0x1}, /* irq miss clear */
-		{AFE_IRQ_MCU_STATUS, 13, 0x1}, /* irq status */
-		{AFE_IRQ_MCU_EN, 13, 0x1}, /* irq enable */
+		{AFE_IRQ_MCU_STATUS, 14, 0x1}, /* irq status */
+		{AFE_IRQ_MCU_EN, 14, 0x1}, /* irq enable */
 		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
 	},
 };
