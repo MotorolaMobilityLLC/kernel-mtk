@@ -1938,9 +1938,11 @@ static int _testcase_full_thread_array(void *data)
 {
 	/* this testcase will be passed only when cmdqSecDr support async config mode because */
 	/* never execute event setting till IWC back to NWd */
+#define MAX_FULL_THREAD_TASK_COUNT 50
 
 	struct cmdqRecStruct *handle = NULL;
-	int32_t i;
+	struct TaskStruct *tasks[MAX_FULL_THREAD_TASK_COUNT] = {0};
+	s32 i;
 
 	/* clearn event first */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
@@ -1953,8 +1955,9 @@ static int _testcase_full_thread_array(void *data)
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 	cmdq_op_wait_no_clear(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handle, false);
 
-	for (i = 0; i < 50; i++) {
+	for (i = 0; i < MAX_FULL_THREAD_TASK_COUNT; i++) {
 		CMDQ_LOG("pid: %d, flush:%6d\n", current->pid, i);
 
 		if (i == 40) {
@@ -1962,8 +1965,11 @@ static int _testcase_full_thread_array(void *data)
 			cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
 		}
 
-		cmdq_task_flush_async(handle);
+		_test_submit_async(handle, &tasks[i]);
 	}
+
+	for (i = 0; i < MAX_FULL_THREAD_TASK_COUNT; i++)
+		cmdqCoreWaitAndReleaseTask(tasks[i], 500);
 	cmdq_task_destroy(handle);
 
 	return 0;
