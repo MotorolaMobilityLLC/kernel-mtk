@@ -1757,7 +1757,7 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_2) & MJC_PROT_STEP1_0_ACK_MASK)
 			!= MJC_PROT_STEP1_0_ACK_MASK) {
-			pr_err("[CCF-2] %s\r\n", __func__);
+			/*pr_err("[CCF-2] %s\r\n", __func__);*/
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
@@ -1765,7 +1765,7 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(SMI0_CLAMP) & MJC_PROT_STEP2_0_ACK_MASK)
 			!= MJC_PROT_STEP2_0_ACK_MASK) {
-			pr_err("[CCF-3] %s\r\n", __func__);
+			/*pr_err("[CCF-3] %s\r\n", __func__);*/
 		}
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */
@@ -1773,8 +1773,8 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until MJC_SRAM_PDN_ACK = 1" */
 		while ((spm_read(MJC_PWR_CON) & MJC_SRAM_PDN_ACK) != MJC_SRAM_PDN_ACK) {
-			pr_err("[CCF-4] %s\r\n", __func__);
-			check_mjc_clk_sts();
+			/*pr_err("[CCF-4] %s\r\n", __func__);*/
+			/*check_mjc_clk_sts();*/
 			/* Need f_fmjc_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -1793,7 +1793,7 @@ int spm_mtcmos_ctrl_mjc(int state)
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & MJC_PWR_STA_MASK)
 		       || (spm_read(PWR_STATUS_2ND) & MJC_PWR_STA_MASK)) {
-			pr_err("[CCF-5] %s\r\n", __func__);
+			/*pr_err("[CCF-5] %s\r\n", __func__);*/
 			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 			/*pr_debug("");*/
 		}
@@ -1810,7 +1810,7 @@ int spm_mtcmos_ctrl_mjc(int state)
 		while (((spm_read(PWR_STATUS) & MJC_PWR_STA_MASK) != MJC_PWR_STA_MASK)
 		|| ((spm_read(PWR_STATUS_2ND) & MJC_PWR_STA_MASK)
 			!= MJC_PWR_STA_MASK)) {
-			pr_err("[CCF-6] %s\n", __func__);
+			/*pr_err("[CCF-6] %s\n", __func__);*/
 				/* No logic between pwr_on and pwr_ack.*/
 				/*Print SRAM / MTCMOS control and PWR_ACK for debug. */
 		}
@@ -1826,8 +1826,8 @@ int spm_mtcmos_ctrl_mjc(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until MJC_SRAM_PDN_ACK_BIT0 = 0" */
 		while (spm_read(MJC_PWR_CON) & MJC_SRAM_PDN_ACK_BIT0) {
-			pr_err("[CCF-7] %s\n", __func__);
-			check_mjc_clk_sts();
+			/*pr_err("[CCF-7] %s\n", __func__);*/
+			/*check_mjc_clk_sts();*/
 			/* Need f_fmjc_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -1872,7 +1872,7 @@ int spm_mtcmos_ctrl_mm0(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_2) & MM0_PROT_STEP1_1_ACK_MASK)
 			!= MM0_PROT_STEP1_1_ACK_MASK) {
-			pr_err("[CCF-2] %s\r\n", __func__);
+			/*pr_err("[CCF-2] %s\r\n", __func__);*/
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
@@ -1880,7 +1880,7 @@ int spm_mtcmos_ctrl_mm0(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MM0_PROT_STEP2_0_ACK_MASK)
 			!= MM0_PROT_STEP2_0_ACK_MASK) {
-			pr_err("[CCF-3] %s\r\n", __func__);
+			/*pr_err("[CCF-3] %s\r\n", __func__);*/
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 1" */
@@ -1888,7 +1888,7 @@ int spm_mtcmos_ctrl_mm0(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(SMI0_CLAMP) & MM0_PROT_STEP2_1_ACK_MASK)
 			!= MM0_PROT_STEP2_1_ACK_MASK) {
-			pr_err("[CCF-4] %s\r\n", __func__);
+			/*pr_err("[CCF-4] %s\r\n", __func__);*/
 		}
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */
@@ -1896,7 +1896,7 @@ int spm_mtcmos_ctrl_mm0(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until MM0_SRAM_PDN_ACK = 1" */
 		while ((spm_read(MM0_PWR_CON) & MM0_SRAM_PDN_ACK) != MM0_SRAM_PDN_ACK) {
-			pr_err("[CCF-5] %s\r\n", __func__);
+			/*pr_err("[CCF-5] %s\r\n", __func__);*/
 			/* Need f_fmm_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -1915,7 +1915,7 @@ int spm_mtcmos_ctrl_mm0(int state)
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & MM0_PWR_STA_MASK)
 		       || (spm_read(PWR_STATUS_2ND) & MM0_PWR_STA_MASK)) {
-			pr_err("[CCF-6] %s\r\n", __func__);
+			/*pr_err("[CCF-6] %s\r\n", __func__);*/
 			/* No logic between pwr_on and pwr_ack. */
 			/* Print SRAM / MTCMOS control and PWR_ACK for debug. */
 		}
@@ -2081,7 +2081,7 @@ int spm_mtcmos_ctrl_cam(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until CAM_SRAM_PDN_ACK = 1" */
 		while ((spm_read(CAM_PWR_CON) & CAM_SRAM_PDN_ACK) != CAM_SRAM_PDN_ACK) {
-			pr_err("[CCF-5] %s\r\n", __func__);
+			/*pr_err("[CCF-5] %s\r\n", __func__);*/
 			/* Need f_fsmi_ck for SRAM PDN delay IP. */
 			/*pr_debug("");*/
 		}
@@ -2100,7 +2100,7 @@ int spm_mtcmos_ctrl_cam(int state)
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & CAM_PWR_STA_MASK)
 		       || (spm_read(PWR_STATUS_2ND) & CAM_PWR_STA_MASK)) {
-			pr_err("[CCF-6] %s\r\n", __func__);
+			/*pr_err("[CCF-6] %s\r\n", __func__);*/
 			/* No logic between pwr_on and pwr_ack.*/
 			/*Print SRAM / MTCMOS control and PWR_ACK for debug. */
 		}
@@ -2562,7 +2562,7 @@ int spm_mtcmos_ctrl_isp(int state)
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & ISP_PWR_STA_MASK)
 		       || (spm_read(PWR_STATUS_2ND) & ISP_PWR_STA_MASK)) {
-			pr_err("[CCF-5] %s\r\n", __func__);
+			/*pr_err("[CCF-5] %s\r\n", __func__);*/
 			/* No logic between pwr_on and pwr_ack.*/
 			/* Print SRAM / MTCMOS control and PWR_ACK for debug. */
 		}
@@ -2777,7 +2777,7 @@ int spm_mtcmos_ctrl_vde(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until VDE_SRAM_PDN_ACK = 1" */
 		while ((spm_read(VDE_PWR_CON) & VDE_SRAM_PDN_ACK) != VDE_SRAM_PDN_ACK) {
-			pr_err("[CCF-4] %s\r\n", __func__);
+			/*pr_err("[CCF-4] %s\r\n", __func__);*/
 			/* Need f_fvdec_ck for SRAM PDN delay IP */
 			/*pr_debug("");*/
 		}
@@ -3658,7 +3658,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 		return;
 	}
 
-	pr_err("[CCF] clk-pg-mt6799: get reg B\n");
+	pr_err("[CCF] clk-pg-mt6799: get reg I\n");
 
 /*
 *   pr_debug("[CCF] %s: sys: %s, reg: 0x%p, 0x%p\n",
