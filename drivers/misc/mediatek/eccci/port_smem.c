@@ -267,6 +267,10 @@ long port_ccb_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 		else
 			CCCI_REPEAT_LOG(md_id, TAG, "ioctl. userspace pass in user_id=%d\n", in_ccb.user_id);
 		/* use user_id as input param, which is the array index, and it will override user space's ID value */
+		if (in_ccb.user_id > ccb_configs_len) {
+			ret = -EINVAL;
+			break;
+		}
 		memcpy(&out_ccb, &ccb_configs[in_ccb.user_id], sizeof(struct ccci_ccb_config));
 		/* user space's CCB array index is count from zero, as it only deal with CCB user, no raw user */
 		out_ccb.user_id -= SMEM_USER_CCB_START;
@@ -303,7 +307,7 @@ long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg
 			CCCI_DEBUG_LOG(md_id, TAG, "get buf_num=%d, page_num=%d\n",
 					debug_in.buffer_id, debug_in.page_id);
 		}
-
+		memset(&debug_out, 0, sizeof(debug_out));
 		if (debug_in.buffer_id == 0) {
 			ptr = (char *)md->mem_layout.ccci_ccb_data_base_vir + ccb_configs[0].dl_buff_size +
 				debug_in.page_id*ccb_configs[0].ul_page_size + 8;
