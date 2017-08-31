@@ -66,7 +66,7 @@ endif
 
 #ccflags-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += -DGED_SSPM
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT),y)
-ccflags-y += -DGED_SSPM
+#ccflags-y += -DGED_SSPM
 endif
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
