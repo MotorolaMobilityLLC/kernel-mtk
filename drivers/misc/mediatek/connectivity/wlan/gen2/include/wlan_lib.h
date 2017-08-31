@@ -92,6 +92,8 @@ extern BOOLEAN fgIsResetting;
 #define WLAN_TX_THREAD_TASK_PRIORITY        0	/* If not setting the priority, 0 is the default */
 #define WLAN_TX_THREAD_TASK_NICE            (-10)	/* If not setting the nice, -10 is the default */
 
+#define WLAN_DOWNLOAD_IMAGE_TIMEOUT         2500	/*ms*/
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

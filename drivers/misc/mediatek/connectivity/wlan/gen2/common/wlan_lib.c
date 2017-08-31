@@ -268,9 +268,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 	UINT_32 i, u4Value = 0;
 	UINT_32 u4WHISR = 0;
+	UINT_32 u4Time, u4Current;
 	UINT_8 aucTxCount[8];
 #if CFG_ENABLE_FW_DOWNLOAD
 	UINT_32 u4FwLoadAddr, u4ImgSecSize;
+	BOOLEAN fgFWDLDumped = FALSE;
 #if CFG_ENABLE_FW_DIVIDED_DOWNLOAD
 	UINT_32 j;
 	P_FIRMWARE_DIVIDED_DOWNLOAD_T prFwHead;
@@ -286,6 +288,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		WAIT_FIRMWARE_READY_FAIL,
 		FAIL_REASON_MAX
 	} eFailReason;
+
 	ASSERT(prAdapter);
 
 	DEBUGFUNC("wlanAdapterStart");
@@ -351,6 +354,9 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		nicRxInitialize(prAdapter);
 
 #if CFG_ENABLE_FW_DOWNLOAD
+
+		wlanFWDLDebugInit();
+
 		if (pvFwImageMapFile == NULL) {
 			DBGLOG(INIT, ERROR, "No Firmware found!\n");
 			u4Status = WLAN_STATUS_FAILURE;
@@ -378,6 +384,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		} else {
 			fgValidHead = FALSE;
 		}
+
+		u4Time = kalGetTimeTick();
+
+		DBGLOG(INIT, INFO, "<wifi> Start to download firmware, time=%u\n",
+			u4Time);
 
 		/* 3b. engage divided firmware downloading */
 		if (fgValidHead == TRUE) {
@@ -411,6 +422,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					else
 						u4ImgSecSize = prFwHead->arSection[i].u4Length - j;
 
+					wlanFWDLDebugStartSectionPacketInfo(i, j, kalGetTimeTick());
+
 					if (wlanImageSectionDownload(prAdapter,
 								     prFwHead->arSection[i].u4DestAddr + j,
 								     u4ImgSecSize,
@@ -422,9 +435,18 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 						u4Status = WLAN_STATUS_FAILURE;
 						break;
 					}
+
+					/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
+					u4Current = kalGetTimeTick();
+					if ((u4Current > u4Time) &&
+						((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+						(fgFWDLDumped == FALSE)) {
+						DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+						wlanFWDLDebugDumpInfo();
+						fgFWDLDumped = TRUE;
+					}
 				}
 #endif
-
 				/* escape from loop if any pending error occurs */
 				if (u4Status == WLAN_STATUS_FAILURE)
 					break;
@@ -447,6 +469,8 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 				else
 					u4ImgSecSize = u4FwImageFileLength - i;
 
+				wlanFWDLDebugStartSectionPacketInfo(0, i, kalGetTimeTick());
+
 				if (wlanImageSectionDownload(prAdapter,
 							     u4FwLoadAddr + i,
 							     u4ImgSecSize,
@@ -456,8 +480,20 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					u4Status = WLAN_STATUS_FAILURE;
 					break;
 				}
+
+				/* timeout exceeding check, dump FWDL log if timeout (>2.5s) */
+				u4Current = kalGetTimeTick();
+				if ((u4Current > u4Time) &&
+					((u4Current - u4Time) > WLAN_DOWNLOAD_IMAGE_TIMEOUT) &&
+					(fgFWDLDumped == FALSE)) {
+					DBGLOG(INIT, ERROR, "FW download timeout > 2.5s, FWDL dump info!\n");
+					wlanFWDLDebugDumpInfo();
+					fgFWDLDumped = TRUE;
+				}
 			}
 #endif
+
+		wlanFWDLDebugUninit();
 
 		if (u4Status != WLAN_STATUS_SUCCESS) {
 			eFailReason = RAM_CODE_DOWNLOAD_FAIL;
@@ -627,6 +663,10 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
+
+#ifdef CFG_TC1_FEATURE /* for Passive Scan */
+		prAdapter->ucScanType = SCAN_TYPE_ACTIVE_SCAN;
+#endif
 
 #if 1				/* set PM parameters */
 		{
@@ -1971,11 +2011,16 @@ wlanImageSectionDownload(IN P_ADAPTER_T prAdapter,
 			}
 			continue;
 		}
+
+		wlanFWDLDebugAddTxStartTime(kalGetTimeTick());
+
 		/* 6.2 Send CMD Info Packet */
 		if (nicTxInitCmd(prAdapter, prCmdInfo, ucTC) != WLAN_STATUS_SUCCESS) {
 			u4Status = WLAN_STATUS_FAILURE;
 			DBGLOG(INIT, ERROR, "Fail to transmit image download command\n");
 		}
+
+		wlanFWDLDebugAddTxDoneTime(kalGetTimeTick());
 
 		break;
 	};
@@ -3107,10 +3152,11 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 	mtk_wcn_wmt_set_wifi_ver(u4FwIDVersion);
 
-	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x\n"
+	DBGLOG(INIT, INFO, "<wifi> ProductID: 0x%x FwVer: 0x%x.%x DriVer:%s\n"
 		, prAdapter->rVerInfo.u2FwProductID
 		, prAdapter->rVerInfo.u2FwOwnVersion
-		, prAdapter->rVerInfo.u2FwOwnVersionExtend);
+		, prAdapter->rVerInfo.u2FwOwnVersionExtend
+		, WIFI_DRIVER_VERSION);
 
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))

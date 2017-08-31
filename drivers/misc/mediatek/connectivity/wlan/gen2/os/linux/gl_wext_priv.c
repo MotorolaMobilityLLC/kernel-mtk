@@ -1671,7 +1671,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		u4CmdLen = prIwReqData->data.length;
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		if (u4CmdLen > sizeof(prNdisReq->ndisOidContent)) {
+		if (u4CmdLen > (sizeof(aucOidBuf) - OFFSET_OF(NDIS_TRANSPORT_STRUCT, ndisOidContent))) {
 			DBGLOG(REQ, ERROR, "Input data length is invalid %u\n", u4CmdLen);
 			return -EINVAL;
 		}

@@ -723,7 +723,6 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
-
 #if CFG_MULTI_SSID_SCAN
 	UINT_32 i;
 #endif
@@ -1043,10 +1042,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 #if CFG_SUPPORT_HOTSPOT_2_0
 	prGlueInfo->fgConnectHS20AP = FALSE;
 #endif
-#if CFG_SUPPORT_OKC
 	prConnSettings->fgUseOkc = FALSE;
-	prConnSettings->fgOkcPmkIdValid = FALSE;
-#endif
 	if (sme->ie && sme->ie_len > 0) {
 		WLAN_STATUS rStatus;
 		UINT_32 u4BufLen;
@@ -1120,13 +1116,17 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 			if (prDesiredIE)
 				u2PmkIdCnt = *(PUINT_16)prDesiredIE;
 			DBGLOG(REQ, TRACE, "u2PmkIdCnt %d\n", u2PmkIdCnt);
-			if (u2PmkIdCnt != 0) {
-				prConnSettings->fgOkcPmkIdValid = TRUE;
-				kalMemCopy(prConnSettings->aucOkcPmkId, prDesiredIE+2, 16);
-			} else {
+			if (u2PmkIdCnt != 0 && sme->bssid && !EQUAL_MAC_ADDR("\x0\x0\x0\x0\x0\x0", sme->bssid) &&
+				IS_UCAST_MAC_ADDR(sme->bssid)) {
+				PARAM_PMKID_T rPmkid;
+
+				rPmkid.u4Length = (UINT_32)(sizeof(rPmkid) | (1 << 31));
+				rPmkid.u4BSSIDInfoCount = 1;
+				kalMemCopy(rPmkid.arBSSIDInfo[0].arBSSID, sme->bssid, MAC_ADDR_LEN);
+				kalMemCopy(rPmkid.arBSSIDInfo[0].arPMKID, prDesiredIE+2, IW_PMKID_LEN);
 				rStatus = kalIoctl(prGlueInfo,
-					   wlanoidAddPMKID,
-					   (PVOID)sme->bssid_hint, MAC_ADDR_LEN, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+					   wlanoidSetPmkid,
+					   (PVOID)&rPmkid, rPmkid.u4Length, FALSE, FALSE, FALSE, FALSE, &u4BufLen);
 				if (rStatus != WLAN_STATUS_SUCCESS)
 					DBGLOG(REQ, WARN, "failed to add OKC PMKID\n");
 			}

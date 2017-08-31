@@ -472,7 +472,7 @@ static VOID HifPdmaRegDump(IN void *HifInfoSrc)
 			if ((chnlStatus >> i & 0x1) == 0)
 				continue;
 			pucChnlStatus = (PUINT_8) ioremap(AP_DMA_HIF_BASE + i * 0x80, 0x70);
-			if (pucChnlStatus) {
+			if (!pucChnlStatus) {
 				DBGLOG(INIT, INFO, "AP_DMA_BASE+%x, ioremap fail\n", i * 0x80);
 				continue;
 			}
