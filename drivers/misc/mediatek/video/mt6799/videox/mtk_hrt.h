@@ -29,7 +29,7 @@
 
 /* #define HRT_DEBUG_LEVEL1 */
 /* #define HRT_DEBUG_LEVEL2 */
-#define HRT_UT_DEBUG
+/* #define HRT_UT_DEBUG */
 
 struct hrt_sort_entry {
 	struct hrt_sort_entry *head, *tail;

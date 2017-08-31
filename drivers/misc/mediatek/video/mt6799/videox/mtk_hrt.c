@@ -25,7 +25,9 @@
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/string.h>
-
+#ifdef CONFIG_MTK_DCS
+#include <mt-plat/mtk_meminfo.h>
+#endif
 #include "mtk_hrt.h"
 
 static int primary_fps = 60;
@@ -37,34 +39,34 @@ static int debug_resolution_level;
 /* Define the hrt boundary for each DVFS level. */
 static int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K */
-	{-1, -1, 4, 4},
+	{-1, 4, 4, 4},
 	/* HRT_BOUND_TYPE_2K_DUAL */
-	{1, 3, 4, 4},
+	{1, 4, 4, 4},
 	/* HRT_BOUND_TYPE_FHD */
-	{2, 4, 6, 8},
+	{2, 6, 6, 8},
 	/* HRT_BOUND_TYPE_2K 4 channel*/
-	{-1, -1, 9, 11},
+	{-1, 9, 9, 11},
 	/* HRT_BOUND_TYPE_2K_DUAL 4 channel*/
-	{2, 6, 18, 22},
+	{2, 18, 18, 22},
 	/* HRT_BOUND_TYPE_FHD 4 channel*/
-	{4, 9, 12, 12},
+	{4, 12, 12, 12},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
 };
 
 static int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_2K */
-	{-1, -1, 4, 5},
+	{-1, 4, 5, 5},
 	/* HRT_BOUND_TYPE_2K_DUAL */
-	{4, 6, 8, 10},
+	{4, 8, 10, 10},
 	/* HRT_BOUND_TYPE_FHD */
-	{4, 5, 7, 9},
+	{4, 7, 9, 9},
 	/* HRT_BOUND_TYPE_2K 4 channel*/
-	{-1, -1, 4, 5},
+	{-1, 4, 5, 5},
 	/* HRT_BOUND_TYPE_2K_DUAL 4 channel*/
-	{4, 6, 8, 10},
+	{4, 8, 10, 10},
 	/* HRT_BOUND_TYPE_FHD 4 channel*/
-	{4, 5, 7, 9},
+	{4, 7, 9, 9},
 	/* HRT_BOUND_TYPE_120HZ */
 	{-1, -1, -1, -1},
 };
@@ -461,8 +463,8 @@ static void dump_disp_info(struct disp_layer_info *disp_info)
 	int i, j;
 	struct layer_config *layer_info;
 
-	DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d\n",
-		disp_info->hrt_num,	primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx);
+	DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/hrt_path:%d/hrt_scale:%d/layer_tb:%d/bound_tb:%d\n",
+		disp_info->hrt_num,	primary_fps, dal_enable, hrt_path, hrt_scale, layer_tb_idx, bound_tb_idx);
 
 	for (i = 0 ; i < 2 ; i++) {
 		DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
@@ -1597,6 +1599,19 @@ int check_disp_info(struct disp_layer_info *disp_info)
 
 static void set_hrt_conditions(struct disp_layer_info *disp_info)
 {
+#ifdef CONFIG_MTK_DCS
+	int ret = 0, ch = 0;
+	enum dcs_status status;
+
+	ret = dcs_get_dcs_status_trylock(&ch, &status);
+	if (ret < 0 || ch < 0) {
+		DISPWARN("[DISP_HRT]DCS status is busy, ch:%d, dcs_status:%d\n", ch, status);
+		ch = 2;
+	} else {
+		dcs_get_dcs_status_unlock();
+	}
+#endif
+
 	if (primary_display_get_lcm_refresh_rate() == 120) {
 		/* TODO: 120 condition */
 		primary_fps = 120;
@@ -1620,8 +1635,8 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
-#ifdef HRT_DCS
-		if (is_4_channel())
+#ifdef CONFIG_MTK_DCS
+		if (ch == 4)
 			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_4CHANNEL;
 		else
 			bound_tb_idx = HRT_BOUND_TYPE_2K_DUAL_2CHANNEL;
@@ -1648,14 +1663,14 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			layer_tb_idx = HRT_TB_TYPE_DUAL_DISP;
 		}
 		primary_fps = 60;
-#ifdef HRT_DCS
+#ifdef CONFIG_MTK_DCS
 		if (is_max_lcm_resolution()) {
-			if (is_4_channel())
+			if (ch == 4)
 				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
 			else
 				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
 		} else {
-			if (is_4_channel())
+			if (ch == 4)
 				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
 			else
 				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
@@ -1682,14 +1697,14 @@ static void set_hrt_conditions(struct disp_layer_info *disp_info)
 			hrt_path = HRT_PATH_GENERAL;
 		}
 
-#ifdef HRT_DCS
+#ifdef CONFIG_MTK_DCS
 		if (is_max_lcm_resolution()) {
-			if (is_4_channel())
+			if (ch == 4)
 				bound_tb_idx = HRT_BOUND_TYPE_2K_4CHANNEL;
 			else
 				bound_tb_idx = HRT_BOUND_TYPE_2K_2CHANNEL;
 		} else {
-			if (is_4_channel())
+			if (ch == 4)
 				bound_tb_idx = HRT_BOUND_TYPE_FHD_4CHANNEL;
 			else
 				bound_tb_idx = HRT_BOUND_TYPE_FHD_2CHANNEL;
