@@ -131,7 +131,7 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 		}
 #endif
 #ifdef CONFIG_ZONE_MOVABLE_CMA
-		if (cma_size && end > max_dma && end < cma_base_pfn) {
+		if (zone_size[ZONE_NORMAL] && end > max_dma && start < cma_base_pfn) {
 			unsigned long normal_end = min(end, cma_base_pfn);
 			unsigned long normal_start = max(start, max_dma);
 
