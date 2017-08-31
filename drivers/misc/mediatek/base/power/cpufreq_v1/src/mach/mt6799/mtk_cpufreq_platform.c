@@ -517,7 +517,8 @@ void adjust_posdiv(struct pll_ctrl_t *pll_p, unsigned int pos_div)
 
 	sel = (pos_div == 1 ? 0 :
 	       pos_div == 2 ? 1 :
-	       pos_div == 4 ? 2 : 0);
+	       pos_div == 4 ? 2 :
+	       pos_div == 8 ? 3 : 0);
 
 	cpufreq_write_mask(pll_p->armpll_addr, 30:28, sel);
 	udelay(POS_SETTLE_TIME);
