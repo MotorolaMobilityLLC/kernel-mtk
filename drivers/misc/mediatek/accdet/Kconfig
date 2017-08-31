@@ -46,6 +46,14 @@ config ACCDET_SUPPORT_BI_EINT
 	  say Y or M here.
 	  If unsure, say N.
 
+config HEADSET_TRI_KEY_CDD
+	tristate "MediaTek three key headset support CDD"
+	---help---
+	  HEADSET_TRI_KEY_CDD support for MediaTek SOC
+	  If you want to support MediaTek CDD three key headset,
+	  say Y or M here.
+	  If unsure, say N.
+
 config HEADSET_SUPPORT_FIVE_POLE
 	tristate "MediaTek five pole Headset"
 	---help---

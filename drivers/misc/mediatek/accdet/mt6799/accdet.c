@@ -30,15 +30,15 @@
 /* ---------------------------------------------------------------------
  * PART0: Macro definition
  */
+ #if 0
  /* Temporary: fix too much log when HW trigger interrupt burst crazy */
 #define ACCDET_DEBUG(format, args...)	pr_debug_ratelimited(format, ##args)
 #define ACCDET_INFO(format, args...)	pr_debug_ratelimited(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_debug_ratelimited(format, ##args)
-/*
+#endif
 #define ACCDET_DEBUG(format, args...)	pr_warn(format, ##args)
 #define ACCDET_INFO(format, args...)	pr_warn(format, ##args)
 #define ACCDET_ERROR(format, args...)	pr_err(format, ##args)
-*/
 
 /* for accdet_read_audio_res */
 #define RET_LT_5K				(-1)/* less than 5k ohm, return -1 */
@@ -376,7 +376,11 @@ static int accdet_get_dts_data(void)
 		     accdet_dts_data.four_key.mid_key_four, accdet_dts_data.four_key.voice_key_four,
 		     accdet_dts_data.four_key.up_key_four, accdet_dts_data.four_key.down_key_four);
 #else
+		#ifdef CONFIG_HEADSET_TRI_KEY_CDD
+		of_property_read_u32_array(node, "headset-three-key-threshold-CDD", three_key, ARRAY_SIZE(three_key));
+		#else
 		of_property_read_u32_array(node, "headset-three-key-threshold", three_key, ARRAY_SIZE(three_key));
+		#endif
 		memcpy(&accdet_dts_data.three_key, three_key+1, sizeof(struct three_key_threshold));
 		ACCDET_INFO("[accdet_get_dts_data]mid-Key = %d, up_key = %d, down_key = %d\n",
 		     accdet_dts_data.three_key.mid_key, accdet_dts_data.three_key.up_key,
