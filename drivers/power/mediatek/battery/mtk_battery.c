@@ -3360,7 +3360,7 @@ void fg_vbat2_h_int_handler(void)
 void fg_chr_full_int_handler(void)
 {
 	bm_err("[fg_chr_full_int_handler]\n");
-	wakeup_fg_algo(FG_INTR_CHR_FULL);
+	/*wakeup_fg_algo(FG_INTR_CHR_FULL);*/
 
 	fg_bat_temp_int_sw_check();
 }
