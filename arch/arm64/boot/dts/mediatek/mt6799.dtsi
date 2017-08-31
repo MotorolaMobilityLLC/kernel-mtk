@@ -1840,8 +1840,8 @@
 		phys = <&pcie_phy 1>;
 		phy-names = "pcie-phy";
 
-	/*	clocks = <&infrasys INFRA_MSDC0>;*/
-	/*	clock-names = "pcie-mac"; */
+		clocks = <&topckgen CLK_TOP_PCIE_MAC_SEL>;
+		clock-names = "pcie-mac";
 
 		pcie0: pcie@1,0 {
 			device_type = "pci";
