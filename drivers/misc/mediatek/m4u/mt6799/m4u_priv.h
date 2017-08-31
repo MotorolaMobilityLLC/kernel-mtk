@@ -151,6 +151,7 @@ typedef struct {
 	unsigned int size_align;
 	int seq_id;
 	unsigned long mapped_kernel_va_for_debug;
+	unsigned int domain_idx;
 } m4u_buf_info_t;
 
 typedef struct _M4U_MAU {
