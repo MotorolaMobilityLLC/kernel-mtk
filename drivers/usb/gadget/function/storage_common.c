@@ -443,6 +443,8 @@ ssize_t fsg_store_file(struct fsg_lun *curlun, struct rw_semaphore *filesem,
 	}
 #endif
 
+	pr_notice("fsg_store_file file=%s, count=%d, curlun->cdrom=%d\n", buf, (int)count, curlun->cdrom);
+
 	/*
 	 * WORKAROUND:VOLD would clean the file path after switching to bicr.
 	 * So when the lun is being a CD-ROM a.k.a. BICR. Dont clean the file path to empty.

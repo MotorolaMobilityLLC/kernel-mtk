@@ -130,7 +130,6 @@ static struct usb_ss_ep_comp_descriptor hidg_ss_comp_desc = {
 	/* .wBytesPerInterval =    DYNAMIC */
 };
 
-#if 0
 static struct usb_descriptor_header *hidg_ss_descriptors[] = {
 	(struct usb_descriptor_header *)&hidg_interface_desc,
 	(struct usb_descriptor_header *)&hidg_desc,
@@ -142,7 +141,6 @@ static struct usb_descriptor_header *hidg_ss_descriptors[] = {
 	(struct usb_descriptor_header *)&hidg_ss_comp_desc,
 	NULL,
 };
-#endif
 
 static struct usb_descriptor_header *hidg_hs_descriptors[] = {
 	(struct usb_descriptor_header *)&hidg_interface_desc,
@@ -665,8 +663,10 @@ static int hidg_bind(struct usb_configuration *c, struct usb_function *f)
 	hidg_hs_out_ep_desc.bEndpointAddress =
 		hidg_fs_out_ep_desc.bEndpointAddress;
 
+	hidg_ss_comp_desc.wBytesPerInterval = cpu_to_le16(hidg->report_length);
+
 	status = usb_assign_descriptors(f, hidg_fs_descriptors,
-			hidg_hs_descriptors, NULL);
+			hidg_hs_descriptors, hidg_ss_descriptors);
 	if (status)
 		goto fail;
 
