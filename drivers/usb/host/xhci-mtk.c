@@ -874,6 +874,197 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	return 0;
 }
 
+/* USB Audio Power Saving */
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#define MIN_SLEEP_MS 10
+static struct xhci_mtk_sram_block xhci_sram[XHCI_SRAM_BLOCK_NUM] = {
+	[XHCI_EVENTRING] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	[XHCI_EPTX] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	[XHCI_EPRX] = {0, NULL, TRB_SEGMENT_SIZE, STATE_UNINIT},
+	/* add 56 bytes for alignment */
+	[XHCI_DCBAA] = {0, NULL, 8 * MAX_HC_SLOTS + 8 + 56, STATE_UNINIT},
+	/* add 48 bytes for alignment */
+	[XHCI_ERST] = {0, NULL, 16 * ERST_NUM_SEGS + 48, STATE_UNINIT}
+};
+
+static struct xhci_mtk_sram_block usb_audio_sram[USB_AUDIO_DATA_BLOCK_NUM] = {
+	[USB_AUDIO_DATA_OUT_EP] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_DATA_IN_EP] = {0, NULL, 0, STATE_UNINIT},
+	[USB_AUDIO_DATA_SYNC_EP] = {0, NULL, 0, STATE_UNINIT}
+};
+
+/* static atomic_t sleep = ATOMIC_INIT(0); */
+
+static int enable_power_saving_mode(bool enable)
+{
+	/* TODO */
+	return 0;
+}
+
+static void xhci_mtk_wakeup_timer_func(unsigned long data)
+{
+    /* pr_info("my_timer_callback called (%ld).\n", jiffies ); */
+	enable_power_saving_mode(false);
+}
+
+static DEFINE_TIMER(xhci_wakeup_timer, xhci_mtk_wakeup_timer_func,
+					0, 0);
+
+void xhci_mtk_allow_sleep(unsigned int sleep_ms)
+{
+	int i;
+	bool data_sram = false;
+
+	/* step1: check if have enough sleep time */
+	if (unlikely(sleep_ms <= MIN_SLEEP_MS))
+		goto not_sleep;
+
+	/* step2: check if xhci control buffer on sram */
+	if (unlikely(xhci_sram[0].state != STATE_ALLOCATE_SUCCESS))
+		goto not_sleep;
+
+	/* setp3: check if usb audio data on sram */
+	for (i = 0; i < USB_AUDIO_DATA_BLOCK_NUM; i++) {
+		if (unlikely(usb_audio_sram[i].state == STATE_ALLOCATE_FAIL))
+			goto not_sleep;
+		else if (usb_audio_sram[i].state == STATE_ALLOCATE_SUCCESS)
+			data_sram = true;
+	}
+
+	if (likely(data_sram) /*&& !atomic_read(&sleep)*/) {
+		/* pr_info("mtk_xhci_allow_sleep (%d) ms\n", sleep_ms); */
+		mod_timer(&xhci_wakeup_timer,
+				  jiffies + msecs_to_jiffies(sleep_ms));
+		enable_power_saving_mode(true);
+	}
+	return;
+
+not_sleep:
+	enable_power_saving_mode(false);
+}
+
+int xhci_mtk_init_sram(struct xhci_hcd *xhci)
+{
+	int i;
+	int offset = 0;
+	unsigned int xhci_sram_size = 0;
+
+	/* init xhci sram */
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+		xhci_sram_size += xhci_sram[i].mlength;
+
+	pr_info("%s size=%d\n", __func__, xhci_sram_size);
+
+	if (mtk_audio_request_sram(&xhci->msram_phys_addr,
+			(unsigned char **) &xhci->msram_virt_addr,
+							   xhci_sram_size, &xhci_sram)) {
+
+		for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+			xhci_sram[i].state = STATE_ALLOCATE_FAIL;
+
+		pr_err("mtk_audio_request_sram fail\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++) {
+		xhci_sram[i].msram_phys_addr =
+			xhci->msram_phys_addr + offset;
+		xhci_sram[i].msram_virt_addr =
+			(void *)((char *)xhci->msram_virt_addr + offset);
+		offset += xhci_sram[i].mlength;
+		memset_io(xhci_sram[i].msram_virt_addr,
+				  0, xhci_sram[i].mlength);
+		xhci_sram[i].state = STATE_ALLOCATE_SUCCESS;
+
+		pr_debug("[%d] p :%llx, v=%p, len=%d\n",
+				 i, xhci_sram[i].msram_phys_addr,
+				 xhci_sram[i].msram_virt_addr,
+				 xhci_sram[i].mlength);
+
+	}
+	return 0;
+}
+
+int xhci_mtk_deinit_sram(struct xhci_hcd *xhci)
+{
+	int i;
+
+	if (xhci->msram_virt_addr)
+		mtk_audio_free_sram(&xhci_sram);
+
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++) {
+		xhci_sram[i].msram_phys_addr = 0;
+		xhci_sram[i].msram_virt_addr = NULL;
+		xhci_sram[i].state = STATE_UNINIT;
+	}
+	xhci->msram_virt_addr = NULL;
+
+	pr_info("%s\n", __func__);
+	return 0;
+}
+
+int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
+						   unsigned char **msram_virt_addr)
+{
+	*sram_phys_addr = xhci_sram[id].msram_phys_addr;
+	*msram_virt_addr =
+		(unsigned char *)xhci_sram[id].msram_virt_addr;
+
+	memset_io(xhci_sram[id].msram_virt_addr,
+			  0, xhci_sram[id].mlength);
+	pr_debug("%s get [%d] p :%llx, v=%p, len=%d\n",
+			__func__, id, xhci_sram[id].msram_phys_addr,
+			xhci_sram[id].msram_virt_addr,
+			xhci_sram[id].mlength);
+	return 0;
+}
+
+int xhci_mtk_free_sram(int id)
+{
+	pr_debug("%s, id=%d\n", __func__, id);
+	return 0;
+}
+
+void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
+{
+	void *sram_virt_addr = NULL;
+
+	/* check if xhci control buffer on sram */
+	if (xhci_sram[0].state != STATE_ALLOCATE_SUCCESS)
+		return NULL;
+
+	mtk_audio_request_sram(dma, (unsigned char **)&sram_virt_addr,
+					   size, &usb_audio_sram[id]);
+
+	if (sram_virt_addr) {
+		usb_audio_sram[id].mlength = size;
+		usb_audio_sram[id].msram_phys_addr = *dma;
+		usb_audio_sram[id].msram_virt_addr =  sram_virt_addr;
+		usb_audio_sram[id].state = STATE_ALLOCATE_SUCCESS;
+		pr_debug("%s, id=%d\n", __func__, id);
+	} else {
+		usb_audio_sram[id].state = STATE_ALLOCATE_FAIL;
+		pr_err("%s fail id=%d\n", __func__, id);
+	}
+
+	return sram_virt_addr;
+}
+
+void mtk_usb_free_sram(id)
+{
+	if (usb_audio_sram[id].state == STATE_ALLOCATE_SUCCESS) {
+		mtk_audio_free_sram(&usb_audio_sram[id]);
+		usb_audio_sram[id].mlength = 0;
+		usb_audio_sram[id].msram_phys_addr = 0;
+		usb_audio_sram[id].msram_virt_addr =  NULL;
+		usb_audio_sram[id].state = STATE_UNINIT;
+		pr_debug("%s, id=%d\n", __func__, id);
+	} else {
+		pr_err("%s, fail id=%d\n", __func__, id);
+	}
+}
+#endif
+
 /*
  * if ip sleep fails, and all clocks are disabled, access register will hang
  * AHB bus, so stop polling roothubs to avoid regs access on bus suspend.

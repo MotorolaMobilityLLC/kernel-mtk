@@ -3830,9 +3830,9 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 			} else {
 				td->last_trb = ep_ring->enqueue;
 				field |= TRB_IOC;
-				if (xhci->hci_version == 0x100 &&
+				/* if (xhci->hci_version == 0x100 &&
 						!(xhci->quirks &
-							XHCI_AVOID_BEI)) {
+							XHCI_AVOID_BEI)) */ {
 					/* Set BEI bit except for the last td */
 					if (i < num_tds - 1)
 						field |= TRB_BEI;
@@ -3886,6 +3886,30 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 	giveback_first_trb(xhci, slot_id, ep_index, urb->stream_id,
 			start_cycle, start_trb);
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (!list_empty(&ep_ring->td_list)) {
+		unsigned int idle_ms = 0;
+		unsigned int left_trbs;
+
+		left_trbs = (ep_ring->num_segs * (TRBS_PER_SEGMENT - 1) - 1) -
+				ep_ring->num_trbs_free;
+
+		switch (urb->dev->speed) {
+		case USB_SPEED_SUPER:
+		case USB_SPEED_HIGH:
+			idle_ms = left_trbs * 2 / 3 / 8;
+			break;
+		case USB_SPEED_FULL:
+		case USB_SPEED_LOW:
+		default:
+			idle_ms = left_trbs * 3 / 4;
+			break;
+		}
+		xhci_mtk_allow_sleep(idle_ms);
+	}
+#endif
+
 	return 0;
 cleanup:
 	/* Clean up a partially enqueued isoc transfer. */
