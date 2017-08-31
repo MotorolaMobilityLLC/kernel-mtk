@@ -26,20 +26,13 @@ ifeq ($(FM_CHIP), mt6625)
 endif
 
 $(warning FM_CHIP := $(FM_CHIP))
-
-ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-	WMT_INCLUDE_PATH := conn_soc
-else
-	WMT_INCLUDE_PATH := combo
-endif
-
+	WMT_INCLUDE_PATH := common_main
 	FM_CHIP_PATH := $(FM_CHIP)/pub/$(FM_CHIP)
 	subdir-ccflags-y += -D$(FM_CHIP_MACRO)
 	subdir-ccflags-y += -I$(src)/inc \
 					-I$(src)/$(FM_CHIP)/inc \
 					-I$(src)/../common/$(WMT_INCLUDE_PATH)/include \
-					-I$(src)/../common/$(WMT_INCLUDE_PATH)/linux/include \
-					-I$(src)/../common/common_detect
+					-I$(src)/../common/$(WMT_INCLUDE_PATH)/linux/include
 
 	obj-$(CONFIG_MTK_FMRADIO) += mtk_fm_drv.o
 	$(FM_CHIP)-objs	:= core/fm_module.o \

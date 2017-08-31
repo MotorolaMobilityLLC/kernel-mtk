@@ -30,7 +30,6 @@ endif
     obj-y += common/
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
     obj-$(CONFIG_MTK_COMBO_GPS) += gps/
-    obj-$(CONFIG_MTK_COMBO_ANT) += ant/
     obj-$(CONFIG_MTK_FMRADIO) += fmradio/
     obj-n := dummy.o
 

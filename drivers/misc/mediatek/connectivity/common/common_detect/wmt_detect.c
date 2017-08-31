@@ -40,7 +40,7 @@ struct device *pDetectDev;
 static int gWmtDetectMajor = WMT_DETECT_MAJOR;
 static struct cdev gWmtDetectCdev;
 unsigned int gWmtDetectDbgLvl = WMT_DETECT_LOG_INFO;
-
+static ENUM_WMT_CHIP_TYPE g_chip_type = WMT_CHIP_TYPE_INVALID;
 
 #ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 inline unsigned int wmt_plat_get_soc_chipid(void)
@@ -254,6 +254,27 @@ static int wmt_detect_remove(struct platform_device *pdev)
 	return 0;
 }
 #endif
+
+int wmt_detect_set_chip_type(int chip_id)
+{
+	switch (chip_id) {
+	case 0x6620:
+	case 0x6628:
+	case 0x6630:
+	case 0x6632:
+		g_chip_type = WMT_CHIP_TYPE_COMBO;
+		break;
+	default:
+		g_chip_type = WMT_CHIP_TYPE_SOC;
+		break;
+	}
+	return 0;
+}
+ENUM_WMT_CHIP_TYPE wmt_detect_get_chip_type(void)
+{
+	return g_chip_type;
+}
+
 
 #ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 static const struct of_device_id wmt_detect_match[] = {
