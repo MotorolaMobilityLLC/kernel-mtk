@@ -53,7 +53,7 @@ struct DISP_EXEC_COMMAND {
 /* PQ */
 #define COLOR_TUNING_INDEX 19
 #define THSHP_TUNING_INDEX 12
-#define THSHP_PARAM_MAX 121 /*Everest Revision*/
+#define THSHP_PARAM_MAX 83
 #define PARTIAL_Y_INDEX 10
 
 #define GLOBAL_SAT_SIZE 10
