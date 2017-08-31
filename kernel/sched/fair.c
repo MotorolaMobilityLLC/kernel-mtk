@@ -8467,6 +8467,7 @@ static int idle_balance(struct rq *this_rq)
 	struct sched_domain *sd;
 	int pulled_task = 0;
 	u64 curr_cost = 0;
+	long removed_util = 0;
 
 	idle_enter_fair(this_rq);
 
@@ -8489,6 +8490,17 @@ static int idle_balance(struct rq *this_rq)
 
 	raw_spin_unlock(&this_rq->lock);
 
+	/*
+	 * If removed_util_avg is !0 we most probably migrated some task away
+	 * from this_cpu. In this case we might be willing to trigger an OPP
+	 * update, but we want to do so if we don't find anybody else to pull
+	 * here (we will trigger an OPP update with the pulled task's enqueue
+	 * anyway).
+	 *
+	 * Record removed_util before calling update_blocked_averages, and use
+	 * it below (before returning) to see if an OPP update is required.
+	 */
+	removed_util = atomic_long_read(&(this_rq->cfs).removed_util_avg);
 	update_blocked_averages(this_cpu);
 	rcu_read_lock();
 	for_each_domain(this_cpu, sd) {
@@ -8564,6 +8576,12 @@ out:
 	if (pulled_task) {
 		idle_exit_fair(this_rq);
 		this_rq->idle_stamp = 0;
+	} else if (removed_util) {
+		/*
+		 * No task pulled and someone has been migrated away.
+		 * Good case to trigger an OPP update.
+		 */
+		update_capacity_of(this_cpu, SCHE_VALID);
 	}
 
 	return pulled_task;
