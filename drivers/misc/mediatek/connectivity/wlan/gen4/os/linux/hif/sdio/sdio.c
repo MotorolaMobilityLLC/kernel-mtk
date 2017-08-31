@@ -1454,7 +1454,7 @@ BOOLEAN glWakeupSdio(P_GLUE_INFO_T prGlueInfo)
 	BOOLEAN fgSuccess = TRUE;
 
 #if (HIF_SDIO_SUPPORT_GPIO_SLEEP_MODE && MTK_WCN_HIF_SDIO)
-	if (mtk_wcn_hif_sdio_wake_up_ctrl(prGlueInfo->rHifInfo.cltCtx) != 0)
+	if (mtk_wcn_stp_sdio_wake_up_ctrl(prGlueInfo->rHifInfo.cltCtx) != 0)
 		fgSuccess = FALSE;
 #endif
 

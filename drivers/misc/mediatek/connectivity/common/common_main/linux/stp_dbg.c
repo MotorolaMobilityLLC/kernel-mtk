@@ -358,6 +358,7 @@ static _osal_inline_ INT32 stp_dbg_core_dump_post_handle(P_WCN_CORE_DUMP_T dmp)
 			issue_type = STP_HOST_TRIGGER_FW_ASSERT;
 		else
 			issue_type = STP_FW_ASSERT_ISSUE;
+		STP_DBG_INFO_FUNC("dmp->head_len = %d\n", dmp->head_len);
 		/*parse f/w assert additional informationi for f/w's analysis */
 		ret = stp_dbg_set_fw_info(dmp->p_head, dmp->head_len, issue_type);
 		if (ret) {
@@ -1227,11 +1228,12 @@ INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
 					comboStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
 					pHdr->ack, pHdr->l_sec, pHdr->l_nsec);
 		else
-			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d), time[%llu.%06lu]\n",
 					pHdr->sec,
 					pHdr->usec,
 					pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
-					socStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
+					socStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
+					pHdr->ack, pHdr->l_sec, pHdr->l_nsec);
 
 		if (len > 0)
 			stp_dbg_dump_data(pBuf, pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx", len);
@@ -2309,7 +2311,8 @@ INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 str_len)
 		len += osal_sprintf(*buf + len, "NULL\n\t\t</rc>\n\t</issue>\n\t");
 		len += osal_sprintf(*buf + len, "<hint>\n\t\t<time_align>NULL</time_align>\n\t\t");
 		len += osal_sprintf(*buf + len, "<host>NULL</host>\n\t\t");
-		len += osal_sprintf(*buf + len, "<client>\n\t\t\t<task>NULL</task>\n\t\t\t");
+		len += osal_sprintf(*buf + len, "<client>\n\t\t\t<task>%s</task>\n\t\t\t",
+				    stp_dbg_id_to_task(g_stp_dbg_cpupcr->fwTaskId));
 		len += osal_sprintf(*buf + len, "<irqx>NULL</irqx>\n\t\t\t");
 		len += osal_sprintf(*buf + len, "<isr>NULL</isr>\n\t\t\t");
 		len += osal_sprintf(*buf + len, "<drv_type>NULL</drv_type>\n\t\t\t");

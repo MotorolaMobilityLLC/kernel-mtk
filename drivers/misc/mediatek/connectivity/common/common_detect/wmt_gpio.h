@@ -81,6 +81,17 @@ typedef struct _GPIO_CTRL_STATE {
 	struct pinctrl_state *gpio_state[GPIO_STATE_MAX];
 } GPIO_CTRL_STATE, *P_GPIO_CTRL_STATE;
 
+typedef struct _WMT_GPIO_STATE_INFO {
+	INT32 gpio_num;
+	INT32 mode;
+	INT32 pull_sel;
+	INT32 in;
+	INT32 out;
+	INT32 pull_en;
+	INT32 dir;
+	INT32 ies;
+} WMT_GPIO_STATE_INFO;
+
 typedef struct _GPIO_CTRL_INFO {
 	struct pinctrl *pinctrl_info;
 	GPIO_CTRL_STATE gpio_ctrl_state[GPIO_PIN_ID_MAX];
@@ -94,12 +105,23 @@ extern const PUINT8 gpio_state_name[GPIO_PIN_ID_MAX][GPIO_STATE_MAX];
 extern const PUINT8 gpio_pin_name[GPIO_PIN_ID_MAX];
 extern GPIO_CTRL_INFO gpio_ctrl_info;
 
+extern int mt_get_gpio_mode_base(unsigned long pin);
+extern int mt_get_gpio_pull_select_base(unsigned long pin);
+extern int mt_get_gpio_in_base(unsigned long pin);
+extern int mt_get_gpio_out_base(unsigned long pin);
+extern int mt_get_gpio_pull_enable_base(unsigned long pin);
+extern int mt_get_gpio_dir_base(unsigned long pin);
+extern int mt_get_gpio_ies_base(unsigned long pin);
+
+
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
 INT32 wmt_gpio_init(struct platform_device *pdev);
-
+VOID _wmt_dump_gpio_regs(INT32 idx);
+VOID _wmt_gpio_pre_regs(INT32 num, WMT_GPIO_STATE_INFO *gpio_state);
+VOID _wmt_dump_gpio_pre_regs(WMT_GPIO_STATE_INFO gpio_state);
 INT32 wmt_gpio_deinit(VOID);
 
 #endif

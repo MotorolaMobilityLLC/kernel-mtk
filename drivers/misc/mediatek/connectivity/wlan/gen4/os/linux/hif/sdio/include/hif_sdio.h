@@ -254,7 +254,7 @@ extern void mtk_wcn_hif_sdio_get_dev(MTK_WCN_HIF_SDIO_CLTCTX ctx, struct device 
 
 extern void mtk_wcn_hif_sdio_enable_irq(MTK_WCN_HIF_SDIO_CLTCTX ctx, MTK_WCN_BOOL enable);
 
-extern INT_32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
+extern INT_32 mtk_wcn_stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 /*******************************************************************************
 *                              F U N C T I O N S

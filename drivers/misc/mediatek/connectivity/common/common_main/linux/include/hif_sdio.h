@@ -78,6 +78,8 @@
 #define HIF_SDIO_LOG_WARN    1
 #define HIF_SDIO_LOG_ERR     0
 
+#define CCCR_F8		(0X00F8)
+#define SWPCDBGR	(0x0154)
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -323,7 +325,7 @@ extern INT32 mtk_wcn_hif_sdio_write_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 
 extern INT32 mtk_wcn_hif_sdio_abort(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
-extern INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
+INT32 hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 extern VOID mtk_wcn_hif_sdio_set_drvdata(MTK_WCN_HIF_SDIO_CLTCTX ctx, PVOID private_data_p);
 

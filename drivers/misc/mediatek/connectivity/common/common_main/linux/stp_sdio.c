@@ -115,7 +115,6 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData);
 static _osal_inline_ INT32 stp_sdio_host_info_deinit(PPUINT8 ppTxBuf, PPUINT8 ppRxBuf);
 static _osal_inline_ INT32 stp_sdio_host_info_init(PPUINT8 ppTxBuf, PPUINT8 ppRxBuf);
 static _osal_inline_ INT32 stp_sdio_host_info_op(INT32 opId);
-static _osal_inline_ INT32 stp_sdio_issue_fake_coredump(UINT8 *str);
 static _osal_inline_ SDIO_PS_OP stp_sdio_get_own_state(VOID);
 static _osal_inline_ INT32 stp_sdio_do_own_set(MTK_WCN_STP_SDIO_HIF_INFO *p_info);
 static _osal_inline_ INT32 stp_sdio_do_own_clr(INT32 wait);
@@ -397,9 +396,9 @@ static _osal_inline_ INT32 stp_sdio_host_info_deinit(PPUINT8 ppTxBuf, PPUINT8 pp
 	return 0;
 }
 
-static _osal_inline_ INT32 stp_sdio_issue_fake_coredump(UINT8 *str)
+INT32 stp_sdio_issue_fake_coredump(UINT8 *str)
 {
-#define MAX_STRING_LENGTH 64
+#define MAX_STRING_LENGTH 140
 	UINT8 AssertStr[4 + MAX_STRING_LENGTH + 1 + 2] = { 0 };
 	UINT32 length = strlen(str) >= MAX_STRING_LENGTH ? MAX_STRING_LENGTH : strlen(str);
 	/*pack str into STP SDIO packet format */
@@ -757,7 +756,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 		/* <0> get CHLPCR information */
 		if (pInfo->awake_flag == 0) {
 			if (CLTCTX_CID(clt_ctx) == 0x6632)
-				mtk_wcn_hif_sdio_wake_up_ctrl(clt_ctx);
+				stp_sdio_wake_up_ctrl(clt_ctx);
 			if (stp_sdio_do_own_clr(0) == 0) {
 				STPSDIO_DBG_FUNC("set OWN to driver side ok!\n");
 				pInfo->awake_flag = 1;
@@ -3468,6 +3467,19 @@ INT32 stp_sdio_func_reg_rw(INT32 direction,  UINT32 offset, UINT32 value)
 		break;
 	default:
 		break;
+	}
+	return ret;
+}
+
+INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
+{
+	INT32 ret;
+
+	ret = hif_sdio_wake_up_ctrl(ctx);
+	if (ret == -11) {
+		STPSDIO_ERR_FUNC("wake up fail, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms\n");
+		ret = stp_sdio_issue_fake_coredump
+			("<ASSERT> wake up fail, polling [GPIO_CHIP_DEEP_SLEEP_PIN] low over 30ms ms # -");
 	}
 	return ret;
 }
