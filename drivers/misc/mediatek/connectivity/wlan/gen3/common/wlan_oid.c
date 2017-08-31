@@ -11708,7 +11708,7 @@ wlanoidSetDrvRoamingPolicy(IN P_ADAPTER_T prAdapter,
 	prRoamingFsmInfo->fgDrvRoamingAllow = (BOOLEAN)u4RoamingPoily;
 
 	DBGLOG(REQ, INFO, "wlanoidSetDrvRoamingPolicy, RoamingPoily= %d, conn policy= [%d] -> [%d]\n",
-			u4RoamingPoily, u4CurConPolicy, prRoamingFsmInfo->fgDrvRoamingAllow);
+			u4RoamingPoily, u4CurConPolicy, prConnSettings->eConnectionPolicy);
 
 	return WLAN_STATUS_SUCCESS;
 }

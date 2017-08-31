@@ -1107,6 +1107,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			if (prBssInfo)
 				u2DeauthReason = prBssInfo->u2DeauthReason;
 			/* CFG80211 Indication */
+			DBGLOG(INIT, INFO, "[wifi]Indicate disconnection: Reason=%d Locally[%d]\n", u2DeauthReason,
+						(eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY));
 			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
 				eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY ? true : false,
 				GFP_KERNEL);
@@ -1196,20 +1198,34 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		break;
 
 #endif
-	case WLAN_STATUS_JOIN_TIMEOUT:
+	case WLAN_STATUS_JOIN_FAILURE:
 		{
 			P_BSS_DESC_T prBssDesc = prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 
 			if (prBssDesc)
+				DBGLOG(INIT, INFO, "JOIN Failure: u2JoinStatus=%d", prBssDesc->u2JoinStatus);
+			if (prBssDesc)
 				COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
 			else
 				COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
-			cfg80211_connect_result(prGlueInfo->prDevHandler,
+			if (prBssDesc && prBssDesc->u2JoinStatus
+				&& prBssDesc->u2JoinStatus != STATUS_CODE_AUTH_TIMEOUT
+				&& prBssDesc->u2JoinStatus != STATUS_CODE_ASSOC_TIMEOUT)
+				cfg80211_connect_result(prGlueInfo->prDevHandler,
+						arBssid,
+						prGlueInfo->aucReqIe,
+						prGlueInfo->u4ReqIeLength,
+						prGlueInfo->aucRspIe,
+						prGlueInfo->u4RspIeLength,
+						prBssDesc->u2JoinStatus, GFP_KERNEL);
+			else
+				cfg80211_connect_result(prGlueInfo->prDevHandler,
 						arBssid,
 						prGlueInfo->aucReqIe,
 						prGlueInfo->u4ReqIeLength,
 						prGlueInfo->aucRspIe,
 						prGlueInfo->u4RspIeLength, WLAN_STATUS_AUTH_TIMEOUT, GFP_KERNEL);
+			prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 			break;
 		}
 	default:
