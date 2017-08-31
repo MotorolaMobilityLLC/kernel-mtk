@@ -187,6 +187,9 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	unsigned char *data_ptr;
 
 	pr_debug("[IRTX] irtx write len=0x%x, pwm=%d\n", (unsigned int)count, (unsigned int)irtx_pwm_config.pwm_no);
+	if (count == 0)
+		return 0;
+
 	wave_vir = dma_alloc_coherent(&mt_irtx_dev.plat_dev->dev, count, &wave_phy, GFP_KERNEL | GFP_DMA);
 	if (!wave_vir) {
 		pr_err("[IRTX] alloc memory fail\n");
