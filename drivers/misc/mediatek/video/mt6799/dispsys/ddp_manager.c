@@ -3110,11 +3110,11 @@ int dpmgr_path_update_rsz(struct disp_ddp_path_config *pconfig)
 		rsz_cfmt = ARGB8101010;
 		break;
 	case HRT_PATH_DUAL_DISP_MIRROR_RESIZE_GENERAL:
-	case HRT_PATH_DUAL_DISP_EXT_RESIZE_GENERAL:
 		rsz_cfmt = RGB888;
 		break;
 	case HRT_PATH_RESIZE_GENERAL:
 	case HRT_PATH_DUAL_PIPE_RESIZE_GENERAL:
+	case HRT_PATH_DUAL_DISP_EXT_RESIZE_GENERAL:
 		rsz_cfmt = RGB999;
 		break;
 	case HRT_PATH_GENERAL:
