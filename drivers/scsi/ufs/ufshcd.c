@@ -49,6 +49,7 @@
 #include "ufs-mtk-platform.h"
 #include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
+#include "ufs-dbg.h"
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
@@ -394,7 +395,7 @@ void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
 	}
 }
 
-void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info)
+void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info, struct seq_file *m)
 {
 	int err = 0;
 	u32 val;
@@ -402,32 +403,32 @@ void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info)
 	if (!(hba->ufshcd_dbg_print & UFSHCD_DBG_PRINT_HOST_STATE_EN))
 		return;
 
-	dev_info(hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
-	dev_info(hba->dev, "req r=%d w=%d map=0x%lx\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "UFS Host state=%d\n", hba->ufshcd_state);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "req r=%d w=%d map=0x%lx\n",
 		hba->req_r_cnt, hba->req_w_cnt, hba->req_tag_map);
-	dev_info(hba->dev, "lrb in use=0x%lx, outstanding reqs=0x%lx tasks=0x%lx\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "lrb in use=0x%lx, outstanding reqs=0x%lx tasks=0x%lx\n",
 		hba->lrb_in_use, hba->outstanding_tasks, hba->outstanding_reqs);
-	dev_info(hba->dev, "saved_err=0x%x, saved_uic_err=0x%x\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "saved_err=0x%x, saved_uic_err=0x%x\n",
 		hba->saved_err, hba->saved_uic_err);
-	dev_info(hba->dev, "Device power mode=%d, UIC link state=%d\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Device power mode=%d, UIC link state=%d\n",
 		hba->curr_dev_pwr_mode, hba->uic_link_state);
-	dev_info(hba->dev, "PM in progress=%d, sys. suspended=%d\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "PM in progress=%d, sys. suspended=%d\n",
 		hba->pm_op_in_progress, hba->is_sys_suspended);
-	dev_info(hba->dev, "Auto BKOPS=%d, Host self-block=%d\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Auto BKOPS=%d, Host self-block=%d\n",
 		hba->auto_bkops_enabled, hba->host->host_self_blocked);
-	dev_info(hba->dev, "error handling flags=0x%x, req. abort count=%d\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "error handling flags=0x%x, req. abort count=%d\n",
 		hba->eh_flags, hba->req_abort_count);
-	dev_info(hba->dev, "Host capabilities=0x%x, caps=0x%x\n",
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Host capabilities=0x%x, caps=0x%x\n",
 		hba->capabilities, hba->caps);
-	dev_info(hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
 		hba->dev_quirks);
 
 	if (mphy_info) {
 		err = ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_FSM_STATE, 0), &val);
 		if (err)
-			dev_info(hba->dev, "get TX_FSM_STATE fail\n");
+			UFS_DEVINFO_PROC_MSG(m, hba->dev, "get TX_FSM_STATE fail\n");
 		else
-			dev_info(hba->dev, "TX_FSM_STATE: %u\n", val);
+			UFS_DEVINFO_PROC_MSG(m, hba->dev, "TX_FSM_STATE: %u\n", val);
 	}
 }
 
@@ -4528,7 +4529,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	scsi_print_command(cmd);
 	if (!hba->req_abort_count) {
 		ufshcd_print_host_regs(hba);
-		ufshcd_print_host_state(hba, 1);
+		ufshcd_print_host_state(hba, 1, NULL);
 		ufshcd_print_pwr_info(hba);
 		ufshcd_print_trs(hba, 1 << tag, true);
 		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_ABORT_CMD_EN);
@@ -6946,6 +6947,12 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	 * Add sysfs nodes for spm_info and rpm_info.
 	 */
 	ufs_mtk_add_sysfs_nodes(hba);
+
+	/*
+	 * MTK PATCH:
+	 * Add ufs debug proc nodes.
+	 */
+	ufs_mtk_debug_proc_init();
 
 	return 0;
 

@@ -27,6 +27,7 @@
 
 #include <mt-plat/mtk_partition.h>
 #include "mtk_secure_api.h"
+#include "ufs-dbg.h"
 
 /* Query request retries */
 #define QUERY_REQ_RETRIES 10
@@ -1813,11 +1814,21 @@ void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd, u32 f
 struct ufs_mtk_trace_cmd_hlist_struct ufs_mtk_trace_cmd_hlist[MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT];
 int ufs_mtk_trace_cmd_ptr = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT - 1;
 int ufs_mtk_trace_cnt;
+static spinlock_t ufs_mtk_cmd_dump_lock;
+static int ufs_mtk_is_cmd_dump_lock_init;
 
 void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 	u8 lun, u32 transfer_len, sector_t lba, u8 opcode)
 {
 	int ptr;
+	unsigned long flags;
+
+	if (!ufs_mtk_is_cmd_dump_lock_init) {
+		spin_lock_init(&ufs_mtk_cmd_dump_lock);
+		ufs_mtk_is_cmd_dump_lock_init = 1;
+	}
+
+	spin_lock_irqsave(&ufs_mtk_cmd_dump_lock, flags);
 
 	ufs_mtk_trace_cmd_ptr++;
 
@@ -1836,16 +1847,25 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 
 	ufs_mtk_trace_cnt++;
 
+	spin_unlock_irqrestore(&ufs_mtk_cmd_dump_lock, flags);
 	/*
 	 * pr_info("[ufs]%d,%d,op=0x%x,lun=%u,t=%d,lba=%llu,len=%u,time=%llu\n",
 	 * ptr, event, opcode, lun, tag, (u64)(lba >> 3), transfer_len, sched_clock());
 	 */
 }
 
-void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
+void ufs_mtk_dbg_dump_trace(u32 latest_cnt, struct seq_file *m)
 {
 	int ptr;
 	int dump_cnt;
+	unsigned long flags;
+
+	if (!ufs_mtk_is_cmd_dump_lock_init) {
+		spin_lock_init(&ufs_mtk_cmd_dump_lock);
+		ufs_mtk_is_cmd_dump_lock_init = 1;
+	}
+
+	spin_lock_irqsave(&ufs_mtk_cmd_dump_lock, flags);
 
 	if (ufs_mtk_trace_cnt > MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT)
 		dump_cnt = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT;
@@ -1857,7 +1877,7 @@ void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
 
 	ptr = ufs_mtk_trace_cmd_ptr;
 
-	pr_info("[ufs]cmd history:req_cnt=%d,real_cnt=%d,ptr=%d\n",
+	UFS_PRINFO_PROC_MSG(m, "[ufs]cmd history:req_cnt=%d,real_cnt=%d,ptr=%d\n",
 		latest_cnt, dump_cnt, ptr);
 
 	while (dump_cnt > 0) {
@@ -1865,7 +1885,7 @@ void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
 		if (ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_TM_SEND ||
 			ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_TM_COMPLETED) {
 
-			pr_info("[ufs]%d-t,%d,tm=0x%x,t=%d,lun=0x%x,data=0x%x,%llu\n",
+			UFS_PRINFO_PROC_MSG(m, "[ufs]%d-t,%d,tm=0x%x,t=%d,lun=0x%x,data=0x%x,%llu\n",
 				ptr,
 				ufs_mtk_trace_cmd_hlist[ptr].event,
 				ufs_mtk_trace_cmd_hlist[ptr].opcode,
@@ -1878,7 +1898,7 @@ void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
 		} else if (ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_DEV_SEND ||
 			ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_DEV_COMPLETED) {
 
-			pr_info("[ufs]%d-d,%d,0x%x,t=%d,lun=0x%x,idn=0x%x,idx=0x%x,sel=0x%x,%llu\n",
+			UFS_PRINFO_PROC_MSG(m, "[ufs]%d-d,%d,0x%x,t=%d,lun=0x%x,idn=0x%x,idx=0x%x,sel=0x%x,%llu\n",
 				ptr,
 				ufs_mtk_trace_cmd_hlist[ptr].event,
 				ufs_mtk_trace_cmd_hlist[ptr].opcode,
@@ -1892,7 +1912,7 @@ void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
 
 		} else {
 
-			pr_info("[ufs]%d-r,%d,0x%x,t=%d,lun=0x%x,lba=%lld,len=%d,%llu\n",
+			UFS_PRINFO_PROC_MSG(m, "[ufs]%d-r,%d,0x%x,t=%d,lun=0x%x,lba=%lld,len=%d,%llu\n",
 				ptr,
 				ufs_mtk_trace_cmd_hlist[ptr].event,
 				ufs_mtk_trace_cmd_hlist[ptr].opcode,
@@ -1911,6 +1931,8 @@ void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
 		if (ptr < 0)
 			ptr = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT - 1;
 	}
+
+	spin_unlock_irqrestore(&ufs_mtk_cmd_dump_lock, flags);
 }
 
 void ufs_mtk_dbg_hang_detect_dump(void)
@@ -1920,9 +1942,21 @@ void ufs_mtk_dbg_hang_detect_dump(void)
 	 * dme commands during exception handling since interrupt
 	 * or preemption may be disabled.
 	 */
-	ufshcd_print_host_state(ufs_mtk_hba, 0);
+	ufshcd_print_host_state(ufs_mtk_hba, 0, NULL);
 
-	ufs_mtk_dbg_dump_trace(ufs_mtk_hba->nutrs + ufs_mtk_hba->nutrs / 2);
+	ufs_mtk_dbg_dump_trace(ufs_mtk_hba->nutrs + ufs_mtk_hba->nutrs / 2, NULL);
+}
+
+void ufs_mtk_dbg_proc_dump(struct seq_file *m)
+{
+	/*
+	 * do not touch host to get unipro or mphy information via
+	 * dme commands during exception handling since interrupt
+	 * or preemption may be disabled.
+	 */
+	ufshcd_print_host_state(ufs_mtk_hba, 0, m);
+
+	ufs_mtk_dbg_dump_trace(MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT, m);
 }
 
 #else
@@ -1931,7 +1965,7 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 {
 }
 
-void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
+void ufs_mtk_dbg_dump_trace(u32 latest_cnt, struct seq_file *m)
 {
 }
 
