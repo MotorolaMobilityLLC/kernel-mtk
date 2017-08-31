@@ -817,7 +817,7 @@ int emmc_autok(void)
 
 	/* spm_msdc_dvfs_setting(host->dvfs_id, 1); */
 
-	msdc_gate_clock(host, 0);
+	msdc_gate_clock(host, 1);
 
 	mmc_release_host(host->mmc);
 
