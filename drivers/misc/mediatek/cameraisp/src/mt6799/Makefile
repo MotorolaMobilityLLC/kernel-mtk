@@ -11,11 +11,6 @@
 # GNU General Public License for more details.
 #
 
-#
-# Makefile for misc devices that really don't fit anywhere else.
-#
-#include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
@@ -23,23 +18,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/staging/android/ion \
              -I$(srctree)/drivers/staging/android/ion/mtk
 
-ifneq ($(CONFIG_ARM64), y)
-# For arm32
-  #obj-y += camera_isp.o
-  #obj-y += camera_tsf.o
-  #obj-y += camera_sysram.o
-  #obj-y += camera_fdvt.o
-  #obj-y += camera_eis.o
-  #obj-y += camera_dpe.o
-  obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
-else
-# For arm64
-  #obj-y += camera_isp.o
-  #obj-y += camera_tsf.o
-  #obj-y += camera_sysram.o
-  #obj-y += camera_fdvt.o
-  #obj-y += camera_eis.o
-  #obj-y += camera_dpe.o
-  obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
-endif
+#obj-y += camera_isp.o
+#obj-y += camera_tsf.o
+#obj-y += camera_sysram.o
+#obj-y += camera_fdvt.o
+#obj-y += camera_eis.o
+#obj-y += camera_dpe.o
+obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += camera_rsc.o
+
 $(info cameraisp drv by platform $(platform_drv))

@@ -6,4 +6,5 @@ config MTK_CAMERA_ISP
 	  like dpe, rsc, tsf, etc. Disable to prevent
 	  camera drivers from being built into the
 	  kernel image.
+
 source "drivers/misc/mediatek/cameraisp/src/Kconfig"
