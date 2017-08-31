@@ -395,7 +395,7 @@ void disp_helper_option_init(void)
 	/* check cmdq command automatically */
 	disp_helper_set_option(DISP_OPT_CHECK_CMDQ_COMMAND, 1);
 	/* dump smi bandwidth information */
-	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 1);
+	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 0);
 	disp_helper_set_option(DISP_OPT_RSZ, 1);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 1);
 }

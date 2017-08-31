@@ -3732,6 +3732,9 @@ unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bu
 
 	ddp_dump_analysis(DISP_MODULE_WDMA0);
 
+	/* turn on smi bandwidth monitor after smi debug is diagnose */
+	disp_helper_set_option(DISP_OPT_SMI_BW_MONITOR, 1);
+
 	/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
 	/* cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF); */
 	/* cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF); */
