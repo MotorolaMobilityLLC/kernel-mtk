@@ -50,6 +50,8 @@ static const char module_name[64] = "arctic, sched-assist dvfs,hps";
 static const char module_name[64] = "arctic";
 #endif
 
+/* To define limit of SODI */
+int sodi_limit = DEFAULT_SODI_LIMIT;
 
 #define VOLT_SCALE 10
 
@@ -63,9 +65,11 @@ void game_hint_notifier(int is_game_mode)
 	if (is_game_mode) {
 		STUNE_TASK_THRESHOLD = 80;
 		capacity_margin = 1024;
+		sodi_limit = 120;
 	} else {
 		STUNE_TASK_THRESHOLD = 0;
 		capacity_margin = 1280;
+		sodi_limit = DEFAULT_SODI_LIMIT;
 	}
 }
 
@@ -649,9 +653,7 @@ static struct kobj_attribute eas_cap_margin_attr =
 __ATTR(cap_margin, S_IWUSR | S_IRUSR, show_cap_margin_knob,
 		store_cap_margin_knob);
 
-/* To define limit of SODI */
-int sodi_limit = 400;
-
+/* To set limit of SODI */
 static ssize_t store_sodi_limit_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
