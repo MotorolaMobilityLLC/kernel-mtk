@@ -470,7 +470,7 @@ struct TaskStruct {
 	CmdqInterruptCB loopCallback;	/* LOOP execution */
 	unsigned long loopData;	/* LOOP execution */
 	CmdqAsyncFlushCB flushCallback;	/* Callback on AsyncFlush (fire-and-forget) tasks */
-	unsigned long flushData;	/* for callbacks & error handling */
+	u64 flushData;	/* for callbacks & error handling */
 	struct work_struct autoReleaseWork;	/* Work item when auto release is used */
 	atomic_t useWorkQueue;
 
