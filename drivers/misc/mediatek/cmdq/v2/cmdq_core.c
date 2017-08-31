@@ -102,9 +102,7 @@ struct DumpFirstErrorStruct gCmdqFirstError;
 
 static struct DumpCommandBufferStruct gCmdqBufferDump;
 
-#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
 static bool g_cmdq_consume_again;
-#endif
 
 /* use to generate [CMDQ_ENGINE_ENUM_id and name] mapping for status print */
 #define CMDQ_FOREACH_MODULE_PRINT(ACTION)\
@@ -3654,10 +3652,10 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 			engineMustEnableClock =
 			    cmdq_core_get_actual_engine_flag_for_enable_clock(engineFlag, thread);
 		}
-#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
+
 		if (thread == CMDQ_INVALID_THREAD && is_secure == true && scenario == CMDQ_SCENARIO_USER_MDP)
 			g_cmdq_consume_again = true;
-#endif
+
 		spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 
 		if (thread != CMDQ_INVALID_THREAD) {
@@ -7593,12 +7591,10 @@ int32_t cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask, struct cmdqRe
 	cmdq_core_track_task_record(pTask, thread);
 	cmdq_core_release_thread(pTask);
 	cmdq_core_auto_release_task(pTask);
-#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
 	if (g_cmdq_consume_again == true) {
 		cmdq_core_add_consume_task();
 		g_cmdq_consume_again = false;
 	}
-#endif
 	CMDQ_PROF_END(current->pid, __func__);
 
 	return status;
@@ -8093,9 +8089,7 @@ int32_t cmdqCoreInitialize(void)
 	/* MDP initialization setting */
 	cmdq_mdp_get_func()->mdpInitialSet();
 
-#ifdef CMDQ_SECURE_PATH_CONSUME_AGAIN
 	g_cmdq_consume_again = false;
-#endif
 
 	atomic_set(&g_cmdq_mem_monitor.monitor_mem_enable, 0);
 
