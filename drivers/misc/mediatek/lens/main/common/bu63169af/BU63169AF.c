@@ -51,7 +51,7 @@ static unsigned long g_u4CurrPosition;
 static unsigned int g_u4CheckDrvStatus;
 
 
-static int s4AK7372AF_WriteReg(u16 a_u2Addr, u16 a_u2Data)
+static int s4AK7372AF_WriteReg(unsigned short a_u2Addr, unsigned short a_u2Data)
 {
 	int i4RetValue = 0;
 
@@ -75,25 +75,24 @@ static inline int setAK7372AFPos(unsigned long a_u4Position)
 {
 	int i4RetValue = 0;
 
-	i4RetValue = s4AK7372AF_WriteReg(0x0, (u16) ((a_u4Position >> 2) & 0xff));
+	i4RetValue = s4AK7372AF_WriteReg(0x0, (unsigned short) ((a_u4Position >> 2) & 0xff));
 
 	if (i4RetValue < 0)
 		return -1;
 
-	i4RetValue = s4AK7372AF_WriteReg(0x1, (u16) ((g_u4TargetPosition & 0x3) << 6));
+	i4RetValue = s4AK7372AF_WriteReg(0x1, (unsigned short) ((g_u4TargetPosition & 0x3) << 6));
 
 	return i4RetValue;
 }
 
-int s4EEPROM_ReadReg_BU63169AF(u16 addr, u16 *data)
+int s4EEPROM_ReadReg_BU63169AF(unsigned short addr, unsigned short *data)
 {
 	int i4RetValue = 0;
 
-        *data = 0;
+	unsigned char u8data[2];
+	unsigned char pu_send_cmd[2] = { (unsigned char) (addr >> 8), (unsigned char) (addr & 0xFF) };
 
-	/* u8 u8data[2];
-	u8 pu_send_cmd[2] = { (u8) (addr >> 8), (u8) (addr & 0xFF) };
-
+	*data = 0;
 	g_pstAF_I2Cclient->addr = (EEPROM_I2C_SLAVE_ADDR) >> 1;
 	if (i2c_master_send(g_pstAF_I2Cclient, pu_send_cmd, 2) < 0) {
 		LOG_INF("read I2C send failed!!\n");
@@ -106,14 +105,14 @@ int s4EEPROM_ReadReg_BU63169AF(u16 addr, u16 *data)
 	LOG_INF("u8data[0] = 0x%x\n", u8data[0]);
 	LOG_INF("u8data[1] = 0x%x\n", u8data[1]);
 
-	*data = u8data[1] << 8 |  u8data[0]; */
+	*data = u8data[1] << 8 |  u8data[0];
 
 	LOG_INF("s4EEPROM_ReadReg2 0x%x, 0x%x\n", addr, *data);
 
 	return i4RetValue;
 }
 
-int s4AF_WriteReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
+int s4AF_WriteReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, unsigned short a_sizeSendData)
 {
 	int i4RetValue = 0;
 
@@ -135,7 +134,8 @@ int s4AF_WriteReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData)
 	return 0;
 }
 
-int s4AF_ReadReg_BU63169AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData)
+int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData,
+		unsigned short a_sizeSendData, unsigned char *a_pRecvData, unsigned short a_sizeRecvData)
 {
 	int i4RetValue;
 	struct i2c_msg msg[2];
