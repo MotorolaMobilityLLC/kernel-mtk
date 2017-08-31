@@ -2018,12 +2018,10 @@ static signed int DPE_DumpReg(void)
 
 		for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_;) {
 			LOG_INF
-			    ("DVE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+			    ("DVE:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j]
-			     , j + 1, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j + 1],
-			     j + 2, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j + 2]
-			     , j + 3, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j + 3]);
-			j = j + 4;
+			     , j + 1, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j + 1]);
+			j = j + 2;
 		}
 	}
 
@@ -2042,12 +2040,10 @@ static signed int DPE_DumpReg(void)
 
 		for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_;) {
 			LOG_INF
-			    ("WMFE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+			    ("WMFE:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j]
-			     , j + 1, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 1],
-			     j + 2, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 2]
-			     , j + 3, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 3]);
-			j = j + 4;
+			     , j + 1, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 1]);
+			j = j + 2;
 		}
 
 	}
