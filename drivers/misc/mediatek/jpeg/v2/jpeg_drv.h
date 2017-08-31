@@ -120,6 +120,7 @@ const long jpeg_dev_get_decoder_base_VA(void);
 typedef struct JpegClk {
 	struct clk *clk_smi_common;
   #ifdef JPEG_DRV_MT6799
+	struct clk *clk_mm_larb7;
 	struct clk *clk_gals_m0_2x;
 	struct clk *clk_gals_m1_2x;
 	struct clk *clk_upsz0;

@@ -3187,6 +3187,7 @@
 		reg = <0 0x17030000 0 0x1000>;
 		interrupts = <GIC_SPI 308 IRQ_TYPE_LEVEL_LOW>;
 			clocks =
+				<&mmsys_config CLK_MM_CG1_B8>,
 				<&mmsys_config CLK_MM_CG1_B12>,
 				<&mmsys_config CLK_MM_CG1_B13>,
 				<&mmsys_config CLK_MM_CG1_B14>,
@@ -3201,6 +3202,7 @@
 				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE2>;
 
 			clock-names =
+				"MT_CG_MM_LARB7",
 				"MT_CG_GALS_M0_2X",
 				"MT_CG_GALS_M1_2X",
 				"MT_CG_UPSZ0",
@@ -3220,6 +3222,7 @@
 		reg = <0 0x17040000 0 0x1000>;
 		interrupts = <GIC_SPI 311 IRQ_TYPE_LEVEL_LOW>;
 			clocks =
+				<&mmsys_config CLK_MM_CG1_B8>,
 				<&mmsys_config CLK_MM_CG1_B12>,
 				<&mmsys_config CLK_MM_CG1_B13>,
 				<&mmsys_config CLK_MM_CG1_B14>,
@@ -3234,6 +3237,7 @@
 				<&venc_global_con CLK_VENC_GLOBAL_CON_CKE3>;
 
 			clock-names =
+				"MT_CG_MM_LARB7",
 				"MT_CG_GALS_M0_2X",
 				"MT_CG_GALS_M1_2X",
 				"MT_CG_UPSZ0",
