@@ -819,7 +819,7 @@ static ssize_t partial_read(struct file *file, char __user *ubuf, size_t count, 
 	int support = 0;
 	struct disp_rect roi = {0, 0, 0, 0};
 
-	if (primary_display_partial_support()) {
+	if (disp_partial_is_support()) {
 		if (!ddp_debug_force_roi()) {
 			support = 1;
 		} else {

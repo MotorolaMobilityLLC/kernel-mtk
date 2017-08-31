@@ -344,11 +344,6 @@ void _primary_path_switch_dst_unlock(void)
 	mutex_unlock(&(pgc->switch_dst_lock));
 }
 
-int primary_display_partial_support(void)
-{
-	return disp_partial_is_support();
-}
-
 int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
 		struct cmdqRecStruct *cmdq_handle)
 {
@@ -4761,9 +4756,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
 
-	if (disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
-		disp_partial_check_support(pgc->plcm);
-
 	pgc->state = DISP_ALIVE;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	disp_switch_data.name = "disp";
@@ -6440,7 +6432,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		if (!aal_is_partial_support() && !ddp_debug_force_roi())
 			assign_full_lcm_roi(&total_dirty_roi);
 
-		DISPDBG("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
+		DISPINFO("frame partial roi(%d,%d,%d,%d)\n", total_dirty_roi.x, total_dirty_roi.y,
 			total_dirty_roi.width, total_dirty_roi.height);
 
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {

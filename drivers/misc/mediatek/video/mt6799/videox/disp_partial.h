@@ -15,8 +15,6 @@
 
 int disp_partial_is_support(void);
 
-int disp_partial_check_support(struct disp_lcm_handle *plcm);
-
 void disp_patial_lcm_validate_roi(struct disp_lcm_handle *plcm, struct disp_rect *roi);
 
 int disp_partial_update_roi_to_lcm(disp_path_handle dp_handle,

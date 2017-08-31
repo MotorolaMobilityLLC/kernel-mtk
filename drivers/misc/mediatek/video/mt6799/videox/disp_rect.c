@@ -15,6 +15,15 @@
 #include "disp_rect.h"
 #include "ddp_info.h"
 
+static int rect_dbg_on;
+#define RECT_DBG(string, args...)					\
+	do {								\
+		if (rect_dbg_on) {			\
+			DISPMSG(string, ##args);			\
+		}							\
+	} while (0)
+
+
 int rect_isEmpty(const struct disp_rect *in)
 {
 	return in->width == 0 || in->height == 0;
@@ -68,7 +77,7 @@ int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
 		if (fBottom > bottom)
 			fBottom = bottom;
 		rect_set(out, fLeft, fTop, fRight, fBottom);
-		DISPDBG("rect_intersect (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+		RECT_DBG("rect_intersect (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
 			src->x, src->y, src->width, src->height, dst->x, dst->y, dst->width, dst->height,
 			out->x, out->y, out->width, out->height);
 		return 1;
@@ -124,7 +133,7 @@ void rect_join(const struct disp_rect *in1, const struct disp_rect *in2,
 			rect_set(out, fLeft, fTop, fRight, fBottom);
 		}
 	}
-	DISPDBG("rect_join (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+	RECT_DBG("rect_join (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
 		in1->x, in1->y, in1->width, in1->height, in2_x, in2_y, in2_w, in2_h,
 		in2->x, in2->y, in2->width, in2->height);
 }

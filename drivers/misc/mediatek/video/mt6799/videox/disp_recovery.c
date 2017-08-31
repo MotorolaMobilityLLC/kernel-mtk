@@ -67,6 +67,8 @@
 #endif
 
 #include "disp_recovery.h"
+#include "disp_partial.h"
+
 
 static struct task_struct *primary_display_check_task; /* For abnormal check */
 static wait_queue_head_t _check_task_wq;	/* used for blocking check task  */
@@ -622,7 +624,7 @@ int primary_display_esd_recovery(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 8);
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");
-	if (primary_display_partial_support()) {
+	if (disp_partial_is_support()) {
 		struct disp_ddp_path_config *data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
 
 		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);

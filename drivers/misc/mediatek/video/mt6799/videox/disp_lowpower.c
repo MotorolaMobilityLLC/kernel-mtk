@@ -56,6 +56,7 @@
 #include "mtk_hrt.h"
 #include "ddp_reg.h"
 #include "ddp_rdma.h"
+#include "disp_partial.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -712,7 +713,7 @@ void _primary_display_enable_mmsys_clk(void)
 		dpmgr_path_connect(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 
 	data_config = dpmgr_path_get_last_config(primary_get_dpmgr_handle());
-	if (primary_display_partial_support())
+	if (disp_partial_is_support())
 		primary_display_config_full_roi(data_config, primary_get_dpmgr_handle(), NULL);
 
 	data_config->dst_dirty = 1;

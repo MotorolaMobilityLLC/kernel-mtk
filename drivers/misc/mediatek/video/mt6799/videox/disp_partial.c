@@ -24,7 +24,14 @@
 
 #include "disp_partial.h"
 
-static int is_partial_support;
+static int disp_partial_dbg_on;
+#define DISP_PARTIAL_DBG(string, args...)					\
+	do {								\
+		if (disp_partial_dbg_on) {			\
+			DISPMSG(string, ##args);			\
+		}							\
+	} while (0)
+
 
 static void _update_layer_dirty(struct OVL_CONFIG_STRUCT *old, struct disp_input_config *src,
 		struct disp_rect *layer_roi)
@@ -85,7 +92,7 @@ static void _convert_picture_to_ovl_dirty(struct disp_input_config *src,
 	out->width = result.width;
 	out->height = result.height;
 
-	DISPDBG("pic to ovl dirty(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
+	DISP_PARTIAL_DBG("pic to ovl dirty(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
 			pic_roi.x, pic_roi.y, pic_roi.width, pic_roi.height,
 			out->x, out->y, out->width, out->height);
 }
@@ -119,7 +126,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 		if (input_cfg->dirty_roi_num) {
 			struct layer_dirty_roi *layer_roi_addr = input_cfg->dirty_roi_addr;
 
-			DISPDBG("layer %d dirty num %d\n", i, input_cfg->dirty_roi_num);
+			DISP_PARTIAL_DBG("layer %d dirty num %d\n", i, input_cfg->dirty_roi_num);
 			/* 1. compute picture dirty roi*/
 			for (j = 0; j < input_cfg->dirty_roi_num; j++) {
 				layer_roi.x = layer_roi_addr[j].dirty_x;
@@ -135,7 +142,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 
 		/* 3. full dirty if num euals 0 */
 		if (input_cfg->dirty_roi_num == 0 && input_cfg->layer_enable) {
-			DISPDBG("layer %d dirty num 0\n", i);
+			DISP_PARTIAL_DBG("layer %d dirty num 0\n", i);
 			if (0) {
 				layer_roi.x = input_cfg->tgt_offset_x;
 				layer_roi.y = input_cfg->tgt_offset_y;
@@ -159,7 +166,7 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 
 	}
 	if (disable_layer >= cfg->input_layer_num) {
-		DISPMSG(" all layer disabled, force full roi\n");
+		DISP_PARTIAL_DBG(" all layer disabled, force full roi\n");
 		assign_full_lcm_roi(result);
 	}
 
@@ -169,15 +176,13 @@ int disp_partial_compute_ovl_roi(struct disp_frame_cfg_t *cfg,
 
 int disp_partial_is_support(void)
 {
-	return is_partial_support;
-}
+	struct disp_lcm_handle *plcm = primary_get_lcm();
 
-int disp_partial_check_support(struct disp_lcm_handle *plcm)
-{
-	if (disp_lcm_is_partial_support(plcm) && !disp_lcm_is_video_mode(plcm))
-		is_partial_support = 1;
+	if (disp_lcm_is_partial_support(plcm) &&
+		!disp_lcm_is_video_mode(plcm) &&
+		disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
+		return 1;
 
-	DISPMSG("display partial %s\n", is_partial_support ? "support" : "not support");
 	return 0;
 }
 
@@ -207,7 +212,7 @@ void disp_patial_lcm_validate_roi(struct disp_lcm_handle *plcm, struct disp_rect
 	int h = roi->height;
 
 	disp_lcm_validate_roi(plcm, &roi->x, &roi->y, &roi->width, &roi->height);
-	DISPDBG("lcm verify partial(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+	DISP_PARTIAL_DBG("lcm verify partial(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
 			x, y, w, h, roi->x, roi->y, roi->width, roi->height);
 }
 
