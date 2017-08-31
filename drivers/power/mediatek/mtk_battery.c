@@ -56,6 +56,7 @@
 #include <mach/mtk_battery_table.h>	/* BATTERY_PROFILE_STRUCT */
 #include <mt-plat/upmu_common.h> /*pmic & ptim */
 #include <mt-plat/mtk_auxadc_intf.h>
+#include <mt-plat/mtk_boot.h>
 
 
 /* ============================================================ */
@@ -68,7 +69,6 @@
 /* global variable */
 /* ============================================================ */
 static struct hrtimer fg_drv_thread_hrtimer;
-static DECLARE_WAIT_QUEUE_HEAD(fg_core_wq);
 static DECLARE_WAIT_QUEUE_HEAD(fg_update_wq);
 PMU_ChargerStruct BMT_status;
 PMU_FuelgaugeStruct FG_status;
@@ -81,7 +81,6 @@ static unsigned int g_fgd_version = -1;
 static bool init_flag;
 signed int g_I_SENSE_offset;	/* Todo: This variable is export by upmu_common.h or upmu_sw.h, change it? */
 bool gFG_Is_Charging;
-unsigned int gm30_intr_flag;
 int BAT_EC_cmd;
 int BAT_EC_param;
 int g_platform_boot_mode;
@@ -362,14 +361,13 @@ static void battery_update(struct battery_data *bat_data)
 
 unsigned char bat_is_kpoc(void)
 {
-#if 0
+	int boot_mode = get_boot_mode();
+
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
-	if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-	    || g_platform_boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 		return true;
 	}
-#endif
 #endif
 	return false;
 }
@@ -510,7 +508,7 @@ bool battery_meter_get_battery_current_sign(void)
 
 signed int battery_meter_get_charger_voltage(void)
 {
-	return 3600;
+	return pmic_get_vbus();
 }
 /* ============================================================ */
 /* Internal function */
@@ -834,13 +832,16 @@ unsigned int TempToBattVolt(int temp, int update)
 	long long Vin = 0;
 	long long V_IR_comp = 0;
 	/*int vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);*/
-	int vbif28 = 2800;
+	int vbif28 = RBAT_PULL_UP_VOLT;
 	static int fg_current_temp;
 	static int fg_current_state;
 	int ret;
 	int fg_r_value = R_FG_VALUE;
 	int	fg_meter_res_value = FG_METER_RESISTANCE;
 
+#ifdef RBAT_PULL_UP_VOLT_BY_BIF
+	vbif28 = pmic_get_vbif28_volt();
+#endif
 	Vin = R_NTC * vbif28 * 10;	/* 0.1 mV */
 	do_div(Vin, (R_NTC + RBAT_PULL_UP_R));
 
@@ -877,8 +878,10 @@ int BattVoltToTemp(int dwVolt)
 
 	TRes_temp = (RBAT_PULL_UP_R * (long long) dwVolt);
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
+	vbif28 = pmic_get_vbif28_volt();
 	do_div(TRes_temp, (vbif28 - dwVolt));
-	/* bm_debug("[RBAT_PULL_UP_VOLT_BY_BIF] vbif28:%d\n",pmic_get_vbif28_volt()); */
+	if (vbif28 > 3000 || vbif28 < 2500)
+		bm_err("[RBAT_PULL_UP_VOLT_BY_BIF] vbif28:%d\n", pmic_get_vbif28_volt());
 #else
 	do_div(TRes_temp, (RBAT_PULL_UP_VOLT - dwVolt));
 #endif
@@ -2020,56 +2023,6 @@ void fg_nafg_int_handler(void)
 	wakeup_fg_algo(FG_INTR_NAG_C_DLTV);
 }
 
-void fg_core_timer_intr_handler(void)
-{
-	ktime_t ktime = ktime_set(10, 0);
-
-	hrtimer_start(&fg_drv_thread_hrtimer, ktime, HRTIMER_MODE_REL);
-}
-
-
-void fg_core_intr_handler(int tmp_intr_flag)
-{
-	unsigned int intr_mask = 0x80000000;
-
-	do {
-		switch (tmp_intr_flag & intr_mask) {
-		case FG_INTR_0:
-			break;
-
-		case FG_INTR_TIMER_UPDATE:
-				pr_err("[fg_core_intr_handler] FG_INTR_TIMER_UPDATE\n");
-				fg_core_timer_intr_handler();
-			break;
-
-		case 0x80000000:
-			break;
-		}
-		intr_mask = intr_mask >> 1;
-	} while (intr_mask > 0);
-
-	if (gm30_intr_flag != 0)
-		wakeup_fg_algo(gm30_intr_flag);
-
-}
-
-int battery_routine(void *x)
-{
-	while (1) {
-		wait_event(fg_core_wq, (gm30_intr_flag > 0));
-
-		fg_core_intr_handler(gm30_intr_flag);
-		gm30_intr_flag = 0;
-	}
-	return 0;
-}
-
-void fg_drv_send_intr(int fg_intr_num)
-{
-	gm30_intr_flag |= fg_intr_num;
-	wake_up(&fg_core_wq);
-}
-
 void fg_bat_temp_int_init(void)
 {
 	int tmp = force_get_tbat(true);
@@ -2342,7 +2295,9 @@ void fg_zcv_int_handler(void)
 void fg_bat_plugout_int_handler(void)
 {
 	pr_err("[fg_bat_plugout_int_handler]\n");
+	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 	wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
+	battery_update(&battery_main);
 }
 
 void fg_charger_in_handler(void)
@@ -2829,13 +2784,24 @@ static int battery_callback(struct notifier_block *nb, unsigned long event, void
 		{
 /* START CHARGING */
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
-
+			battery_update(&battery_main);
 		}
 		break;
 	case CHARGER_NOTIFY_STOP_CHARGING:
 		{
 /* STOP CHARGING */
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+			battery_update(&battery_main);
+		}
+		break;
+	case CHARGER_NOTIFY_ERROR:
+		{
+/* charging enter error state */
+		}
+		break;
+	case CHARGER_NOTIFY_NORMAL:
+		{
+/* charging leave error state */
 		}
 		break;
 
@@ -3128,7 +3094,6 @@ static int battery_probe(struct platform_device *dev)
 
 	fg_custom_init();
 
-	kthread_run(battery_routine, NULL, "battery_thread");
 	kthread_run(battery_update_routine, NULL, "battery_update_thread");
 
 	fg_drv_thread_hrtimer_init();
