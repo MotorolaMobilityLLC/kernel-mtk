@@ -98,6 +98,7 @@
 #define DIFFERENCE_FGC_FGV_TH_SOC1 7000
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
+#define NAFG_RATIO 80
 
 #define PMIC_SHUTDOWN_SW_EN 1
 #define FORCE_VC_MODE 0	/* 0: mix, 1:Coulomb, 2:voltage */

@@ -28,6 +28,7 @@
 /* multiple battery profile compile options */
 /*#define MTK_GET_BATTERY_ID_BY_AUXADC*/
 #define BATTERY_ID_CHANNEL_NUM 1
+#define BATTERY_PROFILE_ID 0
 #define TOTAL_BATTERY_NUMBER 4
 /*#define MTK_GET_BATTERY_ID_BY_GPIO*/
 
