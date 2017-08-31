@@ -3139,7 +3139,7 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 		SetExtI2SAdcInEnable(true);		/* Enable I2S2 */
 		Set2ndI2SOutEnable(true);		/* Enable I2S3 */
 		pr_debug("%s(), Turn on. AFE_I2S_CON2=0x%x, AFE_I2S_CON3=0x%x\n", __func__,
-			 Afe_Get_Reg(AFE_I2S_CON2), Afe_Get_Reg(AFE_I2S_CON2));
+			 Afe_Get_Reg(AFE_I2S_CON2), Afe_Get_Reg(AFE_I2S_CON3));
 
 		EnableAfe(true);
 	} else {
@@ -3168,7 +3168,7 @@ bool platform_EnableSmartpaI2s(int sidegen_control, int hdoutput_control, int ex
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
 			pr_debug("%s(), Turn off. AFE_I2S_CON2=0x%x, AFE_I2S_CON3=0x%x\n", __func__,
-				 Afe_Get_Reg(AFE_I2S_CON2), Afe_Get_Reg(AFE_I2S_CON2));
+				 Afe_Get_Reg(AFE_I2S_CON2), Afe_Get_Reg(AFE_I2S_CON3));
 			EnableAfe(false);
 		}
 		if (!mtk_soc_always_hd)
