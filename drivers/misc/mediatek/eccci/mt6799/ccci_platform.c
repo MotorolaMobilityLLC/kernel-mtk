@@ -21,7 +21,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#include <mt-plat/mtk_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 #include "ccci_config.h"
 #include "ccci_modem.h"
 #include "ccci_bm.h"
@@ -31,7 +31,7 @@
 #include <mach/emi_mpu.h>
 #endif
 #ifdef FEATURE_USING_4G_MEMORY_API
-#include <mt-plat/mtk_lpae.h>
+#include <mt-plat/mt_lpae.h>
 #endif
 
 #define TAG "plat"
@@ -52,83 +52,160 @@ int Is_MD_EMI_voilation(void)
 /* =================================================== */
 /* MPU Region defination */
 /* =================================================== */
-#define MPU_REGION_ID_MD1_MCURO_HWRW    11
-#define MPU_REGION_ID_TOTAL_NUM         24
+#define MPU_REGION_ID_SEC_OS            0
+#define MPU_REGION_ID_ATF               1
+#define MPU_REGION_ID_SVP_SMEM          2
+#define MPU_REGION_ID_TRUSTED_UI        7
+#define MPU_REGION_ID_MD1_SEC_SMEM      8
+
+#define MPU_REGION_ID_MD1_SMEM          10
+#define MPU_REGION_ID_MD3_SMEM          11
+#define MPU_REGION_ID_MD1MD3_SMEM       12
+#define MPU_REGION_ID_MD1_MCURW_HWRW    13
+#define MPU_REGION_ID_MD1_ROM           14  /* contain DSP in Jade */
+#define MPU_REGION_ID_MD1_MCURW_HWRO    15
+#define MPU_REGION_ID_MD1_MCURO_HWRW    16
+#define MPU_REGION_ID_WIFI_EMI_FW       17
+#define MPU_REGION_ID_WMT               18
+#define MPU_REGION_ID_MD1_CCB           19
+#define MPU_REGION_ID_MD3_CCB           20
+#define MPU_REGION_ID_MD3_ROM           21
+#define MPU_REGION_ID_MD3_RW            22
+#define MPU_REGION_ID_PADDING1          23
+#define MPU_REGION_ID_PADDING2          24
+#define MPU_REGION_ID_PADDING3          25
+#define MPU_REGION_ID_PADDING4          26
+#define MPU_REGION_ID_PADDING5          27
+#define MPU_REGION_ID_MD_PROTECT        28
+#define MPU_REGION_ID_MD_DYNAMIC        29
+/*#define MPU_REGION_ID_GPS_EMI           22*/
+#define MPU_REGION_ID_AP                32
+#define MPU_REGION_ID_TOTAL_NUM         (MPU_REGION_ID_AP + 1)
+
 
 #ifdef ENABLE_EMI_PROTECTION
-/*
-* (D7(MDHW),	D6(MFG),	D5(MD3),	D4(MM),	D3(Resv),D2(CONN), D1(MD1), D0(AP))
+/* ////////////////////////////////////////////////////////////// (D7(MDHW),       D6(MFG), \
+*	D5(MD3),        D4(MM),        D3(Resv),      D2(CONN),      D1(MD1),       D0(AP))
 */
 #define MPU_ACCESS_PERMISSON_CLEAR	SET_ACCESS_PERMISSON(NO_PROTECTION, NO_PROTECTION, \
 	NO_PROTECTION,  NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION)
+/* maybe no use */
+#define MPU_ACCESS_PERMISSON_AP_MD1_RO_ATTR  SET_ACCESS_PERMISSON(FORBIDDEN, NO_PROTECTION, \
+	FORBIDDEN,  NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,  NO_PROTECTION)
+/* #define MPU_REGION_ID_AP            19 */
+#define MPU_ACCESS_PERMISSON_AP_ATTR         SET_ACCESS_PERMISSON(FORBIDDEN,     NO_PROTECTION, \
+	FORBIDDEN,      NO_PROTECTION, FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION)
+/* #define MPU_REGION_ID_MD1_ROM_DSP   10 */
+#define MPU_ACCESS_PERMISSON_MD1_ROM_ATTR    SET_ACCESS_PERMISSON(SEC_R_NSEC_R,     FORBIDDEN,     \
+	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     SEC_R_NSEC_R,  SEC_R_NSEC_R)
+/* #define MPU_REGION_ID_MD1_RW        15 */
+#define MPU_ACCESS_PERMISSON_MD1_RW_ATTR     SET_ACCESS_PERMISSON(SEC_R_NSEC_R,     FORBIDDEN,     \
+	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION, FORBIDDEN)
+/* #define MPU_REGION_ID_MD1_SMEM      6 */
+#define MPU_ACCESS_PERMISSON_MD1_SMEM_ATTR   SET_ACCESS_PERMISSON(NO_PROTECTION,     FORBIDDEN,     \
+	FORBIDDEN,      FORBIDDEN,     NO_PROTECTION,     FORBIDDEN,     NO_PROTECTION, NO_PROTECTION)
+/* #define MPU_REGION_ID_MD3_ROM       17
+* note that D3 was set to NO_PROTECTION, but the mpu indicate it be SEC_R_NSEC_R
+*/
+#define MPU_ACCESS_PERMISSON_MD3_ROM_ATTR    SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
+/* #define MPU_REGION_ID_MD3_RW        18 */
+#define MPU_ACCESS_PERMISSON_MD3_RW_ATTR     SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
+/* #define MPU_REGION_ID_MD3_SMEM      7 */
+#define MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION)
+/* #define MPU_REGION_ID_MD1MD3_SMEM   8, AP need to clear smem, so set it to NO_PROTECTION*/
+#define MPU_ACCESS_PERMISSON_MD1MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION)
+/* #define MPU_REGION_ID_MD1_MCURO_HWRW   11 */
+#define MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR   SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, \
+	FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R)
 
-static const unsigned int mpu_attr_default_table[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_ID_TOTAL_NUM] = {
-/*===============================================================================================================*/
-/* No |  | D0(AP)    | D1(MD1)      | D2(CONN) | D3(Res)  | D4(MM)       | D5(MD3 )      | D6(MFG)    | D7(MDHW)|*/
-/*--------------+------------------------------------------------------------------------------------------------*/
-/* 0: set in preloder*/
+static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_ID_TOTAL_NUM] = {
+/*===============================================================================*/
+/* No || D0(AP)| D1(MD1)| D2(CONN) | D3(Res)| D4(MM)| D5(MD3)| D6(MFG)| D7(MDHW)|*/
+/*--------------+----------------------------------------------------------------*/
+/* 0*/
 { SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*1: Preloader*/
+/* 1*/
 { SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/* 2: SVP share mem, set in TEE*/
+/* 2*/
 { SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/* 3: Trust UI, set in TEE*/
+/* 3*/
 { SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_RW, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/* 4: MD1 SEC MEM, set in TEE*/
+/* 4*/
 { SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
-/* 5: CCCI_MD1, set in LK*/
+/* 5*/
+{ SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/* 6*/
+{ SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/* 7*/
+{ SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/* 8*/
+{ SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/* 9*/
+{ SEC_RW, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/*10*/
 { NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/* 6: CCCI_MD3, set in LK*/
+/*11*/
 { NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
-/* 7: MD1_MD3, set in LK*/
+/*12*/
 { NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
-/* 8:   MD1_MCURW_HWRW*/
+/*13*/
 { SEC_R_NSEC_R, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION},
-/* 9: MD1_ROM_DSP, set in LK*/
+/*14*/
 { SEC_R_NSEC_R, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R},
-/*10: MD1_MCURW_HWRO set in LK*/
+/*15*/
 { SEC_R_NSEC_R, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R},
-/*11: MD1_MCURO_HWRW set in kernel*/
+/*16*/
 { SEC_R_NSEC_R, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION},
-/*12: WIFI FW, set in kernel*/
+/*17*/
 { FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*13: WMT set in kernel*/
+/*18*/
 { NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*14: MD1 R/W, set in LK*/
-{ SEC_R_NSEC_R, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R },
-/*15: MD1 logging, set in LK*/
-{ SEC_R_NSEC_R, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN},
-/*16: MD3 ROM set in LK*/
+/*19*/
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION},
+/*20*/
+{ NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
+/*21*/
 { SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN},
-/*17: MD3 R/W, set in LK*/
+/*22*/
 { SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN},
-/*18: MD Padding1, set in LK*/
+/*23*/
 { NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*19: MD Padding2, set in LK*/
+/*24*/
 { NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*20: MD Protect, set in LK*/
-{ NO_PROTECTION, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*21: MD dynamic set in LK*/
+/*25*/
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
+/*26*/
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
+/*27*/
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
+/*28*/
+{ NO_PROTECTION, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN},
+/*29*/
 { FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*22: GPS EMI, set in Kernel*/
+/*30*/
 { NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN},
-/*23: AP, set in Kernel */
+/*31*/
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN},
+/*32*/
 { NO_PROTECTION, SEC_R_NSEC_R, FORBIDDEN, FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION, FORBIDDEN},
 };
-/*==============================================================================================*/
-
 #endif
 
-#define MPU_REGION_INFO_ID0    0
-#define MPU_REGION_INFO_ID1    0
-#define MPU_REGION_INFO_ID2    MPU_REGION_ID_MD1_MCURO_HWRW
-#define MPU_REGION_INFO_ID3    0
+#define MPU_REGION_INFO_ID0    MPU_REGION_ID_MD1_ROM
+#define MPU_REGION_INFO_ID1    MPU_REGION_ID_MD1_MCURO_HWRW
+#define MPU_REGION_INFO_ID2    MPU_REGION_ID_MD1_MCURW_HWRO
+#define MPU_REGION_INFO_ID3    MPU_REGION_ID_MD1_MCURW_HWRW
 #define MPU_REGION_INFO_ID4    0
 #define MPU_REGION_INFO_ID5    0
 #define MPU_REGION_INFO_ID6    0
 #define MPU_REGION_INFO_ID7    0
+#define MPU_REGION_INFO_ID(X)  MPU_REGION_INFO_ID##X
 
-static const unsigned int mpu_region_info_id[] = {
+static const unsigned int MPU_REGION_INFO_ID[] = {
 MPU_REGION_INFO_ID0, MPU_REGION_INFO_ID1, MPU_REGION_INFO_ID2, MPU_REGION_INFO_ID3,
 MPU_REGION_INFO_ID4, MPU_REGION_INFO_ID5, MPU_REGION_INFO_ID6, MPU_REGION_INFO_ID7};
 
@@ -137,16 +214,82 @@ MPU_REGION_INFO_ID4, MPU_REGION_INFO_ID5, MPU_REGION_INFO_ID6, MPU_REGION_INFO_I
 #define CHEAD_MPU_DOMAIN_2      MPU_DOMAIN_ID_MDHW
 #define CHEAD_MPU_DOMAIN_3      0xFF
 #define CHEAD_MPU_DOMAIN_LAST   CHEAD_MPU_DOMAIN_2
+#define MPU_DOMAIN_NUM_OF_ID(X)    MPU_DOMAIN_NUM_OF_ID##X
+/* domain_attr */
+static const unsigned int CHEAD_MPU_DOMAIN_ID[] = {
+CHEAD_MPU_DOMAIN_0, CHEAD_MPU_DOMAIN_1, CHEAD_MPU_DOMAIN_2, CHEAD_MPU_DOMAIN_3};
 
 unsigned long infra_ao_base;
 unsigned long dbgapb_base;
+/* -- MD1 Bank 0 */
+#define MD1_BANK0_MAP0 (infra_ao_base + 0x300)
+#define MD1_BANK0_MAP1 (infra_ao_base + 0x304)
+#define MD1_BANK0_MAP2 (infra_ao_base + 0x308)
+#define MD1_BANK0_MAP3 (infra_ao_base + 0x30C)
+/* -- MD1 Bank 1 */
+#define MD1_BANK1_MAP0 (infra_ao_base + 0x310)
+#define MD1_BANK1_MAP1 (infra_ao_base + 0x314)
+#define MD1_BANK1_MAP2 (infra_ao_base + 0x318)
+#define MD1_BANK1_MAP3 (infra_ao_base + 0x31C)
+
+/* -- MD1 Bank 4 */
+#define MD1_BANK4_MAP0 (infra_ao_base + 0x320)
+#define MD1_BANK4_MAP1 (infra_ao_base + 0x324)
+#define MD1_BANK4_MAP2 (infra_ao_base + 0x328)
+#define MD1_BANK4_MAP3 (infra_ao_base + 0x32C)
+
+/* HW remap for MD3(C2K) */
+/* -- MD3 Bank 0 */
+#define MD3_BANK0_MAP0 (infra_ao_base + 0x330)
+#define MD3_BANK0_MAP1 (infra_ao_base + 0x334)
+#define MD3_BANK0_MAP2 (infra_ao_base + 0x338)
+#define MD3_BANK0_MAP3 (infra_ao_base + 0x33C)
+
+/* -- MD3 Bank 4 */
+#define MD3_BANK4_MAP0 (infra_ao_base + 0x350)
+#define MD3_BANK4_MAP1 (infra_ao_base + 0x354)
+#define MD3_BANK4_MAP2 (infra_ao_base + 0x358)
+#define MD3_BANK4_MAP3 (infra_ao_base + 0x35C)
+
 
 void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
+#ifdef ENABLE_EMI_PROTECTION
+#ifdef SET_EMI_STEP_BY_STAGE
+/*=======================================*/
+/* - Clear HW-related region protection -*/
+/*---------------------------------------*/
+	if (md->index == MD_SYS1) {
+		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n",
+						MPU_REGION_ID_MD1_MCURW_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
+
+	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n",
+						MPU_REGION_ID_MD1_MCURW_HWRO);
+	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+					0,                       /*END_ADDR*/
+					MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
+					MPU_ACCESS_PERMISSON_CLEAR);
+
+		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n",
+						MPU_REGION_ID_MD1_MCURO_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
+	}
+#endif
+
+#endif
 }
 
 void ccci_clear_dsp_region_protection(struct ccci_modem *md)
 {
+#ifdef ENABLE_EMI_PROTECTION
+#endif
 }
 
 /*
@@ -156,11 +299,38 @@ void ccci_clear_dsp_region_protection(struct ccci_modem *md)
  */
 void ccci_set_ap_region_protection(struct ccci_modem *md)
 {
+#ifdef ENABLE_EMI_PROTECTION
+#ifdef SET_AP_MPU_REGION
+	unsigned int ap_mem_mpu_id, ap_mem_mpu_attr;
+	unsigned long long kernel_base;
+	unsigned int dram_size;
 
+	if (is_4g_memory_size_support())
+		kernel_base = 0;
+	else
+		kernel_base = get_phys_offset();
+#ifdef ENABLE_DRAM_API
+	dram_size = get_max_DRAM_size();
+#else
+	dram_size = 256*1024*1024;
+#endif
+	ap_mem_mpu_id = MPU_REGION_ID_AP;
+	ap_mem_mpu_attr = MPU_ACCESS_PERMISSON_AP_ATTR;
+
+	CCCI_NORMAL_LOG(md->index, TAG, "MPU Start protect AP region<%d:%llx:%llx> %x\n",
+			ap_mem_mpu_id, kernel_base, (kernel_base+dram_size-1), ap_mem_mpu_attr);
+	emi_mpu_set_region_protection(kernel_base,
+					(kernel_base+dram_size-1),
+					ap_mem_mpu_id,
+					ap_mem_mpu_attr);
+#endif
+#endif
 }
 
 void ccci_set_dsp_region_protection(struct ccci_modem *md, int loaded)
 {
+#ifdef ENABLE_EMI_PROTECTION
+#endif
 }
 #ifdef ENABLE_EMI_PROTECTION
 inline unsigned int EXTRACT_REGION_VALUE(unsigned int domain_set, int region_num)
@@ -172,7 +342,7 @@ inline unsigned int EXTRACT_REGION_VALUE(unsigned int domain_set, int region_num
 
 	return ret;
 }
-
+/* region_id: 0~7 0=MPU_DOMAIN_INFO_ID_MD1 ->CHEAD_MPU_DOMAIN_ID[MPU_DOMAIN_INFO_ID_MD1]-- domain 1 MD1*/
 unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned region_id)
 {
 	unsigned int domain_id;
@@ -196,12 +366,11 @@ unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned regio
 			if ((extract_value >= NO_PROTECTION) && (extract_value <= FORBIDDEN))
 				region_dom[domain_id] = extract_value;
 			else
-				region_dom[domain_id] =
-					mpu_attr_default_table[mpu_region_info_id[region_id]][domain_id];
+				region_dom[domain_id] = MPU_ATTR_DEFAULT[MPU_REGION_INFO_ID[region_id]][domain_id];
 			CCCI_DEBUG_LOG(md->index, TAG, "1. region_dom[%d] = %X\n", domain_id, region_dom[domain_id]);
 			break;
 		default:
-			region_dom[domain_id] = mpu_attr_default_table[mpu_region_info_id[region_id]][domain_id];
+			region_dom[domain_id] = MPU_ATTR_DEFAULT[MPU_REGION_INFO_ID[region_id]][domain_id];
 			CCCI_DEBUG_LOG(md->index, TAG, "2. region_dom[%d] = %X\n", domain_id, region_dom[domain_id]);
 			break;
 		}
@@ -213,6 +382,151 @@ unsigned int CheckHeader_region_attr_paser(struct ccci_modem *md, unsigned regio
 #endif
 void ccci_set_mem_access_protection(struct ccci_modem *md)
 {
+#ifdef ENABLE_EMI_PROTECTION
+	unsigned long long shr_mem_phy_start, shr_mem_phy_end;
+	unsigned long long rom_mem_phy_start, rom_mem_phy_end;
+	unsigned long long rw_mem_phy_start, rw_mem_phy_end;
+	unsigned int rw_mem_mpu_id, rw_mem_mpu_attr;
+	unsigned int shr_mem_mpu_id, shr_mem_mpu_attr;
+	unsigned int rom_mem_mpu_id, rom_mem_mpu_attr;
+#ifdef SET_AP_MPU_REGION
+	unsigned int ap_mem_mpu_id, ap_mem_mpu_attr;
+#endif
+	unsigned long long shr_mem13_phy_start, shr_mem13_phy_end;
+	unsigned int shr_mem13_mpu_id, shr_mem13_mpu_attr;
+	unsigned int region_id;
+	struct ccci_image_info *img_info;
+	struct ccci_mem_layout *md_layout;
+#ifdef SET_AP_MPU_REGION
+	unsigned int kernel_base;
+	unsigned int dram_size;
+#endif
+	unsigned int by_pass_setting = 0;
+	/* check header version is newer than v4 */
+	CCCI_BOOTUP_LOG(md->index, TAG, "CCCI Image header version = %d\n", md->img_info[IMG_MD].img_info.header_verno);
+	if (md->index == MD_SYS1 && md->img_info[IMG_MD].img_info.header_verno < 4) {
+		CCCI_BOOTUP_LOG(md->index, TAG, "CCCI Image header version is %d ,RMPU Only support after v4\n",
+			md->img_info[IMG_MD].img_info.header_verno);
+		return;
+	}
+
+	if (modem_run_env_ready(md->index)) {
+		CCCI_BOOTUP_LOG(md->index, TAG, "Has protected, bypass\n");
+		by_pass_setting = 1;
+	}
+	switch (md->index) {
+	case MD_SYS1:
+		img_info = &md->img_info[IMG_MD];
+		md_layout = &md->mem_layout;
+		/* region 9 */
+		region_id = MD_SET_REGION_MD1_ROM_DSP;
+		rom_mem_mpu_id = MPU_REGION_ID_MD1_ROM; /*MPU_REGION_INFO_ID[region_id]; */
+		rom_mem_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
+		rom_mem_phy_start = md_layout->md_region_phy +
+				img_info->rmpu_info.region_info[region_id].region_offset;
+		rom_mem_phy_end =
+		((rom_mem_phy_start + img_info->rmpu_info.region_info[region_id].region_size + 0xFFFF)&(~0xFFFF))
+				- 0x1;
+		if (by_pass_setting == 0) {
+			CCCI_BOOTUP_LOG(md->index, TAG, "Start MPU protect region <%d:%llX:%llX> %X\n",
+					     rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr);
+			emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
+						      rom_mem_phy_end,	/*END_ADDR */
+						      rom_mem_mpu_id,	/*region */
+						      rom_mem_mpu_attr);
+		}
+		shr_mem_mpu_id = MPU_REGION_ID_MD1_SMEM;/* 5 */
+		shr_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD1_SMEM_ATTR;/* 5 */
+		break;
+	case MD_SYS3:
+		img_info = &md->img_info[IMG_MD];
+		md_layout = &md->mem_layout;
+		rom_mem_mpu_id = MPU_REGION_ID_MD3_ROM;
+		rw_mem_mpu_id =	MPU_REGION_ID_MD3_RW;
+		shr_mem_mpu_id = MPU_REGION_ID_MD3_SMEM;
+		shr_mem13_mpu_id = MPU_REGION_ID_MD1MD3_SMEM;
+		rom_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_ROM_ATTR;
+		rw_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_RW_ATTR;
+		shr_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR;
+		shr_mem13_mpu_attr = MPU_ACCESS_PERMISSON_MD1MD3_SMEM_ATTR;
+		/*
+		 * if set start=0x0, end=0x10000, the actural protected area will be 0x0-0x1FFFF,
+		 * here we use 64KB align, MPU actually request 32KB align since MT6582, but this works...
+		 * we assume emi_mpu_set_region_protection will round end address down to 64KB align.
+		 */
+		rom_mem_phy_start = md_layout->md_region_phy;
+		rom_mem_phy_end = ((rom_mem_phy_start + img_info->size + 0xFFFF) & (~0xFFFF)) - 0x1;
+		rw_mem_phy_start = rom_mem_phy_end + 0x1;
+		rw_mem_phy_end = rom_mem_phy_start + md_layout->md_region_size - 0x1;
+#ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
+		rw_mem_phy_end += md_layout->smem_region_size;
+#endif
+		/* MD1 MD3 share memory */
+		shr_mem13_phy_start = md_layout->md1_md3_smem_phy;
+		shr_mem13_phy_end = ((shr_mem13_phy_start + md_layout->md1_md3_smem_size + 0xFFFF) & (~0xFFFF)) - 0x1;
+
+		if (by_pass_setting == 0) {
+			CCCI_BOOTUP_LOG(md->index, TAG,
+					"MPU protect MD ROM region<%d:%llx:%llx> %x,invalid_map=0x%llx\n",
+					rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr,
+					(unsigned long long)md->invalid_remap_base);
+			emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
+					rom_mem_phy_end,	/*END_ADDR */
+					rom_mem_mpu_id,	/*region */
+					rom_mem_mpu_attr);
+
+			CCCI_BOOTUP_LOG(md->index, TAG, "MPU protect MD R/W region<%d:%llx:%llx> %x\n",
+					rw_mem_mpu_id, rw_mem_phy_start, rw_mem_phy_end, rw_mem_mpu_attr);
+			emi_mpu_set_region_protection(rw_mem_phy_start,	/*START_ADDR */
+					rw_mem_phy_end,	/*END_ADDR */
+					rw_mem_mpu_id,	/*region */
+					rw_mem_mpu_attr);
+		}
+
+		CCCI_BOOTUP_LOG(md->index, TAG, "MPU protect MD1&3 Share region<%d:%llx:%llx> %x\n",
+			     shr_mem13_mpu_id, shr_mem13_phy_start, shr_mem13_phy_end, shr_mem13_mpu_attr);
+		emi_mpu_set_region_protection(shr_mem13_phy_start,	/*START_ADDR */
+					      shr_mem13_phy_end,	/*END_ADDR */
+					      shr_mem13_mpu_id,	/*region */
+					      shr_mem13_mpu_attr);
+
+		break;
+	default:
+		CCCI_BOOTUP_LOG(md->index, CORE, "[error]invalid when MPU protect\n");
+		return;
+	}
+#ifdef SET_AP_MPU_REGION
+	if (is_4g_memory_size_support())
+		kernel_base = 0;
+	else
+		kernel_base = get_phys_offset();
+#ifdef ENABLE_DRAM_API
+	dram_size = get_max_DRAM_size();
+#else
+	dram_size = 256 * 1024 * 1024;
+#endif
+	ap_mem_mpu_id = MPU_REGION_ID_AP;
+	ap_mem_mpu_attr = MPU_ACCESS_PERMISSON_AP_MD1_RO_ATTR;
+#endif
+
+	shr_mem_phy_start = md_layout->smem_region_phy;
+	shr_mem_phy_end = ((shr_mem_phy_start + md_layout->smem_region_size + 0xFFFF) & (~0xFFFF)) - 0x1;
+
+#ifndef ENABLE_DSP_SMEM_SHARE_MPU_REGION
+	CCCI_BOOTUP_LOG(md->index, TAG, "MPU protect MD Share region<%d:%llx:%llx> %x\n",
+		     shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
+	emi_mpu_set_region_protection(shr_mem_phy_start,	/*START_ADDR */
+				      shr_mem_phy_end,	/*END_ADDR */
+				      shr_mem_mpu_id,	/*region */
+				      shr_mem_mpu_attr);
+#endif
+/* This part need to move common part */
+#ifdef SET_AP_MPU_REGION
+	CCCI_BOOTUP_LOG(md->index, TAG, "MPU protect AP region<%d:%llx:%llx> %x\n",
+		     ap_mem_mpu_id, kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_attr);
+	emi_mpu_set_region_protection(kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_id, ap_mem_mpu_attr);
+#endif
+#endif
 }
 
 #ifdef SET_EMI_STEP_BY_STAGE
@@ -222,9 +536,8 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 #ifdef ENABLE_EMI_PROTECTION
 	struct ccci_image_info *img_info;
 	struct ccci_mem_layout *md_layout;
-	unsigned int region_mpu_id, region_mpu_attr;
+	unsigned int region_id, region_mpu_id, region_mpu_attr;
 	unsigned long long region_mpu_start, region_mpu_end;
-	mpu_cfg_t *mpu_cfg_inf;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -236,29 +549,41 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 			region_mpu_attr = SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 					FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R);
 			region_mpu_start = md_layout->md_region_phy +
-				img_info->rmpu_info.region_info[2].region_offset; /* Note here!!!!!, 2 */
+				img_info->rmpu_info.region_info[1].region_offset; /* Note here!!!!!, 1 */
 			region_mpu_end =
-				((region_mpu_start + img_info->rmpu_info.region_info[2].region_size /* Note here, 2 */
+				((region_mpu_start + img_info->rmpu_info.region_info[1].region_size /* Note here, 1 */
 				 + 0xFFFF)&(~0xFFFF)) - 0x1;
 
-			CCCI_BOOTUP_LOG(md->index, TAG, "Start MPU protect region <%d:%llX:%llX> %X\n",
+			CCCI_BOOTUP_LOG(md->index, TAG, "Start MPU protect region <%d:%llx:%llx> %X\n",
 				region_mpu_id, region_mpu_start, region_mpu_end, region_mpu_attr);
 			emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
 						      region_mpu_end,	/*END_ADDR */
 						      region_mpu_id,	/*region */
 						      region_mpu_attr);
-			mpu_cfg_inf = get_mpu_region_cfg_info(region_mpu_id);
-			if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
-				emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
-								region_mpu_end,	/*END_ADDR */
-								mpu_cfg_inf->relate_region,	/*region */
-								region_mpu_attr);
-				CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@1st)\n",
-								mpu_cfg_inf->relate_region);
-			} else
-				CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@1st)\n",
-								region_mpu_id);
 			break;
+		}
+		img_info = &md->img_info[IMG_MD];
+		md_layout = &md->mem_layout;
+
+		for (region_id = MD_SET_REGION_MD1_MCURW_HWRO; region_id < MPU_REGION_INFO_ID_TOTAL_NUM; region_id++) {
+			/* set 8, 10, 14 region, except 11 */
+			region_mpu_id = MPU_REGION_INFO_ID[region_id];
+			region_mpu_start = md_layout->md_region_phy +
+				img_info->rmpu_info.region_info[region_id].region_offset;
+			region_mpu_end =
+				((region_mpu_start + img_info->rmpu_info.region_info[region_id].region_size
+				+ 0xFFFF)&(~0xFFFF)) - 0x1;
+			if (region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW)
+				region_mpu_attr = MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR;
+			else
+				region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
+
+			CCCI_BOOTUP_LOG(md->index, TAG, "Start MPU protect region <%d:%llX:%llX> %X\n",
+				     region_mpu_id, region_mpu_start, region_mpu_end, region_mpu_attr);
+			emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
+					      region_mpu_end,	/*END_ADDR */
+					      region_mpu_id,	/*region */
+					      region_mpu_attr);
 		}
 		break;
 	case MD_SYS3:
@@ -284,7 +609,7 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 		md_layout = &md->mem_layout;
 		region_id = MD_SET_REGION_MD1_MCURO_HWRW;/*MPU_REGION_ID_MD1_MCURO_HWRW;*/
 		/* set 11 */
-		region_mpu_id = mpu_region_info_id[region_id];
+		region_mpu_id = MPU_REGION_INFO_ID[region_id];
 		region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
 		region_mpu_start = md_layout->md_region_phy +
 			img_info->rmpu_info.region_info[region_id].region_offset;
@@ -308,13 +633,146 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 }
 #endif
 
+#ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
+void ccci_set_exp_region_protection(struct ccci_modem *md)
+{
+	unsigned long long shr_mem_phy_start, shr_mem_phy_end;
+	unsigned int shr_mem_mpu_id, shr_mem_mpu_attr;
+
+	shr_mem_phy_start = md->mem_layout.smem_region_phy;
+	shr_mem_phy_end = ((shr_mem_phy_start + md->mem_layout.smem_region_size + 0xFFFF) & (~0xFFFF)) - 0x1;
+	shr_mem_mpu_id = MPU_REGION_ID_MD1_SMEM;
+	shr_mem_mpu_attr = SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION);
+
+	CCCI_NORMAL_LOG(md->index, TAG, "After EE: MPU Start protect MD Share region<%d:%llx:%llx> %x\n",
+		     shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
+	emi_mpu_set_region_protection(shr_mem_phy_start,	/*START_ADDR */
+				      shr_mem_phy_end,	/*END_ADDR */
+				      shr_mem_mpu_id,	/*region */
+				      shr_mem_mpu_attr);
+}
+#endif
+
 int set_md_smem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, phys_addr_t invalid)
 {
+	unsigned int remap1_val = 0;
+	unsigned int remap2_val = 0;
+	unsigned int remap3_val = 0;
+	unsigned int remap4_val = 0;
+
+	switch (md->index) {
+	case MD_SYS1:
+		/* For MD1_BANK4_MAP0 */
+		remap1_val = (((des >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*1) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD1_BANK4_MAP1 */
+		remap2_val = ((((des + 0x2000000*2) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*3) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD1_BANK4_MAP2 */
+		remap3_val = ((((des + 0x2000000*4) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*5) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD1_BANK4_MAP3 */
+		remap4_val = ((((des + 0x2000000*6) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*7) >> 8) | 1<<16) & 0x3FF0000);
+
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD1_BANK4_MAP0);
+		mt_reg_sync_writel(remap2_val, MD1_BANK4_MAP1);
+		mt_reg_sync_writel(remap3_val, MD1_BANK4_MAP2);
+		mt_reg_sync_writel(remap4_val, MD1_BANK4_MAP3);
+#endif
+		break;
+
+	case MD_SYS3:
+		/* For MD3_BANK4_MAP0 */
+		remap1_val = (((des >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*1) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD3_BANK4_MAP1 */
+		remap2_val = ((((des + 0x2000000*2) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*3) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD3_BANK4_MAP2 */
+		remap3_val = ((((invalid + 0x2000000*4) >> 24) | 0x1) & 0x3FF)
+			+ ((((invalid + 0x2000000*5) >> 8) | 1<<16) & 0x3FF0000);
+		/* For MD3_BANK4_MAP3 */
+		remap4_val = ((((invalid + 0x2000000*6) >> 24) | 0x1) & 0x3FF)
+			+ ((((invalid + 0x2000000*7) >> 8) | 1<<16) & 0x3FF0000);
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD3_BANK4_MAP0);
+		mt_reg_sync_writel(remap2_val, MD3_BANK4_MAP1);
+		mt_reg_sync_writel(remap3_val, MD3_BANK4_MAP2);
+		mt_reg_sync_writel(remap4_val, MD3_BANK4_MAP3);
+#endif
+		break;
+	default:
+		break;
+	}
+
+	CCCI_INIT_LOG(md->index, TAG, "MD Smem remap:[%llx]->[%llx](%08x:%08x:%08x:%08x), invalid_map=0x%llx\n",
+		     (unsigned long long)des, (unsigned long long)src,
+			 ccci_read32(MD1_BANK4_MAP0, 4),
+			 ccci_read32(MD1_BANK4_MAP1, 4),
+			 ccci_read32(MD1_BANK4_MAP2, 4),
+			 ccci_read32(MD1_BANK4_MAP3, 4),
+
+			 (unsigned long long)md->invalid_remap_base);
 	return 0;
 }
 
 int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, phys_addr_t invalid)
 {
+	unsigned int remap1_val = 0;
+	unsigned int remap2_val = 0;
+	unsigned int remap3_val = 0;
+	unsigned int remap4_val = 0;
+
+	if (modem_run_env_ready(md->index)) {
+		CCCI_BOOTUP_LOG(md->index, TAG, "RO_RW has mapped\n");
+		return 0;
+	}
+	CCCI_BOOTUP_LOG(md->index, TAG, "Kernel RO_RW mapping\n");
+
+	switch (md->index) {
+	case MD_SYS1:
+
+		remap1_val = (((des >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*1) >> 8) | 1<<16) & 0x3FF0000);
+		remap2_val = ((((des + 0x2000000*2) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*3) >> 8) | 1<<16) & 0x3FF0000);
+		remap3_val = ((((des + 0x2000000*4) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*5) >> 8) | 1<<16) & 0x3FF0000);
+		remap4_val = ((((des + 0x2000000*6) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*7) >> 8) | 1<<16) & 0x3FF0000);
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD1_BANK0_MAP0);
+		mt_reg_sync_writel(remap2_val, MD1_BANK0_MAP1);
+		mt_reg_sync_writel(remap3_val, MD1_BANK0_MAP2);
+		mt_reg_sync_writel(remap4_val, MD1_BANK0_MAP3);
+#endif
+		break;
+	case MD_SYS3:
+		remap1_val = (((des >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*1) >> 8) | 1<<16) & 0x3FF0000);
+		remap2_val = ((((des + 0x2000000*2) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*3) >> 8) | 1<<16) & 0x3FF0000);
+		remap3_val = ((((des + 0x2000000*4) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*5) >> 8) | 1<<16) & 0x3FF0000);
+		remap4_val = ((((des + 0x2000000*6) >> 24) | 0x1) & 0x3FF)
+			+ ((((des + 0x2000000*7) >> 8) | 1<<16) & 0x3FF0000);
+
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD3_BANK0_MAP0);
+		mt_reg_sync_writel(remap2_val, MD3_BANK0_MAP1);
+		mt_reg_sync_writel(remap3_val, MD3_BANK0_MAP2);
+		mt_reg_sync_writel(remap4_val, MD3_BANK0_MAP3);
+#endif
+		break;
+
+	default:
+		break;
+	}
+
+	CCCI_NORMAL_LOG(md->index, TAG, "MD ROM mem remap:[%llx]->[%llx](%08x:%08x)\n", (unsigned long long)des,
+		     (unsigned long long)src, remap1_val, remap2_val);
 	return 0;
 }
 
@@ -348,6 +806,8 @@ void ccci_set_mem_remap(struct ccci_modem *md, unsigned long smem_offset, phys_a
 	 */
 	md->mem_layout.smem_offset_AP_to_MD = md_bank4_base - 0x40000000;
 	invalid = md->mem_layout.smem_region_phy + md->mem_layout.smem_region_size;
+	set_md_rom_rw_mem_remap(md, 0x00000000, md->mem_layout.md_region_phy, invalid);
+	set_md_smem_remap(md, 0x40000000, md_bank4_base, invalid);
 	CCCI_NORMAL_LOG(md->index, TAG, "%s 0x%llX 0x%X\n", __func__,
 		(unsigned long long)md_bank4_base, md->mem_layout.smem_offset_AP_to_MD);
 }
@@ -378,7 +838,7 @@ void ccci_get_platform_version(char *ver)
 #ifdef ENABLE_CHIP_VER_CHECK
 	sprintf(ver, "MT%04x_S%02x", get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
 #else
-	sprintf(ver, "MTxxxx_S00");
+	sprintf(ver, "MT6735_S00");
 #endif
 }
 
@@ -453,57 +913,22 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
-#if 0
-	{
-		unsigned int tx_channel = 0;
+	unsigned int tx_channel = 0;
 
-		/* clear occupied channel */
-		while (tx_channel < 16) {
-			if (ccci_read32(baseA, PCCIF_BUSY) & (1<<tx_channel))
-				ccci_write32(baseA, PCCIF_TCHNUM, tx_channel);
+	/* clear occupied channel */
+	while (tx_channel < 16) {
+		if (ccci_read32(baseA, PCCIF_BUSY) & (1<<tx_channel))
+			ccci_write32(baseA, PCCIF_TCHNUM, tx_channel);
 
-			if (ccci_read32(baseB, PCCIF_BUSY) & (1<<tx_channel))
-				ccci_write32(baseB, PCCIF_TCHNUM, tx_channel);
+		if (ccci_read32(baseB, PCCIF_BUSY) & (1<<tx_channel))
+			ccci_write32(baseB, PCCIF_TCHNUM, tx_channel);
 
-			tx_channel++;
-		}
-		/* clear un-ached channel */
-		ccci_write32(baseA, PCCIF_ACK, ccci_read32(baseB, PCCIF_BUSY));
-		ccci_write32(baseB, PCCIF_ACK, ccci_read32(baseA, PCCIF_BUSY));
+		tx_channel++;
 	}
-#else
-	{
-		int reset_bit = -1;
-		unsigned int reg_value;
+	/* clear un-ached channel */
+	ccci_write32(baseA, PCCIF_ACK, ccci_read32(baseB, PCCIF_BUSY));
+	ccci_write32(baseB, PCCIF_ACK, ccci_read32(baseA, PCCIF_BUSY));
 
-		switch (ccif_id) {
-		case AP_MD1_CCIF:
-			reset_bit = 8;
-			break;
-		case AP_MD3_CCIF:
-			reset_bit = 7;
-			break;
-		case MD1_MD3_CCIF:
-			reset_bit = 6;
-			break;
-		}
-
-		if (reset_bit == -1)
-			return;
-
-		/* this reset bit will clear CCIF's busy/wch/irq, but not SRAM */
-
-		reg_value = ccci_read32(infra_ao_base, 0x150);
-		reg_value &= ~(1 << reset_bit);
-		reg_value |= (1 << reset_bit);
-		ccci_write32(infra_ao_base, 0x150, reg_value);
-
-		reg_value = ccci_read32(infra_ao_base, 0x154);
-		reg_value &= ~(1 << reset_bit);
-		reg_value |= (1 << reset_bit);
-		ccci_write32(infra_ao_base, 0x154, reg_value);
-	}
-#endif
 	/* clear SRAM */
 	for (i = 0; i < PCCIF_SRAM_SIZE/sizeof(unsigned int); i++) {
 		ccci_write32(baseA, PCCIF_CHDATA+i*sizeof(unsigned int), 0);

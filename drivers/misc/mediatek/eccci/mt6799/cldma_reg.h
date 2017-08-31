@@ -16,12 +16,12 @@
 
 #include <mt-plat/sync_write.h>
 /* INFRA */
-#define INFRA_RST0_REG_PD (0x0150)/* rgu reset cldma reg */
-#define INFRA_RST1_REG_PD (0x0154)/* rgu clear cldma reset reg */
-#define CLDMA_PD_RST_MASK (1 << 2)
+#define INFRA_RST0_REG_PD (0x0120)/*(0x0150) (0x0030)*/	/* rgu reset cldma reg */
+#define INFRA_RST1_REG_PD (0x0124)/*(0x0154) (0x0034)*/	/* rgu clear cldma reset reg */
+#define CLDMA_PD_RST_MASK (1<<15)/*(1<<2)*/
 #define INFRA_RST0_REG_AO (0x0140)
 #define INFRA_RST1_REG_AO (0x0144)
-#define CLDMA_AO_RST_MASK (1 << 6)
+#define CLDMA_AO_RST_MASK (1<<5)/*(1<<6)*/
 
 #define INFRA_AO_MD_SRCCLKENA    (0xF0C) /* SRC CLK ENA */
 /*===========================CLDMA_AO_INDMA: 10014004-1001404C==================================*/
@@ -107,7 +107,6 @@
 #define CLDMA_AP_BUS_CFG                    (0x0890)	/* LTEL2_BUS_INTF configuration register */
 #define CLDMA_AP_CHNL_DISABLE               (0x0894)	/* Dma channel disable register */
 #define CLDMA_AP_HIGH_PRIORITY              (0x0898)	/* Dma channel high priority register */
-#define CLDMA_AP_ADDR_REMAP_FROM            (0x0944)	/* Address Remap From Which Bank */
 #define CLDMA_AP_ADDR_REMAP_TO              (0x0948)	/* Address Remap To Which Bank */
 #define CLDMA_AP_ADDR_REMAP_MASK            (0x094C)	/* Address Remap Mask */
 #define CLDMA_AP_DUMMY                      (0x0950)	/* Dummy Register */

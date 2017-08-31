@@ -27,12 +27,12 @@
 
 /*MD peripheral register: MD bank8; AP bank2*/
 /*Modem WDT */
-#define C2K_WDT_MD_MODE     (0x00)
-#define C2K_WDT_MD_LENGTH   (0x04)
-#define C2K_WDT_MD_RESTART  (0x08)
-#define C2K_WDT_MD_STA      (0x0C)
-#define C2K_WDT_MD_SWRST    (0x1C)
-#define C2K_WDT_MD_MODE_KEY (0x0000220E)
+#define WDT_MD_MODE     (0x00)
+#define WDT_MD_LENGTH   (0x04)
+#define WDT_MD_RESTART  (0x08)
+#define WDT_MD_STA      (0x0C)
+#define WDT_MD_SWRST    (0x1C)
+#define WDT_MD_MODE_KEY (0x0000220E)
 
 /*CCIF */
 #define APCCIF_CON    (0x00)
@@ -68,9 +68,11 @@
 /****mt6755 special****/
 
 #define AP_PLL_CON0				 0x0	/*	((UINT32P)(APMIXED_BASE+0x0))	*/
-#define MDPLL1_CON0              0x2C8	/*	((UINT32P)(APMIXED_BASE+0x02C8))	*/
+#define MDPLL1_CON3              0x3AC	/*	((UINT32P)(APMIXED_BASE+0x03AC))	*/
 
-#define INFRA_TOPAXI_PROTECTEN_1 0x250	/*((UINT32P)(INFRACFG_AO_BASE+0x250))*/
+#define INFRA_TOPAXI_PROTECTEN_1_SET 0x240	/*((UINT32P)(INFRACFG_AO_BASE+0x240))*/
+#define INFRA_TOPAXI_PROTECTEN_1_CLR 0x244	/*((UINT32P)(INFRACFG_AO_BASE+0x244))*/
+#define INFRA_TOPAXI_PROTECTSTA_1 0x258	/*((UINT32P)(INFRACFG_AO_BASE+0x258))*/
 #define AP_POWERON_CONFIG_EN        0x000	/*((UINT32P)(SLEEP_BASE+0x000))*/
 #define AP_PWR_STATUS               0x180	/*((UINT32P)(SLEEP_BASE+0x180))*/
 #define AP_PWR_STATUS_2ND           0x184	/*((UINT32P)(SLEEP_BASE+0x184))*/
@@ -79,6 +81,8 @@
 #define PWR_ON        2
 #define PWR_ON_2ND    3
 #define PWR_CLK_DIS   4
+#define C2K_PWR_STA_MASK  11
+
 /*#define C2K          28*/
 
 #define C2K_MAGIC_NUM	0xC275
@@ -98,18 +102,16 @@
 #define C2K_C2K_PLL_CON3        0x02013008
 #define C2K_C2K_PLL_CON2        0x02013004
 #define C2K_C2K_PLLTD_CON0      0x02013074
-#define C2K_CLK_CTRL9		0x0200029C
-#define C2K_CLK_CTRL4		0x02000010
+#define C2K_CLK_CTRL9	0x0200029C
+#define C2K_CLK_CTRL4	0x02000010
 #define C2K_CG_ARM_AMBA_CLKSEL  0x02000234
 #define C2K_C2K_C2KPLL1_CON0    0x02013018
 #define C2K_C2K_CPPLL_CON0      0x02013040
 #define C2K_C2K_DSPPLL_CON0     0x02013050
 
 
-#define L1_C2K_CCIRQ_BASE		0x10211400
-#define C2K_L1_CCIRQ_BASE		0x10213400
-#define PS_C2K_CCIRQ_BASE		0x10211000
-#define C2K_PS_CCIRQ_BASE		0x10213000
+#define MD1_C2K_CCIRQ_BASE		0x102B0000
+#define C2K_MD1_CCIRQ_BASE		0x10270000
 
 #define ETS_SEL_BIT					(0x1 << 13)
 
@@ -125,11 +127,10 @@ struct md_hw_info {
 	/* #ifdef CONFIG_MTK_ECCCI_C2K */
 	void __iomem *sleep_base;
 	void __iomem *infra_ao_base;
-	unsigned long c2k_misc;
-	void __iomem *toprgu_base;
-	unsigned long c2k_chip_id_base;
-	unsigned long md1_pccif_base;
-	unsigned long md3_pccif_base;
+	unsigned long  c2k_misc;
+	unsigned long  c2k_chip_id_base;
+	unsigned long  md1_pccif_base;
+	unsigned long  md3_pccif_base;
 	/* #endif */
 
 	/*HW info - Interrutpt ID */
@@ -156,7 +157,7 @@ struct c2k_pll_t {
 
 extern unsigned long ccci_modem_boot_count[];
 
-extern int md_ccif_power_off(struct ccci_modem *md, unsigned int stop_type);
+extern int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout);
 extern int md_ccif_power_on(struct ccci_modem *md);
 extern int md_ccif_let_md_go(struct ccci_modem *md);
 int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
@@ -164,7 +165,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
-void dump_c2k_register(struct ccci_modem *md, unsigned int dump_flag);
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
