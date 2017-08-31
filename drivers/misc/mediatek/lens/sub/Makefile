@@ -39,7 +39,7 @@ endif
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/sub/inc
 
-ifeq ($(CONFIG_TOUCHSCREEN_MTK_USE_MODULE), y)
+ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 SUB_CFILES += sub_lens.c
 

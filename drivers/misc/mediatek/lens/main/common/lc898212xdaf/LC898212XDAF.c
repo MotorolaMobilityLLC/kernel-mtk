@@ -335,6 +335,58 @@ static void LC898212XD_init(void)
 			Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 			g_LC898212_SearchDir = 0;
 		}
+	} else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val1);
+		HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val1);
+		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
+
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+
+			Hall_Min = HallMinCheck;
+			Hall_Max = HallMaxCheck;
+
+			/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1); */
+			Hall_Off = val1;
+			/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2); */
+			Hall_Bias = val2;
+			/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+		} else {
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC1, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC2, &val1);
+			HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC3, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC4, &val1);
+			HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC5, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0CC6, &val2);
+
+			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+
+				Hall_Min = HallMinCheck;
+				Hall_Max = HallMaxCheck;
+
+				/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1); */
+				Hall_Off = val1;
+				/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2); */
+				Hall_Bias = val2;
+				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+			}
+		}
+
 	} else {
 		/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 */
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val2);
@@ -535,6 +587,38 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
 			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
 			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+		}
+	}
+
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
+		u8 val1 = 0, val2 = 0;
+		unsigned int AF_Infi = 0x00;
+		unsigned int AF_Marco = 0x00;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0012, &val1);
+		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		LOG_INF("AF_Infi : %x\n", AF_Infi);
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0013, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0014, &val1);
+		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		LOG_INF("AF_Infi : %x\n", AF_Marco);
+
+		/* Hall_Min = 0x8001; */
+		/* Hall_Max = 0x7FFF; */
+
+		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
+			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
+			LOG_INF("u4AF_CalibData_INF : %d\n", u4AF_CalibData_INF);
+			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+			LOG_INF("u4AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
+
+			if (u4AF_CalibData_MACRO > 0 && u4AF_CalibData_INF < 1024 &&
+				u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
+				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
+				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
+			}
 		}
 	}
 

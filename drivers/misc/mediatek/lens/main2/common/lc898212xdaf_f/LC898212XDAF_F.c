@@ -105,6 +105,14 @@ static int s4EEPROM_ReadReg_LC898212XDAF_F(u16 addr, u8 *data)
 	return i4RetValue;
 }
 
+static int convertAF_DAC(short ReadData)
+{
+	int DacVal = ((ReadData - Hall_Min) * (Max_Pos - Min_Pos)) /
+		((unsigned short)(Hall_Max - Hall_Min)) + Min_Pos;
+
+	return DacVal;
+}
+
 static void LC898212XD_init(void)
 {
 
@@ -245,6 +253,58 @@ static void LC898212XD_init(void)
 		}
 	}
 
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F64, &val1);
+		HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F65, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F66, &val1);
+		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2);
+
+		if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+			(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+
+			Hall_Min = HallMinCheck;
+			Hall_Max = HallMaxCheck;
+
+			/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1); */
+			Hall_Off = val1;
+			/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
+			Hall_Bias = val2;
+			/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+		} else {
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC1, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC2, &val1);
+			HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC3, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC4, &val1);
+			HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC5, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_F(0x0CC6, &val2);
+
+			if ((val1 != 0) && (val2 != 0) && (HallMaxCheck >= 0x1FFF && HallMaxCheck <= 0x7FFF) &&
+				(HallMinCheck >= 0x8001 && HallMinCheck <= 0xEFFF)) {
+
+				Hall_Min = HallMinCheck;
+				Hall_Max = HallMaxCheck;
+
+				/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F67, &val1); */
+				Hall_Off = val1;
+				/* s4EEPROM_ReadReg_LC898212XDAF_F(0x0F68, &val2); */
+				Hall_Bias = val2;
+				/* Mt define format - Ev PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+			}
+		}
+	}
 
 	if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
 		signed short Temp;
@@ -347,12 +407,89 @@ static inline int setAFMacro(unsigned long a_u4Position)
 
 static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 {
-	/*
 	stAF_MotorCalPos stMotorCalPos;
+	u32 u4AF_CalibData_INF;
+	u32 u4AF_CalibData_MACRO;
+
+	u8 val1 = 0, val2 = 0;
+	int AF_Infi = 0x00;
+	int AF_Marco = 0x00;
+
+	u4AF_CalibData_INF = 0;
+	u4AF_CalibData_MACRO = 0;
+
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
+		u8 val1 = 0, val2 = 0;
+		unsigned int AF_Infi = 0x00;
+		unsigned int AF_Marco = 0x00;
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0012, &val1);
+		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		LOG_INF("AF_Infi : %x\n", AF_Infi);
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0013, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0014, &val1);
+		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		LOG_INF("AF_Infi : %x\n", AF_Marco);
+
+		/* Hall_Min = 0x8001; */
+		/* Hall_Max = 0x7FFF; */
+
+		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
+			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
+			LOG_INF("u4AF_CalibData_INF : %d\n", u4AF_CalibData_INF);
+			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+			LOG_INF("u4AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
+
+			if (u4AF_CalibData_MACRO > 0 && u4AF_CalibData_INF < 1024 &&
+				u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
+				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
+				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
+			}
+		}
+	} else {
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0012, &val1);
+		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0013, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_F(0x0014, &val1);
+		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		LOG_INF("AF_Infi : %x\n", AF_Infi);
+		LOG_INF("AF_Marco : %x\n", AF_Marco);
+
+		Hall_Min = 0x8001;
+		Hall_Max = 0x7FFF;
+
+		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
+			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
+			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+
+			if (u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
+				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
+				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
+			}
+		}
+
+		LOG_INF("AF_CalibData_INF : %d\n", u4AF_CalibData_INF);
+		LOG_INF("AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
+
+	}
+
+	if (u4AF_CalibData_INF > 0 && u4AF_CalibData_MACRO < 1024 && u4AF_CalibData_INF < u4AF_CalibData_MACRO) {
+		stMotorCalPos.u4MacroPos = u4AF_CalibData_MACRO;
+		stMotorCalPos.u4InfPos = u4AF_CalibData_INF;
+	} else {
+		stMotorCalPos.u4MacroPos = 0;
+		stMotorCalPos.u4InfPos = 0;
+	}
 
 	if (copy_to_user(pstMotorCalPos, &stMotorCalPos, sizeof(stMotorCalPos)))
 		LOG_INF("copy to user failed when getting motor information\n");
-	*/
+
 	return 0;
 }
 
@@ -378,6 +515,9 @@ long LC898212XDAF_F_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsi
 		i4RetValue = setAFMacro(a_u4Param);
 		break;
 
+	case AFIOC_G_MOTORCALPOS:
+		i4RetValue = getAFCalPos((__user stAF_MotorCalPos *) (a_u4Param));
+		break;
 	default:
 		LOG_INF("No CMD\n");
 		i4RetValue = -EPERM;

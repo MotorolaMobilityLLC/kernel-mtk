@@ -43,7 +43,7 @@ subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/l
 subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898212xdaf_f/inc
 subdir-ccflags-$(CONFIG_MTK_LENS_BU63165AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63165af/inc
 
-ifeq ($(CONFIG_TOUCHSCREEN_MTK_USE_MODULE), y)
+ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN_CFILES += main_lens.c
 
