@@ -3413,17 +3413,15 @@ signed int battery_meter_get_battery_percentage(void)
 #if defined(SOC_BY_SW_FG)
 	oam_run();
 #if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-#if (OAM_D5 == 1)
-	return 100 - oam_d_5;
+	if (batt_meter_cust_data.oam_d5 == 1)
+		return 100 - oam_d_5;
+	else
+		return 100 - oam_d_2;
 #else
-	return 100 - oam_d_2;
-#endif
-#else
-#if (OAM_D5 == 1)
-	return 100 - battery_meter_trans_battery_percentage(oam_d_5);
-#else
-	return 100 - battery_meter_trans_battery_percentage(oam_d_2);
-#endif
+	if (batt_meter_cust_data.oam_d5 == 1)
+		return 100 - battery_meter_trans_battery_percentage(oam_d_5);
+	else
+		return 100 - battery_meter_trans_battery_percentage(oam_d_2);
 #endif
 #endif
 
