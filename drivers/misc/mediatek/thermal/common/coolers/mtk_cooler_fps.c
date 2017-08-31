@@ -163,7 +163,7 @@ void dfrc_fps_limit_cb(int fps_limit)
 
 		if (fps_adjust_check) {
 			if ((cl_fps_cur_limit > pre_fps_limit) & (pre_fps_limit != -1))
-				fps_target_adjust = ((cl_fps_cur_limit - pre_fps_limit) *
+				fps_target_adjust += ((cl_fps_cur_limit - pre_fps_limit) *
 					ktime_to_ms(ktime_sub(cur_time, pre_time)));
 
 			mtk_cooler_fps_dprintk("[%s] dfrc fps: %d, current limit: %d, target adjuct: %d\n",
@@ -400,7 +400,6 @@ static bool is_system_too_busy(void)
 
 	/* GPU cases */
 	gpu_loading = get_sma_val(gpu_loading_history, gpu_loading_sma_len);
-
 	mtk_cooler_fps_dprintk("[%s] gpu_loading = %d\n", __func__, gpu_loading);
 	if (gpu_loading >= GPU_LOADING_THRESHOLD)
 		return true;
@@ -415,6 +414,9 @@ static int adp_calc_fps_limit(void)
 {
 	static int last_change_tpcb;
 	static int period;
+#ifdef FEATURE_DFPS
+	static int fixedT_period;
+#endif
 	int sma_tpcb, tpcb_change, sma_fps;
 	int fps_limit = cl_adp_fps_limit;
 
@@ -424,11 +426,6 @@ static int adp_calc_fps_limit(void)
 	}
 	period = 0;
 
-#ifdef FEATURE_DFPS
-	/* [Fix me] adjust the fps target here */
-	/* fps_limit = fps_limit -(fps_target_adjust/(fps_stable_period*1000));*/
-	fps_target_adjust = 0;
-#endif
 	sma_tpcb = get_sma_val(tpcb_history, tpcb_sma_len);
 	tpcb_change = sma_tpcb - last_change_tpcb;
 
@@ -436,6 +433,18 @@ static int adp_calc_fps_limit(void)
 
 	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d, sma_fps = %d\n",
 		__func__, sma_tpcb,  tpcb_change, sma_fps);
+
+#ifdef FEATURE_DFPS
+	/* [Todo] adjust the fps target here */
+	/* fps_limit = fps_limit -(fps_target_adjust/(fps_stable_period*1000));*/
+	fps_target_adjust = 0;
+
+	/* Increase fps limit when tpcb keep stable for 100 sec */
+	if (tpcb_change == 0)
+		fixedT_period++;
+	else
+		fixedT_period = 0;
+#endif
 
 	if (fps_limit_always_on || sma_tpcb >= mtk_thermal_get_tpcb_target()) {
 		/* FPS variation is HIGH */
@@ -451,8 +460,15 @@ static int adp_calc_fps_limit(void)
 			}
 		} else {
 			/* For always-on and low tpcb */
+#ifdef FEATURE_DFPS
+			if (fixedT_period >= fps_stable_period || tpcb_change < 0) {
+				fps_limit = increase_fps_limit();
+				fixedT_period = 0;
+			}
+#else
 			if (sma_tpcb < mtk_thermal_get_tpcb_target() && tpcb_change < 0)
 				fps_limit = increase_fps_limit();
+#endif
 		}
 	} else if (tpcb_change < 0) { /* not always-on and low tpcb */
 		if (fps_limit - sma_fps <= fps_limit * fps_error_threshold / 100)
@@ -748,6 +764,11 @@ static ssize_t mtk_cl_fps_proc_write(struct file *filp, const char __user *buffe
 	if (sscanf(desc, "%d %d %d %d %d", &klog_on, &fps0, &fps1, &fps2, &fps3) >= 1) {
 		if (klog_on == 0 || klog_on == 1)
 			cl_fps_klog_on = klog_on;
+
+		/* [Fix me] debug only */
+		fps_limit_always_on = 0;
+		if (klog_on == 2)
+			fps_limit_always_on = 1;
 
 		if (fps0 == 0)
 			cl_fps_param[0] = 0;
