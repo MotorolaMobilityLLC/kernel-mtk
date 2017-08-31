@@ -1534,15 +1534,14 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, unsigned long long ullWdnd, int i32
 
 	if (psMonitor->psSyncFence == NULL) {
 		ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
-		return GED_ERROR_INVALID_PARAMS;
-	}
-
-	ret = sync_fence_wait_async(psMonitor->psSyncFence, &psMonitor->sSyncWaiter);
-
-	if ((ret == 1) || (ret < 0)) {
-		sync_fence_put(psMonitor->psSyncFence);
-		ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 		ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
+	} else {
+		ret = sync_fence_wait_async(psMonitor->psSyncFence, &psMonitor->sSyncWaiter);
+		if ((ret == 1) || (ret < 0)) {
+			sync_fence_put(psMonitor->psSyncFence);
+			ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
+			ret = ged_kpi_timeP(pid, ullWdnd, i32FrameID);
+		}
 	}
 	return ret;
 #else
