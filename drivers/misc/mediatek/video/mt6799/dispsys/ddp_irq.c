@@ -50,6 +50,9 @@ static unsigned int cnt_rdma_abnormal[2];
 static unsigned int cnt_ovl_underflow[OVL_NUM];
 static unsigned int cnt_wdma_underflow[2];
 
+static unsigned long long ovl_start_time[OVL_NUM];
+static unsigned long long ovl_end_time[OVL_NUM];
+
 unsigned long long rdma_start_time[2] = { 0 };
 unsigned long long rdma_end_time[2] = { 0 };
 
@@ -270,8 +273,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		int i;
 		static int config;
 		static int dump;
-		unsigned int smi_com = 0;
-		unsigned int smi_larb = 0;
+		static unsigned int smi_com[2];
+		static unsigned int smi_larb[2];
+		unsigned long long time_interval;
+		unsigned long long smi_com_interval;
+		unsigned long long smi_larb_interval;
 
 		module = disp_irq_module(irq);
 		index = ovl_to_index(module);
@@ -357,11 +363,15 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 						DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x400,
 								 0x1);
 
-						/* step 3: record SMI BW monitor start information */
+						/* step 3: dump SMI BW monitor start information */
+						ovl_start_time[index] = sched_clock();
+						DDPDUMP("TIME[S]:%d\n", (unsigned int)ovl_start_time[index]);
 						i = 0x1c0;
-						smi_com = DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i);
+						smi_com[0] = DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i);
+						DDPDUMP("SMI_COM+%04x[S]:0x%08x\n", i, smi_com[0]);
 						i = 0x410;
-						smi_larb = DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i);
+						smi_larb[0] = DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i);
+						DDPDUMP("SMI_LARB0+%04x[S]:0x%08x\n", i, smi_larb[0]);
 					}
 				}
 			}
@@ -374,39 +384,34 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				       (index << 16) | reg_val, module);
 
 		if (disp_helper_get_option(DISP_OPT_SMI_BW_MONITOR)) {
-			if (dump) {
-				/* step 4: dump SMI BW monitor information */
-				i = 0x1c0;
-				DDPDUMP("SMI_COM+%04x[S]:0x%08x\n", i, smi_com);
-				i = 0x410;
-				DDPDUMP("SMI_LARB0+%04x[S]:0x%08x\n", i, smi_larb);
+			if (module == DISP_MODULE_OVL0) {
+				if (dump) {
+					/* step 4: dump SMI BW monitor end information */
+					ovl_end_time[index] = sched_clock();
+					DDPDUMP("TIME[E]:%d\n", (unsigned int)ovl_end_time[index]);
+					time_interval = ovl_end_time[index] - ovl_start_time[index];
+					time_interval = time_interval / 1000;
+					i = 0x1c0;
+					smi_com[1] = DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i);
+					smi_com_interval = smi_com[1] - smi_com[0];
+					DDPDUMP("SMI_COM+%04x[E]:0x%08x\n", i, smi_com[1]);
+					DDPDUMP("SMI_COM freq:%d(MHz)\n", (int)(smi_com_interval / time_interval));
+					i = 0x410;
+					smi_larb[1] = DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i);
+					smi_larb_interval = smi_larb[1] - smi_larb[0];
+					DDPDUMP("SMI_LARB0+%04x[E]:0x%08x\n", i, smi_larb[1]);
+					DDPDUMP("SMI_LARB freq:%d(MHz)\n", (int)(smi_larb_interval / time_interval));
 
-				for (i = 0x1c0; i < 0x1f0; i += 16) {
-					DDPDUMP("SMI_COM+%04x[E]: 0x%08x 0x%08x 0x%08x 0x%08x\n", i,
-							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i),
-							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0x4),
-							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0x8),
-							DISP_REG_GET(DDP_REG_BASE_SMI_COMMON + i + 0xc));
+					/* step 5: SMI_COM/SMI_LARB disable */
+					DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a0, 0x0);
+					DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x400, 0x0);
+
+					/* step 6: SMI_COM/SMI_LARB clear */
+					DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a4, 0x1);
+					DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x404, 0x1);
+
+					dump = 0;
 				}
-				for (i = 0x410; i < 0x440; i += 16) {
-					DDPDUMP("SMI_LARB0+%04x[E]: 0x%08x 0x%08x 0x%08x 0x%08x\n", i,
-							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i),
-							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0x4),
-							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0x8),
-							DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i + 0xc));
-				}
-				i = 0x40;
-				DDPDUMP("SMI_LARB0+%04x[E]:0x%08x\n", i, DISP_REG_GET(DDP_REG_BASE_SMI_LARB0 + i));
-
-				/* step 5: SMI_COM/SMI_LARB disable */
-				DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a0, 0x0);
-				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x400, 0x0);
-
-				/* step 6: SMI_COM/SMI_LARB clear */
-				DISP_CPU_REG_SET_FIELD(REG_FLD(1, 0), DDP_REG_BASE_SMI_COMMON + 0x1a4, 0x1);
-				DISP_CPU_REG_SET(DDP_REG_BASE_SMI_LARB0 + 0x404, 0x1);
-
-				dump = 0;
 			}
 		}
 	} else if (irq == dispsys_irq[DISP_REG_WDMA0] || irq == dispsys_irq[DISP_REG_WDMA1]) {
