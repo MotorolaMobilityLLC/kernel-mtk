@@ -737,9 +737,9 @@
 #define CFG_MAX_NUM_OF_CHNL_INFO				50
 #define CFG_SELECT_BSS_BASE_ON_MULTI_PARAM		1
 #define CFG_SELECT_BSS_BASE_ON_RSSI				0
-#define CFG_SUPPORT_VO_ENTERPRISE               1
+#define CFG_SUPPORT_VO_ENTERPRISE               0
 #define CFG_NEIGHBOR_AP_CHANNEL_NUM             50
-#define CFG_SUPPORT_WMM_AC                      1
+#define CFG_SUPPORT_WMM_AC                      0
 
 #if CFG_SUPPORT_VO_ENTERPRISE
 #define CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT  1
