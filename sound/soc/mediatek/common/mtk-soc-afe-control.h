@@ -77,7 +77,6 @@ bool SetIntfConnection(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_b
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable);
 bool GetMemoryPathEnable(uint32 Aud_block);
 bool SetI2SDacEnable(bool bEnable);
-bool SetI2SADDAEnable(bool bEnable);
 bool GetI2SDacEnable(void);
 void EnableAfe(bool bEnable);
 bool set_chip_afe_enable(bool enable);
