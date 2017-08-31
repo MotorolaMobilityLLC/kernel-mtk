@@ -1637,7 +1637,7 @@
 		compatible = "mediatek,auxadc";
 		reg = <0 0x10370000 0 0x1000>;
 		interrupts = <GIC_SPI 390 IRQ_TYPE_EDGE_FALLING>;
-		clocks = <&pericfg CLK_INFRA_AUXADC>;
+		clocks = <&infracfg_ao CLK_INFRA_AUXADC>;
 		clock-names = "auxadc-main";
 	};
 
