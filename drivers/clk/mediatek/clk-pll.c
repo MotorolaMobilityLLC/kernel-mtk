@@ -36,8 +36,11 @@
 #define AUDPLL_TUNER_EN		BIT(31)
 
 #define POSTDIV_MASK		0x7
+#if defined(CONFIG_MACH_MT6799)
+#define INTEGER_BITS		8
+#else
 #define INTEGER_BITS		7
-
+#endif
 /*
  * MediaTek PLLs are configured through their pcw value. The pcw value describes
  * a divider in the PLL feedback loop which consists of 7 bits for the integer
