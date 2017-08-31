@@ -143,9 +143,8 @@ enum audio_system_clock_type {
 	CLOCK_ADC_HIRES_TML,
 	CLOCK_SCP_SYS_AUD,
 	CLOCK_INFRA_SYS_AUDIO,
-	CLOCK_INFRA_SYS_AUDIO_26M,
 	CLOCK_INFRA_ANC_MD32,
-	CLOCK_INFRA_ANC_MD32_32K,
+	CLOCK_TOP_MUX_AXI,
 	CLOCK_TOP_AUD_MUX1,
 	CLOCK_TOP_AUD_MUX2,
 	CLOCK_TOP_AD_APLL1_CK,
@@ -185,9 +184,8 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_ADC_HIRES_TML] = {"aud_adc_hires_tml_clk", false, false, NULL}, /* use this clock when HIRES */
 	[CLOCK_SCP_SYS_AUD] = {"scp_sys_audio", false, false, NULL},
 	[CLOCK_INFRA_SYS_AUDIO] = {"aud_infra_clk", false, false, NULL},
-	[CLOCK_INFRA_SYS_AUDIO_26M] = {"aud_infra_26m", false, false, NULL},
 	[CLOCK_INFRA_ANC_MD32] = {"aud_infra_anc_md32", false, false, NULL},
-	[CLOCK_INFRA_ANC_MD32_32K] = {"aud_infra_anc_md32_32k", false, false, NULL},
+	[CLOCK_TOP_MUX_AXI] = {"top_mux_axi", false, false, NULL}, /* select from 26m for infra_audio */
 	[CLOCK_TOP_AUD_MUX1] = {"aud_mux1_clk", false, false, NULL},		/* select from 26 or apll1 */
 	[CLOCK_TOP_AUD_MUX2] = {"aud_mux2_clk", false, false, NULL},		/* select from 26 or apll2 */
 	[CLOCK_TOP_AD_APLL1_CK] = {"top_ad_apll1_clk", false, false, NULL},	/* parent of TOP_AUD_MUX1 */
@@ -470,17 +468,27 @@ void AudDrv_Clk_On(void)
 			goto EXIT;
 		}
 
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clock);
+		if (aud_clks[CLOCK_TOP_MUX_AXI].clk_prepare) {
+			ret = clk_enable(aud_clks[CLOCK_TOP_MUX_AXI].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].name);
+				       aud_clks[CLOCK_TOP_MUX_AXI].name);
 				AUDIO_AEE("");
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_INFRA_SYS_AUDIO_26M fail\n",
+			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_MUX_AXI fail",
 			       __func__);
+			AUDIO_AEE("");
+			goto EXIT;
+		}
+
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_MUX_AXI].clock,
+				     aud_clks[CLOCK_CLK26M].clock);
+		if (ret) {
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			       __func__, aud_clks[CLOCK_TOP_MUX_AXI].name,
+			       aud_clks[CLOCK_CLK26M].name, ret);
 			AUDIO_AEE("");
 			goto EXIT;
 		}
@@ -638,8 +646,8 @@ void AudDrv_Clk_Off(void)
 		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare)
 			clk_disable(aud_clks[CLOCK_DAC_PREDIS].clock);
 
-		if (aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO_26M].clock);
+		if (aud_clks[CLOCK_TOP_MUX_AXI].clk_prepare)
+			clk_disable(aud_clks[CLOCK_TOP_MUX_AXI].clock);
 
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
@@ -1864,22 +1872,6 @@ void AudDrv_ANC_Clk_On(void)
 			AUDIO_AEE("");
 			goto EXIT;
 		}
-		if (aud_clks[CLOCK_INFRA_ANC_MD32_32K].clk_prepare) {
-			ret = clk_enable(aud_clks[CLOCK_INFRA_ANC_MD32_32K].clock);
-			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock %s fail",
-					__func__,
-					aud_clks[CLOCK_INFRA_ANC_MD32_32K].name);
-				AUDIO_AEE("");
-				goto EXIT;
-			}
-		} else {
-			pr_err("%s [CCF]clk_prepare error enable_clock %s fail",
-				__func__,
-				aud_clks[CLOCK_INFRA_ANC_MD32_32K].name);
-			AUDIO_AEE("");
-			goto EXIT;
-		}
 
 		/* ANC_MD32 TOP CLOCK MUX SELECT SYSPLL1_D2*/
 		if (aud_clks[CLOCK_TOP_MUX_ANC_MD32].clk_prepare) {
@@ -1923,8 +1915,6 @@ void AudDrv_ANC_Clk_Off(void)
 		PRINTK_AUDDRV("+%s(), Aud_ANC_Clk_cntr(%x)\n",
 			      __func__,
 			      Aud_ANC_Clk_cntr);
-		if (aud_clks[CLOCK_INFRA_ANC_MD32_32K].clk_prepare)
-			clk_disable(aud_clks[CLOCK_INFRA_ANC_MD32_32K].clock);
 		if (aud_clks[CLOCK_INFRA_ANC_MD32].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_ANC_MD32].clock);
 
