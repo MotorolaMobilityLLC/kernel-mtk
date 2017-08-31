@@ -3850,8 +3850,8 @@ static int config_display_m4u_port(void)
 static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	void *buffer_va = NULL;
-	unsigned int mva_size = 0;
-	ion_phys_addr_t buffer_mva;
+	size_t mva_size = 0;
+	ion_phys_addr_t buffer_mva = 0;
 
 	struct ion_mm_data mm_data;
 
@@ -3891,7 +3891,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 			return NULL;
 		}
 
-		ion_phys(client, handle, &buffer_mva, (size_t *)&mva_size);
+		ion_phys(client, handle, &buffer_mva, &mva_size);
 		if (buffer_mva == 0) {
 			DISPERR("Fatal Error, get mva failed\n");
 			ion_free(client, handle);
@@ -3901,7 +3901,7 @@ static struct disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		}
 		buf_info->handle = handle;
 		buf_info->mva = (uint32_t)buffer_mva;
-		buf_info->size = mva_size;
+		buf_info->size = (uint32_t)mva_size;
 		buf_info->va = buffer_va;
 	} else {
 		DISPERR("Fatal error, kzalloc internal buffer info failed!!\n");
