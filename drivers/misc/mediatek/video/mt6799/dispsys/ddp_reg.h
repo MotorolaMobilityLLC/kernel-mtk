@@ -1458,6 +1458,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 /* bit 8: dre_gain_force_en */
 #define DISP_AAL_DRE_GAIN_FILTER_00             (DISPSYS_AAL0_BASE + 0x354)
 #define DISP_AAL_DRE_FLT_FORCE(idx)             (DISPSYS_AAL0_BASE + 0x358 + (idx) * 4)
+#define DISP_AAL_DRE_FLT_FORCE_11             (DISPSYS_AAL0_BASE + 0x44C)
 #define DISP_AAL_DRE_CRV_CAL_00                 (DISPSYS_AAL0_BASE + 0x344)
 #define DISP_AAL_DRE_MAPPING_00                 (DISPSYS_AAL0_BASE + 0x3b0)
 #define DISP_AAL_CABC_GAINLMT_TBL(idx)          (DISPSYS_AAL0_BASE + 0x40c + (idx) * 4)
