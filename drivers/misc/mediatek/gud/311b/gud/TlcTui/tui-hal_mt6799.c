@@ -168,13 +168,15 @@ uint32_t hal_tui_alloc(
 #endif
 
 	ret = tui_region_offline(&pa, &size);
+	pr_debug("%s(%d): required size 0x%zx, acquired size=0x%lx\n",
+		 __func__, __LINE__, allocsize * number, size);
 
 	if (ret == 0) {
 		g_tbuff_alloc = 1;
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
 		allocbuffer[2].pa = (uint64_t) (pa + allocsize*2);
-		pr_debug("%s(%d): buf_1 %llx, buf_2 %llx, buf_3 %llx, extra=%d\n", __func__, __LINE__,
+		pr_debug("%s(%d): buf_1 0x%llx, buf_2 0x%llx, buf_3 0x%llx, extra=0x%x\n", __func__, __LINE__,
 			allocbuffer[0].pa, allocbuffer[1].pa, allocbuffer[2].pa, TUI_EXTRA_MEM_SIZE);
 	} else {
 		pr_err("%s(%d): tui_region_offline failed!\n",
