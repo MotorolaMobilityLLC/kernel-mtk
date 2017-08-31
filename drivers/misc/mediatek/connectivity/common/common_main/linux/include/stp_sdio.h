@@ -59,40 +59,47 @@
 ********************************************************************************
 */
 /* Common HIF register address */
-#define CCIR        (0x0000)
-#define CHLPCR        (0x0004)
-#define CSDIOCSR    (0x0008)
-#define CHCR        (0x000c)
-#define CHISR        (0x0010)
-#define CHIER        (0x0014)
-#define CTDR        (0x0018)
-#define CRDR        (0x001c)
-#define CTFSR        (0x0020)
-#define CRPLR        (0x0024)
-#define CSR        (0x00D8)	/* MT6630 & MT6632 only for the moment */
+#define CCIR		(0x0000)
+#define CHLPCR		(0x0004)
+#define CSDIOCSR	(0x0008)
+#define CHCR		(0x000c)
+#define CHISR		(0x0010)
+#define CHIER		(0x0014)
+#define CTDR		(0x0018)
+#define CRDR		(0x001c)
+#define CTFSR		(0x0020)
+#define CRPLR		(0x0024)
+#define CTMDPCR0	(0x00B8)
+#define CTMDPCR1	(0x00BC)
+#define CSR		(0x00D8)	/* MT6630 & MT6632 only for the moment */
 #define SWPCDBGR	(0x0154)
 
 /* Common HIF register bit field address */
+/* CCCR_F0*/
+#define CCCR_F0_RX_CRC	(0x1)
+#define CCCR_F0_RX_INT	(0x8)
+
 /* CHLPCR */
-#define C_FW_OWN_REQ_CLR    (0x00000200)
-#define C_FW_OWN_REQ_SET    (0x00000100)
-#define C_FW_INT_EN_CLR     (0x00000002)
-#define C_FW_INT_EN_SET     (0x00000001)
-#define C_FW_COM_DRV_OWN    (0x00000100)
+#define C_FW_OWN_REQ_CLR	(0x00000200)
+#define C_FW_OWN_REQ_SET	(0x00000100)
+#define C_FW_INT_EN_CLR		(0x00000002)
+#define C_FW_INT_EN_SET		(0x00000001)
+#define C_FW_COM_DRV_OWN	(0x00000100)
 
 /* CHIER */
-#define CHISR_EN_15_7       (0x0000ff80)
-#define CHISR_EN_3_0        (0x0000000f)
+#define CHISR_EN_15_7	(0x0000ff80)
+#define CHISR_EN_3_0	(0x0000000f)
 /* CHISR */
-#define RX_PKT_LEN          (0xffff0000)
-#define FIRMWARE_INT        (0x0000fe00)
-#define TX_FIFO_OVERFLOW    (0x00000100)
-#define FW_INT_IND_INDICATOR (0x00000080)
-#define TX_COMPLETE_COUNT   (0x00000070)
-#define TX_UNDER_THOLD      (0x00000008)
-#define TX_EMPTY            (0x00000004)
-#define RX_DONE             (0x00000002)
-#define FW_OWN_BACK_INT     (0x00000001)
+#define RX_PKT_LEN		(0xffff0000)
+#define FIRMWARE_INT		(0x0000fe00)
+#define TX_RETRY		(0x00000200)
+#define TX_FIFO_OVERFLOW	(0x00000100)
+#define FW_INT_IND_INDICATOR	(0x00000080)
+#define TX_COMPLETE_COUNT	(0x00000070)
+#define TX_UNDER_THOLD		(0x00000008)
+#define TX_EMPTY		(0x00000004)
+#define RX_DONE			(0x00000002)
+#define FW_OWN_BACK_INT		(0x00000001)
 
 /* hardware settings */
 #define STP_SDIO_TX_FIFO_SIZE (2080UL)
@@ -111,7 +118,7 @@
 
 #define STP_SDIO_FW_CPUPCR_POLLING_CNT (5)
 
-#define STP_SDIO_RETRY_LIMIT (5)
+#define STP_SDIO_RETRY_LIMIT (10)
 #define STP_SDIO_MAX_RETRY_NUM (100)
 
 /* tx buffer size for a single entry */
@@ -229,6 +236,10 @@ typedef struct _MTK_WCN_STP_SDIO_HIF_INFO {
 	INT32 dump_flag;
 #endif
 	INT32 tx_dbg_dump_flag;
+	INT32 tx_retry_flag;
+	INT32 retry_enable_flag;
+	INT32 tx_retry_count;
+	INT32 rx_retry_count;
 	struct work_struct tx_work;
 	struct work_struct rx_work;
 } MTK_WCN_STP_SDIO_HIF_INFO;
@@ -281,4 +292,7 @@ INT32 stp_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag);
 */
 INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 		MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32 offset, PUINT32 pData, UINT32 len);
+VOID stp_sdio_retry_flag_ctrl(INT32 flag);
+INT32 stp_sdio_retry_flag_get(VOID);
+
 #endif				/* _STP_SDIO_H */

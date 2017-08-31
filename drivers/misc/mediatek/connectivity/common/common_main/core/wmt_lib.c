@@ -2111,6 +2111,7 @@ INT32 wmt_lib_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 {
 	return stp_dbg_poll_cpupcr(times, sleep, cmd);
 }
+
 UINT32 wmt_lib_co_clock_flag_get(VOID)
 {
 	return wmt_plat_soc_co_clock_flag_get();

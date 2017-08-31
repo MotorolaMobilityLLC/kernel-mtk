@@ -1174,6 +1174,80 @@ out:
 EXPORT_SYMBOL(mtk_wcn_hif_sdio_write_buf);
 
 /*!
+ * \brief
+ *
+ * detailed descriptions
+ *
+ * \param ctx client's context variable
+ *
+ * \retval 0    register successfully
+ * \retval < 0  list error code here
+ */
+INT32 mtk_wcn_hif_sdio_abort(MTK_WCN_HIF_SDIO_CLTCTX ctx)
+{
+#if HIF_SDIO_UPDATE
+	INT32 ret;
+	struct sdio_func *func;
+#else
+	INT32 ret = -HIF_SDIO_ERR_FAIL;
+	INT32 probe_index = -1;
+	struct sdio_func *func = 0;
+#endif
+
+	HIF_SDIO_DBG_FUNC("start!\n");
+	HIF_SDIO_ASSERT(pbuf);
+
+	/* 4 <1> check if ctx is valid, registered, and probed */
+#if HIF_SDIO_UPDATE
+	ret = -HIF_SDIO_ERR_FAIL;
+	func = hif_sdio_ctx_to_func(ctx);
+	if (!func) {
+		ret = -HIF_SDIO_ERR_FAIL;
+		goto out;
+	}
+#else
+	probe_index = CLTCTX_IDX(ctx);
+	if (unlikely(!CLTCTX_IDX_VALID(probe_index))) {	/* invalid index in CLTCTX */
+		HIF_SDIO_WARN_FUNC("invalid ctx(0x%x)\n", ctx);
+		goto out;
+	}
+	if (probe_index < 0 || probe_index >= CFG_CLIENT_COUNT) {	/* the function has not been probed */
+		HIF_SDIO_WARN_FUNC("can't find client in probed list!\n");
+		ret = -HIF_SDIO_ERR_FAIL;
+		goto out;
+	} else {
+		if (g_hif_sdio_probed_func_list[probe_index].clt_idx < 0) {	/* the client has not been registered */
+			HIF_SDIO_WARN_FUNC("can't find client in registered list!\n");
+			ret = -HIF_SDIO_ERR_FAIL;
+			goto out;
+		}
+	}
+	func = g_hif_sdio_probed_func_list[probe_index].func;
+#endif
+	/* 4 <1.1> check if input parameters are valid */
+
+	/* 4 <2> */
+	osal_ftrace_print("%s|S|L|\n", __func__);
+	sdio_claim_host(func);
+	/* SDIO Control must be switched to function 2 before the abort command send
+	 * firmware can receive function 2 abort interrupt
+	 * read CTMDPCR1(0xBC) to switch function 2
+	 */
+	sdio_readl(func, 0xBC, &ret);
+	ret = mmc_io_rw_direct(func->card, 1, 0, SDIO_CCCR_ABORT, func->num, NULL);
+	sdio_release_host(func);
+	osal_ftrace_print("%s|E|L|\n", __func__);
+
+	/* 4 <3> check result code and return proper error code */
+
+out:
+	HIF_SDIO_DBG_FUNC("ret(%d) end!\n", ret);
+
+	return ret;
+}				/* end of mtk_wcn_hif_sdio_write_buf() */
+EXPORT_SYMBOL(mtk_wcn_hif_sdio_abort);
+
+/*!
  * \brief store client driver's private data function.
  *
  *

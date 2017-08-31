@@ -307,6 +307,17 @@ INT32 stp_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag)
 	return mtk_wcn_hif_sdio_deep_sleep_flag_set(flag);
 }
 #endif
+
+VOID stp_sdio_retry_flag_ctrl(INT32 flag)
+{
+	gp_info->retry_enable_flag = flag == 0 ? 0 : 1;
+}
+
+INT32 stp_sdio_retry_flag_get(VOID)
+{
+	return gp_info->retry_enable_flag;
+}
+
 static _osal_inline_ INT32 stp_sdio_host_info_op(INT32 opId)
 {
 	INT32 iRet = 0;
@@ -776,7 +787,7 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 				STPSDIO_HINT_FUNC("FW_OWN_BACK_INT\n");
 
 			/* <4> handle Tx interrupt */
-			if ((chisr & TX_EMPTY) || (chisr & TX_UNDER_THOLD)) {
+			if ((chisr & TX_EMPTY) || (chisr & TX_UNDER_THOLD) || (chisr & TX_RETRY)) {
 				while_loop_counter = 0;
 				STPSDIO_DBG_FUNC("Tx interrupt\n");
 				/* get complete count */
@@ -788,6 +799,8 @@ static VOID stp_sdio_tx_rx_handling(PVOID pData)
 					STPSDIO_ERR_FUNC
 					    ("Abnormal accumulated comp count(%d) chisr(0x%x)\n",
 					     tx_comp, chisr);
+				if (chisr & TX_RETRY)
+					pInfo->tx_retry_flag = 1;
 			}
 			if (pInfo->awake_flag == 1)
 				stp_sdio_tx_wkr(&pInfo->tx_work);
@@ -1535,20 +1548,28 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 {
 	INT32 comp_count;
 	UINT32 idx;
+	INT32 i;
+	INT32 max;
+	INT32 ret;
+	UINT32 value = 0;
 
 	comp_count = atomic_read(&p_info->firmware_info.tx_comp_num);
 	atomic_sub(comp_count, &p_info->firmware_info.tx_comp_num);
 
 	/* update tx to firemware information */
 	if (p_info->firmware_info.tx_packet_num >= comp_count) {
-		STPSDIO_DBG_FUNC("tx_pack_num(%d), comp_count(%d),tx_comp_num(%d)\n",
+		STPSDIO_DBG_FUNC("tx_pack_num(%d), comp_count(%d),tx_comp_num(%d), retry flag(%d)\n",
 				 p_info->firmware_info.tx_packet_num, comp_count,
-				 atomic_read(&p_info->firmware_info.tx_comp_num));
+				 atomic_read(&p_info->firmware_info.tx_comp_num),
+				 p_info->tx_retry_flag);
 		p_info->firmware_info.tx_packet_num -= comp_count;
 	} else {
-		STPSDIO_ERR_FUNC("abnormal complete count(%d), tx_packet_num(%d)!\n",
-				 comp_count, p_info->firmware_info.tx_packet_num);
+		STPSDIO_INFO_FUNC("abnormal complete count(%d), tx_packet_num(%d), retry flag(%d)!\n",
+				 comp_count, p_info->firmware_info.tx_packet_num, p_info->tx_retry_flag);
 		/* TODO: [FixMe][George] Add error handling or bug report!! */
+		STPSDIO_INFO_FUNC("tx_fifo_size(%d), tx_packet_num(%d)\n",
+				p_info->firmware_info.tx_fifo_size,
+				p_info->firmware_info.tx_packet_num);
 	}
 
 	while (comp_count > 0) {
@@ -1567,6 +1588,68 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 		p_info->firmware_info.tx_fifo_size += p_info->tx_pkt_list.pkt_size_list[idx];
 		p_info->tx_pkt_list.out_ts[idx] = jiffies;
 		--comp_count;
+	}
+	if (p_info->retry_enable_flag) {
+		if (p_info->tx_retry_flag) {
+			for (i = 0; i < 100; i++) {
+				ret = stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, p_info->sdio_cltctx,
+						CTMDPCR0, &value, 0);
+				if (value & 1)
+					break;
+				osal_sleep_ms(10);
+			}
+			if (!(value & 1)) {
+				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, p_info->sdio_cltctx,
+						CTMDPCR0, &value, 0);
+				STPSDIO_ERR_FUNC("tx retry: firmware rx buffer is disable CTMDPCR0 value(%x)!\n",
+						value);
+				stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, p_info->sdio_cltctx,
+						CTMDPCR1, &value, 0);
+				STPSDIO_ERR_FUNC("tx retry: firmware rx buffer is disable CTMDPCR1 value(%x)!\n",
+						value);
+				osal_dbg_assert_aee("<HIF_SDIO> tx retry ERROR",
+						"firmware rx buffer is disable");
+				stp_sdio_issue_fake_coredump
+					("ABT: <HIF_SDIO> tx retry: firmware rx buffer is disable");
+			}
+			idx = p_info->tx_pkt_list.pkt_rd_cnt & STP_SDIO_TX_PKT_LIST_SIZE_MASK;
+			max = p_info->firmware_info.tx_packet_num;
+			STPSDIO_ERR_FUNC("tx retry idx(%d) tx retry max(%d)\n", idx, max);
+			for (i = 0; i < max; i++) {
+				/* sdio crc error tx retry */
+				ret = stp_sdio_rw_retry(HIF_TYPE_WRITE_BUF, STP_SDIO_RETRY_LIMIT,
+						p_info->sdio_cltctx, CTDR,
+						(PUINT32)(p_info->pkt_buf.tx_buf + idx * STP_SDIO_TX_ENTRY_SIZE + 0),
+						p_info->tx_pkt_list.pkt_size_list[idx]);
+				if (ret) {
+					STPSDIO_ERR_FUNC("sdio tx retry get CTDR information Tx error(%d)!\n",
+							ret);
+					/* TODO: error handling! */
+					p_info->tx_retry_count++;
+					if (p_info->tx_retry_count > STP_SDIO_RETRY_LIMIT) {
+						STPSDIO_INFO_FUNC("sdio tx retry fail complete count(%d)\n",
+								comp_count);
+						STPSDIO_INFO_FUNC("tx_packet_num(%d), tx_fifo_size(%d)\n",
+								p_info->firmware_info.tx_packet_num,
+								p_info->firmware_info.tx_fifo_size);
+						STPSDIO_INFO_FUNC("retry flag(%d)!\n", p_info->tx_retry_flag);
+						/* TODO: error handling! */
+#if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
+						stp_sdio_txdbg_dump();
+#endif
+						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
+								"retry write data by SDIO report error");
+						p_info->tx_retry_count = 0;
+						stp_sdio_issue_fake_coredump
+							("ABT: <HIF_SDIO> write_readsb retry ERROR");
+					}
+				} else
+					p_info->tx_retry_count = 0;
+				idx++;
+				idx = idx & STP_SDIO_TX_PKT_LIST_SIZE_MASK;
+			}
+			p_info->tx_retry_flag = 0;
+		}
 	}
 }
 
@@ -1733,16 +1816,8 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 				}
 			} while (0);
 #endif
-			if (ret) {
+			if (ret)
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
-
-				/* TODO: error handling! */
-#if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
-				stp_sdio_txdbg_dump();
-#endif
-				osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-						    "write data by SDIO report error");
-			}
 
 			/* clear rd index entry of Tx ring buffer */
 			/*memset(buf_tx, 0, STP_SDIO_TX_ENTRY_SIZE); */
@@ -1911,15 +1986,8 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			} while (0);
 #endif
 
-			if (ret) {
+			if (ret)
 				STPSDIO_ERR_FUNC("get CTDR information Tx error(%d)!\n", ret);
-				/* TODO: error handling! */
-#if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
-				stp_sdio_txdbg_dump();
-#endif
-				osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-						    "write data by SDIO report error");
-			}
 
 			/* clear rd index entry of Tx ring buffer */
 			/*memset(buf_tx, 0, STP_SDIO_TX_ENTRY_SIZE); */
@@ -2000,6 +2068,8 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 	UINT32 bus_rxlen;
 	UINT32 chisr_rxlen;
 	INT32 ret;
+	INT32 ret_1;
+	UINT8 cccr_value = 0;
 	MTK_WCN_STP_SDIO_HIF_INFO *p_info;
 
 	p_info = container_of(work, MTK_WCN_STP_SDIO_HIF_INFO, rx_work);
@@ -2027,6 +2097,57 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 
 	ret = stp_sdio_rw_retry(HIF_TYPE_READ_BUF, STP_SDIO_RETRY_LIMIT, p_info->sdio_cltctx, CRDR,
 			(PUINT32)(&(p_info->pkt_buf.rx_buf[0])), bus_rxlen);
+	if (p_info->retry_enable_flag) {
+		if (ret) {
+			if (ret == -EIO) {
+				cccr_value = 0;
+				ret_1 = mtk_wcn_hif_sdio_f0_readb(p_info->sdio_cltctx, CCCR_F0, &cccr_value);
+				if (ret_1)
+					STPSDIO_ERR_FUNC("read CCCR_F0 fail(%d)\n", ret_1);
+				STPSDIO_ERR_FUNC("read CCCR_F0: (0x%x)\n", cccr_value);
+				cccr_value |= CCCR_F0_RX_CRC;
+				cccr_value |= CCCR_F0_RX_INT;
+				ret_1 = mtk_wcn_hif_sdio_f0_writeb(p_info->sdio_cltctx, CCCR_F0, cccr_value);
+				if (ret_1)
+					STPSDIO_ERR_FUNC("write CCCR_F0 fail(%d)\n", ret_1);
+				STPSDIO_ERR_FUNC("write CCCR_F0: (0x%x)\n", cccr_value);
+				cccr_value = 0;
+				ret_1 = mtk_wcn_hif_sdio_f0_readb(p_info->sdio_cltctx, CCCR_F0, &cccr_value);
+				if (ret_1)
+					STPSDIO_ERR_FUNC("read CCCR_F0 fail(%d)\n", ret_1);
+				STPSDIO_ERR_FUNC("read CCCR_F0: (0x%x)\n", cccr_value);
+				STPSDIO_ERR_FUNC("sdio read buffer happen crc error will be retry(%d)\n", ret);
+				p_info->rx_retry_count++;
+				if (p_info->rx_retry_count > STP_SDIO_RETRY_LIMIT) {
+					osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
+							"retry read data by SDIO report error");
+					p_info->rx_retry_count = 0;
+					stp_sdio_issue_fake_coredump
+						("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
+				}
+			}
+		} else {
+			cccr_value = 0;
+			ret_1 = mtk_wcn_hif_sdio_f0_readb(p_info->sdio_cltctx, CCCR_F0, &cccr_value);
+			if (ret_1)
+				STPSDIO_ERR_FUNC("read CCCR_F0 fail(%d)\n", ret_1);
+			STPSDIO_DBG_FUNC("read CCCR_F0: (0x%x)\n", cccr_value);
+			cccr_value &= ~CCCR_F0_RX_CRC;
+			cccr_value |= CCCR_F0_RX_INT;
+			ret_1 = mtk_wcn_hif_sdio_f0_writeb(p_info->sdio_cltctx, CCCR_F0, cccr_value);
+			if (ret_1)
+				STPSDIO_ERR_FUNC("write CCCR_F0 fail(%d)\n", ret_1);
+			STPSDIO_DBG_FUNC("write CCCR_F0: (0x%x)\n", cccr_value);
+			cccr_value = 0;
+			ret_1 = mtk_wcn_hif_sdio_f0_readb(p_info->sdio_cltctx, CCCR_F0, &cccr_value);
+			if (ret_1)
+				STPSDIO_ERR_FUNC("read CCCR_F0 fail(%d)\n", ret_1);
+			STPSDIO_DBG_FUNC("read CCCR_F0: (0x%x)\n", cccr_value);
+			STPSDIO_DBG_FUNC("sdio read buffer success(%d)\n", ret);
+
+			p_info->rx_retry_count = 0;
+		}
+	}
 	if (ret) {
 		/* TODO: error handling! */
 		STPSDIO_ERR_FUNC("read CRDR len(%d) rx error!(%d)\n", bus_rxlen, ret);
@@ -2413,6 +2534,9 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 	g_stp_sdio_host_info.firmware_info.tx_packet_num = 0;
 	atomic_set(&g_stp_sdio_host_info.firmware_info.tx_comp_num, 0);
 
+	/* init SDIO data path retry flag */
+	g_stp_sdio_host_info.retry_enable_flag = 0;
+
 #if STP_SDIO_OWN_THREAD
 	/* tasklet_init(&g_stp_sdio_host_info.tx_rx_job, stp_sdio_tx_rx_handling, */
 	/*	(unsigned long) &g_stp_sdio_host_info); */
@@ -2607,6 +2731,7 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 		MTK_WCN_HIF_SDIO_CLTCTX clt_ctx, UINT32 offset, PUINT32 pData, UINT32 len)
 {
 	INT32 ret = -1;
+	INT32 ret_1 = -1;
 	INT32 retry_flag = 0;
 
 	UINT32 card_id = CLTCTX_CID(clt_ctx);
@@ -2636,7 +2761,6 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 				ret = mtk_wcn_hif_sdio_readl(clt_ctx, offset, pData);
 			break;
 		case HIF_TYPE_READ_BUF:
-			retry_limit = 1;
 			ret = mtk_wcn_hif_sdio_read_buf(clt_ctx, offset, pData, len);
 			break;
 		case HIF_TYPE_WRITEB:
@@ -2646,7 +2770,6 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 			ret = mtk_wcn_hif_sdio_writel(clt_ctx, offset, *pData);
 			break;
 		case HIF_TYPE_WRITE_BUF:
-			retry_limit = 1;
 			ret = mtk_wcn_hif_sdio_write_buf(clt_ctx, offset, pData, len);
 			break;
 		default:
@@ -2654,11 +2777,22 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 			goto exit;
 		}
 
-		if (ret != 0) {
+		if (ret) {
 			STPSDIO_ERR_FUNC("sdio read or write failed, ret:%d\n", ret);
 			/* sdio CRC error read CSR */
-			if (ret == -EIO)
-				retry_flag = 1;
+			if (ret == -EIO) {
+				if (type == HIF_TYPE_READ_BUF || type == HIF_TYPE_WRITE_BUF) {
+					ret_1 = mtk_wcn_hif_sdio_abort(clt_ctx);
+					if (ret_1)
+						STPSDIO_ERR_FUNC("sdio crc error send abort fail, ret_1:%d\n",
+								ret_1);
+					else
+						STPSDIO_ERR_FUNC("sdio crc error send abort success, ret_1:%d\n",
+								ret_1);
+					goto exit;
+				} else
+					retry_flag = 1;
+			}
 		} else {
 			STPSDIO_LOUD_FUNC("CR:0x:%x value:0x%x\n", offset, *pData);
 			break;
